@@ -26,6 +26,7 @@ module PGIP.DataTypesUtils
          , genMessage
          , genError
          , addToHistory
+         , generatePrompter
          ) where
 
 import PGIP.Utils
@@ -41,6 +42,14 @@ import Logic.Logic
 import System.IO
 import Proofs.AbstractState
 
+-- | Generates the string containing the prompter
+generatePrompter :: CMDL_PrompterState -> String
+generatePrompter pst
+ = case selectedNodes pst of 
+    [] ->(delExtension $ fileLoaded pst) ++ (prompterHead pst) 
+    _  ->(delExtension $ fileLoaded pst) ++ "." ++
+         (selectedNodes pst) ++ (selectedTranslations pst) ++ 
+         (prompterHead pst)
 
 -- | Returns the list of all nodes, if it is not up to date
 -- the function recomputes the list
@@ -128,7 +137,8 @@ getTh useTrans x state
        fn n = case devGraphState state of
                 Nothing -> Nothing
                 Just dgState ->
-                 case computeTheory False (libEnv dgState)-- ??
+                 case computeTheory False 
+                               (libEnv dgState)-- ??
                                (ln dgState) n of
                   Result _ (Just (_le, th)) -> Just th -- le not used !!!
                   _                  -> Nothing

@@ -697,8 +697,7 @@ cDisplayGraph state
      do
       -- obtain the name of the last loaded library for
       -- documentation/debugging reasons
-      let filename = reverse $ drop 2 $ reverse
-                      $ prompter state
+      let filename = fileLoaded $  prompter state
       showGraph filename defaultHetcatsOpts ( Just
                    (ln dgState, libEnv dgState))
       return state

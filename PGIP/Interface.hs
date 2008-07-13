@@ -33,7 +33,11 @@ emptyCMDL_State =
    CMDL_State {
      devGraphState = Nothing,
      proveState = Nothing,
-     prompter = " > ",
+     prompter = CMDL_PrompterState {
+                    fileLoaded = [],
+                    selectedNodes = [],
+                    selectedTranslations = [],
+                    prompterHead = "> " },
      output = CMDL_Output {
                  errorMsg   = [],
                  outputMsg  = [],

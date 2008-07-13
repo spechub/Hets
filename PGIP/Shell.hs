@@ -255,13 +255,38 @@ subtractCommandName allcmds input
                              Just tmp -> [tmp]) allcmds
   in drop (length $ head lst) inp
 
+-- This function tries to extract the name of command. In most cases this 
+-- would be the first word of the string but we have a few exceptions :
+-- dg * commands
+-- dg-all * commands
+-- del * commands
+-- del-all * commands
+-- add * commands
+-- set * commands
+-- set-all * commands
+getCmdName :: String -> String
+getCmdName inp
+ = case words inp of 
+    [] -> []
+    wds -> case tail wds of 
+            []   -> head wds
+            lwds -> case head wds of 
+                     "dg"       -> ("dg "      ++ (head lwds))
+                     "dg-all"   -> ("dg-all "  ++ (head lwds))
+                     "del"      -> ("del "     ++ (head lwds))
+                     "del-all"  -> ("del-all " ++ (head lwds))
+                     "add"      -> ("add "     ++ (head lwds))
+                     "set"      -> ("set "     ++ (head lwds))
+                     "set-all"  -> ("set-all " ++ (head lwds))
+                     wd          -> wd
+
 -- | The function determines the requirements of the command
 -- name found at the begining of the string
 getTypeOf::[CMDL_CmdDescription] -> String -> CMDL_CmdRequirements
 getTypeOf allcmds input
- = let nwInput = trim input
+ = let nwInput = getCmdName input
        tmp =concatMap(\x ->
-                       case find(\y -> isPrefixOf y nwInput)$
+                       case find(\y -> y == nwInput )$ 
                                              cmdNames$ cmdInfo x of
                         Nothing -> []
                         Just _ -> [cmdReq x]) allcmds
@@ -473,9 +498,9 @@ cmdlCompletionFn allcmds allState input
                  (cons_checkers $ targetLogic cid)
            getPName' x = case x of
                           (G_cons_checker _ p) -> prover_name p
-           getConsCheckersAutomatic cm = foldl addConsCheckers [] cm
+           getConsCheckersAutomatic' cm = foldl addConsCheckers [] cm
            createConsCheckersList cm = map (\x -> getPName' x)
-                                         (getConsCheckersAutomatic cm)
+                                         (getConsCheckersAutomatic' cm)
        case  proveState allState of
         Nothing ->
          -- not in proving mode !? you can not choose a consistency
@@ -540,9 +565,10 @@ cmdlCompletionFn allcmds allState input
         Just proofState ->
          case cComorphism proofState of
           -- some comorphism was used
-          Just c-> return $ map (\y -> bC++" "++y) $
-                     filter (\x->isPrefixOf tC x)
-                                      $ createProverList [c]
+          Just c-> do
+                    lst <- checkPresenceProvers $ createProverList [c]
+                    return $ map (\y -> bC++" "++y) $
+                                   filter (\x->isPrefixOf tC x) lst
           Nothing ->
            case elements proofState of
              -- no elements selected
@@ -550,12 +576,13 @@ cmdlCompletionFn allcmds allState input
              -- use the first element to get a comorphism
              c:_ ->
                case c of
-                Element z _->return $ map (\y -> bC++" "++y)
-                              $ filter (\x->isPrefixOf tC x)
-                              $ createProverList
-                              $ findComorphismPaths
-                                logicGraph
-                                  (sublogicOfTh $ theory z)
+                Element z _->do
+                              lst <- checkPresenceProvers 
+                                         $ createProverList
+                                         $ findComorphismPaths
+                                        logicGraph (sublogicOfTh $ theory z)
+                              return $ map (\y -> bC++" "++y)
+                                    $ filter (\x->isPrefixOf tC x) lst
    ReqComorphism ->
        do
         case proveState allState of

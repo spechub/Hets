@@ -36,7 +36,8 @@ module PGIP.Utils
        , nodeContainsGoals
        , edgeContainsGoals
        , checkIntString
-       , cleanPrompter
+       , delExtension
+       , checkPresenceProvers 
        )where
 
 import Data.List
@@ -44,12 +45,35 @@ import Data.Char
 import Data.Graph.Inductive.Graph
 import Static.GTheory
 import Static.DevGraph
+import System
 import System.Directory
 import Common.AS_Annotation
 import qualified Common.OrderedMap as OMap
 
-cleanPrompter :: String -> String
-cleanPrompter str = case find (=='.') str of
+
+-- checks if provers in the prover list are availabe on 
+-- the current machine
+checkPresenceProvers :: [String] -> IO [String]
+checkPresenceProvers ls
+ = case ls of 
+    [] -> return []
+    "SPASS":l -> do
+                  path <- getEnv "PATH"
+                  case isInfixOf "SPASS" path of 
+                   True -> do
+                            contd <- checkPresenceProvers l 
+                            return ("SPASS":contd)
+                   False -> checkPresenceProvers l
+    x:l -> do
+            contd <- checkPresenceProvers l 
+            return (x:contd)
+
+
+-- removes the extension of the file find in the 
+-- name of the prompter ( it delets everything 
+-- after the last . )
+delExtension :: String -> String
+delExtension str = case find (=='.') str of
                      Nothing -> reverse $ safeTail $ safeTail $
                                   reverse str
                      Just _ -> reverse $ safeTail $
@@ -182,7 +206,7 @@ obtainNodeList lN allNodes
 -- | Given a node decides if it contains goals or not
 nodeContainsGoals:: LNode DGNodeLab -> G_theory -> Bool
 nodeContainsGoals (_,l) th
- = (not (isDGRef l)) &&
+ = -- (not (isDGRef l)) &&
    ((case th of
        G_theory _ _ _ sens _ ->
          not $ OMap.null $ OMap.filter

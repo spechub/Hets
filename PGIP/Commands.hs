@@ -32,6 +32,7 @@ import Proofs.Automatic
 import Proofs.Composition
 import Proofs.Global
 import Proofs.HideTheoremShift
+import Proofs.TheoremHideShift
 import Proofs.Local
 import PGIP.UndoRedo
 
@@ -107,55 +108,59 @@ getCommands
              CmdWithInput cUse )
    : (genCmd DgCmd ["dg auto"] CmdNoPriority ReqGEdges
              "apply automatic tactic to a list of edges" $
-             CmdWithInput $ commandDg automaticFromList)
+             CmdWithInput $ commandDg $ wrapResultDg automaticFromList)
    : (genCmd DgCmd ["dg glob-subsume"] CmdNoPriority ReqGEdges
              "apply global subsumption to a list of edges" $
-             CmdWithInput $ commandDg globSubsumeFromList)
+             CmdWithInput $ commandDg $ wrapResultDg globSubsumeFromList)
    : (genCmd DgCmd ["dg glob-decomp"] CmdNoPriority ReqGEdges
              "apply global decomposition to a list of edges" $
-             CmdWithInput $ commandDg globDecompFromList)
+             CmdWithInput $ commandDg $ wrapResultDg globDecompFromList)
    : (genCmd DgCmd ["dg loc-infer"] CmdNoPriority ReqGEdges
              "apply local inference to a list of edges" $
-             CmdWithInput $ commandDg localInferenceFromList)
+             CmdWithInput $ commandDg $ wrapResultDg localInferenceFromList)
    : (genCmd DgCmd ["dg loc-decomp"] CmdNoPriority ReqGEdges
              "apply local decomposition to a list of edges" $
-             CmdWithInput $ commandDg locDecompFromList)
+             CmdWithInput $ commandDg $wrapResultDg locDecompFromList)
    : (genCmd DgCmd ["dg comp"] CmdNoPriority ReqGEdges
              "apply composition to a list of edges" $
-             CmdWithInput $ commandDg compositionFromList)
+             CmdWithInput $ commandDg $wrapResultDg compositionFromList)
    : (genCmd DgCmd ["dg comp-new"] CmdNoPriority ReqGEdges
          "apply composiiton with speculation of new edges to a list of edges"$
-             CmdWithInput $ commandDg compositionCreatingEdgesFromList)
+             CmdWithInput $ commandDg 
+                    $ wrapResultDg compositionCreatingEdgesFromList)
    : (genCmd DgCmd ["dg hide-thm"] CmdNoPriority ReqGEdges
               "apply hide theorem shift to a list of edges" $
-              CmdWithInput $ commandDg automaticHideTheoremShiftFromList)
+              CmdWithInput $ commandDg $
+                wrapResultDg automaticHideTheoremShiftFromList)
    : (genCmd DgCmd ["dg-all auto"] CmdNoPriority ReqNothing
               "apply automatic tactic to all edges" $
-              CmdNoInput $ commandDgAll automatic)
+              CmdNoInput $ commandDgAll $ wrapResultDgAll automatic)
    : (genCmd DgCmd ["dg-all glob-subsume"] CmdNoPriority ReqNothing
               "apply global subsumpetion to all edges" $
-              CmdNoInput $ commandDgAll globSubsume)
+              CmdNoInput $ commandDgAll $ wrapResultDgAll globSubsume)
    : (genCmd DgCmd ["dg-all glob-decomp"] CmdNoPriority ReqNothing
               "apply global decomposition to all edges" $
-              CmdNoInput $ commandDgAll globDecomp)
+              CmdNoInput $ commandDgAll $ wrapResultDgAll globDecomp)
    : (genCmd DgCmd ["dg-all loc-infer"] CmdNoPriority ReqNothing
               "apply local inference to all edges" $
-              CmdNoInput $ commandDgAll localInference)
+              CmdNoInput $ commandDgAll $ wrapResultDgAll localInference)
    : (genCmd DgCmd ["dg-all loc-decomp"] CmdNoPriority ReqNothing
               "apply local decomposition to all edges" $
-              CmdNoInput $ commandDgAll locDecomp)
+              CmdNoInput $ commandDgAll $ wrapResultDgAll locDecomp)
    : (genCmd DgCmd ["dg-all comp"] CmdNoPriority ReqNothing
               "apply composition to all edges" $
-              CmdNoInput $ commandDgAll composition)
+              CmdNoInput $ commandDgAll $ wrapResultDgAll composition)
    : (genCmd DgCmd ["dg-all comp-new"] CmdNoPriority ReqNothing
               "apply composition with speculation of new edges to all edges"$
-              CmdNoInput $ commandDgAll compositionCreatingEdges)
+              CmdNoInput $ commandDgAll 
+                         $ wrapResultDgAll compositionCreatingEdges)
    : (genCmd DgCmd ["dg-all hide-thm"] CmdNoPriority ReqNothing
               "apply hide theorem shift to all edges" $
-              CmdNoInput $ commandDgAll automaticHideTheoremShift)
---   : (genCmd DgCmd ["dg-all thm-hide"] CmdNoPriority ReqNothing
---              "apply theorem hide shift to all nodes"$
---              CmdNoInput $ commandDgAll theoremHideShift)
+              CmdNoInput $ commandDgAll 
+                         $ wrapResultDgAll automaticHideTheoremShift)
+   : (genCmd DgCmd ["dg-all thm-hide"] CmdNoPriority ReqNothing
+              "apply theorem hide shift to all nodes"$
+              CmdNoInput $ commandDgAll theoremHideShift)
    : (genCmd SelectCmdAll ["select-all","dg-all basic"]
               CmdNoPriority ReqNothing
               "select all nodes for proving" $

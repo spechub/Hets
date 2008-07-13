@@ -35,6 +35,7 @@ module PGIP.DataTypes
        , CMDL_Socket(..)
        , CMDL_UseTranslation(..)
        , CMDL_ProverConsChecker(..)
+       , CMDL_PrompterState(..)
        ) where
 
 import Static.DevGraph
@@ -64,7 +65,7 @@ data CMDL_State = CMDL_State {
   -- | prove mode information
   proveState      :: Maybe CMDL_ProveState,
   -- | promter of the interface
-  prompter        :: String,
+  prompter        :: CMDL_PrompterState,
   -- | output of the last command
   output          :: CMDL_Output,
   -- | history
@@ -75,7 +76,12 @@ data CMDL_State = CMDL_State {
   connections     :: [CMDL_Channel]
  }
 
-
+data CMDL_PrompterState = CMDL_PrompterState {
+  fileLoaded :: String,
+  selectedNodes :: String,
+  selectedTranslations :: String,
+  prompterHead :: String
+  }
 -- History datatypes -------------------------------------------------------
 
 -- | Description of the internal history of the CMDL interface
@@ -123,7 +129,7 @@ data CMDL_CmdDescription = CMDL_CmdDescription {
   cmdFn          :: CMDL_CmdFnClasses,
   cmdReq         :: CMDL_CmdRequirements
   }
-
+ 
 
 data CMDL_CmdHistoryDescription = CMDL_CmdHistoryDescription {
   cmdType        :: CMDL_CmdType,

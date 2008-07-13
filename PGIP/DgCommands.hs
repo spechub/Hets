@@ -19,6 +19,8 @@ module PGIP.DgCommands
        , cDgSelect
        , cDgSelectAll
        , selectANode
+       , wrapResultDg
+       , wrapResultDgAll
        )where
 
 import PGIP.Utils
@@ -43,14 +45,29 @@ import Driver.Options
 
 import Comorphisms.KnownProvers
 import Comorphisms.LogicGraph
-
+import Common.Result
 import Logic.Comorphism
 import Logic.Grothendieck
 import Logic.Prover
 
+-- | Wraps Result structure around the result of a dg all style command
+wrapResultDgAll :: (LIB_NAME->LibEnv -> LibEnv) ->
+                   LIB_NAME -> LibEnv -> Result LibEnv
+wrapResultDgAll fn lib_name lib_env
+ = let res = fn lib_name lib_env
+   in Result [] $ Just res
+   
+
+-- | Wraps Result structure around the result of a dg style command
+wrapResultDg :: (LIB_NAME->[LEdge DGLinkLab] -> LibEnv -> LibEnv) ->
+                LIB_NAME->[LEdge DGLinkLab] -> LibEnv -> Result LibEnv
+wrapResultDg fn lib_name ls lib_env
+ = let res = fn lib_name ls lib_env
+   in Result [] $ Just res
+
 
 -- | General function for implementing dg all style commands
-commandDgAll :: ( LIB_NAME->LibEnv->LibEnv) -> CMDL_State
+commandDgAll :: ( LIB_NAME->LibEnv->Result LibEnv) -> CMDL_State
                       -> IO CMDL_State
 commandDgAll fn state
  = case devGraphState state of
@@ -61,20 +78,24 @@ commandDgAll fn state
                return $ genErrorMsg "No library loaded" state
     Just dgState ->
      do
-      let nwLibEnv = fn (ln dgState) (libEnv dgState)
-      return state {
+      case fn (ln dgState) (libEnv dgState) of 
+       Result _ (Just nwLibEnv) ->
+           return state {
               devGraphState = Just dgState { libEnv = nwLibEnv  },
               -- delete any selection if a dg command is used
               proveState = Nothing,
-              prompter = (cleanPrompter $ prompter state )++"> "
+              prompter = (prompter state) { selectedNodes = [],
+                                          selectedTranslations = [] } 
               }
+       Result diag Nothing -> return $ genErrorMsg 
+                                     (concat $ map diagString diag) state
 
 
 -- | Generic function for a dg command, all other dg
 -- commands are derived from this command by simply
 -- specifing the function
 commandDg ::  (LIB_NAME -> [LEdge DGLinkLab]->LibEnv->
-              LibEnv) -> String -> CMDL_State
+              Result LibEnv) -> String -> CMDL_State
                       -> IO CMDL_State
 commandDg fn input state
  = case devGraphState state of
@@ -102,18 +123,20 @@ commandDg fn input state
                               state
          _  ->
            do
-            let
-              nwLibEnv = fn (ln dgState) listEdges
-                            (libEnv dgState)
-            return $ genMessage tmpErrs' []
+            case fn (ln dgState) listEdges (libEnv dgState) of 
+             Result _ (Just nwLibEnv) ->
+                 return $ genMessage tmpErrs' []
                       state {
                         devGraphState = Just
                                   dgState { libEnv = nwLibEnv },
                         -- delete any selection if a dg command is
                         -- used
                         proveState = Nothing,
-                        prompter = (cleanPrompter $ prompter state)++"> "
+                        prompter = (prompter state) { selectedNodes = [],
+                                          selectedTranslations = [] } 
                         }
+             Result diag Nothing -> return $ genErrorMsg 
+                        (concat $ map diagString diag) state
 
 
 -- | The function 'cUse' implements the Use commands, i.e.
@@ -138,7 +161,10 @@ cUse input state
                                    CMDL_DevGraphState {
                                      ln = nwLn,
                                      libEnv = nwLibEnv },
-                     prompter = (file ++ "> "),
+                     prompter = (prompter state) {
+                                          fileLoaded = file,
+                                          selectedNodes =  [],
+                                          selectedTranslations = [] },
                      -- delete any selection if a dg command is
                      -- used
                      proveState = Nothing,
@@ -189,7 +215,9 @@ cDgThmHideShift input state
                           devGraphState = Just
                                           dgState { libEnv = newEnv },
                           proveState = Nothing,
-                          prompter = (cleanPrompter $ prompter state)++"> "
+                          prompter = (prompter state) { 
+                                               selectedNodes = [],
+                                               selectedTranslations = [] }
                            }
 
 -- selection commands
@@ -201,7 +229,7 @@ selectANode x dgState
     -- (i.e. solves DGRef cases and so on,
     -- see CASL Reference Manual, p.294, Def 4.9)
     -- computeTheory is defined in Static.DGToSpec
-    gth n = computeTheory False (libEnv dgState) --is it?
+    gth n = computeTheory False (libEnv dgState) 
                           (ln dgState)
                           n
     nodeName t=case find(\(n,_)-> n==t) $ getAllNodes dgState of
@@ -280,10 +308,12 @@ cDgSelect input state
                                ) listNodes
                 oldH = history state
                 nwPrompter = case nds of
-                              hd:[] -> (cleanPrompter $ prompter state)++"."++
-                                         hd++"> "
-                              hd:_ -> (cleanPrompter $ prompter state)++"."++
-                                         hd++"^> "
+                              hd:[] -> (prompter state) {
+                                           selectedNodes = hd,
+                                           selectedTranslations = []}
+                              hd:_ -> (prompter state) {
+                                           selectedNodes =hd++"..",
+                                           selectedTranslations = []}
                               _ -> prompter state
              return $ genMessage tmpErrs' []
                  state {
@@ -330,11 +360,15 @@ cDgSelectAll state
                            ) lsNodes
           oldH = history state
           nwPrompter = case lsNodes of
-                        hd:[] -> (cleanPrompter $ prompter state) ++
-                                  "."++(getDGNodeName $ snd hd)++"> "
-                        hd:_ -> (cleanPrompter $ prompter state) ++
-                                  "."++(getDGNodeName $ snd hd)++"^> "
-                        _ -> prompter state
+                         hd:[] -> 
+                           (prompter state) {
+                            selectedNodes = (getDGNodeName $ snd hd),
+                            selectedTranslations = []}
+                         hd:_ -> 
+                           (prompter state) {
+                            selectedNodes =(getDGNodeName $ snd hd)++"..",
+                            selectedTranslations = []}
+                         _ -> prompter state
       return state {
               -- add the prove state to the status containing
               -- all information selected in the input

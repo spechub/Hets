@@ -74,7 +74,10 @@ cProver::String -> CMDL_State ->
 cProver input state =
   do
    -- trimed input
-   let inp = trim input
+   inpls <- checkPresenceProvers [(trim input)]
+   let inp  = case inpls of 
+                [] -> "Unknown"
+                pnme:_ ->pnme
    case proveState state of
     Nothing -> return $ genErrorMsg "Nothing selected" state
     Just pS ->

@@ -64,7 +64,8 @@ cDropTranslations state =
      Just _ -> return state {
                           proveState = Just $ pS {
                                          cComorphism = Nothing },
-                          prompter = (prompter state)\\"*"
+                          prompter = (prompter state) {
+                                        selectedTranslations = []}
                           }
 
 
@@ -89,8 +90,8 @@ cTranslate input state =
                    proveState = Just pS {
                                   cComorphism = Just cm
                                   },
-                   prompter = (reverse $ safeTail $ safeTail $ reverse $
-                                prompter state) ++ "*> "
+                   prompter = (prompter state) {
+                                 selectedTranslations = "*" }
                         }
        Just ocm ->
         case compComorphism ocm cm of
@@ -107,8 +108,9 @@ cTranslate input state =
                       proveState = Just pS {
                                   cComorphism = Just smth
                                   },
-                      prompter = (reverse $ safeTail $ safeTail $ reverse $
-                                   prompter state) ++ "*> "
+                      prompter = (prompter state) {
+                                  selectedTranslations=(selectedTranslations
+                                        $ prompter state) ++ "*" }
                       }
 
 
@@ -338,7 +340,7 @@ cTimeLimit input state
  = case proveState state of
     Nothing -> return $ genErrorMsg "Nothing selected" state
     Just ps ->
-     case checkIntString input of
+     case checkIntString $ trim input of
        False -> return $ genErrorMsg "Please insert a number of seconds" state
        True ->
         do
@@ -348,7 +350,7 @@ cTimeLimit input state
            return $ addToHistory (ScriptChange $ script ps)
                state {
                  proveState = Just ps {
-                                 script = ("Time Limit: " ++ input
+                                 script = ("Time limit: " ++ (trim input)
                                             ++"\n"++ (script ps))
                                      }
                       }

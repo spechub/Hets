@@ -23,6 +23,7 @@ import System.Console.Shell.Backend
 import System.IO
 
 import PGIP.DataTypes
+import PGIP.DataTypesUtils
 import PGIP.Commands
 import PGIP.DgCommands
 
@@ -35,7 +36,7 @@ stdShellDescription =
        , commandStyle       = OnlyCommands
        , evaluateFunc       = shellacEvalFunc
        , wordBreakChars     = wbc
-       , prompt             = \x -> return (prompter x)
+       , prompt             = \x -> return $ generatePrompter $prompter x
        , historyFile        = Just ("consoleHistory.tmp")
        }
 
