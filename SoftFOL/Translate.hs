@@ -1,7 +1,7 @@
 {- |
 Module      :  $Header$
-Description :  Functions used by 'Comorphisms.SuleCFOL2SoftFOL' and 'SoftFOL.Prove'
-               for the translation into valid SoftFOL identifiers
+Description :  Functions used by 'Comorphisms.SuleCFOL2SoftFOL'
+  and 'SoftFOL.Prove' for the translation into valid SoftFOL identifiers
 Copyright   :  (c) Klaus Lüttich, Uni Bremen 2005
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 

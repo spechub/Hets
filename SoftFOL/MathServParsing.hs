@@ -1,6 +1,6 @@
 {- |
 Module      :  $Header$
-Description :  Functions for parsing MathServ output into a MathServResponse structure.
+Description :  Functions for parsing MathServ output as a MathServResponse
 Copyright   :  (c) Rainer Grabbe
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
