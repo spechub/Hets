@@ -29,40 +29,34 @@ universe = toId "U"
 
 -- | translation of formulas
 kif2CASLFormula :: ListOfList -> CASLFORMULA
-kif2CASLFormula (List (Literal KToken "and" : phis)) =
-  Conjunction (map kif2CASLFormula phis) nullRange
-kif2CASLFormula (List (Literal KToken "or" : phis)) =
-  Disjunction (map kif2CASLFormula phis) nullRange
-kif2CASLFormula (List [Literal KToken "=>", phi1, phi2]) =
-  Implication (kif2CASLFormula phi1) (kif2CASLFormula phi2) True nullRange
-kif2CASLFormula (List [Literal KToken "<=>", phi1, phi2]) =
-  Equivalence (kif2CASLFormula phi1) (kif2CASLFormula phi2) nullRange
-kif2CASLFormula (List [Literal KToken "not", phi]) =
-  Negation (kif2CASLFormula phi) nullRange
-kif2CASLFormula (List [Literal KToken "True"]) =
-  True_atom nullRange
-kif2CASLFormula (List [Literal KToken "False"]) =
-  False_atom nullRange
-kif2CASLFormula (List [Literal KToken "exists", List vl, phi]) =
-  Quantification Existential (kif2CASLvardeclList vl) (kif2CASLFormula phi) nullRange
-kif2CASLFormula (List [Literal KToken "forall", List vl, phi]) =
-  Quantification Universal (kif2CASLvardeclList vl) (kif2CASLFormula phi) nullRange
-kif2CASLFormula (List [Literal KToken "equal",t1,t2]) =
-  Strong_equation (kif2CASLTerm t1) (kif2CASLTerm t2) nullRange
-kif2CASLFormula (List (Literal KToken p:rest)) =
-  Predication (Pred_name (toId p))
-                  (map kif2CASLTerm rest) nullRange
+kif2CASLFormula x = case x of
+  List (Literal KToken p : phis) -> case (p, phis) of
+    ("and", _) -> Conjunction (map kif2CASLFormula phis) nullRange
+    ("or", _) -> Disjunction (map kif2CASLFormula phis) nullRange
+    ("=>", [phi1, phi2]) ->
+      Implication (kif2CASLFormula phi1) (kif2CASLFormula phi2) True nullRange
+    ("<=>", [phi1, phi2]) ->
+      Equivalence (kif2CASLFormula phi1) (kif2CASLFormula phi2) nullRange
+    ("not", [phi]) -> Negation (kif2CASLFormula phi) nullRange
+    ("True", []) -> True_atom nullRange
+    ("False", []) -> False_atom nullRange
+    ("exists", [List vl, phi]) ->
+      Quantification Existential (kif2CASLvardeclList vl) (kif2CASLFormula phi)
+      nullRange
+    ("forall", [List vl, phi]) ->
+      Quantification Universal (kif2CASLvardeclList vl) (kif2CASLFormula phi)
+      nullRange
+    ("equal", [t1, t2]) ->
+      Strong_equation (kif2CASLTerm t1) (kif2CASLTerm t2) nullRange
+    _ -> Predication (Pred_name (toId p)) (map kif2CASLTerm phis) nullRange
 -- also translate 2nd order applications to 1st order, using holds predicate
-kif2CASLFormula (List l) =
-  Predication (Pred_name (toId "holds"))
+  List l -> Predication (Pred_name (toId "holds"))
                   (map kif2CASLTerm l) nullRange
 -- a variable in place of a formula; coerce from Booleans
-kif2CASLFormula (Literal QWord v) =
-  Strong_equation (Simple_id (toVar v))
+  Literal QWord v -> Strong_equation (Simple_id (toVar v))
                   trueTerm
                   nullRange
-kif2CASLFormula x = error ("kif2CASLFormula : cannot translate" ++
-                       show (ppListOfList x))
+  _ -> error $ "kif2CASLFormula : cannot translate" ++ show (ppListOfList x)
 
 trueTerm :: TERM ()
 trueTerm = Application (Op_name $ toId "True") [] nullRange
@@ -81,7 +75,7 @@ kif2CASLTerm ll = case ll of
     List (Literal l f : args) ->
       if f `elem` ["forall","exists"] -- ,"and","or","=>","<=>","not"]
        then Conditional trueTerm
-                (kif2CASLFormula (List (Literal l f : args))) falseTerm nullRange
+         (kif2CASLFormula (List (Literal l f : args))) falseTerm nullRange
         else Application (Op_name $ toId f) (map kif2CASLTerm args) nullRange
     _ -> error $ "kif2CASLTerm : cannot translate " ++ show (ppListOfList ll)
 
@@ -186,12 +180,13 @@ kif2CASL l = Basic_spec $ filter nonEmpty
         axs = Axiom_items phis nullRange
         preds = Sig_items $ Pred_items preddecls nullRange
         predsyms = Set.toList $ Set.unions $ map (collectPreds . item) phis
-        preddecls = map (emptyAnno . mkPreddecl) (List.groupBy sameArity predsyms)
+        preddecls = map (emptyAnno . mkPreddecl)
+          $ List.groupBy sameArity predsyms
         mkPreddecl [] = error "kif2CASL: this cannot happen"
-        mkPreddecl psyms@(Predsym arity _:_) =
-           Pred_decl (map getName psyms)
-                     (Pred_type (replicate arity universe) nullRange)
-                     nullRange
+        mkPreddecl psyms@(Predsym arity _ : _) =
+            Pred_decl (map getName psyms)
+              (Pred_type (replicate arity universe) nullRange)
+              nullRange
         sorts =
             Sig_items $ Sort_items NonEmptySorts [emptyAnno sortdecl] nullRange
         sortdecl = Sort_decl [universe] nullRange
@@ -207,4 +202,3 @@ kif2CASL l = Basic_spec $ filter nonEmpty
         vars = Var_items (if null usedVars then []
                            else [Var_decl usedVars universe nullRange])
                          nullRange
-

@@ -1,6 +1,7 @@
 {- |
 Module      :  $Header$
-Description :  converters for theories to MMiSSOntology (subsorting and concept taxonomies)
+Description :  converters for theories to MMiSSOntology
+  (subsorting and concept taxonomies)
 Copyright   :  (c) Klaus Lüttich, Uni Bremen 2002-2004
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
@@ -16,10 +17,11 @@ for printing out MMiSS Ontologies in LaTeX to Stdout
 Please do not remove them without reason!!
 -}
 
-module CASL.Taxonomy (-- * Conversion
-                      convTaxo,
-                      -- * Printing of MMiSS ontologies in LaTeX
-                      showOntClass, showRelationName,showRelation) where
+module CASL.Taxonomy
+    (-- * Conversion
+     convTaxo,
+     -- * Printing of MMiSS ontologies in LaTeX
+     showOntClass, showRelationName, showRelation) where
 
 import qualified Data.Map as Map
 import qualified Common.Lib.Rel as Rel
@@ -55,7 +57,6 @@ convSign KSubsort onto sign =
     Set.fold addSor (hasValue onto) $ sortSet sign
 -- Ausgehend von den Top-Sorten -- Rel.mostRight
 
-    --Map.foldWithKey addSort (hasValue onto) $ toMap $ sortRel sign
     where str = show
           relMap = Rel.toMap $ Rel.intransKernel $ sortRel sign
           addSor sort weOnto =
@@ -65,7 +66,7 @@ convSign KSubsort onto sign =
                                           (maybe [] toStrL $
                                                  Map.lookup sort relMap))
                         weOnto
-          insClass o nm supL = -- trace (showOntClass nm supL) $ --writeOut
+          insClass o nm supL =
               insertClass o nm nm supL (Just SubSort)
           toStrL = Set.fold (\ s rs -> str s : rs) []
 
@@ -80,35 +81,29 @@ convPred s o =
                   in if Set.null binT
                         then hasValue on
                         else Set.fold insType (insName on) binT
-                 insName on = -- trace(showRelationName (show pn)) $ --writeOut
-                              insertBaseRelation on (show pn) (show pn)
+                 insName on = insertBaseRelation on (show pn) (show pn)
                                      Nothing Nothing
                  insType t wOn =
                      weither (const wOn)
                              (\ ont ->
                                  let src = (show (predArgs t !! 0))
                                      tar = (show (predArgs t !! 1))
-                                 in -- trace (showRelation (show pn) src tar) $
-                                    --writeOut
-                                    insertRelationType ont (show pn)
+                                 in insertRelationType ont (show pn)
                                        src tar)
                              wOn
 
 convSen :: WithError MMiSSOntology
         -> Named (FORMULA f) -> WithError MMiSSOntology
 convSen weOnto _nSen = weither (const weOnto) hasValue weOnto
-              -- insertClass (cSen nSen) o
-
 
 -- implemented but not used by now
 showOntClass :: String -> [String] -> String
 showOntClass cln =
     foldl (\ res sup -> res ++ ontClass sup) ""
-    where ontClass s = "\\Class{"++cln++"}{"++cln++"}{"++s++"}"
+    where ontClass s = "\\Class{" ++ cln ++ "}{" ++ cln ++ "}{" ++ s ++ "}"
 
 showRelationName :: String -> String
-showRelationName rn = "\\RelationName{"++rn++"}{"++rn++"}"
+showRelationName rn = "\\RelationName{" ++ rn ++ "}{" ++ rn ++ "}"
 
 showRelation :: String -> String -> String -> String
-showRelation rn s t = "\\Relation{"++rn++"}{"++s++"}{"++t++"}{}"
-
+showRelation rn s t = "\\Relation{" ++ rn ++ "}{" ++ s ++ "}{" ++ t ++ "}{}"
