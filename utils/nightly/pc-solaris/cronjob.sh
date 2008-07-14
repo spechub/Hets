@@ -26,6 +26,9 @@ copyStyForCgi
 latexBasicLibraries
 createLogFiles
 
+checkConsOf Calculi/Space/OrientationCalculi.het Ori
+checkConsOf Calculi/Algebra/FuzzySystems.het Fuzzy
+
 runIsaBasic
 runSPASSBasic
 runDarwinBasic

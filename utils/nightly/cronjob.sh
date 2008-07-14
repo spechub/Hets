@@ -168,6 +168,13 @@ checkIsaOf ()
 fgrep \*\*\* ../isa$2.log
 }
 
+checkConsOf ()
+{
+./hets -v2 -o tptp.c $1
+../Hets/utils/nightly/runDarwin.sh `dirname $1`/*.tptp.c > ../cons$2.log 2>&1
+fgrep " Satisfiable" ../cons$2.log
+}
+
 checkBins ()
 {
 ../Hets/Syntax/hetpa Basic/LinearAlgebra_II.casl
