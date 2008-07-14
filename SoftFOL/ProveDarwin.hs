@@ -26,7 +26,6 @@ import Logic.Prover
 import SoftFOL.Sign
 import SoftFOL.Translate
 import SoftFOL.ProverState
-import SoftFOL.ProveHelp ()
 
 import Common.DefaultMorphism
 import Common.AS_Annotation as AS_Anno

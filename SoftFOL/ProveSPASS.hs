@@ -30,7 +30,6 @@ module SoftFOL.ProveSPASS (spassProver,
 import Logic.Prover
 
 import SoftFOL.Sign
-import SoftFOL.ProveHelp
 import SoftFOL.Translate
 import SoftFOL.ProverState
 
@@ -86,7 +85,7 @@ atpFun thName = ATPFunctions
       atpTransSenName = transSenName,
       atpInsertSentence = insertSentenceGen,
       goalOutput = showDFGProblem thName,
-      proverHelpText = spassHelpText,
+      proverHelpText = "http://www.spass-prover.org/\n",
       batchTimeEnv = "HETS_SPASS_BATCH_TIME_LIMIT",
       fileExtensions = FileExtensions{problemOutput = ".dfg",
                                       proverOutput = ".spass",
