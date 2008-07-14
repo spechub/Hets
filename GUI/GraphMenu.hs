@@ -267,21 +267,14 @@ createGlobalMenu gInfo@(GInfo { gi_LIB_NAME = ln
        [ ("Theorem Hide Shift", theoremHideShift)
        , ("Compute Colimit", computeColimit)
        ] ++
-       [Button "Flattening (from 2 to 0)" $ ral $ performProofAction gInfo
-                $ proofMenu gInfo $ return . libEnv_flattening2
-       ] ++
-       [Button "Flattening (from 3 to 0)" $ ral $ performProofAction gInfo
-                $ proofMenu gInfo $ return . libEnv_flattening3
-       ] ++
-       [Button "Flattening (from 4 to 0)" $ ral $ performProofAction gInfo
-                $ proofMenu gInfo $ return . libEnv_flattening4
-       ] ++
-       [Button "Flattening (from 5 to 0)" $ ral $ performProofAction gInfo
-                $ proofMenu gInfo $ return . libEnv_flattening5
-       ] ++
-       [Button "Flattening (from 6 to 0)" $ ral $ performProofAction gInfo
-                $ proofMenu gInfo $ return . libEnv_flattening6
-       ]
+       [ Menu (Just "Flattening") $ map ( \ (str, cmd) ->
+          Button str $ ral $ performProofAction gInfo
+                     $ proofMenu gInfo $ return . cmd)
+             [ ("Importings", libEnv_flattening2)
+             , ("Disjoint unions", libEnv_flattening3)
+             , ("Importings and renamings", libEnv_flattening4)
+             , ("Hiding", libEnv_flattening5)
+             , ("Heterogeniety", libEnv_flattening6)]]
     , Button "Translate Graph" $ ral $ translateGraph gInfo convGraph showLib
     , Button "Show Logic Graph" $ ral $ showLogicGraph daVinciSort
     , Button "Show Library Graph" $ ral $ showLibGraph gInfo showLib
