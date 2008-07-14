@@ -56,12 +56,9 @@ mathServBroker = (mkProverTemplate brokerName () mathServBrokerGUI)
     { proveCMDLautomatic = Just mathServBrokerCMDLautomatic
     , proveCMDLautomaticBatch = Just mathServBrokerCMDLautomaticBatch }
 
-spassHelpText :: String
-spassHelpText =
-  "No help yet available.\n" ++
-  "Ask Klaus L\252ttich (luettich@informatik.uni-bremen.de) " ++
-  "for more information.\n"
-
+mathServHelpText :: String
+mathServHelpText =
+  "No help for MathServ available.\n"
 
 -- * Main prover functions
 
@@ -78,7 +75,7 @@ atpFun thName = ATPFunctions
       atpTransSenName = transSenName,
       atpInsertSentence = insertSentenceGen,
       goalOutput = showTPTPProblem thName,
-      proverHelpText = spassHelpText,
+      proverHelpText = mathServHelpText,
       batchTimeEnv = "HETS_SPASS_BATCH_TIME_LIMIT",
       fileExtensions = FileExtensions{problemOutput = ".tptp",
                                       proverOutput = ".spass",
