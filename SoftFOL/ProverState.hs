@@ -123,19 +123,13 @@ showTPTPProblem thName pst nGoal opts = do
 parseSPASSCommands :: [String] -- ^ SPASS command line options
                    -> [SPSetting] -- ^ parsed parameters and options
 parseSPASSCommands comLine =
-    let body =
-            map (\opt -> let splitOpt = splitOn '=' opt
-                         in case length splitOpt of
-                              0 -> SPFlag "set_flag" [(head splitOpt), "0"]
-                              1 -> SPFlag "set_flag" [(head splitOpt), "1"]
-                         -- if multiple '=', texts are concatenated
-                              _ -> SPFlag "set_flag" [(head splitOpt), concat $ tail splitOpt]
-                ) $ map undash comLine
-    in [SPSettings SPASS body]   -- (SPSetting is changed, see Sign.hs)
-
-    where
-      -- remove '-' (multiple) at beginning of an option
-      undash = dropWhile (\ch -> ch == '-')
+    [SPSettings SPASS $
+            map (\ opt -> case splitOn '=' opt of
+                 [] -> error "parseSPASSCommands"
+                 [h] -> SPFlag "set_flag" [h, "1"]
+                   -- if multiple '=', texts are concatenated
+                 h : r -> SPFlag "set_flag" [h, concat r]
+                ) $ map (dropWhile (== '-')) comLine ]
 
 {- |
   Returns the time limit from GenericConfig if available. Otherwise
