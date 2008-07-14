@@ -75,13 +75,15 @@ pair f s = parens $ f <> comma <+> s
 
 makeToShATerm b =
     let ts = types b
+        tooLong = length (constructor b) > 15
         vs = varNames ts
         rl = text "return $ addATerm (ShAAppl" <+>
             doubleQuotes (text (constructor b)) <+>
             bracketList (varNames' ts) <+> text "[])" <+>
             att (length ts)
-    in ppCons' b vs <+> rArrow <+> (if null vs then rl else text "do")
-       $$ if null vs then empty
+    in ppCons' b vs <+> rArrow <+>
+       (if null vs then if tooLong then empty else rl else text "do")
+       $$ if null vs then if tooLong then block [rl] else empty
           else block $ zipWith childToShATerm vs [0 :: Int ..] ++ [rl]
 
 childToShATerm v i = pair (att $ i + 1) (addPrime v) <+> lArrow
