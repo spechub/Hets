@@ -239,8 +239,14 @@ instance PrintTPTP SPLogState where
       SPStateUnknown       -> "unknown"
 
 instance PrintTPTP SPSetting where
-    printTPTP (SPGeneralSettings e) =
+    printTPTP s = case s of
+      SPGeneralSettings e ->
         hsep [text "% Option ", colon, text $ show e]
-    printTPTP (SPSettings sname settingText ) =
-        hsep [text "% Option ", colon, text $ show sname,
-                   comma, text $ show settingText]
+      SPSettings _ settingText ->
+          hsep $ (text "% Option " <+> colon) : map printTPTP settingText
+
+instance PrintTPTP SPSettingBody where
+    printTPTP s = case s of
+      SPFlag sw v ->
+          cat [text sw, if null v then empty else parens (ppWithCommas v)]
+      _ -> empty
