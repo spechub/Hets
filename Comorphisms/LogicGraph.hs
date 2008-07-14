@@ -152,7 +152,8 @@ comorphismList = Map.elems $ comorphisms logicGraph
 inclusionList :: [AnyComorphism]
 inclusionList =
     filter (\ (Comorphism cid) -> isInclusionComorphism cid) normalList ++
-           [fromJust $ compComorphism (Comorphism DL2CASL_DL) (Comorphism CASL_DL2CASL)]
+           [fromJust $ compComorphism (Comorphism DL2CASL_DL)
+            (Comorphism CASL_DL2CASL)]
 
 {- | Unions of logics, represented as pairs of inclusions.
      Entries only necessary for non-trivial unions

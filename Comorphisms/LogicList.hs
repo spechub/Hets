@@ -1,7 +1,8 @@
 {-# OPTIONS -cpp #-}
 {- |
 Module      :  $Header$
-Description :  Assembles all the logics into a list, as a prerequisite for the logic graph
+Description :  Assembles all the logics into a list, as a prerequisite
+  for the logic graph
 Copyright   :  (c)  Till Mossakowski and Uni Bremen 2003
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 

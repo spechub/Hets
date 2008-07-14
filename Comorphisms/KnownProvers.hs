@@ -1,7 +1,8 @@
 {-# OPTIONS -cpp #-}
 {- |
 Module      :  $Header$
-Description :  provides a map of provers to their most useful composed comorphisms
+Description :  provides a map of provers to their most useful composed
+  comorphisms
 Copyright   :  (c) Klaus Lüttich, Uni Bremen 2005
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
