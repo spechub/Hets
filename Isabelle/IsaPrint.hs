@@ -22,7 +22,7 @@ module Isabelle.IsaPrint
 
 import Isabelle.IsaSign
 import Isabelle.IsaConsts
-import Isabelle.IsaProofPrint
+import Isabelle.IsaProofPrint ()
 
 import Common.AS_Annotation
 import qualified Data.Map as Map
@@ -371,15 +371,6 @@ printThMorp tn t xs = case xs of
       else error "IsaPrint, printInstance: monads not supported"
    _ -> empty
 
-printArities :: Arities -> Doc
-printArities = vcat . map ( \ (t, cl) ->
-                  vcat $ map (printInstance t) cl) . Map.toList
-
-printInstance :: TName -> (IsaClass, [(Typ, Sort)]) -> Doc
-printInstance t xs = case xs of
-   (IsaClass "Monad", _)   -> empty
-   _                       -> printNInstance t xs
-
 printMInstance :: String -> TName -> Doc
 printMInstance tn t = let nM = text (t ++ "_tm")
                           nM2 = text (t ++ "_tm2")
@@ -460,21 +451,6 @@ brackMapList f ws = (brackets $
        hsep $ punctuate comma [parens $ (doubleQuotes (text a)
          <+> text "|->" <+> doubleQuotes (text $ f b)) | (a,b) <- ws])
 
-printNInstance :: TName -> (IsaClass, [(Typ, Sort)]) -> Doc
-printNInstance t (IsaClass x, xs) = let
-    ys = map snd xs
-  in (if elem t ["unitT","intT","integerT","charT","ratT"]
-      then printNInst "lift" [holType]
-      else printNInst t ys)
-     <+> (text x) <+> text ".."
-
-printNInst :: TName -> [Sort] -> Doc
-printNInst t xs = text instanceS <+> text t <>
-   doubleColon <> (case xs of
-        []  -> empty
-        _ -> parens $ hsep $ punctuate comma $
-                  map (doubleQuotes . printSort) xs)
-
 -- filter out types that are given in the domain table
 printTypeDecls :: DomainTab -> Arities -> Doc
 printTypeDecls odt ars =
@@ -545,8 +521,7 @@ printSign sig = let dt = sortBy cmpDomainEntries $ domainTab sig
     printConstTab (Map.difference (constTab sig)
                   $ constructors dt) $++$
     (if showLemmas sig
-         then showCaseLemmata (domainTab sig) else empty) $++$
-    printArities ars
+         then showCaseLemmata (domainTab sig) else empty)
     where
     printAbbrs tab = if Map.null tab then empty else text typesS
                      $+$ vcat (map printAbbr $ Map.toList tab)
