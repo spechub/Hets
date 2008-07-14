@@ -1,6 +1,6 @@
 {- |
 Module      :  $Header$
-Description :  Parse for CASL basic specifications (SIG-ITEMS, BASIC-ITEMS, BASIC-SPEC)
+Description :  Parsing CASL's SIG-ITEMS, BASIC-ITEMS and BASIC-SPEC
 Copyright   :  (c) Christian Maeder, Uni Bremen 2002-2004
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
@@ -32,9 +32,7 @@ import CASL.Formula
 import CASL.SortItem
 import CASL.OpItem
 
--- ------------------------------------------------------------------------
--- sigItems
--- ------------------------------------------------------------------------
+-- * signature items
 
 sortItems, typeItems, opItems, predItems, sigItems
     :: (AParsable s, AParsable f) => [String] -> AParser st (SIG_ITEMS s f)
@@ -48,7 +46,7 @@ predItems ks = itemList ks predS predItem Pred_items
 sigItems ks = fmap Ext_SIG_ITEMS aparser <|>
            sortItems ks <|> opItems ks <|> predItems ks <|> typeItems ks
 
----- helpers ----------------------------------------------------------------
+-- * helpers
 
 datatypeToFreetype :: (AParsable b, AParsable s, AParsable f) =>
                       SIG_ITEMS s f -> Range -> BASIC_ITEMS b s f
@@ -67,9 +65,7 @@ axiomToLocalVarAxioms ai a vs posl =
              in Local_var_axioms vs (aft:fs) (posl `appRange` ds)
      _ -> error "axiomToLocalVarAxioms"
 
--- ------------------------------------------------------------------------
--- basicItems
--- ------------------------------------------------------------------------
+-- * basic items
 
 basicItems :: (AParsable b, AParsable s, AParsable f) =>
               [String] -> AParser st (BASIC_ITEMS b s f)
@@ -122,9 +118,7 @@ dotFormulae ks =
 aFormula  :: AParsable f => [String] -> AParser st (Annoted (FORMULA f))
 aFormula ks = bind appendAnno (annoParser $ formula ks) lineAnnos
 
--- ------------------------------------------------------------------------
--- basicSpec
--- ------------------------------------------------------------------------
+-- * basic spec
 
 basicSpec :: (AParsable f, AParsable s, AParsable b) =>
              [String] -> AParser st (BASIC_SPEC b s f)

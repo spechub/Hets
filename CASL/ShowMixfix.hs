@@ -1,6 +1,6 @@
 {- |
 Module      :  $Header$
-Description :  put parenthesis around mixfix terms, for unambiguous pretty printing
+Description :  uniquely show mixfix terms with sufficient parenthesis
 Copyright   :  (c) Christian Maeder, Uni Bremen 2002-2004
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 

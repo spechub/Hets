@@ -8,9 +8,9 @@ Maintainer  :  Christian.Maeder@dfki.de
 Stability   :  provisional
 Portability :  portable
 
-Replace Sorted_term(s) with explicit injection functions.
-   Don't do this after simplification since crucial sort information may be missing
--}
+Replace Sorted_term(s) with explicit injection functions.  Don't do this after
+   simplification since crucial sort information may be missing
+ -}
 
 module CASL.Inject where
 

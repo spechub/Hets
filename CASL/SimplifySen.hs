@@ -128,8 +128,8 @@ simplifyTerm minF simpF sign term =
 {- |
    simplify the TERM with given sort and attach sort if necessary
 -}
-simplifyTermWithSort :: (GetRange f, Pretty f) => Min f e -> (Sign f e -> f -> f)
-        -> Sign f e -> SORT -> Range -> TERM f -> TERM f
+simplifyTermWithSort :: (GetRange f, Pretty f) => Min f e
+    -> (Sign f e -> f -> f) -> Sign f e -> SORT -> Range -> TERM f -> TERM f
 simplifyTermWithSort minF simpF sign gSort poss term =
     let simplifyTermCS = simplifyTermWithSort minF simpF sign gSort poss
         simplifyTermC = simplifyTerm minF simpF sign
