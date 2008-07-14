@@ -9,13 +9,24 @@ Portability :  non-portable(Logic)
 
 
 In this module we introduce flattening of the graph:
-Flattening from level 1 to 0 - deleting all inclusion links,
-and inserting a new node, with new computed theory (computeTheory).
 
-Flattening from level 4 to 1 - deterimining renaming link,
+Flattening importings - deleting all inclusion links,
+ and inserting a new node, with new computed theory (computeTheory).
+
+Flattening disjoint unions - for each node with more than two importings
+ modify importings in such a way that at each level, only disjoint signatures
+ are imported.
+
+Flattening renaming - deterimining renaming link,
 inserting a new node with the renaming morphism applied to theory of a
 source, deleting the link and setting a new inclusion link between a
 new node and the target node.
+
+Flattening hiding links - for each compute normal form if there is such
+ and eliminate hiding links.
+
+Flattening heterogeniety - for each heterogeneous link, compute theory of
+ a target node and eliminate heterogeneous link.
 
 -}
 
@@ -50,23 +61,37 @@ import Data.List(tails,elem)
 import Data.Maybe(fromJust,isJust)
 import qualified Data.Map as Map
 import Control.Monad
+import Common.Id
 
-import Debug.Trace
-import Common.DocUtils
+unzipProofHistory :: ProofHistory -> ProofHistory
+unzipProofHistory ph =
+      let
+        chngs = concat $ Prelude.map snd ph
+        rls = concat $ Prelude.map fst ph
+       in
+        [(rls,chngs)]
+
 dg_flattening2 :: LibEnv -> LIB_NAME -> Result DGraph
 dg_flattening2 libEnv ln = do
  let
   dg = lookupDGraph ln libEnv
   nds =  nodesDG dg
-  l_edges = labEdgesDG dg
-  change_de =  Prelude.map (\ x -> DeleteEdge(x)) l_edges
-  rule_e = replicate (length l_edges) FlatteningOne
-  hist = [(rule_e
-          ,change_de)]
   -- part for dealing with the graph itself
   updLib = updateLib libEnv ln nds
- return $ applyProofHistory hist (lookupDGraph ln updLib)
+  updDG =  lookupDGraph ln updLib
+  l_edges = labEdgesDG updDG
+  change_de =  Prelude.map (\ x -> DeleteEdge(x)) l_edges
+  rules_de = replicate (length l_edges) FlatteningOne
+  hist_de = [(rules_de
+             ,change_de)]
+  n_hist = proofHistory updDG
+  o_hist = proofHistory dg
+  dif_hist = unzipProofHistory hist_de ++ (take (length n_hist -
+                                                 length o_hist) n_hist)
+  (n_dg,_) = updateDGAndChanges dg change_de
+ return $ n_dg {proofHistory = dif_hist ++ o_hist}
   where
+
    delLEdgesDG :: [LEdge DGLinkLab] -> DGraph -> DGraph
    delLEdgesDG ed dg = case ed of
     [] -> dg
@@ -103,9 +128,10 @@ dg_flattening2 libEnv ln = do
                                                               l_n
                                                               g
                                                               hd)
-               refg = lookupDGraph l_name lib_Env
-               new_dg = applyProofHistory [([FlatteningOne], [change])]
-                                          refg
+               ref_dg = lookupDGraph l_name lib_Env
+               (u_dg,u_change) = updateDGAndChanges ref_dg [change]
+               new_dg = addToProofHistoryDG ([FlatteningOne], u_change)
+                                            u_dg
               in
                updateLib (insert l_name new_dg lib_Env) l_name tl
 
@@ -168,7 +194,7 @@ dg_flattening4 lib_Env l_n =
                  return (n_node,
                          v2,
                          label { dgl_morphism = ng_morphism,
-                                 dgl_type = LocalDef ,
+                                 dgl_type = GlobalDef ,
                                  dgl_origin = DGLinkFlatteningFour,
                                  dgl_id = defaultEdgeId }) )
        change_dg = [SetNodeLab lv1 (v1, propagateErrors nlv1 ),
@@ -228,12 +254,6 @@ dg_flattening5 lib_Envir lib_name =
   in
    (applyProofHistory (unzipProofHistory dhid_hist) dg)
      where
-      unzipProofHistory :: ProofHistory -> ProofHistory
-      unzipProofHistory ph = let
-        chngs = concat $ Prelude.map (\ (_,y) -> y) ph
-        rls = concat $ Prelude.map (\ (x,_) -> x) ph
-       in
-        [(rls,chngs)]
       applyUpdNf :: LibEnv
                     -> LIB_NAME
                     -> DGraph
@@ -365,10 +385,12 @@ return $ applyToAllNodes dg imp_nds
                    -> [([Node],Node,G_sign)]
                    -> Maybe ([Node],Node,G_sign)
  searchForMatch _ [] = Nothing
- searchForMatch l ((tripl@(nds,_,_)):tl) = if containedInList l nds then Just tripl
-                                            else searchForMatch l tl
+ searchForMatch l ((tripl@(nds,_,_)):tl) = if containedInList l nds
+                                              then Just tripl
+                                                   else searchForMatch l tl
 
- -- take a combination of nodes, previous level, and get the signature for the next level
+ -- take a combination of nodes, previous level,
+ -- and get the signature for the next level
  matchCombinations :: [Node]
                        -> [([Node],Node,G_sign)]
                        -> Maybe ([Node],G_sign)
@@ -389,15 +411,19 @@ return $ applyToAllNodes dg imp_nds
               False -> Just (l, n_sig)
 
  -- for a dg and a level, create labels for the new nodes
- createLabels :: DGraph -> [([Node],Node,G_sign)] -> Result [LNode DGNodeLab]
+ createLabels :: DGraph
+                 -> [([Node],Node,G_sign)]
+                 -> Result [LNode DGNodeLab]
  createLabels dg tripls = case tripls of
   [] -> error "createLabels: empty list on input"
   _ -> let
         labels = Prelude.map (\ (x,
                                  y,
                                  G_sign lid (ExtSign sign symb) ind) -> let
+             s_id = mkSimpleId $ "Flattening 3:"++(show x)
+             NodeName _ nm _ = dgn_name $ labDG dg (head x)
              n_theory = noSensGTheory lid (ExtSign sign symb) ind
-             n_name = dgn_name $ labDG dg (head x)
+             n_name = NodeName s_id nm 0
              n_info = newNodeInfo DGFlattening
             in
              (y,newInfoNodeLab n_name n_info n_theory)) tripls
@@ -413,14 +439,13 @@ return $ applyToAllNodes dg imp_nds
    n_edg = (do
              ng_morphism <- ginclusion logicGraph sign_source sign_target
              return (nd, hd, DGLink { dgl_morphism = ng_morphism,
-                                      dgl_type = LocalDef,
+                                      dgl_type = GlobalDef,
                                       dgl_origin = DGLinkFlatteningThree,
                                       dgl_id = defaultEdgeId }))
    rule = [FlatteningThree]
    change = [InsertEdge(propagateErrors n_edg)]
    (u_dg,u_change) = updateDGAndChanges dg change
-   n_dg = setProofHistoryDG [(rule,u_change)] u_dg
-   --n_dg = applyProofHistory [(rule,u_change)] u_dg
+   n_dg = addToProofHistoryDG (rule,u_change) u_dg
   in
    createLinks n_dg (nd,lb) tl
 
@@ -450,32 +475,36 @@ return $ applyToAllNodes dg imp_nds
  createFirstLevel dg nds =
   let
    combs = getAllCombinations 2 nds
-   n_level@((_,g_sign):_) = Prelude.map (\ [x,y] -> let
+   init_level = Prelude.map (\ [x,y] -> let
                                  signx = signOf $ dgn_theory (labDG dg x)
                                  signy = signOf $ dgn_theory (labDG dg y)
                                  n_sign = getIntersectionOfAll [signx
                                                                ,signy]
                                 in
                                  ([x,y],propagateErrors n_sign)) combs
-   n_empty = Prelude.filter (\ (_,(G_sign lid _ _)) ->
-                                g_sign /= emptyG_sign (Logic lid)) n_level
+   n_empty = Prelude.filter (\ (_,sign@(G_sign lid _ _)) ->
+                               sign /= emptyG_sign (Logic lid)) init_level
   in
    case length n_empty of
     0 -> (dg,[])
     _ -> let
-          atch_level = attachNewNodes n_level (getNewNodeDG dg)
+          atch_level = attachNewNodes n_empty (getNewNodeDG dg)
           labels = createLabels dg atch_level
-          insrt_chngs = Prelude.map (\ x ->
+          changes = Prelude.map (\ x ->
                          InsertNode(x)) (propagateErrors labels)
-          insrt_rls = replicate (length insrt_chngs) FlatteningThree
-          insrt_dg = applyProofHistory [(insrt_rls,insrt_chngs)] dg
-          init_level = Prelude.map (\ x ->
-                        ([x],x,signOf $ dgn_theory (labDG insrt_dg x))) nds
-          lnk_dg = linkLevels insrt_dg atch_level init_level
+          rules = replicate (length changes) FlatteningThree
+          (u_dg,u_changes) = updateDGAndChanges dg changes
+          n_dg = addToProofHistoryDG (rules,u_changes) u_dg
+          zero_level = Prelude.map (\ x ->
+                        ([x],x,signOf $ dgn_theory (labDG n_dg x))) nds
+          lnk_dg = linkLevels n_dg atch_level zero_level
          in
           (lnk_dg,atch_level)
 
- createNewLevel :: DGraph  -> [Node] -> [([Node],Node,G_sign)] -> (DGraph,[([Node],Node,G_sign)])
+ createNewLevel :: DGraph
+                   -> [Node]
+                   -> [([Node],Node,G_sign)]
+                   -> (DGraph,[([Node],Node,G_sign)])
  createNewLevel c_dg nds tripls = case tripls of
   [] -> (c_dg,[])
   (_,_,_):[] -> (c_dg,tripls)
@@ -492,46 +521,54 @@ return $ applyToAllNodes dg imp_nds
       _ -> let
             atch_level = attachNewNodes n_level (getNewNodeDG c_dg)
             labels = createLabels c_dg atch_level
-            insrt_chngs = Prelude.map (\ x -> InsertNode(x)) (propagateErrors labels)
-            insrt_rls = replicate (length insrt_chngs) FlatteningThree
-            insrt_dg = applyProofHistory [(insrt_rls,insrt_chngs)] c_dg
-            lnk_dg = linkLevels insrt_dg atch_level tripls
+            chngs = Prelude.map (\ x -> InsertNode(x))
+                                (propagateErrors labels)
+            rls = replicate (length chngs) FlatteningThree
+            (u_dg,u_changes) = updateDGAndChanges c_dg chngs
+            n_dg = addToProofHistoryDG (rls,u_changes) u_dg
+            lnk_dg = linkLevels n_dg atch_level tripls
            in
-            (lnk_dg {proofHistory = convertPH (proofHistory lnk_dg)}, atch_level)
+            (lnk_dg, atch_level)
 
- -- iterate the procedure for all levels (the level passed is already inserted in the graph)
- iterateForAllLevels :: DGraph -> [Node] -> [([Node],Node,G_sign)] -> DGraph
- iterateForAllLevels i_dg nds init_level = case ((length init_level)<2) of
-  False -> let
-            (n_dg, n_level) = createNewLevel i_dg nds init_level
-           in
-            case length n_level of
-             0 -> n_dg
-             _ -> iterateForAllLevels n_dg nds n_level
-  True -> i_dg
-
- convertPH :: ProofHistory -> ProofHistory
- convertPH [] = []
- convertPH ph =
-  let
-   kys = concat $ Prelude.map (\ (x,_) -> x) ph
-   els = concat $ Prelude.map (\ (_,y) -> y) ph
-  in
-   [(kys,els)]
+ -- iterate the procedure for all levels
+ -- (the level passed is already inserted in the graph)
+ iterateForAllLevels :: DGraph
+                        -> [Node]
+                        -> [([Node],Node,G_sign)]
+                        -> DGraph
+ iterateForAllLevels i_dg nds init_level = 
+  case ((length init_level)<2) of
+   False -> let
+             (n_dg, n_level) = createNewLevel i_dg nds init_level
+            in
+             case length n_level of
+              0 -> n_dg
+              _ -> iterateForAllLevels n_dg nds n_level
+   True -> i_dg
 
  applyToAllNodes :: DGraph -> [Node] -> DGraph
  applyToAllNodes a_dg nds = case nds of
-  [] -> a_dg {proofHistory = convertPH (proofHistory a_dg)}
+  [] ->  a_dg
   hd:tl -> let
             inc_nds = Prelude.map (\ (x,_,_) -> x) (innDG a_dg hd)
             (init_dg,init_level) = createFirstLevel a_dg inc_nds
             final_dg = iterateForAllLevels init_dg inc_nds init_level
+            o_hist = proofHistory a_dg
+            n_hist = proofHistory final_dg
+            dif_hist = unzipProofHistory $ take (length n_hist -
+                                                 length o_hist)
+                                                n_hist
+            changes = reverse $ snd (head dif_hist)
+            rules = fst (head dif_hist)
            in
-            applyToAllNodes final_dg tl
+            applyToAllNodes final_dg
+                            {proofHistory =  [(rules,changes)] ++ o_hist}
+                            tl
 
 libEnv_flattening3 :: LibEnv -> Result LibEnv
 libEnv_flattening3 lib = do
- new_lib_env <- mapM (\ (x,_) -> do
-         z <- dg_flattening3 lib x
-         return (x, z)) $ Map.toList lib
+ new_lib_env <- mapM (\ (l_name,_) -> do
+         let
+         n_dg <- dg_flattening3 lib l_name
+         return $ (l_name, n_dg)) $ Map.toList lib
  return $ Map.fromList new_lib_env
