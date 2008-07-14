@@ -1,6 +1,7 @@
 {- |
 Module      :  $Header$
-Description :  String constants for CASL keywords to be used for parsing and printing
+Description :  String constants for CASL keywords to be used for parsing
+  and printing
 Copyright   :  (c) Christian Maeder and Uni Bremen 2002-2003
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
