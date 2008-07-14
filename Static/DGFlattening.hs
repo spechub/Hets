@@ -568,7 +568,6 @@ return $ applyToAllNodes dg imp_nds
 libEnv_flattening3 :: LibEnv -> Result LibEnv
 libEnv_flattening3 lib = do
  new_lib_env <- mapM (\ (l_name,_) -> do
-         let
          n_dg <- dg_flattening3 lib l_name
          return $ (l_name, n_dg)) $ Map.toList lib
  return $ Map.fromList new_lib_env
