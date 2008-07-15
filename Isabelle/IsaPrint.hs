@@ -49,8 +49,7 @@ printIsaTheory tn sign sens = let
 
 printTheoryBody :: Sign -> [Named Sentence] -> Doc
 printTheoryBody sig sens =
-    let (axs, rest) =
-            getAxioms sens
+    let (axs, rest) = getAxioms sens
         (defs, rs) = getDefs rest
         (rdefs, ts) = getRecDefs rs
         tNames = map senAttr $ ts ++ axs
@@ -175,17 +174,12 @@ printNamedSen ns =
       d = printSentence s
   in case s of
   RecDef {} -> d
+  Instance {} -> d
   _ -> let dd = doubleQuotes d in
        if isRefute s then text lemmaS <+> text lab <+> colon
               <+> dd $+$ text refuteS
        else if null lab then dd else fsep[ (case s of
     ConstDef {} -> text $ lab ++ "_def"
-    Instance { tName = t, arityArgs = args, arityRes = res, instProof = prf } ->
-      text instanceS <+> text t <> doubleColon <> (case args of
-        []  -> empty
-	_ -> parens $ hsep $ punctuate comma $
-	     map printSort args)
-        <+> printSort res <+> pretty prf
     Sentence {} ->
         (if b then empty else text theoremS)
         <+> text lab <+> (if b then text "[rule_format]" else
@@ -201,6 +195,12 @@ printSentence :: Sentence -> Doc
 printSentence s = case s of
   RecDef kw xs -> text kw <+>
      and_docs (map (vcat . map (doubleQuotes . printTerm)) xs)
+  Instance { tName = t, arityArgs = args, arityRes = res, instProof = prf } ->
+      text instanceS <+> text t <> doubleColon <> (case args of
+        []  -> empty
+	_ -> parens $ hsep $ punctuate comma $
+	     map printSort args)
+        <+> printSort res <+> pretty prf
   _ -> printPlainTerm (not $ isRefute s) $ senTerm s
 
 -- | print plain term

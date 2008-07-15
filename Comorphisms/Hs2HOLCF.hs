@@ -42,6 +42,7 @@ import TiDecorate
 
 -- Isabelle
 import Isabelle.IsaSign as IsaSign
+import Isabelle.IsaProof
 import Isabelle.IsaConsts
 
 import Debug.Trace
@@ -53,7 +54,12 @@ transTheory :: Continuity -> Bool -> HatAna.Sign -> [Named PrDecl]
 transTheory c m sign sens = do
   sign' <- transSignature c m sign
   (sign'',sens'') <- transSentencesI c sign' (map sentence sens)
-  return (sign'', sens'')
+  return (sign'', concatMap (\ (t, l) ->
+         map (\ (r, ars) -> makeNamed ""
+              $ Instance t (map snd ars) [r] $ toIsaProof DotDot) l)
+         (filter (not . flip elem
+                   ["unitT", "intT", "integerT", "charT", "ratT"] . fst)
+          $ Map.toList $ arities $ tsig sign'') ++ sens'')
 
 ------------------------------ Theory translation ------------------------
 {- Relevant theories in Programatica: base/Ti/TiClasses (for
