@@ -115,28 +115,48 @@ data Term =
       | Tuplex [Term] Continuity
       deriving (Eq, Ord, Show)
 
-data Sentence = Sentence
-  { isSimp :: Bool   -- True for "[simp]"
-  , isRefuteAux :: Bool
-  , senTerm :: Term
-  , thmProof :: Maybe IsaProof }
-  | Instance
-  { tName :: TName
-  , arityArgs :: [Sort]
-  , arityRes :: Sort
-  , instProof :: IsaProof }
+data Sentence =
+    Sentence { isSimp :: Bool   -- True for "[simp]"
+             , isRefuteAux :: Bool
+             , metaTerm :: MetaTerm
+             , thmProof :: Maybe IsaProof }
+  | Instance { tName :: TName
+             , arityArgs :: [Sort]
+             , arityRes :: Sort
+             , instProof :: IsaProof }
   | ConstDef { senTerm :: Term }
-  | RecDef
-  { keyWord :: String
-  , senTerms :: [[Term]] }
-  deriving (Eq, Ord, Show)
+  | RecDef { keyWord :: String
+           , senTerms :: [[Term]] }
+  | TypeDef { newType :: Typ
+            , typeDef :: SetDecl
+            , nonEmptyPr :: IsaProof}
+    deriving (Eq, Ord, Show)
+
+-- Other SetDecl variants to be added later
+data SetDecl = SubSet Term Typ Term -- first is the variable
+                                    -- Second is the type of the variable
+                                    -- third is the formula describing the set comprehension
+                                    -- e.g. x Nat "even x" would be produce the isabelle
+                                    -- code: {x::Nat . even x}
+               deriving (Eq, Ord, Show)
+
+data MetaTerm = Term Term
+              | Conditional [Term] Term -- List of preconditions, conclusion.
+                deriving (Eq, Ord, Show)
 
 mkSen :: Term -> Sentence
 mkSen t = Sentence
     { isSimp = False
     , isRefuteAux = False
     , thmProof = Nothing
-    , senTerm = t }
+    , metaTerm = Term t }
+
+mkCond :: [Term] -> Term -> Sentence
+mkCond conds concl = Sentence
+    { isSimp = False
+    , isRefuteAux = False
+    , thmProof = Nothing
+    , metaTerm = Conditional conds concl}
 
 mkRefuteSen :: Term -> Sentence
 mkRefuteSen t = (mkSen t) { isRefuteAux = True }

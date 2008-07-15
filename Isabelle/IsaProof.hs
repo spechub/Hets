@@ -41,6 +41,10 @@ data ProofMethod
            -- so often it warents its own constructor
     | Simp -- This is a plain auto with no parameters - it is used
            -- so often it warents its own constructor
+    | Induct String -- Induction on a variable
+    | CaseTac String -- apply case_tac to a term
+    | SubgoalTac String-- apply subgoal_tac to a term
+    | Insert String -- insert a lemma/theorem name to the assumptions of the first goal
     | Other String -- used for proof methods that have not been
                    -- implemented yet - including auto and simp
                    -- with parameters

@@ -57,4 +57,8 @@ printProofMethod pm =
     case pm of
       Auto -> text autoS
       Simp -> text simpS
+      Induct var -> (text inductS) <+> doubleQuotes (text var)
+      CaseTac t -> text caseTacS <+> doubleQuotes (text t)
+      SubgoalTac t -> text subgoalTacS <+> doubleQuotes (text t)
+      Insert t -> text insertS <+> text t
       Other s -> parens $ text s

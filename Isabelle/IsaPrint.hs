@@ -173,6 +173,7 @@ printNamedSen ns =
       b = isAxiom ns
       d = printSentence s
   in case s of
+  TypeDef {} -> d
   RecDef {} -> d
   Instance {} -> d
   _ -> let dd = doubleQuotes d in
@@ -193,6 +194,11 @@ printNamedSen ns =
 -- | sentence printing
 printSentence :: Sentence -> Doc
 printSentence s = case s of
+  TypeDef nt td pr ->  text typedefS
+                   <+> printType nt
+                   <+> text "="
+                   <+> doubleQuotes(printSetDecl td)
+                   $+$ pretty pr
   RecDef kw xs -> text kw <+>
      and_docs (map (vcat . map (doubleQuotes . printTerm)) xs)
   Instance { tName = t, arityArgs = args, arityRes = res, instProof = prf } ->
@@ -201,7 +207,27 @@ printSentence s = case s of
 	_ -> parens $ hsep $ punctuate comma $
 	     map printSort args)
         <+> printSort res <+> pretty prf
+  Sentence {} -> printPlainMetaTerm (not $ isRefute s) $ metaTerm s
   _ -> printPlainTerm (not $ isRefute s) $ senTerm s
+
+printSetDecl :: SetDecl -> Doc
+printSetDecl sd = case sd of
+                    SubSet v t f -> braces (printTerm v
+                                 <> colon
+                                 <> colon
+                                 <> printType t
+                                 <> dot
+                                 <> printTerm f)
+
+printMetaTerm :: MetaTerm -> Doc
+printMetaTerm mt =
+    case mt of
+      Term t -> printTerm t
+      Conditional conds t ->  (text premiseOpenS)
+                          <+> foldr1 (\t1 -> \t2 -> t1 <+> semi <+> t2) (map printTerm conds)
+                          <+> (text premiseCloseS)
+                          <+> (text metaImplS)
+                          <+> printTerm t
 
 -- | print plain term
 printTerm :: Term -> Doc
@@ -209,6 +235,9 @@ printTerm = printPlainTerm True
 
 printPlainTerm :: Bool -> Term -> Doc
 printPlainTerm b = fst . printTrm b
+
+printPlainMetaTerm :: Bool -> MetaTerm -> Doc
+printPlainMetaTerm _ mt = printMetaTerm mt
 
 -- | print parens but leave a space if doc starts or ends with a bar
 parensForTerm :: Doc -> Doc

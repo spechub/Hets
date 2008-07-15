@@ -654,6 +654,30 @@ sorryS = "sorry"
 autoS :: String
 autoS = "auto"
 
+inductS :: String
+inductS = "induct"
+
+caseTacS :: String
+caseTacS = "case_tac"
+
+insertS :: String
+insertS = "insert"
+
+subgoalTacS :: String
+subgoalTacS = "subgoal_tac"
+
+typedefS :: String
+typedefS = "typedef"
+
+premiseOpenS :: String
+premiseOpenS = "[|"
+
+premiseCloseS :: String
+premiseCloseS = "|]"
+
+metaImplS :: String
+metaImplS = "==>"
+
 usingS :: String
 usingS = "using"
 
