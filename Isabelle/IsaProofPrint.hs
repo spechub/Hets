@@ -22,7 +22,7 @@ instance Pretty IsaProof where
     pretty = printIsaProof
 
 printIsaProof :: IsaProof -> Doc
-printIsaProof (IsaProof p e) = fsep $ map pretty p ++ [pretty e]
+printIsaProof (IsaProof p e) = fsepq $ map pretty p ++ [pretty e]
 
 instance Pretty ProofCommand where
     pretty = printProofCommand
@@ -57,7 +57,7 @@ printProofMethod pm =
     case pm of
       Auto -> text autoS
       Simp -> text simpS
-      Induct var -> (text inductS) <+> doubleQuotes (text var)
+      Induct var -> parens $ (text inductS) <+> doubleQuotes (text var)
       CaseTac t -> text caseTacS <+> doubleQuotes (text t)
       SubgoalTac t -> text subgoalTacS <+> doubleQuotes (text t)
       Insert t -> text insertS <+> text t
