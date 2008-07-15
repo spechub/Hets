@@ -22,7 +22,7 @@ instance Pretty IsaProof where
     pretty = printIsaProof
 
 printIsaProof :: IsaProof -> Doc
-printIsaProof (IsaProof p e) = fsepq $ map pretty p ++ [pretty e]
+printIsaProof (IsaProof p e) = fsep $ map pretty p ++ [pretty e]
 
 instance Pretty ProofCommand where
     pretty = printProofCommand

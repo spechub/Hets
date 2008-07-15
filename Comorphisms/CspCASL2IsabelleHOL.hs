@@ -254,8 +254,7 @@ addTransitivityTheorem sorts isaTh =
 --  Function to add preAlphabet as an equivalence relation to an Isabelle theory
 addInstansanceOfEquiv :: IsaTheory  -> IsaTheory
 addInstansanceOfEquiv  isaTh =
-    let preAlphabetSort = [IsaClass preAlphabetS]
-        eqvSort = [IsaClass eqvS]
+    let eqvSort = [IsaClass eqvS]
         eqvProof = IsaProof []  (By (Other "intro_classes"))
         equivSort = [IsaClass equivS]
         equivProof = IsaProof [Apply (Other "intro_classes"),
@@ -268,9 +267,9 @@ addInstansanceOfEquiv  isaTh =
         y = mkFree "y"
         defLhs = termAppl x (termAppl (conDouble simS) y)
         defRhs = termAppl (termAppl (conDouble eqS) x) y
-    in   addInstanceOf [preAlphabetSort] equivSort equivProof
+    in   addInstanceOf preAlphabetS [] equivSort equivProof
        $ addDef preAlphabetSimDefS defLhs defRhs
-       $ addInstanceOf [preAlphabetSort] eqvSort eqvProof
+       $ addInstanceOf preAlphabetS [] eqvSort eqvProof
        $ isaTh
 
 -- Function to help keep strings consistent
@@ -387,12 +386,12 @@ addThreomWithProof name conds concl proof' isaTh =
     in (isaTh_sign, isaTh_sen ++ [namedSen])
 
 -- Function to add an instance of command to an Isabelle theory
-addInstanceOf :: [Sort] -> Sort -> IsaProof -> IsaTheory -> IsaTheory
-addInstanceOf args res pr isaTh =
+addInstanceOf :: String -> [Sort] -> Sort -> IsaProof -> IsaTheory -> IsaTheory
+addInstanceOf name args res pr isaTh =
     let isaTh_sign = fst isaTh
         isaTh_sen = snd isaTh
-        sen = Instance "liam" args res pr
-        namedSen = (makeNamed "" sen)
+        sen = Instance name args res pr
+        namedSen = (makeNamed "tester" sen)
     in (isaTh_sign, isaTh_sen ++ [namedSen])
 
 -- Function to add a def command to an Isabelle theory
