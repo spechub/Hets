@@ -24,6 +24,7 @@ module Isabelle.IsaProve where
 import Logic.Prover
 import Isabelle.IsaSign
 import Isabelle.IsaConsts
+import Isabelle.IsaProof
 import Isabelle.IsaPrint
 import Isabelle.IsaParse
 import Isabelle.Translate
@@ -184,11 +185,12 @@ isaProve thName th = do
       useaxs = filter (\ s ->
             sentence s /= mkSen true && (isDef s ||
                isSuffixOf "def" (senAttr s))) axs
-      defaultProof = (if null useaxs then "" else
-                     "using " ++ concatMap ((++ " ") . senAttr) useaxs)
-                     ++ "by auto"
-      thy = shows (printIsaTheoryWithProofs defaultProof thBaseName sig
-        $ axs ++ ths) "\n"
+      defaultProof = Just $ IsaProof
+        (if null useaxs then [] else [Using $ map senAttr useaxs])
+        $ By Auto
+      thy = shows (printIsaTheory thBaseName sig
+        $ axs ++ map (mapNamed $ \ t -> t { thmProof = defaultProof }) ths)
+        "\n"
       thyFile = thBaseName ++ ".thy"
   case parse parseTheory thyFile thy of
     Right (ho, bo) -> do

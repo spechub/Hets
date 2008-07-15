@@ -19,6 +19,7 @@ data IsaProof = IsaProof
 
 data ProofCommand
     = Apply ProofMethod
+    | Using [String]
     | Back
     | Defer Int
     -- | Pr Int -- This proof command simply sets the number of
@@ -29,6 +30,7 @@ data ProofCommand
 
 data ProofEnd
     = By ProofMethod
+    | DotDot
     | Done
     | Oops
     | Sorry
@@ -43,3 +45,9 @@ data ProofMethod
                    -- implemented yet - including auto and simp
                    -- with parameters
       deriving (Show, Eq, Ord)
+
+toIsaProof :: ProofEnd -> IsaProof
+toIsaProof e = IsaProof [] e
+
+mkOops :: IsaProof
+mkOops = toIsaProof Oops

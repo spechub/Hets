@@ -15,7 +15,6 @@ Printing functions for Isabelle logic.
 module Isabelle.IsaPrint
     ( showBaseSig
     , printIsaTheory
-    , printIsaTheoryWithProofs
     , getAxioms
     , printNamedSen
     ) where
@@ -33,10 +32,7 @@ import Data.Char
 import Data.List
 
 printIsaTheory :: String -> Sign -> [Named Sentence] -> Doc
-printIsaTheory = printIsaTheoryWithProofs oopsS
-
-printIsaTheoryWithProofs :: String -> String -> Sign -> [Named Sentence] -> Doc
-printIsaTheoryWithProofs prf tn sign sens = let
+printIsaTheory tn sign sens = let
     b = baseSig sign
     bs = showBaseSig b
     ld = "$HETS_LIB/Isabelle/"
@@ -48,11 +44,11 @@ printIsaTheoryWithProofs prf tn sign sens = let
         _ -> True then doubleQuotes $ text $ ld ++ bs else text bs)
     $+$ use
     $+$ text beginS
-    $++$ printTheoryBody prf sign sens
+    $++$ printTheoryBody sign sens
     $++$ text endS
 
-printTheoryBody :: String -> Sign -> [Named Sentence] -> Doc
-printTheoryBody prf sig sens =
+printTheoryBody :: Sign -> [Named Sentence] -> Doc
+printTheoryBody sig sens =
     let (axs, rest) =
             getAxioms sens
         (defs, rs) = getDefs rest
@@ -72,10 +68,7 @@ printTheoryBody prf sig sens =
          $ filter ( \ a -> case sentence a of
                       b@Sentence{} -> isSimp b
                       _ -> False) axs) $++$
-    vsep (map ( \ t -> printNamedSen t $+$
-                       (case sentence t of
-                          Sentence { thmProof = Just pr } -> pretty pr
-                          _ -> text prf)
+    vsep (map ( \ t -> printNamedSen t
                $++$ callML "record" (text $ show $ Quote $ senAttr t)) ts)
     $++$ printMonSign sig
 
@@ -187,11 +180,21 @@ printNamedSen ns =
               <+> dd $+$ text refuteS
        else if null lab then dd else fsep[ (case s of
     ConstDef {} -> text $ lab ++ "_def"
+    Instance { tName = t, arityArgs = args, arityRes = res, instProof = prf } ->
+      text instanceS <+> text t <> doubleColon <> (case args of
+        []  -> empty
+	_ -> parens $ hsep $ punctuate comma $
+	     map printSort args)
+        <+> printSort res <+> pretty prf
     Sentence {} ->
         (if b then empty else text theoremS)
         <+> text lab <+> (if b then text "[rule_format]" else
             if isSimp s then text "[simp]" else empty)
-    _ -> error "printNamedSen") <+> colon, dd]
+    _ -> error "printNamedSen") <+> colon, dd] $+$ case s of
+    Sentence {} -> if b then empty else case thmProof s of
+      Nothing -> text oopsS
+      Just prf -> pretty prf
+    _ -> empty
 
 -- | sentence printing
 printSentence :: Sentence -> Doc

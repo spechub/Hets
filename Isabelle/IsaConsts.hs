@@ -654,6 +654,12 @@ sorryS = "sorry"
 autoS :: String
 autoS = "auto"
 
+usingS :: String
+usingS = "using"
+
+dotDot :: String
+dotDot = ".."
+
 markups :: [String]
 markups =
     [ "--", "chapter" , "section", "subsection", "subsubsection", "text"
@@ -662,14 +668,14 @@ markups =
 -- | toplevel keys that are currently ignored
 ignoredKeys :: [String]
 ignoredKeys =
-    [ domainS, oopsS, refuteS, fixrecS, primrecS, declareS
+    [ domainS, oopsS, refuteS, fixrecS, primrecS, declareS, usingS, dotDot
     , "sorry", "done", "by", "proof", "apply", "qed"
     , "classrel", "defaultsort", "nonterminls", "arities"
     , "syntax", "no_syntax", "translations"
     , "global", "local", "hide", "use", "setup", "method_setup"
     , "ML_command", "ML_setup", "oracle"
     , "fix", "assume", "presume", "def", "note", "then", "from", "with"
-    , "using", "have", "show", "hence", "thus", "shows", ".", ".."
+    , "have", "show", "hence", "thus", "shows", "."
 --    , "rule", "iprover","OF", "of", "where", "assumption", "this", "-"
     , "let", "is", "next", "apply_end", "defer", "prefer", "back"
     , "pr", "thm", "prf", "term", "prop", "typ", "full_prf"

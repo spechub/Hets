@@ -115,14 +115,21 @@ data Term =
       | Tuplex [Term] Continuity
       deriving (Eq, Ord, Show)
 
-data Sentence = Sentence { isSimp :: Bool   -- True for "[simp]"
-                         , isRefuteAux :: Bool
-                         , senTerm :: Term
-                         , thmProof :: Maybe IsaProof }
-              | ConstDef { senTerm :: Term }
-              | RecDef { keyWord :: String
-                       , senTerms :: [[Term]] }
-                deriving (Eq, Ord, Show)
+data Sentence = Sentence
+  { isSimp :: Bool   -- True for "[simp]"
+  , isRefuteAux :: Bool
+  , senTerm :: Term
+  , thmProof :: Maybe IsaProof }
+  | Instance
+  { tName :: TName
+  , arityArgs :: [Sort]
+  , arityRes :: Sort
+  , instProof :: IsaProof }
+  | ConstDef { senTerm :: Term }
+  | RecDef
+  { keyWord :: String
+  , senTerms :: [[Term]] }
+  deriving (Eq, Ord, Show)
 
 mkSen :: Term -> Sentence
 mkSen t = Sentence
