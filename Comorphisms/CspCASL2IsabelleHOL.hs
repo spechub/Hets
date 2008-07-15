@@ -18,6 +18,7 @@ import qualified CASL.Inject as CASLInject
 import qualified CASL.Sign as CASLSign
 import Common.AS_Annotation
 import Common.Result
+import qualified Common.Lib.Rel as Rel
 import qualified Comorphisms.CASL2PCFOL as CASL2PCFOL
 import qualified Comorphisms.CASL2SubCFOL as CASL2SubCFOL
 import qualified Comorphisms.CFOL2IsabelleHOL as CFOL2IsabelleHOL
@@ -25,6 +26,7 @@ import Comorphisms.CFOL2IsabelleHOL(IsaTheory)
 import CspCASL.Logic_CspCASL
 import CspCASL.AS_CspCASL
 import CspCASL.SignCSP
+import qualified Data.List as List
 import qualified Data.Set as Set
 import qualified Data.Map as Map
 import Isabelle.IsaConsts as IsaConsts
@@ -79,7 +81,7 @@ transCCTheory ccTheory =
           translation3 <- cfol2isabelleHol translation2
           -- Next add the preAlpabet construction to the IsabelleHOL code
           return $ addInstansanceOfEquiv
-                 $ addJustificationTheorems sortList
+                 $ addJustificationTheorems ccSign
                  $ addEqFun sortList
                  $ addManyCompareWithFun ccSign
                  $ addPreAlphabet sortList
@@ -165,14 +167,14 @@ addCompareWithFun ccSign isaTh sort =
                 allTests = concat [test1, test2, test3, test4]
                 test1 = if (sort == sort') then [binEq x y] else []
                 test2 = if (Set.member sort sort'SuperSet)
-                        then [binEq x (termAppl (getInjection sort' sort) y)]
+                        then [binEq x (termAppl (getInjectionOp sort' sort) y)]
                         else []
                 test3 = if (Set.member sort' sortSuperSet)
-                        then [binEq (termAppl (getInjection sort sort') x) y]
+                        then [binEq (termAppl (getInjectionOp sort sort') x) y]
                         else []
                 test4 = if (null commonSuperList) then [] else map test4_atSort commonSuperList
-                test4_atSort s = binEq (termAppl (getInjection sort s) x)
-                                       (termAppl (getInjection sort' s) y)
+                test4_atSort s = binEq (termAppl (getInjectionOp sort s) x)
+                                       (termAppl (getInjectionOp sort' s) y)
             in binEq lhs rhs
         eqs = map mkEq sortList
     in  addPrimRec eqs isaThWithConst
@@ -181,13 +183,16 @@ addCompareWithFun ccSign isaTh sort =
 
 -- Add all justification theorems to an Isabelle Theory
 -- We need to know the number of sorts
-addJustificationTheorems :: [SORT] -> IsaTheory -> IsaTheory
-addJustificationTheorems sorts isaTh = addTransitivityTheorem sorts
-                                     $ addInjectivityTheorems
-                                     $ addDecompositionTheorems
-                                     $ addSymmetryTheorem sorts
-                                     $ addReflexivityTheorem
-                                     $ isaTh
+addJustificationTheorems :: CspCASLSign -> IsaTheory -> IsaTheory
+addJustificationTheorems ccSign isaTh =
+    let sortRel = Rel.toList(CASLSign.sortRel ccSign)
+        sorts = Set.toList(CASLSign.sortSet ccSign)
+    in   addTransitivityTheorem sorts
+       $ addInjectivityTheorem sorts sortRel (head sortRel)
+       $ addDecompositionTheorem
+       $ addSymmetryTheorem sorts
+       $ addReflexivityTheorem
+       $ isaTh
 
 -- Add the reflexivity theorem and proof to an Isabelle Theory
 addReflexivityTheorem :: IsaTheory -> IsaTheory
@@ -220,17 +225,46 @@ addSymmetryTheorem sorts isaTh =
                  }
     in addThreomWithProof name thmConds thmConcl proof' isaTh
 
- -- Add the injectivity theorems and proofs which are deduced from the
- -- embedding_Injectivity axioms from the translation CASL2PCFOL;
- -- CASL2SubCFOL
-addInjectivityTheorems :: IsaTheory -> IsaTheory
-addInjectivityTheorems isaTh = isaTh
+-- Add the injectivity theorem and proof which should be deduced from the
+-- embedding_Injectivity axioms from the translation CASL2PCFOL;
+-- CASL2SubCFOL for a single injection represented as a pair of sorts
+-- We need to know all sorts to pass them on
 
- -- Add the decomposition theorems and proofs which are deduced from the
- -- transitivity axioms from the translation CASL2PCFOL;
- -- CASL2SubCFOL
-addDecompositionTheorems :: IsaTheory -> IsaTheory
-addDecompositionTheorems isaTh = isaTh
+addInjectivityTheorem :: [SORT] -> [(SORT,SORT)] -> (SORT,SORT) -> IsaTheory -> IsaTheory
+addInjectivityTheorem sorts sortRel (s1,s2) isaTh =
+    let x = mkFree "x"
+        y = mkFree "y"
+        injOp = getInjectionOp s1 s2
+        injX = termAppl injOp x
+        injY = termAppl injOp y
+        injName = getInjectionName s1 s2
+        defineNameS1 = getDefinedName sorts s1
+        collectionEmbInj = getCollectionEmbInj sortRel
+        name = "injectivity_" ++ (convertSort2String s1) ++ "_" ++ (convertSort2String s2)
+        conds = [binEq injX injY]
+        concl = binEq x y
+        proof' = IsaProof [Apply(CaseTac ((getDefinedName sorts s2) ++"(" ++ injName ++ "(x))")),
+                           -- Case 1
+                           Apply(SubgoalTac(defineNameS1 ++ "(x)")),
+                           Apply(SubgoalTac(defineNameS1 ++ "(y)")),
+                           Apply(Other ("insert " ++ collectionEmbInj)),
+                           Apply(Simp),
+                           Apply(Other "simp add: totality"),
+                           Apply(Other "simp (no_asm_use) add: totality"),
+                           -- Case 2
+                           Apply(SubgoalTac(defineNameS1 ++ "(x)")),
+                           Apply(SubgoalTac(defineNameS1 ++ "(y)")),
+                           Apply(Other "simp add: ga_not_def_bottom"),
+                           Apply(Other "simp add: totality"),
+                           Apply(Other "simp (no_asm_use) add: totality")]
+                           Done
+    in addThreomWithProof name conds concl proof' isaTh
+
+-- Add the decomposition theorem and proof which should be deduced from the
+-- transitivity axioms from the translation CASL2PCFOL;
+-- CASL2SubCFOL
+addDecompositionTheorem :: IsaTheory -> IsaTheory
+addDecompositionTheorem isaTh = isaTh
 
 -- Add the transitivity theorem and proof to an Isabelle Theory
 -- We need to know the number of sorts
@@ -258,17 +292,17 @@ addInstansanceOfEquiv  isaTh =
         eqvProof = IsaProof []  (By (Other "intro_classes"))
         equivSort = [IsaClass equivS]
         equivProof = IsaProof [Apply (Other "intro_classes"),
-                             Apply (Other "unfold preAlphabet_sim_def"),
-                             Apply (Other "rule eq_refl"),
-                             Apply (Other "rule eq_trans, auto"),
-                             Apply (Other "rule eq_symm, simp")]
-                            Done
+                               Apply (Other "unfold preAlphabet_sim_def"),
+                               Apply (Other "rule eq_refl"),
+                               Apply (Other "rule eq_trans, auto"),
+                               Apply (Other "rule eq_symm, simp")]
+                               Done
         x = mkFree "x"
         y = mkFree "y"
-        defLhs = termAppl x (termAppl (conDouble simS) y)
+        defLhs = App (App eqvOp x NotCont) y NotCont
         defRhs = termAppl (termAppl (conDouble eqS) x) y
     in   addInstanceOf preAlphabetS [] equivSort equivProof
-       $ addDef preAlphabetSimDefS defLhs defRhs
+       $ addDef preAlphabetSimS defLhs defRhs
        $ addInstanceOf preAlphabetS [] eqvSort eqvProof
        $ isaTh
 
@@ -289,11 +323,25 @@ symmetryTheoremS = "eq_symm"
 transitivityS :: String
 transitivityS = "eq_trans"
 
-preAlphabetSimDefS :: String
-preAlphabetSimDefS = "preAlphabet_sim_def"
+preAlphabetSimS :: String
+preAlphabetSimS = "preAlphabet_sim"
 
-simS :: String
-simS = "\\<sim>"
+eqvOp :: Term
+eqvOp = Const {
+          termName= VName {
+                      new = (eqvS),
+                      altSyn = Just (AltSyntax ("(_ \\<sim> _)") [50,51] 50)
+                    },
+          termType = Hide {
+                       typ = Type {
+                               typeId ="dummy",
+                               typeSort = [IsaClass "type"],
+                               typeArgs = []
+                             },
+                       kon = NA,
+                             arit= Nothing
+                     }
+        }
 
 -- String for the name of the axiomatic type class of equivalence relations part 1
 eqvS :: String
@@ -303,11 +351,10 @@ eqvS  = "eqv"
 equivS :: String
 equivS  = "equiv"
 
-
--- This is NOT A GOOD way to do this function
+-- This function is not implemented in a satisfactory way
 -- Return the injection name of the injection from one sort to another
-getInjection :: SORT -> SORT -> Term
-getInjection s s' =
+getInjectionOp :: SORT -> SORT -> Term
+getInjectionOp s s' =
     let t = CASLSign.toOP_TYPE(CASLSign.OpType{CASLSign.opKind = Total,
                                                CASLSign.opArgs = [s],
                                                CASLSign.opRes = s'})
@@ -330,6 +377,36 @@ getInjection s s' =
             arit= Nothing
           }
         }
+
+-- This function is not implemented in a satisfactory way
+-- Return the name of the injection as it is used in the
+-- alternative syntax of the injection from one sort to another
+getInjectionName :: SORT -> SORT -> String
+getInjectionName s s' =
+    let t = CASLSign.toOP_TYPE(CASLSign.OpType{CASLSign.opKind = Total,
+                                               CASLSign.opArgs = [s],
+                                               CASLSign.opRes = s'})
+        injName = show $ CASLInject.uniqueInjName t
+    in injName
+
+-- This function is not implemented in a satisfactory way
+-- Return the name of the definedness function for a sort
+-- We need to know all sorts to perform this workaround
+getDefinedName :: [SORT] -> SORT -> String
+getDefinedName sorts s =
+    let index = List.elemIndex s sorts
+        str = case index of
+                Nothing -> ""
+                Just i -> show (i + 1)
+    in "gn_definedX" ++ str
+
+-- This function is not implemented in a satisfactory way
+-- Return the string of all embedding_injectivity axioms
+getCollectionEmbInj :: [(SORT,SORT)] -> String
+getCollectionEmbInj sorts =
+    let mkEmbInjName = (\i -> "ga_embedding_injectivity" ++ (if (i==0) then "" else ("_" ++ show i)))
+        embInjs = map mkEmbInjName [0 .. (length(sorts) - 1)]
+    in foldr1 (\s -> \s' -> s ++ " " ++ s') embInjs
 
 -- Convert a SORT to a string
 convertSort2String :: SORT -> String
