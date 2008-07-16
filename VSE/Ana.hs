@@ -25,6 +25,7 @@ import Common.Result
 import Common.Lib.State
 
 import CASL.AS_Basic_CASL
+import CASL.Fold
 import CASL.Sign
 import CASL.MixfixParser
 import CASL.MapSentence as MapSen
@@ -34,6 +35,7 @@ import CASL.Quantification
 import CASL.StaticAna
 import CASL.ShowMixfix as Paren
 import CASL.SimplifySen
+import CASL.ToSExpr
 
 import VSE.As
 
@@ -148,13 +150,18 @@ minExpF = minExpFORMULA (const return)
 
 minExpProg :: Set.Set VAR -> Maybe SORT -> Sign () Procs
            -> Program -> Result Program
-minExpProg invars res sig p@(Ranged prg r) = case prg of
+minExpProg invars res sig p@(Ranged prg r) = let
+  tRec = sRec False sig $ error "minExpProg"
+  checkCond = foldFormula tRec
+  checkTerm = foldTerm tRec
+  in case prg of
   Abort -> return p
   Skip -> return p
   Assign v t -> case Map.lookup v $ varMap sig of
     Nothing -> Result [mkDiag Error "undeclared program variable" v] Nothing
     Just s -> do
       nt <- oneExpT sig $ Sorted_term t s r
+      checkTerm nt
       if Set.member v invars then
          Result [mkDiag Warning "assignment to input variable" v] $ Just ()
          else return ()
@@ -174,11 +181,13 @@ minExpProg invars res sig p@(Ranged prg r) = case prg of
           else return ()
         nts <- mapM (oneExpT sig)
           $ zipWith (\ t (Procparam _ s) -> Sorted_term t s r) ts nl
+        mapM_ checkTerm nts
         return $ Ranged (Call i nts) r
   Return t -> case res of
     Nothing -> Result [mkDiag Error "unexpected return statement" t] Nothing
     Just s -> do
       nt <- oneExpT sig $ Sorted_term t s r
+      checkTerm nt
       return $ Ranged (Return nt) r
   Block vs q -> do
     let (_, sign') = runState (mapM_ addVars vs) sig { envDiags = [] }
@@ -191,11 +200,13 @@ minExpProg invars res sig p@(Ranged prg r) = case prg of
     return $ Ranged (Seq p3 p4) r
   If f p1 p2 -> do
     c <- minExpF sig f
+    checkCond c
     p3 <- minExpProg invars res sig p1
     p4 <- minExpProg invars res sig p2
     return $ Ranged (If c p3 p4) r
   While f q -> do
     c <- minExpF sig f
+    checkCond c
     np <- minExpProg invars res sig q
     return $ Ranged (While c np) r
 
