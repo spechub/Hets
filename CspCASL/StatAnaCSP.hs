@@ -33,7 +33,7 @@ import Common.Result
 import Common.GlobalAnnotations
 import Common.ConvertGlobalAnnos
 import qualified Common.Lib.Rel as Rel
-import Common.Id (getRange, Id, simpleIdToId)
+import Common.Id (getRange, Id, simpleIdToId, nullRange, mkSimpleId)
 import Common.Lib.State
 import Common.ExtSign
 
@@ -52,7 +52,8 @@ basicAnalysisCspCASL (cc, sigma, ga) = do
               Just nga -> sigma { globAnnos = nga }
         ds = reverse $ envDiags accSig
     Result (es ++ ds) (Just ()) -- insert diagnostics
-    return (cc, mkExtSign accSig, [makeNamed "empty_sentence" emptyCCSentence])
+    return (cc, mkExtSign accSig, [makeNamed "empty_sentence" emptyCCSentence, makeNamed "name_testProc" testProc])
+    where testProc = CspCASLSentence (mkSimpleId "testProc") [] (ExternalChoice (Stop nullRange) (Stop nullRange) nullRange )
 
 ana_BASIC_CSP :: CspBasicSpec -> State CspCASLSign ()
 ana_BASIC_CSP cc = do checkLocalTops

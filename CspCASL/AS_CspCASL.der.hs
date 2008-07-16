@@ -54,5 +54,4 @@ emptyProcName :: PROCESS_NAME
 emptyProcName = mkSimpleId "empty"
 
 emptyCCSentence :: CspCASLSentence
-emptyCCSentence = CspCASLSentence emptyProcName [] (ExternalChoice (Stop nullRange) (Stop nullRange) nullRange )
-
+emptyCCSentence = CspCASLSentence emptyProcName [] (NamedProcess emptyProcName [] nullRange)

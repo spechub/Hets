@@ -66,13 +66,13 @@ instance Comorphism CspCASL2IsabelleHOL
 transCCTheory :: (CspCASLSign, [Named CspCASLSentence]) -> Result IsaTheory
 transCCTheory ccTheory =
     let ccSign = fst ccTheory
-        -- ccSens = snd ccTheory
+        ccSens = snd ccTheory
         caslSign = ccSig2CASLSign ccSign
         casl2pcfol = (map_theory CASL2PCFOL.CASL2PCFOL)
         pcfol2cfol = (map_theory CASL2SubCFOL.defaultCASL2SubCFOL)
         cfol2isabelleHol = (map_theory CFOL2IsabelleHOL.CFOL2IsabelleHOL)
         sortList = Set.toList(CASLSign.sortSet caslSign)
-        -- fakeType = Type {typeId = "Fake_Type" , typeSort = [], typeArgs =[]}
+        --fakeType = Type {typeId = "Fake_Type" , typeSort = [], typeArgs =[]}
     in do -- Remove Subsorting from the CASL part of the CspCASL specification
           translation1 <- casl2pcfol (caslSign,[])
           -- Next Remove partial functions
@@ -80,18 +80,35 @@ transCCTheory ccTheory =
           -- Next Translate to IsabelleHOL code
           translation3 <- cfol2isabelleHol translation2
           -- Next add the preAlpabet construction to the IsabelleHOL code
-          return $ addInstansanceOfEquiv
-                 $ addJustificationTheorems ccSign (fst translation1)
-                 $ addEqFun sortList
-                 $ addAllCompareWithFun ccSign
-                 $ addPreAlphabet sortList
-                 $ addWarning
+          return -- . $ addInstansanceOfEquiv
+                 -- . $ addJustificationTheorems ccSign (fst translation1)
+                 -- . $ addEqFun sortList
+                 -- . $ addAllCompareWithFun ccSign
+                 -- . $ addPreAlphabet sortList
+                 -- . $ addWarning
+                 -- . $ addConst (show ccSens) fakeType
+                 $ processCspCaslSentences ccSens
                  $ translation3
 
 -- This is not implemented in a sensible way yet
 transCCSentence :: CspCASLSign -> CspCASLSentence -> Result IsaSign.Sentence
-transCCSentence _ s =
-    do return (mkSen (Const (mkVName (show s)) (Disp (Type "byeWorld" [] []) TFun Nothing)))
+transCCSentence ccsign (CspCASLSentence pn _ _) =
+    do return (mkSen (Const (mkVName (show pn)) (Disp (Type "byeWorld" [] []) TFun Nothing)))
+
+processCspCaslSentences :: [Named CspCASLSentence] -> IsaTheory -> IsaTheory
+processCspCaslSentences namedSens isaTh = foldl processCspCaslSentence isaTh namedSens
+
+processCspCaslSentence :: IsaTheory -> Named CspCASLSentence -> IsaTheory
+processCspCaslSentence isaTh namedSen =
+    let sen = sentence namedSen
+        fakeType = Type {typeId = "Fake_Type" , typeSort = [], typeArgs =[]}
+    in case sen of
+         CspCASLSentence pn vars proc ->
+             let name = show pn
+                 t1 = conDouble name
+                 t2 = conDouble $ show proc
+             in addDef name t1 t2
+              $ addConst (show pn) fakeType isaTh
 
 -- Functions for adding the PreAlphabet datatype to an Isabelle theory
 
