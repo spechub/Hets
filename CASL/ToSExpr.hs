@@ -55,7 +55,7 @@ varDeclToSExpr (v, s) =
 sfail :: String -> Range -> Result a
 sfail s r = fatal_error ("unexpected " ++ s) r
 
-sRec :: Bool -> Sign f e -> (f -> Result SExpr)
+sRec :: Bool -> Sign a e -> (f -> Result SExpr)
      -> Record f (Result SExpr) (Result SExpr)
 sRec withQuant sign mf = Record
     { foldQuantification = \ _ q vs r p -> if withQuant then do
