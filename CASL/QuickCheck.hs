@@ -474,17 +474,10 @@ equalElements qm t1 t2 =
   if t1==t2 then return True
    else applyPredicate qm (emptyAssignment qm) eqSymb [t1,t2]
 
-getVars:: [VAR_DECL] -> [(VAR,SORT)]
-getVars = concatMap getVarsAtomic
-
-getVarsAtomic:: VAR_DECL -> [(VAR,SORT)]
-getVarsAtomic (Var_decl vars s _) = zip vars (map (const s) [1..length vars])
-
-
 generateVariableAssignments :: QModel -> [VAR_DECL]
                             -> Result [VARIABLE_ASSIGNMENT]
 generateVariableAssignments qm vardecls = do
-   let vars = getVars vardecls
+   let vars = flatVAR_DECLs vardecls
    carriers <- mapM (getCarrier qm) (map snd vars)
    let varsCarriers = zip (map fst vars) carriers
    return $ map (Variable_Assignment qm) (gVAs varsCarriers)
