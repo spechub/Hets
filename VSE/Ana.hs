@@ -168,10 +168,7 @@ minExpProg invars res sig p@(Ranged prg r) = let
          else return ()
       return $ Ranged (Assign v nt) r
   Call f -> case f of
-    Predication ps ts _ -> do
-      let i = case ps of
-            Pred_name j -> j
-            Qual_pred_name j _ _ -> j
+    Predication ps ts _ -> let i = predSymbName ps in
       case lookupProc i sig of
         Nothing -> Result [mkDiag Error "unknown procedure" i] Nothing
         Just (Profile l re) -> let

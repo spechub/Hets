@@ -284,7 +284,7 @@ data TERM f = Simple_id SIMPLE_ID    -- "Var" might be a better constructor
             -- pos: "{", "}"
             deriving (Show, Eq, Ord)
 
-rangeOfTerm :: GetRange f => TERM f -> Range
+rangeOfTerm :: TERM f -> Range
 rangeOfTerm t = case t of
   Simple_id s -> tokPos s
   Mixfix_term ts -> concatMapRange rangeOfTerm ts

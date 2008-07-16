@@ -182,15 +182,9 @@ posOfTerm :: TERM f -> Range
 posOfTerm trm =
     case trm of
     Qual_var v _ ps -> if isNullRange ps then tokPos v else ps
-    Mixfix_token t -> tokPos t
     Mixfix_term ts -> concatMapRange posOfTerm ts
-    Mixfix_qual_pred p -> case p of
-                  Pred_name i -> posOfId i
-                  Qual_pred_name i _ _ -> posOfId i
-    Application o _ ps -> if isNullRange ps then
-                  (case o of
-                  Op_name i ->  posOfId i
-                  Qual_op_name i _ _ -> posOfId i) else ps
+    Mixfix_qual_pred p -> posOfId $ predSymbName p
+    Application o _ ps -> if isNullRange ps then posOfId $ opSymbName o else ps
     Conditional t1 _ t2 ps ->
         if isNullRange ps then concatMapRange posOfTerm [t1, t2] else ps
     Mixfix_parenthesized ts ps ->
@@ -199,7 +193,7 @@ posOfTerm trm =
         if isNullRange ps then concatMapRange posOfTerm ts else ps
     Mixfix_braced ts ps ->
         if isNullRange ps then concatMapRange posOfTerm ts else ps
-    _ -> nullRange
+    _ -> rangeOfTerm trm
 
 -- | construct application
 asAppl :: Id -> [TERM f] -> Range -> TERM f
