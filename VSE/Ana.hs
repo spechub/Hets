@@ -17,6 +17,7 @@ import Data.Maybe
 import qualified Data.Map as Map
 import qualified Data.Set as Set
 
+import qualified Common.Lib.Rel as Rel
 import Common.AS_Annotation
 import Common.GlobalAnnotations
 import Common.ExtSign
@@ -68,7 +69,7 @@ mapProg :: (TERM () -> TERM ()) -> (FORMULA () -> FORMULA ())
         -> FoldRec Program
 mapProg mt mf = mapRec
   { foldAssign = \ (Ranged _ r) v t -> Ranged (Assign v $ mt t) r
-  , foldCall = \ (Ranged _ r) i ts -> Ranged (Call i $ map mt ts) r
+  , foldCall = \ (Ranged _ r) f -> Ranged (Call $ mf f) r
   , foldReturn = \ (Ranged _ r) t -> Ranged (Return $ mt t) r
   , foldIf = \ (Ranged _ r) c p1 p2 -> Ranged (If (mf c) p1 p2) r
   , foldWhile = \ (Ranged _ r) c p -> Ranged (While (mf c) p) r }
@@ -103,9 +104,9 @@ resolveProg ga rules p@(Ranged prg r) = case prg of
   Assign v t -> do
     nt <- resolveT ga rules t
     return $ Ranged (Assign v nt) r
-  Call i ts -> do
-    nts <- mapM (resolveT ga rules) ts
-    return $ Ranged (Call i nts) r
+  Call f -> do
+    nf <- resolveF ga rules f
+    return $ Ranged (Call nf) r
   Return t -> do
     nt <- resolveT ga rules t
     return $ Ranged (Return nt) r
@@ -166,23 +167,28 @@ minExpProg invars res sig p@(Ranged prg r) = let
          Result [mkDiag Warning "assignment to input variable" v] $ Just ()
          else return ()
       return $ Ranged (Assign v nt) r
-  Call i ts -> case lookupProc i sig of
-    Nothing -> Result [mkDiag Error "unknown procedure" i] Nothing
-    Just (Profile l re) ->
-      let nl = case re of
+  Call f -> case f of
+    Predication ps ts _ -> do
+      let i = case ps of
+            Pred_name j -> j
+            Qual_pred_name j _ _ -> j
+      case lookupProc i sig of
+        Nothing -> Result [mkDiag Error "unknown procedure" i] Nothing
+        Just (Profile l re) -> let
+          nl = case re of
              Nothing -> l
              Just s -> l ++ [Procparam Out s]
-      in if length nl /= length ts then
-        Result [mkDiag Error "non-matching number of parameters for" i]
-        Nothing
-      else do
-        if length l < length nl then
-          Result [mkDiag Warning "function used as procedure" i] $ Just ()
-          else return ()
-        nts <- mapM (oneExpT sig)
-          $ zipWith (\ t (Procparam _ s) -> Sorted_term t s r) ts nl
-        mapM_ checkTerm nts
-        return $ Ranged (Call i nts) r
+          in if length nl /= length ts then
+          Result [mkDiag Error "non-matching number of parameters for" i]
+          Nothing
+             else do
+          if length l < length nl then
+            Result [mkDiag Warning "function used as procedure" i] $ Just ()
+            else return ()
+          nf <- minExpF sig f
+          checkCond nf
+          return $ Ranged (Call nf) r
+    _ -> Result [mkDiag Error "no procedure call" f] Nothing
   Return t -> case res of
     Nothing -> Result [mkDiag Error "unexpected return statement" t] Nothing
     Just s -> do
@@ -241,14 +247,21 @@ anaProcdecl (Procedure i p@(Profile ps _) q) = do
          if all (\ (Procparam j _) -> j == In) ps then return () else
             addDiags [mkDiag Warning "function must have IN params only" i]
          addOp (emptyAnno ()) t i
+         e <- get
+         put e { predMap = Rel.setInsert i (funProfileToPredType p)
+                 $ predMap e }
        _ -> addPred (emptyAnno ()) (profileToPredType p) i
-
 
 paramsToArgs :: [Procparam] -> [SORT]
 paramsToArgs = map (\ (Procparam _ s) -> s)
 
 profileToPredType :: Profile -> PredType
 profileToPredType (Profile a _) = PredType $ paramsToArgs a
+
+funProfileToPredType :: Profile -> PredType
+funProfileToPredType (Profile a r) = case r of
+  Nothing -> error "funProfileToPredType"
+  Just s -> PredType $ paramsToArgs a ++ [s]
 
 profileToOpType :: Profile -> Maybe OpType
 profileToOpType (Profile a r) = case r of
@@ -270,9 +283,8 @@ mapMorProg mor = let m = castMor mor in
     $ mapSen (const id) m)
     { foldBlock = \ (Ranged _ r) vs p ->
         Ranged (Block (map (mapVars m) vs) p) r
-    , foldCall = \ (Ranged _ r) i ts ->
-        Ranged (Call (mapProcId m i) $
-                map (MapSen.mapTerm (const id) m) ts) r }
+    , foldCall = \ (Ranged _ r) f ->
+        Ranged (Call $ MapSen.mapSen (const id) m f) r }
 
 mapProcId :: Morphism f Procs () -> Id -> Id
 mapProcId m i = case lookupProc i $ msource m of
@@ -330,7 +342,7 @@ freeProgVars sig = foldProg FoldRec
   , foldAssign = \ _ v t -> (case Map.lookup v $ varMap sig of
       Just s -> Set.insert (v, s)
       Nothing -> Set.insert (v, sortOfTerm t)) $ freeTermVars sig t
-  , foldCall = \ _ _ ts -> Set.unions $ map (freeTermVars sig) ts
+  , foldCall = \ _ f -> freeVars sig f
   , foldReturn = \ _ t -> freeTermVars sig t
   , foldBlock = \ (Ranged (Block vs p) _) _ _ ->
       Set.difference (freeProgVars (execState (mapM_ addVars vs) sig) p)

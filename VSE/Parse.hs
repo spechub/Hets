@@ -114,12 +114,9 @@ program = do
     t <- term reservedWords
     return $ Ranged (Assign v t) $ tokPos a
   <|> do
-    p <- parseId reservedWords
-    o <- oParenT
-    (ts, ps) <- option ([], []) $
-       term reservedWords `separatedBy` commaT
-    c <- cParenT
-    return $ Ranged (Call p ts) $ toRange o ps c
+    p <- getPos
+    t <- term reservedWords
+    return $ Ranged (Call $ Mixfix_formula t) $ Range [p]
 
 programSeq :: AParser st Program
 programSeq = do

@@ -54,7 +54,7 @@ data PlainProgram =
     Abort
   | Skip
   | Assign VAR (TERM ())
-  | Call Id [TERM ()] -- ^ a procedure call
+  | Call (FORMULA ()) -- ^ a procedure call as predication
   | Return (TERM ())
   | Block [VAR_DECL] Program
   | Seq Program Program
@@ -67,7 +67,7 @@ data FoldRec a = FoldRec
   { foldAbort :: Program -> a
   , foldSkip :: Program -> a
   , foldAssign :: Program -> VAR  -> TERM () -> a
-  , foldCall :: Program -> Id -> [TERM ()] -> a
+  , foldCall :: Program ->  FORMULA () -> a
   , foldReturn :: Program -> (TERM ()) -> a
   , foldBlock :: Program -> [VAR_DECL] -> a -> a
   , foldSeq :: Program -> a -> a -> a
@@ -80,7 +80,7 @@ foldProg r p = case unRanged p of
   Abort -> foldAbort r p
   Skip -> foldSkip r p
   Assign v t-> foldAssign r p v t
-  Call i ts -> foldCall r p i ts
+  Call f -> foldCall r p f
   Return t -> foldReturn r p t
   Block vs q -> foldBlock r p vs $ foldProg r q
   Seq p1 p2 -> foldSeq r p (foldProg r p1) $ foldProg r p2
@@ -92,7 +92,7 @@ mapRec = FoldRec
   { foldAbort = id
   , foldSkip = id
   , foldAssign = \ (Ranged _ r) v t -> Ranged (Assign v t) r
-  , foldCall = \ (Ranged _ r) i ts -> Ranged (Call i ts) r
+  , foldCall = \ (Ranged _ r) f -> Ranged (Call f) r
   , foldReturn = \ (Ranged _ r) t -> Ranged (Return t) r
   , foldBlock = \ (Ranged _ r) vs p -> Ranged (Block vs p) r
   , foldSeq = \ (Ranged _ r) p1 p2 -> Ranged (Seq p1 p2) r
@@ -212,8 +212,7 @@ instance Pretty PlainProgram where
     Abort -> text "ABORT"
     Skip -> text "SKIP"
     Assign v t -> pretty v <+> assign <+> pretty t
-    Call p ts -> idDoc p <>
-      if null ts then empty else parens $ ppWithCommas ts
+    Call f -> pretty f
     Return t -> text "RETURN" <+> pretty t
     Block vs p -> if null vs then block $ pretty p else
       let (vds, q) = addInits (toVarDecl vs) p
