@@ -250,6 +250,11 @@ data PRED_SYMB = Pred_name PRED_NAME
                  -- pos: "(", pred, colon, ")"
                  deriving (Show, Eq, Ord)
 
+predSymbName :: PRED_SYMB -> PRED_NAME
+predSymbName p = case p of
+  Pred_name n -> n
+  Qual_pred_name n _ _ -> n
+
 data TERM f = Simple_id SIMPLE_ID    -- "Var" might be a better constructor
           | Qual_var VAR SORT Range
             -- pos: "(", var, colon, ")"
@@ -279,15 +284,22 @@ data TERM f = Simple_id SIMPLE_ID    -- "Var" might be a better constructor
             -- pos: "{", "}"
             deriving (Show, Eq, Ord)
 
+rangeOfTerm :: GetRange f => TERM f -> Range
+rangeOfTerm t = case t of
+  Simple_id s -> tokPos s
+  Mixfix_term ts -> concatMapRange rangeOfTerm ts
+  Mixfix_token s -> tokPos s
+  _ -> getRange t
+
 data OP_SYMB = Op_name OP_NAME
              | Qual_op_name OP_NAME OP_TYPE Range
                  -- pos: "(", op, colon, ")"
                deriving (Show, Eq, Ord)
 
 opSymbName :: OP_SYMB -> OP_NAME
-opSymbName (Op_name n) = n
-opSymbName (Qual_op_name n _ _) = n
-
+opSymbName o = case o of
+  Op_name n -> n
+  Qual_op_name n _ _ -> n
 
 type CASLFORMULA = FORMULA ()
 type CASLTERM = TERM ()
@@ -297,7 +309,6 @@ type PRED_NAME = Id
 type SORT = Id
 type VAR = SIMPLE_ID
 
------
 data SYMB_ITEMS = Symb_items SYMB_KIND [SYMB] Range
                   -- pos: SYMB_KIND, commas
                   deriving (Show, Eq)
