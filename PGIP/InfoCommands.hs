@@ -168,7 +168,7 @@ cShowNodeUGoals input state
            goalNames =
              concatMap
               (\x ->case x of
-                     (n,_) -> case getTh Do_translate n state of
+                     (n,_) -> case getTh Dont_translate n state of
                                Nothing -> []
                                Just th->
                                 case th of
@@ -188,7 +188,7 @@ cShowNodeUGoalsCurrent state
     Just pState ->
      do
       let glls = concatMap (\(Element _ nb) ->
-                              case getTh Do_translate nb state of
+                              case getTh Dont_translate nb state of
                                Nothing -> []
                                Just th ->
                                 case th of
