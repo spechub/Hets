@@ -91,6 +91,7 @@ charMap = Map.fromList
   ('$' , "Dollar"),
   ('%' , "Percent"),
   ('&' , "Amp"),
+  ('\'', "Prime"), -- Apostrophe?
   ('(' , "OBr"),
   (')' , "CBr"),
   ('*' , "x"),

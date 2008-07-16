@@ -126,11 +126,7 @@ transId t iden
               _ -> toLower
 
 charMap_SP :: Map.Map Char String
-charMap_SP = Map.union
-             (Map.fromList [('\'',"Prime")
-                           ,(' ',"_")
-                           ,('\n',"_")])
-             charMap
+charMap_SP = foldr (\ k -> Map.insert k "_") charMap " \n"
 
 transToSPChar :: Char -> String
 transToSPChar c
