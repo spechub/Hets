@@ -692,7 +692,8 @@ markups =
 -- | toplevel keys that are currently ignored
 ignoredKeys :: [String]
 ignoredKeys =
-    [ domainS, oopsS, refuteS, fixrecS, primrecS, declareS, usingS, dotDot
+    [ domainS, oopsS, refuteS, fixrecS, primrecS, declareS, usingS
+    , dotDot, typedefS
     , "sorry", "done", "by", "proof", "apply", "qed"
     , "classrel", "defaultsort", "nonterminls", "arities"
     , "syntax", "no_syntax", "translations"
@@ -710,7 +711,7 @@ ignoredKeys =
     , "fixes", "constrains", "assumes", "defines", "notes", "includes"
     , "interpretation", "interpret", "obtain", "also", "finally"
     , "moreover", "ultimately" -- "trans", "sym", "symmetric"
-    , "case", "judgment", "typedef", "morphisms", "record", "rep_datatype"
+    , "case", "judgment", "morphisms", "record", "rep_datatype"
     , "recdef", "recdef_tc", "specification","ax_specification"
     , "inductive", "coinductive", "inductive_cases", "codatatype"
     , "code_module", "code_library", "consts_code", "types_code" ]
