@@ -49,14 +49,16 @@ printIsaTheory tn sign sens = let
 
 printTheoryBody :: Sign -> [Named Sentence] -> Doc
 printTheoryBody sig sens =
-    let (axs, rest) = getAxioms sens
-        (defs, rs) = getDefs rest
-        (rdefs, ts) = getRecDefs rs
-        tNames = map senAttr $ ts ++ axs
+    let (axs, rs1) = getAxioms sens
+        (insts, rs2) = getInstances rs1
+        (defs, rs3) = getDefs rs2
+        (rdefs, ts) = getRecDefs rs3
+        tNames = filter (/= "") $ map senAttr $ ts ++ axs
     in
     callML "initialize" (brackets $ sepByCommas
                         $ map (text . show . Quote) tNames) $++$
     printSign sig $++$
+    vsep (map printNamedSen insts) $++$
     (if null axs then empty else text axiomsS $+$
         vsep (map printNamedSen axs)) $++$
     (if null defs then empty else text defsS $+$
@@ -65,10 +67,12 @@ printTheoryBody sig sens =
     vcat (map ( \ a -> text declareS <+> text (senAttr a)
                        <+> brackets (text simpS))
          $ filter ( \ a -> case sentence a of
-                      b@Sentence{} -> isSimp b
+                      b@Sentence{} -> isSimp b && senAttr a /= ""
                       _ -> False) axs) $++$
     vsep (map ( \ t -> printNamedSen t
-               $++$ callML "record" (text $ show $ Quote $ senAttr t)) ts)
+               $++$ case senAttr t of
+          "" -> empty
+          n -> callML "record" (text $ show $ Quote n)) ts)
     $++$ printMonSign sig
 
 callML :: String -> Doc -> Doc
@@ -79,11 +83,15 @@ data QuotedString = Quote String
 instance Show QuotedString where
     show (Quote s) = init . tail . show $ show s
 
-getAxioms, getDefs, getRecDefs :: [Named Sentence] ->
+getAxioms, getInstances, getDefs, getRecDefs :: [Named Sentence] ->
                  ([Named Sentence], [Named Sentence])
 
 getAxioms = partition ( \ s -> case sentence s of
                             Sentence {} -> isAxiom s
+                            _ -> False)
+
+getInstances = partition ( \ s -> case sentence s of
+                            Instance {} -> True
                             _ -> False)
 
 getDefs = partition ( \ s -> case sentence s of
@@ -103,9 +111,13 @@ printClass :: IsaClass -> Doc
 printClass (IsaClass x) = text x
 
 printSort :: Sort -> Doc
-printSort l = case l of
+printSort = printSortAux False
+
+printSortAux :: Bool -> Sort -> Doc
+printSortAux b l = case l of
     [c] -> printClass c
-    _ -> specBraces . hsep . punctuate comma $ map printClass l
+    _ -> (if b then doubleQuotes else id)
+      . braces . hcat . punctuate comma $ map printClass l
 
 data SynFlag = Quoted | Unquoted | Null
 
@@ -205,8 +217,8 @@ printSentence s = case s of
       text instanceS <+> text t <> doubleColon <> (case args of
         []  -> empty
 	_ -> parens $ hsep $ punctuate comma $
-	     map printSort args)
-        <+> printSort res <+> pretty prf
+	     map (printSortAux True) args)
+        <+> printSortAux True res <+> pretty prf
   Sentence {} -> printPlainMetaTerm (not $ isRefute s) $ metaTerm s
   _ -> printPlainTerm (not $ isRefute s) $ senTerm s
 
@@ -220,14 +232,13 @@ printSetDecl sd = case sd of
                                  <> printTerm f)
 
 printMetaTerm :: MetaTerm -> Doc
-printMetaTerm mt =
-    case mt of
-      Term t -> printTerm t
-      Conditional conds t ->  (text premiseOpenS)
-                          <+> foldr1 (\t1 -> \t2 -> t1 <+> semi <+> t2) (map printTerm conds)
-                          <+> (text premiseCloseS)
-                          <+> (text metaImplS)
-                          <+> printTerm t
+printMetaTerm mt = case mt of
+    Term t -> printTerm t
+    Conditional conds t -> text premiseOpenS
+      <+> hsep (punctuate semi $ map printTerm conds)
+      <+> text premiseCloseS
+      <+> text metaImplS
+      <+> printTerm t
 
 -- | print plain term
 printTerm :: Term -> Doc
