@@ -292,7 +292,7 @@ printMixfixAppl b c f args = case f of
              else printApp b c f args
         Const vn _ | new vn `elem` [allS, exS, ex1S] -> case args of
             [Abs v t _] -> (fsep [text (new vn) <+> printPlainTerm False v
-                    <> text "."
+                    <> dot
                     , printPlainTerm b t], lowPrio)
             _ -> printApp b c f args
         App g a d | c == d -> printMixfixAppl b c g (a : args)
@@ -313,7 +313,7 @@ printTrm b trm = case trm of
     Free vn -> (text $ new vn, maxPrio)
     Abs v t c -> ((text $ case c of
         NotCont -> "%"
-        IsCont _ -> "Lam") <+> printPlainTerm False v <> text "."
+        IsCont _ -> "Lam") <+> printPlainTerm False v <> dot
                     <+> printPlainTerm b t, lowPrio)
     If i t e c -> let d = fsep [printPlainTerm b i,
                         text (case c of
@@ -401,11 +401,10 @@ printClassrel = vcat . map printClassR . (orderCDecs . Map.toList)
 printClassR :: (IsaClass,[IsaClass]) -> Doc
 printClassR (y,ys) = case ys of
   [] -> empty
-  z:zs -> text axclassS <+> printClass y <+> text "<" <+>
-                                           printClass z $+$
-          (vcat $ map (\x ->
-                  text instanceS <+> printClass y <+> text "<" <+>
-                                  printClass x <+> text "..") zs)
+  z : zs -> text axclassS <+> printClass y <+> less <+> printClass z
+    $+$ vcat (map (\ x ->
+                  text instanceS <+> printClass y <+> less <+>
+                                  printClass x <+> text dotDot) zs)
 
 orderCDecs :: [(IsaClass, Maybe [IsaClass])] -> [(IsaClass,[IsaClass])]
 orderCDecs ls = let
@@ -489,46 +488,41 @@ printMInstance tn t = let nM = text (t ++ "_tm")
              <+> text "==>" <+> text "x = y")
     $+$ text "sorry "
 
-prnThymorph :: Doc -> String -> String -> TName ->
-        [(String,String)] -> [(String,String)] -> Doc
-prnThymorph nm xn tn t ts ws = let tArrow = text "-->"
-  in (text "thymorph" <+> nm <+> colon <+>
-            text xn <+> tArrow <+> text tn)
-     $+$ text "  maps" <+> (brackets $
-       hcat [parens $ (doubleQuotes (text b <+> text a) <+>
-         text "|->" <+>
-             doubleQuotes (text b <+> (text $ tn ++ "." ++ t))) |
-                                                        (a,b) <- ts])
-     $+$ brackMapList (\j -> tn ++ "." ++ j) ws
+prnThymorph :: Doc -> String -> String -> TName -> [(String, String)]
+            -> [(String, String)] -> Doc
+prnThymorph nm xn tn t ts ws = let qual s = tn ++ "." ++ s in
+     text "thymorph" <+> nm <+> colon <+>
+            text xn <+> cfun <+> text tn
+     $+$ text "  maps" <+> brackets
+       (hcat [ parens $ doubleQuotes (text b <+> text a) <+> mapsto
+               <+> doubleQuotes (text b <+> text (qual t))
+             | (a, b) <- ts])
+     $+$ brackMapList qual ws
 
 brackMapList :: (String -> String) -> [(String,String)] -> Doc
-brackMapList f ws = (brackets $
-       hsep $ punctuate comma [parens $ (doubleQuotes (text a)
-         <+> text "|->" <+> doubleQuotes (text $ f b)) | (a,b) <- ws])
+brackMapList f ws = brackets $ hsep $ punctuate comma
+  [ parens $ doubleQuotes (text a) <+> mapsto <+> doubleQuotes (text $ f b)
+  | (a, b) <- ws]
 
 -- filter out types that are given in the domain table
 printTypeDecls :: DomainTab -> Arities -> Doc
 printTypeDecls odt ars =
-    let dt = Map.fromList $ map (\ (t, _) -> (typeId t, []))
-             $ concat odt
-    in vcat $ map printTycon $ Map.toList
-           $ Map.difference ars dt
+    let dt = Map.fromList $ map (\ (t, _) -> (typeId t, [])) $ concat odt
+    in vcat $ map printTycon $ Map.toList $ Map.difference ars dt
 
 printTycon :: (TName, [(IsaClass, [(Typ, Sort)])]) -> Doc
-printTycon (t, arity') =
-              let arity = if null arity' then
-                          error "IsaPrint.printTycon"
-                                else length (snd $ head arity') in
+printTycon (t, arity') = case arity' of
+  [] -> error "IsaPrint.printTycon"
+  (_, rs) : _ ->
          if elem t ["lBool","intT","integerT","charT","ratT","lString"
                     ,"unitT","unit","bool","int","char","rat","string"
                     ,"lOrdering","sOrdering","either","*"
-                    ,"llist","list","lprod","lEither","lMaybe","option"
-                   ]
+                    ,"llist","list","lprod","lEither","lMaybe","option"]
          then empty else
             text typedeclS <+>
-            (if arity > 0
+            (let arity = length rs in if arity > 0
              then parens $ hsep $ punctuate comma
-                      $ map (text . ("'a"++) . show) [1..arity]
+                      $ map (text . ("'a" ++) . show) [1..arity]
              else empty) <+> text t
 
 -- | show alternative syntax (computed by comorphisms)
