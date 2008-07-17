@@ -30,12 +30,14 @@ import Common.Result
 import Common.GlobalAnnotations (GlobalAnnos)
 import Common.ConvertGlobalAnnos ()
 import qualified Data.Map as Map
+import Common.SExpr
 import Common.SimpPretty (writeFileSDoc)
 
 import Common.ATerm.Lib
 import Common.ATerm.ReadWrite
 
 import Logic.Coerce
+import Logic.Logic (language_name)
 import Logic.Grothendieck
 import Comorphisms.LogicGraph
 
@@ -60,6 +62,9 @@ import Isabelle.IsaPrint (printIsaTheory)
 import SoftFOL.CreateDFGDoc
 import SoftFOL.DFGParser
 import SoftFOL.ParseTPTP
+
+import VSE.Logic_VSE
+import VSE.ToSExpr
 
 import Logic.Prover
 import Static.GTheory
@@ -223,13 +228,23 @@ writeTheory opts filePrefix ga
   raw_gTh@(G_theory lid (ExtSign sign0 _) _ sens0 _) ln i ot =
     let fp = filePrefix ++ "_" ++ show i
         f = fp ++  "." ++ show ot
+        th = (sign0, toNamedList sens0)
     in case ot of
     ThyFile -> writeIsaFile opts fp raw_gTh ln i
     DfgFile c -> writeSoftFOL opts f raw_gTh ln i c 0 "DFG"
     TPTPFile c -> writeSoftFOL opts f raw_gTh ln i c 1 "TPTP"
-    TheoryFile d -> if null $ show d then
+    TheoryFile d -> do
+      if null $ show d then
         writeVerbFile opts f $ shows (DG.printTh ga i raw_gTh) "\n"
         else putIfVerbose opts 0 "printing theory delta is not implemented"
+      if language_name lid == language_name VSE then do
+        (sign, sens) <- coerceBasicTheory lid VSE "" th
+        let Result ds res = mapM (toSExpr sign . sentence) sens
+        case res of
+          Just lse | not $ null lse -> writeVerbFile opts (fp ++ ".sexpr")
+            $ unlines $ map (show . prettySExpr) lse
+          _ -> showDiags opts ds
+        else return ()
     SigFile d -> if null $ show d then
         writeVerbFile opts f $ shows (pretty $ signOf raw_gTh) "\n"
         else putIfVerbose opts 0 "printing signature delta is not implemented"
@@ -240,17 +255,14 @@ writeTheory opts filePrefix ga
         Just d -> writeVerbFile opts f $ shows d "\n"
 #endif
 #if HAXML_PACKAGE
-    ComptableXml -> let
-        th = (sign0, toNamedList sens0)
-        r1 = coerceBasicTheory lid CASL "" th in case r1 of
-        Nothing ->
-            putIfVerbose opts 0 $ "could not translate CASL to file: " ++ f
-        Just th2 -> do
-          let Result d res = computeCompTable i th2
-          showDiags opts d
+    ComptableXml -> if language_name lid == language_name CASL then do
+          th2 <- coerceBasicTheory lid CASL "" th
+          let Result ds res = computeCompTable i th2
+          showDiags opts ds
           case res of
             Just td -> writeVerbFile opts f $ render $ table_document td
             Nothing -> return ()
+        else putIfVerbose opts 0 $ "expected CASL theory for: " ++ f
 #endif
     _ -> return () -- ignore other file types
 

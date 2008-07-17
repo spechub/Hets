@@ -50,7 +50,7 @@ varToSSymbol = SSymbol . transToken
 
 varDeclToSExpr :: (VAR, SORT) -> SExpr
 varDeclToSExpr (v, s) =
-  SList $ SSymbol "vardecl-indet" : varToSSymbol v : [idToSSymbol 0 s]
+  SList [SSymbol "vardecl-indet", varToSSymbol v, idToSSymbol 0 s]
 
 sfail :: String -> Range -> Result a
 sfail s r = fatal_error ("unexpected " ++ s) r
@@ -67,7 +67,7 @@ sRec withQuant sign mf = Record
             _ -> ""
         let vl = SList $ map varDeclToSExpr $ flatVAR_DECLs vs
         f <- r
-        return $ SList $ s : vl : [f]
+        return $ SList [s, vl, f]
       else sfail "Quantification" p
     , foldConjunction = \ _ rs _ -> do
       fs <- sequence rs
@@ -78,34 +78,35 @@ sRec withQuant sign mf = Record
     , foldImplication = \ _ r1 r2 b _ -> do
       f1 <- r1
       f2 <- r2
-      return $ SList $ SSymbol "implies" : if b then f1 : [f2] else f2 : [f1]
+      return $ SList $ SSymbol "implies" : if b then [f1, f2] else [f2, f1]
     , foldEquivalence = \ _ r1 r2 _ -> do
       f1 <- r1
       f2 <- r2
-      return $ SList $ SSymbol "equiv" : f1 : [f2]
+      return $ SList [SSymbol "equiv", f1, f2]
     , foldNegation = \ _ r _ -> do
       f <- r
-      return $ SList $ SSymbol "not" : [f]
+      return $ SList [SSymbol "not", f]
     , foldTrue_atom = \ _ _ -> return $ SSymbol "true"
     , foldFalse_atom = \ _ _ -> return $ SSymbol "false"
     , foldPredication = \ _ p rs _ -> do
       ts <- sequence rs
-      return $ SList $ SSymbol "papply" : predToSSymbol sign p : ts
+      return $ SList [SSymbol "papply", predToSSymbol sign p, SList ts]
     , foldDefinedness = \ _ _ r -> sfail "Definedness" r
     , foldExistl_equation = \ _ _ _ r -> sfail "Existl_equation" r
     , foldStrong_equation = \ _ r1 r2 _ -> do
       t1 <- r1
       t2 <- r2
-      return $ SList $ SSymbol "eq" : t1 : [t2]
+      return $ SList [SSymbol "eq", t1, t2]
     , foldMembership = \ _ _ _ r -> sfail "Membership" r
     , foldMixfix_formula = \ t _ -> sfail "Mixfix_formula" $ getRange t
     , foldSort_gen_ax = \ _ _ _ -> sfail "Sort_gen_ax" nullRange
     , foldExtFORMULA = \ _ f -> mf f
     , foldSimpleId = \ _ t -> sfail "Simple_id" $ tokPos t
-    , foldQual_var = \ _ v _ _ -> return $ varToSSymbol v
+    , foldQual_var = \ _ v _ _ ->
+        return $ SList [SSymbol "varterm", varToSSymbol v]
     , foldApplication = \ _ o rs _ -> do
       ts <- sequence rs
-      return $ SList $ SSymbol "fapply" : opToSSymbol sign o : ts
+      return $ SList [SSymbol "fapply", opToSSymbol sign o, SList ts]
     , foldSorted_term = \ _ r _ _ -> r
     , foldCast = \ _ _ _ r -> sfail "Cast" r
     , foldConditional = \ _ _ _ _ r -> sfail "Conditional" r
