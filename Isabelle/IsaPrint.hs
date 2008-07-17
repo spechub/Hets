@@ -147,7 +147,7 @@ printTyp a = fst . printTypeAux a
 
 printTypeAux :: SynFlag -> Typ -> (Doc, Int)
 printTypeAux a t = case t of
- (TFree v s) -> (let
+ TFree v s -> (let
         d = text $ if isPrefixOf "\'" v || isPrefixOf "?\'" v
                                 then v  else '\'' : v
         c = printSort s
@@ -156,8 +156,8 @@ printTypeAux a t = case t of
                      $ tail s then c else doubleQuotes c
          Unquoted -> d <> doubleColon <> c
          Null -> d, 1000)
- (TVar iv s) -> printTypeAux a $ TFree ("?\'" ++ unindexed iv) s
- (Type name _ args) -> case args of
+ TVar iv s -> printTypeAux a $ TFree ("?\'" ++ unindexed iv) s
+ Type name _ args -> case args of
     [t1, t2] | elem name [prodS, sProdS, funS, cFunS, lFunS, sSumS] ->
        printTypeOp a name t1 t2
     _  -> ((case args of
@@ -235,13 +235,8 @@ printSentence s = case s of
   _ -> printPlainTerm (not $ isRefute s) $ senTerm s
 
 printSetDecl :: SetDecl -> Doc
-printSetDecl sd = case sd of
-                    SubSet v t f -> braces (printTerm v
-                                 <> colon
-                                 <> colon
-                                 <> printType t
-                                 <> dot
-                                 <> printTerm f)
+printSetDecl (SubSet v t f) =
+  braces $ printTerm v <> doubleColon <> printType t <> dot <> printTerm f
 
 printMetaTerm :: MetaTerm -> Doc
 printMetaTerm mt = case mt of
@@ -359,39 +354,39 @@ printApp b c t l = case l of
 
 printDocApp :: Bool -> Continuity -> Doc -> [Term] -> (Doc, Int)
 printDocApp b c d l =
-    (fsep $ (case c of
-          NotCont -> id
-          IsCont True -> punctuate $ text " $$"
-          IsCont False -> punctuate $ text " $")
+    ( fsep $ (case c of
+        NotCont -> id
+        IsCont True -> punctuate $ text " $$"
+        IsCont False -> punctuate $ text " $")
           $ d : map (printParenTerm b maxPrio) l
-          , maxPrio - 1)
+    , maxPrio - 1)
 
 replaceUnderlines :: String -> [Doc] -> [Doc]
 replaceUnderlines str l = case str of
     "" -> []
     '\'': r@(q : s) -> if q `elem` "_/'()"
-                       then cons (text [q]) $ replaceUnderlines s l
-                       else cons (text "'") $ replaceUnderlines r l
+                       then consDocBarSep (text [q]) $ replaceUnderlines s l
+                       else consDocBarSep (text "'") $ replaceUnderlines r l
     '_' : r -> case l of
-                  h : t -> cons h $ replaceUnderlines r t
+                  h : t -> consDocBarSep h $ replaceUnderlines r t
                   _ -> error "replaceUnderlines"
     '/' : ' ' : r -> empty : replaceUnderlines r l
     q : r -> if q `elem` "()/" then replaceUnderlines r l
-             else cons (text [q]) $ replaceUnderlines r l
-  where
-    cons :: Doc -> [Doc] -> [Doc]
-    cons d r = case r of
-                 [] -> [d]
-                 h : t -> let
-                    b = '|'
-                    hs = show h
-                    ds = show d
-                    hhs = head hs
-                    lds = last ds
-                   in if null hs || null ds then (d <> h) : t else
-                      if hhs == b && lds == '('
-                         || last ds == b && hhs == ')' then (d <+> h) : t
-                      else (d <> h) : t
+             else consDocBarSep (text [q]) $ replaceUnderlines r l
+
+consDocBarSep :: Doc -> [Doc] -> [Doc]
+consDocBarSep d r = case r of
+  [] -> [d]
+  h : t -> let
+    b = '|'
+    hs = show h
+    ds = show d
+    hhs = head hs
+    lds = last ds
+    in if null hs || null ds then (d <> h) : t else
+           if hhs == b && lds == '(' || last ds == b && hhs == ')'
+           then (d <+> h) : t
+           else (d <> h) : t
 
 -- end of term printing
 
@@ -611,10 +606,10 @@ printSign sig = let dt = sortBy cmpDomainEntries $ domainTab sig
     showCaseLemmata dtDefs = text (concat $ map showCaseLemmata1 dtDefs)
     showCaseLemmata1 dts = concat $ map showCaseLemma dts
     showCaseLemma (_, []) = ""
-    showCaseLemma (tyCons, (c:cons)) =
+    showCaseLemma (tyCons, (c : cns)) =
       let cs = "case caseVar of" ++ sp
           sc b = showCons b c ++ (concat $ map (("   | " ++)
-                                                . (showCons b)) cons)
+                                                . (showCons b)) cns)
           clSome = sc True
           cl = sc False
           showCons b ((VName {new=cName}), args) =
