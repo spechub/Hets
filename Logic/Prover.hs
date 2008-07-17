@@ -237,8 +237,8 @@ hasProverKind pk pt = case pk of
 data ProverTemplate theory sublogics proof_tree = Prover
     { prover_name :: String,
       prover_sublogic :: sublogics,
-      proveGUI :: Maybe (String -> theory -> IO ([Proof_status proof_tree])),
-      -- input: theory name, theory (incl. goals)
+      proveGUI :: Maybe ([String] -> String -> theory -> IO ([Proof_status proof_tree])),
+      -- input: imported theories, theory name, theory (incl. goals)
       -- output: proof status for goals and lemmas
       proveCMDLautomatic :: Maybe (String -> Tactic_script
                          -> theory -> IO (Result ([Proof_status proof_tree]))),
@@ -281,7 +281,7 @@ mkProverTemplate :: String -> sublogics
 mkProverTemplate str sl fct = Prover
     { prover_name = str
     , prover_sublogic = sl
-    , proveGUI = Just fct
+    , proveGUI = Just $ \ _ -> fct
     , proveCMDLautomatic = Nothing
     , proveCMDLinteractive = Nothing
     , proveCMDLautomaticBatch = Nothing }

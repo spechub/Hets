@@ -80,7 +80,7 @@ cons_check :: Logic lid sublogics
            -> String -> TheoryMorphism sign sentence morphism proof_tree
            -> IO([Proof_status proof_tree])
 cons_check _ c =
-    maybe (\ _ _ -> fail "proveGUI not implemented") id (proveGUI c)
+    maybe (\ _ _ -> fail "proveGUI not implemented") id (proveGUI c) []
 
 proveTheory :: Logic lid sublogics
               basic_spec sentence symb_items symb_map_items
@@ -89,7 +89,7 @@ proveTheory :: Logic lid sublogics
            -> String -> Theory sign sentence proof_tree
            -> IO([Proof_status proof_tree])
 proveTheory _ p =
-    maybe (\ _ _ -> fail "proveGUI not implemented") id (proveGUI p)
+    maybe (\ _ _ -> fail "proveGUI not implemented") id (proveGUI p) []
 
 
 -- | applies basic inference to a given node
