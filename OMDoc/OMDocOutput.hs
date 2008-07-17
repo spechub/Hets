@@ -9,6 +9,8 @@ Stability   :  provisional
 Portability :  non-portable(Logic)
 
 Output-methods for writing OMDoc
+Toplevel module providing the composition of all translations CASL -> OMDoc
+Recurses over imported CASL libraries
 -}
 module OMDoc.OMDocOutput
   (

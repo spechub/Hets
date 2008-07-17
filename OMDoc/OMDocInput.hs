@@ -9,6 +9,8 @@ Stability   :  provisional
 Portability :  non-portable(Logic)
 
 Input-methods for reading OMDoc
+Toplevel module providing the composition of all translations OMDoc -> CASL
+
 -}
 module OMDoc.OMDocInput
   (
