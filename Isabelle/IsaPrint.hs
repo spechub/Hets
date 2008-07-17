@@ -49,31 +49,36 @@ printIsaTheory tn sign sens = let
 
 printTheoryBody :: Sign -> [Named Sentence] -> Doc
 printTheoryBody sig sens =
-    let (axs, rs1) = getAxioms sens
-        (insts, rs2) = getInstances rs1
-        (defs, rs3) = getDefs rs2
-        (rdefs, ts) = getRecDefs rs3
-        tNames = filter (/= "") $ map senAttr $ ts ++ axs
-    in
     callML "initialize" (brackets $ sepByCommas
-                        $ map (text . show . Quote) tNames) $++$
-    printSign sig $++$
-    vsep (map printNamedSen insts) $++$
-    (if null axs then empty else text axiomsS $+$
-        vsep (map printNamedSen axs)) $++$
-    (if null defs then empty else text defsS $+$
-        vsep (map printNamedSen defs)) $++$
-    vsep (map printNamedSen rdefs) $++$
-    vcat (map ( \ a -> text declareS <+> text (senAttr a)
-                       <+> brackets (text simpS))
-         $ filter ( \ a -> case sentence a of
-                      b@Sentence{} -> isSimp b && senAttr a /= ""
-                      _ -> False) axs) $++$
-    vsep (map ( \ t -> printNamedSen t
-               $++$ case senAttr t of
-          "" -> empty
-          n -> callML "record" (text $ show $ Quote n)) ts)
+      $ map (text . show . Quote . senAttr)
+      $ filter (\ s -> not (isConstDef s || isRecDef s || isInstance s)
+                && senAttr s /= "") sens)
+    $++$ printSign sig
+    $++$ printNamedSentences sens
     $++$ printMonSign sig
+
+printNamedSentences :: [Named Sentence] -> Doc
+printNamedSentences sens = case sens of
+  [] -> empty
+  s : r
+    | isIsaAxiom s ->
+      let (axs, rest) = span isAxiom sens in
+      text axiomsS $+$ vsep (map printNamedSen axs)
+      $++$ vcat (map ( \ a -> text declareS <+> text (senAttr a)
+                       <+> brackets (text simpS))
+                $ filter ( \ a -> case sentence a of
+                      b@Sentence{} -> isSimp b && senAttr a /= ""
+                      _ -> False) axs)
+      $++$ printNamedSentences rest
+    | isConstDef s ->
+      let (defs, rest) = span isConstDef sens in
+      text defsS $+$ vsep (map printNamedSen defs)
+      $++$ printNamedSentences rest
+    | True ->
+      printNamedSen s $++$ (case senAttr s of
+        n | n == "" || isRecDef s -> empty
+          | True -> callML "record" (text $ show $ Quote n))
+      $++$ printNamedSentences r
 
 callML :: String -> Doc -> Doc
 callML fun args =
@@ -83,24 +88,28 @@ data QuotedString = Quote String
 instance Show QuotedString where
     show (Quote s) = init . tail . show $ show s
 
-getAxioms, getInstances, getDefs, getRecDefs :: [Named Sentence] ->
-                 ([Named Sentence], [Named Sentence])
+getAxioms :: [Named Sentence] -> ([Named Sentence], [Named Sentence])
+getAxioms = partition isIsaAxiom
 
-getAxioms = partition ( \ s -> case sentence s of
-                            Sentence {} -> isAxiom s
-                            _ -> False)
+isIsaAxiom :: Named Sentence -> Bool
+isIsaAxiom s = case sentence s of
+  Sentence {} -> isAxiom s
+  _ -> False
 
-getInstances = partition ( \ s -> case sentence s of
-                            Instance {} -> True
-                            _ -> False)
+isInstance :: Named Sentence -> Bool
+isInstance s = case sentence s of
+  Instance {} -> True
+  _ -> False
 
-getDefs = partition ( \ s -> case sentence s of
-                            ConstDef {} -> True
-                            _ -> False)
+isConstDef :: Named Sentence -> Bool
+isConstDef s = case sentence s of
+  ConstDef {} -> True
+  _ -> False
 
-getRecDefs = partition ( \ s -> case sentence s of
-                            RecDef {} -> True
-                            _ -> False)
+isRecDef :: Named Sentence -> Bool
+isRecDef s = case sentence s of
+  RecDef {} -> True
+  _ -> False
 
 ----------------------- Printing functions -----------------------------
 
