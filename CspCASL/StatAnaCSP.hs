@@ -52,8 +52,15 @@ basicAnalysisCspCASL (cc, sigma, ga) = do
               Just nga -> sigma { globAnnos = nga }
         ds = reverse $ envDiags accSig
     Result (es ++ ds) (Just ()) -- insert diagnostics
-    return (cc, mkExtSign accSig, [makeNamed "empty_sentence" emptyCCSentence, makeNamed "name_testProc" testProc])
-    where testProc = CspCASLSentence (mkSimpleId "testProc") [] (ExternalChoice (Stop nullRange) (Stop nullRange) nullRange )
+    return (cc, mkExtSign accSig, [makeNamed "empty_sentence" emptyCCSentence,
+                                   makeNamed "StopProcSen"  stopProc,
+                                   makeNamed "GParProcSen"  gParProc,
+                                   makeNamed "StopProcSen"  seqProc])
+    where stopProc = CspCASLSentence (mkSimpleId "stopProc") [] (Stop nullRange )
+          seqProc = CspCASLSentence (mkSimpleId "seqProc") [] (Sequential (Stop nullRange) (Stop nullRange) nullRange)
+          gParProc = CspCASLSentence (mkSimpleId "gParProc") [] (GeneralisedParallel (Stop nullRange)
+                                                                                     (EventSet [mkSimpleId "hugo"] nullRange)
+                                                                                     (Skip nullRange) nullRange)
 
 ana_BASIC_CSP :: CspBasicSpec -> State CspCASLSign ()
 ana_BASIC_CSP cc = do checkLocalTops

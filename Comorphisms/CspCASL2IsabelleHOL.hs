@@ -25,6 +25,7 @@ import qualified Comorphisms.CFOL2IsabelleHOL as CFOL2IsabelleHOL
 import Comorphisms.CFOL2IsabelleHOL(IsaTheory)
 import CspCASL.Logic_CspCASL
 import CspCASL.AS_CspCASL
+import CspCASL.Trans_CspProver
 import CspCASL.SignCSP
 import qualified Data.List as List
 import qualified Data.Set as Set
@@ -54,6 +55,7 @@ instance Comorphism CspCASL2IsabelleHOL
     sourceSublogic CspCASL2IsabelleHOL = ()
     targetLogic CspCASL2IsabelleHOL = Isabelle
     mapSublogic _cid _sl = Just ()
+
     map_theory CspCASL2IsabelleHOL = transCCTheory
     map_morphism = mapDefaultMorphism
     map_sentence CspCASL2IsabelleHOL sign = transCCSentence sign
@@ -80,17 +82,15 @@ transCCTheory ccTheory =
           -- Next Translate to IsabelleHOL code
           translation3 <- cfol2isabelleHol translation2
           -- Next add the preAlpabet construction to the IsabelleHOL code
-          return -- . $ addInstansanceOfEquiv
-                 -- . $ addJustificationTheorems ccSign (fst translation1)
-                 -- . $ addEqFun sortList
-                 -- . $ addAllCompareWithFun ccSign
-                 -- . $ addPreAlphabet sortList
-                 -- . $ addWarning
-                 -- . $ addConst (show ccSens) fakeType
-                 $ processCspCaslSentences ccSens
+          return $ processCspCaslSentences ccSens$ addInstansanceOfEquiv
+                 $ addJustificationTheorems ccSign (fst translation1)
+                 $ addEqFun sortList
+                 $ addAllCompareWithFun ccSign
+                 $ addPreAlphabet sortList
+                 $ addWarning
                  $ translation3
 
--- This is not implemented in a sensible way yet
+-- This is not implemented in a sensible way yet and is not used
 transCCSentence :: CspCASLSign -> CspCASLSentence -> Result IsaSign.Sentence
 transCCSentence ccsign (CspCASLSentence pn _ _) =
     do return (mkSen (Const (mkVName (show pn)) (Disp (Type "byeWorld" [] []) TFun Nothing)))
@@ -106,9 +106,8 @@ processCspCaslSentence isaTh namedSen =
          CspCASLSentence pn vars proc ->
              let name = show pn
                  t1 = conDouble name
-                 t2 = conDouble $ show proc
-             in addDef name t1 t2
-              $ addConst (show pn) fakeType isaTh
+                 t2 = transProcess proc
+             in addDef name t1 t2 isaTh
 
 -- Functions for adding the PreAlphabet datatype to an Isabelle theory
 
