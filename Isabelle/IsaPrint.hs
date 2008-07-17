@@ -133,6 +133,9 @@ data SynFlag = Quoted | Unquoted | Null
 doubleColon :: Doc
 doubleColon = text "::"
 
+isaEquals :: Doc
+isaEquals = text "=="
+
 bar :: [Doc] -> [Doc]
 bar = punctuate $ space <> text "|"
 
@@ -217,7 +220,7 @@ printSentence :: Sentence -> Doc
 printSentence s = case s of
   TypeDef nt td pr ->  text typedefS
                    <+> printType nt
-                   <+> text "="
+                   <+> equals
                    <+> doubleQuotes(printSetDecl td)
                    $+$ pretty pr
   RecDef kw xs -> text kw <+>
@@ -330,11 +333,11 @@ printTrm b trm = case trm of
                     , printParenTerm b (lowPrio + 1) t]) ps), lowPrio)
     Let es i -> (fsep [text "let" <+>
            vcat (punctuate semi $
-               map (\ (p, t) -> fsep [ printPlainTerm b p <+> text "="
+               map (\ (p, t) -> fsep [ printPlainTerm b p <+> equals
                                        , printPlainTerm b t]) es)
            , text "in" <+> printPlainTerm b i], lowPrio)
     IsaEq t1 t2 ->
-        (fsep [ printParenTerm b (isaEqPrio + 1) t1 <+> text "=="
+        (fsep [ printParenTerm b (isaEqPrio + 1) t1 <+> isaEquals
                          , printParenTerm b isaEqPrio t2], isaEqPrio)
     Tuplex cs c -> case c of
         NotCont -> (parensForTerm
@@ -434,9 +437,9 @@ printMInstance tn t = let nM = text (t ++ "_tm")
     $+$ text "without_syntax"
     $++$ text "defs "
     $+$ text (t ++ "_eta_def:") <+> doubleQuotes
-          (text (t ++ "_eta") <+> text "==" <+> text ("return_" ++ t))
+          (text (t ++ "_eta") <+> isaEquals <+> text ("return_" ++ t))
     $+$ text (t ++ "_bind_def:") <+> doubleQuotes
-          (text (t ++ "_bind") <+> text "==" <+> text ("mbind_" ++ t))
+          (text (t ++ "_bind") <+> isaEquals <+> text ("mbind_" ++ t))
     $++$ lunitLemma t
     $+$ runitLemma t
     $+$ assocLemma t
@@ -460,35 +463,35 @@ printMInstance tn t = let nM = text (t ++ "_tm")
     $+$ text "without_syntax"
     $++$ text " "
  where
-  lunitLemma w = text "lemma" <+> text (w ++ "_lunit:")
+  lunitLemma w = text lemmaS <+> text (w ++ "_lunit:")
         <+> doubleQuotes (text (w ++ "_bind")
         <+> parens (text (w ++ "_eta x"))
         <+> parens (text $ "t::'a => 'b " ++ w)
-        <+> text "=" <+> text "t x")
+        <+> equals <+> text "t x")
     $+$ text "sorry "
-  runitLemma w = text "lemma" <+> text (w ++ "_runit:")
+  runitLemma w = text lemmaS <+> text (w ++ "_runit:")
         <+> doubleQuotes (text (w ++ "_bind")
         <+> parens (text $ "t::'a " ++ w) <+> text (w ++ "_eta")
-        <+> text "=" <+> text "t")
+        <+> equals <+> text "t")
     $+$ text "sorry "
-  assocLemma w = text "lemma" <+> text (w ++ "_assoc:")
+  assocLemma w = text lemmaS <+> text (w ++ "_assoc:")
         <+> doubleQuotes ((text $ w ++ "_bind")
         <+> parens ((text $ w ++ "_bind")
         <+> parens (text $ "s::'a " ++ w) <+> text "t") <+> text "u"
-        <+> text "=" <+> text (w ++ "_bind s")
+        <+> equals <+> text (w ++ "_bind s")
         <+> parens ((text "%x.") <+>
                  (text $ w ++ "_bind") <+> text "(t x) u"))
     $+$ text "sorry "
-  etaInjLemma w = text "lemma" <+> text (w ++ "_eta_inj:")
+  etaInjLemma w = text lemmaS <+> text (w ++ "_eta_inj:")
         <+> doubleQuotes (parens (text $ w ++ "_eta::'a => 'a " ++ w)
              <+> text "x"
-             <+> text "=" <+> (text $ w ++ "_eta y")
+             <+> equals <+> (text $ w ++ "_eta y")
              <+> text "==>" <+> text "x = y")
     $+$ text "sorry "
 
 prnThymorph :: Doc -> String -> String -> TName ->
         [(String,String)] -> [(String,String)] -> Doc
-prnThymorph nm xn tn t ts ws = let tArrow = text ("-" ++ "->")
+prnThymorph nm xn tn t ts ws = let tArrow = text "-->"
   in (text "thymorph" <+> nm <+> colon <+>
             text xn <+> tArrow <+> text tn)
      $+$ text "  maps" <+> (brackets $
@@ -643,7 +646,7 @@ printSign sig = let dt = sortBy cmpDomainEntries $ domainTab sig
           showName (Type n _ _) = n
           proof = "apply (case_tac caseVar)\napply (auto)\ndone\n"
       in
-        "lemma" ++ sp ++ "case_" ++ showName tyCons ++ "_SomeProm" ++ sp
+        lemmaS ++ sp ++ "case_" ++ showName tyCons ++ "_SomeProm" ++ sp
                 ++ "[simp]:\"" ++ sp ++ lb ++ cs ++ clSome ++ rb ++ sp
                 ++ "=\n" ++ "Some" ++ sp ++ lb ++ cs ++ cl ++ rb ++ "\"\n"
                 ++ proof
