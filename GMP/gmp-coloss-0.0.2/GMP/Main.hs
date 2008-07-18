@@ -39,9 +39,9 @@ run p_r input = case (parse p_r "" input) of
                                     True -> putStrLn "... is Provable"
                                     _    -> putStrLn "... is Not Provable"
 
--- | Auxiliary run function for testing
-runTest :: Int -> FilePath -> IO ()
-runTest ml path = do
+-- | Auxiliary run function for testing with the file path to input given
+runFPtest :: Int -> FilePath -> IO ()
+runFPtest ml path = do
     input <- readFile path
     case ml of
      1 -> runLex ((par5er Sqr parseKindex) :: Parser (L K)) input
@@ -51,13 +51,26 @@ runTest ml path = do
      5 -> runLex ((par5er Ang parsePindex) :: Parser (L P)) input
      6 -> runLex ((par5er Sqr parseHMindex) :: Parser (L HM)) input
      7 -> runLex ((par5er Sqr parseMindex) :: Parser (L Mon)) input
-     _ -> help
+     _ -> showHelp
     return ()
--- | Function for displying user help
-help :: IO()
-help = do
+-- | Auxiliary run function for testing with the input given as string
+runStest :: Int -> String -> IO ()
+runStest ml input = do
+    case ml of
+     1 -> runLex ((par5er Sqr parseKindex) :: Parser (L K)) input
+     2 -> runLex ((par5er Sqr parseKDindex) :: Parser (L KD)) input
+     3 -> runLex ((par5er Sqr parseCindex) :: Parser (L C)) input
+     4 -> runLex ((par5er Ang parseGindex) :: Parser (L G)) input
+     5 -> runLex ((par5er Ang parsePindex) :: Parser (L P)) input
+     6 -> runLex ((par5er Sqr parseHMindex) :: Parser (L HM)) input
+     7 -> runLex ((par5er Sqr parseMindex) :: Parser (L Mon)) input
+     _ -> showHelp
+    return ()
+-- | Function for displying user help 
+showHelp :: IO()
+showHelp = do
     putStrLn ( "Usage:\n" ++
-               "    ./main <ML> <path>\n\n" ++
+               "    ./main <ML> -p <path> or ./main <ML> -t <test>\n\n" ++
                "<ML>:    1 for K Modal Logic\n" ++
                "         2 for KD Modal Logic\n" ++
                "         3 for Coalition Logic\n" ++
@@ -65,13 +78,16 @@ help = do
                "         5 for Probability Logic\n" ++
                "         6 for Hennessy-Milner Modal Logic\n" ++
                "         7 for Monotonic Logic\n" ++
-               "<path>:  path to input file\n" )
+               "<path>:  path to input file\n" ++
+               "<test>:  test given as a string\n")
 -- | main program function
 main :: IO()
 main = do
     args <- getArgs
-    if (args == [])||(head args == "--help")||(length args < 2)
-     then help
-     else let ml = head args
-              path = head (tail args)
-          in runTest (read ml) path
+    if (args == [])||(head args == "--help")||(length args < 3)
+     then showHelp
+     else let ml:it:test:[] = take 3 args
+          in case it of
+               "-p" -> runFPtest (read ml) test
+               "-t" -> runStest (read ml) test
+               _    -> showHelp
