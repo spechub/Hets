@@ -22,8 +22,14 @@ import CASL.Sign
 import CASL.ToSExpr
 
 import Common.AS_Annotation
-import Common.SExpr
+import Common.Id
 import Common.Result
+import Common.SExpr
+import Common.Lib.Rel (setInsert)
+
+import qualified Data.Map as Map
+import qualified Data.Set as Set
+import Data.Char (toLower)
 
 namedSenToSExpr :: Sign f Procs -> Named Sentence -> Result SExpr
 namedSenToSExpr sig ns = do
@@ -125,3 +131,38 @@ defprocToSExpr sig (Defproc k n vs p _) = do
           _ -> predIdToSSymbol sig n $ profileToPredType pr
     , SList $ map varToSSymbol vs
     , s ]
+
+paramToSExpr :: Procparam -> SExpr
+paramToSExpr (Procparam k s) = SList
+  [ SSymbol $ map toLower $ show k
+  , sortToSSymbol s ]
+
+procsToSExprs :: Sign f Procs -> [SExpr]
+procsToSExprs sig =
+    map (\ (n, pr@(Profile as _)) -> case profileToOpType pr of
+      Nothing -> SList
+        [ SSymbol "procedure"
+        , predIdToSSymbol sig n $ profileToPredType pr
+        , SList $ map paramToSExpr as ]
+      Just ot -> SList
+        [ SSymbol "funcprocedure"
+        , opIdToSSymbol sig n ot
+        , SList $ map sortToSSymbol $ opArgs ot
+        , sortToSSymbol $ opRes ot ])
+    $ Map.toList $ procsMap $ extendedInfo sig
+
+procsToOpPredMaps :: Procs -> (Map.Map Id (Set.Set PredType), OpMap)
+procsToOpPredMaps (Procs m) =
+  foldr (\ (n, pr) (pm, om) -> case profileToOpType pr of
+          Just ot -> ( setInsert n (funProfileToPredType pr) pm
+                     , setInsert n ot om)
+          Nothing -> (setInsert n (profileToPredType pr) pm, om))
+  (Map.empty, Map.empty) $ Map.toList m
+
+vseSignToSExpr :: Sign f Procs -> SExpr
+vseSignToSExpr sig =
+  let (pm, om) = procsToOpPredMaps $ extendedInfo sig
+  in SList $ SSymbol "signature" : signToSExprs
+       (diffSig const sig (emptySign emptyProcs)
+        { opMap = om, predMap = pm })
+       ++ procsToSExprs sig

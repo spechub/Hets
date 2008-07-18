@@ -245,9 +245,15 @@ writeTheory opts filePrefix ga
             $ shows (prettySExpr $ SList lse) "\n"
           _ -> showDiags opts ds
         else return ()
-    SigFile d -> if null $ show d then
+    SigFile d -> do
+      if null $ show d then
         writeVerbFile opts f $ shows (pretty $ signOf raw_gTh) "\n"
         else putIfVerbose opts 0 "printing signature delta is not implemented"
+      if language_name lid == language_name VSE then do
+        (sign, _) <- coerceBasicTheory lid VSE "" th
+        writeVerbFile opts (f ++ ".sexpr")
+          $ shows (prettySExpr $ vseSignToSExpr sign) "\n"
+        else return ()
 #ifdef PROGRAMATICA
     HaskellOut -> case printModule raw_gTh of
         Nothing ->

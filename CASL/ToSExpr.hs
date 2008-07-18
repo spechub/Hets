@@ -135,8 +135,8 @@ sRec withQuant sign mf = Record
     , foldMixfix_braced = \ _ _ r -> sfail "Mixfix_braced" r
     }
 
-signToSExpr :: Sign a e -> [SExpr]
-signToSExpr sign =
+signToSExprs :: Sign a e -> [SExpr]
+signToSExprs sign =
     SList (SSymbol "sorts"
       : map sortToSSymbol (Set.toList $ sortSet sign))
     : concatMap (\ (p, ts) -> map (\ t ->
