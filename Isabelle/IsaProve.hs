@@ -63,6 +63,13 @@ openIsaProof_status n = openProof_status n (prover_name isabelleProver) ()
 inconsistentS :: String
 inconsistentS = "inconsistent"
 
+metaToTerm :: MetaTerm -> Term
+metaToTerm mt = case mt of
+  Term t -> t
+  Conditional ts t -> case ts of
+    [] -> t
+    _ -> binImpl (foldr1 binConj ts) t
+
 consCheck :: String -> TheoryMorphism Sign Sentence (DefaultMorphism Sign) ()
           -> IO([Proof_status ()])
 consCheck thName tm = case t_target tm of
@@ -71,7 +78,8 @@ consCheck thName tm = case t_target tm of
            Theory sig
                $ markAsGoal $ toThSens $ if null axs then [] else
                    [ makeNamed inconsistentS $ mkRefuteSen $ termAppl notOp
-                     $ foldr1 binConj $ map (senTerm . sentence) axs ]
+                     $ foldr1 binConj
+                     $ map (metaToTerm . metaTerm . sentence) axs ]
 
 prepareTheory :: Theory Sign Sentence ()
     -> (Sign, [Named Sentence], [Named Sentence], Map.Map String String)
