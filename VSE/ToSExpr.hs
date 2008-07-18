@@ -21,11 +21,22 @@ import CASL.Fold
 import CASL.Sign
 import CASL.ToSExpr
 
+import Common.AS_Annotation
 import Common.SExpr
 import Common.Result
 
-toSExpr :: Sign f Procs -> Sentence -> Result SExpr
-toSExpr sig s = do
+namedSenToSExpr :: Sign f Procs -> Named Sentence -> Result SExpr
+namedSenToSExpr sig ns = do
+  t <- senToSExpr sig $ sentence ns
+  return $ SList
+    [ SSymbol "asentence"
+    , SSymbol $ transString $ senAttr ns
+    , SSymbol $ if isAxiom ns then "axiom" else "lemma"
+    , SSymbol $ if isAxiom ns then "proved" else "open"
+    , t ]
+
+senToSExpr :: Sign f Procs -> Sentence -> Result SExpr
+senToSExpr sig s = do
   ns <- sentenceToSExpr sig s
   return $ case s of
     ExtFORMULA (Ranged (Defprocs _) _) ->

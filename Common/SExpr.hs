@@ -38,8 +38,10 @@ transId (Id ts cs _) =
     . showString "}"
 
 transToken :: Token -> String
-transToken t = if isPlace t then "_2" else
-  concatMap (\ c -> Map.findWithDefault [c] c cMap) $ tokStr t
+transToken t = if isPlace t then "_2" else transString $ tokStr t
+
+transString :: String -> String
+transString = concatMap (\ c -> Map.findWithDefault [c] c cMap)
 
 cMap :: Map.Map Char String
 cMap = Map.map ('_' :) $ Map.insert '_' "1" charMap
