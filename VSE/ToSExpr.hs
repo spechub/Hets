@@ -14,6 +14,7 @@ translation of VSE to S-Expressions
 module VSE.ToSExpr where
 
 import VSE.As
+import VSE.Ana
 
 import CASL.AS_Basic_CASL
 import CASL.Fold
@@ -97,12 +98,17 @@ progToSExpr sig = let
       return $ SList [SSymbol "while", f, s] }
 
 defprocToSExpr :: Sign f Procs -> Defproc -> Result SExpr
-defprocToSExpr sig (Defproc k n vs p _) = do
+defprocToSExpr sig (Defproc k n vs p r) = do
   s <- progToSExpr sig p
   return $ SList
     [ SSymbol $ case k of
         Proc -> "defproc"
         Func -> "deffuncproc"
-    , idToSSymbol 1 n
+    , case lookupProc n sig of
+        Nothing -> error "defprocToSExpr"
+        Just pr -> case profileToOpType pr of
+          Just ot -> opToSSymbol sig $ Qual_op_name n (toOP_TYPE ot) r
+          _ -> predToSSymbol sig $ Qual_pred_name n
+               (toPRED_TYPE $ profileToPredType pr) r
     , SList $ map varToSSymbol vs
     , s ]
