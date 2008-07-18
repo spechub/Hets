@@ -231,16 +231,16 @@ printSentence s = case s of
 	_ -> parens $ hsep $ punctuate comma $
 	     map (printSortAux True) args)
         <+> printSortAux True res <+> pretty prf
-  Sentence {} -> printPlainMetaTerm (not $ isRefute s) $ metaTerm s
-  _ -> printPlainTerm (not $ isRefute s) $ senTerm s
+  Sentence { isRefuteAux = b, metaTerm = t } -> printPlainMetaTerm (not b) t
+  ConstDef t -> printTerm t
 
 printSetDecl :: SetDecl -> Doc
 printSetDecl (SubSet v t f) =
   braces $ printTerm v <> doubleColon <> printType t <> dot <> printTerm f
 
-printMetaTerm :: MetaTerm -> Doc
-printMetaTerm mt = case mt of
-    Term t -> printTerm t
+printPlainMetaTerm :: Bool -> MetaTerm -> Doc
+printPlainMetaTerm b mt = case mt of
+    Term t -> printPlainTerm b t
     Conditional conds t -> text premiseOpenS
       <+> hsep (punctuate semi $ map printTerm conds)
       <+> text premiseCloseS
@@ -253,9 +253,6 @@ printTerm = printPlainTerm True
 
 printPlainTerm :: Bool -> Term -> Doc
 printPlainTerm b = fst . printTrm b
-
-printPlainMetaTerm :: Bool -> MetaTerm -> Doc
-printPlainMetaTerm _ mt = printMetaTerm mt
 
 -- | print parens but leave a space if doc starts or ends with a bar
 parensForTerm :: Doc -> Doc
