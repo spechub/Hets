@@ -72,7 +72,7 @@ progToSExpr sig = let
       case f of
         Predication p ts _ -> do
           nts <- mapM termToSExpr ts
-          return $ SList [SSymbol "call", predToSSymbol sig p, SList nts]
+          return $ SList $ SSymbol "call" : predToSSymbol sig p : nts
         _ -> sfail "Call" r
   , foldReturn = \ _ t -> do
       nt <- termToSExpr t

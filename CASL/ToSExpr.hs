@@ -90,7 +90,7 @@ sRec withQuant sign mf = Record
     , foldFalse_atom = \ _ _ -> return $ SSymbol "false"
     , foldPredication = \ _ p rs _ -> do
       ts <- sequence rs
-      return $ SList [SSymbol "papply", predToSSymbol sign p, SList ts]
+      return $ SList $ SSymbol "papply" : predToSSymbol sign p : ts
     , foldDefinedness = \ _ _ r -> sfail "Definedness" r
     , foldExistl_equation = \ _ _ _ r -> sfail "Existl_equation" r
     , foldStrong_equation = \ _ r1 r2 _ -> do
@@ -106,7 +106,7 @@ sRec withQuant sign mf = Record
         return $ SList [SSymbol "varterm", varToSSymbol v]
     , foldApplication = \ _ o rs _ -> do
       ts <- sequence rs
-      return $ SList [SSymbol "fapply", opToSSymbol sign o, SList ts]
+      return $ SList $ SSymbol "fapply" : opToSSymbol sign o : ts
     , foldSorted_term = \ _ r _ _ -> r
     , foldCast = \ _ _ _ r -> sfail "Cast" r
     , foldConditional = \ _ _ _ _ r -> sfail "Conditional" r
