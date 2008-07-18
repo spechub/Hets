@@ -241,11 +241,11 @@ printSetDecl (SubSet v t f) =
 printPlainMetaTerm :: Bool -> MetaTerm -> Doc
 printPlainMetaTerm b mt = case mt of
     Term t -> printPlainTerm b t
-    Conditional conds t -> text premiseOpenS
-      <+> hsep (punctuate semi $ map printTerm conds)
-      <+> text premiseCloseS
-      <+> text metaImplS
-      <+> printTerm t
+    Conditional conds t -> sep
+      [ text premiseOpenS
+        <+> fsep (punctuate semi $ map printTerm conds)
+        <+> text premiseCloseS
+      , text metaImplS <+> printTerm t ]
 
 -- | print plain term
 printTerm :: Term -> Doc
