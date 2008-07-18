@@ -28,22 +28,27 @@ import qualified Data.List as List
 predToSSymbol :: Sign f e -> PRED_SYMB -> SExpr
 predToSSymbol sign p = case p of
     Pred_name _ -> error "predToSSymbol"
-    Qual_pred_name i t _ -> case Map.lookup i $ predMap sign of
-      Nothing -> error "predToSSymbol2"
-      Just s -> case List.elemIndex (toPredType t) $ Set.toList s of
-        Nothing -> error "predToSSymbol3"
-        Just n -> idToSSymbol (n + 1) i
+    Qual_pred_name i t _ -> predIdToSSymbol sign i $ toPredType t
+
+predIdToSSymbol :: Sign f e -> Id -> PredType -> SExpr
+predIdToSSymbol sign i t = case Map.lookup i $ predMap sign of
+    Nothing -> error "predIdToSSymbol"
+    Just s -> case List.elemIndex t $ Set.toList s of
+      Nothing -> error "predIdToSSymbol2"
+      Just n -> idToSSymbol (n + 1) i
 
 opToSSymbol :: Sign f e -> OP_SYMB -> SExpr
 opToSSymbol sign o =  case o of
     Op_name _ -> error "opToSSymbol"
-    Qual_op_name i (Op_type _ args res _) _ ->
-      case Map.lookup i $ opMap sign of
-        Nothing -> error "opToSSymbol2"
-        Just s -> case List.findIndex
-          (\ r -> opArgs r == args && opRes r == res) $ Set.toList s of
-            Nothing -> error "opToSSymbol3"
-            Just n -> idToSSymbol (n + 1) i
+    Qual_op_name i t _ -> opIdToSSymbol sign i $ toOpType t
+
+opIdToSSymbol :: Sign f e -> Id -> OpType -> SExpr
+opIdToSSymbol sign i (OpType _ args res) = case Map.lookup i $ opMap sign of
+    Nothing -> error "opIdToSSymbol"
+    Just s -> case List.findIndex
+      (\ r -> opArgs r == args && opRes r == res) $ Set.toList s of
+        Nothing -> error "opIdToSSymbol2"
+        Just n -> idToSSymbol (n + 1) i
 
 sortToSSymbol :: Id -> SExpr
 sortToSSymbol = idToSSymbol 0
@@ -129,3 +134,19 @@ sRec withQuant sign mf = Record
     , foldMixfix_bracketed = \ _ _ r -> sfail "Mixfix_bracketed" r
     , foldMixfix_braced = \ _ _ r -> sfail "Mixfix_braced" r
     }
+
+signToSExpr :: Sign a e -> [SExpr]
+signToSExpr sign =
+    SList (SSymbol "sorts"
+      : map sortToSSymbol (Set.toList $ sortSet sign))
+    : concatMap (\ (p, ts) -> map (\ t ->
+       SList [ SSymbol "predicate"
+             , predIdToSSymbol sign p t
+             , SList $ map sortToSSymbol $ predArgs t ]) $ Set.toList ts)
+      (Map.toList $ predMap sign)
+    ++ concatMap (\ (p, ts) -> map (\ t ->
+       SList [ SSymbol "function"
+             , opIdToSSymbol sign p t
+             , SList $ map sortToSSymbol $ opArgs t
+             , sortToSSymbol $ opRes t ]) $ Set.toList ts)
+      (Map.toList $ opMap sign)

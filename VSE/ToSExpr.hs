@@ -112,7 +112,7 @@ progToSExpr sig = let
       return $ SList [SSymbol "while", f, s] }
 
 defprocToSExpr :: Sign f Procs -> Defproc -> Result SExpr
-defprocToSExpr sig (Defproc k n vs p r) = do
+defprocToSExpr sig (Defproc k n vs p _) = do
   s <- progToSExpr sig p
   return $ SList
     [ SSymbol $ case k of
@@ -121,8 +121,7 @@ defprocToSExpr sig (Defproc k n vs p r) = do
     , case lookupProc n sig of
         Nothing -> error "defprocToSExpr"
         Just pr -> case profileToOpType pr of
-          Just ot -> opToSSymbol sig $ Qual_op_name n (toOP_TYPE ot) r
-          _ -> predToSSymbol sig $ Qual_pred_name n
-               (toPRED_TYPE $ profileToPredType pr) r
+          Just ot -> opIdToSSymbol sig n ot
+          _ -> predIdToSSymbol sig n $ profileToPredType pr
     , SList $ map varToSSymbol vs
     , s ]
