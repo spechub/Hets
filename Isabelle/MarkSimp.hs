@@ -53,8 +53,8 @@ markSimpSen f s = case s of
 
 isSimpRuleSen :: Sentence -> Bool
 isSimpRuleSen sen = case sen of
-    RecDef {} -> False
-    _ -> isCondEq $ senTerm sen
+    Sentence {metaTerm = Term t} -> isCondEq t
+    _ -> False
 
 isSimplAppl :: Term -> Bool
 isSimplAppl trm = case trm of
