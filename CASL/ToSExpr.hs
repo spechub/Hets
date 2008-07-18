@@ -45,12 +45,15 @@ opToSSymbol sign o =  case o of
             Nothing -> error "opToSSymbol3"
             Just n -> idToSSymbol (n + 1) i
 
+sortToSSymbol :: Id -> SExpr
+sortToSSymbol = idToSSymbol 0
+
 varToSSymbol :: Token -> SExpr
 varToSSymbol = SSymbol . transToken
 
 varDeclToSExpr :: (VAR, SORT) -> SExpr
 varDeclToSExpr (v, s) =
-  SList [SSymbol "vardecl-indet", varToSSymbol v, idToSSymbol 0 s]
+  SList [SSymbol "vardecl-indet", varToSSymbol v, sortToSSymbol s]
 
 sfail :: String -> Range -> Result a
 sfail s r = fatal_error ("unexpected " ++ s) r
@@ -99,7 +102,13 @@ sRec withQuant sign mf = Record
       return $ SList [SSymbol "eq", t1, t2]
     , foldMembership = \ _ _ _ r -> sfail "Membership" r
     , foldMixfix_formula = \ t _ -> sfail "Mixfix_formula" $ getRange t
-    , foldSort_gen_ax = \ _ _ _ -> sfail "Sort_gen_ax" nullRange
+    , foldSort_gen_ax = \ _ cs b ->
+      let (srts, ops, _) = recover_Sort_gen_ax cs in
+      return $ SList $ SSymbol ((if b then "freely-" else "") ++ "generated")
+        : (case srts of
+            [s] -> sortToSSymbol s
+            _ -> SList $ map sortToSSymbol srts)
+        : map (opToSSymbol sign) ops
     , foldExtFORMULA = \ _ f -> mf f
     , foldSimpleId = \ _ t -> sfail "Simple_id" $ tokPos t
     , foldQual_var = \ _ v _ _ ->

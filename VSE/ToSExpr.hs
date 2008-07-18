@@ -28,7 +28,10 @@ toSExpr :: Sign f Procs -> Sentence -> Result SExpr
 toSExpr sig s = do
   ns <- sentenceToSExpr sig s
   return $ case s of
-    ExtFORMULA (Ranged (Defprocs _) _) -> ns
+    ExtFORMULA (Ranged (Defprocs _) _) ->
+        SList [SSymbol "defprocs-sentence", ns]
+    Sort_gen_ax _ _ ->
+        SList [SSymbol "generatedness-sentence", ns]
     _ -> SList [SSymbol "formula-sentence", ns]
 
 sentenceToSExpr :: Sign f Procs -> Sentence -> Result SExpr
@@ -47,7 +50,7 @@ vseFormsToSExpr sig vf = case vf of
          Diamond -> "diamond", sp, ns]
   Defprocs ds -> do
     nds <- mapM (defprocToSExpr sig) ds
-    return $ SList $ SSymbol "defprocs-sentence" : nds
+    return $ SList $ SSymbol "defprocs" : nds
 
 vDeclToSExpr :: Sign f Procs -> VarDecl -> Result SExpr
 vDeclToSExpr sig (VarDecl v s m _) =
