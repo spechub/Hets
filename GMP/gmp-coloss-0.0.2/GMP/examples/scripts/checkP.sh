@@ -4,5 +4,5 @@
 for i in ../probabilistic/*
 do 
     echo "~~~~~~processing $i"
-    ./gnutime -f "Running Time (real): %e" ./timeout 600 ../../main 5 $i
+    ./gnutime -f "Running Time (real): %e" ./timeout 600 ../../main 5 -p $i
 done

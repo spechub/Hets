@@ -4,5 +4,5 @@
 for i in ../coalition/*
 do
     echo "~~~~~~processing $i"
-    ./gnutime -f "Running Time (real): %e" ./timeout 600 ../../main 3 $i
+    ./gnutime -f "Running Time (real): %e" ./timeout 600 ../../main 3 -p $i
 done
