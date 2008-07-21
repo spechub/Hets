@@ -304,7 +304,7 @@ minDLForm sign form =
                                  else ds
                                 amigDs ts =
                                  [Diag Error
-                                  ("Ambigous types found for\n    pred '"++
+                                  ("Ambiguous types found for\n    pred '"++
                                    showDoc pn "' in cardinalty "++
                                    "constraint: (showing only two of them)\n"++
                                    "    '"++ showDoc (head ts) "', '"++

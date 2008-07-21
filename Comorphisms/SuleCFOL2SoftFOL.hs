@@ -291,7 +291,7 @@ disSPOId cType sid ty idSet
                            then if nres' == res
                                 then error ("SuleCFOL2SoftFOL: "
                                             ++ "cannot calculate"
-                                            ++ " unambigous id for "
+                                            ++ " unambiguous id for "
                                             ++ show sid ++ " with type "
                                             ++ show ty
                                             ++ " and nres = " ++ nres
