@@ -472,7 +472,6 @@ leqClasses eq = map Set.toList . Rel.partSet eq
 combine      :: [[a]] -> [[a]]
 combine []    = [[]]
 combine (x:l) = concatMap ((`map` combine l) . (:)) x
--- a better name would be "combine"
 
 cmpSubsort :: Sign f e -> POrder SORT
 cmpSubsort sign s1 s2 =
