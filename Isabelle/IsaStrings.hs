@@ -168,7 +168,8 @@ mainS :: IsaSets
 mainS =
   IsaSets {
   types =  mkIsaSet ["bool Int"],
-  consts = mkIsaSet ["inject n [__] [__/__] __[__/__] {__} >= > /",
+  consts = mkIsaSet ["2 3 4 5 6 7 8 9",
+  "inject n [__] [__/__] __[__/__] {__} >= > /",
   "!   !!   #   %   &   (   ()   (]   (|   (}   )   *   +   ++   ,",
   "-   -->   -`   .   ..   ...   ..}   /   //   0   1   :   ::   :=   ;   <",
   "<*>   <*lex*>   <+>   <=   =   ==   ==>   =>   ?   ?!   @   ALL   BIT",
