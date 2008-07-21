@@ -186,7 +186,7 @@ renameOpSymbols graph opsList morMap sigmaRel phiSRel = let
 
 -- this method assigns names to operation symbols in the colimit,
 -- such that no new overloading is introduced between symbols originating
--- from the same sigature
+-- from the same signature
 -- and names are kept as similar with the original ones as possible
 -- i.e. if in a signature two symbols have the same name but not overloaded
 -- and their images in the colimit are not in the overloading relation
