@@ -151,9 +151,22 @@ comorphismList = Map.elems $ comorphisms logicGraph
 
 inclusionList :: [AnyComorphism]
 inclusionList =
-    filter (\ (Comorphism cid) -> isInclusionComorphism cid) normalList ++
-           [fromJust $ compComorphism (Comorphism DL2CASL_DL)
-            (Comorphism CASL_DL2CASL)]
+    filter (\ (Comorphism cid) -> isInclusionComorphism cid) normalList
+
+addComps :: Map.Map (String, String) AnyComorphism
+         -> Map.Map (String, String) AnyComorphism
+addComps cm = Map.unions
+   $ cm : map (\ ((l1, l2), c1) ->
+         Map.foldWithKey (\ (l3, l4) c2 m -> if l3 == l2 then
+              case compComorphism c1 c2 of
+                Just c3 -> Map.insert (l1, l4) c3 m
+                _ -> m
+              else m) (Map.empty) cm) (Map.toList cm)
+
+addCompsN :: Map.Map (String, String) AnyComorphism
+          -> Map.Map (String, String) AnyComorphism
+addCompsN m = let n = addComps m in
+    if Map.keys m == Map.keys n then m else addCompsN n
 
 {- | Unions of logics, represented as pairs of inclusions.
      Entries only necessary for non-trivial unions
@@ -178,7 +191,8 @@ logicGraph = emptyLogicGraph
              [Logic $ sourceLogic cid, Logic $ targetLogic cid])
            normalList
     , comorphisms = Map.fromList $ map addComorphismName normalList
-    , inclusions = Map.fromList $ map addInclusionNames inclusionList
+    , inclusions = addCompsN $ Map.fromList
+        $ map addInclusionNames inclusionList
     , unions = Map.fromList $ map addUnionNames unionList
     , morphisms = Map.fromList $ map addMorphismName morphismList
     , modifications = Map.fromList $ map addModificationName modificationList
