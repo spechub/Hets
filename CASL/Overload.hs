@@ -31,6 +31,7 @@ module CASL.Overload
   , have_common_supersorts
   , keepMinimals1
   , keepMinimals
+  , leqClasses
   ) where
 
 import CASL.Sign
@@ -233,8 +234,8 @@ getPairs :: [[TERM f]] -> [(TERM f, TERM f)]
 getPairs cs = [ (t1, t2) | [t1,t2] <- combine cs ]
 
 minimize_eq :: Sign f e -> [(TERM f, TERM f)] -> [(TERM f, TERM f)]
-minimize_eq s l = keepMinimals s (sortOfTerm . snd) $
-                  keepMinimals s (sortOfTerm . fst) l
+minimize_eq s = keepMinimals s (sortOfTerm . snd)
+  . keepMinimals s (sortOfTerm . fst)
 
 {-----------------------------------------------------------
     - Minimal expansion of a term -
@@ -318,7 +319,7 @@ minExpTerm_appl mef sign ide mty args pos = do
         (Application (Op_name ide) args pos) qualTerms pos
 
 qualifyOps :: Id -> Range -> [[(OpType, [TERM f])]] -> [[TERM f]]
-qualifyOps ide pos = map $ map $ qualify_op ide pos
+qualifyOps ide = map . map . qualify_op ide
 
     -- qualify a single op, given by its signature and its arguments
 qualify_op :: Id -> Range -> (OpType, [TERM f]) -> TERM f
@@ -412,7 +413,7 @@ common_supersorts b sign s1 s2 =
 
 -- | True if both sorts have a common supersort
 have_common_supersorts :: Bool -> Sign f e -> SORT -> SORT -> Bool
-have_common_supersorts b s s1 s2 = not $ null $ common_supersorts b s s1 s2
+have_common_supersorts b s s1 = not . null . common_supersorts b s s1
 
 -- True if both sorts have a common subsort
 have_common_subsorts :: Sign f e -> SORT -> SORT -> Bool
@@ -432,8 +433,7 @@ minimalSupers :: Sign f e -> SORT -> SORT -> [SORT]
 minimalSupers = minimalSupers1 True
 
 minimalSupers1 :: Bool -> Sign f e -> SORT -> SORT -> [SORT]
-minimalSupers1 b s s1 s2 =
-    keepMinimals1 b s id $ common_supersorts b s s1 s2
+minimalSupers1 b s s1 = keepMinimals1 b s id . common_supersorts b s s1
 
 -- | maximal common subsorts of the two input sorts
 maximalSubs :: Sign f e -> SORT -> SORT -> [SORT]
@@ -444,8 +444,7 @@ keepMinimals :: Sign f e -> (a -> SORT) -> [a] -> [a]
 keepMinimals = keepMinimals1 True
 
 keepMinimals1 :: Bool -> Sign f e -> (a -> SORT) -> [a] -> [a]
-keepMinimals1 b s f l = let lt x y = geq_SORT b s (f y) (f x) in
-    keepMins lt l
+keepMinimals1 b s f = let lt x y = geq_SORT b s (f y) (f x) in keepMins lt
 
 -- | True if both ops are in the overloading relation
 leqF :: Sign f e -> OpType -> OpType -> Bool
@@ -461,12 +460,12 @@ leqP sign p1 p2 = length (predArgs p1) == length (predArgs p2)
                   && leqP' sign p1 p2
 
 leqP' :: Sign f e -> PredType -> PredType -> Bool
-leqP' sign p1 p2 =
-    and $ zipWith (have_common_subsorts sign) (predArgs p1) $ predArgs p2
+leqP' sign p1 =
+    and . zipWith (have_common_subsorts sign) (predArgs p1) . predArgs
 
 -- | Divide a Set (List) into equivalence classes w.r.t. eq
 leqClasses :: Ord a => (a -> a -> Bool) -> Set.Set a -> [[a]]
-leqClasses eq os = map Set.toList $ Rel.partSet eq os
+leqClasses eq = map Set.toList . Rel.partSet eq
 
 -- | Transform a list [l1,l2, ... ln] to (in sloppy notation)
 -- [[x1,x2, ... ,xn] | x1<-l1, x2<-l2, ... xn<-ln]

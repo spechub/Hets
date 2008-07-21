@@ -41,23 +41,21 @@ signColimit graph extColimit = let
  (setSort, funSort) = renameSorts (setSort0, funSort0)
  sigmaSort = (emptySign $ error "err"){sortSet=setSort}
  phiSort = Map.fromList $
-  map(\(node, s)-> (node, (embedMorphism (error "err") s sigmaSort)
+    map(\ (node, s)-> (node, (embedMorphism (error "err") s sigmaSort)
                           {sort_map = (Map.!) funSort node})) $
-  labNodes graph
+    labNodes graph
  relS = computeSubsorts graph funSort
  sigmaRel = sigmaSort{sortRel = relS}
- phiRel = Map.fromList $ map (\(node, phi) -> (node, phi{mtarget = sigmaRel}))$
-          Map.toList phiSort
+ phiRel = Map.map (\ phi -> phi{mtarget = sigmaRel}) phiSort
  (sigmaOp, phiOp) = computeColimitOp graph sigmaRel phiRel
  (sigmaPred, phiPred) =  computeColimitPred graph sigmaOp phiOp
  (sigAssoc, phiAssoc) = colimitAssoc graph sigmaPred phiPred
- extGraph = emap (\(i, phi) -> (i, extended_map phi))$ nmap extendedInfo graph
+ extGraph = emap (\(i, phi) -> (i, extended_map phi)) $ nmap extendedInfo graph
  (extInfo, extMaps) = extColimit extGraph
  sigmaExt = sigAssoc{extendedInfo = extInfo}
- phiExt = Map.fromList $
-  map (\(node, phi) -> (node, phi{mtarget = sigmaExt,
-                                  extended_map = (Map.!) extMaps node})) $
-  Map.toList phiAssoc
+ phiExt = Map.mapWithKey
+    (\ node phi -> phi{mtarget = sigmaExt, extended_map = (Map.!) extMaps node})
+    phiAssoc
  in (sigmaExt, phiExt)
 
 -- method for adding the number as suffix of the id it pairs
@@ -132,8 +130,7 @@ computeColimitOp graph sigmaRel phiSRel = let
  oEdges = Map.fromList $ zip (nodes graph) $ map (outdeg graph) $ nodes graph
  clsFun = solveOverloading graph (markEquivClasses graph) oEdges
     -- mark the equivalence classes
- opSetsList = nonEmptyOpSets graph $ Map.fromList $
-              map (\(n, phi) -> (n, sort_map phi)) $ Map.toList phiSRel
+ opSetsList = nonEmptyOpSets graph $ Map.map sort_map phiSRel
     -- compute the list of OpTypes which will be non-empty in the colimit
  (opsList, morMap) = loopOpSets graph clsFun sigmaRel phiSRel opSetsList []
                      (Map.fromList $ zip (nodes graph) (repeat Map.empty))
@@ -165,27 +162,26 @@ renameOpSymbols :: Gr (Sign f e)(Int,Morphism f e m)
 renameOpSymbols graph opsList morMap sigmaRel phiSRel = let
   (partList, partMap) =  tempNames opsList morMap [] $
                          Map.fromList $ zip (nodes graph) (repeat Map.empty)
-  lengthDesc (_,s1) (_,s2) =
-     case compare (length $ Set.toList s1)(length $ Set.toList s2) of
+  lengthDesc (_, s1) (_, s2) =
+     case compare (Set.size s1) $ Set.size s2 of
        LT -> GT
        GT -> LT
        EQ -> EQ
   ordList = sortBy lengthDesc partList
   (rezList, rezMap) = finalNames [] ordList partMap sigmaRel phiSRel
   sigmaOp = sigmaRel{opMap = Map.fromList $
-    map (\(idN,set)->
-    (idN, Set.fromList $ map arity $ Set.toList$ foldl Set.union Set.empty set)
-        ) rezList}
+    map (\ (idN, set)->
+    (idN, Set.map arity $ Set.unions set)) rezList}
   phiOp = let
-    getKeys node = Map.keys$ (Map.!) rezMap node
-    nonId ((id1, optype),(id2, fkind)) = (id1/=id2) || (opKind optype /= fkind)
+    getKeys node = Map.keys $ (Map.!) rezMap node
+    nonId ((id1, optype), (id2, fkind)) = id1 /= id2 || opKind optype /= fkind
    in Map.fromList $ map (\n -> (n, ((Map.!) phiSRel n)
-      {fun_map = Map.fromList$
-                 map (\((i1,opT),(i2,k)) -> ((i1,opT{opKind=Partial}),(i2,k)))
+      {fun_map = Map.fromList $
+         map (\ ((i1, opT), (i2, k)) -> ((i1, opT{opKind=Partial}), (i2, k)))
       $ filter nonId $
       zip (getKeys n)
-      (map(\x -> (symbolName x, opKind $ arity $ opSymbolLabel x))
-      $ map ((Map.!)$(Map.!)rezMap n) $ getKeys n)})) $ nodes graph
+      (map(\ x -> (symbolName x, opKind $ arity $ opSymbolLabel x))
+      $ map ((Map.!) $ (Map.!) rezMap n) $ getKeys n)})) $ nodes graph
  in (sigmaOp, phiOp)
 
 -- this method assigns names to operation symbols in the colimit,
@@ -214,7 +210,7 @@ finalNames rezList opList opsMap1 sigmaRel phiSRel = let
         $ filter (\x -> (opsMap Map.! node)Map.! x `elem`
         (map (\y -> ColimitOpSymbWithLabel{symbolName = id0, opSymbolLabel = y})
         $ Set.toList set))
-        $ Map.keys$ (Map.!) opsMap node)
+        $ Map.keys $ (Map.!) opsMap node)
         (opsMap Map.! node)) ) $ Map.keys opsMap
       in updateMap opsMap2 id0 pairs
   in  case opList of
@@ -225,10 +221,10 @@ finalNames rezList opList opsMap1 sigmaRel phiSRel = let
        opsMap2 = updateMap opsMap1 id0 [(id0,set)]
       in finalNames rezList1 ops opsMap2 sigmaRel phiSRel
      (_, setList):_ -> let
-       opSet =  Set.fromList $ map arity $ Set.toList set
-       getOpTypes oSet = Set.fromList $ map arity $ Set.toList oSet
+       opSet =  Set.map arity set
+       getOpTypes oSet = Set.map arity oSet
        opSetList = map getOpTypes setList
-       oldFunSymbols = foldl Set.union Set.empty opSetList
+       oldFunSymbols = Set.unions opSetList
        funSymbols = Set.union opSet oldFunSymbols
        sigmaId = sigmaRel{opMap = Map.fromList [(id0,funSymbols)]}
        leqFSets = Set.fromList $ map Set.fromList $
@@ -241,19 +237,19 @@ finalNames rezList opList opsMap1 sigmaRel phiSRel = let
        in finalNames rezList1 ops opsMap2 sigmaRel phiSRel
          else let
      -- overloading, remove the sets which create conflicts and assign new names
-        opSets1 = filter (\s -> Set.intersection opSet s /= Set.empty)$
+        opSets1 = filter (not . Set.null . Set.intersection opSet) $
                   Set.toList leqFSets
-        cSets = filter (\s -> Set.intersection
-          (foldl Set.union Set.empty opSets1)
-          (Set.fromList $ map arity $ Set.toList s)/= Set.empty) setList
+        cSets = filter (not . Set.null . Set.intersection
+          (Set.unions opSets1) . Set.map arity) setList
         setList1 = Set.difference (Set.fromList setList) (Set.fromList cSets)
-        rezList1 = if setList1 /= Set.empty then
-           filter (\(x,_) -> x /= id0) rezList ++ [(id0, Set.toList setList1)]
-                   else filter (\(x,_) -> x /= id0) rezList
-        genNewName set0 idN = if setList1 == Set.empty then idN
+        rezList1' = filter (\ (x, _) -> x /= id0) rezList
+        rezList1 = if not $ Set.null setList1 then
+            rezList1' ++ [(id0, Set.toList setList1)]
+                   else rezList1'
+        genNewName set0 idN = if Set.null setList1 then idN
                                   --try to keep old name
           else let
-           nodeList = foldl (++) []$map originNodes $ Set.toList set0
+           nodeList = concatMap originNodes $ Set.toList set0
            nodeNr = head $ head $ sort $ group $ sort nodeList
           in appendNumber idN nodeNr --stringToId $ (show idN) ++ (show nodeNr)
         generateNames oldId nameList csetsList = case csetsList of
@@ -312,7 +308,7 @@ loopGroups splitOps  morMap rezList morMap1 =
       nodeList = Map.keys morMap
       keys node = filter (isMappedTo opGrp morMap node) $
                   Map.keys $ (Map.!) morMap node
-      eList = foldl (++) [] $ map keys nodeList
+      eList = concatMap keys nodeList
       idList = nub $ map fst eList
       sndCompDesc (_,x)(_, y) = case compare x y of
           LT -> GT
@@ -322,7 +318,7 @@ loopGroups splitOps  morMap rezList morMap1 =
                map (\x -> length $ filter (\(y,_) -> y == x) eList ) idList
       opTypeSet = Set.fromList $ map opSymbolLabel opGrp
       fnode node = let
-       opKeys = filter (\x -> x `elem` eList) $ Map.keys $ (Map.!) morMap node
+       opKeys = filter (`elem` eList) $ Map.keys $ (Map.!) morMap node
        newVals = zip opKeys $ map (\x -> x{symbolName =idName}) $
                  map ((Map.!)((Map.!)morMap node)) opKeys
        in Map.union (Map.fromList newVals) ((Map.!) morMap1 node)
@@ -331,12 +327,15 @@ loopGroups splitOps  morMap rezList morMap1 =
        in loopGroups ops morMap ((idName, opTypeSet):rezList) morMap2
 
 
-opSymbols :: Sign f e -> [(Id, OpType)]
+opSymbolsOf :: OpMap -> [(Id, OpType)]
 -- returns the list of all operation symbols in a signature,
 -- as pairs (Id,OpType)
-opSymbols sigma =  foldl (++) [] $
-                map (\(idX, opTSet) -> map (\y -> (idX, y)) $
-                     Set.toList opTSet) $ Map.toList $ opMap sigma
+opSymbolsOf = concatMap
+  (\ (idX, opTSet) -> map (\y -> (idX, y)) $ Set.toList opTSet)
+  . Map.toList
+
+opSymbols :: Sign f e -> [(Id, OpType)]
+opSymbols = opSymbolsOf . opMap
 
 loopOpSets :: Gr (Sign f e)(Int, Morphism f e m)
            -> Map.Map Node (Map.Map (Id, OpType) String)
@@ -388,9 +387,8 @@ labelColimitElements funSort clsFun setN funN = let
      mappedElems = [(idX, optype) | node<- Map.keys funN,
                    (idX, optype) <- Map.keys $ (Map.!) funN node,
                    (Map.!)((Map.!) funN node) (idX, optype) `elem` opResList]
-     allPartial optypeList = let
-       isTotal optype = opKind optype == Total
-      in if filter isTotal optypeList == [] then Partial else Total
+     allPartial optypeList =
+       if all ((== Partial) . opKind) optypeList then Partial else Total
      fKind = allPartial $ map snd  mappedElems
      opTypeRes = (mapOpType ((Map.!)funSort nH) optypeH){opKind = fKind}
      res = ColimitOpSymbWithLabel{
@@ -429,8 +427,7 @@ buildOpGraphNodes graph graph0 funSort oT lNodeList = case lNodeList of
      arityList = preImageWord ((Map.!)funSort node) profile
      opsWithArity sigma1 ar = filter (\x -> getOpArityName x == ar) $
                               opSymbols sigma1
-     symbSet = Set.fromList $ foldl (++) [] $
-               map (opsWithArity sigma) arityList
+     symbSet = Set.fromList $ concatMap (opsWithArity sigma) arityList
      graph1 = insNode (node, symbSet) graph0
     in buildOpGraphNodes graph graph1 funSort oT lnodes
 
@@ -447,10 +444,10 @@ buildOpGraphEdges graph0 edgeList = case edgeList of
       in buildOpGraphEdges  (insEdge (sn,tn,(nr,opsymMap)) graph0) edgeL
 
 getOpArityName :: (Id, OpType) -> [SORT]
-getOpArityName (_, optype) = (opRes optype):(opArgs optype)
+getOpArityName = getArityName . snd
 
 getArityName :: OpType -> [SORT]
-getArityName optype = (opRes optype):(opArgs optype)
+getArityName optype = opRes optype : opArgs optype
 
 getEquivClassesNames :: Map.Map (Id, OpType) String -> [String]
 -- returns all the equivalence classes corresponding to a signature,
@@ -464,16 +461,11 @@ markEquivClasses graph = Map.fromList $
     nameClasses n (Map.keys $ opMap s)(equivFClasses s) Map.empty)) $
  labNodes graph
 
-leqClasses :: Ord a => (a -> a -> Bool) -> Set.Set a -> [[a]]
---partition a set into classes according to a parameter relation eq
-leqClasses eq os = map Set.toList $ Rel.partSet eq os
-
 equivFClasses :: Sign f e -> Map.Map Id [[OpType]]
 -- return all the equivalence classes in a signature
 -- as a function from id to a list of lists of idtype,
 -- each member of the list is an equivalence class
-equivFClasses sig = Map.fromList $
- map (\(idN, set) -> (idN, leqClasses (leqF sig) set)) $ Map.toList $ opMap sig
+equivFClasses sig = Map.map (leqClasses $ leqF sig) $ opMap sig
 
 nameClasses :: Int -> [Id]-> Map.Map Id [[OpType]] -> Map.Map (Id,OpType) String
                -> Map.Map (Id, OpType) String
@@ -482,11 +474,11 @@ nameClasses noNode idList clsFun nameFun = case idList of
  [] -> nameFun
  idN:xs -> nameClasses noNode xs clsFun $
           Map.union nameFun
-                    (nameId (noNode, 0) idN ((Map.!)clsFun idN) Map.empty)
+                    (nameId (noNode, 0) idN ((Map.!) clsFun idN) Map.empty)
 
 showP :: OpType -> String
-showP optype = (foldl (++) "" $ map show $ opArgs optype) ++ "->"++
-               (show $ opRes optype)
+showP optype =
+  intercalate "*" (map show $ opArgs optype) ++ "->"++  show (opRes optype)
 
 nameId :: (Int, Int) -> Id -> [[OpType]] -> Map.Map (Id, OpType) String ->
           Map.Map (Id, OpType) String
@@ -496,7 +488,7 @@ nameId :: (Int, Int) -> Id -> [[OpType]] -> Map.Map (Id, OpType) String ->
 nameId (x1,y1) idN clsList f = case clsList of
   [] -> f
   l:ls -> nameId (x1,y1+1) idN ls $ Map.union f $
-          Map.fromList$ map (\optype -> ((idN,optype),
+          Map.fromList $ map (\optype -> ((idN,optype),
          show idN ++ "_" ++ showP (head l)++ "_" ++ show x1 ++ "_"++show y1))l
 
 
@@ -538,8 +530,8 @@ loopSuccs clsFun succs node = case succs of
     targetSyms = Map.keys $ (Map.!) clsFun tn
     sameClass y z = (Map.!)((Map.!) clsFun tn) y == (Map.!)((Map.!) clsFun tn) z
     fNode = Map.union
-            (Map.fromList $ foldl (++) [] $
-            map (\x -> let y = applyMor phi x in
+            (Map.fromList $ concatMap
+            (\ x -> let y = applyMor phi x in
                   zip (filter (sameClass y) targetSyms)
                       (repeat $(Map.!)((Map.!) clsFun node) x)) opSyms)
             $ (Map.!) clsFun tn
@@ -576,7 +568,7 @@ renameViaMorphism graph (sn, tn, phi) equivClassesList clsFun =
    cls:xs -> let
      preIm = preImageCls  phi ((Map.!) clsFun sn) ((Map.!) clsFun tn) cls
      clsFun1 = Map.insert sn
-               (Map.union (Map.fromList$ map (\x -> (x, cls)) preIm) $
+               (Map.union (Map.fromList $ map (\x -> (x, cls)) preIm) $
                            (Map.!) clsFun sn)
                clsFun
     in renameViaMorphism graph (sn, tn, phi) xs clsFun1
@@ -607,7 +599,7 @@ orderByOutgoingEdges list graph oEdges =
 
 joinCls :: [[String]] -> Map.Map String String
 joinCls classesF = let
-  clsNames = Map.fromList $ map (\x -> (x,x)) $ nub $ foldl (++) [] classesF
+  clsNames = Map.fromList $ map (\x -> (x,x)) $ nub $ concat classesF
   relCls = filter (\list -> length list > 1) classesF
   joinClasses clsNames0 relCls0 = case relCls0 of
     [] -> clsNames0
@@ -616,15 +608,14 @@ joinCls classesF = let
                     lists
  in joinClasses clsNames relCls
 
-nonEmptyOpSets :: Gr (Sign f e)(Int, Morphism f e m) ->
-                Map.Map Node Sort_map ->
-                [OpType]
+nonEmptyOpSets :: Gr (Sign f e)(Int, Morphism f e m)
+               -> Map.Map Node Sort_map -> [OpType]
 nonEmptyOpSets graph funSort = let
   nodeList = labNodes graph
   opSets fSort (node, sigma) = map (mapOpType ((Map.!) fSort node)) $
-       Set.toList $ foldl Set.union Set.empty $ Map.elems $ opMap sigma
+       Set.toList $ Set.unions $ Map.elems $ opMap sigma
  in Set.toList $ Set.fromList $
-    map (makeTotal Total) $ foldl (++) [] $  map (opSets funSort) nodeList
+    map (makeTotal Total) $ concatMap (opSets funSort) nodeList
 
 productList :: [[a]] -> [[a]] -> [[a]]
 productList l1 l2 = [x++y | x<-l1, y <-l2]
@@ -648,8 +639,7 @@ computeColimitPred graph sigmaOp phiOp = let
   oEdges = Map.fromList $ zip (nodes graph) $ map (outdeg graph) (nodes graph)
   clsFun = solvePOverloading graph (markEquivPClasses graph) oEdges
            -- mark the equivalence classes and join them
-  predSetsList = nonEmptyPredSets graph $ Map.fromList $
-                 map (\(n,phi) -> (n, sort_map phi)) $  Map.toList phiOp
+  predSetsList = nonEmptyPredSets graph $ Map.map sort_map phiOp
   (predList, morMap) = loopPredSets graph clsFun sigmaOp phiOp predSetsList []
                        (Map.fromList $ zip (nodes graph) (repeat Map.empty))
   (sigmaPred, phiPred) = renamePredSymbols graph predList morMap sigmaOp phiOp
@@ -671,8 +661,7 @@ equivPClasses :: Sign f e -> Map.Map Id [[PredType]]
 -- return all the equivalence classes in a signature
 -- as a function from id to a list of lists of idtype,
 -- each member of the list is an equivalence class
-equivPClasses sigma = Map.fromList $
-  map (\(i, set)->(i, leqClasses (leqP sigma) set)) $ Map.toList $ predMap sigma
+equivPClasses sigma = Map.map (leqClasses $ leqP sigma) $ predMap sigma
 
 namePClasses :: Int -> [Id]-> Map.Map Id [[PredType]] ->
    Map.Map (Id,PredType) String -> Map.Map (Id, PredType) String
@@ -683,7 +672,7 @@ namePClasses noNode idList clsFun nameFun = case idList of
           Map.union nameFun (namePId (noNode, 0) i (clsFun Map.! i) Map.empty)
 
 showPred :: PredType -> String
-showPred predtype = foldl (++) "" $ map show $ predArgs predtype
+showPred = intercalate "*" . map show . predArgs
 
 namePId :: (Int, Int) -> Id -> [[PredType]] -> Map.Map (Id, PredType) String ->
            Map.Map (Id, PredType) String
@@ -733,8 +722,8 @@ loopSuccsP clsFun succs node = case succs of
      targetSyms = Map.keys $ (Map.!) clsFun tn
      sameClass y z = (Map.!)((Map.!) clsFun tn) y ==
                      (Map.!)((Map.!) clsFun tn) z
-     fNode = Map.union (Map.fromList $ foldl (++) [] $
-         map (\x -> let y = applyMorP phi x in
+     fNode = Map.union (Map.fromList $ concatMap
+             (\ x -> let y = applyMorP phi x in
               zip (filter (sameClass y) targetSyms)
                   (repeat $(Map.!)((Map.!) clsFun node) x))
          predSyms) ((Map.!) clsFun tn)
@@ -794,8 +783,8 @@ nonEmptyPredSets :: Gr (Sign f e)(Int, Morphism f e m) ->
 nonEmptyPredSets graph funSort = let
   nodeList = labNodes graph
   predSets (node, sigma) = map (mapPredType ((Map.!) funSort node)) $
-         Set.toList $ foldl Set.union Set.empty $ Map.elems $ predMap sigma
- in nub $ foldl (++) [] $  map predSets  nodeList
+         Set.toList $ Set.unions $ Map.elems $ predMap sigma
+ in nub $ concatMap predSets nodeList
 
 data PredSymbolLabel = PredSymbolLabel{
    arityP :: PredType,
@@ -816,16 +805,15 @@ renamePredSymbols :: Gr (Sign f e)(Int,Morphism f e m) ->
 renamePredSymbols graph predsList morMap sigmaRel phiSRel = let
   (partList, partMap) = tempPNames predsList morMap [] $ Map.fromList $
                         zip (nodes graph) (repeat Map.empty)
-  lengthDesc (_,s1) (_,s2) =
-     case compare (length $ Set.toList s1)(length $ Set.toList s2) of
+  lengthDesc (_, s1) (_, s2) =
+     case compare (Set.size s1) $ Set.size s2 of
        LT -> GT
        GT -> LT
        EQ -> EQ
   ordList = sortBy lengthDesc partList
   (rezList, rezMap) = finalPNames [] ordList partMap sigmaRel phiSRel
   sigmaPred = sigmaRel{predMap = Map.fromList $ map (\(idN, set) ->
-              (idN, Set.fromList $ map arityP $ Set.toList$
-                    foldl Set.union Set.empty set)
+              (idN, Set.map arityP $ Set.unions set)
               ) rezList }
   phiPred = let
      getKeys node = Map.keys$ (Map.!) rezMap node
@@ -860,7 +848,7 @@ finalPNames rezList predList predsMap1 sigmaRel phiSRel = let
           $ filter (\x -> (predsMap Map.! node)Map.! x `elem`
              (map (\y -> ColimitPredSymbWithLabel
               {symbolNameP = id0, predSymbolLabel = y}) $ Set.toList set))
-           $ Map.keys$ (Map.!) predsMap node) (predsMap Map.! node))) $
+           $ Map.keys $ (Map.!) predsMap node) (predsMap Map.! node))) $
            Map.keys predsMap
       in updateMap predsMap2 id0 pairs
  in case predList of
@@ -871,10 +859,10 @@ finalPNames rezList predList predsMap1 sigmaRel phiSRel = let
         predsMap2 = updateMap predsMap1 id0 [(id0,set)]
        in finalPNames rezList1 preds predsMap2 sigmaRel phiSRel
      (_, setList):_ -> let
-        predSet =  Set.fromList $ map arityP $ Set.toList set
-        getPredTypes pSet = Set.fromList $ map arityP $ Set.toList pSet
+        predSet =  Set.map arityP set
+        getPredTypes pSet = Set.map arityP pSet
         predSetList = map getPredTypes setList
-        funSymbols = Set.union predSet $ foldl Set.union Set.empty predSetList
+        funSymbols = Set.union predSet $ Set.unions predSetList
         sigmaId = sigmaRel{predMap = Map.fromList [(id0,funSymbols)]}
         leqPSets = Set.fromList $ map Set.fromList $
                    leqClasses (leqP sigmaId) funSymbols
@@ -886,20 +874,20 @@ finalPNames rezList predList predsMap1 sigmaRel phiSRel = let
           in finalPNames rezList1 preds predsMap2 sigmaRel phiSRel
           else let
      -- overloading, remove the sets which create conflicts and assign new names
-           predSets1 = filter (\s -> Set.intersection predSet s /= Set.empty)$
+           predSets1 = filter (not . Set.null . Set.intersection predSet) $
                        Set.toList leqPSets
-           cSets = filter (\s -> Set.intersection
-                                 (foldl Set.union Set.empty predSets1)
-                                 (Set.fromList $ map arityP $ Set.toList s)/=
-                                 Set.empty) setList
+           cSets = filter (not . Set.null . Set.intersection
+                                 (Set.unions predSets1) . Set.map arityP)
+                   setList
            setList1 = Set.difference (Set.fromList setList) (Set.fromList cSets)
-           rezList1 = if setList1 /= Set.empty then
-             filter (\(x,_) -> x /= id0) rezList ++ [(id0, Set.toList setList1)]
-                      else filter (\(x,_) -> x /= id0) rezList
+           rezList1' = filter (\ (x, _) -> x /= id0) rezList
+           rezList1 = if not $ Set.null setList1 then
+              rezList1' ++ [(id0, Set.toList setList1)]
+                      else rezList1'
            genNewName set0 idN = if setList1 == Set.empty then idN
                                       --try to keep old name
               else let
-                nodeList = foldl (++) []$map originNodesP $ Set.toList set0
+                nodeList = concatMap originNodesP $ Set.toList set0
                 nodeNr = head $ head $ sort $ group $ sort nodeList
                in appendNumber idN nodeNr
            generateNames oldId nameList csetsList = case csetsList of
@@ -951,7 +939,7 @@ loopPGroups splitPreds  morMap rezList morMap1 = case splitPreds of
      nodeList = Map.keys morMap
      keys node = filter (isMappedTo predGrp morMap node) $
                  Map.keys $ (Map.!) morMap node
-     eList = foldl (++) [] $ map keys nodeList
+     eList = concatMap keys nodeList
      idList = nub $ map fst eList
      sndCompDesc (_,x)(_, y) = case compare x y of
        LT -> GT
@@ -971,9 +959,9 @@ loopPGroups splitPreds  morMap rezList morMap1 = case splitPreds of
     in loopPGroups preds morMap ((idName, predTypeSet):rezList) morMap2
 
 predSymbols :: Sign f e -> [(Id, PredType)]
-predSymbols sigma =  foldl (++) [] $
- map (\(idX, predTSet) -> map (\y -> (idX, y)) $ Set.toList predTSet) $
-  Map.toList $ predMap sigma
+predSymbols = concatMap
+  (\ (idX, predTSet) -> map (\ y -> (idX, y)) $ Set.toList predTSet)
+  .  Map.toList . predMap
 
 loopPredSets :: Gr (Sign f e)(Int, Morphism f e m)
            -> Map.Map Node (Map.Map (Id, PredType) String)
@@ -1055,8 +1043,8 @@ buildPredGraphNodes graph graph0 funSort cls lNodeList = case lNodeList of
      arityList = preImageWord ((Map.!)funSort node) clsName
      predsWithArity sigma1 ar = filter (\x -> getPredArityName x == ar) $
                                 predSymbols sigma1
-     graph1 = insNode (node, Set.fromList $ foldl (++) [] $
-                             map (predsWithArity sigma) arityList) graph0
+     graph1 = insNode (node, Set.fromList $ concatMap
+                             (predsWithArity sigma) arityList) graph0
     in buildPredGraphNodes graph graph1 funSort cls lnodes
 
 buildPredGraphEdges :: Gr (Set.Set (Id, PredType))(Int,EndoMap (Id, PredType))
@@ -1072,29 +1060,25 @@ buildPredGraphEdges graph0 edgeList = case edgeList of
       in buildPredGraphEdges (insEdge (sn, tn, (nr, predsymMap)) graph0) edgeL
 
 getPredArityName :: (Id, PredType) -> [SORT]
-getPredArityName (_, predtype) = predArgs predtype
+getPredArityName = getArityNameP . snd
 
 getArityNameP :: PredType -> [SORT]
 getArityNameP predtype = predArgs predtype
 
 -- associative operations
 
-assocSymbols :: Sign f e-> [(Id, OpType)]
-assocSymbols sigma = foldl (++) [] $
-   map (\(idX, opTSet) -> map (\y -> (idX, y)) $ Set.toList opTSet) $
-   Map.toList $ assocOps sigma
+assocSymbols :: Sign f e -> [(Id, OpType)]
+assocSymbols = opSymbolsOf . assocOps
 
 colimitAssoc :: Gr (Sign f e) (Int,Morphism f e m) -> Sign f e ->
    Map.Map Int (Morphism f e m) -> (Sign f e, Map.Map Int (Morphism f e m))
 colimitAssoc graph sig morMap =  let
-  assocOpList = nub $ foldl (++) [] $
-    map (\(node, sigma) -> map (applyMor ((Map.!)morMap node)) $
+  assocOpList = nub $ concatMap
+    (\ (node, sigma) -> map (applyMor ((Map.!)morMap node)) $
     assocSymbols sigma ) $ labNodes graph
   idList = nub $ map fst assocOpList
   sig1 = sig{assocOps = Map.fromList $
    map (\sb -> (sb,Set.fromList $ map snd $ filter (\(i,_) -> i==sb)
                                             assocOpList )) idList}
-  morMap1 = Map.fromList $ map (\( node, phi) -> (node, phi{mtarget = sig1})) $
-            Map.toList morMap
+  morMap1 = Map.map (\ phi -> phi{mtarget = sig1}) morMap
  in (sig1, morMap1)
-
