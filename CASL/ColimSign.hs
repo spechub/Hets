@@ -617,16 +617,10 @@ nonEmptyOpSets graph funSort = let
  in Set.toList $ Set.fromList $
     map (makeTotal Total) $ concatMap (opSets funSort) nodeList
 
-productList :: [[a]] -> [[a]] -> [[a]]
-productList l1 l2 = [x++y | x<-l1, y <-l2]
-
 preImageWord :: Sort_map -> [SORT] -> [[SORT]]
 preImageWord fs w = let
-  preImage f s = filter (\x -> (Map.!) f x == s) $ Map.keys f
-  lists l = case l of
-    [] -> []
-    x:xs -> [x]:(lists xs)
-   in foldl productList [[]] $ map lists $ map (preImage fs) w
+  preImage f s = Map.keys $ Map.filter (== s) f
+  in combine $ map (preImage fs) w
 
 {--CASL signatures colimit on predicate symbols
 almost identical with operation symbols,
