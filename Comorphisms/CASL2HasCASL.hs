@@ -91,7 +91,7 @@ fromPredType pt =
     let args = map toType $ CasS.predArgs pt
         p = getRange args
         arg = mkProductTypeWithRange args p
-    in simpleTypeScheme $ if null args then unitTypeWithRange p
+    in simpleTypeScheme $ if null args then mkLazyType $ unitTypeWithRange p
                           else predType p arg
 
 mapTheory :: (CasS.Sign f e, [Named (Cas.FORMULA f)])
