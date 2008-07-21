@@ -220,7 +220,7 @@ simpleTypeScheme t = TypeScheme [] t nullRange
    to the unit type -}
 predType :: Range -> Type -> Type
 predType r t = case t of
-    BracketType Parens [] _ -> unitTypeWithRange r
+    BracketType Parens [] _ -> mkLazyType $ unitTypeWithRange r
     _ -> mkFunArrTypeWithRange r t PFunArr $ unitTypeWithRange r
 
 -- | change the type of the scheme to a 'predType'
@@ -230,9 +230,10 @@ predTypeScheme r = mapTypeOfScheme $ predType r
 -- | check for and remove predicate arrow
 unPredType :: Type -> (Bool, Type)
 unPredType t = case getTypeAppl t of
-    (TypeName at _ 0, [ty, TypeName ut (ClassKind _) 0]) |
-         ut == unitTypeId && at == arrowId PFunArr -> (True, ty)
-    (TypeName ut (ClassKind _) 0, []) | ut == unitTypeId ->
+    (TypeName at _ 0, [ty, TypeName ut (ClassKind _) 0])
+        | ut == unitTypeId && at == arrowId PFunArr -> (True, ty)
+    (TypeName lt _ 0, [TypeName ut (ClassKind _) 0])
+        | ut == unitTypeId && lt == lazyTypeId ->
          (True, BracketType Parens [] nullRange) -- for printing only
     _ -> (False, t)
 
