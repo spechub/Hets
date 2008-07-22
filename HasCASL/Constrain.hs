@@ -184,7 +184,7 @@ shapeMgu te knownAtoms cs = let (atoms, sts) = span isAtomic cs in case sts of
                    Just _ -> shapeMgu te newKnowns $ (t1, ry2) : tl
                Just _ -> shapeMgu te newKnowns $ (ry1, t2) : tl
     _ -> if t1 == t2 then shapeMgu te newKnowns tl else
-         error ("shapeMgu2: " ++ showDoc t1 " < " ++ showDoc t2 "")
+         error $ "shapeMgu2: " ++ showDoc t1 " < " ++ showDoc t2 ""
 
 inclusions :: [(Type, Type)] -> [(Type, Type)]
 inclusions cs = let (atoms, sts) = partition isAtomic cs in
@@ -193,25 +193,25 @@ inclusions cs = let (atoms, sts) = partition isAtomic cs in
       p@(t1, t2) : tl -> atoms ++ case p of
         (ExpandedType _ t, _) | noAbs t -> inclusions $ (t, t2) : tl
         (_, ExpandedType _ t) | noAbs t -> inclusions $ (t1, t) : tl
-        (TypeAppl (TypeName l _ _) t, _) | l == lazyTypeId ->
-           inclusions $ (t, t2) : tl
-        (_, TypeAppl (TypeName l _ _) t) | l == lazyTypeId ->
-           inclusions $ (t1, t) : tl
         (KindedType t _ _, _) -> inclusions $ (t, t2) : tl
         (_, KindedType t _ _) -> inclusions $ (t1, t) : tl
-        (TypeAppl f1 a1, TypeAppl f2 a2) ->
-           case redStep t1 of
+        _ -> case redStep t1 of
              Nothing -> case redStep t2 of
-               Nothing -> inclusions $
-                 (f1, f2) : case (rawKindOfType f1, rawKindOfType f2) of
-                   (FunKind CoVar _ _ _,
-                    FunKind CoVar _ _ _) -> (a1, a2) : tl
-                   (FunKind ContraVar _ _ _,
-                    FunKind ContraVar _ _ _) -> (a2, a1) : tl
-                   _ -> (a1, a2) : (a2, a1) : tl
+               Nothing -> case p of
+                 (TypeAppl (TypeName l _ _) t, _) | l == lazyTypeId ->
+                   inclusions $ (t, t2) : tl
+                 (_, TypeAppl (TypeName l _ _) t) | l == lazyTypeId ->
+                   inclusions $ (t1, t) : tl
+                 (TypeAppl f1 a1, TypeAppl f2 a2) -> inclusions $
+                   (f1, f2) : case (rawKindOfType f1, rawKindOfType f2) of
+                     (FunKind CoVar _ _ _,
+                       FunKind CoVar _ _ _) -> (a1, a2) : tl
+                     (FunKind ContraVar _ _ _,
+                       FunKind ContraVar _ _ _) -> (a2, a1) : tl
+                     _ -> (a1, a2) : (a2, a1) : tl
+                 _ -> error $ "inclusions: " ++ shows p ""
                Just r2 -> inclusions $ (t1, r2) : tl
              Just r1 -> inclusions $ (r1, t2) : tl
-        _ -> error $ "inclusions: " ++ showDoc p ""
 
 shapeUnify :: TypeMap -> [(Type, Type)] -> State Int (Subst, [(Type, Type)])
 shapeUnify te l = do

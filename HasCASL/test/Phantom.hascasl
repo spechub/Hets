@@ -1,0 +1,6 @@
+var a: Type
+type dummy a := Logical
+op b: dummy a
+op c: Logical
+. c <=> b[a]
+. c <=> b
