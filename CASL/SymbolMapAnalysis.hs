@@ -23,7 +23,6 @@ module CASL.SymbolMapAnalysis
 import CASL.Sign
 import CASL.AS_Basic_CASL
 import CASL.Morphism
-import CASL.Overload
 
 import qualified Data.Map as Map
 import qualified Data.Set as Set
@@ -813,21 +812,8 @@ cogeneratedSign extEm isSubExt symset sigma =
 
 finalUnion :: (e -> e -> e) -- ^ join signature extensions
            -> Sign f e -> Sign f e -> Result (Sign f e)
-finalUnion addSigExt s1 s2 =
- let leCl eq = Map.map (Set.fromList . Rel.partSet eq)
-     o1 = leCl (leqF s1) $ opMap s1
-     o2 = leCl (leqF s2) $ opMap s2
-     p1 = leCl (leqP s1) $ predMap s1
-     p2 = leCl (leqP s2) $ predMap s2
-     s3 = addSig addSigExt s1 s2
-     o3 = leCl (leqF s3) $ opMap s3
-     p3 = leCl (leqP s3) $ predMap s3
-     o4 = addMapSet o1 o2
-     p4 = addMapSet p1 p2
- in if o4 == o3 && p4 == p3 then return s3
-    else fail $ "illegal overload relation identifications\n" ++
-         if o4 == o3 then showDoc (diffMapSet p4 p3) ""
-         else showDoc (diffMapSet o4 o3) ""
+finalUnion addSigExt sigma1 sigma2 = return $ addSig addSigExt sigma1 sigma2
+  -- ???  Finality check not yet implemented
 
 -- | Insert into a list of values
 listInsert :: Ord k => k -> a -> Map.Map k [a] -> Map.Map k [a]
