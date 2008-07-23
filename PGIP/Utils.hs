@@ -37,7 +37,8 @@ module PGIP.Utils
        , edgeContainsGoals
        , checkIntString
        , delExtension
-       , checkPresenceProvers 
+       , checkPresenceProvers
+       , getPaths
        )where
 
 import Data.List
@@ -51,6 +52,29 @@ import Common.AS_Annotation
 import qualified Common.OrderedMap as OMap
 
 
+
+-- splits the paths in the PATH variable (separeted by 
+-- a ':' symbol)
+getPaths ::  String -> String -> [String] -> [String]
+getPaths ls acc accLs
+ = case ls of 
+    []       -> accLs++[trim acc]
+    ':':l    -> getPaths l [] (accLs++[trim acc])
+    c:l      -> getPaths l (acc++[c]) accLs
+
+
+-- a any version of function that supports IO
+anyIO :: (a -> IO Bool) -> [a] -> IO Bool
+anyIO fn ls
+ = case ls of 
+    [] -> return False
+    e:l -> do 
+            result <- fn e
+            case result of 
+             True -> return True
+             False -> anyIO fn l 
+
+
 -- checks if provers in the prover list are availabe on 
 -- the current machine
 checkPresenceProvers :: [String] -> IO [String]
@@ -59,7 +83,15 @@ checkPresenceProvers ls
     [] -> return []
     "SPASS":l -> do
                   path <- getEnv "PATH"
-                  case isInfixOf "SPASS" path of 
+                  let lsPaths = getPaths path [] []
+                      completePath x = case x of
+                                        [] -> []
+                                        _ -> case last x of
+                                              '/' -> (x++"SPASS")
+                                              _ -> (x ++ "/SPASS")
+                  result <- anyIO ( \x -> doesFileExist $ completePath x)
+                               lsPaths
+                  case result of 
                    True -> do
                             contd <- checkPresenceProvers l 
                             return ("SPASS":contd)
