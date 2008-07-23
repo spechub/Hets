@@ -1,5 +1,4 @@
 call:
-	./coloss.cgi
 	./ghc-call
 
 test:
