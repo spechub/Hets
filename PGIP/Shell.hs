@@ -526,12 +526,14 @@ cmdlCompletionFn allcmds allState input
                                    (sublogicOfTh $ theory z)
    ReqProvers ->
       do
-       let tC = case isWhiteSpace $ lastChar input of
-                 True -> []
-                 False-> lastString $ words input
-           bC = case isWhiteSpace $ lastChar input of
-                 True -> trimRight input
-                 False->unwords $ init $ words input
+       let tC = unwords $ tail $ words input
+                --case isWhiteSpace $ lastChar input of
+                -- True -> []
+                -- False-> lastString $ words input
+           bC = head $ words input
+                --case isWhiteSpace $ lastChar input of
+                -- True -> trimRight input
+                -- False->unwords $ init $ words input
            addProvers acc cm =
             case cm of
             Comorphism cid -> acc ++
