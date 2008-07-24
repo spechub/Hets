@@ -226,11 +226,13 @@ addMapSet :: (Ord a, Ord b) => Map.Map a (Set.Set b) -> Map.Map a (Set.Set b)
           -> Map.Map a (Set.Set b)
 addMapSet = Map.unionWith Set.union
 
+makePartial :: Set.Set OpType -> Set.Set OpType
+makePartial = Set.mapMonotonic (\ o -> o { opKind = Partial })
+
 --  | remove (True) or add (False) partial op if it is included as total
 rmOrAddParts :: Bool -> Set.Set OpType -> Set.Set OpType
 rmOrAddParts b s =
-  let t = Set.mapMonotonic (\ o -> o { opKind = Partial })
-          $ Set.filter ((== Total) . opKind) s
+  let t = makePartial $ Set.filter ((== Total) . opKind) s
   in (if b then Set.difference else Set.union) s t
 
 addOpMapSet :: OpMap -> OpMap -> OpMap

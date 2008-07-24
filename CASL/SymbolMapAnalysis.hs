@@ -23,6 +23,7 @@ module CASL.SymbolMapAnalysis
 import CASL.Sign
 import CASL.AS_Basic_CASL
 import CASL.Morphism
+import CASL.Overload (leqF, leqP)
 
 import qualified Data.Map as Map
 import qualified Data.Set as Set
@@ -32,6 +33,8 @@ import Common.DocUtils
 import Common.ExtSign
 import Common.Id
 import Common.Result
+
+import Data.List (partition, find)
 
 {-
 inducedFromMorphism :: RawSymbolMap -> sign -> Result morphism
@@ -807,13 +810,54 @@ cogeneratedSign extEm isSubExt symset sigma =
     PredAsItemType _ ->   -- 3.1.2
       Set.delete sy symset1'
   profileContains _ SortAsItemType = False
-  profileContains s (OpAsItemType ot) = s `elem` (opRes ot:opArgs ot)
-  profileContains s (PredAsItemType pt) = s `elem` (predArgs pt)
+  profileContains s (OpAsItemType ot) = elem s $ opRes ot : opArgs ot
+  profileContains s (PredAsItemType pt) = elem s $ predArgs pt
 
 finalUnion :: (e -> e -> e) -- ^ join signature extensions
            -> Sign f e -> Sign f e -> Result (Sign f e)
-finalUnion addSigExt sigma1 sigma2 = return $ addSig addSigExt sigma1 sigma2
-  -- ???  Finality check not yet implemented
+finalUnion addSigExt s1 s2 =
+ let leCl eq = Map.map (Rel.partSet eq)
+     mkp = Map.map makePartial
+     extP = Map.map (map $ \ s -> (s, [], False))
+     o1 = extP $ leCl (leqF s1) $ mkp $ opMap s1
+     o2 = extP $ leCl (leqF s2) $ mkp $ opMap s2
+     p1 = extP $ leCl (leqP s1) $ predMap s1
+     p2 = extP $ leCl (leqP s2) $ predMap s2
+     s3 = addSig addSigExt s1 s2
+     o3 = leCl (leqF s3) $ mkp $ opMap s3
+     p3 = leCl (leqP s3) $ predMap s3
+     d1 = Map.differenceWith (listOfSetDiff True) o1 o3
+     d2 = Map.union d1 $ Map.differenceWith (listOfSetDiff False) o2 o3
+     e1 = Map.differenceWith (listOfSetDiff True) p1 p3
+     e2 = Map.union e1 $ Map.differenceWith (listOfSetDiff False) p2 p3
+     prL (s, l, b) = fsep
+       $ text ("(" ++ (if b then "left" else "right")
+               ++ " side of union)")
+       : map pretty l ++ [mapsto <+> pretty s]
+     prM str = ppMap ((text str <+>) . pretty)
+               (vcat . map prL) id vcat (\ v1 v2 -> sep [v1, v2])
+ in if Map.null d2 && Map.null e2 then return s3
+    else fail $ "illegal overload relation identifications for profiles of:\n"
+         ++ show (prM "op" d2 $+$ prM "pred" e2)
+
+listOfSetDiff :: Ord a => Bool -> [(Set.Set a, [Set.Set a], Bool)]
+              -> [Set.Set a]-> Maybe [(Set.Set a, [Set.Set a], Bool)]
+listOfSetDiff b rl1 l2 = let
+  fst3 (s, _, _) = s
+  l1 = map fst3 rl1 in
+  (\ l3 -> if null l3 then Nothing else Just l3)
+  $ fst $ foldr
+  (\ s (l, r) ->
+         let sIn = Set.isSubsetOf s
+             (r1, r2) = partition sIn r in
+         case r1 of
+           [] -> case find sIn l2 of
+             Nothing -> error "CASL.finalUnion.listOfSetDiff1"
+             Just s2 -> (if elem s2 $ map fst3 l then l else
+                         (s2, filter (flip Set.isSubsetOf s2) l1, b) : l, r)
+           [_] -> (l, r2)
+           _ -> error "CASL.finalUnion.listOfSetDiff2")
+  ([], l2) l1
 
 -- | Insert into a list of values
 listInsert :: Ord k => k -> a -> Map.Map k [a] -> Map.Map k [a]
