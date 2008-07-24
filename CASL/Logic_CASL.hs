@@ -234,6 +234,8 @@ instance StaticAnalysis CASL CASLBasicSpec CASLFORMULA
          induced_from_to_morphism CASL = inducedFromToMorphism () trueC const
          theory_to_taxonomy CASL = convTaxo
 
+--       convSignOMDoc CASL = someFunctionFromOMDocFolderNowInCASLFolder
+
 instance Logic CASL CASL_Sublogics
                CASLBasicSpec CASLFORMULA SYMB_ITEMS SYMB_MAP_ITEMS
                CASLSign
