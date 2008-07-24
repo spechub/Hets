@@ -74,7 +74,7 @@ for i in Basic/*.casl; do ./hets -v2 -l HasCASL -o th,pp.het,pp.tex $i; done
 latexBasicLibraries
 date
 for i in Basic/*.pp.het; do ./hets -v2 -l HasCASL -o pp.het,pp.tex $i; done
-\ls -l Basic/*.pp.*
+\ls -sh1 Basic/*.pp.*
 \rm -f Basic/*.pp.*
 }
 
@@ -84,7 +84,7 @@ date
 for i in Basic/*.casl; do ./hets -v2 -o $outtypes $i; done
 date
 for i in Basic/*.pp.het; do ./hets -v2 -o pp.het,pp.tex $i; done
-\ls -l Basic/*.pp.*
+\ls -sh1 Basic/*.pp.*
 }
 
 checkUserManual ()
@@ -225,7 +225,7 @@ cd Haskell/test/HOLCF
 cp ../HOL/*.hs .
 ../../../Haskell/h2hf hc *.hs
 ../../../utils/nightly/runHsIsabelle.sh *.thy > ../../../../isaHs.log 2>&1
-fgrep \*\*\* ../../../../isaHs.log
+grep "^\*\*\*" ../../../../isaHs.log
 cd ../../..
 }
 
