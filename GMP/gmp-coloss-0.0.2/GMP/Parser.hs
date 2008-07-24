@@ -28,7 +28,7 @@ implFormula flag pa = do
                  spaces
                  i <- implFormula flag pa
                  return $ Or (Neg f) i
-          <|> do string "<->"
+          <|> do try(string "<->")
                  spaces
                  i <- implFormula flag pa
                  return $ And (Or (Neg f) i) (Or f (Neg i))

@@ -17,6 +17,19 @@ import IO
 import GMP.Parser
 import GMP.Generic
 
+-- | Goes through a formula and replaces conjunctions by disjunctions
+preparse :: L a -> L a
+preparse f = case f of
+               And x y -> let a = preparse x
+                              b = preparse y
+                          in Neg (Or (Neg a) (Neg b))
+               Or x y  -> let a = preparse x
+                              b = preparse y
+                          in Or a b
+               Neg x   -> let a = preparse x
+                          in Neg a
+               M i x   -> M i $ preparse x
+               x       -> x
 -- | Runs the parser and the prover and prints the result(s) of obtained.
 runLex :: (Logic a, Eq a, Show a) => Parser (L a) -> String -> IO ()
 runLex p_rL input = run (do spaces
@@ -29,7 +42,8 @@ run :: (Logic a, Eq a, Show a) => Parser (L a) -> String -> IO ()
 run p_r input = case (parse p_r "" input) of
                   Left err -> do putStr "parse error at "
                                  print err
-                  Right x ->  do -- putStrLn ({-show x++" <=> "++-}input)
+                  Right x ->  do --let x = preparse y
+                                 --putStrLn (show x{-++" <=> "++input-})
                                  let isS = sat x
                                  case isS of
                                     True -> putStrLn "... is Satisfiable"
@@ -75,6 +89,6 @@ main = do
      else let ml:it:test:[] = take 3 args
           in case it of
                "-p" -> do input <- readFile test
-                          runStest (read ml) input
-               "-t" -> runStest (read ml) test
+                          runTest (read ml) input
+               "-t" -> runTest (read ml) test
                _    -> showHelp
