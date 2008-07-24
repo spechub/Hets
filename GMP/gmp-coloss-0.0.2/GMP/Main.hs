@@ -39,23 +39,9 @@ run p_r input = case (parse p_r "" input) of
                                     True -> putStrLn "... is Provable"
                                     _    -> putStrLn "... is Not Provable"
 
--- | Auxiliary run function for testing with the file path to input given
-runFPtest :: Int -> FilePath -> IO ()
-runFPtest ml path = do
-    input <- readFile path
-    case ml of
-     1 -> runLex ((par5er Sqr parseKindex) :: Parser (L K)) input
-     2 -> runLex ((par5er Sqr parseKDindex) :: Parser (L KD)) input
-     3 -> runLex ((par5er Sqr parseCindex) :: Parser (L C)) input
-     4 -> runLex ((par5er Ang parseGindex) :: Parser (L G)) input
-     5 -> runLex ((par5er Ang parsePindex) :: Parser (L P)) input
-     6 -> runLex ((par5er Sqr parseHMindex) :: Parser (L HM)) input
-     7 -> runLex ((par5er Sqr parseMindex) :: Parser (L Mon)) input
-     _ -> showHelp
-    return ()
 -- | Auxiliary run function for testing with the input given as string
-runStest :: Int -> String -> IO ()
-runStest ml input = do
+runTest :: Int -> String -> IO ()
+runTest ml input = do
     case ml of
      1 -> runLex ((par5er Sqr parseKindex) :: Parser (L K)) input
      2 -> runLex ((par5er Sqr parseKDindex) :: Parser (L KD)) input
@@ -88,6 +74,7 @@ main = do
      then showHelp
      else let ml:it:test:[] = take 3 args
           in case it of
-               "-p" -> runFPtest (read ml) test
+               "-p" -> do input <- readFile test
+                          runStest (read ml) input
                "-t" -> runStest (read ml) test
                _    -> showHelp
