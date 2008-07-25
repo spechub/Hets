@@ -56,7 +56,7 @@ wrapResultDgAll :: (LIB_NAME->LibEnv -> LibEnv) ->
 wrapResultDgAll fn lib_name lib_env
  = let res = fn lib_name lib_env
    in Result [] $ Just res
-   
+
 
 -- | Wraps Result structure around the result of a dg style command
 wrapResultDg :: (LIB_NAME->[LEdge DGLinkLab] -> LibEnv -> LibEnv) ->
@@ -78,16 +78,16 @@ commandDgAll fn state
                return $ genErrorMsg "No library loaded" state
     Just dgState ->
      do
-      case fn (ln dgState) (libEnv dgState) of 
+      case fn (ln dgState) (libEnv dgState) of
        Result _ (Just nwLibEnv) ->
            return state {
               devGraphState = Just dgState { libEnv = nwLibEnv  },
               -- delete any selection if a dg command is used
               proveState = Nothing,
               prompter = (prompter state) { selectedNodes = [],
-                                          selectedTranslations = [] } 
+                                          selectedTranslations = [] }
               }
-       Result diag Nothing -> return $ genErrorMsg 
+       Result diag Nothing -> return $ genErrorMsg
                                      (concat $ map diagString diag) state
 
 
@@ -123,7 +123,7 @@ commandDg fn input state
                               state
          _  ->
            do
-            case fn (ln dgState) listEdges (libEnv dgState) of 
+            case fn (ln dgState) listEdges (libEnv dgState) of
              Result _ (Just nwLibEnv) ->
                  return $ genMessage tmpErrs' []
                       state {
@@ -133,9 +133,9 @@ commandDg fn input state
                         -- used
                         proveState = Nothing,
                         prompter = (prompter state) { selectedNodes = [],
-                                          selectedTranslations = [] } 
+                                          selectedTranslations = [] }
                         }
-             Result diag Nothing -> return $ genErrorMsg 
+             Result diag Nothing -> return $ genErrorMsg
                         (concat $ map diagString diag) state
 
 
@@ -215,7 +215,7 @@ cDgThmHideShift input state
                           devGraphState = Just
                                           dgState { libEnv = newEnv },
                           proveState = Nothing,
-                          prompter = (prompter state) { 
+                          prompter = (prompter state) {
                                                selectedNodes = [],
                                                selectedTranslations = [] }
                            }
@@ -228,8 +228,7 @@ selectANode x dgState
     -- computes the theory of a given node
     -- (i.e. solves DGRef cases and so on,
     -- see CASL Reference Manual, p.294, Def 4.9)
-    -- computeTheory is defined in Static.DGToSpec
-    gth n = computeTheory False (libEnv dgState) 
+    gth n = computeTheory False (libEnv dgState)
                           (ln dgState)
                           n
     nodeName t=case find(\(n,_)-> n==t) $ getAllNodes dgState of
@@ -360,11 +359,11 @@ cDgSelectAll state
                            ) lsNodes
           oldH = history state
           nwPrompter = case lsNodes of
-                         hd:[] -> 
+                         hd:[] ->
                            (prompter state) {
                             selectedNodes = (getDGNodeName $ snd hd),
                             selectedTranslations = []}
-                         hd:_ -> 
+                         hd:_ ->
                            (prompter state) {
                             selectedNodes =(getDGNodeName $ snd hd)++"..",
                             selectedTranslations = []}
