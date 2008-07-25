@@ -17,19 +17,29 @@ import IO
 import GMP.Parser
 import GMP.Generic
 
--- | Goes through a formula and replaces conjunctions by disjunctions
+-- | Replaces all conjunctions by disjunctions and normalizes negations
 preparse :: L a -> L a
-preparse f = case f of
-               And x y -> let a = preparse x
-                              b = preparse y
-                          in Neg (Or (Neg a) (Neg b))
-               Or x y  -> let a = preparse x
-                              b = preparse y
-                          in Or a b
-               Neg x   -> let a = preparse x
-                          in Neg a
-               M i x   -> M i $ preparse x
-               x       -> x
+preparse f = 
+  let conj2disj w = case w of
+                      And x y -> let a = conj2disj x
+                                     b = conj2disj y
+                                 in Neg (Or (Neg a) (Neg b))
+                      Or x y  -> let a = conj2disj x
+                                     b = conj2disj y
+                                 in Or a b
+                      Neg x   -> let a = conj2disj x
+                                 in Neg a
+                      M i x   -> M i $ conj2disj x
+                      x       -> x
+      negNorm w = case w of
+                    Neg (Neg x) -> negNorm x
+                    Neg x       -> Neg $ negNorm x
+                    M i x       -> M i $ negNorm x
+                    Or x y      -> let a = negNorm x
+                                       b = negNorm y
+                                   in Or a b
+                    x           -> x -- there is no need for discussing "And"
+  in negNorm $ conj2disj f
 -- | Runs the parser and the prover and prints the result(s) of obtained.
 runLex :: (Logic a, Eq a, Show a) => Parser (L a) -> String -> IO ()
 runLex p_rL input = run (do spaces
@@ -42,8 +52,8 @@ run :: (Logic a, Eq a, Show a) => Parser (L a) -> String -> IO ()
 run p_r input = case (parse p_r "" input) of
                   Left err -> do putStr "parse error at "
                                  print err
-                  Right x ->  do --let x = preparse y
-                                 --putStrLn (show x{-++" <=> "++input-})
+                  Right y ->  do let x = preparse y
+                                 putStrLn (show x{-++" <=> "++input-})
                                  let isS = sat x
                                  case isS of
                                     True -> putStrLn "... is Satisfiable"
