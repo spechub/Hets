@@ -33,7 +33,6 @@ module Proofs.SimpleTheoremHideShift
 import Static.DevGraph
 import Syntax.AS_Library
 import Proofs.EdgeUtils
---import Static.DGToSpec
 import Proofs.StatusUtils
 
 import Data.Graph.Inductive.Graph

@@ -23,7 +23,6 @@ module GUI.GraphLogic
     , proofMenu
     , openTranslateGraph
     , showReferencedLibrary
-    , showSpec
     , getTheoryOfNode
     , translateTheoryOfNode
     , displaySubsortGraph
@@ -60,7 +59,6 @@ import Syntax.AS_Library(LIB_NAME, getModTime, getLIB_ID)
 import Static.GTheory
 import Static.DevGraph
 import Static.PrintDevGraph
-import Static.DGToSpec(dgToSpec)
 import Static.AnalysisLibrary(anaLibExt, anaLib)
 import Static.DGTranslation(libEnv_translation)
 
@@ -555,14 +553,6 @@ calcGlobalHistory old new = let
 nodeErr :: Int -> IO ()
 nodeErr descr = error $ "node with descriptor " ++ show descr
                 ++ " has no corresponding node in the development graph"
-
-showSpec :: Int -> DGraph -> IO ()
-showSpec descr dgraph = do
-  let sp = dgToSpec dgraph descr
-      sp' = case sp of
-              Res.Result ds Nothing -> showRelDiags 2 ds
-              Res.Result _ m -> showDoc m ""
-  createTextDisplay "Show spec" sp' [size(80,25)]
 
 showNodeInfo :: Int -> DGraph -> IO ()
 showNodeInfo descr dgraph = do

@@ -322,7 +322,6 @@ createLocalMenuNode gInfo = LocalMenu (Menu (Just "node menu") $ map ($ gInfo)
   , createLocalMenuButtonShowTheory
   , createLocalMenuButtonTranslateTheory
   , createLocalMenuTaxonomy
-  , createLocalMenuButtonShowSpec
   , createLocalMenuButtonShowProofStatusOfNode
   , createLocalMenuButtonProveAtNode
   , createLocalMenuButtonCCCAtNode ]) $$$ emptyNodeTypeParms
@@ -382,9 +381,6 @@ createMenuButton title menuFun gInfo =
                            return ()
                        )
                     )
-
-createLocalMenuButtonShowSpec :: GInfo -> ButtonMenu GA.NodeValue
-createLocalMenuButtonShowSpec = createMenuButton "Show spec" showSpec
 
 createLocalMenuButtonShowTheory :: GInfo -> ButtonMenu GA.NodeValue
 createLocalMenuButtonShowTheory gInfo =
