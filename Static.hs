@@ -10,7 +10,6 @@ Heterogeneous development graphs are based on the Grothendieck
 logic implemented by the module "Logic.Grothendieck".
 
 "Static.PrintDevGraph" provides pretty printing for development graphs.
-"Static.DGToSpec" converts development graphs back to specifications.
 "Static.DotGraph" draws a development graph using the
 dot tool <http://www.graphviz.org/>.
 
