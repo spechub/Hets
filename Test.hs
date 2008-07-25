@@ -34,7 +34,6 @@ import Proofs.Global
 import Proofs.EdgeUtils
 import Proofs.StatusUtils
 import Data.Graph.Inductive.Graph
-import Static.DGToSpec
 
 myHetcatsOpts :: HetcatsOpts
 myHetcatsOpts = defaultHetcatsOpts { libdir = "../Hets-lib" }
