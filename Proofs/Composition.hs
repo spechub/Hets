@@ -25,7 +25,6 @@ import Proofs.EdgeUtils
 import Proofs.StatusUtils
 import Syntax.AS_Library
 import Static.DevGraph
--- import Static.DGToSpec
 import qualified Common.Lib.Graph as Tree
 import Data.Graph.Inductive.Graph
 import Data.List
@@ -34,13 +33,14 @@ compositionCreatingEdgesFromList :: LIB_NAME -> [LEdge DGLinkLab] -> LibEnv
                                  -> LibEnv
 compositionCreatingEdgesFromList libname ls proofStatus =
       let dgraph = lookupDGraph libname proofStatus
-          pathsToCompose = getAllPathsOfTypeFromGoalList dgraph isGlobalThm ls
+          pathsToCompose = filter ((> 1) . length) $
+              getAllPathsOfTypeFromGoalList dgraph isGlobalThm ls
           (newDGraph, newHistoryElem)
                  = compositionCreatingEdgesAux dgraph pathsToCompose ([], [])
       in mkResultProofStatus libname proofStatus newDGraph newHistoryElem
 
 {- | creates new edges by composing all paths of global theorem edges
-   in the currenct development graph. These new edges are proven global
+   in the current development graph. These new edges are proven global
    theorems with the morphism and the conservativity of the corresponding
    path. If a new edge is the proven version of a previsously existing
    edge, that edge is deleted. -}
@@ -79,10 +79,9 @@ compositionCreatingEdgesAux dgraph (path:paths) (rules,changes) =
                        dgl_origin = DGLinkProof,
                        dgl_id = defaultEdgeId}
               )
-    (newDGraph, newChanges) = deleteRedundantEdges dgraph newEdge
-       -- deleting does not work, because newEdge is not LeftOpen
-    (newDGraph2, newChanges2) =
-      updateWithOneChange (InsertEdge newEdge) newDGraph
+    (newDGraph, newChanges) = insertDGLEdge newEdge dgraph
+    (newDGraph2, newChanges2) = deleteRedundantEdges newDGraph newEdge
+
 
 {- | this method is used by compositionCreatingEdgesAux.  It selects
 all unproven global theorem edges in the given development graph that
@@ -99,7 +98,7 @@ deleteRedundantEdges dgraph (src, tgt, labl) = let
     haveSameCons :: DGLinkLab -> DGLinkLab -> Bool
     haveSameCons lab1 lab2 = case (dgl_type lab1, dgl_type lab2) of
           (GlobalThm LeftOpen cons1 status1,
-           GlobalThm LeftOpen cons2 status2) ->
+           GlobalThm _ cons2 status2) ->
              cons1 == cons2 &&
              isProvenThmLinkStatus status1 == isProvenThmLinkStatus status2
           _ -> False
