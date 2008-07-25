@@ -66,10 +66,6 @@ instance StaticAnalysis COL C_BASIC_SPEC COLFORMULA
                               emptyMix
          stat_symb_map_items COL = statSymbMapItems
          stat_symb_items COL = statSymbItems
-         ensures_amalgamability COL _ =
-             fail "COL: ensures_amalgamability nyi" -- ???
-
-         sign_to_basic_spec COL _sigma _sens = Basic_spec [] -- ???
 
          symbol_to_raw COL = symbolToRaw
          id_to_raw COL = idToRaw

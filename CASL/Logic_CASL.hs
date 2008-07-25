@@ -214,8 +214,6 @@ instance StaticAnalysis CASL CASLBasicSpec CASLFORMULA
          ensures_amalgamability CASL (opts, diag, sink, desc) =
              ensuresAmalgamability opts diag sink desc
 
-         sign_to_basic_spec CASL _sigma _sens = Basic_spec [] -- ???
-
          symbol_to_raw CASL = symbolToRaw
          id_to_raw CASL = idToRaw
          matches CASL = CASL.Morphism.matches

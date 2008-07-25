@@ -77,9 +77,6 @@ instance StaticAnalysis ConstraintCASL
          basic_analysis ConstraintCASL = Just basicConstraintCASLAnalysis
          stat_symb_map_items ConstraintCASL = statSymbMapItems
          stat_symb_items ConstraintCASL = statSymbItems
-         ensures_amalgamability ConstraintCASL _ =
-            error "ConstraintCASL.ensures_amalgamability not yet implemented"
-         sign_to_basic_spec ConstraintCASL _sigma _sens = Basic_spec [] -- ???
 
          symbol_to_raw ConstraintCASL = symbolToRaw
          id_to_raw ConstraintCASL = idToRaw

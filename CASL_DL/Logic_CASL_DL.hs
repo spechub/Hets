@@ -101,20 +101,12 @@ instance StaticAnalysis CASL_DL DL_BASIC_SPEC DLFORMULA
          stat_symb_map_items CASL_DL sml =
              statSymbMapItems sml >>= checkSymbolMapDL
          stat_symb_items CASL_DL = statSymbItems
-         ensures_amalgamability CASL_DL _ =
-             fail "CASL_DL: ensures_amalgamability nyi" -- ???
-
-         sign_to_basic_spec CASL_DL _sigma _sens = Basic_spec [] -- ???
 
          symbol_to_raw CASL_DL = symbolToRaw
          id_to_raw CASL_DL = idToRaw
          matches CASL_DL = CASL.Morphism.matches
 
-         empty_signature CASL_DL = (emptySign emptyCASL_DLSign)
---                                   {
---                                     sortSet = sortSet predefinedSign
---                                   , predMap = predMap predefinedSign
---                                   }
+         empty_signature CASL_DL = emptySign emptyCASL_DLSign
          signature_union CASL_DL s = return . addSig addCASL_DLSign s
          morphism_union CASL_DL = morphismUnion (const id) addCASL_DLSign
          final_union CASL_DL = finalUnion addCASL_DLSign

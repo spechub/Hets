@@ -13,7 +13,6 @@ The static analysis of DL basic specs is implemented here.
 
 module DL.StaticAnalysis
         ( basic_DL_analysis
-        , sign2basic_spec
         )
         where
 
@@ -911,8 +910,3 @@ examineObjProp bI _ =
                                   nameO = nm
                                 }
                 _                                          -> error "Runtime error!"
-
-sign2basic_spec :: Sign -> [Named DLBasicItem] -> DLBasic
-sign2basic_spec _ items =
-    DLBasic $ map emptyAnno $ map sentence $ items
-

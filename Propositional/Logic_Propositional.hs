@@ -38,7 +38,6 @@ import qualified Propositional.ATC_Propositional()
 import qualified Propositional.Symbol as Symbol
 import qualified Propositional.Parse_AS_Basic as Parse_AS
 import qualified Propositional.Analysis as Analysis
-import qualified Propositional.InverseAnalysis as IAna
 import qualified Propositional.Sublogic as Sublogic
 import qualified Common.Id as Id()
 #ifdef UNI_PACKAGE
@@ -128,7 +127,6 @@ instance StaticAnalysis Propositional
           empty_signature Propositional          = Sign.emptySig
           inclusion Propositional                = Morphism.inclusionMap
           signature_union Propositional          = Sign.sigUnion
-          sign_to_basic_spec Propositional       = IAna.signToBasicSpec
           symbol_to_raw Propositional            = Symbol.symbolToRaw
           id_to_raw     Propositional            = Symbol.idToRaw
           matches       Propositional            = Symbol.matches

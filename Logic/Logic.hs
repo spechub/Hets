@@ -310,10 +310,6 @@ class ( Syntax lid basic_spec symb_items symb_map_items
                                   , [Named sentence]))
          -- default implementation
          basic_analysis _ = Nothing
-
-         -- | one-sided inverse for static analysis
-         sign_to_basic_spec :: lid -> sign -> [Named sentence] -> basic_spec
-         sign_to_basic_spec l _ _ = error $ statErrMsg l "sign_to_basic_spec"
          -- | static analysis of symbol maps, see CASL RefMan p. 222f.
          stat_symb_map_items ::
              lid -> [symb_map_items] -> Result (EndoMap raw_symbol)

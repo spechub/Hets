@@ -65,10 +65,6 @@ instance StaticAnalysis VSE VSEBasicSpec Sentence
          basic_analysis VSE = Just $ basicAna
          stat_symb_map_items VSE = statSymbMapItems
          stat_symb_items VSE = statSymbItems
-         ensures_amalgamability VSE _ =
-             fail "VSE: ensures_amalgamability nyi" -- ???
-
-         sign_to_basic_spec VSE _sigma _sens = Basic_spec [] -- ???
 
          symbol_to_raw VSE = symbolToRaw
          id_to_raw VSE = idToRaw

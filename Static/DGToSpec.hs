@@ -15,17 +15,16 @@ module Static.DGToSpec
     ( dgToSpec
     ) where
 
-import Logic.Logic
 import Logic.Grothendieck
 import Static.DevGraph
-import Static.GTheory
 
 import Syntax.AS_Structured
-import Common.AS_Annotation
-import Logic.Prover
+
+import CASL.Logic_CASL
+import qualified CASL.AS_Basic_CASL as CASL
 
 import Common.Id
-import Common.ExtSign
+import Common.AS_Annotation
 import Data.Graph.Inductive.Graph
 
 
@@ -45,10 +44,8 @@ dgToSpec0 dg node = case matchDG node dg of
                     _ -> error "dgToSpec0.myhead"
    in if isDGRef n then
           Spec_inst (getName $ dgn_name n) [] nullRange
-      else if dgn_origin n == DGBasic then case dgn_theory n of
-         G_theory lid1 (ExtSign sigma _) _ sen' _ ->
-           let b = Basic_spec (G_basic_spec lid1 $
-                 sign_to_basic_spec lid1 sigma $ toNamedList sen') nullRange
+      else if dgn_origin n == DGBasic then
+           let b = Basic_spec (G_basic_spec CASL $ CASL.Basic_spec []) nullRange
            in if null apredSps then b
               else Extension (apredSps ++ [emptyAnno b]) nullRange
       else case dgn_origin n of

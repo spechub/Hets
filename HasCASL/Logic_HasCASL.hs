@@ -97,7 +97,6 @@ instance StaticAnalysis HasCASL BasicSpec Sentence
     cogenerated_sign HasCASL = cogeneratedSign
     generated_sign HasCASL = generatedSign
 
-    sign_to_basic_spec HasCASL _ _ = error "sign_to_basic_spec: HasCASL"
     stat_symb_map_items HasCASL = statSymbMapItems
     stat_symb_items HasCASL = statSymbItems
     symbol_to_raw HasCASL = symbolToRaw

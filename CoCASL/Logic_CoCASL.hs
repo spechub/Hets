@@ -71,10 +71,6 @@ instance StaticAnalysis CoCASL C_BASIC_SPEC CoCASLFORMULA
          basic_analysis CoCASL = Just $ basicCoCASLAnalysis
          stat_symb_map_items CoCASL = statSymbMapItems
          stat_symb_items CoCASL = statSymbItems
-         ensures_amalgamability CoCASL _ =
-             fail "CoCASL: ensures_amalgamability nyi" -- ???
-
-         sign_to_basic_spec CoCASL _sigma _sens = Basic_spec [] -- ???
 
          symbol_to_raw CoCASL = symbolToRaw
          id_to_raw CoCASL = idToRaw

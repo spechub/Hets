@@ -89,10 +89,6 @@ instance StaticAnalysis Modal M_BASIC_SPEC ModalFORMULA
          basic_analysis Modal = Just $ basicModalAnalysis
          stat_symb_map_items Modal = statSymbMapItems
          stat_symb_items Modal = statSymbItems
-         ensures_amalgamability Modal _ =
-             fail "Modal: ensures_amalgamability nyi" -- ???
-
-         sign_to_basic_spec Modal _sigma _sens = Basic_spec [] -- ???
 
          symbol_to_raw Modal = symbolToRaw
          id_to_raw Modal = idToRaw

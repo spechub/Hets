@@ -230,7 +230,6 @@ instance (Morphism cid
                 sign2 morphism2 sign_symbol2 symbol2 proof_tree2)
         => StaticAnalysis (SpanDomain cid) () (S2 sentence2) () ()
            sign1 morphism1 sign_symbol1 symbol1 where
- sign_to_basic_spec _ _ _ = ()
  ensures_amalgamability l _ = statErr l "ensures_amalgamability"
  symbol_to_raw (SpanDomain cid) = symbol_to_raw (morSourceLogic cid)
  id_to_raw (SpanDomain cid) = id_to_raw (morSourceLogic cid)

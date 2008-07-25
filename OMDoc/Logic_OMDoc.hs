@@ -164,7 +164,6 @@ instance Sentences OMDoc_PUN () OMDoc_Sign OMDoc_Morphism OMDoc.Symbol where
     Hets.stringToId $ OMDoc.symbolId s
 
 instance StaticAnalysis OMDoc_PUN () () () () OMDoc_Sign OMDoc_Morphism OMDoc.Symbol () where
-  sign_to_basic_spec OMDoc_PUN _ _ = ()
   symbol_to_raw OMDoc_PUN _ = ()
   id_to_raw OMDoc_PUN _ = ()
   matches OMDoc_PUN _ _ = False
