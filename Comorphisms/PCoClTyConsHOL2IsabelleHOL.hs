@@ -142,7 +142,9 @@ transFunType fty = case fty of
     FunType f a -> mkFunType (transFunType f) $ transFunType a
     PartialVal a -> mkOptionType $ transFunType a
     PairType a b -> prodType (transFunType a) $ transFunType b
-    TupleType l -> transFunType $ foldl1 PairType l
+    TupleType l -> case l of
+      [] -> error "transFunType"
+      _ -> transFunType $ foldl1 PairType l
     ApplType tid args -> Type (showIsaTypeT tid baseSign) []
                        $ map transFunType args
     TypeVar tid -> TFree (showIsaTypeT tid baseSign) []
