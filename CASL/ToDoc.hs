@@ -393,7 +393,7 @@ recoverType :: [Constraint] -> [Annoted DATATYPE_DECL]
 recoverType =
   map (\ c -> let s = newSort c in emptyAnno $ Datatype_decl s
       (map (\ (o, _) -> case o of
-      Qual_op_name i (Op_type fk args res ps) r | res == s ->
+      Qual_op_name i (Op_type fk args _ ps) r ->
           let qs = appRange ps r in emptyAnno $ case args of
             [_] | isInjName i -> Subsorts args qs
             _ -> Alt_construct fk i (map Sort args) qs
