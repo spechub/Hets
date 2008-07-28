@@ -39,8 +39,7 @@ import qualified Common.Lib.Graph as CLGraph
 import Text.XML.HXT.Parser
   (
       (.>), xshow, isTag, getChildren, getValue
-    , emptyRoot, v_1, v_0, a_issue_errors, a_source, a_validate
-    , a_check_namespaces
+    , emptyRoot, v_0, a_issue_errors, a_source, a_validate
   )
 
 import qualified Text.XML.HXT.Parser as HXT hiding (run, trace, when)
@@ -2793,7 +2792,6 @@ maybeGetXml source =
         [
             (HXT.a_source, source)
           , (HXT.a_issue_errors, HXT.v_0)
-          , (HXT.a_check_namespaces, HXT.v_1)
           , (HXT.a_validate, HXT.v_0)
         ]
         HXT.emptyRoot
