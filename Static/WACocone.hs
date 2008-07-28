@@ -21,26 +21,43 @@ module Static.WACocone(GDiagram,
                        removeIdentities,
                        hetWeakAmalgCocone,
                        initDescList,
-                       buildStrMorphisms--,
-                       --gWeaklyAmalgamableCocone
+                       buildStrMorphisms,
+                       weakly_amalgamable_colimit
                        ) where
 
-import Data.Graph.Inductive.Graph as Graph
+import Control.Monad
 import Data.List(nub)
-import Common.Lib.Graph
+import qualified Data.Map as Map
+import qualified Data.Set as Set
+import Data.Graph.Inductive.Graph as Graph
+
+import Common.Lib.Graph as Tree
+import Common.Amalgamate
+import Common.ExtSign
 import Common.Result
+import Common.LogicT
+
 import Logic.Logic
 import Logic.Comorphism
 import Logic.Modification
 import Logic.Grothendieck
 import Logic.Coerce
 import Static.GTheory
-import Common.ExtSign
-import qualified Data.Map as Map
-import qualified Data.Set as Set
-import Control.Monad
-import Common.LogicT
 import Comorphisms.LogicGraph
+
+weakly_amalgamable_colimit :: StaticAnalysis lid
+        basic_spec sentence symb_items symb_map_items
+        sign morphism symbol raw_symbol
+    => lid -> Tree.Gr sign (Int, morphism)
+           -> Result (sign, Map.Map Int morphism)
+weakly_amalgamable_colimit l diag = do
+          (sig, sink) <- signature_colimit l diag
+          amalgCheck <- ensures_amalgamability l
+            ([Cell, ColimitThinness], diag, Map.toList sink, Graph.empty)
+          case amalgCheck of
+            NoAmalgamation s -> fail $ "failed amalgamability test " ++ s
+            DontKnow s -> fail $ "amalgamability test returns DontKnow: "++ s
+            _ -> return (sig, sink)
 
 -- | Grothendieck diagrams
 type GDiagram = Gr G_theory (Int, GMorphism)
