@@ -90,10 +90,11 @@ reload gInfo@(GInfo {gi_LIB_NAME = ln,
 
 -- | Adds the Librarys and the Dependencies to the Graph
 addNodesAndArcs :: GInfo -> DaVinciGraphTypeSyn -> IORef NodeArcList -> IO ()
-addNodesAndArcs gInfo@(GInfo {libEnvIORef = ioRefProofStatus}) depG
-  nodeArcRef = do
+addNodesAndArcs gInfo@(GInfo { libEnvIORef = ioRefProofStatus
+                             , gi_hetcatsOpts = opts}) depG nodeArcRef = do
   le <- readIORef ioRefProofStatus
   let
+    c = colors opts
     lookup' x y = Map.findWithDefault (error "lookup': node not found") y x
     keys = Map.keys le
     subNodeMenu = LocalMenu( Menu Nothing [
@@ -102,7 +103,7 @@ addNodesAndArcs gInfo@(GInfo {libEnvIORef = ioRefProofStatus}) depG
     subNodeTypeParms = subNodeMenu $$$
                        Box $$$
                        ValueTitle (\ x -> return (show x)) $$$
-                       Color "green" $$$
+                       Color (green2B c) $$$
                        emptyNodeTypeParms
   subNodeType <- newNodeType depG subNodeTypeParms
   subNodeList <- mapM (newNode depG subNodeType) keys
@@ -111,7 +112,7 @@ addNodesAndArcs gInfo@(GInfo {libEnvIORef = ioRefProofStatus}) depG
     subArcMenu = LocalMenu( Menu Nothing [])
     subArcTypeParms = subArcMenu $$$
                       ValueTitle id $$$
-                      Color "black" $$$
+                      Color (blackD c) $$$
                       emptyArcTypeParms
   subArcType <- newArcType depG subArcTypeParms
   let

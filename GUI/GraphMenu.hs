@@ -12,7 +12,9 @@ Portability :  non-portable (imports Logic)
 Menu creation
 -}
 
-module GUI.GraphMenu (createGraph) where
+module GUI.GraphMenu
+  ( createGraph )
+  where
 
 import qualified GUI.GraphAbstraction as GA
 import GUI.GraphTypes
@@ -58,48 +60,41 @@ import Control.Concurrent.MVar
 linkTypes :: HetcatsOpts
           -> [(DGEdgeType, EdgePattern GA.EdgeValue, String, Bool, Bool)]
 linkTypes opts = [
--- Name                      Lineformat             Color       Thm    Other
-  (GlobalDefNoInc,           Solid,                 black,      False, False),
-  (GlobalDefInc,             Solid,                 black,      False, False),
-  (LocalDefNoInc,            Dashed,                black,      False, False),
-  (LocalDefInc,              Dashed,                black,      False, False),
-  (DefNoInc,                 Solid,                 steelblue,  False, False),
-  (DefInc,                   Solid,                 steelblue,  False, False),
-  (HidingDefNoInc,           Solid,                 lightblue,  False, False),
-  (HidingDefInc,             Solid,                 lightblue,  False, False),
-  (HetDefNoInc,              GraphConfigure.Double, black,      False, False),
-  (HetDefInc,                GraphConfigure.Double, black,      False, False),
-  (ProvenThmNoInc,           Solid,                 green,      True,  True),
-  (ProvenThmInc,             Solid,                 green,      True,  True),
-  (UnprovenThmNoInc,         Solid,                 coral,      True,  True),
-  (UnprovenThmInc,           Solid,                 coral,      True,  True),
-  (LocalProvenThmNoInc,      Dashed,                green,      True,  True),
-  (LocalProvenThmInc,        Dashed,                green,      True,  True),
-  (LocalUnprovenThmNoInc,    Dashed,                coral,      True,  True),
-  (LocalUnprovenThmInc,      Dashed,                coral,      True,  True),
-  (HetProvenThmNoInc,        GraphConfigure.Double, green,      True,  True),
-  (HetProvenThmInc,          GraphConfigure.Double, green,      True,  True),
-  (HetUnprovenThmNoInc,      GraphConfigure.Double, coral,      True,  True),
-  (HetUnprovenThmInc,        GraphConfigure.Double, coral,      True,  True),
-  (HetLocalProvenThmNoInc,   GraphConfigure.Double, green,      True,  True),
-  (HetLocalProvenThmInc,     GraphConfigure.Double, green,      True,  True),
-  (HetLocalUnprovenThmNoInc, GraphConfigure.Double, coral,      True,  True),
-  (HetLocalUnprovenThmInc,   GraphConfigure.Double, coral,      True,  True),
-  (UnprovenHidingThmNoInc,   Solid,                 yellow,     True,  False),
-  (UnprovenHidingThmInc,     Solid,                 yellow,     True,  False),
-  (ProvenHidingThmNoInc,     Solid,                 lightgreen, True,  False),
-  (ProvenHidingThmInc,       Solid,                 lightgreen, True,  False),
-  (ReferenceNoInc,           Dotted,                grey,       False, False),
-  (ReferenceInc,             Dotted,                grey,       False, False)]
+-- Name                      Lineformat Color      Thm    Other
+  (GlobalDefNoInc,           Solid,     blackB c,  False, False),
+  (GlobalDefInc,             Solid,     blackD c,  False, False),
+  (LocalDefNoInc,            Dashed,    blackB c,  False, False),
+  (LocalDefInc,              Dashed,    blackD c,  False, False),
+  (DefNoInc,                 Solid,     blue1B c,  False, False),
+  (DefInc,                   Solid,     blue1D c,  False, False),
+  (HidingDefNoInc,           Solid,     blue2B c,  False, False),
+  (HidingDefInc,             Solid,     blue2D c,  False, False),
+  (HetDefNoInc,              Double,    blackB c,  False, False),
+  (HetDefInc,                Double,    blackD c,  False, False),
+  (ProvenThmNoInc,           Solid,     green1B c, True,  True),
+  (ProvenThmInc,             Solid,     green1D c, True,  True),
+  (UnprovenThmNoInc,         Solid,     coral1B c, True,  True),
+  (UnprovenThmInc,           Solid,     coral1D c, True,  True),
+  (LocalProvenThmNoInc,      Dashed,    green1B c, True,  True),
+  (LocalProvenThmInc,        Dashed,    green1D c, True,  True),
+  (LocalUnprovenThmNoInc,    Dashed,    coral1B c, True,  True),
+  (LocalUnprovenThmInc,      Dashed,    coral1D c, True,  True),
+  (HetProvenThmNoInc,        Double,    green1B c, True,  True),
+  (HetProvenThmInc,          Double,    green1D c, True,  True),
+  (HetUnprovenThmNoInc,      Double,    coral1B c, True,  True),
+  (HetUnprovenThmInc,        Double,    coral1D c, True,  True),
+  (HetLocalProvenThmNoInc,   Double,    green2B c, True,  True),
+  (HetLocalProvenThmInc,     Double,    green2D c, True,  True),
+  (HetLocalUnprovenThmNoInc, Double,    coral2B c, True,  True),
+  (HetLocalUnprovenThmInc,   Double,    coral2D c, True,  True),
+  (UnprovenHidingThmNoInc,   Solid,     yellowB c, True,  False),
+  (UnprovenHidingThmInc,     Solid,     yellowD c, True,  False),
+  (ProvenHidingThmNoInc,     Solid,     green2B c, True,  False),
+  (ProvenHidingThmInc,       Solid,     green2D c, True,  False),
+  (ReferenceNoInc,           Dotted,    khakiB c,  False, False),
+  (ReferenceInc,             Dotted,    khakiD c,  False, False)]
   where
-    coral = getColor opts "Coral"
-    green = getColor opts "Green"
-    steelblue = getColor opts "Steelblue"
-    lightblue = getColor opts "Lightblue"
-    yellow = getColor opts "Yellow"
-    lightgreen = getColor opts "Lightgreen"
-    grey = getColor opts "Grey"
-    black = getColor opts "Black"
+    c = colors opts
 
 -- | A Map of all nodetypes and their properties.
 mapLinkTypes :: HetcatsOpts
@@ -115,40 +110,26 @@ mapLinkTypesToNames = map (\ s -> map toLower $ take (length s - 5) s)
 #endif
 
 -- | A List of all nodetypes and their properties.
-nodeTypes :: HetcatsOpts -> [(DGNodeType, Shape value, String)]
+nodeTypes :: HetcatsOpts -> [(DGNodeType, String, Shape GA.NodeValue, String)]
 nodeTypes opts = [
--- Name                            Shape    Color
-  (NotEmptyOpenConsSpec,           Ellipse, coral),
-  (NotEmptyProvenConsSpec,         Ellipse, coral),
-  (LocallyEmptyOpenConsSpec,       Ellipse, coral),
-  (LocallyEmptyProvenConsSpec,     Ellipse, green),
-  (NotEmptyOpenConsInternal,       Ellipse, coral),
-  (NotEmptyProvenConsInternal,     Ellipse, coral),
-  (LocallyEmptyOpenConsInternal,   Ellipse, coral),
-  (LocallyEmptyProvenConsInternal, Ellipse, green),
-  (NotEmptyDGRef,                  Box,     coral),
-  (LocallyEmptyDGRef,              Box,     green)
-  ]
+-- Name                            Type        Shape    Color
+  (NotEmptyOpenConsSpec,           "Spec",     Ellipse, coral1D c),
+  (NotEmptyProvenConsSpec,         "Spec",     Ellipse, coral1B c),
+  (LocallyEmptyOpenConsSpec,       "Spec",     Ellipse, coral2D c),
+  (LocallyEmptyProvenConsSpec,     "Spec",     Ellipse, green2B c),
+  (NotEmptyOpenConsInternal,       "Internal", Circle,  coral1D c),
+  (NotEmptyProvenConsInternal,     "Internal", Circle,  coral1B c),
+  (LocallyEmptyOpenConsInternal,   "Internal", Circle,  coral2D c),
+  (LocallyEmptyProvenConsInternal, "Internal", Circle,  green2B c),
+  (NotEmptyDGRef,                  "Ref",      Box,     coral1D c),
+  (LocallyEmptyDGRef,              "Ref",      Box,     green2D c)]
   where
-    coral = getColor opts "Coral"
-    green = getColor opts "Green"
+    c = colors opts
 
 -- | A Map of all nodetypes and their properties.
-mapNodeTypes :: HetcatsOpts -> Map.Map DGNodeType (Shape value, String)
-mapNodeTypes opts = Map.fromList $ map (\(a, b, c) -> (a, (b,c)))
+mapNodeTypes :: HetcatsOpts -> Map.Map DGNodeType (Shape GA.NodeValue, String)
+mapNodeTypes opts = Map.fromList $ map (\(a, _, b, c) -> (a, (b,c)))
                                  $ nodeTypes opts
-
--- | Converts colors to grayscale
-getColor :: HetcatsOpts -> String -> String
-getColor opts color
-  | not $ uncolored opts  = color
-  | color == "Coral"      = "darkgrey"
-  | color == "Green"      = "lightgrey"
-  | color == "Steelblue"  = "steelgrey"
-  | color == "Lightblue"  = "lightsteelgrey"
-  | color == "Yellow"     = "darksteelgrey"
-  | color == "Lightgreen" = "grey"
-  | otherwise             = "black"
 
 -- | Creates the graph. Runs makegraph
 createGraph :: GInfo -> String -> ConvFunc -> LibFunc -> IO ()
@@ -286,19 +267,14 @@ createGlobalMenu gInfo@(GInfo { gi_LIB_NAME = ln
 createNodeTypes :: GInfo -> ConvFunc -> LibFunc
                 -> [(DGNodeType,DaVinciNodeTypeParms GA.NodeValue)]
 createNodeTypes gInfo@(GInfo {gi_hetcatsOpts = opts}) cGraph showLib =
-  [(NotEmptyOpenConsSpec, createLocalMenuNodeTypeSpec c gInfo),
-   (NotEmptyProvenConsSpec, createLocalMenuNodeTypeSpec c gInfo),
-   (LocallyEmptyOpenConsSpec, createLocalMenuNodeTypeSpec c gInfo),
-   (LocallyEmptyProvenConsSpec, createLocalMenuNodeTypeSpec g gInfo),
-   (NotEmptyOpenConsInternal, createLocalMenuNodeTypeInternal c gInfo),
-   (NotEmptyProvenConsInternal, createLocalMenuNodeTypeInternal c gInfo),
-   (LocallyEmptyOpenConsInternal, createLocalMenuNodeTypeInternal c gInfo),
-   (LocallyEmptyProvenConsInternal, createLocalMenuNodeTypeInternal g gInfo),
-   (NotEmptyDGRef, createLocalMenuNodeTypeDgRef c gInfo cGraph showLib),
-   (LocallyEmptyDGRef, createLocalMenuNodeTypeDgRef g gInfo cGraph showLib)]
+  map (\ (n, t, s, c) -> (n, menu t s c)) $ nodeTypes opts
   where
-    c = getColor opts "Coral"
-    g = getColor opts "Green"
+    menu t s c = 
+      case t of
+        "Spec" -> createLocalMenuNodeTypeSpec s c gInfo
+        "Internal" -> createLocalMenuNodeTypeInternal s c gInfo
+        "Ref" -> createLocalMenuNodeTypeDgRef s c gInfo cGraph showLib
+        _ -> error "CreateNodeTypes: Error in nodeTypes table: Type not known."
 
 -- | the link types (share strings to avoid typos)
 createLinkTypes :: GInfo -> [(DGEdgeType,DaVinciArcTypeParms GA.EdgeValue)]
@@ -327,19 +303,19 @@ createLocalMenuNode gInfo = LocalMenu (Menu (Just "node menu") $ map ($ gInfo)
   , createLocalMenuButtonCCCAtNode ]) $$$ emptyNodeTypeParms
 
 -- | local menu for the nodetypes spec and locallyEmpty_spec
-createLocalMenuNodeTypeSpec :: String -> GInfo
+createLocalMenuNodeTypeSpec :: Shape GA.NodeValue -> String -> GInfo
                             -> DaVinciNodeTypeParms GA.NodeValue
-createLocalMenuNodeTypeSpec color gInfo =
-                 Ellipse $$$ Color color
+createLocalMenuNodeTypeSpec shape color gInfo =
+                 shape $$$ Color color
                  $$$ ValueTitle (\ (s,_) -> return s)
                  $$$ createLocalMenuNode gInfo
 
 -- | local menu for the nodetypes internal and locallyEmpty_internal
-createLocalMenuNodeTypeInternal :: String -> GInfo
+createLocalMenuNodeTypeInternal :: Shape GA.NodeValue -> String -> GInfo
                                 -> DaVinciNodeTypeParms GA.NodeValue
-createLocalMenuNodeTypeInternal color
+createLocalMenuNodeTypeInternal shape color
                gInfo@(GInfo {internalNamesIORef = showInternalNames}) =
-                 Ellipse $$$ Color color
+                 shape $$$ Color color
                  $$$ ValueTitleSource (\ (s,_) -> do
                        b <- newSimpleBroadcaster ""
                        intrn <- readIORef showInternalNames
@@ -350,10 +326,11 @@ createLocalMenuNodeTypeInternal color
                  $$$ createLocalMenuNode gInfo
 
 -- | local menu for the nodetypes dg_ref and locallyEmpty_dg_ref
-createLocalMenuNodeTypeDgRef :: String -> GInfo -> ConvFunc -> LibFunc
+createLocalMenuNodeTypeDgRef :: Shape GA.NodeValue -> String -> GInfo
+                             -> ConvFunc -> LibFunc
                              -> DaVinciNodeTypeParms GA.NodeValue
-createLocalMenuNodeTypeDgRef color gInfo convGraph showLib =
-                 Box $$$ Color color
+createLocalMenuNodeTypeDgRef shape color gInfo convGraph showLib =
+                 shape $$$ Color color
                  $$$ ValueTitle (\ (s,_) -> return s)
                  $$$ LocalMenu (Menu (Just "node menu")
                    [createLocalMenuButtonShowNodeInfo gInfo,

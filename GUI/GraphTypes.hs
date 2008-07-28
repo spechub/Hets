@@ -15,6 +15,8 @@ module GUI.GraphTypes
     , ConvFunc
     , LibFunc
     , DaVinciGraphTypeSyn
+    , Colors(..)
+    , colors
     , emptyGInfo
     , copyGInfo
     , lockGlobal
@@ -33,7 +35,7 @@ import Static.DevGraph
 
 import Common.Id(nullRange)
 
-import Driver.Options(HetcatsOpts, defaultHetcatsOpts)
+import Driver.Options(HetcatsOpts(uncolored), defaultHetcatsOpts)
 
 import Data.IORef
 
@@ -79,6 +81,32 @@ type DaVinciGraphTypeSyn =
            DaVinciArc
            DaVinciArcType
            DaVinciArcTypeParms
+
+{- | Colors to use. From dark to bright.
+     Names are structured:
+       color,
+       maybe number (higher number is brighter),
+       D for dark version of color and B for bright version -}
+data Colors = Colors
+  { blackD :: String
+  , blackB :: String
+  , blue1D :: String
+  , blue1B :: String
+  , blue2D :: String
+  , blue2B :: String
+  , coral1D :: String
+  , coral1B :: String
+  , coral2D :: String
+  , coral2B :: String
+  , green1D :: String
+  , green1B :: String
+  , green2D :: String
+  , green2B :: String
+  , yellowD :: String
+  , yellowB :: String
+  , khakiD :: String
+  , khakiB :: String
+  }
 
 -- | Creates an empty GInfo
 emptyGInfo :: IO GInfo
@@ -133,3 +161,30 @@ unlockGlobal (GInfo { globalLock = lock }) = do
   case unlocked of
     Just () -> return ()
     Nothing -> error "Global lock wasn't locked."
+
+-- | Generates the colortable
+colors :: HetcatsOpts -> Colors
+colors opts = Colors
+  { blackD  = getColor opts ("gray0",           "gray0")
+  , blackB  = getColor opts ("gray30",          "gray5")
+  , blue1D  = getColor opts ("RoyalBlue3",      "gray20")
+  , blue1B  = getColor opts ("RoyalBlue1",      "gray23")
+  , blue2D  = getColor opts ("SteelBlue3",      "gray27")
+  , blue2B  = getColor opts ("SteelBlue1",      "gray30")
+  , coral1D = getColor opts ("coral3",          "gray40")
+  , coral1B = getColor opts ("coral1",          "gray43")
+  , coral2D = getColor opts ("LightSalmon2",    "gray47")
+  , coral2B = getColor opts ("LightSalmon",     "gray50")
+  , green1D = getColor opts ("MediumSeaGreen",  "gray60")
+  , green1B = getColor opts ("PaleGreen3",      "gray63")
+  , green2D = getColor opts ("PaleGreen2",      "gray67")
+  , green2B = getColor opts ("LightGreen",      "gray70")
+  , yellowD = getColor opts ("gold2",           "gray78")
+  , yellowB = getColor opts ("gold",            "gray81")
+  , khakiD  = getColor opts ("LightGoldenrod3", "gray85")
+  , khakiB  = getColor opts ("LightGoldenrod",  "gray88")
+  }
+
+-- | Converts colors to grayscale if needed
+getColor :: HetcatsOpts -> (String, String) -> String
+getColor opts (cname, gname) = if uncolored opts then gname else cname
