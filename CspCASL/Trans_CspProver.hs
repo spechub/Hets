@@ -23,11 +23,11 @@ import Isabelle.IsaConsts
 transProcess :: PROCESS -> Term
 transProcess pr = case pr of
     -- precedence 0
-    Skip _ -> conDouble cspProver_skipS
-    Stop _ -> conDouble cspProver_stopS
-    Div  _ -> conDouble cspProver_divS
-    Run es _ -> App (conDouble cspProver_runS) (transEventSet es) NotCont
-    Chaos es _ -> App (conDouble cspProver_chaosS)  (transEventSet es) NotCont
+    Skip _ -> cspProver_skipOp
+    Stop _ -> cspProver_stopOp
+    Div  _ -> cspProver_divOp
+    Run es _ -> App (cspProver_runOp) (transEventSet es) NotCont
+    Chaos es _ -> App (cspProver_chaosOp) (transEventSet es) NotCont
 
     NamedProcess pn ts _ ->
         let pnTerm = conDouble $ show pn
