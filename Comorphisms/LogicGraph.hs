@@ -40,6 +40,7 @@ module Comorphisms.LogicGraph
     ( logicGraph
     , lookupComorphism_in_LG
     , comorphismList
+    , inclusionList
     , lookupSquare_in_LG
     ) where
 
@@ -109,8 +110,8 @@ addMorphismName m@(Morphism cid) = (language_name cid, m)
 addModificationName :: AnyModification -> (String,AnyModification)
 addModificationName m@(Modification cid) = (language_name cid, m)
 
-normalList :: [AnyComorphism]
-normalList =
+comorphismList :: [AnyComorphism]
+comorphismList =
     [ Comorphism CASL2HasCASL
     , Comorphism CFOL2IsabelleHOL
     , Comorphism Prop2CASL
@@ -148,12 +149,9 @@ normalList =
     , Comorphism $ CASL2SubCFOL False NoMembershipOrCast -- keep free types
     , Comorphism CASL2TopSort ]
 
-comorphismList :: [AnyComorphism]
-comorphismList = Map.elems $ comorphisms logicGraph
-
 inclusionList :: [AnyComorphism]
 inclusionList =
-    filter (\ (Comorphism cid) -> isInclusionComorphism cid) normalList
+    filter (\ (Comorphism cid) -> isInclusionComorphism cid) comorphismList
 
 addComps :: Map.Map (String, String) AnyComorphism
          -> Map.Map (String, String) AnyComorphism
@@ -191,8 +189,8 @@ logicGraph = emptyLogicGraph
     { logics = Map.fromList $ map addLogicName $ logicList
         ++ concatMap (\ (Comorphism cid) ->
              [Logic $ sourceLogic cid, Logic $ targetLogic cid])
-           normalList
-    , comorphisms = Map.fromList $ map addComorphismName normalList
+           comorphismList
+    , comorphisms = Map.fromList $ map addComorphismName comorphismList
     , inclusions = addCompsN $ Map.fromList
         $ map addInclusionNames inclusionList
     , unions = Map.fromList $ map addUnionNames unionList

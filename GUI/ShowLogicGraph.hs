@@ -198,10 +198,10 @@ showLogicGraph
                         tid = Logic (targetLogic cid)
                     in  newArc logicG inclArcType i (lookupLogi sid)
                             (lookupLogi tid))
-       mapM_ insertIncl (Map.elems(inclusions logicGraph))
+       mapM_ insertIncl inclusionList
        mapM_ insertComo $
-             filter (not . flip elem (Map.elems(inclusions logicGraph))) $
-             Map.elems(comorphisms logicGraph)
+             filter (not . flip elem inclusionList) $
+             comorphismList
        redraw logicG
     where
         (nullArcTypeParms :: arcTypeParms AnyComorphism) = emptyArcTypeParms
@@ -390,7 +390,7 @@ showHetSublogicGraph
                   newArc logicG tp acm (lookupLogi src)
                             (lookupLogi trg))
            (inclCom, notInclCom) =
-               partition ((`elem` Map.elems (inclusions logicGraph)) . snd) $
+               partition ((`elem` inclusionList) . snd) $
                concatMap (\ (x, ys) -> zip (repeat x) ys) $
                    Map.toList -- [((String,String),[AnyComorphism])]
                           (comorphismEdges hetSublogicGraph)
