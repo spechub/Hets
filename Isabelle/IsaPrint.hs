@@ -114,7 +114,7 @@ isRecDef s = case sentence s of
 ----------------------- Printing functions -----------------------------
 
 showBaseSig :: BaseSig -> String
-showBaseSig = reverse . drop 4 . reverse . show
+showBaseSig = takeWhile (/= '_') . show
 
 printClass :: IsaClass -> Doc
 printClass (IsaClass x) = text x

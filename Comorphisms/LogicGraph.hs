@@ -64,6 +64,7 @@ import Comorphisms.SuleCFOL2SoftFOL
 import Comorphisms.Prop2CASL
 import Comorphisms.HasCASL2IsabelleHOL
 import Comorphisms.PCoClTyConsHOL2IsabelleHOL
+import Comorphisms.PCoClTyConsHOL2PairsInIsaHOL
 import Comorphisms.HasCASL2PCoClTyConsHOL
 import Comorphisms.CASL2TopSort
 #ifdef CASLEXTENSIONS
@@ -135,6 +136,7 @@ normalList =
     , Comorphism Haskell2IsabelleHOL
 #endif
     , Comorphism PCoClTyConsHOL2IsabelleHOL
+    , Comorphism PCoClTyConsHOL2PairsInIsaHOL
     , Comorphism HasCASL2IsabelleHOL
     , Comorphism SuleCFOL2SoftFOLInduction
     , Comorphism HasCASL2PCoClTyConsHOL
