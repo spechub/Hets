@@ -35,6 +35,7 @@ module CspCASL.CspProver_Consts (
 import Isabelle.IsaSign as IsaSign
 
 -- Symbols for CspProver
+-- These symbols and priorities have come from the CSP-Prover source code
 
 -- SKIP primitive process symbol
 cspProver_skipS :: String
