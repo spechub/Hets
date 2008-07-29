@@ -31,13 +31,13 @@ module Proofs.AbstractState
     , GetPName (..)
     , getGoals, markProved
     , G_theory_with_prover (..)
-    , G_theory_with_cons_checker (..) 
+    , G_theory_with_cons_checker (..)
     , prepareForProving
     , prepareForConsChecking
     , getProvers, getConsCheckers
     , lookupKnownProver
     , lookupKnownConsChecker
-    , getConsCheckersAutomatic 
+    , getConsCheckersAutomatic
     ) where
 
 import qualified Data.Map as Map
@@ -211,14 +211,14 @@ initialState lid1 thN th@(G_theory lid2 sig ind thSens _) pm cms =
 
 
 
-data G_theory_with_cons_checker = 
-    forall lid sublogics 
+data G_theory_with_cons_checker =
+    forall lid sublogics
         basic_spec sentence symb_items symb_map_items
          sign morphism symbol raw_symbol proof_tree .
         Logic lid sublogics
          basic_spec sentence symb_items symb_map_items
           sign morphism symbol raw_symbol proof_tree =>
-    G_theory_with_cons_checker lid 
+    G_theory_with_cons_checker lid
                   (TheoryMorphism sign sentence morphism proof_tree)
                   (ConsChecker sign sentence sublogics morphism proof_tree)
 
@@ -249,9 +249,9 @@ prepareForConsChecking :: (Logic lid sublogics1
                               proof_tree1) =>
                          ProofState lid sentence
                       -> (G_cons_checker, AnyComorphism)
-                      -> Result G_theory_with_cons_checker 
-prepareForConsChecking st (G_cons_checker lid4 p, Comorphism cid) = 
-    case selectedTheory st of 
+                      -> Result G_theory_with_cons_checker
+prepareForConsChecking st (G_cons_checker lid4 p, Comorphism cid) =
+    case selectedTheory st of
      G_theory lid1 (ExtSign sign _) _ sens _ ->
        do
         let lidT = targetLogic cid
@@ -408,7 +408,7 @@ lookupKnownConsChecker :: (Logic lid sublogics1
                          ,Monad m) =>
                          ProofState lid sentence -> ProverKind
                          -> m (G_cons_checker,AnyComorphism)
-lookupKnownConsChecker st pk =
+lookupKnownConsChecker st _ =
        let sl = sublogicOfTheory st
            mt = do
                  pr_s <- selectedConsChecker st
@@ -417,7 +417,7 @@ lookupKnownConsChecker st pk =
            matchingCC s (gp,_) = case gp of
                                   G_cons_checker _ p -> prover_name p == s
            findCC (pr_n,cms) =
-               case filter (matchingCC pr_n) $ getConsCheckers 
+               case filter (matchingCC pr_n) $ getConsCheckers
                     $ filter (lessSublogicComor sl) cms of
                  [] -> fail ("PGIP.ProverConsistency.lookupKnownConsChecker"++
                                  ": no consistency checker found")
