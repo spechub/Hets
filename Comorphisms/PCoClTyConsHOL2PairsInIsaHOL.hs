@@ -168,11 +168,14 @@ transPlainFunType fty =
                                $ map transFunType l
     _ -> transFunType fty
 
-data FunType = UnitType | BoolType | FunType FunType FunType
-             | PartialVal FunType | PairType FunType FunType
-             | TupleType [FunType]
-             | ApplType Id [FunType] | TypeVar Id
-               deriving Eq
+data FunType = UnitType | BoolType
+  | FunType FunType FunType
+  | PartialVal FunType
+  | PairType FunType FunType -- only used to represent tuples as nested pairs
+  | TupleType [FunType]
+  | ApplType Id [FunType]
+  | TypeVar Id
+    deriving Eq
 
 isPartialVal :: FunType -> Bool
 isPartialVal t = case t of
@@ -454,7 +457,7 @@ instType :: FunType -> FunType -> ConvFun
 instType f1 f2 = case (f1, f2) of
     (TupleType l1, _) -> instType (foldl1 PairType l1) f2
     (_, TupleType l2) -> instType f1 $ foldl1 PairType l2
-    (PartialVal (TypeVar _), BoolType) -> Option2bool
+    (PartialVal (TypeVar _), BoolType) -> Partial2bool
     (PairType a c, PairType b d) ->
         let c2 = instType c d
             c1 = instType a b
@@ -467,22 +470,26 @@ instType f1 f2 = case (f1, f2) of
 
 invertConv :: ConvFun -> ConvFun
 invertConv c = case c of
-    Option2bool -> Bool2option
+    Partial2bool -> Bool2partial
     MapFun mv cf -> MapFun mv $ invertConv cf
     ResFun cf -> ResFun $ invertConv cf
     ArgFun cf -> ArgFun $ invertConv cf
     CompFun c1 c2 -> CompFun (invertConv c2) (invertConv c1)
     _ -> IdOp
 
-data MapFun = MapFst | MapSnd | MapSome
+data MapFun = MapFst | MapSnd | MapPartial
 
 data LiftFun = LiftFst | LiftSnd
 
-data ConvFun = IdOp | CompFun ConvFun ConvFun | ConstNil | ConstTrue | SomeOp
-             | MapFun MapFun ConvFun | LiftFun LiftFun ConvFun
-             | LiftUnit FunType
-             | LiftSome FunType
-             | ResFun ConvFun | ArgFun ConvFun | Bool2option | Option2bool
+data ConvFun =
+    IdOp | ConstNil | ConstTrue | MkPartial | Bool2partial | Partial2bool
+  | CompFun ConvFun ConvFun
+  | MapFun MapFun ConvFun
+  | LiftFun LiftFun ConvFun
+  | LiftUnit FunType
+  | LiftPartial FunType
+  | ResFun ConvFun
+  | ArgFun ConvFun
 
 isNotIdOp :: ConvFun -> Bool
 isNotIdOp f = case f of
@@ -510,7 +517,7 @@ mapFun :: MapFun -> Isa.Term
 mapFun mf = case mf of
     MapFst -> mapFst
     MapSnd -> mapSnd
-    MapSome -> mapSome
+    MapPartial -> mapSome
 
 compOp :: Isa.Term
 compOp = con compV
@@ -518,14 +525,14 @@ compOp = con compV
 convFun :: ConvFun -> Isa.Term
 convFun cvf = case cvf of
     IdOp -> idOp
-    Bool2option -> bool2option
-    Option2bool -> option2bool
+    Bool2partial -> bool2option
+    Partial2bool -> option2bool
     LiftUnit rTy -> case rTy of
        UnitType -> liftUnit2unit
        BoolType -> liftUnit2bool
        PartialVal _ -> liftUnit2option
        _ -> liftUnit
-    LiftSome rTy ->
+    LiftPartial rTy ->
         case rTy of
             UnitType -> lift2unit
             BoolType -> lift2bool
@@ -535,7 +542,7 @@ convFun cvf = case cvf of
         mkTermAppl (mkTermAppl compOp $ convFun f1) $ convFun f2
     ConstNil -> constNil
     ConstTrue -> constTrue
-    SomeOp -> conSome
+    MkPartial -> conSome
     MapFun mf cv -> mkTermAppl (mapFun mf) $ convFun cv
     LiftFun lf cv -> let ccv = convFun cv in case lf of
         LiftFst -> mkTermAppl (mkTermAppl compOp
@@ -586,25 +593,25 @@ adjustTypes aTy rTy ty = case (aTy, ty) of
     (_, TupleType l) -> adjustTypes aTy rTy $ foldl1 PairType l
     (BoolType, BoolType) -> return ((False, IdOp), (ty, IdOp))
     (UnitType, UnitType) -> return ((False, IdOp), (ty, IdOp))
-    (PartialVal _, BoolType) -> return ((False, IdOp), (aTy, Bool2option))
-    (BoolType, PartialVal _) -> return ((False, IdOp), (aTy, Option2bool))
+    (PartialVal _, BoolType) -> return ((False, IdOp), (aTy, Bool2partial))
+    (BoolType, PartialVal _) -> return ((False, IdOp), (aTy, Partial2bool))
     (_, BoolType) -> return ((True, LiftUnit rTy), (ty, IdOp))
     (BoolType, _) -> return ((False, IdOp), (aTy, ConstTrue))
     (PartialVal a, PartialVal b) -> do
         q@(fp, (argTy, aTrm)) <- adjustTypes a rTy b
         return $ case argTy of
             PartialVal _ -> q
-            _ -> (fp, (PartialVal argTy, mkMapFun MapSome aTrm))
+            _ -> (fp, (PartialVal argTy, mkMapFun MapPartial aTrm))
     (a, PartialVal b) -> do
         q@(_, ap@(argTy, _)) <- adjustTypes a rTy b
         return $ case argTy of
             PartialVal _ -> q
-            _ -> ((True, LiftSome rTy), ap)
+            _ -> ((True, LiftPartial rTy), ap)
     (PartialVal a, b) -> do
         q@(fp, (argTy, aTrm)) <- adjustTypes a rTy b
         return $ case argTy of
             PartialVal _ -> q
-            _ -> (fp, (PartialVal argTy, mkCompFun SomeOp aTrm))
+            _ -> (fp, (PartialVal argTy, mkCompFun MkPartial aTrm))
     (PairType a c, PairType b d) -> do
         ((res2Ty, f2), (arg2Ty, a2)) <- adjustTypes c rTy d
         ((res1Ty, f1), (arg1Ty, a1)) <- adjustTypes a
