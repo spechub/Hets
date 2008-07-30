@@ -1443,13 +1443,8 @@ createNodeFromSpecOM
     caslsign = (emptySign ())
         {
             sortSet = Set.map xnWOaToa (ts_sorts ts)
-          , sortRel =
-              Rel.fromList
-                $
-                map
-                  (\(a, b) -> (xnWOaToa a, xnWOaToa b))
-                  $
-                  (Rel.toList (ts_sortrelation ts))
+          , sortRel = Rel.irreflex $ Rel.transClosure
+                  $ Rel.map xnWOaToa $ ts_sortrelation ts
           , opMap =
               implodeSetToMap
                 opTypeXNWONToOpType
