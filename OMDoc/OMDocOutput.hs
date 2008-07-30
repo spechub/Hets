@@ -1276,7 +1276,7 @@ createADTFor theoname rel s ln nn uniqueNames collectionMap constructors fixed =
                     (is, recogs', pins')
         )
         ([], [], [])
-        (Rel.toList rel)
+        (Rel.toList $ Rel.transReduce rel)
   in
     (
         OMDoc.mkADTEx
