@@ -21,7 +21,6 @@ module GUI.GraphLogic
     , saveProofStatus
     , nodeErr
     , proofMenu
-    , openTranslateGraph
     , showReferencedLibrary
     , getTheoryOfNode
     , translateTheoryOfNode
@@ -100,7 +99,6 @@ import System.Directory(getModificationTime)
 
 import Data.IORef
 import Data.Char(toLower)
-import Data.Maybe(fromJust)
 import Data.List(partition)
 import Data.Graph.Inductive.Graph (Node, LEdge, LNode)
 import qualified Data.Map as Map
@@ -618,11 +616,11 @@ translateTheoryOfNode gInfo@(GInfo {gi_hetcatsOpts = opts,
          -- find all comorphism paths starting from lid
          let paths = findComorphismPaths logicGraph (sublogicOfTh th)
          -- let the user choose one
-         sel <- lift $ listBox "Choose a logic translation"
+         sel <- lift $ listBox "Choose a node logic translation"
                    (map show paths)
          i <- case sel of
            Just j -> return j
-           _ -> liftR $ fail "no logic translation chosen"
+           _ -> liftR $ fail "no node logic translation chosen"
          Comorphism cid <- return (paths!!i)
          -- adjust lid's
          let lidS = sourceLogic cid
@@ -863,36 +861,32 @@ openTranslateGraph libEnv ln opts (Res.Result diagsSl mSublogic) convGraph
     -- if an error existed by the search of maximal sublogicn
     -- (see GUI.DGTranslation.getDGLogic), the process need not to go on.
     let myErrMess = errorMess . showRelDiags (verbose opts) in
-    if hasErrors diagsSl then myErrMess diagsSl
-       else case mSublogic of
-             Just sublogic -> do
-                 let paths = findComorphismPaths logicGraph sublogic
-                 if null paths then
-                     errorMess "This graph has no comorphism to translation."
-                   else do
-                       Res.Result diagsR i <- runResultT ( do
-                         -- the user choose one
-                         sel <- lift $ listBox "Choose a logic translation"
-                                (map show paths)
-                         case sel of
-                           Just j -> return j
-                           _ -> liftR $ fail "no logic translation chosen")
-                       let aComor = paths !! fromJust i
+    if hasErrors diagsSl then myErrMess diagsSl else case mSublogic of
+      Nothing -> errorMess "the maximal sublogic is not found."
+      Just sublogic -> do
+        let paths = findComorphismPaths logicGraph sublogic
+        if null paths then
+            errorMess "This graph has no comorphism to translation."
+           else do
+             -- the user choose one
+           sel <- listBox "Choose a logic translation"
+                  $ map show paths
+           case sel of
+             Nothing -> errorMess "no logic translation chosen"
+             Just j -> do
                        -- graph translation.
-                       case libEnv_translation libEnv aComor of
-                         Res.Result diagsTrans (Just newLibEnv) -> do
-                             showDiags opts (diagsSl ++ diagsR ++ diagsTrans)
-                             if hasErrors (diagsR ++ diagsTrans) then
-                                    myErrMess $ diagsR ++ diagsTrans
-                                  else dg_showGraphAux
+               let Res.Result diagsTrans mLEnv =
+                      libEnv_translation libEnv $ paths !! j
+               case mLEnv of
+                 Just newLibEnv -> do
+                   showDiags opts $ diagsSl ++ diagsTrans
+                   dg_showGraphAux
                                    (\gI@(GInfo{libEnvIORef = iorLE}) -> do
                                      writeIORef iorLE newLibEnv
                                      convGraph (gI{ gi_LIB_NAME = ln
                                                   , gi_hetcatsOpts = opts})
                                                "translation Graph" showLib)
-                         Res.Result diagsTrans Nothing ->
-                             myErrMess $ diagsSl ++ diagsR ++ diagsTrans
-             Nothing -> errorMess "the maximal sublogic is not found."
+                 Nothing -> myErrMess $ diagsSl ++ diagsTrans
 
 dg_showGraphAux :: (GInfo -> IO ()) -> IO ()
 dg_showGraphAux convFct = do
