@@ -55,11 +55,16 @@ basicAnalysisCspCASL (cc, sigma, ga) = do
     return (cc, mkExtSign accSig, [makeNamed "empty_sentence" emptyCCSentence,
                                    makeNamed "StopProcSen"  stopProc,
                                    makeNamed "GParProcSen"  gParProc,
+                                   makeNamed "AParProcSen"  aParProc,
                                    makeNamed "StopProcSen"  seqProc])
     where stopProc = CspCASLSentence (mkSimpleId "stopProc") [] (Stop nullRange )
           seqProc = CspCASLSentence (mkSimpleId "seqProc") [] (Sequential (Stop nullRange) (Stop nullRange) nullRange)
           gParProc = CspCASLSentence (mkSimpleId "gParProc") [] (GeneralisedParallel (Stop nullRange)
                                                                                      (EventSet [mkSimpleId "hugo"] nullRange)
+                                                                                     (Skip nullRange) nullRange)
+          aParProc = CspCASLSentence (mkSimpleId "gParProc") [] (AlphabetisedParallel (Stop nullRange)
+                                                                                     (EventSet [mkSimpleId "hugo1"] nullRange)
+                                                                                     (EventSet [mkSimpleId "hugo2"] nullRange)
                                                                                      (Skip nullRange) nullRange)
 
 ana_BASIC_CSP :: CspBasicSpec -> State CspCASLSign ()

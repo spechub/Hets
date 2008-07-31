@@ -33,6 +33,7 @@ module CspCASL.CspProver_Consts (
 ) where
 
 import Isabelle.IsaSign as IsaSign
+import Isabelle.IsaConsts (binVNameAppl, con, termAppl)
 
 -- Symbols for CspProver
 -- These symbols and priorities have come from the CSP-Prover source code
@@ -210,143 +211,129 @@ cspProver_chaosOp :: Term
 cspProver_chaosOp = makeCspProverOpNoAlt cspProver_chaosS
 
 -- | Action prefix operator
-cspProver_act_prefixOp :: Term
+cspProver_act_prefixOp :: Term -> Term -> Term
 cspProver_act_prefixOp =
-    makeCspProverOp cspProver_act_prefixS
-                    cspProver_act_prefixAltS
-                    cspProver_act_prefixAltArgPrios
-                    cspProver_act_prefixAltOpPrio
+    makeBinCspProverOp cspProver_act_prefixS
+                       cspProver_act_prefixAltS
+                       cspProver_act_prefixAltArgPrios
+                       cspProver_act_prefixAltOpPrio
 
 -- | External prefix choice operator
-cspProver_ext_prefix_choiceOp :: Term
+cspProver_ext_prefix_choiceOp :: Term -> Term -> Term
 cspProver_ext_prefix_choiceOp =
-    makeCspProverOp cspProver_ext_prefix_choiceS
-                    cspProver_ext_prefix_choiceAltS
-                    cspProver_ext_prefix_choiceAltArgPrios
-                    cspProver_ext_prefix_choiceAltOpPrio
+    makeBinCspProverOp cspProver_ext_prefix_choiceS
+                       cspProver_ext_prefix_choiceAltS
+                       cspProver_ext_prefix_choiceAltArgPrios
+                       cspProver_ext_prefix_choiceAltOpPrio
 
 -- | Internal prefix choice operator
-cspProver_int_prefix_choiceOp :: Term
+cspProver_int_prefix_choiceOp :: Term -> Term -> Term
 cspProver_int_prefix_choiceOp =
-    makeCspProverOp cspProver_int_prefix_choiceS
-                    cspProver_int_prefix_choiceAltS
-                    cspProver_int_prefix_choiceAltArgPrios
-                    cspProver_int_prefix_choiceAltOpPrio
+    makeBinCspProverOp cspProver_int_prefix_choiceS
+                       cspProver_int_prefix_choiceAltS
+                       cspProver_int_prefix_choiceAltArgPrios
+                       cspProver_int_prefix_choiceAltOpPrio
 
 -- | Sequence combinator operator
-cspProver_sequenceOp :: Term
+cspProver_sequenceOp :: Term -> Term -> Term
 cspProver_sequenceOp =
-    makeCspProverOp cspProver_sequenceS
-                    cspProver_sequenceAltS
-                    cspProver_sequenceAltArgPrios
-                    cspProver_sequenceAltOpPrio
+    makeBinCspProverOp cspProver_sequenceS
+                       cspProver_sequenceAltS
+                       cspProver_sequenceAltArgPrios
+                       cspProver_sequenceAltOpPrio
 
 -- | External choice operator
-cspProver_external_choiceOp :: Term
+cspProver_external_choiceOp :: Term -> Term -> Term
 cspProver_external_choiceOp =
-    makeCspProverOp cspProver_external_choiceS
-                    cspProver_external_choiceAltS
-                    cspProver_external_choiceAltArgPrios
-                    cspProver_external_choiceAltOpPrio
+    makeBinCspProverOp cspProver_external_choiceS
+                       cspProver_external_choiceAltS
+                       cspProver_external_choiceAltArgPrios
+                       cspProver_external_choiceAltOpPrio
 
 -- | Internal choice operator
-cspProver_internal_choiceOp :: Term
+cspProver_internal_choiceOp :: Term -> Term -> Term
 cspProver_internal_choiceOp =
-    makeCspProverOp cspProver_internal_choiceS
-                    cspProver_internal_choiceAltS
-                    cspProver_internal_choiceAltArgPrios
-                    cspProver_internal_choiceAltOpPrio
+    makeBinCspProverOp cspProver_internal_choiceS
+                       cspProver_internal_choiceAltS
+                       cspProver_internal_choiceAltArgPrios
+                       cspProver_internal_choiceAltOpPrio
 
 -- | Interleaving parallel operator
-cspProver_interleavingOp :: Term
+cspProver_interleavingOp :: Term -> Term -> Term
 cspProver_interleavingOp =
-    makeCspProverOp cspProver_interleavingS
-                    cspProver_interleavingAltS
-                    cspProver_interleavingAltArgPrios
-                    cspProver_interleavingAltOpPrio
+    makeBinCspProverOp cspProver_interleavingS
+                       cspProver_interleavingAltS
+                       cspProver_interleavingAltArgPrios
+                       cspProver_interleavingAltOpPrio
 
 -- | Synchronous parallel operator
-cspProver_synchronousOp :: Term
+cspProver_synchronousOp :: Term -> Term -> Term
 cspProver_synchronousOp =
-    makeCspProverOp cspProver_synchronousS
-                    cspProver_synchronousAltS
-                    cspProver_synchronousAltArgPrios
-                    cspProver_synchronousAltOpPrio
+    makeBinCspProverOp cspProver_synchronousS
+                       cspProver_synchronousAltS
+                       cspProver_synchronousAltArgPrios
+                       cspProver_synchronousAltOpPrio
 
 -- | Generalised parallel operator
-cspProver_general_parallelOp :: Term
+cspProver_general_parallelOp :: Term -> Term -> Term -> Term
 cspProver_general_parallelOp =
-    makeCspProverOp cspProver_general_parallelS
-                    cspProver_general_parallelAltS
-                    cspProver_general_parallelAltArgPrios
-                    cspProver_general_parallelAltOpPrio
+    makeTriCspProverOp cspProver_general_parallelS
+                       cspProver_general_parallelAltS
+                       cspProver_general_parallelAltArgPrios
+                       cspProver_general_parallelAltOpPrio
 
 -- | Alphabetised parallel operator symbols
-cspProver_alphabetised_parallelOp :: Term
+cspProver_alphabetised_parallelOp :: Term -> Term -> Term -> Term -> Term
 cspProver_alphabetised_parallelOp =
-    makeCspProverOp cspProver_alphabetised_parallelS
+    makeQuadCspProverOp cspProver_alphabetised_parallelS
                     cspProver_alphabetised_parallelAltS
                     cspProver_alphabetised_parallelAltArgPrios
                     cspProver_alphabetised_parallelAltOpPrio
 
 -- | Hiding operator
-cspProver_hidingOp :: Term
+cspProver_hidingOp :: Term -> Term -> Term
 cspProver_hidingOp =
-    makeCspProverOp cspProver_hidingS
-                    cspProver_hidingAltS
-                    cspProver_hidingAltArgPrios
-                    cspProver_hidingAltOpPrio
+    makeBinCspProverOp cspProver_hidingS
+                       cspProver_hidingAltS
+                       cspProver_hidingAltArgPrios
+                       cspProver_hidingAltOpPrio
 
 -- | Renaming operator
-cspProver_renamingOp :: Term
+cspProver_renamingOp :: Term -> Term -> Term
 cspProver_renamingOp =
-    makeCspProverOp cspProver_renamingS
-                    cspProver_renamingAltS
-                    cspProver_renamingAltArgPrios
-                    cspProver_renamingAltOpPrio
+    makeBinCspProverOp cspProver_renamingS
+                       cspProver_renamingAltS
+                       cspProver_renamingAltArgPrios
+                       cspProver_renamingAltOpPrio
 
 -- | Conditional operator
-cspProver_ifOp :: Term
+cspProver_ifOp :: Term -> Term -> Term -> Term
 cspProver_ifOp  =
-    makeCspProverOp cspProver_ifS
-                    cspProver_ifAltS
-                    cspProver_ifAltArgPrios
-                    cspProver_ifAltArgOpPrio
+    makeTriCspProverOp cspProver_ifS
+                       cspProver_ifAltS
+                       cspProver_ifAltArgPrios
+                       cspProver_ifAltArgOpPrio
+
+-- Create an Isabelle Term representing a (Unary) CspProver operator
+-- with no alternative syntax
+makeCspProverOpNoAlt :: String -> Term 
+makeCspProverOpNoAlt opName =
+    con $ VName opName $ Nothing
 
 -- Create an Isabelle Term representing a CspProver operator with alternative syntax
-makeCspProverOp :: String -> String -> [Int] -> Int -> Term
-makeCspProverOp opName altSyntax altArgPrios altOpPrio =
-    Const {
-        termName = VName {
-                     new = (opName),
-                     altSyn = Just (AltSyntax altSyntax altArgPrios altOpPrio)
-                    },
-        termType = Hide {
-                     typ = Type {
-                             typeId ="dummy",
-                             typeSort = [IsaClass "type"],
-                             typeArgs = []
-                           },
-                     kon = NA,
-                     arit= Nothing
-                   }
-    }
+makeBinCspProverOp :: String -> String -> [Int] -> Int -> Term -> Term -> Term
+makeBinCspProverOp opName altSyntax altArgPrios altOpPrio t1 t2 =
+    let vname = VName opName $ Just $ AltSyntax altSyntax altArgPrios altOpPrio
+    in binVNameAppl vname t1 t2
 
--- Create an Isabelle Term representing a CspProver operator with no alternative syntax
-makeCspProverOpNoAlt :: String -> Term
-makeCspProverOpNoAlt opName =
-    Const {
-        termName = VName {
-                     new = (opName),
-                     altSyn = Nothing
-                    },
-        termType = Hide {
-                     typ = Type {
-                             typeId ="dummy",
-                             typeSort = [IsaClass "type"],
-                             typeArgs = []
-                           },
-                     kon = NA,
-                     arit= Nothing
-                   }
-    }
+-- Create an Isabelle Term representing a CspProver operator (with 3 parameters) with alternative syntax
+makeTriCspProverOp :: String -> String -> [Int] -> Int -> Term -> Term -> Term -> Term
+makeTriCspProverOp opName altSyntax altArgPrios altOpPrio t1 t2 t3 =
+    let vname = VName opName $ Just $ AltSyntax altSyntax altArgPrios altOpPrio
+    in termAppl (binVNameAppl vname t1 t2) t3
+
+-- Create an Isabelle Term representing a CspProver operator (with 4 parameters) with alternative syntax
+makeQuadCspProverOp :: String -> String -> [Int] -> Int -> Term -> Term -> Term -> Term -> Term
+makeQuadCspProverOp opName altSyntax altArgPrios altOpPrio t1 t2 t3 t4 =
+    let vname = VName opName $ Just $ AltSyntax altSyntax altArgPrios altOpPrio
+    in termAppl (termAppl (binVNameAppl vname t1 t2) t3) t4

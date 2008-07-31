@@ -52,7 +52,7 @@ transProcess pr = case pr of
 -}
     -- precedence 3
     Sequential p q _ ->
-        App (App cspProver_sequenceOp (transProcess p) NotCont) (transProcess q) NotCont
+        cspProver_sequenceOp (transProcess p) (transProcess q)
 --        (pretty p) <+> (text cspProver_sequenceS) <+> (glue pr q)
 {-    PrefixProcess ev p _ ->
         (text "class(C_X") <+> (pretty ev) <> (text ")") <+> (text cspProver_prefixS) <+> (glue pr p)
@@ -78,15 +78,11 @@ transProcess pr = case pr of
         (pretty p) <+> (text cspProver_synchronousS) <+> (glue pr q)
 -}
     GeneralisedParallel p es q _ ->
-        App (App (App cspProver_general_parallelOp (transProcess p) NotCont)
-                     (transEventSet es) NotCont) (transProcess q) NotCont
-{-
-    AlphabetisedParallel p les res q _ ->
-        ((pretty p) <+> (text cspProver_alpha_parallel_openS) <+>
-         (pretty les) <+> (text cspProver_alpha_parallel_sepS) <+> (pretty res) <+>
-         (text cspProver_alpha_parallel_closeS) <+> (glue pr q)
-        )
+        cspProver_general_parallelOp (transProcess p) (transEventSet es) (transProcess q)
 
+    AlphabetisedParallel p les res q _ ->
+        cspProver_alphabetised_parallelOp (transProcess p) (transEventSet les) (transEventSet res) (transProcess q)
+{-
 -- glue and prec_comp decide whether the child in the parse tree needs
 -- to be parenthesised or not.  Parentheses are necessary if the
 -- right-child is at the same level of precedence as the parent but is

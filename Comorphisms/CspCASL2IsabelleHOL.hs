@@ -11,7 +11,9 @@ Portability :  non-portable (imports Logic.Logic)
 The comorphism from CspCASL to Isabelle-HOL.
 -}
 
-module Comorphisms.CspCASL2IsabelleHOL where
+module Comorphisms.CspCASL2IsabelleHOL (
+   CspCASL2IsabelleHOL(..)
+) where
 
 import CASL.AS_Basic_CASL
 import qualified CASL.Inject as CASLInject
@@ -65,6 +67,7 @@ instance Comorphism CspCASL2IsabelleHOL
 
 -- Functions for translating CspCasl theories and sentences to IsabelleHOL
 
+-- | Translate CspCASL theories to Isabelle
 transCCTheory :: (CspCASLSign, [Named CspCASLSentence]) -> Result IsaTheory
 transCCTheory ccTheory =
     let ccSign = fst ccTheory
@@ -82,7 +85,8 @@ transCCTheory ccTheory =
           -- Next Translate to IsabelleHOL code
           translation3 <- cfol2isabelleHol translation2
           -- Next add the preAlpabet construction to the IsabelleHOL code
-          return $ processCspCaslSentences ccSens$ addInstansanceOfEquiv
+          return $ addCspCaslSentences ccSens
+                 $ addInstansanceOfEquiv
                  $ addJustificationTheorems ccSign (fst translation1)
                  $ addEqFun sortList
                  $ addAllCompareWithFun ccSign
@@ -92,18 +96,19 @@ transCCTheory ccTheory =
 
 -- This is not implemented in a sensible way yet and is not used
 transCCSentence :: CspCASLSign -> CspCASLSentence -> Result IsaSign.Sentence
-transCCSentence ccsign (CspCASLSentence pn _ _) =
+transCCSentence _ (CspCASLSentence pn _ _) =
     do return (mkSen (Const (mkVName (show pn)) (Disp (Type "byeWorld" [] []) TFun Nothing)))
 
-processCspCaslSentences :: [Named CspCASLSentence] -> IsaTheory -> IsaTheory
-processCspCaslSentences namedSens isaTh = foldl processCspCaslSentence isaTh namedSens
+-- | Add a list of CspCASL sentences to an Isabelle theory
+addCspCaslSentences :: [Named CspCASLSentence] -> IsaTheory -> IsaTheory
+addCspCaslSentences namedSens isaTh = foldl addCspCaslSentence isaTh namedSens
 
-processCspCaslSentence :: IsaTheory -> Named CspCASLSentence -> IsaTheory
-processCspCaslSentence isaTh namedSen =
+-- | Add a single CspCASL sentence to an Isabelle theory
+addCspCaslSentence :: IsaTheory -> Named CspCASLSentence -> IsaTheory
+addCspCaslSentence isaTh namedSen =
     let sen = sentence namedSen
-        fakeType = Type {typeId = "Fake_Type" , typeSort = [], typeArgs =[]}
     in case sen of
-         CspCASLSentence pn vars proc ->
+         CspCASLSentence pn _ proc ->
              let name = show pn
                  t1 = conDouble name
                  t2 = transProcess proc
@@ -111,13 +116,13 @@ processCspCaslSentence isaTh namedSen =
 
 -- Functions for adding the PreAlphabet datatype to an Isabelle theory
 
--- Add the PreAlphabet (built from a list of sorts) to an Isabelle theory
+-- | Add the PreAlphabet (built from a list of sorts) to an Isabelle theory
 addPreAlphabet :: [SORT] -> IsaTheory -> IsaTheory
 addPreAlphabet sortList isaTh =
     let preAlphabetDomainEntry = mkPreAlphabetDE sortList
     in updateDomainTab preAlphabetDomainEntry isaTh
 
--- Make a PreAlphabet Domain Entry from a list of sorts
+-- | Make a PreAlphabet Domain Entry from a list of sorts
 mkPreAlphabetDE :: [SORT] -> DomainEntry
 mkPreAlphabetDE sorts =
     (Type {typeId = preAlphabetS, typeSort = [isaTerm], typeArgs = []},
@@ -130,29 +135,34 @@ mkPreAlphabetDE sorts =
 
 -- Functions for adding the eq functions and the compare_with functions to an Isabelle theory
 
--- Adds the eq function to an Isabelle theory using a list of sorts
+-- | Add the eq function to an Isabelle theory using a list of sorts
 addEqFun :: [SORT] -> IsaTheory -> IsaTheory
 addEqFun sortList isaTh =
     let preAlphabetType = Type {typeId = preAlphabetS , typeSort = [], typeArgs =[]}
         eqtype = mkFunType preAlphabetType $ mkFunType preAlphabetType boolType
-        isaThWithConst = addConst eqS eqtype isaTh
+        isaThWithConst = addConst eq_PreAlphabetS eqtype isaTh
         mkEq sort =
             let x = mkFree "x"
-                lhs = termAppl (conDouble eqS) (termAppl (conDouble (mkPreAlphabetConstructor sort)) x)
-                rhs = termAppl (conDouble (mkCompareWithFunName sort)) x
+                y = mkFree "y"
+                lhs = binEq_PreAlphabet lhs_a y
+                lhs_a = termAppl (conDouble (mkPreAlphabetConstructor sort)) x
+                rhs = termAppl rhs_a y
+                rhs_a = termAppl (conDouble (mkCompareWithFunName sort)) x
             in binEq lhs rhs
         eqs = map mkEq sortList
     in addPrimRec eqs isaThWithConst
 
--- Add all compare_with functions for a given list sorts to an Isabelle theory
--- We need to know about the casl signature to pass to the addCompareWithFun function
+-- | Add all compare_with functions for a given list of sorts to an
+--   Isabelle theory. We need to know about the casl signature so that
+--   we can pass it on to the addCompareWithFun function
 addAllCompareWithFun :: CspCASLSign -> IsaTheory -> IsaTheory
 addAllCompareWithFun ccSign isaTh =
     let sortList = Set.toList(CASLSign.sortSet ccSign)
     in  foldl (addCompareWithFun ccSign) isaTh sortList
 
--- Add a single compare_with function for a given sort to an Isabelle theory
--- We need to know about the casl signature to work out the RHS of the equations
+-- | Add a single compare_with function for a given sort to an
+--   Isabelle theory.  We need to know about the casl signature to
+--   work out the RHS of the equations.
 addCompareWithFun :: CspCASLSign -> IsaTheory -> SORT -> IsaTheory
 addCompareWithFun ccSign isaTh sort =
     let sortList = Set.toList(CASLSign.sortSet ccSign)
@@ -197,8 +207,10 @@ addCompareWithFun ccSign isaTh sort =
 
 -- Functions for producing the Justification theorems
 
--- Add all justification theorems to an Isabelle Theory
--- We need to know the number of sorts
+-- | Add all justification theorems to an Isabelle Theory. We need to
+--   the CspCASL signature and the PFOL Signature to pass it on. We
+--   could recalculate the PFOL signature from the CspCASL signature
+--   here, but we dont as it can be passed in.
 addJustificationTheorems :: CspCASLSign -> CASLSign.CASLSign -> IsaTheory -> IsaTheory
 addJustificationTheorems ccSign pfolSign isaTh =
     let sortRel = Rel.toList(CASLSign.sortRel ccSign)
@@ -210,13 +222,13 @@ addJustificationTheorems ccSign pfolSign isaTh =
        $ addReflexivityTheorem
        $ isaTh
 
--- Add the reflexivity theorem and proof to an Isabelle Theory
+-- | Add the reflexivity theorem and proof to an Isabelle Theory
 addReflexivityTheorem :: IsaTheory -> IsaTheory
 addReflexivityTheorem isaTh =
     let name = reflexivityTheoremS
         x = mkFree "x"
         thmConds = []
-        thmConcl = termAppl (termAppl (conDouble eqS) x) x
+        thmConcl = binEq_PreAlphabet x x
         proof' = IsaProof {
                    proof = [Apply (Induct "x"),
                             Apply Auto],
@@ -224,16 +236,16 @@ addReflexivityTheorem isaTh =
                  }
     in addThreomWithProof name thmConds thmConcl proof' isaTh
 
--- Add the symmetry theorem and proof to an Isabelle Theory
--- We need to know the number of sorts
+-- | Add the symmetry theorem and proof to an Isabelle Theory
+--   We need to know the number of sorts, but instead we are given a list of all sorts
 addSymmetryTheorem :: [SORT] -> IsaTheory -> IsaTheory
 addSymmetryTheorem sorts isaTh =
     let numSorts = length(sorts)
         name = symmetryTheoremS
         x = mkFree "x"
         y = mkFree "y"
-        thmConds = [termAppl (termAppl (conDouble eqS) x) y]
-        thmConcl = termAppl (termAppl (conDouble eqS) y) x
+        thmConds = [binEq_PreAlphabet x y]
+        thmConcl = binEq_PreAlphabet y x
         inductY = concat $ map (\i -> [Prefer (i*numSorts+1), Apply (Induct "y")]) [0..(numSorts-1)]
         proof' = IsaProof {
                    proof = [Apply (Induct "x")] ++ inductY ++ [Apply Auto],
@@ -241,15 +253,16 @@ addSymmetryTheorem sorts isaTh =
                  }
     in addThreomWithProof name thmConds thmConcl proof' isaTh
 
--- Add all the injectivity theorem and proof
+-- | Add all the injectivity theorems and proofs
 addAllInjectivityTheorems :: CASLSign.CASLSign -> [SORT] -> [(SORT,SORT)] -> IsaTheory -> IsaTheory
 addAllInjectivityTheorems pfolSign sorts sortRel isaTh =
     foldl (addInjectivityTheorem pfolSign sorts sortRel) isaTh sortRel
 
--- Add the injectivity theorem and proof which should be deduced from the
--- embedding_Injectivity axioms from the translation CASL2PCFOL;
--- CASL2SubCFOL for a single injection represented as a pair of sorts
--- We need to know all sorts to pass them on
+-- | Add the injectivity theorem and proof which should be deduced
+--   from the embedding_Injectivity axioms from the translation
+--   CASL2PCFOL; CASL2SubCFOL for a single injection represented as a
+--   pair of sorts. As a work around, we need to know all sorts to
+--   pass them on
 addInjectivityTheorem :: CASLSign.CASLSign -> [SORT] -> [(SORT,SORT)] -> IsaTheory -> (SORT,SORT) -> IsaTheory
 addInjectivityTheorem pfolSign sorts sortRel isaTh (s1,s2) =
     let x = mkFree "x"
@@ -282,15 +295,16 @@ addInjectivityTheorem pfolSign sorts sortRel isaTh (s1,s2) =
                            Done
     in addThreomWithProof name conds concl proof' isaTh
 
--- Add the decomposition theorem and proof which should be deduced from the
--- transitivity axioms from the translation CASL2PCFOL;
--- CASL2SubCFOL
+-- | Add the decomposition theorem and proof which should be deduced
+--   from the transitivity axioms from the translation CASL2PCFOL;
+--   CASL2SubCFOL
 addDecompositionTheorem :: IsaTheory -> IsaTheory
 addDecompositionTheorem isaTh = isaTh
 
--- Add the transitivity theorem and proof to an Isabelle Theory
--- We need to know the number of sorts
--- and also the sort relation to build the collection of injectivity theorem names
+-- | Add the transitivity theorem and proof to an Isabelle Theory. We
+--   need to know the number of sorts to know how much induction to
+--   perfom and also the sub-sort relation to build the collection of
+--   injectivity theorem names
 addTransitivityTheorem :: [SORT] -> [(SORT,SORT)] -> IsaTheory -> IsaTheory
 addTransitivityTheorem sorts sortRel isaTh =
     let colInjThmNames = getColInjThmName sortRel
@@ -299,8 +313,8 @@ addTransitivityTheorem sorts sortRel isaTh =
         x = mkFree "x"
         y = mkFree "y"
         z = mkFree "z"
-        thmConds = [termAppl (termAppl (conDouble eqS) x) y, termAppl (termAppl (conDouble eqS) y) z]
-        thmConcl = termAppl (termAppl (conDouble eqS) x) z
+        thmConds = [binEq_PreAlphabet x y, binEq_PreAlphabet y z]
+        thmConcl = binEq_PreAlphabet x z
         inductY = concat $ map (\i -> [Prefer (i*numSorts+1), Apply (Induct "y")]) [0..(numSorts-1)]
         inductZ = concat $ map (\i -> [Prefer (i*numSorts+1), Apply (Induct "z")]) [0..((numSorts^(2::Int))-1)]
         proof' = IsaProof {
@@ -312,12 +326,12 @@ addTransitivityTheorem sorts sortRel isaTh =
                  }
     in addThreomWithProof name thmConds thmConcl proof' isaTh
 
---  Function to add preAlphabet as an equivalence relation to an Isabelle theory
+-- | Function to add preAlphabet as an equivalence relation to an Isabelle theory
 addInstansanceOfEquiv :: IsaTheory  -> IsaTheory
 addInstansanceOfEquiv  isaTh =
-    let eqvSort = [IsaClass eqvS]
+    let eqvSort = [IsaClass eqvTypeClassS]
         eqvProof = IsaProof []  (By (Other "intro_classes"))
-        equivSort = [IsaClass equivS]
+        equivSort = [IsaClass equivTypeClassS]
         equivProof = IsaProof [Apply (Other "intro_classes"),
                                Apply (Other "unfold preAlphabet_sim_def"),
                                Apply (Other "rule eq_refl"),
@@ -326,8 +340,8 @@ addInstansanceOfEquiv  isaTh =
                                Done
         x = mkFree "x"
         y = mkFree "y"
-        defLhs = App (App eqvOp x NotCont) y NotCont
-        defRhs = termAppl (termAppl (conDouble eqS) x) y
+        defLhs = binEqvSim x y
+        defRhs = binEq_PreAlphabet x y
     in   addInstanceOf preAlphabetS [] equivSort equivProof
        $ addDef preAlphabetSimS defLhs defRhs
        $ addInstanceOf preAlphabetS [] eqvSort eqvProof
@@ -335,8 +349,15 @@ addInstansanceOfEquiv  isaTh =
 
 -- Function to help keep strings consistent
 
-eqS :: String
-eqS = "eq"
+eq_PreAlphabetS :: String
+eq_PreAlphabetS = "eq_PreAlphabet"
+
+eq_PreAlphabetV :: VName
+eq_PreAlphabetV   = VName eq_PreAlphabetS $ Nothing
+
+binEq_PreAlphabet :: Term -> Term -> Term
+binEq_PreAlphabet = binVNameAppl eq_PreAlphabetV
+
 
 preAlphabetS :: String
 preAlphabetS = "PreAlphabet"
@@ -353,33 +374,18 @@ transitivityS = "eq_trans"
 preAlphabetSimS :: String
 preAlphabetSimS = "preAlphabet_sim"
 
-eqvOp :: Term
-eqvOp = Const {
-          termName= VName {
-                      new = (eqvS),
-                      altSyn = Just (AltSyntax ("(_ \\<sim> _)") [50,51] 50)
-                    },
-          termType = Hide {
-                       typ = Type {
-                               typeId ="dummy",
-                               typeSort = [IsaClass "type"],
-                               typeArgs = []
-                             },
-                       kon = NA,
-                             arit= Nothing
-                     }
-        }
+-- | String for the name of the axiomatic type class of equivalence
+-- | relations part 1
+eqvTypeClassS :: String
+eqvTypeClassS  = "eqv"
 
--- String for the name of the axiomatic type class of equivalence relations part 1
-eqvS :: String
-eqvS  = "eqv"
+-- | String for the name of the axiomatic type class of equivalence
+-- | relations part 2
+equivTypeClassS :: String
+equivTypeClassS  = "equiv"
 
--- String for the name of the axiomatic type class of equivalence relations part 2
-equivS :: String
-equivS  = "equiv"
-
--- This function is not implemented in a satisfactory way
--- Return the injection name of the injection from one sort to another
+-- | Return the injection name of the injection from one sort to another
+--   This function is not implemented in a satisfactory way
 getInjectionOp :: SORT -> SORT -> Term
 getInjectionOp s s' =
     let t = CASLSign.toOP_TYPE(CASLSign.OpType{CASLSign.opKind = Total,
@@ -405,9 +411,10 @@ getInjectionOp s s' =
           }
         }
 
--- This function is not implemented in a satisfactory way
--- Return the name of the injection as it is used in the
--- alternative syntax of the injection from one sort to another
+
+-- | Return the name of the injection as it is used in the alternative
+--   syntax of the injection from one sort to another.
+--   This function is not implemented in a satisfactory way
 getInjectionName :: SORT -> SORT -> String
 getInjectionName s s' =
     let t = CASLSign.toOP_TYPE(CASLSign.OpType{CASLSign.opKind = Total,
@@ -416,9 +423,10 @@ getInjectionName s s' =
         injName = show $ CASLInject.uniqueInjName t
     in injName
 
--- This function is not implemented in a satisfactory way
--- Return the name of the definedness function for a sort
--- We need to know all sorts to perform this workaround
+
+-- | Return the name of the definedness function for a sort.  We need
+--   to know all sorts to perform this workaround
+--   This function is not implemented in a satisfactory way
 getDefinedName :: [SORT] -> SORT -> String
 getDefinedName sorts s =
     let index = List.elemIndex s sorts
