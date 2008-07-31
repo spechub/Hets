@@ -352,7 +352,7 @@ unitOp :: Isa.Term
 unitOp = Tuplex [] NotCont
 
 noneOp :: Isa.Term
-noneOp = termAppl false unitOp
+noneOp = Tuplex [false, conDouble "arbitrary"] NotCont
 
 exEqualOp :: Isa.Term
 exEqualOp = conDouble "exEqualOp"
@@ -718,7 +718,7 @@ mkTermAppl fun arg = case (fun, arg) of
           | new d == "curryOp" && new sm == uncurryOpS -> a
       (Const i _, _)
           | new i == "bool2partial" ->
-              let tc = mkTermAppl mkPartial $ unitOp
+              let tc = mkTermAppl mkPartial unitOp
               in case arg of
                     Const j _ | new j == "True" -> tc
                               | new j == "False" -> noneOp
