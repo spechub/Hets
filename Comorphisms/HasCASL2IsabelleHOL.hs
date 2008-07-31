@@ -1,6 +1,6 @@
 {- |
 Module      :  $Header$
-Description :  prefer "Comorphisms.PCoClTyConsHOL2IsabelleHOL"
+Description :  old translation that is only better for case terms
 Copyright   :  (c) Sonja Groening, C. Maeder, Uni Bremen 2003-2006
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
@@ -9,8 +9,7 @@ Stability   :  provisional
 Portability :  non-portable (imports Logic.Logic)
 
 This embedding comorphism from HasCASL to Isabelle-HOL is an old
-version that can be deleted as soon as case terms are implemented by
-PCoClTyConsHOL2IsabelleHOL.
+version that can be deleted as soon as case terms are implemented elsewhere
 -}
 
 module Comorphisms.HasCASL2IsabelleHOL where

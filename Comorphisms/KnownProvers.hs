@@ -56,7 +56,7 @@ import Comorphisms.Modal2CASL
 import Comorphisms.CASL_DL2CASL
 import OWL.Logic_OWL11
 #endif
-import Comorphisms.PCoClTyConsHOL2IsabelleHOL
+import Comorphisms.PCoClTyConsHOL2PairsInIsaHOL
 import Comorphisms.HasCASL2PCoClTyConsHOL
 #ifdef PROGRAMATICA
 import Comorphisms.Haskell2IsabelleHOLCF
@@ -105,7 +105,7 @@ isaComorphisms = do
        subpc2IHOLviaHasCASL <-
            compComorphism (Comorphism CASL2PCFOL) (Comorphism CASL2HasCASL)
            >>= ( \ x -> compComorphism x
-                 $ Comorphism PCoClTyConsHOL2IsabelleHOL)
+                 $ Comorphism PCoClTyConsHOL2PairsInIsaHOL)
        subpc2IHOL <-
            compComorphism (Comorphism CASL2PCFOL)
                (Comorphism defaultCASL2SubCFOL)
@@ -113,7 +113,7 @@ isaComorphisms = do
        -- HasCASL
        subHasCASL <-
            compComorphism (Comorphism HasCASL2PCoClTyConsHOL)
-                          $ Comorphism PCoClTyConsHOL2IsabelleHOL
+                          $ Comorphism PCoClTyConsHOL2PairsInIsaHOL
 #ifdef CASLEXTENSIONS
        -- CoCASL
        casl_dl2CASL <- compComorphism (Comorphism CASL_DL2CASL) subpc2IHOL
@@ -134,7 +134,7 @@ isaComorphisms = do
 #ifdef PROGRAMATICA
                Comorphism Haskell2IsabelleHOLCF,
 #endif
-               subHasCASL, Comorphism PCoClTyConsHOL2IsabelleHOL,
+               subHasCASL, Comorphism PCoClTyConsHOL2PairsInIsaHOL,
                prop2IHOL ]
 
 spassComorphisms :: Result [AnyComorphism]

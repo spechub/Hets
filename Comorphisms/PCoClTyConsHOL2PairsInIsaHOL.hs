@@ -135,7 +135,7 @@ unitTyp :: Typ
 unitTyp = Type "unit" holType []
 
 mkBoolPairType :: Typ -> Typ
-mkBoolPairType = prodType boolType
+mkBoolPairType arg = Type "partial" [] [arg]
 
 transFunType :: FunType -> Typ
 transFunType fty = case fty of
