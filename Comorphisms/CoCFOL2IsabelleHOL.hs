@@ -108,36 +108,38 @@ formTrCoCASL sign tyToks (CoSort_gen_ax sorts ops _) =
              indicesArgs = [1..length args]
              res = res_OP_TYPE t
              -- variables for the extra parameters
-             varDecls = zip [xvar j | j <- indicesArgs] (map transSort args)
+             varDecls = zipWith (\ j a -> (xvar j, transSort a))
+                        indicesArgs args
              -- the selector ...
              topC = con (transOP_SYMB sign tyToks opsymb)
              -- applied to x and extra parameter vars
-             appFold = foldl ( \ t1 t2 -> App t1 t2 NotCont)
-             rhs = appFold (App topC (var "x") NotCont)
-                       (map (var . xvar) indicesArgs)
+             appFold = foldl termAppl
+             rhs = appFold (termAppl topC $ mkFree "x")
+                       $ map (mkFree . xvar) indicesArgs
              -- applied to y and extra parameter vars
-             lhs = appFold (App topC (var "y") NotCont)
-                             (map (var . xvar) indicesArgs)
+             lhs = appFold (termAppl topC $ mkFree "y")
+                             $ map (mkFree . xvar) indicesArgs
              chi = -- is the result of selector non-observable?
                    if res `elem` sorts
                      -- then apply corresponding relation
-                     then App (App (var $
+                     then termAppl (termAppl (mkFree $
                           rvar $ maybe (error "CoCASL2Isabelle.premSel.chi") id
                                $ findIndex (==res) sorts)
-                               rhs NotCont) lhs NotCont
+                               rhs) lhs
                      -- else use equality
                      else binEq rhs lhs
           in foldr (quantifyIsa "All") chi varDecls
         premSel _ = error "CoCASL2Isabelle.premSel"
         prem1 = conjs (map premSel sels)
-        concl1 = App (App (var $ rvar i) (var "x") NotCont) (var "y") NotCont
+        concl1 = termAppl (termAppl (mkFree $ rvar i) $ mkFree "x")
+                 (mkFree "y")
         psi = concl1 `binImpl` prem1
         typS = transSort s
      in foldr (quantifyIsa "All") psi [("x",typS),("y",typS)]
   -- conclusion: all relations are the equality
   concls = conjs (map concl (zip sorts indices))
-  concl (_,i) = binImpl (App (App (var $ rvar i) (var "u") NotCont)
-                     (var "v") NotCont)
-                             (binEq (var "u") (var "v"))
+  concl (_,i) = binImpl (termAppl (termAppl (mkFree $ rvar i) $ mkFree "u")
+                     $ mkFree "v")
+                             $ binEq (mkFree "u") $ mkFree "v"
 formTrCoCASL _sign _ (BoxOrDiamond _ _mod _phi _) =
     error "CoCFOL2IsabelleHOL.formTrCoCASL.BoxOrDiamond"

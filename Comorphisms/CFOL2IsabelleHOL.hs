@@ -22,7 +22,6 @@ module Comorphisms.CFOL2IsabelleHOL
     , quantifyIsa
     , transSort
     , transOP_SYMB
-    , var
     ) where
 
 import Logic.Logic
@@ -195,9 +194,6 @@ getAssumpsToks sign = Map.foldWithKey ( \ i ops s ->
         $ zipWith ( \ o _ -> getConstIsaToks i o baseSign) [1..]
                      $ Set.toList prds) Set.empty $ predMap sign) $ opMap sign
 
-var :: String -> Term
-var v = IsaSign.Free (mkVName v)
-
 transVar :: Set.Set String -> VAR -> String
 transVar toks v = let
     s = showIsaConstT (simpleIdToId v) baseSign
@@ -206,7 +202,7 @@ transVar toks v = let
 
 quantifyIsa :: String -> (String, Typ) -> Term -> Term
 quantifyIsa q (v, _) phi =
-  App (conDouble q) (Abs (var v) phi NotCont) NotCont
+  termAppl (conDouble q) (Abs (mkFree v) phi NotCont)
 
 quantify :: Set.Set String -> QUANTIFIER -> (VAR, SORT) -> Term -> Term
 quantify toks q (v,t) phi  =
@@ -274,13 +270,13 @@ transRecord sign tyToks tr toks = Record
     , foldSort_gen_ax = error "transRecord: Sort_gen_ax"
     , foldExtFORMULA = \ _ phi -> tr sign tyToks phi
     , foldSimpleId = error "transRecord: Simple_id"
-    , foldQual_var = \ _ v _ _ -> var $ transVar toks v
+    , foldQual_var = \ _ v _ _ -> mkFree $ transVar toks v
     , foldApplication = \ _ opsymb args _ ->
           foldl termAppl (con $ transOP_SYMB sign tyToks opsymb) args
     , foldSorted_term = \ _ t _ _ -> t -- no subsorting assumed
     , foldCast = \ _ t _ _ -> t -- no subsorting assumed
     , foldConditional = \ _  t1 phi t2 _ -> -- equal types assumed
-          foldl termAppl (conDouble "If") [phi, t1, t2]
+          If phi t1 t2 NotCont
     , foldMixfix_qual_pred = error "transRecord: Mixfix_qual_pred"
     , foldMixfix_term = error "transRecord: Mixfix_term"
     , foldMixfix_token = error "transRecord: Mixfix_token"
