@@ -43,6 +43,15 @@ isaKeyset = Set.fromList isaKeywords
 mkPreludeMap :: [(BaseSig, Set.Set String)] -> Map.Map BaseSig (Set.Set String)
 mkPreludeMap = Map.fromList . map (\ (b, s) -> (b, Set.union s isaKeyset))
 
+hc2isaNames :: [String]
+hc2isaNames =
+  [ defOpS, "mapSnd", "mapFst", "lift2partial", "lift2bool"
+  , "lift2unit", "liftUnit", "liftUnit2partial", "liftUnit2bool"
+  , "liftUnit2unit", "bool2partial", "curryOp", "uncurryOp", "unpack2bool"
+  , "partial2bool", "unpack2partial", "unpackBool", "unpackPartial"
+  , "resOp", "whenElseOp", "exEqualOp", "ifImplOp", "flip"
+  , "makePartial", "makeTotal", "noneOp"]
+
 isaPrelude :: IsaPreludes
 isaPrelude = IsaPreludes
   { preTypes = mkPreludeMap
@@ -56,19 +65,9 @@ isaPrelude = IsaPreludes
       [ (HsHOL_thy, consts mainS)
       , (HsHOLCF_thy, Set.insert fliftbinS (consts holcfS))
       , (MainHC_thy, foldr Set.insert (consts mainS)
-         [ pAppS, aptS, appS, defOpS, pairC
-         , "mapSnd", "mapFst", "mapSome", "lift2option", "lift2bool"
-         , "lift2unit", "liftUnit", "liftUnit2option", "liftUnit2bool"
-         , "liftUnit2unit", "bool2option", "curryOp", "uncurryOp", "unpack2bool"
-         , "option2bool", "unpack2option", "unpackBool", "unpackOption"
-         , "resOp", "whenElseOp", "exEqualOp", "ifImplOp", "flip"])
-      , (MainHCPairs_thy, foldr Set.insert (consts mainS)
-         [ "mapSnd", "mapFst", "lift2bool"
-         , "lift2unit", "liftUnit", "liftUnit2bool"
-         , "liftUnit2unit", "curryOp", "uncurryOp", "unpack2bool"
-         , "unpackBool", "resOp", "whenElseOp", "exEqualOp"
-         , "ifImplOp", "flip"])
-      , (Main_thy,  consts mainS), (HOLCF_thy, consts holcfS)]}
+         $ [ pAppS, aptS, appS, pairC ] ++ hc2isaNames)
+      , (MainHCPairs_thy, foldr Set.insert (consts mainS) hc2isaNames)
+      , (Main_thy, consts mainS), (HOLCF_thy, consts holcfS)]}
 
 getAltTokenList :: String -> Int -> Id -> BaseSig -> [Token]
 getAltTokenList newPlace over i@(Id ms cs qs) thy = let

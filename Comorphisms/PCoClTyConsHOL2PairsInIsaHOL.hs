@@ -134,17 +134,19 @@ transSignature env toks = do
 unitTyp :: Typ
 unitTyp = Type "unit" holType []
 
-mkBoolPairType :: Typ -> Typ
-mkBoolPairType arg = Type "partial" [] [arg]
+mkPartialType :: Typ -> Typ
+mkPartialType arg = Type "partial" [] [arg]
 
 transFunType :: FunType -> Typ
 transFunType fty = case fty of
     UnitType -> unitTyp
     BoolType -> boolType
     FunType f a -> mkFunType (transFunType f) $ transFunType a
-    PartialVal a -> mkBoolPairType $ transFunType a
+    PartialVal a -> mkPartialType $ transFunType a
     PairType a b -> prodType (transFunType a) $ transFunType b
-    TupleType l -> transFunType $ foldl1 PairType l
+    TupleType l -> case l of
+      [] -> error "transFunType"
+      _ -> transFunType $ foldl1 PairType l
     ApplType tid args -> Type (showIsaTypeT tid baseSign) []
                        $ map transFunType args
     TypeVar tid -> TFree (showIsaTypeT tid baseSign) []
@@ -352,7 +354,7 @@ unitOp :: Isa.Term
 unitOp = Tuplex [] NotCont
 
 noneOp :: Isa.Term
-noneOp = Tuplex [false, conDouble "arbitrary"] NotCont
+noneOp = conDouble "noneOp"
 
 exEqualOp :: Isa.Term
 exEqualOp = conDouble "exEqualOp"

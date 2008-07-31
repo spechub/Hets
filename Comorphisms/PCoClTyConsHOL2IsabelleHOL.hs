@@ -135,12 +135,15 @@ transSignature env toks = do
 unitTyp :: Typ
 unitTyp = Type "unit" holType []
 
+mkPartialType :: Typ -> Typ
+mkPartialType arg = Type "partial" [] [arg]
+
 transFunType :: FunType -> Typ
 transFunType fty = case fty of
     UnitType -> unitTyp
     BoolType -> boolType
     FunType f a -> mkFunType (transFunType f) $ transFunType a
-    PartialVal a -> mkOptionType $ transFunType a
+    PartialVal a -> mkPartialType $ transFunType a
     PairType a b -> prodType (transFunType a) $ transFunType b
     TupleType l -> case l of
       [] -> error "transFunType"
@@ -279,7 +282,7 @@ transSentence sign tyToks s = case s of
           transTerm sign tyToks (getAssumpsToks $ assumps sign) Set.empty trm
       case ty of
         BoolType -> return $ mkSimplifiedSen t
-        PartialVal _ -> return $ mkSimplifiedSen $ mkTermAppl option2bool t
+        PartialVal _ -> return $ mkSimplifiedSen $ mkTermAppl partial2bool t
         FunType _ _ -> error "transSentence: FunType"
         PairType _ _ -> error "transSentence: PairType"
         TupleType _ -> error "transSentence: TupleType"
@@ -349,7 +352,7 @@ unitOp :: Isa.Term
 unitOp = Tuplex [] NotCont
 
 noneOp :: Isa.Term
-noneOp = conDouble "None"
+noneOp = conDouble "noneOp"
 
 exEqualOp :: Isa.Term
 exEqualOp = conDouble "exEqualOp"
@@ -454,7 +457,7 @@ instType :: FunType -> FunType -> ConvFun
 instType f1 f2 = case (f1, f2) of
     (TupleType l1, _) -> instType (foldl1 PairType l1) f2
     (_, TupleType l2) -> instType f1 $ foldl1 PairType l2
-    (PartialVal (TypeVar _), BoolType) -> Option2bool
+    (PartialVal (TypeVar _), BoolType) -> Partial2bool
     (PairType a c, PairType b d) ->
         let c2 = instType c d
             c1 = instType a b
@@ -467,22 +470,22 @@ instType f1 f2 = case (f1, f2) of
 
 invertConv :: ConvFun -> ConvFun
 invertConv c = case c of
-    Option2bool -> Bool2option
+    Partial2bool -> Bool2partial
     MapFun mv cf -> MapFun mv $ invertConv cf
     ResFun cf -> ResFun $ invertConv cf
     ArgFun cf -> ArgFun $ invertConv cf
     CompFun c1 c2 -> CompFun (invertConv c2) (invertConv c1)
     _ -> IdOp
 
-data MapFun = MapFst | MapSnd | MapSome
+data MapFun = MapFst | MapSnd | MapPartial
 
 data LiftFun = LiftFst | LiftSnd
 
-data ConvFun = IdOp | CompFun ConvFun ConvFun | ConstNil | ConstTrue | SomeOp
+data ConvFun = IdOp | CompFun ConvFun ConvFun | ConstNil | ConstTrue | MkPartial
              | MapFun MapFun ConvFun | LiftFun LiftFun ConvFun
              | LiftUnit FunType
-             | LiftSome FunType
-             | ResFun ConvFun | ArgFun ConvFun | Bool2option | Option2bool
+             | LiftPartial FunType
+             | ResFun ConvFun | ArgFun ConvFun | Bool2partial | Partial2bool
 
 isNotIdOp :: ConvFun -> Bool
 isNotIdOp f = case f of
@@ -510,7 +513,7 @@ mapFun :: MapFun -> Isa.Term
 mapFun mf = case mf of
     MapFst -> mapFst
     MapSnd -> mapSnd
-    MapSome -> mapSome
+    MapPartial -> mapPartial
 
 compOp :: Isa.Term
 compOp = con compV
@@ -518,24 +521,24 @@ compOp = con compV
 convFun :: ConvFun -> Isa.Term
 convFun cvf = case cvf of
     IdOp -> idOp
-    Bool2option -> bool2option
-    Option2bool -> option2bool
+    Bool2partial -> bool2partial
+    Partial2bool -> partial2bool
     LiftUnit rTy -> case rTy of
        UnitType -> liftUnit2unit
        BoolType -> liftUnit2bool
-       PartialVal _ -> liftUnit2option
+       PartialVal _ -> liftUnit2partial
        _ -> liftUnit
-    LiftSome rTy ->
+    LiftPartial rTy ->
         case rTy of
             UnitType -> lift2unit
             BoolType -> lift2bool
-            PartialVal _ -> lift2option
-            _ -> mapSome
+            PartialVal _ -> lift2partial
+            _ -> mapPartial
     CompFun f1 f2 ->
         mkTermAppl (mkTermAppl compOp $ convFun f1) $ convFun f2
     ConstNil -> constNil
     ConstTrue -> constTrue
-    SomeOp -> conSome
+    MkPartial -> mkPartial
     MapFun mf cv -> mkTermAppl (mapFun mf) $ convFun cv
     LiftFun lf cv -> let ccv = convFun cv in case lf of
         LiftFst -> mkTermAppl (mkTermAppl compOp
@@ -549,33 +552,34 @@ convFun cvf = case cvf of
     ArgFun cv -> mkTermAppl (termAppl flipOp compOp) $ convFun cv
     ResFun cv -> mkTermAppl compOp $ convFun cv
 
-mapFst, mapSnd, mapSome, idOp, bool2option,
-    option2bool, constNil, constTrue,
-    liftUnit2unit, liftUnit2bool, liftUnit2option, liftUnit, lift2unit,
-    lift2bool, lift2option :: Isa.Term
+mapFst, mapSnd, mapPartial, idOp, bool2partial,
+    partial2bool, constNil, constTrue,
+    liftUnit2unit, liftUnit2bool, liftUnit2partial, liftUnit, lift2unit,
+    lift2bool, lift2partial, mkPartial :: Isa.Term
 
 mapFst = conDouble "mapFst"
 mapSnd = conDouble "mapSnd"
-mapSome = conDouble "mapSome"
+mapPartial = conDouble "mapPartial"
 idOp = conDouble "id"
-bool2option = conDouble "bool2option"
-option2bool = conDouble "option2bool"
+bool2partial = conDouble "bool2partial"
+partial2bool = conDouble "partial2bool"
 constNil = conDouble "constNil"
 constTrue = conDouble "constTrue"
 liftUnit2unit = conDouble "liftUnit2unit"
 liftUnit2bool = conDouble "liftUnit2bool"
-liftUnit2option = conDouble "liftUnit2option"
+liftUnit2partial = conDouble "liftUnit2partial"
 liftUnit = conDouble "liftUnit"
 lift2unit = conDouble "lift2unit"
 lift2bool = conDouble "lift2bool"
-lift2option = conDouble "lift2option"
+lift2partial = conDouble "lift2partial"
+mkPartial = conDouble "makePartial"
 
 unpackOp :: FunType -> Isa.Term
 unpackOp ft = case ft of
     UnitType -> conDouble "unpack2bool"
     BoolType -> conDouble "unpackBool"
-    PartialVal _ -> conDouble "unpackOption"
-    _ ->  conDouble "unpack2option"
+    PartialVal _ -> conDouble "unpackPartial"
+    _ ->  conDouble "unpack2partial"
 
 -- True means require result type to be partial
 adjustTypes :: FunType -> FunType -> FunType
@@ -585,25 +589,25 @@ adjustTypes aTy rTy ty = case (aTy, ty) of
     (_, TupleType l) -> adjustTypes aTy rTy $ foldl1 PairType l
     (BoolType, BoolType) -> return ((False, IdOp), (ty, IdOp))
     (UnitType, UnitType) -> return ((False, IdOp), (ty, IdOp))
-    (PartialVal _, BoolType) -> return ((False, IdOp), (aTy, Bool2option))
-    (BoolType, PartialVal _) -> return ((False, IdOp), (aTy, Option2bool))
+    (PartialVal _, BoolType) -> return ((False, IdOp), (aTy, Bool2partial))
+    (BoolType, PartialVal _) -> return ((False, IdOp), (aTy, Partial2bool))
     (_, BoolType) -> return ((True, LiftUnit rTy), (ty, IdOp))
     (BoolType, _) -> return ((False, IdOp), (aTy, ConstTrue))
     (PartialVal a, PartialVal b) -> do
         q@(fp, (argTy, aTrm)) <- adjustTypes a rTy b
         return $ case argTy of
             PartialVal _ -> q
-            _ -> (fp, (PartialVal argTy, mkMapFun MapSome aTrm))
+            _ -> (fp, (PartialVal argTy, mkMapFun MapPartial aTrm))
     (a, PartialVal b) -> do
         q@(_, ap@(argTy, _)) <- adjustTypes a rTy b
         return $ case argTy of
             PartialVal _ -> q
-            _ -> ((True, LiftSome rTy), ap)
+            _ -> ((True, LiftPartial rTy), ap)
     (PartialVal a, b) -> do
         q@(fp, (argTy, aTrm)) <- adjustTypes a rTy b
         return $ case argTy of
             PartialVal _ -> q
-            _ -> (fp, (PartialVal argTy, mkCompFun SomeOp aTrm))
+            _ -> (fp, (PartialVal argTy, mkCompFun MkPartial aTrm))
     (PairType a c, PairType b d) -> do
         ((res2Ty, f2), (arg2Ty, a2)) <- adjustTypes c rTy d
         ((res1Ty, f1), (arg1Ty, a1)) <- adjustTypes a
@@ -650,13 +654,13 @@ isEquallyLifted :: Isa.Term -> Isa.Term -> Maybe (Isa.Term, Isa.Term, Isa.Term)
 isEquallyLifted l r = case (l, r) of
     (App ft@(Const f _) la _,
      App (Const g _) ra _)
-        | f == g && elem (new f) [someS, "option2bool", "bool2option"]
+        | f == g && elem (new f) ["makePartial", "partial2bool", "bool2partial"]
             -> Just (ft, la, ra)
     _ -> Nothing
 
 isLifted :: Isa.Term -> Bool
 isLifted t = case t of
-    App (Const f _) _ _ | new f == someS -> True
+    App (Const f _) _ _ | new f == "makePartial" -> True
     _ -> False
 
 flipS :: String
@@ -690,27 +694,27 @@ mkTermAppl fun arg = case (fun, arg) of
                Const ma _ | new ma == "True" -> af
                           | new ma == "False" -> false
                _ -> If arg af false c
-          | new mp == "liftUnit2option" -> let af = mkTermAppl f unitOp in
+          | new mp == "liftUnit2partial" -> let af = mkTermAppl f unitOp in
              case arg of
                Const ma _ | new ma == "True" -> af
                           | new ma == "False" -> noneOp
                _ -> If arg af noneOp c
       (App (Const mp _) _ _, _)
           | new mp == "liftUnit2unit" -> arg
-          | new mp == "lift2unit" -> mkTermAppl (conDouble "option2bool") arg
+          | new mp == "lift2unit" -> mkTermAppl (conDouble "partial2bool") arg
       (App (App (Const cmp _) f _) g c, _)
           | new cmp == compS -> mkTermAppl f $ mkTermAppl g arg
           | new cmp == curryOpS -> mkTermAppl f $ Tuplex [g, arg] c
           | new cmp == flipS -> mkTermAppl (mkTermAppl f arg) g
       (Const d _, App (Const sm _) a _)
-          | new d == "defOp" && new sm == someS -> true
-          | new d == "option2bool" && new sm == someS -> true
-          | new d == "option2bool" && new sm == "bool2option"
-            || new d == "bool2option" && new sm == "option2bool" -> a
+          | new d == "defOp" && new sm == "makePartial" -> true
+          | new d == "partial2bool" && new sm == "makePartial" -> true
+          | new d == "partial2bool" && new sm == "bool2partial"
+            || new d == "bool2partial" && new sm == "partial2bool" -> a
           | new d == "curryOp" && new sm == uncurryOpS -> a
       (Const i _, _)
-          | new i == "bool2option" ->
-              let tc = mkTermAppl conSome $ unitOp
+          | new i == "bool2partial" ->
+              let tc = mkTermAppl mkPartial unitOp
               in case arg of
                     Const j _ | new j == "True" -> tc
                               | new j == "False" -> noneOp
@@ -719,7 +723,7 @@ mkTermAppl fun arg = case (fun, arg) of
           | new i == "constTrue" -> true
           | new i == "constNil" -> unitOp
       (Const i _, Tuplex [] _)
-          | new i == "option2bool" -> false
+          | new i == "partial2bool" -> false
       _ -> termAppl fun arg
 
 
@@ -732,15 +736,15 @@ freshIndex = do
 simplify :: Isa.Term -> State Int Isa.Term
 simplify trm = case trm of
     App (App (Const l _) f _) arg _
-        | elem (new l) ["lift2bool", "lift2option", "mapSome"] -> do
+        | elem (new l) ["lift2bool", "lift2partial", "mapPartial"] -> do
              n <- freshIndex
              let casevar = conDouble $ "Xc" ++ show n
              nF <- simplify $ mkTermAppl f casevar
              nArg <- simplify arg
              return $ Case nArg [(noneOp,
                  if new l == "lift2bool" then false else noneOp),
-                                 (termAppl conSome casevar,
-                 if new l == "mapSome" then mkTermAppl conSome nF else nF)]
+                                 (termAppl mkPartial casevar,
+                 if new l == "mapPartial" then mkTermAppl mkPartial nF else nF)]
     App f arg c -> do
         nF <- simplify f
         nArg <- simplify arg
