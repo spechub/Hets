@@ -530,7 +530,7 @@ convFun cvf = case cvf of
             UnitType -> lift2unit
             BoolType -> lift2bool
             PartialVal _ -> lift2option
-            _ -> lift
+            _ -> mapSome
     CompFun f1 f2 ->
         mkTermAppl (mkTermAppl compOp $ convFun f1) $ convFun f2
     ConstNil -> constNil
@@ -552,7 +552,7 @@ convFun cvf = case cvf of
 mapFst, mapSnd, mapSome, idOp, bool2option,
     option2bool, constNil, constTrue,
     liftUnit2unit, liftUnit2bool, liftUnit2option, liftUnit, lift2unit,
-    lift2bool, lift2option, lift :: Isa.Term
+    lift2bool, lift2option :: Isa.Term
 
 mapFst = conDouble "mapFst"
 mapSnd = conDouble "mapSnd"
@@ -569,7 +569,6 @@ liftUnit = conDouble "liftUnit"
 lift2unit = conDouble "lift2unit"
 lift2bool = conDouble "lift2bool"
 lift2option = conDouble "lift2option"
-lift = conDouble "mapSome"
 
 unpackOp :: FunType -> Isa.Term
 unpackOp ft = case ft of
