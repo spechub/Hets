@@ -713,25 +713,23 @@ freshIndex = do
   put $ i + 1
   return i
 
-type Simplifier = VName -> Isa.Term -> Isa.Term -> State Int Isa.Term
+type Simplifier = VName
+  -> Isa.Term -- ^ variable
+  -> Isa.Term -- ^ simplified application to variable
+  -> Isa.Term -- ^ simplified argument
+  -> State Int Isa.Term
 
 simpForOption :: Simplifier
-simpForOption l f nArg = do
-  n <- freshIndex
-  let casevar = conDouble $ "Xc" ++ show n
-  nF <- simplify simpForOption $ mkTermAppl f casevar
+simpForOption l v nF nArg = do
   return $ Case nArg
    [ (noneOp, if new l == "lift2bool" then false else noneOp)
-   , (termAppl mkPartial casevar,
+   , (termAppl mkPartial v,
       if new l == "mapPartial" then mkTermAppl mkPartial nF else nF)]
 
 simpForPairs :: Simplifier
-simpForPairs l f nArg = do
+simpForPairs l v2 nF nArg = do
   n <- freshIndex
-  m <- freshIndex
-  let v1 = conDouble $ "Xb" ++ show n
-      v2 = conDouble $ "Xv" ++ show m
-  nF <- simplify simpForPairs $ mkTermAppl f v2
+  let v1 = mkFree $ "Xb" ++ show n
   return $ Isa.Let [(Tuplex [v1, v2] NotCont, nArg)] $
      If v1 (if new l == "mapPartial" then mkTermAppl mkPartial nF else nF)
             (if new l == "lift2bool" then false else noneOp) NotCont
@@ -740,8 +738,11 @@ simplify :: Simplifier -> Isa.Term -> State Int Isa.Term
 simplify simpF trm = case trm of
     App (App (Const l _) f _) arg _
         | elem (new l) ["lift2bool", "lift2partial", "mapPartial"] -> do
+      n <- freshIndex
+      let pvar = mkFree $ "Xc" ++ show n
+      nF <- simplify simpF $ mkTermAppl f pvar
       nArg <- simplify simpF arg
-      simpF l f nArg
+      simpF l pvar nF nArg
     App f arg c -> do
         nF <- simplify simpF f
         nArg <- simplify simpF arg
@@ -788,7 +789,7 @@ transPattern :: Env -> Set.Set String -> Set.Set String -> As.Term
 transPattern sign tyToks toks pat = do
     p@(ty, _) <- transTerm sign tyToks toks Set.empty pat
     case pat of
-      TupleTerm [] _ -> return (ty, conDouble "_")
+      TupleTerm [] _ -> return (ty, mkFree "_")
       _ -> if not (isPatternType pat) || isPartialVal ty then
         fatal_error ("illegal pattern for Isabelle: " ++ showDoc pat "")
              $ getRange pat
