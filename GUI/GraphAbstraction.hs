@@ -15,7 +15,9 @@ module GUI.GraphAbstraction
     ( -- * Types
       NodeValue
     , EdgeValue
+    , NodeId
     , GraphInfo
+    , AbstractionGraph
     -- * Creation and display
     , initgraphs
     , makegraph

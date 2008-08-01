@@ -41,11 +41,6 @@ import Common.Result
 import Common.Doc
 import Common.DocUtils
 
--- Maps are simple maps between elements of sets
--- By the definition of maps in Data.Map
--- these maps are injective
-type PropMap = Map.Map Id Id
-
 -- | The datatype for morphisms in propositional logic as
 -- | simple injective maps of sets
 
@@ -53,7 +48,7 @@ data Morphism = Morphism
     {
        source :: Sign
      , target :: Sign
-     , propMap :: PropMap
+     , propMap :: Map.Map Id Id
     } deriving (Eq, Show)
 
 instance Pretty Morphism where
@@ -87,7 +82,7 @@ applyMorphism :: Morphism -> Id -> Id
 applyMorphism mor idt = Map.findWithDefault idt idt $ propMap mor
 
 -- | Application function for propMaps
-applyMap :: PropMap -> Id -> Id
+applyMap :: Map.Map Id Id -> Id -> Id
 applyMap pmap idt = Map.findWithDefault idt idt pmap
 
 -- | Composition of morphisms in propositional Logic

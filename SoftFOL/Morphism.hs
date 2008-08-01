@@ -11,12 +11,11 @@ Portability :  portable
 Functions for symbols of SoftFOL.
 -}
 
-module SoftFOL.Morphism (symOf, symbolToId, morphismToSymbolMap) where
+module SoftFOL.Morphism (symOf, symbolToId) where
 
 import SoftFOL.Sign
 
 import Common.Id
-import Common.DefaultMorphism
 
 import qualified Data.Set as Set
 import qualified Data.Map as Map
@@ -44,26 +43,6 @@ toPredSymb (ident,ts) = Set.map toSymb ts
 toSortSymb :: SPIdentifier -> SFSymbol
 toSortSymb ident = SFSymbol { sym_ident = ident
                             , sym_type = SFSortType}
-
-type SymbolMap = Map.Map SFSymbol SFSymbol
-
-morphismToSymbolMap :: DefaultMorphism Sign -> SymbolMap
-morphismToSymbolMap m =
-    let src = domOfDefaultMorphism m
-        trg = codOfDefaultMorphism m
-        sortSymMap = mkSortSymMap (sortMap src) (sortMap trg)
-        opSymMap = mkFuncSymMap sortSymMap (funcMap src) (funcMap trg)
-        predSymMap = mkPredSymMap sortSymMap (predMap src) (predMap trg)
-    in foldr Map.union sortSymMap [opSymMap,predSymMap]
-
-mkSortSymMap :: SortMap -> SortMap -> SymbolMap
-mkSortSymMap _ _ = Map.empty
-
-mkFuncSymMap :: SymbolMap -> FuncMap -> FuncMap -> SymbolMap
-mkFuncSymMap _ _ _ = Map.empty
-
-mkPredSymMap :: SymbolMap -> PredMap -> PredMap -> SymbolMap
-mkPredSymMap _ _ _ = Map.empty
 
 symbolToId :: SFSymbol -> Id
 symbolToId = mkId . (:[]) . sym_ident
