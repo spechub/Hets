@@ -133,11 +133,13 @@ data Sentence =
     deriving (Eq, Ord, Show)
 
 -- Other SetDecl variants to be added later
-data SetDecl = SubSet Term Typ Term -- first is the variable
-                                    -- Second is the type of the variable
-                                    -- third is the formula describing the set comprehension
-                                    -- e.g. x Nat "even x" would be produce the isabelle
-                                    -- code: {x::Nat . even x}
+data SetDecl = SubSet Term Typ Term -- first is the variable Second is
+                                    -- the type of the variable third
+                                    -- is the formula describing the
+                                    -- set comprehension e.g. x Nat
+                                    -- "even x" would be produce the
+                                    -- isabelle code: {x::Nat . even
+                                    -- x}
                deriving (Eq, Ord, Show)
 
 data MetaTerm = Term Term

@@ -1,7 +1,8 @@
 {- |
 Module      :
 Description :  Isabelle Abstract syntax constants for CSP-Prover operations
-Copyright   :  (c) Andy Gimblett, Liam O'Reilly and Markus Roggenbach, Swansea University 2008
+Copyright   :  (c) Andy Gimblett, Liam O'Reilly and Markus Roggenbach,
+                   Swansea University 2008
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
 Maintainer  :  csliam@swansea.ac.uk
@@ -17,9 +18,9 @@ module CspCASL.CspProver_Consts (
     cspProver_divOp,
     cspProver_runOp,
     cspProver_chaosOp,
-    cspProver_act_prefixOp,
-    cspProver_ext_prefix_choiceOp,
-    cspProver_int_prefix_choiceOp,
+    cspProver_action_prefixOp,
+    cspProver_external_prefix_choiceOp,
+    cspProver_internal_prefix_choiceOp,
     cspProver_sequenceOp,
     cspProver_external_choiceOp,
     cspProver_internal_choiceOp,
@@ -29,7 +30,7 @@ module CspCASL.CspProver_Consts (
     cspProver_alphabetised_parallelOp,
     cspProver_hidingOp,
     cspProver_renamingOp,
-    cspProver_ifOp
+    cspProver_conditionalOp
 ) where
 
 import Isabelle.IsaSign as IsaSign
@@ -59,34 +60,34 @@ cspProver_chaosS :: String
 cspProver_chaosS = "??? CHAOS ??? - NOT YET DONE"
 
 -- Action prefix operator symbols
-cspProver_act_prefixS :: String
-cspProver_act_prefixS = "Act_prefix"
-cspProver_act_prefixAltS :: String
-cspProver_act_prefixAltS = "(_ -> _)"
-cspProver_act_prefixAltArgPrios :: [Int]
-cspProver_act_prefixAltArgPrios = [150,80]
-cspProver_act_prefixAltOpPrio :: Int
-cspProver_act_prefixAltOpPrio = 80
+cspProver_action_prefixS :: String
+cspProver_action_prefixS = "Action_prefix"
+cspProver_action_prefixAltS :: String
+cspProver_action_prefixAltS = "(_ -> _)"
+cspProver_action_prefixAltArgPrios :: [Int]
+cspProver_action_prefixAltArgPrios = [150,80]
+cspProver_action_prefixAltOpPrio :: Int
+cspProver_action_prefixAltOpPrio = 80
 
 -- External prefix choice operator symbols
-cspProver_ext_prefix_choiceS :: String
-cspProver_ext_prefix_choiceS = "Ext_pre_choice"
-cspProver_ext_prefix_choiceAltS :: String
-cspProver_ext_prefix_choiceAltS = "(? _:_ -> _)"
-cspProver_ext_prefix_choiceAltArgPrios :: [Int]
-cspProver_ext_prefix_choiceAltArgPrios = [900,900,80]
-cspProver_ext_prefix_choiceAltOpPrio :: Int
-cspProver_ext_prefix_choiceAltOpPrio = 80
+cspProver_external_prefix_choiceS :: String
+cspProver_external_prefix_choiceS = "External_pre_choice"
+cspProver_external_prefix_choiceAltS :: String
+cspProver_external_prefix_choiceAltS = "(? _:_ -> _)"
+cspProver_external_prefix_choiceAltArgPrios :: [Int]
+cspProver_external_prefix_choiceAltArgPrios = [900,900,80]
+cspProver_external_prefix_choiceAltOpPrio :: Int
+cspProver_external_prefix_choiceAltOpPrio = 80
 
 -- Internal prefix choice operator symbols
-cspProver_int_prefix_choiceS :: String
-cspProver_int_prefix_choiceS = "Int_pre_choice"
-cspProver_int_prefix_choiceAltS :: String
-cspProver_int_prefix_choiceAltS = "(! _:_ -> _)"
-cspProver_int_prefix_choiceAltArgPrios :: [Int]
-cspProver_int_prefix_choiceAltArgPrios = [900,900,80]
-cspProver_int_prefix_choiceAltOpPrio :: Int
-cspProver_int_prefix_choiceAltOpPrio = 80
+cspProver_internal_prefix_choiceS :: String
+cspProver_internal_prefix_choiceS = "Internal_pre_choice"
+cspProver_internal_prefix_choiceAltS :: String
+cspProver_internal_prefix_choiceAltS = "(! _:_ -> _)"
+cspProver_internal_prefix_choiceAltArgPrios :: [Int]
+cspProver_internal_prefix_choiceAltArgPrios = [900,900,80]
+cspProver_internal_prefix_choiceAltOpPrio :: Int
+cspProver_internal_prefix_choiceAltOpPrio = 80
 
 -- Sequence combinator operator symbols
 cspProver_sequenceS :: String
@@ -179,14 +180,14 @@ cspProver_renamingAltOpPrio :: Int
 cspProver_renamingAltOpPrio = 84
 
 -- Conditional operator symbols
-cspProver_ifS :: String
-cspProver_ifS = "IF"
-cspProver_ifAltS :: String
-cspProver_ifAltS = "(IF _ THEN _ ELSE _)"
-cspProver_ifAltArgPrios :: [Int]
-cspProver_ifAltArgPrios = [900,88,88]
-cspProver_ifAltArgOpPrio :: Int
-cspProver_ifAltArgOpPrio = 88
+cspProver_conditionalS :: String
+cspProver_conditionalS = "CONDITIONAL"
+cspProver_conditionalAltS :: String
+cspProver_conditionalAltS = "(CONDITIONAL _ THEN _ ELSE _)"
+cspProver_conditionalAltArgPrios :: [Int]
+cspProver_conditionalAltArgPrios = [900,88,88]
+cspProver_conditionalAltArgOpPrio :: Int
+cspProver_conditionalAltArgOpPrio = 88
 
 -- Isabelle Terms representing the operations for CspProver
 
@@ -211,28 +212,28 @@ cspProver_chaosOp :: Term
 cspProver_chaosOp = makeCspProverOpNoAlt cspProver_chaosS
 
 -- | Action prefix operator
-cspProver_act_prefixOp :: Term -> Term -> Term
-cspProver_act_prefixOp =
-    makeBinCspProverOp cspProver_act_prefixS
-                       cspProver_act_prefixAltS
-                       cspProver_act_prefixAltArgPrios
-                       cspProver_act_prefixAltOpPrio
+cspProver_action_prefixOp :: Term -> Term -> Term
+cspProver_action_prefixOp =
+    makeBinCspProverOp cspProver_action_prefixS
+                       cspProver_action_prefixAltS
+                       cspProver_action_prefixAltArgPrios
+                       cspProver_action_prefixAltOpPrio
 
 -- | External prefix choice operator
-cspProver_ext_prefix_choiceOp :: Term -> Term -> Term
-cspProver_ext_prefix_choiceOp =
-    makeBinCspProverOp cspProver_ext_prefix_choiceS
-                       cspProver_ext_prefix_choiceAltS
-                       cspProver_ext_prefix_choiceAltArgPrios
-                       cspProver_ext_prefix_choiceAltOpPrio
+cspProver_external_prefix_choiceOp :: Term -> Term -> Term -> Term
+cspProver_external_prefix_choiceOp =
+    makeTriCspProverOp cspProver_external_prefix_choiceS
+                       cspProver_external_prefix_choiceAltS
+                       cspProver_external_prefix_choiceAltArgPrios
+                       cspProver_external_prefix_choiceAltOpPrio
 
 -- | Internal prefix choice operator
-cspProver_int_prefix_choiceOp :: Term -> Term -> Term
-cspProver_int_prefix_choiceOp =
-    makeBinCspProverOp cspProver_int_prefix_choiceS
-                       cspProver_int_prefix_choiceAltS
-                       cspProver_int_prefix_choiceAltArgPrios
-                       cspProver_int_prefix_choiceAltOpPrio
+cspProver_internal_prefix_choiceOp :: Term -> Term -> Term -> Term
+cspProver_internal_prefix_choiceOp =
+    makeTriCspProverOp cspProver_internal_prefix_choiceS
+                       cspProver_internal_prefix_choiceAltS
+                       cspProver_internal_prefix_choiceAltArgPrios
+                       cspProver_internal_prefix_choiceAltOpPrio
 
 -- | Sequence combinator operator
 cspProver_sequenceOp :: Term -> Term -> Term
@@ -307,12 +308,12 @@ cspProver_renamingOp =
                        cspProver_renamingAltOpPrio
 
 -- | Conditional operator
-cspProver_ifOp :: Term -> Term -> Term -> Term
-cspProver_ifOp  =
-    makeTriCspProverOp cspProver_ifS
-                       cspProver_ifAltS
-                       cspProver_ifAltArgPrios
-                       cspProver_ifAltArgOpPrio
+cspProver_conditionalOp :: Term -> Term -> Term -> Term
+cspProver_conditionalOp  =
+    makeTriCspProverOp cspProver_conditionalS
+                       cspProver_conditionalAltS
+                       cspProver_conditionalAltArgPrios
+                       cspProver_conditionalAltArgOpPrio
 
 -- Create an Isabelle Term representing a (Unary) CspProver operator
 -- with no alternative syntax
@@ -320,20 +321,25 @@ makeCspProverOpNoAlt :: String -> Term
 makeCspProverOpNoAlt opName =
     con $ VName opName $ Nothing
 
--- Create an Isabelle Term representing a CspProver operator with alternative syntax
+-- Create an Isabelle Term representing a CspProver operator with
+-- alternative syntax
 makeBinCspProverOp :: String -> String -> [Int] -> Int -> Term -> Term -> Term
 makeBinCspProverOp opName altSyntax altArgPrios altOpPrio t1 t2 =
     let vname = VName opName $ Just $ AltSyntax altSyntax altArgPrios altOpPrio
     in binVNameAppl vname t1 t2
 
--- Create an Isabelle Term representing a CspProver operator (with 3 parameters) with alternative syntax
-makeTriCspProverOp :: String -> String -> [Int] -> Int -> Term -> Term -> Term -> Term
+-- Create an Isabelle Term representing a CspProver operator (with 3
+-- parameters) with alternative syntax
+makeTriCspProverOp :: String -> String -> [Int] -> Int -> Term -> Term ->
+                      Term -> Term
 makeTriCspProverOp opName altSyntax altArgPrios altOpPrio t1 t2 t3 =
     let vname = VName opName $ Just $ AltSyntax altSyntax altArgPrios altOpPrio
     in termAppl (binVNameAppl vname t1 t2) t3
 
--- Create an Isabelle Term representing a CspProver operator (with 4 parameters) with alternative syntax
-makeQuadCspProverOp :: String -> String -> [Int] -> Int -> Term -> Term -> Term -> Term -> Term
+-- Create an Isabelle Term representing a CspProver operator (with 4
+-- parameters) with alternative syntax
+makeQuadCspProverOp :: String -> String -> [Int] -> Int -> Term -> Term ->
+                       Term -> Term -> Term
 makeQuadCspProverOp opName altSyntax altArgPrios altOpPrio t1 t2 t3 t4 =
     let vname = VName opName $ Just $ AltSyntax altSyntax altArgPrios altOpPrio
     in termAppl (termAppl (binVNameAppl vname t1 t2) t3) t4

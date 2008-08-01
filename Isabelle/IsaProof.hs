@@ -1,6 +1,7 @@
 {- |
 Module      :  $Header$
-Copyright   :  (c) Andy Gimblett, Liam O'Reilly and Markus Roggenbach, Swansea University 2008
+Copyright   :  (c) Andy Gimblett, Liam O'Reilly and Markus Roggenbach,
+                   Swansea University 2008
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
 Maintainer  :  csliam@swansea.ac.uk
@@ -22,8 +23,6 @@ data ProofCommand
     | Using [String]
     | Back
     | Defer Int
-    -- | Pr Int -- This proof command simply sets the number of
-    -- goals shown in the display and is not needed
     | Prefer Int
     | Refute
       deriving (Show, Eq, Ord)
@@ -37,17 +36,25 @@ data ProofEnd
       deriving (Show, Eq, Ord)
 
 data ProofMethod
-    = Auto -- This is a plain auto with no parameters - it is used
-           -- so often it warents its own constructor
-    | Simp -- This is a plain auto with no parameters - it is used
-           -- so often it warents its own constructor
-    | Induct String -- Induction on a variable
-    | CaseTac String -- apply case_tac to a term
-    | SubgoalTac String-- apply subgoal_tac to a term
-    | Insert String -- insert a lemma/theorem name to the assumptions of the first goal
-    | Other String -- used for proof methods that have not been
-                   -- implemented yet - including auto and simp
-                   -- with parameters
+    -- | This is a plain auto with no parameters - it is used
+    --   so often it warents its own constructor
+    = Auto
+    -- | This is a plain auto with no parameters - it is used
+    --   so often it warents its own constructor
+    | Simp
+    -- | Induction proof method. This performs induction upon a variable
+    | Induct String
+    -- |  Case_tac proof method. This perfom a case distinction on a term
+    | CaseTac String
+    -- | Subgoal_tac proof method . Adds a term to the local
+    --   assumptions and also creates a sub-goal of this term
+    | SubgoalTac String
+    -- | Insert proof method. Inserts a lemma or theorem name to the assumptions
+    --   of the first goal
+    | Insert String
+    -- | Used for proof methods that have not been implemented yet.
+    --   This includes auto and simp with parameters
+    | Other String
       deriving (Show, Eq, Ord)
 
 toIsaProof :: ProofEnd -> IsaProof

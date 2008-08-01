@@ -1,7 +1,8 @@
 {- |
 Module      :  $Header$
 Description :  embedding from CspCASL to Isabelle-HOL
-Copyright   :  (c) Andy Gimblett, Liam O'Reilly and Markus Roggenbach, Swansea University 2008
+Copyright   :  (c) Andy Gimblett, Liam O'Reilly and Markus Roggenbach,
+                   Swansea University 2008
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
 Maintainer  :  csliam@swansea.ac.uk
@@ -97,7 +98,8 @@ transCCTheory ccTheory =
 -- This is not implemented in a sensible way yet and is not used
 transCCSentence :: CspCASLSign -> CspCASLSentence -> Result IsaSign.Sentence
 transCCSentence _ (CspCASLSentence pn _ _) =
-    do return (mkSen (Const (mkVName (show pn)) (Disp (Type "byeWorld" [] []) TFun Nothing)))
+    do return (mkSen (Const (mkVName (show pn))
+                                (Disp (Type "byeWorld" [] []) TFun Nothing)))
 
 -- | Add a list of CspCASL sentences to an Isabelle theory
 addCspCaslSentences :: [Named CspCASLSentence] -> IsaTheory -> IsaTheory
@@ -127,18 +129,22 @@ mkPreAlphabetDE :: [SORT] -> DomainEntry
 mkPreAlphabetDE sorts =
     (Type {typeId = preAlphabetS, typeSort = [isaTerm], typeArgs = []},
          map (\sort ->
-                  (mkVName (mkPreAlphabetConstructor sort), [Type {typeId = convertSort2String sort,
-                                                                       typeSort = [isaTerm],
-                                                                       typeArgs = []}])
+                  (mkVName (mkPreAlphabetConstructor sort),
+                               [Type {typeId = convertSort2String sort,
+                                               typeSort = [isaTerm],
+                                                          typeArgs = []}])
              ) sorts
     )
 
--- Functions for adding the eq functions and the compare_with functions to an Isabelle theory
+-- Functions for adding the eq functions and the compare_with
+-- functions to an Isabelle theory
 
 -- | Add the eq function to an Isabelle theory using a list of sorts
 addEqFun :: [SORT] -> IsaTheory -> IsaTheory
 addEqFun sortList isaTh =
-    let preAlphabetType = Type {typeId = preAlphabetS , typeSort = [], typeArgs =[]}
+    let preAlphabetType = Type {typeId = preAlphabetS,
+                                typeSort = [],
+                                typeArgs =[]}
         eqtype = mkFunType preAlphabetType $ mkFunType preAlphabetType boolType
         isaThWithConst = addConst eq_PreAlphabetS eqtype isaTh
         mkEq sort =
@@ -166,8 +172,11 @@ addAllCompareWithFun ccSign isaTh =
 addCompareWithFun :: CspCASLSign -> IsaTheory -> SORT -> IsaTheory
 addCompareWithFun ccSign isaTh sort =
     let sortList = Set.toList(CASLSign.sortSet ccSign)
-        preAlphabetType = Type {typeId = preAlphabetS , typeSort = [], typeArgs =[]}
-        sortType = Type {typeId = convertSort2String sort, typeSort = [], typeArgs =[]}
+        preAlphabetType = Type {typeId = preAlphabetS,
+                                typeSort = [],
+                                typeArgs =[]}
+        sortType = Type {typeId = convertSort2String sort, typeSort = [],
+                                  typeArgs =[]}
         funName = mkCompareWithFunName sort
         funType = mkFunType sortType $ mkFunType preAlphabetType boolType
         isaThWithConst = addConst funName funType isaTh
@@ -180,10 +189,15 @@ addCompareWithFun ccSign isaTh sort =
                 lhs_a = termAppl (conDouble funName) x
                 lhs_b = termAppl (conDouble (sort'Constructor)) y
                 sort'SuperSet =CASLSign.supersortsOf sort' ccSign
-                commonSuperList = Set.toList $ Set.intersection sortSuperSet sort'SuperSet
+                commonSuperList = Set.toList (Set.intersection
+                                                 sortSuperSet
+                                                 sort'SuperSet)
 
-                -- If there are no tests then the rhs=false else combine all tests using binConj
-                rhs = if (null allTests) then false else foldr1 binConj allTests
+                -- If there are no tests then the rhs=false else
+                -- combine all tests using binConj
+                rhs = if (null allTests)
+                      then false
+                      else foldr1 binConj allTests
 
                 -- The tests produce a list of equations for each test
                 -- Test 1 =  test equality at: current sort vs current sort
@@ -198,7 +212,9 @@ addCompareWithFun ccSign isaTh sort =
                 test3 = if (Set.member sort' sortSuperSet)
                         then [binEq (termAppl (getInjectionOp sort sort') x) y]
                         else []
-                test4 = if (null commonSuperList) then [] else map test4_atSort commonSuperList
+                test4 = if (null commonSuperList)
+                        then []
+                        else map test4_atSort commonSuperList
                 test4_atSort s = binEq (termAppl (getInjectionOp sort s) x)
                                        (termAppl (getInjectionOp sort' s) y)
             in binEq lhs rhs
@@ -211,7 +227,8 @@ addCompareWithFun ccSign isaTh sort =
 --   the CspCASL signature and the PFOL Signature to pass it on. We
 --   could recalculate the PFOL signature from the CspCASL signature
 --   here, but we dont as it can be passed in.
-addJustificationTheorems :: CspCASLSign -> CASLSign.CASLSign -> IsaTheory -> IsaTheory
+addJustificationTheorems :: CspCASLSign -> CASLSign.CASLSign ->
+                            IsaTheory -> IsaTheory
 addJustificationTheorems ccSign pfolSign isaTh =
     let sortRel = Rel.toList(CASLSign.sortRel ccSign)
         sorts = Set.toList(CASLSign.sortSet ccSign)
@@ -236,8 +253,9 @@ addReflexivityTheorem isaTh =
                  }
     in addThreomWithProof name thmConds thmConcl proof' isaTh
 
--- | Add the symmetry theorem and proof to an Isabelle Theory
---   We need to know the number of sorts, but instead we are given a list of all sorts
+-- | Add the symmetry theorem and proof to an Isabelle Theory We need
+--   to know the number of sorts, but instead we are given a list of
+--   all sorts
 addSymmetryTheorem :: [SORT] -> IsaTheory -> IsaTheory
 addSymmetryTheorem sorts isaTh =
     let numSorts = length(sorts)
@@ -246,7 +264,9 @@ addSymmetryTheorem sorts isaTh =
         y = mkFree "y"
         thmConds = [binEq_PreAlphabet x y]
         thmConcl = binEq_PreAlphabet y x
-        inductY = concat $ map (\i -> [Prefer (i*numSorts+1), Apply (Induct "y")]) [0..(numSorts-1)]
+        inductY = concat $ map (\i -> [Prefer (i*numSorts+1),
+                                       Apply (Induct "y")])
+                    [0..(numSorts-1)]
         proof' = IsaProof {
                    proof = [Apply (Induct "x")] ++ inductY ++ [Apply Auto],
                    end = Done
@@ -254,7 +274,8 @@ addSymmetryTheorem sorts isaTh =
     in addThreomWithProof name thmConds thmConcl proof' isaTh
 
 -- | Add all the injectivity theorems and proofs
-addAllInjectivityTheorems :: CASLSign.CASLSign -> [SORT] -> [(SORT,SORT)] -> IsaTheory -> IsaTheory
+addAllInjectivityTheorems :: CASLSign.CASLSign -> [SORT] -> [(SORT,SORT)] ->
+                             IsaTheory -> IsaTheory
 addAllInjectivityTheorems pfolSign sorts sortRel isaTh =
     foldl (addInjectivityTheorem pfolSign sorts sortRel) isaTh sortRel
 
@@ -263,7 +284,8 @@ addAllInjectivityTheorems pfolSign sorts sortRel isaTh =
 --   CASL2PCFOL; CASL2SubCFOL for a single injection represented as a
 --   pair of sorts. As a work around, we need to know all sorts to
 --   pass them on
-addInjectivityTheorem :: CASLSign.CASLSign -> [SORT] -> [(SORT,SORT)] -> IsaTheory -> (SORT,SORT) -> IsaTheory
+addInjectivityTheorem :: CASLSign.CASLSign -> [SORT] -> [(SORT,SORT)] ->
+                         IsaTheory -> (SORT,SORT) -> IsaTheory
 addInjectivityTheorem pfolSign sorts sortRel isaTh (s1,s2) =
     let x = mkFree "x"
         y = mkFree "y"
@@ -278,20 +300,24 @@ addInjectivityTheorem pfolSign sorts sortRel isaTh (s1,s2) =
         name = getInjThmName(s1, s2)
         conds = [binEq injX injY]
         concl = binEq x y
-        proof' = IsaProof [Apply(CaseTac ((getDefinedName sorts s2) ++"(" ++ injName ++ "(x))")),
+        proof' = IsaProof [Apply(CaseTac ((getDefinedName sorts s2)
+                                          ++"(" ++ injName ++ "(x))")),
                            -- Case 1
                            Apply(SubgoalTac(defineNameS1 ++ "(x)")),
                            Apply(SubgoalTac(defineNameS1 ++ "(y)")),
                            Apply(Other ("insert " ++ collectionEmbInjAx)),
                            Apply(Simp),
                            Apply(Other ("simp add: " ++ collectionTotAx)),
-                           Apply(Other ("simp (no_asm_use) add: "++ collectionTotAx)),
+                           Apply(Other ("simp (no_asm_use) add: "
+                                        ++ collectionTotAx)),
                            -- Case 2
                            Apply(SubgoalTac("~ " ++ defineNameS1 ++ "(x)")),
                            Apply(SubgoalTac("~ " ++ defineNameS1 ++ "(y)")),
-                           Apply(Other ("simp add: " ++ collectionNotDefBotAx)),
+                           Apply(Other ("simp add: "
+                                        ++ collectionNotDefBotAx)),
                            Apply(Other ("simp add: " ++ collectionTotAx)),
-                           Apply(Other ("simp (no_asm_use) add: " ++ collectionTotAx))]
+                           Apply(Other ("simp (no_asm_use) add: "
+                                        ++ collectionTotAx))]
                            Done
     in addThreomWithProof name conds concl proof' isaTh
 
@@ -315,18 +341,24 @@ addTransitivityTheorem sorts sortRel isaTh =
         z = mkFree "z"
         thmConds = [binEq_PreAlphabet x y, binEq_PreAlphabet y z]
         thmConcl = binEq_PreAlphabet x z
-        inductY = concat $ map (\i -> [Prefer (i*numSorts+1), Apply (Induct "y")]) [0..(numSorts-1)]
-        inductZ = concat $ map (\i -> [Prefer (i*numSorts+1), Apply (Induct "z")]) [0..((numSorts^(2::Int))-1)]
+        inductY = concat $ map (\i -> [Prefer (i*numSorts+1),
+                                       Apply (Induct "y")])
+                  [0..(numSorts-1)]
+        inductZ = concat $ map (\i -> [Prefer (i*numSorts+1),
+                                       Apply (Induct "z")])
+                  [0..((numSorts^(2::Int))-1)]
         proof' = IsaProof {
                    proof = [Apply (Induct "x")] ++
                             inductY ++
                             inductZ ++
-                           [Apply (Other ("auto simp add: " ++ colInjThmNames))],
+                           [Apply (Other ("auto simp add: "
+                                          ++ colInjThmNames))],
                    end = Done
                  }
     in addThreomWithProof name thmConds thmConcl proof' isaTh
 
--- | Function to add preAlphabet as an equivalence relation to an Isabelle theory
+-- | Function to add preAlphabet as an equivalence relation to an
+--   Isabelle theory
 addInstansanceOfEquiv :: IsaTheory  -> IsaTheory
 addInstansanceOfEquiv  isaTh =
     let eqvSort = [IsaClass eqvTypeClassS]
@@ -392,13 +424,15 @@ getInjectionOp s s' =
                                                CASLSign.opArgs = [s],
                                                CASLSign.opRes = s'})
         injName = show $ CASLInject.uniqueInjName t
-    --in conDouble $ "X_" ++ (show $ CASLInject.uniqueInjName t)
-        replace string c s1 = concat (map (\x -> if x==c then s1 else [x]) string)
+        replace string c s1 = concat (map (\x -> if x==c
+                                                 then s1
+                                                 else [x]) string)
 
     in Const {
           termName= VName {
             new = ("X_" ++ injName),
-            altSyn = Just (AltSyntax ((replace injName '_' "'_")   ++ "/'(_')") [3] 999)
+            altSyn = Just (AltSyntax ((replace injName '_' "'_")
+                                      ++ "/'(_')") [3] 999)
           },
           termType = Hide {
             typ = Type {
@@ -453,7 +487,11 @@ getColInjThmName sortRel =
 -- Return the string of all embedding_injectivity axioms
 getCollectionEmbInjAx :: [(SORT,SORT)] -> String
 getCollectionEmbInjAx sorts =
-    let mkEmbInjAxName = (\i -> "ga_embedding_injectivity" ++ (if (i==0) then "" else ("_" ++ show i)))
+    let mkEmbInjAxName = (\i -> "ga_embedding_injectivity"
+                                ++ (if (i==0)
+                                    then ""
+                                    else ("_" ++ show i))
+                         )
         embInjAxs = map mkEmbInjAxName [0 .. (length(sorts) - 1)]
     in if (null embInjAxs)
        then ""
@@ -469,7 +507,11 @@ getCollectionTotAx pfolSign =
                                  in CASLSign.opKind (head listOpType) == Total
         totList = filter totFilter opList
 
-        mkTotAxName = (\i -> "ga_totality" ++ (if (i==0) then "" else ("_" ++ show i)))
+        mkTotAxName = (\i -> "ga_totality"
+                             ++ (if (i==0)
+                                 then ""
+                                 else ("_" ++ show i))
+                      )
         totAxs = map mkTotAxName [0 .. (length(totList) - 1)]
     in if (null totAxs)
        then ""
@@ -479,7 +521,10 @@ getCollectionTotAx pfolSign =
 -- Return the string of all ga_notDefBottom axioms
 getCollectionNotDefBotAx :: [SORT] -> String
 getCollectionNotDefBotAx sorts =
-    let mkNotDefBotAxName = (\i -> "ga_notDefBottom" ++ (if (i==0) then "" else ("_" ++ show i)))
+    let mkNotDefBotAxName = (\i -> "ga_notDefBottom"
+                                   ++ (if (i==0)
+                                       then ""
+                                       else ("_" ++ show i)))
         notDefBotAxs = map mkNotDefBotAxName [0 .. (length(sorts) - 1)]
     in if (null notDefBotAxs)
        then ""
@@ -506,7 +551,8 @@ addConst cName cType isaTh =
     let isaTh_sign = fst isaTh
         isaTh_sen = snd isaTh
         isaTh_sign_ConstTab = constTab isaTh_sign
-        isaTh_sign_ConstTabUpdated = Map.insert (mkVName cName) cType isaTh_sign_ConstTab
+        isaTh_sign_ConstTabUpdated =
+            Map.insert (mkVName cName) cType isaTh_sign_ConstTab
         isaTh_sign_updated = isaTh_sign {constTab = isaTh_sign_ConstTabUpdated}
     in (isaTh_sign_updated, isaTh_sen)
 
@@ -516,7 +562,9 @@ addPrimRec terms isaTh =
     let isaTh_sign = fst isaTh
         isaTh_sen = snd isaTh
         recDef = RecDef {keyWord = primrecS, senTerms = [terms]}
-        namedRecDef = (makeNamed "what_does_this_word_do?" recDef) {isAxiom = False, isDef = True}
+        namedRecDef = (makeNamed "what_does_this_word_do?" recDef) {
+                        isAxiom = False,
+                        isDef = True}
     in (isaTh_sign, isaTh_sen ++ [namedRecDef])
 
 -- Add a DomainEntry to the domain tab of a signature of an Isabelle Theory
@@ -525,11 +573,13 @@ updateDomainTab domEnt isaTh =
     let isaTh_sign = fst isaTh
         isaTh_sen = snd isaTh
         isaTh_sign_domTab = domainTab isaTh_sign
-        isaTh_sign_updated = isaTh_sign {domainTab = (isaTh_sign_domTab ++ [[domEnt]])}
+        isaTh_sign_updated = isaTh_sign {domainTab = (isaTh_sign_domTab
+                                                      ++ [[domEnt]])}
     in (isaTh_sign_updated, isaTh_sen)
 
 -- Add a theorem with proof to an Isabelle theory
-addThreomWithProof :: String -> [Term] -> Term -> IsaProof -> IsaTheory -> IsaTheory
+addThreomWithProof :: String -> [Term] -> Term -> IsaProof -> IsaTheory ->
+                      IsaTheory
 addThreomWithProof name conds concl proof' isaTh =
     let isaTh_sign = fst isaTh
         isaTh_sen = snd isaTh
@@ -563,9 +613,11 @@ addDef name lhs rhs isaTh =
 addWarning :: IsaTheory -> IsaTheory
 addWarning isaTh =
     let fakeType = Type {typeId = "Fake_Type" , typeSort = [], typeArgs =[]}
-    in addConst "Warning_this_is_not_a_stable_or_meaningful_translation" fakeType isaTh
+    in addConst "Warning_this_is_not_a_stable_or_meaningful_translation"
+       fakeType isaTh
 
 -- Add a string version of the abstract syntax of an Isabelle theory to itself
+{-
 addDebug :: IsaTheory -> IsaTheory
 addDebug isaTh =
     let isaTh_sign = fst(isaTh)
@@ -575,7 +627,8 @@ addDebug isaTh =
     in   addConst "debug_isaTh_sens" sensType
        $ addConst "debug_isaTh_sign" signType
        $ isaTh
-
+-}
+{-
 addMR2 :: IsaTheory -> IsaTheory
 addMR2  isaTh =
     let fakeType = Type {typeId = "Fake_Type" , typeSort = [], typeArgs =[]}
@@ -584,12 +637,15 @@ addMR2  isaTh =
         myabbrs = abbrs isaTh_sign_tsig
         abbrsNew = Map.insert "Liam" (["MR2"], fakeType) myabbrs
 
-        isaTh_sign_updated = isaTh_sign {tsig = (isaTh_sign_tsig {abbrs =abbrsNew}) }
+        isaTh_sign_updated = isaTh_sign {
+                               tsig = (isaTh_sign_tsig {abbrs =abbrsNew})
+                             }
     in (isaTh_sign_updated, snd isaTh)
-
+-}
+{-
 addMR3 :: IsaTheory -> IsaTheory
 addMR3 isaTh =
-    let fakeType = Type {typeId = "Fake_Type" , typeSort = [], typeArgs =[]}
+    let fakeType = Type {typeId = "Fake_TypeMR3" , typeSort = [], typeArgs =[]}
         fakeType2 = Type {typeId = "Fake_Type2" , typeSort = [], typeArgs =[]}
         isaTh_sign = fst isaTh
         isaTh_sen = snd isaTh
@@ -600,3 +656,4 @@ addMR3 isaTh =
         sen = TypeDef fakeType set (IsaProof [] Sorry)
         namedSen = (makeNamed "tester" sen)
     in (isaTh_sign, isaTh_sen ++ [namedSen])
+-}
