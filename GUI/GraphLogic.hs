@@ -78,13 +78,12 @@ import GraphConfigure
 import TextDisplay(createTextDisplay)
 import InfoBus(encapsulateWaitTermAct)
 import DialogWin (useHTk)
-import Messages(errorMess)
+import Messages(warningMess, errorMess)
 import qualified HTk
 import Configuration(size)
 import FileDialog(newFileDialogStr)
 
 import Common.DocUtils (showDoc)
-import Common.ResultT(liftR, runResultT)
 import Common.AS_Annotation(isAxiom)
 import Common.Result as Res
 import Common.ExtSign
@@ -104,7 +103,6 @@ import Data.Graph.Inductive.Graph (Node, LEdge, LNode)
 import qualified Data.Map as Map
 
 import Control.Monad(foldM, filterM)
-import Control.Monad.Trans(lift)
 import Control.Concurrent.MVar
 
 -- | Locks the global lock and runs function
@@ -572,6 +570,10 @@ lookupTheoryOfNode proofStatusRef ln descr = do
     (libEnv', gth) <- computeTheory True libEnv ln descr
     return (libEnv', descr, gth)
 
+showDiagMess :: HetcatsOpts -> [Diagnosis] -> IO ()
+showDiagMess opts ds = (if hasErrors ds then errorMess else warningMess)
+  $ showRelDiags (verbose opts) ds
+
 {- | outputs the theory of a node in a window;
 used by the node menu defined in initializeGraph-}
 getTheoryOfNode :: GInfo -> Int -> DGraph -> IO ()
@@ -582,7 +584,7 @@ getTheoryOfNode gInfo@(GInfo { gi_LIB_NAME = ln
  r <- lookupTheoryOfNode le ln descr
  case r of
   Res.Result ds res -> do
-    showDiags (gi_hetcatsOpts gInfo) ds
+    showDiagMess (gi_hetcatsOpts gInfo) ds
     case res of
       (Just (le', n, gth)) -> do
         lockGlobal gInfo
@@ -603,42 +605,36 @@ getTheoryOfNode gInfo@(GInfo { gi_LIB_NAME = ln
 {- | translate the theory of a node in a window;
 used by the node menu defined in initializeGraph-}
 translateTheoryOfNode :: GInfo -> Int -> DGraph -> IO ()
-translateTheoryOfNode gInfo@(GInfo {gi_hetcatsOpts = opts,
-                                    libEnvIORef = le})
-                      descr dgraph = do
- libEnv <- readIORef le
- case (do
-   (libEnv', th) <- computeTheory False libEnv (gi_LIB_NAME gInfo) descr -- ? ok here
-   return (libEnv', descr,th) ) of
-  Res.Result [] (Just (_le', node, th)) -> do
-    Res.Result ds _ <-  runResultT(
-      do G_theory lid sign _ sens _ <- return th
+translateTheoryOfNode
+  gInfo@(GInfo {gi_hetcatsOpts = opts, libEnvIORef = le}) node dgraph = do
+    libEnv <- readIORef le
+    let Res.Result ds mEnv = computeTheory False libEnv (gi_LIB_NAME gInfo) node
+    case mEnv of
+      Just (_, th@(G_theory lid sign _ sens _)) -> do
          -- find all comorphism paths starting from lid
          let paths = findComorphismPaths logicGraph (sublogicOfTh th)
          -- let the user choose one
-         sel <- lift $ listBox "Choose a node logic translation"
-                   (map show paths)
-         i <- case sel of
-           Just j -> return j
-           _ -> liftR $ fail "no node logic translation chosen"
-         Comorphism cid <- return (paths!!i)
-         -- adjust lid's
-         let lidS = sourceLogic cid
-             lidT = targetLogic cid
-         sign' <- coerceSign lid lidS "" sign
-         sens' <- coerceThSens lid lidS "" sens
-         -- translate theory along chosen comorphism
-         (sign'',sens1) <-
-             liftR $ wrapMapTheory cid (plainSign sign', toNamedList sens')
-         lift $ GUI.HTkUtils.displayTheoryWithWarning
+         sel <- listBox "Choose a node logic translation" $ map show paths
+         case sel of
+           Nothing -> warningMess "no node logic translation chosen"
+           Just i -> do
+             Comorphism cid <- return (paths!!i)
+             -- adjust lid's
+             let lidS = sourceLogic cid
+                 lidT = targetLogic cid
+             sign' <- coerceSign lid lidS "" sign
+             sens' <- coerceThSens lid lidS "" sens
+             -- translate theory along chosen comorphism
+             let Result es mTh = wrapMapTheory cid
+                   (plainSign sign', toNamedList sens')
+             case mTh of
+               Nothing -> showDiagMess opts es
+               Just (sign'', sens1) -> GUI.HTkUtils.displayTheoryWithWarning
                 "Translated Theory" (getNameOfNode node dgraph)
                 (addHasInHidingWarning dgraph node)
                 (G_theory lidT (mkExtSign sign'') startSigId
                  (toThSens sens1) startThId)
-     )
-    showDiags opts ds
-    return ()
-  Res.Result ds _ -> showDiags opts ds
+      Nothing -> showDiagMess opts ds
 
 -- | Show proof status of a node
 showProofStatusOfNode :: GInfo -> Int -> DGraph -> IO ()
@@ -860,7 +856,7 @@ openTranslateGraph libEnv ln opts (Res.Result diagsSl mSublogic) convGraph
   showLib =
     -- if an error existed by the search of maximal sublogicn
     -- (see GUI.DGTranslation.getDGLogic), the process need not to go on.
-    let myErrMess = errorMess . showRelDiags (verbose opts) in
+    let myErrMess = showDiagMess opts in
     if hasErrors diagsSl then myErrMess diagsSl else case mSublogic of
       Nothing -> errorMess "the maximal sublogic is not found."
       Just sublogic -> do
@@ -872,14 +868,14 @@ openTranslateGraph libEnv ln opts (Res.Result diagsSl mSublogic) convGraph
            sel <- listBox "Choose a logic translation"
                   $ map show paths
            case sel of
-             Nothing -> errorMess "no logic translation chosen"
+             Nothing -> warningMess "no logic translation chosen"
              Just j -> do
                        -- graph translation.
                let Res.Result diagsTrans mLEnv =
                       libEnv_translation libEnv $ paths !! j
                case mLEnv of
                  Just newLibEnv -> do
-                   showDiags opts $ diagsSl ++ diagsTrans
+                   showDiagMess opts $ diagsSl ++ diagsTrans
                    dg_showGraphAux
                                    (\gI@(GInfo{libEnvIORef = iorLE}) -> do
                                      writeIORef iorLE newLibEnv
