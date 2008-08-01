@@ -47,7 +47,7 @@ import Data.List (nub,intersect,delete)
      - collect all operation symbols from recover_Sort_gen_ax fconstrs
                                                        (= constructors)
    - no variable occurs twice in a leading term, if not, return Nothing
-   - check that patterns do not overlap, if not, return obligations 
+   - check that patterns do not overlap, if not, return obligations
      This means:
        in each group of the grouped axioms:
        all patterns of leading terms/formulas are disjoint
@@ -62,7 +62,7 @@ import Data.List (nub,intersect,delete)
 -------------------------------------------------------------------------}
 -- | free datatypes and recursive equations are consistent
 checkFreeType :: (Sign () (),[Named (FORMULA ())]) -> Morphism () () ()
-                 -> [Named (FORMULA ())] 
+                 -> [Named (FORMULA ())]
                  -> Result (Maybe (ConsistencyStatus,[FORMULA ()]))
 checkFreeType (osig,osens) m fsn
     | null fsn && null nSorts = return (Just (Conservative,[]))
@@ -122,13 +122,13 @@ checkFreeType (osig,osens) m fsn
                       Just (Left opS) -> opSymName opS
                       Just (Right pS) -> predSymName pS
                       _ -> error "CASL.CCC.FreeTypes.<Symb_Name>"
-        in warning (Just (Conservative,obligations)) ("the definition of " ++ 
+        in warning (Just (Conservative,obligations)) ("the definition of " ++
                          sname ++ " is not complete") pos
     | (not $ null fs_terminalProof) && (proof /= Just True)=
          if proof == Just False
-         then warning (Just (Conservative,obligations)) 
+         then warning (Just (Conservative,obligations))
                       "not terminating" nullRange
-         else warning (Just (Conservative,obligations)) 
+         else warning (Just (Conservative,obligations))
                       "cannot prove termination" nullRange
     | not $ null obligations =
         return (Just (conStatus,obligations))
@@ -195,7 +195,7 @@ checkFreeType (osig,osens) m fsn
                  then Conservative
                  else Monomorphic
     _axioms = map quanti axioms
-    l_Syms = map leadingSym axioms        -- leading_Symbol 
+    l_Syms = map leadingSym axioms        -- leading_Symbol
 {-
    check the definitional form of the partial axioms
 -}
@@ -268,7 +268,7 @@ checkFreeType (osig,osens) m fsn
                                               (varDeclOfF f)
                                               f
                                               nullRange) overlap_qu
-{- 
+{-
    check the sufficient completeness
 -}
     axGroups =
@@ -290,7 +290,7 @@ data ConsistencyStatus = Inconsistent | Conservative |
                          Monomorphic | Definitional deriving (Show, Eq, Ord)
 
 instance Pretty ConsistencyStatus where
-  pretty cs = case cs of 
+  pretty cs = case cs of
                 Inconsistent -> keyword "Inconsistent"
                 Conservative -> keyword "Conservative"
                 Monomorphic -> keyword "Monomorphic"
@@ -440,7 +440,7 @@ resultTerm f = case f of
 sortTerm :: TERM f -> SORT
 sortTerm t = case t of
                Qual_var _ s _ -> s
-               Application (Op_name _) _ _ -> 
+               Application (Op_name _) _ _ ->
                  genName "unknown"
                Application (Qual_op_name _ ot _) _ _ ->
                  res_OP_TYPE ot
@@ -512,14 +512,14 @@ overlapQuery ((a1,s1),(a2,s2)) =
 completePatterns :: (Eq f) => [OP_SYMB] -> ([[TERM f]]) -> Bool
 completePatterns cons pas
     | all null pas = True
-    | all isVar $ map head pas = completePatterns cons (map tail pas) 
+    | all isVar $ map head pas = completePatterns cons (map tail pas)
     | otherwise = if elem (con_ts $ map head pas) s_cons
                   then all id $ map (completePatterns cons) $ pa_group pas
-                  else False  
-    where s_op_os c = case c of 
+                  else False
+    where s_op_os c = case c of
                         Op_name _ -> []
                         Qual_op_name on ot _ -> [(res_OP_TYPE ot,on)]
-          s_sum sns = map (\s->(s, map snd $ filter (\c-> (fst c)==s) sns)) $ 
+          s_sum sns = map (\s->(s, map snd $ filter (\c-> (fst c)==s) sns)) $
                       nub $ map fst sns
           s_cons = s_sum $ concat $ map s_op_os cons
           s_op_t t = case t of
@@ -529,14 +529,14 @@ completePatterns cons pas
           opN t = case t of
                     Application os _ _ -> opSymbName os
                     _ -> genName "unknown"
-          pa_group p = map p_g $ map (\o->  
+          pa_group p = map p_g $ map (\o->
                          filter (\a-> (isVar $ head a) ||
-                                      ((opN $ head $ a) == o)) p) $ 
-                         snd $ head $ 
-                         filter (\sc-> fst sc == (sortTerm $ 
+                                      ((opN $ head $ a) == o)) p) $
+                         snd $ head $
+                         filter (\sc-> fst sc == (sortTerm $
                                                   head $ head p)) s_cons
           p_g p = map (\p'-> if isVar $ head p'
-                             then (take (maximum $ map (length.arguOfTerm.head) 
+                             then (take (maximum $ map (length.arguOfTerm.head)
                                   p) $ repeat $ head p') ++ tail p'
                              else (arguOfTerm $ head p') ++ tail p') p
 

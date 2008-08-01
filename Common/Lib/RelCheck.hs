@@ -33,7 +33,7 @@ instance Arbitrary (Rel Int) where
                    z <- choose (0,length keys-1)
                    x1 <- choose (0,length keys-2)
                    y1 <- choose (0,length keys-1)
-                   let r' = 
+                   let r' =
                         insert x1 y1 $
                         insert y1 x1 $
                         insert x y $
@@ -45,7 +45,7 @@ instance Arbitrary (Rel Int) where
 prop_intransKernel_transClosure = prp_transClosure intransKernel
 
 prp_transClosure intrKern r =
-    (Set.size (mostRight rel) <= 3 && 
+    (Set.size (mostRight rel) <= 3 &&
      length (sccOfClosure rel) > 1 &&
      length (Map.keys $ toMap r) > 6 )  ==>
        ((Set.size $ toSet $ irreflex r) < 10) `trivial`
@@ -54,8 +54,8 @@ prp_transClosure intrKern r =
     where rel = transClosure r :: Rel Int
 
 tr = transClosure test1
- 
-test1 = fromList (zip [(1::Int)..7] [2..8] ++ 
+
+test1 = fromList (zip [(1::Int)..7] [2..8] ++
                  [(2,1),(12,11),(4,12),(12,13),(13,12),
                  (11,14),(14,11),(-1,14),(14,-1),(100,1),(2,100)])
 
@@ -84,7 +84,7 @@ prp_invTest relFun rel =
     (length (Map.keys $ toMap rel) > 6 )  ==>
        ((Set.size $ toSet $ irreflex rel) < 10) `trivial`
         collect (length (Map.keys $ toMap rel))
-                ((not . elem Set.empty) $ Map.elems (toMap $ relFun rel)) 
+                ((not . elem Set.empty) $ Map.elems (toMap $ relFun rel))
 
 prop_inv_intransKernel = prp_invTest intransKernel -- violated precondition!
 prop_inv_transReduce = prp_invTest transReduce  -- violated precondition!
@@ -94,7 +94,7 @@ prop_inv_transClosure = prp_invTest transClosure
 
 prp_eq :: (Rel Int -> Rel Int) -> (Rel Int -> Rel Int) -> Rel Int -> Property
 prp_eq relFun1 relFun2 rel = let clos = transClosure rel in
-    (Set.size (nodes rel) > 6 && 
+    (Set.size (nodes rel) > 6 &&
       clos /= rel && clos /= irreflex clos && transpose rel /= rel) ==>
        ((Set.size $ toSet rel) < 10) `trivial`
         collect (Set.size (nodes rel))
@@ -102,7 +102,7 @@ prp_eq relFun1 relFun2 rel = let clos = transClosure rel in
 
 prop_transpose_transpose = prp_eq id (transpose . transpose)
 prop_irreflex_transpose = prp_eq (irreflex .  transpose) (transpose . irreflex)
-prop_transClosure_transpose = 
+prop_transClosure_transpose =
     prp_eq (transClosure . transpose) (transpose . transClosure)
 prop_transClosure_intransKernel = prp_eq transClosure
     (transClosure . intransKernel . transClosure)

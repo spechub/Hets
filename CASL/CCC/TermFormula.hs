@@ -307,7 +307,7 @@ infoSubsort :: [SORT] -> FORMULA f -> [FORMULA f]
 infoSubsort sts f =
     case f of
       Quantification Universal v (Equivalence (Membership _ s _) f1 _) _ ->
-          if not $ elem s sts 
+          if not $ elem s sts
           then [Quantification Existential v f1 nullRange]
           else []
       _ -> []
