@@ -147,7 +147,7 @@ toGuiStatus cf st = case goalStatus st of
                then statusOpenTExceeded
                else statusOpen
 
-{-| stores widgets of an options frame and the frame itself -}
+{- | stores widgets of an options frame and the frame itself -}
 data OpFrame = OpFrame { of_Frame :: Frame
                        , of_timeSpinner :: SpinButton
                        , of_timeEntry :: Entry Int

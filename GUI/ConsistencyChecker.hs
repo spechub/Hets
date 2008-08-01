@@ -93,7 +93,7 @@ statusNotChecked = (Black, "Not checked")
 statusRunning :: (CheckStatusColour, String)
 statusRunning = (Blue, "Running")
 
-{-| stores widgets of an options frame and the frame itself -}
+{- | stores widgets of an options frame and the frame itself -}
 data OpFrame = OpFrame
     { of_Frame :: Frame
     , of_timeSpinner :: SpinButton

@@ -1,4 +1,4 @@
-{-|
+{- |
 Module      :  $Header$
 Description :  calling programatica's parser
 Copyright   :  (c) Christian Maeder, Uni Bremen 2002-2005

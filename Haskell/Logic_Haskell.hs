@@ -1,4 +1,4 @@
-{-|
+{- |
 Module      :  $Header$
 Description :  Instance of class Logic for the Haskell logic
 Copyright   :  (c) Christian Maeder, Sonja Groening, Uni Bremen 2002-2004

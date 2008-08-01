@@ -1439,7 +1439,7 @@ makeUniqueGlobalCounts
     Map.empty
     unnMap
 
-{-|
+{- |
   Create unique names from the use count.
 
   Name collisions are  handled by numbering names in order of

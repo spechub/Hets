@@ -79,7 +79,7 @@ instance Pretty SPSymbolList where
         cat [ text lname
             , brackets (fsep $ punctuate comma $ map pretty list) <> dot]
 
-{-|
+{- |
   Helper function. Creates a Doc from a Signature Symbol.
 -}
 instance Pretty SPSignSym where

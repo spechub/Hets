@@ -171,7 +171,7 @@ genSoftFOLProblem thName lp m_nGoal =
          logicalPart = maybe lp (insertSentence lp) m_nGoal,
          settings = []}
 
-{-|
+{- |
   generates a variable for each for each symbol in the input list
   without symbol overlap
 -}
