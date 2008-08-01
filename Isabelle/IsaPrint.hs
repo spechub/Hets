@@ -228,8 +228,7 @@ printSentence s = case s of
   Instance { tName = t, arityArgs = args, arityRes = res, instProof = prf } ->
       text instanceS <+> text t <> doubleColon <> (case args of
         []  -> empty
-	_ -> parens $ hsep $ punctuate comma $
-	     map (printSortAux True) args)
+        _ -> parens $ hsep $ punctuate comma $ map (printSortAux True) args)
         <+> printSortAux True res <+> pretty prf
   Sentence { isRefuteAux = b, metaTerm = t } -> printPlainMetaTerm (not b) t
   ConstDef t -> printTerm t
