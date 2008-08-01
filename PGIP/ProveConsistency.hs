@@ -53,7 +53,6 @@ import Control.Concurrent.MVar
 import System.IO
 
 
-
 getProversAutomatic :: [AnyComorphism] -> [(G_prover, AnyComorphism)]
 getProversAutomatic = foldl addProvers []
  where addProvers acc cm =
@@ -65,7 +64,6 @@ getProversAutomatic = foldl addProvers []
                           then (G_prover (targetLogic cid)
                              p,cm):l
                           else l) []  (provers $ targetLogic cid)
-
 
 
 -- | Select a prover
@@ -132,7 +130,6 @@ cProver input state =
                                               prover = Just p
                                          }
                               }
-
 
 
 -- | Selects a consistency checker
@@ -295,9 +292,6 @@ checkNode useTh save2File sTxt ndpf ndnm mp mcm mThr mSt mlbE libname
                 return []
 
 
-
-
-
 -- | Given a proofstatus the function does the actual call of the
 -- prover for proving the node or check consistency
 proveNode ::
@@ -458,7 +452,6 @@ pollForResults lid acm mStop mData mState done
           Just () -> return ()
           Nothing -> pollForResults lid acm mStop mData mState
                                                      (done++l)
-
 
 
 -- | inserts the results of the proof in the development graph

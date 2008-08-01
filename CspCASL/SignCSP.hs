@@ -68,7 +68,6 @@ closeOneCspComm sig x =
           subsorts s' = (S.singleton s') `S.union` predecessors (sortRel sig) s'
 
 
-
 {- Will probably be useful, but doesn't appear to be right now.
 
 -- Extract the sorts from a process alphabet
@@ -94,9 +93,6 @@ cspSubsortCloseSorts sig sorts =
         where subsort_sets = S.toList $ S.map (cspSubsortPreds sig) sorts
 
 -}
-
-
-
 
 
 -- | CSP process signature.
@@ -133,7 +129,6 @@ addCspProcSig a b =
 -- XXX looks incomplete!
 isInclusion :: CspSign -> CspSign -> Bool
 isInclusion _ _ = True
-
 
 
 -- XXX morphisms between CSP process signatures?

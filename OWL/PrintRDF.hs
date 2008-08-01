@@ -826,7 +826,6 @@ instance PrettyRDF SubObjectPropertyExpression where
      -}
 
 
-
 printClass :: Description -> Doc -> Doc
 printClass desc content =
     case desc of

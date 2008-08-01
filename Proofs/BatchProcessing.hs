@@ -240,8 +240,6 @@ atpRetvalToDiags gName err =
       _ -> []
 
 
-
-
 -- * Generic command line prover functions
 
 {- |

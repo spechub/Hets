@@ -139,7 +139,6 @@ checkCom descr state
                                       return $ register2history descr nwSt
 
 
-
 -- | Prints details about the syntax of the interface
 cDetails :: CMDL_State -> IO CMDL_State
 cDetails state

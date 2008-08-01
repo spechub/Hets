@@ -304,7 +304,6 @@ newExtSelListBoxFrame b2 title hValue =
   return (SAL sbf lb)
 
 
-
 -- *** Main GUI
 {- |
   Invokes the GUI.

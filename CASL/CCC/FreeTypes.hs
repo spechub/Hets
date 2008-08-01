@@ -338,7 +338,6 @@ checkTerms sig cons ts = all checkT ts
         checkT _ = False
 
 
-
 -- |  no variable occurs twice in a leading term
 checkVar_App :: (Eq f) => TERM f -> Bool
 checkVar_App (Application _ ts _) = noDuplation $ concat $ map varOfTerm ts

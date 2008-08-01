@@ -65,7 +65,6 @@ findTops c cand = S.map get_top (S.filter (is_top cand) c)
           get_top ((_,_),(_,p)) = p
 
 
-
 -- Utility functions.
 
 -- Cartesian product of a set.
@@ -82,7 +81,6 @@ stripMaybe x = S.fromList $ Maybe.catMaybes $ S.toList x
 reflexiveClosure :: Ord a => BinaryRelation a -> BinaryRelation a
 reflexiveClosure r = S.fold add_refl r r
     where add_refl (x, y) r' = (x, x) `S.insert` ((y, y) `S.insert` r')
-
 
 
 -- Interface to hets for CspCASL LTE checks: given a

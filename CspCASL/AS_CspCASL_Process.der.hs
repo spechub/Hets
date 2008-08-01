@@ -36,12 +36,10 @@ data EVENT
     deriving (Show,Ord, Eq)
 
 
-
 -- |Event sets are sets of communication types.
 
 data EVENT_SET = EventSet [COMM_TYPE] Range
     deriving (Show,Ord, Eq)
-
 
 
 -- |CSP renamings are predicate names or op names.
@@ -49,15 +47,11 @@ data EVENT_SET = EventSet [COMM_TYPE] Range
 type RENAMING = [Id]
 
 
-
 type CHANNEL_NAME = SIMPLE_ID
 
 type PROCESS_NAME = SIMPLE_ID
 
 type COMM_TYPE = SIMPLE_ID
-
-
-
 
 
 -- |CSP-CASL process expressions.

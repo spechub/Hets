@@ -47,7 +47,6 @@ basicOutput (InfoOutput out)    = hPutStr stdout out
 basicOutput (ErrorOutput out)   = hPutStr stderr out
 
 
-
 -- | Applies cUse to a list of input files
 recursiveApplyUse::[String] -> CMDL_State -> IO CMDL_State
 recursiveApplyUse ls state

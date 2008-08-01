@@ -90,7 +90,6 @@ addToHistory elm state =
           }
 
 
-
 -- | Returns the list of all nodes that are goals,
 -- taking care of the up to date status
 getAllGoalNodes :: CMDL_State -> CMDL_DevGraphState -> [LNode DGNodeLab]

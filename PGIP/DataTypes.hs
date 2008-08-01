@@ -280,7 +280,6 @@ data CMDL_Channel = CMDL_Channel {
    }
 
 
-
 -- | Channel type describes different type of channel
 data CMDL_ChannelType =
  -- socket type

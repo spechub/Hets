@@ -210,7 +210,6 @@ initialState lid1 thN th@(G_theory lid2 sig ind thSens _) pm cms =
                          }
 
 
-
 data G_theory_with_cons_checker =
     forall lid sublogics
         basic_spec sentence symb_items symb_map_items
@@ -233,8 +232,6 @@ data G_theory_with_prover =
   G_theory_with_prover lid
                 (Theory sign sentence proof_tree)
                 (Prover sign sentence sublogics proof_tree)
-
-
 
 
 prepareForConsChecking :: (Logic lid sublogics1
@@ -394,7 +391,6 @@ getConsCheckersAutomatic = foldl addConsCheckers []
                          else l) [] (cons_checkers $ targetLogic cid)
 
 
-
 lookupKnownConsChecker :: (Logic lid sublogics1
                             basic_spec1
                             sentence
@@ -424,7 +420,6 @@ lookupKnownConsChecker st _ =
                  p:_ -> return p
        in maybe ( fail ("PGIP.ProverConsistency.lookupKnownConsChecker: "++
                       "no matching known prover")) findCC mt
-
 
 
 lookupKnownProver :: (Logic lid sublogics1

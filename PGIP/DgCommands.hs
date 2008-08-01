@@ -268,7 +268,6 @@ selectANode x dgState
        _ -> []
 
 
-
 -- | function swithces interface in proving mode and also
 -- selects a list of nodes to be used inside this mode
 cDgSelect :: String -> CMDL_State -> IO CMDL_State
@@ -335,7 +334,6 @@ cDgSelect input state
                         redoInstances = []},
                    prompter = nwPrompter
                    }
-
 
 
 -- | Function switches the interface in proving mode by

@@ -55,8 +55,6 @@ emptyCMDL_State =
      }
 
 
-
-
 -- | The function runs hets in a shell
 cmdlRunShell :: [String] ->IO CMDL_State
 cmdlRunShell files

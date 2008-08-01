@@ -52,7 +52,6 @@ import Common.AS_Annotation
 import qualified Common.OrderedMap as OMap
 
 
-
 -- splits the paths in the PATH variable (separeted by
 -- a ':' symbol)
 getPaths ::  String -> String -> [String] -> [String]
@@ -285,7 +284,6 @@ createEdgeNames lsN lsE
                                      (show $ getInt $ dgl_id edgLab)
                                      ++ " -> " ++  (nameOf y lsN)) l) edgs
   in allEds
-
 
 
 -- | Given a list of edge names and numbered edge names

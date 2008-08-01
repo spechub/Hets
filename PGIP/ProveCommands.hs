@@ -46,7 +46,6 @@ import Proofs.AbstractState
 import Logic.Comorphism
 
 
-
 import Control.Concurrent
 import Control.Concurrent.MVar
 

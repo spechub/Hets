@@ -104,7 +104,6 @@ getSuperSorts s sMap =
 getSorts sMap = keysFM sMap
 
 
-
 {- getSubSorts liefert eine Liste der direkten Subsorten von
    Sorte s in der Sort_Map sMap -}
 getSubSorts s sMap = lookupWithDefaultFM sMap [] s
@@ -812,7 +811,6 @@ twoElems b n1 n2 =
   if b
     then ((n1 * (n1 - 1)) `div` 2)
     else n1 * n2
-
 
 
 ----------------- Test-Section --------------------------------

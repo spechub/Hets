@@ -41,7 +41,6 @@ printCspBasicSpec ccs =
               chans = channels ccs
 
 
-
 printChanDecs :: [CHANNEL_DECL] -> Doc
 printChanDecs cds = (vcat . punctuate semi . map pretty) cds
 
@@ -51,7 +50,6 @@ instance Pretty CHANNEL_DECL where
 printChanDecl :: CHANNEL_DECL -> Doc
 printChanDecl (ChannelDecl ns s) =
     (ppWithCommas ns) <+> colon <+> (pretty s)
-
 
 
 printProcItems :: [PROC_ITEM] -> Doc
@@ -69,7 +67,6 @@ printProcItem (Proc_Eq pn p) =
     (pretty pn) <+> equals <+> (pretty p)
 
 
-
 instance Pretty PARM_PROCNAME where
     pretty = printParmProcname
 
@@ -84,7 +81,6 @@ instance Pretty PROC_ALPHABET where
 
 printProcAlphabet :: PROC_ALPHABET -> Doc
 printProcAlphabet (ProcAlphabet commTypes _) = ppWithCommas commTypes
-
 
 
 instance Pretty PROCESS where

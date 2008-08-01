@@ -2302,7 +2302,6 @@ quantName Existential = caslSymbolQuantExistentialS
 quantName Unique_existential = caslSymbolQuantUnique_existentialS
 
 
-
 -- | transform a list of variable declarations
 -- into a list of (Name, Type) (bindings).
 makeVarDeclList::

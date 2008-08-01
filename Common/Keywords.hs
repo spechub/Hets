@@ -263,9 +263,6 @@ ren_proc_closeS :: String
 ren_proc_closeS = "]]"
 
 
-
-
-
 -- * standard lower case letter keywords
 withinS,
   withS,

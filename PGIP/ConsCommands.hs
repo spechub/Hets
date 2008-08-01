@@ -87,7 +87,6 @@ cConservCheck input state =
                                        (edgLs ++ nbEdgLs) ) state
 
 
-
 -- checks conservativity for every possible node
 cConservCheckAll :: CMDL_State -> IO CMDL_State
 cConservCheckAll state =

@@ -520,7 +520,6 @@ getCarrier qm s =
   -- todo: generalise this
 
 
-
 ----------------------------------------------------------------------------
 -- * Interfacing to Hets prover interface
 

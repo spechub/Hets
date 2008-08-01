@@ -31,7 +31,6 @@ import PGIP.StdInterface
 import qualified Control.Exception as Ex
 
 
-
 -- | Creates the Backend for reading from files
 fileBackend :: String -> ShellBackend Handle
 fileBackend filename = ShBackend

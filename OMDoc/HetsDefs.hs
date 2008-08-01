@@ -1282,7 +1282,6 @@ findMultiOriginUnifications
       rearranged
 
 
-
 -- | use previously created reference mapping to remove referenced
 -- identifiers from a mapping (leaving only identifiers where they are
 -- introduced)
