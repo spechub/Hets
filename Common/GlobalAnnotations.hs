@@ -112,5 +112,3 @@ lookupDisplay ga df i =
                    Nothing -> Nothing
                    r@(Just disp_toks) ->
                        if null disp_toks then Nothing else r
-
-

@@ -305,4 +305,3 @@ concatSemi :: [String] -> String
 concatSemi [] = ""
 concatSemi (x:[]) = x
 concatSemi (x:xs) = x ++ " ; " ++ concatSemi xs
-

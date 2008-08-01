@@ -24,4 +24,3 @@ atermFromFile :: FilePath -> IO ATerm
 atermFromFile fp =
     do str <- readFile fp
        return (getATermFull (readATerm str))
-

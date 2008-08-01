@@ -704,5 +704,3 @@ cDisplayGraph state
 #endif
    -- no development graph present
     _ -> return state
-
-

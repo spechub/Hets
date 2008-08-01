@@ -212,4 +212,3 @@ toMixfixList mkList splt ga i ts =
                 ListCons b _ -> b
                 _ -> error "print_Literal_text"
    in mkList (Id openL [] nullRange) args (Id closeL comps nullRange)
-

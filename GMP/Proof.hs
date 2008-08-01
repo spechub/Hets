@@ -170,6 +170,3 @@ ttest ( (s1, s2):as ) =
 	    s2p = (sprovable s2)
   in if (s1p /= s2p) then "GOTCHA: " ++ (show s1) ++ (show s2) ++ "<"
 	                   else "*" ++ (ttest as)
-
-
-

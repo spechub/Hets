@@ -93,4 +93,3 @@ t2term = foldTerm mapRec
             AsType ->
                 mkTerm projName (mkInjOrProjType PFunArr) [sty, ty] ps ntrm
             _ -> mkTerm injName (mkInjOrProjType FunArr) [sty, ty] ps ntrm }
-

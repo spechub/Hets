@@ -53,4 +53,3 @@ fileParser = [ ("BasicSpec", fromHAParser basicSpec)
              , ("sentences", printSen senParser)
              , ("translate", printSen transParser)
              ]
-

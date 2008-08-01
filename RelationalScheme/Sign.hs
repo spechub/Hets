@@ -280,4 +280,3 @@ instance Ord RSTable where
     x <  y = x `isProperSubtable` y
     x >= y = y `isProperSubtable` x
     x >  y = y `isSubtable` x
-

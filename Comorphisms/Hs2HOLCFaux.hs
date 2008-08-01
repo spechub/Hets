@@ -1104,4 +1104,3 @@ replaceTyVar x t = if x == noTypeT then t else case t of
     IsaSign.Type n s vs -> IsaSign.Type n s (map (replaceTyVar x) vs)
     IsaSign.TFree _ _ -> x
     IsaSign.TVar _ _ -> x
-

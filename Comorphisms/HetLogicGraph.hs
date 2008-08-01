@@ -282,4 +282,3 @@ addHomogeneousInclusions hsg =
                          Comorphism $
                           mkInclComorphism lid1 sub1 $
                              forceCoerceSublogic lid2 lid1 sub2])
-

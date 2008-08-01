@@ -86,6 +86,3 @@ fileShellDescription =
        , prompt             = \_ -> return []
        , historyFile        = Nothing
        }
-
-
-

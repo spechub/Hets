@@ -9,4 +9,3 @@ main = do
   sendMsg p "3+4;"
   forkIO $ forever $ do m <- readMsg p; putStrLn m
   return p
-

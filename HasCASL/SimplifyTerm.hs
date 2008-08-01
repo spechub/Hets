@@ -88,4 +88,3 @@ simplifySentence env s = case s of
     Formula t -> Formula $ simplifyTerm env t
     ProgEqSen i sc eq -> ProgEqSen i sc $ simplifyEq env eq
     _ -> s
-

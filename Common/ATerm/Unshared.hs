@@ -63,4 +63,3 @@ toATermTable at = fst $ addToTable at emptyATermTable
         let (att1,i)  = addToTable at1 att
             (att2,is) = addToTableList ats att1
         in (att2,i:is)
-

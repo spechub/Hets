@@ -56,5 +56,3 @@ recursiveApplyUse ls state
     l:ll -> do
              nwState <- cUse l state
              recursiveApplyUse ll nwState
-
-

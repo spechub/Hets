@@ -501,4 +501,3 @@ hetWeakAmalgCocone graph funDesc =
         case  maybeResult mGraph  of
          Nothing -> mzero
          Just (graph1, funDesc1) -> hetWeakAmalgCocone graph1 funDesc1
-

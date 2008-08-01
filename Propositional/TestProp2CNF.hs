@@ -108,4 +108,3 @@ showProof = PC.goalDIMACSProblem "DIMACSProblem" (propProverState mySig myForms)
             , sentence = myOtherForm
             }
             []
-

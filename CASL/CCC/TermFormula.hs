@@ -591,5 +591,3 @@ varDeclOfF f =
         sortOfV _ = error "CASL.CCC.TermFormula<sortOfV>"
         varOfV (Qual_var v _ _) = v
         varOfV _ = error "CASL.CCC.TermFormula<varOfV>"
-
-

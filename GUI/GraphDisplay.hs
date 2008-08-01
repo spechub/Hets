@@ -98,5 +98,3 @@ initializeGraph :: GInfo -> String -> LibFunc -> IO ()
 initializeGraph gInfo@(GInfo { gi_LIB_NAME = ln }) title showLib = do
   let title' = (title ++ " for " ++ show ln)
   createGraph gInfo title' (convertGraph) (showLib)
-
-

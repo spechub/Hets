@@ -517,6 +517,3 @@ prettyPrintErrList list
 prettyPrintList ::[String]->String
 prettyPrintList ls
  = unlines ls
-
-
-

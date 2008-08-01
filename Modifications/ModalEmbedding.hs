@@ -52,5 +52,3 @@ instance Modification MODAL_EMBEDDING (InclComorphism CASL CASL_Sublogics)
       (sigma1, _ ) <- wrapMapTheory CASL2Modal (sigma, [])
       (sigma2, _ ) <- wrapMapTheory Modal2CASL (sigma1, [])
       return (embedMorphism () sigma sigma2)
-
-

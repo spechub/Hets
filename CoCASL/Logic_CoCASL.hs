@@ -118,5 +118,3 @@ instance Logic CoCASL CoCASL_Sublogics
          proj_sublogic_epsilon CoCASL = pr_epsilon ()
          all_sublogics CoCASL = sublogics_all [False, True]
          empty_proof_tree CoCASL = ()
-
-

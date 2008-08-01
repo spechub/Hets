@@ -285,5 +285,3 @@ makeAnnoted l r sen = Annoted
                           , r_annos = r
                           , opt_pos = nullRange
                           }
-
-

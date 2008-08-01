@@ -397,10 +397,3 @@ inclusionSink lgraph srcNodes tnsig =
                  return ((n, incl): l)
        sink <- foldl insmorph (return []) srcNodes
        return sink
-
-
-
-
-
-
-

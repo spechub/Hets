@@ -388,5 +388,3 @@ cDgSelectAll state
                          },
               prompter = nwPrompter
               }
-
-

@@ -335,4 +335,3 @@ data SYMB_OR_MAP = Symb SYMB
                  | Symb_map SYMB SYMB Range
                    -- pos: "|->"
                    deriving (Show, Eq)
-

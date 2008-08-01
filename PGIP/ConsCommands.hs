@@ -251,4 +251,3 @@ edgeConservativityState nm (source,target,linklab) libenv libname
                        _ -> "Could not determine whether link is conservative"
             myDiags = showRelDiags 2 ds
         return (nm,showRes++"\n"++myDiags)
-

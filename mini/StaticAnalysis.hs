@@ -42,4 +42,3 @@ staticAnalysis sp = staticAna1 initial_theory sp
         do (env1,th1) <- staticAna1 th sp1
            (env2,th2) <- staticAna1 th1 sp2
            return (Extension_env th2 env1 env2,th2)
-

@@ -836,4 +836,3 @@ instance OMElementClass OMBind where
 instance OMElementClass OMElement where
   toElement = id
   fromElement = Just . id
-

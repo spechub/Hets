@@ -105,4 +105,3 @@ symOf sigma =
                           Set.insert $ idToOpSymbol sigma i $ opType t) s ts)
               types $ assumps sigma
         in ops
-

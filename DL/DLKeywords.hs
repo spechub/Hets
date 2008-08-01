@@ -200,4 +200,3 @@ casl_dl_keywords = [dlclass, dlxor, dlor, dland, dlnot, dlthat, dlsome,
                     dlMultiIndi, dlEquality, dlEqualI, dlDiffI, dlType,
                     dlRefl, dlIrr, dlSuperProp, dlSelf
                     ]
-

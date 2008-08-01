@@ -304,6 +304,3 @@ data CMDL_Socket = CMDL_Socket {
    socketHostName    :: HostName,
    socketPortNumber  :: PortNumber
    }
-
-
-

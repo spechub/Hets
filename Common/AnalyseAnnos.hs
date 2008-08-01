@@ -299,4 +299,3 @@ parse_display_str an str = case parse (tokenL [])
 
           err' = "could not parse display string: using \""
                  ++ str ++ "\" as display token!\n"
-

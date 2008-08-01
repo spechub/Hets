@@ -170,5 +170,3 @@ getRels spec = case spec of
 getSignature :: RSScheme -> RSTables
 getSignature spec = case spec of
             RSScheme tb _ _ -> tb
-
-

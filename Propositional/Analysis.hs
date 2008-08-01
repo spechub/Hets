@@ -380,4 +380,3 @@ inducedFromToMorphism imap (ExtSign sig _) (ExtSign tSig _) =
                                 ]
                               , Result.maybeResult = Nothing
                               }
-

@@ -43,4 +43,3 @@ process fn = do
             putStrLn $ showDoc sig ""
             mapM_ (putStrLn . flip showDoc "" . sentence) hs
         _ -> mapM_ (putStrLn . show) ds
-

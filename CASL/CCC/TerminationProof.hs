@@ -250,4 +250,3 @@ disj_sub fs =
                                   (axiom_sub $ last fs) ++ ")")
   else ("or(" ++ (axiom_sub $ head fs) ++ "," ++
                  (disj_sub $ tail fs) ++ ")")
-

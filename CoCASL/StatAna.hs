@@ -394,4 +394,3 @@ getCoDataGenSig dl =
                   r $ getCoSubsorts a)
                Rel.empty subs
         in (Set.fromList sorts, rel, Set.fromList sels)
-

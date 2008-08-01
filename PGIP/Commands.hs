@@ -343,4 +343,3 @@ getCommands
               "Apply consistency check to all nodes" $
                CmdNoInput cConsistCheckAll)
    : []
-

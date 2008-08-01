@@ -440,4 +440,3 @@ ccgui = do
       +> (closeWindow >>> do
                  destroy main)
        )
-

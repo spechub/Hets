@@ -795,5 +795,3 @@ printQN :: QName -> String
 printQN (QN pre local u)
             | null pre = show (u ++ ":" ++ local)
             | otherwise = show (pre ++ ":" ++ local)
-
-

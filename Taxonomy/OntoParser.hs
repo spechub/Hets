@@ -265,5 +265,3 @@ objLinkP rels =
 
 idParser :: GenParser Char st String
 idParser = many (noneOf "{}[]")
-
-

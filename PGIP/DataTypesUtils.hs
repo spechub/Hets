@@ -212,6 +212,3 @@ genError state
                   fatalError = True
                   }
           }
-
-
-

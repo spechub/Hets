@@ -205,4 +205,3 @@ isEmptyOntology :: Ontology -> Bool
 isEmptyOntology (Ontology uid annoList impList axioms) =
     equalQName uid nullQName && null annoList
                    && null impList && null axioms
-

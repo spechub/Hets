@@ -28,4 +28,3 @@ process f = do
   case parse parseSPASS f s of
     Right b -> writeFile (f ++ ".dfg") $ shows (pretty b) "\n"
     Left err -> print err
-

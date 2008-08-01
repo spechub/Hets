@@ -102,5 +102,3 @@ comSublogics (G_sublogics lid1 l1) (G_sublogics lid2 l2) =
     case coerceSublogic lid1 lid2 "coerce Sublogic" l1 of
       Just sl -> Just (G_sublogics lid2 (join sl l2))
       Nothing -> Nothing
-
-

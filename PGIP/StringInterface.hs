@@ -90,6 +90,3 @@ stringShellDescription =
        , prompt             = \_ -> return []
        , historyFile        = Nothing
        }
-
-
-

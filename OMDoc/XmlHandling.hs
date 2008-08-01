@@ -382,6 +382,3 @@ createQAttributed tagname attributes =
 createAttributed::String->[(String,String)]->HXT.XmlFilter
 createAttributed tagname attributes =
   createQAttributed tagname $ map (\(a, v) -> ("", a, v) ) attributes
-
-
-

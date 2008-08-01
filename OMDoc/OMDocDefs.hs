@@ -324,5 +324,3 @@ type XmlTaggedLibEnv =
   Map.Map
       Hets.LIB_NAME
       XmlTaggedDevGraph
-
-

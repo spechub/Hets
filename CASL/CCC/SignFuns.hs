@@ -70,7 +70,3 @@ inhabited sorts constrs = iterateInhabited sorts
                                                       && (not (elem rs l'))
                                                   then rs:l'
                                                   else l') l argsRes
-
-
-
-

@@ -532,4 +532,3 @@ filterValidProof_status st =
              (allSentencesIncluded && case goalStatus senStat of
                                       Disproved -> True
                                       _ -> False)
-

@@ -91,7 +91,3 @@ processSubContents
 -- strip-function for using processSubContents
 pSCStrip::(a->b)->(z,a)->b
 pSCStrip f (_,a) = f a
-
-
-
-

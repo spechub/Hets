@@ -63,4 +63,3 @@ flattenDis f =
       AS_BASIC.False_atom _       -> [f]
       AS_BASIC.Predication _      -> [f]
       AS_BASIC.Conjunction _ _   -> [f]
-

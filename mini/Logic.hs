@@ -67,5 +67,3 @@ data (Logic id1 s1 m1 sen1 b1 sy1, Logic id2 s2 m2 sen2 b2 sy2) =>
                          tr_mor :: m1 -> m2,
                          tr_sen :: s1 -> sen1 -> Maybe sen2,
                          inv_tr_sen :: s1 -> sen2 -> Maybe sen1 }
-
-

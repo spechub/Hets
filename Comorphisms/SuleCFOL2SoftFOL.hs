@@ -998,4 +998,3 @@ getVars tm = case tm of
     SPComplexTerm (SPCustomSymbol cst) args ->
         if null args then [cst] else concatMap getVars args
     _ -> []
-

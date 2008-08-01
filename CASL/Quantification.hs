@@ -91,4 +91,3 @@ stripAllQuant :: FORMULA f -> FORMULA f
 stripAllQuant (Quantification Universal _ phi _) =
   stripAllQuant phi
 stripAllQuant phi = phi
-

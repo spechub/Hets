@@ -228,4 +228,3 @@ diffType cm ti1 ti2 =
        Just $ ti1 { otherTypeKinds = ks
                   , superTypes = Set.difference (superTypes ti1) $
                                  superTypes ti2 }
-

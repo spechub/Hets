@@ -403,6 +403,3 @@ processCmds cmds state pgipState
                                    (errorMsg $ output nwSt) nPGIP
                    True -> return (nwSt, genErrAnswer (errorMsg $ output nwSt)
                                       nPGIP)
-
-
-

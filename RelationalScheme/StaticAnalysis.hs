@@ -149,4 +149,3 @@ analyse_RSQualidK rn st quid =
                                 "as a key, but not defined as one") rn)
                         return $ (quid, Just $ cname)
             _ -> fatal_error ("Duplicate table name: " ++ (show ft)) rn
-

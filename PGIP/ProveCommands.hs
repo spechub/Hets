@@ -354,5 +354,3 @@ cTimeLimit input state
                                             ++"\n"++ (script ps))
                                      }
                       }
-
-

@@ -865,11 +865,3 @@ testFCount n file t sub_B =
                            ; print (predicates n env (getPredList body) soInd sMap t sub_B)
                            }
 -}
-
-
-
-
-
-
-
-

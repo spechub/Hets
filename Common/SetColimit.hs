@@ -197,5 +197,3 @@ equivClass  elemList (a,node) graph cfct mark=
                   intermValues
   newList = (tail elemList) ++  oValues
  in equivClass newList (a,node) graph cfct1 mark1
-
-

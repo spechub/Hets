@@ -273,4 +273,3 @@ comp_id = do Id ts _ _  <- test_mixfix_id (mixfix_id [])
                                 _   -> True)
                    then return i
                    else fail "only one place is not a legal mixfix id "
-

@@ -149,4 +149,3 @@ data ATP_ProofTree = ATP_ProofTree String
 
 instance Show ATP_ProofTree where
   show (ATP_ProofTree st) = st
-

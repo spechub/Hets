@@ -238,5 +238,3 @@ proveFineGrainedSelect lg st =
        pr <- selectProver cmsToProvers
        ResultT $ callProver st{lastSublogic = sublogicOfTheory st,
                                comorphismsToProvers = cmsToProvers} pr
-
-

@@ -106,5 +106,3 @@ prop_transClosure_transpose =
     prp_eq (transClosure . transpose) (transpose . transClosure)
 prop_transClosure_intransKernel = prp_eq transClosure
     (transClosure . intransKernel . transClosure)
-
-

@@ -180,4 +180,3 @@ proof_stat nGoal res usedAxs timeOut defaultPrStat
       (ATPTLimitExceeded,
        defaultPrStat { goalStatus = res })
   | otherwise = (ATPSuccess, defaultPrStat { goalStatus = res })
-

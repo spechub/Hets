@@ -83,4 +83,3 @@ kifParse s = do
   case e of
     Left err -> putStrLn $ show err
     Right l -> putStrLn $ show $ Doc.vcat $ map ppListOfList l
-

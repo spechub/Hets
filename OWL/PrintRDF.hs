@@ -1023,5 +1023,3 @@ nest :: Int -> Doc
 nest longOfNest
     | longOfNest == 0 = empty
     | otherwise = space <> (nest (longOfNest -1))
-
-

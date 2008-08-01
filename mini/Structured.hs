@@ -12,4 +12,3 @@ data Env = Basic_env G_theory
          | Intra_Translation_env G_theory Env G_morphism
          | Inter_Translation_env G_theory Env AnyTranslation
          | Extension_env G_theory Env Env
-

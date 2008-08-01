@@ -51,4 +51,3 @@ printModule (G_theory lid (ExtSign sign0 _) _ sens0 _) =
                    Just (_, sens) -> Just $
                        vcat $ map (print_named Haskell)
                                 $ toNamedList $ toThSens sens
-

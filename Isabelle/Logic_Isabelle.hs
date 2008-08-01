@@ -58,4 +58,3 @@ instance Logic Isabelle () () Sentence () ()
          empty_proof_tree _ = ()
          provers Isabelle = [isabelleProver]
          cons_checkers Isabelle = [isabelleConsChecker]
-

@@ -539,4 +539,3 @@ completePatterns cons pas
                              then (take (maximum $ map (length.arguOfTerm.head)
                                   p) $ repeat $ head p') ++ tail p'
                              else (arguOfTerm $ head p') ++ tail p') p
-

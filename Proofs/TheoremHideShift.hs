@@ -472,4 +472,3 @@ computePathTheory useNf libEnv ln e@(src, _, link) = do
 theoremsToAxioms :: G_theory -> G_theory
 theoremsToAxioms (G_theory lid sign ind1 sens ind2) =
   G_theory lid sign ind1 (markAsAxiom True sens) ind2
-

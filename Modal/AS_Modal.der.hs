@@ -44,4 +44,3 @@ data M_FORMULA = BoxOrDiamond Bool MODALITY (FORMULA M_FORMULA) Range
                -- The identifier and the term specify the kind of the modality
                -- pos: "[]" or  "<>", True if Box, False if Diamond
              deriving (Eq, Ord, Show)
-

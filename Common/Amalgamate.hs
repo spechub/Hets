@@ -56,4 +56,3 @@ readShow l = readShowAux $ map ( \ o -> (show o, o)) l
 -- | possible CASL amalgamability options
 caslAmalgOpts :: [CASLAmalgOpt]
 caslAmalgOpts = [NoAnalysis, Sharing, Cell, ColimitThinness]
-

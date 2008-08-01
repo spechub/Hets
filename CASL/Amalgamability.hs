@@ -1132,4 +1132,3 @@ ensuresAmalgamability opts diag sink desc =
                           -- TODO: 8 generate proof obligations
                     Nothing -> return Amalgamates
                  else return defaultDontKnow
-

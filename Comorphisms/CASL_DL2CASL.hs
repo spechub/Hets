@@ -1372,4 +1372,3 @@ addCardResAx predicate pt =
                     True
                     nullRange)
                  nullRange}]
-
