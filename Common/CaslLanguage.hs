@@ -207,7 +207,7 @@ mixfix_id accum = do ts <- (try (fmap (:[]) Common.CaslLanguage.place)
                            )
                      sqs <- option [] (lookAhead (fmap (:[]) (symbol "[")))
                      fts <- option [] (lookAhead
-                                         (fmap (:[]) (Common.CaslLanguage.token)))
+                                    (fmap (:[]) (Common.CaslLanguage.token)))
                      Id ats _ _ <-
                          let accum_ts = accum ++ ts
                              defId = mkId accum_ts

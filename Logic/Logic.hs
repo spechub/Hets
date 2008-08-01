@@ -18,9 +18,8 @@ Provides data structures for logics (with symbols). Logics are
 
    For logic (co)morphisms see "Logic.Comorphism"
 
-   This module uses multiparameter type classes
-   (<http://haskell.org/ghc/docs/latest/html/users_guide/type-extensions.html#multi-param-type-classes>)
-   with functional dependencies (<http://haskell.org/hawiki/FunDeps>)
+   This module uses multiparameter type classes with functional dependencies
+   (<http://www.haskell.org/haskellwiki/Functional_dependencies>)
    for defining an interface for the notion of logic. Multiparameter type
    classes are needed because a logic consists of a collection of types,
    together with operations on these. Functional dependencies

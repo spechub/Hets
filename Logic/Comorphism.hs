@@ -1,7 +1,7 @@
 {-# OPTIONS -fglasgow-exts -fallow-undecidable-instances #-}
 {- |
 Module      :  $Header$
-Description :  central interface (type class) for logic translations (comorphisms) in Hets
+Description :  interface and class for logic translations
 Copyright   :  (c) Till Mossakowski, Uni Bremen 2002-2006
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 Maintainer  :  till@informatik.uni-bremen.de

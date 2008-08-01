@@ -1,6 +1,6 @@
 {- |
 Module      :  $Header$
-Description :  tell the typechecker that things dynamically belong to the same logic
+Description :  coerce logic entities dynamically
 Copyright   :  (c) T. Mossakowski, C. Maeder, Uni Bremen 2005-2006
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 Maintainer  :  till@informatik.uni-bremen.de
@@ -9,8 +9,6 @@ Portability :  non-portable (various -fglasgow-exts extensions)
 
 Functions for coercion used in Grothendieck.hs and Analysis modules:
   These tell the typechecker that things dynamically belong to the same logic
-
-
 -}
 
 module Logic.Coerce where
