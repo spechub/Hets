@@ -44,9 +44,8 @@ the "Propositional" resp. "CASL" folder is imported.
 
 You also should have a look at some of the "Common" modules,
 providing data structures for identifiers ("Common.Id"),
-sets ("Common.Lib.Set"), maps ("Common.Lib.Map") and relations ("Common.Lib.Rel").
-These are used quite frequently.
-
+sets ("Common.Lib.Set"), maps ("Common.Lib.Map") and relations
+("Common.Lib.Rel"). These are used quite frequently.
 -}
 
 module Logic where
