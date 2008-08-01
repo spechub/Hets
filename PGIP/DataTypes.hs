@@ -129,7 +129,7 @@ data CMDL_CmdDescription = CMDL_CmdDescription {
   cmdFn          :: CMDL_CmdFnClasses,
   cmdReq         :: CMDL_CmdRequirements
   }
- 
+
 
 data CMDL_CmdHistoryDescription = CMDL_CmdHistoryDescription {
   cmdType        :: CMDL_CmdType,

@@ -75,7 +75,7 @@ cProver input state =
   do
    -- trimed input
    inpls <- checkPresenceProvers [(trim input)]
-   let inp  = case inpls of 
+   let inp  = case inpls of
                 [] -> "Unknown"
                 pnme:_ ->pnme
    case proveState state of
@@ -580,17 +580,17 @@ consCheckLoop :: MVar LibEnv ->
                  [CMDL_ProofAbstractState] ->
                  IO ()
 consCheckLoop mlbE mThr mSt mOut pS pDgS ls
- = case ls of 
+ = case ls of
     -- we are done
-    [] -> do 
+    [] -> do
            nwLbEnv <- readMVar mlbE
            putMVar mOut nwLbEnv
            return ()
-    x:l -> 
+    x:l ->
          do
-          let nodeName x' = case x' of 
+          let nodeName x' = case x' of
                              Element _ t -> case find(\(n,_) -> n==t) $
-                                                  getAllNodes pDgS of 
+                                                  getAllNodes pDgS of
                                               Nothing -> "Unknown node"
                                               Just (_,ll) ->
                                                  getDGNodeName ll
@@ -606,8 +606,8 @@ consCheckLoop mlbE mThr mSt mOut pS pDgS ls
                            mSt
                            mlbE
                            (ln pDgS)
-          case err of 
-           [] -> consCheckLoop mlbE mThr mSt mOut pS pDgS l 
-           _ -> do 
+          case err of
+           [] -> consCheckLoop mlbE mThr mSt mOut pS pDgS l
+           _ -> do
                  putStrLn err
                  consCheckLoop mlbE mThr mSt mOut pS pDgS l

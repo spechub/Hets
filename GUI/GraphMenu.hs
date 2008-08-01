@@ -269,7 +269,7 @@ createNodeTypes :: GInfo -> ConvFunc -> LibFunc
 createNodeTypes gInfo@(GInfo {gi_hetcatsOpts = opts}) cGraph showLib =
   map (\ (n, t, s, c) -> (n, menu t s c)) $ nodeTypes opts
   where
-    menu t s c = 
+    menu t s c =
       case t of
         "Spec" -> createLocalMenuNodeTypeSpec s c gInfo
         "Internal" -> createLocalMenuNodeTypeInternal s c gInfo

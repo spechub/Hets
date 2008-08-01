@@ -102,7 +102,7 @@ glue x y = if (prec_comp x y)
 prec_comp :: PROCESS -> PROCESS -> Bool
 prec_comp x y =
     case x of
-      Hiding _ _ _ -> 
+      Hiding _ _ _ ->
           case y of RenamingProcess _ _ _ -> True
                     _ -> False
       RenamingProcess _ _ _ ->
@@ -114,11 +114,11 @@ prec_comp x y =
                     _ -> False
       PrefixProcess _ _ _ ->
           case y of Sequential _ _ _ -> True
-                    _ -> False 
+                    _ -> False
       InternalPrefixProcess _ _ _ _ ->
           case y of Sequential _ _ _ -> True
                     _ -> False
-      ExternalPrefixProcess _ _ _ _ -> 
+      ExternalPrefixProcess _ _ _ _ ->
           case y of Sequential _ _ _ -> True
                     _ -> False
       ExternalChoice _ _ _ ->

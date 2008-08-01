@@ -316,7 +316,7 @@ cspProver_ifOp  =
 
 -- Create an Isabelle Term representing a (Unary) CspProver operator
 -- with no alternative syntax
-makeCspProverOpNoAlt :: String -> Term 
+makeCspProverOpNoAlt :: String -> Term
 makeCspProverOpNoAlt opName =
     con $ VName opName $ Nothing
 

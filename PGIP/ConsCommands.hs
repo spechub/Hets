@@ -50,7 +50,7 @@ import Control.Concurrent.MVar
 import System.Posix.Signals
 import System.IO
 
--- Command that processes the input and applies a 
+-- Command that processes the input and applies a
 -- conservativity check
 cConservCheck:: String -> CMDL_State -> IO CMDL_State
 cConservCheck input state =
@@ -106,27 +106,27 @@ cConservCheckAll state =
 
 -- applies consistency check to the input
 cConsistCheck :: CMDL_State -> IO CMDL_State
-cConsistCheck state 
-    = case proveState state of 
+cConsistCheck state
+    = case proveState state of
        Nothing -> return $ genErrorMsg "Nothing selected" state
        Just pS ->
-        case devGraphState state of 
+        case devGraphState state of
          Nothing -> return $ genErrorMsg "No library loaded" state
          Just dgS ->
           do
-           case elements pS of 
+           case elements pS of
             [] -> return $ genErrorMsg "Nothing selected" state
             ls ->
-             do 
+             do
               --create initial mVars to comunicate
               mlbEnv <- newMVar $ libEnv dgS
               mSt    <- newMVar Nothing
               mThr   <- newMVar Nothing
-              mW     <- newEmptyMVar   
+              mW     <- newEmptyMVar
               -- fork
               thrID <- forkIO(consCheckLoop mlbEnv mThr mSt mW pS dgS ls)
               -- install the handler that waits for SIG_INT
-              installHandler sigINT (Catch $ 
+              installHandler sigINT (Catch $
                        sigIntHandler mThr mlbEnv mSt thrID mW (ln dgS)
                                     ) Nothing
               -- block and wait for answers
@@ -150,17 +150,17 @@ cConsistCheck state
 
 -- applies consistency check to all possible input
 cConsistCheckAll :: CMDL_State -> IO CMDL_State
-cConsistCheckAll state 
+cConsistCheckAll state
    = case proveState state of
       Nothing -> return $ genErrorMsg "Nothing selected" state
       Just pS ->
-        do 
-         case elements pS of 
+        do
+         case elements pS of
           [] -> return $ genErrorMsg "Nothing selected" state
           ls ->
             do
              let ls' = map (\(Element st nb) ->
-                               case theory st of 
+                               case theory st of
                                 G_theory _ _ _ aMap _ ->
                                  Element
                                   (st {
@@ -169,13 +169,13 @@ cConsistCheckAll state
                                      includedAxioms = OMap.keys aMap,
                                      includedTheorems = OMap.keys $
                                                          goalMap st
-                                     }) nb ) ls 
+                                     }) nb ) ls
              let nwSt = state {
                           proveState = Just pS {
                                         elements = ls'
                                           }
                               }
-             cConsistCheck nwSt 
+             cConsistCheck nwSt
 
 
 -- applies conservativity check to a given list

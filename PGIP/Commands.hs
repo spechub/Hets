@@ -126,7 +126,7 @@ getCommands
              CmdWithInput $ commandDg $wrapResultDg compositionFromList)
    : (genCmd DgCmd ["dg comp-new"] CmdNoPriority ReqGEdges
          "apply composiiton with speculation of new edges to a list of edges"$
-             CmdWithInput $ commandDg 
+             CmdWithInput $ commandDg
                     $ wrapResultDg compositionCreatingEdgesFromList)
    : (genCmd DgCmd ["dg hide-thm"] CmdNoPriority ReqGEdges
               "apply hide theorem shift to a list of edges" $
@@ -152,11 +152,11 @@ getCommands
               CmdNoInput $ commandDgAll $ wrapResultDgAll composition)
    : (genCmd DgCmd ["dg-all comp-new"] CmdNoPriority ReqNothing
               "apply composition with speculation of new edges to all edges"$
-              CmdNoInput $ commandDgAll 
+              CmdNoInput $ commandDgAll
                          $ wrapResultDgAll compositionCreatingEdges)
    : (genCmd DgCmd ["dg-all hide-thm"] CmdNoPriority ReqNothing
               "apply hide theorem shift to all edges" $
-              CmdNoInput $ commandDgAll 
+              CmdNoInput $ commandDgAll
                          $ wrapResultDgAll automaticHideTheoremShift)
    : (genCmd DgCmd ["dg-all thm-hide"] CmdNoPriority ReqNothing
               "apply theorem hide shift to all nodes"$

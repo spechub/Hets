@@ -292,7 +292,7 @@ consCheck thName tm =
                     , goalStatus = Proved (Just True)
                     , usedAxioms = getAxioms
                     , proverName = (prover_name pelletProver)
-                    , proofTree = ATP_ProofTree (unlines out 
+                    , proofTree = ATP_ProofTree (unlines out
                                       ++ "\n\n" ++ mkRealOWL problemS)
                     ,usedTime = timeToTimeOfDay $
                                 secondsToDiffTime $ toInteger tUsed
@@ -305,7 +305,7 @@ consCheck thName tm =
                     , goalStatus = Proved (Just False)
                     , usedAxioms = getAxioms
                     , proverName = (prover_name pelletProver)
-                    , proofTree = ATP_ProofTree (unlines out 
+                    , proofTree = ATP_ProofTree (unlines out
                                       ++ "\n\n" ++ (mkRealOWL problemS))
                     ,usedTime = timeToTimeOfDay $
                                 secondsToDiffTime $ toInteger tUsed
@@ -330,7 +330,7 @@ consCheck thName tm =
                     , goalStatus = Open
                     , usedAxioms = getAxioms
                     , proverName = (prover_name pelletProver)
-                    , proofTree  = ATP_ProofTree (unlines out 
+                    , proofTree  = ATP_ProofTree (unlines out
                                       ++ "\n\n" ++ "timeout" ++
                                                     unlines out)
                     ,usedTime = timeToTimeOfDay $
@@ -447,7 +447,7 @@ runPellet sps cfg savePellet thName nGoal = do
     getAxioms = []
 
     mkOWLGoalProblem = do
-        p <- showOWLProblem thName sps nGoal 
+        p <- showOWLProblem thName sps nGoal
                (simpleOptions ++ ["Requested prover: Pellet"])
         return ((show $ printRDF Map.empty $ ontologySign sps)
                   ++ "\n\n" ++ p ++ "\n</rdf:RDF>")

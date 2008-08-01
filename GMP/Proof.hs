@@ -1,22 +1,22 @@
-module Proof 
---   ((-->), (<-->), (\/), (/\), true, false, box, dia, neg, var,  provable) 
+module Proof
+--   ((-->), (<-->), (\/), (/\), true, false, box, dia, neg, var,  provable)
 where
 
 import Data.List (delete, intersect, nub)
 
 -- data type for fomulas
-data Form =  Var Int | 
+data Form =  Var Int |
 	    Not !Form |  -- ¬A
-	    Box !Form | -- [] A 
+	    Box !Form | -- [] A
 	    Conj !Form !Form  -- A/\B
 	    deriving (Eq)
 
-type Sequent =  [Form]     -- defines a sequent 
+type Sequent =  [Form]     -- defines a sequent
 
 -- pretty printing (sort of)
-instance Show Form where 
+instance Show Form where
 	show (Var p) = "p" ++ (show p)
-	show (Not p) = "~" ++ show p 
+	show (Not p) = "~" ++ show p
 	show (Box p) = "[]" ++ show p
 	show (Conj p q) = "(" ++ show p ++ " & " ++ show q ++ ")"
 
@@ -25,20 +25,20 @@ p = Var 0
 q = Var 1
 r = Var 2
 
-(-->) :: Form -> Form -> Form 
+(-->) :: Form -> Form -> Form
 infixr 5 -->
 -- p --> q = Disj (Not p) q
 p --> q = Not (Conj p (Not q))
 
-(<-->) :: Form -> Form -> Form 
+(<-->) :: Form -> Form -> Form
 infixr 4 <-->
 p <--> q = Not (Conj (Not ( Conj p q)) (Not(Conj (Not p) (Not q))))
 
 box :: Form -> Form
-box p = Box p 
+box p = Box p
 
-dia :: Form -> Form 
-dia p = Not( Box ( Not p ) ) 
+dia :: Form -> Form
+dia p = Not( Box ( Not p ) )
 
 (/\) :: Form -> Form -> Form
 infix 7 /\
@@ -77,7 +77,7 @@ expand (a:as) = a:(expand as)
 
 ----------------------------------------------------------------------------------------------------
 
---Inference Rules 
+--Inference Rules
 -- map a sequent the list of all lists of all premises that derive
 -- the sequent. Note that a premise is a list of sequents:
 -- * to prove Gamma, A /\ B we need both Gamma, A and Gamma, B as premises.
@@ -94,21 +94,21 @@ axiom :: Sequent -> [[Sequent]]
 -- axiom1 xs = [ []  | p <- xs, (Not q) <- xs, p==q]
 axiom xs = nub [ []  | (Var n) <- xs, (Not (Var m)) <- xs, m==n]
 
-negI :: Sequent -> [[Sequent]] 
+negI :: Sequent -> [[Sequent]]
 negI  xs = [ [(p: delete f xs)] | f@(Not(Not p)) <- xs]
 
-negConj :: Sequent -> [[Sequent]] 
+negConj :: Sequent -> [[Sequent]]
 negConj (as) = [[( (Not(p)): (Not(q)) : delete f as )]| f@(Not(Conj p q)) <- as]
 
 
 -- two variants here: use @-patterns or ``plain'' recursion.
 conj :: Sequent -> [[ Sequent ]]
 conj s | seq s $ False = undefined -- force strictness
-conj (as) = [ [ (p: delete f as) , ( q: delete f as )] | f@(Conj p q ) <- as] 
+conj (as) = [ [ (p: delete f as) , ( q: delete f as )] | f@(Conj p q ) <- as]
 
-boxI :: Sequent -> [[Sequent]] 
-boxI (xs) = let as = [ (Not p) | (Not(Box p)) <- xs] 
-            in [ [ p:as] | (Box p) <- xs ]  ++ 
+boxI :: Sequent -> [[Sequent]]
+boxI (xs) = let as = [ (Not p) | (Not(Box p)) <- xs]
+            in [ [ p:as] | (Box p) <- xs ]  ++
 						   [ [ (Not q):delete g xs] | g@(Not (Box q)) <- xs ] -- T rule
 tRule :: Sequent -> [[ Sequent ]]
 tRule (xs) = [ [ (Not p):delete f xs] | f@(Not (Box p)) <- xs ] -- T rule
@@ -122,7 +122,7 @@ allRules :: Sequent -> [[Sequent]]
 -- this is as good as it gets if we apply the individual rules
 -- message for the afterworld: if you want to find proofs quickly,
 -- first look at the rules that induce branching.
--- allRules s =   (axiom1 s) ++ (axiom2 s) ++ (boxI s) ++ (conj s) ++ (negDisj s) ++ (negI s) ++  (negConj s) ++  (disj s) 
+-- allRules s =   (axiom1 s) ++ (axiom2 s) ++ (boxI s) ++ (conj s) ++ (negDisj s) ++ (negI s) ++  (negConj s) ++  (disj s)
 
 
 -- we can do slightly better if we apply all rules that do not
@@ -166,7 +166,7 @@ tforms = [ ([neg a, neg $ box a, b ], [neg $ box a, b])  | a <- level 2, b <- le
 ttest :: [ (Sequent, Sequent) ] -> String
 ttest [] = []
 ttest ( (s1, s2):as ) =
-  let s1p = (sprovable s1) ; 
+  let s1p = (sprovable s1) ;
 	    s2p = (sprovable s2)
   in if (s1p /= s2p) then "GOTCHA: " ++ (show s1) ++ (show s2) ++ "<"
 	                   else "*" ++ (ttest as)

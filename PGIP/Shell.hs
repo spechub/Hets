@@ -255,7 +255,7 @@ subtractCommandName allcmds input
                              Just tmp -> [tmp]) allcmds
   in drop (length $ head lst) inp
 
--- This function tries to extract the name of command. In most cases this 
+-- This function tries to extract the name of command. In most cases this
 -- would be the first word of the string but we have a few exceptions :
 -- dg * commands
 -- dg-all * commands
@@ -266,11 +266,11 @@ subtractCommandName allcmds input
 -- set-all * commands
 getCmdName :: String -> String
 getCmdName inp
- = case words inp of 
+ = case words inp of
     [] -> []
-    wds -> case tail wds of 
+    wds -> case tail wds of
             []   -> head wds
-            lwds -> case head wds of 
+            lwds -> case head wds of
                      "dg"       -> ("dg "      ++ (head lwds))
                      "dg-all"   -> ("dg-all "  ++ (head lwds))
                      "del"      -> ("del "     ++ (head lwds))
@@ -286,7 +286,7 @@ getTypeOf::[CMDL_CmdDescription] -> String -> CMDL_CmdRequirements
 getTypeOf allcmds input
  = let nwInput = getCmdName input
        tmp =concatMap(\x ->
-                       case find(\y -> y == nwInput )$ 
+                       case find(\y -> y == nwInput )$
                                              cmdNames$ cmdInfo x of
                         Nothing -> []
                         Just _ -> [cmdReq x]) allcmds
@@ -579,7 +579,7 @@ cmdlCompletionFn allcmds allState input
              c:_ ->
                case c of
                 Element z _->do
-                              lst <- checkPresenceProvers 
+                              lst <- checkPresenceProvers
                                          $ createProverList
                                          $ findComorphismPaths
                                         logicGraph (sublogicOfTh $ theory z)
@@ -685,13 +685,13 @@ cmdlCompletionFn allcmds allState input
          return $ map (\y->bC++" "++y) $
           filter(\x-> isPrefixOf tC x) $ nub $
           concatMap(\(Element _ nb)->
-                       case getTh Do_translate nb allState of 
+                       case getTh Do_translate nb allState of
                         Nothing -> []
                         Just th ->
                           case th of
                            G_theory _ _ _ sens _ ->
                              OMap.keys $
-                             OMap.filter 
+                             OMap.filter
                               (\s -> (not $ isAxiom s) &&
                               (not $ isProvenSenStatus s)) sens)
                                      $ elements pS

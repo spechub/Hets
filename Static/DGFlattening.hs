@@ -166,8 +166,8 @@ dg_flattening4 lib_Env l_n =
      updateDGWithChanges l_edg@( v1, v2, label) d_graph =
       let
       --update nodes
-       lv1 = labDG d_graph v1 
-       lv2 = labDG d_graph v2 
+       lv1 = labDG d_graph v1
+       lv2 = labDG d_graph v2
        name = dgn_name lv1
        n_node = getNewNodeDG d_graph
        nlv1 = (do
@@ -224,7 +224,7 @@ dg_flattening4 lib_Env l_n =
 libEnv_flattening4 :: LibEnv -> Result LibEnv
 libEnv_flattening4 libEnvi =
        let
-        new_lib_env = Prelude.map (\ (x,_) -> 
+        new_lib_env = Prelude.map (\ (x,_) ->
                         let
                          z = dg_flattening4 libEnvi x
                         in
@@ -536,7 +536,7 @@ return $ applyToAllNodes dg imp_nds
                         -> [Node]
                         -> [([Node],Node,G_sign)]
                         -> DGraph
- iterateForAllLevels i_dg nds init_level = 
+ iterateForAllLevels i_dg nds init_level =
   case ((length init_level)<2) of
    False -> let
              (n_dg, n_level) = createNewLevel i_dg nds init_level
