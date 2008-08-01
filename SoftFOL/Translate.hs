@@ -1,7 +1,6 @@
 {- |
 Module      :  $Header$
-Description :  Functions used by 'Comorphisms.SuleCFOL2SoftFOL'
-  and 'SoftFOL.Prove' for the translation into valid SoftFOL identifiers
+Description :  utility to create valid identifiers for atp provers
 Copyright   :  (c) Klaus Lüttich, Uni Bremen 2005
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
@@ -9,10 +8,9 @@ Maintainer  :  luecke@informatik.uni-bremen.de
 Stability   :  provisional
 Portability :  portable
 
-collection of functions used by Comorphisms.SuleCFOL2SoftFOL and SoftFOL.Prove
- for the translation of CASL identifiers and axiom labels into
- valid SoftFOL identifiers
--}
+collection of functions used by "Comorphisms.SuleCFOL2SoftFOL" and
+ "SoftFOL.ProveSPASS" for the translation of CASL identifiers and axiom labels
+ into valid SoftFOL identifiers -}
 
 module SoftFOL.Translate
     ( reservedWords
