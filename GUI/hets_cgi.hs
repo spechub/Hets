@@ -84,7 +84,8 @@ pdflatex_cmd = "/usr/local/bin/pdflatex"
 --- site independant configuration
 
 cofi_url :: String
-cofi_url = "http://www.informatik.uni-bremen.de/agbkb/forschung/formal_methods/CoFI/"
+cofi_url =
+  "http://www.informatik.uni-bremen.de/agbkb/forschung/formal_methods/CoFI/"
 
 -- link to the homepage of hetcasl
 hetcasl_url :: String
@@ -143,10 +144,11 @@ page1 :: String -> WithHTML x CGI ()
 page1 title1 =
     do
       h1 $ text title1
-      p (do text "Enter a "
-            hlink (read hetcasl_url) $
-                  (text "HetCASL")
-            text " specification or library in the input zone, then press SUBMIT:")
+      p $ do
+        text "Enter a "
+        hlink (read hetcasl_url) $ text "HetCASL"
+        text
+          " specification or library in the input zone, then press SUBMIT:"
       -- Input field
       input   <- p (makeTextarea "" (attr "rows" "22" ## attr "cols" "68"))
       -- check box
@@ -156,8 +158,8 @@ page1 title1 =
       text "output pretty print LaTeX"
       selectTree <- checkboxInputField (attr "valus" "yes")
       text "output parse tree"
-      selectAchiv <- p $ b ( checkboxInputField(attr "checked" "checked") ##
-                         text "If this checkbox is selected, your input will be logged!")
+      selectAchiv <- p $ b $ checkboxInputField(attr "checked" "checked") ##
+        text "If this checkbox is selected, your input will be logged!"
       -- submit/reset botton
       p (submit (F5 input selectTree selectTxt selectTex selectAchiv)
                  handle (fieldVALUE "Submit") >>
