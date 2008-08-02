@@ -259,7 +259,8 @@ createGlobalMenu gInfo@(GInfo { gi_LIB_NAME = ln
     , Button "Translate Graph" $ ral $ translateGraph gInfo convGraph showLib
     , Button "Show Logic Graph" $ ral $ showLogicGraph daVinciSort
     , Button "Show Library Graph" $ ral $ showLibGraph gInfo showLib
-    , Button "Save Graph for uDrawGraph" $ ral $ saveUDGraph gInfo (mapNodeTypes opts) $ mapLinkTypes opts
+    , Button "Save Graph for uDrawGraph" $ ral
+             $ saveUDGraph gInfo (mapNodeTypes opts) $ mapLinkTypes opts
     ])
   ]
 

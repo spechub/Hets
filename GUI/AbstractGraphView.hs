@@ -354,7 +354,8 @@ delnode gid node gv =
     case Map.lookup node (nodes g) of
       Just n -> do
         deleteNode (theGraph g) (snd n)
-        return (g{nodes = Map.delete node (nodes g),deletedNodes = deletedNodes g},
+        return (g{nodes = Map.delete node (nodes g)
+                 ,deletedNodes = deletedNodes g},
                 0,ev_cnt+1,Nothing)
       Nothing ->
         return (g,0,ev_cnt,Just ("delnode: illegal node: "++show node))
@@ -377,7 +378,8 @@ addlink gid edgetype name label src tar gv =
            _ -> do
              edge <- newArc (theGraph g) et (name,ev_cnt,label) (snd src_node)
                        (snd tar_node)
-             return (g{edges = Map.insert ev_cnt (src,tar,edgetype,edge) $ edges g},
+             return (g{edges = Map.insert ev_cnt (src,tar,edgetype,edge)
+                                          $ edges g},
                      ev_cnt,ev_cnt+1,Nothing)
       (Nothing,_,_) ->
         return (g,0,ev_cnt,Just ("addlink: illegal edge type: "++edgetype))

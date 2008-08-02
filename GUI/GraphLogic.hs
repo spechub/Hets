@@ -744,9 +744,10 @@ checkconservativityOfEdge _ gInfo
       GMorphism cid _ _ morphism2 _ <- return $ dgl_morphism linklab
       morphism2' <- coerceMorphism (targetLogic cid) lid
                    "checkconservativityOfEdge" morphism2
-      let (_le', th) = case computeTheory False libEnv (gi_LIB_NAME gInfo) source of
-                Res.Result _ (Just th1) -> th1
-                _ -> error "checkconservativityOfEdge: computeTheory"
+      let (_le', th) =
+            case computeTheory False libEnv (gi_LIB_NAME gInfo) source of
+              Res.Result _ (Just th1) -> th1
+              _ -> error "checkconservativityOfEdge: computeTheory"
       G_theory lid1 sign1 _ sens1 _ <- return th
       sign2 <- coerceSign lid1 lid "checkconservativityOfEdge.coerceSign" sign1
       sens2 <- coerceThSens lid1 lid "" sens1
