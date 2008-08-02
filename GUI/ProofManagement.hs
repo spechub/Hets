@@ -309,26 +309,28 @@ newExtSelListBoxFrame b2 title hValue =
   Invokes the GUI.
 -}
 proofManagementGUI ::
-    (Logic lid sublogics1
-               basic_spec1
-               sentence
-               symb_items1
-               symb_map_items1
-               sign1
-               morphism1
-               symbol1
-               raw_symbol1
-               proof_tree1) =>
-       lid
-    -> ProofActions lid sentence -- ^ record of possible GUI actions
-    -> String -- ^ theory name
-    -> String -- ^ warning information
-    -> G_theory -- ^ theory
-    -> KnownProvers.KnownProversMap -- ^ map of known provers
-    -> [(G_prover,AnyComorphism)] -- ^ list of suitable comorphisms to provers
-                       -- for sublogic of G_theory
-    -> GUIMVar -- ^ allows only one Proof window per graph;
-               -- must be filled with Nothing and is filled with Nothing after closing the window; while the window is open it is filled with the Toplevel
+  (Logic lid sublogics1
+             basic_spec1
+             sentence
+             symb_items1
+             symb_map_items1
+             sign1
+             morphism1
+             symbol1
+             raw_symbol1
+             proof_tree1) =>
+     lid
+  -> ProofActions lid sentence -- ^ record of possible GUI actions
+  -> String -- ^ theory name
+  -> String -- ^ warning information
+  -> G_theory -- ^ theory
+  -> KnownProvers.KnownProversMap -- ^ map of known provers
+  -> [(G_prover,AnyComorphism)] -- ^ list of suitable comorphisms to provers
+                                -- for sublogic of G_theory
+  -> GUIMVar -- ^ allows only one Proof window per graph;
+             {- must be filled with Nothing and is filled with Nothing after
+                closing the window; while the window is open it is filled with
+                the Toplevel -}
     -> IO (Result.Result G_theory)
 proofManagementGUI lid prGuiAcs
                    thName warningTxt th

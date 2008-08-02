@@ -54,7 +54,8 @@ data OpenText = OpenText {
     }
 
 {- |
-  Creates an initial 'GoalDescription' filled with just the standard prover info.
+  Creates an initial 'GoalDescription' filled with just the standard prover
+  info.
 -}
 emptyGoalDescription :: String -- ^ information about the used prover
                      -> GoalDescription -- ^ initiated GoalDescription
