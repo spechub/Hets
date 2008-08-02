@@ -201,7 +201,7 @@ makegraphExt gi title open save saveAs close exit menus nTypeParams
       eTypeParams2 = map (LocalMenu (Button "Expand" (\ _ -> do
                                                        showAll gi
                                                        redisplay gi)) $$$)
-                         eTypeParams1
+                     $ map (Color "purple2" $$$) eTypeParams1
   graph <- GraphDisp.newGraph graphtool graphParms
   nTypes <- mapM (newNodeType graph) nTypeParams1
   eTypes <- mapM (newArcType graph) eTypeParams1
