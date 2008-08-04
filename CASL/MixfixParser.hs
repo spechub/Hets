@@ -101,7 +101,7 @@ ids_OP_ITEM o = case o of
 
 -- | same as singleton but empty for a simple id
 single :: Id -> Set.Set Id
-single i = if isSimpleId i then Set.empty else Set.singleton i
+single i = Set.singleton i
 
 -- | get all pred ids of a pred item
 ids_PRED_ITEM :: PRED_ITEM f -> Set.Set Id
@@ -148,18 +148,24 @@ addRule ga uRules (ops, preds) tok =
                 [mixRule p i, mkSingleArgRule p i, mkArgsRule p i])
         lm = foldr ( \ r@(_, _, t : _) -> Map.insertWith (++) t [r])
              Map.empty $ listRules 1 ga
+        (spreds, rpreds) = Set.partition isSimpleId preds
+        -- do not add simple ids as preds as these may be variables
+        -- with higher precedence
+        sops = Set.union ops spreds
         varR = mkRule varId
         m = Map.insert placeTok uRules
             $ Map.insert varTok [varR]
             $ Map.insert exprTok
                   [varR, mkRule singleArgId, mkRule multiArgsId]
-            $ addR 0 (addR 1 lm ops) preds
-    in (if isSimpleToken tok &&
-                      let mem = Set.member $ mkId [tok, placeTok]
-                      in not (mem ops || mem preds)
-                      then let i = mkId [tok] in
-                      [mkRule i, mkSingleArgRule 1 i, mkArgsRule 1 i]
-       else []) ++ Map.findWithDefault [] tok m
+            $ addR 0 (addR 1 lm sops) rpreds
+        tId = mkId [tok]
+        tPId = mkId [tok, placeTok] -- prefix identifier
+    in (if isSimpleToken tok && not (Set.member tId sops)
+        then [mkRule tId] -- add rule for new variable
+             ++ if Set.member tPId sops then [] else
+                  [mkSingleArgRule 1 tId, mkArgsRule 1 tId]
+              -- add also rules for undeclared op
+        else []) ++ Map.findWithDefault [] tok m
 
 -- insert only identifiers starting with a place
 initRules :: IdSets -> Rules
@@ -292,9 +298,7 @@ iterateCharts par extR g terms c =
 
 -- | construct 'IdSets' from op and pred identifiers
 mkIdSets :: Set.Set Id -> Set.Set Id -> IdSets
-mkIdSets ops preds =
-    let f = Set.filter (not . isSimpleId)
-    in (f ops, f preds)
+mkIdSets ops preds = (ops, preds)
 
 -- | top-level resolution like 'resolveMixTrm' that fails in case of diags
 resolveMixfix :: Pretty f => (f -> f)
