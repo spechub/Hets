@@ -80,6 +80,7 @@ import Comorphisms.CspCASL2Modal
 import Comorphisms.CspCASL2IsabelleHOL
 import Comorphisms.CASL_DL2CASL
 import Comorphisms.OWL2CASL_DL
+import Comorphisms.OWL2DL
 import Comorphisms.DL2CASL_DL
 import Comorphisms.RelScheme2CASL
 import Comorphisms.CASL2VSE
@@ -127,6 +128,7 @@ comorphismList =
     , Comorphism CoCASL2CoSubCFOL
     , Comorphism CoCFOL2IsabelleHOL
     , Comorphism OWL2CASL_DL
+    , Comorphism OWL2DL
     , Comorphism DL2CASL_DL
     , Comorphism RelScheme2CASL
     , Comorphism CASL2VSE
