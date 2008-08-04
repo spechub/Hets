@@ -714,9 +714,9 @@ freshIndex = do
   return i
 
 type Simplifier = VName
-  -> Isa.Term -- ^ variable
-  -> Isa.Term -- ^ simplified application to variable
-  -> Isa.Term -- ^ simplified argument
+  -> Isa.Term -- variable
+  -> Isa.Term -- simplified application to variable
+  -> Isa.Term -- simplified argument
   -> State Int Isa.Term
 
 simpForOption :: Simplifier

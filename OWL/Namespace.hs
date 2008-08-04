@@ -21,9 +21,8 @@ import qualified Common.AS_Annotation as Common.Annotation
 import Data.List(find, nub)
 import Data.Maybe(fromJust)
 import Data.Char(isDigit, isAlpha)
--- import Debug.Trace
 
-type TranslationMap = Map.Map String String  -- ^ OldPrefix -> NewPrefix
+type TranslationMap = Map.Map String String  -- OldPrefix -> NewPrefix
 
 -- | propagate own namespaces from prefix to namespacesURI within a ontology
 class PNamespace a where

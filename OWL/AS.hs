@@ -27,7 +27,9 @@ data URI = FullIRI URIreference
 type URI = QName
 type IRI = String
 type URIreference = QName
-type Namespace = Map.Map String String      -- ^ prefix -> localname
+
+-- | prefix -> localname
+type Namespace = Map.Map String String
 
 type AnnotationURI = URI
 type OntologyURI = URI

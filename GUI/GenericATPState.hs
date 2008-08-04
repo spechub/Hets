@@ -215,12 +215,12 @@ data ATPRetval
   deriving (Eq, Show)
 
 type RunProver sentence proof_tree pst =
-  pst -- ^ prover state containing logical part
-  -> GenericConfig proof_tree -- ^ configuration to use
-  -> Bool -- ^ True means save problem file
-  -> String -- ^ name of the theory in the DevGraph
-  -> AS_Anno.Named sentence -- ^ goal to prove
-  -> IO (ATPRetval, GenericConfig proof_tree) {- ^ (retval, configuration with
+  pst -- prover state containing logical part
+  -> GenericConfig proof_tree -- configuration to use
+  -> Bool -- True means save problem file
+  -> String -- name of the theory in the DevGraph
+  -> AS_Anno.Named sentence -- goal to prove
+  -> IO (ATPRetval, GenericConfig proof_tree) {- (retval, configuration with
                                                    proof_status and complete
                                                    output)-}
 
