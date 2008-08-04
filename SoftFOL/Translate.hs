@@ -95,7 +95,7 @@ transIdString t str = case str of
       CKOp | '_' == c -> 'o' : str
       CKPred | '_' == c -> 'p' : str
       CKVar -> toUpper c : r
-      _ -> if Set.member str reservedWords then str else "x_" ++ str
+      _ -> if Set.member str reservedWords then "x_" ++ str else str
 
 transToSPChar :: Char -> String
 transToSPChar c = if checkSPChar c then [c] else
