@@ -24,8 +24,6 @@ import CASL_DL.Print_AS ()
 
 import Data.List (union, (\\), isPrefixOf)
 import Control.Exception
-import Text.XML.HXT.DOM.XmlTreeTypes (QName)
-import Common.QName ()
 
 data CASL_DLSign =
     CASL_DLSign { annoProperties  :: Map.Map SIMPLE_ID PropertyType
@@ -39,7 +37,6 @@ data AnnoAppl = AnnoAppl SIMPLE_ID Id AnnoLiteral
               deriving (Show,Eq)
 
 data AnnoLiteral = AL_Term (TERM DL_FORMULA)
-                 | AL_URI  QName
                  | AL_Id   Id
               deriving (Show,Eq)
 
@@ -107,12 +104,9 @@ instance Pretty AnnoAppl where
 instance Pretty AnnoLiteral where
     pretty annoLit = case annoLit of
                        AL_Term t -> pretty t
-                       AL_URI u  -> quotes $ text $ show u
                        AL_Id i   -> pretty i
 
 isSublistOf :: (Eq a) => [a] -> [a] -> Bool
-isSublistOf [] _ = True
-isSublistOf _ [] = False
-isSublistOf ys l@(_:l')
-    | length ys <= length l = (ys `isPrefixOf` l) || (ys `isSublistOf` l')
-    | otherwise = False
+isSublistOf ys l = case l of
+  [] -> null ys
+  _ : l' -> isPrefixOf ys l || isSublistOf ys l'
