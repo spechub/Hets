@@ -17,7 +17,6 @@ module CASL.Fold where
 import Common.Id
 import CASL.AS_Basic_CASL
 
-
 data Record f a b = Record
     { foldQuantification :: FORMULA f -> QUANTIFIER -> [VAR_DECL] ->
                           a -> Range -> a
@@ -84,29 +83,6 @@ mapRecord mf = Record
     , foldMixfix_parenthesized = \ _ -> Mixfix_parenthesized
     , foldMixfix_bracketed = \ _ -> Mixfix_bracketed
     , foldMixfix_braced = \ _ -> Mixfix_braced
-    }
-
-mapOnlyTermRecord :: Record f (FORMULA f) (TERM f)
-mapOnlyTermRecord =
-    (mapRecord (\ _ -> error "Will be overwitten"))
-    { foldQuantification = \ _ _ _ _ _ ->
-           error "No implementation for Quantification"
-    , foldConjunction = \ _ _ _ ->
-           error "No implementation for Conjunction"
-    , foldDisjunction = \ _ _ _ ->
-           error "No implementation for Disjunction"
-    , foldImplication = \ _ _ _ _ ->
-           error "No implementation for Implication"
-    , foldEquivalence = \ _ _ _ _ ->
-           error "No implementation for Equivalence"
-    , foldNegation = \ _ _ _ ->
-           error "No implementation for Negation"
-    , foldTrue_atom = \ _ _ ->
-           error "No implementation for True_atom"
-    , foldFalse_atom = \ _ _ ->
-           error "No implementation for False_atom"
-    , foldSort_gen_ax = \ _ _ _ ->
-           error "No implementation for Sort_gen_ax"
     }
 
 constRecord :: (f -> a) -> ([a] -> a) -> a -> Record f a a

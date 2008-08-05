@@ -259,8 +259,7 @@ substConditionalRecord :: (Eq f)
                        => TERM f -- ^ Conditional to search for
                        -> TERM f -- ^ newly inserted term
                        -> Record f (FORMULA f) (TERM f)
-substConditionalRecord c t =
-    mapOnlyTermRecord
+substConditionalRecord c t = (mapRecord id)
      { foldConditional = \ c1 _ _ _ _ ->
        -- FIXME: correct implementation would use an equality
        -- which checks for correct positions also!
