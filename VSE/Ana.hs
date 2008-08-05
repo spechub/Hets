@@ -36,7 +36,6 @@ import CASL.Quantification
 import CASL.StaticAna
 import CASL.ShowMixfix as Paren
 import CASL.SimplifySen
-import CASL.ToSExpr
 
 import VSE.As
 
@@ -149,12 +148,22 @@ oneExpT = oneExpTerm (const return)
 minExpF :: Sign () Procs -> FORMULA () -> Result (FORMULA ())
 minExpF = minExpFORMULA (const return)
 
+checkRec :: Record f Bool Bool
+checkRec = (constRecord (const False) and True)
+  { foldQuantification = \ _ _ _ _ _ -> False
+  , foldDefinedness = \ _ _ _ -> False
+  , foldExistl_equation = \ _ _ _ _ -> False
+  , foldMembership = \ _ _ _ _ -> False
+  , foldCast = \ _ _ _ _ -> False
+  , foldConditional = \ _ _ _ _ _ -> False }
+
 minExpProg :: Set.Set VAR -> Maybe SORT -> Sign () Procs
            -> Program -> Result Program
 minExpProg invars res sig p@(Ranged prg r) = let
-  tRec = sRec False sig $ error "minExpProg"
-  checkCond = foldFormula tRec
-  checkTerm = foldTerm tRec
+  checkCond f = if foldFormula checkRec f then return f else
+                    mkError "illegal formula" f
+  checkTerm t = if foldTerm checkRec t then return t else
+                    mkError "illegal term" t
   in case prg of
   Abort -> return p
   Skip -> return p
