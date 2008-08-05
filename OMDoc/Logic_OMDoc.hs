@@ -15,11 +15,11 @@ module OMDoc.Logic_OMDoc where
 import Logic.Logic
 import qualified OMDoc.OMDocInterface as OMDoc
 import OMDoc.ATC_OMDoc ()
+
+import Common.Id
 import Data.Maybe (fromMaybe)
 import qualified Data.Set as Set
 import qualified Data.Map as Map
-
-import qualified OMDoc.HetsDefs as Hets
 
 data OMDoc_PUN = OMDoc_PUN
 
@@ -161,7 +161,7 @@ instance Sentences OMDoc_PUN () OMDoc_Sign OMDoc_Morphism OMDoc.Symbol where
           (OMDoc.morphismRequations im)
   sym_name OMDoc_PUN s =
     -- real Id's are saved as Presentation-Elements...
-    Hets.stringToId $ OMDoc.symbolId s
+    stringToId $ OMDoc.symbolId s
 
 instance StaticAnalysis OMDoc_PUN () () () () OMDoc_Sign OMDoc_Morphism OMDoc.Symbol () where
   symbol_to_raw OMDoc_PUN _ = ()

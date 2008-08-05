@@ -194,7 +194,7 @@ extractConsXNWONFromOMADT ffxi (origin, theory) adt =
           case
             omPresentationFor theory conxname "Hets"
           of
-            Nothing -> Debug.Trace.trace ("No Presentation for " ++ (show conxname)) $ Hets.stringToId conxname
+            Nothing -> Debug.Trace.trace ("No Presentation for " ++ (show conxname)) $ Id.stringToId conxname
             (Just x) -> read x
         conxnwonid = XmlNamed (Hets.mkWON conid origin) conxname
         args =
@@ -377,7 +377,7 @@ sortsXNWONFromOMTheory (origin, theory) =
                       Debug.Trace.trace
                         ("No presentation for " ++ (show sid))
                         $
-                        Hets.stringToId sid
+                        Id.stringToId sid
                     (Just x) -> read x
               in
                 Set.insert (XmlNamed (Hets.mkWON sname origin) sid) ss
@@ -481,7 +481,7 @@ relsXNWONFromOMTheory xnsortset (origin, theory) =
                 xnsort = case findByNameAndOrigin sortname origin xnsortset of
                   Nothing ->
                     XmlNamed
-                      (Hets.mkWON (Hets.stringToId sortname) (-1))
+                      (Hets.mkWON (Id.stringToId sortname) (-1))
                       sortname
                   (Just xnsort' ) ->
                     xnsort'
@@ -495,7 +495,7 @@ relsXNWONFromOMTheory xnsortset (origin, theory) =
                           xnsortset
                       of
                         Nothing ->
-                          (XmlNamed (Hets.mkWON (Hets.stringToId s) (-1)) s)
+                          (XmlNamed (Hets.mkWON (Id.stringToId s) (-1)) s)
                         (Just xs' ) -> xs'
                     )
                     insortnames
@@ -619,7 +619,7 @@ opsXNWONFromOMTheory
       let
         oid =
           case omPresentationFor theory oidxname "Hets" of
-            Nothing -> Hets.stringToId oidxname
+            Nothing -> Id.stringToId oidxname
             (Just x) -> read x
         isTotal =
           case (OMDoc.omaElements oma) of
@@ -665,7 +665,7 @@ opsXNWONFromOMTheory
                       of
                         Nothing ->
                           XmlNamed
-                            (Hets.mkWON (Hets.stringToId axname) (-1))
+                            (Hets.mkWON (Id.stringToId axname) (-1))
                             axname
                         (Just s) ->
                           s
@@ -742,7 +742,7 @@ predsXNWONFromOMTheory
       let
         pid =
           case omPresentationFor theory pidxname "Hets" of
-            Nothing -> Hets.stringToId pidxname
+            Nothing -> Id.stringToId pidxname
             (Just x) -> read x
         args =
           drop
@@ -784,7 +784,7 @@ predsXNWONFromOMTheory
                       of
                         Nothing ->
                           XmlNamed
-                            (Hets.mkWON (Hets.stringToId axname) (-1))
+                            (Hets.mkWON (Id.stringToId axname) (-1))
                             axname
                         (Just s) ->
                           s
@@ -1905,10 +1905,10 @@ performDefLinkSpecification
                                     (\(_, b) ->
                                       (
                                           XmlNamed
-                                            (Hets.mkWON (Hets.stringToId a) (-1))
+                                            (Hets.mkWON (Id.stringToId a) (-1))
                                             a
                                         , XmlNamed
-                                            (Hets.mkWON (Hets.stringToId b) (-1))
+                                            (Hets.mkWON (Id.stringToId b) (-1))
                                             b
                                       )
                                     )
@@ -3567,7 +3567,7 @@ predicationFromOM ffxi origin (OMDoc.OMES oms) =
     if doFake
       then
         Qual_pred_name
-          (Hets.stringToId sxname)
+          (Id.stringToId sxname)
           (Pred_type [] Id.nullRange)
           Id.nullRange
       else
@@ -4013,7 +4013,7 @@ formulaFromOM ffxi origin varbindings (OMDoc.OMEBIND ombind) =
                  Nothing -> error (e_fname ++ "No Sort for " ++ s)
                  (Just x) -> xnWOaToa x
               )
-              --(Hets.stringToId s)
+              --(Id.stringToId s)
               Id.nullRange
           )
           vardeclS2
@@ -4164,7 +4164,7 @@ formulaFromOM ffxi origin varbindings (OMDoc.OMEA oma) =
                       Predication
                         (
                           Qual_pred_name
-                            (Hets.stringToId applySym)
+                            (Id.stringToId applySym)
                             (
                               Pred_type [] Id.nullRange
                             )
@@ -4590,7 +4590,7 @@ termFromOM ffxi origin vb (OMDoc.OMEA oma) =
     "PROJ" ->
         Cast
           (ehead (e_fname ++ "PROJ") terms)
-          (Hets.stringToId $ show (ehead (e_fname ++ "PROJ, tail") $ tail terms))
+          (Id.stringToId $ show (ehead (e_fname ++ "PROJ, tail") $ tail terms))
           Id.nullRange
     "IfThenElse" ->
       let
@@ -4790,12 +4790,12 @@ operatorFromOM ffxi origin (OMDoc.OMES oms) =
             -- faking Op_name's causes errors in MapSentence later
             -- so this clumsy Qual_op_name is constructed...
             Qual_op_name
-              (Hets.stringToId sxname)
-              (Op_type Total [] (Hets.stringToId "fakeT") Id.nullRange)
+              (Id.stringToId sxname)
+              (Op_type Total [] (Id.stringToId "fakeT") Id.nullRange)
               Id.nullRange
           else
             Op_name -- this is for CASL-special-symbols
-              (Hets.stringToId sxname)
+              (Id.stringToId sxname)
       else
         -- real operator
         Qual_op_name

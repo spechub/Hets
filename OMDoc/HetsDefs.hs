@@ -35,7 +35,6 @@ module OMDoc.HetsDefs
     , IdentifierWON
     , WithOriginNode
     , idToString
-    , stringToId
     , NodeNameWO
     , SORTWO
     , getNameForSens
@@ -129,7 +128,7 @@ import qualified CASL.Induction as Induction
 import CASL.Sign
 import CASL.Morphism
 import qualified CASL.AS_Basic_CASL as CASLBasic
-import qualified Common.Id as Id
+import Common.Id
 import qualified Data.Set as Set
 import qualified Data.Map as Map
 import qualified Common.Lib.Rel as Rel
@@ -163,10 +162,6 @@ getCASLSign (G_sign lid sign _) = do
 -- | like a typed /fromMaybe/
 getJustCASLSign :: Maybe CASLSign -> CASLSign
 getJustCASLSign = maybe (error "getJustCASLSign") id
-
--- | Shortcut for 'Id.Id' construction from a 'String'
-stringToId::String->Id.Id
-stringToId = Id.simpleIdToId . Id.mkSimpleId
 
 -- | extract a 'CASL.Morphism.Morphism' from a 'DGLinkLab'
 -- will fail if not possible
@@ -254,8 +249,8 @@ type NodeNameWO = WithOriginNode NodeName
 -- | sorts with origin
 type SORTWO = WithOriginNode SORT
 
--- | 'Id.Id'S with origin
-type IdWO = WithOriginNode Id.Id
+-- | 'Id'S with origin
+type IdWO = WithOriginNode Id
 
 -- | 'Ann.Named' 'CASLFORMULA'S with origin
 type SentenceWO = WithOriginNode (Ann.Named CASLFORMULA)
@@ -325,23 +320,23 @@ isNonHidingHidAndReqL::HidingAndRequationList->Bool
 isNonHidingHidAndReqL (h, _) = null h
 
 
--- | Instance of 'Read' for 'Id.Id'S
-instance Read Id.Id where
+-- | Instance of 'Read' for 'Id'S
+instance Read Id where
   readsPrec _ ('[':s) =
     let
       (tokens, rest) = spanEsc (not . (flip elem "[]")) s
       tokenl = breakIfNonEsc "," tokens
-      token = map (\str -> Id.Token (trimString $ unesc str) Id.nullRange) tokenl
+      token = map (\str -> Token (trimString $ unesc str) nullRange) tokenl
       idl = breakIfNonEsc "," rest
       ids = foldl (\ids' str ->
-        case ((readsPrec 0 (trimString str))::[(Id.Id, String)]) of
+        case ((readsPrec 0 (trimString str))::[(Id, String)]) of
           [] -> error ("Unable to parse \"" ++ str ++ "\"")
           ((newid,_):_) -> ids' ++ [newid]
           ) [] idl
     in
       case (trimString rest) of
-        (']':_) -> [(Id.Id token [] Id.nullRange, "")]
-        _ -> [(Id.Id token ids Id.nullRange, "")]
+        (']':_) -> [(Id token [] nullRange, "")]
+        _ -> [(Id token ids nullRange, "")]
 
   readsPrec _ _ = []
 
@@ -355,22 +350,22 @@ escapeForId (',':r) = "\\," ++ escapeForId r
 escapeForId (' ':r) = "\\ " ++ escapeForId r
 escapeForId (c:r) = c:escapeForId r
 
--- | creates a parseable representation of an 'Id.Id' (see Read-instance)
-idToString::Id.Id->String
-idToString (Id.Id toks ids _) =
+-- | creates a parseable representation of an 'Id' (see Read-instance)
+idToString::Id->String
+idToString (Id toks ids _) =
                 "[" ++
-                (implode "," (map (\t -> escapeForId $ Id.tokStr t) toks)) ++
+                (implode "," (map (\t -> escapeForId $ tokStr t) toks)) ++
                 (implode "," (map idToString ids)) ++
                 "]"
 
 -- | encapsulates a node_name in an id
-nodeNameToId::NodeName->Id.Id
+nodeNameToId::NodeName->Id
 nodeNameToId (NodeName s e n) =
-  Id.mkId [s, Id.mkSimpleId e, Id.mkSimpleId (show n)]
+  mkId [s, mkSimpleId e, mkSimpleId (show n)]
 
 -- | reads back an encapsulated node_name
-idToNodeName::Id.Id->NodeName
-idToNodeName (Id.Id toks _ _) = case toks of
+idToNodeName::Id->NodeName
+idToNodeName (Id toks _ _) = case toks of
   t0 : t1 : t2 : _ -> NodeName t0 (show t1) $ read $ show t2
   _ -> error "idToNodeName"
 
@@ -385,11 +380,11 @@ type IdNameMapping =
     , NodeName
     , String
     , Graph.Node
-    , Set.Set (Id.Id, String)
-    , Set.Set ((Id.Id, PredType), String)
-    , Set.Set ((Id.Id, OpType, Maybe (Int, Id.Id)), String)
-    , Set.Set ((Id.Id, Int), String)
-    , Set.Set ((Id.Id, PredType), String)
+    , Set.Set (Id, String)
+    , Set.Set ((Id, PredType), String)
+    , Set.Set ((Id, OpType, Maybe (Int, Id)), String)
+    , Set.Set ((Id, Int), String)
+    , Set.Set ((Id, PredType), String)
   )
 
 
@@ -418,23 +413,23 @@ inmGetNodeNum::IdNameMapping->Graph.Node
 inmGetNodeNum (_, _, _, nn, _, _, _, _, _) = nn
 
 -- | projection function for the set of sorts
-inmGetIdNameSortSet::IdNameMapping->Set.Set (Id.Id, String)
+inmGetIdNameSortSet::IdNameMapping->Set.Set (Id, String)
 inmGetIdNameSortSet (_, _, _, _, s, _, _, _, _) = s
 
 -- | projection function for the disambiguated set of predicates
-inmGetIdNamePredSet::IdNameMapping->Set.Set ((Id.Id, PredType), String)
+inmGetIdNamePredSet::IdNameMapping->Set.Set ((Id, PredType), String)
 inmGetIdNamePredSet (_, _, _, _, _, s, _, _, _) = s
 
 -- | projection function for the disambiguated set of operators
-inmGetIdNameOpSet::IdNameMapping->Set.Set ((Id.Id, OpType), String)
+inmGetIdNameOpSet::IdNameMapping->Set.Set ((Id, OpType), String)
 inmGetIdNameOpSet (_, _, _, _, _, _, s, _, _) = Set.map (\((i, t, _), u) -> ((i, t), u)) s
 
 -- | projection function for the sentences (annotated by their appearance)
-inmGetIdNameSensSet::IdNameMapping->Set.Set ((Id.Id, Int), String)
+inmGetIdNameSensSet::IdNameMapping->Set.Set ((Id, Int), String)
 inmGetIdNameSensSet (_, _, _, _, _, _, _, s, _) = s
 
 -- | projection function for the operators that represent constructors
-inmGetIdNameConstructors::IdNameMapping->Set.Set ((Id.Id, OpType, Int, Id.Id), String)
+inmGetIdNameConstructors::IdNameMapping->Set.Set ((Id, OpType, Int, Id), String)
 inmGetIdNameConstructors (_, _, _, _, _, _, s, _, _) =
   Set.fold
     (\((i, t, m), u) newset ->
@@ -448,14 +443,14 @@ inmGetIdNameConstructors (_, _, _, _, _, _, s, _, _) =
     s
 
 -- | projection function for the predicates generated by 'Induction.inductionScheme'
-inmGetIdNameGaPredSet::IdNameMapping->Set.Set ((Id.Id, PredType), String)
+inmGetIdNameGaPredSet::IdNameMapping->Set.Set ((Id, PredType), String)
 inmGetIdNameGaPredSet (_, _, _, _, _, _, _, _, s) = s
 
--- | get just a set with all known 'Id.Id'S and their XML-names
--- ('Id.Id'S can show up more than once because their XML-name differs).
+-- | get just a set with all known 'Id'S and their XML-names
+-- ('Id'S can show up more than once because their XML-name differs).
 --
--- This does not contain the 'Id.Id's from 'inmGetIdNameGaPredSet'.
-inmGetIdNameAllSet::IdNameMapping->Set.Set (Id.Id, String)
+-- This does not contain the 'Id's from 'inmGetIdNameGaPredSet'.
+inmGetIdNameAllSet::IdNameMapping->Set.Set (Id, String)
 inmGetIdNameAllSet inm =
   Set.union
     (
@@ -490,8 +485,8 @@ inmFindLNNN::(LIB_NAME, Graph.Node)->[IdNameMapping]->Maybe IdNameMapping
 inmFindLNNN lnnn = Data.List.find (\inm -> inmGetLNNN inm == lnnn)
 
 -- | filter a list of mappings to keep only mappings that contain a
--- given 'Id.Id'
-getIdOrigins::[IdNameMapping]->Id.Id->[IdNameMapping]
+-- given 'Id'
+getIdOrigins::[IdNameMapping]->Id->[IdNameMapping]
 getIdOrigins [] _ = []
 getIdOrigins (o:r) sid =
   (
@@ -508,7 +503,7 @@ getIdOrigins (o:r) sid =
         [o]
   ) ++ getIdOrigins r sid
 
--- | like 'getIdOrigins' but search for an XML-name instead of an 'Id.Id'
+-- | like 'getIdOrigins' but search for an XML-name instead of an 'Id'
 getNameOrigins::[IdNameMapping]->String->[IdNameMapping]
 getNameOrigins [] _ = []
 getNameOrigins (o:r) name =
@@ -593,7 +588,7 @@ getNameForSort mapping s =
 
 -- | search in a list of mappings for the XML-name of a given predicate
 -- (and type)
-getNameForPred::[IdNameMapping]->(Id.Id, PredType)->Maybe String
+getNameForPred::[IdNameMapping]->(Id, PredType)->Maybe String
 getNameForPred mapping (pid, pt) =
   getNameFor
     mapping
@@ -608,7 +603,7 @@ getNameForPred mapping (pid, pt) =
 
 -- | search in a list of mappings for the XML-name of a fiven operator
 -- (and type)
-getNameForOp::[IdNameMapping]->(Id.Id, OpType)->Maybe String
+getNameForOp::[IdNameMapping]->(Id, OpType)->Maybe String
 getNameForOp mapping (oid, ot) =
   getNameFor
     mapping
@@ -619,7 +614,7 @@ getNameForOp mapping (oid, ot) =
 
 -- | search in a list of mappings for the XML-name of a given
 -- sentence name (and apperance-tag)
-getNameForSens::[IdNameMapping]->(Id.Id, Int)->Maybe String
+getNameForSens::[IdNameMapping]->(Id, Int)->Maybe String
 getNameForSens mapping (s,sn) =
   getNameFor
     mapping
@@ -628,28 +623,28 @@ getNameForSens mapping (s,sn) =
     (not . Set.null)
     (snd . head . Set.toList)
 
--- | type conversion. Ommit 'Id.Range'
+-- | type conversion. Ommit 'Range'
 cv_Op_typeToOpType::OP_TYPE->OpType
 cv_Op_typeToOpType (Op_type fk args res _) = OpType fk args res
 
--- | type conversion. Set range to 'Id.nullRange'.
+-- | type conversion. Set range to 'nullRange'.
 cv_OpTypeToOp_type::OpType->OP_TYPE
-cv_OpTypeToOp_type (OpType fk args res) = Op_type fk args res Id.nullRange
+cv_OpTypeToOp_type (OpType fk args res) = Op_type fk args res nullRange
 
--- | type conversion. Ommit 'Id.Range'
+-- | type conversion. Ommit 'Range'
 cv_Pred_typeToPredType::PRED_TYPE->PredType
 cv_Pred_typeToPredType (Pred_type args _) = PredType args
 
--- | type conversion. Set range to 'Id.nullRange'.
+-- | type conversion. Set range to 'nullRange'.
 cv_PredTypeToPred_type::PredType->PRED_TYPE
-cv_PredTypeToPred_type (PredType args) = Pred_type args Id.nullRange
+cv_PredTypeToPred_type (PredType args) = Pred_type args nullRange
 
 -- | translate a named 'CASLFORMULA' into a set of operators
 -- corresponding to the /Sort_gen_ax/-axiom.
 --
 -- Anything else than a /Sort_gen_ax/-axiom for input results in an
 -- empty set.
-extractConstructorOps::Ann.Named CASLFORMULA->Set.Set (Id.Id, OpType)
+extractConstructorOps::Ann.Named CASLFORMULA->Set.Set (Id, OpType)
 extractConstructorOps ansen =
   case Ann.sentence ansen of
     (Sort_gen_ax cons _) ->
@@ -684,13 +679,13 @@ nodeNameToName =
 
 -- | wrapper around (CASL) symbols
 data Identifier =
-    IdNodeName Id.Id
-  | IdId Id.Id
-  | IdOpM Id.Id OpType (Maybe (Int, Id.Id)) Bool
-  | IdPred Id.Id PredType
-  | IdSens Id.Id Int
+    IdNodeName Id
+  | IdId Id
+  | IdOpM Id OpType (Maybe (Int, Id)) Bool
+  | IdPred Id PredType
+  | IdSens Id Int
   -- | for generated predicates ('Induction.inductionScheme')
-  | IdGaPred Id.Id PredType
+  | IdGaPred Id PredType
   deriving Show
 
 -- | uniform types for 'Identifier'
@@ -706,8 +701,8 @@ getIdType (IdPred {}) = IdTPred
 getIdType (IdSens {}) = IdTSens
 getIdType (IdGaPred {}) = IdTGaPred
 
--- | uniformly project the 'Id.Id' an 'Identifier' refers to
-getIdId::Identifier->Id.Id
+-- | uniformly project the 'Id' an 'Identifier' refers to
+getIdId::Identifier->Id
 getIdId (IdNodeName i) = i
 getIdId (IdId i) = i
 getIdId (IdOpM i _ _ _) = i
@@ -794,7 +789,7 @@ getRecursivePredicatesT _ =
 hasOperator
   ::OpsMapDGWO
   ->NodeNameWO
-  ->Id.Id
+  ->Id
   ->OpType
   ->Bool
 hasOperator
@@ -2075,7 +2070,7 @@ findIdOpsForName
 findIdentifiersForId
   ::CollectionMap
   ->(LIB_NAME, Graph.Node)
-  ->Id.Id
+  ->Id
   ->[(LIB_NAME, (IdentifierWON, String))]
 findIdentifiersForId
   collectionMap
@@ -2112,7 +2107,7 @@ findIdentifiersForId
 findIdIdsForId
   ::CollectionMap
   ->(LIB_NAME, Graph.Node)
-  ->Id.Id
+  ->Id
   ->[(LIB_NAME, (IdentifierWON, String))]
 findIdIdsForId
   collectionMap
@@ -2137,7 +2132,7 @@ findIdPredsForId
   ->PredType
   ->CollectionMap
   ->(LIB_NAME, Graph.Node)
-  ->Id.Id
+  ->Id
   ->[(LIB_NAME, (IdentifierWON, String))]
 findIdPredsForId
   srel
@@ -2180,7 +2175,7 @@ findIdOpsForId
   ->OpType
   ->CollectionMap
   ->(LIB_NAME, Graph.Node)
-  ->Id.Id
+  ->Id
   ->[(LIB_NAME, (IdentifierWON, String))]
 findIdOpsForId
   srel
@@ -2718,7 +2713,7 @@ traceIdentifierOrigin
 
   findNonBlockingEdges::
     ((CASL.Morphism.Morphism () () ()) -> [d])
-    ->(d->Id.Id->Bool)
+    ->(d->Id->Bool)
     ->[Graph.LEdge DGLinkLab]
     ->[Graph.LEdge DGLinkLab]
   findNonBlockingEdges
@@ -3044,7 +3039,7 @@ traceRealIdentifierOrigins
         _ ->  otherTraces
   findMorphismSearches::
     ((CASL.Morphism.Morphism () () ()) -> [d])
-    ->(d->Id.Id->Bool)
+    ->(d->Id->Bool)
     ->(d->Identifier)
     ->DGraph
     ->[(Graph.LEdge DGLinkLab)]
@@ -3088,7 +3083,7 @@ traceRealIdentifierOrigins
       inEdges
   findNonBlockingEdges::
     ((CASL.Morphism.Morphism () () ()) -> [d])
-    ->(d->Id.Id->Bool)
+    ->(d->Id->Bool)
     ->[Graph.LEdge DGLinkLab]
     ->[Graph.LEdge DGLinkLab]
   findNonBlockingEdges

@@ -3303,7 +3303,7 @@ wrapFormulaCMPOM
       case
         filter
           (\((sidwo, snum), _) ->
-            (Hets.getIdId $ Hets.woItem sidwo) == (Hets.stringToId $ Ann.senAttr ansen)
+            (Hets.getIdId $ Hets.woItem sidwo) == (Id.stringToId $ Ann.senAttr ansen)
             && snum == sennum
           )
           $
