@@ -722,8 +722,8 @@ type Simplifier = VName
 simpForOption :: Simplifier
 simpForOption l v nF nArg = do
   return $ Case nArg
-   [ (noneOp, if new l == "lift2bool" then false else noneOp)
-   , (termAppl mkPartial v,
+   [ (conDouble "None", if new l == "lift2bool" then false else noneOp)
+   , (termAppl conSome v,
       if new l == "mapPartial" then mkTermAppl mkPartial nF else nF)]
 
 simpForPairs :: Simplifier
