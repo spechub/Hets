@@ -23,7 +23,7 @@ import Data.Typeable
 import Data.Char
 import Data.List
 import Control.Monad
-import Text.XML.HXT.DOM.TypeDefs (mkName)
+import Text.XML.HXT.DOM.QualifiedName (mkName)
 
 {- this is an overlapping instance that is now resolved in the
 Ontology instance -}

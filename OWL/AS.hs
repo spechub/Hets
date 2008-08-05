@@ -15,15 +15,8 @@ It is modeled after the W3C document: <http://www.w3.org/Submission/2006/SUBM-ow
 module OWL.AS where
 
 import qualified Data.Map as Map
-import Text.XML.HXT.DOM.TypeDefs (nullQName, equalQName)
-import Text.XML.HXT.DOM.QualifiedName (QName(QN))
+import Text.XML.HXT.DOM.QualifiedName (nullQName, equalQName, QName(QN))
 
-
-{-
-data URI = FullIRI URIreference
-         | AbbreviatedIRI IRI
-           deriving (Show, Eq, Ord)
--}
 type URI = QName
 type IRI = String
 type URIreference = QName
