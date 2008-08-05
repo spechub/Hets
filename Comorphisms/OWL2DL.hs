@@ -28,8 +28,9 @@ import DL.Sign as DL
 
 import Common.AS_Annotation
 import Common.Result
+import Common.Id
 
--- import Text.XML.HXT.DOM.QualifiedName (QName(QN))
+import Text.XML.HXT.DOM.QualifiedName (QName(..))
 
 data OWL2DL = OWL2DL deriving Show
 
@@ -67,7 +68,8 @@ instance Comorphism
       map_theory OWL2DL = mapTheory
       map_morphism = mapDefaultMorphism
 
--- qName2Id :: QName -> Id
+qNameToId :: QName -> Id
+qNameToId = stringToId . localPart
 
 mapTheory :: (OWL.Sign, [Named Sentence])
           -> Result (DL.Sign, [Named DLBasicItem])
