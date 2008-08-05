@@ -52,7 +52,7 @@ senToSExpr sig s = do
     _ -> SList [SSymbol "formula-sentence", ns]
 
 sentenceToSExpr :: Sign f Procs -> Sentence -> Result SExpr
-sentenceToSExpr sig = foldFormula $ sRec True sig $ dlFormulaToSExpr sig
+sentenceToSExpr sig = foldFormula $ sRec sig $ dlFormulaToSExpr sig
 
 dlFormulaToSExpr :: Sign f Procs -> Dlformula -> Result SExpr
 dlFormulaToSExpr sig = vseFormsToSExpr sig . unRanged
@@ -75,12 +75,12 @@ vDeclToSExpr sig (VarDecl v s m _) =
   case m of
     Nothing -> return vd
     Just trm -> do
-      nt <- foldTerm (sRec False sig $ error "vDeclToSExpr") trm
+      nt <- foldTerm (sRec sig $ error "vDeclToSExpr") trm
       return $ SList [SSymbol "vardecl", w, ty, nt]
 
 progToSExpr :: Sign f Procs -> Program -> Result SExpr
 progToSExpr sig = let
-  pRec = sRec False sig (error "progToSExpr")
+  pRec = sRec sig (error "progToSExpr")
   termToSExpr = foldTerm pRec
   formToSExpr = foldFormula pRec
   in foldProg FoldRec

@@ -63,20 +63,17 @@ varDeclToSExpr (v, s) =
 sfail :: String -> Range -> Result a
 sfail s r = fatal_error ("unexpected " ++ s) r
 
-sRec :: Bool -> Sign a e -> (f -> Result SExpr)
+sRec :: Sign a e -> (f -> Result SExpr)
      -> Record f (Result SExpr) (Result SExpr)
-sRec withQuant sign mf = Record
-    { foldQuantification = \ _ q vs r p -> if withQuant then do
-        s <- case q of
-          Unique_existential -> sfail "Unique_existential" p
-          _ -> return $ SSymbol $ case q of
-            Universal -> "all"
-            Existential -> "ex"
-            _ -> ""
-        let vl = SList $ map varDeclToSExpr $ flatVAR_DECLs vs
+sRec sign mf = Record
+    { foldQuantification = \ _ q vs r _ -> do
+        let s = SSymbol $ case q of
+              Universal -> "all"
+              Existential -> "ex"
+              Unique_existential -> "ex1"
+            vl = SList $ map varDeclToSExpr $ flatVAR_DECLs vs
         f <- r
         return $ SList [s, vl, f]
-      else sfail "Quantification" p
     , foldConjunction = \ _ rs _ -> do
       fs <- sequence rs
       return $ SList $ SSymbol "and" : fs
@@ -99,13 +96,20 @@ sRec withQuant sign mf = Record
     , foldPredication = \ _ p rs _ -> do
       ts <- sequence rs
       return $ SList $ SSymbol "papply" : predToSSymbol sign p : ts
-    , foldDefinedness = \ _ _ r -> sfail "Definedness" r
-    , foldExistl_equation = \ _ _ _ r -> sfail "Existl_equation" r
+    , foldDefinedness = \ _ r _ -> do
+      t <- r
+      return $ SList [SSymbol "def", t]
+    , foldExistl_equation = \ _ r1 r2 _ -> do
+      t1 <- r1
+      t2 <- r2
+      return $ SList [SSymbol "eeq", t1, t2]
     , foldStrong_equation = \ _ r1 r2 _ -> do
       t1 <- r1
       t2 <- r2
       return $ SList [SSymbol "eq", t1, t2]
-    , foldMembership = \ _ _ _ r -> sfail "Membership" r
+    , foldMembership = \ _ r s _ -> do
+      t <- r
+      return $ SList [SSymbol "member", t, sortToSSymbol s]
     , foldMixfix_formula = \ t _ -> sfail "Mixfix_formula" $ getRange t
     , foldSort_gen_ax = \ _ cs b ->
       let (srts, ops, _) = recover_Sort_gen_ax cs in
@@ -122,8 +126,14 @@ sRec withQuant sign mf = Record
       ts <- sequence rs
       return $ SList $ SSymbol "fapply" : opToSSymbol sign o : ts
     , foldSorted_term = \ _ r _ _ -> r
-    , foldCast = \ _ _ _ r -> sfail "Cast" r
-    , foldConditional = \ _ _ _ _ r -> sfail "Conditional" r
+    , foldCast = \ _ r s _ -> do
+      t <- r
+      return $ SList [SSymbol "cast", t, sortToSSymbol s]
+    , foldConditional = \ _ e f t _ -> do
+      ne <- e
+      nf <- f
+      nt <- t
+      return $ SList [SSymbol "condition", ne, nf, nt]
     , foldMixfix_qual_pred = \ _ p -> sfail "Mixfix_qual_pred" $ getRange p
     , foldMixfix_term = \ (Mixfix_term ts) _ ->
         sfail "Mixfix_term" $ getRange ts
