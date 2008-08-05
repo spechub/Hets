@@ -29,8 +29,10 @@ import DL.Sign as DL
 import Common.AS_Annotation
 import Common.Result
 import Common.Id
+import Common.DocUtils
 
 import Text.XML.HXT.DOM.QualifiedName (QName(..))
+import qualified Data.Set as Set
 
 data OWL2DL = OWL2DL deriving Show
 
@@ -61,17 +63,111 @@ instance Comorphism
     RawDLSymbol            -- raw_symbol
     ()                     -- proof_tree
     where
-      sourceLogic OWL2DL    = OWL11
-      sourceSublogic OWL2DL = ()
-      targetLogic OWL2DL    = DL
-      mapSublogic OWL2DL _  = Just ()
-      map_theory OWL2DL = mapTheory
-      map_morphism = mapDefaultMorphism
+    sourceLogic OWL2DL    = OWL11
+    sourceSublogic OWL2DL = ()
+    targetLogic OWL2DL    = DL
+    mapSublogic OWL2DL _  = Just ()
+    map_theory OWL2DL = mapTheory
+    map_morphism = mapDefaultMorphism
 
 qNameToId :: QName -> Id
 qNameToId = stringToId . localPart
 
 mapTheory :: (OWL.Sign, [Named Sentence])
           -> Result (DL.Sign, [Named DLBasicItem])
-mapTheory = error "map_theory OWL2DL"
+mapTheory (osign, sens) = do
+  let
+    cs = Set.map qNameToId $ concepts osign
+    ps = Set.map qNameToId $ datatypes osign
+    ds = Set.map (QualDataProp . qNameToId) $ dataValuedRoles osign
+    os = Set.map (QualObjProp . qNameToId) $ indValuedRoles osign
+    is = Set.map (flip QualIndiv [] . qNameToId) $ OWL.individuals osign
+  ns <- mapM (mapNamedM mapSenM) sens
+  return (emptyDLSig
+    { classes = Set.union cs $ classes emptyDLSig
+    , pData = Set.union ps $ pData emptyDLSig
+    , dataProps = ds
+    , objectProps = Set.union os $ objectProps emptyDLSig
+    , DL.individuals = is}, ns)
 
+getAxiom :: Sentence -> Axiom
+getAxiom s = case s of
+  OWLAxiom a -> a
+  OWLFact a -> a
+
+toConcept :: Description -> Result DLConcept
+toConcept des = let err = fail $ "OWL2DL.toConcept " ++ showDoc des "" in
+  case des of
+  OWLClass curi -> return $ DLClassId (qNameToId curi) nullRange
+  ObjectUnionOf ds | not $ null ds -> do
+    cs <- mapM toConcept ds
+    return $ foldr1 (\ c1 c2 -> DLOr c1 c2 nullRange) cs
+  ObjectIntersectionOf ds | not $ null ds -> do
+    cs <- mapM toConcept ds
+    return $ foldr1 (\ c1 c2 -> DLAnd c1 c2 nullRange) cs
+  ObjectComplementOf d -> do
+    c <- toConcept d
+    return $ DLNot c nullRange
+  ObjectOneOf is -> return $ DLOneOf (map qNameToId is) nullRange
+  _ -> err
+{-
+  ObjectAllValuesFrom ope d
+  ObjectSomeValuesFrom ope d
+  ObjectExistsSelf ope
+  ObjectHasValue ope i
+  ObjectMinCardinality c ope md
+  ObjectMaxCardinality c ope md
+  ObjectExactCardinality c ope md
+  DataAllValuesFrom dpe dpes dr
+  DataSomeValuesFrom dpe dpes dr
+  DataHasValue dpe con
+  DataMinCardinality c dpe mdr
+  DataMaxCardinality c dpe mdr
+  DataExactCardinality c dpe mdr
+-}
+
+mapSenM :: Sentence -> Result DLBasicItem
+mapSenM sen = let err = fail $ "OWL2DL.mapSenM " ++ showDoc sen "" in
+  case getAxiom sen of
+  SubClassOf _as sub super -> case sub of
+    OWLClass curi -> do
+        c <- toConcept super
+        return $ DLClass (qNameToId curi)
+          [DLSubClassof [c] nullRange] Nothing nullRange
+    _ -> err
+  _ -> err
+{-
+  EquivalentClasses _as ds ->
+  DisjointClasses _as ds ->
+  DisjointUnion _as OwlClassURI ds ->
+  SubObjectPropertyOf _as subOpe ope ->
+  EquivalentObjectProperties _as opes ->
+  DisjointObjectProperties _as opes ->
+  ObjectPropertyDomain _as ope d ->
+  ObjectPropertyRange _as ope d ->
+  InverseObjectProperties _as ope ope ->
+  FunctionalObjectProperty _as ope ->
+  InverseFunctionalObjectProperty _as ope ->
+  ReflexiveObjectProperty _as ope ->
+  IrreflexiveObjectProperty _as ope ->
+  SymmetricObjectProperty _as ope ->
+  AntisymmetricObjectProperty _as ope ->
+  TransitiveObjectProperty _as ope ->
+           -- DataPropertyAxiom
+  SubDataPropertyOf _as dpe dpe ->
+  EquivalentDataProperties _as dpes ->
+  DisjointDataProperties _as dpes ->
+  DataPropertyDomain _as dpe d ->
+  DataPropertyRange _as dpe dr ->
+  FunctionalDataProperty _as dpe ->
+           -- Fact
+  SameIndividual _as is ->
+  DifferentIndividuals _as is ->
+  ClassAssertion _as i d ->
+  ObjectPropertyAssertion _as ope si ti ->
+  NegativeObjectPropertyAssertion _as ope si ti ->
+  DataPropertyAssertion _as dpe si tv ->
+  NegativeDataPropertyAssertion _as dpe si tv ->
+  Declaration _as e ->
+  EntityAnno ea ->
+-}
