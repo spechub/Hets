@@ -79,6 +79,14 @@ parenProg = foldProg $ mapProg (Paren.mapTerm id) $ mapFormula id
 parenDefproc :: Defproc -> Defproc
 parenDefproc (Defproc k i vs p r) = Defproc k i vs (parenProg p) r
 
+procsToOpPredMaps :: Procs -> (Map.Map Id (Set.Set PredType), OpMap)
+procsToOpPredMaps (Procs m) =
+  foldr (\ (n, pr) (pm, om) -> case profileToOpType pr of
+          Just ot -> ( Rel.setInsert n (funProfileToPredType pr) pm
+                     , Rel.setInsert n ot om)
+          Nothing -> (Rel.setInsert n (profileToPredType pr) pm, om))
+  (Map.empty, Map.empty) $ Map.toList m
+
 -- | resolve mixfix applications of terms and formulas
 resolveDlformula :: MixResolve Dlformula
 resolveDlformula ga rules (Ranged f r) = case f of
