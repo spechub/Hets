@@ -37,13 +37,13 @@ import Propositional.ProverState
 import qualified SoftFOL.Sign as SPS
 
 aId :: Id
-aId = simpleIdToId $ mkSimpleId "a"
+aId = stringToId "a"
 
 bId :: Id
-bId = simpleIdToId $ mkSimpleId "b"
+bId = stringToId "b"
 
 cId :: Id
-cId = simpleIdToId $ mkSimpleId "c"
+cId = stringToId "c"
 
 mySig :: Sign
 mySig = addToSig (addToSig (addToSig emptySig aId) bId) cId

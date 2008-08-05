@@ -172,10 +172,10 @@ parseDAnno str = case parse annotationL "" str of
     Right a -> a
 
 aVar :: Id
-aVar = simpleIdToId $ mkSimpleId "a"
+aVar = stringToId "a"
 
 bVar :: Id
-bVar = simpleIdToId $ mkSimpleId "b"
+bVar = stringToId "b"
 
 aType :: Type
 aType = typeArgToType aTypeArg

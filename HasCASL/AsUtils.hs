@@ -30,7 +30,7 @@ typeUniverseS = "Type"
 
 -- | the id of the universe type
 universeId :: Id
-universeId = simpleIdToId $ mkSimpleId typeUniverseS
+universeId = stringToId typeUniverseS
 
 -- | the type universe
 universe :: Kind
@@ -46,7 +46,7 @@ unitTypeS = "Unit"
 
 -- | the identifier for the Unit type
 unitTypeId :: Id
-unitTypeId = simpleIdToId $ mkSimpleId unitTypeS
+unitTypeId = stringToId unitTypeS
 
 -- | single step beta reduce type abstractions
 redStep :: Type -> Maybe Type
