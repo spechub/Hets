@@ -19,6 +19,7 @@ module OMDoc.OMDocOutput
   where
 
 import qualified OMDoc.HetsDefs as Hets
+import OMDoc.CASLOutput
 import CASL.Sign
 import CASL.AS_Basic_CASL as ABC
 import qualified CASL.Morphism as Morphism
@@ -56,11 +57,9 @@ import Data.List (find)
 
 import Debug.Trace (trace)
 
-import qualified System.Directory as System.Directory
+import System.Directory
 
 import Control.Monad
-
-import Data.Char (toLower)
 
 import OMDoc.Util
 import OMDoc.XmlHandling
@@ -566,76 +565,6 @@ createXmlThmLinkOM lnum lenv ln (edge@(from, to, ll)) uniqueNames {-names-} coll
   consConv Static.DevGraph.Cons = OMDoc.CConservative
   consConv Static.DevGraph.Def = OMDoc.CDefinitional
 
--- | Retrieve the XML-names for the sort meaning
-mappedsorts :: [(Hets.WithOrigin Hets.Identifier b1, String)]
-            -> [Char]
-            -> [(Hets.WithOrigin Hets.Identifier b, String)]
-            -> ASL.LIB_NAME
-            -> Hets.CollectionMap
-            -> [Hets.IdNameMapping]
-            -> Graph.Node
-            -> Graph.Node
-            -> Morphism.Morphism f e m
-            -> [((String, (Maybe URI.URI, String)),
-                 (String, (Maybe URI.URI, String)))]
-mappedsorts fromSortIds e_fname toSortIds ln collectionMap uniqueNames from to 
-	caslmorph =
-      Map.foldWithKey
-        (\origsort newsort ms ->
-          let
-            oname =
-              case
-                filter
-                  (\(oid', _) -> Hets.getIdId (Hets.woItem oid') == origsort)
-                  fromSortIds
-              of
-               [] -> error (e_fname ++ "Sort not in From-Set!")
-               s:_ -> snd s
-            nname =
-              case
-                filter
-                  (\(nid', _) -> Hets.getIdId (Hets.woItem nid') == newsort)
-                  toSortIds
-              {-  Set.toList
-                  $
-                  Set.filter
-                    (\(nid', _) -> nid' == newsort)
-                    (Hets.inmGetIdNameSortSet toIdNameMapping)
-              -}
-              of
-               [] -> error (e_fname ++ "Sort not in To-Set!")
-               s:_ -> snd s
-            oorigin =
-              getNodeNameBaseForXml
-                ln
-                $
-                findOrigin
-                  collectionMap
-                  uniqueNames
-                  Hets.findIdIdsForName
-                  (ln, from)
-                  oname
-                  id -- adjustStringForXmlName
-                  " (sorts, from)"
-            norigin =
-              getNodeNameBaseForXml
-                ln
-                $
-                findOrigin
-                  collectionMap
-                  uniqueNames
-                  Hets.findIdIdsForName
-                  (ln, to)
-                  nname
-                  id -- adjustStringForXmlName
-                  " (sorts, to)"
-         in
-          ms ++ [ ((oname, oorigin), (nname, norigin)) ]
-        )
-        []
-        (Morphism.sort_map caslmorph)
-
-
 {- |
   create a xml-representation of a (CASL-)morphism.
 -}
@@ -693,7 +622,7 @@ createOMMorphism
         Hets.inmFindLNNN (ln, to) names
     -}
     -- retrieve the XML-names for the sort mapping
-   
+
     -- retrieve the XML-names for the predicate mapping
     mappedpreds =
       Map.foldWithKey
@@ -851,9 +780,9 @@ createOMMorphism
         []
         (Morphism.fun_map caslmorph)
     -- retrieved names are all of same type, so merge
-    allmapped = mappedsorts fromSortIds e_fname toSortIds ln collectionMap 
-    						uniqueNames from to caslmorph 
-    			++ mappedpreds 
+    allmapped = mappedsorts fromSortIds e_fname toSortIds ln collectionMap
+    						uniqueNames from to caslmorph
+    			++ mappedpreds
     			++ mappedops -- ++ unclashedSorts
     -- merging makes hiding easier also...
     hidden =
@@ -964,61 +893,6 @@ createOMMorphism
       []
       fromIds
 
-findOrigin
-  ::Hets.CollectionMap
-  ->[Hets.IdNameMapping]
-  ->(
-      Hets.CollectionMap
-      ->(Hets.LIB_NAME, Graph.Node)
-      ->String
-      ->(String->String)
-      ->[(Hets.LIB_NAME, Hets.IdentifierWON)]
-    )
-  ->(Hets.LIB_NAME, Graph.Node)
-  ->String
-  ->(String->String)
-  ->String
-  ->Hets.IdNameMapping
-findOrigin
-  collMap
-  mappings
-  searchFun
-  loc
-  sName
-  stringproc
-  debugMsg
-  =
-    case searchFun collMap loc sName stringproc of
-      [] ->
-        error
-          (
-            "No Origin for \"" ++ sName ++ "\""
-            ++ debugMsg ++ " "
-            ++ (show (Map.findWithDefault (Debug.Trace.trace "Empty!" Map.empty) loc collMap))
-          )
-      ((iln, idwo):r) ->
-        (\x ->
-          if null r
-            then
-              x
-            else
-              Debug.Trace.trace
-                (
-                  "More than one origin for \"" ++ sName ++ "\""
-                  ++ debugMsg
-                )
-                x
-        )
-        $
-        case Hets.getLNGN mappings iln (Hets.woOrigin idwo) of
-          Nothing ->
-            error
-              (
-                "Non-existant origin for \""
-                ++ sName ++ "\" " ++ show (iln, Hets.woOrigin idwo)
-                ++ debugMsg
-              )
-          (Just o) -> o
 
 findOriginId
   ::Hets.CollectionMap
@@ -1897,21 +1771,6 @@ getNodeNameForXml::Hets.IdNameMapping->String
 getNodeNameForXml = Hets.inmGetNodeId
 -}
 
-getNodeNameBaseForXml
-  ::Hets.LIB_NAME
-  ->Hets.IdNameMapping
-  ->(Maybe URI.URI, String)
-getNodeNameBaseForXml
-  currentLib
-  inm
-  =
-  let
-    libName = Hets.inmGetLibName inm
-    libURIS = asOMDocFile $ unwrapLinkSource libName
-    asUri = URI.parseURIReference libURIS
-    uriRes = if currentLib /= libName then asUri else Nothing
-  in
-    (uriRes, Hets.inmGetNodeId inm)
 
 -- | create an OMDoc-/symbol/ defining a predication.
 --
@@ -2207,18 +2066,6 @@ instance Show (Source a) where
 createLibName::ASL.LIB_NAME->String
 createLibName libname = splitFile . fst . splitPath $ unwrapLinkSource libname
 
--- | extract the source-component from a library name
-unwrapLinkSource::ASL.LIB_NAME->String
-unwrapLinkSource
-  (ASL.Lib_id lid) = unwrapLID lid
-unwrapLinkSource
-  (ASL.Lib_version lid _) = unwrapLID lid
-
--- | extract the source from a library ID
-unwrapLID::ASL.LIB_ID->String
-unwrapLID (ASL.Indirect_link path _ _ _) = path
-unwrapLID (ASL.Direct_link url _) = url
-
 -- | separates the path and filename part from a filename, first element is the
 -- name, second the path (without last delimiter)
 splitPath::String->(String, String)
@@ -2238,34 +2085,6 @@ splitFile file =
                             "" -> "."++(last filenameparts)
                             fn -> fn
             _ -> implode "." $ init filenameparts
-
--- | returns an 'omdoc-version' of a filename (e.g. test.env -> test.omdoc)
-asOMDocFile::String->String
-asOMDocFile file =
-  let
-    parts = splitFile' file
-    fullfilename = last parts
-    filenameparts = explode "." fullfilename
-    (filename, mfileext) =
-      case (length filenameparts) of
-        0 -> ("", Nothing)
-        1 -> (head filenameparts, Nothing)
-        2 -> case head filenameparts of
-          "" -> ("."++(last filenameparts), Nothing)
-          fn -> (fn, Just (last filenameparts))
-        _ -> ( implode "." $ init filenameparts, Just (last filenameparts))
-  in
-    case mfileext of
-      Nothing -> joinFile $ (init parts) ++ [filename ++ ".omdoc"]
-      (Just fileext) ->
-        case map toLower fileext of
-          "omdoc" -> file
-          _ -> joinFile $ (init parts) ++ [filename ++ ".omdoc"]
-  where
-  splitFile' ::String->[String]
-  splitFile' = explode "/"
-  joinFile::[String]->String
-  joinFile = implode "/"
 
 -- | prepend a path to a pathname
 fileSandbox::
