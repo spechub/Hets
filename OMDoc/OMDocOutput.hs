@@ -171,25 +171,14 @@ writeOMDocDTD dtd' t f = HXT.run' $
 
 -- | Hets interface for writing OMDoc files.
 --   Output is written into directory specified in options.
+--  Create one ore more OMDoc-documents from a library-environment
 hetsToOMDoc::
-  HetcatsOpts -- ^ if recurse is set, all libraries are exported.
-              --   Else only the loaded library is exported.
-  ->(ASL.LIB_NAME, LibEnv) -- ^ Name of loaded library and it's environment
-  ->FilePath -- ^ Name of output-file (ignored when recurse is true)
-  ->IO ()
-hetsToOMDoc hco lnle file =
-  do
-    --libToOMDocIdNameMapping hco lnle file
-    libToOMDoc hco lnle file
-
--- | Create one ore more OMDoc-documents from a library-environment
-libToOMDoc::
   HetcatsOpts -- ^ Hetcats-Options, if recurse is set, all libraries are
               --   extracted.
   ->(ASL.LIB_NAME, LibEnv) -- ^ Name of the loaded library and the environment
   ->FilePath               -- ^ Name of output-file (not used when recurse is set)
   ->IO ()
-libToOMDoc
+hetsToOMDoc
   hco
   (ln, lenv)
   fp
