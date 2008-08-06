@@ -154,11 +154,13 @@ fgrep \*\*\* ../isa.log
 runSPASSBasic ()
 {
 ../Hets/utils/nightly/runSPASS.sh Basic/*.dfg > ../spass.log 2>&1
+fgrep "Line " ../spass.log
 }
 
 runDarwinBasic ()
 {
 ../Hets/utils/nightly/runDarwin.sh Basic/*.tptp.c > ../darwin.log 2>&1
+fgrep Fatal ../darwin.log
 }
 
 checkIsaOf ()
