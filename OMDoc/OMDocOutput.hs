@@ -566,6 +566,77 @@ createXmlThmLinkOM lnum lenv ln (edge@(from, to, ll)) uniqueNames {-names-} coll
   consConv Static.DevGraph.Cons = OMDoc.CConservative
   consConv Static.DevGraph.Def = OMDoc.CDefinitional
 
+-- | Retrieve the XML-names for the sort meaning
+mappedsorts :: [(Hets.WithOrigin Hets.Identifier b1, String)]
+            -> [Char]
+            -> [(Hets.WithOrigin Hets.Identifier b, String)]
+            -> ASL.LIB_NAME
+            -> Hets.CollectionMap
+            -> [Hets.IdNameMapping]
+            -> Graph.Node
+            -> Graph.Node
+            -> Morphism.Morphism f e m
+            -> [((String, (Maybe URI.URI, String)),
+                 (String, (Maybe URI.URI, String)))]
+
+
+mappedsorts fromSortIds e_fname toSortIds ln collectionMap uniqueNames from to caslmorph=
+      Map.foldWithKey
+        (\origsort newsort ms ->
+          let
+            oname =
+              case
+                filter
+                  (\(oid', _) -> Hets.getIdId (Hets.woItem oid') == origsort)
+                  fromSortIds
+              of
+               [] -> error (e_fname ++ "Sort not in From-Set!")
+               s:_ -> snd s
+            nname =
+              case
+                filter
+                  (\(nid', _) -> Hets.getIdId (Hets.woItem nid') == newsort)
+                  toSortIds
+              {-  Set.toList
+                  $
+                  Set.filter
+                    (\(nid', _) -> nid' == newsort)
+                    (Hets.inmGetIdNameSortSet toIdNameMapping)
+              -}
+              of
+               [] -> error (e_fname ++ "Sort not in To-Set!")
+               s:_ -> snd s
+            oorigin =
+              getNodeNameBaseForXml
+                ln
+                $
+                findOrigin
+                  collectionMap
+                  uniqueNames
+                  Hets.findIdIdsForName
+                  (ln, from)
+                  oname
+                  id -- adjustStringForXmlName
+                  " (sorts, from)"
+            norigin =
+              getNodeNameBaseForXml
+                ln
+                $
+                findOrigin
+                  collectionMap
+                  uniqueNames
+                  Hets.findIdIdsForName
+                  (ln, to)
+                  nname
+                  id -- adjustStringForXmlName
+                  " (sorts, to)"
+         in
+          ms ++ [ ((oname, oorigin), (nname, norigin)) ]
+        )
+        []
+        (Morphism.sort_map caslmorph)
+
+
 {- |
   create a xml-representation of a (CASL-)morphism.
 -}
@@ -623,61 +694,7 @@ createOMMorphism
         Hets.inmFindLNNN (ln, to) names
     -}
     -- retrieve the XML-names for the sort mapping
-    mappedsorts =
-      Map.foldWithKey
-        (\origsort newsort ms ->
-          let
-            oname =
-              case
-                filter
-                  (\(oid', _) -> Hets.getIdId (Hets.woItem oid') == origsort)
-                  fromSortIds
-              of
-               [] -> error (e_fname ++ "Sort not in From-Set!")
-               s:_ -> snd s
-            nname =
-              case
-                filter
-                  (\(nid', _) -> Hets.getIdId (Hets.woItem nid') == newsort)
-                  toSortIds
-              {-  Set.toList
-                  $
-                  Set.filter
-                    (\(nid', _) -> nid' == newsort)
-                    (Hets.inmGetIdNameSortSet toIdNameMapping)
-              -}
-              of
-               [] -> error (e_fname ++ "Sort not in To-Set!")
-               s:_ -> snd s
-            oorigin =
-              getNodeNameBaseForXml
-                ln
-                $
-                findOrigin
-                  collectionMap
-                  uniqueNames
-                  Hets.findIdIdsForName
-                  (ln, from)
-                  oname
-                  id -- adjustStringForXmlName
-                  " (sorts, from)"
-            norigin =
-              getNodeNameBaseForXml
-                ln
-                $
-                findOrigin
-                  collectionMap
-                  uniqueNames
-                  Hets.findIdIdsForName
-                  (ln, to)
-                  nname
-                  id -- adjustStringForXmlName
-                  " (sorts, to)"
-         in
-          ms ++ [ ((oname, oorigin), (nname, norigin)) ]
-        )
-        []
-        (Morphism.sort_map caslmorph)
+   
     -- retrieve the XML-names for the predicate mapping
     mappedpreds =
       Map.foldWithKey
@@ -835,7 +852,10 @@ createOMMorphism
         []
         (Morphism.fun_map caslmorph)
     -- retrieved names are all of same type, so merge
-    allmapped = mappedsorts ++ mappedpreds ++ mappedops -- ++ unclashedSorts
+    allmapped = mappedsorts fromSortIds e_fname toSortIds ln collectionMap 
+    						uniqueNames from to caslmorph 
+    			++ mappedpreds 
+    			++ mappedops -- ++ unclashedSorts
     -- merging makes hiding easier also...
     hidden =
       case dgl_type ll of
