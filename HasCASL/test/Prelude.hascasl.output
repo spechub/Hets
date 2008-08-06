@@ -116,7 +116,6 @@ free type bool ::= true | false
 type  bool : Flatcpo
 type  nat : Flatcpo
 classes
-Cpo < Type;
 Flatcpo < Type;
 Pcpo < Type
 classes
@@ -334,6 +333,7 @@ no typing for
 'all
  \ (f, g) : s ->? t
  . all \ x : s . eq (\ . f x, g x) impl eq (f, g)'
+### Warning 115.7, unchanged class 'Cpo'
 ### Hint 117.5, is type variable 'c'
 ### Hint 121.3, no type found for 'all'
 ### Hint 121.3, untypeable term (with type: _v442 ->? Unit) 'all'

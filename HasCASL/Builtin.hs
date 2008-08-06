@@ -282,7 +282,7 @@ cpoId = stringToId "Cpo"
 
 -- | builtin class map
 cpoMap :: ClassMap
-cpoMap = Map.empty -- Map.singleton cpoId $ ClassInfo rStar Set.empty
+cpoMap = Map.singleton cpoId $ ClassInfo rStar $ Set.singleton universe
 
 -- | builtin function map
 bOps :: Assumps

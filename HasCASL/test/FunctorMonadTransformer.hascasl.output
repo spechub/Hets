@@ -200,7 +200,7 @@ rejected '__->?__ < __->__' of '((var q : a ->? m b) (var x : a), (var r : b ->?
 ### Hint 18.36-18.44,
 untypeable term (with type: _v479_m _v480_a * (_v480_a -> _v479_m _v481_b))
 '(q x, r)'
-### Hint 20.16, refined class 'Monad'
+### Warning 20.16, refined class 'Monad'
 ### Hint 21.7, is type variable 'm'
 ### Hint 21.7, rebound type variable 'm'
 ### Hint 21.17, is type variable 'a'

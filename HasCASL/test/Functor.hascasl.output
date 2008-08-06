@@ -117,7 +117,7 @@ forall G : PolyBifunctor; a : Type; f : a -> a; l : ParamDT G a
 ### Hint 25.10, not a kind 'Alg F a'
 ### Hint 25.22, not a kind 'InitialCarrier F -> a'
 ### Hint 25.21, rebound variable 'g'
-### Hint 28.7, refined class 'PolyFunctor'
+### Warning 28.7, refined class 'PolyFunctor'
 ### Hint 29.5, is type variable 'G'
 ### Hint 33.7, not a kind 'ParamDT G a'
 ### Hint 33.23, not a class 'a'

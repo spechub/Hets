@@ -23,11 +23,11 @@ module HasCASL.TypeCheck
     ) where
 
 import HasCASL.Unify
-import HasCASL.Merge
 import HasCASL.VarDecl
 import HasCASL.As
 import HasCASL.FoldType
 import HasCASL.Le
+import HasCASL.PrintLe
 import HasCASL.AsUtils
 import HasCASL.MixAna
 import HasCASL.TypeAna

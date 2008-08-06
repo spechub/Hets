@@ -15,6 +15,7 @@ mapping entities of morphisms
 module HasCASL.Morphism where
 
 import HasCASL.Le
+import HasCASL.PrintLe
 import HasCASL.As
 import HasCASL.FoldType
 import HasCASL.TypeAna

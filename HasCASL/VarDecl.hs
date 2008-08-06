@@ -33,6 +33,7 @@ import HasCASL.As
 import HasCASL.AsUtils
 import HasCASL.FoldType
 import HasCASL.Le
+import HasCASL.PrintLe
 import HasCASL.ClassAna
 import HasCASL.TypeAna
 import HasCASL.Unify

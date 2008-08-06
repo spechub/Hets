@@ -13,9 +13,6 @@ merging parts of local environment
 
 module HasCASL.Merge
     ( merge
-    , mergeMap
-    , improveDiag
-    , mergeClassInfo
     , mergeTypeDefn
     , mergeOpInfo
     , addUnit
@@ -28,7 +25,7 @@ import Common.Result
 import HasCASL.As
 import HasCASL.Le
 import HasCASL.AsUtils
-import HasCASL.PrintLe ()
+import HasCASL.PrintLe
 import HasCASL.ClassAna
 import HasCASL.TypeAna
 import HasCASL.Builtin
@@ -38,27 +35,6 @@ import qualified Data.Set as Set
 
 import Control.Monad(foldM)
 import Data.List
-
-improveDiag :: (GetRange a, Pretty a) => a -> Diagnosis -> Diagnosis
-improveDiag v d = d
-  { diagString = let f:l = lines $ diagString d in
-      unlines $ (f ++ " of '" ++ showDoc v "'") : l
-  , diagPos = getRange v }
-
-mergeMap :: (Ord a, GetRange a, Pretty a) => (b -> b -> Result b)
-         -> Map.Map a b -> Map.Map a b -> Result (Map.Map a b)
-mergeMap f m1 m2 = foldM ( \ m (k, v) -> case Map.lookup k m of
-    Nothing -> return $ Map.insert k v m
-    Just w -> let
-      Result ds r = do
-        u <- f w v
-        return $ Map.insert k u m
-      in Result (map (improveDiag k) ds) r) m1 $ Map.toList m2
-
-mergeClassInfo :: ClassInfo -> ClassInfo -> Result ClassInfo
-mergeClassInfo c1 c2 = do
-    k <-  minRawKind "class raw kind" (rawKind c1) $ rawKind c2
-    return $ ClassInfo k $ Set.union (classKinds c1) $ classKinds c2
 
 mergeTypeInfo :: ClassMap -> TypeInfo -> TypeInfo -> Result TypeInfo
 mergeTypeInfo cm t1 t2 = do

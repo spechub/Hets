@@ -130,7 +130,7 @@ type Data4 ::=
 ### Warning 11.7, unchanged class 'a'
 ### Warning 11.10, unchanged class 'b'
 ### Warning 11.13, unchanged class 'c'
-### Hint 11.19, refined class 'a'
+### Warning 11.19, refined class 'a'
 ### Hint 16.7, not a class 's'
 ### Hint 18.15, rebound variable 'x'
 ### Hint 15.9-15.11,

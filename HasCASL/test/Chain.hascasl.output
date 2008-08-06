@@ -10,8 +10,6 @@ var   a : Cpo
 fun   sup : Chain a ->? a
 vars  x : ? a; c : Chain a
 . sup c <= x <=> forall n : Nat . c n <= x;
-class
-Cpo < Type
 types
 Chain : Cpo -> Type;
 Nat : Type;
@@ -31,6 +29,7 @@ c : Chain a;
 x : ? a
 forall a : Cpo; c : Chain a; x : ? a
 . sup c <= x <=> forall n : Nat . c n <= x
+### Warning 1.7, unchanged class 'Cpo'
 ### Hint 2.8, is type variable 'a'
 ### Hint 6.15, rebound type variable 'a'
 ### Hint 7.35, not a class 'Nat'

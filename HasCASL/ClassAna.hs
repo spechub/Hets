@@ -202,7 +202,7 @@ addClassDecl rk kind ci =
                      else do
                        addSymbol $ idToClassSymbol e ci nk
                        if newKind cm kind superClasses then do
-                         addDiags [mkDiag Hint "refined class" ci]
+                         addDiags [mkDiag Warning "refined class" ci]
                          putClassMap $ Map.insert ci
                            (ClassInfo nk $ addNewKind cm kind superClasses) cm
                         else addDiags [mkDiag Warning "unchanged class" ci]

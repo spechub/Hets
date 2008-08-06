@@ -33,6 +33,6 @@ i < g
 *** Error 3.11, not a class 'd'
 *** Error 4.11, not a class 'e'
 *** Error 6.11, not a class 'g'
-### Hint 8.7, refined class 'g'
+### Warning 8.7, refined class 'g'
 *** Error 10.7, cyclic class 'g'
 ### Warning 11.7, unchanged class 'i'

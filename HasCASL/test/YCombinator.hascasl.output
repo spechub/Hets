@@ -4,8 +4,7 @@ type instance __-->__ : -Cpo -> +Cpo -> Cpo
 type instance __-->__ : -Cpo -> +Cppo -> Cppo
 var   c : Cppo
 fun   Y : (c --> c) --> c
-classes
-Cpo < Type;
+class
 Cppo < Type
 class
 Cppo < Cpo
@@ -15,4 +14,5 @@ __-->__ : -Cpo -> +Cppo -> Cppo
 var
 c : Cppo %(var_1)%
 op Y : forall c : Cppo . (c --> c) --> c %(fun)%
+### Warning 1.7, unchanged class 'Cpo'
 ### Hint 8.5, is type variable 'c'

@@ -13,6 +13,9 @@ pretty printing a HasCASL environment
 module HasCASL.PrintLe
   ( diffClass
   , diffClassMap
+  , mergeClassInfo
+  , mergeMap
+  , improveDiag
   , diffTypeMap
   , diffType
   , printMap1) where
@@ -26,11 +29,13 @@ import HasCASL.ClassAna
 import Common.AS_Annotation
 import Common.Doc
 import Common.DocUtils
-import Common.Id (posOfId)
+import Common.Id
 import qualified Data.Map as Map
 import qualified Data.Set as Set
 import Common.Keywords
+import Common.Result
 
+import Control.Monad (foldM)
 import Data.List
 
 instance Pretty ClassInfo where
@@ -123,8 +128,8 @@ instance Pretty Env where
       , sentences = se
       , envDiags = ds } = let
       oops = foldr Map.delete ops $ map fst bList
-      otm = diffTypeMap cm tm bTypes
       ocm = diffClassMap cm cpoMap
+      otm = diffTypeMap ocm tm bTypes
       ltm = concatMap ( \ (i, ti) -> map ( \ k -> (i, k))
           $ Set.toList $ otherTypeKinds ti) $ Map.toList otm
       stm = concatMap ( \ (i, ti) -> map ( \ s -> (i, s))
@@ -217,12 +222,39 @@ instance Pretty RawSymbol where
           printSK (symbTypeToKind t) [i] <> pretty i <+> colon <+> pretty t
       ASymbol s -> pretty s
 
+improveDiag :: (GetRange a, Pretty a) => a -> Diagnosis -> Diagnosis
+improveDiag v d = d
+  { diagString = let f:l = lines $ diagString d in
+      unlines $ (f ++ " of '" ++ showDoc v "'") : l
+  , diagPos = getRange v }
+
+mergeMap :: (Ord a, GetRange a, Pretty a) => (b -> b -> Result b)
+         -> Map.Map a b -> Map.Map a b -> Result (Map.Map a b)
+mergeMap f m1 m2 = foldM ( \ m (k, v) -> case Map.lookup k m of
+    Nothing -> return $ Map.insert k v m
+    Just w -> let
+      Result ds r = do
+        u <- f w v
+        return $ Map.insert k u m
+      in Result (map (improveDiag k) ds) r) m1 $ Map.toList m2
+
+mergeClassInfo :: ClassInfo -> ClassInfo -> Result ClassInfo
+mergeClassInfo c1 c2 = do
+    k <-  minRawKind "class raw kind" (rawKind c1) $ rawKind c2
+    return $ ClassInfo k $ Set.union (classKinds c1) $ classKinds c2
+
 diffClassMap :: ClassMap -> ClassMap -> ClassMap
-diffClassMap = Map.differenceWith diffClass
+diffClassMap c1 c2 =
+  let Result _ (Just ce) = mergeMap mergeClassInfo c1 c2
+  in Map.differenceWith (diffClass ce) c1 c2
 
 -- | compute difference of class infos
-diffClass :: ClassInfo -> ClassInfo -> Maybe ClassInfo
-diffClass _ _ = Nothing
+diffClass :: ClassMap -> ClassInfo -> ClassInfo -> Maybe ClassInfo
+diffClass cm (ClassInfo r1 k1) (ClassInfo _ k2) =
+    let ks = Set.filter (\ k -> Set.null $
+                  Set.filter (flip (lesserKind cm) k) k2) k1
+    in if Set.null ks then Nothing else
+           Just $ ClassInfo r1 ks
 
 diffTypeMap :: ClassMap -> TypeMap -> TypeMap -> TypeMap
 diffTypeMap cm t1 t2 =
