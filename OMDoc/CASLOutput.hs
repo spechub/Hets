@@ -31,9 +31,9 @@ import OMDoc.Util
 import qualified Network.URI as URI
 
 -- | Retrieve the XML-names for the sort meaning
-mappedsorts :: [(Hets.WithOrigin Hets.Identifier b1, String)]
+mappedsorts :: [(Hets.WithOrigin Hets.Identifier Graph.Node, String)]
             -> [Char]
-            -> [(Hets.WithOrigin Hets.Identifier b, String)]
+            -> [(Hets.WithOrigin Hets.Identifier Graph.Node, String)]
             -> ASL.LIB_NAME
             -> Hets.CollectionMap
             -> [Hets.IdNameMapping]
