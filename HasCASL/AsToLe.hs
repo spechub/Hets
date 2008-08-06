@@ -103,7 +103,7 @@ isSubEnv e1 e2 = if e1 == e2 then True else isEmptyEnv $ diffEnv e1 e2
 diffEnv :: Env -> Env -> Env
 diffEnv e1 e2 = let
     tm = typeMap e2
-    cm = Map.differenceWith diffClass (classMap e1) $ classMap e2
+    cm = diffClassMap (classMap e1) $ classMap e2
     Result _ (Just acm) = mergeMap mergeClassInfo (classMap e1) $ classMap e2
     in initialEnv
        { classMap = cm
@@ -113,10 +113,6 @@ diffEnv e1 e2 = let
        , binders = Map.differenceWith
            (\ i1 i2 -> if i1 == i2 then Nothing else Just i1)
            (binders e1) $ binders e2 }
-
--- | compute difference of class infos
-diffClass :: ClassInfo -> ClassInfo -> Maybe ClassInfo
-diffClass _ _ = Nothing
 
 -- | compute difference of overloaded operations
 diffAss :: ClassMap -> TypeMap -> TypeMap -> Set.Set OpInfo -> Set.Set OpInfo

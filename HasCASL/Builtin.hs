@@ -12,7 +12,9 @@ HasCASL's builtin types and functions
 -}
 
 module HasCASL.Builtin
-    ( bList
+    ( cpoId
+    , cpoMap
+    , bList
     , bTypes
     , bOps
     , preEnv
@@ -275,14 +277,21 @@ bTypes = Map.fromList . map ( \ (i, k, s, d) ->
                                    NoTypeDefn))
                 funSupertypes
 
+cpoId :: Id
+cpoId = stringToId "Cpo"
+
+-- | builtin class map
+cpoMap :: ClassMap
+cpoMap = Map.empty -- Map.singleton cpoId $ ClassInfo rStar Set.empty
+
 -- | builtin function map
 bOps :: Assumps
 bOps = Map.fromList $ map ( \ (i, sc) ->
     (i, Set.singleton $ OpInfo sc Set.empty $ NoOpDefn Fun)) bList
 
--- | environment with predefined types and operations
+-- | environment with predefined names
 preEnv :: Env
-preEnv = initialEnv { typeMap = bTypes, assumps = bOps }
+preEnv = initialEnv { classMap = cpoMap, typeMap = bTypes, assumps = bOps }
 
 mkQualOp :: Id -> TypeScheme -> [Type] -> Range -> Term
 mkQualOp i sc tys ps = QualOp Fun (PolyId i [] ps) sc tys Infer ps

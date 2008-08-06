@@ -10,7 +10,12 @@ Portability :  portable
 pretty printing a HasCASL environment
 -}
 
-module HasCASL.PrintLe (diffTypeMap, diffType, printMap1) where
+module HasCASL.PrintLe
+  ( diffClass
+  , diffClassMap
+  , diffTypeMap
+  , diffType
+  , printMap1) where
 
 import HasCASL.As
 import HasCASL.PrintAs
@@ -119,6 +124,7 @@ instance Pretty Env where
       , envDiags = ds } = let
       oops = foldr Map.delete ops $ map fst bList
       otm = diffTypeMap cm tm bTypes
+      ocm = diffClassMap cm cpoMap
       ltm = concatMap ( \ (i, ti) -> map ( \ k -> (i, k))
           $ Set.toList $ otherTypeKinds ti) $ Map.toList otm
       stm = concatMap ( \ (i, ti) -> map ( \ s -> (i, s))
@@ -128,7 +134,7 @@ instance Pretty Env where
           _ -> False) otm
       scm = concatMap ( \ (i, ci) -> map ( \ s -> (i, s))
           $ Set.toList $ Set.delete (rawToKind $ rawKind ci) $ classKinds ci)
-          $ Map.toList cm
+          $ Map.toList ocm
       bas = map (\ (b, o) -> Unparsed_anno (Annote_word "binder")
              (Line_anno $ " " ++ show b ++ ", " ++ show o) $ posOfId b)
             $ Map.toList bs
@@ -138,8 +144,8 @@ instance Pretty Env where
         _ -> s
       header m s = keyword $
         if Map.size m < 2 then s else mkPlural s
-      in noPrint (Map.null cm) (header cm classS)
-        $+$ printMap0 (Map.map ( \ ci -> ci { classKinds = Set.empty }) cm)
+      in noPrint (Map.null ocm) (header ocm classS)
+        $+$ printMap0 (Map.map ( \ ci -> ci { classKinds = Set.empty }) ocm)
         $+$ noPrint (null scm) (header2 scm classS)
         $+$ vcat (punctuate semi $ map ( \ (i, s) ->
             pretty i <+> text lessS <+> pretty s) scm)
@@ -210,6 +216,13 @@ instance Pretty RawSymbol where
       AQualId i t ->
           printSK (symbTypeToKind t) [i] <> pretty i <+> colon <+> pretty t
       ASymbol s -> pretty s
+
+diffClassMap :: ClassMap -> ClassMap -> ClassMap
+diffClassMap = Map.differenceWith diffClass
+
+-- | compute difference of class infos
+diffClass :: ClassInfo -> ClassInfo -> Maybe ClassInfo
+diffClass _ _ = Nothing
 
 diffTypeMap :: ClassMap -> TypeMap -> TypeMap -> TypeMap
 diffTypeMap cm t1 t2 =
