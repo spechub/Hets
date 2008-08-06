@@ -578,9 +578,8 @@ mappedsorts :: [(Hets.WithOrigin Hets.Identifier b1, String)]
             -> Morphism.Morphism f e m
             -> [((String, (Maybe URI.URI, String)),
                  (String, (Maybe URI.URI, String)))]
-
-
-mappedsorts fromSortIds e_fname toSortIds ln collectionMap uniqueNames from to caslmorph=
+mappedsorts fromSortIds e_fname toSortIds ln collectionMap uniqueNames from to 
+	caslmorph =
       Map.foldWithKey
         (\origsort newsort ms ->
           let
