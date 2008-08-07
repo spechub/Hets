@@ -14,7 +14,8 @@ Here is the place where the class Logic is instantiated for CspCASL.
 {-
    todo:
      - writing real functions
-     - Modul Sign.hs mit CSP-CASL-Signaturen und Morphismen, basiernd auf CASL.Sign
+     - Modul Sign.hs mit CSP-CASL-Signaturen und Morphismen, basiernd
+       auf CASL.Sign
           CSP-CASL-Signatur = (CASL-Sig,Menge von Kanalnamen)
           CSP-CASL-Morphismus = (CASL-Morphismus, Kanalnamenabbildung)
                       oder nur CASL-Morphismus

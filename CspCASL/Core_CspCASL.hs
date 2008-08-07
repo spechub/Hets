@@ -60,7 +60,8 @@ procToCore proc = let p' = procToCore in case proc of
     (NamedProcess pn evs r) -> (NamedProcess pn evs r)
     (ConditionalProcess f p q r) -> (ConditionalProcess f (p' p) (p' q) r)
     -- Non-core, done.
-    (Interleaving p q r) -> (GeneralisedParallel (p' p) (EventSet [] nullRange) (p' q) r)
+    (Interleaving p q r) -> (GeneralisedParallel (p' p)
+                             (EventSet [] nullRange) (p' q) r)
     -- Non-core, not done yet.
     (Div r) -> (Div r)
     (Run es r) -> (Run es r)

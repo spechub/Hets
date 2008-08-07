@@ -44,7 +44,8 @@ import CspCASL.Print_CspCASL ()
 import CspCASL.SignCSP
 
 basicAnalysisCspCASL :: (CspBasicSpec, CspCASLSign, GlobalAnnos)
-        -> Result (CspBasicSpec, ExtSign CspCASLSign (), [Named CspCASLSentence])
+        -> Result (CspBasicSpec, ExtSign CspCASLSign (),
+                   [Named CspCASLSentence])
 basicAnalysisCspCASL (cc, sigma, ga) = do
     let Result es mga = mergeGlobalAnnos ga $ globAnnos sigma
         (_, accSig) = runState (ana_BASIC_CSP cc) $ case mga of
@@ -57,15 +58,20 @@ basicAnalysisCspCASL (cc, sigma, ga) = do
                                    makeNamed "GParProcSen"  gParProc,
                                    makeNamed "AParProcSen"  aParProc,
                                    makeNamed "StopProcSen"  seqProc])
-    where stopProc = CspCASLSentence (mkSimpleId "stopProc") [] (Stop nullRange )
-          seqProc = CspCASLSentence (mkSimpleId "seqProc") [] (Sequential (Stop nullRange) (Stop nullRange) nullRange)
-          gParProc = CspCASLSentence (mkSimpleId "gParProc") [] (GeneralisedParallel (Stop nullRange)
-                                                                                     (EventSet [mkSimpleId "hugo"] nullRange)
-                                                                                     (Skip nullRange) nullRange)
-          aParProc = CspCASLSentence (mkSimpleId "gParProc") [] (AlphabetisedParallel (Stop nullRange)
-                                                                                     (EventSet [mkSimpleId "hugo1"] nullRange)
-                                                                                     (EventSet [mkSimpleId "hugo2"] nullRange)
-                                                                                     (Skip nullRange) nullRange)
+    where
+      stopProc = CspCASLSentence (mkSimpleId "stopProc") [] (Stop nullRange)
+      seqProc = CspCASLSentence (mkSimpleId "seqProc") []
+                                       (Sequential (Stop nullRange)
+                                        (Stop nullRange) nullRange)
+      gParProc = CspCASLSentence (mkSimpleId "gParProc") []
+                                       (GeneralisedParallel (Stop nullRange)
+                                        (EventSet [mkSimpleId "hugo"] nullRange)
+                                        (Skip nullRange) nullRange)
+      aParProc = CspCASLSentence (mkSimpleId "gParProc") []
+                                     (AlphabetisedParallel (Stop nullRange)
+                                      (EventSet [mkSimpleId "hugo1"] nullRange)
+                                      (EventSet [mkSimpleId "hugo2"] nullRange)
+                                      (Skip nullRange) nullRange)
 
 ana_BASIC_CSP :: CspBasicSpec -> State CspCASLSign ()
 ana_BASIC_CSP cc = do checkLocalTops
@@ -209,7 +215,8 @@ anaProcVar old (v, s) = do
 -- Static analysis of process terms
 
 -- | Statically analyse a CspCASL process term.
-anaProcTerm :: PROCESS -> ProcVarMap -> ProcVarMap -> State CspCASLSign CommAlpha
+anaProcTerm :: PROCESS -> ProcVarMap -> ProcVarMap ->
+               State CspCASLSign CommAlpha
 anaProcTerm proc gVars lVars = case proc of
     NamedProcess name args _ ->
         do addDiags [mkDiag Debug "Named process" proc]
@@ -282,10 +289,12 @@ anaProcTerm proc gVars lVars = case proc of
         do addDiags [mkDiag Debug "Alphabetised parallel" proc]
            pComms <- anaProcTerm p gVars lVars
            pSynComms <- anaEventSet esp
-           checkCommAlphaSub pSynComms pComms proc "alphabetised parallel, left"
+           checkCommAlphaSub pSynComms pComms proc
+                                 "alphabetised parallel, left"
            qSynComms <- anaEventSet esq
            qComms <- anaProcTerm q gVars lVars
-           checkCommAlphaSub qSynComms qComms proc "alphabetised parallel, right"
+           checkCommAlphaSub qSynComms qComms proc
+                                 "alphabetised parallel, right"
            return (pComms `S.union` qComms)
     Hiding p es _ ->
         do addDiags [mkDiag Debug "Hiding" proc]
@@ -349,7 +358,8 @@ anaEventSet (EventSet es _) = do
   return comms
 
 -- | Statically analyse a CspCASL communication type.
-anaCommType :: CspCASLSign -> CommAlpha -> COMM_TYPE -> State CspCASLSign CommAlpha
+anaCommType :: CspCASLSign -> CommAlpha -> COMM_TYPE ->
+               State CspCASLSign CommAlpha
 anaCommType sig alpha ct =
     if ctSort `S.member` (sortSet sig)
       then -- ct is a sort name; insert sort into alpha
