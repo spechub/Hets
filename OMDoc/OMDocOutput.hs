@@ -22,7 +22,6 @@ import qualified OMDoc.HetsDefs as Hets
 import OMDoc.CASLOutput
 import CASL.Sign
 import CASL.AS_Basic_CASL as ABC
-import qualified CASL.Morphism as Morphism
 import qualified Common.Id as Id
 import qualified Syntax.AS_Library as ASL
 
@@ -565,6 +564,7 @@ createXmlThmLinkOM lnum lenv ln (edge@(from, to, ll)) uniqueNames {-names-} coll
   consConv Static.DevGraph.Cons = OMDoc.CConservative
   consConv Static.DevGraph.Def = OMDoc.CDefinitional
 
+
 {- |
   create a xml-representation of a (CASL-)morphism.
 -}
@@ -622,168 +622,13 @@ createOMMorphism
         Hets.inmFindLNNN (ln, to) names
     -}
     -- retrieve the XML-names for the sort mapping
-
-    -- retrieve the XML-names for the predicate mapping
-    mappedpreds =
-      Map.foldWithKey
-        (\(origpred, optype) newpred mp ->
-          let
-            oname =
-              case
-                filter
-                  (\((oid', opt'), _) ->
-                    Hets.getIdId (Hets.woItem oid') == origpred
-                    && opt' == optype
-                  )
-                  fromPredIds
-                {-
-                Set.toList
-                  $
-                  Set.filter
-                    (\((oid', opt'), _) -> oid' == origpred && opt' == optype)
-                    (Hets.inmGetIdNamePredSet fromIdNameMapping)
-                -}
-              of
-               [] ->
-                error
-                  (
-                    e_fname
-                    ++ "Pred not in From-Set! " ++ show origpred
-                    ++ " not in "
-                    ++ show fromPredIds
-                    -- ++ show (Hets.inmGetIdNamePredSet fromIdNameMapping)
-                  )
-               s:_ -> snd s
-            nptype = Morphism.mapPredType (Morphism.sort_map caslmorph) optype
-            nname =
-              case
-                filter
-                  (\((nid', npt'), _) ->
-                    Hets.getIdId (Hets.woItem nid') == newpred
-                    && npt' == nptype
-                  )
-                  toPredIds
-                {-
-                Set.toList
-                  $
-                  Set.filter
-                    (\((nid', npt'), _) -> nid' == newpred && npt' == nptype)
-                    (Hets.inmGetIdNamePredSet toIdNameMapping)
-                -}
-              of
-               [] -> error (e_fname ++ "Pred not in To-Set!")
-               s:_ -> snd s
-            oorigin =
-              getNodeNameBaseForXml
-                ln
-                $
-                findOrigin
-                  collectionMap
-                  uniqueNames
-                  (Hets.findIdPredsForName fromRel optype)
-                  (ln, from)
-                  oname
-                  id -- adjustStringForXmlName
-                  " (preds, from)"
-            norigin =
-              getNodeNameBaseForXml
-                ln
-                $
-                findOrigin
-                  collectionMap
-                  uniqueNames
-                  (Hets.findIdPredsForName toRel nptype)
-                  (ln, to)
-                  nname
-                  id -- adjustStringForXmlName
-                  " (preds, to)"
-         in
-          mp ++ [ ((oname, oorigin), (nname, norigin)) ]
-        )
-        []
-        (Morphism.pred_map caslmorph)
-    -- retrieve the XML-names for the operator mapping
-    mappedops =
-      Map.foldWithKey
-        (\(origop, ootype) (newop, nfk) mo ->
-          let
-            oname =
-              case
-                filter
-                  (\((oid', oot'), _) ->
-                    Hets.getIdId (Hets.woItem oid') == origop
-                    && oot' { opKind = opKind ootype } == ootype
-                  )
-                  fromOpIds
-                {-
-                Set.toList
-                  $
-                  Set.filter
-                    (\((oid', oot'), _) ->
-                      oid' == origop
-                      && oot' { opKind = opKind ootype } == ootype
-                    )
-                    (Hets.inmGetIdNameOpSet fromIdNameMapping)
-                -}
-              of
-               [] -> error (e_fname ++ "Op not in From-Set!")
-               s:_ -> snd s
-            notype = Morphism.mapOpTypeK (Morphism.sort_map caslmorph) nfk ootype
-            nname =
-              case
-                filter
-                  (\((nid', not'), _) ->
-                    Hets.getIdId (Hets.woItem nid') == newop
-                    && not' { opKind = opKind notype } == notype
-                  )
-                  toOpIds
-                {-
-                Set.toList
-                  $
-                  Set.filter
-                    (\((nid', not'), _) ->
-                      nid' == newop
-                      && not' { opKind = opKind notype } == notype
-                    )
-                    (Hets.inmGetIdNameOpSet toIdNameMapping)
-                -}
-              of
-               [] -> error (e_fname ++ "Op not in To-Set!")
-               s:_ -> snd s
-            oorigin =
-              getNodeNameBaseForXml
-                ln
-                $
-                findOrigin
-                  collectionMap
-                  uniqueNames
-                  (Hets.findIdOpsForName fromRel ootype)
-                  (ln, from)
-                  oname
-                  id -- adjustStringForXmlName
-                  (" (ops, from) " ++ show (origop, ootype))
-            norigin =
-              getNodeNameBaseForXml
-                ln
-                $
-                findOrigin
-                  collectionMap
-                  uniqueNames
-                  (Hets.findIdOpsForName toRel notype)
-                  (ln, to)
-                  nname
-                  id -- adjustStringForXmlName
-                  " (ops, to)"
-         in
-          mo ++ [ ((oname, oorigin), (nname, norigin)) ]
-        )
-        []
-        (Morphism.fun_map caslmorph)
     -- retrieved names are all of same type, so merge
     allmapped = mappedsorts fromSortIds e_fname toSortIds ln collectionMap
     						uniqueNames from to caslmorph
-    			++ mappedpreds
-    			++ mappedops -- ++ unclashedSorts
+    			++ mappedpreds fromPredIds e_fname caslmorph toPredIds ln 
+    						collectionMap uniqueNames fromRel from toRel to
+    			++ mappedops fromOpIds e_fname caslmorph toOpIds ln 
+    						collectionMap uniqueNames fromRel from toRel to -- ++ unclashedSorts
     -- merging makes hiding easier also...
     hidden =
       case dgl_type ll of
