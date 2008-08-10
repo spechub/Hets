@@ -424,7 +424,8 @@ mapSen1 subSortMap f =
     tr@(True_atom _)  -> tr
     fa@(False_atom _) -> fa
     Quantification q vdl f1 pl ->
-        Quantification q (map updateVarDecls vdl) (mapSen1 subSortMap f1) pl
+        Quantification q (map updateVarDecls vdl) 
+                         (relativize q vdl (mapSen1 subSortMap f1)) pl
     Membership t s pl ->
         let t' = mapTerm subSortMap t
         in maybe (Membership t' s pl)
@@ -449,6 +450,29 @@ mapSen1 subSortMap f =
           updatePRED_SYMB (Qual_pred_name pn (Pred_type sl pl') pl) =
               Qual_pred_name pn
                  (Pred_type (map (lkupTop subSortMap) sl) pl') pl
+          -- relativize quantifiers using predicates coding sorts
+          -- universal? the use implication
+          relativize Universal vdl f1 =
+              if null vdl then f1
+              else Implication (mkVarPreds vdl) f1 True nullRange
+          -- existential or unique-existential? then use conjuction
+          relativize _ vdl f1 =
+              if null vdl then f1
+              else Conjunction [mkVarPreds vdl,f1] nullRange
+          mkVarPreds [v] = mkVarPred v
+          mkVarPreds vdl = Conjunction (map mkVarPred vdl) nullRange
+          mkVarPred (Var_decl [v] s _) = mkVarPred1 s v
+          mkVarPred (Var_decl vs s _) = 
+              Conjunction (map (mkVarPred1 s) vs) nullRange
+          mkVarPred1 s v = 
+              let sTop = lkupTop subSortMap s
+                  p = lkupPRED_NAME subSortMap s
+              in case p of
+                 -- no subsort? then no relativization
+                 Nothing -> True_atom nullRange
+                 Just p1 -> genPredication p1 [sTop] [Qual_var v s nullRange]
+
+            
 
 mapTerm :: SubSortMap -> TERM f -> TERM f
 mapTerm ssMap t = case t of
