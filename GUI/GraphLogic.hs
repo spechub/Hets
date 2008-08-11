@@ -571,8 +571,9 @@ lookupTheoryOfNode proofStatusRef ln descr = do
     return (libEnv', descr, gth)
 
 showDiagMess :: HetcatsOpts -> [Diagnosis] -> IO ()
-showDiagMess opts ds = (if hasErrors ds then errorMess else warningMess)
-  $ showRelDiags (verbose opts) ds
+showDiagMess opts ds = let es = Res.filterDiags (verbose opts) ds in
+  if null es then return () else
+  (if hasErrors es then errorMess else warningMess) $ unlines $ map show es
 
 {- | outputs the theory of a node in a window;
 used by the node menu defined in initializeGraph-}

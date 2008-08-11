@@ -39,6 +39,7 @@ module Common.Result
   , adjustPos
   , propagateErrors
   , showErr
+  , filterDiags
   , showRelDiags
   , printDiags
   ) where
