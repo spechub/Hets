@@ -113,20 +113,20 @@ instance Pretty SPDeclaration where
 -}
 instance Pretty SPFormulaList where
   pretty l = text "list_of_formulae" <> parens (pretty (originType l)) <> dot
-    $+$ vcat (map (\ x -> printFormula x <> dot) $ formulae l)
+    $+$ vcat (map printFormula $ formulae l)
     $+$ endOfListS
 
 instance Pretty SPClauseList where
   pretty l = text "list_of_clauses" <> parens (pretty (coriginType l)
            <> comma <+> pretty (clauseType l)) <> dot
-    $+$ vcat (map (\ x -> printClause x <> dot) $ clauses l)
+    $+$ vcat (map printClause $ clauses l)
     $+$ endOfListS
 
 instance Pretty SPProofList where
   pretty l = text "list_of_proof" <> maybe empty
     (parens . (<> printAssocList (plAssocList l)) . pretty) (proofType l)
       <> dot
-    $+$ vcat (map (\ x -> printStep x <> dot) $ step l)
+    $+$ vcat (map printStep $ step l)
     $+$ endOfListS
 
 printAssocList :: SPAssocList -> Doc
@@ -155,16 +155,16 @@ instance Pretty SPClauseType where
 
 {- |
   Creates a Doc from a SPASS Formula. Needed since SPFormula is just a
-  'type SPFormula = Named SPTerm' and thus instanciating Pretty is not
+  'type SPFormula = Named SPTerm' and thus instantiating Pretty is not
   possible.
 -}
 printFormula :: SPFormula -> Doc
 printFormula f = cat [text "formula", parens (pretty (sentence f) <>
-    printSenAttr f)]
+    printSenAttr f) <> dot]
 
 printClause :: SPClause -> Doc
 printClause c = cat [text "clause", parens (pretty (sentence c) <>
-    printSenAttr c)]
+    printSenAttr c) <> dot]
 
 printSenAttr :: Named a -> Doc
 printSenAttr c = case senAttr c of
