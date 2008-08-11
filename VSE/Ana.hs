@@ -156,7 +156,7 @@ minExpForm :: Min Dlformula Procs
 minExpForm sign (Ranged f r) = let sig = castSign sign in case f of
   Dlformula b p s -> do
     np <- minExpProg Set.empty Nothing sig p
-    n <- minExpFORMULA minExpForm sig s
+    n <- minExpFORMULA minExpForm sign s
     return $ Ranged (Dlformula b np n) r
   Defprocs ps -> do
     nps <- mapM (minProcdecl sig) ps
