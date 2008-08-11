@@ -156,5 +156,7 @@ procsToSExprs sig =
 vseSignToSExpr :: Sign f Procs -> SExpr
 vseSignToSExpr sign =
   let sig = subProcs sign
-  in SList $ SSymbol "signature" : signToSExprs sig
+  in SList $ SSymbol "signature" : predSignToSExprs sig
+       ++ opMapToSExprs sign (diffMapSet (opMap sig)
+          $ procsToOpMap $ extendedInfo sig)
        ++ procsToSExprs sig
