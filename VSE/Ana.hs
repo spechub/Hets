@@ -60,12 +60,14 @@ basicAna
 basicAna (bs, sig, ga) = do
   (bs2, ExtSign sig2 syms, sens) <-
     basicAnalysis minExpForm (const return) anaProcdecls anaMix
-        (bs, addSig const sig boolSig, ga)
-  return (bs2, ExtSign (diffSig const sig2 boolSig) syms, sens)
+        (bs, subProcs $ addSig const sig boolSig, ga)
+  return (bs2, ExtSign (addProcs $ diffSig const sig2 boolSig) syms, sens)
 
 anaMix :: Mix () Procdecls Dlformula Procs
 anaMix = emptyMix
-  { putParen = parenDlFormula
+  { getExtIds = \ procs -> let (ops, preds) = procsToOpPredMaps procs in
+      (Map.keysSet ops, Map.keysSet preds)
+  , putParen = parenDlFormula
   , mixResolve = resolveDlformula }
 
 -- | put parens around ambiguous mixfix formulas (for error messages)
@@ -94,8 +96,7 @@ parenDefproc (Defproc k i vs p r) = Defproc k i vs (parenProg p) r
 procsToOpPredMaps :: Procs -> (Map.Map Id (Set.Set PredType), OpMap)
 procsToOpPredMaps (Procs m) =
   foldr (\ (n, pr) (pm, om) -> case profileToOpType pr of
-          Just ot -> ( Rel.setInsert n (funProfileToPredType pr) pm
-                     , Rel.setInsert n ot om)
+          Just ot -> (pm, Rel.setInsert n ot om)
           Nothing -> (Rel.setInsert n (profileToPredType pr) pm, om))
   (Map.empty, Map.empty) $ Map.toList m
 
@@ -200,7 +201,7 @@ minExpProg invars res sig p@(Ranged prg r) = let
     Predication ps ts _ -> let i = predSymbName ps in
       case lookupProc i sig of
         Nothing -> Result [mkDiag Error "unknown procedure" i] Nothing
-        Just (Profile l re) -> let
+        Just pr@(Profile l re) -> let
           nl = case re of
              Nothing -> l
              Just s -> l ++ [Procparam Out s]
@@ -208,10 +209,13 @@ minExpProg invars res sig p@(Ranged prg r) = let
           Result [mkDiag Error "non-matching number of parameters for" i]
           Nothing
              else do
-          if length l < length nl then
-            Result [mkDiag Warning "function used as procedure" i] $ Just ()
-            else return ()
-          nf <- minExpF sig f
+          sign <- if length l < length nl then
+            Result [mkDiag Warning "function used as procedure" i] $ Just
+              sig { predMap = Rel.setInsert i (funProfileToPredType pr)
+                    $ predMap sig }
+            else return sig { predMap = Rel.setInsert i (profileToPredType pr)
+                    $ predMap sig }
+          nf <- minExpF sign f
           checkCond nf
           return $ Ranged (Call nf) r
     _ -> Result [mkDiag Error "no procedure call" f] Nothing
@@ -273,10 +277,7 @@ anaProcdecl (Procedure i p@(Profile ps _) q) = do
          if all (\ (Procparam j _) -> j == In) ps then return () else
             addDiags [mkDiag Warning "function must have IN params only" i]
          addOp (emptyAnno ()) t i
-         e <- get
-         put e { predMap = Rel.setInsert i (funProfileToPredType p)
-                 $ predMap e }
-       _ -> addPred (emptyAnno ()) (profileToPredType p) i
+       _ -> return ()
 
 paramsToArgs :: [Procparam] -> [SORT]
 paramsToArgs = map (\ (Procparam _ s) -> s)
@@ -309,8 +310,16 @@ mapMorProg mor = let m = castMor mor in
     $ mapSen (const id) m)
     { foldBlock = \ (Ranged _ r) vs p ->
         Ranged (Block (map (mapVars m) vs) p) r
-    , foldCall = \ (Ranged _ r) f ->
-        Ranged (Call $ MapSen.mapSen (const id) m f) r }
+    , foldCall = \ (Ranged _ r)
+          (Predication (Qual_pred_name i (Pred_type args r1) r2) ts r3) ->
+      case lookupProc i $ msource mor of
+        Nothing -> error "mapMorProg"
+        Just pr -> let
+          j = mapProcIdProfile mor i pr
+          nargs = map (mapSrt mor) args
+          nts = map (MapSen.mapTerm (const id) m) ts
+          in Ranged (Call $ Predication
+                (Qual_pred_name j (Pred_type nargs r1) r2) nts r3) r }
 
 mapProcId :: Morphism f Procs () -> Id -> Id
 mapProcId m i = case lookupProc i $ msource m of
@@ -389,6 +398,17 @@ instance GetRange (Ranged a) where
 
 instance FreeVars Dlformula where
   freeVarsOfExt = freeDlVars
+
+procsSign :: Sign f Procs -> Sign f Procs
+procsSign sig = (emptySign emptyProcs)
+ { predMap = fst $ procsToOpPredMaps $ extendedInfo sig }
+
+-- | add procs as functions and predicate
+addProcs :: Sign f Procs -> Sign f Procs
+addProcs sig = addSig const sig $ procsSign sig
+
+subProcs :: Sign f Procs -> Sign f Procs
+subProcs sig = diffSig const sig $ procsSign sig
 
 -- | adjust procs map in morphism target signature
 correctTarget :: Morphism f Procs () -> Morphism f Procs ()
