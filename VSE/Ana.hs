@@ -39,6 +39,15 @@ import CASL.SimplifySen
 
 import VSE.As
 
+boolSig :: Sign f Procs
+boolSig = execState (do
+  let e = emptyAnno ()
+      bi = stringToId "Boolean"
+      ot = OpType Total [] bi
+  addSort NonEmptySorts e bi
+  addOp e ot (stringToId "False")
+  addOp e ot (stringToId "True")) $ emptySign emptyProcs
+
 lookupProc :: Id -> Sign f Procs -> Maybe Profile
 lookupProc i sig = Map.lookup i $ procsMap $ extendedInfo sig
 
@@ -48,8 +57,11 @@ basicAna
   -> Result (BASIC_SPEC () Procdecls Dlformula,
              ExtSign (Sign Dlformula Procs) Symbol,
              [Named Sentence])
-basicAna =
+basicAna (bs, sig, ga) = do
+  (bs2, ExtSign sig2 syms, sens) <-
     basicAnalysis minExpForm (const return) anaProcdecls anaMix
+        (bs, addSig const sig boolSig, ga)
+  return (bs2, ExtSign (diffSig const sig2 boolSig) syms, sens)
 
 anaMix :: Mix () Procdecls Dlformula Procs
 anaMix = emptyMix
