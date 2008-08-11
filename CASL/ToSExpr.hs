@@ -146,7 +146,10 @@ sRec sign mf = Record
     }
 
 signToSExprs :: Sign a e -> [SExpr]
-signToSExprs sign =
+signToSExprs sign = predSignToSExprs sign ++ opMapToSExprs sign (opMap sign)
+
+predSignToSExprs :: Sign a e -> [SExpr]
+predSignToSExprs sign =
     SList (SSymbol "sorts"
       : map sortToSSymbol (Set.toList $ sortSet sign))
     : concatMap (\ (p, ts) -> map (\ t ->
@@ -154,9 +157,12 @@ signToSExprs sign =
              , predIdToSSymbol sign p t
              , SList $ map sortToSSymbol $ predArgs t ]) $ Set.toList ts)
       (Map.toList $ predMap sign)
-    ++ concatMap (\ (p, ts) -> map (\ t ->
+
+opMapToSExprs :: Sign a e -> OpMap -> [SExpr]
+opMapToSExprs sign om =
+    concatMap (\ (p, ts) -> map (\ t ->
        SList [ SSymbol "function"
              , opIdToSSymbol sign p t
              , SList $ map sortToSSymbol $ opArgs t
              , sortToSSymbol $ opRes t ]) $ Set.toList ts)
-      (Map.toList $ opMap sign)
+      $ Map.toList om
