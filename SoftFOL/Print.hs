@@ -159,17 +159,17 @@ instance Pretty SPClauseType where
   possible.
 -}
 printFormula :: SPFormula -> Doc
-printFormula f = cat [text "formula", parens (pretty (sentence f) <>
-    printSenAttr f) <> dot]
+printFormula f = cat [text "formula", parens (sepByCommas
+  $ pretty (sentence f) : printSenAttr f) <> dot]
 
 printClause :: SPClause -> Doc
-printClause c = cat [text "clause", parens (pretty (sentence c) <>
-    printSenAttr c) <> dot]
+printClause c = cat [text "clause", parens (sepByCommas
+  $ pretty (sentence c) : printSenAttr c) <> dot]
 
-printSenAttr :: Named a -> Doc
+printSenAttr :: Named a -> [Doc]
 printSenAttr c = case senAttr c of
-      "" -> empty
-      s -> comma <+> text s
+      "" -> []
+      s -> [text s]
 
 instance Pretty NSPClause where
     pretty t = case t of
