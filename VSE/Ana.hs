@@ -65,8 +65,8 @@ basicAna (bs, sig, ga) = do
 
 anaMix :: Mix () Procdecls Dlformula Procs
 anaMix = emptyMix
-  { getExtIds = \ procs -> let (ops, preds) = procsToOpPredMaps procs in
-      (Map.keysSet ops, Map.keysSet preds)
+  { getExtIds = \ procs ->
+      (Set.empty, Map.keysSet $ procsToPredMap procs)
   , putParen = parenDlFormula
   , mixResolve = resolveDlformula }
 
@@ -93,12 +93,17 @@ parenProg = foldProg $ mapProg (Paren.mapTerm id) $ mapFormula id
 parenDefproc :: Defproc -> Defproc
 parenDefproc (Defproc k i vs p r) = Defproc k i vs (parenProg p) r
 
-procsToOpPredMaps :: Procs -> (Map.Map Id (Set.Set PredType), OpMap)
-procsToOpPredMaps (Procs m) =
-  foldr (\ (n, pr) (pm, om) -> case profileToOpType pr of
-          Just ot -> (pm, Rel.setInsert n ot om)
-          Nothing -> (Rel.setInsert n (profileToPredType pr) pm, om))
-  (Map.empty, Map.empty) $ Map.toList m
+procsToPredMap :: Procs -> Map.Map Id (Set.Set PredType)
+procsToPredMap (Procs m) =
+  foldr (\ (n, pr@(Profile _ mr)) pm -> case mr of
+          Nothing -> Rel.setInsert n (profileToPredType pr) pm
+          Just _ -> pm) Map.empty $ Map.toList m
+
+procsToOpMap :: Procs -> OpMap
+procsToOpMap (Procs m) =
+  foldr (\ (n, pr) om -> case profileToOpType pr of
+          Just ot -> Rel.setInsert n ot om
+          Nothing -> om) Map.empty $ Map.toList m
 
 -- | resolve mixfix applications of terms and formulas
 resolveDlformula :: MixResolve Dlformula
@@ -401,7 +406,7 @@ instance FreeVars Dlformula where
 
 procsSign :: Sign f Procs -> Sign f Procs
 procsSign sig = (emptySign emptyProcs)
- { predMap = fst $ procsToOpPredMaps $ extendedInfo sig }
+ { predMap = procsToPredMap $ extendedInfo sig }
 
 -- | add procs as functions and predicate
 addProcs :: Sign f Procs -> Sign f Procs
