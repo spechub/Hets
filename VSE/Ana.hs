@@ -41,6 +41,35 @@ import CASL.SimplifySen
 import VSE.As
 import VSE.Fold
 
+getVariables :: Sentence -> Set.Set Token
+getVariables = foldFormula $ getVarsRec $ getVSEVars . unRanged
+
+getVarsRec :: (f -> Set.Set Token) -> Record f (Set.Set Token) (Set.Set Token)
+getVarsRec f =
+  (constRecord f Set.unions Set.empty)
+  { foldQuantification = \ _ _ vs r _ -> Set.union r
+      $ Set.fromList $ map fst $ flatVAR_DECLs vs
+  , foldQual_var = \ _ v _ _ -> Set.singleton v }
+
+getVSEVars :: VSEforms -> Set.Set Token
+getVSEVars vf = case vf of
+  Dlformula _ p s -> Set.union (getProgVars p) $ getVariables s
+  Defprocs l -> Set.unions $ map getDefprogVars l
+
+getProgVars :: Program -> Set.Set Token
+getProgVars =
+  let rec = getVarsRec $ const Set.empty
+      getTermVars = foldTerm rec
+      getCondVars = foldFormula rec
+  in foldProg (progToSetRec getTermVars getCondVars)
+  { foldAssign = \ _ v t -> Set.insert v $ getTermVars t
+  , foldBlock = \ _ vs p -> Set.union p
+      $ Set.fromList $ map fst $ flatVAR_DECLs vs }
+
+getDefprogVars :: Defproc -> Set.Set Token
+getDefprogVars (Defproc _ _ vs p _) = Set.union (getProgVars p)
+  $ Set.fromList vs
+
 tokenToLower :: Token -> Token
 tokenToLower (Token s r) = Token (map toLower s) r
 
@@ -84,7 +113,9 @@ basicAna (bs, sig, ga) = do
   (bs2, ExtSign sig2 syms, sens) <-
     basicAnalysis minExpForm (const return) anaProcdecls anaMix
         (bs, addSig const sig boolSig, ga)
-  Result (getCaseDiags sig2) $ Just () -- add diags
+  Result (getCaseDiags sig2 ++ concatMap
+         (getCases "var" . Set.map simpleIdToId . getVariables . sentence)
+          sens) $ Just () -- add diags
   return (bs2, ExtSign (diffSig const sig2 boolSig) syms, sens)
 
 anaMix :: Mix () Procdecls Dlformula Procs
