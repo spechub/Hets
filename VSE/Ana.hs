@@ -13,6 +13,7 @@ analysis of VSE logic extension of CASL
 
 module VSE.Ana where
 
+import Data.Char (toLower)
 import Data.Maybe
 import qualified Data.Map as Map
 import qualified Data.Set as Set
@@ -39,6 +40,27 @@ import CASL.SimplifySen
 
 import VSE.As
 
+tokenToLower :: Token -> Token
+tokenToLower (Token s r) = Token (map toLower s) r
+
+idToLower :: Id -> Id
+idToLower (Id ts cs r) = Id (map tokenToLower ts) (map idToLower cs) r
+
+hasMany :: Set.Set a -> Bool
+hasMany s = Set.size s > 1
+
+getCases :: String -> Set.Set Id -> [Diagnosis]
+getCases msg =
+  map (mkDiag Error ("overlapping " ++ msg ++ " identifiers") . Set.toList)
+  . filter hasMany . Map.elems
+  . Set.fold (\ i -> Rel.setInsert (idToLower i) i) Map.empty
+
+getCaseDiags :: Sign f e -> [Diagnosis]
+getCaseDiags sig =
+  getCases "sort" (sortSet sig)
+  ++ getCases "op or function" (Map.keysSet $ opMap sig)
+  ++ getCases "pred or proc" (Map.keysSet $ predMap sig)
+
 boolSig :: Sign f Procs
 boolSig = execState (do
   let e = emptyAnno ()
@@ -61,6 +83,7 @@ basicAna (bs, sig, ga) = do
   (bs2, ExtSign sig2 syms, sens) <-
     basicAnalysis minExpForm (const return) anaProcdecls anaMix
         (bs, addSig const sig boolSig, ga)
+  Result (getCaseDiags sig2) $ Just () -- add diags
   return (bs2, ExtSign (diffSig const sig2 boolSig) syms, sens)
 
 anaMix :: Mix () Procdecls Dlformula Procs
