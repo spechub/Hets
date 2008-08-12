@@ -24,58 +24,50 @@ import CASL.ToSExpr
 
 import Common.AS_Annotation
 import Common.Id
-import Common.Result
 import Common.SExpr
 
 import qualified Data.Map as Map
 import Data.Char (toLower)
 
-namedSenToSExpr :: Sign f Procs -> Named Sentence -> Result SExpr
-namedSenToSExpr sig ns = do
-  t <- senToSExpr sig $ sentence ns
-  return $ SList
+namedSenToSExpr :: Sign f Procs -> Named Sentence -> SExpr
+namedSenToSExpr sig ns =
+  SList
     [ SSymbol "asentence"
     , SSymbol $ transString $ senAttr ns
     , SSymbol $ if isAxiom ns then "axiom" else "lemma"
     , SSymbol $ if isAxiom ns then "proved" else "open"
-    , t ]
+    , senToSExpr sig $ sentence ns ]
 
-senToSExpr :: Sign f Procs -> Sentence -> Result SExpr
-senToSExpr sig s = do
-  ns <- sentenceToSExpr sig s
-  return $ case s of
+senToSExpr :: Sign f Procs -> Sentence -> SExpr
+senToSExpr sig s = let ns = sentenceToSExpr sig s in case s of
     ExtFORMULA (Ranged (Defprocs _) _) ->
         SList [SSymbol "defprocs-sentence", ns]
     Sort_gen_ax _ _ ->
         SList [SSymbol "generatedness-sentence", ns]
     _ -> SList [SSymbol "formula-sentence", ns]
 
-sentenceToSExpr :: Sign f Procs -> Sentence -> Result SExpr
+sentenceToSExpr :: Sign f Procs -> Sentence -> SExpr
 sentenceToSExpr sig = foldFormula $ sRec sig $ dlFormulaToSExpr sig
 
-dlFormulaToSExpr :: Sign f Procs -> Dlformula -> Result SExpr
+dlFormulaToSExpr :: Sign f Procs -> Dlformula -> SExpr
 dlFormulaToSExpr sig = vseFormsToSExpr sig . unRanged
 
-vseFormsToSExpr :: Sign f Procs -> VSEforms -> Result SExpr
+vseFormsToSExpr :: Sign f Procs -> VSEforms -> SExpr
 vseFormsToSExpr sig vf = case vf of
-  Dlformula b p s -> do
-    sp <- progToSExpr sig p
-    ns <- sentenceToSExpr sig s
-    return $ SList [SSymbol $ case b of
+  Dlformula b p s ->
+    SList [SSymbol $ case b of
          Box -> "box"
-         Diamond -> "diamond", sp, ns]
-  Defprocs ds -> do
-    nds <- mapM (defprocToSExpr sig) ds
-    return $ SList $ SSymbol "defprocs" : nds
+         Diamond -> "diamond", progToSExpr sig p, sentenceToSExpr sig s]
+  Defprocs ds ->
+    SList $ SSymbol "defprocs" : map (defprocToSExpr sig) ds
 
-vDeclToSExpr :: Sign f Procs -> VarDecl -> Result SExpr
+vDeclToSExpr :: Sign f Procs -> VarDecl -> SExpr
 vDeclToSExpr sig (VarDecl v s m _) =
   let vd@(SList [_, w, ty]) = varDeclToSExpr (v, s) in
   case m of
-    Nothing -> return vd
-    Just trm -> do
-      nt <- foldTerm (sRec sig $ error "vDeclToSExpr") trm
-      return $ SList [SSymbol "vardecl", w, ty, nt]
+    Nothing -> vd
+    Just trm -> SList [ SSymbol "vardecl", w, ty
+                      , foldTerm (sRec sig $ error "vDeclToSExpr") trm ]
 
 procIdToSSymbol :: Sign f Procs -> Id -> SExpr
 procIdToSSymbol sig n = case lookupProc n sig of
@@ -84,55 +76,39 @@ procIdToSSymbol sig n = case lookupProc n sig of
           Just ot -> opIdToSSymbol sig n ot
           _ -> predIdToSSymbol sig n $ profileToPredType pr
 
-progToSExpr :: Sign f Procs -> Program -> Result SExpr
+progToSExpr :: Sign f Procs -> Program -> SExpr
 progToSExpr sig = let
   pRec = sRec sig (error "progToSExpr")
   termToSExpr = foldTerm pRec
   formToSExpr = foldFormula pRec
   in foldProg FoldRec
-  { foldAbort = const $ return $ SSymbol "abort"
-  , foldSkip = const $ return $ SSymbol "skip"
-  , foldAssign = \ _ v t -> do
-      nt <- termToSExpr t
-      return $ SList [SSymbol "assign", varToSSymbol v, nt]
+  { foldAbort = const $ SSymbol "abort"
+  , foldSkip = const $ SSymbol "skip"
+  , foldAssign = \ _ v t ->
+      SList [SSymbol "assign", varToSSymbol v, termToSExpr t]
   , foldCall = \ (Ranged _ r) f ->
       case f of
-        Predication (Qual_pred_name i _ _) ts _ -> do
-          nts <- mapM termToSExpr ts
-          return $ SList $ SSymbol "call" : procIdToSSymbol sig i : nts
+        Predication (Qual_pred_name i _ _) ts _ ->
+          SList $ SSymbol "call" : procIdToSSymbol sig i : map termToSExpr ts
         _ -> sfail "Call" r
-  , foldReturn = \ _ t -> do
-      nt <- termToSExpr t
-      return $ SList [SSymbol "return", nt]
-  , foldBlock = \ (Ranged (Block vs p) _) _ _ -> do
+  , foldReturn = \ _ t -> SList [SSymbol "return", termToSExpr t]
+  , foldBlock = \ (Ranged (Block vs p) _) _ _ ->
       let (vds, q) = addInits (toVarDecl vs) p
-      ps <- progToSExpr sig q
-      nvs <- mapM (vDeclToSExpr sig) vds
-      return $ if null nvs then ps else SList [SSymbol "vblock", SList nvs, ps]
-  , foldSeq = \ _ p1 p2 -> do
-      s1 <- p1
-      s2 <- p2
-      return $ SList [SSymbol "seq", s1, s2]
-  , foldIf = \ _ c p1 p2 -> do
-      f <- formToSExpr c
-      s1 <- p1
-      s2 <- p2
-      return $ SList [SSymbol "if", f, s1, s2]
-  , foldWhile = \ _ c p -> do
-      f <- formToSExpr c
-      s <- p
-      return $ SList [SSymbol "while", f, s] }
+          ps = progToSExpr sig q
+          nvs = map (vDeclToSExpr sig) vds
+      in if null nvs then ps else SList [SSymbol "vblock", SList nvs, ps]
+  , foldSeq = \ _ s1 s2 -> SList [SSymbol "seq", s1, s2]
+  , foldIf = \ _ c s1 s2 -> SList [SSymbol "if", formToSExpr c, s1, s2]
+  , foldWhile = \ _ c s -> SList [SSymbol "while", formToSExpr c, s] }
 
-defprocToSExpr :: Sign f Procs -> Defproc -> Result SExpr
-defprocToSExpr sig (Defproc k n vs p _) = do
-  s <- progToSExpr sig p
-  return $ SList
+defprocToSExpr :: Sign f Procs -> Defproc -> SExpr
+defprocToSExpr sig (Defproc k n vs p _) = SList
     [ SSymbol $ case k of
         Proc -> "defproc"
         Func -> "deffuncproc"
     , procIdToSSymbol sig n
     , SList $ map varToSSymbol vs
-    , s ]
+    , progToSExpr sig p ]
 
 paramToSExpr :: Procparam -> SExpr
 paramToSExpr (Procparam k s) = SList

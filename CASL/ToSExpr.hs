@@ -38,7 +38,7 @@ predIdToSSymbol sign i t = case Map.lookup i $ predMap sign of
       Just n -> idToSSymbol (n + 1) i
 
 opToSSymbol :: Sign f e -> OP_SYMB -> SExpr
-opToSSymbol sign o =  case o of
+opToSSymbol sign o = case o of
     Op_name _ -> error "opToSSymbol"
     Qual_op_name i t _ -> opIdToSSymbol sign i $ toOpType t
 
@@ -60,60 +60,38 @@ varDeclToSExpr :: (VAR, SORT) -> SExpr
 varDeclToSExpr (v, s) =
   SList [SSymbol "vardecl-indet", varToSSymbol v, sortToSSymbol s]
 
-sfail :: String -> Range -> Result a
-sfail s r = fatal_error ("unexpected " ++ s) r
+sfail :: String -> Range -> a
+sfail s r = error $ show (Diag Error ("unexpected " ++ s) r)
 
-sRec :: Sign a e -> (f -> Result SExpr)
-     -> Record f (Result SExpr) (Result SExpr)
+sRec :: Sign a e -> (f -> SExpr)
+     -> Record f SExpr SExpr
 sRec sign mf = Record
-    { foldQuantification = \ _ q vs r _ -> do
+    { foldQuantification = \ _ q vs f _ ->
         let s = SSymbol $ case q of
               Universal -> "all"
               Existential -> "ex"
               Unique_existential -> "ex1"
             vl = SList $ map varDeclToSExpr $ flatVAR_DECLs vs
-        f <- r
-        return $ SList [s, vl, f]
-    , foldConjunction = \ _ rs _ -> do
-      fs <- sequence rs
-      return $ SList $ SSymbol "and" : fs
-    , foldDisjunction = \ _ rs _ -> do
-      fs <- sequence rs
-      return $ SList $ SSymbol "or" : fs
-    , foldImplication = \ _ r1 r2 b _ -> do
-      f1 <- r1
-      f2 <- r2
-      return $ SList $ SSymbol "implies" : if b then [f1, f2] else [f2, f1]
-    , foldEquivalence = \ _ r1 r2 _ -> do
-      f1 <- r1
-      f2 <- r2
-      return $ SList [SSymbol "equiv", f1, f2]
-    , foldNegation = \ _ r _ -> do
-      f <- r
-      return $ SList [SSymbol "not", f]
-    , foldTrue_atom = \ _ _ -> return $ SSymbol "true"
-    , foldFalse_atom = \ _ _ -> return $ SSymbol "false"
-    , foldPredication = \ _ p rs _ -> do
-      ts <- sequence rs
-      return $ SList $ SSymbol "papply" : predToSSymbol sign p : ts
-    , foldDefinedness = \ _ r _ -> do
-      t <- r
-      return $ SList [SSymbol "def", t]
-    , foldExistl_equation = \ _ r1 r2 _ -> do
-      t1 <- r1
-      t2 <- r2
-      return $ SList [SSymbol "eeq", t1, t2]
-    , foldStrong_equation = \ _ r1 r2 _ -> do
-      t1 <- r1
-      t2 <- r2
-      return $ SList [SSymbol "eq", t1, t2]
-    , foldMembership = \ _ r s _ -> do
-      t <- r
-      return $ SList [SSymbol "member", t, sortToSSymbol s]
+        in SList [s, vl, f]
+    , foldConjunction = \ _ fs _ -> SList $ SSymbol "and" : fs
+    , foldDisjunction = \ _ fs _ -> SList $ SSymbol "or" : fs
+    , foldImplication = \ _ f1 f2 b _ ->
+        SList $ SSymbol "implies" : if b then [f1, f2] else [f2, f1]
+    , foldEquivalence = \ _ f1 f2 _ -> SList [SSymbol "equiv", f1, f2]
+    , foldNegation = \ _ f _ -> SList [SSymbol "not", f]
+    , foldTrue_atom = \ _ _ -> SSymbol "true"
+    , foldFalse_atom = \ _ _ -> SSymbol "false"
+    , foldPredication = \ _ p ts _ ->
+        SList $ SSymbol "papply" : predToSSymbol sign p : ts
+    , foldDefinedness = \ _ t _ -> SList [SSymbol "def", t]
+    , foldExistl_equation = \ _ t1 t2 _ -> SList [SSymbol "eeq", t1, t2]
+    , foldStrong_equation = \ _ t1 t2 _ -> SList [SSymbol "eq", t1, t2]
+    , foldMembership = \ _ t s _ ->
+        SList [SSymbol "member", t, sortToSSymbol s]
     , foldMixfix_formula = \ t _ -> sfail "Mixfix_formula" $ getRange t
     , foldSort_gen_ax = \ _ cs b ->
       let (srts, ops, _) = recover_Sort_gen_ax cs in
-      return $ SList $ SSymbol ((if b then "freely-" else "") ++ "generated")
+      SList $ SSymbol ((if b then "freely-" else "") ++ "generated")
         : (case srts of
             [s] -> sortToSSymbol s
             _ -> SList $ map sortToSSymbol srts)
@@ -121,19 +99,12 @@ sRec sign mf = Record
     , foldExtFORMULA = \ _ f -> mf f
     , foldSimpleId = \ _ t -> sfail "Simple_id" $ tokPos t
     , foldQual_var = \ _ v _ _ ->
-        return $ SList [SSymbol "varterm", varToSSymbol v]
-    , foldApplication = \ _ o rs _ -> do
-      ts <- sequence rs
-      return $ SList $ SSymbol "fapply" : opToSSymbol sign o : ts
+        SList [SSymbol "varterm", varToSSymbol v]
+    , foldApplication = \ _ o ts _ ->
+        SList $ SSymbol "fapply" : opToSSymbol sign o : ts
     , foldSorted_term = \ _ r _ _ -> r
-    , foldCast = \ _ r s _ -> do
-      t <- r
-      return $ SList [SSymbol "cast", t, sortToSSymbol s]
-    , foldConditional = \ _ e f t _ -> do
-      ne <- e
-      nf <- f
-      nt <- t
-      return $ SList [SSymbol "condition", ne, nf, nt]
+    , foldCast = \ _ t s _ -> SList [SSymbol "cast", t, sortToSSymbol s]
+    , foldConditional = \ _ e f t _ -> SList [SSymbol "condition", e, f, t]
     , foldMixfix_qual_pred = \ _ p -> sfail "Mixfix_qual_pred" $ getRange p
     , foldMixfix_term = \ (Mixfix_term ts) _ ->
         sfail "Mixfix_term" $ getRange ts
@@ -142,8 +113,7 @@ sRec sign mf = Record
     , foldMixfix_cast = \ _ _ r -> sfail "Mixfix_cast" r
     , foldMixfix_parenthesized = \ _ _ r -> sfail "Mixfix_parenthesized" r
     , foldMixfix_bracketed = \ _ _ r -> sfail "Mixfix_bracketed" r
-    , foldMixfix_braced = \ _ _ r -> sfail "Mixfix_braced" r
-    }
+    , foldMixfix_braced = \ _ _ r -> sfail "Mixfix_braced" r }
 
 signToSExprs :: Sign a e -> [SExpr]
 signToSExprs sign = sortSignToSExprs sign
