@@ -236,9 +236,9 @@ mapNamedSen n_sen = let
                         (Qual_op_name _ (Op_type _ args2 _ _) _) ->
                         if length args1 < length args2 then LT else GT) $ 
               filter (hasResSort s) ops
-      genCodeForCtor sn (Qual_op_name 
+      genCodeForCtor (Qual_op_name 
                                      ctor 
-                                     (Op_type _ args res _)
+                                     (Op_type _ args sn _)
                                   _) prg = let
         decls = map (\(_, i) -> genToken $ "x" ++ show i) $ 
                 zip args [1::Int ..]
@@ -286,10 +286,10 @@ mapNamedSen n_sen = let
                         (Ranged (If (Strong_equation 
                                (Qual_var 
                                   (genToken "y")
-                                  res nullRange)
+                                  sn nullRange)
                                (Qual_var 
                                  (genToken  "x")
-                                 res nullRange)
+                                 sn nullRange)
                              nullRange)
                           (Ranged Skip nullRange)
                           prg)nullRange))
@@ -306,7 +306,7 @@ mapNamedSen n_sen = let
       Defproc Proc (stringToId $ genNamePrefix ++ "uniform_"++show s)
               [mkSimpleId $ genNamePrefix ++ "x"]
       (Ranged (
-        Block [] ( foldr (genCodeForCtor s) (Ranged Abort nullRange)
+        Block [] ( foldr genCodeForCtor (Ranged Abort nullRange)
                    ctors)
               ) nullRange
       )
