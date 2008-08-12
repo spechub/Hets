@@ -146,17 +146,21 @@ sRec sign mf = Record
     }
 
 signToSExprs :: Sign a e -> [SExpr]
-signToSExprs sign = predSignToSExprs sign ++ opMapToSExprs sign (opMap sign)
+signToSExprs sign = sortSignToSExprs sign
+  : predMapToSExprs sign (predMap sign) ++ opMapToSExprs sign (opMap sign)
 
-predSignToSExprs :: Sign a e -> [SExpr]
-predSignToSExprs sign =
+sortSignToSExprs :: Sign a e -> SExpr
+sortSignToSExprs sign =
     SList (SSymbol "sorts"
       : map sortToSSymbol (Set.toList $ sortSet sign))
-    : concatMap (\ (p, ts) -> map (\ t ->
+
+predMapToSExprs :: Sign a e -> Map.Map Id (Set.Set PredType) -> [SExpr]
+predMapToSExprs sign pm =
+    concatMap (\ (p, ts) -> map (\ t ->
        SList [ SSymbol "predicate"
              , predIdToSSymbol sign p t
              , SList $ map sortToSSymbol $ predArgs t ]) $ Set.toList ts)
-      (Map.toList $ predMap sign)
+      $ Map.toList pm
 
 opMapToSExprs :: Sign a e -> OpMap -> [SExpr]
 opMapToSExprs sign om =

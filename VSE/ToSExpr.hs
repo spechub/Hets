@@ -22,16 +22,15 @@ import CASL.Sign
 import CASL.ToSExpr
 
 import Common.AS_Annotation
+import Common.Id
 import Common.Result
 import Common.SExpr
-import Common.Id
 
 import qualified Data.Map as Map
 import Data.Char (toLower)
 
 namedSenToSExpr :: Sign f Procs -> Named Sentence -> Result SExpr
-namedSenToSExpr sign ns = do
-  let sig = subProcs sign
+namedSenToSExpr sig ns = do
   t <- senToSExpr sig $ sentence ns
   return $ SList
     [ SSymbol "asentence"
@@ -77,8 +76,12 @@ vDeclToSExpr sig (VarDecl v s m _) =
       nt <- foldTerm (sRec sig $ error "vDeclToSExpr") trm
       return $ SList [SSymbol "vardecl", w, ty, nt]
 
-procIdToSSymbol :: Id -> SExpr
-procIdToSSymbol = idToSSymbol 0
+procIdToSSymbol :: Sign f Procs -> Id -> SExpr
+procIdToSSymbol sig n = case lookupProc n sig of
+        Nothing -> error "procIdToSSymbol"
+        Just pr -> case profileToOpType pr of
+          Just ot -> opIdToSSymbol sig n ot
+          _ -> predIdToSSymbol sig n $ profileToPredType pr
 
 progToSExpr :: Sign f Procs -> Program -> Result SExpr
 progToSExpr sig = let
@@ -95,7 +98,7 @@ progToSExpr sig = let
       case f of
         Predication (Qual_pred_name i _ _) ts _ -> do
           nts <- mapM termToSExpr ts
-          return $ SList $ SSymbol "call" : procIdToSSymbol i : nts
+          return $ SList $ SSymbol "call" : procIdToSSymbol sig i : nts
         _ -> sfail "Call" r
   , foldReturn = \ _ t -> do
       nt <- termToSExpr t
@@ -126,11 +129,7 @@ defprocToSExpr sig (Defproc k n vs p _) = do
     [ SSymbol $ case k of
         Proc -> "defproc"
         Func -> "deffuncproc"
-    , case lookupProc n sig of
-        Nothing -> error "defprocToSExpr"
-        Just pr -> case profileToOpType pr of
-          Just ot -> opIdToSSymbol sig n ot
-          _ -> procIdToSSymbol n
+    , procIdToSSymbol sig n
     , SList $ map varToSSymbol vs
     , s ]
 
@@ -144,7 +143,7 @@ procsToSExprs sig =
     map (\ (n, pr@(Profile as _)) -> case profileToOpType pr of
       Nothing -> SList
         [ SSymbol "procedure"
-        , procIdToSSymbol n
+        , predIdToSSymbol sig n $ profileToPredType pr
         , SList $ map paramToSExpr as ]
       Just ot -> SList
         [ SSymbol "funcprocedure"
@@ -154,9 +153,9 @@ procsToSExprs sig =
     $ Map.toList $ procsMap $ extendedInfo sig
 
 vseSignToSExpr :: Sign f Procs -> SExpr
-vseSignToSExpr sign =
-  let sig = subProcs sign
-  in SList $ SSymbol "signature" : predSignToSExprs sig
-       ++ opMapToSExprs sign (diffMapSet (opMap sig)
-          $ procsToOpMap $ extendedInfo sig)
-       ++ procsToSExprs sig
+vseSignToSExpr sig =
+  let e = extendedInfo sig in
+    SList $ SSymbol "signature" : sortSignToSExprs sig
+      : predMapToSExprs sig (diffMapSet (predMap sig) $ procsToPredMap e)
+      ++ opMapToSExprs sig (diffMapSet (opMap sig) $ procsToOpMap e)
+      ++ procsToSExprs sig

@@ -60,14 +60,12 @@ basicAna
 basicAna (bs, sig, ga) = do
   (bs2, ExtSign sig2 syms, sens) <-
     basicAnalysis minExpForm (const return) anaProcdecls anaMix
-        (bs, subProcs $ addSig const sig boolSig, ga)
-  return (bs2, ExtSign (addProcs $ diffSig const sig2 boolSig) syms, sens)
+        (bs, addSig const sig boolSig, ga)
+  return (bs2, ExtSign (diffSig const sig2 boolSig) syms, sens)
 
 anaMix :: Mix () Procdecls Dlformula Procs
 anaMix = emptyMix
-  { getExtIds = \ procs ->
-      (Set.empty, Map.keysSet $ procsToPredMap procs)
-  , putParen = parenDlFormula
+  { putParen = parenDlFormula
   , mixResolve = resolveDlformula }
 
 -- | put parens around ambiguous mixfix formulas (for error messages)
@@ -277,12 +275,13 @@ anaProcdecl (Procedure i p@(Profile ps _) q) = do
            hint n ("repeated procedure " ++ showId i "") q
            else warning n ("redeclared procedure " ++ showId i "") q
          Nothing -> return n)
+     let e = emptyAnno ()
      case profileToOpType p of
        Just t -> do
          if all (\ (Procparam j _) -> j == In) ps then return () else
             addDiags [mkDiag Warning "function must have IN params only" i]
-         addOp (emptyAnno ()) t i
-       _ -> return ()
+         addOp e t i
+       _ -> addPred e (profileToPredType p) i
 
 paramsToArgs :: [Procparam] -> [SORT]
 paramsToArgs = map (\ (Procparam _ s) -> s)
@@ -403,17 +402,6 @@ instance GetRange (Ranged a) where
 
 instance FreeVars Dlformula where
   freeVarsOfExt = freeDlVars
-
-procsSign :: Sign f Procs -> Sign f Procs
-procsSign sig = (emptySign emptyProcs)
- { predMap = procsToPredMap $ extendedInfo sig }
-
--- | add procs as functions and predicate
-addProcs :: Sign f Procs -> Sign f Procs
-addProcs sig = addSig const sig $ procsSign sig
-
-subProcs :: Sign f Procs -> Sign f Procs
-subProcs sig = diffSig const sig $ procsSign sig
 
 -- | adjust procs map in morphism target signature
 correctTarget :: Morphism f Procs () -> Morphism f Procs ()
