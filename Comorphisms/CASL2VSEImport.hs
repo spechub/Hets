@@ -1,6 +1,6 @@
 {- |
 Module      :  $Header$
-Description :  embedding from CASL to VSE, plus wrapping procedures 
+Description :  embedding from CASL to VSE, plus wrapping procedures
                with default implementations
 Copyright   :  (c) M.Codescu, DFKI Bremen 2008
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
@@ -53,7 +53,7 @@ instance Comorphism CASL2VSEImport
                VSEMor
                Symbol RawSymbol () where
     sourceLogic CASL2VSEImport = CASL
-    sourceSublogic CASL2VSEImport = SL.top 
+    sourceSublogic CASL2VSEImport = SL.top
     targetLogic CASL2VSEImport = VSE
     mapSublogic CASL2VSEImport _ = Just ()
     map_theory CASL2VSEImport = mapCASLTheory
@@ -61,158 +61,173 @@ instance Comorphism CASL2VSEImport
     map_sentence CASL2VSEImport _ = return . mapSen
     map_symbol CASL2VSEImport = error "nyi"
       -- check these 3, but should be fine
-    has_model_expansion CASL2VSEImport = True    
+    has_model_expansion CASL2VSEImport = True
     is_weakly_amalgamable CASL2VSEImport = True
     isInclusionComorphism CASL2VSEImport = True
 
 
-mapCASLTheory :: (CASLSign, [Named CASLFORMULA]) -> 
+mapCASLTheory :: (CASLSign, [Named CASLFORMULA]) ->
                  Result (VSESign, [Named Sentence])
 mapCASLTheory (sig, n_sens) = do
   let (tsig, genAx) =  mapSig sig
       tsens = concatMap mapNamedSen n_sens
-  return (tsig, tsens ++ genAx) 
- 
+  return (tsig, tsens ++ genAx)
+
 mapSig :: CASLSign -> (VSESign, [Named Sentence])
-mapSig sign = 
+mapSig sign =
  let wrapSort (procsym, axs) s = let
         restrName = stringToId $ genNamePrefix ++ "restr_"++show s
         uniformName = stringToId $ genNamePrefix ++ "uniform_"++show s
         eqName = stringToId $ genNamePrefix ++ "eq_"++show s
         sProcs = [(restrName, Profile [Procparam In s] Nothing),
                    (uniformName, Profile [Procparam In s] Nothing),
-                   (eqName, 
-                     Profile [Procparam In s, Procparam In s] 
+                   (eqName,
+                     Profile [Procparam In s, Procparam In s]
                              (Just $ stringToId  "Boolean"))]
-        sSens = [makeNamed ("ga_restriction_" ++ show s) $ ExtFORMULA $ 
-                 Ranged 
-                  (Defprocs 
-                   [Defproc Proc restrName [mkSimpleId $ genNamePrefix ++ "x"] 
-                   (Ranged (Block [] (Ranged Skip nullRange)) nullRange) 
+        sSens = [makeNamed ("ga_restriction_" ++ show s) $ ExtFORMULA $
+                 Ranged
+                  (Defprocs
+                   [Defproc Proc restrName [mkSimpleId $ genNamePrefix ++ "x"]
+                   (Ranged (Block [] (Ranged Skip nullRange)) nullRange)
                            nullRange])
                   nullRange,
-                 makeNamed ("ga_equality_"++ show s) $ ExtFORMULA $ 
-                 Ranged 
-                  (Defprocs 
+                 makeNamed ("ga_equality_"++ show s) $ ExtFORMULA $
+                 Ranged
+                  (Defprocs
                    [Defproc Func eqName (map mkSimpleId ["x","y"])
-                   (Ranged (Block [] (Ranged 
+                   (Ranged (Block [] (Ranged
                                        (If (Strong_equation
                         (Qual_var (mkSimpleId "x") s nullRange)
                         (Qual_var (mkSimpleId "y") s nullRange)
-                        nullRange) 
-                                         (Ranged (Return 
-                            (Application (Op_name (stringToId "True"))
+                        nullRange)
+                                         (Ranged (Return
+                            (Application (Qual_op_name (stringToId "True")
+                                          (Op_type Total []
+                                            (stringToId "Boolean")
+                                           nullRange)nullRange)
                                          [] nullRange)
                                          ) nullRange)
-                                         (Ranged (Return 
-                            (Application (Op_name (stringToId "False"))
-                                         [] nullRange) ) 
+                                         (Ranged (Return
+                            (Application (Qual_op_name (stringToId "False")
+                                            (Op_type Total []
+                                               (stringToId "Boolean")
+                                           nullRange)nullRange)
+                                         [] nullRange) )
                                          nullRange))
-                                        nullRange)) nullRange) 
+                                        nullRange)) nullRange)
                            nullRange])
                   nullRange
                 ]
                                           in
         (sProcs ++ procsym,  sSens ++ axs)
-     (sortProcs, sortSens) = foldl wrapSort ([],[]) $ 
+     (sortProcs, sortSens) = foldl wrapSort ([],[]) $
                                         Set.toList $ sortSet sign
      wrapOp (procsym, axs) (i, opTypeSet) = let
        funName = stringToId $ genNamePrefix ++ show i
        opTypes = Set.toList opTypeSet
-       fProcs = map (\profile -> 
-                       (funName, 
-                        Profile 
-                           (map (Procparam In) $ opArgs profile) 
+       fProcs = map (\profile ->
+                       (funName,
+                        Profile
+                           (map (Procparam In) $ opArgs profile)
                            (Just $ opRes profile))) opTypes
-       fSens = map (\ (OpType _ w s) -> let 
+       fSens = map (\ (OpType fKind w s) -> let
                       vars = map (\(t,n) -> (genToken ("x"++ (show n)), t)) $
                              zip w [1::Int ..]
-                                      in 
-                   makeNamed "" $ ExtFORMULA $ Ranged 
-                     (Defprocs 
-                       [Defproc 
+                                      in
+                   makeNamed "" $ ExtFORMULA $ Ranged
+                     (Defprocs
+                       [Defproc
                          Func funName (map fst vars)
                          ( Ranged (Block []
-                         (Ranged 
-                            (Block 
-                              [Var_decl [genToken "y"] s nullRange] 
-                              (Ranged 
-                                (Seq  
+                         (Ranged
+                            (Block
+                              [Var_decl [genToken "y"] s nullRange]
+                              (Ranged
+                                (Seq
 
                                  (Ranged
-                                   (Assign 
+                                   (Assign
                                      (genToken "y")
-                                     (Application 
-                                      (Op_name i)
-                                      (map  (\(v,ss) -> 
+                                     (Application
+                                      (Qual_op_name i
+                                        (Op_type fKind w s nullRange)
+                                       nullRange )
+                                      (map  (\(v,ss) ->
                                               Qual_var v ss nullRange) vars)
-                                      nullRange)) 
+                                      nullRange))
                                    nullRange)
 
-                                 (Ranged 
-                                   (Return 
+                                 (Ranged
+                                   (Return
                                     (Qual_var (genToken "y") s nullRange))
-                                   nullRange) 
+                                   nullRange)
 
                                 )--end seq
                                nullRange)
-                              )--end block 
-                            nullRange)-- end procedure body 
+                              )--end block
+                            nullRange)-- end procedure body
                             ) nullRange)
                          nullRange]
                      )
                      nullRange
-                   ) opTypes 
-                                            in 
+                   ) opTypes
+                                            in
        (procsym ++ fProcs, axs ++ fSens)
-     (opProcs, opSens) = foldl wrapOp ([],[]) $ 
+     (opProcs, opSens) = foldl wrapOp ([],[]) $
                                         Map.toList $ opMap sign
      wrapPred (procsym, axs) (i, predTypeSet) = let
        predTypes = Set.toList predTypeSet
        procName = stringToId $ genNamePrefix ++ show i
-       pProcs = map (\profile -> (procName, 
-                        Profile 
-                           (map (Procparam In) $ predArgs profile) 
-                           (Just $ stringToId "Boolean"))) predTypes   
-       pSens = map (\ (PredType w) -> let 
+       pProcs = map (\profile -> (procName,
+                        Profile
+                           (map (Procparam In) $ predArgs profile)
+                           (Just $ stringToId "Boolean"))) predTypes
+       pSens = map (\ (PredType w) -> let
                       vars = map (\(t,n) -> (genToken ("x"++ (show n)), t)) $
                              zip w [1::Int ..]
-                                      in 
-                   makeNamed "" $ ExtFORMULA $ Ranged 
-                     (Defprocs 
-                       [Defproc 
+                                      in
+                   makeNamed "" $ ExtFORMULA $ Ranged
+                     (Defprocs
+                       [Defproc
                          Func procName (map fst vars)
                          (Ranged (Block [](Ranged
-                            ( If 
+                            ( If
                                (Predication
-                                        (Qual_pred_name 
+                                        (Qual_pred_name
                                           i
-                                         (Pred_type 
-                                           (map snd vars) 
+                                         (Pred_type
+                                           (map snd vars)
                                            nullRange)
                                         nullRange)
-                                        (map (\(v,ss) -> 
+                                        (map (\(v,ss) ->
                                                Qual_var v ss nullRange) vars)
                                        nullRange)
-                                (Ranged 
-                                 (Return 
-                                   (Application (Op_name (stringToId "True"))
-                                         [] nullRange))  
-                                  nullRange) 
-                                (Ranged 
+                                (Ranged
+                                 (Return
+                                   (Application (Qual_op_name
+                                          (stringToId "True")
+                                          (Op_type Total []
+                                            (stringToId "Boolean")
+                                           nullRange) nullRange)
+                                         [] nullRange))
+                                  nullRange)
+                                (Ranged
                                 (Return
-                                (Application (Op_name (stringToId "False"))
+                                (Application (Qual_op_name (stringToId "False")
+                                          (Op_type Total []
+                                            (stringToId "Boolean")
+                                           nullRange)nullRange)
                                          [] nullRange)
-                                )  nullRange)
-                              )--endif
-                            nullRange)) nullRange)
+                                )  nullRange)) nullRange)
+                              )--block
+                            nullRange)
                           nullRange]
                      )
                      nullRange
                    ) predTypes
-                                                in 
+                                                in
       (procsym ++ pProcs, axs ++ pSens)
-     (predProcs, predSens) = foldl wrapPred ([],[]) $ 
+     (predProcs, predSens) = foldl wrapPred ([],[]) $
                                         Map.toList $ predMap sign
      procs = Procs $ Map.fromList (sortProcs ++ opProcs ++ predProcs)
      newPreds = procsToPredMap procs
@@ -227,67 +242,69 @@ mapNamedSen n_sen = let
  sen = sentence n_sen
  trans = mapSen sen
                     in
- case sen of 
+ case sen of
   Sort_gen_ax constrs _isFree -> let
     (genSorts, genOps, _maps) = recover_Sort_gen_ax constrs
     genUniform sorts ops s = let
       hasResSort sn (Qual_op_name _ opType _) = (res_OP_TYPE opType) == sn
-      ctors = sortBy (\ (Qual_op_name _ (Op_type _ args1 _ _) _) 
+      ctors = sortBy (\ (Qual_op_name _ (Op_type _ args1 _ _) _)
                         (Qual_op_name _ (Op_type _ args2 _ _) _) ->
-                        if length args1 < length args2 then LT else GT) $ 
+                        if length args1 < length args2 then LT else GT) $
               filter (hasResSort s) ops
-      genCodeForCtor (Qual_op_name 
-                                     ctor 
-                                     (Op_type _ args sn _)
+      genCodeForCtor (Qual_op_name
+                                     ctor
+                                     (Op_type fK args sn _)
                                   _) prg = let
-        decls = map (\(_, i) -> genToken $ "x" ++ show i) $ 
+        decls = map (\(_, i) -> genToken $ "x" ++ show i) $
                 zip args [1::Int ..]
-        recCalls = map (\(x,i) -> 
-                         Ranged (Call (Predication 
-                                        (Qual_pred_name (stringToId $ 
+        recCalls = map (\(x,i) ->
+                         Ranged (Call (Predication
+                                        (Qual_pred_name (stringToId $
                                                  genNamePrefix ++ "uniform_"
-                                                 ++ show x) 
+                                                 ++ show x)
                                          (Pred_type [x] nullRange) nullRange)
-                                        [Qual_var 
-                                          (genToken $ "x" ++ show i)  
+                                        [Qual_var
+                                          (genToken $ "x" ++ show i)
                                           x nullRange] nullRange
                                       )) nullRange) $
-                   filter (\(x,_) -> x `elem` sorts) $ 
+                   filter (\(x,_) -> x `elem` sorts) $
                    zip args [1::Int ..]
         recCallsSeq = if not $ null recCalls then
                       foldr1 (\p1 p2 -> Ranged (Seq p1 p2) nullRange) recCalls
-                      else Ranged Skip nullRange 
+                      else Ranged Skip nullRange
                                           in Ranged (
-       Block ([Var_decl [genToken "y"] s nullRange] ++ 
+       Block ([Var_decl [genToken "y"] s nullRange] ++
               (map (\ (a,i) -> Var_decl [genToken $ "x" ++ show i] a nullRange)
               $ zip args [1::Int ..]))
-       (Ranged 
-         (Seq 
-           (Ranged 
+       (Ranged
+         (Seq
+           (Ranged
             (Assign
              (genToken "y")
              (Qual_var (genToken "x") sn nullRange)
             )
-           nullRange) 
-           (Ranged 
-             (Seq recCallsSeq 
-              (Ranged (Seq 
+           nullRange)
+           (Ranged
+             (Seq recCallsSeq
+              (Ranged (Seq
                         ((Ranged
-                                   (Assign 
+                                   (Assign
                                      (genToken  "y")
-                                     (Application 
-                                      (Op_name ctor)
-                                      (map  (\(v,ss) -> 
-                                              Qual_var v ss nullRange) $ 
+                                     (Application
+                                      (Qual_op_name ctor
+                                        (Op_type fK args sn nullRange)
+                                        nullRange)
+                                      (map  (\(v,ss) ->
+                                              Qual_var v ss nullRange) $
                                        zip decls args)
-                                      nullRange)) 
+                                      nullRange))
                                    nullRange)
                         )
-                        (Ranged (If (Strong_equation 
-                               (Qual_var 
+                        (Ranged (If (Strong_equation
+                               (Qual_var
                                   (genToken "y")
                                   sn nullRange)
-                               (Qual_var 
+                               (Qual_var
                                  (genToken  "x")
                                  sn nullRange)
                              nullRange)
@@ -301,7 +318,7 @@ mapNamedSen n_sen = let
          )
        nullRange) ) nullRange
                              in
-     ExtFORMULA $ 
+     ExtFORMULA $
      Ranged (Defprocs  [
       Defproc Proc (stringToId $ genNamePrefix ++ "uniform_"++show s)
               [mkSimpleId $ genNamePrefix ++ "x"]
@@ -311,7 +328,7 @@ mapNamedSen n_sen = let
               ) nullRange
       )
       nullRange])
-     nullRange 
+     nullRange
     procDefs = map (genUniform genSorts genOps) genSorts
                                  in
      map (makeNamed "") (trans:procDefs)
