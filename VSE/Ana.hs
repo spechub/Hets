@@ -103,6 +103,18 @@ boolSig = execState (do
 lookupProc :: Id -> Sign f Procs -> Maybe Profile
 lookupProc i sig = Map.lookup i $ procsMap $ extendedInfo sig
 
+procsSign :: Sign f Procs -> Sign f Procs
+procsSign sig = (emptySign emptyProcs)
+ { predMap = procsToPredMap $ extendedInfo sig }
+
+-- | add procs as predicate
+addProcs :: Sign f Procs -> Sign f Procs
+addProcs sig = addSig const sig $ procsSign sig
+
+-- | remove procs as predicate
+subProcs :: Sign f Procs -> Sign f Procs
+subProcs sig = diffSig const sig $ procsSign sig
+
 basicAna
   :: (BASIC_SPEC () Procdecls Dlformula,
       Sign Dlformula Procs, GlobalAnnos)
@@ -110,13 +122,18 @@ basicAna
              ExtSign (Sign Dlformula Procs) Symbol,
              [Named Sentence])
 basicAna (bs, sig, ga) = do
+  let sigIn = subProcs $ addSig const sig boolSig
   (bs2, ExtSign sig2 syms, sens) <-
     basicAnalysis minExpForm (const return) anaProcdecls anaMix
-        (bs, addSig const sig boolSig, ga)
+        (bs, sigIn, ga)
   Result (getCaseDiags sig2 ++ concatMap
          (getCases "var" . Set.map simpleIdToId . getVariables . sentence)
           sens) $ Just () -- add diags
-  return (bs2, ExtSign (diffSig const sig2 boolSig) syms, sens)
+  Result (map
+    (\ i -> mkDiag Error "illegal predicate declaration for procedure" i)
+    $ Map.keys $ interMapSet (diffMapSet (predMap sig2) $ predMap sigIn)
+    $ procsToPredMap $ extendedInfo sig2) $ Just ()
+  return (bs2, ExtSign (addProcs $ diffSig const sig2 boolSig) syms, sens)
 
 anaMix :: Mix () Procdecls Dlformula Procs
 anaMix = emptyMix
@@ -314,20 +331,30 @@ anaProcdecls _ ds@(Procdecls ps _) = do
   return ds
 
 anaProcdecl :: Sigentry -> State (Sign Dlformula Procs) ()
-anaProcdecl (Procedure i p@(Profile ps _) q) = do
+anaProcdecl (Procedure i p@(Profile ps mr) q) = do
+     e <- get
+     let prM = predMap e
+         l = Map.findWithDefault Set.empty i prM
+         ea = emptyAnno ()
+         isPred = case mr of
+           Nothing -> Set.member (profileToPredType p) l
+           _ -> False
      updateExtInfo (\ pm@(Procs m) ->
        let n = Procs $ Map.insert i p m in case Map.lookup i m of
          Just o -> if p == o then
            hint n ("repeated procedure " ++ showId i "") q
-           else plain_error pm ("redeclared procedure " ++ showId i "") q
-         Nothing -> return n)
-     let e = emptyAnno ()
+           else plain_error pm
+             ("cannot change profile of procedure " ++ showId i "") q
+         Nothing -> if isPred then plain_error pm
+           ("cannot change predicate to procedure " ++ showId i "") q
+           else return n)
      case profileToOpType p of
        Just t -> do
          if all (\ (Procparam j _) -> j == In) ps then return () else
             addDiags [mkDiag Warning "function must have IN params only" i]
-         addOp e t i
-       _ -> addPred e (profileToPredType p) i
+         addOp ea t i
+       _ -> if isPred then return () else
+            addAnnoSet ea $ Symbol i $ PredAsItemType $ profileToPredType p
 
 paramsToArgs :: [Procparam] -> [SORT]
 paramsToArgs = map (\ (Procparam _ s) -> s)
