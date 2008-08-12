@@ -15,6 +15,7 @@ module VSE.ToSExpr where
 
 import VSE.As
 import VSE.Ana
+import VSE.Fold
 
 import CASL.AS_Basic_CASL
 import CASL.Fold

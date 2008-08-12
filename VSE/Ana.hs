@@ -39,6 +39,7 @@ import CASL.ShowMixfix as Paren
 import CASL.SimplifySen
 
 import VSE.As
+import VSE.Fold
 
 tokenToLower :: Token -> Token
 tokenToLower (Token s r) = Token (map toLower s) r
@@ -98,15 +99,6 @@ parenDlFormula (Ranged f r) = case f of
     let n = mapFormula parenDlFormula s
     in Ranged (Dlformula b (parenProg p) n) r
   Defprocs ps -> Ranged (Defprocs $ map parenDefproc ps) r
-
-mapProg :: (TERM () -> TERM ()) -> (FORMULA () -> FORMULA ())
-        -> FoldRec Program
-mapProg mt mf = mapRec
-  { foldAssign = \ (Ranged _ r) v t -> Ranged (Assign v $ mt t) r
-  , foldCall = \ (Ranged _ r) f -> Ranged (Call $ mf f) r
-  , foldReturn = \ (Ranged _ r) t -> Ranged (Return $ mt t) r
-  , foldIf = \ (Ranged _ r) c p1 p2 -> Ranged (If (mf c) p1 p2) r
-  , foldWhile = \ (Ranged _ r) c p -> Ranged (While (mf c) p) r }
 
 parenProg :: Program -> Program
 parenProg = foldProg $ mapProg (Paren.mapTerm id) $ mapFormula id
@@ -398,21 +390,14 @@ simpDlformula sign (Ranged f r) = let sig = castSign sign in case f of
 
 -- | free variables to be universally bound on the top level
 freeProgVars :: Sign () e -> Program -> VarSet
-freeProgVars sig = foldProg FoldRec
-  { foldAbort = const Set.empty
-  , foldSkip = const Set.empty
-  , foldAssign = \ _ v t -> (case Map.lookup v $ varMap sig of
+freeProgVars sig = let ft = freeTermVars sig in
+  foldProg (progToSetRec ft (freeVars sig))
+  { foldAssign = \ _ v t -> (case Map.lookup v $ varMap sig of
       Just s -> Set.insert (v, s)
-      Nothing -> Set.insert (v, sortOfTerm t)) $ freeTermVars sig t
-  , foldCall = \ _ f -> freeVars sig f
-  , foldReturn = \ _ t -> freeTermVars sig t
+      Nothing -> Set.insert (v, sortOfTerm t)) $ ft t
   , foldBlock = \ (Ranged (Block vs p) _) _ _ ->
       Set.difference (freeProgVars (execState (mapM_ addVars vs) sig) p)
-        $ Set.fromList $ flatVAR_DECLs vs
-  , foldSeq = \ _ p1 p2 -> Set.union p1 p2
-  , foldIf = \ _ c p1 p2 -> Set.union (freeVars sig c)
-             $ Set.union p1 p2
-  , foldWhile = \ _ c p -> Set.union (freeVars sig c) p }
+        $ Set.fromList $ flatVAR_DECLs vs }
 
 freeDlVars :: Sign Dlformula e -> Dlformula -> VarSet
 freeDlVars sig (Ranged f _) = case f of
