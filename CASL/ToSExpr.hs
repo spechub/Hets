@@ -44,7 +44,7 @@ opToSSymbol sign o = case o of
 
 opIdToSSymbol :: Sign f e -> Id -> OpType -> SExpr
 opIdToSSymbol sign i (OpType _ args res) = case Map.lookup i $ opMap sign of
-    Nothing -> error "opIdToSSymbol"
+    Nothing -> error $ "opIdToSSymbol " ++ show i
     Just s -> case List.findIndex
       (\ r -> opArgs r == args && opRes r == res) $ Set.toList s of
         Nothing -> error "opIdToSSymbol2"

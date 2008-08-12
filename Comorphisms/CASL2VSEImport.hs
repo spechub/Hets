@@ -63,7 +63,7 @@ instance Comorphism CASL2VSEImport
       -- check these 3, but should be fine
     has_model_expansion CASL2VSEImport = True
     is_weakly_amalgamable CASL2VSEImport = True
-    isInclusionComorphism CASL2VSEImport = False
+    isInclusionComorphism CASL2VSEImport = True
 
 
 mapCASLTheory :: (CASLSign, [Named CASLFORMULA]) ->

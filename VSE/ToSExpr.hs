@@ -47,7 +47,8 @@ senToSExpr sig s = let ns = sentenceToSExpr sig s in case s of
     _ -> SList [SSymbol "formula-sentence", ns]
 
 sentenceToSExpr :: Sign f Procs -> Sentence -> SExpr
-sentenceToSExpr sig = foldFormula $ sRec sig $ dlFormulaToSExpr sig
+sentenceToSExpr sign = let sig = addSig const sign boolSig in
+  foldFormula $ sRec sig $ dlFormulaToSExpr sig
 
 dlFormulaToSExpr :: Sign f Procs -> Dlformula -> SExpr
 dlFormulaToSExpr sig = vseFormsToSExpr sig . unRanged
