@@ -269,11 +269,11 @@ anaProcdecls _ ds@(Procdecls ps _) = do
 
 anaProcdecl :: Sigentry -> State (Sign Dlformula Procs) ()
 anaProcdecl (Procedure i p@(Profile ps _) q) = do
-     updateExtInfo (\ (Procs m) ->
+     updateExtInfo (\ pm@(Procs m) ->
        let n = Procs $ Map.insert i p m in case Map.lookup i m of
          Just o -> if p == o then
            hint n ("repeated procedure " ++ showId i "") q
-           else warning n ("redeclared procedure " ++ showId i "") q
+           else plain_error pm ("redeclared procedure " ++ showId i "") q
          Nothing -> return n)
      let e = emptyAnno ()
      case profileToOpType p of
