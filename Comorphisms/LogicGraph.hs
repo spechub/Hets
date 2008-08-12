@@ -84,6 +84,9 @@ import Comorphisms.OWL2DL
 import Comorphisms.DL2CASL_DL
 import Comorphisms.RelScheme2CASL
 import Comorphisms.CASL2VSE
+
+import Comorphisms.CASL2VSEImport
+
 #endif
 #ifdef PROGRAMATICA
 import Comorphisms.HasCASL2Haskell
@@ -132,6 +135,7 @@ comorphismList =
     , Comorphism DL2CASL_DL
     , Comorphism RelScheme2CASL
     , Comorphism CASL2VSE
+    , Comorphism CASL2VSEImport
 #endif
 #ifdef PROGRAMATICA
     , Comorphism HasCASL2Haskell
