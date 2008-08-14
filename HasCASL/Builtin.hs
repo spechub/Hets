@@ -12,8 +12,7 @@ HasCASL's builtin types and functions
 -}
 
 module HasCASL.Builtin
-    ( cpoId
-    , cpoMap
+    ( cpoMap
     , bList
     , bTypes
     , bOps
@@ -256,12 +255,16 @@ bList = (botId, botType) : (defId, defType) : (notId, notType) :
         (eqId, eqType) : (exEq, eqType) : (resId, resType) :
         map ( \ o -> (o, logType)) [andId, orId, eqvId, implId, infixIf]
 
+mkTypesEntry :: Id -> Kind -> [Kind] -> [Id] -> TypeDefn -> (Id, TypeInfo)
+mkTypesEntry i k cs s d =
+  (i, TypeInfo (toRaw k) (Set.fromList cs) (Set.fromList s) d)
+
 funEntry :: Arrow -> [Arrow] -> [Kind] -> (Id, TypeInfo)
-funEntry a s cs = (arrowId a, TypeInfo (toRaw funKind)
-  (Set.fromList $ funKind : cs) (Set.fromList $ map arrowId s) NoTypeDefn)
+funEntry a s cs =
+  mkTypesEntry (arrowId a) funKind (funKind : cs) (map arrowId s) NoTypeDefn
 
 mkEntry :: Id -> Kind -> [Kind] -> TypeDefn -> (Id, TypeInfo)
-mkEntry i k cs d = (i, TypeInfo (toRaw k) (Set.fromList cs) Set.empty d)
+mkEntry i k cs = mkTypesEntry i k cs []
 
 pEntry :: Id -> Kind -> TypeDefn -> (Id, TypeInfo)
 pEntry i k d = mkEntry i k [k] d
@@ -278,10 +281,9 @@ bTypes = Map.fromList $ funEntry PFunArr [] []
         (AliasTypeDefn aPredType)
     : pEntry lazyTypeId coKind NoTypeDefn
     : pEntry logId universe (AliasTypeDefn $ mkLazyType unitType)
-    : map (\ n ->
-               let k = prodKind n nullRange
-                   cs = k : map (prodKind1 n nullRange) [cpoCl, cppoCl]
-               in mkEntry (productId n nullRange) k cs NoTypeDefn)
+    : map (\ n -> let k = prodKind n nullRange in
+            mkEntry (productId n nullRange) k
+              (k : map (prodKind1 n nullRange) [cpoCl, cppoCl]) NoTypeDefn)
           [2 .. 5]
 
 cpoId :: Id
