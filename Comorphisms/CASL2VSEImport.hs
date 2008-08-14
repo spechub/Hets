@@ -57,7 +57,7 @@ instance Comorphism CASL2VSEImport
     targetLogic CASL2VSEImport = VSE
     mapSublogic CASL2VSEImport _ = Just ()
     map_theory CASL2VSEImport = mapCASLTheory
-    map_morphism CASL2VSEImport = error "nyi"
+    map_morphism CASL2VSEImport = return . mapMor
     map_sentence CASL2VSEImport _ = return . mapSen
     map_symbol CASL2VSEImport = error "nyi"
       -- check these 3, but should be fine
@@ -71,7 +71,9 @@ mapCASLTheory :: (CASLSign, [Named CASLFORMULA]) ->
 mapCASLTheory (sig, n_sens) = do
   let (tsig, genAx) =  mapSig sig
       tsens = concatMap mapNamedSen n_sens
-  return (tsig, tsens ++ genAx)
+  case not $ null $ checkCases tsig (tsens ++ genAx) of
+   True -> fail "case error in signature"
+   _ -> return (tsig, tsens ++ genAx)
 
 mapSig :: CASLSign -> (VSESign, [Named Sentence])
 mapSig sign =
@@ -83,7 +85,7 @@ mapSig sign =
                    (uniformName, Profile [Procparam In s] Nothing),
                    (eqName,
                      Profile [Procparam In s, Procparam In s]
-                             (Just $ stringToId  "Boolean"))]
+                             (Just uBoolean))]
         sSens = [makeNamed ("ga_restriction_" ++ show s) $ ExtFORMULA $
                  Ranged
                   (Defprocs
@@ -101,16 +103,16 @@ mapSig sign =
                         (Qual_var (mkSimpleId "y") s nullRange)
                         nullRange)
                                          (Ranged (Return
-                            (Application (Qual_op_name (stringToId "True")
+                            (Application (Qual_op_name uTrue
                                           (Op_type Total []
-                                            (stringToId "Boolean")
+                                            uBoolean
                                            nullRange)nullRange)
                                          [] nullRange)
                                          ) nullRange)
                                          (Ranged (Return
-                            (Application (Qual_op_name (stringToId "False")
+                            (Application (Qual_op_name uFalse
                                             (Op_type Total []
-                                               (stringToId "Boolean")
+                                               uBoolean
                                            nullRange)nullRange)
                                          [] nullRange) )
                                          nullRange))
@@ -181,7 +183,7 @@ mapSig sign =
        pProcs = map (\profile -> (procName,
                         Profile
                            (map (Procparam In) $ predArgs profile)
-                           (Just $ stringToId "Boolean"))) predTypes
+                           (Just $ uBoolean))) predTypes
        pSens = map (\ (PredType w) -> let
                       vars = map (\(t,n) -> (genToken ("x"++ (show n)), t)) $
                              zip w [1::Int ..]
@@ -205,17 +207,17 @@ mapSig sign =
                                 (Ranged
                                  (Return
                                    (Application (Qual_op_name
-                                          (stringToId "True")
+                                          uTrue
                                           (Op_type Total []
-                                            (stringToId "Boolean")
+                                            uBoolean
                                            nullRange) nullRange)
                                          [] nullRange))
                                   nullRange)
                                 (Ranged
                                 (Return
-                                (Application (Qual_op_name (stringToId "False")
+                                (Application (Qual_op_name uFalse
                                           (Op_type Total []
-                                            (stringToId "Boolean")
+                                            uBoolean
                                            nullRange)nullRange)
                                          [] nullRange)
                                 )  nullRange)) nullRange)
@@ -369,3 +371,61 @@ mapTERM t = case t of
     Conditional t1 f t2 ps ->
        Conditional (mapTERM t1) (mapSen f) (mapTERM t2) ps
     _ -> error "CASL2VSEImport.mapTERM"
+
+mapMor :: CASLMor -> VSEMor
+mapMor m = let
+ renSorts = Map.keys $ sort_map m
+ eqOps = Map.fromList $ map
+         (\s -> ((stringToId $ genNamePrefix ++ "eq_"++ show s,
+                OpType Partial [s,s] (uBoolean)) ,
+                (stringToId $ genNamePrefix ++ "eq_"++
+                                  (show $ (sort_map m) Map.!s ),
+                Partial )
+         ))
+         renSorts
+ restrPreds = Map.fromList $ concatMap
+           (\s -> [(
+               (stringToId $ genNamePrefix ++ "restr_"++ show s,
+                PredType [s,s]),
+               stringToId $ genNamePrefix ++ "restr_"++
+                                  show ((sort_map m) Map.!s)),
+               (
+               (stringToId $ genNamePrefix ++ "uniform_"++ show s,
+                PredType [s,s]),
+               stringToId $ genNamePrefix ++ "uniform_"++
+                                  show ((sort_map m) Map.!s))
+                ]
+           )
+           renSorts
+ renOps = Map.keys $ fun_map m
+ opsProcs = Map.fromList $
+            map (\ (idN, oT@(OpType _ w s)) -> let
+                   (idN', _) = (fun_map m) Map.! (idN, oT)
+                                               in
+                  ((stringToId $ genNamePrefix ++ show idN,
+                    OpType Partial w s)  ,
+                   (stringToId $ genNamePrefix ++ show idN',
+                    Partial)
+                  )
+                )
+            renOps
+ renPreds = Map.keys $ pred_map m
+ predProcs = Map.fromList $
+            map (\ (idN, pT@(PredType w)) -> let
+                   idN' = (pred_map m) Map.! (idN, pT)
+                                               in
+                  ((stringToId $ genNamePrefix ++ show idN,
+                    PredType w)  ,
+                   stringToId $ genNamePrefix ++ show idN'
+                  )
+                )
+            renPreds
+ (sig1,_) = mapSig $ msource m
+ (sig2,_) = mapSig $ mtarget m
+           in
+  m
+  { msource = sig1
+  , mtarget = sig2
+  , fun_map = Map.union (Map.union eqOps opsProcs) $ fun_map m
+  , pred_map = Map.union (Map.union restrPreds predProcs) $ pred_map m
+  }

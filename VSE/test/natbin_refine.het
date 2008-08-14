@@ -1,0 +1,220 @@
+%% from Basic/SimpleDatatypes get Boolean
+
+logic CASL
+
+%%Export Specification
+%%====================
+spec nats_sig =
+ sort nats
+ op zero_n: nats
+ op succ_n: nats -> nats
+ op prdc_n: nats -> nats
+ op add_n: nats * nats -> nats
+end
+
+spec simpnats =
+ nats_sig
+ then
+ free type nats ::= zero_n | succ_n(nats)
+ vars m, n : nats
+ .prdc_n(zero_n) = zero_n
+ .prdc_n(succ_n(m)) = m
+ .add_n(m,zero_n) = m;
+ .add_n(m,succ_n(n)) = succ_n(add_n(m,n));
+end
+
+logic VSE
+
+spec simpnats_goals =
+ simpnats with logic CASL2VSERefine
+
+%%Import Specification
+%%====================
+
+logic CASL 
+spec bin_data =
+ free type bin ::= b_zero | b_one | s0(pop : ?bin) | s1(pop : ?bin)
+end
+
+spec bin =
+ bin_data then
+
+ op top : bin -> bin
+
+ pred __<<__ : bin * bin
+
+ vars x, y, z : bin
+
+ . top(b_zero) = b_zero;
+ . top(b_one) = b_one;
+ . top(s0(x)) = b_zero;
+ . top(s1(x)) = b_one;
+ . not x << x;
+ . (x << y) /\ (y << z) => x << z;
+ . not b_zero << b_one;
+ . not b_one << b_zero;
+ . x << s0(x);
+ . x << s1(x);
+ . b_zero << s0(x);
+ . b_zero << s1(x);
+ . b_one << s0(x);
+ . b_one << s1(x);
+ . s0(x) << s0(y) <=> x << y;
+ . s0(x) << s1(y) <=> x << y;
+ . s1(x) << s0(y) <=> x << y;
+ . s1(x) << s1(y) <=> x << y
+
+end
+
+%% Implementation
+%%===============
+logic VSE
+spec nats_impl =
+ bin with logic CASL2VSEImport
+ then
+ PROCEDURES
+ hnlz: IN bin;
+ gn_restr_bin:  IN bin;
+ i_badd: IN bin, IN bin, OUT bin, OUT bin;
+ i_add: IN bin, IN bin -> bin;
+ i_prdc:  IN bin -> bin;
+ i_succ:  IN bin -> bin;
+ i_zero: -> bin;
+ gn_eq_bin:  IN bin, IN bin -> Boolean
+
+. DEFPROCS
+  PROCEDURE hnlz(x)
+   BEGIN
+    IF x = b_zero
+       THEN ABORT
+      ELSE IF x = b_one
+           THEN SKIP
+           ELSE hnlz(pop(x))
+           FI
+      FI
+   END;
+
+   PROCEDURE gn_restr_bin(x)
+    BEGIN
+     IF x = b_zero
+      THEN SKIP
+      ELSE hnlz(x)
+     FI
+    END
+  DEFPROCSEND; %(restr)%
+
+. DEFPROCS
+  PROCEDURE i_badd (a, b, z, c)
+   BEGIN
+      IF a = b_zero
+      THEN c := b_zero;
+           z := b
+      ELSE c := b;
+           IF b = b_one
+           THEN z := b_zero
+           ELSE z := b_one
+           FI
+      FI
+   END;
+
+   FUNCTION i_add(x, y)
+    BEGIN
+     DECLARE
+      z : bin := b_zero,
+      c : bin := b_zero,
+      s : bin := b_zero;
+     IF x = b_zero
+      THEN s := y
+      ELSE IF y = b_zero
+       THEN s := x
+       ELSE IF x = b_one
+        THEN s := i_succ(y)
+        ELSE IF y = b_one
+         THEN s := i_succ(x)
+         ELSE i_badd(top(x), top(y), z, c);
+         IF c = b_one
+          THEN s := i_add(pop(x), pop(y))
+          ELSE s := i_succ(pop(x));
+          s := i_add(s, pop(y))
+         FI;
+         IF z = b_zero
+          THEN s := s0(s)
+          ELSE s := s1(s)
+         FI
+        FI
+       FI
+      FI
+     FI;
+     RETURN s
+    END;
+
+   FUNCTION i_prdc(x)
+   BEGIN
+    DECLARE
+     y : bin := b_zero;
+    IF x = b_zero \/ x = b_one
+     THEN y := b_zero
+     ELSE IF x = s0(b_one)
+      THEN y := b_one
+      ELSE IF top(x) = b_one
+       THEN y := s0(pop(x))
+       ELSE y := i_prdc(pop(x));
+       y := s1(y)
+      FI
+     FI
+    FI;
+    RETURN y
+   END;
+
+   FUNCTION i_succ(x)
+   BEGIN
+    DECLARE
+     y : bin := b_one;
+    IF x = b_zero
+     THEN y := b_one
+     ELSE IF x = b_one
+      THEN y := s0(b_one)
+      ELSE IF top(x) = b_zero
+       THEN y := s1(pop(x))
+       ELSE y := i_succ(pop(x));
+       y := s0(y)
+      FI
+     FI
+    FI;
+    RETURN y
+   END;
+
+   FUNCTION i_zero()
+   BEGIN RETURN b_zero END
+ DEFPROCSEND %(impl)%
+
+ . DEFPROCS
+  FUNCTION gn_eq_bin(x,y) 
+  BEGIN
+   DECLARE res: Boolean := False;
+   IF x = y THEN res := True ELSE skip FI;
+   RETURN res
+  END
+ DEFPROCSEND %(congruence)%
+end
+
+
+%% The theorem link
+%%=================
+logic VSE
+view refine:
+ simpnats_goals to nats_impl =
+   %% Sort
+   nats    |-> bin, 
+   %% Restriction
+   gn_restr_nat  |-> gn_restr_bin,      
+   %% uniform restriction
+   gn_uniform_nat |-> gn_uniform_bin,
+   %% equality
+   gn_eq_nat |-> gn_eq_bin,
+   %% Implementations      
+   gn_zero_n  |-> i_zero,
+   gn_succ_n  |-> i_succ, 
+   gn_prdc_n  |-> i_prdc,
+   gn_add_n   |-> i_add
+
