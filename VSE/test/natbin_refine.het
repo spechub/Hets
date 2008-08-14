@@ -74,13 +74,13 @@ spec nats_impl =
  then
  PROCEDURES
  hnlz: IN bin;
- gn_restr_bin:  IN bin;
+ nlz:  IN bin;
  i_badd: IN bin, IN bin, OUT bin, OUT bin;
  i_add: IN bin, IN bin -> bin;
  i_prdc:  IN bin -> bin;
  i_succ:  IN bin -> bin;
  i_zero: -> bin;
- gn_eq_bin:  IN bin, IN bin -> Boolean
+ eq:  IN bin, IN bin -> Boolean
 
 . DEFPROCS
   PROCEDURE hnlz(x)
@@ -94,7 +94,7 @@ spec nats_impl =
       FI
    END;
 
-   PROCEDURE gn_restr_bin(x)
+   PROCEDURE nlz(x)
     BEGIN
      IF x = b_zero
       THEN SKIP
@@ -189,7 +189,7 @@ spec nats_impl =
  DEFPROCSEND %(impl)%
 
  . DEFPROCS
-  FUNCTION gn_eq_bin(x,y)
+  FUNCTION eq(x,y)
   BEGIN
    DECLARE res: Boolean := False;
    IF x = y THEN res := True ELSE skip FI;
@@ -207,11 +207,11 @@ view refine:
    %% Sort
    nats    |-> bin,
    %% Restriction
-   gn_restr_nats  |-> gn_restr_bin,
+   gn_restr_nats  |-> nlz,
    %% uniform restriction
    gn_uniform_nats |-> gn_uniform_bin,
    %% equality
-   gn_eq_nats |-> gn_eq_bin,
+   gn_eq_nats |-> eq,
    %% Implementations
    gn_zero_n  |-> i_zero,
    gn_succ_n  |-> i_succ,
