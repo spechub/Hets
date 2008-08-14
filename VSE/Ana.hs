@@ -11,7 +11,24 @@ Portability :  portable
 analysis of VSE logic extension of CASL
 -}
 
-module VSE.Ana where
+module VSE.Ana
+  ( uTrue
+  , uFalse
+  , uBoolean
+  , constBoolType
+  , boolSig
+  , lookupProc
+  , procsToOpMap
+  , procsToPredMap
+  , profileToOpType
+  , profileToPredType
+  , checkCases
+  , basicAna
+  , mapDlformula
+  , minExpForm
+  , simpDlformula
+  , correctTarget
+  ) where
 
 import Data.Char (toLower)
 import Data.Maybe
@@ -91,14 +108,26 @@ getCaseDiags sig =
   ++ getCases "op or function" (Map.keysSet $ opMap sig)
   ++ getCases "pred or proc" (Map.keysSet $ predMap sig)
 
+uBoolean :: Id
+uBoolean = stringToId "Boolean"
+
+uTrue :: Id
+uTrue = stringToId "True"
+
+uFalse :: Id
+uFalse = stringToId "False"
+
+constBoolType :: OpType
+constBoolType =  OpType Total [] uBoolean
+
+uOpMap :: OpMap
+uOpMap = Map.fromList $ map (\ c -> (c, Set.singleton constBoolType))
+  [uFalse, uTrue]
+
 boolSig :: Sign f Procs
-boolSig = execState (do
-  let e = emptyAnno ()
-      bi = stringToId "Boolean"
-      ot = OpType Total [] bi
-  addSort NonEmptySorts e bi
-  addOp e ot (stringToId "False")
-  addOp e ot (stringToId "True")) $ emptySign emptyProcs
+boolSig = (emptySign emptyProcs)
+  { sortSet = Set.singleton uBoolean
+  , opMap = uOpMap }
 
 lookupProc :: Id -> Sign f Procs -> Maybe Profile
 lookupProc i sig = Map.lookup i $ procsMap $ extendedInfo sig
@@ -115,6 +144,10 @@ addProcs sig = addSig const sig $ procsSign sig
 subProcs :: Sign f Procs -> Sign f Procs
 subProcs sig = diffSig const sig $ procsSign sig
 
+checkCases :: Sign f e -> [Named Sentence] -> [Diagnosis]
+checkCases sig2 sens = getCaseDiags sig2 ++ concatMap
+    (getCases "var" . Set.map simpleIdToId . getVariables . sentence) sens
+
 basicAna
   :: (BASIC_SPEC () Procdecls Dlformula,
       Sign Dlformula Procs, GlobalAnnos)
@@ -126,13 +159,15 @@ basicAna (bs, sig, ga) = do
   (bs2, ExtSign sig2 syms, sens) <-
     basicAnalysis minExpForm (const return) anaProcdecls anaMix
         (bs, sigIn, ga)
-  Result (getCaseDiags sig2 ++ concatMap
-         (getCases "var" . Set.map simpleIdToId . getVariables . sentence)
-          sens) $ Just () -- add diags
-  Result (map
+  appendDiags $ checkCases sig2 sens
+  appendDiags $ map
     (\ i -> mkDiag Error "illegal predicate declaration for procedure" i)
     $ Map.keys $ interMapSet (diffMapSet (predMap sig2) $ predMap sigIn)
-    $ procsToPredMap $ extendedInfo sig2) $ Just ()
+    $ procsToPredMap $ extendedInfo sig2
+  let sig3 = diffSig const sig2 boolSig
+  appendDiags $ map (\ i -> mkDiag Error "illegal overloading of" i)
+    $ Set.toList $ Set.intersection (Map.keysSet uOpMap)
+    $ Map.keysSet $ opMap sig3
   return (bs2, ExtSign (addProcs $ diffSig const sig2 boolSig) syms, sens)
 
 anaMix :: Mix () Procdecls Dlformula Procs
