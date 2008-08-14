@@ -33,5 +33,13 @@ forall f : a ->? b; x : a . twice2 f x = (f (f x) as b)
 forall a : Type; b < a : Type; f : a ->? b; x : a
 . twice f x = f (f x)
 ### Hint 1.6, is type variable 'a'
+### Hint 5.14-5.20,
+no kind found for 'a ->? b'
+  expected: {Cpo}
+     found: {Type}
+### Hint 5.14-5.20,
+no kind found for 'a ->? b'
+  expected: {Cppo}
+     found: {Type}
 ### Hint 9.7, not a kind 'a ->? b'
 ### Hint 9.20, not a class 'a'

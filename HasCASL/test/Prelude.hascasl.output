@@ -123,9 +123,7 @@ Flatcpo < Cpo;
 Pcpo < Cpo
 types
 Unit : Pcpo;
-__*__ : +Cpo -> +Cpo -> Cpo;
 __*__ : +Pcpo -> +Pcpo -> Pcpo;
-__-->__ : -Cpo -> +Cpo -> Cpo;
 __-->__ : -Cpo -> +Pcpo -> Pcpo;
 __-->?__ : -Cpo -> +Cpo -> Pcpo;
 bool : Flatcpo;
@@ -200,6 +198,14 @@ ignoring declaration for builtin identifier '__=>__'
 ignoring declaration for builtin identifier '__if__'
 ### Warning 19.40,
 ignoring declaration for builtin identifier '__<=>__'
+### Hint 22.14,
+no kind found for 's'
+  expected: {Cpo}
+     found: {Type}
+### Hint 22.14,
+no kind found for 's'
+  expected: {Cppo}
+     found: {Type}
 ### Warning 22.8,
 ignoring declaration for builtin identifier '__=__'
 ### Hint 27.8, redeclared type '__->?__'
@@ -252,6 +258,14 @@ ambiguous typings
 = \ ((var x : s), (var y : t)) . (def y) und (def x)
  2. (\ ((var x : s), (var y : t)) . def (x res y))
 = \ ((var x : s), (var y : t)) . (def y) und (def x)
+### Hint 72.11,
+no kind found for 's'
+  expected: {Cpo}
+     found: {Type}
+### Hint 72.11,
+no kind found for 's'
+  expected: {Cppo}
+     found: {Type}
 ### Hint 74.5, rebound variable 'x'
 ### Hint 74.5, rebound variable 'x'
 ### Hint 75.6, rebound variable 'x'
@@ -335,6 +349,10 @@ no typing for
  . all \ x : s . eq (\ . f x, g x) impl eq (f, g)'
 ### Warning 115.7, unchanged class 'Cpo'
 ### Hint 117.5, is type variable 'c'
+### Hint 119.16,
+no kind found for 'c'
+  expected: {Cppo}
+     found: {Cpo}
 ### Hint 121.3, no type found for 'all'
 ### Hint 121.3, untypeable term (with type: _v442 ->? Unit) 'all'
 *** Error 121.3-121.16, no typing for 'all \ x : c . x <<= x'
@@ -389,6 +407,7 @@ repeated declaration of '__<<=__' with type 'c * c ->? Unit'
 ### Hint 153.5, is type variable 'c'
 ### Hint 153.5, rebound type variable 'c'
 ### Hint 153.8, is type variable 'd'
+### Hint 155.17, redeclared type '__*__'
 ### Hint 157.7, not a class 'c'
 ### Hint 157.11, not a class 'c'
 ### Hint 157.18, not a class 'd'
@@ -436,14 +455,27 @@ ambiguous mixfix term
 no typing for
 'program f <<=[c -->? d] g
          = all \ x : c . def (f x) impl f (x) <<= g (x)'
+### Hint 179.17, redeclared type '__-->__'
 *** Error 181.17-181.23, non-unique kind for '__ -->? __'
+### Hint 182.16,
+no kind found for 'd'
+  expected: {Cppo}
+     found: {Cpo}
 *** Error 182.46-182.53,
 ambiguous mixfix term
   def (f x)
   (def f) x
 *** Error 182.7, unexpected mixfix token: :
 ### Hint 184.7, not a kind 'c --> d'
+### Hint 184.19,
+no kind found for 'd'
+  expected: {Cppo}
+     found: {Cpo}
 ### Hint 184.11, not a kind 'c --> d'
+### Hint 184.19,
+no kind found for 'd'
+  expected: {Cppo}
+     found: {Cpo}
 ### Hint 186.25-186.34, is type list '[c -->? d]'
 ### Hint 186.10, rebound variable 'f'
 ### Hint 186.16, rebound variable 'g'
@@ -451,6 +483,14 @@ ambiguous mixfix term
 ### Hint 186.16, rebound variable 'g'
 ### Hint 119.14-119.18,
 repeated declaration of '__<<=__' with type 'c * c ->? Unit'
+### Hint 190.16,
+no kind found for 'p'
+  expected: {Cppo}
+     found: {Pcpo}
+### Hint 190.23,
+no kind found for 'p'
+  expected: {Cppo}
+     found: {Pcpo}
 ### Hint 192.3, no type found for 'all'
 ### Hint 192.3, untypeable term (with type: _v521 ->? Unit) 'all'
 *** Error 192.3-193.47,
@@ -459,9 +499,33 @@ no typing for
  \ f : p -->? p
  . eq (f (Y f), Y f) und all \ x : p . eq (f x, x) impl Y f <<= x'
 ### Hint 195.7, not a kind 'p --> p'
+### Hint 195.15,
+no kind found for 'p'
+  expected: {Cppo}
+     found: {Pcpo}
 ### Hint 195.5, rebound variable 'f'
 ### Hint 195.20, not a class 'p'
 ### Hint 195.18, rebound variable 'x'
+### Hint 199.22,
+no kind found for 'p'
+  expected: {Cppo}
+     found: {Pcpo}
+### Hint 199.40,
+no kind found for 'p'
+  expected: {Cppo}
+     found: {Pcpo}
+### Hint 199.58,
+no kind found for 'p'
+  expected: {Cppo}
+     found: {Pcpo}
+### Hint 199.71,
+no kind found for 'p'
+  expected: {Cppo}
+     found: {Pcpo}
+### Hint 199.65-199.71,
+no kind found for 'c --> p'
+  expected: {Cppo}
+     found: {Pcpo}
 ### Warning 204.20,
 ignoring declaration for builtin identifier 'true'
 ### Warning 204.27,

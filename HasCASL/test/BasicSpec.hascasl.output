@@ -151,6 +151,14 @@ illegal lhs pattern
 ### Warning 22.1-22.18,
 illegal lhs pattern
 '(var snd : s * t ->? t) ((var x : s), (var y : t)) : t'
+### Hint 24.11,
+no kind found for 's'
+  expected: {Cpo}
+     found: {c}
+### Hint 24.11,
+no kind found for 's'
+  expected: {Cppo}
+     found: {c}
 ### Hint 26.6, redeclared type 's'
 ### Hint 28.38-28.41,
 in type of '((var p : s), (pred tt : s))'

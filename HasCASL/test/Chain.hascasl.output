@@ -31,6 +31,18 @@ forall a : Cpo; c : Chain a; x : ? a
 . sup c <= x <=> forall n : Nat . c n <= x
 ### Warning 1.7, unchanged class 'Cpo'
 ### Hint 2.8, is type variable 'a'
+### Hint 3.25,
+no kind found for 'a'
+  expected: {Cppo}
+     found: {Cpo}
+### Hint 5.27,
+no kind found for 'Nat'
+  expected: {Cpo}
+     found: {Type}
+### Hint 5.27,
+no kind found for 'Nat'
+  expected: {Cppo}
+     found: {Type}
 ### Hint 6.15, rebound type variable 'a'
 ### Hint 7.35, not a class 'Nat'
 ### Hint 8.8, is type variable 'a'

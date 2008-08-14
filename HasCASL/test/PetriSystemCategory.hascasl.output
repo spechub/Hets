@@ -298,9 +298,201 @@ forall h1 : HomSys; h2 : HomSys
          o (op transitionsMap : HomSys -> T ->? T) h1,
          (op cod : HomSys -> System) h2)
         as HomSys)
+### Hint 3.28,
+no kind found for 'Nat'
+  expected: {Cpo}
+     found: {Type}
+### Hint 3.28,
+no kind found for 'Nat'
+  expected: {Cppo}
+     found: {Type}
+### Hint 3.28,
+no kind found for 'Nat'
+  expected: {Cpo}
+     found: {Type}
+### Hint 3.28,
+no kind found for 'Nat'
+  expected: {Cppo}
+     found: {Type}
+### Hint 3.28,
+no kind found for 'Nat'
+  expected: {Cpo}
+     found: {Type}
+### Hint 3.28,
+no kind found for 'Nat'
+  expected: {Cppo}
+     found: {Type}
+### Hint 4.34,
+no kind found for 'Nat'
+  expected: {Cpo}
+     found: {Type}
+### Hint 4.34,
+no kind found for 'Nat'
+  expected: {Cppo}
+     found: {Type}
+### Hint 4.34,
+no kind found for 'Nat'
+  expected: {Cpo}
+     found: {Type}
+### Hint 4.34,
+no kind found for 'Nat'
+  expected: {Cppo}
+     found: {Type}
+### Hint 4.34,
+no kind found for 'Nat'
+  expected: {Cpo}
+     found: {Type}
+### Hint 4.34,
+no kind found for 'Nat'
+  expected: {Cppo}
+     found: {Type}
 ### Hint 7.7, is type variable 'S'
 ### Hint 7.9, is type variable 'V'
+### Hint 11.18,
+no kind found for 'S'
+  expected: {Cpo}
+     found: {Type}
+### Hint 11.18,
+no kind found for 'S'
+  expected: {Cppo}
+     found: {Type}
+### Hint 12.25-12.29,
+no kind found for 'Set S'
+  expected: {Cpo}
+     found: {Type}
+### Hint 12.25-12.29,
+no kind found for 'Set S'
+  expected: {Cppo}
+     found: {Type}
+### Hint 13.46-13.50,
+no kind found for 'Set S'
+  expected: {Cpo}
+     found: {Type}
+### Hint 13.46-13.50,
+no kind found for 'Set S'
+  expected: {Cppo}
+     found: {Type}
+### Hint 13.46-13.50,
+no kind found for 'Set S'
+  expected: {Cpo}
+     found: {Type}
+### Hint 13.46-13.50,
+no kind found for 'Set S'
+  expected: {Cppo}
+     found: {Type}
+### Hint 13.46-13.50,
+no kind found for 'Set S'
+  expected: {Cpo}
+     found: {Type}
+### Hint 13.46-13.50,
+no kind found for 'Set S'
+  expected: {Cppo}
+     found: {Type}
+### Hint 14.28-14.32,
+no kind found for 'Set S'
+  expected: {Cpo}
+     found: {Type}
+### Hint 14.28-14.32,
+no kind found for 'Set S'
+  expected: {Cppo}
+     found: {Type}
+### Hint 15.15-15.19,
+no kind found for 'Set S'
+  expected: {Cpo}
+     found: {Type}
+### Hint 15.15-15.19,
+no kind found for 'Set S'
+  expected: {Cppo}
+     found: {Type}
+### Hint 15.37,
+no kind found for 'S'
+  expected: {Cpo}
+     found: {Type}
+### Hint 15.37,
+no kind found for 'S'
+  expected: {Cppo}
+     found: {Type}
+### Hint 16.28-16.32,
+no kind found for 'Set S'
+  expected: {Cpo}
+     found: {Type}
+### Hint 16.28-16.32,
+no kind found for 'Set S'
+  expected: {Cppo}
+     found: {Type}
+### Hint 16.50,
+no kind found for 'S'
+  expected: {Cpo}
+     found: {Type}
+### Hint 16.50,
+no kind found for 'S'
+  expected: {Cppo}
+     found: {Type}
+### Hint 17.24,
+no kind found for 'S'
+  expected: {Cpo}
+     found: {Type}
+### Hint 17.24,
+no kind found for 'S'
+  expected: {Cppo}
+     found: {Type}
+### Hint 17.24,
+no kind found for 'S'
+  expected: {Cpo}
+     found: {Type}
+### Hint 17.24,
+no kind found for 'S'
+  expected: {Cppo}
+     found: {Type}
 ### Hint 19.7, is type variable 'Elem'
+### Hint 22.25,
+no kind found for 'Elem'
+  expected: {Cpo}
+     found: {Type}
+### Hint 22.25,
+no kind found for 'Elem'
+  expected: {Cppo}
+     found: {Type}
+### Hint 23.24-23.33,
+no kind found for 'MultiSet Elem'
+  expected: {Cpo}
+     found: {Type}
+### Hint 23.24-23.33,
+no kind found for 'MultiSet Elem'
+  expected: {Cppo}
+     found: {Type}
+### Hint 27.21-27.30,
+no kind found for 'MultiSet Elem'
+  expected: {Cpo}
+     found: {Type}
+### Hint 27.21-27.30,
+no kind found for 'MultiSet Elem'
+  expected: {Cppo}
+     found: {Type}
+### Hint 27.21-27.30,
+no kind found for 'MultiSet Elem'
+  expected: {Cpo}
+     found: {Type}
+### Hint 27.21-27.30,
+no kind found for 'MultiSet Elem'
+  expected: {Cppo}
+     found: {Type}
+### Hint 27.21-27.30,
+no kind found for 'MultiSet Elem'
+  expected: {Cpo}
+     found: {Type}
+### Hint 27.21-27.30,
+no kind found for 'MultiSet Elem'
+  expected: {Cppo}
+     found: {Type}
+### Hint 28.14,
+no kind found for 'Elem'
+  expected: {Cpo}
+     found: {Type}
+### Hint 28.14,
+no kind found for 'Elem'
+  expected: {Cppo}
+     found: {Type}
 ### Hint 31.6, is type variable 'Elem'
 ### Hint 31.6, rebound type variable 'Elem'
 ### Hint 33.10, not a kind 'MultiSet Elem'
@@ -321,13 +513,109 @@ untypeable term (with type: _v19_Elem * MultiSet _v19_Elem)
 ### Hint 45.9, is type variable 'V'
 ### Hint 45.9, rebound type variable 'V'
 ### Hint 45.11, is type variable 'U'
+### Hint 51.33-51.37,
+no kind found for 'S ->? V'
+  expected: {Cpo}
+     found: {Type}
+### Hint 51.33-51.37,
+no kind found for 'S ->? V'
+  expected: {Cppo}
+     found: {Type}
+### Hint 52.21-52.25,
+no kind found for 'S ->? V'
+  expected: {Cpo}
+     found: {Type}
+### Hint 52.21-52.25,
+no kind found for 'S ->? V'
+  expected: {Cppo}
+     found: {Type}
+### Hint 53.18-53.22,
+no kind found for 'S ->? V'
+  expected: {Cpo}
+     found: {Type}
+### Hint 53.18-53.22,
+no kind found for 'S ->? V'
+  expected: {Cppo}
+     found: {Type}
+### Hint 54.16-54.20,
+no kind found for 'V ->? U'
+  expected: {Cpo}
+     found: {Type}
+### Hint 54.16-54.20,
+no kind found for 'V ->? U'
+  expected: {Cppo}
+     found: {Type}
+### Hint 55.17-55.21,
+no kind found for 'S ->? V'
+  expected: {Cpo}
+     found: {Type}
+### Hint 55.17-55.21,
+no kind found for 'S ->? V'
+  expected: {Cppo}
+     found: {Type}
+### Hint 57.30,
+no kind found for 'S'
+  expected: {Cpo}
+     found: {Type}
+### Hint 57.30,
+no kind found for 'S'
+  expected: {Cppo}
+     found: {Type}
+### Hint 59.44-59.48,
+no kind found for 'S ->? V'
+  expected: {Cpo}
+     found: {Type}
+### Hint 59.44-59.48,
+no kind found for 'S ->? V'
+  expected: {Cppo}
+     found: {Type}
+### Hint 59.44-59.48,
+no kind found for 'S ->? V'
+  expected: {Cpo}
+     found: {Type}
+### Hint 59.44-59.48,
+no kind found for 'S ->? V'
+  expected: {Cppo}
+     found: {Type}
+### Hint 60.23-60.27,
+no kind found for 'S ->? V'
+  expected: {Cpo}
+     found: {Type}
+### Hint 60.23-60.27,
+no kind found for 'S ->? V'
+  expected: {Cppo}
+     found: {Type}
 ### Hint 62.7, is type variable 'S'
 ### Hint 62.7, rebound type variable 'S'
 ### Hint 62.10, is type variable 'V'
 ### Hint 62.10, rebound type variable 'V'
+### Hint 63.33-63.47,
+no kind found for 'S ->? MultiSet V'
+  expected: {Cpo}
+     found: {Type}
+### Hint 63.33-63.47,
+no kind found for 'S ->? MultiSet V'
+  expected: {Cppo}
+     found: {Type}
+### Hint 67.27-67.36,
+no kind found for 'MultiSet Elem'
+  expected: {Cpo}
+     found: {Type}
+### Hint 67.27-67.36,
+no kind found for 'MultiSet Elem'
+  expected: {Cppo}
+     found: {Type}
 ### Hint 20.18-67.60,
 repeated declaration of '__intersection__' with type
 'MultiSet Elem * MultiSet Elem -> MultiSet Elem'
+### Hint 71.30-71.34,
+no kind found for 'Set P'
+  expected: {Cpo}
+     found: {Type}
+### Hint 71.30-71.34,
+no kind found for 'Set P'
+  expected: {Cppo}
+     found: {Type}
 ### Hint 72.23, not a kind 'MultiSet P'
 ### Hint 73.26, not a kind 'MultiSet P'
 ### Hint 72.37-72.51,
@@ -344,6 +632,14 @@ rejected 'Unit < Nat' of '((var p1 : MultiSet P),
 ### Hint 73.40-73.54,
 untypeable term (with type: _v172_Elem * MultiSet _v172_Elem)
 '(p1, range pre)'
+### Hint 79.23,
+no kind found for 'Net'
+  expected: {Cpo}
+     found: {Type}
+### Hint 79.23,
+no kind found for 'Net'
+  expected: {Cppo}
+     found: {Type}
 ### Hint 81.19, not a class 'T'
 ### Hint 80.8-80.35,
 in type of '((var hp : P ->? P), (op places : Net -> Set P) (var n1 : Net),
@@ -367,6 +663,22 @@ rejected 'Unit < Nat' of '((var t : T), (op transitions : Net -> Set T) (var n1 
 ### Hint 81.24-81.43,
 untypeable term (with type: _v461_Elem * MultiSet _v461_Elem)
 '(t, transitions n1)'
+### Hint 89.15,
+no kind found for 'HomNet'
+  expected: {Cpo}
+     found: {Type}
+### Hint 89.15,
+no kind found for 'HomNet'
+  expected: {Cppo}
+     found: {Type}
+### Hint 93.26,
+no kind found for 'Net'
+  expected: {Cpo}
+     found: {Type}
+### Hint 93.26,
+no kind found for 'Net'
+  expected: {Cppo}
+     found: {Type}
 ### Hint 95.38, not a class 'P'
 ### Hint 95.43-95.50,
 rejected 'Nat < Unit' of '((var x : P), (var m : Marking))'
@@ -377,6 +689,30 @@ rejected 'Unit < Nat' of '((var x : P), (var p : P ->? Unit))'
 ### Hint 95.55-95.62,
 untypeable term (with type: _v674_Elem * MultiSet _v674_Elem)
 '(x, p)'
+### Hint 99.20,
+no kind found for 'System'
+  expected: {Cpo}
+     found: {Type}
+### Hint 99.20,
+no kind found for 'System'
+  expected: {Cppo}
+     found: {Type}
+### Hint 100.20,
+no kind found for 'System'
+  expected: {Cpo}
+     found: {Type}
+### Hint 100.20,
+no kind found for 'System'
+  expected: {Cppo}
+     found: {Type}
+### Hint 102.39,
+no kind found for 'System'
+  expected: {Cpo}
+     found: {Type}
+### Hint 102.39,
+no kind found for 'System'
+  expected: {Cppo}
+     found: {Type}
 ### Hint 104.19, not a class 'P'
 ### Hint 104.24-104.74,
 in type of '((op freq : forall Elem : Type . Elem * MultiSet Elem -> Nat)
@@ -390,6 +726,14 @@ in type of '((op freq : forall Elem : Type . Elem * MultiSet Elem -> Nat)
 ### Hint 104.24-104.74,
 untypeable term (with type: MultiSet _v796_Elem * MultiSet _v796_Elem)
 '(freq (p, marking sys1), freq (hp p, marking sys2))'
+### Hint 110.16,
+no kind found for 'HomSys'
+  expected: {Cpo}
+     found: {Type}
+### Hint 110.16,
+no kind found for 'HomSys'
+  expected: {Cppo}
+     found: {Type}
 ### Hint 112.12, not a class 'HomSys'
 ### Hint 112.16, not a class 'HomSys'
 ### Hint 113.10-113.15,

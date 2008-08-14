@@ -102,3 +102,11 @@ forall c < e : Type; d < f : Type; e : Type; f : Type; x : c; y : d
 ### Hint 30.8, rebound variable 'x'
 ### Hint 30.15, not a class 'd'
 ### Hint 30.14, rebound variable 'y'
+### Hint 30.33,
+no kind found for 'e'
+  expected: {Cpo}
+     found: {Type}
+### Hint 30.33,
+no kind found for 'e'
+  expected: {Cppo}
+     found: {Type}

@@ -91,6 +91,14 @@ forall G : PolyBifunctor; a : Type; f : a -> a; l : ParamDT G a
 ### Hint 1.26, not a class 'b'
 ### Hint 1.37, not a class 'b'
 ### Hint 1.37, not a class 'c'
+### Hint 2.18-2.23,
+no kind found for 'b -> c'
+  expected: {Cpo}
+     found: {Type}
+### Hint 2.18-2.23,
+no kind found for 'b -> c'
+  expected: {Cppo}
+     found: {Type}
 ### Hint 8.7, is type variable 'a'
 ### Hint 8.7, rebound type variable 'a'
 ### Hint 8.9, is type variable 'b'
@@ -110,6 +118,14 @@ forall G : PolyBifunctor; a : Type; f : a -> a; l : ParamDT G a
 ### Hint 16.17, rebound type variable 'a'
 ### Hint 16.19, is type variable 'b'
 ### Hint 16.19, rebound type variable 'b'
+### Hint 18.23-18.28,
+no kind found for 'a -> b'
+  expected: {Cpo}
+     found: {Type}
+### Hint 18.23-18.28,
+no kind found for 'a -> b'
+  expected: {Cppo}
+     found: {Type}
 ### Hint 21.5, is type variable 'F'
 ### Hint 21.5, rebound type variable 'F'
 ### Hint 21.19, is type variable 'a'

@@ -36,6 +36,14 @@ a4 := \ a : Type . \ a : Type . a -> Unit;
 a7 := \ a : Type . a6 a -> Unit
 var
 s : Type %(var_1)%
+### Hint 2.16,
+no kind found for 'S'
+  expected: {Cpo}
+     found: {Type}
+### Hint 2.16,
+no kind found for 'S'
+  expected: {Cppo}
+     found: {Type}
 ### Hint 3.5, is type variable 's'
 *** Error 5.14, unknown type variable 't'
 *** Error 7.9, unknown type variable 'a'

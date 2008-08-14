@@ -32,6 +32,14 @@ program snd ((var x : s), (var y : t)) : t = (var y : t) %(pe_snd)%
 program (var b : s) = a %(pe_b)%
 program b = a %(pe_b)%
 . c = (snd (x, y) as t)
+### Hint 2.10,
+no kind found for 's'
+  expected: {Cpo}
+     found: {Type}
+### Hint 2.10,
+no kind found for 's'
+  expected: {Cppo}
+     found: {Type}
 ### Hint 2.10-2.19,
 repeated declaration of 'snd' with type 's * t -> t'
 ### Hint 2.10-2.19,

@@ -112,6 +112,22 @@ a : Type; b : Type; m : Monad; t : MonadT; p : m a; q : a -> m b
 ### Hint 9.20, rebound type variable 'b'
 ### Hint 9.23, is type variable 'c'
 ### Hint 9.23, rebound type variable 'c'
+### Hint 10.17-10.19,
+no kind found for 'm a'
+  expected: {Cpo}
+     found: {Type}
+### Hint 10.17-10.19,
+no kind found for 'm a'
+  expected: {Cppo}
+     found: {Type}
+### Hint 11.17-11.19,
+no kind found for 'm a'
+  expected: {Cpo}
+     found: {Type}
+### Hint 11.17-11.19,
+no kind found for 'm a'
+  expected: {Cppo}
+     found: {Type}
 ### Hint 13.8, not a class 'a'
 ### Hint 13.7, rebound variable 'x'
 ### Hint 13.11, not a class 'a'
@@ -244,6 +260,14 @@ untypeable term (with type: _v563_m _v564_a * (_v564_a -> _v563_m _v565_b))
 ### Hint 33.7, rebound type variable 'a'
 ### Hint 33.10, is type variable 'b'
 ### Hint 33.10, rebound type variable 'b'
+### Hint 34.30,
+no kind found for 'a'
+  expected: {Cpo}
+     found: {Type}
+### Hint 34.30,
+no kind found for 'a'
+  expected: {Cppo}
+     found: {Type}
 ### Hint 34.6, redeclared type 'ST'
 ### Hint 35.8, not a class 'a'
 ### Hint 35.7, rebound variable 'x'

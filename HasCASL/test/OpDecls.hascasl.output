@@ -104,6 +104,22 @@ op z : s
 . z = ((op __+__ : s * s -> s) (x as s, x as t as s) as s)
 . x in s %(bla_label)%
 . x in t
+### Hint 7.14,
+no kind found for 's'
+  expected: {Cpo}
+     found: {Type}
+### Hint 7.14,
+no kind found for 's'
+  expected: {Cppo}
+     found: {Type}
+### Hint 8.14,
+no kind found for 't'
+  expected: {Cpo}
+     found: {Type}
+### Hint 8.14,
+no kind found for 't'
+  expected: {Cppo}
+     found: {Type}
 ### Warning 9.7, expected tuple argument for '__+__'
 ### Hint 13.12-13.16,
 in type of '((op a : s), (op b : s))'
@@ -151,14 +167,38 @@ rejected 't < s' of '((op a : s), (op a : t))'
 rejected 't < s' of '((op a : t), (op a : s))'
 ### Hint 15.14-15.21,
 rejected 't < s' of '((op a : t), (op a : t))'
+### Hint 17.8,
+no kind found for 's'
+  expected: {Cpo}
+     found: {Type}
+### Hint 17.8,
+no kind found for 's'
+  expected: {Cppo}
+     found: {Type}
 ### Hint 17.6-17.24,
 in type of '(op __+__ : t -> t -> t) as s * s -> s'
   typename 't' (9.14)
   is not unifiable with type 's * s' (17.12)
+### Hint 19.8,
+no kind found for 's'
+  expected: {Cpo}
+     found: {Type}
+### Hint 19.8,
+no kind found for 's'
+  expected: {Cppo}
+     found: {Type}
 ### Hint 19.6-19.25,
 in type of '(op __+__ : t -> t -> t) as s * s -> s'
   typename 't' (9.14)
   is not unifiable with type 's * s' (19.12)
+### Hint 21.8,
+no kind found for 's'
+  expected: {Cpo}
+     found: {Type}
+### Hint 21.8,
+no kind found for 's'
+  expected: {Cppo}
+     found: {Type}
 ### Hint 23.23-23.26,
 in type of '((op a : s), (op b : s))'
   typename 't' (9.14)
@@ -197,12 +237,28 @@ untypeable term (with type: t) '(a : s, b : s)'
 ### Hint 30.18, rejected 't < s' of '(op a : t)'
 ### Hint 31.19, rejected 't < s' of '(op a : t)'
 ### Hint 32.21, rejected 't < s' of '(op a : t)'
+### Hint 34.21,
+no kind found for 's'
+  expected: {Cpo}
+     found: {Type}
+### Hint 34.21,
+no kind found for 's'
+  expected: {Cppo}
+     found: {Type}
 ### Hint 36.13-36.19,
 rejected 't < s' of '((op a : s), (op b : t), (op c : s))'
 ### Hint 36.13-36.19,
 rejected 't < s' of '((op a : t), (op b : s), (op c : s))'
 ### Hint 36.13-36.19,
 rejected 't < s' of '((op a : t), (op b : t), (op c : s))'
+### Hint 37.9,
+no kind found for 's'
+  expected: {Cpo}
+     found: {Type}
+### Hint 37.9,
+no kind found for 's'
+  expected: {Cppo}
+     found: {Type}
 ### Hint 38.29-38.36,
 rejected 't < s' of '((op a : s), (op b : t), (op c : s))'
 ### Hint 38.29-38.36,
@@ -215,6 +271,14 @@ rejected 't < s' of '((op a : s), (op b : t), (op c : s))'
 rejected 't < s' of '((op a : t), (op b : s), (op c : s))'
 ### Hint 39.31-39.38,
 rejected 't < s' of '((op a : t), (op b : t), (op c : s))'
+### Hint 40.9,
+no kind found for 's'
+  expected: {Cpo}
+     found: {Type}
+### Hint 40.9,
+no kind found for 's'
+  expected: {Cppo}
+     found: {Type}
 ### Hint 44.42-44.44, rejected 't < s' of '(op a : t) : s'
 ### Hint 46.12-46.38,
 in type of '((op x : s) as s, (op x : s) as t as s)'

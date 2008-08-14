@@ -5,3 +5,19 @@ type
 s : Type
 op f : s --> s %(op)%
 . f = ((\ x : s . x) as s --> s)
+### Hint 3.8,
+no kind found for 's'
+  expected: {Cpo}
+     found: {Type}
+### Hint 3.8,
+no kind found for 's'
+  expected: {Cpo}
+     found: {Type}
+### Hint 5.25,
+no kind found for 's'
+  expected: {Cpo}
+     found: {Type}
+### Hint 5.25,
+no kind found for 's'
+  expected: {Cpo}
+     found: {Type}

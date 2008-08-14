@@ -26,6 +26,46 @@ forall E : Type; N : Type; g : Graph N E; g' : Graph N E
 ### Hint 1.7, is type variable 'S'
 ### Hint 1.9, is type variable 'N'
 ### Hint 1.11, is type variable 'E'
+### Hint 3.21-3.25,
+no kind found for 'Set N'
+  expected: {Cpo}
+     found: {Type}
+### Hint 3.21-3.25,
+no kind found for 'Set N'
+  expected: {Cppo}
+     found: {Type}
+### Hint 5.20-5.28,
+no kind found for 'Graph N E'
+  expected: {Cpo}
+     found: {Type}
+### Hint 5.20-5.28,
+no kind found for 'Graph N E'
+  expected: {Cppo}
+     found: {Type}
+### Hint 6.47-6.51,
+no kind found for 'Set S'
+  expected: {Cpo}
+     found: {Type}
+### Hint 6.47-6.51,
+no kind found for 'Set S'
+  expected: {Cppo}
+     found: {Type}
+### Hint 6.47-6.51,
+no kind found for 'Set S'
+  expected: {Cpo}
+     found: {Type}
+### Hint 6.47-6.51,
+no kind found for 'Set S'
+  expected: {Cppo}
+     found: {Type}
+### Hint 6.47-6.51,
+no kind found for 'Set S'
+  expected: {Cpo}
+     found: {Type}
+### Hint 6.47-6.51,
+no kind found for 'Set S'
+  expected: {Cppo}
+     found: {Type}
 ### Hint 8.11, not a kind 'Graph N E'
 ### Hint 8.15, not a kind 'Graph N E'
 ### Hint 9.6-9.14,

@@ -73,6 +73,14 @@ in term '(op fail : forall a : Type; m : Monad . m a)
 = (op empty : forall a : Type . List a)'
  are uninstantiated type variables
 '[_v21_a]'
+### Hint 31.15-31.17,
+no kind found for 'm a'
+  expected: {Cpo}
+     found: {Type}
+### Hint 31.15-31.17,
+no kind found for 'm a'
+  expected: {Cppo}
+     found: {Type}
 ### Hint 33.7, not a class 'a'
 ### Hint 33.7, not a class 'b'
 ### Hint 33.23, not a kind 'm a'

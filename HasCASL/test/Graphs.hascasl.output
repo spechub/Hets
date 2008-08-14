@@ -72,6 +72,102 @@ forall S : Type; x : S . inr x = (x, True)
 ### Hint 3.19, rebound type variable 'S'
 ### Hint 3.8, redeclared type 'Pred'
 ### Hint 4.17, rebound type variable 'S'
+### Hint 9.18,
+no kind found for 'S'
+  expected: {Cpo}
+     found: {Type}
+### Hint 9.18,
+no kind found for 'S'
+  expected: {Cppo}
+     found: {Type}
+### Hint 10.25-10.29,
+no kind found for 'Set S'
+  expected: {Cpo}
+     found: {Type}
+### Hint 10.25-10.29,
+no kind found for 'Set S'
+  expected: {Cppo}
+     found: {Type}
+### Hint 11.46-11.50,
+no kind found for 'Set S'
+  expected: {Cpo}
+     found: {Type}
+### Hint 11.46-11.50,
+no kind found for 'Set S'
+  expected: {Cppo}
+     found: {Type}
+### Hint 11.46-11.50,
+no kind found for 'Set S'
+  expected: {Cpo}
+     found: {Type}
+### Hint 11.46-11.50,
+no kind found for 'Set S'
+  expected: {Cppo}
+     found: {Type}
+### Hint 11.46-11.50,
+no kind found for 'Set S'
+  expected: {Cpo}
+     found: {Type}
+### Hint 11.46-11.50,
+no kind found for 'Set S'
+  expected: {Cppo}
+     found: {Type}
+### Hint 12.28-12.32,
+no kind found for 'Set S'
+  expected: {Cpo}
+     found: {Type}
+### Hint 12.28-12.32,
+no kind found for 'Set S'
+  expected: {Cppo}
+     found: {Type}
+### Hint 13.15-13.19,
+no kind found for 'Set S'
+  expected: {Cpo}
+     found: {Type}
+### Hint 13.15-13.19,
+no kind found for 'Set S'
+  expected: {Cppo}
+     found: {Type}
+### Hint 13.37,
+no kind found for 'S'
+  expected: {Cpo}
+     found: {Type}
+### Hint 13.37,
+no kind found for 'S'
+  expected: {Cppo}
+     found: {Type}
+### Hint 14.28-14.32,
+no kind found for 'Set S'
+  expected: {Cpo}
+     found: {Type}
+### Hint 14.28-14.32,
+no kind found for 'Set S'
+  expected: {Cppo}
+     found: {Type}
+### Hint 14.50,
+no kind found for 'S'
+  expected: {Cpo}
+     found: {Type}
+### Hint 14.50,
+no kind found for 'S'
+  expected: {Cppo}
+     found: {Type}
+### Hint 15.22,
+no kind found for 'S'
+  expected: {Cpo}
+     found: {Type}
+### Hint 15.22,
+no kind found for 'S'
+  expected: {Cppo}
+     found: {Type}
+### Hint 15.22,
+no kind found for 'S'
+  expected: {Cpo}
+     found: {Type}
+### Hint 15.22,
+no kind found for 'S'
+  expected: {Cppo}
+     found: {Type}
 ### Hint 16.11, not a class 'S'
 ### Hint 16.14, not a class 'S'
 ### Hint 16.19, not a class 'T'

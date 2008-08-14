@@ -84,9 +84,25 @@ forall a : Ord; x : ? a; y : ? a
 forall a : Cpo; x : ? a . x <= x
 ### Hint 2.7, is type variable 'a'
 ### Hint 2.16, not a class 'a'
+### Hint 3.22,
+no kind found for 'a'
+  expected: {Cpo}
+     found: {Ord}
+### Hint 3.22,
+no kind found for 'a'
+  expected: {Cppo}
+     found: {Ord}
 ### Hint 8.7, is type variable 'a'
 ### Hint 8.7, rebound type variable 'a'
 ### Hint 8.15, is type variable 'b'
+### Hint 9.22,
+no kind found for 'a'
+  expected: {Cpo}
+     found: {Ord}
+### Hint 9.22,
+no kind found for 'a'
+  expected: {Cppo}
+     found: {Ord}
 ### Hint 9.16-9.24,
 repeated declaration of '__<=__' with type 'Pred (a * a)'
 ### Hint 11.8, not a class 'a'
@@ -115,6 +131,22 @@ repeated declaration of '__<=__' with type 'Pred (a * a)'
 ### Hint 28.7, rebound type variable 'a'
 ### Hint 28.15, is type variable 'b'
 ### Hint 28.15, rebound type variable 'b'
+### Hint 29.12,
+no kind found for 'a'
+  expected: {Cpo}
+     found: {Ord}
+### Hint 29.12,
+no kind found for 'a'
+  expected: {Cppo}
+     found: {Ord}
+### Hint 30.12,
+no kind found for 'b'
+  expected: {Cpo}
+     found: {Num}
+### Hint 30.12,
+no kind found for 'b'
+  expected: {Cppo}
+     found: {Num}
 ### Hint 30.12,
 no kind found for 'b'
   expected: {Ord}
@@ -123,6 +155,14 @@ no kind found for 'b'
 ### Hint 32.7, rebound type variable 'a'
 ### Hint 32.15, is type variable 'b'
 ### Hint 32.15, rebound type variable 'b'
+### Hint 33.23-33.29,
+no kind found for 'a ->? b'
+  expected: {Cpo}
+     found: {Type}
+### Hint 33.23-33.29,
+no kind found for 'a ->? b'
+  expected: {Cppo}
+     found: {Type}
 ### Hint 33.23-33.29,
 no kind found for 'a ->? b'
   expected: {Ord}
@@ -175,6 +215,10 @@ untypeable term (with type: (_v182_a ->? _v183_b) * (_v182_a ->? _v183_b))
 ### Warning 43.7, refined class 'Cpo'
 ### Hint 44.5, is type variable 'a'
 ### Hint 44.5, rebound type variable 'a'
+### Hint 45.22,
+no kind found for 'a'
+  expected: {Cppo}
+     found: {Cpo}
 ### Hint 47.6, not a kind '? a'
 ### Hint 47.5, rebound variable 'x'
 ### Hint 48.7-48.10, is type list '[? a]'

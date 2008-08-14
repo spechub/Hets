@@ -16,4 +16,12 @@ op snoc : forall a : Type . List a -> a --> List a %(op)%
 forall a : Type; x : a . snoc nil x = snoc nil x
 forall a : Type; x : a . head nil x = x
 ### Hint 1.5, is type variable 'a'
+### Hint 5.21,
+no kind found for 'a'
+  expected: {Cpo}
+     found: {Type}
+### Hint 5.21,
+no kind found for 'a'
+  expected: {Cpo}
+     found: {Type}
 ### Hint 6.9, not a class 'a'

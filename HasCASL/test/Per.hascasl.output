@@ -41,12 +41,60 @@ forall S : Type; r : Set (S * S)
   <=> forall x, y, z : S . r (x, y) /\ r (y, z) => r (x, y)
 forall S : Type; r : PER S; x : S . x isIn dom r <=> (x, x) isIn r
 ### Hint 1.7, is type variable 'S'
+### Hint 3.20,
+no kind found for 'S'
+  expected: {Cpo}
+     found: {Type}
+### Hint 3.20,
+no kind found for 'S'
+  expected: {Cppo}
+     found: {Type}
+### Hint 4.51,
+no kind found for 'S'
+  expected: {Cpo}
+     found: {Type}
+### Hint 4.51,
+no kind found for 'S'
+  expected: {Cppo}
+     found: {Type}
+### Hint 4.51,
+no kind found for 'S'
+  expected: {Cpo}
+     found: {Type}
+### Hint 4.51,
+no kind found for 'S'
+  expected: {Cppo}
+     found: {Type}
+### Hint 4.51,
+no kind found for 'S'
+  expected: {Cpo}
+     found: {Type}
+### Hint 4.51,
+no kind found for 'S'
+  expected: {Cppo}
+     found: {Type}
 ### Hint 5.11, not a kind 'Set (S * S)'
+### Hint 5.16,
+no kind found for 'S'
+  expected: {Cpo}
+     found: {Type}
+### Hint 5.16,
+no kind found for 'S'
+  expected: {Cppo}
+     found: {Type}
 ### Hint 6.29, not a class 'S'
 ### Hint 7.29, not a class 'S'
 ### Hint 7.31, not a class 'S'
 ### Hint 8.30, not a class 'S'
 ### Hint 8.32, not a class 'S'
 ### Hint 8.34, not a class 'S'
+### Hint 9.26,
+no kind found for 'S'
+  expected: {Cpo}
+     found: {Type}
+### Hint 9.26,
+no kind found for 'S'
+  expected: {Cppo}
+     found: {Type}
 ### Hint 11.8, not a class 'S'
 ### Hint 11.13, not a kind 'PER S'

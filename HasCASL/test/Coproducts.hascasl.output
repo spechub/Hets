@@ -89,3 +89,11 @@ in term 'not def (op bot : forall a : Type . ? a)'
 ### Hint 20.16, not a class 'a'
 ### Hint 20.15, rebound variable 'x'
 ### Hint 20.18, not a class 'a'
+### Hint 22.25,
+no kind found for 'Bool'
+  expected: {Cpo}
+     found: {Type}
+### Hint 22.25,
+no kind found for 'Bool'
+  expected: {Cppo}
+     found: {Type}

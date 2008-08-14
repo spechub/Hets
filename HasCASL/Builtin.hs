@@ -256,33 +256,51 @@ bList = (botId, botType) : (defId, defType) : (notId, notType) :
         (eqId, eqType) : (exEq, eqType) : (resId, resType) :
         map ( \ o -> (o, logType)) [andId, orId, eqvId, implId, infixIf]
 
-funSupertypes :: [(Arrow, [Arrow])]
-funSupertypes = [(PFunArr,[]), (FunArr, [PFunArr]), (PContFunArr, [PFunArr]),
-                 (ContFunArr, [PContFunArr, FunArr])]
+funEntry :: Arrow -> [Arrow] -> [Kind] -> (Id, TypeInfo)
+funEntry a s cs = (arrowId a, TypeInfo (toRaw funKind)
+  (Set.fromList $ funKind : cs) (Set.fromList $ map arrowId s) NoTypeDefn)
+
+mkEntry :: Id -> Kind -> [Kind] -> TypeDefn -> (Id, TypeInfo)
+mkEntry i k cs d = (i, TypeInfo (toRaw k) (Set.fromList cs) Set.empty d)
+
+pEntry :: Id -> Kind -> TypeDefn -> (Id, TypeInfo)
+pEntry i k d = mkEntry i k [k] d
 
 -- | builtin data type map
 bTypes :: TypeMap
-bTypes = Map.fromList . map ( \ (i, k, s, d) ->
-    (i, TypeInfo (toRaw k) (Set.singleton k) (Set.fromList s) d)) $
-              (unitTypeId, universe, [], NoTypeDefn)
-              : (predTypeId, FunKind ContraVar universe universe nullRange, [],
-                           AliasTypeDefn aPredType)
-              : (lazyTypeId, coKind, [], NoTypeDefn)
-              : (logId, universe, [], AliasTypeDefn $ mkLazyType unitType)
-              : map ( \ n -> (productId n nullRange, prodKind n nullRange
-                             , [], NoTypeDefn))
-                [2 .. 5]
-              ++ map ( \ (a, l) -> (arrowId a, funKind,
-                        map ( \ b -> arrowId b) l,
-                                   NoTypeDefn))
-                funSupertypes
+bTypes = Map.fromList $ funEntry PFunArr [] []
+    : funEntry FunArr [PFunArr] []
+    : funEntry PContFunArr [PFunArr] [funKind3 cpoCl cpoCl cppoCl]
+    : funEntry ContFunArr [PContFunArr, FunArr]
+        [funKind3 cpoCl cpoCl cpoCl, funKind3 cpoCl cppoCl cppoCl]
+    : pEntry unitTypeId cppoCl NoTypeDefn
+    : pEntry predTypeId (FunKind ContraVar universe universe nullRange)
+        (AliasTypeDefn aPredType)
+    : pEntry lazyTypeId coKind NoTypeDefn
+    : pEntry logId universe (AliasTypeDefn $ mkLazyType unitType)
+    : map (\ n ->
+               let k = prodKind n nullRange
+                   cs = k : map (prodKind1 n nullRange) [cpoCl, cppoCl]
+               in mkEntry (productId n nullRange) k cs NoTypeDefn)
+          [2 .. 5]
 
 cpoId :: Id
 cpoId = stringToId "Cpo"
 
+cpoCl :: Kind
+cpoCl = ClassKind cpoId
+
+cppoId :: Id
+cppoId = stringToId "Cppo"
+
+cppoCl :: Kind
+cppoCl = ClassKind cppoId
+
 -- | builtin class map
 cpoMap :: ClassMap
-cpoMap = Map.singleton cpoId $ ClassInfo rStar $ Set.singleton universe
+cpoMap = Map.fromList
+  [ (cpoId, ClassInfo rStar $ Set.singleton universe)
+  , (cppoId, ClassInfo rStar $ Set.singleton cpoCl)]
 
 -- | builtin function map
 bOps :: Assumps

@@ -245,9 +245,14 @@ isPredType = fst . unPredType
 unPredTypeScheme :: TypeScheme -> TypeScheme
 unPredTypeScheme = mapTypeOfScheme (snd . unPredType)
 
+funKindWithRange3 :: Range -> Kind -> Kind -> Kind -> Kind
+funKindWithRange3 r a b c = FunKind ContraVar a (FunKind CoVar b c r) r
+
+funKind3 :: Kind -> Kind -> Kind -> Kind
+funKind3 = funKindWithRange3 nullRange
+
 funKindWithRange :: Range -> Kind
-funKindWithRange r = FunKind ContraVar (universeWithRange r)
-          (FunKind CoVar (universeWithRange r) (universeWithRange r) r) r
+funKindWithRange r = let c = universeWithRange r in funKindWithRange3 r c c c
 
 -- | the kind of the function type
 funKind :: Kind
@@ -258,10 +263,13 @@ mkFunKind :: Range -> [(Variance, AnyKind a)] -> AnyKind a -> AnyKind a
 mkFunKind r args res = foldr ( \ (v, a) k -> FunKind v a k r) res args
 
 -- | the 'Kind' of the product type
-prodKind :: Int -> Range -> Kind
-prodKind n r =
-    if n > 1 then mkFunKind r (replicate n (CoVar, universe)) universe
+prodKind1 :: Int -> Range -> Kind -> Kind
+prodKind1 n r c =
+    if n > 1 then mkFunKind r (replicate n (CoVar, c)) c
     else error "prodKind"
+
+prodKind :: Int -> Range -> Kind
+prodKind n r = prodKind1 n r universe
 
 -- | a type name with a universe kind
 toType :: Id -> Type
