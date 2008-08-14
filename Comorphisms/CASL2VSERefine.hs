@@ -686,8 +686,10 @@ mapSig sign =
      (predProcs, predSens) = foldl wrapPred ([],[]) $
                                         Map.toList $ predMap sign
      procs = Procs $ Map.fromList (sortProcs ++ opProcs ++ predProcs)
- in(sign { opMap = Map.empty,
-           predMap = Map.empty,
+     newPreds = procsToPredMap procs
+     newOps = procsToOpMap procs
+ in(sign { opMap = newOps,
+           predMap = newPreds,
            extendedInfo = procs,
            sentences = [] }, sortSens ++ opSens ++ predSens)
 

@@ -31,7 +31,7 @@ spec simpnats_goals =
 %%Import Specification
 %%====================
 
-logic CASL 
+logic CASL
 spec bin_data =
  free type bin ::= b_zero | b_one | s0(pop : ?bin) | s1(pop : ?bin)
 end
@@ -189,7 +189,7 @@ spec nats_impl =
  DEFPROCSEND %(impl)%
 
  . DEFPROCS
-  FUNCTION gn_eq_bin(x,y) 
+  FUNCTION gn_eq_bin(x,y)
   BEGIN
    DECLARE res: Boolean := False;
    IF x = y THEN res := True ELSE skip FI;
@@ -205,16 +205,16 @@ logic VSE
 view refine:
  simpnats_goals to nats_impl =
    %% Sort
-   nats    |-> bin, 
+   nats    |-> bin,
    %% Restriction
-   gn_restr_nat  |-> gn_restr_bin,      
+   gn_restr_nats  |-> gn_restr_bin,
    %% uniform restriction
-   gn_uniform_nat |-> gn_uniform_bin,
+   gn_uniform_nats |-> gn_uniform_bin,
    %% equality
-   gn_eq_nat |-> gn_eq_bin,
-   %% Implementations      
+   gn_eq_nats |-> gn_eq_bin,
+   %% Implementations
    gn_zero_n  |-> i_zero,
-   gn_succ_n  |-> i_succ, 
+   gn_succ_n  |-> i_succ,
    gn_prdc_n  |-> i_prdc,
    gn_add_n   |-> i_add
 
