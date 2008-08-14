@@ -137,7 +137,6 @@ p : Pcpo %(var_461)%;
 t : Type %(var_2)%
 op Y : forall p : Pcpo . (p --> p) --> p %(fun)%
 op __<<=__ : forall c : Cpo . c * c ->? Unit %(pred)%
-op bottom : forall p : Pcpo . p %(op)%
 op def : forall s : Type . Pred s %(op)%
 op eq : forall s : Type . s * s ->? Unit %(pred)%
 op fst : forall s : Type; t : Type . s * t -> s
@@ -397,6 +396,8 @@ no typing for
 *** Error 134.3-134.46,
 no typing for 'all \ s : nat -> c . isChain s impl def (sup s)'
 ### Hint 139.5, is type variable 'p'
+### Warning 141.4,
+ignoring declaration for builtin identifier 'bottom'
 ### Hint 143.3, no type found for 'all'
 ### Hint 143.3, untypeable term (with type: _v462 ->? Unit) 'all'
 *** Error 143.3-143.22, no typing for 'all \ x : p . bottom <<= x'

@@ -187,8 +187,11 @@ bType = typeArgToType bTypeArg
 lazyAType :: Type
 lazyAType = mkLazyType aType
 
+varToTypeArgK :: Id -> Int -> Variance -> Kind -> TypeArg
+varToTypeArgK i n v k = TypeArg i v (VarKind k) (toRaw k) n Other nullRange
+
 varToTypeArg :: Id -> Int -> Variance -> TypeArg
-varToTypeArg i n v = TypeArg i v (VarKind universe) rStar n Other nullRange
+varToTypeArg i n v = varToTypeArgK i n v universe
 
 mkATypeArg :: Variance -> TypeArg
 mkATypeArg = varToTypeArg aVar (-1)
@@ -196,11 +199,17 @@ mkATypeArg = varToTypeArg aVar (-1)
 aTypeArg :: TypeArg
 aTypeArg = mkATypeArg NonVar
 
+aTypeArgK :: Kind -> TypeArg
+aTypeArgK k = varToTypeArgK aVar (-1) NonVar k
+
 bTypeArg :: TypeArg
 bTypeArg = varToTypeArg bVar (-2) NonVar
 
+bindVarA :: TypeArg -> Type -> TypeScheme
+bindVarA a t = TypeScheme [a] t nullRange
+
 bindA :: Type -> TypeScheme
-bindA t = TypeScheme [aTypeArg] t nullRange
+bindA = bindVarA aTypeArg
 
 resType :: TypeScheme
 resType = TypeScheme [aTypeArg, bTypeArg]
@@ -233,7 +242,7 @@ unitTypeScheme :: TypeScheme
 unitTypeScheme = simpleTypeScheme lazyLog
 
 botId :: Id
-botId = mkId [mkSimpleId "g_bottom"]
+botId = mkId [mkSimpleId "bottom"]
 
 predTypeId :: Id
 predTypeId = mkId [mkSimpleId "Pred"]
@@ -242,7 +251,7 @@ logId :: Id
 logId = mkId [mkSimpleId "Logical"]
 
 botType :: TypeScheme
-botType = bindA $ lazyAType
+botType = let a = aTypeArgK cppoCl in bindVarA a $ mkLazyType $ typeArgToType a
 
 defType :: TypeScheme
 defType = bindA $ mkFunArrType lazyAType PFunArr unitType
