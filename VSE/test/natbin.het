@@ -22,8 +22,7 @@ PROCEDURES
  i_add: IN bin, IN bin -> bin;
  i_pred:  IN bin -> bin;
  i_succ:  IN bin -> bin;
- i_zero: -> bin;
- True : -> bin
+ i_zero: -> bin
 
 . DEFPROCS
 
