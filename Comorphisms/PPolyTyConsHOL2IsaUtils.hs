@@ -757,6 +757,9 @@ mkApp :: Env -> Set.Set String -> Set.Set String -> Set.Set VarDecl -> As.Term
 mkApp sign tyToks toks pVars f arg = do
     (fTy, fTrm) <- transTerm sign tyToks toks pVars f
     (aTy, aTrm) <- transTerm sign tyToks toks pVars arg
+    let pv = case arg of -- dummy application of a unit argument
+          TupleTerm [] _ -> return (fTy, fTrm)
+          _ -> mkError "wrong function type"  f
     case fTy of
          FunType a r -> do
              ((rTy, fConv), (_, aConv)) <- adjustTypes a r aTy
@@ -769,10 +772,8 @@ mkApp sign tyToks toks pVars f arg = do
              return (resTy, mkTermAppl (mkTermAppl (mkTermAppl
                               (unpackOp r) $ convFun fConv) fTrm)
                             $ applConv aConv aTrm)
-         PartialVal _ -> case arg of
-             TupleTerm [] _ ->
-                 return (fTy, fTrm)
-             _ -> mkError "wrong function type"  f
+         PartialVal _ -> pv
+         BoolType -> pv
          _ -> mkError "not a function type"  f
 
 -- * translation of lambda abstractions
