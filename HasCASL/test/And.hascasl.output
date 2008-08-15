@@ -1,5 +1,5 @@
 free type Bool ::= False | True
-op    And : Bool -> (? Bool) -> Bool
+op    And : Bool -> ? Bool -> Bool
 var   x : ? Bool
 . And False x = False
 . And True x = x
@@ -15,4 +15,4 @@ free type Bool ::= False | True %(ga_Bool)%
 forall x : ? Bool . And False x = False
 forall x : ? Bool . And True x = x
 . And False True = False %implied
-### Hint 3.6, not a kind '? Bool'
+### Hint 3.8, not a kind '? Bool'

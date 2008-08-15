@@ -1,6 +1,6 @@
 free type Bool ::= False | True
-op  And: Bool -> (?Bool) -> Bool
-var x:?Bool
+op   And : Bool -> ? Bool -> Bool
+var  x : ? Bool
 . And False x = False
 . And True x = x
 . And False True = False %implied
