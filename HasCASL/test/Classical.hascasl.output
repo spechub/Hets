@@ -1,15 +1,93 @@
-var   a : Type
-pred  phi : a
-. (forall x : a . phi x) = ((\ x : a . phi x) =e= \ x : a . ());
-var   p : Logical
-. p \/ not p;
+. __=__ = __<=>__
+. true = ();
+vars  p, q : Logical
+. p /\ q = p res q
+. (p => q) = ((\ . p) =e= \ . p /\ q)
+. (p <=> q) = ((p => q) /\ (q => p));
+vars  t : Type; pr : Pred t
+. (forall y : t . pr y) = ((\ y : t . pr y) =e= \ y : t . true)
+. false = forall a : Logical . a ()
+. not p <=> p => false
+. p \/ q
+  <=> forall a : Logical . (p => a ()) /\ (q => a ()) => a ()
+. (exists y : t . pr y)
+  = forall a : Logical . (forall y : t . pr y => a ()) => a ();
+vars  a, b : t
+. a = b <=> (def a => a =e= b) /\ (def b => def a);
+op    choose : Pred t ->? t
+. choose pr = a <=> forall y : t . pr y <=> a = y;
+op    epsilon : Pred t -> t
+. (exists x : t . pr x) => pr (epsilon pr)
+. p \/ not p; %implied
 var
-a : Type %(var_1)%
-op phi : forall a : Type . a ->? Unit %(pred)%
-var
-p : Logical
-forall a : Type
-. (forall x : a . phi x) = ((\ x : a . phi x) =e= \ x : a . ())
-forall p : Logical . p \/ not p
-### Hint 3.12, not a class 'a'
-### Hint 5.7, not a class 'Logical'
+t : Type %(var_86)%
+op choose : forall t : Type . Pred t ->? t %(op)%
+op epsilon : forall t : Type . Pred t -> t %(op)%
+vars
+a : t;
+b : t;
+p : Logical;
+pr : Pred t;
+q : Logical
+. __=__ = __<=>__
+. true = ()
+forall p : Logical; q : Logical . p /\ q = p res q
+forall p : Logical; q : Logical
+. (p => q) = ((\ . p) =e= \ . p /\ q)
+forall p : Logical; q : Logical
+. (p <=> q) = ((p => q) /\ (q => p))
+forall t : Type; pr : Pred t
+. (forall y : t . pr y) = ((\ y : t . pr y) =e= \ y : t . true)
+. false = forall a : Logical . a ()
+forall p : Logical . not p <=> p => false
+forall p : Logical; q : Logical
+. p \/ q
+  <=> forall a : Logical . (p => a ()) /\ (q => a ()) => a ()
+forall t : Type; pr : Pred t
+. (exists y : t . pr y)
+  = forall a : Logical . (forall y : t . pr y => a ()) => a ()
+forall t : Type; a : t; b : t
+. a = b <=> (def a => a =e= b) /\ (def b => def a)
+forall t : Type; a : t; pr : Pred t
+. choose pr = a <=> forall y : t . pr y <=> a = y
+forall t : Type; pr : Pred t
+. (exists x : t . pr x) => pr (epsilon pr)
+forall p : Logical . p \/ not p %implied
+### Hint 4.7, not a class 'Logical'
+### Hint 4.10, not a class 'Logical'
+### Hint 11.6, is type variable 't'
+### Hint 11.19, not a kind 'Pred t'
+### Hint 12.13, not a class 't'
+### Hint 14.20, not a class 'Logical'
+### Hint 14.32,
+in type of '(var a : Logical)'
+  typename 'Unit'
+  is not unifiable with type 'Unit ->? Unit'
+### Hint 18.23, not a class 'Logical'
+### Hint 18.41,
+in type of '(var a : Logical)'
+  typename 'Unit'
+  is not unifiable with type 'Unit ->? _v148' (18.41)
+### Hint 18.55,
+in type of '(var a : Logical)'
+  typename 'Unit'
+  is not unifiable with type 'Unit ->? _v154' (18.55)
+### Hint 18.63,
+in type of '(var a : Logical)'
+  typename 'Unit'
+  is not unifiable with type 'Unit ->? _v155' (18.63)
+### Hint 20.13, not a class 't'
+### Hint 20.36, not a class 'Logical'
+### Hint 21.16, not a class 't'
+### Hint 21.30,
+in type of '(var a : Logical)'
+  typename 'Unit'
+  is not unifiable with type 'Unit ->? _v172' (21.30)
+### Hint 21.38,
+in type of '(var a : Logical)'
+  typename 'Unit'
+  is not unifiable with type 'Unit ->? _v173' (21.38)
+### Hint 23.7, not a class 't'
+### Hint 23.10, not a class 't'
+### Hint 27.30, not a class 't'
+### Hint 30.13, not a class 't'

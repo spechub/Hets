@@ -1,6 +1,32 @@
-var a
-pred phi : a
-. (forall x: a . phi x) = ((\ x: a . phi x) =e= \ x: a . ())
+. __=__ = __<=>__
 
-var p : Logical
-. p  \/ not p
+. true = ()
+vars p, q: Logical
+. p /\ q = p res q
+
+. (p => q) = ((\ . p) =e= \ . p /\ q)
+
+. (p <=> q) = ((p => q) /\ (q => p))
+
+vars t : Type; pr : Pred t
+. (forall y : t . pr y) = ((\ y : t . pr y) =e= \ y : t . true)
+
+. false = forall a : Logical . a()
+
+. not p <=> p => false
+
+. p \/ q <=> forall a : Logical . (p => a()) /\ (q => a()) => a()
+
+. (exists y : t . pr y) = forall a : Logical
+   . (forall y : t . pr y => a()) => a()
+
+vars a, b: t
+. a = b <=> (def a => a =e= b) /\ (def b => def a)
+
+op choose : Pred t ->? t
+. choose pr = a <=> forall y : t . pr y <=> a = y
+
+op epsilon : Pred t -> t
+. (exists x : t . pr x) => pr(epsilon pr)
+
+. p \/ not p %implied
