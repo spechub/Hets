@@ -13,7 +13,16 @@ free types
 even a ::= rek (odd a);
 odd a ::= rek (even a)
 free type odd2 a ::= rek (even2 a)
+type  DList a := List (List a)
+class Ord
+var   o : Ord
+types List o, DList o : Ord
+class
+Ord < Type
 types
+DList : +Ord -> Ord;
+DList : +Type -> Type;
+List : +Ord -> Ord;
 List : +Type -> Type;
 Tree : +Type -> Type;
 Tree1 : +Type -> Type;
@@ -22,9 +31,12 @@ even : +Type -> Type;
 even2 : +Type -> Type;
 odd : +Type -> Type;
 odd2 : +Type -> Type
+type
+DList := \ a : +Type . List (List a)
 vars
 a : +Type %(var_2)%;
-b : Type %(var_1)%
+b : Type %(var_1)%;
+o : Ord %(var_16)%
 op Branch : forall a : Type . Tree a * Tree a -> Tree a
             %(constructor)%
 op Branch : forall a : Type . Tree a * Tree1 a -> Tree1 a
@@ -134,3 +146,4 @@ illegal polymorphic recursion
 illegal polymorphic recursion
   expected: odd2 a
      found: odd2 (odd2 a)
+### Hint 19.5, is type variable 'o'
