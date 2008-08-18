@@ -20,10 +20,10 @@ __
 .a[a,b]
 'a'[a,b]
 __*__
-a =e= b 
+a =e= b
 a = e= b
 a =e = b
-a = e= __ b __ 
+a = e= __ b __
 (a = b)
 (a __ b)
 (a __ b) a
@@ -37,17 +37,17 @@ b{a __ b} a
 [a __ b] a
 b[a __ b]
 b[a __ b] a
-(a, =, b) 
-({}, [], {[]{}}) 
+(a, =, b)
+({}, [], {[]{}})
 {{}, [], {[]{}}}
 [{}, [], {[]{}}]
 (var y : bb)
-(op y : bb) 
-(op __<__ : ##) 
-(op __<__ : ## -> --) 
-(op __<__ : bb) 
-(op __<__ :? bb) 
-(op __<__ :? ##) 
+(op y : bb)
+(op __<__ : ##)
+(op __<__ : ## -> --)
+(op __<__ : bb)
+(op __<__ :? bb)
+(op __<__ :? ##)
 (pred y : bb)
 (pred y : bb*bb)
 (var y : bb->bb)
@@ -59,8 +59,8 @@ ys as b
 (predy y : bb)
 (predy : bb)
 (predy : bb)
-exists1 (predy :: bb) 
-exists predy : bb . a 
+exists1 (predy :: bb)
+exists predy : bb . a
 exists! a: v . x
 exists!a:v.x
 exists! # :v.x
@@ -97,14 +97,14 @@ a \a:v.! !x
 =e=e=e=
 =e= e =e=
 =e =e= e=
-(op __<__ :? ## -> bb) 
-(op __<__ :? aa*bb) 
+(op __<__ :? ## -> bb)
+(op __<__ :? aa*bb)
 let x = y in z
 let x = y; x = y;x = y in z
 let x = y; x = y;x = y in z in t
 let x = (y in z) in x
 let x = \y:t.y in x(x)
-let x = case x in t of y -> z; x=y in x  
+let x = case x in t of y -> z; x=y in x
 ()
 if a then b
 a if b
@@ -117,5 +117,5 @@ if a then b else c
 \ (a) . a
 y where x= y; z=y;
 y where x= y; z=y in t
-(op __<__ : ?##) 
-(op __<__ : ? ##) 
+(op __<__ : ?##)
+(op __<__ : ? ##)
