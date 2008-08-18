@@ -1,9 +1,16 @@
-type  s
-var   x : s
-. def \ f : s -> s . def f x;
+type  s < t
+vars  x : s; y : t
+. def \ f : s -> s . def f x
+. def (y as s);
+types
+s : Type;
+t : Type
 type
-s : Type
-var
-x : s
+s < t
+vars
+x : s;
+y : t
 forall x : s . def \ f : s -> s . def f x
+forall y : t . def (y as s)
 ### Hint 2.7, not a class 's'
+### Hint 2.14, not a class 't'

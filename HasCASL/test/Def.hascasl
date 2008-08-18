@@ -1,4 +1,5 @@
-sort s
-var x : s
+sort s < t
+var x : s; y : t
 
 . def (\f : s ->s . def f (x))
+. def y as s
