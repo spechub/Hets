@@ -1,0 +1,39 @@
+var   a : Type
+type  Flag a
+ops   mkf : Logical -> Flag a;
+      getl : Flag a -> Logical
+vars  x : Flag a; b : Logical
+. mkf (getl x) = x
+. getl (mkf b : Flag a) = b;
+op    sg : Flag a = mkf forall x, y : a . x = y;
+op    c : Logical = getl (sg : Flag a);
+type
+Flag : Type -> Type
+var
+a : Type %(var_1)%
+op c : ? Unit
+       %[op=
+       \
+       . (op getl : forall a : Type . Flag a -> Logical)
+         ((op sg : forall a : Type . Flag a) : Flag a)
+         as Unit]%
+op getl : forall a : Type . Flag a -> Logical %(op)%
+op mkf : forall a : Type . Logical -> Flag a %(op)%
+op sg : forall a : Type . Flag a
+        %[op=
+        ((op mkf : forall a : Type . Logical -> Flag a)
+         forall x, y : a . (var x : a) = (var y : a))
+        as Flag a]%
+vars
+b : Logical;
+x : Flag a
+forall a : Type; x : Flag a . mkf (getl x) = x
+forall a : Type; b : Logical . getl (mkf b : Flag a) = b
+. sg = ((mkf forall x, y : a . x = y) as Flag a)
+. c = (getl (sg : Flag a) as Unit)
+### Hint 1.6, is type variable 'a'
+### Hint 5.8, not a kind 'Flag a'
+### Hint 5.20, not a class 'Logical'
+### Hint 8.32, not a class 'a'
+### Hint 8.36, not a class 'a'
+### Hint 8.31, rebound variable 'x'

@@ -1,0 +1,9 @@
+var  a : Type
+type Flag a
+ops  mkf : Logical -> Flag a;
+     getl : Flag a -> Logical
+vars x : Flag a; b : Logical
+. mkf (getl x) = x
+. getl (mkf b : Flag a) = b
+op   sg : Flag a = mkf forall x, y : a . x = y
+op   c : Logical = getl (sg : Flag a)
