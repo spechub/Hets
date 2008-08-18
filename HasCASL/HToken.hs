@@ -45,11 +45,20 @@ scanHCWords = reserved hascasl_reserved_words scanAnyWords
 scanHCSigns :: GenParser Char st String
 scanHCSigns = reserved hascasl_reserved_ops scanAnySigns
 
+-- | symbols illegal in types and variables
+hascasl_reserved_tops :: [String]
+hascasl_reserved_tops = assignS : lessS : barS : formula_ops
+
+-- | symbols illegal in types, variables and constructors
+hcKeysFew :: ([String], [String])
+hcKeysFew =
+  (hascasl_reserved_tops ++ hascasl_reserved_ops, hascasl_reserved_words)
+
 -- * HasCASL 'Id' parsers
 
--- | non-type variables ('lessS' additionally excluded)
+-- | non-type variables
 var :: GenParser Char st Id
-var = fmap mkId (start (lessS : hascasl_reserved_ops, hascasl_reserved_words))
+var = fmap mkId $ start hcKeysFew
 
 -- | the HasCASL keys for 'mixId'
 hcKeys :: ([String], [String])
@@ -74,9 +83,9 @@ ite = do
 opId :: GenParser Char st Id
 opId = mixId hcKeys hcKeys <?> "id"
 
--- | constructor 'Id' ('barS' additionally excluded)
+-- | constructor 'Id'
 hconsId :: GenParser Char st Id
-hconsId = mixId (barS : hascasl_reserved_ops, hascasl_reserved_words) hcKeys
+hconsId = mixId hcKeysFew hcKeys
 
 -- | simple 'Id' without compound list (only a words)
 typeVar :: GenParser Char st Id
