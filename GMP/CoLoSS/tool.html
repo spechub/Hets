@@ -1,0 +1,37 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1" />
+    <title>CoLoSS - Test Tool</title>
+    <link rel="stylesheet" href="main.css" type="text/css" />
+  </head>
+
+  <body>
+    <br>
+    <form method="submit" action="tool.php">
+
+    <li> Select a Modal Logic:
+       <select name="logic">
+        <option value="1" selected> K 
+        <option value="2"> KD 
+        <option value="3"> Coalition Logic
+        <option value="4"> Graded Modal Logic
+        <option value="5"> Probabilistic Modal Logic
+        <option value="6"> Hennesy-Milner Modal Logic
+        <option value="7"> Monotonic Modal Logic
+       </select> or <input type="reset" value="Clear Input">
+    <br> <br>
+    <li> Give an input formula: <br>
+      <!--<code>-->
+        <pre>
+        <textarea rows='7' cols='106' name="formula"></textarea>
+        </pre>
+      <!--</code>-->
+    <li> <input type="submit" value="Check Provability & Satisfiability">
+    <br><br> Tasks which take more than 120 seconds are killed.
+    
+    <br><br>
+    Notes on the input format can be found <a href="format.html">here</a> and some simple tests we used can be found <a href="tests.html">here</a>.
+    </form>
+  </body>
+</html>

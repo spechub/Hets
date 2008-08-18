@@ -1,0 +1,32 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1" />
+<title>CoLoSS - Input Format</title>
+<link rel="stylesheet" href="main.css" type="text/css" />
+</head>
+
+<body class="secondary">
+The accepted input format (as considered by the parser) is summarized by: <br> 
+<ul>
+  <li> T,F stand for True,respectively False
+  <li> ~ stands for negation (eg. ~&phi;)
+  <li> /\,\/,-&gt;,&lt;-,&lt;-&gt; stand for conjuction,disjunction,implication,reverse implication,double implication (eg. &phi;/\&psi;)
+  <li> [],&lt;&gt; stand for "box", respectively "diamond" modal operators (eg. [i]&phi;, &lt;i&gt;&phi;)
+  <li> the "modal index" under the "box"/"diamond" modal operator depends on the logic and is allowed to be:
+     <ul type="circle">
+       <li> Nothing (ie. blank) for K, KD and Monotonic Modal Logic
+       <li> Any set of agents/numbers (eg. {}, {1,2}, 1..7) for Coalition Logic
+       <li> Any number (&ge;0) for Graded Modal Logic
+       <li> Any positive rational number &le;1 (eg. 0.5, 1/3) for Probability Logic
+       <li> Any letter for Hennesy-Milner Modal Logic
+     </ul>
+  <li> variables of the type 'pN' where N is a number are also allowed
+</ul>
+
+<br><br><br>
+<a href="tool.html">Back</a>
+</body>
+
+</html>
