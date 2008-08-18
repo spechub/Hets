@@ -53,15 +53,14 @@ run p_r input = case (parse p_r "" input) of
                   Left err -> do putStr "parse error at "
                                  print err
                   Right y ->  do let x = preparse y
-                                 putStrLn (show x{-++" <=> "++input-})
-                                 let isS = sat x
-                                 case isS of
-                                    True -> putStrLn "... is Satisfiable"
-                                    _    -> putStrLn "... is Not Satisfiable"
+                                 --putStrLn (show x{-++" <=> "++input-})
                                  let isP = provable x
                                  case isP of
                                     True -> putStrLn "... is Provable"
-                                    _    -> putStrLn "... is Not Provable"
+                                    _    -> let isS = sat x
+                                            in case isS of
+                                                 True -> putStrLn "... is not Provable but Satisfiable"
+                                                 _    -> putStrLn "... is not Satisfiable"
 
 -- | Auxiliary run function for testing with the input given as string
 runTest :: Int -> String -> IO ()
