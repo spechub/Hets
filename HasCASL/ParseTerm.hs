@@ -206,7 +206,7 @@ typePatternOrId = mixTypePattern primTypePatternOrId
 -- that may appear in 'TypePattern's as 'TypePatternToken'.
 typePatternToken :: AParser st TypePattern
 typePatternToken = fmap TypePatternToken $ pToken $ scanHCWords <|> placeS
-    <|> reserved [assignS, lessS, equalS] scanHCSigns
+    <|> reserved (assignS : lessS : barS : formula_ops) scanHCSigns
 
 -- | a 'typePatternToken' or something in braces (a 'typePattern'),
 -- in square brackets (a 'typePatternOrId' covering compound lists)
@@ -227,7 +227,8 @@ typePattern = mixTypePattern primTypePattern
 -- | type tokens with some symbols removed
 typeToken :: AParser st Type
 typeToken = fmap TypeToken $ pToken $ scanHCWords <|> placeS <|>
-    reserved (assignS : lessS : equalS : barS : hascasl_type_ops) scanHCSigns
+    reserved (assignS : lessS : barS : formula_ops ++ hascasl_type_ops)
+    scanHCSigns
 
 -- | 'TypeToken's within 'BracketType's may recusively be
 -- 'idToken's. Parenthesis may group a mixfix type

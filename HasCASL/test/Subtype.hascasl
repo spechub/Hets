@@ -17,7 +17,7 @@ var  y: b; x: a
 
 op   up: a -> b
 . down (up x : b) = x
-. def (down (y : b) : a) => up (down y : a) = y
+. def down (y : b) : a => up (down y : a) = y
 
 vars c: Type; b < c
 
