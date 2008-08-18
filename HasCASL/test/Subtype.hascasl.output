@@ -1,7 +1,9 @@
-vars  a : Type; b : Type
+vars  a : -Type; b : +Type
 types i a b, Inj a b < a -> b
 vars  a : Type; b < a
 op    twice : (a ->? b) -> (a ->? b)
+type  F a b
+      %% should be illegal here
 vars  f : a ->? b; x : a
 . twice f x = f (f x);
 vars  a : Type; b : Type
@@ -22,18 +24,19 @@ forall f : e -> f . (up f : e ->? f) = \ x : e . f x;
 forall f : e ->? d . (up f : c ->? f) = \ x : c . up (f (up x));
 forall x : c; y : d . (up (x, y) : e * f) = (up x, up y);
 types
-Inj : Type -> Type -> Type;
-i : Type -> Type -> Type
+F : Type -> Type -> Type;
+Inj : -Type -> +Type -> Type;
+i : -Type -> +Type -> Type
 types
 Inj < __->__;
 i < __->__
 vars
-a < b : Type %(var_53)%;
-b < c : Type %(var_99)%;
-c < e : Type %(var_128)%;
-d < f : Type %(var_129)%;
-e : Type %(var_126)%;
-f : Type %(var_127)%
+a < b : Type %(var_55)%;
+b < c : Type %(var_101)%;
+c < e : Type %(var_130)%;
+d < f : Type %(var_131)%;
+e : Type %(var_128)%;
+f : Type %(var_129)%
 op down : forall b : Type; a < b : Type . b ->? a %(op)%
 op twice : forall a : Type; b < a : Type . (a ->? b) -> a ->? b
            %(op)%
@@ -58,55 +61,55 @@ forall c < e : Type; d < f : Type; e : Type; f : Type; f : e ->? d
 forall c < e : Type; d < f : Type; e : Type; f : Type; x : c; y : d
 . (up (x, y) : e * f) = (up x, up y)
 ### Hint 1.6, is type variable 'a'
-### Hint 1.15, is type variable 'b'
+### Hint 1.16, is type variable 'b'
 ### Hint 2.8, rebound type variable 'a'
 ### Hint 2.10, rebound type variable 'b'
 ### Hint 3.6, is type variable 'a'
 ### Hint 3.6, rebound type variable 'a'
 ### Hint 3.15, rebound type variable 'b'
-### Hint 6.7, not a kind 'a ->? b'
-### Hint 6.19, not a class 'a'
-### Hint 9.6, is type variable 'a'
-### Hint 9.6, rebound type variable 'a'
-### Hint 9.15, is type variable 'b'
-### Hint 9.15, rebound type variable 'b'
-### Hint 10.17, rebound variable 'f'
-### Hint 10.37, not a class 'a'
-### Hint 10.40, not a class 'a'
-### Hint 10.36, rebound variable 'x'
-### Hint 10.6, redeclared type 'Inj'
-### Hint 10.22, repeated supertype '__->__'
-### Hint 12.6, is type variable 'a'
-### Hint 12.6, rebound type variable 'a'
-### Hint 12.9, is type variable 'b'
-### Hint 12.9, rebound type variable 'b'
-### Hint 12.18, rebound type variable 'a'
-### Hint 14.7, not a class 'b'
-### Hint 14.13, not a class 'a'
-### Hint 14.12, rebound variable 'x'
-### Hint 21.6, is type variable 'c'
-### Hint 21.15, rebound type variable 'b'
-### Hint 23.6, not a class 'a'
-### Hint 23.5, rebound variable 'x'
-### Hint 27.6, rebound type variable 'c'
-### Hint 27.18, rebound type variable 'c'
-### Hint 27.25, rebound type variable 'd'
-### Hint 28.9, not a class 'e'
-### Hint 28.9, not a class 'f'
-### Hint 28.8, rebound variable 'f'
-### Hint 28.39, rebound variable 'x'
-### Hint 29.9, not a kind 'e ->? d'
+### Hint 7.7, not a kind 'a ->? b'
+### Hint 7.19, not a class 'a'
+### Hint 10.6, is type variable 'a'
+### Hint 10.6, rebound type variable 'a'
+### Hint 10.15, is type variable 'b'
+### Hint 10.15, rebound type variable 'b'
+### Hint 11.17, rebound variable 'f'
+### Hint 11.37, not a class 'a'
+### Hint 11.40, not a class 'a'
+### Hint 11.36, rebound variable 'x'
+### Hint 11.6, redeclared type 'Inj'
+### Hint 11.22, repeated supertype '__->__'
+### Hint 13.6, is type variable 'a'
+### Hint 13.6, rebound type variable 'a'
+### Hint 13.9, is type variable 'b'
+### Hint 13.9, rebound type variable 'b'
+### Hint 13.18, rebound type variable 'a'
+### Hint 15.7, not a class 'b'
+### Hint 15.13, not a class 'a'
+### Hint 15.12, rebound variable 'x'
+### Hint 22.6, is type variable 'c'
+### Hint 22.15, rebound type variable 'b'
+### Hint 24.6, not a class 'a'
+### Hint 24.5, rebound variable 'x'
+### Hint 28.6, rebound type variable 'c'
+### Hint 28.18, rebound type variable 'c'
+### Hint 28.25, rebound type variable 'd'
+### Hint 29.9, not a class 'e'
+### Hint 29.9, not a class 'f'
 ### Hint 29.8, rebound variable 'f'
-### Hint 29.40, rebound variable 'x'
-### Hint 30.9, not a class 'c'
-### Hint 30.8, rebound variable 'x'
-### Hint 30.15, not a class 'd'
-### Hint 30.14, rebound variable 'y'
-### Hint 30.33,
+### Hint 29.39, rebound variable 'x'
+### Hint 30.9, not a kind 'e ->? d'
+### Hint 30.8, rebound variable 'f'
+### Hint 30.40, rebound variable 'x'
+### Hint 31.9, not a class 'c'
+### Hint 31.8, rebound variable 'x'
+### Hint 31.15, not a class 'd'
+### Hint 31.14, rebound variable 'y'
+### Hint 31.33,
 no kind found for 'e'
   expected: {Cpo}
      found: {Type}
-### Hint 30.33,
+### Hint 31.33,
 no kind found for 'e'
   expected: {Cppo}
      found: {Type}

@@ -1,0 +1,17 @@
+var   a : +Type
+type  List a
+      %%type NonrepList a < List a
+var   c : Cpo
+type  NonrepList c < List c
+types
+List : +Type -> Type;
+NonrepList : Cpo -> Type
+type
+NonrepList < List
+vars
+a : +Type %(var_1)%;
+c : Cpo %(var_3)%
+### Hint 1.5, is type variable 'a'
+### Hint 5.5, is type variable 'c'
+### Hint 6.18, rebound type variable 'c'
+### Hint 6.18, rebound type variable 'c'

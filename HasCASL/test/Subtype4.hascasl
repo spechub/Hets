@@ -1,0 +1,7 @@
+var a : +Type
+type List a : Type
+%%type NonrepList a < List a
+
+var c : Cpo
+type NonrepList (c : Cpo) < List c
+

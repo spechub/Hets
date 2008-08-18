@@ -1,7 +1,8 @@
-vars a: Type; b: Type
+vars a: -Type; b: +Type
 type i a b, Inj a b < a -> b
 vars a: Type; b < a
 op   twice: (a ->? b) -> (a ->? b)
+type F a b %% should be illegal here
 
 vars f: a ->? b; x: a
 . twice f x = f (f x)

@@ -1,0 +1,13 @@
+class C
+type  t : C -> C -> C
+type  t : +C -> C -> C
+type  t : C -> -C -> C
+type  t : -C -> +C -> C
+type  s : (+C -> C) -> C
+type  s : (-C -> C) -> C
+type  s : (C -> C) -> C
+class
+C < Type
+types
+s : (C -> C) -> C;
+t : +-C -> +-C -> C
