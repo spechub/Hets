@@ -8,7 +8,7 @@ class Functor < Type -> Type
 {vars a,b,c: Type; F: Functor; f: a -> b; g: b -> c
 op map: (a -> b) -> F a -> F b
 . map id = id: F a -> F a
-. (map (g comp f)):(F a -> F c)  = (map g) comp (map f) }
+. map (g comp f) : F a -> F c = map g comp map f }
 
 class PolyFunctor < Functor
 class PolyBifunctor < Type -> PolyFunctor
