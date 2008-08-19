@@ -285,7 +285,7 @@ CASL_files = CASL/Sublogic.hs CASL/Morphism.hs CASL/Sign.hs \
     CASL/AS_Basic_CASL.der.hs
 
 HasCASL_files = Common/Prec.hs HasCASL/As.hs HasCASL/Le.hs HasCASL/Sublogic.hs
-Isabelle_files = Isabelle/IsaSign.hs Isabelle/IsaProof.hs
+Isabelle_files = Isabelle/IsaSign.hs
 
 Propositional_files = Propositional/Sign.hs Propositional/Morphism.hs \
     Propositional/AS_BASIC_Propositional.hs Propositional/Symbol.hs \

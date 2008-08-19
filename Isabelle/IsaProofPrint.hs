@@ -16,7 +16,7 @@ module Isabelle.IsaProofPrint where
 import Common.Doc
 import Common.DocUtils
 import Isabelle.IsaConsts
-import Isabelle.IsaProof
+import Isabelle.IsaSign
 
 instance Pretty IsaProof where
     pretty = printIsaProof

@@ -24,7 +24,6 @@ module Isabelle.IsaProve where
 import Logic.Prover
 import Isabelle.IsaSign
 import Isabelle.IsaConsts
-import Isabelle.IsaProof
 import Isabelle.IsaPrint
 import Isabelle.IsaParse
 import Isabelle.Translate

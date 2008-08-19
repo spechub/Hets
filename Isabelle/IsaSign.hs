@@ -17,7 +17,6 @@ module Isabelle.IsaSign where
 
 import qualified Data.Map as Map
 import Data.List
-import Isabelle.IsaProof
 
 --------------- not quite from src/Pure/term.ML ------------------------
 ------------------------ Names -----------------------------------------
@@ -303,3 +302,55 @@ In both cases, the typing expressions may be encoded as schemes.
 Schemes and instances allows for the inference of type constraints over
 values of functions.
 -}
+
+-- Data structures for Isabelle Proofs
+
+data IsaProof = IsaProof
+    { proof :: [ProofCommand],
+      end :: ProofEnd
+    } deriving (Show, Eq, Ord)
+
+data ProofCommand
+    = Apply ProofMethod
+    | Using [String]
+    | Back
+    | Defer Int
+    | Prefer Int
+    | Refute
+      deriving (Show, Eq, Ord)
+
+data ProofEnd
+    = By ProofMethod
+    | DotDot
+    | Done
+    | Oops
+    | Sorry
+      deriving (Show, Eq, Ord)
+
+data ProofMethod
+    -- | This is a plain auto with no parameters - it is used
+    --   so often it warents its own constructor
+    = Auto
+    -- | This is a plain auto with no parameters - it is used
+    --   so often it warents its own constructor
+    | Simp
+    -- | Induction proof method. This performs induction upon a variable
+    | Induct String
+    -- |  Case_tac proof method. This perfom a case distinction on a term
+    | CaseTac String
+    -- | Subgoal_tac proof method . Adds a term to the local
+    --   assumptions and also creates a sub-goal of this term
+    | SubgoalTac String
+    -- | Insert proof method. Inserts a lemma or theorem name to the assumptions
+    --   of the first goal
+    | Insert String
+    -- | Used for proof methods that have not been implemented yet.
+    --   This includes auto and simp with parameters
+    | Other String
+      deriving (Show, Eq, Ord)
+
+toIsaProof :: ProofEnd -> IsaProof
+toIsaProof e = IsaProof [] e
+
+mkOops :: IsaProof
+mkOops = toIsaProof Oops

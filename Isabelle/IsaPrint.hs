@@ -629,12 +629,12 @@ printSign sig = let dt = sortBy cmpDomainEntries $ domainTab sig
           showName (TFree v _) = v
           showName (TVar v _) = unindexed v
           showName (Type n _ _) = n
-          proof = "apply (case_tac caseVar)\napply (auto)\ndone\n"
+          proof' = "apply (case_tac caseVar)\napply (auto)\ndone\n"
       in
         lemmaS ++ sp ++ "case_" ++ showName tyCons ++ "_SomeProm" ++ sp
                 ++ "[simp]:\"" ++ sp ++ lb ++ cs ++ clSome ++ rb ++ sp
                 ++ "=\n" ++ "Some" ++ sp ++ lb ++ cs ++ cl ++ rb ++ "\"\n"
-                ++ proof
+                ++ proof'
 
 instance Pretty Sentence where
     pretty = printSentence

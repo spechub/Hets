@@ -35,7 +35,6 @@ import qualified Data.Set as Set
 import qualified Data.Map as Map
 import Isabelle.IsaConsts as IsaConsts
 import Isabelle.IsaSign as IsaSign
-import Isabelle.IsaProof
 import Isabelle.Logic_Isabelle
 import Logic.Logic
 import Logic.Comorphism
