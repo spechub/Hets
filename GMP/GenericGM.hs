@@ -1,4 +1,4 @@
-module Proof where
+module GMP.GenericGM where
 --   ((-->), (<-->), (\/), (/\), true, false, box, dia, neg, var,  provable)
 
 import Data.List (delete, intersect, nub)
