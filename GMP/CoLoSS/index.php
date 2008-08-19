@@ -7,7 +7,7 @@
 </head>
 
 <FRAMESET ROWS=150,*,30" border="0">
-     <FRAME SRC="menu.html" NAME=TITLE>
+     <FRAME SRC="menu.html" NAME=TITLE SCROLLING=NO>
      <FRAME SRC="info.html" NAME=INFO>
      <FRAME SRC="tfoot.html" />
 </FRAMESET>
