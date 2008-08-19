@@ -1,16 +1,16 @@
 {- |
 Module      :  $Header$
-Description :  Hets-to-OMDoc conversion
-Copyright   :  (c) Hendrik Iben, Uni Bremen 2005-2007
+Description :  Hets-to-OMDoc morphism conversion
+Copyright   :  (c) Elena Digor, Jacobs University Bremen 2008
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
-Maintainer  :  hiben@informatik.uni-bremen.de
+Maintainer  :  edigor@jacobs-university.de
 Stability   :  provisional
 Portability :  non-portable(Logic)
 
-Output-methods for writing OMDoc
-Toplevel module providing the composition of all translations CASL -> OMDoc
-Recurses over imported CASL libraries
+Output-methods used by OMDoc.CASLOutput for writing OMDoc morphism
+elementary methods to retrieve XML-names for sorts, opperators, and predicates
+module called by createOMMorphism
 -}
 module OMDoc.CASLOutput where
 
