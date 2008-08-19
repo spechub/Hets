@@ -19,4 +19,17 @@ op fold : (a -> c) -> ((b -> List c) -> c) -> Tree a b -> c
 
 vars f : a -> c; g : (b -> List c) -> c; x : a; s : b -> List (Tree a b)
 . fold f g (leaf x) = f x
-. def (fold f g (branch s)) 
+. def (fold f g (branch s))
+
+var Q : Pred(Set (Sys b)); P : Pred (Sys b)
+
+. (forall x : b; s : Set (Sys b) . Q s => P (node x s))
+  /\ Q empty
+  /\ (forall s : Set (Sys b); t : Sys b . Q s /\ P t => Q (add t s))
+  => forall t : Sys b . P t
+
+var R : Pred(CTree a)
+. (forall x : a . R (leaf x))
+  /\ (forall f : Nat ->? CTree a .
+    (forall x : Nat . def f x => R (f x)) => R (branch f))
+  => forall t : CTree a . R t
