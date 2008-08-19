@@ -234,7 +234,7 @@ addJustificationTheorems ccSign pfolSign isaTh =
         sorts = Set.toList(CASLSign.sortSet ccSign)
     in   addTransitivityTheorem sorts sortRel
        $ addAllInjectivityTheorems pfolSign sorts sortRel
-       $ addDecompositionTheorem
+       $ addAllDecompositionTheorem pfolSign sorts sortRel
        $ addSymmetryTheorem sorts
        $ addReflexivityTheorem
        $ isaTh
@@ -297,7 +297,7 @@ addInjectivityTheorem pfolSign sorts sortRel isaTh (s1,s2) =
         collectionEmbInjAx = getCollectionEmbInjAx sortRel
         collectionTotAx = getCollectionTotAx pfolSign
         collectionNotDefBotAx = getCollectionNotDefBotAx sorts
-        name = getInjThmName(s1, s2)
+        name = getInjectivityThmName(s1, s2)
         conds = [binEq injX injY]
         concl = binEq x y
         proof' = IsaProof [Apply(CaseTac ((getDefinedName sorts s2)
@@ -321,11 +321,47 @@ addInjectivityTheorem pfolSign sorts sortRel isaTh (s1,s2) =
                            Done
     in addThreomWithProof name conds concl proof' isaTh
 
+-- | Add all the decoposition theorems and proofs
+addAllDecompositionTheorem :: CASLSign.CASLSign -> [SORT] -> [(SORT,SORT)] ->
+                             IsaTheory -> IsaTheory
+addAllDecompositionTheorem pfolSign sorts sortRel isaTh =
+    let tripples = [(s1,s2,s3) |
+                    (s1,s2) <- sortRel, (s2',s3) <- sortRel, s2==s2']
+    in foldl (addDecompositionTheorem pfolSign sorts sortRel) isaTh tripples
+
 -- | Add the decomposition theorem and proof which should be deduced
 --   from the transitivity axioms from the translation CASL2PCFOL;
---   CASL2SubCFOL
-addDecompositionTheorem :: IsaTheory -> IsaTheory
-addDecompositionTheorem isaTh = isaTh
+--   CASL2SubCFOL for a pair of injections represented as a tripple of
+--   sorts. e.g. (S,T,U) means produce the lemma and proof for
+--   inj_T_U(inj_S_T(x)) = inj_S_U(x). As a work around, we need to
+--   know all sorts to pass them on.
+addDecompositionTheorem :: CASLSign.CASLSign -> [SORT] -> [(SORT,SORT)] ->
+                         IsaTheory -> (SORT,SORT,SORT) -> IsaTheory
+addDecompositionTheorem _ _ _ isaTh (s1,s2,s3) =
+    let x = mkFree "x"
+        injOp_s1_s2 = getInjectionOp s1 s2
+        injOp_s2_s3 = getInjectionOp s2 s3
+        injOp_s1_s3 = getInjectionOp s1 s3
+        inj_s1_s2_s3 = termAppl injOp_s2_s3 (termAppl injOp_s1_s2 x)
+        inj_s1_s3 = termAppl injOp_s1_s3 x
+
+--         injName_s1_s2 = getInjectionName s1 s2
+
+
+--         defineNameS1 = getDefinedName sorts s1
+
+--         collectionEmbInjAx = getCollectionEmbInjAx sortRel
+--         collectionTotAx = getCollectionTotAx pfolSign
+--         collectionNotDefBotAx = getCollectionNotDefBotAx sorts
+
+        name = getDecompositionThmName(s1, s2, s3)
+        conds = []
+        concl = binEq inj_s1_s2_s3 inj_s1_s3
+
+        proof' = IsaProof []
+                           Sorry
+    in addThreomWithProof name conds concl proof' isaTh
+
 
 -- | Add the transitivity theorem and proof to an Isabelle Theory. We
 --   need to know the number of sorts to know how much induction to
@@ -333,7 +369,8 @@ addDecompositionTheorem isaTh = isaTh
 --   injectivity theorem names
 addTransitivityTheorem :: [SORT] -> [(SORT,SORT)] -> IsaTheory -> IsaTheory
 addTransitivityTheorem sorts sortRel isaTh =
-    let colInjThmNames = getColInjThmName sortRel
+    let colInjThmNames = getColInjectivityThmName sortRel
+        colDecompThmNames = getColDecompositionThmName sortRel
         numSorts = length(sorts)
         name = transitivityS
         x = mkFree "x"
@@ -352,6 +389,7 @@ addTransitivityTheorem sorts sortRel isaTh =
                             inductY ++
                             inductZ ++
                            [Apply (Other ("auto simp add: "
+                                          ++ colDecompThmNames
                                           ++ colInjThmNames))],
                    end = Done
                  }
@@ -469,19 +507,36 @@ getDefinedName sorts s =
                 Just i -> show (i + 1)
     in "gn_definedX" ++ str
 
+-- Produce the theorem name of the decomposition theorem that we produce
+getDecompositionThmName :: (SORT,SORT,SORT) -> String
+getDecompositionThmName (s, s', s'') =
+    "decomposition_" ++ (convertSort2String s) ++ "_" ++ (convertSort2String s')
+                    ++ "_" ++ (convertSort2String s'')
+
 -- Produce the theorem name of the injectivity theorem that we produce
-getInjThmName :: (SORT,SORT) -> String
-getInjThmName (s, s') =
+getInjectivityThmName :: (SORT,SORT) -> String
+getInjectivityThmName (s, s') =
     "injectivity_" ++ (convertSort2String s) ++ "_" ++ (convertSort2String s')
 
 -- This function is not implemented in a satisfactory way
--- Return the string of all injectivity theorem names
-getColInjThmName :: [(SORT,SORT)] -> String
-getColInjThmName sortRel =
-    let injThmNames = map getInjThmName sortRel
+-- Return the string of all injectivity theorem names that we generate
+getColInjectivityThmName :: [(SORT,SORT)] -> String
+getColInjectivityThmName sortRel =
+    let injThmNames = map getInjectivityThmName sortRel
     in if (null injThmNames)
        then ""
        else foldr1 (\s -> \s' -> s ++ " " ++ s') injThmNames
+
+-- This function is not implemented in a satisfactory way
+-- Return the string of all decomposition theorem names that we generate
+getColDecompositionThmName :: [(SORT,SORT)] -> String
+getColDecompositionThmName sortRel =
+    let tripples = [(s1,s2,s3) |
+                    (s1,s2) <- sortRel, (s2',s3) <- sortRel, s2==s2']
+        decompThmNames = map getDecompositionThmName tripples
+    in if (null decompThmNames)
+       then ""
+       else foldr1 (\s -> \s' -> s ++ " " ++ s') decompThmNames
 
 -- This function is not implemented in a satisfactory way
 -- Return the string of all embedding_injectivity axioms
