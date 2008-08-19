@@ -1,6 +1,5 @@
 #!/usr/local/bin/perl
 
-# HetCATS/utils/pp_test.pl
 # $Id$
 # Author: Klaus Lüttich
 # Year : 2002
