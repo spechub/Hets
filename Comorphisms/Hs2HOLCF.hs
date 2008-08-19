@@ -42,7 +42,6 @@ import TiDecorate
 
 -- Isabelle
 import Isabelle.IsaSign as IsaSign
-import Isabelle.IsaProof
 import Isabelle.IsaConsts
 
 import Debug.Trace
