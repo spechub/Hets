@@ -7,13 +7,17 @@ generated type CTree a ::= leaf a | branch (Nat ->? CTree a)
 free type L ::= abs (L -> L)
 free type Tree a b ::= leaf b | branch (a -> Tree a b)
 free type List a ::= nil | cons (a; List a)
+var   b : Type
+op    map : (a -> b) -> List a -> List b
 free type Tree a b ::= leaf a | branch (b -> List (Tree a b))
 var   c : Type
 op    fold : (a -> c) -> ((b -> List c) -> c) -> Tree a b -> c
+op    __o__ : (b -> c) * (a -> b) -> a -> c
 vars  f : a -> c; g : (b -> List c) -> c; x : a;
       s : b -> List (Tree a b)
 . fold f g (leaf x) = f x
-. def fold f g (branch s);
+. def fold f g (branch s)
+. fold f g (branch s) = g (map (fold f g) o s);
 vars  Q : Pred (Set (Sys b)); P : Pred (Sys b)
 . ((forall x : b; s : Set (Sys b) . Q s => P (node x s)) /\ Q ""
    /\ forall s : Set (Sys b); t : Sys b . Q s /\ P t => Q (add t s))
@@ -33,8 +37,11 @@ Sys : Type -> Type;
 Tree : Type -> Type -> Type
 vars
 a : Type %(var_5)%;
-b : Type %(var_2)%;
-c : Type %(var_12)%
+b : Type %(var_10)%;
+c : Type %(var_13)%
+op __o__ : forall a : Type; b : Type; c : Type
+           . (b -> c) * (a -> b) -> a -> c
+           %(op)%
 op abs : (L -> L) -> L %(constructor)%
 op add : forall a : Type . a -> Set a -> Set a %(constructor)%
 op branch : forall a : Type . (Nat ->? CTree a) -> CTree a
@@ -46,12 +53,14 @@ op branch : forall a : Type; b : Type . (a -> Tree a b) -> Tree a b
             %(constructor)%
 op cons : forall a : Type . a * List a -> List a %(constructor)%
 op empty : forall a : Type . Set a %(constructor)%
-op fold : forall b : Type; a : Type; c : Type
+op fold : forall a : Type; b : Type; c : Type
           . (a -> c) -> ((b -> List c) -> c) -> Tree a b -> c
           %(op)%
 op leaf : forall a : Type . a -> CTree a %(constructor)%
 op leaf : forall a : Type; b : Type . b -> Tree a b %(constructor)%
 op leaf : forall a : Type; b : Type . a -> Tree a b %(constructor)%
+op map : forall a : Type; b : Type . (a -> b) -> List a -> List b
+         %(op)%
 op nil : forall a : Type . List a %(constructor)%
 op node : forall b : Type . b -> Set (Sys b) -> Sys b
           %(constructor)%
@@ -81,6 +90,10 @@ forall
 a : Type; b : Type; c : Type; f : a -> c; g : (b -> List c) -> c;
 s : b -> List (Tree a b)
 . def fold f g (branch s)
+forall
+a : Type; b : Type; c : Type; f : a -> c; g : (b -> List c) -> c;
+s : b -> List (Tree a b)
+. fold f g (branch s) = g (map (fold f g) o s)
 forall b : Type; P : Pred (Sys b); Q : Pred (Set (Sys b))
 . ((forall x : b; s : Set (Sys b) . Q s => P (node x s)) /\ Q ""
    /\ forall s : Set (Sys b); t : Sys b . Q s /\ P t => Q (add t s))
@@ -94,61 +107,80 @@ forall a : Type; R : Pred (CTree a)
 ### Hint 1.8, is type variable 'b'
 ### Hint 6.5, is type variable 'a'
 ### Hint 6.5, rebound type variable 'a'
-### Hint 15.11, redeclared type 'Tree'
-### Hint 17.5, is type variable 'c'
-### Hint 20.8, not a class 'a'
-### Hint 20.8, not a class 'c'
-### Hint 20.20, not a kind '(b -> List c) -> c'
-### Hint 20.44, not a class 'a'
-### Hint 20.51, not a kind 'b -> List (Tree a b)'
-### Hint 21.13,
+### Hint 15.5, is type variable 'b'
+### Hint 15.5, rebound type variable 'b'
+### Hint 18.11, redeclared type 'Tree'
+### Hint 20.5, is type variable 'c'
+### Hint 23.15-23.20,
+no kind found for 'b -> c'
+  expected: {Cpo}
+     found: {Type}
+### Hint 23.15-23.20,
+no kind found for 'b -> c'
+  expected: {Cppo}
+     found: {Type}
+### Hint 25.8, not a class 'a'
+### Hint 25.8, not a class 'c'
+### Hint 25.20, not a kind '(b -> List c) -> c'
+### Hint 25.44, not a class 'a'
+### Hint 25.51, not a kind 'b -> List (Tree a b)'
+### Hint 26.13,
 in type of '(op leaf : forall a : Type . a -> CTree a)'
   typename 'CTree' (7.16)
-  is not unifiable with type 'Tree a' (20.10)
-### Hint 21.18, rejected 'a < b' of '(var x : a)'
-### Hint 21.18, untypeable term (with type: b) 'x'
-### Hint 22.18,
+  is not unifiable with type 'Tree a' (25.10)
+### Hint 26.18, rejected 'a < b' of '(var x : a)'
+### Hint 26.18, untypeable term (with type: b) 'x'
+### Hint 27.18,
 in type of '(op branch : forall a : Type . (Nat ->? CTree a) -> CTree a)'
   typename 'CTree' (7.16)
-  is not unifiable with type 'Tree a' (20.10)
-### Hint 22.25,
+  is not unifiable with type 'Tree a' (25.10)
+### Hint 27.25,
 in type of '(var s : b -> List (Tree a b))'
-  typename 'List' (20.58)
-  is not unifiable with type 'Tree a' (20.10)
-### Hint 22.25, untypeable term (with type: a -> Tree a b) 's'
-### Hint 24.7, not a kind 'Pred (Set (Sys b))'
-### Hint 24.30, not a kind 'Pred (Sys b)'
-### Hint 26.13, not a class 'b'
-### Hint 26.20, not a kind 'Set (Sys b)'
-### Hint 28.16, not a kind 'Set (Sys b)'
-### Hint 28.33, not a kind 'Sys b'
-### Hint 29.15, not a kind 'Sys b'
-### Hint 26.11, rebound variable 'x'
-### Hint 26.18, rebound variable 's'
-### Hint 28.14, rebound variable 's'
-### Hint 31.7, not a kind 'Pred (CTree a)'
-### Hint 32.13, not a class 'a'
-### Hint 33.16, not a kind 'Nat ->? CTree a'
-### Hint 34.15, not a class 'Nat'
-### Hint 35.15, not a kind 'CTree a'
+  typename 'List' (25.58)
+  is not unifiable with type 'Tree a' (25.10)
+### Hint 27.25, untypeable term (with type: a -> Tree a b) 's'
+### Hint 28.13,
+in type of '(op branch : forall a : Type . (Nat ->? CTree a) -> CTree a)'
+  typename 'CTree' (7.16)
+  is not unifiable with type 'Tree a' (25.10)
+### Hint 28.20,
+in type of '(var s : b -> List (Tree a b))'
+  typename 'List' (25.58)
+  is not unifiable with type 'Tree a' (25.10)
+### Hint 28.20, untypeable term (with type: a -> Tree a b) 's'
+### Hint 30.7, not a kind 'Pred (Set (Sys b))'
+### Hint 30.30, not a kind 'Pred (Sys b)'
+### Hint 32.13, not a class 'b'
+### Hint 32.20, not a kind 'Set (Sys b)'
+### Hint 34.16, not a kind 'Set (Sys b)'
+### Hint 34.33, not a kind 'Sys b'
+### Hint 35.15, not a kind 'Sys b'
 ### Hint 32.11, rebound variable 'x'
-### Hint 32.22,
+### Hint 32.18, rebound variable 's'
+### Hint 34.14, rebound variable 's'
+### Hint 37.7, not a kind 'Pred (CTree a)'
+### Hint 38.13, not a class 'a'
+### Hint 39.16, not a kind 'Nat ->? CTree a'
+### Hint 40.15, not a class 'Nat'
+### Hint 41.15, not a kind 'CTree a'
+### Hint 38.11, rebound variable 'x'
+### Hint 38.22,
 in type of '(op leaf : forall a : Type; b : Type . b -> Tree a b)'
-  typename 'CTree' (31.14)
-  is not unifiable with type 'Tree _v175_a' (11.16)
-### Hint 32.22,
+  typename 'CTree' (37.14)
+  is not unifiable with type 'Tree _v271_a' (11.16)
+### Hint 38.22,
 in type of '(op leaf : forall a : Type; b : Type . a -> Tree a b)'
-  typename 'CTree' (31.14)
-  is not unifiable with type 'Tree _v172' (32.27)
-### Hint 33.14, rebound variable 'f'
-### Hint 34.13, rebound variable 'x'
-### Hint 34.49,
+  typename 'CTree' (37.14)
+  is not unifiable with type 'Tree _v268' (38.27)
+### Hint 39.14, rebound variable 'f'
+### Hint 40.13, rebound variable 'x'
+### Hint 40.49,
 in type of '(op branch :
  forall a : Type; b : Type . (b -> List (Tree a b)) -> Tree a b)'
-  typename 'CTree' (31.14)
-  is not unifiable with type 'Tree _v204_a' (15.16)
-### Hint 34.49,
+  typename 'CTree' (37.14)
+  is not unifiable with type 'Tree _v300_a' (18.16)
+### Hint 40.49,
 in type of '(op branch :
  forall a : Type; b : Type . (a -> Tree a b) -> Tree a b)'
-  typename 'CTree' (31.14)
-  is not unifiable with type 'Tree _v205_a' (11.16)
+  typename 'CTree' (37.14)
+  is not unifiable with type 'Tree _v301_a' (11.16)

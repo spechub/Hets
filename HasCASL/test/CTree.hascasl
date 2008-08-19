@@ -12,14 +12,20 @@ free type Tree a b ::= leaf b | branch (a -> Tree a b)
 
 free type List a ::= nil | cons (a; List a)
 
+var b : Type
+op map : (a -> b) -> List a -> List b
+
 free type Tree a b ::= leaf a | branch (b -> List (Tree a b))
 
 var c : Type
 op fold : (a -> c) -> ((b -> List c) -> c) -> Tree a b -> c
 
+op __ o __ : (b -> c) * (a -> b) -> a -> c
+
 vars f : a -> c; g : (b -> List c) -> c; x : a; s : b -> List (Tree a b)
 . fold f g (leaf x) = f x
 . def (fold f g (branch s))
+. fold f g (branch s) = g (map (fold f g) o s)
 
 var Q : Pred(Set (Sys b)); P : Pred (Sys b)
 
