@@ -1,4 +1,4 @@
-class C
+class C, D
 
 type t : C -> C -> C
 type t : +C -> C -> C
@@ -6,5 +6,4 @@ type t : C -> -C -> C
 type t : -C -> +C -> C
 
 type s : (+C -> C) -> C
-type s : (-C -> C) -> C
-type s : (C -> C) -> C
+type s : (D -> D) -> D

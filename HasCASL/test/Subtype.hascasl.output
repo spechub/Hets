@@ -22,7 +22,9 @@ var   x : a
 vars  c, d, e, f : Type; c < e; d < f
 forall f : e -> f . (up f : e ->? f) = \ x : e . f x;
 forall f : e ->? d . (up f : c ->? f) = \ x : c . up (f (up x));
-forall x : c; y : d . (up (x, y) : e * f) = (up x, up y);
+forall x : c; y : d
+. (up (x, y) : e * f) = (up x, up y)
+. forall f : e -> d . (up f : c -> f) = \ x : c .! f (up x);
 types
 F : Type -> Type -> Type;
 Inj : -Type -> +Type -> Type;
@@ -60,6 +62,8 @@ forall c < e : Type; d < f : Type; e : Type; f : Type; f : e ->? d
 . (up f : c ->? f) = \ x : c . up (f (up x))
 forall c < e : Type; d < f : Type; e : Type; f : Type; x : c; y : d
 . (up (x, y) : e * f) = (up x, up y)
+forall c < e : Type; d < f : Type; e : Type; f : Type
+. forall f : e -> d . (up f : c -> f) = \ x : c .! f (up x)
 ### Hint 1.6, is type variable 'a'
 ### Hint 1.16, is type variable 'b'
 ### Hint 2.8, rebound type variable 'a'
@@ -113,3 +117,7 @@ no kind found for 'e'
 no kind found for 'e'
   expected: {Cppo}
      found: {Type}
+### Hint 33.11, not a class 'e'
+### Hint 33.11, not a class 'd'
+### Hint 33.10, rebound variable 'f'
+### Hint 33.40, rebound variable 'x'
