@@ -1,0 +1,80 @@
+vars  m : Type -> Type; a : Type
+op    ret : a -> m a
+var   state : Type
+type  ST state a := state ->? a * state
+var   x : a
+vars  p : ST state a; b : Type; q : a ->? ST state b
+op    __>>=__ : m a * (a -> m b) -> m b
+type
+ST : Type -> Type -> Type
+type
+ST := \ state : Type . \ a : Type . state ->? a * state
+vars
+a : Type %(var_2)%;
+b : Type %(var_36)%;
+m : Type -> Type %(var_1)%;
+state : Type %(var_3)%
+op __>>=__ : forall m : Type -> Type; a : Type; b : Type
+             . m a * (a -> m b) -> m b
+             %(op)%
+op ret : forall m : Type -> Type; a : Type . a -> m a %(op)%
+vars
+p : ST state a;
+q : a ->? ST state b;
+x : a
+### Hint 1.7, is type variable 'm'
+### Hint 1.24, is type variable 'a'
+### Hint 3.7, is type variable 'state'
+### Hint 4.30,
+no kind found for 'a'
+  expected: {Cpo}
+     found: {Type}
+### Hint 4.30,
+no kind found for 'a'
+  expected: {Cppo}
+     found: {Type}
+### Hint 5.7, not a class 'a'
+### Hint 6.12,
+in type of '(var x : a)'
+  typename 'a' (5.9)
+  is not unifiable with type '_v13 _v14_a _v15_state' (6.25)
+### Hint 6.12,
+untypeable term (with type: _v13 _v14_a _v15_state) 'x'
+### Hint 6.8-6.14,
+untypeable term (with type: ? _v7_a) 'ret x : ST state a'
+*** Error 6.3, no typing for 'def (ret x : ST state a)'
+### Hint 8.7,
+in type of '(var x : a)'
+  typename 'a' (5.9)
+  is not unifiable with type '_v30 _v31_a _v32_state' (8.20)
+### Hint 8.7,
+untypeable term (with type: _v30 _v31_a _v32_state) 'x'
+### Hint 8.3-8.42,
+untypeable term (with type: ? _v21_a * ? _v21_a)
+'(ret x : ST state a, \ s : state . (x, s))'
+*** Error 8.3,
+no typing for '(ret x : ST state a) = \ s : state . (x, s)'
+### Hint 10.7, not a kind 'ST state a'
+### Hint 10.21, is type variable 'b'
+### Hint 10.33, not a kind 'a ->? ST state b'
+### Hint 11.14-11.16,
+no kind found for 'm a'
+  expected: {Cpo}
+     found: {Type}
+### Hint 11.14-11.16,
+no kind found for 'm a'
+  expected: {Cppo}
+     found: {Type}
+### Hint 13.3-13.9,
+in type of '((var p : ST state a), (var q : a ->? ST state b))'
+  typename 'a' (10.35)
+  is not unifiable with type 'a * state' (10.18)
+### Hint 13.3-13.9,
+untypeable term (with type: _v46_m _v47_a * (_v47_a -> _v46_m _v48_b))
+'(p, q)'
+### Hint 13.5-13.54,
+untypeable term (with type: ? _v40_a * ? _v40_a)
+'(p >>= q, \ s2 : state . let (z, s2) = p s1 in q z s2)'
+*** Error 13.5,
+no typing for
+'p >>= q = \ s2 : state . let (z, s2) = p s1 in q z s2'

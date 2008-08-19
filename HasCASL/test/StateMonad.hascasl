@@ -1,0 +1,13 @@
+vars  m: Type -> Type; a: Type
+op ret : a -> m a
+var   state: Type
+type ST state a := state ->? a * state
+var x : a
+. def (ret x : ST state a)
+
+. ret x : ST state a = \ s : state . (x, s)
+
+var p : ST state a; b : Type; q : a ->? ST state b
+op __>>=__ : m a * (a -> m b) -> m b
+
+. p >>= q = \ s2 : state . let (z, s2) = p s1 in q z s2
