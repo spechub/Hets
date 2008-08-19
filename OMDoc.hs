@@ -28,6 +28,7 @@ The "OMDoc" folder also contains some additional files, which are as well used i
 "OMDoc.Container" and "OMDoc.Util" - utility functions
 "OMDoc.HetsInterface.hspp"  - is a Test function
 "OMDoc.KeyDebug" - used in debugging
+"OMDoc.CASLOutput" - takes care of CASL.Morphism transformation to OMDoc. The module is used by the function "createOMMorphism" from "OMDoc.OMDocOutput"
 
 The "Basic" subdirectory contains the CASL's basic transformation in OMDoc format.
 
