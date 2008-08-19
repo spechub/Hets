@@ -2,7 +2,7 @@
 <html xmlns="http://www.w3.org/1999/xhtml">
 <head>
 <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1" />
-<title>CoLoSS - Coalgebrical Logic Satisfiability Solver</title>
+<title>CoLoSS - Coalgebraic Logic Satisfiability Solver</title>
 <link rel="stylesheet" href="main.css" type="text/css" />
 </head>
 
