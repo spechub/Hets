@@ -992,7 +992,7 @@ isDiffAssoc assocs precs op arg = isInfix op && isInfix arg &&
 -- no need for parens in the following cases
 isSafeLhs :: Id -> Id -> Bool
 isSafeLhs op arg = applId /= op &&
-    (isPostfix arg || endPlace op && not (isInfix arg))
+    (applId == arg || isPostfix arg || endPlace op && not (isInfix arg))
 
 isBoth :: PrecedenceGraph -> Id -> Id -> Bool
 isBoth precs op arg = case precRel precs op arg of

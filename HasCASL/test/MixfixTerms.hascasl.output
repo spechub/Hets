@@ -15,7 +15,7 @@ m (m, n) = m when m <= n else n
 f + - f = f
 - f + - f + - f = - f + - f + - f
 f a none a but f a
-(f a) one a done
+f a one a done
 f a --> f a
 s a <= 0
 not if if a then b else c then b else c
