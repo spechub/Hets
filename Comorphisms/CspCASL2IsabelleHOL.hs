@@ -337,7 +337,7 @@ addAllDecompositionTheorem pfolSign sorts sortRel isaTh =
 --   know all sorts to pass them on.
 addDecompositionTheorem :: CASLSign.CASLSign -> [SORT] -> [(SORT,SORT)] ->
                          IsaTheory -> (SORT,SORT,SORT) -> IsaTheory
-addDecompositionTheorem _ _ _ isaTh (s1,s2,s3) =
+addDecompositionTheorem pfolSign sorts sortRel isaTh (s1,s2,s3) =
     let x = mkFree "x"
         injOp_s1_s2 = getInjectionOp s1 s2
         injOp_s2_s3 = getInjectionOp s2 s3
@@ -346,20 +346,32 @@ addDecompositionTheorem _ _ _ isaTh (s1,s2,s3) =
         inj_s1_s3 = termAppl injOp_s1_s3 x
 
 --         injName_s1_s2 = getInjectionName s1 s2
+        defineNameS1 = getDefinedName sorts s1
 
-
---         defineNameS1 = getDefinedName sorts s1
-
---         collectionEmbInjAx = getCollectionEmbInjAx sortRel
---         collectionTotAx = getCollectionTotAx pfolSign
---         collectionNotDefBotAx = getCollectionNotDefBotAx sorts
+        collectionTransAx = getCollectionTransAx sortRel
+        collectionTotAx = getCollectionTotAx pfolSign
+        collectionNotDefBotAx = getCollectionNotDefBotAx sorts
 
         name = getDecompositionThmName(s1, s2, s3)
         conds = []
         concl = binEq inj_s1_s2_s3 inj_s1_s3
 
-        proof' = IsaProof []
-                           Sorry
+        proof' = IsaProof [
+                           -- Case 1
+                           Apply(SubgoalTac(defineNameS1 ++ "(x)")),
+                           Apply(Other ("insert " ++ collectionTransAx)),
+                           Apply(Simp),
+                           Apply(Other ("simp add: " ++ collectionTotAx)),
+                           Apply(Other ("simp (no_asm_use) add: "
+                                        ++ collectionTotAx)),
+                           -- Case 2
+                           Apply(SubgoalTac("~ " ++ defineNameS1 ++ "(x)")),
+                           Apply(Other ("simp add: "
+                                        ++ collectionNotDefBotAx)),
+                           Apply(Other ("simp add: " ++ collectionTotAx)),
+                           Apply(Other ("simp (no_asm_use) add: "
+                                        ++ collectionTotAx))]
+                           Done
     in addThreomWithProof name conds concl proof' isaTh
 
 
@@ -538,16 +550,34 @@ getColDecompositionThmName sortRel =
        then ""
        else foldr1 (\s -> \s' -> s ++ " " ++ s') decompThmNames
 
--- This function is not implemented in a satisfactory way
--- Return the string of all embedding_injectivity axioms
+-- This function is not implemented in a satisfactory way. Return the
+-- string of all transitivity axioms produced by the translation
+-- CASL2PCFOL; CASL2SubCFOL
+getCollectionTransAx :: [(SORT,SORT)] -> String
+getCollectionTransAx sortRel =
+    let tripples = [(s1,s2,s3) |
+                    (s1,s2) <- sortRel, (s2',s3) <- sortRel, s2==s2']
+        mkEmbInjAxName = (\i -> "ga_transitivity"
+                                ++ (if (i==0)
+                                    then ""
+                                    else ("_" ++ show i))
+                         )
+        embInjAxs = map mkEmbInjAxName [0 .. (length(tripples) - 1)]
+    in if (null embInjAxs)
+       then ""
+       else foldr1 (\s -> \s' -> s ++ " " ++ s') embInjAxs
+
+-- This function is not implemented in a satisfactory way. Return the
+-- string of all embedding_injectivity axioms produced by the
+-- translation CASL2PCFOL; CASL2SubCFOL
 getCollectionEmbInjAx :: [(SORT,SORT)] -> String
-getCollectionEmbInjAx sorts =
+getCollectionEmbInjAx sortRel =
     let mkEmbInjAxName = (\i -> "ga_embedding_injectivity"
                                 ++ (if (i==0)
                                     then ""
                                     else ("_" ++ show i))
                          )
-        embInjAxs = map mkEmbInjAxName [0 .. (length(sorts) - 1)]
+        embInjAxs = map mkEmbInjAxName [0 .. (length(sortRel) - 1)]
     in if (null embInjAxs)
        then ""
        else foldr1 (\s -> \s' -> s ++ " " ++ s') embInjAxs
