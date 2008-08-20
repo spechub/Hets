@@ -680,6 +680,16 @@ printProofEnd pe =
       Oops -> text oopsS
       Sorry -> text sorryS
 
+instance Pretty Modifier where
+    pretty = printModifier
+
+printModifier :: Modifier -> Doc
+printModifier m =
+    case m of
+      No_asm -> text "no_asm"
+      No_asm_simp -> text "no_asm_simp"
+      No_asm_use -> text "no_asm_use"
+
 instance Pretty ProofMethod where
     pretty = printProofMethod
 
@@ -688,8 +698,18 @@ printProofMethod pm =
     case pm of
       Auto -> text autoS
       Simp -> text simpS
-      Induct var -> parens $ (text inductS) <+> doubleQuotes (text var)
-      CaseTac t -> parens $ text caseTacS <+> doubleQuotes (text t)
-      SubgoalTac t -> parens $  text subgoalTacS <+> doubleQuotes (text t)
-      Insert t -> parens $ text insertS <+> text t
+      AutoSimpAdd m names -> let modDoc = case m of
+                                            Just mod' -> parens $ pretty mod'
+                                            Nothing -> empty
+                             in parens $ text autoS <+> text simpS <+>
+                                modDoc <+> text "add:" <+> hsep (map text names)
+      SimpAdd m names -> let modDoc = case m of
+                                        Just mod' -> parens $ pretty mod'
+                                        Nothing -> empty
+                         in parens $ text simpS <+> modDoc <+>
+                            text "add:" <+> hsep (map text names)
+      Induct var -> parens $ (text inductS) <+> doubleQuotes (printTerm var)
+      CaseTac t -> parens $ text caseTacS <+> doubleQuotes (printTerm t)
+      SubgoalTac t -> parens $  text subgoalTacS <+> doubleQuotes (printTerm t)
+      Insert ts -> parens $ text insertS <+> (hsep (map text ts))
       Other s -> parens $ text s

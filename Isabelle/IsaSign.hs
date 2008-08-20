@@ -327,6 +327,18 @@ data ProofEnd
     | Sorry
       deriving (Show, Eq, Ord)
 
+data Modifier
+    -- | No_asm means that assumptions are completely ignored.
+    = No_asm
+    -- | No_asm_simp means that the assumptions are not simpliﬁed but
+    -- | are used in the simpliﬁcation of the conclusion.
+    | No_asm_simp
+    -- | No_asm_use means that the assumptions are simpliﬁed but are
+    -- | not used in the simpliﬁcation of each other or the
+    -- | conclusion.
+    | No_asm_use
+      deriving (Show, Eq, Ord)
+
 data ProofMethod
     -- | This is a plain auto with no parameters - it is used
     --   so often it warents its own constructor
@@ -334,16 +346,28 @@ data ProofMethod
     -- | This is a plain auto with no parameters - it is used
     --   so often it warents its own constructor
     | Simp
+    -- | This is an auto where the simpset has been temporarily
+    --   extended with a listof lemmas, theorems and axioms. An
+    --   optional modifier can also be used to control how the
+    --   assumptions are used. It is used so often it warents its own
+    --   constructor
+    | AutoSimpAdd (Maybe Modifier) [String]
+    -- | This is a simp where the simpset has been temporarily
+    --   extended with a listof lemmas, theorems and axioms.  An
+    --   optional modifier can also be used to control how the
+    --   assumptions are used. It is used so often it warents its own
+    --   constructor
+    | SimpAdd (Maybe Modifier) [String]
     -- | Induction proof method. This performs induction upon a variable
-    | Induct String
+    | Induct Term
     -- |  Case_tac proof method. This perfom a case distinction on a term
-    | CaseTac String
+    | CaseTac Term
     -- | Subgoal_tac proof method . Adds a term to the local
     --   assumptions and also creates a sub-goal of this term
-    | SubgoalTac String
+    | SubgoalTac Term
     -- | Insert proof method. Inserts a lemma or theorem name to the assumptions
     --   of the first goal
-    | Insert String
+    | Insert [String]
     -- | Used for proof methods that have not been implemented yet.
     --   This includes auto and simp with parameters
     | Other String

@@ -246,7 +246,7 @@ addReflexivityTheorem isaTh =
         thmConds = []
         thmConcl = binEq_PreAlphabet x x
         proof' = IsaProof {
-                   proof = [Apply (Induct "x"),
+                   proof = [Apply (Induct x),
                             Apply Auto],
                    end = Done
                  }
@@ -264,10 +264,10 @@ addSymmetryTheorem sorts isaTh =
         thmConds = [binEq_PreAlphabet x y]
         thmConcl = binEq_PreAlphabet y x
         inductY = concat $ map (\i -> [Prefer (i*numSorts+1),
-                                       Apply (Induct "y")])
+                                       Apply (Induct y)])
                     [0..(numSorts-1)]
         proof' = IsaProof {
-                   proof = [Apply (Induct "x")] ++ inductY ++ [Apply Auto],
+                   proof = [Apply (Induct x)] ++ inductY ++ [Apply Auto],
                    end = Done
                  }
     in addThreomWithProof name thmConds thmConcl proof' isaTh
@@ -291,32 +291,28 @@ addInjectivityTheorem pfolSign sorts sortRel isaTh (s1,s2) =
         injOp = getInjectionOp s1 s2
         injX = termAppl injOp x
         injY = termAppl injOp y
-        injName = getInjectionName s1 s2
-        defineNameS1 = getDefinedName sorts s1
+        definedOp_s1 = getDefinedOp sorts s1
+        definedOp_s2 = getDefinedOp sorts s2
         collectionEmbInjAx = getCollectionEmbInjAx sortRel
         collectionTotAx = getCollectionTotAx pfolSign
         collectionNotDefBotAx = getCollectionNotDefBotAx sorts
         name = getInjectivityThmName(s1, s2)
         conds = [binEq injX injY]
         concl = binEq x y
-        proof' = IsaProof [Apply(CaseTac ((getDefinedName sorts s2)
-                                          ++"(" ++ injName ++ "(x))")),
+        proof' = IsaProof [Apply(CaseTac (definedOp_s2 injX)),
                            -- Case 1
-                           Apply(SubgoalTac(defineNameS1 ++ "(x)")),
-                           Apply(SubgoalTac(defineNameS1 ++ "(y)")),
-                           Apply(Other ("insert " ++ collectionEmbInjAx)),
+                           Apply(SubgoalTac(definedOp_s1 x)),
+                           Apply(SubgoalTac(definedOp_s1 y)),
+                           Apply(Insert collectionEmbInjAx),
                            Apply(Simp),
-                           Apply(Other ("simp add: " ++ collectionTotAx)),
-                           Apply(Other ("simp (no_asm_use) add: "
-                                        ++ collectionTotAx)),
+                           Apply(SimpAdd Nothing collectionTotAx),
+                           Apply(SimpAdd (Just No_asm_use) collectionTotAx),
                            -- Case 2
-                           Apply(SubgoalTac("~ " ++ defineNameS1 ++ "(x)")),
-                           Apply(SubgoalTac("~ " ++ defineNameS1 ++ "(y)")),
-                           Apply(Other ("simp add: "
-                                        ++ collectionNotDefBotAx)),
-                           Apply(Other ("simp add: " ++ collectionTotAx)),
-                           Apply(Other ("simp (no_asm_use) add: "
-                                        ++ collectionTotAx))]
+                           Apply(SubgoalTac(termAppl notOp (definedOp_s1 x))),
+                           Apply(SubgoalTac(termAppl notOp(definedOp_s1 y))),
+                           Apply(SimpAdd Nothing collectionNotDefBotAx),
+                           Apply(SimpAdd Nothing collectionTotAx),
+                           Apply(SimpAdd (Just No_asm_use) collectionTotAx)]
                            Done
     in addThreomWithProof name conds concl proof' isaTh
 
@@ -343,10 +339,8 @@ addDecompositionTheorem pfolSign sorts sortRel isaTh (s1,s2,s3) =
         injOp_s1_s3 = getInjectionOp s1 s3
         inj_s1_s2_s3 = termAppl injOp_s2_s3 (termAppl injOp_s1_s2 x)
         inj_s1_s3 = termAppl injOp_s1_s3 x
-
---         injName_s1_s2 = getInjectionName s1 s2
-        defineNameS1 = getDefinedName sorts s1
-
+        definedOp_s1 = getDefinedOp sorts s1
+        definedOp_s3 = getDefinedOp sorts s3
         collectionTransAx = getCollectionTransAx sortRel
         collectionTotAx = getCollectionTotAx pfolSign
         collectionNotDefBotAx = getCollectionNotDefBotAx sorts
@@ -355,21 +349,18 @@ addDecompositionTheorem pfolSign sorts sortRel isaTh (s1,s2,s3) =
         conds = []
         concl = binEq inj_s1_s2_s3 inj_s1_s3
 
-        proof' = IsaProof [
+        proof' = IsaProof [Apply(CaseTac (definedOp_s3 inj_s1_s2_s3)),
                            -- Case 1
-                           Apply(SubgoalTac(defineNameS1 ++ "(x)")),
-                           Apply(Other ("insert " ++ collectionTransAx)),
+                           Apply(SubgoalTac(definedOp_s1 x)),
+                           Apply(Insert collectionTransAx),
                            Apply(Simp),
-                           Apply(Other ("simp add: " ++ collectionTotAx)),
-                           Apply(Other ("simp (no_asm_use) add: "
-                                        ++ collectionTotAx)),
+                           Apply(SimpAdd Nothing collectionTotAx),
+
                            -- Case 2
-                           Apply(SubgoalTac("~ " ++ defineNameS1 ++ "(x)")),
-                           Apply(Other ("simp add: "
-                                        ++ collectionNotDefBotAx)),
-                           Apply(Other ("simp add: " ++ collectionTotAx)),
-                           Apply(Other ("simp (no_asm_use) add: "
-                                        ++ collectionTotAx))]
+                           Apply(SubgoalTac(
+                               termAppl notOp(definedOp_s3 inj_s1_s3))),
+                           Apply(SimpAdd Nothing collectionNotDefBotAx),
+                           Apply(SimpAdd Nothing collectionTotAx)]
                            Done
     in addThreomWithProof name conds concl proof' isaTh
 
@@ -390,18 +381,17 @@ addTransitivityTheorem sorts sortRel isaTh =
         thmConds = [binEq_PreAlphabet x y, binEq_PreAlphabet y z]
         thmConcl = binEq_PreAlphabet x z
         inductY = concat $ map (\i -> [Prefer (i*numSorts+1),
-                                       Apply (Induct "y")])
+                                       Apply (Induct y)])
                   [0..(numSorts-1)]
         inductZ = concat $ map (\i -> [Prefer (i*numSorts+1),
-                                       Apply (Induct "z")])
+                                       Apply (Induct z)])
                   [0..((numSorts^(2::Int))-1)]
         proof' = IsaProof {
-                   proof = [Apply (Induct "x")] ++
+                   proof = [Apply (Induct x)] ++
                             inductY ++
                             inductZ ++
-                           [Apply (Other ("auto simp add: "
-                                          ++ colDecompThmNames
-                                          ++ colInjThmNames))],
+                           [Apply (AutoSimpAdd Nothing
+                                  (colDecompThmNames ++ colInjThmNames))],
                    end = Done
                  }
     in addThreomWithProof name thmConds thmConcl proof' isaTh
@@ -469,14 +459,10 @@ equivTypeClassS  = "equiv"
 --   This function is not implemented in a satisfactory way
 getInjectionOp :: SORT -> SORT -> Term
 getInjectionOp s s' =
-    let t = CASLSign.toOP_TYPE(CASLSign.OpType{CASLSign.opKind = Total,
-                                               CASLSign.opArgs = [s],
-                                               CASLSign.opRes = s'})
-        injName = show $ CASLInject.uniqueInjName t
+    let injName = getInjectionName s s'
         replace string c s1 = concat (map (\x -> if x==c
                                                  then s1
                                                  else [x]) string)
-
     in Const {
           termName= VName {
             new = ("X_" ++ injName),
@@ -506,6 +492,11 @@ getInjectionName s s' =
         injName = show $ CASLInject.uniqueInjName t
     in injName
 
+-- | Return the injection name of the injection from one sort to another
+--   This function is not implemented in a satisfactory way
+getDefinedOp :: [SORT] -> SORT -> Term -> Term
+getDefinedOp sorts s t =
+    termAppl (con $ VName (getDefinedName sorts s) $ Nothing) t
 
 -- | Return the name of the definedness function for a sort.  We need
 --   to know all sorts to perform this workaround
@@ -524,35 +515,29 @@ getDecompositionThmName (s, s', s'') =
     "decomposition_" ++ (convertSort2String s) ++ "_" ++ (convertSort2String s')
                     ++ "_" ++ (convertSort2String s'')
 
+-- This function is not implemented in a satisfactory way
+-- Return the list of string of all decomposition theorem names that we generate
+getColDecompositionThmName :: [(SORT,SORT)] -> [String]
+getColDecompositionThmName sortRel =
+    let tripples = [(s1,s2,s3) |
+                    (s1,s2) <- sortRel, (s2',s3) <- sortRel, s2==s2']
+    in map getDecompositionThmName tripples
+
 -- Produce the theorem name of the injectivity theorem that we produce
 getInjectivityThmName :: (SORT,SORT) -> String
 getInjectivityThmName (s, s') =
     "injectivity_" ++ (convertSort2String s) ++ "_" ++ (convertSort2String s')
 
 -- This function is not implemented in a satisfactory way
--- Return the string of all injectivity theorem names that we generate
-getColInjectivityThmName :: [(SORT,SORT)] -> String
-getColInjectivityThmName sortRel =
-    let injThmNames = map getInjectivityThmName sortRel
-    in if (null injThmNames)
-       then ""
-       else foldr1 (\s -> \s' -> s ++ " " ++ s') injThmNames
-
--- This function is not implemented in a satisfactory way
--- Return the string of all decomposition theorem names that we generate
-getColDecompositionThmName :: [(SORT,SORT)] -> String
-getColDecompositionThmName sortRel =
-    let tripples = [(s1,s2,s3) |
-                    (s1,s2) <- sortRel, (s2',s3) <- sortRel, s2==s2']
-        decompThmNames = map getDecompositionThmName tripples
-    in if (null decompThmNames)
-       then ""
-       else foldr1 (\s -> \s' -> s ++ " " ++ s') decompThmNames
+-- Return the list of strings of the injectivity theorem names
+-- that we generate
+getColInjectivityThmName :: [(SORT,SORT)] -> [String]
+getColInjectivityThmName sortRel = map getInjectivityThmName sortRel
 
 -- This function is not implemented in a satisfactory way. Return the
--- string of all transitivity axioms produced by the translation
--- CASL2PCFOL; CASL2SubCFOL
-getCollectionTransAx :: [(SORT,SORT)] -> String
+-- list of strings of all transitivity axioms produced by the
+-- translation CASL2PCFOL; CASL2SubCFOL
+getCollectionTransAx :: [(SORT,SORT)] -> [String]
 getCollectionTransAx sortRel =
     let tripples = [(s1,s2,s3) |
                     (s1,s2) <- sortRel, (s2',s3) <- sortRel, s2==s2']
@@ -561,29 +546,23 @@ getCollectionTransAx sortRel =
                                     then ""
                                     else ("_" ++ show i))
                          )
-        embInjAxs = map mkEmbInjAxName [0 .. (length(tripples) - 1)]
-    in if (null embInjAxs)
-       then ""
-       else foldr1 (\s -> \s' -> s ++ " " ++ s') embInjAxs
+    in  map mkEmbInjAxName [0 .. (length(tripples) - 1)]
 
 -- This function is not implemented in a satisfactory way. Return the
--- string of all embedding_injectivity axioms produced by the
+-- list of string of all embedding_injectivity axioms produced by the
 -- translation CASL2PCFOL; CASL2SubCFOL
-getCollectionEmbInjAx :: [(SORT,SORT)] -> String
+getCollectionEmbInjAx :: [(SORT,SORT)] -> [String]
 getCollectionEmbInjAx sortRel =
     let mkEmbInjAxName = (\i -> "ga_embedding_injectivity"
                                 ++ (if (i==0)
                                     then ""
                                     else ("_" ++ show i))
                          )
-        embInjAxs = map mkEmbInjAxName [0 .. (length(sortRel) - 1)]
-    in if (null embInjAxs)
-       then ""
-       else foldr1 (\s -> \s' -> s ++ " " ++ s') embInjAxs
+    in map mkEmbInjAxName [0 .. (length(sortRel) - 1)]
 
 -- This function is not implemented in a satisfactory way
--- Return the string of all gn_totality axioms
-getCollectionTotAx :: CASLSign.CASLSign -> String
+-- Return the list of strings of all gn_totality axioms
+getCollectionTotAx :: CASLSign.CASLSign -> [String]
 getCollectionTotAx pfolSign =
     let opList = Map.toList $ CASLSign.opMap pfolSign
         -- This filter is not quite right
@@ -596,23 +575,17 @@ getCollectionTotAx pfolSign =
                                  then ""
                                  else ("_" ++ show i))
                       )
-        totAxs = map mkTotAxName [0 .. (length(totList) - 1)]
-    in if (null totAxs)
-       then ""
-       else foldr1 (\s -> \s' -> s ++ " " ++ s') totAxs
+    in map mkTotAxName [0 .. (length(totList) - 1)]
 
 -- This function is not implemented in a satisfactory way
--- Return the string of all ga_notDefBottom axioms
-getCollectionNotDefBotAx :: [SORT] -> String
+-- Return the list of strings of all ga_notDefBottom axioms
+getCollectionNotDefBotAx :: [SORT] -> [String]
 getCollectionNotDefBotAx sorts =
     let mkNotDefBotAxName = (\i -> "ga_notDefBottom"
                                    ++ (if (i==0)
                                        then ""
                                        else ("_" ++ show i)))
-        notDefBotAxs = map mkNotDefBotAxName [0 .. (length(sorts) - 1)]
-    in if (null notDefBotAxs)
-       then ""
-       else foldr1 (\s -> \s' -> s ++ " " ++ s') notDefBotAxs
+    in map mkNotDefBotAxName [0 .. (length(sorts) - 1)]
 
 -- Convert a SORT to a string
 convertSort2String :: SORT -> String
