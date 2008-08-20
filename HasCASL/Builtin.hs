@@ -137,7 +137,8 @@ addBuiltins ga =
         precs = prec_annos ga
         pMap = Rel.toMap precs
         opIds = Set.unions (Map.keysSet pMap : Map.elems pMap)
-        opIs = Set.toList ((((Set.filter isInfix opIds)
+        opIs = Set.toList
+               ((((Set.filter (\ i -> begPlace i || endPlace i) opIds)
                 Set.\\ builtinRelIds) Set.\\ builtinLogIds)
                 Set.\\ Set.fromList [applId, whenElse])
         logs = [(eqvId, implId), (implId, andId), (implId, orId),
