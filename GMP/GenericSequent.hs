@@ -29,7 +29,10 @@ instance (Show a, Eq a) => Logic K a where
 
 -- ............
 
+provable :: Logic a b => Sequent a b -> Bool
+provable _ = True
 
+-- ............
 
 ------------------------------------------------------------------------------
 
