@@ -422,8 +422,8 @@ mapMorProg mor = let m = castMor mor in
     $ mapSen (const id) m)
     { foldBlock = \ (Ranged _ r) vs p ->
         Ranged (Block (map (mapVars m) vs) p) r
-    , foldCall = \ (Ranged _ r)
-          (Predication (Qual_pred_name i (Pred_type args r1) r2) ts r3) ->
+    , foldCall = \ (Ranged _ r) f -> case f of
+     Predication (Qual_pred_name i (Pred_type args r1) r2) ts r3 ->
       case lookupProc i $ msource mor of
         Nothing -> error "mapMorProg"
         Just pr -> let
@@ -431,7 +431,8 @@ mapMorProg mor = let m = castMor mor in
           nargs = map (mapSrt mor) args
           nts = map (MapSen.mapTerm (const id) m) ts
           in Ranged (Call $ Predication
-                (Qual_pred_name j (Pred_type nargs r1) r2) nts r3) r }
+                (Qual_pred_name j (Pred_type nargs r1) r2) nts r3) r
+     _ -> error $ "mapMorProg " ++ show f }
 
 mapProcId :: Morphism f Procs () -> Id -> Id
 mapProcId m i = case lookupProc i $ msource m of
