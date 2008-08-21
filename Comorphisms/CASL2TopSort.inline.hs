@@ -37,9 +37,10 @@ import CASL.Morphism
 import CASL.Sublogic as SL
 
 -- | The identity of the comorphism
-data CASL2TopSort = CASL2TopSort deriving (Show)
+data CASL2TopSort = CASL2TopSort deriving Show
 
-instance Language CASL2TopSort -- default definition is okay
+instance Language CASL2TopSort where
+  language_name CASL2TopSort = "CASL2PCFOLTopSort"
 
 instance Comorphism CASL2TopSort
                CASL CASL_Sublogics
@@ -424,7 +425,7 @@ mapSen1 subSortMap f =
     tr@(True_atom _)  -> tr
     fa@(False_atom _) -> fa
     Quantification q vdl f1 pl ->
-        Quantification q (map updateVarDecls vdl) 
+        Quantification q (map updateVarDecls vdl)
                          (relativize q vdl (mapSen1 subSortMap f1)) pl
     Membership t s pl ->
         let t' = mapTerm subSortMap t
@@ -462,9 +463,9 @@ mapSen1 subSortMap f =
           mkVarPreds [v] = mkVarPred v
           mkVarPreds vdl = Conjunction (map mkVarPred vdl) nullRange
           mkVarPred (Var_decl [v] s _) = mkVarPred1 s v
-          mkVarPred (Var_decl vs s _) = 
+          mkVarPred (Var_decl vs s _) =
               Conjunction (map (mkVarPred1 s) vs) nullRange
-          mkVarPred1 s v = 
+          mkVarPred1 s v =
               let sTop = lkupTop subSortMap s
                   p = lkupPRED_NAME subSortMap s
               in case p of
@@ -472,7 +473,7 @@ mapSen1 subSortMap f =
                  Nothing -> True_atom nullRange
                  Just p1 -> genPredication p1 [sTop] [Qual_var v s nullRange]
 
-            
+
 
 mapTerm :: SubSortMap -> TERM f -> TERM f
 mapTerm ssMap t = case t of
