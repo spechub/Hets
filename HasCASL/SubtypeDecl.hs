@@ -79,7 +79,7 @@ addSuperType t ak p@(i, nAs) = case t of
           ExpandedType t1 t2 -> do
             addSuperType t1 ak p
             addSuperType t2 ak p
-          _ -> error "addSuperType"
+          _ -> addDiags[mkDiag Error ("unexpected type as supertype") t]
 
 -- | generalize a type scheme for an alias type
 generalizeT :: TypeScheme -> State Env TypeScheme
