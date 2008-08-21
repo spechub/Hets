@@ -1124,10 +1124,9 @@ mapCASLTerm n t = case t of
                        else Ranged Skip nullRange
    case opsym of
     Op_name _ -> fail "must be qualified"
-    Qual_op_name oName (Op_type _ args res _) _ -> return $ Ranged
-     (Seq
-       asgn
-       (Ranged (Assign (genToken $ "x" ++ show n)
+    Qual_op_name oName (Op_type _ args res _) _ ->
+      case args of
+       [] ->  return $ Ranged (Assign (genToken $ "x" ++ show n)
                        (Application
                         (Qual_op_name
                          (stringToId $
@@ -1136,8 +1135,21 @@ mapCASLTerm n t = case t of
                          nullRange
                         )
                        xvars nullRange))
-        nullRange))
-     nullRange
+                       nullRange
+       _ -> return $ Ranged
+               (Seq
+                asgn
+                (Ranged (Assign (genToken $ "x" ++ show n)
+                       (Application
+                        (Qual_op_name
+                         (stringToId $
+                           genNamePrefix ++ show oName)
+                         (Op_type Partial args res nullRange)
+                         nullRange
+                        )
+                       xvars nullRange))
+                  nullRange))
+                nullRange
   _ -> fail "nyi term"
 
 freshIndex :: SORT -> State (Int, VarSet) Int
