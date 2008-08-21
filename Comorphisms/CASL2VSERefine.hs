@@ -797,8 +797,10 @@ mapNamedSen n_sen = let
                                    (Assign
                                      (genToken  "y")
                                      (Application
-                                      (Op_name $ stringToId $
-                                            genNamePrefix ++ show ctor)
+                                      (Qual_op_name
+                                     (stringToId $ genNamePrefix ++ show ctor)
+                                     (Op_type Partial args sn nullRange)
+                                     nullRange)
                                       (map  (\(v,ss) ->
                                               Qual_var v ss nullRange) $
                                        zip decls args)
