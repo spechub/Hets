@@ -54,8 +54,8 @@ import SoftFOL.Translate
 import SoftFOL.ParseTPTP
 
 -- | The identity of the comorphisms
-data SuleCFOL2SoftFOL = SuleCFOL2SoftFOL deriving (Show)
-data SuleCFOL2SoftFOLInduction = SuleCFOL2SoftFOLInduction deriving (Show)
+data SuleCFOL2SoftFOL = SuleCFOL2SoftFOL deriving Show
+data SuleCFOL2SoftFOLInduction = SuleCFOL2SoftFOLInduction deriving Show
 
 -- | SoftFOL theories
 type SoftFOLTheory = (SPSign.Sign,[Named SPTerm])
@@ -124,8 +124,11 @@ type FormulaTranslator f e =
 formTrCASL :: FormulaTranslator () ()
 formTrCASL _ _ = error "SuleCFOL2SoftFOL: No extended formulas allowed in CASL"
 
-instance Language SuleCFOL2SoftFOL -- default definition is okay
-instance Language SuleCFOL2SoftFOLInduction -- default definition is okay
+instance Language SuleCFOL2SoftFOL where
+  language_name SuleCFOL2SoftFOL = "CASL2SoftFOL"
+
+instance Language SuleCFOL2SoftFOLInduction where
+  language_name SuleCFOL2SoftFOLInduction = "CASL2SoftFOLInduction"
 
 instance Comorphism SuleCFOL2SoftFOL
                CASL CASL_Sublogics

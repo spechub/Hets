@@ -36,7 +36,8 @@ import HasCASL.Unify (getTypeOf)
 -- | The identity of the comorphism
 data HasCASL2PCoClTyConsHOL = HasCASL2PCoClTyConsHOL deriving Show
 
-instance Language HasCASL2PCoClTyConsHOL
+instance Language HasCASL2PCoClTyConsHOL where
+  language_name HasCASL2PCoClTyConsHOL = "HasCASL2HasCASLNoSubtypes"
 
 instance Comorphism HasCASL2PCoClTyConsHOL
                HasCASL Sublogic

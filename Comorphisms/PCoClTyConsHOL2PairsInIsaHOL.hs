@@ -30,7 +30,8 @@ import Isabelle.Logic_Isabelle
 -- | The identity of the comorphism
 data PCoClTyConsHOL2PairsInIsaHOL = PCoClTyConsHOL2PairsInIsaHOL deriving Show
 
-instance Language PCoClTyConsHOL2PairsInIsaHOL -- default definition is okay
+instance Language PCoClTyConsHOL2PairsInIsaHOL where
+  language_name PCoClTyConsHOL2PairsInIsaHOL = "HasCASL2IsabelleBoolPair"
 
 instance Comorphism PCoClTyConsHOL2PairsInIsaHOL
                HasCASL Sublogic

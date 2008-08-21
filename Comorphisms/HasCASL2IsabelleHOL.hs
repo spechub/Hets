@@ -42,7 +42,8 @@ import Data.Maybe (catMaybes)
 -- | The identity of the comorphism
 data HasCASL2IsabelleHOL = HasCASL2IsabelleHOL deriving Show
 
-instance Language HasCASL2IsabelleHOL -- default definition is okay
+instance Language HasCASL2IsabelleHOL where
+  language_name HasCASL2IsabelleHOL = "HasCASL2IsabelleOldOption"
 
 instance Comorphism HasCASL2IsabelleHOL
                HasCASL Sublogic

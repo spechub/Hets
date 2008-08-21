@@ -28,7 +28,8 @@ import Common.AS_Annotation
 -- | The identity of the comorphism
 data HasCASL2HasCASL = HasCASL2HasCASL deriving Show
 
-instance Language HasCASL2HasCASL -- default definition is okay
+instance Language HasCASL2HasCASL where
+  language_name HasCASL2HasCASL = "HasCASL2HasCASLPrograms"
 
 instance Comorphism HasCASL2HasCASL
                HasCASL Sublogic

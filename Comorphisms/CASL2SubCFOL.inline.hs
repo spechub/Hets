@@ -65,8 +65,7 @@ defaultCASL2SubCFOL :: CASL2SubCFOL
 defaultCASL2SubCFOL = CASL2SubCFOL True FormulaDependent
 
 instance Language CASL2SubCFOL where
-    language_name (CASL2SubCFOL b m) =
-        (if b then "CASL2SubCFOL" else "SubPFOL2SubFOL")
+    language_name (CASL2SubCFOL _ m) = "CASL2SubCFOL"
         ++ treatFormula m (show m) "" (show m)
 
 instance Comorphism CASL2SubCFOL
