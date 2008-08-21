@@ -40,9 +40,10 @@ import Logic.Logic
 import Logic.Comorphism
 
 -- | The identity of the comorphism
-data CspCASL2IsabelleHOL = CspCASL2IsabelleHOL deriving (Show)
+data CspCASL2IsabelleHOL = CspCASL2IsabelleHOL deriving Show
 
-instance Language CspCASL2IsabelleHOL -- default definition is okay
+instance Language CspCASL2IsabelleHOL where
+  language_name CspCASL2IsabelleHOL = "CspCASL2Isabelle"
 
 instance Comorphism CspCASL2IsabelleHOL
                CspCASL ()

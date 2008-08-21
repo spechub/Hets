@@ -37,9 +37,10 @@ import Data.Char (ord, chr)
 
 
 -- | The identity of the comorphism
-data CoCFOL2IsabelleHOL = CoCFOL2IsabelleHOL deriving (Show)
+data CoCFOL2IsabelleHOL = CoCFOL2IsabelleHOL deriving Show
 
-instance Language CoCFOL2IsabelleHOL -- default definition is okay
+instance Language CoCFOL2IsabelleHOL where
+  language_name CoCFOL2IsabelleHOL = "CoCASL2Isabelle"
 
 instance Comorphism CoCFOL2IsabelleHOL
                CoCASL CoCASL_Sublogics

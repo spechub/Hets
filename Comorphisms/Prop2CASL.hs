@@ -37,9 +37,10 @@ import qualified CASL.Morphism as CMor
 import Propositional.Prop2CASLHelpers
 
 -- | lid of the morphism
-data Prop2CASL = Prop2CASL deriving (Show)
+data Prop2CASL = Prop2CASL deriving Show
 
-instance Language Prop2CASL
+instance Language Prop2CASL where
+  language_name Prop2CASL = "Propositional2CASL"
 
 instance Comorphism Prop2CASL
     PLogic.Propositional

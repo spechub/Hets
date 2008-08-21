@@ -54,7 +54,7 @@ isSingleton :: Set.Set a -> Bool
 isSingleton s = Set.size s == 1
 
 -- | The identity of the comorphism
-data CFOL2IsabelleHOL = CFOL2IsabelleHOL deriving (Show)
+data CFOL2IsabelleHOL = CFOL2IsabelleHOL deriving Show
 
 -- Isabelle theories
 type IsaTheory = (IsaSign.Sign, [Named IsaSign.Sentence])
@@ -73,7 +73,8 @@ type FormulaTranslator f e = CASL.Sign.Sign f e -> Set.Set String -> f -> Term
 formTrCASL :: FormulaTranslator () ()
 formTrCASL _ _ = error "CFOL2IsabelleHOL: No extended formulas allowed in CASL"
 
-instance Language CFOL2IsabelleHOL -- default definition is okay
+instance Language CFOL2IsabelleHOL where
+  language_name CFOL2IsabelleHOL = "CASL2Isabelle"
 
 instance Comorphism CFOL2IsabelleHOL
                CASL CASL_Sublogics

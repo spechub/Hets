@@ -34,7 +34,7 @@ import TiPropDecorate
 -- * Comorphisms
 
 -- The identity of the comorphism
-data Haskell2IsabelleHOLCF = Haskell2IsabelleHOLCF deriving (Show)
+data Haskell2IsabelleHOLCF = Haskell2IsabelleHOLCF deriving Show
 
 instance Language Haskell2IsabelleHOLCF
 
@@ -54,9 +54,10 @@ instance Comorphism Haskell2IsabelleHOLCF
     map_theory _ (sign, sens) =
         Hs2HOLCF.transTheory (IsCont True) False sign sens
 
-data Haskell2IsabelleHOL = Haskell2IsabelleHOL deriving (Show)
+data Haskell2IsabelleHOL = Haskell2IsabelleHOL deriving Show
 
-instance Language Haskell2IsabelleHOL
+instance Language Haskell2IsabelleHOL where
+  language_name Haskell2IsabelleHOL = "Haskell2Isabelle"
 
 instance Comorphism Haskell2IsabelleHOL
                Haskell ()
