@@ -107,7 +107,8 @@ mapSig sign =
                      (Dlformula Diamond
                       (Ranged
                         (Call
-                          (Predication (Pred_name restrName)
+                          (Predication (Qual_pred_name restrName
+                                         (Pred_type [s] nullRange) nullRange)
                             [varx] nullRange))
                           nullRange)
                       (True_atom nullRange) ) nullRange,
@@ -115,7 +116,8 @@ mapSig sign =
                      (Dlformula Diamond
                       (Ranged
                         (Call
-                          (Predication (Pred_name restrName)
+                          (Predication (Qual_pred_name restrName
+                                         (Pred_type [s] nullRange) nullRange)
                             [vary] nullRange))
                           nullRange)
                       (True_atom nullRange) ) nullRange
@@ -124,7 +126,9 @@ mapSig sign =
                      (Dlformula Diamond
                       (Ranged
                         (Call
-                          (Predication (Pred_name eqName)
+                          (Predication (Qual_pred_name eqName
+                                          (Pred_type [s,s, uBoolean] nullRange)
+                             nullRange )
                             [varx, vary,varb] nullRange))
                           nullRange)
                       (True_atom nullRange) ) nullRange)
@@ -138,7 +142,8 @@ mapSig sign =
                      (Dlformula Diamond
                       (Ranged
                         (Call
-                          (Predication (Pred_name restrName)
+                          (Predication (Qual_pred_name restrName
+                                          (Pred_type [s] nullRange ) nullRange)
                             [varx] nullRange))
                           nullRange)
                       (True_atom nullRange) ) nullRange)
@@ -147,7 +152,9 @@ mapSig sign =
                      (Dlformula Diamond
                       (Ranged
                         (Call
-                          (Predication (Pred_name eqName)
+                          (Predication (Qual_pred_name eqName
+                                         (Pred_type [s,s,uBoolean] nullRange)
+                                        nullRange)
                             [varx, varx, varb] nullRange))
                           nullRange)
                       (Strong_equation
@@ -171,7 +178,8 @@ mapSig sign =
                      (Dlformula Diamond
                       (Ranged
                         (Call
-                          (Predication (Pred_name restrName)
+                          (Predication (Qual_pred_name restrName
+                                         (Pred_type [s] nullRange) nullRange)
                             [varx] nullRange))
                           nullRange)
                       (True_atom nullRange) ) nullRange,
@@ -179,7 +187,8 @@ mapSig sign =
                      (Dlformula Diamond
                       (Ranged
                         (Call
-                          (Predication (Pred_name restrName)
+                          (Predication (Qual_pred_name restrName
+                                         (Pred_type [s] nullRange) nullRange)
                             [vary] nullRange))
                           nullRange)
                       (True_atom nullRange) ) nullRange,
@@ -187,7 +196,9 @@ mapSig sign =
                      (Dlformula Diamond
                       (Ranged
                         (Call
-                          (Predication (Pred_name eqName)
+                          (Predication (Qual_pred_name eqName
+                                        (Pred_type [s,s,uBoolean] nullRange)
+                                        nullRange)
                             [varx, vary, varb1] nullRange))
                           nullRange)
                       (Strong_equation
@@ -205,7 +216,9 @@ mapSig sign =
                      (Dlformula Diamond
                       (Ranged
                         (Call
-                          (Predication (Pred_name eqName)
+                          (Predication (Qual_pred_name eqName
+                                         (Pred_type [s,s,uBoolean] nullRange)
+                                        nullRange)
                             [vary, varx, varb2] nullRange))
                           nullRange)
                       (Strong_equation
@@ -231,7 +244,8 @@ mapSig sign =
                      (Dlformula Diamond
                       (Ranged
                         (Call
-                          (Predication (Pred_name restrName)
+                          (Predication (Qual_pred_name restrName
+                                        (Pred_type [s] nullRange)  nullRange)
                             [varx] nullRange))
                           nullRange)
                       (True_atom nullRange) ) nullRange,
@@ -239,7 +253,8 @@ mapSig sign =
                      (Dlformula Diamond
                       (Ranged
                         (Call
-                          (Predication (Pred_name restrName)
+                          (Predication (Qual_pred_name restrName
+                                        (Pred_type [s] nullRange ) nullRange)
                             [vary] nullRange))
                           nullRange)
                       (True_atom nullRange) ) nullRange,
@@ -247,7 +262,8 @@ mapSig sign =
                      (Dlformula Diamond
                       (Ranged
                         (Call
-                          (Predication (Pred_name restrName)
+                          (Predication (Qual_pred_name restrName
+                                        (Pred_type [s] nullRange ) nullRange)
                             [varz] nullRange))
                           nullRange)
                       (True_atom nullRange) ) nullRange,
@@ -255,7 +271,9 @@ mapSig sign =
                      (Dlformula Diamond
                       (Ranged
                         (Call
-                          (Predication (Pred_name eqName)
+                          (Predication (Qual_pred_name eqName
+                                        (Pred_type [s,s,uBoolean] nullRange)
+                                        nullRange)
                             [varx, vary, varb1] nullRange))
                           nullRange)
                       (Strong_equation
@@ -270,7 +288,9 @@ mapSig sign =
                      (Dlformula Diamond
                       (Ranged
                         (Call
-                          (Predication (Pred_name eqName)
+                          (Predication (Qual_pred_name eqName
+                                         (Pred_type [s,s,uBoolean] nullRange )
+                                        nullRange)
                             [vary, varz, varb2] nullRange))
                           nullRange)
                       (Strong_equation
@@ -288,7 +308,9 @@ mapSig sign =
                      (Dlformula Diamond
                       (Ranged
                         (Call
-                          (Predication (Pred_name eqName)
+                          (Predication (Qual_pred_name eqName
+                                         (Pred_type [s,s,uBoolean] nullRange )
+                                        nullRange)
                             [varx, varz, varb] nullRange))
                           nullRange)
                       (Strong_equation
@@ -364,8 +386,9 @@ mapSig sign =
                           (Ranged
                                 (Call
                                  (Predication
-                                   (Pred_name $  stringToId $
+                                   (Qual_pred_name (stringToId $
                                      genNamePrefix ++ "restr_" ++ show si)
+                                    (Pred_type [si] nullRange) nullRange )
                                    [xv] nullRange))
                                nullRange)
                           (True_atom nullRange) ) nullRange ,
@@ -373,8 +396,9 @@ mapSig sign =
                               (Ranged
                                 (Call
                                  (Predication
-                                   (Pred_name $  stringToId $
+                                   (Qual_pred_name (stringToId $
                                      genNamePrefix ++ "restr_" ++ show si)
+                                    (Pred_type [si] nullRange) nullRange)
                                    [yv] nullRange))
                                nullRange)
                           (True_atom nullRange) ) nullRange ,
@@ -382,8 +406,10 @@ mapSig sign =
                               (Ranged
                                 (Call
                                  (Predication
-                                   (Pred_name $ stringToId $
+                                   (Qual_pred_name (stringToId $
                                      genNamePrefix ++ "eq_" ++ show si)
+                                    (Pred_type [si,si,uBoolean] nullRange)
+                                    nullRange)
                                    [xv, yv, bi] nullRange))
                                nullRange)
                               (Strong_equation
@@ -400,8 +426,9 @@ mapSig sign =
                   (ExtFORMULA $ Ranged (
                      Dlformula Diamond
                       (Ranged (Call (Predication
-                                   (Pred_name $ stringToId $
-                                       genNamePrefix ++ show i)
+                                   (Qual_pred_name (stringToId $
+                                     genNamePrefix ++ show i)
+                                    (Pred_type (w ++ [s]) nullRange) nullRange)
                                    ((map (
                   \(si, ii) ->
                   Qual_var (mkSimpleId $ genNamePrefix ++ "x" ++ show ii )
@@ -410,8 +437,9 @@ mapSig sign =
                       (ExtFORMULA $ Ranged (
                          Dlformula Diamond
                       (Ranged (Call (Predication
-                                   (Pred_name $ stringToId $
+                                   (Qual_pred_name (stringToId $
                                      genNamePrefix ++ show i)
+                                    (Pred_type (w ++ [s]) nullRange) nullRange)
                                    ((map (
                   \(si, ii) ->
                   Qual_var (mkSimpleId $ genNamePrefix ++ "y" ++ show ii )
@@ -422,8 +450,10 @@ mapSig sign =
                           Dlformula Diamond
                           ( Ranged
                         (Call
-                          (Predication (Pred_name $ stringToId $
-                              genNamePrefix ++ "eq_" ++ show s )
+                          (Predication (Qual_pred_name (stringToId $
+                                     genNamePrefix ++ "eq_"++show s)
+                                    (Pred_type [s,s,uBoolean] nullRange)
+                                     nullRange)
                             [xvar, yvar, bvar] nullRange))
                           nullRange
                           )
@@ -459,8 +489,9 @@ mapSig sign =
                           (Ranged
                                 (Call
                                  (Predication
-                                   (Pred_name $  stringToId $
+                                   (Qual_pred_name (stringToId $
                                      genNamePrefix ++ "restr_" ++ show si)
+                                    (Pred_type (w++[s]) nullRange) nullRange)
                                    [xv] nullRange))
                                nullRange)
                           (True_atom nullRange) ) nullRange
@@ -472,16 +503,18 @@ mapSig sign =
                        (
                        Dlformula Diamond
                        (Ranged
-                         (Call (Predication (Pred_name $ stringToId $
-                                             genNamePrefix ++ show i)
+                         (Call (Predication (Qual_pred_name (stringToId $
+                                     genNamePrefix ++ show i)
+                                    (Pred_type [s] nullRange) nullRange)
                           (xvars ++[xvar])
                           nullRange))
                         nullRange)
                        (ExtFORMULA $
                          Ranged
                          (Dlformula Diamond (Ranged
-                          (Call (Predication (Pred_name $ stringToId $
-                              genNamePrefix ++ "restr_" ++ show s )
+                          (Call (Predication (Qual_pred_name (stringToId $
+                                     genNamePrefix ++ "restr_" ++ show s)
+                                    (Pred_type [s] nullRange) nullRange)
                               [xvar] nullRange))
                                              nullRange)
                           (True_atom nullRange)
@@ -499,15 +532,17 @@ mapSig sign =
                        (
                        Dlformula Diamond
                        (Ranged
-                         (Call (Predication (Pred_name $ stringToId $
-                                              genNamePrefix ++ show i)
+                         (Call (Predication (Qual_pred_name (stringToId $
+                                     genNamePrefix ++ show i)
+                                    (Pred_type (w ++ [s]) nullRange) nullRange)
                               [xvar] nullRange))
                         nullRange)
                        (ExtFORMULA $
                          Ranged
                          (Dlformula Diamond (Ranged
-                          (Call (Predication (Pred_name $ stringToId $
-                              genNamePrefix ++ "restr_" ++ show s )
+                          (Call (Predication (Qual_pred_name (stringToId $
+                                     genNamePrefix ++ "restr_" ++ show s)
+                                    (Pred_type [s] nullRange) nullRange)
                               [xvar] nullRange))
                                              nullRange)
                           (True_atom nullRange)
@@ -578,8 +613,9 @@ mapSig sign =
                           (Ranged
                                 (Call
                                  (Predication
-                                   (Pred_name $  stringToId $
+                                   (Qual_pred_name (stringToId $
                                      genNamePrefix ++ "restr_" ++ show si)
+                                    (Pred_type [si] nullRange) nullRange)
                                    [xv] nullRange))
                                nullRange)
                           (True_atom nullRange) ) nullRange ,
@@ -587,8 +623,9 @@ mapSig sign =
                               (Ranged
                                 (Call
                                  (Predication
-                                   (Pred_name $  stringToId $
+                                   (Qual_pred_name (stringToId $
                                      genNamePrefix ++ "restr_" ++ show si)
+                                    (Pred_type [si] nullRange) nullRange)
                                    [yv] nullRange))
                                nullRange)
                           (True_atom nullRange) ) nullRange ,
@@ -596,8 +633,10 @@ mapSig sign =
                               (Ranged
                                 (Call
                                  (Predication
-                                   (Pred_name $ stringToId $
+                                   (Qual_pred_name (stringToId $
                                      genNamePrefix ++ "eq_" ++ show si)
+                                    (Pred_type [si,si,uBoolean] nullRange)
+                                    nullRange)
                                    [xv, yv, bi] nullRange))
                                nullRange)
                               (Strong_equation
@@ -614,8 +653,10 @@ mapSig sign =
                   (ExtFORMULA $ Ranged (
                      Dlformula Diamond
                       (Ranged (Call (Predication
-                                   (Pred_name $ stringToId $
-                                                genNamePrefix ++ show i)
+                                   (Qual_pred_name (stringToId $
+                                     genNamePrefix ++ show i)
+                                    (Pred_type (w ++ [uBoolean]) nullRange)
+                                    nullRange)
                                    ((map (
                   \(si, ii) ->
                   Qual_var (mkSimpleId $ genNamePrefix ++ "x" ++ show ii )
@@ -624,8 +665,10 @@ mapSig sign =
                       (ExtFORMULA $ Ranged (
                          Dlformula Diamond
                       (Ranged (Call (Predication
-                                   (Pred_name $ stringToId $
-                                                genNamePrefix ++ show i)
+                                   (Qual_pred_name (stringToId $
+                                     genNamePrefix ++ show i)
+                                    (Pred_type (w ++ [uBoolean]) nullRange)
+                                     nullRange)
                                    ((map (
                   \(si, ii) ->
                   Qual_var (mkSimpleId $ genNamePrefix ++ "y" ++ show ii )
@@ -659,8 +702,9 @@ mapSig sign =
                            (Ranged
                                  (Call
                                   (Predication
-                                    (Pred_name $  stringToId $
-                                      genNamePrefix ++ "restr_" ++ show si)
+                                    (Qual_pred_name (stringToId $
+                                     genNamePrefix ++ "restr_" ++ show si)
+                                    (Pred_type [si] nullRange) nullRange)
                                     [xv] nullRange))
                                 nullRange)
                            (True_atom nullRange) ) nullRange
@@ -672,8 +716,10 @@ mapSig sign =
                         (
                         Dlformula Diamond
                         (Ranged
-                          (Call (Predication (Pred_name $ stringToId $
-                                               genNamePrefix ++ show i)
+                          (Call (Predication (Qual_pred_name (stringToId $
+                                     genNamePrefix ++ show i)
+                                    (Pred_type (w ++ [uBoolean]) nullRange)
+                                     nullRange)
                                  (xvars++[rvar1])
                            nullRange))
                          nullRange)
@@ -751,7 +797,8 @@ mapNamedSen n_sen = let
                                    (Assign
                                      (genToken  "y")
                                      (Application
-                                      (Op_name ctor)
+                                      (Op_name $ stringToId $
+                                            genNamePrefix ++ show ctor)
                                       (map  (\(v,ss) ->
                                               Qual_var v ss nullRange) $
                                        zip decls args)
