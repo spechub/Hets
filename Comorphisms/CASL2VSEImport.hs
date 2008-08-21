@@ -249,10 +249,12 @@ mapNamedSen n_sen = let
     (genSorts, genOps, _maps) = recover_Sort_gen_ax constrs
     genUniform sorts ops s = let
       hasResSort sn (Qual_op_name _ opType _) = (res_OP_TYPE opType) == sn
+      hasResSort _ _ = error "should have qual names"
       ctors = sortBy (\ (Qual_op_name _ (Op_type _ args1 _ _) _)
                         (Qual_op_name _ (Op_type _ args2 _ _) _) ->
                         if length args1 < length args2 then LT else GT) $
               filter (hasResSort s) ops
+      genCodeForCtor (Op_name _) _ = error "should have qual names" 
       genCodeForCtor (Qual_op_name
                                      ctor
                                      (Op_type fK args sn _)
