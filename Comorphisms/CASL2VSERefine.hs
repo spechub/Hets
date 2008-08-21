@@ -35,6 +35,10 @@ import Common.Result
 import Common.Id
 import Common.AS_Annotation
 
+import Common.Lib.State
+import CASL.Quantification
+import CASL.CCC.FreeTypes
+
 -- | The identity of the comorphism
 data CASL2VSERefine = CASL2VSERefine deriving (Show)
 
@@ -58,7 +62,7 @@ instance Comorphism CASL2VSERefine
     mapSublogic CASL2VSERefine _ = Just ()
     map_theory CASL2VSERefine = mapCASLTheory
     map_morphism CASL2VSERefine = return . mapMor
-    map_sentence CASL2VSERefine _ = return. mapSen
+    map_sentence CASL2VSERefine _ = return. mapCASLSen
     map_symbol CASL2VSERefine = error "map symbol nyi"
     has_model_expansion CASL2VSERefine = True
         --check these 3, but should be fine
@@ -696,7 +700,7 @@ mapSig sign =
 mapNamedSen :: Named CASLFORMULA -> [Named Sentence]
 mapNamedSen n_sen = let
  sen = sentence n_sen
- trans = mapSen sen
+ trans = mapCASLSen sen
                     in
  case sen of
   Sort_gen_ax constrs _isFree -> let
@@ -787,7 +791,7 @@ mapNamedSen n_sen = let
          )
        nullRange) ) nullRange
                              in
-     ExtFORMULA $
+     [ExtFORMULA $
      Ranged (Defprocs  [
       Defproc Proc (stringToId $ genNamePrefix ++ "uniform_"++show s)
               [mkSimpleId $ genNamePrefix ++ "x"]
@@ -797,47 +801,30 @@ mapNamedSen n_sen = let
               ) nullRange
       )
       nullRange])
-     nullRange
-    procDefs = map (genUniform genSorts genOps) genSorts
+     nullRange,
+     Quantification Universal [Var_decl [genToken "x"] s nullRange]
+      (Implication
+       ( ExtFORMULA $ Ranged
+          (Dlformula Diamond ( Ranged
+            (Call $ Predication
+              (Qual_pred_name (stringToId $ genNamePrefix ++ "restr_"++ show s)
+                (Pred_type [s] nullRange) nullRange)
+               [Qual_var (genToken "x") s nullRange] nullRange) nullRange)
+            (True_atom nullRange))
+          nullRange)
+       ( ExtFORMULA $ Ranged
+          (Dlformula Diamond (Ranged
+            (Call $ Predication
+              (Qual_pred_name (stringToId $ genNamePrefix ++
+                                            "uniform_" ++ show s)
+                (Pred_type [s] nullRange) nullRange)
+               [Qual_var (genToken "x") s nullRange] nullRange) nullRange)
+            (True_atom nullRange))
+          nullRange) True nullRange) nullRange]
+    procDefs = concatMap (genUniform genSorts genOps) genSorts
                                  in
-     map (makeNamed "") (trans:procDefs)
+     map (makeNamed "") procDefs
   _ -> [n_sen{sentence = trans}]
-
-mapSen :: CASLFORMULA -> Sentence
-mapSen f = case f of
-    Quantification q vs frm ps ->
-        Quantification q vs (mapSen frm) ps
-    Conjunction fs ps ->
-        Conjunction (map mapSen fs) ps
-    Disjunction fs ps ->
-        Disjunction (map mapSen fs) ps
-    Implication f1 f2 b ps ->
-        Implication (mapSen f1) (mapSen f2) b ps
-    Equivalence f1 f2 ps ->
-        Equivalence (mapSen f1) (mapSen f2) ps
-    Negation frm ps -> Negation (mapSen frm) ps
-    True_atom ps -> True_atom ps
-    False_atom ps -> False_atom ps
-    Existl_equation t1 t2 ps ->
-        Existl_equation (mapTERM t1) (mapTERM t2) ps
-    Strong_equation t1 t2 ps ->
-        Strong_equation (mapTERM t1) (mapTERM t2) ps
-    Predication pn as qs ->
-        Predication pn (map mapTERM as) qs
-    Definedness t ps -> Definedness (mapTERM t) ps
-    Membership t ty ps -> Membership (mapTERM t) ty ps
-    Sort_gen_ax constrs isFree -> Sort_gen_ax constrs isFree
-    _ -> error "CASL2VSEImport.mapSen"
-
-mapTERM :: TERM () -> TERM Dlformula
-mapTERM t = case t of
-    Qual_var v ty ps -> Qual_var v ty ps
-    Application opsym as qs  -> Application opsym (map mapTERM as) qs
-    Sorted_term trm ty ps -> Sorted_term (mapTERM trm) ty ps
-    Cast trm ty ps -> Cast (mapTERM trm) ty ps
-    Conditional t1 f t2 ps ->
-       Conditional (mapTERM t1) (mapSen f) (mapTERM t2) ps
-    _ -> error "CASL2VSEImport.mapTERM"
 
 mapMor :: CASLMor -> VSEMor
 mapMor m = let
@@ -896,3 +883,219 @@ mapMor m = let
   , fun_map = Map.union eqOps opsProcs
   , pred_map = Map.union restrPreds predProcs
   }
+
+mapCASLSen :: CASLFORMULA -> Sentence
+mapCASLSen f =
+ let
+  (sen, (_i, vars)) = runState (mapCASLSenAux f) (0, Set.empty)
+ in addQuantifiers vars sen
+  -- here i have to return an universal quantification
+
+addQuantifiers :: VarSet -> Sentence -> Sentence
+addQuantifiers vars sen =
+ Quantification Universal
+  (map (\(v,s) -> Var_decl [v] s nullRange) $ Set.toList vars) sen nullRange
+
+mapCASLSenAux :: CASLFORMULA -> State (Int, VarSet) Sentence
+mapCASLSenAux f = case f of
+  True_atom _ps -> return $ True_atom nullRange
+  False_atom _ps -> return $ False_atom nullRange
+  Strong_equation t1 t2 _ps -> do
+     let sort1 = sortTerm t1
+     n1 <- freshIndex sort1 -- (typeof t1)
+     prg1 <- mapCASLTerm n1 t1
+     n2 <- freshIndex sort1 -- (typeof t2)
+     prg2 <- mapCASLTerm n2 t2
+     n <- freshIndex uBoolean
+     return $ ExtFORMULA $ Ranged
+      (Dlformula Diamond
+       (Ranged
+           (Seq  (Ranged (Seq prg1 prg2) nullRange)
+                 (Ranged
+                 (Assign
+                    (genToken $ "x" ++ show n)
+                    (Application
+                       (Qual_op_name
+                         (stringToId $ genNamePrefix ++ "eq_" ++ show sort1)
+                         (Op_type Partial [sort1,sort1] uBoolean nullRange)
+                        nullRange)
+                       [Qual_var (genToken $ "x" ++ show n1) sort1 nullRange,
+                        Qual_var (genToken $ "x" ++ show n2) sort1 nullRange]
+                       nullRange
+                    )
+                 ) nullRange)
+           )
+        nullRange)
+       (Strong_equation (Qual_var (genToken $ "x" ++ show n) uBoolean nullRange)
+                        (Application
+                                 (Qual_op_name (stringToId  "True")
+                                  (Op_type Total []
+                                    uBoolean nullRange)
+                                  nullRange)
+                                 [] nullRange) nullRange)
+      )
+      nullRange
+     -- here i have to return smth like
+     --      <: xn1 := prg1;
+     --         xn2 := prg2;
+     --         xn := gn_eq_s(xn1,xn2) :> xn = True  "
+  Predication pn as _qs -> do
+     indexes <- mapM (\ argi -> freshIndex $ sortTerm argi) as
+     prgs <- mapM (\(ti, i) -> mapCASLTerm i ti) $ zip as indexes
+     let xvars = map (\(ti,i) ->
+                     Qual_var (genToken $ "x" ++ show i)
+                              (sortTerm ti) nullRange ) $ zip as indexes
+     n <- freshIndex $ stringToId "Boolean"
+     let asgn = if not $ null prgs then
+                       foldr1 (\p1 p2 -> Ranged (Seq p1 p2) nullRange) prgs
+                       else Ranged Skip nullRange
+     case pn of
+      Pred_name _ -> fail "must be qualified"
+      Qual_pred_name pname (Pred_type ptype _)_ -> return $ ExtFORMULA $ Ranged
+       (Dlformula Diamond
+        (Ranged
+          (Seq
+             asgn
+             (Ranged (Assign (genToken $ "x" ++ show n)
+                       (Application
+                         (Qual_op_name
+                          (stringToId $ genNamePrefix ++ show pname)
+                          (Op_type Partial ptype uBoolean nullRange) nullRange)
+                          xvars nullRange))
+              nullRange))
+         nullRange)
+        (Strong_equation
+          (Qual_var (genToken $ "x" ++ show n) uBoolean nullRange)
+                        (Application
+                                 (Qual_op_name (stringToId  "True")
+                                  (Op_type Total []
+                                    uBoolean nullRange)
+                                  nullRange)
+                                 [] nullRange) nullRange))
+       nullRange
+     -- <: xi := prgi;
+     --      x:= gn_p(x1,..,xn):> x = True
+  Conjunction fs _r -> do
+   mapFs <- mapM mapCASLSenAux fs
+   return $ Conjunction mapFs nullRange
+  Disjunction fs _r -> do
+   mapFs <- mapM mapCASLSenAux fs
+   return $ Disjunction mapFs nullRange
+  Implication f1 f2 flag _r -> do
+   trf1 <- mapCASLSenAux f1
+   trf2 <- mapCASLSenAux f2
+   return $ Implication trf1 trf2 flag nullRange
+  Equivalence f1 f2 _r -> do
+   trf1 <- mapCASLSenAux f1
+   trf2 <- mapCASLSenAux f2
+   return $ Equivalence trf1 trf2 nullRange
+  Negation f1 _r -> do
+   trf <- mapCASLSenAux f1
+   return $ Negation trf nullRange
+  Quantification q vars sen _ ->
+   case q of
+    Universal -> do
+     trSen <- mapCASLSenAux sen
+     let h = map (\ (Var_decl varS s _) -> let
+           restrs = map (\v -> ExtFORMULA $ Ranged (
+                                  Dlformula Diamond
+                                  (Ranged
+                                    (Call
+                                      (Predication
+                                         (Qual_pred_name
+                                            (stringToId $
+                                              genNamePrefix ++ "restr_"
+                                              ++ show s)
+                                            (Pred_type [s] nullRange)
+                                            nullRange
+                                         )
+                                         [Qual_var v s nullRange]
+                                         nullRange
+                                      )
+                                    )
+                                   nullRange)
+                                  (True_atom nullRange)) nullRange)
+                 varS
+                                         in
+           Conjunction restrs  nullRange)
+             vars
+     let sen' = Implication
+                 (foldr1 (\ sen1 sen2 -> Conjunction [sen1,sen2] nullRange) h)
+                 trSen True nullRange
+     return $ Quantification q vars sen' nullRange
+    Existential -> do
+     trSen <- mapCASLSenAux sen
+     let h = map (\ (Var_decl varS s _) -> let
+           restrs = map (\v -> ExtFORMULA $ Ranged (
+                                  Dlformula Diamond
+                                  (Ranged
+                                    (Call
+                                      (Predication
+                                         (Qual_pred_name
+                                            (stringToId $
+                                              genNamePrefix ++ "restr_"
+                                              ++ show s)
+                                            (Pred_type [s] nullRange)
+                                            nullRange
+                                         )
+                                         [Qual_var v s nullRange]
+                                         nullRange
+                                      )
+                                    )
+                                   nullRange)
+                                  (True_atom nullRange)) nullRange)
+                 varS
+                                         in
+           Conjunction restrs  nullRange)
+             vars
+     let sen' = Conjunction
+                 [(foldr1 (\ sen1 sen2 -> Conjunction [sen1,sen2] nullRange) h),
+                 trSen] nullRange
+     return $ Quantification q vars sen' nullRange
+    _ -> fail "nyi"
+
+  _ -> fail "nyi"
+
+
+mapCASLTerm :: Int -> TERM () -> State (Int, VarSet) Program
+mapCASLTerm n t = case t of
+  Qual_var v s _ps -> do
+     --let _ = addVarToState v s
+     return $
+      Ranged (Assign (genToken $ "x" ++ show n)
+               (Qual_var v s nullRange)) nullRange
+  Application opsym as _qs  -> do
+   indexes <- mapM (\ argi -> freshIndex $ sortTerm argi) as
+   let xvars = map (\(ti,i) ->
+                     Qual_var (genToken $ "x" ++ show i)
+                              (sortTerm ti) nullRange ) $ zip as indexes
+   prgs <- mapM (\(ti, i) -> mapCASLTerm i ti) $ zip as indexes
+   let asgn = if not $ null prgs then
+                       foldr1 (\p1 p2 -> Ranged (Seq p1 p2) nullRange) prgs
+                       else Ranged Skip nullRange
+   case opsym of
+    Op_name _ -> fail "must be qualified"
+    Qual_op_name oName (Op_type _ args res _) _ -> return $ Ranged
+     (Seq
+       asgn
+       (Ranged (Assign (genToken $ "x" ++ show n)
+                       (Application
+                        (Qual_op_name
+                         (stringToId $
+                           genNamePrefix ++ show oName)
+                         (Op_type Partial args res nullRange)
+                         nullRange
+                        )
+                       xvars nullRange))
+        nullRange))
+     nullRange
+  _ -> fail "nyi term"
+
+freshIndex :: SORT -> State (Int, VarSet) Int
+freshIndex ss = do
+  (i, s) <- get
+  let v = genToken $ "x"++ show i
+  put $ (i + 1, Set.insert (v,ss) s)
+  return i
+
+
