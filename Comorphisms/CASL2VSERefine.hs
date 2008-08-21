@@ -778,22 +778,17 @@ mapNamedSen n_sen = let
         recCallsSeq = if not $ null recCalls then
                       foldr1 (\p1 p2 -> Ranged (Seq p1 p2) nullRange) recCalls
                       else Ranged Skip nullRange
-                                          in Ranged (
-       Block ([Var_decl [genToken "y"] s nullRange] ++
+                                          in
+        case recCalls of
+         [] -> Ranged (
+                Block ([Var_decl [genToken "y"] s nullRange] ++
               (map (\ (a,i) -> Var_decl [genToken $ "x" ++ show i] a nullRange)
               $ zip args [1::Int ..]))
-       (Ranged
-         (Seq
-           (Ranged
-            (Assign
-             (genToken "y")
-             (Qual_var (genToken "x") sn nullRange)
-            )
-           nullRange)
-           (Ranged
-             (Seq recCallsSeq
               (Ranged (Seq
-                        ((Ranged
+                (Ranged
+                   (Assign (genToken "y") (Qual_var (genToken "x") sn nullRange)
+                    ) nullRange)
+                (Ranged (Seq (Ranged
                                    (Assign
                                      (genToken  "y")
                                      (Application
@@ -806,7 +801,6 @@ mapNamedSen n_sen = let
                                        zip decls args)
                                       nullRange))
                                    nullRange)
-                        )
                         (Ranged (If (Strong_equation
                                (Application
                                  (
@@ -832,13 +826,56 @@ mapNamedSen n_sen = let
                              nullRange)
                           (Ranged Skip nullRange)
                           prg)nullRange))
-               nullRange
-              )
-             )
-           nullRange
-           )
-         )
-       nullRange) ) nullRange
+                nullRange )) nullRange) ) nullRange
+         _ -> Ranged (
+                 Block ([Var_decl [genToken "y"] s nullRange] ++
+                (map (\ (a,i) -> Var_decl
+                                  [genToken $ "x" ++ show i] a nullRange)
+                 $ zip args [1::Int ..]))
+                (Ranged (Seq (Ranged (Assign (genToken "y")
+                                      (Qual_var (genToken "x") sn nullRange)
+                                     ) nullRange)
+                             (Ranged
+                              (Seq recCallsSeq
+                               (Ranged (Seq
+                                  ((Ranged
+                                    (Assign
+                                      (genToken  "y")
+                                     (Application
+                                      (Qual_op_name
+                                     (stringToId $ genNamePrefix ++ show ctor)
+                                     (Op_type Partial args sn nullRange)
+                                     nullRange)
+                                      (map  (\(v,ss) ->
+                                              Qual_var v ss nullRange) $
+                                       zip decls args)
+                                      nullRange))
+                                   nullRange)
+                                 )
+                                (Ranged (If (Strong_equation
+                                 ( Application
+                                 ( Qual_op_name
+                                   (stringToId $ genNamePrefix ++ "eq_"++
+                                                 show s)
+                                   (Op_type Partial [s,s]
+                                    uBoolean nullRange)
+                                  nullRange
+                                 ) [Qual_var
+                                      (genToken "x")
+                                      s nullRange,
+                                     Qual_var
+                                      (genToken "y")
+                                      s nullRange
+                                    ] nullRange)
+                                (Application
+                                 (Qual_op_name (stringToId  "True")
+                                  (Op_type Total []
+                                    uBoolean nullRange)
+                                  nullRange)
+                                 [] nullRange)
+                               nullRange)
+                               (Ranged Skip nullRange) prg) nullRange))
+                               nullRange )) nullRange)) nullRange) ) nullRange
                              in
      [ExtFORMULA $
      Ranged (Defprocs  [
