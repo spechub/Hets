@@ -87,6 +87,8 @@ transCCTheory ccTheory =
           translation3 <- cfol2isabelleHol translation2
           -- Next add the preAlpabet construction to the IsabelleHOL code
           return $ addCspCaslSentences ccSens
+                 $ addAllBarTypes sortList
+                 $ addAlphabetType
                  $ addInstansanceOfEquiv
                  $ addJustificationTheorems ccSign (fst translation1)
                  $ addEqFun sortList
@@ -405,7 +407,8 @@ addInstansanceOfEquiv  isaTh =
         eqvProof = IsaProof []  (By (Other "intro_classes"))
         equivSort = [IsaClass equivTypeClassS]
         equivProof = IsaProof [Apply (Other "intro_classes"),
-                               Apply (Other "unfold preAlphabet_sim_def"),
+                               Apply (Other ("unfold " ++ preAlphabetSimS
+                                             ++ "_def")),
                                Apply (Other "rule eq_refl"),
                                Apply (Other "rule eq_trans, auto"),
                                Apply (Other "rule eq_symm, simp")]
@@ -419,6 +422,50 @@ addInstansanceOfEquiv  isaTh =
        $ addInstanceOf preAlphabetS [] eqvSort eqvProof
        $ isaTh
 
+-- | Function to add the Alphabet type (type synonym) to an Isabelle theory
+addAlphabetType :: IsaTheory -> IsaTheory
+addAlphabetType  isaTh =
+    let preAlphabetType = Type {typeId = preAlphabetS,
+                                typeSort = [],
+                                typeArgs =[]}
+        preAlphabetQuotType = Type {typeId = quotS,
+                             typeSort = [],
+                             typeArgs =[preAlphabetType]}
+        isaTh_sign = fst isaTh
+        isaTh_sign_tsig = tsig isaTh_sign
+        myabbrs = abbrs isaTh_sign_tsig
+        abbrsNew = Map.insert alphabetS ([], preAlphabetQuotType) myabbrs
+
+        isaTh_sign_updated = isaTh_sign {
+                               tsig = (isaTh_sign_tsig {abbrs =abbrsNew})
+                             }
+    in (isaTh_sign_updated, snd isaTh)
+
+-- | Function to add all the bar types to an Isabelle theory.
+addAllBarTypes :: [SORT] -> IsaTheory -> IsaTheory
+addAllBarTypes sorts isaTh = foldl addBarType isaTh sorts
+
+-- | Function to add the bar types of a sort to an Isabelle theory.
+addBarType :: IsaTheory -> SORT -> IsaTheory
+addBarType isaTh sort =
+    let sortBarString = convertSort2String sort ++ "_Bar"
+        barType = Type {typeId = sortBarString, typeSort = [], typeArgs =[]}
+        alphabetType = Type {typeId = "Alphabet",
+                             typeSort = [],
+                             typeArgs =[]}
+        isaTh_sign = fst isaTh
+        isaTh_sen = snd isaTh
+        x = mkFree "x"
+        y = mkFree "y"
+        rhs = termAppl (conDouble (mkPreAlphabetConstructor sort)) y
+        bin_eq = binEq x $ termAppl (conDouble "class" ) rhs
+        exist_eq =termAppl (conDouble exS) (Abs y bin_eq NotCont)
+        set = SubSet x alphabetType exist_eq
+        sen = TypeDef barType set (IsaProof [] (By Auto))
+        namedSen = (makeNamed sortBarString sen)
+    in (isaTh_sign, isaTh_sen ++ [namedSen])
+
+
 -- Function to help keep strings consistent
 
 eq_PreAlphabetS :: String
@@ -430,9 +477,14 @@ eq_PreAlphabetV   = VName eq_PreAlphabetS $ Nothing
 binEq_PreAlphabet :: Term -> Term -> Term
 binEq_PreAlphabet = binVNameAppl eq_PreAlphabetV
 
+alphabetS :: String
+alphabetS = "Alphabet"
 
 preAlphabetS :: String
 preAlphabetS = "PreAlphabet"
+
+quotS :: String
+quotS = "quot"
 
 reflexivityTheoremS :: String
 reflexivityTheoremS = "eq_refl"
@@ -653,7 +705,7 @@ addInstanceOf name args res pr isaTh =
     let isaTh_sign = fst isaTh
         isaTh_sen = snd isaTh
         sen = Instance name args res pr
-        namedSen = (makeNamed "tester" sen)
+        namedSen = (makeNamed name sen)
     in (isaTh_sign, isaTh_sen ++ [namedSen])
 
 -- Function to add a def command to an Isabelle theory
@@ -685,33 +737,4 @@ addDebug isaTh =
     in   addConst "debug_isaTh_sens" sensType
        $ addConst "debug_isaTh_sign" signType
        $ isaTh
--}
-{-
-addMR2 :: IsaTheory -> IsaTheory
-addMR2  isaTh =
-    let fakeType = Type {typeId = "Fake_Type" , typeSort = [], typeArgs =[]}
-        isaTh_sign = fst isaTh
-        isaTh_sign_tsig = tsig isaTh_sign
-        myabbrs = abbrs isaTh_sign_tsig
-        abbrsNew = Map.insert "Liam" (["MR2"], fakeType) myabbrs
-
-        isaTh_sign_updated = isaTh_sign {
-                               tsig = (isaTh_sign_tsig {abbrs =abbrsNew})
-                             }
-    in (isaTh_sign_updated, snd isaTh)
--}
-{-
-addMR3 :: IsaTheory -> IsaTheory
-addMR3 isaTh =
-    let fakeType = Type {typeId = "Fake_TypeMR3" , typeSort = [], typeArgs =[]}
-        fakeType2 = Type {typeId = "Fake_Type2" , typeSort = [], typeArgs =[]}
-        isaTh_sign = fst isaTh
-        isaTh_sen = snd isaTh
-        x = mkFree "x"
-        y = mkFree "y"
-        eq' = binEq x y
-        set = SubSet x fakeType2 eq'
-        sen = TypeDef fakeType set (IsaProof [] Sorry)
-        namedSen = (makeNamed "tester" sen)
-    in (isaTh_sign, isaTh_sen ++ [namedSen])
 -}

@@ -20,6 +20,7 @@ module Comorphisms.CFOL2IsabelleHOL
     , SignTranslator
     , FormulaTranslator
     , quantifyIsa
+    , quantify
     , transSort
     , transOP_SYMB
     ) where

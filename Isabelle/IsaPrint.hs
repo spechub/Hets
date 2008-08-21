@@ -234,7 +234,7 @@ printSentence s = case s of
 
 printSetDecl :: SetDecl -> Doc
 printSetDecl (SubSet v t f) =
-  braces $ printTerm v <> doubleColon <> printType t <> dot <> printTerm f
+  braces $ printTerm v <> doubleColon <> printType t <> dot <+> printTerm f
 
 printPlainMetaTerm :: Bool -> MetaTerm -> Doc
 printPlainMetaTerm b mt = case mt of
