@@ -54,8 +54,8 @@ import Comorphisms.CoCASL2CoSubCFOL
 import Comorphisms.CoCFOL2IsabelleHOL
 import Comorphisms.Modal2CASL
 import Comorphisms.CASL_DL2CASL
-import OWL.Logic_OWL11
 #endif
+import OWL.Logic_OWL11
 import Comorphisms.PCoClTyConsHOL2PairsInIsaHOL
 import Comorphisms.HasCASL2PCoClTyConsHOL
 #ifdef PROGRAMATICA
