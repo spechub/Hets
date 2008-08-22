@@ -1,9 +1,9 @@
 name: Hets
-version: 0.85
+version: 0.87
 Cabal-Version: >= 1.2.2
 License-File: LICENSE.txt
 Description: The Heterogeneous Tool Set
--- utils/Setup configure --user --ghc-pkg-options="-f ../uni/uni-package.conf"
+build-type: Simple
 build-depends:
     base >= 3.0.1.0
   , array >= 0.1.0.0
@@ -20,12 +20,14 @@ build-depends:
   , old-time >= 1.0.0.0
   , unix >= 2.3.0.0
   , network >= 2.1.0.0
+  , dataenc >= 0.11
   , Shellac >= 0.9
   , Shellac-compatline >= 0.9
   , HaXml >= 1.13.2
   , HaXml <= 1.13.3
-  , HTTP == 3001.0.0.1
-  , hxt >= 7.3
+  , HTTP >= 3001.0.4
+  , hxt >= 8.0.0
+  , hxt-filter >= 8.0.0
   , uni-htk >= 1.1
   , uni-util
   , uni-posixutil
@@ -39,5 +41,6 @@ build-depends:
 executable: hets
 main-is: hets.hs
 extensions: OverlappingInstances
-ghc-options: -fglasgow-exts -package-conf ../uni/uni-package.conf -DUNI_PACKAGE
+ghc-options: -fglasgow-exts
+cpp-options: -DUNI_PACKAGE
   -DCASLEXTENSIONS -DPROGRAMATICA -DHAXML_PACKAGE
