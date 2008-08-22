@@ -13,8 +13,8 @@ module AbstractSyntax where
 import qualified Data.Map as Map
 
 -- | Datatype for holding modal formulae of a certain type
-data Boole a = F | T | Not (Boole a) | And (Boole a) (Boole a) 
-             | At a | Var Char (Maybe Int) deriving (Eq, Ord, Show)
+data Boole a = F | T | Not (Boole a) | And (Boole a) (Boole a) | At a 
+  deriving (Eq, Ord, Show)
 
 -- | Datatype for a modal formulae of type "l" wrapped under K modal logic
 data K l = K (Boole l) deriving (Eq, Ord, Show)
