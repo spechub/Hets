@@ -1,0 +1,6 @@
+var e : Type; a < e
+op f : a -> a
+
+var x : a
+
+. f = \ x : e . f x

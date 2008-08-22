@@ -1,0 +1,4 @@
+var a
+types Ref a < Loc
+type Loc := Ref a
+op coerce : Ref a -> Loc

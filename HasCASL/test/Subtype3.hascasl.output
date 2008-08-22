@@ -1,0 +1,14 @@
+vars  e : Type; a < e
+op    f : a -> a
+var   x : a
+. f = \ x : e . f x;
+vars
+a < e : Type %(var_2)%;
+e : Type %(var_1)%
+op f : forall a < e : Type . a -> a %(op)%
+var
+x : a
+forall e : Type . f = \ x : e . f x
+### Hint 1.5, is type variable 'e'
+### Hint 4.7, not a class 'a'
+### Hint 6.9, rebound variable 'x'

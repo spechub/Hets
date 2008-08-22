@@ -1,0 +1,8 @@
+types S, T
+type Binary < S * S -> T
+vars a, b: Type; a < b
+op   down: b ->? a
+var  y: b; x: a
+. down y = x
+
+types Nat < Int; Inj < Int -> Int

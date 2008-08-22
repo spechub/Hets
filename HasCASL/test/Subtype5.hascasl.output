@@ -1,0 +1,22 @@
+var   a : Type
+type  Ref a < Loc
+type  Loc := Ref a
+op    coerce : Ref a -> Loc
+types
+Loc : Type;
+Ref : Type -> Type
+type
+Loc := Ref a
+var
+a : Type %(var_1)%
+op coerce : forall a : Type . Ref a -> Loc %(op)%
+### Hint 2.11, rebound type variable 'a'
+*** Error 2.7,
+incompatible kind of: Ref
+  expected: Type -> Type
+     found: Type
+*** Error 3.13-3.17,
+unbound type variable(s)
+  a in
+'Ref a'
+### Hint 3.6, redeclared type 'Loc'
