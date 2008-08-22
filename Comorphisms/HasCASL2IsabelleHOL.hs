@@ -43,7 +43,7 @@ import Data.Maybe (catMaybes)
 data HasCASL2IsabelleHOL = HasCASL2IsabelleHOL deriving Show
 
 instance Language HasCASL2IsabelleHOL where
-  language_name HasCASL2IsabelleHOL = "HasCASL2IsabelleOldOption"
+  language_name HasCASL2IsabelleHOL = "HasCASL2IsabelleDeprecated"
 
 instance Comorphism HasCASL2IsabelleHOL
                HasCASL Sublogic
