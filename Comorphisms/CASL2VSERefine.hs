@@ -1145,7 +1145,6 @@ mapCASLSenAux f = case f of
 mapCASLTerm :: Int -> TERM () -> State (Int, VarSet) Program
 mapCASLTerm n t = case t of
   Qual_var v s _ps -> do
-     --let _ = addVarToState v s
      return $
       Ranged (Assign (genToken $ "x" ++ show n)
                (Qual_var v s nullRange)) nullRange
