@@ -342,6 +342,11 @@ mapSig sign =
                   Qual_var (mkSimpleId $ genNamePrefix ++ "x" ++ show ii )
                   si nullRange ) $
                    zip w [1::Int ..]
+          yvars = map (
+                  \(si, ii) ->
+                  Qual_var (mkSimpleId $ genNamePrefix ++ "y" ++ show ii )
+                  si nullRange ) $
+                   zip w [1::Int ..]
           ytokens = map (\(_,ii) -> genToken $ "y"++ show ii) $
                     zip w [1::Int ..]
           btokens = map (\(_,ii) -> genToken $ "b"++ show ii) $
@@ -422,29 +427,21 @@ mapSig sign =
                                   [] nullRange) nullRange) )nullRange
                      ] ) $
                     zip w [1::Int ..] )
-                   nullRange )--ipoteza
+                   nullRange )--hypothesis
                   (ExtFORMULA $ Ranged (
                      Dlformula Diamond
                       (Ranged (Call (Predication
                                    (Qual_pred_name (stringToId $
                                      genNamePrefix ++ show i)
                                     (Pred_type (w ++ [s]) nullRange) nullRange)
-                                   ((map (
-                  \(si, ii) ->
-                  Qual_var (mkSimpleId $ genNamePrefix ++ "x" ++ show ii )
-                  si nullRange ) $
-                   zip w [1::Int ..]) ++ [xvar]) nullRange)) nullRange)
+                                   (xvars ++ [xvar]) nullRange)) nullRange)
                       (ExtFORMULA $ Ranged (
                          Dlformula Diamond
                       (Ranged (Call (Predication
                                    (Qual_pred_name (stringToId $
                                      genNamePrefix ++ show i)
                                     (Pred_type (w ++ [s]) nullRange) nullRange)
-                                   ((map (
-                  \(si, ii) ->
-                  Qual_var (mkSimpleId $ genNamePrefix ++ "y" ++ show ii )
-                  si nullRange ) $
-                   zip w [1::Int ..]) ++ [yvar]) nullRange)) nullRange)
+                                   (yvars ++ [yvar]) nullRange)) nullRange)
                        (ExtFORMULA $
                         Ranged (
                           Dlformula Diamond
@@ -467,7 +464,7 @@ mapSig sign =
                                   [] nullRange) nullRange)
                         ) nullRange)
                         ) nullRange)
-                   ) nullRange) --concluzia
+                   ) nullRange) --conclusion
                   True nullRange )
                nullRange
               ]
@@ -505,8 +502,8 @@ mapSig sign =
                        (Ranged
                          (Call (Predication (Qual_pred_name (stringToId $
                                      genNamePrefix ++ show i)
-                                    (Pred_type [s] nullRange) nullRange)
-                          (xvars ++[xvar])
+                                    (Pred_type (w ++ [s]) nullRange) nullRange)
+                          (xvars ++ [xvar])
                           nullRange))
                         nullRange)
                        (ExtFORMULA $
@@ -534,7 +531,7 @@ mapSig sign =
                        (Ranged
                          (Call (Predication (Qual_pred_name (stringToId $
                                      genNamePrefix ++ show i)
-                                    (Pred_type (w ++ [s]) nullRange) nullRange)
+                                    (Pred_type [s] nullRange) nullRange)
                               [xvar] nullRange))
                         nullRange)
                        (ExtFORMULA $
@@ -649,7 +646,7 @@ mapSig sign =
                                   [] nullRange) nullRange) )nullRange
                      ] ) $
                     zip w [1::Int ..] )
-                   nullRange )--ipoteza
+                   nullRange )--hypothesis
                   (ExtFORMULA $ Ranged (
                      Dlformula Diamond
                       (Ranged (Call (Predication
@@ -680,7 +677,7 @@ mapSig sign =
                                   nullRange
                         )
                         ) nullRange)
-                   ) nullRange) --concluzia
+                   ) nullRange) --conclusion
                   True nullRange )
                nullRange
               ]
