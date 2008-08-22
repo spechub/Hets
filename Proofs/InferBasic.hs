@@ -63,14 +63,14 @@ import Data.Maybe
 selectProver :: GetPName a =>
                 [(a,AnyComorphism)] -> ResultT IO (a,AnyComorphism)
 selectProver [p] = return p
-selectProver [] = liftR $ fatal_error "No prover available" nullRange
+selectProver [] = fail "No prover available"
 selectProver ps = do
    sel <- lift $ listBox
                 "Choose a translation to a prover-supported logic"
                 $ map (\ (aGN,cm) -> show cm ++" ("++getPName aGN++")") ps
    i <- case sel of
            Just j -> return j
-           _ -> liftR $ fail "Proofs.Proofs: selection"
+           _ -> fail "Proofs.Proofs: selection"
    return $ ps !! i
 
 cons_check :: Logic lid sublogics
