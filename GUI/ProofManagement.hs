@@ -16,7 +16,7 @@ module GUI.ProofManagement (proofManagementGUI,GUIMVar) where
 
 import Common.AS_Annotation as AS_Anno
 import qualified Common.Doc as Pretty
-import qualified Common.Result as Result
+import Common.Result as Result
 import qualified Data.Map as Map
 import qualified Common.OrderedMap as OMap
 import Common.ExtSign
@@ -28,6 +28,7 @@ import HTk
 import Separator
 import Space
 import XSelection
+import Messages(errorMess)
 
 import GUI.HTkUtils
 import GUI.ProofDetails
@@ -644,11 +645,10 @@ proofManagementGUI lid prGuiAcs
             updateDisplay s' True lb pathsLb statusLabel
             disableWids wids
             prState <- updateStatusSublogic s'
-            Result.Result ds ms'' <- (fineGrainedSelectionF prGuiAcs) prState
+            Result.Result ds ms'' <- fineGrainedSelectionF prGuiAcs prState
             s'' <- case ms'' of
                    Nothing -> do
-                       putStrLn "fineGrainedSelection returned Nothing"
-                       Result.printDiags 2 ds
+                       errorMess (showRelDiags 2 ds)
                        return s'
                    Just res -> return res
             let s''' = s'' { proverRunning = False
@@ -665,11 +665,10 @@ proofManagementGUI lid prGuiAcs
             updateDisplay s' True lb pathsLb statusLabel
             disableWids wids
             prState <- updateStatusSublogic s'
-            Result.Result ds ms'' <- (proveF prGuiAcs) prState
+            Result.Result ds ms'' <- proveF prGuiAcs prState
             s'' <- case ms'' of
                    Nothing -> do
-                       putStrLn "proveF returned Nothing"
-                       Result.printDiags 2 ds
+                       errorMess (showRelDiags 2 ds)
                        return s'
                    Just res -> return res
             let s''' = s''{proverRunning = False,
@@ -717,8 +716,8 @@ proofManagementGUI lid prGuiAcs
    G_theory lidT sigT indT sensT _ ->
     do gMap <- coerceThSens (logicId s) lidT
                                "ProofManagement last coerce" (goalMap s)
-       return (Result.Result {Result.diags = accDiags s,
-                              Result.maybeResult =
+       return (Result.Result {diags = accDiags s,
+                              maybeResult =
                                   Just (G_theory lidT sigT indT
                                         (Map.union sensT gMap) startThId)
                              }
