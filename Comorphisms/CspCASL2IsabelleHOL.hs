@@ -87,6 +87,7 @@ transCCTheory ccTheory =
           translation3 <- cfol2isabelleHol translation2
           -- Next add the preAlpabet construction to the IsabelleHOL code
           return $ addCspCaslSentences ccSens
+                 $ addAllChooseFunctions sortList
                  $ addAllBarTypes sortList
                  $ addAlphabetType
                  $ addInstansanceOfEquiv
@@ -409,9 +410,11 @@ addInstansanceOfEquiv  isaTh =
         equivProof = IsaProof [Apply (Other "intro_classes"),
                                Apply (Other ("unfold " ++ preAlphabetSimS
                                              ++ "_def")),
-                               Apply (Other "rule eq_refl"),
-                               Apply (Other "rule eq_trans, auto"),
-                               Apply (Other "rule eq_symm, simp")]
+                               Apply (Other ("rule " ++ reflexivityTheoremS)),
+                               Apply (Other ("rule " ++ transitivityS
+                                                ++", auto")),
+                               Apply (Other ("rule " ++ symmetryTheoremS
+                                                ++ ", simp"))]
                                Done
         x = mkFree "x"
         y = mkFree "y"
@@ -448,9 +451,9 @@ addAllBarTypes sorts isaTh = foldl addBarType isaTh sorts
 -- | Function to add the bar types of a sort to an Isabelle theory.
 addBarType :: IsaTheory -> SORT -> IsaTheory
 addBarType isaTh sort =
-    let sortBarString = convertSort2String sort ++ "_Bar"
+    let sortBarString = convertSort2String sort ++ barExtS
         barType = Type {typeId = sortBarString, typeSort = [], typeArgs =[]}
-        alphabetType = Type {typeId = "Alphabet",
+        alphabetType = Type {typeId = alphabetS,
                              typeSort = [],
                              typeArgs =[]}
         isaTh_sign = fst isaTh
@@ -458,13 +461,63 @@ addBarType isaTh sort =
         x = mkFree "x"
         y = mkFree "y"
         rhs = termAppl (conDouble (mkPreAlphabetConstructor sort)) y
-        bin_eq = binEq x $ termAppl (conDouble "class" ) rhs
+        bin_eq = binEq x $ termAppl (conDouble classS ) rhs
         exist_eq =termAppl (conDouble exS) (Abs y bin_eq NotCont)
-        set = SubSet x alphabetType exist_eq
-        sen = TypeDef barType set (IsaProof [] (By Auto))
+        subset = SubSet x alphabetType exist_eq
+        sen = TypeDef barType subset (IsaProof [] (By Auto))
         namedSen = (makeNamed sortBarString sen)
     in (isaTh_sign, isaTh_sen ++ [namedSen])
 
+-- | Add all choose functions for a given list of sorts to an Isabelle
+--   theory.
+addAllChooseFunctions :: [SORT] -> IsaTheory -> IsaTheory
+addAllChooseFunctions sorts isaTh =
+    foldl addChooseFunctions isaTh sorts
+
+-- | Add a single choose function for a given sort to an Isabelle
+--   theory.  The following Isabelle code is produced by this function:
+--   consts choose_Nat :: "Alphabet => Nat"
+--   defs choose_Nat_def: "choose_Nat x == contents{y . class(C_Nat y) = x}"
+
+addChooseFunctions ::  IsaTheory -> SORT -> IsaTheory
+addChooseFunctions isaTh sort =
+    let --constant
+        alphabetType = Type {typeId = alphabetS,
+                                typeSort = [],
+                                typeArgs =[]}
+        sortType = Type {typeId = convertSort2String sort, typeSort = [],
+                                  typeArgs =[]}
+        chooseFunName = mkChooseFunName sort
+        chooseFunType = mkFunType alphabetType sortType
+        -- definition
+        x = mkFree "x"
+        y = mkFree "y"
+        contentsOp = termAppl (conDouble "contents")
+        chooseOp = termAppl (conDouble chooseFunName)
+        sortConsOp = termAppl (conDouble (mkPreAlphabetConstructor sort))
+        bin_eq = binEq (classOp $ sortConsOp y) x
+        subset = SubSet y sortType bin_eq
+        lhs = chooseOp x
+        rhs = contentsOp (Set subset)
+        -- theorm
+        subgoalTacTermLhsBinEq = binEq (classOp $ sortConsOp y)
+                                       (classOp $ sortConsOp x)
+        subgoalTacTermLhs = Set $ SubSet y sortType subgoalTacTermLhsBinEq
+        subgoalTacTermRhs = Set $ FixedSet [x]
+        subgoalTacTerm = binEq subgoalTacTermLhs subgoalTacTermRhs
+        thmConds = []
+        thmConcl = binEq (chooseOp $ classOp $ sortConsOp x) x
+        proof' = IsaProof [Apply (Other ("unfold " ++ chooseFunName ++ "_def")),
+                           Apply (SubgoalTac subgoalTacTerm),
+                           Apply(Simp),
+                           Apply(Other ("unfold " ++ quotEqualityS)),
+                           Apply(Other ("unfold "++ preAlphabetSimS
+                                           ++ "_def")),
+                           Apply(Auto)]
+                           Done
+    in  addThreomWithProof chooseFunName thmConds thmConcl proof' -- Add theorem
+      $ addDef chooseFunName lhs rhs -- Add defintion to theory
+      $ addConst chooseFunName chooseFunType isaTh -- Add constant to theory
 
 -- Function to help keep strings consistent
 
@@ -479,6 +532,18 @@ binEq_PreAlphabet = binVNameAppl eq_PreAlphabetV
 
 alphabetS :: String
 alphabetS = "Alphabet"
+
+barExtS :: String
+barExtS = "_Bar"
+
+classS :: String
+classS = "class"
+
+classOp :: Term -> Term
+classOp = termAppl (conDouble classS)
+
+quotEqualityS :: String
+quotEqualityS = "quot_equality"
 
 preAlphabetS :: String
 preAlphabetS = "PreAlphabet"
@@ -651,7 +716,12 @@ mkPreAlphabetConstructor sort = "C_" ++ (show sort)
 -- Function that takes a sort and outputs a the function name for the
 -- corresponing compare_with function
 mkCompareWithFunName :: SORT -> String
-mkCompareWithFunName sort = ("compare_with_" ++ (show sort))
+mkCompareWithFunName sort = ("compare_with_" ++ (mkPreAlphabetConstructor sort))
+
+-- Function that takes a sort and outputs a the function name for the
+-- corresponing choose function
+mkChooseFunName :: SORT -> String
+mkChooseFunName sort = ("choose_" ++ (mkPreAlphabetConstructor sort))
 
 -- Functions for manipulating an Isabelle theory
 

@@ -233,8 +233,11 @@ printSentence s = case s of
   ConstDef t -> printTerm t
 
 printSetDecl :: SetDecl -> Doc
-printSetDecl (SubSet v t f) =
-  braces $ printTerm v <> doubleColon <> printType t <> dot <+> printTerm f
+printSetDecl setdecl =
+    case setdecl of
+      SubSet v t f -> braces $ printTerm v <> doubleColon <> printType t <> dot
+                      <+> printTerm f
+      FixedSet elems -> braces $ sepByCommas $ map printTerm elems
 
 printPlainMetaTerm :: Bool -> MetaTerm -> Doc
 printPlainMetaTerm b mt = case mt of
@@ -341,6 +344,7 @@ printTrm b trm = case trm of
                                   lpairTerm a $ IsCont False)
                                      (Tuplex aa c) (IsCont False)
     App f a c -> printMixfixAppl b c f [a]
+    Set setdecl -> (printSetDecl setdecl, lowPrio)
 
 printApp :: Bool -> Continuity -> Term -> [Term] -> (Doc, Int)
 printApp b c t l = case l of
