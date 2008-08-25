@@ -49,3 +49,4 @@ cnf phi = map (\(Implies p n) -> Implies n p) (dnf (Not phi))
 
 -- | Provability function
 provable phi = all (\c -> any (all provable) (map fst (match c))) (cnf phi)
+
