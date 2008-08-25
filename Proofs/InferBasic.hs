@@ -27,9 +27,7 @@ module Proofs.InferBasic (basicInferenceNode) where
 import Static.GTheory
 import Static.DevGraph
 
-
 import Syntax.AS_Library
-import Syntax.Print_AS_Library()
 
 import Proofs.StatusUtils
 import Proofs.EdgeUtils
@@ -37,7 +35,6 @@ import Proofs.AbstractState
 import Proofs.TheoremHideShift
 
 import Common.ExtSign
-import Common.Id
 import Common.Result
 import Common.ResultT
 
@@ -54,11 +51,6 @@ import Comorphisms.KnownProvers
 
 import GUI.Utils
 import GUI.ProofManagement
-
-import Data.Maybe
--- ---------------
--- basic inference
--- ---------------
 
 selectProver :: GetPName a =>
                 [(a,AnyComorphism)] -> ResultT IO (a,AnyComorphism)
