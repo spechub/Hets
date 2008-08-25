@@ -1,0 +1,20 @@
+library List_Rev
+
+logic VSE
+
+spec List_Rev [sort elem] =
+    free type list[elem] ::= empty | cons(elem; list[elem])
+    ops app : list[elem] * list[elem] -> list[elem],
+	    assoc, unit empty; %implied
+	reverse : list[elem] -> list[elem]
+    forall e:elem; l, l1, l2:list[elem]
+    . app(empty, l) = l
+    . app(cons(e, l1), l2) = cons(e, app(l1, l2))
+    . reverse(empty) = empty
+    . reverse(cons(e, l)) = app(reverse(l), cons(e, empty))
+
+then %implies
+forall l, l1, l2:list[elem]
+    . reverse(app(l1, l2)) = app(reverse(l2), reverse(l1))
+    . reverse(reverse(l)) = l
+end
