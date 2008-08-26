@@ -756,11 +756,13 @@ checkconservativityOfEdge _ gInfo
               conservativityCheck lid
                  (plainSign sign2, toNamedList sens2)
                  morphism2' $ toNamedList sens
+          obl [] = ""
+          obl sens = ", provided that the following proof obligations can be discharged:\n"++ concatMap ((++"\n").show) sens
           showRes = case res of
-                     Just (Just Inconsistent) -> "The link is not conservative"
-                     Just (Just Conservative) -> "The link is conservative"
-                     Just (Just Monomorphic) -> "The link is monomorphic"
-                     Just (Just Definitional) -> "The link is definitional"
+                     Just (Just (Inconsistent,sens)) -> "The link is not conservative"++obl sens
+                     Just (Just (Conservative,sens)) -> "The link is conservative"++obl sens
+                     Just (Just (Monomorphic,sens)) -> "The link is monomorphic"++obl sens
+                     Just (Just (Definitional,sens)) -> "The link is definitional"++obl sens
                      _ -> "Could not determine whether link is conservative"
               --     Just(Just True) -> "The link is conservative"
               --     Just(Just False) -> "The link is not conservative"

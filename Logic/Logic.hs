@@ -535,8 +535,7 @@ class (StaticAnalysis lid
          -- | conservativity checkers
          conservativityCheck :: lid -> (sign, [Named sentence]) ->
                                 morphism -> [Named sentence]
-                                -> Result (Maybe ConsistencyStatus)
-                       --      -> Result (Maybe Bool)
+                                -> Result (Maybe (ConsistencyStatus,[sentence]))
          conservativityCheck l _ _ _ = statErr l "conservativityCheck"
          -- | the empty proof tree
          empty_proof_tree :: lid -> proof_tree

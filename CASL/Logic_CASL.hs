@@ -243,7 +243,7 @@ instance Logic CASL CASL_Sublogics
          proj_sublogic_epsilon CASL = pr_epsilon ()
          all_sublogics _ = sublogics_all [()]
          conservativityCheck CASL th mor phis =
-             fmap (fmap fst) (checkFreeType th mor phis)
+             checkFreeType th mor phis
          empty_proof_tree CASL = error "instance Logic CASL"
 #ifdef UNI_PACKAGE
          provers CASL = [quickCheckProver]
