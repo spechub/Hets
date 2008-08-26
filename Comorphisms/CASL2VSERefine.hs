@@ -16,7 +16,6 @@ module Comorphisms.CASL2VSERefine (CASL2VSERefine(..)
 
 import qualified Data.Set as Set
 import qualified Data.Map as Map
-import Data.List(sortBy)
 
 import Logic.Logic
 import Logic.Comorphism
@@ -73,7 +72,7 @@ mapCASLTheory :: (CASLSign, [Named CASLFORMULA]) ->
                  Result (VSESign, [Named Sentence])
 mapCASLTheory (sig, n_sens) = do
   let (tsig, genAx) =  mapSig sig
-      tsens = concatMap mapNamedSen n_sens
+      tsens = map mapNamedSen n_sens
   case not $ null $ checkCases tsig (tsens ++ genAx) of
    True -> fail "case error in signature"
    _ -> return (tsig, tsens ++ genAx)
@@ -82,10 +81,10 @@ mapSig :: CASLSign -> (VSESign, [Named Sentence])
 mapSig sign =
  let wrapSort (procsym, axs) s = let
         restrName = stringToId $ genNamePrefix ++ "restr_"++show s
-        uniformName = stringToId $ genNamePrefix ++ "uniform_"++show s
+        --uniformName = stringToId $ genNamePrefix ++ "uniform_"++show s
         eqName = stringToId $ genNamePrefix ++ "eq_"++show s
         sProcs = [(restrName, Profile [Procparam In s] Nothing),
-                   (uniformName, Profile [Procparam In s] Nothing),
+                   --(uniformName, Profile [Procparam In s] Nothing),
                    (eqName,
                      Profile [Procparam In s, Procparam In s]
                              (Just $ stringToId  "Boolean"))]
@@ -740,176 +739,12 @@ mapSig sign =
            extendedInfo = procs,
            sentences = [] }, sortSens ++ opSens ++ predSens)
 
-mapNamedSen :: Named CASLFORMULA -> [Named Sentence]
+mapNamedSen :: Named CASLFORMULA -> Named Sentence
 mapNamedSen n_sen = let
  sen = sentence n_sen
  trans = mapCASLSen sen
                     in
- case sen of
-  Sort_gen_ax constrs _isFree -> let
-    (genSorts, genOps, _maps) = recover_Sort_gen_ax constrs
-    genUniform sorts ops s = let
-      hasResSort sn (Qual_op_name _ opType _) = (res_OP_TYPE opType) == sn
-      hasResSort _ _ = error "should have qual names"
-      ctors = sortBy (\ (Qual_op_name _ (Op_type _ args1 _ _) _)
-                        (Qual_op_name _ (Op_type _ args2 _ _) _) ->
-                        if length args1 < length args2 then LT else GT) $
-              filter (hasResSort s) ops
-      genCodeForCtor (Op_name _ ) _ = error "should have qual names"
-      genCodeForCtor (Qual_op_name
-                                     ctor
-                                     (Op_type _ args sn _)
-                                  _) prg = let
-        decls = map (\(_, i) -> genToken $ "x" ++ show i) $
-                zip args [1::Int ..]
-        recCalls = map (\(x,i) ->
-                         Ranged (Call (Predication
-                                        (Qual_pred_name (stringToId $
-                                                 genNamePrefix ++ "uniform_"
-                                                 ++ show x)
-                                         (Pred_type [x] nullRange) nullRange)
-                                        [Qual_var
-                                          (genToken $ "x" ++ show i)
-                                          x nullRange] nullRange
-                                      )) nullRange) $
-                   filter (\(x,_) -> x `elem` sorts) $
-                   zip args [1::Int ..]
-        recCallsSeq = if not $ null recCalls then
-                      foldr1 (\p1 p2 -> Ranged (Seq p1 p2) nullRange) recCalls
-                      else Ranged Skip nullRange
-                                          in
-        case recCalls of
-         [] -> Ranged (
-                Block ([Var_decl [genToken "y"] s nullRange] ++
-              (map (\ (a,i) -> Var_decl [genToken $ "x" ++ show i] a nullRange)
-              $ zip args [1::Int ..]))
-              (Ranged (Seq
-                (Ranged
-                   (Assign (genToken "y") (Qual_var (genToken "x") sn nullRange)
-                    ) nullRange)
-                (Ranged (Seq (Ranged
-                                   (Assign
-                                     (genToken  "y")
-                                     (Application
-                                      (Qual_op_name
-                                     (stringToId $ genNamePrefix ++ show ctor)
-                                     (Op_type Partial args sn nullRange)
-                                     nullRange)
-                                      (map  (\(v,ss) ->
-                                              Qual_var v ss nullRange) $
-                                       zip decls args)
-                                      nullRange))
-                                   nullRange)
-                        (Ranged (If (Strong_equation
-                               (Application
-                                 (
-                                  Qual_op_name
-                                   (stringToId $ genNamePrefix ++ "eq_"++
-                                                 show s)
-                                   (Op_type Partial [s,s]
-                                    uBoolean nullRange)
-                                  nullRange
-                                 ) [Qual_var
-                                      (genToken "x")
-                                      s nullRange,
-                                     Qual_var
-                                      (genToken "y")
-                                      s nullRange
-                                    ] nullRange)
-                               (Application
-                                 (Qual_op_name (stringToId  "True")
-                                  (Op_type Total []
-                                    uBoolean nullRange)
-                                  nullRange)
-                                 [] nullRange)
-                             nullRange)
-                          (Ranged Skip nullRange)
-                          prg)nullRange))
-                nullRange )) nullRange) ) nullRange
-         _ -> Ranged (
-                 Block ([Var_decl [genToken "y"] s nullRange] ++
-                (map (\ (a,i) -> Var_decl
-                                  [genToken $ "x" ++ show i] a nullRange)
-                 $ zip args [1::Int ..]))
-                (Ranged (Seq (Ranged (Assign (genToken "y")
-                                      (Qual_var (genToken "x") sn nullRange)
-                                     ) nullRange)
-                             (Ranged
-                              (Seq recCallsSeq
-                               (Ranged (Seq
-                                  ((Ranged
-                                    (Assign
-                                      (genToken  "y")
-                                     (Application
-                                      (Qual_op_name
-                                     (stringToId $ genNamePrefix ++ show ctor)
-                                     (Op_type Partial args sn nullRange)
-                                     nullRange)
-                                      (map  (\(v,ss) ->
-                                              Qual_var v ss nullRange) $
-                                       zip decls args)
-                                      nullRange))
-                                   nullRange)
-                                 )
-                                (Ranged (If (Strong_equation
-                                 ( Application
-                                 ( Qual_op_name
-                                   (stringToId $ genNamePrefix ++ "eq_"++
-                                                 show s)
-                                   (Op_type Partial [s,s]
-                                    uBoolean nullRange)
-                                  nullRange
-                                 ) [Qual_var
-                                      (genToken "x")
-                                      s nullRange,
-                                     Qual_var
-                                      (genToken "y")
-                                      s nullRange
-                                    ] nullRange)
-                                (Application
-                                 (Qual_op_name (stringToId  "True")
-                                  (Op_type Total []
-                                    uBoolean nullRange)
-                                  nullRange)
-                                 [] nullRange)
-                               nullRange)
-                               (Ranged Skip nullRange) prg) nullRange))
-                               nullRange )) nullRange)) nullRange) ) nullRange
-                             in
-     [ExtFORMULA $
-     Ranged (Defprocs  [
-      Defproc Proc (stringToId $ genNamePrefix ++ "uniform_"++show s)
-              [mkSimpleId $ genNamePrefix ++ "x"]
-      (Ranged (
-        Block [] ( foldr genCodeForCtor (Ranged Abort nullRange)
-                   ctors)
-              ) nullRange
-      )
-      nullRange])
-     nullRange,
-     Quantification Universal [Var_decl [genToken "x"] s nullRange]
-      (Implication
-       ( ExtFORMULA $ Ranged
-          (Dlformula Diamond ( Ranged
-            (Call $ Predication
-              (Qual_pred_name (stringToId $ genNamePrefix ++ "restr_"++ show s)
-                (Pred_type [s] nullRange) nullRange)
-               [Qual_var (genToken "x") s nullRange] nullRange) nullRange)
-            (True_atom nullRange))
-          nullRange)
-       ( ExtFORMULA $ Ranged
-          (Dlformula Diamond (Ranged
-            (Call $ Predication
-              (Qual_pred_name (stringToId $ genNamePrefix ++
-                                            "uniform_" ++ show s)
-                (Pred_type [s] nullRange) nullRange)
-               [Qual_var (genToken "x") s nullRange] nullRange) nullRange)
-            (True_atom nullRange))
-          nullRange) True nullRange) nullRange]
-    procDefs = concatMap (genUniform genSorts genOps) genSorts
-                                 in
-     map (makeNamed "") procDefs
-  _ -> [n_sen{sentence = trans}]
+ n_sen{sentence = trans}
 
 mapMor :: CASLMor -> VSEMor
 mapMor m = let
@@ -973,7 +808,9 @@ mapCASLSen :: CASLFORMULA -> Sentence
 mapCASLSen f =
  let
   (sen, (_i, vars)) = runState (mapCASLSenAux f) (0, Set.empty)
- in addQuantifiers vars sen
+ in case sen of
+     Sort_gen_ax _ _ -> sen
+     _ -> addQuantifiers vars sen
   -- here i have to return an universal quantification
 
 addQuantifiers :: VarSet -> Sentence -> Sentence
@@ -983,6 +820,16 @@ addQuantifiers vars sen =
 
 mapCASLSenAux :: CASLFORMULA -> State (Int, VarSet) Sentence
 mapCASLSenAux f = case f of
+  Sort_gen_ax constrs isFree -> do
+   let
+    toProcs (Op_name _, _) = error "must be qual names"
+    toProcs (Qual_op_name op (Op_type _fkind args res _range) _, l) =
+           ( Qual_op_name (stringToId $ genNamePrefix ++ show op)
+                           (Op_type Partial args res nullRange) nullRange,
+             l)
+    opsToProcs (Constraint nSort syms oSort) =
+                Constraint nSort (map toProcs syms) oSort
+   return $ Sort_gen_ax (map opsToProcs constrs) isFree
   True_atom _ps -> return $ True_atom nullRange
   False_atom _ps -> return $ False_atom nullRange
   Strong_equation t1 t2 _ps -> do

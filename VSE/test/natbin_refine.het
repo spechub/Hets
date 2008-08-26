@@ -209,7 +209,7 @@ view refine:
    %% Restriction
    gn_restr_nats  |-> nlz,
    %% uniform restriction
-   gn_uniform_nats |-> gn_uniform_bin,
+   %%gn_uniform_nats |-> gn_uniform_bin,
    %% equality
    gn_eq_nats |-> eq,
    %% Implementations
