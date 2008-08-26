@@ -237,21 +237,19 @@ writeTheory opts filePrefix ga
       if null $ show d then
         writeVerbFile opts f $ shows (DG.printTh ga i raw_gTh) "\n"
         else putIfVerbose opts 0 "printing theory delta is not implemented"
-      if language_name lid == language_name VSE then do
+      when (language_name lid == language_name VSE) $ do
         (sign, sens) <- coerceBasicTheory lid VSE "" th
         let lse = map (namedSenToSExpr sign) sens
-        if null lse then return () else writeVerbFile opts (fp ++ ".sexpr")
+        unless (null lse) $ writeVerbFile opts (fp ++ ".sexpr")
             $ shows (prettySExpr $ SList lse) "\n"
-        else return ()
     SigFile d -> do
       if null $ show d then
         writeVerbFile opts f $ shows (pretty $ signOf raw_gTh) "\n"
         else putIfVerbose opts 0 "printing signature delta is not implemented"
-      if language_name lid == language_name VSE then do
+      when (language_name lid == language_name VSE) $ do
         (sign, _) <- coerceBasicTheory lid VSE "" th
         writeVerbFile opts (f ++ ".sexpr")
           $ shows (prettySExpr $ vseSignToSExpr sign) "\n"
-        else return ()
 #ifdef PROGRAMATICA
     HaskellOut -> case printModule raw_gTh of
         Nothing ->
