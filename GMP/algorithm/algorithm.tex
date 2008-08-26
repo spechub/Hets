@@ -1,0 +1,33 @@
+\documentclass[11pt,final,notitlepage,onecolumn]{article}%
+\usepackage{amsfonts}
+\usepackage{graphicx}
+\usepackage{amsmath}
+\usepackage{amssymb}%
+\date{}
+\oddsidemargin 0in \evensidemargin 0in \textwidth 6.5in \topmargin 0in \textheight 8.5in
+\begin{document}
+% PSPACE Bounds for Rank-1 Modal Logics 
+{\bf Algorithm for deciding SAT of $\phi\in\mathcal{F}(\Lambda)$}
+\begin{itemize}
+\item (1) (Existential) Guess a propositionally consistent pseudovaluation $H$ for $\phi$.
+\item (2) (Universal) Choose a contracted clause $\rho\neq\bot$ over $MA(H)$ such that $H\vdash_{PL}\neg\rho$.
+\item (3) (Universal) Choose an $\mathcal{R}_C$-matching $[R]$ of $\rho$.
+\item (4) (Existential) Guess a clause $\gamma$ from the CNF of the premise of $R$.
+\item (5) Recursively check that $\neg\gamma\sigma(R,\rho)$ is satisfiable.
+\end{itemize}
+The algorithm succeeds if all possible choices at steps marked universal lead to successful termination, and for all steps marked existential, there exists a choice leading to successful termination. Concerning the first step, note that the only way for a pseudovaluation to be propositionally inconsistent is to contain both $L\rho$ and $\neg L\rho$ for some modal atom $L\rho$.
+
+\bigskip
+
+% Detailed Interpretation
+Interpretation for our Haskell Implementation
+\begin{itemize}
+\item (1) When getting to this step it is supposed that $\phi$ is our predefined formula type. We then extract all top-layer modal atoms of the given formula (will be stored in a list) and generate all combinations of possible instantiations of these modal atoms (thus getting a list of propositional formulas). Filter the latter so we keep only the ones evaluating to true.
+\item (2) \ldots ?
+\item (3) Test each of the $\rho$'s against the predefined rules of the top-layer logic and for each $\rho$ return a list containing the "numeric" order of the atoms in the matched rule.
+\item (4) For each $\rho$ and matching rule (stored as in the previous step) generate a list with all clauses from the CNF of the premise of the rule.
+\item (5) For each clause $\gamma$ of the list obtained above check the satisfiability of $\neg\gamma\sigma(R,\rho)$ and recurse by removing the modal "layers" as in the first 4 steps.
+\end{itemize}
+
+\bigskip
+\end{document}

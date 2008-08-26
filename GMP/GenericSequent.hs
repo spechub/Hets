@@ -1,3 +1,4 @@
+{-# OPTIONS -fglasgow-exts #-}
 module GenericSequent where
 
 import AbstractSyntax
@@ -6,8 +7,8 @@ import Data.List
 -- | Generate all possible clauses out of a list of atoms
 allClauses :: [a] -> [Clause a]
 allClauses x = case x of
-                 h:t -> let addPositive c (Implies p n) = Implies (c:p) n
-                            addNegative c (Implies p n) = Implies p (c:n)
+                 h:t -> let addPositive c (Implies n p) = Implies n (c:p)
+                            addNegative c (Implies n p) = Implies (c:n) p
                         in map (addPositive h) (allClauses t) ++
                            map (addNegative h) (allClauses t)
                  _   -> [Implies [] []]
@@ -19,7 +20,7 @@ getMA x = case x of
             Not phi     -> getMA phi
             At phi      -> [At phi]
             _           -> []
-          
+
 -- | Substitution of modal atoms within a "Boole" expression
 subst :: Eq a => Boole a -> Clause (Boole a) -> Boole a 
 subst x s@(Implies neg pos) = 
@@ -42,11 +43,17 @@ eval x = case x of
            _           -> error "GenericSequent.eval"
 
 -- | DNF: disjunctive normal form
+dnf :: (Eq a) => Boole a -> [Clause (Boole a)]
 dnf phi = filter (\x -> eval (subst phi x)) (allClauses (getMA phi))
 
 -- | CNF: conjunctive normal form
-cnf phi = map (\(Implies p n) -> Implies n p) (dnf (Not phi))
+cnf :: (Eq a) => Boole a -> [Clause (Boole a)]
+cnf phi = map (\(Implies x y) -> Implies y x) (dnf (Not phi))
 
 -- | Provability function
-provable phi = all (\c -> any (all provable) (map fst (match c))) (cnf phi)
+--provable :: Logic a b => Boole (a c) -> Bool
+--provable phi = all (\c -> any (all provable) (map fst (match c))) (cnf phi)
 
+
+unwrapK = \(K x) -> x
+unwrapKD = \(KD x) -> x

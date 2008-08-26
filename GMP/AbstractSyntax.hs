@@ -26,7 +26,7 @@ data KD l  = KD (Boole l) deriving (Eq, Ord, Show)
 data RKD = RKDPos Int | RKDNeg Int deriving Show
 
 -- | Datatype for combined Segala logics
-data Segala = S (KD (K Segala)) deriving (Eq, Show)
+--data Segala = S (KD (K Segala)) deriving (Eq, Show)
 
 -- | Datatype for propositional clauses
 data Clause a = Implies [a] [a] deriving (Eq, Ord, Show)
