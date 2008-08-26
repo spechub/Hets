@@ -20,10 +20,10 @@ The algorithm succeeds if all possible choices at steps marked universal lead to
 \bigskip
 
 % Detailed Interpretation
-Interpretation for our Haskell Implementation
+{\bf Interpretation for our Haskell Implementation}
 \begin{itemize}
 \item (1) When getting to this step it is supposed that $\phi$ is our predefined formula type. We then extract all top-layer modal atoms of the given formula (will be stored in a list) and generate all combinations of possible instantiations of these modal atoms (thus getting a list of propositional formulas). Filter the latter so we keep only the ones evaluating to true.
-\item (2) \ldots ?
+\item (2) Generate all nonempty clauses $\rho$ (as a list) for the kept pseudovaluations above such that the formula instantiated with the particular pseudovaluation entails $\neg\rho$. These clauses will be stored in a list (one list of $\rho$'s for each good pseudovaluation).
 \item (3) Test each of the $\rho$'s against the predefined rules of the top-layer logic and for each $\rho$ return a list containing the "numeric" order of the atoms in the matched rule.
 \item (4) For each $\rho$ and matching rule (stored as in the previous step) generate a list with all clauses from the CNF of the premise of the rule.
 \item (5) For each clause $\gamma$ of the list obtained above check the satisfiability of $\neg\gamma\sigma(R,\rho)$ and recurse by removing the modal "layers" as in the first 4 steps.
