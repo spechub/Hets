@@ -27,9 +27,8 @@ import Common.DocUtils
 import Common.Doc
 import Common.Result
 import Common.Id
-import Maybe
--- import Debug.Trace
 import Data.List (nub,intersect,delete)
+import Data.Char (toLower)
 
 
 {------------------------------------------------------------------------
@@ -285,16 +284,17 @@ checkFreeType (osig,osens) m fsn
                 else Conservative
     conStatus = min dataStatus defStatus
 
+data ConsistencyStatus =
+  Inconsistent | Conservative | Monomorphic | Definitional
+  deriving (Show, Eq, Ord)
 
-data ConsistencyStatus = Inconsistent | Conservative |
-                         Monomorphic | Definitional deriving (Show, Eq, Ord)
+showConsistencyStatus :: ConsistencyStatus -> String
+showConsistencyStatus cs = case cs of
+  Inconsistent -> "not conservative"
+  _ -> map toLower $ show cs
 
 instance Pretty ConsistencyStatus where
-  pretty cs = case cs of
-                Inconsistent -> keyword "Inconsistent"
-                Conservative -> keyword "Conservative"
-                Monomorphic -> keyword "Monomorphic"
-                Definitional -> keyword "Definitional"
+  pretty = text . showConsistencyStatus
 
 -- | group the axioms according to their leading symbol,
 --   output Nothing if there is some axiom in incorrect form
