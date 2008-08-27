@@ -73,7 +73,7 @@ mapCASLTheory :: (CASLSign, [Named CASLFORMULA]) ->
                  Result (VSESign, [Named Sentence])
 mapCASLTheory (sig, n_sens) = do
   let (tsig, genAx) =  mapSig sig
-      tsens = concatMap mapNamedSen n_sens
+      tsens = map mapNamedSen n_sens
   case not $ null $ checkCases tsig (tsens ++ genAx) of
    True -> fail "case error in signature"
    _ -> return (tsig, tsens ++ genAx)
@@ -740,12 +740,12 @@ mapSig sign =
            extendedInfo = procs,
            sentences = [] }, sortSens ++ opSens ++ predSens)
 
-mapNamedSen :: Named CASLFORMULA -> [Named Sentence]
+mapNamedSen :: Named CASLFORMULA -> Named Sentence
 mapNamedSen n_sen = let
  sen = sentence n_sen
  trans = mapCASLSen sen
                     in
- [n_sen{sentence = trans}]
+ n_sen{sentence = trans}
 
 
 mapMor :: CASLMor -> VSEMor
