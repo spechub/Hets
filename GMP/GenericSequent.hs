@@ -1,7 +1,7 @@
 {-# OPTIONS -fglasgow-exts #-}
 module GenericSequent where
 
-import AbstractSyntax
+import ModalLogic
 import Data.List
 
 -- | Generate all possible clauses out of a list of atoms

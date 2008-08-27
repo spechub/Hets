@@ -1,6 +1,6 @@
 module SegExamples where
 
-import AbstractSyntax
+import ModalLogic
 import GenericSequent
 
 -- example Segala
