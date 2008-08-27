@@ -238,17 +238,17 @@ edgeConservativityState nm (source,target,linklab) libenv libname
                 conservativityCheck lid
                    (plainSign sign2, toNamedList sens2)
                    morphism2' $ toNamedList sens
-            obl [] = ""
-            obl sens = ", provided that the following proof obligations can be discharged:\n"++ concatMap ((++"\n").show) sens
+            showObls [] = ""
+            showObls obls = ", provided that the following proof obligations can be discharged:\n"++ concatMap ((++"\n").show) obls
             showRes = case res of
-                       Just (Just (Inconsistent,sens)) ->
-                                     "not conservative" ++ obl sens
-                       Just (Just (Conservative,sens)) ->
-                                     "conservative" ++ obl sens
-                       Just (Just (Monomorphic,sens)) ->
-                                     "monomorphic" ++ obl sens
-                       Just (Just (Definitional,sens)) ->
-                                     "definitional" ++ obl sens
+                       Just (Just (Inconsistent,obls)) ->
+                                     "not conservative" ++ showObls obls
+                       Just (Just (Conservative,obls)) ->
+                                     "conservative" ++ showObls obls
+                       Just (Just (Monomorphic,obls)) ->
+                                     "monomorphic" ++ showObls obls
+                       Just (Just (Definitional,obls)) ->
+                                     "definitional" ++ showObls obls
                        _ -> "Could not determine whether link is conservative"
             myDiags = showRelDiags 2 ds
         return (nm,showRes++"\n"++myDiags)

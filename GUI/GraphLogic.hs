@@ -45,7 +45,7 @@ module GUI.GraphLogic
     , applyChanges
     ) where
 
-import Logic.Logic(conservativityCheck)
+import Logic.Logic(conservativityCheck,map_sen)
 import Logic.Coerce(coerceSign, coerceMorphism)
 import Logic.Grothendieck
 import Logic.Comorphism
@@ -738,38 +738,44 @@ checkconservativityOfEdge :: Int -> GInfo -> Maybe (LEdge DGLinkLab) -> IO ()
 checkconservativityOfEdge _ gInfo
                            (Just (source,target,linklab)) = do
   libEnv <- readIORef $ libEnvIORef gInfo
-  let dgraph = lookupDGraph (gi_LIB_NAME gInfo) libEnv
-      dgtar = labDG dgraph target
-  if isDGRef dgtar then error "checkconservativityOfEdge: no DGNode" else do
-      G_theory lid _ _ sens _ <- return $ dgn_theory dgtar
-      GMorphism cid _ _ morphism2 _ <- return $ dgl_morphism linklab
-      morphism2' <- coerceMorphism (targetLogic cid) lid
-                   "checkconservativityOfEdge" morphism2
-      let (_le', th) =
-            case computeTheory False libEnv (gi_LIB_NAME gInfo) source of
-              Res.Result _ (Just th1) -> th1
-              _ -> error "checkconservativityOfEdge: computeTheory"
-      G_theory lid1 sign1 _ sens1 _ <- return th
-      sign2 <- coerceSign lid1 lid "checkconservativityOfEdge.coerceSign" sign1
-      sens2 <- coerceThSens lid1 lid "" sens1
-      let Res.Result ds res =
-              conservativityCheck lid
-                 (plainSign sign2, toNamedList sens2)
-                 morphism2' $ toNamedList sens
-          obl [] = ""
-          obl sens = ", provided that the following proof obligations can be discharged:\n"++ concatMap ((++"\n").show) sens
-          showRes = case res of
-                     Just (Just (Inconsistent,sens)) -> "The link is not conservative"++obl sens
-                     Just (Just (Conservative,sens)) -> "The link is conservative"++obl sens
-                     Just (Just (Monomorphic,sens)) -> "The link is monomorphic"++obl sens
-                     Just (Just (Definitional,sens)) -> "The link is definitional"++obl sens
-                     _ -> "Could not determine whether link is conservative"
-              --     Just(Just True) -> "The link is conservative"
-              --     Just(Just False) -> "The link is not conservative"
-              --     _ -> "Could not determine whether link is conservative"
-          myDiags = showRelDiags 2 ds
-      createTextDisplay "Result of conservativity check"
-                      (showRes ++ "\n" ++ myDiags) [HTk.size(50,50)]
+  let (_, thTar) =
+        case computeTheory False libEnv (gi_LIB_NAME gInfo) target of
+          Res.Result _ (Just th1) -> th1
+          _ -> error "checkconservativityOfEdge: computeTheory"
+  G_theory lid _sign _ sensTar _ <- return thTar
+  GMorphism cid _ _ morphism2 _ <- return $ dgl_morphism linklab
+  morphism2' <- coerceMorphism (targetLogic cid) lid
+                "checkconservativityOfEdge" morphism2
+  let (_le', thSrc) =
+        case computeTheory False libEnv (gi_LIB_NAME gInfo) source of
+          Res.Result _ (Just th1) -> th1
+          _ -> error "checkconservativityOfEdge: computeTheory"
+  G_theory lid1 sign1 _ sensSrc1 _ <- return thSrc
+  sign2 <- coerceSign lid1 lid "checkconservativityOfEdge.coerceSign" sign1
+  sensSrc2 <- coerceThSens lid1 lid "" sensSrc1
+  let transSensSrc = 
+       mapThSensValue (propagateErrors . map_sen lid morphism2') sensSrc2
+  let Res.Result ds res =
+          conservativityCheck lid
+             (plainSign sign2, toNamedList sensSrc2)
+             morphism2' $ toNamedList (sensTar `OMap.difference` transSensSrc)
+      showObls [] = ""
+      showObls obls = ", provided that the following proof obligations "
+                      ++"can be discharged:\n"
+                      ++ concatMap ((++"\n").flip showDoc "") obls
+      showRes = case res of
+                 Just (Just (Inconsistent,obls)) -> 
+                      "The link is not conservative"++showObls obls
+                 Just (Just (Conservative,obls)) -> 
+                      "The link is conservative"++showObls obls
+                 Just (Just (Monomorphic,obls)) -> 
+                      "The link is monomorphic"++showObls obls
+                 Just (Just (Definitional,obls)) -> 
+                      "The link is definitional"++showObls obls
+                 _ -> "Could not determine whether link is conservative"
+      myDiags = showRelDiags 2 ds
+  createTextDisplay "Result of conservativity check"
+                  (showRes ++ "\n" ++ myDiags) [HTk.size(50,50)]
 
 checkconservativityOfEdge descr _ Nothing =
       createTextDisplay "Error"

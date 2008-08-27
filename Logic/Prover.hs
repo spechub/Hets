@@ -65,6 +65,9 @@ type ThSens a b = OMap.OMap String (SenStatus a b)
 noSens :: ThSens a b
 noSens = OMap.empty
 
+mapThSensValue :: (a -> b) -> ThSens a c -> ThSens b c
+mapThSensValue f = OMap.map (mapValue f)
+
 mapThSensStatus :: (b -> c) -> ThSens a b -> ThSens a c
 mapThSensStatus f = OMap.map (mapStatus f)
 
