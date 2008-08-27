@@ -1,7 +1,5 @@
 library List_Rev
 
-logic VSE
-
 spec List_Rev [sort elem] =
     free type list[elem] ::= empty | cons(elem; list[elem])
     ops app : list[elem] * list[elem] -> list[elem],
