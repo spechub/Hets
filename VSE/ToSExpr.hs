@@ -234,9 +234,8 @@ vseFormsToSExpr sig vf = case vf of
          Diamond -> "diamond", progToSExpr sig p, sentenceToSExpr sig s]
   Defprocs ds ->
     SList $ SSymbol "defprocs" : map (defprocToSExpr sig) ds
-  RestrictedConstraint _ _ _ -> error "nyi"
-   -- here add uniform restrictions and generate SExpr for
-   -- the proof obligations and the axioms
+  RestrictedConstraint _ _ _ ->
+   error "restricted constraints should be handled separately"
 
 vDeclToSExpr :: Sign f Procs -> VarDecl -> SExpr
 vDeclToSExpr sig (VarDecl v s m _) =
