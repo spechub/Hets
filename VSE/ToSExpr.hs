@@ -28,6 +28,179 @@ import Common.SExpr
 
 import qualified Data.Map as Map
 import Data.Char (toLower)
+import Data.List(sortBy)
+
+namedSenToSExprList :: Sign f Procs -> Named Sentence -> [SExpr]
+namedSenToSExprList sig ns = case sentence ns of
+  ExtFORMULA (Ranged (RestrictedConstraint constrs restr _flag) _r) ->
+   let
+    (genSorts, genOps, _maps) = recover_Sort_gen_ax constrs
+    genUniform sorts ops s = let
+      hasResSort sn (Qual_op_name _ opType _) = (res_OP_TYPE opType) == sn
+      hasResSort _ _ = error "should have qual names"
+      ctors = sortBy (\ (Qual_op_name _ (Op_type _ args1 _ _) _)
+                        (Qual_op_name _ (Op_type _ args2 _ _) _) ->
+                        if length args1 < length args2 then LT else GT) $
+              filter (hasResSort s) ops
+      genCodeForCtor (Op_name _ ) _ = error "should have qual names"
+      genCodeForCtor (Qual_op_name
+                                     ctor
+                                     (Op_type _ args sn _)
+                                  _) prg = let
+        decls = map (\(_, i) -> genToken $ "x" ++ show i) $
+                zip args [1::Int ..]
+        recCalls = map (\(x,i) ->
+                         Ranged (Call (Predication
+                                        (Qual_pred_name (stringToId $
+                                                 genNamePrefix ++ "uniform_"
+                                                 ++ show x)
+                                         (Pred_type [x] nullRange) nullRange)
+                                        [Qual_var
+                                          (genToken $ "x" ++ show i)
+                                          x nullRange] nullRange
+                                      )) nullRange) $
+                   filter (\(x,_) -> x `elem` sorts) $
+                   zip args [1::Int ..]
+        recCallsSeq = if not $ null recCalls then
+                      foldr1 (\p1 p2 -> Ranged (Seq p1 p2) nullRange) recCalls
+                      else Ranged Skip nullRange
+                                          in
+        case recCalls of
+         [] -> Ranged (
+                Block ([Var_decl [genToken "y"] s nullRange] ++
+              (map (\ (a,i) -> Var_decl [genToken $ "x" ++ show i] a nullRange)
+              $ zip args [1::Int ..]))
+              (Ranged (Seq
+                (Ranged
+                   (Assign (genToken "y") (Qual_var (genToken "x") sn nullRange)
+                    ) nullRange)
+                (Ranged (Seq (Ranged
+                                   (Assign
+                                     (genToken  "y")
+                                     (Application
+                                      (Qual_op_name
+                                     (stringToId $ genNamePrefix ++ show ctor)
+                                     (Op_type Partial args sn nullRange)
+                                     nullRange)
+                                      (map  (\(v,ss) ->
+                                              Qual_var v ss nullRange) $
+                                       zip decls args)
+                                      nullRange))
+                                   nullRange)
+                        (Ranged (If (Strong_equation
+                               (Application
+                                 (
+                                  Qual_op_name
+                                   (stringToId $ genNamePrefix ++ "eq_"++
+                                                 show s)
+                                   (Op_type Partial [s,s]
+                                    uBoolean nullRange)
+                                  nullRange
+                                 ) [Qual_var
+                                      (genToken "x")
+                                      s nullRange,
+                                     Qual_var
+                                      (genToken "y")
+                                      s nullRange
+                                    ] nullRange)
+                               (Application
+                                 (Qual_op_name (stringToId  "True")
+                                  (Op_type Total []
+                                    uBoolean nullRange)
+                                  nullRange)
+                                 [] nullRange)
+                             nullRange)
+                          (Ranged Skip nullRange)
+                          prg)nullRange))
+                nullRange )) nullRange) ) nullRange
+         _ -> Ranged (
+                 Block ([Var_decl [genToken "y"] s nullRange] ++
+                (map (\ (a,i) -> Var_decl
+                                  [genToken $ "x" ++ show i] a nullRange)
+                 $ zip args [1::Int ..]))
+                (Ranged (Seq (Ranged (Assign (genToken "y")
+                                      (Qual_var (genToken "x") sn nullRange)
+                                     ) nullRange)
+                             (Ranged
+                              (Seq recCallsSeq
+                               (Ranged (Seq
+                                  ((Ranged
+                                    (Assign
+                                      (genToken  "y")
+                                     (Application
+                                      (Qual_op_name
+                                     (stringToId $ genNamePrefix ++ show ctor)
+                                     (Op_type Partial args sn nullRange)
+                                     nullRange)
+                                      (map  (\(v,ss) ->
+                                              Qual_var v ss nullRange) $
+                                       zip decls args)
+                                      nullRange))
+                                   nullRange)
+                                 )
+                                (Ranged (If (Strong_equation
+                                 ( Application
+                                 ( Qual_op_name
+                                   (stringToId $ genNamePrefix ++ "eq_"++
+                                                 show s)
+                                   (Op_type Partial [s,s]
+                                    uBoolean nullRange)
+                                  nullRange
+                                 ) [Qual_var
+                                      (genToken "x")
+                                      s nullRange,
+                                     Qual_var
+                                      (genToken "y")
+                                      s nullRange
+                                    ] nullRange)
+                                (Application
+                                 (Qual_op_name (stringToId  "True")
+                                  (Op_type Total []
+                                    uBoolean nullRange)
+                                  nullRange)
+                                 [] nullRange)
+                               nullRange)
+                               (Ranged Skip nullRange) prg) nullRange))
+                               nullRange )) nullRange)) nullRange) ) nullRange
+                             in
+     [makeNamed "" $  ExtFORMULA $
+     Ranged (Defprocs  [
+      Defproc Proc (stringToId $ genNamePrefix ++ "uniform_"++show s)
+              [mkSimpleId $ genNamePrefix ++ "x"]
+      (Ranged (
+        Block [] ( foldr genCodeForCtor (Ranged Abort nullRange)
+                   ctors)
+              ) nullRange
+      )
+      nullRange])
+     nullRange,
+     (makeNamed "" $
+     Quantification Universal [Var_decl [genToken "x"] s nullRange]
+      (Implication
+       ( ExtFORMULA $ Ranged
+          (Dlformula Diamond ( Ranged
+            (Call $ Predication
+              (Qual_pred_name
+                (restr Map.! s)
+                --(stringToId $ genNamePrefix ++ "restr_"++ show s)
+                (Pred_type [s] nullRange) nullRange)
+               [Qual_var (genToken "x") s nullRange] nullRange) nullRange)
+            (True_atom nullRange))
+          nullRange)
+       ( ExtFORMULA $ Ranged
+          (Dlformula Diamond (Ranged
+            (Call $ Predication
+              (Qual_pred_name (stringToId $ genNamePrefix ++
+                                            "uniform_" ++ show s)
+                (Pred_type [s] nullRange) nullRange)
+               [Qual_var (genToken "x") s nullRange] nullRange) nullRange)
+            (True_atom nullRange))
+          nullRange) True nullRange) nullRange) {isAxiom = False}]
+    procDefs = concatMap (genUniform genSorts genOps) genSorts
+   in
+     map (namedSenToSExpr sig) procDefs
+  _ -> [namedSenToSExpr sig ns]
+
 
 namedSenToSExpr :: Sign f Procs -> Named Sentence -> SExpr
 namedSenToSExpr sig ns =
@@ -61,6 +234,9 @@ vseFormsToSExpr sig vf = case vf of
          Diamond -> "diamond", progToSExpr sig p, sentenceToSExpr sig s]
   Defprocs ds ->
     SList $ SSymbol "defprocs" : map (defprocToSExpr sig) ds
+  RestrictedConstraint _ _ _ -> error "nyi"
+   -- here add uniform restrictions and generate SExpr for
+   -- the proof obligations and the axioms
 
 vDeclToSExpr :: Sign f Procs -> VarDecl -> SExpr
 vDeclToSExpr sig (VarDecl v s m _) =

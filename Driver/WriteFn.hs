@@ -239,7 +239,7 @@ writeTheory opts filePrefix ga
         else putIfVerbose opts 0 "printing theory delta is not implemented"
       when (language_name lid == language_name VSE) $ do
         (sign, sens) <- coerceBasicTheory lid VSE "" th
-        let lse = map (namedSenToSExpr sign) sens
+        let lse = concatMap (namedSenToSExprList sign) sens
         unless (null lse) $ writeVerbFile opts (fp ++ ".sexpr")
             $ shows (prettySExpr $ SList lse) "\n"
     SigFile d -> do

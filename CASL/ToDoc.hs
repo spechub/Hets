@@ -19,6 +19,8 @@ module CASL.ToDoc
     , pluralS
     , isJunct
     , ListCheck(..)
+    , recoverType
+    , printALTERNATIVE
     ) where
 
 import Common.Id

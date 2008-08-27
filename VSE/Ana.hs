@@ -72,6 +72,7 @@ getVSEVars :: VSEforms -> Set.Set Token
 getVSEVars vf = case vf of
   Dlformula _ p s -> Set.union (getProgVars p) $ getVariables s
   Defprocs l -> Set.unions $ map getDefprogVars l
+  _ -> Set.empty -- no variables in a sort generation constraint
 
 getProgVars :: Program -> Set.Set Token
 getProgVars =
@@ -182,6 +183,7 @@ parenDlFormula (Ranged f r) = case f of
     let n = mapFormula parenDlFormula s
     in Ranged (Dlformula b (parenProg p) n) r
   Defprocs ps -> Ranged (Defprocs $ map parenDefproc ps) r
+  _ -> Ranged f r -- no mixfix formulas?
 
 parenProg :: Program -> Program
 parenProg = foldProg $ mapProg (Paren.mapTerm id) $ mapFormula id
@@ -211,6 +213,7 @@ resolveDlformula ga rules (Ranged f r) = case f of
   Defprocs ps -> do
     nps <- mapM (resolveDefproc ga rules) ps
     return $ Ranged (Defprocs nps) r
+  _ -> return $ Ranged f r -- no mixfix?
 
 resolveT :: MixResolve (TERM ())
 resolveT = resolveMixTrm id (mixResolve emptyMix)
@@ -263,6 +266,7 @@ minExpForm sign (Ranged f r) = let sig = castSign sign in case f of
   Defprocs ps -> do
     nps <- mapM (minProcdecl sig) ps
     return $ Ranged (Defprocs nps) r
+  _ -> fail "nyi for restricted constraints"
 
 oneExpT :: Sign () Procs -> TERM () -> Result (TERM ())
 oneExpT = oneExpTerm (const return)
@@ -455,6 +459,13 @@ mapDlformula m (Ranged f r) = case f of
     let n = mapSen mapDlformula m s
     in Ranged (Dlformula b (mapMorProg m p) n) r
   Defprocs ps -> Ranged (Defprocs $ map (mapMorDefproc m) ps) r
+  RestrictedConstraint constr restr flag ->
+   Ranged
+    (RestrictedConstraint
+       (map (MapSen.mapConstr m) constr)
+       (Map.fromList $ map (\(s,i) -> (sort_map m Map.! s, mapProcId m i)) $
+        Map.toList restr)
+    flag ) r
 
 -- | simplify fully qualified terms and formulas for pretty printing sentences
 simpProg :: Sign () e -> Program -> Program
@@ -481,6 +492,8 @@ simpDlformula sign (Ranged f r) = let sig = castSign sign in case f of
     n = simplifySen minExpForm simpDlformula sign s
     in Ranged (Dlformula b q n) r
   Defprocs ps -> Ranged (Defprocs $ map (simpDefproc sig) ps) r
+  RestrictedConstraint _ _ _  -> Ranged f r
+    -- how should this be for restricted constraints?
 
 -- | free variables to be universally bound on the top level
 freeProgVars :: Sign () e -> Program -> VarSet
@@ -498,6 +511,7 @@ freeDlVars sig (Ranged f _) = case f of
   Dlformula _ p s -> Set.union (freeProgVars (castSign sig) p) $
           freeVars sig s
   Defprocs _ -> Set.empty
+  RestrictedConstraint _ _ _  -> Set.empty
 
 instance GetRange (Ranged a) where
   getRange (Ranged _ r) = r

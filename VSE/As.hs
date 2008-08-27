@@ -26,7 +26,7 @@ import Common.DocUtils
 import Common.Result
 
 import CASL.AS_Basic_CASL
-import CASL.ToDoc ()
+import CASL.ToDoc (recoverType, printALTERNATIVE)
 
 -- | input or output procedure parameter kind
 data Paramkind = In | Out deriving (Show, Eq, Ord)
@@ -83,6 +83,7 @@ addInits vs p = case vs of
 data VSEforms =
     Dlformula BoxOrDiamond Program Sentence
   | Defprocs [Defproc]
+  | RestrictedConstraint [Constraint] (Map.Map SORT Id)  Bool
     deriving (Show, Eq, Ord)
 
 type Dlformula = Ranged VSEforms
@@ -203,6 +204,20 @@ instance Pretty VSEforms where
          Diamond -> text "<:" <> d <> text ":>"
       , pretty f ]
     Defprocs ps -> prettyProcdefs ps
+    RestrictedConstraint constrs restr _b ->
+       let
+        l = recoverType constrs
+       in sep [text "generated type", semiAnnos (printRESTRTYPE_DECL restr) l]
+
+printRESTRTYPE_DECL :: Map.Map SORT Id -> DATATYPE_DECL -> Doc
+printRESTRTYPE_DECL restr (Datatype_decl s a r)=
+    let pa = printAnnoted printALTERNATIVE in case a of
+    [] -> printRESTRTYPE_DECL restr
+           (Datatype_decl s [emptyAnno $ Subsorts [s] r] r)
+    h : t  -> sep [idLabelDoc s, colon <> colon <> sep
+                      ((equals <+> pa h) :
+                       map ((bar <+>) . pa) t), text "restricted by",
+                   pretty $ restr Map.! s]
 
 prettyProcdefs :: [Defproc] -> Doc
 prettyProcdefs ps = vcat

@@ -37,6 +37,7 @@ import Common.AS_Annotation
 import Common.Lib.State
 import CASL.Quantification
 import CASL.CCC.FreeTypes
+import Data.List(sortBy)
 
 -- | The identity of the comorphism
 data CASL2VSERefine = CASL2VSERefine deriving (Show)
@@ -61,7 +62,7 @@ instance Comorphism CASL2VSERefine
     mapSublogic CASL2VSERefine _ = Just ()
     map_theory CASL2VSERefine = mapCASLTheory
     map_morphism CASL2VSERefine = return . mapMor
-    map_sentence CASL2VSERefine _ = return. mapCASLSen
+    map_sentence CASL2VSERefine _ = error "map sen nyi" --return. mapCASSen
     map_symbol CASL2VSERefine = error "map symbol nyi"
     has_model_expansion CASL2VSERefine = True
         --check these 3, but should be fine
@@ -72,7 +73,7 @@ mapCASLTheory :: (CASLSign, [Named CASLFORMULA]) ->
                  Result (VSESign, [Named Sentence])
 mapCASLTheory (sig, n_sens) = do
   let (tsig, genAx) =  mapSig sig
-      tsens = map mapNamedSen n_sens
+      tsens = concatMap mapNamedSen n_sens
   case not $ null $ checkCases tsig (tsens ++ genAx) of
    True -> fail "case error in signature"
    _ -> return (tsig, tsens ++ genAx)
@@ -739,12 +740,13 @@ mapSig sign =
            extendedInfo = procs,
            sentences = [] }, sortSens ++ opSens ++ predSens)
 
-mapNamedSen :: Named CASLFORMULA -> Named Sentence
+mapNamedSen :: Named CASLFORMULA -> [Named Sentence]
 mapNamedSen n_sen = let
  sen = sentence n_sen
  trans = mapCASLSen sen
                     in
- n_sen{sentence = trans}
+ [n_sen{sentence = trans}]
+
 
 mapMor :: CASLMor -> VSEMor
 mapMor m = let
@@ -805,13 +807,12 @@ mapMor m = let
   }
 
 mapCASLSen :: CASLFORMULA -> Sentence
-mapCASLSen f =
- let
-  (sen, (_i, vars)) = runState (mapCASLSenAux f) (0, Set.empty)
- in case sen of
-     Sort_gen_ax _ _ -> sen
-     _ -> addQuantifiers vars sen
-  -- here i have to return an universal quantification
+mapCASLSen f = let
+ (sen, (_i, vars)) = runState (mapCASLSenAux f) (0, Set.empty)
+               in
+ case f of
+  Sort_gen_ax _ _ -> sen
+  _ -> addQuantifiers vars sen
 
 addQuantifiers :: VarSet -> Sentence -> Sentence
 addQuantifiers vars sen =
@@ -822,6 +823,7 @@ mapCASLSenAux :: CASLFORMULA -> State (Int, VarSet) Sentence
 mapCASLSenAux f = case f of
   Sort_gen_ax constrs isFree -> do
    let
+    (genSorts, _, _ ) = recover_Sort_gen_ax constrs
     toProcs (Op_name _, _) = error "must be qual names"
     toProcs (Qual_op_name op (Op_type _fkind args res _range) _, l) =
            ( Qual_op_name (stringToId $ genNamePrefix ++ show op)
@@ -829,7 +831,15 @@ mapCASLSenAux f = case f of
              l)
     opsToProcs (Constraint nSort syms oSort) =
                 Constraint nSort (map toProcs syms) oSort
-   return $ Sort_gen_ax (map opsToProcs constrs) isFree
+   return $ ExtFORMULA $
+            Ranged
+             (RestrictedConstraint
+                (map opsToProcs constrs)
+                (Map.fromList $
+                 map (\s -> (s, stringToId $
+                                genNamePrefix ++ "restr_" ++ show s))
+                 genSorts) isFree)
+            nullRange
   True_atom _ps -> return $ True_atom nullRange
   False_atom _ps -> return $ False_atom nullRange
   Strong_equation t1 t2 _ps -> do
