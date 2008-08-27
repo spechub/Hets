@@ -1,7 +1,8 @@
 {-# OPTIONS -fglasgow-exts #-}
 module Experiment where
 
-data Boole a = And a a | Not a
+import ModalLogic
+
 data Box c a = Box c (Boole a)
 data BBox c a = BBox c (Boole a) (Boole a)
 data WBForm = WBForm (Box W (BWForm))
@@ -14,5 +15,6 @@ class Form a b c | a->b, a->c where
   extract :: Form a b c => a -> Box b c
   provable :: Form a b c => a -> Bool
 
-instance Form WBForm W BWForm
-instance Form BWForm B WBForm
+instance Form WBForm W BWForm --where
+
+instance Form BWForm B WBForm --where
