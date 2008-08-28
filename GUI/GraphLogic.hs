@@ -45,7 +45,7 @@ module GUI.GraphLogic
     , applyChanges
     ) where
 
-import Logic.Logic(conservativityCheck,map_sen)
+import Logic.Logic(conservativityCheck,map_sen, comp)
 import Logic.Coerce(coerceSign, coerceMorphism)
 import Logic.Grothendieck
 import Logic.Comorphism
@@ -735,47 +735,67 @@ showEdgeInfo descr me = case me of
 
 -- | check conservativity of the edge
 checkconservativityOfEdge :: Int -> GInfo -> Maybe (LEdge DGLinkLab) -> IO ()
-checkconservativityOfEdge _ gInfo
+checkconservativityOfEdge _ gInfo@(GInfo{gi_LIB_NAME = ln,
+                                         gi_GraphInfo = actGraphInfo,
+                                         libEnvIORef = le})
                            (Just (source,target,linklab)) = do
+  lockGlobal gInfo
   libEnv <- readIORef $ libEnvIORef gInfo
+  let libEnv' = case convertToNf ln libEnv target of
+                  Result _ (Just lE) -> lE
+                  _ -> error "checkconservativityOfEdge: convertToNf"
   let (_, thTar) =
-        case computeTheory False libEnv (gi_LIB_NAME gInfo) target of
+        case computeTheory True libEnv' ln target of
           Res.Result _ (Just th1) -> th1
           _ -> error "checkconservativityOfEdge: computeTheory"
   G_theory lid _sign _ sensTar _ <- return thTar
   GMorphism cid _ _ morphism2 _ <- return $ dgl_morphism linklab
+  Just (GMorphism cid' _ _ morphism3 _) <- return $
+                  dgn_sigma $ labDG (lookupDGraph ln libEnv') target
   morphism2' <- coerceMorphism (targetLogic cid) lid
                 "checkconservativityOfEdge" morphism2
+  morphism3' <- coerceMorphism (targetLogic cid') lid
+                "checkconservativityOfEdge" morphism3
+  let compMor = case comp morphism2' morphism3' of
+               Res.Result _ (Just phi) -> phi
+               _ -> error "checkconservativtiyOfEdge: comp"
   let (_le', thSrc) =
-        case computeTheory False libEnv (gi_LIB_NAME gInfo) source of
+        case computeTheory False libEnv' (gi_LIB_NAME gInfo) source of
           Res.Result _ (Just th1) -> th1
           _ -> error "checkconservativityOfEdge: computeTheory"
   G_theory lid1 sign1 _ sensSrc1 _ <- return thSrc
   sign2 <- coerceSign lid1 lid "checkconservativityOfEdge.coerceSign" sign1
   sensSrc2 <- coerceThSens lid1 lid "" sensSrc1
-  let transSensSrc = 
-       mapThSensValue (propagateErrors . map_sen lid morphism2') sensSrc2
+  let transSensSrc =
+       mapThSensValue (propagateErrors . map_sen lid compMor) sensSrc2
   let Res.Result ds res =
           conservativityCheck lid
              (plainSign sign2, toNamedList sensSrc2)
-             morphism2' $ toNamedList (sensTar `OMap.difference` transSensSrc)
+             compMor $ toNamedList (sensTar `OMap.difference` transSensSrc)
       showObls [] = ""
       showObls obls = ", provided that the following proof obligations "
                       ++"can be discharged:\n"
                       ++ concatMap ((++"\n").flip showDoc "") obls
       showRes = case res of
-                 Just (Just (Inconsistent,obls)) -> 
+                 Just (Just (Inconsistent,obls)) ->
                       "The link is not conservative"++showObls obls
-                 Just (Just (Conservative,obls)) -> 
+                 Just (Just (Conservative,obls)) ->
                       "The link is conservative"++showObls obls
-                 Just (Just (Monomorphic,obls)) -> 
+                 Just (Just (Monomorphic,obls)) ->
                       "The link is monomorphic"++showObls obls
-                 Just (Just (Definitional,obls)) -> 
+                 Just (Just (Definitional,obls)) ->
                       "The link is definitional"++showObls obls
                  _ -> "Could not determine whether link is conservative"
       myDiags = showRelDiags 2 ds
   createTextDisplay "Result of conservativity check"
                   (showRes ++ "\n" ++ myDiags) [HTk.size(50,50)]
+  let newGr = lookupDGraph ln libEnv'
+      newHistory = proofHistory newGr
+      oldHistory = proofHistory $ lookupDGraph ln libEnv
+      history = take (length newHistory - length oldHistory) newHistory
+  applyChanges actGraphInfo history
+  writeIORef le libEnv'
+  unlockGlobal gInfo
 
 checkconservativityOfEdge descr _ Nothing =
       createTextDisplay "Error"
