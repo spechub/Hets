@@ -2,6 +2,7 @@
 module GenericSequent where
 
 import ModalLogic
+import CombLogic
 import Data.List
 
 -- | Generate all possible clauses out of a list of atoms
@@ -42,11 +43,11 @@ eval x = case x of
            F           -> False
            _           -> error "GenericSequent.eval"
 
--- | DNF: disjunctive normal form
+-- | DNF: disjunctive normal form of a Boole expression
 dnf :: (Eq a) => Boole a -> [Clause (Boole a)]
 dnf phi = filter (\x -> eval (subst phi x)) (allClauses (getMA phi))
 
--- | CNF: conjunctive normal form
+-- | CNF: conjunctive normal form of a Boole expression
 cnf :: (Eq a) => Boole a -> [Clause (Boole a)]
 cnf phi = map (\(Implies x y) -> Implies y x) (dnf (Not phi))
 

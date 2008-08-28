@@ -24,6 +24,10 @@ data RK = RK Int deriving Show
 data KD l  = KD (Boole l) deriving (Eq, Ord, Show)
 -- | Datatype for the "rules" of KD modal logic
 data RKD = RKDPos Int | RKDNeg Int deriving Show
+-- | Datatype for a modal formulae of type "l" wrapped under Graded ML
+data G l = G Int (Boole l) deriving (Eq, Ord, Show)
+-- | Datatype for the "rules" of Graded ML
+data RG = RG [Int] [Int] deriving Show
 
 -- | Datatype for combined Segala logics
 --data Segala = S (KD (K Segala)) deriving (Eq, Show)
