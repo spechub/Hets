@@ -1,7 +1,6 @@
+library IsabelleCoding
 
-library IsabelleCodingErrors
-
-spec Options [sort s] = 
+spec Options [sort s] =
      free type Opt[s] ::=  Nothing | Just(s)
 end
 
