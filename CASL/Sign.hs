@@ -204,9 +204,10 @@ diffRel :: Ord a => Rel.Rel a -> Rel.Rel a -> Rel.Rel a
 diffRel a = Rel.irreflex . Rel.transClosure . Rel.difference a
 
 diffSig :: (e -> e -> e) -> Sign f e -> Sign f e -> Sign f e
-diffSig dif a b = a
-  { sortSet = sortSet a `Set.difference` sortSet b
-  , emptySortSet = emptySortSet a `Set.difference` emptySortSet b
+diffSig dif a b = let s = sortSet a `Set.difference` sortSet b in a
+  { sortSet = s
+  , emptySortSet = Set.difference s
+      $ nonEmptySortSet a `Set.difference` nonEmptySortSet b
   , sortRel = diffRel (sortRel a) $ sortRel b
   , opMap = opMap a `diffMapSet` opMap b
   , assocOps = assocOps a `diffMapSet` assocOps b
@@ -255,10 +256,14 @@ uniteCASLSign a b = addSig (\_ _ -> ()) a b
 addRel :: Ord a => Rel.Rel a -> Rel.Rel a -> Rel.Rel a
 addRel a = Rel.irreflex . Rel.transClosure . Rel.union a
 
+nonEmptySortSet :: Sign f e -> Set.Set Id
+nonEmptySortSet s = Set.difference (sortSet s) $ emptySortSet s
+
 addSig :: (e -> e -> e) -> Sign f e -> Sign f e -> Sign f e
-addSig ad a b = a
-  { sortSet = sortSet a `Set.union` sortSet b
-  , emptySortSet = emptySortSet a `Set.union` emptySortSet b
+addSig ad a b = let s = sortSet a `Set.union` sortSet b in a
+  { sortSet = s
+  , emptySortSet = Set.difference s
+      $ nonEmptySortSet a `Set.union` nonEmptySortSet b
   , sortRel = addRel (sortRel a) $ sortRel b
   , opMap = addOpMapSet (opMap a) $ opMap b
   , assocOps = addOpMapSet (assocOps a) $ assocOps b
@@ -271,9 +276,10 @@ interRel a = Rel.irreflex . Rel.transClosure . Rel.fromSet
   . Set.intersection (Rel.toSet a) . Rel.toSet
 
 interSig :: (e -> e -> e) -> Sign f e -> Sign f e -> Sign f e
-interSig ef a b = a
-  { sortSet = sortSet a `Set.intersection` sortSet b
-  , emptySortSet = emptySortSet a `Set.intersection` emptySortSet b
+interSig ef a b = let s = sortSet a `Set.intersection` sortSet b in a
+  { sortSet = s
+  , emptySortSet = Set.difference s
+      $ nonEmptySortSet a `Set.intersection` nonEmptySortSet b
   , sortRel = interRel (sortRel a) $ sortRel b
   , opMap = interOpMapSet (opMap a) $ opMap b
   , assocOps = interOpMapSet (assocOps a) $ assocOps b
@@ -330,21 +336,22 @@ addSort sk a s = do
   e <- State.get
   let m = sortSet e
       em = emptySortSet e
-  if Set.member s m then addDiags [mkDiag Hint "redeclared sort" s]
+      known = Set.member s m
+  if known then addDiags [mkDiag Hint "redeclared sort" s]
     else do
       State.put e { sortSet = Set.insert s m }
       addDiags $ checkNamePrefix s
   case sk of
-    NonEmptySorts -> if Set.member s em then
-       addDiags [mkDiag Warning "redeclared sort as non-empty" s]
-       else return ()
-    PossiblyEmptySorts -> if not $ Set.member s em then do
+    NonEmptySorts -> if Set.member s em then do
+        e2 <- State.get
+        State.put e2 { emptySortSet = Set.delete s em }
+        addDiags [mkDiag Warning "redeclared sort as non-empty" s]
+      else return ()
+    PossiblyEmptySorts -> if known then
+      addDiags [mkDiag Warning "non-empty sort remains non-empty" s]
+      else do
         e2 <- State.get
         State.put e2 { emptySortSet = Set.insert s em }
-        if Set.member s m then
-          addDiags [mkDiag Warning "redeclared sort as possibly empty" s]
-          else return ()
-      else return ()
   addAnnoSet a $ Symbol s SortAsItemType
 
 hasSort :: Sign f e -> SORT -> [Diagnosis]

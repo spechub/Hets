@@ -1,5 +1,5 @@
-(esorts a, b, [])
+(sorts a, b, [])
 ### Hint 2.6, redeclared sort 'a'
 ### Warning 2.6, redeclared sort as non-empty 'a'
 ### Hint 3.7, redeclared sort 'b'
-### Warning 3.7, redeclared sort as possibly empty 'b'
+### Warning 3.7, non-empty sort remains non-empty 'b'
