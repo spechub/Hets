@@ -37,7 +37,6 @@ import Common.AS_Annotation
 import Common.Lib.State
 import CASL.Quantification
 import CASL.CCC.FreeTypes
-import Data.List(sortBy)
 
 -- | The identity of the comorphism
 data CASL2VSERefine = CASL2VSERefine deriving (Show)
