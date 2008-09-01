@@ -1,4 +1,4 @@
-module Main where
+module SegExamples where
 
 import ModalLogic
 import CombLogic
