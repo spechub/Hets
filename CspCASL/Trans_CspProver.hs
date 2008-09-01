@@ -1,6 +1,6 @@
 {- |
-Module      :  Provides transformations from Csp Processes to Isabelle terms
-Description :  Pretty printing for CspCASL
+Module      :  $Header$
+Description :  Provides transformations from Csp Processes to Isabelle terms
 Copyright   :  (c) Andy Gimblett, Liam O'Reilly and Markus Roggenbach,
                    Swansea University 2008
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
@@ -15,10 +15,13 @@ Provides transformations from Csp Processes to Isabelle terms
 module CspCASL.Trans_CspProver where
 
 import CASL.AS_Basic_CASL (SORT, VAR)
---import CspCASL.AS_CspCASL
+
+import Common.Id
+
 import CspCASL.AS_CspCASL_Process
--- import CspCASL.CspCASL_Keywords
 import CspCASL.CspProver_Consts
+import CspCASL.Trans_Consts
+
 import Isabelle.IsaSign
 import Isabelle.IsaConsts
 
@@ -78,16 +81,26 @@ transProcess pr = case pr of
                                           (transProcess q)
 
 transEventSet :: EVENT_SET -> Term
-transEventSet _ = conDouble "not yet done"
+transEventSet evs =
+    let
+        tranCommType ct = conDouble $ (tokStr ct) ++ barExtS
+    in case evs of
+         EventSet commTypes _ -> Set $ FixedSet $ map tranCommType commTypes
 
 transEvent :: EVENT -> Term
-transEvent _ = conDouble "not yet done"
+transEvent ev =
+    case ev of
+      TermEvent caslTerm _ -> conDouble "not yet done"
+      ChanSend _ _ _ -> conDouble "not yet done"
+      ChanNonDetSend _ _ _ _ -> conDouble "not yet done"
+      ChanRecv _ _ _ _ -> conDouble "not yet done"
 
 transVar :: VAR -> Term
-transVar _ = conDouble "not yet done"
+transVar v = conDouble $ tokStr v
 
 transSort :: SORT -> Term
-transSort _ = conDouble "not yet done"
+transSort sort = let sortBarString = convertSort2String sort ++ barExtS
+                 in conDouble  sortBarString
 
 transRenaming :: RENAMING -> Term
 transRenaming _ = conDouble "not yet done"

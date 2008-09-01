@@ -29,6 +29,7 @@ import Comorphisms.CFOL2IsabelleHOL(IsaTheory)
 import CspCASL.Logic_CspCASL
 import CspCASL.AS_CspCASL
 import CspCASL.Trans_CspProver
+import CspCASL.Trans_Consts
 import CspCASL.SignCSP
 import qualified Data.List as List
 import qualified Data.Set as Set
@@ -87,6 +88,7 @@ transCCTheory ccTheory =
           translation3 <- cfol2isabelleHol translation2
           -- Next add the preAlpabet construction to the IsabelleHOL code
           return $ addCspCaslSentences ccSens
+                 $ addAllIntegrationTheorems sortList ccSign
                  $ addAllChooseFunctions sortList
                  $ addAllBarTypes sortList
                  $ addAlphabetType
@@ -106,7 +108,12 @@ transCCSentence _ (CspCASLSentence pn _ _) =
 
 -- | Add a list of CspCASL sentences to an Isabelle theory
 addCspCaslSentences :: [Named CspCASLSentence] -> IsaTheory -> IsaTheory
-addCspCaslSentences namedSens isaTh = foldl addCspCaslSentence isaTh namedSens
+addCspCaslSentences namedSens isaTh =
+    -- Create datatype for process names
+    -- crate constant
+    -- create primrec
+      -- create list of equations -- one for each sentence
+    foldl addCspCaslSentence isaTh namedSens
 
 -- | Add a single CspCASL sentence to an Isabelle theory
 addCspCaslSentence :: IsaTheory -> Named CspCASLSentence -> IsaTheory
@@ -210,16 +217,16 @@ addCompareWithFun ccSign isaTh sort =
                 allTests = concat [test1, test2, test3, test4]
                 test1 = if (sort == sort') then [binEq x y] else []
                 test2 = if (Set.member sort sort'SuperSet)
-                        then [binEq x (termAppl (getInjectionOp sort' sort) y)]
+                        then [binEq x (mkInjection sort' sort y)]
                         else []
                 test3 = if (Set.member sort' sortSuperSet)
-                        then [binEq (termAppl (getInjectionOp sort sort') x) y]
+                        then [binEq (mkInjection sort sort' x) y]
                         else []
                 test4 = if (null commonSuperList)
                         then []
                         else map test4_atSort commonSuperList
-                test4_atSort s = binEq (termAppl (getInjectionOp sort s) x)
-                                       (termAppl (getInjectionOp sort' s) y)
+                test4_atSort s = binEq (mkInjection sort  s x)
+                                       (mkInjection sort' s y)
             in binEq lhs rhs
         eqs = map mkEq sortList
     in  addPrimRec eqs isaThWithConst
@@ -292,9 +299,8 @@ addInjectivityTheorem :: CASLSign.CASLSign -> [SORT] -> [(SORT,SORT)] ->
 addInjectivityTheorem pfolSign sorts sortRel isaTh (s1,s2) =
     let x = mkFree "x"
         y = mkFree "y"
-        injOp = getInjectionOp s1 s2
-        injX = termAppl injOp x
-        injY = termAppl injOp y
+        injX = mkInjection s1 s2 x
+        injY = mkInjection s1 s2 y
         definedOp_s1 = getDefinedOp sorts s1
         definedOp_s2 = getDefinedOp sorts s2
         collectionEmbInjAx = getCollectionEmbInjAx sortRel
@@ -338,11 +344,13 @@ addDecompositionTheorem :: CASLSign.CASLSign -> [SORT] -> [(SORT,SORT)] ->
                          IsaTheory -> (SORT,SORT,SORT) -> IsaTheory
 addDecompositionTheorem pfolSign sorts sortRel isaTh (s1,s2,s3) =
     let x = mkFree "x"
-        injOp_s1_s2 = getInjectionOp s1 s2
-        injOp_s2_s3 = getInjectionOp s2 s3
-        injOp_s1_s3 = getInjectionOp s1 s3
-        inj_s1_s2_s3 = termAppl injOp_s2_s3 (termAppl injOp_s1_s2 x)
-        inj_s1_s3 = termAppl injOp_s1_s3 x
+        -- These 5 lines make use of currying
+        injOp_s1_s2 = mkInjection s1 s2
+        injOp_s2_s3 = mkInjection s2 s3
+        injOp_s1_s3 = mkInjection s1 s3
+        inj_s1_s2_s3_x = injOp_s2_s3 (injOp_s1_s2 x)
+        inj_s1_s3_x = injOp_s1_s3 x
+
         definedOp_s1 = getDefinedOp sorts s1
         definedOp_s3 = getDefinedOp sorts s3
         collectionTransAx = getCollectionTransAx sortRel
@@ -351,9 +359,9 @@ addDecompositionTheorem pfolSign sorts sortRel isaTh (s1,s2,s3) =
 
         name = getDecompositionThmName(s1, s2, s3)
         conds = []
-        concl = binEq inj_s1_s2_s3 inj_s1_s3
+        concl = binEq inj_s1_s2_s3_x inj_s1_s3_x
 
-        proof' = IsaProof [Apply(CaseTac (definedOp_s3 inj_s1_s2_s3)),
+        proof' = IsaProof [Apply(CaseTac (definedOp_s3 inj_s1_s2_s3_x)),
                            -- Case 1
                            Apply(SubgoalTac(definedOp_s1 x)),
                            Apply(Insert collectionTransAx),
@@ -362,7 +370,7 @@ addDecompositionTheorem pfolSign sorts sortRel isaTh (s1,s2,s3) =
 
                            -- Case 2
                            Apply(SubgoalTac(
-                               termAppl notOp(definedOp_s3 inj_s1_s3))),
+                               termAppl notOp(definedOp_s3 inj_s1_s3_x))),
                            Apply(SimpAdd Nothing collectionNotDefBotAx),
                            Apply(SimpAdd Nothing collectionTotAx)]
                            Done
@@ -472,21 +480,22 @@ addBarType isaTh sort =
 --   theory.
 addAllChooseFunctions :: [SORT] -> IsaTheory -> IsaTheory
 addAllChooseFunctions sorts isaTh =
-    foldl addChooseFunctions isaTh sorts
+    let isaTh' = foldl addChooseFunction isaTh sorts --add function and def
+    in foldl addChooseFunctionLemma isaTh' sorts --add theorem and proof
 
 -- | Add a single choose function for a given sort to an Isabelle
 --   theory.  The following Isabelle code is produced by this function:
 --   consts choose_Nat :: "Alphabet => Nat"
 --   defs choose_Nat_def: "choose_Nat x == contents{y . class(C_Nat y) = x}"
-
-addChooseFunctions ::  IsaTheory -> SORT -> IsaTheory
-addChooseFunctions isaTh sort =
+addChooseFunction ::  IsaTheory -> SORT -> IsaTheory
+addChooseFunction isaTh sort =
     let --constant
         alphabetType = Type {typeId = alphabetS,
-                                typeSort = [],
-                                typeArgs =[]}
-        sortType = Type {typeId = convertSort2String sort, typeSort = [],
-                                  typeArgs =[]}
+                             typeSort = [],
+                             typeArgs =[]}
+        sortType = Type {typeId = convertSort2String sort,
+                         typeSort = [],
+                         typeArgs =[]}
         chooseFunName = mkChooseFunName sort
         chooseFunType = mkFunType alphabetType sortType
         -- definition
@@ -499,6 +508,24 @@ addChooseFunctions isaTh sort =
         subset = SubSet y sortType bin_eq
         lhs = chooseOp x
         rhs = contentsOp (Set subset)
+    in  addDef chooseFunName lhs rhs -- Add defintion to theory
+      $ addConst chooseFunName chooseFunType isaTh -- Add constant to theory
+
+-- | Add a single choose function lemma for a given sort to an
+--   Isabelle theory.  The following Isabelle code is produced by this
+--   function: lemma "choose_Nat (class (C_Nat x)) = x". The proof is
+--   also produced.
+
+addChooseFunctionLemma ::  IsaTheory -> SORT -> IsaTheory
+addChooseFunctionLemma isaTh sort =
+    let sortType = Type {typeId = convertSort2String sort,
+                         typeSort = [],
+                         typeArgs =[]}
+        chooseFunName = mkChooseFunName sort
+        x = mkFree "x"
+        y = mkFree "y"
+        chooseOp = termAppl (conDouble chooseFunName)
+        sortConsOp = termAppl (conDouble (mkPreAlphabetConstructor sort))
         -- theorm
         subgoalTacTermLhsBinEq = binEq (classOp $ sortConsOp y)
                                        (classOp $ sortConsOp x)
@@ -515,9 +542,51 @@ addChooseFunctions isaTh sort =
                                            ++ "_def")),
                            Apply(Auto)]
                            Done
-    in  addThreomWithProof chooseFunName thmConds thmConcl proof' -- Add theorem
-      $ addDef chooseFunName lhs rhs -- Add defintion to theory
-      $ addConst chooseFunName chooseFunType isaTh -- Add constant to theory
+    in  addThreomWithProof chooseFunName thmConds thmConcl proof' isaTh
+
+-- | Add all the integration theorems. We need to know all the sorts
+--   to produce all the theorems.
+addAllIntegrationTheorems :: [SORT] -> CspCASLSign -> IsaTheory -> IsaTheory
+addAllIntegrationTheorems sorts ccSign isaTh =
+    let pairs = [(s1,s2) | s1 <- sorts, s2 <- sorts]
+    in foldl (addIntegrationTheorem_A ccSign) isaTh pairs
+
+-- | Add Integration theorem A -- Compare to elements of the Alphabet.
+--   We add the integration theorem based on the sorts of both
+--   elements of the alphabet. We need to know the subsort relation to
+--   find the highest common sort, but we pass in the CC signature for
+--   use in function calls.
+addIntegrationTheorem_A :: CspCASLSign -> IsaTheory -> (SORT,SORT) -> IsaTheory
+addIntegrationTheorem_A ccSign isaTh (s1,s2) =
+    let sortRel = Rel.toList(CASLSign.sortRel ccSign)
+        s1SuperSet = CASLSign.supersortsOf s1 ccSign
+        s2SuperSet = CASLSign.supersortsOf s2 ccSign
+        commonSuperList = Set.toList (Set.intersection
+                                         (Set.insert s1 s1SuperSet)
+                                         (Set.insert s2 s2SuperSet))
+        x = mkFree "x"
+        y = mkFree "y"
+        s1ConsOp = termAppl (conDouble (mkPreAlphabetConstructor s1))
+        s2ConsOp = termAppl (conDouble (mkPreAlphabetConstructor s2))
+        rhs = binEq (classOp $ s1ConsOp x) (classOp $ s2ConsOp y)
+        lhs = if (null commonSuperList)
+              then false
+              else
+                  -- pick any common sort - we should pick the top most one.
+                  let s' = head commonSuperList
+                  in binEq (mkInjection s1 s' x) (mkInjection s2 s' y)
+        thmConds = []
+        thmConcl = binEq rhs lhs
+        -- theorem names for proof
+        colInjThmNames = getColInjectivityThmName sortRel
+        colDecompThmNames = getColDecompositionThmName sortRel
+        proof' = IsaProof [Apply (SimpAdd Nothing ["quot_equality"]),
+                           Apply (Other ("unfold " ++ preAlphabetSimS
+                                             ++ "_def")),
+                           Apply (AutoSimpAdd Nothing
+                                  (colDecompThmNames ++ colInjThmNames))]
+                           Done
+    in  addThreomWithProof "IntegrationTheorem_A" thmConds thmConcl proof' isaTh
 
 -- Function to help keep strings consistent
 
@@ -530,17 +599,6 @@ eq_PreAlphabetV   = VName eq_PreAlphabetS $ Nothing
 binEq_PreAlphabet :: Term -> Term -> Term
 binEq_PreAlphabet = binVNameAppl eq_PreAlphabetV
 
-alphabetS :: String
-alphabetS = "Alphabet"
-
-barExtS :: String
-barExtS = "_Bar"
-
-classS :: String
-classS = "class"
-
-classOp :: Term -> Term
-classOp = termAppl (conDouble classS)
 
 quotEqualityS :: String
 quotEqualityS = "quot_equality"
@@ -573,31 +631,34 @@ eqvTypeClassS  = "eqv"
 equivTypeClassS :: String
 equivTypeClassS  = "equiv"
 
--- | Return the injection name of the injection from one sort to another
+-- | Return the term representing the injection of a term from one sort to another
+--   note: the term is returned if both sorts are the same
 --   This function is not implemented in a satisfactory way
-getInjectionOp :: SORT -> SORT -> Term
-getInjectionOp s s' =
+mkInjection :: SORT -> SORT -> Term -> Term
+mkInjection s s' t =
     let injName = getInjectionName s s'
         replace string c s1 = concat (map (\x -> if x==c
                                                  then s1
                                                  else [x]) string)
-    in Const {
-          termName= VName {
-            new = ("X_" ++ injName),
-            altSyn = Just (AltSyntax ((replace injName '_' "'_")
-                                      ++ "/'(_')") [3] 999)
-          },
-          termType = Hide {
-            typ = Type {
-              typeId ="dummy",
-              typeSort = [IsaClass "type"],
-              typeArgs = []
-            },
-            kon = NA,
-            arit= Nothing
-          }
-        }
-
+        injOp = Const {
+                  termName= VName {
+                              new = ("X_" ++ injName),
+                              altSyn = Just (AltSyntax ((replace injName '_' "'_")
+                                                        ++ "/'(_')") [3] 999)
+                            },
+                  termType = Hide {
+                               typ = Type {
+                                       typeId ="dummy",
+                                       typeSort = [IsaClass "type"],
+                                       typeArgs = []
+                                     },
+                               kon = NA,
+                               arit= Nothing
+                             }
+                }
+    in if s == s'
+       then t
+       else termAppl injOp t
 
 -- | Return the name of the injection as it is used in the alternative
 --   syntax of the injection from one sort to another.
@@ -704,10 +765,6 @@ getCollectionNotDefBotAx sorts =
                                        then ""
                                        else ("_" ++ show i)))
     in map mkNotDefBotAxName [0 .. (length(sorts) - 1)]
-
--- Convert a SORT to a string
-convertSort2String :: SORT -> String
-convertSort2String s = show s
 
 -- Function that returns the constructor of PreAlphabet for a given sort
 mkPreAlphabetConstructor :: SORT -> String

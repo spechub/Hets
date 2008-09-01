@@ -65,12 +65,12 @@ basicAnalysisCspCASL (cc, sigma, ga) = do
                                         (Stop nullRange) nullRange)
       gParProc = CspCASLSentence (mkSimpleId "gParProc") []
                                        (GeneralisedParallel (Stop nullRange)
-                                        (EventSet [mkSimpleId "hugo"] nullRange)
+                                        (EventSet [mkSimpleId "S"] nullRange)
                                         (Skip nullRange) nullRange)
       aParProc = CspCASLSentence (mkSimpleId "gParProc") []
                                      (AlphabetisedParallel (Stop nullRange)
-                                      (EventSet [mkSimpleId "hugo1"] nullRange)
-                                      (EventSet [mkSimpleId "hugo2"] nullRange)
+                                      (EventSet [mkSimpleId "T"] nullRange)
+                                      (EventSet [mkSimpleId "U"] nullRange)
                                       (Skip nullRange) nullRange)
 
 ana_BASIC_CSP :: CspBasicSpec -> State CspCASLSign ()
