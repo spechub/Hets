@@ -117,7 +117,8 @@ prettyDGNodeLab l = sep [ text $ getDGNodeName l, pretty $ nodeInfo l]
 instance Pretty DGNodeLab where
   pretty l = vcat
     [ text "Origin:" <+> pretty (nodeInfo l)
-    , text $ if hasOpenGoals l then "locally empty" else "has open goals"
+    , if hasOpenGoals l then text "has open goals" else
+      if hasSenKind (const True) l then Doc.empty else text "locally empty"
     , case dgn_nf l of
         Nothing -> Doc.empty
         Just n -> text "normal form:" <+> text (showNodeId n)

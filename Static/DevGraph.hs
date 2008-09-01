@@ -165,11 +165,14 @@ isProvenSenStatus = any isProvenSenStatusAux . thmStatus
   where isProvenSenStatusAux (_, BasicProof _ pst) = isProvedStat pst
         isProvenSenStatusAux _ = False
 
+hasSenKind :: (forall a . SenStatus a (AnyComorphism, BasicProof) -> Bool)
+           -> DGNodeLab -> Bool
+hasSenKind f dgn = case dgn_theory dgn of
+  G_theory _lid _sigma _ sens _ -> not $ OMap.null $ OMap.filter f sens
+
 -- | test if a given node label has local open goals
 hasOpenGoals ::  DGNodeLab -> Bool
-hasOpenGoals dgn = case dgn_theory dgn of
-  G_theory _lid _sigma _ sens _-> not $ OMap.null $ OMap.filter
-      (\ s -> not (isAxiom s) && not (isProvenSenStatus s)) sens
+hasOpenGoals = hasSenKind (\ s -> not (isAxiom s) && not (isProvenSenStatus s))
 
 -- | check if the node has an internal name (wrong for DGRef?)
 isInternalNode :: DGNodeLab -> Bool
