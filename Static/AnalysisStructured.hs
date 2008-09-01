@@ -382,11 +382,12 @@ ana_SPEC addSyms lg dg nsig name opts sp = case sp of
       Comorphism cid <- adj $ logicInclusion lg (Logic lidD) (Logic lidP)
       let lidD' = sourceLogic cid
           lidP' = targetLogic cid
+          dname = inc name
       (sp1', NodeSig n' (G_sign lid' sigma' _), dg') <-
-         ana_SPEC False lg dg (EmptyNode (Logic lidD)) (inc name) opts sp1
+         ana_SPEC False lg dg (EmptyNode (Logic lidD)) dname opts sp1
       sigmaD <- adj $ coerceSign lid' lidD' "Analysis of data spec" sigma'
-      (sigmaD',sensD') <- adj $ ext_map_sign cid sigmaD
-      let (nsig2@(NodeSig node _), dg1) = insGTheory dg' name DGData
+      (sigmaD', sensD') <- adj $ ext_map_sign cid sigmaD
+      let (nsig2@(NodeSig node _), dg1) = insGTheory dg' dname DGData
             $ G_theory lidP' sigmaD' startSigId (toThSens sensD') startThId
           dg2 = insLink dg1 (GMorphism cid sigmaD startSigId
                              (ext_ide sigmaD') startMorId)
