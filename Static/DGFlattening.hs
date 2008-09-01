@@ -25,7 +25,7 @@ new node and the target node.
 Flattening hiding links - for each compute normal form if there is such
  and eliminate hiding links.
 
-Flattening heterogeniety - for each heterogeneous link, compute theory of
+Flattening heterogeneity - for each heterogeneous link, compute theory of
  a target node and eliminate heterogeneous link.
 
 -}
@@ -39,7 +39,7 @@ module Static.DGFlattening (dg_flattening2,
                             dg_flattening5,
                             libEnv_flattening5,  -- hiding
                             dg_flattening6,
-                            libEnv_flattening6   -- heterogeniety
+                            libEnv_flattening6   -- heterogeneity
                             ) where
 import Logic.Grothendieck
 import Logic.Logic

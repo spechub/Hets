@@ -255,7 +255,7 @@ createGlobalMenu gInfo@(GInfo { gi_LIB_NAME = ln
              , ("Disjoint unions", libEnv_flattening3)
              , ("Importings and renamings", libEnv_flattening4)
              , ("Hiding", libEnv_flattening5)
-             , ("Heterogeniety", libEnv_flattening6)]]
+             , ("Heterogeneity", libEnv_flattening6)]]
     , Button "Translate Graph" $ ral $ translateGraph gInfo convGraph showLib
     , Button "Show Logic Graph" $ ral $ showLogicGraph daVinciSort
     , Button "Show Library Graph" $ ral $ showLibGraph gInfo showLib
