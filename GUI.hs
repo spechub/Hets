@@ -45,6 +45,8 @@ prover state and configurations.
 "GUI.GraphTypes" defines the types used in "GUI.GraphDisplay", "GUI.GraphLogic"
 and "GUI.GraphMenu".
 
+"GUI.History" provides a history of commands in proof-script format.
+
 "GUI.HTkUtils" provides some utilities on top of "HTk".
 
 "GUI.PrintUtils" are pretty printing functions used by "GUI.GenericATP".

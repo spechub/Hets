@@ -20,6 +20,7 @@ import qualified GUI.GraphAbstraction as GA
 import GUI.GraphTypes
 import GUI.GraphLogic
 import GUI.ShowLogicGraph(showLogicGraph)
+import GUI.History
 #ifdef GTKGLADE
 import GUI.GtkLinkTypeChoice
 import Data.List (isSuffixOf)
@@ -211,6 +212,7 @@ createExit (GInfo {exitMVar = exit}) = do
 createGlobalMenu :: GInfo -> ConvFunc -> LibFunc -> [GlobalMenu]
 createGlobalMenu gInfo@(GInfo { gi_LIB_NAME = ln
                               , gi_hetcatsOpts = opts
+                              , commandHist = ch
                               }) convGraph showLib =
   let ral x = runAndLock gInfo x in
   [GlobalMenu (Menu Nothing
@@ -231,21 +233,30 @@ createGlobalMenu gInfo@(GInfo { gi_LIB_NAME = ln
     , Menu (Just "Proofs") $ map ( \ (str, cmd) ->
        Button str $ ral $ performProofAction gInfo
                   $ proofMenu gInfo $ return . return . cmd ln)
-       [ ("Automatic", automatic)
-       , ("Global Subsumption", globSubsume)
-       , ("Global Decomposition", globDecomp)
-       , ("Local Inference", localInference)
-       , ("Local Decomposition (merge of rules)", locDecomp)
-       , ("Composition (merge of rules)", composition)
-       , ("Composition - creating new links", compositionCreatingEdges)
+       [ ("Automatic",
+                         addToHistUnsafe ch "dg-all auto" automatic)
+       , ("Global Subsumption",
+                         addToHistUnsafe ch "dg-all glob-subsume" globSubsume)
+       , ("Global Decomposition",
+                         addToHistUnsafe ch "dg-all glob-decomp" globDecomp)
+       , ("Local Inference",
+                         addToHistUnsafe ch "dg-all loc-infer" localInference)
+       , ("Local Decomposition (merge of rules)",
+                         addToHistUnsafe ch "dg-all loc-decomp" locDecomp)
+       , ("Composition (merge of rules)",
+                         addToHistUnsafe ch "dg-all comp" composition)
+       , ("Composition - creating new links",
+                         addToHistUnsafe ch "dg-all comp-new" compositionCreatingEdges)
        ] ++
-       [Button "Hide Theorem Shift" $ ral $ performProofAction gInfo
+       [Button "Hide Theorem Shift" $ addToHistUnsafe ch "dg-all hide-thm"
+               $ ral $ performProofAction gInfo
                $ proofMenu gInfo $ fmap return . interactiveHideTheoremShift ln
        ] ++
        map (\ (str, cmd) ->
               Button str $ ral $ performProofAction gInfo
                   $ proofMenu gInfo $ return . cmd ln)
-       [ ("Theorem Hide Shift", theoremHideShift)
+       [ ("Theorem Hide Shift",
+                         addToHistUnsafe ch "dg-all thm-hide" theoremHideShift)
        , ("Compute Colimit", computeColimit)
        ] ++
        [ Menu (Just "Flattening") $ map ( \ (str, cmd) ->
@@ -261,8 +272,20 @@ createGlobalMenu gInfo@(GInfo { gi_LIB_NAME = ln
     , Button "Show Library Graph" $ ral $ showLibGraph gInfo showLib
     , Button "Save Graph for uDrawGraph" $ ral
              $ saveUDGraph gInfo (mapNodeTypes opts) $ mapLinkTypes opts
+    , Button "Save proof-script" $ ral $ askSaveProofScript gInfo
     ])
   ]
+
+-- | Displays a Save-As dialog and writes the proof-script.
+askSaveProofScript :: GInfo -> IO ()
+askSaveProofScript (GInfo { commandHist = ch }) =
+  do
+    file <- getProofScriptFileName ch
+    evnt <- newFileDialogStr "Save as..." file
+    maybeFilePath <- HTk.sync evnt
+    case maybeFilePath of
+      Just filePath -> saveCommandHistory ch filePath
+      Nothing -> fail "Could not save file."
 
 -- | A list of all Node Types
 createNodeTypes :: GInfo -> ConvFunc -> LibFunc

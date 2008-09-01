@@ -27,6 +27,7 @@ module GUI.GraphTypes
 
 import GUI.GraphAbstraction(GraphInfo, initgraphs)
 import GUI.ProofManagement (GUIMVar)
+import GUI.History(CommandHistory, emptyCommandHistory)
 
 import Syntax.AS_Library
 import Syntax.Print_AS_Library()
@@ -58,6 +59,7 @@ data GInfo = GInfo
              , exitMVar :: MVar ()
              , globalLock :: MVar ()
              , globalHist :: MVar ([[LIB_NAME]],[[LIB_NAME]])
+             , commandHist :: CommandHistory
              , functionLock :: MVar ()
                -- Local
              , gi_LIB_NAME :: LIB_NAME
@@ -120,6 +122,7 @@ emptyGInfo = do
   exit <- newEmptyMVar
   wc <- newMVar 0
   gh <- newMVar ([],[])
+  ch <- emptyCommandHistory
   return $ GInfo { libEnvIORef = iorLE
                   , gi_LIB_NAME = Lib_id $ Indirect_link "" nullRange "" noTime
                  , gi_GraphInfo = graphInfo
@@ -130,6 +133,7 @@ emptyGInfo = do
                  , exitMVar = exit
                  , globalLock = gl
                  , globalHist = gh
+                 , commandHist = ch
                  , functionLock = fl
                  }
 

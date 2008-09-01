@@ -666,7 +666,8 @@ showStatusAux dgnode =
 -- | start local theorem proving or consistency checking at a node
 proveAtNode :: Bool -> GInfo -> Int -> DGraph -> IO ()
 proveAtNode checkCons gInfo@(GInfo { libEnvIORef = ioRefProofStatus
-                                   , gi_LIB_NAME = ln }) descr dgraph = do
+                                   , gi_LIB_NAME = ln
+                                   , commandHist = ch }) descr dgraph = do
   let dgn = labDG dgraph descr
       libNode = (ln,descr)
   (dgraph',dgn') <- case hasLock dgn of
@@ -687,7 +688,7 @@ proveAtNode checkCons gInfo@(GInfo { libEnvIORef = ioRefProofStatus
             le <- readIORef ioRefProofStatus
             guiMVar <- newMVar Nothing
             res <- basicInferenceNode checkCons logicGraph libNode ln
-                guiMVar le
+                guiMVar le ch
             runProveAtNode gInfo (descr, dgn') res
       case checkCons || not (hasIncomingHidingEdge dgraph' $ snd libNode) of
         True -> action

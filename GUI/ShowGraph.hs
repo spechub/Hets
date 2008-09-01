@@ -21,6 +21,7 @@ import Static.DevGraph
 import GUI.GraphDisplay
 import GUI.GraphTypes
 import GUI.ShowLibGraph
+import GUI.History(initCommandHistory)
 
 import InfoBus
 -- import Events
@@ -43,8 +44,10 @@ showGraph file opts env = case env of
     useHTk -- All messages are displayed in TK dialog windows
     -- from this point on
     writeIORef (libEnvIORef gInfo) le
+    ch <- (initCommandHistory file)
     let gInfo' = gInfo { gi_LIB_NAME = ln
                        , gi_hetcatsOpts = opts
+                       , commandHist = ch
                        }
     showLibGraph gInfo'
     mShowGraph gInfo' ln

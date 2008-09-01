@@ -51,6 +51,7 @@ import Comorphisms.KnownProvers
 
 import GUI.Utils
 import GUI.ProofManagement
+import GUI.History(CommandHistory, addProveToHist)
 
 selectProver :: GetPName a =>
                 [(a,AnyComorphism)] -> ResultT IO (a,AnyComorphism)
@@ -87,9 +88,9 @@ proveTheory _ p =
 -- | applies basic inference to a given node
 basicInferenceNode :: Bool -- ^ True = CheckConsistency; False = Prove
                    -> LogicGraph -> (LIB_NAME,Node) -> LIB_NAME
-                   -> GUIMVar -> LibEnv
+                   -> GUIMVar -> LibEnv -> CommandHistory
                    -> IO (Result (LibEnv, Result G_theory))
-basicInferenceNode checkCons lg (ln, node) libname guiMVar libEnv = do
+basicInferenceNode checkCons lg (ln, node) libname guiMVar libEnv ch = do
       let dGraph = lookupDGraph libname libEnv
       runResultT $ do
         -- compute the theory of the node, and its name
@@ -143,8 +144,8 @@ basicInferenceNode checkCons lg (ln, node) libname guiMVar libEnv = do
             kpMap <- liftR $ knownProversGUI
             newTh <- ResultT $
                    proofManagementGUI lid1 ProofActions {
-                       proveF = (proveKnownPMap lg),
-                       fineGrainedSelectionF = (proveFineGrainedSelect lg),
+                       proveF = (proveKnownPMap lg ch),
+                       fineGrainedSelectionF = (proveFineGrainedSelect lg ch),
                        recalculateSublogicF  =
                                      recalculateSublogicAndSelectedTheory }
                                            thName
@@ -181,10 +182,12 @@ proveKnownPMap :: (Logic lid sublogics1
                symbol1
                raw_symbol1
                proof_tree1) =>
-       LogicGraph
+       LogicGraph -> CommandHistory
     -> ProofState lid sentence -> IO (Result (ProofState lid sentence))
-proveKnownPMap lg st =
-    maybe (proveFineGrainedSelect lg st) (callProver st) $
+proveKnownPMap lg ch st =
+    runResultT $ do
+    lift $ addProveToHist ch st Nothing
+    ResultT $ maybe (proveFineGrainedSelect lg ch st) (callProver st) $
           lookupKnownProver st ProveGUI
 
 callProver :: (Logic lid sublogics1
@@ -217,9 +220,9 @@ proveFineGrainedSelect ::
                symbol1
                raw_symbol1
                proof_tree1) =>
-       LogicGraph
+       LogicGraph -> CommandHistory
     -> ProofState lid sentence -> IO (Result (ProofState lid sentence))
-proveFineGrainedSelect lg st =
+proveFineGrainedSelect lg ch st =
     runResultT $ do
        let sl = sublogicOfTheory st
            cmsToProvers =
@@ -228,5 +231,6 @@ proveFineGrainedSelect lg st =
                else getProvers ProveGUI sl $
                       filter hasModelExpansion $ findComorphismPaths lg sl
        pr <- selectProver cmsToProvers
+       lift $ addProveToHist ch st (Just pr)
        ResultT $ callProver st{lastSublogic = sublogicOfTheory st,
                                comorphismsToProvers = cmsToProvers} pr
