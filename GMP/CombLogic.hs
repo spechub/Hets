@@ -22,7 +22,7 @@ data KD_u = KD_u deriving (Show, Eq)
  -}
 class Form a b c | a->b, a->c where
   extract :: Form a b c => a -> Box b c
-  provable :: Form a b c => a -> Bool
+  provable :: Form a b c => Boole a -> Bool
 
 --instance Form K_KD K_u KD_K where
 --instance Form (K (KD l)) K_u (KD l) where
