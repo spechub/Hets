@@ -55,3 +55,4 @@ instance Eq l => Form (KD l) l where
 
 --instance Form KD_K KD_u K_KD -- where
 --instance Form (KD (K l)) KD_u (K l) -- where
+-- instance Form (G l) Int l
