@@ -209,13 +209,16 @@ diffSig dif a b = let s = sortSet a `Set.difference` sortSet b in a
   , emptySortSet = Set.difference s
       $ nonEmptySortSet a `Set.difference` nonEmptySortSet b
   , sortRel = diffRel (sortRel a) $ sortRel b
-  , opMap = opMap a `diffMapSet` opMap b
-  , assocOps = assocOps a `diffMapSet` assocOps b
+  , opMap = opMap a `diffOpMapSet` opMap b
+  , assocOps = assocOps a `diffOpMapSet` assocOps b
   , predMap = predMap a `diffMapSet` predMap b
   , annoMap = annoMap a `diffMapSet` annoMap b
   , extendedInfo = dif (extendedInfo a) $ extendedInfo b }
   -- transClosure needed:  {a < b < c} - {a < c; b}
   -- is not transitive!
+
+diffOpMapSet :: OpMap -> OpMap -> OpMap
+diffOpMapSet m = diffMapSet m . Map.map (rmOrAddParts False)
 
 diffMapSet :: (Ord a, Ord b) => Map.Map a (Set.Set b)
            -> Map.Map a (Set.Set b) -> Map.Map a (Set.Set b)
