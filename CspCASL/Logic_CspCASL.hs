@@ -71,6 +71,8 @@ instance Sentences CspCASL
     ()                      -- symbol (?)
     where
       parse_sentence CspCASL = Nothing
+      map_sen CspCASL mor sen = if isInclusionMorphism mor then return sen
+        else fail "renaming in map_sen CspCASL not implemented"
 
 -- | Syntax of CspCASL
 instance Syntax CspCASL
