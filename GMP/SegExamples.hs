@@ -1,10 +1,11 @@
-module SegExamples where
+module Main where
 
 import ModalLogic
+import CombLogic
 import GenericSequent
 
 -- example Segala
-test1 = KD (And (At (K (And (At (KD T)) F))) (And (And F (At (K F))) F))
+test1 = And (At (K (And (At (KD T)) F))) (And (And F (At (K F))) F)
 
 --test4 = 
 test2 = K T

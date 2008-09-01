@@ -39,8 +39,11 @@ data Subst a = Subst (Map.Map Int a) deriving (Eq, Show)
 
 -- | Logic Class
 class Logic a b | a -> b, b -> a where
+  -- | Match a certain clause against the rule(s) of the pertaining logic
   match :: Clause (a c) -> [(b, Subst (Boole c))]
+  -- | Generate all clauses out of a specific (CNF) rule of the logic
   clauses :: b -> [Clause Int]
+  -- | Generate all subclauses out of a certain (CNF) clause
   subclauses :: Ord c => Clause (a c) -> [Clause (a c)]
 
 -- | Logic instance for K modal logic
@@ -64,4 +67,8 @@ instance Logic KD RKD where
                         _ -> [Implies [1..n] [n+1]]
   clauses (RKDNeg n) = [Implies [1..n] []]
   subclauses (Implies n p) = [Implies n [l] | l <- p]
-
+-- | Logic instance for Graded Modal Logic
+instance Logic G RG where
+  match ((Implies n p)::Clause (G c)) = []
+  clauses (RG u v) = []
+  subclauses (Implies n p) = []

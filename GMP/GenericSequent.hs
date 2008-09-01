@@ -51,10 +51,8 @@ dnf phi = filter (\x -> eval (subst phi x)) (allClauses (getMA phi))
 cnf :: (Eq a) => Boole a -> [Clause (Boole a)]
 cnf phi = map (\(Implies x y) -> Implies y x) (dnf (Not phi))
 
--- | Provability function
---provable :: Logic a b => Boole (a c) -> Bool
+-- | Generic Provability Function
+provable :: (Eq a, Form a b c) => Boole a -> Bool
+provable _ = True
 --provable phi = all (\c -> any (all provable) (map fst (match c))) (cnf phi)
 
-
-unwrapK = \(K x) -> x
-unwrapKD = \(KD x) -> x
