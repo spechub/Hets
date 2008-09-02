@@ -152,7 +152,7 @@ mapSig sign =
                      (ExtFORMULA $ Ranged
                      (Dlformula Diamond
                       (Ranged
-                        (Assign (mkSimpleId $ genNamePrefix ++ "b")
+                        (Assign (genToken "b")
                           (Application
                              (Qual_op_name
                                eqName
@@ -198,7 +198,7 @@ mapSig sign =
                     ExtFORMULA $ Ranged
                      (Dlformula Diamond
                       (Ranged
-                        (Assign (mkSimpleId $ genNamePrefix ++ "b1")
+                        (Assign (genToken "b1")
                           (Application
                              (Qual_op_name
                                eqName
@@ -214,7 +214,7 @@ mapSig sign =
                      (ExtFORMULA $ Ranged
                      (Dlformula Diamond
                       (Ranged
-                        (Assign (mkSimpleId $ genNamePrefix ++ "b2")
+                        (Assign (genToken "b2")
                           (Application
                              (Qual_op_name
                                eqName
@@ -266,7 +266,7 @@ mapSig sign =
                     ExtFORMULA $ Ranged
                      (Dlformula Diamond
                       (Ranged
-                        (Assign (mkSimpleId $ genNamePrefix ++ "b1")
+                        (Assign (genToken "b1")
                           (Application
                              (Qual_op_name
                                eqName
@@ -280,7 +280,7 @@ mapSig sign =
                     ExtFORMULA $ Ranged
                      (Dlformula Diamond
                       (Ranged
-                        (Assign (mkSimpleId $ genNamePrefix ++ "b2")
+                        (Assign (genToken "b2")
                           (Application
                              (Qual_op_name
                                eqName
@@ -297,7 +297,7 @@ mapSig sign =
                      (ExtFORMULA $ Ranged
                      (Dlformula Diamond
                       (Ranged
-                        (Assign (mkSimpleId $ genNamePrefix ++ "b")
+                        (Assign (genToken "b")
                           (Application
                              (Qual_op_name
                                eqName
