@@ -310,5 +310,5 @@ vseSignToSExpr sig =
   let e = extendedInfo sig in
     SList $ SSymbol "signature" : sortSignToSExprs sig
       : predMapToSExprs sig (diffMapSet (predMap sig) $ procsToPredMap e)
-      ++ opMapToSExprs sig (diffMapSet (opMap sig) $ procsToOpMap e)
+      ++ opMapToSExprs sig (diffOpMapSet (opMap sig) $ procsToOpMap e)
       ++ procsToSExprs sig

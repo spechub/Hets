@@ -243,6 +243,8 @@ class (Language lid, Category sign morphism, Ord sentence,
       -- | parsing of sentences
       parse_sentence :: lid -> Maybe (AParser st sentence)
       parse_sentence _ = Nothing
+      print_sign :: lid -> sign -> Doc
+      print_sign _ = pretty
       -- | print a sentence with comments
       print_named :: lid -> Named sentence -> Doc
       print_named _ = printAnnoted (addBullet . pretty) . fromLabelledSen

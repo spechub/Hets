@@ -13,6 +13,8 @@ morphisms and symbols need to be extended, too
 
 module VSE.Logic_VSE where
 
+import Common.DocUtils
+
 import CASL.AS_Basic_CASL
 import CASL.Sign
 import CASL.Morphism
@@ -21,13 +23,14 @@ import CASL.SymbolMapAnalysis
 import CASL.Parse_AS_Basic
 import CASL.SymbolParser
 import CASL.SimplifySen
+import CASL.ToDoc
+import CASL.Logic_CASL ()
 
 import VSE.As
 import VSE.Parse
 import VSE.Ana
 import VSE.ATC_VSE ()
 import Logic.Logic
-import CASL.Logic_CASL ()
 
 data VSE = VSE deriving Show
 
@@ -51,6 +54,10 @@ instance Sentences VSE Sentence VSESign VSEMor Symbol where
       symmap_of VSE = morphismToSymbMap
       sym_name VSE = symName
       simplify_sen VSE = simplifySen minExpForm simpDlformula
+      print_named VSE = printTheoryFormula
+      print_sign VSE sig = let e = extendedInfo sig in
+        pretty sig { opMap = diffOpMapSet (opMap sig) $ procsToOpMap e
+                   , predMap = diffMapSet (predMap sig) $ procsToPredMap e }
 
 interSigM :: Monad m => (e -> e -> m e) -> Sign f e -> Sign f e -> m (Sign f e)
 interSigM f a b = do

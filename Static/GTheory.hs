@@ -86,7 +86,7 @@ prettyGTheory g = case simplifyTh g of
      G_theory lid sign@(ExtSign s _) _ sens _-> let l = toNamedList sens in
          if null l && ext_is_subsig lid sign (ext_empty_signature lid) then
              specBraces Common.Doc.empty else
-         pretty s $++$ vsep (map (print_named lid) l)
+         print_sign lid s $++$ vsep (map (print_named lid) l)
 
 -- | compute sublogic of a theory
 sublogicOfTh :: G_theory -> G_sublogics
