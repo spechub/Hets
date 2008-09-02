@@ -171,6 +171,16 @@ genToken str = mkSimpleId $ genNamePrefix ++ str
 genName :: String -> Id
 genName str = mkId [genToken str]
 
+-- | create a generated identifier from a given one excluding characters
+mkGenName :: Id -> Id
+mkGenName i@(Id ts cs r) = case ts of
+  t : s -> let st = tokStr t in case st of
+    c : _ | isAlpha c || isDigit c -> Id (genToken st : s) cs r
+          | isPlace t -> Id (mkSimpleId "gn" : ts) cs r
+          | c == '\'' -> i
+    _ -> Id (mkSimpleId "gn_n" : ts) cs r
+  _ -> i
+
 -- | tests whether a Token is already a generated one
 isGeneratedToken :: Token -> Bool
 isGeneratedToken = isPrefixOf genNamePrefix . tokStr
