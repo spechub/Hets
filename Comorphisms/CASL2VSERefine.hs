@@ -127,11 +127,13 @@ mapSig sign =
                   (ExtFORMULA $ Ranged
                      (Dlformula Diamond
                       (Ranged
-                        (Call
-                          (Predication (Qual_pred_name eqName
-                                          (Pred_type [s,s, uBoolean] nullRange)
-                             nullRange )
-                            [varx, vary,varb] nullRange))
+                         (Assign (mkSimpleId $ genNamePrefix ++ "b")
+                          (Application
+                             (Qual_op_name
+                               eqName
+                               (Op_type Partial [s,s] uBoolean nullRange)
+                              nullRange)
+                             [varx, vary] nullRange))
                           nullRange)
                       (True_atom nullRange) ) nullRange)
                   True nullRange) nullRange ,
