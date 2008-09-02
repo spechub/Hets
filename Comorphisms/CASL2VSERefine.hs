@@ -81,6 +81,7 @@ mapSig :: CASLSign -> (VSESign, [Named Sentence])
 mapSig sign =
  let wrapSort (procsym, axs) s = let
         restrName = stringToId $ genNamePrefix ++ "restr_"++show s
+                    --mkGenName "restr_" s
         --uniformName = stringToId $ genNamePrefix ++ "uniform_"++show s
         eqName = stringToId $ genNamePrefix ++ "eq_"++show s
         sProcs = [(restrName, Profile [Procparam In s] Nothing),
@@ -99,7 +100,9 @@ mapSig sign =
                         uBoolean nullRange
         sSens = [ makeNamed ("ga_termination_eq_" ++ show s) $
                   Quantification Universal [Var_decl [genToken "x",
-                                                      genToken "y"] s nullRange]
+                                                      genToken "y"] s nullRange
+                                           , Var_decl [genToken "b"]
+                                              uBoolean nullRange]
                   (Implication
                   (Conjunction [
                    ExtFORMULA $ Ranged
@@ -326,7 +329,7 @@ mapSig sign =
      (sortProcs, sortSens) = foldl wrapSort ([],[]) $
                                         Set.toList $ sortSet sign
      wrapOp (procsym, axs) (i, opTypeSet) = let
-       funName = stringToId $ genNamePrefix ++ show i
+       funName = mkGenName i
        opTypes = Set.toList opTypeSet
        fProcs = map (\profile ->
                        (funName,
@@ -556,7 +559,7 @@ mapSig sign =
                                         Map.toList $ opMap sign
      wrapPred (procsym, axs) (i, predTypeSet) = let
        predTypes = Set.toList predTypeSet
-       procName = stringToId $ genNamePrefix ++ show i
+       procName = mkGenName i
        pProcs = map (\profile -> (procName,
                         Profile
                            (map (Procparam In) $ predArgs profile)
