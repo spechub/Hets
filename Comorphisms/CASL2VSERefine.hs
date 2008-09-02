@@ -83,7 +83,6 @@ mapSig sign =
         restrName = genName $ "restr_" ++ show s
         eqName = genName $ "eq_" ++ show s
         sProcs = [(restrName, Profile [Procparam In s] Nothing),
-                   --(uniformName, Profile [Procparam In s] Nothing),
                    (eqName,
                      Profile [Procparam In s, Procparam In s]
                              (Just uBoolean))]
@@ -153,12 +152,14 @@ mapSig sign =
                      (ExtFORMULA $ Ranged
                      (Dlformula Diamond
                       (Ranged
-                        (Call
-                          (Predication (Qual_pred_name eqName
-                                         (Pred_type [s,s,uBoolean] nullRange)
-                                        nullRange)
-                            [varx, varx, varb] nullRange))
-                          nullRange)
+                        (Assign (mkSimpleId $ genNamePrefix ++ "b")
+                          (Application
+                             (Qual_op_name
+                               eqName
+                               (Op_type Partial [s,s] uBoolean nullRange)
+                              nullRange)
+                             [varx, varx] nullRange))
+                        nullRange)
                       (Strong_equation
                          varb
                          (Application (Qual_op_name uTrue
@@ -197,11 +198,13 @@ mapSig sign =
                     ExtFORMULA $ Ranged
                      (Dlformula Diamond
                       (Ranged
-                        (Call
-                          (Predication (Qual_pred_name eqName
-                                        (Pred_type [s,s,uBoolean] nullRange)
-                                        nullRange)
-                            [varx, vary, varb1] nullRange))
+                        (Assign (mkSimpleId $ genNamePrefix ++ "b1")
+                          (Application
+                             (Qual_op_name
+                               eqName
+                               (Op_type Partial [s,s] uBoolean nullRange)
+                              nullRange)
+                             [varx, vary] nullRange))
                           nullRange)
                       (Strong_equation varb1 aTrue nullRange
                       )) nullRange
@@ -211,11 +214,13 @@ mapSig sign =
                      (ExtFORMULA $ Ranged
                      (Dlformula Diamond
                       (Ranged
-                        (Call
-                          (Predication (Qual_pred_name eqName
-                                         (Pred_type [s,s,uBoolean] nullRange)
-                                        nullRange)
-                            [vary, varx, varb2] nullRange))
+                        (Assign (mkSimpleId $ genNamePrefix ++ "b2")
+                          (Application
+                             (Qual_op_name
+                               eqName
+                               (Op_type Partial [s,s] uBoolean nullRange)
+                              nullRange)
+                             [vary, varx] nullRange))
                           nullRange)
                       (Strong_equation
                          varb2 aTrue nullRange
@@ -261,11 +266,13 @@ mapSig sign =
                     ExtFORMULA $ Ranged
                      (Dlformula Diamond
                       (Ranged
-                        (Call
-                          (Predication (Qual_pred_name eqName
-                                        (Pred_type [s,s,uBoolean] nullRange)
-                                        nullRange)
-                            [varx, vary, varb1] nullRange))
+                        (Assign (mkSimpleId $ genNamePrefix ++ "b1")
+                          (Application
+                             (Qual_op_name
+                               eqName
+                               (Op_type Partial [s,s] uBoolean nullRange)
+                              nullRange)
+                             [varx, vary] nullRange))
                           nullRange)
                       (Strong_equation
                          varb1 aTrue nullRange
@@ -273,11 +280,13 @@ mapSig sign =
                     ExtFORMULA $ Ranged
                      (Dlformula Diamond
                       (Ranged
-                        (Call
-                          (Predication (Qual_pred_name eqName
-                                         (Pred_type [s,s,uBoolean] nullRange )
-                                        nullRange)
-                            [vary, varz, varb2] nullRange))
+                        (Assign (mkSimpleId $ genNamePrefix ++ "b2")
+                          (Application
+                             (Qual_op_name
+                               eqName
+                               (Op_type Partial [s,s] uBoolean nullRange)
+                              nullRange)
+                             [vary, varz] nullRange))
                           nullRange)
                       (Strong_equation
                          varb2 aTrue nullRange
@@ -288,11 +297,13 @@ mapSig sign =
                      (ExtFORMULA $ Ranged
                      (Dlformula Diamond
                       (Ranged
-                        (Call
-                          (Predication (Qual_pred_name eqName
-                                         (Pred_type [s,s,uBoolean] nullRange )
-                                        nullRange)
-                            [varx, varz, varb] nullRange))
+                        (Assign (mkSimpleId $ genNamePrefix ++ "b")
+                          (Application
+                             (Qual_op_name
+                               eqName
+                               (Op_type Partial [s,s] uBoolean nullRange)
+                              nullRange)
+                             [varx, varz] nullRange))
                           nullRange)
                       (Strong_equation
                          varb aTrue nullRange
@@ -354,8 +365,7 @@ mapSig sign =
                            si nullRange)
                      yv = (Qual_var (genToken $ "y" ++ show ii)
                            si nullRange)
-                     bi = (Qual_var (genToken $ "b" ++ show ii)
-                           uBoolean nullRange)
+                     varbi = genToken $ "b" ++ show ii
                      bi1 = (Qual_var (genToken $ "b" ++ show ii)
                            uBoolean nullRange)
                                           in
@@ -381,13 +391,14 @@ mapSig sign =
                           (True_atom nullRange) ) nullRange ,
                        ExtFORMULA $ mkRanged $ Dlformula Diamond
                               (Ranged
-                                (Call
-                                 (Predication
-                                   (Qual_pred_name (genName $ "eq_" ++ show si)
-                                    (Pred_type [si,si,uBoolean] nullRange)
-                                    nullRange)
-                                   [xv, yv, bi] nullRange))
-                               nullRange)
+                                (Assign varbi
+                            (Application
+                             (Qual_op_name
+                               (genName $ "eq_"++ show s)
+                               (Op_type Partial [s,s] uBoolean nullRange)
+                              nullRange)
+                             [xv, yv] nullRange))
+                                nullRange)
                               (Strong_equation
                                   bi1 aTrue nullRange)
                      ] ) $
@@ -395,26 +406,38 @@ mapSig sign =
                    nullRange )--hypothesis
                   (ExtFORMULA $ Ranged (
                      Dlformula Diamond
-                      (Ranged (Call (Predication
-                                   (Qual_pred_name (genName $ show i)
-                                    (Pred_type (w ++ [s]) nullRange) nullRange)
-                                   (xvars ++ [xvar]) nullRange)) nullRange)
+
+                      (Ranged
+                        (Assign (genToken "x")
+                            (Application
+                             (Qual_op_name
+                               (mkGenName i)
+                               (Op_type Partial w s nullRange)
+                              nullRange)
+                             xvars nullRange))
+                       nullRange)
                       (ExtFORMULA $ Ranged (
                          Dlformula Diamond
-                      (Ranged (Call (Predication
-                                   (Qual_pred_name (genName $ show i)
-                                    (Pred_type (w ++ [s]) nullRange) nullRange)
-                                   (yvars ++ [yvar]) nullRange)) nullRange)
+                      (Ranged
+                         (Assign (genToken "y")
+                            (Application
+                             (Qual_op_name
+                               (mkGenName i)
+                               (Op_type Partial w s nullRange)
+                              nullRange)
+                             yvars nullRange))
+                       nullRange)
                        (ExtFORMULA $
                         Ranged (
                           Dlformula Diamond
                           ( Ranged
-                        (Call
-                          (Predication (Qual_pred_name
-                                        (genName $ "eq_" ++ show s)
-                                    (Pred_type [s,s,uBoolean] nullRange)
-                                     nullRange)
-                            [xvar, yvar, bvar] nullRange))
+                            (Assign (genToken "b")
+                            (Application
+                             (Qual_op_name
+                               (genName $ "eq_" ++ show s)
+                               (Op_type Partial [s,s] uBoolean nullRange)
+                              nullRange)
+                             [xvar, yvar] nullRange))
                           nullRange
                           )
                           (Strong_equation
@@ -456,10 +479,13 @@ mapSig sign =
                        (
                        Dlformula Diamond
                        (Ranged
-                         (Call (Predication (Qual_pred_name (genName $ show i)
-                                    (Pred_type (w ++ [s]) nullRange) nullRange)
-                          (xvars ++ [xvar])
-                          nullRange))
+                         (Assign (genToken "x")
+                            (Application
+                             (Qual_op_name
+                               (genName $ show i)
+                               (Op_type Partial w s nullRange)
+                              nullRange)
+                             xvars nullRange))
                         nullRange)
                        (ExtFORMULA $
                          Ranged
@@ -484,9 +510,13 @@ mapSig sign =
                        (
                        Dlformula Diamond
                        (Ranged
-                         (Call (Predication (Qual_pred_name (genName $ show i)
-                                    (Pred_type [s] nullRange) nullRange)
-                              [xvar] nullRange))
+                         (Assign (genToken "x")
+                            (Application
+                             (Qual_op_name
+                               (genName $ show i)
+                               (Op_type Partial [] s nullRange)
+                              nullRange)
+                             [] nullRange))
                         nullRange)
                        (ExtFORMULA $
                          Ranged
@@ -551,8 +581,6 @@ mapSig sign =
                            si nullRange)
                      yv = (Qual_var (genToken $ "y" ++ show ii)
                            si nullRange)
-                     bi = (Qual_var (genToken $ "b" ++ show ii)
-                           uBoolean nullRange)
                      bi1 = (Qual_var (genToken $ "b" ++ show ii)
                            uBoolean nullRange)
                                           in
@@ -578,12 +606,13 @@ mapSig sign =
                           (True_atom nullRange) ) nullRange ,
                        ExtFORMULA $ mkRanged $ Dlformula Diamond
                               (Ranged
-                                (Call
-                                 (Predication
-                                   (Qual_pred_name (genName $ "eq_" ++ show si)
-                                    (Pred_type [si,si,uBoolean] nullRange)
-                                    nullRange)
-                                   [xv, yv, bi] nullRange))
+                                (Assign (genToken $ "b" ++ show ii)
+                            (Application
+                             (Qual_op_name
+                               (genName $ "eq_" ++ show si)
+                               (Op_type Partial [si,si] uBoolean nullRange)
+                              nullRange)
+                             [xv, yv] nullRange))
                                nullRange)
                               (Strong_equation
                                   bi1 aTrue nullRange)
