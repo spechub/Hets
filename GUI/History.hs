@@ -19,28 +19,28 @@ module GUI.History (CommandHistory,
                     getProofScriptFileName,
                     saveCommandHistory) where
 
-import Common.Utils (splitOn, joinWith)
 import Common.OrderedMap (keys)
-import Control.Concurrent
+import Common.Utils (splitOn, joinWith)
 import Logic.Comorphism (AnyComorphism(..))
 import Logic.Logic (language_name)
 import Proofs.AbstractState
 import Static.GTheory (G_theory(..))
 
 import Data.List (isPrefixOf, stripPrefix)
+import Data.IORef
 import System.Directory(getCurrentDirectory)
 import System.IO.Unsafe (unsafePerformIO)
 
 data CommandHistory = CommandHistory {file     :: String,
-                                      lastNode :: MVar String,
-                                      hist     :: MVar [String]}
+                                      lastNode :: IORef String,
+                                      hist     :: IORef [String]}
 
 -- Creates an empty command history.
 emptyCommandHistory :: IO CommandHistory
 emptyCommandHistory =
     do
-    ln <- newMVar ""
-    ch <- newMVar [""]
+    ln <- newIORef ""
+    ch <- newIORef [""]
     return $ CommandHistory {file = "", lastNode = ln, hist = ch}
 
 -- Initializes the command history with a filename.
@@ -49,15 +49,15 @@ initCommandHistory f =
     do
     ff <- tryRemoveAbsolutePathComponent f
     let ff' = removeFileExtension $ ff
-    ln <- newMVar ""
-    ch <- newMVar ["# automatically generated hets proof-script", "",
+    ln <- newIORef ""
+    ch <- newIORef ["# automatically generated hets proof-script", "",
                    "use " ++ ff', ""]
     return $ CommandHistory {file = ff', lastNode = ln, hist = ch}
 
 -- Adds a single command to the history.
 addToHist :: CommandHistory -> String -> IO ()
 addToHist (CommandHistory {hist = ch}) s = 
-    takeMVar ch >>= (\ch' -> putMVar ch $ ch' ++ [s])
+    readIORef ch >>= (\ch' -> writeIORef ch $ ch' ++ [s])
 
 -- Adds a command to the history and executes a given function.
 -- This function is used for the graph menu items.
@@ -78,7 +78,7 @@ addProveToHist :: CommandHistory                  -- our history
 addProveToHist ch st acm =
     do
     let node = theoryName st
-    ln <- readMVar $ lastNode ch
+    ln <- readIORef $ lastNode ch
 
     -- seperator string and selected node
     if node == ln
@@ -129,11 +129,11 @@ addProveToHist ch st acm =
 -- Saves the history of commands in a file.
 saveCommandHistory :: CommandHistory -> String -> IO ()
 saveCommandHistory (CommandHistory {hist = c}) f =
-    takeMVar c >>= (writeFile f . joinWith '\n')
+    readIORef c >>= (writeFile f . joinWith '\n')
 
 -- Sets the last node.
 setLastNode :: CommandHistory -> String -> IO ()
-setLastNode (CommandHistory {lastNode = ln}) nn = swapMVar ln nn >> return ()
+setLastNode (CommandHistory {lastNode = ln}) nn = writeIORef ln nn
 
 -- Suggests a proof-script filename.
 getProofScriptFileName :: CommandHistory -> IO FilePath
