@@ -46,6 +46,10 @@ data Procdecls = Procdecls [Annoted Sigentry] Range deriving (Show, Eq)
 data Ranged a = Ranged { unRanged :: a, range :: Range }
   deriving (Show, Eq, Ord)
 
+-- | attach a nullRange
+mkRanged :: a -> Ranged a
+mkRanged a = Ranged a nullRange
+
 -- | programs with ranges
 type Program = Ranged PlainProgram
 
