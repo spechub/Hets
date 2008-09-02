@@ -75,27 +75,6 @@ mapCASLTheory (sig, n_sens) = do
    True -> fail "case error in signature"
    _ -> return (tsig, tsens ++ genAx)
 
-tBoolean :: OP_TYPE
-tBoolean = Op_type Total [] uBoolean nullRange
-
-qBoolean :: Id -> OP_SYMB
-qBoolean c = Qual_op_name c tBoolean nullRange
-
-qTrue :: OP_SYMB
-qTrue = qBoolean uTrue
-
-qFalse :: OP_SYMB
-qFalse = qBoolean uFalse
-
-mkConstAppl :: OP_SYMB -> TERM f
-mkConstAppl o = Application o [] nullRange
-
-aTrue :: TERM f
-aTrue = mkConstAppl qTrue
-
-aFalse :: TERM f
-aFalse = mkConstAppl qFalse
-
 mkIfProg :: FORMULA () -> Program
 mkIfProg f =
   mkRanged $ If f (mkRanged $ Return aTrue) $ mkRanged $ Return aFalse

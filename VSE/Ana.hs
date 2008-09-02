@@ -14,6 +14,8 @@ analysis of VSE logic extension of CASL
 module VSE.Ana
   ( uTrue
   , uFalse
+  , aTrue
+  , aFalse
   , uBoolean
   , constBoolType
   , boolSig
@@ -118,8 +120,29 @@ uTrue = stringToId "True"
 uFalse :: Id
 uFalse = stringToId "False"
 
+tBoolean :: OP_TYPE
+tBoolean = Op_type Total [] uBoolean nullRange
+
 constBoolType :: OpType
-constBoolType =  OpType Total [] uBoolean
+constBoolType = toOpType tBoolean
+
+qBoolean :: Id -> OP_SYMB
+qBoolean c = Qual_op_name c tBoolean nullRange
+
+qTrue :: OP_SYMB
+qTrue = qBoolean uTrue
+
+qFalse :: OP_SYMB
+qFalse = qBoolean uFalse
+
+mkConstAppl :: OP_SYMB -> TERM f
+mkConstAppl o = Application o [] nullRange
+
+aTrue :: TERM f
+aTrue = mkConstAppl qTrue
+
+aFalse :: TERM f
+aFalse = mkConstAppl qFalse
 
 uOpMap :: OpMap
 uOpMap = Map.fromList $ map (\ c -> (c, Set.singleton constBoolType))

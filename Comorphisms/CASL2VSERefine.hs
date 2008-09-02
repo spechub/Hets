@@ -80,23 +80,21 @@ mapCASLTheory (sig, n_sens) = do
 mapSig :: CASLSign -> (VSESign, [Named Sentence])
 mapSig sign =
  let wrapSort (procsym, axs) s = let
-        restrName = stringToId $ genNamePrefix ++ "restr_"++show s
-                    --mkGenName "restr_" s
-        --uniformName = stringToId $ genNamePrefix ++ "uniform_"++show s
-        eqName = stringToId $ genNamePrefix ++ "eq_"++show s
+        restrName = genName $ "restr_" ++ show s
+        eqName = genName $ "eq_" ++ show s
         sProcs = [(restrName, Profile [Procparam In s] Nothing),
                    --(uniformName, Profile [Procparam In s] Nothing),
                    (eqName,
                      Profile [Procparam In s, Procparam In s]
-                             (Just $ stringToId  "Boolean"))]
-        varx = Qual_var (mkSimpleId $ genNamePrefix ++ "x") s nullRange
-        vary = Qual_var (mkSimpleId $ genNamePrefix ++ "y") s nullRange
-        varz = Qual_var (mkSimpleId $ genNamePrefix ++ "z") s nullRange
-        varb = Qual_var (mkSimpleId $ genNamePrefix ++ "b")
+                             (Just uBoolean))]
+        varx = Qual_var (genToken "x") s nullRange
+        vary = Qual_var (genToken "y") s nullRange
+        varz = Qual_var (genToken "z") s nullRange
+        varb = Qual_var (genToken "b")
                         uBoolean nullRange
-        varb1 = Qual_var (mkSimpleId $ genNamePrefix ++ "b1")
+        varb1 = Qual_var (genToken "b1")
                         uBoolean nullRange
-        varb2 = Qual_var (mkSimpleId $ genNamePrefix ++ "b2")
+        varb2 = Qual_var (genToken "b2")
                         uBoolean nullRange
         sSens = [ makeNamed ("ga_termination_eq_" ++ show s) $
                   Quantification Universal [Var_decl [genToken "x",
@@ -339,30 +337,30 @@ mapSig sign =
                            (map (Procparam In) $ opArgs profile)
                            (Just $ opRes profile))) opTypes
        opTypeSens (OpType _ w s) = let
-          xtokens = map (\(_,ii) -> genToken $ "x"++ show ii) $
+          xtokens = map (\(_,ii) -> genToken $ "x" ++ show ii) $
                     zip w [1::Int ..]
           xvars = map (
                   \(si, ii) ->
-                  Qual_var (mkSimpleId $ genNamePrefix ++ "x" ++ show ii )
+                  Qual_var (genToken $ "x" ++ show ii )
                   si nullRange ) $
                    zip w [1::Int ..]
           yvars = map (
                   \(si, ii) ->
-                  Qual_var (mkSimpleId $ genNamePrefix ++ "y" ++ show ii )
+                  Qual_var (genToken $ "y" ++ show ii )
                   si nullRange ) $
                    zip w [1::Int ..]
-          ytokens = map (\(_,ii) -> genToken $ "y"++ show ii) $
+          ytokens = map (\(_,ii) -> genToken $ "y" ++ show ii) $
                     zip w [1::Int ..]
-          btokens = map (\(_,ii) -> genToken $ "b"++ show ii) $
+          btokens = map (\(_,ii) -> genToken $ "b" ++ show ii) $
                     zip w [1::Int ..]
           xtoken = genToken "x"
           ytoken = genToken "y"
           btoken = genToken "b"
-          xvar = Qual_var (mkSimpleId $ genNamePrefix ++ "x")
+          xvar = Qual_var (genToken "x")
                   s nullRange
-          yvar = Qual_var (mkSimpleId $ genNamePrefix ++ "y")
+          yvar = Qual_var (genToken "y")
                   s nullRange
-          bvar = Qual_var (mkSimpleId $ genNamePrefix ++ "b")
+          bvar = Qual_var (genToken "b")
                   uBoolean nullRange
           congrF = [makeNamed "" $
                   Quantification Universal ([Var_decl [xtoken, ytoken] s
@@ -378,25 +376,21 @@ mapSig sign =
                (Implication
                   (Conjunction
                    (concatMap (\(si,ii) -> let
-                     xv = (Qual_var (mkSimpleId $
-                                     genNamePrefix ++ "x" ++ show ii)
+                     xv = (Qual_var (genToken $ "x" ++ show ii)
                            si nullRange)
-                     yv = (Qual_var (mkSimpleId $
-                                     genNamePrefix ++ "y" ++ show ii)
+                     yv = (Qual_var (genToken $ "y" ++ show ii)
                            si nullRange)
-                     bi = (Qual_var (mkSimpleId $
-                                     genNamePrefix ++ "b" ++ show ii)
+                     bi = (Qual_var (genToken $ "b" ++ show ii)
                            uBoolean nullRange)
-                     bi1 = (Qual_var (mkSimpleId $
-                                     genNamePrefix ++ "b" ++ show ii)
+                     bi1 = (Qual_var (genToken $ "b" ++ show ii)
                            uBoolean nullRange)
                                           in
                      [ExtFORMULA $ Ranged ( Dlformula Diamond
                           (Ranged
                                 (Call
                                  (Predication
-                                   (Qual_pred_name (stringToId $
-                                     genNamePrefix ++ "restr_" ++ show si)
+                                   (Qual_pred_name
+                                    (genName $ "restr_" ++ show si)
                                     (Pred_type [si] nullRange) nullRange )
                                    [xv] nullRange))
                                nullRange)
@@ -405,8 +399,8 @@ mapSig sign =
                               (Ranged
                                 (Call
                                  (Predication
-                                   (Qual_pred_name (stringToId $
-                                     genNamePrefix ++ "restr_" ++ show si)
+                                   (Qual_pred_name
+                                    (genName $ "restr_" ++ show si)
                                     (Pred_type [si] nullRange) nullRange)
                                    [yv] nullRange))
                                nullRange)
@@ -415,8 +409,7 @@ mapSig sign =
                               (Ranged
                                 (Call
                                  (Predication
-                                   (Qual_pred_name (stringToId $
-                                     genNamePrefix ++ "eq_" ++ show si)
+                                   (Qual_pred_name (genName $ "eq_" ++ show si)
                                     (Pred_type [si,si,uBoolean] nullRange)
                                     nullRange)
                                    [xv, yv, bi] nullRange))
@@ -435,15 +428,13 @@ mapSig sign =
                   (ExtFORMULA $ Ranged (
                      Dlformula Diamond
                       (Ranged (Call (Predication
-                                   (Qual_pred_name (stringToId $
-                                     genNamePrefix ++ show i)
+                                   (Qual_pred_name (genName $ show i)
                                     (Pred_type (w ++ [s]) nullRange) nullRange)
                                    (xvars ++ [xvar]) nullRange)) nullRange)
                       (ExtFORMULA $ Ranged (
                          Dlformula Diamond
                       (Ranged (Call (Predication
-                                   (Qual_pred_name (stringToId $
-                                     genNamePrefix ++ show i)
+                                   (Qual_pred_name (genName $ show i)
                                     (Pred_type (w ++ [s]) nullRange) nullRange)
                                    (yvars ++ [yvar]) nullRange)) nullRange)
                        (ExtFORMULA $
@@ -451,8 +442,8 @@ mapSig sign =
                           Dlformula Diamond
                           ( Ranged
                         (Call
-                          (Predication (Qual_pred_name (stringToId $
-                                     genNamePrefix ++ "eq_"++show s)
+                          (Predication (Qual_pred_name
+                                        (genName $ "eq_" ++ show s)
                                     (Pred_type [s,s,uBoolean] nullRange)
                                      nullRange)
                             [xvar, yvar, bvar] nullRange))
@@ -482,17 +473,16 @@ mapSig sign =
                      (Implication
                         (Conjunction
                          (concatMap (\(si,ii) -> let
-                     xv = (Qual_var (mkSimpleId $
-                                     genNamePrefix ++ "x" ++ show ii)
+                     xv = (Qual_var (genToken $ "x" ++ show ii)
                            si nullRange)
                                           in
                      [ExtFORMULA $ Ranged ( Dlformula Diamond
                           (Ranged
                                 (Call
                                  (Predication
-                                   (Qual_pred_name (stringToId $
-                                     genNamePrefix ++ "restr_" ++ show si)
-                                    (Pred_type (w++[s]) nullRange) nullRange)
+                                   (Qual_pred_name
+                                    (genName $ "restr_" ++ show si)
+                                    (Pred_type (w ++ [s]) nullRange) nullRange)
                                    [xv] nullRange))
                                nullRange)
                           (True_atom nullRange) ) nullRange
@@ -504,8 +494,7 @@ mapSig sign =
                        (
                        Dlformula Diamond
                        (Ranged
-                         (Call (Predication (Qual_pred_name (stringToId $
-                                     genNamePrefix ++ show i)
+                         (Call (Predication (Qual_pred_name (genName $ show i)
                                     (Pred_type (w ++ [s]) nullRange) nullRange)
                           (xvars ++ [xvar])
                           nullRange))
@@ -513,8 +502,8 @@ mapSig sign =
                        (ExtFORMULA $
                          Ranged
                          (Dlformula Diamond (Ranged
-                          (Call (Predication (Qual_pred_name (stringToId $
-                                     genNamePrefix ++ "restr_" ++ show s)
+                          (Call (Predication (Qual_pred_name
+                                              (genName $ "restr_" ++ show s)
                                     (Pred_type [s] nullRange) nullRange)
                               [xvar] nullRange))
                                              nullRange)
@@ -533,16 +522,15 @@ mapSig sign =
                        (
                        Dlformula Diamond
                        (Ranged
-                         (Call (Predication (Qual_pred_name (stringToId $
-                                     genNamePrefix ++ show i)
+                         (Call (Predication (Qual_pred_name (genName $ show i)
                                     (Pred_type [s] nullRange) nullRange)
                               [xvar] nullRange))
                         nullRange)
                        (ExtFORMULA $
                          Ranged
                          (Dlformula Diamond (Ranged
-                          (Call (Predication (Qual_pred_name (stringToId $
-                                     genNamePrefix ++ "restr_" ++ show s)
+                          (Call (Predication (Qual_pred_name
+                                              (genName $ "restr_" ++ show s)
                                     (Pred_type [s] nullRange) nullRange)
                               [xvar] nullRange))
                                              nullRange)
@@ -565,25 +553,25 @@ mapSig sign =
        pProcs = map (\profile -> (procName,
                         Profile
                            (map (Procparam In) $ predArgs profile)
-                           (Just $ uBoolean))) predTypes
+                           (Just uBoolean))) predTypes
        predTypeSens (PredType w) = let
-          xtokens = map (\(_,ii) -> genToken $ "x"++ show ii) $
+          xtokens = map (\(_,ii) -> genToken $ "x" ++ show ii) $
                     zip w [1::Int ..]
           xvars = map (
                   \(si, ii) ->
-                  Qual_var (mkSimpleId $ genNamePrefix ++ "x" ++ show ii )
+                  Qual_var (genToken $ "x" ++ show ii )
                   si nullRange ) $
                    zip w [1::Int ..]
-          ytokens = map (\(_,ii) -> genToken $ "y"++ show ii) $
+          ytokens = map (\(_,ii) -> genToken $ "y" ++ show ii) $
                     zip w [1::Int ..]
-          btokens = map (\(_,ii) -> genToken $ "b"++ show ii) $
+          btokens = map (\(_,ii) -> genToken $ "b" ++ show ii) $
                     zip w [1::Int ..]
           btoken = genToken "b"
           r1 = genToken "r1"
           r2 = genToken "r2"
-          rvar1 = Qual_var (mkSimpleId $ genNamePrefix ++ "r1")
+          rvar1 = Qual_var (genToken "r1")
                   uBoolean nullRange
-          rvar2 = Qual_var (mkSimpleId $ genNamePrefix ++ "r2")
+          rvar2 = Qual_var (genToken "r2")
                   uBoolean nullRange
           congrP = [makeNamed "" $
                   Quantification Universal ([Var_decl (btoken:r1:r2:btokens)
@@ -597,25 +585,21 @@ mapSig sign =
                (Implication
                   (Conjunction
                    (concatMap (\(si,ii) -> let
-                     xv = (Qual_var (mkSimpleId $
-                                     genNamePrefix ++ "x" ++ show ii)
+                     xv = (Qual_var (genToken $ "x" ++ show ii)
                            si nullRange)
-                     yv = (Qual_var (mkSimpleId $
-                                     genNamePrefix ++ "y" ++ show ii)
+                     yv = (Qual_var (genToken $ "y" ++ show ii)
                            si nullRange)
-                     bi = (Qual_var (mkSimpleId $
-                                     genNamePrefix ++ "b" ++ show ii)
+                     bi = (Qual_var (genToken $ "b" ++ show ii)
                            uBoolean nullRange)
-                     bi1 = (Qual_var (mkSimpleId $
-                                     genNamePrefix ++ "b" ++ show ii)
+                     bi1 = (Qual_var (genToken $ "b" ++ show ii)
                            uBoolean nullRange)
                                           in
                      [ExtFORMULA $ Ranged ( Dlformula Diamond
                           (Ranged
                                 (Call
                                  (Predication
-                                   (Qual_pred_name (stringToId $
-                                     genNamePrefix ++ "restr_" ++ show si)
+                                   (Qual_pred_name
+                                    (genName $ "restr_" ++ show si)
                                     (Pred_type [si] nullRange) nullRange)
                                    [xv] nullRange))
                                nullRange)
@@ -624,8 +608,8 @@ mapSig sign =
                               (Ranged
                                 (Call
                                  (Predication
-                                   (Qual_pred_name (stringToId $
-                                     genNamePrefix ++ "restr_" ++ show si)
+                                   (Qual_pred_name
+                                    (genName $ "restr_" ++ show si)
                                     (Pred_type [si] nullRange) nullRange)
                                    [yv] nullRange))
                                nullRange)
@@ -634,8 +618,7 @@ mapSig sign =
                               (Ranged
                                 (Call
                                  (Predication
-                                   (Qual_pred_name (stringToId $
-                                     genNamePrefix ++ "eq_" ++ show si)
+                                   (Qual_pred_name (genName $ "eq_" ++ show si)
                                     (Pred_type [si,si,uBoolean] nullRange)
                                     nullRange)
                                    [xv, yv, bi] nullRange))
@@ -654,25 +637,23 @@ mapSig sign =
                   (ExtFORMULA $ Ranged (
                      Dlformula Diamond
                       (Ranged (Call (Predication
-                                   (Qual_pred_name (stringToId $
-                                     genNamePrefix ++ show i)
+                                   (Qual_pred_name (genName $ show i)
                                     (Pred_type (w ++ [uBoolean]) nullRange)
                                     nullRange)
                                    ((map (
                   \(si, ii) ->
-                  Qual_var (mkSimpleId $ genNamePrefix ++ "x" ++ show ii )
+                  Qual_var (genToken $ "x" ++ show ii )
                   si nullRange ) $
                    zip w [1::Int ..]) ++ [rvar1]) nullRange)) nullRange)
                       (ExtFORMULA $ Ranged (
                          Dlformula Diamond
                       (Ranged (Call (Predication
-                                   (Qual_pred_name (stringToId $
-                                     genNamePrefix ++ show i)
+                                   (Qual_pred_name (genName $ show i)
                                     (Pred_type (w ++ [uBoolean]) nullRange)
                                      nullRange)
                                    ((map (
                   \(si, ii) ->
-                  Qual_var (mkSimpleId $ genNamePrefix ++ "y" ++ show ii )
+                  Qual_var (genToken $ "y" ++ show ii )
                   si nullRange ) $
                    zip w [1::Int ..]) ++ [rvar2]) nullRange)) nullRange)
                        (Strong_equation
@@ -695,16 +676,15 @@ mapSig sign =
                       (Implication
                          (Conjunction
                           (concatMap (\(si,ii) -> let
-                      xv = (Qual_var (mkSimpleId $
-                                      genNamePrefix ++ "x" ++ show ii)
+                      xv = (Qual_var (genToken $ "x" ++ show ii)
                             si nullRange)
                                            in
                       [ExtFORMULA $ Ranged ( Dlformula Diamond
                            (Ranged
                                  (Call
                                   (Predication
-                                    (Qual_pred_name (stringToId $
-                                     genNamePrefix ++ "restr_" ++ show si)
+                                    (Qual_pred_name
+                                     (genName $ "restr_" ++ show si)
                                     (Pred_type [si] nullRange) nullRange)
                                     [xv] nullRange))
                                 nullRange)
@@ -717,8 +697,7 @@ mapSig sign =
                         (
                         Dlformula Diamond
                         (Ranged
-                          (Call (Predication (Qual_pred_name (stringToId $
-                                     genNamePrefix ++ show i)
+                          (Call (Predication (Qual_pred_name (genName $ show i)
                                     (Pred_type (w ++ [uBoolean]) nullRange)
                                      nullRange)
                                  (xvars++[rvar1])
@@ -756,23 +735,23 @@ mapMor :: CASLMor -> VSEMor
 mapMor m = let
  renSorts = Map.keys $ sort_map m
  eqOps = Map.fromList $ map
-         (\s -> ((stringToId $ genNamePrefix ++ "eq_"++ show s,
+         (\s -> ((genName $ "eq_" ++ show s,
                 OpType Partial [s,s] uBoolean) ,
-                (stringToId $ genNamePrefix ++ "eq_"++
+                (genName $ "eq_" ++
                                   (show $ (sort_map m) Map.!s ),
                 Partial )
          ))
          renSorts
  restrPreds = Map.fromList $ concatMap
            (\s -> [(
-               (stringToId $ genNamePrefix ++ "restr_"++ show s,
+               (genName $ "restr_" ++ show s,
                 PredType [s,s]),
-               stringToId $ genNamePrefix ++ "restr_"++
+               genName $ "restr_" ++
                                   show ((sort_map m) Map.!s)),
                (
-               (stringToId $ genNamePrefix ++ "uniform_"++ show s,
+               (genName $ "uniform_" ++ show s,
                 PredType [s,s]),
-               stringToId $ genNamePrefix ++ "uniform_"++
+               genName $ "uniform_" ++
                                   show ((sort_map m) Map.!s))
                 ]
            )
@@ -782,9 +761,9 @@ mapMor m = let
             map (\ (idN, oT@(OpType _ w s)) -> let
                    (idN', _) = (fun_map m) Map.! (idN, oT)
                                                in
-                  ((stringToId $ genNamePrefix ++ show idN,
+                  ((genName $ show idN,
                     OpType Partial w s)  ,
-                   (stringToId $ genNamePrefix ++ show idN',
+                   (genName $ show idN',
                     Partial)
                   )
                 )
@@ -794,9 +773,9 @@ mapMor m = let
             map (\ (idN, pT@(PredType w)) -> let
                    idN' = (pred_map m) Map.! (idN, pT)
                                                in
-                  ((stringToId $ genNamePrefix ++ show idN,
+                  ((genName $ show idN,
                     PredType w)  ,
-                   stringToId $ genNamePrefix ++ show idN'
+                   genName $ show idN'
                   )
                 )
             renPreds
@@ -830,7 +809,7 @@ mapCASLSenAux f = case f of
     (genSorts, _, _ ) = recover_Sort_gen_ax constrs
     toProcs (Op_name _, _) = error "must be qual names"
     toProcs (Qual_op_name op (Op_type _fkind args res _range) _, l) =
-           ( Qual_op_name (stringToId $ genNamePrefix ++ show op)
+           ( Qual_op_name (genName $ show op)
                            (Op_type Partial args res nullRange) nullRange,
              l)
     opsToProcs (Constraint nSort syms oSort) =
@@ -840,8 +819,8 @@ mapCASLSenAux f = case f of
              (RestrictedConstraint
                 (map opsToProcs constrs)
                 (Map.fromList $
-                 map (\s -> (s, stringToId $
-                                genNamePrefix ++ "restr_" ++ show s))
+                 map (\s -> (s, genName $
+                                "restr_" ++ show s))
                  genSorts) isFree)
             nullRange
   True_atom _ps -> return $ True_atom nullRange
@@ -862,7 +841,7 @@ mapCASLSenAux f = case f of
                     (genToken $ "x" ++ show n)
                     (Application
                        (Qual_op_name
-                         (stringToId $ genNamePrefix ++ "eq_" ++ show sort1)
+                         (genName $ "eq_" ++ show sort1)
                          (Op_type Partial [sort1,sort1] uBoolean nullRange)
                         nullRange)
                        [Qual_var (genToken $ "x" ++ show n1) sort1 nullRange,
@@ -873,12 +852,7 @@ mapCASLSenAux f = case f of
            )
         nullRange)
        (Strong_equation (Qual_var (genToken $ "x" ++ show n) uBoolean nullRange)
-                        (Application
-                                 (Qual_op_name (stringToId  "True")
-                                  (Op_type Total []
-                                    uBoolean nullRange)
-                                  nullRange)
-                                 [] nullRange) nullRange)
+                        aTrue nullRange)
       )
       nullRange
      -- here i have to return smth like
@@ -891,7 +865,7 @@ mapCASLSenAux f = case f of
      let xvars = map (\(ti,i) ->
                      Qual_var (genToken $ "x" ++ show i)
                               (sortTerm ti) nullRange ) $ zip as indexes
-     n <- freshIndex $ stringToId "Boolean"
+     n <- freshIndex uBoolean
      let asgn = if not $ null prgs then
                        foldr1 (\p1 p2 -> Ranged (Seq p1 p2) nullRange) prgs
                        else Ranged Skip nullRange
@@ -905,19 +879,14 @@ mapCASLSenAux f = case f of
              (Ranged (Assign (genToken $ "x" ++ show n)
                        (Application
                          (Qual_op_name
-                          (stringToId $ genNamePrefix ++ show pname)
+                          (genName $ show pname)
                           (Op_type Partial ptype uBoolean nullRange) nullRange)
                           xvars nullRange))
               nullRange))
          nullRange)
         (Strong_equation
           (Qual_var (genToken $ "x" ++ show n) uBoolean nullRange)
-                        (Application
-                                 (Qual_op_name (stringToId  "True")
-                                  (Op_type Total []
-                                    uBoolean nullRange)
-                                  nullRange)
-                                 [] nullRange) nullRange))
+                        aTrue nullRange))
        nullRange
      -- <: xi := prgi;
      --      x:= gn_p(x1,..,xn):> x = True
@@ -949,8 +918,8 @@ mapCASLSenAux f = case f of
                                     (Call
                                       (Predication
                                          (Qual_pred_name
-                                            (stringToId $
-                                              genNamePrefix ++ "restr_"
+                                            (genName $
+                                              "restr_"
                                               ++ show s)
                                             (Pred_type [s] nullRange)
                                             nullRange
@@ -978,8 +947,8 @@ mapCASLSenAux f = case f of
                                     (Call
                                       (Predication
                                          (Qual_pred_name
-                                            (stringToId $
-                                              genNamePrefix ++ "restr_"
+                                            (genName $
+                                              "restr_"
                                               ++ show s)
                                             (Pred_type [s] nullRange)
                                             nullRange
@@ -1025,8 +994,7 @@ mapCASLTerm n t = case t of
        [] ->  return $ Ranged (Assign (genToken $ "x" ++ show n)
                        (Application
                         (Qual_op_name
-                         (stringToId $
-                           genNamePrefix ++ show oName)
+                         (genName $ show oName)
                          (Op_type Partial args res nullRange)
                          nullRange
                         )
@@ -1038,8 +1006,7 @@ mapCASLTerm n t = case t of
                 (Ranged (Assign (genToken $ "x" ++ show n)
                        (Application
                         (Qual_op_name
-                         (stringToId $
-                           genNamePrefix ++ show oName)
+                         (genName $ show oName)
                          (Op_type Partial args res nullRange)
                          nullRange
                         )
@@ -1051,8 +1018,6 @@ mapCASLTerm n t = case t of
 freshIndex :: SORT -> State (Int, VarSet) Int
 freshIndex ss = do
   (i, s) <- get
-  let v = genToken $ "x"++ show i
+  let v = genToken $ "x" ++ show i
   put $ (i + 1, Set.insert (v,ss) s)
   return i
-
-
