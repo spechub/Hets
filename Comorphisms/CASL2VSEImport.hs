@@ -74,6 +74,31 @@ mapCASLTheory (sig, n_sens) = do
    True -> fail "case error in signature"
    _ -> return (tsig, tsens ++ genAx)
 
+tBoolean :: OP_TYPE
+tBoolean = Op_type Total [] uBoolean nullRange
+
+qBoolean :: Id -> OP_SYMB
+qBoolean c = Qual_op_name c tBoolean nullRange
+
+qTrue :: OP_SYMB
+qTrue = qBoolean uTrue
+
+qFalse :: OP_SYMB
+qFalse = qBoolean uFalse
+
+mkConstAppl :: OP_SYMB -> TERM f
+mkConstAppl o = Application o [] nullRange
+
+aTrue :: TERM f
+aTrue = mkConstAppl qTrue
+
+aFalse :: TERM f
+aFalse = mkConstAppl qFalse
+
+mkIfProg :: FORMULA () -> Program
+mkIfProg f =
+  mkRanged $ If f (mkRanged $ Return aTrue) $ mkRanged $ Return aFalse
+
 mapSig :: CASLSign -> (VSESign, [Named Sentence])
 mapSig sign =
  let wrapSort (procsym, axs) s = let
@@ -84,38 +109,20 @@ mapSig sign =
                      Profile [Procparam In s, Procparam In s]
                              (Just uBoolean))]
         sSens = [makeNamed ("ga_restriction_" ++ show s) $ ExtFORMULA $
-                 Ranged
+                 mkRanged
                   (Defprocs
                    [Defproc Proc restrName [mkSimpleId $ genNamePrefix ++ "x"]
-                   (Ranged (Block [] (Ranged Skip nullRange)) nullRange)
+                   (mkRanged (Block [] (mkRanged Skip)))
                            nullRange])
-                  nullRange,
-                 makeNamed ("ga_equality_"++ show s) $ ExtFORMULA $
-                 Ranged
+                ,makeNamed ("ga_equality_"++ show s) $ ExtFORMULA $
+                 mkRanged
                   (Defprocs
                    [Defproc Func eqName (map mkSimpleId ["x","y"])
-                   (Ranged (Block [] (Ranged
-                                       (If (Strong_equation
+                   (mkRanged (Block [] (mkIfProg (Strong_equation
                         (Qual_var (mkSimpleId "x") s nullRange)
                         (Qual_var (mkSimpleId "y") s nullRange)
-                        nullRange)
-                                         (Ranged (Return
-                            (Application (Qual_op_name uTrue
-                                          (Op_type Total []
-                                            uBoolean
-                                           nullRange)nullRange)
-                                         [] nullRange)
-                                         ) nullRange)
-                                         (Ranged (Return
-                            (Application (Qual_op_name uFalse
-                                            (Op_type Total []
-                                               uBoolean
-                                           nullRange)nullRange)
-                                         [] nullRange) )
-                                         nullRange))
-                                        nullRange)) nullRange)
+                        nullRange))))
                            nullRange])
-                  nullRange
                 ]
                                           in
         (sProcs ++ procsym,  sSens ++ axs)
@@ -185,12 +192,11 @@ mapSig sign =
                       vars = map (\(t,n) -> (genToken ("x"++ (show n)), t)) $
                              zip w [1::Int ..]
                                       in
-                   makeNamed "" $ ExtFORMULA $ Ranged
+                   makeNamed "" $ ExtFORMULA $ mkRanged
                      (Defprocs
                        [Defproc
                          Func procName (map fst vars)
-                         (Ranged (Block [](Ranged
-                            ( If
+                         (mkRanged (Block [] (mkIfProg
                                (Predication
                                         (Qual_pred_name
                                           i
@@ -200,29 +206,9 @@ mapSig sign =
                                         nullRange)
                                         (map (\(v,ss) ->
                                                Qual_var v ss nullRange) vars)
-                                       nullRange)
-                                (Ranged
-                                 (Return
-                                   (Application (Qual_op_name
-                                          uTrue
-                                          (Op_type Total []
-                                            uBoolean
-                                           nullRange) nullRange)
-                                         [] nullRange))
-                                  nullRange)
-                                (Ranged
-                                (Return
-                                (Application (Qual_op_name uFalse
-                                          (Op_type Total []
-                                            uBoolean
-                                           nullRange)nullRange)
-                                         [] nullRange)
-                                )  nullRange)) nullRange)
-                              )--block
-                            nullRange)
+                                       nullRange))))
                           nullRange]
                      )
-                     nullRange
                    ) predTypes
                                                 in
       (procsym ++ pProcs, axs ++ pSens)
