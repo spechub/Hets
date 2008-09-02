@@ -39,9 +39,11 @@ reservedWords = let
     , "defprocs", "defprocsend" ]
   in [ "<:", ":>"] ++ declWords ++ rs ++ map (map toUpper) rs
 
-keyword :: String -> CharParser st Token
+keyword :: String -> AParser st Token
 keyword s = pToken $ try $ do
+   annos
    str <- scanAnyWords
+   lineAnnos
    if map toLower str == s then return s else unexpected str <?> map toUpper s
 
 vseVarDecl :: AParser st VarDecl
@@ -125,7 +127,7 @@ programSeq = do
     p2 <- programSeq
     return $ Ranged (Seq p1 p2) $ tokPos s
 
-procKind :: CharParser st (ProcKind, Token)
+procKind :: AParser st (ProcKind, Token)
 procKind = do
     k <- keyword "procedure"
     return (Proc, k)
@@ -167,7 +169,7 @@ dlformula = do
    f <- formula reservedWords
    return $ Ranged (Dlformula b p f) $ toRange o [] c
 
-param :: CharParser st Procparam
+param :: AParser st Procparam
 param = do
     k <- (keyword "in" >> return In) <|> (keyword "out" >> return Out)
     s <- sortId reservedWords
