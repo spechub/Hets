@@ -19,6 +19,7 @@ module GUI.History (CommandHistory,
                     getProofScriptFileName,
                     saveCommandHistory) where
 
+import Common.Utils (splitOn, joinWith)
 import Common.OrderedMap (keys)
 import Control.Concurrent
 import Logic.Comorphism (AnyComorphism(..))
@@ -26,7 +27,7 @@ import Logic.Logic (language_name)
 import Proofs.AbstractState
 import Static.GTheory (G_theory(..))
 
-import Data.List (intersperse, stripPrefix)
+import Data.List (isPrefixOf, stripPrefix)
 import System.Directory(getCurrentDirectory)
 import System.IO.Unsafe (unsafePerformIO)
 
@@ -46,11 +47,12 @@ emptyCommandHistory =
 initCommandHistory :: String -> IO CommandHistory
 initCommandHistory f =
     do
-    let ff = removeFileExtension f
+    ff <- tryRemoveAbsolutePathComponent f
+    let ff' = removeFileExtension $ ff
     ln <- newMVar ""
     ch <- newMVar ["# automatically generated hets proof-script", "",
-                   "use " ++ ff, ""]
-    return $ CommandHistory {file = ff, lastNode = ln, hist = ch}
+                   "use " ++ ff', ""]
+    return $ CommandHistory {file = ff', lastNode = ln, hist = ch}
 
 -- Adds a single command to the history.
 addToHist :: CommandHistory -> String -> IO ()
@@ -112,7 +114,7 @@ addProveToHist ch st acm =
         selAxioms = includedAxioms st
     if allAxioms == selAxioms
        then return ()
-       else addToHist ch $ "set axioms " ++ (concat $ intersperse " " selAxioms)
+       else addToHist ch $ "set axioms " ++ (joinWith ' ' selAxioms)
 
     -- selected goals and prove command
     let allGoals = keys $ goalMap st
@@ -120,14 +122,14 @@ addProveToHist ch st acm =
     if allGoals == selGoals
         then addToHist ch $ "prove-all"
         else addListToHist ch $ ["set goals " ++
-             (concat $ intersperse " " selGoals), "prove"]
+             (joinWith ' ' selGoals), "prove"]
 
     return ()
 
 -- Saves the history of commands in a file.
 saveCommandHistory :: CommandHistory -> String -> IO ()
 saveCommandHistory (CommandHistory {hist = c}) f =
-    takeMVar c >>= (writeFile f . concat . intersperse "\n")
+    takeMVar c >>= (writeFile f . joinWith '\n')
 
 -- Sets the last node.
 setLastNode :: CommandHistory -> String -> IO ()
@@ -135,10 +137,11 @@ setLastNode (CommandHistory {lastNode = ln}) nn = swapMVar ln nn >> return ()
 
 -- Suggests a proof-script filename.
 getProofScriptFileName :: CommandHistory -> IO FilePath
-getProofScriptFileName (CommandHistory {file = f}) = 
-    do
-    dir <- getCurrentDirectory
-    return (dir ++ "/" ++ f ++ ".hpf")
+getProofScriptFileName (CommandHistory {file = f}) 
+    | "/" `isPrefixOf` f = return $ f ++ ".hpf"
+    | otherwise          = do
+                           dir <- getCurrentDirectory
+                           return $ dir ++ "/" ++ f ++ ".hpf"
 
 -- Removes the extension from the filename.
 removeFileExtension :: String -> String
@@ -153,11 +156,15 @@ dropName (CommandHistory {file = f}) s = case stripPrefix f s of
 -- Splits the comorphism string into its translations.
 splitComorphism :: AnyComorphism -> [String]
 splitComorphism (Comorphism cid) = 
-    (map ("translate " ++) . tail . split ';') $ language_name cid
+    (map ("translate " ++) . tail . splitOn ';') $ language_name cid
 
--- Splits a string into its parts seperated by a given character.
-split :: Char -> String -> [String]
-split _ [] = []
-split c s  = a : (split c $ drop 1 b)
-             where 
-             (a, b) = span (/= c) s
+-- If an absolute path is given,
+-- it tries to remove the current working directory as prefix of it.
+tryRemoveAbsolutePathComponent :: String -> IO String
+tryRemoveAbsolutePathComponent f 
+    | "/" `isPrefixOf` f = do
+                           dir <- getCurrentDirectory
+                           case stripPrefix (dir ++ "/") f of
+                               Just s  -> return s
+                               Nothing -> return f
+    | otherwise          = return f
