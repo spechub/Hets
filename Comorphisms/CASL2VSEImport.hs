@@ -103,8 +103,8 @@ mkIfProg f =
 mapSig :: CASLSign -> (VSESign, [Named Sentence])
 mapSig sign =
  let wrapSort (procsym, axs) s = let
-        restrName = stringToId $ genNamePrefix ++ "restr_"++show s
-        eqName = stringToId $ genNamePrefix ++ "eq_"++show s
+        restrName = genName $ "restr_" ++ show s
+        eqName = genName $ "eq_" ++ show s
         sProcs = [(restrName, Profile [Procparam In s] Nothing),
                   (eqName,
                      Profile [Procparam In s, Procparam In s]
@@ -115,7 +115,7 @@ mapSig sign =
                    [Defproc Proc restrName [mkSimpleId $ genNamePrefix ++ "x"]
                    (mkRanged (Block [] (mkRanged Skip)))
                            nullRange])
-                ,makeNamed ("ga_equality_"++ show s) $ ExtFORMULA $
+                ,makeNamed ("ga_equality_" ++ show s) $ ExtFORMULA $
                  mkRanged
                   (Defprocs
                    [Defproc Func eqName (map mkSimpleId ["x","y"])
@@ -138,7 +138,7 @@ mapSig sign =
                            (map (Procparam In) $ opArgs profile)
                            (Just $ opRes profile))) opTypes
        fSens = map (\ (OpType fKind w s) -> let
-                      vars = map (\(t,n) -> (genToken ("x"++ (show n)), t)) $
+                      vars = map (\(t,n) -> (genToken ("x" ++ (show n)), t)) $
                              zip w [1::Int ..]
                                       in
                    makeNamed "" $ ExtFORMULA $ Ranged
@@ -190,7 +190,7 @@ mapSig sign =
                            (map (Procparam In) $ predArgs profile)
                            (Just $ uBoolean))) predTypes
        pSens = map (\ (PredType w) -> let
-                      vars = map (\(t,n) -> (genToken ("x"++ (show n)), t)) $
+                      vars = map (\(t,n) -> (genToken ("x" ++ (show n)), t)) $
                              zip w [1::Int ..]
                                       in
                    makeNamed "" $ ExtFORMULA $ mkRanged
@@ -233,23 +233,23 @@ mapMor :: CASLMor -> VSEMor
 mapMor m = let
  renSorts = Map.keys $ sort_map m
  eqOps = Map.fromList $ map
-         (\s -> ((stringToId $ genNamePrefix ++ "eq_"++ show s,
+         (\s -> ((genName $ "eq_" ++ show s,
                 OpType Partial [s,s] (uBoolean)) ,
-                (stringToId $ genNamePrefix ++ "eq_"++
+                (genName $ "eq_" ++
                                   (show $ (sort_map m) Map.!s ),
                 Partial )
          ))
          renSorts
  restrPreds = Map.fromList $ concatMap
            (\s -> [(
-               (stringToId $ genNamePrefix ++ "restr_"++ show s,
+               (genName $ "restr_" ++ show s,
                 PredType [s,s]),
-               stringToId $ genNamePrefix ++ "restr_"++
+               genName $ "restr_" ++
                                   show ((sort_map m) Map.!s)),
                (
-               (stringToId $ genNamePrefix ++ "uniform_"++ show s,
+               (genName $ "uniform_" ++ show s,
                 PredType [s,s]),
-               stringToId $ genNamePrefix ++ "uniform_"++
+               genName $ "uniform_" ++
                                   show ((sort_map m) Map.!s))
                 ]
            )
@@ -259,9 +259,9 @@ mapMor m = let
             map (\ (idN, oT@(OpType _ w s)) -> let
                    (idN', _) = (fun_map m) Map.! (idN, oT)
                                                in
-                  ((stringToId $ genNamePrefix ++ show idN,
+                  ((genName $ show idN,
                     OpType Partial w s)  ,
-                   (stringToId $ genNamePrefix ++ show idN',
+                   (genName $ show idN',
                     Partial)
                   )
                 )
@@ -271,9 +271,9 @@ mapMor m = let
             map (\ (idN, pT@(PredType w)) -> let
                    idN' = (pred_map m) Map.! (idN, pT)
                                                in
-                  ((stringToId $ genNamePrefix ++ show idN,
+                  ((genName $ show idN,
                     PredType w)  ,
-                   stringToId $ genNamePrefix ++ show idN'
+                   genName $ show idN'
                   )
                 )
             renPreds
