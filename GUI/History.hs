@@ -23,6 +23,7 @@ import Common.OrderedMap (keys)
 import Common.Utils (splitOn, joinWith)
 import Driver.Options (rmSuffix)
 import Logic.Comorphism (AnyComorphism(..))
+import Logic.Grothendieck (SigId(..))
 import Logic.Logic (language_name)
 import Proofs.AbstractState
 import Static.GTheory (G_theory(..))
@@ -33,14 +34,14 @@ import System.Directory(getCurrentDirectory)
 import System.IO.Unsafe (unsafePerformIO)
 
 data CommandHistory = CommandHistory {file     :: String,
-                                      lastNode :: IORef String,
+                                      lastNode :: IORef Int,
                                       hist     :: IORef [String]}
 
 -- Creates an empty command history.
 emptyCommandHistory :: IO CommandHistory
 emptyCommandHistory =
     do
-    ln <- newIORef ""
+    ln <- newIORef (-1)
     ch <- newIORef [""]
     return $ CommandHistory {file = "", lastNode = ln, hist = ch}
 
@@ -50,7 +51,7 @@ initCommandHistory f =
     do
     ff <- tryRemoveAbsolutePathComponent f
     let ff' = rmSuffix $ ff
-    ln <- newIORef ""
+    ln <- newIORef (-1)
     ch <- newIORef ["# automatically generated hets proof-script", "",
                    "use " ++ ff', ""]
     return $ CommandHistory {file = ff', lastNode = ln, hist = ch}
@@ -78,16 +79,17 @@ addProveToHist :: CommandHistory                  -- our history
                -> IO ()
 addProveToHist ch st acm =
     do
-    let node = theoryName st
+    let nodeName = theoryName st
+    let (SigId nodeId) = gTheorySignIdx $ theory st
     ln <- readIORef $ lastNode ch
 
     -- seperator string and selected node
-    if node == ln
+    if nodeId == ln
         then addToHist ch ""
         else do
              addListToHist ch ["", "# " ++ (take 78 $ repeat '-'), "",
-                               "dg basic " ++ (dropName ch node)]
-             setLastNode ch node
+                               "dg basic " ++ (dropName ch nodeName)]
+             setLastNode ch nodeId
              return ()
 
     -- selected prover and translation
@@ -133,7 +135,7 @@ saveCommandHistory (CommandHistory {hist = c}) f =
     readIORef c >>= (writeFile f . joinWith '\n')
 
 -- Sets the last node.
-setLastNode :: CommandHistory -> String -> IO ()
+setLastNode :: CommandHistory -> Int -> IO ()
 setLastNode (CommandHistory {lastNode = ln}) nn = writeIORef ln nn
 
 -- Suggests a proof-script filename.
