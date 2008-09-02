@@ -203,13 +203,7 @@ mapSig sign =
                                         nullRange)
                             [varx, vary, varb1] nullRange))
                           nullRange)
-                      (Strong_equation
-                         varb1
-                         (Application (Qual_op_name uTrue
-                                          (Op_type Total []
-                                            uBoolean
-                                           nullRange)nullRange)
-                          [] nullRange) nullRange
+                      (Strong_equation varb1 aTrue nullRange
                       )) nullRange
                    ] nullRange)
 
@@ -224,12 +218,7 @@ mapSig sign =
                             [vary, varx, varb2] nullRange))
                           nullRange)
                       (Strong_equation
-                         varb2
-                         (Application (Qual_op_name uTrue
-                                          (Op_type Total []
-                                            uBoolean
-                                           nullRange)nullRange)
-                          [] nullRange) nullRange
+                         varb2 aTrue nullRange
                       )) nullRange)
                   True nullRange) nullRange
                   , makeNamed ("ga_trans_eq_" ++ show s) $
@@ -279,12 +268,7 @@ mapSig sign =
                             [varx, vary, varb1] nullRange))
                           nullRange)
                       (Strong_equation
-                         varb1
-                         (Application (Qual_op_name uTrue
-                                          (Op_type Total []
-                                            uBoolean
-                                           nullRange)nullRange)
-                          [] nullRange) nullRange
+                         varb1 aTrue nullRange
                       )) nullRange,
                     ExtFORMULA $ Ranged
                      (Dlformula Diamond
@@ -296,12 +280,7 @@ mapSig sign =
                             [vary, varz, varb2] nullRange))
                           nullRange)
                       (Strong_equation
-                         varb2
-                         (Application (Qual_op_name uTrue
-                                          (Op_type Total []
-                                            uBoolean
-                                           nullRange)nullRange)
-                          [] nullRange) nullRange
+                         varb2 aTrue nullRange
                       )) nullRange
                    ] nullRange)
 
@@ -316,12 +295,7 @@ mapSig sign =
                             [varx, varz, varb] nullRange))
                           nullRange)
                       (Strong_equation
-                         varb
-                         (Application (Qual_op_name uTrue
-                                          (Op_type Total []
-                                            uBoolean
-                                           nullRange)nullRange)
-                          [] nullRange) nullRange
+                         varb aTrue nullRange
                       )) nullRange)
                   True nullRange) nullRange ]
                                           in
@@ -405,7 +379,7 @@ mapSig sign =
                                    [yv] nullRange))
                                nullRange)
                           (True_atom nullRange) ) nullRange ,
-                       ExtFORMULA $ Ranged ( Dlformula Diamond
+                       ExtFORMULA $ mkRanged $ Dlformula Diamond
                               (Ranged
                                 (Call
                                  (Predication
@@ -415,13 +389,7 @@ mapSig sign =
                                    [xv, yv, bi] nullRange))
                                nullRange)
                               (Strong_equation
-                                  bi1
-                                  (Application (Qual_op_name uTrue
-                                          (Op_type Total []
-                                            uBoolean
-                                           nullRange)
-                                                nullRange)
-                                  [] nullRange) nullRange) )nullRange
+                                  bi1 aTrue nullRange)
                      ] ) $
                     zip w [1::Int ..] )
                    nullRange )--hypothesis
@@ -450,13 +418,7 @@ mapSig sign =
                           nullRange
                           )
                           (Strong_equation
-                                  bvar
-                                  (Application (Qual_op_name uTrue
-                                          (Op_type Total []
-                                            uBoolean
-                                           nullRange)
-                                                nullRange)
-                                  [] nullRange) nullRange)
+                                  bvar aTrue nullRange)
                         ) nullRange)
                         ) nullRange)
                    ) nullRange) --conclusion
@@ -614,7 +576,7 @@ mapSig sign =
                                    [yv] nullRange))
                                nullRange)
                           (True_atom nullRange) ) nullRange ,
-                       ExtFORMULA $ Ranged ( Dlformula Diamond
+                       ExtFORMULA $ mkRanged $ Dlformula Diamond
                               (Ranged
                                 (Call
                                  (Predication
@@ -624,13 +586,7 @@ mapSig sign =
                                    [xv, yv, bi] nullRange))
                                nullRange)
                               (Strong_equation
-                                  bi1
-                                  (Application (Qual_op_name uTrue
-                                          (Op_type Total []
-                                            uBoolean
-                                           nullRange)
-                                                nullRange)
-                                  [] nullRange) nullRange) )nullRange
+                                  bi1 aTrue nullRange)
                      ] ) $
                     zip w [1::Int ..] )
                    nullRange )--hypothesis
