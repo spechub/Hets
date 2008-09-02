@@ -112,7 +112,7 @@ mapSig sign =
         sSens = [makeNamed ("ga_restriction_" ++ show s) $ ExtFORMULA $
                  mkRanged
                   (Defprocs
-                   [Defproc Proc restrName [mkSimpleId $ genNamePrefix ++ "x"]
+                   [Defproc Proc restrName [genToken "x"]
                    (mkRanged (Block [] (mkRanged Skip)))
                            nullRange])
                 ,makeNamed ("ga_equality_" ++ show s) $ ExtFORMULA $
