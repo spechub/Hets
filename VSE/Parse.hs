@@ -36,7 +36,7 @@ reservedWords = let
   rs =
     [ "in", "out", "begin", "end", "abort", "skip", "return", "declare"
     , "if", "then", "else", "fi", "while", "do", "od"
-    , "defprocs", "defprocsend" ]
+    , "defprocs", "defprocsend", "restricted" ]
   in [ "<:", ":>"] ++ declWords ++ rs ++ map (map toUpper) rs
 
 keyword :: String -> AParser st Token

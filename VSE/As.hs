@@ -209,9 +209,10 @@ instance Pretty VSEforms where
       , pretty f ]
     Defprocs ps -> prettyProcdefs ps
     RestrictedConstraint constrs restr _b ->
-       let
-        l = recoverType constrs
-       in sep [text "generated type", semiAnnos (printRESTRTYPE_DECL restr) l]
+       let l = recoverType constrs
+       in fsep [ text "true %[generated type"
+               , semiAnnos (printRESTRTYPE_DECL restr) l
+               , text "]%"]
 
 printRESTRTYPE_DECL :: Map.Map SORT Id -> DATATYPE_DECL -> Doc
 printRESTRTYPE_DECL restr (Datatype_decl s a r)=
