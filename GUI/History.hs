@@ -21,6 +21,7 @@ module GUI.History (CommandHistory,
 
 import Common.OrderedMap (keys)
 import Common.Utils (splitOn, joinWith)
+import Driver.Options (rmSuffix)
 import Logic.Comorphism (AnyComorphism(..))
 import Logic.Logic (language_name)
 import Proofs.AbstractState
@@ -48,7 +49,7 @@ initCommandHistory :: String -> IO CommandHistory
 initCommandHistory f =
     do
     ff <- tryRemoveAbsolutePathComponent f
-    let ff' = removeFileExtension $ ff
+    let ff' = rmSuffix $ ff
     ln <- newIORef ""
     ch <- newIORef ["# automatically generated hets proof-script", "",
                    "use " ++ ff', ""]
@@ -142,10 +143,6 @@ getProofScriptFileName (CommandHistory {file = f})
     | otherwise          = do
                            dir <- getCurrentDirectory
                            return $ dir ++ "/" ++ f ++ ".hpf"
-
--- Removes the extension from the filename.
-removeFileExtension :: String -> String
-removeFileExtension = reverse . tail . dropWhile (/= '.') . reverse
 
 -- Drops the filename as prefix from a string.
 dropName :: CommandHistory -> String -> String
