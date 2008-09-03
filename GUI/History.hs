@@ -58,7 +58,7 @@ initCommandHistory f =
 
 -- Adds a single command to the history.
 addToHist :: CommandHistory -> String -> IO ()
-addToHist (CommandHistory {hist = ch}) s = 
+addToHist (CommandHistory {hist = ch}) s =
     readIORef ch >>= (\ch' -> writeIORef ch $ ch' ++ [s])
 
 -- Adds a command to the history and executes a given function.
@@ -140,7 +140,7 @@ setLastNode (CommandHistory {lastNode = ln}) nn = writeIORef ln nn
 
 -- Suggests a proof-script filename.
 getProofScriptFileName :: CommandHistory -> IO FilePath
-getProofScriptFileName (CommandHistory {file = f}) 
+getProofScriptFileName (CommandHistory {file = f})
     | "/" `isPrefixOf` f = return $ f ++ ".hpf"
     | otherwise          = do
                            dir <- getCurrentDirectory
@@ -154,13 +154,13 @@ dropName (CommandHistory {file = f}) s = case stripPrefix f s of
 
 -- Splits the comorphism string into its translations.
 splitComorphism :: AnyComorphism -> [String]
-splitComorphism (Comorphism cid) = 
+splitComorphism (Comorphism cid) =
     (map ("translate " ++) . tail . splitOn ';') $ language_name cid
 
 -- If an absolute path is given,
 -- it tries to remove the current working directory as prefix of it.
 tryRemoveAbsolutePathComponent :: String -> IO String
-tryRemoveAbsolutePathComponent f 
+tryRemoveAbsolutePathComponent f
     | "/" `isPrefixOf` f = do
                            dir <- getCurrentDirectory
                            case stripPrefix (dir ++ "/") f of
