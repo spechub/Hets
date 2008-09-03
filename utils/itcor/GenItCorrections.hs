@@ -30,8 +30,8 @@ main = do
        p1 <- parseItTable str1
        str2 <- readFile fp2        -- file with table for combinated characters
        p2 <- parseItTable str2
-       itc <- corrections (Map.fromList (zip allCharacters p1))
-                          (zip combinations p2) []
+       let itc = corrections (Map.fromList (zip allCharacters p1))
+                          (zip combinations p2)
        str <- output itc ""  --print itc
        putStrLn ("\nitaliccorrection_map :: Map String Int\n"++
                  "italiccorrection_map = fromList $ read " ++ post_proc str )
@@ -63,7 +63,7 @@ post_proc str = '\"': '[': concatMap conv str ++ "]\""
     where conv c = case c of
                    '\"' -> "\\\""
                    -- converting umlauts to numbers
-	           -- substitute ÄÖÜßäöü with \196\214\220\223\228\246\252
+                   -- substitute ÄÖÜßäöü with \196\214\220\223\228\246\252
                    '\196' -> "\\196"
                    '\214' -> "\\214"
                    '\220' -> "\\220"
@@ -117,16 +117,16 @@ tableChar = do str <- try letter <|> digit
 --------------------------------------------------------------------------
 
 corrections :: (Map.Map Char Double) -> [(String,Double)] -> [(String,Int)]
-            -> IO [(String,Int)]
-corrections fm []     l = return l
-corrections fm (x:xs) l = corrections fm xs (l ++ [corrections' fm x])
+corrections fm = map (corrections' fm)
 
 corrections' :: (Map.Map Char Double) -> (String,Double) -> (String,Int)
-corrections' fm ((c1:c2:[]),d) =
+corrections' fm (str, d) = case str of
+  [c1, c2] ->
     let d1 = Map.findWithDefault (0.0) c1 fm
         d2 = Map.findWithDefault (0.0) c2 fm
         dif = round (((d1 + d2) - d) * 0.351 * 1000.0)
-    in ((c1:[c2]),dif)
+    in (str, dif)
+  _ -> error "corrections'"
 
 combinations :: [String]
 combinations = let z = zipIt allCharacters allCharacters
