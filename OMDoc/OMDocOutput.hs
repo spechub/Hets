@@ -613,9 +613,9 @@ createOMMorphism
     -- retrieved names are all of same type, so merge
     allmapped = mappedsorts fromSortIds e_fname toSortIds ln collectionMap
     						uniqueNames from to caslmorph
-    			++ mappedpreds fromPredIds e_fname caslmorph toPredIds ln 
+    			++ mappedpreds fromPredIds e_fname caslmorph toPredIds ln
     						collectionMap uniqueNames fromRel from toRel to
-    			++ mappedops fromOpIds e_fname caslmorph toOpIds ln 
+    			++ mappedops fromOpIds e_fname caslmorph toOpIds ln
     						collectionMap uniqueNames fromRel from toRel to -- ++ unclashedSorts
     -- merging makes hiding easier also...
     hidden =
@@ -1004,8 +1004,8 @@ libEnvLibNameIdNameMappingToOMDoc
       e_fname = "OMDoc.OMDocOutput.libEnvLibNameIdNameMappingToOMDoc: "
       dummyTheoryComment =
         (
-          Just "This theory is not used. It serves only as a semantic\
-            \ 'anchor' for theory- and axiom-inclusions."
+          Just $ "This theory is not used. It serves only as a semantic"
+            ++ " 'anchor' for theory- and axiom-inclusions."
         )
       dg = lookupDGraph ln lenv
       -- get all theorem links pointing

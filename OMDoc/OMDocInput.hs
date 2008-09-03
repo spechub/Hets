@@ -3189,8 +3189,8 @@ unwrapFormulasOM ffxi (origin, theory) =
               OMDoc.axiomName axiom
             (OMDoc.CDe definition) ->
               OMDoc.definitionId definition
-            _ -> error "OMDoc.OMDocInput.unwrapFormulasOM#processAxDef: \
-                       \This should not happen!"
+            _ -> error "OMDoc.OMDocInput.unwrapFormulasOM#processAxDef: "
+              ++ "This should not happen!"
         name =
           case
             find
@@ -3406,8 +3406,7 @@ omToSort_gen_ax ffxi origin (OMDoc.OMEA oma') =
                 Debug.Trace.trace
                   (
                     e_fname
-                    ++ "Ignoring unexpected elements in constraint-\
-                    \definition"
+                    ++ "Ignoring unexpected elements in constraint-definition"
                   )
                   contexts'
           )
@@ -4222,8 +4221,8 @@ formulaFromOM ffxi origin varbindings (OMDoc.OMEA oma) =
       if length formulas < 2
         then
           error
-            "OMDoc.OMDocInput.formulaFromOM#makeEquivalence: \
-            \Not enough formulas for equivalence!"
+            $ "OMDoc.OMDocInput.formulaFromOM#makeEquivalence: "
+            ++ "Not enough formulas for equivalence!"
         else
           Equivalence
             (formulas!!0)
@@ -4235,8 +4234,8 @@ formulaFromOM ffxi origin varbindings (OMDoc.OMEA oma) =
       if length formulas < 1
         then
           error
-            "OMDoc.OMDocInput.formulaFromOM#makeNegation: \
-            \Empty formulas for negation!"
+            $ "OMDoc.OMDocInput.formulaFromOM#makeNegation: "
+            ++ "Empty formulas for negation!"
         else
           Negation (formulas!!0) Id.nullRange
 
@@ -4312,8 +4311,8 @@ formulaFromOM ffxi origin varbindings (OMDoc.OMEA oma) =
       if length terms < 2
         then
           error
-            "OMDoc.OMDocInput.formulaFromOM#makeExistl_equation: \
-            \Not enough terms for Existl_equation!"
+            $ "OMDoc.OMDocInput.formulaFromOM#makeExistl_equation: "
+            ++ "Not enough terms for Existl_equation!"
         else
           Existl_equation
             (terms!!0)
@@ -4325,12 +4324,10 @@ formulaFromOM ffxi origin varbindings (OMDoc.OMEA oma) =
       if length terms < 2
         then
           error
-            (
-              "OMDoc.OMDocInput.formulaFromOM#makeStrong_equation: \
-              \Not enough terms for Strong_equation! ("
-                ++ show (length terms) ++ ") : "
-                ++ (take 1000 (show oma))
-            )
+            $ "OMDoc.OMDocInput.formulaFromOM#makeStrong_equation: "
+            ++ "Not enough terms for Strong_equation! ("
+            ++ show (length terms) ++ ") :\n"
+            ++ take 1000 (show oma)
         else
           Strong_equation
             (terms!!0)
@@ -4672,11 +4669,8 @@ termFromOM ffxi origin _ (ome@(OMDoc.OMES _)) =
 -- nothing else can be processed
 termFromOM _ _ _ t =
   error
-    (
-      "OMDoc.OMDocInput.termFromOM: @_ : \
-      \Impossible to create term from \""
+    $ "OMDoc.OMDocInput.termFromOM: @_ : Impossible to create term from \""
       ++ show t ++"\""
-    )
 
 {- |
   Transforms an OMDoc-Element into an operator-symbol.

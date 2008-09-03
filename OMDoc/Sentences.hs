@@ -73,13 +73,10 @@ wrapFormulaCMPOM
             collectionMap
             (ln, nn)
       of
-        [] ->
-          error
-            (
-              "OMDoc.OMDocOutput.wrapFormulaCMPOM: \
-              \No unique name for Sentence \"" ++ Ann.senAttr ansen ++ "\""
-            )
-        ((_, uName):_) -> uName
+        [] -> error $
+          "OMDoc.OMDocOutput.wrapFormulaCMPOM: No unique name for Sentence \""
+          ++ Ann.senAttr ansen ++ "\""
+        (_, uName) : _ -> uName
     sens = Ann.sentence ansen
     sposl = Id.getPosList sens
     omformula = processFormulaOM go lenv ln nn uniqueNames collectionMap [] sens
