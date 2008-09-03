@@ -205,9 +205,8 @@ map_basic_item sig sent =
             ofts <- mapM (map_facts sig iid) fts
             orel <- mapM (map_irel sig iid) irel
             return $ (tps ++ ofts ++ (concat orel))
-      DLMultiIndi _ _ _ _ _ rn -> fatal_error "Error during analysis, \
-                                            \ Multi-Individual was not \
-                                            \ expanded, bailing out." rn
+      DLMultiIndi _ _ _ _ _ rn -> fatal_error
+        "DL2CASL_DL: Multi-Individual was not expanded." rn
 
 map_irel :: SDL.Sign -> Id -> DLIndRel -> Result [DLFORMULA]
 map_irel _ indi rel =
