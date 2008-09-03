@@ -124,7 +124,7 @@ mapSig sign =
                   (ExtFORMULA $ Ranged
                      (Dlformula Diamond
                       (Ranged
-                         (Assign (mkSimpleId $ genNamePrefix ++ "b")
+                         (Assign (genToken "b")
                           (Application
                              (Qual_op_name
                                eqName
@@ -482,7 +482,7 @@ mapSig sign =
                          (Assign (genToken "x")
                             (Application
                              (Qual_op_name
-                               (genName $ show i)
+                               (mkGenName i)
                                (Op_type Partial w s nullRange)
                               nullRange)
                              xvars nullRange))
@@ -513,7 +513,7 @@ mapSig sign =
                          (Assign (genToken "x")
                             (Application
                              (Qual_op_name
-                               (genName $ show i)
+                               (mkGenName i)
                                (Op_type Partial [] s nullRange)
                               nullRange)
                              [] nullRange))
@@ -622,7 +622,7 @@ mapSig sign =
                   (ExtFORMULA $ Ranged (
                      Dlformula Diamond
                       (Ranged (Call (Predication
-                                   (Qual_pred_name (genName $ show i)
+                                   (Qual_pred_name (mkGenName i)
                                     (Pred_type (w ++ [uBoolean]) nullRange)
                                     nullRange)
                                    ((map (
@@ -633,7 +633,7 @@ mapSig sign =
                       (ExtFORMULA $ Ranged (
                          Dlformula Diamond
                       (Ranged (Call (Predication
-                                   (Qual_pred_name (genName $ show i)
+                                   (Qual_pred_name (mkGenName i)
                                     (Pred_type (w ++ [uBoolean]) nullRange)
                                      nullRange)
                                    ((map (
@@ -682,7 +682,7 @@ mapSig sign =
                         (
                         Dlformula Diamond
                         (Ranged
-                          (Call (Predication (Qual_pred_name (genName $ show i)
+                          (Call (Predication (Qual_pred_name (mkGenName i)
                                     (Pred_type (w ++ [uBoolean]) nullRange)
                                      nullRange)
                                  (xvars++[rvar1])
@@ -746,9 +746,9 @@ mapMor m = let
             map (\ (idN, oT@(OpType _ w s)) -> let
                    (idN', _) = (fun_map m) Map.! (idN, oT)
                                                in
-                  ((genName $ show idN,
+                  ((mkGenName idN,
                     OpType Partial w s)  ,
-                   (genName $ show idN',
+                   (mkGenName idN',
                     Partial)
                   )
                 )
@@ -758,9 +758,9 @@ mapMor m = let
             map (\ (idN, pT@(PredType w)) -> let
                    idN' = (pred_map m) Map.! (idN, pT)
                                                in
-                  ((genName $ show idN,
+                  ((mkGenName idN,
                     PredType w)  ,
-                   genName $ show idN'
+                   mkGenName idN'
                   )
                 )
             renPreds
@@ -794,7 +794,7 @@ mapCASLSenAux f = case f of
     (genSorts, _, _ ) = recover_Sort_gen_ax constrs
     toProcs (Op_name _, _) = error "must be qual names"
     toProcs (Qual_op_name op (Op_type _fkind args res _range) _, l) =
-           ( Qual_op_name (genName $ show op)
+           ( Qual_op_name (mkGenName op)
                            (Op_type Partial args res nullRange) nullRange,
              l)
     opsToProcs (Constraint nSort syms oSort) =
@@ -864,7 +864,7 @@ mapCASLSenAux f = case f of
              (Ranged (Assign (genToken $ "x" ++ show n)
                        (Application
                          (Qual_op_name
-                          (genName $ show pname)
+                          (mkGenName pname)
                           (Op_type Partial ptype uBoolean nullRange) nullRange)
                           xvars nullRange))
               nullRange))
@@ -979,7 +979,7 @@ mapCASLTerm n t = case t of
        [] ->  return $ Ranged (Assign (genToken $ "x" ++ show n)
                        (Application
                         (Qual_op_name
-                         (genName $ show oName)
+                         (mkGenName oName)
                          (Op_type Partial args res nullRange)
                          nullRange
                         )
@@ -991,7 +991,7 @@ mapCASLTerm n t = case t of
                 (Ranged (Assign (genToken $ "x" ++ show n)
                        (Application
                         (Qual_op_name
-                         (genName $ show oName)
+                         (mkGenName oName)
                          (Op_type Partial args res nullRange)
                          nullRange
                         )

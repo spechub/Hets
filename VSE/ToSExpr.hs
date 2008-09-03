@@ -30,9 +30,19 @@ import qualified Data.Map as Map
 import Data.Char (toLower)
 import Data.List(sortBy)
 
-namedSenToSExprList :: Sign f Procs -> Named Sentence -> [SExpr]
-namedSenToSExprList sig ns = case sentence ns of
-  ExtFORMULA (Ranged (RestrictedConstraint constrs restr _flag) _r) ->
+addUniformRestr :: Sign f Procs -> [Named Sentence] ->
+                   (Sign f Procs, [Named Sentence])
+addUniformRestr sig nsens = let
+  namedConstr = filter (\ns -> case sentence ns of
+                                ExtFORMULA
+                                 (Ranged
+                                   (RestrictedConstraint _ _ _)
+                                  _) -> True
+                                _ -> False ) nsens
+  restrConstr = map sentence namedConstr
+  restrToSExpr (procs, tSens)
+               (ExtFORMULA
+                 (Ranged (RestrictedConstraint constrs restr _flag) _r)) =
    let
     (genSorts, genOps, _maps) = recover_Sort_gen_ax constrs
     genUniform sorts ops s = let
@@ -51,9 +61,8 @@ namedSenToSExprList sig ns = case sentence ns of
                 zip args [1::Int ..]
         recCalls = map (\(x,i) ->
                          Ranged (Call (Predication
-                                        (Qual_pred_name (stringToId $
-                                                 genNamePrefix ++ "uniform_"
-                                                 ++ show x)
+                                        (Qual_pred_name
+                                          (genName $ "uniform_"++show s)
                                          (Pred_type [x] nullRange) nullRange)
                                         [Qual_var
                                           (genToken $ "x" ++ show i)
@@ -79,7 +88,7 @@ namedSenToSExprList sig ns = case sentence ns of
                                      (genToken  "y")
                                      (Application
                                       (Qual_op_name
-                                     (stringToId $ genNamePrefix ++ show ctor)
+                                     (stringToId $ show ctor)
                                      (Op_type Partial args sn nullRange)
                                      nullRange)
                                       (map  (\(v,ss) ->
@@ -91,8 +100,7 @@ namedSenToSExprList sig ns = case sentence ns of
                                (Application
                                  (
                                   Qual_op_name
-                                   (stringToId $ genNamePrefix ++ "eq_"++
-                                                 show s)
+                                   (genName $ "eq_"++ show s)
                                    (Op_type Partial [s,s]
                                     uBoolean nullRange)
                                   nullRange
@@ -129,7 +137,7 @@ namedSenToSExprList sig ns = case sentence ns of
                                       (genToken  "y")
                                      (Application
                                       (Qual_op_name
-                                     (stringToId $ genNamePrefix ++ show ctor)
+                                     (mkGenName ctor)
                                      (Op_type Partial args sn nullRange)
                                      nullRange)
                                       (map  (\(v,ss) ->
@@ -141,8 +149,7 @@ namedSenToSExprList sig ns = case sentence ns of
                                 (Ranged (If (Strong_equation
                                  ( Application
                                  ( Qual_op_name
-                                   (stringToId $ genNamePrefix ++ "eq_"++
-                                                 show s)
+                                   (genName $ "eq_"++ show s)
                                    (Op_type Partial [s,s]
                                     uBoolean nullRange)
                                   nullRange
@@ -165,8 +172,8 @@ namedSenToSExprList sig ns = case sentence ns of
                              in
      [makeNamed "" $  ExtFORMULA $
      Ranged (Defprocs  [
-      Defproc Proc (stringToId $ genNamePrefix ++ "uniform_"++show s)
-              [mkSimpleId $ genNamePrefix ++ "x"]
+      Defproc Proc (genName $ "uniform_"++show s)
+              [genToken "x"]
       (Ranged (
         Block [] ( foldr genCodeForCtor (Ranged Abort nullRange)
                    ctors)
@@ -182,7 +189,6 @@ namedSenToSExprList sig ns = case sentence ns of
             (Call $ Predication
               (Qual_pred_name
                 (restr Map.! s)
-                --(stringToId $ genNamePrefix ++ "restr_"++ show s)
                 (Pred_type [s] nullRange) nullRange)
                [Qual_var (genToken "x") s nullRange] nullRange) nullRange)
             (True_atom nullRange))
@@ -190,17 +196,25 @@ namedSenToSExprList sig ns = case sentence ns of
        ( ExtFORMULA $ Ranged
           (Dlformula Diamond (Ranged
             (Call $ Predication
-              (Qual_pred_name (stringToId $ genNamePrefix ++
-                                            "uniform_" ++ show s)
+              (Qual_pred_name (genName $ "uniform_" ++ show s)
                 (Pred_type [s] nullRange) nullRange)
                [Qual_var (genToken "x") s nullRange] nullRange) nullRange)
             (True_atom nullRange))
           nullRange) True nullRange) nullRange) {isAxiom = False}]
     procDefs = concatMap (genUniform genSorts genOps) genSorts
+    procs' = Map.fromList $
+             map (\s -> (genName $ "uniform_" ++ show s,
+                         Profile [Procparam In s] Nothing)) genSorts
    in
-     map (namedSenToSExpr sig) procDefs
-  _ -> [namedSenToSExpr sig ns]
+    (Map.union procs procs', tSens ++ procDefs)
+  restrToSExpr _ _ = error "should not be anything than restricted constraints"
+  (newProcs, trSens) = foldl restrToSExpr (Map.empty, []) restrConstr
+                            in
+ (sig{
+   predMap = addMapSet (predMap sig) $ procsToPredMap $ Procs newProcs,
 
+   extendedInfo =  Procs $ Map.union newProcs (procsMap $ extendedInfo sig)},
+  trSens ++ filter (\x -> not $ x `elem` namedConstr) nsens)
 
 namedSenToSExpr :: Sign f Procs -> Named Sentence -> SExpr
 namedSenToSExpr sig ns =

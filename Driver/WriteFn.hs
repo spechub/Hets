@@ -239,7 +239,8 @@ writeTheory opts filePrefix ga
         else putIfVerbose opts 0 "printing theory delta is not implemented"
       when (language_name lid == language_name VSE) $ do
         (sign, sens) <- coerceBasicTheory lid VSE "" th
-        let lse = concatMap (namedSenToSExprList sign) sens
+        let (sign', sens') = addUniformRestr sign sens
+            lse = map (namedSenToSExpr sign') sens'
         unless (null lse) $ writeVerbFile opts (fp ++ ".sexpr")
             $ shows (prettySExpr $ SList lse) "\n"
     SigFile d -> do
@@ -247,9 +248,10 @@ writeTheory opts filePrefix ga
         writeVerbFile opts f $ shows (pretty $ signOf raw_gTh) "\n"
         else putIfVerbose opts 0 "printing signature delta is not implemented"
       when (language_name lid == language_name VSE) $ do
-        (sign, _) <- coerceBasicTheory lid VSE "" th
+        (sign, sens) <- coerceBasicTheory lid VSE "" th
+        let (sign', _sens') = addUniformRestr sign sens
         writeVerbFile opts (f ++ ".sexpr")
-          $ shows (prettySExpr $ vseSignToSExpr sign) "\n"
+          $ shows (prettySExpr $ vseSignToSExpr sign') "\n"
 #ifdef PROGRAMATICA
     HaskellOut -> case printModule raw_gTh of
         Nothing ->

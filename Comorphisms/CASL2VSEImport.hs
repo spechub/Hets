@@ -238,9 +238,9 @@ mapMor m = let
             map (\ (idN, oT@(OpType _ w s)) -> let
                    (idN', _) = (fun_map m) Map.! (idN, oT)
                                                in
-                  ((genName $ show idN,
+                  ((mkGenName idN,
                     OpType Partial w s)  ,
-                   (genName $ show idN',
+                   (mkGenName idN',
                     Partial)
                   )
                 )
@@ -250,9 +250,9 @@ mapMor m = let
             map (\ (idN, pT@(PredType w)) -> let
                    idN' = (pred_map m) Map.! (idN, pT)
                                                in
-                  ((genName $ show idN,
+                  ((mkGenName idN,
                     PredType w)  ,
-                   genName $ show idN'
+                   mkGenName idN'
                   )
                 )
             renPreds
