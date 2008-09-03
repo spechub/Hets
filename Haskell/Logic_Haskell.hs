@@ -42,12 +42,12 @@ import Logic.Logic
 
 data Haskell = Haskell deriving (Show)
 instance Language Haskell where
- description _ =
-  "Haskell - a purely functional programming language,\
-  \ featuring static typing, higher-order functions, polymorphism,\
-  \ type classes and monadic effects.\
-  \ See http://www.haskell.org. This version is based on Programatica,\
-  \ see http://www.cse.ogi.edu/PacSoft/projects/programatica/"
+ description _ = unlines
+  [ "Haskell - a purely functional programming language"
+  , "featuring static typing, higher-order functions, polymorphism,"
+  , "type classes and monadic effects."
+  , "See http://www.haskell.org. This version is based on Programatica,"
+  , "see http://www.cse.ogi.edu/PacSoft/projects/programatica/" ]
 
 type HaskellMorphism = DefaultMorphism Sign
 

@@ -35,26 +35,28 @@ import Common.DocUtils
 data HasCASL = HasCASL deriving Show
 
 instance Language HasCASL where
- description _ =
-  "HasCASL - Algebraic Specification + Functional Programming = \
-  \Environment for Formal Software Development\n\
-  \This logic is based on the partial lambda calculus,\n\
-  \and features subtyping, overloading and type class polymorphism\n\
-  \See the HasCASL summary and further papers,\n\
-  \available at http://www.informatik.uni-bremen.de/cofi/HasCASL\n\n\
-  \Abbreviations of sublogic names indicate the following feature:\n\
-  \  Sub    -> with subtyping\n\
-  \  P      -> with partial functions\n\
-  \  TyCl   -> with simple type classes (a la Isabelle)\n\
-  \  CoCl   -> with constructor classes (a la Haskell)\n\
-  \  Poly   -> polymorphism without classes\n\
-  \  TyCons -> user definable type constructors\n\
-  \  HOL    -> higher order logic (covers sort generation constraints)\n\
-  \  FOL    -> first order logic\n\
-  \and others like for CASL\n\n\
-  \Examples:\n\
-  \  SubCFOL=       -> the CASL logic without sort generation constraints\n\
-  \  PCoClTyConsHOL -> the Haskell type system fragment"
+ description _ = unlines
+  [ "HasCASL - Algebraic Specification + Functional Programming = "
+  , "            Environment for Formal Software Development"
+  , "This logic is based on the partial lambda calculus and"
+  , "  features subtyping, overloading and type class polymorphism"
+  , "See the HasCASL summary and further papers available at"
+  , "  http://www.informatik.uni-bremen.de/cofi/HasCASL"
+  , ""
+  , "Abbreviations of sublogic names indicate the following feature:"
+  , "  Sub    -> with subtyping"
+  , "  P      -> with partial functions"
+  , "  TyCl   -> with simple type classes (a la Isabelle)"
+  , "  CoCl   -> with constructor classes (a la Haskell)"
+  , "  Poly   -> polymorphism without classes"
+  , "  TyCons -> user definable type constructors"
+  , "  HOL    -> higher order logic (covers sort generation constraints)"
+  , "  FOL    -> first order logic"
+  , "and others like for CASL"
+  , ""
+  , "Examples:"
+  , "  SubCFOL=       -> the CASL logic without sort generation constraints"
+  , "  PCoClTyConsHOL -> the Haskell type system fragment" ]
 
 instance Syntax HasCASL BasicSpec
                 SymbItems SymbMapItems
