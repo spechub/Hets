@@ -40,7 +40,7 @@ build-depends:
   , programatica == 1.0
 executable: hets
 main-is: hets.hs
-extensions: OverlappingInstances
+extensions: OverlappingInstances, CPP
 ghc-options: -fglasgow-exts
 cpp-options: -DUNI_PACKAGE
   -DCASLEXTENSIONS -DPROGRAMATICA -DHAXML_PACKAGE
