@@ -382,20 +382,20 @@ genVarItems = do
             return (vs ++ ws, s : ts)
       <|> return (vs, [])
 
-freeDatatype ::  AParser st BasicItem
+freeDatatype :: AParser st BasicItem
 freeDatatype = do
     f <- asKey freeS
     FreeDatatype ds ps <- dataItems
     return $ FreeDatatype ds $ appRange (tokPos f) ps
 
-progItems ::  AParser st BasicItem
+progItems :: AParser st BasicItem
 progItems = hasCaslItemList programS
     (patternTermPair [equalS] (WithIn, []) equalS) ProgItems
 
-axiomItems ::  AParser st BasicItem
+axiomItems :: AParser st BasicItem
 axiomItems = hasCaslItemList axiomS term $ AxiomItems []
 
-forallItem ::  AParser st BasicItem
+forallItem :: AParser st BasicItem
 forallItem = do
     f <- forallT
     (vs, ps) <- genVarDecls `separatedBy` anSemi
@@ -404,13 +404,13 @@ forallItem = do
     let aft = Annoted ft qs (a ++ as) rs
     return $ AxiomItems (concat vs) (aft : fs) $ appRange (catRange $ f : ps) ds
 
-genVarItem ::  AParser st BasicItem
+genVarItem :: AParser st BasicItem
 genVarItem = do
     v <- pluralKeyword varS
     (vs, ps) <- genVarItems
     return $ GenVarItems vs $ catRange $ v:ps
 
-dotFormulae ::  AParser st BasicItem
+dotFormulae :: AParser st BasicItem
 dotFormulae = do
     d <- dotT
     let aFormula = bind appendAnno (annoParser term) lineAnnos
@@ -423,7 +423,7 @@ dotFormulae = do
                $ catRange m
        else return $ AxiomItems [] fs ps
 
-internalItems ::  AParser st BasicItem
+internalItems :: AParser st BasicItem
 internalItems = do
     i <- asKey internalS
     o <- oBraceT
@@ -431,7 +431,7 @@ internalItems = do
     p <- cBraceT
     return (Internal is $ toRange i [o] p)
 
-basicItems ::  AParser st BasicItem
+basicItems :: AParser st BasicItem
 basicItems = fmap SigItems sigItems
     <|> classItems
     <|> progItems
