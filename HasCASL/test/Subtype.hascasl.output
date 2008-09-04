@@ -100,7 +100,8 @@ forall c < e : Type; d < f : Type; e : Type; f : Type
 ### Hint 28.9, is type variable 'd'
 ### Hint 28.12, is type variable 'e'
 ### Hint 28.15, is type variable 'f'
-*** Error 28.15, type variable does not shadow normal variable 'f'
+### Warning 28.15,
+type variable does not shadow normal variable 'f'
 ### Hint 28.24, rebound type variable 'c'
 ### Hint 28.31, rebound type variable 'd'
 ### Hint 29.9, not a class 'e'
