@@ -279,7 +279,7 @@ addLocalVar warn (VarDecl v t _ _) =
          when (Map.member v vs)
            $ addDiags [mkDiag Hint "rebound variable" v]
          when (Map.member v $ localTypeVars e)
-           $ addDiags [mkDiag Hint "variable also known as type variable" v]
+           $ addDiags [mkDiag Warning "variable also known as type variable" v]
        putLocalVars $ Map.insert v (VarDefn t) vs
 
 -- | add analysed local variable or type variable declaration

@@ -450,7 +450,7 @@ ambiguous mixfix term
 ambiguous mixfix term
   (def ((((f x) impl) f) x)) <<= (g x)
   ((((def (f x)) impl) f) x) <<= (g x)
-### Hint 176.11, variable also known as type variable 'f'
+### Warning 176.11, variable also known as type variable 'f'
 ### Hint 176.31, no type found for 'all'
 ### Hint 176.31, untypeable term (with type: _v502 ->? Unit) 'all'
 *** Error 176.29,
@@ -473,7 +473,7 @@ ambiguous mixfix term
 no kind found for 'd'
   expected: {Cppo}
      found: {Cpo}
-### Hint 184.6, variable also known as type variable 'f'
+### Warning 184.6, variable also known as type variable 'f'
 ### Hint 184.11, not a kind 'c --> d'
 ### Hint 184.19,
 no kind found for 'd'
@@ -481,10 +481,10 @@ no kind found for 'd'
      found: {Cpo}
 ### Hint 186.25-186.34, is type list '[c -->? d]'
 ### Hint 186.10, rebound variable 'f'
-### Hint 186.10, variable also known as type variable 'f'
+### Warning 186.10, variable also known as type variable 'f'
 ### Hint 186.16, rebound variable 'g'
 ### Hint 186.10, rebound variable 'f'
-### Hint 186.10, variable also known as type variable 'f'
+### Warning 186.10, variable also known as type variable 'f'
 ### Hint 186.16, rebound variable 'g'
 ### Hint 119.14-119.18,
 repeated declaration of '__<<=__' with type 'c * c ->? Unit'
@@ -509,7 +509,7 @@ no kind found for 'p'
   expected: {Cppo}
      found: {Pcpo}
 ### Hint 195.5, rebound variable 'f'
-### Hint 195.5, variable also known as type variable 'f'
+### Warning 195.5, variable also known as type variable 'f'
 ### Hint 195.20, not a class 'p'
 ### Hint 195.18, rebound variable 'x'
 ### Hint 199.22,
