@@ -449,7 +449,6 @@ data InMode = NoIn   -- ^ next 'inS' belongs to 'letS'
 baseTerm :: (InMode, TokenMode) -> AParser st Term
 baseTerm b = ifTerm b
     <|> whenTerm b
-    <|> forallTerm b
     <|> exTerm b
     <|> lambdaTerm b
     <|> caseTerm b
@@ -571,29 +570,21 @@ whereTerm b = do
 term :: AParser st Term
 term = whereTerm (WithIn, [])
 
--- | a 'Universal' 'QuantifiedTerm'
-forallTerm :: (InMode, TokenMode) -> AParser st Term
-forallTerm b = do
-    f <- forallT
-    (vs, ps) <- genVarDecls `separatedBy` anSemi
-    addAnnos
-    d <- dotT
-    t <- mixTerm b
-    return $ QuantifiedTerm Universal (concat vs) t $ toRange f ps d
-
--- | 'Unique' or 'Existential'
+-- | a 'Universal', 'Unique' or 'Existential' 'QuantifiedTerm'
 exQuant :: AParser st (Token, Quantifier)
-exQuant = bind (,) (asKey (existsS++exMark)) (return Unique)
-    <|> bind (,) (asKey existsS) (return Existential)
+exQuant = choice $ map (\ (v, s) -> bind (,) (asKey s) $ return v)
+  [ (Universal, forallS)
+  , (Unique, existsS ++ exMark)
+  , (Existential, existsS) ]
 
 -- | a (possibly unique) existential 'QuantifiedTerm'
 exTerm :: (InMode, TokenMode) -> AParser st Term
 exTerm b = do
-    (p, q) <- exQuant <?> existsS
+    (p, q) <- exQuant
     (vs, ps) <- varDecls `separatedBy` anSemi
     d <- dotT
     f <- mixTerm b
-    return $ QuantifiedTerm q (map GenVarDecl (concat vs)) f $ toRange p ps d
+    return $ QuantifiedTerm q (map GenVarDecl $ concat vs) f $ toRange p ps d
 
 lamDecls :: AParser st [Term]
 lamDecls = try ((do

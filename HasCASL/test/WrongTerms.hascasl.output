@@ -8,71 +8,71 @@ expecting "\\" or "\""
 
 parse error at 3.2:
 unexpected end of input
-expecting "%", "=e=", "=", id/literal, "{", "[", "(", "if", "when", "forall", exists, "\\", "case", "let" or "}"
+expecting "%", "=e=", "=", id/literal, "{", "[", "(", "if", "when", "forall", "exists!", "exists", "\\", "case", "let" or "}"
 
 parse error at 4.2:
 unexpected end of input
-expecting "%", "=e=", "=", id/literal, "{", "[", "(", "if", "when", "forall", exists, "\\", "case", "let" or "]"
+expecting "%", "=e=", "=", id/literal, "{", "[", "(", "if", "when", "forall", "exists!", "exists", "\\", "case", "let" or "]"
 
 parse error at 5.2:
 unexpected end of input
-expecting "%", "=e=", "=", id/literal, "{", "[", "(", "if", "when", "forall", exists, "\\", "case", "let", "var", "op", "fun", "pred" or ")"
+expecting "%", "=e=", "=", id/literal, "{", "[", "(", "if", "when", "forall", "exists!", "exists", "\\", "case", "let", "var", "op", "fun", "pred" or ")"
 
 parse error at 6.1:
 unexpected "}"
-expecting "%", "=e=", "=", id/literal, "{", "[", "(", "if", "when", "forall", exists, "\\", "case" or "let"
+expecting "%", "=e=", "=", id/literal, "{", "[", "(", "if", "when", "forall", "exists!", "exists", "\\", "case" or "let"
 
 parse error at 7.1:
 unexpected "]"
-expecting "%", "=e=", "=", id/literal, "{", "[", "(", "if", "when", "forall", exists, "\\", "case" or "let"
+expecting "%", "=e=", "=", id/literal, "{", "[", "(", "if", "when", "forall", "exists!", "exists", "\\", "case" or "let"
 
 parse error at 8.1:
 unexpected ")"
-expecting "%", "=e=", "=", id/literal, "{", "[", "(", "if", "when", "forall", exists, "\\", "case" or "let"
+expecting "%", "=e=", "=", id/literal, "{", "[", "(", "if", "when", "forall", "exists!", "exists", "\\", "case" or "let"
 
 parse error at 9.1-9.2:
 unexpected "."
-expecting "%", "=e=", "=", id/literal, "{", "[", "(", "if", "when", "forall", exists, "\\", "case" or "let"
+expecting "%", "=e=", "=", id/literal, "{", "[", "(", "if", "when", "forall", "exists!", "exists", "\\", "case" or "let"
 
 parse error at 10.1:
 unexpected "_"
-expecting "%", "=e=", "=", id/literal, "{", "[", "(", "if", "when", "forall", exists, "\\", "case" or "let"
+expecting "%", "=e=", "=", id/literal, "{", "[", "(", "if", "when", "forall", "exists!", "exists", "\\", "case" or "let"
 
 parse error at 11.1:
 unexpected ":"
-expecting "%", "=e=", "=", id/literal, "{", "[", "(", "if", "when", "forall", exists, "\\", "case" or "let"
+expecting "%", "=e=", "=", id/literal, "{", "[", "(", "if", "when", "forall", "exists!", "exists", "\\", "case" or "let"
 
 parse error at 12.1:
 unexpected ":?"
-expecting "%", "=e=", "=", id/literal, "{", "[", "(", "if", "when", "forall", exists, "\\", "case" or "let"
+expecting "%", "=e=", "=", id/literal, "{", "[", "(", "if", "when", "forall", "exists!", "exists", "\\", "case" or "let"
 
 parse error at 13.1:
 unexpected ","
-expecting "%", "=e=", "=", id/literal, "{", "[", "(", "if", "when", "forall", exists, "\\", "case" or "let"
+expecting "%", "=e=", "=", id/literal, "{", "[", "(", "if", "when", "forall", "exists!", "exists", "\\", "case" or "let"
 
 parse error at 14.1:
 unexpected ";"
-expecting "%", "=e=", "=", id/literal, "{", "[", "(", "if", "when", "forall", exists, "\\", "case" or "let"
+expecting "%", "=e=", "=", id/literal, "{", "[", "(", "if", "when", "forall", "exists!", "exists", "\\", "case" or "let"
 
 parse error at 15.2:
 unexpected ","
-expecting "%", "=e=", "=", id/literal, "{", "[", "(", "if", "when", "forall", exists, "\\", "case", "let", "var", "op", "fun", "pred" or ")"
+expecting "%", "=e=", "=", id/literal, "{", "[", "(", "if", "when", "forall", "exists!", "exists", "\\", "case", "let", "var", "op", "fun", "pred" or ")"
 
 parse error at 16.4:
 unexpected ")"
-expecting "%", "=e=", "=", id/literal, "{", "[", "(", "if", "when", "forall", exists, "\\", "case", "let", "var", "op", "fun" or "pred"
+expecting "%", "=e=", "=", id/literal, "{", "[", "(", "if", "when", "forall", "exists!", "exists", "\\", "case", "let", "var", "op", "fun" or "pred"
 
 parse error at 17.1:
 unexpected "as"
-expecting "%", "=e=", "=", id/literal, "{", "[", "(", "if", "when", "forall", exists, "\\", "case" or "let"
+expecting "%", "=e=", "=", id/literal, "{", "[", "(", "if", "when", "forall", "exists!", "exists", "\\", "case" or "let"
 
 parse error at 18.1:
 unexpected ":"
-expecting "%", "=e=", "=", id/literal, "{", "[", "(", "if", "when", "forall", exists, "\\", "case" or "let"
+expecting "%", "=e=", "=", id/literal, "{", "[", "(", "if", "when", "forall", "exists!", "exists", "\\", "case" or "let"
 
 parse error at 19.1:
 unexpected "in"
-expecting "%", "=e=", "=", id/literal, "{", "[", "(", "if", "when", "forall", exists, "\\", "case" or "let"
+expecting "%", "=e=", "=", id/literal, "{", "[", "(", "if", "when", "forall", "exists!", "exists", "\\", "case" or "let"
 
 parse error at 20.15:
 unexpected ")"
@@ -99,8 +99,8 @@ unexpected "?"
 expecting __ or "%"
 
 parse error at 26.9:
-unexpected missing kind
-expecting "{", "[", __, "%", "+", "-", ",", ":" or "<"
+unexpected "a"
+expecting "{", "[", __, "%", "," or ":"
 
 parse error at 27.13:
 unexpected ".!" or "!"
@@ -120,39 +120,39 @@ expecting "?", words, __, casl sign, "[", "{", "(", "%", ":", cross, ->, ";" or 
 
 parse error at 31.1:
 unexpected "pred"
-expecting "%", "=e=", "=", id/literal, "{", "[", "(", "if", "when", "forall", exists, "\\", "case" or "let"
+expecting "%", "=e=", "=", id/literal, "{", "[", "(", "if", "when", "forall", "exists!", "exists", "\\", "case" or "let"
 
 parse error at 32.1:
 unexpected "var"
-expecting "%", "=e=", "=", id/literal, "{", "[", "(", "if", "when", "forall", exists, "\\", "case" or "let"
+expecting "%", "=e=", "=", id/literal, "{", "[", "(", "if", "when", "forall", "exists!", "exists", "\\", "case" or "let"
 
 parse error at 33.1:
 unexpected "op"
-expecting "%", "=e=", "=", id/literal, "{", "[", "(", "if", "when", "forall", exists, "\\", "case" or "let"
+expecting "%", "=e=", "=", id/literal, "{", "[", "(", "if", "when", "forall", "exists!", "exists", "\\", "case" or "let"
 
 parse error at 34.3:
 unexpected "and" or "a"
-expecting "%", ":", "as", "in", "=e=", "=", id/literal, "{", "[", "(", "if", "when", "forall", exists, "\\", "case", "let", "where" or end of input
+expecting "%", ":", "as", "in", "=e=", "=", id/literal, "{", "[", "(", "if", "when", "forall", "exists!", "exists", "\\", "case", "let", "where" or end of input
 
 parse error at 35.1:
 unexpected "then"
-expecting "%", "=e=", "=", id/literal, "{", "[", "(", "if", "when", "forall", exists, "\\", "case" or "let"
+expecting "%", "=e=", "=", id/literal, "{", "[", "(", "if", "when", "forall", "exists!", "exists", "\\", "case" or "let"
 
 parse error at 36.4:
 unexpected "then"
-expecting "%", "=e=", "=", id/literal, "{", "[", "(", "if", "when", "forall", exists, "\\", "case" or "let"
+expecting "%", "=e=", "=", id/literal, "{", "[", "(", "if", "when", "forall", "exists!", "exists", "\\", "case" or "let"
 
 parse error at 37.3:
 unexpected end of input
-expecting casl char, "_", "%", "=e=", "=", id/literal, "{", "[", "(", "if", "when", "forall", exists, "\\", "case" or "let"
+expecting casl char, "_", "%", "=e=", "=", id/literal, "{", "[", "(", "if", "when", "forall", "exists!", "exists", "\\", "case" or "let"
 
 parse error at 38.10:
 unexpected end of input
-expecting casl char, "_", "%", "=e=", "=", id/literal, "{", "[", "(", "if", "when", "forall", exists, "\\", "case" or "let"
+expecting casl char, "_", "%", "=e=", "=", id/literal, "{", "[", "(", "if", "when", "forall", "exists!", "exists", "\\", "case" or "let"
 
 parse error at 39.13:
 unexpected end of input
-expecting casl char, "_", "%", "=e=", "=", id/literal, "{", "[", "(", "if", "when", "forall", exists, "\\", "case" or "let"
+expecting casl char, "_", "%", "=e=", "=", id/literal, "{", "[", "(", "if", "when", "forall", "exists!", "exists", "\\", "case" or "let"
 
 parse error at 40.11:
 unexpected "@"

@@ -15,11 +15,11 @@ a (: s + b : s)
 *** Error 13.9, not a class 's'
 parse error at 14.12:
 unexpected "as" or "a"
-expecting "[", "%", "->", cross, ->, "=e=", "=", id/literal, "{", "(", "if", "when", "forall", exists, "\\", "case", "let", "where" or end of input
+expecting "[", "%", "->", cross, ->, "=e=", "=", id/literal, "{", "(", "if", "when", "forall", "exists!", "exists", "\\", "case", "let", "where" or end of input
 
 parse error at 15.7:
 unexpected "as" or "a"
-expecting "[", "%", "->", cross, ->, "=e=", "=", id/literal, "{", "(", "if", "when", "forall", exists, "\\", "case", "let", "where" or end of input
+expecting "[", "%", "->", cross, ->, "=e=", "=", id/literal, "{", "(", "if", "when", "forall", "exists!", "exists", "\\", "case", "let", "where" or end of input
 
 [ ]
 + a
