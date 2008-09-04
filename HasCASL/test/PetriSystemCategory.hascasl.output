@@ -497,9 +497,12 @@ no kind found for 'Elem'
 ### Hint 31.6, rebound type variable 'Elem'
 ### Hint 33.10, not a kind 'MultiSet Elem'
 ### Hint 33.27, not a kind 'Set Elem'
+### Hint 33.26, variable also known as type variable 'S'
 ### Hint 35.17, not a class 'Elem'
 ### Hint 34.12, rebound variable 'S'
+### Hint 34.12, variable also known as type variable 'S'
 ### Hint 34.12, rebound variable 'S'
+### Hint 34.12, variable also known as type variable 'S'
 ### Hint 35.25-35.32,
 rejected 'Unit < Nat' of '((var x : Elem), (var S : Set Elem))'
 ### Hint 35.25-35.32,

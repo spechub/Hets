@@ -271,14 +271,15 @@ addOpId i oldSc attrs dfn = do
 -- | add a local variable with an analysed type (if True then warn)
 addLocalVar :: Bool -> VarDecl -> State Env ()
 addLocalVar warn (VarDecl v t _ _) =
-    do ass <- gets assumps
-       vs <- gets localVars
-       if warn then if Map.member v ass then
-          addDiags [mkDiag Hint "variable shadows global name(s)" v]
-          else if Map.member v vs then
-          addDiags [mkDiag Hint "rebound variable" v]
-          else return ()
-         else return ()
+    do e <- get
+       let vs = localVars e
+       when warn $ do
+         when (Map.member v $ assumps e)
+           $ addDiags [mkDiag Hint "variable shadows global name(s)" v]
+         when (Map.member v vs)
+           $ addDiags [mkDiag Hint "rebound variable" v]
+         when (Map.member v $ localTypeVars e)
+           $ addDiags [mkDiag Hint "variable also known as type variable" v]
        putLocalVars $ Map.insert v (VarDefn t) vs
 
 -- | add analysed local variable or type variable declaration
