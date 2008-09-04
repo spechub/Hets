@@ -121,6 +121,9 @@ addAliasType b i sc fullKind = do
     addAliasTypeAux b i newSc fullKind
 
 addAliasTypeAux :: Bool -> Id -> TypeScheme -> Kind -> State Env Bool
-addAliasTypeAux b i (TypeScheme args ty ps) fullKind = do
-    addTypeId b (AliasTypeDefn $ foldr ( \ t y -> TypeAbs t y ps) ty args)
+addAliasTypeAux b i (TypeScheme args ty ps) fullKind =
+  if elem i $ map (fst . snd) $ leaves (== 0) ty then do
+    addDiags[mkDiag Error "cyclic alias type" i]
+    return False
+  else addTypeId b (AliasTypeDefn $ foldr ( \ t y -> TypeAbs t y ps) ty args)
         fullKind i
