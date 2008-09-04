@@ -24,9 +24,10 @@ import qualified Data.Set as Set
 import Common.DocUtils
 import Common.Id
 import Common.Result
+import Common.Lib.State
 import Data.List as List
 import Data.Maybe
-import Common.Lib.State
+import Control.Monad
 
 -- * infer kind
 
@@ -72,16 +73,17 @@ addTypeVarDecl warn (TypeArg i v vk rk c _ _) =
 
 addLocalTypeVar :: Bool -> TypeVarDefn -> Id -> State Env ()
 addLocalTypeVar warn tvd i = do
-    tvs <- gets localTypeVars
-    if warn then do
-         tm <- gets typeMap
-         case Map.lookup i tm of
-             Nothing -> case Map.lookup i tvs of
-                 Nothing -> return ()
-                 Just _ -> addDiags [mkDiag Hint "rebound type variable" i]
-             Just _ -> addDiags [mkDiag Hint
-                    "type variable shadows type constructor" i]
-       else return ()
+    e <- get
+    let tvs = localTypeVars e
+    when warn $ do
+       when (Map.member i $ typeMap e)
+         $ addDiags [mkDiag Warning
+           "type variable shadows type constructor" i]
+       when (Map.member i tvs)
+         $ addDiags [mkDiag Hint "rebound type variable" i]
+       when (Map.member i $ localVars e)
+         $ addDiags [mkDiag Warning
+           "type variable does not shadow normal variable" i]
     putLocalTypeVars $ Map.insert i tvd tvs
 
 -- | infer all minimal kinds

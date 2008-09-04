@@ -1,8 +1,8 @@
-var a, b;
+var a, b: Type;
 free type Pair a b ::= Pair (fst : a; snd : b)
 
 op f (a : a; b: b) : Pair a b = Pair (a, b)
 
-op g : Pair a b ->? a 
+op g : Pair a b ->? a
 
 program g(Pair (a, b)) = a

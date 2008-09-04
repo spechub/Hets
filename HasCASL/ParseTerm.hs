@@ -101,17 +101,17 @@ extVar vp = bind (,) vp variance
 typeVars :: AParser st [TypeArg]
 typeVars = do
     (ts, ps) <- extVar typeVar `separatedBy` anComma
-    typeKind ts ps
+    typeKind False ts ps
 
 allIsNonVar :: [(Id, Variance)] -> Bool
 allIsNonVar = all ( \ (_, v) -> case v of
     NonVar -> True
     _ -> False)
 
--- 'parseType' a 'Downset' starting with 'lessT'
-typeKind :: [(Id, Variance)] -> [Token]
+-- 'parseType' a 'Downset' starting with 'lessT' (True means require kind)
+typeKind :: Bool -> [(Id, Variance)] -> [Token]
          -> AParser st [TypeArg]
-typeKind vs ps = do
+typeKind b vs ps = do
     c <- colT
     if allIsNonVar vs then do
         (v, k) <- extKind
@@ -123,7 +123,8 @@ typeKind vs ps = do
     l <- lessT
     t <- parseType
     return $ makeTypeArgs vs ps NonVar (Downset t) $ tokPos l
-  <|> return (makeTypeArgs vs ps NonVar MissingKind nullRange)
+  <|> if b then unexpected "missing kind" else
+          return (makeTypeArgs vs ps NonVar MissingKind nullRange)
 
 -- | add the 'Kind' to all 'extVar' and yield a 'TypeArg'
 makeTypeArgs :: [(Id, Variance)] -> [Token]
@@ -343,7 +344,7 @@ genVarDecls = fmap (map ( \ g -> case g of
                                               rStar n s ps)
     _ -> g)) $ do
     (vs, ps) <- extVar var `separatedBy` anComma
-    let other = fmap (map GenTypeVarDecl) (typeKind vs ps)
+    let other = fmap (map GenTypeVarDecl) (typeKind True vs ps)
     if allIsNonVar vs then fmap (map GenVarDecl)
         (varDeclType (map ( \ (i, _) -> i) vs) ps) <|> other
       else other

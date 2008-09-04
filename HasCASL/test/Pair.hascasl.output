@@ -31,6 +31,8 @@ free type Pair(a : Type)(b : Type) ::= Pair (fst : a; snd : b)
                                                        %(ga_Pair)%
 forall a : a; b : b . f (a, b) = (Pair (a, b) as Pair a b)
 program g (Pair (a, b)) = a %(pe_g)%
+### Hint 1.5, is type variable 'a'
+### Hint 1.8, is type variable 'b'
 *** Error 8.24,
 in term 'program (op g : forall a : Type; b : Type . Pair a b ->? a)
         ((op Pair : forall a : Type; b : Type . a * b -> Pair a b) (a, b))

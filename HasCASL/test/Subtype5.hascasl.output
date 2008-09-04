@@ -10,6 +10,7 @@ Loc := Ref a
 var
 a : Type %(var_1)%
 op coerce : forall a : Type . Ref a -> Loc %(op)%
+### Hint 1.5, is type variable 'a'
 ### Hint 2.11, rebound type variable 'a'
 *** Error 2.7,
 incompatible kind of: Ref

@@ -99,8 +99,8 @@ unexpected "?"
 expecting __ or "%"
 
 parse error at 26.9:
-unexpected "a"
-expecting "{", "[", __, "%", "+", "-", ",", ":", "<", ";" or dot
+unexpected missing kind
+expecting "{", "[", __, "%", "+", "-", ",", ":" or "<"
 
 parse error at 27.13:
 unexpected ".!" or "!"
