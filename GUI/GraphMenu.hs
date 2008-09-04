@@ -231,32 +231,27 @@ createGlobalMenu gInfo@(GInfo { gi_LIB_NAME = ln
                                    print)
 #endif
     , Menu (Just "Proofs") $ map ( \ (str, cmd) ->
-       Button str $ ral $ performProofAction gInfo
-                  $ proofMenu gInfo $ return . return . cmd ln)
-       [ ("Automatic",
-                         addToHistUnsafe ch "dg-all auto" automatic)
-       , ("Global Subsumption",
-                         addToHistUnsafe ch "dg-all glob-subsume" globSubsume)
-       , ("Global Decomposition",
-                         addToHistUnsafe ch "dg-all glob-decomp" globDecomp)
-       , ("Local Inference",
-                         addToHistUnsafe ch "dg-all loc-infer" localInference)
-       , ("Local Decomposition (merge of rules)",
-                         addToHistUnsafe ch "dg-all loc-decomp" locDecomp)
-       , ("Composition (merge of rules)",
-                         addToHistUnsafe ch "dg-all comp" composition)
-       , ("Composition - creating new links",
-                         addToHistUnsafe ch "dg-all comp-new" compositionCreatingEdges)
+       Button str $ (addMenuItemToHist ch str) >> 
+                  (ral $ performProofAction gInfo
+                  $ proofMenu gInfo $ return . return . cmd ln))
+       [ ("Automatic", automatic)
+       , ("Global Subsumption", globSubsume)
+       , ("Global Decomposition", globDecomp)
+       , ("Local Inference", localInference)
+       , ("Local Decomposition (merge of rules)", locDecomp)
+       , ("Composition (merge of rules)", composition)
+       , ("Composition - creating new links", compositionCreatingEdges)
        ] ++
-       [Button "Hide Theorem Shift" $ addToHistUnsafe ch "dg-all hide-thm"
-               $ ral $ performProofAction gInfo
-               $ proofMenu gInfo $ fmap return . interactiveHideTheoremShift ln
+       [Button "Hide Theorem Shift" $ 
+               (addMenuItemToHist ch "Hide Theorem Shift") >>
+               (ral $ performProofAction gInfo
+               $ proofMenu gInfo $ fmap return . interactiveHideTheoremShift ln)
        ] ++
        map (\ (str, cmd) ->
-              Button str $ ral $ performProofAction gInfo
-                  $ proofMenu gInfo $ return . cmd ln)
-       [ ("Theorem Hide Shift",
-                         addToHistUnsafe ch "dg-all thm-hide" theoremHideShift)
+              Button str $ (addMenuItemToHist ch str) >> 
+                  (ral $ performProofAction gInfo
+                  $ proofMenu gInfo $ return . cmd ln))
+       [ ("Theorem Hide Shift", theoremHideShift)
        , ("Compute Colimit", computeColimit)
        ] ++
        [ Menu (Just "Flattening") $ map ( \ (str, cmd) ->

@@ -13,7 +13,7 @@ Manages the history of proof commands.
 module GUI.History (CommandHistory,
                     emptyCommandHistory,
                     initCommandHistory,
-                    addToHistUnsafe,
+                    addMenuItemToHist,
                     addListToHist,
                     addProveToHist,
                     getProofScriptFileName,
@@ -31,7 +31,6 @@ import Static.GTheory (G_theory(..))
 import Data.List (isPrefixOf, stripPrefix)
 import Data.IORef
 import System.Directory(getCurrentDirectory)
-import System.IO.Unsafe (unsafePerformIO)
 
 data CommandHistory = CommandHistory {file     :: String,
                                       lastNode :: IORef Int,
@@ -61,11 +60,25 @@ addToHist :: CommandHistory -> String -> IO ()
 addToHist (CommandHistory {hist = ch}) s =
     readIORef ch >>= (\ch' -> writeIORef ch $ ch' ++ [s])
 
--- Adds a command to the history and executes a given function.
--- This function is used for the graph menu items.
--- Note: This uses unsafe IO.
-addToHistUnsafe :: CommandHistory -> String -> a -> a
-addToHistUnsafe ch s a = unsafePerformIO $ addToHist ch s >> return a
+-- Adds a menu item to the history.
+addMenuItemToHist :: CommandHistory -> String -> IO ()
+addMenuItemToHist ch item = case lookup item menuItems of
+                                Just s  -> addToHist ch s
+                                Nothing -> return ()
+
+-- A List of menu items and their corresponding proof-script command.
+menuItems :: [(String, String)]
+menuItems = [
+    ("Automatic", "dg-all auto"),
+    ("Global Subsumption", "dg-all glob-subsume"),
+    ("Global Decomposition", "dg-all glob-decomp"),
+    ("Local Inference", "dg-all loc-infer"),
+    ("Local Decomposition (merge of rules)", "dg-all loc-decomp"),
+    ("Composition (merge of rules)", "dg-all comp"),
+    ("Composition - creating new links", "dg-all comp-new"),
+    ("Hide Theorem Shift", "dg-all hide-thm"),
+    ("Theorem Hide Shift", "dg-all thm-hide")
+    ]
 
 -- Adds a list of commands to the history.
 addListToHist :: CommandHistory -> [String] -> IO ()
