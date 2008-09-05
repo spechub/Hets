@@ -165,12 +165,13 @@ addTypeKind warn d i k = do
          addDiags [mkDiag Error "cannot refine kind" i]
          return False
 
-nonUniqueKind :: (GetRange a, Pretty a) => Set.Set Kind -> a ->
+nonUniqueKind :: (GetRange a, Pretty a) => Set.Set Kind -> RawKind -> a ->
                  (Kind -> State Env (Maybe b)) -> State Env (Maybe b)
-nonUniqueKind ks a f = case Set.toList ks of
+nonUniqueKind ks rk a f = case Set.toList ks of
     [k] -> f k
-    _ -> do addDiags [mkDiag Error "non-unique kind for" a]
-            return Nothing
+    _ -> do
+      addDiags [mkDiag Warning "non-unique kind for" a]
+      f (rawToKind rk)
 
 -- | analyse a type argument
 anaddTypeVarDecl :: TypeArg -> State Env (Maybe TypeArg)
@@ -195,7 +196,7 @@ anaddTypeVarDecl (TypeArg i v vk _ _ s ps) = do
         case mt of
             Nothing -> return Nothing
             Just ((rk, ks), nt) ->
-                nonUniqueKind ks t $ \ k -> do
+                nonUniqueKind ks rk t $ \ k -> do
                    let nd = Downset (KindedType nt (Set.singleton k) nullRange)
                    addLocalTypeVar True (TypeVarDefn NonVar nd rk c) i
                    return $ Just $ TypeArg i v (Downset nt) rk c s ps

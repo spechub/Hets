@@ -100,6 +100,7 @@ type  __-->?__ < __->?__
 
 %% Tcont
 type instance __-->__ : -Cpo -> +Cpo -> Cpo
+type  __-->__ < __-->?__
 vars  f, g : c --> d
 program f <<= g = f <<=[c -->? d] g;
 type instance __-->__ : -Cpo -> +Pcpo -> Pcpo
@@ -458,7 +459,9 @@ no typing for
 'program f <<=[c -->? d] g
          = all \ x : c . def (f x) impl f (x) <<= g (x)'
 ### Hint 179.17, redeclared type '__-->__'
-*** Error 181.17-181.23, non-unique kind for '__ -->? __'
+### Warning 181.17-181.23, non-unique kind for '__ -->? __'
+### Hint 181.9, redeclared type '__-->__'
+### Hint 181.19, repeated supertype '__-->?__'
 ### Hint 182.16,
 no kind found for 'd'
   expected: {Cppo}

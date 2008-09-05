@@ -177,7 +177,7 @@ anaSubtypeDecl pats t ps = do
                 addDiags es
                 return $ Just $ TypeDecl newPats universe ps
       Just ((rk, ks), newT) -> do
-        nonUniqueKind ks t $ \ kind -> do
+        nonUniqueKind ks rk t $ \ kind -> do
           mapM_ (addTypePattern NoTypeDefn kind) is
           mapM_ (addSuperType newT $ rawToKind rk) nis
           return $ if null nis then Nothing else
