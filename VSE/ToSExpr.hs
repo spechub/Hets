@@ -88,7 +88,7 @@ addUniformRestr sig nsens = let
                                      (genToken  "y")
                                      (Application
                                       (Qual_op_name
-                                     (stringToId $ show ctor)
+                                      ctor
                                      (Op_type Partial args sn nullRange)
                                      nullRange)
                                       (map  (\(v,ss) ->
@@ -137,7 +137,7 @@ addUniformRestr sig nsens = let
                                       (genToken  "y")
                                      (Application
                                       (Qual_op_name
-                                     (mkGenName ctor)
+                                     ctor
                                      (Op_type Partial args sn nullRange)
                                      nullRange)
                                       (map  (\(v,ss) ->
