@@ -11,7 +11,7 @@ Portability :  portable
 mixfix identifiers for testing CASL's and HasCASL's mixfix analysis
 -}
 
-module Common.ExampleMixIds (stdOpsL, stdPredsL, mkIds) where
+module Common.ExampleMixIds (stdOpsL, stdPreds, mkIds) where
 
 import Common.Id
 import Common.Anno_Parser
@@ -35,3 +35,6 @@ stdPredsL =
 
 mkIds :: [String] -> Set.Set Id
 mkIds = Set.fromList . map (parseString some_id)
+
+stdPreds :: Set.Set Id
+stdPreds = mkIds stdPredsL

@@ -25,7 +25,7 @@ import CASL.MixfixParser
 import CASL.AS_Basic_CASL
 
 myIdSets :: IdSets
-myIdSets = mkIdSets (mkIds stdOpsL) $ mkIds stdPredsL
+myIdSets = mkIdSets (mkIds stdOpsL) stdPreds
 
 resolveForm :: GlobalAnnos -> AParser () (Result (FORMULA ()))
 resolveForm ga =

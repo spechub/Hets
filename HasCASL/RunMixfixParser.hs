@@ -36,9 +36,6 @@ stdOps :: Set.Set Id
 stdOps = mkIds $ stdOpsL ++ ["__#", "D__", "if__then__else__"]
   ++ map (:[]) "#0123456789abcdefghijklmnopqxABCDEFGHIJKLMNO"
 
-stdPreds :: Set.Set Id
-stdPreds = mkIds stdPredsL
-
 resolveTerm :: GlobalAnnos -> AParser () (Result Term)
 resolveTerm ga = do
        trm <- term
