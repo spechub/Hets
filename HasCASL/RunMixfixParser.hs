@@ -18,11 +18,10 @@ import Common.Earley
 import Common.Prec
 import Common.GlobalAnnotations
 import Common.Id
-import Common.Anno_Parser
 import Common.Result
-import Common.Lexer
 import Common.Lib.State
 import Common.Doc
+import Common.ExampleMixIds
 import qualified Data.Set as Set
 import qualified Data.Map as Map
 
@@ -33,31 +32,11 @@ import HasCASL.PrintAs
 import HasCASL.ParseTerm
 import HasCASL.Le
 
--- start testing
-stdOpsL, stdPredsL :: [String]
+stdOps :: Set.Set Id
+stdOps = mkIds $ stdOpsL ++ ["__#", "D__", "if__then__else__"]
+  ++ map (:[]) "#0123456789abcdefghijklmnopqxABCDEFGHIJKLMNO"
 
-stdOpsL = ["__^__", "__*__", "__+__", "[__]","__div__","__mod__", "__rem__",
-        "__-__", "+__", "__E__", "__@@__", "[]", "__::__", "__:::__",
-        "-__", "__!"] ++
-          [ "____p", "q____","____x____", "{____}",
-          "repeat__until__", "while__do__od",
-            "__none__but__", "__one__done",
-           "__ --> __", "__{__}--__-->{__}__"]
-         ++ map (:[]) "#0123456789abcdefghijklmnopqxABCDEFGHIJKLMNO"
-         ++ ["A[a[c,d],b]", "B[a[c,d],b]", "__B[a[c,d],b]__",
-             "a[c,d]", "__a[c,d]__", "A[a]", "A__B",
-             "A__", "__[a]", "__p", "__#", "D__",
-             "__[__]__", "[__]__", "__[__]", "if__then__else__"]
-
-stdPredsL = ["__<__", "__<=__", "__>__", "__>=__", "__!=__", "__<>__",
-             "__/=__", "even__", "odd__", "__isEmpty",
-             "__<=__<=__"]
-
-mkIds :: [String] -> Set.Set Id
-mkIds = Set.fromList . map (parseString some_id)
-
-stdOps, stdPreds :: Set.Set Id
-stdOps = mkIds stdOpsL
+stdPreds :: Set.Set Id
 stdPreds = mkIds stdPredsL
 
 resolveTerm :: GlobalAnnos -> AParser () (Result Term)

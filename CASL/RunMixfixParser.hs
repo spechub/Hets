@@ -9,51 +9,20 @@ Stability   :  experimental
 Portability :  portable
 
 Make mixfix analysis checkable by RunParsers
-
 -}
 
 module CASL.RunMixfixParser where
 
 import Common.AnnoState
-import CASL.MixfixParser
-import CASL.AS_Basic_CASL
 import Common.GlobalAnnotations
-import qualified Data.Set as Set
-import Common.Id
 import Common.Result
-import Common.Lexer
 import Common.Doc
 import Common.DocUtils
-
-import Common.Token
+import Common.ExampleMixIds
 import CASL.Formula
 import CASL.ShowMixfix
-
--- start testing
-stdOpsL, stdPredsL :: [String]
-
-stdOpsL = ["__^__", "__*__", "__+__", "[__]","__div__","__mod__", "__rem__",
-        "__-__", "+__", "__E__", "__@@__", "[]", "__::__", "__:::__",
-        "-__", "__!"] ++
-          [ "____p", "q____","____x____", "{____}",
-          "repeat__until__", "while__do__od",
-            "__where__but__", "__where__done",
-           "__ --> __", "__{__}--__-->{__}__"]
-         ++ ["A[a[c,d],b]", "B[a[c,d],b]", "__B[a[c,d],b]__",
-             "a[c,d]", "__a[c,d]__", "A[a]", "A__B",
-             "A__", "__[a]", "__p",
-             "__[__]__", "[__]__", "__[__]"]
-
-stdPredsL = ["__<__", "__<=__", "__>__", "__>=__", "__!=__", "__<>__",
-             "__/=__", "even__", "odd__", "__isEmpty",
-            "__<=__<=__"]
-
-mkIds :: [String] -> Set.Set Id
-mkIds = Set.fromList . map (parseString $ parseId [])
-
-stdOps, stdPreds :: Set.Set Id
-stdOps = mkIds stdOpsL
-stdPreds = mkIds stdPredsL
+import CASL.MixfixParser
+import CASL.AS_Basic_CASL
 
 myIdSets :: IdSets
 myIdSets = mkIdSets (mkIds stdOpsL) $ mkIds stdPredsL
