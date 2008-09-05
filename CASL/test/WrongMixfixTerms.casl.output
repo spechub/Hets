@@ -87,3 +87,7 @@ ambiguous mixfix term
 *** Error 28.2-28.4,
 expected further mixfix token: ["*","+","-","-->","::"]
 *** Error 29.1-29.9, expected further mixfix token: ["p","x"]
+*** Error 30.1-30.7,
+ambiguous mixfix term
+  odd__(-__(a))
+  __-__(odd, a)

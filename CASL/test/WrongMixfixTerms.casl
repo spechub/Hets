@@ -11,7 +11,7 @@ a when (var a:b) else b
 a when (op a:b)(a) else b
 A[a]
 B[a]
-A[a]A[a]p 
+A[a]A[a]p
 A[a]!
 [[[a]]]
 [b, A[a]]
@@ -27,3 +27,4 @@ b + A[a]
 A[a] + b
 +2^4
 (var a:b)(a)
+odd - a
