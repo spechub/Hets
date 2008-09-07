@@ -23,6 +23,7 @@ import GUI.ShowLogicGraph(showLogicGraph)
 import GUI.History
 #ifdef GTKGLADE
 import GUI.GtkLinkTypeChoice
+import GUI.GtkConsistencyChecker
 import Data.List (isSuffixOf)
 import Data.Char (toLower)
 #endif
@@ -226,9 +227,8 @@ createGlobalMenu gInfo@(GInfo { gi_LIB_NAME = ln
       ]
     , Button "Focus node" $ ral $ focusNode gInfo
 #ifdef GTKGLADE
-    , Button "Select Linktypes" (showLinkTypeChoiceDialog
-                                   (mapLinkTypesToNames opts)
-                                   print)
+    , Button "Select Linktypes" $ showLinkTypeChoice (mapLinkTypesToNames opts)
+                                                     print
 #endif
     , Menu (Just "Proofs") $ map ( \ (str, cmd) ->
        Button str $ (addMenuItemToHist ch str) >> 
@@ -319,6 +319,9 @@ createLocalMenuNode gInfo = LocalMenu (Menu (Just "node menu") $ map ($ gInfo)
   , createLocalMenuTaxonomy
   , createLocalMenuButtonShowProofStatusOfNode
   , createLocalMenuButtonProveAtNode
+#ifdef GTKGLADE
+  , createLocalMenuButtonConsistencyChecker
+#endif
   , createLocalMenuButtonCCCAtNode ]) $$$ emptyNodeTypeParms
 
 -- | local menu for the nodetypes spec and locallyEmpty_spec
@@ -413,6 +416,13 @@ createLocalMenuButtonProveAtNode :: GInfo -> ButtonMenu GA.NodeValue
 createLocalMenuButtonProveAtNode gInfo =
   createMenuButton "Prove" (\descr dgraph -> performProofAction gInfo
     (proveAtNode False gInfo descr dgraph)) gInfo
+
+#ifdef GTKGLADE
+createLocalMenuButtonConsistencyChecker :: GInfo -> ButtonMenu GA.NodeValue
+createLocalMenuButtonConsistencyChecker gInfo =
+  createMenuButton "Consistency checker"
+                   (\_ _ -> showConsistencyChecker gInfo) gInfo
+#endif
 
 createLocalMenuButtonCCCAtNode :: GInfo -> ButtonMenu GA.NodeValue
 createLocalMenuButtonCCCAtNode gInfo =

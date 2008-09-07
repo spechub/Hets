@@ -1,45 +1,37 @@
+{- |
+Module      :  $Header$
+Description :  Gtk GUI for the selection of linktypes
+Copyright   :  (c) Thiemo Wiedemeyer, Uni Bremen 2008
+License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
+
+Maintainer  :  raider@informatik.uni-bremen.de
+Stability   :  provisional
+Portability :  portable
+
+This module provides a GUI for the selection of linktypes.
+-}
+
 module GUI.GtkLinkTypeChoice
-  (showLinkTypeChoiceDialog)
+  (showLinkTypeChoice)
   where
 
 import Graphics.UI.Gtk
 import Graphics.UI.Gtk.Glade
 
+import GUI.GtkUtils
+import GUI.Glade.LinkTypeChoice
+
 import Monad(foldM)
 
-{-
-linkTypes :: [String]
-linkTypes =
-  [ "globaldef"
-  , "localdef"
-  , "def"
-  , "hidingdef"
-  , "hetdef"
-  , "proventhm"
-  , "unproventhm"
-  , "localproventhm"
-  , "localunproventhm"
-  , "hetproventhm"
-  , "hetunproventhm"
-  , "hetlocalproventhm"
-  , "hetlocalunproventhm"
-  , "unprovenhidingthm"
-  , "provenhidingthm"
-  , "reference"
-  ]
--}
-
-showLinkTypeChoiceDialog :: [String] -> ([String] -> IO ()) -> IO ()
-showLinkTypeChoiceDialog linkTypes updateFunction = do
-  initGUI
-  Just xml <- xmlNew "GUI/GtkLinkTypeChoice.glade"
+-- | Displays the linktype selection window
+showLinkTypeChoice :: [String] -> ([String] -> IO ()) -> IO ()
+showLinkTypeChoice linkTypes updateFunction = postGUIAsync $ do
+  xml <- getGladeXML $ getLinkTypeChoice
   window   <- xmlGetWidget xml castToWindow "linktypechoice"
   ok       <- xmlGetWidget xml castToButton "b_ok"
   cancel   <- xmlGetWidget xml castToButton "b_cancel"
-  onDestroy window mainQuit
 
-  onClicked cancel $ do
-    widgetDestroy window
+  onClicked cancel $ widgetDestroy window
 
   onClicked ok $ do
     checkButtons <- mapM (\ name -> do
@@ -54,5 +46,4 @@ showLinkTypeChoiceDialog linkTypes updateFunction = do
     updateFunction linkTypes'
     widgetDestroy window
 
-  widgetShowAll window
-  mainGUI
+  widgetShow window

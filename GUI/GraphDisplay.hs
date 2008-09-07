@@ -44,10 +44,10 @@ import qualified Data.Map as Map(lookup, insert)
 import Control.Concurrent.MVar
 
 initializeConverter :: IO (GInfo,HTk.HTk)
-initializeConverter =
-    do wishInst <- HTk.initHTk [HTk.withdrawMainWin]
-       gInfo <- emptyGInfo
-       return (gInfo,wishInst)
+initializeConverter = do
+  wishInst <- HTk.initHTk [HTk.withdrawMainWin]
+  gInfo <- emptyGInfo
+  return (gInfo,wishInst)
 
 {- | converts the development graph given by its libname into an
     abstract graph and returns the descriptor of the latter, the

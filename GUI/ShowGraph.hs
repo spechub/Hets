@@ -1,3 +1,4 @@
+{-# OPTIONS -cpp #-}
 {- |
 Module      :  $Header$
 Copyright   :  (c) Uni Bremen 2002-2005
@@ -22,6 +23,9 @@ import GUI.GraphDisplay
 import GUI.GraphTypes
 import GUI.ShowLibGraph
 import GUI.History(initCommandHistory)
+#ifdef GTKGLADE
+import GUI.GtkUtils(startMainLoop, stopMainLoop)
+#endif
 
 import InfoBus
 -- import Events
@@ -40,6 +44,9 @@ showGraph file opts env = case env of
     putIfVerbose opts 2 $ "Trying to display " ++ file
                      ++ " in a graphical window"
     putIfVerbose opts 3 "Initializing Converter"
+#ifdef GTKGLADE
+    startMainLoop
+#endif
     (gInfo,wishInst) <- initializeConverter
     useHTk -- All messages are displayed in TK dialog windows
     -- from this point on
@@ -52,6 +59,9 @@ showGraph file opts env = case env of
     showLibGraph gInfo'
     mShowGraph gInfo' ln
     takeMVar $ exitMVar gInfo'
+#ifdef GTKGLADE
+    stopMainLoop
+#endif
     destroy wishInst
     InfoBus.shutdown
   Nothing -> putIfVerbose opts 1 $ "Error: Basic Analysis is neccessary "

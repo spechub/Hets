@@ -331,7 +331,7 @@ cpp_sources = \
     Propositional/Logic_Propositional.hs GUI/GraphMenu.hs \
     Comorphisms/LogicList.hs Comorphisms/LogicGraph.hs \
     Comorphisms/KnownProvers.hs hets.hs $(happy_files) \
-    PGIP/InfoCommands.hs OWL/Logic_OWL11.hs
+    PGIP/InfoCommands.hs OWL/Logic_OWL11.hs GUI/ShowGraph.hs
 
 # unused, remove when header files are gone
 genrule_header_files = $(wildcard ATC/*.header.hs)
@@ -844,3 +844,60 @@ initialize_installer:
 	@echo "  -> cd $(INSTALLER_DIR)"
 	@echo "  -> make"
 	@echo and wait until it is finished
+
+####################################################################
+## Rules to generate hs files from glade files. Needed for GTK
+
+# directory for glade files
+GTK_GLADE_DIR = GUI/Glade/
+
+# list glade files
+GTK_GLADE_FILES := $(shell ls $(GTK_GLADE_DIR) | grep .glade)
+
+# create header. replace placeholder with filename
+GTK_HS_HEADER = printf \
+ '{- |\
+\nModule      :  $$Header$$\
+\nDescription :  Glade xmlstring for %s\
+\nCopyright   :  (c) Thiemo Wiedemeyer, Uni Bremen 2008\
+\nLicense     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt\
+\n\
+\nMaintainer  :  raider@informatik.uni-bremen.de\nStability   :  provisional\
+\nPortability :  portable\
+\n\
+\nThis module provides a string containing the xml data of the glade file for:\
+\n%s\
+\n\
+\nThis module is automaticly created.\
+\n-}\
+\n\
+\nmodule GUI.Glade.%s\
+\n  (get%s)\
+\nwhere\
+\n\
+\nget%s :: (String, String)\
+\nget%s = ("%s",' $(GTK_BASE) $(GTK_BASE) $(GTK_BASE) $(GTK_BASE)\
+                  $(GTK_BASE) $(GTK_BASE) $(GTK_BASE)
+
+# footer
+GTK_HS_FOOTER = ' )\n'
+
+# name of file without suffix
+GTK_BASE = $(basename $(file))
+
+# filepath
+GTK_FILE = $(GTK_GLADE_DIR)$(file)
+
+# destination filepath
+GTK_HS = $(GTK_GLADE_DIR)$(addsuffix .hs, $(GTK_BASE))
+
+# write content to file
+GTK_WRITE = $(GTK_HS_HEADER) | utils/appendHaskellPreludeString $(GTK_FILE)\
+            > $(GTK_HS); echo $(GTK_HS_FOOTER) >> $(GTK_HS);
+
+# info message
+GTK_INFO = echo converting $(file) to $(GTK_BASE).hs;
+
+#create for each glade file a hs file
+glade2hs: utils/appendHaskellPreludeString
+	@$(foreach file, $(GTK_GLADE_FILES), $(GTK_INFO) $(GTK_WRITE))
