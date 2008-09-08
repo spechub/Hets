@@ -19,13 +19,13 @@ import Graphics.UI.Gtk
 import Graphics.UI.Gtk.Glade
 
 import GUI.GtkUtils
-import GUI.Glade.ConsistencyChecker
+import qualified GUI.Glade.ConsistencyChecker as ConsistencyChecker
 import GUI.GraphTypes
 
 -- | Displays the consistency checker window
 showConsistencyChecker :: GInfo -> IO ()
 showConsistencyChecker _ = postGUIAsync $ do
-  xml                 <- getGladeXML $ getConsistencyChecker
+  xml                 <- getGladeXML ConsistencyChecker.get
 
   -- get objects
   window              <- xmlGetWidget xml castToWindow "ConsistencyChecker"

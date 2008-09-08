@@ -19,14 +19,14 @@ import Graphics.UI.Gtk
 import Graphics.UI.Gtk.Glade
 
 import GUI.GtkUtils
-import GUI.Glade.LinkTypeChoice
+import qualified GUI.Glade.LinkTypeChoice as LinkTypeChoice
 
 import Monad(foldM)
 
 -- | Displays the linktype selection window
 showLinkTypeChoice :: [String] -> ([String] -> IO ()) -> IO ()
 showLinkTypeChoice linkTypes updateFunction = postGUIAsync $ do
-  xml <- getGladeXML $ getLinkTypeChoice
+  xml <- getGladeXML LinkTypeChoice.get
   window   <- xmlGetWidget xml castToWindow "linktypechoice"
   ok       <- xmlGetWidget xml castToButton "b_ok"
   cancel   <- xmlGetWidget xml castToButton "b_cancel"

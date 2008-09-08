@@ -75,8 +75,19 @@ SETUPPACKAGE = ../$(SETUP) clean; \
 
 HAXMLVERSION = $(shell $(HCPKG) field HaXml version)
 ifneq ($(findstring 1.13., $(HAXMLVERSION)),)
-HAXML_PACKAGE = -package HaXml -DHAXML_PACKAGE
+HAXML_PACKAGE = -DHAXML_PACKAGE
 endif
+
+GLADEVERSION = $(shell $(HCPKG) field glade version)
+ifneq ($(findstring 0.9.1, $(GLADEVERSION)),)
+GLADE_PACKAGE = -DGTKGLADE
+endif
+
+# list glade files
+GTK_GLADE_FILES = $(wildcard GUI/Glade/*.glade)
+GTK_GLADE_HSFILES = $(subst .glade,.hs,$(GTK_GLADE_FILES))
+
+derived_sources += $(GTK_GLADE_HSFILES)
 
 # remove -fno-warn-orphans for older ghcs and add -ifgl
 HC_WARN = -Wall -fno-warn-orphans
@@ -216,7 +227,7 @@ TESTTARGETS = Test.o $(subst .hs,,$(TESTTARGETFILES))
 # HC_PROF = -prof -auto-all -osuf p_o +RTS -K100m -RTS
 
 HC_OPTS = $(HC_FLAGS) $(HC_INCLUDE) $(HC_PROF) $(HAXML_PACKAGE) $(HC_PACKAGE) \
-  $(PFE_FLAGS) -DCASLEXTENSIONS -threaded
+  $(PFE_FLAGS) -DCASLEXTENSIONS $(GLADE_PACKAGE) -threaded
 
 ####################################################################
 ## sources for hets
@@ -804,6 +815,13 @@ $(CASL_DEPENDENT_BINARIES): $(sources) $(derived_sources)
 %.d : %.lhs
 	$(HC) -M $< $(HC_OPTS) -optdep-f -optdep$@
 
+## Rule to generate hs files from glade files. Needed for GTK
+%.hs: %.glade utils/appendHaskellPreludeString \
+  GUI/Glade/Template.append.hs
+	b=`basename $< .glade`; \
+    cat GUI/Glade/Template.append.hs | sed "s/\%s/$$b/" | \
+    utils/appendHaskellPreludeString $< > $@
+
 ## generate the inline file for the predefined CASL_DL sign
 CASL_DL/PredefinedSign.inline.hs:  \
      CASL_DL/PredefinedSign.inline.hs.in utils/appendHaskellPreludeString \
@@ -844,60 +862,3 @@ initialize_installer:
 	@echo "  -> cd $(INSTALLER_DIR)"
 	@echo "  -> make"
 	@echo and wait until it is finished
-
-####################################################################
-## Rules to generate hs files from glade files. Needed for GTK
-
-# directory for glade files
-GTK_GLADE_DIR = GUI/Glade/
-
-# list glade files
-GTK_GLADE_FILES := $(shell ls $(GTK_GLADE_DIR) | grep .glade)
-
-# create header. replace placeholder with filename
-GTK_HS_HEADER = printf \
- '{- |\
-\nModule      :  $$Header$$\
-\nDescription :  Glade xmlstring for %s\
-\nCopyright   :  (c) Thiemo Wiedemeyer, Uni Bremen 2008\
-\nLicense     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt\
-\n\
-\nMaintainer  :  raider@informatik.uni-bremen.de\nStability   :  provisional\
-\nPortability :  portable\
-\n\
-\nThis module provides a string containing the xml data of the glade file for:\
-\n%s\
-\n\
-\nThis module is automaticly created.\
-\n-}\
-\n\
-\nmodule GUI.Glade.%s\
-\n  (get%s)\
-\nwhere\
-\n\
-\nget%s :: (String, String)\
-\nget%s = ("%s",' $(GTK_BASE) $(GTK_BASE) $(GTK_BASE) $(GTK_BASE)\
-                  $(GTK_BASE) $(GTK_BASE) $(GTK_BASE)
-
-# footer
-GTK_HS_FOOTER = ' )\n'
-
-# name of file without suffix
-GTK_BASE = $(basename $(file))
-
-# filepath
-GTK_FILE = $(GTK_GLADE_DIR)$(file)
-
-# destination filepath
-GTK_HS = $(GTK_GLADE_DIR)$(addsuffix .hs, $(GTK_BASE))
-
-# write content to file
-GTK_WRITE = $(GTK_HS_HEADER) | utils/appendHaskellPreludeString $(GTK_FILE)\
-            > $(GTK_HS); echo $(GTK_HS_FOOTER) >> $(GTK_HS);
-
-# info message
-GTK_INFO = echo converting $(file) to $(GTK_BASE).hs;
-
-#create for each glade file a hs file
-glade2hs: utils/appendHaskellPreludeString
-	@$(foreach file, $(GTK_GLADE_FILES), $(GTK_INFO) $(GTK_WRITE))
