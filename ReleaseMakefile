@@ -35,13 +35,18 @@ endif
 # check for new HaXml-1.13.2
 HAXMLVERSION = $(shell ghc-pkg field HaXml version)
 ifneq ($(findstring 1.13.2, $(HAXMLVERSION)),)
-HAXML_PACKAGE = -package HaXml -DHAXML_PACKAGE
+HAXML_PACKAGE = -DHAXML_PACKAGE
+endif
+
+GLADEVERSION = $(shell $(HCPKG) field glade version)
+ifneq ($(findstring 0.9.1, $(GLADEVERSION)),)
+GLADE_PACKAGE = -DGTKGLADE
 endif
 
 HC_OPTS1 = -fglasgow-exts -fallow-overlapping-instances \
     $(HC_PACKAGE) $(PFE_FLAGS) -DCASLEXTENSIONS
 
-HC_OPTS = $(HAXML_PACKAGE) $(HC_OPTS1)
+HC_OPTS = $(HAXML_PACKAGE) $(HC_OPTS1) $(GLADE_PACKAGE)
 
 ####################################################################
 ### targets
