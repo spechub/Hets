@@ -563,7 +563,7 @@ leftCancellableClosure rel1 =
                 wtp = rel !! pos
                 rel' = iterateWord2 wtp rel 0
             in iterateWord1 rel' (pos + 1)
-    in {-trace ("leftCancellableClosure " ++ show rel) $-} iterateWord1 rel1 0
+    in iterateWord1 rel1 0
 
 {- | Compute the congruence closure of an equivalence R: two pairs of
 elements (1, 3) and (2, 4) are chosen such that 1 R 2 and 3 R 4. It is
@@ -611,7 +611,7 @@ congruenceClosure check op rel =
       wtp = rel1 !! pos1
       rel' = iterateWord2 wtp rel1 0
       in iterateWord1 rel' (pos1 + 1)
-    in{- trace ("congruenceClosure " ++ show rel) $-} iterateWord1 rel 0
+    in iterateWord1 rel 0
 
 
 -- | Compute the cong_tau relation for given diagram and sink.
@@ -636,7 +636,6 @@ cong_tau diag sink st =
 cong_0 :: CASLDiag
        -> EquivRel DiagSort -- ^ the \simeq relation
        -> EquivRel DiagEmbWord
--- BUG: this should not include (1,s,s) (1,s,s) as it does now, has to be fixed
 -- Comp rule is not applied
 cong_0 diag simeq' =
     let -- diagRule: the Diag rule
@@ -669,8 +668,7 @@ cong_0 diag simeq' =
         rel' = mergeEquivClassesBy diagRule rel
         rel'' = taggedValsToEquivClasses rel'
         w2s = words2 em em em
-        rel''' = {--trace ("words2:" ++ (show w2s) ++ "\n")$--}
-                 foldl addToRel rel'' w2s
+        rel''' = foldl addToRel rel'' w2s
     in rel'''
 
 
@@ -821,12 +819,7 @@ colimitIsThin simeq' embs' c0 =
               res = if subRelation (findInMap (s1, s2) b)
                     (findInMap (e1, e2) c3) == Nothing then checkIncl embprs
                     else False
-              in {- trace ("B[" ++ (show s1) ++ ", " ++ (show s2) ++ ":\n"
-                                      ++ (show (findInMap (s1, s2) b))
-                                      ++ "\n" ++ "C[" ++ (show e1) ++
-                                      ", " ++ (show e2) ++ ":\n" ++
-                                      (show (findInMap (e1, e2) c3)) ++
-                                      "\n\n") -}  res
+              in res
             in checkIncl [(e1, e2) | e1 <- embsCs, e2 <- embsCs]
                 -- cs: next colimit sort to process
                 -- m1: the order map with cs removed
@@ -839,9 +832,8 @@ colimitIsThin simeq' embs' c0 =
                                            m' (Map.keys m')
             in (cs', m'')
           in if checkSort cs then checkAllSorts m1
-             else {-trace "CT: No"-} False
-        in {-trace ("\\simeq: " ++ (show simeq) ++ "\nEmbs: " ++ (show
-        embs) ++ "\n\\cong_0: " ++ show c0)-} checkAllSorts ordMap
+             else  False
+        in  checkAllSorts ordMap
 
 {- the old, unoptimised version of cong:
 -- | Compute the \cong relation given its (finite) domain
@@ -989,7 +981,7 @@ canonicalCong_tau ct sim' =
                    in ce
         mapWord w = map mapEmb w
         mapEqcl ec = map mapWord ec
-    in map mapEqcl ct -- i think here it should be further reduced
+    in map mapEqcl ct
 
 
 -- | Convert a word to a list of sorts that are embedded
@@ -1031,10 +1023,8 @@ ensuresAmalgamability opts diag sink desc =
                   Just (_, d) -> d
                   Nothing -> showDoc (getNodeSig n lns) ""
               -- and now the relevant stuff
-    s = -- trace ("Diagram: " ++ showDoc diag "\n Sink: " ++ showDoc sink "" )$
-        simeq diag
-    st = --trace ("s=" ++ (show s)++"\n st=" ++ (show $ simeq_tau sink)++"\n") $
-        simeq_tau sink
+    s = simeq diag
+    st = simeq_tau sink
               {- 2. Check the inclusion (*). If it doesn't hold, the
                  specification is incorrect. -}
     in case subRelation st s of
