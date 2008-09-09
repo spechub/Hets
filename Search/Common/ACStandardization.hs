@@ -22,7 +22,6 @@ data Symbol l v p = Logical l Arity AC
 
 type State l v p = (([v], [p]), [Symbol l Int Int], [Symbol l v p])
 
-     
 acStandardize :: (Eq v, Ord l) =>
                  [Symbol l v p] -> ([Symbol l Int Int], [[Symbol l v p]])
 acStandardize termStr = (acSkeleton,acParametrizations)

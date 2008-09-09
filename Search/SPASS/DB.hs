@@ -8,7 +8,8 @@ Maintainer  :  inormann@jacobs-university.de
 Stability   :  provisional
 Portability :  portable
 -}
-module Main where
+--module Main where
+module Search.SPASS.DB where
 
 import Data.List as L hiding (intersect)
 import Data.Map (toList)

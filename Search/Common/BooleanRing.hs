@@ -10,12 +10,7 @@ Portability :  portable
 -}
 module Search.Common.BooleanRing where
 
-
-import Search.Common.Normalization
-import Search.SPASS.DFGParser
-import Search.SPASS.Sign
-import Search.SPASS.FormulaWrapper
-
+import Search.Common.Data
 import qualified Data.List as L
 import qualified Data.Set as S
 
@@ -24,6 +19,19 @@ Functions
 todo: Elimination von: imp, or , eqv, neg
       flatten, distr
 -}
+
+
+brForm :: (Show c, Show v, Ord v, Ord c) =>
+          Formula (Constant c) v -> Formula (Constant c) v
+brForm (Binder b vs body) = Binder b vs (brForm body)
+brForm f = br -- reduce $ fromAlgebra f
+    where (Const Xor ands) = reduce $ fromAlgebra f
+          br = (Const Xor (map reduceAnd ands)) -- todo: this should be already performed in reduce
+          reduceAnd (Const And xs) = (Const And (L.nub xs))
+          reduceAnd f = f
+
+
+
 fromAlgebra (Var v xs) = (Var v xs)
 fromAlgebra (Const Not [x]) = Const Xor [Const TrueAtom [],fromAlgebra x]
 fromAlgebra (Const Imp [x,y]) = fromAlgebra (Const Or [(Const Not [x]),y])
@@ -33,6 +41,11 @@ fromAlgebra (Const Or (x:y:rest)) =
     fromAlgebra (Const Or ((Const Xor [x,y,(Const And [x,y])]):rest))
 fromAlgebra (Const Eqv [x,y]) = fromAlgebra (Const Not [Const Xor [x,y]])
 fromAlgebra (Const Xor xs) = Const Xor (map fromAlgebra xs)
+fromAlgebra (Const TrueAtom []) = Const TrueAtom []
+fromAlgebra (Const FalseAtom []) = Const FalseAtom []
+fromAlgebra (Const Equal xs) =(Const Equal xs)
+fromAlgebra (Binder _ _ _) = error "quantitfier free expression expected"
+fromAlgebra f = error ("fromAlgebra: pattern not supported in " ++ show f)
 
 reduce (Var x args) = (Var x args)
 reduce (Const TrueAtom _) = (Const TrueAtom [])
@@ -57,12 +70,13 @@ reduce (Const And fs) =
     in if elem false fs'
        then false
        else case pull And (filter (/=true) fs')  -- try to pull an And expression to front
-            of [] -> true -- i.e. every component of fs was false so (Const Or fs) is false
+            of [] -> true -- i.e. every component of fs was false so (Const And fs) is false
                [f] -> f  -- And with a single argument f is interpreted as f itself!!
                ((Const And ffs'):ffs) -> reduce (Const And (L.sort (ffs'++ffs)))
                ffs -> case pull Xor ffs
                       of ((Const Xor ffs'):ffs) -> reduce (Const Xor (distAnd ffs' ffs))
                          _ -> (Const And ffs)
+reduce (Const Equal xs) =(Const Equal xs)
 reduce x = error ("todo: " ++ show x)
 
 distAnd l1 l2 = map (\x -> Const And (x:l2)) l1
@@ -74,6 +88,14 @@ pull op lst = pull' lst []
               then ((Const op2 xs):ys)++acc
               else pull' ys ((Const op2 xs):acc)
           pull' (y:ys) acc = pull' ys (y:acc)
+
+-- helpers
+
+true :: Formula (Constant c) v
+true = Const TrueAtom []
+false :: Formula (Constant c) v
+false = Const FalseAtom []
+
 
 {-
 Testing 
@@ -134,9 +156,3 @@ true
 true
 -}
 
-getTerm str = run term str >>= return . wrapTerm
-getBTerm str = run term str >>= return . fromAlgebra . wrapTerm
-reduceBTerm str = run term str >>= return . reduce . fromAlgebra . wrapTerm
-
-getArgs (Var _ args) = args
-getArgs (Const _ args) = args

@@ -22,6 +22,7 @@ import Control.Monad.State
  -- nur für den Abschnitt indexing nötig, sollte vielleicht in eine Extradatai ausgelagert werden:
 import qualified Data.Set as Set
 import qualified Data.Map as Map
+import Search.Common.BooleanRing (brForm)
 import Search.Common.ACINormalization
 
 
@@ -29,27 +30,6 @@ data ScopeLabel a = Scope Int a deriving (Eq,Ord)
 type MaxScope = Int
 type ScopeId = Int
 type ActualScope = Int
-
-instance (Show c,Show v) => Show (Formula c v) where
-    show (Const c []) = show c
-    show (Const c args) = "(" ++ show c ++ " " ++ (mapShow " " args) ++ ")"
-    show (Var c []) = show c
-    show (Var v args) = "(" ++ show v ++ " " ++  (mapShow " " args) ++ ")"
-    show (Binder c vars body) = "(" ++ show c ++ " (" ++ (mapShow " " vars) ++ ") " ++ show body ++ ")"
-
-instance (Show c) => Show (Constant c)
-    where show TrueAtom = "true"
-          show FalseAtom = "false"
-          show Not = "not"
-          show And = "and"
-          show Or = "or"
-          show Imp = "imp"
-	  show Eqv = "eqv"
-          show Xor = "xor"
-	  show Equal = "eq"
-          show All = "all"
-          show Some = "some"
-          show (LogicDependent c) = "_" ++ show c
 
 instance (Show a) => Show (ScopeLabel a) where
     show (Scope n a) = show a ++ show n
@@ -238,6 +218,7 @@ moveLeftAllSome (Const c fs) = (exQ (Const c (collectF fs')) fs')
 	  collectF [] = []
 moveLeftAllSome (Var c fs) = Var c fs -- no recursive call here, because quantifiers can't occur in fs!
 
+
 {- +++++++++++++++++++++++ cnf +++++++++++++++++++++++ -}
 
 cnf :: (Eq c) => Formula (Constant c) v -> Formula (Constant c) v
@@ -419,7 +400,7 @@ normalize f = if (countNodes f > 100) -- && (maxACI f > 8)
 	      else getSkeletonParams ((strongNormalize f),"strong")
     where getSkeletonParams ((sceleton,paramaters,_),info) = (sortBinding sceleton,paramaters,info)
 	  weakNormalize = alphaNormalize . mergeBinding . elemTrueFalse . prenex . annotateScope
-	  strongNormalize = alphaNormalize . mergeBinding . maybeAciFormula . cnf . elemTrueFalse . prenex . annotateScope
+	  strongNormalize = alphaNormalize . mergeBinding . maybeAciFormula . brForm . elemTrueFalse . prenex . annotateScope
 	  maybeAciFormula f = if (maxACI f < 8) then (aciFormula f) else f
 
 countNodes (Var _ fs) = 1 + (sum (map countNodes fs))
