@@ -13,9 +13,8 @@ is able to analyse heterogeneous and in particular CASL
 specifications.
 
 The sources need to be compiled using ghc Glasgow Haskell Compiler
-(www.haskell.org/ghc) version 6.8.2! Haskell as a logic is also
-a part of Hets via "Programatica"
-(www.cse.ogi.edu/PacSoft/projects/programatica).
+(www.haskell.org/ghc) version 6.8.x! Haskell as a logic is also
+a part of Hets via "Programatica" (http://programatica.cs.pdx.edu/).
 
 Beside output written to the console (stdout) or to files, hets can
 display graphs using "uDraw(Graph)", formerly "daVinci"
@@ -31,10 +30,20 @@ the actual executable, respectively.
 
 export UNIDAVINCI=$UDG_HOME/bin/uDrawGraph
 
+Some dialogs depend on Gtk and Glade that require a couple of further
+libraries.  Mac users may consult
+http://developer.imendio.com/projects/gtk-macosx/
+
 A typical call of hets is then: hets -g Basic/Numbers.casl
 
 Example specifications can be found under:
 https://svn-agbkb.informatik.uni-bremen.de/Hets-lib/trunk
+
+For proving Mac users may need to set HETS_ISABELLE, so that Isabelle finds
+Aquamacs.
+
+export HETS_ISABELLE="isabelle-interface -p \
+  '/Applications/Aquamacs\ Emacs.app/Contents/MacOS/Aquamacs\ Emacs'" 
 
 If you need to build the hets binary follow the instructions in
 INSTALL, alternatively try to get a binary or a complete installer from:
