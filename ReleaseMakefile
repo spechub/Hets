@@ -11,30 +11,23 @@
 ## Some varibles, which control the compilation
 
 HC = ghc
+HCPKG = ghc-pkg
 
 # check for the "uni" library
 UNI_PACKAGE_CONF = $(wildcard ../uni/uni-package.conf)
 ifneq ($(strip $(UNI_PACKAGE_CONF)),)
-HC_PACKAGE = -package-conf $(UNI_PACKAGE_CONF) -package uni-davinci \
-             -package uni-server -DUNI_PACKAGE
+HC_PACKAGE = -package-conf $(UNI_PACKAGE_CONF) -DUNI_PACKAGE
 endif
 
 # check for programatica
 PFE_TOOLDIR = $(wildcard ../programatica/tools)
 ifneq ($(strip $(PFE_TOOLDIR)),)
-PFE_DIRS = base/AST base/TI base/parse2 base/parse2/Lexer base/parse2/Parser \
-    base/parse2/LexerGen base/parse2/LexerSpec base/tests/HbcLibraries \
-    base/pretty base/syntax base/lib base/lib/Monads base/Modules base/defs \
-    base/transforms base/transforms/Deriving property \
-    property/syntax property/AST property/transforms \
-    property/TI property/defs property/parse2 property/parse2/Parser
-PFE_PATH = $(addprefix -i$(PFE_TOOLDIR)/, $(PFE_DIRS))
-PFE_FLAGS = -package programatica -DPROGRAMATICA
+PFE_FLAGS = -DPROGRAMATICA
 endif
 
 # check for new HaXml-1.13.2
-HAXMLVERSION = $(shell ghc-pkg field HaXml version)
-ifneq ($(findstring 1.13.2, $(HAXMLVERSION)),)
+HAXMLVERSION = $(shell $(HCPKG) field HaXml version)
+ifneq ($(findstring 1.13., $(HAXMLVERSION)),)
 HAXML_PACKAGE = -DHAXML_PACKAGE
 endif
 
