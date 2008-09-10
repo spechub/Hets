@@ -24,7 +24,8 @@ import Common.ExtSign
 import Data.List
 
 import qualified Control.Concurrent as Conc
-import HTk
+import HTk hiding (value)
+import qualified HTk (value)
 import Separator
 import Space
 import XSelection

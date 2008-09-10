@@ -44,7 +44,7 @@ import Data.Time (TimeOfDay,timeToTimeOfDay)
 import System
 import Directory
 
-import ChildProcess
+import ChildProcess as CP
 import ProcessClasses
 import Text.Regex
 
@@ -277,7 +277,7 @@ runZchaff pState cfg saveDIMACS thName nGoal =
                           prob)
       (writeFile (zFileName)
                  prob)
-      zchaff <- newChildProcess "zchaff" [ChildProcess.arguments allOptions]
+      zchaff <- newChildProcess "zchaff" [CP.arguments allOptions]
       Exception.catch (runZchaffReal zchaff)
                    (\ excep -> do
                       -- kill zchaff process

@@ -14,7 +14,8 @@ module GUI.HTkUtils where
 
 import System.Directory
 
-import HTk
+import HTk hiding (font)
+import qualified HTk (font)
 import ScrollBox
 import FileDialog
 

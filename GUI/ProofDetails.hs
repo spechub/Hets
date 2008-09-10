@@ -21,7 +21,8 @@ import Data.IORef
 
 import System.Directory
 
-import HTk
+import HTk hiding (font)
+import qualified HTk (font)
 import XSelection
 import ScrollBox
 import FileDialog

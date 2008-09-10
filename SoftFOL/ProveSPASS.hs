@@ -36,7 +36,7 @@ import SoftFOL.ProverState
 import qualified Common.AS_Annotation as AS_Anno
 import qualified Common.Result as Result
 
-import ChildProcess
+import ChildProcess as CP
 import ProcessClasses
 
 import Text.Regex
@@ -274,7 +274,7 @@ runSpass :: SoftFOLProverState -- ^ logical part containing the input Sign and
              -- ^ (retval, configuration with proof status and complete output)
 runSpass sps cfg saveDFG thName nGoal = do
 --  putStrLn ("running 'SPASS" ++ (concatMap (' ':) allOptions) ++ "'")
-  spass <- newChildProcess "SPASS" [ChildProcess.arguments allOptions]
+  spass <- newChildProcess "SPASS" [CP.arguments allOptions]
   Exception.catch (runSpassReal spass)
     (\ excep -> do
       -- kill spass process

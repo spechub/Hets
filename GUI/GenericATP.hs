@@ -28,7 +28,8 @@ import qualified Control.Concurrent as Conc
 
 import GHC.Read
 
-import HTk
+import HTk hiding (value)
+import qualified HTk (value)
 import SpinButton
 import Messages
 import TextDisplay

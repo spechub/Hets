@@ -266,7 +266,7 @@ makegraphExt title open save saveAs close exit menus nodetypeparams
     (nodetypenames,nodetypeparams1) =
       unzip (("ABSTRACT",abstractNodetypeparams):nodetypeparams)
     (edgetypenames,edgetypeparams1) = unzip edgetypeparams
-  graph <- GraphDisp.newGraph graphtool graphParms
+  graph <- newGraph graphtool graphParms
   ontoGr <- return(Graph.empty)
   relViewSpecList <- return([])
   nodetypes <- sequence (map (newNodeType graph) nodetypeparams1)

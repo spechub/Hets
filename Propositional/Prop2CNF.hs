@@ -53,7 +53,7 @@ import qualified SoftFOL.Translate as Translate
 import qualified CASL.Logic_CASL as CLogic
 import qualified Logic.Coerce as LC
 
-import ChildProcess
+import ChildProcess as CP
 import ProcessClasses
 
 import System
@@ -121,7 +121,7 @@ runSpass :: PState.SoftFOLProverState -- Spass Prover state... Theory + Sig
          -> IO String -- Placeholder
 runSpass sps saveDFG =
     do
-      spass <- newChildProcess prover_name [ChildProcess.arguments allOptions]
+      spass <- newChildProcess prover_name [CP.arguments allOptions]
       Exception.catch (runSpassReal spass)
                    (\ excep -> do
                       -- kill spass process

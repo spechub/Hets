@@ -42,7 +42,7 @@ graphParms :: (GraphAllConfig graph graphParms node nodeType nodeTypeParms
            -> String -- ^ title of graph
            -> graphParms
 graphParms (_ ::
-       GraphDisp.Graph graph graphParms node nodeType nodeTypeParms arc
+       Graph graph graphParms node nodeType nodeTypeParms arc
           arcType arcTypeParms) title =
              GraphTitle title $$
              OptimiseLayout True $$
@@ -61,7 +61,7 @@ makeNodeMenu :: (  GraphAllConfig graph graphParms node
                   -> String -- ^ color of node
                   -> nodeTypeParms value
 makeNodeMenu (_ ::
-       GraphDisp.Graph graph graphParms node nodeType nodeTypeParms arc
+       Graph graph graphParms node nodeType nodeTypeParms arc
           arcType arcTypeParms) showValue logicNodeMenu color =
                logicNodeMenu $$$
                Ellipse $$$
@@ -98,7 +98,7 @@ showLogicGraph ::
    -> IO ()
 showLogicGraph
    (displaySrt ::
-       GraphDisp.Graph graph graphParms node nodeType nodeTypeParms arc
+       Graph graph graphParms node nodeType nodeTypeParms arc
           arcType arcTypeParms) =
     do
            -- disp s tD = debug (s ++ (show tD))
@@ -302,7 +302,7 @@ showHetSublogicGraph ::
    -> IO ()
 showHetSublogicGraph
    (displaySrt ::
-       GraphDisp.Graph graph graphParms node nodeType nodeTypeParms arc
+       Graph graph graphParms node nodeType nodeTypeParms arc
           arcType arcTypeParms) =
     do
        logicG <- newGraph displaySrt (graphParms displaySrt
