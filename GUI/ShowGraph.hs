@@ -27,8 +27,7 @@ import GUI.History(initCommandHistory)
 import GUI.GtkUtils(startMainLoop, stopMainLoop)
 #endif
 
-import InfoBus
--- import Events
+import InfoBus (shutdown)
 import Destructible
 import DialogWin (useHTk)
 
@@ -63,6 +62,6 @@ showGraph file opts env = case env of
     stopMainLoop
 #endif
     destroy wishInst
-    InfoBus.shutdown
+    shutdown
   Nothing -> putIfVerbose opts 1 $ "Error: Basic Analysis is neccessary "
     ++ "to display graphs in a graphical window"
