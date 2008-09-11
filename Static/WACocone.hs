@@ -180,17 +180,6 @@ removeIdentities graph = let
 --  assigns to a node all proper descendents
 initDescList :: (Eq a, Eq b) => Gr a b -> Map.Map Node [(Node, a)]
 initDescList graph =  let
- -- isProperDescOf gr n x = trace (show n ++ " "++ show x)$
---      let
---    existsPath diag snode nlist = if snode `elem` nlist then True
---                                  else let
---       nlist1 = foldl (++) [] $ map (pre diag) nlist
---         in trace ("nlist1 " ++ show nlist1)$ if nlist1 == [] then False
---            else existsPath diag snode (nub nlist1)
---      in  if n == x then False
---          else existsPath gr x [n]
---  descsOf n = filter (\(x,_) -> trace ("descs of " ++ show n) $
---                                      isProperDescOf graph n x)$ labNodes graph
  descsOf n = let
   nodeList = filter (\x -> x /= n) $ pre graph n
   f = Map.fromList $ zip nodeList (repeat False)
