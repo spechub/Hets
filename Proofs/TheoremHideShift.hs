@@ -48,7 +48,6 @@ import Proofs.ComputeColimit
 import Control.Monad
 import Data.List(nub, sortBy)
 import Proofs.SimpleTheoremHideShift(getInComingGlobalUnprovenEdges)
-import Debug.Trace
 import Common.Id
 
 
@@ -72,8 +71,7 @@ convertNodesToNf ln libEnv = do
 
 {- | converts the given node to its own normal form -}
 convertToNf :: LIB_NAME -> LibEnv -> Node -> Result LibEnv
-convertToNf ln libEnv node = trace ("convert " ++ show node ++ " in " ++
-                                    show ln) $ do
+convertToNf ln libEnv node = do
  let dgraph = lookupDGraph ln libEnv
      nodelab = labDG dgraph node
  case dgn_nf nodelab of
@@ -380,10 +378,9 @@ computeTheory useNf libEnv ln n =
     return (libEnv', joinTh)
    else
     if useNf && (hasIngoingHidingDef libEnv ln n) then do
-      let libEnvRes = trace ("converting" ++ show n ++ " in "
-                             ++ show ln) $ convertToNf ln libEnv n
+      let libEnvRes = convertToNf ln libEnv n
       case maybeResult libEnvRes of
-       Nothing -> trace "fails" $ computeTheory False libEnv ln n
+       Nothing -> computeTheory False libEnv ln n
         -- if it fails or colimits are not implemented,
         -- use old version
        Just libEnv' -> do
