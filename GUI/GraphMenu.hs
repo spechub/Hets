@@ -36,7 +36,7 @@ import Proofs.Global(globSubsume, globDecomp)
 import Proofs.Local(localInference, locDecomp)
 import Proofs.Composition(composition, compositionCreatingEdges)
 import Proofs.HideTheoremShift(interactiveHideTheoremShift)
-import Proofs.TheoremHideShift(theoremHideShift)
+import Proofs.TheoremHideShift(theoremHideShift, convertNodesToNf)
 import Proofs.ComputeColimit(computeColimit)
 
 import Data.IORef
@@ -231,7 +231,7 @@ createGlobalMenu gInfo@(GInfo { gi_LIB_NAME = ln
                                                      print
 #endif
     , Menu (Just "Proofs") $ map ( \ (str, cmd) ->
-       Button str $ (addMenuItemToHist ch str) >> 
+       Button str $ (addMenuItemToHist ch str) >>
                   (ral $ performProofAction gInfo
                   $ proofMenu gInfo $ return . return . cmd ln))
        [ ("Automatic", automatic)
@@ -242,17 +242,18 @@ createGlobalMenu gInfo@(GInfo { gi_LIB_NAME = ln
        , ("Composition (merge of rules)", composition)
        , ("Composition - creating new links", compositionCreatingEdges)
        ] ++
-       [Button "Hide Theorem Shift" $ 
+       [Button "Hide Theorem Shift" $
                (addMenuItemToHist ch "Hide Theorem Shift") >>
                (ral $ performProofAction gInfo
                $ proofMenu gInfo $ fmap return . interactiveHideTheoremShift ln)
        ] ++
        map (\ (str, cmd) ->
-              Button str $ (addMenuItemToHist ch str) >> 
+              Button str $ (addMenuItemToHist ch str) >>
                   (ral $ performProofAction gInfo
                   $ proofMenu gInfo $ return . cmd ln))
        [ ("Theorem Hide Shift", theoremHideShift)
        , ("Compute Colimit", computeColimit)
+       , ("Compute normal forms", convertNodesToNf)
        ] ++
        [ Menu (Just "Flattening") $ map ( \ (str, cmd) ->
           Button str $ ral $ performProofAction gInfo
@@ -376,7 +377,7 @@ createMenuButton title menuFun gInfo =
                       (\ (_, descr) ->
                         do le <- readIORef $ libEnvIORef gInfo
                            let dGraph = lookupDGraph (gi_LIB_NAME gInfo) le
-                           menuFun descr dGraph
+                           runAndLock gInfo $  menuFun descr dGraph
                            return ()
                        )
                     )

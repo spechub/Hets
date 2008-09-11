@@ -21,6 +21,7 @@ module Static.WACocone(GDiagram,
                        removeIdentities,
                        hetWeakAmalgCocone,
                        initDescList,
+                       dijkstra,
                        buildStrMorphisms,
                        weakly_amalgamable_colimit
                        ) where
@@ -32,7 +33,7 @@ import qualified Data.Set as Set
 import Data.Graph.Inductive.Graph as Graph
 
 import Common.Lib.Graph as Tree
-import Common.Amalgamate
+-- import Common.Amalgamate for now
 import Common.ExtSign
 import Common.Result
 import Common.LogicT
@@ -52,12 +53,14 @@ weakly_amalgamable_colimit :: StaticAnalysis lid
            -> Result (sign, Map.Map Int morphism)
 weakly_amalgamable_colimit l diag = do
           (sig, sink) <- signature_colimit l diag
-          amalgCheck <- ensures_amalgamability l
-            ([Cell, ColimitThinness], diag, Map.toList sink, Graph.empty)
-          case amalgCheck of
-            NoAmalgamation s -> fail $ "failed amalgamability test " ++ s
-            DontKnow s -> fail $ "amalgamability test returns DontKnow: "++ s
-            _ -> return (sig, sink)
+          return (sig, sink)
+-- until amalgamability check is fixed, just return a colimit
+          -- amalgCheck <- ensures_amalgamability l
+--             ([Cell, ColimitThinness], diag, Map.toList sink, Graph.empty)
+--           case amalgCheck of
+--             NoAmalgamation s -> fail $ "failed amalgamability test " ++ s
+--             DontKnow s -> fail $ "amalgamability test returns DontKnow: "++ s
+--             _ -> return (sig, sink)
 
 -- | Grothendieck diagrams
 type GDiagram = Gr G_theory (Int, GMorphism)
@@ -175,18 +178,39 @@ removeIdentities graph = let
         $ labEdges graph
 
 --  assigns to a node all proper descendents
-initDescList :: Gr a b -> Map.Map Node [(Node, a)]
+initDescList :: (Eq a, Eq b) => Gr a b -> Map.Map Node [(Node, a)]
 initDescList graph =  let
- isProperDescOf gr n x = let
-   existsPath diag snode nlist = if snode `elem` nlist then True
-                                 else let
-      nlist1 = foldl (++) [] $ map (pre diag) nlist
-        in if nlist1 == [] then False
-           else existsPath diag snode nlist1
-     in  if n == x then False
-         else existsPath gr x [n]
- descsOf n = filter (\(x,_) -> isProperDescOf graph n x)$ labNodes graph
- in Map.fromList$ map (\node -> (node, descsOf node)) $ nodes graph
+ -- isProperDescOf gr n x = trace (show n ++ " "++ show x)$
+--      let
+--    existsPath diag snode nlist = if snode `elem` nlist then True
+--                                  else let
+--       nlist1 = foldl (++) [] $ map (pre diag) nlist
+--         in trace ("nlist1 " ++ show nlist1)$ if nlist1 == [] then False
+--            else existsPath diag snode (nub nlist1)
+--      in  if n == x then False
+--          else existsPath gr x [n]
+--  descsOf n = filter (\(x,_) -> trace ("descs of " ++ show n) $
+--                                      isProperDescOf graph n x)$ labNodes graph
+ descsOf n = let
+  nodeList = filter (\x -> x /= n) $ pre graph n
+  f = Map.fromList $ zip nodeList (repeat False)
+  precs nList nList' avail =
+    case nList of
+      [] -> nList'
+      _ -> let
+            nList'' = concat $
+                      map (\y -> filter (\x -> if x `elem` Map.keys avail
+                                                then avail Map.! x
+                                                else True ) $
+                                 filter (\x -> x /= y) $
+                                 pre graph y) nList
+            avail' = Map.union avail $
+                     Map.fromList $ zip nList'' (repeat False)
+           in precs (nub nList'') (nub $ nList' ++ nList'') avail'
+             in precs nodeList nodeList f
+  in Map.fromList$ map (\node -> (node, filter (\x->(fst x) `elem`
+                                                   descsOf node)
+                                       $ labNodes graph )) $ nodes graph
 
 commonBounds :: (Eq a) => Map.Map Node [(Node, a)] -> Node -> Node -> [(Node,a)]
 commonBounds funDesc n1  n2 = filter
@@ -236,10 +260,11 @@ dijkstra graph source target = let
     outEdges = out gr u
     upNeighbor dMap pMap cMap uNode edgeList = case edgeList of
      [] -> (dMap, pMap, cMap)
-     (_, v, (_, gmor)):edgeL  ->  let
+     (_, v, (_, gmor)):edgeL  -> let
        alt =  (Map.!) dMap uNode + 1
       in
-        if (alt >= (Map.!) dMap v) then upNeighbor dMap pMap cMap uNode edgeL
+        if (alt >= (Map.!) dMap v) then
+          upNeighbor dMap pMap cMap uNode edgeL
         else let
       d1 = Map.insert v alt dMap
       p1 = Map.insert v uNode pMap

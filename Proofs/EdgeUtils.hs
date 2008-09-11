@@ -350,7 +350,13 @@ updateWithChanges :: [DGChange] -> DGraph -> (DGraph, [DGChange])
 updateWithChanges = flip updateDGAndChanges
 
 hasIncomingHidingEdge :: DGraph -> Node -> Bool
-hasIncomingHidingEdge dgraph = any (liftE isHidingEdge) . innDG dgraph
+hasIncomingHidingEdge dgraph n =
+  let
+    inEdges = innDG dgraph n
+    precs = map (\ (s,_,_) -> s) $ filter (liftE isGlobalDef) inEdges
+  in
+    any (liftE isHidingEdge) inEdges
+    || (or $ map (hasIncomingHidingEdge dgraph) precs)
 
 {- | return a warning text if the given node has incoming hiding edge,
      otherwise just an empty string. -}
