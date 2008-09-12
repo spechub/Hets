@@ -42,6 +42,7 @@ import qualified Propositional.Sublogic as PS
 import SoftFOL.Logic_SoftFOL (SoftFOL(..))
 import Isabelle.Logic_Isabelle (Isabelle(..))
 import qualified Propositional.Logic_Propositional as Prop
+import VSE.Logic_VSE (VSE(..))
 
 import Comorphisms.Prop2CASL
 import Comorphisms.CASL2SubCFOL
@@ -86,6 +87,7 @@ knownProversWithKind pk =
        pelletCS <- pelletComorphisms
        return $ foldl insProvers Map.empty $
               isaCs ++ spassCs ++ zchaffCS ++ qCs ++ pelletCS
+              ++ [Comorphism $ mkIdComorphism VSE ()]
        where insProvers kpm cm =
               case cm of
                 Comorphism cid ->
