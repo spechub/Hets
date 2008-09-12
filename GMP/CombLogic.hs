@@ -24,6 +24,3 @@ instance Eq l => Form (KD l) () l where
 instance Eq l => Form (G l) Int l where
   extract (G i f) = Box i f
 
--- | Generic Provability Function
---provable :: Form a b c => Boole a -> Bool
---provable f = all(\x -> any(all provable) (map fst (match f))) (cnf f)

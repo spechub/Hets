@@ -1,5 +1,5 @@
 {- | Module     : $Header$
- -  Description : Implemenation of main file for the prover
+ -  Description : Implementation of main file for the prover
  -  Copyright   : (c) Georgel Calin & Lutz Schroeder, DFKI Lab Bremen
  -  License     : Similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
  -  Maintainer  : g.calin@jacobs-university.de
@@ -14,8 +14,9 @@ import Text.ParserCombinators.Parsec
 import System.Environment
 import IO
 
-import GMP.Parser
-import GMP.Generic
+--import Parser
+import GenericSequent
+{-
 
 -- | Replaces all conjunctions by disjunctions and normalizes negations
 preparse :: L a -> L a
@@ -63,9 +64,9 @@ run p_r input = case (parse p_r "" input) of
                                                  _    -> putStrLn "... is not Satisfiable"
 
 -- | Auxiliary run function for testing with the input given as string
-runTest :: Int -> String -> IO ()
+runTest :: [Int] -> String -> IO ()
 runTest ml input = do
-    case ml of
+    case (head ml) of
      1 -> runLex ((par5er Sqr parseKindex) :: Parser (L K)) input
      2 -> runLex ((par5er Sqr parseKDindex) :: Parser (L KD)) input
      3 -> runLex ((par5er Sqr parseCindex) :: Parser (L C)) input
@@ -75,29 +76,37 @@ runTest ml input = do
      7 -> runLex ((par5er Sqr parseMindex) :: Parser (L Mon)) input
      _ -> showHelp
     return ()
+-}
 -- | Function for displying user help 
 showHelp :: IO()
 showHelp = do
     putStrLn ( "Usage:\n" ++
-               "    ./main <ML> -p <path> or ./main <ML> -t <test>\n\n" ++
-               "<ML>:    1 for K Modal Logic\n" ++
-               "         2 for KD Modal Logic\n" ++
-               "         3 for Coalition Logic\n" ++
-               "         4 for Graded Modal Logic\n" ++
-               "         5 for Probability Logic\n" ++
-               "         6 for Hennessy-Milner Modal Logic\n" ++
-               "         7 for Monotonic Logic\n" ++
+               "    ./main -p <path> <N> <L1> <L2> .. <LN>\n" ++
+               "    ./main -t <test> <N> <L1> <L2> .. <LN>\n\n" ++
+               "<N>:     a natural number >0 specifing the number of combined/embedded logics\n" ++
+               "<Lx>:    each logic can be one of the following cases:\n" ++
+               "              1 - K Modal Logic\n" ++
+               "              2 - KD Modal Logic\n" ++
+               "              3 - Coalition Logic\n" ++
+               "              4 - Graded Modal Logic\n" ++
+               "              5 - Probability Logic\n" ++
+               "              6 - Hennessy-Milner Modal Logic\n" ++
+               "              7 - Monotonic Logic\n" ++
                "<path>:  path to input file\n" ++
                "<test>:  test given as a string\n")
 -- | main program function
 main :: IO()
 main = do
     args <- getArgs
-    if (args == [])||(head args == "--help")||(length args < 3)
+    if (args == [])||(head args == "--help")||(length args < 4)
      then showHelp
-     else let ml:it:test:[] = take 3 args
-          in case it of
-               "-p" -> do input <- readFile test
-                          runTest (read ml) input
-               "-t" -> runTest (read ml) test
-               _    -> showHelp
+     else let it:test:n:[] = take 3 args
+              rest = tail.tail.tail $ args
+          in if (length rest < read n)
+             then showHelp
+             else let list = take (read n) rest
+                  in case it of
+                       "-p" -> do input <- readFile test
+                                  putStrLn input
+                       "-t" -> putStrLn test
+                       _    -> showHelp

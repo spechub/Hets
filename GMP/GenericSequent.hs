@@ -3,21 +3,22 @@ module GenericSequent where
 
 import ModalLogic
 import CombLogic
-import Data.List
+import Data.List as List
+--import Data.Map as Map
 
 -- | Generate all possible clauses out of a list of atoms
 allClauses :: [a] -> [Clause a]
 allClauses x = case x of
                  h:t -> let addPositive c (Implies n p) = Implies n (c:p)
                             addNegative c (Implies n p) = Implies (c:n) p
-                        in map (addPositive h) (allClauses t) ++
-                           map (addNegative h) (allClauses t)
+                        in List.map (addPositive h) (allClauses t) ++
+                           List.map (addNegative h) (allClauses t)
                  _   -> [Implies [] []]
 
 -- | Extract the modal atoms from a formula 
 getMA :: Eq a => Boole a -> [Boole a]
 getMA x = case x of
-            And phi psi -> (getMA phi) `union` (getMA psi)
+            And phi psi -> (getMA phi) `List.union` (getMA psi)
             Not phi     -> getMA phi
             At phi      -> [At phi]
             _           -> []
@@ -45,14 +46,18 @@ eval x = case x of
 
 -- | DNF: disjunctive normal form of a Boole expression
 dnf :: (Eq a) => Boole a -> [Clause (Boole a)]
-dnf phi = filter (\x -> eval (subst phi x)) (allClauses (getMA phi))
+dnf phi = List.filter (\x -> eval (subst phi x)) (allClauses (getMA phi))
 
 -- | CNF: conjunctive normal form of a Boole expression
 cnf :: (Eq a) => Boole a -> [Clause (Boole a)]
-cnf phi = map (\(Implies x y) -> Implies y x) (dnf (Not phi))
+cnf phi = List.map (\(Implies x y) -> Implies y x) (dnf (Not phi))
 
 -- | Generic Provability Function
 provable :: (Eq a, Form a b c) => Boole a -> Bool
 provable _ = True
---provable phi = all (\c -> any (all provable) (map fst (match c))) (cnf phi)
+{-
+provable phi = 
+  let unwrap (Subst x) = Map.elems x
+  in all (\c -> any (all provable) (List.map unwrap.snd (match c))) (cnf phi)
+-}
 
