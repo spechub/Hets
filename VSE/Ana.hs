@@ -12,7 +12,8 @@ analysis of VSE logic extension of CASL
 -}
 
 module VSE.Ana
-  ( uTrue
+  ( VSESign
+  , uTrue
   , uFalse
   , aTrue
   , aFalse
@@ -30,6 +31,7 @@ module VSE.Ana
   , minExpForm
   , simpDlformula
   , correctTarget
+  , toSen
   ) where
 
 import Data.Char (toLower)
@@ -59,6 +61,8 @@ import CASL.SimplifySen
 
 import VSE.As
 import VSE.Fold
+
+type VSESign = Sign Dlformula Procs
 
 getVariables :: Sentence -> Set.Set Token
 getVariables = foldFormula $ getVarsRec $ getVSEVars . unRanged
@@ -565,3 +569,6 @@ mapProfile ::  Sort_map -> Profile -> Profile
 mapProfile m (Profile l r) = Profile
   (map (\ (Procparam k s) -> Procparam k $ mapSort m s) l)
   $ fmap (mapSort m) r
+
+toSen :: CASLFORMULA -> Sentence
+toSen = foldFormula $ mapRecord (error "CASL2VSEImport.mapSen")

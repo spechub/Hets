@@ -30,6 +30,7 @@ import VSE.As
 import VSE.Parse
 import VSE.Ana
 import VSE.ATC_VSE ()
+import VSE.Prove(vse)
 import Logic.Logic
 
 data VSE = VSE deriving Show
@@ -39,7 +40,6 @@ instance Language VSE where
   "VSE extends CASL by modal operators and programs."
 
 type VSEBasicSpec = BASIC_SPEC () Procdecls Dlformula
-type VSESign = Sign Dlformula Procs
 type VSEMor = Morphism Dlformula Procs ()
 
 instance Syntax VSE VSEBasicSpec SYMB_ITEMS SYMB_MAP_ITEMS where
@@ -97,5 +97,5 @@ instance Logic VSE ()
                VSESign
                VSEMor
                Symbol RawSymbol () where
-         stability _ = Unstable
-         empty_proof_tree _ = ()
+         stability VSE = Unstable
+         provers VSE = [vse]

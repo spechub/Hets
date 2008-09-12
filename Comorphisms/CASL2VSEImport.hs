@@ -12,8 +12,7 @@ Portability :  non-portable (imports Logic.Logic)
 The embedding comorphism from CASL to VSE.
 -}
 
-module Comorphisms.CASL2VSEImport (CASL2VSEImport(..)
- ) where
+module Comorphisms.CASL2VSEImport (CASL2VSEImport(..)) where
 
 import qualified Data.Set as Set
 import qualified Data.Map as Map
@@ -26,7 +25,6 @@ import CASL.Sublogic as SL
 import CASL.Sign
 import CASL.AS_Basic_CASL
 import CASL.Morphism
-import CASL.Fold
 
 import VSE.Logic_VSE
 import VSE.As
@@ -58,7 +56,7 @@ instance Comorphism CASL2VSEImport
     mapSublogic CASL2VSEImport _ = Just ()
     map_theory CASL2VSEImport = mapCASLTheory
     map_morphism CASL2VSEImport = return . mapMor
-    map_sentence CASL2VSEImport _ = return . mapSen
+    map_sentence CASL2VSEImport _ = return . toSen
     map_symbol CASL2VSEImport = error "nyi"
       -- check these 3, but should be fine
     has_model_expansion CASL2VSEImport = True
@@ -203,10 +201,7 @@ mapSig sign =
            sentences = [] }, sortSens ++ opSens ++ predSens)
 
 mapNamedSen :: Named CASLFORMULA -> Named Sentence
-mapNamedSen = mapNamed mapSen
-
-mapSen :: CASLFORMULA -> Sentence
-mapSen = foldFormula $ mapRecord (error "CASL2VSEImport.mapSen")
+mapNamedSen = mapNamed toSen
 
 mapMor :: CASLMor -> VSEMor
 mapMor m = let
