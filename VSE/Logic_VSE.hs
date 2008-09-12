@@ -1,3 +1,4 @@
+{-# OPTIONS -cpp #-}
 {- |
 Module      :  $Header$
 Description :  the incomplete Logic instance for VSE
@@ -30,7 +31,9 @@ import VSE.As
 import VSE.Parse
 import VSE.Ana
 import VSE.ATC_VSE ()
+#ifdef UNI_PACKAGE
 import VSE.Prove(vse)
+#endif
 import Logic.Logic
 
 data VSE = VSE deriving Show
@@ -98,4 +101,6 @@ instance Logic VSE ()
                VSEMor
                Symbol RawSymbol () where
          stability VSE = Unstable
+#ifdef UNI_PACKAGE
          provers VSE = [vse]
+#endif
