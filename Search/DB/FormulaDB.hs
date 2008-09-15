@@ -6,8 +6,11 @@ module Search.DB.FormulaDB where
 import Database.HaskellDB.DBLayout
 
 import qualified FormulaDB.Profile
+import qualified FormulaDB.Short_profile
 import qualified FormulaDB.Statistics
 import qualified FormulaDB.Inclusion
+import qualified FormulaDB.Theory
+import qualified FormulaDB.Skel_to_theory
 
 formulaDB :: DBInfo
 formulaDB = DBInfo {dbname = "formulaDB",
@@ -33,6 +36,17 @@ formulaDB = DBInfo {dbname = "formulaDB",
                                                   descr = (StringT, False)},
                                            CInfo {cname = "skeleton_length",
                                                   descr = (IntT, False)}]},
+                            TInfo {tname = "short_profile",
+                                   cols = [CInfo {cname = "theory_id",
+                                                  descr = (IntT, False)},
+                                           CInfo {cname = "skeleton_md5",
+                                                  descr = (StringT, False)},
+                                           CInfo {cname = "parameter",
+                                                  descr = (StringT, False)},
+                                           CInfo {cname = "role",
+                                                  descr = (StringT, False)},
+                                           CInfo {cname = "line",
+                                                  descr = (IntT, False)}]},
                             TInfo {tname = "statistics",
                                    cols = [CInfo {cname = "library",
                                                   descr = (StringT, False)},
@@ -54,4 +68,14 @@ formulaDB = DBInfo {dbname = "formulaDB",
                                            CInfo {cname = "morphism",
                                                   descr = (StringT, False)},
                                            CInfo {cname = "morphism_size",
+                                                  descr = (IntT, False)}]},
+                            TInfo {tname = "theory",
+                                   cols = [CInfo {cname = "tid",
+                                                  descr = (IntT, False)},
+                                           CInfo {cname = "name",
+                                                  descr = (StringT, False)}]},
+                            TInfo {tname = "skel_to_theory",
+                                   cols = [CInfo {cname = "skeleton_md5",
+                                                  descr = (StringT, False)},
+                                           CInfo {cname = "theory_id",
                                                   descr = (IntT, False)}]}]}

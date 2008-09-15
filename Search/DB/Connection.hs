@@ -141,6 +141,9 @@ inclusion2clause (source', target', line_assoc', morphism', morphism_size') =
      (morphism <<- show morphism') #
      (morphism_size <<- morphism_size'))
 
+
+insertInclusion rec = myInsert inclusion (inclusion2clause rec)
+
 multiInsertInclusion :: (Show f, Show p) => [InclusionTuple f p] -> IO ()
 multiInsertInclusion recs = myMultiInsert inclusion (map inclusion2clause recs)
 
@@ -188,7 +191,8 @@ insertStatistics stat = myInsert statistics (stat2clause stat)
  DATABASE CONNECTION
 connect :: (MonadIO m) => DriverInterface -> [(String, String)] -> (Database -> m a) -> m a
 -}
-options = [("server","localhost"),("db","formulaDB"),("uid","constructive"),("pwd","constructive")]
+--options = [("server","localhost"),("db","formulaDB"),("uid","constructive"),("pwd","constructive")]
+options = [("server","localhost"),("db","formulaDB"),("uid","active"),("pwd","pi=3,141")]
 
 myConnect :: (Database -> IO a) -> IO a
 myConnect = connect driver options
