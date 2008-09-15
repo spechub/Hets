@@ -26,6 +26,19 @@ mysql> describe profile;
 | skeleton_length  | int(11)                    | YES  |     | NULL    |       | 
 +------------------+----------------------------+------+-----+---------+-------+
 
+
+mysql> describe short_profile;
++--------------+----------------------------+------+-----+---------+-------+
+| Field        | Type                       | Null | Key | Default | Extra |
++--------------+----------------------------+------+-----+---------+-------+
+| theory_id    | mediumint(8) unsigned      | YES  | MUL | NULL    |       | 
+| skeleton_md5 | char(32)                   | YES  |     | NULL    |       | 
+| parameter    | text                       | YES  |     | NULL    |       | 
+| role         | enum('axiom','conjecture') | YES  |     | NULL    |       | 
+| line         | smallint(6)                | YES  |     | NULL    |       | 
++--------------+----------------------------+------+-----+---------+-------+
+
+
 mysql> describe statistics;
 +-------------+-----------+------+-----+---------+-------+
 | Field       | Type      | Null | Key | Default | Extra |
@@ -48,8 +61,18 @@ mysql> describe inclusion;
 | morphism_size | int(11)   | YES  |     | NULL    |       | 
 +---------------+-----------+------+-----+---------+-------+
 
+mysql> describe test;
++--------------+-----------------------+------+-----+---------+-------+
+| Field        | Type                  | Null | Key | Default | Extra |
++--------------+-----------------------+------+-----+---------+-------+
+| skeleton_md5 | char(32)              | YES  |     | NULL    |       | 
+| theory_id    | mediumint(8) unsigned | YES  |     | NULL    |       | 
++--------------+-----------------------+------+-----+---------+-------+
+
+
+
 -}
-module Search.DBSpec where
+module Search.DB.DBSpec where
  
 --import Config (hsSource)
 import Database.HaskellDB
@@ -62,13 +85,14 @@ import Database.HaskellDB.DBSpec.DBSpecToDBDirect
  which implement the connections to the database.
  Repelace afterwards "module XY" by "module DB.XY" with
  cd ./DB
- sed -i 's/module /module DB./' FormulaDB.hs FormulaDB/*
+ sed -i 's/module /module Search.DB./' FormulaDB.hs FormulaDB/*
 -}
 
 createFormulaDB = dbInfoToModuleFiles "/tmp" "FormulaDB" formulaDB
 
 formulaDB :: DBInfo
-formulaDB = makeDBSpec "formulaDB" (DBOptions False) [profile,statistics,inclusion]
+--formulaDB = makeDBSpec "formulaDB" (DBOptions False) [profile,statistics,inclusion]
+formulaDB = makeDBSpec "formulaDB" (DBOptions False) [profile,short_profile,statistics,inclusion,theory,skel_to_theory]
 
 {- profile -}
 profile :: TInfo 
@@ -85,6 +109,10 @@ parameter = makeCInfo "parameter" (StringT,False)
 role = makeCInfo "role" (StringT,False)
 norm_strength = makeCInfo "norm_strength" (StringT,False)
 skeleton_length = makeCInfo "skeleton_length" (IntT,False)
+
+{- short_profile -}
+short_profile :: TInfo 
+short_profile = makeTInfo "short_profile" [theory_id, skeleton_md5, parameter, role, line]
 
 {- statistics -}
 statistics :: TInfo
@@ -104,3 +132,17 @@ target = makeCInfo "target"  (StringT,False)
 line_assoc = makeCInfo "line_assoc"  (StringT,False)
 morphism = makeCInfo "morphism"  (StringT,False)
 morphism_size = makeCInfo "morphism_size"  (IntT,False)
+
+{- theory -}
+theory :: TInfo
+theory = makeTInfo "theory" [tid,name]
+
+tid = makeCInfo "tid"  (IntT,False)
+name = makeCInfo "name"  (StringT,False)
+
+{- skel_to_theory -}
+skel_to_theory :: TInfo
+skel_to_theory = makeTInfo "skel_to_theory" [skeleton_md5,theory_id]
+
+theory_id :: CInfo
+theory_id = makeCInfo "theory_id"  (IntT,False)
