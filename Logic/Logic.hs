@@ -337,10 +337,13 @@ class ( Syntax lid basic_spec symb_items symb_map_items
          -- | signature colimits
          signature_colimit :: lid -> Tree.Gr sign (Int, morphism)
                            -> Result (sign, Map.Map Int morphism)
-         signature_colimit l _ = fail
-           ("signature colimits not implemented for logic " ++ show l)
-
-
+         signature_colimit l _ = statErr l "signature_colimit"
+         {- | rename and qualify the symbols, code out overloading,
+            create sentences for the overloading relation and also return
+            the inverse morphism -}
+         qualify :: lid -> Id -> sign
+                 -> Result (morphism, [Named sentence], morphism)
+         qualify l _ _ = statErr l "qualify"
          -------------------- symbols and raw symbols ---------------------
          {- | Construe a symbol, like f:->t, as a raw symbol.
             This is a one-sided inverse to the function SymSySigSym
