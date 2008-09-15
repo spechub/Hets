@@ -32,6 +32,8 @@ instance (Show c) => Show (Constant c)
           show Some = "some"
           show (LogicDependent c) = "_" ++ show c
 
+type FileName = String
+type DirPath = FilePath
 type Skel = String -- ???
 type LibraryName = String
 type TheoryName = String

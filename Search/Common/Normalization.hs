@@ -400,7 +400,7 @@ normalize f = if (countNodes f > 100) -- && (maxACI f > 8)
 	      else getSkeletonParams ((strongNormalize f),"strong")
     where getSkeletonParams ((sceleton,paramaters,_),info) = (sortBinding sceleton,paramaters,info)
 	  weakNormalize = alphaNormalize . mergeBinding . elemTrueFalse . prenex . annotateScope
-	  strongNormalize = alphaNormalize . mergeBinding . maybeAciFormula . brForm . elemTrueFalse . prenex . annotateScope
+	  strongNormalize = alphaNormalize . mergeBinding . maybeAciFormula . cnf . elemTrueFalse . prenex . annotateScope
 	  maybeAciFormula f = if (maxACI f < 8) then (aciFormula f) else f
 
 countNodes (Var _ fs) = 1 + (sum (map countNodes fs))
