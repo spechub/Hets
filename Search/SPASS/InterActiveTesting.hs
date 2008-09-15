@@ -1,6 +1,6 @@
 {- |
 Module      :  $Header$
-Description :  Fot testing purpose with GHCI
+Description :  Logic independent retrieval functionality
 Copyright   :  (c) Immanuel Normann, Uni Bremen 2007
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
@@ -8,221 +8,273 @@ Maintainer  :  inormann@jacobs-university.de
 Stability   :  provisional
 Portability :  portable
 -}
-{- SoftFOL.DFGParser must export term,
-   Search.SPASS.DB must not have Main as module name
--}
+
 module Main where
 
+import Search.SPASS.FormulaWrapper (wrapTerm,SpassConst)
+import Search.SPASS.UnWrap (readDFGFormulae)
+import Search.Common.Normalization (normalize)
+import Search.Common.Data hiding (parameter,role)
 import Data.List as L
 import Data.Set as S
-import Data.Map as M (Map,fromList,toList)
-import System.Environment (getArgs)
-
-import Search.Utils.SetMap (fromListSetValues)
-import Search.Utils.List (mapShow)
-
-import Search.SPASS.DB hiding (main)
-import Search.Common.Data hiding (parameter)
-import Search.Common.BooleanRing
-import Search.Common.Normalization
-import Search.Common.Select hiding (matchSkeleton)
-import Search.SPASS.FormulaWrapper
-import Search.SPASS.UnWrap hiding (f1,f2)
-import Search.SPASS.Cache
-import SoftFOL.Sign
-import SoftFOL.DFGParser (term)
-import Text.ParserCombinators.Parsec
-
+import Data.Map as M hiding ((!))
+import Data.Maybe (catMaybes)
+import Search.Utils.SetMap as SM --(fromListSetValues)
+import Search.Utils.List
 import Database.HaskellDB
 import Database.HaskellDB.DriverAPI
 import Database.HaskellDB.HDBRec
 import Search.DB.Connection
-import Search.DB.FormulaDB.Skel_to_theory as T
-import Search.DB.FormulaDB.Profile as P hiding (Role,skeleton)
+import Search.DB.FormulaDB.Profile as P
+import Search.DB.FormulaDB.Short_profile as SP
+import SoftFOL.Sign --(SPTerm,)
+--import Search.DB.FormulaDB.Skel_to_theory as ST
+import Search.DB.FormulaDB.Theory as T
+import MD5
+import System.Environment (getArgs)
 
-testdfg = "/home/immanuel/dfg/query-files/test.dfg"
-tmp = "/home/immanuel/dfg/query-files/tmp.dfg"
-tmp2 = "/home/immanuel/dfg/query-files/tmp2.dfg"
-alg1 = "/home/immanuel/dfg/query-files/alg_1__t9_alg_1.dfg"
-aff1 = "/home/immanuel/dfg/query-files/aff_1__t10_aff_1.dfg"
+dir = "/home/immanuel/dfg/dfg-problems/alg_1"
+dfgFile = "alg_1__t9_alg_1.dfg"
+--dfgFile = "mod_1__t13_mod_1.dfg"
 
-runOn normalizer file = 
-    do (t,_,_):_ <- readDFGFormulae file
-       return (normalizer $ wrapTerm t)
-
-elemQ (Binder _ _ f) = elemQ f
-elemQ f = f
-
-runTest file = do fs <- readDFGFormulae file
-                  mapM_ showAnalyse fs
-                  --showAnalyse (fs!!0)
-                  --return (map analyse fs)
-
-analyse (t,n,r) = (normalize f,alphaNormalize $ annotateScope f,n::Int,r::Role)
-    where f = wrapTerm t
-
-showAnalyse :: (SoftFOL.Sign.SPTerm, Int, Role) -> IO ()
-showAnalyse (t,n,r) =
-    let (nf,af,n,r) = analyse (t,n,r)
-    in do putStrLn "8<------------------------------------------"
-          -- putStrLn ("line: " ++ show n) -- ++ "  role: " ++ show r)
-          putStrLn (show nf)
-          putStrLn (show af)
-
-f1 = "forall([a,b],and(a,or(b,not(a))))"
-f2 = "implies(P(A),implies(R(B,A),Q(B)))"
-f3 = "forall([A],implies(P(A),forall([B],implies(R(B,A),Q(B)))))"
-f4 = "implies(f1(A),implies(f2(B,A),and(f3(B),and(f4(B),f5(B)))))"
-
-br str = getTerm str >>= return . brForm
-{-
-*SPASS.InterActiveTesting> br "implies(a,b)"
-(xor "a" (and "b" "a") true)
--}
-
-getTerm str = run term str >>= return . wrapTerm
-getBTerm str = run term str >>= return . fromAlgebra . wrapTerm
-reduceBTerm str = run term str >>= return . reduce . fromAlgebra . wrapTerm
-
-getArguments (Var _ args) = args
-getArguments (Const _ args) = args
-
-run p input = case (parse p "" input)
-              of Left err -> error (show err)
-                 Right result  -> return result
-
--- --------------------------------------------------------------
-{-
-search getSourceProfiles dir file =
-    let skelOf (skel,_,_,_) = skel
-    in do (axioms,theorems) <- getSourceProfiles dir file
-          axioms' <- return $ removeDuplicateProfiles axioms
-          targetCandidates <- allTargetCandidates (L.map skelOf axioms')
-
-
-allTargetCandidates skels =
-    let len = length $ nub skels
-        comprisesAllSkels skelLineSet = 
-                     ((S.size $ S.map fst skelLineSet) == len)
-    in do triples <- matchSkeleton skels
-          return $ (M.map fromSetSetValues
-                         (M.filter comprisesAllSkels (fromListSetValues triples)))
-
-dfgNormalize (lib,theory) (spterm, lineNr, role) = 
-    Profile lib theory lineNr spterm skel pars role strength
-         where (skel,pars,strength) = normalize $ wrapTerm spterm
-
--}
-
-dfgProblems = "/home/immanuel/dfg/dfg-problems"
-gs f = getAxiomSkels dfgProblems f
---alg1 =  "alg_1/alg_1__t9_alg_1.dfg"
-
-getAxiomSkels :: DirPath -> FileName -> IO [Skel]
-getAxiomSkels dir file =
-    let getSkel (skel,_,_,_) = skel
-    in do (axioms,_) <- readAxiomsAndTheorems dir file
-          return $ L.map getSkel axioms
-
---getTheoryIds :: [Skel] -> IO (M.Map TheoryName (S.Set Skel))
-getTheoryIds skels =
-    let q = do t <- table profile  -- the query
-	       restrict (_in (t!P.skeleton_md5) (L.map constant skels))
-	       project (file << t!file # P.skeleton_md5 << t!P.skeleton_md5)
-        recToTuple rec = (theory,skel)
-            where (RecCons theory (RecCons skel _)) = rec RecNil
-        recsToMap recs = L.map recToTuple recs
-        --recsToMap recs = fromListSetValues $ L.map recToTuple recs
-    in do recs <- myQuery q
-          return $ recsToMap recs
-
-
---fromListSetValues :: (Ord k,Ord v) => [(k,v)] -> Map.Map k (Set.Set v)
-
-boese = "1a8c5f73411bbd689bff1d9306b9da3b"
-gut = "000014d104f7cccb8a8bf6471f220f0a"
+-- todo: SenType -> Role in ShortProfile
 
 main = do args <- getArgs
           case args of
-            ("skel":skel:_) -> getTheoryIds [skel] >>= putStrLn . show
-            ("file":file:_) -> getAxiomSkels dfgProblems file >>= 
-                               getTheoryIds >>=
-                               putStrLn . show
+            (dir:file:_) -> searchDFG dir file >> return ()
+            _ -> error "invalid arguments! It should be one of:\nsearch <dir> <file>"
+            
 
-{-
-  ab hier interessant:
--}
-serialize skel =
-    let q = do t <- table skel_to_theory  -- the query
-               restrict ((t!T.skeleton_md5) .==. (constant skel))
-	       project (theory_id << t!theory_id)
-        recToTuple rec = skel
-            where (RecCons skel _) = rec RecNil
-        recsToSet recs = S.fromList $ L.map recToTuple recs
-        --recsToMap recs = fromListSetValues $ L.map recToTuple recs
+-- -----------------------------------------------------------
+-- *  SPASS specific
+-- -----------------------------------------------------------
+
+searchDFG :: DirPath -> FileName -> IO [[LongInclusionTuple SPIdentifier]]
+searchDFG = search readAxiomsAndTheorems
+
+readAxiomsAndTheorems :: DirPath -> FileName -> IO [Triple SpassConst SPIdentifier]
+readAxiomsAndTheorems dir file =
+    do fs <- readDFGFormulae (dir ++ "/" ++ file) -- fs :: [DFGFormula]
+       return $ (L.map toSProfile fs)
+
+type DFGFormula = (SPTerm, LineNr, Search.Common.Data.Role)
+-- type ShortProfile p = (Skel, [p], LineNr, SenType)
+
+
+toSProfile :: (SPTerm, LineNr, Search.Common.Data.Role)
+           -> Triple SpassConst SPIdentifier
+toSProfile (spterm,line,role) = (formula,line,role')
+    where formula = wrapTerm spterm
+          --skel' = md5s $ Str $ show $ skel
+          role' = if role == Axiom then "axiom" else "theorem"
+
+-- -----------------------------------------------------------
+-- *  Principle Functions
+-- -----------------------------------------------------------
+
+test = search' readAxiomsAndTheorems "/home/immanuel/dfg/dfg-problems/alg_1" "alg_1__t9_alg_1.dfg"
+
+search' getSourceProfiles dir file =
+    do triples <- getSourceProfiles dir file -- (formula,line,role') [ShortProfile p]
+       (axioms,theorems) <- return $ L.partition isAxiom $ normalizeAndCleanUp triples
+       tIds <- targetIds $ L.map getSkel axioms  -- [Int]
+       theoryIdNamePairs <- idToName tIds
+       return theoryIdNamePairs
+
+
+search :: (Show p, Show c, Ord p, Ord c, Read p) =>
+          (DirPath -> TheoryName -> IO [Triple c p])
+          -> DirPath
+          -> TheoryName
+          -> IO [[LongInclusionTuple p]]
+search getSourceProfiles dir file =
+    do triples <- getSourceProfiles dir file -- (formula,line,role') [ShortProfile p]
+       (axioms,theorems) <- return $ L.partition isAxiom $ normalizeAndCleanUp triples
+       tIds <- targetIds $ L.map getSkel axioms  -- [Int]
+       theoryIdNamePairs <- idToName tIds
+       --return theoryIdNamePairs
+       mapM (matchOne axioms theorems file) theoryIdNamePairs
+
+idToName :: [TargetId] -> IO [(TargetId,TheoryName)]
+idToName theoryIds =
+    let q = do t <- table theory  -- the query
+	       restrict (_in (t!T.tid) (L.map constant theoryIds))
+	       project (T.tid << t!T.tid # T.name << t!T.name)
+        recToTuple rec = (id,name)
+            where (RecCons id (RecCons name _)) = rec RecNil
+        recsToMap recs = L.map recToTuple recs
     in do recs <- myQuery q
-          putStrLn skel
-          writeFile ("/home/immanuel/dfg/cache/" ++ skel) (show $ recsToSet recs)
-          --serialize 0 $ recsToMap recs
+          return $ recsToMap recs
 
-s1 = ["d304fdc9ed308dcf598ea4361eb69340","1a8c5f73411bbd689bff1d9306b9da3b","e1c12f1b37171c29b65ba1230072e10f"]
+-- type LongInclusionTuple p = (TheoryName, TheoryName, Renaming p, LineMap, [LineNr])
 
-readIntList lst = (read lst)::[Int]
-readIntSet lst = (read lst):: S.Set Int
-readStrList lst = (read lst)::[String]
+matchOne :: (Read p,Ord p,Show p) => [ShortProfile p] -> [ShortProfile p]
+         -> TheoryName -> (TheoryId,TheoryName)
+         -> IO [LongInclusionTuple p]
+matchOne sAxioms sTheorems sTheoryName (tTheoryId,tTheoryName) =
+    let toIncTuple (st,tt,ps,lm,lines) =  (st,tt,ps,lm,length lines)
+        --mkPair tMap = (tTheoryName,tMap)
+    in do putStrLn tTheoryName
+          targetProfiles <- getProfilesFromDB tTheoryId -- [ShortProfile p]
+          --morphs <- return $ mkPair $ calcMorphs sAxioms targetProfiles
+          morphs <- return $ theoryInterpretation sAxioms targetProfiles
+          longIncTuples <- return (L.map (inclusionTuple sTheoryName tTheoryName
+                                          targetProfiles sTheorems)
+                                   morphs)
+          multiInsertInclusion $ (L.map toIncTuple longIncTuples)
+          return longIncTuples
 
+
+
+
+toProfile2 (skel, ps, lineNr, _) = (skel, (ps, lineNr))
+
+type TargetId = Int
+
+data Hide x = H x
+
+
+targetIds :: [Skel] -> IO [TargetId]
+targetIds skels =
+    do targetIdMatrix <- mapM readTheoryIds skels
+       return $ S.toList $ foldr1 S.intersection targetIdMatrix
+
+readTheoryIds :: Skel -> IO (Set Int)
 readTheoryIds skel = readFile ("/home/immanuel/dfg/cache/" ++ skel) >>= return . readIntSet
+    where readIntSet lst = (read lst):: S.Set Int
 
-readAllSkeletons = readFile "/home/immanuel/dfg/cache/all-skeletons" >>= return . readStrList
 
-readTheoryIdIntersection skels = 
-    do listOfTids <- mapM readTheoryIds skels
-       return $ S.size $ L.foldl1 S.intersection listOfTids
+-- type ShortProfile p = (Skel, [p], LineNr, SenType)
+isAxiom (_,_,_,r) = r == "axiom"
+getSkel (skel,_,_,_) = skel
+getRen (_,ren,_,_) = ren
+getLine (_,_,line,_) = line
 
--- readTheoryIdIntersection ["a","b","c","d","e","f","g","h","i","j"]
+type Triple c p = (Search.Common.Data.Formula (Constant c) p, LineNr, SenType)
 
-showSQL = do t <- table skel_to_theory  -- the query
-             restrict ((t!T.skeleton_md5) .==. (constant "1a8c5f73411bbd689bff1d9306b9da3b"))
-	     project (theory_id << t!theory_id)
+--normalizeAndCleanUp :: (Eq p) => [ShortProfile p] -> [ShortProfile p]
+normalizeAndCleanUp :: (Show p, Show c, Ord p, Ord c) =>
+                       [Triple c p] -> [ShortProfile p]
+normalizeAndCleanUp triples = L.map normalizeTriple cleanTriples
+    where isNonTrivial ((Const TrueAtom []),_,_) = False
+          isNonTrivial _ = True
+          eqTriples (f1,_,_) (f2,_,_) = f1 == f2
+          cleanTriples = nubBy eqTriples $ L.filter isNonTrivial triples
+          normalizeTriple (f,l,r) = (md5s $ Str $ show s,p,l,r)
+              where (s,p,_) = normalize f
 
-{-
-serialize n [] = return ()
-serialize n assoc = 
-    let step = 5
-        (l,rassoc) = splitAt step assoc
-        lassoc = M.toList $ fromListSetValues l
-    in do writeFile ("/home/immanuel/dfg/cache/" ++ show n) $ show lassoc
-          putStrLn $ show n
-          serialize (n+step) rassoc
 
-genCache = getTheoryIds4 $ take 12 skels
+inclusionTuple :: (Eq p,Ord p) =>
+                  TheoryName  -- ^ source theory
+               -> TheoryName  -- ^ target theory
+               -> [ShortProfile p] -- ^ profiles of target sentences
+               -> [ShortProfile p] -- ^ profiles of source theorems
+               -> (Renaming p, LineMap) -- ^ profile mapping
+               -> LongInclusionTuple p -- ^ profiles of reused source theorems
+inclusionTuple st tt ts ss (ren,lmap) = (st,tt,ren',lmap',newTheorems)
+    where newTheorems = L.map lineOf $ reusedTheorems ts ss ren
+          lineOf (_,_,lNr,_) = lNr
+          neq a b = a /=b
+          ren' = M.filterWithKey neq ren
+          lmap' = M.filterWithKey neq lmap
+
+reusedTheorems :: (Eq p,Ord p) => [ShortProfile p] -> [ShortProfile p] -> Renaming p -> [ShortProfile p]
+reusedTheorems tSens sTheorems renaming = L.filter reusedTheorem sTheorems'
+    where sTheorems' = L.map (translate renaming) sTheorems
+          neq (s1,p1,_,_) (s2,p2,_,_) = (s1 /= s2) || (p1 /= p2)
+          reusedTheorem s = all (neq s) tSens
+
+translate :: (Ord p) => Renaming p -> ShortProfile p -> ShortProfile p 
+translate renaming (skel,param,lnr,role) = (skel,param',lnr,role)
+    where param' = L.map (f renaming) param
+          f renaming param = findWithDefault param param renaming
+
+-- -----------------------------------------------------------
+-- *  Database Access
+-- -----------------------------------------------------------
+
+type TheoryId = Int
+
+getProfilesFromDB :: (Read p) => TheoryId -> IO [ShortProfile p]
+getProfilesFromDB tTheoryId =
+    let q = do t <- table short_profile  -- the query
+	       restrict ((t!SP.theory_id) .==. (constant tTheoryId))
+	       project (SP.skeleton_md5 << t!SP.skeleton_md5 # 
+                        SP.parameter << t!SP.parameter # 
+                        SP.line << t!SP.line # SP.role << t!SP.role)
+        recToTuple rec = (skel, (read parameter) , line, role)
+            where (RecCons skel (RecCons parameter (RecCons line (RecCons role _)))) = 
+                      rec RecNil
+    in do recs <- myQuery q
+          return $ L.map recToTuple recs
+
+showq tTheoryId =
+    do t <- table short_profile  -- the query
+       restrict ((t!SP.theory_id) .==. (constant tTheoryId))
+       project (SP.skeleton_md5 << t!SP.skeleton_md5 # 
+                SP.parameter << t!SP.parameter # 
+                SP.line << t!SP.line # SP.role << t!SP.role)
+
+-- -----------------------------------------------------------
+-- *  Matching
+-- -----------------------------------------------------------
+
+theoryInterpretation :: (Read p, Ord p) => [ShortProfile p] -> [ShortProfile p]
+                     -> [(Renaming p, LineMap)]
+theoryInterpretation sAxioms tProfiles = 
+    case (L.map (matchList tProfiles) sAxioms)
+    of [] -> []
+       matrix ->  foldl1 merge matrix
+
+{- |
+   merge takes two lists of profile mappings and returns the list of
+   all profile mappings resulting from a admissible union out of the
+   Cartesian product of the input lists. A union is of two profile mappings
+   is admissible iff their renamings are equal on their common domain.
 -}
+merge :: (Ord p, Read p) => [(Renaming p, LineMap)]
+                 -> [(Renaming p, LineMap)]
+                 -> [(Renaming p, LineMap)]
+merge ps1 ps2 = catMaybes [merge' p1 p2 | p1 <- ps1, p2 <- ps2]
+    where merge' (r1,l1) (r2,l2) =
+              case maybeUnion r1 r2
+              of (Just r) -> Just (r, M.union l1 l2)
+                 Nothing -> Nothing
 
-targetCandidates :: [String] -> S.Set Int
-targetCandidates skels = foldr1 S.intersection filteredTidsList
-    where inSkels (s,_) = elem s skels
-          filteredTidsList = L.map snd $ L.filter inSkels cache
-
-
-
-{- alternative Ansaetze
-
-targetCandidates skels = M.fold S.intersection (M.filter inSkels cache)
-    where inSkels s _ = s elem skels
-          
-foldWithKey :: (k -> a -> b -> b) -> b -> Map k a -> b
- keys map = foldWithKey (\k x ks -> k:ks) [] map
-filterWithKey :: Ord k => (k -> a -> Bool) -> Map k a -> Map k a
-
-conditionalIntersect :: String -> S.Set Int -> S.Set Int -> S.Set Int
-conditionalIntersect skel tids1 tids2 =
-    if skel in skels
-    then S.intersect tids1 tids2
-    else 
-
--}                        
-
-
-{-
- CACHE
+{- |
+   matchList takes  a list of target pairs and a single source pair
+   and returns a list of renamings together with a line number mapping.
 -}
+matchList :: (Ord p, Read p) =>
+            [ShortProfile p] -> ShortProfile p -> [(Renaming p, LineMap)]
+matchList targetProfiles sourceProfile =
+    foldr justInsert [] (L.map (match sourceProfile) targetProfiles)
+        where justInsert Nothing lst = lst
+              justInsert (Just x) lst = x:lst
+
+{- |
+   match takes two pairs and returns (Just) 
+   a renaming of parameters and a line number association
+   if the pairs match and Nothing otherwise.
+   Each pair has a list of parameter as first component
+   and a line number as second. Each pair represents a formula
+   whose skeleton is supposed to be identical.
+   The pairs match iff their parameter do (s. 'constructRenaming').
+-}
+match :: (Ord p, Read p) => ShortProfile p -> ShortProfile p
+                -> Maybe (Renaming p, LineMap)
+match (s1,p1,l1,_) (s2,p2,l2,_) =
+    if s1 == s2
+    then case constructRenaming p1 p2
+         of (Just renaming) -> Just (renaming, M.singleton l1 l2)
+            _ -> Nothing
+    else Nothing
+
+{- |
+   constructRenaming takes two lists of parameters and returns (Just) a pointwise
+   mapping between these lists if this is consistently possible.
+   Otherwise it returns Nothing.
+-}
+constructRenaming :: (Ord p, Read p) => [p] -> [p] -> Maybe (Renaming p)
+constructRenaming lst1 lst2 = SM.fromList $ zip lst1 lst2
+
