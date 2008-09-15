@@ -83,7 +83,6 @@ import Comorphisms.OWL2CASL_DL
 import Comorphisms.OWL2DL
 import Comorphisms.DL2CASL_DL
 import Comorphisms.RelScheme2CASL
-import Comorphisms.CASL2VSE
 import Comorphisms.CASL2VSERefine
 import Comorphisms.CASL2VSEImport
 
@@ -134,7 +133,6 @@ comorphismList =
     , Comorphism OWL2DL
     , Comorphism DL2CASL_DL
     , Comorphism RelScheme2CASL
-    , Comorphism CASL2VSE
     , Comorphism CASL2VSEImport
     , Comorphism CASL2VSERefine
 #endif
