@@ -11,14 +11,6 @@ Portability :  portable
 Symbols and signature morphisms for the CASL logic
 -}
 
-{-
-todo:
-issue warning for symbols lists like __ * __, __ + __: Elem * Elem -> Elem
-the qualification only applies to __+__ !
-
-possibly reuse SYMB_KIND for Kind
--}
-
 module CASL.Morphism where
 
 import CASL.Sign
@@ -34,6 +26,7 @@ import Common.Keywords
 import Common.Result
 
 import Control.Exception (assert)
+import Control.Monad
 
 type SymbolSet = Set.Set Symbol
 type SymbolMap = Map.Map Symbol Symbol
@@ -157,31 +150,47 @@ symOf sigma = let
 
 statSymbMapItems :: [SYMB_MAP_ITEMS] -> Result RawSymbolMap
 statSymbMapItems sl = do
-  ls <- mapM s1 sl
-  foldl insertRsys (return Map.empty) (concat ls)
-  where
-  s1 (Symb_map_items kind l _) = mapM (symbOrMapToRaw kind) l
-  insertRsys m (rsy1,rsy2) = do
-    m1 <- m
-    case Map.lookup rsy1 m1 of
-      Nothing -> return $ Map.insert rsy1 rsy2 m1
-      Just rsy3 ->
-        plain_error m1 ("Symbol " ++ showDoc rsy1 " mapped twice to "
+  let check l = case l of
+         Symb (Symb_id _) : Symb (Qual_id b _ _) : r ->
+            mkDiag Warning "qualification only applies to" b : check r
+         _ : r -> check r
+         [] -> []
+      st (Symb_map_items kind l _) = do
+        appendDiags $ check l
+        mapM (symbOrMapToRaw kind) l
+      insertRsys m1 (rsy1, rsy2) = case Map.lookup rsy1 m1 of
+          Nothing -> return $ Map.insert rsy1 rsy2 m1
+          Just rsy3 ->
+              plain_error m1 ("Symbol " ++ showDoc rsy1 " mapped twice to "
                 ++ showDoc rsy2 " and " ++ showDoc rsy3 "") nullRange
+  ls <- mapM st sl
+  foldM insertRsys Map.empty (concat ls)
 
 symbOrMapToRaw :: SYMB_KIND -> SYMB_OR_MAP -> Result (RawSymbol, RawSymbol)
 symbOrMapToRaw k sm = do
   let (u, v) = case sm of
          Symb s -> (s, s)
          Symb_map s t _ -> (s, t)
+      ws = case sm of
+             Symb_map (Symb_id a) (Symb_id b) _ | a == b ->
+               [mkDiag Hint "unneeded identical mapping of" a]
+             _ -> []
+  appendDiags ws
   w <- symbToRaw k u
   x <- symbToRaw k v
   return (w, x)
 
 statSymbItems :: [SYMB_ITEMS] -> Result [RawSymbol]
 statSymbItems sl =
-  fmap concat (mapM s1 sl)
-  where s1 (Symb_items kind l _) = mapM (symbToRaw kind) l
+  let check l = case l of
+         Symb_id _ : Qual_id b _ _ : r ->
+            mkDiag Warning "qualification in list only applies to" b : check r
+         _ : r -> check r
+         [] -> []
+      st (Symb_items kind l _) = do
+        appendDiags $ check l
+        mapM (symbToRaw kind) l
+  in fmap concat (mapM st sl)
 
 symbToRaw :: SYMB_KIND -> SYMB -> Result RawSymbol
 symbToRaw k si = case si of

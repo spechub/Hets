@@ -87,12 +87,12 @@ symbs ks =
 -- | parse a possible kinded list of symbol mappings
 symbMapItems :: [String] -> GenParser Char st SYMB_MAP_ITEMS
 symbMapItems ks =
-    do s <- symbMap ks
-       return (Symb_map_items Implicit [s] nullRange)
+    do (is, ps) <- symbMaps ks
+       return (Symb_map_items Implicit is $ catRange $ ps)
     <|>
     do (k, p) <- symbKind
        (is, ps) <- symbMaps ks
-       return (Symb_map_items k is $ catRange $ p:ps)
+       return (Symb_map_items k is $ catRange $ p : ps)
 
 -- | parse a comma separated list of symbol mappings
 symbMaps :: [String] -> GenParser Char st ([SYMB_OR_MAP], [Token])
