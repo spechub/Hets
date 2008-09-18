@@ -41,6 +41,7 @@ module Common.ATerm.ReadWrite
 
 import Common.ATerm.AbstractSyntax
 import Common.SimpPretty
+import Common.Base64
 import Data.Char
 import qualified Data.IntMap as IntMap
 
@@ -311,46 +312,3 @@ mkAbbrevAux x str =
 
 deAbbrev :: [Char] -> Int
 deAbbrev = let f m c = 64 * m + toBase64Int c in foldl f 0
-
-{-
-toBase64 :: [Char]
-toBase64 =
-  [ 'A','B','C','D','E','F','G','H','I','J','K','L','M','N','O','P',
-    'Q','R','S','T','U','V','W','X','Y','Z','a','b','c','d','e','f',
-    'g','h','i','j','k','l','m','n','o','p','q','r','s','t','u','v',
-    'w','x','y','z','0','1','2','3','4','5','6','7','8','9','+','/'
-  ]
--}
-
-toBase64Int :: Char -> Int
-toBase64Int c
-    | isUpper c = ord c - ordA
-    | isLower c = ord c - orda_26
-    | isDigit c = ord c + mord0_52
-    | c == '+' = 62
-    | otherwise = 63 -- '/'
-
-toBase64Char :: Int -> Char
-toBase64Char i
-    | i < 26 = chr (ordA + i)
-    | i < 52 = chr (orda_26 + i)
-    | i < 62 = chr (i - mord0_52)
-    | i == 62 = '+'
-    | otherwise = '/' -- 63
-
-isBase64Char :: Char -> Bool
-isBase64Char c = isAscii c && (isAlphaNum c || c == '+' || c == '/')
-
--- a couple of constants
-
-ordA :: Int
-ordA = ord 'A'
-
-orda_26 :: Int
-orda_26 = ord 'a' - 26
-
-ord0 :: Int
-ord0 = ord '0'
-
-mord0_52 :: Int
-mord0_52 = 52 - ord0
