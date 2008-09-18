@@ -227,7 +227,7 @@ writeTheory :: HetcatsOpts -> FilePath -> GlobalAnnos -> G_theory -> LIB_NAME
 writeTheory opts filePrefix ga
   raw_gTh@(G_theory lid (ExtSign sign0 _) _ sens0 _) ln i ot =
     let fp = filePrefix ++ "_" ++ show i
-        f = fp ++  "." ++ show ot
+        f = fp ++ "." ++ show ot
         th = (sign0, toNamedList sens0)
     in case ot of
     ThyFile -> writeIsaFile opts fp raw_gTh ln i

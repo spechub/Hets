@@ -367,7 +367,7 @@ sortedWorldTerm fws v = Sorted_term (Qual_var v fws nullRange) fws nullRange
 addWorld_OP :: SORT -> OP_NAME -> Set.Set OpType
             -> Map.Map OP_NAME (Set.Set OpType)
             -> Map.Map OP_NAME (Set.Set OpType)
-addWorld_OP = addWorld_ (\ws t -> t { opArgs =  ws : opArgs t})
+addWorld_OP = addWorld_ (\ws t -> t { opArgs = ws : opArgs t})
 
 addWorld_PRED :: SORT -> PRED_NAME -> Set.Set PredType
               -> Map.Map PRED_NAME (Set.Set PredType)

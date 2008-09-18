@@ -63,8 +63,8 @@ instance Comorphism CoCASL2CoPCFOL
                 ++ map (mapNamed mapSen) (generateAxioms sig)))
       (map_sentence CoCASL2CoPCFOL)
     map_morphism CoCASL2CoPCFOL mor = return
-      (mor  { msource =  encodeSig $ msource mor,
-              mtarget =  encodeSig $ mtarget mor })
+      (mor  { msource = encodeSig $ msource mor,
+              mtarget = encodeSig $ mtarget mor })
       -- other components need not to be adapted!
     map_sentence CoCASL2CoPCFOL _ = return . cf2CFormula
     map_symbol CoCASL2CoPCFOL = Set.singleton . id

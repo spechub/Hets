@@ -71,7 +71,7 @@ instance Comorphism CASL2VSERefine
 mapCASLTheory :: (CASLSign, [Named CASLFORMULA]) ->
                  Result (VSESign, [Named Sentence])
 mapCASLTheory (sig, n_sens) = do
-  let (tsig, genAx) =  mapSig sig
+  let (tsig, genAx) = mapSig sig
       tsens = map mapNamedSen n_sens
   case not $ null $ checkCases tsig (tsens ++ genAx) of
    True -> fail "case error in signature"
@@ -352,7 +352,7 @@ mapSig sign =
                                             nullRange
                                            ,Var_decl (btoken:btokens)
                                               uBoolean nullRange
-                                            ] ++  (map
+                                            ] ++ (map
                                             (\((t1,t2),si) ->
                                              Var_decl [t1, t2] si
                                              nullRange) $
@@ -568,7 +568,7 @@ mapSig sign =
           congrP = [makeNamed "" $
                   Quantification Universal ([Var_decl (btoken:r1:r2:btokens)
                                               uBoolean nullRange
-                                            ] ++  (map
+                                            ] ++ (map
                                             (\((t1,t2),si) ->
                                              Var_decl [t1, t2] si
                                              nullRange) $
