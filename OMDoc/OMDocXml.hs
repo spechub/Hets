@@ -24,7 +24,7 @@ import qualified Data.List as List
 
 import Data.Char
 
-import qualified Codec.Binary.Base64 as Base64
+import qualified Common.Base64 as Base64
 
 import qualified Numeric as Numeric
 
@@ -1247,7 +1247,7 @@ instance XmlRepresentable OMBase64 where
   fromXml t =
     case (HXT.isTag "OMB") t of
       [] -> Nothing
-      _ -> fmap OMB $ Base64.decode $ HXT.xshow $ HXT.getChildren t
+      _ -> Just $ OMB $ Base64.decode $ HXT.xshow $ HXT.getChildren t
 
 -- | OMSTR
 instance XmlRepresentable OMString where
