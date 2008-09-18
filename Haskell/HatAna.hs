@@ -164,7 +164,7 @@ hatAna2 (hs@(HsDecls ds), e, _) = do
            case filter ((==ns) . namespace) $ applyRel expScope (fakeSN n) of
            [v] -> Right (ent2pnt v)
            _ -> Left ("'" ++ n ++ "' unknown or ambiguous")
-       inMyEnv =  withStdNames findPredef
+       inMyEnv = withStdNames findPredef
                . inModule (const mod_Prelude) []
                . extendts [ a :>: b | (a, b) <- Map.toList $ values e ]
                . extendkts [ a :>: b | (a, b) <- Map.toList $ types e ]

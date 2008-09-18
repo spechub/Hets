@@ -219,7 +219,7 @@ generateAxioms b bsorts sig = filter (not . is_True_atom . sentence) $
       \ op pr : s'->s   \
       \ pred d:s        \
       \ forall x:s . d(x) => pr(x)=x %(ga_projection)% "
-      | s <- sortList, let y =  mkSimpleId "y",
+      | s <- sortList, let y = mkSimpleId "y",
         s' <- minSupers s]
     ++ [inlineAxioms CASL
       " sort s          \

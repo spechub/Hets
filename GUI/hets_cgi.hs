@@ -278,8 +278,7 @@ anaInput contents selectedBoxes outputfiles =
       -- log file
       saveLog :: Bool -> IO()
       saveLog willSave =
-          when willSave (
-                do
+          when willSave $ do
                   fd <- openFd logFile ReadWrite Nothing
                                defaultFileFlags{append = True}
                   fSize <- sizeof fd
@@ -290,19 +289,18 @@ anaInput contents selectedBoxes outputfiles =
                   fdWrite fd (aktTime ++ "\n" ++ contents ++ "\n\n")
                   setLock fd fileunlock
                   closeFd fd
-                        )
-        where
-          timeStamp :: IO String
-          timeStamp =  do t <- getClockTime
-                          ct <- toCalendarTime t
-                          return $ calendarTimeToString ct
-
-          sizeof :: Fd -> IO FileOffset
-          sizeof fd = do fstatus <- getFdStatus fd
-                         return $ fileSize fstatus
+      timeStamp :: IO String
+      timeStamp = do
+            t <- getClockTime
+            ct <- toCalendarTime t
+            return $ calendarTimeToString ct
+      sizeof :: Fd -> IO FileOffset
+      sizeof fd = do
+            fstatus <- getFdStatus fd
+            return $ fileSize fstatus
 
 catcher :: IO a -> IO String
-catcher act = catch (act >> return "") (\e -> return $ show e)
+catcher act = catch (act >> return "") (return . show)
 
 
 -- Print the result

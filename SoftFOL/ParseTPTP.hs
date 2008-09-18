@@ -356,7 +356,7 @@ variable :: Parser SPTerm
 variable = fmap (simpTerm . SPCustomSymbol) $ pToken upperWord
 
 definedAtom :: Parser SPTerm
-definedAtom =  fmap (simpTerm . SPCustomSymbol) $ pToken $ real <|> distinct
+definedAtom = fmap (simpTerm . SPCustomSymbol) $ pToken $ real <|> distinct
 
 functor :: Parser SPSymbol
 functor = fmap (\ t -> case lookup (tokStr t) $ zip

@@ -388,7 +388,7 @@ transTotalLambda sign t = transTerm sign t
 arangeCaseAlts :: Env -> [ProgEq]-> [(IsaSign.Term, IsaSign.Term)]
 arangeCaseAlts sign peqs
   | and (map patIsVar peqs) = map (transCaseAlt sign) peqs
-  | otherwise               =  sortCaseAlts sign peqs
+  | otherwise               = sortCaseAlts sign peqs
 
 
 {- Input: List of case alternatives, that patterns does consist of
@@ -493,7 +493,7 @@ instance Eq CaseMatrix where
 
 -- Functionality: turns ProgEq into CaseMatrix
 matricize :: [ProgEq] -> [CaseMatrix]
-matricize =  map matriPEq
+matricize = map matriPEq
 
 matriPEq :: ProgEq -> CaseMatrix
 matriPEq (ProgEq pat altTerm _) = matriArg pat altTerm
@@ -503,7 +503,7 @@ matriArg pat cTerm =
   case pat of
     ApplTerm t1 t2 _ -> let (c, p) = stripAppl t1 (Nothing, []) in CaseMatrix
         { patBrand = Appl,
-          cons     =  c,
+          cons     = c,
           args     = p ++ [t2],
           newArgs  = [],
           term     = cTerm }
@@ -676,7 +676,7 @@ transPat sign (TupleTerm terms@(_ : _) _) =
     foldl1 (binConst isaPair) (map (transPat sign) terms)
 transPat _ (QualOp _ (PolyId i _ _) _ _ _ _) =
     conDouble (showIsaConstT i baseSign)
-transPat _ _ =  error "HasCASL2IsabelleHOL.transPat"
+transPat _ _ = error "HasCASL2IsabelleHOL.transPat"
 
 -- | apply binary operation to arguments
 binConst :: String -> IsaSign.Term -> IsaSign.Term -> IsaSign.Term
