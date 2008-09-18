@@ -37,7 +37,7 @@ data InjMap a b = InjMap
     } deriving (Show, Eq, Ord)
 
 -- | for serialization only
-unsafeConstructInjMap ::  Map.Map a b -> Map.Map b a -> InjMap a b
+unsafeConstructInjMap :: Map.Map a b -> Map.Map b a -> InjMap a b
 unsafeConstructInjMap = InjMap
 
 -- * the visible interface

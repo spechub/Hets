@@ -123,10 +123,6 @@ instance AParsable C_SIG_ITEM where
 instance AParsable C_BASIC_ITEM where
   aparser = cBasic
 
-
----- helpers ----------------------------------------------------------------
-
-codatatypeToCofreetype ::  C_SIG_ITEM -> Range -> C_BASIC_ITEM
-codatatypeToCofreetype d pos =
-   case d of
+codatatypeToCofreetype :: C_SIG_ITEM -> Range -> C_BASIC_ITEM
+codatatypeToCofreetype d pos = case d of
      CoDatatype_items ts ps -> CoFree_datatype ts (pos `appRange` ps)

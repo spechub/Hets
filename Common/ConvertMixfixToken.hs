@@ -84,10 +84,12 @@ makeFloatTerm f d e asAppl t@(Token s p) =
                 $ inc offset p
 
 -- | convert a literal token to an application term
-convertMixfixToken ::  LiteralAnnos -> AsAppl a
-                  -> (Token -> a) -> Token -> ([Diagnosis], a)
-convertMixfixToken ga asAppl toTerm t =
-     if isString t then
+convertMixfixToken :: LiteralAnnos -> AsAppl a
+                   -> (Token -> a) -> Token -> ([Diagnosis], a)
+convertMixfixToken ga asAppl toTerm t = let
+  te =  toTerm t
+  err s = ([Diag Error ("missing %" ++ s ++ " annotation") (tokPos t)], te)
+  in if isString t then
         case string_lit ga of
         Nothing -> err "string"
         Just (c, f) -> ([], makeStringTerm c f asAppl t)
@@ -100,6 +102,3 @@ convertMixfixToken ga asAppl toTerm t =
                         Just (d, e) -> ([], makeFloatTerm f d e asAppl t)
                     else ([], makeNumberTerm f asAppl t)
      else ([], te)
-    where te =  toTerm t
-          err s = ([Diag Error ("missing %" ++ s ++ " annotation") (tokPos t)]
-                  , te)

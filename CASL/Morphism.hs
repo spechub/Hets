@@ -63,7 +63,7 @@ data Morphism f e m = Morphism
   , extended_map :: m
   } deriving Show
 
-isInclusionMorphism ::  Morphism f e m -> Bool
+isInclusionMorphism :: Morphism f e m -> Bool
 isInclusionMorphism m = morKind m <= InclMor
 
 instance (Eq f, Eq e, Eq m) => Eq (Morphism f e m) where
@@ -137,7 +137,7 @@ rawSymName rs = case rs of
   AnID i -> i
   AKindedId _ i -> i
 
-symOf ::  Sign f e -> SymbolSet
+symOf :: Sign f e -> SymbolSet
 symOf sigma = let
     sorts = Set.map idToSortSymbol $ sortSet sigma
     ops = Set.fromList $
@@ -346,7 +346,7 @@ compose comp mor1 mor2 = if mtarget mor1 == msource mor2 then
                       Map.empty $ predMap src }
     else fail "target of first and source of second morphism are different"
 
-legalSign ::  Sign f e -> Bool
+legalSign :: Sign f e -> Bool
 legalSign sigma =
   Map.foldWithKey (\s sset b -> b && legalSort s && all legalSort
                                 (Set.toList sset))

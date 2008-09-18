@@ -449,7 +449,7 @@ functionUndef loc s =
               (HsBody $ expUndef loc $ pp s)
               []]
 
-translateSentence ::  Env -> Named Sentence -> [Named HsDecl]
+translateSentence :: Env -> Named Sentence -> [Named HsDecl]
 translateSentence env sen = case sentence sen of
     DatatypeSen dt -> map (translateDt env) dt
     ProgEqSen _ _ pe -> [sen { sentence = translateProgEq env pe }]

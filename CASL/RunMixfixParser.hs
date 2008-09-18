@@ -45,7 +45,7 @@ instance Show WrapString where
 instance Pretty WrapString where
     pretty (WrapString s) = text s
 
-testTerm ::  AParser () WrapString
+testTerm :: AParser () WrapString
 testTerm = do t <- term [] :: AParser () (TERM ())
               return $ WrapString $ showDoc (mapTerm id t) ""
 

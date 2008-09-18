@@ -11,9 +11,7 @@ Portability :  portable
 Data structures for global annotations
 -}
 
-module Common.GlobalAnnotations (module Common.GlobalAnnotations,
-                                 Display_format(..))
-    where
+module Common.GlobalAnnotations where
 
 import qualified Data.Map as Map
 import qualified Common.Lib.Rel as Rel
@@ -21,37 +19,38 @@ import Common.AS_Annotation
 import Common.Id
 
 -- | all global annotations and a field for pretty printing stuff
-data GlobalAnnos = GA { prec_annos     :: PrecedenceGraph -- ^ precedences
-                      , assoc_annos    :: AssocMap  -- ^ associativity
-                      , display_annos  :: DisplayMap -- ^ display annotations
-                      , literal_annos  :: LiteralAnnos -- ^ literal annotations
-                      , literal_map    :: LiteralMap -- ^ redundant
-                        -- representation of the previous literal annotations
-                      } deriving (Show,Eq)
+data GlobalAnnos = GA
+  { prec_annos     :: PrecedenceGraph -- ^ precedences
+  , assoc_annos    :: AssocMap  -- ^ associativity
+  , display_annos  :: DisplayMap -- ^ display annotations
+  , literal_annos  :: LiteralAnnos -- ^ literal annotations
+  , literal_map    :: LiteralMap -- ^ redundant literal map
+  } deriving (Show,Eq)
 
 -- | empty (or initial) global annotations
 emptyGlobalAnnos :: GlobalAnnos
-emptyGlobalAnnos = GA { prec_annos    = Rel.empty
-                      , assoc_annos   = Map.empty
-                      , display_annos = Map.empty
-                      , literal_annos = emptyLiteralAnnos
-                      , literal_map   = Map.empty
-                      }
+emptyGlobalAnnos = GA
+  { prec_annos    = Rel.empty
+  , assoc_annos   = Map.empty
+  , display_annos = Map.empty
+  , literal_annos = emptyLiteralAnnos
+  , literal_map   = Map.empty }
 
 -- | literal annotations for string, lists, number and floating
-data LiteralAnnos = LA { string_lit :: Maybe (Id,Id)
-                       , list_lit :: Map.Map Id (Id, Id)
-                       , number_lit :: Maybe Id
-                       , float_lit  :: Maybe (Id,Id)
-                       } deriving (Show,Eq)
+data LiteralAnnos = LA
+  { string_lit :: Maybe (Id,Id)
+  , list_lit   :: Map.Map Id (Id, Id)
+  , number_lit :: Maybe Id
+  , float_lit  :: Maybe (Id,Id)
+  } deriving (Show,Eq)
 
 -- | empty literal annotations
 emptyLiteralAnnos :: LiteralAnnos
-emptyLiteralAnnos = LA { string_lit  = Nothing
-                        , list_lit = Map.empty
-                        , number_lit = Nothing
-                        , float_lit  = Nothing
-                        }
+emptyLiteralAnnos = LA
+  { string_lit = Nothing
+  , list_lit   = Map.empty
+  , number_lit = Nothing
+  , float_lit  = Nothing }
 
 -- | ids to be displayed according to a format
 type DisplayMap = Map.Map Id (Map.Map Display_format [Token])
@@ -60,19 +59,19 @@ type DisplayMap = Map.Map Id (Map.Map Display_format [Token])
 type LiteralMap = Map.Map Id LiteralType
 
 -- | description of the type of a literal for a given 'Id' in 'LiteralMap'
-data LiteralType = StringCons Id  -- ^ refer to the 'Id' of the null string
-                 | StringNull
-                 | ListCons Id Id  -- ^ brackets (as 'Id') and the 'Id' of the
-                                   -- matching null list
-                 | ListNull Id -- ^ brackets (as 'Id') for the empty list
-                 | Number
-                 | Fraction
-                 | Floating
-                 | NoLiteral -- ^ and error value for a 'getLiteralType'
-                   deriving (Show,Eq)
+data LiteralType =
+    StringCons Id  -- ^ refer to the 'Id' of the null string
+  | StringNull
+  | ListCons Id Id  -- ^ brackets (as 'Id') and 'Id' of matching empty list
+  | ListNull Id -- ^ brackets (as 'Id') for the empty list
+  | Number
+  | Fraction
+  | Floating
+  | NoLiteral -- ^ and error value for a 'getLiteralType'
+    deriving (Show,Eq)
 
 -- | the 'LiteralType' of an 'Id' (possibly 'NoLiteral')
-getLiteralType ::  GlobalAnnos -> Id -> LiteralType
+getLiteralType :: GlobalAnnos -> Id -> LiteralType
 getLiteralType ga i =
     Map.findWithDefault NoLiteral i $ literal_map ga
 
@@ -97,18 +96,16 @@ precRel :: PrecedenceGraph -- ^ Graph describing the precedences
 -- a 'Lower' corresponds to %prec {out_id} < {in_id}
 -- BothDirections means <> was given (or derived by transitive closure)
 precRel pg out_id in_id =
-    case (Rel.member in_id out_id pg, Rel.member out_id in_id pg) of
-    (False,True)  -> Lower
-    (True,False)  -> Higher
-    (True,True)   -> BothDirections
-    (False,False) -> NoDirection
+  case (Rel.member in_id out_id pg, Rel.member out_id in_id pg) of
+    (False, True)  -> Lower
+    (True, False)  -> Higher
+    (True, True)   -> BothDirections
+    (False, False) -> NoDirection
 
 -- | lookup of an display [string] in the GlobalAnnos record
 lookupDisplay :: GlobalAnnos -> Display_format -> Id -> Maybe [Token]
-lookupDisplay ga df i =
-    case Map.lookup i (display_annos ga) of
+lookupDisplay ga df i = case Map.lookup i (display_annos ga) of
     Nothing -> Nothing
     Just df_map -> case Map.lookup df df_map of
-                   Nothing -> Nothing
-                   r@(Just disp_toks) ->
-                       if null disp_toks then Nothing else r
+      Nothing -> Nothing
+      r@(Just disp_toks) -> if null disp_toks then Nothing else r

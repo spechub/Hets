@@ -63,7 +63,7 @@ import qualified Data.Set as Set
 -- ** basic types
 
 -- | Node with signature in a DG
-data NodeSig = NodeSig { getNode :: Node, getSig ::  G_sign }
+data NodeSig = NodeSig { getNode :: Node, getSig :: G_sign }
     deriving (Show, Eq)
 
 {- | NodeSig or possibly the empty sig in a logic
@@ -171,7 +171,7 @@ hasSenKind f dgn = case dgn_theory dgn of
   G_theory _lid _sigma _ sens _ -> not $ OMap.null $ OMap.filter f sens
 
 -- | test if a given node label has local open goals
-hasOpenGoals ::  DGNodeLab -> Bool
+hasOpenGoals :: DGNodeLab -> Bool
 hasOpenGoals = hasSenKind (\ s -> not (isAxiom s) && not (isProvenSenStatus s))
 
 -- | check if the node has an internal name (wrong for DGRef?)

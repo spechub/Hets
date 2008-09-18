@@ -565,7 +565,7 @@ correctSign sig = sig
            Just s -> Set.member (profileToPredType p) s
            Nothing -> False) $ procsMap $ extendedInfo sig }
 
-mapProfile ::  Sort_map -> Profile -> Profile
+mapProfile :: Sort_map -> Profile -> Profile
 mapProfile m (Profile l r) = Profile
   (map (\ (Procparam k s) -> Procparam k $ mapSort m s) l)
   $ fmap (mapSort m) r
