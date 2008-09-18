@@ -67,7 +67,7 @@ addLineAnnos :: AParser st ()
 addLineAnnos = getState >>= parseLineAnnos >>= setState
 
 getUserState :: AParser st st
-getUserState =  fmap userState getState
+getUserState = fmap userState getState
 
 setUserState :: st -> AParser st ()
 setUserState st = getState >>= \ s -> setState s { userState = st }
@@ -158,7 +158,7 @@ itemAux :: [String] -> AParser st a
 itemAux startKeywords itemParser =
     do a <- itemParser
        (m, an) <- optSemi
-       let r =  return ([a], [], [an])
+       let r = return ([a], [], [an])
        if null m then r else (tryItemEnd startKeywords >> r) <|>
           do (ergs, ts, ans) <- itemAux startKeywords itemParser
              return (a:ergs, m++ts, an:ans)

@@ -141,7 +141,7 @@ commaIds :: GenParser Char st [Id]
 commaIds = commaSep1 some_id
 
 annoArg :: Annote_text -> String
-annoArg txt =  case txt of
+annoArg txt = case txt of
   Line_anno str -> str
   Group_anno ls -> unlines ls
 

@@ -87,7 +87,7 @@ makeFloatTerm f d e asAppl t@(Token s p) =
 convertMixfixToken :: LiteralAnnos -> AsAppl a
                    -> (Token -> a) -> Token -> ([Diagnosis], a)
 convertMixfixToken ga asAppl toTerm t = let
-  te =  toTerm t
+  te = toTerm t
   err s = ([Diag Error ("missing %" ++ s ++ " annotation") (tokPos t)], te)
   in if isString t then
         case string_lit ga of

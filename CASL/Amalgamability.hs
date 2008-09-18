@@ -758,7 +758,7 @@ colimitIsThin simeq' embs' c0 =
 
         embDomS (n, dom, _) = maybe (error "embDomS") id
                               $ findTag simeqT (n, dom)
-        embCodS (n, _, cod) =  maybe (error "embCodS") id
+        embCodS (n, _, cod) = maybe (error "embCodS") id
                                $ findTag simeqT (n, cod)
         -- checkAllSorts: check the C = B condition for all colimit sorts
         checkAllSorts m | Map.null m = {-trace "CT: Yes"-} True
@@ -959,7 +959,7 @@ sim diag embs' =
             in if rel1 == rel2 then rel1 else fixCong rel2
 
         rel = map (\e -> (e, e)) embs'
-        rel' =  fixCong rel
+        rel' = fixCong rel
         rel'' = mergeEquivClassesBy diagRule rel'
     in taggedValsToEquivClasses rel''
 

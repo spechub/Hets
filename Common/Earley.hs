@@ -447,6 +447,6 @@ getResolved pp p toExpr st = let
        Nothing
 
 showAmbigs :: (a -> ShowS) -> Range -> [a] -> Diagnosis
-showAmbigs pp p as =  Diag Error
+showAmbigs pp p as = Diag Error
     ("ambiguous mixfix term\n  " ++ showSepList (showString "\n  ") pp
      (take 5 as) "") p

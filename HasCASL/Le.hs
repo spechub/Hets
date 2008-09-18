@@ -231,7 +231,7 @@ putClassMap ce = do
 
 -- | store local assumptions
 putLocalVars :: Map.Map Id VarDefn -> State.State Env ()
-putLocalVars vs =  do
+putLocalVars vs = do
     e <- State.get
     State.put e { localVars = vs }
 

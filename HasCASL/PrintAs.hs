@@ -392,7 +392,7 @@ sameType g1 g2 = case (g1, g2) of
     _ -> False
 
 printVarDeclType :: Type -> Doc
-printVarDeclType t =  case t of
+printVarDeclType t = case t of
        MixfixType [] -> empty
        _ -> colon <+> pretty t
 

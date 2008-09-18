@@ -192,7 +192,7 @@ appendNumber (Id tokList idList range) nr = let
   isAlphaToken tok = case tokStr tok of
     c : _ -> isAlpha c
     "" -> False
-  genTok tList tList1 n =  case tList of
+  genTok tList tList1 n = case tList of
     [] -> [mkSimpleId $ genNamePrefix ++ "n" ++ show n]
           -- for invisible identifiers
     tok : tokens ->
@@ -338,7 +338,7 @@ getPlainTokenList = getTokenList place
 -- Replace top-level places with the input String
 getTokenList :: String -> Id -> [Token]
 getTokenList placeStr (Id ts cs ps) =
-    let convert =  map (\ t -> if isPlace t then t {tokStr = placeStr} else t)
+    let convert = map (\ t -> if isPlace t then t {tokStr = placeStr} else t)
         -- reconstruct tokens of a compound list
         -- although positions will be replaced (by scan)
         getCompoundTokenList comps = concat .

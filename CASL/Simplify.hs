@@ -31,7 +31,7 @@ simplifyRecord mf = (mapRecord mf)
            (True_atom _, Universal) -> qf
            (False_atom _, Existential) -> qf
            _ -> nf
-    , foldConjunction =  \ _ fs ps -> if any is_False_atom fs
+    , foldConjunction = \ _ fs ps -> if any is_False_atom fs
       then False_atom ps else case nub $ filter (not . is_True_atom) fs of
       [] -> True_atom ps
       [f] -> f

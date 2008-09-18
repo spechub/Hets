@@ -48,7 +48,7 @@ signColimit graph extColimit = let
  sigmaRel = sigmaSort{sortRel = relS}
  phiRel = Map.map (\ phi -> phi{mtarget = sigmaRel}) phiSort
  (sigmaOp, phiOp) = computeColimitOp graph sigmaRel phiRel
- (sigmaPred, phiPred) =  computeColimitPred graph sigmaOp phiOp
+ (sigmaPred, phiPred) = computeColimitPred graph sigmaOp phiOp
  (sigAssoc, phiAssoc) = colimitAssoc graph sigmaPred phiPred
  extGraph = emap (\(i, phi) -> (i, extended_map phi)) $ nmap extendedInfo graph
  (extInfo, extMaps) = extColimit extGraph
@@ -67,7 +67,7 @@ renameSorts :: (Set.Set (Id, Node), Map.Map Node (Map.Map Id (Id, Node))) ->
                (Set.Set Id, Map.Map Node (EndoMap Id))
 renameSorts (set, fun) = let
   fstEqual (x1,_) (x2,_) = x1 == x2
-  partList pairSet =  leqClasses fstEqual pairSet
+  partList pairSet = leqClasses fstEqual pairSet
   namePartitions elemList f0 s1 f1 = case elemList of
    [] -> (s1, f1)
    p:ps -> if length p == 1 then
@@ -160,7 +160,7 @@ renameOpSymbols :: Gr (Sign f e)(Int,Morphism f e m)
                 -> Map.Map Node (Morphism f e m)
                 -> (Sign f e, Map.Map Node (Morphism f e m))
 renameOpSymbols graph opsList morMap sigmaRel phiSRel = let
-  (partList, partMap) =  tempNames opsList morMap [] $
+  (partList, partMap) = tempNames opsList morMap [] $
                          Map.fromList $ zip (nodes graph) (repeat Map.empty)
   lengthDesc (_, s1) (_, s2) =
      case compare (Set.size s1) $ Set.size s2 of
@@ -221,7 +221,7 @@ finalNames rezList opList opsMap1 sigmaRel phiSRel = let
        opsMap2 = updateMap opsMap1 id0 [(id0,set)]
       in finalNames rezList1 ops opsMap2 sigmaRel phiSRel
      (_, setList):_ -> let
-       opSet =  Set.map arity set
+       opSet = Set.map arity set
        getOpTypes oSet = Set.map arity oSet
        opSetList = map getOpTypes setList
        oldFunSymbols = Set.unions opSetList
@@ -279,7 +279,7 @@ tempNames :: [ColimitOpSymbWithLabel]
          ->  Map.Map Node (Map.Map (Id, OpType) ColimitOpSymbWithLabel)
          ->  ([(Id, Set.Set OpSymbolLabel)],
                Map.Map Node (Map.Map (Id, OpType) ColimitOpSymbWithLabel))
-tempNames opsList morMap rezList morMap1 =  loopGroups (groupOps opsList)
+tempNames opsList morMap rezList morMap1 = loopGroups (groupOps opsList)
                                              morMap rezList morMap1
 
 groupOps :: [ColimitOpSymbWithLabel] ->  [[ColimitOpSymbWithLabel]]
@@ -354,9 +354,9 @@ loopOpSets graph clsFun sigmaRel phiSRel opSetsList opsList morMap =
              map ((Map.!)phiSRel) $ nodes graph
    graph1 = buildOpGraphNodes graph Graph.empty funSort
             opSet $ labNodes graph
-   (setN, funN) =  computeColimitSet graph1
+   (setN, funN) = computeColimitSet graph1
    (opsList1, morMap1) = labelColimitElements funSort clsFun setN funN
-   opsList2 =  opsList ++ opsList1
+   opsList2 = opsList ++ opsList1
    morMap2 = Map.fromList $ map (\n-> (n, Map.union (morMap1 Map.! n)
                                       (morMap Map.!n))) $ nodes graph
    in loopOpSets graph clsFun sigmaRel phiSRel opSets opsList2 morMap2
@@ -853,7 +853,7 @@ finalPNames rezList predList predsMap1 sigmaRel phiSRel = let
         predsMap2 = updateMap predsMap1 id0 [(id0,set)]
        in finalPNames rezList1 preds predsMap2 sigmaRel phiSRel
      (_, setList):_ -> let
-        predSet =  Set.map arityP set
+        predSet = Set.map arityP set
         getPredTypes pSet = Set.map arityP pSet
         predSetList = map getPredTypes setList
         funSymbols = Set.union predSet $ Set.unions predSetList
@@ -910,7 +910,7 @@ tempPNames :: [ColimitPredSymbWithLabel]
          ->  Map.Map Node (Map.Map (Id, PredType) ColimitPredSymbWithLabel)
          ->  ([(Id, Set.Set PredSymbolLabel)],
              Map.Map Node (Map.Map (Id, PredType) ColimitPredSymbWithLabel))
-tempPNames predsList morMap rezList morMap1 =  loopPGroups
+tempPNames predsList morMap rezList morMap1 = loopPGroups
         (groupPreds predsList)  morMap rezList morMap1
 
 groupPreds :: [ColimitPredSymbWithLabel] ->  [[ColimitPredSymbWithLabel]]
@@ -1066,7 +1066,7 @@ assocSymbols = opSymbolsOf . assocOps
 
 colimitAssoc :: Gr (Sign f e) (Int,Morphism f e m) -> Sign f e ->
    Map.Map Int (Morphism f e m) -> (Sign f e, Map.Map Int (Morphism f e m))
-colimitAssoc graph sig morMap =  let
+colimitAssoc graph sig morMap = let
   assocOpList = nub $ concatMap
     (\ (node, sigma) -> map (applyMor ((Map.!)morMap node)) $
     assocSymbols sigma ) $ labNodes graph

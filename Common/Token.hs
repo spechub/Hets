@@ -153,7 +153,7 @@ innerMix2 l = let p = innerList l in
 
 -- | any mixfix components within braces or brackets
 innerList :: ([String], [String]) -> GenParser Char st [Token]
-innerList l =  option [] (innerMix1 l <|> innerMix2 l <?> "token")
+innerList l = option [] (innerMix1 l <|> innerMix2 l <?> "token")
 
 -- | mixfix components starting with a 'sid' (outside 'innerList')
 topMix1 :: ([String], [String]) -> GenParser Char st [Token]

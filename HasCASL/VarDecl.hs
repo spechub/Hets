@@ -301,7 +301,7 @@ convTypeToKind ty = let s = showDoc ty "" in
     _ -> Nothing
 
 convertTypeToKind :: Env -> Type -> Result (Variance, Kind)
-convertTypeToKind e ty =  case convTypeToKind ty of
+convertTypeToKind e ty = case convTypeToKind ty of
     Just (v, k) -> let Result ds _ = anaKindM k $ classMap e in
                if null ds then return (v, k) else Result ds Nothing
     _ -> fail $ "not a kind '" ++ showDoc ty "'"

@@ -11,7 +11,7 @@ import Common.Id
 import Common.Token(parseId)
 
 testP :: Show a => (b -> a) -> CharParser () b -> SourceName -> String -> IO ()
-testP f p n s =  case parse p n s of
+testP f p n s = case parse p n s of
              Left err -> putStr "parse error at " >> print err
              Right x  -> print $ f x
 

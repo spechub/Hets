@@ -609,7 +609,7 @@ instance Eq Component where
         (i1, opArgs t1, opRes t1) == (i2, opArgs t2, opRes t2)
 
 instance Ord Component where
-    Component i1 t1 <=  Component i2 t2 =
+    Component i1 t1 <= Component i2 t2 =
         (i1, opArgs t1, opRes t1) <= (i2, opArgs t2, opRes t2)
 
 instance Pretty Component where
@@ -711,7 +711,7 @@ makeDisjoint l = case l of
         $ mkForall (v1 ++ v2) (Negation (Strong_equation t1 t2 p) p) p
 
 catSels :: [(Maybe Id, OpType)] -> [(Id, OpType)]
-catSels =  map ( \ (m, t) -> (fromJust m, t)) .
+catSels = map ( \ (m, t) -> (fromJust m, t)) .
                  filter ( \ (m, _) -> isJust m)
 
 makeUndefForm :: (Id, OpType) -> (Id, [VAR_DECL], TERM f, [(Id, OpType)])
@@ -817,7 +817,7 @@ ana_COMPONENTS s c = do
 -- | utility
 resultToState :: (a -> Result a) -> a -> State (Sign f e) a
 resultToState f a = do
-    let r =  f a
+    let r = f a
     addDiags $ diags r
     case maybeResult r of
         Nothing -> return a

@@ -147,7 +147,7 @@ insertSen qm sen =
                Sort_gen_ax cs _ ->
                  let s = zip (map newSort cs) (map (const [f]) [1..length cs])
                      ins = foldr $ uncurry $ Map.insertWith (++)
-                  in qm { carrierSens =  ins (carrierSens qm) s }
+                  in qm { carrierSens = ins (carrierSens qm) s }
                -- axiom forcing empty carrier?
                Quantification Universal [Var_decl [_] s _] (False_atom _) _ ->
                  qm { carrierSens = Map.insertWith (++) s [f] (carrierSens qm) }

@@ -213,7 +213,7 @@ addUniformRestr sig nsens = let
  (sig{
    predMap = addMapSet (predMap sig) $ procsToPredMap $ Procs newProcs,
 
-   extendedInfo =  Procs $ Map.union newProcs (procsMap $ extendedInfo sig)},
+   extendedInfo = Procs $ Map.union newProcs (procsMap $ extendedInfo sig)},
   trSens ++ filter (\x -> not $ x `elem` namedConstr) nsens)
 
 namedSenToSExpr :: Sign f Procs -> Named Sentence -> SExpr

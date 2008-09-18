@@ -211,7 +211,7 @@ subst m = if Map.null m then id else foldType mapTypeRec
       Nothing -> t }
 
 showDocWithPos :: Type -> ShowS
-showDocWithPos a =  let p = getRange a in
+showDocWithPos a = let p = getRange a in
     showChar '\'' . showDoc a . showChar '\''
     . noShow (isNullRange p) (showChar ' ' .
         showParen True (showPos $ maximum (rangeToList p)))

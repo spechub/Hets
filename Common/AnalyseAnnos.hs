@@ -45,7 +45,7 @@ addGlobalAnnos ga all_annos = do
        n_display_annos <- store_display_annos (display_annos ga) annos
        n_literal_annos <- store_literal_annos (literal_annos ga) annos
        n_literal_map <- store_literal_map (literal_map ga) annos
-       return ga { prec_annos =  n_prec_annos
+       return ga { prec_annos = n_prec_annos
                  , assoc_annos = n_assoc_annos
                  , display_annos = n_display_annos
                  , literal_annos = n_literal_annos

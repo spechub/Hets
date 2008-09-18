@@ -83,7 +83,7 @@ typefree :: Parser String
 typefree = prime <:> ident
 
 indexsuffix :: Parser String
-indexsuffix =  option "" (char '.' <:> nat)
+indexsuffix = option "" (char '.' <:> nat)
 
 typevar :: Parser String
 typevar = try (string "?'") <++> ident <++> option "" (char '.' <:> nat)
