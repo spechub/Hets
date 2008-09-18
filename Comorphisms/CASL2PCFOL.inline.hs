@@ -1,5 +1,6 @@
 {- |
 Module      :  $Header$
+Descripzion :  coding out subsorting
 Copyright   :  (c) Zicheng Wang, C.Maeder Uni Bremen 2002-2005
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
@@ -16,7 +17,6 @@ module Comorphisms.CASL2PCFOL where
 import Logic.Logic
 import Logic.Comorphism
 import Common.Id
-import qualified Data.Map as Map
 import qualified Data.Set as Set
 import qualified Common.Lib.Rel as Rel
 import Common.AS_Annotation
@@ -30,8 +30,7 @@ import CASL.Morphism
 import CASL.Sublogic as Sublogic
 import CASL.Inject
 import CASL.Project
-import CASL.Overload
-import CASL.StaticAna
+import CASL.Monoton
 
 -- | The identity of the comorphism
 data CASL2PCFOL = CASL2PCFOL deriving (Show)
@@ -62,7 +61,8 @@ instance Comorphism CASL2PCFOL
                                   else sl
     map_theory CASL2PCFOL = mkTheoryMapping ( \ sig ->
       let e = encodeSig sig in
-      return (e, monotonicities sig ++ generateAxioms sig))
+      return (e, map (mapNamed $ injFormula id) (monotonicities sig)
+                 ++ generateAxioms sig))
       (map_sentence CASL2PCFOL)
     map_morphism CASL2PCFOL mor = return
       (mor  { msource = encodeSig $ msource mor,
@@ -130,85 +130,6 @@ generateAxioms sig = map (mapNamed $ renameFormula id) $ concat $
         pr = projName
         realSupers so = Set.toList $ supersortsOf so sig
         sorts = Set.toList $ sortSet sig
-
-monotonicities :: Sign f e -> [Named (FORMULA f)]
-monotonicities sig =
-    concatMap (makeMonos sig) (Map.toList $ opMap sig)
-    ++ concatMap (makePredMonos sig) (Map.toList $ predMap sig)
-
-makeMonos :: Sign f e -> (Id, Set.Set OpType) -> [Named (FORMULA f)]
-makeMonos sig (o, ts) = makeEquivMonos o sig $ Set.toList ts
-
-makePredMonos :: Sign f e -> (Id, Set.Set PredType) -> [Named (FORMULA f)]
-makePredMonos sig (p, ts) = makeEquivPredMonos p sig $ Set.toList ts
-
-makeEquivMonos :: Id -> Sign f e -> [OpType] -> [Named (FORMULA f)]
-makeEquivMonos o sig ts =
-  case ts of
-  [] -> []
-  t : rs -> concatMap (makeEquivMono o sig t) rs ++
-            makeEquivMonos o sig rs
-
-makeEquivPredMonos :: Id -> Sign f e -> [PredType] -> [Named (FORMULA f)]
-makeEquivPredMonos o sig ts =
-  case ts of
-  [] -> []
-  t : rs -> concatMap (makeEquivPredMono o sig t) rs ++
-            makeEquivPredMonos o sig rs
-
-makeEquivMono :: Id -> Sign f e -> OpType -> OpType -> [Named (FORMULA f)]
-makeEquivMono o sig o1 o2 =
-      let rs = minimalSupers sig (opRes o1) (opRes o2)
-          a1 = opArgs o1
-          a2 = opArgs o2
-          args = if length a1 == length a2 then
-                 combine $ zipWith (maximalSubs sig) a1 a2
-                 else []
-      in concatMap (makeEquivMonoRs o o1 o2 rs) args
-
-makeEquivMonoRs :: Id -> OpType -> OpType ->
-                   [SORT] -> [SORT] -> [Named (FORMULA f)]
-makeEquivMonoRs o o1 o2 rs args = map (makeEquivMonoR o o1 o2 args) rs
-
-makeEquivMonoR :: Id -> OpType -> OpType ->
-                  [SORT] -> SORT -> Named (FORMULA f)
-makeEquivMonoR o o1 o2 args res =
-    let vds = zipWith (\ s n -> Var_decl [mkSelVar "x" n] s nullRange)
-              args [1..]
-        inject = injectUnique nullRange
-        a1 = zipWith (\ v s -> inject (toQualVar v) s) vds $ opArgs o1
-        a2 = zipWith (\ v s -> inject (toQualVar v) s) vds $ opArgs o2
-        t1 = inject (Application (Qual_op_name o (toOP_TYPE o1)
-                                            nullRange) a1 nullRange) res
-        t2 = inject (Application (Qual_op_name o (toOP_TYPE o2)
-                                            nullRange) a2 nullRange) res
-    in makeNamed "ga_function_monotonicity" $ mkForall vds
-           (Existl_equation t1 t2 nullRange) nullRange
-
-makeEquivPredMono :: Id -> Sign f e -> PredType -> PredType
-                  -> [Named (FORMULA f)]
-makeEquivPredMono o sig o1 o2 =
-      let a1 = predArgs o1
-          a2 = predArgs o2
-          args = if length a1 == length a2 then
-                 combine $ zipWith (maximalSubs sig) a1 a2
-                 else []
-      in map (makeEquivPred o o1 o2) args
-
-makeEquivPred :: Id -> PredType -> PredType -> [SORT] -> Named (FORMULA f)
-makeEquivPred o o1 o2 args =
-    let vds = zipWith (\ s n -> Var_decl [mkSelVar "x" n] s nullRange)
-              args [1..]
-        inject = injectUnique nullRange
-        a1 = zipWith (\ v s -> inject (toQualVar v) s) vds $ predArgs o1
-        a2 = zipWith (\ v s -> inject (toQualVar v) s) vds $ predArgs o2
-        t1 = Predication (Qual_pred_name o (toPRED_TYPE o1) nullRange) a1
-             nullRange
-        t2 = Predication (Qual_pred_name o (toPRED_TYPE o2) nullRange) a2
-             nullRange
-    in makeNamed "ga_predicate_monotonicity" $ mkForall vds
-           (Equivalence t1 t2 nullRange) nullRange
-
 
 f2Formula :: FORMULA f -> FORMULA f
 f2Formula = projFormula Partial id . injFormula id

@@ -30,6 +30,7 @@ import CASL.Morphism
 import CASL.Sublogic
 import CASL.Inject
 import CASL.Project
+import CASL.Monoton
 import Comorphisms.CASL2PCFOL
 import Comorphisms.CASL2CoCASL
 
@@ -59,8 +60,9 @@ instance Comorphism CoCASL2CoPCFOL
             , has_eq = True
             }
     map_theory CoCASL2CoPCFOL = mkTheoryMapping ( \ sig ->
-      let e = encodeSig sig in return (e, monotonicities sig
-                ++ map (mapNamed mapSen) (generateAxioms sig)))
+      let e = encodeSig sig in return
+      (e, map (mapNamed $ injFormula injC_Formula) (monotonicities sig)
+          ++ map (mapNamed mapSen) (generateAxioms sig)))
       (map_sentence CoCASL2CoPCFOL)
     map_morphism CoCASL2CoPCFOL mor = return
       (mor  { msource = encodeSig $ msource mor,
