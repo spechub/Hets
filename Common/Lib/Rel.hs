@@ -39,7 +39,7 @@ module Common.Lib.Rel
     , intransKernel, mostRight, restrict, delSet
     , toSet, fromSet, topSort, nodes
     , transpose, transReduce, setInsert
-    , haveCommonLeftElem, fromDistinctMap, locallyFiltered, flatSet, partSet
+    , fromDistinctMap, locallyFiltered, flatSet, partSet
     ) where
 
 import Prelude hiding (map, null)
@@ -138,7 +138,7 @@ sccOfClosure r@(Rel m) =
 {- | restrict strongly connected components to its minimal representative
      (input sets must be non-null). Direct cycles may remain. -}
 collaps :: Ord a => [Set.Set a] -> Rel a -> Rel a
-collaps cs = delSet $ Set.unions $ List.map Set.deleteMin cs
+collaps = delSet . Set.unions . List.map Set.deleteMin
 
 setToMap :: Ord a => Set.Set a -> Map.Map a ()
 setToMap s = Map.fromDistinctAscList $
@@ -237,8 +237,9 @@ topSort r = let cs = sccOfClosure r in
 
 -- | find the cycle and add it to the result set
 expandCycle :: Ord a => [Set.Set a] -> Set.Set a -> Set.Set a
-expandCycle [] s = s
-expandCycle (c : r) s = if Set.null c then error "expandCycle" else
+expandCycle cs s = case cs of
+  [] -> s
+  c : r -> if Set.null c then error "Common.Lib.Rel.expandCycle" else
     let (a, b) = Set.deleteFindMin c in
     if Set.member a s then Set.union b s else expandCycle r s
 
@@ -284,7 +285,7 @@ intransKernel r =
 
 -- add a cycle given by a set in the collapsed node
 addCycle :: Ord a => Set.Set a -> Rel a -> Rel a
-addCycle c r = if Set.null c then error "addCycle" else
+addCycle c r = if Set.null c then error "Common.Lib.Rel.addCycle" else
     let (a, b) = Set.deleteFindMin c
         (m, d) = Set.deleteFindMax c
     in insert m a $ foldr ( \ (x, y) -> insert x y) (delete a a r) $
@@ -314,7 +315,7 @@ partSet f s = if Set.null s then [] else
 -- each set to represent the set
 flatSet :: (Ord a) => [Set.Set a] -> Set.Set a
 flatSet = Set.fromList . List.map (\s -> if Set.null s
-                         then error "Common.Lib.Rel.flatSet: never!"
+                         then error "Common.Lib.Rel.flatSet"
                          else Set.findMin s)
 
 -- | checks if a given relation is locally filtered
