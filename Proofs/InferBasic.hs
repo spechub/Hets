@@ -207,9 +207,9 @@ callProver st ch trans_chosen p_cm@(_,acm) =
         ps <- lift $ proveTheory lid p (theoryName st) th
         -- lift $ putStrLn $ show ps
         let st' = markProved acm lid ps st
-        case trans_chosen of
-            True -> lift $ checkAndAddProve ch st' (Just p_cm) ps
-            _    -> lift $ checkAndAddProve ch st' Nothing ps
+        if trans_chosen
+            then lift $ checkAndAddProve ch st' (Just p_cm) ps
+            else lift $ checkAndAddProve ch st' Nothing ps
         return st'
 
 proveFineGrainedSelect ::
