@@ -154,9 +154,6 @@ ana_BASIC_SPEC mef ab anas mix (Basic_spec al) = fmap Basic_spec $
 -- looseness of a datatype
 data GenKind = Free | Generated | Loose deriving (Show, Eq, Ord)
 
-mkForall :: [VAR_DECL] -> FORMULA f -> Range -> FORMULA f
-mkForall vl f ps = if null vl then f else Quantification Universal vl f ps
-
 unionGenAx :: [GenAx] -> GenAx
 unionGenAx = foldr ( \ (s1, r1, f1) (s2, r2, f2) ->
                         (Set.union s1 s2,
@@ -749,10 +746,7 @@ getCompType s (Sort cs) = [(Nothing, OpType Partial [s] cs)]
 genSelVars :: String -> Int -> [OpType] -> [VAR_DECL]
 genSelVars _ _ [] = []
 genSelVars str n (ty:rs)  =
-    Var_decl [mkSelVar str n] (opRes ty) nullRange : genSelVars str (n+1) rs
-
-mkSelVar :: String -> Int -> Token
-mkSelVar str n = mkSimpleId (str ++ show n)
+    Var_decl [mkNumVar str n] (opRes ty) nullRange : genSelVars str (n+1) rs
 
 makeSelForms :: Int -> (Id, [VAR_DECL], TERM f, [(Maybe Id, OpType)])
              -> [Named (FORMULA f)]
@@ -767,7 +761,7 @@ makeSelForms n (i, vs, t, (mi, ty):rs) =
                      $ mkForall vs
                       (Strong_equation
                        (Application (Qual_op_name j (toOP_TYPE ty) p) [t] p)
-                       (Qual_var (mkSelVar "X" n) rty q) p) p]
+                       (Qual_var (mkNumVar "X" n) rty q) p) p]
     )  ++ makeSelForms (n+1) (i, vs, t, rs)
 
 selForms1 :: String -> (Id, OpType, [COMPONENTS])
@@ -777,10 +771,6 @@ selForms1 str (i, ty, il) =
         vs = genSelVars str 1 $ map snd cs
     in (i, vs, Application (Qual_op_name i (toOP_TYPE ty) nullRange)
             (map toQualVar vs) nullRange, cs)
-
-toQualVar :: VAR_DECL -> TERM f
-toQualVar (Var_decl v s ps) =
-    if isSingle v then Qual_var (head v) s ps else error "toQualVar"
 
 selForms :: (Id, OpType, [COMPONENTS]) -> [Named (FORMULA f)]
 selForms = makeSelForms 1 . selForms1 "X"

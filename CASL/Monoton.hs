@@ -24,7 +24,6 @@ import Data.List
 import CASL.AS_Basic_CASL
 import CASL.Sign
 import CASL.Overload
-import CASL.StaticAna
 
 monotonicities :: Sign f e -> [Named (FORMULA f)]
 monotonicities sig =
@@ -67,12 +66,12 @@ injectVar :: VAR_DECL -> SORT -> TERM f
 injectVar v = injectTerm (toQualVar v)
 
 injectTerm :: TERM f -> SORT -> TERM f
-injectTerm t s = Sorted_term t s nullRange
+injectTerm t s = if sortOfTerm t == s then t else Sorted_term t s nullRange
 
 makeEquivMonoR :: Id -> OpType -> OpType -> [SORT] -> SORT
                -> Named (FORMULA f)
 makeEquivMonoR o o1 o2 args res =
-    let vds = zipWith (\ s n -> Var_decl [mkSelVar "x" n] s nullRange)
+    let vds = zipWith (\ s n -> Var_decl [mkNumVar "x" n] s nullRange)
               args [1..]
         a1 = zipWith (\ v s -> injectVar v s) vds $ opArgs o1
         a2 = zipWith (\ v s -> injectVar v s) vds $ opArgs o2
@@ -95,7 +94,7 @@ makeEquivPredMono o sig o1 o2 =
 
 makeEquivPred :: Id -> PredType -> PredType -> [SORT] -> Named (FORMULA f)
 makeEquivPred o o1 o2 args =
-    let vds = zipWith (\ s n -> Var_decl [mkSelVar "x" n] s nullRange)
+    let vds = zipWith (\ s n -> Var_decl [mkNumVar "x" n] s nullRange)
               args [1..]
         a1 = zipWith (\ v s -> injectVar v s) vds $ predArgs o1
         a2 = zipWith (\ v s -> injectVar v s) vds $ predArgs o2

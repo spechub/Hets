@@ -451,3 +451,14 @@ sortOfTerm t = case t of
     Cast _ ty _ -> ty
     Conditional t1 _ _ _ -> sortOfTerm t1
     _ -> error "sortOfTerm"
+
+-- | create binding if variables are non-null
+mkForall :: [VAR_DECL] -> FORMULA f -> Range -> FORMULA f
+mkForall vl f ps = if null vl then f else Quantification Universal vl f ps
+
+-- | convert a singleton variable declaration into a qualified variable
+toQualVar :: VAR_DECL -> TERM f
+toQualVar (Var_decl v s ps) =
+    if isSingle v then Qual_var (head v) s ps else error "toQualVar"
+
+

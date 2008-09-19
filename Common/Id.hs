@@ -96,6 +96,11 @@ type SIMPLE_ID = Token
 mkSimpleId :: String -> Token
 mkSimpleId s = Token s nullRange
 
+-- | create a numbered simple identifer (for variables)
+mkNumVar :: String -> Int -> Token
+mkNumVar str n = mkSimpleId (str ++ show n)
+
+-- | test if the first character indicates a legal simple CASL identifier
 isSimpleToken :: Token -> Bool
 isSimpleToken t = case tokStr t of
     c : r -> isAlpha c || isDigit c && null r || c == '\''
