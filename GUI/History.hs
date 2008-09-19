@@ -30,7 +30,7 @@ import Static.GTheory (G_theory(..))
 
 import Data.List (isPrefixOf, stripPrefix)
 import Data.IORef
-import System.Directory(getCurrentDirectory)
+import System.Directory (getCurrentDirectory)
 
 data CommandHistory = CommandHistory {file     :: String,
                                       lastNode :: IORef Int,
@@ -57,8 +57,12 @@ initCommandHistory f =
 
 -- Adds a single command to the history.
 addToHist :: CommandHistory -> String -> IO ()
-addToHist (CommandHistory {hist = ch}) s =
-    readIORef ch >>= (\ch' -> writeIORef ch $ ch' ++ [s])
+addToHist ch s = addListToHist ch [s]
+
+-- Adds a list of commands to the history.
+addListToHist :: CommandHistory -> [String] -> IO ()
+addListToHist (CommandHistory {hist = c}) l =
+    readIORef c >>= (\c' -> writeIORef c $ c' ++ l)
 
 -- Adds a menu item to the history.
 addMenuItemToHist :: CommandHistory -> String -> IO ()
@@ -79,11 +83,6 @@ menuItems = [
     ("Hide Theorem Shift", "dg-all hide-thm"),
     ("Theorem Hide Shift", "dg-all thm-hide")
     ]
-
--- Adds a list of commands to the history.
-addListToHist :: CommandHistory -> [String] -> IO ()
-addListToHist _ []     = return ()
-addListToHist ch (x:s) = addToHist ch x >> addListToHist ch s
 
 -- Adds a prove to the history.
 addProveToHist :: CommandHistory                  -- our history
