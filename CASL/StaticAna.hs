@@ -859,7 +859,7 @@ basicAnalysis mef anab anas mix (bs, inSig, ga) =
                    , assocOps = assocOps accSig
                    , predMap = predMap accSig
                    , globAnnos = ga }
-    in Result ds $
+    in Result (ds ++ warnUnused accSig sents) $
        Just (newBs, ExtSign cleanSig $ declaredSymbols accSig, sents)
 
 basicCASLAnalysis :: (BASIC_SPEC () () (), Sign () (), GlobalAnnos)

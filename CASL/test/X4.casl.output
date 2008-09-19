@@ -4,3 +4,4 @@
  op __-__ : Nat * Nat -> Int,
  [forall v1 : Nat . def v1 - 0])
 ### Hint 8.8, known variable shadowed 'a'
+### Warning 6.5, unused variable 'a'

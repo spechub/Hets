@@ -5,14 +5,14 @@ spec List_Rev [sort elem] =
     ops app : list[elem] * list[elem] -> list[elem],
 	    assoc, unit empty; %implied
 	reverse : list[elem] -> list[elem]
-    forall e:elem; l, l1, l2:list[elem]
+    vars e:elem; l, l1, l2:list[elem]
     . app(empty, l) = l
     . app(cons(e, l1), l2) = cons(e, app(l1, l2))
     . reverse(empty) = empty
     . reverse(cons(e, l)) = app(reverse(l), cons(e, empty))
 
 then %implies
-forall l, l1, l2:list[elem]; e:elem
+    vars e:elem; l:list[elem]
     . reverse(app(l, cons(e, empty))) = cons(e, reverse(l))
     . reverse(reverse(l)) = l
 end

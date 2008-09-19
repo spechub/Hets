@@ -2329,3 +2329,5 @@ ambiguous term
 ### Hint 1486.6, redeclared sort 'a'
 ### Warning 1489.4, new 'op b' is also known as 'pred b'
 ### Warning 1489.4, new 'op b' is also known as 'var b'
+### Warning 309.11, unused variable 'b'
+### Warning 402.20, unused variable 'r2'

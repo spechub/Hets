@@ -5,3 +5,4 @@
  op __-?__ : Int * Int ->? Int
  op __-?__ : Nat * Nat ->? Nat,
  [def 0 %(Nat_divide_0)%])
+### Warning 7.5, unused variable 'm'

@@ -16,9 +16,14 @@ module CASL.Quantification where
 import CASL.AS_Basic_CASL
 import CASL.Fold
 import CASL.Sign
+
+import Common.AS_Annotation
 import Common.Id
+import Common.Result
+
 import Data.List
 import qualified Data.Set as Set
+import qualified Data.Map as Map
 
 flatVAR_DECLs :: [VAR_DECL] -> [(VAR, SORT)]
 flatVAR_DECLs = concatMap (\ (Var_decl vs s _) -> map (\ v -> (v, s)) vs)
@@ -85,9 +90,27 @@ stripRecord s mf = (mapRecord mf)
 stripQuant :: FreeVars f => Sign f e -> FORMULA f -> FORMULA f
 stripQuant s = foldFormula $ stripRecord s id
 
-
 -- | strip all universal quantifications
 stripAllQuant :: FORMULA f -> FORMULA f
-stripAllQuant (Quantification Universal _ phi _) =
-  stripAllQuant phi
-stripAllQuant phi = phi
+stripAllQuant f = case f of
+  Quantification Universal _ phi _ -> stripAllQuant phi
+  _ -> f
+
+-- | get top-level variables
+getQuantVars :: FORMULA f -> VarSet
+getQuantVars f = case f of
+  Quantification Universal vds _ _ -> Set.fromList $ flatVAR_DECLs vds
+  _ -> Set.empty
+
+-- | get top-level variables for all sentences
+getTopVars :: [Named (FORMULA f)] -> VarSet
+getTopVars = Set.unions . map (getQuantVars . sentence)
+
+diffVars :: Map.Map VAR SORT -> VarSet -> Map.Map VAR SORT
+diffVars = Set.fold (\ (v, s) m -> case Map.lookup v m of
+    Just t | t == s -> Map.delete v m
+    _ -> m)
+
+warnUnused :: Sign f e -> [Named (FORMULA f)] -> [Diagnosis]
+warnUnused sig sens = map (mkDiag Warning "unused variable")
+  $ Map.keys $ diffVars (varMap sig) (getTopVars sens)
