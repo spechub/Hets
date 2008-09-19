@@ -187,7 +187,7 @@ generateInductionLemmasAux sort_gen_axs goals =
                      then Var_decl (filter (not . (==) v) vars) s r
                      else var_decl)
     uniQuantGoals =
-            foldl ( \ l goal -> case sentence goal of
+            foldr ( \ goal l -> case sentence goal of
                                   Quantification Universal varDecl _ _ ->
                                      (goal, concatVarDecl varDecl) : l
                                   _ -> l) [] goals
