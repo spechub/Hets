@@ -51,7 +51,7 @@ import Comorphisms.KnownProvers
 
 import GUI.Utils
 import GUI.ProofManagement
-import GUI.History(CommandHistory, addProveToHist)
+import GUI.History(CommandHistory, checkAndAddProve)
 
 selectProver :: GetPName a =>
                 [(a,AnyComorphism)] -> ResultT IO (a,AnyComorphism)
@@ -185,9 +185,7 @@ proveKnownPMap :: (Logic lid sublogics1
        LogicGraph -> CommandHistory
     -> ProofState lid sentence -> IO (Result (ProofState lid sentence))
 proveKnownPMap lg ch st =
-    runResultT $ do
-    lift $ addProveToHist ch st Nothing
-    ResultT $ maybe (proveFineGrainedSelect lg ch st) (callProver st) $
+    maybe (proveFineGrainedSelect lg ch st) (callProver st ch False) $
           lookupKnownProver st ProveGUI
 
 callProver :: (Logic lid sublogics1
@@ -201,13 +199,18 @@ callProver :: (Logic lid sublogics1
                raw_symbol1
                proof_tree1) =>
        ProofState lid sentence
+    -> CommandHistory -> Bool -- indicates if a translation was chosen
     -> (G_prover,AnyComorphism) -> IO (Result (ProofState lid sentence))
-callProver st p_cm@(_,acm) =
+callProver st ch trans_chosen p_cm@(_,acm) =
        runResultT $ do
         G_theory_with_prover lid th p <- liftR $ prepareForProving st p_cm
         ps <- lift $ proveTheory lid p (theoryName st) th
         -- lift $ putStrLn $ show ps
-        return $ markProved acm lid ps st
+        let st' = markProved acm lid ps st
+        case trans_chosen of
+            True -> lift $ checkAndAddProve ch st' (Just p_cm) ps
+            _    -> lift $ checkAndAddProve ch st' Nothing ps
+        return st'
 
 proveFineGrainedSelect ::
     (Logic lid sublogics1
@@ -231,6 +234,5 @@ proveFineGrainedSelect lg ch st =
                else getProvers ProveGUI sl $
                       filter hasModelExpansion $ findComorphismPaths lg sl
        pr <- selectProver cmsToProvers
-       lift $ addProveToHist ch st (Just pr)
        ResultT $ callProver st{lastSublogic = sublogicOfTheory st,
-                               comorphismsToProvers = cmsToProvers} pr
+                               comorphismsToProvers = cmsToProvers} ch True pr

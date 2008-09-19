@@ -15,16 +15,17 @@ module GUI.History (CommandHistory,
                     initCommandHistory,
                     addMenuItemToHist,
                     addListToHist,
-                    addProveToHist,
+                    checkAndAddProve,
                     getProofScriptFileName,
                     saveCommandHistory) where
 
 import Common.OrderedMap (keys)
-import Common.Utils (splitOn, joinWith)
+import Common.Utils (joinWith, splitOn)
 import Driver.Options (rmSuffix)
 import Logic.Comorphism (AnyComorphism(..))
 import Logic.Grothendieck (SigId(..))
 import Logic.Logic (language_name)
+import Logic.Prover
 import Proofs.AbstractState
 import Static.GTheory (G_theory(..))
 
@@ -84,12 +85,32 @@ menuItems = [
     ("Theorem Hide Shift", "dg-all thm-hide")
     ]
 
+-- If at least one goal was proved the prove gets added, otherwise not.
+checkAndAddProve :: (Eq proof_tree) => CommandHistory
+        -> ProofState lid sentence -- current proofstate
+        -> Maybe (G_prover, AnyComorphism) -- possible used translation
+        -> [Proof_status proof_tree] -- goals included in prove
+        -> IO ()
+checkAndAddProve ch st pcm pt
+    | goals == [] = return ()
+    | otherwise   = addProveToHist ch st pcm goals
+    where
+        -- 1. filter out the not proven goals
+        -- 2. reverse the list, because the last proven goals are on top
+        goals = reverse $ filter (wasProved) pt
+        -- This checks wether a goal was proved or not.
+        wasProved :: Proof_status proof_tree -> Bool
+        wasProved g = case goalStatus g of
+                          Proved _ -> True
+                          _        -> False
+
 -- Adds a prove to the history.
-addProveToHist :: CommandHistory                  -- our history
-               -> ProofState lid sentence         -- current proofstate
-               -> Maybe (G_prover, AnyComorphism) -- possible used translation
-               -> IO ()
-addProveToHist ch st acm =
+addProveToHist :: CommandHistory
+    -> ProofState lid sentence -- current proofstate
+    -> Maybe (G_prover, AnyComorphism) -- possible used translation
+    -> [Proof_status proof_tree] -- proven goals included in prove
+    -> IO ()
+addProveToHist ch st pcm goals =
     do
     let nodeName = theoryName st
     let (SigId nodeId) = gTheorySignIdx $ theory st
@@ -104,42 +125,60 @@ addProveToHist ch st acm =
              setLastNode ch nodeId
              return ()
 
-    -- selected prover and translation
-    case acm of
-        Just (p, c) -> do
-                       addToHist ch $ "prover " ++ getProverName p
-                       addListToHist ch $ splitComorphism c
-        Nothing -> do
-                   case selectedProver st of
-                       Just s  -> addToHist ch $ "prover " ++ s
-                       Nothing -> addToHist ch "# no explicit prover chosen"
+    -- selected translations
+    case pcm of
+        Just (_, cm) -> do addListToHist ch ("drop-translations" : 
+                                             splitComorphism cm)
+                           addToHist ch ""
+        Nothing      -> return ()
+    
+    -- process each goal
+    mapM_ (addGoalToHist ch st pcm) goals
 
-    -- selected consistency checker
-    case selectedConsChecker st of
-        Just s  -> addToHist ch $ "cons-checker " ++ s
-        Nothing -> return ()
+    return ()
 
-    -- selected time-limit
-    -- for this to work, we have to get into genericATPgui.
-    -- this seems very complicated since a lot of non-gui modules use it.
+-- Adds a prove for a goal to the history.
+addGoalToHist :: CommandHistory
+    -> ProofState lid sentence -- current proofstate
+    -> Maybe (G_prover, AnyComorphism) -- possible used translation
+    -> Proof_status proof_tree -- current goal
+    -> IO ()
+addGoalToHist ch st pcm g =
+    do
+    addToHist ch $ "set goals " ++ (goalName g)
 
     -- axioms to include in prove
     let allAxioms = case theory st of
                         G_theory _ _ _ axioms _ -> keys axioms
-        selAxioms = includedAxioms st
-    if allAxioms == selAxioms
-       then return ()
+        selAxioms = usedAxioms g
+    if allAxioms == selAxioms || selAxioms == []
+       then addToHist ch $ "set-all axioms"
        else addToHist ch $ "set axioms " ++ (joinWith ' ' selAxioms)
 
-    -- selected goals and prove command
-    let allGoals = keys $ goalMap st
-        selGoals = selectedGoals st
-    if allGoals == selGoals
-        then addToHist ch $ "prove-all"
-        else addListToHist ch $ ["set goals " ++
-             (joinWith ' ' selGoals), "prove"]
+    -- selected time-limit
+    let (Tactic_script s) = tacticScript g
+    case parseTimeLimit $ splitOn '\n' s of
+        Just timeLimit -> addToHist ch $ "set time-limit " ++ timeLimit
+        Nothing        -> return ()
+
+    -- selected prover
+    case pcm of
+        Just (p, _) -> addToHist ch $ "prover " ++ getProverName p
+        Nothing     -> do
+                       case selectedProver st of
+                           Just sp -> addToHist ch $ "prover " ++ sp
+                           Nothing -> addToHist ch "# no explicit prover chosen"
+    addListToHist ch ["prove", ""]
 
     return ()
+
+-- Parses time-limit from the tactic-script of a goal.
+parseTimeLimit :: [String] -> Maybe String
+parseTimeLimit l = case length l' of
+                       1 -> Just (drop (length "Time limit: ") $ head l')
+                       _ -> Nothing
+                   where
+                       l' = filter (isPrefixOf "Time limit: ") l
 
 -- Saves the history of commands in a file.
 saveCommandHistory :: CommandHistory -> String -> IO ()
