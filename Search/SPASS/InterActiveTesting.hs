@@ -15,6 +15,7 @@ import Search.SPASS.FormulaWrapper (wrapTerm,SpassConst)
 import Search.SPASS.UnWrap (readDFGFormulae)
 import Search.Common.Normalization (normalize)
 import Search.Common.Data hiding (parameter,role)
+import Search.SPASS.ByteString
 import Data.List as L
 import Data.Set as S
 import Data.Map as M hiding ((!))
@@ -32,6 +33,7 @@ import SoftFOL.Sign --(SPTerm,)
 import Search.DB.FormulaDB.Theory as T
 import MD5
 import System.Environment (getArgs)
+import System.Directory (getDirectoryContents)
 
 dir = "/home/immanuel/dfg/dfg-problems/alg_1"
 dfgFile = "alg_1__t9_alg_1.dfg"
@@ -72,15 +74,17 @@ toSProfile (spterm,line,role) = (formula,line,role')
 -- *  Principle Functions
 -- -----------------------------------------------------------
 
-test = search' readAxiomsAndTheorems "/home/immanuel/dfg/dfg-problems/alg_1" "alg_1__t9_alg_1.dfg"
+--test = search' "/home/immanuel/dfg/dfg-problems/alg_1" "alg_1__t9_alg_1.dfg"
+--test' "/home/immanuel/dfg/dfg-problems/abcmiz_0" "abcmiz_0__t10_abcmiz_0.dfg"
 
-search' getSourceProfiles dir file =
-    do triples <- getSourceProfiles dir file -- (formula,line,role') [ShortProfile p]
+
+
+test' dir file =
+    do triples <- readAxiomsAndTheorems dir file -- (formula,line,role') [ShortProfile p]
        (axioms,theorems) <- return $ L.partition isAxiom $ normalizeAndCleanUp triples
-       tIds <- targetIds $ L.map getSkel axioms  -- [Int]
-       theoryIdNamePairs <- idToName tIds
-       return theoryIdNamePairs
-
+       --tIds <- targetIds $ L.map getSkel axioms  -- [Int]
+       tIdSets <- mapM readTheoryIds $ L.map getSkel axioms
+       return $ (H tIdSets,L.map S.size tIdSets)
 
 search :: (Show p, Show c, Ord p, Ord c, Read p) =>
           (DirPath -> TheoryName -> IO [Triple c p])
@@ -90,10 +94,10 @@ search :: (Show p, Show c, Ord p, Ord c, Read p) =>
 search getSourceProfiles dir file =
     do triples <- getSourceProfiles dir file -- (formula,line,role') [ShortProfile p]
        (axioms,theorems) <- return $ L.partition isAxiom $ normalizeAndCleanUp triples
-       tIds <- targetIds $ L.map getSkel axioms  -- [Int]
+       skels <- return $ L.map getSkel axioms
+       tIds <- theoryIdsIntersection skels 
        theoryIdNamePairs <- idToName tIds
-       --return theoryIdNamePairs
-       mapM (matchOne axioms theorems file) theoryIdNamePairs
+       mapM (matchOne skels axioms theorems file) theoryIdNamePairs
 
 idToName :: [TargetId] -> IO [(TargetId,TheoryName)]
 idToName theoryIds =
@@ -108,22 +112,20 @@ idToName theoryIds =
 
 -- type LongInclusionTuple p = (TheoryName, TheoryName, Renaming p, LineMap, [LineNr])
 
-matchOne :: (Read p,Ord p,Show p) => [ShortProfile p] -> [ShortProfile p]
+
+matchOne :: (Read p,Ord p,Show p) => [Skel] -> [ShortProfile p] -> [ShortProfile p]
          -> TheoryName -> (TheoryId,TheoryName)
          -> IO [LongInclusionTuple p]
-matchOne sAxioms sTheorems sTheoryName (tTheoryId,tTheoryName) =
+matchOne skels sAxioms sTheorems sTheoryName (tTheoryId,tTheoryName) =
     let toIncTuple (st,tt,ps,lm,lines) =  (st,tt,ps,lm,length lines)
-        --mkPair tMap = (tTheoryName,tMap)
     in do putStrLn tTheoryName
-          targetProfiles <- getProfilesFromDB tTheoryId -- [ShortProfile p]
-          --morphs <- return $ mkPair $ calcMorphs sAxioms targetProfiles
+          targetProfiles <- getProfilesFromDB tTheoryId skels
           morphs <- return $ theoryInterpretation sAxioms targetProfiles
           longIncTuples <- return (L.map (inclusionTuple sTheoryName tTheoryName
                                           targetProfiles sTheorems)
                                    morphs)
           multiInsertInclusion $ (L.map toIncTuple longIncTuples)
           return longIncTuples
-
 
 
 
@@ -137,12 +139,96 @@ data Hide x = H x
 targetIds :: [Skel] -> IO [TargetId]
 targetIds skels =
     do targetIdMatrix <- mapM readTheoryIds skels
-       return $ S.toList $ foldr1 S.intersection targetIdMatrix
+       return $ S.toList $ foldr1 S.intersection $
+              L.sortBy compSetSize targetIdMatrix
+
+compSetSize :: Set Int -> Set Int -> Ordering
+compSetSize s1 s2 = compare (S.size s2) (S.size s1)
+
+-- skel: "000014d104f7cccb8a8bf6471f220f0a"
+skel_cache_file = "/home/immanuel/dfg/skel-cache"
+
+writeClassifiedTheoryIdSet :: Skel -> IO ()--TheoryIds
+
+writeSkelCache :: IO ()
+writeSkelCache =
+    do (_:_:skels) <- getDirectoryContents "/home/immanuel/dfg/cache" 
+       writeFile skel_cache_file "skelCache = ["
+       mapM writeClassifiedTheoryIdSet skels
+       appendFile skel_cache_file "]"
+
+
+writeClassifiedTheoryIdSet skel =
+    let classify tids = if S.size tids < 2000
+                        then TIds (skel,(True,(S.size tids,tids)))
+                        else TIds (skel,(False,(S.size tids,(complement tids))))
+    in do putStrLn skel
+          tids <- readTheoryIds skel
+          appendFile skel_cache_file ("  " ++ (show $ classify tids) ++ ",\n")
 
 readTheoryIds :: Skel -> IO (Set Int)
 readTheoryIds skel = readFile ("/home/immanuel/dfg/cache/" ++ skel) >>= return . readIntSet
-    where readIntSet lst = (read lst):: S.Set Int
 
+readIntSet str = (read str)::S.Set Int
+
+allTids = S.fromList [1..41758]
+
+complement :: Set Int -> Set Int
+complement = S.difference allTids
+
+data TheoryIds = TIds (Skel,(Bool,(Int,(Set Int)))) deriving Show
+
+
+s16 = "00070b01ff9f0d8635d47dab235f8f8f"
+s5101 = "0009fa10450577924b70d4978e5bf4ef"
+
+{-
+
+  TIds ("9f389b080cbea52db3851ec2a523464b",(True,(3,fromList [21134,21135,21159]))),
+
+  TIds ("fe69886c6b8c727abfed03f1e0c391fd",(True,(2,fromList [21159,36437]))),
+
+*Main> theoryIdsIntersection ["9f389b080cbea52db3851ec2a523464b","fe69886c6b8c727abfed03f1e0c391fd"]
+[21159]
+
+-}
+
+theoryIdsIntersection :: [Skel] -> IO [Int]
+theoryIdsIntersection skels =
+    do bstrs <- mapM readTheorIdByteString skels
+       return $ fromByteString $ multiply bstrs
+
+--theorIdByteStringIntersection bstrs = multiply bstrs
+
+--readTheorIdByteString :: Skel -> Data.ByteString.Internal.ByteString
+readTheorIdByteString skel = 
+    readByteString ("/home/immanuel/dfg/bytestring-cache/" ++ skel)
+
+
+
+genByteCache :: IO ()
+genByteCache =
+    do (_:_:skels) <- getDirectoryContents "/home/immanuel/dfg/cache"
+       mapM_ genByteCache1 skels
+
+
+genByteCache1 :: Skel -> IO ()
+genByteCache1 skel =
+    do putStrLn skel
+       str <- readFile ("/home/immanuel/dfg/cache/" ++ skel)
+       writeIntList ("/home/immanuel/dfg/bytestring-cache/" ++ skel) $
+                    S.toAscList $ readIntSet str
+
+genCocache :: Skel -> IO ()
+genCocache skel =
+    do str <- readFile ("/home/immanuel/dfg/cache/" ++ skel)
+       writeFile ("/home/immanuel/dfg/cocache/" ++ skel)
+                     (show $ S.toList $ complement $ readIntSet str)
+
+theoryIdsFromCocache :: Skel -> IO [Int]
+theoryIdsFromCocache skel = readFile ("/home/immanuel/dfg/cocache/" ++ skel) >>=
+                            return . readIntList
+    where readIntList str = (read str)::[Int]
 
 -- type ShortProfile p = (Skel, [p], LineNr, SenType)
 isAxiom (_,_,_,r) = r == "axiom"
@@ -195,10 +281,11 @@ translate renaming (skel,param,lnr,role) = (skel,param',lnr,role)
 
 type TheoryId = Int
 
-getProfilesFromDB :: (Read p) => TheoryId -> IO [ShortProfile p]
-getProfilesFromDB tTheoryId =
+getProfilesFromDB :: (Read p) => TheoryId -> [Skel] -> IO [ShortProfile p]
+getProfilesFromDB tTheoryId skels =
     let q = do t <- table short_profile  -- the query
-	       restrict ((t!SP.theory_id) .==. (constant tTheoryId))
+	       restrict ((t!SP.theory_id) .==. (constant tTheoryId) .&&.
+                         (_in (t!SP.skeleton_md5) (L.map constant skels)))
 	       project (SP.skeleton_md5 << t!SP.skeleton_md5 # 
                         SP.parameter << t!SP.parameter # 
                         SP.line << t!SP.line # SP.role << t!SP.role)
