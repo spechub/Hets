@@ -26,7 +26,7 @@ import Database.HaskellDB
 import Database.HaskellDB.DriverAPI
 import Database.HaskellDB.HDBRec
 import Search.DB.Connection
-import Search.DB.FormulaDB.Profile as P
+--import Search.DB.FormulaDB.Profile as P
 import Search.DB.FormulaDB.Short_profile as SP
 import SoftFOL.Sign --(SPTerm,)
 --import Search.DB.FormulaDB.Skel_to_theory as ST
@@ -43,7 +43,8 @@ dfgFile = "alg_1__t9_alg_1.dfg"
 
 main = do args <- getArgs
           case args of
-            (dir:file:_) -> searchDFG dir file >> return ()
+            ("-db":dir:file:_) -> searchDFG True dir file >> return ()
+            (dir:file:_) -> searchDFG False dir file >> return ()
             _ -> error "invalid arguments! It should be one of:\nsearch <dir> <file>"
             
 
@@ -51,8 +52,8 @@ main = do args <- getArgs
 -- *  SPASS specific
 -- -----------------------------------------------------------
 
-searchDFG :: DirPath -> FileName -> IO [[LongInclusionTuple SPIdentifier]]
-searchDFG = search readAxiomsAndTheorems
+searchDFG :: Bool -> DirPath -> FileName -> IO [[LongInclusionTuple SPIdentifier]]
+searchDFG toDB = search toDB readAxiomsAndTheorems
 
 readAxiomsAndTheorems :: DirPath -> FileName -> IO [Triple SpassConst SPIdentifier]
 readAxiomsAndTheorems dir file =
@@ -76,8 +77,7 @@ toSProfile (spterm,line,role) = (formula,line,role')
 
 --test = search' "/home/immanuel/dfg/dfg-problems/alg_1" "alg_1__t9_alg_1.dfg"
 --test' "/home/immanuel/dfg/dfg-problems/abcmiz_0" "abcmiz_0__t10_abcmiz_0.dfg"
-
-
+-- "/home/immanuel/dfg/dfg-problems/bvfunc26" "bvfunc26__t22_bvfunc26.dfg"
 
 test' dir file =
     do triples <- readAxiomsAndTheorems dir file -- (formula,line,role') [ShortProfile p]
@@ -87,17 +87,18 @@ test' dir file =
        return $ (H tIdSets,L.map S.size tIdSets)
 
 search :: (Show p, Show c, Ord p, Ord c, Read p) =>
-          (DirPath -> TheoryName -> IO [Triple c p])
+           Bool
+          -> (DirPath -> TheoryName -> IO [Triple c p])
           -> DirPath
           -> TheoryName
           -> IO [[LongInclusionTuple p]]
-search getSourceProfiles dir file =
+search toDB getSourceProfiles dir file =
     do triples <- getSourceProfiles dir file -- (formula,line,role') [ShortProfile p]
        (axioms,theorems) <- return $ L.partition isAxiom $ normalizeAndCleanUp triples
        skels <- return $ L.map getSkel axioms
        tIds <- theoryIdsIntersection skels 
        theoryIdNamePairs <- idToName tIds
-       mapM (matchOne skels axioms theorems file) theoryIdNamePairs
+       mapM (matchOne toDB skels axioms theorems file) theoryIdNamePairs
 
 idToName :: [TargetId] -> IO [(TargetId,TheoryName)]
 idToName theoryIds =
@@ -113,10 +114,10 @@ idToName theoryIds =
 -- type LongInclusionTuple p = (TheoryName, TheoryName, Renaming p, LineMap, [LineNr])
 
 
-matchOne :: (Read p,Ord p,Show p) => [Skel] -> [ShortProfile p] -> [ShortProfile p]
+matchOne :: (Read p,Ord p,Show p) => Bool -> [Skel] -> [ShortProfile p] -> [ShortProfile p]
          -> TheoryName -> (TheoryId,TheoryName)
          -> IO [LongInclusionTuple p]
-matchOne skels sAxioms sTheorems sTheoryName (tTheoryId,tTheoryName) =
+matchOne toDB skels sAxioms sTheorems sTheoryName (tTheoryId,tTheoryName) =
     let toIncTuple (st,tt,ps,lm,lines) =  (st,tt,ps,lm,length lines)
     in do putStrLn tTheoryName
           targetProfiles <- getProfilesFromDB tTheoryId skels
@@ -124,8 +125,10 @@ matchOne skels sAxioms sTheorems sTheoryName (tTheoryId,tTheoryName) =
           longIncTuples <- return (L.map (inclusionTuple sTheoryName tTheoryName
                                           targetProfiles sTheorems)
                                    morphs)
-          multiInsertInclusion $ (L.map toIncTuple longIncTuples)
-          return longIncTuples
+          if toDB
+            then do multiInsertInclusion $ (L.map toIncTuple longIncTuples)
+                    return longIncTuples
+            else return longIncTuples
 
 
 
@@ -142,8 +145,11 @@ targetIds skels =
        return $ S.toList $ foldr1 S.intersection $
               L.sortBy compSetSize targetIdMatrix
 
-compSetSize :: Set Int -> Set Int -> Ordering
+compSetSize :: Set Int -> Set Int -> Ordering -- for descending sortBy !!!
 compSetSize s1 s2 = compare (S.size s2) (S.size s1)
+
+
+
 
 -- skel: "000014d104f7cccb8a8bf6471f220f0a"
 skel_cache_file = "/home/immanuel/dfg/skel-cache"
@@ -281,6 +287,8 @@ translate renaming (skel,param,lnr,role) = (skel,param',lnr,role)
 
 type TheoryId = Int
 
+getProfilesDFGFromDB n ss = (getProfilesFromDB n ss)::IO [ShortProfile String]
+
 getProfilesFromDB :: (Read p) => TheoryId -> [Skel] -> IO [ShortProfile p]
 getProfilesFromDB tTheoryId skels =
     let q = do t <- table short_profile  -- the query
@@ -311,7 +319,12 @@ theoryInterpretation :: (Read p, Ord p) => [ShortProfile p] -> [ShortProfile p]
 theoryInterpretation sAxioms tProfiles = 
     case (L.map (matchList tProfiles) sAxioms)
     of [] -> []
-       matrix ->  foldl1 merge matrix
+       matrix ->  foldl1 merge (L.sortBy compListLength matrix) -- sort improves speed!
+
+
+compListLength :: [a] -> [a] -> Ordering
+compListLength s1 s2 = compare (L.length s1) (L.length s2)
+
 
 {- |
    merge takes two lists of profile mappings and returns the list of
