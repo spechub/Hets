@@ -44,16 +44,21 @@ module Static.DGFlattening (dg_flattening2,
 import Logic.Grothendieck
 import Logic.Logic
 import Logic.Coerce
+
 import Comorphisms.LogicGraph
+
 import Static.DevGraph
 import Static.GTheory
 import Static.DevGraph
+
 import Proofs.EdgeUtils
 import Proofs.TheoremHideShift
-import Propositional.Sign()
-import Syntax.AS_Library
-import Common.Result
+
 import Common.ExtSign
+import Common.Id
+import Common.LibName
+import Common.Result
+
 import Data.Graph.Inductive.Graph hiding (empty)
 import Data.Map hiding (intersection,empty)
 import Data.Set hiding (intersection,insert)
@@ -61,7 +66,6 @@ import Data.List(tails,elem)
 import Data.Maybe(fromJust,isJust)
 import qualified Data.Map as Map
 import Control.Monad
-import Common.Id
 
 unzipProofHistory :: ProofHistory -> ProofHistory
 unzipProofHistory ph =

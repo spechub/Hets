@@ -29,19 +29,24 @@ module Proofs.Local
 
 import Proofs.EdgeUtils
 import Proofs.StatusUtils
+import Proofs.TheoremHideShift
+
 import Logic.Grothendieck
 import Logic.Prover
+
 import Static.GTheory
 import Static.DevGraph
-import Syntax.AS_Library
-import Common.Result
+
 import Common.AS_Annotation
-import qualified Data.Map as Map
+import Common.LibName
+import Common.Result
 import qualified Common.OrderedMap as OMap
+
+import qualified Data.Map as Map
 import Data.Graph.Inductive.Graph
 import Data.List
 
-import Proofs.TheoremHideShift
+
 
 -- | local decomposition
 locDecompFromList :: LIB_NAME ->  [LEdge DGLinkLab] -> LibEnv -> LibEnv

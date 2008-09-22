@@ -32,6 +32,7 @@ import Common.AnnoState
 import Common.Id
 import Common.Result
 import Common.DocUtils
+import Common.LibName
 import Text.ParserCombinators.Parsec
 
 import Driver.Options
@@ -49,6 +50,10 @@ read_LIB_DEFN_M lgraph opts file input mt =
           (emptyAnnos ()) file input of
          Left err  -> fail (showErr err)
          Right ast -> return $ setFilePath file mt ast
+
+setFilePath :: FilePath -> ClockTime -> LIB_DEFN -> LIB_DEFN
+setFilePath fp mt (Lib_defn ln lis r as) =
+  Lib_defn ln { getLIB_ID = updFilePathOfLibId fp mt $ getLIB_ID ln } lis r as
 
 readShATermFile :: ShATermConvertible a => FilePath -> IO (Result a)
 readShATermFile fp = do

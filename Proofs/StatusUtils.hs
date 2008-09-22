@@ -24,7 +24,7 @@ module Proofs.StatusUtils
 import Static.DevGraph
 import Data.Graph.Inductive.Graph
 import qualified Data.Map as Map
-import Syntax.AS_Library
+import Common.LibName
 import Logic.Logic
 
 {-

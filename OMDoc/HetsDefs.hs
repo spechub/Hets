@@ -110,6 +110,7 @@ import Data.Graph.Inductive.Graph
 import qualified Data.Graph.Inductive.Graph as Graph
 
 import Common.GlobalAnnotations (emptyGlobalAnnos)
+import Common.LibName
 
 import Syntax.AS_Library --(LIB_NAME(),LIB_DEFN())
 

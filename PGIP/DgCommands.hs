@@ -34,12 +34,11 @@ import Static.GTheory
 import Static.DevGraph
 import Static.AnalysisLibrary
 
+import Common.LibName
 import Common.Result
 
 import Data.Graph.Inductive.Graph
 import Data.List
-
-import Syntax.AS_Library
 
 import Driver.Options
 

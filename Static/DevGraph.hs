@@ -35,8 +35,6 @@ and 'Proofs.StatusUtils.mkResultProofStatus'.
 module Static.DevGraph where
 
 import Static.GTheory
-import Syntax.AS_Library (LIB_NAME)
-import Syntax.Print_AS_Library ()
 
 import Logic.Logic
 import Logic.ExtSign
@@ -49,6 +47,7 @@ import qualified Common.OrderedMap as OMap
 import Common.AS_Annotation
 import Common.GlobalAnnotations
 import Common.Id
+import Common.LibName
 
 import Control.Concurrent.MVar
 import Control.Exception (assert)

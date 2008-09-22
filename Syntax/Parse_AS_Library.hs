@@ -25,6 +25,7 @@ import Common.Keywords
 import Common.Lexer
 import Common.Token
 import Common.Id
+import Common.LibName
 import Text.ParserCombinators.Parsec
 import Data.List(intersperse)
 import Data.Maybe(maybeToList)

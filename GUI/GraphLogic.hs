@@ -52,8 +52,6 @@ import Logic.Comorphism
 import Logic.Prover
 import Comorphisms.LogicGraph(logicGraph)
 
-import Syntax.AS_Library(LIB_NAME, getModTime, getLIB_ID)
-
 import Static.GTheory
 import Static.DevGraph
 import Static.PrintDevGraph
@@ -86,6 +84,7 @@ import Common.DocUtils (showDoc)
 import Common.AS_Annotation (isAxiom)
 import Common.Consistency
 import Common.ExtSign
+import Common.LibName
 import Common.Result as Res
 import qualified Common.OrderedMap as OMap
 import qualified Common.Lib.Rel as Rel

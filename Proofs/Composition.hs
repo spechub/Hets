@@ -20,11 +20,13 @@ module Proofs.Composition
     , compositionCreatingEdgesFromList
     ) where
 
-import Logic.Grothendieck
 import Proofs.EdgeUtils
 import Proofs.StatusUtils
-import Syntax.AS_Library
+
 import Static.DevGraph
+import Logic.Grothendieck
+import Common.LibName
+
 import qualified Common.Lib.Graph as Tree
 import Data.Graph.Inductive.Graph
 import Data.List

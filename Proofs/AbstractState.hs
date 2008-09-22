@@ -48,16 +48,15 @@ import Data.Typeable
 import qualified Common.OrderedMap as OMap
 import Common.Result as Result
 import Common.AS_Annotation
-import Common.Utils
 import Common.ExtSign
+import Common.LibName
+import Common.Utils
 
 import Logic.Logic
 import Logic.Prover
 import Logic.Grothendieck
 import Logic.Comorphism
 import Logic.Coerce
-
-import Syntax.AS_Library (LIB_NAME)
 
 import Comorphisms.KnownProvers
 

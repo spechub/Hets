@@ -15,17 +15,18 @@ module Static.DGTranslation
     ( libEnv_translation
     ) where
 
+import Static.GTheory
+import Static.DevGraph
+
 import Logic.Logic
 import Logic.Coerce
 import Logic.Comorphism
 import Logic.Grothendieck
 import Logic.Prover
-import Syntax.AS_Library
-import Static.GTheory
-import Static.DevGraph
 
-import Common.Result
 import Common.ExtSign
+import Common.LibName
+import Common.Result
 
 import qualified Data.Map as Map
 import qualified List as List (nub)

@@ -6,34 +6,35 @@ import Static.GTheory
 import Static.DevGraph
 import Static.PrintDevGraph
 import Driver.Options
-import qualified Data.Map as Map
-import Common.Doc
-import Common.DocUtils
-import Common.AS_Annotation
-import System.Environment
 
--- CASL things
-
-import Data.Maybe
-import Data.List
-import Common.Id as Id
 import qualified Common.OrderedMap as OMap
 import Common.AS_Annotation as Anno
 import Common.Result
 import Common.ResultT
+import Common.LibName
+import Common.Id as Id
 import Common.ExtSign
+import Common.Doc
+import Common.DocUtils
+import Common.AS_Annotation
+
+import System.Environment
+import Data.Graph.Inductive.Graph
+import qualified Data.Map as Map
+import Data.Maybe
+import Data.List
+
+-- CASL things
 import Logic.Coerce
 import CASL.Logic_CASL
 import CASL.AS_Basic_CASL
 import CASL.Sign
 import Comorphisms.LogicGraph
-import Static.AnalysisLibrary
 
 -- DG things :)
 import Proofs.Global
 import Proofs.EdgeUtils
 import Proofs.StatusUtils
-import Data.Graph.Inductive.Graph
 
 myHetcatsOpts :: HetcatsOpts
 myHetcatsOpts = defaultHetcatsOpts { libdir = "../Hets-lib" }

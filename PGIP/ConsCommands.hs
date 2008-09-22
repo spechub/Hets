@@ -28,17 +28,19 @@ import PGIP.DgCommands
 
 import Proofs.AbstractState
 import Proofs.TheoremHideShift
+
 import Static.DevGraph
 import Static.GTheory
+
 import Logic.Logic (conservativityCheck)
 import Logic.Coerce (coerceSign, coerceMorphism)
 import Logic.Grothendieck
 import Logic.Comorphism
 import Logic.Prover
-import Syntax.AS_Library(LIB_NAME)
 
 import Common.Consistency
 import Common.ExtSign
+import Common.LibName
 import Common.Result as Res
 import qualified Common.OrderedMap as OMap
 

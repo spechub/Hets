@@ -18,10 +18,9 @@ import qualified Data.Map as Map
 import Common.Result
 import Common.Id
 import Common.GlobalAnnotations
+import Common.LibName
 import Common.Utils
 import Common.ExtSign
-
-import Syntax.AS_Library
 
 import Haskell.HatAna
 import Haskell.HatParser

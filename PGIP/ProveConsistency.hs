@@ -26,26 +26,25 @@ import PGIP.DataTypes
 import PGIP.DataTypesUtils
 import PGIP.Utils
 
-import Static.GTheory
-import Static.DevGraph
-
-import Common.Result
-
-import Data.List
-import qualified Data.Map as Map
-
 import Comorphisms.LogicGraph
 
 import Proofs.EdgeUtils
 import Proofs.StatusUtils
 import Proofs.AbstractState
 
+import Static.GTheory
+import Static.DevGraph
+
 import Logic.Grothendieck
 import Logic.Comorphism
 import Logic.Logic
 import qualified Logic.Prover as P
 
-import Syntax.AS_Library
+import Common.LibName
+import Common.Result
+
+import Data.List
+import qualified Data.Map as Map
 
 import Control.Concurrent
 import Control.Concurrent.MVar

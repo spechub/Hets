@@ -22,10 +22,8 @@ module Static.PrintDevGraph
 import Static.GTheory
 import Static.DevGraph
 
-import Syntax.AS_Library (LIB_NAME, getLIB_ID)
-import Syntax.Print_AS_Library ()
-
 import Common.GlobalAnnotations
+import Common.LibName
 import Common.Id
 import Common.Doc as Doc
 import Common.DocUtils

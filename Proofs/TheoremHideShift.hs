@@ -32,24 +32,26 @@ module Proofs.TheoremHideShift
     , theoremsToAxioms
     ) where
 
-import Data.List (partition)
 import Logic.Logic
 import Logic.Prover
+
 import Static.GTheory
 import Static.DevGraph
 import Static.WACocone
-import Common.Result
-import Data.Graph.Inductive.Graph as Graph
-import qualified Data.Map as Map
-import Syntax.AS_Library
+
 import Proofs.EdgeUtils
 import Proofs.StatusUtils
 import Proofs.ComputeColimit
-import Control.Monad
-import Data.List(nub, sortBy)
 import Proofs.SimpleTheoremHideShift(getInComingGlobalUnprovenEdges)
-import Common.Id
 
+import Common.Id
+import Common.LibName
+import Common.Result
+
+import Data.Graph.Inductive.Graph as Graph
+import qualified Data.Map as Map
+import Data.List (nub, sortBy, partition)
+import Control.Monad
 
 convertNodesToNf :: LIB_NAME -> LibEnv -> Result LibEnv
 convertNodesToNf ln libEnv = do

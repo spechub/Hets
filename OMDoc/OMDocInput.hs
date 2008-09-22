@@ -24,7 +24,7 @@ import CASL.Morphism
 import CASL.Logic_CASL
 import CASL.AS_Basic_CASL
 import qualified Common.Id as Id
-import qualified Syntax.AS_Library as ASL
+import qualified Common.LibName as ASL
 import qualified CASL.AS_Basic_CASL as ABC
 
 -- import OMDoc.Logic_OMDoc -- for testing the logic instances, not used here

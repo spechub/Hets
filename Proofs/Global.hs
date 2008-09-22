@@ -26,7 +26,7 @@ import Data.List
 
 import Static.GTheory
 import Static.DevGraph
-import Syntax.AS_Library
+import Common.LibName
 
 import Proofs.EdgeUtils
 import Proofs.StatusUtils

@@ -35,6 +35,7 @@ import Common.ATerm.ReadWrite
 
 import Common.Id
 import Common.AS_Annotation
+import Common.LibName
 
 import CASL.AS_Basic_CASL
 

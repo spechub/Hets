@@ -23,16 +23,14 @@ import Logic.Coerce
 
 import Static.GTheory
 
-import Common.Id
+import Common.AS_Annotation as AS_Anno
 import Common.Doc
 import Common.DocUtils
 import Common.ExtSign
-import Common.Result
-import Common.AS_Annotation as AS_Anno
+import Common.Id
+import Common.LibName
 import Common.ProofUtils
-
-import Syntax.AS_Library
-import Syntax.Print_AS_Library ()
+import Common.Result
 
 import CASL.Logic_CASL
 import CASL.Sublogic

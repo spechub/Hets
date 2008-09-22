@@ -28,19 +28,20 @@ module Proofs.HideTheoremShift
     , automaticHideTheoremShiftFromList
     ) where
 
-import Logic.Grothendieck
-import Syntax.AS_Library
-import Static.DevGraph
-import Common.Result
-import Common.Utils (mapAccumLM)
-import Data.Graph.Inductive.Graph
-
 import Proofs.EdgeUtils
 import Proofs.StatusUtils
 import Comorphisms.LogicGraph
 import GUI.Utils
 
+import Logic.Grothendieck
+import Static.DevGraph
+
+import Common.LibName
+import Common.Result
+import Common.Utils (mapAccumLM)
+
 import Control.Monad.Identity
+import Data.Graph.Inductive.Graph
 import Data.List
 
 type ListSelector m a = [a] -> m (Maybe a)

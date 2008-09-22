@@ -15,8 +15,6 @@ module GUI.ShowLibGraph (showLibGraph, mShowGraph) where
 import Driver.Options (HetcatsOpts(outtypes), putIfVerbose)
 import Driver.ReadFn
 
-import Syntax.AS_Library
-
 import Static.DevGraph
 import Static.AnalysisLibrary
 
@@ -34,9 +32,11 @@ import GUI.GraphLogic(getLibDeps, hideNodes)
 import GUI.GraphDisplay
 import qualified GUI.GraphAbstraction as GA
 
+import Common.LibName
+import qualified Common.Lib.Rel as Rel
+
 import Data.IORef
 import qualified Data.Map as Map
-import qualified Common.Lib.Rel as Rel
 
 import Control.Concurrent.MVar
 import Control.Concurrent(threadDelay)

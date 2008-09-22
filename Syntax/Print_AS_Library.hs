@@ -102,18 +102,3 @@ instance Pretty ITEM_NAME_OR_MAP where
         Item_name aa -> structSimpleId aa
         Item_name_map aa ab _ ->
             fsep [structSimpleId aa, mapsto, structSimpleId ab]
-
-instance Pretty LIB_NAME where
-    pretty l = case l of
-        Lib_version i v ->
-            fsep [pretty i, keyword versionS, pretty v]
-        Lib_id i -> pretty i
-
-instance Pretty LIB_ID where
-    pretty l = structId $ case l of
-        Direct_link u _ -> u
-        Indirect_link p _ _ _ -> p
-
-instance Pretty VERSION_NUMBER where
-    pretty (Version_number aa _) =
-        hcat $ punctuate dot $ map codeToken aa

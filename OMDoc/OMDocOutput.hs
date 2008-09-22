@@ -23,7 +23,7 @@ import OMDoc.CASLOutput
 import CASL.Sign
 import CASL.AS_Basic_CASL as ABC
 import qualified Common.Id as Id
-import qualified Syntax.AS_Library as ASL
+import qualified Common.LibName as ASL
 
 import Driver.Options
 
@@ -370,7 +370,7 @@ caslLogicImports =
 -- | translate a definitional link to OMDoc (/imports/)
 createOMDefLink::
   Static.DevGraph.LibEnv -- ^ library environment
-  ->Hets.LIB_NAME        -- ^ library (where link occures)
+  ->ASL.LIB_NAME        -- ^ library (where link occures)
   ->Graph.LEdge Static.DevGraph.DGLinkLab -- ^ the link
   ->[Hets.IdNameMapping] -- ^ mapping of unique names (Hets\<->OMDoc)
 --  ->[Hets.IdNameMapping] -- ^ mapping of names (Hets\<->OMDoc)
@@ -423,7 +423,7 @@ createOMDefLink lenv ln (from, to, ll) uniqueNames {-names-} collectionMap =
 createXmlThmLinkOM::
     Int -- ^ link number (for disambiguation when there are multiple similar links)
   ->Static.DevGraph.LibEnv -- ^ library environment
-  ->Hets.LIB_NAME -- ^ library (where link occures)
+  ->ASL.LIB_NAME -- ^ library (where link occures)
   ->Graph.LEdge Static.DevGraph.DGLinkLab -- ^ the link
   ->[Hets.IdNameMapping] -- ^ mapping of unique names (Hets\<->OMDoc)
 --  ->[Hets.IdNameMapping] -- ^ mapping of names (Hets\<->OMDoc)
@@ -558,7 +558,7 @@ createXmlThmLinkOM lnum lenv ln (edge@(from, to, ll)) uniqueNames {-names-} coll
 -}
 createOMMorphism::
   Static.DevGraph.LibEnv -- ^ library environment
-  ->Hets.LIB_NAME -- ^ library (of morphism)
+  ->ASL.LIB_NAME -- ^ library (of morphism)
   ->Graph.LEdge Static.DevGraph.DGLinkLab -- ^ link carrying morphism
   ->[Hets.IdNameMapping] -- ^ mapping of unique names (Hets\<->OMDoc)
 --  ->[Hets.IdNameMapping] -- ^ mapping of names (Hets\<->OMDoc)
@@ -766,7 +766,7 @@ filterThmLinks =
 -- | translate operators representing sort constructors to
 --   OMDoc-ADT-constructors.
 createConstructorsOM::
-  Hets.LIB_NAME
+  ASL.LIB_NAME
   ->Graph.Node
   ->[Hets.IdNameMapping]
   ->Hets.CollectionMap
@@ -798,7 +798,7 @@ createConstructorsOM
 -- | translate a single sort constructing operator to
 -- an OMDoc-ADT-constructor
 createConstructorOM::
-  Hets.LIB_NAME
+  ASL.LIB_NAME
   ->Graph.Node
   ->[Hets.IdNameMapping]
   ->Hets.CollectionMap
@@ -853,7 +853,7 @@ createADTFor::
     String
   ->Rel.Rel SORT
   ->SORT
-  ->Hets.LIB_NAME
+  ->ASL.LIB_NAME
   ->Graph.Node
   ->[Hets.IdNameMapping]
   ->Hets.CollectionMap
@@ -987,7 +987,7 @@ getSortIdName idNameMapping sid =
 libEnvLibNameIdNameMappingToOMDoc::
   GlobalOptions           -- ^ HetcatsOpts and debugging information
   ->LibEnv                -- ^ Library-Environment to process
-  ->Hets.LIB_NAME         -- ^ Libary to process
+  ->ASL.LIB_NAME         -- ^ Libary to process
   ->OMDoc.XmlId           -- ^ Name (xml:id) for OMDoc-Document
   ->[Hets.IdNameMapping]  -- ^ Mapping of unique names (Hets\<->XML)
   ->Hets.CollectionMap
@@ -1572,7 +1572,7 @@ getNodeNameForXml = Hets.inmGetNodeId
 --   \<\/symbol>
 -- @
 predicationToXmlOM::
-  Hets.LIB_NAME -- ^ library name of predication
+  ASL.LIB_NAME -- ^ library name of predication
   ->Graph.Node -- ^ node of predication
   ->[Hets.IdNameMapping] -- ^ unique name mapping
   ->Hets.CollectionMap
@@ -1686,7 +1686,7 @@ predicationToXmlOM
 --   \<\/symbol>
 -- @
 operatorToXmlOM::
-  Hets.LIB_NAME -- ^ library name of operator
+  ASL.LIB_NAME -- ^ library name of operator
   ->Graph.Node -- ^ node of operator
   ->[Hets.IdNameMapping] -- ^ unique name mapping
   ->Hets.CollectionMap
@@ -1905,7 +1905,7 @@ posLines posl =
 {-
 -- | find the XML-name and library name mapping for a sort
 findSortOriginCL::
-  Hets.LIB_NAME -- ^ library to search in
+  ASL.LIB_NAME -- ^ library to search in
   ->[Hets.IdNameMapping] -- ^ unique name mapping
   ->[Hets.IdNameMapping] -- ^ name mapping
   ->SORT -- ^ sort to find
@@ -1939,7 +1939,7 @@ findSortOriginCL
 -- to find a predicate with a compatible signature (according to
 -- the relation).
 findPredicateOriginCL::
-  Hets.LIB_NAME -- ^ name of library to search in
+  ASL.LIB_NAME -- ^ name of library to search in
   ->[Hets.IdNameMapping] -- ^ unique name mapping
   ->[Hets.IdNameMapping] -- ^ name mapping
   ->Rel.Rel SORT -- ^ sort relation for compatibility checks
@@ -2016,7 +2016,7 @@ findPredicateOriginCL
 -- to find an operator with a compatible signature (according to
 -- the relation).
 findOperatorOriginCL::
-  Hets.LIB_NAME -- ^ name of library to search in
+  ASL.LIB_NAME -- ^ name of library to search in
   ->[Hets.IdNameMapping] -- ^ unique name mapping
   ->[Hets.IdNameMapping] -- ^ name mapping
   ->Rel.Rel SORT -- ^ sort relation for compatibility checks
@@ -2099,7 +2099,7 @@ preferEqualFindCompatible l isEqual isCompatible =
 wrapFormulasCMPIOOM::
   GlobalOptions -- ^ HetcatsOpts + debugging-information
   ->LibEnv -- ^ library environment
-  ->Hets.LIB_NAME -- ^ library of formulas
+  ->ASL.LIB_NAME -- ^ library of formulas
   ->Graph.Node -- ^ node of formulas
   ->[Hets.IdNameMapping] -- ^ mapping of unique names
   ->Hets.CollectionMap

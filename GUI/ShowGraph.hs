@@ -16,8 +16,8 @@ module GUI.ShowGraph
 where
 
 import Driver.Options
-import Syntax.AS_Library(LIB_NAME)
 import Static.DevGraph
+import Common.LibName
 
 import GUI.GraphDisplay
 import GUI.GraphTypes

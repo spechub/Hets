@@ -16,14 +16,12 @@ module Syntax.AS_Library where
 -- DrIFT command:
 {-! global: GetRange !-}
 
-import System.Time
-import Data.List
 import Common.Id
 import Common.AS_Annotation
+import Common.LibName
 
 import Syntax.AS_Architecture
 import Syntax.AS_Structured
-
 
 data LIB_DEFN = Lib_defn LIB_NAME [Annoted LIB_ITEM] Range [Annotation]
                 -- pos: "library"
@@ -66,63 +64,3 @@ data ITEM_NAME_OR_MAP = Item_name ITEM_NAME
                         deriving (Show, Eq)
 
 type ITEM_NAME = SIMPLE_ID
-
-data LIB_NAME = Lib_version
-    { getLIB_ID :: LIB_ID
-    , libVersion :: VERSION_NUMBER }
-    | Lib_id { getLIB_ID :: LIB_ID }
-
-data LIB_ID = Direct_link URL Range
-              -- pos: start of URL
-            | Indirect_link PATH Range FilePath ClockTime
-              -- pos: start of PATH
-
-noTime :: ClockTime
-noTime = TOD 0 0
-
--- | Returns the LIB_ID of a LIB_NAME
-getModTime :: LIB_ID -> ClockTime
-getModTime li = case li of
-    Direct_link _ _ -> noTime
-    Indirect_link _ _ _ m -> m
-
-updFilePathOfLibId :: FilePath -> ClockTime -> LIB_ID -> LIB_ID
-updFilePathOfLibId fp mt li = case li of
-  Direct_link _ _ -> li
-  Indirect_link p r _ _ -> Indirect_link p r fp mt
-
-setFilePath :: FilePath -> ClockTime -> LIB_DEFN -> LIB_DEFN
-setFilePath fp mt (Lib_defn ln lis r as) =
-  Lib_defn ln { getLIB_ID = updFilePathOfLibId fp mt $ getLIB_ID ln } lis r as
-
-data VERSION_NUMBER = Version_number [String] Range deriving (Show, Eq)
-                      -- pos: "version", start of first string
-
-type URL = String
-type PATH = String
-
-instance Show LIB_ID where
-  show (Direct_link s1 _) = s1
-  show (Indirect_link s1 _ _ _) = s1
-
-instance Show LIB_NAME where
-  show (Lib_version libid (Version_number vs _)) =
-      shows libid " version " ++ concat (intersperse "." vs)
-  show (Lib_id libid) = show libid
-
-instance Eq LIB_ID where
-  Direct_link s1 _ == Direct_link s2 _ = s1 == s2
-  Indirect_link s1 _ _ _ == Indirect_link s2 _ _ _ = s1 == s2
-  _ == _ = False
-
-instance Ord LIB_ID where
-  Direct_link s1 _ <= Direct_link s2 _ = s1 <= s2
-  Indirect_link s1 _ _ _ <= Indirect_link s2 _ _ _ = s1 <= s2
-  Direct_link _ _ <= _ = True
-  Indirect_link _ _ _ _ <= _ = False
-
-instance Eq LIB_NAME where
-  ln1 == ln2 = getLIB_ID ln1 == getLIB_ID ln2
-
-instance Ord LIB_NAME where
-  ln1 <= ln2 = getLIB_ID ln1 <= getLIB_ID ln2

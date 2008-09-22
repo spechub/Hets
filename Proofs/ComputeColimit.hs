@@ -23,13 +23,12 @@ import Static.DevGraph
 import Static.GTheory
 import Static.WACocone
 
-import Syntax.AS_Library
-
 import Logic.Comorphism (mkIdComorphism)
 import Logic.Grothendieck
 import Logic.Logic
 
 import Common.ExtSign
+import Common.LibName
 import Common.Result
 import Common.SFKT
 

@@ -30,10 +30,11 @@ module Proofs.SimpleTheoremHideShift
           getInComingGlobalUnprovenEdges
          ) where
 
-import Static.DevGraph
-import Syntax.AS_Library
 import Proofs.EdgeUtils
 import Proofs.StatusUtils
+
+import Static.DevGraph
+import Common.LibName
 
 import Data.Graph.Inductive.Graph
 import Data.List

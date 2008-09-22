@@ -38,13 +38,14 @@ module PGIP.DataTypes
        , CMDL_PrompterState(..)
        ) where
 
+import Proofs.AbstractState
 import Static.DevGraph
 import Logic.Comorphism
 import Logic.Logic
+import Common.LibName
+
 import System.IO
-import Network
-import Syntax.AS_Library
-import Proofs.AbstractState
+import Network.Socket
 
 
 data CMDL_ProverConsChecker =

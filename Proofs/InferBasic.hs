@@ -27,14 +27,13 @@ module Proofs.InferBasic (basicInferenceNode) where
 import Static.GTheory
 import Static.DevGraph
 
-import Syntax.AS_Library
-
 import Proofs.StatusUtils
 import Proofs.EdgeUtils
 import Proofs.AbstractState
 import Proofs.TheoremHideShift
 
 import Common.ExtSign
+import Common.LibName
 import Common.Result
 import Common.ResultT
 

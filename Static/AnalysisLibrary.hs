@@ -21,31 +21,41 @@ module Static.AnalysisLibrary
     ) where
 
 import Proofs.Automatic
+
 import Logic.Logic
 import Logic.Grothendieck
-import Data.Graph.Inductive.Graph
+
 import Syntax.AS_Structured
 import Syntax.AS_Library
+
 import Static.GTheory
 import Static.DevGraph
 import Static.AnalysisStructured
 import Static.AnalysisArchitecture
+
 import Comorphisms.LogicGraph
+
 import Common.AS_Annotation hiding (isAxiom, isDef)
 import Common.GlobalAnnotations
 import Common.ConvertGlobalAnnos
 import Common.AnalyseAnnos
 import Common.Result
 import Common.ResultT
+import Common.LibName
 import Common.Keywords
 import Common.Id
-import qualified Data.Map as Map
+
 import Driver.Options
 import Driver.ReadFn
 import Driver.WriteFn
+
+import Data.Graph.Inductive.Graph
+import qualified Data.Map as Map
 import Data.List
+
 import Control.Monad
 import Control.Monad.Trans
+
 import System.Directory
 import System.Time
 

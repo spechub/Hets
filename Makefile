@@ -253,7 +253,7 @@ drifted_files = Common/AS_Annotation.hs \
 atc_files = Common/AS_Annotation.der.hs Common/DefaultMorphism.hs \
     Syntax/AS_Structured.der.hs Syntax/AS_Architecture.der.hs \
     Common/GlobalAnnotations.hs Syntax/AS_Library.der.hs \
-    Logic/Prover.hs Common/ExtSign.hs Static/DevGraph.hs
+    Logic/Prover.hs Common/LibName.hs Common/ExtSign.hs Static/DevGraph.hs
 
 atc_der_files = $(foreach file, $(atc_files), \
     ATC/$(basename $(basename $(notdir $(file)))).der.hs)
@@ -265,6 +265,9 @@ ATC/Result.der.hs: Common/Result.hs $(GENRULES)
 	$(GENRULECALL) -o $@ $<
 
 ATC/AS_Annotation.der.hs: Common/AS_Annotation.der.hs $(GENRULES)
+	$(GENRULECALL) -o $@ $<
+
+ATC/LibName.der.hs: Common/LibName.hs $(GENRULES)
 	$(GENRULECALL) -o $@ $<
 
 ATC/ExtSign.der.hs: Common/ExtSign.hs $(GENRULES)
@@ -280,7 +283,7 @@ ATC/AS_Architecture.der.hs: Syntax/AS_Architecture.der.hs $(GENRULES)
 	$(GENRULECALL) -i ATC.AS_Structured -o $@ $<
 
 ATC/AS_Library.der.hs: Syntax/AS_Library.der.hs $(GENRULES)
-	$(GENRULECALL) -i ATC.AS_Architecture -o $@ $<
+	$(GENRULECALL) -i ATC.AS_Architecture -i ATC.LibName -o $@ $<
 
 ATC/GlobalAnnotations.der.hs: Common/GlobalAnnotations.hs $(GENRULES)
 	$(GENRULECALL) -i ATC.AS_Annotation -o $@ $<

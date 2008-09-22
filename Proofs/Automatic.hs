@@ -25,17 +25,16 @@ automatic proofs in development graphs.
 
 module Proofs.Automatic (automatic, automaticFromList) where
 
-import Data.Graph.Inductive.Graph
-import Static.DevGraph
-import Syntax.AS_Library
-import Syntax.Print_AS_Library()
-
 import Proofs.StatusUtils
 import Proofs.Global
 import Proofs.Local
 import Proofs.HideTheoremShift
 
+import Static.DevGraph
+import Common.LibName
+
 import qualified Data.Map as Map
+import Data.Graph.Inductive.Graph
 import Data.Maybe (fromJust)
 
 

@@ -15,6 +15,7 @@ module OMDoc.OMDocDefs where
 import CASL.Sign
 import CASL.AS_Basic_CASL
 import qualified Common.Id as Id
+import Common.LibName
 import qualified CASL.AS_Basic_CASL as ABC
 
 import Static.DevGraph
@@ -322,5 +323,5 @@ type XmlTaggedDevGraph =
 
 type XmlTaggedLibEnv =
   Map.Map
-      Hets.LIB_NAME
+      LIB_NAME
       XmlTaggedDevGraph

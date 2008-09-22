@@ -26,14 +26,13 @@ import Static.DevGraph
 import Common.Id
 import Common.GlobalAnnotations
 import Common.ExtSign
+import Common.LibName
 import Common.Result
 import Common.Utils
 import Common.AS_Annotation hiding (isAxiom, isDef)
-
 import Common.ATerm.ReadWrite
 import Common.ATerm.Unshared
 
-import Syntax.AS_Library
 import Driver.Options
 
 import Logic.Comorphism

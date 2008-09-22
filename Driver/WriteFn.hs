@@ -25,6 +25,7 @@ import Common.Id
 import Common.Doc
 import Common.DocUtils
 import Common.ExtSign
+import Common.LibName
 import Common.PrintLaTeX
 import Common.Result
 import Common.GlobalAnnotations (GlobalAnnos)
@@ -41,7 +42,7 @@ import Logic.Logic (language_name)
 import Logic.Grothendieck
 import Comorphisms.LogicGraph
 
-import Syntax.AS_Library (getLIB_ID, LIB_DEFN(), LIB_NAME())
+import Syntax.AS_Library (LIB_DEFN())
 import Syntax.Print_AS_Library ()
 
 import CASL.Logic_CASL

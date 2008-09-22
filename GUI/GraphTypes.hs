@@ -29,11 +29,9 @@ import GUI.GraphAbstraction(GraphInfo, initgraphs)
 import GUI.ProofManagement (GUIMVar)
 import GUI.History(CommandHistory, emptyCommandHistory)
 
-import Syntax.AS_Library
-import Syntax.Print_AS_Library()
-
 import Static.DevGraph
 
+import Common.LibName
 import Common.Id(nullRange)
 
 import Driver.Options(HetcatsOpts(uncolored), defaultHetcatsOpts)

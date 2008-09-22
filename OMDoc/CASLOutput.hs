@@ -16,7 +16,7 @@ module OMDoc.CASLOutput where
 
 import qualified OMDoc.HetsDefs as Hets
 import qualified CASL.Morphism as Morphism
-import qualified Syntax.AS_Library as ASL
+import qualified Common.LibName as ASL
 
 import qualified Data.Graph.Inductive.Graph as Graph
 
@@ -106,26 +106,26 @@ mappedsorts fromSortIds e_fname toSortIds ln collectionMap uniqueNames from to
         )
         []
         (Morphism.sort_map caslmorph)
-        
+
 -- | retrieve the XML-names for the predicate mapping
 mappedpreds::(Show b1) =>
-			 [((Hets.WithOrigin Hets.Identifier b1, PredType),
+                         [((Hets.WithOrigin Hets.Identifier b1, PredType),
                                              String)]
              -> [Char]
-			 -> Morphism.Morphism f e m
+                         -> Morphism.Morphism f e m
              -> [((Hets.WithOrigin Hets.Identifier b, PredType),
-					String)]
-			 -> ASL.LIB_NAME
+                                        String)]
+                         -> ASL.LIB_NAME
              -> Hets.CollectionMap
-			 -> [Hets.IdNameMapping]
-			 -> Rel.Rel SORT
+                         -> [Hets.IdNameMapping]
+                         -> Rel.Rel SORT
              -> Graph.Node
              -> Rel.Rel SORT
              -> Graph.Node
-		     -> [((String, (Maybe URI.URI, String)),
+                     -> [((String, (Maybe URI.URI, String)),
                   (String, (Maybe URI.URI, String)))]
-mappedpreds fromPredIds e_fname caslmorph toPredIds ln collectionMap uniqueNames 
-	fromRel from toRel to=
+mappedpreds fromPredIds e_fname caslmorph toPredIds ln collectionMap uniqueNames
+        fromRel from toRel to=
       Map.foldWithKey
         (\(origpred, optype) newpred mp ->
           let
@@ -206,20 +206,20 @@ mappedpreds fromPredIds e_fname caslmorph toPredIds ln collectionMap uniqueNames
 
 -- | retrieve the XML-names for the operator mapping
 mappedops::[((Hets.WithOrigin Hets.Identifier b1, OpType), String)]
-			-> [Char]
-			-> Morphism.Morphism f e m
-			-> [((Hets.WithOrigin Hets.Identifier b, OpType), String)]
-			-> ASL.LIB_NAME
-			-> Hets.CollectionMap
-			-> [Hets.IdNameMapping]
-			-> Rel.Rel SORT
-			-> Graph.Node
-			-> Rel.Rel SORT
-			-> Graph.Node
-			-> [((String, (Maybe URI.URI, String)),
-				 (String, (Maybe URI.URI, String)))]
-mappedops fromOpIds e_fname caslmorph toOpIds ln collectionMap uniqueNames 
-		  fromRel from toRel to =
+                        -> [Char]
+                        -> Morphism.Morphism f e m
+                        -> [((Hets.WithOrigin Hets.Identifier b, OpType), String)]
+                        -> ASL.LIB_NAME
+                        -> Hets.CollectionMap
+                        -> [Hets.IdNameMapping]
+                        -> Rel.Rel SORT
+                        -> Graph.Node
+                        -> Rel.Rel SORT
+                        -> Graph.Node
+                        -> [((String, (Maybe URI.URI, String)),
+                                 (String, (Maybe URI.URI, String)))]
+mappedops fromOpIds e_fname caslmorph toOpIds ln collectionMap uniqueNames
+                  fromRel from toRel to =
       Map.foldWithKey
         (\(origop, ootype) (newop, nfk) mo ->
           let
@@ -301,12 +301,12 @@ findOrigin
   ->[Hets.IdNameMapping]
   ->(
       Hets.CollectionMap
-      ->(Hets.LIB_NAME, Graph.Node)
+      ->(ASL.LIB_NAME, Graph.Node)
       ->String
       ->(String->String)
-      ->[(Hets.LIB_NAME, Hets.IdentifierWON)]
+      ->[(ASL.LIB_NAME, Hets.IdentifierWON)]
     )
-  ->(Hets.LIB_NAME, Graph.Node)
+  ->(ASL.LIB_NAME, Graph.Node)
   ->String
   ->(String->String)
   ->String
@@ -353,7 +353,7 @@ findOrigin
           (Just o) -> o
 
 getNodeNameBaseForXml
-  ::Hets.LIB_NAME
+  ::ASL.LIB_NAME
   ->Hets.IdNameMapping
   ->(Maybe URI.URI, String)
 getNodeNameBaseForXml
