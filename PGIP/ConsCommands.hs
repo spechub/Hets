@@ -26,29 +26,29 @@ import PGIP.DataTypesUtils
 import PGIP.ProveConsistency
 import PGIP.DgCommands
 
+import Proofs.AbstractState
+import Proofs.TheoremHideShift
 import Static.DevGraph
 import Static.GTheory
-import Data.Graph.Inductive.Graph
-import Data.List
-import Data.Char
-import Logic.Logic(conservativityCheck)
-import Logic.Coerce(coerceSign, coerceMorphism)
+import Logic.Logic (conservativityCheck)
+import Logic.Coerce (coerceSign, coerceMorphism)
 import Logic.Grothendieck
 import Logic.Comorphism
 import Logic.Prover
-import CASL.CCC.FreeTypes
 import Syntax.AS_Library(LIB_NAME)
-import Proofs.TheoremHideShift
-import Common.Result as Res
+
+import Common.Consistency
 import Common.ExtSign
+import Common.Result as Res
 import qualified Common.OrderedMap as OMap
-import Proofs.AbstractState
-import Logic.Comorphism
+
 import Control.Concurrent
 import Control.Concurrent.MVar
-
 import System.Posix.Signals
 import System.IO
+import Data.Graph.Inductive.Graph
+import Data.List
+import Data.Char
 
 -- Command that processes the input and applies a
 -- conservativity check

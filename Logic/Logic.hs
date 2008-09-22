@@ -117,12 +117,12 @@ import Common.Lib.Graph as Tree
 import Common.AnnoState
 import Common.Result
 import Common.AS_Annotation
+import Common.Consistency
 import Common.Doc
 import Common.DocUtils
 import Common.DefaultMorphism
 import Common.ExtSign
 import Logic.Prover (Prover, ConsChecker, Theory(..))
-import CASL.CCC.FreeTypes
 
 import Data.Typeable
 import Common.ATerm.Lib (ShATermConvertible)

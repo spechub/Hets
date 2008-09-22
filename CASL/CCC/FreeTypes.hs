@@ -23,13 +23,10 @@ import CASL.CCC.SignFuns
 import CASL.CCC.TermFormula
 import CASL.CCC.TerminationProof
 import Common.AS_Annotation
-import Common.DocUtils
-import Common.Doc
+import Common.Consistency
 import Common.Result
 import Common.Id
 import Data.List (nub,intersect,delete)
-import Data.Char (toLower)
-
 
 {------------------------------------------------------------------------
    function checkFreeType:
@@ -283,18 +280,6 @@ checkFreeType (osig,osens) m fsn
                 then Definitional
                 else Conservative
     conStatus = min dataStatus defStatus
-
-data ConsistencyStatus =
-  Inconsistent | Conservative | Monomorphic | Definitional
-  deriving (Show, Eq, Ord)
-
-showConsistencyStatus :: ConsistencyStatus -> String
-showConsistencyStatus cs = case cs of
-  Inconsistent -> "not conservative"
-  _ -> map toLower $ show cs
-
-instance Pretty ConsistencyStatus where
-  pretty = text . showConsistencyStatus
 
 -- | group the axioms according to their leading symbol,
 --   output Nothing if there is some axiom in incorrect form

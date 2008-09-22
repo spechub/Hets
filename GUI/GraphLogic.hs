@@ -50,7 +50,6 @@ import Logic.Coerce(coerceSign, coerceMorphism)
 import Logic.Grothendieck
 import Logic.Comorphism
 import Logic.Prover
-import CASL.CCC.FreeTypes
 import Comorphisms.LogicGraph(logicGraph)
 
 import Syntax.AS_Library(LIB_NAME, getModTime, getLIB_ID)
@@ -84,9 +83,10 @@ import Configuration(size)
 import FileDialog(newFileDialogStr)
 
 import Common.DocUtils (showDoc)
-import Common.AS_Annotation(isAxiom)
-import Common.Result as Res
+import Common.AS_Annotation (isAxiom)
+import Common.Consistency
 import Common.ExtSign
+import Common.Result as Res
 import qualified Common.OrderedMap as OMap
 import qualified Common.Lib.Rel as Rel
 
