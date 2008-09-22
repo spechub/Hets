@@ -341,9 +341,9 @@ class ( Syntax lid basic_spec symb_items symb_map_items
          {- | rename and qualify the symbols, code out overloading,
             create sentences for the overloading relation and also return
             the inverse morphism -}
-         qualify :: lid -> Id -> sign
+         qualify :: lid -> SIMPLE_ID -> SIMPLE_ID -> sign
                  -> Result (morphism, [Named sentence], morphism)
-         qualify l _ _ = statErr l "qualify"
+         qualify l _ _ _ = statErr l "qualify"
          -------------------- symbols and raw symbols ---------------------
          {- | Construe a symbol, like f:->t, as a raw symbol.
             This is a one-sided inverse to the function SymSySigSym

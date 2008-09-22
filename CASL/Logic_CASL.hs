@@ -39,6 +39,7 @@ import CASL.Taxonomy
 import CASL.SimplifySen
 import CASL.CCC.FreeTypes
 import CASL.CCC.OnePoint() -- currently unused
+import CASL.Qualify
 #ifdef UNI_PACKAGE
 import CASL.QuickCheck
 #endif
@@ -214,6 +215,7 @@ instance StaticAnalysis CASL CASLBasicSpec CASLFORMULA
          ensures_amalgamability CASL (opts, diag, sink, desc) =
              ensuresAmalgamability opts diag sink desc
 
+         qualify CASL = qualifySig
          symbol_to_raw CASL = symbolToRaw
          id_to_raw CASL = idToRaw
          matches CASL = CASL.Morphism.matches
