@@ -11,11 +11,7 @@ Portability :  non-portable(Logic)
 Additional definitions for interfacing Hets
 -}
 module OMDoc.HetsDefs
-  (
-      module Driver.Options
-    , module Syntax.AS_Library
-    , module Common.GlobalAnnotations
-    , dho
+    ( dho
     , getFlatNames
     , getMultiOrigins
     , findMultiOriginUnifications
@@ -109,10 +105,7 @@ module OMDoc.HetsDefs
 import Data.Graph.Inductive.Graph
 import qualified Data.Graph.Inductive.Graph as Graph
 
-import Common.GlobalAnnotations (emptyGlobalAnnos)
 import Common.LibName
-
-import Syntax.AS_Library --(LIB_NAME(),LIB_DEFN())
 
 import Driver.Options
 

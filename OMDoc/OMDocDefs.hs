@@ -12,6 +12,7 @@ Definitions for reading\/writing omdoc
 -}
 module OMDoc.OMDocDefs where
 
+import Driver.Options
 import CASL.Sign
 import CASL.AS_Basic_CASL
 import qualified Common.Id as Id
@@ -41,7 +42,7 @@ data GlobalOptions =
   GOpts
     {
         dbgInf :: DbgInf
-      , hetsOpts :: Hets.HetcatsOpts
+      , hetsOpts :: HetcatsOpts
       , processingConstraint :: Bool
     }
   deriving Show
