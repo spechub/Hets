@@ -12,11 +12,7 @@ Here is the place where the class Logic is instantiated for CASL.
    Also the instances for Syntax an Category.
 -}
 
-module ConstraintCASL.Logic_ConstraintCASL
-    ( module ConstraintCASL.Logic_ConstraintCASL
-    , CASLSign
-    , ConstraintCASLMor)
-    where
+module ConstraintCASL.Logic_ConstraintCASL where
 
 import Common.AS_Annotation
 import Common.Lexer((<<))

@@ -137,9 +137,9 @@ import qualified Common.OrderedMap as OMap
 
 import qualified Common.Result as Result
 
-import qualified Debug.Trace as Debug.Trace
+import Debug.Trace (trace)
 
-import qualified Data.List as Data.List
+import Data.List (find, nub, partition)
 
 import OMDoc.Util
 
@@ -476,7 +476,7 @@ inmGetLNNN inm = (inmGetLibName inm, inmGetNodeNum inm)
 
 -- | searches for mapping where library name and node number match
 inmFindLNNN::(LIB_NAME, Graph.Node)->[IdNameMapping]->Maybe IdNameMapping
-inmFindLNNN lnnn = Data.List.find (\inm -> inmGetLNNN inm == lnnn)
+inmFindLNNN lnnn = find (\inm -> inmGetLNNN inm == lnnn)
 
 -- | filter a list of mappings to keep only mappings that contain a
 -- given 'Id'
@@ -860,7 +860,7 @@ getFlatNames lenv =
             (
               Set.fromList
                 $
-                Data.List.nub
+                nub
                   $
                   foldl
                     (\sgp (nn, (_, s)) ->
@@ -1062,7 +1062,7 @@ getFlatNames lenv =
                     fm'
                   else
                   {-
-                    Debug.Trace.trace
+                    trace
                       (
                         "Generating Constructor from Sentence: "
                         ++ (show (nodenum, (cid, cot)))
@@ -1150,7 +1150,7 @@ identifyFlatNames
                   -- if none, something is wrong (should not happen)
                   [] ->
                     {-
-                    Debug.Trace.trace
+                    trace
                       ("The impossible : " ++ (show $ woItem rws))
                       $
                     -}
@@ -1551,7 +1551,7 @@ makeUniqueIdNameMapping
                           ids
                     of
                       [] ->
-                        Debug.Trace.trace
+                        trace
                           (
                             "no node found for "
                             ++ show (nn, nodeNameToName $ dgn_name node)
@@ -1584,7 +1584,7 @@ makeUniqueIdNameMapping
                             )
                             (Map.findWithDefault Set.empty mln unnMap)
                       of
-                        [] -> Debug.Trace.trace
+                        [] -> trace
                           ("no refnode found... "
                             ++ show (ln, nn, nodeNameToName $ dgn_name node)
                             ++ " -> "
@@ -1717,7 +1717,7 @@ compatiblePredicate sortrel pt1 pt2 =
 -- | check type compatibility for two operators
 compatibleOperator::Rel.Rel SORT->OpType->OpType->Bool
 compatibleOperator sortrel ot1 ot2 =
---  (\x -> Debug.Trace.trace ("Comparing " ++ show ot1 ++ " to " ++ show ot2 ++ " -> " ++ show x) x)
+--  (\x -> trace ("Comparing " ++ show ot1 ++ " to " ++ show ot2 ++ " -> " ++ show x) x)
 --  $
   (isTypeOrSubType sortrel (opRes ot1) (opRes ot2))
   &&
@@ -2263,7 +2263,7 @@ makeCollectionMap
                           ids
                     of
                       [] ->
-                        Debug.Trace.trace
+                        trace
                           (
                             "no node found for "
                             ++ show (nn, nodeNameToName $ dgn_name node)
@@ -2293,7 +2293,7 @@ makeCollectionMap
                             (Map.findWithDefault Set.empty mln unnMap)
                       of
                         [] ->
-                          Debug.Trace.trace
+                          trace
                             (
                               "no refnode found... "
                               ++ show (ln, nn, nodeNameToName $ dgn_name node)
@@ -2323,7 +2323,7 @@ makeCollectionMap
                                 ids
                           of
                             [] ->
-                              Debug.Trace.trace
+                              trace
                                 (
                                   "In Library " ++ (show ln) ++ ", Theory \""
                                   ++ nodename ++ "\" : Sort " ++ (show swo)
@@ -2367,7 +2367,7 @@ makeCollectionMap
                                   refIds
                             of
                               [] ->
-                                Debug.Trace.trace
+                                trace
                                   (
                                     "In Library " ++ (show ln) ++ ", Theory \""
                                     ++ nodename ++ "\" : Sort \"" ++ (show swo)
@@ -2433,7 +2433,7 @@ makeCollectionMap
                                       ids
                                 of
                                   [] ->
-                                    Debug.Trace.trace
+                                    trace
                                       (
                                         "In Library " ++ (show ln) ++ ", Theory \""
                                         ++ nodename ++ "\" : Operator \"" ++ (show idwo)
@@ -2445,7 +2445,7 @@ makeCollectionMap
                                       (IdOpM {})  ->
                                         (ln, (midwo, unName))
                                       x ->
-                                        Debug.Trace.trace
+                                        trace
                                           ("Not an operator, but same name... " ++ (show x))
                                           (ln, (midwo, unName))
                               (Just (mln, mid)) ->
@@ -2472,7 +2472,7 @@ makeCollectionMap
                                         refIds
                                 of
                                   [] ->
-                                    Debug.Trace.trace
+                                    trace
                                       (
                                         "In Library " ++ (show ln) ++ ", Theory \""
                                         ++ nodename ++ "\" : Operator \"" ++ (show idwo)
@@ -2489,7 +2489,7 @@ makeCollectionMap
                                       (IdOpM {}) ->
                                         (mln, (midwo, unName))
                                       x ->
-                                        Debug.Trace.trace
+                                        trace
                                           ("Not an operator but same name " ++ (show x))
                                           (mln, (midwo, unName))
 
@@ -2524,7 +2524,7 @@ makeCollectionMap
                                       ids
                                 of
                                   [] ->
-                                    Debug.Trace.trace
+                                    trace
                                       (
                                         "In Library " ++ (show ln) ++ ", Theory \""
                                         ++ nodename ++ "\" : Predicate \"" ++ (show idwo)
@@ -2557,7 +2557,7 @@ makeCollectionMap
                                         refIds
                                   of
                                     [] ->
-                                      Debug.Trace.trace
+                                      trace
                                         (
                                           "In Library " ++ (show ln) ++ ", Theory \""
                                           ++ nodename ++ "\" : Predicate \"" ++ (show idwo)
@@ -3008,7 +3008,7 @@ traceRealIdentifierOrigins
       otherNodes =
         map (\(from, _, _) -> from) nbl
       otherTraces =
-        Data.List.nub
+        nub
           $
           concatMap
             (\n' -> traceRealIdentifierOrigins lenv ln n' identifier)
@@ -3018,7 +3018,7 @@ traceRealIdentifierOrigins
         [] ->
           let
             mSearches =
-              Data.List.nub
+              nub
                 $
                 concatMap
                   (\(ln', n', i') ->
@@ -3221,7 +3221,7 @@ traceIdentifierOrigins
       otherNodes =
         map (\(from, _, _) -> from) nbl
       otherTraces =
-        Data.List.nub
+        nub
           $
           concatMap
             (\n' -> traceIdentifierOrigins dg n' identifier)

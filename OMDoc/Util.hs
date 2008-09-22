@@ -10,10 +10,10 @@ Portability :  portable
 
 some utility functions
 -}
-module OMDoc.Util (module OMDoc.Util, module Data.List) where
+module OMDoc.Util where
 
 import Data.Char (isSpace)
-import Data.List (isSuffixOf, partition)
+import Data.List (isSuffixOf)
 
 listStart::forall a . Eq a => [a]->[a]->Bool
 listStart _ [] = True
