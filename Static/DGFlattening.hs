@@ -59,19 +59,17 @@ import Common.Id
 import Common.LibName
 import Common.Result
 
-import Data.Graph.Inductive.Graph hiding (empty)
-import Data.Map hiding (intersection,empty)
-import Data.Set hiding (intersection,insert)
-import Data.List(tails,elem)
-import Data.Maybe(fromJust,isJust)
+import Data.Graph.Inductive.Graph
+import Data.List (tails)
+import Data.Maybe (catMaybes)
 import qualified Data.Map as Map
 import Control.Monad
 
 unzipProofHistory :: ProofHistory -> ProofHistory
 unzipProofHistory ph =
       let
-        chngs = concat $ Prelude.map snd ph
-        rls = concat $ Prelude.map fst ph
+        chngs = concatMap snd ph
+        rls = concatMap fst ph
        in
         [(rls,chngs)]
 
@@ -84,7 +82,7 @@ dg_flattening2 libEnv ln = do
   updLib = updateLib libEnv ln nds
   updDG =  lookupDGraph ln updLib
   l_edges = labEdgesDG updDG
-  change_de =  Prelude.map (\ x -> DeleteEdge(x)) l_edges
+  change_de =  map (\ x -> DeleteEdge(x)) l_edges
   rules_de = replicate (length l_edges) FlatteningOne
   hist_de = [(rules_de
              ,change_de)]
@@ -137,7 +135,7 @@ dg_flattening2 libEnv ln = do
                new_dg = addToProofHistoryDG ([FlatteningOne], u_change)
                                             u_dg
               in
-               updateLib (insert l_name new_dg lib_Env) l_name tl
+               updateLib (Map.insert l_name new_dg lib_Env) l_name tl
 
 
 libEnv_flattening2 :: LibEnv -> Result LibEnv
@@ -152,7 +150,7 @@ dg_flattening4 lib_Env l_n =
   let
    dg = lookupDGraph l_n lib_Env
    l_edges = labEdgesDG dg
-   renamings = Prelude.filter (\ (_,_,x) -> let
+   renamings = filter (\ (_,_,x) -> let
                                     l_type = getRealDGLinkType x
                                   in
                                     case l_type of
@@ -228,7 +226,7 @@ dg_flattening4 lib_Env l_n =
 libEnv_flattening4 :: LibEnv -> Result LibEnv
 libEnv_flattening4 libEnvi =
        let
-        new_lib_env = Prelude.map (\ (x,_) ->
+        new_lib_env = map (\ (x,_) ->
                         let
                          z = dg_flattening4 libEnvi x
                         in
@@ -244,11 +242,11 @@ dg_flattening5 lib_Envir lib_name =
    nods = nodesDG dg
    nf_dg = applyUpdNf lib_Envir lib_name dg nods
    l_edges = labEdgesDG dg
-   hids = Prelude.filter (\ (_,_,x) -> (case dgl_type x of
+   hids = filter (\ (_,_,x) -> (case dgl_type x of
                                          HidingDef -> True
                                          _ -> False)) l_edges
    dhid_rule = replicate (length hids) FlatteningFive
-   dhid_change = Prelude.map (\ x -> DeleteEdge(x)) hids
+   dhid_change = map (\ x -> DeleteEdge(x)) hids
    old_hist = proofHistory dg
    nfHist = proofHistory nf_dg
    dhid_hist = (take (length nfHist - length old_hist) nfHist)
@@ -277,7 +275,7 @@ dg_flattening5 lib_Envir lib_name =
 libEnv_flattening5 :: LibEnv -> Result LibEnv
 libEnv_flattening5 libEnvi =
  let
-  new_lib_env = Prelude.map (\ (x,_) ->
+  new_lib_env = map (\ (x,_) ->
        let
         z = dg_flattening5 libEnvi x
        in
@@ -291,13 +289,13 @@ dg_flattening6 libEnv ln = do
   dg = lookupDGraph ln libEnv
   l_edges = labEdgesDG dg
   nds = nodesDG dg
-  het_comorph = Prelude.filter (\ (_,_,x) ->
+  het_comorph = filter (\ (_,_,x) ->
                  let
                   comorph = dgl_morphism x
                  in
                   (not $ isHomogeneous comorph)) l_edges
   het_rules = replicate (length het_comorph) FlatteningSix
-  het_del_changes = Prelude.map (\x -> DeleteEdge(x)) het_comorph
+  het_del_changes = map (\x -> DeleteEdge(x)) het_comorph
   updLib = updateNodes libEnv ln nds
   all_hist = [(het_rules , het_del_changes)]
  return $ applyProofHistory all_hist (lookupDGraph ln updLib)
@@ -341,7 +339,7 @@ dg_flattening3 libEnv ln = do
 let
  dg = lookupDGraph ln libEnv
  all_nodes = nodesDG dg
- imp_nds = Prelude.filter (\ x -> ( length (innDG dg x) > 1)) all_nodes
+ imp_nds = filter (\ x -> ( length (innDG dg x) > 1)) all_nodes
  -- as previously, no need to care about reference nodes,
  -- as previous one remain same.
 return $ applyToAllNodes dg imp_nds
@@ -363,7 +361,7 @@ return $ applyToAllNodes dg imp_nds
                                                "getIntersectionOfAll"
                                                extSign1
                n_sign <- intersection lid2 sign1 signtr2
-               return $ G_sign lid2 (ExtSign n_sign empty) startSigId)
+               return $ G_sign lid2 (mkExtSign n_sign) startSigId)
            in
             case  (n_signtr) == (emptyG_sign (Logic lid2)) of
              True -> return n_signtr
@@ -421,7 +419,7 @@ return $ applyToAllNodes dg imp_nds
  createLabels dg tripls = case tripls of
   [] -> error "createLabels: empty list on input"
   _ -> let
-        labels = Prelude.map (\ (x,
+        labels = map (\ (x,
                                  y,
                                  G_sign lid (ExtSign sign symb) ind) -> let
              s_id = mkSimpleId $ "Flattening 3:"++(show x)
@@ -479,14 +477,14 @@ return $ applyToAllNodes dg imp_nds
  createFirstLevel dg nds =
   let
    combs = getAllCombinations 2 nds
-   init_level = Prelude.map (\ [x,y] -> let
+   init_level = map (\ [x,y] -> let
                                  signx = signOf $ dgn_theory (labDG dg x)
                                  signy = signOf $ dgn_theory (labDG dg y)
                                  n_sign = getIntersectionOfAll [signx
                                                                ,signy]
                                 in
                                  ([x,y],propagateErrors n_sign)) combs
-   n_empty = Prelude.filter (\ (_,sign@(G_sign lid _ _)) ->
+   n_empty = filter (\ (_,sign@(G_sign lid _ _)) ->
                                sign /= emptyG_sign (Logic lid)) init_level
   in
    case length n_empty of
@@ -494,12 +492,12 @@ return $ applyToAllNodes dg imp_nds
     _ -> let
           atch_level = attachNewNodes n_empty (getNewNodeDG dg)
           labels = createLabels dg atch_level
-          changes = Prelude.map (\ x ->
+          changes = map (\ x ->
                          InsertNode(x)) (propagateErrors labels)
           rules = replicate (length changes) FlatteningThree
           (u_dg,u_changes) = updateDGAndChanges dg changes
           n_dg = addToProofHistoryDG (rules,u_changes) u_dg
-          zero_level = Prelude.map (\ x ->
+          zero_level = map (\ x ->
                         ([x],x,signOf $ dgn_theory (labDG n_dg x))) nds
           lnk_dg = linkLevels n_dg atch_level zero_level
          in
@@ -516,16 +514,15 @@ return $ applyToAllNodes dg imp_nds
    0 -> (c_dg,[])
    _ -> let
      combs = getAllCombinations (length nd_s +1) nds
-     n_level = Prelude.map (\ x -> fromJust x) $
-                 Prelude.filter (\ x -> isJust x)
-                   (Prelude.map (\ x -> matchCombinations x tripls) combs)
+     n_level = catMaybes
+                   (map (\ x -> matchCombinations x tripls) combs)
     in
      case length n_level of
       0 -> (c_dg,[])
       _ -> let
             atch_level = attachNewNodes n_level (getNewNodeDG c_dg)
             labels = createLabels c_dg atch_level
-            chngs = Prelude.map (\ x -> InsertNode(x))
+            chngs = map (\ x -> InsertNode(x))
                                 (propagateErrors labels)
             rls = replicate (length chngs) FlatteningThree
             (u_dg,u_changes) = updateDGAndChanges c_dg chngs
@@ -554,7 +551,7 @@ return $ applyToAllNodes dg imp_nds
  applyToAllNodes a_dg nds = case nds of
   [] ->  a_dg
   hd:tl -> let
-            inc_nds = Prelude.map (\ (x,_,_) -> x) (innDG a_dg hd)
+            inc_nds = map (\ (x,_,_) -> x) (innDG a_dg hd)
             (init_dg,init_level) = createFirstLevel a_dg inc_nds
             final_dg = iterateForAllLevels init_dg inc_nds init_level
             o_hist = proofHistory a_dg
