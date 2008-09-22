@@ -21,6 +21,7 @@ import qualified Data.Map as Map
 import qualified Common.Result as CRes
 import Common.Doc (toText)
 import Common.DocUtils (pretty)
+import Common.LibName
 import Common.ResultT
 import Static.AnalysisLibrary
 import Comorphisms.LogicGraph
