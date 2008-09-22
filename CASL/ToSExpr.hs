@@ -97,7 +97,6 @@ sRec sign mf = Record
             _ -> SList $ map sortToSSymbol srts)
         : map (opToSSymbol sign) ops
     , foldExtFORMULA = \ _ f -> mf f
-    , foldSimpleId = \ _ t -> sfail "Simple_id" $ tokPos t
     , foldQual_var = \ _ v _ _ ->
         SList [SSymbol "varterm", varToSSymbol v]
     , foldApplication = \ _ o ts _ ->

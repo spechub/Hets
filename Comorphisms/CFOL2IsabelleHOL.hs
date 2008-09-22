@@ -271,7 +271,6 @@ transRecord sign tyToks tr toks = Record
     , foldMixfix_formula = error "transRecord: Mixfix_formula"
     , foldSort_gen_ax = error "transRecord: Sort_gen_ax"
     , foldExtFORMULA = \ _ phi -> tr sign tyToks phi
-    , foldSimpleId = error "transRecord: Simple_id"
     , foldQual_var = \ _ v _ _ -> mkFree $ transVar toks v
     , foldApplication = \ _ opsymb args _ ->
           foldl termAppl (con $ transOP_SYMB sign tyToks opsymb) args

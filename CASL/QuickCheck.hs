@@ -229,7 +229,6 @@ instance Error ([Diagnosis], Maybe a) where
 
 calculateTerm :: QModel -> VARIABLE_ASSIGNMENT -> CASLTERM -> Result CASLTERM
 calculateTerm qm ass trm = case trm of
-    Simple_id var -> lookupVar var ass
     Qual_var var _ _ -> lookupVar var ass
     Application opSymb terms _ ->
               applyOperation qm ass opSymb terms
@@ -288,7 +287,6 @@ match1 args (vars,body) = do
 
 match2 :: CASLTERM -> CASLTERM -> Maybe [(VAR,CASLTERM)]
 match2 (Qual_var v _ _) t = Just [(v,t)]
-match2 (Simple_id v) t = Just [(v,t)]
 match2 (Application opsymb1 terms1 _) (Application opsymb2 terms2 _) = do
    -- direct match of operation symbols?
    if (opsymb1 == opsymb2) then do

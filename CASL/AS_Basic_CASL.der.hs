@@ -255,9 +255,7 @@ predSymbName p = case p of
   Pred_name n -> n
   Qual_pred_name n _ _ -> n
 
-data TERM f = Simple_id SIMPLE_ID    -- "Var" might be a better constructor
-          | Qual_var VAR SORT Range
-            -- pos: "(", var, colon, ")"
+data TERM f = Qual_var VAR SORT Range -- pos: "(", var, colon, ")"
           | Application OP_SYMB [TERM f] Range
             -- pos: parens around TERM f if any and seperating commas
           | Sorted_term (TERM f) SORT Range
@@ -284,9 +282,12 @@ data TERM f = Simple_id SIMPLE_ID    -- "Var" might be a better constructor
             -- pos: "{", "}"
             deriving (Show, Eq, Ord)
 
+-- | state after mixfix- but before overload resolution
+varOrConst :: Token -> TERM f
+varOrConst t = Application (Op_name $ simpleIdToId t) [] $ tokPos t
+
 rangeOfTerm :: TERM f -> Range
 rangeOfTerm t = case t of
-  Simple_id s -> tokPos s
   Mixfix_term ts -> concatMapRange rangeOfTerm ts
   Mixfix_token s -> tokPos s
   _ -> getRange t
@@ -307,7 +308,7 @@ type CASLTERM = TERM ()
 type OP_NAME = Id
 type PRED_NAME = Id
 type SORT = Id
-type VAR = SIMPLE_ID
+type VAR = Token
 
 data SYMB_ITEMS = Symb_items SYMB_KIND [SYMB] Range
                   -- pos: SYMB_KIND, commas

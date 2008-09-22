@@ -35,7 +35,6 @@ data Record f a b = Record
     , foldMixfix_formula :: FORMULA f -> b -> a
     , foldSort_gen_ax :: FORMULA f -> [Constraint] -> Bool -> a
     , foldExtFORMULA :: FORMULA f -> f -> a
-    , foldSimpleId :: TERM f -> VAR -> b
     , foldQual_var :: TERM f -> VAR -> SORT -> Range -> b
     , foldApplication :: TERM f -> OP_SYMB -> [b] -> Range -> b
     , foldSorted_term :: TERM f ->  b -> SORT -> Range -> b
@@ -69,7 +68,6 @@ mapRecord mf = Record
     , foldMixfix_formula = \ _ -> Mixfix_formula
     , foldSort_gen_ax = \ _ -> Sort_gen_ax
     , foldExtFORMULA = \ _ f -> ExtFORMULA $ mf f
-    , foldSimpleId = \ _ -> Simple_id
     , foldQual_var = \ _ -> Qual_var
     , foldApplication = \ _ -> Application
     , foldSorted_term = \ _ -> Sorted_term
@@ -103,7 +101,6 @@ constRecord mf join c = Record
     , foldMixfix_formula = \ _ r -> r
     , foldSort_gen_ax = \ _ _ _ -> c
     , foldExtFORMULA = \ _ f -> mf f
-    , foldSimpleId = \ _ _ -> c
     , foldQual_var = \ _ _ _ _ -> c
     , foldApplication = \ _ _ l _ -> join l
     , foldSorted_term = \ _ r _ _ -> r
@@ -148,7 +145,6 @@ foldTerm r = foldOnlyTerm (foldFormula r) r
 
 foldOnlyTerm :: (FORMULA f -> a) -> Record f a b -> TERM f -> b
 foldOnlyTerm ff r t = case t of
-   Simple_id i -> foldSimpleId r t i
    Qual_var v s ps -> foldQual_var r t v s ps
    Application o ts ps -> foldApplication r t o (map (foldOnlyTerm ff r) ts) ps
    Sorted_term st s ps -> foldSorted_term r t (foldOnlyTerm ff r st) s ps

@@ -94,9 +94,8 @@ predSymName ps = case ps of
 term_trs :: TERM f -> String
 term_trs t =
   case (term t) of
-    Simple_id simid -> tokStr simid
     Qual_var var _ _ -> tokStr var
-    Application (Op_name opn) _ _ ->
+    Application (Op_name opn) [] _ ->
         idStr opn
     Application (Qual_op_name opn _ _) ts _ ->
         if null ts then (idStr opn)

@@ -53,24 +53,24 @@ kif2CASLFormula x = case x of
   List l -> Predication (Pred_name (toId "holds"))
                   (map kif2CASLTerm l) nullRange
 -- a variable in place of a formula; coerce from Booleans
-  Literal QWord v -> Strong_equation (Simple_id (toVar v))
+  Literal QWord v -> Strong_equation (Mixfix_token $ toVar v)
                   trueTerm
                   nullRange
   _ -> error $ "kif2CASLFormula : cannot translate" ++ show (ppListOfList x)
 
 trueTerm :: TERM ()
-trueTerm = Application (Op_name $ toId "True") [] nullRange
+trueTerm = varOrConst $ toSimpleId "True"
 
 falseTerm :: TERM ()
-falseTerm = Application (Op_name $ toId "False") [] nullRange
+falseTerm = varOrConst $ toSimpleId "False"
 
 toVar :: String -> Token
 toVar v = toSimpleId $ 'v' : tail v
 
 kif2CASLTerm :: ListOfList -> TERM ()
 kif2CASLTerm ll = case ll of
-    Literal QWord v -> Simple_id $ toVar v
-    Literal _ s -> Application (Op_name $ toId s) [] nullRange
+    Literal QWord v -> Mixfix_token $ toVar v
+    Literal _ s -> varOrConst $ toSimpleId s
     -- a formula in place of a term; coerce to Booleans
     List (Literal l f : args) ->
       if f `elem` ["forall","exists"] -- ,"and","or","=>","<=>","not"]
@@ -140,7 +140,7 @@ collectPreds = foldFormula
 collectVars :: CASLFORMULA -> Set.Set Token
 collectVars = foldFormula
     (constRecord (error "Kif2CASL.collectVars") Set.unions Set.empty)
-    { foldSimpleId = \ _ v -> Set.singleton v }
+    { foldMixfix_token = \ _ v -> Set.singleton v }
 
 data Opsym = Opsym Int OP_NAME
                 deriving (Eq, Ord, Show)

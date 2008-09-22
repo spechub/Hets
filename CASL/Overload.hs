@@ -240,7 +240,6 @@ minimize_eq s = keepMinimals s (sortOfTerm . snd)
 {-----------------------------------------------------------
     - Minimal expansion of a term -
   Expand a given term by typing information.
-  * 'Simple_id' do not exist!
   * 'Qual_var' terms are handled by 'minExpTerm_var'
   * 'Application' terms are handled by 'minExpTerm_op'.
   * 'Conditional' terms are handled by 'minExpTerm_cond'.

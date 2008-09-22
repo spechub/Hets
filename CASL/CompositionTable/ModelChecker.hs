@@ -49,9 +49,9 @@ extractAnnotation (Symbol symbname symbtype, set) = case symbtype of
     SortAsItemType -> Nothing
 
 createOpSymb :: Id -> SymbType -> OP_SYMB
-createOpSymb i (OpAsItemType ty) =
-    Qual_op_name i (toOP_TYPE ty) nullRange
-createOpSymb _ s = error ("Symbtype not supported: " ++ show s)
+createOpSymb i st = case st of
+  OpAsItemType ty -> Qual_op_name i (toOP_TYPE ty) nullRange
+  _ -> error "CASL.CompositionTable.ModelChecker.createOpSymb"
 
 getAnno :: Set.Set Annotation -> String
 getAnno a
@@ -68,20 +68,21 @@ showDiagStrings = concat . intersperse "\n" . map diagString
 
 modelCheckTest ::  [(OP_SYMB, String)] -> (Sign () (), [Named (FORMULA ())])
                -> Table -> Result Bool
-modelCheckTest _ (_, []) _ = error("no Formulas provided in modelCheckTest")
-modelCheckTest symbs (sign, [x]) t
- = let Result d _ = modelCheckTest1 (sign, x) t symbs
-       fstr = show(printTheoryFormula(mapNamed (simplify_sen CASL sign) x))
-              ++ "\n"
-   in if null d
+modelCheckTest _ (_, []) _ =
+ error "CASL.CompositionTable.ModelChecker.modelCheckTest"
+modelCheckTest symbs (sign, xs) t = case xs of
+  [] -> error "CASL.CompositionTable.ModelChecker.modelCheckTest"
+  [x] -> let
+    Result d _ = modelCheckTest1 (sign, x) t symbs
+    fstr = shows(printTheoryFormula(mapNamed (simplify_sen CASL sign) x)) "\n"
+      in if null d
       then hint True ("Formula succeeded: " ++ fstr)  nullRange
       else warning False ("Formula failed: \n" ++ fstr ++
                " some Counterexamples: \n"
                ++ showDiagStrings(take 10 d)) nullRange
-
-modelCheckTest a (sign, x : xs) t = do
-    modelCheckTest a (sign, xs) t
-    modelCheckTest a (sign, [x]) t
+  x : r -> do
+    modelCheckTest symbs (sign, r) t
+    modelCheckTest symbs (sign, [x]) t
 
 modelCheckTest1 :: (Sign () (), Named (FORMULA ())) -> Table
                 -> [(OP_SYMB,String)] -> Result Bool
@@ -144,7 +145,8 @@ modelCheckTest1 (sign, nSen) t symbs = case sentence nSen of
         let ass = generateVariableAssignments decl t
         in calculateQuantification (sign, qf)
                   ass t symbs
-    e -> error $ "modelCheckTest1: not implemented: " ++ showDoc e ""
+    e -> error $ "CASL.CompositionTable.ModelChecker.modelCheckTest1 "
+         ++ showDoc e ""
 
 calculateQuantification :: (Sign () (), FORMULA ()) -> [VARIABLE_ASSIGNMENT]
                         -> Table -> [(OP_SYMB, String)] -> Result Bool
@@ -167,7 +169,7 @@ calculateQuantification (sign, qf) vardecls t symbs = case qf of
           case suceededTuples of
             [_] -> return True
             _ -> warning False "Unique Existential not fulifilled" range
-    _ -> error "calculateQuantification"
+    _ -> error "CASL.CompositionTable.ModelChecker.calculateQuantification"
 
 data VARIABLE_ASSIGNMENT = Variable_Assignment [(VAR, Baserel)] deriving Eq
 
@@ -189,13 +191,12 @@ concatAssignment (Variable_Assignment l1) (Variable_Assignment l2) =
 calculateTerm :: (Sign () (), TERM ()) -> VARIABLE_ASSIGNMENT -> Table
               -> [(OP_SYMB,String)] -> [Baserel]
 calculateTerm (sign, trm) ass t symbs = case trm of
-    Simple_id var -> getBaseRelForVariable var ass
     Qual_var var _ _ -> getBaseRelForVariable var ass
     Application opSymb terms _ ->
               applyOperation (getIdentifierForSymb opSymb symbs) (sign, terms)
               t ass symbs
     Sorted_term term _ _ -> calculateTerm (sign, term) ass t symbs
-    Cast _ _ _ -> error "not implemented Cast"
+    Cast _ _ _ -> error "CASL.CompositionTable.ModelChecker.calculateTerm"
     Conditional t1 fo t2 _ ->
               let res = calculateFormula (sign, fo) ass t symbs
               in if res then calculateTerm (sign, t1) ass t symbs
@@ -329,7 +330,8 @@ calculateFormula (sign, qf) varass t symbs = case qf of
                      t2 = calculateTerm (sign,term2) varass t symbs
                  in if equalElements t1 t2 then True
                     else False
-    _ -> error $ "calculateFormula not implemented for: " ++ showDoc qf ""
+    _ -> error $ "CASL.CompositionTable.ModelChecker.calculateFormula "
+         ++ showDoc qf ""
 
 equalElements :: [Baserel] -> [Baserel] -> Bool
 equalElements a b = Set.fromList a == Set.fromList b

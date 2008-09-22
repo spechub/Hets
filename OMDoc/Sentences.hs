@@ -502,12 +502,6 @@ processTermOM::
   ->[(String, String)] -- ^ variable bindings (Name, Type)
   -> TERM f -- ^ the term to process
   ->OMDoc.OMElement
--- Simple_id
-processTermOM _ _ _ _ _ _ _
-  (Simple_id id' ) =
-  OMDoc.toElement
-    $
-    (OMDoc.mkOMSimpleVar (show id'))
 -- Qual_var
 processTermOM _ _ ln nn uniqueNames collectionMap vb
   (Qual_var v s _) =

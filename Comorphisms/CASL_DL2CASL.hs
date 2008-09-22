@@ -496,7 +496,6 @@ makeMaxCardinality inSig ps trm1 trm2 =
 trTerm :: DLSign -> TERM DL_FORMULA -> Result (TERM ())
 trTerm inSig inF =
     case inF of
-      Simple_id sid -> return (Simple_id sid)
       Qual_var v s rn -> return (Qual_var v s rn)
       Application os tms rn ->
           do

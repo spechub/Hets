@@ -367,7 +367,6 @@ printRecord mf = Record
                         , semiAnnos printDATATYPE_DECL l]
         in if b then text "%% free" $+$ genAx else genAx
     , foldExtFORMULA = \ _ f -> mf f
-    , foldSimpleId = \ _ s -> idApplDoc (simpleIdToId s) []
     , foldQual_var = \ _ v s _ ->
           parens $ fsep [text varS, sidDoc v, colon <+> idDoc s]
     , foldApplication = \ (Application _ ol _) o l _ -> case o of

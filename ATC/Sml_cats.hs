@@ -977,7 +977,7 @@ instance ATermConvertibleSML (TERM a) where
             (ShAAppl "var-or-const" [ aa ] _)  ->
                 let
                 aa' = from_sml_ATermSIMPLE_ID (getATermByIndex1 aa att)
-                in (Simple_id aa')
+                in varOrConst aa'
             (ShAAppl "qual-var" [ aa,ab ] _)  ->
                 let
                 aa' = from_sml_ShATerm (getATermByIndex1 aa att)

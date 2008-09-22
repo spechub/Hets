@@ -430,10 +430,10 @@ resultTerm f = case f of
                  Quantification _ _ f' _ -> resultTerm f'
                  Implication _ f' _ _ -> resultTerm f'
                  Negation (Definedness _ _) _ ->
-                   [Simple_id (mkSimpleId "undefined")]
+                   [varOrConst (mkSimpleId "undefined")]
                  Strong_equation _ t _ -> [t]
                  Existl_equation _ t _ -> [t]
-                 _ -> [Simple_id (mkSimpleId "unknown")]
+                 _ -> [varOrConst (mkSimpleId "unknown")]
 
 -- | get the sort of a term
 sortTerm :: TERM f -> SORT

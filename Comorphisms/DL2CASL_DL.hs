@@ -827,7 +827,7 @@ map_concept sign str iid con =
 
 
 makeCASLNumber :: Int -> TERM DL_FORMULA
-makeCASLNumber num = (Simple_id $ mkSimpleId $ show num) -- placeholder
+makeCASLNumber = varOrConst . mkSimpleId . show -- placeholder
 
 restoreToken :: Id -> Token
 restoreToken = head . getTokens
