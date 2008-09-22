@@ -47,7 +47,7 @@ maybeGetXml source =
         HXT.emptyRoot
     return
       (let
-        status = (read $ HXT.xshow $ XML.getValue "status" (head xml))::Int
+        status = (read $ HXT.xshow $ getValue "status" (head xml))::Int
         result = if status < HXT.c_err then (Just xml) else Nothing
       in
         result)

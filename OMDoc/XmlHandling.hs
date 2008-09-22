@@ -37,11 +37,7 @@ module OMDoc.XmlHandling
     ,qualattr
     ,createAttributed
     ,createQAttributed
-    ,module Text.XML.HXT.Parser
     ,xpipe
-    , module Text.XML.HXT.RelaxNG.Validator
-    , module Text.XML.HXT.Arrow.ReadDocument
-    , module Text.XML.HXT.Arrow.XmlIOStateArrow
   )
   where
 
