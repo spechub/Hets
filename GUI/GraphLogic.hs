@@ -55,7 +55,6 @@ import Comorphisms.LogicGraph(logicGraph)
 import Static.GTheory
 import Static.DevGraph
 import Static.PrintDevGraph
-import Static.AnalysisLibrary(anaLibExt, anaLib)
 import Static.DGTranslation(libEnv_translation)
 
 import Proofs.EdgeUtils
@@ -90,8 +89,9 @@ import qualified Common.OrderedMap as OMap
 import qualified Common.Lib.Rel as Rel
 
 import Driver.Options
-import Driver.WriteFn(writeShATermFile)
+import Driver.WriteLibDefn(writeShATermFile)
 import Driver.ReadFn(libNameToFile, readVerbose)
+import Driver.AnaLib(anaLibExt, anaLib)
 
 import System.Directory(getModificationTime)
 

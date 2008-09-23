@@ -32,7 +32,7 @@ import Proofs.TheoremHideShift
 
 import Static.GTheory
 import Static.DevGraph
-import Static.AnalysisLibrary
+import Driver.AnaLib
 
 import Common.LibName
 import Common.Result

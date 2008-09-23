@@ -293,7 +293,7 @@ ATC/Prover.der.hs: Logic/Prover.hs $(GENRULES)
             -i ATC.AS_Annotation -o $@ $<
 
 ATC/DevGraph.der.hs: Static/DevGraph.hs $(GENRULES)
-	$(GENRULECALL) -i ATC.AS_Library -i ATC.Grothendieck -o $@ $<
+	$(GENRULECALL) -i ATC.LibName -i ATC.Grothendieck -o $@ $<
 
 CASL_files = CASL/Sublogic.hs CASL/Morphism.hs CASL/Sign.hs \
     CASL/AS_Basic_CASL.der.hs

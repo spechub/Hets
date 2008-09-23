@@ -14,9 +14,9 @@ module GUI.ShowLibGraph (showLibGraph, mShowGraph) where
 
 import Driver.Options (HetcatsOpts(outtypes), putIfVerbose)
 import Driver.ReadFn
+import Driver.AnaLib
 
 import Static.DevGraph
-import Static.AnalysisLibrary
 
 -- for graph display
 import DaVinciGraph

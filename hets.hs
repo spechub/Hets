@@ -20,13 +20,13 @@ module Main where
 import System.Environment (getArgs)
 
 import Driver.Options
+import Driver.AnaLib
 
 #ifdef CASLEXTENSIONS
 import OWL.OWLAnalysis
 #endif
 
 import OMDoc.OMDocInput
-import Static.AnalysisLibrary
 
 #ifdef UNI_PACKAGE
 import GUI.ShowGraph

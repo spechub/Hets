@@ -8,7 +8,8 @@ Maintainer  :  Christian.Maeder@dfki.de
 Stability   :  provisional
 Portability :  non-portable(DevGraph)
 
-reading and parsing ATerms, CASL, HetCASL files
+reading and parsing ATerms, CASL, HetCASL files as much as is needed for the
+static analysis
 -}
 
 module Driver.ReadFn where
@@ -16,29 +17,24 @@ module Driver.ReadFn where
 import Logic.Grothendieck
 import Syntax.AS_Library
 import Syntax.Parse_AS_Library
-import Syntax.Print_AS_Library()
-import Static.DevGraph
-import Proofs.EdgeUtils
 
-import ATC.AS_Library()
-import ATC.DevGraph()
-import ATC.GlobalAnnotations()
+import ATC.AS_Library ()
+import ATC.GlobalAnnotations ()
 import ATC.Sml_cats
+
+import Driver.Options
 
 import Common.ATerm.Lib
 import Common.ATerm.ReadWrite
-import qualified Data.Map as Map
 import Common.AnnoState
 import Common.Id
 import Common.Result
 import Common.DocUtils
 import Common.LibName
-import Text.ParserCombinators.Parsec
 
-import Driver.Options
+import Text.ParserCombinators.Parsec
 import System.Time
-import Control.Monad
-import Data.List
+import Data.List (isPrefixOf)
 
 read_LIB_DEFN_M :: Monad m => LogicGraph -> HetcatsOpts
                 -> FilePath -> String -> ClockTime -> m LIB_DEFN
@@ -112,17 +108,3 @@ fileToLibName opts efile =
                 then drop (length path) file -- cut off libdir prefix
                 else file
     in Lib_id $ Indirect_link nfile nullRange "" noTime
-
-readPrfFile :: HetcatsOpts -> LibEnv -> LIB_NAME -> IO LibEnv
-readPrfFile opts ps ln = do
-    let fname = libNameToFile opts ln
-        prfFile = rmSuffix fname ++ prfSuffix
-    recent <- checkRecentEnv opts prfFile fname
-    h <- if recent then
-          fmap (maybe [emptyHistory] id) $ readVerbose opts ln prfFile
-       else return [emptyHistory]
-    return $ Map.update (Just . applyProofHistory h) ln ps
-
-readPrfFiles :: HetcatsOpts -> LibEnv -> IO LibEnv
-readPrfFiles opts le = do
-    foldM (readPrfFile opts) le $ Map.keys le

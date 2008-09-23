@@ -13,14 +13,10 @@ Static analysis of CASL specification libraries
 -}
 
 module Static.AnalysisLibrary
-    ( anaLib
-    , anaLibExt
-    , anaLibReadPrfs
+    ( anaLibFileOrGetEnv
     , ana_LIB_DEFN
     , anaSourceFile
     ) where
-
-import Proofs.Automatic
 
 import Logic.Logic
 import Logic.Grothendieck
@@ -32,8 +28,6 @@ import Static.GTheory
 import Static.DevGraph
 import Static.AnalysisStructured
 import Static.AnalysisArchitecture
-
-import Comorphisms.LogicGraph
 
 import Common.AS_Annotation hiding (isAxiom, isDef)
 import Common.GlobalAnnotations
@@ -47,7 +41,7 @@ import Common.Id
 
 import Driver.Options
 import Driver.ReadFn
-import Driver.WriteFn
+import Driver.WriteLibDefn
 
 import Data.Graph.Inductive.Graph
 import qualified Data.Map as Map
@@ -58,46 +52,6 @@ import Control.Monad.Trans
 
 import System.Directory
 import System.Time
-
-anaLibReadPrfs :: HetcatsOpts -> FilePath -> IO (Maybe (LIB_NAME, LibEnv))
-anaLibReadPrfs opts file = do
-    m <- anaLib opts
-      { outtypes = []
-      , specNames = []
-      , modelSparQ = ""
-      , dumpOpts = [] } file
-    case m of
-      Nothing -> return Nothing
-      Just (ln, libEnv) -> do
-        nEnv <- readPrfFiles opts libEnv
-        writeSpecFiles (removePrfOut opts) file nEnv ln $ lookupDGraph ln nEnv
-        return $ Just (ln, nEnv)
-
--- | lookup an env or read and analyze a file
-anaLib :: HetcatsOpts -> FilePath -> IO (Maybe (LIB_NAME, LibEnv))
-anaLib opts fname = do
-  fname' <- existsAnSource opts {intype = GuessIn} $ rmSuffix fname
-  case fname' of
-    Nothing -> anaLibExt opts fname emptyLibEnv
-    Just file ->
-        if isSuffixOf prfSuffix file then do
-            putIfVerbose opts 0 $ "a matching source file for proof history '"
-                             ++ file ++ "' not found."
-            return Nothing
-        else anaLibExt opts file emptyLibEnv
-
--- | read a file and extended the current library environment
-anaLibExt :: HetcatsOpts -> FilePath -> LibEnv -> IO (Maybe (LIB_NAME, LibEnv))
-anaLibExt opts file libEnv = do
-    Result ds res <- runResultT $ anaLibFileOrGetEnv logicGraph opts
-                     libEnv (fileToLibName opts file) file
-    showDiags opts ds
-    case res of
-        Nothing -> return Nothing
-        Just (ln, lenv) -> do
-            let nEnv = if hasPrfOut opts then automatic ln lenv else lenv
-            writeSpecFiles opts file nEnv ln $ lookupDGraph ln nEnv
-            return $ Just (ln, nEnv)
 
 -- | parsing and static analysis for files
 -- Parameters: logic graph, default logic, file name
