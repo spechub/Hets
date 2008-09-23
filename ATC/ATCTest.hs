@@ -4,14 +4,12 @@ import System
 import Syntax.AS_Library
 import Common.ATerm.Lib
 import Common.Result
-import ATC.AS_Library()
 import ATC.Sml_cats
-import Driver.WriteFn
+import Driver.WriteLibDefn
 import Driver.ReadFn
 
 main :: IO ()
-main = do args <- getArgs
-          mapM_ testATC args
+main = getArgs >>= mapM_ testATC
 
 testATC :: FilePath -> IO ()
 testATC fp = do
@@ -20,7 +18,6 @@ testATC fp = do
   putStrLn $ show $ show libdefn == show ld1
   ld2 <- readWriteATerm2 libdefn
   putStrLn $ show $ show libdefn == show ld2
-
 
 readWriteATerm1 :: LIB_DEFN -> IO LIB_DEFN
 readWriteATerm1 ld  = do
@@ -31,5 +28,5 @@ readWriteATerm1 ld  = do
 readWriteATerm2 :: LIB_DEFN -> IO LIB_DEFN
 readWriteATerm2 ld  = do
     str <- toShATermString ld
-    return $ maybe (error "readWriteATerm'")
+    return $ maybe (error "readWriteATerm2")
                          id $ maybeResult $ fromShATermString str
