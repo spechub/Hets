@@ -10,6 +10,7 @@ import Text.ParserCombinators.Parsec (parse)
 
 import ModalCasl as Casl
 import ModalCaslToNuSmvLtl as CaslToLtl
+import NuSmv as NuSmv
 
 main :: IO ()
 
@@ -31,5 +32,9 @@ main = do args <- getArgs
                                               exitFailure
                                               
                                 Just lf -> do i <- hWaitForInput stdin 0
-                                              when i (getContents >>= putStrLn)
+                                              when i $ (do contents <- getContents
+                                                           case parse NuSmv.program "<<input>>" contents of
+                                                             Left e2 -> do putStrLn (show e2)
+                                                                           exitFailure
+                                                             Right model -> do putStrLn (show model))
                                               putStrLn (show lf)

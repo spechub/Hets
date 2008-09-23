@@ -1,6 +1,6 @@
 {-# OPTIONS -fglasgow-exts #-}
 
-module NuSmv (basicExpr) where
+module NuSmv (basicExpr, program) where
 
 import Control.Monad (liftM, liftM2)
 import Data.Char (toLower)
@@ -420,10 +420,20 @@ element =  varDecl
        <|> compassion
   where
     varDecl =  do keyword "VAR"
-                  error "TODO: Not implemented yet."
+                  vars <- many1 (do id <- identifier << ws
+                                    token ":"
+                                    ty <- typeSpec
+                                    token ";"
+                                    return (id, ty))
+                  return (VarDecl vars)
     
     ivarDecl =  do keyword "IVAR"
-                   error "TODO: Not implemented yet."
+                   vars <- many1 (do id <- identifier << ws
+                                     token ":"
+                                     ty <- typeSpec
+                                     token ";"
+                                     return (id, ty))
+                   return (IVarDecl vars)
     
     defineDecl =  do keyword "DEFINE"
                      defs <- many1 (do id <- identifier << ws
@@ -474,6 +484,41 @@ element =  varDecl
                     token ")"
                     optional (token ";")
                     return (Compassion exprA exprB)
+
+
+typeSpec :: Parser Type
+typeSpec =  boolSpec
+        <|> wordSpec
+        <|> enumSpec
+        <|> rangeSpec
+        <|> arraySpec
+  where
+    boolSpec =  do keyword "boolean"
+                   return BoolType
+    
+    wordSpec =  do keyword "word"
+                   token "["
+                   width <- integer
+                   token "]"
+                   return (WordType width)
+    
+    enumSpec =  do token "{"
+                   values <- sepBy1 (liftM Symbol identifier <|> liftM Number integer) (token ",")
+                   token "}"
+                   return (EnumType values)
+    
+    rangeSpec = do from <- integer
+                   token ".."
+                   to <- integer
+                   return (RangeType from to)
+    
+    arraySpec = do keyword "array"
+                   from <- integer
+                   token ".."
+                   to <- integer
+                   keyword "of"
+                   ty <- typeSpec
+                   return (ArrayType from to ty)
 
 
 {------------------------------------------------------------------------------}
