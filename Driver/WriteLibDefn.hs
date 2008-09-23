@@ -12,7 +12,15 @@ Writing out HetCASL env files as much as is needed for
 the static analysis
 -}
 
-module Driver.WriteLibDefn where
+module Driver.WriteLibDefn
+  ( getFilePrefix
+  , write_LIB_DEFN
+  , write_casl_asc
+  , write_casl_latex
+  , toShATermString
+  , writeShATermFile
+  , writeFileInfo
+  ) where
 
 import Common.Utils
 import Common.Doc
