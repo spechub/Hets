@@ -33,28 +33,56 @@ import Data.List (isPrefixOf, stripPrefix)
 import Data.IORef
 import System.Directory (getCurrentDirectory)
 
-data CommandHistory = CommandHistory {file     :: String,
-                                      lastNode :: IORef Int,
-                                      hist     :: IORef [String]}
+-- This datastructure holds all information for the history.
+data CommandHistory = CommandHistory {file      :: String,
+                                      lastNode  :: IORef Int,
+                                      lastProve :: IORef Prove,
+                                      hist      :: IORef [String]}
+
+-- This represents a prove with all properties needed to add it to the history.
+data Prove = Prove {nodeId :: Int, -- id of the node
+                    nodeName :: String, -- name of the node
+                    prover :: Maybe String, -- name of the prover
+                    translation :: Maybe AnyComorphism,  -- used translation
+                    timeLimit :: Int, -- chosen time-limit
+                    provenGoals :: [ProvenGoal], -- proven goals
+                    allAxioms :: [String] -- all available axioms
+                   } deriving Eq
+
+-- This represents the information about a proved goal
+data ProvenGoal = ProvenGoal {name :: String, -- name of the goal
+                              axioms :: [String] -- used axioms in the prove
+                             } deriving Eq
 
 -- Creates an empty command history.
 emptyCommandHistory :: IO CommandHistory
 emptyCommandHistory =
     do
     ln <- newIORef (-1)
+    lp <- newIORef emptyProve
     ch <- newIORef [""]
-    return $ CommandHistory {file = "", lastNode = ln, hist = ch}
+    return $ CommandHistory{file = "", lastNode = ln, lastProve = lp, hist = ch}
 
 -- Initializes the command history with a filename.
 initCommandHistory :: String -> IO CommandHistory
 initCommandHistory f =
     do
+    eh <- emptyCommandHistory
     ff <- tryRemoveAbsolutePathComponent f
-    let ff' = rmSuffix $ ff
-    ln <- newIORef (-1)
+    let ff' = rmSuffix ff
     ch <- newIORef ["# automatically generated hets proof-script", "",
                    "use " ++ ff', ""]
-    return $ CommandHistory {file = ff', lastNode = ln, hist = ch}
+    return $ eh {file = ff', hist = ch}
+
+-- Creates an empty prove.
+emptyProve :: Prove
+emptyProve = Prove {nodeId = -1,
+                    nodeName = "",
+                    prover = Nothing,
+                    translation = Nothing,
+                    timeLimit = -1,
+                    provenGoals = [],
+                    allAxioms = []}
 
 -- Adds a single command to the history.
 addToHist :: CommandHistory -> String -> IO ()
@@ -85,7 +113,8 @@ menuItems = [
     ("Theorem Hide Shift", "dg-all thm-hide")
     ]
 
--- If at least one goal was proved the prove gets added, otherwise not.
+-- If at least one goal was proved and the prove is not the same as last-time
+-- the prove gets added, otherwise not.
 checkAndAddProve :: (Eq proof_tree) => CommandHistory
         -> ProofState lid sentence -- current proofstate
         -> Maybe (G_prover, AnyComorphism) -- possible used translation
@@ -93,7 +122,15 @@ checkAndAddProve :: (Eq proof_tree) => CommandHistory
         -> IO ()
 checkAndAddProve ch st pcm pt
     | goals == [] = return ()
-    | otherwise   = addProveToHist ch st pcm goals
+    | otherwise   = do
+                    prove <- convertProofTreeToProve st pcm goals
+                    lp <- readIORef $ lastProve ch
+                    if prove == lp
+                        then return()
+                        else do
+                             setLastProve ch prove
+                             addProveToHist ch (prove{provenGoals = mergeGoals $
+                                                             provenGoals prove})
     where
         -- 1. filter out the not proven goals
         -- 2. reverse the list, because the last proven goals are on top
@@ -104,70 +141,111 @@ checkAndAddProve ch st pcm pt
                           Proved _ -> True
                           _        -> False
 
--- Adds a prove to the history.
-addProveToHist :: CommandHistory
-    -> ProofState lid sentence -- current proofstate
+-- Converts a list of proof-trees to a prove.
+convertProofTreeToProve :: (Eq proof_tree) =>
+       ProofState lid sentence -- current proofstate
     -> Maybe (G_prover, AnyComorphism) -- possible used translation
-    -> [Proof_status proof_tree] -- proven goals included in prove
-    -> IO ()
-addProveToHist ch st pcm goals =
+    -> [Proof_status proof_tree] -- goals included in prove
+    -> IO Prove
+convertProofTreeToProve st pcm goals =
     do
-    let nodeName = theoryName st
-    let (SigId nodeId) = gTheorySignIdx $ theory st
+    -- selected node
+    let nname = theoryName st
+    let (SigId nId) = gTheorySignIdx $ theory st
+
+    -- selected time-limit
+    let (Tactic_script script) = tacticScript (head goals)
+    let tlimit = case parseTimeLimit $ splitOn '\n' script of
+                     Just limit -> read limit
+                     Nothing    -> 20
+
+    -- selected prover
+    let prvr = case pcm of
+                     Just (p, _) -> Just (getProverName p)
+                     Nothing     -> selectedProver st
+
+    -- selected translation
+    let trans = case pcm of
+                    Just (_, cm) -> Just cm
+                    Nothing      -> Nothing
+
+    -- convert all proof-trees to goals
+    let convertedGoals = map (convertGoal) goals
+
+    -- axioms to include in prove
+    let allax = case theory st of
+                     G_theory _ _ _ axs _ -> keys axs
+
+    return $ Prove {nodeId = nId,
+                    nodeName = nname,
+                    prover = prvr,
+                    translation = trans,
+                    timeLimit = tlimit,
+                    provenGoals = convertedGoals,
+                    allAxioms = allax}
+
+-- Converts a proof-tree into a goal.
+convertGoal :: Proof_status proof_tree -> ProvenGoal
+convertGoal pt = ProvenGoal {name = goalName pt,
+                             axioms = usedAxioms pt}
+
+-- Merges goals with the same used axioms into one goal.
+mergeGoals :: [ProvenGoal] -> [ProvenGoal]
+mergeGoals []     = []
+mergeGoals (h:[]) = [h]
+mergeGoals (h:t)  | axioms h == axioms h' = mergeGoals $ (merge h h'):(tail t)
+                  | otherwise             = h:(mergeGoals t)
+                  where
+                      h' = head t
+                      merge :: ProvenGoal -> ProvenGoal -> ProvenGoal
+                      merge a b = a {name = name a ++ ' ':(name b)}
+
+-- Adds a prove to the history.
+addProveToHist :: CommandHistory -> Prove -> IO ()
+addProveToHist ch p =
+    do
     ln <- readIORef $ lastNode ch
 
     -- seperator string and selected node
-    if nodeId == ln
+    if nodeId p == ln
         then addToHist ch ""
         else do
              addListToHist ch ["", "# " ++ (take 78 $ repeat '-'), "",
-                               "dg basic " ++ (dropName ch nodeName)]
-             setLastNode ch nodeId
+                               "dg basic " ++ (dropName ch $ nodeName p)]
+             setLastNode ch $ nodeId p
              return ()
 
     -- selected translations
-    case pcm of
-        Just (_, cm) -> do addListToHist ch ("drop-translations" : 
-                                             splitComorphism cm)
-                           addToHist ch ""
-        Nothing      -> return ()
-    
+    addToHist ch "drop-translations"
+    case translation p of
+        Just acm -> addListToHist ch $ splitComorphism acm
+        Nothing  -> return ()
+
+    -- selected prover
+    case prover p of
+        Just prvr -> addToHist ch $ "prover " ++ prvr
+        Nothing   -> addToHist ch "# no explicit prover chosen"
+    addToHist ch ""
+
     -- process each goal
-    mapM_ (addGoalToHist ch st pcm) goals
+    mapM_ (addGoalToHist ch p) $ provenGoals p
 
     return ()
 
 -- Adds a prove for a goal to the history.
-addGoalToHist :: CommandHistory
-    -> ProofState lid sentence -- current proofstate
-    -> Maybe (G_prover, AnyComorphism) -- possible used translation
-    -> Proof_status proof_tree -- current goal
-    -> IO ()
-addGoalToHist ch st pcm g =
+addGoalToHist :: CommandHistory -> Prove -> ProvenGoal -> IO ()
+addGoalToHist ch p g =
     do
-    addToHist ch $ "set goals " ++ (goalName g)
+    addToHist ch $ "set goals " ++ (name g)
 
     -- axioms to include in prove
-    let allAxioms = case theory st of
-                        G_theory _ _ _ axioms _ -> keys axioms
-        selAxioms = usedAxioms g
-    if allAxioms == selAxioms || selAxioms == []
+    if (allAxioms p) == (axioms g) || (axioms g) == []
        then addToHist ch $ "set-all axioms"
-       else addToHist ch $ "set axioms " ++ (joinWith ' ' selAxioms)
+       else addToHist ch $ "set axioms " ++ (joinWith ' ' $ axioms g)
 
     -- selected time-limit
-    let (Tactic_script s) = tacticScript g
-    case parseTimeLimit $ splitOn '\n' s of
-        Just timeLimit -> addToHist ch $ "set time-limit " ++ timeLimit
-        Nothing        -> return ()
+    addToHist ch $ "set time-limit " ++ (show $ timeLimit p)
 
-    -- selected prover
-    case pcm of
-        Just (p, _) -> addToHist ch $ "prover " ++ getProverName p
-        Nothing     -> do
-                       case selectedProver st of
-                           Just sp -> addToHist ch $ "prover " ++ sp
-                           Nothing -> addToHist ch "# no explicit prover chosen"
     addListToHist ch ["prove", ""]
 
     return ()
@@ -187,7 +265,11 @@ saveCommandHistory (CommandHistory {hist = c}) f =
 
 -- Sets the last node.
 setLastNode :: CommandHistory -> Int -> IO ()
-setLastNode (CommandHistory {lastNode = ln}) nn = writeIORef ln nn
+setLastNode (CommandHistory {lastNode = ln}) = writeIORef ln
+
+-- Sets the last prove.
+setLastProve :: CommandHistory -> Prove -> IO ()
+setLastProve (CommandHistory {lastProve = lp}) = writeIORef lp
 
 -- Suggests a proof-script filename.
 getProofScriptFileName :: CommandHistory -> IO FilePath
