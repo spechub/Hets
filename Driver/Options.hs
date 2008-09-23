@@ -1,7 +1,7 @@
 {- |
 Module      :  $Header$
 Description :  Datatypes and functions for options that hets understands.
-Copyright   :  (c) Martin Kühl, Christian Maeder, Uni Bremen 2002-2006
+Copyright   :  (c) Martin Kuehl, Christian Maeder, Uni Bremen 2002-2006
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
 Maintainer  :  Christian.Maeder@dfki.de

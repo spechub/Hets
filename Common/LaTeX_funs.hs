@@ -77,7 +77,7 @@ setTabWSp = "\\@setTS@{"
 {- functions for calculating an integer value according to a given
    length in LaTeX units
 
-   Units per mm found in: Karsten Günther, "Einführung in LaTeX2e" (p.376)
+   Units per mm found in: Karsten Guenther, "Einfuehrung in LaTeX2e" (p.376)
 -}
 
 calc_line_length :: String -> Int
