@@ -6,6 +6,7 @@ import Static.GTheory
 import Static.DevGraph
 import Static.PrintDevGraph
 import Driver.Options
+import Driver.AnaLib
 
 import qualified Common.OrderedMap as OMap
 import Common.AS_Annotation as Anno
