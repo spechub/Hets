@@ -1,7 +1,7 @@
 {- |
 Module      :  $Header$
 Description :  Abstract syntax of CASL basic specifications
-Copyright   :  (c) Klaus Lüttich, Christian Maeder, Uni Bremen 2002-2006
+Copyright   :  (c) Klaus Luettich, Christian Maeder, Uni Bremen 2002-2006
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
 Maintainer  :  Christian.Maeder@dfki.de

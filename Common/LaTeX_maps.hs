@@ -1,7 +1,7 @@
 {- |
 Module      :  $Header$
 Description :  several tables needed for LaTeX formatting
-Copyright   :  (c) Klaus Lüttich, Uni Bremen 2002-2004
+Copyright   :  (c) Klaus Luettich, Uni Bremen 2002-2004
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
 Maintainer  :  Christian.Maeder@dfki.de
@@ -12,7 +12,7 @@ Portability :  portable
 {-
     HetCATS/Common/LaTeX_maps
     $Id$
-    Author: Klaus Lüttich
+    Author: Klaus Luettich
     Year: 2002
 
     Created by a Perl-script (HetCATS/utils/words.pl)!

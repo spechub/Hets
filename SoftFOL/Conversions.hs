@@ -1,7 +1,7 @@
 {- |
 Module      :  $Header$
 Description :  Functions to convert to internal SP* data structures.
-Copyright   :  (c) Rene Wagner, Klaus Lüttich, Uni Bremen 2005
+Copyright   :  (c) Rene Wagner, Klaus Luettich, Uni Bremen 2005
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
 Maintainer  :  luecke@informatik.uni-bremen.de

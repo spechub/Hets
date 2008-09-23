@@ -1,7 +1,7 @@
 {- |
 Module      :  $Header$
 Description :  Utilities for CASL and its comorphisms
-Copyright   :  (c) Klaus Lüttich and Uni Bremen 2002-2004
+Copyright   :  (c) Klaus Luettich and Uni Bremen 2002-2004
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
 Maintainer  :  Christian.Maeder@dfki.de

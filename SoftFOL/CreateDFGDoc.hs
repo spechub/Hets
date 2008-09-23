@@ -1,7 +1,7 @@
 {- |
 Module      :  $Header$
 Description :  Generating DFG Doc out of SPASS theories.
-Copyright   :  (c) Klaus Lüttich, Uni Bremen 2005
+Copyright   :  (c) Klaus Luettich, Uni Bremen 2005
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
 Maintainer  :  luecke@informatik.uni-bremen.de

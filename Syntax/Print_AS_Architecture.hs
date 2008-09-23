@@ -1,7 +1,7 @@
 {- |
 Module      :  $Header$
 Description :  pretty printing of CASL architectural specifications
-Copyright   :  (c) Klaus Lüttich, Uni Bremen 2002-2006
+Copyright   :  (c) Klaus Luettich, Uni Bremen 2002-2006
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 Maintainer  :  Christian.Maeder@dfki.de
 Stability   :  provisional

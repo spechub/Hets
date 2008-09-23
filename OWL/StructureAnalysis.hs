@@ -1,6 +1,6 @@
 {- |
 Module      :  $Header$
-Copyright   :  (c) Klaus Lüttich, Heng Jiang, Uni Bremen 2002-2005
+Copyright   :  (c) Klaus Luettich, Heng Jiang, Uni Bremen 2002-2005
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
 Maintainer  :  luecke@informatik.uni-bremen.de

@@ -1,6 +1,6 @@
 {- |
 Module      :  $Id$
-Copyright   :  (c) K. Lüttich, C. Maeder and Uni Bremen 2002-2006
+Copyright   :  (c) K. Luettich, C. Maeder and Uni Bremen 2002-2006
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
 Maintainer  :  Christian.Maeder@dfki.de

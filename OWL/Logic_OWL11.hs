@@ -2,7 +2,7 @@
 {- |
 Module      :  $Header$
 Description :  instance of the class Logic for OWL
-Copyright   :  (c) Klaus Lüttich, Heng Jiang, Uni Bremen 2002-2004
+Copyright   :  (c) Klaus Luettich, Heng Jiang, Uni Bremen 2002-2004
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
 Maintainer  :  luecke@informatik.uni-bremen.de

@@ -1,7 +1,7 @@
 {- |
 Module      :  $Header$
 Description :  read and write ATerms to and from strings
-Copyright   :  (c) Klaus Lüttich, C.Maeder, Uni Bremen 2002-2005
+Copyright   :  (c) Klaus Luettich, C.Maeder, Uni Bremen 2002-2005
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
 Maintainer  :  Christian.Maeder@dfki.de

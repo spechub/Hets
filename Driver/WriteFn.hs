@@ -2,7 +2,7 @@
 {- |
 Module      :  $Header$
 Description :  Writing various formats, according to Hets options
-Copyright   :  (c) Klaus Lüttich, C.Maeder, Uni Bremen 2002-2006
+Copyright   :  (c) Klaus Luettich, C.Maeder, Uni Bremen 2002-2006
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
 Maintainer  :  Christian.Maeder@dfki.de

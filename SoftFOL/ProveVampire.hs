@@ -1,7 +1,7 @@
 {- |
 Module      :  $Header$
 Description :  Interface to the Vampire theorem prover via MathServe.
-Copyright   :  (c) Rene Wagner, Klaus Lüttich, Rainer Grabbe,
+Copyright   :  (c) Rene Wagner, Klaus Luettich, Rainer Grabbe,
                    Uni Bremen 2005-2006
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 

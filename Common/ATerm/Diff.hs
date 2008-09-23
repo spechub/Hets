@@ -1,7 +1,7 @@
 {- |
 Module      :  $Header$
 Description :  compute the differences of two unshared ATerms
-Copyright   :  (c) Klaus Lüttich, Uni Bremen 2005
+Copyright   :  (c) Klaus Luettich, Uni Bremen 2005
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
 Maintainer  :  Christian.Maeder@dfki.de

@@ -1,6 +1,6 @@
 {- |
 Module      :  $Header$
-Copyright   :  (c) K. Lüttich, Rene Wagner, Uni Bremen 2002-2005
+Copyright   :  (c) K. Luettich, Rene Wagner, Uni Bremen 2002-2005
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
 Maintainer  :  luecke@informatik.uni-bremen.de

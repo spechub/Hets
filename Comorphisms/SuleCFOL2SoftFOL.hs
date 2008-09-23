@@ -1,7 +1,7 @@
 {- |
 Module      :  $Header$
 Description :  Coding of a CASL subset into SoftFOL
-Copyright   :  (c) Klaus Lüttich and Uni Bremen 2005
+Copyright   :  (c) Klaus Luettich and Uni Bremen 2005
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
 Maintainer  :  luecke@informatik.uni-bremen.de

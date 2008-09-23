@@ -1,7 +1,7 @@
 {- |
 Module      :  $Header$
 Description :  abstract syntax of CASL structured specifications
-Copyright   :  (c) Klaus Lüttich, Uni Bremen 2002-2006
+Copyright   :  (c) Klaus Luettich, Uni Bremen 2002-2006
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 Maintainer  :  till@informatik.uni-bremen.de
 Stability   :  provisional

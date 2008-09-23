@@ -1,7 +1,7 @@
 {- |
 Module      :  $Header$
 Description :  ordered maps (these keep insertion order)
-Copyright   :  (c)  Klaus Lüttich and Uni Bremen 2005
+Copyright   :  (c)  Klaus Luettich and Uni Bremen 2005
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
 Maintainer  :  Christian.Maeder@dfki.de

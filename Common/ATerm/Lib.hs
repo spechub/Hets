@@ -1,7 +1,7 @@
 {- |
 Module      :  $Header$
 Description :  reexports modules needed for ATC generation
-Copyright   :  (c) Klaus Lüttich, Uni Bremen 2002-2004
+Copyright   :  (c) Klaus Luettich, Uni Bremen 2002-2004
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
 Maintainer  :  Christian.Maeder@dfki.de

@@ -1,7 +1,7 @@
 {-
     HetCATS/Common/LaTeX_maps
     $Id$
-    Author: Klaus Lüttich
+    Author: Klaus Luettich
     Year: 2002
 
     Created by a Perl-script (HetCATS/utils/words.pl)!
