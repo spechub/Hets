@@ -99,7 +99,7 @@ ids_OP_ITEM o = case o of
     Op_decl ops _ _ _ -> Set.unions $ map single ops
     Op_defn i _ _ _ -> single i
 
--- | same as singleton but empty for a simple id
+-- | same as singleton
 single :: Id -> Set.Set Id
 single i = Set.singleton i
 
@@ -162,7 +162,7 @@ addRule ga uRules (ops, preds) tok =
         tPId = mkId [tok, placeTok] -- prefix identifier
     in (if isSimpleToken tok && not (Set.member tId sops)
         then [mkRule tId] -- add rule for new variable
-             ++ if Set.member tPId sops then [] else
+             ++ if Set.member tPId ops || Set.member tPId rpreds then [] else
                   [mkSingleArgRule 1 tId, mkArgsRule 1 tId]
               -- add also rules for undeclared op
         else []) ++ Map.findWithDefault [] tok m
