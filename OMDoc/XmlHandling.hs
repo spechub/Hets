@@ -49,10 +49,6 @@ import Text.XML.HXT.Parser ( (.>), (+=), getValue, hasAttr )
 
 import qualified Text.XML.HXT.Parser as HXT hiding (run, trace, when)
 
-import Text.XML.HXT.RelaxNG.Validator
-import Text.XML.HXT.Arrow.ReadDocument
-import Text.XML.HXT.Arrow.XmlIOStateArrow
-
 import Data.List (find)
 import Data.Char (isDigit, isAlpha, isAlphaNum, isAscii, isControl, ord)
 
