@@ -14,7 +14,7 @@ module Main where
 
 import WASH.CGI.CGI as CGI
 import Driver.Options
-import Driver.WriteFn
+import Driver.WriteLibDefn
 import Driver.ReadFn
 import Driver.Version
 import qualified Data.Map as Map
