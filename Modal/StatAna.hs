@@ -33,6 +33,7 @@ import Common.Lib.State
 import Common.Id
 import Common.Result
 import Common.ExtSign
+import Data.List as List
 
 instance FreeVars M_FORMULA where
     freeVarsOfExt sign (BoxOrDiamond _ _ f _) = freeVars sign f
@@ -152,7 +153,6 @@ addRigidPred ty i m = return
        m { rigidPreds = let rps = rigidPreds m in Map.insert i
              (Set.insert ty $ Map.findWithDefault Set.empty i rps) rps }
 
-
 ana_M_BASIC_ITEM
     :: Ana M_BASIC_ITEM M_BASIC_ITEM M_SIG_ITEM M_FORMULA ModalSign
 ana_M_BASIC_ITEM mix bi = do
@@ -177,7 +177,8 @@ preAddModId i m =
        else return m { modies = Map.insert i [] ms }
 
 addModId :: [AnModFORM] -> SIMPLE_ID -> ModalSign -> Result ModalSign
-addModId frms i m = return m { modies = Map.insert i frms $ modies m }
+addModId frms i m = return m
+  { modies = Map.insertWith List.union i frms $ modies m }
 
 preAddModSort :: Sign M_FORMULA ModalSign -> SORT -> ModalSign
               -> Result ModalSign
@@ -189,8 +190,8 @@ preAddModSort e i m =
        else return m { termModies = Map.insert i [] ms }
 
 addModSort :: [AnModFORM] -> SORT -> ModalSign -> Result ModalSign
-addModSort frms i m =
-       return m { termModies = Map.insert i frms $ termModies m }
+addModSort frms i m = return m
+  { termModies = Map.insertWith List.union i frms $ termModies m }
 
 ana_FORMULA
     :: Ana (FORMULA M_FORMULA) M_BASIC_ITEM M_SIG_ITEM M_FORMULA ModalSign

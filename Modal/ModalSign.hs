@@ -62,4 +62,4 @@ isSubModalSign a b =
     && isSubMapSet (rigidPreds a) (rigidPreds b)
     && Map.isSubmapOfBy sublist (modies a) (modies b)
     && Map.isSubmapOfBy sublist (termModies a) (termModies b)
-    where sublist l1 l2 = List.union l1 l2 == l1
+    where sublist l1 l2 = List.union l2 l1 == l2
