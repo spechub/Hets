@@ -27,7 +27,6 @@ module Common.Result
   , mapR
   , fatal_error
   , mkError
-  , mkNiceError
   , debug
   , plain_error
   , warning
@@ -153,15 +152,11 @@ fatal_error s p = Result [Diag Error s p] Nothing
 mkError :: (GetRange a, Pretty a) => String -> a -> Result b
 mkError s c = Result [mkDiag Error s c] Nothing
 
--- | a failing result constructing a message from a type
-mkNiceError :: (GetRange a, Pretty a) => GlobalAnnos -> String -> a -> Result b
-mkNiceError ga s c = Result [mkNiceDiag ga Error s c] Nothing
-
 -- | add a debug point
 debug :: (GetRange a, Pretty a) => Int -> (String, a) -> Result ()
-debug n (s, a) = Result [mkDiag Debug
-                         (" point " ++ show n ++ "\nVariable "++s++":\n") a ]
-                 $ Just ()
+debug n (s, a) = Result
+  [mkDiag Debug (unlines [" point " ++ show n, "Variable "++ s ++":"]) a ]
+  $ Just ()
 
 -- | add an error message but don't fail
 plain_error :: a -> String -> Range -> Result a
