@@ -11,7 +11,7 @@ ops   __+__, __*__ : Nat * Nat -> Nat;
       __-?__ : Nat * Nat ->? Nat;
       __/?__ : Nat * Nat ->? Nat;
       __div__, __mod__, __quot__, __rem__ : Nat * Nat ->? Nat; %()%
-      
+
       %% Operations to represent natural numbers with digits:
       1, 2, 3, 4, 5, 6, 7, 8, 9 : Nat;
       __@@__ : Nat * Nat -> Nat
@@ -205,15 +205,15 @@ ops   a : b;
       c : b
 types s, t < s
 type  s
-      ::= type s2, s1 | 
-          c | 
-          c a | 
-          c (a; a : t; b : t; d : t) | 
+      ::= type s2, s1 |
+          c |
+          c a |
+          c (a; a : t; b : t; d : t) |
           c (a)? %(bla1)%
 }
 
 %(sort)%
-types 
+types
       %(after-sort)%
       s; %(bla2)%
       t
@@ -228,10 +228,10 @@ vars  a : t; a, b : s
 %(bla8-ignored)%
 %(type)%
 type  t
-      ::= 
+      ::=
           %(c)%
-          c %(c)% | 
-          e %(e)% | 
+          c %(c)% |
+          e %(e)% |
           d %(9)%
           %(axiom)%
 . a = a %(a1)%
@@ -300,10 +300,10 @@ type  Data1 ::= a | b | c
 type  Data2
       ::= Cons21 (Data1; Data2) | Cons22 (Data2; Data1) | type Data1
 type  Data3
-      ::= Cons31 (sel1 : ? Data1; sel2 : ? Data2) | 
+      ::= Cons31 (sel1 : ? Data1; sel2 : ? Data2) |
           Cons32 (sel2 : ? Data2; sel1 : ? Data1)
 type  Data4
-      ::= Cons41 (sel1 : ? Data1; sel2 : ? Data2)? | 
+      ::= Cons41 (sel1 : ? Data1; sel2 : ? Data2)? |
           Cons42 (sel2 : ? Data2; sel1 : ? Data1)?
 types Data1, Data2, Data3
 types Tree ::= Leaf Data1 | Forest;
@@ -827,12 +827,12 @@ ops   ' ' : Char = '\032'; %(printable_32)%
       'ý' : Char = '\253'; %(printable_253)%
       'þ' : Char = '\254'; %(printable_254)%
       'ÿ' : Char = '\255'; %(printable_255)%
-preds isLetter(c : Char) <=> 
+preds isLetter(c : Char) <=>
       ((ord ('A') <= ord (c) /\ ord (c) <= ord ('Z')) \/
        (ord ('a') <= ord (c) /\ ord (c) <= ord ('z'))); %(isLetter_def)%
       isDigit(c : Char) <=> ord ('0') <= ord (c) /\ ord (c) <= ord ('9');
                                                          %(isDigit_def)%
-      isPrintable(c : Char) <=> 
+      isPrintable(c : Char) <=>
       ((ord (' ') <= ord (c) /\ ord (c) <= ord ('~')) \/
        (ord (' ') <= ord (c) /\ ord (c) <= ord ('ÿ')));
                                                      %(isPrintable_def)%

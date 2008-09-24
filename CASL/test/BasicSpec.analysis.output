@@ -11,7 +11,7 @@ ops   __+__, __*__ : Nat * Nat -> Nat;
       __-?__ : Nat * Nat ->? Nat;
       __/?__ : Nat * Nat ->? Nat;
       __div__, __mod__, __quot__, __rem__ : Nat * Nat ->? Nat; %()%
-      
+
       %% Operations to represent natural numbers with digits:
       1, 2, 3, 4, 5, 6, 7, 8, 9 : Nat;
       __@@__ : Nat * Nat -> Nat
@@ -206,7 +206,7 @@ type  s
 }
 
 %(sort)%
-sorts 
+sorts
       %(after-sort)%
       s; %(bla2)%
       t
@@ -221,7 +221,7 @@ vars  a : t; a, b : s
 %(bla8-ignored)%
 %(type)%
 type  t
-      ::= 
+      ::=
           %(c)%
           c %(c)%
         | e %(e)%

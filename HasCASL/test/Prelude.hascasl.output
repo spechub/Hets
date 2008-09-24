@@ -253,7 +253,7 @@ ambiguous mixfix term
 ### Hint 65.40, rebound variable 'x'
 *** Error 65.51-65.69, unexpected term '(def y) und (def x)'
 *** Error 65.16,
-ambiguous typings 
+ambiguous typings
  1. (\ ((var x : s), (var y : t)) . def (x res y))
 = \ ((var x : s), (var y : t)) . (def y) und (def x)
  2. (\ ((var x : s), (var y : t)) . def (x res y))

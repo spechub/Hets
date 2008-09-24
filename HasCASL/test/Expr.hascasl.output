@@ -21,7 +21,7 @@ op b : bool -> bool
 op notA : bool
           %[op=
           (case (op a : bool) of
-           (op True : bool) -> (op False : bool) | 
+           (op True : bool) -> (op False : bool) |
            (op False : bool) -> (op True : bool))
           as bool]%
 type bool ::= False | True %(ga_bool)%

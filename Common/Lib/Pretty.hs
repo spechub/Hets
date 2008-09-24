@@ -212,8 +212,6 @@ module Common.Lib.Pretty (
         TextDetails(..)
                        ) where
 
-import Prelude
-
 infixl 6 <>
 infixl 6 <+>
 infixl 5 $$, $+$
@@ -850,10 +848,15 @@ showDoc :: Doc -> String -> String
 showDoc doc rest = renderStyle' rest style doc
 
 string_txt :: TextDetails -> String -> String
-string_txt (Chr c)   s  = c:s
-string_txt (Str s1)  s2 = s1 ++ s2
-string_txt (PStr s1) s2 = s1 ++ s2
+string_txt t s2 = let s1 = textToStr t in case s2 of
+  '\n' : _ -> reverse (dropWhile (== ' ') $ reverse s1) ++ s2
+  _ -> s1 ++ s2
 
+textToStr :: TextDetails -> String
+textToStr t = case t of
+  Chr c -> [c]
+  Str s -> s
+  PStr s -> s
 
 fullRender OneLineMode _ _ txt end doc =
     easy_display space_text txt end (reduceDoc doc)

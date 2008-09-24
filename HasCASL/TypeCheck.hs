@@ -173,7 +173,7 @@ typeCheck mt trm =
                     return $ Just t
                     else
                     do addDiags [Diag Error
-                         ("ambiguous typings \n " ++
+                         ("ambiguous typings\n " ++
                           showSepList ("\n " ++)
                           ( \ (n, t) -> shows n . (". " ++) . showDoc t)
                           (zip [1..(5::Int)] $ map ( \ (_,_,_,t) ->

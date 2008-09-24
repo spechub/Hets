@@ -4,10 +4,10 @@ op    caseTree : forall a . Tree Nat -> Tree Nat
 forall h : Tree Nat; n : Nat; t : Tree Nat
 . caseTree t
   = case t of
-    EmptyLeaf -> EmptyLeaf | 
-    Leaf n -> EmptyLeaf | 
-    Node EmptyLeaf n -> EmptyLeaf | 
-    Node (Node h n) n -> h | 
+    EmptyLeaf -> EmptyLeaf |
+    Leaf n -> EmptyLeaf |
+    Node EmptyLeaf n -> EmptyLeaf |
+    Node (Node h n) n -> h |
     Node (Leaf n) n -> Leaf n;
 types
 Nat : Type;
@@ -24,10 +24,10 @@ free type Nat ::= Suc (Nat) | Zero %(ga_Nat)%
 forall t : Tree Nat
 . caseTree t
   = case t of
-    EmptyLeaf -> EmptyLeaf | 
-    Leaf n -> EmptyLeaf | 
-    Node EmptyLeaf n -> EmptyLeaf | 
-    Node (Node h n) n -> h | 
+    EmptyLeaf -> EmptyLeaf |
+    Leaf n -> EmptyLeaf |
+    Node EmptyLeaf n -> EmptyLeaf |
+    Node (Node h n) n -> h |
     Node (Leaf n) n -> Leaf n
 *** Error 1.18, unknown type variable 'a'
 *** Error 4.23, unknown type variable 'a'
