@@ -245,19 +245,20 @@ ana_SPEC addSyms lg dg nsig name opts sp = case sp of
   Local_spec asp asp' poss ->
    do let sp1 = item asp
           sp1' = item asp'
+          adj = adjustPos poss
       (sp2, nsig'@(NodeSig _ (G_sign lid' sigma' _)), dg') <-
           ana_SPEC False lg dg nsig (extName "L" name) opts sp1
       (sp2', NodeSig n'' (G_sign lid'' sigma'' _), dg'') <-
           ana_SPEC False lg dg' (JustNode nsig') (inc name) opts sp1'
       let gsigma = getMaybeSig nsig
       G_sign lid sigma _ <- return gsigma
-      sigma1 <- coerceSign lid' lid "Analysis of local spec" sigma'
-      sigma2 <- coerceSign lid'' lid "Analysis of local spec" sigma''
+      sigma1 <- adj $ coerceSign lid' lid "Analysis of local spec" sigma'
+      sigma2 <- adj $ coerceSign lid'' lid "Analysis of local spec" sigma''
       let sys = ext_sym_of lid sigma
           sys1 = ext_sym_of lid sigma1
           sys2 = ext_sym_of lid sigma2
       mor3 <- if isStructured opts then return (ext_ide sigma2)
-               else adjustPos poss $ ext_cogenerated_sign lid
+               else adj $ ext_cogenerated_sign lid
                       (sys1 `Set.difference` sys) sigma2
       let sigma3 = dom mor3
           -- gsigma2 = G_sign lid sigma2
