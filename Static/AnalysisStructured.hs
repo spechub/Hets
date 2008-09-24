@@ -441,9 +441,9 @@ ana_ren lg opts lenv pos gmor@(GMorphism r sigma ind1 mor _) gmap =
         EmptyNode _ -> return ()
         JustNode (NodeSig _ (G_sign lidLenv sigmaLenv _)) -> do
           -- needs to be changed for logic translations
-          sigmaLenv' <- coerceSign lidLenv lid2
+          sigmaLenv' <- adj $ coerceSign lidLenv lid2
             "Analysis of renaming: logic translations not properly handeled"
-            sigmaLenv
+            sigmaLenv -- see Calculi/Time/FlowOfTime.casl line 305
           let sysLenv = ext_sym_of lid2 sigmaLenv'
               m = symmap_of lid2 mor1
               isChanged sy = case Map.lookup sy m of
