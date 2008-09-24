@@ -14,3 +14,11 @@ ambiguous mixfix term
   a <= (b <= c)
   (a <= b) <= c
   a <= b <= c
+*** Error 10.1-10.9,
+ambiguous mixfix term
+  A x
+  A x
+*** Error 11.1-11.8,
+ambiguous mixfix term
+  even (A x)
+  even (A x)
