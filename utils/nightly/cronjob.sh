@@ -85,6 +85,8 @@ for i in Basic/*.casl; do ./hets -v2 -o $outtypes $i; done
 date
 for i in Basic/*.pp.het; do ./hets -v2 -o pp.het,pp.tex $i; done
 \ls -sh1 Basic/*.pp.*
+date
+for i in Examples/*.casl; do ./hets -v2 $i; done
 }
 
 checkUserManual ()
