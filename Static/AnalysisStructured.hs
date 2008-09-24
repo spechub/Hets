@@ -432,11 +432,11 @@ ana_ren lg opts lenv pos gmor@(GMorphism r sigma ind1 mor _) gmap =
   let adj = adjustPos pos in case gmap of
   G_symb_map (G_symb_map_items_list lid sis) ->
     let lid2 = targetLogic r in
-    if language_name lid2 == language_name lid then
+    adj $ if language_name lid2 == language_name lid then
      if isStructured opts then return gmor else do
-      sis1 <- adj $ coerceSymbMapItemsList lid lid2 "Analysis of renaming" sis
-      rmap <- adj $ stat_symb_map_items lid2 sis1
-      mor1 <- adj $ induced_from_morphism lid2 rmap (cod mor)
+      sis1 <- coerceSymbMapItemsList lid lid2 "Analysis of renaming" sis
+      rmap <- stat_symb_map_items lid2 sis1
+      mor1 <- induced_from_morphism lid2 rmap (cod mor)
       case lenv of
         EmptyNode _ -> return ()
         JustNode (NodeSig _ (G_sign lidLenv sigmaLenv _)) -> do
@@ -458,13 +458,15 @@ ana_ren lg opts lenv pos gmor@(GMorphism r sigma ind1 mor _) gmap =
     else do
       comor <- logicInclusion lg (Logic lid2) (Logic lid)
       gmorTrans <- gEmbedComorphism comor $ cod gmor
-      newMor <- adj $ comp gmor gmorTrans
+      newMor <- comp gmor gmorTrans
       ana_ren lg opts lenv pos newMor gmap
-  G_logic_translation (Logic_code tok src tar pos1) -> do
+  G_logic_translation (Logic_code tok src tar pos1) ->
     let adj1 = adjustPos $ if pos1 == nullRange then pos else pos1
-    G_sign srcLid srcSig ind<- return (cod gmor)
-    c <- adj1 $ case tok of
+    in adj1 $ do
+    G_sign srcLid srcSig ind <- return (cod gmor)
+    c <- case tok of
             Just ctok -> do
+               let getLogicStr (Logic_name l _) = tokStr l
                Comorphism cid <- lookupComorphism (tokStr ctok) lg
                when (isJust src && getLogicStr (fromJust src) /=
                                     language_name (sourceLogic cid))
@@ -482,9 +484,8 @@ ana_ren lg opts lenv pos gmor@(GMorphism r sigma ind1 mor _) gmap =
                  tarL <- lookupLogic "with logic: " (tokStr l) lg
                  logicInclusion lg (Logic srcLid) tarL
                Nothing -> fail "with logic: cannot determine comorphism"
-    mor1 <- adj1 $ gEmbedComorphism c (G_sign srcLid srcSig ind)
-    adj $ comp gmor mor1
-    where getLogicStr (Logic_name l _) = tokStr l
+    mor1 <- gEmbedComorphism c (G_sign srcLid srcSig ind)
+    comp gmor mor1
 
 ana_RENAMING :: LogicGraph -> MaybeNode -> G_sign -> HetcatsOpts -> RENAMING
              -> Result GMorphism
