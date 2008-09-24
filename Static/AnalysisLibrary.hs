@@ -415,7 +415,7 @@ ana_ITEM_NAME_OR_MAP1 :: LibEnv -> LIB_NAME -> GlobalEnv
                       -> (GlobalEnv, DGraph) -> (SIMPLE_ID, SIMPLE_ID)
                       -> Result (GlobalEnv, DGraph)
 ana_ITEM_NAME_OR_MAP1 libenv ln genv' (genv, dg) (old, new) = do
-  entry <- maybeToResult nullRange
+  entry <- maybeToResult (tokPos old)
             (tokStr old ++ " not found") (Map.lookup old genv')
   case Map.lookup new genv of
     Nothing -> return ()
