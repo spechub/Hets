@@ -167,7 +167,7 @@ instance Eq BasicProof where
   Conjectured == Conjectured = True
   Handwritten == Handwritten = True
   BasicProof lid1 p1 == BasicProof lid2 p2 =
-    coerceBasicProof lid1 lid2 "Eq BasicProof" p1 == Just p2
+    coerceProofStatus lid1 lid2 "Eq BasicProof" p1 == Just p2
   _ == _ = False
 
 instance Ord BasicProof where
