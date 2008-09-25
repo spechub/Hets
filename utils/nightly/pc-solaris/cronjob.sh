@@ -26,6 +26,7 @@ copyStyForCgi
 latexBasicLibraries
 createLogFiles
 
+checkConsOf Calculi/Space/Interval.casl Inter
 checkConsOf Calculi/Space/OrientationCalculi.het Ori
 checkConsOf Calculi/Algebra/FuzzySystems.het Fuzzy
 
@@ -39,4 +40,5 @@ repackDocs
 updateLibForCgi
 
 moreChecks
+checkCalculi
 checkEnvs
