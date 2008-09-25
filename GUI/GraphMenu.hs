@@ -29,8 +29,8 @@ import Data.Char (toLower)
 #endif
 
 import Static.DevGraph
-import Static.DGFlattening
 
+import Proofs.DGFlattening
 import Proofs.Automatic(automatic)
 import Proofs.Global(globSubsume, globDecomp)
 import Proofs.Local(localInference, locDecomp)
