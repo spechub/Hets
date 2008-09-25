@@ -5,7 +5,7 @@ Copyright   :  (c) Till Mossakowski, Klaus Luettich, Uni Bremen 2002-2005
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 Maintainer  :  till@informatik.uni-bremen.de
 Stability   :  provisional
-Portability :  portable
+Portability :  non-portable (deriving Typeable)
 
 General datastructures for theorem prover interfaces
 -}
