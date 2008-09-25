@@ -17,6 +17,19 @@ import Text.ParserCombinators.Parsec hiding (State, token)
 {------------------------------------------------------------------------------}
 
 
+checkWith :: (Show a) => GenParser tok st a -> (a -> Bool) -> GenParser tok st a
+checkWith p f = do x <- p
+                   if f x then return x
+                          else unexpected (show x)
+
+
+reserved :: [String] -> CharParser st String -> CharParser st String
+reserved l p = try $ checkWith p (`notElem` l)
+
+
+{------------------------------------------------------------------------------}
+
+
 ws :: Parser ()
 ws = many (oneOf " \t\r\n") >> return ()
 
@@ -45,6 +58,22 @@ identifier =  liftM2 (:) idFirstChar (many idConsecutiveChar) <?> "identifier"
 
 integer :: Parser Int
 integer =  liftM read (liftM2 (++) (option "" (string "-")) (many1 digit)) <?> "integer number"
+
+
+{------------------------------------------------------------------------------}
+
+
+keywords :: [String]
+keywords =  [ "MODULE", "DEFINE", "CONSTANTS", "VAR", "IVAR", "INIT", "TRANS",
+              "INVAR", "SPEC", "CTLSPEC", "LTLSPEC", "PSLSPEC", "COMPUTE",
+              "INVARSPEC", "FAIRNESS", "JUSTICE", "COMPASSION", "ISA", "ASSIGN",
+              "CONSTRAINT", "SIMPWFF", "CTLWFF", "LTLWFF", "PSLWFF", "COMPWFF",
+              "IN", "MIN", "MAX", "process", "array", "of", "boolean",
+              "integer", "real", "word", "word1", "bool", "EX", "AX", "EF",
+              "AF", "EG", "AG", "E", "F", "O", "G", "H", "X", "Y", "Z", "A",
+              "U", "S", "V", "T", "BU", "EBF", "ABF", "EBG", "ABG", "case",
+              "esac", "mod", "next", "init", "union", "in", "xor", "xnor",
+              "self", "TRUE", "FALSE" ]
 
 
 {------------------------------------------------------------------------------}
@@ -289,6 +318,31 @@ constantExpr =  (constantA <?> "integer constant") <|>
 
 {------------------------------------------------------------------------------}
 {-                                                                            -}
+{-  Complex Identifiers                                                       -}
+{-                                                                            -}
+{------------------------------------------------------------------------------}
+
+
+data ComplexId =  Id String
+               |  ComplexId ComplexId String
+               |  IndexedId ComplexId Int
+               |  Self
+
+
+instance Show ComplexId where
+  show (Id s)           =  s
+  show (ComplexId id s) =  (show id) ++ "." ++ s
+  show (IndexedId id i) =  (show id) ++ "[" ++ (show i) ++ "]"
+  show (Self)           =  "self"
+
+
+complexId :: Parser ComplexId
+complexId =  do id <- reserved keywords identifier << ws
+                return (Id id) --TODO: really complex identifiers
+
+
+{------------------------------------------------------------------------------}
+{-                                                                            -}
 {-  NuSMV Programs                                                            -}
 {-                                                                            -}
 {------------------------------------------------------------------------------}
@@ -307,7 +361,7 @@ data Element =  VarDecl [(String, Type)]
              |  Init Expr
              |  Invar Expr
              |  Trans Expr
-             |  Assign [(Expr, Expr)]
+             |  Assign [(AssignLhs, AssignRhs)]
              |  Fairness Expr
              |  Justice Expr
              |  Compassion Expr Expr
@@ -322,6 +376,14 @@ data Type =  BoolType
 
 data EnumValue =  Symbol String
                |  Number Int
+
+
+data AssignLhs =  CurrentValue ComplexId
+               |  InitialValue ComplexId
+               |  NextValue    ComplexId
+
+
+type AssignRhs =  Expr
 
 
 instance Show Program where
@@ -364,7 +426,7 @@ showElement (Trans expr) =  concat [ "TRANS ", showBasicExpr expr True, ";\n" ]
 
 showElement (Assign assigns) =  concat [ "ASSIGN", concatMap showAssign assigns, "\n" ]
   where
-    showAssign (lhs, rhs) =  concat [ " ", showBasicExpr lhs True, " := ", showBasicExpr rhs True, ";" ]
+    showAssign (lhs, rhs) =  concat [ " ", show lhs, " := ", show rhs, ";" ]
 
 showElement (Fairness expr) =  concat [ "FAIRNESS ", showBasicExpr expr True, ";\n" ]
 showElement (Justice expr) =  concat [ "JUSTICE ", showBasicExpr expr True, ";\n" ]
@@ -385,6 +447,12 @@ showType (RangeType from to) =  concat [ show from, "..", show to ]
 showType (ArrayType from to ty) =  concat [ "array ", show from, "..", show to, " of ", showType ty ]
 
 
+instance Show AssignLhs where
+  show (CurrentValue id) =  show id
+  show (InitialValue id) =  "init(" ++ (show id) ++ ")"
+  show (NextValue id)    =  "next(" ++ (show id) ++ ")"
+
+
 {------------------------------------------------------------------------------}
 {-                                                                            -}
 {-  Parser for Programs                                                       -}
@@ -398,12 +466,12 @@ program =  liftM Program (many modul)
 
 modul :: Parser Module
 modul =  do keyword "MODULE"
-            name <- identifier << ws
+            name <- reserved keywords identifier << ws
             params <- option [] (between (token "(") (token ")") parameters)
             elements <- many element
             return (Module name params elements)
   where
-    parameters =  sepBy1 (identifier << ws) (token ",")
+    parameters =  sepBy1 (reserved keywords identifier << ws) (token ",")
 
 
 element :: Parser Element
@@ -420,7 +488,7 @@ element =  varDecl
        <|> compassion
   where
     varDecl =  do keyword "VAR"
-                  vars <- many1 (do id <- identifier << ws
+                  vars <- many1 (do id <- (reserved keywords identifier) << ws
                                     token ":"
                                     ty <- typeSpec
                                     token ";"
@@ -428,7 +496,7 @@ element =  varDecl
                   return (VarDecl vars)
     
     ivarDecl =  do keyword "IVAR"
-                   vars <- many1 (do id <- identifier << ws
+                   vars <- many1 (do id <- (reserved keywords identifier) << ws
                                      token ":"
                                      ty <- typeSpec
                                      token ";"
@@ -436,7 +504,7 @@ element =  varDecl
                    return (IVarDecl vars)
     
     defineDecl =  do keyword "DEFINE"
-                     defs <- many1 (do id <- identifier << ws
+                     defs <- many1 (do id <- (reserved keywords identifier) << ws
                                        token ":="
                                        expr <- basicExpr
                                        token ";"
@@ -444,7 +512,7 @@ element =  varDecl
                      return (DefineDecl defs)
     
     constDecl =  do keyword "CONSTANTS"
-                    consts <- sepBy1 (identifier << ws) (token ",")
+                    consts <- sepBy1 (reserved keywords identifier << ws) (token ",")
                     token ";"
                     return (ConstDecl consts)
     
@@ -464,7 +532,25 @@ element =  varDecl
                           return (Trans expr)
     
     assign =  do keyword "ASSIGN"
-                 error "TODO: Not implemented yet."
+                 assigns <- many1 (do lhs <- assignLhs
+                                      token ":="
+                                      rhs <- basicExpr
+                                      token ";"
+                                      return (lhs, rhs))
+                 return (Assign assigns)
+      where
+        assignLhs =  do keyword "init"
+                        token "("
+                        id <- complexId
+                        token ")"
+                        return (InitialValue id)
+                 <|> do keyword "next"
+                        token "("
+                        id <- complexId
+                        token ")"
+                        return (NextValue id)
+                 <|> do id <- complexId
+                        return (CurrentValue id)
   
     fairness =  do keyword "FAIRNESS"
                    expr <- basicExpr
@@ -476,14 +562,14 @@ element =  varDecl
                   optional (token ";")
                   return (Justice expr)
     
-    compassion = do keyword "COMPASSION"
-                    token "("
-                    exprA <- basicExpr
-                    token ","
-                    exprB <- basicExpr
-                    token ")"
-                    optional (token ";")
-                    return (Compassion exprA exprB)
+    compassion =  do keyword "COMPASSION"
+                     token "("
+                     exprA <- basicExpr
+                     token ","
+                     exprB <- basicExpr
+                     token ")"
+                     optional (token ";")
+                     return (Compassion exprA exprB)
 
 
 typeSpec :: Parser Type
@@ -503,22 +589,22 @@ typeSpec =  boolSpec
                    return (WordType width)
     
     enumSpec =  do token "{"
-                   values <- sepBy1 (liftM Symbol identifier <|> liftM Number integer) (token ",")
+                   values <- sepBy1 (liftM Symbol identifier <|> liftM Number integer) (ws >> token ",")
                    token "}"
                    return (EnumType values)
     
-    rangeSpec = do from <- integer
-                   token ".."
-                   to <- integer
-                   return (RangeType from to)
+    rangeSpec =  do from <- integer
+                    token ".."
+                    to <- integer
+                    return (RangeType from to)
     
-    arraySpec = do keyword "array"
-                   from <- integer
-                   token ".."
-                   to <- integer
-                   keyword "of"
-                   ty <- typeSpec
-                   return (ArrayType from to ty)
+    arraySpec =  do keyword "array"
+                    from <- integer
+                    token ".."
+                    to <- integer
+                    keyword "of"
+                    ty <- typeSpec
+                    return (ArrayType from to ty)
 
 
 {------------------------------------------------------------------------------}
