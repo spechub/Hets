@@ -6,7 +6,7 @@ License     :  similar to LGPL, see HetCATS/LICENSE.txt
 
 Maintainer  :  Christian.Maeder@dfki.de
 Stability   :  provisional
-Portability :  portable
+Portability :  non-portable (ATerms)
 
 Automatic derivation of instances via DrIFT-rule Typeable, ShATermConvertible
  the type in OWL.OWL11.FFS
@@ -17,16 +17,48 @@ module OWL.ReadWrite where
 
 import qualified Data.Map as Map
 import OWL.AS
-import Common.QName ()
 import Common.ATerm.Lib
 import Data.Typeable
 import Data.Char
 import Data.List
 import Control.Monad
-import Text.XML.HXT.DOM.QualifiedName (mkName)
+import Text.XML.HXT.DOM.QualifiedName (mkName, QName(QN))
 
-{- this is an overlapping instance that is now resolved in the
-Ontology instance -}
+instance ShATermConvertible QName where
+  toShATermAux = toShATermAux_QName
+  fromShATermAux = fromShATermAux_QName
+
+toShATermAux_QName :: ATermTable -> QName -> IO (ATermTable, Int)
+toShATermAux_QName att0 (QN aa ab _) = do
+        (att1, aa') <- toShATerm' att0 (aa ++ ":" ++ ab)
+        return $ addATerm (ShAAppl (aa ++ ":" ++ ab) [aa'] []) att1
+
+fromShATermAux_QName :: Int -> ATermTable -> (ATermTable, QName)
+fromShATermAux_QName ix att = (att,
+      case getShATerm ix att of
+       ShAAppl idName _ _ ->
+         if null idName || idName == "\"\"" then
+              QN "" "_" ""
+          else
+           let idName' = read idName::String
+               idName'' = if head idName' == '<' then
+                               take ((length idName') -2) $ tail idName'
+                             else idName'
+               (pre, loc) = span (/= ':') idName''
+           in if null loc then    -- no : in ID, only localName
+                 QN "" pre ""
+                 else
+                  if (not $ isAlpha $ head pre)
+                     then QN "" idName'' ""
+                     else
+                      if (take 4 pre == "http" ||
+                          take 4 pre == "file")
+                          then let (ns, loc2) = span (/= '#') idName''
+                               in if length loc2 > 1 then
+                                     QN "" (tail loc2) ns
+                                     else QN "" ns ""
+                          else  QN pre (tail loc) ""
+       u -> fromShATermError "OWL.QName" u)
 
 instance ShATermConvertible OntologyFile where
     toShATermAux att0 (OntologyFile a b) = do
