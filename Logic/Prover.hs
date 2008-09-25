@@ -31,11 +31,16 @@ import qualified Control.Concurrent as Concurrent
 
 -- * pack sentences with their proofs
 
+{- | instead of the sentence name (that will be the key into the order map)
+the theorem status will be stored as attribute. The theorem status will be a
+(wrapped) list of pairs (AnyComorphism, BasicProof) in G_theory, but a wrapped
+list of (Proof_status proof_tree) in a logic specific 'Theory'. -}
 type SenStatus a tStatus = SenAttr a (ThmStatus tStatus)
 
 thmStatus :: SenStatus a tStatus -> [tStatus]
 thmStatus = getThmStatus . senAttr
 
+-- | the wrapped list of proof scripts or (AnyComorphism, BasicProof) pairs
 data ThmStatus a = ThmStatus { getThmStatus :: [a] } deriving Show
 
 instance Eq (ThmStatus a) where
@@ -60,6 +65,7 @@ instance Pretty a => Pretty (OMap.ElemWOrd a) where
 printOMapElemWOrd :: (a -> Doc) -> OMap.ElemWOrd a -> Doc
 printOMapElemWOrd fA = fA . OMap.ele
 
+-- | the map from lables to the theorem plus status (and position)
 type ThSens a b = OMap.OMap String (SenStatus a b)
 
 noSens :: ThSens a b
