@@ -108,7 +108,6 @@ exclude s = not $
     isPrefixOf "ATC." s || isPrefixOf ".ATC_" (dropWhile (/= '.') s)
     || Set.member s (Set.fromList
     [ "Isabelle.CreateTheories"
-    , "CASL.CCC.FreeTypes"
     , "OWL.StructureAnalysis", "OWL.OWLAnalysis"
     , "OWL.ProvePellet"
     , "Haskell.Haskell2DG", "Haskell.CreateModules"
@@ -125,7 +124,7 @@ exclude s = not $
     , "Propositional.Prop2CNF", "Propositional.Prop2CASLHelpers"
     , "Propositional.Prove"
     , "Modifications.ModalEmbedding"
-    , "Static.AnalysisLibrary", "Static.DGFlattening"
+    , "Static.AnalysisLibrary"
     , "OMDoc.OMDocDefs", "OMDoc.OMDocOutput"
     , "OMDoc.OMDocInput", "OMDoc.HetsDefs", "Debug.Trace"
     ])
