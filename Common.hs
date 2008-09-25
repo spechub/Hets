@@ -41,36 +41,33 @@ identifiers and annotations as well as their parsing and printing.
  * "Common.Earley"
         the mixfix resolution engine used for CASL and HasCASL
 
+ * "Common.ExtSign"
+        a (signature) data type extended with a symbol set
+
  * "Common.GlobalAnnotations"
         analysed list, number and display annotations
 
  * "Common.Id"                   simple, mixfix and compound identifiers
 
+ * "Common.InjMap"               one-to-one mappings
+
  * "Common.Keywords"             string constants for keywords
 
- * "Common.LaTeX_AS_Annotation"  latex printing of annotations
+ * "Common.LaTeX_funs"           latex printing support
 
- * "Common.LaTeX_funs"
-
- * "Common.LaTeX_maps"
-
- * "Common.LaTeX_utils"
+ * "Common.LaTeX_maps"           latex string size mapping
 
  * "Common.Lexer"                parsing words, signs and nested comments
+
+ * "Common.LibName"              library names as keys for development graphs
 
  * "Common.OrderedMap"           reordered maps
 
  * "Common.Partial"              utilities for partial orders
 
- * "Common.PPUtils"              pretty printing utilities
-
  * "Common.Prec"                 precedence computations
 
- * "Common.PrettyPrint"          pretty printing classes and instance
-
- * "Common.Print_AS_Annotation"  pretty printing of annotations
-
- * "Common.PrintLaTeX"
+ * "Common.PrintLaTeX"           latex rendering
 
  * "Common.ProofUtils"           naming sentences
 
@@ -78,7 +75,7 @@ identifiers and annotations as well as their parsing and printing.
 
  * "Common.ResultT"              a generalized result monad
 
- * "Common.RunParsers"           support for test drivers
+ * "Common.SExor"                lisp s-expressions as exchange format
 
  * "Common.SimpPretty"           printing aterms
 
