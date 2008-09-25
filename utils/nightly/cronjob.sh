@@ -86,13 +86,19 @@ date
 for i in Basic/*.pp.het; do ./hets -v2 -o pp.het,pp.tex $i; done
 \ls -sh1 Basic/*.pp.*
 date
-for i in Examples/*.casl; do ./hets -v2 $i; done
+for i in Examples/*.casl CASL/*.casl;  do ./hets -v2 $i; done
 }
 
 checkUserManual ()
 {
 date
 for i in UserManual/*.casl; do ./hets -v2 -o $outtypes $i; done
+}
+
+checkCalculi ()
+{
+date
+for i in Calculi/*/*.casl Calculi/*/*.het; do ./hets -v2 $i; done
 }
 
 reCheckBasicCASLThs ()
