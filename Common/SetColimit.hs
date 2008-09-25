@@ -5,7 +5,7 @@ Copyright   :  (c) Mihai Codescu, and Uni Bremen 2002-2006
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 Maintainer  :  mcodescu@informatik.uni-bremen.de
 Stability   :  provisional
-Portability :  non-portable
+Portability :  portable
 
 Computes the colimit of an arbitrary diagram in Set:
   - the set is the disjoint union of all sets in the diagram

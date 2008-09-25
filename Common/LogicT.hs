@@ -1,10 +1,15 @@
-{-# OPTIONS -fglasgow-exts #-}
-
--- Logic Monad Transformer: MonadPlusT with interleave, bindi, ifte and once
--- Definition and implementation of generic operations, in terms of msplit
-
-{- Copyright (c) 2005, Amr Sabry, Chung-chieh Shan, Oleg Kiselyov,
+{- |
+Module      :  $Header$
+Description :  colimit of an arbitrary diagram in Set
+Copyright   :  (c) 2005, Amr Sabry, Chung-chieh Shan, Oleg Kiselyov,
         and Daniel P. Friedman
+License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
+Maintainer  :  Mihai.Codescu@dfki.de
+Stability   :  provisional
+Portability :  portable
+
+Logic Monad Transformer: MonadPlusT with interleave, bindi, ifte and once
+Definition and implementation of generic operations, in terms of msplit
 -}
 
 module Common.LogicT (
@@ -92,7 +97,8 @@ bagofN :: (Monad m, LogicT t, MonadPlus (t m)) => Maybe Int -> t m a -> t m [a]
 bagofN (Just n) _ | n <= 0  = return []
 bagofN n m = msplit m >>= bagofN'
     where bagofN' Nothing = return []
-          bagofN' (Just (a,m')) = bagofN (fmap (-1 +) n) m' >>= (return . (a:))
+          bagofN' (Just (a, m')) = bagofN (fmap ((-1) +) n) m'
+                                   >>= return . (a :)
 
 
     -- This is like the opposite of `msplit'
