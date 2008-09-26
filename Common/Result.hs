@@ -201,7 +201,7 @@ propagateErrors :: Result a -> a
 propagateErrors r =
   case (hasErrors $ diags r, maybeResult r) of
     (False, Just x) -> x
-    _ -> error $ unlines $ map show $ diags r
+    _ -> error $ showRelDiags 2 $ diags r
 
 -- | showing (Parsec) parse errors using our own 'showPos' function
 showErr :: ParseError -> String

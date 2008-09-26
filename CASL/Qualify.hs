@@ -23,18 +23,15 @@ import qualified Data.Set as Set
 import qualified Common.Lib.Rel as Rel
 import Common.AS_Annotation
 import Common.Id
+import Common.LibName
 import Common.Result
 import qualified Common.InjMap as InjMap
-
-mkQualName :: SIMPLE_ID -> SIMPLE_ID -> Id -> Id
-mkQualName nodeId libId i =
-  Id [genToken "OM"] [i, simpleIdToId nodeId, simpleIdToId libId] $ posOfId i
 
 mkOverloadedId :: Int -> Id -> Id
 mkOverloadedId n i =
   Id [genToken "Over"] (i : map (stringToId  . (: [])) (show n)) $ posOfId i
 
-qualifySig :: SIMPLE_ID -> SIMPLE_ID -> Sign f e
+qualifySig :: SIMPLE_ID -> LIB_ID -> Sign f e
         -> Result (Morphism f e (), [Named (FORMULA f)], Morphism f e ())
 qualifySig nodeId libId sig = let
   ps = predMap sig
@@ -71,7 +68,7 @@ qualifySig nodeId libId sig = let
     , fun_map = rom
     , pred_map = rpm })
 
-qualOverloaded :: Ord a => SIMPLE_ID -> SIMPLE_ID -> (a -> a)
+qualOverloaded :: Ord a => SIMPLE_ID -> LIB_ID -> (a -> a)
                -> Map.Map Id (Set.Set a) -> InjMap.InjMap (Id, a) (Id, a)
 qualOverloaded nodeId libId f =
   Map.foldWithKey (\ i s m -> case Set.toList s of

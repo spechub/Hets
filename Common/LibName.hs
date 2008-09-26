@@ -13,12 +13,24 @@ Abstract syntax of HetCASL specification libraries
 
 module Common.LibName where
 
-import Common.Id
 import Common.Doc
 import Common.DocUtils
+import Common.Id
 import Common.Keywords
-import System.Time
+import Common.Utils
+
 import Data.List
+import System.Time
+
+mkQualName :: SIMPLE_ID -> LIB_ID -> Id -> Id
+mkQualName nodeId libId i =
+  Id [genToken "OM"] [i, simpleIdToId nodeId, libIdToId libId] $ posOfId i
+
+libIdToId :: LIB_ID -> Id
+libIdToId li = let
+  path = splitOn '/' $ show li
+  toTok s = Token s $ getRange li
+  in mkId $ map toTok $ intersperse "/" path
 
 data LIB_NAME = Lib_version
     { getLIB_ID :: LIB_ID
@@ -50,14 +62,21 @@ data VERSION_NUMBER = Version_number [String] Range deriving (Show, Eq)
 type URL = String
 type PATH = String
 
+instance GetRange LIB_ID where
+  getRange li = case li of
+    Direct_link _ r -> r
+    Indirect_link _ r _ _ -> r
+
 instance Show LIB_ID where
-  show (Direct_link s1 _) = s1
-  show (Indirect_link s1 _ _ _) = s1
+  show li = case li of
+    Direct_link s _ -> s
+    Indirect_link s1 _ _ _ -> s1
 
 instance Show LIB_NAME where
-  show (Lib_version libid (Version_number vs _)) =
-      shows libid " version " ++ concat (intersperse "." vs)
-  show (Lib_id libid) = show libid
+  show ln = case ln of
+    Lib_version li (Version_number vs _) ->
+      shows li $ " version " ++ intercalate "." vs
+    Lib_id li -> show li
 
 instance Eq LIB_ID where
   Direct_link s1 _ == Direct_link s2 _ = s1 == s2

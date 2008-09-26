@@ -109,27 +109,29 @@ Provides data structures for logics (with symbols). Logics are
 
 module Logic.Logic where
 
-import Common.Id
-import Common.GlobalAnnotations
-import qualified Data.Set as Set
-import qualified Data.Map as Map
-import Common.Lib.Graph as Tree
-import Common.AnnoState
-import Common.Result
+import Logic.Prover (Prover, ConsChecker, Theory(..))
+import Taxonomy.MMiSSOntology (MMiSSOntology)
+import ATC.DefaultMorphism ()
+
 import Common.AS_Annotation
+import Common.ATerm.Lib (ShATermConvertible)
+import Common.Amalgamate
+import Common.AnnoState
 import Common.Consistency
+import Common.DefaultMorphism
 import Common.Doc
 import Common.DocUtils
-import Common.DefaultMorphism
 import Common.ExtSign
-import Logic.Prover (Prover, ConsChecker, Theory(..))
-
-import Data.Typeable
-import Common.ATerm.Lib (ShATermConvertible)
-import ATC.DefaultMorphism ()
-import Common.Amalgamate
+import Common.GlobalAnnotations
+import Common.Id
+import Common.Lib.Graph
+import Common.LibName
+import Common.Result
 import Common.Taxonomy
-import Taxonomy.MMiSSOntology (MMiSSOntology)
+
+import qualified Data.Set as Set
+import qualified Data.Map as Map
+import Data.Typeable
 
 -- | Stability of logic implementations
 data Stability = Stable | Testing | Unstable | Experimental
@@ -327,21 +329,21 @@ class ( Syntax lid basic_spec symb_items symb_map_items
          -- | architectural sharing analysis, see CASL RefMan p. 247ff.
          ensures_amalgamability :: lid ->
               ([CASLAmalgOpt],        -- the program options
-               Tree.Gr sign (Int,morphism), -- the diagram to be analyzed
+               Gr sign (Int,morphism), -- the diagram to be analyzed
                [(Int, morphism)],     -- the sink
-               Tree.Gr String String) -- the descriptions of nodes and edges
+               Gr String String) -- the descriptions of nodes and edges
                   -> Result Amalgamates
          ensures_amalgamability l _ = warning Amalgamates
            ("amalgamability test not implemented for logic " ++ show l)
            nullRange
          -- | signature colimits
-         signature_colimit :: lid -> Tree.Gr sign (Int, morphism)
+         signature_colimit :: lid -> Gr sign (Int, morphism)
                            -> Result (sign, Map.Map Int morphism)
          signature_colimit l _ = statErr l "signature_colimit"
          {- | rename and qualify the symbols, code out overloading,
             create sentences for the overloading relation and also return
             the inverse morphism -}
-         qualify :: lid -> SIMPLE_ID -> SIMPLE_ID -> sign
+         qualify :: lid -> SIMPLE_ID -> LIB_ID -> sign
                  -> Result (morphism, [Named sentence], morphism)
          qualify l _ _ _ = statErr l "qualify"
          -------------------- symbols and raw symbols ---------------------
