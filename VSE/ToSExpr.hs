@@ -221,7 +221,7 @@ namedSenToSExpr sig ns =
   SList
     [ SSymbol "asentence"
     , SSymbol $ transString $ senAttr ns
-    , SSymbol $ if isAxiom ns then "axiom" else "lemma"
+    , SSymbol $ if isAxiom ns then "axiom" else "obligation"
     , SSymbol $ if isAxiom ns then "proved" else "open"
     , senToSExpr sig $ sentence ns ]
 
