@@ -1,8 +1,8 @@
 library natbin
 
 spec bin =
-  type bin ::= b_zero | b_one | s0 (pop :? bin) | s1 (pop :? bin)
-  op top : bin -> bin
+  type bin ::= b_zero | b_one | s0 (bin) | s1 (bin)
+  op pop, top : bin -> bin
   . top (b_zero) = b_zero
   . top (b_one) = b_one
   var x : bin

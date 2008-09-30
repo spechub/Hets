@@ -33,7 +33,8 @@ spec simpnats_goals =
 
 logic CASL
 spec bin_data =
- free type bin ::= b_zero | b_one | s0(pop : ?bin) | s1(pop : ?bin)
+ free type bin ::= b_zero | b_one | s0(bin) | s1(bin)
+ op pop : bin -> bin
 end
 
 spec bin =

@@ -55,8 +55,7 @@ instance Comorphism CASL2VSERefine
                VSEMor
                Symbol RawSymbol () where
     sourceLogic CASL2VSERefine = CASL
-    sourceSublogic CASL2VSERefine = SL.top
-       -- here is not ok, because of partiality
+    sourceSublogic CASL2VSERefine = SL.cFol
     targetLogic CASL2VSERefine = VSE
     mapSublogic CASL2VSERefine _ = Just ()
     map_theory CASL2VSERefine = mapCASLTheory
