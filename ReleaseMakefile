@@ -39,7 +39,7 @@ endif
 HC_OPTS1 = -fglasgow-exts -fallow-overlapping-instances \
     $(HC_PACKAGE) $(PFE_FLAGS) -DCASLEXTENSIONS
 
-HC_OPTS = $(HAXML_PACKAGE) $(HC_OPTS1) $(GLADE_PACKAGE)
+HC_OPTS = $(HAXML_PACKAGE) $(HC_OPTS1) $(GLADE_PACKAGE) -threaded
 
 ####################################################################
 ### targets
