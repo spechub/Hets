@@ -19,10 +19,10 @@ import VSE.Ana
 import VSE.ToSExpr
 import Common.SExpr
 
-import ChildProcess
-
 import Control.Monad
 import Data.List
+import System.Process
+import System.IO
 
 vse :: Prover VSESign Sentence () ()
 vse = mkProverTemplate "VSE" () prove
@@ -42,36 +42,61 @@ lemsP = "LEMMABASE"
 prx :: String -> String
 prx = ("(API::GET-" ++)
 
-readUntilMatchParen :: ChildProcess -> String -> IO (String)
+readUntilMatchParen :: Handle -> String -> IO (String)
 readUntilMatchParen cp str =
   let os = length $ filter (== '(') str
       cs = length $ filter (== ')') str
-  in if os == cs then return str
+  in if os == cs && os > 0 then return str
   else do
-    r <- readMsg cp
-    readUntilMatchParen cp $ str ++ r
+  mc <- myGetChar cp
+  case mc of
+    Nothing -> readUntilMatchParen cp str
+    Just c -> readUntilMatchParen cp $ c : str
 
-readMyMsg :: ChildProcess -> String -> IO ()
+myGetChar :: Handle -> IO (Maybe Char)
+myGetChar h = catch (fmap Just $ hGetChar h) $ \ _ -> return Nothing
+
+readMyMsg :: Handle -> String -> IO ()
 readMyMsg cp expect = do
-  s <- readMsg cp
-  r <- readUntilMatchParen cp s
-  if isPrefixOf (prx expect) r then return ()
-    else putStrLn $ "an error occurred when waiting for: " ++ expect
+  mc <- myGetChar cp
+  case mc of
+    Nothing -> readMyMsg cp expect
+    Just c -> do
+    r <- readUntilMatchParen cp [c]
+    if isPrefixOf (prx expect) $ dropWhile (/= '(') $ reverse r then return ()
+      else putStrLn $ "an error occurred when waiting for: " ++ expect
 
-sendMyMsg :: ChildProcess -> String -> IO ()
-sendMyMsg cp str = sendMsg cp (str ++ "\n")
+sendMyMsg :: Handle -> String -> IO ()
+sendMyMsg cp str = do
+  hPutStrLn cp str
+  hFlush cp
+
+readRest :: ProcessHandle -> Handle -> String -> IO String
+readRest cp out str = do
+  mc <- myGetChar out
+  case mc of
+    Nothing -> do
+       ms <- getProcessExitCode cp
+       case ms of
+         Nothing -> readRest cp out str
+         _ -> return str
+    Just c -> readRest cp out $ c : str
 
 prove :: String -> Theory VSESign Sentence () -> IO [Proof_status ()]
 prove str (Theory sig thsens) = do
-  cp <- newChildProcess "hetsvse" [arguments ["-std"], linemode False]
-  readMyMsg cp nameP
-  sendMyMsg cp $ "(" ++ str ++ ")"
-  readMyMsg cp linksP
-  sendMyMsg cp "nil"
-  readMyMsg cp sigP
+  (inp, out, _, cp) <-
+      runInteractiveProcess "hetsvse" ["-std"] Nothing Nothing
+  readMyMsg out nameP
+  sendMyMsg inp $ "(" ++ str ++ ")"
+  readMyMsg out linksP
+  sendMyMsg inp "nil"
+  readMyMsg out sigP
   let (fsig, sens) = addUniformRestr sig $ toNamedList thsens
-  sendMyMsg cp $ show $ prettySExpr $ vseSignToSExpr fsig
-  readMyMsg cp lemsP
-  sendMyMsg cp $ show $ prettySExpr $ SList $ map (namedSenToSExpr fsig) sens
-  waitForChildProcess cp
+  sendMyMsg inp $ show $ prettySExpr $ vseSignToSExpr fsig
+  readMyMsg out lemsP
+  sendMyMsg inp $ show $ prettySExpr $ SList $ map (namedSenToSExpr fsig) sens
+  res <- readRest cp out ""
+  putStrLn "--begin--"
+  putStrLn $ reverse res
+  putStrLn "--end--"
   return []
