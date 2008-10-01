@@ -60,7 +60,6 @@ import CASL.Quantification
 import CASL.StaticAna
 import CASL.ShowMixfix as Paren
 import CASL.SimplifySen
-import CASL.Sublogic
 
 import VSE.As
 import VSE.Fold
@@ -197,9 +196,6 @@ basicAna (bs, sig, ga) = do
     $ procsToPredMap $ extendedInfo sig2
   let sig3 = diffSig const sig2 boolSig
       (rSens, fSens) = partition (foldFormula (checkRec True) . sentence) sens
-  unless (sublogics_max cFol (sl_sign sig2) == (cFol :: CASL_SL ()))
-    $ appendDiags
-          [Diag Error "no support for partiality or subsorting" nullRange]
   appendDiags $ map (mkDiag Error "unsupported VSE formula" . sentence) fSens
   appendDiags $ map (mkDiag Error "illegal overloading of")
     $ Set.toList $ Set.intersection (Map.keysSet $ opMap sig3)
@@ -316,7 +312,8 @@ checkRec b = (constRecord (const False) and True)
   , foldExistl_equation = \ _ _ _ _ -> False
   , foldMembership = \ _ _ _ _ -> False
   , foldCast = \ _ _ _ _ -> False
-  , foldConditional = \ _ _ _ _ _ -> False }
+  , foldConditional = \ _ _ _ _ _ -> False
+  , foldExtFORMULA = \ _ _ -> b }
 
 minExpProg :: Set.Set VAR -> Maybe SORT -> Sign () Procs
            -> Program -> Result Program
