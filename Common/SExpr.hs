@@ -17,6 +17,7 @@ import Common.Doc
 import Common.Id
 import Common.ProofUtils
 import qualified Data.Map as Map
+import Data.Char
 
 data SExpr = SSymbol String | SList [SExpr] deriving (Eq, Ord, Show)
 
@@ -40,8 +41,13 @@ transId (Id ts cs _) =
 transToken :: Token -> String
 transToken t = if isPlace t then "_2" else transString $ tokStr t
 
+transStringAux :: String -> String
+transStringAux = concatMap (\ c -> Map.findWithDefault [c] c cMap)
+
 transString :: String -> String
-transString = concatMap (\ c -> Map.findWithDefault [c] c cMap)
+transString s = case s of
+  c : r | isDigit c -> "_D" ++ c : transStringAux r
+  _ -> transStringAux s
 
 cMap :: Map.Map Char String
 cMap = Map.map ('_' :) $ Map.insert '_' "1" charMap
