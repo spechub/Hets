@@ -89,11 +89,8 @@ readRest cp out str = do
        ms <- getProcessExitCode cp
        case ms of
          Nothing -> readRest cp out str
-         _ -> do
-            r <- catch (hGetContents out) $ \ _ -> return ""
-            return $ reverse r ++ str
+         _ -> return str
     Just c -> readRest cp out $ c : str
-
 
 parseSymbol :: Parser SExpr
 parseSymbol = skipWhite $ do
@@ -133,7 +130,14 @@ findState str sexpr l = case sexpr of
   _ -> l
 
 prove :: String -> Theory VSESign Sentence () -> IO [Proof_status ()]
-prove str (Theory sig thsens) = do
+prove ostr (Theory sig thsens) = do
+  let str = map (\ c -> if c == '/' then '-' else c) ostr
+      oSens = toNamedList thsens
+      (fsig, sens) = addUniformRestr sig oSens
+      (disAxs, disGoals) = partition isAxiom oSens
+      rMap = Map.fromList $ map (\ SenAttr { senAttr = n } ->
+                (map toUpper $ transString n, n)) disGoals
+      errfile = "hetvse.out"
   (inp, out, _, cp) <-
       runInteractiveProcess "hetsvse" ["-std"] Nothing Nothing
   readMyMsg out nameP
@@ -141,17 +145,11 @@ prove str (Theory sig thsens) = do
   readMyMsg out linksP
   sendMyMsg inp "nil"
   readMyMsg out sigP
-  let oSens = toNamedList thsens
-      (fsig, sens) = addUniformRestr sig oSens
-      (disAxs, disGoals) = partition isAxiom oSens
-      rMap = Map.fromList $ map (\ SenAttr { senAttr = n } ->
-                (map toUpper $ transString n, n)) disGoals
   sendMyMsg inp $ show $ prettySExpr $ vseSignToSExpr fsig
   readMyMsg out lemsP
   sendMyMsg inp $ show $ prettySExpr $ SList $ map (namedSenToSExpr fsig) sens
   revres <- readRest cp out ""
   let res = reverse revres
-      errfile = "hetvse.out"
   case parse parseSExprs errfile res of
     Right l -> return
       $ foldr (\ s r -> case Map.lookup s rMap of
