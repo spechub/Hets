@@ -34,7 +34,9 @@ module VSE.Ana
   , toSen
   ) where
 
+import Control.Monad
 import Data.Char (toLower)
+import Data.List
 import Data.Maybe
 import qualified Data.Map as Map
 import qualified Data.Set as Set
@@ -58,6 +60,7 @@ import CASL.Quantification
 import CASL.StaticAna
 import CASL.ShowMixfix as Paren
 import CASL.SimplifySen
+import CASL.Sublogic
 
 import VSE.As
 import VSE.Fold
@@ -193,10 +196,15 @@ basicAna (bs, sig, ga) = do
     $ Map.keys $ interMapSet (diffMapSet (predMap sig2) $ predMap sigIn)
     $ procsToPredMap $ extendedInfo sig2
   let sig3 = diffSig const sig2 boolSig
-  appendDiags $ map (\ i -> mkDiag Error "illegal overloading of" i)
+      (rSens, fSens) = partition (foldFormula (checkRec True) . sentence) sens
+  unless (sublogics_max cFol (sl_sign sig2) == (cFol :: CASL_SL ()))
+    $ appendDiags
+          [Diag Error "no support for partiality or subsorting" nullRange]
+  appendDiags $ map (mkDiag Error "unsupported VSE formula" . sentence) fSens
+  appendDiags $ map (mkDiag Error "illegal overloading of")
     $ Set.toList $ Set.intersection (Map.keysSet $ opMap sig3)
     $ Map.keysSet uOpMap
-  return (bs2, ExtSign (addProcs $ diffSig const sig2 boolSig) syms, sens)
+  return (bs2, ExtSign (addProcs $ diffSig const sig2 boolSig) syms, rSens)
 
 anaMix :: Mix () Procdecls Dlformula Procs
 anaMix = emptyMix
@@ -301,9 +309,9 @@ oneExpT = oneExpTerm (const return)
 minExpF :: Sign () Procs -> FORMULA () -> Result (FORMULA ())
 minExpF = minExpFORMULA (const return)
 
-checkRec :: Record f Bool Bool
-checkRec = (constRecord (const False) and True)
-  { foldQuantification = \ _ _ _ _ _ -> False
+checkRec :: Bool -> Record f Bool Bool
+checkRec b = (constRecord (const False) and True)
+  { foldQuantification = \ _ _ _ _ _ -> b
   , foldDefinedness = \ _ _ _ -> False
   , foldExistl_equation = \ _ _ _ _ -> False
   , foldMembership = \ _ _ _ _ -> False
@@ -313,9 +321,9 @@ checkRec = (constRecord (const False) and True)
 minExpProg :: Set.Set VAR -> Maybe SORT -> Sign () Procs
            -> Program -> Result Program
 minExpProg invars res sig p@(Ranged prg r) = let
-  checkCond f = if foldFormula checkRec f then return f else
+  checkCond f = if foldFormula (checkRec False) f then return f else
                     mkError "illegal formula" f
-  checkTerm t = if foldTerm checkRec t then return t else
+  checkTerm t = if foldTerm (checkRec False) t then return t else
                     mkError "illegal term" t
   in case prg of
   Abort -> return p
