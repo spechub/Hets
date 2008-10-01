@@ -49,14 +49,14 @@ import System.Cmd
 isabelleS :: String
 isabelleS = "Isabelle"
 
+openIsaProof_status :: String -> Proof_status ()
+openIsaProof_status n = openProof_status n isabelleS ()
+
 isabelleProver :: Prover Sign Sentence () ()
 isabelleProver = mkProverTemplate isabelleS () isaProve
 
 isabelleConsChecker :: ConsChecker Sign Sentence () (DefaultMorphism Sign) ()
 isabelleConsChecker = mkProverTemplate "Isabelle-refute" () consCheck
-
-openIsaProof_status :: String -> Proof_status ()
-openIsaProof_status n = openProof_status n (prover_name isabelleProver) ()
 
 -- | the name of the inconsistent lemma for consistency checks
 inconsistentS :: String
