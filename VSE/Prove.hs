@@ -17,15 +17,25 @@ import Logic.Prover
 import VSE.As
 import VSE.Ana
 import VSE.ToSExpr
+import Common.AS_Annotation
 import Common.SExpr
 
 import Control.Monad
+import Data.Char
 import Data.List
+import qualified Data.Map as Map
 import System.Process
 import System.IO
+import Text.ParserCombinators.Parsec
+
+vseProverName :: String
+vseProverName = "VSE"
+
+openVseProofStatus :: String -> Proof_status ()
+openVseProofStatus n = openProof_status n vseProverName ()
 
 vse :: Prover VSESign Sentence () ()
-vse = mkProverTemplate "VSE" () prove
+vse = mkProverTemplate vseProverName () prove
 
 nameP :: String
 nameP = "SPECIFICATION-NAMES"
@@ -79,8 +89,48 @@ readRest cp out str = do
        ms <- getProcessExitCode cp
        case ms of
          Nothing -> readRest cp out str
-         _ -> return str
+         _ -> do
+            r <- catch (hGetContents out) $ \ _ -> return ""
+            return $ reverse r ++ str
     Just c -> readRest cp out $ c : str
+
+
+parseSymbol :: Parser SExpr
+parseSymbol = skipWhite $ do
+  fmap SSymbol $ many1 $ satisfy $ \ c -> not (isSpace c || elem c "()")
+
+parseList :: Parser SExpr
+parseList = do
+  skipWhite $ char '('
+  l <- many parseSExpr
+  skipWhite $ char ')'
+  return $ SList l
+
+parseSExpr :: Parser SExpr
+parseSExpr = parseList <|> parseSymbol
+
+skipWhite :: Parser a -> Parser a
+skipWhite p = do
+  a <- p
+  spaces
+  return a
+
+skipJunk :: Parser ()
+skipJunk = skipMany $ satisfy (/= '(')
+
+parseSExprs :: Parser [SExpr]
+parseSExprs = do
+  skipJunk
+  sepEndBy parseSExpr skipJunk
+
+findState :: String -> SExpr -> [String] -> [String]
+findState str sexpr l = case sexpr of
+  SList (SSymbol "API::SET-SENTENCE" : SSymbol nodeStr :
+         SList (SSymbol "API::ASENTENCE" : SSymbol senStr :
+                SSymbol "API::OBLIGATION" : SSymbol "API::PROVED" : _) : _)
+    | nodeStr == "API::" ++ map toUpper str && isPrefixOf "API::" senStr
+    -> drop 5 senStr : l
+  _ -> l
 
 prove :: String -> Theory VSESign Sentence () -> IO [Proof_status ()]
 prove str (Theory sig thsens) = do
@@ -91,12 +141,26 @@ prove str (Theory sig thsens) = do
   readMyMsg out linksP
   sendMyMsg inp "nil"
   readMyMsg out sigP
-  let (fsig, sens) = addUniformRestr sig $ toNamedList thsens
+  let oSens = toNamedList thsens
+      (fsig, sens) = addUniformRestr sig oSens
+      (disAxs, disGoals) = partition isAxiom oSens
+      rMap = Map.fromList $ map (\ SenAttr { senAttr = n } ->
+                (map toUpper $ transString n, n)) disGoals
   sendMyMsg inp $ show $ prettySExpr $ vseSignToSExpr fsig
   readMyMsg out lemsP
   sendMyMsg inp $ show $ prettySExpr $ SList $ map (namedSenToSExpr fsig) sens
-  res <- readRest cp out ""
-  putStrLn "--begin--"
-  putStrLn $ reverse res
-  putStrLn "--end--"
-  return []
+  revres <- readRest cp out ""
+  let res = reverse revres
+      errfile = "hetvse.out"
+  case parse parseSExprs errfile res of
+    Right l -> return
+      $ foldr (\ s r -> case Map.lookup s rMap of
+                 Nothing -> r
+                 Just n -> (openVseProofStatus n)
+                   { goalStatus = Proved Nothing
+                   , usedAxioms = map senAttr disAxs } : r) []
+      $ foldr (findState str) [] l
+    Left e -> do
+      print e
+      writeFile errfile res
+      return []
