@@ -19,6 +19,7 @@ import VSE.Ana
 import VSE.ToSExpr
 import Common.AS_Annotation
 import Common.SExpr
+import Common.Utils
 
 import Control.Monad
 import Data.Char
@@ -138,8 +139,9 @@ prove ostr (Theory sig thsens) = do
       rMap = Map.fromList $ map (\ SenAttr { senAttr = n } ->
                 (map toUpper $ transString n, n)) disGoals
       errfile = "hetvse.out"
+  vseBin <- getEnvDef "HETS_VSE" "hetsvse"
   (inp, out, _, cp) <-
-      runInteractiveProcess "hetsvse" ["-std"] Nothing Nothing
+      runInteractiveProcess vseBin ["-std"] Nothing Nothing
   readMyMsg out nameP
   sendMyMsg inp $ "(" ++ str ++ ")"
   readMyMsg out linksP
