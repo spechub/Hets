@@ -35,6 +35,9 @@ logic CASL
 spec bin_data =
  free type bin ::= b_zero | b_one | s0(bin) | s1(bin)
  op pop : bin -> bin
+ var x: bin
+ . pop(s0(x)) = x
+ . pop(s1(x)) = x
 end
 
 spec bin =
