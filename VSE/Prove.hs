@@ -53,45 +53,48 @@ lemsP = "LEMMABASE"
 prx :: String -> String
 prx = ("(API::GET-" ++)
 
-readUntilMatchParen :: Handle -> String -> IO (String)
-readUntilMatchParen cp str =
+data MaybeChar = Wait | Stop | JustChar Char
+
+readUntilMatchParen :: ProcessHandle -> Handle -> String -> IO String
+readUntilMatchParen cp h str =
   let os = length $ filter (== '(') str
       cs = length $ filter (== ')') str
   in if os == cs && os > 0 then return str
   else do
-  mc <- myGetChar cp
+  mc <- myGetChar cp h
   case mc of
-    Nothing -> readUntilMatchParen cp str
-    Just c -> readUntilMatchParen cp $ c : str
+    Wait -> readUntilMatchParen cp h str
+    Stop -> return str
+    JustChar c -> readUntilMatchParen cp h $ c : str
 
-myGetChar :: Handle -> IO (Maybe Char)
-myGetChar h = catch (fmap Just $ hGetChar h) $ \ _ -> return Nothing
+myGetChar :: ProcessHandle -> Handle -> IO MaybeChar
+myGetChar cp h = catch (fmap JustChar $ hGetChar h) $ \ _ -> do
+  ms <- getProcessExitCode cp
+  return $ case ms of
+    Nothing -> Wait
+    Just _ -> Stop
 
-readMyMsg :: Handle -> String -> IO ()
-readMyMsg cp expect = do
-  mc <- myGetChar cp
+readMyMsg :: ProcessHandle -> Handle -> String -> IO ()
+readMyMsg cp h expect = do
+  mc <- myGetChar cp h
   case mc of
-    Nothing -> readMyMsg cp expect
-    Just c -> do
-    r <- readUntilMatchParen cp [c]
-    if isPrefixOf (prx expect) $ dropWhile (/= '(') $ reverse r then return ()
-      else putStrLn $ "an error occurred when waiting for: " ++ expect
+    Wait -> readMyMsg cp h expect
+    Stop -> return ()
+    JustChar c -> do
+      r <- readUntilMatchParen cp h [c]
+      unless (isPrefixOf (prx expect) $ dropWhile (/= '(') $ reverse r)
+        $ putStrLn $ "an error occurred when waiting for: " ++ expect
 
 sendMyMsg :: Handle -> String -> IO ()
-sendMyMsg cp str = do
-  hPutStrLn cp str
-  hFlush cp
+sendMyMsg cp str = catch (hPutStrLn cp str >> hFlush cp) $ \ _ -> return ()
 
 readRest :: ProcessHandle -> Handle -> String -> IO String
 readRest cp out str = do
-  mc <- myGetChar out
+  mc <- myGetChar cp out
   case mc of
-    Nothing -> do
-       ms <- getProcessExitCode cp
-       case ms of
-         Nothing -> readRest cp out str
-         _ -> return str
-    Just c -> readRest cp out $ c : str
+    Wait -> readRest cp out str
+    Stop -> return str
+    JustChar c -> readRest cp out $ c : str
 
 parseSymbol :: Parser SExpr
 parseSymbol = skipWhite $ do
@@ -142,25 +145,31 @@ prove ostr (Theory sig thsens) = do
   vseBin <- getEnvDef "HETS_VSE" "hetsvse"
   (inp, out, _, cp) <-
       runInteractiveProcess vseBin ["-std"] Nothing Nothing
-  readMyMsg out nameP
+  readMyMsg cp out nameP
   sendMyMsg inp $ "(" ++ str ++ ")"
-  readMyMsg out linksP
+  readMyMsg cp out linksP
   sendMyMsg inp "nil"
-  readMyMsg out sigP
+  readMyMsg cp out sigP
   sendMyMsg inp $ show $ prettySExpr $ vseSignToSExpr fsig
-  readMyMsg out lemsP
+  readMyMsg cp out lemsP
   sendMyMsg inp $ show $ prettySExpr $ SList $ map (namedSenToSExpr fsig) sens
-  revres <- readRest cp out ""
-  let res = reverse revres
-  case parse parseSExprs errfile res of
-    Right l -> return
-      $ foldr (\ s r -> case Map.lookup s rMap of
+  ms <- getProcessExitCode cp
+  case ms of
+    Just _ -> do
+      putStrLn $ vseBin ++ " unavailable"
+      return []
+    Nothing -> do
+      revres <- readRest cp out ""
+      let res = reverse revres
+      case parse parseSExprs errfile res of
+        Right l -> return
+          $ foldr (\ s r -> case Map.lookup s rMap of
                  Nothing -> r
                  Just n -> (openVseProofStatus n)
                    { goalStatus = Proved Nothing
                    , usedAxioms = map senAttr disAxs } : r) []
-      $ foldr (findState str) [] l
-    Left e -> do
-      print e
-      writeFile errfile res
-      return []
+          $ foldr (findState str) [] l
+        Left e -> do
+          print e
+          writeFile errfile res
+          return []
