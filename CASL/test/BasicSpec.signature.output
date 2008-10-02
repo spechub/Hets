@@ -1225,39 +1225,15 @@ ambiguous mixfix term
 *** Error 285.31, unknown sort 'a'
 *** Error 285.34, duplicates at '(285,41)' for 'a : s -> t'
 *** Error 285.52, unknown sort 'a'
-*** Error 285.25,
-total selectors 'a : s -> t,b : s -> t,d : s -> t'
-  must appear in alternative
-'c : s'
-*** Error 285.50,
-total selectors 'a : s -> t,b : s -> t,d : s -> t'
-  must appear in alternative
-'c : a ->? s'
 *** Error 286.22, unknown sort 's2'
 *** Error 286.25, unknown sort 's1'
 *** Error 286.36, unknown sort 'a'
 *** Error 286.55, unknown sort 'a'
-*** Error 286.30,
-total selectors 'a : s -> t,b : s -> t,d : s -> t'
-  must appear in alternative
-'c : s'
-*** Error 286.53,
-total selectors 'a : s -> t,b : s -> t,d : s -> t'
-  must appear in alternative
-'c : a ->? s'
 *** Error 286.53, illegal free partial constructor 'c'
 *** Error 287.27, unknown sort 's2'
 *** Error 287.30, unknown sort 's1'
 *** Error 287.41, unknown sort 'a'
 *** Error 287.60, unknown sort 'a'
-*** Error 287.35,
-total selectors 'a : s -> t,b : s -> t,d : s -> t'
-  must appear in alternative
-'c : s'
-*** Error 287.58,
-total selectors 'a : s -> t,b : s -> t,d : s -> t'
-  must appear in alternative
-'c : a ->? s'
 *** Error 290.16, unknown sort 'a'
 *** Error 290.20, unknown sort 'a'
 *** Error 292.7, unknown sort 'b'
@@ -1268,18 +1244,6 @@ total selectors 'a : s -> t,b : s -> t,d : s -> t'
 *** Error 294.38, unknown sort 'a'
 *** Error 294.57, unknown sort 'a'
 *** Error 294.29, duplicates at '(294,55)' for 'c : a -> s'
-*** Error 294.25,
-total selectors 'a : s -> t,b : s -> t,d : s -> t'
-  must appear in alternative
-'c : s'
-*** Error 294.29,
-total selectors 'a : s -> t,b : s -> t,d : s -> t'
-  must appear in alternative
-'c : a -> s'
-*** Error 294.55,
-total selectors 'a : s -> t,b : s -> t,d : s -> t'
-  must appear in alternative
-'c : a ->? s'
 *** Error 304.6, unknown sort 'b'
 *** Error 305.6, unknown sort 'd'
 *** Error 316.3,

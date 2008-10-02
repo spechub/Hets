@@ -1435,13 +1435,13 @@ ambiguous mixfix term
 ### Warning 285.41, new 'op a' is also known as 'var a'
 *** Error 285.34, duplicates at '(285,41)' for 'a : s -> t'
 *** Error 285.52, unknown sort 'a'
-*** Error 285.25,
-total selectors 'a : s -> t,b : s -> t,d : s -> t'
-  must appear in alternative
+### Warning 285.25,
+total selectors 'a : s -> t, b : s -> t, d : s -> t'
+  should be in alternative
 'c : s'
-*** Error 285.50,
-total selectors 'a : s -> t,b : s -> t,d : s -> t'
-  must appear in alternative
+### Warning 285.50,
+total selectors 'a : s -> t, b : s -> t, d : s -> t'
+  should be in alternative
 'c : a ->? s'
 ### Hint 286.11, redeclared sort 's'
 *** Error 286.22, unknown sort 's2'
@@ -1457,13 +1457,13 @@ total selectors 'a : s -> t,b : s -> t,d : s -> t'
 ### Hint 286.46, redeclared op 'd'
 *** Error 286.55, unknown sort 'a'
 ### Hint 286.53, redeclared op 'c'
-*** Error 286.30,
-total selectors 'a : s -> t,b : s -> t,d : s -> t'
-  must appear in alternative
+### Warning 286.30,
+total selectors 'a : s -> t, b : s -> t, d : s -> t'
+  should be in alternative
 'c : s'
-*** Error 286.53,
-total selectors 'a : s -> t,b : s -> t,d : s -> t'
-  must appear in alternative
+### Warning 286.53,
+total selectors 'a : s -> t, b : s -> t, d : s -> t'
+  should be in alternative
 'c : a ->? s'
 *** Error 286.53, illegal free partial constructor 'c'
 ### Hint 287.16, redeclared sort 's'
@@ -1481,13 +1481,13 @@ total selectors 'a : s -> t,b : s -> t,d : s -> t'
 ### Hint 287.51, redeclared op 'd'
 *** Error 287.60, unknown sort 'a'
 ### Hint 287.58, redeclared op 'c'
-*** Error 287.35,
-total selectors 'a : s -> t,b : s -> t,d : s -> t'
-  must appear in alternative
+### Warning 287.35,
+total selectors 'a : s -> t, b : s -> t, d : s -> t'
+  should be in alternative
 'c : s'
-*** Error 287.58,
-total selectors 'a : s -> t,b : s -> t,d : s -> t'
-  must appear in alternative
+### Warning 287.58,
+total selectors 'a : s -> t, b : s -> t, d : s -> t'
+  should be in alternative
 'c : a ->? s'
 *** Error 290.16, unknown sort 'a'
 *** Error 290.20, unknown sort 'a'
@@ -1519,17 +1519,17 @@ total selectors 'a : s -> t,b : s -> t,d : s -> t'
 *** Error 294.57, unknown sort 'a'
 ### Warning 294.55, partially redeclared 'c'
 *** Error 294.29, duplicates at '(294,55)' for 'c : a -> s'
-*** Error 294.25,
-total selectors 'a : s -> t,b : s -> t,d : s -> t'
-  must appear in alternative
+### Warning 294.25,
+total selectors 'a : s -> t, b : s -> t, d : s -> t'
+  should be in alternative
 'c : s'
-*** Error 294.29,
-total selectors 'a : s -> t,b : s -> t,d : s -> t'
-  must appear in alternative
+### Warning 294.29,
+total selectors 'a : s -> t, b : s -> t, d : s -> t'
+  should be in alternative
 'c : a -> s'
-*** Error 294.55,
-total selectors 'a : s -> t,b : s -> t,d : s -> t'
-  must appear in alternative
+### Warning 294.55,
+total selectors 'a : s -> t, b : s -> t, d : s -> t'
+  should be in alternative
 'c : a ->? s'
 ### Warning 293.9, generated sorts without constructor '{t}'
 ### Warning 292.13, non-generated sorts as constructor result '{b}'

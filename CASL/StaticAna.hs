@@ -626,10 +626,10 @@ ana_DATATYPE_DECL gk (Datatype_decl s al _) =
           else do addDiags $ checkUniqueness cs
                   let totalSels = Set.unions $ map snd constr
                       wrongConstr = filter ((totalSels /=) . snd) constr
-                  addDiags $ map ( \ (c, _) -> mkDiag Error
-                      ("total selectors '" ++ showSepList (showString ",")
+                  addDiags $ map ( \ (c, _) -> mkDiag Warning
+                      ("total selectors '" ++ showSepList (showString ", ")
                        showDoc (Set.toList totalSels)
-                       "'\n  must appear in alternative") c) wrongConstr
+                       "'\n  should be in alternative") c) wrongConstr
        case gk of
          Free -> do
            let allts = map item al
