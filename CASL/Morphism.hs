@@ -361,25 +361,30 @@ legalSign sigma =
                         && all legalSort (opArgs t)
         legalPredType t = all legalSort (predArgs t)
 
+inducedOpMap :: Sort_map -> Fun_map -> OpMap -> OpMap
+inducedOpMap sm fm os = Map.foldWithKey
+  ( \ i -> flip $ Set.fold ( \ ot ->
+      let (j, nt) = mapOpSym sm fm (i, ot)
+      in Rel.setInsert j nt)) Map.empty os
+
+inducedPredMap :: Sort_map -> Pred_map -> Map.Map Id (Set.Set PredType)
+               -> Map.Map Id (Set.Set PredType)
+inducedPredMap sm pm ps = Map.foldWithKey
+  ( \ i -> flip $ Set.fold ( \ ot ->
+      let (j, nt) = mapPredSym sm pm (i, ot)
+      in Rel.setInsert j nt)) Map.empty ps
+
 legalMor :: Morphism f e m -> Bool
 legalMor mor =
   let s1 = msource mor
       s2 = mtarget mor
-      smap = sort_map mor
-      msorts = Set.map $ mapSort smap
-      mops = Map.foldWithKey ( \ i ->
-                 flip $ Set.fold ( \ ot ->
-                        let (j, nt) = mapOpSym smap (fun_map mor) (i, ot)
-                        in Rel.setInsert j nt)) Map.empty $ opMap s1
-      mpreds = Map.foldWithKey ( \ i ->
-                 flip $ Set.fold ( \ pt ->
-                        let (j, nt) = mapPredSym smap (pred_map mor) (i, pt)
-                        in Rel.setInsert j nt)) Map.empty $ predMap s1
+      sm = sort_map mor
+      msorts = Set.map $ mapSort sm
   in legalSign s1
   && Set.isSubsetOf (msorts $ sortSet s1) (sortSet s2)
   && Set.isSubsetOf (msorts $ emptySortSet s1) (emptySortSet s2)
-  && isSubOpMap mops (opMap s2)
-  && isSubMapSet mpreds (predMap s2)
+  && isSubOpMap (inducedOpMap sm (fun_map mor) $ opMap s1) (opMap s2)
+  && isSubMapSet (inducedPredMap sm (pred_map mor) $ predMap s1) (predMap s2)
   && legalSign s2
 
 idOrInclMorphism :: (e -> e -> Bool) -> Morphism f e m -> Morphism f e m

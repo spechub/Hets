@@ -180,6 +180,9 @@ class (Eq object, Eq morphism)
          comp :: morphism -> morphism -> Result morphism
          -- | domain and codomain of morphisms
          dom, cod :: morphism -> object
+         -- | the inverse of a morphism
+         inverse :: morphism -> Result morphism
+         inverse _ = fail "Logic.Logic.Category.inverse not implemented"
          -- | test if the signature morphism an inclusion
          isInclusion :: morphism -> Bool
          isInclusion _ = False -- in general no inclusion
@@ -340,11 +343,11 @@ class ( Syntax lid basic_spec symb_items symb_map_items
          signature_colimit :: lid -> Gr sign (Int, morphism)
                            -> Result (sign, Map.Map Int morphism)
          signature_colimit l _ = statErr l "signature_colimit"
-         {- | rename and qualify the symbols, code out overloading,
-            create sentences for the overloading relation and also return
-            the inverse morphism -}
-         qualify :: lid -> SIMPLE_ID -> LIB_ID -> sign
-                 -> Result (morphism, [Named sentence], morphism)
+         {- | rename and qualify the symbols considering incoming morphisms,
+            code out overloading and
+            create sentences for the overloading relation -}
+         qualify :: lid -> SIMPLE_ID -> LIB_ID -> [morphism] -> sign
+                 -> Result (morphism, [Named sentence])
          qualify l _ _ _ = statErr l "qualify"
          -------------------- symbols and raw symbols ---------------------
          {- | Construe a symbol, like f:->t, as a raw symbol.
