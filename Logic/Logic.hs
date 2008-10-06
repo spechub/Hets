@@ -348,7 +348,7 @@ class ( Syntax lid basic_spec symb_items symb_map_items
             create sentences for the overloading relation -}
          qualify :: lid -> SIMPLE_ID -> LIB_ID -> [morphism] -> sign
                  -> Result (morphism, [Named sentence])
-         qualify l _ _ _ = statErr l "qualify"
+         qualify l _ _ _ _ = statErr l "qualify"
          -------------------- symbols and raw symbols ---------------------
          {- | Construe a symbol, like f:->t, as a raw symbol.
             This is a one-sided inverse to the function SymSySigSym
