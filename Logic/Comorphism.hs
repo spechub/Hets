@@ -212,7 +212,7 @@ mkTheoryMapping :: (Monad m) => (sign1 -> m (sign2, [Named sentence2]))
 mkTheoryMapping mapSig mapSen (sign,sens) = do
        (sign',sens') <- mapSig sign
        sens'' <- mapM (mapNamedM $ mapSen sign) sens
-       return (sign', disambiguateSens Set.empty . nameSens $ sens' ++ sens'')
+       return (sign', nameAndDisambiguate $ sens' ++ sens'')
 
 data InclComorphism lid sublogics = InclComorphism
   { inclusion_logic :: lid

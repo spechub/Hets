@@ -14,7 +14,6 @@ module Logic.Prover where
 
 import qualified Common.OrderedMap as OMap
 import qualified Data.Map as Map
-import qualified Data.Set as Set
 
 import Common.AS_Annotation as AS_Anno
 import Common.ProofUtils
@@ -153,7 +152,7 @@ toNamed k s = s { AS_Anno.senAttr    = k }
 toThSens :: Ord a => [AS_Anno.Named a] -> ThSens a b
 toThSens = OMap.fromList . map
     ( \ v -> (AS_Anno.senAttr v, v { senAttr = ThmStatus [] }))
-    . disambiguateSens Set.empty . nameSens
+    . nameAndDisambiguate
 
 -- | theories with a signature and sentences with proof states
 data Theory sign sen proof_tree =

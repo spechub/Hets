@@ -69,7 +69,7 @@ instance Comorphism CoCASL2CoSubCFOL
                     (uniqueBottom defaultCASL2SubCFOL) bsrts sig
             sens2 = map (mapNamed (simplifyFormula simC_FORMULA
                                    . codeCoFormula bsrts)) sens
-        in return (e, disambiguateSens Set.empty . nameSens $ sens1 ++ sens2)
+        in return (e, nameAndDisambiguate $ sens1 ++ sens2)
     map_morphism CoCASL2CoSubCFOL mor@Morphism{msource = src, mtarget = tar} =
         let mkBSrts s = sortsWithBottom
               (formulaTreatment defaultCASL2SubCFOL) s Set.empty

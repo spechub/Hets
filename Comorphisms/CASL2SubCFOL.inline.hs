@@ -100,7 +100,7 @@ instance Comorphism CASL2SubCFOL
                  fail "CASL2SubCFOL: unexpected membership test or cast"
              _ -> return
                  ( encodeSig bsrts sig
-                 , disambiguateSens Set.empty . nameSens $ sens1 ++ sens2)
+                 , nameAndDisambiguate $ sens1 ++ sens2)
     map_morphism (CASL2SubCFOL _ m) mor@Morphism{msource = src, mtarget = tar}
         = return
         mor { msource = encodeSig (sortsWithBottom m src Set.empty) src
