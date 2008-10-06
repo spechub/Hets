@@ -25,6 +25,7 @@ import Common.LibName
 import Common.Result
 
 import Control.Monad
+import Data.Maybe
 import qualified Data.Map as Map
 import qualified Data.Set as Set
 
@@ -32,35 +33,54 @@ mkOverloadedId :: Int -> Id -> Id
 mkOverloadedId n i =
   Id [genToken "Over"] (i : map (stringToId  . (: [])) (show n)) $ posOfId i
 
+mkOrReuseQualSortName :: Sort_map -> SIMPLE_ID -> LIB_ID -> Id -> Id
+mkOrReuseQualSortName sm nodeId libId i =
+  case Map.lookup i sm of
+    Just j | isQualName j -> j
+    _ -> mkQualName nodeId libId i
+
 qualifySig :: SIMPLE_ID -> LIB_ID -> [Morphism f e ()] -> Sign f e
            -> Result (Morphism f e (), [Named (FORMULA f)])
-qualifySig nodeId libId inns sig = let
-  ps = predMap sig
-  os = opMap sig
-  ss = sortSet sig
-  sm = Set.fold (\ s -> Map.insert s (mkQualName nodeId libId s)) Map.empty ss
-  om = createFunMap $ qualOverloaded nodeId libId (mapOpType sm) os
-  pm = Map.map fst $ qualOverloaded nodeId libId (mapPredType sm) ps
-  tar = sig
-    { sortSet = Set.map (mapSort sm) ss
-    , sortRel = Rel.map (mapSort sm) $ sortRel sig
-    , emptySortSet = Set.map (mapSort sm) $ emptySortSet sig
-    , opMap = inducedOpMap sm om os
-    , assocOps = inducedOpMap sm om $ assocOps sig
-    , predMap = inducedPredMap sm pm ps }
-  in return ((embedMorphism () sig tar)
+qualifySig nodeId libId inns sig = do
+  let invms = mapMaybe (maybeResult . inverseMorphism return) inns
+  m <- foldM (morphismUnionM (const id) (const return))
+       (embedMorphism () sig sig) invms
+  let ps = predMap sig
+      os = opMap sig
+      ss = sortSet sig
+      sm = Set.fold (\ s -> Map.insert s
+                    $ mkOrReuseQualSortName (sort_map m) nodeId libId s)
+           Map.empty ss
+      om = createFunMap $ qualOverloaded (Map.map fst $ fun_map m)
+           nodeId libId (mapOpType sm) os
+      pm = Map.map fst
+           $ qualOverloaded (pred_map m) nodeId libId (mapPredType sm) ps
+      tar = sig
+        { sortSet = Set.map (mapSort sm) ss
+        , sortRel = Rel.map (mapSort sm) $ sortRel sig
+        , emptySortSet = Set.map (mapSort sm) $ emptySortSet sig
+        , opMap = inducedOpMap sm om os
+        , assocOps = inducedOpMap sm om $ assocOps sig
+        , predMap = inducedPredMap sm pm ps }
+  return ((embedMorphism () sig tar)
     { sort_map = sm
     , fun_map = om
     , pred_map = pm }, monotonicities sig)
 
-qualOverloaded :: Ord a => SIMPLE_ID -> LIB_ID -> (a -> a)
-               -> Map.Map Id (Set.Set a) -> Map.Map (Id, a) (Id, a)
-qualOverloaded nodeId libId f =
+qualOverloaded :: Ord a => Map.Map (Id, a) Id -> SIMPLE_ID -> LIB_ID
+               -> (a -> a) -> Map.Map Id (Set.Set a) -> Map.Map (Id, a) (Id, a)
+qualOverloaded rn nodeId libId f =
   Map.foldWithKey (\ i s m -> case Set.toList s of
       [] -> error "CASL.Qualify.qualOverloaded"
-      t : r -> let m1 = Map.insert (i, t) (mkQualName nodeId libId i, f t) m
-       in foldr (\ (e, n) -> Map.insert (i, e)
-                 (mkQualName nodeId libId $ mkOverloadedId n i, f e)) m1
+      t : r -> let
+        nt = f t
+        m1 = Map.insert (i, nt) (case Map.lookup (i, nt) rn of
+                          Just j | isQualName j -> j
+                          _ -> mkQualName nodeId libId i, nt) m
+       in foldr (\ (e, n) -> let ne = f e in Map.insert (i, ne)
+                 (case Map.lookup (i, ne) rn of
+                    Just j | isQualName j -> j
+                    _ -> mkQualName nodeId libId $ mkOverloadedId n i, ne)) m1
            $ zip r [2 ..]) Map.empty
 
 createFunMap :: Map.Map (Id, OpType) (Id, OpType)
