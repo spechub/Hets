@@ -15,6 +15,9 @@ will be repeated.
 
 module Proofs.QualifyNames where
 
+import Logic.Coerce
+import Logic.Comorphism
+import Logic.Grothendieck
 import Logic.Logic
 
 import Static.DevGraph
@@ -47,8 +50,15 @@ qualifyLabNode ln dg le (n, lb) = let
   outs = outDG dg n in
   case dgn_theory lb of
     G_theory lid (ExtSign sig syms) sigId sens thId -> do
-        (m1, osens, m2) <- qualify lid (mkSimpleId $ getDGNodeName lb)
-                          (getLIB_ID ln) sig
+        hins <- foldM (\ l (GMorphism cid s sid mor morId) ->
+            if isIdComorphism (Comorphism cid) && language_name lid ==
+               language_name (targetLogic cid) then do
+                hmor <- coerceMorphism (targetLogic cid) lid
+                        "qualifyLabNode" mor
+                return $ hmor : l
+            else return l) [] $ map (\ (_, _, ld) -> dgl_morphism ld) inss
+        (m1, osens) <- qualify lid (mkSimpleId $ getDGNodeName lb)
+                          (getLIB_ID ln) hins sig
         -- compose morphisms with in- and out- going edges
         -- later, keep or merge renamings of ingoing edges
         return (dg, le)
