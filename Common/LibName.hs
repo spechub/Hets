@@ -22,9 +22,17 @@ import Common.Utils
 import Data.List
 import System.Time
 
+omTs :: [Token]
+omTs = [genToken "OM"]
+
 mkQualName :: SIMPLE_ID -> LIB_ID -> Id -> Id
 mkQualName nodeId libId i =
-  Id [genToken "OM"] [i, simpleIdToId nodeId, libIdToId libId] $ posOfId i
+  Id omTs [i, simpleIdToId nodeId, libIdToId libId] $ posOfId i
+
+isQualName :: Id -> Bool
+isQualName (Id ts cs _) = case cs of
+  _ : _ : _ -> ts == omTs
+  _ -> False
 
 libIdToId :: LIB_ID -> Id
 libIdToId li = let
