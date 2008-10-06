@@ -49,10 +49,10 @@ instance Eq (ThmStatus a) where
 instance Ord (ThmStatus a) where
     compare _ _ = EQ
 
-instance (Show b, Pretty a) => Pretty (SenStatus a b) where
+instance (Show b, Pretty a) => Pretty (SenAttr a b) where
     pretty = printSenStatus pretty
 
-printSenStatus :: (a -> Doc) -> SenStatus a b  -> Doc
+printSenStatus :: (a -> Doc) -> SenAttr a b  -> Doc
 printSenStatus fA = fA . sentence
 
 emptySenStatus :: SenStatus a b
