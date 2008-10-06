@@ -30,7 +30,7 @@ Flattening heterogeneity - for each heterogeneous link, compute theory of
 
 -}
 
-module Static.DGFlattening (dg_flattening2,
+module Proofs.DGFlattening (dg_flattening2,
                             libEnv_flattening2,  -- importing
                             dg_flattening3,
                             libEnv_flattening3,  -- disjoint unions
