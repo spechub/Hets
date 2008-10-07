@@ -126,7 +126,7 @@ mapSig sign =
                          (Assign (genToken "b")
                           (Application
                              (Qual_op_name
-                               eqName
+                               (genName $ "eq_" ++ show s)
                                (Op_type Partial [s,s] uBoolean nullRange)
                               nullRange)
                              [varx, vary] nullRange))
@@ -154,7 +154,7 @@ mapSig sign =
                         (Assign (genToken "b")
                           (Application
                              (Qual_op_name
-                               eqName
+                               (genName $ "eq_" ++ show s)
                                (Op_type Partial [s,s] uBoolean nullRange)
                               nullRange)
                              [varx, varx] nullRange))
@@ -200,7 +200,7 @@ mapSig sign =
                         (Assign (genToken "b1")
                           (Application
                              (Qual_op_name
-                               eqName
+                               (genName $ "eq_" ++ show s)
                                (Op_type Partial [s,s] uBoolean nullRange)
                               nullRange)
                              [varx, vary] nullRange))
@@ -216,7 +216,7 @@ mapSig sign =
                         (Assign (genToken "b2")
                           (Application
                              (Qual_op_name
-                               eqName
+                               (genName $ "eq_" ++ show s)
                                (Op_type Partial [s,s] uBoolean nullRange)
                               nullRange)
                              [vary, varx] nullRange))
@@ -268,7 +268,7 @@ mapSig sign =
                         (Assign (genToken "b1")
                           (Application
                              (Qual_op_name
-                               eqName
+                               (genName $ "eq_" ++ show s)
                                (Op_type Partial [s,s] uBoolean nullRange)
                               nullRange)
                              [varx, vary] nullRange))
@@ -282,7 +282,7 @@ mapSig sign =
                         (Assign (genToken "b2")
                           (Application
                              (Qual_op_name
-                               eqName
+                               (genName $ "eq_" ++ show s)
                                (Op_type Partial [s,s] uBoolean nullRange)
                               nullRange)
                              [vary, varz] nullRange))
@@ -299,7 +299,7 @@ mapSig sign =
                         (Assign (genToken "b")
                           (Application
                              (Qual_op_name
-                               eqName
+                               (genName $ "eq_" ++ show s)
                                (Op_type Partial [s,s] uBoolean nullRange)
                               nullRange)
                              [varx, varz] nullRange))
@@ -393,8 +393,8 @@ mapSig sign =
                                 (Assign varbi
                             (Application
                              (Qual_op_name
-                               (genName $ "eq_"++ show s)
-                               (Op_type Partial [s,s] uBoolean nullRange)
+                               (genName $ "eq_"++ show si)
+                               (Op_type Partial [si,si] uBoolean nullRange)
                               nullRange)
                              [xv, yv] nullRange))
                                 nullRange)
