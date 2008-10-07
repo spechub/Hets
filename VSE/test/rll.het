@@ -1,0 +1,139 @@
+%%from Basic/Numbers get Nat % Can't use Nat because of number constants
+
+logic CASL
+spec Nat = 
+ free type Nat ::= null | suc(Nat)
+ ops pre: Nat -> Nat
+ pred __ > __ : Nat * Nat
+ forall n: Nat
+ . pre(suc(n)) = n
+%% ToDo: Axioms are missing
+end
+
+
+logic CASL
+spec list =
+ sort element
+ free type list ::= empty | 
+                    cons(element; list)
+ ops head: list -> element;
+     tail: list -> list
+ forall e: element; l: list 
+ . head(cons(e,l)) = e
+ . tail(cons(e,l)) = l 
+end
+
+spec rllist =
+ Nat
+ then
+ sort element
+ free type rllist ::= rllempty |
+                      rllcons(Nat; element; rllist)
+ ops count: rllist -> Nat;
+     content: rllist -> element;
+     rlltail: rllist -> rllist
+ forall n: Nat; e: element; l: rllist
+ . count(rllcons(n,e,l)) = n
+ . content(rllcons(n,e,l)) = e
+ . rlltail(rllcons(n,e,l)) = l
+end
+
+logic VSE
+spec list_impl =
+ rllist with logic CASL2VSEImport
+ then
+ PROCEDURES
+ wf_rll: IN rllist;
+ i_empty: -> rllist;
+ i_cons:  IN element, IN rllist -> rllist;
+ i_head:  IN rllist -> element;
+ i_tail:  IN rllist -> rllist
+
+. DEFPROCS
+  PROCEDURE wf_rll(rll)
+   BEGIN
+    IF not rll = rllempty THEN
+     IF count(rll) = null THEN abort
+     ELSE 
+      IF not rlltail(rll) = rllempty THEN
+       IF content(rll) = content(rlltail(rll)) THEN abort
+       ELSE wf_rll(rlltail(rll))
+       FI
+      ELSE skip
+      FI
+     FI
+    ELSE skip
+    FI
+  END
+  DEFPROCSEND
+
+. DEFPROCS
+  FUNCTION i_empty()
+  BEGIN
+    RETURN rllempty
+  END;
+
+  FUNCTION i_cons(n,rll)
+  BEGIN
+   DECLARE
+         res : rllist := rllempty;
+    IF rll = rllempty
+    THEN res := rllcons(suc(null), n, rll)
+    ELSE IF content(rll) = n
+         THEN res := rllcons(suc(count(rll)), n, rlltail(rll))
+         ELSE res := rllcons(suc(null), n, rll)
+         FI
+    FI;
+    RETURN res
+   END;
+
+
+  FUNCTION i_head(rll)
+  BEGIN
+   RETURN content(rll)
+  END;
+
+  FUNCTION i_tail(rll)
+  BEGIN
+   DECLARE res: rllist := rllempty;
+   IF not rll = rllempty THEN
+    IF count(rll) > suc(null) THEN
+     res := rllcons(pre(count(rll)),content(rll),rlltail(rll))
+    ELSE
+     res := rlltail(rll)
+    FI
+   FI;
+   RETURN res
+  END
+ DEFPROCSEND
+
+end
+
+
+logic VSE
+
+spec list_goals =
+ list with logic CASL2VSERefine
+
+%% The theorem link
+%%=================
+logic VSE
+view refine:
+ list_goals to list_impl =
+   %% Sort
+   element |-> element,
+   list    |-> rllist,
+   %% Restriction
+   gn_restr_list  |-> wf_rll,
+   %% uniform restriction
+   %%gn_uniform_nats |-> gn_uniform_bin,
+   %% equality
+   gn_eq_element |-> gn_eq_element,
+   gn_eq_list    |-> gn_eq_rllist,
+   %% Implementations
+   gn_empty |-> i_empty,
+   gn_cons  |-> i_cons,
+   gn_head  |-> i_head,
+   gn_tail  |-> i_tail
+
+
