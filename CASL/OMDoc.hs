@@ -15,7 +15,7 @@ Recurses over imported CASL libraries
 module CASL.OMDoc
   where
 
-import qualified OMDoc.HetsDefs as Hets
+import qualified OMDoc.CASLDefs as Hets
 import OMDoc.CASLOutput()
 import CASL.Sign()
 import CASL.AS_Basic_CASL as ABC
