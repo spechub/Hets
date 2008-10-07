@@ -15,7 +15,7 @@ Recurses over imported CASL libraries
 module CASL.OMDoc
   where
 
-import qualified OMDoc.CASLDefs as Hets
+import qualified OMDoc.HetsDefs as Hets
 import OMDoc.CASLOutput()
 import CASL.Sign()
 import CASL.AS_Basic_CASL as ABC
@@ -481,12 +481,13 @@ processTermOM::
   ->[(String, String)] -- ^ variable bindings (Name, Type)
   -> TERM f -- ^ the term to process
   ->OMDoc.OMElement
+-- TODO: use TERM from AS_Basic_CASL, not Search/CASL
 -- Simple_id
-processTermOM _ _
-  (Simple_id id' ) =
-  OMDoc.toElement
-    $
-    (OMDoc.mkOMSimpleVar (show id'))
+-- processTermOM _ _
+--   (Simple_id id' ) =
+--   OMDoc.toElement
+--     $
+--     (OMDoc.mkOMSimpleVar (show id'))
 -- Qual_var
 processTermOM _ vb
   (Qual_var v s _) =
