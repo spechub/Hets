@@ -56,8 +56,8 @@ import Logic.Grothendieck
 import Common.ExtSign
 import Logic.Coerce
 
-
-import OMDoc.Util
+import Common.LibName (LIB_NAME)
+import Data.List (partition)
 
 -- | This datatype represents /something/ that has an origin.
 data WithOrigin a b = WithOrigin { woItem::a, woOrigin::b }
@@ -389,7 +389,7 @@ findIdPredsForId
         )
         allValid
     (eqpr, comp) =
-      partition
+      Data.List.partition
         (\(_, (i, _)) ->
           case woItem i of
             (IdPred _ ipt) ->
@@ -421,7 +421,7 @@ findIdOpsForId
     allValid = findIdentifiersForId collectionMap location id'
     compOp =
       filter
-        (\(_, (i, _)) ->
+        (\ (_, (i, _)) ->
           case woItem i of
             (IdOpM _ iot _ _) ->
               compatibleOperator srel iot otype
@@ -430,8 +430,8 @@ findIdOpsForId
         )
         allValid
     (eqop, comp) =
-      partition
-        (\(_, (i, _)) ->
+      Data.List.partition
+        (\ (_, (i, _)) ->
           case woItem i of
             (IdOpM _ iot _ _) ->
               iot { opKind = opKind otype } == otype
