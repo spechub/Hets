@@ -753,9 +753,9 @@ checkconservativityOfEdge _ gInfo@(GInfo{gi_LIB_NAME = ln,
   Just (GMorphism cid' _ _ morphism3 _) <- return $
                   dgn_sigma $ labDG (lookupDGraph ln libEnv') target
   morphism2' <- coerceMorphism (targetLogic cid) lid
-                "checkconservativityOfEdge" morphism2
+                "checkconservativityOfEdge2" morphism2
   morphism3' <- coerceMorphism (targetLogic cid') lid
-                "checkconservativityOfEdge" morphism3
+                "checkconservativityOfEdge3" morphism3
   let compMor = case comp morphism2' morphism3' of
                Res.Result _ (Just phi) -> phi
                _ -> error "checkconservativtiyOfEdge: comp"
@@ -765,7 +765,7 @@ checkconservativityOfEdge _ gInfo@(GInfo{gi_LIB_NAME = ln,
           _ -> error "checkconservativityOfEdge: computeTheory"
   G_theory lid1 sign1 _ sensSrc1 _ <- return thSrc
   sign2 <- coerceSign lid1 lid "checkconservativityOfEdge.coerceSign" sign1
-  sensSrc2 <- coerceThSens lid1 lid "" sensSrc1
+  sensSrc2 <- coerceThSens lid1 lid "checkconservativityOfEdge1" sensSrc1
   let transSensSrc = propagateErrors
         $ mapThSensValueM (map_sen lid compMor) sensSrc2
   let Res.Result ds res =
@@ -774,7 +774,7 @@ checkconservativityOfEdge _ gInfo@(GInfo{gi_LIB_NAME = ln,
              compMor $ toNamedList (sensTar `OMap.difference` transSensSrc)
       showObls [] = ""
       showObls obls = ", provided that the following proof obligations "
-                      ++"can be discharged:\n"
+                      ++ "can be discharged:\n"
                       ++ concatMap (flip showDoc "\n") obls
       showRes = case res of
                  Just (Just (cst, obls)) -> "The link is "
