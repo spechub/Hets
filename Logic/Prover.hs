@@ -26,6 +26,7 @@ import Data.List
 import Data.Maybe (isJust)
 import Data.Time (TimeOfDay,midnight)
 
+import Control.Monad
 import qualified Control.Concurrent as Concurrent
 
 -- * pack sentences with their proofs
@@ -70,8 +71,12 @@ type ThSens a b = OMap.OMap String (SenStatus a b)
 noSens :: ThSens a b
 noSens = OMap.empty
 
-mapThSensValue :: (a -> b) -> ThSens a c -> ThSens b c
-mapThSensValue f = OMap.map (mapValue f)
+mapThSensValueM :: Monad m => (a -> m b) -> ThSens a c -> m (ThSens b c)
+mapThSensValueM f = foldM (\ m (k, v) -> do
+  let oe =  OMap.ele v
+  ns <- f $ sentence oe
+  let ne = oe { sentence = ns }
+  return $ Map.insert k v { OMap.ele = ne } m) Map.empty . Map.toList
 
 mapThSensStatus :: (b -> c) -> ThSens a b -> ThSens a c
 mapThSensStatus f = OMap.map (mapStatus f)

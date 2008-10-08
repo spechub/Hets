@@ -766,8 +766,8 @@ checkconservativityOfEdge _ gInfo@(GInfo{gi_LIB_NAME = ln,
   G_theory lid1 sign1 _ sensSrc1 _ <- return thSrc
   sign2 <- coerceSign lid1 lid "checkconservativityOfEdge.coerceSign" sign1
   sensSrc2 <- coerceThSens lid1 lid "" sensSrc1
-  let transSensSrc =
-       mapThSensValue (propagateErrors . map_sen lid compMor) sensSrc2
+  let transSensSrc = propagateErrors
+        $ mapThSensValueM (map_sen lid compMor) sensSrc2
   let Res.Result ds res =
           conservativityCheck lid
              (plainSign sign2, toNamedList sensSrc2)
@@ -775,16 +775,10 @@ checkconservativityOfEdge _ gInfo@(GInfo{gi_LIB_NAME = ln,
       showObls [] = ""
       showObls obls = ", provided that the following proof obligations "
                       ++"can be discharged:\n"
-                      ++ concatMap ((++"\n").flip showDoc "") obls
+                      ++ concatMap (flip showDoc "\n") obls
       showRes = case res of
-                 Just (Just (Inconsistent,obls)) ->
-                      "The link is not conservative"++showObls obls
-                 Just (Just (Conservative,obls)) ->
-                      "The link is conservative"++showObls obls
-                 Just (Just (Monomorphic,obls)) ->
-                      "The link is monomorphic"++showObls obls
-                 Just (Just (Definitional,obls)) ->
-                      "The link is definitional"++showObls obls
+                 Just (Just (cst, obls)) -> "The link is "
+                   ++ showConsistencyStatus cst ++ showObls obls
                  _ -> "Could not determine whether link is conservative"
       myDiags = showRelDiags 2 ds
   createTextDisplay "Result of conservativity check"
