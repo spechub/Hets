@@ -27,13 +27,16 @@ import Logic.Prover
 import Static.DevGraph
 import Static.GTheory
 
+import Common.DocUtils
 import Common.ExtSign
 import Common.Id
 import Common.LibName
 import Common.Result
 
 import Data.Graph.Inductive.Graph
+import Data.List
 import qualified Data.Map as Map
+import qualified Data.Set as Set
 import Control.Monad
 
 foldWithKeyM :: Monad m => (k -> v -> a -> m a) -> a -> Map.Map k v -> m a
@@ -44,14 +47,21 @@ qualifyLibEnv le = foldWithKeyM qualifyDGraph le le
 
 qualifyDGraph :: LIB_NAME -> DGraph -> LibEnv -> Result LibEnv
 qualifyDGraph ln dg le = do
+  let es = map (\ (_, _, lb) -> dgl_id lb) $ labEdgesDG dg
+  unless (Set.size (Set.fromList es) == length es) $
+    fail $ "inkonsistent graph for library " ++ showDoc ln ""
   (dg1, le1) <- foldM (uncurry $ qualifyLabNode ln) (dg, le) $ labNodesDG dg
   return $ Map.insert ln dg1 le1
+
+-- consider that loops are part of innDG and outDG that should not be handled
+-- twice
 
 qualifyLabNode :: LIB_NAME -> DGraph -> LibEnv -> LNode DGNodeLab
                -> Result (DGraph, LibEnv)
 qualifyLabNode ln dg le (n, lb) = let
-  inss = innDG dg n
-  outs = outDG dg n in
+  noLoop (x, y, _) = x /= y
+  inss = filter noLoop $ innDG dg n
+  allOuts = outDG dg n in
   case dgn_theory lb of
     G_theory lid (ExtSign sig _) _ sens _ -> do
         hins <- foldM (\ l (GMorphism cid _ _ mor _) ->
@@ -68,16 +78,24 @@ qualifyLabNode ln dg le (n, lb) = let
         let nlb = lb { dgn_theory = G_theory lid
              (makeExtSign lid (cod m1)) startSigId
              (joinSens nThSens $ toThSens osens) startThId }
-        ninss <- mapM (composeWithMorphism True $ G_morphism lid m1 startMorId)
-          inss
-        nouts <- mapM (composeWithMorphism False $ G_morphism lid rm startMorId)
-          outs
-        let changes = map DeleteEdge (outs ++ inss)
-              ++ SetNodeLab lb (n, nlb) : map InsertEdge (ninss ++ nouts)
+        gm1 <- return $ gEmbed $ G_morphism lid m1 startMorId
+        grm <- return $ gEmbed $ G_morphism lid rm startMorId
+        nAllouts <- mapM (composeWithMorphism False gm1 grm) allOuts
+        let (nouts, nloops) = partition noLoop nAllouts
+        nAllinss <- mapM (composeWithMorphism True gm1 grm) $ nloops ++ inss
+        let changes = map DeleteEdge (allOuts ++ inss)
+              ++ SetNodeLab lb (n, nlb) : map InsertEdge (nAllinss ++ nouts)
         return (changesDG dg changes, le)
 
-composeWithMorphism :: Bool -> G_morphism -> LEdge DGLinkLab
+-- consider that hiding edges have a reverse morphism
+
+composeWithMorphism :: Bool -> GMorphism -> GMorphism -> LEdge DGLinkLab
                     -> Result (LEdge DGLinkLab)
-composeWithMorphism dir mor (s, t, lb) = do
-    nmor <- (if dir then id else flip) comp (dgl_morphism lb) $ gEmbed mor
-    return (s, t, lb { dgl_morphism = nmor})
+composeWithMorphism dir mor rmor (s, t, lb) = do
+    let lmor = dgl_morphism lb
+        Result ds mmor = if dir /= isHidingEdge (dgl_type lb)
+          then comp lmor mor else comp rmor lmor
+    case mmor of
+      Nothing -> fail $ showDoc mor "\n" ++ showDoc lb "\n"
+                 ++ shows dir " " ++ shows (s, t) "\n" ++ showRelDiags 2 ds
+      Just nmor -> return (s, t, lb { dgl_morphism = nmor})
