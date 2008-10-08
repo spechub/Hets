@@ -15,10 +15,14 @@ will be repeated.
 
 module Proofs.QualifyNames where
 
+import Proofs.EdgeUtils
+
 import Logic.Coerce
 import Logic.Comorphism
+import Logic.ExtSign
 import Logic.Grothendieck
 import Logic.Logic
+import Logic.Prover
 
 import Static.DevGraph
 import Static.GTheory
@@ -49,8 +53,8 @@ qualifyLabNode ln dg le (n, lb) = let
   inss = innDG dg n
   outs = outDG dg n in
   case dgn_theory lb of
-    G_theory lid (ExtSign sig syms) sigId sens thId -> do
-        hins <- foldM (\ l (GMorphism cid s sid mor morId) ->
+    G_theory lid (ExtSign sig _) _ sens _ -> do
+        hins <- foldM (\ l (GMorphism cid _ _ mor _) ->
             if isIdComorphism (Comorphism cid) && language_name lid ==
                language_name (targetLogic cid) then do
                 hmor <- coerceMorphism (targetLogic cid) lid
@@ -59,6 +63,21 @@ qualifyLabNode ln dg le (n, lb) = let
             else return l) [] $ map (\ (_, _, ld) -> dgl_morphism ld) inss
         (m1, osens) <- qualify lid (mkSimpleId $ getDGNodeName lb)
                           (getLIB_ID ln) hins sig
-        -- compose morphisms with in- and out- going edges
-        -- later, keep or merge renamings of ingoing edges
-        return (dg, le)
+        rm <- inverse m1
+        nThSens <- mapThSensValueM (map_sen lid m1) sens
+        let nlb = lb { dgn_theory = G_theory lid
+             (makeExtSign lid (cod m1)) startSigId
+             (joinSens nThSens $ toThSens osens) startThId }
+        ninss <- mapM (composeWithMorphism True $ G_morphism lid m1 startMorId)
+          inss
+        nouts <- mapM (composeWithMorphism False $ G_morphism lid rm startMorId)
+          outs
+        let changes = map DeleteEdge (outs ++ inss)
+              ++ SetNodeLab lb (n, nlb) : map InsertEdge (ninss ++ nouts)
+        return (changesDG dg changes, le)
+
+composeWithMorphism :: Bool -> G_morphism -> LEdge DGLinkLab
+                    -> Result (LEdge DGLinkLab)
+composeWithMorphism dir mor (s, t, lb) = do
+    nmor <- (if dir then id else flip) comp (dgl_morphism lb) $ gEmbed mor
+    return (s, t, lb { dgl_morphism = nmor})
