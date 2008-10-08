@@ -17,8 +17,9 @@ module CASL.Logic_CASL where
 
 import Common.AS_Annotation
 import Common.Lexer((<<))
-import Text.ParserCombinators.Parsec
+import Common.Result
 
+import Text.ParserCombinators.Parsec
 
 import Logic.Logic
 
@@ -28,7 +29,7 @@ import CASL.ToDoc
 import CASL.SymbolParser
 import CASL.MapSentence
 import CASL.Amalgamability
-import CASL.ATC_CASL()
+import CASL.ATC_CASL ()
 import CASL.Sublogic as SL
 import CASL.Sign
 import CASL.StaticAna
@@ -38,7 +39,7 @@ import CASL.SymbolMapAnalysis
 import CASL.Taxonomy
 import CASL.SimplifySen
 import CASL.CCC.FreeTypes
-import CASL.CCC.OnePoint() -- currently unused
+import CASL.CCC.OnePoint () -- currently unused
 import CASL.Qualify
 #ifdef UNI_PACKAGE
 import CASL.QuickCheck
@@ -88,13 +89,16 @@ trueC _ _ = True
 
 class IdeMorphismExtension m where
    ideMorphismExtension :: m
+   inverseMorphismExtension :: m -> Result m
 
 instance IdeMorphismExtension () where
    ideMorphismExtension = ()
+   inverseMorphismExtension = return
 
 instance (Eq f, Eq e, Eq m, IdeMorphismExtension m) =>
     Category (Sign f e) (Morphism f e m) where
     ide = idMor ideMorphismExtension
+    inverse = inverseMorphism inverseMorphismExtension
     comp = compose (const id)
     dom = msource
     cod = mtarget
