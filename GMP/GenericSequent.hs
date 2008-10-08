@@ -61,3 +61,13 @@ provable phi =
   in all (\c -> any (all provable) (List.map unwrap.snd (match c))) (cnf phi)
 -}
 
+-- | Generic Satisfiability Function
+sat :: (Eq a, Form a b c) => Boole a -> Bool
+sat phi = not $ provable $ neg phi
+
+-- | Function for "normalizing" negation
+neg :: Eq a => Boole a -> Boole a
+neg phi = case phi of
+            Not psi -> psi
+            _       -> phi
+

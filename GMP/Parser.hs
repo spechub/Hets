@@ -11,8 +11,10 @@
 module Parser where
 
 import Text.ParserCombinators.Parsec
+
 import ModalLogic
 import GenericSequent
+import CombLogic
 
 {-
 -- | Main parser
@@ -191,31 +193,29 @@ parsePindex =
 parseMindex :: Parser ()
 parseMindex = return ()
 
-{-
+-- | Main parsing unit for checking provability/satisfiability
+run :: (Eq a, Form a b c) => Parser (Boole a) -> String -> IO ()
+run parser input = case (parse parser "" input) of
+                     Left err -> do putStr "parse error at "
+                                    print err
+                     Right x ->  do --putStrLn (show x{-++" <=> "++input-})
+                                    let isP = provable x
+                                    case isP of
+                                       True -> putStrLn "... is Provable"
+                                       _    -> let isS = sat x
+                                               in case isS of
+                                                    True -> putStrLn "... is not Provable but Satisfiable"
+                                                    _    -> putStrLn "... is not Satisfiable"
 
-run :: Parser (Boole a) -> String -> IO ()
-run p_r input = case (parse p_r "" input) of
-                  Left err -> do putStr "parse error at "
-                                 print err
-                  Right y ->  do let x = preparse y
-                                 --putStrLn (show x{-++" <=> "++input-})
-                                 let isP = provable x
-                                 case isP of
-                                    True -> putStrLn "... is Provable"
-                                    _    -> let isS = sat x
-                                            in case isS of
-                                                 True -> putStrLn "... is not Provable but Satisfiable"
-                                                 _    -> putStrLn "... is not Satisfiable"
-
--- | Runs the parser and the prover and prints the result(s) obtained.
-runLex :: Parser (Boole a) -> String -> IO ()
+-- | Runs the main parsing unit (probably superfluous)
+runLex :: (Eq a, Form a b c) => Parser (Boole a) -> String -> IO ()
 runLex parser input = run (do spaces
-                            res <- parser
-                            eof
-                            return res
-                        ) input
+                              res <- parser
+                              eof
+                              return res
+                          ) input
 
-
+{-
 -- | Auxiliary run function for testing with the input given as string
 runTest :: [Int] -> String -> IO ()
 runTest ml input = do

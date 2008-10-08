@@ -17,16 +17,12 @@ import System.Environment
 import IO
 
 -- | Map logic indexes from [Char] to Int
-transformLogicIndex :: [Char] -> Int
-transformLogicIndex c = case c of
-                         "K"  -> 1
-                         "KD" -> 2
-                         "C"  -> 3
-                         "G"  -> 4
-                         "P"  -> 5
-                         "HM" -> 6
-                         "M"  -> 7
-                         _    -> error "Main.transformLogicIndex"
+indexToInt :: [Char] -> Int
+indexToInt c = case c of
+                 "K"  -> 1; "KD" -> 2
+                 "C"  -> 3; "G"  -> 4
+                 "P"  -> 5; "HM" -> 6
+                 "M"  -> 7; _    -> error "Main.indexToInt"
 
 -- | Function for displying user help 
 showHelp :: IO()
