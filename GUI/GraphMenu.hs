@@ -258,11 +258,11 @@ createGlobalMenu gInfo@(GInfo { gi_LIB_NAME = ln
        [ Menu (Just "Flattening") $ map ( \ (str, cmd) ->
           Button str $ ral $ performProofAction gInfo
                      $ proofMenu gInfo $ return . cmd)
-             [ ("Importings", libEnv_flattening2)
-             , ("Disjoint unions", libEnv_flattening3)
-             , ("Importings and renamings", libEnv_flattening4)
-             , ("Hiding", libEnv_flattening5)
-             , ("Heterogeneity", libEnv_flattening6)]]
+             [ ("Importings", libEnv_flattening_imports)
+             , ("Disjoint unions", libEnv_flattening_dunions)
+             , ("Importings and renamings", libEnv_flattening_renamings)
+             , ("Hiding", libEnv_flattening_hiding)
+             , ("Heterogeneity", libEnv_flattening_heterogen)]]
     , Button "Translate Graph" $ ral $ translateGraph gInfo convGraph showLib
     , Button "Show Logic Graph" $ ral $ showLogicGraph daVinciSort
     , Button "Show Library Graph" $ ral $ showLibGraph gInfo showLib
