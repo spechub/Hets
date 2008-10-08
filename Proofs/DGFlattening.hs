@@ -30,17 +30,17 @@ Flattening heterogeneity - for each heterogeneous link, compute theory of
 
 -}
 
-module Proofs.DGFlattening (dg_flattening2,
-                            libEnv_flattening2,  -- importing
-                            dg_flattening3,
-                            libEnv_flattening3,  -- disjoint unions
-                            dg_flattening4,
-                            libEnv_flattening4,  -- import with renaming
-                            dg_flattening5,
-                            libEnv_flattening5,  -- hiding
-                            dg_flattening6,
-                            libEnv_flattening6,   -- heterogeniety
-                            singleTree_flattening3
+module Proofs.DGFlattening (dg_flattening_imports,
+                            libEnv_flattening_imports,   -- importing
+                            dg_flattening_dunions,
+                            libEnv_flattening_dunions,   -- disjoint unions
+                            dg_flattening_renamings,
+                            libEnv_flattening_renamings, -- import with renaming
+                            dg_flattening_hiding,
+                            libEnv_flattening_hiding,    -- hiding
+                            dg_flattening_heterogen,
+                            libEnv_flattening_heterogen, -- heterogeniety
+                            singleTree_flattening_dunions
                             ) where
 import Logic.Grothendieck
 import Logic.Logic
@@ -64,6 +64,7 @@ import qualified Data.Map as Map
 import Control.Monad
 import Common.Id
 
+
 unzipProofHistory :: ProofHistory -> ProofHistory
 unzipProofHistory ph =
       let
@@ -72,8 +73,16 @@ unzipProofHistory ph =
        in
         [(rls,chngs)]
 
-dg_flattening2 :: LibEnv -> LIB_NAME -> Result DGraph
-dg_flattening2 libEnv ln = do
+lookUpReferenceChain :: LibEnv -> LIB_NAME -> Node -> (LIB_NAME,Node)
+lookUpReferenceChain lib_Env libName nd = let
+  dg = (lookupDGraph libName lib_Env)
+ in
+  case (lookupInRefNodesDG nd dg) of
+   Just (n_lib,n_nd) -> lookUpReferenceChain lib_Env n_lib n_nd
+   Nothing -> (libName,nd)
+
+dg_flattening_imports :: LibEnv -> LIB_NAME -> Result DGraph
+dg_flattening_imports libEnv ln = do
  let
   dg = lookupDGraph ln libEnv
   nds =  nodesDG dg
@@ -92,60 +101,48 @@ dg_flattening2 libEnv ln = do
   (n_dg,_) = updateDGAndChanges dg change_de
  return $ n_dg {proofHistory = dif_hist ++ o_hist}
   where
-
-   delLEdgesDG :: [LEdge DGLinkLab] -> DGraph -> DGraph
-   delLEdgesDG ed dg = case ed of
-    [] -> dg
-    hd : tl -> delLEdgesDG tl ( delLEdgeDG hd dg )
-
-   updateNodes :: LibEnv
-                  -> LIB_NAME
-                  -> DGraph
-                  -> Node
-                  -> Result (LIB_NAME, DGChange)
-   updateNodes lib_Env l_n g n =
+   updateNode :: LibEnv
+                 -> LIB_NAME
+                 -> Node
+                 -> Result (LIB_NAME, DGChange)
+   updateNode lib_Env l_n n =
     let
-     labRf = labDG g n
-     lib_nd = lookupInRefNodesDG n g
+     --(lib,nd) = lookUpReferenceChain lib_Env l_n n
+     dg = lookupDGraph l_n lib_Env
+     labRf = labDG dg n
       -- have to consider references here. computeTheory is applied
       -- to the node at the end of the chain of references only.
     in
-     case lib_nd of
-      Just (lib,nd) -> do
-           updateNodes lib_Env lib g nd
-      _ -> do
-           (_,ndgn_theory) <- computeTheory False lib_Env l_n n
-           return $(l_n,
-                    SetNodeLab labRf (n,
-                    labRf {dgn_theory = ndgn_theory}))
+     do
+      (_,ndgn_theory) <- computeTheory False lib_Env l_n n
+      return $(l_n,
+               SetNodeLab labRf (n,
+               labRf {dgn_theory = ndgn_theory}))
 
    updateLib :: LibEnv -> LIB_NAME -> [Node] -> LibEnv
    updateLib lib_Env l_n nds =
     case nds of
      [] ->  lib_Env
      hd:tl -> let
-               g = lookupDGraph l_n lib_Env
-               (l_name,change) = propagateErrors (updateNodes lib_Env
+               (l_name,change) = propagateErrors (updateNode lib_Env
                                                               l_n
-                                                              g
                                                               hd)
                ref_dg = lookupDGraph l_name lib_Env
                (u_dg,u_change) = updateDGAndChanges ref_dg [change]
-               new_dg = addToProofHistoryDG ([FlatteningOne], u_change)
-                                            u_dg
+               new_dg = addToProofHistoryDG ([FlatteningOne],u_change) u_dg
               in
                updateLib (insert l_name new_dg lib_Env) l_name tl
 
 
-libEnv_flattening2 :: LibEnv -> Result LibEnv
-libEnv_flattening2 lib = do
+libEnv_flattening_imports :: LibEnv -> Result LibEnv
+libEnv_flattening_imports lib = do
         new_lib_env <- mapM (\ (x,_) -> do
-                         z <- dg_flattening2 lib x
+                         z <- dg_flattening_imports lib x
                          return (x, z)) $ Map.toList lib
         return $ Map.fromList new_lib_env
 
-dg_flattening4 :: LibEnv -> LIB_NAME -> DGraph
-dg_flattening4 lib_Env l_n =
+dg_flattening_renamings :: LibEnv -> LIB_NAME -> DGraph
+dg_flattening_renamings lib_Env l_n =
   let
    dg = lookupDGraph l_n lib_Env
    l_edges = labEdgesDG dg
@@ -222,24 +219,24 @@ dg_flattening4 lib_Env l_n =
                            (ch_l ++ changes)
                            dev_g
 
-libEnv_flattening4 :: LibEnv -> Result LibEnv
-libEnv_flattening4 libEnvi =
+libEnv_flattening_renamings :: LibEnv -> Result LibEnv
+libEnv_flattening_renamings libEnv =
        let
         new_lib_env = Prelude.map (\ (x,_) ->
                         let
-                         z = dg_flattening4 libEnvi x
+                         z = dg_flattening_renamings libEnv x
                         in
-                         (x, z)) $ Map.toList libEnvi
+                         (x, z)) $ Map.toList libEnv
        in
         return $ Map.fromList new_lib_env
 
 
-dg_flattening5 :: LibEnv -> LIB_NAME -> DGraph
-dg_flattening5 lib_Envir lib_name =
+dg_flattening_hiding :: LibEnv -> LIB_NAME -> DGraph
+dg_flattening_hiding lib_Env lib_name =
   let
-   dg = lookupDGraph lib_name lib_Envir
+   dg = lookupDGraph lib_name lib_Env
    nods = nodesDG dg
-   nf_dg = applyUpdNf lib_Envir lib_name dg nods
+   nf_dg = applyUpdNf lib_Env lib_name dg nods
    l_edges = labEdgesDG dg
    hids = Prelude.filter (\ (_,_,x) -> (case dgl_type x of
                                          HidingDef -> True
@@ -248,12 +245,15 @@ dg_flattening5 lib_Envir lib_name =
    dhid_change = Prelude.map (\ x -> DeleteEdge(x)) hids
    old_hist = proofHistory dg
    nfHist = proofHistory nf_dg
-   dhid_hist = (take (length nfHist - length old_hist) nfHist)
-                ++ [(dhid_rule, dhid_change)]
+   dhist = (take (length nfHist - length old_hist) nfHist)
+          ++ [(dhid_rule, dhid_change)]
+   dhid_hist_rls =concat $ Prelude.map fst dhist
+   dhid_hist_chngs = concat $ Prelude.map snd dhist
   -- no need to care about references either, as nodes are preserved
   -- after flattening, as well as references.
+   (n_dg,ndhid_hist_chngs) = updateDGAndChanges dg dhid_hist_chngs
   in
-   (applyProofHistory (unzipProofHistory dhid_hist) dg)
+   addToProofHistoryDG (dhid_hist_rls,ndhid_hist_chngs) n_dg
      where
       applyUpdNf :: LibEnv
                     -> LIB_NAME
@@ -271,19 +271,19 @@ dg_flattening5 lib_Envir lib_name =
          in
           applyUpdNf new_Lib lib_Name new_dg tl
 
-libEnv_flattening5 :: LibEnv -> Result LibEnv
-libEnv_flattening5 libEnvi =
+libEnv_flattening_hiding :: LibEnv -> Result LibEnv
+libEnv_flattening_hiding libEnvi =
  let
   new_lib_env = Prelude.map (\ (x,_) ->
        let
-        z = dg_flattening5 libEnvi x
+        z = dg_flattening_hiding libEnvi x
        in
         (x, z)) $ Map.toList libEnvi
  in
   return $ Map.fromList new_lib_env
 
-dg_flattening6 :: LibEnv -> LIB_NAME -> Result DGraph
-dg_flattening6 libEnv ln = do
+dg_flattening_heterogen :: LibEnv -> LIB_NAME -> Result DGraph
+dg_flattening_heterogen libEnv ln = do
  let
   dg = lookupDGraph ln libEnv
   l_edges = labEdgesDG dg
@@ -299,12 +299,6 @@ dg_flattening6 libEnv ln = do
   all_hist = [(het_rules , het_del_changes)]
  return $ applyProofHistory all_hist (lookupDGraph ln updLib)
   where
-   lookUpReferenceChain :: LibEnv -> LIB_NAME -> Node -> (LIB_NAME,Node)
-   lookUpReferenceChain lib_Env libName nd =
-    case (lookupInRefNodesDG nd (lookupDGraph libName lib_Env)) of
-     Just (n_lib,n_nd) -> lookUpReferenceChain lib_Env n_lib n_nd
-     Nothing -> (libName,nd)
-
    updateNodes :: LibEnv
                   -> LIB_NAME
                   -> [Node]
@@ -326,15 +320,15 @@ dg_flattening6 libEnv ln = do
      in
       (updateNodes (Map.insert lname n_dg lib_Env) l_n tl)
 
-libEnv_flattening6 :: LibEnv -> Result LibEnv
-libEnv_flattening6 lib = do
+libEnv_flattening_heterogen :: LibEnv -> Result LibEnv
+libEnv_flattening_heterogen lib = do
  new_lib_env <- mapM (\ (x,_) -> do
-         z <- dg_flattening6 lib x
+         z <- dg_flattening_heterogen lib x
          return (x, z)) $ Map.toList lib
  return $ Map.fromList new_lib_env
 
-dg_flattening3 :: LibEnv -> LIB_NAME -> Result DGraph
-dg_flattening3 libEnv ln = do
+dg_flattening_dunions :: LibEnv -> LIB_NAME -> Result DGraph
+dg_flattening_dunions libEnv ln = do
  let
   dg = lookupDGraph ln libEnv
   all_nodes = nodesDG dg
@@ -633,8 +627,8 @@ filterSpecificationsAndLinks dg nds chgs =
             in
              filterSpecificationsAndLinks n_dg (tl++innNds) (chgs++n_chngs)
 
-singleTree_flattening3 :: LibEnv -> LIB_NAME -> Node -> Result LibEnv
-singleTree_flattening3 libEnv libName nd =
+singleTree_flattening_dunions :: LibEnv -> LIB_NAME -> Node -> Result LibEnv
+singleTree_flattening_dunions libEnv libName nd =
  let
   dg = lookupDGraph libName libEnv
   in_nds = filterIngoing dg [nd]
@@ -642,9 +636,9 @@ singleTree_flattening3 libEnv libName nd =
  in
   return $ insert libName n_dg libEnv
 
-libEnv_flattening3 :: LibEnv -> Result LibEnv
-libEnv_flattening3 lib = do
+libEnv_flattening_dunions :: LibEnv -> Result LibEnv
+libEnv_flattening_dunions lib = do
  new_lib_env <- mapM (\ (l_name,_) -> do
-         n_dg <- dg_flattening3 lib l_name
+         n_dg <- dg_flattening_dunions lib l_name
          return $ (l_name, n_dg)) $ Map.toList lib
  return $ Map.fromList new_lib_env
