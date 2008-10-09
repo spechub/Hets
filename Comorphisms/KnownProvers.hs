@@ -14,14 +14,17 @@ This module provides a map of provers to their most useful composed
 comorphisms.
 -}
 
-module Comorphisms.KnownProvers (KnownProversMap,
-                                 KnownConsCheckersMap,
-                                 defaultGUIProver,
-                                 knownProversGUI,
-                                 knownProversWithKind,
-                                 shrinkKnownProvers,
-                                 showKnownProvers,
-                                 showAllKnownProvers) where
+module Comorphisms.KnownProvers
+  ( KnownProversMap
+  , KnownConsCheckersMap
+  , defaultGUIProver
+  , knownProversGUI
+  , knownProversWithKind
+  , shrinkKnownProvers
+  , showKnownProvers
+  , showAllKnownProvers
+  , isaComorphisms
+  ) where
 
 import qualified Data.Map as Map
 
