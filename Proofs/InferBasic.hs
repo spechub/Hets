@@ -1,11 +1,7 @@
 {- |
 Module      :  $Header$
 Description :  devGraph rule that calls provers for specific logics
-<<<<<<< .mine
-Copyright   :  (c) J. Gerken, T. Mossakowski, K. L�ttich, Uni Bremen 2002-2006
-=======
 Copyright   :  (c) J. Gerken, T. Mossakowski, K. Luettich, Uni Bremen 2002-2006
->>>>>>> .r10777
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 Maintainer  :  till@informatik.uni-bremen.de
 Stability   :  provisional
