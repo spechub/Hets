@@ -62,6 +62,8 @@ instance Language CspCASL
 -- | Instance for CspCASL morphism extension (used for Category)
 instance IdeMorphismExtension SignCSP.CspAddMorphism where
    ideMorphismExtension = SignCSP.emptyCspAddMorphism
+   inverseMorphismExtension = SignCSP.inverseCspAddMorphism
+
 
 -- | Instance of Sentences for CspCASL (missing)
 instance Sentences CspCASL
