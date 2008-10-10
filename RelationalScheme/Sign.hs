@@ -124,17 +124,18 @@ data RSMorphism = RSMorphism
 apply_comp_c_map :: Id -> RSMorphism -> RSMorphism -> Result (Id, RSTMap)
 apply_comp_c_map i imap imor =
     let
-        apply_comp_c_maph :: Id -> RSTMap -> RSMorphism -> Result (Id,RSTMap)
+        apply_comp_c_maph :: Id -> RSTMap -> RSMorphism -> Result (Id, RSTMap)
         apply_comp_c_maph ih imaph imorh =
-            do
-                iM <- Map.lookup ih $ column_map imorh
+          case Map.lookup ih $ column_map imorh of
+            Just iM -> do
                 oM <- comp_c_map (col_map imaph) (col_map iM)
-                return (ih,RSTMap oM)
-    in
-    do
-        iM <- Map.lookup i (column_map imap)
+                return (ih, RSTMap oM)
+            Nothing -> fail "apply_comp_c_map"
+    in case Map.lookup i $ column_map imap of
+      Just iM -> do
         oM <- apply_comp_c_maph i iM imor
         return $ oM
+      Nothing -> fail "apply_comp_c_map,imap"
 
 -- composition of Rel morphisms
 comp_rst_mor ::   RSMorphism -> RSMorphism -> Result RSMorphism
