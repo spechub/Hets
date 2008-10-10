@@ -6,9 +6,9 @@ import Common.SimpPretty
 import Common.ATerm.Lib
 import Common.ATerm.ReadWrite
 import Common.ATerm.Unshared
+import Common.Utils (readMaybe)
 import qualified Data.Map as Map
 import Data.List (isPrefixOf)
-import GHC.Read
 
 main :: IO ()
 main = do args <- getArgs
@@ -37,13 +37,14 @@ usage cmd _ = do
 
 generateRandomLists :: String -> IO [(Int,Int)]
 generateRandomLists upstr  = do
-    up <- case readEither upstr of
-          Right u -> do putStrLn ("generating list with "++show u
-                                  ++" items")
-                        return u
-          Left  m -> do putStrLn ("no upper_number read\n"++
-                                  m++"\ngenerating list with 2000 items")
-                        return 2000
+    up <- case readMaybe upstr of
+      Just u -> do
+        putStrLn $ "generating list with "++ show u ++ " items"
+        return u
+      Nothing -> do
+        putStrLn "no upper_number read"
+        putStrLn "generating list with 2000 items"
+        return 2000
     genIList up
 
 genIList :: Int -> IO [(Int,Int)]

@@ -14,6 +14,7 @@ Utility functions that can't be found in the libraries
 
 module Common.Utils
   ( joinWith
+  , readMaybe
   , mapAccumLM
   , keepMins
   , splitOn
@@ -28,8 +29,8 @@ module Common.Utils
   , composeMap
   ) where
 
+import Data.Char
 import Data.List
-
 import qualified Data.Map as Map
 import qualified Data.Set as Set
 
@@ -38,6 +39,11 @@ import System.IO.Error
 import Control.Monad
 
 import qualified Control.Exception as Exception
+
+readMaybe :: Read a => String -> Maybe a
+readMaybe s = case filter (all isSpace . snd) $ reads s of
+  [(a, _)] -> Just a
+  _ -> Nothing
 
 -- | generalization of mapAccumL to monads
 mapAccumLM :: Monad m
