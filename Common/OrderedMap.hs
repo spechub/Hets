@@ -56,7 +56,8 @@ instance Ord a => Ord (ElemWOrd a) where
 type OMap a b = Map.Map a (ElemWOrd b)
 
 lookup :: (Monad m,Functor m,Ord k) => k -> OMap k a -> m a
-lookup k m = liftM ele $ Map.lookup k m
+lookup k m = maybe (fail "Common.OrderedMap.lookup")
+  (return . ele) $ Map.lookup k m
 
 insert :: Ord k => k -> a -> OMap k a -> OMap k a
 insert k e m = Map.insertWith (\ ne oe -> oe {ele = ele ne})
