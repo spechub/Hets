@@ -13,8 +13,8 @@ In this module we introduce flattening of the graph:
 Flattening importings - deleting all inclusion links,
  and inserting a new node, with new computed theory (computeTheory).
 
-Flattening disjoint unions - for each node with more than two importings
- modify importings in such a way that at each level, only disjoint signatures
+Flattening non-disjoint unions - for each node with more than two importings
+ modify importings in such a way that at each level, only non-disjoint signatures
  are imported.
 
 Flattening renaming - deterimining renaming link,
@@ -33,7 +33,7 @@ Flattening heterogeneity - for each heterogeneous link, compute theory of
 module Proofs.DGFlattening (dg_flattening_imports,
                             libEnv_flattening_imports,   -- importing
                             dg_flattening_dunions,
-                            libEnv_flattening_dunions,   -- disjoint unions
+                            libEnv_flattening_dunions,   -- non-disjoint unions
                             dg_flattening_renamings,
                             libEnv_flattening_renamings, -- import with renaming
                             dg_flattening_hiding,
@@ -64,7 +64,7 @@ import qualified Data.Map as Map
 import Control.Monad
 import Common.Id
 
-
+-- putting all the history together
 unzipProofHistory :: ProofHistory -> ProofHistory
 unzipProofHistory ph =
       let
@@ -73,6 +73,8 @@ unzipProofHistory ph =
        in
         [(rls,chngs)]
 
+-- given a node in a library, gives the node at the end of the reference chain
+-- in the library
 lookUpReferenceChain :: LibEnv -> LIB_NAME -> Node -> (LIB_NAME,Node)
 lookUpReferenceChain lib_Env libName nd = let
   dg = (lookupDGraph libName lib_Env)
@@ -81,6 +83,7 @@ lookUpReferenceChain lib_Env libName nd = let
    Just (n_lib,n_nd) -> lookUpReferenceChain lib_Env n_lib n_nd
    Nothing -> (libName,nd)
 
+-- this function performs flattening of import links for a given developement graph
 dg_flattening_imports :: LibEnv -> LIB_NAME -> Result DGraph
 dg_flattening_imports libEnv ln = do
  let
@@ -133,7 +136,7 @@ dg_flattening_imports libEnv ln = do
               in
                updateLib (insert l_name new_dg lib_Env) l_name tl
 
-
+-- this function performs flattening of imports for the whole library
 libEnv_flattening_imports :: LibEnv -> Result LibEnv
 libEnv_flattening_imports lib = do
         new_lib_env <- mapM (\ (x,_) -> do
@@ -141,6 +144,8 @@ libEnv_flattening_imports lib = do
                          return (x, z)) $ Map.toList lib
         return $ Map.fromList new_lib_env
 
+-- this function performs flattening of imports with renamings
+-- links for a given developement graph
 dg_flattening_renamings :: LibEnv -> LIB_NAME -> DGraph
 dg_flattening_renamings lib_Env l_n =
   let
@@ -219,6 +224,7 @@ dg_flattening_renamings lib_Env l_n =
                            (ch_l ++ changes)
                            dev_g
 
+-- this function performs flattening of imports with renamings for a given developement graph
 libEnv_flattening_renamings :: LibEnv -> Result LibEnv
 libEnv_flattening_renamings libEnv =
        let
@@ -230,7 +236,7 @@ libEnv_flattening_renamings libEnv =
        in
         return $ Map.fromList new_lib_env
 
-
+-- this function performs flattening of hiding links for a given developement graph
 dg_flattening_hiding :: LibEnv -> LIB_NAME -> DGraph
 dg_flattening_hiding lib_Env lib_name =
   let
@@ -271,6 +277,7 @@ dg_flattening_hiding lib_Env lib_name =
          in
           applyUpdNf new_Lib lib_Name new_dg tl
 
+-- this function performs flattening of heterogeniety for the whole library
 libEnv_flattening_hiding :: LibEnv -> Result LibEnv
 libEnv_flattening_hiding libEnvi =
  let
@@ -282,6 +289,8 @@ libEnv_flattening_hiding libEnvi =
  in
   return $ Map.fromList new_lib_env
 
+-- this function performs flattening of heterogeniety
+-- for a given developement graph
 dg_flattening_heterogen :: LibEnv -> LIB_NAME -> Result DGraph
 dg_flattening_heterogen libEnv ln = do
  let
@@ -320,6 +329,7 @@ dg_flattening_heterogen libEnv ln = do
      in
       (updateNodes (Map.insert lname n_dg lib_Env) l_n tl)
 
+-- this function performs flattening of heterogeniety for the whole library
 libEnv_flattening_heterogen :: LibEnv -> Result LibEnv
 libEnv_flattening_heterogen lib = do
  new_lib_env <- mapM (\ (x,_) -> do
@@ -327,18 +337,20 @@ libEnv_flattening_heterogen lib = do
          return (x, z)) $ Map.toList lib
  return $ Map.fromList new_lib_env
 
+-- this function performs flattening of non-disjoint unions for the given
+-- DGraph
 dg_flattening_dunions :: LibEnv -> LIB_NAME -> Result DGraph
 dg_flattening_dunions libEnv ln = do
  let
   dg = lookupDGraph ln libEnv
   all_nodes = nodesDG dg
   imp_nds = Prelude.filter (\ x -> ( length (innDG dg x) > 1)) all_nodes
-  lower_nodes = Prelude.filter (\ x -> (outDG dg x == [])) (nodesDG dg)
+ --lower_nodes = Prelude.filter (\ x -> (outDG dg x == [])) (nodesDG dg)
  -- as previously, no need to care about reference nodes,
  -- as previous one remain same.
- return $ filterSpecificationsAndLinks (applyToAllNodes dg imp_nds) lower_nodes []
+ return $ applyToAllNodes dg imp_nds
 
-
+-- this funciton given a list og G_sign returns intersection of them
 getIntersectionOfAll :: [G_sign] -> Result G_sign
 getIntersectionOfAll signs =
   case signs of
@@ -361,6 +373,8 @@ getIntersectionOfAll signs =
              True -> return n_signtr
              False -> getIntersectionOfAll (n_signtr:tl)
 
+-- this function given a list of all possible combinations of nodes
+-- of a given length
 getAllCombinations :: Int -> [Node] -> [[Node]]
 getAllCombinations 0 _  = [ [] ]
 getAllCombinations n xs = [ y:ys | y:xs' <- tails xs
@@ -416,10 +430,11 @@ createLabels dg tripls = case tripls of
         labels = Prelude.map (\ (x,
                                  y,
                                  G_sign lid (ExtSign sign symb) ind) -> let
-             names = show $ Prelude.map (\ z -> let
-                                                   NodeName sid _ _ = dgn_name $ labDG dg z
-                                                  in
-                                                   sid) x
+             n_map = (\ z -> let
+                              NodeName sid _ _ = dgn_name $ labDG dg z
+                             in
+                              sid)
+             names = show $ Prelude.map n_map  x
              s_id = mkSimpleId $ "Flattening 3:"++(names)
              n_theory = noSensGTheory lid (ExtSign sign symb) ind
              n_name = makeName s_id
@@ -429,6 +444,7 @@ createLabels dg tripls = case tripls of
        in
         return labels
 
+-- create links connecting given node with a list of nodes
 createLinks :: DGraph -> (LNode DGNodeLab) -> [Node] -> DGraph
 createLinks dg  _ [] = dg
 createLinks dg (nd,lb) (hd:tl) =
@@ -448,6 +464,9 @@ createLinks dg (nd,lb) (hd:tl) =
   in
    createLinks n_dg (nd,lb) tl
 
+-- given an element in the level and a lower link, function searches
+-- elements in the given level, which are suitable for inserting a link 
+-- connecting given element.
 searchForLink :: ([Node],Node,G_sign)
                  -> [([Node],Node,G_sign)]
                  -> [Node]
@@ -457,6 +476,8 @@ searchForLink el@(nds1,_,_) down_level = case down_level of
                            then nd2:searchForLink el tl
                                  else searchForLink el tl
 
+-- given two levels of the graph, insert links between them, so that the
+-- signatures are imported properly
 linkLevels :: DGraph
               -> [([Node],Node,G_sign)]
               -> [([Node],Node,G_sign)]
@@ -470,6 +491,8 @@ linkLevels dg up_level down_level = case up_level of
            in
             linkLevels n_dg tl down_level
 
+-- given a list of the lower nodes, gives a DGraph with a first level 
+-- of nodes inserted in this graph
 createFirstLevel :: DGraph -> [Node] -> (DGraph,[([Node],Node,G_sign)])
 createFirstLevel dg nds =
   let
@@ -500,6 +523,8 @@ createFirstLevel dg nds =
          in
           (lnk_dg,atch_level)
 
+-- given a level of nodes and a graph, constructs upper level,
+-- inserting the nodes of the new level to the DGraph
 createNewLevel :: DGraph
                   -> [Node]
                   -> [([Node],Node,G_sign)]
@@ -531,7 +556,6 @@ createNewLevel c_dg nds tripls = case tripls of
 
  -- iterate the procedure for all levels
  -- (the level passed is already inserted in the graph)
-
 iterateForAllLevels :: DGraph
                         -> [Node]
                         -> [([Node],Node,G_sign)]
@@ -546,6 +570,7 @@ iterateForAllLevels i_dg nds init_level =
               _ -> iterateForAllLevels n_dg nds n_level
    True -> i_dg
 
+-- applies itteration for all the nodes in the graph
 applyToAllNodes :: DGraph -> [Node] -> DGraph
 applyToAllNodes a_dg nds = case nds of
  [] ->  a_dg
@@ -564,7 +589,8 @@ applyToAllNodes a_dg nds = case nds of
             applyToAllNodes final_dg
                             {proofHistory =  [(rules,changes)] ++ o_hist}
                             tl
-
+-- given a lower level of nodes, gives upper level of nodes,
+-- which are ingoing nodes for the lower level
 filterIngoing :: DGraph -> [Node] -> [Node]
 filterIngoing dg nds = case nds of
  [] -> []
@@ -576,7 +602,20 @@ filterIngoing dg nds = case nds of
 -- part for deleting specifications with equivalent symbols, and composing
 -- corresponding links.
 
-filterSpecificationsAndLinksAux :: DGraph -> [LEdge DGLinkLab] -> [[LEdge DGLinkLab]] -> [DGChange]
+-- this function takes a link1, and a list of links, which are ingoing
+-- links to the source of link1. Then, if one of the signatures of the
+-- target of link1 is the same as signature of one of the sources of links,
+-- then I do the following:
+--    1. All the incoming links to source are put to the target of link1
+--    2. Link1 and the corresponding link are composed
+--    3. All of the outgoing links of a corresponding link are deleted
+--       and put to the target of link1.
+
+{- 
+filterSpecificationsAndLinksAux :: DGraph
+                                   -> [LEdge DGLinkLab]
+                                   -> [[LEdge DGLinkLab]]
+                                   -> [DGChange]
 filterSpecificationsAndLinksAux dg  links0 links1 = case links0 of
  [] -> []
  (nd2,nd1,lab1):tl0 ->
@@ -607,7 +646,8 @@ filterSpecificationsAndLinksAux dg  links0 links1 = case links0 of
                  n_chngs ++ filterSpecificationsAndLinksAux n_dg tl0  (tail links1)
       False -> []
 
-
+-- this function applies filterSpecificationsAndLinks to all nodes
+-- at the buttom level, going up untill all the nodes of the graph are considered
 filterSpecificationsAndLinks :: DGraph -> [Node] -> [DGChange]-> DGraph
 filterSpecificationsAndLinks dg nds chgs =
   case nds of
@@ -626,8 +666,14 @@ filterSpecificationsAndLinks dg nds chgs =
              (n_dg,n_chngs) = updateDGAndChanges dg chngs
             in
              filterSpecificationsAndLinks n_dg (tl++innNds) (chgs++n_chngs)
+-}
 
-singleTree_flattening_dunions :: LibEnv -> LIB_NAME -> Node -> Result LibEnv
+-- this function takes a node and performs flattening
+-- of non-disjoint unions for the ingoing tree of nodes to the given node
+singleTree_flattening_dunions :: LibEnv 
+                                 -> LIB_NAME
+                                 -> Node
+                                 -> Result LibEnv
 singleTree_flattening_dunions libEnv libName nd =
  let
   dg = lookupDGraph libName libEnv
@@ -636,6 +682,8 @@ singleTree_flattening_dunions libEnv libName nd =
  in
   return $ insert libName n_dg libEnv
 
+-- this functions performs flattening of
+-- non-disjoint unions for the whole library
 libEnv_flattening_dunions :: LibEnv -> Result LibEnv
 libEnv_flattening_dunions lib = do
  new_lib_env <- mapM (\ (l_name,_) -> do
