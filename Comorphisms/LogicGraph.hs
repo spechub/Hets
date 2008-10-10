@@ -204,7 +204,7 @@ logicGraph = emptyLogicGraph
     , squares = squareMap }
 
 lookupSquare :: AnyComorphism -> AnyComorphism -> LogicGraph -> Result [Square]
-lookupSquare com1 com2 lg = do
+lookupSquare com1 com2 lg = maybe (fail "lookupSquare") return $ do
                             sqL1 <- Map.lookup (com1, com2) $ squares lg
                             sqL2 <- Map.lookup (com2, com1) $ squares lg
                             return $ nub $ sqL1 ++ (map mirrorSquare sqL2)
