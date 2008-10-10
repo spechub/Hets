@@ -114,8 +114,7 @@ map_qualId mor qid =
     let
         (tid, rid, rn) = case qid of
             RSQualId i1 i2 rn1 -> (i1, i2,rn1)
-    in
-        do
+    in maybe (fail "map_qualId") return $ do
             mtid <- Map.lookup tid $ table_map mor
             rmor <- Map.lookup tid $ column_map mor
             mrid <- Map.lookup rid $ col_map rmor
