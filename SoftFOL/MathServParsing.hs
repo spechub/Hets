@@ -15,7 +15,7 @@ Functions for parsing MathServ output into a MathServResponse structure.
 module SoftFOL.MathServParsing where
 
 import SoftFOL.MathServCommunication
-import Common.Utils (getEnvSave)
+import Common.Utils (getEnvSave, readMaybe)
 
 import Network.URI
 import Network.Service
@@ -30,8 +30,6 @@ import Data.Char (toUpper, isDigit)
 import Data.List
 import Data.Maybe
 import Data.Time (TimeOfDay, timeToTimeOfDay)
-
-import GHC.Read
 
 -- * Datatypes for MathServ services
 
@@ -51,10 +49,9 @@ instance Read ServerAddr where
                                       else span isDigit $ tail portRest
                         portN = if null port
                                 then 8080
-                                else either (const 8080) id
-                                         (readEither port)
-                    in [(ServerAddr {serverName = n,
-                                   portNumber = portN },
+                                else maybe 8080 id
+                                         (readMaybe port)
+                    in [(ServerAddr { serverName = n, portNumber = portN },
                         rest)]
 
 defaultServer :: ServerAddr
@@ -238,7 +235,7 @@ callMathServ :: MathServCall -- ^ needed data to do a MathServ call
              -- ^ Left (SOAP error) or Right (MathServ output or error message)
 callMathServ call =
     do
-       serverPort <- getEnvSave defaultServer "HETS_MATHSERVE" readEither
+       serverPort <- getEnvSave defaultServer "HETS_MATHSERVE" readMaybe
        maybe (return $ Left $ "MathServe not running!")
              (\ endPoint -> do
                  res <- soapCall endPoint $ mkProveProblem call
@@ -356,8 +353,8 @@ parseProvingProblem rdfTree =
 parseCalculus :: XmlTree -- ^ XML tree to parse
               -> MWCalculus -- ^ parsed Calculus node
 parseCalculus rdfTree =
-    either (\_ -> UnknownCalc) id
-           (readEither (filterUnderline False calc) :: Either String MWCalculus)
+    maybe UnknownCalc id
+           (readMaybe (filterUnderline False calc) :: Maybe MWCalculus)
     where
       calculusXPath = xpathTagAttr "calculus"
       calc = (getAnchor $ getXText calculusXPath rdfTree)
@@ -372,13 +369,12 @@ parseStatus :: XmlTree -- ^ XML tree to parse
             -> MWStatus -- ^ parsed Status node
 parseStatus rdfTree =
     let foAtp =
-          either (\_ ->
-                       either (error $ "Could not classify status of proof: "
+          maybe (maybe (error $ "Could not classify status of proof: "
                                          ++ statusStr)
                          Unsolved
-                         (readEither statusStr :: Either String UnsolvedStatus))
+                         (readMaybe statusStr :: Maybe UnsolvedStatus))
                  Solved
-                 ((readEither statusStr) :: Either String SolvedStatus)
+                 (readMaybe statusStr :: Maybe SolvedStatus)
     in MWStatus {solved      = case foAtp of
                                  Solved _   -> True
                                  Unsolved _ -> False,

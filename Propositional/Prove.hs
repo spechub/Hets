@@ -18,43 +18,43 @@ module Propositional.Prove
     )
     where
 
-import qualified Logic.Prover as LP
-import qualified Propositional.Sign as Sig
 import qualified Propositional.AS_BASIC_Propositional as AS_BASIC
-import qualified Propositional.ProverState as PState
-import qualified Propositional.Morphism as PMorphism
-import qualified GUI.GenericATPState as ATPState
 import qualified Propositional.Conversions as Cons
+import qualified Propositional.Conversions as PC
+import qualified Propositional.Morphism as PMorphism
+import qualified Propositional.ProverState as PState
+import qualified Propositional.Sign as Sig
 import Propositional.Sublogic(PropSL,top)
 
-import qualified Common.AS_Annotation as AS_Anno
 import Proofs.BatchProcessing
-import qualified Common.Result as Result
-import qualified Common.Id as Id
 
-import qualified Control.Exception as Exception
-import GHC.Read (readEither)
-import qualified Control.Concurrent as Concurrent
+import qualified Logic.Prover as LP
 
-import Char
-import Data.Maybe
-import Data.List
-import Data.Time (TimeOfDay,timeToTimeOfDay)
-
-import System
-import Directory
-
-import ChildProcess as CP
-import ProcessClasses
-import Text.Regex
-
-import HTk
-
+import qualified GUI.GenericATPState as ATPState
 import GUI.GenericATP
 import GUI.HTkUtils
-import IO
+
+import HTk
+import ProcessClasses
+import ChildProcess as CP
+
+import Common.Utils (readMaybe)
+import qualified Common.AS_Annotation as AS_Anno
+import qualified Common.Id as Id
 import qualified Common.OrderedMap as OMap
-import qualified Propositional.Conversions as PC
+import qualified Common.Result as Result
+
+import qualified Control.Concurrent as Concurrent
+import qualified Control.Exception as Exception
+import Data.Char
+import Data.List
+import Data.Maybe
+import Data.Time (TimeOfDay,timeToTimeOfDay)
+import System.Directory
+import System.Cmd
+import System.Exit
+import System.IO
+import Text.Regex
 
 -- * Prover implementation
 
@@ -182,10 +182,9 @@ parseTactic_script :: Int -- ^ default time limit (standard:
                    -> LP.Tactic_script
                    -> ATPState.ATPTactic_script
 parseTactic_script tLimit (LP.Tactic_script ts) =
-    either (\_ -> ATPState.ATPTactic_script { ATPState.ts_timeLimit = tLimit,
-                                              ATPState.ts_extraOpts = [] })
-           id
-           (readEither ts :: Either String ATPState.ATPTactic_script)
+    maybe (ATPState.ATPTactic_script { ATPState.ts_timeLimit = tLimit,
+                                       ATPState.ts_extraOpts = [] })
+           id $ readMaybe ts
 
 -- ** command line functions
 

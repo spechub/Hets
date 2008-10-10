@@ -18,15 +18,13 @@ import Logic.Prover
 
 import qualified Common.AS_Annotation as AS_Anno
 import qualified Data.Map as Map
-import Common.Utils (getEnvSave)
+import Common.Utils (getEnvSave, readMaybe)
 import Common.Result
 
 import Data.List
 import Data.Maybe (isJust)
 import qualified Control.Exception as Exception
 import qualified Control.Concurrent as Conc
-
-import GHC.Read
 
 import HTk hiding (value)
 import qualified HTk (value)
@@ -196,7 +194,7 @@ getValueSafe defaultTimeLimit timeEntry =
 getBatchTimeLimit :: String -- ^ ENV-variable containing batch time limit
                   -> IO Int
 getBatchTimeLimit env =
-    getEnvSave batchTimeLimit env readEither
+    getEnvSave batchTimeLimit env readMaybe
 
 {- |
   Text displayed by the batch mode window.
@@ -536,7 +534,7 @@ genericATPgui atpFun isExtraOptions prName thName th pt = do
                        text $ "Save "
                    ++ (removeFirstDot $ problemOutput $ fileExtensions atpFun)]
 
-  enableSaveCheckBox <- getEnvSave False "HETS_ENABLE_BATCH_SAVE" readEither
+  enableSaveCheckBox <- getEnvSave False "HETS_ENABLE_BATCH_SAVE" readMaybe
   when enableSaveCheckBox $
        pack saveProblem_batch_checkBox [Expand Off, Fill None, Side AtBottom]
 

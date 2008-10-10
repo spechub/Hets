@@ -156,11 +156,11 @@ filterMapWithSet s = Map.filterWithKey selected
   parse-check-function returns a Left value -}
 getEnvSave :: a -- ^ default value
            -> String -- ^ name of environment variable
-           -> (String -> Either b a) -- ^ parse and check value of variable;
+           -> (String -> Maybe a) -- ^ parse and check value of variable;
                          -- for every b the default value is returned
            -> IO a
 getEnvSave defValue envVar readFun = Exception.catch
-  (getEnv envVar >>= return . either (const defValue) id . readFun)
+  (getEnv envVar >>= return . maybe defValue id . readFun)
   $ \ e -> case e of
              Exception.IOException ie ->
                  if isDoesNotExistError ie -- == NoSuchThing
@@ -171,4 +171,4 @@ getEnvSave defValue envVar readFun = Exception.catch
 getEnvDef :: String -- ^ environment variable
           -> String -- ^  default value
           -> IO String
-getEnvDef envVar defValue = getEnvSave defValue envVar Right
+getEnvDef envVar defValue = getEnvSave defValue envVar Just

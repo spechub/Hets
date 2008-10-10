@@ -19,11 +19,20 @@ module OWL.ProvePellet (pelletProver,pelletGUI,pelletCMDLautomatic,
 import Logic.Prover
 
 import OWL.Sign
--- import OWL.PrintOWL
 import OWL.PrintRDF
 import OWL.AS
 
+import HTk
+
+import GUI.GenericATP
+import GUI.GenericATPState
+import GUI.HTkUtils
+
+import Proofs.BatchProcessing
+
+import Common.Utils (readMaybe)
 import qualified Common.AS_Annotation as AS_Anno
+import Common.DefaultMorphism
 import qualified Common.Result as Result
 import qualified Data.Map as Map
 
@@ -33,20 +42,9 @@ import Data.Time.Clock (UTCTime(..), secondsToDiffTime, getCurrentTime)
 
 import qualified Control.Concurrent as Concurrent
 
-import HTk
 import System
 import System.IO
 import System.Process
-import GUI.GenericATP
-import GUI.GenericATPState
-import Proofs.BatchProcessing
-import Common.DefaultMorphism
-import GUI.HTkUtils
-
--- import GUI.GenericATP (guiDefaultTimeLimit)
--- import GUI.GenericATPState
-import GHC.Read (readEither)
-
 
 data PelletProverState = PelletProverState
                         { ontologySign :: Sign
@@ -573,11 +571,9 @@ parseTactic_script :: Int -- ^ default time limit (standard:
                    -> Tactic_script
                    -> ATPTactic_script
 parseTactic_script tLimit extOpts (Tactic_script ts) =
-    either (\_ -> ATPTactic_script { ts_timeLimit = tLimit,
-                                     ts_extraOpts = extOpts })
-           id
-           (readEither ts :: Either String ATPTactic_script)
-
+    maybe (ATPTactic_script { ts_timeLimit = tLimit,
+                              ts_extraOpts = extOpts })
+           id $ readMaybe ts
 
 mkAssMap :: [Sentence]
          -> Map.Map IndividualURI OwlClassURI
