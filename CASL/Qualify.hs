@@ -94,7 +94,6 @@ inverseMorphism invExt m = do
   let src = msource m
       tar = mtarget m
       sm = sort_map m
-      im = Map.fromList $ map (\ (s1, s2) -> (s2, s1)) $ Map.toList sm
   unless (sortSet tar == Set.map (mapSort sm) (sortSet src))
     $ fail "no injective CASL sort mapping"
   unless (opMap tar == inducedOpMap sm (fun_map m) (opMap src))
@@ -102,10 +101,10 @@ inverseMorphism invExt m = do
   unless (predMap tar == inducedPredMap sm (pred_map m) (predMap src))
     $ fail "no injective CASL pred mapping"
   return (embedMorphism iExt tar src)
-    { sort_map = im
+    { sort_map = Map.fromList $ map (\ (s1, s2) -> (s2, s1)) $ Map.toList sm
     , fun_map = Map.fromList $ map (\ ((i, t), (j, k)) ->
-                  ((j, mapOpType im t), (i, k)))
+                  ((j, mapOpType sm t), (i, k)))
                $ Map.toList $ fun_map m
     , pred_map = Map.fromList $ map (\ ((i, t), j) ->
-                  ((j, mapPredType im t), i)) $ Map.toList $ pred_map m
+                  ((j, mapPredType sm t), i)) $ Map.toList $ pred_map m
     , morKind = if morKind m == IdMor then IdMor else OtherMor }
