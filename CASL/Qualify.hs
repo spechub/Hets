@@ -52,9 +52,9 @@ qualifySig nodeId libId inns sig = do
                     $ mkOrReuseQualSortName (sort_map m) nodeId libId s)
            Map.empty ss
       om = createFunMap $ qualOverloaded (Map.map fst $ fun_map m)
-           nodeId libId (mapOpType sm) os
+           nodeId libId (mapOpType sm) (\ o -> o { opKind = Partial }) os
       pm = Map.map fst
-           $ qualOverloaded (pred_map m) nodeId libId (mapPredType sm) ps
+           $ qualOverloaded (pred_map m) nodeId libId (mapPredType sm) id ps
       tar = sig
         { sortSet = Set.map (mapSort sm) ss
         , sortRel = Rel.map (mapSort sm) $ sortRel sig
@@ -68,19 +68,20 @@ qualifySig nodeId libId inns sig = do
     , pred_map = pm }, monotonicities sig)
 
 qualOverloaded :: Ord a => Map.Map (Id, a) Id -> SIMPLE_ID -> LIB_ID
-               -> (a -> a) -> Map.Map Id (Set.Set a) -> Map.Map (Id, a) (Id, a)
-qualOverloaded rn nodeId libId f =
+               -> (a -> a) -> (a -> a) -> Map.Map Id (Set.Set a)
+               -> Map.Map (Id, a) (Id, a)
+qualOverloaded rn nodeId libId f g =
   Map.foldWithKey (\ i s m -> case Set.toList s of
       [] -> error "CASL.Qualify.qualOverloaded"
       t : r -> let
-        nt = f t
-        m1 = Map.insert (i, t) (case Map.lookup (i, t) rn of
+        gt = g t
+        m1 = Map.insert (i, gt) (case Map.lookup (i, gt) rn of
                           Just j | isQualName j -> j
-                          _ -> mkQualName nodeId libId i, nt) m
-       in foldr (\ (e, n) -> let ne = f e in Map.insert (i, e)
-                 (case Map.lookup (i, e) rn of
+                          _ -> mkQualName nodeId libId i, f t) m
+       in foldr (\ (e, n) -> let ge = g e in Map.insert (i, ge)
+                 (case Map.lookup (i, ge) rn of
                     Just j | isQualName j -> j
-                    _ -> mkQualName nodeId libId $ mkOverloadedId n i, ne)) m1
+                    _ -> mkQualName nodeId libId $ mkOverloadedId n i, f e)) m1
            $ zip r [2 ..]) Map.empty
 
 createFunMap :: Map.Map (Id, OpType) (Id, OpType)
@@ -103,7 +104,7 @@ inverseMorphism invExt m = do
   return (embedMorphism iExt tar src)
     { sort_map = im
     , fun_map = Map.fromList $ map (\ ((i, t), (j, k)) ->
-                  ((j, makeTotal k $ mapOpType im t), (i, opKind t)))
+                  ((j, mapOpType im t), (i, k)))
                $ Map.toList $ fun_map m
     , pred_map = Map.fromList $ map (\ ((i, t), j) ->
                   ((j, mapPredType im t), i)) $ Map.toList $ pred_map m
