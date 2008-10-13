@@ -343,10 +343,10 @@ class ( Syntax lid basic_spec symb_items symb_map_items
          signature_colimit :: lid -> Gr sign (Int, morphism)
                            -> Result (sign, Map.Map Int morphism)
          signature_colimit l _ = statErr l "signature_colimit"
-         {- | rename and qualify the symbols considering incoming morphisms,
-            code out overloading and
+         {- | rename and qualify the symbols considering a united incoming
+            morphisms, code out overloading and
             create sentences for the overloading relation -}
-         qualify :: lid -> SIMPLE_ID -> LIB_ID -> [morphism] -> sign
+         qualify :: lid -> SIMPLE_ID -> LIB_ID -> morphism -> sign
                  -> Result (morphism, [Named sentence])
          qualify l _ _ _ _ = statErr l "qualify"
          -------------------- symbols and raw symbols ---------------------

@@ -25,7 +25,6 @@ import Common.LibName
 import Common.Result
 
 import Control.Monad
-import Data.Maybe
 import qualified Data.Map as Map
 import qualified Data.Set as Set
 
@@ -39,12 +38,9 @@ mkOrReuseQualSortName sm nodeId libId i =
     Just j | isQualName j -> j
     _ -> mkQualName nodeId libId i
 
-qualifySig :: SIMPLE_ID -> LIB_ID -> [Morphism f e ()] -> Sign f e
+qualifySig :: SIMPLE_ID -> LIB_ID -> Morphism f e () -> Sign f e
            -> Result (Morphism f e (), [Named (FORMULA f)])
-qualifySig nodeId libId inns sig = do
-  let invms = mapMaybe (maybeResult . inverseMorphism return) inns
-  m <- foldM (morphismUnionM (const id) (const return))
-       (embedMorphism () sig sig) invms
+qualifySig nodeId libId m sig = do
   let ps = predMap sig
       os = opMap sig
       ss = sortSet sig

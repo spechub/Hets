@@ -35,6 +35,7 @@ import Common.Result
 
 import Data.Graph.Inductive.Graph
 import Data.List
+import Data.Maybe
 import qualified Data.Map as Map
 import qualified Data.Set as Set
 import Control.Monad
@@ -56,6 +57,16 @@ qualifyDGraph ln dg le = do
 -- consider that loops are part of innDG and outDG that should not be handled
 -- twice
 
+constructUnion :: Logic lid sublogics
+         basic_spec sentence symb_items symb_map_items
+          sign morphism symbol raw_symbol proof_tree =>
+            lid -> morphism -> [morphism] -> morphism
+constructUnion lid hd l = case l of
+  [] -> hd
+  sd : tl -> case maybeResult $ morphism_union lid hd sd of
+    Just m -> constructUnion lid m tl
+    Nothing -> constructUnion lid sd tl
+
 qualifyLabNode :: LIB_NAME -> DGraph -> LibEnv -> LNode DGNodeLab
                -> Result (DGraph, LibEnv)
 qualifyLabNode ln dg le (n, lb) = let
@@ -71,8 +82,12 @@ qualifyLabNode ln dg le (n, lb) = let
                         "qualifyLabNode" mor
                 return $ hmor : l
             else return l) [] $ map (\ (_, _, ld) -> dgl_morphism ld) inss
+        let revHins = mapMaybe (maybeResult . inverse) hins
+            m = case revHins of
+                  [] -> ide sig
+                  hd : tl -> constructUnion lid hd tl
         (m1, osens) <- qualify lid (mkSimpleId $ getDGNodeName lb)
-                       (getLIB_ID ln) hins sig
+                       (getLIB_ID ln) m sig
         rm <- inverse m1
         nThSens <- mapThSensValueM (map_sen lid m1) sens
         let nlb = lb { dgn_theory = G_theory lid
