@@ -30,6 +30,7 @@ import Data.Char (toLower)
 
 import Static.DevGraph
 
+import Proofs.QualifyNames
 import Proofs.DGFlattening
 import Proofs.Automatic(automatic)
 import Proofs.Global(globSubsume, globDecomp)
@@ -262,7 +263,8 @@ createGlobalMenu gInfo@(GInfo { gi_LIB_NAME = ln
              , ("Disjoint unions", libEnv_flattening_dunions)
              , ("Importings and renamings", libEnv_flattening_renamings)
              , ("Hiding", libEnv_flattening_hiding)
-             , ("Heterogeneity", libEnv_flattening_heterogen)]]
+             , ("Heterogeneity", libEnv_flattening_heterogen)
+             , ("Qualify all names", qualifyLibEnv)]]
     , Button "Translate Graph" $ ral $ translateGraph gInfo convGraph showLib
     , Button "Show Logic Graph" $ ral $ showLogicGraph daVinciSort
     , Button "Show Library Graph" $ ral $ showLibGraph gInfo showLib
