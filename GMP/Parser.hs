@@ -80,16 +80,17 @@ primFormula flag logics =  do string "T"
                               spaces
                               f <- primFormula flag logics
                               return $ Not f
-                       <|> do f <- modalAtom flag logics
+                       <|> do f <- atomFormula flag logics
                               return f
-                       
+                       <?> "GMPParser.primFormula"
+                      
 
 --modalAtom :: ModalOperator -> [Int] -> GenParser Char st (Boole a)
-modalAtom flag logics = do char '<'
-                           spaces
-                           let h = head logics
-                           let t = tail logics
-                           case h of
+atomFormula flag logics =  do char '<'
+                              spaces
+                              let h = head logics
+                              let t = tail logics
+                              case h of
                                 1 -> do parseKindex
                                         spaces
                                         char '>'
@@ -109,26 +110,22 @@ modalAtom flag logics = do char '<'
                                           Ang -> return $ At (KD f)--M i f
                                           Sqr -> return $ Not (At (KD (Not f)))
                                           _   -> return $ At (KD f)
-
--}
-{-
                                 _ -> do aux <- parseGindex
                                         return aux
 -}
 {-
-                   <|> do char '['
-                          spaces
-                          i <- head pa
-                          spaces
-                          char ']'
-                          spaces
-                          f <- primFormula flag $ tail pa ++ [head pa]
-                          case flag of
-                            Ang -> return $ Not (At (Not (Box i f)))
-                            Sqr -> return $ At (Box i f)
-                            _   -> return $ At (Box i f)
+                       <|> do char '['
+                              spaces
+                              i <- head pa
+                              spaces
+                              char ']'
+                              spaces
+                              f <- primFormula flag $ tail pa ++ [head pa]
+                              case flag of
+                                Ang -> return $ Not (At (Not (Box i f)))
+                                Sqr -> return $ At (Box i f)
+                                _   -> return $ At (Box i f)
 -}
-                       <?> "GMPParser.primFormula"
 
 -- | Parser for un-parenthesizing a formula
 -- parenFormula :: ModalOperator -> [GenParser Char st a] -> GenParser Char st (Boole a)
