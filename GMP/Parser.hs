@@ -8,106 +8,140 @@
  -
  -  Provides the implementation of the generic parser for the Boole datatype
  -}
+{-# OPTIONS -fglasgow-exts #-}
 module Parser where
 
 import Text.ParserCombinators.Parsec
 
+-- import GenericSequent
 import ModalLogic
-import GenericSequent
 import CombLogic
 
-{-
+data ModalOperator = Sqr | Ang | None deriving Eq
+
 -- | Main parser
-par5er :: [GenParser Char st a] -> GenParser Char st (Boole a)
-par5er pa = implFormula pa
+-- par5er :: ModalOperator -> [GenParser Char st a] -> GenParser Char st (Boole a)
+par5er flag logics = implFormula flag logics
 
 -- | Parser which translates all implications in disjunctions & conjunctions
-implFormula :: [GenParser Char st a] -> GenParser Char st (Boole a)
-implFormula pa = do
-    f <- orFormula pa
+-- implFormula :: ModalOperator -> [GenParser Char st a] -> GenParser Char st (Boole a)
+implFormula flag logics = do
+    f <- orFormula flag logics
     option f (do string "->"
                  spaces
-                 i <- implFormula pa
-                 return $ Or (Neg f) i
+                 i <- implFormula flag logics
+                 return $ Not (And f (Not i))
           <|> do try(string "<->")
                  spaces
-                 i <- implFormula pa
-                 return $ And (Or (Neg f) i) (Or f (Neg i))
+                 i <- implFormula flag logics
+                 return $ And (Not (And f (Not i))) (Not (And (Not f) i))
           <|> do string "<-"
                  spaces
-                 i <- implFormula pa
-                 return $ Or f (Neg i)
+                 i <- implFormula flag logics
+                 return $ And (Not f) i
           <|> do return f
           <?> "GMPParser.implFormula")
 
 -- | Parser for disjunction - used for handling binding order
-orFormula :: [GenParser Char st a] -> GenParser Char st (Boole a)
-orFormula pa = do
-    f <- andFormula pa
+-- orFormula :: ModalOperator -> [GenParser Char st a] -> GenParser Char st (Boole a)
+orFormula flag logics = do
+    f <- andFormula flag logics
     option f $ do
       string "\\/"
       spaces
-      g <- orFormula pa
-      return $ Or f g
+      g <- orFormula flag logics
+      return $ Not (And (Not f) (Not g))
   <?> "GMPParser.orFormula"
 
 -- | Parser for conjunction - used for handling the binding order
-andFormula :: [GenParser Char st a] -> GenParser Char st (Boole a)
-andFormula pa = do
-    f <- primFormula pa
+-- andFormula :: ModalOperator -> [GenParser Char st a] -> GenParser Char st (Boole a)
+andFormula flag logics = do
+    f <- primFormula flag logics
     option f $ do
       string "/\\"
       spaces
-      g <- andFormula pa
+      g <- andFormula flag logics
       return $ And f g
   <?> "GMPParser.andFormula"
 
           
-{- | Parse a primitive formula: T, F, ~f, <i>f, [i]f, p*, 
- -   where i stands for an index, f for a formula and 
- -   * for a series of digits i.e. and integer -}
-primFormula :: GenParser Char st a -> GenParser Char st (Boole a)
-primFormula pa =  do string "T"
-                     spaces
-                     return T
-              <|> do string "F"
-                     spaces
-                     return F
-              <|> do f <- parenFormula pa
-                     return f
-              <|> do string "~"
-                     spaces
-                     f <- primFormula pa
-                     return $ nneg f
-              <|> do char '<'
-                     spaces
-                     i <- pa
-                     spaces
-                     char '>'
-                     spaces
-                     f <- primFormula pa
-                     return $ M i f
-              <|> do char '['
-                     spaces
-                     i <- pa
-                     spaces
-                     char ']'
-                     spaces
-                     f <- primFormula flag pa
-                     return $ M i f
-              <?> "GMPParser.primFormula"
+{- | Parse a primitive formula: T, F, ~f, <i>f, [i]f, 
+ -   where i stands for an index, f for a formula/boolean expression -}
+-- primFormula :: ModalOperator -> [GenParser Char st a] -> GenParser Char st (Boole a)
+primFormula flag logics =  do string "T"
+                              spaces
+                              return T
+                       <|> do string "F"
+                              spaces
+                              return F
+                       <|> do f <- parenFormula flag logics
+                              return f
+                       <|> do string "~"
+                              spaces
+                              f <- primFormula flag logics
+                              return $ Not f
+                       <|> do f <- modalAtom flag logics
+                              return f
+                       
+
+--modalAtom :: ModalOperator -> [Int] -> GenParser Char st (Boole a)
+modalAtom flag logics = do char '<'
+                           spaces
+                           let h = head logics
+                           let t = tail logics
+                           case h of
+                                1 -> do parseKindex
+                                        spaces
+                                        char '>'
+                                        spaces
+                                        f <- primFormula flag $ t ++ [h]
+                                        case flag of
+                                          Ang -> return $ At (K f)--M i f
+                                          Sqr -> return $ Not (At (K (Not f)))
+                                          _   -> return $ At (K f)
+{-
+                                2 -> do parseKDindex
+                                        spaces
+                                        char '>'
+                                        spaces
+                                        f <- primFormula flag $ t ++ [h]
+                                        case flag of
+                                          Ang -> return $ At (KD f)--M i f
+                                          Sqr -> return $ Not (At (KD (Not f)))
+                                          _   -> return $ At (KD f)
+
+-}
+{-
+                                _ -> do aux <- parseGindex
+                                        return aux
+-}
+{-
+                   <|> do char '['
+                          spaces
+                          i <- head pa
+                          spaces
+                          char ']'
+                          spaces
+                          f <- primFormula flag $ tail pa ++ [head pa]
+                          case flag of
+                            Ang -> return $ Not (At (Not (Box i f)))
+                            Sqr -> return $ At (Box i f)
+                            _   -> return $ At (Box i f)
+-}
+                       <?> "GMPParser.primFormula"
 
 -- | Parser for un-parenthesizing a formula
-parenFormula :: GenParser Char st a -> GenParser Char st (Boole a)
-parenFormula pa =  do char '('
-                      spaces
-                      f <- par5er flag pa
-                      spaces
-                      char ')'
-                      spaces
-                      return f
-               <?> "GMPParser.parenFormula"
--}
+-- parenFormula :: ModalOperator -> [GenParser Char st a] -> GenParser Char st (Boole a)
+parenFormula flag logics = do char '('
+                              spaces
+                              f <- par5er flag logics
+                              spaces
+                              char ')'
+                              spaces
+                              return f
+                        <?> "GMPParser.parenFormula"
+
+
 -- | Parse integer number
 natural :: GenParser Char st Integer
 natural = fmap read $ many1 digit 
@@ -192,42 +226,3 @@ parsePindex =
 -- | Parser for Monotonic Modal Logic index
 parseMindex :: Parser ()
 parseMindex = return ()
-
--- | Main parsing unit for checking provability/satisfiability
-run :: (Eq a, Form a b c) => Parser (Boole a) -> String -> IO ()
-run parser input = case (parse parser "" input) of
-                     Left err -> do putStr "parse error at "
-                                    print err
-                     Right x ->  do --putStrLn (show x{-++" <=> "++input-})
-                                    let isP = provable x
-                                    case isP of
-                                       True -> putStrLn "... is Provable"
-                                       _    -> let isS = sat x
-                                               in case isS of
-                                                    True -> putStrLn "... is not Provable but Satisfiable"
-                                                    _    -> putStrLn "... is not Satisfiable"
-
--- | Runs the main parsing unit (probably superfluous)
-runLex :: (Eq a, Form a b c) => Parser (Boole a) -> String -> IO ()
-runLex parser input = run (do spaces
-                              res <- parser
-                              eof
-                              return res
-                          ) input
-
-{-
--- | Auxiliary run function for testing with the input given as string
-runTest :: [Int] -> String -> IO ()
-runTest ml input = do
-    let h = head ml; t = tail ml
-    in case h of
-      1 -> runLex ((par5er Sqr parseKindex) :: Parser (L K)) input
-      2 -> runLex ((par5er Sqr parseKDindex) :: Parser (L KD)) input
-      3 -> runLex ((par5er Sqr parseCindex) :: Parser (L C)) input
-      4 -> runLex ((par5er Ang parseGindex) :: Parser (L G)) input
-      5 -> runLex ((par5er Ang parsePindex) :: Parser (L P)) input
-      6 -> runLex ((par5er Sqr parseHMindex) :: Parser (L HM)) input
-      7 -> runLex ((par5er Sqr parseMindex) :: Parser (L Mon)) input
-      _ -> showHelp
-    return ()
--}

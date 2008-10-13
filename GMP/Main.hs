@@ -11,10 +11,52 @@
 module Main where
 
 import GenericSequent
+import ModalLogic
+import CombLogic
 import Parser
 
+import Text.ParserCombinators.Parsec
 import System.Environment
 import IO
+
+-- | Main parsing unit for checking provability/satisfiability
+run :: (Eq a, Form a b c) => Parser (Boole a) -> String -> IO ()
+run parser input = 
+  case (parse parser "" input) of
+    Left err -> do putStr "parse error at "
+                   print err
+    Right x ->  do --putStrLn (show x{-++" <=> "++input-})
+                   let isP = provable x
+                   case isP of
+                     True -> putStrLn "... is Provable"
+                     _    -> let isS = sat x
+                             in case isS of
+                                  True -> putStrLn ("... is not Provable" ++
+                                                    " but Satisfiable")
+                                  _    -> putStrLn "... is not Satisfiable"
+
+-- | Runs the main parsing unit (probably superfluous)
+runLex :: (Eq a, Form a b c) => Parser (Boole a) -> String -> IO ()
+runLex parser input = run (do spaces
+                              res <- parser
+                              eof
+                              return res
+                          ) input
+
+-- | Auxiliary run function for testing with the input given as string
+runTest :: [Int] -> String -> IO ()
+runTest logics input =
+  do {-case (head logics) of
+       1 -> runLex (parseKindex{-(par5er Sqr parseKindex) :: Parser (L K)-}) input
+       2 -> runLex ((par5er Sqr parseKDindex) :: Parser (L KD)) input
+       3 -> runLex ((par5er Sqr parseCindex) :: Parser (L C)) input
+       4 -> runLex ((par5er Ang parseGindex) :: Parser (L G)) input
+       5 -> runLex ((par5er Ang parsePindex) :: Parser (L P)) input
+       6 -> runLex ((par5er Sqr parseHMindex) :: Parser (L HM)) input
+       7 -> runLex ((par5er Sqr parseMindex) :: Parser (L Mon)) input
+       _ -> showHelp
+     -}
+     return ()
 
 -- | Map logic indexes from [Char] to Int
 indexToInt :: [Char] -> Int
@@ -30,7 +72,8 @@ showHelp = do
     putStrLn ( "Usage:\n" ++
                "    ./main -p <path> <N> <L1> <L2> .. <LN>\n" ++
                "    ./main -t <test> <N> <L1> <L2> .. <LN>\n\n" ++
-               "<N>:     a natural number >0 specifing the number of combined/embedded logics\n" ++
+               "<N>:     a natural number >0 specifing the number of " ++ 
+                        "combined/embedded logics\n" ++
                "<Lx>:    each logic can be one of the following cases:\n" ++
                "              K  - K Modal Logic\n" ++
                "              KD - KD Modal Logic\n" ++
@@ -54,7 +97,11 @@ main = do
              then showHelp
              else let list = take (read n) rest
                   in case it of
-                       "-p" -> do test <- readFile test
+                       "-p" -> do let logics = map indexToInt rest
+                                  test <- readFile test
                                   putStrLn test -- run prover with given input
-                       "-t" -> putStrLn test -- run prover with given input
+                                  putStrLn $ show logics
+                       "-t" -> do let logics = map indexToInt rest
+                                  putStrLn test -- run prover with given input
+                                  putStrLn $ show logics
                        _    -> showHelp
