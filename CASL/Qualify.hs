@@ -74,11 +74,11 @@ qualOverloaded rn nodeId libId f =
       [] -> error "CASL.Qualify.qualOverloaded"
       t : r -> let
         nt = f t
-        m1 = Map.insert (i, nt) (case Map.lookup (i, nt) rn of
+        m1 = Map.insert (i, t) (case Map.lookup (i, t) rn of
                           Just j | isQualName j -> j
                           _ -> mkQualName nodeId libId i, nt) m
-       in foldr (\ (e, n) -> let ne = f e in Map.insert (i, ne)
-                 (case Map.lookup (i, ne) rn of
+       in foldr (\ (e, n) -> let ne = f e in Map.insert (i, e)
+                 (case Map.lookup (i, e) rn of
                     Just j | isQualName j -> j
                     _ -> mkQualName nodeId libId $ mkOverloadedId n i, ne)) m1
            $ zip r [2 ..]) Map.empty
