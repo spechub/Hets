@@ -28,6 +28,7 @@ import Logic.Prover
 import Proofs.AbstractState
 import Static.GTheory (G_theory(..))
 
+import Control.Monad (when)
 import Data.IORef
 import Data.List (isPrefixOf, stripPrefix)
 import Data.Maybe (fromMaybe)
@@ -152,7 +153,7 @@ addProveToHist ch st pcm pt
                   p' <- proofTreeToProve st pcm pt
                   mp <- getLastProve ch
                   case mp of
-                      Just p  -> if p == p' then return () else addProve p'
+                      Just p  -> when (p /= p') (addProve p')
                       Nothing -> addProve p'
     where
         addProve :: Prove -> IO ()
@@ -162,9 +163,7 @@ addProveToHist ch st pcm pt
             let nc' = NodeChange $ Node nId (dropName ch $ theoryName st)
             mn <- getLastNode ch
             case mn of
-                Just n  -> if NodeChange n == nc'
-                               then return ()
-                               else addToHist ch nc'
+                Just n  -> when (NodeChange n /= nc') (addToHist ch nc')
                 Nothing -> addToHist ch nc'
             addToHist ch $ ProveCommand p
 
@@ -218,10 +217,10 @@ mergeGoals (h:[]) = [h]
 mergeGoals (h:t)  | mergeAble h h' = mergeGoals $ (merge h h'):(tail t)
                   | otherwise      = h:(mergeGoals t)
                   where
+                      h' = head t
                       mergeAble :: ProvenGoal -> ProvenGoal -> Bool
                       mergeAble g1 g2 = (axioms g1 == axioms g2) &&
-                                       (timeLimit g1 == timeLimit g2)
-                      h' = head t
+                                        (timeLimit g1 == timeLimit g2)
                       merge :: ProvenGoal -> ProvenGoal -> ProvenGoal
                       merge a b = a {name = name a ++ ' ':(name b)}
 
