@@ -72,12 +72,12 @@ qualifyLabNode ln dg le (n, lb) = let
                 return $ hmor : l
             else return l) [] $ map (\ (_, _, ld) -> dgl_morphism ld) inss
         (m1, osens) <- qualify lid (mkSimpleId $ getDGNodeName lb)
-                          (getLIB_ID ln) hins sig
+                       (getLIB_ID ln) hins sig
         rm <- inverse m1
         nThSens <- mapThSensValueM (map_sen lid m1) sens
         let nlb = lb { dgn_theory = G_theory lid
-             (makeExtSign lid (cod m1)) startSigId
-             (joinSens nThSens $ toThSens osens) startThId }
+                       (makeExtSign lid (cod m1)) startSigId
+                       (joinSens nThSens $ toThSens osens) startThId }
         gm1 <- return $ gEmbed $ G_morphism lid m1 startMorId
         grm <- return $ gEmbed $ G_morphism lid rm startMorId
         nAllouts <- mapM (composeWithMorphism False gm1 grm) allOuts
@@ -85,7 +85,8 @@ qualifyLabNode ln dg le (n, lb) = let
         nAllinss <- mapM (composeWithMorphism True gm1 grm) $ nloops ++ inss
         let changes = map DeleteEdge (allOuts ++ inss)
               ++ SetNodeLab lb (n, nlb) : map InsertEdge (nAllinss ++ nouts)
-        return (changesDG dg changes, le)
+            changedDG = changesDG dg changes
+        return (addToProofHistoryDG ([], changes) changedDG, le)
 
 -- consider that hiding edges have a reverse morphism
 
