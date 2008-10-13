@@ -176,9 +176,6 @@ logics += Haskell
 derived_sources += Haskell/PreludeString.hs $(LEX_DIR)/HsLex.hs \
     $(LEX_DIR)Gen/HsLexerGen
 
-utils/appendHaskellPreludeString: utils/appendHaskellPreludeString.hs
-	$(HC) --make -o $@ $<
-
 APPENDPRELUDESTRING = utils/appendHaskellPreludeString \
     Haskell/ProgramaticaPrelude.hs
 
@@ -561,6 +558,9 @@ $(INLINEAXIOMS): $(INLINEAXIOMS_deps)
 	$(HC) --make utils/InlineAxioms/InlineAxioms.hs $(HC_WARN) $(HC_PROF) \
             -i../.. -o $(INLINEAXIOMS)
 	strip $(INLINEAXIOMS)
+
+utils/appendHaskellPreludeString: utils/appendHaskellPreludeString.hs
+	$(HC) --make -o $@ $<
 
 REV = trunk
 release:
