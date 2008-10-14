@@ -28,7 +28,7 @@ module Common.OrderedMap ( OMap
                          , filter, filterWithKey
                          , partition, partitionWithKey
                          , fromList, toList
-                         , keys, Map.keysSet
+                         , keys, Map.keysSet, elems
                          ) where
 
 import Prelude hiding (lookup,map,filter,foldr,foldl,null)
@@ -134,3 +134,6 @@ toList = List.map (\ (k,e) -> (k,ele e)) . List.sortBy comp . Map.toList
 
 keys :: Ord k => OMap k a -> [k]
 keys = List.map fst . toList
+
+elems :: forall k a. Ord k => OMap k a -> [a]
+elems omap = List.map ele $ Map.elems omap
