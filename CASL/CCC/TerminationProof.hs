@@ -194,6 +194,8 @@ axiom_trs f doms =
                then (term_trs t1) ++ " -> " ++ (term_trs t2)
                else "eq(" ++ (term_trs t1) ++ "," ++ (term_trs t2) ++
                     ") -> true"
+    True_atom _ -> "true -> true"
+    False_atom _ -> "false -> false"
     _ -> error "CASL.CCC.TerminationProof.<axiom_trs>"
 
 
