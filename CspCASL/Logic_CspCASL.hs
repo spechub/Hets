@@ -59,11 +59,14 @@ instance Language CspCASL
         "CspCASL - see\n\n"++
         "http://www.cs.swan.ac.uk/~csmarkus/ProcessesAndData/"
 
--- | Instance for CspCASL morphism extension (used for Category)
-instance IdeMorphismExtension SignCSP.CspAddMorphism where
-   ideMorphismExtension = SignCSP.emptyCspAddMorphism
-   inverseMorphismExtension = SignCSP.inverseCspAddMorphism
+instance SignExtension SignCSP.CspSign where
+  isSubSignExtension = SignCSP.isInclusion
 
+-- | Instance for CspCASL morphism extension (used for Category)
+instance MorphismExtension SignCSP.CspAddMorphism where
+  ideMorphismExtension = SignCSP.emptyCspAddMorphism
+  composeMorphismExtension = SignCSP.composeCspAddMorphism
+  inverseMorphismExtension = SignCSP.inverseCspAddMorphism
 
 -- | Instance of Sentences for CspCASL (missing)
 instance Sentences CspCASL

@@ -25,7 +25,7 @@ import CASL.Parse_AS_Basic
 import CASL.SymbolParser
 import CASL.SimplifySen
 import CASL.ToDoc
-import CASL.Logic_CASL ()
+import CASL.Logic_CASL (SignExtension(..))
 
 import VSE.As
 import VSE.Parse
@@ -44,6 +44,9 @@ instance Language VSE where
 
 type VSEBasicSpec = BASIC_SPEC () Procdecls Dlformula
 type VSEMor = Morphism Dlformula Procs ()
+
+instance SignExtension Procs where
+  isSubSignExtension = isSubProcsMap
 
 instance Syntax VSE VSEBasicSpec SYMB_ITEMS SYMB_MAP_ITEMS where
     parse_basic_spec VSE = Just $ basicSpec reservedWords

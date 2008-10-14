@@ -33,7 +33,7 @@ import CASL.MapSentence
 import CASL.SymbolParser
 import CASL.Taxonomy
 import CASL.SimplifySen
-import CASL.Logic_CASL ()
+import CASL.Logic_CASL (SignExtension(..))
 import CASL_DL.Sublogics
 
 import Logic.Logic
@@ -53,6 +53,9 @@ instance Language CASL_DL  where
 
 type DLMor = Morphism DL_FORMULA CASL_DLSign ()
 type DLFORMULA = FORMULA DL_FORMULA
+
+instance SignExtension CASL_DLSign where
+  isSubSignExtension = isSubCASL_DLSign
 
 instance Syntax CASL_DL DL_BASIC_SPEC
                 SYMB_ITEMS SYMB_MAP_ITEMS

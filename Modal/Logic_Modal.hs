@@ -27,7 +27,7 @@ import CASL.MapSentence
 import CASL.SimplifySen
 import CASL.SymbolParser
 import CASL.Taxonomy
-import CASL.Logic_CASL ()
+import CASL.Logic_CASL (SignExtension(..))
 import Logic.Logic
 
 data Modal = Modal deriving Show
@@ -43,6 +43,9 @@ instance Language Modal  where
 type MSign = Sign M_FORMULA ModalSign
 type ModalMor = Morphism M_FORMULA ModalSign ()
 type ModalFORMULA = FORMULA M_FORMULA
+
+instance SignExtension ModalSign where
+  isSubSignExtension = isSubModalSign
 
 instance Syntax Modal M_BASIC_SPEC SYMB_ITEMS SYMB_MAP_ITEMS where
     parse_basic_spec Modal = Just $ basicSpec modal_reserved_words

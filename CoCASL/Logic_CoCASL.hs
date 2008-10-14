@@ -13,21 +13,20 @@ Instance of class Logic for CoCASL.
 module CoCASL.Logic_CoCASL where
 
 import CoCASL.AS_CoCASL
+import CoCASL.ATC_CoCASL ()
 import CoCASL.CoCASLSign
-import CoCASL.ATC_CoCASL()
 import CoCASL.Parse_AS
 import CoCASL.StatAna
 import CoCASL.Sublogic
-import CASL.Sign
-import CASL.Morphism
-import CASL.SymbolMapAnalysis
-import CASL.Logic_CASL
 import CASL.AS_Basic_CASL
-import CASL.Parse_AS_Basic
+import CASL.Logic_CASL
 import CASL.MapSentence
-import CASL.SymbolParser
+import CASL.Morphism
+import CASL.Parse_AS_Basic
+import CASL.Sign
 import CASL.Sublogic
-import CASL.Logic_CASL ()
+import CASL.SymbolMapAnalysis
+import CASL.SymbolParser
 import Logic.Logic
 
 data CoCASL = CoCASL deriving Show
@@ -38,6 +37,9 @@ instance Language CoCASL  where
 
 type CoCASLMor = Morphism C_FORMULA CoCASLSign ()
 type CoCASLFORMULA = FORMULA C_FORMULA
+
+instance SignExtension CoCASLSign where
+  isSubSignExtension = isSubCoCASLSign
 
 instance Syntax CoCASL C_BASIC_SPEC SYMB_ITEMS SYMB_MAP_ITEMS where
     parse_basic_spec CoCASL = Just $ basicSpec cocasl_reserved_words

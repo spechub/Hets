@@ -304,9 +304,14 @@ matches x@(Symbol idt k) rs = case rs of
 idMor :: m -> Sign f e -> Morphism f e m
 idMor extEm sigma = (embedMorphism extEm sigma sigma) { morKind = IdMor }
 
-compose :: (Eq e, Eq f) => (m -> m -> m)
-        -> Morphism f e m -> Morphism f e m -> Result (Morphism f e m)
-compose comp mor1 mor2 = if mtarget mor1 == msource mor2 then
+composeIdMaps :: Map.Map Id Id -> Map.Map Id Id -> Map.Map Id Id
+composeIdMaps m1 m2 = Map.foldWithKey (\ i j -> case Map.lookup j m2 of
+  Nothing -> Map.insert i j
+  Just k -> if k == i then id else Map.insert i k) (Map.difference m2 m1) m1
+
+composeM :: (Eq e, Eq f) => (e -> e -> Bool) -> (m -> m -> Result m)
+         -> Morphism f e m -> Morphism f e m -> Result (Morphism f e m)
+composeM isSubExt comp mor1 mor2 = if mtarget mor1 == msource mor2 then do
   let sMap1 = sort_map mor1
       src = msource mor1
       tar = mtarget mor2
@@ -315,18 +320,8 @@ compose comp mor1 mor2 = if mtarget mor1 == msource mor2 then
       sMap2 = sort_map mor2
       fMap2 = fun_map mor2
       pMap2 = pred_map mor2
-      sMap = if Map.null sMap2 then sMap1 else
-             Set.fold ( \ i ->
-                       let j = mapSort sMap2 (mapSort sMap1 i) in
-                       if i == j then id else Map.insert i j)
-                 Map.empty $ sortSet src
-      emb = (embedMorphism (comp (extended_map mor1) $ extended_map mor2)
-             src tar) { morKind = max (morKind mor1) $ morKind mor2 }
-  in return $
-     if Map.null sMap1 &&  Map.null sMap2 && Map.null fMap1 && Map.null fMap2
-        && Map.null pMap1 && Map.null pMap2 then emb else emb
-     { sort_map = sMap
-     , fun_map  = if Map.null fMap2 then fMap1 else
+      sMap = composeIdMaps sMap1 sMap2
+      fMap = if Map.null fMap2 then fMap1 else
                  Map.foldWithKey ( \ i t m ->
                    Set.fold ( \ ot ->
                        let (ni, nt) = mapOpSym sMap2 fMap2 $
@@ -336,15 +331,25 @@ compose comp mor1 mor2 = if mtarget mor1 == msource mor2 then
                           if i == ni && opKind ot == k then id else
                           Map.insert (i, ot {opKind = Partial }) (ni, k)) m t)
                      Map.empty $ opMap src
-     , pred_map = if Map.null pMap2 then pMap1 else
+      pMap = if Map.null pMap2 then pMap1 else
                  Map.foldWithKey ( \ i t m ->
                    Set.fold ( \ pt ->
                        let (ni, nt) = mapPredSym sMap2 pMap2 $
                                      mapPredSym sMap1 pMap1 (i, pt)
                        in assert (mapPredType sMap pt == nt) $
                        if i == ni then id else Map.insert (i, pt) ni) m t)
-                      Map.empty $ predMap src }
-    else fail "target of first and source of second morphism are different"
+                      Map.empty $ predMap src
+  extComp <- comp (extended_map mor1) $ extended_map mor2
+  let emb0 = embedMorphism extComp src tar
+      emb = emb0
+        { morKind = if isSubSig isSubExt src tar && Map.null sMap
+                    && Map.null pMap && isInclFunMap fMap then
+          if isSubSig isSubExt tar src then IdMor else InclMor else OtherMor }
+  return $ emb
+     { sort_map = sMap
+     , fun_map  = fMap
+     , pred_map = pMap }
+ else fail "target of first and source of second morphism are different"
 
 legalSign :: Sign f e -> Bool
 legalSign sigma =
@@ -387,6 +392,9 @@ legalMor mor =
   && isSubMapSet (inducedPredMap sm (pred_map mor) $ predMap s1) (predMap s2)
   && legalSign s2
 
+isInclFunMap :: Fun_map -> Bool
+isInclFunMap = all (\ ((i, _), (j, k)) -> i == j && k == Total) . Map.toList
+
 idOrInclMorphism :: (e -> e -> Bool) -> Morphism f e m -> Morphism f e m
 idOrInclMorphism isSubExt m =
   let src = msource m
@@ -399,7 +407,7 @@ idOrInclMorphism isSubExt m =
                  $ Set.toList s) $ Map.toList diffOpMap }
 
 sigInclusion :: (Pretty f, Pretty e)
-             => m -- ^ compute extended morphism
+             => m -- ^ computed extended morphism
              -> (e -> e -> Bool) -- ^ subsignature test of extensions
              -> (e -> e -> e) -- ^ difference of signature extensions
              -> Sign f e -> Sign f e -> Result (Morphism f e m)

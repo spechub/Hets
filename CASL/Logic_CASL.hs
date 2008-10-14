@@ -87,19 +87,27 @@ type CASLBasicSpec = BASIC_SPEC () () ()
 trueC :: a -> b -> Bool
 trueC _ _ = True
 
-class IdeMorphismExtension m where
+class MorphismExtension m where
    ideMorphismExtension :: m
+   composeMorphismExtension :: m -> m -> Result m
    inverseMorphismExtension :: m -> Result m
 
-instance IdeMorphismExtension () where
+instance MorphismExtension () where
    ideMorphismExtension = ()
+   composeMorphismExtension _ = return
    inverseMorphismExtension = return
 
-instance (Eq f, Eq e, Eq m, IdeMorphismExtension m) =>
+class SignExtension e where
+    isSubSignExtension :: e -> e -> Bool
+
+instance SignExtension () where
+    isSubSignExtension _ _ = True
+
+instance (Eq f, Eq e, Eq m, SignExtension e, MorphismExtension m) =>
     Category (Sign f e) (Morphism f e m) where
     ide = idMor ideMorphismExtension
     inverse = inverseMorphism inverseMorphismExtension
-    comp = compose (const id)
+    comp = composeM isSubSignExtension composeMorphismExtension
     dom = msource
     cod = mtarget
     isInclusion = isInclusionMorphism

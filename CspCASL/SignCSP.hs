@@ -20,7 +20,7 @@ import CspCASL.AS_CspCASL_Process (CHANNEL_NAME, PROCESS_NAME)
 
 import CASL.AS_Basic_CASL (SORT)
 import CASL.Sign (emptySign, Sign, extendedInfo, sortRel)
-import CASL.Morphism (Morphism)
+import CASL.Morphism (Morphism, composeIdMaps)
 
 import qualified Common.Doc as Doc
 import qualified Common.DocUtils as DocUtils
@@ -136,6 +136,12 @@ data CspAddMorphism = CspAddMorphism
     { channelMap :: Map.Map Id Id
     , processMap :: Map.Map Id Id
     } deriving (Eq, Show)
+
+composeCspAddMorphism :: CspAddMorphism -> CspAddMorphism
+                      -> Result CspAddMorphism
+composeCspAddMorphism m1 m2 = return emptyCspAddMorphism
+  { channelMap = composeIdMaps (channelMap m1) $ channelMap m2
+  , processMap = composeIdMaps (processMap m1) $ processMap m2 }
 
 inverseCspAddMorphism :: CspAddMorphism -> Result CspAddMorphism
 inverseCspAddMorphism cm = do

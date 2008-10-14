@@ -28,7 +28,7 @@ import CASL.AS_Basic_CASL
 import CASL.Parse_AS_Basic
 import CASL.MapSentence
 import CASL.SymbolParser
-import CASL.Logic_CASL ()
+import CASL.Logic_CASL (SignExtension(..))
 import Logic.Logic
 
 data COL = COL deriving Show
@@ -41,6 +41,9 @@ type C_BASIC_SPEC = BASIC_SPEC () COL_SIG_ITEM ()
 type CSign = Sign () COLSign
 type COLMor = Morphism () COLSign ()
 type COLFORMULA = FORMULA ()
+
+instance SignExtension COLSign where
+  isSubSignExtension = isSubCOLSign
 
 instance Syntax COL C_BASIC_SPEC
                 SYMB_ITEMS SYMB_MAP_ITEMS

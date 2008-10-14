@@ -594,8 +594,9 @@ inducedFromToMorphism extEm isSubExt diffExt rmap (ExtSign sigma1 sy1)
   let inducedSign = mtarget mor1
   if isSubSig isSubExt inducedSign sigma2
    -- yes => we are done
-   then compose (const $ const extEm) mor1 $ idOrInclMorphism isSubExt
-          $ embedMorphism extEm inducedSign sigma2
+   then composeM isSubExt (\ _ _ -> return extEm) mor1
+            $ idOrInclMorphism isSubExt
+            $ embedMorphism extEm inducedSign sigma2
    -- no => OK, we've to take the hard way
    else let so1 = Set.findMin sy1
             so2 = Set.findMin sy2 in
