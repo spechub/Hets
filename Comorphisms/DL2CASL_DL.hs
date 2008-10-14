@@ -102,7 +102,6 @@ mapMorphism phi = do
     return Morphism {
                  msource = ssign,
                  mtarget = tsign,
-                 morKind = InclMor,
                  sort_map = Map.empty,
                  fun_map =  im,
                  pred_map = pm,

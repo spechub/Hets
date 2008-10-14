@@ -67,6 +67,7 @@ instance MorphismExtension SignCSP.CspAddMorphism where
   ideMorphismExtension = SignCSP.emptyCspAddMorphism
   composeMorphismExtension = SignCSP.composeCspAddMorphism
   inverseMorphismExtension = SignCSP.inverseCspAddMorphism
+  isInclusionMorphismExtension _ = True -- missing!
 
 -- | Instance of Sentences for CspCASL (missing)
 instance Sentences CspCASL
@@ -76,7 +77,9 @@ instance Sentences CspCASL
     ()                      -- symbol (?)
     where
       parse_sentence CspCASL = Nothing
-      map_sen CspCASL mor sen = if isInclusionMorphism mor then return sen
+      map_sen CspCASL mor sen =
+        if isInclusionMorphism isInclusionMorphismExtension mor
+        then return sen
         else fail "renaming in map_sen CspCASL not implemented"
 
 -- | Syntax of CspCASL

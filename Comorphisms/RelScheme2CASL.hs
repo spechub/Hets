@@ -103,7 +103,6 @@ mapMorphism phi = let
   Morphism {
    msource = ssign,
    mtarget = mapSign $ SRel.codomain phi,
-   morKind = InclMor,
    sort_map = Map.empty,
    fun_map =  Map.fromList $
      map (\(tab,(c1,c2)) -> let

@@ -51,29 +51,18 @@ type Fun_map = Map.Map (Id, OpType) (Id, FunKind)
 type Pred_map = Map.Map (Id, PredType) Id
 type CASLMor = Morphism () () ()
 
-data MorKind = IdMor | InclMor | OtherMor deriving (Show, Eq, Ord)
-
 data Morphism f e m = Morphism
   { msource :: Sign f e
   , mtarget :: Sign f e
-  , morKind :: MorKind
   , sort_map :: Sort_map
   , fun_map :: Fun_map
   , pred_map :: Pred_map
   , extended_map :: m
-  } deriving Show
+  } deriving (Show, Eq)
 
-isInclusionMorphism :: Morphism f e m -> Bool
-isInclusionMorphism m = morKind m <= InclMor
-
-instance (Eq f, Eq e, Eq m) => Eq (Morphism f e m) where
-    m1 == m2 = msource m1 == msource m2 &&
-      (morKind m1 == IdMor && morKind m2 == IdMor
-       || mtarget m1 == mtarget m2) &&
-      sort_map m1 == sort_map m2 &&
-      fun_map m1 == fun_map m2 &&
-      pred_map m1 == pred_map m2 &&
-      extended_map m1 == extended_map m2
+isInclusionMorphism :: (m -> Bool) -> Morphism f e m -> Bool
+isInclusionMorphism f m = f (extended_map m) && Map.null (sort_map m)
+  && Map.null (pred_map m) && isInclFunMap (fun_map m)
 
 mapSort :: Sort_map -> SORT -> SORT
 mapSort sorts s = Map.findWithDefault s s sorts
@@ -113,7 +102,6 @@ embedMorphism :: m -> Sign f e -> Sign f e -> Morphism f e m
 embedMorphism extEm a b = Morphism
   { msource = a
   , mtarget = b
-  , morKind = OtherMor  -- unknown for most uses
   , sort_map = Map.empty
   , fun_map = Map.empty
   , pred_map = Map.empty
@@ -302,16 +290,11 @@ matches x@(Symbol idt k) rs = case rs of
         _ -> False
 
 idMor :: m -> Sign f e -> Morphism f e m
-idMor extEm sigma = (embedMorphism extEm sigma sigma) { morKind = IdMor }
+idMor extEm sigma = embedMorphism extEm sigma sigma
 
-composeIdMaps :: Map.Map Id Id -> Map.Map Id Id -> Map.Map Id Id
-composeIdMaps m1 m2 = Map.foldWithKey (\ i j -> case Map.lookup j m2 of
-  Nothing -> Map.insert i j
-  Just k -> if k == i then id else Map.insert i k) (Map.difference m2 m1) m1
-
-composeM :: (Eq e, Eq f) => (e -> e -> Bool) -> (m -> m -> Result m)
+composeM :: (Eq e, Eq f) => (m -> m -> Result m)
          -> Morphism f e m -> Morphism f e m -> Result (Morphism f e m)
-composeM isSubExt comp mor1 mor2 = if mtarget mor1 == msource mor2 then do
+composeM comp mor1 mor2 = if mtarget mor1 == msource mor2 then do
   let sMap1 = sort_map mor1
       src = msource mor1
       tar = mtarget mor2
@@ -320,7 +303,10 @@ composeM isSubExt comp mor1 mor2 = if mtarget mor1 == msource mor2 then do
       sMap2 = sort_map mor2
       fMap2 = fun_map mor2
       pMap2 = pred_map mor2
-      sMap = composeIdMaps sMap1 sMap2
+      sMap = if Map.null sMap2 then sMap1 else Set.fold ( \ i ->
+ 	                       let j = mapSort sMap2 (mapSort sMap1 i) in
+ 	                       if i == j then id else Map.insert i j)
+                Map.empty $ sortSet src
       fMap = if Map.null fMap2 then fMap1 else
                  Map.foldWithKey ( \ i t m ->
                    Set.fold ( \ ot ->
@@ -340,11 +326,7 @@ composeM isSubExt comp mor1 mor2 = if mtarget mor1 == msource mor2 then do
                        if i == ni then id else Map.insert (i, pt) ni) m t)
                       Map.empty $ predMap src
   extComp <- comp (extended_map mor1) $ extended_map mor2
-  let emb0 = embedMorphism extComp src tar
-      emb = emb0
-        { morKind = if isSubSig isSubExt src tar && Map.null sMap
-                    && Map.null pMap && isInclFunMap fMap then
-          if isSubSig isSubExt tar src then IdMor else InclMor else OtherMor }
+  let emb = embedMorphism extComp src tar
   return $ emb
      { sort_map = sMap
      , fun_map  = fMap
@@ -399,10 +381,9 @@ idOrInclMorphism :: (e -> e -> Bool) -> Morphism f e m -> Morphism f e m
 idOrInclMorphism isSubExt m =
   let src = msource m
       tar = mtarget m
-  in if isSubSig isSubExt tar src then m { morKind = IdMor }
+  in if isSubSig isSubExt tar src then m
      else let diffOpMap = diffMapSet (opMap src) $ opMap tar in
-          m { morKind = InclMor
-            , fun_map = Map.fromList $ concatMap (\ (i, s) ->
+          m { fun_map = Map.fromList $ concatMap (\ (i, s) ->
               map (\ t -> ((i, t), (i, Total)))
                  $ Set.toList s) $ Map.toList diffOpMap }
 
@@ -491,8 +472,7 @@ morphismUnionM uniteM addSigExt mor1 mor2 =
     let o3 = opMap s3
     return
       (embedMorphism (uniteM (extended_map mor1) $ extended_map mor2) s3 s4)
-      { morKind = max (morKind mor1) $ morKind mor2
-      , sort_map = Map.filterWithKey (/=) smap
+      { sort_map = Map.filterWithKey (/=) smap
       , fun_map = Map.filterWithKey
         (\ (i, ot) (j, k) -> i /= j || k == Total && Set.member ot
          (Map.findWithDefault Set.empty i o3)) omap
@@ -533,9 +513,10 @@ printMorphism fF fE fM mor =
         ops = fun_map mor
         prSig s = specBraces (space <> printSign fF fE s)
         srcD = prSig src
-    in case morKind mor of
-    IdMor -> fsep [text "identity morphism over", srcD]
-    InclMor -> fsep
+    in if isInclusionMorphism (const True) mor then
+           if isSubSig (\ _ _ -> True) tar src then
+               fsep [text "identity morphism over", srcD]
+           else fsep
       [ text "inclusion morphism of", srcD
       , fsep $ if Map.null ops then
           [ text "extended with"
@@ -543,7 +524,7 @@ printMorphism fF fE fM mor =
         else
           [ text "by totalizing"
           , pretty $ Set.map (uncurry idToOpSymbol) $ Map.keysSet ops ]]
-    OtherMor -> fsep
+    else fsep
       [ pretty (morphismToSymbMapAux True mor)
           $+$ fM (extended_map mor)
       , colon <+> srcD, mapsto <+> prSig tar ]

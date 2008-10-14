@@ -91,11 +91,13 @@ class MorphismExtension m where
    ideMorphismExtension :: m
    composeMorphismExtension :: m -> m -> Result m
    inverseMorphismExtension :: m -> Result m
+   isInclusionMorphismExtension :: m -> Bool
 
 instance MorphismExtension () where
    ideMorphismExtension = ()
    composeMorphismExtension _ = return
    inverseMorphismExtension = return
+   isInclusionMorphismExtension _ = True
 
 class SignExtension e where
     isSubSignExtension :: e -> e -> Bool
@@ -103,14 +105,14 @@ class SignExtension e where
 instance SignExtension () where
     isSubSignExtension _ _ = True
 
-instance (Eq f, Eq e, Eq m, SignExtension e, MorphismExtension m) =>
+instance (Eq f, Eq e, Eq m, MorphismExtension m) =>
     Category (Sign f e) (Morphism f e m) where
     ide = idMor ideMorphismExtension
     inverse = inverseMorphism inverseMorphismExtension
-    comp = composeM isSubSignExtension composeMorphismExtension
+    comp = composeM composeMorphismExtension
     dom = msource
     cod = mtarget
-    isInclusion = isInclusionMorphism
+    isInclusion = isInclusionMorphism isInclusionMorphismExtension
     legal_mor = legalMor
 
 -- abstract syntax, parsing (and printing)

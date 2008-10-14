@@ -20,7 +20,7 @@ import CspCASL.AS_CspCASL_Process (CHANNEL_NAME, PROCESS_NAME)
 
 import CASL.AS_Basic_CASL (SORT)
 import CASL.Sign (emptySign, Sign, extendedInfo, sortRel)
-import CASL.Morphism (Morphism, composeIdMaps)
+import CASL.Morphism (Morphism)
 
 import qualified Common.Doc as Doc
 import qualified Common.DocUtils as DocUtils
@@ -136,6 +136,11 @@ data CspAddMorphism = CspAddMorphism
     { channelMap :: Map.Map Id Id
     , processMap :: Map.Map Id Id
     } deriving (Eq, Show)
+
+composeIdMaps :: Map.Map Id Id -> Map.Map Id Id -> Map.Map Id Id
+composeIdMaps m1 m2 = Map.foldWithKey (\ i j -> case Map.lookup j m2 of
+  Nothing -> error "SignCsp.composeIdMaps"
+  Just k -> Map.insert i k) Map.empty m1
 
 composeCspAddMorphism :: CspAddMorphism -> CspAddMorphism
                       -> Result CspAddMorphism

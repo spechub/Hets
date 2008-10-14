@@ -103,7 +103,7 @@ Output: morphims "Mrph": Sigma1 -> "Sigma2".
 
 inducedFromMorphism :: (Pretty e, Pretty f) => m -> (e -> e -> Bool)
                     -> RawSymbolMap -> Sign f e -> Result (Morphism f e m)
-inducedFromMorphism extEm isSubExt rmap sigma = do
+inducedFromMorphism extEm _isSubExt rmap sigma = do
   -- ??? Missing: check preservation of overloading relation
   -- first check: do all source raw symbols match with source signature?
   let syms = symOf sigma
@@ -159,12 +159,7 @@ inducedFromMorphism extEm isSubExt rmap sigma = do
   return (embedMorphism extEm sigma sigma')
     { sort_map = sort_Map
     , fun_map = op_Map
-    , pred_map = pred_Map
-    , morKind = if Map.null sort_Map && Map.null pred_Map
-        && isSubSig isSubExt sigma sigma' then
-          if isSubSig isSubExt sigma' sigma && Map.null op_Map then IdMor else
-          if Map.null $ Map.filterWithKey (\ (i, _) (j, _) -> i /= j) op_Map
-             then InclMor else OtherMor else OtherMor }
+    , pred_map = pred_Map }
 
   -- the sorts of the source signature
   -- sortFun is the sort map as a Haskell function
@@ -594,7 +589,7 @@ inducedFromToMorphism extEm isSubExt diffExt rmap (ExtSign sigma1 sy1)
   let inducedSign = mtarget mor1
   if isSubSig isSubExt inducedSign sigma2
    -- yes => we are done
-   then composeM isSubExt (\ _ _ -> return extEm) mor1
+   then composeM (\ _ _ -> return extEm) mor1
             $ idOrInclMorphism isSubExt
             $ embedMorphism extEm inducedSign sigma2
    -- no => OK, we've to take the hard way
@@ -605,8 +600,7 @@ inducedFromToMorphism extEm isSubExt diffExt rmap (ExtSign sigma1 sy1)
            then return mor1
                     { mtarget = sigma2
                     , sort_map = Map.singleton (symName so1)
-                                 $ symName so2
-                    , morKind = OtherMor }
+                                 $ symName so2 }
    else do -- 2. Compute initial posmap, using all possible mappings of symbols
      let addCard sym s = (s,(postponeEntry sym s,Set.size s))
          ins1 sym = Map.insert sym

@@ -119,5 +119,4 @@ inverseMorphism invExt m = do
   return (embedMorphism iExt ntar src)
     { sort_map = ism
     , fun_map = ifm
-    , pred_map = ipm
-    , morKind = if morKind m == IdMor then IdMor else OtherMor }
+    , pred_map = ipm }
