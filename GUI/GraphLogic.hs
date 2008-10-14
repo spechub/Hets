@@ -333,7 +333,11 @@ hideNodes (GInfo { libEnvIORef = ioRefProofStatus
       GA.showTemporaryMessage actGraphInfo "Hiding unnamed nodes..."
       le <- readIORef ioRefProofStatus
       let dg = lookupDGraph ln le
-          nodes = selectNodesByType dg [LocallyEmptyProvenConsInternal]
+          nodes = selectNodesByType dg [DGNodeType
+                                         {nonRefType = NonRefType
+                                           {isProvenCons = True
+                                           , isInternalSpec = True}
+                                         , isLocallyEmpty = True}]
           edges = getCompressedEdges dg nodes
       GA.hideNodes actGraphInfo nodes edges
 

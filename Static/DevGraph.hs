@@ -191,36 +191,26 @@ getDGNodeType dgnodelab =
          then "internal"
          else "spec"
 
-data DGNodeType = NotEmptyOpenConsSpec
-                | NotEmptyProvenConsSpec
-                | LocallyEmptyOpenConsSpec
-                | LocallyEmptyProvenConsSpec
-                | NotEmptyOpenConsInternal
-                | NotEmptyProvenConsInternal
-                | LocallyEmptyOpenConsInternal
-                | LocallyEmptyProvenConsInternal
-                | NotEmptyDGRef
-                | LocallyEmptyDGRef
-                  deriving (Show, Eq, Ord)
+data DGNodeType = DGNodeType
+  { nonRefType :: NonRefType
+  , isLocallyEmpty :: Bool }
+  deriving (Eq, Ord, Show)
+
+data NonRefType = 
+    RefType
+  | NonRefType { isProvenCons :: Bool
+               , isInternalSpec :: Bool }
+  deriving (Eq, Ord, Show)
 
 -- | gets the type of a development graph edge as a datatype
 getRealDGNodeType :: DGNodeLab -> DGNodeType
-getRealDGNodeType dgnodelab = case (loc,ref,con,int) of
-  (True, True,_,_) -> NotEmptyDGRef
-  (False,True,_,_) -> LocallyEmptyDGRef
-  (True, _,True, True ) -> NotEmptyOpenConsInternal
-  (True, _,True, False) -> NotEmptyOpenConsSpec
-  (True, _,False,True ) -> NotEmptyProvenConsInternal
-  (True, _,False,False) -> NotEmptyProvenConsSpec
-  (False,_,True, True ) -> LocallyEmptyOpenConsInternal
-  (False,_,True, False) -> LocallyEmptyOpenConsSpec
-  (False,_,False,True ) -> LocallyEmptyProvenConsInternal
-  (False,_,False,False) -> LocallyEmptyProvenConsSpec
-  where
-    loc = hasOpenGoals dgnodelab
-    ref = isDGRef dgnodelab
-    con = getConsState False (nodeInfo dgnodelab)
-    int = isInternalNode dgnodelab
+getRealDGNodeType dgnlab = DGNodeType
+  { nonRefType = case isDGRef dgnlab of
+      True -> RefType
+      False -> NonRefType { isProvenCons = getConsState True $ nodeInfo dgnlab
+                          , isInternalSpec = isInternalNode dgnlab }
+  , isLocallyEmpty = not $ hasOpenGoals dgnlab
+  }
 
 -- ** edge label types
 
@@ -366,85 +356,58 @@ getDGLinkType lnk = let
     LocalDef -> "localdef"
     _  -> "def" -- FreeDef, CofreeDef
 
-data DGEdgeType = GlobalDefNoInc
-                | GlobalDefInc
-                | LocalDefNoInc
-                | LocalDefInc
-                | DefNoInc
-                | DefInc
-                | HidingDefNoInc
-                | HidingDefInc
-                | HetDefNoInc
-                | HetDefInc
-                | ProvenThmNoInc
-                | ProvenThmInc
-                | UnprovenThmNoInc
-                | UnprovenThmInc
-                | LocalProvenThmNoInc
-                | LocalProvenThmInc
-                | LocalUnprovenThmNoInc
-                | LocalUnprovenThmInc
-                | HetProvenThmNoInc
-                | HetProvenThmInc
-                | HetUnprovenThmNoInc
-                | HetUnprovenThmInc
-                | HetLocalProvenThmNoInc
-                | HetLocalProvenThmInc
-                | HetLocalUnprovenThmNoInc
-                | HetLocalUnprovenThmInc
-                | UnprovenHidingThmNoInc
-                | UnprovenHidingThmInc
-                | ProvenHidingThmNoInc
-                | ProvenHidingThmInc
-                | ReferenceNoInc
-                | ReferenceInc
-                  deriving (Show, Eq, Ord)
+data DGEdgeType = DGEdgeType
+  { edgeTypeModInc :: DGEdgeTypeModInc
+  , isInc :: Bool }
+  deriving (Eq, Ord, Show)
+
+data DGEdgeTypeModInc =
+    HomGlobalDef
+  | HetGlobalDef
+  | HidingDefType
+  | LocalDefType
+  | FreeOrCofreeDef
+  | ThmType { thmEdgeType :: ThmTypes
+            , isProvenEdge :: Bool }
+  deriving (Eq, Ord, Show)
+
+data ThmTypes =
+    HidingThmType
+  | FreeThmType
+  | GlobalOrLocalThm { isLocalThmType :: Bool
+                     , isHomThm :: Bool }
+  deriving (Eq, Ord, Show)
 
 -- | describe the link type of the label
 getRealDGLinkType :: DGLinkLab -> DGEdgeType
-getRealDGLinkType lnk = case (dgl,hom,thm,inc') of
-  (GlobalDef,True ,_,True ) -> GlobalDefInc
-  (GlobalDef,True ,_,False) -> GlobalDefNoInc
-  (GlobalDef,False,_,True ) -> HetDefInc
-  (GlobalDef,False,_,False) -> HetDefNoInc
-  (HidingDef,_,_,True ) -> HidingDefInc
-  (HidingDef,_,_,False) -> HidingDefNoInc
-  (LocalThm _ _ _,True, True, True ) -> LocalProvenThmInc
-  (LocalThm _ _ _,True, True, False) -> LocalProvenThmNoInc
-  (LocalThm _ _ _,True, False,True ) -> LocalUnprovenThmInc
-  (LocalThm _ _ _,True, False,False) -> LocalUnprovenThmNoInc
-  (LocalThm _ _ _,False,True, True ) -> HetLocalProvenThmInc
-  (LocalThm _ _ _,False,True, False) -> HetLocalProvenThmNoInc
-  (LocalThm _ _ _,False,False,True ) -> HetLocalUnprovenThmInc
-  (LocalThm _ _ _,False,False,False) -> HetLocalUnprovenThmNoInc
-  (GlobalThm _ _ _,True, True, True ) -> ProvenThmInc
-  (GlobalThm _ _ _,True, True, False) -> ProvenThmNoInc
-  (GlobalThm _ _ _,True, False,True ) -> UnprovenThmInc
-  (GlobalThm _ _ _,True, False,False) -> UnprovenThmNoInc
-  (GlobalThm _ _ _,False,True, True ) -> HetProvenThmInc
-  (GlobalThm _ _ _,False,True, False) -> HetProvenThmNoInc
-  (GlobalThm _ _ _,False,False,True ) -> HetUnprovenThmInc
-  (GlobalThm _ _ _,False,False,False) -> HetUnprovenThmNoInc
-  (HidingThm _ _,_,True, True ) -> ProvenHidingThmInc
-  (HidingThm _ _,_,True, False) -> ProvenHidingThmNoInc
-  (HidingThm _ _,_,False,True ) -> UnprovenHidingThmInc
-  (HidingThm _ _,_,False,False) -> UnprovenHidingThmNoInc
-  (FreeThm _ _,_,True, True ) -> ProvenThmInc
-  (FreeThm _ _,_,True, False) -> ProvenThmNoInc
-  (FreeThm _ _,_,False,True ) -> UnprovenThmInc
-  (FreeThm _ _,_,False,False) -> UnprovenThmNoInc
-  (LocalDef,_,_,True ) -> LocalDefInc
-  (LocalDef,_,_,False) -> LocalDefNoInc
-  (_,_,_,True ) -> DefInc
-  (_,_,_,False) -> DefNoInc
-  where
-    hom = isHomogeneous $ dgl_morphism lnk
-    dgl = dgl_type lnk
-    inc' = case dgl_morphism lnk of
-            GMorphism cid _ _ mor _ ->
-              isInclusionComorphism cid && isInclusion mor
-    thm = maybe (error "getRealDGLinkType error") (isProvenThmLinkStatus)
-                $ thmLinkStatus $ dgl_type lnk
+getRealDGLinkType lnk = DGEdgeType
+  { edgeTypeModInc = case dgl_type lnk of
+      GlobalDef -> case isHomogeneous $ dgl_morphism lnk of
+        True -> HomGlobalDef
+        False -> HetGlobalDef
+      HidingDef -> HidingDefType
+      LocalDef -> LocalDefType
+      FreeDef _ -> FreeOrCofreeDef
+      CofreeDef _ -> FreeOrCofreeDef
+      LocalThm s _ _ -> ThmType
+        { thmEdgeType = GlobalOrLocalThm 
+          { isLocalThmType = True
+          , isHomThm = isHomogeneous $ dgl_morphism lnk }
+        , isProvenEdge = isProvenThmLinkStatus s }
+      GlobalThm s _ _ -> ThmType
+        { thmEdgeType = GlobalOrLocalThm 
+          { isLocalThmType = False
+          , isHomThm = isHomogeneous $ dgl_morphism lnk }
+        , isProvenEdge = isProvenThmLinkStatus s }
+      HidingThm _ s -> ThmType
+        { thmEdgeType = HidingThmType
+        , isProvenEdge = isProvenThmLinkStatus s }
+      FreeThm _ s -> ThmType
+        { thmEdgeType = FreeThmType
+        , isProvenEdge = isProvenThmLinkStatus s }
+  , isInc = case dgl_morphism lnk of
+      GMorphism cid _ _ mor _ -> isInclusionComorphism cid && isInclusion mor
+  }
 
 -- ** types for global environments
 

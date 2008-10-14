@@ -94,7 +94,6 @@ addNodesAndArcs gInfo@(GInfo { libEnvIORef = ioRefProofStatus
                              , gi_hetcatsOpts = opts}) depG nodeArcRef = do
   le <- readIORef ioRefProofStatus
   let
-    c = colors opts
     lookup' x y = Map.findWithDefault (error "lookup': node not found") y x
     keys = Map.keys le
     subNodeMenu = LocalMenu( Menu Nothing [
@@ -103,7 +102,7 @@ addNodesAndArcs gInfo@(GInfo { libEnvIORef = ioRefProofStatus
     subNodeTypeParms = subNodeMenu $$$
                        Box $$$
                        ValueTitle (\ x -> return (show x)) $$$
-                       Color (green2B c) $$$
+                       Color (getColor opts Green True True) $$$
                        emptyNodeTypeParms
   subNodeType <- newNodeType depG subNodeTypeParms
   subNodeList <- mapM (newNode depG subNodeType) keys
@@ -112,7 +111,7 @@ addNodesAndArcs gInfo@(GInfo { libEnvIORef = ioRefProofStatus
     subArcMenu = LocalMenu( Menu Nothing [])
     subArcTypeParms = subArcMenu $$$
                       ValueTitle id $$$
-                      Color (blackD c) $$$
+                      Color (getColor opts Black False False) $$$
                       emptyArcTypeParms
   subArcType <- newArcType depG subArcTypeParms
   let

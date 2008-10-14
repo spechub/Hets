@@ -151,12 +151,10 @@ dg_flattening_renamings lib_Env l_n =
   let
    dg = lookupDGraph l_n lib_Env
    l_edges = labEdgesDG dg
-   renamings = Prelude.filter (\ (_,_,x) -> let
-                                    l_type = getRealDGLinkType x
-                                  in
-                                    case l_type of
-                                     GlobalDefNoInc -> True
-                                     _ -> False ) l_edges
+   renamings = Prelude.filter (\ (_,_,x) -> let l_type = getRealDGLinkType x in
+     case l_type of
+       DGEdgeType { edgeTypeModInc = HomGlobalDef, isInc = False} -> True
+       _ -> False ) l_edges
    (fin_dg,ruls, chngs) = applyUpdDG renamings [] [] dg
   -- no need to care about references as each node
   -- is preserved during flattening.

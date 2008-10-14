@@ -24,9 +24,10 @@ import GUI.History
 #ifdef GTKGLADE
 import GUI.GtkLinkTypeChoice
 import GUI.GtkConsistencyChecker
-import Data.List (isSuffixOf)
-import Data.Char (toLower)
 #endif
+
+import Data.IORef
+import qualified Data.Map as Map
 
 import Static.DevGraph
 
@@ -39,9 +40,6 @@ import Proofs.Composition(composition, compositionCreatingEdges)
 import Proofs.HideTheoremShift(interactiveHideTheoremShift)
 import Proofs.TheoremHideShift(theoremHideShift, convertNodesToNf)
 import Proofs.ComputeColimit(computeColimit)
-
-import Data.IORef
-import qualified Data.Map as Map
 
 import Common.DocUtils(showDoc)
 import Common.Result as Res
@@ -59,80 +57,128 @@ import qualified HTk
 
 import Control.Concurrent.MVar
 
--- | A List of all linktypes and their properties. Hierarchy = Order
-linkTypes :: HetcatsOpts
-          -> [(DGEdgeType, EdgePattern GA.EdgeValue, String, Bool, Bool)]
-linkTypes opts = [
--- Name                      Lineformat Color      Thm    Other
-  (GlobalDefNoInc,           Solid,     blackB c,  False, False),
-  (GlobalDefInc,             Solid,     blackD c,  False, False),
-  (LocalDefNoInc,            Dashed,    blackB c,  False, False),
-  (LocalDefInc,              Dashed,    blackD c,  False, False),
-  (DefNoInc,                 Solid,     blue1B c,  False, False),
-  (DefInc,                   Solid,     blue1D c,  False, False),
-  (HidingDefNoInc,           Solid,     blue2B c,  False, False),
-  (HidingDefInc,             Solid,     blue2D c,  False, False),
-  (HetDefNoInc,              Double,    blackB c,  False, False),
-  (HetDefInc,                Double,    blackD c,  False, False),
-  (ProvenThmNoInc,           Solid,     green1B c, True,  True),
-  (ProvenThmInc,             Solid,     green1D c, True,  True),
-  (UnprovenThmNoInc,         Solid,     coral1B c, True,  True),
-  (UnprovenThmInc,           Solid,     coral1D c, True,  True),
-  (LocalProvenThmNoInc,      Dashed,    green1B c, True,  True),
-  (LocalProvenThmInc,        Dashed,    green1D c, True,  True),
-  (LocalUnprovenThmNoInc,    Dashed,    coral1B c, True,  True),
-  (LocalUnprovenThmInc,      Dashed,    coral1D c, True,  True),
-  (HetProvenThmNoInc,        Double,    green1B c, True,  True),
-  (HetProvenThmInc,          Double,    green1D c, True,  True),
-  (HetUnprovenThmNoInc,      Double,    coral1B c, True,  True),
-  (HetUnprovenThmInc,        Double,    coral1D c, True,  True),
-  (HetLocalProvenThmNoInc,   Double,    green2B c, True,  True),
-  (HetLocalProvenThmInc,     Double,    green2D c, True,  True),
-  (HetLocalUnprovenThmNoInc, Double,    coral2B c, True,  True),
-  (HetLocalUnprovenThmInc,   Double,    coral2D c, True,  True),
-  (UnprovenHidingThmNoInc,   Solid,     yellowB c, True,  False),
-  (UnprovenHidingThmInc,     Solid,     yellowD c, True,  False),
-  (ProvenHidingThmNoInc,     Solid,     green2B c, True,  False),
-  (ProvenHidingThmInc,       Solid,     green2D c, True,  False),
-  (ReferenceNoInc,           Dotted,    khakiB c,  False, False),
-  (ReferenceInc,             Dotted,    khakiD c,  False, False)]
-  where
-    c = colors opts
+-- | Creates a list with all DGEdgeType types
+mkEdgeTypeList :: [DGEdgeType]
+mkEdgeTypeList =
+  [ DGEdgeType { edgeTypeModInc = modinc
+               , isInc = inclusion }
+  | modinc <- 
+    [ HomGlobalDef
+    , HetGlobalDef
+    , HidingDefType
+    , LocalDefType
+    , FreeOrCofreeDef ] ++
+      [ ThmType { thmEdgeType = thmType
+                , isProvenEdge = proven}
+      | thmType <-
+        [ HidingThmType
+        , FreeThmType] ++
+          [ GlobalOrLocalThm { isLocalThmType = local
+                             , isHomThm = hom}
+          | local <- [True, False]
+          , hom <- [True, False]
+          ]
+      , proven <- [True, False]
+      ]
+  , inclusion <- [True, False]
+  ]
 
--- | A Map of all nodetypes and their properties.
-mapLinkTypes :: HetcatsOpts
+-- | Adds to the DGEdgeType list style options for each type
+edgeTypes :: HetcatsOpts
+          -> [( DGEdgeType -- ^ Edgetype
+              , EdgePattern GA.EdgeValue -- ^ Lineformat
+              , String -- ^ Color
+              , Bool -- ^ Is theorem
+              , Bool -- ^ Extra menu
+              )]
+edgeTypes opts = map
+  ( (\ (e, l, c) -> case edgeTypeModInc e of -- Add menu options
+      ThmType { thmEdgeType = HidingThmType } -> (e, l, c, True,  False)
+      ThmType _ _                             -> (e, l, c, True,  True)
+      _                                       -> (e, l, c, False, False)
+    )
+  . (\ (e, l) -> case edgeTypeModInc e of -- Add colors
+      HidingDefType   -> (e, l, getColor opts Blue   True  $ not $ isInc e)
+      FreeOrCofreeDef -> (e, l, getColor opts Blue   False $ not $ isInc e)
+      ThmType { thmEdgeType = thmType
+              , isProvenEdge = False } -> case thmType of
+        GlobalOrLocalThm { isLocalThmType = True, isHomThm = False }
+                      -> (e, l, getColor opts Coral  True  $ not $ isInc e)
+        HidingThmType -> (e, l, getColor opts Yellow False $ not $ isInc e)
+        _             -> (e, l, getColor opts Coral  False $ not $ isInc e)
+      ThmType { thmEdgeType = thmType
+              , isProvenEdge = True } -> case thmType of
+        GlobalOrLocalThm { isLocalThmType = True, isHomThm = False }
+                      -> (e, l, getColor opts Green  True  $ not $ isInc e)
+        HidingThmType -> (e, l, getColor opts Green  True  $ not $ isInc e)
+        _             -> (e, l, getColor opts Green  False $ not $ isInc e)
+      _               -> (e, l, getColor opts Black  False $ not $ isInc e)
+    )
+  . (\ e -> case edgeTypeModInc e of -- Add lineformat
+      ThmType { thmEdgeType = GlobalOrLocalThm { isLocalThmType = True
+                                               , isHomThm = True } }
+                   -> (e, Dashed)
+      ThmType { thmEdgeType = GlobalOrLocalThm { isHomThm = False } }
+                   -> (e, Double)
+      LocalDefType -> (e, Dashed)
+      HetGlobalDef -> (e, Double)
+      _            -> (e, Solid)
+    )
+  ) mkEdgeTypeList
+
+-- | A Map of all edgetypes and their properties.
+mapEdgeTypes :: HetcatsOpts
              -> Map.Map DGEdgeType (EdgePattern GA.EdgeValue, String)
-mapLinkTypes opts = Map.fromList $ map (\(a, b, c, _, _) -> (a, (b,c)))
-                                 $ linkTypes opts
+mapEdgeTypes opts = Map.fromList $ map (\ (e, l, c, _, _) -> (e, (l, c)))
+                                       $ edgeTypes opts
 
 #ifdef GTKGLADE
-mapLinkTypesToNames :: HetcatsOpts -> [String]
-mapLinkTypesToNames = map (\ s -> map toLower $ take (length s - 5) s)
-  . filter (isSuffixOf "NoInc")
-  . map (\ (a, _, _, _, _) -> show a) . linkTypes
+mapEdgeTypesToNames :: [String]
+mapEdgeTypesToNames = map show mkEdgeTypeList
 #endif
 
--- | A List of all nodetypes and their properties.
-nodeTypes :: HetcatsOpts -> [(DGNodeType, String, Shape GA.NodeValue, String)]
-nodeTypes opts = [
--- Name                            Type        Shape    Color
-  (NotEmptyOpenConsSpec,           "Spec",     Ellipse, coral1D c),
-  (NotEmptyProvenConsSpec,         "Spec",     Ellipse, coral1B c),
-  (LocallyEmptyOpenConsSpec,       "Spec",     Ellipse, coral2D c),
-  (LocallyEmptyProvenConsSpec,     "Spec",     Ellipse, green2B c),
-  (NotEmptyOpenConsInternal,       "Internal", Circle,  coral1D c),
-  (NotEmptyProvenConsInternal,     "Internal", Circle,  coral1B c),
-  (LocallyEmptyOpenConsInternal,   "Internal", Circle,  coral2D c),
-  (LocallyEmptyProvenConsInternal, "Internal", Circle,  green2B c),
-  (NotEmptyDGRef,                  "Ref",      Box,     coral1D c),
-  (LocallyEmptyDGRef,              "Ref",      Box,     green2D c)]
-  where
-    c = colors opts
+-- | Creates a list with all DGNodeType types
+mkNodeTypeList :: [DGNodeType]
+mkNodeTypeList =
+  [ DGNodeType { nonRefType = ref
+               , isLocallyEmpty = empty}
+  | ref <- 
+    [ RefType ] ++
+      [ NonRefType { isProvenCons = proven
+                   , isInternalSpec = spec }
+      | proven <- [True, False]
+      , spec <- [True, False]
+      ]
+  , empty <- [True, False]
+  ]
+
+-- | Adds to the DGNodeType list style options for each type
+nodeTypes :: HetcatsOpts
+          -> [( DGNodeType -- ^ Nodetype
+              , Shape GA.NodeValue -- ^ Shape
+              , String -- ^ Color
+              )]
+nodeTypes opts = map
+  ( (\ (n, s) -> case isLocallyEmpty n of -- Add color
+      True -> case nonRefType n of
+        NonRefType { isProvenCons = False }
+                -> (n, s, getColor opts Coral True  False)
+        _       -> (n, s, getColor opts Green True  False)
+      False -> case nonRefType n of
+        RefType -> (n, s, getColor opts Coral False False)
+        t       -> (n, s, getColor opts Coral False $ isProvenCons t)
+    )
+  . (\ n -> case nonRefType n of -- Add shape
+      RefType                               -> (n, Box)
+      NonRefType { isInternalSpec = True }  -> (n, Circle)
+      NonRefType { isInternalSpec = False } -> (n, Ellipse)
+    )
+  ) mkNodeTypeList
 
 -- | A Map of all nodetypes and their properties.
 mapNodeTypes :: HetcatsOpts -> Map.Map DGNodeType (Shape GA.NodeValue, String)
-mapNodeTypes opts = Map.fromList $ map (\(a, _, b, c) -> (a, (b,c)))
-                                 $ nodeTypes opts
+mapNodeTypes opts = Map.fromList $ map (\ (n, s, c) -> (n, (s, c)))
+                                       $ nodeTypes opts
 
 -- | Creates the graph. Runs makegraph
 createGraph :: GInfo -> String -> ConvFunc -> LibFunc -> IO ()
@@ -150,7 +196,7 @@ createGraph gInfo@(GInfo { gi_LIB_NAME = ln
                   (Just (createExit gInfo))
                   (createGlobalMenu gInfo convGraph showLib)
                   (createNodeTypes gInfo convGraph showLib)
-                  (createLinkTypes gInfo)
+                  (createEdgeTypes gInfo)
 
 -- | Returns the open-function
 createOpen :: GInfo -> FilePath -> ConvFunc -> LibFunc -> Maybe (IO ())
@@ -228,8 +274,7 @@ createGlobalMenu gInfo@(GInfo { gi_LIB_NAME = ln
       ]
     , Button "Focus node" $ ral $ focusNode gInfo
 #ifdef GTKGLADE
-    , Button "Select Linktypes" $ showLinkTypeChoice (mapLinkTypesToNames opts)
-                                                     print
+    , Button "Select Linktypes" $ showLinkTypeChoice mapEdgeTypesToNames print
 #endif
     , Menu (Just "Proofs") $ map ( \ (str, cmd) ->
        Button str $ (addMenuItemToHist ch str) >>
@@ -269,7 +314,7 @@ createGlobalMenu gInfo@(GInfo { gi_LIB_NAME = ln
     , Button "Show Logic Graph" $ ral $ showLogicGraph daVinciSort
     , Button "Show Library Graph" $ ral $ showLibGraph gInfo showLib
     , Button "Save Graph for uDrawGraph" $ ral
-             $ saveUDGraph gInfo (mapNodeTypes opts) $ mapLinkTypes opts
+             $ saveUDGraph gInfo (mapNodeTypes opts) $ mapEdgeTypes opts
     , Button "Save proof-script" $ ral $ askSaveProofScript gInfo
     ])
   ]
@@ -288,19 +333,21 @@ askSaveProofScript (GInfo { commandHist = ch }) =
 -- | A list of all Node Types
 createNodeTypes :: GInfo -> ConvFunc -> LibFunc
                 -> [(DGNodeType,DaVinciNodeTypeParms GA.NodeValue)]
-createNodeTypes gInfo@(GInfo {gi_hetcatsOpts = opts}) cGraph showLib =
-  map (\ (n, t, s, c) -> (n, menu t s c)) $ nodeTypes opts
-  where
-    menu t s c =
-      case t of
-        "Spec" -> createLocalMenuNodeTypeSpec s c gInfo
-        "Internal" -> createLocalMenuNodeTypeInternal s c gInfo
-        "Ref" -> createLocalMenuNodeTypeDgRef s c gInfo cGraph showLib
-        _ -> error "CreateNodeTypes: Error in nodeTypes table: Type not known."
+createNodeTypes gInfo@(GInfo {gi_hetcatsOpts = opts}) cGraph showLib = map
+  (\ (n, s, c) ->
+    ( n
+    , case nonRefType n of
+        RefType -> createLocalMenuNodeTypeDgRef s c gInfo cGraph showLib
+        NonRefType { isInternalSpec = True }
+                -> createLocalMenuNodeTypeInternal s c gInfo
+        NonRefType { isInternalSpec = False }
+                -> createLocalMenuNodeTypeSpec s c gInfo
+    )
+  ) $ nodeTypes opts
 
--- | the link types (share strings to avoid typos)
-createLinkTypes :: GInfo -> [(DGEdgeType,DaVinciArcTypeParms GA.EdgeValue)]
-createLinkTypes gInfo@(GInfo {gi_hetcatsOpts = opts}) =
+-- | the edge types (share strings to avoid typos)
+createEdgeTypes :: GInfo -> [(DGEdgeType,DaVinciArcTypeParms GA.EdgeValue)]
+createEdgeTypes gInfo@(GInfo {gi_hetcatsOpts = opts}) =
   map (\(title, look, color, thm, extra) ->
         (title, look
             $$$ Color color
@@ -310,7 +357,7 @@ createLinkTypes gInfo@(GInfo {gi_hetcatsOpts = opts}) =
                   $$$ emptyArcTypeParms :: DaVinciArcTypeParms GA.EdgeValue
                   else
                     emptyArcTypeParms :: DaVinciArcTypeParms GA.EdgeValue))
-      ) $ linkTypes opts
+      ) $ edgeTypes opts
 
 -- * methods to create the local menus of the different nodetypes
 
