@@ -88,19 +88,36 @@ inverseMorphism :: (m -> Result m) -> Morphism f e m -> Result (Morphism f e m)
 inverseMorphism invExt m = do
   iExt <- invExt $ extended_map m
   let src = msource m
+      ss = sortSet src
+      os = opMap src
+      ps = predMap src
       tar = mtarget m
       sm = sort_map m
-  unless (sortSet tar == Set.map (mapSort sm) (sortSet src))
+      nss = Set.map (mapSort sm) ss
+      nos = inducedOpMap sm fm os
+      nps = inducedPredMap sm pm ps
+      fm = fun_map m
+      pm = pred_map m
+      ntar = tar
+        { sortSet = nss
+        , sortRel = Rel.map (mapSort sm) $ sortRel src
+        , emptySortSet = Set.map (mapSort sm) $ emptySortSet src
+        , opMap = nos
+        , assocOps = inducedOpMap sm fm $ assocOps src
+        , predMap = nps }
+      ism = Map.fromList $ map (\ (s1, s2) -> (s2, s1)) $ Map.toList sm
+      ifm = Map.fromList $ map (\ ((i, t), (j, k)) ->
+                  ((j, mapOpType sm t), (i, k))) $ Map.toList fm
+      ipm = Map.fromList $ map (\ ((i, t), j) ->
+                  ((j, mapPredType sm t), i)) $ Map.toList pm
+  unless (ss == Set.map (mapSort ism) nss)
     $ fail "no injective CASL sort mapping"
-  unless (opMap tar == inducedOpMap sm (fun_map m) (opMap src))
+  unless (os == inducedOpMap ism ifm nos)
     $ fail "no injective CASL op mapping"
-  unless (predMap tar == inducedPredMap sm (pred_map m) (predMap src))
+  unless (ps == inducedPredMap ism ipm nps)
     $ fail "no injective CASL pred mapping"
-  return (embedMorphism iExt tar src)
-    { sort_map = Map.fromList $ map (\ (s1, s2) -> (s2, s1)) $ Map.toList sm
-    , fun_map = Map.fromList $ map (\ ((i, t), (j, k)) ->
-                  ((j, mapOpType sm t), (i, k)))
-               $ Map.toList $ fun_map m
-    , pred_map = Map.fromList $ map (\ ((i, t), j) ->
-                  ((j, mapPredType sm t), i)) $ Map.toList $ pred_map m
+  return (embedMorphism iExt ntar src)
+    { sort_map = ism
+    , fun_map = ifm
+    , pred_map = ipm
     , morKind = if morKind m == IdMor then IdMor else OtherMor }
