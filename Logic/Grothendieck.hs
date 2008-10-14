@@ -62,6 +62,7 @@ module Logic.Grothendieck
   , lookupModification
   , GMorphism (..)
   , isHomogeneous
+  , isHomInclusion
   , Grothendieck (..)
   , gEmbed
   , gEmbed2
@@ -492,6 +493,10 @@ instance Eq GMorphism where
 isHomogeneous :: GMorphism -> Bool
 isHomogeneous (GMorphism cid _ _ _ _) =
   isIdComorphism (Comorphism cid)
+
+isHomInclusion :: GMorphism -> Bool
+isHomInclusion gm@(GMorphism _ _ _ mor _) =
+  isHomogeneous gm && isInclusion mor
 
 data Grothendieck = Grothendieck deriving (Typeable, Show)
 
