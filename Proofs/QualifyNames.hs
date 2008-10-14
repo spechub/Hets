@@ -109,9 +109,6 @@ composeWithMorphism :: Bool -> GMorphism -> GMorphism -> LEdge DGLinkLab
                     -> Result (LEdge DGLinkLab)
 composeWithMorphism dir mor rmor (s, t, lb) = do
     let lmor = dgl_morphism lb
-        Result ds mmor = if dir /= isHidingEdge (dgl_type lb)
-          then comp lmor mor else comp rmor lmor
-    case mmor of
-      Nothing -> fail $ showDoc mor "\n" ++ showDoc lb "\n"
-                 ++ shows dir " " ++ shows (s, t) "\n" ++ showRelDiags 2 ds
-      Just nmor -> return (s, t, lb { dgl_morphism = nmor})
+    nmor <- if dir /= isHidingEdge (dgl_type lb)
+            then comp lmor mor else comp rmor lmor
+    return (s, t, lb { dgl_morphism = nmor})
