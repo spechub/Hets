@@ -378,18 +378,21 @@ lookupCompComorphism nameList logicGraph = do
     c:cs1 -> foldM compComorphism c cs1
     _ -> fail "Illegal empty comorphism composition"
   where
-  hasSublogic name (Logic lid) = elem name (sublogic_names $ top_sublogic lid)
   lookupN name =
     case name of
       'i':'d':'_':logic -> do
          let (mainLogic, subLogicD) = span (/= '.') logic
           --subLogicD will begin with a . which has to be removed
-         l <- maybe (fail ("Cannot find Logic "++mainLogic)) return
+         sublogic <- if null subLogicD
+                     then fail $ "missing sublogic for " ++ logic
+                     else return $ tail subLogicD
+         Logic lid <- maybe (fail ("Cannot find Logic " ++ mainLogic)) return
                  $ Map.lookup mainLogic (logics logicGraph)
-         case hasSublogic (tail subLogicD) l of
-           True ->  return $ idComorphism l
-           False -> fail ("Error in sublogic name"++logic)
-      _ -> maybe (fail ("Cannot find logic comorphism "++name)) return
+         case filter (\ s -> elem sublogic $ sublogic_names s)
+              $ all_sublogics lid of
+           [] -> fail $ "unknown sublogic name " ++ sublogic
+           s : _ ->  return $ Comorphism $ mkIdComorphism lid s
+      _ -> maybe (fail ("Cannot find logic comorphism " ++ name)) return
              $ Map.lookup name (comorphisms logicGraph)
 
 -- | find a comorphism in a logic graph
