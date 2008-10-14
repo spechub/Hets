@@ -101,7 +101,7 @@ mkOMDocTypeElem system =
         until dtd-retrieving issues are solved I put the dtd online...
 -}
 defaultDTDURI::String
-defaultDTDURI = "http://www.tzi.de/~hiben/omdoc/dtd/omdoc.dtd"
+defaultDTDURI = "http://www.informatik.uni-bremen.de/~hiben/omdoc/dtd/omdoc.dtd"
 
 envDTDURI::IO String
 envDTDURI = getEnvDef "OMDOC_DTD_URI" defaultDTDURI
