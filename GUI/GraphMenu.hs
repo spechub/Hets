@@ -61,9 +61,9 @@ import Control.Concurrent.MVar
 
 -- | Adds to the DGNodeType list style options for each type
 nodeTypes :: HetcatsOpts
-          -> [( DGNodeType -- ^ Nodetype
-              , Shape GA.NodeValue -- ^ Shape
-              , String -- ^ Color
+          -> [( DGNodeType -- Nodetype
+              , Shape GA.NodeValue -- Shape
+              , String -- Color
               )]
 nodeTypes opts = map
   ( (\ (n, s) -> case isLocallyEmpty n of -- Add color
@@ -89,11 +89,11 @@ mapNodeTypes opts = Map.fromList $ map (\ (n, s, c) -> (n, (s, c)))
 
 -- | Adds to the DGEdgeType list style options for each type
 edgeTypes :: HetcatsOpts
-          -> [( DGEdgeType -- ^ Edgetype
-              , EdgePattern GA.EdgeValue -- ^ Lineformat
-              , String -- ^ Color
-              , Bool -- ^ Is theorem
-              , Bool -- ^ Extra menu
+          -> [( DGEdgeType -- Edgetype
+              , EdgePattern GA.EdgeValue -- Lineformat
+              , String -- Color
+              , Bool -- Is theorem
+              , Bool -- Extra menu
               )]
 edgeTypes opts = map
   ( (\ (e, l, c) -> case edgeTypeModInc e of -- Add menu options
