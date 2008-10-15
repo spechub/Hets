@@ -24,6 +24,8 @@ import GUI.History
 #ifdef GTKGLADE
 import GUI.GtkLinkTypeChoice
 import GUI.GtkConsistencyChecker
+
+import Char(toLower)
 #endif
 
 import Data.IORef
@@ -57,31 +59,33 @@ import qualified HTk
 
 import Control.Concurrent.MVar
 
--- | Creates a list with all DGEdgeType types
-mkEdgeTypeList :: [DGEdgeType]
-mkEdgeTypeList =
-  [ DGEdgeType { edgeTypeModInc = modinc
-               , isInc = inclusion }
-  | modinc <- 
-    [ HomGlobalDef
-    , HetGlobalDef
-    , HidingDefType
-    , LocalDefType
-    , FreeOrCofreeDef ] ++
-      [ ThmType { thmEdgeType = thmType
-                , isProvenEdge = proven}
-      | thmType <-
-        [ HidingThmType
-        , FreeThmType] ++
-          [ GlobalOrLocalThm { isLocalThmType = local
-                             , isHomThm = hom}
-          | local <- [True, False]
-          , hom <- [True, False]
-          ]
-      , proven <- [True, False]
-      ]
-  , inclusion <- [True, False]
-  ]
+-- | Adds to the DGNodeType list style options for each type
+nodeTypes :: HetcatsOpts
+          -> [( DGNodeType -- ^ Nodetype
+              , Shape GA.NodeValue -- ^ Shape
+              , String -- ^ Color
+              )]
+nodeTypes opts = map
+  ( (\ (n, s) -> case isLocallyEmpty n of -- Add color
+      True -> case nonRefType n of
+        NonRefType { isProvenCons = False }
+                -> (n, s, getColor opts Coral True  False)
+        _       -> (n, s, getColor opts Green True  False)
+      False -> case nonRefType n of
+        RefType -> (n, s, getColor opts Coral False False)
+        t       -> (n, s, getColor opts Coral False $ isProvenCons t)
+    )
+  . (\ n -> case nonRefType n of -- Add shape
+      RefType                               -> (n, Box)
+      NonRefType { isInternalSpec = True }  -> (n, Circle)
+      NonRefType { isInternalSpec = False } -> (n, Ellipse)
+    )
+  ) listDGNodeTypes
+
+-- | A Map of all nodetypes and their properties.
+mapNodeTypes :: HetcatsOpts -> Map.Map DGNodeType (Shape GA.NodeValue, String)
+mapNodeTypes opts = Map.fromList $ map (\ (n, s, c) -> (n, (s, c)))
+                                       $ nodeTypes opts
 
 -- | Adds to the DGEdgeType list style options for each type
 edgeTypes :: HetcatsOpts
@@ -124,7 +128,7 @@ edgeTypes opts = map
       HetGlobalDef -> (e, Double)
       _            -> (e, Solid)
     )
-  ) mkEdgeTypeList
+  ) listDGEdgeTypes
 
 -- | A Map of all edgetypes and their properties.
 mapEdgeTypes :: HetcatsOpts
@@ -134,51 +138,10 @@ mapEdgeTypes opts = Map.fromList $ map (\ (e, l, c, _, _) -> (e, (l, c)))
 
 #ifdef GTKGLADE
 mapEdgeTypesToNames :: [String]
-mapEdgeTypesToNames = map show mkEdgeTypeList
+mapEdgeTypesToNames =
+  map (\ e -> map toLower $ getDGEdgeTypeName e)
+      $ filter (\ e -> not $ isInc e) listDGEdgeTypes
 #endif
-
--- | Creates a list with all DGNodeType types
-mkNodeTypeList :: [DGNodeType]
-mkNodeTypeList =
-  [ DGNodeType { nonRefType = ref
-               , isLocallyEmpty = empty}
-  | ref <- 
-    [ RefType ] ++
-      [ NonRefType { isProvenCons = proven
-                   , isInternalSpec = spec }
-      | proven <- [True, False]
-      , spec <- [True, False]
-      ]
-  , empty <- [True, False]
-  ]
-
--- | Adds to the DGNodeType list style options for each type
-nodeTypes :: HetcatsOpts
-          -> [( DGNodeType -- ^ Nodetype
-              , Shape GA.NodeValue -- ^ Shape
-              , String -- ^ Color
-              )]
-nodeTypes opts = map
-  ( (\ (n, s) -> case isLocallyEmpty n of -- Add color
-      True -> case nonRefType n of
-        NonRefType { isProvenCons = False }
-                -> (n, s, getColor opts Coral True  False)
-        _       -> (n, s, getColor opts Green True  False)
-      False -> case nonRefType n of
-        RefType -> (n, s, getColor opts Coral False False)
-        t       -> (n, s, getColor opts Coral False $ isProvenCons t)
-    )
-  . (\ n -> case nonRefType n of -- Add shape
-      RefType                               -> (n, Box)
-      NonRefType { isInternalSpec = True }  -> (n, Circle)
-      NonRefType { isInternalSpec = False } -> (n, Ellipse)
-    )
-  ) mkNodeTypeList
-
--- | A Map of all nodetypes and their properties.
-mapNodeTypes :: HetcatsOpts -> Map.Map DGNodeType (Shape GA.NodeValue, String)
-mapNodeTypes opts = Map.fromList $ map (\ (n, s, c) -> (n, (s, c)))
-                                       $ nodeTypes opts
 
 -- | Creates the graph. Runs makegraph
 createGraph :: GInfo -> String -> ConvFunc -> LibFunc -> IO ()

@@ -26,10 +26,32 @@ import Monad(foldM)
 -- | Displays the linktype selection window
 showLinkTypeChoice :: [String] -> ([String] -> IO ()) -> IO ()
 showLinkTypeChoice linkTypes updateFunction = postGUIAsync $ do
-  xml <- getGladeXML LinkTypeChoice.get
+  xml      <- getGladeXML LinkTypeChoice.get
   window   <- xmlGetWidget xml castToWindow "linktypechoice"
   ok       <- xmlGetWidget xml castToButton "b_ok"
   cancel   <- xmlGetWidget xml castToButton "b_cancel"
+  select   <- xmlGetWidget xml castToButton "b_select"
+  deselect <- xmlGetWidget xml castToButton "b_deselect"
+  invert   <- xmlGetWidget xml castToButton "b_invert"
+
+  onClicked select $ mapM_ (\ name -> do
+                             cb <- xmlGetWidget xml castToCheckButton $
+                                               "cb_" ++ name
+                             toggleButtonSetActive cb True
+                           ) linkTypes
+
+  onClicked deselect $ mapM_ (\ name -> do
+                             cb <- xmlGetWidget xml castToCheckButton $
+                                               "cb_" ++ name
+                             toggleButtonSetActive cb False
+                           ) linkTypes
+
+  onClicked invert $ mapM_ (\ name -> do
+                             cb <- xmlGetWidget xml castToCheckButton $
+                                               "cb_" ++ name
+                             selected <- toggleButtonGetActive cb
+                             toggleButtonSetActive cb $ not selected
+                           ) linkTypes
 
   onClicked cancel $ widgetDestroy window
 

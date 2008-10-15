@@ -202,7 +202,7 @@ data NonRefType =
                , isInternalSpec :: Bool }
   deriving (Eq, Ord, Show)
 
--- | gets the type of a development graph edge as a datatype
+-- | creates a DGNodeType from a DGNodeLab
 getRealDGNodeType :: DGNodeLab -> DGNodeType
 getRealDGNodeType dgnlab = DGNodeType
   { nonRefType = case isDGRef dgnlab of
@@ -211,6 +211,21 @@ getRealDGNodeType dgnlab = DGNodeType
                           , isInternalSpec = isInternalNode dgnlab }
   , isLocallyEmpty = not $ hasOpenGoals dgnlab
   }
+
+-- | Creates a list with all DGNodeType types
+listDGNodeTypes :: [DGNodeType]
+listDGNodeTypes =
+  [ DGNodeType { nonRefType = ref
+               , isLocallyEmpty = isEmpty'}
+  | ref <- 
+    [ RefType ] ++
+      [ NonRefType { isProvenCons = proven
+                   , isInternalSpec = spec }
+      | proven <- [True, False]
+      , spec <- [True, False]
+      ]
+  , isEmpty' <- [True, False]
+  ]
 
 -- ** edge label types
 
@@ -378,7 +393,7 @@ data ThmTypes =
                      , isHomThm :: Bool }
   deriving (Eq, Ord, Show)
 
--- | describe the link type of the label
+-- | creates a DGEdgeType from a DGLinkLab
 getRealDGLinkType :: DGLinkLab -> DGEdgeType
 getRealDGLinkType lnk = DGEdgeType
   { edgeTypeModInc = case dgl_type lnk of
@@ -408,6 +423,59 @@ getRealDGLinkType lnk = DGEdgeType
   , isInc = case dgl_morphism lnk of
       GMorphism cid _ _ mor _ -> isInclusionComorphism cid && isInclusion mor
   }
+
+-- | Creates a list with all DGEdgeType types
+listDGEdgeTypes :: [DGEdgeType]
+listDGEdgeTypes =
+  [ DGEdgeType { edgeTypeModInc = modinc
+               , isInc = isInclusion' }
+  | modinc <- 
+    [ HomGlobalDef
+    , HetGlobalDef
+    , HidingDefType
+    , LocalDefType
+    , FreeOrCofreeDef ] ++
+      [ ThmType { thmEdgeType = thmType
+                , isProvenEdge = proven}
+      | thmType <-
+        [ HidingThmType
+        , FreeThmType] ++
+          [ GlobalOrLocalThm { isLocalThmType = local
+                             , isHomThm = hom}
+          | local <- [True, False]
+          , hom <- [True, False]
+          ]
+      , proven <- [True, False]
+      ]
+  , isInclusion' <- [True, False]
+  ]
+
+-- | converts a DGEdgeType to a String
+getDGEdgeTypeName :: DGEdgeType -> String
+getDGEdgeTypeName e = case edgeTypeModInc e of
+    ThmType { thmEdgeType = thmType
+            , isProvenEdge = proven } -> case thmType of
+        GlobalOrLocalThm { isLocalThmType = True
+                         , isHomThm = hom } -> case hom of
+            True -> "Hom"
+            False -> "Het"
+          ++ "LocalThm"
+        GlobalOrLocalThm { isLocalThmType = False
+                         , isHomThm = hom } -> case hom of
+            True -> "Hom"
+            False -> "Het"
+          ++ "GlobalThm"
+        HidingThmType -> "HidingThm"
+        FreeThmType -> "FreeThm"
+      ++ case proven of
+        True -> "Proven"
+        False -> "Unproven"
+    HidingDefType -> "HidingDef"
+    LocalDefType -> "LocalDef"
+    t -> show t
+  ++ case isInc e of
+    True -> "Inc"
+    False -> ""
 
 -- ** types for global environments
 
