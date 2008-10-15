@@ -135,5 +135,5 @@ toList = List.map (\ (k,e) -> (k,ele e)) . List.sortBy comp . Map.toList
 keys :: Ord k => OMap k a -> [k]
 keys = List.map fst . toList
 
-elems :: forall k a. Ord k => OMap k a -> [a]
-elems omap = List.map ele $ Map.elems omap
+elems :: Ord k => OMap k a -> [a]
+elems = List.map snd . toList
