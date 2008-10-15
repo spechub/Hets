@@ -24,8 +24,6 @@ import GUI.History
 #ifdef GTKGLADE
 import GUI.GtkLinkTypeChoice
 import GUI.GtkConsistencyChecker
-
-import Char(toLower)
 #endif
 
 import Data.IORef
@@ -136,13 +134,6 @@ mapEdgeTypes :: HetcatsOpts
 mapEdgeTypes opts = Map.fromList $ map (\ (e, l, c, _, _) -> (e, (l, c)))
                                        $ edgeTypes opts
 
-#ifdef GTKGLADE
-mapEdgeTypesToNames :: [String]
-mapEdgeTypesToNames =
-  map (\ e -> map toLower $ getDGEdgeTypeName e)
-      $ filter (\ e -> not $ isInc e) listDGEdgeTypes
-#endif
-
 -- | Creates the graph. Runs makegraph
 createGraph :: GInfo -> String -> ConvFunc -> LibFunc -> IO ()
 createGraph gInfo@(GInfo { gi_LIB_NAME = ln
@@ -223,6 +214,7 @@ createExit (GInfo {exitMVar = exit}) = do
 createGlobalMenu :: GInfo -> ConvFunc -> LibFunc -> [GlobalMenu]
 createGlobalMenu gInfo@(GInfo { gi_LIB_NAME = ln
                               , gi_hetcatsOpts = opts
+                              , gi_GraphInfo = gi
                               , commandHist = ch
                               }) convGraph showLib =
   let ral x = runAndLock gInfo x in
@@ -237,9 +229,14 @@ createGlobalMenu gInfo@(GInfo { gi_LIB_NAME = ln
       ]
     , Button "Focus node" $ ral $ focusNode gInfo
 #ifdef GTKGLADE
-    , Button "Select Linktypes" $ showLinkTypeChoice mapEdgeTypesToNames print
+    , Button "Select Linktypes" $ showLinkTypeChoice
+                                $ (\ eList -> ral $ do
+                                    GA.showAll gi
+                                    GA.hideSetOfEdgeTypes gi eList
+                                    GA.redisplay gi
+                                  )
 #endif
-    , Menu (Just "Proofs") $ map ( \ (str, cmd) ->
+    , Menu (Just "Proofs") $ map (\ (str, cmd) ->
        Button str $ (addMenuItemToHist ch str) >>
                   (ral $ performProofAction gInfo
                   $ proofMenu gInfo $ return . return . cmd ln))
