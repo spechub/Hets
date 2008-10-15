@@ -141,6 +141,7 @@ createGraph gInfo@(GInfo { gi_LIB_NAME = ln
                          , gi_hetcatsOpts = opts
                          }) title convGraph showLib = do
   let file = rmSuffix (libNameToFile opts ln) ++ prfSuffix
+  deselectEdgeTypes <- newIORef []
   GA.makegraphExt actGraphInfo
                   title
                   (createOpen gInfo file convGraph showLib)
@@ -148,7 +149,7 @@ createGraph gInfo@(GInfo { gi_LIB_NAME = ln
                   (createSaveAs gInfo file)
                   (createClose gInfo)
                   (Just (createExit gInfo))
-                  (createGlobalMenu gInfo convGraph showLib)
+                  (createGlobalMenu gInfo convGraph showLib deselectEdgeTypes)
                   (createNodeTypes gInfo convGraph showLib)
                   (createEdgeTypes gInfo)
 
@@ -211,12 +212,13 @@ createExit (GInfo {exitMVar = exit}) = do
   putMVar exit ()
 
 -- | Creates the global menu
-createGlobalMenu :: GInfo -> ConvFunc -> LibFunc -> [GlobalMenu]
+createGlobalMenu :: GInfo -> ConvFunc -> LibFunc -> IORef [String]
+                 -> [GlobalMenu]
 createGlobalMenu gInfo@(GInfo { gi_LIB_NAME = ln
                               , gi_hetcatsOpts = opts
                               , gi_GraphInfo = gi
                               , commandHist = ch
-                              }) convGraph showLib =
+                              }) convGraph showLib deselectEdgeTypes =
   let ral x = runAndLock gInfo x in
   [GlobalMenu (Menu Nothing
     [ Button "Undo" $ ral $ undo gInfo True
@@ -229,7 +231,7 @@ createGlobalMenu gInfo@(GInfo { gi_LIB_NAME = ln
       ]
     , Button "Focus node" $ ral $ focusNode gInfo
 #ifdef GTKGLADE
-    , Button "Select Linktypes" $ showLinkTypeChoice
+    , Button "Select Linktypes" $ showLinkTypeChoice deselectEdgeTypes
                                 $ (\ eList -> ral $ do
                                     GA.showAll gi
                                     GA.hideSetOfEdgeTypes gi eList

@@ -24,26 +24,32 @@ import qualified GUI.Glade.LinkTypeChoice as LinkTypeChoice
 import Static.DevGraph
 
 import Monad(filterM)
-import Char(toLower)
 
+import Data.IORef
 import qualified Data.Map as Map
 
 mapEdgeTypesToNames :: Map.Map String (DGEdgeType, DGEdgeType)
 mapEdgeTypesToNames = Map.fromList
-  $ map (\ (e, eI) -> ("cb_" ++ (map toLower $ getDGEdgeTypeName e), (e, eI)))
+  $ map (\ (e, eI) -> ("cb" ++ getDGEdgeTypeName e, (e, eI)))
   $ map (\ e -> (e, e { isInc = True } ))
   $ filter (\ e -> not $ isInc e) listDGEdgeTypes
 
 -- | Displays the linktype selection window
-showLinkTypeChoice :: ([DGEdgeType] -> IO ()) -> IO ()
-showLinkTypeChoice updateFunction = postGUIAsync $ do
+showLinkTypeChoice :: IORef [String] -> ([DGEdgeType] -> IO ()) -> IO ()
+showLinkTypeChoice ioRefDeselect updateFunction = postGUIAsync $ do
   xml      <- getGladeXML LinkTypeChoice.get
   window   <- xmlGetWidget xml castToWindow "linktypechoice"
-  ok       <- xmlGetWidget xml castToButton "b_ok"
-  cancel   <- xmlGetWidget xml castToButton "b_cancel"
-  select   <- xmlGetWidget xml castToButton "b_select"
-  deselect <- xmlGetWidget xml castToButton "b_deselect"
-  invert   <- xmlGetWidget xml castToButton "b_invert"
+  ok       <- xmlGetWidget xml castToButton "btnOk"
+  cancel   <- xmlGetWidget xml castToButton "btnCancel"
+  select   <- xmlGetWidget xml castToButton "btnSelect"
+  deselect <- xmlGetWidget xml castToButton "btnDeselect"
+  invert   <- xmlGetWidget xml castToButton "btnInvert"
+
+  deselectEdgeTypes <- readIORef ioRefDeselect
+  mapM_ (\ name -> do
+          cb <- xmlGetWidget xml castToCheckButton name
+          toggleButtonSetActive cb False
+        ) deselectEdgeTypes
 
   let
     edgeMap = mapEdgeTypesToNames
@@ -70,6 +76,7 @@ showLinkTypeChoice updateFunction = postGUIAsync $ do
                                selected <- toggleButtonGetActive cb
                                return $ not selected
                              ) keys
+    writeIORef ioRefDeselect edgeTypeNames
     let edgeTypes =  foldl (\ eList (e, eI) -> e:eI:eList) []
                            $ map (\ name -> Map.findWithDefault
                                    (error "GtkLinkTypeChoice: lookup error!")

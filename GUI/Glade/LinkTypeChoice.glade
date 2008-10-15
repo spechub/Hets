@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <!DOCTYPE glade-interface SYSTEM "glade-2.0.dtd">
-<!--Generated with glade3 3.4.5 on Tue Oct 14 19:55:33 2008 -->
+<!--Generated with glade3 3.4.5 on Wed Oct 15 16:11:39 2008 -->
 <glade-interface>
   <widget class="GtkWindow" id="linktypechoice">
     <child>
@@ -30,7 +30,7 @@
                             <property name="events">GDK_POINTER_MOTION_MASK | GDK_POINTER_MOTION_HINT_MASK | GDK_BUTTON_PRESS_MASK | GDK_BUTTON_RELEASE_MASK</property>
                             <property name="layout_style">GTK_BUTTONBOX_START</property>
                             <child>
-                              <widget class="GtkCheckButton" id="cb_homglobaldef">
+                              <widget class="GtkCheckButton" id="cbHomGlobalDef">
                                 <property name="visible">True</property>
                                 <property name="can_focus">True</property>
                                 <property name="events">GDK_POINTER_MOTION_MASK | GDK_POINTER_MOTION_HINT_MASK | GDK_BUTTON_PRESS_MASK | GDK_BUTTON_RELEASE_MASK</property>
@@ -41,7 +41,7 @@
                               </widget>
                             </child>
                             <child>
-                              <widget class="GtkCheckButton" id="cb_hetglobaldef">
+                              <widget class="GtkCheckButton" id="cbHetGlobalDef">
                                 <property name="visible">True</property>
                                 <property name="can_focus">True</property>
                                 <property name="events">GDK_POINTER_MOTION_MASK | GDK_POINTER_MOTION_HINT_MASK | GDK_BUTTON_PRESS_MASK | GDK_BUTTON_RELEASE_MASK</property>
@@ -55,7 +55,7 @@
                               </packing>
                             </child>
                             <child>
-                              <widget class="GtkCheckButton" id="cb_localdef">
+                              <widget class="GtkCheckButton" id="cbLocalDef">
                                 <property name="visible">True</property>
                                 <property name="can_focus">True</property>
                                 <property name="events">GDK_POINTER_MOTION_MASK | GDK_POINTER_MOTION_HINT_MASK | GDK_BUTTON_PRESS_MASK | GDK_BUTTON_RELEASE_MASK</property>
@@ -69,7 +69,7 @@
                               </packing>
                             </child>
                             <child>
-                              <widget class="GtkCheckButton" id="cb_hidingdef">
+                              <widget class="GtkCheckButton" id="cbHidingDef">
                                 <property name="visible">True</property>
                                 <property name="can_focus">True</property>
                                 <property name="events">GDK_POINTER_MOTION_MASK | GDK_POINTER_MOTION_HINT_MASK | GDK_BUTTON_PRESS_MASK | GDK_BUTTON_RELEASE_MASK</property>
@@ -83,7 +83,7 @@
                               </packing>
                             </child>
                             <child>
-                              <widget class="GtkCheckButton" id="cb_freeorcofreedef">
+                              <widget class="GtkCheckButton" id="cbFreeOrCofreeDef">
                                 <property name="visible">True</property>
                                 <property name="can_focus">True</property>
                                 <property name="events">GDK_POINTER_MOTION_MASK | GDK_POINTER_MOTION_HINT_MASK | GDK_BUTTON_PRESS_MASK | GDK_BUTTON_RELEASE_MASK</property>
@@ -122,22 +122,27 @@
                         <property name="visible">True</property>
                         <property name="xalign">0</property>
                         <property name="yalign">0</property>
+                        <property name="top_padding">5</property>
                         <property name="left_padding">12</property>
+                        <property name="right_padding">100</property>
                         <child>
-                          <widget class="GtkVButtonBox" id="vbuttonbox4">
+                          <widget class="GtkVBox" id="vbox4">
                             <property name="visible">True</property>
-                            <property name="layout_style">GTK_BUTTONBOX_START</property>
                             <child>
-                              <widget class="GtkButton" id="b_select">
+                              <widget class="GtkButton" id="btnSelect">
                                 <property name="visible">True</property>
                                 <property name="can_focus">True</property>
                                 <property name="receives_default">True</property>
                                 <property name="label" translatable="yes">Select all</property>
                                 <property name="response_id">0</property>
                               </widget>
+                              <packing>
+                                <property name="expand">False</property>
+                                <property name="fill">False</property>
+                              </packing>
                             </child>
                             <child>
-                              <widget class="GtkButton" id="b_deselect">
+                              <widget class="GtkButton" id="btnDeselect">
                                 <property name="visible">True</property>
                                 <property name="can_focus">True</property>
                                 <property name="receives_default">True</property>
@@ -145,11 +150,13 @@
                                 <property name="response_id">0</property>
                               </widget>
                               <packing>
+                                <property name="expand">False</property>
+                                <property name="fill">False</property>
                                 <property name="position">1</property>
                               </packing>
                             </child>
                             <child>
-                              <widget class="GtkButton" id="b_invert">
+                              <widget class="GtkButton" id="btnInvert">
                                 <property name="visible">True</property>
                                 <property name="can_focus">True</property>
                                 <property name="receives_default">True</property>
@@ -157,6 +164,8 @@
                                 <property name="response_id">0</property>
                               </widget>
                               <packing>
+                                <property name="expand">False</property>
+                                <property name="fill">False</property>
                                 <property name="position">2</property>
                               </packing>
                             </child>
@@ -176,6 +185,7 @@
                     </child>
                   </widget>
                   <packing>
+                    <property name="expand">False</property>
                     <property name="position">1</property>
                   </packing>
                 </child>
@@ -199,7 +209,7 @@
                             <property name="events">GDK_POINTER_MOTION_MASK | GDK_POINTER_MOTION_HINT_MASK | GDK_BUTTON_PRESS_MASK | GDK_BUTTON_RELEASE_MASK</property>
                             <property name="layout_style">GTK_BUTTONBOX_START</property>
                             <child>
-                              <widget class="GtkCheckButton" id="cb_homglobalthmproven">
+                              <widget class="GtkCheckButton" id="cbHomGlobalThmProven">
                                 <property name="visible">True</property>
                                 <property name="can_focus">True</property>
                                 <property name="events">GDK_POINTER_MOTION_MASK | GDK_POINTER_MOTION_HINT_MASK | GDK_BUTTON_PRESS_MASK | GDK_BUTTON_RELEASE_MASK</property>
@@ -210,7 +220,7 @@
                               </widget>
                             </child>
                             <child>
-                              <widget class="GtkCheckButton" id="cb_hetglobalthmproven">
+                              <widget class="GtkCheckButton" id="cbHetGlobalThmProven">
                                 <property name="visible">True</property>
                                 <property name="can_focus">True</property>
                                 <property name="events">GDK_POINTER_MOTION_MASK | GDK_POINTER_MOTION_HINT_MASK | GDK_BUTTON_PRESS_MASK | GDK_BUTTON_RELEASE_MASK</property>
@@ -224,7 +234,7 @@
                               </packing>
                             </child>
                             <child>
-                              <widget class="GtkCheckButton" id="cb_homlocalthmproven">
+                              <widget class="GtkCheckButton" id="cbHomLocalThmProven">
                                 <property name="visible">True</property>
                                 <property name="can_focus">True</property>
                                 <property name="events">GDK_POINTER_MOTION_MASK | GDK_POINTER_MOTION_HINT_MASK | GDK_BUTTON_PRESS_MASK | GDK_BUTTON_RELEASE_MASK</property>
@@ -238,7 +248,7 @@
                               </packing>
                             </child>
                             <child>
-                              <widget class="GtkCheckButton" id="cb_hetlocalthmproven">
+                              <widget class="GtkCheckButton" id="cbHetLocalThmProven">
                                 <property name="visible">True</property>
                                 <property name="can_focus">True</property>
                                 <property name="events">GDK_POINTER_MOTION_MASK | GDK_POINTER_MOTION_HINT_MASK | GDK_BUTTON_PRESS_MASK | GDK_BUTTON_RELEASE_MASK</property>
@@ -252,7 +262,7 @@
                               </packing>
                             </child>
                             <child>
-                              <widget class="GtkCheckButton" id="cb_hidingthmproven">
+                              <widget class="GtkCheckButton" id="cbHidingThmProven">
                                 <property name="visible">True</property>
                                 <property name="can_focus">True</property>
                                 <property name="events">GDK_POINTER_MOTION_MASK | GDK_POINTER_MOTION_HINT_MASK | GDK_BUTTON_PRESS_MASK | GDK_BUTTON_RELEASE_MASK</property>
@@ -266,7 +276,7 @@
                               </packing>
                             </child>
                             <child>
-                              <widget class="GtkCheckButton" id="cb_freethmproven">
+                              <widget class="GtkCheckButton" id="cbFreeThmProven">
                                 <property name="visible">True</property>
                                 <property name="can_focus">True</property>
                                 <property name="events">GDK_POINTER_MOTION_MASK | GDK_POINTER_MOTION_HINT_MASK | GDK_BUTTON_PRESS_MASK | GDK_BUTTON_RELEASE_MASK</property>
@@ -310,7 +320,7 @@
                             <property name="events">GDK_POINTER_MOTION_MASK | GDK_POINTER_MOTION_HINT_MASK | GDK_BUTTON_PRESS_MASK | GDK_BUTTON_RELEASE_MASK</property>
                             <property name="layout_style">GTK_BUTTONBOX_START</property>
                             <child>
-                              <widget class="GtkCheckButton" id="cb_homglobalthmunproven">
+                              <widget class="GtkCheckButton" id="cbHomGlobalThmUnproven">
                                 <property name="visible">True</property>
                                 <property name="can_focus">True</property>
                                 <property name="events">GDK_POINTER_MOTION_MASK | GDK_POINTER_MOTION_HINT_MASK | GDK_BUTTON_PRESS_MASK | GDK_BUTTON_RELEASE_MASK</property>
@@ -321,7 +331,7 @@
                               </widget>
                             </child>
                             <child>
-                              <widget class="GtkCheckButton" id="cb_hetglobalthmunproven">
+                              <widget class="GtkCheckButton" id="cbHetGlobalThmUnproven">
                                 <property name="visible">True</property>
                                 <property name="can_focus">True</property>
                                 <property name="events">GDK_POINTER_MOTION_MASK | GDK_POINTER_MOTION_HINT_MASK | GDK_BUTTON_PRESS_MASK | GDK_BUTTON_RELEASE_MASK</property>
@@ -335,7 +345,7 @@
                               </packing>
                             </child>
                             <child>
-                              <widget class="GtkCheckButton" id="cb_homlocalthmunproven">
+                              <widget class="GtkCheckButton" id="cbHomLocalThmUnproven">
                                 <property name="visible">True</property>
                                 <property name="can_focus">True</property>
                                 <property name="events">GDK_POINTER_MOTION_MASK | GDK_POINTER_MOTION_HINT_MASK | GDK_BUTTON_PRESS_MASK | GDK_BUTTON_RELEASE_MASK</property>
@@ -349,7 +359,7 @@
                               </packing>
                             </child>
                             <child>
-                              <widget class="GtkCheckButton" id="cb_hetlocalthmunproven">
+                              <widget class="GtkCheckButton" id="cbHetLocalThmUnproven">
                                 <property name="visible">True</property>
                                 <property name="can_focus">True</property>
                                 <property name="events">GDK_POINTER_MOTION_MASK | GDK_POINTER_MOTION_HINT_MASK | GDK_BUTTON_PRESS_MASK | GDK_BUTTON_RELEASE_MASK</property>
@@ -363,7 +373,7 @@
                               </packing>
                             </child>
                             <child>
-                              <widget class="GtkCheckButton" id="cb_hidingthmunproven">
+                              <widget class="GtkCheckButton" id="cbHidingThmUnproven">
                                 <property name="visible">True</property>
                                 <property name="can_focus">True</property>
                                 <property name="events">GDK_POINTER_MOTION_MASK | GDK_POINTER_MOTION_HINT_MASK | GDK_BUTTON_PRESS_MASK | GDK_BUTTON_RELEASE_MASK</property>
@@ -377,7 +387,7 @@
                               </packing>
                             </child>
                             <child>
-                              <widget class="GtkCheckButton" id="cb_freethmunproven">
+                              <widget class="GtkCheckButton" id="cbFreeThmUnproven">
                                 <property name="visible">True</property>
                                 <property name="can_focus">True</property>
                                 <property name="events">GDK_POINTER_MOTION_MASK | GDK_POINTER_MOTION_HINT_MASK | GDK_BUTTON_PRESS_MASK | GDK_BUTTON_RELEASE_MASK</property>
@@ -422,7 +432,7 @@
             <property name="spacing">5</property>
             <property name="layout_style">GTK_BUTTONBOX_END</property>
             <child>
-              <widget class="GtkButton" id="b_cancel">
+              <widget class="GtkButton" id="btnCancel">
                 <property name="visible">True</property>
                 <property name="can_focus">True</property>
                 <property name="receives_default">True</property>
@@ -431,7 +441,7 @@
               </widget>
             </child>
             <child>
-              <widget class="GtkButton" id="b_ok">
+              <widget class="GtkButton" id="btnOk">
                 <property name="visible">True</property>
                 <property name="can_focus">True</property>
                 <property name="receives_default">True</property>
