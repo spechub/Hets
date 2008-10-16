@@ -21,6 +21,7 @@ module Propositional.Analysis
     ,mkStatSymbMapItem
     ,inducedFromMorphism
     ,inducedFromToMorphism
+    , signatureColimit
     )
     where
 
@@ -38,6 +39,10 @@ import qualified Propositional.Morphism as Morphism
 import Common.Doc ()
 import Common.DocUtils
 import Common.ExtSign
+import Common.Lib.Graph
+import Data.Graph.Inductive.Graph
+import Common.SetColimit
+import CASL.ColimSign(renameSorts)
 
 -- | Datatype for formulas with diagnosis data
 data DIAG_FORM = DiagForm
@@ -380,3 +385,18 @@ inducedFromToMorphism imap (ExtSign sig _) (ExtSign tSig _) =
                                 ]
                               , Result.maybeResult = Nothing
                               }
+
+signatureColimit :: Gr Sign.Sign (Int, Morphism.Morphism)
+                 -> Result.Result (Sign.Sign, Map.Map Int Morphism.Morphism)
+signatureColimit graph = do 
+ let graph1 = nmap Sign.items $ emap (\(x,y) -> (x, Morphism.propMap y)) graph
+     (set, maps) = renameSorts $ computeColimitSet graph1
+     cSig = Sign.Sign{Sign.items = set}
+ return (cSig, 
+         Map.fromList $ map (\(i, n) -> 
+                              (i, Morphism.Morphism{
+                                    Morphism.source = n, 
+                                    Morphism.target = cSig,
+                                    Morphism.propMap = maps Map.! i
+                                  }))$ labNodes graph) 
+  

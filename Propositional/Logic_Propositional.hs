@@ -135,6 +135,7 @@ instance StaticAnalysis Propositional
           induced_from_morphism Propositional    = Analysis.inducedFromMorphism
           induced_from_to_morphism Propositional =
               Analysis.inducedFromToMorphism
+          signature_colimit Propositional  = Analysis.signatureColimit
 
 -- | Sublogics
 instance SemiLatticeWithTop Sublogic.PropSL where
