@@ -12,7 +12,8 @@ The static analysis of DL basic specs is implemented here.
 -}
 
 module DL.StaticAnalysis
-        ( basic_DL_analysis
+        ( basic_DL_analysis,
+          signColimit
         )
         where
 
@@ -23,12 +24,19 @@ import Common.Result
 import Common.AS_Annotation
 import Common.ExtSign
 import qualified Data.Set as Set
+import qualified Data.Map as Map
 import DL.Sign
 import Common.Id
 import qualified Common.Lib.Rel as Rel()
 import Data.List
 import Data.Maybe
 import Control.Monad
+
+import Data.Graph.Inductive.Graph
+import Common.Lib.Graph
+import Common.SetColimit
+import CASL.ColimSign(renameSorts)
+import CASL.Overload(leqClasses)
 
 basic_DL_analysis :: (DLBasic, Sign,GlobalAnnos) ->
                       Result (DLBasic, ExtSign Sign DLSymbol,[Named DLBasicItem])
@@ -910,3 +918,105 @@ examineObjProp bI _ =
                                   nameO = nm
                                 }
                 _                                          -> error "Runtime error!"
+
+signColimit :: Gr Sign (Int, DLMorphism) ->
+               Result (Sign, Map.Map Int DLMorphism)
+signColimit graph = do
+ let clGraph = nmap classes $ emap (\(x,y) -> (x,c_map y)) graph
+     dpGraph = nmap ((Set.map nameD).dataProps) $
+               emap (\(x,y) -> (x, Map.fromList $
+                                   map (\(s,t) ->(nameD s, nameD t))$
+                                   Map.toList $ dp_map y)) graph
+     opGraph = nmap ( (Set.map nameO).objectProps) $
+               emap (\(x,y) -> (x, Map.fromList $
+                                   map (\(s,t) ->(nameO s, nameO t))$
+                                   Map.toList $op_map y)) graph
+     indGraph = nmap individuals $
+                emap (\(x,y) -> (x, i_map y)) graph
+     (clCol, clMap) = renameSorts $ computeColimitSet clGraph
+     (dpCol, dpMap) = renameSorts $ computeColimitSet dpGraph
+     (opCol, opMap) = renameSorts $ computeColimitSet opGraph
+     (indCol, indMap) = computeColimitIndiv indGraph clMap
+     cSig = Sign{
+              classes = clCol,
+              pData = Set.empty,
+              dataProps = Set.map (\x -> QualDataProp {nameD = x} ) dpCol,
+              objectProps = Set.map (\x -> QualObjProp {nameO = x} ) opCol,
+              individuals = indCol
+             }
+     cMor = Map.fromList $ map
+            (\(i, n) -> (i,
+              DLMorphism{
+               msource = n,
+               mtarget = cSig,
+               c_map = clMap Map.! i,
+               dp_map = Map.fromList $
+                        map (\(s,t) ->(QualDataProp {nameD = s},
+                                       QualDataProp {nameD = t}) )$
+                        Map.toList $ dpMap Map.! i,
+               op_map = Map.fromList $
+                        map (\(s,t) ->(QualObjProp {nameO = s},
+                                       QualObjProp {nameO = t}) )$
+                        Map.toList $ opMap Map.! i,
+               i_map = indMap Map.! i
+              })) $ labNodes graph
+ return (cSig, cMor)
+
+computeColimitIndiv
+  :: Gr (Set.Set QualIndiv) (Int, Map.Map QualIndiv QualIndiv)
+  -> Map.Map Int (Map.Map Id Id)
+  -> (Set.Set QualIndiv, Map.Map Int (Map.Map QualIndiv QualIndiv))
+computeColimitIndiv indGraph clsFun =
+ let (inds, indFun) = computeColimitSet indGraph
+     renameInd (indSet, indivMap) = let
+       fstEqual (ind1, _) (ind2, _) = iid ind1 == iid ind2
+       partList pairSet = leqClasses fstEqual pairSet
+       namePartitions elemList pairFun ids idsMap =
+         case elemList of
+          [] -> (ids, idsMap)
+          p:ps ->
+            if length p == 1 then
+              -- a single individual with this name, keep it
+              let (indiv, idx) = head p
+                  indiv' = QualIndiv{
+                             iid = iid indiv,
+                             types = map ( (clsFun Map.! idx) Map.!) $
+                                     types indiv
+                                    }
+                  ids' = Set.insert indiv' ids
+                  updateF node = let
+                                  fNode = idsMap Map.! node
+                                  fPair = pairFun Map.! node
+                                 in
+                                  Map.union fNode $
+                                  Map.fromList $ map (\x -> (x,indiv')) $
+                                  filter (\x -> fPair Map.! x == head p) $
+                                  Map.keys fPair
+                  idsMap' = Map.fromList $ zip (Map.keys idsMap) $
+                            map updateF $ Map.keys idsMap
+              in namePartitions ps pairFun ids' idsMap'
+            else let
+              indivs = map (\(i, idx) -> (idx, QualIndiv{
+                             iid = appendNumber (iid i) idx,
+                             types = map ( (clsFun Map.! idx) Map.!) $
+                                     types i
+                                    } )) p
+              ids' = Set.union ids $ Set.fromList $ map snd indivs
+              updateF node = let
+                                  fNode = idsMap Map.! node
+                                  fPair = pairFun Map.! node
+                             in
+                              Map.union fNode $
+                              Map.fromList $
+                              map (\x -> (x, (Map.fromList indivs) Map.! node))$
+                              filter (\x -> fPair Map.! x `elem` p) $
+                              Map.keys fPair
+              idsMap' = Map.fromList $ zip (Map.keys idsMap) $
+                            map updateF $ Map.keys idsMap
+                 in namePartitions ps pairFun ids' idsMap'
+              -- several individuals, add the number to the end
+                               in
+       namePartitions (partList indSet) indivMap (Set.empty) $
+                      Map.fromList $ zip (Map.keys indivMap) (repeat Map.empty)
+ in renameInd (inds, indFun)
+

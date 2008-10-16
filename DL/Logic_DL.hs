@@ -86,3 +86,4 @@ instance StaticAnalysis DL
     inclusion DL = inclusionMor
     symbol_to_raw DL = symbol2raw
     signature_union DL = uniteSig
+    signature_colimit DL = signColimit
