@@ -939,7 +939,10 @@ signColimit graph = do
      (indCol, indMap) = computeColimitIndiv indGraph clMap
      cSig = Sign{
               classes = clCol,
-              pData = Set.empty,
+              pData = Set.fromList $
+                       concatMap (\(i,l) -> map ((clMap Map.! i) Map.!) l ) $
+                       map (\(i,n) -> (i, Set.toList $ pData n)) $
+                       labNodes graph,
               dataProps = Set.map (\x -> QualDataProp {nameD = x} ) dpCol,
               objectProps = Set.map (\x -> QualObjProp {nameO = x} ) opCol,
               individuals = indCol
