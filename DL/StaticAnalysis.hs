@@ -38,6 +38,8 @@ import Common.SetColimit
 import CASL.ColimSign(renameSorts)
 import CASL.Overload(leqClasses)
 
+import Debug.Trace
+
 basic_DL_analysis :: (DLBasic, Sign,GlobalAnnos) ->
                       Result (DLBasic, ExtSign Sign DLSymbol,[Named DLBasicItem])
 basic_DL_analysis (spec, sig, _) =
@@ -937,12 +939,11 @@ signColimit graph = do
      (dpCol, dpMap) = renameSorts $ computeColimitSet dpGraph
      (opCol, opMap) = renameSorts $ computeColimitSet opGraph
      (indCol, indMap) = computeColimitIndiv indGraph clMap
-     cSig = Sign{
+     cSig = trace (show $ Map.keys clMap)$ Sign{
               classes = clCol,
               pData = Set.fromList $
-                       concatMap (\(i,l) -> map ((clMap Map.! i) Map.!) l ) $
-                       map (\(i,n) -> (i, Set.toList $ pData n)) $
-                       labNodes graph,
+                        concat $ map (\(_i,n) -> Set.toList $ pData n) $
+                        labNodes graph,
               dataProps = Set.map (\x -> QualDataProp {nameD = x} ) dpCol,
               objectProps = Set.map (\x -> QualObjProp {nameO = x} ) opCol,
               individuals = indCol
