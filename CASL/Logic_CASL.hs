@@ -161,8 +161,8 @@ instance (Lattice a, ProjForm a f, ProjSigItem a s f)
     => ProjBasic a () s f where
     projBasicItems _ b = (Just $ Ext_BASIC_ITEMS b, [])
 
-instance (NameSL a) => Sublogics (CASL_SL a) where
-    sublogic_names = sublogics_name nameSL
+instance (NameSL a) => SublogicName (CASL_SL a) where
+    sublogicName = sublogics_name nameSL
 
 instance (MinSL a f, MinSL a s, MinSL a b) =>
     MinSublogic (CASL_SL a) (BASIC_SPEC b s f) where

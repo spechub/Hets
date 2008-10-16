@@ -467,12 +467,12 @@ class MinSublogic sublogic item => ProjectSublogicM sublogic item where
 instance ProjectSublogicM () b where
     projectSublogicM _ = Just
 
--- | class for providing a list of sublogic names
-class Sublogics l where
-    sublogic_names :: l -> [String]
+-- | a class for providing a sublogi name
+class SublogicName l where
+    sublogicName :: l -> String
 
-instance Sublogics () where
-    sublogic_names () = [""]
+instance SublogicName () where
+    sublogicName () = ""
 
 {- Type class logic. The central type class of Hets, providing the
    interface for logics. This type class is instantiated for many logics,
@@ -500,7 +500,7 @@ class (StaticAnalysis lid
        ProjectSublogicM sublogics symbol,
        Typeable sublogics,
        ShATermConvertible sublogics,
-       Sublogics sublogics,
+       SublogicName sublogics,
        Eq proof_tree, Show proof_tree, ShATermConvertible proof_tree,
        Ord proof_tree, Typeable proof_tree)
     => Logic lid sublogics

@@ -1,7 +1,7 @@
 {- |
 Module      :  $Header$
 Description :  Instance of class Logic for CASL DL
-Copyright   :  (c) Klaus L�ttich, Uni Bremen 2005
+Copyright   :  (c) Klaus Luettich, Uni Bremen 2005
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
 Maintainer  :  luecke@informatik.uni-bremen.de
@@ -136,7 +136,6 @@ instance Logic CASL_DL CASL_DL_SL
                DLMor
                Symbol RawSymbol Q_ProofTree where
          stability _        = Unstable
-         empty_proof_tree _ = error "instance Logic CASL_DL"
          top_sublogic _     = SROIQ
          all_sublogics _    = [SROIQ]
 
@@ -173,8 +172,8 @@ instance ProjectSublogic CASL_DL_SL DL_BASIC_SPEC where
 instance MinSublogic CASL_DL_SL DL_BASIC_SPEC where
     minSublogic _ = SROIQ
 
-instance Sublogics CASL_DL_SL where
-    sublogic_names SROIQ = ["SROIQ"]
+instance SublogicName CASL_DL_SL where
+    sublogicName SROIQ = show SROIQ
 
 instance SemiLatticeWithTop CASL_DL_SL where
     join _ _ = SROIQ

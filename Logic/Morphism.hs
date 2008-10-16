@@ -86,10 +86,10 @@ instance Logic lid sublogics
         basic_spec sentence symb_items symb_map_items
         sign morphism sign_symbol symbol proof_tree =>
          Language (IdMorphism lid sublogics) where
-           language_name (IdMorphism lid sub) =
-               case sublogic_names sub of
-               [] -> error "language_name IdMorphism"
-               h : _ -> "id_" ++ language_name lid ++ "." ++ h
+           language_name (IdMorphism lid sub) = "id_" ++ language_name lid
+               ++ case sublogicName sub of
+                    [] -> ""
+                    h -> "." ++ h
 
 instance Logic lid sublogics
         basic_spec sentence symb_items symb_map_items
@@ -294,12 +294,13 @@ instance (ShATermConvertible sublogics1, ShATermConvertible sublogics2)
                                  (att1, i1') -> (att1, SublogicsPair i1' i2')
            u -> fromShATermError "SublogicsPair" u
 
-instance (Sublogics sublogics1, Sublogics sublogics2)
-         => Sublogics (SublogicsPair sublogics1 sublogics2) where
-       sublogic_names (SublogicsPair sub1 sub2) =
-           [ x1 ++ " " ++ x2
-           | x1 <- sublogic_names sub1
-           , x2 <- sublogic_names sub2 ]
+instance (SublogicName sublogics1, SublogicName sublogics2)
+         => SublogicName (SublogicsPair sublogics1 sublogics2) where
+       sublogicName (SublogicsPair sub1 sub2) =
+           let s1 = sublogicName sub1
+               s2 = sublogicName sub2
+           in if null s1 then s2 else if null s2 then s1 else
+              s1 ++ "|" ++ s2
 
 instance ( MinSublogic sublogics1 ()
          , Morphism cid

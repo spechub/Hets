@@ -290,8 +290,8 @@ formulas_name False Horn   = "Cond"
 formulas_name True  Atomic = "Atom"
 formulas_name False Atomic = "Eq"
 
-sublogics_name :: (a -> String) -> CASL_SL a -> [String]
-sublogics_name f x = [ f (ext_features x)
+sublogics_name :: (a -> String) -> CASL_SL a -> String
+sublogics_name f x = f (ext_features x)
                     ++ (case sub_features x of
                          NoSub     -> ""
                          LocFilSub -> "Sul"
@@ -305,7 +305,7 @@ sublogics_name f x = [ f (ext_features x)
                          else "")
                     ++ (formulas_name (has_pred x) (which_logic x) )
                     ++ (if has_eq x then "=" else "")
-                    ++ (if has_empty_sorts x then "E" else "")]
+                    ++ (if has_empty_sorts x then "E" else "")
 
 ------------------------------------------------------------------------------
 -- join or max functions

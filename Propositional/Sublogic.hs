@@ -285,12 +285,10 @@ sublogics_all =
 -- Conversion functions to String                                            --
 -------------------------------------------------------------------------------
 
-sublogics_name :: PropSL -> [String]
-sublogics_name f =
-    case formType of
-      HornClause -> ["HornClause"]
-      PlainFormula -> ["Prop"]
-    where formType = format f
+sublogics_name :: PropSL -> String
+sublogics_name f = case format f of
+      HornClause -> "HornClause"
+      PlainFormula -> "Prop"
 
 -------------------------------------------------------------------------------
 -- Projections to sublogics                                                  --

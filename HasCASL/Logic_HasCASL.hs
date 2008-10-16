@@ -111,8 +111,8 @@ instance SemiLatticeWithTop Sublogic where
     join s = sublogicUp . sublogic_max s
     top = topLogic
 
-instance Sublogics Sublogic where
-    sublogic_names = sublogic_name
+instance SublogicName Sublogic where
+    sublogicName = sublogic_name
 
 instance MinSublogic Sublogic BasicSpec where
     minSublogic = sl_basicSpec

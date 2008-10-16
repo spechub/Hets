@@ -227,8 +227,8 @@ formulas_name hasPred f = case f of
                 _ -> id) $ if hasPred then "Horn" else "Cond"
 
 -- | the sublogic name as a singleton string list
-sublogic_name :: Sublogic -> [String]
-sublogic_name x = [
+sublogic_name :: Sublogic -> String
+sublogic_name x =
      (if has_sub x then "Sub" else "")
   ++ (if has_part x then "P" else "")
   ++ (case type_classes x of
@@ -237,7 +237,7 @@ sublogic_name x = [
          ConstructorClasses -> "CoCl")
   ++ (if has_type_constructors x then "TyCons" else "")
   ++ formulas_name (has_pred x) (which_logic x)
-  ++ (if has_eq x then "=" else "")]
+  ++ (if has_eq x then "=" else "")
 
 -- * join functions
 sublogic_join :: (Bool -> Bool -> Bool)

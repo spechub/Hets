@@ -208,11 +208,10 @@ showLogicGraph
         (nullSubArcTypeParms:: arcTypeParms [Char]) = emptyArcTypeParms
         showSublogic l =
             case l of
-              Logic lid -> unlines (map unwords $
-                                map sublogic_names (all_sublogics lid))
+              Logic lid -> unlines (map sublogicName (all_sublogics lid))
         showSubTitle gsl =
             case gsl of
-              G_sublogics _ sls -> unwords $ sublogic_names sls
+              G_sublogics _ sls -> sublogicName sls
         showDescription l =
             case l of
               Logic lid -> description lid ++
@@ -262,7 +261,7 @@ showLogicGraph
                          subNodeMenu $$$
                          Ellipse $$$
                          ValueTitle
-                           (\gsl -> return (unwords $ sublogic_names gsl)) $$$
+                           (\gsl -> return (sublogicName gsl)) $$$
                          Color "yellow" $$$
                          emptyNodeTypeParms
                  subNodeType <- newNodeType subLogicG subNodeTypeParms
@@ -403,10 +402,10 @@ showHetSublogicGraph
     where
         (nullArcTypeParms :: arcTypeParms AnyComorphism) = emptyArcTypeParms
         showSublogic (G_sublogics lid _) =
-            unlines (map unwords $ map sublogic_names (all_sublogics lid))
+            unlines (map sublogicName (all_sublogics lid))
         showSubTitle gsl =
             case gsl of
-              G_sublogics _ sls -> unwords $ sublogic_names sls
+              G_sublogics _ sls -> sublogicName sls
         showDescription (G_sublogics lid _) =
             description lid ++ "\n\nStability: " ++ show (stability lid)
         showComoDescription c =

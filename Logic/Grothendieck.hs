@@ -253,9 +253,9 @@ data G_sublogics = forall lid sublogics
   deriving Typeable
 
 instance Show G_sublogics where
-    show (G_sublogics lid sub) = case sublogic_names sub of
-      [] -> error "show G_sublogics"
-      h : _ -> show lid ++ (if null h then "" else "." ++ h)
+    show (G_sublogics lid sub) = language_name lid ++ case sublogicName sub of
+      [] -> ""
+      h -> "." ++ h
 
 instance Eq G_sublogics where
     g1 == g2 = compare g1 g2 == EQ
@@ -389,7 +389,7 @@ lookupCompComorphism nameList logicGraph = do
                      else return $ tail subLogicD
          Logic lid <- maybe (fail ("Cannot find Logic " ++ mainLogic)) return
                  $ Map.lookup mainLogic (logics logicGraph)
-         case filter (\ s -> elem sublogic $ sublogic_names s)
+         case filter (\ s -> sublogic == sublogicName s)
               $ all_sublogics lid of
            [] -> fail $ "unknown sublogic name " ++ sublogic
            s : _ ->  return $ Comorphism $ mkIdComorphism lid s

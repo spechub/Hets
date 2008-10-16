@@ -191,11 +191,11 @@ wrapMapTheory cid (sign, sens) =
                  then map_theory cid (sign, sens)
                  else fail $ "for '" ++ language_name cid ++
                            "' expected sublogic '" ++
-                           concat (sublogic_names sub) ++
+                           sublogicName sub ++
                            "'\n but found sublogic '" ++
-                           concat (sublogic_names senLog) ++
+                           sublogicName senLog ++
                            "' with signature sublogic '" ++
-                           concat (sublogic_names sigLog) ++ "'\n" ++
+                           sublogicName sigLog ++ "'\n" ++
                  show (vcat $ pretty sign : map
                                 (print_named $ sourceLogic cid) sens)
 
@@ -257,15 +257,13 @@ instance Logic lid sublogics
         sign morphism symbol raw_symbol proof_tree =>
          Language (InclComorphism lid sublogics) where
            language_name (InclComorphism lid sub_src sub_trg) =
+             let sblName = sublogicName sub_src in
                if sub_src == sub_trg
                then "id_" ++ language_name lid ++
-                    if null (sblName sub_src)
-                    then "" else "." ++ (sblName sub_src)
-               else "incl_" ++ language_name lid ++ ": " ++
-                    sblName sub_src ++ " -> " ++ sblName sub_trg
-             where sblName sub = case sublogic_names sub of
-                                   [] -> error "language_name IdComorphism"
-                                   h : _ -> h
+                    if null sblName
+                    then "" else "." ++ sblName
+               else "incl_" ++ language_name lid ++ ":" ++
+                    sblName ++ "->" ++ sublogicName sub_trg
 
 instance Logic lid sublogics
         basic_spec sentence symb_items symb_map_items
@@ -304,7 +302,7 @@ data CompComorphism cid1 cid2 = CompComorphism cid1 cid2 deriving Show
 instance (Language cid1, Language cid2)
           => Language (CompComorphism cid1 cid2) where
    language_name (CompComorphism cid1 cid2) =
-     language_name cid1++ ";" ++language_name cid2
+     language_name cid1 ++ ";" ++ language_name cid2
 
 instance (Comorphism cid1
             lid1 sublogics1 basic_spec1 sentence1 symb_items1 symb_map_items1
@@ -447,7 +445,10 @@ isWeaklyAmalgamable (Comorphism cid) = is_weakly_amalgamable cid
 compComorphism :: Monad m => AnyComorphism -> AnyComorphism -> m AnyComorphism
 compComorphism (Comorphism cid1) (Comorphism cid2) =
    let l1 = targetLogic cid1
-       l2 = sourceLogic cid2 in
+       l2 = sourceLogic cid2
+       msg = "ogic mismatch in composition of " ++ language_name cid1
+                  ++ " and " ++ language_name cid2
+   in
    if language_name l1 == language_name l2 then
       if isSubElem (forceCoerceSublogic l1 l2 $ targetSublogic cid1)
             $ sourceSublogic cid2
@@ -455,7 +456,5 @@ compComorphism (Comorphism cid1) (Comorphism cid2) =
          (True,_) -> return cm2
          (_,True) -> return cm1
          _ ->  -} return $ Comorphism (CompComorphism cid1 cid2)
-       else fail ("Sublogic mismatch in composition of "++language_name cid1++
-                  " and "++language_name cid2)
-    else fail ("Logic mismatch in composition of "++language_name cid1++
-                     " and "++language_name cid2)
+       else fail $ "Subl" ++ msg
+    else fail $ "L" ++ msg

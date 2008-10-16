@@ -148,8 +148,8 @@ instance MinSublogic Sublogic.PropSL AS_BASIC.BASIC_SPEC where
 instance MinSublogic Sublogic.PropSL Sign.Sign where
     minSublogic si = Sublogic.sl_sig Sublogic.bottom si
 
-instance Sublogics Sublogic.PropSL where
-    sublogic_names = Sublogic.sublogics_name
+instance SublogicName Sublogic.PropSL where
+    sublogicName = Sublogic.sublogics_name
 
 instance MinSublogic Sublogic.PropSL AS_BASIC.FORMULA where
     minSublogic frm = Sublogic.sl_form Sublogic.bottom frm
