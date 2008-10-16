@@ -12,7 +12,7 @@ Supposed to be working for CASL extensions as well.
 
 -}
 
-module CASL.ColimSign(signColimit, extCASLColimit) where
+module CASL.ColimSign(signColimit, extCASLColimit, renameSorts) where
 
 import CASL.Sign
 import CASL.Morphism
