@@ -14,9 +14,6 @@ the proof status with manipulating functions
 module Proofs.StatusUtils
     ( lookupHistory
     , mkResultProofStatus
-    , updateProofStatus
-    , prepareProofStatus
-    , reviseProofStatus
     , removeContraryChanges
     , isIdentityEdge
     ) where
@@ -55,45 +52,6 @@ mapProofHistory f = Map.map ( \ c -> setProofHistoryWithDG f c )
 
 prepareResultProofHistory :: LibEnv -> LibEnv
 prepareResultProofHistory = mapProofHistory (emptyHistory :)
-
--- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
--- prepare, revise, lookup, update on proofstatus and its components
--- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-
-{- prepares the all histories of the proof history of the given proofstatus -}
-prepareProofStatus :: LibEnv -> LibEnv
-prepareProofStatus = mapProofHistory prepareHistory
-
-{- prepares the given history for the rule application by appending
-   an empty list tuple to the front of it, if there is not already one
-   with an empty change list-}
-prepareHistory :: ProofHistory -> ProofHistory
-prepareHistory [] = [emptyHistory]
-prepareHistory history@((_,[]):_) = history
-prepareHistory history = emptyHistory : history
-
-{- revises the history of the given proofstatus -}
-reviseProofStatus :: LibEnv -> LibEnv
-reviseProofStatus = mapProofHistory reviseHistory
-
-{- removes the contrary changes form the given history and adds the name
-   of the proof method (TheoremHideShift) -}
-reviseHistory :: ProofHistory -> ProofHistory
-reviseHistory [] = []
-reviseHistory ((_,changes) : history) =
-  ([TheoremHideShift], removeContraryChanges changes) : history
-
-{- updates the library environment and the proof history of the given
-   proofstatus for the given library name-}
-updateProofStatus :: LIB_NAME -> DGraph -> [DGChange] -> LibEnv -> LibEnv
-updateProofStatus ln dgraph changes =
-  Map.update (const $ Just $
-             setProofHistoryWithDG (addChanges changes) dgraph) ln
-
-{- adds the given changes to the given history -}
-addChanges :: [DGChange] -> [([DGRule],[DGChange])] -> [([DGRule],[DGChange])]
-addChanges changes [] = [([],changes)]
-addChanges changes (hElem:history) = (fst hElem, snd hElem ++ changes):history
 
 -- ----------------------------------------------
 -- methods that keep the change list clean
@@ -144,8 +102,8 @@ removeChange c1@(DeleteNode (n,_)) (c2:rest) =
    else c2:removeChange c1 rest
 removeChange c1 (c2:rest) = c2:removeChange c1 rest
 
-{- | check if the given edge is a so-called identitied edge, namely a circle
-     from a node to itself. -}
+{- | check if the given edge is an identity edge, namely a loop
+     from a node to itself with an identity morphism. -}
 isIdentityEdge :: LEdge DGLinkLab -> LibEnv -> DGraph -> Bool
 isIdentityEdge (src, tgt, edgeLab) ps dgraph =
   let nodeLab = labDG dgraph src
