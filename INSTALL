@@ -1,9 +1,8 @@
 For the graph display with uDrawGraph we rely on "uni"
-(www.informatik.uni-bremen.de/uniform/wb).
-svn co https://svn-agbkb.informatik.uni-bremen.de/uni/trunk uni
+  svn co https://svn-agbkb.informatik.uni-bremen.de/uni/trunk uni
 
 For compilation the Glasgow Haskell Compiler "ghc" Version
-6.8.2 is required! (ghc-6.6.1 with Cabal-1.2.2.0 may work, too) 
+6.8.2 is required!
 
 In order to build "hets" from sources using GHC, the "uni" library
 must have been installed. "uni" relies on the
@@ -15,19 +14,21 @@ from http://www.informatik.uni-bremen.de/uDrawGraph only needs to be
 unpacked.
 
 Within uni call:
-./configure
-make cabal
-# and optional
-./runhaddock.sh
+  ./configure
+  make packages
+
+Make sure you don't have uni-packages in your user database:
+  ghc-pkg list
+Other unregister them all:
+  ghc-pkg unregiser uni-util --user
+
 
 "Hets" and "uni" must reside in the same
 directory. Additionally - if you want a mini-logic Haskell - a
 "programatica" directory may be there. (The file
 utils/nightly/cronjob.sh contains the lines how to check out programatica.)
 
-From
-http://www.dfki.de/sks/hets/src-distribution/versions/
-
+From http://www.dfki.de/sks/hets/src-distribution/versions/
 recent snapshots of "uni", "programatica" and the "hets" sources may be
 obtained (if you don't want to check out from cvs or svn
 repositories).
@@ -37,10 +38,10 @@ comptable.xml output.
 
 The binary "hets" should be produced by:
 
-make -f Makefile.orig packages
-make depend
-make hets
-# this takes a while
+  make -f Makefile.orig packages
+  make depend
+  make hets
+  # this takes a while
 
 Use "gmake" (and "gtar" for unpacking) under solaris!
 
