@@ -53,13 +53,15 @@ import Modal.Logic_Modal
 import CoCASL.Logic_CoCASL
 import CspCASL.Logic_CspCASL
 import COL.Logic_COL ()
-import OWL.Logic_OWL11
 import CASL_DL.Logic_CASL_DL
 import ConstraintCASL.Logic_ConstraintCASL
 import DL.Logic_DL
 import RelationalScheme.Logic_Rel
 import VSE.Logic_VSE
 import OMDoc.Logic_OMDoc ()
+#endif
+#ifndef NOOWLLOGIC
+import OWL.Logic_OWL11
 #endif
 
 logicList :: [AnyLogic]
@@ -69,8 +71,11 @@ logicList = [Logic CASL, Logic HasCASL,
 #endif
 #ifdef CASLEXTENSIONS
              Logic CoCASL, Logic Modal, Logic CspCASL, -- Logic COL,
-             Logic OWL11, Logic CASL_DL, Logic ConstraintCASL, Logic DL,
+             Logic CASL_DL, Logic ConstraintCASL, Logic DL,
              Logic RelScheme, Logic VSE,
+#endif
+#ifndef NOOWLLOGIC
+             Logic OWL11,
 #endif
              Logic Isabelle,Logic SoftFOL,
             Logic Propositional]

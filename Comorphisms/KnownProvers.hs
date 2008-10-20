@@ -58,6 +58,8 @@ import Comorphisms.CoCASL2CoSubCFOL
 import Comorphisms.CoCFOL2IsabelleHOL
 import Comorphisms.Modal2CASL
 import Comorphisms.CASL_DL2CASL
+#endif
+#ifndef NOOWLLOGIC
 import OWL.Logic_OWL11
 #endif
 import Comorphisms.PCoClTyConsHOL2PairsInIsaHOL
@@ -87,12 +89,12 @@ knownProversWithKind pk =
        spassCs <- spassComorphisms
        zchaffCS <- zchaffComorphisms
        qCs <- quickCheckComorphisms
-#ifdef CASLEXTENSIONS
+#ifndef NOOWLLOGIC
        pelletCS <- pelletComorphisms
 #endif
        return $ foldl insProvers Map.empty $
               isaCs ++ spassCs ++ zchaffCS ++ qCs
-#ifdef CASLEXTENSIONS
+#ifndef NOOWLLOGIC
               ++ pelletCS
 #endif
               ++ [Comorphism $ mkIdComorphism VSE ()]
@@ -180,7 +182,7 @@ zchaffComorphisms = return
                      Comorphism (mkIdComorphism Prop.Propositional PS.top)
                     ]
 
-#ifdef CASLEXTENSIONS
+#ifndef NOOWLLOGIC
 pelletComorphisms :: Result [AnyComorphism]
 pelletComorphisms = return
                     [

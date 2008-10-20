@@ -79,14 +79,16 @@ import Comorphisms.CASL2CspCASL
 import Comorphisms.CspCASL2Modal
 import Comorphisms.CspCASL2IsabelleHOL
 import Comorphisms.CASL_DL2CASL
-import Comorphisms.OWL2CASL_DL
-import Comorphisms.OWL2DL
 import Comorphisms.DL2CASL_DL
 import Comorphisms.RelScheme2CASL
 import Comorphisms.CASL2VSERefine
 import Comorphisms.CASL2VSEImport
-
 #endif
+#ifndef NOOWLLOGIC
+import Comorphisms.OWL2CASL_DL
+import Comorphisms.OWL2DL
+#endif
+
 #ifdef PROGRAMATICA
 import Comorphisms.HasCASL2Haskell
 import Comorphisms.Haskell2IsabelleHOLCF
@@ -129,12 +131,14 @@ comorphismList =
     , Comorphism CoCASL2CoPCFOL
     , Comorphism CoCASL2CoSubCFOL
     , Comorphism CoCFOL2IsabelleHOL
-    , Comorphism OWL2CASL_DL
-    , Comorphism OWL2DL
     , Comorphism DL2CASL_DL
     , Comorphism RelScheme2CASL
     , Comorphism CASL2VSEImport
     , Comorphism CASL2VSERefine
+#endif
+#ifndef NOOWLLOGIC
+    , Comorphism OWL2CASL_DL
+    , Comorphism OWL2DL
 #endif
 #ifdef PROGRAMATICA
     , Comorphism HasCASL2Haskell

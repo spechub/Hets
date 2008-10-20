@@ -22,7 +22,7 @@ import System.Environment (getArgs)
 import Driver.Options
 import Driver.AnaLib
 
-#ifdef CASLEXTENSIONS
+#ifndef NOOWLLOGIC
 import OWL.OWLAnalysis
 #endif
 
@@ -78,7 +78,7 @@ processFile opts file = do
 #ifdef PROGRAMATICA
       HaskellIn -> anaHaskellFile opts file
 #endif
-#ifdef CASLEXTENSIONS
+#ifndef NOOWLLOGIC
       OWLIn -> do
         ontoMap <- parseOWL file
         structureAna file opts ontoMap

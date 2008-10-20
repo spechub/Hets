@@ -95,6 +95,11 @@ else
 HXTFILTER_PACKAGE = -DNOMATHSERVER -DNOOWLLOGIC
 endif
 
+UNIVERSION = $(shell $(HCPKG) field uni-uDrawGraph version)
+ifneq ($(findstring 2., $(UNIVERSION)),)
+UNI_PACKAGE= -DUNI_PACKAGE
+endif
+
 # list glade files
 GTK_GLADE_FILES = $(wildcard GUI/Glade/*.glade)
 GTK_GLADE_HSFILES = $(subst .glade,.hs,$(GTK_GLADE_FILES))
@@ -120,9 +125,10 @@ TESTTARGETFILES += CASL/fromKif.hs CASL/capa.hs HasCASL/hacapa.hs \
     SoftFOL/tests/soapTest.hs Comorphisms/test/sublogicGraph.hs \
     SoftFOL/dfg.hs
 
+ifeq ($(strip $(UNI_PACKAGE)),)
 UNI_PACKAGE_CONF = $(wildcard ../uni/uni-package.conf)
 ifneq ($(strip $(UNI_PACKAGE_CONF)),)
-HC_PACKAGE = -package-conf $(UNI_PACKAGE_CONF) -package uni-davinci \
+UNI_PACKAGE = -package-conf $(UNI_PACKAGE_CONF) -package uni-davinci \
     -package uni-server -DUNI_PACKAGE
 
 # some modules from uni for haddock
@@ -134,6 +140,7 @@ uni_sources = $(wildcard $(addsuffix /haddock/*.hs, $(uni_dirs))) \
     $(wildcard ../uni/htk/haddock/*/*.hs)
 TESTTARGETFILES += OWL/OWL11Parser.hs \
     Taxonomy/taxonomyTool.hs SoftFOL/tests/CMDL_tests.hs
+endif
 endif
 
 ### list of directories to run checks in
@@ -235,7 +242,7 @@ TESTTARGETS = Test.o $(subst .hs,,$(TESTTARGETFILES))
 ### Comment in the following line for switching on profiling.
 # HC_PROF = -prof -auto-all -osuf p_o +RTS -K100m -RTS
 
-HC_OPTS = $(HC_FLAGS) $(HC_INCLUDE) $(HC_PROF) $(HAXML_PACKAGE) $(HC_PACKAGE) \
+HC_OPTS = $(HC_FLAGS) $(HC_INCLUDE) $(HC_PROF) $(HAXML_PACKAGE) $(UNI_PACKAGE) \
   $(SHELLAC_PACKAGE) $(HXTFILTER_PACKAGE) $(PFE_FLAGS) -DCASLEXTENSIONS \
   $(GLADE_PACKAGE) -threaded
 
@@ -408,10 +415,14 @@ syb_pkg: $(SETUP)
           echo "of syb-generics package found"; else \
           (cd syb-generics; $(SETUPPACKAGE)) fi
 
+ifeq ($(strip $(HXTFILTER_PACKAGE)),)
 haifa_pkg: $(SETUP) syb_pkg
 	@if $(HCPKG) field HAIFA version; then \
           echo "of HAIFA package found"; else \
           (cd haifa-lite; $(SETUPPACKAGE)) fi
+else
+haifa_pkg:
+endif
 
 programatica_pkg:
 
