@@ -26,7 +26,9 @@ import Driver.AnaLib
 import OWL.OWLAnalysis
 #endif
 
+#ifdef HXTFILTER
 import OMDoc.OMDocInput
+#endif
 
 #ifdef UNI_PACKAGE
 import GUI.ShowGraph
@@ -37,11 +39,15 @@ import Haskell.Haskell2DG
 #endif
 import System.Exit (ExitCode(ExitSuccess), exitWith)
 
+#ifdef SHELLAC
 import PGIP.Interface
 import PGIP.XMLparsing
+#endif
+
 main :: IO ()
 main = do
-    opts <- getArgs >>= hetcatsOpts
+    getArgs >>= hetcatsOpts >>= \ opts ->
+#ifdef SHELLAC
     if connectP opts /= -1
      then
       cmdlConnect2Port (xmlFlag opts) (connectH opts) (connectP opts)
@@ -59,7 +65,9 @@ main = do
            else
             cmdlRunShell (infiles opts)
           return ()
-         else do
+         else
+#endif
+          do
           putIfVerbose opts 3 ("Options: " ++ show opts)
           mapM_ (processFile opts) (infiles opts)
 
@@ -75,12 +83,16 @@ processFile opts file = do
         ontoMap <- parseOWL file
         structureAna file opts ontoMap
 #endif
+#ifdef HXTFILTER
       OmdocIn -> mLibEnvFromOMDocFile opts file
+#endif
       PrfIn -> anaLibReadPrfs opts file
+#ifdef SHELLAC
       ProofCommand -> do
         putStrLn "Start processing a proof command file"
         cmdlProcessFile file
         return Nothing
+#endif
       _ -> anaLib opts file
     case guiType opts of
       NoGui -> return ()

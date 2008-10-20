@@ -68,7 +68,9 @@ import Proofs.TheoremHideShift(theoremsToAxioms, computeTheory)
 import Driver.Options
 import Driver.WriteLibDefn
 
+#ifdef HXTFILTER
 import OMDoc.OMDocOutput
+#endif
 
 writeVerbFile :: HetcatsOpts -> FilePath -> String -> IO ()
 writeVerbFile opts f str = do
@@ -82,7 +84,9 @@ writeLibEnv opts filePrefix lenv ln ot =
         dg = lookupDGraph ln lenv in case ot of
       Prf -> toShATermString (ln, lookupHistory ln lenv)
              >>= writeVerbFile opts f
+#ifdef HXTFILTER
       OmdocOut -> hetsToOMDoc opts (ln, lenv) f
+#endif
       GraphOut (Dot showInternalNodeLabels) -> writeVerbFile opts f
         $ dotGraph showInternalNodeLabels dg
       _ -> do
