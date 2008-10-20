@@ -83,6 +83,18 @@ ifneq ($(findstring 0.9.1, $(GLADEVERSION)),)
 GLADE_PACKAGE = -DGTKGLADE
 endif
 
+SHELLACVERSION = $(shell $(HCPKG) field Shellac-compatline version)
+ifneq ($(findstring 0.9, $(SHELLACVERSION)),)
+SHELLAC_PACKAGE = -DSHELLAC
+endif
+
+HXTFILTERVERSION = $(shell $(HCPKG) field hxt-filter version)
+ifneq ($(findstring 8., $(HXTFILTERVERSION)),)
+HXTFILTER_PACKAGE = -DHXTFILTER
+else
+HXTFILTER_PACKAGE = -DNOMATHSERVER -DNOOWLLOGIC
+endif
+
 # list glade files
 GTK_GLADE_FILES = $(wildcard GUI/Glade/*.glade)
 GTK_GLADE_HSFILES = $(subst .glade,.hs,$(GTK_GLADE_FILES))
@@ -224,7 +236,8 @@ TESTTARGETS = Test.o $(subst .hs,,$(TESTTARGETFILES))
 # HC_PROF = -prof -auto-all -osuf p_o +RTS -K100m -RTS
 
 HC_OPTS = $(HC_FLAGS) $(HC_INCLUDE) $(HC_PROF) $(HAXML_PACKAGE) $(HC_PACKAGE) \
-  $(PFE_FLAGS) -DCASLEXTENSIONS $(GLADE_PACKAGE) -threaded
+  $(SHELLAC_PACKAGE) $(HXTFILTER_PACKAGE) $(PFE_FLAGS) -DCASLEXTENSIONS \
+  $(GLADE_PACKAGE) -threaded
 
 ####################################################################
 ## sources for hets

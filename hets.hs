@@ -48,7 +48,7 @@ main :: IO ()
 main = do
     getArgs >>= hetcatsOpts >>= \ opts ->
 #ifdef SHELLAC
-    if connectP opts /= -1
+     if connectP opts /= -1
      then
       cmdlConnect2Port (xmlFlag opts) (connectH opts) (connectP opts)
       >> return ()
