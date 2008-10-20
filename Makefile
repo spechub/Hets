@@ -401,80 +401,14 @@ tax_objects = $(patsubst %.hs, %.o, $(tax_sources))
 $(SETUP): utils/Setup.hs
 	$(HC) --make -O -o $@ $<
 
-packages: base64_pkg http_pkg syb_pkg shellac_pkg shread_pkg shcompat_pkg \
-  tagsoup_pkg hxt_pkg hxtfilter_pkg haifa_pkg programatica_pkg
-
-base64_pkg: utils/dataenc-0.11.tar.gz $(SETUP)
-	@if $(HCPKG) field dataenc version; then \
-          echo "of dataenc package found"; else \
-          $(RM) -r dataenc-0.11; \
-          $(TAR) zxf utils/dataenc-0.11.tar.gz; \
-          (cd dataenc-0.11; $(SETUPPACKAGE)) fi
-
-http_pkg: utils/HTTP-3001.0.4.tar.gz $(SETUP)
-	@if $(HCPKG) field HTTP version; then \
-          echo "of HTTP package found"; else \
-          $(RM) -r HTTP-3001.0.4; \
-          $(TAR) zxf utils/HTTP-3001.0.4.tar.gz; \
-          (cd HTTP-3001.0.4; $(SETUPPACKAGE)) fi
+packages: syb_pkg haifa_pkg programatica_pkg
 
 syb_pkg: $(SETUP)
 	@if $(HCPKG) field syb-generics version; then \
           echo "of syb-generics package found"; else \
           (cd syb-generics; $(SETUPPACKAGE)) fi
 
-shellac_pkg: utils/shellac.tgz $(SETUP)
-	@if $(HCPKG) field Shellac version; then \
-          echo "of Shellac package found"; else \
-          $(RM) -r shellac; \
-          $(TAR) zxf utils/shellac.tgz; \
-          (cd shellac; $(SETUPPACKAGE)) fi
-
-ifneq ($(findstring Darwin, $(OSBYUNAME)),)
-shread_pkg: utils/Shellac-editline-0.9.tar.gz $(SETUP) shellac_pkg
-	@if $(HCPKG) field Shellac-editline version; then \
-          echo "of Shellac-editline package found"; else \
-          $(RM) -r Shellac-editline-0.9; \
-          $(TAR) zxf utils/Shellac-editline-0.9.tar.gz; \
-          (cd Shellac-editline-0.9; $(SETUPPACKAGE)) fi
-else
-shread_pkg: utils/shread.tgz $(SETUP) shellac_pkg
-	@if $(HCPKG) field Shellac-readline version; then \
-          echo "of Shellac-readline package found"; else \
-          $(RM) -r shread; \
-          $(TAR) zxf utils/shread.tgz; \
-          (cd shread; $(SETUPPACKAGE)) fi
-endif
-
-shcompat_pkg: utils/shcompat.tgz $(SETUP) shread_pkg
-	@if $(HCPKG) field Shellac-compatline version; then \
-          echo "of Shellac-compatline package found"; else \
-          $(RM) -r shcompat; \
-          $(TAR) zxf utils/shcompat.tgz; \
-          (cd shcompat; $(SETUPPACKAGE)) fi
-
-tagsoup_pkg: utils/tagsoup-0.6.tar.gz $(SETUP)
-	@if $(HCPKG) field tagsoup version; then \
-          echo "of tagsoup package found"; else \
-          $(RM) -r tagsoup-0.6; \
-          $(TAR) zxf utils/tagsoup-0.6.tar.gz; \
-          (cd tagsoup-0.6; $(SETUPPACKAGE)) fi
-
-hxt_pkg: utils/hxt-8.0.0.tar.gz $(SETUP) http_pkg tagsoup_pkg
-	@if $(HCPKG) field hxt version; then \
-          echo "of hxt package found"; else \
-          $(RM) -r hxt-8.0.0; \
-          $(TAR) zxf utils/hxt-8.0.0.tar.gz; \
-          (cd hxt-8.0.0; $(SETUPPACKAGE)) fi
-
-hxtfilter_pkg: utils/hxt-filter-8.0.0.tar.gz $(SETUP) hxt_pkg
-	@if $(HCPKG) field hxt-filter version; then \
-          echo "of hxt-filter package found"; else \
-          $(RM) -r hxt-filter-8.0.0; \
-          $(TAR) zxf utils/hxt-filter-8.0.0.tar.gz; \
-          (cd hxt-filter-8.0.0; $(SETUPPACKAGE)) fi
-
-haifa_pkg: $(SETUP) base64_pkg hxtfilter_pkg syb_pkg
+haifa_pkg: $(SETUP) syb_pkg
 	@if $(HCPKG) field HAIFA version; then \
           echo "of HAIFA package found"; else \
           (cd haifa-lite; $(SETUPPACKAGE)) fi
