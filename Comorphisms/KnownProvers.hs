@@ -58,8 +58,8 @@ import Comorphisms.CoCASL2CoSubCFOL
 import Comorphisms.CoCFOL2IsabelleHOL
 import Comorphisms.Modal2CASL
 import Comorphisms.CASL_DL2CASL
-#endif
 import OWL.Logic_OWL11
+#endif
 import Comorphisms.PCoClTyConsHOL2PairsInIsaHOL
 import Comorphisms.HasCASL2PCoClTyConsHOL
 #ifdef PROGRAMATICA
@@ -87,9 +87,14 @@ knownProversWithKind pk =
        spassCs <- spassComorphisms
        zchaffCS <- zchaffComorphisms
        qCs <- quickCheckComorphisms
+#ifdef CASLEXTENSIONS
        pelletCS <- pelletComorphisms
+#endif
        return $ foldl insProvers Map.empty $
-              isaCs ++ spassCs ++ zchaffCS ++ qCs ++ pelletCS
+              isaCs ++ spassCs ++ zchaffCS ++ qCs
+#ifdef CASLEXTENSIONS
+              ++ pelletCS
+#endif
               ++ [Comorphism $ mkIdComorphism VSE ()]
        where insProvers kpm cm =
               case cm of
@@ -175,11 +180,13 @@ zchaffComorphisms = return
                      Comorphism (mkIdComorphism Prop.Propositional PS.top)
                     ]
 
+#ifdef CASLEXTENSIONS
 pelletComorphisms :: Result [AnyComorphism]
 pelletComorphisms = return
                     [
                      Comorphism (mkIdComorphism OWL11 ())
                     ]
+#endif
 
 quickCheckComorphisms :: Result [AnyComorphism]
 quickCheckComorphisms = do
