@@ -35,8 +35,8 @@ import Data.Maybe (fromMaybe)
 import System.Directory (getCurrentDirectory)
 
 -- This datastructure holds all information for the history.
-data CommandHistory = CommandHistory {file      :: String,
-                                      hist      :: IORef [Command]}
+data CommandHistory = CommandHistory {file :: String,
+                                      hist :: IORef [Command]}
 
 -- Represents a command in the history.
 data Command = DGComm DGCommand | NodeChange Node | ProveCommand Prove
@@ -47,6 +47,7 @@ instance Show Command where
     show (NodeChange n)   = show n
     show (ProveCommand p) = show p
 
+-- This is used to recognize a change of node between the proofs.
 data Node = Node Int String deriving Eq
 
 instance Show Node where
@@ -56,7 +57,7 @@ instance Show Node where
 -- This represents a dg menu-item.
 data DGCommand = AllAuto      | AllGlobSubsume | AllGlobDecomp | AllLocInfer |
                  AllLocDecomp | AllComp        | AllCompNew    | AllHideThm  |
-                 AllThmHide deriving Eq
+                 AllThmHide   deriving Eq
 
 instance Show DGCommand where
     show AllAuto        = "dg-all auto"
@@ -78,12 +79,14 @@ data Prove = Prove {prover      :: Maybe String,        -- name of the prover
 
 instance Show Prove where
     show p =
-        "drop-translations\n" ++
+        "drop-translations\n"
+        ++
         -- selected translation
-        (maybe "" (unlines . splitComorphism) $
-            translation p) ++
+        (maybe "" (unlines . splitComorphism) $ translation p)
+        ++
         -- selected prover
-        (maybe "# no prover chosen" ("prover " ++) $ prover p) ++ "\n\n" ++
+        (maybe "# no prover chosen" ("prover " ++) $ prover p) ++ "\n\n"
+        ++
         -- proven goals
         (unlines $ map (goalToString p) $ provenGoals p)
 
@@ -96,11 +99,13 @@ data ProvenGoal = ProvenGoal {name      :: String,   -- name of the goal
 -- Converts a proven goal to a string.
 goalToString :: Prove -> ProvenGoal -> String
 goalToString p g =
-    "set goals " ++ (name g) ++
+    "set goals " ++ (name g)
+    ++
     -- axioms to include in prove
     '\n':(if (allAxioms p == axioms g) || (null $ axioms g)
               then "set-all axioms"
-              else "set axioms " ++ (joinWith ' ' $ axioms g)) ++
+              else "set axioms " ++ (joinWith ' ' $ axioms g))
+    ++
     -- selected time-limit
     "\nset time-limit " ++ (show $ timeLimit g) ++ "\nprove\n"
 
@@ -118,8 +123,8 @@ initCommandHistory f =
 
 -- Adds a single command to the history.
 addToHist :: CommandHistory -> Command -> IO ()
-addToHist (CommandHistory {hist = h}) c =
-    readIORef h >>= (\h' -> writeIORef h $ h' ++ [c])
+addToHist (CommandHistory {hist = c}) cm =
+    readIORef c >>= (\h -> writeIORef c $ h ++ [cm])
 
 -- Adds a menu item to the history.
 addMenuItemToHist :: CommandHistory -> String -> IO ()
@@ -156,15 +161,22 @@ addProveToHist ch st pcm pt
                       Just p  -> when (p /= p') (addProve p')
                       Nothing -> addProve p'
     where
+        -- Drops the filename as prefix from a node-name.
+        dropName :: String -> String
+        dropName s = maybe s (tail) (stripPrefix (file ch) s)
+        -- Adds a prove to the history.
         addProve :: Prove -> IO ()
         addProve p =
             do
+            -- Create new NodeChange and compare it with last found NodeChange.
             let (SigId nId) = gTheorySignIdx $ theory st
-            let nc' = NodeChange $ Node nId (dropName ch $ theoryName st)
+            let nc' = NodeChange $ Node nId (dropName $ theoryName st)
             mn <- getLastNode ch
+            -- Add new NodeChange if it doesn't match.
             case mn of
                 Just n  -> when (NodeChange n /= nc') (addToHist ch nc')
                 Nothing -> addToHist ch nc'
+            -- Finally add the prove.
             addToHist ch $ ProveCommand p
 
 -- Converts a list of proof-trees to a prove.
@@ -174,23 +186,18 @@ proofTreeToProve :: ProofState lid sentence -- current proofstate
     -> IO Prove
 proofTreeToProve st pcm pt =
     do
-
     -- selected prover
-    let prvr =  maybe (selectedProver st) (Just . getProverName . fst) pcm
-
+    let prvr = maybe (selectedProver st) (Just . getProverName . fst) pcm
     -- selected translation
     let trans = maybe Nothing (Just . snd) pcm
-
     -- 1. filter out the not proven goals
     -- 2. reverse the list, because the last proven goals are on top
     -- 3. convert all proof-trees to goals
     -- 4. merge goals with same used axioms
     let goals = mergeGoals $ reverse $ map (convertGoal) $ filter (wasProved) pt
-
     -- axioms to include in prove
     let allax = case theory st of
-                     G_theory _ _ _ axs _ -> keys axs
-
+                    G_theory _ _ _ axs _ -> keys axs
     return $ Prove {prover = prvr,
                     translation = trans,
                     provenGoals = goals,
@@ -210,6 +217,14 @@ convertGoal pt =
         (Tactic_script script) = tacticScript pt
         tlimit = maybe 20 (read) (parseTimeLimit $ splitOn '\n' script)
 
+-- Parses time-limit from the tactic-script of a goal.
+parseTimeLimit :: [String] -> Maybe String
+parseTimeLimit l =
+    if null l' then Nothing else Just $ drop (length tlStr) $ last l'
+    where
+        l' = filter (isPrefixOf tlStr) l
+        tlStr = "Time limit: "
+
 -- Merges goals with the same used axioms into one goal.
 mergeGoals :: [ProvenGoal] -> [ProvenGoal]
 mergeGoals []     = []
@@ -219,18 +234,17 @@ mergeGoals (h:t)  | mergeAble h h' = mergeGoals $ (merge h h'):(tail t)
                   where
                       h' = head t
                       mergeAble :: ProvenGoal -> ProvenGoal -> Bool
-                      mergeAble g1 g2 = (axioms g1 == axioms g2) &&
-                                        (timeLimit g1 == timeLimit g2)
+                      mergeAble a b = axioms a == axioms b &&
+                                      timeLimit a == timeLimit b
                       merge :: ProvenGoal -> ProvenGoal -> ProvenGoal
-                      merge a b = a {name = name a ++ ' ':(name b)}
-
+                      merge a b = a{name = name a ++ ' ':(name b)}
 
 -- Returns the last nodechange in the history.
 getLastNode :: CommandHistory -> IO (Maybe Node)
 getLastNode (CommandHistory{hist = c}) =
     do
     h <- readIORef c
-    let h' = [ n | NodeChange n <- h]
+    let h' = [n | NodeChange n <- h]
     return $ if null h' then Nothing else Just $ last h'
 
 -- If the last command in history is a prove it gets returned.
@@ -244,21 +258,14 @@ getLastProve (CommandHistory{hist = c}) =
                         ProveCommand p -> Just p
                         _              -> Nothing
 
--- Parses time-limit from the tactic-script of a goal.
-parseTimeLimit :: [String] -> Maybe String
-parseTimeLimit l =
-    if null l' then Nothing else Just $ drop (length tlStr) $ last l'
-    where
-        l' = filter (isPrefixOf tlStr) l
-        tlStr = "Time limit: "
-
 -- Saves the history of commands in a file.
 saveCommandHistory :: CommandHistory -> String -> IO ()
 saveCommandHistory (CommandHistory {file = ff, hist = c}) f =
     do
     h <- readIORef c
-    writeFile f $ unlines $ ["# automatically generated hets proof-script", "",
-                             "use " ++ ff, ""] ++ (map (show) h)
+    let history = ["# automatically generated hets proof-script", "",
+                   "use " ++ ff, ""] ++ map (show) h
+    writeFile f $ joinWith '\n' history
 
 -- Suggests a proof-script filename.
 getProofScriptFileName :: CommandHistory -> IO FilePath
@@ -267,10 +274,6 @@ getProofScriptFileName (CommandHistory {file = f})
     | otherwise          = do
                            dir <- getCurrentDirectory
                            return $ dir ++ '/':f ++ ".hpf"
-
--- Drops the filename as prefix from a string.
-dropName :: CommandHistory -> String -> String
-dropName (CommandHistory {file = f}) s = maybe s (tail) (stripPrefix f s)
 
 -- Splits the comorphism string into its translations.
 splitComorphism :: AnyComorphism -> [String]
