@@ -45,7 +45,6 @@ import Proofs.AbstractState
 
 import Logic.Comorphism
 
-
 import Control.Concurrent
 import Control.Concurrent.MVar
 
@@ -81,37 +80,44 @@ cTranslate input state =
     Result _ (Just cm) ->
      do
       case cComorphism pS of
-       -- no comorphism used before
-       Nothing ->
-        return $ genMessage [] "Adding comorphism" $
-                 addToHistory (CComorphismChange $ cComorphism pS)
-                 state {
-                   proveState = Just pS {
-                                  cComorphism = Just cm
-                                  },
-                   prompter = (prompter state) {
-                                 selectedTranslations = "*" }
-                        }
+       -- when selecting some theory the Id comorphism is automatically
+       -- generated
+       Nothing -> return $ genErrorMsg "No theory selected" state
        Just ocm ->
-        case compComorphism ocm cm of
-         Nothing ->
-           return $ genErrorMsg "Can not compose comorphisms" state {
-                      proveState = Just pS {
-                                  cComorphism = Just ocm
-                                  }
-                      }
-         Just smth ->
-           return $ genMessage [] "Composing comorphisms"
-                  $ addToHistory (CComorphismChange $ cComorphism pS)
-                    state {
-                      proveState = Just pS {
-                                  cComorphism = Just smth
-                                  },
-                      prompter = (prompter state) {
-                                  selectedTranslations=(selectedTranslations
+        case compComorphism ocm cm of 
+            Nothing ->
+             return $ genErrorMsg "Can not add comorphism" state {
+                       proveState = Just pS {
+                                              cComorphism = Just ocm
+                                    }
+                          }
+            Just smth ->
+              return $ genMessage [] "Adding comorphism"
+                     $ addToHistory (CComorphismChange $ cComorphism pS)
+                      state {
+                        proveState = Just pS {
+                                     cComorphism = Just smth
+                                     },
+                        prompter = (prompter state) {
+                                    selectedTranslations=(selectedTranslations
                                         $ prompter state) ++ "*" }
-                      }
+                          }
 
+        
+--      case cComorphism pS of
+--      -- no comorphism used before
+--       Nothing ->
+--        return $ genMessage [] "Adding comorphism" $
+--                 addToHistory (CComorphismChange $ cComorphism pS)
+--                 state {
+--                   proveState = Just pS {
+--                                  cComorphism = Just cm
+--                                  },
+--                   prompter = (prompter state) {
+--                                 selectedTranslations = "*" }
+--                        }
+--       Just ocm ->
+--        case compComorphism ocm cm of
 
 parseElements :: CMDL_ListAction -> [String] -> CMDL_GoalAxiom
                  -> [CMDL_ProofAbstractState]

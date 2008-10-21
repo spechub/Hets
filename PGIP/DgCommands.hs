@@ -266,6 +266,15 @@ selectANode x dgState
                                              } x)
        _ -> []
 
+-- | Given a list of selected theory generate an Id comorphism to the
+-- first selected theory
+getIdComorphism :: [CMDL_ProofAbstractState] -> Maybe AnyComorphism 
+getIdComorphism ls 
+ = case ls of 
+    [] -> Nothing
+    (Element st _):_ ->
+       case sublogicOfTheory st of 
+        (G_sublogics lid sub) -> Just $ Comorphism (mkIdComorphism lid sub)
 
 -- | function swithces interface in proving mode and also
 -- selects a list of nodes to be used inside this mode
@@ -320,7 +329,7 @@ cDgSelect input state
                    proveState = Just
                        CMDL_ProveState {
                          elements = elems,
-                         cComorphism = Nothing,
+                         cComorphism = getIdComorphism elems,
                          prover = Nothing,
                          consChecker = Nothing,
                          save2file = False,
@@ -371,7 +380,7 @@ cDgSelectAll state
               proveState = Just
                             CMDL_ProveState {
                               elements = elems,
-                              cComorphism = Nothing,
+                              cComorphism = getIdComorphism elems,
                               prover = Nothing,
                               consChecker = Nothing,
                               save2file = False,
