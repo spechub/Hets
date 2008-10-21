@@ -304,8 +304,8 @@ composeM comp mor1 mor2 = if mtarget mor1 == msource mor2 then do
       fMap2 = fun_map mor2
       pMap2 = pred_map mor2
       sMap = if Map.null sMap2 then sMap1 else Set.fold ( \ i ->
- 	                       let j = mapSort sMap2 (mapSort sMap1 i) in
- 	                       if i == j then id else Map.insert i j)
+                               let j = mapSort sMap2 (mapSort sMap1 i) in
+                               if i == j then id else Map.insert i j)
                 Map.empty $ sortSet src
       fMap = if Map.null fMap2 then fMap1 else
                  Map.foldWithKey ( \ i t m ->
