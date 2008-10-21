@@ -3,47 +3,11 @@
 # Author: (c) Christian Maeder, Uni Bremen 2002-2004
 # Year:   2004
 
-# This Makefile will compile the hets sources
-# note that you'll need the "uni" library residing in ".."
-# from http://www.informatik.uni-bremen.de/~ger/cvs/CVS.html
-
-####################################################################
 ## Some varibles, which control the compilation
+include var.mk
 
-HC = ghc
-HCPKG = ghc-pkg
-
-# check for the "uni" library
-UNI_PACKAGE_CONF = $(wildcard ../uni/uni-package.conf)
-ifneq ($(strip $(UNI_PACKAGE_CONF)),)
-HC_PACKAGE = -package-conf $(UNI_PACKAGE_CONF) -DUNI_PACKAGE
-endif
-
-# check for programatica
-PFE_TOOLDIR = $(wildcard ../programatica/tools)
-ifneq ($(strip $(PFE_TOOLDIR)),)
-PFE_FLAGS = -DPROGRAMATICA
-endif
-
-# check for new HaXml-1.13.2
-HAXMLVERSION = $(shell $(HCPKG) field HaXml version)
-ifneq ($(findstring 1.13., $(HAXMLVERSION)),)
-HAXML_PACKAGE = -DHAXML_PACKAGE
-endif
-
-GLADEVERSION = $(shell $(HCPKG) field glade version)
-ifneq ($(findstring 0.9.1, $(GLADEVERSION)),)
-GLADE_PACKAGE = -DGTKGLADE
-endif
-
-HC_OPTS1 = -fglasgow-exts -fallow-overlapping-instances \
-    $(HC_PACKAGE) $(PFE_FLAGS) -DCASLEXTENSIONS
-
-HC_OPTS = $(HAXML_PACKAGE) $(HC_OPTS1) $(GLADE_PACKAGE) -threaded
-
-####################################################################
 ### targets
-.PHONY : all clean o_clean bin_clean depend
+.PHONY : all depend clean o_clean bin_clean
 
 all: hets
 

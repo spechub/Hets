@@ -11,10 +11,11 @@
 
 all: hets
 
+include var.mk
+
 ####################################################################
 ## Some varibles, which control the compilation
 
-INCLUDE_PATH =
 HAIFA_PATHS = Network Network/Server Org Org/W3 Org/W3/N2001 \
     Org/Xmlsoap Org/Xmlsoap/Schemas Org/Xmlsoap/Schemas/Soap \
     Text Text/XML Text/XML/HXT Text/XML/Schema Text/XML/Schema/TypeMapper \
@@ -45,8 +46,6 @@ INLINEAXIOMS_deps = utils/InlineAxioms/InlineAxioms.hs \
     Common/Doc.hs CASL/ToDoc.hs Modal/AS_Modal.hs \
     Modal/Parse_AS.hs Modal/ModalSign.hs Modal/Print_AS.hs Modal/StatAna.hs
 
-HC = ghc
-HCPKG = ghc-pkg
 PERL = perl
 HAPPY = happy -sga
 GENRULES = utils/genRules
@@ -73,46 +72,11 @@ SETUPPACKAGE = ../$(SETUP) clean; \
     ../$(SETUP) configure $(SETUPPREFIX) --user; \
     ../$(SETUP) build; ../$(SETUP) haddock; ../$(SETUP) install --user
 
-HAXMLVERSION = $(shell $(HCPKG) field HaXml version)
-ifneq ($(findstring 1.13., $(HAXMLVERSION)),)
-HAXML_PACKAGE = -DHAXML_PACKAGE
-endif
-
-GLADEVERSION = $(shell $(HCPKG) field glade version)
-ifneq ($(findstring 0.9.1, $(GLADEVERSION)),)
-GLADE_PACKAGE = -DGTKGLADE
-endif
-
-SHELLACVERSION = $(shell $(HCPKG) field Shellac-compatline version)
-ifneq ($(findstring 0.9, $(SHELLACVERSION)),)
-SHELLAC_PACKAGE = -DSHELLAC
-endif
-
-HXTFILTERVERSION = $(shell $(HCPKG) field hxt-filter version)
-ifneq ($(findstring 8., $(HXTFILTERVERSION)),)
-HXTFILTER_PACKAGE = -DHXTFILTER
-else
-HXTFILTER_PACKAGE = -DNOMATHSERVER -DNOOWLLOGIC
-endif
-
-UNIVERSION = $(shell $(HCPKG) field uni-uDrawGraph version)
-ifneq ($(findstring 2., $(UNIVERSION)),)
-UNI_PACKAGE= -DUNI_PACKAGE
-endif
-
 # list glade files
 GTK_GLADE_FILES = $(wildcard GUI/Glade/*.glade)
 GTK_GLADE_HSFILES = $(subst .glade,.hs,$(GTK_GLADE_FILES))
 
 derived_sources += $(GTK_GLADE_HSFILES)
-
-# remove -fno-warn-orphans for older ghcs and add -ifgl
-HC_WARN = -Wall -fno-warn-orphans
-HC_FLAGS = $(HC_WARN) -fglasgow-exts -fallow-overlapping-instances
-# -ddump-minimal-imports
-# uncomment to above line to generate .imports files for displayDependencyGraph
-
-HC_INCLUDE = $(addprefix -i, $(INCLUDE_PATH))
 
 logics = CASL HasCASL Isabelle Modal CoCASL COL CspCASL CASL_DL SoftFOL \
      ConstraintCASL Propositional OWL DL RelationalScheme VSE OMDoc
@@ -124,24 +88,6 @@ TESTTARGETFILES += CASL/fromKif.hs CASL/capa.hs HasCASL/hacapa.hs \
     SoftFOL/tests/PrintTPTPTests.hs Comorphisms/test/showKP.hs \
     SoftFOL/tests/soapTest.hs Comorphisms/test/sublogicGraph.hs \
     SoftFOL/dfg.hs
-
-ifeq ($(strip $(UNI_PACKAGE)),)
-UNI_PACKAGE_CONF = $(wildcard ../uni/uni-package.conf)
-ifneq ($(strip $(UNI_PACKAGE_CONF)),)
-UNI_PACKAGE = -package-conf $(UNI_PACKAGE_CONF) -package uni-davinci \
-    -package uni-server -DUNI_PACKAGE
-
-# some modules from uni for haddock
-# if uni/server is included also HaXml sources are needed
-uni_dirs = ../uni/davinci ../uni/graphs ../uni/events \
-    ../uni/reactor ../uni/util ../uni/posixutil
-
-uni_sources = $(wildcard $(addsuffix /haddock/*.hs, $(uni_dirs))) \
-    $(wildcard ../uni/htk/haddock/*/*.hs)
-TESTTARGETFILES += OWL/OWL11Parser.hs \
-    Taxonomy/taxonomyTool.hs SoftFOL/tests/CMDL_tests.hs
-endif
-endif
 
 ### list of directories to run checks in
 TESTDIRS += Common CASL HasCASL test
@@ -161,7 +107,6 @@ PFE_DIRS = base/AST base/TI base/parse2 base/parse2/Lexer base/parse2/Parser \
 PFE_PATHS = $(addprefix $(PFE_TOOLDIR)/, $(PFE_DIRS))
 pfe_sources = $(wildcard $(addsuffix /*hs, $(PFE_PATHS)))
 PFE_PATH = $(addprefix -i, $(PFE_PATHS))
-PFE_FLAGS = -package programatica -DPROGRAMATICA
 happy_files += $(PFE_TOOLDIR)/property/parse2/Parser/PropParser.hs
 
 LEX_DIR = $(PFE_TOOLDIR)/base/parse2/Lexer
@@ -234,17 +179,16 @@ TESTTARGETFILES += Haskell/hana.hs Haskell/h2h.hs Haskell/h2hf.hs
 endif
 
 TESTTARGETS = Test.o $(subst .hs,,$(TESTTARGETFILES))
-
-### Profiling (only for debugging)
-### Attention every module must be compiled with profiling or the linker
-### cannot link the various .o files properly. So after switching on
-### Profiling, do an 'gmake real_clean; gmake'
-### Comment in the following line for switching on profiling.
+# remove -fno-warn-orphans for older ghcs and add -ifgl
+HC_WARN = -Wall -fno-warn-orphans
+# INCLUDE_PATH =
+HC_INCLUDE = $(addprefix -i, $(INCLUDE_PATH))
+# uncomment for profiling
 # HC_PROF = -prof -auto-all -osuf p_o +RTS -K100m -RTS
 
-HC_OPTS = $(HC_FLAGS) $(HC_INCLUDE) $(HC_PROF) $(HAXML_PACKAGE) $(UNI_PACKAGE) \
-  $(SHELLAC_PACKAGE) $(HXTFILTER_PACKAGE) $(PFE_FLAGS) -DCASLEXTENSIONS \
-  $(GLADE_PACKAGE) -threaded
+HC_OPTS += $(HC_WARN) $(HC_INCLUDE) $(HC_PROF)
+# -ddump-minimal-imports
+# uncomment to above line to generate .imports files for displayDependencyGraph
 
 ####################################################################
 ## sources for hets
@@ -701,7 +645,7 @@ h2hf: Haskell/h2hf
 
 Haskell/h2hf: Haskell/h2hf.hs Haskell/*.hs Isabelle/*.hs Common/*.hs \
     Common/Lib/*.hs Comorphisms/*.hs
-	$(HC) -O --make -o $@ $< $(HC_FLAGS) $(PFE_FLAGS)
+	$(HC) -O --make -o $@ $< $(HC_OPTS)
 
 ### HasCASL to Haskell translation
 h2h: Haskell/h2h
