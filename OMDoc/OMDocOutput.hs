@@ -612,11 +612,11 @@ createOMMorphism
     -- retrieve the XML-names for the sort mapping
     -- retrieved names are all of same type, so merge
     allmapped = mappedsorts fromSortIds e_fname toSortIds ln collectionMap
-    						uniqueNames from to caslmorph
-    			++ mappedpreds fromPredIds e_fname caslmorph toPredIds ln
-    						collectionMap uniqueNames fromRel from toRel to
-    			++ mappedops fromOpIds e_fname caslmorph toOpIds ln
-    						collectionMap uniqueNames fromRel from toRel to -- ++ unclashedSorts
+                                                uniqueNames from to caslmorph
+                        ++ mappedpreds fromPredIds e_fname caslmorph toPredIds ln
+                                                collectionMap uniqueNames fromRel from toRel to
+                        ++ mappedops fromOpIds e_fname caslmorph toOpIds ln
+                                                collectionMap uniqueNames fromRel from toRel to -- ++ unclashedSorts
     -- merging makes hiding easier also...
     hidden =
       case dgl_type ll of
