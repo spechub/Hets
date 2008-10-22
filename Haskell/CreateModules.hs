@@ -49,5 +49,4 @@ printModule (G_theory lid (ExtSign sign0 _) _ sens0 _) =
                 in case maybeResult r3 of
                    Nothing -> Nothing
                    Just (_, sens) -> Just $
-                       vcat $ map (print_named Haskell)
-                                $ toNamedList $ toThSens sens
+                       vcat $ map (print_named Haskell) sens
