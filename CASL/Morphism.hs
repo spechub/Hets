@@ -481,17 +481,21 @@ morphismUnionM uniteM addSigExt mor1 mor2 =
 
 isSortInjective :: Morphism f e m -> Bool
 isSortInjective m =
-   null [() | k1 <- src, k2 <- src, k1 /= k2,
-              (Map.lookup k1 sm :: Maybe SORT) == Map.lookup k2 sm]
-   where sm = sort_map m
-         src = Map.keys sm
+    let ss = sortSet $ msource m
+    in Set.size ss == Set.size (Set.map (mapSort $ sort_map m) ss)
 
+sumSize :: Map.Map a (Set.Set b) -> Int
+sumSize = sum . map Set.size . Map.elems
+
+-- morphism extension m is not considered here
 isInjective :: Morphism f e m -> Bool
-isInjective m =
-   null [() | k1 <- src, k2 <- src, k1 /= k2,
-              (Map.lookup k1 symmap :: Maybe Symbol) == Map.lookup k2 symmap]
-   where src = Map.keys symmap
-         symmap = morphismToSymbMap m
+isInjective m = isSortInjective m && let
+    src = msource m
+    sm = sort_map m
+    os = opMap src
+    ps = predMap src
+    in sumSize os == sumSize (inducedOpMap sm (fun_map m) os)
+       && sumSize ps == sumSize (inducedPredMap sm (pred_map m) ps)
 
 instance Pretty Kind where
   pretty k = keyword $ case k of
