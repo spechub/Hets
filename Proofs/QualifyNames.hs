@@ -34,6 +34,8 @@ import Common.LibName
 import Common.Result
 
 import Data.Graph.Inductive.Graph
+import Data.Graph.Inductive.Basic
+import Data.Graph.Inductive.Query.DFS
 import Data.List
 import Data.Maybe
 import qualified Data.Map as Map
@@ -46,12 +48,18 @@ foldWithKeyM f a = foldM (flip $ uncurry f) a . Map.toList
 qualifyLibEnv :: LibEnv -> Result LibEnv
 qualifyLibEnv le = foldWithKeyM qualifyDGraph le le
 
+topsortedNodes :: Graph g => g DGNodeLab DGLinkLab -> [LNode DGNodeLab]
+topsortedNodes dg = postorderF $ xdffWith (\ (ps, n, _, _) -> map snd $
+   filter (\ (el, s) -> s /= n && isDefEdge (dgl_type el)) ps)
+   (\ (_, n, nl, _) -> (n, nl)) (nodes dg) dg
+
 qualifyDGraph :: LIB_NAME -> DGraph -> LibEnv -> Result LibEnv
 qualifyDGraph ln dg le = do
   let es = map (\ (_, _, lb) -> dgl_id lb) $ labEdgesDG dg
   unless (Set.size (Set.fromList es) == length es) $
     fail $ "inkonsistent graph for library " ++ showDoc ln ""
-  (cs, dg1, le1) <- foldM (qualifyLabNode ln) ([], dg, le) $ labNodesDG dg
+  (cs, dg1, le1) <- foldM (qualifyLabNode ln) ([], dg, le)
+    $ topsortedNodes $ dgBody dg
   return $ Map.insert ln (addToProofHistoryDG ([], reverse cs) dg1) le1
 
 -- consider that loops are part of innDG and outDG that should not be handled
