@@ -598,15 +598,7 @@ real_clean: clean
 package_clean:
 	$(HCPKG) unregister HAIFA --user || exit 0
 	$(HCPKG) unregister programatica --user || exit 0
-	$(HCPKG) unregister hxt-filter --user || exit 0
-	$(HCPKG) unregister hxt --user || exit 0
-	$(HCPKG) unregister tagsoup --user || exit 0
-	$(HCPKG) unregister Shellac-compatline --user || exit 0
-	$(HCPKG) unregister Shellac-readline --user || exit 0
-	$(HCPKG) unregister HTTP --user || exit 0
 	$(HCPKG) unregister syb-generics --user || exit 0
-	$(HCPKG) unregister Shellac --user || exit 0
-	$(HCPKG) unregister dataenc --user || exit 0
 
 ### additionally removes generated files not in the CVS tree
 distclean: clean clean_genRules
