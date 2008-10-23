@@ -225,11 +225,6 @@ isFloating :: Token -> Bool
 -- precondition: isNumber
 isFloating t = any (\ c -> c == '.' || c == 'E') $ tokStr t
 
-isLitToken :: Token -> Bool
-isLitToken t = case tokStr t of
-  c : _ -> c == '\"' || c == '\'' || isDigit c
-  _ -> False
-
 -- * nested comment outs
 
 nestedComment :: String -> String -> CharParser st String
