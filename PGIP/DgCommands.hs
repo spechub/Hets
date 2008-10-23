@@ -21,6 +21,7 @@ module PGIP.DgCommands
        , selectANode
        , wrapResultDg
        , wrapResultDgAll
+       , getIdComorphism
        )where
 
 import PGIP.Utils

@@ -31,7 +31,6 @@ import PGIP.Utils
 import PGIP.DgCommands
 import PGIP.ProveConsistency
 
-
 import Static.GTheory
 
 import Common.Result
@@ -59,12 +58,13 @@ cDropTranslations state =
    Just pS ->
     case cComorphism pS of
      Nothing -> return state
-     Just _ -> return state {
-                          proveState = Just $ pS {
-                                         cComorphism = Nothing },
-                          prompter = (prompter state) {
-                                        selectedTranslations = []}
-                          }
+     Just _ -> return 
+        state {
+          proveState = Just $ pS {
+                cComorphism = getIdComorphism $ elements pS  },
+                prompter = (prompter state) {
+                                             selectedTranslations = []}
+                }
 
 
 -- | select comorphisms
@@ -190,6 +190,7 @@ cProve state
       Nothing -> return $ genErrorMsg "No library loaded" state
       Just dgS ->
        do
+        putStrLn $ script pS 
         case elements pS of
          [] -> return $ genErrorMsg "Nothing selected" state
          ls ->
@@ -349,13 +350,14 @@ cTimeLimit input state
        False -> return $ genErrorMsg "Please insert a number of seconds" state
        True ->
         do
+        putStrLn input
         case isInfixOf "Time Limit: " $ script ps of
          True -> return $ genErrorMsg "Time limit already set" state
          False->
            return $ addToHistory (ScriptChange $ script ps)
                state {
                  proveState = Just ps {
-                                 script = ("Time limit: " ++ (trim input)
+                                 script = ("Time Limit: " ++ (trim input)
                                             ++"\n"++ (script ps))
                                      }
                       }
