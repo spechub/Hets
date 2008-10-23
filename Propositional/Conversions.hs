@@ -24,7 +24,6 @@ import qualified Common.AS_Annotation as AS_Anno
 import qualified Propositional.Prop2CNF as P2C
 import qualified Propositional.Sign as Sig
 import qualified Common.Id as Id
-import qualified Common.Result as Res
 import qualified Propositional.Tools as PT
 import qualified Data.Set as Set
 import qualified Data.Map as Map
@@ -111,12 +110,6 @@ showDIMACSProblem name sig axs cons =
                                                       tflCon)
                                         )
                            tfCon
-
--- | Helper to get out of the Maybe Monad
-
-unwrapMaybe :: Maybe a -> a
-unwrapMaybe (Just yv) = yv
-unwrapMaybe Nothing   = error "Cannot unwrap Nothing"
 
 -- | Create signature map
 createSignMap :: Sig.Sign
