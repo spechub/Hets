@@ -140,7 +140,7 @@ runSpass sps saveDFG =
              when saveDFG
                       (writeFile ("FlotterIn.dfg") prob)
              sendMsg spass prob
-             flotterOut <- parseProtected spass
+             flotterOut <- parseIt spass
              when saveDFG
                       (writeFile ("FlotterOut.dfg") flotterOut)
              return flotterOut

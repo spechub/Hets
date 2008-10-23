@@ -292,17 +292,7 @@ runZchaff pState cfg saveDIMACS thName nGoal =
       allOptions = zFileName : (createZchaffOptions cfg)
       runZchaffReal zchaff =
           do
-            e <- getToolStatus zchaff
-            if isJust e
-              then
-                  do
-                    deleteJunk
-                    return
-                      (ATPState.ATPError "Could not start zchaff. Is zchaff in your $PATH?",
-                               ATPState.emptyConfig (LP.prover_name zchaffProver)
-                                           (AS_Anno.senAttr nGoal) $ Sig.ATP_ProofTree "")
-              else do
-                zchaffOut <- parseProtected zchaff
+                zchaffOut <- parseIt zchaff
                 (res, usedAxs, output, tUsed) <- analyzeZchaff zchaffOut pState
                 let (err, retval) = proof_stat res usedAxs [] (head output)
                 deleteJunk
@@ -436,15 +426,14 @@ parseProtected zchaff = do
 -- | Helper function for parsing zChaff output
 parseIt :: ChildProcess -> IO String
 parseIt zchaff = do
-  line <- return ""
-  msg  <- parseItHelp zchaff $ return line
+  line <- readMsg zchaff
+  msg  <- parseItHelp zchaff line
   return msg
 
 -- | Helper function for parsing zChaff output
-parseItHelp :: ChildProcess -> IO String -> IO String
-parseItHelp zchaff inp = do
+parseItHelp :: ChildProcess -> String -> IO String
+parseItHelp zchaff inT = do
   e <- getToolStatus zchaff
-  inT <- inp
   case e of
     Nothing
          ->
@@ -455,7 +444,7 @@ parseItHelp zchaff inp = do
                    return (inT ++ "\n" ++ line)
                _    ->
                    do
-                     parseItHelp zchaff $ return (inT ++ "\n" ++ line)
+                     parseItHelp zchaff $ inT ++ "\n" ++ line
     Just (ExitFailure retval)
         -- returned error
         -> do
@@ -471,7 +460,7 @@ parseItHelp zchaff inp = do
                    return (inT ++ "\n" ++ line)
                _    ->
                    do
-                     parseItHelp zchaff $ return (inT ++ "\n" ++ line)
+                     parseItHelp zchaff $ inT ++ "\n" ++ line
 
 -- | We are searching for Flotter needed to determine the end of input
 isEnd :: String -> Bool
