@@ -163,22 +163,6 @@ showDFGProblem thName pst opts = do
                      (PState.parseSPASSCommands opts) }
   return $ showDoc prob' ""
 
--- | Helper for reading SPASS output
-parseProtected :: ChildProcess -> IO String
-parseProtected spass = do
-  e <- getToolStatus spass
-  case e of
-    Nothing                   ->
-        do
-          dfg <- parseIt spass
-          _   <- waitForChildProcess spass
-          return dfg
-    Just (ExitFailure retval) ->
-        do
-          _ <- waitForChildProcess spass
-          return ("Error!!! Cause was: " ++ show retval)
-    Just ExitSuccess          -> return "done"
-
 parseIt :: ChildProcess -> IO String
 parseIt spass = do
   line <- readMsg spass

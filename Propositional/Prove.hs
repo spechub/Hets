@@ -403,26 +403,6 @@ re_SUBTIME = mkRegex "Total Run Time"
 re_SUBPOINT :: Regex
 re_SUBPOINT = mkRegex ".(.*)"
 
--- | Helper for reading zChaff output
-parseProtected :: ChildProcess -> IO String
-parseProtected zchaff = do
-  e <- getToolStatus zchaff
-  case e of
-    Nothing                   ->
-        do
-          miniOut <- parseIt zchaff
-          _   <- waitForChildProcess zchaff
-          return miniOut
-    Just (ExitFailure retval) ->
-        do
-          _ <- waitForChildProcess zchaff
-          return ("Error!!! Cause was: " ++ show retval)
-    Just ExitSuccess          ->
-        do
-          miniOut <- parseIt zchaff
-          _   <- waitForChildProcess zchaff
-          return miniOut
-
 -- | Helper function for parsing zChaff output
 parseIt :: ChildProcess -> IO String
 parseIt zchaff = do
