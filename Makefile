@@ -361,7 +361,7 @@ syb_pkg: $(SETUP)
           echo "of syb-generics package found"; else \
           (cd syb-generics; $(SETUPPACKAGE)) fi
 
-ifeq ($(strip $(HXTFILTER_PACKAGE)),)
+ifneq ($(strip $(HXTFILTER_PACKAGE)),)
 haifa_pkg: $(SETUP) syb_pkg
 	@if $(HCPKG) field HAIFA version; then \
           echo "of HAIFA package found"; else \
