@@ -347,8 +347,8 @@ translateSPClause ct nspc = do
         Sig.BriefClause _ (Sig.TWL l1 _) (Sig.TWL l2 _) -> do
           s1 <- mapM Sig.toLiteral l1
           s2 <- mapM Sig.toLiteral l2
-          let s3 = map (\ (Sig.SPLiteral b s) -> Sig.SPLiteral (not b) s) s1
-          return $ Sig.NSPClauseBody Sig.SPDNF $ s3 ++ s2
+          let s3 = map (\ (Sig.SPLiteral b s) -> Sig.SPLiteral (not b) s) s2
+          return $ Sig.NSPClauseBody Sig.SPCNF $ s1 ++ s3
     transL <- translateNSPClause ct cla'
     return nspc { AS_Anno.sentence = transL }
 
