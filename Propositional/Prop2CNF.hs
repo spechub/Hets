@@ -62,7 +62,6 @@ import Data.Maybe
 import HTk
 import qualified Control.Exception as Exception
 import Common.DocUtils
-import System.IO.Unsafe
 import Text.ParserCombinators.Parsec
 
 safeDFGFiles ::Bool
@@ -222,10 +221,10 @@ isEnd inS = isPrefixOf "FLOTTER needed" inS
 
 -- | Main function for run SPASS and Parse
 runSPASSandParseDFG :: PState.SoftFOLProverState -- Spass Prover state... Theory + Sig
-         -> Bool                               -- True means save DFG file
-         -> Sig.SPProblem                      -- Output AS
+         -> Bool                                 -- True means save DFG file
+         -> IO Sig.SPProblem                     -- Output AS
 runSPASSandParseDFG pstate save =
-    parseDFG $ unsafePerformIO $ runSpass pstate save
+    fmap parseDFG $ runSpass pstate save
 
 -- | run the DFG Parser
 parseDFG :: String -> Sig.SPProblem
@@ -406,7 +405,7 @@ translateClauseList clist inSetting =
 
 
 -- | Translation of the logical part of SPASS to Propositional
-translateLogicalPart :: Sig.SPLogicalPart -> Sig.SPSettingBody -> Result.Result [AS_Anno.Named PBasic.FORMULA]
+translateLogicalPart :: Sig.SPLogicalPart -> Sig.SPSettingBody -> IO [AS_Anno.Named PBasic.FORMULA]
 translateLogicalPart spLog inSetting =
     let
         clauseLists    = filterSPCL $ Sig.clauseLists  spLog
@@ -416,11 +415,10 @@ translateLogicalPart spLog inSetting =
     in
       if clauseLists == []
       then
-          Result.maybeToResult Id.nullRange "All fine" $ Just $
-                []
+          return []
       else
           case hasErrors of
-            True  -> Result.fatal_error ("Cannot translate logical part" ++ show spLog) Id.nullRange
+            True  -> fail ("Cannot translate logical part" ++ show spLog)
             False ->
                 let theFormulae = concat $
                          map (\xv -> case xv of
@@ -428,8 +426,8 @@ translateLogicalPart spLog inSetting =
                                        _       -> error "Bailing out in translateLogicalPart..."
                              ) outForm
                 in
-                  Result.maybeToResult Id.nullRange "All fine" $ Just $
-                        theFormulae
+                  do
+                    return theFormulae
 
 -- | Determines the output signature
 getOutputSign :: Sig.SPSymbolList -> PSign.Sign
@@ -450,7 +448,7 @@ translateSymbol inSym = case inSym of
       Sig.SPSimpleSignSym name -> Id.simpleIdToId name
 
 -- | Translation of a SPASS Problem to propositional
-translateProblem :: Sig.SPProblem -> Result.Result [AS_Anno.Named PBasic.FORMULA]
+translateProblem :: Sig.SPProblem -> IO [AS_Anno.Named PBasic.FORMULA]
 translateProblem spProb =
     let
         logicalPart = Sig.logicalPart spProb
@@ -465,20 +463,21 @@ translateProblem spProb =
 
 -- | Translation of Propositional theories to CNF
 translateToCNF :: (PSign.Sign, [AS_Anno.Named PBasic.FORMULA])
-               -> Result.Result (PSign.Sign, [AS_Anno.Named PBasic.FORMULA])
+               -> IO (PSign.Sign, [AS_Anno.Named PBasic.FORMULA])
 translateToCNF (sig, forms) =
     case forms of
-      [] -> Result.maybeToResult Id.nullRange "Empty" $ Just $ (sig, [])
+      [] -> return (sig, [])
       _  ->
           let pState      = createInitProverState sig forms
-              outProb     = runSPASSandParseDFG pState safeDFGFiles
-              mSymList    = Sig.symbolList $ Sig.logicalPart outProb
-              outSymList  =
-                  case mSymList of
-                    Just xsym -> getOutputSign xsym
-                    _         -> sig
           in
             do
+              outProb <- runSPASSandParseDFG pState safeDFGFiles
+              let
+                  mSymList    = Sig.symbolList $ Sig.logicalPart outProb
+                  outSymList  =
+                      case mSymList of
+                        Just xsym -> getOutputSign xsym
+                        _         -> sig
               re <- translateProblem outProb
               return $ (outSymList, restoreContext forms re)
 

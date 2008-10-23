@@ -50,15 +50,14 @@ ioDIMACSProblem :: String                     -- name of the theory
                 -> [AS_Anno.Named AS.FORMULA] -- Conjectures
                 -> IO String                  -- Output
 ioDIMACSProblem name sig axs cons =
-    do
-      return $ showDIMACSProblem name sig axs cons
+     showDIMACSProblem name sig axs cons
 
 -- | Translation of a Propositional Formula to a String in DIMACS Format
 showDIMACSProblem :: String                     -- name of the theory
                   -> Sig.Sign                   -- Signature
                   -> [AS_Anno.Named AS.FORMULA] -- Axioms
                   -> [AS_Anno.Named AS.FORMULA] -- Conjectures
-                  -> String                     -- Output
+                  -> IO String                     -- Output
 showDIMACSProblem name sig axs cons =
     let
         nakedCons   = map (AS_Anno.sentence) cons
@@ -81,43 +80,35 @@ showDIMACSProblem name sig axs cons =
                                 }
                                ]
                       ) nakedCons
-        transAx     = P2C.translateToCNF (sig, axs)
-        transCon    = P2C.translateToCNF (sig, negatedCons)
-        resAx       = Res.diags transAx
-        resCon      = Res.diags transCon
-        errors      = Res.hasErrors resAx || Res.hasErrors resCon
     in
-      case errors of
-        True  -> "Translation failed... sorry"
-        False ->
-            let
-                (tSig,tAxs)  = unwrapMaybe $ Res.maybeResult transAx
-                (tpSig,tCon) = unwrapMaybe $ Res.maybeResult transCon
-                fSig         = Sig.unite tSig tpSig
-                tfAxs        = concat $ map PT.flatten $
-                               map AS_Anno.sentence tAxs
-                tfCon        = concat $ map PT.flatten $
-                               map AS_Anno.sentence tCon
-                numVars      = Set.size $ Sig.items fSig
-                numClauses   = length tfAxs + length tfCon
-                sigMap       = createSignMap fSig 1 Map.empty
-            in
-              "c " ++ name ++ "\n" ++
-              "p cnf " ++ show numVars ++ " " ++ show numClauses ++ "\n"++
-                  (\tflAxs ->
-                   case tflAxs of
-                     [] -> ""
-                     _  -> "c Axioms\n" ++
-                         (foldl (\sr xv -> sr ++ mapClause xv sigMap) "" tflAxs)
-                  ) tfAxs ++
-              (\tflCon ->
-                   case tflCon of
-                     [] -> ""
-                     _  -> "c Conjectures\n" ++
-                           (foldl (\sr xv -> sr ++ mapClause xv sigMap) ""
-                                  tflCon)
-              )
-                  tfCon
+              do
+                (tSig, tAxs) <- P2C.translateToCNF (sig, axs)
+                (tpSig, tCon) <- P2C.translateToCNF (sig, negatedCons)
+                let
+                    fSig         = Sig.unite tSig tpSig
+                    tfAxs        = concat $ map PT.flatten $
+                                   map AS_Anno.sentence tAxs
+                    tfCon        = concat $ map PT.flatten $
+                                   map AS_Anno.sentence tCon
+                    numVars      = Set.size $ Sig.items fSig
+                    numClauses   = length tfAxs + length tfCon
+                    sigMap       = createSignMap fSig 1 Map.empty
+                return $ "c " ++ name ++ "\n" ++
+                           "p cnf " ++ show numVars ++ " " ++ show numClauses ++ "\n"++
+                                        (\tflAxs ->
+                                             case tflAxs of
+                                               [] -> ""
+                                               _  -> "c Axioms\n" ++
+                                                     (foldl (\sr xv -> sr ++ mapClause xv sigMap) "" tflAxs)
+                                        ) tfAxs ++
+                                        (\tflCon ->
+                                             case tflCon of
+                                               [] -> ""
+                                               _  -> "c Conjectures\n" ++
+                                                     (foldl (\sr xv -> sr ++ mapClause xv sigMap) ""
+                                                            tflCon)
+                                        )
+                           tfCon
 
 -- | Helper to get out of the Maybe Monad
 
