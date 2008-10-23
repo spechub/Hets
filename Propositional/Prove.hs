@@ -25,6 +25,7 @@ import qualified Propositional.Morphism as PMorphism
 import qualified Propositional.ProverState as PState
 import qualified Propositional.Sign as Sig
 import Propositional.Sublogic(PropSL,top)
+import Propositional.ChildMessage
 
 import Proofs.BatchProcessing
 
@@ -35,7 +36,6 @@ import GUI.GenericATP
 import GUI.HTkUtils
 
 import HTk
-import ProcessClasses
 import ChildProcess as CP
 
 import Common.Utils (readMaybe)
@@ -292,7 +292,7 @@ runZchaff pState cfg saveDIMACS thName nGoal =
       allOptions = zFileName : (createZchaffOptions cfg)
       runZchaffReal zchaff =
           do
-                zchaffOut <- parseIt zchaff
+                zchaffOut <- parseIt zchaff isEnd
                 (res, usedAxs, output, tUsed) <- analyzeZchaff zchaffOut pState
                 let (err, retval) = proof_stat res usedAxs [] (head output)
                 deleteJunk
@@ -356,7 +356,7 @@ analyzeZchaff str pState =
         timeLine = (\xv ->
                       case xv of
                         Just yv  -> head yv
-                        Nothing  -> "Total Run Time0"
+                        Nothing  -> "0"
                     ) $ matchRegex re_TIME str'
         timeout =  ((\xv ->
                     case xv of
@@ -389,8 +389,9 @@ analyzeZchaff str pState =
 -- | Calculated the time need for the proof in seconds
 calculateTime :: String -> TimeOfDay
 calculateTime timeLine =
-    timeToTimeOfDay $ realToFrac $ ((read $ subRegex re_SUBPOINT
-               (subRegex re_SUBTIME timeLine "") "")::Double)
+    timeToTimeOfDay $ realToFrac $ (maybe
+         (error $ "calculateTime " ++ timeLine) id $ readMaybe timeLine
+             :: Double)
 
 re_UNSAT :: Regex
 re_UNSAT = mkRegex "(.*)RESULT:UNSAT(.*)"
@@ -398,49 +399,6 @@ re_SAT :: Regex
 re_SAT   = mkRegex "(.*)RESULT:SAT(.*)"
 re_TIME :: Regex
 re_TIME  = mkRegex "Total Run Time(.*)"
-re_SUBTIME :: Regex
-re_SUBTIME = mkRegex "Total Run Time"
-re_SUBPOINT :: Regex
-re_SUBPOINT = mkRegex ".(.*)"
-
--- | Helper function for parsing zChaff output
-parseIt :: ChildProcess -> IO String
-parseIt zchaff = do
-  line <- readMsg zchaff
-  msg  <- parseItHelp zchaff line
-  return msg
-
--- | Helper function for parsing zChaff output
-parseItHelp :: ChildProcess -> String -> IO String
-parseItHelp zchaff inT = do
-  e <- getToolStatus zchaff
-  case e of
-    Nothing
-         ->
-           do
-             line <- readMsg zchaff
-             case isEnd line of
-               True ->
-                   return (inT ++ "\n" ++ line)
-               _    ->
-                   do
-                     parseItHelp zchaff $ inT ++ "\n" ++ line
-    Just (ExitFailure retval)
-        -- returned error
-        -> do
-           _ <- waitForChildProcess zchaff
-           return $ "zchaff returned error: "++(show retval)
-    Just ExitSuccess
-         -- completed successfully. read remaining output.
-         ->
-           do
-             line <- readMsg zchaff
-             case isEnd line of
-               True ->
-                   return (inT ++ "\n" ++ line)
-               _    ->
-                   do
-                     parseItHelp zchaff $ inT ++ "\n" ++ line
 
 -- | We are searching for Flotter needed to determine the end of input
 isEnd :: String -> Bool

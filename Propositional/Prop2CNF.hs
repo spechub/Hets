@@ -51,11 +51,10 @@ import qualified Data.Set as Set
 import qualified SoftFOL.Translate as Translate
 import qualified CASL.Logic_CASL as CLogic
 import qualified Logic.Coerce as LC
+import Propositional.ChildMessage
 
 import ChildProcess as CP
 import ProcessClasses
-
-import System
 
 import Data.List
 import Data.Maybe
@@ -140,7 +139,7 @@ runSpass sps saveDFG =
              when saveDFG
                       (writeFile ("FlotterIn.dfg") prob)
              sendMsg spass prob
-             flotterOut <- parseIt spass
+             flotterOut <- parseIt spass isEnd
              when saveDFG
                       (writeFile ("FlotterOut.dfg") flotterOut)
              return flotterOut
@@ -162,42 +161,6 @@ showDFGProblem thName pst opts = do
   let prob' = prob { Sig.settings = (Sig.settings prob) ++
                      (PState.parseSPASSCommands opts) }
   return $ showDoc prob' ""
-
-parseIt :: ChildProcess -> IO String
-parseIt spass = do
-  line <- readMsg spass
-  msg  <- parseItHelp spass $ return line
-  return msg
-
-parseItHelp :: ChildProcess -> IO String -> IO String
-parseItHelp spass inp = do
-  e <- getToolStatus spass
-  inT <- inp
-  case e of
-    Nothing
-         ->
-           do
-             line <- readMsg spass
-             case isEnd line of
-               True ->
-                   return inT
-               _    ->
-                   parseItHelp spass $ return (inT ++ "\n" ++ line)
-    Just (ExitFailure retval)
-        -- returned error
-        -> do
-           _ <- waitForChildProcess spass
-           return $ "SPASS returned error: "++(show retval)
-    Just ExitSuccess
-         -- completed successfully. read remaining output.
-         ->
-           do
-             line <- readMsg spass
-             case isEnd line of
-               True ->
-                   return inT
-               _    ->
-                   parseItHelp spass $ return (inT ++ "\n" ++ line)
 
 -- | We are searching for Flotter needed to determine the end of input
 isEnd :: String -> Bool
