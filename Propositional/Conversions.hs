@@ -57,7 +57,7 @@ showDIMACSProblem :: String                     -- name of the theory
                   -> Sig.Sign                   -- Signature
                   -> [AS_Anno.Named AS.FORMULA] -- Axioms
                   -> [AS_Anno.Named AS.FORMULA] -- Conjectures
-                  -> IO String                     -- Output
+                  -> IO String                  -- Output
 showDIMACSProblem name sig axs cons =
     let
         nakedCons   = map (AS_Anno.sentence) cons
@@ -99,14 +99,16 @@ showDIMACSProblem name sig axs cons =
                                              case tflAxs of
                                                [] -> ""
                                                _  -> "c Axioms\n" ++
-                                                     (foldl (\sr xv -> sr ++ mapClause xv sigMap) "" tflAxs)
+                                                     (foldl (\sr xv -> sr ++
+                                                             mapClause xv sigMap) "" tflAxs)
                                         ) tfAxs ++
                                         (\tflCon ->
                                              case tflCon of
                                                [] -> ""
                                                _  -> "c Conjectures\n" ++
-                                                     (foldl (\sr xv -> sr ++ mapClause xv sigMap) ""
-                                                            tflCon)
+                                                     (foldl (\sr xv -> sr ++
+                                                             mapClause xv sigMap) ""
+                                                      tflCon)
                                         )
                            tfCon
 
