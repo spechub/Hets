@@ -527,7 +527,7 @@ proofManagementGUI lid prGuiAcs
                       showSelThButton : deselectFormerTheoremsButton :
                       axsBtns++goalBtns++thsBtns) ++
              goalSpecificWids
-  enableWidsUponSelection lb goalSpecificWids
+  enableWids goalSpecificWids
   pack main [Expand On, Fill Both]
   putWinOnTop main
   let updateStatusSublogic s = do
@@ -573,8 +573,7 @@ proofManagementGUI lid prGuiAcs
             done)
       +> (selectTheorems >>> do
             Conc.modifyMVar_ stateMVar updateStatusSublogic
-            done)
-      +> (selectOpenGoals >>> do
+            done)      +> (selectOpenGoals >>> do
              s <- Conc.takeMVar stateMVar
              clearSelection lb
              let isOpenGoal (_,st) =
@@ -607,7 +606,7 @@ proofManagementGUI lid prGuiAcs
             done)
       +> (deselectAllGoals >>> do
             doSelectAllEntries False lb
-            disableWids goalSpecificWids
+            enableWids goalSpecificWids
             Conc.modifyMVar_ stateMVar updateStatusSublogic
             done)
       +> (selectAllGoals >>> do

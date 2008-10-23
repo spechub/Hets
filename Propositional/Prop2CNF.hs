@@ -32,7 +32,6 @@ using SPASS -Flotter=1 here
 module Propositional.Prop2CNF
     (
      translateToCNF            -- CNF conversion via SPASS
-    ,translateSentenceToCNF    -- CNF conversion of a sentence
     )
     where
 
@@ -227,6 +226,7 @@ runSPASSandParseDFG :: PState.SoftFOLProverState -- Spass Prover state... Theory
          -> Sig.SPProblem                      -- Output AS
 runSPASSandParseDFG pstate save =
     parseDFG $ unsafePerformIO $ runSpass pstate save
+
 -- | run the DFG Parser
 parseDFG :: String -> Sig.SPProblem
 parseDFG input
@@ -472,51 +472,15 @@ translateToCNF (sig, forms) =
       _  ->
           let pState      = createInitProverState sig forms
               outProb     = runSPASSandParseDFG pState safeDFGFiles
-              translation = translateProblem outProb
-              pDiags      = Result.diags translation
-              pMaybe      = Result.maybeResult translation
-              hasErrs     = Result.hasErrors pDiags
               mSymList    = Sig.symbolList $ Sig.logicalPart outProb
               outSymList  =
                   case mSymList of
                     Just xsym -> getOutputSign xsym
                     _         -> sig
           in
-            case hasErrs of
-              True  -> Result.fatal_error ("Translation to CNF encountered errors... Bailing out...") Id.nullRange
-              False -> let re = (\xv -> case xv of
-                                          Just yv -> yv
-                                          _       -> error "Bailing out in translateToCNF..."
-                                ) pMaybe
-                 in
-                   Result.maybeToResult Id.nullRange "All fine" $ Just $
-                         (outSymList, restoreContext forms re)
-
--- | Translation of a sentence to CNF
-translateSentenceToCNF :: PSign.Sign
-                       -> PBasic.FORMULA
-                       -> Result.Result PBasic.FORMULA
-translateSentenceToCNF sig form =
-    let
-        emptyNamed = AS_Anno.makeNamed "axToTranslate" form
-        outCNF     = translateToCNF (sig, [emptyNamed])
-        out        = Result.maybeResult outCNF
-        diags      = Result.diags outCNF
-        hasErrors  = Result.hasErrors diags
-    in
-      case hasErrors of
-        True -> Result.fatal_error ("Translation of sentence " ++
-                                    (show $ pretty form) ++ (" failed"))
-                Id.nullRange
-        _    ->
-            let
-                outData = (\xv -> case xv of
-                                    Just yv -> yv
-                                    _       -> error "Failed!!!"
-                          ) out
-                outFrm  = AS_Anno.sentence $ head $ snd outData
-            in
-              Result.maybeToResult Id.nullRange "All fine" $ Just $ outFrm
+            do
+              re <- translateProblem outProb
+              return $ (outSymList, restoreContext forms re)
 
 -- | Filtering of empty ClauseLists
 emptySPCL :: Sig.SPClauseList -> Bool

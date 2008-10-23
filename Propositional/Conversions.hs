@@ -49,7 +49,9 @@ ioDIMACSProblem :: String                     -- name of the theory
                 -> [AS_Anno.Named AS.FORMULA] -- Axioms
                 -> [AS_Anno.Named AS.FORMULA] -- Conjectures
                 -> IO String                  -- Output
-ioDIMACSProblem name sig axs cons = return $ showDIMACSProblem name sig axs cons
+ioDIMACSProblem name sig axs cons =
+    do
+      return $ showDIMACSProblem name sig axs cons
 
 -- | Translation of a Propositional Formula to a String in DIMACS Format
 showDIMACSProblem :: String                     -- name of the theory
@@ -73,7 +75,7 @@ showDIMACSProblem name sig axs cons =
                                               )
                                         Id.nullRange)
                                 {
-                                  AS_Anno.isAxiom = True
+                                  AS_Anno.isAxiom = False
                                 , AS_Anno.isDef   = False
                                 , AS_Anno.wasTheorem = False
                                 }
