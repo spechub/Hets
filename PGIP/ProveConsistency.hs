@@ -112,10 +112,12 @@ cProver input state =
                                           ++" this name found") state
                Just (p,nCm@(Comorphism cid))->
                  return $ addToHistory (ProverChange $ prover pS)
-                     $ genMessage ("Prover can't be used with the "
-                            ++"comorphism selected using translate"
-                            ++" command. Using comorphism : "
-                            ++ language_name cid) []
+                     $ genMessage [] ("Warning: Prover can't be used with " 
+                            ++"the selected comorphism (or the default if "
+                            ++"none was selected). Instead the `"
+                            ++ (language_name  cid) 
+                            ++"` comorphism was selected. Current prover is "
+                            ++ input) 
                             state {
                               proveState = Just pS {
                                              cComorphism=Just nCm
