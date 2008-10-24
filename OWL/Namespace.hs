@@ -89,7 +89,7 @@ instance PNamespace QName where
 
 instance PNamespace Sign where
    propagateNspaces _ sig = sig
-
+   renameNamespace tMap (Sign p1 p2 p3 p4 p5 p6 p7 p8 p9 p10) =
        Sign (renameNamespace tMap p1)
             (Set.map (renameNamespace tMap) p2)
             (Set.map (renameNamespace tMap) p3)
@@ -706,7 +706,7 @@ integrateOntologyFile of1@( OntologyFile ns1
     let (newNamespace, transMap) = integrateNamespaces ns1 ns2
     in OntologyFile newNamespace
             ( Ontology (newOid oid1 oid2)
-                 (nub $ imp1 ++ map (renameNamespace transMap) imp)
+                 (nub $ imp1 ++ map (renameNamespace transMap) imp2)
                  (nub $ anno1 ++ map (renameNamespace transMap) anno2)
                  (nub $ axiom1 ++ map (renameNamespace transMap) axiom2))
     where newOid :: OntologyURI -> OntologyURI -> OntologyURI
