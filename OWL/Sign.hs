@@ -110,7 +110,7 @@ addSign toIns totalSign =
     totalSign { ontologyID = let
                     lp1 = localPart $ ontologyID totalSign
                     lp2 = localPart $ ontologyID toIns
-                    in  mkName $ lp1 ++ "_" ++ lp2,
+                    in  mkQName $ lp1 ++ "_" ++ lp2,
                 concepts = Set.union (concepts totalSign)
                                      (concepts toIns),
                 primaryConcepts = Set.union (primaryConcepts totalSign)

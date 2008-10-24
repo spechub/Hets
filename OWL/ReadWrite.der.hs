@@ -118,12 +118,13 @@ instance ShATermConvertible Constant where
             ShAAppl "TypedConstant" [a] _ ->
                     case fromShATerm' a att0 of { (att1, a') ->
                       let (b, c) = span (/='^') a'
-                          c' = mkName $ (if null c then "" else tail $ tail c)
+                          c' = mkQName $ (if null c then "" else tail $ tail c)
                       in (att1, TypedConstant (b, c')) }
             ShAAppl "UntypedConstant" [a] _ ->
                     case fromShATerm' a att0 of { (att1, a') ->
                       let (b, c) = span (/='@') a'
-                      in  (att1, UntypedConstant (b, if null c then "" else tail c)) }
+                      in  (att1, UntypedConstant (b,
+                                 if null c then "" else tail c)) }
             u -> fromShATermError "Constant" u
 
 {-! for QName derive : Typeable!-}

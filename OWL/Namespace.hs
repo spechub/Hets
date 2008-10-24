@@ -10,7 +10,12 @@ Portability :  non-portable(instances for Namespace and Named Sentence)
 This module implements a namespace transformation
 -}
 
-module OWL.Namespace where
+module OWL.Namespace
+  ( PNamespace(..)
+  , integrateNamespaces
+  , integrateOntologyFile
+  , printQN
+  , uriToName) where
 
 import OWL.Sign
 import OWL.AS
@@ -757,15 +762,10 @@ reverseMap oldMap =
 
 -- build a QName from string, only local part (for node name, etc.).
 uriToName :: String -> String
-uriToName str =
-  if null str then "" else
-    let str' = if head str == '"' then
-                  read str::String
-                  else str
-        nodeName = fst $ span (/='/') $ reverse str'
-    in  if head nodeName == '#' then
-            fst $ span (/='.') (reverse $ tail nodeName)
-           else fst $ span (/='.') (reverse nodeName)
+uriToName str = let str' = if take 1 str == "\"" then read str else str in
+    takeWhile (/='.') $ reverse $ case takeWhile (/='/') $ reverse str' of
+         '#' : r  -> r
+         r -> r
 
 -- output a QName for pretty print
 printQN :: QName -> String

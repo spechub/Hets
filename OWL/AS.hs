@@ -28,11 +28,8 @@ data QName = QN
 nullQName :: QName
 nullQName = QN "" "" ""
 
-mkName :: String -> QName
-mkName s = nullQName { localPart = s }
-
-qualifiedName :: QName -> String
-qualifiedName (QN p l _) = if null p then l else p ++ (':' : l)
+mkQName :: String -> QName
+mkQName s = nullQName { localPart = s }
 
 instance Eq QName where
     p == q = compare p q == EQ
@@ -42,9 +39,6 @@ instance Ord QName where
       if null n1 then
           if null n2 then compare (p1, l1) (p2, l2) else LT
       else if null n2 then GT else compare (l1, n1) (l2, n2)
-
-equalQName :: QName -> QName -> Bool
-equalQName (QN _ l1 n1) (QN _ l2 n2) = (l1, n1) == (l2, n2)
 
 type URI = QName
 type IRI = String
@@ -216,16 +210,10 @@ emptyOntologyFile = OntologyFile Map.empty emptyOntology
 emptyOntology :: Ontology
 emptyOntology = Ontology nullQName [] [] []
 
--- | check if QName is empty
-isEmptyQN :: QName -> Bool
-isEmptyQN (QN a b c) =
-    (null a) && (null b) && (null c)
-
 isEmptyOntologyFile :: OntologyFile -> Bool
 isEmptyOntologyFile (OntologyFile ns onto) =
     Map.null ns && isEmptyOntology onto
 
 isEmptyOntology :: Ontology -> Bool
-isEmptyOntology (Ontology uid annoList impList axioms) =
-    equalQName uid nullQName && null annoList
-                   && null impList && null axioms
+isEmptyOntology (Ontology (QN _ l n) annoList impList axioms) =
+    null l && null n && null annoList && null impList && null axioms
