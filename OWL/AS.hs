@@ -85,7 +85,7 @@ data EntityType =
   | ObjectProperty
   | DataProperty
   | Individual
-    deriving (Show, Eq, Ord)
+    deriving (Show, Read, Eq, Ord)
 
 -- | Syntax of Entities
 data Entity = Entity EntityType URI deriving (Show, Eq, Ord)
