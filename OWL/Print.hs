@@ -5,7 +5,7 @@ License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
 Maintainer  :  jiang@informatik.uni-bremen.de
 Stability   :  provisional
-Portability :  non-portable(instances for URIreference and Namespace)
+Portability :  portable
 
 Pretty printing for OWL DL theories.
 -}
@@ -34,10 +34,10 @@ printSign (Sign _ p2 p3 p4 p5 p6 _ p8 _ p10) =
     text "data_valued_roles " <+> setToDocF p6 $+$
     text "individuals " <+> setToDocF p8
 
-instance Pretty URIreference where
+instance Pretty QName where
     pretty = printURIreference
 
-printURIreference :: URIreference -> Doc
+printURIreference :: QName -> Doc
 printURIreference (QN prefix localpart u)
     | localpart == "_" = text $ show "_"
     | null prefix = if null u then
@@ -51,59 +51,8 @@ printNamespace nsMap =
        where pp :: (String, String) -> Doc
              pp (s1,s2) = text s1 <> defn <> text s2
 
-
 instance Pretty SignAxiom where
-    pretty = text . show -- printSignAxiom
-
-{-
-printSignAxiom :: SignAxiom -> Doc
-printSignAxiom signAxiom = case signAxiom of
-    Subconcept cid1 cid2 ->
-      parens (text "forall ((x owl:Thing))" <+>
-              parens (text "implies" <+>
-                      parens (printDescription cid1 <+> text "x") <+>
-                      parens (printDescription cid2 <+> text "x")))
-    RoleDomain rid rdomains ->
-      listToDocH
-        (\x y -> parens (text "forall ((x owl:Thing) (y owl:Thing))" $+$
-                         parens (text "implies" <+>
-                                 parens (printURIreference x <+>
-                                         text "x y") <+>
-                                 (parens $ printRDomain y)))
-        ) rid rdomains
-    RoleRange rid rranges -> case head rranges of
-      RDRange _ ->
-        text "(forall ((x owl:Thing) (y rdfs:Literal))" $+$
-        text "(implies (" <> printURIreference rid <+> text "x y)" $+$
-        (if (length rranges > 1) then
-           text "(or "
-         else lparen) <>
-        listToDocH form5 rid rranges $+$ text ")))"
-      _         ->
-        listToDocV
-          (\x y -> text "(forall ((x owl:Thing) (y owl:Thing))" $+$
-                   text "(implies (" <> printURIreference x <+>
-                   text "x y) (" <> printRRange y <> text " y)" $+$
-                   text "))")
-          rid rranges
-    FuncRole (rtype, rid) ->
-      case rtype of
-        IRole ->
-          text "(forall ((x owl:Thing) (y owl:Thing) (z owl:Thing))" $+$
-          text "(implies" $+$
-          text "(and (" <> printURIreference rid <+>
-          text "x y) (" <+> printURIreference rid <+> text "x z))" $+$
-          text "(= y z)" $+$ text "))"
-        DRole ->
-          text "(forall ((x owl:Thing) (y rdfs:Literal) (z rdfs:Literal))" $+$
-          text "(implies" $+$
-          text "(and (" <> printURIreference rid <+>
-          text "x y) (" <+> printURIreference rid <+> text "x z))" $+$
-          text "(= y z)" $+$ text "))"
-    Conceptmembership iID desc ->
-      parens (printDescription 0 iID desc <+> printURIreference iID)
-    u -> text . show u
--}
+    pretty = text . show
 
 instance Pretty Description where
     pretty = printDescription
@@ -341,12 +290,8 @@ instance Pretty SubObjectPropertyExpression where
                                  take (length opExpList -1) opExpList)) <+>
                   text "o" <+> pretty (head $ reverse opExpList)
 
--- not necessary
 instance Pretty OntologyFile where
     pretty = text . show
-
-instance Pretty Ontology where
-    pretty = text . show  -- printOntology
 
 setToDocs :: Pretty a => Set.Set a -> [Doc]
 setToDocs = punctuate comma . map pretty . Set.toList
