@@ -24,7 +24,7 @@ import SoftFOL.Print ()
 
 import qualified Common.AS_Annotation as AS_Anno
 import Common.ProofUtils
-import Common.Utils (splitOn, readMaybe)
+import Common.Utils (splitOn)
 import Common.DocUtils
 import qualified Control.Exception as Exception
 

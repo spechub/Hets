@@ -30,7 +30,6 @@ import GUI.HTkUtils
 
 import Proofs.BatchProcessing
 
-import Common.Utils (readMaybe)
 import qualified Common.AS_Annotation as AS_Anno
 import Common.DefaultMorphism
 import qualified Common.Result as Result
