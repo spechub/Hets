@@ -704,20 +704,19 @@ integrateOntologyFile of1@( OntologyFile ns1
   if of1 == of2 then of1
    else
     let (newNamespace, transMap) = integrateNamespaces ns1 ns2
+        newOid :: OntologyURI -> OntologyURI -> OntologyURI
+        newOid id1 id2 = let
+              lid1 = localPart id1
+              lid2 = localPart id2
+            in if null lid1 then id2 else
+               if null lid2 then id1 else
+               if id1 == id2 then id1 else id1
+                  { localPart = uriToName lid1 ++ "_" ++ uriToName lid2 }
     in OntologyFile newNamespace
             ( Ontology (newOid oid1 oid2)
                  (nub $ imp1 ++ map (renameNamespace transMap) imp2)
                  (nub $ anno1 ++ map (renameNamespace transMap) anno2)
                  (nub $ axiom1 ++ map (renameNamespace transMap) axiom2))
-    where newOid :: OntologyURI -> OntologyURI -> OntologyURI
-          newOid id1 id2 =
-            if null $ localPart id1 then id2 else
-             if null $ localPart id2 then id1 else
-              if id1 == id2 then id1
-                 else id1 {localPart=
-                           (uriToName $ localPart id1) ++
-                             "_" ++
-                             (uriToName $ localPart id2)}
 
 -- | reverse a map: (key, value) -> (value, key)
 reverseMap :: Ord a => Map.Map k a -> Map.Map a k
