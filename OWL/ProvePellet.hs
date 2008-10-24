@@ -46,6 +46,8 @@ import System
 import System.IO
 import System.Process
 
+import PGIP.ProveUtils
+
 data PelletProverState = PelletProverState
                         { ontologySign :: Sign
                         , initialState :: [AS_Anno.Named Sentence] }
@@ -571,9 +573,10 @@ parseTactic_script :: Int -- ^ default time limit (standard:
                    -> Tactic_script
                    -> ATPTactic_script
 parseTactic_script tLimit extOpts (Tactic_script ts) =
-    maybe (ATPTactic_script { ts_timeLimit = tLimit,
-                              ts_extraOpts = extOpts })
-           id $ readMaybe ts
+    cParseScript tLimit extOpts (Tactic_script ts)
+--    maybe (ATPTactic_script { ts_timeLimit = tLimit,
+--                              ts_extraOpts = extOpts })
+--           id $ readMaybe ts
 
 mkAssMap :: [Sentence]
          -> Map.Map IndividualURI OwlClassURI

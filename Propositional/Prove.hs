@@ -56,6 +56,9 @@ import System.Exit
 import System.IO
 import Text.Regex
 
+
+
+import PGIP.ProveUtils
 -- * Prover implementation
 
 zchaffHelpText :: String
@@ -182,9 +185,10 @@ parseTactic_script :: Int -- ^ default time limit (standard:
                    -> LP.Tactic_script
                    -> ATPState.ATPTactic_script
 parseTactic_script tLimit (LP.Tactic_script ts) =
-    maybe (ATPState.ATPTactic_script { ATPState.ts_timeLimit = tLimit,
-                                       ATPState.ts_extraOpts = [] })
-           id $ readMaybe ts
+     cParseScript tLimit [] (LP.Tactic_script ts)
+--    maybe (ATPState.ATPTactic_script { ATPState.ts_timeLimit = tLimit,
+--                                       ATPState.ts_extraOpts = [] })
+--           id $ readMaybe ts
 
 -- ** command line functions
 

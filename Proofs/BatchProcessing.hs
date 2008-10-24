@@ -312,6 +312,7 @@ genericCMDLautomaticBatch ::
            --   snd: MVar to wait for the end of the thread
 genericCMDLautomaticBatch atpFun inclProvedThs saveProblem_batch resultMVar
                           prName thName defaultTactic_script th pt = do
+    putStrLn $ show defaultTactic_script
     let iGS = initialGenericState prName
                                   (initialProverState atpFun)
                                   (atpTransSenName atpFun) th pt

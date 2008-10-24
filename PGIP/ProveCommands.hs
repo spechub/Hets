@@ -152,9 +152,13 @@ parseElements action gls gls_axm elems (acc1,acc2)
                    ActionSet -> filter (fn allgls) gls
                    ActionAdd ->
                         nub $ (selgls)++ filter (fn allgls) gls
-          nwelm = Element (st { selectedGoals = gls' }) nb
-       in parseElements action gls gls_axm ll (nwelm:acc1,
-                          (GoalsChange (selectedGoals st) nb):acc2)
+          nwelm = case gls_axm of 
+                   ChangeGoals  -> Element (st {selectedGoals = gls'}) nb
+                   ChangeAxioms -> Element (st {includedAxioms= gls'}) nb
+          hchg = case gls_axm of 
+                   ChangeGoals  -> GoalsChange (selectedGoals  st) nb 
+                   ChangeAxioms -> AxiomsChange(includedAxioms st) nb
+       in parseElements action gls gls_axm ll (nwelm:acc1,hchg:acc2)
 
 -- | A general function that implements the actions of setting,
 -- adding or deleting goals or axioms from the selection list
@@ -190,7 +194,6 @@ cProve state
       Nothing -> return $ genErrorMsg "No library loaded" state
       Just dgS ->
        do
-        putStrLn $ script pS 
         case elements pS of
          [] -> return $ genErrorMsg "Nothing selected" state
          ls ->
@@ -350,14 +353,13 @@ cTimeLimit input state
        False -> return $ genErrorMsg "Please insert a number of seconds" state
        True ->
         do
-        putStrLn input
-        case isInfixOf "Time Limit: " $ script ps of
+        case isInfixOf "time_limit " $ script ps of
          True -> return $ genErrorMsg "Time limit already set" state
          False->
            return $ addToHistory (ScriptChange $ script ps)
                state {
                  proveState = Just ps {
-                                 script = ("Time Limit: " ++ (trim input)
+                                 script = ("time_limit " ++ (trim input)
                                             ++"\n"++ (script ps))
                                      }
                       }
