@@ -74,11 +74,6 @@ idToOpSymbol idt typ = Symbol idt (OpAsItemType typ)
 idToPredSymbol :: Id -> PredType -> Symbol
 idToPredSymbol idt typ = Symbol idt (PredAsItemType typ)
 
-data Q_ProofTree = Q_ProofTree String deriving (Eq, Ord)
-
-instance Show Q_ProofTree where
-  show (Q_ProofTree st) = st
-
 dummy :: Sign f s -> a -> ()
 dummy _ _ = ()
 

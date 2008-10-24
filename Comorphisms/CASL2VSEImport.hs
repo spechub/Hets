@@ -14,9 +14,6 @@ The embedding comorphism from CASL to VSE.
 
 module Comorphisms.CASL2VSEImport (CASL2VSEImport(..)) where
 
-import qualified Data.Set as Set
-import qualified Data.Map as Map
-
 import Logic.Logic
 import Logic.Comorphism
 
@@ -30,9 +27,13 @@ import VSE.Logic_VSE
 import VSE.As
 import VSE.Ana
 
-import Common.Result
-import Common.Id
 import Common.AS_Annotation
+import Common.Id
+import Common.ProofTree
+import Common.Result
+
+import qualified Data.Set as Set
+import qualified Data.Map as Map
 
 -- | The identity of the comorphism
 data CASL2VSEImport = CASL2VSEImport deriving (Show)
@@ -44,7 +45,7 @@ instance Comorphism CASL2VSEImport
                CASLBasicSpec CASLFORMULA SYMB_ITEMS SYMB_MAP_ITEMS
                CASLSign
                CASLMor
-               Symbol RawSymbol Q_ProofTree
+               Symbol RawSymbol ProofTree
                VSE ()
                VSEBasicSpec Sentence SYMB_ITEMS SYMB_MAP_ITEMS
                VSESign

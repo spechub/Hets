@@ -20,9 +20,12 @@ module Comorphisms.RelScheme2CASL
 
 import Logic.Logic
 import Logic.Comorphism
+
 import Common.AS_Annotation
-import Common.Result
 import Common.Id
+import Common.ProofTree
+import Common.Result
+
 import qualified Data.Set as Set
 import qualified Data.Map as Map
 
@@ -67,7 +70,7 @@ instance Comorphism
     CASLMor           -- morphism codomain
     Symbol          -- symbol codomain
     RawSymbol       -- rawsymbol codomain
-    Q_ProofTree              -- proof tree domain
+    ProofTree              -- proof tree domain
         where
           sourceLogic RelScheme2CASL    = RelScheme
           sourceSublogic RelScheme2CASL = ()

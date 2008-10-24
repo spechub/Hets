@@ -13,9 +13,10 @@ Instance of class Logic for CASL DL
 
 module CASL_DL.Logic_CASL_DL (CASL_DL(..), DLMor, DLFORMULA) where
 
-import Common.Result
 import qualified Data.Set as Set
 import qualified Common.Lib.Rel as Rel
+import Common.Result
+import Common.ProofTree
 
 import CASL_DL.AS_CASL_DL
 import CASL_DL.Sign
@@ -134,7 +135,7 @@ instance Logic CASL_DL CASL_DL_SL
                DL_BASIC_SPEC DLFORMULA SYMB_ITEMS SYMB_MAP_ITEMS
                DLSign
                DLMor
-               Symbol RawSymbol Q_ProofTree where
+               Symbol RawSymbol ProofTree where
          stability _        = Unstable
          top_sublogic _     = SROIQ
          all_sublogics _    = [SROIQ]

@@ -201,8 +201,8 @@ data SPSetting = SPFlag String String
 {- |
   Datatype for storing of the proof tree. The Show class is instantiated.
 -}
-data ATP_ProofTree = ATP_ProofTree String
+data ProofTree = ProofTree String
        deriving (Eq, Ord)
 
-instance Show ATP_ProofTree where
-  show (ATP_ProofTree st) = st
+instance Show ProofTree where
+  show (ProofTree st) = st

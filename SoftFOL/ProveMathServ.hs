@@ -35,6 +35,7 @@ import SoftFOL.ProverState
 
 import qualified Common.AS_Annotation as AS_Anno
 import qualified Common.Result as Result
+import Common.ProofTree
 
 import qualified Control.Concurrent as Concurrent
 import qualified Control.Exception as Exception
@@ -51,7 +52,7 @@ import Proofs.BatchProcessing
   The Prover implementation. First runs the batch prover (with graphical
   feedback), then starts the GUI prover.
 -}
-mathServBroker :: Prover Sign Sentence () ATP_ProofTree
+mathServBroker :: Prover Sign Sentence () ProofTree
 mathServBroker = (mkProverTemplate brokerName () mathServBrokerGUI)
     { proveCMDLautomatic = Just mathServBrokerCMDLautomatic
     , proveCMDLautomaticBatch = Just mathServBrokerCMDLautomaticBatch }
@@ -69,7 +70,7 @@ mathServHelpText =
   line interface.
 -}
 atpFun :: String -- ^ theory name
-       -> ATPFunctions Sign Sentence ATP_ProofTree SoftFOLProverState
+       -> ATPFunctions Sign Sentence ProofTree SoftFOLProverState
 atpFun thName = ATPFunctions
     { initialProverState = spassProverState,
       atpTransSenName = transSenName,
@@ -90,14 +91,14 @@ atpFun thName = ATPFunctions
   data type ATPFunctions.
 -}
 mathServBrokerGUI :: String -- ^ theory name
-                  -> Theory Sign Sentence ATP_ProofTree
+                  -> Theory Sign Sentence ProofTree
                   -- ^ theory consisting of a SoftFOL.Sign.Sign
                   --   and a list of Named SoftFOL.Sign.Sentence
-                  -> IO([Proof_status ATP_ProofTree])
+                  -> IO([Proof_status ProofTree])
                      -- ^ proof status for each goal
 mathServBrokerGUI thName th =
     genericATPgui (atpFun thName) False (prover_name mathServBroker) thName th $
-                  ATP_ProofTree ""
+                  ProofTree ""
 
 -- ** command line functions
 
@@ -109,13 +110,13 @@ mathServBrokerGUI thName th =
 mathServBrokerCMDLautomatic ::
            String -- ^ theory name
         -> Tactic_script -- ^ default tactic script
-        -> Theory Sign Sentence ATP_ProofTree
+        -> Theory Sign Sentence ProofTree
            -- ^ theory consisting of a signature and a list of Named sentence
-        -> IO (Result.Result ([Proof_status ATP_ProofTree]))
+        -> IO (Result.Result ([Proof_status ProofTree]))
            -- ^ Proof status for goals and lemmas
 mathServBrokerCMDLautomatic thName defTS th =
     genericCMDLautomatic (atpFun thName) (prover_name mathServBroker) thName
-        (parseTactic_script batchTimeLimit [] defTS) th (ATP_ProofTree "")
+        (parseTactic_script batchTimeLimit [] defTS) th (ProofTree "")
 
 {- |
   Implementation of 'Logic.Prover.proveCMDLautomaticBatch' which provides an
@@ -125,11 +126,11 @@ mathServBrokerCMDLautomatic thName defTS th =
 mathServBrokerCMDLautomaticBatch ::
            Bool -- ^ True means include proved theorems
         -> Bool -- ^ True means save problem file
-        -> Concurrent.MVar (Result.Result [Proof_status ATP_ProofTree])
+        -> Concurrent.MVar (Result.Result [Proof_status ProofTree])
            -- ^ used to store the result of the batch run
         -> String -- ^ theory name
         -> Tactic_script -- ^ default tactic script
-        -> Theory Sign Sentence ATP_ProofTree -- ^ theory consisting of a
+        -> Theory Sign Sentence ProofTree -- ^ theory consisting of a
            --   'SoftFOL.Sign.Sign' and a list of Named 'SoftFOL.Sign.Sentence'
         -> IO (Concurrent.ThreadId,Concurrent.MVar ())
            -- ^ fst: identifier of the batch thread for killing it
@@ -138,7 +139,7 @@ mathServBrokerCMDLautomaticBatch inclProvedThs saveProblem_batch resultMVar
                         thName defTS th =
     genericCMDLautomaticBatch (atpFun thName) inclProvedThs saveProblem_batch
         resultMVar (prover_name mathServBroker) thName
-        (parseTactic_script batchTimeLimit [] defTS) th (ATP_ProofTree "")
+        (parseTactic_script batchTimeLimit [] defTS) th (ProofTree "")
 
 
 {- |
@@ -148,11 +149,11 @@ mathServBrokerCMDLautomaticBatch inclProvedThs saveProblem_batch resultMVar
 runMSBroker :: SoftFOLProverState
             -- ^ logical part containing the input Sign and axioms and possibly
             --   goals that have been proved earlier as additional axioms
-            -> GenericConfig ATP_ProofTree -- ^ configuration to use
+            -> GenericConfig ProofTree -- ^ configuration to use
             -> Bool -- ^ True means save TPTP file
             -> String -- ^ name of the theory in the DevGraph
             -> AS_Anno.Named SPTerm -- ^ goal to prove
-            -> IO (ATPRetval, GenericConfig ATP_ProofTree)
+            -> IO (ATPRetval, GenericConfig ProofTree)
             -- ^ (retval, configuration with proof status and complete output)
 runMSBroker sps cfg saveTPTP thName nGoal = do
 --    putStrLn ("running MathServ Broker...")

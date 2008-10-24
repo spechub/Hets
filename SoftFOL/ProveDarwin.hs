@@ -30,6 +30,7 @@ import SoftFOL.ProverState
 import Common.DefaultMorphism
 import Common.AS_Annotation as AS_Anno
 import qualified Common.Result as Result
+import Common.ProofTree
 
 import Data.Char (isDigit)
 import Data.List (isPrefixOf)
@@ -52,13 +53,13 @@ import Proofs.BatchProcessing
 
 {- | The Prover implementation. First runs the batch prover (with
   graphical feedback), then starts the GUI prover.  -}
-darwinProver :: Prover Sign Sentence () ATP_ProofTree
+darwinProver :: Prover Sign Sentence () ProofTree
 darwinProver = (mkProverTemplate "Darwin" () darwinGUI)
     { proveCMDLautomatic = Just darwinCMDLautomatic
     , proveCMDLautomaticBatch = Just darwinCMDLautomaticBatch }
 
 darwinConsChecker
-    :: ConsChecker Sign Sentence () (DefaultMorphism Sign) ATP_ProofTree
+    :: ConsChecker Sign Sentence () (DefaultMorphism Sign) ProofTree
 darwinConsChecker = mkProverTemplate "darwin" () consCheck
 
 {- |
@@ -66,7 +67,7 @@ darwinConsChecker = mkProverTemplate "darwin" () consCheck
   line interface.
 -}
 atpFun :: String -- ^ theory name
-       -> ATPFunctions Sign Sentence ATP_ProofTree SoftFOLProverState
+       -> ATPFunctions Sign Sentence ProofTree SoftFOLProverState
 atpFun thName = ATPFunctions
   { initialProverState = spassProverState
   , atpTransSenName = transSenName
@@ -88,13 +89,13 @@ atpFun thName = ATPFunctions
   data type ATPFunctions.
 -}
 darwinGUI :: String -- ^ theory name
-           -> Theory Sign Sentence ATP_ProofTree
+           -> Theory Sign Sentence ProofTree
            -- ^ theory consisting of a SoftFOL.Sign.Sign
            --   and a list of Named SoftFOL.Sign.Sentence
-           -> IO([Proof_status ATP_ProofTree]) -- ^ proof status for each goal
+           -> IO([Proof_status ProofTree]) -- ^ proof status for each goal
 darwinGUI thName th =
     genericATPgui (atpFun thName) True (prover_name darwinProver) thName th $
-                  ATP_ProofTree ""
+                  ProofTree ""
 
 -- ** command line functions
 
@@ -106,13 +107,13 @@ darwinGUI thName th =
 darwinCMDLautomatic ::
            String -- ^ theory name
         -> Tactic_script -- ^ default tactic script
-        -> Theory Sign Sentence ATP_ProofTree
+        -> Theory Sign Sentence ProofTree
            -- ^ theory consisting of a signature and a list of Named sentence
-        -> IO (Result.Result ([Proof_status ATP_ProofTree]))
+        -> IO (Result.Result ([Proof_status ProofTree]))
            -- ^ Proof status for goals and lemmas
 darwinCMDLautomatic thName defTS th =
     genericCMDLautomatic (atpFun thName) (prover_name darwinProver) thName
-        (parseTactic_script batchTimeLimit [] defTS) th (ATP_ProofTree "")
+        (parseTactic_script batchTimeLimit [] defTS) th (ProofTree "")
 
 {- |
   Implementation of 'Logic.Prover.proveCMDLautomaticBatch' which provides an
@@ -122,11 +123,11 @@ darwinCMDLautomatic thName defTS th =
 darwinCMDLautomaticBatch ::
            Bool -- ^ True means include proved theorems
         -> Bool -- ^ True means save problem file
-        -> Concurrent.MVar (Result.Result [Proof_status ATP_ProofTree])
+        -> Concurrent.MVar (Result.Result [Proof_status ProofTree])
            -- ^ used to store the result of the batch run
         -> String -- ^ theory name
         -> Tactic_script -- ^ default tactic script
-        -> Theory Sign Sentence ATP_ProofTree -- ^ theory consisting of a
+        -> Theory Sign Sentence ProofTree -- ^ theory consisting of a
            --   'SoftFOL.Sign.Sign' and a list of Named 'SoftFOL.Sign.Sentence'
         -> IO (Concurrent.ThreadId,Concurrent.MVar ())
            -- ^ fst: identifier of the batch thread for killing it
@@ -135,7 +136,7 @@ darwinCMDLautomaticBatch inclProvedThs saveProblem_batch resultMVar
                         thName defTS th =
     genericCMDLautomaticBatch (atpFun thName) inclProvedThs saveProblem_batch
         resultMVar (prover_name darwinProver) thName
-        (parseTactic_script batchTimeLimit [] defTS) th (ATP_ProofTree "")
+        (parseTactic_script batchTimeLimit [] defTS) th (ProofTree "")
 
 -- * Main prover functions
 {- |
@@ -143,8 +144,8 @@ darwinCMDLautomaticBatch inclProvedThs saveProblem_batch resultMVar
 -}
 
 consCheck :: String
-          -> TheoryMorphism Sign Sentence (DefaultMorphism Sign) ATP_ProofTree
-          -> IO([Proof_status ATP_ProofTree])
+          -> TheoryMorphism Sign Sentence (DefaultMorphism Sign) ProofTree
+          -> IO([Proof_status ProofTree])
 consCheck thName tm = case t_target tm of
     Theory sig nSens -> let
         saveTPTP = False
@@ -160,7 +161,7 @@ consCheck thName tm = case t_target tm of
         extraOptions  = "-pc true -pmtptp true -fd true -to "
                         ++ show timeLimitI
         saveFileName  = reverse $ fst $ span (/= '/') $ reverse thName
-        runDarwinRealM :: IO([Proof_status ATP_ProofTree])
+        runDarwinRealM :: IO([Proof_status ProofTree])
         runDarwinRealM = do
             probl <- problem
             hasProgramm <- system ("which darwin > /dev/null 2> /dev/null")
@@ -172,7 +173,7 @@ consCheck thName tm = case t_target tm of
                     , goalStatus = Open
                     , usedAxioms = getAxioms
                     , proverName = prover_name darwinProver
-                    , proofTree  = ATP_ProofTree "Darwin not found"
+                    , proofTree  = ProofTree "Darwin not found"
                     , usedTime = timeToTimeOfDay $ secondsToDiffTime 0
                     , tacticScript  = tac }]
               ExitSuccess -> do
@@ -187,14 +188,14 @@ consCheck thName tm = case t_target tm of
                   let outState = proof_statM exCode simpleOptions output tUsed
                   return [outState]
         proof_statM :: ExitCode -> String ->  [String] -> Int
-                    -> Proof_status ATP_ProofTree
+                    -> Proof_status ProofTree
         proof_statM exitCode _ out tUsed = let
              outState = Proof_status
                { goalName = thName
                , goalStatus = Proved (Just True)
                , usedAxioms = getAxioms
                , proverName = prover_name darwinProver
-               , proofTree = ATP_ProofTree (unlines out)
+               , proofTree = ProofTree (unlines out)
                , usedTime = timeToTimeOfDay $ secondsToDiffTime
                             $ toInteger tUsed
                , tacticScript  = tac }
@@ -212,11 +213,11 @@ consCheck thName tm = case t_target tm of
 runDarwin :: SoftFOLProverState
            -- ^ logical part containing the input Sign and axioms and possibly
            --   goals that have been proved earlier as additional axioms
-           -> GenericConfig ATP_ProofTree -- ^ configuration to use
+           -> GenericConfig ProofTree -- ^ configuration to use
            -> Bool -- ^ True means save TPTP file
            -> String -- ^ name of the theory in the DevGraph
            -> AS_Anno.Named SPTerm -- ^ goal to prove
-           -> IO (ATPRetval, GenericConfig ATP_ProofTree)
+           -> IO (ATPRetval, GenericConfig ProofTree)
            -- ^ (retval, configuration with proof status and complete output)
 runDarwin sps cfg saveTPTP thName nGoal = do
   -- putStrLn ("running Darwin...")
@@ -237,7 +238,7 @@ runDarwin sps cfg saveTPTP thName nGoal = do
         ExitFailure _ -> return
             (ATPError "Could not start Darwin. Is Darwin in your $PATH?",
                   emptyConfig (prover_name darwinProver)
-                              (AS_Anno.senAttr nGoal) $ ATP_ProofTree "")
+                              (AS_Anno.senAttr nGoal) $ ProofTree "")
         ExitSuccess -> do
           prob <- showTPTPProblem thName sps nGoal $
                       simpleOptions ++ ["Requested prover: Darwin"]
@@ -273,7 +274,7 @@ runDarwin sps cfg saveTPTP thName nGoal = do
     defaultProof_status opts =
             (openProof_status
             (AS_Anno.senAttr nGoal) (prover_name darwinProver) $
-                                    ATP_ProofTree "")
+                                    ProofTree "")
                        {tacticScript = Tactic_script $ show $ ATPTactic_script
                         {ts_timeLimit = configTimeLimit cfg,
                          ts_extraOpts = opts} }
@@ -286,7 +287,7 @@ runDarwin sps cfg saveTPTP thName nGoal = do
       , goalStatus = Proved (Just True)
       , usedAxioms = getAxioms -- []
       , proverName = prover_name darwinProver
-      , proofTree = ATP_ProofTree ""
+      , proofTree = ProofTree ""
       , usedTime = timeToTimeOfDay $ secondsToDiffTime $ toInteger ut
       , tacticScript = Tactic_script $ show $ ATPTactic_script
           { ts_timeLimit = configTimeLimit cfg, ts_extraOpts = opts }}

@@ -17,6 +17,7 @@ module Comorphisms.CASL2Modal (CASL2Modal(..)) where
 import Logic.Logic
 import Logic.Comorphism
 import qualified Data.Set as Set
+import Common.ProofTree
 
 -- CASL
 import CASL.Logic_CASL
@@ -40,7 +41,7 @@ instance Comorphism CASL2Modal
                CASLBasicSpec CASLFORMULA SYMB_ITEMS SYMB_MAP_ITEMS
                CASLSign
                CASLMor
-               Symbol RawSymbol Q_ProofTree
+               Symbol RawSymbol ProofTree
                Modal ()
                M_BASIC_SPEC ModalFORMULA SYMB_ITEMS SYMB_MAP_ITEMS
                MSign

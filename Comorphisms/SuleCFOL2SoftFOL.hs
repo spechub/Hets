@@ -24,6 +24,7 @@ import Common.AS_Annotation
 import Common.Id
 import Common.Result
 import Common.DocUtils
+import Common.ProofTree
 import Common.Utils (mapAccumLM)
 import qualified Common.Lib.Rel as Rel
 
@@ -135,10 +136,10 @@ instance Comorphism SuleCFOL2SoftFOL
                CASLBasicSpec CASLFORMULA SYMB_ITEMS SYMB_MAP_ITEMS
                CASLSign
                CASLMor
-               CSign.Symbol RawSymbol Q_ProofTree
+               CSign.Symbol RawSymbol ProofTree
                SoftFOL () () SPTerm () ()
                SPSign.Sign
-               SoftFOLMorphism SFSymbol () SPSign.ATP_ProofTree where
+               SoftFOLMorphism SFSymbol () ProofTree where
     sourceLogic SuleCFOL2SoftFOL = CASL
     sourceSublogic SuleCFOL2SoftFOL = SL.cFol
                       { sub_features = LocFilSub
@@ -160,10 +161,10 @@ instance Comorphism SuleCFOL2SoftFOLInduction
                CASLBasicSpec CASLFORMULA SYMB_ITEMS SYMB_MAP_ITEMS
                CASLSign
                CASLMor
-               CSign.Symbol RawSymbol Q_ProofTree
+               CSign.Symbol RawSymbol ProofTree
                SoftFOL () () SPTerm () ()
                SPSign.Sign
-               SoftFOLMorphism SFSymbol () SPSign.ATP_ProofTree where
+               SoftFOLMorphism SFSymbol () ProofTree where
     sourceLogic SuleCFOL2SoftFOLInduction = CASL
     sourceSublogic SuleCFOL2SoftFOLInduction = SL.cFol
                       { sub_features = LocFilSub
@@ -849,9 +850,9 @@ isSingleSorted sign =
   Set.size (CSign.sortSet sign) == 1
   && Set.null (emptySortSet sign) -- empty sorts need relativization
 
-extractCASLModel :: CASLSign -> ATP_ProofTree
+extractCASLModel :: CASLSign -> ProofTree
                  -> Result (CASLSign, [Named (FORMULA ())])
-extractCASLModel sign (ATP_ProofTree output) =
+extractCASLModel sign (ProofTree output) =
   case parse tptpModel "" output of
     Right ts -> do
       let (_, idMap, _) = transSign sign

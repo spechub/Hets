@@ -35,6 +35,7 @@ import qualified Data.Set as Set
 import qualified Common.Lib.Rel as Rel
 import Common.AS_Annotation
 import Common.ProofUtils
+import Common.ProofTree
 
 import Data.List (zip)
 
@@ -73,12 +74,12 @@ instance Comorphism CASL2SubCFOL
                CASLBasicSpec CASLFORMULA SYMB_ITEMS SYMB_MAP_ITEMS
                CASLSign
                CASLMor
-               Symbol RawSymbol Q_ProofTree
+               Symbol RawSymbol ProofTree
                CASL CASL_Sublogics
                CASLBasicSpec CASLFORMULA SYMB_ITEMS SYMB_MAP_ITEMS
                CASLSign
                CASLMor
-               Symbol RawSymbol Q_ProofTree where
+               Symbol RawSymbol ProofTree where
     sourceLogic (CASL2SubCFOL _ _) = CASL
     sourceSublogic (CASL2SubCFOL b _) =
         if b then SL.caslTop else SL.caslTop { cons_features = NoSortGen }

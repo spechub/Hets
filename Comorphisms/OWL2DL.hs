@@ -27,9 +27,10 @@ import DL.AS
 import DL.Sign as DL
 
 import Common.AS_Annotation
-import Common.Result
-import Common.Id
 import Common.DocUtils
+import Common.Id
+import Common.ProofTree
+import Common.Result
 
 import qualified Data.Set as Set
 
@@ -49,7 +50,7 @@ instance Comorphism
     OWL11_Morphism  -- morphism domain
     ()              -- symbol domain
     ()              -- rawsymbol domain
-    ATP_ProofTree   -- proof tree codomain
+    ProofTree   -- proof tree codomain
     DL         -- lid codomain
     ()                     -- Sublogics
     DLBasic                -- basic_spec

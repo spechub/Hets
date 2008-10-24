@@ -43,12 +43,13 @@ import Isabelle.Logic_Isabelle
 import Isabelle.Translate
 
 import Common.AS_Annotation
-import Common.Id
-import Common.Result
 import Common.DocUtils
+import Common.Id
+import Common.ProofTree
+import Common.Result
+
 import qualified Data.Map as Map
 import qualified Data.Set as Set
-
 import qualified Data.List as List
 
 isSingleton :: Set.Set a -> Bool
@@ -82,7 +83,7 @@ instance Comorphism CFOL2IsabelleHOL
                CASLBasicSpec CASLFORMULA SYMB_ITEMS SYMB_MAP_ITEMS
                CASLSign
                CASLMor
-               Symbol RawSymbol Q_ProofTree
+               Symbol RawSymbol ProofTree
                Isabelle () () IsaSign.Sentence () ()
                IsaSign.Sign
                IsabelleMorphism () () ()  where

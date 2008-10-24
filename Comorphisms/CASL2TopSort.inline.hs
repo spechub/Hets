@@ -21,12 +21,11 @@ import Data.List
 import Logic.Logic
 import Logic.Comorphism
 
-import Common.Id
-import Common.Result
-import qualified Data.Map as Map
-import qualified Data.Set as Set
-import qualified Common.Lib.Rel as Rel
 import Common.AS_Annotation
+import Common.Id
+import Common.ProofTree
+import Common.Result
+import qualified Common.Lib.Rel as Rel
 
 -- CASL
 import CASL.Logic_CASL
@@ -35,6 +34,9 @@ import CASL.Utils
 import CASL.Sign
 import CASL.Morphism
 import CASL.Sublogic as SL
+
+import qualified Data.Map as Map
+import qualified Data.Set as Set
 
 -- | The identity of the comorphism
 data CASL2TopSort = CASL2TopSort deriving Show
@@ -47,12 +49,12 @@ instance Comorphism CASL2TopSort
                CASLBasicSpec CASLFORMULA SYMB_ITEMS SYMB_MAP_ITEMS
                CASLSign
                CASLMor
-               Symbol RawSymbol Q_ProofTree
+               Symbol RawSymbol ProofTree
                CASL CASL_Sublogics
                CASLBasicSpec CASLFORMULA SYMB_ITEMS SYMB_MAP_ITEMS
                CASLSign
                CASLMor
-               Symbol RawSymbol Q_ProofTree where
+               Symbol RawSymbol ProofTree where
     sourceLogic CASL2TopSort = CASL
     sourceSublogic CASL2TopSort = SL.top
         { sub_features = LocFilSub

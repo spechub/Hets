@@ -216,7 +216,8 @@ drifted_files = Common/AS_Annotation.hs \
 atc_files = Common/AS_Annotation.der.hs Common/DefaultMorphism.hs \
     Syntax/AS_Structured.der.hs Syntax/AS_Architecture.der.hs \
     Common/GlobalAnnotations.hs Syntax/AS_Library.der.hs \
-    Logic/Prover.hs Common/LibName.hs Common/ExtSign.hs Static/DevGraph.hs
+    Logic/Prover.hs Common/LibName.hs Common/ExtSign.hs \
+    Common/ProofTree.hs Static/DevGraph.hs
 
 atc_der_files = $(foreach file, $(atc_files), \
     ATC/$(basename $(basename $(notdir $(file)))).der.hs)
@@ -225,6 +226,9 @@ ATC/Id.der.hs: Common/Id.hs $(GENRULES)
 	$(GENRULECALL) -o $@ $<
 
 ATC/Result.der.hs: Common/Result.hs $(GENRULES)
+	$(GENRULECALL) -o $@ $<
+
+ATC/ProofTree.der.hs: Common/ProofTree.hs $(GENRULES)
 	$(GENRULECALL) -o $@ $<
 
 ATC/AS_Annotation.der.hs: Common/AS_Annotation.der.hs $(GENRULES)

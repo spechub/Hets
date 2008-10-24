@@ -18,6 +18,9 @@ module CASL.Logic_CASL where
 import Common.AS_Annotation
 import Common.Lexer((<<))
 import Common.Result
+import Common.ProofTree
+
+import ATC.ProofTree ()
 
 import Text.ParserCombinators.Parsec
 
@@ -254,7 +257,7 @@ instance Logic CASL CASL_Sublogics
                CASLBasicSpec CASLFORMULA SYMB_ITEMS SYMB_MAP_ITEMS
                CASLSign
                CASLMor
-               Symbol RawSymbol Q_ProofTree where
+               Symbol RawSymbol ProofTree where
          stability _ = Stable
          proj_sublogic_epsilon CASL = pr_epsilon ()
          all_sublogics _ = sublogics_all [()]

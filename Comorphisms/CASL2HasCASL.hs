@@ -15,8 +15,11 @@ module Comorphisms.CASL2HasCASL where
 
 import Logic.Logic
 import Logic.Comorphism
-import Common.Id
+
 import Common.AS_Annotation
+import Common.Id
+import Common.ProofTree
+
 import qualified Data.Map as Map
 import qualified Data.Set as Set
 
@@ -45,7 +48,7 @@ instance Comorphism CASL2HasCASL
                Cas.SYMB_MAP_ITEMS
                CasS.CASLSign
                CasM.CASLMor
-               CasS.Symbol CasM.RawSymbol CasS.Q_ProofTree
+               CasS.Symbol CasM.RawSymbol ProofTree
                HasCASL Sublogic
                BasicSpec Sentence SymbItems SymbMapItems
                Env Morphism Symbol RawSymbol () where

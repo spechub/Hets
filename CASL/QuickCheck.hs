@@ -13,7 +13,6 @@ Initially, only finite enumeration domains are supported
 -}
 
 module CASL.QuickCheck(quickCheckProver,
-                       Q_ProofTree (..),
                        QModel (..),
                        VARIABLE_ASSIGNMENT (..)) where
 
@@ -27,13 +26,14 @@ import CASL.Quantification
 import CASL.ToDoc
 import CASL.SimplifySen
 
-
 import Logic.Prover
+
 import SoftFOL.ProverState (parseTactic_script)
 
-import Common.Result
-import Common.Id
 import Common.DocUtils
+import Common.Id
+import Common.ProofTree
+import Common.Result
 
 import qualified Data.Map as Map
 import Data.Maybe
@@ -44,8 +44,10 @@ import Control.Concurrent
 import Control.Concurrent.MVar
 
 import System.IO
+
 import GUI.GenericATP
 import GUI.GenericATPState
+
 import Proofs.BatchProcessing
 
 -- a qmodel is a certain term model used by QuickCheck
@@ -69,11 +71,11 @@ data QModel = QModel
 runQuickCheck :: QModel
            -- ^ logical part containing the input Sign and axioms and possibly
            --   goals that have been proved earlier as additional axioms
-           -> GenericConfig Q_ProofTree -- ^ configuration to use
+           -> GenericConfig ProofTree -- ^ configuration to use
            -> Bool -- ^ True means save theory file
            -> String -- ^ name of the theory in the DevGraph
            -> AS_Anno.Named CASLFORMULA -- ^ goal to prove
-           -> IO (ATPRetval, GenericConfig Q_ProofTree)
+           -> IO (ATPRetval, GenericConfig ProofTree)
            -- ^ (retval, configuration with proof status and complete output)
 runQuickCheck qm cfg _saveFile _thName nGoal = do
    (stat,Result d res) <- case timeLimit cfg of
@@ -100,7 +102,7 @@ runQuickCheck qm cfg _saveFile _thName nGoal = do
           Nothing -> Open
        setStatus pstat = pstat { goalStatus = gstat,
                                  proverName = "QuickCheck",
-                                 proofTree = Q_ProofTree diagstr }
+                                 proofTree = ProofTree diagstr }
        cfg' = cfg { proof_status = setStatus (proof_status cfg),
                     resultOutput = [diagstr] }
    return (stat, cfg')
@@ -523,7 +525,7 @@ getCarrier qm s =
 
 {- | The Prover implementation. First runs the batch prover (with
   graphical feedback), then starts the GUI prover.  -}
-quickCheckProver :: Prover CASLSign CASLFORMULA CASL_Sublogics Q_ProofTree
+quickCheckProver :: Prover CASLSign CASLFORMULA CASL_Sublogics ProofTree
 quickCheckProver =
   (mkProverTemplate "QuickCheck"
                     (SL.top {has_part = False})
@@ -537,7 +539,7 @@ quickCheckProver =
 -}
 
 atpFun :: String -- ^ theory name
-       -> ATPFunctions CASLSign CASLFORMULA Q_ProofTree QModel
+       -> ATPFunctions CASLSign CASLFORMULA ProofTree QModel
 atpFun _thName = ATPFunctions
     { initialProverState = \ sig sens -> insertSens (makeQm sig) sens,
       atpTransSenName = id,
@@ -563,12 +565,12 @@ atpFun _thName = ATPFunctions
   data type ATPFunctions.
 -}
 quickCheckGUI :: String -- ^ theory name
-           -> Theory CASLSign CASLFORMULA Q_ProofTree
+           -> Theory CASLSign CASLFORMULA ProofTree
            -- ^ theory consisting of a signature
            --   and a list of named sentences
-           -> IO([Proof_status Q_ProofTree]) -- ^ proof status for each goal
+           -> IO([Proof_status ProofTree]) -- ^ proof status for each goal
 quickCheckGUI thName th = genericATPgui (atpFun thName) True
-    (prover_name quickCheckProver) thName th $ Q_ProofTree ""
+    (prover_name quickCheckProver) thName th $ ProofTree ""
 
 -- ** command line functions
 
@@ -580,13 +582,13 @@ quickCheckGUI thName th = genericATPgui (atpFun thName) True
 quickCheckCMDLautomatic ::
            String -- ^ theory name
         -> Tactic_script -- ^ default tactic script
-        -> Theory CASLSign CASLFORMULA Q_ProofTree
+        -> Theory CASLSign CASLFORMULA ProofTree
            -- ^ theory consisting of a signature and a list of Named sentence
-        -> IO (Result.Result ([Proof_status Q_ProofTree]))
+        -> IO (Result.Result ([Proof_status ProofTree]))
            -- ^ Proof status for goals and lemmas
 quickCheckCMDLautomatic thName defTS th =
     genericCMDLautomatic (atpFun thName) (prover_name quickCheckProver) thName
-        (parseTactic_script batchTimeLimit [] defTS) th (Q_ProofTree "")
+        (parseTactic_script batchTimeLimit [] defTS) th (ProofTree "")
 
 {- |
   Implementation of 'Logic.Prover.proveCMDLautomaticBatch' which provides an
@@ -596,11 +598,11 @@ quickCheckCMDLautomatic thName defTS th =
 quickCheckCMDLautomaticBatch ::
            Bool -- ^ True means include proved theorems
         -> Bool -- ^ True means save problem file
-        -> MVar (Result.Result [Proof_status Q_ProofTree])
+        -> MVar (Result.Result [Proof_status ProofTree])
            -- ^ used to store the result of the batch run
         -> String -- ^ theory name
         -> Tactic_script -- ^ default tactic script
-        -> Theory CASLSign CASLFORMULA Q_ProofTree -- ^ theory consisting of a
+        -> Theory CASLSign CASLFORMULA ProofTree -- ^ theory consisting of a
            --   signature and a list of named sentences
         -> IO (ThreadId,MVar ())
            -- ^ fst: identifier of the batch thread for killing it
@@ -609,4 +611,4 @@ quickCheckCMDLautomaticBatch inclProvedThs saveProblem_batch resultMVar
                         thName defTS th =
     genericCMDLautomaticBatch (atpFun thName) inclProvedThs saveProblem_batch
         resultMVar (prover_name quickCheckProver) thName
-        (parseTactic_script batchTimeLimit [] defTS) th (Q_ProofTree "")
+        (parseTactic_script batchTimeLimit [] defTS) th (ProofTree "")

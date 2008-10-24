@@ -18,16 +18,15 @@ module Comorphisms.CASL_DL2CASL
 
 import Logic.Logic
 import Logic.Comorphism
-import Common.Id
-import qualified Data.Set as Set
-import qualified Common.Lib.Rel as Rel
-import qualified Data.Map as Map
+
 import Common.AS_Annotation
-import Data.List
+import Common.Id
+import Common.ProofTree
 import Common.Result
-import CASL_DL.PredefinedCASLAxioms
+import qualified Common.Lib.Rel as Rel
 
 --CASL_DL = domain
+import CASL_DL.PredefinedCASLAxioms
 import CASL_DL.Logic_CASL_DL
 import CASL_DL.AS_CASL_DL
 import CASL_DL.Sign()
@@ -42,6 +41,10 @@ import CASL.AS_Basic_CASL
 import CASL.Sign
 import CASL.Morphism
 import CASL.Sublogic as Sublogic
+
+import Data.List
+import qualified Data.Set as Set
+import qualified Data.Map as Map
 
 data CASL_DL2CASL = CASL_DL2CASL deriving Show
 
@@ -59,7 +62,7 @@ instance Comorphism
     DLMor           -- morphism domain
     Symbol          -- symbol domain
     RawSymbol       -- rawsymbol domain
-    Q_ProofTree     -- proof tree codomain
+    ProofTree     -- proof tree codomain
     CASL            -- lid codomain
     CASL_Sublogics  -- sublogics codomain
     CASLBasicSpec   -- Basic spec codomain
@@ -70,7 +73,7 @@ instance Comorphism
     CASLMor         -- morphism codomain
     Symbol          -- symbol codomain
     RawSymbol       -- rawsymbol codomain
-    Q_ProofTree     -- proof tree domain
+    ProofTree     -- proof tree domain
     where
       sourceLogic CASL_DL2CASL    = CASL_DL
       targetLogic CASL_DL2CASL    = CASL

@@ -15,7 +15,7 @@ import SoftFOL.Sign
 import SoftFOL.Prove
 
 
-printStatus :: IO [Proof_status ATP_ProofTree] -> IO ()
+printStatus :: IO [Proof_status ProofTree] -> IO ()
 printStatus act = do st <- act
                      putStrLn (show st)
 
@@ -45,11 +45,11 @@ goal3 :: Named SPTerm
 goal3 = NamedSen "Go2" False False (SPQuantTerm SPForall [term_x] (SPComplexTerm SPImplies [SPComplexTerm (SPCustomSymbol "P") [term_x],SPComplexTerm (SPCustomSymbol "A") [term_x] ]))
 
 
-theory1 :: Theory SoftFOL.Sign.Sign SPTerm ATP_ProofTree
+theory1 :: Theory SoftFOL.Sign.Sign SPTerm ProofTree
 theory1 = (Theory sign1 $ toThSens [axiom1,-- axiom2,
                          goal1,goal2])
 
-theory2 :: Theory SoftFOL.Sign.Sign SPTerm ATP_ProofTree
+theory2 :: Theory SoftFOL.Sign.Sign SPTerm ProofTree
 theory2 = (Theory sign1 $ toThSens [axiom1,axiom2,axiom3,
                          goal1,goal2,goal3])
 

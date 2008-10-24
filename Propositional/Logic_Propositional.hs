@@ -30,7 +30,12 @@ module Propositional.Logic_Propositional
             , Morphism
     ) where
 
+import Common.ProofTree
+
+import ATC.ProofTree ()
+
 import Logic.Logic
+
 import Propositional.Sign as Sign
 import Propositional.Morphism as Morphism
 import qualified Propositional.AS_BASIC_Propositional as AS_BASIC
@@ -39,7 +44,7 @@ import qualified Propositional.Symbol as Symbol
 import qualified Propositional.Parse_AS_Basic as Parse_AS
 import qualified Propositional.Analysis as Analysis
 import qualified Propositional.Sublogic as Sublogic
-import qualified Common.Id as Id()
+
 #ifdef UNI_PACKAGE
 import qualified Propositional.Prove as Prove
 #endif
@@ -99,7 +104,7 @@ instance Logic Propositional
     Morphism.Morphism                  -- morphism
     Symbol.Symbol                      -- symbol
     Symbol.Symbol                      -- raw_symbol
-    Sign.ATP_ProofTree                 -- proof_tree
+    ProofTree                      -- proof_tree
     where
       stability Propositional     = Experimental
       top_sublogic Propositional  = Sublogic.top

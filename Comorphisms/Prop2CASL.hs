@@ -17,6 +17,8 @@ module Comorphisms.Prop2CASL
     )
     where
 
+import Common.ProofTree
+
 import Logic.Logic
 import Logic.Comorphism
 
@@ -53,7 +55,7 @@ instance Comorphism Prop2CASL
     PMor.Morphism
     PSymbol.Symbol
     PSymbol.Symbol
-    PSign.ATP_ProofTree
+    ProofTree
     CLogic.CASL
     CSL.CASL_Sublogics
     CLogic.CASLBasicSpec
@@ -64,7 +66,7 @@ instance Comorphism Prop2CASL
     CMor.CASLMor
     CSign.Symbol
     CMor.RawSymbol
-    CSign.Q_ProofTree
+    ProofTree
     where
       sourceLogic Prop2CASL = PLogic.Propositional
       sourceSublogic Prop2CASL = PSL.top

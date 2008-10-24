@@ -16,11 +16,14 @@ module Comorphisms.CASL2PCFOL where
 
 import Logic.Logic
 import Logic.Comorphism
-import Common.Id
+
+import Data.List
 import qualified Data.Set as Set
+
 import qualified Common.Lib.Rel as Rel
 import Common.AS_Annotation
-import Data.List
+import Common.Id
+import Common.ProofTree
 
 -- CASL
 import CASL.Logic_CASL
@@ -42,12 +45,12 @@ instance Comorphism CASL2PCFOL
                CASLBasicSpec CASLFORMULA SYMB_ITEMS SYMB_MAP_ITEMS
                CASLSign
                CASLMor
-               Symbol RawSymbol Q_ProofTree
+               Symbol RawSymbol ProofTree
                CASL CASL_Sublogics
                CASLBasicSpec CASLFORMULA SYMB_ITEMS SYMB_MAP_ITEMS
                CASLSign
                CASLMor
-               Symbol RawSymbol Q_ProofTree where
+               Symbol RawSymbol ProofTree where
     sourceLogic CASL2PCFOL = CASL
     sourceSublogic CASL2PCFOL = Sublogic.caslTop
     targetLogic CASL2PCFOL = CASL

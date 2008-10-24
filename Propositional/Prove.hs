@@ -38,6 +38,7 @@ import GUI.HTkUtils
 import HTk
 import ChildProcess as CP
 
+import Common.ProofTree
 import Common.Utils (readMaybe)
 import qualified Common.AS_Annotation as AS_Anno
 import qualified Common.Id as Id
@@ -75,7 +76,7 @@ zchaffS = "zchaff"
 
   Implemented are: a prover GUI, and both commandline prover interfaces.
 -}
-zchaffProver :: LP.Prover Sig.Sign AS_BASIC.FORMULA PropSL Sig.ATP_ProofTree
+zchaffProver :: LP.Prover Sig.Sign AS_BASIC.FORMULA PropSL ProofTree
 zchaffProver = (LP.mkProverTemplate zchaffS top zchaffProveGUI)
     { LP.proveCMDLautomatic = Just $ zchaffProveCMDLautomatic
     , LP.proveCMDLautomaticBatch = Just $ zchaffProveCMDLautomaticBatch }
@@ -84,12 +85,12 @@ zchaffProver = (LP.mkProverTemplate zchaffS top zchaffProveGUI)
    The Consistency Cheker.
 -}
 propConsChecker :: LP.ConsChecker Sig.Sign AS_BASIC.FORMULA PropSL
-                                  PMorphism.Morphism Sig.ATP_ProofTree
+                                  PMorphism.Morphism ProofTree
 propConsChecker = LP.mkProverTemplate zchaffS top consCheck
 
 consCheck :: String -> LP.TheoryMorphism Sig.Sign AS_BASIC.FORMULA
-             PMorphism.Morphism Sig.ATP_ProofTree
-          -> IO([LP.Proof_status Sig.ATP_ProofTree])
+             PMorphism.Morphism ProofTree
+          -> IO([LP.Proof_status ProofTree])
 consCheck thName tm =
     case LP.t_target tm of
       LP.Theory sig nSens -> do
@@ -136,7 +137,7 @@ consCheck thName tm =
             return []
 
     where
-        getAxioms :: [LP.SenStatus AS_BASIC.FORMULA (LP.Proof_status Sig.ATP_ProofTree)]
+        getAxioms :: [LP.SenStatus AS_BASIC.FORMULA (LP.Proof_status ProofTree)]
                   -> [AS_Anno.Named AS_BASIC.FORMULA]
         getAxioms f = map (AS_Anno.makeNamed "consistency" . AS_Anno.sentence) $ filter AS_Anno.isAxiom f
 
@@ -161,11 +162,11 @@ consCheck thName tm =
   Invokes the generic prover GUI.
 -}
 zchaffProveGUI :: String -- ^ theory name
-          -> LP.Theory Sig.Sign AS_BASIC.FORMULA Sig.ATP_ProofTree
-          -> IO([LP.Proof_status Sig.ATP_ProofTree]) -- ^ proof status for each goal
+          -> LP.Theory Sig.Sign AS_BASIC.FORMULA ProofTree
+          -> IO([LP.Proof_status ProofTree]) -- ^ proof status for each goal
 zchaffProveGUI thName th =
     genericATPgui (atpFun thName) True (LP.prover_name zchaffProver) thName th
-                  $ Sig.ATP_ProofTree ""
+                  $ ProofTree ""
 {- |
   Parses a given default tactic script into a
   'GUI.GenericATPState.ATPTactic_script' if possible.
@@ -200,13 +201,13 @@ parseTactic_script tLimit (LP.Tactic_script ts) =
 zchaffProveCMDLautomatic ::
            String -- ^ theory name
         -> LP.Tactic_script -- ^ default tactic script
-        -> LP.Theory Sig.Sign AS_BASIC.FORMULA Sig.ATP_ProofTree  -- ^ theory consisting of a
+        -> LP.Theory Sig.Sign AS_BASIC.FORMULA ProofTree  -- ^ theory consisting of a
                                 -- signature and a list of Named sentence
-        -> IO (Result.Result ([LP.Proof_status Sig.ATP_ProofTree]))
+        -> IO (Result.Result ([LP.Proof_status ProofTree]))
            -- ^ Proof status for goals and lemmas
 zchaffProveCMDLautomatic thName defTS th =
     genericCMDLautomatic (atpFun thName) (LP.prover_name zchaffProver) thName
-        (parseZchaffTactic_script defTS) th (Sig.ATP_ProofTree "")
+        (parseZchaffTactic_script defTS) th (ProofTree "")
 
 {- |
   Implementation of 'Logic.Prover.proveCMDLautomaticBatch' which provides an
@@ -216,11 +217,11 @@ zchaffProveCMDLautomatic thName defTS th =
 zchaffProveCMDLautomaticBatch ::
            Bool -- ^ True means include proved theorems
         -> Bool -- ^ True means save problem file
-        -> Concurrent.MVar (Result.Result [LP.Proof_status Sig.ATP_ProofTree])
+        -> Concurrent.MVar (Result.Result [LP.Proof_status ProofTree])
            -- ^ used to store the result of the batch run
         -> String -- ^ theory name
         -> LP.Tactic_script -- ^ default tactic script
-        -> LP.Theory Sig.Sign AS_BASIC.FORMULA Sig.ATP_ProofTree -- ^ theory consisting of a
+        -> LP.Theory Sig.Sign AS_BASIC.FORMULA ProofTree -- ^ theory consisting of a
            --   'SPASS.Sign.Sign' and a list of Named 'SPASS.Sign.Sentence'
         -> IO (Concurrent.ThreadId,Concurrent.MVar ())
            -- ^ fst: identifier of the batch thread for killing it
@@ -229,14 +230,14 @@ zchaffProveCMDLautomaticBatch inclProvedThs saveProblem_batch resultMVar
                         thName defTS th =
     genericCMDLautomaticBatch (atpFun thName) inclProvedThs saveProblem_batch
         resultMVar (LP.prover_name zchaffProver) thName
-        (parseZchaffTactic_script defTS) th (Sig.ATP_ProofTree "")
+        (parseZchaffTactic_script defTS) th (ProofTree "")
 
 {- |
   Record for prover specific functions. This is used by both GUI and command
   line interface.
 -}
 atpFun :: String            -- Theory name
-       -> ATPState.ATPFunctions Sig.Sign AS_BASIC.FORMULA Sig.ATP_ProofTree PState.PropProverState
+       -> ATPState.ATPFunctions Sig.Sign AS_BASIC.FORMULA ProofTree PState.PropProverState
 atpFun thName = ATPState.ATPFunctions
                 {
                   ATPState.initialProverState = PState.propProverState
@@ -260,7 +261,7 @@ runZchaff :: PState.PropProverState
            -- logical part containing the input Sign and
            -- axioms and possibly goals that have been proved
            -- earlier as additional axioms
-           -> ATPState.GenericConfig Sig.ATP_ProofTree
+           -> ATPState.GenericConfig ProofTree
            -- configuration to use
            -> Bool
            -- True means save DIMACS file
@@ -269,7 +270,7 @@ runZchaff :: PState.PropProverState
            -> AS_Anno.Named AS_BASIC.FORMULA
            -- Goal to prove
            -> IO (ATPState.ATPRetval
-                 , ATPState.GenericConfig Sig.ATP_ProofTree
+                 , ATPState.GenericConfig ProofTree
                  )
            -- (retval, configuration with proof status and complete output)
 runZchaff pState cfg saveDIMACS thName nGoal =
@@ -311,7 +312,7 @@ runZchaff pState cfg saveDIMACS thName nGoal =
                                 (defaultProof_status options)
                                 {LP.goalStatus = LP.Proved $ Nothing
                                 , LP.usedAxioms = filter (/=(AS_Anno.senAttr nGoal)) usedAxs
-                                , LP.proofTree = Sig.ATP_ProofTree $ out })
+                                , LP.proofTree = ProofTree $ out })
                            | isJust res && elem (fromJust res) disproved =
                                (ATPState.ATPSuccess,
                                 (defaultProof_status options) {LP.goalStatus = LP.Disproved} )
@@ -322,7 +323,7 @@ runZchaff pState cfg saveDIMACS thName nGoal =
                            | otherwise = (ATPState.ATPSuccess, defaultProof_status options)
                   defaultProof_status opts =
                       (LP.openProof_status (AS_Anno.senAttr nGoal) (LP.prover_name zchaffProver) $
-                                        Sig.ATP_ProofTree "")
+                                        ProofTree "")
                       {LP.tacticScript = LP.Tactic_script $ show $ ATPState.ATPTactic_script
                                          {ATPState.ts_timeLimit = configTimeLimit cfg,
                                           ATPState.ts_extraOpts = opts} }
@@ -439,7 +440,7 @@ excepToATPResult :: String
                  -> Exception.Exception
                  -- ^ occured exception
                  -> IO (ATPState.ATPRetval,
-                        ATPState.GenericConfig Sig.ATP_ProofTree)
+                        ATPState.GenericConfig ProofTree)
                     -- ^ (retval,
                     -- configuration with proof status and complete output)
 excepToATPResult prName nGoal excep = return $ case excep of
@@ -456,13 +457,13 @@ excepToATPResult prName nGoal excep = return $ case excep of
           emptyCfg)
   where
     emptyCfg = ATPState.emptyConfig prName (AS_Anno.senAttr nGoal) $
-               Sig.ATP_ProofTree ""
+               ProofTree ""
 
 {- |
   Returns the time limit from GenericConfig if available. Otherwise
   guiDefaultTimeLimit is returned.
 -}
-configTimeLimit :: ATPState.GenericConfig Sig.ATP_ProofTree
+configTimeLimit :: ATPState.GenericConfig ProofTree
                 -> Int
 configTimeLimit cfg =
     maybe (guiDefaultTimeLimit) id $ ATPState.timeLimit cfg
@@ -471,6 +472,6 @@ configTimeLimit cfg =
   Creates a list of all options the zChaff prover runs with.
   Only Option is the timelimit
 -}
-createZchaffOptions :: ATPState.GenericConfig Sig.ATP_ProofTree -> [String]
+createZchaffOptions :: ATPState.GenericConfig ProofTree -> [String]
 createZchaffOptions cfg =
     [(show $ configTimeLimit cfg)]

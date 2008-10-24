@@ -30,6 +30,8 @@ import CASL.Sign
 import CASL.Morphism
 import CASL_DL.Sublogics
 
+import Common.ProofTree
+
 data OWL2CASL_DL = OWL2CASL_DL deriving Show
 
 instance Language OWL2CASL_DL
@@ -46,7 +48,7 @@ instance Comorphism
     OWL11_Morphism  -- morphism domain
     ()              -- symbol domain
     ()              -- rawsymbol domain
-    ATP_ProofTree   -- proof tree codomain
+    ProofTree   -- proof tree codomain
     CASL_DL         -- lid codomain
     CASL_DL_SL      -- sublogics codomain
     DL_BASIC_SPEC   -- Basic spec codomain
@@ -57,7 +59,7 @@ instance Comorphism
     DLMor           -- morphism codomain
     Symbol          -- symbol codomain
     RawSymbol       -- rawsymbol codomain
-    Q_ProofTree     -- proof tree domain
+    ProofTree     -- proof tree domain
     where
       sourceLogic OWL2CASL_DL    = OWL11
       sourceSublogic OWL2CASL_DL = ()

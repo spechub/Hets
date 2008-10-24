@@ -16,6 +16,10 @@ module SoftFOL.Logic_SoftFOL where
 
 import Common.DefaultMorphism
 import Common.DocUtils
+import Common.ProofTree
+
+import ATC.ProofTree ()
+
 import Logic.Logic
 
 import SoftFOL.ATC_SoftFOL ()
@@ -76,7 +80,7 @@ instance StaticAnalysis SoftFOL () Sentence
 
 instance Logic SoftFOL () () Sentence () ()
                Sign
-               SoftFOLMorphism SFSymbol () ATP_ProofTree where
+               SoftFOLMorphism SFSymbol () ProofTree where
          stability _ = Testing
     -- again default implementations are fine
     -- the prover uses HTk and IO functions from uni
@@ -88,3 +92,4 @@ instance Logic SoftFOL () () Sentence () ()
                            , darwinProver]
          cons_checkers SoftFOL = [darwinConsChecker]
 #endif
+

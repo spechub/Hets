@@ -18,10 +18,10 @@ module Comorphisms.Modal2CASL (Modal2CASL(..)) where
 
 import Logic.Logic
 import Logic.Comorphism
-import qualified Data.Set as Set
-import qualified Data.Map as Map
+
 import Common.AS_Annotation
 import Common.Id
+import Common.ProofTree
 
 -- CASL
 import CASL.Logic_CASL
@@ -40,8 +40,9 @@ import Modal.Utils
 -- generated function
 import Modal.ModalSystems
 
+import qualified Data.Set as Set
+import qualified Data.Map as Map
 import Data.Maybe
--- Debugging
 import Control.Exception (assert)
 
 
@@ -60,7 +61,7 @@ instance Comorphism Modal2CASL
                CASLBasicSpec CASLFORMULA SYMB_ITEMS SYMB_MAP_ITEMS
                CASLSign
                CASLMor
-               Symbol RawSymbol Q_ProofTree where
+               Symbol RawSymbol ProofTree where
     sourceLogic Modal2CASL = Modal
     sourceSublogic Modal2CASL = ()
     targetLogic Modal2CASL = CASL

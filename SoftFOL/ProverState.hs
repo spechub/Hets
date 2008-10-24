@@ -23,9 +23,11 @@ import SoftFOL.PrintTPTP
 import SoftFOL.Print ()
 
 import qualified Common.AS_Annotation as AS_Anno
+import Common.ProofTree
 import Common.ProofUtils
 import Common.Utils (splitOn)
 import Common.DocUtils
+
 import qualified Control.Exception as Exception
 
 import Data.Maybe
@@ -136,7 +138,7 @@ parseSPASSCommands comLine =
   Returns the time limit from GenericConfig if available. Otherwise
   guiDefaultTimeLimit is returned.
 -}
-configTimeLimit :: GenericConfig ATP_ProofTree
+configTimeLimit :: GenericConfig ProofTree
                 -> Int
 configTimeLimit cfg =
     maybe (guiDefaultTimeLimit) id $ timeLimit cfg
@@ -161,7 +163,7 @@ parseTactic_script tLimit extOpts (Tactic_script ts) =
 excepToATPResult :: String -- ^ name of running prover
                  -> AS_Anno.Named SPTerm -- ^ goal to prove
                  -> Exception.Exception -- ^ occured exception
-                 -> IO (ATPRetval, GenericConfig ATP_ProofTree) -- ^ (retval,
+                 -> IO (ATPRetval, GenericConfig ProofTree) -- ^ (retval,
                     -- configuration with proof status and complete output)
 excepToATPResult prName nGoal excep = return $ case excep of
     -- this is supposed to distinguish "fd ... vanished"
@@ -174,4 +176,4 @@ excepToATPResult prName nGoal excep = return $ case excep of
     _ -> (ATPError ("Error running " ++ prName ++ ".\n" ++ show excep),
           emptyCfg)
   where
-    emptyCfg = emptyConfig prName (AS_Anno.senAttr nGoal) $ ATP_ProofTree ""
+    emptyCfg = emptyConfig prName (AS_Anno.senAttr nGoal) $ ProofTree ""

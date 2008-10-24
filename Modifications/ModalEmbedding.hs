@@ -19,6 +19,8 @@ import CASL.Morphism
 import CASL.AS_Basic_CASL
 import CASL.Sublogic as SL
 
+import Common.ProofTree
+
 data MODAL_EMBEDDING = MODAL_EMBEDDING deriving Show
 
 instance Language MODAL_EMBEDDING
@@ -29,22 +31,22 @@ instance Modification MODAL_EMBEDDING (InclComorphism CASL CASL_Sublogics)
         CASLBasicSpec CASLFORMULA SYMB_ITEMS SYMB_MAP_ITEMS
         CASLSign
         CASLMor
-        Symbol RawSymbol Q_ProofTree
+        Symbol RawSymbol ProofTree
         CASL CASL_Sublogics
         CASLBasicSpec CASLFORMULA SYMB_ITEMS SYMB_MAP_ITEMS
         CASLSign
         CASLMor
-        Symbol RawSymbol Q_ProofTree
+        Symbol RawSymbol ProofTree
         CASL CASL_Sublogics
         CASLBasicSpec CASLFORMULA SYMB_ITEMS SYMB_MAP_ITEMS
         CASLSign
         CASLMor
-        Symbol RawSymbol Q_ProofTree
+        Symbol RawSymbol ProofTree
         CASL CASL_Sublogics
         CASLBasicSpec CASLFORMULA SYMB_ITEMS SYMB_MAP_ITEMS
         CASLSign
         CASLMor
-        Symbol RawSymbol Q_ProofTree
+        Symbol RawSymbol ProofTree
  where
   sourceComorphism MODAL_EMBEDDING = mkIdComorphism CASL (top_sublogic CASL)
   targetComorphism MODAL_EMBEDDING = CompComorphism CASL2Modal Modal2CASL

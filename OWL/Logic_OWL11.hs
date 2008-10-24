@@ -19,6 +19,9 @@ import Common.AS_Annotation
 import Common.DefaultMorphism
 import Common.Doc
 import Common.DocUtils
+import Common.ProofTree
+
+import ATC.ProofTree ()
 
 import Logic.Logic
 
@@ -72,7 +75,7 @@ instance StaticAnalysis OWL11 OntologyFile Sentence
 
 instance Logic OWL11 () OntologyFile Sentence () ()
                Sign
-               OWL11_Morphism () () ATP_ProofTree where
+               OWL11_Morphism () () ProofTree where
     --     stability _ = Testing
     -- default implementations are fine
     -- the prover uses HTk and IO functions from uni

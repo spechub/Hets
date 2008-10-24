@@ -32,9 +32,10 @@ import Proofs.BatchProcessing
 
 import qualified Common.AS_Annotation as AS_Anno
 import Common.DefaultMorphism
+import Common.ProofTree
 import qualified Common.Result as Result
-import qualified Data.Map as Map
 
+import qualified Data.Map as Map
 import Data.List (isPrefixOf)
 import Data.Time (timeToTimeOfDay)
 import Data.Time.Clock (UTCTime(..), secondsToDiffTime, getCurrentTime)
@@ -77,12 +78,12 @@ pelletProverState sig oSens = PelletProverState
 {- |
   The Prover implementation. First runs the batch prover (with graphical feedback), then starts the GUI prover.
 -}
-pelletProver :: Prover Sign Sentence () ATP_ProofTree
+pelletProver :: Prover Sign Sentence () ProofTree
 pelletProver = (mkProverTemplate "Pellet" () pelletGUI)
     { proveCMDLautomatic = Just pelletCMDLautomatic
     , proveCMDLautomaticBatch = Just pelletCMDLautomaticBatch }
 
-pelletConsChecker :: ConsChecker Sign Sentence () (DefaultMorphism Sign) ATP_ProofTree
+pelletConsChecker :: ConsChecker Sign Sentence () (DefaultMorphism Sign) ProofTree
 pelletConsChecker = mkProverTemplate "pellet" () consCheck
 
 
@@ -91,7 +92,7 @@ pelletConsChecker = mkProverTemplate "pellet" () consCheck
   line interface.
 -}
 atpFun :: String -- ^ theory name
-       -> ATPFunctions Sign Sentence ATP_ProofTree PelletProverState
+       -> ATPFunctions Sign Sentence ProofTree PelletProverState
 atpFun thName = ATPFunctions
     { initialProverState = pelletProverState,
       atpTransSenName = id,   -- transSenName,
@@ -121,11 +122,11 @@ insertOWLSentence pps s =
   Invokes the generic prover GUI.
 -}
 pelletGUI :: String -- ^ theory name
-           -> Theory Sign Sentence ATP_ProofTree
-           -> IO([Proof_status ATP_ProofTree]) -- ^ proof status for each goal
+           -> Theory Sign Sentence ProofTree
+           -> IO([Proof_status ProofTree]) -- ^ proof status for each goal
 pelletGUI thName th =
     genericATPgui (atpFun thName) True (prover_name pelletProver) thName th $
-                  ATP_ProofTree ""
+                  ProofTree ""
 
 -- ** command line functions
 
@@ -137,13 +138,13 @@ pelletGUI thName th =
 pelletCMDLautomatic ::
            String -- ^ theory name
         -> Tactic_script -- ^ default tactic script
-        -> Theory Sign Sentence ATP_ProofTree
+        -> Theory Sign Sentence ProofTree
            -- ^ theory consisting of a signature and a list of Named sentence
-        -> IO (Result.Result ([Proof_status ATP_ProofTree]))
+        -> IO (Result.Result ([Proof_status ProofTree]))
            -- ^ Proof status for goals and lemmas
 pelletCMDLautomatic thName defTS th =
     genericCMDLautomatic (atpFun thName) (prover_name pelletProver) thName
-        (parseTactic_script batchTimeLimit [] defTS) th (ATP_ProofTree "")
+        (parseTactic_script batchTimeLimit [] defTS) th (ProofTree "")
 
 {- |
   Implementation of 'Logic.Prover.proveCMDLautomaticBatch' which provides an
@@ -153,11 +154,11 @@ pelletCMDLautomatic thName defTS th =
 pelletCMDLautomaticBatch ::
            Bool -- ^ True means include proved theorems
         -> Bool -- ^ True means save problem file
-        -> Concurrent.MVar (Result.Result [Proof_status ATP_ProofTree])
+        -> Concurrent.MVar (Result.Result [Proof_status ProofTree])
            -- ^ used to store the result of the batch run
         -> String -- ^ theory name
         -> Tactic_script -- ^ default tactic script
-        -> Theory Sign Sentence ATP_ProofTree -- ^ theory consisting of a
+        -> Theory Sign Sentence ProofTree -- ^ theory consisting of a
            --   'SoftFOL.Sign.Sign' and a list of Named 'SoftFOL.Sign.Sentence'
         -> IO (Concurrent.ThreadId,Concurrent.MVar ())
            -- ^ fst: identifier of the batch thread for killing it
@@ -166,14 +167,14 @@ pelletCMDLautomaticBatch inclProvedThs saveProblem_batch resultMVar
                         thName defTS th =
     genericCMDLautomaticBatch (atpFun thName) inclProvedThs saveProblem_batch
         resultMVar (prover_name pelletProver) thName
-        (parseTactic_script batchTimeLimit [] defTS) th (ATP_ProofTree "")
+        (parseTactic_script batchTimeLimit [] defTS) th (ProofTree "")
 
 -- * Main prover functions
 {- |
   Runs the Pellet service.
 -}
 
-spamOutput :: Proof_status ATP_ProofTree -> IO ()
+spamOutput :: Proof_status ProofTree -> IO ()
 spamOutput ps =
     let
         dName = goalName ps
@@ -217,8 +218,8 @@ spamOutput ps =
 
 
 consCheck :: String
-          -> TheoryMorphism Sign Sentence (DefaultMorphism Sign) ATP_ProofTree
-          -> IO([Proof_status ATP_ProofTree])
+          -> TheoryMorphism Sign Sentence (DefaultMorphism Sign) ProofTree
+          -> IO([Proof_status ProofTree])
 consCheck thName tm =
     case t_target tm of
       Theory sig nSens ->
@@ -238,7 +239,7 @@ consCheck thName tm =
           saveFileName  = (reverse $ fst $ span (/='/') $ reverse thName)
           tmpFileName   = saveFileName
 
-          runPelletRealM :: IO([Proof_status ATP_ProofTree])
+          runPelletRealM :: IO([Proof_status ProofTree])
           runPelletRealM = do
               hasProgramm <- system ("cd $PELLET_PATH; sh $PELLET_PATH/pellet.sh -version  > /dev/null 2> /dev/null")
               case hasProgramm of
@@ -250,7 +251,7 @@ consCheck thName tm =
                            , goalStatus = Open
                            , usedAxioms = getAxioms
                            , proverName = (prover_name pelletProver)
-                           , proofTree  = ATP_ProofTree "Pellet not found"
+                           , proofTree  = ProofTree "Pellet not found"
                            , usedTime = timeToTimeOfDay $
                                         secondsToDiffTime 0
                            ,tacticScript  = tac
@@ -281,7 +282,7 @@ consCheck thName tm =
                  ++ "\n\n" ++ probl ++ "\n</rdf:RDF>"
 
           proof_statM :: ExitCode -> String ->  [String]
-                      -> Int -> Proof_status ATP_ProofTree
+                      -> Int -> Proof_status ProofTree
           proof_statM exitCode _ out tUsed =
               case exitCode of
                 ExitSuccess ->   -- consistent
@@ -291,7 +292,7 @@ consCheck thName tm =
                     , goalStatus = Proved (Just True)
                     , usedAxioms = getAxioms
                     , proverName = (prover_name pelletProver)
-                    , proofTree = ATP_ProofTree (unlines out
+                    , proofTree = ProofTree (unlines out
                                       ++ "\n\n" ++ mkRealOWL problemS)
                     ,usedTime = timeToTimeOfDay $
                                 secondsToDiffTime $ toInteger tUsed
@@ -304,7 +305,7 @@ consCheck thName tm =
                     , goalStatus = Proved (Just False)
                     , usedAxioms = getAxioms
                     , proverName = (prover_name pelletProver)
-                    , proofTree = ATP_ProofTree (unlines out
+                    , proofTree = ProofTree (unlines out
                                       ++ "\n\n" ++ (mkRealOWL problemS))
                     ,usedTime = timeToTimeOfDay $
                                 secondsToDiffTime $ toInteger tUsed
@@ -317,7 +318,7 @@ consCheck thName tm =
                     , goalStatus = Disproved
                     , usedAxioms = getAxioms
                     , proverName = (prover_name pelletProver)
-                    , proofTree = ATP_ProofTree "can not run pellet."
+                    , proofTree = ProofTree "can not run pellet."
                     ,usedTime = timeToTimeOfDay $
                                 secondsToDiffTime $ toInteger tUsed
                     ,tacticScript  = tac
@@ -329,7 +330,7 @@ consCheck thName tm =
                     , goalStatus = Open
                     , usedAxioms = getAxioms
                     , proverName = (prover_name pelletProver)
-                    , proofTree  = ATP_ProofTree (unlines out
+                    , proofTree  = ProofTree (unlines out
                                       ++ "\n\n" ++ "timeout" ++
                                                     unlines out)
                     ,usedTime = timeToTimeOfDay $
@@ -343,7 +344,7 @@ consCheck thName tm =
                     , goalStatus = Disproved
                     , usedAxioms = getAxioms
                     , proverName = (prover_name pelletProver)
-                    , proofTree =   ATP_ProofTree (unlines out
+                    , proofTree =   ProofTree (unlines out
                                         ++ "\n\n" ++  (mkRealOWL problemS))
                     ,usedTime = timeToTimeOfDay $
                                 secondsToDiffTime $ toInteger tUsed
@@ -360,11 +361,11 @@ consCheck thName tm =
 runPellet :: PelletProverState
            -- ^ logical part containing the input Sign and axioms and possibly
            --   goals that have been proved earlier as additional axioms
-           -> GenericConfig ATP_ProofTree -- ^ configuration to use
+           -> GenericConfig ProofTree -- ^ configuration to use
            -> Bool -- ^ True means save TPTP file
            -> String -- ^ name of the theory in the DevGraph
            -> AS_Anno.Named Sentence -- ^ goal to prove
-           -> IO (ATPRetval, GenericConfig ATP_ProofTree)
+           -> IO (ATPRetval, GenericConfig ProofTree)
            -- ^ (retval, configuration with proof status and complete output)
 runPellet sps cfg savePellet thName nGoal = do
   -- putStrLn ("running Pellet...")
@@ -386,7 +387,7 @@ runPellet sps cfg savePellet thName nGoal = do
         ExitFailure _ -> return
             (ATPError "Could not start Pellet. Is Pellet in your $PATH?",
                   emptyConfig (prover_name pelletProver)
-                              (AS_Anno.senAttr nGoal) $ ATP_ProofTree "")
+                              (AS_Anno.senAttr nGoal) $ ProofTree "")
         ExitSuccess -> do
           prob <- mkOWLGoalProblem
           when savePellet
@@ -421,7 +422,7 @@ runPellet sps cfg savePellet thName nGoal = do
     defaultProof_status opts =
             (openProof_status
             (AS_Anno.senAttr nGoal) (prover_name pelletProver) $
-                                    ATP_ProofTree "")
+                                    ProofTree "")
                        {tacticScript = Tactic_script $ show $ ATPTactic_script
                         {ts_timeLimit = configTimeLimit cfg,
                          ts_extraOpts = opts} }
@@ -435,7 +436,7 @@ runPellet sps cfg savePellet thName nGoal = do
               ,goalStatus = Proved (Just True)
               ,usedAxioms = getAxioms -- []
               ,proverName = (prover_name pelletProver)
-              ,proofTree =   ATP_ProofTree ""
+              ,proofTree =   ProofTree ""
               ,usedTime = timeToTimeOfDay $
                                  secondsToDiffTime $ toInteger ut
               ,tacticScript  = Tactic_script $ show $ ATPTactic_script
@@ -556,7 +557,7 @@ genPelletProblemS thName pps m_nGoal =
   Returns the time limit from GenericConfig if available. Otherwise
   guiDefaultTimeLimit is returned.
 -}
-configTimeLimit :: GenericConfig ATP_ProofTree
+configTimeLimit :: GenericConfig ProofTree
                 -> Int
 configTimeLimit cfg =
     maybe (guiDefaultTimeLimit) id $ timeLimit cfg

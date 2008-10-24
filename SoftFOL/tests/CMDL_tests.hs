@@ -3,12 +3,6 @@
 -}
 module Main where
 
-import qualified Data.Map as Map
-import qualified Data.Set as Set
-import Common.Result
-import Common.Id
-import Common.AS_Annotation
-
 import GUI.GenericATPState
 import qualified Logic.Prover as LProver
 
@@ -22,6 +16,13 @@ import System.IO (stdout, hSetBuffering, BufferMode(NoBuffering))
 import System.Environment (getArgs)
 import System.Exit
 
+import Common.AS_Annotation
+import Common.Id
+import Common.ProofTree
+import Common.Result
+
+import qualified Data.Set as Set
+import qualified Data.Map as Map
 import qualified Control.Concurrent as Concurrent
 import Control.Monad
 
@@ -56,11 +57,11 @@ goal3 :: Named SPTerm
 goal3 = (makeNamed "go3" $ SPQuantTerm SPForall [term_x] (SPComplexTerm SPImplies [SPComplexTerm (mkSPCustomSymbol "p") [term_x],SPComplexTerm (mkSPCustomSymbol "a") [term_x] ])) { isAxiom = False }
 
 
-theory1 :: LProver.Theory SoftFOL.Sign.Sign SPTerm ATP_ProofTree
+theory1 :: LProver.Theory SoftFOL.Sign.Sign SPTerm ProofTree
 theory1 = (LProver.Theory sign1 $ LProver.toThSens [axiom1,-- axiom2,
                          goal1,goal2])
 
-theory2 :: LProver.Theory SoftFOL.Sign.Sign SPTerm ATP_ProofTree
+theory2 :: LProver.Theory SoftFOL.Sign.Sign SPTerm ProofTree
 theory2 = (LProver.Theory sign1 $ LProver.toThSens [axiom1,axiom2,axiom3,
                          goal1,goal2,goal3])
 
@@ -118,7 +119,7 @@ ga_comm_inf = (makeNamed "ga_comm_inf" SPQuantTerm {quantSym = SPForall, variabl
 gone :: Named SPTerm
 gone = (makeNamed "gone" $ simpTerm SPTrue) { isAxiom = False }
 
-theoryExt :: LProver.Theory SoftFOL.Sign.Sign SPTerm ATP_ProofTree
+theoryExt :: LProver.Theory SoftFOL.Sign.Sign SPTerm ProofTree
 theoryExt = (LProver.Theory signExt $ LProver.toThSens [ga_nonEmpty, ga_notDefBottom, ga_strictness, ga_strictness_one, ga_predicate_strictness, antisym, trans, refl, inf_def_ExtPartialOrder, sup_def_ExtPartialOrder, gone, ga_comm_sup, ga_comm_inf])
 
 -- * Testing functions
@@ -265,12 +266,12 @@ runAllTests = do
 -}
 runTest :: (String
             -> LProver.Tactic_script
-            -> LProver.Theory Sign Sentence ATP_ProofTree
-            -> IO (Result ([LProver.Proof_status ATP_ProofTree]))
+            -> LProver.Theory Sign Sentence ProofTree
+            -> IO (Result ([LProver.Proof_status ProofTree]))
            )
         -> String -- ^ prover name for proof status in case of error
         -> String -- ^ theory name
-        -> LProver.Theory Sign Sentence ATP_ProofTree
+        -> LProver.Theory Sign Sentence ProofTree
         -> [(String,LProver.GoalStatus)] -- ^ list of expected results
         -> IO Bool
 runTest runCMDLProver prName thName th expStatus = do
@@ -282,7 +283,7 @@ runTest runCMDLProver prName thName th expStatus = do
                               ts_timeLimit = 20, ts_extraOpts = [] }))
                            th
     stResult <- maybe (return [LProver.openProof_status ""
-                                         prName (ATP_ProofTree "")])
+                                         prName (ProofTree "")])
                       return (maybeResult m_result)
     putStrLn $ if (succeeded stResult expStatus)
                  then "passed"
@@ -297,15 +298,15 @@ runTestBatch :: Maybe Int -- ^ seconds to pass before thread will be killed
               -> (Bool
                   -> Bool
                   -> Concurrent.MVar
-                       (Result [LProver.Proof_status ATP_ProofTree])
+                       (Result [LProver.Proof_status ProofTree])
                   -> String
                   -> LProver.Tactic_script
-                  -> LProver.Theory Sign Sentence ATP_ProofTree
+                  -> LProver.Theory Sign Sentence ProofTree
                   -> IO (Concurrent.ThreadId,Concurrent.MVar ())
                  )
               -> String -- ^ prover name
               -> String -- ^ theory name
-              -> LProver.Theory Sign Sentence ATP_ProofTree
+              -> LProver.Theory Sign Sentence ProofTree
               -> [(String,LProver.GoalStatus)] -- ^ list of expected results
               -> IO Bool
 runTestBatch waitsec runCMDLProver prName thName th expStatus =
@@ -319,15 +320,15 @@ runTestBatch2 :: Bool -- ^ True means try to read intermediate results
               -> (Bool
                   -> Bool
                   -> Concurrent.MVar
-                       (Result [LProver.Proof_status ATP_ProofTree])
+                       (Result [LProver.Proof_status ProofTree])
                   -> String
                   -> LProver.Tactic_script
-                  -> LProver.Theory Sign Sentence ATP_ProofTree
+                  -> LProver.Theory Sign Sentence ProofTree
                   -> IO (Concurrent.ThreadId,Concurrent.MVar ())
                  )
               -> String -- ^ prover name
               -> String -- ^ theory name
-              -> LProver.Theory Sign Sentence ATP_ProofTree
+              -> LProver.Theory Sign Sentence ProofTree
               -> [(String,LProver.GoalStatus)] -- ^ list of expected results
               -> IO Bool
 runTestBatch2 intermRes waitsec runCMDLProver prName thName th expStatus = do
@@ -345,7 +346,7 @@ runTestBatch2 intermRes waitsec runCMDLProver prName thName th expStatus = do
     maybe (return ()) (\ ws -> do
              Concurrent.threadDelay (ws*1000000)
              Concurrent.killThread threadID) waitsec
-    (stResult,diaStr):: ([LProver.Proof_status ATP_ProofTree],String)
+    (stResult,diaStr):: ([LProver.Proof_status ProofTree],String)
        <- if intermRes
         then do -- reading intermediate results
           iResMV <- Concurrent.newMVar []
@@ -398,7 +399,7 @@ runTestBatch2 intermRes waitsec runCMDLProver prName thName th expStatus = do
 {- |
   Checks if a prover run's result matches expected result.
 -}
-succeeded :: [LProver.Proof_status ATP_ProofTree]
+succeeded :: [LProver.Proof_status ProofTree]
           -> [(String,LProver.GoalStatus)]
           -> Bool
 succeeded stResult expStatus =
