@@ -163,7 +163,7 @@ instance PNamespace (Common.Annotation.Named Sentence) where
         Common.Annotation.sentence = renameNamespace tMap
                                      (Common.Annotation.sentence sent) }
 
-instance PNamespace  OntologyFile where
+instance PNamespace OntologyFile where
     propagateNspaces ns ( OntologyFile namespace onto) =
          OntologyFile (propagateNspaces ns namespace)
                     (propagateNspaces ns onto)
@@ -171,7 +171,7 @@ instance PNamespace  OntologyFile where
          OntologyFile (renameNamespace tMap namespace)
                          (renameNamespace tMap onto)
 
-instance PNamespace  Ontology where
+instance PNamespace Ontology where
     propagateNspaces ns ( Ontology ouri impList anList axList) =
          Ontology (propagateNspaces ns ouri)
                      (map (propagateNspaces ns) impList)
@@ -183,7 +183,7 @@ instance PNamespace  Ontology where
                      (map (renameNamespace tMap) anList)
                      (map (renameNamespace tMap) axList)
 
-instance PNamespace  Annotation where
+instance PNamespace Annotation where
     propagateNspaces ns anno =
         case anno of
            ExplicitAnnotation annoUri constant ->
@@ -210,7 +210,7 @@ instance PNamespace  Annotation where
                              (renameNamespace tMap entity)
 
 
-instance PNamespace  Axiom where
+instance PNamespace Axiom where
     propagateNspaces ns axiom =
         case axiom of
            SubClassOf annosList sub sup ->
@@ -472,7 +472,7 @@ instance PNamespace  Axiom where
            EntityAnno entityAnnotation  ->
                EntityAnno (renameNamespace tMap entityAnnotation)
 
-instance PNamespace  Entity where
+instance PNamespace Entity where
     propagateNspaces ns entity =
         case entity of
            Datatype duri ->
@@ -498,19 +498,19 @@ instance PNamespace  Entity where
            Individual iuri ->
                Individual (renameNamespace tMap iuri)
 
-instance PNamespace  Constant where
+instance PNamespace Constant where
     propagateNspaces ns constant =
         case constant of
-           TypedConstant (l, curi) ->
-               TypedConstant (l, (propagateNspaces ns curi))
+           Constant l (Left curi) ->
+               Constant l $ Left $ propagateNspaces ns curi
            u -> u        -- for untyped constant
     renameNamespace tMap constant =
         case constant of
-           TypedConstant (l, curi) ->
-               TypedConstant (l, (renameNamespace tMap curi))
+           Constant l (Left curi) ->
+               Constant l $ Left $ renameNamespace tMap curi
            u -> u        -- for untyped constant
 
-instance PNamespace  ObjectPropertyExpression where
+instance PNamespace ObjectPropertyExpression where
     propagateNspaces ns opExp =
         case opExp of
            OpURI opuri ->  OpURI (propagateNspaces ns opuri)
@@ -520,7 +520,7 @@ instance PNamespace  ObjectPropertyExpression where
            OpURI opuri ->  OpURI (renameNamespace tMap opuri)
            InverseOp invOp ->  InverseOp (renameNamespace tMap invOp)
 
-instance PNamespace  DataRange where
+instance PNamespace DataRange where
     propagateNspaces ns dr =
         case dr of
            DRDatatype druri ->
@@ -548,7 +548,7 @@ instance PNamespace  DataRange where
      where rnRest (facet, value) =
                (facet, renameNamespace tMap value)
 
-instance PNamespace  Description where
+instance PNamespace Description where
     propagateNspaces ns desc =
         case desc of
            OWLClass curi ->
@@ -655,7 +655,7 @@ instance PNamespace  Description where
                DataExactCardinality card (renameNamespace tMap dpExp)
                                        (maybeRename tMap maybeRange)
 
-instance PNamespace  SubObjectPropertyExpression where
+instance PNamespace SubObjectPropertyExpression where
     propagateNspaces ns subOpExp =
         case subOpExp of
            OPExpression opExp ->
@@ -671,7 +671,7 @@ instance PNamespace  SubObjectPropertyExpression where
                SubObjectPropertyChain
                      (map (renameNamespace tMap) opExpList)
 
-instance PNamespace  EntityAnnotation where
+instance PNamespace EntityAnnotation where
     propagateNspaces ns ( EntityAnnotation annoList1 entity annoList2) =
          EntityAnnotation (map (propagateNspaces ns) annoList1)
                              (propagateNspaces ns entity)

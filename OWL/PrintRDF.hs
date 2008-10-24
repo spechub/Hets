@@ -367,12 +367,7 @@ printFV (facet, restValue) = printFacet facet
                                     (getValueFromConst restValue)
 
 getValueFromConst :: Constant -> Doc
-getValueFromConst cons =
-    case cons of
-      TypedConstant (lexi, _) ->
-          text lexi
-      UntypedConstant (lexi, _) ->
-          text lexi
+getValueFromConst (Constant lexi _) = text lexi
 
 printFacet :: DatatypeFacet -> Doc -> Doc
 printFacet facet doc =
@@ -395,17 +390,12 @@ instance PrettyRDF DatatypeFacet where
           FRACTIONDIGITS -> text "owl11:fractionDigits"
 
 instance PrettyRDF Constant where
-    printRDF _ cons =
-        case cons of
-          TypedConstant (lexi, u) ->
-              text "<owl11:Constant rdfs:Datatype=" <>
-                       (text $ show$localPart u) <>
-                   text (">" ++ lexi) <> text "</owl11:Constant>"
+    printRDF _ (Constant lexi ty) = case ty of
+        Left u -> text "<owl11:Constant rdfs:Datatype=" <>
+                  text (show$localPart u) <>
+                  text (">" ++ lexi) <> text "</owl11:Constant>"
    -- <Constant Datatype="&xsd;int">20</Constant>
-          UntypedConstant (lexi, _) ->
-              text "<owl11:Constant>" <>
-                   (text $ lexi) <> (text "</owl11:Constant>")
-
+        _ -> text "<owl11:Constant>" <> text lexi <> text "</owl11:Constant>"
 
 instance PrettyRDF Entity where
     printRDF _ = printEntity
@@ -874,23 +864,18 @@ printPredicateDataProp dpe =
     oneLineTagToDoc "rdf:predicate" (printResource dpe)
 
 printObjectDataProp :: TargetValue -> Doc
-printObjectDataProp cons =
-   tagToDocWithAttr' "rdf:object"
-      (case cons of
-         TypedConstant (_, ty) ->
-             printURIWithAttr "rdf:datatype" ty
-         UntypedConstant _ -> empty)
-      (getValueFromConst cons)
+printObjectDataProp (Constant lexi ety) =
+    tagToDocWithAttr' "rdf:object" (printConstURIWithAttr ety) (text lexi)
+
+printConstURIWithAttr :: Either URIreference LanguageTag -> Doc
+printConstURIWithAttr ety = case ety of
+    Left ty -> printURIWithAttr "rdf:datatype" ty
+    _ -> empty
 
 printDPWithConst :: DataPropertyExpression
                  -> Constant -> Doc
-printDPWithConst dpe cons =
-    tagToDocWithAttr' (localPart dpe)
-      (case cons of
-         TypedConstant (_, ty) ->
-             printURIWithAttr "rdf:datatype" ty
-         UntypedConstant _ -> empty)
-      (getValueFromConst cons)
+printDPWithConst dpe (Constant lexi ety) =
+    tagToDocWithAttr' (localPart dpe) (printConstURIWithAttr ety) (text lexi)
 
 tagToDoc :: String -> Doc -> Doc
 tagToDoc tag content =

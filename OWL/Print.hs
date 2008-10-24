@@ -208,11 +208,9 @@ instance Pretty DatatypeFacet where
     pretty = text . show
 
 instance Pretty Constant where
-    pretty cons = case cons of
-                    TypedConstant (lexi, u) ->
-                        text lexi <> text "^^" <> pretty u
-                    UntypedConstant (lexi, tag) ->
-                        text lexi <> text "@@" <> text tag
+    pretty (Constant lexi ty) = text lexi <> case ty of
+      Left u -> text "^^" <> pretty u
+      Right tag -> text "@@" <> text tag -- really two "@@" ?
 
 instance Pretty Sentence where
     pretty = printSentence

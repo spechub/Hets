@@ -684,7 +684,7 @@ getNonPrimaryConcept (h:r) =
                   ExplicitAnnotation annoUri cons ->
                       if localPart annoUri == "CASL_Sort" then
                           case cons of
-                            TypedConstant (lexi, _) ->
+                            Constant lexi (Left _) ->
                                 if lexi == "false" then
                                     True
                                   else False
@@ -748,7 +748,7 @@ isToProve :: [OWL.AS.Annotation] -> Bool
 isToProve [] = False
 isToProve (anno:r) =
     case anno of
-      ExplicitAnnotation auri (TypedConstant (value,_)) ->
+      ExplicitAnnotation auri (Constant value (Left _)) ->
           if localPart auri == "Implied" then
              if value == "true" then
                  True

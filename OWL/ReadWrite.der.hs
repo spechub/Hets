@@ -106,25 +106,25 @@ fromShATermToNS att0 ix =
       u -> fromShATermError "OWL.NS" u
 
 instance ShATermConvertible Constant where
-    toShATermAux att0 (TypedConstant (a, b)) = do
+    toShATermAux att0 (Constant a (Left b)) = do
         (att1, a') <- toShATerm' att0 (a ++ "^^")
         (att2, b') <- toShATerm' att1 b
         return $ addATerm (ShAAppl "TypedConstant" [a', b'] []) att2
-    toShATermAux att0 (UntypedConstant (a, b)) = do
+    toShATermAux att0 (Constant a (Right b)) = do
         (att1, a') <- toShATerm' att0 (a ++ "@" ++ b)
         return $ addATerm (ShAAppl "UntypedConstant" [a'] []) att1
+ {- I wonder why TypedConstant has two arguments when writing
+    but only one when reading -}
     fromShATermAux ix att0 =
         case getShATerm ix att0 of
             ShAAppl "TypedConstant" [a] _ ->
                     case fromShATerm' a att0 of { (att1, a') ->
                       let (b, c) = span (/='^') a'
-                          c' = mkQName $ (if null c then "" else tail $ tail c)
-                      in (att1, TypedConstant (b, c')) }
+                      in (att1, Constant b $ Left $ mkQName $ drop 2 c) }
             ShAAppl "UntypedConstant" [a] _ ->
                     case fromShATerm' a att0 of { (att1, a') ->
                       let (b, c) = span (/='@') a'
-                      in  (att1, UntypedConstant (b,
-                                 if null c then "" else tail c)) }
+                      in  (att1, Constant b $ Right $ drop 1 c ) }
             u -> fromShATermError "Constant" u
 
 {-! for QName derive : Typeable!-}
