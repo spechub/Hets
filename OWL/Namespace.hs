@@ -90,7 +90,6 @@ instance PNamespace QName where
 instance PNamespace Sign where
    propagateNspaces _ sig = sig
 
-   renameNamespace tMap (Sign p1 p2 p3 p4 p5 p6 p7 p8 p9 p10) =
        Sign (renameNamespace tMap p1)
             (Set.map (renameNamespace tMap) p2)
             (Set.map (renameNamespace tMap) p3)
@@ -104,7 +103,6 @@ instance PNamespace Sign where
 
 instance PNamespace SignAxiom where
    propagateNspaces _ signAxiom = signAxiom
-
    renameNamespace tMap signAxiom =
        case signAxiom of
        Subconcept cId1 cId2 ->
@@ -142,7 +140,6 @@ instance PNamespace RDomain where
 
 instance PNamespace RRange where
    propagateNspaces _ rr = rr
-
    renameNamespace tMap rr =
         case rr of
          RIRange des -> RIRange (renameNamespace tMap des)
@@ -150,7 +147,6 @@ instance PNamespace RRange where
 
 instance PNamespace Sentence where
    propagateNspaces _ sent = sent
-
    renameNamespace tMap sent =
        case sent of
        OWLAxiom axiom -> OWLAxiom (renameNamespace tMap axiom)
@@ -158,7 +154,6 @@ instance PNamespace Sentence where
 
 instance PNamespace (Common.Annotation.Named Sentence) where
     propagateNspaces _ nsent = nsent
-
     renameNamespace tMap sent = sent {
         Common.Annotation.sentence = renameNamespace tMap
                                      (Common.Annotation.sentence sent) }
@@ -340,7 +335,6 @@ instance PNamespace Axiom where
                               (propagateNspaces ns entity)
            EntityAnno entityAnnotation  ->
                EntityAnno (propagateNspaces ns entityAnnotation)
-
     renameNamespace tMap axiom =
         case axiom of
            SubClassOf annosList sub sup ->
@@ -473,8 +467,8 @@ instance PNamespace Axiom where
                EntityAnno (renameNamespace tMap entityAnnotation)
 
 instance PNamespace Entity where
-    propagateNspaces ns (Entity ty euri) = Entity ty $ propagateNspaces ns euri
-    renameNamespace tMap (Entity ty euri) = Entity ty $ renameNamespace tMap euri
+  propagateNspaces ns (Entity ty euri) = Entity ty $ propagateNspaces ns euri
+  renameNamespace tMap (Entity ty euri) = Entity ty $ renameNamespace tMap euri
 
 instance PNamespace Constant where
     propagateNspaces ns constant =
@@ -491,12 +485,12 @@ instance PNamespace Constant where
 instance PNamespace ObjectPropertyExpression where
     propagateNspaces ns opExp =
         case opExp of
-           OpURI opuri ->  OpURI (propagateNspaces ns opuri)
-           InverseOp invOp ->  InverseOp (propagateNspaces ns invOp)
+           OpURI opuri -> OpURI (propagateNspaces ns opuri)
+           InverseOp invOp -> InverseOp (propagateNspaces ns invOp)
     renameNamespace tMap opExp =
         case opExp of
-           OpURI opuri ->  OpURI (renameNamespace tMap opuri)
-           InverseOp invOp ->  InverseOp (renameNamespace tMap invOp)
+           OpURI opuri -> OpURI (renameNamespace tMap opuri)
+           InverseOp invOp -> InverseOp (renameNamespace tMap invOp)
 
 instance PNamespace DataRange where
     propagateNspaces ns dr =
@@ -579,7 +573,6 @@ instance PNamespace Description where
            DataExactCardinality card dpExp maybeRange ->
                DataExactCardinality card (propagateNspaces ns dpExp)
                                        (maybePropagate ns maybeRange)
-
     renameNamespace tMap desc =
         case desc of
            OWLClass curi ->
@@ -659,7 +652,6 @@ instance PNamespace EntityAnnotation where
                              (renameNamespace tMap entity)
                              (map (renameNamespace tMap) annoList2)
 
-
 -- propagate namespace of Maybe
 maybePropagate :: (PNamespace a) => Namespace -> Maybe a -> Maybe a
 maybePropagate ns = fmap $ propagateNspaces ns
@@ -703,8 +695,8 @@ integrateNamespaces oldNsMap testNsMap =
                      [name' ++ (show (i::Int)) | i <-[1..]]
 
 
-integrateOntologyFile ::  OntologyFile ->  OntologyFile
-                      ->  OntologyFile
+integrateOntologyFile :: OntologyFile -> OntologyFile
+                      -> OntologyFile
 integrateOntologyFile of1@( OntologyFile ns1
                            ( Ontology oid1 imp1 anno1 axiom1))
                       of2@( OntologyFile ns2
@@ -712,13 +704,12 @@ integrateOntologyFile of1@( OntologyFile ns1
   if of1 == of2 then of1
    else
     let (newNamespace, transMap) = integrateNamespaces ns1 ns2
-    in   OntologyFile newNamespace
+    in OntologyFile newNamespace
             ( Ontology (newOid oid1 oid2)
-                 (nub (imp1 ++ (map (renameNamespace transMap) imp2)))
-                 (nub (anno1 ++ (map (renameNamespace transMap) anno2)))
-                 (nub (axiom1 ++ (map (renameNamespace transMap) axiom2))))
-
-    where newOid ::  OntologyURI ->  OntologyURI ->  OntologyURI
+                 (nub $ imp1 ++ map (renameNamespace transMap) imp)
+                 (nub $ anno1 ++ map (renameNamespace transMap) anno2)
+                 (nub $ axiom1 ++ map (renameNamespace transMap) axiom2))
+    where newOid :: OntologyURI -> OntologyURI -> OntologyURI
           newOid id1 id2 =
             if null $ localPart id1 then id2 else
              if null $ localPart id2 then id1 else
@@ -729,11 +720,11 @@ integrateOntologyFile of1@( OntologyFile ns1
                              (uriToName $ localPart id2)}
 
 -- | reverse a map: (key, value) -> (value, key)
-reverseMap :: (Ord a) => Map.Map k a -> Map.Map a k
+reverseMap :: Ord a => Map.Map k a -> Map.Map a k
 reverseMap oldMap =
     Map.foldWithKey transport Map.empty oldMap
   where
-   transport :: (Ord a) =>  k -> a -> Map.Map a k -> Map.Map a k
+   transport :: Ord a =>  k -> a -> Map.Map a k -> Map.Map a k
    transport mKey mElem newMap
        | Map.member mElem newMap = error "double keys in translationMap."
        | otherwise = Map.insert mElem mKey newMap
