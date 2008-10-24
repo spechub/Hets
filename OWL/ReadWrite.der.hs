@@ -139,11 +139,131 @@ instance ShATermConvertible Entity where
            (att1, a') -> (att1, Entity ty a')
        u -> fromShATermError "Entity" u
 
+instance ShATermConvertible Description where
+  toShATermAux att0 xv = case xv of
+    OWLClass a -> do
+        (att1, a') <- toShATerm' att0 a
+        return $ addATerm (ShAAppl "OWLClass" [a'] []) att1
+    ObjectJunction ty a -> do
+        (att1, a') <- toShATerm' att0 a
+        return $ addATerm (ShAAppl ("Object" ++ show ty) [a'] []) att1
+    ObjectComplementOf a -> do
+        (att1, a') <- toShATerm' att0 a
+        return $ addATerm (ShAAppl "ObjectComplementOf" [a'] []) att1
+    ObjectOneOf a -> do
+        (att1, a') <- toShATerm' att0 a
+        return $ addATerm (ShAAppl "ObjectOneOf" [a'] []) att1
+    ObjectValuesFrom ty a b -> do
+        (att1, a') <- toShATerm' att0 a
+        (att2, b') <- toShATerm' att1 b
+        return $ addATerm (ShAAppl ("Object" ++ show ty) [a',b'] []) att2
+    ObjectExistsSelf a -> do
+        (att1, a') <- toShATerm' att0 a
+        return $ addATerm (ShAAppl "ObjectExistsSelf" [a'] []) att1
+    ObjectHasValue a b -> do
+        (att1, a') <- toShATerm' att0 a
+        (att2, b') <- toShATerm' att1 b
+        return $ addATerm (ShAAppl "ObjectHasValue" [a',b'] []) att2
+    ObjectCardinality (Cardinality ty a b c) -> do
+        (att1, a') <- toShATerm' att0 a
+        (att2, b') <- toShATerm' att1 b
+        (att3, c') <- toShATerm' att2 c
+        return $ addATerm (ShAAppl ("Object" ++ show ty) [a',b', c'] []) att3
+    DataValuesFrom ty a b c -> do
+        (att1, a') <- toShATerm' att0 a
+        (att2, b') <- toShATerm' att1 b
+        (att3, c') <- toShATerm' att2 c
+        return $ addATerm (ShAAppl ("Data" ++ show ty) [a',b',c'] []) att3
+    DataHasValue a b -> do
+        (att1, a') <- toShATerm' att0 a
+        (att2, b') <- toShATerm' att1 b
+        return $ addATerm (ShAAppl "DataHasValue" [a',b'] []) att2
+    DataCardinality (Cardinality ty a b c) -> do
+        (att1, a') <- toShATerm' att0 a
+        (att2, b') <- toShATerm' att1 b
+        (att3, c') <- toShATerm' att2 c
+        return $ addATerm (ShAAppl ("Data" ++ show ty) [a',b',c'] []) att3
+  fromShATermAux ix att0 = case getShATerm ix att0 of
+    ShAAppl "OWLClass" [a] _ ->
+        case fromShATerm' a att0 of { (att1, a') ->
+        (att1, OWLClass a') }
+    ShAAppl "ObjectUnionOf" [a] _ ->
+        case fromShATerm' a att0 of { (att1, a') ->
+        (att1, ObjectJunction UnionOf a') }
+    ShAAppl "ObjectIntersectionOf" [a] _ ->
+        case fromShATerm' a att0 of { (att1, a') ->
+        (att1, ObjectJunction IntersectionOf a') }
+    ShAAppl "ObjectComplementOf" [a] _ ->
+        case fromShATerm' a att0 of { (att1, a') ->
+        (att1, ObjectComplementOf a') }
+    ShAAppl "ObjectOneOf" [a] _ ->
+        case fromShATerm' a att0 of { (att1, a') ->
+        (att1, ObjectOneOf a') }
+    ShAAppl "ObjectAllValuesFrom" [a,b] _ ->
+        case fromShATerm' a att0 of { (att1, a') ->
+        case fromShATerm' b att1 of { (att2, b') ->
+        (att2, ObjectValuesFrom AllValuesFrom a' b') }}
+    ShAAppl "ObjectSomeValuesFrom" [a,b] _ ->
+       case fromShATerm' a att0 of { (att1, a') ->
+        case fromShATerm' b att1 of { (att2, b') ->
+        (att2, ObjectValuesFrom SomeValuesFrom a' b') }}
+    ShAAppl "ObjectExistsSelf" [a] _ ->
+        case fromShATerm' a att0 of { (att1, a') ->
+        (att1, ObjectExistsSelf a') }
+    ShAAppl "ObjectHasValue" [a,b] _ ->
+        case fromShATerm' a att0 of { (att1, a') ->
+        case fromShATerm' b att1 of { (att2, b') ->
+        (att2, ObjectHasValue a' b') }}
+    ShAAppl "ObjectMinCardinality" [a,b,c] _ ->
+        case fromShATerm' a att0 of { (att1, a') ->
+        case fromShATerm' b att1 of { (att2, b') ->
+        case fromShATerm' c att2 of { (att3, c') ->
+        (att3, ObjectCardinality $ Cardinality MinCardinality a' b' c') }}}
+    ShAAppl "ObjectMaxCardinality" [a,b,c] _ ->
+        case fromShATerm' a att0 of { (att1, a') ->
+        case fromShATerm' b att1 of { (att2, b') ->
+        case fromShATerm' c att2 of { (att3, c') ->
+        (att3, ObjectCardinality $ Cardinality MaxCardinality a' b' c') }}}
+    ShAAppl "ObjectExactCardinality" [a,b,c] _ ->
+        case fromShATerm' a att0 of { (att1, a') ->
+        case fromShATerm' b att1 of { (att2, b') ->
+        case fromShATerm' c att2 of { (att3, c') ->
+        (att3, ObjectCardinality $ Cardinality ExactCardinality a' b' c') }}}
+    ShAAppl "DataAllValuesFrom" [a,b,c] _ ->
+        case fromShATerm' a att0 of { (att1, a') ->
+        case fromShATerm' b att1 of { (att2, b') ->
+        case fromShATerm' c att2 of { (att3, c') ->
+        (att3, DataValuesFrom AllValuesFrom a' b' c') }}}
+    ShAAppl "DataSomeValuesFrom" [a,b,c] _ ->
+        case fromShATerm' a att0 of { (att1, a') ->
+        case fromShATerm' b att1 of { (att2, b') ->
+        case fromShATerm' c att2 of { (att3, c') ->
+        (att3, DataValuesFrom SomeValuesFrom a' b' c') }}}
+    ShAAppl "DataHasValue" [a,b] _ ->
+        case fromShATerm' a att0 of { (att1, a') ->
+        case fromShATerm' b att1 of { (att2, b') ->
+        (att2, DataHasValue a' b') }}
+    ShAAppl "DataMinCardinality" [a,b,c] _ ->
+        case fromShATerm' a att0 of { (att1, a') ->
+        case fromShATerm' b att1 of { (att2, b') ->
+        case fromShATerm' c att2 of { (att3, c') ->
+        (att3, DataCardinality $ Cardinality MinCardinality a' b' c') }}}
+    ShAAppl "DataMaxCardinality" [a,b,c] _ ->
+        case fromShATerm' a att0 of { (att1, a') ->
+        case fromShATerm' b att1 of { (att2, b') ->
+        case fromShATerm' c att2 of { (att3, c') ->
+        (att3, DataCardinality $ Cardinality MaxCardinality a' b' c') }}}
+    ShAAppl "DataExactCardinality" [a,b,c] _ ->
+        case fromShATerm' a att0 of { (att1, a') ->
+        case fromShATerm' b att1 of { (att2, b') ->
+        case fromShATerm' c att2 of { (att3, c') ->
+        (att3, DataCardinality $ Cardinality ExactCardinality a' b' c') }}}
+    u -> fromShATermError "Description" u
+
 {-! for QName derive : Typeable!-}
 {-! for OntologyFile derive : Typeable!-}
 {-! for Ontology derive : Typeable !-}
 {-! for Annotation derive : Typeable !-}
-{-! for EntityType derive : Typeable !-}
 {-! for Entity derive : Typeable !-}
 {-! for Constant derive : Typeable !-}
 {-! for ObjectPropertyExpression derive : Typeable !-}
@@ -156,11 +276,9 @@ instance ShATermConvertible Entity where
 
 {-! for Ontology derive : ShATermConvertible !-}
 {-! for Annotation derive : ShATermConvertible !-}
-{-! for EntityType derive : ShATermConvertible !-}
 {-! for ObjectPropertyExpression derive : ShATermConvertible !-}
 {-! for DatatypeFacet derive : ShATermConvertible !-}
 {-! for DataRange derive : ShATermConvertible !-}
 {-! for EntityAnnotation derive : ShATermConvertible !-}
-{-! for Description derive : ShATermConvertible !-}
 {-! for SubObjectPropertyExpression derive : ShATermConvertible !-}
 {-! for Axiom derive : ShATermConvertible !-}

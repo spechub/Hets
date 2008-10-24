@@ -140,27 +140,30 @@ data EntityAnnotation =
     deriving (Show, Eq, Ord)
 
 -- | Syntax of Classes
-type Cardinality = Int
+
+data CardinalityType = MinCardinality | MaxCardinality | ExactCardinality
+    deriving (Show, Eq, Ord)
+
+data JunctionType = UnionOf | IntersectionOf deriving (Show, Eq, Ord)
+
+data QuantifierType = AllValuesFrom | SomeValuesFrom deriving (Show, Eq, Ord)
+
+data Cardinality a b = Cardinality CardinalityType Int a (Maybe b)
+    deriving (Show, Eq, Ord)
 
 data Description =
     OWLClass OwlClassURI
-  | ObjectUnionOf [Description]  --  min. 2 Descriptions
-  | ObjectIntersectionOf [Description]  --  min. 2 Descriptions
+  | ObjectJunction JunctionType [Description]  --  min. 2 Descriptions
   | ObjectComplementOf Description
   | ObjectOneOf [IndividualURI]  --  min. 1 Individual
-  | ObjectAllValuesFrom ObjectPropertyExpression Description
-  | ObjectSomeValuesFrom ObjectPropertyExpression Description
+  | ObjectValuesFrom QuantifierType ObjectPropertyExpression Description
   | ObjectExistsSelf ObjectPropertyExpression
   | ObjectHasValue ObjectPropertyExpression IndividualURI
-  | ObjectMinCardinality Cardinality ObjectPropertyExpression (Maybe Description)
-  | ObjectMaxCardinality Cardinality ObjectPropertyExpression (Maybe Description)
-  | ObjectExactCardinality Cardinality ObjectPropertyExpression (Maybe Description)
-  | DataAllValuesFrom DataPropertyExpression [DataPropertyExpression] DataRange
-  | DataSomeValuesFrom DataPropertyExpression [DataPropertyExpression] DataRange
+  | ObjectCardinality (Cardinality ObjectPropertyExpression Description)
+  | DataValuesFrom
+      QuantifierType DataPropertyExpression [DataPropertyExpression] DataRange
   | DataHasValue DataPropertyExpression Constant
-  | DataMinCardinality Cardinality DataPropertyExpression (Maybe DataRange)
-  | DataMaxCardinality Cardinality DataPropertyExpression (Maybe DataRange)
-  | DataExactCardinality Cardinality DataPropertyExpression (Maybe DataRange)
+  | DataCardinality (Cardinality DataPropertyExpression DataRange)
     deriving (Show, Eq, Ord)
 
 -- Axiom

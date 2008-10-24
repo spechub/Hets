@@ -525,106 +525,64 @@ instance PNamespace Description where
         case desc of
            OWLClass curi ->
                OWLClass (propagateNspaces ns curi)
-           ObjectUnionOf descList ->
-               ObjectUnionOf (map (propagateNspaces ns) descList)
-           ObjectIntersectionOf descList ->
-               ObjectIntersectionOf (map (propagateNspaces ns) descList)
+           ObjectJunction ty descList ->
+               ObjectJunction ty (map (propagateNspaces ns) descList)
            ObjectComplementOf desc' ->
-               ObjectComplementOf  (propagateNspaces ns desc')
+               ObjectComplementOf (propagateNspaces ns desc')
            ObjectOneOf indsList ->
                ObjectOneOf (map (propagateNspaces ns) indsList)
-           ObjectAllValuesFrom opExp desc' ->
-               ObjectAllValuesFrom (propagateNspaces ns opExp)
+           ObjectValuesFrom ty opExp desc' ->
+               ObjectValuesFrom ty (propagateNspaces ns opExp)
                                       (propagateNspaces ns desc')
-           ObjectSomeValuesFrom opExp desc' ->
-               ObjectSomeValuesFrom (propagateNspaces ns opExp)
-                                       (propagateNspaces ns desc')
            ObjectExistsSelf opExp ->
                ObjectExistsSelf (propagateNspaces ns opExp)
            ObjectHasValue opExp indUri ->
                ObjectHasValue (propagateNspaces ns opExp)
                                  (propagateNspaces ns indUri)
-           ObjectMinCardinality card opExp maybeDesc ->
-               ObjectMinCardinality card (propagateNspaces ns opExp)
-                                       (maybePropagate ns maybeDesc)
-           ObjectMaxCardinality card opExp maybeDesc ->
-               ObjectMaxCardinality card (propagateNspaces ns opExp)
-                                       (maybePropagate ns maybeDesc)
-           ObjectExactCardinality card opExp maybeDesc ->
-               ObjectExactCardinality card (propagateNspaces ns opExp)
-                                         (maybePropagate ns maybeDesc)
-           DataAllValuesFrom dpExp dpExpList dataRange ->
-               DataAllValuesFrom (propagateNspaces ns dpExp)
+           ObjectCardinality (Cardinality ty card opExp maybeDesc) ->
+               ObjectCardinality $ Cardinality ty card
+                 (propagateNspaces ns opExp) (maybePropagate ns maybeDesc)
+           DataValuesFrom ty dpExp dpExpList dataRange ->
+               DataValuesFrom ty (propagateNspaces ns dpExp)
                                     (map (propagateNspaces ns) dpExpList)
                                     (propagateNspaces ns dataRange)
-           DataSomeValuesFrom dpExp dpExpList dataRange ->
-               DataSomeValuesFrom  (propagateNspaces ns dpExp)
-                                      (map (propagateNspaces ns) dpExpList)
-                                      (propagateNspaces ns dataRange)
            DataHasValue dpExp const' ->
                DataHasValue (propagateNspaces ns dpExp)
                                (propagateNspaces ns const')
-           DataMinCardinality  card dpExp maybeRange ->
-               DataMinCardinality card (propagateNspaces ns dpExp)
-                                     (maybePropagate ns maybeRange)
-           DataMaxCardinality card dpExp maybeRange ->
-               DataMaxCardinality  card (propagateNspaces ns dpExp)
-                                     (maybePropagate ns maybeRange)
-           DataExactCardinality card dpExp maybeRange ->
-               DataExactCardinality card (propagateNspaces ns dpExp)
-                                       (maybePropagate ns maybeRange)
+           DataCardinality (Cardinality ty card dpExp maybeRange) ->
+               DataCardinality $ Cardinality ty card
+                 (propagateNspaces ns dpExp) (maybePropagate ns maybeRange)
     renameNamespace tMap desc =
         case desc of
            OWLClass curi ->
                OWLClass (renameNamespace tMap curi)
-           ObjectUnionOf descList ->
-               ObjectUnionOf (map (renameNamespace tMap) descList)
-           ObjectIntersectionOf descList ->
-               ObjectIntersectionOf (map (renameNamespace tMap) descList)
+           ObjectJunction ty descList ->
+               ObjectJunction ty (map (renameNamespace tMap) descList)
            ObjectComplementOf desc' ->
-               ObjectComplementOf  (renameNamespace tMap desc')
+               ObjectComplementOf (renameNamespace tMap desc')
            ObjectOneOf indsList ->
                ObjectOneOf (map (renameNamespace tMap) indsList)
-           ObjectAllValuesFrom opExp desc' ->
-               ObjectAllValuesFrom (renameNamespace tMap opExp)
+           ObjectValuesFrom ty opExp desc' ->
+               ObjectValuesFrom ty (renameNamespace tMap opExp)
                                       (renameNamespace tMap desc')
-           ObjectSomeValuesFrom opExp desc' ->
-               ObjectSomeValuesFrom (renameNamespace tMap opExp)
-                                       (renameNamespace tMap desc')
            ObjectExistsSelf opExp ->
                ObjectExistsSelf (renameNamespace tMap opExp)
            ObjectHasValue opExp indUri ->
                ObjectHasValue (renameNamespace tMap opExp)
                                  (renameNamespace tMap indUri)
-           ObjectMinCardinality card opExp maybeDesc ->
-               ObjectMinCardinality card (renameNamespace tMap opExp)
-                                       (maybeRename tMap maybeDesc)
-           ObjectMaxCardinality card opExp maybeDesc ->
-               ObjectMaxCardinality card (renameNamespace tMap opExp)
-                                       (maybeRename tMap maybeDesc)
-           ObjectExactCardinality card opExp maybeDesc ->
-               ObjectExactCardinality card (renameNamespace tMap opExp)
-                                         (maybeRename tMap maybeDesc)
-           DataAllValuesFrom dpExp dpExpList dataRange ->
-               DataAllValuesFrom (renameNamespace tMap dpExp)
+           ObjectCardinality (Cardinality ty card opExp maybeDesc) ->
+               ObjectCardinality $ Cardinality ty card
+                 (renameNamespace tMap opExp) (maybeRename tMap maybeDesc)
+           DataValuesFrom ty dpExp dpExpList dataRange ->
+               DataValuesFrom ty (renameNamespace tMap dpExp)
                                     (map (renameNamespace tMap) dpExpList)
                                     (renameNamespace tMap dataRange)
-           DataSomeValuesFrom dpExp dpExpList dataRange ->
-               DataSomeValuesFrom  (renameNamespace tMap dpExp)
-                                      (map (renameNamespace tMap) dpExpList)
-                                      (renameNamespace tMap dataRange)
            DataHasValue dpExp const' ->
                DataHasValue (renameNamespace tMap dpExp)
                                (renameNamespace tMap const')
-           DataMinCardinality  card dpExp maybeRange ->
-               DataMinCardinality card (renameNamespace tMap dpExp)
-                                     (maybeRename tMap maybeRange)
-           DataMaxCardinality card dpExp maybeRange ->
-               DataMaxCardinality  card (renameNamespace tMap dpExp)
-                                     (maybeRename tMap maybeRange)
-           DataExactCardinality card dpExp maybeRange ->
-               DataExactCardinality card (renameNamespace tMap dpExp)
-                                       (maybeRename tMap maybeRange)
+           DataCardinality (Cardinality ty card dpExp maybeRange) ->
+               DataCardinality $ Cardinality ty card
+                 (renameNamespace tMap dpExp) (maybeRename tMap maybeRange)
 
 instance PNamespace SubObjectPropertyExpression where
     propagateNspaces ns subOpExp =

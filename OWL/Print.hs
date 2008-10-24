@@ -57,76 +57,62 @@ instance Pretty SignAxiom where
 instance Pretty Description where
     pretty = printDescription
 
+cardinalityType :: CardinalityType -> Doc
+cardinalityType ty = text $ case ty of
+    MinCardinality -> "min"
+    MaxCardinality -> "max"
+    ExactCardinality -> "exactly"
+
+quantifierType :: QuantifierType -> Doc
+quantifierType ty = text $ case ty of
+    AllValuesFrom -> "only"
+    SomeValuesFrom -> "some"
+
 printDescription :: Description -> Doc
 printDescription desc = case desc of
    OWLClass ocUri -> printURIreference ocUri
-   ObjectUnionOf descList ->
-       text "or:" <+> sepByCommas (setToDocs $ Set.fromList descList)
-   ObjectIntersectionOf descList ->  printDescriptionWithRestriction descList
+   ObjectJunction UnionOf descList ->
+      text "or:" <+> sepByCommas (setToDocs $ Set.fromList descList)
+   ObjectJunction IntersectionOf descList ->
+      printDescriptionWithRestriction descList
    ObjectComplementOf d -> text "not" <+> pretty d
    ObjectOneOf indUriList -> specBraces $ setToDocF $ Set.fromList indUriList
-   ObjectAllValuesFrom opExp d -> printObjPropExp opExp <+> text "only"
-                                      <+> pretty d
-   ObjectSomeValuesFrom opExp d -> printObjPropExp opExp <+> text "some"
-                                       <+> pretty d
-   ObjectExistsSelf opExp -> printObjPropExp opExp <+> text "some"
-                                                   <+> text "self"
-   ObjectHasValue opExp indUri -> pretty opExp  <+> text "value"
-                                        <+> pretty indUri
-   ObjectMinCardinality card opExp maybeDesc ->
-        printObjPropExp opExp  <+> text "min" <+> (text $ show card) <+>
-                            (maybe empty pretty maybeDesc)
-   ObjectMaxCardinality card opExp maybeDesc ->
-        printObjPropExp opExp  <+> text "max" <+> (text $ show card) <+>
-                            (maybe empty pretty maybeDesc)
-   ObjectExactCardinality card opExp maybeDesc ->
-        printObjPropExp opExp  <+> text "exactly" <+> (text $ show card) <+>
-                            (maybe empty pretty maybeDesc)
-   DataAllValuesFrom dpExp dpExpList dRange ->
-       printURIreference dpExp <+> text "only"
+   ObjectValuesFrom ty opExp d ->
+      printObjPropExp opExp <+> quantifierType ty <+> pretty d
+   ObjectExistsSelf opExp ->
+      printObjPropExp opExp <+> text "some" <+> text "self"
+   ObjectHasValue opExp indUri ->
+      pretty opExp <+> text "value" <+> pretty indUri
+   ObjectCardinality (Cardinality ty card opExp maybeDesc) ->
+      printObjPropExp opExp <+> cardinalityType ty
+        <+> text (show card) <+> maybe empty pretty maybeDesc
+   DataValuesFrom ty dpExp dpExpList dRange ->
+       printURIreference dpExp <+> quantifierType ty
            <+> (if null dpExpList then empty
                  else specBraces (sepByCommas $ setToDocs
                    (Set.fromList dpExpList))) <+> pretty dRange
-   DataSomeValuesFrom  dpExp dpExpList dRange ->
-       printURIreference dpExp <+> text "some"
-           <+> (if null dpExpList then empty
-                   else specBraces (sepByCommas $ setToDocs
-                         (Set.fromList dpExpList))) <+> pretty dRange
    DataHasValue dpExp cons -> pretty dpExp <+> text "value" <+> pretty cons
-   DataMinCardinality  card dpExp maybeRange ->
-        pretty dpExp  <+> text "min" <+> (text $ show card) <+>
-                            (maybe empty pretty maybeRange)
-   DataMaxCardinality  card dpExp maybeRange ->
-        pretty dpExp  <+> text "max" <+> (text $ show card) <+>
-                            (maybe empty pretty maybeRange)
-   DataExactCardinality  card dpExp maybeRange ->
-        pretty dpExp  <+> text "exactly" <+> (text $ show card) <+>
-                            (maybe empty pretty maybeRange)
+   DataCardinality (Cardinality ty card dpExp maybeRange) ->
+       pretty dpExp <+> cardinalityType ty <+> text (show card)
+         <+> maybe empty pretty maybeRange
 
 printDescriptionWithRestriction :: [Description] -> Doc
 printDescriptionWithRestriction descList =
     writeDesc descList True False empty
   where
     writeDesc [] _ _ doc = doc
-    writeDesc (h:r) isFirst lastWasNamed doc =
+    writeDesc (h : r) isFirst lastWasNamed doc =
      let thisIsNamed = (case h of
                          OWLClass _ -> True
                          _ -> False)
-     in  if isFirst then
-             writeDesc r False thisIsNamed (printDescription h)
-
-          else if not lastWasNamed then
-                   writeDesc r False thisIsNamed
-                          (doc $+$ text "and" <+> (printDescription h))
-                else
-                   writeDesc r False thisIsNamed
-                    ((case h of
+     in writeDesc r False thisIsNamed $ if isFirst then printDescription h else
+          if not lastWasNamed then doc $+$ text "and" <+> printDescription h
+          else (case h of
                        OWLClass _ -> doc $+$ text "and"
-                       ObjectUnionOf _ -> doc $+$ text "and"
-                       ObjectIntersectionOf _ -> doc $+$ text "and"
+                       ObjectJunction _ _ -> doc $+$ text "and"
                        ObjectComplementOf _ -> doc $+$ text "and"
                        ObjectOneOf _ -> doc $+$ text "and"
-                       _ -> doc $+$ text "that") <+> (printDescription h))
+                       _ -> doc $+$ text "that") <+> printDescription h
 
 instance Pretty ObjectPropertyExpression where
     pretty = printObjPropExp

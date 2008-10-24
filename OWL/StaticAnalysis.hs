@@ -696,9 +696,7 @@ getClassFromDescription :: Description -> [OwlClassURI]
 getClassFromDescription desc =
     case desc of
       OWLClass clazz -> [clazz]
-      ObjectUnionOf descList ->
-              foldl (++) [] $ map getClassFromDescription descList
-      ObjectIntersectionOf descList ->
+      ObjectJunction _ descList ->
               foldl (++) [] $ map getClassFromDescription descList
       ObjectComplementOf desc' -> getClassFromDescription desc'
       _ -> []

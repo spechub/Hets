@@ -94,16 +94,18 @@ getAxiom s = case s of
   OWLAxiom a -> a
   OWLFact a -> a
 
+toDLJunction :: JunctionType -> DLConcept -> DLConcept -> Range -> DLConcept
+toDLJunction ty = case ty of
+  UnionOf -> DLOr
+  IntersectionOf -> DLAnd
+
 toConcept :: Description -> Result DLConcept
 toConcept des = let err = fail $ "OWL2DL.toConcept " ++ showDoc des "" in
   case des of
   OWLClass curi -> return $ DLClassId (qNameToId curi) nullRange
-  ObjectUnionOf ds | not $ null ds -> do
+  ObjectJunction ty ds | not $ null ds -> do
     cs <- mapM toConcept ds
-    return $ foldr1 (\ c1 c2 -> DLOr c1 c2 nullRange) cs
-  ObjectIntersectionOf ds | not $ null ds -> do
-    cs <- mapM toConcept ds
-    return $ foldr1 (\ c1 c2 -> DLAnd c1 c2 nullRange) cs
+    return $ foldr1 (\ c1 c2 -> toDLJunction ty c1 c2 nullRange) cs
   ObjectComplementOf d -> do
     c <- toConcept d
     return $ DLNot c nullRange

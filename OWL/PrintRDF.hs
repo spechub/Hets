@@ -20,7 +20,7 @@ import OWL.AS
 import qualified Common.AS_Annotation as AS_Anno
 import qualified Data.Map as Map
 
--- import Debug.Trace
+import Data.Char
 
 type AssMap = Map.Map IndividualURI OwlClassURI
 
@@ -120,6 +120,28 @@ instance PrettyRDF SignAxiom where
 instance PrettyRDF Description where
     printRDF _ = printDescription
 
+downCaseFirst :: String -> String
+downCaseFirst s = case s of
+ c : r -> toLower c : r
+ _ -> error "PrintRDF.downCaseFirst"
+
+junctionType :: JunctionType -> String
+junctionType ty = "owl:" ++ downCaseFirst (show ty)
+
+
+cardinalityType :: CardinalityType -> String
+cardinalityType ty = "owl:" ++ case ty of
+    ExactCardinality -> "cardinality"
+    _ -> downCaseFirst (show ty)
+
+cardinalityTag :: CardinalityType -> Int -> Doc
+cardinalityTag ty c = let ct = cardinalityType ty in text $
+  "<" ++ ct ++ " rdf:datatype=\"&xsd;nonNegativeInteger\">" ++ show c
+   ++ "</" ++ ct ++ ">"
+
+quantifierType :: QuantifierType -> String
+quantifierType ty = "owl:" ++ downCaseFirst (show ty)
+
 printDescription :: Description -> Doc
 printDescription desc =
   case desc of
@@ -127,13 +149,9 @@ printDescription desc =
         oneLineTagToDoc "rdf:Description" (printURI ocUri)
     -- text "<owl:Class" <+> printURI ocUri
     -- <+> text "/>"
-    ObjectUnionOf descList ->        -- no example
-        tagToDocWithAttr "owl:UnionOf" "rdf:parseType=\"Collection\""
+    ObjectJunction ty descList ->        -- no example
+        tagToDocWithAttr (junctionType ty) "rdf:parseType=\"Collection\""
           (listToDoc' (printRDF Map.empty) descList)
-
-    ObjectIntersectionOf descList ->
-        tagToDocWithAttr "owl:intersectionOf" "rdf:parseType=\"Collection\""
-           (listToDoc' (printRDF Map.empty) descList)
      {-
       <owl:intersectionOf rdf:parseType="Collection">
         ...
@@ -164,22 +182,16 @@ printDescription desc =
          <rdf:Description rdf:about="#son"/>
        </owl:oneOf>
      -}
-    ObjectAllValuesFrom opExp d ->
+    ObjectValuesFrom ty opExp d ->
         tagToDoc "owl:Restriction"
                (printOPERes opExp $+$
-                tagToDoc "owl:allValuesFrom" (printRDF Map.empty d))
+                tagToDoc (quantifierType ty) (printRDF Map.empty d))
     {-
       <owl:Restriction>
          <owl:onProperty rdf:resource="#isMarriedTo"/>
          <owl:allValuesFrom rdf:resource="#Male"/>
       </owl:Restriction>
      -}
-
-    ObjectSomeValuesFrom opExp d ->
-        tagToDoc "owl:Restriction"
-            (printOPERes opExp $+$
-             tagToDoc "owl:someValuesFrom" (printRDF Map.empty d))
-
     ObjectExistsSelf opExp ->
         tagToDoc "owl11:SelfRestriction"
             (tagToDoc "owl:onProperty" (printRDF Map.empty opExp))
@@ -189,12 +201,11 @@ printDescription desc =
             (printOPERes opExp $+$
              oneLineTagToDoc "owl:hasValue" (printResource indUri))
 
-    ObjectMinCardinality card opExp maybeDesc ->
+    ObjectCardinality (Cardinality ty c opExp maybeDesc) ->
         tagToDoc "owl:Restriction"
-         (text "<owl:minCardinality rdf:datatype=\"&xsd;nonNegativeInteger\">" <> text (show card) <> text "</owl:minCardinality>" $+$
+         (cardinalityTag ty c $+$
           printOPERes opExp $+$
           maybe empty printOnClass maybeDesc)
-
     {-
       <owl:Restriction>
          <owl:onProperty rdf:resource="#hasChild"/>
@@ -202,26 +213,11 @@ printDescription desc =
          <owl:minCardinality rdf:datatype="&xsd;nonNegativeInteger">2</owl:minCardinality>
       </owl:Restriction>
      -}
-
-    ObjectMaxCardinality card opExp maybeDesc ->
-        tagToDoc "owl:Restriction"
-         (text "<owl:maxCardinality rdf:datatype=\"&xsd;nonNegativeInteger\">" <> text (show card) <> text "</owl:maxCardinality>" $+$
-          printOPERes opExp $+$
-          maybe empty printOnClass maybeDesc
-         )
-
-    ObjectExactCardinality card opExp maybeDesc ->
-        tagToDoc "owl:Restriction"
-         (text "<owl:cardinality rdf:datatype=\"&xsd;nonNegativeInteger\">" <> text (show card) <> text "</owl:cardinality>" $+$
-          printOPERes opExp $+$
-          maybe empty printOnClass maybeDesc)
-
-
-    DataAllValuesFrom dpExp dpExpList dRange ->
+    DataValuesFrom ty dpExp dpExpList dRange ->
         tagToDoc "owl:Restriction"
            (listToDoc' (\d -> oneLineTagToDoc "owl:onProperty"
                               (printResource d)) (dpExp:dpExpList) $+$
-            tagToDoc "owl:allValuesFrom" (tagToDoc "rdf:Description"
+            tagToDoc (quantifierType ty) (tagToDoc "rdf:Description"
                             (printRDF Map.empty  dRange)))
     {-
        <owl:Restriction>
@@ -231,35 +227,15 @@ printDescription desc =
           </owl:allValuesFrom>
        </owl:Restriction>
      -}
-    DataSomeValuesFrom  dpExp dpExpList dRange ->
-        tagToDoc "owl:Restriction"
-           (listToDoc' (\d -> oneLineTagToDoc "owl:onProperty"
-                              (printResource d)) (dpExp:dpExpList) $+$
-            tagToDoc "owl:someValuesFrom" (printRDF Map.empty  dRange))
-
     DataHasValue dpExp cons ->
         tagToDoc "owl:Restriction"
            (oneLineTagToDoc "owl:onProperty" (printResource dpExp)$+$
             tagToDoc "owl:hasValue" (printRDF Map.empty  cons))
-
-    DataMinCardinality card dpExp maybeRange ->
+    DataCardinality (Cardinality ty c dpExp maybeRange) ->
         tagToDoc "owl:Restriction"
            (oneLineTagToDoc "owl:onProperty" (printResource dpExp) $+$
-            text "<owl:minCardinality rdf:datatype=\"&xsd;nonNegativeInteger\">" <> text (show card)  <> text "</owl:minCardinality>" $+$
+            cardinalityTag ty c $+$
             maybe empty (printRDF Map.empty) maybeRange)
-
-    DataMaxCardinality  card dpExp maybeRange ->
-        tagToDoc "owl:Restriction"
-           (oneLineTagToDoc "owl:onProperty" (printResource dpExp) $+$
-            text "<owl:maxCardinality rdf:datatype=\"&xsd;nonNegativeInteger\">" <> text (show card) <> text "</owl:maxCardinality>" $+$
-            maybe empty (printRDF Map.empty) maybeRange)
-
-    DataExactCardinality  card dpExp maybeRange ->
-        tagToDoc "owl:Restriction"
-           (oneLineTagToDoc "owl:onProperty" (printResource dpExp) $+$
-            text "<owl:cardinality rdf:datatype=\"&xsd;nonNegativeInteger\">" <> text (show card) <> text "</owl:cardinality>" $+$
-            maybe empty (printRDF Map.empty) maybeRange)
-
 
 instance PrettyRDF ObjectPropertyExpression where
     printRDF _ = printObjPropExp
@@ -439,10 +415,11 @@ printAxiom indClsMap axiom = case axiom of
    EquivalentClasses _ (clazz:equiList) ->
        printClass clazz
           (equivalentClassTag
-             $ listToDoc' (\d -> case d of
-                                  ObjectIntersectionOf _ -> tagToDoc "owl:Class" (printRDF Map.empty  d)
-                                  ObjectOneOf _ ->  tagToDoc "owl:Class" (printRDF Map.empty  d)
-                                  _ -> printRDF  Map.empty d) equiList)
+             $ listToDoc' (\ d -> case d of
+                 ObjectJunction IntersectionOf _ ->
+                     tagToDoc "owl:Class" (printRDF Map.empty  d)
+                 ObjectOneOf _ -> tagToDoc "owl:Class" (printRDF Map.empty  d)
+                 _ -> printRDF Map.empty d) equiList)
    {-
     <owl:Class rdf:about="#Adult">
         <owl:equivalentClass>
