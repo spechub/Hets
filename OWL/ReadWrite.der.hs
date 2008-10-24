@@ -17,6 +17,7 @@ module OWL.ReadWrite () where
 
 import qualified Data.Map as Map
 import OWL.AS
+import Common.Utils
 import Common.ATerm.Lib
 import Data.Typeable
 import Data.Char
@@ -127,6 +128,17 @@ instance ShATermConvertible Constant where
                       in  (att1, Constant b $ Right $ drop 1 c ) }
             u -> fromShATermError "Constant" u
 
+instance ShATermConvertible Entity where
+    toShATermAux att0 (Entity ty euri) = do
+       (att1, t) <- toShATerm' att0 euri
+       return $ addATerm (ShAAppl (show ty) [t] []) att1
+    fromShATermAux ix att0 = case getShATerm ix att0 of
+       u@(ShAAppl tys [a] _) -> case readMaybe tys of
+         Nothing -> fromShATermError "Entity" u
+         Just ty -> case fromShATerm' a att0 of
+           (att1, a') -> (att1, Entity ty a')
+       u -> fromShATermError "Entity" u
+
 {-! for QName derive : Typeable!-}
 {-! for OntologyFile derive : Typeable!-}
 {-! for Ontology derive : Typeable !-}
@@ -138,6 +150,10 @@ instance ShATermConvertible Constant where
 {-! for DatatypeFacet derive : Typeable !-}
 {-! for DataRange derive : Typeable !-}
 {-! for EntityAnnotation derive : Typeable !-}
+{-! for CardinalityType derive : Typeable !-}
+{-! for JunctionType derive : Typeable !-}
+{-! for QuantifierType derive : Typeable !-}
+{-! for Cardinality derive : Typeable !-}
 {-! for Description derive : Typeable !-}
 {-! for SubObjectPropertyExpression derive : Typeable !-}
 {-! for Axiom derive : Typeable !-}
@@ -145,11 +161,14 @@ instance ShATermConvertible Constant where
 {-! for Ontology derive : ShATermConvertible !-}
 {-! for Annotation derive : ShATermConvertible !-}
 {-! for EntityType derive : ShATermConvertible !-}
-{-! for Entity derive : ShATermConvertible !-}
 {-! for ObjectPropertyExpression derive : ShATermConvertible !-}
 {-! for DatatypeFacet derive : ShATermConvertible !-}
 {-! for DataRange derive : ShATermConvertible !-}
 {-! for EntityAnnotation derive : ShATermConvertible !-}
+{-! for CardinalityType derive : ShATermConvertible !-}
+{-! for JunctionType derive : ShATermConvertible !-}
+{-! for QuantifierType derive : ShATermConvertible !-}
+{-! for Cardinality derive : ShATermConvertible !-}
 {-! for Description derive : ShATermConvertible !-}
 {-! for SubObjectPropertyExpression derive : ShATermConvertible !-}
 {-! for Axiom derive : ShATermConvertible !-}
