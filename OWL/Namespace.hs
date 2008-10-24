@@ -473,30 +473,8 @@ instance PNamespace Axiom where
                EntityAnno (renameNamespace tMap entityAnnotation)
 
 instance PNamespace Entity where
-    propagateNspaces ns entity =
-        case entity of
-           Datatype duri ->
-               Datatype (propagateNspaces ns duri)
-           OWLClassEntity curi ->
-               OWLClassEntity (propagateNspaces ns curi)
-           ObjectProperty opuri ->
-               ObjectProperty (propagateNspaces ns opuri)
-           DataProperty dpuri ->
-               DataProperty (propagateNspaces ns dpuri)
-           Individual iuri ->
-               Individual (propagateNspaces ns iuri)
-    renameNamespace tMap entity =
-        case entity of
-           Datatype duri ->
-               Datatype (renameNamespace tMap duri)
-           OWLClassEntity curi ->
-               OWLClassEntity (renameNamespace tMap curi)
-           ObjectProperty opuri ->
-               ObjectProperty (renameNamespace tMap opuri)
-           DataProperty dpuri ->
-               DataProperty (renameNamespace tMap dpuri)
-           Individual iuri ->
-               Individual (renameNamespace tMap iuri)
+    propagateNspaces ns (Entity ty euri) = Entity ty $ propagateNspaces ns euri
+    renameNamespace tMap (Entity ty euri) = Entity ty $ renameNamespace tMap euri
 
 instance PNamespace Constant where
     propagateNspaces ns constant =

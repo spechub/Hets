@@ -401,18 +401,13 @@ instance PrettyRDF Entity where
     printRDF _ = printEntity
 
 printEntity :: Entity -> Doc
-printEntity entity =
-    case entity of
-       Datatype dUri ->
-           oneLineTagToDoc "rdfs:Datatype" (printURI dUri)
-       OWLClassEntity cUri ->
-           oneLineTagToDoc "owl:OWLClass" (printURI cUri)
-       ObjectProperty opUri ->
-           oneLineTagToDoc "owl:ObjectProperty" (printURI opUri)
-       DataProperty dpUri ->
-           oneLineTagToDoc "owl:DatatypeProperty" (printURI dpUri)
-       Individual iUri ->
-           oneLineTagToDoc "owl11:Individual" (printURI iUri)
+printEntity (Entity ty eUri) = oneLineTagToDoc
+    (case ty of
+       Datatype -> "rdfs:Datatype"
+       OWLClassEntity -> "owl:OWLClass"
+       ObjectProperty -> "owl:ObjectProperty"
+       DataProperty -> "owl:DatatypeProperty"
+       Individual -> "owl11:Individual") (printURI eUri)
 
 instance PrettyRDF Sentence where
     printRDF = printSentence

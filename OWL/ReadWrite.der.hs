@@ -131,6 +131,7 @@ instance ShATermConvertible Constant where
 {-! for OntologyFile derive : Typeable!-}
 {-! for Ontology derive : Typeable !-}
 {-! for Annotation derive : Typeable !-}
+{-! for EntityType derive : Typeable !-}
 {-! for Entity derive : Typeable !-}
 {-! for Constant derive : Typeable !-}
 {-! for ObjectPropertyExpression derive : Typeable !-}
@@ -143,6 +144,7 @@ instance ShATermConvertible Constant where
 
 {-! for Ontology derive : ShATermConvertible !-}
 {-! for Annotation derive : ShATermConvertible !-}
+{-! for EntityType derive : ShATermConvertible !-}
 {-! for Entity derive : ShATermConvertible !-}
 {-! for ObjectPropertyExpression derive : ShATermConvertible !-}
 {-! for DatatypeFacet derive : ShATermConvertible !-}

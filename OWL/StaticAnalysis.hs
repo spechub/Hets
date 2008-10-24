@@ -649,31 +649,30 @@ anaAxioms ga inSign ns ontologyF@(OntologyFile _ onto) (axiom:rest) =
 
 
   where getDeclFromEntity :: Entity -> Sign -> Sign
-        getDeclFromEntity e s =
-            case e of
-              Datatype u  ->
+        getDeclFromEntity (Entity ty u) s =
+            case ty of
+              Datatype ->
                   let dt = datatypes s
                   in s { datatypes = Set.insert u dt}
-              OWLClassEntity u ->
+              OWLClassEntity ->
                   let c = concepts s
                   in s { concepts = Set.insert u c}
-              ObjectProperty u ->
+              ObjectProperty ->
                   let ind = indValuedRoles s
                   in s { indValuedRoles = Set.insert u ind}
-              DataProperty u ->
+              DataProperty ->
                   let d = dataValuedRoles s
                   in s { dataValuedRoles = Set.insert u d}
-              Individual u ->
+              Individual ->
                   let i = individuals s
                   in s { dataValuedRoles = Set.insert u i}
-
 
 -- | if CASL_Sort == false then the concept is not primary
 getNonPrimaryConcept :: [Axiom] ->  [ClassID]
 getNonPrimaryConcept [] = []
 getNonPrimaryConcept (h:r) =
     case h of
-      EntityAnno (EntityAnnotation _ (OWLClassEntity curi) annos) ->
+      EntityAnno (EntityAnnotation _ (Entity OWLClassEntity curi) annos) ->
           if isCASL_SortFalse annos then
               curi:(getNonPrimaryConcept r)
               else getNonPrimaryConcept r

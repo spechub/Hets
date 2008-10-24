@@ -79,14 +79,16 @@ data Ontology = Ontology
 
 type OntologyMap = Map.Map String OntologyFile
 
--- | Syntax of Entities
-data Entity =
-    Datatype DatatypeURI
-  | OWLClassEntity OwlClassURI
-  | ObjectProperty ObjectPropertyURI
-  | DataProperty DataPropertyURI
-  | Individual IndividualURI
+data EntityType =
+    Datatype
+  | OWLClassEntity
+  | ObjectProperty
+  | DataProperty
+  | Individual
     deriving (Show, Eq, Ord)
+
+-- | Syntax of Entities
+data Entity = Entity EntityType URI deriving (Show, Eq, Ord)
 
 type LexicalForm = String
 type LanguageTag = String
