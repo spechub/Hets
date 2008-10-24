@@ -13,7 +13,6 @@ Cloned and modified from Sign of OWL DL.
 
 module OWL.Sign where
 
-import Text.XML.HXT.DOM.QualifiedName (QName(QN))
 import OWL.AS
 import qualified Data.Set as Set
 import qualified Data.Map as Map
@@ -77,7 +76,7 @@ data Sentence = OWLAxiom Axiom
                 deriving (Show,Eq,Ord)
 
 emptySign :: Sign
-emptySign =  Sign { ontologyID = QN "" "" "",
+emptySign =  Sign { ontologyID = nullQName,
                     concepts = Set.empty,
                     primaryConcepts = Set.empty,
                     datatypes = Set.empty,
@@ -108,9 +107,10 @@ diffSig a b =
 
 addSign :: Sign -> Sign -> Sign
 addSign toIns totalSign =
-    totalSign { ontologyID = (let QN _ lp1 _ = ontologyID totalSign
-                                  QN _ lp2 _ = ontologyID toIns
-                              in  QN "" (lp1 ++ "_" ++ lp2) ""),
+    totalSign { ontologyID = let
+                    lp1 = localPart $ ontologyID totalSign
+                    lp2 = localPart $ ontologyID toIns
+                    in  mkName $ lp1 ++ "_" ++ lp2,
                 concepts = Set.union (concepts totalSign)
                                      (concepts toIns),
                 primaryConcepts = Set.union (primaryConcepts totalSign)

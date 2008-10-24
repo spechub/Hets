@@ -5,19 +5,18 @@ License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
 Maintainer  :  luecke@informatik.uni-bremen.de
 Stability   :  provisional
-Portability :  portable
+Portability :  non-portable (imports Logic)
 
 Structured analysis of the import structure of OWL-DL files. circular
 imports result in a united theory of all members of the circle.
 -}
 
-module OWL.StructureAnalysis where
+module OWL.StructureAnalysis (getNameFromNode, buildDevGraph) where
 
 
 import Static.GTheory
 import Static.DevGraph
 
-import Text.XML.HXT.DOM.QualifiedName (QName(..))
 import OWL.Sign
 import OWL.Logic_OWL11
 import OWL.AS
@@ -117,7 +116,7 @@ createLNodes (hs:rs) exLNodes om =
                      Map.delete hs (Map.insert (show sid)
                                     (case Map.lookup hs ontoMap' of
                                       Just res -> res
-                                      Prelude.Nothing -> emptyOntologyFile
+                                      Nothing -> emptyOntologyFile
                                     )
                                     ontoMap')
                     )
@@ -177,7 +176,7 @@ integrateScc nodeList ontoMap dg =
         theories = map dgn_theory lnodes
         ontologies = map (\x -> case Map.lookup x ontoMap of
                                 Just res -> res
-                                Prelude.Nothing -> emptyOntologyFile
+                                Nothing -> emptyOntologyFile
                          ) dgnNames
         newName = makeName $ mkSimpleId $ (\z -> take ((length z) -1) z) $
                     foldr (\x y -> x ++ "_" ++ y) "" dgnNames

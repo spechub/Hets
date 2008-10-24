@@ -15,7 +15,36 @@ It is modeled after the W3C document: <http://www.w3.org/Submission/2006/SUBM-ow
 module OWL.AS where
 
 import qualified Data.Map as Map
-import Text.XML.HXT.DOM.QualifiedName (nullQName, equalQName, QName(QN))
+
+data QName = QN
+  { namePrefix :: String
+  -- ^ the name prefix part of a qualified name \"namePrefix:localPart\"
+  , localPart :: String
+  -- ^ the local part of a qualified name \"namePrefix:localPart\"
+  , namespaceUri :: String
+  -- ^ the associated namespace uri
+  } deriving Show
+
+nullQName :: QName
+nullQName = QN "" "" ""
+
+mkName :: String -> QName
+mkName s = nullQName { localPart = s }
+
+qualifiedName :: QName -> String
+qualifiedName (QN p l _) = if null p then l else p ++ (':' : l)
+
+instance Eq QName where
+    p == q = compare p q == EQ
+
+instance Ord QName where
+  compare(QN p1 l1 n1) (QN p2 l2 n2) =
+      if null n1 then
+          if null n2 then compare (p1, l1) (p2, l2) else LT
+      else if null n2 then GT else compare (l1, n1) (l2, n2)
+
+equalQName :: QName -> QName -> Bool
+equalQName (QN _ l1 n1) (QN _ l2 n2) = (l1, n1) == (l2, n2)
 
 type URI = QName
 type IRI = String

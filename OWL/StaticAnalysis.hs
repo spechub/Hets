@@ -10,20 +10,21 @@ Portability :  portable
 static analysis of basic specifications for OWL 1.1.
 -}
 
-module OWL.StaticAnalysis where
+module OWL.StaticAnalysis (basicOWL11Analysis) where
 
-import Text.XML.HXT.DOM.QualifiedName (QName(..))
 import OWL.Namespace
 import OWL.Sign
 import OWL.AS
+
 import qualified Data.Set as Set
 import qualified Data.Map as Map
+
 import Common.AS_Annotation
 import Common.Result
 import Common.GlobalAnnotations
 import Common.ExtSign
+
 import Data.List (nub)
--- import Debug.Trace (trace)
 
 -- | static analysis of ontology with incoming sign.
 basicOWL11Analysis ::
@@ -104,13 +105,13 @@ concatResult :: Result (OntologyFile,Sign,[Named Sentence])
              -> Result (OntologyFile,Sign,[Named Sentence])
 concatResult (Result diag1 maybeRes1) (Result diag2 maybeRes2) =
     case maybeRes1 of
-    Prelude.Nothing ->
+    Nothing ->
         case maybeRes2 of
-        Prelude.Nothing -> Result (diag2++diag1) Prelude.Nothing
+        Nothing -> Result (diag2++diag1) Nothing
         _ -> Result (diag2++diag1) maybeRes2
     Just (ontoF1, _, namedSen1) ->
         case maybeRes2 of
-         Prelude.Nothing -> Result (diag2++diag1) maybeRes1
+         Nothing -> Result (diag2++diag1) maybeRes1
          Just (ontoF2, inSign2, namedSen2) ->
              let
                  accSign = inSign2 -- insertSign inSign1 inSign2
@@ -129,7 +130,7 @@ mkDefSen nam sen = (makeNamed nam sen) { isDef = True }
 -- Try to store the %implied in simpAnno of Named-struction.
 anaAxioms :: GlobalAnnos -> Sign -> Namespace -> OntologyFile -> [Axiom]
             -> Result (OntologyFile,Sign,[Named Sentence])
-anaAxioms _ _ _ _ [] = initResult
+anaAxioms _ _ _ _ [] = Result [] Nothing
 anaAxioms ga inSign ns ontologyF@(OntologyFile _ onto) (axiom:rest) =
   case axiom of
    SubClassOf anno sub super  ->
@@ -692,39 +693,6 @@ getNonPrimaryConcept (h:r) =
                         else isCASL_SortFalse s
                   _ -> isCASL_SortFalse s
 
-getAllConceptsAndRoles :: Ontology
-                       -> ([OwlClassURI], [IndividualURI]
-                          ,[IndividualURI], [IndividualURI])
-getAllConceptsAndRoles onto = getAllConcepts' (axiomsList onto)
-                                                  ([],[],[],[])
-  where getAllConcepts' [] res = res
-        getAllConcepts' (h:r) res@(con, objRole, dataRole, annoRole) =
-         case h of
-           SubClassOf _ sub super ->
-            getAllConcepts' r (((getClassFromDescription sub) ++
-             (getClassFromDescription super) ++con),objRole, dataRole, annoRole)
-           EquivalentClasses _ descList ->
-               getAllConcepts' r (((foldl (++) [] $ map
-                                    getClassFromDescription descList) ++ con),
-                                  objRole,
-                                  dataRole, annoRole)
-           DisjointClasses _  descList ->
-               getAllConcepts' r  (((foldl (++) [] $ map
-                                   getClassFromDescription descList) ++ con)
-                                  ,objRole, dataRole, annoRole)
-           DisjointUnion _ clazz descList ->
-               getAllConcepts' r (((clazz:(foldl (++) [] $ map
-                                   getClassFromDescription descList)) ++ con)
-                                 ,objRole, dataRole, annoRole)
-           Declaration _ (OWLClassEntity clazz) ->
-               getAllConcepts' r ((clazz:con)
-                                 ,objRole, dataRole, annoRole)
-           EntityAnno (EntityAnnotation _ (OWLClassEntity clazz) _) ->
-               getAllConcepts' r ((clazz:con)
-                                  ,objRole, dataRole, annoRole)
-           _ -> getAllConcepts' r res
-
-
 getClassFromDescription :: Description -> [OwlClassURI]
 getClassFromDescription desc =
     case desc of
@@ -787,9 +755,3 @@ isToProve (anno:r) =
                else False
             else isToProve r
       _ -> isToProve r
-
-nullID :: ID
-nullID = QN "" "" ""
-
-initResult :: Result a
-initResult = Result [] Prelude.Nothing

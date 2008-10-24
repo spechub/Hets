@@ -13,7 +13,7 @@ Automatic derivation of instances via DrIFT-rule Typeable, ShATermConvertible
 manual instance for 'OntologyFile'
 -}
 
-module OWL.ReadWrite where
+module OWL.ReadWrite () where
 
 import qualified Data.Map as Map
 import OWL.AS
@@ -22,7 +22,6 @@ import Data.Typeable
 import Data.Char
 import Data.List
 import Control.Monad
-import Text.XML.HXT.DOM.QualifiedName (mkName, QName(QN))
 
 instance ShATermConvertible QName where
   toShATermAux = toShATermAux_QName
@@ -127,6 +126,7 @@ instance ShATermConvertible Constant where
                       in  (att1, UntypedConstant (b, if null c then "" else tail c)) }
             u -> fromShATermError "Constant" u
 
+{-! for QName derive : Typeable!-}
 {-! for OntologyFile derive : Typeable!-}
 {-! for Ontology derive : Typeable !-}
 {-! for Annotation derive : Typeable !-}

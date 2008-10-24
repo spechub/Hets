@@ -10,10 +10,10 @@ Portability :  non-portable(instances for URIreference and Namespace)
 Pretty printing for OWL DL theories from abstract syntax to RDF\/OWL file.
 -}
 
-module OWL.PrintRDF where
+module OWL.PrintRDF (printRDF) where
 
 import Common.Doc
-import Text.XML.HXT.DOM.QualifiedName (QName(..))
+
 import OWL.Sign
 import OWL.AS
 
@@ -850,34 +850,9 @@ equivalentClassTag doc =
       nest 4 <> doc $+$
     text "</owl:equivalentClass>"
 
-classTag :: Description -> Doc -> Doc
-classTag desc content =
-    case desc of
-      OWLClass curi ->
-          classStart curi $+$
-          nest 4 <>  content  $+$
-          classEnd
-      _ -> error ("Class here muss be a delaration of OWLClass")
-  where
-    classStart :: OwlClassURI  -> Doc
-    classStart cu =
-        text "<owl:Class" <+> printURI cu
-                          <+> text ">"
-
-    classEnd :: Doc
-    classEnd = text "</owl:Class>"
-
-classTag' :: OwlClassURI -> Doc -> Doc
-classTag' curi d =
-    classTag (OWLClass curi) d
-
 printIndividual :: IndividualURI -> Doc
 printIndividual iuri =
     oneLineTagToDoc "owl11:Individual" (printResource iuri)
-
-printDataProperty :: DataPropertyExpression -> Doc
-printDataProperty dpe =
-    oneLineTagToDoc "owl11:DataProperty" (printRDF Map.empty  dpe)
 
 printSubject :: SourceIndividualURI -> Doc
 printSubject ind =
@@ -934,13 +909,6 @@ tagToDocWithAttr' tag attr content =
     text ("<" ++ tag) <+> attr <> text ">" $+$
        nest 4 <> content  $+$
     text ("</" ++ tag ++ ">")
-
-cardinalityToDoc :: String -> Cardinality -> Doc -> Doc
-cardinalityToDoc tag card d =
-    text ("<owl11:" ++ tag ++ " owl11:cardinality=\"" ++
-                       show card ++ "\">") $+$
-       nest 4 <> d  $+$
-    text ("</owl11:" ++ tag ++ ">")
 
 printClassAssertion :: OwlClassURI -> IndividualURI
                     -> Description -> Doc
@@ -1004,19 +972,6 @@ classNameForInd cid =
     in if lp == "Thing" then
            "owl:" ++ lp
          else lp
-
-emptyQN :: QName
-emptyQN = QN "" "" ""
-
-simpleQN :: String -> QName
-simpleQN str = QN "" str ""
-
-choiceName :: Int -> String
-choiceName level
-    | level <= 0 = "x"
-    | level == 1 = "y"
-    | level == 2 = "z"
-    | otherwise = "u" ++ (show (level -2))
 
 nest :: Int -> Doc
 nest longOfNest

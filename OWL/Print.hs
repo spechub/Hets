@@ -10,13 +10,11 @@ Portability :  non-portable(instances for URIreference and Namespace)
 Pretty printing for OWL DL theories.
 -}
 
-module OWL.Print where
+module OWL.Print () where
 
 import Common.Doc
 import Common.DocUtils
--- import qualified Common.Lib.Pretty as Pretty (nest, char)
 
-import Text.XML.HXT.DOM.QualifiedName (QName(QN))
 import OWL.Sign
 import OWL.AS
 
@@ -335,7 +333,6 @@ printCharact :: String -> Doc
 printCharact charact =
     text "Characteristics:" $+$  (text charact)
 
-
 instance Pretty SubObjectPropertyExpression where
     pretty sopExp =
         case sopExp of
@@ -361,27 +358,3 @@ setToDocF = fsep . setToDocs
 
 setToDocV :: (Pretty a) => Set.Set a -> Doc
 setToDocV = vcat . setToDocs
-
--- output a list in vertikal direction
-listToDocV :: (Pretty a, Pretty b)
-                  => (a -> b -> Doc) -> a -> [b] -> Doc
-listToDocV printForm iD = vcat . map (printForm iD)
-
--- output a list in horizonal direction
-listToDocH :: (Pretty a, Pretty b)
-                  =>  (a -> b -> Doc) -> a -> [b] -> Doc
-listToDocH printForm iD = hsep . map (printForm iD)
-
-
-emptyQN :: QName
-emptyQN = QN "" "" ""
-
-simpleQN :: String -> QName
-simpleQN str = QN "" str ""
-
-choiceName :: Int -> String
-choiceName level
-    | level <= 0 = "x"
-    | level == 1 = "y"
-    | level == 2 = "z"
-    | otherwise = "u" ++ (show (level -2))

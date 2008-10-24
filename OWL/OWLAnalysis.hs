@@ -10,7 +10,7 @@ Portability :  non-portable (imports Logic.Logic)
 analyse OWL11 files by calling the external Java parser.
 -}
 
-module OWL.OWLAnalysis where
+module OWL.OWLAnalysis (structureAna, parseOWL) where
 
 import OWL.AS
 import OWL.Namespace
@@ -226,7 +226,7 @@ nodesStaticAna (h:r) signMap ontoMap globalNs dg diag = do
     case res of
         Just (newSignMap, newDg, newGlobalNs) ->
             nodesStaticAna r newSignMap ontoMap newGlobalNs newDg (diag++digs)
-        Prelude.Nothing ->
+        Nothing ->
                -- Warning or Error message
             nodesStaticAna r signMap ontoMap globalNs dg (diag++digs)
 
@@ -239,8 +239,7 @@ nodeStaticAna :: [LNode DGNodeLab]   -- ^ imported nodes of one node
               -> Namespace           -- ^ global namespaces
               -> DGraph              -- ^ current graph
               -> IO (Result (SignMap, DGraph, Namespace))
-nodeStaticAna [] _ _ _ _ _ =
-    do return initResult           -- remove warning
+nodeStaticAna [] _ _ _ _ _ = return $ Result [] Nothing  -- remove warning
 -- the last node in list is current top node.
 nodeStaticAna
     ((n,topNode):[]) (inSig, oldDiags) signMap ontoMap globalNs dg =
@@ -294,7 +293,7 @@ nodeStaticAna
                                     ("error by analysing of "
                                      ++ (show mid)) ()
                     putStrLn (show diag)
-                    return $ Result (actDiag:oldDiags) Prelude.Nothing
+                    return $ Result (actDiag:oldDiags) Nothing
             -- The GMorphism of edge should also with new Signature be changed,
             -- since with "show theory" the edges also with Sign one links
             -- (see Static.DevGraph.joinG_sentences).
@@ -314,7 +313,7 @@ nodeStaticAna ((n, _):r) (inSig, oldDiags) signMap ontoMap globalNs dg
      Just (sig, _) ->
         nodeStaticAna r ((integSign sig inSig), oldDiags)
                              signMap ontoMap globalNs dg
-     Prelude.Nothing ->
+     Nothing ->
        do
          Result digs' res' <-
                  nodeStaticAna (getBFSnodeList n dg)

@@ -31,7 +31,6 @@ import Common.Result
 import Common.Id
 import Common.DocUtils
 
-import Text.XML.HXT.DOM.QualifiedName (QName(..))
 import qualified Data.Set as Set
 
 data OWL2DL = OWL2DL deriving Show

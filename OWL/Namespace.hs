@@ -12,7 +12,6 @@ This module implements a namespace transformation
 
 module OWL.Namespace where
 
-import Text.XML.HXT.DOM.QualifiedName (QName(..))
 import OWL.Sign
 import OWL.AS
 import qualified Data.Map as Map
@@ -36,35 +35,32 @@ class PNamespace a where
 instance PNamespace Namespace where
     propagateNspaces _ ns = ns
     renameNamespace tMap oldNs =
-        trans tMap (Map.toList oldNs) Map.empty
-        where trans :: TranslationMap -> [(String, String)]
-                    -> Namespace -> Namespace
-              trans _ [] ns = ns
-              trans tm ((pre, ouri):rest) ns =
-                  case Map.lookup pre tm of
-                  Just pre' -> trans tm rest (Map.insert pre' ouri ns)
-                  _         -> trans tm rest (Map.insert pre ouri ns)
+        foldl (\ ns (pre, ouri) ->
+           Map.insert (Map.findWithDefault pre pre tMap) ouri ns)
+        Map.empty $ Map.toList oldNs
 
 instance PNamespace QName where
   propagateNspaces ns old@(QN pre local nsUri)
     | null (pre ++ local ++ nsUri) = old
     | otherwise =
-     if local == "Thing" || (snd $ span (/=':') local) == ":Thing" then
+     if local == "Thing" || snd (span (/=':') local) == ":Thing" then
         QN "owl" "Thing" "http://www.w3.org/2002/07/owl#"
       else
-        if null nsUri then
-           if null pre  then
+        if null nsUri then let
+          prop :: String -> String -> QName
+          prop p loc = QN p loc $ Map.findWithDefault "" p ns
+          in if null pre  then
               let (pre', local') = span (/=':')
                                      (if (head local) == '\"' then
                                          read local::String
                                          else local
                                      )
               -- hiding "ftp://" oder "http://" oder "file:///"
-              in if ((length pre' > 3) && (isAlpha $ head $ reverse pre'))
-                     || (null local') then
-                    QN pre local nsUri
+              in if length pre' > 3 && isAlpha (head $ reverse pre')
+                     || null local' then
+                    QN pre' local nsUri
                    else let local'' = tail local'
-                         in  prop pre' local''
+                         in prop pre' local''
              else prop pre local
          else
              if null pre then
@@ -73,29 +69,18 @@ instance PNamespace QName where
                                          read nsUri::String
                                          else nsUri
                                      )
-               in if pre' /= "file:" then
-                    case Map.lookup (nsUri ++ "#") (reverseMap ns) of
-                      Prelude.Nothing ->  old
+                   rns = reverseMap ns
+                in if pre' /= "file:" then
+                       old { namePrefix = Map.findWithDefault pre
+                             (nsUri ++ "#") rns }
                     -- if uri of QName already existed in namespace map, must
                     -- the prefix also changed (as is located in map).
-                      Just pre1 -> QN pre1 local nsUri
-                   else maybe old (\a -> QN a local nsUri) $
-                          Map.lookup (pre' ++ "//" ++ local' ++ "#")
-                                 (reverseMap ns)
+                   else old { namePrefix = Map.findWithDefault pre
+                              (pre' ++ "//" ++ local' ++ "#") rns }
               else old
 
-      where
-        prop :: String -> String -> QName
-        prop p loc =
-           let maybeNsUri = Map.lookup p ns
-           in  case maybeNsUri of
-                    Just nsURI -> QN p loc nsURI
-                    Prelude.Nothing    -> QN p loc ""
-
-  renameNamespace tMap old@(QN pre local nsUri) =
-        case Map.lookup pre tMap of
-        Prelude.Nothing -> old
-        Just pre' -> QN pre' local nsUri
+  renameNamespace tMap old = let pre = namePrefix old in
+      old { namePrefix = Map.findWithDefault pre pre tMap }
 
 instance PNamespace Sign where
    propagateNspaces _ sig = sig
@@ -694,18 +679,11 @@ instance PNamespace  EntityAnnotation where
 
 -- propagate namespace of Maybe
 maybePropagate :: (PNamespace a) => Namespace -> Maybe a -> Maybe a
-maybePropagate ns obj =
-    case obj of
-             Just j -> Just (propagateNspaces ns j)
-             Prelude.Nothing  -> Prelude.Nothing
-
+maybePropagate ns = fmap $ propagateNspaces ns
 
 -- rename namespace of Maybe
 maybeRename :: (PNamespace a) => TranslationMap -> Maybe a -> Maybe a
-maybeRename tMap obj =
-    case obj of
-             Just j -> Just (renameNamespace tMap j)
-             Prelude.Nothing -> Prelude.Nothing
+maybeRename tMap = fmap $ renameNamespace tMap
 
 integrateNamespaces :: Namespace -> Namespace
                     -> (Namespace,TranslationMap)
