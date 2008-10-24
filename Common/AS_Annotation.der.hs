@@ -1,7 +1,7 @@
 {- |
 Module      :  $Header$
 Description :  datastructures for annotations of (Het)CASL.
-Copyright   :  (c) Klaus L�ttich, Christian Maeder, and Uni Bremen 2002-2006
+Copyright   :  (c) Klaus Luettich, Christian Maeder, and Uni Bremen 2002-2006
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
 Maintainer  :  Christian.Maeder@dfki.de
