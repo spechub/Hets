@@ -150,10 +150,6 @@ instance ShATermConvertible Entity where
 {-! for DatatypeFacet derive : Typeable !-}
 {-! for DataRange derive : Typeable !-}
 {-! for EntityAnnotation derive : Typeable !-}
-{-! for CardinalityType derive : Typeable !-}
-{-! for JunctionType derive : Typeable !-}
-{-! for QuantifierType derive : Typeable !-}
-{-! for Cardinality derive : Typeable !-}
 {-! for Description derive : Typeable !-}
 {-! for SubObjectPropertyExpression derive : Typeable !-}
 {-! for Axiom derive : Typeable !-}
@@ -165,10 +161,6 @@ instance ShATermConvertible Entity where
 {-! for DatatypeFacet derive : ShATermConvertible !-}
 {-! for DataRange derive : ShATermConvertible !-}
 {-! for EntityAnnotation derive : ShATermConvertible !-}
-{-! for CardinalityType derive : ShATermConvertible !-}
-{-! for JunctionType derive : ShATermConvertible !-}
-{-! for QuantifierType derive : ShATermConvertible !-}
-{-! for Cardinality derive : ShATermConvertible !-}
 {-! for Description derive : ShATermConvertible !-}
 {-! for SubObjectPropertyExpression derive : ShATermConvertible !-}
 {-! for Axiom derive : ShATermConvertible !-}
