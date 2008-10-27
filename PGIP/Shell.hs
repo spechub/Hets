@@ -44,6 +44,7 @@ import System.IO
 import System.Console.Shell.ShellMonad
 import qualified Common.OrderedMap as OMap
 import Common.AS_Annotation
+import GUI.GenericATPState
 -- | Creates a shellac command
 shellacCmd :: CMDL_CmdDescription -> Sh CMDL_State ()
 shellacCmd cmd
@@ -93,9 +94,13 @@ checkCom descr state
                      CmdNoInput fn -> fn
                      CmdWithInput fn -> fn (cmdInput $ cmdInfo dsc)
     -- adds a line into the script (composed of command name and input)
-        addSp st ps nm p = st {
-                            proveState = Just ps {
-                              script = ((script ps)++nm++" "++p++"\n") } }
+        addSp st ps nm p = let olds = script ps 
+                               oldextOpts = ts_extraOpts olds
+                           in st {
+                                proveState = Just ps {
+                                  script = olds{
+                                       ts_extraOpts = (nm++" "++p):oldextOpts
+                                        } } }
     -- check the priority of the current command
     case cmdPriority descr of
      -- command has no priority

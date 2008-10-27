@@ -50,6 +50,8 @@ import Logic.Comorphism
 import Logic.Grothendieck
 import Logic.Prover
 
+import GUI.GenericATPState
+
 -- | Wraps Result structure around the result of a dg all style command
 wrapResultDgAll :: (LIB_NAME->LibEnv -> LibEnv) ->
                    LIB_NAME -> LibEnv -> Result LibEnv
@@ -335,7 +337,10 @@ cDgSelect input state
                          consChecker = Nothing,
                          save2file = False,
                          useTheorems = False,
-                         script = [],
+                         script = ATPTactic_script {
+                                         ts_timeLimit = 20,
+                                         ts_extraOpts = [] 
+                                         },
                          loadScript = False
                          },
                    history = oldH {
@@ -386,7 +391,10 @@ cDgSelectAll state
                               consChecker = Nothing,
                               save2file = False,
                               useTheorems = False,
-                              script = [],
+                              script = ATPTactic_script {
+                                           ts_timeLimit = 20,
+                                           ts_extraOpts = [] 
+                                           },
                               loadScript = False
                              },
               history = oldH {

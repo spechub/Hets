@@ -51,6 +51,7 @@ import Control.Concurrent.MVar
 
 import System.IO
 
+import GUI.GenericATPState
 
 getProversAutomatic :: [AnyComorphism] -> [(G_prover, AnyComorphism)]
 getProversAutomatic = foldl addProvers []
@@ -197,7 +198,7 @@ checkNode ::
               -- save problem file for each goal
               Bool ->
               -- Tactic script
-              String ->
+              ATPTactic_script ->
               -- proofState of the node that needs proving
               -- all theorems, goals and axioms should have
               -- been selected before,but the theory should have
@@ -276,7 +277,7 @@ checkNode useTh save2File sTxt ndpf ndnm mp mcm mThr mSt mlbE libname
                       save2File
                       answ
                       (theoryName st)
-                      (P.Tactic_script sTxt)
+                      (P.Tactic_script $ show sTxt)
                       th
              swapMVar mThr $ Just $ fst tmp
              pollForResults lid1 cmp (snd tmp) answ mSt []
@@ -301,7 +302,7 @@ proveNode ::
               -- save problem file for each goal
               Bool ->
               -- Tactic script
-              String ->
+              ATPTactic_script ->
               -- proofState of the node that needs proving
               -- all theorems, goals and axioms should have
               -- been selected before,but the theory should have
@@ -380,7 +381,7 @@ proveNode useTh save2File sTxt ndpf ndnm mp mcm mThr mSt mlbE libname
                       save2File
                       answ
                       (theoryName st)
-                      (P.Tactic_script sTxt)
+                      (P.Tactic_script $ show  sTxt)
                       th
              swapMVar mThr $ Just $ fst tmp
              pollForResults lid1 cmp (snd tmp) answ mSt []

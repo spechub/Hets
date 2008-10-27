@@ -43,6 +43,7 @@ import Static.DevGraph
 import Logic.Comorphism
 import Logic.Logic
 import Common.LibName
+import GUI.GenericATPState
 
 import System.IO
 import Network.Socket
@@ -105,7 +106,7 @@ data CMDL_UndoRedoElem =
  | Save2FileChange Bool
  | ProverChange (Maybe G_prover)
  | ConsCheckerChange (Maybe G_cons_checker)
- | ScriptChange String
+ | ScriptChange ATPTactic_script
  | LoadScriptChange Bool
  | CComorphismChange (Maybe AnyComorphism)
  | ListChange [CMDL_ListChange]
@@ -225,7 +226,7 @@ data CMDL_ProveState =
     -- | Use proven theorems in subsequent proofs
     useTheorems :: Bool,
     -- | Script to be used when proving
-    script      :: String,
+    script      :: ATPTactic_script,
     -- | If script is currently being inserted
     loadScript  :: Bool
    }

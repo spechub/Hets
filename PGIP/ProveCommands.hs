@@ -50,6 +50,8 @@ import Control.Concurrent.MVar
 import System.Posix.Signals
 import System.IO
 
+import GUI.GenericATPState
+
 -- | Drops any seleceted comorphism
 cDropTranslations :: CMDL_State -> IO CMDL_State
 cDropTranslations state =
@@ -304,8 +306,15 @@ cNotACommand input state
             False -> return$ genErrorMsg ("Error on input line :"++s) state
             True ->
              do
+              let olds = script pS
+                  oldextOpts = ts_extraOpts olds
               let nwSt = state {
-                          proveState=Just pS{script=((script pS)++s++"\n")}
+                          proveState=
+                              Just pS{
+                                 script=olds{
+                                        ts_extraOpts=s:oldextOpts
+                                        }
+                                    }
                           }
               return $ addToHistory (ScriptChange $ script pS) nwSt
 
@@ -353,13 +362,13 @@ cTimeLimit input state
        False -> return $ genErrorMsg "Please insert a number of seconds" state
        True ->
         do
-        case isInfixOf "time_limit " $ script ps of
-         True -> return $ genErrorMsg "Time limit already set" state
-         False->
-           return $ addToHistory (ScriptChange $ script ps)
+         let inpVal = (read $ trim input)::Int
+         let oldS = script ps
+         return $ addToHistory (ScriptChange $ script ps)
                state {
                  proveState = Just ps {
-                                 script = ("time_limit " ++ (trim input)
-                                            ++"\n"++ (script ps))
+                                 script = oldS {
+                                           ts_timeLimit = inpVal
+                                           }
                                      }
                       }
