@@ -101,49 +101,27 @@ instance PNamespace Sign where
             (Set.map (renameNamespace tMap) p9)
             (renameNamespace tMap p10)
 
+instance PNamespace (DomainOrRangeOrFunc a) where
+   propagateNspaces _ = id
+   renameNamespace tMap dor = case dor of
+     DomainOrRange ty des -> DomainOrRange ty $ renameNamespace tMap des
+     RDRange dr -> RDRange $ renameNamespace tMap dr
+     _ -> dor
+
 instance PNamespace SignAxiom where
-   propagateNspaces _ signAxiom = signAxiom
+   propagateNspaces _ = id
    renameNamespace tMap signAxiom =
        case signAxiom of
        Subconcept cId1 cId2 ->
            Subconcept (renameNamespace tMap cId1)
                    (renameNamespace tMap cId2)
-       RoleDomain id1 rDomains ->
-           RoleDomain (renameNamespace tMap id1)
-                   (renameNamespace tMap rDomains)
-       RoleRange id1 rRange ->
-           RoleRange (renameNamespace tMap id1)
-                   (renameNamespace tMap rRange)
-       FuncRole (t, id1) ->
-           FuncRole (t, (renameNamespace tMap id1))
+       Role rdr id1 ->
+           Role (renameNamespace tMap rdr) (renameNamespace tMap id1)
+       Data rdr id1 ->
+           Data (renameNamespace tMap rdr) (renameNamespace tMap id1)
        Conceptmembership iId des ->
            Conceptmembership (renameNamespace tMap iId)
                              (renameNamespace tMap des)
-       DataDomain dpExp domain ->
-           DataDomain (renameNamespace tMap dpExp)
-                      (renameNamespace tMap domain)
-       DataRange dpExp range ->
-           DataRange (renameNamespace tMap dpExp)
-                      (renameNamespace tMap range)
-       FuncDataProp dpExp ->
-           FuncDataProp (renameNamespace tMap dpExp)
-       RefRole (t, opExp) ->
-           RefRole (t, (renameNamespace tMap opExp))
-
-
-instance PNamespace RDomain where
-    propagateNspaces _ rd = rd
-    renameNamespace tMap rd =
-        case rd of
-        RDomain des -> RDomain (renameNamespace tMap des)
-        DDomain des -> DDomain (renameNamespace tMap des)
-
-instance PNamespace RRange where
-   propagateNspaces _ rr = rr
-   renameNamespace tMap rr =
-        case rr of
-         RIRange des -> RIRange (renameNamespace tMap des)
-         RDRange dr  -> RDRange (renameNamespace tMap dr)
 
 instance PNamespace Sentence where
    propagateNspaces _ sent = sent

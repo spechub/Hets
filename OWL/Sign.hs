@@ -44,36 +44,35 @@ data Sign = Sign
               -- ^of roles, functional roles and concept membership
             , axioms :: Set.Set SignAxiom
             , namespaceMap :: Namespace
-            } deriving (Show,Eq,Ord)
+            } deriving (Show, Eq, Ord)
 
-data SignAxiom = Subconcept Description Description   -- subclass, superclass
-               | RoleDomain ObjectPropertyExpression RDomain
-               | RoleRange  ObjectPropertyExpression RRange
-               | DataDomain DataPropertyExpression RDomain
-               | DataRange DataPropertyExpression RRange
-               | FuncRole (RoleType, ObjectPropertyExpression)
-               | FuncDataProp DataPropertyExpression
-               | RefRole (RoleType, ObjectPropertyExpression)
-               | Conceptmembership IndividualID Description
-                 deriving (Show,Eq,Ord)
+data SignAxiom =
+    Subconcept Description Description   -- subclass, superclass
+  | Role (DomainOrRangeOrFunc (RoleKind, RoleType)) ObjectPropertyExpression
+  | Data (DomainOrRangeOrFunc ()) DataPropertyExpression
+  | Conceptmembership IndividualID Description
+    deriving (Show, Eq, Ord)
+
+data RoleKind = FuncRole | RefRole  deriving (Show, Eq, Ord)
 
 data RoleType = IRole | DRole deriving (Show, Eq, Ord)
 
-data RDomain = RDomain Description
-             | DDomain Description
-                 deriving (Show,Eq,Ord)
+data DesKind = RDomain | DDomain | RIRange deriving (Show, Eq, Ord)
 
-data RRange = RIRange Description
-            | RDRange DataRange
-              deriving (Show,Eq,Ord)
+data DomainOrRangeOrFunc a =
+    DomainOrRange DesKind Description
+  | RDRange DataRange
+  | FuncProp a
+    deriving (Show, Eq, Ord)
 
 -- data RoleID = IVP IndividualvaluedPropertyID
 --             | DVP DatavaluedPropertyID
 --               deriving (Show,Eq,Ord)
 
-data Sentence = OWLAxiom Axiom
-              | OWLFact Axiom
-                deriving (Show,Eq,Ord)
+data Sentence =
+    OWLAxiom Axiom
+  | OWLFact Axiom
+    deriving (Show,Eq,Ord)
 
 emptySign :: Sign
 emptySign =  Sign { ontologyID = nullQName,
