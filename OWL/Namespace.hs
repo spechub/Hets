@@ -182,267 +182,241 @@ instance PNamespace Annotation where
                Annotation (renameNamespace tMap annoUri)
                              (renameNamespace tMap entity)
 
-
 instance PNamespace Axiom where
+    propagateNspaces ns axiom = case axiom of
+        PlainAxiom annosList pa -> PlainAxiom
+            (map (propagateNspaces ns) annosList) $ propagateNspaces ns pa
+        EntityAnno entityAnnotation ->
+            EntityAnno (propagateNspaces ns entityAnnotation)
+    renameNamespace tMap axiom = case axiom of
+        PlainAxiom annosList pa -> PlainAxiom
+            (map (renameNamespace tMap) annosList) $ renameNamespace tMap pa
+        EntityAnno entityAnnotation ->
+               EntityAnno (renameNamespace tMap entityAnnotation)
+
+instance PNamespace PlainAxiom where
     propagateNspaces ns axiom =
         case axiom of
-           SubClassOf annosList sub sup ->
-               SubClassOf (map (propagateNspaces ns) annosList)
-                             (propagateNspaces ns sub)
+           SubClassOf sub sup ->
+               SubClassOf (propagateNspaces ns sub)
                              (propagateNspaces ns sup)
-           EquivalentClasses annosList descList ->
-               EquivalentClasses (map (propagateNspaces ns) annosList)
+           EquivalentClasses descList ->
+               EquivalentClasses
                                     (map (propagateNspaces ns) descList)
-           DisjointClasses annosList descList ->
-               DisjointClasses (map (propagateNspaces ns) annosList)
+           DisjointClasses descList ->
+               DisjointClasses
                                   (map (propagateNspaces ns) descList)
-           DisjointUnion annosList classUri descList ->
-               DisjointUnion (map (propagateNspaces ns) annosList)
+           DisjointUnion classUri descList ->
+               DisjointUnion
                                 (propagateNspaces ns classUri)
                                 (map (propagateNspaces ns) descList)
-           SubObjectPropertyOf annosList subExp objExp ->
-               SubObjectPropertyOf (map (propagateNspaces ns) annosList)
+           SubObjectPropertyOf subExp objExp ->
+               SubObjectPropertyOf
                                       (propagateNspaces ns subExp)
                                       (propagateNspaces ns objExp)
-           EquivalentObjectProperties annosList objExpList ->
+           EquivalentObjectProperties objExpList ->
                EquivalentObjectProperties
-                     (map (propagateNspaces ns) annosList)
                      (map (propagateNspaces ns) objExpList)
-           DisjointObjectProperties annosList objExpList ->
+           DisjointObjectProperties objExpList ->
                DisjointObjectProperties
-                     (map (propagateNspaces ns) annosList)
                      (map (propagateNspaces ns) objExpList)
-           ObjectPropertyDomain annosList objExp desc ->
-               ObjectPropertyDomain (map (propagateNspaces ns) annosList)
+           ObjectPropertyDomain objExp desc ->
+               ObjectPropertyDomain
                                        (propagateNspaces ns objExp)
                                        (propagateNspaces ns desc)
-           ObjectPropertyRange annosList objExp desc ->
-               ObjectPropertyRange (map (propagateNspaces ns) annosList)
+           ObjectPropertyRange objExp desc ->
+               ObjectPropertyRange
                                       (propagateNspaces ns objExp)
                                       (propagateNspaces ns desc)
-           InverseObjectProperties annosList objExp1 objExp2 ->
-               InverseObjectProperties (map (propagateNspaces ns) annosList)
+           InverseObjectProperties objExp1 objExp2 ->
+               InverseObjectProperties
                                           (propagateNspaces ns objExp1)
                                           (propagateNspaces ns objExp2)
-           FunctionalObjectProperty annosList objExp ->
+           FunctionalObjectProperty objExp ->
                FunctionalObjectProperty
-                  (map (propagateNspaces ns) annosList)
                   (propagateNspaces ns objExp)
-           InverseFunctionalObjectProperty annosList objExp ->
+           InverseFunctionalObjectProperty objExp ->
                InverseFunctionalObjectProperty
-                  (map (propagateNspaces ns) annosList)
                   (propagateNspaces ns objExp)
-           ReflexiveObjectProperty annosList objExp ->
+           ReflexiveObjectProperty objExp ->
                ReflexiveObjectProperty
-                  (map (propagateNspaces ns) annosList)
                   (propagateNspaces ns objExp)
-           IrreflexiveObjectProperty annosList objExp ->
+           IrreflexiveObjectProperty objExp ->
                IrreflexiveObjectProperty
-                  (map (propagateNspaces ns) annosList)
                   (propagateNspaces ns objExp)
-           SymmetricObjectProperty  annosList objExp ->
+           SymmetricObjectProperty  objExp ->
                SymmetricObjectProperty
-                  (map (propagateNspaces ns) annosList)
                   (propagateNspaces ns objExp)
-           AntisymmetricObjectProperty  annosList objExp ->
+           AntisymmetricObjectProperty  objExp ->
                AntisymmetricObjectProperty
-                  (map (propagateNspaces ns) annosList)
                   (propagateNspaces ns objExp)
-           TransitiveObjectProperty annosList objExp ->
+           TransitiveObjectProperty objExp ->
                TransitiveObjectProperty
-                  (map (propagateNspaces ns) annosList)
                   (propagateNspaces ns objExp)
-           SubDataPropertyOf annosList dpExp1 dpExp2 ->
-               SubDataPropertyOf (map (propagateNspaces ns) annosList)
+           SubDataPropertyOf dpExp1 dpExp2 ->
+               SubDataPropertyOf
                                     (propagateNspaces ns dpExp1)
                                     (propagateNspaces ns dpExp2)
-           EquivalentDataProperties annosList dpExpList ->
+           EquivalentDataProperties dpExpList ->
                EquivalentDataProperties
-                     (map (propagateNspaces ns) annosList)
                      (map (propagateNspaces ns) dpExpList)
-           DisjointDataProperties annosList  dpExpList ->
+           DisjointDataProperties  dpExpList ->
                DisjointDataProperties
-                     (map (propagateNspaces ns) annosList)
                      (map (propagateNspaces ns) dpExpList)
-           DataPropertyDomain annosList dpExp desc ->
-               DataPropertyDomain (map (propagateNspaces ns) annosList)
+           DataPropertyDomain dpExp desc ->
+               DataPropertyDomain
                                      (propagateNspaces ns dpExp)
                                      (propagateNspaces ns desc)
-           DataPropertyRange annosList dpExp dataRange ->
-               DataPropertyRange (map (propagateNspaces ns) annosList)
+           DataPropertyRange dpExp dataRange ->
+               DataPropertyRange
                                      (propagateNspaces ns dpExp)
                                      (propagateNspaces ns dataRange)
-           FunctionalDataProperty annosList dpExp ->
-               FunctionalDataProperty (map (propagateNspaces ns) annosList)
+           FunctionalDataProperty dpExp ->
+               FunctionalDataProperty
                                          (propagateNspaces ns dpExp)
-           SameIndividual annosList indUriList ->
-               SameIndividual (map (propagateNspaces ns) annosList)
+           SameIndividual indUriList ->
+               SameIndividual
                                  (map (propagateNspaces ns) indUriList)
-           DifferentIndividuals annosList indUriList ->
-               DifferentIndividuals  (map (propagateNspaces ns) annosList)
+           DifferentIndividuals indUriList ->
+               DifferentIndividuals
                                         (map (propagateNspaces ns) indUriList)
-           ClassAssertion annosList indUri desc ->
-               ClassAssertion (map (propagateNspaces ns) annosList)
+           ClassAssertion indUri desc ->
+               ClassAssertion
                                  (propagateNspaces ns indUri)
                                  (propagateNspaces ns desc)
-           ObjectPropertyAssertion annosList objExp source target ->
-              ObjectPropertyAssertion (map (propagateNspaces ns) annosList)
+           ObjectPropertyAssertion objExp source target ->
+              ObjectPropertyAssertion
                                          (propagateNspaces ns objExp)
                                          (propagateNspaces ns source)
                                          (propagateNspaces ns target)
-           NegativeObjectPropertyAssertion annosList objExp source target ->
+           NegativeObjectPropertyAssertion objExp source target ->
               NegativeObjectPropertyAssertion
-                    (map (propagateNspaces ns) annosList)
                     (propagateNspaces ns objExp)
                     (propagateNspaces ns source)
                     (propagateNspaces ns target)
-           DataPropertyAssertion annosList dpExp source target ->
+           DataPropertyAssertion dpExp source target ->
                DataPropertyAssertion
-                 (map (propagateNspaces ns) annosList)
                  (propagateNspaces ns dpExp)
                  (propagateNspaces ns source)
                  (propagateNspaces ns target)
-           NegativeDataPropertyAssertion annosList dpExp source target ->
+           NegativeDataPropertyAssertion dpExp source target ->
                NegativeDataPropertyAssertion
-                 (map (propagateNspaces ns) annosList)
                  (propagateNspaces ns dpExp)
                  (propagateNspaces ns source)
                  (propagateNspaces ns target)
-           Declaration annosList entity ->
-               Declaration (map (propagateNspaces ns) annosList)
+           Declaration entity ->
+               Declaration
                               (propagateNspaces ns entity)
-           EntityAnno entityAnnotation  ->
-               EntityAnno (propagateNspaces ns entityAnnotation)
     renameNamespace tMap axiom =
         case axiom of
-           SubClassOf annosList sub sup ->
-               SubClassOf (map (renameNamespace tMap) annosList)
+           SubClassOf sub sup -> SubClassOf
                              (renameNamespace tMap sub)
                              (renameNamespace tMap sup)
-           EquivalentClasses annosList descList ->
-               EquivalentClasses (map (renameNamespace tMap) annosList)
+           EquivalentClasses descList ->
+               EquivalentClasses
                                     (map (renameNamespace tMap) descList)
-           DisjointClasses annosList descList ->
-               DisjointClasses (map (renameNamespace tMap) annosList)
+           DisjointClasses descList -> DisjointClasses
                                   (map (renameNamespace tMap) descList)
-           DisjointUnion annosList classUri descList ->
-               DisjointUnion (map (renameNamespace tMap) annosList)
+           DisjointUnion classUri descList -> DisjointUnion
                                 (renameNamespace tMap classUri)
                                 (map (renameNamespace tMap) descList)
-           SubObjectPropertyOf annosList subExp objExp ->
-               SubObjectPropertyOf (map (renameNamespace tMap) annosList)
+           SubObjectPropertyOf subExp objExp ->
+               SubObjectPropertyOf
                                       (renameNamespace tMap subExp)
                                       (renameNamespace tMap objExp)
-           EquivalentObjectProperties annosList objExpList ->
+           EquivalentObjectProperties objExpList ->
                EquivalentObjectProperties
-                     (map (renameNamespace tMap) annosList)
                      (map (renameNamespace tMap) objExpList)
-           DisjointObjectProperties annosList objExpList ->
+           DisjointObjectProperties objExpList ->
                DisjointObjectProperties
-                     (map (renameNamespace tMap) annosList)
                      (map (renameNamespace tMap) objExpList)
-           ObjectPropertyDomain annosList objExp desc ->
-               ObjectPropertyDomain (map (renameNamespace tMap) annosList)
+           ObjectPropertyDomain objExp desc ->
+               ObjectPropertyDomain
                                        (renameNamespace tMap objExp)
                                        (renameNamespace tMap desc)
-           ObjectPropertyRange annosList objExp desc ->
-               ObjectPropertyRange (map (renameNamespace tMap) annosList)
+           ObjectPropertyRange objExp desc ->
+               ObjectPropertyRange
                                       (renameNamespace tMap objExp)
                                       (renameNamespace tMap desc)
-           InverseObjectProperties annosList objExp1 objExp2 ->
+           InverseObjectProperties objExp1 objExp2 ->
                InverseObjectProperties
-                     (map (renameNamespace tMap) annosList)
                      (renameNamespace tMap objExp1)
                      (renameNamespace tMap objExp2)
-           FunctionalObjectProperty annosList objExp ->
+           FunctionalObjectProperty objExp ->
                FunctionalObjectProperty
-                  (map (renameNamespace tMap) annosList)
                   (renameNamespace tMap objExp)
-           InverseFunctionalObjectProperty annosList objExp ->
+           InverseFunctionalObjectProperty objExp ->
                InverseFunctionalObjectProperty
-                  (map (renameNamespace tMap) annosList)
                   (renameNamespace tMap objExp)
-           ReflexiveObjectProperty annosList objExp ->
+           ReflexiveObjectProperty objExp ->
                ReflexiveObjectProperty
-                  (map (renameNamespace tMap) annosList)
                   (renameNamespace tMap objExp)
-           IrreflexiveObjectProperty annosList objExp ->
+           IrreflexiveObjectProperty objExp ->
                IrreflexiveObjectProperty
-                  (map (renameNamespace tMap) annosList)
                   (renameNamespace tMap objExp)
-           SymmetricObjectProperty  annosList objExp ->
+           SymmetricObjectProperty  objExp ->
                SymmetricObjectProperty
-                  (map (renameNamespace tMap) annosList)
                   (renameNamespace tMap objExp)
-           AntisymmetricObjectProperty  annosList objExp ->
+           AntisymmetricObjectProperty  objExp ->
                AntisymmetricObjectProperty
-                  (map (renameNamespace tMap) annosList)
                   (renameNamespace tMap objExp)
-           TransitiveObjectProperty annosList objExp ->
+           TransitiveObjectProperty objExp ->
                TransitiveObjectProperty
-                  (map (renameNamespace tMap) annosList)
                   (renameNamespace tMap objExp)
-           SubDataPropertyOf annosList dpExp1 dpExp2 ->
-               SubDataPropertyOf (map (renameNamespace tMap) annosList)
+           SubDataPropertyOf dpExp1 dpExp2 ->
+               SubDataPropertyOf
                                     (renameNamespace tMap dpExp1)
                                     (renameNamespace tMap dpExp2)
-           EquivalentDataProperties annosList dpExpList ->
+           EquivalentDataProperties dpExpList ->
                EquivalentDataProperties
-                     (map (renameNamespace tMap) annosList)
                      (map (renameNamespace tMap) dpExpList)
-           DisjointDataProperties annosList  dpExpList ->
+           DisjointDataProperties  dpExpList ->
                DisjointDataProperties
-                     (map (renameNamespace tMap) annosList)
                      (map (renameNamespace tMap) dpExpList)
-           DataPropertyDomain annosList dpExp desc ->
-               DataPropertyDomain (map (renameNamespace tMap) annosList)
+           DataPropertyDomain dpExp desc ->
+               DataPropertyDomain
                                      (renameNamespace tMap dpExp)
                                      (renameNamespace tMap desc)
-           DataPropertyRange annosList dpExp dataRange ->
-               DataPropertyRange (map (renameNamespace tMap) annosList)
+           DataPropertyRange dpExp dataRange ->
+               DataPropertyRange
                                      (renameNamespace tMap dpExp)
                                      (renameNamespace tMap dataRange)
-           FunctionalDataProperty annosList dpExp ->
-               FunctionalDataProperty (map (renameNamespace tMap) annosList)
+           FunctionalDataProperty dpExp ->
+               FunctionalDataProperty
                                          (renameNamespace tMap dpExp)
-           SameIndividual annosList indUriList ->
-               SameIndividual (map (renameNamespace tMap) annosList)
+           SameIndividual indUriList ->
+               SameIndividual
                                  (map (renameNamespace tMap) indUriList)
-           DifferentIndividuals annosList indUriList ->
-               DifferentIndividuals  (map (renameNamespace tMap) annosList)
+           DifferentIndividuals indUriList ->
+               DifferentIndividuals
                                         (map (renameNamespace tMap) indUriList)
-           ClassAssertion annosList indUri desc ->
-               ClassAssertion (map (renameNamespace tMap) annosList)
+           ClassAssertion indUri desc ->
+               ClassAssertion
                                  (renameNamespace tMap indUri)
                                  (renameNamespace tMap desc)
-           ObjectPropertyAssertion annosList objExp source target ->
-              ObjectPropertyAssertion (map (renameNamespace tMap) annosList)
+           ObjectPropertyAssertion objExp source target ->
+              ObjectPropertyAssertion
                                          (renameNamespace tMap objExp)
                                          (renameNamespace tMap source)
                                          (renameNamespace tMap target)
-           NegativeObjectPropertyAssertion annosList objExp source target ->
+           NegativeObjectPropertyAssertion objExp source target ->
               NegativeObjectPropertyAssertion
-                    (map (renameNamespace tMap) annosList)
                     (renameNamespace tMap objExp)
                     (renameNamespace tMap source)
                     (renameNamespace tMap target)
-           DataPropertyAssertion annosList dpExp source target ->
+           DataPropertyAssertion dpExp source target ->
                DataPropertyAssertion
-                 (map (renameNamespace tMap) annosList)
                  (renameNamespace tMap dpExp)
                  (renameNamespace tMap source)
                  (renameNamespace tMap target)
-           NegativeDataPropertyAssertion annosList dpExp source target ->
+           NegativeDataPropertyAssertion dpExp source target ->
                NegativeDataPropertyAssertion
-                 (map (renameNamespace tMap) annosList)
                  (renameNamespace tMap dpExp)
                  (renameNamespace tMap source)
                  (renameNamespace tMap target)
-           Declaration annosList entity ->
-               Declaration (map (renameNamespace tMap) annosList)
+           Declaration entity ->
+               Declaration
                               (renameNamespace tMap entity)
-           EntityAnno entityAnnotation  ->
-               EntityAnno (renameNamespace tMap entityAnnotation)
 
 instance PNamespace Entity where
   propagateNspaces ns (Entity ty euri) = Entity ty $ propagateNspaces ns euri

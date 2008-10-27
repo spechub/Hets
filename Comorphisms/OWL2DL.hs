@@ -130,26 +130,28 @@ toConcept des = let err = fail $ "OWL2DL.toConcept " ++ showDoc des "" in
 
 mapSenM :: Sentence -> Result DLBasicItem
 mapSenM sen = let err = fail $ "OWL2DL.mapSenM " ++ showDoc sen "" in
-  case getAxiom sen of
-  SubClassOf _as sub super -> case sub of
+ case getAxiom sen of
+ PlainAxiom _ paxiom -> case paxiom of
+  SubClassOf sub super -> case sub of
     OWLClass curi -> do
         c <- toConcept super
         return $ DLClass (qNameToId curi)
           [DLSubClassof [c] nullRange] Nothing nullRange
     _ -> err
-  EquivalentClasses _as (cl : cs) -> case cl of
+  EquivalentClasses (cl : cs) -> case cl of
     OWLClass curi -> do
         es <- mapM toConcept cs
         return $ DLClass (qNameToId curi)
           [DLEquivalentTo es nullRange] Nothing nullRange
     _ -> err
-  DisjointClasses _as (cl : cs) -> case cl of
+  DisjointClasses (cl : cs) -> case cl of
     OWLClass curi -> do
         es <- mapM toConcept cs
         return $ DLClass (qNameToId curi)
           [DLDisjointWith es nullRange] Nothing nullRange
     _ -> err
   _ -> err
+ _ -> err
 {-
   DisjointUnion _as OwlClassURI ds ->
   SubObjectPropertyOf _as subOpe ope ->

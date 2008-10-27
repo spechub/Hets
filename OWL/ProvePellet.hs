@@ -584,6 +584,6 @@ mkAssMap :: [Sentence]
 mkAssMap [] m = m
 mkAssMap (h:r) m =
     case h of
-      OWLFact (ClassAssertion _ indUri (OWLClass cUri)) ->
+      OWLFact (PlainAxiom _ (ClassAssertion indUri (OWLClass cUri))) ->
           mkAssMap r (Map.insert indUri cUri m)
       _ -> mkAssMap r m

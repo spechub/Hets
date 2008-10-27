@@ -260,6 +260,300 @@ instance ShATermConvertible Description where
         (att3, DataCardinality $ Cardinality ExactCardinality a' b' c') }}}
     u -> fromShATermError "Description" u
 
+instance ShATermConvertible Axiom where
+    toShATermAux att0 xv = case xv of
+      EntityAnno a -> do
+        (att1, a') <- toShATerm' att0 a
+        return $ addATerm (ShAAppl "EntityAnno" [a'] []) att1
+      PlainAxiom a f -> do
+         (att1, a') <- toShATerm' att0 a
+         toATC_Axiom a' att1 f
+    fromShATermAux ix att0 = case getShATerm ix att0 of
+      ShAAppl "EntityAnno" [a] _ ->
+        case fromShATerm' a att0 of { (att1, a') ->
+        (att1, EntityAnno a') }
+      _ -> fromATC_Axiom ix att0
+
+toATC_Axiom :: Int -> ATermTable -> PlainAxiom -> IO (ATermTable, Int)
+toATC_Axiom a' att1 xv = case xv of
+    SubClassOf b c -> do
+        (att2, b') <- toShATerm' att1 b
+        (att3, c') <- toShATerm' att2 c
+        return $ addATerm (ShAAppl "SubClassOf" [a',b',c'] []) att3
+    EquivalentClasses b -> do
+        (att2, b') <- toShATerm' att1 b
+        return $ addATerm (ShAAppl "EquivalentClasses" [a',b'] []) att2
+    DisjointClasses b -> do
+        (att2, b') <- toShATerm' att1 b
+        return $ addATerm (ShAAppl "DisjointClasses" [a',b'] []) att2
+    DisjointUnion b c -> do
+        (att2, b') <- toShATerm' att1 b
+        (att3, c') <- toShATerm' att2 c
+        return $ addATerm (ShAAppl "DisjointUnion" [a',b',c'] []) att3
+    SubObjectPropertyOf b c -> do
+        (att2, b') <- toShATerm' att1 b
+        (att3, c') <- toShATerm' att2 c
+        return $ addATerm (ShAAppl "SubObjectPropertyOf" [a',b',
+                                                          c'] []) att3
+    EquivalentObjectProperties b -> do
+        (att2, b') <- toShATerm' att1 b
+        return $ addATerm (ShAAppl "EquivalentObjectProperties" [a',
+                                                                 b'] []) att2
+    DisjointObjectProperties b -> do
+        (att2, b') <- toShATerm' att1 b
+        return $ addATerm (ShAAppl "DisjointObjectProperties" [a',
+                                                               b'] []) att2
+    ObjectPropertyDomain b c -> do
+        (att2, b') <- toShATerm' att1 b
+        (att3, c') <- toShATerm' att2 c
+        return $ addATerm (ShAAppl "ObjectPropertyDomain" [a',b',
+                                                           c'] []) att3
+    ObjectPropertyRange b c -> do
+        (att2, b') <- toShATerm' att1 b
+        (att3, c') <- toShATerm' att2 c
+        return $ addATerm (ShAAppl "ObjectPropertyRange" [a',b',
+                                                          c'] []) att3
+    InverseObjectProperties b c -> do
+        (att2, b') <- toShATerm' att1 b
+        (att3, c') <- toShATerm' att2 c
+        return $ addATerm (ShAAppl "InverseObjectProperties" [a',b',
+                                                              c'] []) att3
+    FunctionalObjectProperty b -> do
+        (att2, b') <- toShATerm' att1 b
+        return $ addATerm (ShAAppl "FunctionalObjectProperty" [a',
+                                                               b'] []) att2
+    InverseFunctionalObjectProperty b -> do
+        (att2, b') <- toShATerm' att1 b
+        return $ addATerm (ShAAppl "InverseFunctionalObjectProperty" [a',
+                                                                      b'] []) att2
+    ReflexiveObjectProperty b -> do
+        (att2, b') <- toShATerm' att1 b
+        return $ addATerm (ShAAppl "ReflexiveObjectProperty" [a',
+                                                              b'] []) att2
+    IrreflexiveObjectProperty b -> do
+        (att2, b') <- toShATerm' att1 b
+        return $ addATerm (ShAAppl "IrreflexiveObjectProperty" [a',
+                                                                b'] []) att2
+    SymmetricObjectProperty b -> do
+        (att2, b') <- toShATerm' att1 b
+        return $ addATerm (ShAAppl "SymmetricObjectProperty" [a',
+                                                              b'] []) att2
+    AntisymmetricObjectProperty b -> do
+        (att2, b') <- toShATerm' att1 b
+        return $ addATerm (ShAAppl "AntisymmetricObjectProperty" [a',
+                                                                  b'] []) att2
+    TransitiveObjectProperty b -> do
+        (att2, b') <- toShATerm' att1 b
+        return $ addATerm (ShAAppl "TransitiveObjectProperty" [a',
+                                                               b'] []) att2
+    SubDataPropertyOf b c -> do
+        (att2, b') <- toShATerm' att1 b
+        (att3, c') <- toShATerm' att2 c
+        return $ addATerm (ShAAppl "SubDataPropertyOf" [a',b',c'] []) att3
+    EquivalentDataProperties b -> do
+        (att2, b') <- toShATerm' att1 b
+        return $ addATerm (ShAAppl "EquivalentDataProperties" [a',
+                                                               b'] []) att2
+    DisjointDataProperties b -> do
+        (att2, b') <- toShATerm' att1 b
+        return $ addATerm (ShAAppl "DisjointDataProperties" [a',
+                                                             b'] []) att2
+    DataPropertyDomain b c -> do
+        (att2, b') <- toShATerm' att1 b
+        (att3, c') <- toShATerm' att2 c
+        return $ addATerm (ShAAppl "DataPropertyDomain" [a',b',c'] []) att3
+    DataPropertyRange b c -> do
+        (att2, b') <- toShATerm' att1 b
+        (att3, c') <- toShATerm' att2 c
+        return $ addATerm (ShAAppl "DataPropertyRange" [a',b',c'] []) att3
+    FunctionalDataProperty b -> do
+        (att2, b') <- toShATerm' att1 b
+        return $ addATerm (ShAAppl "FunctionalDataProperty" [a',
+                                                             b'] []) att2
+    SameIndividual b -> do
+        (att2, b') <- toShATerm' att1 b
+        return $ addATerm (ShAAppl "SameIndividual" [a',b'] []) att2
+    DifferentIndividuals b -> do
+        (att2, b') <- toShATerm' att1 b
+        return $ addATerm (ShAAppl "DifferentIndividuals" [a',b'] []) att2
+    ClassAssertion b c -> do
+        (att2, b') <- toShATerm' att1 b
+        (att3, c') <- toShATerm' att2 c
+        return $ addATerm (ShAAppl "ClassAssertion" [a',b',c'] []) att3
+    ObjectPropertyAssertion b c d -> do
+        (att2, b') <- toShATerm' att1 b
+        (att3, c') <- toShATerm' att2 c
+        (att4, d') <- toShATerm' att3 d
+        return $ addATerm (ShAAppl "ObjectPropertyAssertion" [a',b',c',
+                                                              d'] []) att4
+    NegativeObjectPropertyAssertion b c d -> do
+        (att2, b') <- toShATerm' att1 b
+        (att3, c') <- toShATerm' att2 c
+        (att4, d') <- toShATerm' att3 d
+        return $ addATerm (ShAAppl "NegativeObjectPropertyAssertion" [a',b'
+                                                                      ,c',d'] []) att4
+    DataPropertyAssertion b c d -> do
+        (att2, b') <- toShATerm' att1 b
+        (att3, c') <- toShATerm' att2 c
+        (att4, d') <- toShATerm' att3 d
+        return $ addATerm (ShAAppl "DataPropertyAssertion" [a',b',c',
+                                                            d'] []) att4
+    NegativeDataPropertyAssertion b c d -> do
+        (att2, b') <- toShATerm' att1 b
+        (att3, c') <- toShATerm' att2 c
+        (att4, d') <- toShATerm' att3 d
+        return $ addATerm (ShAAppl "NegativeDataPropertyAssertion" [a',b',
+                                                                    c',d'] []) att4
+    Declaration b -> do
+        (att2, b') <- toShATerm' att1 b
+        return $ addATerm (ShAAppl "Declaration" [a',b'] []) att2
+
+fromATC_Axiom :: Int -> ATermTable -> (ATermTable, Axiom)
+fromATC_Axiom ix att0 = case getShATerm ix att0 of
+    ShAAppl "SubClassOf" [a,b,c] _ ->
+        case fromShATerm' a att0 of { (att1, a') ->
+        case fromShATerm' b att1 of { (att2, b') ->
+        case fromShATerm' c att2 of { (att3, c') ->
+        (att3, PlainAxiom a' $ SubClassOf b' c') }}}
+    ShAAppl "EquivalentClasses" [a,b] _ ->
+        case fromShATerm' a att0 of { (att1, a') ->
+        case fromShATerm' b att1 of { (att2, b') ->
+        (att2, PlainAxiom a' $ EquivalentClasses b') }}
+    ShAAppl "DisjointClasses" [a,b] _ ->
+        case fromShATerm' a att0 of { (att1, a') ->
+        case fromShATerm' b att1 of { (att2, b') ->
+        (att2, PlainAxiom a' $ DisjointClasses b') }}
+    ShAAppl "DisjointUnion" [a,b,c] _ ->
+        case fromShATerm' a att0 of { (att1, a') ->
+        case fromShATerm' b att1 of { (att2, b') ->
+        case fromShATerm' c att2 of { (att3, c') ->
+        (att3, PlainAxiom a' $ DisjointUnion b' c') }}}
+    ShAAppl "SubObjectPropertyOf" [a,b,c] _ ->
+        case fromShATerm' a att0 of { (att1, a') ->
+        case fromShATerm' b att1 of { (att2, b') ->
+        case fromShATerm' c att2 of { (att3, c') ->
+        (att3, PlainAxiom a' $ SubObjectPropertyOf b' c') }}}
+    ShAAppl "EquivalentObjectProperties" [a,b] _ ->
+        case fromShATerm' a att0 of { (att1, a') ->
+        case fromShATerm' b att1 of { (att2, b') ->
+        (att2, PlainAxiom a' $ EquivalentObjectProperties b') }}
+    ShAAppl "DisjointObjectProperties" [a,b] _ ->
+        case fromShATerm' a att0 of { (att1, a') ->
+        case fromShATerm' b att1 of { (att2, b') ->
+        (att2, PlainAxiom a' $ DisjointObjectProperties b') }}
+    ShAAppl "ObjectPropertyDomain" [a,b,c] _ ->
+        case fromShATerm' a att0 of { (att1, a') ->
+        case fromShATerm' b att1 of { (att2, b') ->
+        case fromShATerm' c att2 of { (att3, c') ->
+        (att3, PlainAxiom a' $ ObjectPropertyDomain b' c') }}}
+    ShAAppl "ObjectPropertyRange" [a,b,c] _ ->
+        case fromShATerm' a att0 of { (att1, a') ->
+        case fromShATerm' b att1 of { (att2, b') ->
+        case fromShATerm' c att2 of { (att3, c') ->
+        (att3, PlainAxiom a' $ ObjectPropertyRange b' c') }}}
+    ShAAppl "InverseObjectProperties" [a,b,c] _ ->
+        case fromShATerm' a att0 of { (att1, a') ->
+        case fromShATerm' b att1 of { (att2, b') ->
+        case fromShATerm' c att2 of { (att3, c') ->
+        (att3, PlainAxiom a' $ InverseObjectProperties b' c') }}}
+    ShAAppl "FunctionalObjectProperty" [a,b] _ ->
+        case fromShATerm' a att0 of { (att1, a') ->
+        case fromShATerm' b att1 of { (att2, b') ->
+        (att2, PlainAxiom a' $ FunctionalObjectProperty b') }}
+    ShAAppl "InverseFunctionalObjectProperty" [a,b] _ ->
+        case fromShATerm' a att0 of { (att1, a') ->
+        case fromShATerm' b att1 of { (att2, b') ->
+        (att2, PlainAxiom a' $ InverseFunctionalObjectProperty b') }}
+    ShAAppl "ReflexiveObjectProperty" [a,b] _ ->
+        case fromShATerm' a att0 of { (att1, a') ->
+        case fromShATerm' b att1 of { (att2, b') ->
+        (att2, PlainAxiom a' $ ReflexiveObjectProperty b') }}
+    ShAAppl "IrreflexiveObjectProperty" [a,b] _ ->
+        case fromShATerm' a att0 of { (att1, a') ->
+        case fromShATerm' b att1 of { (att2, b') ->
+        (att2, PlainAxiom a' $ IrreflexiveObjectProperty b') }}
+    ShAAppl "SymmetricObjectProperty" [a,b] _ ->
+        case fromShATerm' a att0 of { (att1, a') ->
+        case fromShATerm' b att1 of { (att2, b') ->
+        (att2, PlainAxiom a' $ SymmetricObjectProperty b') }}
+    ShAAppl "AntisymmetricObjectProperty" [a,b] _ ->
+        case fromShATerm' a att0 of { (att1, a') ->
+        case fromShATerm' b att1 of { (att2, b') ->
+        (att2, PlainAxiom a' $ AntisymmetricObjectProperty b') }}
+    ShAAppl "TransitiveObjectProperty" [a,b] _ ->
+        case fromShATerm' a att0 of { (att1, a') ->
+        case fromShATerm' b att1 of { (att2, b') ->
+        (att2, PlainAxiom a' $ TransitiveObjectProperty b') }}
+    ShAAppl "SubDataPropertyOf" [a,b,c] _ ->
+        case fromShATerm' a att0 of { (att1, a') ->
+        case fromShATerm' b att1 of { (att2, b') ->
+        case fromShATerm' c att2 of { (att3, c') ->
+        (att3, PlainAxiom a' $ SubDataPropertyOf b' c') }}}
+    ShAAppl "EquivalentDataProperties" [a,b] _ ->
+        case fromShATerm' a att0 of { (att1, a') ->
+        case fromShATerm' b att1 of { (att2, b') ->
+        (att2, PlainAxiom a' $ EquivalentDataProperties b') }}
+    ShAAppl "DisjointDataProperties" [a,b] _ ->
+        case fromShATerm' a att0 of { (att1, a') ->
+        case fromShATerm' b att1 of { (att2, b') ->
+        (att2, PlainAxiom a' $ DisjointDataProperties b') }}
+    ShAAppl "DataPropertyDomain" [a,b,c] _ ->
+        case fromShATerm' a att0 of { (att1, a') ->
+        case fromShATerm' b att1 of { (att2, b') ->
+        case fromShATerm' c att2 of { (att3, c') ->
+        (att3, PlainAxiom a' $ DataPropertyDomain b' c') }}}
+    ShAAppl "DataPropertyRange" [a,b,c] _ ->
+        case fromShATerm' a att0 of { (att1, a') ->
+        case fromShATerm' b att1 of { (att2, b') ->
+        case fromShATerm' c att2 of { (att3, c') ->
+        (att3, PlainAxiom a' $ DataPropertyRange b' c') }}}
+    ShAAppl "FunctionalDataProperty" [a,b] _ ->
+        case fromShATerm' a att0 of { (att1, a') ->
+        case fromShATerm' b att1 of { (att2, b') ->
+        (att2, PlainAxiom a' $ FunctionalDataProperty b') }}
+    ShAAppl "SameIndividual" [a,b] _ ->
+        case fromShATerm' a att0 of { (att1, a') ->
+        case fromShATerm' b att1 of { (att2, b') ->
+        (att2, PlainAxiom a' $ SameIndividual b') }}
+    ShAAppl "DifferentIndividuals" [a,b] _ ->
+        case fromShATerm' a att0 of { (att1, a') ->
+        case fromShATerm' b att1 of { (att2, b') ->
+        (att2, PlainAxiom a' $ DifferentIndividuals b') }}
+    ShAAppl "ClassAssertion" [a,b,c] _ ->
+        case fromShATerm' a att0 of { (att1, a') ->
+        case fromShATerm' b att1 of { (att2, b') ->
+        case fromShATerm' c att2 of { (att3, c') ->
+        (att3, PlainAxiom a' $ ClassAssertion b' c') }}}
+    ShAAppl "ObjectPropertyAssertion" [a,b,c,d] _ ->
+        case fromShATerm' a att0 of { (att1, a') ->
+        case fromShATerm' b att1 of { (att2, b') ->
+        case fromShATerm' c att2 of { (att3, c') ->
+        case fromShATerm' d att3 of { (att4, d') ->
+        (att4, PlainAxiom a' $ ObjectPropertyAssertion b' c' d') }}}}
+    ShAAppl "NegativeObjectPropertyAssertion" [a,b,c,d] _ ->
+        case fromShATerm' a att0 of { (att1, a') ->
+        case fromShATerm' b att1 of { (att2, b') ->
+        case fromShATerm' c att2 of { (att3, c') ->
+        case fromShATerm' d att3 of { (att4, d') ->
+        (att4, PlainAxiom a' $ NegativeObjectPropertyAssertion b' c' d') }}}}
+    ShAAppl "DataPropertyAssertion" [a,b,c,d] _ ->
+        case fromShATerm' a att0 of { (att1, a') ->
+        case fromShATerm' b att1 of { (att2, b') ->
+        case fromShATerm' c att2 of { (att3, c') ->
+        case fromShATerm' d att3 of { (att4, d') ->
+        (att4, PlainAxiom a' $ DataPropertyAssertion b' c' d') }}}}
+    ShAAppl "NegativeDataPropertyAssertion" [a,b,c,d] _ ->
+        case fromShATerm' a att0 of { (att1, a') ->
+        case fromShATerm' b att1 of { (att2, b') ->
+        case fromShATerm' c att2 of { (att3, c') ->
+        case fromShATerm' d att3 of { (att4, d') ->
+        (att4, PlainAxiom a' $ NegativeDataPropertyAssertion b' c' d') }}}}
+    ShAAppl "Declaration" [a,b] _ ->
+        case fromShATerm' a att0 of { (att1, a') ->
+        case fromShATerm' b att1 of { (att2, b') ->
+        (att2, PlainAxiom a' $ Declaration b') }}
+    u -> fromShATermError "Axiom" u
+
 {-! for QName derive : Typeable!-}
 {-! for OntologyFile derive : Typeable!-}
 {-! for Ontology derive : Typeable !-}
@@ -281,4 +575,3 @@ instance ShATermConvertible Description where
 {-! for DataRange derive : ShATermConvertible !-}
 {-! for EntityAnnotation derive : ShATermConvertible !-}
 {-! for SubObjectPropertyExpression derive : ShATermConvertible !-}
-{-! for Axiom derive : ShATermConvertible !-}

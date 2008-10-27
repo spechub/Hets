@@ -183,43 +183,47 @@ type TargetIndividualURI = IndividualURI
 type TargetValue = Constant
 
 data Axiom = -- Annotations can be ignored
-    SubClassOf [Annotation] SubClass SuperClass
-  | EquivalentClasses [Annotation] [Description] -- min. 2 desc.
-  | DisjointClasses [Annotation] [Description] -- min. 2 desc.
-  | DisjointUnion [Annotation] OwlClassURI [Description] -- min. 2 desc.
-  | SubObjectPropertyOf [Annotation] SubObjectPropertyExpression ObjectPropertyExpression
-  | EquivalentObjectProperties [Annotation] [ObjectPropertyExpression]
-                                  -- min. 2  ObjectPropertyExpression
-  | DisjointObjectProperties [Annotation] [ObjectPropertyExpression]
-                                  -- min. 2  ObjectPropertyExpression
-  | ObjectPropertyDomain [Annotation] ObjectPropertyExpression Description
-  | ObjectPropertyRange [Annotation] ObjectPropertyExpression Description
-  | InverseObjectProperties [Annotation] ObjectPropertyExpression ObjectPropertyExpression
-  | FunctionalObjectProperty [Annotation] ObjectPropertyExpression
-  | InverseFunctionalObjectProperty [Annotation] ObjectPropertyExpression
-  | ReflexiveObjectProperty [Annotation] ObjectPropertyExpression
-  | IrreflexiveObjectProperty [Annotation] ObjectPropertyExpression
-  | SymmetricObjectProperty [Annotation] ObjectPropertyExpression
-  | AntisymmetricObjectProperty [Annotation] ObjectPropertyExpression
-  | TransitiveObjectProperty [Annotation] ObjectPropertyExpression
-  | SubDataPropertyOf [Annotation] DataPropertyExpression DataPropertyExpression
-  | EquivalentDataProperties [Annotation] [DataPropertyExpression]
-                                  -- min. 2 DataPropertyExpressions
-  | DisjointDataProperties [Annotation] [DataPropertyExpression]
-                                  -- min. 2 DataPropertyExpressions
-  | DataPropertyDomain [Annotation] DataPropertyExpression Description
-  | DataPropertyRange [Annotation] DataPropertyExpression DataRange
-  | FunctionalDataProperty [Annotation] DataPropertyExpression
-           -- Fact
-  | SameIndividual [Annotation] [IndividualURI]  -- min. 2 ind.
-  | DifferentIndividuals [Annotation] [IndividualURI]  -- min. 2 ind.
-  | ClassAssertion [Annotation] IndividualURI Description
-  | ObjectPropertyAssertion [Annotation] ObjectPropertyExpression SourceIndividualURI TargetIndividualURI
-  | NegativeObjectPropertyAssertion [Annotation] ObjectPropertyExpression SourceIndividualURI TargetIndividualURI
-  | DataPropertyAssertion [Annotation] DataPropertyExpression SourceIndividualURI TargetValue
-  | NegativeDataPropertyAssertion [Annotation] DataPropertyExpression SourceIndividualURI TargetValue
-  | Declaration [Annotation] Entity
+    PlainAxiom [Annotation] PlainAxiom
   | EntityAnno EntityAnnotation
+    deriving (Show, Eq, Ord)
+
+data PlainAxiom =
+    SubClassOf SubClass SuperClass
+  | EquivalentClasses [Description] -- min. 2 desc.
+  | DisjointClasses [Description] -- min. 2 desc.
+  | DisjointUnion OwlClassURI [Description] -- min. 2 desc.
+  | SubObjectPropertyOf SubObjectPropertyExpression ObjectPropertyExpression
+  | EquivalentObjectProperties [ObjectPropertyExpression]
+                                  -- min. 2  ObjectPropertyExpression
+  | DisjointObjectProperties [ObjectPropertyExpression]
+                                  -- min. 2  ObjectPropertyExpression
+  | ObjectPropertyDomain ObjectPropertyExpression Description
+  | ObjectPropertyRange ObjectPropertyExpression Description
+  | InverseObjectProperties ObjectPropertyExpression ObjectPropertyExpression
+  | FunctionalObjectProperty ObjectPropertyExpression
+  | InverseFunctionalObjectProperty ObjectPropertyExpression
+  | ReflexiveObjectProperty ObjectPropertyExpression
+  | IrreflexiveObjectProperty ObjectPropertyExpression
+  | SymmetricObjectProperty ObjectPropertyExpression
+  | AntisymmetricObjectProperty ObjectPropertyExpression
+  | TransitiveObjectProperty ObjectPropertyExpression
+  | SubDataPropertyOf DataPropertyExpression DataPropertyExpression
+  | EquivalentDataProperties [DataPropertyExpression]
+                                  -- min. 2 DataPropertyExpressions
+  | DisjointDataProperties [DataPropertyExpression]
+                                  -- min. 2 DataPropertyExpressions
+  | DataPropertyDomain DataPropertyExpression Description
+  | DataPropertyRange DataPropertyExpression DataRange
+  | FunctionalDataProperty DataPropertyExpression
+           -- Fact
+  | SameIndividual [IndividualURI]  -- min. 2 ind.
+  | DifferentIndividuals [IndividualURI]  -- min. 2 ind.
+  | ClassAssertion IndividualURI Description
+  | ObjectPropertyAssertion ObjectPropertyExpression SourceIndividualURI TargetIndividualURI
+  | NegativeObjectPropertyAssertion ObjectPropertyExpression SourceIndividualURI TargetIndividualURI
+  | DataPropertyAssertion DataPropertyExpression SourceIndividualURI TargetValue
+  | NegativeDataPropertyAssertion DataPropertyExpression SourceIndividualURI TargetValue
+  | Declaration Entity
     deriving (Show, Eq, Ord)
 
 emptyOntologyFile :: OntologyFile

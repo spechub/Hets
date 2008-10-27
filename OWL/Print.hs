@@ -160,94 +160,95 @@ instance Pretty Axiom where
 
 printAxiom :: Axiom -> Doc
 printAxiom axiom = case axiom of
-   SubClassOf _ sub super ->
+  EntityAnno _ -> empty -- EntityAnnotation
+  PlainAxiom _ paxiom -> case paxiom of
+   SubClassOf sub super ->
        classStart <+> pretty sub $+$ (text "SubClassOf:") $+$
                    (pretty super)
-   EquivalentClasses _ (clazz:equiList) ->
-       classStart <+> pretty clazz $+$  (text "EquivalentTo:") $+$
+   EquivalentClasses (clazz:equiList) ->
+       classStart <+> pretty clazz $+$ (text "EquivalentTo:") $+$
                       (setToDocV $ Set.fromList equiList)
 
-   DisjointClasses _ (clazz:equiList) ->
-       classStart <+> pretty clazz $+$  (text "DisjointWith:") $+$
+   DisjointClasses (clazz:equiList) ->
+       classStart <+> pretty clazz $+$ (text "DisjointWith:") $+$
                    (setToDocV $ Set.fromList equiList)
-   DisjointUnion _ curi discList ->
-       classStart <+> pretty curi $+$  (text "DisjointUnionOf:") $+$
+   DisjointUnion curi discList ->
+       classStart <+> pretty curi $+$ (text "DisjointUnionOf:") $+$
                    (setToDocV $ Set.fromList discList)
    -- ObjectPropertyAxiom
-   SubObjectPropertyOf _ sopExp opExp ->
-       opStart <+> pretty sopExp $+$  (text "SubObjectPropertyOf:") $+$
+   SubObjectPropertyOf sopExp opExp ->
+       opStart <+> pretty sopExp $+$ (text "SubObjectPropertyOf:") $+$
                 (pretty opExp)
-   EquivalentObjectProperties _ (opExp:opList) ->
-       opStart <+> pretty opExp $+$  (text "EquivalentTo:") $+$
+   EquivalentObjectProperties (opExp:opList) ->
+       opStart <+> pretty opExp $+$ (text "EquivalentTo:") $+$
                    (setToDocV $ Set.fromList opList)
-   DisjointObjectProperties _ (opExp:opList) ->
-       opStart <+> pretty opExp $+$  (text "DisjointWith:") $+$
+   DisjointObjectProperties (opExp:opList) ->
+       opStart <+> pretty opExp $+$ (text "DisjointWith:") $+$
                    (setToDocV $ Set.fromList opList)
-   ObjectPropertyDomain _ opExp desc ->
-       opStart <+> pretty opExp $+$  (text "Domain:") $+$
+   ObjectPropertyDomain opExp desc ->
+       opStart <+> pretty opExp $+$ (text "Domain:") $+$
                    (pretty desc)
-   ObjectPropertyRange  _ opExp desc ->
-       opStart <+> pretty opExp $+$  (text "Range:") $+$
+   ObjectPropertyRange opExp desc ->
+       opStart <+> pretty opExp $+$ (text "Range:") $+$
                    (pretty desc)
-   InverseObjectProperties  _ opExp1 opExp2 ->
-       opStart <+> pretty opExp1 $+$  (text "Inverse:") $+$
+   InverseObjectProperties opExp1 opExp2 ->
+       opStart <+> pretty opExp1 $+$ (text "Inverse:") $+$
                    (pretty opExp2)
-   FunctionalObjectProperty _ opExp ->
-       opStart <+> pretty opExp $+$  (printCharact "Functinal")
-   InverseFunctionalObjectProperty _ opExp ->
-       opStart <+> pretty opExp $+$  (printCharact "Inverse_Functinal")
-   ReflexiveObjectProperty  _ opExp ->
-       opStart <+> pretty opExp $+$  (printCharact "Reflexive")
-   IrreflexiveObjectProperty  _ opExp ->
-       opStart <+> pretty opExp $+$  (printCharact "Irreflexive")
-   SymmetricObjectProperty  _ opExp ->
-       opStart <+> pretty opExp $+$  (printCharact "Symmetric")
-   AntisymmetricObjectProperty  _ opExp ->
-       opStart <+> pretty opExp $+$  (printCharact "AntiSymmetric")
-   TransitiveObjectProperty _ opExp ->
-       opStart <+> pretty opExp $+$  (printCharact "Transitive")
+   FunctionalObjectProperty opExp ->
+       opStart <+> pretty opExp $+$ (printCharact "Functinal")
+   InverseFunctionalObjectProperty opExp ->
+       opStart <+> pretty opExp $+$ (printCharact "Inverse_Functinal")
+   ReflexiveObjectProperty opExp ->
+       opStart <+> pretty opExp $+$ (printCharact "Reflexive")
+   IrreflexiveObjectProperty opExp ->
+       opStart <+> pretty opExp $+$ (printCharact "Irreflexive")
+   SymmetricObjectProperty opExp ->
+       opStart <+> pretty opExp $+$ (printCharact "Symmetric")
+   AntisymmetricObjectProperty opExp ->
+       opStart <+> pretty opExp $+$ (printCharact "AntiSymmetric")
+   TransitiveObjectProperty opExp ->
+       opStart <+> pretty opExp $+$ (printCharact "Transitive")
    -- DataPropertyAxiom
-   SubDataPropertyOf _ dpExp1 dpExp2 ->
-       dpStart <+> pretty dpExp1 $+$  (text "SubDataPropertyOf") $+$
+   SubDataPropertyOf dpExp1 dpExp2 ->
+       dpStart <+> pretty dpExp1 $+$ (text "SubDataPropertyOf") $+$
                 (pretty dpExp2)
-   EquivalentDataProperties  _ (dpExp:dpList) ->
-       opStart <+> pretty dpExp $+$  (text "EquivalentTo:") $+$
+   EquivalentDataProperties (dpExp:dpList) ->
+       opStart <+> pretty dpExp $+$ (text "EquivalentTo:") $+$
                 (setToDocV $ Set.fromList dpList)
-   DisjointDataProperties  _ (dpExp:dpList) ->
-       opStart <+> pretty dpExp $+$  (text "DisjointWith:") $+$
+   DisjointDataProperties (dpExp:dpList) ->
+       opStart <+> pretty dpExp $+$ (text "DisjointWith:") $+$
                    (setToDocV $ Set.fromList dpList)
-   DataPropertyDomain  _ dpExp desc ->
-       opStart <+> pretty dpExp $+$  (text "Domain:") $+$
+   DataPropertyDomain dpExp desc ->
+       opStart <+> pretty dpExp $+$ (text "Domain:") $+$
                    (pretty desc)
-   DataPropertyRange  _ dpExp desc ->
-       opStart <+> pretty dpExp $+$  (text "Range:") $+$
+   DataPropertyRange dpExp desc ->
+       opStart <+> pretty dpExp $+$ (text "Range:") $+$
                    (pretty desc)
-   FunctionalDataProperty _ dpExp ->
-       opStart <+> pretty dpExp $+$  (printCharact "Functinal")
+   FunctionalDataProperty dpExp ->
+       opStart <+> pretty dpExp $+$ (printCharact "Functinal")
    -- Fact
-   SameIndividual _ (ind:indList) ->
-       indStart <+> (pretty ind) $+$  (text "SameAs:") $+$
+   SameIndividual (ind:indList) ->
+       indStart <+> (pretty ind) $+$ (text "SameAs:") $+$
                  (setToDocV $ Set.fromList indList)
-   DifferentIndividuals _ (ind:indList) ->
-       indStart <+> (pretty ind) $+$  (text "DifferentFrom:") $+$
+   DifferentIndividuals (ind:indList) ->
+       indStart <+> (pretty ind) $+$ (text "DifferentFrom:") $+$
                  (setToDocV $ Set.fromList indList)
-   ClassAssertion _ ind desc ->
-       indStart <+> (pretty ind) $+$  (text "Types:") $+$
+   ClassAssertion ind desc ->
+       indStart <+> (pretty ind) $+$ (text "Types:") $+$
                  (pretty desc)
-   ObjectPropertyAssertion _ opExp source target ->
-       indStart <+> (pretty source) $+$  (pretty opExp) $+$
+   ObjectPropertyAssertion opExp source target ->
+       indStart <+> (pretty source) $+$ (pretty opExp) $+$
                  (pretty target)
-   NegativeObjectPropertyAssertion  _ opExp source target ->
-       indStart <+> (pretty source) $+$  (text "not" <+>
+   NegativeObjectPropertyAssertion opExp source target ->
+       indStart <+> (pretty source) $+$ (text "not" <+>
                                   parens (pretty opExp <+> pretty target))
-   DataPropertyAssertion  _ dpExp source target ->
-       indStart <+> (pretty source) $+$  (pretty dpExp) $+$
+   DataPropertyAssertion dpExp source target ->
+       indStart <+> (pretty source) $+$ (pretty dpExp) $+$
                  (pretty target)
-   NegativeDataPropertyAssertion  _ dpExp source target ->
-       indStart <+> (pretty source) $+$  (text "not" <+>
+   NegativeDataPropertyAssertion dpExp source target ->
+       indStart <+> (pretty source) $+$ (text "not" <+>
                                   parens (pretty dpExp <+> pretty target))
-   Declaration _ _ -> empty    -- [Annotation] Entity
-   EntityAnno _ -> empty -- EntityAnnotation
+   Declaration _ -> empty    -- [Annotation] Entity
    u -> error ("unknow axiom" ++ show u)
 
 classStart :: Doc
@@ -264,7 +265,7 @@ indStart = text "Individual:"
 
 printCharact :: String -> Doc
 printCharact charact =
-    text "Characteristics:" $+$  (text charact)
+    text "Characteristics:" $+$ (text charact)
 
 instance Pretty SubObjectPropertyExpression where
     pretty sopExp =

@@ -132,8 +132,13 @@ anaAxioms :: GlobalAnnos -> Sign -> Namespace -> OntologyFile -> [Axiom]
             -> Result (OntologyFile,Sign,[Named Sentence])
 anaAxioms _ _ _ _ [] = Result [] Nothing
 anaAxioms ga inSign ns ontologyF@(OntologyFile _ onto) (axiom:rest) =
-  case axiom of
-   SubClassOf anno sub super  ->
+ case axiom of
+  EntityAnno (EntityAnnotation _ entity _) ->  -- no idee
+       let accSign =  getDeclFromEntity entity inSign
+       in concatResult (Result [] (Just (ontologyF, accSign, [])))
+                   (anaAxioms ga accSign ns ontologyF rest)
+  PlainAxiom anno paxiom -> case paxiom of
+   SubClassOf sub super  ->
        let ax = axioms inSign
            c = (getClassFromDescription sub) ++
                 (getClassFromDescription super)
@@ -151,7 +156,7 @@ anaAxioms ga inSign ns ontologyF@(OntologyFile _ onto) (axiom:rest) =
               onto{axiomsList = axiomsList onto ++ [axiom]}},
               accSign, [namedSent])))
                 (anaAxioms ga accSign ns ontologyF rest)
-   EquivalentClasses anno descList ->
+   EquivalentClasses descList ->
      case head descList of
       OWLClass _ ->
        let clazz = head descList
@@ -171,10 +176,10 @@ anaAxioms ga inSign ns ontologyF@(OntologyFile _ onto) (axiom:rest) =
               onto{axiomsList = axiomsList onto ++ [axiom]}},
               accSign, [namedSent])))
                 (anaAxioms ga accSign ns ontologyF rest)
-      _ -> let reAnaAxiom = EquivalentClasses anno (tail descList
+      _ -> let reAnaAxiom = PlainAxiom anno $ EquivalentClasses (tail descList
                                                     ++ [head descList])
            in anaAxioms ga inSign ns ontologyF (reAnaAxiom:rest)
-   DisjointClasses anno descList ->
+   DisjointClasses descList ->
        let clazz = head descList
            equiv = tail descList
            c = foldl (++) [] $ map getClassFromDescription descList
@@ -192,7 +197,7 @@ anaAxioms ga inSign ns ontologyF@(OntologyFile _ onto) (axiom:rest) =
               onto{axiomsList = axiomsList onto ++ [axiom]}},
               accSign, [namedSent])))
               (anaAxioms ga accSign ns ontologyF rest)
-   DisjointUnion anno cid descList ->
+   DisjointUnion cid descList ->
        let c = cid:(foldl (++) [] $
                             map getClassFromDescription descList)
 
@@ -211,7 +216,7 @@ anaAxioms ga inSign ns ontologyF@(OntologyFile _ onto) (axiom:rest) =
               accSign, [namedSent])))
               (anaAxioms ga accSign ns ontologyF rest)
            -- ObjectPropertyAxiom
-   SubObjectPropertyOf anno subObjProp objProp ->
+   SubObjectPropertyOf subObjProp objProp ->
        let r = (getObjRoleFromExpression objProp):
                 (getObjRoleFromSubExpression subObjProp)
 
@@ -229,7 +234,7 @@ anaAxioms ga inSign ns ontologyF@(OntologyFile _ onto) (axiom:rest) =
               onto{axiomsList = axiomsList onto ++ [axiom]}},
               accSign, [namedSent])))
               (anaAxioms ga accSign ns ontologyF rest)
-   EquivalentObjectProperties anno objPropExps ->
+   EquivalentObjectProperties objPropExps ->
        let prop = head objPropExps
            equiv = tail objPropExps
 
@@ -249,7 +254,7 @@ anaAxioms ga inSign ns ontologyF@(OntologyFile _ onto) (axiom:rest) =
               onto{axiomsList = axiomsList onto ++ [axiom]}},
               accSign, [namedSent])))
               (anaAxioms ga accSign ns ontologyF rest)
-   DisjointObjectProperties anno objPropExps ->
+   DisjointObjectProperties objPropExps ->
        let prop = head objPropExps
            equiv = tail objPropExps
            r = map getObjRoleFromExpression objPropExps
@@ -267,7 +272,7 @@ anaAxioms ga inSign ns ontologyF@(OntologyFile _ onto) (axiom:rest) =
               onto{axiomsList = axiomsList onto ++ [axiom]}},
               accSign, [namedSent])))
               (anaAxioms ga accSign ns ontologyF rest)
-   ObjectPropertyDomain anno opExp desc ->
+   ObjectPropertyDomain opExp desc ->
        let roleDomain = Role (DomainOrRange RDomain desc) opExp
            ax = axioms inSign
            accSign = inSign {axioms =
@@ -281,7 +286,7 @@ anaAxioms ga inSign ns ontologyF@(OntologyFile _ onto) (axiom:rest) =
               onto{axiomsList = axiomsList onto ++ [axiom]}},
               accSign, [namedSent])))
               (anaAxioms ga accSign ns ontologyF rest)
-   ObjectPropertyRange anno opExp desc ->
+   ObjectPropertyRange opExp desc ->
        let roleRange = Role (DomainOrRange RIRange desc) opExp
            ax = axioms inSign
            accSign = inSign {axioms =
@@ -295,7 +300,7 @@ anaAxioms ga inSign ns ontologyF@(OntologyFile _ onto) (axiom:rest) =
               onto{axiomsList = axiomsList onto ++ [axiom]}},
               accSign, [namedSent])))
               (anaAxioms ga accSign ns ontologyF rest)
-   InverseObjectProperties anno opExp1 opExp2 ->
+   InverseObjectProperties opExp1 opExp2 ->
        let r = (getObjRoleFromExpression opExp1):
                 (getObjRoleFromExpression opExp2):[]
            accSign = inSign {indValuedRoles =
@@ -311,7 +316,7 @@ anaAxioms ga inSign ns ontologyF@(OntologyFile _ onto) (axiom:rest) =
               onto{axiomsList = axiomsList onto ++ [axiom]}},
               accSign, [namedSent])))
               (anaAxioms ga accSign ns ontologyF rest)
-   FunctionalObjectProperty anno opExp ->
+   FunctionalObjectProperty opExp ->
        let r = getObjRoleFromExpression opExp
            ax = axioms inSign
            fr = Role (FuncProp (FuncRole, IRole)) opExp
@@ -326,7 +331,7 @@ anaAxioms ga inSign ns ontologyF@(OntologyFile _ onto) (axiom:rest) =
               onto{axiomsList = axiomsList onto ++ [axiom]}},
               accSign, [namedSent])))
               (anaAxioms ga accSign ns ontologyF rest)
-   InverseFunctionalObjectProperty anno opExp ->
+   InverseFunctionalObjectProperty opExp ->
        let r = getObjRoleFromExpression opExp
            ax = axioms inSign
            fr = Role (FuncProp (FuncRole, IRole)) opExp
@@ -341,7 +346,7 @@ anaAxioms ga inSign ns ontologyF@(OntologyFile _ onto) (axiom:rest) =
               onto{axiomsList = axiomsList onto++ [axiom]}},
               accSign, [namedSent])))
               (anaAxioms ga accSign ns ontologyF rest)
-   ReflexiveObjectProperty anno opExp ->
+   ReflexiveObjectProperty opExp ->
        let r = getObjRoleFromExpression opExp
            ax = axioms inSign
            fr = Role (FuncProp (RefRole, IRole)) opExp
@@ -356,7 +361,7 @@ anaAxioms ga inSign ns ontologyF@(OntologyFile _ onto) (axiom:rest) =
               onto{axiomsList = axiomsList onto ++ [axiom]}},
               accSign, [namedSent])))
               (anaAxioms ga accSign ns ontologyF rest)
-   IrreflexiveObjectProperty anno opExp ->
+   IrreflexiveObjectProperty opExp ->
        let r = getObjRoleFromExpression opExp
            ax = axioms inSign
            fr = Role (FuncProp (RefRole, IRole)) opExp
@@ -372,7 +377,7 @@ anaAxioms ga inSign ns ontologyF@(OntologyFile _ onto) (axiom:rest) =
               onto{axiomsList = axiomsList onto ++ [axiom]}},
               accSign, [namedSent])))
               (anaAxioms ga accSign ns ontologyF rest)
-   SymmetricObjectProperty anno _ ->
+   SymmetricObjectProperty _ ->
        -- no idee
        let
            namedSent = findImplied anno
@@ -382,7 +387,7 @@ anaAxioms ga inSign ns ontologyF@(OntologyFile _ onto) (axiom:rest) =
               onto{axiomsList = axiomsList onto ++ [axiom]}},
               inSign, [namedSent])))
               (anaAxioms ga inSign ns ontologyF rest)
-   AntisymmetricObjectProperty anno _ ->
+   AntisymmetricObjectProperty _ ->
        -- no idee
        let
            namedSent = findImplied anno
@@ -392,7 +397,7 @@ anaAxioms ga inSign ns ontologyF@(OntologyFile _ onto) (axiom:rest) =
               onto{axiomsList = axiomsList onto ++ [axiom]}},
               inSign, [namedSent])))
               (anaAxioms ga inSign ns ontologyF rest)
-   TransitiveObjectProperty anno opExp ->
+   TransitiveObjectProperty opExp ->
        let r = getObjRoleFromExpression opExp
            ax = axioms inSign
            fr = Role (FuncProp (FuncRole, IRole)) opExp
@@ -409,7 +414,7 @@ anaAxioms ga inSign ns ontologyF@(OntologyFile _ onto) (axiom:rest) =
               accSign, [namedSent])))
               (anaAxioms ga accSign ns ontologyF rest)
      -- DataPropertyAxiom
-   SubDataPropertyOf anno dpExp1 dpExp2 ->
+   SubDataPropertyOf dpExp1 dpExp2 ->
        let r = dpExp1:dpExp2:[]
            accSign = inSign {dataValuedRoles =
                                  Set.union (Set.fromList r)
@@ -424,7 +429,7 @@ anaAxioms ga inSign ns ontologyF@(OntologyFile _ onto) (axiom:rest) =
               onto{axiomsList = axiomsList onto ++ [axiom]}},
               accSign, [namedSent])))
               (anaAxioms ga accSign ns ontologyF rest)
-   EquivalentDataProperties anno dpExpList ->
+   EquivalentDataProperties dpExpList ->
        let dpExp1 = head dpExpList
            dpExp2 = head $ tail dpExpList
            dpList = tail $ tail dpExpList
@@ -444,7 +449,7 @@ anaAxioms ga inSign ns ontologyF@(OntologyFile _ onto) (axiom:rest) =
               onto{axiomsList = axiomsList onto ++ [axiom]}},
               accSign, [namedSent])))
               (anaAxioms ga accSign ns ontologyF rest)
-   DisjointDataProperties anno dpExpList ->
+   DisjointDataProperties dpExpList ->
        let dpExp1 = head dpExpList
            dpExp2 = head $ tail dpExpList
            dpList = tail $ tail dpExpList
@@ -464,7 +469,7 @@ anaAxioms ga inSign ns ontologyF@(OntologyFile _ onto) (axiom:rest) =
               onto{axiomsList = axiomsList onto ++ [axiom]}},
               accSign, [namedSent])))
               (anaAxioms ga accSign ns ontologyF rest)
-   DataPropertyDomain anno dpExp desc ->
+   DataPropertyDomain dpExp desc ->
        let dataDomain = Data (DomainOrRange DDomain desc) dpExp
            ax = axioms inSign
            accSign = inSign {axioms =
@@ -477,7 +482,7 @@ anaAxioms ga inSign ns ontologyF@(OntologyFile _ onto) (axiom:rest) =
               onto{axiomsList = axiomsList onto ++ [axiom]}}
                                         , accSign, [namedSent])))
               (anaAxioms ga accSign ns ontologyF rest)
-   DataPropertyRange anno dpExp dr ->
+   DataPropertyRange dpExp dr ->
        let dataRange = Data (RDRange dr) dpExp
            ax = axioms inSign
            accSign = inSign {axioms =
@@ -490,7 +495,7 @@ anaAxioms ga inSign ns ontologyF@(OntologyFile _ onto) (axiom:rest) =
               onto{axiomsList = axiomsList onto ++ [axiom]}}
                                         , accSign, [namedSent])))
               (anaAxioms ga accSign ns ontologyF rest)
-   FunctionalDataProperty anno dpExp ->
+   FunctionalDataProperty dpExp ->
        let _isImp = isToProve anno
            fr = Data (FuncProp ()) dpExp
            accSign = inSign { dataValuedRoles = Set.insert dpExp
@@ -505,7 +510,7 @@ anaAxioms ga inSign ns ontologyF@(OntologyFile _ onto) (axiom:rest) =
               accSign, [namedSent])))
               (anaAxioms ga accSign ns ontologyF rest)
    -- Fact
-   SameIndividual anno indList ->
+   SameIndividual indList ->
        let ind1 = head indList
            iList = tail indList
            accSign = inSign { individuals =
@@ -522,7 +527,7 @@ anaAxioms ga inSign ns ontologyF@(OntologyFile _ onto) (axiom:rest) =
               onto{axiomsList = axiomsList onto ++ [axiom]}},
               accSign, [namedSent])))
               (anaAxioms ga accSign ns ontologyF rest)
-   DifferentIndividuals anno indList ->
+   DifferentIndividuals indList ->
        let ind1 = head indList
            iList = tail indList
            accSign = inSign { individuals = Set.union (Set.fromList indList)
@@ -537,7 +542,7 @@ anaAxioms ga inSign ns ontologyF@(OntologyFile _ onto) (axiom:rest) =
               onto{axiomsList = axiomsList onto ++ [axiom]}},
               accSign, [namedSent])))
               (anaAxioms ga accSign ns ontologyF rest)
-   ClassAssertion anno indUri _ ->         -- no idee
+   ClassAssertion indUri _ ->         -- no idee
        let
            accSign = inSign { individuals = Set.insert indUri
                                             (individuals inSign)}
@@ -548,7 +553,7 @@ anaAxioms ga inSign ns ontologyF@(OntologyFile _ onto) (axiom:rest) =
               onto{axiomsList = axiomsList onto ++ [axiom]}},
               accSign, [namedSent])))
               (anaAxioms ga accSign ns ontologyF rest)
-   ObjectPropertyAssertion anno _ sourceID targetID ->       -- no idee
+   ObjectPropertyAssertion _ sourceID targetID ->       -- no idee
        let
            accSign = inSign { individuals = Set.insert sourceID
                                             (Set.insert targetID
@@ -560,7 +565,7 @@ anaAxioms ga inSign ns ontologyF@(OntologyFile _ onto) (axiom:rest) =
               onto{axiomsList = axiomsList onto ++ [axiom]}},
               accSign, [namedSent])))
               (anaAxioms ga accSign ns ontologyF rest)
-   NegativeObjectPropertyAssertion anno _  sourceID targetID ->  -- no idee
+   NegativeObjectPropertyAssertion _  sourceID targetID ->  -- no idee
        let
            accSign = inSign { individuals = Set.insert sourceID
                                             (Set.insert targetID
@@ -572,7 +577,7 @@ anaAxioms ga inSign ns ontologyF@(OntologyFile _ onto) (axiom:rest) =
               onto{axiomsList = axiomsList onto ++ [axiom]}},
               accSign, [namedSent])))
               (anaAxioms ga accSign ns ontologyF rest)
-   DataPropertyAssertion anno _ sourceID _ ->      -- no idee
+   DataPropertyAssertion _ sourceID _ ->      -- no idee
        let
            accSign = inSign { individuals = Set.insert sourceID
                                             (individuals inSign)}
@@ -583,7 +588,7 @@ anaAxioms ga inSign ns ontologyF@(OntologyFile _ onto) (axiom:rest) =
               onto{axiomsList = axiomsList onto ++ [axiom]}},
               accSign, [namedSent])))
               (anaAxioms ga accSign ns ontologyF rest)
-   NegativeDataPropertyAssertion anno _ sourceID _ ->      -- no idee
+   NegativeDataPropertyAssertion _ sourceID _ ->      -- no idee
        let
            accSign = inSign { individuals = Set.insert sourceID
                                             (individuals inSign)}
@@ -594,12 +599,8 @@ anaAxioms ga inSign ns ontologyF@(OntologyFile _ onto) (axiom:rest) =
               onto{axiomsList = axiomsList onto ++ [axiom]}},
               accSign, [namedSent])))
               (anaAxioms ga accSign ns ontologyF rest)
-   Declaration _ entity ->
+   Declaration entity ->
        let accSign = getDeclFromEntity entity inSign
-       in concatResult (Result [] (Just (ontologyF, accSign, [])))
-                   (anaAxioms ga accSign ns ontologyF rest)
-   EntityAnno (EntityAnnotation _ entity _) ->  -- no idee
-       let accSign =  getDeclFromEntity entity inSign
        in concatResult (Result [] (Just (ontologyF, accSign, [])))
                    (anaAxioms ga accSign ns ontologyF rest)
   {-
