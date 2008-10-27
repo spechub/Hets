@@ -27,12 +27,18 @@ import qualified Data.Map as Map
 import qualified Data.Set as Set
 import Data.List
 
-extCASLColimit :: Gr () (Int, ()) ->((),Map.Map Int ())
-extCASLColimit graph = ((),Map.fromList $ zip (nodes graph) (repeat ()))
+extCASLColimit :: Gr () (Int, ()) ->
+                  Map.Map Int CASLMor ->
+                  ((),Map.Map Int ())
+extCASLColimit graph _ = ((),Map.fromList $ zip (nodes graph) (repeat ()))
 
 --central function for computing CASL signature colimits
 signColimit :: Gr (Sign f e)(Int,Morphism f e m) ->
-               (Gr e (Int, m) -> (e, Map.Map Int m)) ->
+               ( Gr e (Int, m) ->
+                 Map.Map Int (Morphism f e m)
+                 -> (e, Map.Map Int m)
+               )
+               ->
                (Sign f e, Map.Map Int (Morphism f e m))
 signColimit graph extColimit = let
  getSortMap (x, phi) = (x,sort_map phi)
@@ -51,7 +57,7 @@ signColimit graph extColimit = let
  (sigmaPred, phiPred) = computeColimitPred graph sigmaOp phiOp
  (sigAssoc, phiAssoc) = colimitAssoc graph sigmaPred phiPred
  extGraph = emap (\(i, phi) -> (i, extended_map phi)) $ nmap extendedInfo graph
- (extInfo, extMaps) = extColimit extGraph
+ (extInfo, extMaps) = extColimit extGraph phiAssoc
  sigmaExt = sigAssoc{extendedInfo = extInfo}
  phiExt = Map.mapWithKey
     (\ node phi -> phi{mtarget = sigmaExt, extended_map = (Map.!) extMaps node})
