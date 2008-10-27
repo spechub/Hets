@@ -367,7 +367,7 @@ instance PrettyRDF DatatypeFacet where
 
 instance PrettyRDF Constant where
     printRDF _ (Constant lexi ty) = case ty of
-        Left u -> text "<owl11:Constant rdfs:Datatype=" <>
+        Typed u -> text "<owl11:Constant rdfs:Datatype=" <>
                   text (show$localPart u) <>
                   text (">" ++ lexi) <> text "</owl11:Constant>"
    -- <Constant Datatype="&xsd;int">20</Constant>
@@ -839,9 +839,9 @@ printObjectDataProp :: TargetValue -> Doc
 printObjectDataProp (Constant lexi ety) =
     tagToDocWithAttr' "rdf:object" (printConstURIWithAttr ety) (text lexi)
 
-printConstURIWithAttr :: Either URIreference LanguageTag -> Doc
+printConstURIWithAttr :: TypedOrUntyped -> Doc
 printConstURIWithAttr ety = case ety of
-    Left ty -> printURIWithAttr "rdf:datatype" ty
+    Typed ty -> printURIWithAttr "rdf:datatype" ty
     _ -> empty
 
 printDPWithConst :: DataPropertyExpression

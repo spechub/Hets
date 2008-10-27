@@ -473,13 +473,13 @@ instance PNamespace Entity where
 instance PNamespace Constant where
     propagateNspaces ns constant =
         case constant of
-           Constant l (Left curi) ->
-               Constant l $ Left $ propagateNspaces ns curi
+           Constant l (Typed curi) ->
+               Constant l $ Typed $ propagateNspaces ns curi
            u -> u        -- for untyped constant
     renameNamespace tMap constant =
         case constant of
-           Constant l (Left curi) ->
-               Constant l $ Left $ renameNamespace tMap curi
+           Constant l (Typed curi) ->
+               Constant l $ Typed $ renameNamespace tMap curi
            u -> u        -- for untyped constant
 
 instance PNamespace ObjectPropertyExpression where

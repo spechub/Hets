@@ -107,11 +107,11 @@ fromShATermToNS att0 ix =
       u -> fromShATermError "OWL.NS" u
 
 instance ShATermConvertible Constant where
-    toShATermAux att0 (Constant a (Left b)) = do
+    toShATermAux att0 (Constant a (Typed b)) = do
         (att1, a') <- toShATerm' att0 (a ++ "^^")
         (att2, b') <- toShATerm' att1 b
         return $ addATerm (ShAAppl "TypedConstant" [a', b'] []) att2
-    toShATermAux att0 (Constant a (Right b)) = do
+    toShATermAux att0 (Constant a (Untyped b)) = do
         (att1, a') <- toShATerm' att0 (a ++ "@" ++ b)
         return $ addATerm (ShAAppl "UntypedConstant" [a'] []) att1
  {- I wonder why TypedConstant has two arguments when writing
@@ -121,11 +121,11 @@ instance ShATermConvertible Constant where
             ShAAppl "TypedConstant" [a] _ ->
                     case fromShATerm' a att0 of { (att1, a') ->
                       let (b, c) = span (/='^') a'
-                      in (att1, Constant b $ Left $ mkQName $ drop 2 c) }
+                      in (att1, Constant b $ Typed $ mkQName $ drop 2 c) }
             ShAAppl "UntypedConstant" [a] _ ->
                     case fromShATerm' a att0 of { (att1, a') ->
                       let (b, c) = span (/='@') a'
-                      in  (att1, Constant b $ Right $ drop 1 c ) }
+                      in  (att1, Constant b $ Untyped $ drop 1 c ) }
             u -> fromShATermError "Constant" u
 
 instance ShATermConvertible Entity where

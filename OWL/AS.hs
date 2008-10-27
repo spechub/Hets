@@ -93,10 +93,12 @@ data Entity = Entity EntityType URI deriving (Show, Eq, Ord)
 type LexicalForm = String
 type LanguageTag = String
 
+data TypedOrUntyped = Typed URIreference | Untyped LanguageTag
+    deriving (Show, Eq, Ord)
+
 -- | a lexical representation either with an "^^" URI (tyoed) or
 -- an optional language tag starting with "\@" (untyped)
-data Constant = Constant LexicalForm (Either URIreference LanguageTag)
-    deriving (Show, Eq, Ord)
+data Constant = Constant LexicalForm TypedOrUntyped deriving (Show, Eq, Ord)
 
 -- | Object and Data Property Expressions
 type InverseObjectProperty = ObjectPropertyExpression
