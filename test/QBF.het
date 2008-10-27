@@ -1,0 +1,39 @@
+library QBF
+
+logic Propositional
+
+spec sp =
+  props p,r
+  . p => r
+then %cons
+  prop q
+  . p => q
+  . q => r
+end
+
+logic CASL
+
+spec Bool =
+  free type Bool ::= True | False
+  forall p,r:Bool . p=True => r=True => exists q:Bool . (p=True => q=True) /\ (q=True => r=True) %implied
+end
+
+spec sp =
+  props p,w
+  . p => w
+then %cons
+  prop q,r,s,t,u,v
+  . p => q
+  . q => r
+  . r => s
+  . s => t
+  . t => u
+  . u => w
+end
+spec Bool2 =
+  sort Bool
+  ops True, False : Bool
+  . not True = False
+  forall x:Bool . x= True \/ x = False
+  forall p,w:Bool . p=True => w=True => exists q,r,s,t,u,v:Bool . (p=True => q=True) /\ (q=True => r=True) /\ (r=True => s=True) /\ (s=True => t=True) /\ (t=True => u=True) /\ (u=True => v=True) /\ (v=True => w=True) %implied
+end
