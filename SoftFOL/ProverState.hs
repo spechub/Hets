@@ -25,7 +25,7 @@ import SoftFOL.Print ()
 import qualified Common.AS_Annotation as AS_Anno
 import Common.ProofTree
 import Common.ProofUtils
-import Common.Utils (splitOn)
+import Common.Utils (splitOn, readMaybe)
 import Common.DocUtils
 
 import qualified Control.Exception as Exception
@@ -34,8 +34,6 @@ import Data.Maybe
 
 import GUI.GenericATP (guiDefaultTimeLimit)
 import GUI.GenericATPState
-
-import PGIP.ProveUtils
 
 -- * Data structures
 
@@ -154,10 +152,9 @@ parseTactic_script :: Int -- ^ default time limit (standard:
                    -> Tactic_script
                    -> ATPTactic_script
 parseTactic_script tLimit extOpts (Tactic_script ts) =
-        cParseScript tLimit extOpts (Tactic_script ts)
---    maybe (ATPTactic_script { ts_timeLimit = tLimit,
---                              ts_extraOpts = extOpts })
---           id $ readMaybe ts
+    maybe (ATPTactic_script { ts_timeLimit = tLimit,
+                              ts_extraOpts = extOpts })
+           id $ readMaybe ts
 
 -- | Converts a thrown exception into an ATP result (ATPRetval and proof tree).
 excepToATPResult :: String -- ^ name of running prover
