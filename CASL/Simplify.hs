@@ -15,9 +15,9 @@ module CASL.Simplify where
 
 import CASL.AS_Basic_CASL
 import CASL.Fold
-import Data.List(nub)
+import Common.Utils (nubOrd)
 
-simplifyRecord :: Eq f => (f -> f) -> Record f (FORMULA f) (TERM f)
+simplifyRecord :: Ord f => (f -> f) -> Record f (FORMULA f) (TERM f)
 simplifyRecord mf = (mapRecord mf)
     { foldConditional = \ _ t1 f t2 ps -> case f of
       True_atom _ -> t1
@@ -32,12 +32,12 @@ simplifyRecord mf = (mapRecord mf)
            (False_atom _, Existential) -> qf
            _ -> nf
     , foldConjunction = \ _ fs ps -> if any is_False_atom fs
-      then False_atom ps else case nub $ filter (not . is_True_atom) fs of
+      then False_atom ps else case nubOrd $ filter (not . is_True_atom) fs of
       [] -> True_atom ps
       [f] -> f
       rs -> Conjunction rs ps
     , foldDisjunction = \ _ fs ps -> if any is_True_atom fs
-      then True_atom ps else case nub $ filter (not . is_False_atom) fs of
+      then True_atom ps else case nubOrd $ filter (not . is_False_atom) fs of
       [] -> False_atom ps
       [f] -> f
       rs -> Disjunction rs ps
@@ -65,8 +65,8 @@ simplifyRecord mf = (mapRecord mf)
       if t1 == t2 then True_atom ps else Strong_equation t1 t2 ps
     }
 
-simplifyTerm :: Eq f => (f -> f) -> TERM f -> TERM f
+simplifyTerm :: Ord f => (f -> f) -> TERM f -> TERM f
 simplifyTerm = foldTerm . simplifyRecord
 
-simplifyFormula :: Eq f => (f -> f) -> FORMULA f -> FORMULA f
+simplifyFormula :: Ord f => (f -> f) -> FORMULA f -> FORMULA f
 simplifyFormula = foldFormula . simplifyRecord

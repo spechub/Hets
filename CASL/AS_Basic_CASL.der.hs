@@ -17,7 +17,7 @@ module CASL.AS_Basic_CASL where
 
 import Common.Id
 import Common.AS_Annotation
-import Data.List (nub)
+import qualified Data.Set as Set
 
 -- DrIFT command
 {-! global: GetRange !-}
@@ -202,12 +202,15 @@ data Constraint = Constraint { newSort :: SORT,
                                origSort :: SORT }
                   deriving (Show, Eq, Ord)
 
+isInjectiveList :: Ord a => [a] -> Bool
+isInjectiveList l = Set.size (Set.fromList l) == length l
+
 -- | from a Sort_gex_ax, recover:
 -- | a traditional sort generation constraint plus a sort mapping
 recover_Sort_gen_ax :: [Constraint] ->
                         ([SORT],[OP_SYMB],[(SORT,SORT)])
 recover_Sort_gen_ax constrs =
-  if length (nub sorts) == length sorts
+  if isInjectiveList sorts
      -- no duplicate sorts, i.e. injective sort map? Then we can ignore indices
      then (sorts,map fst (concat (map opSymbs constrs)),[])
      -- otherwise, we have to introduce new sorts for the indices
@@ -234,13 +237,13 @@ recover_Sort_gen_ax constrs =
 -- | fails (i.e. delivers Nothing) if the sort map is not injective
 recover_free_Sort_gen_ax :: [Constraint] -> Maybe [(SORT,[OP_SYMB])]
 recover_free_Sort_gen_ax constrs =
-  if length (nub sorts) == length sorts
+  if isInjectiveList sorts
      -- no duplicate sorts, i.e. injective sort map?
      then Just $ map getOpProfile constrs
      else Nothing
   where
   sorts = map newSort constrs
-  getOpProfile constr = (newSort constr,map fst $ opSymbs constr)
+  getOpProfile constr = (newSort constr, map fst $ opSymbs constr)
 
 data QUANTIFIER = Universal | Existential | Unique_existential
                   deriving (Show, Eq, Ord)

@@ -31,7 +31,7 @@ inductionScheme :: Pretty f =>  [Constraint] -> Result (FORMULA f)
 inductionScheme constrs =
   induction constrs (map predSubst constrs)
   where sorts = map newSort constrs
-        injective = length (nub sorts) == length sorts
+        injective = isInjectiveList sorts
         predSubst constr t =
           Predication predSymb [t] nullRange
           where
