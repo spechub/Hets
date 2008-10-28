@@ -14,6 +14,7 @@ Utility functions that can't be found in the libraries
 
 module Common.Utils
   ( joinWith
+  , nubOrd
   , readMaybe
   , mapAccumLM
   , keepMins
@@ -39,6 +40,24 @@ import System.IO.Error
 import Control.Monad
 
 import qualified Control.Exception as Exception
+
+{- | The 'nubWith' function accepts as an argument a \"stop list\" update
+function and an initial stop list. The stop list is a set of list elements
+that 'nubWith' uses as a filter to remove duplicate elements.  The stop list
+is normally initially empty.  The stop list update function is given a list
+element a and the current stop list b, and returns 'Nothing' if the element is
+already in the stop list, else 'Just' b', where b' is a new stop list updated
+to contain a. -}
+nubWith :: (a -> b -> Maybe b) -> b -> [a] -> [a]
+nubWith f s es = case es of
+  [] -> []
+  e : rs -> case f e s of
+       Just s' -> e : nubWith f s' rs
+       Nothing -> nubWith f s rs
+
+nubOrd :: Ord e => [e] -> [e]
+nubOrd = let f e s = if Set.member e s then Nothing else Just (Set.insert e s)
+  in nubWith f Set.empty
 
 readMaybe :: Read a => String -> Maybe a
 readMaybe s = case filter (all isSpace . snd) $ reads s of
