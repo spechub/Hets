@@ -323,7 +323,7 @@ newOptionsFrame con updateFn isExtraOps = do
   Invokes the prover GUI. Users may start the batch prover run on all goals,
   or use a detailed GUI for proving each goal manually.
 -}
-genericATPgui :: (Ord proof_tree, Ord sentence, Show proof_tree, Show sentence)
+genericATPgui :: (Ord proof_tree, Ord sentence)
               => ATPFunctions sign sentence proof_tree pst -- ^ prover specific
                                                            -- functions
               -> Bool -- ^ prover supports extra options

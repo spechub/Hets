@@ -128,7 +128,7 @@ type TransSenName = String -> String
 {- |
   Creates an initial GenericState around a Theory.
 -}
-initialGenericState :: (Show sentence, Ord sentence, Ord proof_tree) =>
+initialGenericState :: (Ord sentence, Ord proof_tree) =>
                        String -- ^ name of the prover
                     -> InitialProverState sign sentence pst
                     -> TransSenName
@@ -174,7 +174,7 @@ initialGenericState prName ips trSenName th pt =
   additionally the axioms generated from typing information are
   removed and warnings are generated.  -}
 
-revertRenamingOfLabels :: (Show sentence, Ord sentence, Ord proof_tree) =>
+revertRenamingOfLabels :: (Ord sentence, Ord proof_tree) =>
                            GenericState sign sentence proof_tree pst
                         -> [Proof_status proof_tree]
                         -> Result [Proof_status proof_tree]

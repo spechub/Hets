@@ -71,16 +71,10 @@ nameSens sens =
                               else sen
 
 -- | collect the mapping of new to old names
-collectNameMapping ::Show a => [Named a] -> [Named a] -> Map.Map String String
-collectNameMapping n o = Map.fromList (zipWith toPair n o)
-    where toPair nSen oSen = (senAttr nSen,
-                              if null oName
-                                 then error ("Common.ProofUtils."++
-                                             "collectNameMapping: sentence "++
-                                             "without name found: "++
-                                             show (sentence oSen))
-                                 else oName)
-              where oName = senAttr oSen
+collectNameMapping :: [Named a] -> [Named a] -> Map.Map String String
+collectNameMapping ns os = if any (null . senAttr) os
+  then error "Common.ProofUtils.collectNameMapping"
+  else Map.fromList $ zipWith (\ n o -> (senAttr n, senAttr o)) ns os
 
 -- | a separate Map speeds up lookup
 charMap :: Map.Map Char String

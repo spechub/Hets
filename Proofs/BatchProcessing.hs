@@ -100,7 +100,7 @@ checkGoal cfgMap goal =
 {- |
   Called every time a goal has been processed in the batch mode.
 -}
-goalProcessed :: (Ord proof_tree, Show proof_tree) =>
+goalProcessed :: (Ord proof_tree) =>
                  Conc.MVar (GenericState sign sentence proof_tree pst)
                -- ^ IORef pointing to the backing State data structure
               -> Int -- ^ batch time limit
@@ -138,7 +138,7 @@ goalProcessed stateMVar tLimit extOpts numGoals prName processedGoalsSoFar
   A non-GUI batch mode prover. The list of goals is processed sequentially.
   Proved goals are inserted as axioms.
 -}
-genericProveBatch :: (Show sentence, Ord sentence, Ord proof_tree) =>
+genericProveBatch :: (Ord sentence, Ord proof_tree) =>
                      Bool -- ^ True means use tLimit\/options from GenericState
                   -> Int -- ^ batch time limit
                   -> [String] -- ^ extra options passed
@@ -246,7 +246,7 @@ atpRetvalToDiags gName err =
   Automatic command line prover which only proves the first goal (if possible).
 -}
 genericCMDLautomatic ::
-        (Ord proof_tree, Ord sentence, Show proof_tree, Show sentence)
+        (Ord proof_tree, Ord sentence)
         => ATPFunctions sign sentence proof_tree pst
            -- ^ prover specific functions
         -> String -- ^ prover name
@@ -294,7 +294,7 @@ genericCMDLautomatic atpFun prName thName def_TS th pt = do
   Automatic command line prover using batch mode.
 -}
 genericCMDLautomaticBatch ::
-        (Ord proof_tree, Ord sentence, Show proof_tree, Show sentence)
+        (Ord proof_tree, Ord sentence)
         => ATPFunctions sign sentence proof_tree pst -- ^ prover specific
                                                      --   functions
         -> Bool -- ^ True means include proved theorems

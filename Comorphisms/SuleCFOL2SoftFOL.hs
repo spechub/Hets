@@ -321,8 +321,7 @@ transPredType pt = map transIdSort (CSign.predArgs pt)
 transIdSort :: Id -> SPIdentifier
 transIdSort = transId CKSort
 
-integrateGenerated :: (Pretty f, GetRange f) =>
-                      IdType_SPId_Map -> [Named (FORMULA f)] ->
+integrateGenerated :: IdType_SPId_Map -> [Named (FORMULA f)] ->
                       SPSign.Sign ->
                       Result (IdType_SPId_Map, SPSign.Sign, [Named SPTerm])
 integrateGenerated idMap genSens sign
@@ -356,7 +355,7 @@ integrateGenerated idMap genSens sign
                                             exhaustSens))))
                   mv
 
-makeGenGoals :: (Pretty f, GetRange f) => IdType_SPId_Map -> [Named (FORMULA f)]
+makeGenGoals :: IdType_SPId_Map -> [Named (FORMULA f)]
              -> (PredMap, IdType_SPId_Map, [Named SPTerm])
 makeGenGoals idMap fs =
   let Result _ res = makeGens idMap fs
@@ -377,8 +376,7 @@ makeGenGoals idMap fs =
 only one goal, but additional symbols, axioms and a goal
  -}
 
-makeGens :: (Pretty f, GetRange f) =>
-            IdType_SPId_Map -> [Named (FORMULA f)]
+makeGens :: IdType_SPId_Map -> [Named (FORMULA f)]
          -> Result (SortMap, FuncMap, IdType_SPId_Map,[Named SPTerm])
             -- ^ The list of SoftFOL sentences gives exhaustiveness for
             -- generated sorts with only constant constructors
@@ -395,8 +393,7 @@ makeGens idMap fs =
                              opM,idMap',exhaustSens)))
               mv
 
-makeGen :: (Pretty f, GetRange f) =>
-           Result (FuncMap, IdType_SPId_Map,
+makeGen :: Result (FuncMap, IdType_SPId_Map,
                    [(SPIdentifier,Maybe Generated)],[Named SPTerm])
         -> Named (FORMULA f)
         -> Result (FuncMap, IdType_SPId_Map,
@@ -411,7 +408,7 @@ makeGen r@(Result ods omv) nf =
                                             rList ++ genPairs,
                                             eSens ++ eSens')))
                  else mkError ("Non-injective sort mappings cannot " ++
-                               "be translated to SoftFOL") (sentence nf)
+                               "be translated to SoftFOL") mp
       where -- compute standard form of sort generation constraints
             (srts,ops,mp) = recover_Sort_gen_ax constrs
             -- test whether a constructor belongs to a specific sort
@@ -580,7 +577,7 @@ disjointTopSorts sign idMap = let
                 map (\ t -> maybe (transIdSort t) id
                      $ lookupSPId t CSort idMap) l
 
-transTheory :: (Pretty f, GetRange f, Eq f) =>
+transTheory :: (Pretty f, Eq f) =>
                SignTranslator f e
             -> FormulaTranslator f e
             -> (CSign.Sign f e, [Named (FORMULA f)])
@@ -636,7 +633,7 @@ transTheory trSig trForm (sign,sens) =
  The given Named (FORMULA f) is checked for this and if so, will be put
  into the set of such predicates.
 -}
-findEqPredicates :: (Show f, Eq f) => (Set.Set PRED_SYMB, [Named (FORMULA f)])
+findEqPredicates :: (Eq f) => (Set.Set PRED_SYMB, [Named (FORMULA f)])
                     -- ^ previous list of found predicates and valid sentences
                  -> Named (FORMULA f)
                     -- ^ sentence to check
