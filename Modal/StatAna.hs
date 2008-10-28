@@ -160,14 +160,18 @@ ana_M_BASIC_ITEM mix bi = do
         Simple_mod_decl al fs ps -> do
             mapM_ ((updateExtInfo . preAddModId) . item) al
             newFs <- mapAnM (ana_FORMULA mix) fs
-            mapM_ ((updateExtInfo . addModId newFs) . item) al
-            return $ Simple_mod_decl al newFs ps
+            resFs <- mapAnM (return . fst) newFs
+            anaFs <- mapAnM (return . snd) newFs
+            mapM_ ((updateExtInfo . addModId anaFs) . item) al
+            return $ Simple_mod_decl al resFs ps
         Term_mod_decl al fs ps -> do
             e <- get
             mapM_ ((updateExtInfo . preAddModSort e) . item) al
             newFs <- mapAnM (ana_FORMULA mix) fs
-            mapM_ ((updateExtInfo . addModSort newFs) . item) al
-            return $ Term_mod_decl al newFs ps
+            resFs <- mapAnM (return . fst) newFs
+            anaFs <- mapAnM (return . snd) newFs
+            mapM_ ((updateExtInfo . addModSort anaFs) . item) al
+            return $ Term_mod_decl al resFs ps
 
 preAddModId :: SIMPLE_ID -> ModalSign -> Result ModalSign
 preAddModId i m =
@@ -193,8 +197,9 @@ addModSort :: [AnModFORM] -> SORT -> ModalSign -> Result ModalSign
 addModSort frms i m = return m
   { termModies = Map.insertWith List.union i frms $ termModies m }
 
-ana_FORMULA
-    :: Ana (FORMULA M_FORMULA) M_BASIC_ITEM M_SIG_ITEM M_FORMULA ModalSign
+ana_FORMULA :: Mix M_BASIC_ITEM M_SIG_ITEM M_FORMULA ModalSign
+            -> FORMULA M_FORMULA -> State (Sign M_FORMULA ModalSign)
+               (FORMULA M_FORMULA, FORMULA M_FORMULA)
 ana_FORMULA mix f = do
            let ps = map (mkId . (: [])) $ Set.toList $ getFormPredToks f
            pm <- gets predMap
@@ -205,9 +210,10 @@ ana_FORMULA mix f = do
            addDiags es
            e <- get
            phi <- case m of
-               Nothing -> return f
-               Just r -> do resultToState (minExpFORMULA minExpForm e) r
-                            return r
+               Nothing -> return (f, f)
+               Just r -> do
+                   n <- resultToState (minExpFORMULA minExpForm e) r
+                   return (r, n)
            e2 <- get
            put e2 {predMap = pm}
            return phi
