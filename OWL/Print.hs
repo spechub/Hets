@@ -153,101 +153,81 @@ instance Pretty Sentence where
 printSentence :: Sentence -> Doc
 printSentence sent = case sent of
     OWLAxiom axiom -> pretty axiom
-    OWLFact fact   -> pretty fact
+    OWLFact fact -> pretty fact
 
 instance Pretty Axiom where
     pretty = printAxiom
+
+printEquivOrDisjoint :: EquivOrDisjoint -> Doc
+printEquivOrDisjoint ed = text $ case ed of
+    Equivalent -> "EquivalentTo:"
+    Disjoint -> "DisjointWith:"
+
+printObjDomainOrRange :: ObjDomainOrRange -> Doc
+printObjDomainOrRange dr = text $ case dr of
+    ObjDomain -> "Domain:"
+    ObjRange -> "Range:"
+
+printDataDomainOrRange :: DataDomainOrRange -> Doc
+printDataDomainOrRange dr = case dr of
+    DataDomain d -> text "Domain:" $+$ pretty d
+    DataRange d -> text "Range:" $+$ pretty d
+
+printSameOrDifferent :: SameOrDifferent -> Doc
+printSameOrDifferent sd = text $ case sd of
+    Same -> "SameAs:"
+    Different -> "DifferentFrom:"
+
+printAssertion :: (Pretty a, Pretty b) => Assertion a b -> Doc
+printAssertion (Assertion a p s b) = indStart <+> pretty s $+$
+   let d = pretty a $+$ pretty b in
+   case p of
+     Positive -> d
+     Negative -> text "not" <+> parens d
 
 printAxiom :: Axiom -> Doc
 printAxiom axiom = case axiom of
   EntityAnno _ -> empty -- EntityAnnotation
   PlainAxiom _ paxiom -> case paxiom of
    SubClassOf sub super ->
-       classStart <+> pretty sub $+$ (text "SubClassOf:") $+$
-                   (pretty super)
-   EquivalentClasses (clazz:equiList) ->
-       classStart <+> pretty clazz $+$ (text "EquivalentTo:") $+$
-                      (setToDocV $ Set.fromList equiList)
-
-   DisjointClasses (clazz:equiList) ->
-       classStart <+> pretty clazz $+$ (text "DisjointWith:") $+$
-                   (setToDocV $ Set.fromList equiList)
+       classStart <+> pretty sub $+$ (text "SubClassOf:") $+$ pretty super
+   EquivOrDisjointClasses ty (clazz : equiList) ->
+       classStart <+> pretty clazz $+$ printEquivOrDisjoint ty $+$
+                      setToDocV (Set.fromList equiList)
    DisjointUnion curi discList ->
-       classStart <+> pretty curi $+$ (text "DisjointUnionOf:") $+$
-                   (setToDocV $ Set.fromList discList)
+       classStart <+> pretty curi $+$ text "DisjointUnionOf:" $+$
+                   setToDocV (Set.fromList discList)
    -- ObjectPropertyAxiom
    SubObjectPropertyOf sopExp opExp ->
-       opStart <+> pretty sopExp $+$ (text "SubObjectPropertyOf:") $+$
-                (pretty opExp)
-   EquivalentObjectProperties (opExp:opList) ->
-       opStart <+> pretty opExp $+$ (text "EquivalentTo:") $+$
-                   (setToDocV $ Set.fromList opList)
-   DisjointObjectProperties (opExp:opList) ->
-       opStart <+> pretty opExp $+$ (text "DisjointWith:") $+$
-                   (setToDocV $ Set.fromList opList)
-   ObjectPropertyDomain opExp desc ->
-       opStart <+> pretty opExp $+$ (text "Domain:") $+$
-                   (pretty desc)
-   ObjectPropertyRange opExp desc ->
-       opStart <+> pretty opExp $+$ (text "Range:") $+$
-                   (pretty desc)
+       opStart <+> pretty sopExp $+$ text "SubObjectPropertyOf:"
+                   $+$ pretty opExp
+   EquivOrDisjointObjectProperties ty (opExp : opList) ->
+       opStart <+> pretty opExp $+$ printEquivOrDisjoint ty $+$
+                   setToDocV (Set.fromList opList)
+   ObjectPropertyDomainOrRange ty opExp desc ->
+       opStart <+> pretty opExp $+$ printObjDomainOrRange ty $+$ pretty desc
    InverseObjectProperties opExp1 opExp2 ->
-       opStart <+> pretty opExp1 $+$ (text "Inverse:") $+$
-                   (pretty opExp2)
-   FunctionalObjectProperty opExp ->
-       opStart <+> pretty opExp $+$ (printCharact "Functinal")
-   InverseFunctionalObjectProperty opExp ->
-       opStart <+> pretty opExp $+$ (printCharact "Inverse_Functinal")
-   ReflexiveObjectProperty opExp ->
-       opStart <+> pretty opExp $+$ (printCharact "Reflexive")
-   IrreflexiveObjectProperty opExp ->
-       opStart <+> pretty opExp $+$ (printCharact "Irreflexive")
-   SymmetricObjectProperty opExp ->
-       opStart <+> pretty opExp $+$ (printCharact "Symmetric")
-   AntisymmetricObjectProperty opExp ->
-       opStart <+> pretty opExp $+$ (printCharact "AntiSymmetric")
-   TransitiveObjectProperty opExp ->
-       opStart <+> pretty opExp $+$ (printCharact "Transitive")
+       opStart <+> pretty opExp1 $+$ text "Inverse:" $+$ pretty opExp2
+   ObjectPropertyCharacter ch opExp ->
+       opStart <+> pretty opExp $+$ printCharact (show ch)
    -- DataPropertyAxiom
    SubDataPropertyOf dpExp1 dpExp2 ->
-       dpStart <+> pretty dpExp1 $+$ (text "SubDataPropertyOf") $+$
-                (pretty dpExp2)
-   EquivalentDataProperties (dpExp:dpList) ->
-       opStart <+> pretty dpExp $+$ (text "EquivalentTo:") $+$
-                (setToDocV $ Set.fromList dpList)
-   DisjointDataProperties (dpExp:dpList) ->
-       opStart <+> pretty dpExp $+$ (text "DisjointWith:") $+$
-                   (setToDocV $ Set.fromList dpList)
-   DataPropertyDomain dpExp desc ->
-       opStart <+> pretty dpExp $+$ (text "Domain:") $+$
-                   (pretty desc)
-   DataPropertyRange dpExp desc ->
-       opStart <+> pretty dpExp $+$ (text "Range:") $+$
-                   (pretty desc)
+       dpStart <+> pretty dpExp1 $+$ text "SubDataPropertyOf" $+$ pretty dpExp2
+   EquivOrDisjointDataProperties ty (dpExp : dpList) ->
+       dpStart <+> pretty dpExp $+$ printEquivOrDisjoint ty $+$
+               setToDocV (Set.fromList dpList)
+   DataPropertyDomainOrRange ddr dpExp ->
+       dpStart <+> pretty dpExp $+$ printDataDomainOrRange ddr
    FunctionalDataProperty dpExp ->
-       opStart <+> pretty dpExp $+$ (printCharact "Functinal")
+       dpStart <+> pretty dpExp $+$ (printCharact "Functional")
    -- Fact
-   SameIndividual (ind:indList) ->
-       indStart <+> (pretty ind) $+$ (text "SameAs:") $+$
-                 (setToDocV $ Set.fromList indList)
-   DifferentIndividuals (ind:indList) ->
-       indStart <+> (pretty ind) $+$ (text "DifferentFrom:") $+$
-                 (setToDocV $ Set.fromList indList)
+   SameOrDifferentIndividual ty (ind : indList) ->
+       indStart <+> pretty ind $+$ printSameOrDifferent ty $+$
+                 setToDocV (Set.fromList indList)
    ClassAssertion ind desc ->
-       indStart <+> (pretty ind) $+$ (text "Types:") $+$
-                 (pretty desc)
-   ObjectPropertyAssertion opExp source target ->
-       indStart <+> (pretty source) $+$ (pretty opExp) $+$
-                 (pretty target)
-   NegativeObjectPropertyAssertion opExp source target ->
-       indStart <+> (pretty source) $+$ (text "not" <+>
-                                  parens (pretty opExp <+> pretty target))
-   DataPropertyAssertion dpExp source target ->
-       indStart <+> (pretty source) $+$ (pretty dpExp) $+$
-                 (pretty target)
-   NegativeDataPropertyAssertion dpExp source target ->
-       indStart <+> (pretty source) $+$ (text "not" <+>
-                                  parens (pretty dpExp <+> pretty target))
+       indStart <+> pretty ind $+$ text "Types:" $+$ pretty desc
+   ObjectPropertyAssertion ass -> printAssertion ass
+   DataPropertyAssertion ass -> printAssertion ass
    Declaration _ -> empty    -- [Annotation] Entity
    u -> error ("unknow axiom" ++ show u)
 

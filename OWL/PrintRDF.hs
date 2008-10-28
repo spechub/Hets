@@ -210,7 +210,8 @@ printDescription desc =
       <owl:Restriction>
          <owl:onProperty rdf:resource="#hasChild"/>
          <owl11:onClass rdf:resource="#Female"/>
-         <owl:minCardinality rdf:datatype="&xsd;nonNegativeInteger">2</owl:minCardinality>
+         <owl:minCardinality rdf:datatype="&xsd;nonNegativeInteger">2
+         </owl:minCardinality>
       </owl:Restriction>
      -}
     DataValuesFrom ty dpExp dpExpList dRange ->
@@ -347,9 +348,8 @@ getValueFromConst (Constant lexi _) = text lexi
 
 printFacet :: DatatypeFacet -> Doc -> Doc
 printFacet facet doc =
-    (text "<" <> printRDF  Map.empty facet <+> text "rdf:datatype=\"&xsd;int\">") <>
-      doc <>
-    text "</"<> printRDF  Map.empty facet <> text ">"
+    text "<" <> printRDF Map.empty facet <+> text "rdf:datatype=\"&xsd;int\">"
+    <> doc <> text "</"<> printRDF Map.empty facet <> text ">"
 
 instance PrettyRDF DatatypeFacet where
     printRDF _ df =
@@ -414,7 +414,7 @@ printAxiom indClsMap axiom = case axiom of
     </owl:Class>
     -}
 
-   EquivalentClasses (clazz:equiList) ->
+   EquivOrDisjointClasses Equivalent (clazz : equiList) ->
        printClass clazz
           (equivalentClassTag
              $ listToDoc' (\ d -> case d of
@@ -432,8 +432,8 @@ printAxiom indClsMap axiom = case axiom of
                         <owl:allValuesFrom>
                             <rdf:Description>
                                 <rdf:type rdf:resource="&owl;DataRange"/>
-                                <owl11:minInclusive rdf:datatype="&xsd;int">20</owl11:minInclusive>
-                                <owl11:onDataRange rdf:resource="&xsd;nonNegativeInteger"/>
+           <owl11:minInclusive rdf:datatype="&xsd;int">20</owl11:minInclusive>
+           <owl11:onDataRange rdf:resource="&xsd;nonNegativeInteger"/>
                             </rdf:Description>
                         </owl:allValuesFrom>
                     </owl:Restriction>
@@ -445,7 +445,7 @@ printAxiom indClsMap axiom = case axiom of
     </owl:Class>
    -}
 
-   DisjointClasses (clazz:djList) ->
+   EquivOrDisjointClasses Disjoint (clazz : djList) ->
        tagToDocWithAttr' "owl:Class" (printURIFromDesc clazz)
          (tagToDoc "owl:disjointWith" (listToDoc' (printRDF Map.empty) djList))
     {-
@@ -456,7 +456,9 @@ printAxiom indClsMap axiom = case axiom of
 
    DisjointUnion curi discList ->
        tagToDocWithAttr' "owl:Class" (printURI curi)
-         (tagToDocWithAttr "owl11:disjointUnionOf" "rdf:parseType=\"Collection\"" (listToDoc' (printRDF Map.empty) discList))
+         (tagToDocWithAttr "owl11:disjointUnionOf"
+          "rdf:parseType=\"Collection\""
+          (listToDoc' (printRDF Map.empty) discList))
    {-
      <owl:Class rdf:about="#Person">
         <owl11:disjointUnionOf rdf:parseType="Collection">
@@ -494,9 +496,12 @@ printAxiom indClsMap axiom = case axiom of
     </rdf:Description>
     -}
 
-   EquivalentObjectProperties (opExp:opList) ->
-       tagToDocWithAttr' "owl:ObjectProperty" (printURIFromOPExp opExp)
-           (listToDoc' (\o -> oneLineTagToDoc "owl:equivalentProperty"
+   EquivOrDisjointObjectProperties ty (opExp : opList) ->
+       let tystr = case ty of
+                     Equivalent -> "owl:equivalentProperty"
+                     Disjoint -> "owl11:disjointObjectProperties"
+       in tagToDocWithAttr' "owl:ObjectProperty" (printURIFromOPExp opExp)
+           (listToDoc' (\o -> oneLineTagToDoc tystr
                           (printURIFromOPExpRes o)) opList)
     {-
       <owl:ObjectProperty rdf:about="#hasSon">
@@ -507,18 +512,16 @@ printAxiom indClsMap axiom = case axiom of
       </owl:ObjectProperty>
     -}
 
-   DisjointObjectProperties (opExp:opList) ->
-        tagToDocWithAttr' "owl:ObjectProperty" (printURIFromOPExp opExp)
-           (listToDoc' (\o -> oneLineTagToDoc "owl11:disjointObjectProperties"
-                          (printURIFromOPExpRes o)) opList)
-
-   ObjectPropertyDomain opExp desc ->
-       tagToDocWithAttr' "owl:ObjectProperty"
+   ObjectPropertyDomainOrRange rd opExp desc ->
+       let rdstr = "rdfs:" ++ case rd of
+                     ObjDomain -> "domain"
+                     ObjRange -> "range"
+       in tagToDocWithAttr' "owl:ObjectProperty"
                              (printURIFromOPExp opExp)
           (case desc of
-             OWLClass _ -> oneLineTagToDoc "rdfs:domain"
+             OWLClass _ -> oneLineTagToDoc rdstr
                                (printURIFromDescRes desc)
-             _ -> tagToDoc "rdfs:domain"
+             _ -> tagToDoc rdstr
                         (printRDF Map.empty desc))
     {-
       <owl:ObjectProperty rdf:about="#hasAncestor">
@@ -526,10 +529,6 @@ printAxiom indClsMap axiom = case axiom of
         <rdfs:range rdf:resource="#Person"/>
       </owl:ObjectProperty>
     -}
-   ObjectPropertyRange opExp desc ->
-       tagToDocWithAttr' "owl:ObjectProperty" (printURIFromOPExp opExp)
-          (oneLineTagToDoc "rdfs:range" (printURIFromDescRes desc))
-
    InverseObjectProperties opExp1 opExp2 ->
        tagToDocWithAttr' "owl:ObjectProperty"
                              (printURIFromOPExp opExp1)
@@ -539,13 +538,20 @@ printAxiom indClsMap axiom = case axiom of
         <owl:inverseOf rdf:resource="#hasSister"/>
       </owl:ObjectProperty>
     -}
-   FunctionalObjectProperty opExp ->
-      tagToDocWithAttr' "owl:ObjectProperty" (printURIFromOPExp opExp)
-        (text "<rdf:type rdf:resource=\"&owl;FunctionalProperty\"/>")
+   ObjectPropertyCharacter ch opExp ->
+       let ver11 = case ch of
+              Reflexive -> True
+              Irreflexive -> True
+              Asymmetric -> True
+              _ -> False
+           chstr = "<rdf:type rdf:resource=\"&owl" ++
+                   (if ver11 then "11;" else ";") ++ show ch ++"Property\"/>"
+        in tagToDocWithAttr' "owl:ObjectProperty" (printURIFromOPExp opExp)
+               (text chstr)
     {-
       <owl:ObjectProperty rdf:about="#hasFather">
         <rdf:type rdf:resource="&owl;FunctionalProperty"/>
-        <rdf:type rdf:resource="&owl11;AntisymmetricProperty"/>
+        <rdf:type rdf:resource="&owl11;AsymmetricProperty"/>
         <rdf:type rdf:resource="&owl;InverseFunctionalProperty"/>
         <rdf:type rdf:resource="&owl11;ReflexiveProperty"/>
         <rdf:type rdf:resource="&owl11;IrreflexiveProperty"/>
@@ -555,26 +561,6 @@ printAxiom indClsMap axiom = case axiom of
         <rdfs:range rdf:resource="#Male"/>
       </owl:ObjectProperty>
     -}
-   InverseFunctionalObjectProperty opExp ->
-      tagToDocWithAttr' "owl:ObjectProperty" (printURIFromOPExp opExp)
-        (text "<rdf:type rdf:resource=\"&owl;InverseFunctionalProperty\"/>")
-
-   ReflexiveObjectProperty opExp ->
-      tagToDocWithAttr' "owl:ObjectProperty" (printURIFromOPExp opExp)
-        (text "<rdf:type rdf:resource=\"&owl11;ReflexiveProperty\"/>")
-
-   IrreflexiveObjectProperty opExp ->
-      tagToDocWithAttr' "owl:ObjectProperty" (printURIFromOPExp opExp)
-        (text "<rdf:type rdf:resource=\"&owl11;IrreflexiveProperty\"/>")
-   SymmetricObjectProperty opExp ->
-      tagToDocWithAttr' "owl:ObjectProperty" (printURIFromOPExp opExp)
-        (text "<rdf:type rdf:resource=\"&owl;SymmetricProperty\"/>")
-   AntisymmetricObjectProperty opExp ->
-      tagToDocWithAttr' "owl:ObjectProperty" (printURIFromOPExp opExp)
-        (text "<rdf:type rdf:resource=\"&owl;AntisymmetricProperty\"/>")
-   TransitiveObjectProperty opExp ->
-      tagToDocWithAttr' "owl:ObjectProperty" (printURIFromOPExp opExp)
-        (text "<rdf:type rdf:resource=\"&owl;TransitiveProperty\"/>")
 
    -- DataPropertyAxiom
        -- no example
@@ -590,39 +576,33 @@ printAxiom indClsMap axiom = case axiom of
         <rdfs:subPropertyOf rdf:resource="#topDataProperty"/>
       </owl:DatatypeProperty>
      -}
-   EquivalentDataProperties (dpExp:dpList) ->
-     tagToDocWithAttr' "owl:DatatypeProperty" (printURI dpExp)
-        (listToDoc' (\dp -> oneLineTagToDoc "owl:equivalentProperty"
-                              (printResource dp)) dpList)
-
-   DisjointDataProperties (dpExp:dpList) ->
-     tagToDocWithAttr' "owl:DatatypeProperty" (printURI dpExp)
-        (listToDoc' (\dp -> oneLineTagToDoc "owl11:disjointDataProperties"
-                              (printResource dp)) dpList)
-
-   DataPropertyDomain dpExp desc ->
-       tagToDocWithAttr' "owl:DatatypeProperty" (printURI dpExp)
-          (tagToDoc "rdfs:domain" (printRDF Map.empty  desc))
+   EquivOrDisjointDataProperties ty (dpExp : dpList) ->
+       let tystr = case ty of
+                     Equivalent -> "owl:equivalentProperty"
+                     Disjoint -> "owl11:disjointDataProperties"
+       in tagToDocWithAttr' "owl:DatatypeProperty" (printURI dpExp)
+        (listToDoc' (oneLineTagToDoc tystr . printResource) dpList)
+   DataPropertyDomainOrRange ddr dpExp ->
+       let rdoc = case ddr of
+             DataDomain desc ->
+               tagToDoc "rdfs:domain" (printRDF Map.empty desc)
+             DataRange drange -> case drange of
+               DRDatatype did ->
+                 oneLineTagToDoc "rdfs:range" (printResource did)
+               _ -> tagToDoc "rdfs:range" (printRDF Map.empty drange)
+       in tagToDocWithAttr' "owl:DatatypeProperty" (printURI dpExp) rdoc
     {-
       <owl:DatatypeProperty rdf:about="#testDataProperty1">
         <rdfs:domain rdf:resource="#Female"/>
       </owl:DatatypeProperty>
      -}
-   DataPropertyRange dpExp drange ->
-       tagToDocWithAttr' "owl:DatatypeProperty" (printURI dpExp)
-        (case drange of
-           DRDatatype did ->
-             oneLineTagToDoc "rdfs:range" (printResource did)
-           _ ->
-             (tagToDoc "rdfs:range" (printRDF Map.empty drange)))
-
    FunctionalDataProperty dpExp ->
       tagToDocWithAttr' "owl:DatatypeProperty" (printURI dpExp)
         (text "<rdf:type rdf:resource=\"&owl;FunctionalProperty\"/>")
 
    -- Fact
-   -- see http://www.w3.org/2007/OWL/draft/ED-owl11-xml-serialization-20080326/#The_XML_Schema
-   SameIndividual (ind:indList) ->
+   -- see http://www.w3.org/2007/OWL/draft/ED-owl11-xml-serialization-20080326/
+   SameOrDifferentIndividual Same (ind : indList) ->
        case Map.lookup ind indClsMap of
          Just classId ->
              let clz = classNameForInd classId
@@ -640,11 +620,13 @@ printAxiom indClsMap axiom = case axiom of
         <owl:sameAs rdf:resource="#father"/>
       </Person>
      -}
-
-   DifferentIndividuals (ind:indList) ->
+   SameOrDifferentIndividual Different indList ->
        tagToDoc "rdf:Description"
          (text "<rdf:type rdf:resource=\"&owl;AllDifferent\"/>" $+$
-          tagToDocWithAttr "owl:distinctMembers" "rdf:parseType=\"Collection\"" (listToDoc' (\d -> oneLineTagToDoc "rdf:Description" (printURI d)) (ind:indList)))
+          tagToDocWithAttr "owl:distinctMembers"
+          "rdf:parseType=\"Collection\""
+          (listToDoc' (\d -> oneLineTagToDoc "rdf:Description" (printURI d))
+           indList))
     {-
       <rdf:Description>
         <rdf:type rdf:resource="&owl;AllDifferent"/>
@@ -685,8 +667,7 @@ printAxiom indClsMap axiom = case axiom of
         </rdf:type>
      </Person>
     -}
-
-   ObjectPropertyAssertion opExp source target ->
+   ObjectPropertyAssertion (Assertion opExp Positive source target) ->
        case Map.lookup source indClsMap of
          Just curi ->
              tagToDocWithAttr' (classNameForInd curi) (printURI source)
@@ -713,7 +694,7 @@ printAxiom indClsMap axiom = case axiom of
     </Person>
    -}
 
-   NegativeObjectPropertyAssertion opExp source target ->
+   ObjectPropertyAssertion (Assertion opExp Negative source target) ->
        tagToDoc "owl11:NegativeObjectPropertyAssertion"
           (printSubject source <+>
            printPredicate opExp <+>
@@ -726,7 +707,7 @@ printAxiom indClsMap axiom = case axiom of
     </owl11:NegativeObjectPropertyAssertion>
     -}
 
-   DataPropertyAssertion dpExp source target ->
+   DataPropertyAssertion (Assertion dpExp Positive source target) ->
        case Map.lookup source indClsMap of
          Just curi ->
              tagToDocWithAttr' (classNameForInd curi) (printURI source)
@@ -743,7 +724,7 @@ printAxiom indClsMap axiom = case axiom of
     </Person>
    -}
 
-   NegativeDataPropertyAssertion dpExp source target ->
+   DataPropertyAssertion (Assertion dpExp Negative source target) ->
        tagToDoc "owl11:NegativeDataPropertyAssertion"
          (printSubject source
           $+$ printPredicateDataProp dpExp
@@ -756,7 +737,6 @@ printAxiom indClsMap axiom = case axiom of
         <rdf:object rdf:datatype="&xsd;string">RRRRRRRRR</rdf:object>
     </owl11:NegativeDataPropertyAssertion>
    -}
-
    Declaration entity ->
      {-  case entity of ->
          Datatype u ->
@@ -830,7 +810,8 @@ printPredicate ope =
     case ope of
        OpURI oUri -> oneLineTagToDoc "rdf:predicate"
                                (printResource oUri)
-       InverseOp _ -> error ("NegativeObjectPropertyAssertion can not accept a inverse object property expression.")
+       InverseOp _ -> error
+         "NegativeObjectPropertyAssertion can not accept inverse object"
 
 printPredicateDataProp :: DataPropertyExpression -> Doc
 printPredicateDataProp dpe =
@@ -922,7 +903,6 @@ listToDoc pf list =
 listToDoc' :: (PrettyRDF a) =>
               (a -> Doc) -> [a] -> Doc
 listToDoc' p  = vcat . map p
-
 
 classNameForInd ::OwlClassURI -> String
 classNameForInd cid =

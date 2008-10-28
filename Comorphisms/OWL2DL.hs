@@ -138,17 +138,13 @@ mapSenM sen = let err = fail $ "OWL2DL.mapSenM " ++ showDoc sen "" in
         return $ DLClass (qNameToId curi)
           [DLSubClassof [c] nullRange] Nothing nullRange
     _ -> err
-  EquivalentClasses (cl : cs) -> case cl of
+  EquivOrDisjointClasses ty (cl : cs) -> case cl of
     OWLClass curi -> do
         es <- mapM toConcept cs
         return $ DLClass (qNameToId curi)
-          [DLEquivalentTo es nullRange] Nothing nullRange
-    _ -> err
-  DisjointClasses (cl : cs) -> case cl of
-    OWLClass curi -> do
-        es <- mapM toConcept cs
-        return $ DLClass (qNameToId curi)
-          [DLDisjointWith es nullRange] Nothing nullRange
+          [(case ty of
+              Equivalent -> DLEquivalentTo
+              Disjoint -> DLDisjointWith) es nullRange] Nothing nullRange
     _ -> err
   _ -> err
  _ -> err

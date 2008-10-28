@@ -187,42 +187,52 @@ data Axiom = -- Annotations can be ignored
   | EntityAnno EntityAnnotation
     deriving (Show, Eq, Ord)
 
+data EquivOrDisjoint = Equivalent | Disjoint deriving (Show, Eq, Ord)
+
+data ObjDomainOrRange = ObjDomain | ObjRange deriving (Show, Eq, Ord)
+
+data DataDomainOrRange = DataDomain Description | DataRange DataRange
+    deriving (Show, Eq, Ord)
+
+data Character =
+    Functional
+  | InverseFunctional
+  | Reflexive
+  | Irreflexive
+  | Symmetric
+  | Asymmetric
+  | Transitive
+    deriving (Show, Eq, Ord)
+
+data SameOrDifferent = Same | Different deriving (Show, Eq, Ord)
+
+data PositiveOrNegative = Positive | Negative deriving (Show, Eq, Ord)
+
+data Assertion a b = Assertion a PositiveOrNegative SourceIndividualURI b
+    deriving (Show, Eq, Ord)
+
 data PlainAxiom =
     SubClassOf SubClass SuperClass
-  | EquivalentClasses [Description] -- min. 2 desc.
-  | DisjointClasses [Description] -- min. 2 desc.
+  | EquivOrDisjointClasses EquivOrDisjoint [Description] -- min. 2 desc.
   | DisjointUnion OwlClassURI [Description] -- min. 2 desc.
   | SubObjectPropertyOf SubObjectPropertyExpression ObjectPropertyExpression
-  | EquivalentObjectProperties [ObjectPropertyExpression]
+  | EquivOrDisjointObjectProperties EquivOrDisjoint [ObjectPropertyExpression]
                                   -- min. 2  ObjectPropertyExpression
-  | DisjointObjectProperties [ObjectPropertyExpression]
-                                  -- min. 2  ObjectPropertyExpression
-  | ObjectPropertyDomain ObjectPropertyExpression Description
-  | ObjectPropertyRange ObjectPropertyExpression Description
+  | ObjectPropertyDomainOrRange ObjDomainOrRange ObjectPropertyExpression
+    Description
   | InverseObjectProperties ObjectPropertyExpression ObjectPropertyExpression
-  | FunctionalObjectProperty ObjectPropertyExpression
-  | InverseFunctionalObjectProperty ObjectPropertyExpression
-  | ReflexiveObjectProperty ObjectPropertyExpression
-  | IrreflexiveObjectProperty ObjectPropertyExpression
-  | SymmetricObjectProperty ObjectPropertyExpression
-  | AntisymmetricObjectProperty ObjectPropertyExpression
-  | TransitiveObjectProperty ObjectPropertyExpression
+  | ObjectPropertyCharacter Character ObjectPropertyExpression
   | SubDataPropertyOf DataPropertyExpression DataPropertyExpression
-  | EquivalentDataProperties [DataPropertyExpression]
+  | EquivOrDisjointDataProperties EquivOrDisjoint [DataPropertyExpression]
                                   -- min. 2 DataPropertyExpressions
-  | DisjointDataProperties [DataPropertyExpression]
-                                  -- min. 2 DataPropertyExpressions
-  | DataPropertyDomain DataPropertyExpression Description
-  | DataPropertyRange DataPropertyExpression DataRange
+  | DataPropertyDomainOrRange DataDomainOrRange DataPropertyExpression
   | FunctionalDataProperty DataPropertyExpression
-           -- Fact
-  | SameIndividual [IndividualURI]  -- min. 2 ind.
-  | DifferentIndividuals [IndividualURI]  -- min. 2 ind.
+  | SameOrDifferentIndividual SameOrDifferent [IndividualURI]  -- min. 2 ind.
   | ClassAssertion IndividualURI Description
-  | ObjectPropertyAssertion ObjectPropertyExpression SourceIndividualURI TargetIndividualURI
-  | NegativeObjectPropertyAssertion ObjectPropertyExpression SourceIndividualURI TargetIndividualURI
-  | DataPropertyAssertion DataPropertyExpression SourceIndividualURI TargetValue
-  | NegativeDataPropertyAssertion DataPropertyExpression SourceIndividualURI TargetValue
+  | ObjectPropertyAssertion
+    (Assertion ObjectPropertyExpression TargetIndividualURI)
+  | DataPropertyAssertion
+    (Assertion DataPropertyExpression TargetValue)
   | Declaration Entity
     deriving (Show, Eq, Ord)
 

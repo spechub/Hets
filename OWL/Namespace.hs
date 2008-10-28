@@ -197,226 +197,102 @@ instance PNamespace Axiom where
 instance PNamespace PlainAxiom where
     propagateNspaces ns axiom =
         case axiom of
-           SubClassOf sub sup ->
-               SubClassOf (propagateNspaces ns sub)
-                             (propagateNspaces ns sup)
-           EquivalentClasses descList ->
-               EquivalentClasses
-                                    (map (propagateNspaces ns) descList)
-           DisjointClasses descList ->
-               DisjointClasses
-                                  (map (propagateNspaces ns) descList)
-           DisjointUnion classUri descList ->
-               DisjointUnion
-                                (propagateNspaces ns classUri)
-                                (map (propagateNspaces ns) descList)
-           SubObjectPropertyOf subExp objExp ->
-               SubObjectPropertyOf
-                                      (propagateNspaces ns subExp)
-                                      (propagateNspaces ns objExp)
-           EquivalentObjectProperties objExpList ->
-               EquivalentObjectProperties
-                     (map (propagateNspaces ns) objExpList)
-           DisjointObjectProperties objExpList ->
-               DisjointObjectProperties
-                     (map (propagateNspaces ns) objExpList)
-           ObjectPropertyDomain objExp desc ->
-               ObjectPropertyDomain
-                                       (propagateNspaces ns objExp)
-                                       (propagateNspaces ns desc)
-           ObjectPropertyRange objExp desc ->
-               ObjectPropertyRange
-                                      (propagateNspaces ns objExp)
-                                      (propagateNspaces ns desc)
-           InverseObjectProperties objExp1 objExp2 ->
-               InverseObjectProperties
-                                          (propagateNspaces ns objExp1)
-                                          (propagateNspaces ns objExp2)
-           FunctionalObjectProperty objExp ->
-               FunctionalObjectProperty
-                  (propagateNspaces ns objExp)
-           InverseFunctionalObjectProperty objExp ->
-               InverseFunctionalObjectProperty
-                  (propagateNspaces ns objExp)
-           ReflexiveObjectProperty objExp ->
-               ReflexiveObjectProperty
-                  (propagateNspaces ns objExp)
-           IrreflexiveObjectProperty objExp ->
-               IrreflexiveObjectProperty
-                  (propagateNspaces ns objExp)
-           SymmetricObjectProperty  objExp ->
-               SymmetricObjectProperty
-                  (propagateNspaces ns objExp)
-           AntisymmetricObjectProperty  objExp ->
-               AntisymmetricObjectProperty
-                  (propagateNspaces ns objExp)
-           TransitiveObjectProperty objExp ->
-               TransitiveObjectProperty
-                  (propagateNspaces ns objExp)
-           SubDataPropertyOf dpExp1 dpExp2 ->
-               SubDataPropertyOf
-                                    (propagateNspaces ns dpExp1)
-                                    (propagateNspaces ns dpExp2)
-           EquivalentDataProperties dpExpList ->
-               EquivalentDataProperties
-                     (map (propagateNspaces ns) dpExpList)
-           DisjointDataProperties  dpExpList ->
-               DisjointDataProperties
-                     (map (propagateNspaces ns) dpExpList)
-           DataPropertyDomain dpExp desc ->
-               DataPropertyDomain
-                                     (propagateNspaces ns dpExp)
-                                     (propagateNspaces ns desc)
-           DataPropertyRange dpExp dataRange ->
-               DataPropertyRange
-                                     (propagateNspaces ns dpExp)
-                                     (propagateNspaces ns dataRange)
-           FunctionalDataProperty dpExp ->
-               FunctionalDataProperty
-                                         (propagateNspaces ns dpExp)
-           SameIndividual indUriList ->
-               SameIndividual
-                                 (map (propagateNspaces ns) indUriList)
-           DifferentIndividuals indUriList ->
-               DifferentIndividuals
-                                        (map (propagateNspaces ns) indUriList)
-           ClassAssertion indUri desc ->
-               ClassAssertion
-                                 (propagateNspaces ns indUri)
-                                 (propagateNspaces ns desc)
-           ObjectPropertyAssertion objExp source target ->
-              ObjectPropertyAssertion
-                                         (propagateNspaces ns objExp)
-                                         (propagateNspaces ns source)
-                                         (propagateNspaces ns target)
-           NegativeObjectPropertyAssertion objExp source target ->
-              NegativeObjectPropertyAssertion
-                    (propagateNspaces ns objExp)
-                    (propagateNspaces ns source)
-                    (propagateNspaces ns target)
-           DataPropertyAssertion dpExp source target ->
-               DataPropertyAssertion
-                 (propagateNspaces ns dpExp)
-                 (propagateNspaces ns source)
-                 (propagateNspaces ns target)
-           NegativeDataPropertyAssertion dpExp source target ->
-               NegativeDataPropertyAssertion
-                 (propagateNspaces ns dpExp)
-                 (propagateNspaces ns source)
-                 (propagateNspaces ns target)
-           Declaration entity ->
-               Declaration
-                              (propagateNspaces ns entity)
+           SubClassOf sub sup -> SubClassOf
+                   (propagateNspaces ns sub) (propagateNspaces ns sup)
+           EquivOrDisjointClasses ty descList -> EquivOrDisjointClasses ty
+                   (map (propagateNspaces ns) descList)
+           DisjointUnion classUri descList -> DisjointUnion
+                   (propagateNspaces ns classUri)
+                   (map (propagateNspaces ns) descList)
+           SubObjectPropertyOf subExp objExp -> SubObjectPropertyOf
+                   (propagateNspaces ns subExp) (propagateNspaces ns objExp)
+           EquivOrDisjointObjectProperties ty objExpList ->
+                   EquivOrDisjointObjectProperties ty
+                   (map (propagateNspaces ns) objExpList)
+           ObjectPropertyDomainOrRange ty objExp desc ->
+                   ObjectPropertyDomainOrRange ty
+                   (propagateNspaces ns objExp) (propagateNspaces ns desc)
+           InverseObjectProperties objExp1 objExp2 -> InverseObjectProperties
+                   (propagateNspaces ns objExp1) (propagateNspaces ns objExp2)
+           ObjectPropertyCharacter ch objExp -> ObjectPropertyCharacter ch
+                   (propagateNspaces ns objExp)
+           SubDataPropertyOf dpExp1 dpExp2 -> SubDataPropertyOf
+                   (propagateNspaces ns dpExp1) (propagateNspaces ns dpExp2)
+           EquivOrDisjointDataProperties ty dpExpList ->
+                   EquivOrDisjointDataProperties ty
+                   (map (propagateNspaces ns) dpExpList)
+           DataPropertyDomainOrRange ddr dpExp -> DataPropertyDomainOrRange
+                   (case ddr of
+                      DataDomain desc -> DataDomain $ propagateNspaces ns desc
+                      DataRange dataRange -> DataRange
+                          $ propagateNspaces ns dataRange)
+                   $ propagateNspaces ns dpExp
+           FunctionalDataProperty dpExp -> FunctionalDataProperty
+                   (propagateNspaces ns dpExp)
+           SameOrDifferentIndividual ty indUriList ->
+                   SameOrDifferentIndividual ty
+                   (map (propagateNspaces ns) indUriList)
+           ClassAssertion indUri desc -> ClassAssertion
+                   (propagateNspaces ns indUri) (propagateNspaces ns desc)
+           ObjectPropertyAssertion (Assertion objExp ty source target) ->
+                   ObjectPropertyAssertion $ Assertion
+                   (propagateNspaces ns objExp) ty
+                   (propagateNspaces ns source) (propagateNspaces ns target)
+           DataPropertyAssertion (Assertion dpExp ty source target) ->
+                   DataPropertyAssertion $ Assertion
+                   (propagateNspaces ns dpExp) ty
+                   (propagateNspaces ns source) (propagateNspaces ns target)
+           Declaration entity -> Declaration (propagateNspaces ns entity)
     renameNamespace tMap axiom =
         case axiom of
            SubClassOf sub sup -> SubClassOf
-                             (renameNamespace tMap sub)
-                             (renameNamespace tMap sup)
-           EquivalentClasses descList ->
-               EquivalentClasses
-                                    (map (renameNamespace tMap) descList)
-           DisjointClasses descList -> DisjointClasses
-                                  (map (renameNamespace tMap) descList)
+                   (renameNamespace tMap sub) (renameNamespace tMap sup)
+           EquivOrDisjointClasses ty descList -> EquivOrDisjointClasses ty
+                   (map (renameNamespace tMap) descList)
            DisjointUnion classUri descList -> DisjointUnion
-                                (renameNamespace tMap classUri)
-                                (map (renameNamespace tMap) descList)
-           SubObjectPropertyOf subExp objExp ->
-               SubObjectPropertyOf
-                                      (renameNamespace tMap subExp)
-                                      (renameNamespace tMap objExp)
-           EquivalentObjectProperties objExpList ->
-               EquivalentObjectProperties
-                     (map (renameNamespace tMap) objExpList)
-           DisjointObjectProperties objExpList ->
-               DisjointObjectProperties
-                     (map (renameNamespace tMap) objExpList)
-           ObjectPropertyDomain objExp desc ->
-               ObjectPropertyDomain
-                                       (renameNamespace tMap objExp)
-                                       (renameNamespace tMap desc)
-           ObjectPropertyRange objExp desc ->
-               ObjectPropertyRange
-                                      (renameNamespace tMap objExp)
-                                      (renameNamespace tMap desc)
-           InverseObjectProperties objExp1 objExp2 ->
-               InverseObjectProperties
-                     (renameNamespace tMap objExp1)
-                     (renameNamespace tMap objExp2)
-           FunctionalObjectProperty objExp ->
-               FunctionalObjectProperty
-                  (renameNamespace tMap objExp)
-           InverseFunctionalObjectProperty objExp ->
-               InverseFunctionalObjectProperty
-                  (renameNamespace tMap objExp)
-           ReflexiveObjectProperty objExp ->
-               ReflexiveObjectProperty
-                  (renameNamespace tMap objExp)
-           IrreflexiveObjectProperty objExp ->
-               IrreflexiveObjectProperty
-                  (renameNamespace tMap objExp)
-           SymmetricObjectProperty  objExp ->
-               SymmetricObjectProperty
-                  (renameNamespace tMap objExp)
-           AntisymmetricObjectProperty  objExp ->
-               AntisymmetricObjectProperty
-                  (renameNamespace tMap objExp)
-           TransitiveObjectProperty objExp ->
-               TransitiveObjectProperty
-                  (renameNamespace tMap objExp)
-           SubDataPropertyOf dpExp1 dpExp2 ->
-               SubDataPropertyOf
-                                    (renameNamespace tMap dpExp1)
-                                    (renameNamespace tMap dpExp2)
-           EquivalentDataProperties dpExpList ->
-               EquivalentDataProperties
-                     (map (renameNamespace tMap) dpExpList)
-           DisjointDataProperties  dpExpList ->
-               DisjointDataProperties
-                     (map (renameNamespace tMap) dpExpList)
-           DataPropertyDomain dpExp desc ->
-               DataPropertyDomain
-                                     (renameNamespace tMap dpExp)
-                                     (renameNamespace tMap desc)
-           DataPropertyRange dpExp dataRange ->
-               DataPropertyRange
-                                     (renameNamespace tMap dpExp)
-                                     (renameNamespace tMap dataRange)
-           FunctionalDataProperty dpExp ->
-               FunctionalDataProperty
-                                         (renameNamespace tMap dpExp)
-           SameIndividual indUriList ->
-               SameIndividual
-                                 (map (renameNamespace tMap) indUriList)
-           DifferentIndividuals indUriList ->
-               DifferentIndividuals
-                                        (map (renameNamespace tMap) indUriList)
-           ClassAssertion indUri desc ->
-               ClassAssertion
-                                 (renameNamespace tMap indUri)
-                                 (renameNamespace tMap desc)
-           ObjectPropertyAssertion objExp source target ->
-              ObjectPropertyAssertion
-                                         (renameNamespace tMap objExp)
-                                         (renameNamespace tMap source)
-                                         (renameNamespace tMap target)
-           NegativeObjectPropertyAssertion objExp source target ->
-              NegativeObjectPropertyAssertion
-                    (renameNamespace tMap objExp)
-                    (renameNamespace tMap source)
-                    (renameNamespace tMap target)
-           DataPropertyAssertion dpExp source target ->
-               DataPropertyAssertion
-                 (renameNamespace tMap dpExp)
-                 (renameNamespace tMap source)
-                 (renameNamespace tMap target)
-           NegativeDataPropertyAssertion dpExp source target ->
-               NegativeDataPropertyAssertion
-                 (renameNamespace tMap dpExp)
-                 (renameNamespace tMap source)
-                 (renameNamespace tMap target)
-           Declaration entity ->
-               Declaration
-                              (renameNamespace tMap entity)
+                   (renameNamespace tMap classUri)
+                   (map (renameNamespace tMap) descList)
+           SubObjectPropertyOf subExp objExp -> SubObjectPropertyOf
+                   (renameNamespace tMap subExp)
+                   (renameNamespace tMap objExp)
+           EquivOrDisjointObjectProperties ty objExpList ->
+                   EquivOrDisjointObjectProperties ty
+                   (map (renameNamespace tMap) objExpList)
+           ObjectPropertyDomainOrRange ty objExp desc ->
+                   ObjectPropertyDomainOrRange ty
+                   (renameNamespace tMap objExp) (renameNamespace tMap desc)
+           InverseObjectProperties objExp1 objExp2 -> InverseObjectProperties
+                   (renameNamespace tMap objExp1)
+                   (renameNamespace tMap objExp2)
+           ObjectPropertyCharacter ch objExp -> ObjectPropertyCharacter ch
+                   (renameNamespace tMap objExp)
+           SubDataPropertyOf dpExp1 dpExp2 -> SubDataPropertyOf
+                   (renameNamespace tMap dpExp1) (renameNamespace tMap dpExp2)
+           EquivOrDisjointDataProperties ty dpExpList ->
+                   EquivOrDisjointDataProperties ty
+                   (map (renameNamespace tMap) dpExpList)
+           DataPropertyDomainOrRange ddr dpExp -> DataPropertyDomainOrRange
+                   (case ddr of
+                      DataDomain desc -> DataDomain $ renameNamespace tMap desc
+                      DataRange dataRange -> DataRange
+                          $ renameNamespace tMap dataRange)
+                   (renameNamespace tMap dpExp)
+           FunctionalDataProperty dpExp -> FunctionalDataProperty
+                   (renameNamespace tMap dpExp)
+           SameOrDifferentIndividual ty indUriList ->
+                   SameOrDifferentIndividual ty
+                   (map (renameNamespace tMap) indUriList)
+           ClassAssertion indUri desc -> ClassAssertion
+                   (renameNamespace tMap indUri) (renameNamespace tMap desc)
+           ObjectPropertyAssertion (Assertion objExp ty source target) ->
+                   ObjectPropertyAssertion $ Assertion
+                   (renameNamespace tMap objExp) ty
+                   (renameNamespace tMap source) (renameNamespace tMap target)
+           DataPropertyAssertion (Assertion dpExp ty source target) ->
+                   DataPropertyAssertion $ Assertion
+                   (renameNamespace tMap dpExp) ty
+                   (renameNamespace tMap source) (renameNamespace tMap target)
+           Declaration entity -> Declaration (renameNamespace tMap entity)
 
 instance PNamespace Entity where
   propagateNspaces ns (Entity ty euri) = Entity ty $ propagateNspaces ns euri
