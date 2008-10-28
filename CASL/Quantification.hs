@@ -20,6 +20,7 @@ import CASL.Sign
 import Common.AS_Annotation
 import Common.Id
 import Common.Result
+import Common.Utils (nubOrdOn)
 
 import Data.List
 import qualified Data.Set as Set
@@ -61,8 +62,8 @@ effQuantify sign q vdecls phi pos =
         cleanDecls =
             map joinVarDecl . myGroup . reverse . myNub . reverse .
                    concatMap flatVAR_DECL
-        myGroup = groupBy ( \ (Var_decl _ s1 _) (Var_decl _ s2 _) -> s1 == s2)
-        myNub = nubBy ( \ (Var_decl v1 _ _) (Var_decl v2 _ _) -> v1 == v2)
+        myGroup = groupBy (\ (Var_decl _ s1 _) (Var_decl _ s2 _) -> s1 == s2)
+        myNub = nubOrdOn (\ (Var_decl v _ _) -> v)
         in case q of
            Unique_existential -> Quantification q (cleanDecls vdecls) phi pos
            _ -> let fvs = freeVars sign phi

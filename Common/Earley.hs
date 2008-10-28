@@ -55,6 +55,7 @@ import Common.Result
 import Common.GlobalAnnotations
 import Common.AS_Annotation
 import Common.Prec
+import Common.Utils (nubOrd)
 import qualified Data.Map as Map
 import Data.List
 import Control.Exception
@@ -436,7 +437,7 @@ getResolved pp p toExpr st = let
        (q, errs) = if null withpos then (p, expected) else
          (concatMapRange (reverseRange . posList) withpos, withpos)
        in Result (Diag Error ("expected further mixfix token: "
-            ++ show (take 5 $ nub $ map (tokStr . head . rest) errs)) q : ds)
+            ++ show (take 5 $ nubOrd $ map (tokStr . head . rest) errs)) q : ds)
             Nothing
      [har] -> case ambigs har of
        [] -> case mkAmbigs toExpr har of

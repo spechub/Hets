@@ -15,6 +15,7 @@ Utility functions that can't be found in the libraries
 module Common.Utils
   ( joinWith
   , nubOrd
+  , nubOrdOn
   , readMaybe
   , mapAccumLM
   , keepMins
@@ -55,8 +56,12 @@ nubWith f s es = case es of
        Just s' -> e : nubWith f s' rs
        Nothing -> nubWith f s rs
 
-nubOrd :: Ord e => [e] -> [e]
-nubOrd = let f e s = if Set.member e s then Nothing else Just (Set.insert e s)
+nubOrd :: Ord a => [a] -> [a]
+nubOrd = nubOrdOn id
+
+nubOrdOn :: Ord b => (a -> b) -> [a] -> [a]
+nubOrdOn g = let f a s = let e = g a in
+                   if Set.member e s then Nothing else Just (Set.insert e s)
   in nubWith f Set.empty
 
 readMaybe :: Read a => String -> Maybe a
@@ -83,16 +88,16 @@ mapAccumLM f s l = case l of
 composeMap :: (Monad m, Ord a, Ord b, Ord c, Show b) =>
                 Map.Map a b -> Map.Map b c -> m (Map.Map a c)
 composeMap in1 in2 = foldM (\ m1 (x,y)  -> case Map.lookup y in2 of
-   Nothing -> fail ("Item " ++ (show y) ++ " not found in target map")
+   Nothing -> fail $ "Item " ++ show y ++ " not found in target map"
    Just z  -> return $ Map.insert x z m1) Map.empty $ Map.toList in1
 
 -- | keep only minimal elements
 keepMins :: (a -> a -> Bool) -> [a] -> [a]
 keepMins lt l = case l of
     [] -> []
-    x : r -> let s = filter ( \ y -> not (lt x y)) r
+    x : r -> let s = filter (\ y -> not (lt x y)) r
                  m = keepMins lt s
-              in if any ( \ y -> lt y x) s then m
+              in if any (\ y -> lt y x) s then m
                  else x : m
 
 {- |
@@ -112,7 +117,7 @@ joinWith sep = concat . intersperse [sep]
 splitOn :: Eq a => a -- ^ seperator
         -> [a] -- ^ list to split
         -> [[a]]
-splitOn x xs = let (l, r) = break (==x) xs in
+splitOn x xs = let (l, r) = break (== x) xs in
     (if null l then [] else [l]) ++ (if null r then [] else splitOn x $ tail r)
 
 {- |
@@ -120,14 +125,14 @@ splitOn x xs = let (l, r) = break (==x) xs in
   File::Basename. It removes the directory part of a filepath.
 -}
 basename :: FilePath -> FilePath
-basename fp = (\(_path,basen) -> basen) (stripDir fp)
+basename fp = (\ (_path, basen) -> basen) (stripDir fp)
 
 {- |
   A function inspired by a perl function from the standard perl-module
   File::Basename. It gives the directory part of a filepath.
 -}
 dirname :: FilePath -> FilePath
-dirname fp = (\(path,_basen) -> path) (stripDir fp)
+dirname fp = (\ (path, _basen) -> path) (stripDir fp)
 
 {- |
   A function inspired by a perl function from the standard perl-module
@@ -145,7 +150,7 @@ fileparse sufs fp = let (path,base) = stripDir fp
 
 stripDir :: FilePath -> (FilePath,FilePath)
 stripDir fp =
-    (\(x,y) -> (if not (null y) then reverse y else "./", reverse x))
+    (\ (x, y) -> (if null y then "./" else reverse y, reverse x))
     (break (== '/') (reverse fp))
 
 stripSuffix :: [String] -> FilePath -> (FilePath,Maybe String)
