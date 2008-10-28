@@ -95,7 +95,7 @@ darwinGUI :: String -- ^ theory name
            -> IO([Proof_status ProofTree]) -- ^ proof status for each goal
 darwinGUI thName th =
     genericATPgui (atpFun thName) True (prover_name darwinProver) thName th $
-                  ProofTree ""
+                  emptyProofTree
 
 -- ** command line functions
 
@@ -113,7 +113,7 @@ darwinCMDLautomatic ::
            -- ^ Proof status for goals and lemmas
 darwinCMDLautomatic thName defTS th =
     genericCMDLautomatic (atpFun thName) (prover_name darwinProver) thName
-        (parseTactic_script batchTimeLimit [] defTS) th (ProofTree "")
+        (parseTactic_script batchTimeLimit [] defTS) th emptyProofTree
 
 {- |
   Implementation of 'Logic.Prover.proveCMDLautomaticBatch' which provides an
@@ -136,7 +136,7 @@ darwinCMDLautomaticBatch inclProvedThs saveProblem_batch resultMVar
                         thName defTS th =
     genericCMDLautomaticBatch (atpFun thName) inclProvedThs saveProblem_batch
         resultMVar (prover_name darwinProver) thName
-        (parseTactic_script batchTimeLimit [] defTS) th (ProofTree "")
+        (parseTactic_script batchTimeLimit [] defTS) th emptyProofTree
 
 -- * Main prover functions
 {- |
@@ -238,7 +238,7 @@ runDarwin sps cfg saveTPTP thName nGoal = do
         ExitFailure _ -> return
             (ATPError "Could not start Darwin. Is Darwin in your $PATH?",
                   emptyConfig (prover_name darwinProver)
-                              (AS_Anno.senAttr nGoal) $ ProofTree "")
+                              (AS_Anno.senAttr nGoal) emptyProofTree)
         ExitSuccess -> do
           prob <- showTPTPProblem thName sps nGoal $
                       simpleOptions ++ ["Requested prover: Darwin"]
@@ -274,7 +274,7 @@ runDarwin sps cfg saveTPTP thName nGoal = do
     defaultProof_status opts =
             (openProof_status
             (AS_Anno.senAttr nGoal) (prover_name darwinProver) $
-                                    ProofTree "")
+                                    emptyProofTree)
                        {tacticScript = Tactic_script $ show $ ATPTactic_script
                         {ts_timeLimit = configTimeLimit cfg,
                          ts_extraOpts = opts} }
@@ -287,7 +287,7 @@ runDarwin sps cfg saveTPTP thName nGoal = do
       , goalStatus = Proved (Just True)
       , usedAxioms = getAxioms -- []
       , proverName = prover_name darwinProver
-      , proofTree = ProofTree ""
+      , proofTree = emptyProofTree
       , usedTime = timeToTimeOfDay $ secondsToDiffTime $ toInteger ut
       , tacticScript = Tactic_script $ show $ ATPTactic_script
           { ts_timeLimit = configTimeLimit cfg, ts_extraOpts = opts }}

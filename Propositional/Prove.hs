@@ -165,7 +165,7 @@ zchaffProveGUI :: String -- ^ theory name
           -> IO([LP.Proof_status ProofTree]) -- ^ proof status for each goal
 zchaffProveGUI thName th =
     genericATPgui (atpFun thName) True (LP.prover_name zchaffProver) thName th
-                  $ ProofTree ""
+                  emptyProofTree
 {- |
   Parses a given default tactic script into a
   'GUI.GenericATPState.ATPTactic_script' if possible.
@@ -205,7 +205,7 @@ zchaffProveCMDLautomatic ::
            -- ^ Proof status for goals and lemmas
 zchaffProveCMDLautomatic thName defTS th =
     genericCMDLautomatic (atpFun thName) (LP.prover_name zchaffProver) thName
-        (parseZchaffTactic_script defTS) th (ProofTree "")
+        (parseZchaffTactic_script defTS) th emptyProofTree
 
 {- |
   Implementation of 'Logic.Prover.proveCMDLautomaticBatch' which provides an
@@ -228,7 +228,7 @@ zchaffProveCMDLautomaticBatch inclProvedThs saveProblem_batch resultMVar
                         thName defTS th =
     genericCMDLautomaticBatch (atpFun thName) inclProvedThs saveProblem_batch
         resultMVar (LP.prover_name zchaffProver) thName
-        (parseZchaffTactic_script defTS) th (ProofTree "")
+        (parseZchaffTactic_script defTS) th emptyProofTree
 
 {- |
   Record for prover specific functions. This is used by both GUI and command
@@ -320,8 +320,8 @@ runZchaff pState cfg saveDIMACS thName nGoal =
                                (ATPState.ATPError "Internal error.", defaultProof_status options)
                            | otherwise = (ATPState.ATPSuccess, defaultProof_status options)
                   defaultProof_status opts =
-                      (LP.openProof_status (AS_Anno.senAttr nGoal) (LP.prover_name zchaffProver) $
-                                        ProofTree "")
+                      (LP.openProof_status (AS_Anno.senAttr nGoal) (LP.prover_name zchaffProver)
+                                        emptyProofTree)
                       {LP.tacticScript = LP.Tactic_script $ show $ ATPState.ATPTactic_script
                                          {ATPState.ts_timeLimit = configTimeLimit cfg,
                                           ATPState.ts_extraOpts = opts} }
@@ -454,8 +454,8 @@ excepToATPResult prName nGoal excep = return $ case excep of
                              ++ show excep),
           emptyCfg)
   where
-    emptyCfg = ATPState.emptyConfig prName (AS_Anno.senAttr nGoal) $
-               ProofTree ""
+    emptyCfg = ATPState.emptyConfig prName (AS_Anno.senAttr nGoal)
+               emptyProofTree
 
 {- |
   Returns the time limit from GenericConfig if available. Otherwise

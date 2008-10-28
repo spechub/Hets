@@ -92,7 +92,7 @@ vampireGUI :: String -- ^ theory name
            -> IO([Proof_status ProofTree]) -- ^ proof status for each goal
 vampireGUI thName th =
     genericATPgui (atpFun thName) True (prover_name vampire) thName th $
-                  ProofTree ""
+                  emptyProofTree
 
 -- ** command line functions
 
@@ -110,7 +110,7 @@ vampireCMDLautomatic ::
            -- ^ Proof status for goals and lemmas
 vampireCMDLautomatic thName defTS th =
     genericCMDLautomatic (atpFun thName) (prover_name vampire) thName
-        (parseTactic_script batchTimeLimit [] defTS) th (ProofTree "")
+        (parseTactic_script batchTimeLimit [] defTS) th emptyProofTree
 
 {- |
   Implementation of 'Logic.Prover.proveCMDLautomaticBatch' which provides an
@@ -133,7 +133,7 @@ vampireCMDLautomaticBatch inclProvedThs saveProblem_batch resultMVar
                         thName defTS th =
     genericCMDLautomaticBatch (atpFun thName) inclProvedThs saveProblem_batch
         resultMVar (prover_name vampire) thName
-        (parseTactic_script batchTimeLimit [] defTS) th (ProofTree "")
+        (parseTactic_script batchTimeLimit [] defTS) th emptyProofTree
 
 {- |
   Runs the Vampire service.

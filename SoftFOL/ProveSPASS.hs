@@ -116,7 +116,7 @@ spassProveGUI :: String -- ^ theory name
           -> IO([Proof_status ProofTree]) -- ^ proof status for each goal
 spassProveGUI thName th =
     genericATPgui (atpFun thName) True (prover_name spassProver) thName th
-                  $ ProofTree ""
+                  emptyProofTree
 
 -- ** command line functions
 
@@ -134,7 +134,7 @@ spassProveCMDLautomatic ::
            -- ^ Proof status for goals and lemmas
 spassProveCMDLautomatic thName defTS th =
     genericCMDLautomatic (atpFun thName) (prover_name spassProver) thName
-        (parseSpassTactic_script defTS) th (ProofTree "")
+        (parseSpassTactic_script defTS) th emptyProofTree
 
 {- |
   Implementation of 'Logic.Prover.proveCMDLautomaticBatch' which provides an
@@ -157,7 +157,7 @@ spassProveCMDLautomaticBatch inclProvedThs saveProblem_batch resultMVar
                         thName defTS th =
     genericCMDLautomaticBatch (atpFun thName) inclProvedThs saveProblem_batch
         resultMVar (prover_name spassProver) thName
-        (parseSpassTactic_script defTS) th (ProofTree "")
+        (parseSpassTactic_script defTS) th emptyProofTree
 
 
 -- * SPASS Interfacing Code
@@ -291,7 +291,7 @@ runSpass sps cfg saveDFG thName nGoal = do
         then return
                  (ATPError "Could not start SPASS. Is SPASS in your $PATH?",
                   emptyConfig (prover_name spassProver)
-                              (AS_Anno.senAttr nGoal) $ ProofTree "")
+                              (AS_Anno.senAttr nGoal) emptyProofTree)
         else do
           prob <- showDFGProblem thName sps nGoal (createSpassOptions cfg)
           when saveDFG
@@ -308,7 +308,7 @@ runSpass sps cfg saveDFG thName nGoal = do
     extraOptions = ("-DocProof"):(cleanOptions cfg)
     defaultProof_status opts =
         (openProof_status (AS_Anno.senAttr nGoal) (prover_name spassProver) $
-                           ProofTree "")
+                           emptyProofTree)
         {tacticScript = Tactic_script $ show $ ATPTactic_script
           {ts_timeLimit = configTimeLimit cfg,
            ts_extraOpts = opts} }

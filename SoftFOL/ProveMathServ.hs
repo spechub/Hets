@@ -98,7 +98,7 @@ mathServBrokerGUI :: String -- ^ theory name
                      -- ^ proof status for each goal
 mathServBrokerGUI thName th =
     genericATPgui (atpFun thName) False (prover_name mathServBroker) thName th $
-                  ProofTree ""
+                  emptyProofTree
 
 -- ** command line functions
 
@@ -116,7 +116,7 @@ mathServBrokerCMDLautomatic ::
            -- ^ Proof status for goals and lemmas
 mathServBrokerCMDLautomatic thName defTS th =
     genericCMDLautomatic (atpFun thName) (prover_name mathServBroker) thName
-        (parseTactic_script batchTimeLimit [] defTS) th (ProofTree "")
+        (parseTactic_script batchTimeLimit [] defTS) th emptyProofTree
 
 {- |
   Implementation of 'Logic.Prover.proveCMDLautomaticBatch' which provides an
@@ -139,7 +139,7 @@ mathServBrokerCMDLautomaticBatch inclProvedThs saveProblem_batch resultMVar
                         thName defTS th =
     genericCMDLautomaticBatch (atpFun thName) inclProvedThs saveProblem_batch
         resultMVar (prover_name mathServBroker) thName
-        (parseTactic_script batchTimeLimit [] defTS) th (ProofTree "")
+        (parseTactic_script batchTimeLimit [] defTS) th emptyProofTree
 
 
 {- |

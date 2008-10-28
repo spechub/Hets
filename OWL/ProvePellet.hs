@@ -125,7 +125,7 @@ pelletGUI :: String -- ^ theory name
            -> IO([Proof_status ProofTree]) -- ^ proof status for each goal
 pelletGUI thName th =
     genericATPgui (atpFun thName) True (prover_name pelletProver) thName th $
-                  ProofTree ""
+                  emptyProofTree
 
 -- ** command line functions
 
@@ -143,7 +143,7 @@ pelletCMDLautomatic ::
            -- ^ Proof status for goals and lemmas
 pelletCMDLautomatic thName defTS th =
     genericCMDLautomatic (atpFun thName) (prover_name pelletProver) thName
-        (parseTactic_script batchTimeLimit [] defTS) th (ProofTree "")
+        (parseTactic_script batchTimeLimit [] defTS) th emptyProofTree
 
 {- |
   Implementation of 'Logic.Prover.proveCMDLautomaticBatch' which provides an
@@ -166,7 +166,7 @@ pelletCMDLautomaticBatch inclProvedThs saveProblem_batch resultMVar
                         thName defTS th =
     genericCMDLautomaticBatch (atpFun thName) inclProvedThs saveProblem_batch
         resultMVar (prover_name pelletProver) thName
-        (parseTactic_script batchTimeLimit [] defTS) th (ProofTree "")
+        (parseTactic_script batchTimeLimit [] defTS) th emptyProofTree
 
 -- * Main prover functions
 {- |
@@ -386,7 +386,7 @@ runPellet sps cfg savePellet thName nGoal = do
         ExitFailure _ -> return
             (ATPError "Could not start Pellet. Is Pellet in your $PATH?",
                   emptyConfig (prover_name pelletProver)
-                              (AS_Anno.senAttr nGoal) $ ProofTree "")
+                              (AS_Anno.senAttr nGoal) emptyProofTree)
         ExitSuccess -> do
           prob <- mkOWLGoalProblem
           when savePellet
@@ -421,7 +421,7 @@ runPellet sps cfg savePellet thName nGoal = do
     defaultProof_status opts =
             (openProof_status
             (AS_Anno.senAttr nGoal) (prover_name pelletProver) $
-                                    ProofTree "")
+                                    emptyProofTree)
                        {tacticScript = Tactic_script $ show $ ATPTactic_script
                         {ts_timeLimit = configTimeLimit cfg,
                          ts_extraOpts = opts} }
@@ -435,7 +435,7 @@ runPellet sps cfg savePellet thName nGoal = do
               ,goalStatus = Proved (Just True)
               ,usedAxioms = getAxioms -- []
               ,proverName = (prover_name pelletProver)
-              ,proofTree =   ProofTree ""
+              ,proofTree =   emptyProofTree
               ,usedTime = timeToTimeOfDay $
                                  secondsToDiffTime $ toInteger ut
               ,tacticScript  = Tactic_script $ show $ ATPTactic_script

@@ -570,7 +570,7 @@ quickCheckGUI :: String -- ^ theory name
            --   and a list of named sentences
            -> IO([Proof_status ProofTree]) -- ^ proof status for each goal
 quickCheckGUI thName th = genericATPgui (atpFun thName) True
-    (prover_name quickCheckProver) thName th $ ProofTree ""
+    (prover_name quickCheckProver) thName th emptyProofTree
 
 -- ** command line functions
 
@@ -588,7 +588,7 @@ quickCheckCMDLautomatic ::
            -- ^ Proof status for goals and lemmas
 quickCheckCMDLautomatic thName defTS th =
     genericCMDLautomatic (atpFun thName) (prover_name quickCheckProver) thName
-        (parseTactic_script batchTimeLimit [] defTS) th (ProofTree "")
+        (parseTactic_script batchTimeLimit [] defTS) th emptyProofTree
 
 {- |
   Implementation of 'Logic.Prover.proveCMDLautomaticBatch' which provides an
@@ -611,4 +611,4 @@ quickCheckCMDLautomaticBatch inclProvedThs saveProblem_batch resultMVar
                         thName defTS th =
     genericCMDLautomaticBatch (atpFun thName) inclProvedThs saveProblem_batch
         resultMVar (prover_name quickCheckProver) thName
-        (parseTactic_script batchTimeLimit [] defTS) th (ProofTree "")
+        (parseTactic_script batchTimeLimit [] defTS) th emptyProofTree
