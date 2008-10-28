@@ -13,11 +13,15 @@ Instance of class Logic for modal logic.
 
 module Modal.Logic_Modal where
 
+import Logic.Logic
+
 import Modal.AS_Modal
 import Modal.ModalSign
-import Modal.ATC_Modal()
+import Modal.ATC_Modal ()
 import Modal.Parse_AS
+import Modal.Print_AS
 import Modal.StatAna
+
 import CASL.Sign
 import CASL.Morphism
 import CASL.SymbolMapAnalysis
@@ -28,7 +32,8 @@ import CASL.SimplifySen
 import CASL.SymbolParser
 import CASL.Taxonomy
 import CASL.Logic_CASL (SignExtension(..))
-import Logic.Logic
+
+import Common.DocUtils
 
 data Modal = Modal deriving Show
 
@@ -70,6 +75,8 @@ instance Sentences Modal ModalFORMULA MSign ModalMor Symbol where
       symmap_of Modal = morphismToSymbMap
       sym_name Modal = symName
       simplify_sen Modal = simplifySen minExpForm simModal
+      print_sign Modal sig = printSign pretty
+          (printModalSign $ simplifySen minExpForm simModal sig) sig
 
 -- simplifySen for ExtFORMULA
 simModal :: Sign M_FORMULA ModalSign -> M_FORMULA -> M_FORMULA

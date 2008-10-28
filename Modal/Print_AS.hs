@@ -23,12 +23,11 @@ import Modal.ModalSign
 import CASL.AS_Basic_CASL (FORMULA(..))
 import CASL.ToDoc
 
-printFormulaOfModalSign :: Pretty f => [[Annoted (FORMULA f)]] -> Doc
-printFormulaOfModalSign f =
-    vcat $ map rekuPF f
-        where rekuPF :: Pretty f => [Annoted (FORMULA f)] -> Doc
-              rekuPF tf = fsep $ punctuate semi
-                          $ map (printAnnoted pretty) tf
+printFormulaOfModalSign :: Pretty f => (FORMULA f -> FORMULA f)
+                        -> [[Annoted (FORMULA f)]] -> Doc
+printFormulaOfModalSign sim =
+    vcat . map (\ tf -> fsep $ punctuate semi
+                          $ map (printAnnoted $ pretty . sim) tf)
 
 instance Pretty M_BASIC_ITEM where
     pretty (Simple_mod_decl is fs _) =
@@ -67,10 +66,10 @@ instance Pretty MODALITY where
     pretty (Term_mod t) = pretty t
 
 instance Pretty ModalSign where
-    pretty = printModalSign
+    pretty = printModalSign id
 
-printModalSign :: ModalSign -> Doc
-printModalSign s =
+printModalSign :: (FORMULA M_FORMULA -> FORMULA M_FORMULA) -> ModalSign -> Doc
+printModalSign sim s =
     let ms = modies s
         tms = termModies s in
     printSetMap (keyword rigidS <+> keyword opS) empty (rigidOps s)
@@ -79,11 +78,11 @@ printModalSign s =
     $+$ (if Map.null ms then empty else
         cat [keyword modalitiesS <+> (fsep $ punctuate semi $
             map sidDoc (Map.keys ms))
-            , specBraces (printFormulaOfModalSign $ Map.elems ms)])
+            , specBraces (printFormulaOfModalSign sim $ Map.elems ms)])
     $+$ (if Map.null tms then empty else
         cat [keyword termS <+> keyword modalityS <+> (fsep $ punctuate semi $
                 map idDoc (Map.keys tms))
-            , specBraces (printFormulaOfModalSign $ Map.elems tms)])
+            , specBraces (printFormulaOfModalSign sim $ Map.elems tms)])
 
 condParensInnerF :: Pretty f => (FORMULA f -> Doc)
                     -> (Doc -> Doc)    -- ^ a function that surrounds
