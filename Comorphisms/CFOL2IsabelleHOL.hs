@@ -47,6 +47,7 @@ import Common.DocUtils
 import Common.Id
 import Common.ProofTree
 import Common.Result
+import Common.Utils (nubOrdOn)
 
 import qualified Data.Map as Map
 import qualified Data.Set as Set
@@ -135,10 +136,9 @@ transTheory trSig trForm (sign, sens) = do
         (\ s -> case sentence s of
                 Sort_gen_ax _ _ -> False
                 _ -> True) sens
-    unique_sort_gen_axs = List.nubBy
-            ( \ (Sort_gen_ax cs1 _) (Sort_gen_ax cs2 _) ->
-                  any (flip elem $ map newSort cs1) $ map newSort cs2
-            ) $ map sentence sort_gen_axs
+    unique_sort_gen_axs = nubOrdOn (\ (Sort_gen_ax cs _) ->
+                                    Set.fromList $ map newSort cs)
+                          $ map sentence sort_gen_axs
     (freeTypes, genTypes) = List.partition (\ (Sort_gen_ax _ b) -> b)
                             $ unique_sort_gen_axs
     dtDefs = makeDtDefs sign tyToks freeTypes
