@@ -8,9 +8,7 @@ Maintainer  :  Christian.Maeder@dfki.de
 Stability   :  provisional
 Portability :  non-portable (ATerms)
 
-Automatic derivation of instances via DrIFT-rule Typeable, ShATermConvertible
- the type in OWL.OWL11.FFS
-manual instance for 'OntologyFile'
+Automatically derived and manual ShATermConvertible instances
 -}
 
 module OWL.ReadWrite () where
@@ -508,20 +506,6 @@ fromATC_Axiom ix att0 = case getShATerm ix att0 of
         case fromShATerm' b att1 of { (att2, b') ->
         (att2, PlainAxiom a' $ Declaration b') }}
     u -> fromShATermError "Axiom" u
-
-{-! for QName derive : Typeable!-}
-{-! for OntologyFile derive : Typeable!-}
-{-! for Ontology derive : Typeable !-}
-{-! for Annotation derive : Typeable !-}
-{-! for Entity derive : Typeable !-}
-{-! for Constant derive : Typeable !-}
-{-! for ObjectPropertyExpression derive : Typeable !-}
-{-! for DatatypeFacet derive : Typeable !-}
-{-! for DataRange derive : Typeable !-}
-{-! for EntityAnnotation derive : Typeable !-}
-{-! for Description derive : Typeable !-}
-{-! for SubObjectPropertyExpression derive : Typeable !-}
-{-! for Axiom derive : Typeable !-}
 
 {-! for Ontology derive : ShATermConvertible !-}
 {-! for Annotation derive : ShATermConvertible !-}

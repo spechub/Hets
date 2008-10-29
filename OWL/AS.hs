@@ -5,7 +5,7 @@ License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
 Maintainer  :  jiang@informatik.uni-bremen.de
 Stability   :  provisional
-Portability :  portable
+Portability :  non-portable(deriving Typeable)
 
 This module defines all the data types for the functional style Syntax
 of OWL 1.1.
@@ -15,6 +15,7 @@ It is modeled after the W3C document: <http://www.w3.org/Submission/2006/SUBM-ow
 module OWL.AS where
 
 import qualified Data.Map as Map
+import Data.Typeable
 
 data QName = QN
   { namePrefix :: String
@@ -23,7 +24,7 @@ data QName = QN
   -- ^ the local part of a qualified name \"namePrefix:localPart\"
   , namespaceUri :: String
   -- ^ the associated namespace uri
-  } deriving Show
+  } deriving (Typeable, Show)
 
 nullQName :: QName
 nullQName = QN "" "" ""
@@ -63,19 +64,19 @@ data Annotation =
   | Label Constant     -- ^ LabelAnnotation
   | Comment Constant   -- ^ CommentAnnotation
   | Annotation AnnotationURI Entity  -- ^ AnnotationByEntity
-    deriving (Show, Eq, Ord)
+    deriving (Typeable, Show, Eq, Ord)
 
 data OntologyFile = OntologyFile
   { namespaces :: Namespace
   , ontology :: Ontology
-  } deriving (Show, Eq, Ord)
+  } deriving (Typeable, Show, Eq, Ord)
 
 data Ontology = Ontology
   { uri :: OntologyURI
   , importsList :: [ImportURI]
   , annotationsList :: [Annotation]
   , axiomsList :: [Axiom]
-  } deriving (Show, Eq, Ord)
+  } deriving (Typeable, Show, Eq, Ord)
 
 type OntologyMap = Map.Map String OntologyFile
 
@@ -85,20 +86,21 @@ data EntityType =
   | ObjectProperty
   | DataProperty
   | Individual
-    deriving (Show, Read, Eq, Ord)
+    deriving (Typeable, Show, Read, Eq, Ord)
 
 -- | Syntax of Entities
-data Entity = Entity EntityType URI deriving (Show, Eq, Ord)
+data Entity = Entity EntityType URI deriving (Typeable, Show, Eq, Ord)
 
 type LexicalForm = String
 type LanguageTag = String
 
 data TypedOrUntyped = Typed URIreference | Untyped LanguageTag
-    deriving (Show, Eq, Ord)
+    deriving (Typeable, Show, Eq, Ord)
 
 -- | a lexical representation either with an "^^" URI (tyoed) or
 -- an optional language tag starting with "\@" (untyped)
-data Constant = Constant LexicalForm TypedOrUntyped deriving (Show, Eq, Ord)
+data Constant = Constant LexicalForm TypedOrUntyped
+    deriving (Typeable, Show, Eq, Ord)
 
 -- | Object and Data Property Expressions
 type InverseObjectProperty = ObjectPropertyExpression
@@ -106,7 +108,7 @@ type InverseObjectProperty = ObjectPropertyExpression
 data ObjectPropertyExpression =
     OpURI ObjectPropertyURI
   | InverseOp InverseObjectProperty
-    deriving (Show, Eq, Ord)
+    deriving (Typeable, Show, Eq, Ord)
 
 type DataPropertyExpression = DataPropertyURI
 
@@ -122,7 +124,7 @@ data DatatypeFacet =
   | MAXEXCLUSIVE
   | TOTALDIGITS
   | FRACTIONDIGITS
-    deriving (Show, Eq, Ord)
+    deriving (Typeable, Show, Eq, Ord)
 
 type RestrictionValue = Constant
 
@@ -131,7 +133,7 @@ data DataRange =
   | DataComplementOf DataRange
   | DataOneOf [Constant] --  min. 1 constant
   | DatatypeRestriction DataRange [(DatatypeFacet, RestrictionValue)]
-    deriving (Show, Eq, Ord)
+    deriving (Typeable, Show, Eq, Ord)
 
 -- | Syntax of Entity Annotations
 type AnnotationsForAxiom = Annotation
@@ -139,7 +141,7 @@ type AnnotationsForEntity = Annotation
 
 data EntityAnnotation =
     EntityAnnotation [AnnotationsForAxiom] Entity [AnnotationsForEntity]
-    deriving (Show, Eq, Ord)
+    deriving (Typeable, Show, Eq, Ord)
 
 -- | Syntax of Classes
 
@@ -151,7 +153,7 @@ data JunctionType = UnionOf | IntersectionOf deriving (Show, Eq, Ord)
 data QuantifierType = AllValuesFrom | SomeValuesFrom deriving (Show, Eq, Ord)
 
 data Cardinality a b = Cardinality CardinalityType Int a (Maybe b)
-    deriving (Show, Eq, Ord)
+    deriving (Typeable, Show, Eq, Ord)
 
 data Description =
     OWLClass OwlClassURI
@@ -166,7 +168,7 @@ data Description =
       QuantifierType DataPropertyExpression [DataPropertyExpression] DataRange
   | DataHasValue DataPropertyExpression Constant
   | DataCardinality (Cardinality DataPropertyExpression DataRange)
-    deriving (Show, Eq, Ord)
+    deriving (Typeable, Show, Eq, Ord)
 
 -- Axiom
 type SubClass = Description
@@ -176,7 +178,7 @@ data SubObjectPropertyExpression =
     OPExpression ObjectPropertyExpression
   | SubObjectPropertyChain [ObjectPropertyExpression]
       -- ^ min. 2 ObjectPropertyExpression
-    deriving (Show, Eq, Ord)
+    deriving (Typeable, Show, Eq, Ord)
 
 type SourceIndividualURI = IndividualURI
 type TargetIndividualURI = IndividualURI
@@ -185,14 +187,14 @@ type TargetValue = Constant
 data Axiom = -- Annotations can be ignored
     PlainAxiom [Annotation] PlainAxiom
   | EntityAnno EntityAnnotation
-    deriving (Show, Eq, Ord)
+    deriving (Typeable, Show, Eq, Ord)
 
 data EquivOrDisjoint = Equivalent | Disjoint deriving (Show, Eq, Ord)
 
 data ObjDomainOrRange = ObjDomain | ObjRange deriving (Show, Eq, Ord)
 
 data DataDomainOrRange = DataDomain Description | DataRange DataRange
-    deriving (Show, Eq, Ord)
+    deriving (Typeable, Show, Eq, Ord)
 
 data Character =
     Functional
@@ -202,14 +204,14 @@ data Character =
   | Symmetric
   | Asymmetric
   | Transitive
-    deriving (Show, Eq, Ord)
+    deriving (Typeable, Show, Eq, Ord)
 
 data SameOrDifferent = Same | Different deriving (Show, Eq, Ord)
 
 data PositiveOrNegative = Positive | Negative deriving (Show, Eq, Ord)
 
 data Assertion a b = Assertion a PositiveOrNegative SourceIndividualURI b
-    deriving (Show, Eq, Ord)
+    deriving (Typeable, Show, Eq, Ord)
 
 data PlainAxiom =
     SubClassOf SubClass SuperClass
@@ -234,7 +236,7 @@ data PlainAxiom =
   | DataPropertyAssertion
     (Assertion DataPropertyExpression TargetValue)
   | Declaration Entity
-    deriving (Show, Eq, Ord)
+    deriving (Typeable, Show, Eq, Ord)
 
 emptyOntologyFile :: OntologyFile
 emptyOntologyFile = OntologyFile Map.empty emptyOntology
