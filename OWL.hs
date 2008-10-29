@@ -2,7 +2,7 @@
 
 The "OWL" folder contains the OWL 1.1 (see
 <http://www.w3.org/Submission/2006/10/>) instance of "Logic.Logic".  All the
-data for this instance is assembled in "OWL.Logic_OWL11".
+data for this instance is assembled in "OWL.Logic_OWL".
 
 /Abstract Syntax/
 
@@ -49,7 +49,7 @@ sentences. "OWL.StructureAnalysis" contains the structured analysis of OWL 1.1.
 "OWL.Namespace" provides a transformation function for namespaces down
 the abstract syntax defined in "OWL.AS".
 
-OWL\/OWL11Parser.hs provides a test program for calling the Java parser
+OWL\/OWLParser.hs provides a test program for calling the Java parser
 and analysing its result.
 
 Additional details maybe obtained from the LaTeX document owl-casl-doc_en.tex
@@ -57,4 +57,4 @@ in OWL\/doc.
 
 -}
 
-module OWL11 where
+module OWL where
