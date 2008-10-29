@@ -46,7 +46,7 @@ instance Language Modal  where
   , "sublanguages." ]
 
 type MSign = Sign M_FORMULA ModalSign
-type ModalMor = Morphism M_FORMULA ModalSign ()
+type ModalMor = Morphism M_FORMULA ModalSign (DefMorExt ModalSign)
 type ModalFORMULA = FORMULA M_FORMULA
 
 instance SignExtension ModalSign where
@@ -59,7 +59,7 @@ instance Syntax Modal M_BASIC_SPEC SYMB_ITEMS SYMB_MAP_ITEMS where
 
 -- Modal logic
 
-map_M_FORMULA :: MapSen M_FORMULA ModalSign ()
+map_M_FORMULA :: MapSen M_FORMULA ModalSign (DefMorExt ModalSign)
 map_M_FORMULA mor (BoxOrDiamond b m f ps) =
     let newM = case m of
                    Simple_mod _ -> m
@@ -109,12 +109,13 @@ instance StaticAnalysis Modal M_BASIC_SPEC ModalFORMULA
          intersection Modal s = return . interSig interModalSign s
          morphism_union Modal = morphismUnion (const id) addModalSign
          final_union Modal = finalUnion addModalSign
-         inclusion Modal = sigInclusion () isSubModalSign diffModalSign
-         cogenerated_sign Modal = cogeneratedSign () isSubModalSign
-         generated_sign Modal = generatedSign () isSubModalSign
-         induced_from_morphism Modal = inducedFromMorphism () isSubModalSign
+         inclusion Modal = sigInclusion emptyMorExt isSubModalSign diffModalSign
+         cogenerated_sign Modal = cogeneratedSign emptyMorExt isSubModalSign
+         generated_sign Modal = generatedSign emptyMorExt isSubModalSign
+         induced_from_morphism Modal =
+             inducedFromMorphism emptyMorExt isSubModalSign
          induced_from_to_morphism Modal =
-             inducedFromToMorphism () isSubModalSign diffModalSign
+             inducedFromToMorphism emptyMorExt isSubModalSign diffModalSign
          theory_to_taxonomy Modal = convTaxo
 
 instance Logic Modal ()

@@ -43,7 +43,7 @@ instance Language VSE where
   "VSE extends CASL by modal operators and programs."
 
 type VSEBasicSpec = BASIC_SPEC () Procdecls Dlformula
-type VSEMor = Morphism Dlformula Procs ()
+type VSEMor = Morphism Dlformula Procs VSEMorExt
 
 instance SignExtension Procs where
   isSubSignExtension = isSubProcsMap
@@ -88,15 +88,15 @@ instance StaticAnalysis VSE VSEBasicSpec Sentence
          intersection VSE = interSigM interProcs
          morphism_union VSE = morphismUnionM (const id) unionProcs
          final_union VSE = addSigM unionProcs
-         inclusion VSE = sigInclusion () isSubProcsMap diffProcs
+         inclusion VSE = sigInclusion emptyMorExt isSubProcsMap diffProcs
          cogenerated_sign VSE s = fmap correctTarget
-           . cogeneratedSign () isSubProcsMap s
+           . cogeneratedSign emptyMorExt isSubProcsMap s
          generated_sign VSE s = fmap correctTarget
-           . generatedSign () isSubProcsMap s
+           . generatedSign emptyMorExt isSubProcsMap s
          induced_from_morphism VSE rm = fmap correctTarget
-           . inducedFromMorphism () isSubProcsMap rm
+           . inducedFromMorphism emptyMorExt isSubProcsMap rm
          induced_from_to_morphism VSE rm s1 = fmap correctTarget
-           . inducedFromToMorphism () isSubProcsMap diffProcs rm s1
+           . inducedFromToMorphism emptyMorExt isSubProcsMap diffProcs rm s1
 
 instance Logic VSE ()
                VSEBasicSpec Sentence SYMB_ITEMS SYMB_MAP_ITEMS

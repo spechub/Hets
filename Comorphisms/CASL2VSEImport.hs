@@ -260,4 +260,5 @@ mapMor m = let
   , mtarget = sig2
   , fun_map = Map.union (Map.union eqOps opsProcs) $ fun_map m
   , pred_map = Map.union (Map.union restrPreds predProcs) $ pred_map m
+  , extended_map = emptyMorExt
   }

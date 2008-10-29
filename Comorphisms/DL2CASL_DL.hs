@@ -108,7 +108,7 @@ mapMorphism phi = do
                  sort_map = Map.empty,
                  fun_map =  im,
                  pred_map = pm,
-                 extended_map = ()
+                 extended_map = emptyMorExt
                 }
 
 map_DL_theory :: (SDL.Sign, [Named DLBasicItem]) ->

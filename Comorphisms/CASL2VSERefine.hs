@@ -771,6 +771,7 @@ mapMor m = let
   , mtarget = sig2
   , fun_map = Map.union eqOps opsProcs
   , pred_map = Map.union restrPreds predProcs
+  , extended_map = emptyMorExt
   }
 
 mapCASLSen :: CASLFORMULA -> Sentence

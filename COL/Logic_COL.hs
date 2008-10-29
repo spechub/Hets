@@ -39,7 +39,7 @@ instance Language COL where
 
 type C_BASIC_SPEC = BASIC_SPEC () COL_SIG_ITEM ()
 type CSign = Sign () COLSign
-type COLMor = Morphism () COLSign ()
+type COLMor = Morphism () COLSign (DefMorExt COLSign)
 type COLFORMULA = FORMULA ()
 
 instance SignExtension COLSign where
@@ -79,12 +79,13 @@ instance StaticAnalysis COL C_BASIC_SPEC COLFORMULA
            return $ addSig addCOLSign sigma1 sigma2
          morphism_union COL = morphismUnion (const id) addCOLSign
          final_union COL = finalUnion addCOLSign
-         inclusion COL = sigInclusion () isSubCOLSign diffCOLSign
-         cogenerated_sign COL = cogeneratedSign () isSubCOLSign
-         generated_sign COL = generatedSign () isSubCOLSign
-         induced_from_morphism COL = inducedFromMorphism () isSubCOLSign
+         inclusion COL = sigInclusion emptyMorExt isSubCOLSign diffCOLSign
+         cogenerated_sign COL = cogeneratedSign emptyMorExt isSubCOLSign
+         generated_sign COL = generatedSign emptyMorExt isSubCOLSign
+         induced_from_morphism COL =
+             inducedFromMorphism emptyMorExt isSubCOLSign
          induced_from_to_morphism COL =
-             inducedFromToMorphism () isSubCOLSign diffCOLSign
+             inducedFromToMorphism emptyMorExt isSubCOLSign diffCOLSign
 
 instance Logic COL ()
                C_BASIC_SPEC COLFORMULA SYMB_ITEMS SYMB_MAP_ITEMS

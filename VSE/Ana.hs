@@ -32,6 +32,7 @@ module VSE.Ana
   , simpDlformula
   , correctTarget
   , toSen
+  , VSEMorExt
   ) where
 
 import Control.Monad
@@ -451,8 +452,10 @@ castMor m = m
   { msource = castSign $ msource m
   , mtarget = castSign $ mtarget m }
 
+type VSEMorExt = DefMorExt Procs
+
 -- | apply a morphism
-mapMorProg :: Morphism f Procs () -> Program -> Program
+mapMorProg :: Morphism f Procs VSEMorExt -> Program -> Program
 mapMorProg mor = let m = castMor mor in
   foldProg (mapProg (MapSen.mapTerm (const id) m)
     $ mapSen (const id) m)
@@ -470,22 +473,22 @@ mapMorProg mor = let m = castMor mor in
                 (Qual_pred_name j (Pred_type nargs r1) r2) nts r3) r
      _ -> error $ "mapMorProg " ++ show f }
 
-mapProcId :: Morphism f Procs () -> Id -> Id
+mapProcId :: Morphism f Procs VSEMorExt -> Id -> Id
 mapProcId m i = case lookupProc i $ msource m of
   Just p -> mapProcIdProfile m i p
   Nothing -> error $ "VSE.mapProcId unknown " ++ show i
 
-mapProcIdProfile :: Morphism f Procs () -> Id -> Profile -> Id
+mapProcIdProfile :: Morphism f Procs VSEMorExt -> Id -> Profile -> Id
 mapProcIdProfile m i p = case profileToOpType p of
   Just t -> fst $ mapOpSym (sort_map m) (fun_map m) (i, t)
   Nothing -> fst $ mapPredSym (sort_map m) (pred_map m)
     (i, profileToPredType p)
 
-mapMorDefproc :: Morphism f Procs () -> Defproc -> Defproc
+mapMorDefproc :: Morphism f Procs VSEMorExt -> Defproc -> Defproc
 mapMorDefproc m (Defproc k i vs p r) =
   Defproc k (mapProcId m i) vs (mapMorProg m p) r
 
-mapDlformula :: MapSen Dlformula Procs ()
+mapDlformula :: MapSen Dlformula Procs VSEMorExt
 mapDlformula m (Ranged f r) = case f of
   Dlformula b p s ->
     let n = mapSen mapDlformula m s
@@ -552,7 +555,7 @@ instance FreeVars Dlformula where
   freeVarsOfExt = freeDlVars
 
 -- | adjust procs map in morphism target signature
-correctTarget :: Morphism f Procs () -> Morphism f Procs ()
+correctTarget :: Morphism f Procs VSEMorExt -> Morphism f Procs VSEMorExt
 correctTarget m = let tar = mtarget m in m
   { mtarget = correctSign tar
     { extendedInfo = Procs $ Map.fromList

@@ -35,7 +35,7 @@ instance Language CoCASL  where
  description _ =
   "CoCASL is the coalgebraic extension of CASL."
 
-type CoCASLMor = Morphism C_FORMULA CoCASLSign ()
+type CoCASLMor = Morphism C_FORMULA CoCASLSign (DefMorExt CoCASLSign)
 type CoCASLFORMULA = FORMULA C_FORMULA
 
 instance SignExtension CoCASLSign where
@@ -48,7 +48,7 @@ instance Syntax CoCASL C_BASIC_SPEC SYMB_ITEMS SYMB_MAP_ITEMS where
 
 -- CoCASL logic
 
-map_C_FORMULA :: MapSen C_FORMULA CoCASLSign ()
+map_C_FORMULA :: MapSen C_FORMULA CoCASLSign (DefMorExt CoCASLSign)
 map_C_FORMULA mor frm = case frm of
            BoxOrDiamond b m f ps -> let
               newF = mapSen map_C_FORMULA mor f
@@ -83,12 +83,14 @@ instance StaticAnalysis CoCASL C_BASIC_SPEC CoCASLFORMULA
          intersection CoCASL s = return . interSig interCoCASLSign s
          morphism_union CoCASL = morphismUnion (const id) addCoCASLSign
          final_union CoCASL = finalUnion addCoCASLSign
-         inclusion CoCASL = sigInclusion () isSubCoCASLSign diffCoCASLSign
-         cogenerated_sign CoCASL = cogeneratedSign () isSubCoCASLSign
-         generated_sign CoCASL = generatedSign () isSubCoCASLSign
-         induced_from_morphism CoCASL = inducedFromMorphism () isSubCoCASLSign
+         inclusion CoCASL =
+             sigInclusion emptyMorExt isSubCoCASLSign diffCoCASLSign
+         cogenerated_sign CoCASL = cogeneratedSign emptyMorExt isSubCoCASLSign
+         generated_sign CoCASL = generatedSign emptyMorExt isSubCoCASLSign
+         induced_from_morphism CoCASL =
+             inducedFromMorphism emptyMorExt isSubCoCASLSign
          induced_from_to_morphism CoCASL =
-             inducedFromToMorphism () isSubCoCASLSign diffCoCASLSign
+             inducedFromToMorphism emptyMorExt isSubCoCASLSign diffCoCASLSign
 
 instance NameSL Bool where
     nameSL b = if b then "Co" else ""
@@ -117,6 +119,6 @@ instance Logic CoCASL CoCASL_Sublogics
                CoCASLMor
                Symbol RawSymbol () where
          stability CoCASL = Unstable
-         proj_sublogic_epsilon CoCASL = pr_epsilon ()
+         proj_sublogic_epsilon CoCASL = pr_epsilon emptyMorExt
          all_sublogics CoCASL = sublogics_all [False, True]
          empty_proof_tree CoCASL = ()

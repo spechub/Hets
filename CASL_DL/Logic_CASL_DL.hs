@@ -52,7 +52,7 @@ instance Language CASL_DL  where
   , "  * SHIQ"
   , "  * SHOIQ" ]
 
-type DLMor = Morphism DL_FORMULA CASL_DLSign ()
+type DLMor = Morphism DL_FORMULA CASL_DLSign (DefMorExt CASL_DLSign)
 type DLFORMULA = FORMULA DL_FORMULA
 
 instance SignExtension CASL_DLSign where
@@ -68,7 +68,7 @@ instance Syntax CASL_DL DL_BASIC_SPEC
 
 -- CASL_DL logic
 
-map_DL_FORMULA :: MapSen DL_FORMULA CASL_DLSign ()
+map_DL_FORMULA :: MapSen DL_FORMULA CASL_DLSign (DefMorExt CASL_DLSign)
 map_DL_FORMULA mor (Cardinality ct pn varT natT qualT r) =
     Cardinality ct pn' varT' natT' qualT r
     where pn' = mapPrSymb mor pn
@@ -114,13 +114,14 @@ instance StaticAnalysis CASL_DL DL_BASIC_SPEC DLFORMULA
          signature_union CASL_DL s = return . addSig addCASL_DLSign s
          morphism_union CASL_DL = morphismUnion (const id) addCASL_DLSign
          final_union CASL_DL = finalUnion addCASL_DLSign
-         inclusion CASL_DL = sigInclusion () isSubCASL_DLSign diffCASL_DLSign
-         cogenerated_sign CASL_DL = cogeneratedSign () isSubCASL_DLSign
-         generated_sign CASL_DL = generatedSign () isSubCASL_DLSign
+         inclusion CASL_DL =
+             sigInclusion emptyMorExt isSubCASL_DLSign diffCASL_DLSign
+         cogenerated_sign CASL_DL = cogeneratedSign emptyMorExt isSubCASL_DLSign
+         generated_sign CASL_DL = generatedSign emptyMorExt isSubCASL_DLSign
          induced_from_morphism CASL_DL =
-             inducedFromMorphism () isSubCASL_DLSign
+             inducedFromMorphism emptyMorExt isSubCASL_DLSign
          induced_from_to_morphism CASL_DL =
-             inducedFromToMorphism () isSubCASL_DLSign diffCASL_DLSign
+             inducedFromToMorphism emptyMorExt isSubCASL_DLSign diffCASL_DLSign
          theory_to_taxonomy CASL_DL tgk mo sig sen =
              convTaxo tgk mo (extendSortRelWithTopSort sig) sen
 

@@ -49,7 +49,6 @@ type Sort_map = Map.Map SORT SORT
 -- always use the partial profile as key!
 type Fun_map = Map.Map (Id, OpType) (Id, FunKind)
 type Pred_map = Map.Map (Id, PredType) Id
-type CASLMor = Morphism () () ()
 
 data Morphism f e m = Morphism
   { msource :: Sign f e
@@ -59,6 +58,16 @@ data Morphism f e m = Morphism
   , pred_map :: Pred_map
   , extended_map :: m
   } deriving (Show, Eq)
+
+data DefMorExt e = DefMorExt deriving (Show, Eq)
+
+emptyMorExt :: DefMorExt e
+emptyMorExt = DefMorExt
+
+instance Pretty (DefMorExt e) where
+  pretty _ = empty
+
+type CASLMor = Morphism () () ()
 
 isInclusionMorphism :: (m -> Bool) -> Morphism f e m -> Bool
 isInclusionMorphism f m = f (extended_map m) && Map.null (sort_map m)
