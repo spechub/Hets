@@ -61,7 +61,7 @@ import VSE.Logic_VSE
 import OMDoc.Logic_OMDoc ()
 #endif
 #ifndef NOOWLLOGIC
-import OWL.Logic_OWL11
+import OWL.Logic_OWL
 #endif
 
 logicList :: [AnyLogic]
@@ -75,7 +75,7 @@ logicList = [Logic CASL, Logic HasCASL,
              Logic RelScheme, Logic VSE,
 #endif
 #ifndef NOOWLLOGIC
-             Logic OWL11,
+             Logic OWL,
 #endif
              Logic Isabelle,Logic SoftFOL,
             Logic Propositional]

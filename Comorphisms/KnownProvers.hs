@@ -60,7 +60,7 @@ import Comorphisms.Modal2CASL
 import Comorphisms.CASL_DL2CASL
 #endif
 #ifndef NOOWLLOGIC
-import OWL.Logic_OWL11
+import OWL.Logic_OWL
 #endif
 import Comorphisms.PCoClTyConsHOL2PairsInIsaHOL
 import Comorphisms.HasCASL2PCoClTyConsHOL
@@ -186,7 +186,7 @@ zchaffComorphisms = return
 pelletComorphisms :: Result [AnyComorphism]
 pelletComorphisms = return
                     [
-                     Comorphism (mkIdComorphism OWL11 ())
+                     Comorphism (mkIdComorphism OWL ())
                     ]
 #endif
 

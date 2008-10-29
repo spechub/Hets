@@ -21,7 +21,7 @@ main :: IO ()
 main = do
   args <- getArgs
   if null args then
-     putStrLn "usage: OWL11Parser <URI>"
+     putStrLn "usage: OWLParser <URI>"
     else mapM_ process args
 
 isURI :: String -> Bool

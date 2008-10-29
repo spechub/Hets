@@ -17,7 +17,7 @@ import Logic.Logic
 import Logic.Comorphism
 
 --OWL = domain
-import OWL.Logic_OWL11
+import OWL.Logic_OWL
 import OWL.AS
 import OWL.Sign as OS
 
@@ -38,14 +38,14 @@ instance Language OWL2CASL_DL
 
 instance Comorphism
     OWL2CASL_DL     -- comorphism
-    OWL11           -- lid domain
+    OWL           -- lid domain
     ()              -- sublogics domain
     OntologyFile    -- Basic spec domain
     Sentence        -- sentence domain
     ()              -- symbol items domain
     ()              -- symbol map items domain
     OS.Sign         -- signature domain
-    OWL11_Morphism  -- morphism domain
+    OWL_Morphism  -- morphism domain
     ()              -- symbol domain
     ()              -- rawsymbol domain
     ProofTree   -- proof tree codomain
@@ -61,7 +61,7 @@ instance Comorphism
     RawSymbol       -- rawsymbol codomain
     ProofTree     -- proof tree domain
     where
-      sourceLogic OWL2CASL_DL    = OWL11
+      sourceLogic OWL2CASL_DL    = OWL
       sourceSublogic OWL2CASL_DL = ()
       targetLogic OWL2CASL_DL    = CASL_DL
       mapSublogic OWL2CASL_DL _  = Just $ SROIQ

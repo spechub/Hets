@@ -7,14 +7,14 @@ Maintainer  :  jiang@informatik.uni-bremen.de
 Stability   :  provisional
 Portability :  non-portable (imports Logic.Logic)
 
-analyse OWL11 files by calling the external Java parser.
+analyse OWL files by calling the external Java parser.
 -}
 
 module OWL.OWLAnalysis (structureAna, parseOWL) where
 
 import OWL.AS
 import OWL.Namespace
-import OWL.Logic_OWL11
+import OWL.Logic_OWL
 import OWL.ReadWrite()
 import OWL.StaticAnalysis
 import OWL.Sign
@@ -169,7 +169,7 @@ simpleLibEnv filename dg =
            { globalEnv = Map.singleton (mkSimpleId "")
                 (SpecEntry (ExtGenSig (JustNode nodeSig) [] g_sign nodeSig))}
        where nodeSig = NodeSig 0 g_sign
-             g_sign = G_sign OWL11 (mkExtSign emptySign) startSigId
+             g_sign = G_sign OWL (mkExtSign emptySign) startSigId
 
 simpleLibName :: FilePath -> LIB_NAME
 simpleLibName s = Lib_id $ Direct_link ("library_" ++ s) nullRange
@@ -258,7 +258,7 @@ nodeStaticAna
             Result diag res =
                  -- static analysis of current ontology with all sign of
                  -- imported ontology.
-                 basicOWL11Analysis (ontoF, inSig, emptyGlobalAnnos)
+                 basicOWLAnalysis (ontoF, inSig, emptyGlobalAnnos)
         case res of
           Just (_, ExtSign accSig _, sent) ->
             do
@@ -274,7 +274,7 @@ nodeStaticAna
                  -- imported ontoloies can be automatically outputed by
                  -- showTheory (see GUI)
                  newLNode = (n, topNode
-                   { dgn_theory = G_theory OWL11 newSig startSigId
+                   { dgn_theory = G_theory OWL newSig startSigId
                                   (toThSens newSent) startThId })
                  -- by remove of an node all associated edges are also deleted
                  -- so the deges must be saved before remove the node, then
@@ -298,9 +298,9 @@ nodeStaticAna
             -- since with "show theory" the edges also with Sign one links
             -- (see Static.DevGraph.joinG_sentences).
       where changeGMorOfEdges newSign (n1, n2, edge) =
-                let newCMor = idComorphism (Logic OWL11)
+                let newCMor = idComorphism (Logic OWL)
                     Result _ newGMor = gEmbedComorphism newCMor
-                                       (G_sign OWL11 newSign startSigId)
+                                       (G_sign OWL newSign startSigId)
                 in  (n1, n2, edge {dgl_morphism = fromJust newGMor})
 
 -- The other nodes in list are examined whether they were already analyzed.

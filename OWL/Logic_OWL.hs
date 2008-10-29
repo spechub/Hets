@@ -13,7 +13,7 @@ Here is the place where the class Logic is instantiated for OWL DL.
 __SROIQ__
 -}
 
-module OWL.Logic_OWL11 where
+module OWL.Logic_OWL where
 
 import Common.AS_Annotation
 import Common.DefaultMorphism
@@ -34,22 +34,22 @@ import OWL.StaticAnalysis
 import OWL.ProvePellet
 #endif
 
-data OWL11 = OWL11 deriving Show
+data OWL = OWL deriving Show
 
-instance Language OWL11 where
+instance Language OWL where
  description _ =
   "OWL DL -- Web Ontology Language Description Logic http://wwww.w3c.org/"
 
-type OWL11_Morphism = DefaultMorphism Sign
+type OWL_Morphism = DefaultMorphism Sign
 
-instance Syntax OWL11 OntologyFile () ()
+instance Syntax OWL OntologyFile () ()
     -- default implementation is fine!
 
 -- OWL DL logic
 
-instance Sentences OWL11 Sentence Sign OWL11_Morphism () where
-    map_sen OWL11 _ s = return s
-    print_named OWL11 namedSen =
+instance Sentences OWL Sentence Sign OWL_Morphism () where
+    map_sen OWL _ s = return s
+    print_named OWL namedSen =
         pretty (sentence namedSen) <>
            if null (senAttr namedSen) then empty
         else space <> text "%%" <> text (senAttr namedSen)
@@ -57,29 +57,29 @@ instance Sentences OWL11 Sentence Sign OWL11_Morphism () where
                       Just True -> text "%%implied"
                       _ -> empty)
 
-instance StaticAnalysis OWL11 OntologyFile Sentence
+instance StaticAnalysis OWL OntologyFile Sentence
                () ()
                Sign
-               OWL11_Morphism
+               OWL_Morphism
                () ()   where
 {- these functions are be implemented in OWL.StaticAna and OWL.Sign: -}
-      basic_analysis OWL11 = Just basicOWL11Analysis
-      empty_signature OWL11 = emptySign
-      signature_union OWL11 s = return . addSign s
-      final_union OWL11 = signature_union OWL11
-      inclusion OWL11 = defaultInclusion isSubSign
+      basic_analysis OWL = Just basicOWLAnalysis
+      empty_signature OWL = emptySign
+      signature_union OWL s = return . addSign s
+      final_union OWL = signature_union OWL
+      inclusion OWL = defaultInclusion isSubSign
 
 {-   this function will be implemented in OWL.Taxonomy
          theory_to_taxonomy OWL = convTaxo
 -}
 
-instance Logic OWL11 () OntologyFile Sentence () ()
+instance Logic OWL () OntologyFile Sentence () ()
                Sign
-               OWL11_Morphism () () ProofTree where
+               OWL_Morphism () () ProofTree where
     --     stability _ = Testing
     -- default implementations are fine
     -- the prover uses HTk and IO functions from uni
 #ifdef UNI_PACKAGE
-         provers OWL11 = [pelletProver]
-         cons_checkers OWL11 = [pelletConsChecker]
+         provers OWL = [pelletProver]
+         cons_checkers OWL = [pelletConsChecker]
 #endif

@@ -18,7 +18,7 @@ import Static.GTheory
 import Static.DevGraph
 
 import OWL.Sign
-import OWL.Logic_OWL11
+import OWL.Logic_OWL
 import OWL.AS
 import OWL.Namespace
 
@@ -75,9 +75,9 @@ graphFromMap ouri (OntologyFile _ onto) (ontoMap, dg) =
        -- if tagnode existed then it muss be reduced.
         newLNodes = reduceLNodes (cl:tagLNodes) dg
 
-        morphism = idComorphism (Logic OWL11)
+        morphism = idComorphism (Logic OWL)
         Result _ (Just comorphism) =
-             gEmbedComorphism morphism (G_sign OWL11 currentSign startSigId)
+             gEmbedComorphism morphism (G_sign OWL currentSign startSigId)
 
         -- to add ids into edges
         ledgeList = zipWith (\(indT, _) n ->
@@ -154,7 +154,7 @@ buildLNodeFromStr u i =
         nodeName = makeName $ mkSimpleId name
         currentSign = mkExtSign $ simpleSign $ QN "" u ""
     in  (i+1, newNodeLab nodeName DGBasic
-              $ noSensGTheory OWL11 currentSign startSigId)
+              $ noSensGTheory OWL currentSign startSigId)
 
 -- remove existing nodes in graph
 reduceLNodes :: [LNode DGNodeLab] -> DGraph -> [LNode DGNodeLab]
@@ -193,7 +193,7 @@ integrateScc nodeList ontoMap dg =
 -- simple integrate Theory
 integrateTheory :: [G_theory] -> G_theory
 integrateTheory theories =
-  foldl assembleTheories emptyOWL11Theory theories
+  foldl assembleTheories emptyOWLTheory theories
    where
     assembleTheories :: G_theory -> G_theory -> G_theory
     assembleTheories (G_theory lid1 sign1 _ theSen1 _)
@@ -231,5 +231,5 @@ changeEdges ((fromNodes, n, _, toNodes):r) newNode dg =
                                     delEdgeDG (n, tn) dg2
             | otherwise = changeTo rf dg2
 
-emptyOWL11Theory:: G_theory
-emptyOWL11Theory = noSensGTheory OWL11 (mkExtSign emptySign) startSigId
+emptyOWLTheory:: G_theory
+emptyOWLTheory = noSensGTheory OWL (mkExtSign emptySign) startSigId

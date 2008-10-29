@@ -10,7 +10,7 @@ Portability :  portable
 static analysis of basic specifications for OWL 1.1.
 -}
 
-module OWL.StaticAnalysis (basicOWL11Analysis) where
+module OWL.StaticAnalysis (basicOWLAnalysis) where
 
 import OWL.Namespace
 import OWL.Sign
@@ -28,10 +28,10 @@ import Common.Utils (nubOrd)
 import Data.Char (toLower)
 
 -- | static analysis of ontology with incoming sign.
-basicOWL11Analysis ::
+basicOWLAnalysis ::
     (OntologyFile, Sign, GlobalAnnos) ->
         Result (OntologyFile, ExtSign Sign (), [Named Sentence])
-basicOWL11Analysis (ofile, inSign, ga) =
+basicOWLAnalysis (ofile, inSign, ga) =
  if isEmptyOntologyFile ofile then
      fail "An empty OntologyFile has been found."
    else
@@ -123,7 +123,7 @@ negPrefix ty = case ty of
     Negative -> "negative_"
 
 -- | static analyse of all Axoms of an ontology base of functional
--- | style syntax (see OWL\/OWL11\/FFS.hs), ignores all imports and
+-- | style syntax (see OWL\/OWL\/FFS.hs), ignores all imports and
 -- | Annotations
 -- Try to store the %implied in simpAnno of Named-struction.
 anaAxioms :: GlobalAnnos -> Sign -> Namespace -> OntologyFile -> [Axiom]

@@ -312,7 +312,7 @@ cpp_sources = \
     Propositional/Logic_Propositional.hs GUI/GraphMenu.hs \
     Comorphisms/LogicList.hs Comorphisms/LogicGraph.hs \
     Comorphisms/KnownProvers.hs hets.hs $(happy_files) \
-    PGIP/InfoCommands.hs OWL/Logic_OWL11.hs GUI/ShowGraph.hs \
+    PGIP/InfoCommands.hs OWL/Logic_OWL.hs GUI/ShowGraph.hs \
     VSE/Logic_VSE.hs
 
 # unused, remove when header files are gone
