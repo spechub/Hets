@@ -149,11 +149,13 @@ runSKizzo qd =
             do
               tmp  <- getTemporaryDirectory
               time <- getCurrentTime
-              let path = replaceBaddies $ tmp ++ "/sKizzoTemp_" ++ show time ++ ".qdimacs"
+              let path = tmp ++ "/sKizzoTemp_" ++
+                         (replaceBaddies $ show time) ++ ".qdimacs"
               writeFile path qd
               let command = proverName ++ " " ++ defOptions ++ " " ++ path
               (_,_,_,pid) <- runInteractiveCommand command
               exCode <- waitForProcess pid
+              removeFile path
               case exCode of
                 ExitFailure 10   -> return Conservative
                 ExitFailure 20   -> return Inconsistent
@@ -165,8 +167,10 @@ runSKizzo qd =
                 ExitFailure (-4) -> return $ Unknown "Parse error"
                 ExitFailure (-5) -> return $ Unknown "sKizzo crashed"
                 ExitFailure (-6) -> return $ Unknown "Out of memory"
-                n                -> return $ Unknown $ "Unkown, exit was: " ++ show n
+                n                -> return $ Unknown $ "Unkown, exit was: " ++
+                                    show n
 
+-- | Helper to filter out problematic characters
 replaceBaddies :: String -> String
 replaceBaddies s = map (\x -> case x of
                                ' ' -> '_'
