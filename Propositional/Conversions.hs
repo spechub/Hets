@@ -115,7 +115,7 @@ showDIMACSProblem name sig axs cons =
 
 -- | Create signature map
 createSignMap :: Sig.Sign
-              -> Integer                   -- | Starting number of the variables
+              -> Integer                   -- ^ Starting number of the variables
               -> Map.Map Id.Token Integer
               -> Map.Map Id.Token Integer
 createSignMap sig inNum inMap =
