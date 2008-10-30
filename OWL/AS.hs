@@ -97,7 +97,7 @@ type LanguageTag = String
 data TypedOrUntyped = Typed URIreference | Untyped LanguageTag
     deriving (Typeable, Show, Eq, Ord)
 
--- | a lexical representation either with an "^^" URI (tyoed) or
+-- | a lexical representation either with an "^^" URI (typed) or
 -- an optional language tag starting with "\@" (untyped)
 data Constant = Constant LexicalForm TypedOrUntyped
     deriving (Typeable, Show, Eq, Ord)
