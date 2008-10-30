@@ -164,7 +164,7 @@ data SenAttr s a = SenAttr
     , simpAnno :: Maybe Bool -- for %simp or %nosimp annotations
     , sentence :: s } deriving (Eq, Ord, Show)
 
--- | equip a sentence with an empty name
+-- | equip a sentence with a name
 makeNamed :: a -> s -> SenAttr s a
 makeNamed a s = SenAttr
   { senAttr = a
