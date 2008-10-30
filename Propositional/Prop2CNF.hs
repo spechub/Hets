@@ -144,7 +144,9 @@ runSpass sps saveDFG =
                       (writeFile ("FlotterOut.dfg") flotterOut)
              return flotterOut
 
-      filteredOptions = ["-Auto=0","-Flotter=1","-Stdin=1"]
+      filteredOptions = ["-Auto=0","-Flotter=1","-Stdin=1", "-CNFOptSkolem=0",
+                         "-CNFStrSkolem=0"
+                        ]
       allOptions = filteredOptions
 
 {- |

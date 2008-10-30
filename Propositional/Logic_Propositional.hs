@@ -47,6 +47,7 @@ import qualified Propositional.Sublogic as Sublogic
 
 #ifdef UNI_PACKAGE
 import qualified Propositional.Prove as Prove
+import Propositional.Conservativity
 #endif
 
 -- | Lid for propositional logic
@@ -113,6 +114,7 @@ instance Logic Propositional
 #ifdef UNI_PACKAGE
       provers Propositional = [Prove.zchaffProver]
       cons_checkers Propositional = [Prove.propConsChecker]
+      conservativityCheck Propositional = conserCheck
 #endif
 
 

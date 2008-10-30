@@ -1,0 +1,13 @@
+logic Propositional
+
+spec A =
+     props a, b,c
+     . a /\ b => c
+end
+
+spec B =
+     A
+then %cons
+     props d,e,f
+     . d \/ e => f
+end

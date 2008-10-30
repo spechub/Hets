@@ -29,6 +29,7 @@ module Propositional.Morphism
     ,inclusionMap                -- inclusion map
     ,mapSentence                 -- map of sentences
     ,applyMap                    -- application function for maps
+    ,applyMorphism               -- application function for morphism
     ) where
 
 import qualified Data.Map as Map

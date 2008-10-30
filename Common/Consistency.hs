@@ -18,14 +18,14 @@ import Common.Doc
 import Common.DocUtils
 
 data ConsistencyStatus =
-  Inconsistent | Conservative | Monomorphic | Definitional
+  Inconsistent | Conservative | Monomorphic | Definitional | Unknown String
   deriving (Show, Eq, Ord)
 
 showConsistencyStatus :: ConsistencyStatus -> String
 showConsistencyStatus cs = case cs of
   Inconsistent -> "not conservative"
+  Unknown str  -> "unkown if being conservative. Cause is : " ++ str
   _ -> map toLower $ show cs
 
 instance Pretty ConsistencyStatus where
   pretty = text . showConsistencyStatus
-
