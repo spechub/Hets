@@ -48,7 +48,7 @@ uni_dirs = ../uni/davinci ../uni/graphs ../uni/events \
 uni_sources = $(wildcard $(addsuffix /haddock/*.hs, $(uni_dirs))) \
     $(wildcard ../uni/htk/haddock/*/*.hs)
 endif
-TESTTARGETFILES += Taxonomy/taxonomyTool.hs OWL/OWL11Parser.hs \
+TESTTARGETFILES += Taxonomy/taxonomyTool.hs OWL/OWLParser.hs \
     Taxonomy/taxonomyTool.hs SoftFOL/tests/CMDL_tests.hs
 endif
 
