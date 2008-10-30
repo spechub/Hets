@@ -358,7 +358,7 @@ tax_objects = $(patsubst %.hs, %.o, $(tax_sources))
 $(SETUP): utils/Setup.hs
 	$(HC) --make -O -o $@ $<
 
-packages: syb_pkg haifa_pkg programatica_pkg
+packages: syb_pkg haifa_pkg programatica_pkg tabular_pkg
 
 syb_pkg: $(SETUP)
 	@if $(HCPKG) field syb-generics version; then \
@@ -375,6 +375,11 @@ haifa_pkg:
 endif
 
 programatica_pkg:
+
+tabular_pkg: $(SETUP)
+	@if $(HCPKG) field tabular version; then \
+          echo "of tabular package found"; else \
+          (cd tabular-0.1; $(SETUPPACKAGE)) fi
 
 hets-opt:
 	$(MAKE) distclean
