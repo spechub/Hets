@@ -66,7 +66,7 @@ zchaffHelpText = "Zchaff is a very fast SAT-Solver \n"++
                  "No additional Options are available"++
                  "for it!"
 
--- | the name of the inconsistent lemma for consistency checks
+-- | the name of the prover
 zchaffS :: String
 zchaffS = "zchaff"
 
