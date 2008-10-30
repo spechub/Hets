@@ -114,7 +114,7 @@ instance Logic Propositional
 #ifdef UNI_PACKAGE
       provers Propositional = [Prove.zchaffProver]
       cons_checkers Propositional = [Prove.propConsChecker]
-      conservativityCheck Propositional = conserCheck
+      conservativityCheck Propositional = conserChose
 #endif
 
 
