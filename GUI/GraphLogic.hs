@@ -245,7 +245,7 @@ reloadLib iorle opts ioruplibs ln = do
             Nothing -> return ()
           writeIORef iorle $ newle
         Nothing ->
-          errorMess $ "Could not read original development graph from "
+          errorMess $ "Error when reloading file "
             ++ show file
 
 -- | Reloads libraries if nessesary

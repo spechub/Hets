@@ -80,7 +80,7 @@ reload gInfo@(GInfo {gi_LIB_NAME = ln,
   m <- anaLib opts { outtypes = [] } libfile
   case m of
     Nothing -> fail $
-      "Could not read original development graph from '" ++ libfile ++  "'"
+      "Error when reloading file '" ++ libfile ++  "'"
     Just (_, _) -> do
       mapM_ (deleteArc depG) arcs
       mapM_ (deleteNode depG) nodes'
