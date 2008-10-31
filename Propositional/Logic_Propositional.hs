@@ -46,8 +46,10 @@ import qualified Propositional.Analysis as Analysis
 import qualified Propositional.Sublogic as Sublogic
 
 #ifdef UNI_PACKAGE
-import qualified Propositional.Prove as Prove
+#ifdef TABULAR_PACKAGE
 import qualified Propositional.ProveWithTruthTable as ProveTT
+#endif
+import qualified Propositional.Prove as Prove
 import Propositional.Conservativity
 #endif
 
@@ -113,7 +115,11 @@ instance Logic Propositional
       all_sublogics Propositional = Sublogic.sublogics_all
     -- supplied provers
 #ifdef UNI_PACKAGE
-      provers Propositional = [Prove.zchaffProver,ProveTT.ttProver]
+      provers Propositional = [Prove.zchaffProver
+#ifdef TABULAR_PACKAGE
+                              ,ProveTT.ttProver
+#endif
+                              ]
       cons_checkers Propositional = [Prove.propConsChecker]
       conservativityCheck Propositional = conserChose
 #endif

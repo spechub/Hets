@@ -3,6 +3,11 @@
 HC = ghc
 HCPKG = ghc-pkg
 
+TABULARVERSION = $(shell $(HCPKG) field tabular version)
+ifneq ($(findstring 0.1, $(TABULARVERSION)),)
+TABULAR_PACKAGE = -DTABULAR_PACKAGE
+endif
+
 HAXMLVERSION = $(shell $(HCPKG) field HaXml version)
 ifneq ($(findstring 1.13., $(HAXMLVERSION)),)
 HAXML_PACKAGE = -DHAXML_PACKAGE
@@ -54,4 +59,4 @@ endif
 
 HC_OPTS = -threaded -fglasgow-exts -fallow-overlapping-instances \
   $(HAXML_PACKAGE) $(UNI_PACKAGE) $(SHELLAC_PACKAGE) $(HXTFILTER_PACKAGE) \
-  $(PFE_FLAGS) $(GLADE_PACKAGE) -DCASLEXTENSIONS
+  $(PFE_FLAGS) $(GLADE_PACKAGE) $(TABULAR_PACKAGE) -DCASLEXTENSIONS
