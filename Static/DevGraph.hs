@@ -196,7 +196,7 @@ data DGNodeType = DGNodeType
   , isLocallyEmpty :: Bool }
   deriving (Eq, Ord, Show)
 
-data NonRefType = 
+data NonRefType =
     RefType
   | NonRefType { isProvenCons :: Bool
                , isInternalSpec :: Bool }
@@ -217,7 +217,7 @@ listDGNodeTypes :: [DGNodeType]
 listDGNodeTypes =
   [ DGNodeType { nonRefType = ref
                , isLocallyEmpty = isEmpty'}
-  | ref <- 
+  | ref <-
     [ RefType ] ++
       [ NonRefType { isProvenCons = proven
                    , isInternalSpec = spec }
@@ -298,6 +298,7 @@ data DGRule =
   | FlatteningFour
   | FlatteningFive
   | FlatteningSix
+  | ConservativityCheck
     deriving (Show, Eq)
 
 -- | proof status of a link
@@ -405,12 +406,12 @@ getRealDGLinkType lnk = DGEdgeType
       FreeDef _ -> FreeOrCofreeDef
       CofreeDef _ -> FreeOrCofreeDef
       LocalThm s _ _ -> ThmType
-        { thmEdgeType = GlobalOrLocalThm 
+        { thmEdgeType = GlobalOrLocalThm
           { isLocalThmType = True
           , isHomThm = isHomogeneous $ dgl_morphism lnk }
         , isProvenEdge = isProvenThmLinkStatus s }
       GlobalThm s _ _ -> ThmType
-        { thmEdgeType = GlobalOrLocalThm 
+        { thmEdgeType = GlobalOrLocalThm
           { isLocalThmType = False
           , isHomThm = isHomogeneous $ dgl_morphism lnk }
         , isProvenEdge = isProvenThmLinkStatus s }
@@ -429,7 +430,7 @@ listDGEdgeTypes :: [DGEdgeType]
 listDGEdgeTypes =
   [ DGEdgeType { edgeTypeModInc = modinc
                , isInc = isInclusion' }
-  | modinc <- 
+  | modinc <-
     [ HomGlobalDef
     , HetGlobalDef
     , HidingDefType

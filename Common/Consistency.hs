@@ -23,6 +23,14 @@ data ConsistencyStatus =
   Inconsistent | Conservative | Monomorphic | Definitional | Unknown String
   deriving (Show, Eq, Ord)
 
+showToComply :: ConsistencyStatus -> String
+showToComply cons =
+    case cons of
+      Conservative -> "Cons"
+      Monomorphic  -> "Mono"
+      Definitional -> "Def"
+      _            -> "dunno"
+
 showConsistencyStatus :: ConsistencyStatus -> String
 showConsistencyStatus cs = case cs of
   Inconsistent -> "not conservative"

@@ -107,6 +107,7 @@ import qualified Data.Map as Map
 import Control.Monad(foldM, filterM)
 import Control.Concurrent.MVar
 
+
 -- | Locks the global lock and runs function
 runAndLock :: GInfo -> IO () -> IO ()
 runAndLock (GInfo { functionLock = lock
@@ -780,11 +781,6 @@ checkconservativityOfEdge _ gInfo@(GInfo{gi_LIB_NAME = ln,
        do
         GUI.HTkUtils.createInfoWindow "Result of conservativity check"
                         "No conservativity checkers available"
-        let newGr = lookupDGraph ln libEnv'
-            newHistory = proofHistory newGr
-            oldHistory = proofHistory $ lookupDGraph ln libEnv
-            history = take (length newHistory - length oldHistory) newHistory
-        applyChanges actGraphInfo history
         writeIORef le libEnv'
         unlockGlobal gInfo
    else
@@ -795,11 +791,6 @@ checkconservativityOfEdge _ gInfo@(GInfo{gi_LIB_NAME = ln,
        do
         GUI.HTkUtils.createInfoWindow "Result of conservativity check"
                         "No conservativity checker chosen"
-        let newGr = lookupDGraph ln libEnv'
-            newHistory = proofHistory newGr
-            oldHistory = proofHistory $ lookupDGraph ln libEnv
-            history = take (length newHistory - length oldHistory) newHistory
-        applyChanges actGraphInfo history
         writeIORef le libEnv'
         unlockGlobal gInfo
       else
@@ -822,10 +813,32 @@ checkconservativityOfEdge _ gInfo@(GInfo{gi_LIB_NAME = ln,
             myDiags = showRelDiags 2 ds
         createTextDisplay "Result of conservativity check"
                         (showRes ++ "\n" ++ myDiags) [HTk.size(50,50)]
+        let
+            consShow = case res of
+                        Just (Just (cst, _)) -> cst
+                        _                    -> Unknown "Unknown"
+            GlobalThm proven conserv _ = dgl_type linklab
+            consNew  = if ((show conserv) == (showToComply consShow))
+                        then
+                            Proven ConservativityCheck emptyProofBasis
+                        else
+                            LeftOpen
+            provenEdge = (source
+                         ,target
+                         ,linklab
+                          {
+                            dgl_type = GlobalThm proven conserv consNew
+                          }
+                         )
+            changes = [([ConservativityCheck]
+                      , [DeleteEdge (source,target,linklab)
+                        ,InsertEdge provenEdge
+                        ])]
         let newGr = lookupDGraph ln libEnv'
             newHistory = proofHistory newGr
             oldHistory = proofHistory $ lookupDGraph ln libEnv
-            history = take (length newHistory - length oldHistory) newHistory
+            history = (take (length newHistory - length oldHistory)
+                                    newHistory) ++ changes
         applyChanges actGraphInfo history
         writeIORef le libEnv'
         unlockGlobal gInfo
@@ -843,13 +856,13 @@ conservativityChoser :: [ConservativityChecker sign sentence morphism]
 conservativityChoser checkers =
     case length $ checkers of
       0 -> return $ fail "No conservativity checkers available"
+      1 -> return $ return $ head $ checkers
       _ ->
           do
             chosenOne <- listBox "Pick a conservativity checker"
                          $ map checker_id checkers
             case chosenOne of
               Nothing -> return $ fail "No conservativity checker chosen"
-              Just 1  -> return $ return $ head $ checkers
               Just i  -> return $ return $ (checkers !! i)
 
 -- | converts a DGraph

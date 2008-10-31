@@ -322,7 +322,7 @@ instance ( MinSublogic sublogics1 ()
       -- project_sublogic_epsilon - default implementation for now
       provers _ = []
       cons_checkers _ = []
-      conservativityCheck l = []
+      conservativityCheck _ = []
       empty_proof_tree (SpanDomain cid) = empty_proof_tree (morTargetLogic cid)
 
 -- * Morphisms
