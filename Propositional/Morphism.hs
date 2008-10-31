@@ -28,6 +28,7 @@ module Propositional.Morphism
     ,composeMor                  -- composition
     ,inclusionMap                -- inclusion map
     ,mapSentence                 -- map of sentences
+    ,mapSentenceH                -- map of sentences, without Result type
     ,applyMap                    -- application function for maps
     ,applyMorphism               -- application function for morphism
     ) where
@@ -43,7 +44,7 @@ import Common.Doc
 import Common.DocUtils
 
 -- | The datatype for morphisms in propositional logic as
--- | simple injective maps of sets
+-- | maps of sets
 
 data Morphism = Morphism
     {

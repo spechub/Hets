@@ -42,6 +42,7 @@ import Propositional.Morphism
 import Propositional.Prop2CNF
 import Propositional.Conversions
 import Propositional.Tools
+import Propositional.ProveWithTruthTable
 
 proverName :: String
 proverName = "sKizzo"
@@ -58,12 +59,10 @@ conserChose (inSig, inSens) mor cSens=
             do
               let option = unsafePerformIO $
                            listBox "Pick a conservativity checker"
-                                       ["sKizzo"]
+                                       ["sKizzo","truth tables"]
               case option of
-                Just 0 ->
-                    do
-                      out <- conserCheck (inSig, inSens) mor cSens
-                      return out
+                Just 0 -> conserCheck (inSig, inSens) mor cSens
+                Just 1 -> ttConservativityChecker (inSig, inSens) mor cSens
                 _      -> return (Just (Unknown "No checker chosen", []))
 
 -- | Conservativity Check for Propositional Logic

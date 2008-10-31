@@ -1,26 +1,27 @@
 {- |
 Module      :  $Header$
 Description :  Provers for propositional logic
-Copyright   :  (c) Dominik Luecke, Uni Bremen 2007
+Copyright   :  (c) Till Mossakowski, Uni Bremen 2008
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
-Maintainer  :  luecke@informatik.uni-bremen.de
+Maintainer  :  till@informatik.uni-bremen.de
 Stability   :  experimental
 Portability :  portable
 
-This is the connection of the SAT-Solver minisat to Hets
+A truth table prover for propositional logic. 
+Inefficient, but useful for learning purposes.
 -}
 
 module Propositional.ProveWithTruthTable
     (
-     ttProver --,    
---     ttConsistencyChecker,
---     ttConservativityChecker
+     ttProver,    
+     ttConsistencyChecker,
+     ttConservativityChecker
     )
     where
 
-import Text.Tabular.AsciiArt
 import Text.Tabular
+import Text.Tabular.AsciiArt
 
 import Propositional.AS_BASIC_Propositional
 import Propositional.Sign
@@ -47,10 +48,14 @@ import Data.Char
 import Data.List
 import Data.Maybe
 import qualified Data.Set as Set
+import qualified Data.Map as Map
 import qualified Common.OrderedMap as OMap
 import System.IO
+import System.IO.Unsafe
 
 import Common.Utils (readMaybe)
+import Common.Consistency
+import qualified Common.Result as Result
 
 
 
@@ -62,7 +67,15 @@ ttS = "truth tables"
 
 -- maximal size of the signature
 maxSigSize :: Int
-maxSigSize = 15
+maxSigSize = 17
+
+-- display error message when signature is too large
+sigTooLarge :: Int -> IO()
+sigTooLarge size =
+   createInfoWindow "Signature is too large" 
+           ("Signature is too large. "++
+            "It should contain < "++show maxSigSize++" symbols, "++
+            "but it contains "++show size++" symbols.")
 
 ttHelpText :: String
 ttHelpText = "An implementation of the truth table method.\n"++
@@ -106,17 +119,21 @@ allModels sig = allModels1 $ Set.toList $ items sig
           let models = allModels1 rest
            in models ++ map (Set.insert p) models
 
+data TTExtRow =
+     TTExtRow { rextprops, rextaxioms :: [Bool],
+                rextIsModel :: Bool
+              }
+ 
 data TTRow =
-     TTRow { rprops :: [Bool],
-             raxioms :: [Bool],
+     TTRow { rprops, raxioms :: [Bool],
              rgoal :: Maybe Bool,
+             rextrows :: [TTExtRow],
              rIsModel :: Bool,
              rIsOK :: Bool
            }
 
 data TTHead = 
-     TTHead { hprops :: [String],
-              haxioms :: [String],
+     TTHead { hprops, haxioms, hextprops, hextaxioms :: [String],
               hgoal :: Maybe String
             }
 
@@ -126,23 +143,45 @@ data TruthTable =
 
 renderTT :: TruthTable -> Table String
 renderTT tt = Table rowHeaders header table 
-  where 
+  where
+  hextpropsTT = hextprops (thead tt)
+  hextaxiomsTT = hextaxioms (thead tt)
+  rowsTT = trows tt
   header = Group DoubleLine
            ( [ Group SingleLine (map Header (hprops (thead tt)))
              , Group SingleLine (map Header (haxioms (thead tt)))]
+             ++ if null hextpropsTT && null hextaxiomsTT then []
+                else [ Header ""
+                     , Group SingleLine (map Header hextpropsTT)
+                     , Group SingleLine (map Header hextaxiomsTT)] 
              ++ case hgoal (thead tt) of
                  Nothing -> []
                  Just g -> [Header g])
   rowtype row =   (if rIsModel row then "M" else " ")
-                ++(if rIsOK row then "+" else "-")
-  rowHeaders = 
-    Group NoLine (map (Header . rowtype) (trows tt))
-  makeRow row = map showBool (rprops row) ++ 
-                map showBool (raxioms row) ++ 
-                case (rgoal row) of
-                  Nothing -> []
-                  Just g -> [showBool g]
-  table = map makeRow (trows tt)
+                ++(if rIsOK row then (if rIsModel row then "+" else "o") 
+                                else "-")
+  rowHeader row = 
+     Group NoLine (Header (rowtype row) : 
+                   map (const (Header "")) [2..length (rextrows row)])
+  rowHeaders =
+    if all (null . rextrows) rowsTT 
+    then Group NoLine (map (Header . rowtype) rowsTT)
+    else Group SingleLine (map rowHeader rowsTT)
+  makeExtRow e =
+    (if rextIsModel e then "M" else "") :
+    map showBool (rextprops e) ++
+    map showBool (rextaxioms e)
+  makeRow row = 
+    let common = map showBool (rprops row) ++ 
+                 map showBool (raxioms row) ++ 
+                 case (rgoal row) of
+                   Nothing -> []
+                   Just g -> [showBool g]
+        emptyPrefix = map (const "") [1..length common]
+    in case map makeExtRow (rextrows row) of
+       [] -> [common]
+       (e:extrows) -> (common++e):map (emptyPrefix ++) extrows
+  table = concatMap makeRow rowsTT
 
 
 {- |
@@ -166,30 +205,45 @@ consCheck :: String -> LP.TheoryMorphism Sig.Sign FORMULA
              PMorphism.Morphism ProofTree
           -> IO([LP.Proof_status ProofTree])
 consCheck thName tm =
-    case LP.t_target tm of
-      LP.Theory sig nSens -> do
-            let axioms = getAxioms $ snd $ unzip $ OMap.toList nSens
-            createInfoWindow "consistency checker" "test"
-            return undefined
-    where
-        getAxioms :: [LP.SenStatus FORMULA (LP.Proof_status ProofTree)]
-                  -> [AS_Anno.Named FORMULA]
-        getAxioms f = map (AS_Anno.makeNamed "consistency" . AS_Anno.sentence) $ filter AS_Anno.isAxiom f
+  case LP.t_target tm of
+    LP.Theory sig nSens ->
+      let size = Set.size (items sig) in 
+      if size >= maxSigSize then do
+        sigTooLarge size
+        return []
+      else do
+        let axs = filter (AS_Anno.isAxiom . snd) $ OMap.toList nSens
+            models = allModels sig
+            sigList = Set.toList $ items sig
+            heading = 
+              TTHead { hprops = map show sigList,
+                       haxioms = map fst axs,
+                       hextprops = [], hextaxioms = [],
+                       hgoal = Nothing
+                     }
+            row m = 
+              let evalAx = map (eval m . AS_Anno.sentence . snd) axs
+                  isModel = and evalAx
+              in TTRow { rprops = map (`Set.member` m) sigList,
+                         raxioms = evalAx,
+                         rextrows = [],  
+                         rgoal = Nothing,
+                         rIsModel = isModel,
+                         rIsOK = isModel
+                       }
+            rows = map row models
+            isOK = or (map rIsOK rows)
+            table = TruthTable { thead = heading,
+                                 trows = rows
+                               }
+            title = if isOK then "Theory is consistent" 
+                            else "Theory is inconsistent" 
+            legend = "Legend:\nM+ = model of the axioms\n"++
+                     " - = not a model of the axioms\n"
+            body = legend++"\n"++render id (renderTT table)
+        createTextSaveDisplay title (thName++".tt") body
+        return []
 
-        searchResult :: Handle -> IO Bool
-        searchResult hf = do
-            eof <- hIsEOF hf
-            if eof then
-                return False
-              else
-               do
-                line <- hGetLine hf
-                putStrLn line
-                if line == "RESULT:\tUNSAT" then
-                      return True
-                  else if line == "RESULT:\tSAT" then
-                          return False
-                         else searchResult hf
 
 -- ** prover GUI
 
@@ -275,10 +329,7 @@ runTt pState cfg _ thName nGoal =
   let sig = PState.initialSignature pState 
       size = Set.size $ items sig
    in if size >= maxSigSize then do
-        createInfoWindow "Signature is too large" 
-           ("Signature is too large. "++
-            "It should contain < "++show maxSigSize++" symbols, "++
-            "but it contains "++show size++" symbols.")
+        sigTooLarge size
         return (ATPState.ATPTLimitExceeded, 
                 cfg{ATPState.proof_status = defaultProof_status nGoal})
       else do
@@ -288,6 +339,7 @@ runTt pState cfg _ thName nGoal =
            heading = 
              TTHead { hprops = map show sigList,
                       haxioms = map AS_Anno.senAttr axs,
+                      hextprops = [], hextaxioms = [],
                       hgoal = Just $ AS_Anno.senAttr nGoal 
                     }
            row m = 
@@ -296,6 +348,7 @@ runTt pState cfg _ thName nGoal =
                  isModel = and evalAx
              in TTRow { rprops = map (`Set.member` m) sigList,
                         raxioms = evalAx,
+                        rextrows = [],
                         rgoal = Just evalGoal,
                         rIsModel = isModel,
                         rIsOK = not isModel || evalGoal
@@ -306,9 +359,10 @@ runTt pState cfg _ thName nGoal =
                                 trows = rows
                               }
            title = if isOK then "Proof succeeded" else "Proof failed"
-           legend = "Legend:\nM = model of the axioms\n"++
-                    "+ = OK\n- = not OK, counterexample "++
-                    "for logical consequence\n"
+           legend = "Legend:\nM = model of the premises\n"++
+                    "+ = OK, model fulfills conclusion\n"++
+                    "- = not OK, counterexample for logical consequence\n"++
+                    "o = OK, premises are not fulfilled, hence conclusion is irrelevant\n"
            body = legend++"\n"++render id (renderTT table)
 --        createInfoWindow title body
        let status = (defaultProof_status nGoal)
@@ -335,3 +389,84 @@ goalProblem :: String                   -- name of the theory
                   -> IO String
 goalProblem thName pState conjec _ =
   return ""
+
+{- |
+  Conservativity check
+-}
+
+-- | Conservativity Check via truth table
+
+-- TODO: check for injectivity!
+
+-- | amalgamation of models
+amalg :: Model -> Model -> Model
+amalg = Set.union
+  
+ttConservativityChecker :: 
+              (Sign, [AS_Anno.Named FORMULA]) -- ^ Initial sign and formulas
+           -> PMorphism.Morphism              -- ^ morhpism between specs
+           -> [AS_Anno.Named FORMULA]         -- ^ Formulas of extended spec
+           -> Result.Result (Maybe (ConsistencyStatus, [FORMULA]))
+ttConservativityChecker (_, srcSens) mor tarSens=
+  let srcAxs        = filter AS_Anno.isAxiom srcSens
+      tarAxs        = filter AS_Anno.isAxiom tarSens
+      srcSig        = items $ PMorphism.source mor
+      imageSig      = Set.map (PMorphism.applyMorphism mor) $srcSig
+      imageSigList  =  Set.toList imageSig
+      tarSig        = items $ PMorphism.target mor
+      tarSigList    = Set.toList tarSig
+      newSig        = Set.difference tarSig imageSig
+      size          = Set.size tarSig
+  in
+    if size >= maxSigSize then do
+       return (seq (unsafePerformIO $ sigTooLarge size) Nothing)
+    else do     
+      let imageAxs = map (AS_Anno.mapNamed (PMorphism.mapSentenceH mor)) srcAxs
+          models = allModels (Sign imageSig)
+          newSigList = Set.toList newSig
+          heading = 
+            TTHead { hprops = map show imageSigList,
+                     haxioms = map AS_Anno.senAttr srcAxs,
+                     hextprops =  map show newSigList,
+                     hextaxioms = map AS_Anno.senAttr tarAxs,
+                     hgoal = Nothing
+                   }
+          row m = 
+            let evalAx = map (evalNamed m) imageAxs
+                isModel = and evalAx
+                extmodels = allModels (Sign newSig)
+                extrow m' = 
+                  let evalExtAx = map (evalNamed (m `amalg` m')) tarAxs
+                      isExtModel = and evalExtAx
+                   in TTExtRow { rextprops = map (`Set.member` m') newSigList,
+                                rextaxioms = evalExtAx,
+                                rextIsModel = isExtModel
+                              }
+                extrows = map extrow extmodels
+            in TTRow { rprops = map (`Set.member` m) imageSigList,
+                       raxioms = evalAx,
+                       rgoal = Nothing,
+                       rextrows = if isModel then extrows else [],
+                       rIsModel = isModel,
+                       rIsOK = not isModel || or (map rextIsModel extrows)
+                     }
+          rows = map row models
+          isOK = and (map rIsOK rows)
+          table = TruthTable { thead = heading,
+                               trows = rows
+                             }
+          title = "The extension is "++
+                  (if isOK then "" else "not ")++
+                  "conservative"
+          legend = "Legend:\n"++
+                   "M = model of the axioms\n"++
+                   "+ = OK, has expanion\n"++
+                   "- = not OK, has no expansion, "++
+                       "hence conservativity fails\n"++
+                   "o = OK, not a model of the axioms, "++
+                       "hence no expansion needed\n"
+          body = legend++"\n"++render id (renderTT table)
+          disp = createTextSaveDisplay title "unnamed" body
+          res = if isOK then Conservative else Inconsistent
+      return (seq (unsafePerformIO $ disp) (Just (res,[])))
+

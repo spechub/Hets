@@ -120,7 +120,8 @@ instance Logic Propositional
                               ,ProveTT.ttProver
 #endif
                               ]
-      cons_checkers Propositional = [Prove.propConsChecker]
+      cons_checkers Propositional = 
+         [Prove.propConsChecker,ProveTT.ttConsistencyChecker]
       conservativityCheck Propositional = conserChose
 #endif
 

@@ -465,7 +465,7 @@ createLocalMenuButtonShowEdgeInfo _ = Button "Show info"
 createLocalMenuButtonCheckconservativityOfEdge :: GInfo
                                                -> ButtonMenu GA.EdgeValue
 createLocalMenuButtonCheckconservativityOfEdge gInfo =
-  Button "Check conservativity (preliminary)"
+  Button "Check conservativity"
     (\ (_, (EdgeId descr), maybeLEdge)  ->
       checkconservativityOfEdge descr gInfo maybeLEdge)
 
