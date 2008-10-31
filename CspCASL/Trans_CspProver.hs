@@ -90,7 +90,7 @@ transEventSet evs =
 transEvent :: EVENT -> Term
 transEvent ev =
     case ev of
-      TermEvent caslTerm _ -> conDouble "not yet done"
+      TermEvent _caslTerm _ -> conDouble "not yet done"
       ChanSend _ _ _ -> conDouble "not yet done"
       ChanNonDetSend _ _ _ _ -> conDouble "not yet done"
       ChanRecv _ _ _ _ -> conDouble "not yet done"
