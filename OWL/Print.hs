@@ -58,15 +58,10 @@ instance Pretty Description where
     pretty = printDescription
 
 cardinalityType :: CardinalityType -> Doc
-cardinalityType ty = text $ case ty of
-    MinCardinality -> "min"
-    MaxCardinality -> "max"
-    ExactCardinality -> "exactly"
+cardinalityType = text . showCardinalityType
 
 quantifierType :: QuantifierType -> Doc
-quantifierType ty = text $ case ty of
-    AllValuesFrom -> "only"
-    SomeValuesFrom -> "some"
+quantifierType = text . showQuantifierType
 
 printDescription :: Description -> Doc
 printDescription desc = case desc of
@@ -80,7 +75,7 @@ printDescription desc = case desc of
    ObjectValuesFrom ty opExp d ->
       printObjPropExp opExp <+> quantifierType ty <+> pretty d
    ObjectExistsSelf opExp ->
-      printObjPropExp opExp <+> text "some" <+> text "self"
+      printObjPropExp opExp <+> text "Self"
    ObjectHasValue opExp indUri ->
       pretty opExp <+> text "value" <+> pretty indUri
    ObjectCardinality (Cardinality ty card opExp maybeDesc) ->

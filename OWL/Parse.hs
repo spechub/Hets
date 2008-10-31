@@ -18,7 +18,7 @@ module OWL.Parse where
 
 import OWL.AS
 
-import Common.Lexer
+import Common.Lexer hiding (skip)
 
 import Text.ParserCombinators.Parsec
 import Data.Char
@@ -129,8 +129,12 @@ ihierPart =
 hierPartWithOpts :: CharParser st String
 hierPartWithOpts = ihierPart <++> optQueryOrFrag
 
+skip :: CharParser st a -> CharParser st a
+skip = (<< spaces)
+
+-- possibly exlude keywords here too
 uriP :: CharParser st QName
-uriP =  do
+uriP = skip $ do
     pre <- try (prefix << char ':')
     r <- hierPartWithOpts
     return $ QN pre r ""
@@ -179,7 +183,7 @@ stringConstant = do
     <|> return (Constant s $ Typed $ mkQName "string")
 
 constant :: CharParser st Constant
-constant = do
+constant = skip $ do
     f <- try floatingPointLit
     return $ Constant f $ Typed $ mkQName "float"
   <|> do
@@ -187,3 +191,154 @@ constant = do
     return $ Constant d $ Typed $ mkQName
       $ if any (== '.') d then "decimal" else "integer"
   <|> stringConstant
+
+-- * description
+
+owlClassUri :: CharParser st QName
+owlClassUri = uriP
+
+individualUri :: CharParser st QName
+individualUri = uriP
+
+parensP :: CharParser st a -> CharParser st a
+parensP = between (skip $ char '(') (skip $ char ')')
+
+bracesP :: CharParser st a -> CharParser st a
+bracesP = between (skip $ char '{') (skip $ char '}')
+
+sepByComma :: CharParser st a -> CharParser st [a]
+sepByComma p = sepBy1 p (skip $ char ',')
+
+keyword :: String -> CharParser st ()
+keyword s = skip $ try $ string s >> notFollowedBy alphaNum
+
+-- base OWLClass excluded
+atomic :: CharParser st Description
+atomic = parensP description
+  <|> fmap ObjectOneOf (bracesP $ sepByComma individualUri)
+
+objectPropertyExpr :: CharParser st ObjectPropertyExpression
+objectPropertyExpr = do
+    keyword "InverseOf"
+    fmap InverseOp objectPropertyExpr
+  <|> fmap OpURI uriP
+
+showFacet :: DatatypeFacet -> String
+showFacet df = case df of
+    LENGTH -> "length"
+    MINLENGTH -> "minLength"
+    MAXLENGTH -> "maxLength"
+    PATTERN -> "pattern"
+    MININCLUSIVE -> "<="
+    MINEXCLUSIVE -> "<"
+    MAXINCLUSIVE -> ">="
+    MAXEXCLUSIVE -> ">"
+    TOTALDIGITS -> "digits"
+    FRACTIONDIGITS -> "fraction"
+
+facetValuePair :: CharParser st (DatatypeFacet, RestrictionValue)
+facetValuePair = do
+  df <- choice $ map (\ f -> keyword (showFacet f) >> return f)
+      [ LENGTH
+      , MINLENGTH
+      , MAXLENGTH
+      , PATTERN
+      , TOTALDIGITS
+      , FRACTIONDIGITS ] ++ map
+      (\ f -> skip (try $ string (showFacet f) >> notFollowedBy (oneOf "<>="))
+              >> return f)
+      [ MININCLUSIVE
+      , MINEXCLUSIVE
+      , MAXINCLUSIVE
+      , MAXEXCLUSIVE ]
+  rv <- constant
+  return (df, rv)
+
+dataRangeRestriction :: CharParser st DataRange
+dataRangeRestriction = do
+  d <- fmap DRDatatype uriP
+  option d $ fmap (DatatypeRestriction d) $ sepByComma facetValuePair
+
+dataRange :: CharParser st DataRange
+dataRange = do
+    keyword "not"
+    fmap DataComplementOf dataRange
+   <|> fmap DataOneOf (bracesP $ sepByComma constant)
+   <|> dataRangeRestriction
+
+someOrOnly :: CharParser st QuantifierType
+someOrOnly = choice $ map (\ f -> keyword (showQuantifierType f) >> return f)
+             [AllValuesFrom, SomeValuesFrom]
+
+card :: CharParser st (CardinalityType, Int)
+card = do
+  c <- choice $ map (\ f -> skip (try $ string (showCardinalityType f)
+                         >> notFollowedBy letter) >> return f)
+             [MinCardinality, MaxCardinality, ExactCardinality]
+  n <- skip getNumber
+  return (c, value 10 n)
+
+restrictionObj :: ObjectPropertyExpression -> CharParser st Description
+restrictionObj opExpr = do
+      keyword "value"
+      u <- individualUri
+      return $ ObjectHasValue opExpr u
+    <|> do
+      keyword "Self"
+      return $ ObjectExistsSelf opExpr
+    <|> do
+      v <- someOrOnly
+      p <- primary
+      return $ ObjectValuesFrom v opExpr p
+    <|> do
+      (c, n) <- card
+      mp <- optionMaybe primary
+      return $ ObjectCardinality $ Cardinality c n opExpr mp
+
+restrictionData :: QName -> CharParser st Description
+restrictionData dpExpr = do
+      keyword "value"
+      c <- constant
+      return $ DataHasValue dpExpr c
+    <|> do
+      v <- someOrOnly
+      r <- dataRange
+      return $ DataValuesFrom v dpExpr [] r
+    <|> do
+      (c, n) <- card
+      mr <- optionMaybe dataRange
+      return $ DataCardinality $ Cardinality c n dpExpr mr
+
+restrictionTry :: ObjectPropertyExpression -> CharParser st Description
+restrictionTry opExpr = case opExpr of
+      InverseOp _ -> restrictionObj opExpr
+      OpURI euri ->
+        try (restrictionData euri) <|> try (restrictionObj opExpr)
+
+restriction :: CharParser st Description
+restriction = objectPropertyExpr >>= restrictionTry
+
+restrictionOrAtomic :: CharParser st Description
+restrictionOrAtomic = do
+    opExpr <- objectPropertyExpr
+    restrictionTry opExpr <|> case opExpr of
+       OpURI euri -> return $ OWLClass euri
+       _ -> unexpected "inverse object property"
+  <|> atomic
+
+optNot :: (a -> a) -> CharParser st a  -> CharParser st a
+optNot f p = (keyword "not" >> fmap f p) <|> p
+
+primary :: CharParser st Description
+primary = optNot ObjectComplementOf restrictionOrAtomic
+
+conjunction :: CharParser st Description
+conjunction = do
+    curi <- fmap OWLClass $ try (owlClassUri << keyword "that")
+    rs <- sepBy1 (optNot ObjectComplementOf restriction) $ keyword "and"
+    return $ ObjectJunction IntersectionOf $ curi : rs
+  <|> fmap (ObjectJunction IntersectionOf)
+      (sepBy1 primary $ keyword "and")
+
+description :: CharParser st Description
+description = fmap (ObjectJunction UnionOf) $ sepBy1 conjunction $ keyword "or"

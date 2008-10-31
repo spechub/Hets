@@ -148,9 +148,20 @@ data EntityAnnotation =
 data CardinalityType = MinCardinality | MaxCardinality | ExactCardinality
     deriving (Show, Eq, Ord)
 
+showCardinalityType :: CardinalityType -> String
+showCardinalityType ty = case ty of
+    MinCardinality -> "min"
+    MaxCardinality -> "max"
+    ExactCardinality -> "exactly"
+
 data JunctionType = UnionOf | IntersectionOf deriving (Show, Eq, Ord)
 
 data QuantifierType = AllValuesFrom | SomeValuesFrom deriving (Show, Eq, Ord)
+
+showQuantifierType :: QuantifierType -> String
+showQuantifierType ty = case ty of
+    AllValuesFrom -> "only"
+    SomeValuesFrom -> "some"
 
 data Cardinality a b = Cardinality CardinalityType Int a (Maybe b)
     deriving (Typeable, Show, Eq, Ord)
