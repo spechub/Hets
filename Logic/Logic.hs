@@ -543,10 +543,9 @@ class (StaticAnalysis lid
                                        sublogics morphism proof_tree]
          cons_checkers _ = [] -- default implementation
          -- | conservativity checkers
-         conservativityCheck :: lid -> (sign, [Named sentence]) ->
-                                morphism -> [Named sentence]
-                                -> Result (Maybe (ConsistencyStatus,[sentence]))
-         conservativityCheck l _ _ _ = statErr l "conservativityCheck"
+         conservativityCheck :: lid
+                             -> [ConservativityChecker sign sentence morphism]
+         conservativityCheck l = []
          -- | the empty proof tree
          empty_proof_tree :: lid -> proof_tree
          empty_proof_tree l = error $ statErrMsg l "empty_proof_tree"

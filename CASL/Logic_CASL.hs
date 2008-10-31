@@ -19,6 +19,7 @@ import Common.AS_Annotation
 import Common.Lexer((<<))
 import Common.Result
 import Common.ProofTree
+import Common.Consistency
 
 import ATC.ProofTree ()
 
@@ -267,8 +268,10 @@ instance Logic CASL CASL_Sublogics
          stability _ = Stable
          proj_sublogic_epsilon CASL = pr_epsilon ()
          all_sublogics _ = sublogics_all [()]
-         conservativityCheck CASL th mor phis =
-             checkFreeType th mor phis
+         conservativityCheck CASL  =
+             [
+             ConservativityChecker "CCC" checkFreeType
+             ]
          empty_proof_tree CASL = error "instance Logic CASL"
 #ifdef UNI_PACKAGE
          provers CASL = [quickCheckProver]

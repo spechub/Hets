@@ -68,7 +68,8 @@ import GUI.DGTranslation(getDGLogic)
 import GUI.GraphTypes
 import qualified GUI.GraphAbstraction as GA
 import qualified GUI.HTkUtils (displayTheoryWithWarning,
-                               createInfoDisplayWithTwoButtons)
+                               createInfoDisplayWithTwoButtons,
+                               createInfoWindow)
 
 import GraphConfigure
 import TextDisplay(createTextDisplay)
@@ -87,6 +88,8 @@ import Common.LibName
 import Common.Result as Res
 import qualified Common.OrderedMap as OMap
 import qualified Common.Lib.Rel as Rel
+
+import Data.Maybe
 
 import Driver.Options
 import Driver.WriteLibDefn(writeShATermFile)
@@ -772,33 +775,82 @@ checkconservativityOfEdge _ gInfo@(GInfo{gi_LIB_NAME = ln,
   sensSrc2 <- coerceThSens lid1 lid "checkconservativityOfEdge1" sensSrc1
   let transSensSrc = propagateErrors
         $ mapThSensValueM (map_sen lid compMor) sensSrc2
-  let Res.Result ds res =
-          conservativityCheck lid
-             (plainSign sign2, toNamedList sensSrc2)
-             compMor $ toNamedList (sensTar `OMap.difference` transSensSrc)
-      showObls [] = ""
-      showObls obls = ", provided that the following proof obligations "
-                      ++ "can be discharged:\n"
-                      ++ concatMap (flip showDoc "\n") obls
-      showRes = case res of
-                 Just (Just (cst, obls)) -> "The link is "
-                   ++ showConsistencyStatus cst ++ showObls obls
-                 _ -> "Could not determine whether link is conservative"
-      myDiags = showRelDiags 2 ds
-  createTextDisplay "Result of conservativity check"
-                  (showRes ++ "\n" ++ myDiags) [HTk.size(50,50)]
-  let newGr = lookupDGraph ln libEnv'
-      newHistory = proofHistory newGr
-      oldHistory = proofHistory $ lookupDGraph ln libEnv
-      history = take (length newHistory - length oldHistory) newHistory
-  applyChanges actGraphInfo history
-  writeIORef le libEnv'
-  unlockGlobal gInfo
+  if (length $ conservativityCheck lid) < 1
+   then
+       do
+        GUI.HTkUtils.createInfoWindow "Result of conservativity check"
+                        "No conservativity checkers available"
+        let newGr = lookupDGraph ln libEnv'
+            newHistory = proofHistory newGr
+            oldHistory = proofHistory $ lookupDGraph ln libEnv
+            history = take (length newHistory - length oldHistory) newHistory
+        applyChanges actGraphInfo history
+        writeIORef le libEnv'
+        unlockGlobal gInfo
+   else
+    do
+     checkerR <- conservativityChoser $ conservativityCheck lid
+     if Res.hasErrors $ Res.diags checkerR
+      then
+       do
+        GUI.HTkUtils.createInfoWindow "Result of conservativity check"
+                        "No conservativity checker chosen"
+        let newGr = lookupDGraph ln libEnv'
+            newHistory = proofHistory newGr
+            oldHistory = proofHistory $ lookupDGraph ln libEnv
+            history = take (length newHistory - length oldHistory) newHistory
+        applyChanges actGraphInfo history
+        writeIORef le libEnv'
+        unlockGlobal gInfo
+      else
+       do
+        let chCons =  checkConservativity $
+                      fromJust $ Res.maybeResult $ checkerR
+        let Res.Result ds res =
+                chCons
+                   (plainSign sign2, toNamedList sensSrc2)
+                   compMor $ toNamedList
+                               (sensTar `OMap.difference` transSensSrc)
+            showObls [] = ""
+            showObls obls = ", provided that the following proof obligations "
+                            ++ "can be discharged:\n"
+                            ++ concatMap (flip showDoc "\n") obls
+            showRes = case res of
+                       Just (Just (cst, obls)) -> "The link is "
+                        ++ showConsistencyStatus cst ++ showObls obls
+                       _ -> "Could not determine whether link is conservative"
+            myDiags = showRelDiags 2 ds
+        createTextDisplay "Result of conservativity check"
+                        (showRes ++ "\n" ++ myDiags) [HTk.size(50,50)]
+        let newGr = lookupDGraph ln libEnv'
+            newHistory = proofHistory newGr
+            oldHistory = proofHistory $ lookupDGraph ln libEnv
+            history = take (length newHistory - length oldHistory) newHistory
+        applyChanges actGraphInfo history
+        writeIORef le libEnv'
+        unlockGlobal gInfo
 
 checkconservativityOfEdge descr _ Nothing =
       createTextDisplay "Error"
           ("edge " ++ show descr ++ " has no corresponding edge "
                 ++ "in the development graph") [HTk.size(30,10)]
+
+-- | Graphical choser for conservativity checkers
+conservativityChoser :: [ConservativityChecker sign sentence morphism]
+                     -> IO
+                         (Res.Result (ConservativityChecker
+                          sign sentence morphism))
+conservativityChoser checkers =
+    case length $ checkers of
+      0 -> return $ fail "No conservativity checkers available"
+      _ ->
+          do
+            chosenOne <- listBox "Pick a conservativity checker"
+                         $ map checker_id checkers
+            case chosenOne of
+              Nothing -> return $ fail "No conservativity checker chosen"
+              Just 1  -> return $ return $ head $ checkers
+              Just i  -> return $ return $ (checkers !! i)
 
 -- | converts a DGraph
 convert :: GA.GraphInfo -> DGraph -> IO ()
@@ -944,7 +996,6 @@ saveUDGraph gInfo@(GInfo { gi_GraphInfo = graphInfo
       writeFile filepath nstring
       GA.showTemporaryMessage graphInfo $ "Graph stored to " ++ filepath ++ "!"
     Nothing -> GA.showTemporaryMessage graphInfo $ "Aborted!"
-
 
 -- | Converts the nodes of the graph to String representation
 nodes2String :: GInfo -> Map.Map DGNodeType (Shape value, String)

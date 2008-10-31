@@ -15,7 +15,6 @@ code connecting it to Hets
 module Propositional.Conservativity
     (
      conserCheck
-    ,conserChose
     )
     where
 
@@ -33,7 +32,6 @@ import System.Cmd
 import System.Directory
 import Data.Time.Clock
 import System.Process
-import GUI.HTkUtils
 
 -- Propositional Stuff
 import Propositional.Sign
@@ -42,28 +40,12 @@ import Propositional.Morphism
 import Propositional.Prop2CNF
 import Propositional.Conversions
 import Propositional.Tools
-import Propositional.ProveWithTruthTable
 
 proverName :: String
 proverName = "sKizzo"
 
 defOptions :: String
 defOptions = "-timeout 60"
-
--- | Conservativity Checker Choser for Propositional Logic
-conserChose :: (Sign, [Named FORMULA])      -- ^ Initial sign and formulas
-           -> Morphism                      -- ^ morhpism between specs
-           -> [Named FORMULA]               -- ^ Formulas of extended spec
-           -> Result (Maybe (ConsistencyStatus, [FORMULA]))
-conserChose (inSig, inSens) mor cSens=
-            do
-              let option = unsafePerformIO $
-                           listBox "Pick a conservativity checker"
-                                       ["sKizzo","truth tables"]
-              case option of
-                Just 0 -> conserCheck (inSig, inSens) mor cSens
-                Just 1 -> ttConservativityChecker (inSig, inSens) mor cSens
-                _      -> return (Just (Unknown "No checker chosen", []))
 
 -- | Conservativity Check for Propositional Logic
 conserCheck :: (Sign, [Named FORMULA])      -- ^ Initial sign and formulas

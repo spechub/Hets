@@ -31,6 +31,7 @@ module Propositional.Logic_Propositional
     ) where
 
 import Common.ProofTree
+import Common.Consistency
 
 import ATC.ProofTree ()
 
@@ -120,9 +121,13 @@ instance Logic Propositional
                               ,ProveTT.ttProver
 #endif
                               ]
-      cons_checkers Propositional = 
+      cons_checkers Propositional =
          [Prove.propConsChecker,ProveTT.ttConsistencyChecker]
-      conservativityCheck Propositional = conserChose
+      conservativityCheck Propositional =
+          [
+           ConservativityChecker "sKizzo" conserCheck
+          ,ConservativityChecker "Truth Tables" ProveTT.ttConservativityChecker
+          ]
 #endif
 
 

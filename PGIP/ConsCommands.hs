@@ -237,9 +237,13 @@ edgeConservativityState nm (source,target,linklab) libenv libname
                                     sign1
         sens2 <- coerceThSens lid1 lid "" sens1
         let Res.Result ds res =
-                conservativityCheck lid
-                   (plainSign sign2, toNamedList sens2)
-                   morphism2' $ toNamedList sens
+                if (length $ conservativityCheck lid) > 0
+                   then
+                       (checkConservativity (head $ conservativityCheck lid))
+                          (plainSign sign2, toNamedList sens2)
+                          morphism2' $ toNamedList sens
+                   else
+                       error "no conservativity checkers are defined"
             showObls [] = ""
             showObls obls = ", provided that the following proof obligations can be discharged:\n"++ concatMap ((++"\n").show) obls
             showRes = case res of

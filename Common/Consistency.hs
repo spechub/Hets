@@ -16,6 +16,8 @@ module Common.Consistency where
 import Data.Char (toLower)
 import Common.Doc
 import Common.DocUtils
+import Common.AS_Annotation
+import Common.Result
 
 data ConsistencyStatus =
   Inconsistent | Conservative | Monomorphic | Definitional | Unknown String
@@ -29,3 +31,15 @@ showConsistencyStatus cs = case cs of
 
 instance Pretty ConsistencyStatus where
   pretty = text . showConsistencyStatus
+
+data ConservativityChecker sign sentence morphism = ConservativityChecker
+                           {
+                             checker_id          :: String
+                           , checkConservativity :: (sign, [Named sentence])
+                                                 -> morphism
+                                                 -> [Named sentence]
+                                                 -> Result
+                                                    (Maybe
+                                                     (ConsistencyStatus
+                                                     ,[sentence]))
+                           }
