@@ -26,8 +26,9 @@ import Data.Char
 ncNameStart :: Char -> Bool
 ncNameStart c = isAlpha c || c == '_'
 
+-- | rfc3987 plus '+' from scheme (scheme does not allow the dots)
 ncNameChar :: Char -> Bool
-ncNameChar c = isAlphaNum c || elem c ".-_\183"
+ncNameChar c = isAlphaNum c || elem c ".+-_\183"
 
 prefix :: CharParser st String
 prefix = satisfy ncNameStart <:> many (satisfy ncNameChar)
@@ -42,10 +43,13 @@ pctEncoded = char '%' <:> hexDigit <:> single hexDigit
 subDelims :: Char -> Bool
 subDelims c = elem c "!$&'()*+,;="
 
+iunreservedSubDelims :: String -> CharParser st Char
+iunreservedSubDelims cs =
+    satisfy $ \ c -> iunreserved c || subDelims c || elem c cs
+
 iunreservedPctEncodedSubDelims :: String -> CharParser st String
 iunreservedPctEncodedSubDelims cs =
-    single (satisfy $ \ c -> iunreserved c || subDelims c || elem c cs)
-    <|> pctEncoded
+    single (iunreservedSubDelims cs) <|> pctEncoded
 
 ipChar :: CharParser st String
 ipChar = iunreservedPctEncodedSubDelims ":@"
@@ -62,8 +66,17 @@ iregName = flat $ many $ iunreservedPctEncodedSubDelims ""
 iuserinfo :: CharParser st String
 iuserinfo = flat $ many $ iunreservedPctEncodedSubDelims ":"
 
+-- | parse zero or at most n consecutive arguments
+atMost :: Int -> GenParser tok st a -> GenParser tok st [a]
+atMost n p = if n <= 0 then return [] else
+     p <:> atMost (n - 1) p <|> return []
+
+-- | parse at least one but at most n conse
+atMost1 :: Int -> GenParser tok st a -> GenParser tok st [a]
+atMost1 n p = p <:> atMost (n - 1) p
+
 decOctet :: CharParser st String
-decOctet = digit <:> option "" (digit <:> option "" (single digit))
+decOctet = atMost 3 digit
   `checkWith` \ s -> let v = value 10 s in v <= 255 &&
                              (if v == 0 then s == "0" else take 1 s /= "0")
 
@@ -89,65 +102,39 @@ isegment = flat $ many ipChar
 isegmentNz :: CharParser st String
 isegmentNz = flat $ many1 ipChar
 
-isegmentNzNc :: CharParser st String
-isegmentNzNc = flat $ many1 $ iunreservedPctEncodedSubDelims "@"
-
 ipathAbempty :: CharParser st String
 ipathAbempty = flat $ many (char '/' <:> isegment)
 
 ipathAbsolute :: CharParser st String
 ipathAbsolute = char '/' <:> option "" (isegmentNz <++> ipathAbempty)
 
-ipathNoscheme :: CharParser st String
-ipathNoscheme = isegmentNzNc <++> ipathAbempty
-
 ipathRootless :: CharParser st String
 ipathRootless = isegmentNz <++> ipathAbempty
 
 ipathEmpty :: CharParser st String
-ipathEmpty = notFollowedWith (return "") ipChar
+ipathEmpty = notFollowedBy (iunreservedSubDelims ":@% ") >> return ""
 
 iauthorityWithPath :: CharParser st String
 iauthorityWithPath = try (string "//") <++> iauthority <++> ipathAbempty
-
-irelativePart :: CharParser st String
-irelativePart =
-  iauthorityWithPath <|> ipathAbsolute <|> ipathNoscheme <|> ipathEmpty
 
 optQueryOrFrag :: CharParser st String
 optQueryOrFrag = option "" (char '?' <:> iquery)
   <++> option "" (char '#' <:> ifragment)
 
-reference :: CharParser st String
-reference = irelativePart <++> optQueryOrFrag
-
-curie :: CharParser st QName
-curie = do
-    pre <- try (prefix << char ':')
-    r <- reference
-    return $ QN pre r ""
-  <|> fmap mkQName reference
-
+-- | covers irelative-part (therefore we omit curie)
 ihierPart :: CharParser st String
 ihierPart =
   iauthorityWithPath <|> ipathAbsolute <|> ipathRootless <|> ipathEmpty
 
-scheme :: CharParser st String
-scheme = letter
-  <:> many (satisfy $ \ c -> isAlphaNum c || elem c "+-.")
-
 hierPartWithOpts :: CharParser st String
 hierPartWithOpts = ihierPart <++> optQueryOrFrag
 
-iri :: CharParser st QName
-iri =  do
-    pre <- try (scheme << char ':')
+uriP :: CharParser st QName
+uriP =  do
+    pre <- try (prefix << char ':')
     r <- hierPartWithOpts
     return $ QN pre r ""
   <|> fmap mkQName hierPartWithOpts
-
-uriP :: CharParser st QName
-uriP = try curie <|> iri
 
 datatype :: CharParser st QName
 datatype = fmap mkQName
@@ -174,13 +161,6 @@ floatingPointLit :: CharParser st String
 floatingPointLit = optSign <++> (fullDecimal <|> postDecimal)
   <++> option "" (oneOf "eE" <:> optSign <++> getNumber)
   <++> single (oneOf "fF")
-
-atMost :: Int -> GenParser tok st a -> GenParser tok st [a]
-atMost n p = if n <= 0 then return [] else
-     p <:> atMost (n - 1) p <|> return []
-
-atMost1 :: Int -> GenParser tok st a -> GenParser tok st [a]
-atMost1 n p = p <:> atMost (n - 1) p
 
 languageTag :: CharParser st String
 languageTag = atMost1 4 letter
