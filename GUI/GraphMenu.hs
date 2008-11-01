@@ -24,6 +24,7 @@ import GUI.History
 #ifdef GTKGLADE
 import GUI.GtkLinkTypeChoice
 import GUI.GtkConsistencyChecker
+-- import GUI.GtkTextView
 #endif
 
 import Data.IORef
@@ -237,6 +238,7 @@ createGlobalMenu gInfo@(GInfo { gi_LIB_NAME = ln
                                     GA.hideSetOfEdgeTypes gi eList
                                     GA.redisplay gi
                                   )
+--    , Button "TextView Test" $ showTextView "<b>Headline here</b>"
 #endif
     , Menu (Just "Proofs") $ map (\ (str, cmd) ->
        Button str $ (addMenuItemToHist ch str) >>
