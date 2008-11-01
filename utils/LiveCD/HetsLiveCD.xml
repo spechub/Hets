@@ -1,11 +1,11 @@
 <comps>
  <group>
-  <version>0.85</version>
+  <version>0.90</version>
   <id>hets</id>
   <name>HetsLiveCD</name>
   <repositorylist>
-   <repository type="debian">http://ftp.de.debian.org/debian</repository>
-   <repository type="debian" suite="etch/updates">http://ftp.de.debian.org/debian/debian-security/</repository>
+   <repository type="debian">http://ftp.debian.org/debian</repository>
+   <repository type="debian" suite="etch/updates">http://security.debian.org/</repository>
    <repository type="plain">http://www.morphix.org/debian</repository>
   </repositorylist>
   <description>Hets LightGUI LiveCD</description>
@@ -111,6 +111,8 @@
    <packagereq>spass</packagereq>
    <packagereq>libgmp3c2</packagereq>
    <packagereq>libmozjs0d</packagereq>
+   <packagereq>libglitz1</packagereq>
+   <packagereq>libglade2-0</packagereq>
 	    
 <!-- from debian-marillat -->
    <packagereq>mplayer-586</packagereq>
