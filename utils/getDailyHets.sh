@@ -74,3 +74,16 @@ bunzip2 "$DAILY_HETS_TARGET" || exit 1
 chmod a+x "$DAILY_HETS" || exit 1
 
 echo "Downloaded and saved daily hets to: " $DAILY_HETS
+
+if [ -e "$INSTALLDIR/hets" ] ; then
+  if [ -L "$INSTALLDIR/hets" ] ; then
+   echo relinking: $INSTALLDIR/hets
+   (cd "$INSTALLDIR"; ln -sf $TARGET_HETS hets)
+  else
+   echo creating backup: $INSTALLDIR/hets~
+   (cd "$INSTALLDIR"; mv hets hets~; ln -s $TARGET_HETS hets)
+  fi
+else
+  echo creating link: $INSTALLDIR/hets
+  (cd "$INSTALLDIR"; ln -s $TARGET_HETS hets)
+fi
