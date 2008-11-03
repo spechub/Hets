@@ -202,6 +202,11 @@ data Axiom = -- Annotations can be ignored
 
 data EquivOrDisjoint = Equivalent | Disjoint deriving (Show, Eq, Ord)
 
+showEquivOrDisjoint :: EquivOrDisjoint -> String
+showEquivOrDisjoint ed = case ed of
+    Equivalent -> "EquivalentTo:"
+    Disjoint -> "DisjointWith:"
+
 data ObjDomainOrRange = ObjDomain | ObjRange deriving (Show, Eq, Ord)
 
 data DataDomainOrRange = DataDomain Description | DataRange DataRange

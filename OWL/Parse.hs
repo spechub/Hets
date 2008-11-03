@@ -342,3 +342,84 @@ conjunction = do
 
 description :: CharParser st Description
 description = fmap (ObjectJunction UnionOf) $ sepBy1 conjunction $ keyword "or"
+
+showEntityType :: EntityType -> String
+showEntityType et = case et of
+    OWLClassEntity -> "OWLClass"
+    _ -> show et
+
+entityType :: CharParser st EntityType
+entityType = choice $ map (\ f -> keyword (showEntityType f) >> return f)
+  [ Datatype
+  , OWLClassEntity
+  , ObjectProperty
+  , DataProperty
+  , Individual ]
+-- AnnotationProperty is missing
+
+entity :: CharParser st Entity
+entity = do
+  t <- entityType
+  u <- parensP uriP
+  return $ Entity t u
+
+annotation :: CharParser st Annotation
+annotation = do
+  a <- uriP
+  parensP $ do
+      c <- constant
+      return $ ExplicitAnnotation a c
+    <|> do
+      e <- entity
+      return $ Annotation a e
+    <|> do
+      individualUri
+      fail "unsupported individualURI of annotation"
+
+ckeyword :: String -> CharParser st String
+ckeyword s = skip $ try $ string $ s ++ ":"
+
+optAnnos :: CharParser st a -> CharParser st ([Annotation], a)
+optAnnos p = do
+  as <- option [] annotations
+  a <- p
+  return (as, a)
+
+annotations :: CharParser st [Annotation]
+annotations = do
+  ckeyword "Annotations"
+  as <- sepByComma $ optAnnos annotation
+  return $ map snd as -- annoted annotations not supported yet
+
+descriptionAnnotatedList :: CharParser st [([Annotation], Description)]
+descriptionAnnotatedList = sepByComma $ optAnnos description
+
+equivOrDisjoint :: CharParser st EquivOrDisjoint
+equivOrDisjoint = choice
+  $ map (\ f -> skip (try $ string $ showEquivOrDisjoint f) >> return f)
+  [Equivalent, Disjoint]
+
+classFrameBit :: QName -> CharParser st [Axiom]
+classFrameBit curi = do
+    as <- annotations
+    return [EntityAnno $ EntityAnnotation [] (Entity OWLClassEntity curi) as]
+  <|> do
+    ckeyword "SubclassOf"
+    ds <- descriptionAnnotatedList
+    return $ map (\ (as, d) -> PlainAxiom as $ SubClassOf (OWLClass curi) d) ds
+  <|> do
+    e <- equivOrDisjoint
+    ds <- descriptionAnnotatedList
+    return [PlainAxiom (concatMap fst ds)
+           $ EquivOrDisjointClasses e $ OWLClass curi : map snd ds]
+  <|> do
+    ckeyword "DisjointUnionOf"
+    as <- annotations
+    ds <- sepByComma description
+    return [PlainAxiom as $ DisjointUnion curi ds]
+
+classFrame :: CharParser st [Axiom]
+classFrame = do
+  ckeyword "Class"
+  curi <- owlClassUri
+  flat $ many $ classFrameBit curi

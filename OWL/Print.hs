@@ -154,9 +154,7 @@ instance Pretty Axiom where
     pretty = printAxiom
 
 printEquivOrDisjoint :: EquivOrDisjoint -> Doc
-printEquivOrDisjoint ed = text $ case ed of
-    Equivalent -> "EquivalentTo:"
-    Disjoint -> "DisjointWith:"
+printEquivOrDisjoint = text . showEquivOrDisjoint
 
 printObjDomainOrRange :: ObjDomainOrRange -> Doc
 printObjDomainOrRange dr = text $ case dr of
