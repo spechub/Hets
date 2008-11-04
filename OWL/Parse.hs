@@ -631,9 +631,43 @@ individualFrame = do
   iuri <- individualUri
   flat $ many $ iFrameBit iuri
 
+equivOrDisjointKeyword :: String -> CharParser st EquivOrDisjoint
+equivOrDisjointKeyword ext =
+  (ckeyword ("Equivalent" ++ ext) >> return Equivalent)
+  <|> (ckeyword ("Disjoint" ++ ext) >> return Disjoint)
+
+-- note the plural when different
+sameOrDifferentIndu :: CharParser st SameOrDifferent
+sameOrDifferentIndu =
+  (ckeyword "SameIndividual" >> return Same)
+  <|> (ckeyword "DifferentIndividuals" >> return Different)
+
+misc :: CharParser st Axiom
+misc = do
+    e <- equivOrDisjointKeyword "Classes"
+    as <- annotations
+    ds <- sepByComma description
+    return $ PlainAxiom as $ EquivOrDisjointClasses e ds
+  <|> do
+    e <- equivOrDisjointKeyword "ObjectProperties"
+    as <- annotations
+    es <- sepByComma objectPropertyExpr
+    return $ PlainAxiom as $ EquivOrDisjointObjectProperties e es
+  <|> do
+    e <- equivOrDisjointKeyword "DataProperties"
+    as <- annotations
+    ds <- sepByComma uriP
+    return $ PlainAxiom as $ EquivOrDisjointDataProperties e ds
+  <|> do
+    s <- sameOrDifferentIndu
+    as <- annotations
+    is <- sepByComma individualUri
+    return $ PlainAxiom as $ SameOrDifferentIndividual s is
+
 frames :: CharParser st [Axiom]
 frames = flat $ many $ classFrame
   <|> objectPropertyFrame <|> dataPropertyFrame <|> individualFrame
+  <|> single misc
 
 basicSpec :: CharParser st OntologyFile
 basicSpec = do
