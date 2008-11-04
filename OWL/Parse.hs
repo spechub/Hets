@@ -211,8 +211,11 @@ bracesP = between (skip $ char '{') (skip $ char '}')
 bracketsP :: CharParser st a -> CharParser st a
 bracketsP = between (skip $ char '[') (skip $ char ']')
 
+commaP :: CharParser st ()
+commaP = skip (char ',') >> return ()
+
 sepByComma :: CharParser st a -> CharParser st [a]
-sepByComma p = sepBy1 p (skip $ char ',')
+sepByComma p = sepBy1 p commaP
 
 -- | plain string parser with skip
 pkeyword :: String -> CharParser st ()
@@ -270,7 +273,8 @@ facetValuePair = do
 dataRangeRestriction :: CharParser st DataRange
 dataRangeRestriction = do
   d <- fmap DRDatatype uriP
-  option d $ fmap (DatatypeRestriction d) $ sepByComma facetValuePair
+  option d $ fmap (DatatypeRestriction d) $ bracketsP
+    $ sepByComma facetValuePair
 
 dataRange :: CharParser st DataRange
 dataRange = do
@@ -293,11 +297,47 @@ card = do
   n <- skip getNumber
   return (c, value 10 n)
 
-restrictionObj :: ObjectPropertyExpression -> CharParser st Description
-restrictionObj opExpr = do
+individualOrConstant :: CharParser st (Either QName Constant)
+individualOrConstant = fmap Left individualUri <|> fmap Right constant
+
+individualOrConstantList :: CharParser st (Either [QName] [Constant])
+individualOrConstantList = do
+    ioc <- individualOrConstant
+    case ioc of
+      Left u -> fmap (Left . (u :)) $ option []
+        $ commaP >> sepByComma individualUri
+      Right c -> fmap (Right . (c :)) $ option []
+        $ commaP >> sepByComma constant
+
+primaryOrDataRange :: CharParser st (Either Description DataRange)
+primaryOrDataRange = do
+  ns <- many $ keyword "not"
+  ed <- do
+      u <- uriP
+      fmap Left (restrictionAny $ OpURI u)
+        <|> fmap (Right . DatatypeRestriction (DRDatatype u))
+            (bracketsP $ sepByComma facetValuePair)
+        <|> return (Left $ OWLClass u) -- could be a datatypeUri, too
+    <|> do
+      e <- bracesP individualOrConstantList
+      return $ case e of
+        Left us -> Left $ ObjectOneOf us
+        Right cs -> Right $ DataOneOf cs
+    <|> fmap Left restrictionOrAtomic
+  return $ if even (length ns) then ed else
+    case ed of
+      Left d -> Left $ ObjectComplementOf d
+      Right d -> Right $ DataComplementOf d
+
+restrictionAny :: ObjectPropertyExpression -> CharParser st Description
+restrictionAny opExpr = do
       keyword "value"
-      u <- individualUri
-      return $ ObjectHasValue opExpr u
+      e <- individualOrConstant
+      case e of
+        Left u -> return $ ObjectHasValue opExpr u
+        Right c -> case opExpr of
+          OpURI dpExpr -> return $ DataHasValue dpExpr c
+          _ -> unexpected "constant"
     <|> do
       keyword "Self"
       return $ ObjectExistsSelf opExpr
@@ -309,40 +349,32 @@ restrictionObj opExpr = do
       return $ ObjectJunction IntersectionOf $ o : as
     <|> do
       v <- someOrOnly
-      p <- primary
-      return $ ObjectValuesFrom v opExpr p
+      pr <- primaryOrDataRange
+      case pr of
+        Left p -> return $ ObjectValuesFrom v opExpr p
+        Right r -> case opExpr of
+          OpURI dpExpr -> return $ DataValuesFrom v dpExpr [] r
+          _ -> unexpected $ "dataRange after " ++ showQuantifierType v
     <|> do
       (c, n) <- card
-      mp <- optionMaybe primary
-      return $ ObjectCardinality $ Cardinality c n opExpr mp
-
-restrictionData :: QName -> CharParser st Description
-restrictionData dpExpr = do
-      keyword "value"
-      c <- constant
-      return $ DataHasValue dpExpr c
-    <|> do
-      v <- someOrOnly
-      r <- dataRange
-      return $ DataValuesFrom v dpExpr [] r
-    <|> do
-      (c, n) <- card
-      mr <- optionMaybe dataRange
-      return $ DataCardinality $ Cardinality c n dpExpr mr
-
-restrictionTry :: ObjectPropertyExpression -> CharParser st Description
-restrictionTry opExpr = case opExpr of
-      InverseOp _ -> restrictionObj opExpr
-      OpURI euri ->
-        try (restrictionData euri) <|> try (restrictionObj opExpr)
+      mp <- optionMaybe primaryOrDataRange
+      case mp of
+         Nothing -> return $ ObjectCardinality $ Cardinality c n opExpr Nothing
+         Just pr -> case pr of
+           Left p ->
+             return $ ObjectCardinality $ Cardinality c n opExpr $ Just p
+           Right r -> case opExpr of
+             OpURI dpExpr ->
+               return $ DataCardinality $ Cardinality c n dpExpr $ Just r
+             _ -> unexpected $ "dataRange after " ++ showCardinalityType c
 
 restriction :: CharParser st Description
-restriction = objectPropertyExpr >>= restrictionTry
+restriction = objectPropertyExpr >>= restrictionAny
 
 restrictionOrAtomic :: CharParser st Description
 restrictionOrAtomic = do
     opExpr <- objectPropertyExpr
-    restrictionTry opExpr <|> case opExpr of
+    restrictionAny opExpr <|> case opExpr of
        OpURI euri -> return $ OWLClass euri
        _ -> unexpected "inverse object property"
   <|> atomic
