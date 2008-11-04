@@ -516,8 +516,9 @@ objectPropertyCharacter = choice
 objPropExprAList :: CharParser st [([Annotation], ObjectPropertyExpression)]
 objPropExprAList = sepByComma $ optAnnos objectPropertyExpr
 
-subPropertyKey :: CharParser st ()
-subPropertyKey = ckeyword "SubPropertyOf"
+subPropertyKey :: CharParser st Bool
+subPropertyKey = (ckeyword "SubPropertyOf" >> return True)
+   <|> (ckeyword "SuperPropertyOf" >> return False)
 
 characterKey :: CharParser st ()
 characterKey = ckeyword "Characteristics"
@@ -536,10 +537,11 @@ objectFrameBit ouri = let opExp = OpURI ouri in do
     return $ map (\ (as, c) -> PlainAxiom as
       $ ObjectPropertyCharacter c opExp) ds
   <|> do
-    subPropertyKey
+    b <- subPropertyKey
     ds <- objPropExprAList
     return $ map (\ (as, s) -> PlainAxiom as
-      $ SubObjectPropertyOf (OPExpression s) opExp) ds
+      $ if b then SubObjectPropertyOf (OPExpression s) opExp
+        else SubObjectPropertyOf (OPExpression opExp) s) ds
   <|> do
     e <- equivOrDisjoint
     ds <- objPropExprAList
@@ -585,9 +587,11 @@ dataFrameBit duri = do
     keyword "Functional"
     return [PlainAxiom as $ FunctionalDataProperty duri]
   <|> do
-    subPropertyKey
+    b <- subPropertyKey
     ds <- dataPropExprAList
-    return $ map (\ (as, s) -> PlainAxiom as $ SubDataPropertyOf s duri) ds
+    return $ map (\ (as, s) -> PlainAxiom as $
+      if b then SubDataPropertyOf s duri
+      else SubDataPropertyOf duri s) ds
   <|> do
     e <- equivOrDisjoint
     ds <- dataPropExprAList
