@@ -143,7 +143,7 @@ uriQ = do
   <|> fmap mkQName hierPartWithOpts
 
 datatypeKeys :: [String]
-datatypeKeys = ["integer", "decimal", "float", "string"]
+datatypeKeys = ["integer", "decimal", "float", "string", "boolean"]
 
 uriP :: CharParser st QName
 uriP = skip $ checkWith uriQ $ \ q -> not $ elem q
