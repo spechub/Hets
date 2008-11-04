@@ -452,7 +452,11 @@ classFrame :: CharParser st [Axiom]
 classFrame = do
   ckeyword "Class"
   curi <- owlClassUri
-  flat $ many $ classFrameBit curi
+  las <- many $ classFrameBit curi
+  let as = concat las
+  return $ if null as
+    then [PlainAxiom [] $ Declaration $ Entity OWLClassEntity curi]
+    else as
 
 domainOrRange :: CharParser st ObjDomainOrRange
 domainOrRange = choice
