@@ -17,7 +17,8 @@ Manchester syntax parser for OWL 1.1
 module OWL.Parse (basicSpec) where
 
 import OWL.AS
-
+import DL.DLKeywords (casl_dl_keywords)
+import Common.Token (casl_reserved_words)
 import Common.Lexer hiding (skip)
 
 import Text.ParserCombinators.Parsec
@@ -134,18 +135,22 @@ hierPartWithOpts = ihierPart <++> optQueryOrFrag
 skip :: CharParser st a -> CharParser st a
 skip = (<< spaces)
 
--- possibly exlude keywords here too
-uriP :: CharParser st QName
-uriP = skip $ do
+uriQ :: CharParser st QName
+uriQ = do
     pre <- try (prefix << char ':')
     r <- hierPartWithOpts
     return $ QN pre r ""
   <|> fmap mkQName hierPartWithOpts
 
-datatype :: CharParser st QName
-datatype = fmap mkQName
-  (choice $ map (try . string) ["integer", "decimal", "float", "string"])
-  <|> uriP
+datatypeKeys :: [String]
+datatypeKeys = ["integer", "decimal", "float", "string"]
+
+uriP :: CharParser st QName
+uriP = skip $ checkWith uriQ $ \ q -> not $ elem q
+  $ map mkQName $ datatypeKeys ++ casl_reserved_words ++ casl_dl_keywords
+
+datatypeUri :: CharParser st QName
+datatypeUri = fmap mkQName (choice $ map keyword datatypeKeys) <|> uriP
 
 stringLit :: CharParser st String
 stringLit = enclosedBy (flat $ many $ single (noneOf "\\\"")
@@ -176,20 +181,20 @@ stringConstant :: CharParser st Constant
 stringConstant = do
   s <- stringLit
   do  string "^^"
-      d <- datatype
+      d <- datatypeUri
       return $ Constant s $ Typed d
     <|> do
       char '@'
-      t <- languageTag
+      t <- skip languageTag
       return $ Constant s $ Untyped t
-    <|> return (Constant s $ Typed $ mkQName "string")
+    <|> skip (return $ Constant s $ Typed $ mkQName "string")
 
 constant :: CharParser st Constant
-constant = skip $ do
-    f <- try floatingPointLit
+constant = do
+    f <- skip $ try floatingPointLit
     return $ Constant f $ Typed $ mkQName "float"
   <|> do
-    d <- decimalLit
+    d <- skip decimalLit
     return $ Constant d $ Typed $ mkQName
       $ if any (== '.') d then "decimal" else "integer"
   <|> stringConstant
@@ -221,11 +226,11 @@ sepByComma p = sepBy1 p commaP
 pkeyword :: String -> CharParser st ()
 pkeyword s = skip $ try (string s) >> return ()
 
-keywordNotFollowedBy :: String -> CharParser st Char -> CharParser st ()
-keywordNotFollowedBy s c = skip $ try $ string s >> notFollowedBy c
+keywordNotFollowedBy :: String -> CharParser st Char -> CharParser st String
+keywordNotFollowedBy s c = skip $ try $ string s << notFollowedBy c
 
 -- | keyword not followed by any alphanum
-keyword :: String -> CharParser st ()
+keyword :: String -> CharParser st String
 keyword s = keywordNotFollowedBy s alphaNum
 
 -- base OWLClass excluded
@@ -272,7 +277,7 @@ facetValuePair = do
 
 dataRangeRestriction :: CharParser st DataRange
 dataRangeRestriction = do
-  d <- fmap DRDatatype uriP
+  d <- fmap DRDatatype datatypeUri
   option d $ fmap (DatatypeRestriction d) $ bracketsP
     $ sepByComma facetValuePair
 
@@ -313,11 +318,13 @@ primaryOrDataRange :: CharParser st (Either Description DataRange)
 primaryOrDataRange = do
   ns <- many $ keyword "not"
   ed <- do
-      u <- uriP
+      u <- datatypeUri
       fmap Left (restrictionAny $ OpURI u)
         <|> fmap (Right . DatatypeRestriction (DRDatatype u))
             (bracketsP $ sepByComma facetValuePair)
-        <|> return (Left $ OWLClass u) -- could be a datatypeUri, too
+        <|> return (if elem u $ map mkQName datatypeKeys
+              then Right $ DRDatatype u
+              else Left $ OWLClass u) -- could still be a datatypeUri
     <|> do
       e <- bracesP individualOrConstantList
       return $ case e of
