@@ -208,20 +208,22 @@ parensP = between (skip $ char '(') (skip $ char ')')
 bracesP :: CharParser st a -> CharParser st a
 bracesP = between (skip $ char '{') (skip $ char '}')
 
+bracketsP :: CharParser st a -> CharParser st a
+bracketsP = between (skip $ char '[') (skip $ char ']')
+
 sepByComma :: CharParser st a -> CharParser st [a]
 sepByComma p = sepBy1 p (skip $ char ',')
 
--- | plain try string parser without skip
-ukeyword :: String -> CharParser st ()
-ukeyword s = try (string s) >> return ()
-
 -- | plain string parser with skip
 pkeyword :: String -> CharParser st ()
-pkeyword s = skip $ ukeyword s
+pkeyword s = skip $ try (string s) >> return ()
+
+keywordNotFollowedBy :: String -> CharParser st Char -> CharParser st ()
+keywordNotFollowedBy s c = skip $ try $ string s >> notFollowedBy c
 
 -- | keyword not followed by any alphanum
 keyword :: String -> CharParser st ()
-keyword s = skip $ ukeyword s >> notFollowedBy alphaNum
+keyword s = keywordNotFollowedBy s alphaNum
 
 -- base OWLClass excluded
 atomic :: CharParser st Description
@@ -256,7 +258,7 @@ facetValuePair = do
       , PATTERN
       , TOTALDIGITS
       , FRACTIONDIGITS ] ++ map
-      (\ f -> skip $ ukeyword (showFacet f) >> notFollowedBy (oneOf "<>=")
+      (\ f -> keywordNotFollowedBy (showFacet f) (oneOf "<>=")
               >> return f)
       [ MININCLUSIVE
       , MINEXCLUSIVE
@@ -278,13 +280,15 @@ dataRange = do
    <|> dataRangeRestriction
 
 someOrOnly :: CharParser st QuantifierType
-someOrOnly = choice $ map (\ f -> keyword (showQuantifierType f) >> return f)
-             [AllValuesFrom, SomeValuesFrom]
+someOrOnly = choice
+  $ (keyword "has" >> return SomeValuesFrom)
+  : map (\ f -> keyword (showQuantifierType f) >> return f)
+    [AllValuesFrom, SomeValuesFrom]
 
 card :: CharParser st (CardinalityType, Int)
 card = do
-  c <- choice $ map (\ f -> skip $ ukeyword (showCardinalityType f)
-                         >> notFollowedBy letter >> return f)
+  c <- choice $ map (\ f -> keywordNotFollowedBy (showCardinalityType f) letter
+                            >> return f)
              [MinCardinality, MaxCardinality, ExactCardinality]
   n <- skip getNumber
   return (c, value 10 n)
@@ -297,6 +301,12 @@ restrictionObj opExpr = do
     <|> do
       keyword "Self"
       return $ ObjectExistsSelf opExpr
+    <|> do
+      keyword "onlysome"
+      ds <- bracketsP $ sepByComma description
+      let as = map (\ d -> ObjectValuesFrom SomeValuesFrom opExpr d) ds
+          o = ObjectValuesFrom AllValuesFrom opExpr $ ObjectJunction UnionOf ds
+      return $ ObjectJunction IntersectionOf $ o : as
     <|> do
       v <- someOrOnly
       p <- primary
@@ -433,6 +443,10 @@ classFrameBit curi = let duri = OWLClass curi in do
     as <- annotations
     ds <- sepByComma description
     return [PlainAxiom as $ DisjointUnion curi ds]
+  <|> do
+    ckeyword "Paraphrase"
+    skip stringLit
+    return []
 
 classFrame :: CharParser st [Axiom]
 classFrame = do
