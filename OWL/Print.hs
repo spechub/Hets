@@ -157,9 +157,7 @@ printEquivOrDisjoint :: EquivOrDisjoint -> Doc
 printEquivOrDisjoint = text . showEquivOrDisjoint
 
 printObjDomainOrRange :: ObjDomainOrRange -> Doc
-printObjDomainOrRange dr = text $ case dr of
-    ObjDomain -> "Domain:"
-    ObjRange -> "Range:"
+printObjDomainOrRange = text . showObjDomainOrRange
 
 printDataDomainOrRange :: DataDomainOrRange -> Doc
 printDataDomainOrRange dr = case dr of
@@ -167,9 +165,7 @@ printDataDomainOrRange dr = case dr of
     DataRange d -> text "Range:" $+$ pretty d
 
 printSameOrDifferent :: SameOrDifferent -> Doc
-printSameOrDifferent sd = text $ case sd of
-    Same -> "SameAs:"
-    Different -> "DifferentFrom:"
+printSameOrDifferent = text . showSameOrDifferent
 
 printAssertion :: (Pretty a, Pretty b) => Assertion a b -> Doc
 printAssertion (Assertion a p s b) = indStart <+> pretty s $+$

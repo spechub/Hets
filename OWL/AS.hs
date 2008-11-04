@@ -209,6 +209,11 @@ showEquivOrDisjoint ed = case ed of
 
 data ObjDomainOrRange = ObjDomain | ObjRange deriving (Show, Eq, Ord)
 
+showObjDomainOrRange :: ObjDomainOrRange -> String
+showObjDomainOrRange dr = case dr of
+    ObjDomain -> "Domain:"
+    ObjRange -> "Range:"
+
 data DataDomainOrRange = DataDomain Description | DataRange DataRange
     deriving (Typeable, Show, Eq, Ord)
 
@@ -223,6 +228,11 @@ data Character =
     deriving (Typeable, Show, Eq, Ord)
 
 data SameOrDifferent = Same | Different deriving (Show, Eq, Ord)
+
+showSameOrDifferent :: SameOrDifferent -> String
+showSameOrDifferent sd = case sd of
+    Same -> "SameAs:"
+    Different -> "DifferentFrom:"
 
 data PositiveOrNegative = Positive | Negative deriving (Show, Eq, Ord)
 
