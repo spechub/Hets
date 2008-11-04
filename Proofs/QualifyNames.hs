@@ -48,10 +48,10 @@ foldWithKeyM f a = foldM (flip $ uncurry f) a . Map.toList
 qualifyLibEnv :: LibEnv -> Result LibEnv
 qualifyLibEnv le = foldWithKeyM qualifyDGraph le le
 
-topsortedNodes :: Graph g => g DGNodeLab DGLinkLab -> [LNode DGNodeLab]
-topsortedNodes dg = postorderF $ xdffWith (\ (ps, n, _, _) -> map snd $
-   filter (\ (el, s) -> s /= n && isDefEdge (dgl_type el)) ps)
-   (\ (_, n, nl, _) -> (n, nl)) (nodes dg) dg
+topsortedNodes :: DynGraph g => g DGNodeLab DGLinkLab -> [LNode DGNodeLab]
+topsortedNodes dg = reverse $ postorderF $ dffWith
+   (\ (_, n, nl, _) -> (n, nl)) (nodes dg)
+     $ efilter (\ (s, t, el) -> s /= t && isDefEdge (dgl_type el)) dg
 
 qualifyDGraph :: LIB_NAME -> DGraph -> LibEnv -> Result LibEnv
 qualifyDGraph ln dg le = do
