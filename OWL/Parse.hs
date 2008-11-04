@@ -14,7 +14,7 @@ Manchester syntax parser for OWL 1.1
 <http://www.faqs.org/rfcs/rfc4646.html>
 -}
 
-module OWL.Parse where
+module OWL.Parse (basicSpec) where
 
 import OWL.AS
 
@@ -40,8 +40,9 @@ iunreserved c = isAlphaNum c || elem c "-._~" || ord c >= 160 && ord c <= 55295
 pctEncoded :: CharParser st String
 pctEncoded = char '%' <:> hexDigit <:> single hexDigit
 
+-- | comma and parens removed!
 subDelims :: Char -> Bool
-subDelims c = elem c "!$&'()*+,;="
+subDelims c = elem c "!$&'*+;="
 
 iunreservedSubDelims :: String -> CharParser st Char
 iunreservedSubDelims cs =
@@ -111,8 +112,9 @@ ipathAbsolute = char '/' <:> option "" (isegmentNz <++> ipathAbempty)
 ipathRootless :: CharParser st String
 ipathRootless = isegmentNz <++> ipathAbempty
 
+-- added comma and parens here
 ipathEmpty :: CharParser st String
-ipathEmpty = notFollowedBy (iunreservedSubDelims ":@% ") >> return ""
+ipathEmpty = notFollowedBy (iunreservedSubDelims ":@%(), ") >> return ""
 
 iauthorityWithPath :: CharParser st String
 iauthorityWithPath = try (string "//") <++> iauthority <++> ipathAbempty
@@ -209,13 +211,17 @@ bracesP = between (skip $ char '{') (skip $ char '}')
 sepByComma :: CharParser st a -> CharParser st [a]
 sepByComma p = sepBy1 p (skip $ char ',')
 
+-- | plain try string parser without skip
+ukeyword :: String -> CharParser st ()
+ukeyword s = try (string s) >> return ()
+
 -- | plain string parser with skip
 pkeyword :: String -> CharParser st ()
-pkeyword s = skip (try $ string s) >> return ()
+pkeyword s = skip $ ukeyword s
 
 -- | keyword not followed by any alphanum
 keyword :: String -> CharParser st ()
-keyword s = pkeyword s >> notFollowedBy alphaNum
+keyword s = skip $ ukeyword s >> notFollowedBy alphaNum
 
 -- base OWLClass excluded
 atomic :: CharParser st Description
@@ -250,7 +256,7 @@ facetValuePair = do
       , PATTERN
       , TOTALDIGITS
       , FRACTIONDIGITS ] ++ map
-      (\ f -> pkeyword (showFacet f) >> notFollowedBy (oneOf "<>=")
+      (\ f -> skip $ ukeyword (showFacet f) >> notFollowedBy (oneOf "<>=")
               >> return f)
       [ MININCLUSIVE
       , MINEXCLUSIVE
@@ -277,7 +283,7 @@ someOrOnly = choice $ map (\ f -> keyword (showQuantifierType f) >> return f)
 
 card :: CharParser st (CardinalityType, Int)
 card = do
-  c <- choice $ map (\ f -> pkeyword (showCardinalityType f)
+  c <- choice $ map (\ f -> skip $ ukeyword (showCardinalityType f)
                          >> notFollowedBy letter >> return f)
              [MinCardinality, MaxCardinality, ExactCardinality]
   n <- skip getNumber
@@ -574,3 +580,12 @@ individualFrame = do
   ckeyword "Individual"
   iuri <- individualUri
   flat $ many $ iFrameBit iuri
+
+frames :: CharParser st [Axiom]
+frames = flat $ many $ classFrame
+  <|> objectPropertyFrame <|> dataPropertyFrame <|> individualFrame
+
+basicSpec :: CharParser st OntologyFile
+basicSpec = do
+  as <- frames
+  return emptyOntologyFile { ontology = emptyOntology { axiomsList = as } }

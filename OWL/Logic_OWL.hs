@@ -26,6 +26,7 @@ import ATC.ProofTree ()
 import Logic.Logic
 
 import OWL.AS
+import OWL.Parse
 import OWL.Print ()
 import OWL.ATC_OWL ()
 import OWL.Sign
@@ -42,8 +43,8 @@ instance Language OWL where
 
 type OWL_Morphism = DefaultMorphism Sign
 
-instance Syntax OWL OntologyFile () ()
-    -- default implementation is fine!
+instance Syntax OWL OntologyFile () () where
+    parse_basic_spec OWL = Just basicSpec
 
 -- OWL DL logic
 
