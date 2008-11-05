@@ -428,7 +428,7 @@ fromATC_Axiom ix att0 = case getShATerm ix att0 of
     ShAAppl "AntisymmetricObjectProperty" [a,b] _ ->
         case fromShATerm' a att0 of { (att1, a') ->
         case fromShATerm' b att1 of { (att2, b') ->
-        (att2, PlainAxiom a' $ ObjectPropertyCharacter Asymmetric b') }}
+        (att2, PlainAxiom a' $ ObjectPropertyCharacter Antisymmetric b') }}
     ShAAppl "TransitiveObjectProperty" [a,b] _ ->
         case fromShATerm' a att0 of { (att1, a') ->
         case fromShATerm' b att1 of { (att2, b') ->

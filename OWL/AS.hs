@@ -224,6 +224,7 @@ data Character =
   | Irreflexive
   | Symmetric
   | Asymmetric
+  | Antisymmetric
   | Transitive
     deriving (Typeable, Show, Eq, Ord)
 
