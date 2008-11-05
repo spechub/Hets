@@ -58,6 +58,7 @@ import Comorphisms.CoCASL2CoSubCFOL
 import Comorphisms.CoCFOL2IsabelleHOL
 import Comorphisms.Modal2CASL
 import Comorphisms.CASL_DL2CASL
+import Comorphisms.DL2CASL_DL
 #endif
 #ifndef NOOWLLOGIC
 import OWL.Logic_OWL
@@ -166,13 +167,14 @@ spassComorphisms =
 #ifdef CASLEXTENSIONS
        prop2SPASS <- compComorphism (Comorphism Prop2CASL) partOut
        casl_dl2SPASS <- compComorphism (Comorphism CASL_DL2CASL) partOut
+       dl2spass <- compComorphism (Comorphism DL2CASL_DL) casl_dl2SPASS
 #endif
        -- Fixme: constraint empty mapping is not available after Modal2CASL
        -- mod2SPASS <- compComorphism (Comorphism Modal2CASL) partSubOut
        return [Comorphism (mkIdComorphism SoftFOL ()),
                Comorphism SuleCFOL2SoftFOL,partOut,partSubOut
 #ifdef CASLEXTENSIONS
-              ,prop2SPASS,casl_dl2SPASS
+              ,prop2SPASS,casl_dl2SPASS, dl2spass
 #endif
               ]
 
