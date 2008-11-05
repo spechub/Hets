@@ -122,11 +122,17 @@ instance Logic Propositional
 #endif
                               ]
       cons_checkers Propositional =
-         [Prove.propConsChecker,ProveTT.ttConsistencyChecker]
+         [Prove.propConsChecker
+#ifdef TABULAR_PACKAGE
+         ,ProveTT.ttConsistencyChecker
+#endif
+         ]
       conservativityCheck Propositional =
           [
            ConservativityChecker "sKizzo" conserCheck
+#ifdef TABULAR_PACKAGE
           ,ConservativityChecker "Truth Tables" ProveTT.ttConservativityChecker
+#endif
           ]
 #endif
 
