@@ -45,10 +45,10 @@ basic_DL_analysis (spec, sig, _) =
         sens = case spec of
                     DLBasic x -> x
         [cCls, cObjProps, cDtProps, cIndi, cMIndi] = splitSentences sens
-        oCls        = uniteClasses cCls
-        oObjProps   = uniteObjProps cObjProps
-        oDtProps    = uniteDataProps cDtProps
-        oIndi       = uniteIndividuals (cIndi ++ splitUpMIndis cMIndi)
+        oCls        = cCls
+        oObjProps   = cObjProps
+        oDtProps    = cDtProps
+        oIndi       = (cIndi ++ splitUpMIndis cMIndi)
         cls         = getClasses $ map item $ oCls
         dtPp        = getDataProps (map item oDtProps) (cls)
         obPp        = getObjProps (map item oObjProps) (cls)
