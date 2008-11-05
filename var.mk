@@ -27,7 +27,7 @@ HXTFILTERVERSION = $(shell $(HCPKG) field hxt-filter version)
 ifneq ($(findstring 8., $(HXTFILTERVERSION)),)
 HXTFILTER_PACKAGE = -DHXTFILTER
 else
-HXTFILTER_PACKAGE = -DNOMATHSERVER
+NOMATHSERVER = -DNOMATHSERVER
 endif
 
 UNIVERSION = $(shell $(HCPKG) field uni-uDrawGraph version)
@@ -59,4 +59,5 @@ endif
 
 HC_OPTS = -threaded -fglasgow-exts -fallow-overlapping-instances \
   $(HAXML_PACKAGE) $(UNI_PACKAGE) $(SHELLAC_PACKAGE) $(HXTFILTER_PACKAGE) \
-  $(PFE_FLAGS) $(GLADE_PACKAGE) $(TABULAR_PACKAGE) -DCASLEXTENSIONS
+  $(PFE_FLAGS) $(GLADE_PACKAGE) $(TABULAR_PACKAGE) $(NOMATHSERVER) \
+  -DCASLEXTENSIONS
