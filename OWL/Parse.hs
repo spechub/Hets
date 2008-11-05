@@ -290,8 +290,7 @@ dataRange = do
 
 someOrOnly :: CharParser st QuantifierType
 someOrOnly = choice
-  $ (keyword "has" >> return SomeValuesFrom)
-  : map (\ f -> keyword (showQuantifierType f) >> return f)
+  $ map (\ f -> keyword (showQuantifierType f) >> return f)
     [AllValuesFrom, SomeValuesFrom]
 
 card :: CharParser st (CardinalityType, Int)
@@ -354,6 +353,10 @@ restrictionAny opExpr = do
       let as = map (\ d -> ObjectValuesFrom SomeValuesFrom opExpr d) ds
           o = ObjectValuesFrom AllValuesFrom opExpr $ ObjectJunction UnionOf ds
       return $ ObjectJunction IntersectionOf $ o : as
+    <|> do
+      keyword "has"
+      iu <- individualUri
+      return $ ObjectValuesFrom SomeValuesFrom opExpr $ ObjectOneOf [iu]
     <|> do
       v <- someOrOnly
       pr <- primaryOrDataRange
