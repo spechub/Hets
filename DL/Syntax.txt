@@ -5,7 +5,7 @@ CONCEPT ::= CONCEPT-ID
           | CONCEPT 'xor' CONCEPT          
           | 'not' CONCEPT
           | '{' INDIV-ID+ '}'
-          | RELATION 'some'
+          | RELATION 'some' CONCEPT
           | RELATION 'has' INDIV-ID
           | RELATION 'value' INDIV-ID
           | RELATION 'only' CONCEPT
