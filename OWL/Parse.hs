@@ -135,12 +135,23 @@ hierPartWithOpts = ihierPart <++> optQueryOrFrag
 skip :: CharParser st a -> CharParser st a
 skip = (<< spaces)
 
-uriQ :: CharParser st QName
-uriQ = do
+abbrIri :: CharParser st QName
+abbrIri = do
     pre <- try (prefix << char ':')
     r <- hierPartWithOpts
     return $ QN pre r ""
   <|> fmap mkQName hierPartWithOpts
+
+fullIri :: CharParser st QName
+fullIri = do
+    char '<'
+    QN pre r _ <- abbrIri
+    char '>'
+    return $ QN "" "" $ pre ++ r
+  <|> abbrIri
+
+uriQ :: CharParser st QName
+uriQ = fullIri <|> abbrIri
 
 datatypeKeys :: [String]
 datatypeKeys = ["integer", "decimal", "float", "string", "boolean"]
