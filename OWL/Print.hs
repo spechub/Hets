@@ -67,7 +67,7 @@ printDescription :: Description -> Doc
 printDescription desc = case desc of
    OWLClass ocUri -> printURIreference ocUri
    ObjectJunction UnionOf descList ->
-      text "or:" <+> sepByCommas (setToDocs $ Set.fromList descList)
+      fsep $ punctuate (text "or") (setToDocs $ Set.fromList descList)
    ObjectJunction IntersectionOf descList ->
       printDescriptionWithRestriction descList
    ObjectComplementOf d -> text "not" <+> pretty d

@@ -52,11 +52,7 @@ instance Sentences OWL Sentence Sign OWL_Morphism () where
     map_sen OWL _ s = return s
     print_named OWL namedSen =
         pretty (sentence namedSen) <>
-           if null (senAttr namedSen) then empty
-        else space <> text "%%" <> text (senAttr namedSen)
-               <+> (case simpAnno namedSen of
-                      Just True -> text "%%implied"
-                      _ -> empty)
+          if isAxiom namedSen then empty else space <> text "%implied"
 
 instance StaticAnalysis OWL OntologyFile Sentence
                () ()

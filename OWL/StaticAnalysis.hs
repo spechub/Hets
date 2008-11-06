@@ -44,7 +44,9 @@ basicOWLAnalysis (ofile, inSign, ga) =
     in  case anaOntologyFile (inSign {namespaceMap = integNamespace}) ofile' of
         Result diags2 (Just (ontoFile, accSign, namedSen)) ->
           Result (diags1 ++ diags2) $
-                        Just (ontoFile, mkExtSign accSign, namedSen)
+                        Just ( ontoFile
+                             , mkExtSign accSign { axioms = Set.empty }
+                             , namedSen)
         u  -> fail ("unknown error in static analysis. Please try again.\n"
                     ++ (show ofile) ++ "\n" ++ show u)
 
