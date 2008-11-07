@@ -117,11 +117,6 @@ ipathAbsolute = char '/' <:> option "" (isegmentNz <++> ipathAbempty)
 ipathRootless :: CharParser st String
 ipathRootless = isegmentNz <++> ipathAbempty
 
--- added comma and parens here (maybe testing via lookahead is better)
-ipathEmpty :: CharParser st String
-ipathEmpty = notFollowedBy (iunreservedSubDelims ":@%()[]{}, \n\r\t\v\f")
-  >> return ""
-
 iauthorityWithPath :: CharParser st String
 iauthorityWithPath = try (string "//") <++> iauthority <++> ipathAbempty
 
@@ -132,7 +127,7 @@ optQueryOrFrag = option "" (char '?' <:> iquery)
 -- | covers irelative-part (therefore we omit curie)
 ihierPart :: CharParser st String
 ihierPart =
-  iauthorityWithPath <|> ipathAbsolute <|> ipathRootless <|> ipathEmpty
+  iauthorityWithPath <|> ipathAbsolute <|> ipathRootless
 
 hierPartWithOpts :: CharParser st String
 hierPartWithOpts = ihierPart <++> optQueryOrFrag
@@ -141,8 +136,8 @@ skip :: CharParser st a -> CharParser st a
 skip = (<< spaces)
 
 abbrIri :: CharParser st QName
-abbrIri = do
-    pre <- try (prefix << char ':')
+abbrIri = try $ do
+    pre <- try $ prefix << char ':'
     r <- hierPartWithOpts
     return $ QN pre r ""
   <|> fmap mkQName hierPartWithOpts
@@ -152,7 +147,8 @@ fullIri = do
     char '<'
     QN pre r _ <- abbrIri
     char '>'
-    return $ QN pre "" r
+    return $ QN pre r $ if null pre then r else pre
+           -- unclear how full IRIs are represented
   <|> abbrIri
 
 uriQ :: CharParser st QName
@@ -163,7 +159,7 @@ datatypeKeys :: [String]
 datatypeKeys = ["integer", "decimal", "float", "string", "boolean"]
 
 uriP :: CharParser st QName
-uriP = skip $ checkWith uriQ $ \ q -> not $ elem (localPart q)
+uriP = skip $ checkWithUsing showQN uriQ $ \ q -> not $ elem (localPart q)
   $ datatypeKeys ++ casl_reserved_words ++ casl_dl_keywords
 -- colon keywords should be checked as prefix
 

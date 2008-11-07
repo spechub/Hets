@@ -17,6 +17,7 @@ module OWL.AS where
 import qualified Data.Map as Map
 import Data.Typeable
 
+-- | it is unclear how full IRIs are represented
 data QName = QN
   { namePrefix :: String
   -- ^ the name prefix part of a qualified name \"namePrefix:localPart\"
@@ -25,6 +26,11 @@ data QName = QN
   , namespaceUri :: String
   -- ^ the associated namespace uri
   } deriving (Typeable, Show)
+
+showQN :: QName -> String
+showQN (QN pre local u) =
+  (if null u then id else ('<' :) . (++ "<"))
+  $ if null pre then local else pre ++ ":" ++ local
 
 nullQName :: QName
 nullQName = QN "" "" ""
