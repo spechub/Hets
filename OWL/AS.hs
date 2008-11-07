@@ -126,6 +126,19 @@ data DatatypeFacet =
   | FRACTIONDIGITS
     deriving (Typeable, Show, Eq, Ord)
 
+showFacet :: DatatypeFacet -> String
+showFacet df = case df of
+    LENGTH -> "length"
+    MINLENGTH -> "minLength"
+    MAXLENGTH -> "maxLength"
+    PATTERN -> "pattern"
+    MININCLUSIVE -> "<="
+    MINEXCLUSIVE -> "<"
+    MAXINCLUSIVE -> ">="
+    MAXEXCLUSIVE -> ">"
+    TOTALDIGITS -> "digits"
+    FRACTIONDIGITS -> "fraction"
+
 type RestrictionValue = Constant
 
 data DataRange =

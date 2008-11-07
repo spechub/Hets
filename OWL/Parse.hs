@@ -19,6 +19,7 @@ import OWL.AS
 import DL.DLKeywords (casl_dl_keywords)
 import Common.Token (casl_reserved_words)
 import Common.Lexer hiding (skip)
+import Common.Utils (nubOrd)
 
 import Text.ParserCombinators.Parsec
 import Data.Char
@@ -262,19 +263,6 @@ objectPropertyExpr = do
     fmap InverseOp objectPropertyExpr
   <|> fmap OpURI uriP
 
-showFacet :: DatatypeFacet -> String
-showFacet df = case df of
-    LENGTH -> "length"
-    MINLENGTH -> "minLength"
-    MAXLENGTH -> "maxLength"
-    PATTERN -> "pattern"
-    MININCLUSIVE -> "<="
-    MINEXCLUSIVE -> "<"
-    MAXINCLUSIVE -> ">="
-    MAXEXCLUSIVE -> ">"
-    TOTALDIGITS -> "digits"
-    FRACTIONDIGITS -> "fraction"
-
 facetValuePair :: CharParser st (DatatypeFacet, RestrictionValue)
 facetValuePair = do
   df <- choice $ map (\ f -> keyword (showFacet f) >> return f)
@@ -354,10 +342,10 @@ primaryOrDataRange = do
       Right d -> Right $ DataComplementOf d
 
 mkObjectJunction :: JunctionType -> [Description] -> Description
-mkObjectJunction ty ds = case ds of
+mkObjectJunction ty ds = case nubOrd ds of
   [] -> error "mkObjectJunction"
   [x] -> x
-  _ -> ObjectJunction ty ds
+  ns -> ObjectJunction ty ns
 
 restrictionAny :: ObjectPropertyExpression -> CharParser st Description
 restrictionAny opExpr = do

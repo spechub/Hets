@@ -54,60 +54,44 @@ printNamespace nsMap =
 instance Pretty SignAxiom where
     pretty = text . show
 
-instance Pretty Description where
-    pretty = printDescription
-
 cardinalityType :: CardinalityType -> Doc
 cardinalityType = text . showCardinalityType
 
 quantifierType :: QuantifierType -> Doc
 quantifierType = text . showQuantifierType
 
-printDescription :: Description -> Doc
-printDescription desc = case desc of
+instance Pretty Description where
+  pretty desc = case desc of
    OWLClass ocUri -> printURIreference ocUri
-   ObjectJunction UnionOf descList ->
-      fsep $ punctuate (text "or") (setToDocs $ Set.fromList descList)
-   ObjectJunction IntersectionOf descList ->
-      printDescriptionWithRestriction descList
+   ObjectJunction ty ds -> let
+      (k, p) = case ty of
+          UnionOf -> ("or", pretty)
+          IntersectionOf -> ("and", printPrimary)
+      in fsep $ prepPunctuate (text k <> space) $ map p ds
    ObjectComplementOf d -> text "not" <+> pretty d
-   ObjectOneOf indUriList -> specBraces $ setToDocF $ Set.fromList indUriList
+   ObjectOneOf indUriList -> specBraces $ ppWithCommas indUriList
    ObjectValuesFrom ty opExp d ->
-      printObjPropExp opExp <+> quantifierType ty <+> pretty d
+      printObjPropExp opExp <+> quantifierType ty <+> printPrimary d
    ObjectExistsSelf opExp ->
       printObjPropExp opExp <+> text "Self"
    ObjectHasValue opExp indUri ->
       pretty opExp <+> text "value" <+> pretty indUri
    ObjectCardinality (Cardinality ty card opExp maybeDesc) ->
       printObjPropExp opExp <+> cardinalityType ty
-        <+> text (show card) <+> maybe empty pretty maybeDesc
+        <+> text (show card) <+> maybe empty printPrimary maybeDesc
    DataValuesFrom ty dpExp dpExpList dRange ->
        printURIreference dpExp <+> quantifierType ty
            <+> (if null dpExpList then empty
-                 else specBraces (sepByCommas $ setToDocs
-                   (Set.fromList dpExpList))) <+> pretty dRange
+                 else specBraces $ ppWithCommas dpExpList) <+> pretty dRange
    DataHasValue dpExp cons -> pretty dpExp <+> text "value" <+> pretty cons
    DataCardinality (Cardinality ty card dpExp maybeRange) ->
        pretty dpExp <+> cardinalityType ty <+> text (show card)
          <+> maybe empty pretty maybeRange
 
-printDescriptionWithRestriction :: [Description] -> Doc
-printDescriptionWithRestriction descList =
-    writeDesc descList True False empty
-  where
-    writeDesc [] _ _ doc = doc
-    writeDesc (h : r) isFirst lastWasNamed doc =
-     let thisIsNamed = (case h of
-                         OWLClass _ -> True
-                         _ -> False)
-     in writeDesc r False thisIsNamed $ if isFirst then printDescription h else
-          if not lastWasNamed then doc $+$ text "and" <+> printDescription h
-          else (case h of
-                       OWLClass _ -> doc $+$ text "and"
-                       ObjectJunction _ _ -> doc $+$ text "and"
-                       ObjectComplementOf _ -> doc $+$ text "and"
-                       ObjectOneOf _ -> doc $+$ text "and"
-                       _ -> doc $+$ text "that") <+> printDescription h
+printPrimary :: Description -> Doc
+printPrimary d = let dd = pretty d in case d of
+  ObjectJunction _ _ -> parens dd
+  _ -> dd
 
 instance Pretty ObjectPropertyExpression where
     pretty = printObjPropExp
@@ -125,22 +109,20 @@ printDataRange :: DataRange -> Doc
 printDataRange dr = case dr of
     DRDatatype du -> pretty du
     DataComplementOf drange -> text "not" <+> pretty drange
-    DataOneOf constList -> specBraces $ sepByCommas $ map pretty constList
-    DatatypeRestriction drange l ->
-        pretty drange <+> brackets (sepByCommas $ printFV l)
+    DataOneOf constList -> specBraces $ ppWithCommas constList
+    DatatypeRestriction drange l -> pretty drange <+>
+      if null l then empty else brackets $ sepByCommas $ map printFV l
 
-printFV :: [(DatatypeFacet, RestrictionValue)] -> [Doc]
-printFV [] = []
-printFV ((facet, restValue):r) = (pretty facet <> text ":"
-                                  <+> pretty restValue):(printFV r)
+printFV :: (DatatypeFacet, RestrictionValue) -> Doc
+printFV (facet, restValue) = pretty facet <+> pretty restValue
 
 instance Pretty DatatypeFacet where
-    pretty = text . show
+    pretty = text . showFacet
 
 instance Pretty Constant where
     pretty (Constant lexi ty) = text lexi <> case ty of
       Typed u -> text "^^" <> pretty u
-      Untyped tag -> text "@@" <> text tag -- really two "@@" ?
+      Untyped tag -> text "@" <> text tag
 
 instance Pretty Sentence where
     pretty = printSentence
@@ -179,7 +161,7 @@ printAxiom axiom = case axiom of
   EntityAnno _ -> empty -- EntityAnnotation
   PlainAxiom _ paxiom -> case paxiom of
    SubClassOf sub super ->
-       classStart <+> pretty sub $+$ (text "SubClassOf:") $+$ pretty super
+       classStart <+> pretty sub $+$ text "SubClassOf:" $+$ pretty super
    EquivOrDisjointClasses ty (clazz : equiList) ->
        classStart <+> pretty clazz $+$ printEquivOrDisjoint ty $+$
                       setToDocV (Set.fromList equiList)
@@ -224,7 +206,7 @@ classStart :: Doc
 classStart = text "Class:"
 
 opStart :: Doc
-opStart = text "ObjectProterty:"
+opStart = text "ObjectProperty:"
 
 dpStart :: Doc
 dpStart = text "DataProperty:"
