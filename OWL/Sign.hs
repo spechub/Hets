@@ -75,17 +75,18 @@ data Sentence =
     deriving (Show,Eq,Ord)
 
 emptySign :: Sign
-emptySign =  Sign { ontologyID = nullQName,
-                    concepts = Set.empty,
-                    primaryConcepts = Set.empty,
-                    datatypes = Set.empty,
-                    indValuedRoles = Set.empty,
-                    dataValuedRoles = Set.empty,
-                    annotationRoles = Set.empty,
-                    individuals = Set.empty,
-                    axioms = Set.empty,
-                    namespaceMap = Map.empty
-                  }
+emptySign =  Sign
+  { ontologyID = nullQName
+  , concepts = Set.empty
+  , primaryConcepts = Set.empty
+  , datatypes = Set.empty
+  , indValuedRoles = Set.empty
+  , dataValuedRoles = Set.empty
+  , annotationRoles = Set.empty
+  , individuals = Set.empty
+  , axioms = Set.empty
+  , namespaceMap = Map.empty
+  }
 
 simpleSign :: ID -> Sign
 simpleSign ontoID =
@@ -101,7 +102,6 @@ diffSig a b =
       , dataValuedRoles = dataValuedRoles a `Set.difference` dataValuedRoles b
       , annotationRoles = annotationRoles a `Set.difference` annotationRoles b
       , individuals = individuals a `Set.difference` individuals b
-      , axioms = axioms a `Set.difference` axioms b
       }
 
 addSign :: Sign -> Sign -> Sign
@@ -123,9 +123,7 @@ addSign toIns totalSign =
                 annotationRoles = Set.union (annotationRoles totalSign)
                                             (annotationRoles toIns),
                 individuals = Set.union (individuals totalSign)
-                                        (individuals toIns),
-                axioms = Set.union (axioms totalSign)
-                                   (axioms toIns)
+                                        (individuals toIns)
               }
 
 isSubSign :: Sign -> Sign -> Bool
@@ -137,4 +135,3 @@ isSubSign a b =
        && Set.isSubsetOf (dataValuedRoles a) (dataValuedRoles b)
        && Set.isSubsetOf (annotationRoles a) (annotationRoles b)
        && Set.isSubsetOf (individuals a) (individuals b)
-       && Set.isSubsetOf (axioms a) (axioms b)
