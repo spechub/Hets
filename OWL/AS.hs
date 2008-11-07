@@ -94,6 +94,11 @@ data EntityType =
   | Individual
     deriving (Typeable, Show, Read, Eq, Ord)
 
+showEntityType :: EntityType -> String
+showEntityType et = case et of
+    OWLClassEntity -> "OWLClass"
+    _ -> show et
+
 -- | Syntax of Entities
 data Entity = Entity EntityType URI deriving (Typeable, Show, Eq, Ord)
 

@@ -417,11 +417,6 @@ description :: CharParser st Description
 description =
   fmap (mkObjectJunction UnionOf) $ sepBy1 conjunction $ keyword "or"
 
-showEntityType :: EntityType -> String
-showEntityType et = case et of
-    OWLClassEntity -> "OWLClass"
-    _ -> show et
-
 entityType :: CharParser st EntityType
 entityType = choice $ map (\ f -> keyword (showEntityType f) >> return f)
   [ Datatype

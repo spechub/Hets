@@ -42,9 +42,11 @@ printSign s =
    in vcat (map (\ (c, l) -> text $ "Namespace: " ++ c ++ " " ++ l)
            $ Map.toList $ namespaceMap s)
    $++$ text "Ontology:" <+> pon
+   $++$ vcat (map (\ d -> text "Annotations: data"
+                   <+> printEntity (Entity Datatype d))
+             $ Set.toList $ datatypes s)
    $++$ vcat (map (\ c -> classStart <+> pretty c) $ Set.toList ps)
    $++$ vcat (map (\ c -> classStart <+> pretty c) $ Set.toList ds)
-   $++$ vcat (map (\ d -> dpStart <+> pretty d) $ Set.toList $ datatypes s)
    $++$ vcat (map (\ o -> opStart <+> pretty o) $ Set.toList $ indValuedRoles s)
    $++$
      vcat (map (\ d -> dpStart <+> pretty d) $ Set.toList $ dataValuedRoles s)
@@ -160,6 +162,9 @@ printAssertion (Assertion a p s b) = indStart <+> pretty s $+$
    case p of
      Positive -> d
      Negative -> text "not" <+> parens d
+
+printEntity :: Entity -> Doc
+printEntity (Entity ty u) = text (showEntityType ty) <> parens (pretty u)
 
 printAxiom :: Axiom -> Doc
 printAxiom axiom = case axiom of
