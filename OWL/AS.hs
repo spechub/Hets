@@ -29,7 +29,7 @@ data QName = QN
 
 showQN :: QName -> String
 showQN (QN pre local u) =
-  (if null u then id else ('<' :) . (++ "<"))
+  (if null u then id else ('<' :) . (++ ">"))
   $ if null pre then local else pre ++ ":" ++ local
 
 nullQName :: QName
