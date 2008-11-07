@@ -23,7 +23,10 @@ import qualified Data.Set as Set
 import qualified Data.Map as Map
 
 printOWLBasicTheory :: (Sign, [Named Sentence]) -> Doc
-printOWLBasicTheory (_, l) = vsep $ map (pretty . sentence) l
+printOWLBasicTheory (s, l) =
+  text "Ontology: <http://www.dfki.de/sks/hets/ontos>"
+  $++$ vcat (map (\ c -> classStart <+> pretty c) $ Set.toList $ concepts s)
+  $++$ vsep (map (pretty . sentence) l)
 
 instance Pretty Sign where
     pretty = printSign
