@@ -13,7 +13,6 @@ Manchester syntax parser for OWL 1.1
 <http://www.faqs.org/rfcs/rfc3987.html>
 <http://www.faqs.org/rfcs/rfc4646.html>
 -}
-
 module OWL.Parse (basicSpec) where
 
 import OWL.AS
@@ -354,6 +353,12 @@ primaryOrDataRange = do
       Left d -> Left $ ObjectComplementOf d
       Right d -> Right $ DataComplementOf d
 
+mkObjectJunction :: JunctionType -> [Description] -> Description
+mkObjectJunction ty ds = case ds of
+  [] -> error "mkObjectJunction"
+  [x] -> x
+  _ -> ObjectJunction ty ds
+
 restrictionAny :: ObjectPropertyExpression -> CharParser st Description
 restrictionAny opExpr = do
       keyword "value"
@@ -370,8 +375,9 @@ restrictionAny opExpr = do
       keyword "onlysome"
       ds <- bracketsP $ sepByComma description
       let as = map (\ d -> ObjectValuesFrom SomeValuesFrom opExpr d) ds
-          o = ObjectValuesFrom AllValuesFrom opExpr $ ObjectJunction UnionOf ds
-      return $ ObjectJunction IntersectionOf $ o : as
+          o = ObjectValuesFrom AllValuesFrom opExpr
+              $ mkObjectJunction UnionOf ds
+      return $ mkObjectJunction IntersectionOf $ o : as
     <|> do -- sugar
       keyword "has"
       iu <- individualUri
@@ -418,12 +424,13 @@ conjunction :: CharParser st Description
 conjunction = do
     curi <- fmap OWLClass $ try (owlClassUri << keyword "that")
     rs <- sepBy1 (optNot ObjectComplementOf restriction) $ keyword "and"
-    return $ ObjectJunction IntersectionOf $ curi : rs
-  <|> fmap (ObjectJunction IntersectionOf)
+    return $ mkObjectJunction IntersectionOf $ curi : rs
+  <|> fmap (mkObjectJunction IntersectionOf)
       (sepBy1 primary $ keyword "and")
 
 description :: CharParser st Description
-description = fmap (ObjectJunction UnionOf) $ sepBy1 conjunction $ keyword "or"
+description =
+  fmap (mkObjectJunction UnionOf) $ sepBy1 conjunction $ keyword "or"
 
 showEntityType :: EntityType -> String
 showEntityType et = case et of
