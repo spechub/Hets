@@ -11,8 +11,8 @@ Portability :  non-portable (via Logic.Logic)
 a not yet implemented comorphism
 -}
 
-module Comorphisms.OWL2CASL_DL
-    (OWL2CASL_DL(..)
+module Comorphisms.OWL2CASL
+    (OWL2CASL(..)
     , mapSentence
     )
     where
@@ -31,24 +31,22 @@ import OWL.AS
 import OWL.Sign as OS
 
 --CASL_DL = codomain
-import CASL_DL.Logic_CASL_DL
-import CASL_DL.AS_CASL_DL
-import CASL_DL.StatAna -- DLSign
+import CASL.Logic_CASL
 import CASL.AS_Basic_CASL
 import CASL.Sign
 import CASL.Morphism
-import CASL_DL.Sublogics
+import CASL.Sublogic
 import CASL_DL.PredefinedSign -- Prefedined Symbols
 
 import Common.ProofTree
 
-data OWL2CASL_DL = OWL2CASL_DL deriving Show
+data OWL2CASL = OWL2CASL deriving Show
 
-instance Language OWL2CASL_DL
+instance Language OWL2CASL
 
 instance Comorphism
-    OWL2CASL_DL     -- comorphism
-    OWL           -- lid domain
+    OWL2CASL        -- comorphism
+    OWL             -- lid domain
     ()              -- sublogics domain
     OntologyFile    -- Basic spec domain
     Sentence        -- sentence domain
@@ -58,25 +56,25 @@ instance Comorphism
     OWL_Morphism  -- morphism domain
     ()              -- symbol domain
     ()              -- rawsymbol domain
-    ProofTree   -- proof tree codomain
-    CASL_DL         -- lid codomain
-    CASL_DL_SL      -- sublogics codomain
-    DL_BASIC_SPEC   -- Basic spec codomain
-    DLFORMULA       -- sentence codomain
+    ProofTree       -- proof tree codomain
+    CASL            -- lid codomain
+    CASL_Sublogics  -- sublogics codomain
+    CASLBasicSpec   -- Basic spec codomain
+    CASLFORMULA     -- sentence codomain
     SYMB_ITEMS      -- symbol items codomain
     SYMB_MAP_ITEMS  -- symbol map items codomain
-    DLSign          -- signature codomain
-    DLMor           -- morphism codomain
+    CASLSign        -- signature codomain
+    CASLMor         -- morphism codomain
     Symbol          -- symbol codomain
     RawSymbol       -- rawsymbol codomain
-    ProofTree     -- proof tree domain
+    ProofTree       -- proof tree domain
     where
-      sourceLogic OWL2CASL_DL    = OWL
-      sourceSublogic OWL2CASL_DL = ()
-      targetLogic OWL2CASL_DL    = CASL_DL
-      mapSublogic OWL2CASL_DL _  = Just $ SROIQ
-      map_theory OWL2CASL_DL = error "map_theory OWL2CASL_DL"
-      map_morphism OWL2CASL_DL = error "map_morphism OWL2CASL_DL"
+      sourceLogic OWL2CASL    = OWL
+      sourceSublogic OWL2CASL = ()
+      targetLogic OWL2CASL    = CASL
+      mapSublogic OWL2CASL _  = Just $ caslTop
+      map_theory OWL2CASL     = error "map_theory OWL2CASL"
+      map_morphism OWL2CASL   = error "map_morphism OWL2CASL"
 
 -- Primary concepts stay in OWL, but non-primary concepts cannot be
 -- superconcepts of primary ones
@@ -89,7 +87,7 @@ hetsPrefix = "hetsowl"
 
 -- | mapping of OWL to CASL_DL formulae
 mapSentence :: Named Sentence              -- ^ OWL Sentence
-            -> Result (Named DLFORMULA)    -- ^ CASL_DL Sentence
+            -> Result (Named CASLFORMULA)    -- ^ CASL_DL Sentence
 mapSentence inSen =
     let
         sName = senAttr    inSen
@@ -126,7 +124,7 @@ mapSentence inSen =
 
 -- | Mapping of Axioms
 mapAxiom :: Axiom                -- ^ OWL Axiom
-         -> Result DLFORMULA     -- ^ CASL_DL Formula
+         -> Result CASLFORMULA     -- ^ CASL_DL Formula
 mapAxiom ax =
     let
         a = mkSimpleId (hetsPrefix ++ "1")
@@ -197,7 +195,7 @@ mapAxiom ax =
 mapSubObjProp :: SubObjectPropertyExpression
               -> ObjectPropertyExpression
               -> Int
-              -> Result DLFORMULA
+              -> Result CASLFORMULA
 mapSubObjProp prop oP num1 =
     let
         num2 = num1 + 1
@@ -247,7 +245,7 @@ mapSubObjProp prop oP num1 =
 mapObjProp :: ObjectPropertyExpression
               -> Int
               -> Int
-              -> Result DLFORMULA
+              -> Result CASLFORMULA
 mapObjProp ob num1 num2 =
     case ob of
       OpURI u ->
@@ -265,7 +263,7 @@ mapObjProp ob num1 num2 =
 -- | Mapping of Class URIs
 mapClassURI :: OwlClassURI
             -> Token
-            -> Result DLFORMULA
+            -> Result CASLFORMULA
 mapClassURI uri uid =
     do
       ur <- uriToId uri
@@ -293,7 +291,7 @@ uriToId ur =
 -- | Mapping of a list of descriptions
 mapDescriptionList :: Int
                       -> [Description]
-                      -> Result [DLFORMULA]
+                      -> Result [CASLFORMULA]
 mapDescriptionList n lst =
     do
       olst <- mapM (\(x,y) -> mapDescription x y)
@@ -303,7 +301,7 @@ mapDescriptionList n lst =
 -- | Mapping of a list of pairs of descriptions
 mapDescriptionListP :: Int
                     -> [(Description, Description)]
-                    -> Result [(DLFORMULA, DLFORMULA)]
+                    -> Result [(CASLFORMULA, CASLFORMULA)]
 mapDescriptionListP n lst =
     do
       let (l, r) = unzip lst
@@ -315,7 +313,7 @@ mapDescriptionListP n lst =
 -- | mapping of OWL Descriptions
 mapDescription :: Description              -- ^ OWL Description
                -> Int                      -- ^ Current Variablename
-               -> Result DLFORMULA         -- ^ CASL_DL Formula
+               -> Result CASLFORMULA         -- ^ CASL_DL Formula
 mapDescription _ = fail "mapDescription nyi"
 
 -- | Build a name

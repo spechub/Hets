@@ -62,6 +62,7 @@ import Comorphisms.DL2CASL_DL
 #endif
 #ifndef NOOWLLOGIC
 import OWL.Logic_OWL
+import Comorphisms.OWL2CASL
 #endif
 import Comorphisms.PCoClTyConsHOL2PairsInIsaHOL
 import Comorphisms.HasCASL2PCoClTyConsHOL
@@ -139,8 +140,14 @@ isaComorphisms = do
 #endif
        -- Propositional
        prop2IHOL <- compComorphism (Comorphism Prop2CASL) subpc2IHOL
+#ifndef NOOWLLOGIC
+       owl2IHOL <- compComorphism (Comorphism OWL2CASL) subpc2IHOL
+#endif
        return [Comorphism (mkIdComorphism Isabelle ()),
                Comorphism CFOL2IsabelleHOL, subpc2IHOLviaHasCASL, subpc2IHOL,
+#ifndef NOOWLLOGIC
+               owl2IHOL,
+#endif
 #ifdef CASLEXTENSIONS
                co2IHOL, mod2IHOL,casl_dl2CASL,
 #endif
@@ -169,12 +176,18 @@ spassComorphisms =
        casl_dl2SPASS <- compComorphism (Comorphism CASL_DL2CASL) partOut
        dl2spass <- compComorphism (Comorphism DL2CASL_DL) casl_dl2SPASS
 #endif
+#ifndef NOOWLLOGIC
+       owl2spass <- compComorphism (Comorphism OWL2CASL) partOut
+#endif
        -- Fixme: constraint empty mapping is not available after Modal2CASL
        -- mod2SPASS <- compComorphism (Comorphism Modal2CASL) partSubOut
        return [Comorphism (mkIdComorphism SoftFOL ()),
                Comorphism SuleCFOL2SoftFOL,partOut,partSubOut
 #ifdef CASLEXTENSIONS
               ,prop2SPASS,casl_dl2SPASS, dl2spass
+#endif
+#ifndef NOOWLLOGIC
+              , owl2spass
 #endif
               ]
 

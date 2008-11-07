@@ -85,7 +85,7 @@ import Comorphisms.CASL2VSERefine
 import Comorphisms.CASL2VSEImport
 #endif
 #ifndef NOOWLLOGIC
-import Comorphisms.OWL2CASL_DL
+import Comorphisms.OWL2CASL
 import Comorphisms.OWL2DL
 #endif
 
@@ -137,7 +137,7 @@ comorphismList =
     , Comorphism CASL2VSERefine
 #endif
 #ifndef NOOWLLOGIC
-    , Comorphism OWL2CASL_DL
+    , Comorphism OWL2CASL
     , Comorphism OWL2DL
 #endif
 #ifdef PROGRAMATICA
