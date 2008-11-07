@@ -140,14 +140,8 @@ isaComorphisms = do
 #endif
        -- Propositional
        prop2IHOL <- compComorphism (Comorphism Prop2CASL) subpc2IHOL
-#ifndef NOOWLLOGIC
-       owl2IHOL <- compComorphism (Comorphism OWL2CASL) subpc2IHOL
-#endif
        return [Comorphism (mkIdComorphism Isabelle ()),
                Comorphism CFOL2IsabelleHOL, subpc2IHOLviaHasCASL, subpc2IHOL,
-#ifndef NOOWLLOGIC
-               owl2IHOL,
-#endif
 #ifdef CASLEXTENSIONS
                co2IHOL, mod2IHOL,casl_dl2CASL,
 #endif
