@@ -41,7 +41,8 @@ iunreserved c = isAlphaNum c || elem c "-._~" || ord c >= 160 && ord c <= 55295
 pctEncoded :: CharParser st String
 pctEncoded = char '%' <:> hexDigit <:> single hexDigit
 
--- | comma and parens removed!
+-- comma and parens are removed here
+-- but would cause no problems for full IRIs within angle brackets
 subDelims :: Char -> Bool
 subDelims c = elem c "!$&'*+;="
 
@@ -110,12 +111,15 @@ ipathAbempty = flat $ many (char '/' <:> isegment)
 ipathAbsolute :: CharParser st String
 ipathAbsolute = char '/' <:> option "" (isegmentNz <++> ipathAbempty)
 
+-- within abbreviated IRIs only ipath-noscheme should be used
+-- that excludes colons via isegment-nz-nc
 ipathRootless :: CharParser st String
 ipathRootless = isegmentNz <++> ipathAbempty
 
--- added comma and parens here
+-- added comma and parens here (maybe testing via lookahead is better)
 ipathEmpty :: CharParser st String
-ipathEmpty = notFollowedBy (iunreservedSubDelims ":@%(), ") >> return ""
+ipathEmpty = notFollowedBy (iunreservedSubDelims ":@%(), \n\r\t\v\f")
+  >> return ""
 
 iauthorityWithPath :: CharParser st String
 iauthorityWithPath = try (string "//") <++> iauthority <++> ipathAbempty
@@ -147,18 +151,20 @@ fullIri = do
     char '<'
     QN pre r _ <- abbrIri
     char '>'
-    return $ QN "" "" $ pre ++ r
+    return $ QN pre "" r
   <|> abbrIri
 
 uriQ :: CharParser st QName
 uriQ = fullIri <|> abbrIri
 
+-- boolean not documented
 datatypeKeys :: [String]
 datatypeKeys = ["integer", "decimal", "float", "string", "boolean"]
 
 uriP :: CharParser st QName
-uriP = skip $ checkWith uriQ $ \ q -> not $ elem q
-  $ map mkQName $ datatypeKeys ++ casl_reserved_words ++ casl_dl_keywords
+uriP = skip $ checkWith uriQ $ \ q -> not $ elem (localPart q)
+  $ datatypeKeys ++ casl_reserved_words ++ casl_dl_keywords
+-- colon keywords should be checked as prefix
 
 datatypeUri :: CharParser st QName
 datatypeUri = fmap mkQName (choice $ map keyword datatypeKeys) <|> uriP
@@ -232,6 +238,8 @@ commaP = skip (char ',') >> return ()
 
 sepByComma :: CharParser st a -> CharParser st [a]
 sepByComma p = sepBy1 p commaP
+
+-- keywords need to be case insensitive
 
 -- | plain string parser with skip
 pkeyword :: String -> CharParser st ()
@@ -326,7 +334,7 @@ individualOrConstantList = do
 
 primaryOrDataRange :: CharParser st (Either Description DataRange)
 primaryOrDataRange = do
-  ns <- many $ keyword "not"
+  ns <- many $ keyword "not"  -- allows multiple not before primary
   ed <- do
       u <- datatypeUri
       fmap Left (restrictionAny $ OpURI u)
@@ -358,13 +366,13 @@ restrictionAny opExpr = do
     <|> do
       keyword "Self"
       return $ ObjectExistsSelf opExpr
-    <|> do
+    <|> do -- sugar
       keyword "onlysome"
       ds <- bracketsP $ sepByComma description
       let as = map (\ d -> ObjectValuesFrom SomeValuesFrom opExpr d) ds
           o = ObjectValuesFrom AllValuesFrom opExpr $ ObjectJunction UnionOf ds
       return $ ObjectJunction IntersectionOf $ o : as
-    <|> do
+    <|> do -- sugar
       keyword "has"
       iu <- individualUri
       return $ ObjectValuesFrom SomeValuesFrom opExpr $ ObjectOneOf [iu]
@@ -483,7 +491,7 @@ classFrameBit :: QName -> CharParser st [Axiom]
 classFrameBit curi = let duri = OWLClass curi in do
     entityAnnos curi OWLClassEntity
   <|> do
-    ckeyword "SubclassOf"
+    ckeyword "SubClassOf" <|> ckeyword "SubclassOf"
     ds <- descriptionAnnotatedList
     return $ map (\ (as, d) -> PlainAxiom as $ SubClassOf duri d) ds
   <|> do
@@ -496,7 +504,7 @@ classFrameBit curi = let duri = OWLClass curi in do
     as <- annotations
     ds <- sepByComma description
     return [PlainAxiom as $ DisjointUnion curi ds]
-  <|> do
+  <|> do -- no documented
     ckeyword "Paraphrase"
     skip stringLit
     return []
@@ -532,7 +540,7 @@ objPropExprAList = sepByComma $ optAnnos objectPropertyExpr
 
 subPropertyKey :: CharParser st Bool
 subPropertyKey = (ckeyword "SubPropertyOf" >> return True)
-   <|> (ckeyword "SuperPropertyOf" >> return False)
+   <|> (ckeyword "SuperPropertyOf" >> return False)  -- sugar
 
 characterKey :: CharParser st ()
 characterKey = ckeyword "Characteristics"
