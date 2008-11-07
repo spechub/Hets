@@ -56,6 +56,9 @@ import SoftFOL.ParseTPTP
 import VSE.Logic_VSE
 import VSE.ToSExpr
 
+import OWL.Logic_OWL
+import OWL.Print (printOWLBasicTheory)
+
 import Logic.Prover
 import Static.GTheory
 import Static.DevGraph
@@ -63,7 +66,7 @@ import Static.CheckGlobalContext
 import Static.DotGraph
 import qualified Static.PrintDevGraph as DG
 import Proofs.StatusUtils
-import Proofs.TheoremHideShift(theoremsToAxioms, computeTheory)
+import Proofs.TheoremHideShift (theoremsToAxioms, computeTheory)
 
 import Driver.Options
 import Driver.WriteLibDefn
@@ -183,6 +186,10 @@ writeTheory opts filePrefix ga
             Nothing -> return ()
         else putIfVerbose opts 0 $ "expected CASL theory for: " ++ f
 #endif
+    OWLOut -> if language_name lid == language_name OWL then do
+            th2 <- coerceBasicTheory lid OWL "" th
+            writeVerbFile opts f $ shows (printOWLBasicTheory th2) "\n"
+        else putIfVerbose opts 0 $ "expected OWL theory for: " ++ f
     _ -> return () -- ignore other file types
 
 modelSparQCheck :: HetcatsOpts -> G_theory -> SIMPLE_ID -> IO ()
@@ -243,6 +250,7 @@ writeSpecFiles opts file lenv ln dg = do
             TPTPFile _ -> True
             TheoryFile _ -> True
             SigFile _ -> True
+            OWLOut -> True
             HaskellOut -> True
             ComptableXml -> True
             _ -> False) outTypes

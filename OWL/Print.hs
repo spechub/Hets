@@ -10,8 +10,9 @@ Portability :  portable
 Pretty printing for OWL DL theories.
 -}
 
-module OWL.Print () where
+module OWL.Print (printOWLBasicTheory) where
 
+import Common.AS_Annotation
 import Common.Doc
 import Common.DocUtils
 
@@ -20,6 +21,9 @@ import OWL.AS
 
 import qualified Data.Set as Set
 import qualified Data.Map as Map
+
+printOWLBasicTheory :: (Sign, [Named Sentence]) -> Doc
+printOWLBasicTheory (_, l) = vsep $ map (pretty . sentence) l
 
 instance Pretty Sign where
     pretty = printSign
