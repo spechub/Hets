@@ -94,12 +94,13 @@ genTermS = "gen_trm"
 treeS = "tree."
 bafS = ".baf"
 
-graphS, ppS, envS, deltaS, prfS, omdocS, hsS :: String
+graphS, ppS, envS, deltaS, prfS, owlS, omdocS, hsS :: String
 graphS = "graph."
 ppS = "pp."
 envS = "env"
 deltaS = ".delta"
 prfS = "prf"
+owlS = "owl"
 omdocS = "omdoc"
 hsS = "hs"
 
@@ -276,7 +277,7 @@ instance Show InType where
     ATermIn at -> genTermS ++ show at
     CASLIn -> "casl"
     HetCASLIn -> "het"
-    OWLIn -> "owl"
+    OWLIn -> owlS
     HaskellIn -> hsS
     PrfIn -> prfS
     OmdocIn -> omdocS
@@ -321,6 +322,7 @@ data OutType =
   | GraphOut GraphType
   | Prf
   | EnvOut
+  | OWLOut
   | OmdocOut
   | HaskellOut
   | ThyFile -- ^ isabelle theory file
@@ -336,6 +338,7 @@ instance Show OutType where
     GraphOut f -> graphS ++ show f
     Prf -> prfS
     EnvOut -> envS
+    OWLOut -> owlS
     OmdocOut -> omdocS
     HaskellOut -> hsS
     ThyFile -> "thy"
@@ -346,7 +349,8 @@ instance Show OutType where
     TheoryFile d -> "th" ++ show d
 
 plainOutTypeList :: [OutType]
-plainOutTypeList = [Prf, EnvOut, OmdocOut, HaskellOut, ThyFile, ComptableXml]
+plainOutTypeList =
+  [Prf, EnvOut, OWLOut, OmdocOut, HaskellOut, ThyFile, ComptableXml]
 
 outTypeList :: [OutType]
 outTypeList = let dl = [Delta, Fully] in
