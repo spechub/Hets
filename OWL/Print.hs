@@ -247,7 +247,7 @@ instance Pretty SubObjectPropertyExpression where
                   text "o" <+> pretty (head $ reverse opExpList)
 
 instance Pretty OntologyFile where
-    pretty = text . show
+    pretty = vsep . map pretty . axiomsList . ontology
 
 setToDocs :: Pretty a => Set.Set a -> [Doc]
 setToDocs = punctuate comma . map pretty . Set.toList
