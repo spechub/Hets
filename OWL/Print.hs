@@ -24,39 +24,37 @@ import qualified Data.Map as Map
 
 printOWLBasicTheory :: (Sign, [Named Sentence]) -> Doc
 printOWLBasicTheory (s, l) =
-  text "Ontology: <http://www.dfki.de/sks/hets/ontos>"
-  $++$ vcat (map (\ c -> classStart <+> pretty c) $ Set.toList $ concepts s)
+  printSign s
   $++$ vsep (map (pretty . sentence) l)
 
 instance Pretty Sign where
     pretty = printSign
 
 printSign :: Sign -> Doc
-printSign (Sign _ p2 p3 p4 p5 p6 _ p8 _ p10) =
-    text "namespaces " $+$ printNamespace p10 $+$
-    text "concepts" <+> setToDocF p2 $+$
-    text "primaryConcepts " <+> setToDocF p3 $+$
-    text "datatypes " <+> setToDocF p4 $+$
-    text "indvidual_valued_roles " <+> setToDocF p5 $+$
-    text "data_valued_roles " <+> setToDocF p6 $+$
-    text "individuals " <+> setToDocF p8
+printSign s =
+   let cs = concepts s
+       ps = primaryConcepts s
+       ds = Set.difference cs ps
+       on = ontologyID s
+       pon = if on == nullQName
+             then text "<http://www.dfki.de/sks/hets/ontology/unamed>"
+             else pretty on
+   in vcat (map (\ (c, l) -> text $ "Namespace: " ++ c ++ " " ++ l)
+           $ Map.toList $ namespaceMap s)
+   $++$ text "Ontology:" <+> pon
+   $++$ vcat (map (\ c -> classStart <+> pretty c) $ Set.toList ps)
+   $++$ vcat (map (\ c -> classStart <+> pretty c) $ Set.toList ds)
+   $++$ vcat (map (\ d -> dpStart <+> pretty d) $ Set.toList $ datatypes s)
+   $++$ vcat (map (\ o -> opStart <+> pretty o) $ Set.toList $ indValuedRoles s)
+   $++$
+     vcat (map (\ d -> dpStart <+> pretty d) $ Set.toList $ dataValuedRoles s)
+   $++$ vcat (map (\ i -> indStart <+> pretty i) $ Set.toList $ individuals s)
 
 instance Pretty QName where
     pretty = printURIreference
 
 printURIreference :: QName -> Doc
-printURIreference (QN prefix localpart u)
-    | localpart == "_" = text $ show "_"
-    | null prefix = if null u then
-                        text localpart
-                      else text $ show (u ++ ":" ++ localpart)
-    | otherwise = text $ show ( prefix ++ ":" ++ localpart)
-
-printNamespace :: Namespace -> Doc
-printNamespace nsMap =
-    vcat $ map pp (Map.toList nsMap)
-       where pp :: (String, String) -> Doc
-             pp (s1,s2) = text s1 <> defn <> text s2
+printURIreference = text . showQN
 
 instance Pretty SignAxiom where
     pretty = text . show
@@ -240,9 +238,6 @@ instance Pretty OntologyFile where
 
 setToDocs :: Pretty a => Set.Set a -> [Doc]
 setToDocs = punctuate comma . map pretty . Set.toList
-
-setToDocF :: Pretty a => Set.Set a -> Doc
-setToDocF = fsep . setToDocs
 
 setToDocV :: (Pretty a) => Set.Set a -> Doc
 setToDocV = vcat . setToDocs
