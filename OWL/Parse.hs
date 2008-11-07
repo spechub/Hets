@@ -13,6 +13,7 @@ Manchester syntax parser for OWL 1.1
 <http://www.faqs.org/rfcs/rfc3987.html>
 <http://www.faqs.org/rfcs/rfc4646.html>
 -}
+
 module OWL.Parse (basicSpec) where
 
 import OWL.AS
@@ -118,7 +119,7 @@ ipathRootless = isegmentNz <++> ipathAbempty
 
 -- added comma and parens here (maybe testing via lookahead is better)
 ipathEmpty :: CharParser st String
-ipathEmpty = notFollowedBy (iunreservedSubDelims ":@%(), \n\r\t\v\f")
+ipathEmpty = notFollowedBy (iunreservedSubDelims ":@%()[]{}, \n\r\t\v\f")
   >> return ""
 
 iauthorityWithPath :: CharParser st String
