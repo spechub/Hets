@@ -109,11 +109,14 @@ begDoEnd open p close = open <:> p <++> single close
 enclosedBy :: (Monad f, Functor f) => f [a] -> f a -> f [a]
 enclosedBy p q = begDoEnd q p q
 
-checkWith :: (Show a) => GenParser tok st a -> (a -> Bool)
+checkWithUsing :: (a -> String) -> GenParser tok st a -> (a -> Bool)
           -> GenParser tok st a
-checkWith p f = do
+checkWithUsing display p f = do
   x <- p
-  if f x then return x else unexpected (show x)
+  if f x then return x else unexpected (display x)
+
+checkWith :: Show a => GenParser tok st a -> (a -> Bool) -> GenParser tok st a
+checkWith = checkWithUsing show
 
 separatedBy :: GenParser tok st a -> GenParser tok st b
             -> GenParser tok st ([a], [b])
