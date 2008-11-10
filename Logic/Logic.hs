@@ -545,7 +545,7 @@ class (StaticAnalysis lid
          -- | conservativity checkers
          conservativityCheck :: lid
                              -> [ConservativityChecker sign sentence morphism]
-         conservativityCheck l = []
+         conservativityCheck _ = []
          -- | the empty proof tree
          empty_proof_tree :: lid -> proof_tree
          empty_proof_tree l = error $ statErrMsg l "empty_proof_tree"
