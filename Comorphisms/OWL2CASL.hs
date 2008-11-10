@@ -24,6 +24,8 @@ import Common.Result
 import Common.Id
 import Control.Monad
 import Data.Char
+import qualified Data.Set as Set
+import qualified Data.Map as Map
 
 --OWL = domain
 import OWL.Logic_OWL
@@ -83,20 +85,133 @@ instance Comorphism
 thing :: SORT
 thing = stringToId "Thing"
 
+-- | OWL bottom
+noThing :: PRED_SYMB
+noThing =
+     (Qual_pred_name (stringToId "Nothing")
+                         (Pred_type [thing] nullRange) nullRange)
+
 -- | OWL Data topSort DATA
 dataS :: SORT
 dataS = stringToId "DATA"
 
+predefSorts :: Set.Set SORT
+predefSorts = Set.fromList [dataS, thing]
+
 hetsPrefix :: String
-hetsPrefix = "hetsowl"
+hetsPrefix = "gn_"
+
+mapSign :: OS.Sign                 -- ^ OWL signature
+        -> Result CASLSign         -- ^ CASL signature
+mapSign sig =
+    do
+      let conc = Set.union (OS.concepts sig) (OS.primaryConcepts sig)
+      ooConcs <- foldM (\x y ->
+                               do
+                                 nId <- uriToId y
+                                 return $ (Map.insert nId
+                                    (Set.singleton (PredType [thing])) x)
+                            )
+                   Map.empty $ Set.toList conc
+      let oConcs = Map.union ooConcs $ foldl (Map.union) Map.empty $
+               [
+                Map.singleton (stringToId "Thing")
+                       (Set.singleton (PredType [thing]))
+               ,Map.singleton (stringToId "nothing")
+                       (Set.singleton (PredType [thing]))
+               ]
+      let objProps = OS.indValuedRoles sig
+      oObjProps <- foldM (\x y ->
+                               do
+                                 nId <- uriToId y
+                                 return $ (Map.insert nId
+                                    (Set.singleton (PredType [thing,thing])) x)
+                            )
+                   Map.empty $ Set.toList objProps
+      let inDis = OS.individuals sig
+      oInDis <- foldM (\x y ->
+                               do
+                                 nId <- uriToId y
+                                 return $ (Map.insert nId
+                                    (Set.singleton (OpType Total [] thing)) x)
+                            )
+                   Map.empty $ Set.toList inDis
+      return $ (emptySign ())
+             {
+               sortSet = predefSorts
+             , emptySortSet = Set.empty
+             , predMap = oConcs `Map.union` oObjProps
+             , opMap = oInDis
+             }
+
+predefinedSentences :: [SenAttr (FORMULA ()) [Char]]
+predefinedSentences =
+    [
+     makeNamed "nothing in Nothing" $
+     Quantification Universal
+     [Var_decl [mk_Name 1] thing nullRange]
+     (
+      Negation
+      (
+       Predication
+       noThing
+       [Qual_var (mk_Name 1) thing nullRange]
+       nullRange
+      )
+      nullRange
+     )
+     nullRange
+    ,
+     makeNamed "thing in Thing" $
+     Quantification Universal
+     [Var_decl [mk_Name 1] thing nullRange]
+     (
+       Predication
+       (Qual_pred_name (stringToId "Thing")
+                           (Pred_type [thing] nullRange) nullRange)
+       [Qual_var (mk_Name 1) thing nullRange]
+       nullRange
+     )
+     nullRange
+    ,
+     makeNamed "thing is not data" $
+     Quantification Universal
+     [Var_decl [mk_Name 1] thing nullRange]
+     (
+      Negation
+      (
+       Membership
+       (Qual_var (mk_Name 1) thing nullRange)
+       dataS
+       nullRange
+      )
+      nullRange
+     )
+     nullRange
+    ,
+     makeNamed "data is not thing" $
+     Quantification Universal
+     [Var_decl [mk_Name 1] thing nullRange]
+     (
+      Negation
+      (
+       Membership
+       (Qual_var (mk_Name 1) dataS nullRange)
+       thing
+       nullRange
+      )
+      nullRange
+     )
+     nullRange
+    ]
 
 mapTheory :: (OS.Sign, [Named OS.Sentence])
              -> Result (CASLSign, [Named CASLFORMULA])
 mapTheory (owlSig, owlSens) =
     do
       cSens <- mapM mapSentence owlSens
-      let cSig = emptySign ()
-      return $ (cSig, cSens)
+      cSig  <- mapSign owlSig
+      return $ (cSig, predefinedSentences ++ cSens)
 
 -- | mapping of OWL to CASL_DL formulae
 mapSentence :: Named OS.Sentence             -- ^ OWL Sentence
@@ -149,8 +264,8 @@ mapAxiom ax =
             case pAx of
               SubClassOf sub super ->
                   do
-                    domT <- mapDescription sub   c
-                    codT <- mapDescription super c
+                    domT <- mapDescription sub   a
+                    codT <- mapDescription super a
                     return $ Quantification Universal [Var_decl [mk_Name a]
                                                        thing nullRange]
                                (Implication
@@ -160,7 +275,7 @@ mapAxiom ax =
                                 nullRange) nullRange
               EquivOrDisjointClasses eD dS ->
                   do
-                    decrsS <- mapDescriptionListP c $ comPairs dS dS
+                    decrsS <- mapDescriptionListP a $ comPairs dS dS
                     let decrsP = map (\(x,y) -> Conjunction [x,y] nullRange) decrsS
                     return $ Quantification Universal [Var_decl [mk_Name a]
                                                        thing nullRange]
@@ -175,8 +290,8 @@ mapAxiom ax =
                                ) nullRange
               DisjointUnion cls sD ->
                   do
-                    decrs  <- mapDescriptionList c sD
-                    decrsS <- mapDescriptionListP c $ comPairs sD sD
+                    decrs  <- mapDescriptionList a sD
+                    decrsS <- mapDescriptionListP a $ comPairs sD sD
                     let decrsP = map (\(x,y) -> Conjunction [x,y] nullRange) decrsS
                     mcls <- mapClassURI cls (mk_Name a)
                     return $ Quantification Universal [Var_decl [mk_Name a]
@@ -488,19 +603,19 @@ mapAxiom ax =
                                )
                                nullRange
               DataPropertyDomainOrRange _ _ ->
-                  fail "case alternative not implemented"
+                  fail "DataPropertyDomainOrRange not implemented"
               FunctionalDataProperty _ ->
-                  fail "case alternative not implemented"
+                  fail "FunctionalDataProperty not implemented"
               SameOrDifferentIndividual _ _ ->
-                  fail "case alternative not implemented"
+                  fail "SameOrDifferentIndividual not implemented"
               ClassAssertion _ _ ->
-                  fail "case alternative not implemented"
+                  fail "ClassAssertion not implemented"
               ObjectPropertyAssertion _ ->
-                  fail "case alternative not implemented"
+                  fail "ObjectPropertyAssertion not implemented"
               DataPropertyAssertion _ ->
-                  fail "case alternative not implemented"
+                  fail "DataPropertyAssertion not implemented"
               Declaration _ ->
-                  fail "case alternative not implemented"
+                  fail "Entity Declaration not implemented"
         EntityAnno _  -> fail "Mapping of Entity Axioms not implemented!"
 
 -- | Mapping along ObjectPropsList for creation of pairs for commutative operations
@@ -620,6 +735,27 @@ mapObjProp ob num1 num2 =
       InverseOp u ->
           mapObjProp u num2 num1
 
+-- | Mapping of obj props with Individuals
+mapObjPropI :: ObjectPropertyExpression
+              -> Int
+              -> IndividualURI
+              -> Result CASLFORMULA
+mapObjPropI ob num1 indivID =
+    case ob of
+      OpURI u ->
+          do
+            let l = mk_Name num1
+            iT <- mapIndivURI indivID
+            ur <- uriToId u
+            return $ Predication
+                       (Qual_pred_name ur
+                        (Pred_type [thing,thing] nullRange) nullRange)
+                       [Qual_var l thing nullRange,
+                        iT
+                       ]
+                       nullRange
+      InverseOp _ -> fail "cannot map this"
+
 -- | Mapping of Class URIs
 mapClassURI :: OwlClassURI
             -> Token
@@ -632,6 +768,23 @@ mapClassURI uril uid =
                   [Qual_var uid thing nullRange]
                   nullRange
 
+-- | Mapping of Individual URIs
+mapIndivURI :: IndividualURI
+            -> Result (TERM ())
+mapIndivURI uriI =
+    do
+      ur <- uriToId uriI
+      return $ Application
+                 (
+                  Qual_op_name
+                  ur
+                  (Op_type Total [] thing nullRange)
+                  nullRange
+                 )
+                 []
+                 nullRange
+
+-- | Extracts Id from URI
 uriToId :: URI
         -> Result Id
 uriToId ur =
@@ -646,7 +799,7 @@ uriToId ur =
         nU = map repl $ namespaceUri ur
     in
       do
-        return $ stringToId $ nU ++ "_" ++ nP ++ "_" ++ lP ++ "_"
+        return $ stringToId $ nU ++ "" ++ nP ++ "" ++ lP
 
 -- | Mapping of a list of descriptions
 mapDescriptionList :: Int
@@ -685,4 +838,135 @@ comPairs (a:as) (_:bs) = zip (replicate (length bs) a) bs ++ comPairs as bs
 mapDescription :: Description              -- ^ OWL Description
                -> Int                      -- ^ Current Variablename
                -> Result CASLFORMULA       -- ^ CASL_DL Formula
-mapDescription _ = fail "mapDescription nyi"
+mapDescription des var =
+    case des of
+      OWLClass cl            -> mapClassURI cl (mk_Name var)
+      ObjectJunction jt desL ->
+          do
+            desO <- mapM (\x -> mapDescription x var) desL
+            case jt of
+              UnionOf        ->
+                  do
+                    return $ Disjunction desO nullRange
+              IntersectionOf ->
+                  do
+                    return $ Conjunction desO nullRange
+      ObjectComplementOf descr ->
+             do
+               desO <- mapDescription descr var
+               return $ Negation desO nullRange
+      ObjectOneOf indS ->
+          do
+            indO <- mapM mapIndivURI indS
+            let varO  = Qual_var (mk_Name var) thing nullRange
+            let forms = map (\y ->
+                                 Strong_equation varO y nullRange)
+                                 indO
+            return $ Disjunction forms nullRange
+      ObjectValuesFrom qt oprop descr ->
+        do
+          opropO <- mapObjProp oprop var (var + 1)
+          descO  <- mapDescription descr (var + 1)
+          case qt of
+            AllValuesFrom  ->
+                return $ Quantification Existential [Var_decl [mk_Name
+                                                               (var + 1)]
+                                                       thing nullRange]
+                       (
+                        Conjunction
+                        [opropO, descO]
+                        nullRange
+                       )
+                       nullRange
+            SomeValuesFrom ->
+                return $ Quantification Universal [Var_decl [mk_Name
+                                                               (var + 1)]
+                                                       thing nullRange]
+                       (
+                        Implication
+                        opropO descO
+                        True
+                        nullRange
+                       )
+                       nullRange
+      ObjectExistsSelf oprop ->
+             do
+               opropO <- mapObjProp oprop var var
+               return opropO
+      ObjectHasValue oprop indiv ->
+          do
+            opropO <- mapObjPropI oprop var indiv
+            return $ opropO
+      ObjectCardinality c ->
+          case c of
+            Cardinality ct n oprop Nothing
+                 ->
+                   do
+                     let vlst = [(var+1) .. (n+var+1)]
+                         vlstM = [(var+1) .. (n+var+2)]
+                         dlst = map (\(x,y) ->
+                                     Negation
+                                     (
+                                        Strong_equation
+                                         (Qual_var (mk_Name x) thing nullRange)
+                                         (Qual_var (mk_Name y) thing nullRange)
+                                         nullRange
+                                     )
+                                     nullRange
+                                    ) $ comPairs vlst vlst
+                         dlstM = map (\(x,y) ->
+                                     Negation
+                                     (
+                                        Strong_equation
+                                         (Qual_var (mk_Name x) thing nullRange)
+                                         (Qual_var (mk_Name y) thing nullRange)
+                                         nullRange
+                                     )
+                                     nullRange
+                                    ) $ comPairs vlstM vlstM
+
+                         qVars = map (\x ->
+                                          Var_decl [mk_Name x]
+                                                    thing nullRange
+                                     ) vlst
+                         qVarsM = map (\x ->
+                                          Var_decl [mk_Name x]
+                                                    thing nullRange
+                                     ) vlstM
+                     oProps <- mapM (\x -> mapObjProp oprop var x) vlst
+                     oPropsH <- mapM (\x -> mapObjProp oprop var x) vlst
+                     let oPropsM = map (\x ->
+                                          Negation
+                                          x nullRange) oPropsH
+                     let minLst = Quantification Existential
+                                  qVars
+                                  (
+                                   Conjunction
+                                   (dlst ++ oProps)
+                                   nullRange
+                                  )
+                                  nullRange
+                     let maxLst = Quantification Universal
+                                  qVarsM
+                                  (
+                                   Implication
+                                   (Conjunction dlstM nullRange)
+                                   (Disjunction oPropsM nullRange)
+                                   True
+                                   nullRange
+                                  )
+                                  nullRange
+                     case ct of
+                       MinCardinality -> return minLst
+                       MaxCardinality -> return maxLst
+                       ExactCardinality -> return $
+                                           Conjunction
+                                           [minLst, maxLst]
+                                           nullRange
+            Cardinality _ _ _ (Just _)
+                 ->
+                   do
+                     fail "qual cardinality nyi"
+      DataValuesFrom _ _ _ _ -> fail "data handling nyi"
+      DataHasValue _ _       -> fail "data handling nyi"
+      DataCardinality _      -> fail "data handling nyi"
