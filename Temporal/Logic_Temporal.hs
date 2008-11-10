@@ -24,8 +24,8 @@ Instance of class Logic for the propositional logic
   2005.
 -}
 
-module Propositional.Logic_Propositional
-    (module Propositional.Logic_Propositional
+module Temporal.Logic_Temporal
+    (module Temporal.Logic_Temporal
             , Sign
             , Morphism
     ) where
@@ -44,17 +44,16 @@ import qualified Propositional.ATC_Propositional()
 import qualified Propositional.Symbol as Symbol
 import qualified Propositional.Parse_AS_Basic as Parse_AS
 import qualified Propositional.Analysis as Analysis
-import qualified Propositional.Sublogic as Sublogic
 
 
 -- | Lid for propositional logic
-data Propositional = Propositional deriving Show --lid
+data Temproal = Temporal deriving Show --lid
 
-instance Language Propositional where
+instance Language Temporal where
     description _ =
-        "Propositional Logic\n"++
+        "Temporal Logic\n"++
          "for more information please refer to\n"++
-         "http://en.wikipedia.org/wiki/Propositional_logic"
+         "http://en.wikipedia.org/wiki/Temporal_logic"
 
 
 -- beibehalten
@@ -73,30 +72,30 @@ instance Category Sign.Sign Morphism.Morphism where
 
 -- Symbol von Propositional uebernehmen
 -- | Instance of Sentences for propositional logic
-instance Sentences Propositional (StateFormula Id)
+instance Sentences Temporal (StateFormula Id)
     Sign.Sign Morphism.Morphism Symbol.Symbol where
     -- returns the set of symbols
-    sym_of Propositional = Symbol.symOf
+    sym_of Temporal = Symbol.symOf
     -- returns the symbol map
-    symmap_of Propositional = Symbol.getSymbolMap
+    symmap_of Temporal = Symbol.getSymbolMap
     -- returns the name of a symbol
-    sym_name Propositional = Symbol.getSymbolName
+    sym_name Temporal = Symbol.getSymbolName
     -- translation of sentences along signature morphism
-    map_sen Propositional = Morphism.mapSentence
+    map_sen Temporal = Morphism.mapSentence
     -- there is nothing to leave out
-    simplify_sen Propositional _ form = form
+    simplify_sen Temporal _ form = form
 
 -- BASIC_SPEC: von Propositional uebernehmen (abstrakte Syntax)
 -- aber Formeln neu machen
--- | Syntax of Propositional logic
-instance Syntax Propositional AS_BASIC.BASIC_SPEC () () where
+-- | Syntax of Temporal logic
+instance Syntax Temporal AS_BASIC.BASIC_SPEC () () where
          -- hier den Parser einbinden
-         parse_basic_spec Propositional = Just Parse_AS.basicSpec
+         parse_basic_spec Temporal = Just Parse_AS.basicSpec
          parse_symb_items _ = Nothing
          parse_symb_map_items _ = Nothing
 
 -- | Instance of Logic for propositional logc
-instance Logic Propositional
+instance Logic Temporal
       -- erstmal (), spaeter Datentyp fuer Sublogiken
     Sublogic.PropSL                    -- Sublogics 
     AS_BASIC.BASIC_SPEC                -- basic_spec
@@ -109,18 +108,18 @@ instance Logic Propositional
     Symbol.Symbol                      -- raw_symbol
     ()                      -- proof_tree
     where
-      stability Propositional     = Experimental
-      top_sublogic Propositional  = ()
-      all_sublogics Propositional = ()
+      stability Temporal     = Experimental
+      top_sublogic Temporal  = ()
+      all_sublogics Temporal = ()
     -- supplied provers
-      provers Propositional = []  -- spaeter: nuSMV
-      cons_checkers Propositional = []
-      conservativityCheck Propositional = []
+      provers Temporal = []  -- spaeter: nuSMV
+      cons_checkers Temporal = []
+      conservativityCheck Temporal = []
 
 
 -- groﬂteils uebernehmen
 -- | Static Analysis for propositional logic
-instance StaticAnalysis Propositional
+instance StaticAnalysis Temporal
     AS_BASIC.BASIC_SPEC                -- basic_spec
     AS_BASIC.FORMULA                   -- sentence
     AS_BASIC.SYMB_ITEMS                -- symb_items
@@ -130,20 +129,20 @@ instance StaticAnalysis Propositional
     Symbol.Symbol                      -- symbol
     Symbol.Symbol                      -- raw_symbol
         where
-          basic_analysis Propositional           =
-              Just $ Analysis.basicPropositionalAnalysis
-          empty_signature Propositional          = Sign.emptySig
-          inclusion Propositional                = Morphism.inclusionMap
-          signature_union Propositional          = Sign.sigUnion
-          symbol_to_raw Propositional            = Symbol.symbolToRaw
-          id_to_raw     Propositional            = Symbol.idToRaw
-          matches       Propositional            = Symbol.matches
-          stat_symb_items Propositional          = Analysis.mkStatSymbItems
-          stat_symb_map_items Propositional      = Analysis.mkStatSymbMapItem
-          induced_from_morphism Propositional    = Analysis.inducedFromMorphism
-          induced_from_to_morphism Propositional =
+          basic_analysis Temporal           =
+              Just $ Analysis.basicTemporalAnalysis
+          empty_signature Temporal          = Sign.emptySig
+          inclusion Temporal                = Morphism.inclusionMap
+          signature_union Temporal          = Sign.sigUnion
+          symbol_to_raw Temporal            = Symbol.symbolToRaw
+          id_to_raw     Temporal            = Symbol.idToRaw
+          matches       Temporal            = Symbol.matches
+          stat_symb_items Temporal          = Analysis.mkStatSymbItems
+          stat_symb_map_items Temporal      = Analysis.mkStatSymbMapItem
+          induced_from_morphism Temporal    = Analysis.inducedFromMorphism
+          induced_from_to_morphism Temporal =
               Analysis.inducedFromToMorphism
-          signature_colimit Propositional  = Analysis.signatureColimit
+          signature_colimit Temporal  = Analysis.signatureColimit
 
 -- | Sublogics
 instance SemiLatticeWithTop Sublogic.PropSL where

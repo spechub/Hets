@@ -43,6 +43,7 @@ import Logic.Grothendieck
 import CASL.Logic_CASL  -- also serves as default logic
 import HasCASL.Logic_HasCASL
 import Propositional.Logic_Propositional
+-- import Temporal.Logic_Temporal
 #ifdef PROGRAMATICA
 import Haskell.Logic_Haskell
 #endif
