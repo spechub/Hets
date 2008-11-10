@@ -72,8 +72,7 @@ instance Comorphism
       sourceSublogic OWL2CASL = ()
       targetLogic OWL2CASL    = CASL
       mapSublogic OWL2CASL _  = Just $ cFol
-        { cons_features = emptyMapConsFeature
-        , has_empty_sorts = True }
+        { cons_features = emptyMapConsFeature }
       map_theory OWL2CASL     = mapTheory
       map_morphism OWL2CASL   = fail "map_morphism OWL2CASL"
 
