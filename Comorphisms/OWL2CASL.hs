@@ -220,6 +220,7 @@ mapSentence inSen =
     let
         sName = senAttr    inSen
         sDef  = isDef      inSen
+        sAx   = isAxiom    inSen
         wTh   = wasTheorem inSen
         sen   = sentence   inSen
         sAnno = simpAnno   inSen
@@ -231,7 +232,7 @@ mapSentence inSen =
               return $ SenAttr
                          {
                            senAttr    = sName
-                         , isAxiom    = False
+                         , isAxiom    = sAx
                          , isDef      = sDef
                          , wasTheorem = wTh
                          , sentence   = outAx
@@ -243,7 +244,7 @@ mapSentence inSen =
               return $ SenAttr
                          {
                            senAttr    = sName
-                         , isAxiom    = True
+                         , isAxiom    = sAx
                          , isDef      = sDef
                          , wasTheorem = wTh
                          , sentence   = outFact

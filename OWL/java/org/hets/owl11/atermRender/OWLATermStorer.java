@@ -4,6 +4,7 @@ import org.semanticweb.owl.io.OWLFunctionalSyntaxOntologyFormat;
 import org.semanticweb.owl.io.OWLRendererException;
 import org.semanticweb.owl.io.OWLRendererIOException;
 import org.semanticweb.owl.model.*;
+import org.semanticweb.owl.io.OWLOntologyOutputTarget;
 
 import java.io.*;
 import java.net.URI;
@@ -33,7 +34,9 @@ public class OWLATermStorer implements OWLOntologyStorer {
      * @param physicalURI    The physical URI that specifies the location
      * @param ontologyFormat The format that the ontology should be stored in
      */
-    public void storeOntology(OWLOntologyManager manager, OWLOntology ontology, URI physicalURI,
+    public void storeOntology(OWLOntologyManager manager, 
+			      OWLOntology ontology, 
+			      URI physicalURI,
                               OWLOntologyFormat ontologyFormat) throws OWLRendererException {
         try {
             OWLATermRenderer renderer = new OWLATermRenderer(manager);
@@ -47,5 +50,12 @@ public class OWLATermStorer implements OWLOntologyStorer {
         catch (IOException e) {
             throw new OWLRendererIOException(e);
         }
+    }
+ 
+    public void storeOntology(OWLOntologyManager manager, 
+			      OWLOntology ontology, 
+			      OWLOntologyOutputTarget target, 
+			      OWLOntologyFormat format) throws OWLOntologyStorageException
+    {
     }
 }
