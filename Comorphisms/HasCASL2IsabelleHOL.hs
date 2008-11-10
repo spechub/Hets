@@ -321,16 +321,7 @@ transWhenElse sign t =
 -- form Abs(pattern term)
 abstraction :: Env -> As.Term -> IsaSign.Term -> IsaSign.Term
 abstraction sign pat body =
-    Abs (transPattern sign pat) body NotCont where
---    Abs (transPattern sign pat) body NotCont where
-    getType t =
-      case t of
-        QualVar (VarDecl _ ty _ _) ->  transType ty
-        TypedTerm _ _ ty _         -> transType ty
-        TupleTerm terms _           -> evalTupleType terms
-        _                           ->
-          error "HasCASL2IsabelleHOL.abstraction"
-    evalTupleType t = foldr1 prodType (map getType t)
+    Abs (transPattern sign pat) body NotCont
 
 -- translation of lambda patterns
 -- a pattern keeps his type 't', isn't translated to 't option'
