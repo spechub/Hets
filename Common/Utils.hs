@@ -37,10 +37,7 @@ import qualified Data.Map as Map
 import qualified Data.Set as Set
 
 import System.Environment
-import System.IO.Error
 import Control.Monad
-
-import qualified Control.Exception as Exception
 
 {- | The 'nubWith' function accepts as an argument a \"stop list\" update
 function and an initial stop list. The stop list is a set of list elements
@@ -183,13 +180,9 @@ getEnvSave :: a -- ^ default value
            -> (String -> Maybe a) -- ^ parse and check value of variable;
                          -- for every b the default value is returned
            -> IO a
-getEnvSave defValue envVar readFun = Exception.catch
-  (getEnv envVar >>= return . maybe defValue id . readFun)
-  $ \ e -> case e of
-             Exception.IOException ie ->
-                 if isDoesNotExistError ie -- == NoSuchThing
-                 then return defValue else Exception.throwIO e
-             _ -> Exception.throwIO e
+getEnvSave defValue envVar readFun = do
+    getEnvironment >>= return . maybe defValue (maybe defValue id . readFun)
+      . lookup envVar
 
 -- | get environment variable
 getEnvDef :: String -- ^ environment variable
