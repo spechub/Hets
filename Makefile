@@ -27,7 +27,7 @@ SOURCE_PATHS = . utils/itcor \
     Syntax Static GUI HasCASL Haskell Modal CoCASL COL ConstraintCASL \
     CspCASL ATC Proofs Comorphisms Isabelle Driver Modifications \
     Taxonomy CASL_DL SoftFOL OWL OMDoc PGIP Propositional RelationalScheme \
-    DL VSE
+    VSE
 
 # the 'replacing spaces' example was taken from the (GNU) Make info manual
 empty =
@@ -79,7 +79,7 @@ GTK_GLADE_HSFILES = $(subst .glade,.hs,$(GTK_GLADE_FILES))
 derived_sources += $(GTK_GLADE_HSFILES)
 
 logics = CASL HasCASL Isabelle Modal CoCASL COL CspCASL CASL_DL SoftFOL \
-     ConstraintCASL Propositional OWL DL RelationalScheme VSE OMDoc
+     ConstraintCASL Propositional OWL RelationalScheme VSE OMDoc
 
 TESTTARGETFILES += CASL/fromKif.hs CASL/capa.hs HasCASL/hacapa.hs \
     Haskell/wrap.hs Isabelle/isa.hs Syntax/hetpa.hs \
@@ -210,7 +210,7 @@ drifted_files = Common/AS_Annotation.hs \
     CoCASL/AS_CoCASL.hs COL/AS_COL.hs \
     CASL_DL/AS_CASL_DL.hs OWL/ReadWrite.hs \
     CspCASL/AS_CspCASL_Process.hs CspCASL/AS_CspCASL.hs \
-    DL/AS.hs RelationalScheme/AS.hs \
+    RelationalScheme/AS.hs \
     $(gendrifted_files)
 
 atc_files = Common/AS_Annotation.der.hs Common/DefaultMorphism.hs \
@@ -271,8 +271,6 @@ Isabelle_files = Isabelle/IsaSign.hs
 Propositional_files = Propositional/Sign.hs Propositional/Morphism.hs \
     Propositional/AS_BASIC_Propositional.hs Propositional/Symbol.hs \
     Propositional/Sublogic.hs
-
-DL_files = DL/AS.hs DL/Sign.hs
 
 RS_files = RelationalScheme/AS.hs RelationalScheme/Sign.hs
 
@@ -525,9 +523,6 @@ genRules: $(generated_rule_files)
 
 CASL/ATC_CASL.der.hs: $(CASL_files) $(GENRULES)
 	$(GENRULECALL) -i ATC.GlobalAnnotations -o $@ $(CASL_files)
-
-DL/ATC_DL.der.hs: $(DL_files) $(GENRULES)
-	$(GENRULECALL) -i ATC.GlobalAnnotations -o $@ $(DL_files)
 
 RelationalScheme/ATC_RelationalScheme.der.hs: $(RS_files) $(GENRULES)
 	$(GENRULECALL) -i ATC.GlobalAnnotations -o $@ $(RS_files)

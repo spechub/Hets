@@ -11,7 +11,7 @@ Portability :  portable
 Keywords for the DL Concrete Syntax
 -}
 
-module DL.DLKeywords where
+module OWL.ManKeywords where
 
 dlclass :: String
 dlclass = "Class:"

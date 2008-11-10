@@ -17,7 +17,7 @@ Manchester syntax parser for OWL 1.1
 module OWL.Parse (basicSpec) where
 
 import OWL.AS
-import DL.DLKeywords (casl_dl_keywords)
+import OWL.ManKeywords (casl_dl_keywords)
 import Common.Token (casl_reserved_words)
 import Common.Lexer hiding (skip)
 import Common.Utils (nubOrd)

@@ -56,7 +56,6 @@ import CspCASL.Logic_CspCASL
 import COL.Logic_COL ()
 import CASL_DL.Logic_CASL_DL
 import ConstraintCASL.Logic_ConstraintCASL
-import DL.Logic_DL
 import RelationalScheme.Logic_Rel
 import VSE.Logic_VSE
 import OMDoc.Logic_OMDoc ()
@@ -72,7 +71,7 @@ logicList = [Logic CASL, Logic HasCASL,
 #endif
 #ifdef CASLEXTENSIONS
              Logic CoCASL, Logic Modal, Logic CspCASL, -- Logic COL,
-             Logic CASL_DL, Logic ConstraintCASL, Logic DL,
+             Logic CASL_DL, Logic ConstraintCASL,
              Logic RelScheme, Logic VSE,
 #endif
 #ifndef NOOWLLOGIC
