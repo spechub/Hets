@@ -12,7 +12,7 @@ a list plus its length for a more efficient history implementation.
 Parts of the implementation is stolen from Data.Edison.Seq.SizedSeq
 -}
 
-module SizedList where
+module Common.Lib.SizedList where
 
 import Prelude hiding (null, head, tail, reverse, take, drop)
 
