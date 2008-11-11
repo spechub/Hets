@@ -19,6 +19,7 @@ module Common.ATerm.ConvInstances () where
 import Common.ATerm.Conversion
 import Common.ATerm.AbstractSyntax
 import Common.Lib.Graph as Graph
+import Common.Lib.SizedList as SizedList
 import qualified Data.Map as Map
 import qualified Data.IntMap as IntMap
 import qualified Data.Set as Set
@@ -32,6 +33,20 @@ import Data.Time (TimeOfDay(..))
 import Data.Fixed (Pico)
 import Data.Ratio (Ratio)
 import System.Time
+
+_tc_SizedListTc = mkTyCon "Common.Lib.SizedList.SizedList"
+
+instance Typeable a => Typeable (SizedList.SizedList a) where
+    typeOf x = mkTyConApp _tc_SizedListTc [typeOf (geta x)]
+      where
+        geta :: SizedList.SizedList a -> a
+        geta = undefined
+
+instance ShATermConvertible a => ShATermConvertible (SizedList.SizedList a)
+    where
+  toShATermAux att0 = toShATermAux att0 . SizedList.toList
+  fromShATermAux ix att0 = case fromShATermAux ix att0 of
+    (att, l) -> (att, SizedList.fromList l)
 
 _tc_InjMapTc = mkTyCon "Common.InjMap.InjMap"
 
