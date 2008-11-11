@@ -137,6 +137,9 @@ isaComorphisms = do
        -- ModalCASL
        mod2IHOL <- compComorphism (Comorphism Modal2CASL) subpc2IHOL
 #endif
+#ifndef NOOWLLOGIC
+       owl2HOL  <- compComorphism (Comorphism OWL2CASL) subpc2IHOL
+#endif
        -- Propositional
        prop2IHOL <- compComorphism (Comorphism Prop2CASL) subpc2IHOL
        return [Comorphism (mkIdComorphism Isabelle ()),
@@ -146,6 +149,9 @@ isaComorphisms = do
 #endif
 #ifdef PROGRAMATICA
                Comorphism Haskell2IsabelleHOLCF,
+#endif
+#ifndef NOOWLLOGIC
+               owl2HOL,
 #endif
                subHasCASL, Comorphism PCoClTyConsHOL2PairsInIsaHOL,
                prop2IHOL ]
