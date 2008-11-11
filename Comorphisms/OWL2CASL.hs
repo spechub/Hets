@@ -25,6 +25,7 @@ import Control.Monad
 import Data.Char
 import qualified Data.Set as Set
 import qualified Data.Map as Map
+import Common.DefaultMorphism
 
 --OWL = domain
 import OWL.Logic_OWL
@@ -75,10 +76,51 @@ instance Comorphism
       mapSublogic OWL2CASL _  = Just $ cFol
         { cons_features = emptyMapConsFeature }
       map_theory OWL2CASL     = mapTheory
-      map_morphism OWL2CASL   = fail "map_morphism OWL2CASL"
+      map_morphism OWL2CASL   = mapMorphism
 
--- Primary concepts stay in OWL, but non-primary concepts cannot be
--- superconcepts of primary ones
+-- | Mapping of OWL morphisms to CASL morphisms
+mapMorphism :: OWL_Morphism
+            -> Result CASLMor
+mapMorphism oMor =
+    do
+      cdm <- mapSign $ domOfDefaultMorphism oMor
+      ccd <- mapSign $ codOfDefaultMorphism oMor
+      let inc = isInclusionDefaultMorphism oMor
+      let sorts = case inc of
+                    True  ->
+                        Set.fold (\x y -> Map.insert x x y) Map.empty $
+                           sortSet cdm
+                    False ->
+                        Map.empty
+      let preds = case inc of
+                    True  -> Map.foldWithKey (\x e b ->
+                                              Set.fold (\pt p ->
+                                                       Map.insert (x, pt) x p)
+                                              b e
+                                              )
+                             Map.empty $ predMap cdm
+                    False ->
+                        Map.empty
+      let funs = case inc of
+                   True  ->
+                       Map.foldWithKey (\x ot b ->
+                                            Set.fold (\ots p ->
+                                                          Map.insert (x, ots)
+                                                              (x, opKind ots) p
+                                                     ) b ot
+                                       )
+                                        Map.empty $ opMap cdm
+                   False ->
+                       Map.empty
+      return $ Morphism
+                 {
+                   msource      = cdm
+                 , mtarget      = ccd
+                 , sort_map     = sorts
+                 , fun_map      = funs
+                 , pred_map     = preds
+                 , extended_map = ()
+                 }
 
 -- | OWL topsort Thing
 thing :: SORT
