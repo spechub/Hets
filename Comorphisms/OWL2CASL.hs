@@ -94,11 +94,13 @@ noThing =
 dataS :: SORT
 dataS = stringToId "DATA"
 
+data VarOrIndi = OVar Int | OIndi URI
+
 predefSorts :: Set.Set SORT
 predefSorts = Set.fromList [dataS, thing]
 
 hetsPrefix :: String
-hetsPrefix = "gn_"
+hetsPrefix = ""
 
 mapSign :: OS.Sign                 -- ^ OWL signature
         -> Result CASLSign         -- ^ CASL signature
@@ -170,36 +172,6 @@ predefinedSentences =
                            (Pred_type [thing] nullRange) nullRange)
        [Qual_var (mk_Name 1) thing nullRange]
        nullRange
-     )
-     nullRange
-    ,
-     makeNamed "thing is not data" $
-     Quantification Universal
-     [Var_decl [mk_Name 1] thing nullRange]
-     (
-      Negation
-      (
-       Membership
-       (Qual_var (mk_Name 1) thing nullRange)
-       dataS
-       nullRange
-      )
-      nullRange
-     )
-     nullRange
-    ,
-     makeNamed "data is not thing" $
-     Quantification Universal
-     [Var_decl [mk_Name 1] thing nullRange]
-     (
-      Negation
-      (
-       Membership
-       (Qual_var (mk_Name 1) dataS nullRange)
-       thing
-       nullRange
-      )
-      nullRange
      )
      nullRange
     ]
@@ -295,17 +267,18 @@ mapAxiom cSig ax =
               EquivOrDisjointClasses eD dS ->
                   do
                     decrsS <- mapDescriptionListP cSig a $ comPairs dS dS
-                    let decrsP = map (\(x,y) -> Conjunction [x,y] nullRange) decrsS
+                    let decrsP =
+                            case eD of
+                              Equivalent ->
+                                  map (\(x,y) -> Equivalence x y nullRange) decrsS
+                              Disjoint   ->
+                                  map (\(x,y) -> Negation
+                                                 (Conjunction [x,y] nullRange) nullRange)
+                                                 decrsS
                     return $ (Just $ Quantification Universal [Var_decl [mk_Name a]
                                                        thing nullRange]
                                (
-                                case eD of
-                                  Equivalent -> Conjunction decrsP nullRange
-                                  Disjoint   ->
-                                      Negation
-                                      (
-                                       Conjunction decrsP nullRange
-                                      ) nullRange
+                                Conjunction decrsP nullRange
                                ) nullRange, cSig)
               DisjointUnion cls sD ->
                   do
@@ -831,24 +804,30 @@ mapObjProp cSig ob num1 num2 =
 -- | Mapping of obj props with Individuals
 mapObjPropI :: CASLSign
               -> ObjectPropertyExpression
-              -> Int
-              -> IndividualURI
+              -> VarOrIndi
+              -> VarOrIndi
               -> Result CASLFORMULA
-mapObjPropI cSig ob num1 indivID =
-    case ob of
-      OpURI u ->
+mapObjPropI cSig ob lP rP =
+      case ob of
+        OpURI u ->
           do
-            let l = mk_Name num1
-            iT <- mapIndivURI cSig indivID
+            lT <- case lP of
+                    OVar   num1   -> return $ Qual_var (mk_Name num1)
+                                     thing nullRange
+                    OIndi indivID -> mapIndivURI cSig indivID
+            rT <- case rP of
+                    OVar   num1   -> return $ Qual_var (mk_Name num1)
+                                     thing nullRange
+                    OIndi indivID -> mapIndivURI cSig indivID
             ur <- uriToId u
             return $ Predication
                        (Qual_pred_name ur
                         (Pred_type [thing,thing] nullRange) nullRange)
-                       [Qual_var l thing nullRange,
-                        iT
+                       [lT,
+                        rT
                        ]
                        nullRange
-      InverseOp _ -> fail "cannot map this"
+        InverseOp u -> mapObjPropI cSig u rP lP
 
 -- | Mapping of Class URIs
 mapClassURI :: CASLSign
@@ -923,7 +902,12 @@ mapDescriptionListP cSig n lst =
 
 -- | Build a name
 mk_Name :: Int -> Token
-mk_Name i = mkSimpleId $ hetsPrefix ++ show i
+mk_Name i = mkSimpleId $ hetsPrefix ++  mk_Name_H i
+    where
+      mk_Name_H k =
+          case k of
+            0 -> ""
+            j ->  (mk_Name_H (j `div` 26)) ++ [(chr ((j `mod` 26) + 96))]
 
 -- | Get all distinct pairs for commutative operations
 comPairs :: [t] -> [t1] -> [(t, t1)]
@@ -994,16 +978,22 @@ mapDescription cSig des var =
                return opropO
       ObjectHasValue oprop indiv ->
           do
-            opropO <- mapObjPropI cSig oprop var indiv
+            opropO <- mapObjPropI cSig oprop (OVar var) (OIndi indiv)
             return $ opropO
       ObjectCardinality c ->
           case c of
-            Cardinality ct n oprop Nothing
+            Cardinality ct n oprop d
                  ->
                    do
-                     let vlst = [(var+1) .. (n+var+1)]
-                         vlstM = [(var+1) .. (n+var+2)]
-                         dlst = map (\(x,y) ->
+                     let vlst =  [(var+1) .. (n+var)]
+                         vlstM = [(var+1) .. (n+var+1)]
+                     dOut <- (\x -> case x of
+                                      Nothing -> return []
+                                      Just  y ->
+                                          do
+                                            mapM (mapDescription cSig y) vlst
+                                 ) d
+                     let dlst = map (\(x,y) ->
                                      Negation
                                      (
                                         Strong_equation
@@ -1014,14 +1004,10 @@ mapDescription cSig des var =
                                      nullRange
                                     ) $ comPairs vlst vlst
                          dlstM = map (\(x,y) ->
-                                     Negation
-                                     (
                                         Strong_equation
                                          (Qual_var (mk_Name x) thing nullRange)
                                          (Qual_var (mk_Name y) thing nullRange)
                                          nullRange
-                                     )
-                                     nullRange
                                     ) $ comPairs vlstM vlstM
 
                          qVars = map (\x ->
@@ -1033,15 +1019,12 @@ mapDescription cSig des var =
                                                     thing nullRange
                                      ) vlstM
                      oProps <- mapM (\x -> mapObjProp cSig oprop var x) vlst
-                     oPropsH <- mapM (\x -> mapObjProp cSig oprop var x) vlst
-                     let oPropsM = map (\x ->
-                                          Negation
-                                          x nullRange) oPropsH
+                     oPropsM <- mapM (\x -> mapObjProp cSig oprop var x) vlstM
                      let minLst = Quantification Existential
                                   qVars
                                   (
                                    Conjunction
-                                   (dlst ++ oProps)
+                                   (dlst ++ dOut ++ oProps)
                                    nullRange
                                   )
                                   nullRange
@@ -1049,8 +1032,8 @@ mapDescription cSig des var =
                                   qVarsM
                                   (
                                    Implication
-                                   (Conjunction dlstM nullRange)
-                                   (Disjunction oPropsM nullRange)
+                                   (Conjunction (oPropsM ++ dOut) nullRange)
+                                   (Disjunction dlstM nullRange)
                                    True
                                    nullRange
                                   )
@@ -1062,10 +1045,7 @@ mapDescription cSig des var =
                                            Conjunction
                                            [minLst, maxLst]
                                            nullRange
-            Cardinality _ _ _ (Just _)
-                 ->
-                   do
-                     fail "qualified cardinality restriction nyi"
+
       DataValuesFrom _ _ _ _ -> fail "data handling nyi"
       DataHasValue _ _       -> fail "data handling nyi"
       DataCardinality _      -> fail "data handling nyi"
