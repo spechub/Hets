@@ -691,5 +691,6 @@ frames = flat $ many $ classFrame
 
 basicSpec :: CharParser st OntologyFile
 basicSpec = do
+  option () $ ckeyword "Ontology" >> uriP >> return ()
   as <- frames
   return emptyOntologyFile { ontology = emptyOntology { axiomsList = as } }
