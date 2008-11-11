@@ -10,7 +10,7 @@ Portability :  portable
 Pretty printing for OWL DL theories.
 -}
 
-module OWL.Print (printOWLBasicTheory) where
+module OWL.Print (printOWLBasicTheory, printAxiom) where
 
 import Common.AS_Annotation
 import Common.Doc
@@ -78,7 +78,7 @@ instance Pretty Description where
    ObjectComplementOf d -> text "not" <+> pretty d
    ObjectOneOf indUriList -> specBraces $ ppWithCommas indUriList
    ObjectValuesFrom ty opExp d ->
-      printObjPropExp opExp <+> quantifierType ty <+> printPrimary d
+      printObjPropExp opExp <+> quantifierType ty <+> printNegatedPrimary d
    ObjectExistsSelf opExp ->
       printObjPropExp opExp <+> text "Self"
    ObjectHasValue opExp indUri ->
@@ -99,6 +99,11 @@ printPrimary :: Description -> Doc
 printPrimary d = let dd = pretty d in case d of
   ObjectJunction _ _ -> parens dd
   _ -> dd
+
+printNegatedPrimary :: Description -> Doc
+printNegatedPrimary d = case d of
+  ObjectComplementOf _ -> parens $ pretty d
+  _ -> printPrimary d
 
 instance Pretty ObjectPropertyExpression where
     pretty = printObjPropExp
