@@ -12,9 +12,25 @@ a list plus its length for a more efficient history implementation.
 Parts of the implementation is stolen from Data.Edison.Seq.SizedSeq
 -}
 
-module Common.Lib.SizedList where
+module Common.Lib.SizedList
+  ( SizedList
+  , fromList
+  , toList
+  , empty
+  , singleton
+  , cons
+  , append
+  , head
+  , tail
+  , null
+  , size
+  , reverse
+  , take
+  , drop
+  , map
+  ) where
 
-import Prelude hiding (null, head, tail, reverse, take, drop)
+import Prelude hiding (null, head, tail, reverse, take, drop, map)
 
 import qualified Data.List as List
 
@@ -68,3 +84,6 @@ drop i original@(N n xs)
   | i <= 0 = original
   | i >= n = empty
   | otherwise = N (n - i) $ List.drop i xs
+
+map :: (a -> b) -> SizedList a -> SizedList b
+map f (N n xs) = N n (List.map f xs)
