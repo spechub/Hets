@@ -993,7 +993,7 @@ mapDescription cSig des var =
           opropO <- mapObjProp cSig oprop var (var + 1)
           descO  <- mapDescription cSig descr (var + 1)
           case qt of
-            AllValuesFrom  ->
+            SomeValuesFrom  ->
                 return $ Quantification Existential [Var_decl [mk_Name
                                                                (var + 1)]
                                                        thing nullRange]
@@ -1003,7 +1003,7 @@ mapDescription cSig des var =
                         nullRange
                        )
                        nullRange
-            SomeValuesFrom ->
+            AllValuesFrom ->
                 return $ Quantification Universal [Var_decl [mk_Name
                                                                (var + 1)]
                                                        thing nullRange]
