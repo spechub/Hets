@@ -384,7 +384,7 @@ printEntity (Entity ty eUri) = oneLineTagToDoc
        OWLClassEntity -> "owl:Class"
        ObjectProperty -> "owl:ObjectProperty"
        DataProperty -> "owl:DatatypeProperty"
-       Individual -> "owl:Individual") (printURI eUri)
+       Individual -> "owl2xml:Individual") (printURI eUri)
 
 instance PrettyRDF Sentence where
     printRDF = printSentence
@@ -609,10 +609,10 @@ printAxiom indClsMap axiom = case axiom of
              let clz = classNameForInd classId
              in tagToDocWithAttr' clz (printURI ind)
                     (listToDoc'
-                     (\i -> oneLineTagToDoc "owl:sameAs"
+                     (\i -> oneLineTagToDoc "owl2xml:sameAs"
                             (printResource i)) indList)
          Nothing ->
-             tagToDoc "owl:SameIndividual"
+             tagToDoc "owl2xml:SameIndividual"
                           ((printIndividual ind)
                            $+$ (listToDoc printIndividual indList))
     {-
@@ -795,7 +795,7 @@ equivalentClassTag doc =
 
 printIndividual :: IndividualURI -> Doc
 printIndividual iuri =
-    oneLineTagToDoc "owl:Individual" (printResource iuri)
+    oneLineTagToDoc "owl2xml:Individual" (printResource iuri)
 
 printSubject :: SourceIndividualURI -> Doc
 printSubject ind =
