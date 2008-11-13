@@ -161,7 +161,9 @@ basicOWLAnalysis (ofile, inSign, _) =
         ofile' = renameNamespace transMap ofile
         (sens, accSign) = runState
           (mapM anaAxiom $ axiomsList $ ontology ofile')
-          inSign {namespaceMap = integNamespace}
+          inSign {namespaceMap = integNamespace
+                 ,ontologyID   = uri $ ontology $ ofile'
+                 }
     in Result diags1 $ Just (ofile', mkExtSign accSign, concat sens)
     where
         oName = uri $ ontology ofile

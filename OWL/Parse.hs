@@ -24,6 +24,7 @@ import Common.Utils (nubOrd)
 
 import Text.ParserCombinators.Parsec
 import Data.Char
+import qualified Data.Map as Map
 
 ncNameStart :: Char -> Bool
 ncNameStart c = isAlpha c || c == '_'
@@ -693,4 +694,20 @@ basicSpec :: CharParser st OntologyFile
 basicSpec = do
   option () $ ckeyword "Ontology" >> uriP >> return ()
   as <- frames
-  return emptyOntologyFile { ontology = emptyOntology { axiomsList = as } }
+  return emptyOntologyFile { ontology   = emptyOntology
+                               { axiomsList = as
+                               , uri = QN ""
+                                "http://www.dfki.de/sks/hets/ontology/unamed"
+                                "unamed"
+                               }
+                           , namespaces = Map.fromList
+                              [
+                               ("owl","http://www.w3.org/2002/07/owl#")
+                              ,("rdf",
+                                "http://www.w3.org/1999/02/22-rdf-syntax-ns#")
+                              ,("rdfs","http://www.w3.org/2000/01/rdf-schema#")
+                              ,("xsd", "http://www.w3.org/2001/XMLSchema#")
+                              ,("owl2xml",
+                                "http://www.w3.org/2006/12/owl2-xml#")
+                              ]
+                           }

@@ -36,7 +36,7 @@ data ShATerm =
     ShAAppl String [Int] [Int]
   | ShAList [Int]        [Int]
   | ShAInt  Integer      [Int]
-    deriving (Eq, Ord)
+    deriving (Show, Eq, Ord)
 
 data IntMap =
     Updateable !(IntMap.Map Int ShATerm)

@@ -39,7 +39,7 @@ printSign s =
        pon = if on == nullQName
              then text "<http://www.dfki.de/sks/hets/ontology/unamed>"
              else pretty on
-   in vcat (map (\ (c, l) -> text $ "Namespace: " ++ c ++ " " ++ l)
+   in vcat (map (\ (c, l) -> text $ "Namespace: <" ++ c ++ " " ++ l ++">")
            $ Map.toList $ namespaceMap s)
    $++$ text "Ontology:" <+> pon
    $++$ vcat (map (\ d -> text "Annotations: data"
