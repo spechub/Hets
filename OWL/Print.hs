@@ -155,15 +155,15 @@ printObjDomainOrRange = text . showObjDomainOrRange
 
 printDataDomainOrRange :: DataDomainOrRange -> Doc
 printDataDomainOrRange dr = case dr of
-    DataDomain d -> text "Domain:" $+$ pretty d
-    DataRange d -> text "Range:" $+$ pretty d
+    DataDomain d -> text "Domain:" <+> pretty d
+    DataRange d -> text "Range:" <+> pretty d
 
 printSameOrDifferent :: SameOrDifferent -> Doc
 printSameOrDifferent = text . showSameOrDifferent
 
 printAssertion :: (Pretty a, Pretty b) => Assertion a b -> Doc
 printAssertion (Assertion a p s b) = indStart <+> pretty s $+$
-   let d = pretty a $+$ pretty b in
+   let d = fsep [pretty a, pretty b] in
    text "Facts:" <+> case p of
      Positive -> d
      Negative -> text "not" <+> parens d
@@ -176,31 +176,31 @@ printAxiom axiom = case axiom of
   EntityAnno _ -> empty -- EntityAnnotation
   PlainAxiom _ paxiom -> case paxiom of
    SubClassOf sub super ->
-       classStart <+> pretty sub $+$ text "SubClassOf:" $+$ pretty super
+       classStart <+> pretty sub $+$ text "SubClassOf:" <+> pretty super
    EquivOrDisjointClasses ty (clazz : equiList) ->
-       classStart <+> pretty clazz $+$ printEquivOrDisjoint ty $+$
+       classStart <+> pretty clazz $+$ printEquivOrDisjoint ty <+>
                       setToDocV (Set.fromList equiList)
    DisjointUnion curi discList ->
-       classStart <+> pretty curi $+$ text "DisjointUnionOf:" $+$
+       classStart <+> pretty curi $+$ text "DisjointUnionOf:" <+>
                    setToDocV (Set.fromList discList)
    -- ObjectPropertyAxiom
    SubObjectPropertyOf sopExp opExp ->
        opStart <+> pretty sopExp $+$ text "SubObjectPropertyOf:"
-                   $+$ pretty opExp
+                   <+> pretty opExp
    EquivOrDisjointObjectProperties ty (opExp : opList) ->
-       opStart <+> pretty opExp $+$ printEquivOrDisjoint ty $+$
+       opStart <+> pretty opExp $+$ printEquivOrDisjoint ty <+>
                    setToDocV (Set.fromList opList)
    ObjectPropertyDomainOrRange ty opExp desc ->
-       opStart <+> pretty opExp $+$ printObjDomainOrRange ty $+$ pretty desc
+       opStart <+> pretty opExp $+$ printObjDomainOrRange ty <+> pretty desc
    InverseObjectProperties opExp1 opExp2 ->
-       opStart <+> pretty opExp1 $+$ text "Inverse:" $+$ pretty opExp2
+       opStart <+> pretty opExp1 $+$ text "Inverse:" <+> pretty opExp2
    ObjectPropertyCharacter ch opExp ->
        opStart <+> pretty opExp $+$ printCharact (show ch)
    -- DataPropertyAxiom
    SubDataPropertyOf dpExp1 dpExp2 ->
-       dpStart <+> pretty dpExp1 $+$ text "SubDataPropertyOf" $+$ pretty dpExp2
+       dpStart <+> pretty dpExp1 $+$ text "SubDataPropertyOf" <+> pretty dpExp2
    EquivOrDisjointDataProperties ty (dpExp : dpList) ->
-       dpStart <+> pretty dpExp $+$ printEquivOrDisjoint ty $+$
+       dpStart <+> pretty dpExp $+$ printEquivOrDisjoint ty <+>
                setToDocV (Set.fromList dpList)
    DataPropertyDomainOrRange ddr dpExp ->
        dpStart <+> pretty dpExp $+$ printDataDomainOrRange ddr
@@ -208,10 +208,10 @@ printAxiom axiom = case axiom of
        dpStart <+> pretty dpExp $+$ (printCharact "Functional")
    -- Fact
    SameOrDifferentIndividual ty (ind : indList) ->
-       indStart <+> pretty ind $+$ printSameOrDifferent ty $+$
+       indStart <+> pretty ind $+$ printSameOrDifferent ty <+>
                  setToDocV (Set.fromList indList)
    ClassAssertion ind desc ->
-       indStart <+> pretty ind $+$ text "Types:" $+$ pretty desc
+       indStart <+> pretty ind $+$ text "Types:" <+> pretty desc
    ObjectPropertyAssertion ass -> printAssertion ass
    DataPropertyAssertion ass -> printAssertion ass
    Declaration _ -> empty    -- [Annotation] Entity
@@ -231,7 +231,7 @@ indStart = text "Individual:"
 
 printCharact :: String -> Doc
 printCharact charact =
-    text "Characteristics:" $+$ (text charact)
+    text "Characteristics:" <+> text charact
 
 instance Pretty SubObjectPropertyExpression where
     pretty sopExp =
