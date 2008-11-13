@@ -164,7 +164,7 @@ printSameOrDifferent = text . showSameOrDifferent
 printAssertion :: (Pretty a, Pretty b) => Assertion a b -> Doc
 printAssertion (Assertion a p s b) = indStart <+> pretty s $+$
    let d = pretty a $+$ pretty b in
-   case p of
+   text "Facts:" <+> case p of
      Positive -> d
      Negative -> text "not" <+> parens d
 
