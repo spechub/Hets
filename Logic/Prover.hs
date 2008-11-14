@@ -248,7 +248,8 @@ hasProverKind pk pt = case pk of
 
 data FreeDefMorphism morphism = FreeDefMorphism
   { freeDefMorphism :: morphism
-  , pathFromFreeDef :: morphism }
+  , pathFromFreeDef :: morphism
+  , isCofree :: Bool }
 
 -- | prover or consistency checker
 data ProverTemplate theory morphism sublogics proof_tree = Prover
