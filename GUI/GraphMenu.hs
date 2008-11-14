@@ -31,7 +31,9 @@ import Data.IORef
 import qualified Data.Map as Map
 
 import Static.DevGraph
+import Static.PrintDevGraph
 
+import Proofs.EdgeUtils
 import Proofs.QualifyNames
 import Proofs.DGFlattening
 import Proofs.Automatic(automatic)
@@ -241,9 +243,10 @@ createGlobalMenu gInfo@(GInfo { gi_LIB_NAME = ln
 --    , Button "TextView Test" $ showTextView "<b>Headline here</b>"
 #endif
     , Menu (Just "Proofs") $ map (\ (str, cmd) ->
-       Button str $ (addMenuItemToHist ch str) >>
+       Button str $ addMenuItemToHist ch str >>
                   (ral $ performProofAction gInfo
-                  $ proofMenu gInfo $ return . return . cmd ln))
+                  $ proofMenu gInfo $ return . return . cmd ln
+                  . Map.map undoRedo))
        [ ("Automatic", automatic)
        , ("Global Subsumption", globSubsume)
        , ("Global Decomposition", globDecomp)
@@ -274,6 +277,9 @@ createGlobalMenu gInfo@(GInfo { gi_LIB_NAME = ln
              , ("Hiding", libEnv_flattening_hiding)
              , ("Heterogeneity", libEnv_flattening_heterogen)
              , ("Qualify all names", qualifyLibEnv)]]
+    , Button "Dump LibEnv" $ do
+         le <- readIORef $ libEnvIORef gInfo
+         print $ prettyLibEnv le
     , Button "Translate Graph" $ ral $ translateGraph gInfo convGraph showLib
     , Button "Show Logic Graph" $ ral $ showLogicGraph daVinciSort
     , Button "Show Library Graph" $ ral $ showLibGraph gInfo showLib

@@ -31,6 +31,7 @@ import Common.Result
 import Common.Keywords
 import Common.ConvertGlobalAnnos
 import Common.AnalyseAnnos
+import qualified Common.Lib.SizedList as SizedList
 import qualified Common.Lib.Rel as Rel
 import qualified Common.Lib.Graph as Tree
 
@@ -187,23 +188,17 @@ prettyLEdge e@(_, _, l) = fsep
 
 dgRuleEdges :: DGRule -> [LEdge DGLinkLab]
 dgRuleEdges r = case r of
-    HideTheoremShift l -> [l]
-    GlobDecomp l -> [l]
-    LocDecomp l -> [l]
-    LocInference l -> [l]
-    GlobSubsumption l -> [l]
+    DGRuleWithEdge _ l -> [l]
     Composition ls -> ls
     _ -> []
 
 dgRuleHeader :: DGRule -> String
 dgRuleHeader r = case r of
-    GlobDecomp _ -> "Global-Decomposition"
-    LocDecomp _ -> "Local-Decomposition"
-    LocInference _ -> "Local-Inference"
-    GlobSubsumption _ -> "Global-Subsumption"
+    DGRule str -> str
+    DGRuleWithEdge str _ -> str
+    Composition _ -> "Composition"
     BasicInference _ _ -> "Basic-Inference"
     BasicConsInference _ _ -> "Basic-Cons-Inference"
-    _ -> takeWhile isAlpha $ show r
 
 instance Pretty DGRule where
   pretty r = let es = dgRuleEdges r in fsep
@@ -317,17 +312,18 @@ instance Pretty DGraph where
     , text "Global Environment"
     , printMap id vcat (\ k v -> fsep [k <+> mapsto, v]) $ globalEnv dg
     , text "History"
-    , prettyHistory $ proofHistory dg
+    , prettyHistory $ reverseHistory $ proofHistory dg
     , text "Redoable History"
-    , prettyHistory $ redoHistory dg
+    , prettyHistory $ SizedList.reverse $ reverseHistory $ redoHistory dg
     , text "next edge:" <+> pretty (getNewEdgeId dg) ]
 
-prettyHistElem :: ([DGRule], [DGChange]) -> Doc
-prettyHistElem (rs, cs) =
-  vcat $ (text "rules: " <+> ppWithCommas rs) : map pretty cs
+prettyHistElem :: HistElem -> Doc
+prettyHistElem he = case he of
+  HistElem c -> pretty c
+  HistGroup r l -> text "rule:" <+> pretty r $+$ space <+> prettyHistory l
 
 prettyHistory :: ProofHistory -> Doc
-prettyHistory = vcat . map prettyHistElem
+prettyHistory = vcat . map prettyHistElem . SizedList.toList
 
 prettyLibEnv :: LibEnv -> Doc
 prettyLibEnv = printMap id vsep ($+$)

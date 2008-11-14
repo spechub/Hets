@@ -43,6 +43,7 @@ import Logic.Grothendieck
 import Logic.Prover
 
 import qualified Common.Lib.Graph as Tree
+import qualified Common.Lib.SizedList as SizedList
 import qualified Common.OrderedMap as OMap
 import Common.AS_Annotation
 import Common.GlobalAnnotations
@@ -274,31 +275,11 @@ data DGLinkOrigin =
    mutual recursive with 'DGLinkLab', 'DGLinkType', and 'ThmLinkStatus'
 -}
 data DGRule =
-    TheoremHideShift
-  | HideTheoremShift (LEdge DGLinkLab)
-  | ComputeColimit
-  | NormalForm
-  | Borrowing
-  | ConsShift
-  | DefShift
-  | MonoShift
-  | DefToMono
-  | MonoToCons
-  | FreeIsMono
-  | MonoIsFree
-  | GlobDecomp (LEdge DGLinkLab)  -- edge in the conclusion
-  | LocDecomp (LEdge DGLinkLab)
-  | LocInference (LEdge DGLinkLab)
-  | GlobSubsumption (LEdge DGLinkLab)
+    DGRule String
+  | DGRuleWithEdge String (LEdge DGLinkLab)
   | Composition [LEdge DGLinkLab]
   | BasicInference AnyComorphism BasicProof -- coding and proof tree. obsolete?
   | BasicConsInference Edge BasicConsProof
-  | FlatteningOne
-  | FlatteningThree
-  | FlatteningFour
-  | FlatteningFive
-  | FlatteningSix
-  | ConservativityCheck
     deriving (Show, Eq)
 
 -- | proof status of a link
@@ -526,10 +507,12 @@ data DGChange =
   | SetNodeLab DGNodeLab (LNode DGNodeLab)
   deriving (Show, Eq)
 
-type ProofHistory = [([DGRule], [DGChange])]
+data HistElem =
+    HistElem DGChange
+  | HistGroup DGRule ProofHistory
+    deriving (Show, Eq)
 
-emptyHistory :: ([DGRule], [DGChange])
-emptyHistory = ([], [])
+type ProofHistory = SizedList.SizedList HistElem
 
 {- | the actual development graph with auxiliary information. A
   'G_sign' should be stored in 'sigMap' under its 'gSignSelfIdx'. The
@@ -547,7 +530,7 @@ data DGraph = DGraph
   , morMap :: Map.Map MorId G_morphism -- ^ theory map
   , proofHistory :: ProofHistory -- ^ applied proof steps
   , redoHistory :: ProofHistory -- ^ undone proofs steps
-  , openlock :: Maybe (MVar (ProofHistory -> IO ()))
+  , openlock :: Maybe (MVar ([DGChange] -> IO ()))
   -- ^ control of graph display
   } deriving Show
 
@@ -562,8 +545,8 @@ emptyDG = DGraph
   , sigMap = Map.empty
   , thMap = Map.empty
   , morMap = Map.empty
-  , proofHistory = [emptyHistory]
-  , redoHistory = [emptyHistory]
+  , proofHistory = SizedList.empty
+  , redoHistory = SizedList.empty
   , openlock = Nothing }
 
 type LibEnv = Map.Map LIB_NAME DGraph
@@ -576,10 +559,6 @@ emptyDGwithMVar :: IO DGraph
 emptyDGwithMVar = do
   ol <- newEmptyMVar
   return $ emptyDG { openlock = Just ol }
-
--- | inserting a (key,value) pair into a map
-insertLibEnv :: (LIB_NAME , DGraph) -> LibEnv -> LibEnv
-insertLibEnv (ln , dg) lib_env  = Map.insert ln dg lib_env
 
 -- * utility functions
 
@@ -976,18 +955,45 @@ mkGraphDG ns ls dg = insEdgesDG ls $ insNodesDG ns dg
 
 -- ** handle proof history
 
--- | add a proof history into current one of the given DG
-setProofHistoryDG :: ProofHistory -> DGraph -> DGraph
-setProofHistoryDG h dg = dg { proofHistory = h ++ proofHistory dg }
-
 -- | add a history item to current history.
-addToProofHistoryDG :: ([DGRule], [DGChange]) -> DGraph -> DGraph
-addToProofHistoryDG x dg = dg { proofHistory = x : proofHistory dg }
+addToProofHistoryDG :: HistElem -> DGraph -> DGraph
+addToProofHistoryDG x dg =
+  dg { proofHistory = SizedList.cons x $ proofHistory dg }
 
--- | update the proof history with a function
-setProofHistoryWithDG :: (ProofHistory -> ProofHistory)
-                      -> DGraph -> DGraph
-setProofHistoryWithDG f dg = dg { proofHistory = f $ proofHistory dg }
+-- | get the old history and the new offset
+splitHistory :: DGraph -> DGraph -> (ProofHistory, ProofHistory)
+splitHistory oldGraph newGraph = let
+  oldHist = proofHistory oldGraph
+  newHist = proofHistory newGraph
+  diff = SizedList.take (SizedList.size newHist - SizedList.size oldHist)
+         newHist
+  in (oldHist, diff)
+
+-- | reverse the history list
+reverseHistory :: SizedList.SizedList HistElem -> SizedList.SizedList HistElem
+reverseHistory = SizedList.reverse . SizedList.map
+  (\ e -> case e of
+     HistElem _ -> e
+     HistGroup r l -> HistGroup r $ reverseHistory l)
+
+-- | group pushd changes, leave history of old graph unchanged
+groupHistory :: DGraph -> DGRule -> DGraph -> DGraph
+groupHistory oldGraph rule newGraph = let
+  (oldHist, diff) = splitHistory oldGraph newGraph
+  in if SizedList.null diff then newGraph else
+     newGraph { proofHistory = SizedList.cons (HistGroup rule diff) oldHist }
+
+-- | get most recent step
+getLastHistElem :: DGraph -> HistElem
+getLastHistElem dg = let hist = proofHistory dg in
+  if SizedList.null hist then error "Static.DevGraph.getHistElem"
+  else SizedList.head hist
+
+-- | get most recent change
+getLastChange :: DGraph -> DGChange
+getLastChange dg = case getLastHistElem dg of
+  HistElem c -> c
+  HistGroup _ _ -> error "Static.DevGraph.getLastChange"
 
 -- ** top-level functions
 

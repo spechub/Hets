@@ -13,14 +13,12 @@ the proof status with manipulating functions
 
 module Proofs.StatusUtils
     ( lookupHistory
-    , mkResultProofStatus
     , removeContraryChanges
     , isIdentityEdge
     ) where
 
 import Static.DevGraph
 import Data.Graph.Inductive.Graph
-import qualified Data.Map as Map
 import Common.LibName
 import Logic.Logic
 
@@ -39,19 +37,6 @@ import Logic.Logic
 {- returns the history that belongs to the given library name-}
 lookupHistory :: LIB_NAME -> LibEnv -> ProofHistory
 lookupHistory ln = proofHistory . lookupDGraph ln
-
-mkResultProofStatus :: LIB_NAME -> LibEnv -> DGraph
-                    -> ([DGRule], [DGChange]) -> LibEnv
-mkResultProofStatus ln ps dgraph (dgrules, dgchanges) =
-  let historyElem = (dgrules, removeContraryChanges dgchanges)
-      le' = prepareResultProofHistory ps
-  in Map.insert ln (addToProofHistoryDG historyElem dgraph) le'
-
-mapProofHistory :: (ProofHistory -> ProofHistory) -> LibEnv -> LibEnv
-mapProofHistory f = Map.map ( \ c -> setProofHistoryWithDG f c )
-
-prepareResultProofHistory :: LibEnv -> LibEnv
-prepareResultProofHistory = mapProofHistory (emptyHistory :)
 
 -- ----------------------------------------------
 -- methods that keep the change list clean

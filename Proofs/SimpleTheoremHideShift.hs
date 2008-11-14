@@ -31,11 +31,11 @@ module Proofs.SimpleTheoremHideShift
          ) where
 
 import Proofs.EdgeUtils
-import Proofs.StatusUtils
 
 import Static.DevGraph
 import Common.LibName
 
+import qualified Data.Map as Map
 import Data.Graph.Inductive.Graph
 import Data.List
 
@@ -47,29 +47,25 @@ theoremHideShift :: LIB_NAME -> LibEnv -> LibEnv
 theoremHideShift ln proofStatus =
     let dgraph = lookupDGraph ln proofStatus
         hidingDefEdges = filter (liftE isHidingDef) $ labEdgesDG dgraph
-        (newDGraph, newHistory) = mapAccumL
-            theoremHideShiftFromList dgraph hidingDefEdges
-    in mkResultProofStatus ln proofStatus newDGraph
-       (concatMap fst newHistory, concatMap snd newHistory)
+        newDGraph = foldl theoremHideShiftFromList dgraph hidingDefEdges
+    in Map.insert ln newDGraph proofStatus
 
 {- | apply the theorem hide shift with a list of hiding definition links.
      it calls the function for one hiding edge at a time and fills the history
      if necessary.
 -}
-theoremHideShiftFromList :: DGraph -> LEdge DGLinkLab
-                         -> (DGraph, ([DGRule], [DGChange]))
+theoremHideShiftFromList :: DGraph -> LEdge DGLinkLab -> DGraph
 theoremHideShiftFromList dgraph e = let
-    (newDGraph, newChanges) = theoremHideShiftWithOneHidingDefEdge dgraph e
-    in (newDGraph, ([TheoremHideShift], concat newChanges))
+    newDGraph = theoremHideShiftWithOneHidingDefEdge dgraph e
+    in groupHistory dgraph (DGRule "TheoremHideShift") newDGraph
 
 {- | apply the rule to one hiding definition link.
      it takes all the related global unproven edges to the given hiding edge
      and passes them together to its auxiliary function.
 -}
-theoremHideShiftWithOneHidingDefEdge :: DGraph -> LEdge DGLinkLab
-                                     -> (DGraph, [[DGChange]])
+theoremHideShiftWithOneHidingDefEdge :: DGraph -> LEdge DGLinkLab -> DGraph
 theoremHideShiftWithOneHidingDefEdge dgraph e@(_, n, _) =
-    mapAccumL (theoremHideShiftWithOneHidingDefEdgeAux e) dgraph
+    foldl (theoremHideShiftWithOneHidingDefEdgeAux e) dgraph
       $ getInComingGlobalUnprovenEdges dgraph n
 
 {- | get all the global unproven threorem links which go into the given
@@ -85,12 +81,9 @@ getInComingGlobalUnprovenEdges dgraph =
      fulfilling the task and is marked below.
 -}
 theoremHideShiftWithOneHidingDefEdgeAux :: LEdge DGLinkLab -> DGraph
-                                        -> LEdge DGLinkLab
-                                        -> (DGraph, [DGChange])
+                                        -> LEdge DGLinkLab -> DGraph
 theoremHideShiftWithOneHidingDefEdgeAux hd@(hds, _, _) dgraph x@(s, t, lbl) =
-    (finalDGraph, newChanges ++ finalChanges)
-    where
-    -------- to insert an unproven global theorem link ------------
+  let
     newMorphism = case calculateMorphismOfPath [x, hd] of
       Just m -> m
       Nothing -> error
@@ -100,30 +93,28 @@ theoremHideShiftWithOneHidingDefEdgeAux hd@(hds, _, _) dgraph x@(s, t, lbl) =
       , dgl_type = GlobalThm LeftOpen None LeftOpen
       , dgl_origin = DGLinkProof
       , dgl_id = defaultEdgeId})
-    ((newDGraph, newChanges), proofbasis) =
+    (newDGraph, proofbasis) =
       tryToInsertEdgeAndSelectProofBasis dgraph newGlobalEdge emptyProofBasis
     -------- to insert a proven global theorem link ---------------
     GlobalThm _ conservativity conservStatus = dgl_type lbl
     provenEdge = (s, t, lbl
-      { dgl_type = GlobalThm (Proven TheoremHideShift proofbasis)
-          conservativity conservStatus
+      { dgl_type = GlobalThm (Proven (DGRule "SimpleTheoremHideShift")
+                              proofbasis) conservativity conservStatus
       , dgl_origin = DGLinkProof })
-    (finalDGraph, finalChanges) = updateWithChanges
-            [DeleteEdge x, InsertEdge provenEdge] newDGraph
+  in changesDGH newDGraph [DeleteEdge x, InsertEdge provenEdge]
 
 {- | it tries to insert the given edge into the DGraph and selects the
      inserted edge as proof basis if possible.
 -}
 tryToInsertEdgeAndSelectProofBasis :: DGraph -> LEdge DGLinkLab -> ProofBasis
-                                   -> ((DGraph, [DGChange]), ProofBasis)
+                                   -> (DGraph, ProofBasis)
 tryToInsertEdgeAndSelectProofBasis dgraph newEdge proofbasis =
     case tryToGetEdge newEdge dgraph of
-      Just tempE -> ((dgraph, []), addEdgeId proofbasis $ getEdgeId tempE)
+      Just tempE -> (dgraph, addEdgeId proofbasis $ getEdgeId tempE)
       Nothing -> let
-          (tempDGraph, tempChanges) =
-              updateWithOneChange (InsertEdge newEdge) dgraph
-          tempPB = case tempChanges of
-            [InsertEdge tempE] -> addEdgeId proofbasis $ getEdgeId tempE
+          tempDGraph = changeDGH dgraph $ InsertEdge newEdge
+          tempPB = case getLastChange tempDGraph of
+            InsertEdge tempE -> addEdgeId proofbasis $ getEdgeId tempE
             _ -> error
               "SimpleTheoremHideShift.tryToInsertEdgeAndSelectProofBasis"
-          in ((tempDGraph, tempChanges), tempPB)
+          in (tempDGraph, tempPB)

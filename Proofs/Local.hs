@@ -46,17 +46,13 @@ import qualified Data.Map as Map
 import Data.Graph.Inductive.Graph
 import Data.List
 
-
-
 -- | local decomposition
 locDecompFromList :: LIB_NAME ->  [LEdge DGLinkLab] -> LibEnv -> LibEnv
 locDecompFromList ln localThmEdges libEnv=
    let dgraph = lookupDGraph ln libEnv
        finalLocalThmEdges = filter (liftE isUnprovenLocalThm) localThmEdges
-       (nextDGraph, nextHistoryElems) =
-           mapAccumL (locDecompAux libEnv ln) dgraph finalLocalThmEdges
-   in mkResultProofStatus ln libEnv nextDGraph
-         (concatMap fst nextHistoryElems, concatMap snd nextHistoryElems)
+       nextDGraph = foldl (locDecompAux libEnv ln) dgraph finalLocalThmEdges
+   in Map.insert ln nextDGraph libEnv
 
 -- | local decomposition for all edges
 locDecomp :: LIB_NAME -> LibEnv -> LibEnv
@@ -67,29 +63,26 @@ locDecomp ln libEnv =
 
 {- auxiliary function for locDecomp (above)
    actual implementation -}
-locDecompAux :: LibEnv -> LIB_NAME -> DGraph -> LEdge DGLinkLab
-             -> (DGraph, ([DGRule], [DGChange]))
-locDecompAux libEnv ln dgraph ledge@(src, tgt, edgeLab) =
-  if not (isIdentityEdge ledge libEnv dgraph) && nullProofBasis proofbasis
-     then (dgraph, emptyHistory)
-     else (newGraph, (newRules, delChange ++ insChange))
-  where
+locDecompAux :: LibEnv -> LIB_NAME -> DGraph -> LEdge DGLinkLab -> DGraph
+locDecompAux libEnv ln dgraph ledge@(src, tgt, edgeLab) = let
     morphism = dgl_morphism edgeLab
     allPaths = getAllLocGlobPathsBetween dgraph src tgt
     th = computeLocalTheory libEnv ln src
     pathsWithoutEdgeItself = filter (noPath ledge) allPaths
     filteredPaths = filterByTranslation th morphism pathsWithoutEdgeItself
     proofbasis = selectProofBasis dgraph ledge filteredPaths
-    (auxGraph, delChange) =
-        updateWithOneChange (DeleteEdge ledge) dgraph
+    auxGraph = changeDGH dgraph $ DeleteEdge ledge
     LocalThm _ conservativity conservStatus = dgl_type edgeLab
     newEdge = (src, tgt, edgeLab
-      { dgl_type = LocalThm (Proven (LocDecomp ledge) proofbasis)
-                          conservativity conservStatus
+      { dgl_type = LocalThm
+          (Proven (DGRuleWithEdge "Local-Decomposition" ledge) proofbasis)
+          conservativity conservStatus
       , dgl_origin = DGLinkProof })
-    (newGraph, insChange) =
-        insertDGLEdge newEdge auxGraph
-    newRules = [LocDecomp ledge]
+    newGraph = insertDGLEdge newEdge auxGraph
+    in if not (isIdentityEdge ledge libEnv dgraph) && nullProofBasis proofbasis
+     then dgraph else
+     groupHistory dgraph (DGRuleWithEdge "Local-Decomposition" ledge) newGraph
+
 
 {- | removes all paths from the given list of paths whose morphism does
 not translate the given sentence list to the same resulting sentence
@@ -116,10 +109,9 @@ localInferenceFromList :: LIB_NAME -> [LEdge DGLinkLab] -> LibEnv -> LibEnv
 localInferenceFromList ln localThmEdges libEnv =
    let dgraph = lookupDGraph ln libEnv
        finalLocalThmEdges = filter (liftE isUnprovenLocalThm) localThmEdges
-       ((newLibEnv, nextDGraph), nextHistoryElems) = mapAccumL
+       (newLibEnv, nextDGraph) = foldl
                (localInferenceAux ln) (libEnv, dgraph) finalLocalThmEdges
-   in mkResultProofStatus ln newLibEnv nextDGraph
-               (concatMap fst nextHistoryElems, concatMap snd nextHistoryElems)
+   in Map.insert ln nextDGraph newLibEnv
 
 -- | local inference for all edges
 localInference :: LIB_NAME -> LibEnv -> LibEnv
@@ -130,9 +122,9 @@ localInference ln libEnv =
 
 -- auxiliary method for localInference
 localInferenceAux :: LIB_NAME -> (LibEnv, DGraph) -> LEdge DGLinkLab
-                  -> ((LibEnv, DGraph), ([DGRule], [DGChange]))
+                  -> (LibEnv, DGraph)
 localInferenceAux ln (libEnv, dgraph) ledge@(src, tgt, edgeLab) = let
-    noChange = ((libEnv, dgraph), emptyHistory)
+    noChange = (libEnv, dgraph)
     morphism = dgl_morphism edgeLab
     maybeThSrc = computeLocalTheory libEnv ln src
     in case maybeThSrc of
@@ -159,22 +151,21 @@ localInferenceAux ln (libEnv, dgraph) ledge@(src, tgt, edgeLab) = let
                   LocalThm _ conservativity conservStatus = dgl_type edgeLab
                   newLab = edgeLab
                     { dgl_type = LocalThm
-                        (Proven (LocInference ledge) emptyProofBasis)
-                        conservativity conservStatus
+                        (Proven (DGRuleWithEdge "Local-Inference" ledge)
+                         emptyProofBasis) conservativity conservStatus
                     , dgl_origin = DGLinkProof }
                   newEdge = (src, tgt, newLab)
-                  newRules = [LocInference ledge]
                   oldContents = labDG dgraph tgt
-                  (newLibEnv, (graphWithChangedTheory, change)) =
-                    if OMap.null goals then (libEnv', (dgraph, []))
+                  (newLibEnv, graphWithChangedTheory) =
+                    if OMap.null goals then (libEnv', dgraph)
                     else let
-                      p@(dg, _) = updateWithOneChange
-                                  (SetNodeLab oldContents (tgt, newContents))
-                                  dgraph
-                      in (Map.adjust (const dg) ln libEnv', p)
-                  (newGraph, newChanges) = updateWithChanges
+                      dg = changeDGH dgraph
+                           $ SetNodeLab oldContents (tgt, newContents)
+                      in (Map.adjust (const dg) ln libEnv', dg)
+                  newGraph = changesDGH graphWithChangedTheory
                         [DeleteEdge ledge, InsertEdge newEdge]
-                        graphWithChangedTheory
-              in ((newLibEnv, newGraph), (newRules, change ++ newChanges))
+              in ( newLibEnv
+                 , groupHistory dgraph (DGRuleWithEdge "Local-Inference" ledge)
+                   newGraph)
         _ -> noChange
     _ -> noChange

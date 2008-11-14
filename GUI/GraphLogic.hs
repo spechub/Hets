@@ -88,8 +88,7 @@ import Common.LibName
 import Common.Result as Res
 import qualified Common.OrderedMap as OMap
 import qualified Common.Lib.Rel as Rel
-
-import Data.Maybe
+import qualified Common.Lib.SizedList as SizedList
 
 import Driver.Options
 import Driver.WriteLibDefn(writeShATermFile)
@@ -106,7 +105,6 @@ import qualified Data.Map as Map
 
 import Control.Monad(foldM, filterM)
 import Control.Concurrent.MVar
-
 
 -- | Locks the global lock and runs function
 runAndLock :: GInfo -> IO () -> IO ()
@@ -126,15 +124,6 @@ runAndLock (GInfo { functionLock = lock
       GA.showTemporaryMessage actGraphInfo
         $ "an other function is still working ... please wait ..."
 
--- | negate change
-negateChange :: DGChange -> DGChange
-negateChange change = case change of
-      InsertNode x -> DeleteNode x
-      DeleteNode x -> InsertNode x
-      InsertEdge x -> DeleteEdge x
-      DeleteEdge x -> InsertEdge x
-      SetNodeLab old (node, new) -> SetNodeLab new (node, old)
-
 -- | Undo one step of the History
 undo :: GInfo -> Bool -> IO ()
 undo gInfo@(GInfo { globalHist = gHist
@@ -145,16 +134,13 @@ undo gInfo@(GInfo { globalHist = gHist
     [] -> do
        GA.showTemporaryMessage actGraph "History is empty..."
        putMVar gHist (guHist, grHist)
-    (lns:gHist') -> do
+    lns : gHist' -> do
       undoDGraphs gInfo isUndo lns
       putMVar gHist $ if isUndo then (gHist', reverse lns : grHist)
                                 else (reverse lns : guHist, gHist')
 
 undoDGraphs :: GInfo -> Bool -> [LIB_NAME] -> IO ()
-undoDGraphs _ _ []     = return ()
-undoDGraphs g u (ln:r) = do
-  undoDGraph g u ln
-  undoDGraphs g u r
+undoDGraphs g u = mapM_ $ undoDGraph g u
 
 undoDGraph :: GInfo -> Bool -> LIB_NAME -> IO ()
 undoDGraph gInfo@(GInfo { libEnvIORef = ioRefProofStatus
@@ -167,18 +153,7 @@ undoDGraph gInfo@(GInfo { libEnvIORef = ioRefProofStatus
   le <- readIORef ioRefProofStatus
   let
     dg = lookupDGraph ln le
-    hist = (proofHistory dg, redoHistory dg)
-    swap (a, b) = (b, a)
-    (phist, rhist) = (if isUndo then id else swap) hist
-    (cl@(rs, cs), newHist) = case phist of
-           hd : tl -> (hd, (tl, hd : rhist))
-           _ -> error "undoDGraph"
-    (newPHist, newRHist) = (if isUndo then id else swap) newHist
-    change = if isUndo then (reverse rs, reverse $ map negateChange cs)
-             else cl
-    dg' = (changesDG dg $ snd change)
-          { proofHistory = newPHist
-          , redoHistory = newRHist }
+    (dg', changes) = (if isUndo then undoHistStep else redoHistStep) dg
   writeIORef ioRefProofStatus $ Map.insert ln dg' le
   case openlock dg' of
     Nothing -> return ()
@@ -187,7 +162,7 @@ undoDGraph gInfo@(GInfo { libEnvIORef = ioRefProofStatus
       case mvar of
         Nothing -> return ()
         Just applyHist -> do
-          applyHist [change]
+          applyHist changes
           putMVar lock applyHist
   unlockGlobal gInfo
 
@@ -530,14 +505,15 @@ proofMenu gInfo@(GInfo { libEnvIORef = ioRefProofStatus
           printDiags 2 ds
         Just newProofStatus -> do
           let newGr = lookupDGraph ln newProofStatus
-              history = proofHistory newGr
+              history = snd $ splitHistory (lookupDGraph ln proofStatus) newGr
           (guHist, grHist) <- takeMVar gHist
           doDump hOpts "PrintHistory" $ do
             putStrLn "History"
             print $ prettyHistory history
           putMVar gHist
            (calcGlobalHistory proofStatus newProofStatus : guHist, grHist)
-          applyChanges actGraphInfo history
+          applyChanges actGraphInfo $ reverse
+            $ flatHistory history
           writeIORef ioRefProofStatus newProofStatus
           unlockGlobal gInfo
           hideShowNames gInfo False
@@ -548,9 +524,8 @@ proofMenu gInfo@(GInfo { libEnvIORef = ioRefProofStatus
 
 calcGlobalHistory :: LibEnv -> LibEnv -> [LIB_NAME]
 calcGlobalHistory old new = let
-    pHist = (\ ln le -> proofHistory $ lookupDGraph ln le)
-    length' = (\ ln le -> length $ pHist ln le)
-    changes = filter (\ ln -> pHist ln old /= pHist ln new) $ Map.keys old
+    length' = \ ln -> SizedList.size . proofHistory . lookupDGraph ln
+    changes = filter (\ ln -> length' ln old < length' ln new) $ Map.keys old
   in concatMap (\ ln -> replicate (length' ln new - length' ln old) ln) changes
 
 nodeErr :: Int -> IO ()
@@ -601,11 +576,9 @@ getTheoryOfNode gInfo@(GInfo { gi_LIB_NAME = ln
                 (addHasInHidingWarning dgraph n)
                 gth
         let newGr = lookupDGraph ln le'
-            newHistory = proofHistory newGr
         libEnv <- readIORef le
-        let oldHistory = proofHistory $ lookupDGraph ln libEnv
-            history = take (length newHistory - length oldHistory) newHistory
-        applyChanges actGraphInfo history
+        let history = snd $ splitHistory (lookupDGraph ln libEnv) newGr
+        applyChanges actGraphInfo $ reverse $ flatHistory history
         writeIORef le le'
         unlockGlobal gInfo
       _ -> return ()
@@ -727,8 +700,7 @@ mergeDGNodeLab (GInfo{gi_LIB_NAME = ln}) (v, new_dgn) le = do
   return $ do
     theory <- joinG_sentences (dgn_theory old_dgn) $ dgn_theory new_dgn
     let new_dgn' = old_dgn { dgn_theory = theory }
-        (dg', _) = labelNodeDG (v, new_dgn') dg
-        dg'' = addToProofHistoryDG ([], [SetNodeLab old_dgn (v, new_dgn')]) dg'
+        dg'' = changeDGH dg $ SetNodeLab old_dgn (v, new_dgn')
     return $ Map.insert ln dg'' le
 
 -- | print the id, origin, type, proof-status and morphism of the edge
@@ -741,10 +713,13 @@ showEdgeInfo descr me = case me of
     ("edge " ++ show descr ++ " has no corresponding edge"
      ++ "in the development graph") [HTk.size(50,10)]
 
+conservativityRule :: DGRule
+conservativityRule = DGRule "ConservativityCheck"
+
 -- | check conservativity of the edge
 checkconservativityOfEdge :: Int -> GInfo -> Maybe (LEdge DGLinkLab) -> IO ()
 checkconservativityOfEdge _ gInfo@(GInfo{gi_LIB_NAME = ln,
-                                         gi_GraphInfo = actGraphInfo,
+                                         gi_GraphInfo = _actGraphInfo,
                                          libEnvIORef = le})
                            (Just (source,target,linklab)) = do
   lockGlobal gInfo
@@ -776,7 +751,7 @@ checkconservativityOfEdge _ gInfo@(GInfo{gi_LIB_NAME = ln,
   sensSrc2 <- coerceThSens lid1 lid "checkconservativityOfEdge1" sensSrc1
   let transSensSrc = propagateErrors
         $ mapThSensValueM (map_sen lid compMor) sensSrc2
-  if (length $ conservativityCheck lid) < 1
+  if length (conservativityCheck lid) < 1
    then
        do
         GUI.HTkUtils.createInfoWindow "Result of conservativity check"
@@ -796,7 +771,8 @@ checkconservativityOfEdge _ gInfo@(GInfo{gi_LIB_NAME = ln,
       else
        do
         let chCons =  checkConservativity $
-                      fromJust $ Res.maybeResult $ checkerR
+                      maybe (error "checkconservativityOfEdge4") id
+                            $ Res.maybeResult $ checkerR
         let Res.Result ds res =
                 chCons
                    (plainSign sign2, toNamedList sensSrc2)
@@ -820,7 +796,7 @@ checkconservativityOfEdge _ gInfo@(GInfo{gi_LIB_NAME = ln,
             GlobalThm proven conserv _ = dgl_type linklab
             consNew  = if ((show conserv) == (showToComply consShow))
                         then
-                            Proven ConservativityCheck emptyProofBasis
+                            Proven conservativityRule emptyProofBasis
                         else
                             LeftOpen
             provenEdge = (source
@@ -830,17 +806,14 @@ checkconservativityOfEdge _ gInfo@(GInfo{gi_LIB_NAME = ln,
                             dgl_type = GlobalThm proven conserv consNew
                           }
                          )
-            changes = [([ConservativityCheck]
-                      , [DeleteEdge (source,target,linklab)
-                        ,InsertEdge provenEdge
-                        ])]
+            changes = [ DeleteEdge (source,target,linklab)
+                      , InsertEdge provenEdge ]
         let newGr = lookupDGraph ln libEnv'
-            newHistory = proofHistory newGr
-            oldHistory = proofHistory $ lookupDGraph ln libEnv
-            history = (take (length newHistory - length oldHistory)
-                                    newHistory) ++ changes
-        applyChanges actGraphInfo history
-        writeIORef le libEnv'
+            nextGr = changesDGH newGr changes
+            newLibEnv = Map.insert ln
+              (groupHistory newGr conservativityRule nextGr) libEnv'
+        -- applyChanges actGraphInfo history
+        writeIORef le newLibEnv
         unlockGlobal gInfo
 
 checkconservativityOfEdge descr _ Nothing =
@@ -922,10 +895,8 @@ showReferencedLibrary descr gInfo@(GInfo { libEnvIORef = ioRefProofStatus
 
 -- | apply the changes of first history item (computed by proof rules,
 -- see folder Proofs) to the displayed development graph
-applyChanges :: GA.GraphInfo -> ProofHistory -> IO ()
-applyChanges _ [] = return ()
-applyChanges ginfo ((_, hElem) : _) = mapM_ (applyChangesAux ginfo)
-  $ removeContraryChanges hElem
+applyChanges :: GA.GraphInfo -> [DGChange] -> IO ()
+applyChanges ginfo = mapM_ (applyChangesAux ginfo) . removeContraryChanges
 
 -- | auxiliary function for applyChanges
 applyChangesAux :: GA.GraphInfo -> DGChange -> IO ()

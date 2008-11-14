@@ -40,7 +40,6 @@ import Static.DevGraph
 import Static.WACocone
 
 import Proofs.EdgeUtils
-import Proofs.StatusUtils
 import Proofs.ComputeColimit
 import Proofs.SimpleTheoremHideShift(getInComingGlobalUnprovenEdges)
 
@@ -50,26 +49,17 @@ import Common.Result
 
 import Data.Graph.Inductive.Graph as Graph
 import qualified Data.Map as Map
-import Data.List (nub, sortBy, partition)
+import Data.List (nub, sortBy)
 import Control.Monad
 
 convertNodesToNf :: LIB_NAME -> LibEnv -> Result LibEnv
 convertNodesToNf ln libEnv = do
- libEnv' <- foldM (convertToNf ln) libEnv $
+  libEnv' <- foldM (convertToNf ln) libEnv $
                   nodesDG $ lookupDGraph ln libEnv
- let
-     oldGraph = lookupDGraph ln libEnv
-     oldHistory = proofHistory oldGraph
-     auxGraph = lookupDGraph ln libEnv'
-     auxHistory = proofHistory auxGraph
-     nfHistory = take (length auxHistory - length oldHistory) auxHistory
-     changes = concat $ map snd $ reverse nfHistory
-     (newGraph', changes') = updateWithChanges changes oldGraph
-     newHistory = [([TheoremHideShift], changes')]
-     libEnv'' = mkResultProofStatus ln libEnv' newGraph'
-                       (concatMap fst newHistory, concatMap snd newHistory)
- return libEnv''
-
+  let oldGraph = lookupDGraph ln libEnv
+      newGraph = lookupDGraph ln libEnv'
+  return $ Map.insert ln
+    (groupHistory oldGraph (DGRule "TheoremHideShift") newGraph) libEnv'
 
 {- | converts the given node to its own normal form -}
 convertToNf :: LIB_NAME -> LibEnv -> Node -> Result LibEnv
@@ -80,7 +70,7 @@ convertToNf ln libEnv node = do
   -- here checks if it's already been computed
   Just _ -> return libEnv
   Nothing ->
-   case (hasIngoingHidingDef libEnv ln node) of
+   case hasIngoingHidingDef libEnv ln node of
     False -> -- no hiding, nf is the node itself
              -- we need to update the fields
              -- dgn_sign and dgn_nf of node
@@ -90,10 +80,9 @@ convertToNf ln libEnv node = do
                     dgn_nf = Just node,
                     dgn_sigma = mor}
           chLab = SetNodeLab nodelab (node, newLab)
-          changes = [([NormalForm],[chLab])]
-          newGraph  = changeDG dgraph chLab
-      return $ mkResultProofStatus ln libEnv newGraph
-               (concatMap fst changes, concatMap snd changes)
+          newGraph  = changeDGH dgraph chLab
+      return $ Map.insert ln
+        (groupHistory dgraph (DGRule "NormalForm") newGraph) libEnv
     True -> case isDGRef nodelab of
       True -> do
         -- the normal form of the node
@@ -126,14 +115,10 @@ convertToNf ln libEnv node = do
                     dgn_sigma = dgn_sigma $ labDG refGraph' $ dgn_node nodelab
                   }
          chLab = SetNodeLab nodelab (node, newLab)
-         changes = [InsertNode (nfNode,refLab), chLab]
-         (newGraph, changes') = updateWithChanges changes dgraph
-          -- i should also collect the changes made in the referenced graph
-          -- for undo
-         allChanges = [([NormalForm],changes')]
-         newProofStatus = mkResultProofStatus ln libEnv' newGraph
-                         (concatMap fst allChanges, concatMap snd allChanges)
-       return newProofStatus
+         changes = [InsertNode (nfNode, refLab), chLab]
+         newGraph = changesDGH dgraph changes
+       return $ Map.insert ln
+         (groupHistory dgraph (DGRule "NormalForm") newGraph) libEnv'
       False -> do
           auxProofstatus <- createNfsForPredecessors ln libEnv node
           (diagram, g) <- computeDiagram ln auxProofstatus node
@@ -174,19 +159,14 @@ convertToNf ln libEnv node = do
                                               , dgl_origin = DGLinkProof
                                               , dgl_id = defaultEdgeId
                                               })
-                insStrMor = map (\(x, f) -> InsertEdge $ makeEdge x
-                                                         nfNode f) $ nub $
-                            map (\(x,y) -> (g Map.! x, y)) $ Map.toList mmap
-                allChanges = chLab:insNNF:insStrMor
-                (newGraph, changes') = updateWithChanges allChanges auxGraph
-                newHistory = [([NormalForm],changes')]
-                oldHistory = proofHistory dgraph
-                auxHistory = take ((length $ proofHistory auxGraph) -
-                                    length oldHistory ) $
-                             proofHistory auxGraph
-                hist = (reverse auxHistory) ++ newHistory
-               return $ mkResultProofStatus ln auxProofstatus newGraph
-                 (concatMap fst hist, concatMap snd hist)
+                insStrMor = map (\ (x, f) -> InsertEdge $ makeEdge x nfNode f)
+                  $ nub $ map (\ (x, y) -> (g Map.! x, y))
+                  $ Map.toList mmap
+                allChanges = chLab : insNNF : insStrMor
+                newGraph = changesDGH auxGraph allChanges
+               return $ Map.insert ln
+                 (groupHistory auxGraph (DGRule "NormalForm") newGraph)
+                 auxProofstatus
 
 {- computes the diagram associated to a node N in a development graph,
    adding common origins for multiple occurences of nodes, whenever
@@ -285,44 +265,34 @@ theoremHideShiftAux ln proofStatus nodeList = do
   auxProofstatus <- foldM (convertToNf ln) proofStatus $
                      nodesDG $ lookupDGraph ln proofStatus
   let
-     oldGraph = lookupDGraph ln proofStatus
-     oldHistory = proofHistory oldGraph
      auxGraph = lookupDGraph ln auxProofstatus
-     auxHistory = proofHistory auxGraph
-     nfHistory = take (length auxHistory - length oldHistory) auxHistory
-     (nodesWHiding, _) = partition (hasIngoingHidingDef proofStatus ln) nodeList
+
+     nodesWHiding = filter (hasIngoingHidingDef proofStatus ln) nodeList
      -- all nodes with incoming hiding links
      -- all the theorem links entering these nodes
      -- have to replaced by theorem links with the same origin
      -- but pointing to the normal form of the former target node
      ingoingEdges = concat $
                     map (getInComingGlobalUnprovenEdges auxGraph) nodesWHiding
-     (_graph, changesTHS) = foldl theoremHideShiftForEdge (auxGraph, [])
-                             ingoingEdges
-     changes = (concat $ map snd $ reverse nfHistory) ++ changesTHS
-     (newGraph, changes') = updateWithChanges changes oldGraph
-     newHistory = [([TheoremHideShift], changes')]
-     newProofStatus = mkResultProofStatus ln auxProofstatus newGraph
-                       (concatMap fst newHistory, concatMap snd newHistory)
-  return newProofStatus
+     newGraph = foldl theoremHideShiftForEdge auxGraph ingoingEdges
+  return $ Map.insert ln
+    (groupHistory auxGraph (DGRule "TheoremHideShift") newGraph)
+         auxProofstatus
 
-theoremHideShiftForEdge :: (DGraph, [DGChange]) ->  LEdge DGLinkLab ->
-                           (DGraph, [DGChange])
-theoremHideShiftForEdge (dg, chList) edge@(source, target, edgeLab) =
+theoremHideShiftForEdge :: DGraph -> LEdge DGLinkLab -> DGraph
+theoremHideShiftForEdge dg edge@(source, target, edgeLab) =
   case maybeResult $ theoremHideShiftForEdgeAux dg edge of
    Nothing -> error "theoremHideShiftForEdgeAux"
-   Just ((dg', pbasis),changes) -> let
+   Just (dg', pbasis) -> let
     GlobalThm _ conservativity conservStatus = dgl_type edgeLab
     provenEdge = (source, target, edgeLab
-        { dgl_type = GlobalThm (Proven TheoremHideShift pbasis)
+        { dgl_type = GlobalThm (Proven (DGRule "TheoremHideShift") pbasis)
             conservativity conservStatus
         , dgl_origin = DGLinkProof })
-    (dg2, insC) = updateWithChanges [DeleteEdge edge, InsertEdge provenEdge]
-                   dg'
-                                   in (dg2, chList ++ changes ++ insC)
+    in changesDGH dg' [DeleteEdge edge, InsertEdge provenEdge]
 
-theoremHideShiftForEdgeAux :: DGraph -> LEdge DGLinkLab ->
-                      Result ((DGraph, ProofBasis), [DGChange])
+theoremHideShiftForEdgeAux :: DGraph -> LEdge DGLinkLab
+                           -> Result (DGraph, ProofBasis)
 theoremHideShiftForEdgeAux dg (sn, tn, llab) = do
   let tlab = labDG dg tn
       Just nfNode = dgn_nf tlab
@@ -337,18 +307,16 @@ theoremHideShiftForEdgeAux dg (sn, tn, llab) = do
                })
   case tryToGetEdge newEdge dg of
         Nothing -> let
-          (newGraph, newChange) =
-            updateWithOneChange (InsertEdge newEdge) dg
-          finalEdge = case newChange of
-            [InsertEdge final_e] -> final_e
+          newGraph = changeDGH dg $ InsertEdge newEdge
+          finalEdge = case getLastChange newGraph of
+            InsertEdge final_e -> final_e
             _ -> error "Proofs.Global.globDecompForOneEdgeAux"
           in return
-              ((newGraph, addEdgeId emptyProofBasis $ getEdgeId finalEdge)
-             , newChange)
-        Just e -> return ((dg, addEdgeId emptyProofBasis $ getEdgeId e), [])
+              (newGraph, addEdgeId emptyProofBasis $ getEdgeId finalEdge)
+        Just e -> return (dg, addEdgeId emptyProofBasis $ getEdgeId e)
 
-theoremHideShiftFromList :: LIB_NAME -> [LNode DGNodeLab]
-                              -> LibEnv -> Result LibEnv
+theoremHideShiftFromList :: LIB_NAME -> [LNode DGNodeLab] -> LibEnv
+                         -> Result LibEnv
 theoremHideShiftFromList ln ls proofStatus =
   theoremHideShiftAux ln proofStatus $ map fst ls
 
@@ -363,12 +331,12 @@ computeTheory useNf libEnv ln n =
       inEdges = filter (liftE $ liftOr isLocalDef isGlobalDef) $ innDG dg n
       localTh = dgn_theory nodelab
   in
-   if (isDGRef nodelab) then do
+   if isDGRef nodelab then do
     let refLn = dgn_libname nodelab
         refNode = dgn_node nodelab
     (libEnv', refTh) <- computeTheory useNf libEnv refLn refNode
     -- local sentences have to be mapped along dgn_sigma if refNode has hiding
-    localTh' <- if useNf && (hasIngoingHidingDef libEnv' refLn refNode) then
+    localTh' <- if useNf && hasIngoingHidingDef libEnv' refLn refNode then
                   let dg' = lookupDGraph refLn libEnv'
                       newLab = labDG dg' refNode
                   in case dgn_sigma newLab of
@@ -379,7 +347,7 @@ computeTheory useNf libEnv ln n =
     joinTh <- joinG_sentences (theoremsToAxioms refTh) localTh'
     return (libEnv', joinTh)
    else
-    if useNf && (hasIngoingHidingDef libEnv ln n) then do
+    if useNf && hasIngoingHidingDef libEnv ln n then do
       let libEnvRes = convertToNf ln libEnv n
       case maybeResult libEnvRes of
        Nothing -> computeTheory False libEnv ln n

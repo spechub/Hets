@@ -29,7 +29,6 @@ import PGIP.Utils
 import Comorphisms.LogicGraph
 
 import Proofs.EdgeUtils
-import Proofs.StatusUtils
 import Proofs.AbstractState
 
 import Static.GTheory
@@ -113,12 +112,12 @@ cProver input state =
                                           ++" this name found") state
                Just (p,nCm@(Comorphism cid))->
                  return $ addToHistory (ProverChange $ prover pS)
-                     $ genMessage [] ("Warning: Prover can't be used with " 
+                     $ genMessage [] ("Warning: Prover can't be used with "
                             ++"the selected comorphism (or the default if "
                             ++"none was selected). Instead the `"
-                            ++ (language_name  cid) 
+                            ++ (language_name  cid)
                             ++"` comorphism was selected. Current prover is "
-                            ++ input) 
+                            ++ input)
                             state {
                               proveState = Just pS {
                                              cComorphism=Just nCm
@@ -479,14 +478,9 @@ addResults lbEnv libname ndps
            dGraph = lookupDGraph libname lbEnv
            oldContents = labDG dGraph node
            newContents = oldContents {dgn_theory = nwTh}
-           (nextDGraph,changes) =
-                  updateWithOneChange (SetNodeLab
-                                        (error "addResults")
-                                           (node,newContents)) dGraph
-           rules = []
-           nextHistoryElem = (rules, changes)
-       return $ mkResultProofStatus libname lbEnv nextDGraph
-                  nextHistoryElem
+           nextDGraph = changeDGH dGraph
+               $ SetNodeLab oldContents (node, newContents)
+       return $ Map.insert libname nextDGraph lbEnv
 
 
 -- | Signal handler that stops the prover from running

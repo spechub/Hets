@@ -14,27 +14,19 @@ module PGIP.UndoRedo
        ( cUndo
        , cRedo
        ) where
--- import Text.ParserCombinators.Parsec
 
-import System.IO
-
-import Data.List
-import Static.DevGraph
-
+import PGIP.DgCommands
+import PGIP.DataTypes
+import PGIP.DataTypesUtils
 
 import Proofs.AbstractState
 import Proofs.EdgeUtils
 
+import Static.DevGraph
+
+import System.IO
 import qualified Data.Map as Map
-
--- import System.Console.Shell.ShellMonad
-
--- import PGIP.Shell
-import PGIP.DgCommands
--- import PGIP.InfoCommands
-import PGIP.DataTypes
-import PGIP.DataTypesUtils
--- import PGIP.ProveCommands
+import Data.List
 
 -- | Local datatype used to differentiate between the two action (so that
 -- code does not get duplicated
@@ -52,27 +44,25 @@ beforeEnding actionType state
    in
     case ls of
      [] -> genMessage [] "Nothing to undo" state
-     _ ->
-      let action = head $ ls
-          rest   = tail $ ls
-          oH     = history state
+     action : rest ->
+      let oH = history state
       in case actionType of
           DoUndo ->
-           genMessage [] ("Action '"++(head$cmdNames action)++
+           genMessage [] ("Action '" ++ head (cmdNames action) ++
              "' is now undone")
              state {
                history = oH {
                      undoList = rest,
-                     redoList = (action: (redoList oH))
+                     redoList = action : redoList oH
                       }
                  }
           DoRedo ->
-           genMessage [] ("Action '"++(head$cmdNames action)++
+           genMessage [] ("Action '" ++ head (cmdNames action) ++
              "' is now redone")
              state {
                history = oH {
                     redoList = rest,
-                    undoList = (action :(undoList oH))
+                    undoList = action : undoList oH
                     }
                  }
 
@@ -85,45 +75,25 @@ noAction actionType state =
    return $ beforeEnding actionType state
 
 dgCmd :: UndoOrRedo -> CMDL_State -> IO CMDL_State
-dgCmd actionType state =
- do
+dgCmd actionType state = do
   case devGraphState state of
     -- should I return an error message??
    Nothing -> return $ genMessage [] "No library loaded yet" state
-   Just dgS ->
-    case oldEnv $ history state of
-     Nothing ->
-      return $ genErrorMsg "Internal Error ! Please reload the library" state
-     Just initEnv ->
-      do
+   Just dgS -> do
        let
         oldLn  = ln dgS
         old_Env= libEnv dgS
-        dg     = lookupDGraph oldLn old_Env
-        initdg = lookupDGraph oldLn initEnv
-        hist  = case actionType of
-                  DoUndo -> proofHistory dg
-                  DoRedo -> redoHistory  dg
-       if hist == [emptyHistory] then return state
-         else
-          do
-           let
-             change = head hist
-             phist'     = case actionType of
-                           DoUndo -> tail $ proofHistory dg
-                           DoRedo -> change : (proofHistory dg)
-             rhist'     = case actionType of
-                           DoUndo -> change:(redoHistory dg)
-                           DoRedo -> tail $ redoHistory dg
-             dg'        = (applyProofHistory (init phist') initdg)
-                          {redoHistory = rhist' }
-             newEnv     = Map.insert oldLn dg' old_Env
-             newst      = state {
+        dg = lookupDGraph oldLn old_Env
+        dg'     = fst $ (case actionType of
+                           DoUndo -> undoHistStep
+                           DoRedo -> redoHistStep) dg
+        newEnv     = Map.insert oldLn dg' old_Env
+        newst      = state {
                            devGraphState = Just dgS {
                                                  libEnv = newEnv
                                                  }
                                 }
-           return $ beforeEnding actionType newst
+       return $ beforeEnding actionType newst
 
 
 processList :: [CMDL_ListChange]-> [CMDL_ProofAbstractState]

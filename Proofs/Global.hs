@@ -51,13 +51,10 @@ globDecompFromList :: LIB_NAME -> [LEdge DGLinkLab] -> LibEnv -> LibEnv
 globDecompFromList ln globalThmEdges proofStatus =
     let dgraph = lookupDGraph ln proofStatus
         finalGlobalThmEdges = filter (liftE isUnprovenGlobalThm) globalThmEdges
-        (auxGraph, auxChanges) = mapAccumL (updateDGraph proofStatus) dgraph
+        auxGraph = foldl (updateDGraph proofStatus) dgraph
            $ map (\ (src, _, _) -> src) finalGlobalThmEdges
-        (newDGraph, newHistoryElem) = mapAccumL
-            globDecompAux auxGraph finalGlobalThmEdges
-    in mkResultProofStatus ln proofStatus newDGraph
-       (concatMap fst newHistoryElem,
-        concat auxChanges ++ concatMap snd newHistoryElem)
+        newDGraph = foldl globDecompAux auxGraph finalGlobalThmEdges
+    in Map.insert ln newDGraph proofStatus
 
 {- | update the given DGraph with source nodes of all global unproven
      links.
@@ -70,7 +67,7 @@ globDecompFromList ln globalThmEdges proofStatus =
 -}
 updateDGraph :: LibEnv -> DGraph
              -> Node -- source nodes of all global unproven links
-             -> (DGraph, [DGChange])
+             -> DGraph
 updateDGraph le dg x =
     {- checks if it is an unexpanded referenced node
        the function lookupInRefNodesDG only checks the
@@ -83,10 +80,10 @@ updateDGraph le dg x =
                notice that if the node is expanded, then it should be
                deleted out of the unexpanded map using
                deleteFromRefNodesDG -}
-            (auxDG, auxChanges) = mapAccumL (updateDGraphAux le x refl)
+            auxDG = foldl (updateDGraphAux le x refl)
                 (deleteFromRefNodesDG x dg) parents
-            in (auxDG, concat auxChanges)
-         _ -> (dg, [])
+            in auxDG
+         _ -> dg
 
 {- | get all the parents, namely the related referenced nodes and the links
      between them and the present to be expanded node.
@@ -133,18 +130,17 @@ modifyPs dg ls =
 -}
 updateDGraphAux :: LibEnv -> Node -- the present to be expanded node
                 -> LIB_NAME -> DGraph -> (LNode DGNodeLab, [DGLinkLab])
-                -> (DGraph, [DGChange])
+                -> DGraph
 updateDGraphAux libenv n refl dg (pnl, pls) =
    let
-   ((auxDG, auxChanges), newN) = addParentNode libenv dg refl pnl
-   (finalDG, finalChanges) = addParentLinks auxDG newN n pls
-   in (finalDG, auxChanges ++ finalChanges)
+   (auxDG, newN) = addParentNode libenv dg refl pnl
+   in addParentLinks auxDG newN n pls
 
 {- | add the given parent node into the current dgraph
 -}
 addParentNode :: LibEnv -> DGraph ->  LIB_NAME
               -> LNode DGNodeLab -- the referenced parent node
-              -> ((DGraph, [DGChange]), Node)
+              -> (DGraph, Node)
 addParentNode libenv dg refl (refn, oldNodelab) =
    let
    {-
@@ -177,24 +173,21 @@ addParentNode libenv dg refl (refn, oldNodelab) =
    -- checks if this node exists in the current dg, if so, nothing needs to be
    -- done.
    case lookupInAllRefNodesDG refInfo dg of
-        Nothing ->
-           let
-           newN = getNewNodeDG dg
-           in
-           (updateWithOneChange
-           (InsertNode (newN, newRefNode))
-           (setThMapDG (Map.insert (succ t) newGTh tMap)
-           $ setSigMapDG (Map.insert (succ s) (signOf newGTh) sgMap)
-           $ addToRefNodesDG newN refInfo dg), newN)
-        Just extN -> ((dg, []), extN)
+        Nothing -> let newN = getNewNodeDG dg in
+           ( changeDGH (setThMapDG (Map.insert (succ t) newGTh tMap)
+                $ setSigMapDG (Map.insert (succ s) (signOf newGTh) sgMap)
+                $ addToRefNodesDG newN refInfo dg)
+             $ InsertNode (newN, newRefNode)
+           , newN)
+        Just extN -> (dg, extN)
 
 {- | add a list of links between the given two node ids.
 -}
-addParentLinks :: DGraph -> Node -> Node -> [DGLinkLab] -> (DGraph, [DGChange])
-addParentLinks dg src tgt ls = updateWithChanges
+addParentLinks :: DGraph -> Node -> Node -> [DGLinkLab] -> DGraph
+addParentLinks dg src tgt ls = changesDGH dg
  [ InsertEdge (src, tgt, x { dgl_id = defaultEdgeId
                            , dgl_type = invalidateProof $ dgl_type x })
-   | x <- ls] dg
+   | x <- ls]
 
 {- applies global decomposition to all unproven global theorem edges
    if possible -}
@@ -207,35 +200,33 @@ globDecomp ln proofStatus =
 
 {- auxiliary function for globDecomp (above)
    actual implementation -}
-globDecompAux :: DGraph -> LEdge DGLinkLab -> (DGraph, ([DGRule], [DGChange]))
+globDecompAux :: DGraph -> LEdge DGLinkLab -> DGraph
 globDecompAux dgraph edge =
-  let (newDGraph, newChanges) = globDecompForOneEdge dgraph edge
-  in (newDGraph, ([GlobDecomp edge], newChanges))
+  let newDGraph = globDecompForOneEdge dgraph edge
+  in groupHistory dgraph (DGRuleWithEdge "Global-Decomposition" edge) newDGraph
 
 -- applies global decomposition to a single edge
-globDecompForOneEdge :: DGraph -> LEdge DGLinkLab -> (DGraph, [DGChange])
+globDecompForOneEdge :: DGraph -> LEdge DGLinkLab -> DGraph
 globDecompForOneEdge dgraph edge@(source, target, edgeLab) = let
     defEdgesToSource = [e | e@(_, _, lbl) <- innDG dgraph source,
                         isDefEdge (dgl_type lbl)]
     paths = map (\e -> [e, edge]) defEdgesToSource ++ [[edge]]
              -- why not? [edge] : map ...
-    ((newGr,  proof_basis), changes) = mapAccumL
+    (newGr,  proof_basis) = foldl
       (globDecompForOneEdgeAux target) (dgraph, emptyProofBasis) paths
     GlobalThm _ conservativity conservStatus = dgl_type edgeLab
     provenEdge = (source, target, edgeLab
-        { dgl_type = GlobalThm (Proven (GlobDecomp edge) proof_basis)
+        { dgl_type = GlobalThm
+            (Proven (DGRuleWithEdge "Global-Decomposition" edge) proof_basis)
             conservativity conservStatus
         , dgl_origin = DGLinkProof })
-    (dg2, insC) = updateWithChanges [DeleteEdge edge, InsertEdge provenEdge]
-                    newGr
-    in (dg2, concat changes ++ insC)
-
+    in changesDGH newGr [DeleteEdge edge, InsertEdge provenEdge]
 
 {- auxiliary funktion for globDecompForOneEdge (above)
    actual implementation -}
 globDecompForOneEdgeAux :: Node -> (DGraph, ProofBasis)
                         -> [LEdge DGLinkLab]
-                        -> ((DGraph, ProofBasis), [DGChange])
+                        -> (DGraph, ProofBasis)
 -- for each path an unproven localThm edge is inserted
 globDecompForOneEdgeAux target (dgraph, proof_basis) path =
   case path of
@@ -257,23 +248,20 @@ globDecompForOneEdgeAux target (dgraph, proof_basis) path =
         , dgl_id = defaultEdgeId })
       in case tryToGetEdge newEdge dgraph of
         Nothing -> let
-          (newGraph, newChange) =
-            updateWithOneChange (InsertEdge newEdge) dgraph
-          finalEdge = case newChange of
-            [InsertEdge final_e] -> final_e
+          newGraph = changeDGH dgraph $ InsertEdge newEdge
+          finalEdge = case getLastChange newGraph of
+            InsertEdge final_e -> final_e
             _ -> error "Proofs.Global.globDecompForOneEdgeAux"
-          in ((newGraph, addEdgeId proof_basis $ getEdgeId finalEdge)
-             , newChange)
-        Just e -> ((dgraph, addEdgeId proof_basis $ getEdgeId e), [])
+          in (newGraph, addEdgeId proof_basis $ getEdgeId finalEdge)
+        Just e -> (dgraph, addEdgeId proof_basis $ getEdgeId e)
 
 globSubsumeFromList :: LIB_NAME -> [LEdge DGLinkLab] -> LibEnv -> LibEnv
 globSubsumeFromList ln globalThmEdges libEnv =
     let dgraph = lookupDGraph ln libEnv
         finalGlobalThmEdges = filter (liftE isUnprovenGlobalThm) globalThmEdges
-        (nextDGraph, nextHistoryElems) = mapAccumL
+        nextDGraph = foldl
             (globSubsumeAux libEnv) dgraph finalGlobalThmEdges
-    in mkResultProofStatus ln libEnv nextDGraph
-       (concatMap fst nextHistoryElems, concatMap snd nextHistoryElems)
+    in Map.insert ln nextDGraph libEnv
 
 -- | tries to apply global subsumption to all unproven global theorem edges
 globSubsume :: LIB_NAME -> LibEnv -> LibEnv
@@ -283,8 +271,7 @@ globSubsume ln libEnv =
     in globSubsumeFromList ln globalThmEdges libEnv
 
 {- auxiliary function for globSubsume (above) the actual implementation -}
-globSubsumeAux :: LibEnv ->  DGraph -> LEdge DGLinkLab
-               -> (DGraph, ([DGRule], [DGChange]))
+globSubsumeAux :: LibEnv ->  DGraph -> LEdge DGLinkLab  -> DGraph
 globSubsumeAux libEnv dgraph ledge@(src, tgt, edgeLab) =
   let morphism = dgl_morphism edgeLab
       filteredPaths = filterPathsByMorphism morphism $ filter (noPath ledge)
@@ -295,10 +282,10 @@ globSubsumeAux libEnv dgraph ledge@(src, tgt, edgeLab) =
      let GlobalThm _ conservativity conservStatus = dgl_type edgeLab
          newEdge = (src, tgt, edgeLab
                { dgl_type = GlobalThm
-                   (Proven (GlobSubsumption ledge) proofbasis)
-                   conservativity conservStatus
+                   (Proven (DGRuleWithEdge "Global-Subsumption" ledge)
+                    proofbasis) conservativity conservStatus
                , dgl_origin = DGLinkProof })
-         (newDGraph, newChanges) = updateWithChanges
-           [DeleteEdge ledge, InsertEdge newEdge] dgraph
-     in (newDGraph, ([GlobSubsumption ledge], newChanges))
-   else (dgraph, emptyHistory)
+         newDGraph = changesDGH dgraph [DeleteEdge ledge, InsertEdge newEdge]
+     in groupHistory dgraph (DGRuleWithEdge "Global-Subsumption" ledge)
+        newDGraph
+   else dgraph

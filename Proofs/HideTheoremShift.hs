@@ -29,7 +29,6 @@ module Proofs.HideTheoremShift
     ) where
 
 import Proofs.EdgeUtils
-import Proofs.StatusUtils
 import Comorphisms.LogicGraph
 import GUI.Utils
 
@@ -38,9 +37,9 @@ import Static.DevGraph
 
 import Common.LibName
 import Common.Result
-import Common.Utils (mapAccumLM)
 
 import Control.Monad.Identity
+import qualified Data.Map as Map
 import Data.Graph.Inductive.Graph
 import Data.List
 
@@ -70,10 +69,9 @@ hideTheoremShiftFromList :: Monad m => ProofBaseSelector m -> LIB_NAME
 hideTheoremShiftFromList proofBaseSel ln hidingThmEdges proofStatus = do
     let dgraph = lookupDGraph ln proofStatus
         finalHidingThmEdges = filter (liftE isUnprovenHidingThm) hidingThmEdges
-    (nextDGraph, nextHistoryElems) <- mapAccumLM
+    nextDGraph <- foldM
        (hideTheoremShiftAux proofBaseSel) dgraph finalHidingThmEdges
-    return $ mkResultProofStatus ln proofStatus nextDGraph
-       (concatMap fst nextHistoryElems, concatMap snd nextHistoryElems)
+    return $ Map.insert ln nextDGraph proofStatus
 
 hideTheoremShift :: Monad m => ProofBaseSelector m -> LIB_NAME
                  -> LibEnv -> m LibEnv
@@ -87,22 +85,19 @@ hideTheoremShift proofBaseSel ln proofStatus =
      current edge and inserting of the new proven edge.
 -}
 hideTheoremShiftAux :: Monad m => ProofBaseSelector m -> DGraph
-                    -> LEdge DGLinkLab -> m (DGraph, ([DGRule], [DGChange]))
+                    -> LEdge DGLinkLab -> m DGraph
 hideTheoremShiftAux proofBaseSel dgraph ledge =
   do proofbasis <- findProofBaseForHideTheoremShift dgraph ledge proofBaseSel
      return $ if null proofbasis
-      then (dgraph, emptyHistory)
+      then dgraph
        else
-         let ((auxDGraph, finalProofBasis), auxChanges) =
-                 mapAccumL insertNewEdges (dgraph, emptyProofBasis) proofbasis
+         let (auxDGraph, finalProofBasis) =
+                 foldl insertNewEdges (dgraph, emptyProofBasis) proofbasis
              newEdge = makeProvenHidingThmEdge finalProofBasis ledge
-             (newDGraph2, delChange) =
-                 updateWithOneChange (DeleteEdge ledge) auxDGraph
-             (newDGraph, insChange) =
-                   insertDGLEdge newEdge newDGraph2
-             newRules = [HideTheoremShift ledge]
-         in (newDGraph, (newRules,
-                         concat auxChanges ++ delChange ++ insChange))
+             newDGraph2 = changeDGH auxDGraph $ DeleteEdge ledge
+             newDGraph = insertDGLEdge newEdge newDGraph2
+             newRules = DGRuleWithEdge "HideTheoremShift" ledge
+         in groupHistory dgraph newRules newDGraph
 
 {- | inserts the given edges into the development graph and adds a
      corresponding entry to the changes, while getting the proofbasis.
@@ -110,21 +105,20 @@ hideTheoremShiftAux proofBaseSel dgraph ledge =
      be used as proof basis.
 -}
 insertNewEdges :: (DGraph, ProofBasis) -> LEdge DGLinkLab
-               -> ((DGraph, ProofBasis), [DGChange])
+               -> (DGraph, ProofBasis)
 insertNewEdges (dgraph, proofbasis) edge =
   case tryToGetEdge edge dgraph of
-       Just e -> ((dgraph, addEdgeId proofbasis $ getEdgeId e), [])
+       Just e -> (dgraph, addEdgeId proofbasis $ getEdgeId e)
        Nothing -> let
-                  (tempDGraph, tempChange) =
-                       updateWithOneChange (InsertEdge edge) dgraph
+                  tempDGraph = changeDGH dgraph $ InsertEdge edge
                   -- checks if the edge is actually inserted
-                  tempProofBasis = case tempChange of
-                    [InsertEdge tempE] ->
+                  tempProofBasis = case getLastChange tempDGraph of
+                    InsertEdge tempE ->
                         addEdgeId proofbasis $ getEdgeId tempE
                     _ -> error ("Proofs"++
                                 ".HideTheoremShift"++
                                 ".insertNewEdges")
-                  in ((tempDGraph, tempProofBasis), tempChange)
+                  in (tempDGraph, tempProofBasis)
 
 {- | creates a new proven HidingThm edge from the given
      HidingThm edge using the edge list as the proofbasis
@@ -134,7 +128,7 @@ makeProvenHidingThmEdge proofBasisEdges ledge@(src,tgt,edgeLab) =
   let HidingThm hidingMorphism _ = dgl_type edgeLab
   in (src, tgt, edgeLab
        { dgl_type = HidingThm hidingMorphism
-           $ Proven (HideTheoremShift ledge) proofBasisEdges
+           $ Proven (DGRuleWithEdge "HideTheoremShift" ledge) proofBasisEdges
        , dgl_origin = DGLinkProof })
 
 {- | selects a proof basis for 'hide theorem shift' if there is one

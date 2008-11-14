@@ -22,13 +22,12 @@ Proof rule "basic inference" in the development graphs calculus.
 
 -}
 
-module Proofs.InferBasic (basicInferenceNode) where
+module Proofs.InferBasic (basicInferenceNode, basicInferenceSubTree) where
 
 import Static.GTheory
 import Static.DevGraph
 import Proofs.DGFlattening(singleTree_flattening_dunions)
 
-import Proofs.StatusUtils
 import Proofs.EdgeUtils
 import Proofs.AbstractState
 import Proofs.TheoremHideShift
@@ -54,7 +53,7 @@ import GUI.ProofManagement
 import GUI.History(CommandHistory, addProveToHist)
 
 import Data.Maybe
-import Data.Map(insert)
+import qualified Data.Map as Map
 -- ---------------
 -- basic inference
 -- ---------------
@@ -142,15 +141,12 @@ basicInferenceNode checkCons lg (ln, node) libname guiMVar libEnv ch = do
                               (toThSens sens''') startThId
                     _ -> Result [] Nothing
                   _ -> Result [] Nothing
-            let nextHistoryElem = ([Borrowing],[])
-             -- ??? to be implemented
-                newProofStatus = mkResultProofStatus libname
-                                 libEnv' dGraph nextHistoryElem
-            return (newProofStatus, resT)
+             -- ??? Borrowing to be implemented
+            return (libEnv', resT)
           else do -- proving
             -- get known Provers
 
-------------------------------------------------------------------------------------------------------------------------------
+-----------------------------------------------------------------------------
 {- GOALS:
           1. Make a function that writes everything to files
           2. Add it to definition of ProverTemplate
@@ -176,16 +172,10 @@ basicInferenceNode checkCons lg (ln, node) libname guiMVar libEnv ch = do
             let oldContents = labDG dGraph node
                 newContents = oldContents{dgn_theory = newTh}
                 -- update the graph with the new node lab
-                (nextDGraph,changes) =
-                    updateWithOneChange (SetNodeLab
-                                      (error "basicInferenceNode")
-                                         (node, newContents)) dGraph
-                rules = [] -- map (\s -> BasicInference (Comorphism cid)
-                           --     (BasicProof lidT s))
-                         -- FIXME: [Proof_status] not longer available
-                nextHistoryElem = (rules,changes)
-            return (mkResultProofStatus libname libEnv'
-                    nextDGraph nextHistoryElem, Result [] Nothing)
+                nextDGraph = changeDGH dGraph $ SetNodeLab oldContents
+                                         (node, newContents)
+            return ( Map.insert libname nextDGraph libEnv'
+                   , Result [] Nothing)
 
 -- | applies basic inference to a given node and whole import tree above
 basicInferenceSubTree :: Bool -- ^ True = CheckConsistency; False = Prove
@@ -212,24 +202,24 @@ basicInferenceSubTree checkCons lg (ln, node) guiMVar ch libEnv = do
         -- select a suitable translation and prover
             cms = filter hasModelExpansion $ findComorphismPaths lg sublogic
         -- incoming nodes consideration
-            in_nds = Prelude.map (\ (x,_,_) -> x) (innDG dGraph node)
-            in_labs = Prelude.map (\ x -> (x,labDG dGraph x)) in_nds
-            in_theories = Prelude.map (\ (x,y) -> (x,y,dgn_theory y)) in_labs
-            in_sublogics = Prelude.map (\ (x,y,z) -> (x,y,z,sublogicOfTh z)) in_theories
-            in_cms = Prelude.map (\ (x,y,z,t) ->
-                                    (x,y,z,filter
-                                    (\ cm -> elem cm (propagateErrors isaComorphisms)) $
-                                    findComorphismPaths lg t)) in_sublogics
-            in_changed = Prelude.map (\ (x,y,z,t) -> case t of
-                                 [] ->    return $ error "no comorphism's found"
-                                 hd:_ -> do
-                                          n_theory <- mapG_theory hd z
-                                          return $ SetNodeLab y (x,y {dgn_theory = n_theory})) in_cms
-            (u_dGraph,u_changes) = updateDGAndChanges dGraph (Prelude.map (\ x -> propagateErrors x) in_changed)
-            u_rules = Prelude.map (\ (_,_,_,hd:_) -> (BasicInference hd Conjectured)) in_cms
-            n_dGraph = addToProofHistoryDG (u_rules,u_changes) u_dGraph
-            f_libEnv = singleTree_flattening_dunions (insert ln n_dGraph libEnv) ln node
-            f_dGraph = lookupDGraph ln (propagateErrors f_libEnv)
+            in_nds = map (\ (x,_,_) -> x) (innDG dGraph node)
+            in_labs = map (\ x -> (x,labDG dGraph x)) in_nds
+            in_theories = map (\ (x,y) -> (x,y,dgn_theory y)) in_labs
+            in_sublogics = map (\ (x,y,z) -> (x,y,z,sublogicOfTh z)) in_theories
+            in_cms = map (\ (x,y,z,t) ->
+              (x,y,z,filter (\ cm -> elem cm (propagateErrors isaComorphisms))
+                    $ findComorphismPaths lg t)) in_sublogics
+            in_changed = map (\ (x,y,z,t) -> case t of
+                [] ->    return $ error "no comorphism's found"
+                hd : _ -> do
+                  n_theory <- mapG_theory hd z
+                  return $ SetNodeLab y (x,y {dgn_theory = n_theory})) in_cms
+            u_dGraph = changesDGH dGraph (map propagateErrors in_changed)
+            n_dGraph = groupHistory dGraph (DGRule "BasicInference-Conjectured")
+                       u_dGraph
+            f_libEnv = propagateErrors $ singleTree_flattening_dunions
+                       (Map.insert ln n_dGraph libEnv') ln node
+            f_dGraph = lookupDGraph ln f_libEnv
         if checkCons then do
             (G_cons_checker lid4 cc, Comorphism cid) <-
                  selectProver $ getConsCheckers cms
@@ -257,11 +247,8 @@ basicInferenceSubTree checkCons lg (ln, node) guiMVar ch libEnv = do
                               (toThSens sens''') startThId
                     _ -> Result [] Nothing
                   _ -> Result [] Nothing
-            let nextHistoryElem = ([Borrowing],[])
              -- ??? to be implemented
-                newProofStatus = mkResultProofStatus ln
-                                 libEnv' dGraph nextHistoryElem
-            return (newProofStatus, resT)
+            return (f_libEnv, resT)
           else do -- proving
             -- get known Provers
             kpMap <- liftR $ knownProversGUI
@@ -272,7 +259,7 @@ basicInferenceSubTree checkCons lg (ln, node) guiMVar ch libEnv = do
                        recalculateSublogicF  =
                                      recalculateSublogicAndSelectedTheory }
                                            thName
-                                           (addHasInHidingWarning dGraph node)
+                                           (addHasInHidingWarning f_dGraph node)
                                            thForProof
                                            kpMap
                                            (getProvers ProveGUI sublogic cms)
@@ -282,19 +269,12 @@ basicInferenceSubTree checkCons lg (ln, node) guiMVar ch libEnv = do
             -- instead, mark proven things as proven in the node
             -- TODO: Reimplement stuff
             let
-                oldContents = labDG dGraph node
+                oldContents = labDG f_dGraph node
                 newContents = oldContents{dgn_theory = newTh}
                 -- update the graph with the new node lab
-                (nextDGraph,changes) =
-                    updateWithOneChange (SetNodeLab
-                                      (error "basicInferenceNode")
-                                         (node, newContents)) dGraph
-                rules = [] -- map (\s -> BasicInference (Comorphism cid)
-                           --     (BasicProof lidT s))
-                         -- FIXME: [Proof_status] not longer available
-                nextHistoryElem = (rules,changes)
-            return (mkResultProofStatus ln libEnv'
-                    nextDGraph nextHistoryElem, Result [] Nothing)
+                nextDGraph = changeDGH f_dGraph $ SetNodeLab oldContents
+                                         (node, newContents)
+            return (Map.insert ln nextDGraph f_libEnv, Result [] Nothing)
 
 proveKnownPMap :: (Logic lid sublogics1
                basic_spec1

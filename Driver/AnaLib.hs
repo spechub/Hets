@@ -27,6 +27,7 @@ import Comorphisms.LogicGraph
 import Common.Result
 import Common.ResultT
 import Common.LibName
+import qualified Common.Lib.SizedList as SizedList
 
 import Driver.Options
 import Driver.ReadFn
@@ -82,8 +83,8 @@ readPrfFile opts ps ln = do
         prfFile = rmSuffix fname ++ prfSuffix
     recent <- checkRecentEnv opts prfFile fname
     h <- if recent then
-          fmap (maybe [emptyHistory] id) $ readVerbose opts ln prfFile
-       else return [emptyHistory]
+          fmap (maybe SizedList.empty id) $ readVerbose opts ln prfFile
+       else return SizedList.empty
     return $ Map.update (Just . applyProofHistory h) ln ps
 
 readPrfFiles :: HetcatsOpts -> LibEnv -> IO LibEnv

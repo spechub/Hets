@@ -17,6 +17,7 @@ import Comorphisms.LogicGraph
 import Logic.Grothendieck
 import Static.DevGraph
 import Common.Result
+import qualified Common.Lib.SizedList as SizedList
 import qualified Common.Lib.Rel as Rel
 import qualified Common.Lib.Graph as Tree
 import Data.Graph.Inductive.Graph
@@ -26,18 +27,88 @@ import qualified Data.Set as Set
 import qualified Data.Map as Map
 import Control.Exception (assert)
 
--- | change the given DGraph with the given DGChange.
-changeDG :: DGraph -> DGChange -> DGraph
-changeDG g = fst . updateDGAndChange g
+-- | negate change
+negateChange :: DGChange -> DGChange
+negateChange change = case change of
+      InsertNode x -> DeleteNode x
+      DeleteNode x -> InsertNode x
+      InsertEdge x -> DeleteEdge x
+      DeleteEdge x -> InsertEdge x
+      SetNodeLab old (node, new) -> SetNodeLab new (node, old)
+
+flatHistory :: SizedList.SizedList HistElem -> [DGChange]
+flatHistory h = if SizedList.null h then [] else
+  (case SizedList.head h of
+    HistElem c -> [c]
+    HistGroup _ l -> flatHistory l) ++ flatHistory (SizedList.tail h)
+
+contraryRedo :: SizedList.SizedList HistElem -> SizedList.SizedList HistElem
+contraryRedo = SizedList.map $ \ he -> case he of
+  HistElem c -> HistElem $ negateChange c
+  HistGroup r l -> HistGroup r $  SizedList.reverse $ contraryRedo l
+
+undoHistStep :: DGraph -> (DGraph, [DGChange])
+undoHistStep dg = let h = proofHistory dg in
+  if SizedList.null h then (dg, []) else let
+  he = SizedList.head h
+  (ndg, cs) = case he of
+    HistElem c -> let (dg2, nc) = updateDGOnly dg $ negateChange c in
+       (dg2 { proofHistory = SizedList.tail h }, [nc])
+    HistGroup _ l -> let
+     (dg2, ncs) = mapAccumL (\ g _ -> undoHistStep g)
+        dg { proofHistory = SizedList.append l $ SizedList.tail h }
+        $ SizedList.toList l
+     in (dg2, concat ncs)
+  in (ndg { redoHistory = SizedList.cons he $ redoHistory dg }, cs)
+
+redoHistStep :: DGraph -> (DGraph, [DGChange])
+redoHistStep dg = let h = redoHistory dg in
+  if SizedList.null h then (dg, []) else
+      let he = SizedList.head h
+          cs = reverse $ flatHistory $ SizedList.singleton $ he
+          (ndg, ncs) = updateDGAndChanges dg cs
+      in (ndg { proofHistory = SizedList.cons he $ proofHistory dg
+              , redoHistory = SizedList.tail h }, ncs)
+
+-- | apply the reversed changes to the graph and add them to the history
+applyProofHistory :: SizedList.SizedList HistElem -> DGraph -> DGraph
+applyProofHistory l = applyReverseHistory $ reverseHistory l
+
+applyReverseHistory :: SizedList.SizedList HistElem -> DGraph -> DGraph
+applyReverseHistory l dg = if SizedList.null l then dg else
+  applyReverseHistory (SizedList.tail l) $ case SizedList.head l of
+    HistElem c -> changeDGH dg c
+    HistGroup r h -> let dg2 = applyReverseHistory h dg in
+      groupHistory dg r dg2
+
+-- | change the given DGraph with a list of changes
+changesDGH :: DGraph -> [DGChange] -> DGraph
+changesDGH = foldl' changeDGH
+
+-- | empty redo stack by moving redo changes and their reverses to the history
+undoRedo :: DGraph -> DGraph
+undoRedo g = let
+  rh = redoHistory g
+  he1 = HistGroup (DGRule "RedoRedo") $ SizedList.reverse rh
+  he2 = HistGroup (DGRule "UndoRedo") $ SizedList.reverse rh
+  he3 = HistGroup (DGRule "LeftOverRedo") $ SizedList.fromList [he2, he1]
+  in if SizedList.null rh then g else g
+      { proofHistory = SizedList.cons he3 $ proofHistory g
+      , redoHistory = SizedList.empty }
+
+-- | change the given DGraph and the history with the given DGChange.
+changeDGH :: DGraph -> DGChange -> DGraph
+changeDGH g c = let (ng, nc) = updateDGOnly g c in
+  addToProofHistoryDG (HistElem nc) $ undoRedo ng
 
 -- | change the given DGraph with a list of DGChange
-changesDG :: DGraph -> [DGChange] -> DGraph
-changesDG = foldl' changeDG
+updateDGAndChanges :: DGraph -> [DGChange] -> (DGraph, [DGChange])
+updateDGAndChanges = mapAccumL updateDGOnly
 
 {- | change the given DGraph with given DGChange and return a new DGraph and
      the processed DGChange as well. -}
-updateDGAndChange :: DGraph -> DGChange -> (DGraph, DGChange)
-updateDGAndChange g c =
+updateDGOnly :: DGraph -> DGChange -> (DGraph, DGChange)
+updateDGOnly g c =
   case c of
     InsertNode n -> (insLNodeDG n g, InsertNode n)
     DeleteNode n -> (delLNodeDG n g, DeleteNode n)
@@ -45,16 +116,6 @@ updateDGAndChange g c =
        (ng, InsertEdge newEdge)
     DeleteEdge e -> (delLEdgeDG e g, DeleteEdge e)
     SetNodeLab _ n -> let (newG, o) = labelNodeDG n g in (newG, SetNodeLab o n)
-
--- | change the given DGraph with a list of DGChange
-updateDGAndChanges :: DGraph -> [DGChange] -> (DGraph, [DGChange])
-updateDGAndChanges = mapAccumL updateDGAndChange
-
-{- | apply the proof history to the given DGraph to make it go back to
-     previous one. -}
-applyProofHistory :: ProofHistory  -> DGraph -> DGraph
-applyProofHistory h c =
-  setProofHistoryDG h $ changesDG c $ concatMap snd $ reverse h
 
 -- -------------------------------------
 -- methods to check the type of an edge
@@ -150,18 +211,17 @@ tryToGetEdge (src, tgt, lb) dgraph = fmap (\ l -> (src, tgt, l))
 {- | try to insert an edge into the given dgraph, if the edge exists, the to
 be inserted edge's id would be added into the existing edge. -}
 insertDGLEdge :: LEdge DGLinkLab -- ^ the to be inserted edge
-              -> DGraph -> (DGraph, [DGChange])
+              -> DGraph -> DGraph
 insertDGLEdge edge dgraph =
   case tryToGetEdge edge dgraph of
-    Nothing -> updateWithChanges [InsertEdge edge] dgraph
+    Nothing -> changeDGH dgraph $ InsertEdge edge
     Just e@(src, tgt, label) -> let eid = getEdgeId edge in
         if eid == defaultEdgeId
-        then (dgraph, [])
+        then dgraph
         else let nid = assert (dgl_id label == eid) eid
                  newEdge = (src, tgt,
                    label { dgl_id = nid })
-             in
-             updateWithChanges [DeleteEdge e, InsertEdge newEdge] dgraph
+             in changesDGH dgraph [DeleteEdge e, InsertEdge newEdge]
 
 {- | get the edge id out of a given edge -}
 getEdgeId :: LEdge DGLinkLab -> EdgeId
@@ -318,9 +378,9 @@ invalidateProof t = case t of
     _ -> t
 
 {- | adopts the edges of the old node to the new node -}
-adoptEdges :: DGraph -> Node -> Node -> (DGraph, [DGChange])
+adoptEdges :: DGraph -> Node -> Node -> DGraph
 adoptEdges dgraph oldNode newNode =
-  if oldNode == newNode then (dgraph, []) else
+  if oldNode == newNode then dgraph else
   let (inEdges', _, _, outEdges') = safeContextDG "adoptEdges" dgraph oldNode
       inEdges = map ( \ (l, v) -> (v, oldNode, l)) inEdges'
       outEdges = map ( \ (l, v) -> (oldNode, v, l)) outEdges'
@@ -328,7 +388,7 @@ adoptEdges dgraph oldNode newNode =
       newOut = map (adoptEdgesAux newNode False) outEdges
       allChanges = map DeleteEdge (inEdges ++ outEdges)
                    ++ map InsertEdge (newIn ++ newOut)
-  in (changesDG dgraph allChanges, allChanges)
+  in changesDGH dgraph allChanges
 
 {- | auxiliary method for adoptEdges -}
 adoptEdgesAux :: Node -> Bool -> LEdge DGLinkLab -> LEdge DGLinkLab
@@ -339,15 +399,6 @@ adoptEdgesAux node areIngoingEdges (src,tgt,edgelab) =
 
 getAllOpenNodeGoals :: [DGNodeLab] -> [DGNodeLab]
 getAllOpenNodeGoals = filter hasOpenGoals
-
-{- | update both the given devgraph and the changelist with a given change -}
-updateWithOneChange :: DGChange -> DGraph -> (DGraph, [DGChange])
-updateWithOneChange change = updateWithChanges [change]
-
-{- | update both the given devgraph and the changelist with a list of
-given changes -}
-updateWithChanges :: [DGChange] -> DGraph -> (DGraph, [DGChange])
-updateWithChanges = flip updateDGAndChanges
 
 hasIncomingHidingEdge :: DGraph -> Node -> Bool
 hasIncomingHidingEdge dgraph n =

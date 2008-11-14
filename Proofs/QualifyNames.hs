@@ -58,9 +58,9 @@ qualifyDGraph ln dg le = do
   let es = map (\ (_, _, lb) -> dgl_id lb) $ labEdgesDG dg
   unless (Set.size (Set.fromList es) == length es) $
     fail $ "inkonsistent graph for library " ++ showDoc ln ""
-  (cs, dg1, le1) <- foldM (qualifyLabNode ln) ([], dg, le)
+  (dg1, le1) <- foldM (qualifyLabNode ln) (dg, le)
     $ topsortedNodes $ dgBody dg
-  return $ Map.insert ln (addToProofHistoryDG ([], reverse cs) dg1) le1
+  return $ Map.insert ln (groupHistory dg (DGRule "Qualified-Names") dg1) le1
 
 -- consider that loops are part of innDG and outDG that should not be handled
 -- twice
@@ -75,9 +75,9 @@ constructUnion lid hd l = case l of
     Just m -> constructUnion lid m tl
     Nothing -> constructUnion lid sd tl
 
-qualifyLabNode :: LIB_NAME -> ([DGChange], DGraph, LibEnv) -> LNode DGNodeLab
-               -> Result ([DGChange], DGraph, LibEnv)
-qualifyLabNode ln (cs, dg, le) (n, lb) = let
+qualifyLabNode :: LIB_NAME -> (DGraph, LibEnv) -> LNode DGNodeLab
+               -> Result (DGraph, LibEnv)
+qualifyLabNode ln (dg, le) (n, lb) = let
   noLoop (x, y, _) = x /= y
   inss = filter noLoop $ innDG dg n
   allOuts = outDG dg n in
@@ -108,8 +108,8 @@ qualifyLabNode ln (cs, dg, le) (n, lb) = let
         nAllinss <- mapM (composeWithMorphism True gm1 grm) $ nloops ++ inss
         let changes = map DeleteEdge (allOuts ++ inss)
               ++ SetNodeLab lb (n, nlb) : map InsertEdge (nAllinss ++ nouts)
-            changedDG = changesDG dg changes
-        return (reverse changes ++ cs, changedDG, le)
+            changedDG = changesDGH dg changes
+        return (changedDG, le)
 
 -- consider that hiding edges have a reverse morphism
 

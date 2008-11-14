@@ -17,7 +17,6 @@ Improvements:
 module Proofs.ComputeColimit where
 
 import Proofs.EdgeUtils
-import Proofs.StatusUtils
 
 import Static.DevGraph
 import Static.GTheory
@@ -38,31 +37,28 @@ import Data.Graph.Inductive.Graph
 import Data.List(nub)
 import Control.Monad
 
-computeColimit :: LIB_NAME -> LibEnv ->Result LibEnv
+computeColimit :: LIB_NAME -> LibEnv -> Result LibEnv
 computeColimit ln le = do
- let
-  dgraph = lookupDGraph ln le
- (nextDGraph, (dgrule, dgchange)) <- insertColimitInGraph dgraph
- return $  mkResultProofStatus ln le nextDGraph (dgrule, dgchange)
+  let dgraph = lookupDGraph ln le
+  nextDGraph <- insertColimitInGraph dgraph
+  return $ Map.insert ln nextDGraph le
 
-insertColimitInGraph :: DGraph -> Result (DGraph,([DGRule],[DGChange]))
+insertColimitInGraph :: DGraph -> Result DGraph
 insertColimitInGraph dgraph = do
- let
-    diag = makeDiagram dgraph (nodes $ dgBody dgraph) (labEdges $ dgBody dgraph)
- (gth, morFun) <- gWeaklyAmalgamableCocone diag
- let -- a better node name, gn_Signature_Colimit?
-       newNode = newInfoNodeLab emptyNodeName (newNodeInfo DGProof) gth
-       newNodeNr = getNewNodeDG dgraph
-       edgeList = map (\n -> (n, newNodeNr,DGLink{
+  let diag = makeDiagram dgraph (nodesDG dgraph) $ labEdgesDG dgraph
+  (gth, morFun) <- gWeaklyAmalgamableCocone diag
+  let -- a better node name, gn_Signature_Colimit?
+      newNode = newInfoNodeLab emptyNodeName (newNodeInfo DGProof) gth
+      newNodeNr = getNewNodeDG dgraph
+      edgeList = map (\n -> (n, newNodeNr,DGLink{
                     dgl_morphism = (Map.!)morFun n,
                     dgl_type = GlobalDef,
                     dgl_origin = SeeTarget,
                     dgl_id = defaultEdgeId})) $
                    nodes $ dgBody dgraph
-       changes  = InsertNode (newNodeNr, newNode) : map InsertEdge edgeList
-       (newGraph,newChanges) = updateWithChanges changes dgraph
-       rules = [ComputeColimit]
- return (newGraph, (rules, newChanges))
+      changes  = InsertNode (newNodeNr, newNode) : map InsertEdge edgeList
+      newGraph = changesDGH dgraph changes
+  return $ groupHistory dgraph (DGRule "Compute-Colimit") newGraph
 
 {- | creates an GDiagram with the signatures of the given nodes as nodes
    and the morphisms of the given edges as edges -}
