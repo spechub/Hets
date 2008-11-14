@@ -13,7 +13,6 @@ static analysis of basic specifications for OWL 1.1.
 module OWL.StaticAnalysis (basicOWLAnalysis) where
 
 import OWL.Namespace
-import OWL.Print
 import OWL.Sign
 import OWL.AS
 
@@ -25,8 +24,6 @@ import Common.Result
 import Common.GlobalAnnotations
 import Common.ExtSign
 import Common.Lib.State
-
-import Data.List (intercalate)
 
 addEntity :: Entity -> State Sign ()
 addEntity (Entity ty u) = do
@@ -46,8 +43,7 @@ anaAxiom an = case an of
     return []
   PlainAxiom as p -> do
     anaPlainAxiom p
-    return [findImplied as $ makeNamed
-            (intercalate "_" $ words $ show $ printAxiom an) $ OWLAxiom an]
+    return [findImplied as $ makeNamed "" $ OWLAxiom an]
 
 anaObjPropExpr :: ObjectPropertyExpression -> State Sign ()
 anaObjPropExpr = addEntity . Entity ObjectProperty . getObjRoleFromExpression
