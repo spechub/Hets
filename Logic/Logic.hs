@@ -535,7 +535,7 @@ class (StaticAnalysis lid
 
          ----------------------- provers ---------------------------
          -- | several provers can be provided. See module "Logic.Prover"
-         provers :: lid -> [Prover sign sentence sublogics proof_tree]
+         provers :: lid -> [Prover sign sentence morphism sublogics proof_tree]
          provers _ = [] -- default implementation
          -- | consistency checkers
          cons_checkers :: lid

@@ -21,8 +21,14 @@ import qualified Data.Set as Set
 import qualified Common.Lib.Rel as Rel
 import Common.AS_Annotation
 import Common.Id
+import Common.DefaultMorphism
 
 -- * Externally used data structures
+
+{- |
+  We use the DefaultMorphism for SPASS.
+-}
+type SoftFOLMorphism = DefaultMorphism Sign
 
 type SortMap = Map.Map SPIdentifier (Maybe Generated)
 

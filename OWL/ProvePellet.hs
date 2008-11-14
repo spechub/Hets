@@ -77,7 +77,7 @@ pelletProverState sig oSens = PelletProverState
 {- |
   The Prover implementation. First runs the batch prover (with graphical feedback), then starts the GUI prover.
 -}
-pelletProver :: Prover Sign Sentence () ProofTree
+pelletProver :: Prover Sign Sentence (DefaultMorphism Sign) () ProofTree
 pelletProver = (mkProverTemplate "Pellet" () pelletGUI)
     { proveCMDLautomatic = Just pelletCMDLautomatic
     , proveCMDLautomaticBatch = Just pelletCMDLautomaticBatch }

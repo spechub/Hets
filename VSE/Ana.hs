@@ -33,6 +33,8 @@ module VSE.Ana
   , correctTarget
   , toSen
   , VSEMorExt
+  , VSEMor
+  , VSEBasicSpec
   ) where
 
 import Control.Monad
@@ -179,12 +181,10 @@ checkCases :: Sign f e -> [Named Sentence] -> [Diagnosis]
 checkCases sig2 sens = getCaseDiags sig2 ++ concatMap
     (getCases "var" . Set.map simpleIdToId . getVariables . sentence) sens
 
-basicAna
-  :: (BASIC_SPEC () Procdecls Dlformula,
-      Sign Dlformula Procs, GlobalAnnos)
-  -> Result (BASIC_SPEC () Procdecls Dlformula,
-             ExtSign (Sign Dlformula Procs) Symbol,
-             [Named Sentence])
+type VSEBasicSpec = BASIC_SPEC () Procdecls Dlformula
+
+basicAna :: (VSEBasicSpec, VSESign, GlobalAnnos)
+         -> Result (VSEBasicSpec, ExtSign VSESign Symbol, [Named Sentence])
 basicAna (bs, sig, ga) = do
   let sigIn = subProcs $ addSig const sig boolSig
   (bs2, ExtSign sig2 syms, sens) <-
@@ -453,6 +453,7 @@ castMor m = m
   , mtarget = castSign $ mtarget m }
 
 type VSEMorExt = DefMorExt Procs
+type VSEMor = Morphism Dlformula Procs VSEMorExt
 
 -- | apply a morphism
 mapMorProg :: Morphism f Procs VSEMorExt -> Program -> Program

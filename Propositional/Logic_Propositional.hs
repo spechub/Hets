@@ -24,11 +24,7 @@ Instance of class Logic for the propositional logic
   2005.
 -}
 
-module Propositional.Logic_Propositional
-    (module Propositional.Logic_Propositional
-            , Sign
-            , Morphism
-    ) where
+module Propositional.Logic_Propositional where
 
 import Common.ProofTree
 import Common.Consistency

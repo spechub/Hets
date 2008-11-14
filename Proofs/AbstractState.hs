@@ -73,7 +73,7 @@ data G_prover = forall lid sublogics
         Logic lid sublogics
          basic_spec sentence symb_items symb_map_items
           sign morphism symbol raw_symbol proof_tree =>
-       G_prover lid (Prover sign sentence sublogics proof_tree)
+       G_prover lid (Prover sign sentence morphism sublogics proof_tree)
   deriving Typeable
 
 getProverName :: G_prover -> String
@@ -85,8 +85,8 @@ coerceProver ::
    Logic  lid2 sublogics2 basic_spec2 sentence2 symb_items2 symb_map_items2
                 sign2 morphism2 symbol2 raw_symbol2 proof_tree2,
    Monad m) => lid1 -> lid2 -> String
-      -> Prover sign1 sentence1 sublogics1 proof_tree1
-      -> m (Prover sign2 sentence2 sublogics2 proof_tree2)
+      -> Prover sign1 sentence1 morphism1 sublogics1 proof_tree1
+      -> m (Prover sign2 sentence2 morphism2 sublogics2 proof_tree2)
 coerceProver l1 l2 msg m1 = primCoerce l1 l2 msg m1
 
 data G_cons_checker = forall lid sublogics
@@ -229,7 +229,7 @@ data G_theory_with_prover =
           sign morphism symbol raw_symbol proof_tree =>
   G_theory_with_prover lid
                 (Theory sign sentence proof_tree)
-                (Prover sign sentence sublogics proof_tree)
+                (Prover sign sentence morphism sublogics proof_tree)
 
 
 prepareForConsChecking :: (Logic lid sublogics1

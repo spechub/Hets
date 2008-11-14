@@ -239,18 +239,22 @@ goalUsedInProof pst = case goalStatus pst of
 data ProverKind = ProveGUI | ProveCMDLautomatic | ProveCMDLinteractive
 
 -- | determine if a prover kind is implemented
-hasProverKind :: ProverKind -> ProverTemplate x y z -> Bool
+hasProverKind :: ProverKind -> ProverTemplate x m y z -> Bool
 hasProverKind pk pt = case pk of
     ProveGUI -> isJust $ proveGUI pt
     ProveCMDLautomatic ->
         isJust (proveCMDLautomatic pt) && isJust (proveCMDLautomaticBatch pt)
     ProveCMDLinteractive -> isJust $ proveCMDLinteractive pt
 
+data FreeDefMorphism morphism = FreeDefMorphism
+  { freeDefMorphism :: morphism
+  , pathFromFreeDef :: morphism }
+
 -- | prover or consistency checker
-data ProverTemplate theory sublogics proof_tree = Prover
+data ProverTemplate theory morphism sublogics proof_tree = Prover
     { prover_name :: String,
       prover_sublogic :: sublogics,
-      proveGUI :: Maybe ([String] -> String -> theory
+      proveGUI :: Maybe ([FreeDefMorphism morphism] -> String -> theory
                          -> IO ([Proof_status proof_tree])),
       -- input: imported theories, theory name, theory (incl. goals)
       -- output: proof status for goals and lemmas
@@ -286,12 +290,12 @@ data ProverTemplate theory sublogics proof_tree = Prover
       --         snd --> MVar to wait for the end of the thread
     } deriving Typeable
 
-type Prover sign sentence sublogics proof_tree =
-    ProverTemplate (Theory sign sentence proof_tree) sublogics proof_tree
+type Prover sign sentence morphism sublogics proof_tree =
+  ProverTemplate (Theory sign sentence proof_tree) morphism sublogics proof_tree
 
 mkProverTemplate :: String -> sublogics
                  -> (String -> theory -> IO ([Proof_status proof_tree]))
-                 -> ProverTemplate theory sublogics proof_tree
+                 -> ProverTemplate theory morphism sublogics proof_tree
 mkProverTemplate str sl fct = Prover
     { prover_name = str
     , prover_sublogic = sl
@@ -302,4 +306,4 @@ mkProverTemplate str sl fct = Prover
 
 type ConsChecker sign sentence sublogics morphism proof_tree =
     ProverTemplate (TheoryMorphism sign sentence morphism proof_tree)
-        sublogics proof_tree
+        morphism sublogics proof_tree

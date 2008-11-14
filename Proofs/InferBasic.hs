@@ -84,7 +84,7 @@ cons_check _ c =
 proveTheory :: Logic lid sublogics
               basic_spec sentence symb_items symb_map_items
               sign morphism symbol raw_symbol proof_tree
-           => lid -> Prover sign sentence sublogics proof_tree
+           => lid -> Prover sign sentence morphism sublogics proof_tree
            -> String -> Theory sign sentence proof_tree
            -> IO([Proof_status proof_tree])
 proveTheory _ p =

@@ -27,7 +27,6 @@ import SoftFOL.Sign
 import SoftFOL.Translate
 import SoftFOL.ProverState
 
-import Common.DefaultMorphism
 import Common.AS_Annotation as AS_Anno
 import qualified Common.Result as Result
 import Common.ProofTree
@@ -53,13 +52,13 @@ import Proofs.BatchProcessing
 
 {- | The Prover implementation. First runs the batch prover (with
   graphical feedback), then starts the GUI prover.  -}
-darwinProver :: Prover Sign Sentence () ProofTree
+darwinProver :: Prover Sign Sentence SoftFOLMorphism () ProofTree
 darwinProver = (mkProverTemplate "Darwin" () darwinGUI)
     { proveCMDLautomatic = Just darwinCMDLautomatic
     , proveCMDLautomaticBatch = Just darwinCMDLautomaticBatch }
 
 darwinConsChecker
-    :: ConsChecker Sign Sentence () (DefaultMorphism Sign) ProofTree
+    :: ConsChecker Sign Sentence () SoftFOLMorphism ProofTree
 darwinConsChecker = mkProverTemplate "darwin" () consCheck
 
 {- |
@@ -144,7 +143,7 @@ darwinCMDLautomaticBatch inclProvedThs saveProblem_batch resultMVar
 -}
 
 consCheck :: String
-          -> TheoryMorphism Sign Sentence (DefaultMorphism Sign) ProofTree
+          -> TheoryMorphism Sign Sentence SoftFOLMorphism ProofTree
           -> IO([Proof_status ProofTree])
 consCheck thName tm = case t_target tm of
     Theory sig nSens -> let

@@ -52,7 +52,7 @@ import Proofs.BatchProcessing
   The Prover implementation. First runs the batch prover (with graphical
   feedback), then starts the GUI prover.
 -}
-mathServBroker :: Prover Sign Sentence () ProofTree
+mathServBroker :: Prover Sign Sentence SoftFOLMorphism () ProofTree
 mathServBroker = (mkProverTemplate brokerName () mathServBrokerGUI)
     { proveCMDLautomatic = Just mathServBrokerCMDLautomatic
     , proveCMDLautomaticBatch = Just mathServBrokerCMDLautomaticBatch }

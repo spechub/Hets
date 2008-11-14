@@ -35,7 +35,7 @@ vseProverName = "VSE"
 openVseProofStatus :: String -> Proof_status ()
 openVseProofStatus n = openProof_status n vseProverName ()
 
-vse :: Prover VSESign Sentence () ()
+vse :: Prover VSESign Sentence VSEMor () ()
 vse = mkProverTemplate vseProverName () prove
 
 nameP :: String

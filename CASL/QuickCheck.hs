@@ -22,6 +22,7 @@ import qualified Common.Result as Result
 import CASL.AS_Basic_CASL
 import CASL.Sublogic as SL
 import CASL.Sign
+import CASL.Morphism
 import CASL.Quantification
 import CASL.ToDoc
 import CASL.SimplifySen
@@ -525,7 +526,7 @@ getCarrier qm s =
 
 {- | The Prover implementation. First runs the batch prover (with
   graphical feedback), then starts the GUI prover.  -}
-quickCheckProver :: Prover CASLSign CASLFORMULA CASL_Sublogics ProofTree
+quickCheckProver :: Prover CASLSign CASLFORMULA CASLMor CASL_Sublogics ProofTree
 quickCheckProver =
   (mkProverTemplate "QuickCheck"
                     (SL.top {has_part = False})

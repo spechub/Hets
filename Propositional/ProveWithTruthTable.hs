@@ -8,13 +8,13 @@ Maintainer  :  till@informatik.uni-bremen.de
 Stability   :  experimental
 Portability :  portable
 
-A truth table prover for propositional logic. 
+A truth table prover for propositional logic.
 Inefficient, but useful for learning purposes.
 -}
 
 module Propositional.ProveWithTruthTable
     (
-     ttProver,    
+     ttProver,
      ttConsistencyChecker,
      ttConservativityChecker
     )
@@ -68,7 +68,7 @@ maxSigSize = 17
 -- display error message when signature is too large
 sigTooLarge :: Int -> IO()
 sigTooLarge sigSize =
-   createInfoWindow "Signature is too large" 
+   createInfoWindow "Signature is too large"
            ("Signature is too large. "++
             "It should contain < "++show maxSigSize++" symbols, "++
             "but it contains "++show sigSize++" symbols.")
@@ -95,9 +95,9 @@ eval :: Model -> FORMULA -> Bool
 eval m (Negation phi _) = not (eval m phi)
 eval m (Conjunction phis _) = and (map (eval m) phis)
 eval m (Disjunction phis _) = or (map (eval m) phis)
-eval m (Implication phi1 phi2 _) = 
+eval m (Implication phi1 phi2 _) =
        not (eval m phi1) || (eval m phi2)
-eval m (Equivalence phi1 phi2 _) = 
+eval m (Equivalence phi1 phi2 _) =
        (eval m phi1) == (eval m phi2)
 eval _ (True_atom _) = True
 eval _ (False_atom _) = False
@@ -111,7 +111,7 @@ evalNamed m phi = eval m (AS_Anno.sentence phi)
 allModels :: Sign -> [Model]
 allModels sig = allModels1 $ Set.toList $ items sig
   where allModels1 [] = [Set.empty]
-        allModels1 (p:rest) = 
+        allModels1 (p:rest) =
           let models = allModels1 rest
            in models ++ map (Set.insert p) models
 
@@ -119,7 +119,7 @@ data TTExtRow =
      TTExtRow { rextprops, rextaxioms :: [Bool],
                 rextIsModel :: Bool
               }
- 
+
 data TTRow =
      TTRow { rprops, raxioms :: [Bool],
              rgoal :: Maybe Bool,
@@ -128,17 +128,17 @@ data TTRow =
              rIsOK :: Bool
            }
 
-data TTHead = 
+data TTHead =
      TTHead { hprops, haxioms, hextprops, hextaxioms :: [String],
               hgoal :: Maybe String
             }
 
-data TruthTable = 
+data TruthTable =
      TruthTable { thead :: TTHead,
                   trows :: [TTRow] }
 
 renderTT :: TruthTable -> Table String
-renderTT tt = Table rowHeaders header table 
+renderTT tt = Table rowHeaders header table
   where
   hextpropsTT = hextprops (thead tt)
   hextaxiomsTT = hextaxioms (thead tt)
@@ -154,22 +154,22 @@ renderTT tt = Table rowHeaders header table
                  Nothing -> []
                  Just g -> [Group DoubleLine [Header g]])
   rowtype r = (if rIsModel r then "M" else " ")
-              ++(if rIsOK r then (if rIsModel r then "+" else "o") 
+              ++(if rIsOK r then (if rIsModel r then "+" else "o")
                             else "-")
-  rowHeader r = 
-     Group NoLine (Header (rowtype r) : 
+  rowHeader r =
+     Group NoLine (Header (rowtype r) :
                    map (const (Header "")) [2..length (rextrows r)])
   rowHeaders =
-    if all (null . rextrows) rowsTT 
+    if all (null . rextrows) rowsTT
     then Group NoLine (map (Header . rowtype) rowsTT)
     else Group SingleLine (map rowHeader rowsTT)
   makeExtRow e =
     (if rextIsModel e then "M" else "") :
     map showBool (rextprops e) ++
     map showBool (rextaxioms e)
-  makeRow r = 
-    let common = map showBool (rprops r) ++ 
-                 map showBool (raxioms r) ++ 
+  makeRow r =
+    let common = map showBool (rprops r) ++
+                 map showBool (raxioms r) ++
                  case (rgoal r) of
                    Nothing -> []
                    Just g -> [showBool g]
@@ -185,9 +185,9 @@ renderTT tt = Table rowHeaders header table
 
   Implemented are: a prover GUI.
 -}
-ttProver :: LP.Prover Sig.Sign FORMULA PropSL ProofTree
+ttProver :: LP.Prover Sig.Sign FORMULA PMorphism.Morphism PropSL ProofTree
 ttProver = (LP.mkProverTemplate ttS top ttProveGUI)
-    { LP.proveCMDLautomatic = Nothing 
+    { LP.proveCMDLautomatic = Nothing
     , LP.proveCMDLautomaticBatch = Nothing }
 
 {- |
@@ -203,7 +203,7 @@ consCheck :: String -> LP.TheoryMorphism Sig.Sign FORMULA
 consCheck thName tm =
   case LP.t_target tm of
     LP.Theory sig nSens ->
-      let sigSize = Set.size (items sig) in 
+      let sigSize = Set.size (items sig) in
       if sigSize >= maxSigSize then do
         sigTooLarge sigSize
         return []
@@ -211,18 +211,18 @@ consCheck thName tm =
         let axs = filter (AS_Anno.isAxiom . snd) $ OMap.toList nSens
             models = allModels sig
             sigList = Set.toList $ items sig
-            heading = 
+            heading =
               TTHead { hprops = map show sigList,
                        haxioms = map fst axs,
                        hextprops = [], hextaxioms = [],
                        hgoal = Nothing
                      }
-            mkRow m = 
+            mkRow m =
               let evalAx = map (eval m . AS_Anno.sentence . snd) axs
                   isModel = and evalAx
               in TTRow { rprops = map (`Set.member` m) sigList,
                          raxioms = evalAx,
-                         rextrows = [],  
+                         rextrows = [],
                          rgoal = Nothing,
                          rIsModel = isModel,
                          rIsOK = isModel
@@ -232,8 +232,8 @@ consCheck thName tm =
             table = TruthTable { thead = heading,
                                  trows = rows
                                }
-            title = if isOK then "Theory is consistent" 
-                            else "Theory is inconsistent" 
+            title = if isOK then "Theory is consistent"
+                            else "Theory is inconsistent"
             legend = "Legend:\nM+ = model of the axioms\n"++
                      " - = not a model of the axioms\n"
             body = legend++"\n"++render id (renderTT table)
@@ -275,13 +275,13 @@ atpFun thName = ATPState.ATPFunctions
                 }
 
 defaultProof_status :: AS_Anno.Named FORMULA -> LP.Proof_status ProofTree
-defaultProof_status nGoal = 
-  (LP.openProof_status (AS_Anno.senAttr nGoal) 
+defaultProof_status nGoal =
+  (LP.openProof_status (AS_Anno.senAttr nGoal)
                        (LP.prover_name ttProver)
                        emptyProofTree)
 
 {- |
-  Runs tt. 
+  Runs tt.
 -}
 
 runTt :: PState.PropProverState
@@ -301,23 +301,23 @@ runTt :: PState.PropProverState
                  )
            -- (retval, configuration with proof status and complete output)
 runTt pState cfg _ _thName nGoal =
-  let sig = PState.initialSignature pState 
+  let sig = PState.initialSignature pState
       sigSize = Set.size $ items sig
    in if sigSize >= maxSigSize then do
         sigTooLarge sigSize
-        return (ATPState.ATPTLimitExceeded, 
+        return (ATPState.ATPTLimitExceeded,
                 cfg{ATPState.proof_status = defaultProof_status nGoal})
       else do
        let axs = PState.initialAxioms pState
            models = allModels sig
            sigList = Set.toList $ items sig
-           heading = 
+           heading =
              TTHead { hprops = map show sigList,
                       haxioms = map AS_Anno.senAttr axs,
                       hextprops = [], hextaxioms = [],
-                      hgoal = Just $ AS_Anno.senAttr nGoal 
+                      hgoal = Just $ AS_Anno.senAttr nGoal
                     }
-           mkRow m = 
+           mkRow m =
              let evalAx = map (evalNamed m) axs
                  evalGoal = evalNamed m nGoal
                  isModel = and evalAx
@@ -341,12 +341,12 @@ runTt pState cfg _ _thName nGoal =
        let status = (defaultProof_status nGoal)
                         { LP.goalStatus = if isOK then LP.Proved $ Nothing
                                                   else LP.Disproved,
-                          LP.usedAxioms = map AS_Anno.senAttr axs 
-                        }                          
+                          LP.usedAxioms = map AS_Anno.senAttr axs
+                        }
        return (ATPState.ATPSuccess,
                cfg{ATPState.proof_status = status,
                    ATPState.resultOutput = [body]})
-            
+
 {- |
   Creates a list of all options the truth table prover runs with.
   Only Option is the timelimit
@@ -374,8 +374,8 @@ goalProblem _ _ _ _ =
 -- | amalgamation of models
 amalg :: Model -> Model -> Model
 amalg = Set.union
-  
-ttConservativityChecker :: 
+
+ttConservativityChecker ::
               (Sign, [AS_Anno.Named FORMULA]) -- ^ Initial sign and formulas
            -> PMorphism.Morphism              -- ^ morhpism between specs
            -> [AS_Anno.Named FORMULA]         -- ^ Formulas of extended spec
@@ -393,22 +393,22 @@ ttConservativityChecker (_, srcSens) mor tarSens=
   in
     if sigSize >= maxSigSize then do
        return (seq (unsafePerformIO $ sigTooLarge sigSize) Nothing)
-    else do     
+    else do
       let imageAxs = map (AS_Anno.mapNamed (PMorphism.mapSentenceH mor)) srcAxs
           models = allModels (Sign imageSig)
           newSigList = Set.toList newSig
-          heading = 
+          heading =
             TTHead { hprops = map show imageSigList,
                      haxioms = map AS_Anno.senAttr srcAxs,
                      hextprops =  map show newSigList,
                      hextaxioms = map AS_Anno.senAttr tarAxs,
                      hgoal = Nothing
                    }
-          mkRow m = 
+          mkRow m =
             let evalAx = map (evalNamed m) imageAxs
                 isModel = and evalAx
                 extmodels = allModels (Sign newSig)
-                extrow m' = 
+                extrow m' =
                   let evalExtAx = map (evalNamed (m `amalg` m')) tarAxs
                       isExtModel = and evalExtAx
                    in TTExtRow { rextprops = map (`Set.member` m') newSigList,

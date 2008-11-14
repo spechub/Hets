@@ -41,11 +41,6 @@ instance Pretty Sign where
   pretty = pretty . signToSPLogicalPart
 
 {- |
-  We use the DefaultMorphism for SPASS.
--}
-type SoftFOLMorphism = DefaultMorphism Sign
-
-{- |
   A dummy datatype for the LogicGraph and for identifying the right
   instances
 -}

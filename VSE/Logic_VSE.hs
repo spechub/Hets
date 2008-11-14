@@ -42,9 +42,6 @@ instance Language VSE where
  description _ =
   "VSE extends CASL by modal operators and programs."
 
-type VSEBasicSpec = BASIC_SPEC () Procdecls Dlformula
-type VSEMor = Morphism Dlformula Procs VSEMorExt
-
 instance SignExtension Procs where
   isSubSignExtension = isSubProcsMap
 

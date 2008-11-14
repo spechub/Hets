@@ -75,7 +75,8 @@ zchaffS = "zchaff"
 
   Implemented are: a prover GUI, and both commandline prover interfaces.
 -}
-zchaffProver :: LP.Prover Sig.Sign AS_BASIC.FORMULA PropSL ProofTree
+zchaffProver
+  :: LP.Prover Sig.Sign AS_BASIC.FORMULA PMorphism.Morphism PropSL ProofTree
 zchaffProver = (LP.mkProverTemplate zchaffS top zchaffProveGUI)
     { LP.proveCMDLautomatic = Just $ zchaffProveCMDLautomatic
     , LP.proveCMDLautomaticBatch = Just $ zchaffProveCMDLautomaticBatch }

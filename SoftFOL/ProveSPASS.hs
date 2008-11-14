@@ -33,32 +33,27 @@ import SoftFOL.Sign
 import SoftFOL.Translate
 import SoftFOL.ProverState
 
-import qualified Common.AS_Annotation as AS_Anno
-import qualified Common.Result as Result
-import Common.ProofTree
-
 import ChildProcess as CP
 import ProcessClasses
-
-import Text.Regex
-import Data.List
-import Data.Maybe
-import Data.Time (TimeOfDay(..),midnight -- only in ghc-6.6.1: ,parseTime
-                 )
--- import System.Locale
-import qualified Control.Concurrent as Concurrent
-import qualified Control.Exception as Exception
-
-import System
-
 import HTk
 
 import GUI.GenericATP
 import GUI.GenericATPState
 import Proofs.BatchProcessing
 
+import qualified Common.AS_Annotation as AS_Anno
+import qualified Common.Result as Result
+import Common.ProofTree
 import Common.Utils (splitOn)
 
+import qualified Control.Concurrent as Concurrent
+import qualified Control.Exception as Exception
+import System.Exit
+import Text.Regex
+import Data.List
+import Data.Maybe
+import Data.Time (TimeOfDay(..),midnight -- only in ghc-6.6.1: ,parseTime
+                 )
 -- * Prover implementation
 
 {- |
@@ -66,7 +61,7 @@ import Common.Utils (splitOn)
 
   Implemented are: a prover GUI, and both commandline prover interfaces.
 -}
-spassProver :: Prover Sign Sentence () ProofTree
+spassProver :: Prover Sign Sentence SoftFOLMorphism () ProofTree
 spassProver = (mkProverTemplate "SPASS" () spassProveGUI)
     { proveCMDLautomatic = Just spassProveCMDLautomatic
     , proveCMDLautomaticBatch = Just spassProveCMDLautomaticBatch }

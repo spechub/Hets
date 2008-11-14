@@ -44,7 +44,7 @@ import Proofs.BatchProcessing
   The Prover implementation. First runs the batch prover (with graphical
   feedback), then starts the GUI prover.
 -}
-vampire :: Prover Sign Sentence () ProofTree
+vampire :: Prover Sign Sentence SoftFOLMorphism () ProofTree
 vampire = (mkProverTemplate "Vampire" () vampireGUI)
     { proveCMDLautomatic = Just vampireCMDLautomatic
     , proveCMDLautomaticBatch = Just vampireCMDLautomaticBatch }

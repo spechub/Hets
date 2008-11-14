@@ -52,7 +52,7 @@ isabelleS = "Isabelle"
 openIsaProof_status :: String -> Proof_status ()
 openIsaProof_status n = openProof_status n isabelleS ()
 
-isabelleProver :: Prover Sign Sentence () ()
+isabelleProver :: Prover Sign Sentence (DefaultMorphism Sign) () ()
 isabelleProver = mkProverTemplate isabelleS () isaProve
 
 isabelleConsChecker :: ConsChecker Sign Sentence () (DefaultMorphism Sign) ()
