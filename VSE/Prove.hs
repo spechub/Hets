@@ -133,8 +133,8 @@ findState str sexpr l = case sexpr of
     -> drop 5 senStr : l
   _ -> l
 
-prove :: String -> Theory VSESign Sentence () -> IO [Proof_status ()]
-prove ostr (Theory sig thsens) = do
+prove :: String -> Theory VSESign Sentence () -> a -> IO [Proof_status ()]
+prove ostr (Theory sig thsens) _freedefs = do
   let str = map (\ c -> if c == '/' then '-' else c) ostr
       oSens = toNamedList thsens
       (fsig, sens) = addUniformRestr sig oSens

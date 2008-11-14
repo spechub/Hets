@@ -69,8 +69,9 @@ data PelletSetting = PelletSetting
 -- * Prover implementation
 pelletProverState :: Sign
                  -> [AS_Anno.Named Sentence]
+                 -> [FreeDefMorphism (DefaultMorphism Sign)] -- ^ freeness constraints
                  -> PelletProverState
-pelletProverState sig oSens = PelletProverState
+pelletProverState sig oSens _ = PelletProverState
          { ontologySign = sig
           ,initialState = filter AS_Anno.isAxiom oSens }
 
@@ -91,7 +92,7 @@ pelletConsChecker = mkProverTemplate "pellet" () consCheck
   line interface.
 -}
 atpFun :: String -- ^ theory name
-       -> ATPFunctions Sign Sentence ProofTree PelletProverState
+       -> ATPFunctions Sign Sentence (DefaultMorphism Sign) ProofTree PelletProverState
 atpFun thName = ATPFunctions
     { initialProverState = pelletProverState,
       atpTransSenName = id,   -- transSenName,
@@ -122,10 +123,11 @@ insertOWLSentence pps s =
 -}
 pelletGUI :: String -- ^ theory name
            -> Theory Sign Sentence ProofTree
+           -> [FreeDefMorphism (DefaultMorphism Sign)] -- ^ freeness constraints
            -> IO([Proof_status ProofTree]) -- ^ proof status for each goal
-pelletGUI thName th =
-    genericATPgui (atpFun thName) True (prover_name pelletProver) thName th $
-                  emptyProofTree
+pelletGUI thName th freedefs =
+    genericATPgui (atpFun thName) True (prover_name pelletProver) thName th
+                  freedefs emptyProofTree
 
 -- ** command line functions
 
@@ -139,11 +141,12 @@ pelletCMDLautomatic ::
         -> Tactic_script -- ^ default tactic script
         -> Theory Sign Sentence ProofTree
            -- ^ theory consisting of a signature and a list of Named sentence
+        -> [FreeDefMorphism (DefaultMorphism Sign)] -- ^ freeness constraints
         -> IO (Result.Result ([Proof_status ProofTree]))
            -- ^ Proof status for goals and lemmas
-pelletCMDLautomatic thName defTS th =
+pelletCMDLautomatic thName defTS th freedefs =
     genericCMDLautomatic (atpFun thName) (prover_name pelletProver) thName
-        (parseTactic_script batchTimeLimit [] defTS) th emptyProofTree
+        (parseTactic_script batchTimeLimit [] defTS) th freedefs emptyProofTree
 
 {- |
   Implementation of 'Logic.Prover.proveCMDLautomaticBatch' which provides an
@@ -159,14 +162,15 @@ pelletCMDLautomaticBatch ::
         -> Tactic_script -- ^ default tactic script
         -> Theory Sign Sentence ProofTree -- ^ theory consisting of a
            --   'SoftFOL.Sign.Sign' and a list of Named 'SoftFOL.Sign.Sentence'
+        -> [FreeDefMorphism (DefaultMorphism Sign)] -- ^ freeness constraints
         -> IO (Concurrent.ThreadId,Concurrent.MVar ())
            -- ^ fst: identifier of the batch thread for killing it
            --   snd: MVar to wait for the end of the thread
 pelletCMDLautomaticBatch inclProvedThs saveProblem_batch resultMVar
-                        thName defTS th =
+                        thName defTS th freedefs =
     genericCMDLautomaticBatch (atpFun thName) inclProvedThs saveProblem_batch
         resultMVar (prover_name pelletProver) thName
-        (parseTactic_script batchTimeLimit [] defTS) th emptyProofTree
+        (parseTactic_script batchTimeLimit [] defTS) th freedefs emptyProofTree
 
 -- * Main prover functions
 {- |
@@ -218,8 +222,9 @@ spamOutput ps =
 
 consCheck :: String
           -> TheoryMorphism Sign Sentence (DefaultMorphism Sign) ProofTree
+          -> [FreeDefMorphism (DefaultMorphism Sign)] -- ^ freeness constraints
           -> IO([Proof_status ProofTree])
-consCheck thName tm =
+consCheck thName tm freedefs =
     case t_target tm of
       Theory sig nSens ->
         let
@@ -230,7 +235,7 @@ consCheck thName tm =
                        ts_extraOpts = [extraOptions]
                       }
           proverStateI = pelletProverState sig
-                                       (toNamedList nSens)
+                                       (toNamedList nSens) freedefs 
           -- problem     = showOWLProblemA thName proverStateI []
           problemS     = showOWLProblemS thName proverStateI []
           simpleOptions = "-consistency on -s off "
@@ -381,7 +386,7 @@ runPellet sps cfg savePellet thName nGoal = do
     -- tLimit = maybe (guiDefaultTimeLimit) id $ timeLimit cfg
 
     runPelletReal = do
-      hasProgramm <- system ("sh $PELLET_PATH/pellet.sh -version  > /dev/null 2> /dev/null")
+      hasProgramm <- system ("cd $PELLET_PATH; sh $PELLET_PATH/pellet.sh -version  > /dev/null 2> /dev/null")
       case hasProgramm of
         ExitFailure _ -> return
             (ATPError "Could not start Pellet. Is Pellet in your $PATH?",

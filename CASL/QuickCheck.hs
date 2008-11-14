@@ -540,9 +540,9 @@ quickCheckProver =
 -}
 
 atpFun :: String -- ^ theory name
-       -> ATPFunctions CASLSign CASLFORMULA ProofTree QModel
+       -> ATPFunctions CASLSign CASLFORMULA CASLMor ProofTree QModel
 atpFun _thName = ATPFunctions
-    { initialProverState = \ sig sens -> insertSens (makeQm sig) sens,
+    { initialProverState = \ sig sens _ -> insertSens (makeQm sig) sens,
       atpTransSenName = id,
       atpInsertSentence = insertSen,
       goalOutput = \_ _ _ -> do
@@ -569,9 +569,10 @@ quickCheckGUI :: String -- ^ theory name
            -> Theory CASLSign CASLFORMULA ProofTree
            -- ^ theory consisting of a signature
            --   and a list of named sentences
+           -> [FreeDefMorphism CASLMor] -- ^ freeness constraints
            -> IO([Proof_status ProofTree]) -- ^ proof status for each goal
-quickCheckGUI thName th = genericATPgui (atpFun thName) True
-    (prover_name quickCheckProver) thName th emptyProofTree
+quickCheckGUI thName th freedefs = genericATPgui (atpFun thName) True
+    (prover_name quickCheckProver) thName th freedefs emptyProofTree
 
 -- ** command line functions
 
@@ -585,11 +586,12 @@ quickCheckCMDLautomatic ::
         -> Tactic_script -- ^ default tactic script
         -> Theory CASLSign CASLFORMULA ProofTree
            -- ^ theory consisting of a signature and a list of Named sentence
+        -> [FreeDefMorphism CASLMor] -- ^ freeness constraints
         -> IO (Result.Result ([Proof_status ProofTree]))
            -- ^ Proof status for goals and lemmas
-quickCheckCMDLautomatic thName defTS th =
+quickCheckCMDLautomatic thName defTS th freedefs =
     genericCMDLautomatic (atpFun thName) (prover_name quickCheckProver) thName
-        (parseTactic_script batchTimeLimit [] defTS) th emptyProofTree
+        (parseTactic_script batchTimeLimit [] defTS) th freedefs emptyProofTree
 
 {- |
   Implementation of 'Logic.Prover.proveCMDLautomaticBatch' which provides an
@@ -605,11 +607,12 @@ quickCheckCMDLautomaticBatch ::
         -> Tactic_script -- ^ default tactic script
         -> Theory CASLSign CASLFORMULA ProofTree -- ^ theory consisting of a
            --   signature and a list of named sentences
+        -> [FreeDefMorphism CASLMor] -- ^ freeness constraints
         -> IO (ThreadId,MVar ())
            -- ^ fst: identifier of the batch thread for killing it
            --   snd: MVar to wait for the end of the thread
 quickCheckCMDLautomaticBatch inclProvedThs saveProblem_batch resultMVar
-                        thName defTS th =
+                        thName defTS th freedefs =
     genericCMDLautomaticBatch (atpFun thName) inclProvedThs saveProblem_batch
         resultMVar (prover_name quickCheckProver) thName
-        (parseTactic_script batchTimeLimit [] defTS) th emptyProofTree
+        (parseTactic_script batchTimeLimit [] defTS) th freedefs emptyProofTree

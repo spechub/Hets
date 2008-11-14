@@ -70,15 +70,16 @@ metaToTerm mt = case mt of
     _ -> binImpl (foldr1 binConj ts) t
 
 consCheck :: String -> TheoryMorphism Sign Sentence (DefaultMorphism Sign) ()
-          -> IO([Proof_status ()])
-consCheck thName tm = case t_target tm of
+          -> a -> IO([Proof_status ()])
+consCheck thName tm freedefs = case t_target tm of
     Theory sig nSens -> let (axs, _) = getAxioms $ toNamedList nSens in
-       isaProve (thName ++ "_c") $
-           Theory sig
+       isaProve (thName ++ "_c") 
+           (Theory sig
                $ markAsGoal $ toThSens $ if null axs then [] else
                    [ makeNamed inconsistentS $ mkRefuteSen $ termAppl notOp
                      $ foldr1 binConj
-                     $ map (metaToTerm . metaTerm . sentence) axs ]
+                     $ map (metaToTerm . metaTerm . sentence) axs ])
+           freedefs
 
 prepareTheory :: Theory Sign Sentence ()
     -> (Sign, [Named Sentence], [Named Sentence], Map.Map String String)
@@ -184,8 +185,8 @@ revertThyFile thyFile thy = do
 callSystem :: String -> IO ExitCode
 callSystem s = putStrLn s >> system s
 
-isaProve :: String -> Theory Sign Sentence () -> IO([Proof_status ()])
-isaProve thName th = do
+isaProve :: String -> Theory Sign Sentence () -> a -> IO([Proof_status ()])
+isaProve thName th _freedefs = do
   let (sig, axs, ths, m) = prepareTheory th
       thms = map senAttr ths
       thBaseName = reverse . takeWhile (/= '/') $ reverse thName

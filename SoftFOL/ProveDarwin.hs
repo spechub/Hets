@@ -66,7 +66,7 @@ darwinConsChecker = mkProverTemplate "darwin" () consCheck
   line interface.
 -}
 atpFun :: String -- ^ theory name
-       -> ATPFunctions Sign Sentence ProofTree SoftFOLProverState
+       -> ATPFunctions Sign Sentence SoftFOLMorphism ProofTree SoftFOLProverState
 atpFun thName = ATPFunctions
   { initialProverState = spassProverState
   , atpTransSenName = transSenName
@@ -91,10 +91,11 @@ darwinGUI :: String -- ^ theory name
            -> Theory Sign Sentence ProofTree
            -- ^ theory consisting of a SoftFOL.Sign.Sign
            --   and a list of Named SoftFOL.Sign.Sentence
+           -> [FreeDefMorphism SoftFOLMorphism] -- ^ freeness constraints
            -> IO([Proof_status ProofTree]) -- ^ proof status for each goal
-darwinGUI thName th =
-    genericATPgui (atpFun thName) True (prover_name darwinProver) thName th $
-                  emptyProofTree
+darwinGUI thName th freedefs =
+    genericATPgui (atpFun thName) True (prover_name darwinProver) thName th 
+                  freedefs emptyProofTree
 
 -- ** command line functions
 
@@ -108,11 +109,12 @@ darwinCMDLautomatic ::
         -> Tactic_script -- ^ default tactic script
         -> Theory Sign Sentence ProofTree
            -- ^ theory consisting of a signature and a list of Named sentence
+        -> [FreeDefMorphism SoftFOLMorphism] -- ^ freeness constraints
         -> IO (Result.Result ([Proof_status ProofTree]))
            -- ^ Proof status for goals and lemmas
-darwinCMDLautomatic thName defTS th =
+darwinCMDLautomatic thName defTS th freedefs =
     genericCMDLautomatic (atpFun thName) (prover_name darwinProver) thName
-        (parseTactic_script batchTimeLimit [] defTS) th emptyProofTree
+        (parseTactic_script batchTimeLimit [] defTS) th freedefs emptyProofTree
 
 {- |
   Implementation of 'Logic.Prover.proveCMDLautomaticBatch' which provides an
@@ -128,14 +130,15 @@ darwinCMDLautomaticBatch ::
         -> Tactic_script -- ^ default tactic script
         -> Theory Sign Sentence ProofTree -- ^ theory consisting of a
            --   'SoftFOL.Sign.Sign' and a list of Named 'SoftFOL.Sign.Sentence'
+        -> [FreeDefMorphism SoftFOLMorphism] -- ^ freeness constraints
         -> IO (Concurrent.ThreadId,Concurrent.MVar ())
            -- ^ fst: identifier of the batch thread for killing it
            --   snd: MVar to wait for the end of the thread
 darwinCMDLautomaticBatch inclProvedThs saveProblem_batch resultMVar
-                        thName defTS th =
+                        thName defTS th freedefs =
     genericCMDLautomaticBatch (atpFun thName) inclProvedThs saveProblem_batch
         resultMVar (prover_name darwinProver) thName
-        (parseTactic_script batchTimeLimit [] defTS) th emptyProofTree
+        (parseTactic_script batchTimeLimit [] defTS) th freedefs emptyProofTree
 
 -- * Main prover functions
 {- |
@@ -144,8 +147,9 @@ darwinCMDLautomaticBatch inclProvedThs saveProblem_batch resultMVar
 
 consCheck :: String
           -> TheoryMorphism Sign Sentence SoftFOLMorphism ProofTree
+          -> [FreeDefMorphism SoftFOLMorphism] -- ^ freeness constraints
           -> IO([Proof_status ProofTree])
-consCheck thName tm = case t_target tm of
+consCheck thName tm freedefs = case t_target tm of
     Theory sig nSens -> let
         saveTPTP = False
         timeLimitI = 800
@@ -153,8 +157,7 @@ consCheck thName tm = case t_target tm of
                                            {ts_timeLimit = timeLimitI,
                                             ts_extraOpts = [extraOptions]
                                            }
-        proverStateI = spassProverState sig
-                                              (toNamedList nSens)
+        proverStateI = spassProverState sig (toNamedList nSens) freedefs
         problem     = showTPTPProblemM thName proverStateI []
         simpleOptions = ""
         extraOptions  = "-pc true -pmtptp true -fd true -to "

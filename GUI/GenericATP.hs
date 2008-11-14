@@ -324,20 +324,21 @@ newOptionsFrame con updateFn isExtraOps = do
   or use a detailed GUI for proving each goal manually.
 -}
 genericATPgui :: (Ord proof_tree, Ord sentence)
-              => ATPFunctions sign sentence proof_tree pst -- ^ prover specific
+              => ATPFunctions sign sentence mor proof_tree pst -- ^ prover specific
                                                            -- functions
               -> Bool -- ^ prover supports extra options
               -> String -- ^ prover name
               -> String -- ^ theory name
               -> Theory sign sentence proof_tree -- ^ theory consisting of a
                  -- signature and a list of Named sentence
+              -> [FreeDefMorphism mor] -- ^ freeness constraints
               -> proof_tree -- ^ initial empty proof_tree
               -> IO([Proof_status proof_tree]) -- ^ proof status for each goal
-genericATPgui atpFun isExtraOptions prName thName th pt = do
+genericATPgui atpFun isExtraOptions prName thName th freedefs pt = do
   -- create initial backing data structure
   let initState = initialGenericState prName
                                       (initialProverState atpFun)
-                                      (atpTransSenName atpFun) th pt
+                                      (atpTransSenName atpFun) th freedefs  pt
   stateMVar <- Conc.newMVar initState
   batchTLimit <- getBatchTimeLimit $ batchTimeEnv atpFun
 

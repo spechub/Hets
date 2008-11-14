@@ -77,18 +77,20 @@ cons_check :: Logic lid sublogics
               sign morphism symbol raw_symbol proof_tree
            => lid -> ConsChecker sign sentence sublogics morphism proof_tree
            -> String -> TheoryMorphism sign sentence morphism proof_tree
+           -> [FreeDefMorphism morphism]
            -> IO([Proof_status proof_tree])
 cons_check _ c =
-    maybe (\ _ _ -> fail "proveGUI not implemented") id (proveGUI c) []
+    maybe (\ _ _ -> fail "proveGUI not implemented") id (proveGUI c)
 
 proveTheory :: Logic lid sublogics
               basic_spec sentence symb_items symb_map_items
               sign morphism symbol raw_symbol proof_tree
            => lid -> Prover sign sentence morphism sublogics proof_tree
            -> String -> Theory sign sentence proof_tree
+           -> [FreeDefMorphism morphism]
            -> IO([Proof_status proof_tree])
 proveTheory _ p =
-    maybe (\ _ _ -> fail "proveGUI not implemented") id (proveGUI p) []
+    maybe (\ _ _ -> fail "proveGUI not implemented") id (proveGUI p)
 
 
 -- | applies basic inference to a given node
@@ -128,7 +130,7 @@ basicInferenceNode checkCons lg (ln, node) libname guiMVar libEnv ch = do
                         t_target = Theory sign'' (toThSens sens''),
                         t_morphism = incl }
             cc' <- coerceConsChecker lid4 lidT "" cc
-            pts <- lift $ cons_check lidT cc' thName mor
+            pts <- lift $ cons_check lidT cc' thName mor [] -- TODO: freedefs
             let resT = case pts of
                   [pt] -> case goalStatus pt of
                     Proved (Just True) -> let
@@ -243,7 +245,7 @@ basicInferenceSubTree checkCons lg (ln, node) guiMVar ch libEnv = do
                         t_target = Theory sign'' (toThSens sens''),
                         t_morphism = incl }
             cc' <- coerceConsChecker lid4 lidT "" cc
-            pts <- lift $ cons_check lidT cc' thName mor
+            pts <- lift $ cons_check lidT cc' thName mor [] -- TODO: freedefs
             let resT = case pts of
                   [pt] -> case goalStatus pt of
                     Proved (Just True) -> let
@@ -326,7 +328,7 @@ callProver :: (Logic lid sublogics1
 callProver st ch trans_chosen p_cm@(_,acm) =
        runResultT $ do
         G_theory_with_prover lid th p <- liftR $ prepareForProving st p_cm
-        ps <- lift $ proveTheory lid p (theoryName st) th
+        ps <- lift $ proveTheory lid p (theoryName st) th [] -- TODO: freedefs
         -- lift $ putStrLn $ show ps
         let st' = markProved acm lid ps st
         lift $ addProveToHist ch st'

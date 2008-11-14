@@ -188,7 +188,7 @@ renderTT tt = Table rowHeaders header table
 ttProver :: LP.Prover Sig.Sign FORMULA PMorphism.Morphism PropSL ProofTree
 ttProver = (LP.mkProverTemplate ttS top ttProveGUI)
     { LP.proveCMDLautomatic = Nothing
-    , LP.proveCMDLautomaticBatch = Nothing }
+    , LP.proveCMDLautomaticBatch = Nothing}
 
 {- |
    The Consistency Cheker.
@@ -199,8 +199,9 @@ ttConsistencyChecker = LP.mkProverTemplate ttS top consCheck
 
 consCheck :: String -> LP.TheoryMorphism Sig.Sign FORMULA
              PMorphism.Morphism ProofTree
+          -> [LP.FreeDefMorphism PMorphism.Morphism] -- ^ free definitions
           -> IO([LP.Proof_status ProofTree])
-consCheck thName tm =
+consCheck thName tm freedefs =
   case LP.t_target tm of
     LP.Theory sig nSens ->
       let sigSize = Set.size (items sig) in
@@ -248,17 +249,18 @@ consCheck thName tm =
 -}
 ttProveGUI :: String -- ^ theory name
           -> LP.Theory Sig.Sign FORMULA ProofTree
+          -> [LP.FreeDefMorphism PMorphism.Morphism] -- ^ free definitions
           -> IO([LP.Proof_status ProofTree]) -- ^ proof status for each goal
-ttProveGUI thName th =
+ttProveGUI thName th freedefs =
     genericATPgui (atpFun thName) True (LP.prover_name ttProver) thName th
-                  emptyProofTree
+                  freedefs emptyProofTree
 
 {- |
   Record for prover specific functions. This is used by both GUI and command
   line interface.
 -}
 atpFun :: String            -- Theory name
-       -> ATPState.ATPFunctions Sig.Sign FORMULA ProofTree PState.PropProverState
+       -> ATPState.ATPFunctions Sig.Sign FORMULA PMorphism.Morphism ProofTree PState.PropProverState
 atpFun thName = ATPState.ATPFunctions
                 {
                   ATPState.initialProverState = PState.propProverState

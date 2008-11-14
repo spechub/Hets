@@ -65,7 +65,7 @@ vampireHelpText =
   line interface.
 -}
 atpFun :: String -- ^ theory name
-       -> ATPFunctions Sign Sentence ProofTree SoftFOLProverState
+       -> ATPFunctions Sign Sentence SoftFOLMorphism ProofTree SoftFOLProverState
 atpFun thName = ATPFunctions
     { initialProverState = spassProverState,
       atpTransSenName = transSenName,
@@ -89,10 +89,11 @@ vampireGUI :: String -- ^ theory name
            -> Theory Sign Sentence ProofTree
            -- ^ theory consisting of a SoftFOL.Sign.Sign
            --   and a list of Named SoftFOL.Sign.Sentence
+          -> [FreeDefMorphism SoftFOLMorphism] -- ^ freeness constraints
            -> IO([Proof_status ProofTree]) -- ^ proof status for each goal
-vampireGUI thName th =
-    genericATPgui (atpFun thName) True (prover_name vampire) thName th $
-                  emptyProofTree
+vampireGUI thName th freedefs =
+    genericATPgui (atpFun thName) True (prover_name vampire) thName th 
+                 freedefs emptyProofTree
 
 -- ** command line functions
 
@@ -106,11 +107,12 @@ vampireCMDLautomatic ::
         -> Tactic_script -- ^ default tactic script
         -> Theory Sign Sentence ProofTree
            -- ^ theory consisting of a signature and a list of Named sentence
+        -> [FreeDefMorphism SoftFOLMorphism] -- ^ freeness constraints
         -> IO (Result.Result ([Proof_status ProofTree]))
            -- ^ Proof status for goals and lemmas
-vampireCMDLautomatic thName defTS th =
+vampireCMDLautomatic thName defTS th freedefs =
     genericCMDLautomatic (atpFun thName) (prover_name vampire) thName
-        (parseTactic_script batchTimeLimit [] defTS) th emptyProofTree
+        (parseTactic_script batchTimeLimit [] defTS) th freedefs emptyProofTree
 
 {- |
   Implementation of 'Logic.Prover.proveCMDLautomaticBatch' which provides an
@@ -126,14 +128,15 @@ vampireCMDLautomaticBatch ::
         -> Tactic_script -- ^ default tactic script
         -> Theory Sign Sentence ProofTree -- ^ theory consisting of a
            --   'SoftFOL.Sign.Sign' and a list of Named 'SoftFOL.Sign.Sentence'
+        -> [FreeDefMorphism SoftFOLMorphism] -- ^ freeness constraints
         -> IO (Concurrent.ThreadId,Concurrent.MVar ())
            -- ^ fst: identifier of the batch thread for killing it
            --   snd: MVar to wait for the end of the thread
 vampireCMDLautomaticBatch inclProvedThs saveProblem_batch resultMVar
-                        thName defTS th =
+                        thName defTS th freedefs =
     genericCMDLautomaticBatch (atpFun thName) inclProvedThs saveProblem_batch
         resultMVar (prover_name vampire) thName
-        (parseTactic_script batchTimeLimit [] defTS) th emptyProofTree
+        (parseTactic_script batchTimeLimit [] defTS) th freedefs emptyProofTree
 
 {- |
   Runs the Vampire service.

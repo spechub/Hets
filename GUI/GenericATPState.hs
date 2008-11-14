@@ -121,8 +121,8 @@ data GenericState sign sentence proof_tree pst = GenericState {
 {- |
   Initialising the specific prover state containing logical part.
 -}
-type InitialProverState sign sentence pst =
-        sign -> [AS_Anno.Named sentence] -> pst
+type InitialProverState sign sentence morphism pst =
+        sign -> [AS_Anno.Named sentence] -> [FreeDefMorphism morphism]-> pst
 type TransSenName = String -> String
 
 {- |
@@ -130,12 +130,13 @@ type TransSenName = String -> String
 -}
 initialGenericState :: (Ord sentence, Ord proof_tree) =>
                        String -- ^ name of the prover
-                    -> InitialProverState sign sentence pst
+                    -> InitialProverState sign sentence morphism pst
                     -> TransSenName
                     -> Theory sign sentence proof_tree
+                    -> [FreeDefMorphism morphism] -- ^ freeness constraints
                     -> proof_tree -- ^ initial empty proof_tree
                     -> GenericState sign sentence proof_tree pst
-initialGenericState prName ips trSenName th pt =
+initialGenericState prName ips trSenName th freedefs pt =
     GenericState {currentGoal = Nothing,
                   proof_tree = pt,
                   configsMap = Map.fromList $
@@ -147,7 +148,7 @@ initialGenericState prName ips trSenName th pt =
                                    goals,
                   namesMap = collectNameMapping nSens oSens',
                   goalsList = goals,
-                  proverState = ips sign oSens'
+                  proverState = ips sign oSens' freedefs
                  }
     where Theory sign oSens = th
           -- Search in list of Proof_status for first occurence of an Open goal
@@ -227,9 +228,9 @@ type RunProver sentence proof_tree pst =
 {- |
   Prover specific functions
 -}
-data ATPFunctions sign sentence proof_tree pst = ATPFunctions {
+data ATPFunctions sign sentence morphism proof_tree pst = ATPFunctions {
     -- | initial prover specific state
-    initialProverState :: InitialProverState sign sentence pst,
+    initialProverState :: InitialProverState sign sentence morphism pst,
     -- | prover specific translation of goal name
     atpTransSenName :: TransSenName,
     -- | inserts a goal into prover state

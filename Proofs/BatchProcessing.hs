@@ -247,20 +247,21 @@ atpRetvalToDiags gName err =
 -}
 genericCMDLautomatic ::
         (Ord proof_tree, Ord sentence)
-        => ATPFunctions sign sentence proof_tree pst
+        => ATPFunctions sign sentence morphism proof_tree pst
            -- ^ prover specific functions
         -> String -- ^ prover name
         -> String -- ^ theory name
         -> ATPTactic_script -- ^ default prover specific tactic script
         -> Theory sign sentence proof_tree
            -- ^ theory consisting of a signature and a list of Named sentence
+        -> [FreeDefMorphism morphism] -- ^ freeness constraints
         -> proof_tree -- ^ initial empty proof_tree
         -> IO (Result ([Proof_status proof_tree]))
            -- ^ proof status for goals and lemmas
-genericCMDLautomatic atpFun prName thName def_TS th pt = do
+genericCMDLautomatic atpFun prName thName def_TS th freedefs pt = do
     let iGS = initialGenericState prName
                                   (initialProverState atpFun)
-                                  (atpTransSenName atpFun) th pt
+                                  (atpTransSenName atpFun) th freedefs pt
         openGoals = filterOpenGoals (configsMap iGS)
         emptyResult = Result { diags = [], maybeResult = Just [] }
         goals = goalsList iGS
@@ -295,7 +296,7 @@ genericCMDLautomatic atpFun prName thName def_TS th pt = do
 -}
 genericCMDLautomaticBatch ::
         (Ord proof_tree, Ord sentence)
-        => ATPFunctions sign sentence proof_tree pst -- ^ prover specific
+        => ATPFunctions sign sentence mor proof_tree pst -- ^ prover specific
                                                      --   functions
         -> Bool -- ^ True means include proved theorems
         -> Bool -- ^ True means save problem file
@@ -306,16 +307,17 @@ genericCMDLautomaticBatch ::
         -> ATPTactic_script -- ^ default prover specific tactic script
         -> Theory sign sentence proof_tree
            -- ^ theory consisting of a signature and a list of Named sentence
+        -> [FreeDefMorphism mor] -- ^ freeness constraints
         -> proof_tree -- ^ initial empty proof_tree
         -> IO (Conc.ThreadId,Conc.MVar ())
            -- ^ fst: identifier of the batch thread for killing it
            --   snd: MVar to wait for the end of the thread
 genericCMDLautomaticBatch atpFun inclProvedThs saveProblem_batch resultMVar
-                          prName thName defaultTactic_script th pt = do
+                          prName thName defaultTactic_script th freedefs pt = do
     putStrLn $ show defaultTactic_script
     let iGS = initialGenericState prName
                                   (initialProverState atpFun)
-                                  (atpTransSenName atpFun) th pt
+                                  (atpTransSenName atpFun) th freedefs pt
     stateMVar <- Conc.newMVar iGS
     let tLimit  = ts_timeLimit defaultTactic_script
         extOpts = ts_extraOpts defaultTactic_script

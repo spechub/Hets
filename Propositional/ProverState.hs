@@ -17,20 +17,24 @@ module Propositional.ProverState
 import qualified Common.AS_Annotation as AS_Anno
 import qualified Propositional.AS_BASIC_Propositional as AS
 import qualified Propositional.Sign as Sign
+import qualified Propositional.Morphism as PMorphism
 import qualified Common.ProofUtils as PUtil
+import qualified Logic.Prover as LP
 
 -- | Datatype for the prover state for propositional logic
 data PropProverState = PropProverState
     {
       initialAxioms    :: [AS_Anno.Named AS.FORMULA]
     , initialSignature :: Sign.Sign
+    , freeDefs         :: [LP.FreeDefMorphism PMorphism.Morphism] 
     } deriving (Show)
 
 -- | function to create prover state
 propProverState :: Sign.Sign                  -- Input Signature
                 -> [AS_Anno.Named AS.FORMULA] -- Input Formulae
+                -> [LP.FreeDefMorphism PMorphism.Morphism] -- ^ free definitions
                 -> PropProverState
-propProverState sign aSens =
+propProverState sign aSens freedefs =
     let
         axioms = PUtil.prepareSenNames transSenName $ filter AS_Anno.isAxiom aSens
     in
@@ -39,6 +43,7 @@ propProverState sign aSens =
       {
         initialAxioms    = []
       , initialSignature = sign
+      , freeDefs = freedefs
       } axioms
 
 insertSentence :: PropProverState

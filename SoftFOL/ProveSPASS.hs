@@ -75,7 +75,7 @@ spassProver = (mkProverTemplate "SPASS" () spassProveGUI)
   line interface.
 -}
 atpFun :: String -- ^ theory name
-       -> ATPFunctions Sign Sentence ProofTree SoftFOLProverState
+       -> ATPFunctions Sign Sentence SoftFOLMorphism ProofTree SoftFOLProverState
 atpFun thName = ATPFunctions
     { initialProverState = spassProverState,
       atpTransSenName = transSenName,
@@ -108,10 +108,11 @@ parseSpassTactic_script =
 spassProveGUI :: String -- ^ theory name
           -> Theory Sign Sentence ProofTree -- ^ theory consisting of a
              --   'SPASS.Sign.Sign' and a list of Named 'SPASS.Sign.Sentence'
+          -> [FreeDefMorphism SoftFOLMorphism] -- ^ freeness constraints
           -> IO([Proof_status ProofTree]) -- ^ proof status for each goal
-spassProveGUI thName th =
+spassProveGUI thName th freedefs =
     genericATPgui (atpFun thName) True (prover_name spassProver) thName th
-                  emptyProofTree
+                  freedefs emptyProofTree
 
 -- ** command line functions
 
@@ -125,11 +126,12 @@ spassProveCMDLautomatic ::
         -> Tactic_script -- ^ default tactic script
         -> Theory Sign Sentence ProofTree -- ^ theory consisting of a
                                 -- signature and a list of Named sentence
+        -> [FreeDefMorphism SoftFOLMorphism] -- ^ freeness constraints
         -> IO (Result.Result ([Proof_status ProofTree]))
            -- ^ Proof status for goals and lemmas
-spassProveCMDLautomatic thName defTS th =
+spassProveCMDLautomatic thName defTS th freedefs =
     genericCMDLautomatic (atpFun thName) (prover_name spassProver) thName
-        (parseSpassTactic_script defTS) th emptyProofTree
+        (parseSpassTactic_script defTS) th freedefs emptyProofTree
 
 {- |
   Implementation of 'Logic.Prover.proveCMDLautomaticBatch' which provides an
@@ -145,14 +147,15 @@ spassProveCMDLautomaticBatch ::
         -> Tactic_script -- ^ default tactic script
         -> Theory Sign Sentence ProofTree -- ^ theory consisting of a
            --   'SoftFOL.Sign.Sign' and a list of Named 'SoftFOL.Sign.Sentence'
+        -> [FreeDefMorphism SoftFOLMorphism] -- ^ freeness constraints
         -> IO (Concurrent.ThreadId,Concurrent.MVar ())
            -- ^ fst: identifier of the batch thread for killing it
            --   snd: MVar to wait for the end of the thread
 spassProveCMDLautomaticBatch inclProvedThs saveProblem_batch resultMVar
-                        thName defTS th =
+                        thName defTS th freedefs =
     genericCMDLautomaticBatch (atpFun thName) inclProvedThs saveProblem_batch
         resultMVar (prover_name spassProver) thName
-        (parseSpassTactic_script defTS) th emptyProofTree
+        (parseSpassTactic_script defTS) th freedefs emptyProofTree
 
 
 -- * SPASS Interfacing Code

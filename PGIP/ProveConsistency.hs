@@ -278,7 +278,7 @@ checkNode useTh save2File sTxt ndpf ndnm mp mcm mThr mSt mlbE libname
                       answ
                       (theoryName st)
                       (P.Tactic_script $ show sTxt)
-                      th
+                      th []
              swapMVar mThr $ Just $ fst tmp
              pollForResults lid1 cmp (snd tmp) answ mSt []
              swapMVar mThr $ Nothing
@@ -382,7 +382,7 @@ proveNode useTh save2File sTxt ndpf ndnm mp mcm mThr mSt mlbE libname
                       answ
                       (theoryName st)
                       (P.Tactic_script $ show  sTxt)
-                      th
+                      th []
              swapMVar mThr $ Just $ fst tmp
              pollForResults lid1 cmp (snd tmp) answ mSt []
              swapMVar mThr $ Nothing

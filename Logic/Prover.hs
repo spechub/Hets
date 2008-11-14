@@ -250,23 +250,25 @@ data FreeDefMorphism morphism = FreeDefMorphism
   { freeDefMorphism :: morphism
   , pathFromFreeDef :: morphism
   , isCofree :: Bool }
+  deriving (Eq, Show)
 
 -- | prover or consistency checker
 data ProverTemplate theory morphism sublogics proof_tree = Prover
     { prover_name :: String,
       prover_sublogic :: sublogics,
-      proveGUI :: Maybe ([FreeDefMorphism morphism] -> String -> theory
+      proveGUI :: Maybe (String -> theory -> [FreeDefMorphism morphism]
                          -> IO ([Proof_status proof_tree])),
       -- input: imported theories, theory name, theory (incl. goals)
       -- output: proof status for goals and lemmas
       proveCMDLautomatic :: Maybe (String -> Tactic_script
-                         -> theory -> IO (Result ([Proof_status proof_tree]))),
+                         -> theory -> [FreeDefMorphism morphism] 
+                         ->IO (Result ([Proof_status proof_tree]))),
       -- blocks until a result is determined
       -- input: theory name, Tactic_script,
       --        theory (incl. goals, but only the first one is tried)
       -- output: proof status for goals and lemmas
       proveCMDLinteractive :: Maybe (String -> Tactic_script
-                         -> theory -> IO (Result ([Proof_status proof_tree]))),
+                         -> theory -> [FreeDefMorphism morphism] -> IO (Result ([Proof_status proof_tree]))),
       -- input, output: see above
       proveCMDLautomaticBatch ::
           Maybe (Bool -- 1.
@@ -275,6 +277,7 @@ data ProverTemplate theory morphism sublogics proof_tree = Prover
                  -> String -- 4.
                  -> Tactic_script  -- 5.
                  -> theory  -- 6.
+                 -> [FreeDefMorphism morphism]
                  -> IO (Concurrent.ThreadId,Concurrent.MVar ())) -- output
       -- input: 1. True means include proven theorems in subsequent
       --           proof attempts;
@@ -295,12 +298,12 @@ type Prover sign sentence morphism sublogics proof_tree =
   ProverTemplate (Theory sign sentence proof_tree) morphism sublogics proof_tree
 
 mkProverTemplate :: String -> sublogics
-                 -> (String -> theory -> IO ([Proof_status proof_tree]))
+                 -> (String -> theory -> [FreeDefMorphism morphism] -> IO ([Proof_status proof_tree]))
                  -> ProverTemplate theory morphism sublogics proof_tree
 mkProverTemplate str sl fct = Prover
     { prover_name = str
     , prover_sublogic = sl
-    , proveGUI = Just $ \ _ -> fct
+    , proveGUI = Just fct
     , proveCMDLautomatic = Nothing
     , proveCMDLinteractive = Nothing
     , proveCMDLautomaticBatch = Nothing }

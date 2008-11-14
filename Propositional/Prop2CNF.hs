@@ -108,7 +108,7 @@ createInitProverState sign nForms =
               Just (xs,ys) -> (xs,ys)
               Nothing    -> error "Should not happen... Error in Prop2CNF"
     in
-      PState.spassProverState osig oth
+      PState.spassProverState osig oth []
 
 {- |
   Runs SPASS. SPASS is assumed to reside in PATH.
