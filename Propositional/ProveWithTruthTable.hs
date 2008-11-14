@@ -201,7 +201,7 @@ consCheck :: String -> LP.TheoryMorphism Sig.Sign FORMULA
              PMorphism.Morphism ProofTree
           -> [LP.FreeDefMorphism PMorphism.Morphism] -- ^ free definitions
           -> IO([LP.Proof_status ProofTree])
-consCheck thName tm freedefs =
+consCheck thName tm _freedefs =
   case LP.t_target tm of
     LP.Theory sig nSens ->
       let sigSize = Set.size (items sig) in
@@ -283,6 +283,39 @@ defaultProof_status nGoal =
                        emptyProofTree)
 
 {- |
+  Filter models due to (co)freeness constraints
+-}
+
+reduceModel :: Sig.Sign -> Model -> Model
+reduceModel sig m = Set.intersection m (items sig)
+
+leq :: Sig.Sign -> Model -> Model -> Bool
+leq _ = Set.isSubsetOf 
+
+filterMin :: Sig.Sign -> Bool -> [Model] -> [Model]
+filterMin sig isCo models =
+  filter isMin models
+  where
+  isMin m = all (\m' -> if isCo then leq sig m' m else leq sig m m') models
+
+filterFree :: Sig.Sign
+              -> [Model] 
+              -> LP.FreeDefMorphism PMorphism.Morphism
+              -> [Model]
+filterFree _ [] _ = []
+filterFree sig models freedef =
+  let reducedModels = nub $ map (reduceModel freetar) models
+      modelGroups = groupBy
+                    (\m1 m2 -> reduceModel freesrc m1 == reduceModel freesrc m2)
+                    reducedModels
+      freeReducedModels = concatMap (filterMin sig isCo) modelGroups
+  in filter (\m -> reduceModel freetar m `elem` freeReducedModels) models
+  where freemor = LP.freeDefMorphism freedef
+        freesrc = PMorphism.source freemor
+        freetar = PMorphism.target freemor
+        isCo = LP.isCofree freedef
+
+{- |
   Runs tt.
 -}
 
@@ -311,7 +344,8 @@ runTt pState cfg _ _thName nGoal =
                 cfg{ATPState.proof_status = defaultProof_status nGoal})
       else do
        let axs = PState.initialAxioms pState
-           models = allModels sig
+           freedefs = PState.freeDefs pState
+           models = foldl (filterFree sig) (allModels sig) freedefs
            sigList = Set.toList $ items sig
            heading =
              TTHead { hprops = map show sigList,
