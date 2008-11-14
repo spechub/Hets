@@ -32,6 +32,16 @@ showQN (QN pre local u) =
   (if null u then id else ('<' :) . (++ ">"))
   $ if null pre then local else pre ++ ":" ++ local
 
+-- | Print Function that ignores third argument
+showQU :: QName -> String
+showQU (QN pre local _) =
+    if null pre then local else pre ++ ":" ++ local
+
+showQI :: QName -> String
+showQI (QN pre local _)=
+    ('<' :) . (++ ">")
+     $ if null pre then local else pre ++ ":" ++ local
+
 nullQName :: QName
 nullQName = QN "" "" ""
 
