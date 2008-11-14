@@ -24,6 +24,7 @@ import Common.Utils (nubOrd)
 
 import Text.ParserCombinators.Parsec
 import Data.Char
+import Data.List (partition)
 import qualified Data.Map as Map
 
 ncNameStart :: Char -> Bool
@@ -150,7 +151,6 @@ fullIri = do
     char '>'
     return $ QN pre r $ if null pre then r else pre
            -- unclear how full IRIs are represented
-  <|> abbrIri
 
 uriQ :: CharParser st QName
 uriQ = fullIri <|> abbrIri
@@ -160,9 +160,12 @@ datatypeKeys :: [String]
 datatypeKeys = ["integer", "decimal", "float", "string", "boolean"]
 
 uriP :: CharParser st QName
-uriP = skip $ checkWithUsing showQN uriQ $ \ q -> not $ elem (localPart q)
-  $ datatypeKeys ++ casl_reserved_words ++ casl_dl_keywords
--- colon keywords should be checked as prefix
+uriP = let
+  (cs, ncs) = partition (elem ':') casl_dl_keywords
+  in skip $ checkWithUsing showQN uriQ $ \ q -> let p = namePrefix q in
+  if null p then not $ elem (localPart q)
+   $ datatypeKeys ++ casl_reserved_words ++ ncs
+   else not $ elem p cs
 
 datatypeUri :: CharParser st QName
 datatypeUri = fmap mkQName (choice $ map keyword datatypeKeys) <|> uriP
@@ -436,7 +439,7 @@ entity = do
 annotation :: CharParser st Annotation
 annotation = do
   a <- uriP
-  parensP $ do
+  do
       c <- constant
       return $ ExplicitAnnotation a c
     <|> do
@@ -558,7 +561,7 @@ objectFrameBit ouri = let opExp = OpURI ouri in do
     return [PlainAxiom (concatMap fst ds)
            $ EquivOrDisjointObjectProperties e $ opExp : map snd ds]
   <|> do
-    ckeyword "Inverses"
+    ckeyword "Inverses" <|> ckeyword "InverseOf"
     ds <- objPropExprAList
     return $ map (\ (as, i) -> PlainAxiom as
       $ InverseObjectProperties opExp i) ds
@@ -690,24 +693,31 @@ frames = flat $ many $ classFrame
   <|> objectPropertyFrame <|> dataPropertyFrame <|> individualFrame
   <|> single misc
 
+nsEntry :: CharParser st (String, QName)
+nsEntry = do
+  ckeyword "Namespace"
+  p <- skip prefix
+  i <- skip fullIri
+  return (p, i)
+
+importEntry :: CharParser st QName
+importEntry = ckeyword "Import" >> uriP
+
 basicSpec :: CharParser st OntologyFile
 basicSpec = do
+  nss <- many nsEntry
   option () $ ckeyword "Ontology" >> uriP >> return ()
+  many importEntry
+  many annotations
   as <- frames
-  return emptyOntologyFile { ontology   = emptyOntology
-                               { axiomsList = as
-                               , uri = QN ""
-                                "http://www.dfki.de/sks/hets/ontology/unamed"
-                                "unamed"
-                               }
-                           , namespaces = Map.fromList
-                              [
-                               ("owl","http://www.w3.org/2002/07/owl#")
-                              ,("rdf",
-                                "http://www.w3.org/1999/02/22-rdf-syntax-ns#")
-                              ,("rdfs","http://www.w3.org/2000/01/rdf-schema#")
-                              ,("xsd", "http://www.w3.org/2001/XMLSchema#")
-                              ,("owl2xml",
-                                "http://www.w3.org/2006/12/owl2-xml#")
-                              ]
-                           }
+  return emptyOntologyFile
+    { ontology = emptyOntology
+      { axiomsList = as
+      , uri = QN "http" "//www.dfki.de/sks/hets/ontology/unamed" "unamed" }
+    , namespaces = Map.fromList $
+      [ ("owl", "http://www.w3.org/2002/07/owl#")
+      , ("rdf", "http://www.w3.org/1999/02/22-rdf-syntax-ns#")
+      , ("rdfs", "http://www.w3.org/2000/01/rdf-schema#")
+      , ("xsd", "http://www.w3.org/2001/XMLSchema#")
+      , ("owl2xml", "http://www.w3.org/2006/12/owl2-xml#") ]
+      ++ map (\ (p, q) -> (p, showQN q { namespaceUri = "" })) nss }
