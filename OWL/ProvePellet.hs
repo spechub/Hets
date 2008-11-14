@@ -18,9 +18,10 @@ module OWL.ProvePellet (pelletProver,pelletGUI,pelletCMDLautomatic,
 
 import Logic.Prover
 
+import Common.AS_Annotation
+
 import OWL.Sign
-import OWL.PrintRDF
-import OWL.AS
+import OWL.Print
 
 import HTk
 
@@ -35,7 +36,6 @@ import Common.DefaultMorphism
 import Common.ProofTree
 import qualified Common.Result as Result
 
-import qualified Data.Map as Map
 import Data.List (isPrefixOf)
 import Data.Time (timeToTimeOfDay)
 import Data.Time.Clock (UTCTime(..), secondsToDiffTime, getCurrentTime)
@@ -45,6 +45,7 @@ import qualified Control.Concurrent as Concurrent
 import System
 import System.IO
 import System.Process
+import System.Directory
 
 import Common.Utils
 data PelletProverState = PelletProverState
@@ -198,8 +199,8 @@ spamOutput ps =
                  show dTree
                 )
         Proved (Just True) ->     -- consistent
-             do createInfoWindow "Pellet consistency check"
-                                     "This ontology is consistent."
+             do --createInfoWindow "Pellet consistency check"
+                --                     "This ontology is consistent."
                 createTextSaveDisplay "Pellet prover" ("./"++ dName ++".pellet.log")
                  (
                  -- "I found a model for the theory " ++
@@ -208,8 +209,8 @@ spamOutput ps =
                  )
 
         Proved (Just False) ->   -- not consistent
-             do createInfoWindow "Pellet consistency check"
-                                     "This ontology is not consistent."
+             do --createInfoWindow "Pellet consistency check"
+                --                     "This ontology is not consistent."
                 createTextSaveDisplay "Pellet prover" ("./"++ dName ++".pellet.log")
                  (
                  -- "I found a model for the theory " ++
@@ -235,17 +236,17 @@ consCheck thName tm freedefs =
                        ts_extraOpts = [extraOptions]
                       }
           proverStateI = pelletProverState sig
-                                       (toNamedList nSens) freedefs 
+                                       (toNamedList nSens) freedefs
           -- problem     = showOWLProblemA thName proverStateI []
           problemS     = showOWLProblemS thName proverStateI []
-          simpleOptions = "-consistency on -s off "
-          extraOptions  = "-timeout " ++ (show timeLimitI)
+          simpleOptions = "consistency "
+          extraOptions  = ""
           saveFileName  = (reverse $ fst $ span (/='/') $ reverse thName)
           tmpFileName   = saveFileName
 
           runPelletRealM :: IO([Proof_status ProofTree])
           runPelletRealM = do
-              hasProgramm <- system ("cd $PELLET_PATH; sh $PELLET_PATH/pellet.sh -version  > /dev/null 2> /dev/null")
+              hasProgramm <- system ("cd $PELLET_PATH; sh $PELLET_PATH/pellet.sh > /dev/null 2> /dev/null")
               case hasProgramm of
                 ExitFailure _ -> do
                    createInfoWindow "Pellet prover" "Pellet not found"
@@ -268,22 +269,17 @@ consCheck thName tm freedefs =
                                      ++ (show $ utctDay t) ++
                                      "-" ++ (show $ utctDayTime t) ++ ".owl"
                        tmpURI = "file://"++timeTmpFile
-                   writeFile timeTmpFile $ mkRealOWL problemS
+                   writeFile timeTmpFile $ problemS
                    let command = "cd $PELLET_PATH; sh pellet.sh "
                                  ++ simpleOptions ++ extraOptions
-                                 ++ " -if " ++ tmpURI
-                   putStrLn $ command
-                   -- putStrLn $ mkRealOWL problemS
+                                 ++ tmpURI
                    (_, outh, errh, proch) <- runInteractiveCommand command
                    (exCode, output, tUsed) <- parsePelletOut outh errh proch
                    let outState = proof_statM exCode simpleOptions
                                               output tUsed
                    spamOutput outState
+                   removeFile timeTmpFile
                    return [outState]
-
-          mkRealOWL probl =
-              (show $ printRDF Map.empty sig)
-                 ++ "\n\n" ++ probl ++ "\n</rdf:RDF>"
 
           proof_statM :: ExitCode -> String ->  [String]
                       -> Int -> Proof_status ProofTree
@@ -297,7 +293,7 @@ consCheck thName tm freedefs =
                     , usedAxioms = getAxioms
                     , proverName = (prover_name pelletProver)
                     , proofTree = ProofTree (unlines out
-                                      ++ "\n\n" ++ mkRealOWL problemS)
+                                      ++ "\n\n" ++ problemS)
                     ,usedTime = timeToTimeOfDay $
                                 secondsToDiffTime $ toInteger tUsed
                     ,tacticScript  = tac
@@ -310,7 +306,7 @@ consCheck thName tm freedefs =
                     , usedAxioms = getAxioms
                     , proverName = (prover_name pelletProver)
                     , proofTree = ProofTree (unlines out
-                                      ++ "\n\n" ++ (mkRealOWL problemS))
+                                      ++ "\n\n" ++ (problemS))
                     ,usedTime = timeToTimeOfDay $
                                 secondsToDiffTime $ toInteger tUsed
                     ,tacticScript  = tac
@@ -349,7 +345,7 @@ consCheck thName tm freedefs =
                     , usedAxioms = getAxioms
                     , proverName = (prover_name pelletProver)
                     , proofTree =   ProofTree (unlines out
-                                        ++ "\n\n" ++  (mkRealOWL problemS))
+                                        ++ "\n\n" ++  (problemS))
                     ,usedTime = timeToTimeOfDay $
                                 secondsToDiffTime $ toInteger tUsed
                     ,tacticScript  = tac
@@ -377,34 +373,39 @@ runPellet sps cfg savePellet thName nGoal = do
 
   where
     simpleOptions = extraOpts cfg
-    extraOptions  = maybe "-s off -cs"
-        ( \ tl -> "-pc false" ++ " -to " ++ show tl ++ " -cs ")
-        $ timeLimit cfg
+    extraOptions  = "entail -e "
     saveFileName  = thName++'_':AS_Anno.senAttr nGoal
     tmpFileName   = (reverse $ fst $ span (/='/') $ reverse thName) ++
                        '_':AS_Anno.senAttr nGoal
-    -- tLimit = maybe (guiDefaultTimeLimit) id $ timeLimit cfg
-
     runPelletReal = do
-      hasProgramm <- system ("cd $PELLET_PATH; sh $PELLET_PATH/pellet.sh -version  > /dev/null 2> /dev/null")
+      hasProgramm <- system ("cd $PELLET_PATH; sh $PELLET_PATH/pellet.sh > /dev/null 2> /dev/null")
       case hasProgramm of
         ExitFailure _ -> return
             (ATPError "Could not start Pellet. Is Pellet in your $PATH?",
                   emptyConfig (prover_name pelletProver)
                               (AS_Anno.senAttr nGoal) emptyProofTree)
         ExitSuccess -> do
-          prob <- mkOWLGoalProblem
+          let prob   = showOWLProblemS thName sps []
+          let entail = showOWLProblemS thName (sps{initialState = [nGoal{isAxiom=True}]}) []
           when savePellet
             (writeFile (saveFileName ++".owl") prob)
+          when savePellet
+            (writeFile (saveFileName ++".entail.owl") entail)
           t <- getCurrentTime
           let timeTmpFile = "/tmp/" ++ tmpFileName ++ (show $ utctDay t) ++
                                "-" ++ (show $ utctDayTime t) ++ ".owl"
+              entailsFile = "/tmp/" ++ tmpFileName ++ (show $ utctDay t) ++
+                               "-" ++ (show $ utctDayTime t) ++ ".entails.owl"
           writeFile timeTmpFile prob
-          let command = "pellet " ++ extraOptions ++ " " ++ timeTmpFile
+          writeFile entailsFile entail
+          let command = "cd $PELLET_PATH; sh pellet.sh " ++ extraOptions ++ " " ++ entailsFile
+                        ++ " " ++ timeTmpFile
           -- putStrLn command
           (_, outh, errh, proch) <- runInteractiveCommand command
           (exCode, output, tUsed) <- parsePelletOut outh errh proch
           let (err, retval) = proof_stat exCode simpleOptions output tUsed
+          removeFile timeTmpFile
+          removeFile entailsFile
           return (err,
                   cfg{proof_status = retval,
                       resultOutput = output,
@@ -413,7 +414,11 @@ runPellet sps cfg savePellet thName nGoal = do
 
     proof_stat exitCode options out tUsed =
             case exitCode of
-              ExitSuccess -> (ATPSuccess, proved_status options tUsed)
+              ExitSuccess -> (ATPSuccess, (proved_status options tUsed)
+                                        {
+                                          usedAxioms = map AS_Anno.senAttr $ initialState sps
+                                        }
+                             )
               ExitFailure 2 -> (ATPError (unlines ("Internal error.":out)),
                                 defaultProof_status options)
               ExitFailure 112 ->
@@ -449,12 +454,6 @@ runPellet sps cfg savePellet thName nGoal = do
                     }
 
     getAxioms = []
-
-    mkOWLGoalProblem = do
-        p <- showOWLProblem thName sps nGoal
-               (simpleOptions ++ ["Requested prover: Pellet"])
-        return ((show $ printRDF Map.empty $ ontologySign sps)
-                  ++ "\n\n" ++ p ++ "\n</rdf:RDF>")
 
 parsePelletOut :: Handle        -- ^ handel of stdout
                -> Handle        -- ^ handel of stderr
@@ -493,8 +492,16 @@ parsePelletOut outh _ proc = do
                    else if "Time" `isPrefixOf` okey  -- get cup time
                            then readLineAndParse (exCode, (output ++ [line]),
                            ((read $ fst $ span (/=' ') $ tail ovalue)::Int))
-                           else readLineAndParse
-                                 (exCode, (output ++ [line]), to)
+                           else if "All axioms are entailed" `isPrefixOf` line
+                                then
+                                    readLineAndParse (ExitSuccess, (output ++ [line]), to)
+                                else if "Non-entailments:" `isPrefixOf` line
+                                     then
+                                         do
+                                           readLineAndParse (ExitFailure 5, (output ++ [line]), to)
+                                     else
+                                         readLineAndParse
+                                         (exCode, (output ++ [line]), to)
 
      failure -> do waitForProcess proc
                    return (failure, output, to)
@@ -515,10 +522,9 @@ showOWLProblemS ::  String -- ^ theory name
 showOWLProblemS thName pst _ =
     let namedSens = initialState $ problemProverState
                     $ genPelletProblemS thName pst Nothing
-    in show (printRDF (mkAssMap (map AS_Anno.sentence namedSens)
-                                Map.empty)
-                      namedSens
-            )
+        sign      = ontologySign $ problemProverState
+                    $ genPelletProblemS thName pst Nothing
+    in show $ printOWLBasicTheory (sign, filter (\ax -> isAxiom(ax)) namedSens)
 
 {- |
   Pretty printing SoftFOL goal in DFG format.
@@ -580,13 +586,3 @@ parseTactic_script tLimit extOpts (Tactic_script ts) =
     maybe (ATPTactic_script { ts_timeLimit = tLimit,
                               ts_extraOpts = extOpts })
            id $ readMaybe ts
-
-mkAssMap :: [Sentence]
-         -> Map.Map IndividualURI OwlClassURI
-         -> Map.Map IndividualURI OwlClassURI
-mkAssMap [] m = m
-mkAssMap (h:r) m =
-    case h of
-      OWLFact (PlainAxiom _ (ClassAssertion indUri (OWLClass cUri))) ->
-          mkAssMap r (Map.insert indUri cUri m)
-      _ -> mkAssMap r m

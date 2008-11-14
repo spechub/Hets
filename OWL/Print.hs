@@ -39,7 +39,7 @@ printSign s =
        pon = if on == nullQName
              then text "<http://www.dfki.de/sks/hets/ontology/unamed>"
              else pretty on
-   in vcat (map (\ (c, l) -> text $ "Namespace: <" ++ c ++ " " ++ l ++">")
+   in vcat (map (\ (c, l) -> text $ "Namespace: " ++ c ++ " <" ++ l ++">")
            $ Map.toList $ namespaceMap s)
    $++$ text "Ontology:" <+> pon
    $++$ vcat (map (\ d -> text "Annotations: data"
@@ -85,7 +85,7 @@ instance Pretty Description where
       pretty opExp <+> text "value" <+> pretty indUri
    ObjectCardinality (Cardinality ty card opExp maybeDesc) ->
       printObjPropExp opExp <+> cardinalityType ty
-        <+> text (show card) <+> maybe empty printPrimary maybeDesc
+        <+> text (show card) <+> maybe (text "owl:Thing") printPrimary maybeDesc
    DataValuesFrom ty dpExp dpExpList dRange ->
        printURIreference dpExp <+> quantifierType ty
            <+> (if null dpExpList then empty

@@ -904,8 +904,12 @@ mapIndivURI _ uriI =
 -- | Extracts Id from URI
 uriToId :: URI
         -> Result Id
-uriToId ur =
+uriToId urI =
     let
+        ur = case urI of
+               QN _ "Thing" _   -> QN "" "Thing"   ""
+               QN _ "Nothing" _ -> QN "" "Nothing" ""
+               _                -> urI
         repl a = if (isAlphaNum a)
                   then
                       a

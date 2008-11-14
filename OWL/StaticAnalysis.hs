@@ -74,7 +74,13 @@ anaDataRange dr = case dr of
 
 anaDescription :: Description -> State Sign ()
 anaDescription desc = case desc of
-  OWLClass u -> addEntity $ Entity OWLClassEntity u
+  OWLClass u ->
+      case u of
+        QN _ "Thing" _ -> addEntity $ Entity OWLClassEntity $
+                          QN "owl" "Thing" ""
+        QN _ "Nothing" _ -> addEntity $ Entity OWLClassEntity $
+                          QN "owl" "Nothing" ""
+        v -> addEntity $ Entity OWLClassEntity v
   ObjectJunction _ ds -> mapM_ anaDescription ds
   ObjectComplementOf d -> anaDescription d
   ObjectOneOf is -> mapM_ anaIndividual is
