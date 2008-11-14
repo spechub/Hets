@@ -188,7 +188,7 @@ printAxiom axiom = case axiom of
                    setToDocV (Set.fromList discList)
    -- ObjectPropertyAxiom
    SubObjectPropertyOf sopExp opExp ->
-       opStart <+> pretty sopExp $+$ text "SubObjectPropertyOf:"
+       opStart <+> pretty sopExp $+$ text "SubPropertyOf:"
                    <+> pretty opExp
    EquivOrDisjointObjectProperties ty (opExp : opList) ->
        opStart <+> pretty opExp $+$ printEquivOrDisjoint ty <+>
@@ -201,7 +201,7 @@ printAxiom axiom = case axiom of
        opStart <+> pretty opExp $+$ printCharact (show ch)
    -- DataPropertyAxiom
    SubDataPropertyOf dpExp1 dpExp2 ->
-       dpStart <+> pretty dpExp1 $+$ text "SubDataPropertyOf" <+> pretty dpExp2
+       dpStart <+> pretty dpExp1 $+$ text "SubPropertyOf" <+> pretty dpExp2
    EquivOrDisjointDataProperties ty (dpExp : dpList) ->
        dpStart <+> pretty dpExp $+$ printEquivOrDisjoint ty <+>
                setToDocV (Set.fromList dpList)
