@@ -47,6 +47,9 @@ import System.IO
 import System.Process
 import System.Directory
 
+import Control.Concurrent
+import Control.Concurrent.MVar
+
 import Common.Utils
 data PelletProverState = PelletProverState
                         { ontologySign :: Sign
@@ -273,10 +276,14 @@ consCheck thName tm freedefs =
                    let command = "cd $PELLET_PATH; sh pellet.sh "
                                  ++ simpleOptions ++ extraOptions
                                  ++ tmpURI
-                   (_, outh, errh, proch) <- runInteractiveCommand command
-                   (exCode, output, tUsed) <- parsePelletOut outh errh proch
-                   let outState = proof_statM exCode simpleOptions
+                   outState <- timeWatch timeLimitI $
+                     (do
+                       (_, outh, errh, proch) <- runInteractiveCommand command
+                       (exCode, output, tUsed) <- parsePelletOut outh errh proch
+                       let outState = proof_statM exCode simpleOptions
                                               output tUsed
+                       return outState
+                     )
                    spamOutput outState
                    removeFile timeTmpFile
                    return [outState]
@@ -354,6 +361,33 @@ consCheck thName tm freedefs =
           getAxioms =
                map AS_Anno.senAttr $ initialState proverStateI
 
+          timeWatch :: Int
+                    -> IO (Proof_status ProofTree)
+                    -> IO (Proof_status ProofTree)
+          timeWatch time process =
+              do
+                mvar <- newEmptyMVar
+                tid1 <- forkIO $ do z <- process
+                                    putMVar mvar (Just z)
+                tid2 <- forkIO $ do threadDelay (time * 1000000)
+                                    putMVar mvar Nothing
+                res <- takeMVar mvar
+                case res of
+                  Just z -> do
+                           killThread tid2 `catch` (\e -> putStrLn (show e))
+                           return z
+                  Nothing -> do
+                           killThread tid1 `catch` (\e -> putStrLn (show e))
+                           return (Proof_status{
+                               goalName = thName
+                             , goalStatus = Open
+                             , usedAxioms = getAxioms
+                             , proverName = (prover_name pelletProver)
+                             , proofTree  = ProofTree ("\n\n" ++ "timeout")
+                             ,usedTime = timeToTimeOfDay $
+                               secondsToDiffTime 0
+                             ,tacticScript  = tac
+                             })
         in
           runPelletRealM
 
@@ -373,6 +407,7 @@ runPellet sps cfg savePellet thName nGoal = do
 
   where
     simpleOptions = extraOpts cfg
+    tLimit        = timeLimit cfg
     extraOptions  = "entail -e "
     saveFileName  = thName++'_':AS_Anno.senAttr nGoal
     tmpFileName   = (reverse $ fst $ span (/='/') $ reverse thName) ++
@@ -401,9 +436,21 @@ runPellet sps cfg savePellet thName nGoal = do
           let command = "cd $PELLET_PATH; sh pellet.sh " ++ extraOptions ++ " " ++ entailsFile
                         ++ " " ++ timeTmpFile
           -- putStrLn command
-          (_, outh, errh, proch) <- runInteractiveCommand command
-          (exCode, output, tUsed) <- parsePelletOut outh errh proch
-          let (err, retval) = proof_stat exCode simpleOptions output tUsed
+          ((err, retval),output, tUsed) <- case tLimit of
+            Nothing ->
+                do
+                  (_, outh, errh, proch) <- runInteractiveCommand command
+                  (exCode, output, tUsed) <- parsePelletOut outh errh proch
+                  return $ (proof_stat exCode simpleOptions output tUsed,
+                            output, tUsed)
+            Just tm  ->
+                timeWatchP tm
+                  (do
+                    (_, outh, errh, proch) <- runInteractiveCommand command
+                    (exCode, output, tUsed) <- parsePelletOut outh errh proch
+                    return $ (proof_stat exCode simpleOptions output tUsed,
+                            output, tUsed)
+                    )
           removeFile timeTmpFile
           removeFile entailsFile
           return (err,
@@ -412,11 +459,32 @@ runPellet sps cfg savePellet thName nGoal = do
                       timeUsed     = timeToTimeOfDay $
                                  secondsToDiffTime $ toInteger tUsed})
 
+    timeWatchP :: Int -> IO ((ATPRetval, Proof_status ProofTree), [String], Int)
+                     -> IO ((ATPRetval, Proof_status ProofTree), [String] , Int)
+    timeWatchP time process =
+        do
+          mvar <- newEmptyMVar
+          tid1 <- forkIO $ do z <- process
+                              putMVar mvar (Just z)
+          tid2 <- forkIO $ do threadDelay (time * 1000000)
+                              putMVar mvar Nothing
+          res <- takeMVar mvar
+          case res of
+            Just z -> do
+                     killThread tid2 `catch` (\e -> putStrLn (show e))
+                     return z
+            Nothing -> do
+                     killThread tid1 `catch` (\e -> putStrLn (show e))
+                     return ((ATPTLimitExceeded
+                            , defaultProof_status simpleOptions)
+                            , [],time)
+
     proof_stat exitCode options out tUsed =
             case exitCode of
               ExitSuccess -> (ATPSuccess, (proved_status options tUsed)
                                         {
-                                          usedAxioms = map AS_Anno.senAttr $ initialState sps
+                                          usedAxioms = map AS_Anno.senAttr $
+                                                       initialState sps
                                         }
                              )
               ExitFailure 2 -> (ATPError (unlines ("Internal error.":out)),
