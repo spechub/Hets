@@ -20,7 +20,7 @@ Within uni call:
 Make sure you don't have uni-packages in your user database:
   ghc-pkg list
 Other unregister them all:
-  ghc-pkg unregiser uni-util --user
+  ghc-pkg unregister uni-util --user
 
 
 "Hets" and "uni" must reside in the same
