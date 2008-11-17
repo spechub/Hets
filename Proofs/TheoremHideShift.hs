@@ -78,7 +78,8 @@ convertToNf ln libEnv node = do
       let (sign, mor) = (dgn_theory nodelab, Just $ ide $ dgn_sign nodelab)
           newLab = (newNodeLab (dgn_name nodelab) DGProof sign){
                     dgn_nf = Just node,
-                    dgn_sigma = mor}
+                    dgn_sigma = mor,
+                    nodeInfo = nodeInfo nodelab}
           chLab = SetNodeLab nodelab (node, newLab)
           newGraph  = changeDGH dgraph chLab
       return $ Map.insert ln
