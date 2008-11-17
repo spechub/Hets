@@ -267,6 +267,7 @@ runAllTests = do
 runTest :: (String
             -> LProver.Tactic_script
             -> LProver.Theory Sign Sentence ProofTree
+            -> [LProver.FreeDefMorphism SoftFOLMorphism]
             -> IO (Result ([LProver.Proof_status ProofTree]))
            )
         -> String -- ^ prover name for proof status in case of error
@@ -281,7 +282,7 @@ runTest runCMDLProver prName thName th expStatus = do
                            thName
                            (LProver.Tactic_script (show $ ATPTactic_script {
                               ts_timeLimit = 20, ts_extraOpts = [] }))
-                           th
+                           th []
     stResult <- maybe (return [LProver.openProof_status ""
                                          prName (ProofTree "")])
                       return (maybeResult m_result)
@@ -302,6 +303,7 @@ runTestBatch :: Maybe Int -- ^ seconds to pass before thread will be killed
                   -> String
                   -> LProver.Tactic_script
                   -> LProver.Theory Sign Sentence ProofTree
+                  -> [LProver.FreeDefMorphism SoftFOLMorphism]
                   -> IO (Concurrent.ThreadId,Concurrent.MVar ())
                  )
               -> String -- ^ prover name
@@ -324,6 +326,7 @@ runTestBatch2 :: Bool -- ^ True means try to read intermediate results
                   -> String
                   -> LProver.Tactic_script
                   -> LProver.Theory Sign Sentence ProofTree
+                  -> [LProver.FreeDefMorphism SoftFOLMorphism]
                   -> IO (Concurrent.ThreadId,Concurrent.MVar ())
                  )
               -> String -- ^ prover name
@@ -342,7 +345,7 @@ runTestBatch2 intermRes waitsec runCMDLProver prName thName th expStatus = do
                             False False resultMVar thName
                             (LProver.Tactic_script (show $ ATPTactic_script {
                                ts_timeLimit = 10, ts_extraOpts = [] }))
-                            th
+                            th []
     maybe (return ()) (\ ws -> do
              Concurrent.threadDelay (ws*1000000)
              Concurrent.killThread threadID) waitsec
