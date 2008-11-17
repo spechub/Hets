@@ -103,7 +103,7 @@ atpFun thName = ATPFunctions
       atpTransSenName = id,   -- transSenName,
       atpInsertSentence = insertOWLSentence,
       goalOutput = showOWLProblem thName,
-      proverHelpText = "no help for pellet available",
+      proverHelpText = "http://clarkparsia.com/pellet/\n",
       batchTimeEnv = "HETS_Pellet_BATCH_TIME_LIMIT",
       fileExtensions = FileExtensions{problemOutput = ".owl",  -- owl-hets
                                       proverOutput = ".pellet",
@@ -224,6 +224,15 @@ spamOutput ps =
 
         Proved Nothing -> return ()  -- todo: another errors
 
+getEnvSec :: String -> IO [Char]
+getEnvSec s =
+    do
+      env <- getEnvironment
+      let var = filter (\(z,_) -> z == s) env
+      case length var of
+        0 -> return ""
+        1 -> return $ snd $ head $ var
+        _ -> fail $ "Ambigoous environment"
 
 consCheck :: String
           -> TheoryMorphism Sign Sentence (DefaultMorphism Sign) ProofTree
@@ -250,7 +259,7 @@ consCheck thName tm freedefs =
 
           runPelletRealM :: IO([Proof_status ProofTree])
           runPelletRealM = do
-              pPath     <- getEnv "PELLET_PATH"
+              pPath     <- getEnvSec "PELLET_PATH"
               progTh    <- doesFileExist $ pPath ++ "/pellet.sh"
               progEx <- if (progTh)
                          then
@@ -436,7 +445,7 @@ runPellet sps cfg savePellet thName nGoal = do
     tmpFileName   = (reverse $ fst $ span (/='/') $ reverse thName) ++
                        '_':AS_Anno.senAttr nGoal
     runPelletReal = do
-      pPath     <- getEnv "PELLET_PATH"
+      pPath     <- getEnvSec "PELLET_PATH"
       progTh    <- doesFileExist $ pPath ++ "/pellet.sh"
       progEx <- if (progTh)
                  then
