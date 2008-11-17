@@ -46,6 +46,7 @@ import System
 import System.IO
 import System.Process
 import System.Directory
+import System.Environment
 
 import Control.Concurrent
 import Control.Concurrent.MVar
@@ -88,7 +89,7 @@ pelletProver = (mkProverTemplate "Pellet" () pelletGUI)
     , proveCMDLautomaticBatch = Just pelletCMDLautomaticBatch }
 
 pelletConsChecker :: ConsChecker Sign Sentence () (DefaultMorphism Sign) ProofTree
-pelletConsChecker = mkProverTemplate "pellet" () consCheck
+pelletConsChecker = mkProverTemplate "Pellet Consistency Checker" () consCheck
 
 
 {- |
@@ -249,22 +250,17 @@ consCheck thName tm freedefs =
 
           runPelletRealM :: IO([Proof_status ProofTree])
           runPelletRealM = do
-              hasProgramm <- system ("cd $PELLET_PATH; sh $PELLET_PATH/pellet.sh > /dev/null 2> /dev/null")
-              case hasProgramm of
-                ExitFailure _ -> do
-                   createInfoWindow "Pellet prover" "Pellet not found"
-                   return [Proof_status
-                           {
-                            goalName = thName
-                           , goalStatus = Open
-                           , usedAxioms = getAxioms
-                           , proverName = (prover_name pelletProver)
-                           , proofTree  = ProofTree "Pellet not found"
-                           , usedTime = timeToTimeOfDay $
-                                        secondsToDiffTime 0
-                           ,tacticScript  = tac
-                           }]
-                ExitSuccess -> do
+              pPath     <- getEnv "PELLET_PATH"
+              progTh    <- doesFileExist $ pPath ++ "/pellet.sh"
+              progEx <- if (progTh)
+                         then
+                             do
+                               progPerms <- getPermissions $ pPath ++ "/pellet.sh"
+                               return $ executable $ progPerms
+                         else
+                             return False
+              case (progTh, progEx) of
+                (True,True) -> do
                    when saveOWL
                           (writeFile (saveFileName ++".owl") problemS)
                    t <- getCurrentTime
@@ -287,6 +283,33 @@ consCheck thName tm freedefs =
                    spamOutput outState
                    removeFile timeTmpFile
                    return [outState]
+                (True,False) -> do
+                   createInfoWindow "Pellet prover" "Pellet not executable"
+                   return [Proof_status
+                           {
+                            goalName = thName
+                           , goalStatus = Open
+                           , usedAxioms = getAxioms
+                           , proverName = (prover_name pelletProver)
+                           , proofTree  = ProofTree "Pellet not executable"
+                           , usedTime = timeToTimeOfDay $
+                                        secondsToDiffTime 0
+                           ,tacticScript  = tac
+                           }]
+                (False,_) -> do
+                   createInfoWindow "Pellet prover" "Pellet not found"
+                   return [Proof_status
+                           {
+                            goalName = thName
+                           , goalStatus = Open
+                           , usedAxioms = getAxioms
+                           , proverName = (prover_name pelletProver)
+                           , proofTree  = ProofTree "Pellet not found"
+                           , usedTime = timeToTimeOfDay $
+                                        secondsToDiffTime 0
+                           ,tacticScript  = tac
+                           }]
+
 
           proof_statM :: ExitCode -> String ->  [String]
                       -> Int -> Proof_status ProofTree
@@ -413,13 +436,17 @@ runPellet sps cfg savePellet thName nGoal = do
     tmpFileName   = (reverse $ fst $ span (/='/') $ reverse thName) ++
                        '_':AS_Anno.senAttr nGoal
     runPelletReal = do
-      hasProgramm <- system ("cd $PELLET_PATH; sh $PELLET_PATH/pellet.sh > /dev/null 2> /dev/null")
-      case hasProgramm of
-        ExitFailure _ -> return
-            (ATPError "Could not start Pellet. Is Pellet in your $PATH?",
-                  emptyConfig (prover_name pelletProver)
-                              (AS_Anno.senAttr nGoal) emptyProofTree)
-        ExitSuccess -> do
+      pPath     <- getEnv "PELLET_PATH"
+      progTh    <- doesFileExist $ pPath ++ "/pellet.sh"
+      progEx <- if (progTh)
+                 then
+                     do
+                       progPerms <- getPermissions $ pPath ++ "/pellet.sh"
+                       return $ executable $ progPerms
+                 else
+                     return False
+      case (progTh,progEx) of
+        (True,True) -> do
           let prob   = showOWLProblemS thName sps []
           let entail = showOWLProblemS thName (sps{initialState = [nGoal{isAxiom=True}]}) []
           when savePellet
@@ -458,6 +485,14 @@ runPellet sps cfg savePellet thName nGoal = do
                       resultOutput = output,
                       timeUsed     = timeToTimeOfDay $
                                  secondsToDiffTime $ toInteger tUsed})
+        (True,False) -> return
+            (ATPError "Pellet prover found, but file is not executable.",
+                  emptyConfig (prover_name pelletProver)
+                              (AS_Anno.senAttr nGoal) emptyProofTree)
+        (False,_) -> return
+            (ATPError "Could not find pellet prover. Is $PELLET_PATH set?",
+                  emptyConfig (prover_name pelletProver)
+                              (AS_Anno.senAttr nGoal) emptyProofTree)
 
     timeWatchP :: Int -> IO ((ATPRetval, Proof_status ProofTree), [String], Int)
                      -> IO ((ATPRetval, Proof_status ProofTree), [String] , Int)
