@@ -31,6 +31,7 @@ import OWL.Print ()
 import OWL.ATC_OWL ()
 import OWL.Sign
 import OWL.StaticAnalysis
+import OWL.Sublogic
 #ifdef UNI_PACKAGE
 import OWL.ProvePellet
 #endif
@@ -70,7 +71,7 @@ instance StaticAnalysis OWL OntologyFile Sentence
          theory_to_taxonomy OWL = convTaxo
 -}
 
-instance Logic OWL () OntologyFile Sentence () ()
+instance Logic OWL OWL_SL OntologyFile Sentence () ()
                Sign
                OWL_Morphism () () ProofTree where
     --     stability _ = Testing
@@ -80,3 +81,37 @@ instance Logic OWL () OntologyFile Sentence () ()
          provers OWL = [pelletProver]
          cons_checkers OWL = [pelletConsChecker]
 #endif
+
+instance SemiLatticeWithTop (OWL_SL) where
+    join = sl_max
+    top = sl_top
+
+instance SublogicName (OWL_SL) where
+    sublogicName = sl_name
+
+instance MinSublogic OWL_SL Sentence where
+    minSublogic = sl_basic_spec
+
+instance MinSublogic OWL_SL OWL_Morphism where
+    minSublogic = sl_mor
+
+instance ProjectSublogic OWL_SL OWL_Morphism where
+    projectSublogic = pr_mor
+
+instance MinSublogic OWL_SL Sign where
+    minSublogic = sl_sig
+
+instance ProjectSublogic OWL_SL Sign where
+    projectSublogic = pr_sig
+
+instance MinSublogic OWL_SL () where
+    minSublogic _ = sl_top
+
+instance MinSublogic OWL_SL OntologyFile where
+    minSublogic = sl_o_file
+
+instance ProjectSublogicM OWL_SL () where
+    projectSublogicM _ _ = return ()
+
+instance ProjectSublogic OWL_SL OntologyFile where
+    projectSublogic = pr_o_file

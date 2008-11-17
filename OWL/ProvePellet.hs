@@ -22,6 +22,7 @@ import Common.AS_Annotation
 
 import OWL.Sign
 import OWL.Print
+import OWL.Sublogic
 
 import HTk
 
@@ -83,13 +84,15 @@ pelletProverState sig oSens _ = PelletProverState
 {- |
   The Prover implementation. First runs the batch prover (with graphical feedback), then starts the GUI prover.
 -}
-pelletProver :: Prover Sign Sentence (DefaultMorphism Sign) () ProofTree
-pelletProver = (mkProverTemplate "Pellet" () pelletGUI)
+pelletProver :: Prover Sign Sentence (DefaultMorphism Sign) OWL_SL ProofTree
+pelletProver = (mkProverTemplate "Pellet" sl_top pelletGUI)
     { proveCMDLautomatic = Just pelletCMDLautomatic
     , proveCMDLautomaticBatch = Just pelletCMDLautomaticBatch }
 
-pelletConsChecker :: ConsChecker Sign Sentence () (DefaultMorphism Sign) ProofTree
-pelletConsChecker = mkProverTemplate "Pellet Consistency Checker" () consCheck
+pelletConsChecker :: ConsChecker Sign Sentence OWL_SL
+                     (DefaultMorphism Sign) ProofTree
+pelletConsChecker = mkProverTemplate "Pellet Consistency Checker" sl_top
+                    consCheck
 
 
 {- |

@@ -30,6 +30,7 @@ import Common.DefaultMorphism
 --OWL = domain
 import OWL.Logic_OWL
 import OWL.AS
+import OWL.Sublogic
 import qualified OWL.Sign as OS
 
 --CASL_DL = codomain
@@ -48,7 +49,7 @@ instance Language OWL2CASL
 instance Comorphism
     OWL2CASL        -- comorphism
     OWL             -- lid domain
-    ()              -- sublogics domain
+    OWL_SL          -- sublogics domain
     OntologyFile    -- Basic spec domain
     OS.Sentence     -- sentence domain
     ()              -- symbol items domain
@@ -71,7 +72,7 @@ instance Comorphism
     ProofTree       -- proof tree domain
     where
       sourceLogic OWL2CASL    = OWL
-      sourceSublogic OWL2CASL = ()
+      sourceSublogic OWL2CASL = sl_top
       targetLogic OWL2CASL    = CASL
       mapSublogic OWL2CASL _  = Just $ cFol
         { cons_features = emptyMapConsFeature }
