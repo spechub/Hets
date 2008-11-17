@@ -259,15 +259,7 @@ consCheck thName tm freedefs =
 
           runPelletRealM :: IO([Proof_status ProofTree])
           runPelletRealM = do
-              pPath     <- getEnvSec "PELLET_PATH"
-              progTh    <- doesFileExist $ pPath ++ "/pellet.sh"
-              progEx <- if (progTh)
-                         then
-                             do
-                               progPerms <- getPermissions $ pPath ++ "/pellet.sh"
-                               return $ executable $ progPerms
-                         else
-                             return False
+              (progTh, progEx) <- check4Pellet
               case (progTh, progEx) of
                 (True,True) -> do
                    when saveOWL
@@ -282,6 +274,7 @@ consCheck thName tm freedefs =
                    let command = "sh pellet.sh "
                                  ++ simpleOptions ++ extraOptions
                                  ++ tmpURI
+                   pPath     <- getEnvSec "PELLET_PATH"
                    setCurrentDirectory(pPath)
                    outState <- timeWatch timeLimitI $
                      (do
@@ -425,6 +418,20 @@ consCheck thName tm freedefs =
         in
           runPelletRealM
 
+check4Pellet :: IO (Bool, Bool)
+check4Pellet =
+    do
+      pPath     <- getEnvSec "PELLET_PATH"
+      progTh    <- doesFileExist $ pPath ++ "/pellet.sh"
+      progEx <- if (progTh)
+                 then
+                     do
+                       progPerms <- getPermissions $ pPath ++ "/pellet.sh"
+                       return $ executable $ progPerms
+                 else
+                     return False
+      return $ (progTh, progEx)
+
 -- TODO: Pellet Prove for single goals.
 runPellet :: PelletProverState
            -- ^ logical part containing the input Sign and axioms and possibly
@@ -447,15 +454,7 @@ runPellet sps cfg savePellet thName nGoal = do
     tmpFileName   = (reverse $ fst $ span (/='/') $ reverse thName) ++
                        '_':AS_Anno.senAttr nGoal
     runPelletReal = do
-      pPath     <- getEnvSec "PELLET_PATH"
-      progTh    <- doesFileExist $ pPath ++ "/pellet.sh"
-      progEx <- if (progTh)
-                 then
-                     do
-                       progPerms <- getPermissions $ pPath ++ "/pellet.sh"
-                       return $ executable $ progPerms
-                 else
-                     return False
+      (progTh, progEx) <- check4Pellet
       case (progTh,progEx) of
         (True,True) -> do
           let prob   = showOWLProblemS thName sps []
@@ -474,6 +473,7 @@ runPellet sps cfg savePellet thName nGoal = do
           writeFile entailsFile entail
           let command = "sh pellet.sh " ++ extraOptions ++ " " ++ entailsFile
                         ++ " " ++ timeTmpFile
+          pPath     <- getEnvSec "PELLET_PATH"
           setCurrentDirectory(pPath)
           ((err, retval),output, tUsed) <- case tLimit of
             Nothing ->
