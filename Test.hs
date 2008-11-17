@@ -163,12 +163,13 @@ myGlobal ln n lenv =
         -- try to do n times globDecomp
         dgraph = lookupDGraph ln newLenv
         globalThmEdges = filter (liftE isUnprovenGlobalThm) (labEdgesDG dgraph)
-        (_, newHistoryElems) = mapAccumL globDecompAux dgraph globalThmEdges
+        ngraph = foldl globDecompAux dgraph globalThmEdges
         defEdgesToSource = myGoingIntoGTE dgraph globalThmEdges []
     in do putStrLn "all the edges going into global Thm Edges"
           putStrLn $ show defEdgesToSource
-          return (globalThmEdges , concatMap snd newHistoryElems)
-            -- get the DGChanges by the fourth time executing globDecomp
+          return (globalThmEdges,
+             flatHistory $ snd $ splitHistory dgraph ngraph)
+            -- get the DGChanges by executing globDecomp
 
 myGoingIntoGTE :: DGraph -> [LEdge DGLinkLab] -> [String]->[String]
 myGoingIntoGTE _ [] res = res
