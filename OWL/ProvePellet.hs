@@ -273,14 +273,16 @@ consCheck thName tm freedefs =
                    when saveOWL
                           (writeFile (saveFileName ++".owl") problemS)
                    t <- getCurrentTime
-                   let timeTmpFile = "/tmp/" ++ tmpFileName
+                   tempDir <- getTemporaryDirectory
+                   let timeTmpFile = tempDir ++ "/" ++ tmpFileName
                                      ++ (show $ utctDay t) ++
                                      "-" ++ (show $ utctDayTime t) ++ ".owl"
                        tmpURI = "file://"++timeTmpFile
                    writeFile timeTmpFile $ problemS
-                   let command = "cd $PELLET_PATH; sh pellet.sh "
+                   let command = "sh pellet.sh "
                                  ++ simpleOptions ++ extraOptions
                                  ++ tmpURI
+                   setCurrentDirectory(pPath)
                    outState <- timeWatch timeLimitI $
                      (do
                        (_, outh, errh, proch) <- runInteractiveCommand command
@@ -463,15 +465,16 @@ runPellet sps cfg savePellet thName nGoal = do
           when savePellet
             (writeFile (saveFileName ++".entail.owl") entail)
           t <- getCurrentTime
-          let timeTmpFile = "/tmp/" ++ tmpFileName ++ (show $ utctDay t) ++
+          tempDir <- getTemporaryDirectory
+          let timeTmpFile = tempDir ++ "/" ++ tmpFileName ++ (show $ utctDay t) ++
                                "-" ++ (show $ utctDayTime t) ++ ".owl"
-              entailsFile = "/tmp/" ++ tmpFileName ++ (show $ utctDay t) ++
+              entailsFile = tempDir ++ "/" ++ tmpFileName ++ (show $ utctDay t) ++
                                "-" ++ (show $ utctDayTime t) ++ ".entails.owl"
           writeFile timeTmpFile prob
           writeFile entailsFile entail
-          let command = "cd $PELLET_PATH; sh pellet.sh " ++ extraOptions ++ " " ++ entailsFile
+          let command = "sh pellet.sh " ++ extraOptions ++ " " ++ entailsFile
                         ++ " " ++ timeTmpFile
-          -- putStrLn command
+          setCurrentDirectory(pPath)
           ((err, retval),output, tUsed) <- case tLimit of
             Nothing ->
                 do
@@ -647,18 +650,16 @@ showOWLProblem :: String -- ^ theory name
                -> AS_Anno.Named Sentence -- ^ goal to print
                -> [String] -- ^ extra options
                -> IO String -- ^ formatted output of the goal
-showOWLProblem thName pst nGoal _ = do
-  prob <- genPelletProblem thName pst (Just nGoal)
-  return $ show (initialState $ problemProverState prob)
-
-{- |
-  Generate a SoftFOL problem with time stamp while maybe adding a goal.
--}
-genPelletProblem :: String -> PelletProverState
-                -> Maybe (AS_Anno.Named Sentence)
-                -> IO PelletProblem
-genPelletProblem thName pps m_nGoal = do
-       return $ genPelletProblemS thName pps m_nGoal
+showOWLProblem thName pst nGoal _ =
+    let namedSens = initialState $ problemProverState
+                    $ genPelletProblemS thName pst Nothing
+        sign      = ontologySign $ problemProverState
+                    $ genPelletProblemS thName pst Nothing
+    in return $
+       ((show $ printOWLBasicTheory (sign, filter (\ax -> isAxiom(ax)) namedSens))
+        ++ "\n\nEntailments:\n\n" ++
+        (show $ printOWLBasicTheory (sign, [nGoal]))
+       )
 
 {- |
   Generate a SoftFOL problem with time stamp while maybe adding a goal.
