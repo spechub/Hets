@@ -115,7 +115,7 @@ printObjPropExp :: ObjectPropertyExpression -> Doc
 printObjPropExp obExp =
     case obExp of
      OpURI ou -> pretty ou
-     InverseOp iopExp -> text "inverse" <> parens (printObjPropExp iopExp)
+     InverseOp iopExp -> text "inverseOf" <> parens (printObjPropExp iopExp)
 
 instance Pretty DataRange where
     pretty = printDataRange
@@ -196,7 +196,7 @@ printAxiom axiom = case axiom of
    ObjectPropertyDomainOrRange ty opExp desc ->
        opStart <+> pretty opExp $+$ printObjDomainOrRange ty <+> pretty desc
    InverseObjectProperties opExp1 opExp2 ->
-       opStart <+> pretty opExp1 $+$ text "Inverse:" <+> pretty opExp2
+       opStart <+> pretty opExp1 $+$ text "InverseOf:" <+> pretty opExp2
    ObjectPropertyCharacter ch opExp ->
        opStart <+> pretty opExp $+$ printCharact (show ch)
    -- DataPropertyAxiom

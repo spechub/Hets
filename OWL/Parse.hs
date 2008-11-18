@@ -165,7 +165,7 @@ uriP = let
   in skip $ checkWithUsing showQN uriQ $ \ q -> let p = namePrefix q in
   if null p then not $ elem (localPart q)
    $ datatypeKeys ++ casl_reserved_words ++ ncs
-   else not $ elem p cs
+   else not $ elem p $ map (takeWhile (/= ':')) cs
 
 datatypeUri :: CharParser st QName
 datatypeUri = fmap mkQName (choice $ map keyword datatypeKeys) <|> uriP
@@ -260,7 +260,7 @@ atomic = parensP description
 
 objectPropertyExpr :: CharParser st ObjectPropertyExpression
 objectPropertyExpr = do
-    keyword "InverseOf"
+    keyword "inverseOf"
     fmap InverseOp objectPropertyExpr
   <|> fmap OpURI uriP
 
