@@ -34,7 +34,7 @@ import qualified Logic.Prover as LP
 
 import qualified GUI.GenericATPState as ATPState
 import GUI.GenericATP
-import GUI.HTkUtils
+import GUI.Utils (infoDialog, createTextSaveDisplay)
 
 import HTk
 
@@ -68,10 +68,10 @@ maxSigSize = 17
 -- display error message when signature is too large
 sigTooLarge :: Int -> IO()
 sigTooLarge sigSize =
-   createInfoWindow "Signature is too large"
-           ("Signature is too large. "++
-            "It should contain < "++show maxSigSize++" symbols, "++
-            "but it contains "++show sigSize++" symbols.")
+   infoDialog "Signature is too large"
+              ("Signature is too large. "++
+               "It should contain < "++show maxSigSize++" symbols, "++
+               "but it contains "++show sigSize++" symbols.")
 
 ttHelpText :: String
 ttHelpText = "An implementation of the truth table method.\n"++

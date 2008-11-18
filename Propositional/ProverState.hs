@@ -36,7 +36,8 @@ propProverState :: Sign.Sign                  -- Input Signature
                 -> PropProverState
 propProverState sign aSens freedefs =
     let
-        axioms = PUtil.prepareSenNames transSenName $ filter AS_Anno.isAxiom aSens
+        axioms = PUtil.prepareSenNames transSenName 
+                                       $ filter AS_Anno.isAxiom aSens
     in
       foldl insertSentence
       PropProverState
@@ -58,6 +59,7 @@ insertSentence pState frm =
       {
         initialAxioms    = axs ++ [frm]
       , initialSignature = sign
+      , freeDefs = []
       }
 
 

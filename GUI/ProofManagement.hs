@@ -31,7 +31,10 @@ import Space
 import XSelection
 import Messages(errorMess)
 
-import GUI.HTkUtils
+import GUI.Utils (createTextSaveDisplay, displayTheoryWithWarning)
+import GUI.HTkUtils ( LBGoalView (..), LBStatusIndicator (..), EnableWid (..)
+                    , populateGoalsListBox, indicatorFromBasicProof
+                    , enableWids, disableWids, enableWidsUponSelection)
 import GUI.ProofDetails
 
 import Proofs.AbstractState

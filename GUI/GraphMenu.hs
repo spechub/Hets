@@ -219,9 +219,13 @@ createGlobalMenu :: GInfo -> ConvFunc -> LibFunc -> IORef [String]
                  -> [GlobalMenu]
 createGlobalMenu gInfo@(GInfo { gi_LIB_NAME = ln
                               , gi_hetcatsOpts = opts
-                              , gi_GraphInfo = gi
                               , commandHist = ch
+#ifdef GTKGLADE
+                              , gi_GraphInfo = gi
                               }) convGraph showLib deselectEdgeTypes =
+#else
+                              }) convGraph showLib _ =
+#endif
   let ral x = runAndLock gInfo x in
   [GlobalMenu (Menu Nothing
     [ Button "Undo" $ ral $ undo gInfo True
@@ -441,7 +445,7 @@ createLocalMenuButtonProveAtNode gInfo =
 createLocalMenuButtonConsistencyChecker :: GInfo -> ButtonMenu GA.NodeValue
 createLocalMenuButtonConsistencyChecker gInfo =
   createMenuButton "Consistency checker"
-                   (\_ _ -> showConsistencyChecker gInfo) gInfo
+                   (showConsistencyChecker gInfo) gInfo
 #endif
 
 createLocalMenuButtonCCCAtNode :: GInfo -> ButtonMenu GA.NodeValue

@@ -10,7 +10,6 @@ Portability :  non-portable (imports Logic)
 
 This module provides functions for all the menus in the Hets GUI.
 These are then assembled to the GUI in "GUI.GraphMenu".
-
 -}
 
 module GUI.GraphLogic
@@ -67,9 +66,11 @@ import GUI.Taxonomy (displayConceptGraph,displaySubsortGraph)
 import GUI.DGTranslation(getDGLogic)
 import GUI.GraphTypes
 import qualified GUI.GraphAbstraction as GA
-import qualified GUI.HTkUtils (displayTheoryWithWarning,
-                               createInfoDisplayWithTwoButtons,
-                               createInfoWindow)
+import GUI.Utils ( displayTheoryWithWarning
+                 , warningDialog
+                 , infoDialog
+                 , errorDialog
+                 )
 
 import GraphConfigure
 import TextDisplay(createTextDisplay)
@@ -571,10 +572,8 @@ getTheoryOfNode gInfo@(GInfo { gi_LIB_NAME = ln
     case res of
       (Just (le', n, gth)) -> do
         lockGlobal gInfo
-        GUI.HTkUtils.displayTheoryWithWarning
-                "Theory" (getNameOfNode n dgraph)
-                (addHasInHidingWarning dgraph n)
-                gth
+        displayTheoryWithWarning "Theory" (getNameOfNode n dgraph)
+                                 (addHasInHidingWarning dgraph n) gth
         let newGr = lookupDGraph ln le'
         libEnv <- readIORef le
         let history = snd $ splitHistory (lookupDGraph ln libEnv) newGr
@@ -610,7 +609,7 @@ translateTheoryOfNode
                    (plainSign sign', toNamedList sens')
              case mTh of
                Nothing -> showDiagMess opts es
-               Just (sign'', sens1) -> GUI.HTkUtils.displayTheoryWithWarning
+               Just (sign'', sens1) -> displayTheoryWithWarning
                 "Translated Theory" (getNameOfNode node dgraph)
                 (addHasInHidingWarning dgraph node)
                 (G_theory lidT (mkExtSign sign'') startSigId
@@ -672,9 +671,11 @@ proveAtNode checkCons gInfo@(GInfo { libEnvIORef = ioRefProofStatus
             runProveAtNode gInfo (descr, dgn') res
       case checkCons || not (hasIncomingHidingEdge dgraph' $ snd libNode) of
         True -> action
-        False -> GUI.HTkUtils.createInfoDisplayWithTwoButtons "Warning"
-                   "This node has incoming hiding links!!!" "Prove anyway"
-                   action
+        False -> do
+          warningDialog "Warning"
+                        "This node has incoming hiding links!\n Prove anyway?"
+                        $ Just (\ _ -> action)
+          return ()
   unlockLocal dgn'
 
 runProveAtNode :: GInfo -> LNode DGNodeLab
@@ -707,11 +708,11 @@ mergeDGNodeLab (GInfo{gi_LIB_NAME = ln}) (v, new_dgn) le = do
 showEdgeInfo :: Int -> Maybe (LEdge DGLinkLab) -> IO ()
 showEdgeInfo descr me = case me of
   Just e@(_, _, l) -> let estr = showLEdge e in
-    createTextDisplay ("Info of " ++ estr)
-      (estr ++ "\n" ++ showDoc l "") [HTk.size(70,30)]
-  Nothing -> createTextDisplay "Error"
+    infoDialog ("Info of " ++ estr)
+      (estr ++ "\n" ++ showDoc l "")
+  Nothing -> errorDialog "Error"
     ("edge " ++ show descr ++ " has no corresponding edge"
-     ++ "in the development graph") [HTk.size(50,10)]
+     ++ "in the development graph")
 
 conservativityRule :: DGRule
 conservativityRule = DGRule "ConservativityCheck"
@@ -754,8 +755,8 @@ checkconservativityOfEdge _ gInfo@(GInfo{gi_LIB_NAME = ln,
   if length (conservativityCheck lid) < 1
    then
        do
-        GUI.HTkUtils.createInfoWindow "Result of conservativity check"
-                        "No conservativity checkers available"
+        infoDialog "Result of conservativity check"
+                   "No conservativity checkers available"
         writeIORef le libEnv'
         unlockGlobal gInfo
    else
@@ -764,8 +765,8 @@ checkconservativityOfEdge _ gInfo@(GInfo{gi_LIB_NAME = ln,
      if Res.hasErrors $ Res.diags checkerR
       then
        do
-        GUI.HTkUtils.createInfoWindow "Result of conservativity check"
-                        "No conservativity checker chosen"
+        infoDialog "Result of conservativity check"
+                   "No conservativity checker chosen"
         writeIORef le libEnv'
         unlockGlobal gInfo
       else
@@ -817,9 +818,9 @@ checkconservativityOfEdge _ gInfo@(GInfo{gi_LIB_NAME = ln,
         unlockGlobal gInfo
 
 checkconservativityOfEdge descr _ Nothing =
-      createTextDisplay "Error"
+      errorDialog "Error"
           ("edge " ++ show descr ++ " has no corresponding edge "
-                ++ "in the development graph") [HTk.size(30,10)]
+                ++ "in the development graph")
 
 -- | Graphical choser for conservativity checkers
 conservativityChoser :: [ConservativityChecker sign sentence morphism]

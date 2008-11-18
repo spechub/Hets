@@ -10,7 +10,26 @@ Portability :  non-portable (imports HTk)
 Utilities on top of HTk
 -}
 
-module GUI.HTkUtils where
+module GUI.HTkUtils 
+  ( LBGoalView (..)
+  , LBStatusIndicator (..)
+  , EnableWid (..)
+  , listBox
+  , askFileNameAndSave
+  , createTextSaveDisplay
+  , createInfoWindow
+  , createInfoDisplayWithTwoButtons
+  , displayTheory
+  , displayTheoryWithWarning
+  , populateGoalsListBox
+  , indicatorFromProof_status
+  , indicatorFromBasicProof
+  , indicatorString
+  , enableWids
+  , disableWids
+  , enableWidsUponSelection
+  )
+  where
 
 import System.Directory
 

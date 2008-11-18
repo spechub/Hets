@@ -36,7 +36,10 @@ import XSelection
 import Space
 import ScrollBar
 
-import GUI.HTkUtils
+import GUI.Utils (createTextSaveDisplay)
+import GUI.HTkUtils ( LBGoalView (..), LBStatusIndicator (..), EnableWid (..)
+                    , populateGoalsListBox, indicatorFromProof_status
+                    , enableWids, disableWids, enableWidsUponSelection)
 import GUI.GenericATPState
 import GUI.PrintUtils
 

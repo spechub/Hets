@@ -33,7 +33,7 @@ import qualified Logic.Prover as LP
 
 import qualified GUI.GenericATPState as ATPState
 import GUI.GenericATP
-import GUI.HTkUtils
+import GUI.Utils (infoDialog)
 
 import HTk
 import ChildProcess as CP
@@ -92,7 +92,7 @@ consCheck :: String -> LP.TheoryMorphism Sig.Sign AS_BASIC.FORMULA
              PMorphism.Morphism ProofTree
           -> [LP.FreeDefMorphism PMorphism.Morphism] -- ^ free definitions
           -> IO([LP.Proof_status ProofTree])
-consCheck thName tm freedefs =
+consCheck thName tm _ =
     case LP.t_target tm of
       LP.Theory sig nSens -> do
             let axioms = getAxioms $ snd $ unzip $ OMap.toList nSens
@@ -122,7 +122,7 @@ consCheck thName tm freedefs =
             exitCode <- system ("zchaff " ++ tmpFile ++ " >> " ++ resultFile)
             removeFile tmpFile
             if exitCode /= ExitSuccess then
-                createInfoWindow "consistency checker"
+                infoDialog "consistency checker"
                           ("error by call zchaff " ++ thName)
                else do
                    resultHf <- openFile resultFile ReadMode
@@ -130,10 +130,10 @@ consCheck thName tm freedefs =
                    hClose resultHf
                    removeFile resultFile
                    if isSAT then
-                       createInfoWindow "consistency checker"
+                       infoDialog "consistency checker"
                           ("consistent.")
                      else
-                         createInfoWindow "consistency checker"
+                         infoDialog "consistency checker"
                           ("inconsistent.")
             return []
 

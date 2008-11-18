@@ -31,7 +31,7 @@ import XSelection
 import Space
 import ScrollBar
 
-import GUI.HTkUtils
+import GUI.Utils
 import GUI.GenericATPState
 
 -- ** Constants

@@ -26,7 +26,7 @@ import HTk
 
 import GUI.GenericATP
 import GUI.GenericATPState
-import GUI.HTkUtils
+import GUI.Utils (createTextSaveDisplay, infoDialog)
 
 import Proofs.BatchProcessing
 
@@ -281,7 +281,7 @@ consCheck thName tm freedefs =
                    removeFile timeTmpFile
                    return [outState]
                 (True,False) -> do
-                   createInfoWindow "Pellet prover" "Pellet not executable"
+                   infoDialog "Pellet prover" "Pellet not executable"
                    return [Proof_status
                            {
                             goalName = thName
@@ -294,7 +294,7 @@ consCheck thName tm freedefs =
                            ,tacticScript  = tac
                            }]
                 (False,_) -> do
-                   createInfoWindow "Pellet prover" "Pellet not found"
+                   infoDialog "Pellet prover" "Pellet not found"
                    return [Proof_status
                            {
                             goalName = thName

@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <!DOCTYPE glade-interface SYSTEM "glade-2.0.dtd">
-<!--Generated with glade3 3.4.5 on Wed Oct 15 15:58:49 2008 -->
+<!--Generated with glade3 3.4.5 on Sat Nov  1 17:01:47 2008 -->
 <glade-interface>
   <widget class="GtkWindow" id="ConsistencyChecker">
     <child>
@@ -28,18 +28,9 @@
                             <property name="left_padding">6</property>
                             <property name="right_padding">6</property>
                             <child>
-                              <widget class="GtkScrolledWindow" id="scrolledwindow1">
+                              <widget class="GtkTreeView" id="trvModel">
                                 <property name="visible">True</property>
                                 <property name="can_focus">True</property>
-                                <property name="hscrollbar_policy">GTK_POLICY_AUTOMATIC</property>
-                                <property name="vscrollbar_policy">GTK_POLICY_AUTOMATIC</property>
-                                <child>
-                                  <widget class="GtkTreeView" id="lstModel">
-                                    <property name="visible">True</property>
-                                    <property name="can_focus">True</property>
-                                    <property name="headers_clickable">True</property>
-                                  </widget>
-                                </child>
                               </widget>
                             </child>
                           </widget>
@@ -139,6 +130,7 @@
                             <property name="expand">False</property>
                             <property name="fill">False</property>
                             <property name="pack_type">GTK_PACK_END</property>
+                            <property name="position">1</property>
                           </packing>
                         </child>
                       </widget>
@@ -244,18 +236,9 @@
                             <property name="left_padding">6</property>
                             <property name="right_padding">75</property>
                             <child>
-                              <widget class="GtkScrolledWindow" id="scrolledwindow2">
+                              <widget class="GtkTreeView" id="trvFinder">
                                 <property name="visible">True</property>
                                 <property name="can_focus">True</property>
-                                <property name="hscrollbar_policy">GTK_POLICY_AUTOMATIC</property>
-                                <property name="vscrollbar_policy">GTK_POLICY_AUTOMATIC</property>
-                                <child>
-                                  <widget class="GtkTreeView" id="lstFinder">
-                                    <property name="visible">True</property>
-                                    <property name="can_focus">True</property>
-                                    <property name="headers_clickable">True</property>
-                                  </widget>
-                                </child>
                               </widget>
                             </child>
                           </widget>

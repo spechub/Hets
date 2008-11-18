@@ -45,7 +45,7 @@ import System.Process
 import HTk
 import GUI.GenericATP
 import GUI.GenericATPState
-import GUI.HTkUtils
+import GUI.Utils (infoDialog)
 import Proofs.BatchProcessing
 
 -- * Prover implementation
@@ -169,7 +169,7 @@ consCheck thName tm freedefs = case t_target tm of
             hasProgramm <- system ("which darwin > /dev/null 2> /dev/null")
             case hasProgramm of
               ExitFailure _ -> do
-                  createInfoWindow "Darwin prover" "Darwin not found"
+                  infoDialog "Darwin prover" "Darwin not found"
                   return [Proof_status
                     { goalName = thName
                     , goalStatus = Open
