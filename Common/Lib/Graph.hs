@@ -19,6 +19,7 @@ module Common.Lib.Graph
   , unsafeConstructGr
   , decomposeGr
   , getPaths
+  , getAllPathsTo
   , getPathsTo
   , getLEdges
   , Common.Lib.Graph.delLEdge
@@ -156,6 +157,16 @@ getPaths src gr = case decomposeGr src gr of
              ++ concatMap (\ p -> map (\ b -> (src, nxt, b) : p) lbls)
                            (getPaths nxt ng)) [] $ nodeSuccs c
     Nothing -> error $ "Common.Lib.Graph.getPaths no node: " ++ show src
+
+-- | compute the possible cycle free reversed paths from a start node
+getAllPathsTo :: Node -> Gr a b -> [[LEdge b]]
+getAllPathsTo tgt gr = case decomposeGr tgt gr of
+    Just (c, ng) ->
+      Map.foldWithKey (\ nxt lbls l ->
+           l ++ map (\ b -> [(nxt, tgt, b)]) lbls
+             ++ concatMap (\ p -> map (\ b -> (nxt, tgt, b) : p) lbls)
+                           (getAllPathsTo nxt ng)) [] $ nodePreds c
+    Nothing -> error $ "Common.Lib.Graph.getAllPathsTo no node: " ++ show tgt
 
 -- | compute the possible cycle free paths from a start node to a target node.
 getPathsTo :: Node -> Node -> Gr a b -> [[LEdge b]]
