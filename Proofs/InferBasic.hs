@@ -38,7 +38,6 @@ import Common.Result
 import Common.ResultT
 
 import Control.Monad.Trans
-import Data.Graph.Inductive.Graph
 
 import Logic.Logic
 import Logic.Prover
@@ -52,20 +51,80 @@ import GUI.Utils
 import GUI.ProofManagement
 import GUI.History(CommandHistory, addProveToHist)
 
+import qualified Common.Lib.Graph as Tree
+import Data.Graph.Inductive.Basic (elfilter)
+import Data.Graph.Inductive.Graph
 import Data.Maybe
 import qualified Data.Map as Map
--- ---------------
--- basic inference
--- ---------------
 
-selectProver :: GetPName a =>
-                [(a,AnyComorphism)] -> ResultT IO (a,AnyComorphism)
-selectProver [p] = return p
-selectProver [] = fail "No prover available"
-selectProver ps = do
-   sel <- lift $ listBox
-                "Choose a translation to a prover-supported logic"
-                $ map (\ (aGN,cm) -> show cm ++" ("++getPName aGN++")") ps
+isFreeEdge :: DGLinkType -> Bool
+isFreeEdge edge = case edge of
+    FreeDef _ -> True
+    _ -> False
+
+isCofreeEdge :: DGLinkType -> Bool
+isCofreeEdge edge = case edge of
+    CofreeDef _ -> True
+    _ -> False
+
+getCFreeDefLinks :: DGraph -> Node
+                        -> ([[LEdge DGLinkLab]], [[LEdge DGLinkLab]])
+getCFreeDefLinks dg tgt =
+  let isGlobalOrCFreeEdge = liftOr isGlobalEdge $ liftOr isFreeEdge isCofreeEdge
+      paths = map reverse $ Tree.getAllPathsTo tgt
+        $ elfilter (isGlobalOrCFreeEdge . dgl_type) $ dgBody dg
+      myfilter p = filter ( \ ((_, _, lbl) : _) -> p $ dgl_type lbl)
+  in (myfilter isFreeEdge paths, myfilter isCofreeEdge paths)
+
+mkFreeDefMor :: morphism -> morphism -> FreeDefMorphism morphism
+mkFreeDefMor m1 m2 = FreeDefMorphism
+  { freeDefMorphism = m1
+  , pathFromFreeDef = m2
+  , isCofree = False }
+
+getFreeDefMorphism :: Logic lid sublogics
+         basic_spec sentence symb_items symb_map_items
+          sign morphism symbol raw_symbol proof_tree =>
+   lid -> DGraph -> [LEdge DGLinkLab] -> Maybe (FreeDefMorphism morphism)
+getFreeDefMorphism lid dg path = case path of
+  [] -> error "getFreeDefMorphism"
+  (_, t, l) : rp -> do
+    gmor@(GMorphism cid _ _ fmor _) <- return $ dgl_morphism l
+    if isHomogeneous gmor then do
+        cfmor <- coerceMorphism (targetLogic cid) lid "getFreeDefMorphism1" fmor
+        case rp of
+          [] -> do
+            G_theory lid2 (ExtSign sig _) _ _ _ <-
+                     return $ dgn_theory $ labDG dg t
+            sig2 <- coercePlainSign lid2 lid "getFreeDefMorphism2" sig
+            return $ mkFreeDefMor cfmor $ ide sig2
+          _ -> do
+            pm@(GMorphism cid2 _ _ pmor _) <- calculateMorphismOfPath rp
+            if isHomogeneous pm then do
+                cpmor <- coerceMorphism (targetLogic cid2) lid
+                         "getFreeDefMorphism3" pmor
+                return $ mkFreeDefMor cfmor cpmor
+              else Nothing
+      else Nothing
+
+getCFreeDefMorphs :: Logic lid sublogics
+         basic_spec sentence symb_items symb_map_items
+          sign morphism symbol raw_symbol proof_tree =>
+   lid -> DGraph -> Node  -> [FreeDefMorphism morphism]
+getCFreeDefMorphs lid dg node = let
+  (frees, cofrees) = getCFreeDefLinks dg node
+  myget = catMaybes . map (getFreeDefMorphism lid dg)
+  mkCoFree m = m { isCofree = True }
+  in myget frees ++ map mkCoFree (myget cofrees)
+
+selectProver :: GetPName a => [(a, AnyComorphism)]
+             -> ResultT IO (a, AnyComorphism)
+selectProver ps = case ps of
+  [] -> fail "No prover available"
+  [p] -> return p
+  _ -> do
+   sel <- lift $ listBox "Choose a translation to a prover-supported logic"
+     $ map (\ (aGN, cm) -> shows cm $ " (" ++ getPName aGN ++ ")") ps
    i <- case sel of
            Just j -> return j
            _ -> fail "Proofs.Proofs: selection"
@@ -125,7 +184,8 @@ basicInferenceNode checkCons lg (ln, node) libname guiMVar libEnv ch = do
                         t_target = Theory sign'' (toThSens sens''),
                         t_morphism = incl }
             cc' <- coerceConsChecker lid4 lidT "" cc
-            pts <- lift $ cons_check lidT cc' thName mor [] -- TODO: freedefs
+            pts <- lift $ cons_check lidT cc' thName mor
+              $ getCFreeDefMorphs lidT dGraph node
             let resT = case pts of
                   [pt] -> case goalStatus pt of
                     Proved (Just True) -> let
@@ -227,7 +287,8 @@ basicInferenceSubTree checkCons lg (ln, node) guiMVar ch libEnv = do
                         t_target = Theory sign'' (toThSens sens''),
                         t_morphism = incl }
             cc' <- coerceConsChecker lid4 lidT "" cc
-            pts <- lift $ cons_check lidT cc' thName mor [] -- TODO: freedefs
+            pts <- lift $ cons_check lidT cc' thName mor
+              $ getCFreeDefMorphs lidT f_dGraph node
             let resT = case pts of
                   [pt] -> case goalStatus pt of
                     Proved (Just True) -> let
