@@ -297,17 +297,6 @@ getAllPathsOfTypeFrom :: DGraph -> Node -> [[LEdge DGLinkLab]]
 getAllPathsOfTypeFrom dgraph src =
    Tree.getPaths src $ dgBody dgraph
 
--- --------------------------------------------------------------
--- methods to determine the inserted edges in the given dgchange
--- --------------------------------------------------------------
-
-{- | returns all insertions of edges from the given list of changes -}
-getInsertedEdges :: [DGChange] -> [LEdge DGLinkLab]
-getInsertedEdges [] = []
-getInsertedEdges (change : list) = (case change of
-    InsertEdge edge -> (edge :)
-    _ -> id) $ getInsertedEdges list
-
 -- ----------------------------------------
 -- methods to check and select proof basis
 -- ----------------------------------------
