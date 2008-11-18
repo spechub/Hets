@@ -104,12 +104,8 @@ basicInferenceNode checkCons lg (ln, node) libname guiMVar libEnv ch = do
         -- may contain proved theorems
         (libEnv', thForProof@(G_theory lid1 (ExtSign sign _) _ axs _)) <-
              liftR $ computeTheory False libEnv ln node
-        ctx <- liftR
-                    $ maybeToMonad ("Could not find node "++show node)
-                    $ fst $ matchDG node dGraph
-        let nodeName = dgn_name $ lab' ctx
-            thName = shows (getLIB_ID ln) "_"
-                     ++ {-maybe (show node)-} showName nodeName
+        let thName = shows (getLIB_ID ln) "_"
+                     ++ getNameOfNode node dGraph
             sublogic = sublogicOfTh thForProof
         -- select a suitable translation and prover
 
@@ -192,12 +188,8 @@ basicInferenceSubTree checkCons lg (ln, node) guiMVar ch libEnv = do
         -- may contain proved theorems
         (libEnv', thForProof@(G_theory lid1 (ExtSign sign _) _ axs _)) <-
              liftR $ computeTheory False libEnv ln node
-        ctx <- liftR
-                    $ maybeToMonad ("Could not find node "++show node)
-                    $ fst $ matchDG node dGraph
-        let nodeName = dgn_name $ lab' ctx
-            thName = shows (getLIB_ID ln) "_"
-                     ++ {-maybe (show node)-} showName nodeName
+        let thName = shows (getLIB_ID ln) "_"
+                     ++ getNameOfNode node dGraph
             sublogic = sublogicOfTh thForProof
         -- select a suitable translation and prover
             cms = filter hasModelExpansion $ findComorphismPaths lg sublogic
