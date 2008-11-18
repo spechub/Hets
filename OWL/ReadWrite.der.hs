@@ -33,8 +33,7 @@ fromShATermAux_QName :: Int -> ATermTable -> (ATermTable, QName)
 fromShATermAux_QName ix att = (att,
       case getShATerm ix att of
        ShAAppl idName _ _ ->
-         if null idName || idName == "\"\"" then
-             QN "" "_" False ""
+         if null idName || idName == "\"\"" then nullQName
           else
            let idName' = read idName::String
                (idName'', isFull) =
