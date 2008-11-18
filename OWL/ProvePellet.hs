@@ -18,8 +18,6 @@ module OWL.ProvePellet (pelletProver,pelletGUI,pelletCMDLautomatic,
 
 import Logic.Prover
 
-import Common.AS_Annotation
-
 import OWL.Sign
 import OWL.Print
 import OWL.Sublogic
@@ -32,10 +30,11 @@ import GUI.HTkUtils
 
 import Proofs.BatchProcessing
 
-import qualified Common.AS_Annotation as AS_Anno
+import Common.AS_Annotation
 import Common.DefaultMorphism
 import Common.ProofTree
-import qualified Common.Result as Result
+import Common.Result as Result
+import Common.Utils
 
 import Data.List (isPrefixOf)
 import Data.Time (timeToTimeOfDay)
@@ -43,19 +42,17 @@ import Data.Time.Clock (UTCTime(..), secondsToDiffTime, getCurrentTime)
 
 import qualified Control.Concurrent as Concurrent
 
-import System
+import System.Exit
 import System.IO
 import System.Process
 import System.Directory
-import System.Environment
 
 import Control.Concurrent
 import Control.Concurrent.MVar
 
-import Common.Utils
 data PelletProverState = PelletProverState
                         { ontologySign :: Sign
-                        , initialState :: [AS_Anno.Named Sentence] }
+                        , initialState :: [Named Sentence] }
                          deriving (Show)
 data PelletProblem = PelletProblem
                    { identifier :: PelletID
@@ -74,12 +71,12 @@ data PelletSetting = PelletSetting
 
 -- * Prover implementation
 pelletProverState :: Sign
-                 -> [AS_Anno.Named Sentence]
+                 -> [Named Sentence]
                  -> [FreeDefMorphism (DefaultMorphism Sign)] -- ^ freeness constraints
                  -> PelletProverState
 pelletProverState sig oSens _ = PelletProverState
          { ontologySign = sig
-          ,initialState = filter AS_Anno.isAxiom oSens }
+          ,initialState = filter isAxiom oSens }
 
 {- |
   The Prover implementation. First runs the batch prover (with graphical feedback), then starts the GUI prover.
@@ -119,7 +116,7 @@ atpFun thName = ATPFunctions
 -}
 insertOWLSentence :: PelletProverState -- ^ prover state containing
                                       --   initial logical part
-                  -> AS_Anno.Named Sentence -- ^ goal to add
+                  -> Named Sentence -- ^ goal to add
                   -> PelletProverState
 insertOWLSentence pps s =
     pps{initialState = (initialState pps) ++ [s]}
@@ -227,15 +224,8 @@ spamOutput ps =
 
         Proved Nothing -> return ()  -- todo: another errors
 
-getEnvSec :: String -> IO [Char]
-getEnvSec s =
-    do
-      env <- getEnvironment
-      let var = filter (\(z,_) -> z == s) env
-      case length var of
-        0 -> return ""
-        1 -> return $ snd $ head $ var
-        _ -> fail $ "Ambigoous environment"
+getEnvSec :: String -> IO String
+getEnvSec s = getEnvDef s ""
 
 consCheck :: String
           -> TheoryMorphism Sign Sentence (DefaultMorphism Sign) ProofTree
@@ -389,7 +379,7 @@ consCheck thName tm freedefs =
                     }
 
           getAxioms =
-               map AS_Anno.senAttr $ initialState proverStateI
+               map senAttr $ initialState proverStateI
 
           timeWatch :: Int
                     -> IO (Proof_status ProofTree)
@@ -442,7 +432,7 @@ runPellet :: PelletProverState
            -> GenericConfig ProofTree -- ^ configuration to use
            -> Bool -- ^ True means save TPTP file
            -> String -- ^ name of the theory in the DevGraph
-           -> AS_Anno.Named Sentence -- ^ goal to prove
+           -> Named Sentence -- ^ goal to prove
            -> IO (ATPRetval, GenericConfig ProofTree)
            -- ^ (retval, configuration with proof status and complete output)
 runPellet sps cfg savePellet thName nGoal = do
@@ -453,15 +443,16 @@ runPellet sps cfg savePellet thName nGoal = do
     simpleOptions = extraOpts cfg
     tLimit        = timeLimit cfg
     extraOptions  = "entail -e "
-    saveFileName  = thName++'_':AS_Anno.senAttr nGoal
-    tmpFileName   = (reverse $ fst $ span (/='/') $ reverse thName) ++
-                       '_':AS_Anno.senAttr nGoal
+    goalSuffix    = '_' : senAttr nGoal
+    saveFileName  = thName ++ goalSuffix
+    tmpFileName   = reverse (takeWhile (/= '/') $ reverse thName) ++ goalSuffix
     runPelletReal = do
       (progTh, progEx) <- check4Pellet
       case (progTh,progEx) of
         (True,True) -> do
           let prob   = showOWLProblemS thName sps []
-          let entail = showOWLProblemS thName (sps{initialState = [nGoal{isAxiom=True}]}) []
+          let entail = showOWLProblemS thName
+                  (sps{initialState = [nGoal{isAxiom=True}]}) []
           when savePellet
             (writeFile (saveFileName ++".owl") prob)
           when savePellet
@@ -503,11 +494,11 @@ runPellet sps cfg savePellet thName nGoal = do
         (True,False) -> return
             (ATPError "Pellet prover found, but file is not executable.",
                   emptyConfig (prover_name pelletProver)
-                              (AS_Anno.senAttr nGoal) emptyProofTree)
+                              (senAttr nGoal) emptyProofTree)
         (False,_) -> return
             (ATPError "Could not find pellet prover. Is $PELLET_PATH set?",
                   emptyConfig (prover_name pelletProver)
-                              (AS_Anno.senAttr nGoal) emptyProofTree)
+                              (senAttr nGoal) emptyProofTree)
 
     timeWatchP :: Int -> IO ((ATPRetval, Proof_status ProofTree), [String], Int)
                      -> IO ((ATPRetval, Proof_status ProofTree), [String] , Int)
@@ -533,7 +524,7 @@ runPellet sps cfg savePellet thName nGoal = do
             case exitCode of
               ExitSuccess -> (ATPSuccess, (proved_status options tUsed)
                                         {
-                                          usedAxioms = map AS_Anno.senAttr $
+                                          usedAxioms = map senAttr $
                                                        initialState sps
                                         }
                              )
@@ -548,7 +539,7 @@ runPellet sps cfg savePellet thName nGoal = do
 
     defaultProof_status opts =
             (openProof_status
-            (AS_Anno.senAttr nGoal) (prover_name pelletProver) $
+            (senAttr nGoal) (prover_name pelletProver) $
                                     emptyProofTree)
                        {tacticScript = Tactic_script $ show $ ATPTactic_script
                         {ts_timeLimit = configTimeLimit cfg,
@@ -559,7 +550,7 @@ runPellet sps cfg savePellet thName nGoal = do
 
     proved_status opts ut =
         Proof_status{
-               goalName = AS_Anno.senAttr nGoal
+               goalName = senAttr nGoal
               ,goalStatus = Proved (Just True)
               ,usedAxioms = getAxioms -- []
               ,proverName = (prover_name pelletProver)
@@ -650,7 +641,7 @@ showOWLProblemS thName pst _ =
 showOWLProblem :: String -- ^ theory name
                -> PelletProverState -- ^ prover state containing
                                     -- initial logical part
-               -> AS_Anno.Named Sentence -- ^ goal to print
+               -> Named Sentence -- ^ goal to print
                -> [String] -- ^ extra options
                -> IO String -- ^ formatted output of the goal
 showOWLProblem thName pst nGoal _ =
@@ -668,7 +659,7 @@ showOWLProblem thName pst nGoal _ =
   Generate a SoftFOL problem with time stamp while maybe adding a goal.
 -}
 genPelletProblemS :: String -> PelletProverState
-                -> Maybe (AS_Anno.Named Sentence)
+                -> Maybe (Named Sentence)
                 -> PelletProblem
 genPelletProblemS thName pps m_nGoal =
        PelletProblem
