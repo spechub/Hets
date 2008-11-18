@@ -72,10 +72,10 @@ anaDescription :: Description -> State Sign ()
 anaDescription desc = case desc of
   OWLClass u ->
       case u of
-        QN _ "Thing" _ -> addEntity $ Entity OWLClassEntity $
-                          QN "owl" "Thing" ""
-        QN _ "Nothing" _ -> addEntity $ Entity OWLClassEntity $
-                          QN "owl" "Nothing" ""
+        QN _ "Thing" _ _ -> addEntity $ Entity OWLClassEntity $
+                          QN "owl" "Thing" False ""
+        QN _ "Nothing" _ _ -> addEntity $ Entity OWLClassEntity $
+                          QN "owl" "Nothing" False ""
         v -> addEntity $ Entity OWLClassEntity v
   ObjectJunction _ ds -> mapM_ anaDescription ds
   ObjectComplementOf d -> anaDescription d

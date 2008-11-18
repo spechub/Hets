@@ -62,7 +62,7 @@ graphFromMap :: String -> OntologyFile
              -> (OntologyMap, DGraph)
 graphFromMap ouri (OntologyFile _ onto) (ontoMap, dg) =
     let existedLNodes = labNodesDG dg
-        currentSign = mkExtSign $ simpleSign $ QN "" ouri ""
+        currentSign = mkExtSign $ simpleSign $ mkQName ouri
        -- get current node
         (lnode, ontoMap1) =
             createLNodes [ouri] existedLNodes ontoMap
@@ -152,7 +152,7 @@ buildLNodeFromStr :: String -> Int -> (LNode DGNodeLab)
 buildLNodeFromStr u i =
     let name = uriToName u
         nodeName = makeName $ mkSimpleId name
-        currentSign = mkExtSign $ simpleSign $ QN "" u ""
+        currentSign = mkExtSign $ simpleSign $ mkQName u
     in  (i+1, newNodeLab nodeName DGBasic
               $ noSensGTheory OWL currentSign startSigId)
 

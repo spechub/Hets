@@ -27,35 +27,33 @@ instance ShATermConvertible QName where
   fromShATermAux = fromShATermAux_QName
 
 toShATermAux_QName :: ATermTable -> QName -> IO (ATermTable, Int)
-toShATermAux_QName att0 (QN aa ab _) = do
-        (att1, aa') <- toShATerm' att0 (aa ++ ":" ++ ab)
-        return $ addATerm (ShAAppl (aa ++ ":" ++ ab) [aa'] []) att1
+toShATermAux_QName att0 = toShATermAux att0 . showQN
 
 fromShATermAux_QName :: Int -> ATermTable -> (ATermTable, QName)
 fromShATermAux_QName ix att = (att,
       case getShATerm ix att of
        ShAAppl idName _ _ ->
          if null idName || idName == "\"\"" then
-              QN "" "_" ""
+             QN "" "_" False ""
           else
            let idName' = read idName::String
-               idName'' = if head idName' == '<' then
-                               take ((length idName') -2) $ tail idName'
-                             else idName'
+               (idName'', isFull) =
+                   if head idName' == '<' && last idName' == '>' then
+                               (init $ tail idName', True)
+                             else (idName', False)
                (pre, loc) = span (/= ':') idName''
            in if null loc then    -- no : in ID, only localName
-                 QN "" pre ""
+                 QN "" pre isFull ""
                  else
-                  if (not $ isAlpha $ head pre)
-                     then QN "" idName'' ""
-                     else
-                      if (take 4 pre == "http" ||
-                          take 4 pre == "file")
-                          then let (ns, loc2) = span (/= '#') idName''
-                               in if length loc2 > 1 then
-                                     QN "" (tail loc2) ns
-                                     else QN "" ns ""
-                          else  QN pre (tail loc) ""
+                  if not (isAlpha $ head idName'')
+                     then QN "" idName'' isFull ""
+                     else let loc1 = tail loc in
+                      if elem (take 4 pre) ["http", "file"] then
+                        let (ns, loc2) = span (/= '#') idName''
+                        in if length loc2 > 1 then
+                               QN "" (tail loc2) isFull ns
+                                     else QN "" ns isFull ""
+                          else QN pre loc1 isFull ""
        u -> fromShATermError "OWL.QName" u)
 
 instance ShATermConvertible OntologyFile where

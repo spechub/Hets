@@ -141,16 +141,15 @@ abbrIri :: CharParser st QName
 abbrIri = try $ do
     pre <- try $ prefix << char ':'
     r <- hierPartWithOpts
-    return $ QN pre r ""
+    return $ QN pre r False ""
   <|> fmap mkQName hierPartWithOpts
 
 fullIri :: CharParser st QName
 fullIri = do
     char '<'
-    QN pre r _ <- abbrIri
+    QN pre r _ _ <- abbrIri
     char '>'
-    return $ QN pre r $ if null pre then r else pre
-           -- unclear how full IRIs are represented
+    return $ QN pre r True ""
 
 uriQ :: CharParser st QName
 uriQ = fullIri <|> abbrIri
@@ -713,7 +712,7 @@ basicSpec = do
   return emptyOntologyFile
     { ontology = emptyOntology
       { axiomsList = as
-      , uri = QN "http" "//www.dfki.de/sks/hets/ontology/unamed" "unamed" }
+      , uri = QN "http" "//www.dfki.de/sks/hets/ontology/unamed" True "" }
     , namespaces = Map.fromList $
       [ ("owl", "http://www.w3.org/2002/07/owl#")
       , ("rdf", "http://www.w3.org/1999/02/22-rdf-syntax-ns#")

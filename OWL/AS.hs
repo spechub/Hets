@@ -23,27 +23,25 @@ data QName = QN
   -- ^ the name prefix part of a qualified name \"namePrefix:localPart\"
   , localPart :: String
   -- ^ the local part of a qualified name \"namePrefix:localPart\"
+  , isFullIri :: Bool
   , namespaceUri :: String
-  -- ^ the associated namespace uri
+  -- ^ the associated namespace uri (not printed)
   } deriving (Typeable, Show)
 
 showQN :: QName -> String
-showQN (QN pre local u) =
-  (if null u then id else ('<' :) . (++ ">"))
-  $ if null pre then local else pre ++ ":" ++ local
+showQN q = (if isFullIri q then showQI else showQU) q
 
--- | Print Function that ignores third argument
+-- | show QName as abbreviated iri
 showQU :: QName -> String
-showQU (QN pre local _) =
+showQU (QN pre local _ _) =
     if null pre then local else pre ++ ":" ++ local
 
+-- | show QName in ankle brackets as full iris
 showQI :: QName -> String
-showQI (QN pre local _)=
-    ('<' :) . (++ ">")
-     $ if null pre then local else pre ++ ":" ++ local
+showQI = ('<' :) . (++ ">") . showQU
 
 nullQName :: QName
-nullQName = QN "" "" ""
+nullQName = QN "" "" False ""
 
 mkQName :: String -> QName
 mkQName s = nullQName { localPart = s }
@@ -52,10 +50,10 @@ instance Eq QName where
     p == q = compare p q == EQ
 
 instance Ord QName where
-  compare(QN p1 l1 n1) (QN p2 l2 n2) =
-      if null n1 then
-          if null n2 then compare (p1, l1) (p2, l2) else LT
-      else if null n2 then GT else compare (l1, n1) (l2, n2)
+  compare(QN p1 l1 b1 n1) (QN p2 l2 b2 n2) =
+    if null n1 then
+      if null n2 then compare (b1, p1, l1) (b2, p2, l2) else LT
+    else if null n2 then GT else compare (b1, l1, n1) (b2, l2, n2)
 
 type URI = QName
 type IRI = String
@@ -310,5 +308,5 @@ isEmptyOntologyFile (OntologyFile ns onto) =
     Map.null ns && isEmptyOntology onto
 
 isEmptyOntology :: Ontology -> Bool
-isEmptyOntology (Ontology (QN _ l n) annoList impList axioms) =
+isEmptyOntology (Ontology (QN _ l _ n) annoList impList axioms) =
     null l && null n && null annoList && null impList && null axioms

@@ -14,7 +14,6 @@ module OWL.Namespace
   ( PNamespace(..)
   , integrateNamespaces
   , integrateOntologyFile
-  , printQN
   , uriToName) where
 
 import OWL.Sign
@@ -45,32 +44,30 @@ instance PNamespace Namespace where
         Map.empty $ Map.toList oldNs
 
 instance PNamespace QName where
-  propagateNspaces ns old@(QN pre local nsUri)
+  propagateNspaces ns old@(QN pre local isFull nsUri)
     | null (pre ++ local ++ nsUri) = old
     | otherwise =
      if local == "Thing" || snd (span (/=':') local) == ":Thing" then
-        QN "owl" "Thing" "http://www.w3.org/2002/07/owl#"
+        QN "owl" "Thing" False "http://www.w3.org/2002/07/owl#"
       else
         if null nsUri then let
           prop :: String -> String -> QName
-          prop p loc = QN p loc $ Map.findWithDefault "" p ns
+          prop p loc = QN p loc isFull $ Map.findWithDefault "" p ns
           in if null pre  then
-              let (pre', local') = span (/=':')
-                                     (if (head local) == '\"' then
+              let (pre', local') = span (/= ':')
+                                     (if head local == '\"' then
                                          read local::String
                                          else local
                                      )
               -- hiding "ftp://" oder "http://" oder "file:///"
-              in if length pre' > 3 && isAlpha (head $ reverse pre')
-                     || null local' then
-                    QN pre' local nsUri
-                   else let local'' = tail local'
-                         in prop pre' local''
+              in if null local' then old else let local'' = tail local' in
+                    if length pre' > 3 && isAlpha (last pre') then old
+                   else prop pre' local''
              else prop pre local
          else
              if null pre then
                let (pre', local') = span (/='/')
-                                     (if (head nsUri) == '\"' then
+                                     (if head nsUri == '\"' then
                                          read nsUri::String
                                          else nsUri
                                      )
@@ -520,9 +517,3 @@ uriToName str = let str' = if take 1 str == "\"" then read str else str in
     takeWhile (/='.') $ reverse $ case takeWhile (/='/') $ reverse str' of
          '#' : r  -> r
          r -> r
-
--- output a QName for pretty print
-printQN :: QName -> String
-printQN (QN pre local u)
-            | null pre = show (u ++ ":" ++ local)
-            | otherwise = show (pre ++ ":" ++ local)

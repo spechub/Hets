@@ -908,10 +908,10 @@ uriToId :: URI
 uriToId urI =
     let
         ur = case urI of
-               QN _ "Thing" _   -> QN "" "Thing"   ""
-               QN _ "Nothing" _ -> QN "" "Nothing" ""
-               _                -> urI
-        repl a = if (isAlphaNum a)
+               QN _ "Thing" _ _ -> mkQName "Thing"
+               QN _ "Nothing" _ _ -> mkQName "Nothing"
+               _ -> urI
+        repl a = if isAlphaNum a
                   then
                       a
                   else

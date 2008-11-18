@@ -38,7 +38,7 @@ printSign s =
        on = ontologyID s
        pon = if on == nullQName
              then text "<http://www.dfki.de/sks/hets/ontology/unamed>"
-             else printIRIreference on
+             else printURIreference on
    in vcat (map (\ (c, l) -> text $ "Namespace: " ++ c ++ " <" ++ l ++">")
            $ Map.toList $ namespaceMap s)
    $++$ text "Ontology:" <+> pon
@@ -56,10 +56,7 @@ instance Pretty QName where
     pretty = printURIreference
 
 printURIreference :: QName -> Doc
-printURIreference = text . showQU
-
-printIRIreference :: QName -> Doc
-printIRIreference = text . showQI
+printURIreference = text . showQN
 
 instance Pretty SignAxiom where
     pretty = text . show
