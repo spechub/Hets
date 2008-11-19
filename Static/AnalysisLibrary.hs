@@ -168,7 +168,7 @@ ana_LIB_DEFN :: LogicGraph -> HetcatsOpts -> LibEnv -> LIB_DEFN
              -> ResultT IO (LIB_NAME,LIB_DEFN, DGraph, LibEnv)
 ana_LIB_DEFN lgraph opts libenv (Lib_defn ln alibItems pos ans) = do
   gannos <- showDiags1 opts $ liftR $ addGlobalAnnos emptyGlobalAnnos ans
-  dg <- lift $ emptyDGwithMVar
+  let dg = emptyDG
   (libItems', dg1, libenv', _) <- foldM ana
       ([], dg { globalAnnos = gannos }, libenv, lgraph) (map item alibItems)
   return (ln, Lib_defn ln
