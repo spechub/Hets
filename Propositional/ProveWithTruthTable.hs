@@ -16,7 +16,8 @@ module Propositional.ProveWithTruthTable
     (
      ttProver,
      ttConsistencyChecker,
-     ttConservativityChecker
+     ttConservativityChecker,
+     allModels
     )
     where
 
@@ -304,7 +305,7 @@ filterFree :: Sig.Sign
               -> [Model]
 filterFree _ [] _ = []
 filterFree sig models freedef =
-  let reducedModels = nub $ map (reduceModel freetar) models
+  let reducedModels = allModels freetar
       modelGroups = groupBy
                     (\m1 m2 -> reduceModel freesrc m1 == reduceModel freesrc m2)
                     reducedModels

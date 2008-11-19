@@ -208,11 +208,12 @@ basicInferenceNode checkCons lg (ln, node) libname guiMVar libEnv ch = do
           2. Add it to definition of ProverTemplate
           3. Implement it with BasicInference to avoid GUI stuff
           4. Add it to definition of IsaProve -}
+            let freedefs = getCFreeDefMorphs lid1 dGraph node
             kpMap <- liftR $ knownProversGUI
             newTh <- ResultT $
                    proofManagementGUI lid1 ProofActions {
-                       proveF = (proveKnownPMap lg ch),
-                       fineGrainedSelectionF = (proveFineGrainedSelect lg ch),
+                       proveF = (proveKnownPMap lg ch freedefs),
+                       fineGrainedSelectionF = (proveFineGrainedSelect lg ch freedefs),
                        recalculateSublogicF  =
                                      recalculateSublogicAndSelectedTheory }
                                            thName
@@ -304,11 +305,12 @@ basicInferenceSubTree checkCons lg (ln, node) guiMVar ch libEnv = do
             return (f_libEnv, resT)
           else do -- proving
             -- get known Provers
+            let freedefs = getCFreeDefMorphs lid1 f_dGraph node
             kpMap <- liftR $ knownProversGUI
             newTh <- ResultT $
                    proofManagementGUI lid1 ProofActions {
-                       proveF = (proveKnownPMap lg ch),
-                       fineGrainedSelectionF = (proveFineGrainedSelect lg ch),
+                       proveF = (proveKnownPMap lg ch freedefs),
+                       fineGrainedSelectionF = (proveFineGrainedSelect lg ch freedefs),
                        recalculateSublogicF  =
                                      recalculateSublogicAndSelectedTheory }
                                            thName
@@ -340,9 +342,11 @@ proveKnownPMap :: (Logic lid sublogics1
                raw_symbol1
                proof_tree1) =>
        LogicGraph -> CommandHistory
+    -> [FreeDefMorphism morphism1]
     -> ProofState lid sentence -> IO (Result (ProofState lid sentence))
-proveKnownPMap lg ch st =
-    maybe (proveFineGrainedSelect lg ch st) (callProver st ch False) $
+proveKnownPMap lg ch freedefs st =
+    maybe (proveFineGrainedSelect lg ch freedefs st) 
+          (callProver st ch False freedefs) $
           lookupKnownProver st ProveGUI
 
 callProver :: (Logic lid sublogics1
@@ -357,11 +361,15 @@ callProver :: (Logic lid sublogics1
                proof_tree1) =>
        ProofState lid sentence
     -> CommandHistory -> Bool -- indicates if a translation was chosen
+    -> [FreeDefMorphism morphism1]
     -> (G_prover,AnyComorphism) -> IO (Result (ProofState lid sentence))
-callProver st ch trans_chosen p_cm@(_,acm) =
+callProver st ch trans_chosen freedefs p_cm@(_,acm) =
        runResultT $ do
         G_theory_with_prover lid th p <- liftR $ prepareForProving st p_cm
-        ps <- lift $ proveTheory lid p (theoryName st) th [] -- TODO: freedefs
+        freedefs1 <- mapM (coerceFreeDefMorphism (logicId st) lid
+                           "Logic.InferBasic: callProver") 
+                          freedefs 
+        ps <- lift $ proveTheory lid p (theoryName st) th freedefs1
         -- lift $ putStrLn $ show ps
         let st' = markProved acm lid ps st
         lift $ addProveToHist ch st'
@@ -380,8 +388,9 @@ proveFineGrainedSelect ::
                raw_symbol1
                proof_tree1) =>
        LogicGraph -> CommandHistory
+    -> [FreeDefMorphism morphism1]
     -> ProofState lid sentence -> IO (Result (ProofState lid sentence))
-proveFineGrainedSelect lg ch st =
+proveFineGrainedSelect lg ch freedefs st =
     runResultT $ do
        let sl = sublogicOfTheory st
            cmsToProvers =
@@ -391,4 +400,4 @@ proveFineGrainedSelect lg ch st =
                       filter hasModelExpansion $ findComorphismPaths lg sl
        pr <- selectProver cmsToProvers
        ResultT $ callProver st{lastSublogic = sublogicOfTheory st,
-                               comorphismsToProvers = cmsToProvers} ch True pr
+                               comorphismsToProvers = cmsToProvers} ch True freedefs pr
