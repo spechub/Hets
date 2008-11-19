@@ -57,16 +57,6 @@ import Data.Graph.Inductive.Graph
 import Data.Maybe
 import qualified Data.Map as Map
 
-isFreeEdge :: DGLinkType -> Bool
-isFreeEdge edge = case edge of
-    FreeDef _ -> True
-    _ -> False
-
-isCofreeEdge :: DGLinkType -> Bool
-isCofreeEdge edge = case edge of
-    CofreeDef _ -> True
-    _ -> False
-
 getCFreeDefLinks :: DGraph -> Node
                         -> ([[LEdge DGLinkLab]], [[LEdge DGLinkLab]])
 getCFreeDefLinks dg tgt =
@@ -345,7 +335,7 @@ proveKnownPMap :: (Logic lid sublogics1
     -> [FreeDefMorphism morphism1]
     -> ProofState lid sentence -> IO (Result (ProofState lid sentence))
 proveKnownPMap lg ch freedefs st =
-    maybe (proveFineGrainedSelect lg ch freedefs st) 
+    maybe (proveFineGrainedSelect lg ch freedefs st)
           (callProver st ch False freedefs) $
           lookupKnownProver st ProveGUI
 
@@ -367,8 +357,8 @@ callProver st ch trans_chosen freedefs p_cm@(_,acm) =
        runResultT $ do
         G_theory_with_prover lid th p <- liftR $ prepareForProving st p_cm
         freedefs1 <- mapM (coerceFreeDefMorphism (logicId st) lid
-                           "Logic.InferBasic: callProver") 
-                          freedefs 
+                           "Logic.InferBasic: callProver")
+                          freedefs
         ps <- lift $ proveTheory lid p (theoryName st) th freedefs1
         -- lift $ putStrLn $ show ps
         let st' = markProved acm lid ps st

@@ -329,7 +329,9 @@ computeTheory :: Bool -> LibEnv -> LIB_NAME -> Node ->
 computeTheory useNf libEnv ln n =
   let dg = lookupDGraph ln libEnv
       nodelab = labDG dg n
-      inEdges = filter (liftE $ liftOr isLocalDef isGlobalDef) $ innDG dg n
+      isDefLink = liftOr isGlobalDef $ liftOr isLocalDef
+        $ liftOr isFreeEdge isCofreeEdge
+      inEdges = filter (liftE isDefLink) $ innDG dg n
       localTh = dgn_theory nodelab
   in
    if isDGRef nodelab then do

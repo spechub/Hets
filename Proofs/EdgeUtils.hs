@@ -189,6 +189,16 @@ isUnprovenHidingThm lt = case lt of
     HidingThm _ LeftOpen -> True
     _ -> False
 
+isFreeEdge :: DGLinkType -> Bool
+isFreeEdge edge = case edge of
+    FreeDef _ -> True
+    _ -> False
+
+isCofreeEdge :: DGLinkType -> Bool
+isCofreeEdge edge = case edge of
+    CofreeDef _ -> True
+    _ -> False
+
 -- ----------------------------------------------------------------------------
 -- other methods on edges
 -- ----------------------------------------------------------------------------
