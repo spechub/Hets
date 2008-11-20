@@ -187,8 +187,10 @@ printAxiom axiom = case axiom of
                    setToDocV (Set.fromList discList)
    -- ObjectPropertyAxiom
    SubObjectPropertyOf sopExp opExp ->
-       opStart <+> pretty sopExp $+$ text "SubPropertyOf:"
-                   <+> pretty opExp
+       opStart <+> pretty opExp $+$ text (case sopExp of
+                 SubObjectPropertyChain _ -> "SubPropertyChain:"
+                 _ -> "SubPropertyOf:")
+                   <+> pretty sopExp
    EquivOrDisjointObjectProperties ty (opExp : opList) ->
        opStart <+> pretty opExp $+$ printEquivOrDisjoint ty <+>
                    setToDocV (Set.fromList opList)
@@ -240,10 +242,7 @@ instance Pretty SubObjectPropertyExpression where
         case sopExp of
           OPExpression opExp -> pretty opExp
           SubObjectPropertyChain opExpList ->
-              foldl (\x y -> x <+> text "o" <+> y)
-                  empty (setToDocs (Set.fromList $
-                                 take (length opExpList -1) opExpList)) <+>
-                  text "o" <+> pretty (head $ reverse opExpList)
+             fsep $ prepPunctuate (text "o ") $ map pretty opExpList
 
 instance Pretty OntologyFile where
     pretty = vsep . map pretty . axiomsList . ontology
