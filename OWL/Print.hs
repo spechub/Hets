@@ -75,7 +75,7 @@ instance Pretty Description where
           UnionOf -> ("or", pretty)
           IntersectionOf -> ("and", printPrimary)
       in fsep $ prepPunctuate (text k <> space) $ map p ds
-   ObjectComplementOf d -> text "not" <+> pretty d
+   ObjectComplementOf d -> text "not" <+> printNegatedPrimary d
    ObjectOneOf indUriList -> specBraces $ ppWithCommas indUriList
    ObjectValuesFrom ty opExp d ->
       printObjPropExp opExp <+> quantifierType ty <+> printNegatedPrimary d
@@ -101,8 +101,10 @@ printPrimary d = let dd = pretty d in case d of
   _ -> dd
 
 printNegatedPrimary :: Description -> Doc
-printNegatedPrimary d = case d of
-  ObjectComplementOf _ -> parens $ pretty d
+printNegatedPrimary d = let r = parens $ pretty d in case d of
+  ObjectComplementOf _ -> r
+  ObjectValuesFrom _ _ _ -> r
+  DataValuesFrom _ _ _ _ -> r
   _ -> printPrimary d
 
 instance Pretty ObjectPropertyExpression where
@@ -193,7 +195,7 @@ printAxiom axiom = case axiom of
    ObjectPropertyDomainOrRange ty opExp desc ->
        opStart <+> pretty opExp $+$ printObjDomainOrRange ty <+> pretty desc
    InverseObjectProperties opExp1 opExp2 ->
-       opStart <+> pretty opExp1 $+$ text "InverseOf:" <+> pretty opExp2
+       opStart <+> pretty opExp1 $+$ text "Inverses:" <+> pretty opExp2
    ObjectPropertyCharacter ch opExp ->
        opStart <+> pretty opExp $+$ printCharact (show ch)
    -- DataPropertyAxiom

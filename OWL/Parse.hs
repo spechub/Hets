@@ -719,4 +719,4 @@ basicSpec = do
       , ("rdfs", "http://www.w3.org/2000/01/rdf-schema#")
       , ("xsd", "http://www.w3.org/2001/XMLSchema#")
       , ("owl2xml", "http://www.w3.org/2006/12/owl2-xml#") ]
-      ++ map (\ (p, q) -> (p, showQN q { namespaceUri = "" })) nss }
+      ++ map (\ (p, q) -> (p, showQN q { isFullIri = False })) nss }
