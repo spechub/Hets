@@ -98,9 +98,8 @@ dialog messageType title message mAction = postGUISync $ do
       messageDialogNew Nothing [] messageType ButtonsYesNo message
     MessageQuestion ->
       messageDialogNew Nothing [] messageType ButtonsYesNo message
-    MessageError ->
-      messageDialogNew Nothing [] messageType ButtonsOk message      
-    MessageOther -> error "Dialog: Wrong Type"
+    _ ->
+      messageDialogNew Nothing [] messageType ButtonsOk message
   set dlg [windowTitle := title]
 
   response <- dialogRun dlg
