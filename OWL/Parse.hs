@@ -566,7 +566,7 @@ objectFrameBit ouri = let opExp = OpURI ouri in do
       $ InverseObjectProperties opExp i) ds
   <|> do
     ckeyword "SubPropertyChain"
-    as <- annotations
+    as <- option [] annotations
     os <- sepBy1 objectPropertyExpr (keyword "o")
     return [PlainAxiom as
       $ SubObjectPropertyOf (SubObjectPropertyChain os) opExp]
