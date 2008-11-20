@@ -258,6 +258,14 @@ textView title message file = postGUIAsync $ do
   buffer <- textViewGetBuffer tvText
   textBufferInsertAtCursor buffer message
 
+  tagTable <- textBufferGetTagTable buffer
+  font <- textTagNew Nothing
+  set font [ textTagFont := "FreeMono" ]
+  textTagTableAdd tagTable font
+  start <- textBufferGetStartIter buffer
+  end <- textBufferGetEndIter buffer
+  textBufferApplyTag buffer font start end
+
   btnSave <- dialogAddButton dlg stockSave ResponseNone
   btnClose <- dialogAddButton dlg stockClose ResponseNone
 
