@@ -32,6 +32,9 @@ module OWL.Sublogic
     )
     where
 
+import OWL.AS
+import OWL.Sign
+
 data NumberRestrictions = None | Unqualified | Qualified
                         deriving (Show, Eq, Ord)
 
@@ -47,7 +50,7 @@ data OWL_SL = OWL_SL
             , roleHierarchy :: Bool
             , complexRoleInclusions :: Bool
             , addFeatures :: Bool
-            , datatypes :: OWLDatatypes
+            , datatype :: OWLDatatypes
             } deriving (Show, Eq, Ord)
 
 -- | sROIQ(D)
@@ -61,7 +64,7 @@ sl_top = OWL_SL
       , roleHierarchy = True
       , complexRoleInclusions = True
       , addFeatures = True
-      , datatypes = OWLDatatypes
+      , datatype = OWLDatatypes
       }
 
 -- ALC
@@ -75,7 +78,7 @@ sl_bottom = OWL_SL
             , roleHierarchy = False
             , complexRoleInclusions = False
             , addFeatures = False
-            , datatypes = OWLNoDatatypes
+            , datatype = OWLNoDatatypes
             }
 
 
@@ -97,8 +100,8 @@ sl_max sl1 sl2 =
                               (complexRoleInclusions sl2)
     , addFeatures = max (addFeatures sl1)
                     (addFeatures sl2)
-    , datatypes = max (datatypes sl1)
-                  (datatypes sl2)
+    , datatype = max (datatype sl1)
+                  (datatype sl2)
     }
 
 -- | Naming for Description Logics
@@ -127,7 +130,7 @@ sl_name sl =
         Qualified   -> "Q"
         Unqualified -> "N"
         None        -> ""
-     ,if (datatypes sl == OWLDatatypes) then "(D)" else ""
+     ,if (datatype sl == OWLDatatypes) then "(D)" else ""
      ])
 
 requireQualNumberRestrictions :: OWL_SL -> OWL_SL
@@ -185,23 +188,23 @@ requireInverseRoles sl = sl
                            inverseRoles = True
                          }
 
-requireDatatypes :: OWL_SL -> OWL_SL
-requireDatatypes sl = sl
+requireDatatype :: OWL_SL -> OWL_SL
+requireDatatype sl = sl
                       {
-                        datatypes = OWLDatatypes
+                        datatype = OWLDatatypes
                       }
 
 -- Sublogics
-sl_basic_spec :: t3 -> OWL_SL
+sl_basic_spec :: Sentence -> OWL_SL
 sl_basic_spec _  = sl_top
 
-sl_o_file :: t -> OWL_SL
+sl_o_file :: OntologyFile -> OWL_SL
 sl_o_file _ = sl_top
 
-sl_sig :: t3 -> OWL_SL
+sl_sig :: Sign -> OWL_SL
 sl_sig _ = sl_top
 
-sl_mor :: t3 -> OWL_SL
+sl_mor :: t -> OWL_SL
 sl_mor _  = sl_top
 
 -- projections along sublogics

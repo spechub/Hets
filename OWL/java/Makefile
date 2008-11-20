@@ -30,12 +30,12 @@ install:
 	cp OWL2ATerm.jar ..
 
 clean: 
-	rm -r OWL2ATerm.jar ./org/hets/owl11/atermRender/*.class aterm edu jjtraveler owlapi.zip shared uk org/coode org/semanticweb aterm-java-1.6.jar owlapi-src.jar owlapi-bin.jar de com license.txt build.xml javadoc releasenotes.txt lib
+	rm -r OWL2ATerm.jar ./org/hets/owl11/atermRender/*.class aterm edu jjtraveler owlapi.zip shared uk org/coode org/semanticweb aterm-java-1.6.jar owlapi-src.jar owlapi-bin.jar de/uulm com license.txt build.xml javadoc releasenotes.txt lib
 
 get:
-	curl http://mesh.dl.sourceforge.net/sourceforge/owlapi/owlapi-2.2.0.zip  > owlapi.zip
+	#curl http://mesh.dl.sourceforge.net/sourceforge/owlapi/owlapi-2.2.0.zip  > owlapi.zip
 	curl http://smi-protege.stanford.edu/svn/*checkout*/protege-pellet-reasoner/trunk/lib/aterm-java-1.6.jar > aterm-java-1.6.jar
-	unzip -oq owlapi.zip
+	#unzip -oq owlapi.zip
 
 unpack:
 	unzip -oq aterm-java-1.6.jar
