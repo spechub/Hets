@@ -95,17 +95,6 @@ percentS = "%"
 percents :: String
 percents = percentS ++ percentS
 
-left_assocS, right_assocS, precS, displayS, numberS, stringS, listS,
-  floatingS :: String
-left_assocS = "left_assoc"
-right_assocS = "right_assoc"
-precS = "prec"
-displayS = "display"
-numberS = "number"
-stringS = "string"
-listS = "list"
-floatingS = "floating"
-
 -- * formula symbols
 
 -- | implication arrow (equal and greater)
@@ -164,23 +153,6 @@ rightArrow = "<-"
 
 -- * further HasCASL keywords
 
-internalS, classS, programS, instanceS, caseS, ofS, letS, derivingS :: String
-classS = "class"
-programS = "program"
-instanceS = "instance"
-caseS = "case"
-ofS = "of"
-letS = "let"
-derivingS = "deriving"
-internalS = "internal"
-
-whereS :: String
-whereS = "where"
-
--- | for monad notation
-doS :: String
-doS = "do"
-
 -- | the new keyword fun ('funS' is already defined differently)
 functS :: String
 functS = "fun"
@@ -194,15 +166,6 @@ diamondS = "<>"
 -- | the greater sign
 greaterS :: String
 greaterS = ">"
-
--- * Modal CASL keywords
-modalityS, modalitiesS, flexibleS, rigidS, termS, emptyS :: String
-modalityS = "modality"
-modalitiesS = init modalityS ++ "ies"
-flexibleS = "flexible"
-rigidS = "rigid"
-termS = "term"
-emptyS = "empty"
 
 -- * CspCasl key signs
 
@@ -262,120 +225,247 @@ ren_proc_openS = "[["
 ren_proc_closeS :: String
 ren_proc_closeS = "]]"
 
+-- * letter keywords taken form Keywords.txt
 
--- * standard lower case letter keywords
-withinS,
-  withS,
-  viewS,
-  versionS,
-  unitS,
-  typeS,
-  cotypeS,
-  toS,
-  thenS,
-  specS,
-  sortS,
-  revealS,
-  resultS,
-  localS,
-  logicS,
-  libraryS,
-  lambdaS,
-  inS,
-  idemS,
-  hideS,
-  givenS,
-  getS,
-  generatedS,
-  cogeneratedS,
-  fromS,
-  cofreeS,
-  freeS,
-  fitS,
-  forallS,
-  existsS,
-  esortS,
-  etypeS,
-  endS,
-  commS,
-  closedS,
-  opS,
-  predS,
-  varS,
-  sS,
-  axiomS,
-  assocS,
-  asS,
-  archS,
-  andS,
-  whenS,
-  trueS,
-  notS,
-  ifS,
-  falseS,
-  elseS,
-  defS,
-  propS :: String
-
-defS = "def"
-elseS = "else"
-falseS = "false"
-ifS = "if"
-notS = "not"
-trueS = "true"
-whenS = "when"
-
+andS :: String
 andS = "and"
-archS = "arch"
-asS = "as"
-assocS = "assoc"
-axiomS = "axiom"
-sS = "s"
-varS = "var"
-predS = "pred"
-opS = "op"
-closedS = "closed"
-commS = "comm"
-endS = "end"
-esortS = "esort"
-etypeS = "etype"
-existsS = "exists"
-forallS = "forall"
-fitS = "fit"
-freeS = "free"
-cofreeS = "cofree"
-fromS = "from"
-generatedS = "generated"
-cogeneratedS = "cogenerated"
-getS = "get"
-givenS = "given"
-hideS = "hide"
-idemS = "idem"
-inS = "in"
-lambdaS = "lambda"
-libraryS = "library"
-localS = "local"
-logicS = "logic" -- new keyword
-resultS = "result"
-revealS = "reveal"
-sortS = "sort"
-specS = "spec"
-thenS = "then"
-toS = "to"
-typeS = "type"
-cotypeS = "cotype"
-unitS = "unit"
-versionS = "version"
-viewS = "view"
-withS = "with"
-withinS = "within"
-propS = "prop"
 
-refinementS, refinedS, behaviourallyS :: String
-refinementS = "refinement"
-refinedS = "refined"
+archS :: String
+archS = "arch"
+
+asS :: String
+asS = "as"
+
+assocS :: String
+assocS = "assoc"
+
+axiomS :: String
+axiomS = "axiom"
+
+behaviourallyS :: String
 behaviourallyS = "behaviourally"
 
-viaS, dataS :: String
-viaS = "via"
+caseS :: String
+caseS = "case"
+
+classS :: String
+classS = "class"
+
+closedS :: String
+closedS = "closed"
+
+cofreeS :: String
+cofreeS = "cofree"
+
+cogeneratedS :: String
+cogeneratedS = "cogenerated"
+
+commS :: String
+commS = "comm"
+
+cotypeS :: String
+cotypeS = "cotype"
+
+dataS :: String
 dataS = "data"
+
+defS :: String
+defS = "def"
+
+derivingS :: String
+derivingS = "deriving"
+
+displayS :: String
+displayS = "display"
+
+doS :: String
+doS = "do"
+
+elseS :: String
+elseS = "else"
+
+emptyS :: String
+emptyS = "empty"
+
+endS :: String
+endS = "end"
+
+esortS :: String
+esortS = "esort"
+
+etypeS :: String
+etypeS = "etype"
+
+existsS :: String
+existsS = "exists"
+
+falseS :: String
+falseS = "false"
+
+fitS :: String
+fitS = "fit"
+
+flexibleS :: String
+flexibleS = "flexible"
+
+floatingS :: String
+floatingS = "floating"
+
+forallS :: String
+forallS = "forall"
+
+freeS :: String
+freeS = "free"
+
+fromS :: String
+fromS = "from"
+
+generatedS :: String
+generatedS = "generated"
+
+getS :: String
+getS = "get"
+
+givenS :: String
+givenS = "given"
+
+hideS :: String
+hideS = "hide"
+
+idemS :: String
+idemS = "idem"
+
+ifS :: String
+ifS = "if"
+
+inS :: String
+inS = "in"
+
+instanceS :: String
+instanceS = "instance"
+
+internalS :: String
+internalS = "internal"
+
+lambdaS :: String
+lambdaS = "lambda"
+
+left_assocS :: String
+left_assocS = "left_assoc"
+
+letS :: String
+letS = "let"
+
+libraryS :: String
+libraryS = "library"
+
+listS :: String
+listS = "list"
+
+localS :: String
+localS = "local"
+
+logicS :: String
+logicS = "logic"
+
+modalitiesS :: String
+modalitiesS = "modalities"
+
+modalityS :: String
+modalityS = "modality"
+
+notS :: String
+notS = "not"
+
+numberS :: String
+numberS = "number"
+
+ofS :: String
+ofS = "of"
+
+opS :: String
+opS = "op"
+
+precS :: String
+precS = "prec"
+
+predS :: String
+predS = "pred"
+
+programS :: String
+programS = "program"
+
+propS :: String
+propS = "prop"
+
+refinedS :: String
+refinedS = "refined"
+
+refinementS :: String
+refinementS = "refinement"
+
+resultS :: String
+resultS = "result"
+
+revealS :: String
+revealS = "reveal"
+
+right_assocS :: String
+right_assocS = "right_assoc"
+
+rigidS :: String
+rigidS = "rigid"
+
+sS :: String
+sS = "s"
+
+sortS :: String
+sortS = "sort"
+
+specS :: String
+specS = "spec"
+
+stringS :: String
+stringS = "string"
+
+termS :: String
+termS = "term"
+
+thenS :: String
+thenS = "then"
+
+toS :: String
+toS = "to"
+
+trueS :: String
+trueS = "true"
+
+typeS :: String
+typeS = "type"
+
+unitS :: String
+unitS = "unit"
+
+varS :: String
+varS = "var"
+
+versionS :: String
+versionS = "version"
+
+viaS :: String
+viaS = "via"
+
+viewS :: String
+viewS = "view"
+
+whenS :: String
+whenS = "when"
+
+whereS :: String
+whereS = "where"
+
+withS :: String
+withS = "with"
+
+withinS :: String
+withinS = "within"
