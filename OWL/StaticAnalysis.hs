@@ -31,7 +31,7 @@ addEntity (Entity ty u) = do
   let ins = Set.insert u
   put $ case ty of
     Datatype -> s { datatypes = ins $ datatypes s }
-    OWLClassEntity -> s { concepts = ins $ concepts s }
+    OWLClass -> s { concepts = ins $ concepts s }
     ObjectProperty -> s { indValuedRoles = ins $ indValuedRoles s }
     DataProperty -> s { dataValuedRoles = ins $ dataValuedRoles s }
     Individual -> s { individuals = ins $ individuals s }
@@ -70,13 +70,13 @@ anaDataRange dr = case dr of
 
 anaDescription :: Description -> State Sign ()
 anaDescription desc = case desc of
-  OWLClass u ->
+  OWLClassDescription u ->
       case u of
-        QN _ "Thing" _ _ -> addEntity $ Entity OWLClassEntity $
+        QN _ "Thing" _ _ -> addEntity $ Entity OWLClass $
                           QN "owl" "Thing" False ""
-        QN _ "Nothing" _ _ -> addEntity $ Entity OWLClassEntity $
+        QN _ "Nothing" _ _ -> addEntity $ Entity OWLClass $
                           QN "owl" "Nothing" False ""
-        v -> addEntity $ Entity OWLClassEntity v
+        v -> addEntity $ Entity OWLClass v
   ObjectJunction _ ds -> mapM_ anaDescription ds
   ObjectComplementOf d -> anaDescription d
   ObjectOneOf is -> mapM_ anaIndividual is
@@ -109,7 +109,7 @@ anaPlainAxiom pa = case pa of
   EquivOrDisjointClasses _ ds ->
     mapM_ anaDescription ds
   DisjointUnion u ds -> do
-    addEntity $ Entity OWLClassEntity u
+    addEntity $ Entity OWLClass u
     mapM_ anaDescription ds
   SubObjectPropertyOf sop op -> do
     mapM_ (addEntity . Entity ObjectProperty)

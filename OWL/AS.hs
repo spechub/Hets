@@ -96,16 +96,11 @@ type OntologyMap = Map.Map String OntologyFile
 
 data EntityType =
     Datatype
-  | OWLClassEntity
+  | OWLClass
   | ObjectProperty
   | DataProperty
   | Individual
-    deriving (Typeable, Show, Read, Eq, Ord)
-
-showEntityType :: EntityType -> String
-showEntityType et = case et of
-    OWLClassEntity -> "OWLClass"
-    _ -> show et
+    deriving (Typeable, Enum, Bounded, Show, Read, Eq, Ord)
 
 -- | Syntax of Entities
 data Entity = Entity EntityType URI deriving (Typeable, Show, Eq, Ord)
@@ -199,7 +194,7 @@ data Cardinality a b = Cardinality CardinalityType Int a (Maybe b)
     deriving (Typeable, Show, Eq, Ord)
 
 data Description =
-    OWLClass OwlClassURI
+    OWLClassDescription OwlClassURI
   | ObjectJunction JunctionType [Description]  --  min. 2 Descriptions
   | ObjectComplementOf Description
   | ObjectOneOf [IndividualURI]  --  min. 1 Individual

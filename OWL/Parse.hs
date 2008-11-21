@@ -329,7 +329,7 @@ primaryOrDataRange = do
             (bracketsP $ sepByComma facetValuePair)
         <|> return (if elem u $ map mkQName datatypeKeys
               then Right $ DRDatatype u
-              else Left $ OWLClass u) -- could still be a datatypeUri
+              else Left $ OWLClassDescription u) -- could still be a datatypeUri
     <|> do
       e <- bracesP individualOrConstantList
       return $ case e of
@@ -398,7 +398,7 @@ restrictionOrAtomic :: CharParser st Description
 restrictionOrAtomic = do
     opExpr <- objectPropertyExpr
     restrictionAny opExpr <|> case opExpr of
-       OpURI euri -> return $ OWLClass euri
+       OpURI euri -> return $ OWLClassDescription euri
        _ -> unexpected "inverse object property"
   <|> atomic
 
@@ -410,7 +410,7 @@ primary = optNot ObjectComplementOf restrictionOrAtomic
 
 conjunction :: CharParser st Description
 conjunction = do
-    curi <- fmap OWLClass $ try (owlClassUri << keyword "that")
+    curi <- fmap OWLClassDescription $ try (owlClassUri << keyword "that")
     rs <- sepBy1 (optNot ObjectComplementOf restriction) $ keyword "and"
     return $ mkObjectJunction IntersectionOf $ curi : rs
   <|> fmap (mkObjectJunction IntersectionOf)
@@ -421,12 +421,9 @@ description =
   fmap (mkObjectJunction UnionOf) $ sepBy1 conjunction $ keyword "or"
 
 entityType :: CharParser st EntityType
-entityType = choice $ map (\ f -> keyword (showEntityType f) >> return f)
-  [ Datatype
-  , OWLClassEntity
-  , ObjectProperty
-  , DataProperty
-  , Individual ]
+entityType = choice $ map (\ f -> keyword (show f) >> return f)
+  [ minBound .. maxBound ]
+
 -- AnnotationProperty is missing
 
 entity :: CharParser st Entity
@@ -478,8 +475,8 @@ entityAnnos qn ty = do
     return [PlainAxiom as $ Declaration $ Entity ty qn]
 
 classFrameBit :: QName -> CharParser st [Axiom]
-classFrameBit curi = let duri = OWLClass curi in do
-    entityAnnos curi OWLClassEntity
+classFrameBit curi = let duri = OWLClassDescription curi in do
+    entityAnnos curi OWLClass
   <|> do
     ckeyword "SubClassOf" <|> ckeyword "SubclassOf"
     ds <- descriptionAnnotatedList
@@ -506,7 +503,7 @@ classFrame = do
   las <- many $ classFrameBit curi
   let as = concat las
   return $ if null as
-    then [PlainAxiom [] $ Declaration $ Entity OWLClassEntity curi]
+    then [PlainAxiom [] $ Declaration $ Entity OWLClass curi]
     else as
 
 domainOrRange :: CharParser st ObjDomainOrRange

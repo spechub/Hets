@@ -128,8 +128,7 @@ instance ShATermConvertible Entity where
        (att1, t) <- toShATerm' att0 euri
        return $ addATerm (ShAAppl (show ty) [t] []) att1
     fromShATermAux ix att0 = case getShATerm ix att0 of
-       u@(ShAAppl tys [a] _) -> case if tys == "OWLClass"
-            then Just OWLClassEntity else readMaybe tys of
+       u@(ShAAppl tys [a] _) -> case readMaybe tys of
          Nothing -> fromShATermError "Entity" u
          Just ty -> case fromShATerm' a att0 of
            (att1, a') -> (att1, Entity ty a')
@@ -137,7 +136,7 @@ instance ShATermConvertible Entity where
 
 instance ShATermConvertible Description where
   toShATermAux att0 xv = case xv of
-    OWLClass a -> do
+    OWLClassDescription a -> do
         (att1, a') <- toShATerm' att0 a
         return $ addATerm (ShAAppl "OWLClass" [a'] []) att1
     ObjectJunction ty a -> do
@@ -182,7 +181,7 @@ instance ShATermConvertible Description where
   fromShATermAux ix att0 = case getShATerm ix att0 of
     ShAAppl "OWLClass" [a] _ ->
         case fromShATerm' a att0 of { (att1, a') ->
-        (att1, OWLClass a') }
+        (att1, OWLClassDescription a') }
     ShAAppl "ObjectUnionOf" [a] _ ->
         case fromShATerm' a att0 of { (att1, a') ->
         (att1, ObjectJunction UnionOf a') }

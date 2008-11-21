@@ -970,7 +970,7 @@ mapDescription :: CASLSign
                -> Result CASLFORMULA       -- ^ CASL_DL Formula
 mapDescription cSig des var =
     case des of
-      OWLClass cl            -> mapClassURI cSig cl (mk_Name var)
+      OWLClassDescription cl -> mapClassURI cSig cl (mk_Name var)
       ObjectJunction jt desL ->
           do
             desO <- mapM (\x -> mapDescription cSig x var) desL

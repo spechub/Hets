@@ -69,7 +69,7 @@ quantifierType = text . showQuantifierType
 
 instance Pretty Description where
   pretty desc = case desc of
-   OWLClass ocUri -> printURIreference ocUri
+   OWLClassDescription ocUri -> printURIreference ocUri
    ObjectJunction ty ds -> let
       (k, p) = case ty of
           UnionOf -> ("or", pretty)
@@ -171,7 +171,7 @@ printAssertion (Assertion a p s b) = indStart <+> pretty s $+$
      Negative -> text "not" <+> parens d
 
 printEntity :: Entity -> Doc
-printEntity (Entity ty u) = text (showEntityType ty) <> parens (pretty u)
+printEntity (Entity ty u) = text (show ty) <> parens (pretty u)
 
 printAxiom :: Axiom -> Doc
 printAxiom axiom = case axiom of

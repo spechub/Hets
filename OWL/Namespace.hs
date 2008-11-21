@@ -348,8 +348,8 @@ instance PNamespace DataRange where
 instance PNamespace Description where
     propagateNspaces ns desc =
         case desc of
-           OWLClass curi ->
-               OWLClass (propagateNspaces ns curi)
+           OWLClassDescription curi ->
+               OWLClassDescription (propagateNspaces ns curi)
            ObjectJunction ty descList ->
                ObjectJunction ty (map (propagateNspaces ns) descList)
            ObjectComplementOf desc' ->
@@ -379,8 +379,8 @@ instance PNamespace Description where
                  (propagateNspaces ns dpExp) (maybePropagate ns maybeRange)
     renameNamespace tMap desc =
         case desc of
-           OWLClass curi ->
-               OWLClass (renameNamespace tMap curi)
+           OWLClassDescription curi ->
+               OWLClassDescription (renameNamespace tMap curi)
            ObjectJunction ty descList ->
                ObjectJunction ty (map (renameNamespace tMap) descList)
            ObjectComplementOf desc' ->
