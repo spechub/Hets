@@ -579,7 +579,7 @@ objectFrameBit ouri = let opExp = OpURI ouri in do
     return [PlainAxiom (concatMap fst ds)
            $ EquivOrDisjointObjectProperties e $ opExp : map snd ds]
   <|> do
-    pkeyword inversesC <|> pkeyword "InverseOf:"
+    pkeyword inversesC <|> pkeyword inverseOfC -- protege output
     ds <- objPropExprAList
     return $ map (\ (as, i) -> PlainAxiom as
       $ InverseObjectProperties opExp i) ds

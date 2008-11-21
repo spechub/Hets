@@ -41,6 +41,7 @@ colonKeywords =
   , factsC
   , importC
   , individualC
+  , inverseOfC
   , inversesC
   , namespaceC
   , objectPropertiesC
@@ -121,6 +122,9 @@ importC = "Import:"
 
 individualC :: String
 individualC = "Individual:"
+
+inverseOfC :: String
+inverseOfC = "InverseOf:"
 
 inversesC :: String
 inversesC = "Inverses:"
