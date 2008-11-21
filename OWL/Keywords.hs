@@ -16,6 +16,34 @@ String constants for keywords to be used for parsing and printing
 
 module OWL.Keywords where
 
+keywords :: [String]
+keywords =
+  [ booleanS
+  , decimalS
+  , digitsS
+  , exactlyS
+  , floatS
+  , fractionS
+  , functionalS
+  , hasS
+  , integerS
+  , inverseOfS
+  , lengthS
+  , maxLengthS
+  , maxS
+  , minLengthS
+  , minS
+  , oS
+  , onlyS
+  , onlysomeS
+  , orS
+  , patternS
+  , selfS
+  , someS
+  , thatS
+  , valueS
+  , xorS ]
+
 booleanS :: String
 booleanS = "boolean"
 

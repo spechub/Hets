@@ -35,34 +35,8 @@ characters :: [Character]
 characters = [minBound .. maxBound]
 
 owlKeywords :: [String]
-owlKeywords = map show entityTypes
-  ++ map show characters ++ casl_reserved_words ++
-  [ notS
-  , booleanS
-  , decimalS
-  , digitsS
-  , exactlyS
-  , floatS
-  , fractionS
-  , functionalS
-  , hasS
-  , integerS
-  , inverseOfS
-  , lengthS
-  , maxLengthS
-  , maxS
-  , minLengthS
-  , minS
-  , oS
-  , onlyS
-  , onlysomeS
-  , orS
-  , patternS
-  , selfS
-  , someS
-  , thatS
-  , valueS
-  , xorS ]
+owlKeywords = notS : map show entityTypes
+  ++ map show characters ++ casl_reserved_words ++ keywords
 
 ncNameStart :: Char -> Bool
 ncNameStart c = isAlpha c || c == '_'
