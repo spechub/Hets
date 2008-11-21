@@ -15,9 +15,12 @@ module OWL.Print (printOWLBasicTheory, printAxiom) where
 import Common.AS_Annotation
 import Common.Doc
 import Common.DocUtils
+import Common.Keywords
 
-import OWL.Sign
 import OWL.AS
+import OWL.Keywords
+import OWL.ColonKeywords
+import OWL.Sign
 
 import qualified Data.Set as Set
 import qualified Data.Map as Map
@@ -39,10 +42,10 @@ printSign s =
        pon = if on == nullQName
              then text "<http://www.dfki.de/sks/hets/ontology/unamed>"
              else printURIreference on
-   in vcat (map (\ (c, l) -> text $ "Namespace: " ++ c ++ " <" ++ l ++">")
+   in vcat (map (\ (c, l) -> text $ namespaceC ++" " ++ c ++ " <" ++ l ++">")
            $ Map.toList $ namespaceMap s)
-   $++$ text "Ontology:" <+> pon
-   $++$ vcat (map (\ d -> text "Annotations: data"
+   $++$ text ontologyC <+> pon
+   $++$ vcat (map (\ d -> text (annotationsC ++ " data")
                    <+> printEntity (Entity Datatype d))
              $ Set.toList $ datatypes s)
    $++$ vcat (map (\ c -> classStart <+> pretty c) $ Set.toList ps)
@@ -72,17 +75,17 @@ instance Pretty Description where
    OWLClassDescription ocUri -> printURIreference ocUri
    ObjectJunction ty ds -> let
       (k, p) = case ty of
-          UnionOf -> ("or", pretty)
-          IntersectionOf -> ("and", printPrimary)
+          UnionOf -> (orS, pretty)
+          IntersectionOf -> (andS, printPrimary)
       in fsep $ prepPunctuate (text k <> space) $ map p ds
-   ObjectComplementOf d -> text "not" <+> printNegatedPrimary d
+   ObjectComplementOf d -> text notS <+> printNegatedPrimary d
    ObjectOneOf indUriList -> specBraces $ ppWithCommas indUriList
    ObjectValuesFrom ty opExp d ->
       printObjPropExp opExp <+> quantifierType ty <+> printNegatedPrimary d
    ObjectExistsSelf opExp ->
-      printObjPropExp opExp <+> text "Self"
+      printObjPropExp opExp <+> text selfS
    ObjectHasValue opExp indUri ->
-      pretty opExp <+> text "value" <+> pretty indUri
+      pretty opExp <+> text valueS <+> pretty indUri
    ObjectCardinality (Cardinality ty card opExp maybeDesc) ->
       printObjPropExp opExp <+> cardinalityType ty
         <+> text (show card) <+> maybe (text "owl:Thing") printPrimary maybeDesc
@@ -90,7 +93,7 @@ instance Pretty Description where
        printURIreference dpExp <+> quantifierType ty
            <+> (if null dpExpList then empty
                  else specBraces $ ppWithCommas dpExpList) <+> pretty dRange
-   DataHasValue dpExp cons -> pretty dpExp <+> text "value" <+> pretty cons
+   DataHasValue dpExp cons -> pretty dpExp <+> text valueS <+> pretty cons
    DataCardinality (Cardinality ty card dpExp maybeRange) ->
        pretty dpExp <+> cardinalityType ty <+> text (show card)
          <+> maybe empty pretty maybeRange
@@ -114,7 +117,7 @@ printObjPropExp :: ObjectPropertyExpression -> Doc
 printObjPropExp obExp =
     case obExp of
      OpURI ou -> pretty ou
-     InverseOp iopExp -> text "inverseOf" <> parens (printObjPropExp iopExp)
+     InverseOp iopExp -> text inverseOfS <> parens (printObjPropExp iopExp)
 
 instance Pretty DataRange where
     pretty = printDataRange
@@ -122,7 +125,7 @@ instance Pretty DataRange where
 printDataRange :: DataRange -> Doc
 printDataRange dr = case dr of
     DRDatatype du -> pretty du
-    DataComplementOf drange -> text "not" <+> pretty drange
+    DataComplementOf drange -> text notS <+> pretty drange
     DataOneOf constList -> specBraces $ ppWithCommas constList
     DatatypeRestriction drange l -> pretty drange <+>
       if null l then empty else brackets $ sepByCommas $ map printFV l
@@ -157,8 +160,8 @@ printObjDomainOrRange = text . showObjDomainOrRange
 
 printDataDomainOrRange :: DataDomainOrRange -> Doc
 printDataDomainOrRange dr = case dr of
-    DataDomain d -> text "Domain:" <+> pretty d
-    DataRange d -> text "Range:" <+> pretty d
+    DataDomain d -> text domainC <+> pretty d
+    DataRange d -> text rangeC <+> pretty d
 
 printSameOrDifferent :: SameOrDifferent -> Doc
 printSameOrDifferent = text . showSameOrDifferent
@@ -166,9 +169,9 @@ printSameOrDifferent = text . showSameOrDifferent
 printAssertion :: (Pretty a, Pretty b) => Assertion a b -> Doc
 printAssertion (Assertion a p s b) = indStart <+> pretty s $+$
    let d = fsep [pretty a, pretty b] in
-   text "Facts:" <+> case p of
+   text factsC <+> case p of
      Positive -> d
-     Negative -> text "not" <+> parens d
+     Negative -> text notS <+> parens d
 
 printEntity :: Entity -> Doc
 printEntity (Entity ty u) = text (show ty) <> parens (pretty u)
@@ -178,18 +181,18 @@ printAxiom axiom = case axiom of
   EntityAnno _ -> empty -- EntityAnnotation
   PlainAxiom _ paxiom -> case paxiom of
    SubClassOf sub super ->
-       classStart <+> pretty sub $+$ text "SubClassOf:" <+> pretty super
+       classStart <+> pretty sub $+$ text subClassOfC <+> pretty super
    EquivOrDisjointClasses ty (clazz : equiList) ->
        classStart <+> pretty clazz $+$ printEquivOrDisjoint ty <+>
                       setToDocV (Set.fromList equiList)
    DisjointUnion curi discList ->
-       classStart <+> pretty curi $+$ text "DisjointUnionOf:" <+>
+       classStart <+> pretty curi $+$ text disjointUnionOfC <+>
                    setToDocV (Set.fromList discList)
    -- ObjectPropertyAxiom
    SubObjectPropertyOf sopExp opExp ->
        opStart <+> pretty opExp $+$ text (case sopExp of
-                 SubObjectPropertyChain _ -> "SubPropertyChain:"
-                 _ -> "SubPropertyOf:")
+                 SubObjectPropertyChain _ -> subPropertyChainC
+                 _ -> subPropertyOfC)
                    <+> pretty sopExp
    EquivOrDisjointObjectProperties ty (opExp : opList) ->
        opStart <+> pretty opExp $+$ printEquivOrDisjoint ty <+>
@@ -197,52 +200,52 @@ printAxiom axiom = case axiom of
    ObjectPropertyDomainOrRange ty opExp desc ->
        opStart <+> pretty opExp $+$ printObjDomainOrRange ty <+> pretty desc
    InverseObjectProperties opExp1 opExp2 ->
-       opStart <+> pretty opExp1 $+$ text "Inverses:" <+> pretty opExp2
+       opStart <+> pretty opExp1 $+$ text inversesC <+> pretty opExp2
    ObjectPropertyCharacter ch opExp ->
        opStart <+> pretty opExp $+$ printCharact (show ch)
    -- DataPropertyAxiom
    SubDataPropertyOf dpExp1 dpExp2 ->
-       dpStart <+> pretty dpExp1 $+$ text "SubPropertyOf" <+> pretty dpExp2
+       dpStart <+> pretty dpExp1 $+$ text subPropertyOfC <+> pretty dpExp2
    EquivOrDisjointDataProperties ty (dpExp : dpList) ->
        dpStart <+> pretty dpExp $+$ printEquivOrDisjoint ty <+>
                setToDocV (Set.fromList dpList)
    DataPropertyDomainOrRange ddr dpExp ->
        dpStart <+> pretty dpExp $+$ printDataDomainOrRange ddr
    FunctionalDataProperty dpExp ->
-       dpStart <+> pretty dpExp $+$ (printCharact "Functional")
+       dpStart <+> pretty dpExp $+$ printCharact functionalS
    -- Fact
    SameOrDifferentIndividual ty (ind : indList) ->
        indStart <+> pretty ind $+$ printSameOrDifferent ty <+>
                  setToDocV (Set.fromList indList)
    ClassAssertion ind desc ->
-       indStart <+> pretty ind $+$ text "Types:" <+> pretty desc
+       indStart <+> pretty ind $+$ text typesC <+> pretty desc
    ObjectPropertyAssertion ass -> printAssertion ass
    DataPropertyAssertion ass -> printAssertion ass
    Declaration _ -> empty    -- [Annotation] Entity
-   u -> error ("unknow axiom" ++ show u)
+   u -> error $ "unknow axiom " ++ show u
 
 classStart :: Doc
-classStart = text "Class:"
+classStart = text classC
 
 opStart :: Doc
-opStart = text "ObjectProperty:"
+opStart = text objectPropertyC
 
 dpStart :: Doc
-dpStart = text "DataProperty:"
+dpStart = text dataPropertyC
 
 indStart :: Doc
-indStart = text "Individual:"
+indStart = text individualC
 
 printCharact :: String -> Doc
 printCharact charact =
-    text "Characteristics:" <+> text charact
+    text characteristicsC <+> text charact
 
 instance Pretty SubObjectPropertyExpression where
     pretty sopExp =
         case sopExp of
           OPExpression opExp -> pretty opExp
           SubObjectPropertyChain opExpList ->
-             fsep $ prepPunctuate (text "o ") $ map pretty opExpList
+             fsep $ prepPunctuate (text oS <> space) $ map pretty opExpList
 
 instance Pretty OntologyFile where
     pretty = vsep . map pretty . axiomsList . ontology
