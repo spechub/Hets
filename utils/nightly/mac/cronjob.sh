@@ -2,9 +2,9 @@
 
 export PATH=/home/pub-bkb/bin:/bin:/usr/bin:/usr/local/bin/:/usr/X11R6/bin:/opt/local/bin:/sw/bin
 export UDG_HOME=/home/mac-bkb/uDrawGraph-3.1
-export HETS_LIB=/local/home/maeder/haskell/Hets-lib
+export HETS_LIB=/Users/Shared/maeder/haskell/Hets-lib
 
-cd /local/home/maeder/haskell
+cd /Users/Shared/maeder/haskell
 
 . ../cronjob.sh
 
