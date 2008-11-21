@@ -138,8 +138,8 @@ instance Pretty DatatypeFacet where
 
 instance Pretty Constant where
     pretty (Constant lexi ty) = text lexi <> case ty of
-      Typed u -> text "^^" <> pretty u
-      Untyped tag -> text "@" <> text tag
+      Typed u -> text cTypeS <> pretty u
+      Untyped tag -> text asP <> text tag
 
 instance Pretty Sentence where
     pretty = printSentence

@@ -220,23 +220,23 @@ languageTag = atMost1 4 letter
 stringConstant :: CharParser st Constant
 stringConstant = do
   s <- stringLit
-  do  string "^^"
+  do  string cTypeS
       d <- datatypeUri
       return $ Constant s $ Typed d
     <|> do
-      char '@'
+      string asP
       t <- skip languageTag
       return $ Constant s $ Untyped t
-    <|> skip (return $ Constant s $ Typed $ mkQName "string")
+    <|> skip (return $ Constant s $ Typed $ mkQName stringS)
 
 constant :: CharParser st Constant
 constant = do
     f <- skip $ try floatingPointLit
-    return $ Constant f $ Typed $ mkQName "float"
+    return $ Constant f $ Typed $ mkQName floatS
   <|> do
     d <- skip decimalLit
     return $ Constant d $ Typed $ mkQName
-      $ if any (== '.') d then "decimal" else "integer"
+      $ if any (== '.') d then decimalS else integerS
   <|> stringConstant
 
 -- * description
