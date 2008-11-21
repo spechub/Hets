@@ -1,5 +1,7 @@
+DATA
 Functional
 Self
+Universal
 boolean
 decimal
 digits
@@ -14,11 +16,15 @@ max
 maxLength
 min
 minLength
+negativeInteger
+nonNegativeInteger
+nonPositiveInteger
 o
 only
 onlysome
 or
 pattern
+positiveInteger
 some
 that
 value

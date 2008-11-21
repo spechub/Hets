@@ -19,6 +19,7 @@ module OWL.Keywords where
 keywords :: [String]
 keywords =
   [ booleanS
+  , dATAS
   , decimalS
   , digitsS
   , exactlyS
@@ -33,19 +34,28 @@ keywords =
   , maxS
   , minLengthS
   , minS
+  , negativeIntegerS
+  , nonNegativeIntegerS
+  , nonPositiveIntegerS
   , oS
   , onlyS
   , onlysomeS
   , orS
   , patternS
+  , positiveIntegerS
   , selfS
   , someS
   , thatS
+  , universalS
   , valueS
-  , xorS ]
+  , xorS
+  ]
 
 booleanS :: String
 booleanS = "boolean"
+
+dATAS :: String
+dATAS = "DATA"
 
 decimalS :: String
 decimalS = "decimal"
@@ -89,6 +99,15 @@ minLengthS = "minLength"
 minS :: String
 minS = "min"
 
+negativeIntegerS :: String
+negativeIntegerS = "negativeInteger"
+
+nonNegativeIntegerS :: String
+nonNegativeIntegerS = "nonNegativeInteger"
+
+nonPositiveIntegerS :: String
+nonPositiveIntegerS = "nonPositiveInteger"
+
 oS :: String
 oS = "o"
 
@@ -104,6 +123,9 @@ orS = "or"
 patternS :: String
 patternS = "pattern"
 
+positiveIntegerS :: String
+positiveIntegerS = "positiveInteger"
+
 selfS :: String
 selfS = "Self"
 
@@ -112,6 +134,9 @@ someS = "some"
 
 thatS :: String
 thatS = "that"
+
+universalS :: String
+universalS = "Universal"
 
 valueS :: String
 valueS = "value"

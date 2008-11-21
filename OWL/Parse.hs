@@ -35,7 +35,7 @@ characters :: [Character]
 characters = [minBound .. maxBound]
 
 owlKeywords :: [String]
-owlKeywords = notS : map show entityTypes
+owlKeywords = notS : stringS : map show entityTypes
   ++ map show characters ++ casl_reserved_words ++ keywords
 
 ncNameStart :: Char -> Bool
@@ -167,7 +167,19 @@ uriQ = fullIri <|> abbrIri
 
 -- boolean not documented
 datatypeKeys :: [String]
-datatypeKeys = [integerS, decimalS, floatS, stringS, booleanS]
+datatypeKeys =
+  [ booleanS
+  , dATAS
+  , decimalS
+  , floatS
+  , integerS
+  , negativeIntegerS
+  , nonNegativeIntegerS
+  , nonPositiveIntegerS
+  , positiveIntegerS
+  , stringS
+  , universalS
+  ]
 
 uriP :: CharParser st QName
 uriP = let
