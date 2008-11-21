@@ -264,12 +264,22 @@ sepByComma p = sepBy1 p commaP
 
 -- keywords need to be case insensitive
 
+-- | parse character case insensitive
+ichar :: Char -> CharParser st Char
+ichar c = char (toUpper c) <|> char (toLower c) <?> show [c]
+
+-- | parse string case insensitive
+istring :: String -> CharParser st String
+istring s = case s of
+  [] -> return ""
+  c : r -> ichar c <:> istring r
+
 -- | plain string parser with skip
 pkeyword :: String -> CharParser st ()
 pkeyword s = keywordNotFollowedBy s (alphaNum <|> char '/') >> return ()
 
 keywordNotFollowedBy :: String -> CharParser st Char -> CharParser st String
-keywordNotFollowedBy s c = skip $ try $ string s << notFollowedBy c
+keywordNotFollowedBy s c = skip $ try $ istring s << notFollowedBy c
 
 -- | keyword not followed by any alphanum
 keyword :: String -> CharParser st String
@@ -497,7 +507,7 @@ classFrameBit :: QName -> CharParser st [Axiom]
 classFrameBit curi = let duri = OWLClassDescription curi in do
     entityAnnos curi OWLClass
   <|> do
-    pkeyword subClassOfC <|> pkeyword "SubclassOf:"
+    pkeyword subClassOfC
     ds <- descriptionAnnotatedList
     return $ map (\ (as, d) -> PlainAxiom as $ SubClassOf duri d) ds
   <|> do
