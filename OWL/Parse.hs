@@ -266,7 +266,7 @@ sepByComma p = sepBy1 p commaP
 
 -- | plain string parser with skip
 pkeyword :: String -> CharParser st ()
-pkeyword s = skip $ try (string s) >> return ()
+pkeyword s = keywordNotFollowedBy s (alphaNum <|> char '/') >> return ()
 
 keywordNotFollowedBy :: String -> CharParser st Char -> CharParser st String
 keywordNotFollowedBy s c = skip $ try $ string s << notFollowedBy c
