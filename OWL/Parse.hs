@@ -17,7 +17,6 @@ Manchester syntax parser for OWL 1.1
 module OWL.Parse (basicSpec) where
 
 import OWL.AS
-import OWL.ManKeywords (casl_dl_keywords)
 import OWL.Keywords
 import OWL.ColonKeywords
 import Common.Keywords
@@ -27,8 +26,43 @@ import Common.Utils (nubOrd)
 
 import Text.ParserCombinators.Parsec
 import Data.Char
-import Data.List (partition)
 import qualified Data.Map as Map
+
+entityTypes :: [EntityType]
+entityTypes = [minBound .. maxBound]
+
+characters :: [Character]
+characters = [minBound .. maxBound]
+
+owlKeywords :: [String]
+owlKeywords = map show entityTypes
+  ++ map show characters ++ casl_reserved_words ++
+  [ notS
+  , booleanS
+  , decimalS
+  , digitsS
+  , exactlyS
+  , floatS
+  , fractionS
+  , functionalS
+  , hasS
+  , integerS
+  , inverseOfS
+  , lengthS
+  , maxLengthS
+  , maxS
+  , minLengthS
+  , minS
+  , oS
+  , onlyS
+  , onlysomeS
+  , orS
+  , patternS
+  , selfS
+  , someS
+  , thatS
+  , valueS
+  , xorS ]
 
 ncNameStart :: Char -> Bool
 ncNameStart c = isAlpha c || c == '_'
@@ -163,11 +197,11 @@ datatypeKeys = [integerS, decimalS, floatS, stringS, booleanS]
 
 uriP :: CharParser st QName
 uriP = let
-  (cs, ncs) = partition (elem ':') casl_dl_keywords
+  mkLow = map toLower
   in skip $ checkWithUsing showQN uriQ $ \ q -> let p = namePrefix q in
-  if null p then not $ elem (localPart q)
-   $ datatypeKeys ++ casl_reserved_words ++ ncs
-   else not $ elem p $ map (takeWhile (/= ':')) cs
+  if null p then not $ elem (mkLow $ localPart q) $ map mkLow owlKeywords
+   else not $ elem (mkLow p)
+     $ map (mkLow . takeWhile (/= ':')) colonKeywords
 
 datatypeUri :: CharParser st QName
 datatypeUri = fmap mkQName (choice $ map keyword datatypeKeys) <|> uriP
@@ -425,7 +459,7 @@ description =
 
 entityType :: CharParser st EntityType
 entityType = choice $ map (\ f -> keyword (show f) >> return f)
-  [ minBound .. maxBound ]
+  entityTypes
 
 -- AnnotationProperty is missing
 
@@ -511,15 +545,8 @@ domainOrRange = choice
   [ObjDomain, ObjRange]
 
 objectPropertyCharacter :: CharParser st Character
-objectPropertyCharacter = choice
-  $ map (\ f -> keyword (show f) >> return f)
-  [ Functional
-  , InverseFunctional
-  , Reflexive
-  , Irreflexive
-  , Symmetric
-  , Asymmetric
-  , Transitive ]
+objectPropertyCharacter =
+  choice $ map (\ f -> keyword (show f) >> return f) characters
 
 objPropExprAList :: CharParser st [([Annotation], ObjectPropertyExpression)]
 objPropExprAList = sepByComma $ optAnnos objectPropertyExpr

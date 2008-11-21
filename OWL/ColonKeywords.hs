@@ -18,6 +18,39 @@ printing
 
 module OWL.ColonKeywords where
 
+colonKeywords :: [String]
+colonKeywords =
+  [ annotationsC
+  , characteristicsC
+  , classC
+  , classesC
+  , dataPropertiesC
+  , dataPropertyC
+  , differentFromC
+  , differentIndividualsC
+  , disjointUnionOfC
+  , disjointWithC
+  , domainC
+  , equivalentToC
+  , factsC
+  , importC
+  , individualC
+  , inversesC
+  , namespaceC
+  , objectPropertiesC
+  , objectPropertyC
+  , ontologyC
+  , paraphraseC
+  , rangeC
+  , sameAsC
+  , sameIndividualC
+  , subClassOfC
+  , subPropertyChainC
+  , subPropertyOfC
+  , superPropertyChainC
+  , superPropertyOfC
+  , typesC ]
+
 annotationsC :: String
 annotationsC = "Annotations:"
 

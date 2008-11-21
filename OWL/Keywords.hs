@@ -87,3 +87,6 @@ thatS = "that"
 
 valueS :: String
 valueS = "value"
+
+xorS :: String
+xorS = "xor"

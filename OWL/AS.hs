@@ -259,7 +259,7 @@ data Character =
   | Asymmetric
   | Antisymmetric
   | Transitive
-    deriving (Typeable, Show, Eq, Ord)
+    deriving (Typeable, Enum, Bounded, Show, Eq, Ord)
 
 data SameOrDifferent = Same | Different deriving (Show, Eq, Ord)
 
