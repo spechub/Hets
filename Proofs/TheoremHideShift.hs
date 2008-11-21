@@ -41,7 +41,8 @@ import Static.WACocone
 
 import Proofs.EdgeUtils
 import Proofs.ComputeColimit
-import Proofs.SimpleTheoremHideShift(getInComingGlobalUnprovenEdges)
+import Proofs.SimpleTheoremHideShift
+  (thmHideShift, getInComingGlobalUnprovenEdges)
 
 import Common.Id
 import Common.LibName
@@ -52,6 +53,9 @@ import qualified Data.Map as Map
 import Data.List (nub, sortBy)
 import Control.Monad
 
+normalFormRule :: DGRule
+normalFormRule = DGRule "NormalForm"
+
 convertNodesToNf :: LIB_NAME -> LibEnv -> Result LibEnv
 convertNodesToNf ln libEnv = do
   libEnv' <- foldM (convertToNf ln) libEnv $
@@ -59,7 +63,7 @@ convertNodesToNf ln libEnv = do
   let oldGraph = lookupDGraph ln libEnv
       newGraph = lookupDGraph ln libEnv'
   return $ Map.insert ln
-    (groupHistory oldGraph (DGRule "TheoremHideShift") newGraph) libEnv'
+    (groupHistory oldGraph thmHideShift newGraph) libEnv'
 
 {- | converts the given node to its own normal form -}
 convertToNf :: LIB_NAME -> LibEnv -> Node -> Result LibEnv
@@ -83,7 +87,7 @@ convertToNf ln libEnv node = do
           chLab = SetNodeLab nodelab (node, newLab)
           newGraph  = changeDGH dgraph chLab
       return $ Map.insert ln
-        (groupHistory dgraph (DGRule "NormalForm") newGraph) libEnv
+        (groupHistory dgraph normalFormRule newGraph) libEnv
     True -> case isDGRef nodelab of
       True -> do
         -- the normal form of the node
@@ -119,7 +123,7 @@ convertToNf ln libEnv node = do
          changes = [InsertNode (nfNode, refLab), chLab]
          newGraph = changesDGH dgraph changes
        return $ Map.insert ln
-         (groupHistory dgraph (DGRule "NormalForm") newGraph) libEnv'
+         (groupHistory dgraph normalFormRule newGraph) libEnv'
       False -> do
           auxProofstatus <- createNfsForPredecessors ln libEnv node
           (diagram, g) <- computeDiagram ln auxProofstatus node
@@ -166,7 +170,7 @@ convertToNf ln libEnv node = do
                 allChanges = chLab : insNNF : insStrMor
                 newGraph = changesDGH auxGraph allChanges
                return $ Map.insert ln
-                 (groupHistory auxGraph (DGRule "NormalForm") newGraph)
+                 (groupHistory auxGraph normalFormRule newGraph)
                  auxProofstatus
 
 {- computes the diagram associated to a node N in a development graph,
@@ -277,7 +281,7 @@ theoremHideShiftAux ln proofStatus nodeList = do
                     map (getInComingGlobalUnprovenEdges auxGraph) nodesWHiding
      newGraph = foldl theoremHideShiftForEdge auxGraph ingoingEdges
   return $ Map.insert ln
-    (groupHistory auxGraph (DGRule "TheoremHideShift") newGraph)
+    (groupHistory auxGraph thmHideShift newGraph)
          auxProofstatus
 
 theoremHideShiftForEdge :: DGraph -> LEdge DGLinkLab -> DGraph
@@ -287,7 +291,7 @@ theoremHideShiftForEdge dg edge@(source, target, edgeLab) =
    Just (dg', pbasis) -> let
     GlobalThm _ conservativity conservStatus = dgl_type edgeLab
     provenEdge = (source, target, edgeLab
-        { dgl_type = GlobalThm (Proven (DGRule "TheoremHideShift") pbasis)
+        { dgl_type = GlobalThm (Proven thmHideShift pbasis)
             conservativity conservStatus
         , dgl_origin = DGLinkProof })
     in changesDGH dg' [DeleteEdge edge, InsertEdge provenEdge]

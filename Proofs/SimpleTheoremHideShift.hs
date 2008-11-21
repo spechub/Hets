@@ -26,9 +26,10 @@ simple version of theorem hide shift proof rule for development graphs.
 -}
 
 module Proofs.SimpleTheoremHideShift
-         (theoremHideShift,
-          getInComingGlobalUnprovenEdges
-         ) where
+  ( theoremHideShift
+  , thmHideShift
+  , getInComingGlobalUnprovenEdges
+  ) where
 
 import Proofs.EdgeUtils
 
@@ -38,6 +39,10 @@ import Common.LibName
 import qualified Data.Map as Map
 import Data.Graph.Inductive.Graph
 import Data.List
+
+-- | rule name
+thmHideShift :: DGRule
+thmHideShift = DGRule "TheoremHideShift"
 
 {- | to be exported function.
      firstly it gets all the hiding definition links out of DGraph and
@@ -57,7 +62,7 @@ theoremHideShift ln proofStatus =
 theoremHideShiftFromList :: DGraph -> LEdge DGLinkLab -> DGraph
 theoremHideShiftFromList dgraph e = let
     newDGraph = theoremHideShiftWithOneHidingDefEdge dgraph e
-    in groupHistory dgraph (DGRule "TheoremHideShift") newDGraph
+    in groupHistory dgraph thmHideShift newDGraph
 
 {- | apply the rule to one hiding definition link.
      it takes all the related global unproven edges to the given hiding edge
@@ -98,7 +103,7 @@ theoremHideShiftWithOneHidingDefEdgeAux hd@(hds, _, _) dgraph x@(s, t, lbl) =
     -------- to insert a proven global theorem link ---------------
     GlobalThm _ conservativity conservStatus = dgl_type lbl
     provenEdge = (s, t, lbl
-      { dgl_type = GlobalThm (Proven (DGRule "SimpleTheoremHideShift")
+      { dgl_type = GlobalThm (Proven thmHideShift
                               proofbasis) conservativity conservStatus
       , dgl_origin = DGLinkProof })
   in changesDGH newDGraph [DeleteEdge x, InsertEdge provenEdge]

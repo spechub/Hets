@@ -73,15 +73,15 @@ locDecompAux libEnv ln dgraph ledge@(src, tgt, edgeLab) = let
     proofbasis = selectProofBasis dgraph ledge filteredPaths
     auxGraph = changeDGH dgraph $ DeleteEdge ledge
     LocalThm _ conservativity conservStatus = dgl_type edgeLab
+    locDecompRule = DGRuleWithEdge "Local-Decomposition" ledge
     newEdge = (src, tgt, edgeLab
-      { dgl_type = LocalThm
-          (Proven (DGRuleWithEdge "Local-Decomposition" ledge) proofbasis)
+      { dgl_type = LocalThm (Proven locDecompRule proofbasis)
           conservativity conservStatus
       , dgl_origin = DGLinkProof })
     newGraph = insertDGLEdge newEdge auxGraph
     in if not (isIdentityEdge ledge libEnv dgraph) && nullProofBasis proofbasis
      then dgraph else
-     groupHistory dgraph (DGRuleWithEdge "Local-Decomposition" ledge) newGraph
+     groupHistory dgraph locDecompRule newGraph
 
 
 {- | removes all paths from the given list of paths whose morphism does
@@ -149,10 +149,10 @@ localInferenceAux ln (libEnv, dgraph) ledge@(src, tgt, edgeLab) = let
                                    (sens `joinSens` goals'') startThId
                   newContents = oldContents { dgn_theory = newTh }
                   LocalThm _ conservativity conservStatus = dgl_type edgeLab
+                  locInferRule = DGRuleWithEdge "Local-Inference" ledge
                   newLab = edgeLab
-                    { dgl_type = LocalThm
-                        (Proven (DGRuleWithEdge "Local-Inference" ledge)
-                         emptyProofBasis) conservativity conservStatus
+                    { dgl_type = LocalThm (Proven locInferRule emptyProofBasis)
+                        conservativity conservStatus
                     , dgl_origin = DGLinkProof }
                   newEdge = (src, tgt, newLab)
                   oldContents = labDG dgraph tgt
@@ -164,8 +164,6 @@ localInferenceAux ln (libEnv, dgraph) ledge@(src, tgt, edgeLab) = let
                       in (Map.adjust (const dg) ln libEnv', dg)
                   newGraph = changesDGH graphWithChangedTheory
                         [DeleteEdge ledge, InsertEdge newEdge]
-              in ( newLibEnv
-                 , groupHistory dgraph (DGRuleWithEdge "Local-Inference" ledge)
-                   newGraph)
+              in (newLibEnv, groupHistory dgraph locInferRule newGraph)
         _ -> noChange
     _ -> noChange

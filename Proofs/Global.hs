@@ -31,6 +31,9 @@ import Common.LibName
 import Proofs.EdgeUtils
 import Proofs.StatusUtils
 
+globDecompRule :: LEdge DGLinkLab -> DGRule
+globDecompRule = DGRuleWithEdge "Global-Decomposition"
+
 {- apply rule GlobDecomp to all global theorem links in the current DG
    current DG = DGm
    add to proof status the pair ([GlobDecomp e1,...,GlobDecomp en],DGm+1)
@@ -203,7 +206,7 @@ globDecomp ln proofStatus =
 globDecompAux :: DGraph -> LEdge DGLinkLab -> DGraph
 globDecompAux dgraph edge =
   let newDGraph = globDecompForOneEdge dgraph edge
-  in groupHistory dgraph (DGRuleWithEdge "Global-Decomposition" edge) newDGraph
+  in groupHistory dgraph (globDecompRule edge) newDGraph
 
 -- applies global decomposition to a single edge
 globDecompForOneEdge :: DGraph -> LEdge DGLinkLab -> DGraph
@@ -216,8 +219,7 @@ globDecompForOneEdge dgraph edge@(source, target, edgeLab) = let
       (globDecompForOneEdgeAux target) (dgraph, emptyProofBasis) paths
     GlobalThm _ conservativity conservStatus = dgl_type edgeLab
     provenEdge = (source, target, edgeLab
-        { dgl_type = GlobalThm
-            (Proven (DGRuleWithEdge "Global-Decomposition" edge) proof_basis)
+        { dgl_type = GlobalThm (Proven (globDecompRule edge) proof_basis)
             conservativity conservStatus
         , dgl_origin = DGLinkProof })
     in changesDGH newGr [DeleteEdge edge, InsertEdge provenEdge]
@@ -280,12 +282,11 @@ globSubsumeAux libEnv dgraph ledge@(src, tgt, edgeLab) =
   in if not (nullProofBasis proofbasis) || isIdentityEdge ledge libEnv dgraph
    then
      let GlobalThm _ conservativity conservStatus = dgl_type edgeLab
+         globSubsumeRule = DGRuleWithEdge "Global-Subsumption" ledge
          newEdge = (src, tgt, edgeLab
-               { dgl_type = GlobalThm
-                   (Proven (DGRuleWithEdge "Global-Subsumption" ledge)
-                    proofbasis) conservativity conservStatus
+               { dgl_type = GlobalThm (Proven globSubsumeRule proofbasis)
+                   conservativity conservStatus
                , dgl_origin = DGLinkProof })
          newDGraph = changesDGH dgraph [DeleteEdge ledge, InsertEdge newEdge]
-     in groupHistory dgraph (DGRuleWithEdge "Global-Subsumption" ledge)
-        newDGraph
+     in groupHistory dgraph globSubsumeRule newDGraph
    else dgraph
