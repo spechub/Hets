@@ -167,6 +167,14 @@ diamondS = "<>"
 greaterS :: String
 greaterS = ">"
 
+-- * OWL key signs
+
+lessEq :: String
+lessEq = "<="
+
+greaterEq :: String
+greaterEq = ">="
+
 -- * CspCasl key signs
 
 -- | Prefix processes

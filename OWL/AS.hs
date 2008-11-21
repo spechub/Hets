@@ -14,6 +14,9 @@ It is modeled after the W3C document: <http://www.w3.org/Submission/2006/SUBM-ow
 
 module OWL.AS where
 
+import Common.Keywords
+import OWL.Keywords
+import OWL.ColonKeywords
 import qualified Data.Map as Map
 import Data.Typeable
 
@@ -142,16 +145,16 @@ data DatatypeFacet =
 
 showFacet :: DatatypeFacet -> String
 showFacet df = case df of
-    LENGTH -> "length"
-    MINLENGTH -> "minLength"
-    MAXLENGTH -> "maxLength"
-    PATTERN -> "pattern"
-    MININCLUSIVE -> "<="
-    MINEXCLUSIVE -> "<"
-    MAXINCLUSIVE -> ">="
-    MAXEXCLUSIVE -> ">"
-    TOTALDIGITS -> "digits"
-    FRACTIONDIGITS -> "fraction"
+    LENGTH -> lengthS
+    MINLENGTH -> minLengthS
+    MAXLENGTH -> maxLengthS
+    PATTERN -> patternS
+    MININCLUSIVE -> lessEq
+    MINEXCLUSIVE -> lessS
+    MAXINCLUSIVE -> greaterEq
+    MAXEXCLUSIVE -> greaterS
+    TOTALDIGITS -> digitsS
+    FRACTIONDIGITS -> fractionS
 
 type RestrictionValue = Constant
 
@@ -177,9 +180,9 @@ data CardinalityType = MinCardinality | MaxCardinality | ExactCardinality
 
 showCardinalityType :: CardinalityType -> String
 showCardinalityType ty = case ty of
-    MinCardinality -> "min"
-    MaxCardinality -> "max"
-    ExactCardinality -> "exactly"
+    MinCardinality -> minS
+    MaxCardinality -> maxS
+    ExactCardinality -> exactlyS
 
 data JunctionType = UnionOf | IntersectionOf deriving (Show, Eq, Ord)
 
@@ -187,8 +190,8 @@ data QuantifierType = AllValuesFrom | SomeValuesFrom deriving (Show, Eq, Ord)
 
 showQuantifierType :: QuantifierType -> String
 showQuantifierType ty = case ty of
-    AllValuesFrom -> "only"
-    SomeValuesFrom -> "some"
+    AllValuesFrom -> onlyS
+    SomeValuesFrom -> someS
 
 data Cardinality a b = Cardinality CardinalityType Int a (Maybe b)
     deriving (Typeable, Show, Eq, Ord)
@@ -231,15 +234,15 @@ data EquivOrDisjoint = Equivalent | Disjoint deriving (Show, Eq, Ord)
 
 showEquivOrDisjoint :: EquivOrDisjoint -> String
 showEquivOrDisjoint ed = case ed of
-    Equivalent -> "EquivalentTo:"
-    Disjoint -> "DisjointWith:"
+    Equivalent -> equivalentToC
+    Disjoint -> disjointWithC
 
 data ObjDomainOrRange = ObjDomain | ObjRange deriving (Show, Eq, Ord)
 
 showObjDomainOrRange :: ObjDomainOrRange -> String
 showObjDomainOrRange dr = case dr of
-    ObjDomain -> "Domain:"
-    ObjRange -> "Range:"
+    ObjDomain -> domainC
+    ObjRange -> rangeC
 
 data DataDomainOrRange = DataDomain Description | DataRange DataRange
     deriving (Typeable, Show, Eq, Ord)
@@ -259,8 +262,8 @@ data SameOrDifferent = Same | Different deriving (Show, Eq, Ord)
 
 showSameOrDifferent :: SameOrDifferent -> String
 showSameOrDifferent sd = case sd of
-    Same -> "SameAs:"
-    Different -> "DifferentFrom:"
+    Same -> sameAsC
+    Different -> differentFromC
 
 data PositiveOrNegative = Positive | Negative deriving (Show, Eq, Ord)
 

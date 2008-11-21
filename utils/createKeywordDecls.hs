@@ -21,10 +21,10 @@ main = getContents >>=
     mapM_ (\ (k, v) ->
          putStrLn ""
       >> putStrLn (k ++ " :: String")
-      >> putStrLn (k ++ " = \"" ++ v ++ "\""))
+      >> putStrLn (k ++ " = \"" ++ v ++ ":\""))
   . Map.toList
   . Map.fromList
-  . map (\ s@(c : r) -> (toLower c : r ++ "S", s))
+  . map (\ s@(c : r) -> (toLower c : r ++ "C", s))
   . filter (not . null)
   . map (takeWhile $ \ c -> isAlpha c || c == '_')
   . lines

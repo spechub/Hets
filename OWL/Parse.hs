@@ -18,6 +18,9 @@ module OWL.Parse (basicSpec) where
 
 import OWL.AS
 import OWL.ManKeywords (casl_dl_keywords)
+import OWL.Keywords
+import OWL.ColonKeywords
+import Common.Keywords
 import Common.Token (casl_reserved_words)
 import Common.Lexer hiding (skip)
 import Common.Utils (nubOrd)
@@ -156,7 +159,7 @@ uriQ = fullIri <|> abbrIri
 
 -- boolean not documented
 datatypeKeys :: [String]
-datatypeKeys = ["integer", "decimal", "float", "string", "boolean"]
+datatypeKeys = [integerS, decimalS, floatS, stringS, booleanS]
 
 uriP :: CharParser st QName
 uriP = let
@@ -259,7 +262,7 @@ atomic = parensP description
 
 objectPropertyExpr :: CharParser st ObjectPropertyExpression
 objectPropertyExpr = do
-    keyword "inverseOf"
+    keyword inverseOfS
     fmap InverseOp objectPropertyExpr
   <|> fmap OpURI uriP
 
@@ -289,7 +292,7 @@ dataRangeRestriction = do
 
 dataRange :: CharParser st DataRange
 dataRange = do
-    keyword "not"
+    keyword notS
     fmap DataComplementOf dataRange
    <|> fmap DataOneOf (bracesP $ sepByComma constant)
    <|> dataRangeRestriction
@@ -321,7 +324,7 @@ individualOrConstantList = do
 
 primaryOrDataRange :: CharParser st (Either Description DataRange)
 primaryOrDataRange = do
-  ns <- many $ keyword "not"  -- allows multiple not before primary
+  ns <- many $ keyword notS  -- allows multiple not before primary
   ed <- do
       u <- datatypeUri
       fmap Left (restrictionAny $ OpURI u)
@@ -349,7 +352,7 @@ mkObjectJunction ty ds = case nubOrd ds of
 
 restrictionAny :: ObjectPropertyExpression -> CharParser st Description
 restrictionAny opExpr = do
-      keyword "value"
+      keyword valueS
       e <- individualOrConstant
       case e of
         Left u -> return $ ObjectHasValue opExpr u
@@ -357,17 +360,17 @@ restrictionAny opExpr = do
           OpURI dpExpr -> return $ DataHasValue dpExpr c
           _ -> unexpected "constant"
     <|> do
-      keyword "Self"
+      keyword selfS
       return $ ObjectExistsSelf opExpr
     <|> do -- sugar
-      keyword "onlysome"
+      keyword onlysomeS
       ds <- bracketsP $ sepByComma description
       let as = map (\ d -> ObjectValuesFrom SomeValuesFrom opExpr d) ds
           o = ObjectValuesFrom AllValuesFrom opExpr
               $ mkObjectJunction UnionOf ds
       return $ mkObjectJunction IntersectionOf $ o : as
     <|> do -- sugar
-      keyword "has"
+      keyword hasS
       iu <- individualUri
       return $ ObjectValuesFrom SomeValuesFrom opExpr $ ObjectOneOf [iu]
     <|> do
@@ -403,22 +406,22 @@ restrictionOrAtomic = do
   <|> atomic
 
 optNot :: (a -> a) -> CharParser st a  -> CharParser st a
-optNot f p = (keyword "not" >> fmap f p) <|> p
+optNot f p = (keyword notS >> fmap f p) <|> p
 
 primary :: CharParser st Description
 primary = optNot ObjectComplementOf restrictionOrAtomic
 
 conjunction :: CharParser st Description
 conjunction = do
-    curi <- fmap OWLClassDescription $ try (owlClassUri << keyword "that")
-    rs <- sepBy1 (optNot ObjectComplementOf restriction) $ keyword "and"
+    curi <- fmap OWLClassDescription $ try (owlClassUri << keyword thatS)
+    rs <- sepBy1 (optNot ObjectComplementOf restriction) $ keyword andS
     return $ mkObjectJunction IntersectionOf $ curi : rs
   <|> fmap (mkObjectJunction IntersectionOf)
-      (sepBy1 primary $ keyword "and")
+      (sepBy1 primary $ keyword andS)
 
 description :: CharParser st Description
 description =
-  fmap (mkObjectJunction UnionOf) $ sepBy1 conjunction $ keyword "or"
+  fmap (mkObjectJunction UnionOf) $ sepBy1 conjunction $ keyword orS
 
 entityType :: CharParser st EntityType
 entityType = choice $ map (\ f -> keyword (show f) >> return f)
@@ -445,10 +448,6 @@ annotation = do
       individualUri
       fail "unsupported individualURI of annotation"
 
--- | keyword followed by a colon (that is consumed too)
-ckeyword :: String -> CharParser st ()
-ckeyword s = pkeyword $ s ++ ":"
-
 optAnnos :: CharParser st a -> CharParser st ([Annotation], a)
 optAnnos p = do
   as <- option [] annotations
@@ -457,7 +456,7 @@ optAnnos p = do
 
 annotations :: CharParser st [Annotation]
 annotations = do
-  ckeyword "Annotations"
+  pkeyword annotationsC
   as <- sepByComma $ optAnnos annotation
   return $ map snd as -- annoted annotations not supported yet
 
@@ -478,7 +477,7 @@ classFrameBit :: QName -> CharParser st [Axiom]
 classFrameBit curi = let duri = OWLClassDescription curi in do
     entityAnnos curi OWLClass
   <|> do
-    ckeyword "SubClassOf" <|> ckeyword "SubclassOf"
+    pkeyword subClassOfC <|> pkeyword "SubclassOf:"
     ds <- descriptionAnnotatedList
     return $ map (\ (as, d) -> PlainAxiom as $ SubClassOf duri d) ds
   <|> do
@@ -487,18 +486,18 @@ classFrameBit curi = let duri = OWLClassDescription curi in do
     return [PlainAxiom (concatMap fst ds)
            $ EquivOrDisjointClasses e $ duri : map snd ds]
   <|> do
-    ckeyword "DisjointUnionOf"
+    pkeyword disjointUnionOfC
     as <- annotations
     ds <- sepByComma description
     return [PlainAxiom as $ DisjointUnion curi ds]
   <|> do -- no documented
-    ckeyword "Paraphrase"
+    pkeyword paraphraseC
     skip stringLit
     return []
 
 classFrame :: CharParser st [Axiom]
 classFrame = do
-  ckeyword "Class"
+  pkeyword classC
   curi <- owlClassUri
   las <- many $ classFrameBit curi
   let as = concat las
@@ -526,11 +525,11 @@ objPropExprAList :: CharParser st [([Annotation], ObjectPropertyExpression)]
 objPropExprAList = sepByComma $ optAnnos objectPropertyExpr
 
 subPropertyKey :: CharParser st Bool
-subPropertyKey = (ckeyword "SubPropertyOf" >> return True)
-   <|> (ckeyword "SuperPropertyOf" >> return False)  -- sugar
+subPropertyKey = (pkeyword subPropertyOfC >> return True)
+   <|> (pkeyword superPropertyOfC >> return False)  -- sugar
 
 characterKey :: CharParser st ()
-characterKey = ckeyword "Characteristics"
+characterKey = pkeyword characteristicsC
 
 objectFrameBit :: QName -> CharParser st [Axiom]
 objectFrameBit ouri = let opExp = OpURI ouri in do
@@ -557,20 +556,20 @@ objectFrameBit ouri = let opExp = OpURI ouri in do
     return [PlainAxiom (concatMap fst ds)
            $ EquivOrDisjointObjectProperties e $ opExp : map snd ds]
   <|> do
-    ckeyword "Inverses" <|> ckeyword "InverseOf"
+    pkeyword inversesC <|> pkeyword "InverseOf:"
     ds <- objPropExprAList
     return $ map (\ (as, i) -> PlainAxiom as
       $ InverseObjectProperties opExp i) ds
   <|> do
-    ckeyword "SubPropertyChain"
+    pkeyword subPropertyChainC
     as <- option [] annotations
-    os <- sepBy1 objectPropertyExpr (keyword "o")
+    os <- sepBy1 objectPropertyExpr (keyword oS)
     return [PlainAxiom as
       $ SubObjectPropertyOf (SubObjectPropertyChain os) opExp]
 
 objectPropertyFrame :: CharParser st [Axiom]
 objectPropertyFrame = do
-  ckeyword "ObjectProperty"
+  pkeyword objectPropertyC
   ouri <- uriP
   flat $ many $ objectFrameBit ouri
 
@@ -581,19 +580,19 @@ dataFrameBit :: QName -> CharParser st [Axiom]
 dataFrameBit duri = do
     entityAnnos duri DataProperty
   <|> do
-    ckeyword "Domain"
+    pkeyword domainC
     ds <- descriptionAnnotatedList
     return $ map (\ (as, d) -> PlainAxiom as
       $ DataPropertyDomainOrRange (DataDomain d) duri) ds
   <|> do
-    ckeyword "Range"
+    pkeyword rangeC
     ds <- sepByComma $ optAnnos dataRange
     return $ map (\ (as, r) -> PlainAxiom as
       $ DataPropertyDomainOrRange (DataRange r) duri) ds
   <|> do
     characterKey
     as <- annotations
-    keyword "Functional"
+    keyword functionalS
     return [PlainAxiom as $ FunctionalDataProperty duri]
   <|> do
     b <- subPropertyKey
@@ -609,7 +608,7 @@ dataFrameBit duri = do
 
 dataPropertyFrame :: CharParser st [Axiom]
 dataPropertyFrame = do
-  ckeyword "DataProperty"
+  pkeyword dataPropertyC
   duri <- uriP
   flat $ many $ dataFrameBit duri
 
@@ -620,7 +619,7 @@ sameOrDifferent = choice
 
 fact :: QName -> CharParser st PlainAxiom
 fact iuri = do
-  pn <- option Positive $ keyword "not" >> return Negative
+  pn <- option Positive $ keyword notS >> return Negative
   u <- uriP
   do  c <- constant
       return $ DataPropertyAssertion $ Assertion u pn iuri c
@@ -632,7 +631,7 @@ iFrameBit :: QName -> CharParser st [Axiom]
 iFrameBit iuri = do
     entityAnnos iuri Individual
   <|> do
-    ckeyword "Types"
+    pkeyword typesC
     ds <- descriptionAnnotatedList
     return $ map (\ (as, d) -> PlainAxiom as $ ClassAssertion iuri d) ds
   <|> do
@@ -641,40 +640,40 @@ iFrameBit iuri = do
     return [PlainAxiom (concatMap fst is)
       $ SameOrDifferentIndividual s $ iuri : map snd is]
   <|> do
-    ckeyword "Facts"
+    pkeyword factsC
     fs <- sepByComma $ optAnnos $ fact iuri
     return $ map (\ (as, f) -> PlainAxiom as f) fs
 
 individualFrame :: CharParser st [Axiom]
 individualFrame = do
-  ckeyword "Individual"
+  pkeyword individualC
   iuri <- individualUri
   flat $ many $ iFrameBit iuri
 
 equivOrDisjointKeyword :: String -> CharParser st EquivOrDisjoint
 equivOrDisjointKeyword ext =
-  (ckeyword ("Equivalent" ++ ext) >> return Equivalent)
-  <|> (ckeyword ("Disjoint" ++ ext) >> return Disjoint)
+  (pkeyword ("Equivalent" ++ ext) >> return Equivalent)
+  <|> (pkeyword ("Disjoint" ++ ext) >> return Disjoint)
 
 -- note the plural when different
 sameOrDifferentIndu :: CharParser st SameOrDifferent
 sameOrDifferentIndu =
-  (ckeyword "SameIndividual" >> return Same)
-  <|> (ckeyword "DifferentIndividuals" >> return Different)
+  (pkeyword sameIndividualC >> return Same)
+  <|> (pkeyword differentIndividualsC >> return Different)
 
 misc :: CharParser st Axiom
 misc = do
-    e <- equivOrDisjointKeyword "Classes"
+    e <- equivOrDisjointKeyword classesC
     as <- annotations
     ds <- sepByComma description
     return $ PlainAxiom as $ EquivOrDisjointClasses e ds
   <|> do
-    e <- equivOrDisjointKeyword "ObjectProperties"
+    e <- equivOrDisjointKeyword objectPropertiesC
     as <- annotations
     es <- sepByComma objectPropertyExpr
     return $ PlainAxiom as $ EquivOrDisjointObjectProperties e es
   <|> do
-    e <- equivOrDisjointKeyword "DataProperties"
+    e <- equivOrDisjointKeyword dataPropertiesC
     as <- annotations
     ds <- sepByComma uriP
     return $ PlainAxiom as $ EquivOrDisjointDataProperties e ds
@@ -691,18 +690,18 @@ frames = flat $ many $ classFrame
 
 nsEntry :: CharParser st (String, QName)
 nsEntry = do
-  ckeyword "Namespace"
+  pkeyword namespaceC
   p <- skip prefix
   i <- skip fullIri
   return (p, i)
 
 importEntry :: CharParser st QName
-importEntry = ckeyword "Import" >> uriP
+importEntry = pkeyword importC >> uriP
 
 basicSpec :: CharParser st OntologyFile
 basicSpec = do
   nss <- many nsEntry
-  option () $ ckeyword "Ontology" >> uriP >> return ()
+  option () $ pkeyword ontologyC >> uriP >> return ()
   many importEntry
   many annotations
   as <- frames
