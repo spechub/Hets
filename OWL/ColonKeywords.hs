@@ -28,9 +28,15 @@ colonKeywords =
   , dataPropertyC
   , differentFromC
   , differentIndividualsC
+  , disjointClassesC
+  , disjointDataPropertiesC
+  , disjointObjectPropertyC
   , disjointUnionOfC
   , disjointWithC
   , domainC
+  , equivalentClassesC
+  , equivalentDataPropertiesC
+  , equivalentObjectPropertiesC
   , equivalentToC
   , factsC
   , importC
@@ -49,7 +55,9 @@ colonKeywords =
   , subPropertyOfC
   , superPropertyChainC
   , superPropertyOfC
-  , typesC ]
+  , typesC
+  , valuePartitionC
+  ]
 
 annotationsC :: String
 annotationsC = "Annotations:"
@@ -75,6 +83,15 @@ differentFromC = "DifferentFrom:"
 differentIndividualsC :: String
 differentIndividualsC = "DifferentIndividuals:"
 
+disjointClassesC :: String
+disjointClassesC = "DisjointClasses:"
+
+disjointDataPropertiesC :: String
+disjointDataPropertiesC = "DisjointDataProperties:"
+
+disjointObjectPropertyC :: String
+disjointObjectPropertyC = "DisjointObjectProperty:"
+
 disjointUnionOfC :: String
 disjointUnionOfC = "DisjointUnionOf:"
 
@@ -83,6 +100,15 @@ disjointWithC = "DisjointWith:"
 
 domainC :: String
 domainC = "Domain:"
+
+equivalentClassesC :: String
+equivalentClassesC = "EquivalentClasses:"
+
+equivalentDataPropertiesC :: String
+equivalentDataPropertiesC = "EquivalentDataProperties:"
+
+equivalentObjectPropertiesC :: String
+equivalentObjectPropertiesC = "EquivalentObjectProperties:"
 
 equivalentToC :: String
 equivalentToC = "EquivalentTo:"
@@ -140,3 +166,6 @@ superPropertyOfC = "SuperPropertyOf:"
 
 typesC :: String
 typesC = "Types:"
+
+valuePartitionC :: String
+valuePartitionC = "ValuePartition:"

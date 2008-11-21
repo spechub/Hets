@@ -6,9 +6,15 @@ DataProperties
 DataProperty
 DifferentFrom
 DifferentIndividuals
+DisjointClasses
+DisjointDataProperties
+DisjointObjectProperty
 DisjointUnionOf
 DisjointWith
 Domain
+EquivalentClasses
+EquivalentDataProperties
+EquivalentObjectProperties
 EquivalentTo
 Facts
 Import
@@ -28,3 +34,4 @@ SubPropertyOf
 SuperPropertyChain
 SuperPropertyOf
 Types
+ValuePartition
