@@ -46,6 +46,9 @@ showQI = ('<' :) . (++ ">") . showQU
 nullQName :: QName
 nullQName = QN "" "" False ""
 
+dummyQName :: QName
+dummyQName = QN "http" "//www.dfki.de/sks/hets/ontology/unamed" True ""
+
 mkQName :: String -> QName
 mkQName s = nullQName { localPart = s }
 

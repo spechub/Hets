@@ -39,9 +39,9 @@ printSign s =
        ps = primaryConcepts s
        ds = Set.difference cs ps
        on = ontologyID s
-       pon = if on == nullQName
-             then text "<http://www.dfki.de/sks/hets/ontology/unamed>"
-             else printURIreference on
+       pon = printURIreference $ if on == nullQName
+             then dummyQName
+             else on
    in vcat (map (\ (c, l) -> text $ namespaceC ++" " ++ c ++ " <" ++ l ++">")
            $ Map.toList $ namespaceMap s)
    $++$ text ontologyC <+> pon

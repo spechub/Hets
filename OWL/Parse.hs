@@ -708,11 +708,11 @@ basicSpec = do
   return emptyOntologyFile
     { ontology = emptyOntology
       { axiomsList = as
-      , uri = QN "http" "//www.dfki.de/sks/hets/ontology/unamed" True "" }
+      , uri = dummyQName }
     , namespaces = Map.fromList $
       [ ("owl", "http://www.w3.org/2002/07/owl#")
       , ("rdf", "http://www.w3.org/1999/02/22-rdf-syntax-ns#")
       , ("rdfs", "http://www.w3.org/2000/01/rdf-schema#")
       , ("xsd", "http://www.w3.org/2001/XMLSchema#")
       , ("owl2xml", "http://www.w3.org/2006/12/owl2-xml#") ]
-      ++ map (\ (p, q) -> (p, showQN q { isFullIri = False })) nss }
+      ++ map (\ (p, q) -> (p, showQU q)) nss }
