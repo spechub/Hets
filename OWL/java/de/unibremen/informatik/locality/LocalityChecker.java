@@ -11,31 +11,83 @@ import org.semanticweb.owl.model.*;
 import java.net.URI;
 
 import java.util.Set;
+import java.util.Iterator;
 
 public class LocalityChecker {
 
-    private static Set<? extends OWLEntity> sign;
+    private static Set<OWLEntity> sign;
+    private static Set<OWLAxiom> axioms;
 
     public static void main(String[] args)
     {
-	if (args.length < 1) 
+	if (args.length != 2) 
 	    {
-		System.out.println("Usage: LocalityChecker <URI> <Class*>");
+		System.out.println("Usage: LocalityChecker <URI> " +
+                                   "<SignatureURI>");
 		System.exit(1);
 	    }
 
-	try
+	try 
 	    {
-		OWLOntologyManager manager = OWLManager.createOWLOntologyManager();
-		URI physicalURI = URI.create(args[0]);
-		OWLOntology ontology = 
-		    manager.loadOntologyFromPhysicalURI(physicalURI);
+		loader(args[0], args[1]);
+		boolean local = checker();
+		System.out.print("Result: ");
+		if (local)
+		    {
+			System.out.println("LOCAL");
+			System.exit(10);
+		    }
+		else
+		    {
+			System.out.println("NON-LOCAL");
+			System.exit(20);			
+		    }
 	    }
 	catch (OWLOntologyCreationException e)
 	    {
 		System.out.println("The ontology could not be created: " + 
 				   e.getMessage());
+		System.exit(1);
 	    }
     }
 
+    private static Boolean checker()
+    {
+	boolean local = true;
+	SyntacticLocalityEvaluator eval = 
+	    new SyntacticLocalityEvaluator(com.clarkparsia.modularity.locality.LocalityClass.BOTTOM_BOTTOM); 
+	//let's try the bottom evaluator first
+	Iterator<OWLAxiom> it = axioms.iterator();
+	while (it.hasNext())
+	    {
+		OWLAxiom elem = it.next();
+		it.remove();
+		boolean l = eval.isLocal(elem, sign);
+		if (!l)
+		    {
+			System.out.println("Non-local axiom: ");
+			System.out.println(elem);
+			System.out.println("");
+		    }
+		local = local && l;
+	    }
+	return local;
+    }
+
+    private static void loader(String onto, String sig) throws OWLOntologyCreationException
+    {
+	OWLOntologyManager manager = 
+	    OWLManager.createOWLOntologyManager();
+	OWLOntologyManager signMan = 
+	    OWLManager.createOWLOntologyManager();
+	URI physicalURI = URI.create(onto);
+	URI signURI     = URI.create(sig);
+	OWLOntology ontology = 
+	    manager.loadOntologyFromPhysicalURI(physicalURI);
+	OWLOntology signOnto = 
+	    manager.loadOntologyFromPhysicalURI(signURI);
+	sign = signOnto.getSignature();
+	axioms = ontology.getAxioms();
+    }
+    
 }
