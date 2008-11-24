@@ -84,7 +84,7 @@ getFreeDefMorphism lid libEnv ln dg path = case path of
   [] -> error "getFreeDefMorphism"
   (s, t, l) : rp -> do
     gmor@(GMorphism cid _ _ fmor _) <- return $ dgl_morphism l
-    (_,(G_theory lidth (ExtSign sign _) _ axs _)) <-
+    (_,(G_theory lidth (ExtSign _sign _) _ axs _)) <-
        resultToMaybe $ computeTheory False libEnv ln s
     if isHomogeneous gmor then do
         cfmor <- coerceMorphism (targetLogic cid) lid "getFreeDefMorphism1" fmor
@@ -364,7 +364,8 @@ callProver :: (Logic lid sublogics1
 callProver st ch trans_chosen freedefs p_cm@(_,acm) =
        runResultT $ do
         G_theory_with_prover lid th p <- liftR $ prepareForProving st p_cm
-        freedefs1 <- mapM (coerceFreeDefMorphism (logicId st) lid
+        let freedefs1 = maybe [] id $
+                  mapM (coerceFreeDefMorphism (logicId st) lid
                            "Logic.InferBasic: callProver")
                           freedefs
         ps <- lift $ proveTheory lid p (theoryName st) th freedefs1
