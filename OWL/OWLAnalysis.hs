@@ -55,7 +55,7 @@ import qualified Data.Graph.Inductive.Query.BFS as BFS
 import Data.Maybe (fromJust)
 
 
--- | call for owl parser (env. variable $HETS_OWL_PARSER muss be defined)
+-- | call for owl parser (env. variable $HETS_OWL_TOOLS muss be defined)
 parseOWL :: FilePath              -- ^ local filepath or uri
          -> IO OntologyMap        -- ^ map: uri -> OntologyFile
 parseOWL filename  =
@@ -75,7 +75,7 @@ parseOWL filename  =
            if checkUri filename
                then
                  do exitCode <-
-                        system ("$HETS_OWL_PARSER/owl_parser "
+                        system ("$HETS_OWL_TOOLS/owl_parser "
                                 ++ filename ++
                                " " ++ tmpFile)
                     run exitCode tmpFile
@@ -83,12 +83,12 @@ parseOWL filename  =
                      then
                       do
                         exitCode <-
-                         system ("$HETS_OWL_PARSER/owl_parser file://"
+                         system ("$HETS_OWL_TOOLS/owl_parser file://"
                                  ++ filename ++ " " ++ tmpFile)
                         run exitCode tmpFile
                      else do
                            exitCode <-
-                            system("$HETS_OWL_PARSER/owl_parser file://"
+                            system("$HETS_OWL_TOOLS/owl_parser file://"
                                    ++ pwd ++ "/" ++ filename ++
                                    " " ++ tmpFile)
                            run exitCode tmpFile

@@ -1,7 +1,7 @@
 #!/bin/sh
 
-HETS_OWL_PARSER=`pwd`/..
-export HETS_OWL_PARSER
+HETS_OWL_TOOLS=`pwd`/..
+export HETS_OWL_TOOLS
 
 rm -f *-local
 ./replaceLinks.sh

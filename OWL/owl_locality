@@ -4,5 +4,5 @@
 
 cd $HETS_OWL_TOOLS
 java -jar $HETS_OWL_TOOLS/OWLLocality.jar $* || exit $?   
-# mv output.term $HETS_OWL_PARSER
+# mv output.term $HETS_OWL_TOOLS
 # cd -

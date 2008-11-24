@@ -11,9 +11,9 @@ then
     exit 1
 fi
 
-if [ -d "$HETS_OWL_PARSER" ]
+if [ -d "$HETS_OWL_TOOLS" ]
 then
-    java -jar $HETS_OWL_PARSER/java/OWL2ATerm.jar $* || exit $?   
+    java -jar $HETS_OWL_TOOLS/java/OWL2ATerm.jar $* || exit $?   
 else
     java -jar $INSTALL_PATH/lib/hets/java/OWL2ATerm.jar $* ||exit $? 
 fi
