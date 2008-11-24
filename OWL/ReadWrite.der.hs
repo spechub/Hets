@@ -128,7 +128,8 @@ instance ShATermConvertible Entity where
        (att1, t) <- toShATerm' att0 euri
        return $ addATerm (ShAAppl (show ty) [t] []) att1
     fromShATermAux ix att0 = case getShATerm ix att0 of
-       u@(ShAAppl tys [a] _) -> case readMaybe tys of
+       u@(ShAAppl tys [a] _) -> case if tys == "OWLClassEntity" then
+           Just OWLClass else readMaybe tys of
          Nothing -> fromShATermError "Entity" u
          Just ty -> case fromShATerm' a att0 of
            (att1, a') -> (att1, Entity ty a')
