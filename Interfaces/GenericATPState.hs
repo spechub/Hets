@@ -120,7 +120,8 @@ data GenericState sign sentence proof_tree pst = GenericState {
   Initialising the specific prover state containing logical part.
 -}
 type InitialProverState sign sentence morphism pst =
-        sign -> [AS_Anno.Named sentence] -> [FreeDefMorphism morphism]-> pst
+        sign -> [AS_Anno.Named sentence] -> [FreeDefMorphism sentence morphism]
+             -> pst
 type TransSenName = String -> String
 
 {- |
@@ -131,7 +132,7 @@ initialGenericState :: (Ord sentence, Ord proof_tree) =>
                     -> InitialProverState sign sentence morphism pst
                     -> TransSenName
                     -> Theory sign sentence proof_tree
-                    -> [FreeDefMorphism morphism] -- ^ freeness constraints
+                    -> [FreeDefMorphism sentence morphism] -- ^ freeness constraints
                     -> proof_tree -- ^ initial empty proof_tree
                     -> GenericState sign sentence proof_tree pst
 initialGenericState prName ips trSenName th freedefs pt =
