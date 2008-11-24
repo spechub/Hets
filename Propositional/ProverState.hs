@@ -52,14 +52,15 @@ insertSentence :: PropProverState
                -> PropProverState
 insertSentence pState frm =
     let
-        sign = initialSignature pState
-        axs  = initialAxioms    pState
+        sign     = initialSignature pState
+        axs      = initialAxioms    pState
+        freedefs = freeDefs         pState  
     in
       PropProverState
       {
         initialAxioms    = axs ++ [frm]
       , initialSignature = sign
-      , freeDefs = []
+      , freeDefs = freedefs
       }
 
 

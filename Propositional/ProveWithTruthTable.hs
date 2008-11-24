@@ -145,7 +145,6 @@ evalFree :: Model
               -> LP.FreeDefMorphism FORMULA PMorphism.Morphism 
               -> Bool
 evalFree m freedef = 
- trace (show freedef) $
   let diffsig = Sign ((items freetar) `Set.difference` (items freesrc))
       mred = reduceModel freesrc m
       modelsOverMred = map (mred `amalg`) (allModels diffsig) 
@@ -304,6 +303,7 @@ ttProveGUI :: String -- ^ theory name
           -> [LP.FreeDefMorphism FORMULA PMorphism.Morphism] -- ^ free definitions
           -> IO([LP.Proof_status ProofTree]) -- ^ proof status for each goal
 ttProveGUI thName th freedefs =
+  trace (show freedefs) $
     genericATPgui (atpFun thName) True (LP.prover_name ttProver) thName th
                   freedefs emptyProofTree
 
