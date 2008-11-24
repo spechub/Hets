@@ -45,7 +45,7 @@ printSign s =
    in vcat (map (\ (c, l) -> text $ namespaceC ++" " ++ c ++ " <" ++ l ++">")
            $ Map.toList $ namespaceMap s)
    $++$ text ontologyC <+> pon
-   $++$ vcat (map (\ d -> text (annotationsC ++ " data")
+   $++$ vcat (map (\ d -> text (annotationsC ++ " data-entity")
                    <+> printEntity (Entity Datatype d))
              $ Set.toList $ datatypes s)
    $++$ vcat (map (\ c -> classStart <+> pretty c) $ Set.toList ps)
@@ -137,7 +137,8 @@ instance Pretty DatatypeFacet where
     pretty = text . showFacet
 
 instance Pretty Constant where
-    pretty (Constant lexi ty) = text lexi <> case ty of
+    pretty (Constant lexi ty) =
+     text (if take 1 lexi == "\"" then lexi else show lexi) <> case ty of
       Typed u -> text cTypeS <> pretty u
       Untyped tag -> text asP <> text tag
 

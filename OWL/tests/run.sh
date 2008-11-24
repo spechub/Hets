@@ -8,5 +8,5 @@ rm -f *-local
 
 for i in *-local
 do
-  ../../hets -v2 -i owl -o th $i
+  ../../hets -v2 -i owl -o th,owl $i
 done

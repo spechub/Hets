@@ -18,6 +18,7 @@ import Control.Monad
 import Text.ParserCombinators.Parsec
 import Text.PrettyPrint.HughesPJ (render)
 import Data.List (partition, (\\))
+import Data.Graph.Inductive.Graph as Graph
 
 import Common.AS_Annotation
 import Common.Id
@@ -56,8 +57,11 @@ import SoftFOL.ParseTPTP
 import VSE.Logic_VSE
 import VSE.ToSExpr
 
+#ifndef NOOWLLOGIC
 import OWL.Logic_OWL
 import OWL.Print (printOWLBasicTheory)
+import OWL.Parse (basicSpec)
+#endif
 
 import Logic.Prover
 import Static.GTheory
@@ -186,10 +190,16 @@ writeTheory opts filePrefix ga
             Nothing -> return ()
         else putIfVerbose opts 0 $ "expected CASL theory for: " ++ f
 #endif
+#ifndef NOOWLLOGIC
     OWLOut -> if language_name lid == language_name OWL then do
             th2 <- coerceBasicTheory lid OWL "" th
-            writeVerbFile opts f $ shows (printOWLBasicTheory th2) "\n"
+            let owltext = shows (printOWLBasicTheory th2) "\n"
+            case parse (basicSpec >> eof) f owltext of
+              Left err -> putIfVerbose opts 0 $ show err
+              _ -> putIfVerbose opts 3 $ "reparsed: " ++ f
+            writeVerbFile opts f owltext
         else putIfVerbose opts 0 $ "expected OWL theory for: " ++ f
+#endif
     _ -> return () -- ignore other file types
 
 modelSparQCheck :: HetcatsOpts -> G_theory -> SIMPLE_ID -> IO ()
@@ -210,7 +220,7 @@ modelSparQCheck opts gTh@(G_theory lid (ExtSign sign0 _) _ sens0 _) i =
 writeTheoryFiles :: HetcatsOpts -> [OutType] -> FilePath -> LibEnv
                  -> GlobalAnnos -> LIB_NAME -> SIMPLE_ID -> Int -> IO ()
 writeTheoryFiles opts specOutTypes filePrefix lenv ga ln i n =
-    unless (isDGRef $ labDG (lookupDGraph ln lenv) n) $
+    unless (maybe True isDGRef $ lab (dgBody $ lookupDGraph ln lenv) n) $
     case computeTheory False lenv ln n of
           Result ds Nothing -> do
                  putIfVerbose opts 0 $ "could not compute theory of spec "
