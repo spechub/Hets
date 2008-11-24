@@ -20,6 +20,10 @@ module PGIP.ConsCommands
        , cConsistCheckAll
        ) where
 
+
+import Interfaces.DataTypes
+import Interfaces.Utils
+
 import PGIP.DataTypes
 import PGIP.Utils
 import PGIP.DataTypesUtils
@@ -56,7 +60,7 @@ import Data.Char
 -- conservativity check
 cConservCheck:: String -> CMDL_State -> IO CMDL_State
 cConservCheck input state =
-  case devGraphState state of
+  case i_state $ intState state of
    Nothing ->
      return $ genErrorMsg "No library loaded" state
    Just dgState -> do
@@ -70,7 +74,7 @@ cConservCheck input state =
          let lsNodes = getAllNodes dgState
              lsEdges = getAllEdges dgState
          allList <- conservativityList lsNodes lsEdges
-                                  (libEnv dgState) (ln dgState)
+                                  (i_libEnv dgState) (i_ln dgState)
          let edgLs = concatMap (\x -> case find (
                                         \(s1,_) -> s1 == x) allList of
                                        Nothing -> []
@@ -92,15 +96,15 @@ cConservCheck input state =
 -- checks conservativity for every possible node
 cConservCheckAll :: CMDL_State -> IO CMDL_State
 cConservCheckAll state =
-   case devGraphState state of
+   case i_state $ intState state of
     Nothing ->
               return $ genErrorMsg "No library loaded" state
     Just dgState ->
      do
       resTxt <- conservativityList (getAllNodes dgState)
                                    (getAllEdges dgState)
-                                   (libEnv dgState)
-                                   (ln dgState)
+                                   (i_libEnv dgState)
+                                   (i_ln dgState)
       return $ genMessage []
                 (concatMap (\(s1,s2) -> s1++" : "++s2++"\n") resTxt)  state
 
@@ -108,51 +112,48 @@ cConservCheckAll state =
 -- applies consistency check to the input
 cConsistCheck :: CMDL_State -> IO CMDL_State
 cConsistCheck state
-    = case proveState state of
+    = case i_state $ intState state of
        Nothing -> return $ genErrorMsg "Nothing selected" state
        Just pS ->
-        case devGraphState state of
-         Nothing -> return $ genErrorMsg "No library loaded" state
-         Just dgS ->
           do
            case elements pS of
             [] -> return $ genErrorMsg "Nothing selected" state
             ls ->
              do
               --create initial mVars to comunicate
-              mlbEnv <- newMVar $ libEnv dgS
+              mlbEnv <- newMVar $ i_libEnv pS
               mSt    <- newMVar Nothing
               mThr   <- newMVar Nothing
               mW     <- newEmptyMVar
               -- fork
-              thrID <- forkIO(consCheckLoop mlbEnv mThr mSt mW pS dgS ls)
+              thrID <- forkIO(consCheckLoop mlbEnv mThr mSt mW pS ls)
               -- install the handler that waits for SIG_INT
               installHandler sigINT (Catch $
-                       sigIntHandler mThr mlbEnv mSt thrID mW (ln dgS)
+                       sigIntHandler mThr mlbEnv mSt thrID mW (i_ln pS)
                                     ) Nothing
               -- block and wait for answers
               answ <- takeMVar mW
-              let nwDgS = dgS {
-                               libEnv = answ
+              let nwpS = pS {
+                               i_libEnv = answ
                               }
               let nwls = concatMap (\(Element _ x) ->
-                                                   selectANode x nwDgS) ls
+                                                   selectANode x nwpS) ls
                   hist = concatMap(\(Element stt x) ->
                                      (AxiomsChange (includedAxioms stt) x):
                                      (GoalsChange (selectedGoals stt) x):
                                         []) ls
-              return $ addToHistory (ProveChange (libEnv dgS) hist)
+              return $ add2hist [(DgCommandChange $i_ln nwpS),
+                                 (ListChange hist)] $
                           state {
-                             devGraphState = Just nwDgS
-                            ,proveState = Just pS {
-                                                elements= nwls
-                                                }
+                            intState = (intState state) { 
+                               i_state = Just $ pS { 
+                                            elements = nwls } }
                              }
 
 -- applies consistency check to all possible input
 cConsistCheckAll :: CMDL_State -> IO CMDL_State
 cConsistCheckAll state
-   = case proveState state of
+   = case i_state $ intState state of
       Nothing -> return $ genErrorMsg "Nothing selected" state
       Just pS ->
         do
@@ -171,11 +172,11 @@ cConsistCheckAll state
                                      includedTheorems = OMap.keys $
                                                          goalMap st
                                      }) nb ) ls
-             let nwSt = state {
-                          proveState = Just pS {
-                                        elements = ls'
-                                          }
-                              }
+             let nwSt = add2hist [ListChange [NodesChange $ elements pS]] $
+                          state {
+                           intState = (intState state) {
+                              i_state = Just $ pS { 
+                                                  elements = ls' } } }
              cConsistCheck nwSt
 
 

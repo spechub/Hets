@@ -19,13 +19,15 @@ module PGIP.Shell
        , cOpenComment
        , cCloseComment
        , nodeNames
-       , register2history
        , checkCom
        , subtractCommandName
        , getTypeOf
        , cmdlCompletionFn
        ) where
 
+import Interfaces.DataTypes
+import Interfaces.Utils
+import Interfaces.GenericATPState
 import PGIP.DataTypes
 import PGIP.Utils
 import PGIP.DataTypesUtils
@@ -44,7 +46,8 @@ import System.IO
 import System.Console.Shell.ShellMonad
 import qualified Common.OrderedMap as OMap
 import Common.AS_Annotation
-import GUI.GenericATPState
+
+
 -- | Creates a shellac command
 shellacCmd :: CMDL_CmdDescription -> Sh CMDL_State ()
 shellacCmd cmd
@@ -53,7 +56,7 @@ shellacCmd cmd
                                                      output = (output state){
                                                            errorMsg = [],
                                                            outputMsg = [],
-                                                           fatalError = False
+                                                           warningMsg = []
                                                            }
                                                       })
     let result = output newState
@@ -61,87 +64,91 @@ shellacCmd cmd
       then shellPutErrLn
                ("The following error(s) occured :\n"++(errorMsg result))
       else return ()
+    if warningMsg result /= []
+      then shellPutErrLn
+               ("The following warning(s) occured :\n"++(warningMsg result))
+      else return ()
     if outputMsg result /= []
       then shellPutStrLn $ outputMsg result
       else return ()
     putShellSt newState
 
+ 
+register2history :: CMDL_CmdDescription -> IO CMDL_State -> IO CMDL_State
+register2history dscr state_io
+ = do 
+    state <- state_io
+    let oldHistory = i_hist $ intState  state
+    case undoList oldHistory of
+       [] -> return state
+       h:r -> case cmdName h of 
+               [] ->do
+                     let nwh = h { 
+                                cmdName = head $ cmdNames dscr }
+                     return $ state { 
+                         intState = (intState state) { 
+                            i_hist = oldHistory {
+                               undoList = nwh:r,
+                               redoList = []
+                             } } }
+               _ -> return state
 
-register2history :: CMDL_CmdDescription -> CMDL_State -> CMDL_State
-register2history dscr state
- = let oldHistory = history state
-   in case cmdType $ cmdInfo dscr of
-       UndoRedoCmd -> state
-       _ -> state {
-                 history = oldHistory {
-                            undoList = (cmdInfo dscr): (undoList oldHistory),
-                            redoList = []
-                            }
-                 }
 
--- | Checks if a command needs to be executed or skiped
+-- process a comment line
+processComment :: CMDL_State -> String -> CMDL_State
+processComment st inp 
+ = case isInfixOf "}%" inp of 
+    True -> st { openComment = False }
+    False -> st
+
+-- gets the function
+getFn :: CMDL_CmdDescription -> (CMDL_State -> IO CMDL_State)
+getFn desc 
+ = case cmdFn desc of 
+    CmdNoInput fn -> fn 
+    CmdWithInput fn -> fn (cmdInput desc)
+
+-- adds a line to the script
+addToScript :: CMDL_State -> IntIState -> String -> CMDL_State
+addToScript st ist str 
+ = let olds = script ist
+       oldextOpts = ts_extraOpts olds
+   in st {
+        intState = (intState st) {
+                     i_state = Just ist { 
+                       script = olds { ts_extraOpts = str:oldextOpts } }
+          } }
+
+
 checkCom :: CMDL_CmdDescription -> CMDL_State -> IO CMDL_State
-checkCom descr state
- = do
-    -- pC processes a comment line checking if it is the end of the comment
-    -- returns the corresponding state
-    let pC st inp = case isInfixOf "}%" inp of
-                                      True -> st {openComment = False}
-                                      False -> st
-     -- obtains the function that needs to be called (if it requires input
-     -- insert the input into the function
-        getFn dsc = case cmdFn dsc of
-                     CmdNoInput fn -> fn
-                     CmdWithInput fn -> fn (cmdInput $ cmdInfo dsc)
-    -- adds a line into the script (composed of command name and input)
-        addSp st ps nm p = let olds = script ps 
-                               oldextOpts = ts_extraOpts olds
-                           in st {
-                                proveState = Just ps {
-                                  script = olds{
-                                       ts_extraOpts = (nm++" "++p):oldextOpts
-                                        } } }
-    -- check the priority of the current command
-    case cmdPriority descr of
-     -- command has no priority
+checkCom descr state 
+  = 
+    --check the priority of the current command
+    case cmdPriority descr of 
      CmdNoPriority ->
-      -- check if there is a prove state
-      case proveState state of
-       -- no prove state,
-       Nothing ->
-         -- check for comment
-        if openComment state == True then return $ pC state $
-                                                   cmdInput $ cmdInfo descr
-                                     else
-                                       do
-                                        nwSt <- (getFn descr) state
-                                        return $register2history descr nwSt
-         -- else see if it is inside a script
-       Just pS ->
-        if loadScript pS == False
-         then if openComment state ==True then return$pC state$
-                                                      cmdInput$ cmdInfo descr
-                                           else
-                                            do
-                                             nwSt <- (getFn descr) state
-                                             return$ register2history
-                                                               descr nwSt
-         else return $ addSp state pS (head $ cmdNames $ cmdInfo descr)
-                                         (cmdInput $ cmdInfo descr)
+      -- check if there is open comment
+      case openComment state of 
+       True -> return $ processComment state $ cmdInput descr
+       False -> 
+        case i_state $ intState state of 
+         Nothing -> register2history descr $ (getFn descr) state
+         Just ist ->
+          -- check if there is inside a script
+          case loadScript ist of
+           False->register2history descr $ (getFn descr) state 
+           True->return$addToScript state ist 
+                         ((head $ cmdNames descr) ++ " " ++ (cmdInput descr))
      CmdGreaterThanComments ->
-      case proveState state of
-       Nothing -> do
-                   nwSt <- (getFn descr) state
-                   return $ register2history descr nwSt
-       Just pS ->
-         if loadScript pS == False then
-                                    do nwSt <- (getFn descr) state
-                                       return$ register2history descr nwSt
-                else return $ addSp state pS (head $ cmdNames$ cmdInfo descr)
-                                             (cmdInput $ cmdInfo descr)
-     CmdGreaterThanScriptAndComments -> do
-                                      nwSt <- (getFn descr) state
-                                      return $ register2history descr nwSt
+      case i_state $ intState state of
+       Nothing -> register2history descr $ (getFn descr) state 
+       Just ist ->
+        case loadScript ist of 
+         False -> register2history descr $ (getFn descr) state 
+         True ->return$addToScript state ist 
+                        ((head $ cmdNames descr)++ " " ++(cmdInput descr))
+     CmdGreaterThanScriptAndComments ->
+        (getFn descr) state
+
 
 
 -- | Prints details about the syntax of the interface
@@ -149,10 +156,10 @@ cDetails :: CMDL_State -> IO CMDL_State
 cDetails state
  = do
     return state {
-            output = CMDL_Output {
-               errorMsg = "",
+            output = CMDL_Message {
+               errorMsg = [],
                outputMsg = printDetails,
-               fatalError = False
+               warningMsg = []
                         }
             }
 
@@ -254,7 +261,7 @@ subtractCommandName::[CMDL_CmdDescription] -> String -> String
 subtractCommandName allcmds input
  =let inp = trimLeft input
       lst = concatMap(\x -> case find(\y -> isPrefixOf y inp)$
-                                            cmdNames $ cmdInfo x of
+                                            cmdNames x of
                              Nothing -> []
                              Just tmp -> [tmp]) allcmds
   in drop (length $ head lst) inp
@@ -291,7 +298,7 @@ getTypeOf allcmds input
  = let nwInput = getCmdName input
        tmp =concatMap(\x ->
                        case find(\y -> y == nwInput )$
-                                             cmdNames$ cmdInfo x of
+                                             cmdNames x of
                         Nothing -> []
                         Just _ -> [cmdReq x]) allcmds
    in case tmp of
@@ -309,7 +316,7 @@ cmdlCompletionFn allcmds allState input
  =do
   case getTypeOf allcmds input of
    ReqNodes ->
-    case devGraphState allState of
+    case i_state $ intState allState of
      Nothing -> return []
      Just state ->
       do
@@ -334,9 +341,9 @@ cmdlCompletionFn allcmds allState input
                   filter (\x -> isPrefixOf tC x) allNames
        return res
    ReqGNodes ->
-    case devGraphState allState of
+    case i_state $ intState  allState of
      Nothing-> return []
-     Just state ->
+     Just _ ->
       do
         --the last unfinished word that needs to be
         --completed and what is before it
@@ -350,13 +357,13 @@ cmdlCompletionFn allcmds allState input
                                    unwords $ init
                                    $ words input)
           -- get all goal node names
-           allNames = nodeNames (getAllGoalNodes allState state)
+           allNames = nodeNames (getAllGoalNodes allState)
       -- filter out words that do not start with the word
       -- that needs to be completed
        return $ map(\y -> bC++" "++y) $
            filter(\x -> isPrefixOf tC x) allNames
    ReqEdges ->
-    case devGraphState allState of
+    case i_state $ intState allState of
      Nothing -> return []
      Just state ->
       do
@@ -379,7 +386,7 @@ cmdlCompletionFn allcmds allState input
                   filter(\x->isPrefixOf tC x) allNames
        return res
    ReqGEdges ->
-    case devGraphState allState of
+    case i_state$ intState allState of
      Nothing -> return []
      Just state ->
       do
@@ -390,14 +397,14 @@ cmdlCompletionFn allcmds allState input
            bC = reverse $ trimLeft $ drop (length tC)
                      $ trimLeft $ reverse input
            ls  = getAllNodes state
-           lsGE= getAllGoalEdges state
+           lsGE= getAllGoalEdges allState
            allNames = createEdgeNames ls lsGE
           -- filter out words that do not start with the word
           -- that needs to be completed
        return $ map (\y -> bC++" "++y) $
            filter(\x-> isPrefixOf tC x) allNames
    ReqNodesAndEdges ->
-    case devGraphState allState of
+    case i_state $ intState allState of
      Nothing -> return []
      Just state ->
       do
@@ -440,12 +447,12 @@ cmdlCompletionFn allcmds allState input
       -- sum up the two cases
        return (filteredNodes ++ filteredEdges )
    ReqGNodesAndGEdges ->
-    case devGraphState allState of
+    case i_state $ intState allState of
      Nothing -> return []
      Just state ->
       do
        let allnodes = getAllNodes state
-           allGE= getAllGoalEdges state
+           allGE= getAllGoalEdges allState
            penultimum s=lastString $ reverse $ safeTail
                                    $ reverse s
           -- same as in the ReqNode case just that we need
@@ -470,7 +477,7 @@ cmdlCompletionFn allcmds allState input
                                   words input)
            filteredNodes=map (\y -> bCN++" "++y) $
                           filter(\x->isPrefixOf tCN x)
-                                $ nodeNames (getAllGoalNodes allState state)
+                                $ nodeNames (getAllGoalNodes allState)
            tCE = unfinishedEdgeName $
                      subtractCommandName allcmds input
            bCE = reverse $ trimLeft $ drop (length tCE)
@@ -505,7 +512,7 @@ cmdlCompletionFn allcmds allState input
            getConsCheckersAutomatic' cm = foldl addConsCheckers [] cm
            createConsCheckersList cm = map (\x -> getPName' x)
                                          (getConsCheckersAutomatic' cm)
-       case  proveState allState of
+       case  i_state $ intState allState of
         Nothing ->
          -- not in proving mode !? you can not choose a consistency
          -- checker here
@@ -557,7 +564,7 @@ cmdlCompletionFn allcmds allState input
                              (getProversCMDLautomatic cm)
       -- find the last comorphism used if none use the
       -- the comorphism of the first selected node
-       case proveState allState of
+       case i_state $ intState allState of
         Nothing ->
        -- not in proving mode !? you can not choose
        -- provers here
@@ -585,7 +592,7 @@ cmdlCompletionFn allcmds allState input
                                     $ filter (\x->isPrefixOf tC x) lst
    ReqComorphism ->
        do
-        case proveState allState of
+        case i_state $ intState allState of
          Nothing -> return []
          Just pS ->
           case elements pS of
@@ -652,7 +659,7 @@ cmdlCompletionFn allcmds allState input
         return $ map (\y -> bC++y) names''
    ReqAxm ->
      do
-      case proveState allState of
+      case i_state $ intState allState of
        Nothing-> return []
        Just pS->
         do
@@ -670,7 +677,7 @@ cmdlCompletionFn allcmds allState input
                    OMap.keys aMap ) $ elements pS
    ReqGoal ->
      do
-      case proveState allState of
+      case i_state $ intState allState of
        Nothing-> return []
        Just pS ->
         do

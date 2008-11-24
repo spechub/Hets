@@ -50,29 +50,30 @@ import Control.Concurrent.MVar
 import System.Posix.Signals
 import System.IO
 
-import GUI.GenericATPState
+import Interfaces.GenericATPState
+import Interfaces.DataTypes
 
 -- | Drops any seleceted comorphism
 cDropTranslations :: CMDL_State -> IO CMDL_State
 cDropTranslations state =
- case proveState state of
+ case i_state $ intState state of
    Nothing -> return $ genErrorMsg "Nothing selected" state
    Just pS ->
     case cComorphism pS of
      Nothing -> return state
-     Just _ -> return 
+     Just _ -> return $ 
+       add2hist [CComorphismChange $ cComorphism pS] $ 
         state {
-          proveState = Just $ pS {
-                cComorphism = getIdComorphism $ elements pS  },
-                prompter = (prompter state) {
-                                             selectedTranslations = []}
-                }
+          intState = (intState state ) { 
+           i_state = Just $ pS { 
+              cComorphism = getIdComorphism $ elements pS } }
+         }
 
 
 -- | select comorphisms
 cTranslate::String -> CMDL_State -> IO CMDL_State
 cTranslate input state =
- case proveState state of
+ case i_state $ intState state of
   -- nothing selected !
   Nothing ->return $ genErrorMsg "Nothing selected" state
   Just pS ->
@@ -88,43 +89,21 @@ cTranslate input state =
        Just ocm ->
         case compComorphism ocm cm of 
             Nothing ->
-             return $ genErrorMsg "Can not add comorphism" state {
-                       proveState = Just pS {
-                                              cComorphism = Just ocm
-                                    }
-                          }
+             return $ genErrorMsg "Can not add comorphism" state 
             Just smth ->
               return $ genMessage [] "Adding comorphism"
-                     $ addToHistory (CComorphismChange $ cComorphism pS)
+                     $ add2hist [CComorphismChange $ cComorphism pS] $
                       state {
-                        proveState = Just pS {
-                                     cComorphism = Just smth
-                                     },
-                        prompter = (prompter state) {
-                                    selectedTranslations=(selectedTranslations
-                                        $ prompter state) ++ "*" }
+                        intState = (intState state) { 
+                         i_state = Just pS { 
+                                    cComorphism = Just smth } }
                           }
 
         
---      case cComorphism pS of
---      -- no comorphism used before
---       Nothing ->
---        return $ genMessage [] "Adding comorphism" $
---                 addToHistory (CComorphismChange $ cComorphism pS)
---                 state {
---                   proveState = Just pS {
---                                  cComorphism = Just cm
---                                  },
---                   prompter = (prompter state) {
---                                 selectedTranslations = "*" }
---                        }
---       Just ocm ->
---        case compComorphism ocm cm of
-
 parseElements :: CMDL_ListAction -> [String] -> CMDL_GoalAxiom
-                 -> [CMDL_ProofAbstractState]
-                 -> ([CMDL_ProofAbstractState],[CMDL_ListChange])
-                 -> ([CMDL_ProofAbstractState],[CMDL_ListChange])
+                 -> [Int_NodeInfo]
+                 -> ([Int_NodeInfo],[ListChange])
+                 -> ([Int_NodeInfo],[ListChange])
 parseElements action gls gls_axm elems (acc1,acc2)
  = case elems of
     [] -> (acc1,acc2)
@@ -168,7 +147,7 @@ cGoalsAxmGeneral :: CMDL_ListAction -> CMDL_GoalAxiom ->
                     String ->CMDL_State
                  -> IO CMDL_State
 cGoalsAxmGeneral action gls_axm input state
- = case proveState state of
+ = case i_state $ intState state of
     Nothing -> return $ genErrorMsg "Nothing selected" state
     Just pS ->
      case elements pS of
@@ -179,62 +158,62 @@ cGoalsAxmGeneral action gls_axm input state
         let (ls',hist) = parseElements action gls
                            gls_axm
                            ls ([],[])
-        return $ addToHistory (ListChange hist)
-                    state {proveState = Just pS {
+        return $ add2hist [ListChange hist] $
+                    state {
+                      intState = (intState state) { 
+                        i_state = Just pS {
                                          elements = ls'
                                          }
+                             }
                      }
 
 -- | Proves only selected goals from all nodes using selected
 -- axioms
 cProve:: CMDL_State-> IO CMDL_State
 cProve state
- = case proveState state of
+ = case i_state $ intState state of
     Nothing -> return $ genErrorMsg "Nothing selected" state
     Just pS ->
-     case devGraphState state of
-      Nothing -> return $ genErrorMsg "No library loaded" state
-      Just dgS ->
        do
         case elements pS of
          [] -> return $ genErrorMsg "Nothing selected" state
          ls ->
            do
             --create initial mVars to comunicate
-            mlbEnv <- newMVar $ libEnv dgS
+            mlbEnv <- newMVar $ i_libEnv pS
             mSt    <- newMVar Nothing
             mThr   <- newMVar Nothing
             mW     <- newEmptyMVar
             -- fork
-            thrID <- forkIO(proveLoop mlbEnv mThr mSt mW pS dgS ls)
+            thrID <- forkIO(proveLoop mlbEnv mThr mSt mW pS ls)
             -- install the handler that waits for SIG_INT
             installHandler sigINT (Catch $
-                     sigIntHandler mThr mlbEnv mSt thrID mW (ln dgS)
+                     sigIntHandler mThr mlbEnv mSt thrID mW (i_ln pS)
                                   ) Nothing
             -- block and wait for answers
             answ <- takeMVar mW
-            let nwDgS = dgS {
-                             libEnv = answ
+            let nwpS = pS {
+                             i_libEnv = answ
                              }
             let nwls=concatMap(\(Element _ x) ->
-                                              selectANode x nwDgS) ls
+                                              selectANode x nwpS) ls
                 hist=concatMap(\(Element stt x)  ->
                                  (AxiomsChange (includedAxioms stt) x):
                                  (GoalsChange (selectedGoals stt) x):
                                    []) ls
-            return $ addToHistory (ProveChange (libEnv dgS) hist)
+            return $ add2hist [(DgCommandChange $ i_ln nwpS),
+                               (ListChange hist)] $
                          state {
-                            devGraphState = Just nwDgS
-                           ,proveState = Just pS {
-                                               elements = nwls
-                                               }
-                          }
+                           intState = (intState state) { 
+                            i_state = Just $ pS { 
+                                              elements = nwls } } 
+                            }
 
 -- | Proves all goals in the nodes selected using all axioms and
 -- theorems
 cProveAll::CMDL_State ->IO CMDL_State
 cProveAll state
- = case proveState state of
+ = case i_state $ intState state of
     Nothing -> return$ genErrorMsg "Nothing selected" state
     Just pS ->
        do
@@ -253,40 +232,37 @@ cProveAll state
                                      includedTheorems = OMap.keys $
                                                          goalMap st
                                     }) nb ) ls
-            let nwSt = state {
-                          proveState = Just pS {
-                                        elements = ls'
-                                          }
-                              }
+            let nwSt = add2hist [ListChange [NodesChange $ elements pS]] $
+                      state {
+                       intState = (intState state) { 
+                         i_state = Just $ pS { 
+                                           elements = ls' } } } 
             cProve nwSt
 
 -- | Sets the use theorems flag of the interface
 cSetUseThms :: Bool -> CMDL_State -> IO CMDL_State
 cSetUseThms val state
- = case proveState state of
+ = case i_state $ intState state of
     Nothing -> return $ genErrorMsg "Norhing selected" state
     Just pS ->
      do
-      return $ addToHistory (UseThmChange $ useTheorems pS)
+      return $ add2hist [UseThmChange $ useTheorems pS] $
           state {
-         proveState = Just pS {
-                             useTheorems = val
-                             }
-                   }
+           intState = (intState state) { 
+             i_state=  Just pS { 
+                             useTheorems = val } } }
 
 -- | Sets the save2File value to either true or false
 cSetSave2File :: Bool -> CMDL_State -> IO CMDL_State
 cSetSave2File val state
- = case proveState state of
+ = case i_state $ intState state of
     Nothing -> return $ genErrorMsg "Nothing selected" state
     Just ps ->
      do
-      return $ addToHistory (Save2FileChange $ save2file ps)
+      return $ add2hist [Save2FileChange $ save2file ps] $
           state {
-            proveState = Just ps {
-                            save2file = val
-                            }
-                   }
+            intState = (intState state) { 
+             i_state = Just ps { save2file = val } } }
 
 
 -- | The function is called everytime when the input could
@@ -299,7 +275,7 @@ cNotACommand input state
      [] -> return state
      -- anything else see if it is in a blocl of command
      s ->
-      case proveState state of
+      case i_state $ intState state of
         Nothing -> return $ genErrorMsg ("Error on input line :"++s) state
         Just pS ->
           case loadScript pS of
@@ -309,20 +285,17 @@ cNotACommand input state
               let olds = script pS
                   oldextOpts = ts_extraOpts olds
               let nwSt = state {
-                          proveState=
-                              Just pS{
-                                 script=olds{
-                                        ts_extraOpts=s:oldextOpts
-                                        }
-                                    }
-                          }
-              return $ addToHistory (ScriptChange $ script pS) nwSt
+                          intState = (intState state) {
+                           i_state = Just pS { 
+                             script = olds { ts_extraOpts = s:oldextOpts }
+                             } } }
+              return $ add2hist [ScriptChange $ script pS] nwSt
 
 
 -- | Function to signal the interface that the script has ended
 cEndScript :: CMDL_State -> IO CMDL_State
 cEndScript state
- = case proveState state of
+ = case i_state $ intState state of
     Nothing -> return $ genErrorMsg "Nothing selected" state
     Just ps ->
      case loadScript ps of
@@ -330,32 +303,29 @@ cEndScript state
       True ->
        do
         let nwSt= state {
-                      proveState = Just ps {
-                            loadScript = False
-                            }
-                   }
-        return $ addToHistory (LoadScriptChange $ loadScript ps) nwSt
+                    intState = (intState state) { 
+                     i_state = Just ps { 
+                       loadScript = False } } }
+        return $ add2hist [LoadScriptChange $ loadScript ps] nwSt
 
 -- | Function to signal the interface that a scrips starts so it should
 -- not try to parse the input
 cStartScript :: CMDL_State-> IO CMDL_State
 cStartScript state
  = do
-    case proveState state of
+    case i_state $ intState state of
      Nothing -> return $ genErrorMsg "Nothing selected" state
      Just ps ->
-      return $ addToHistory (LoadScriptChange $ loadScript ps)
-            $ addToHistory (ScriptChange $ script ps)
+      return $ add2hist [LoadScriptChange $ loadScript ps] $
               state {
-                  proveState = Just ps {
-                                     loadScript = True
-                                     }
-                   }
+                intState = (intState state) { 
+                  i_state = Just ps { 
+                                 loadScript = True } } } 
 
 -- sets a time limit
 cTimeLimit :: String -> CMDL_State-> IO CMDL_State
 cTimeLimit input state
- = case proveState state of
+ = case i_state $ intState state of
     Nothing -> return $ genErrorMsg "Nothing selected" state
     Just ps ->
      case checkIntString $ trim input of
@@ -364,11 +334,9 @@ cTimeLimit input state
         do
          let inpVal = (read $ trim input)::Int
          let oldS = script ps
-         return $ addToHistory (ScriptChange $ script ps)
+         return $ add2hist [ScriptChange $ script ps] $
                state {
-                 proveState = Just ps {
-                                 script = oldS {
-                                           ts_timeLimit = inpVal
-                                           }
-                                     }
-                      }
+                 intState = (intState state) { 
+                  i_state = Just ps { 
+                              script = oldS {   ts_timeLimit = inpVal } } } }
+

@@ -21,7 +21,9 @@ import PGIP.XMLstate
 import PGIP.Interface
 import PGIP.DataTypes
 import Data.List
-
+import Interfaces.DataTypes
+import Interfaces.Utils
+import PGIP.DataTypesUtils
 
 -- | Generates the XML packet that contains information about the interface
 genHandShake :: CMDL_PgipState -> CMDL_PgipState
@@ -253,12 +255,12 @@ processCmds cmds state pgipState
                              hFlush $ hout pgipSt
                              let nPGIP = resetMsg [] pgipSt
                              nwSt <- cmdlProcessString str state
-                             case fatalError $ output nwSt of
-                              False -> processCmds l nwSt $
+                             case errorMsg $ output nwSt of
+                              [] -> processCmds l nwSt $
                                          addToMsg (outputMsg $ output nwSt)
                                                   (errorMsg $ output nwSt)
                                                   nPGIP
-                              True -> return (nwSt, genErrAnswer
+                              _ -> return (nwSt, genErrAnswer
                                               (errorMsg $ output nwSt) nPGIP)
      XML_Exit :l -> do
                   processCmds l state $ addToMsg "Exiting prover" []
@@ -289,11 +291,11 @@ processCmds cmds state pgipState
                   hFlush $ hout pgipSt
                   let nPGIP = resetMsg [] pgipSt
                   nwSt <- cmdlProcessString ("add goals "++str++"\n") state
-                  case fatalError $ output nwSt of
-                   False -> processCmds l nwSt $
+                  case errorMsg $ output nwSt of
+                   [] -> processCmds l nwSt $
                            addToMsg (outputMsg $ output nwSt)
                                     (errorMsg $ output nwSt) nPGIP
-                   True -> return (nwSt, genErrAnswer (errorMsg $ output nwSt)
+                   _ -> return (nwSt, genErrAnswer (errorMsg $ output nwSt)
                                          nPGIP)
      (XML_CloseGoal str) :l -> do
                   appendFile "/tmp/razvan.txt" ("Output : " ++(theMsg pgipSt)
@@ -303,11 +305,11 @@ processCmds cmds state pgipState
                   let nPGIP = resetMsg [] pgipSt
                   nwSt <- cmdlProcessString ("add goals "++str++"\n prove \n")
                                                                      state
-                  case fatalError $ output nwSt of
-                   False -> processCmds l nwSt $
+                  case errorMsg $ output nwSt of
+                   [] -> processCmds l nwSt $
                           addToMsg (outputMsg $ output nwSt)
                                    (errorMsg $ output nwSt) nPGIP
-                   True -> return (nwSt, genErrAnswer (errorMsg $ output nwSt)
+                   _ -> return (nwSt, genErrAnswer (errorMsg $ output nwSt)
                                       nPGIP)
      (XML_GiveUpGoal str) :l -> do
                   appendFile "/tmp/razvan.txt" ("Output : "++(theMsg pgipSt)
@@ -316,11 +318,11 @@ processCmds cmds state pgipState
                   hFlush $ hout pgipSt
                   let nPGIP = resetMsg [] pgipSt
                   nwSt <- cmdlProcessString ("del goals "++str++"\n") state
-                  case fatalError $ output nwSt of
-                   False -> processCmds l nwSt $
+                  case errorMsg $ output nwSt of
+                   [] -> processCmds l nwSt $
                           addToMsg (outputMsg $ output nwSt)
                                    (errorMsg $ output nwSt) nPGIP
-                   True -> return (nwSt, genErrAnswer (errorMsg $ output nwSt)
+                   _ -> return (nwSt, genErrAnswer (errorMsg $ output nwSt)
                                       nPGIP)
      (XML_Unknown str) :_ -> do
                   return (state, addToMsg []  ("Unknown command : "++str)
@@ -332,11 +334,11 @@ processCmds cmds state pgipState
                   hFlush $ hout pgipSt
                   let nPGIP = resetMsg [] pgipSt
                   nwSt <- cmdlProcessString ("undo \n") state
-                  case fatalError $ output nwSt of
-                   False -> processCmds l nwSt $
+                  case errorMsg $ output nwSt of
+                   [] -> processCmds l nwSt $
                           addToMsg (outputMsg $ output nwSt)
                                    (errorMsg $ output nwSt) nPGIP
-                   True -> return (nwSt, genErrAnswer (errorMsg $ output nwSt)
+                   _ -> return (nwSt, genErrAnswer (errorMsg $ output nwSt)
                                      nPGIP)
      XML_Redo : l -> do
                   appendFile "/tmp/razvan.txt" ("Output : "++(theMsg pgipSt)
@@ -345,11 +347,11 @@ processCmds cmds state pgipState
                   hFlush $ hout pgipSt
                   let nPGIP = resetMsg [] pgipSt
                   nwSt <- cmdlProcessString ("redo \n") state
-                  case fatalError $ output nwSt of
-                   False -> processCmds l nwSt $
+                  case errorMsg $ output nwSt of
+                   [] -> processCmds l nwSt $
                           addToMsg (outputMsg $ output nwSt)
                                    (errorMsg $ output nwSt) nPGIP
-                   True -> return (nwSt, genErrAnswer (errorMsg $ output nwSt)
+                   _ -> return (nwSt, genErrAnswer (errorMsg $ output nwSt)
                                      nPGIP)
      (XML_Forget str) :l -> do
                   appendFile "/tmp/razvan.txt" ("Output : "++(theMsg pgipSt)
@@ -358,11 +360,11 @@ processCmds cmds state pgipState
                   hFlush $ hout pgipSt
                   let nPGIP = resetMsg [] pgipSt
                   nwSt <- cmdlProcessString ("del axioms "++str++"\n") state
-                  case fatalError $ output nwSt of
-                   False -> processCmds l nwSt $
+                  case errorMsg $ output nwSt of
+                   [] -> processCmds l nwSt $
                           addToMsg (outputMsg $ output nwSt)
                                    (errorMsg $ output nwSt) nPGIP
-                   True -> return (nwSt, genErrAnswer (errorMsg $ output nwSt)
+                   _ -> return (nwSt, genErrAnswer (errorMsg $ output nwSt)
                                     nPGIP)
      (XML_OpenTheory str) :l -> do
                   appendFile "/tmp/razvan.txt" ("Output : "++(theMsg pgipSt)
@@ -371,22 +373,26 @@ processCmds cmds state pgipState
                   hFlush $ hout pgipSt
                   let nPGIP = resetMsg [] pgipSt
                   nwSt <- cmdlProcessString ("select "++str ++ "\n") state
-                  case fatalError $ output nwSt of
-                   False -> processCmds l nwSt $
+                  case errorMsg $ output nwSt of
+                   [] -> processCmds l nwSt $
                           addToMsg (outputMsg $ output nwSt)
                                    (errorMsg $ output nwSt) nPGIP
-                   True -> return (nwSt, genErrAnswer (errorMsg $ output nwSt)
+                   _ -> return (nwSt, genErrAnswer (errorMsg $ output nwSt)
                                     nPGIP)
      (XML_CloseTheory _) :l -> do
-                  let hst = history state
-                      uI  = undoInstances hst
-                      nwSt = state {
-                                proveState = Nothing,
-                                history = hst {
-                                          undoInstances = ([],[]): uI
-                                          }
+                  case i_state $ intState state of 
+                   Nothing -> 
+                     processCmds l state $ addToMsg "Theory closed" [] pgipSt
+                   Just ist -> do
+                     let nwSt = 
+                          add2hist [IStateChange $ Just ist] $
+                               state {
+                                intState = (intState state) { 
+                                  i_state = Just $ emptyIntIState 
+                                             (i_libEnv ist) (i_ln ist)
+                                             }
                                 }
-                  processCmds l nwSt $ addToMsg "Theory closed" [] pgipSt
+                     processCmds l nwSt $ addToMsg "Theory closed" [] pgipSt
      (XML_CloseFile _) :l -> do
                   processCmds l emptyCMDL_State $ addToMsg "File closed" []
                                                        pgipSt
@@ -397,9 +403,9 @@ processCmds cmds state pgipState
                   hFlush $ hout pgipSt
                   let nPGIP = resetMsg [] pgipSt
                   nwSt <- cmdlProcessString ("use "++str++"\n") state
-                  case fatalError $ output nwSt of
-                   False -> processCmds l nwSt $
+                  case errorMsg $ output nwSt of
+                   [] -> processCmds l nwSt $
                           addToMsg (outputMsg $ output nwSt)
                                    (errorMsg $ output nwSt) nPGIP
-                   True -> return (nwSt, genErrAnswer (errorMsg $ output nwSt)
+                   _ -> return (nwSt, genErrAnswer (errorMsg $ output nwSt)
                                       nPGIP)

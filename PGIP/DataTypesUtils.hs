@@ -17,18 +17,20 @@ module PGIP.DataTypesUtils
          ( getAllNodes
          , obtainGoalNodeList
          , getAllGoalNodes
-         , getAllEdges
          , getAllGoalEdges
-         , initCMDLProofAbstractState
          , getTh
          , baseChannels
          , genErrorMsg
          , genMessage
-         , genError
-         , addToHistory
          , generatePrompter
+         , add2hist
+         , getIdComorphism
          ) where
 
+
+import Interfaces.DataTypes
+import Interfaces.Utils
+import Interfaces.History
 import PGIP.Utils
 import PGIP.DataTypes
 import Common.Result
@@ -37,25 +39,68 @@ import Data.Graph.Inductive.Graph
 import Static.GTheory
 import Static.DevGraph
 import Proofs.TheoremHideShift
-import Logic.Logic
 import System.IO
+
 import Proofs.AbstractState
+import Proofs.TheoremHideShift
+
+import Static.GTheory
+import Static.DevGraph
+
+import Common.Result
+
+import Data.Graph.Inductive.Graph
+import Data.List
+
+
+import Common.Result
+import Logic.Comorphism
+import Logic.Grothendieck
+
+
+add2hist :: [UndoRedoElem] -> CMDL_State ->  CMDL_State
+add2hist descr st
+ = let intst = add2history (intState st) [] descr
+   in st { 
+         intState = intst }
+
+-- | Given a list of selected theory generate an Id comorphism to the
+-- first selected theory
+getIdComorphism :: [Int_NodeInfo] -> Maybe AnyComorphism 
+getIdComorphism ls 
+ = case ls of 
+    [] -> Nothing
+    (Element st _):_ ->
+       case sublogicOfTheory st of 
+        (G_sublogics lid sub) -> Just $ Comorphism (mkIdComorphism lid sub)
+
 
 -- | Generates the string containing the prompter
-generatePrompter :: CMDL_PrompterState -> String
-generatePrompter pst
- = case selectedNodes pst of
-    [] ->(delExtension $ fileLoaded pst) ++ (prompterHead pst)
-    _  ->(delExtension $ fileLoaded pst) ++ "." ++
-         (selectedNodes pst) ++ (selectedTranslations pst) ++
-         (prompterHead pst)
-
--- | Returns the list of all nodes, if it is not up to date
--- the function recomputes the list
-getAllNodes :: CMDL_DevGraphState -> [LNode DGNodeLab]
-getAllNodes state
- = labNodesDG $ lookupDGraph (ln state)
-                             (libEnv state)
+generatePrompter :: CMDL_State -> String
+generatePrompter st
+ = case i_state $ intState st of 
+    Nothing ->  prompterHead $ prompter st
+    Just ist ->
+     let pst = prompter st
+         els = case elements ist of
+                []  -> []
+                el:[] -> case el of 
+                          Element sm _ ->"."++(theoryName sm) 
+                el:_ -> case el of 
+                          Element sm _ ->"." ++(theoryName sm)++ ".."
+         cm = case elements ist of 
+               [] -> []
+               _-> case cComorphism ist of 
+                    Nothing -> []
+                    Just cm' -> 
+                     case getIdComorphism $ elements ist of 
+                      Nothing -> []
+                      Just ocm ->
+                        case cm' == ocm of
+                          True -> []
+                          False -> "*"
+     in (delExtension $ fileLoaded pst) ++ els ++ cm ++ (prompterHead pst)
+                       
 
 -- | Given a list of node names and the list of all nodes
 -- the function returns all the nodes that have their name
@@ -72,88 +117,62 @@ obtainGoalNodeList state input ls
    in (l1,l2')
 
 
-addToHistory :: CMDL_UndoRedoElem -> CMDL_State -> CMDL_State
-addToHistory elm state =
- case proveState state of
-  Nothing -> state
-  Just _ ->
-     let oH  = history state
-         oH' = tail $ undoInstances oH
-         hist  = head $ undoInstances oH
-         uhist = fst hist
-         rhist = snd hist
-     in state {
-           history = oH {
-                      undoInstances = (elm:uhist,rhist):oH',
-                      redoInstances = []
-                      }
-          }
-
-
 -- | Returns the list of all nodes that are goals,
 -- taking care of the up to date status
-getAllGoalNodes :: CMDL_State -> CMDL_DevGraphState -> [LNode DGNodeLab]
-getAllGoalNodes st state
- = filter (\(nb,nd) ->
+getAllGoalNodes :: CMDL_State ->  [LNode DGNodeLab]
+getAllGoalNodes st 
+ = case i_state $ intState st of 
+    Nothing -> []
+    Just ist ->
+      filter (\(nb,nd) ->
              let nwth = getTh Dont_translate nb st
              in case nwth of
                  Nothing -> False
                  Just th -> nodeContainsGoals (nb,nd) th) $
-                                                     getAllNodes state
-
--- | Returns the list of all edges, if it is not up to date
--- the funcrion recomputes the list
-getAllEdges :: CMDL_DevGraphState -> [LEdge DGLinkLab]
-getAllEdges state
- = labEdgesDG $ lookupDGraph (ln state)
-                            (libEnv state)
+                                 getAllNodes $ ist
 
 -- | Returns the list of all goal edges taking care of the
 -- up to date status
-getAllGoalEdges :: CMDL_DevGraphState -> [LEdge DGLinkLab]
-getAllGoalEdges state
- = filter edgeContainsGoals $ getAllEdges state
-
--- | Constructor for CMDLProofGUIState datatype
-initCMDLProofAbstractState:: (Logic lid1 sublogics1
-         basic_spec1 sentence1 symb_items1 symb_map_items1
-         sign1 morphism1 symbol1 raw_symbol1 proof_tree1) =>
-         ProofState lid1 sentence1 -> Int
-         -> CMDL_ProofAbstractState
-initCMDLProofAbstractState ps nb
- = Element ps nb
+getAllGoalEdges :: CMDL_State -> [LEdge DGLinkLab]
+getAllGoalEdges st
+ = case i_state $ intState st of
+    Nothing -> []
+    Just ist ->
+      filter edgeContainsGoals $ getAllEdges $ ist
 
 
 --local function that computes the theory of a node
 --that takes into consideration translated theories in
 --the selection too and returns the theory as a string
 getTh :: CMDL_UseTranslation -> Int -> CMDL_State -> Maybe G_theory
-getTh useTrans x state
+getTh useTrans x st
  = let
     -- compute the theory for a given node
-       fn n = case devGraphState state of
-                Nothing -> Nothing
-                Just dgState ->
-                 case computeTheory False
-                               (libEnv dgState)-- ??
-                               (ln dgState) n of
-                  Result _ (Just (_le, th)) -> Just th -- le not used !!!
-                  _                  -> Nothing
+       fn n = case i_state $ intState st of 
+               Nothing -> Nothing 
+               Just ist ->
+                case computeTheory False (i_libEnv ist) (i_ln ist) n of 
+                 Result _ (Just (_, th)) -> Just th 
+                 _                       -> Nothing
+       
    in
     case useTrans of
      Dont_translate -> fn x
      Do_translate ->
-      case proveState state of
-       Nothing -> fn x
-       Just ps ->
-        case find (\y -> case y of
+      case i_state $ intState st of 
+       Nothing -> Nothing
+       Just ist ->
+        case elements ist of
+         [] -> fn x
+         _ ->
+          case find (\y -> case y of
                           Element _ z -> z == x) $
-                  elements ps of
-         Nothing -> fn x
-         Just _ ->
-           case cComorphism ps of
-            Nothing -> fn x
-            Just cm ->
+                  elements ist of
+           Nothing -> fn x
+           Just _ ->
+            case cComorphism ist of
+             Nothing -> fn x
+             Just cm ->
               case fn x of
                Nothing -> Nothing
                Just sth->
@@ -183,31 +202,22 @@ baseChannels
 
 
 genErrorMsg :: String -> CMDL_State -> CMDL_State
-genErrorMsg msg state
- = state {
-      output = CMDL_Output {
-                  errorMsg = msg,
-                  outputMsg = [],
-                  fatalError = True
-                  }
-          }
+genErrorMsg msg st
+ = st {
+      output = CMDL_Message {
+         outputMsg = [],
+         warningMsg = [],
+         errorMsg = msg
+         }
+     }
 
 genMessage :: String -> String -> CMDL_State -> CMDL_State
-genMessage errMsg msg state
- = state {
-      output = CMDL_Output {
-                  errorMsg = errMsg,
-                  outputMsg = msg,
-                  fatalError = False
-                  }
-         }
+genMessage warnings msg st
+ = st{
+      output = CMDL_Message {
+        outputMsg = msg,
+        warningMsg = warnings,
+        errorMsg = []
+        }
+     }
 
-genError :: CMDL_State -> CMDL_State
-genError state
- = state {
-      output = CMDL_Output {
-                  errorMsg = [],
-                  outputMsg = [],
-                  fatalError = True
-                  }
-          }

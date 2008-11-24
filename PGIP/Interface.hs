@@ -27,29 +27,26 @@ import PGIP.StringInterface
 import PGIP.StdInterface
 import PGIP.FileInterface
 
+import Interfaces.DataTypes
+
 -- | Creates an empty CMDL_State
 emptyCMDL_State ::  CMDL_State
 emptyCMDL_State =
    CMDL_State {
-     devGraphState = Nothing,
-     proveState = Nothing,
-     prompter = CMDL_PrompterState {
+      intState = IntState { 
+                  i_state = Nothing,
+                  i_hist = IntHistory { 
+                              undoList = [],
+                              redoList = [] }
+                        },
+      prompter = CMDL_PrompterState {
                     fileLoaded = [],
-                    selectedNodes = [],
-                    selectedTranslations = [],
                     prompterHead = "> " },
-     output = CMDL_Output {
+      output = CMDL_Message {
                  errorMsg   = [],
                  outputMsg  = [],
-                 fatalError = False
+                 warningMsg = []
                   },
-     history = CMDL_History {
-                 undoList      = [],
-                 redoList      = [],
-                 oldEnv        = Nothing,
-                 undoInstances = [],
-                 redoInstances = []
-                 },
       openComment = False,
       connections = []
      }

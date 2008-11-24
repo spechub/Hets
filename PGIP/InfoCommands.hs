@@ -73,20 +73,23 @@ import Logic.Logic
 
 import Driver.Options
 
+import Interfaces.DataTypes
+import Interfaces.Utils
+
 -- show list of all goals(i.e. prints their name)
 cShowDgGoals :: CMDL_State -> IO CMDL_State
 cShowDgGoals state
- = case devGraphState state of
+ = case i_state $ intState state of
     -- nothing to print
     Nothing -> return state
     Just dgState ->
      do
      -- compute list of node goals
-     let nodeGoals = nodeNames $ getAllGoalNodes state dgState
+     let nodeGoals = nodeNames $ getAllGoalNodes state 
 
          -- list of all nodes
          ls  = getAllNodes dgState
-         lsGE= getAllGoalEdges dgState
+         lsGE= getAllGoalEdges state
          -- list of all goal edge names
          edgeGoals = createEdgeNames ls lsGE
      -- print sorted version of the list
@@ -123,7 +126,7 @@ getThS useTrans x state
 cShowTheoryGoals :: String -> CMDL_State
                     -> IO CMDL_State
 cShowTheoryGoals input state
- = case devGraphState state of
+ = case i_state $ intState state of
     --nothing to print
     Nothing -> return state
     Just dgState ->
@@ -148,7 +151,7 @@ cShowTheoryGoals input state
 
 cShowNodeUGoals :: String -> CMDL_State -> IO CMDL_State
 cShowNodeUGoals input state
- = case devGraphState state of
+ = case i_state $ intState state of
     --nothing to print
     Nothing -> return state
     Just dgState ->
@@ -183,7 +186,7 @@ cShowNodeUGoals input state
 
 cShowNodeUGoalsCurrent :: CMDL_State -> IO CMDL_State
 cShowNodeUGoalsCurrent state
- = case proveState state of
+ = case i_state $ intState state of
     Nothing -> return state
     Just pState ->
      do
@@ -202,7 +205,7 @@ cShowNodeUGoalsCurrent state
 
 cShowNodePGoals :: String -> CMDL_State -> IO CMDL_State
 cShowNodePGoals input state
- = case devGraphState state of
+ = case i_state $ intState state of
     Nothing -> return state
     Just dgState ->
      do
@@ -232,7 +235,7 @@ cShowNodePGoals input state
 
 cShowNodeAxioms :: String -> CMDL_State -> IO CMDL_State
 cShowNodeAxioms input state
- = case devGraphState state of
+ = case i_state $ intState state of
     Nothing -> return state
     Just dgState ->
      do
@@ -259,7 +262,7 @@ cShowNodeAxioms input state
 
 cShowNodePGoalsCurrent :: CMDL_State -> IO CMDL_State
 cShowNodePGoalsCurrent state
- = case proveState state of
+ = case i_state $ intState state of
     Nothing -> return state
     Just pState ->
      do
@@ -279,7 +282,7 @@ cShowNodePGoalsCurrent state
 
 cShowNodeAxiomsCurrent :: CMDL_State -> IO CMDL_State
 cShowNodeAxiomsCurrent state
- = case proveState state of
+ = case i_state $ intState state of
     Nothing -> return state
     Just pState ->
      do
@@ -296,7 +299,7 @@ cShowNodeAxiomsCurrent state
 
 cShowTheoryGoalsCurrent :: CMDL_State -> IO CMDL_State
 cShowTheoryGoalsCurrent state
- = case proveState state of
+ = case i_state $ intState state of
      Nothing -> return state
      Just pState ->
       do
@@ -309,7 +312,7 @@ cShowTheoryGoalsCurrent state
 -- show theory of selection
 cShowTheoryCurrent :: CMDL_UseTranslation -> CMDL_State -> IO CMDL_State
 cShowTheoryCurrent useTrans state
- = case proveState state of
+ = case i_state $ intState state of
     Nothing -> return state
     Just pState ->
      do
@@ -322,7 +325,7 @@ cShowTheoryCurrent useTrans state
 -- show theory of input nodes
 cShowTheory :: CMDL_UseTranslation -> String -> CMDL_State -> IO CMDL_State
 cShowTheory useTrans input state
- = case devGraphState state of
+ = case i_state $ intState state of
     Nothing -> return state
     Just dgState -> do
      -- compute the input nodes
@@ -398,7 +401,7 @@ showNodeInfo state (nb,nd)
 --be printed as a string
 showEdgeInfo::CMDL_State -> LEdge DGLinkLab -> String
 showEdgeInfo state (x,y,dglab@(DGLink morp _ org _ ) )
- =case devGraphState state of
+ =case i_state $ intState state of
    Nothing -> ""
    Just dgS ->
     let
@@ -436,13 +439,10 @@ showEdgeInfo state (x,y,dglab@(DGLink morp _ org _ ) )
  -- show all information of selection
 cInfoCurrent::CMDL_State -> IO CMDL_State
 cInfoCurrent state
- = case proveState state of
+ = case i_state $ intState state of
     -- nothing selected
     Nothing -> return state
     Just ps ->
-     case devGraphState state of
-      Nothing -> return state
-      Just dgS->
        do
        -- get node by number
        let getNNb x l' = case find (\y->case y of
@@ -451,7 +451,7 @@ cInfoCurrent state
                                Nothing -> []
                                Just sm -> [sm]
            -- get all nodes
-           ls = getAllNodes dgS
+           ls = getAllNodes ps
            -- get node numbers of selected nodes
            nodesNb = map (\x -> case x of
                                  Element _ z -> z)
@@ -464,7 +464,7 @@ cInfoCurrent state
 -- show all information of input
 cInfo::String -> CMDL_State -> IO CMDL_State
 cInfo input state
- = case devGraphState state of
+ = case i_state $ intState state of
     -- error message
     Nothing -> return $genErrorMsg "No library loaded" state
     Just dgS -> do
@@ -495,7 +495,7 @@ taxoShowGeneric kind state ls
  = case ls of
 #ifdef UNI_PACKAGE
     (nb,nlab):ll ->
-     case devGraphState state of
+     case i_state $ intState state of
       Nothing -> return ()
       Just _ ->
        do
@@ -526,14 +526,11 @@ taxoShowGeneric kind state ls
 -- show taxonomy of selection
 cShowTaxonomyCurrent::CMDL_State -> IO CMDL_State
 cShowTaxonomyCurrent state
- = case proveState state of
+ = case i_state $ intState state of
     -- nothing selected
     Nothing -> return state
     -- else
     Just ps ->
-     case devGraphState state of
-      Nothing -> return state
-      Just dgS->
        do
      -- get node by number
        let getNNb x ks = case find (\y -> case y of
@@ -542,7 +539,7 @@ cShowTaxonomyCurrent state
                            Nothing -> []
                            Just sm -> [sm]
            -- get all nodes
-           ls = getAllNodes dgS
+           ls = getAllNodes ps
            -- get node numbers of selected nodes
            nodesNb = map (\x -> case x of
                                  Element _ z ->z)
@@ -555,7 +552,7 @@ cShowTaxonomyCurrent state
 -- show taxonomy of input
 cShowTaxonomy::String -> CMDL_State -> IO CMDL_State
 cShowTaxonomy input state
- = case devGraphState state of
+ = case i_state $ intState state of
     -- nothing to print
     Nothing -> return state
     Just dgS -> do
@@ -576,14 +573,11 @@ cShowTaxonomy input state
 -- show concept of selection
 cShowConceptCurrent::CMDL_State -> IO CMDL_State
 cShowConceptCurrent state
- = case proveState state of
+ = case i_state $ intState state of
     -- nothing selected
     Nothing -> return state
     -- else
     Just ps ->
-     case devGraphState state of
-      Nothing -> return state
-      Just dgS->
        do
      -- get node by number
        let getNNb x ks = case find (\y -> case y of
@@ -592,7 +586,7 @@ cShowConceptCurrent state
                            Nothing -> []
                            Just sm -> [sm]
            -- get all nodes
-           ls = getAllNodes dgS
+           ls = getAllNodes ps
            -- get node numbers of selected nodes
            nodesNb = map (\x -> case x of
                                  Element _ z -> z)
@@ -605,7 +599,7 @@ cShowConceptCurrent state
 -- show concept of input
 cShowConcept::String -> CMDL_State -> IO CMDL_State
 cShowConcept input state
- = case devGraphState state of
+ = case i_state $ intState state of
     -- nothing to print
     Nothing -> return state
     Just dgS -> do
@@ -626,7 +620,7 @@ cShowConcept input state
 -- show node number of input
 cNodeNumber::String -> CMDL_State -> IO CMDL_State
 cNodeNumber input state
- = case devGraphState state of
+ = case i_state $ intState state of
     Nothing -> return state
     Just dgState -> do
      -- compute the input nodes
@@ -649,7 +643,7 @@ cNodeNumber input state
 -- print the name of all edges
 cEdges::CMDL_State -> IO CMDL_State
 cEdges state
- = case devGraphState state of
+ = case i_state $ intState state of
     Nothing -> return state
     Just dgState ->
      do
@@ -664,21 +658,21 @@ cEdges state
 cUndoHistory :: CMDL_State -> IO CMDL_State
 cUndoHistory state
  = do
-    let undoH  = undoList $ history state
-        undoH' = map(\x -> head $ cmdNames x) undoH
+    let undoH  = undoList $ i_hist $ intState state
+        undoH' = map(\x -> cmdName x) undoH
     return $genMessage [] ("Undo history :\n"++ prettyPrintList undoH') state
 
 cRedoHistory :: CMDL_State -> IO CMDL_State
 cRedoHistory state
  = do
-    let redoH  = redoList $ history state
-        redoH' = concatMap (\x -> cmdNames x) redoH
+    let redoH  = redoList $ i_hist $ intState state
+        redoH' = map (\x -> cmdName x) redoH
     return $genMessage [] ("Redo history :\n"++ prettyPrintList redoH') state
 
 -- print the name of all nodes
 cNodes::CMDL_State -> IO CMDL_State
 cNodes state
- = case devGraphState state of
+ = case i_state $ intState state of
     -- no library loaded, so nothing to print
     Nothing -> return state
     Just dgState ->
@@ -691,7 +685,7 @@ cNodes state
 -- draw graph
 cDisplayGraph::CMDL_State -> IO CMDL_State
 cDisplayGraph state
- = case devGraphState state of
+ = case i_state $ intState state of
 #ifdef UNI_PACKAGE
     Just dgState ->
      do
@@ -699,7 +693,7 @@ cDisplayGraph state
       -- documentation/debugging reasons
       let filename = fileLoaded $  prompter state
       showGraph filename defaultHetcatsOpts ( Just
-                   (ln dgState, libEnv dgState))
+                   (i_ln dgState, i_libEnv dgState))
       return state
 #endif
    -- no development graph present

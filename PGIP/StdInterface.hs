@@ -36,7 +36,7 @@ stdShellDescription =
        , commandStyle       = OnlyCommands
        , evaluateFunc       = shellacEvalFunc
        , wordBreakChars     = wbc
-       , prompt             = \x -> return $ generatePrompter $prompter x
+       , prompt             = \x -> return $ generatePrompter x
        , historyFile        = Just ("consoleHistory.tmp")
        }
 

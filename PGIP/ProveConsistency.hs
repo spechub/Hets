@@ -22,6 +22,8 @@ module PGIP.ProveConsistency
        ) where
 
 
+import Interfaces.DataTypes
+
 import PGIP.DataTypes
 import PGIP.DataTypesUtils
 import PGIP.Utils
@@ -50,7 +52,7 @@ import Control.Concurrent.MVar
 
 import System.IO
 
-import GUI.GenericATPState
+import Interfaces.GenericATPState
 
 getProversAutomatic :: [AnyComorphism] -> [(G_prover, AnyComorphism)]
 getProversAutomatic = foldl addProvers []
@@ -75,7 +77,7 @@ cProver input state =
    let inp  = case inpls of
                 [] -> "Unknown"
                 pnme:_ ->pnme
-   case proveState state of
+   case i_state $ intState state of
     Nothing -> return $ genErrorMsg "Nothing selected" state
     Just pS ->
      -- check that some theories are selected
@@ -92,11 +94,14 @@ cProver input state =
                               logicGraph $ sublogicOfTh $ theory z of
                    Nothing -> return $genErrorMsg ("No applicable prover with"
                                                 ++" this name found") state
-                   Just (p,_)-> return $ addToHistory(ProverChange $
-                                           prover pS) state {
-                                                         proveState=Just pS
-                                                        {prover = Just p }
-                                                      }
+                   Just (p,_)-> return $ add2hist [ProverChange$ prover pS]$
+                                    state {
+                                         intState = (intState state) { 
+                                            i_state = Just pS {
+                                                        prover = Just p 
+                                              }
+                                         }
+                                 }
        -- if yes,  use the comorphism to find a list
        -- of provers
        Just x ->
@@ -111,7 +116,8 @@ cProver input state =
                Nothing -> return $ genErrorMsg ("No applicable prover with"
                                           ++" this name found") state
                Just (p,nCm@(Comorphism cid))->
-                 return $ addToHistory (ProverChange $ prover pS)
+                 return $ add2hist [(ProverChange $ prover pS),
+                                    (CComorphismChange $ cComorphism pS)]
                      $ genMessage [] ("Warning: Prover can't be used with "
                             ++"the selected comorphism (or the default if "
                             ++"none was selected). Instead the `"
@@ -119,18 +125,22 @@ cProver input state =
                             ++"` comorphism was selected. Current prover is "
                             ++ input)
                             state {
-                              proveState = Just pS {
+                              intState = (intState state) {
+                                i_state = Just pS {
                                              cComorphism=Just nCm
                                              ,prover = Just p
                                              }
+                                      }
                                }
             Just (p,_) -> return
-                              $ addToHistory (ProverChange $ prover pS)
+                              $ add2hist [ProverChange $ prover pS]
                                 state {
-                                  proveState = Just pS {
-                                              prover = Just p
-                                         }
-                              }
+                                  intState = (intState state) {
+                                    i_state = Just pS { 
+                                               prover = Just p 
+                                               }
+                                     }
+                                  }
 
 
 -- | Selects a consistency checker
@@ -139,7 +149,7 @@ cConsChecker input state =
   do
    --trimed input
    let inp = trim input
-   case proveState state of
+   case i_state $ intState state of
     Nothing -> return $ genErrorMsg "Nothing selected" state
     Just pS ->
      --check that some theories are selected
@@ -157,10 +167,14 @@ cConsChecker input state =
                     Nothing -> return $ genErrorMsg ("No applicable "++
                                  "consistency checker with this name found")
                                  state
-                    Just (p,_) -> return $ addToHistory(ConsCheckerChange $
-                                             consChecker pS) state {
-                                                proveState = Just pS {
-                                                    consChecker = Just p}}
+                    Just (p,_) -> return $ add2hist 
+                                    [ConsCheckerChange $consChecker pS] 
+                                    state {
+                                      intState = (intState state) { 
+                                         i_state = Just pS {
+                                             consChecker = Just p }
+                                          }
+                                      }
         Just x ->
           case find(\(y,_) -> (getPName y) == inp)
                      $ getConsCheckersAutomatic [x] of
@@ -172,21 +186,25 @@ cConsChecker input state =
              Nothing -> return $ genErrorMsg ("No applicable consistency "++
                                  "checker with this name found") state
              Just (p,nCm@(Comorphism cid)) ->
-               return $ addToHistory (ConsCheckerChange $ consChecker pS)
+               return $ add2hist [(ConsCheckerChange $ consChecker pS),
+                                  (CComorphismChange $ cComorphism pS)]
                   $ genMessage ("Consistency checker can't be used with the "
                       ++"comorphism selected using translate "
                       ++"command. Using comorphism :"
                       ++ language_name cid) []
                       state {
-                       proveState = Just pS {
-                                      cComorphism = Just nCm
-                                      ,consChecker = Just p
-                                      } }
+                       intState = (intState state) { 
+                         i_state = Just pS { 
+                                    cComorphism = Just nCm,
+                                    consChecker = Just p }
+                                  }
+                          }
            Just (p,_) -> return
-                           $addToHistory (ConsCheckerChange $ consChecker pS)
+                           $add2hist [ConsCheckerChange $ consChecker pS]$
                             state {
-                             proveState = Just pS{
-                                           consChecker = Just p } }
+                            intState = (intState state) { 
+                              i_state = Just pS{
+                                          consChecker = Just p } } }
 
 
 -- | Given a proofstatus the function does the actual call of the
@@ -202,7 +220,7 @@ checkNode ::
               -- all theorems, goals and axioms should have
               -- been selected before,but the theory should have
               -- not beed recomputed
-              CMDL_ProofAbstractState->
+              Int_NodeInfo ->
               -- node name
               String ->
               -- selected prover, if non one will be automatically
@@ -212,7 +230,7 @@ checkNode ::
               -- selected
               Maybe AnyComorphism ->
               MVar (Maybe ThreadId) ->
-              MVar (Maybe CMDL_ProofAbstractState)  ->
+              MVar (Maybe Int_NodeInfo)  ->
               MVar LibEnv ->
               LIB_NAME ->
               -- returns an error message if anything happens
@@ -306,7 +324,7 @@ proveNode ::
               -- all theorems, goals and axioms should have
               -- been selected before,but the theory should have
               -- not beed recomputed
-              CMDL_ProofAbstractState->
+              Int_NodeInfo ->
               -- node name
               String ->
               -- selected prover, if non one will be automatically
@@ -316,7 +334,7 @@ proveNode ::
               -- selected
               Maybe AnyComorphism ->
               MVar (Maybe ThreadId) ->
-              MVar (Maybe CMDL_ProofAbstractState)  ->
+              MVar (Maybe Int_NodeInfo)  ->
               MVar LibEnv ->
               LIB_NAME ->
               -- returns an error message if anything happens
@@ -404,7 +422,7 @@ pollForResults :: (Logic lid sublogics basic_spec sentence
                   AnyComorphism ->
                   MVar () ->
                   MVar (Result [P.Proof_status proof_tree]) ->
-                  MVar  (Maybe CMDL_ProofAbstractState) ->
+                  MVar  (Maybe Int_NodeInfo) ->
                   [P.Proof_status proof_tree] ->
                   IO ()
 pollForResults lid acm mStop mData mState done
@@ -458,7 +476,7 @@ pollForResults lid acm mStop mData mState done
 -- | inserts the results of the proof in the development graph
 addResults ::    LibEnv
               -> LIB_NAME
-              -> CMDL_ProofAbstractState
+              -> Int_NodeInfo
               -> IO LibEnv
 addResults lbEnv libname ndps
  =case ndps of
@@ -487,7 +505,7 @@ addResults lbEnv libname ndps
 -- when SIGINT is send
 sigIntHandler :: MVar (Maybe ThreadId) ->
                  MVar LibEnv ->
-                 MVar (Maybe CMDL_ProofAbstractState) ->
+                 MVar (Maybe Int_NodeInfo) ->
                  ThreadId ->
                  MVar LibEnv ->
                  LIB_NAME ->
@@ -521,13 +539,12 @@ sigIntHandler mthr mlbE mSt thr mOut libname
 
 proveLoop :: MVar LibEnv ->
              MVar (Maybe ThreadId) ->
-             MVar (Maybe CMDL_ProofAbstractState)  ->
+             MVar (Maybe Int_NodeInfo)  ->
              MVar LibEnv ->
-             CMDL_ProveState ->
-             CMDL_DevGraphState ->
-             [CMDL_ProofAbstractState] ->
+             IntIState ->
+             [Int_NodeInfo] ->
              IO ()
-proveLoop mlbE mThr mSt mOut pS pDgS ls
+proveLoop mlbE mThr mSt mOut pS ls
  = case ls of
    -- we are done
     [] -> do
@@ -538,7 +555,7 @@ proveLoop mlbE mThr mSt mOut pS pDgS ls
           do
            let nodeName x' = case x' of
                               Element _ t -> case find(\(n,_)-> n==t)
-                                                  $ getAllNodes pDgS of
+                                                  $ getAllNodes pS of
                                                Nothing -> "Unkown node"
                                                Just (_,ll) ->
                                                  getDGNodeName ll
@@ -553,22 +570,21 @@ proveLoop mlbE mThr mSt mOut pS pDgS ls
                             mThr
                             mSt
                             mlbE
-                            (ln pDgS)
+                            (i_ln pS)
            case err of
-            [] -> proveLoop mlbE mThr mSt mOut pS pDgS l
+            [] -> proveLoop mlbE mThr mSt mOut pS l
             _  -> do
                   putStrLn err
-                  proveLoop mlbE mThr mSt mOut pS pDgS l
+                  proveLoop mlbE mThr mSt mOut pS l
 
 consCheckLoop :: MVar LibEnv ->
                  MVar (Maybe ThreadId) ->
-                 MVar (Maybe CMDL_ProofAbstractState) ->
+                 MVar (Maybe Int_NodeInfo) ->
                  MVar LibEnv ->
-                 CMDL_ProveState ->
-                 CMDL_DevGraphState ->
-                 [CMDL_ProofAbstractState] ->
+                 IntIState ->
+                 [Int_NodeInfo] ->
                  IO ()
-consCheckLoop mlbE mThr mSt mOut pS pDgS ls
+consCheckLoop mlbE mThr mSt mOut pS  ls
  = case ls of
     -- we are done
     [] -> do
@@ -579,7 +595,7 @@ consCheckLoop mlbE mThr mSt mOut pS pDgS ls
          do
           let nodeName x' = case x' of
                              Element _ t -> case find(\(n,_) -> n==t) $
-                                                  getAllNodes pDgS of
+                                                  getAllNodes pS of
                                               Nothing -> "Unknown node"
                                               Just (_,ll) ->
                                                  getDGNodeName ll
@@ -594,9 +610,9 @@ consCheckLoop mlbE mThr mSt mOut pS pDgS ls
                            mThr
                            mSt
                            mlbE
-                           (ln pDgS)
+                           (i_ln pS)
           case err of
-           [] -> consCheckLoop mlbE mThr mSt mOut pS pDgS l
+           [] -> consCheckLoop mlbE mThr mSt mOut pS l
            _ -> do
                  putStrLn err
-                 consCheckLoop mlbE mThr mSt mOut pS pDgS l
+                 consCheckLoop mlbE mThr mSt mOut pS l

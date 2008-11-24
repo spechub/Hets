@@ -21,9 +21,10 @@ module PGIP.DgCommands
        , selectANode
        , wrapResultDg
        , wrapResultDgAll
-       , getIdComorphism
        )where
 
+import Interfaces.DataTypes
+import Interfaces.Utils
 import PGIP.Utils
 import PGIP.DataTypes
 import PGIP.DataTypesUtils
@@ -50,7 +51,6 @@ import Logic.Comorphism
 import Logic.Grothendieck
 import Logic.Prover
 
-import GUI.GenericATPState
 
 -- | Wraps Result structure around the result of a dg all style command
 wrapResultDgAll :: (LIB_NAME->LibEnv -> LibEnv) ->
@@ -72,24 +72,24 @@ wrapResultDg fn lib_name ls lib_env
 commandDgAll :: ( LIB_NAME->LibEnv->Result LibEnv) -> CMDL_State
                       -> IO CMDL_State
 commandDgAll fn state
- = case devGraphState state of
+ = case  i_state $ intState state of
     Nothing ->
                       -- just an error message and leave
                       -- the internal state intact so that
                       -- the interface can recover
                return $ genErrorMsg "No library loaded" state
-    Just dgState ->
-     do
-      case fn (ln dgState) (libEnv dgState) of
-       Result _ (Just nwLibEnv) ->
-           return state {
-              devGraphState = Just dgState { libEnv = nwLibEnv  },
-              -- delete any selection if a dg command is used
-              proveState = Nothing,
-              prompter = (prompter state) { selectedNodes = [],
-                                          selectedTranslations = [] }
+    Just ist ->
+       do
+        case fn (i_ln ist) (i_libEnv ist) of
+         Result _ (Just nwLibEnv) ->
+         -- Name of function is not known here, so an empty text is 
+         -- added as name, in a later stage (Shell.hs) the name will 
+         -- be inserted 
+           return $ add2hist [IStateChange $ Just ist] $ state {
+              intState = (intState state) {
+                           i_state=Just$ emptyIntIState nwLibEnv $ i_ln ist}
               }
-       Result diag Nothing -> return $ genErrorMsg
+         Result diag Nothing -> return $ genErrorMsg
                                      (concat $ map diagString diag) state
 
 
@@ -100,11 +100,11 @@ commandDg ::  (LIB_NAME -> [LEdge DGLinkLab]->LibEnv->
               Result LibEnv) -> String -> CMDL_State
                       -> IO CMDL_State
 commandDg fn input state
- = case devGraphState state of
+ = case i_state $ intState state of
     Nothing ->        -- leave the internal state intact so
                       -- that the interface can recover
                 return $ genErrorMsg "No library loaded" state
-    Just dgState -> do
+    Just ist -> do
      let (_,edg,nbEdg,errs) = decomposeIntoGoals input
          tmpErrs =  prettyPrintErrList errs
      case (edg,nbEdg) of
@@ -114,8 +114,8 @@ commandDg fn input state
                               state
        (_,_) ->
         do
-        let lsNodes   = getAllNodes dgState
-            lsEdges   = getAllEdges dgState
+        let lsNodes   = getAllNodes ist
+            lsEdges   = getAllEdges ist
             -- compute the list of edges from the input
             (errs',listEdges) = obtainEdgeList edg nbEdg lsNodes
                               lsEdges
@@ -125,17 +125,14 @@ commandDg fn input state
                               state
          _  ->
            do
-            case fn (ln dgState) listEdges (libEnv dgState) of
+            case fn (i_ln ist) listEdges (i_libEnv ist) of
              Result _ (Just nwLibEnv) ->
-                 return $ genMessage tmpErrs' []
+               -- name added later !!
+                 return $ add2hist [IStateChange $ Just ist]
+                        $ genMessage tmpErrs' []
                       state {
-                        devGraphState = Just
-                                  dgState { libEnv = nwLibEnv },
-                        -- delete any selection if a dg command is
-                        -- used
-                        proveState = Nothing,
-                        prompter = (prompter state) { selectedNodes = [],
-                                          selectedTranslations = [] }
+                        intState = (intState state){
+                          i_state=Just$ emptyIntIState nwLibEnv $ i_ln ist}
                         }
              Result diag Nothing -> return $ genErrorMsg
                         (concat $ map diagString diag) state
@@ -148,42 +145,32 @@ cUse input state
  = do
    let opts = defaultHetcatsOpts
        file = trim input
-   tmp <- case devGraphState state of
+   tmp <- case i_state $ intState state of
            Nothing -> anaLib opts file
            Just dgState ->
-                   anaLibExt opts file $ libEnv dgState
+                   anaLibExt opts file $ i_libEnv dgState
    case tmp of
     Nothing ->             -- leave internal state intact so that
                            -- the interface can recover
                return$ genErrorMsg ("Unable to load library "++input) state
     Just (nwLn, nwLibEnv) ->
-                 return
+                 return 
                    state {
-                     devGraphState = Just
-                                   CMDL_DevGraphState {
-                                     ln = nwLn,
-                                     libEnv = nwLibEnv },
+                     intState = IntState { 
+                          i_hist = IntHistory { undoList = [],
+                                                redoList = []
+                                              },
+                          i_state = Just $   emptyIntIState nwLibEnv nwLn
+                          },
                      prompter = (prompter state) {
-                                          fileLoaded = file,
-                                          selectedNodes =  [],
-                                          selectedTranslations = [] },
-                     -- delete any selection if a dg command is
-                     -- used
-                     proveState = Nothing,
-                     history = CMDL_History {
-                                 oldEnv = Just nwLibEnv,
-                                 undoList = [],
-                                 redoList = [],
-                                 undoInstances = [],
-                                 redoInstances = []
-                                 }
+                                          fileLoaded = file }
                      }
 
 -- The only command that requires a list of nodes instead
 -- of edges.
 cDgThmHideShift :: String -> CMDL_State -> IO CMDL_State
 cDgThmHideShift input state
- = case devGraphState state of
+ = case i_state $ intState state of
     Nothing ->                -- leave internal state intact so
                               -- that the interface can recover
                return $ genErrorMsg "No library loaded" state
@@ -206,32 +193,33 @@ cDgThmHideShift input state
            _ ->
             do
              let
-              Result diag nwLibEnv = theoremHideShiftFromList (ln dgState)
-                                     listNodes (libEnv dgState)
+              Result diag nwLibEnv = theoremHideShiftFromList (i_ln dgState)
+                                     listNodes (i_libEnv dgState)
               -- diag not used, how should it?
              case nwLibEnv of
               Nothing -> return $ genErrorMsg (concat $ map diagString diag)
                                   state
-              Just newEnv -> return $ genMessage tmpErrs' []
-                        state {
-                          devGraphState = Just
-                                          dgState { libEnv = newEnv },
-                          proveState = Nothing,
-                          prompter = (prompter state) {
-                                               selectedNodes = [],
-                                               selectedTranslations = [] }
+               -- ADD TO HISTORY ??
+              Just newEnv -> 
+                 return $ add2hist [IStateChange $ Just dgState] $
+                     genMessage tmpErrs' []
+                    state {
+                       intState = 
+                        (intState state) { 
+                         i_state =Just $ emptyIntIState newEnv $ i_ln dgState
+                         }
                            }
 
 -- selection commands
-selectANode :: Int -> CMDL_DevGraphState
-               -> [CMDL_ProofAbstractState]
+selectANode :: Int -> IntIState
+               -> [Int_NodeInfo]
 selectANode x dgState
  = let
     -- computes the theory of a given node
     -- (i.e. solves DGRef cases and so on,
     -- see CASL Reference Manual, p.294, Def 4.9)
-    gth n = computeTheory False (libEnv dgState)
-                          (ln dgState)
+    gth n = computeTheory False (i_libEnv dgState)
+                          (i_ln dgState)
                           n
     nodeName t=case find(\(n,_)-> n==t) $ getAllNodes dgState of
                 Nothing -> "Unknown node"
@@ -251,7 +239,7 @@ selectANode x dgState
          tmp<-initialState
                 lid
                 (shows
-                   (getLIB_ID $ ln dgState) "_" ++(nodeName x)
+                   (getLIB_ID $ i_ln dgState) "_" ++(nodeName x)
                 )
                 th
                 (shrinkKnownProvers sl kpMap)
@@ -262,28 +250,18 @@ selectANode x dgState
                 )
          -- make so that nothing (no goals, no axioms) are
          -- selected initialy in the goal proof status
-         return (initCMDLProofAbstractState tmp{
+         return (initNodeInfo tmp{
                              selectedGoals =case selectedGoals tmp of
                                              [] -> []
                                              s:_-> [s]
                                              } x)
        _ -> []
 
--- | Given a list of selected theory generate an Id comorphism to the
--- first selected theory
-getIdComorphism :: [CMDL_ProofAbstractState] -> Maybe AnyComorphism 
-getIdComorphism ls 
- = case ls of 
-    [] -> Nothing
-    (Element st _):_ ->
-       case sublogicOfTheory st of 
-        (G_sublogics lid sub) -> Just $ Comorphism (mkIdComorphism lid sub)
-
 -- | function swithces interface in proving mode and also
 -- selects a list of nodes to be used inside this mode
 cDgSelect :: String -> CMDL_State -> IO CMDL_State
 cDgSelect input state
- =case devGraphState state of
+ =case i_state $ intState state of
    Nothing ->              -- leave internal state intact so
                            -- that the interface can recover
               return $ genErrorMsg "No library loaded" state
@@ -315,38 +293,22 @@ cDgSelect input state
                        (\x -> case x of
                                (n,_) -> selectANode n dgState
                                ) listNodes
-                oldH = history state
-                nwPrompter = case nds of
-                              hd:[] -> (prompter state) {
-                                           selectedNodes = hd,
-                                           selectedTranslations = []}
-                              hd:_ -> (prompter state) {
-                                           selectedNodes =hd++"..",
-                                           selectedTranslations = []}
-                              _ -> prompter state
-             return $ genMessage tmpErrs' []
+          --      oldH = history state
+                nwist = emptyIntIState (i_libEnv dgState) (i_ln dgState)
+             return $ add2hist [IStateChange $ Just dgState] $ 
+                   genMessage tmpErrs' []
                  state {
                    -- add the prove state to the status
                    -- containing all information selected
                    -- in the input
-                   proveState = Just
-                       CMDL_ProveState {
-                         elements = elems,
-                         cComorphism = getIdComorphism elems,
-                         prover = Nothing,
-                         consChecker = Nothing,
-                         save2file = False,
-                         useTheorems = False,
-                         script = ATPTactic_script {
-                                         ts_timeLimit = 20,
-                                         ts_extraOpts = [] 
-                                         },
-                         loadScript = False
-                         },
-                   history = oldH {
-                        undoInstances = ([],[]):(undoInstances oldH),
-                        redoInstances = []},
-                   prompter = nwPrompter
+                   intState = (intState state) { 
+                               i_state = Just nwist { 
+                                          elements = elems,
+                                          cComorphism = getIdComorphism elems
+                                          } }
+               --    history = oldH {
+               --         undoInstances = ([],[]):(undoInstances oldH),
+               --         redoInstances = []},
                    }
 
 
@@ -354,7 +316,7 @@ cDgSelect input state
 -- selecting all nodes
 cDgSelectAll :: CMDL_State -> IO CMDL_State
 cDgSelectAll state
- =case devGraphState state of
+ =case i_state $ intState state of
    Nothing -> return $ genErrorMsg "No library loaded" state
    Just dgState ->
     case knownProversWithKind ProveCMDLautomatic of
@@ -369,37 +331,19 @@ cDgSelectAll state
                    (\x -> case x of
                            (n,_) -> selectANode n dgState
                            ) lsNodes
-          oldH = history state
-          nwPrompter = case lsNodes of
-                         hd:[] ->
-                           (prompter state) {
-                            selectedNodes = (getDGNodeName $ snd hd),
-                            selectedTranslations = []}
-                         hd:_ ->
-                           (prompter state) {
-                            selectedNodes =(getDGNodeName $ snd hd)++"..",
-                            selectedTranslations = []}
-                         _ -> prompter state
-      return state {
+         -- oldH = history state
+          nwist = emptyIntIState (i_libEnv dgState) (i_ln dgState)
+               -- ADD TO HISTORY
+      return $ add2hist [IStateChange $ Just dgState] $ state {
               -- add the prove state to the status containing
               -- all information selected in the input
-              proveState = Just
-                            CMDL_ProveState {
-                              elements = elems,
-                              cComorphism = getIdComorphism elems,
-                              prover = Nothing,
-                              consChecker = Nothing,
-                              save2file = False,
-                              useTheorems = False,
-                              script = ATPTactic_script {
-                                           ts_timeLimit = 20,
-                                           ts_extraOpts = [] 
-                                           },
-                              loadScript = False
-                             },
-              history = oldH {
-                         undoInstances= ([],[]):(undoInstances oldH),
-                         redoInstances= []
-                         },
-              prompter = nwPrompter
+              intState = (intState state) { 
+                           i_state = Just nwist { 
+                                          elements = elems,
+                                          cComorphism = getIdComorphism elems
+                                            } }
+        --      history = oldH {
+        --                 undoInstances= ([],[]):(undoInstances oldH),
+        --                 redoInstances= []
+        --                 },
               }
