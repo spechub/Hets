@@ -21,6 +21,8 @@ module Propositional.ProveWithTruthTable
     )
     where
 
+import Debug.Trace
+
 import Text.Tabular
 import Text.Tabular.AsciiArt
 
@@ -104,8 +106,57 @@ eval _ (True_atom _) = True
 eval _ (False_atom _) = False
 eval m (Predication ident) = Id.simpleIdToId ident `Set.member` m
 
-evalNamed :: Model -> AS_Anno.Named (FORMULA) -> Bool
+evalNamed :: Model -> AS_Anno.Named FORMULA -> Bool
 evalNamed m phi = eval m (AS_Anno.sentence phi)
+
+
+{- |
+  Evaluation of (co)freeness constraints
+-}
+
+
+-- | amalgamation of models
+amalg :: Model -> Model -> Model
+amalg = Set.union
+
+data FormulaOrFree =
+     Formula FORMULA
+   | FreeConstraint (LP.FreeDefMorphism FORMULA PMorphism.Morphism)
+
+
+evalNamedFormulaOrFree :: Model -> AS_Anno.Named FormulaOrFree -> Bool
+evalNamedFormulaOrFree m phi = evalFormulaOrFree m (AS_Anno.sentence phi)
+
+evalFormulaOrFree :: Model -> FormulaOrFree -> Bool
+evalFormulaOrFree m (Formula phi) = eval m phi
+evalFormulaOrFree m (FreeConstraint freedef) = evalFree m freedef
+
+reduceModel :: Sig.Sign -> Model -> Model
+reduceModel sig m = Set.intersection m (items sig)
+
+leq :: Model -> Model -> Bool
+leq = Set.isSubsetOf 
+
+isMin :: Bool -> Model -> [Model] -> Bool
+isMin isCo m models =
+   all (\m' -> if isCo then leq m' m else leq m m') models
+
+evalFree :: Model 
+              -> LP.FreeDefMorphism FORMULA PMorphism.Morphism 
+              -> Bool
+evalFree m freedef = 
+ trace (show freedef) $
+  let diffsig = Sign ((items freetar) `Set.difference` (items freesrc))
+      mred = reduceModel freesrc m
+      modelsOverMred = map (mred `amalg`) (allModels diffsig) 
+      modelClass = foldr (filter . (flip eval)) modelsOverMred freeth 
+  in isMin isCo m modelClass
+  where freemor = LP.freeDefMorphism freedef
+        freesrc = PMorphism.source freemor
+        freetar = PMorphism.target freemor
+        freeth = map AS_Anno.sentence $ LP.freeTheory freedef
+        isCo = LP.isCofree freedef
+
 
 
 -- | generate all models for a signature
@@ -200,7 +251,7 @@ ttConsistencyChecker = LP.mkProverTemplate ttS top consCheck
 
 consCheck :: String -> LP.TheoryMorphism Sig.Sign FORMULA
              PMorphism.Morphism ProofTree
-          -> [LP.FreeDefMorphism PMorphism.Morphism] -- ^ free definitions
+          -> [LP.FreeDefMorphism FORMULA PMorphism.Morphism] -- ^ free definitions
           -> IO([LP.Proof_status ProofTree])
 consCheck thName tm _freedefs =
   case LP.t_target tm of
@@ -250,7 +301,7 @@ consCheck thName tm _freedefs =
 -}
 ttProveGUI :: String -- ^ theory name
           -> LP.Theory Sig.Sign FORMULA ProofTree
-          -> [LP.FreeDefMorphism PMorphism.Morphism] -- ^ free definitions
+          -> [LP.FreeDefMorphism FORMULA PMorphism.Morphism] -- ^ free definitions
           -> IO([LP.Proof_status ProofTree]) -- ^ proof status for each goal
 ttProveGUI thName th freedefs =
     genericATPgui (atpFun thName) True (LP.prover_name ttProver) thName th
@@ -283,38 +334,6 @@ defaultProof_status nGoal =
                        (LP.prover_name ttProver)
                        emptyProofTree)
 
-{- |
-  Filter models due to (co)freeness constraints
--}
-
-reduceModel :: Sig.Sign -> Model -> Model
-reduceModel sig m = Set.intersection m (items sig)
-
-leq :: Sig.Sign -> Model -> Model -> Bool
-leq _ = Set.isSubsetOf 
-
-filterMin :: Sig.Sign -> Bool -> [Model] -> [Model]
-filterMin sig isCo models =
-  filter isMin models
-  where
-  isMin m = all (\m' -> if isCo then leq sig m' m else leq sig m m') models
-
-filterFree :: Sig.Sign
-              -> [Model] 
-              -> LP.FreeDefMorphism PMorphism.Morphism
-              -> [Model]
-filterFree _ [] _ = []
-filterFree sig models freedef =
-  let reducedModels = allModels freetar
-      modelGroups = groupBy
-                    (\m1 m2 -> reduceModel freesrc m1 == reduceModel freesrc m2)
-                    reducedModels
-      freeReducedModels = concatMap (filterMin sig isCo) modelGroups
-  in filter (\m -> reduceModel freetar m `elem` freeReducedModels) models
-  where freemor = LP.freeDefMorphism freedef
-        freesrc = PMorphism.source freemor
-        freetar = PMorphism.target freemor
-        isCo = LP.isCofree freedef
 
 {- |
   Runs tt.
@@ -346,16 +365,20 @@ runTt pState cfg _ _thName nGoal =
       else do
        let axs = PState.initialAxioms pState
            freedefs = PState.freeDefs pState
-           models = foldl (filterFree sig) (allModels sig) freedefs
+           nameFree fd = 
+              AS_Anno.makeNamed (if LP.isCofree fd then "cofree" else "free")
+                                (FreeConstraint fd)
+           sens = map (AS_Anno.mapNamed Formula) axs ++ map nameFree freedefs
+           models = allModels sig
            sigList = Set.toList $ items sig
            heading =
              TTHead { hprops = map show sigList,
-                      haxioms = map AS_Anno.senAttr axs,
+                      haxioms = map AS_Anno.senAttr sens,
                       hextprops = [], hextaxioms = [],
                       hgoal = Just $ AS_Anno.senAttr nGoal
                     }
            mkRow m =
-             let evalAx = map (evalNamed m) axs
+             let evalAx = map (evalNamedFormulaOrFree m) sens
                  evalGoal = evalNamed m nGoal
                  isModel = and evalAx
              in TTRow { rprops = map (`Set.member` m) sigList,
@@ -378,7 +401,7 @@ runTt pState cfg _ _thName nGoal =
        let status = (defaultProof_status nGoal)
                         { LP.goalStatus = if isOK then LP.Proved $ Nothing
                                                   else LP.Disproved,
-                          LP.usedAxioms = map AS_Anno.senAttr axs
+                          LP.usedAxioms = map AS_Anno.senAttr sens
                         }
        return (ATPState.ATPSuccess,
                cfg{ATPState.proof_status = status,
@@ -407,10 +430,6 @@ goalProblem _ _ _ _ =
 -- | Conservativity Check via truth table
 
 -- TODO: check for injectivity!
-
--- | amalgamation of models
-amalg :: Model -> Model -> Model
-amalg = Set.union
 
 ttConservativityChecker ::
               (Sign, [AS_Anno.Named FORMULA]) -- ^ Initial sign and formulas

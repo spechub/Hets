@@ -159,12 +159,6 @@ coerceFreeDefMorphism ::
    Logic  lid2 sublogics2 basic_spec2 sentence2 symb_items2 symb_map_items2
                 sign2 morphism2 symbol2 raw_symbol2 proof_tree2,
    Monad m) => lid1 -> lid2 -> String 
-                -> FreeDefMorphism morphism1 
-                -> m (FreeDefMorphism morphism2)
-coerceFreeDefMorphism l1 l2 msg freedef = do
-  f <- coerceMorphism l1 l2 msg $ freeDefMorphism freedef
-  p <- coerceMorphism l1 l2 msg $ pathFromFreeDef freedef
-  let c = isCofree freedef
-  return FreeDefMorphism { freeDefMorphism = f,
-                           pathFromFreeDef = p,
-                           isCofree = c }
+                -> FreeDefMorphism sentence1 morphism1 
+                -> m (FreeDefMorphism sentence2 morphism2)
+coerceFreeDefMorphism l1 l2 msg freedef = primCoerce l1 l2 msg freedef

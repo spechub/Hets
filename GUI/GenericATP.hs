@@ -334,7 +334,7 @@ genericATPgui :: (Ord proof_tree, Ord sentence)
               -> String -- ^ theory name
               -> Theory sign sentence proof_tree -- ^ theory consisting of a
                  -- signature and a list of Named sentence
-              -> [FreeDefMorphism mor] -- ^ freeness constraints
+              -> [FreeDefMorphism sentence mor] -- ^ freeness constraints
               -> proof_tree -- ^ initial empty proof_tree
               -> IO([Proof_status proof_tree]) -- ^ proof status for each goal
 genericATPgui atpFun isExtraOptions prName thName th freedefs pt = do

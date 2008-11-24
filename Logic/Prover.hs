@@ -239,36 +239,37 @@ goalUsedInProof pst = case goalStatus pst of
 data ProverKind = ProveGUI | ProveCMDLautomatic | ProveCMDLinteractive
 
 -- | determine if a prover kind is implemented
-hasProverKind :: ProverKind -> ProverTemplate x m y z -> Bool
+hasProverKind :: ProverKind -> ProverTemplate x s m y z -> Bool
 hasProverKind pk pt = case pk of
     ProveGUI -> isJust $ proveGUI pt
     ProveCMDLautomatic ->
         isJust (proveCMDLautomatic pt) && isJust (proveCMDLautomaticBatch pt)
     ProveCMDLinteractive -> isJust $ proveCMDLinteractive pt
 
-data FreeDefMorphism morphism = FreeDefMorphism
+data FreeDefMorphism sentence morphism = FreeDefMorphism
   { freeDefMorphism :: morphism
   , pathFromFreeDef :: morphism
+  , freeTheory :: [AS_Anno.Named sentence]
   , isCofree :: Bool }
   deriving (Eq, Show)
 
 -- | prover or consistency checker
-data ProverTemplate theory morphism sublogics proof_tree = Prover
+data ProverTemplate theory sentence morphism sublogics proof_tree = Prover
     { prover_name :: String,
       prover_sublogic :: sublogics,
-      proveGUI :: Maybe (String -> theory -> [FreeDefMorphism morphism]
+      proveGUI :: Maybe (String -> theory -> [FreeDefMorphism sentence morphism]
                          -> IO ([Proof_status proof_tree])),
       -- input: imported theories, theory name, theory (incl. goals)
       -- output: proof status for goals and lemmas
       proveCMDLautomatic :: Maybe (String -> Tactic_script
-                         -> theory -> [FreeDefMorphism morphism] 
+                         -> theory -> [FreeDefMorphism sentence morphism] 
                          ->IO (Result ([Proof_status proof_tree]))),
       -- blocks until a result is determined
       -- input: theory name, Tactic_script,
       --        theory (incl. goals, but only the first one is tried)
       -- output: proof status for goals and lemmas
       proveCMDLinteractive :: Maybe (String -> Tactic_script
-                         -> theory -> [FreeDefMorphism morphism] -> IO (Result ([Proof_status proof_tree]))),
+                         -> theory -> [FreeDefMorphism sentence morphism] -> IO (Result ([Proof_status proof_tree]))),
       -- input, output: see above
       proveCMDLautomaticBatch ::
           Maybe (Bool -- 1.
@@ -277,7 +278,7 @@ data ProverTemplate theory morphism sublogics proof_tree = Prover
                  -> String -- 4.
                  -> Tactic_script  -- 5.
                  -> theory  -- 6.
-                 -> [FreeDefMorphism morphism]
+                 -> [FreeDefMorphism sentence morphism]
                  -> IO (Concurrent.ThreadId,Concurrent.MVar ())) -- output
       -- input: 1. True means include proven theorems in subsequent
       --           proof attempts;
@@ -295,11 +296,11 @@ data ProverTemplate theory morphism sublogics proof_tree = Prover
     } deriving Typeable
 
 type Prover sign sentence morphism sublogics proof_tree =
-  ProverTemplate (Theory sign sentence proof_tree) morphism sublogics proof_tree
+  ProverTemplate (Theory sign sentence proof_tree) sentence morphism sublogics proof_tree
 
 mkProverTemplate :: String -> sublogics
-                 -> (String -> theory -> [FreeDefMorphism morphism] -> IO ([Proof_status proof_tree]))
-                 -> ProverTemplate theory morphism sublogics proof_tree
+                 -> (String -> theory -> [FreeDefMorphism sentence morphism] -> IO ([Proof_status proof_tree]))
+                 -> ProverTemplate theory sentence morphism sublogics proof_tree
 mkProverTemplate str sl fct = Prover
     { prover_name = str
     , prover_sublogic = sl
@@ -310,4 +311,4 @@ mkProverTemplate str sl fct = Prover
 
 type ConsChecker sign sentence sublogics morphism proof_tree =
     ProverTemplate (TheoryMorphism sign sentence morphism proof_tree)
-        morphism sublogics proof_tree
+        sentence morphism sublogics proof_tree

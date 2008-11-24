@@ -36,6 +36,7 @@ import Common.ExtSign
 import Common.LibName
 import Common.Result
 import Common.ResultT
+import Common.AS_Annotation
 
 import Control.Monad.Trans
 
@@ -66,44 +67,51 @@ getCFreeDefLinks dg tgt =
       myfilter p = filter ( \ ((_, _, lbl) : _) -> p $ dgl_type lbl)
   in (myfilter isFreeEdge paths, myfilter isCofreeEdge paths)
 
-mkFreeDefMor :: morphism -> morphism -> FreeDefMorphism morphism
-mkFreeDefMor m1 m2 = FreeDefMorphism
+mkFreeDefMor :: [Named sentence] -> morphism -> morphism 
+                -> FreeDefMorphism sentence morphism
+mkFreeDefMor sens m1 m2 = FreeDefMorphism
   { freeDefMorphism = m1
   , pathFromFreeDef = m2
+  , freeTheory = sens
   , isCofree = False }
 
 getFreeDefMorphism :: Logic lid sublogics
          basic_spec sentence symb_items symb_map_items
           sign morphism symbol raw_symbol proof_tree =>
-   lid -> DGraph -> [LEdge DGLinkLab] -> Maybe (FreeDefMorphism morphism)
-getFreeDefMorphism lid dg path = case path of
+   lid -> LibEnv -> LIB_NAME -> DGraph -> [LEdge DGLinkLab] 
+   -> Maybe (FreeDefMorphism sentence morphism)
+getFreeDefMorphism lid libEnv ln dg path = case path of
   [] -> error "getFreeDefMorphism"
-  (_, t, l) : rp -> do
+  (s, t, l) : rp -> do
     gmor@(GMorphism cid _ _ fmor _) <- return $ dgl_morphism l
+    (_,(G_theory lidth (ExtSign sign _) _ axs _)) <-
+       resultToMaybe $ computeTheory False libEnv ln s
     if isHomogeneous gmor then do
         cfmor <- coerceMorphism (targetLogic cid) lid "getFreeDefMorphism1" fmor
+        sens <- coerceSens lidth lid "getFreeDefMorphism4" (toNamedList axs)
         case rp of
           [] -> do
             G_theory lid2 (ExtSign sig _) _ _ _ <-
                      return $ dgn_theory $ labDG dg t
             sig2 <- coercePlainSign lid2 lid "getFreeDefMorphism2" sig
-            return $ mkFreeDefMor cfmor $ ide sig2
+            return $ mkFreeDefMor sens cfmor $ ide sig2
           _ -> do
             pm@(GMorphism cid2 _ _ pmor _) <- calculateMorphismOfPath rp
             if isHomogeneous pm then do
                 cpmor <- coerceMorphism (targetLogic cid2) lid
                          "getFreeDefMorphism3" pmor
-                return $ mkFreeDefMor cfmor cpmor
+                return $ mkFreeDefMor sens cfmor cpmor
               else Nothing
       else Nothing
 
 getCFreeDefMorphs :: Logic lid sublogics
          basic_spec sentence symb_items symb_map_items
           sign morphism symbol raw_symbol proof_tree =>
-   lid -> DGraph -> Node  -> [FreeDefMorphism morphism]
-getCFreeDefMorphs lid dg node = let
+   lid -> LibEnv -> LIB_NAME -> DGraph -> Node  
+   -> [FreeDefMorphism sentence morphism]
+getCFreeDefMorphs lid libEnv ln dg node = let
   (frees, cofrees) = getCFreeDefLinks dg node
-  myget = catMaybes . map (getFreeDefMorphism lid dg)
+  myget = catMaybes . map (getFreeDefMorphism lid libEnv ln dg)
   mkCoFree m = m { isCofree = True }
   in myget frees ++ map mkCoFree (myget cofrees)
 
@@ -125,7 +133,7 @@ cons_check :: Logic lid sublogics
               sign morphism symbol raw_symbol proof_tree
            => lid -> ConsChecker sign sentence sublogics morphism proof_tree
            -> String -> TheoryMorphism sign sentence morphism proof_tree
-           -> [FreeDefMorphism morphism]
+           -> [FreeDefMorphism sentence morphism]
            -> IO([Proof_status proof_tree])
 cons_check _ c =
     maybe (\ _ _ -> fail "proveGUI not implemented") id (proveGUI c)
@@ -135,7 +143,7 @@ proveTheory :: Logic lid sublogics
               sign morphism symbol raw_symbol proof_tree
            => lid -> Prover sign sentence morphism sublogics proof_tree
            -> String -> Theory sign sentence proof_tree
-           -> [FreeDefMorphism morphism]
+           -> [FreeDefMorphism sentence morphism]
            -> IO([Proof_status proof_tree])
 proveTheory _ p =
     maybe (\ _ _ -> fail "proveGUI not implemented") id (proveGUI p)
@@ -175,7 +183,7 @@ basicInferenceNode checkCons lg (ln, node) libname guiMVar libEnv ch = do
                         t_morphism = incl }
             cc' <- coerceConsChecker lid4 lidT "" cc
             pts <- lift $ cons_check lidT cc' thName mor
-              $ getCFreeDefMorphs lidT dGraph node
+              $ getCFreeDefMorphs lidT libEnv' ln dGraph node
             let resT = case pts of
                   [pt] -> case goalStatus pt of
                     Proved (Just True) -> let
@@ -198,7 +206,7 @@ basicInferenceNode checkCons lg (ln, node) libname guiMVar libEnv ch = do
           2. Add it to definition of ProverTemplate
           3. Implement it with BasicInference to avoid GUI stuff
           4. Add it to definition of IsaProve -}
-            let freedefs = getCFreeDefMorphs lid1 dGraph node
+            let freedefs = getCFreeDefMorphs lid1 libEnv' ln dGraph node
             kpMap <- liftR $ knownProversGUI
             newTh <- ResultT $
                    proofManagementGUI lid1 ProofActions {
@@ -279,7 +287,7 @@ basicInferenceSubTree checkCons lg (ln, node) guiMVar ch libEnv = do
                         t_morphism = incl }
             cc' <- coerceConsChecker lid4 lidT "" cc
             pts <- lift $ cons_check lidT cc' thName mor
-              $ getCFreeDefMorphs lidT f_dGraph node
+              $ getCFreeDefMorphs lidT f_libEnv ln f_dGraph node
             let resT = case pts of
                   [pt] -> case goalStatus pt of
                     Proved (Just True) -> let
@@ -295,7 +303,7 @@ basicInferenceSubTree checkCons lg (ln, node) guiMVar ch libEnv = do
             return (f_libEnv, resT)
           else do -- proving
             -- get known Provers
-            let freedefs = getCFreeDefMorphs lid1 f_dGraph node
+            let freedefs = getCFreeDefMorphs lid1 f_libEnv ln f_dGraph node
             kpMap <- liftR $ knownProversGUI
             newTh <- ResultT $
                    proofManagementGUI lid1 ProofActions {
@@ -332,7 +340,7 @@ proveKnownPMap :: (Logic lid sublogics1
                raw_symbol1
                proof_tree1) =>
        LogicGraph -> CommandHistory
-    -> [FreeDefMorphism morphism1]
+    -> [FreeDefMorphism sentence morphism1]
     -> ProofState lid sentence -> IO (Result (ProofState lid sentence))
 proveKnownPMap lg ch freedefs st =
     maybe (proveFineGrainedSelect lg ch freedefs st)
@@ -351,7 +359,7 @@ callProver :: (Logic lid sublogics1
                proof_tree1) =>
        ProofState lid sentence
     -> CommandHistory -> Bool -- indicates if a translation was chosen
-    -> [FreeDefMorphism morphism1]
+    -> [FreeDefMorphism sentence morphism1]
     -> (G_prover,AnyComorphism) -> IO (Result (ProofState lid sentence))
 callProver st ch trans_chosen freedefs p_cm@(_,acm) =
        runResultT $ do
@@ -378,7 +386,7 @@ proveFineGrainedSelect ::
                raw_symbol1
                proof_tree1) =>
        LogicGraph -> CommandHistory
-    -> [FreeDefMorphism morphism1]
+    -> [FreeDefMorphism sentence morphism1]
     -> ProofState lid sentence -> IO (Result (ProofState lid sentence))
 proveFineGrainedSelect lg ch freedefs st =
     runResultT $ do

@@ -48,7 +48,7 @@ data SoftFOLProverState = SoftFOLProverState
 spassProverState :: Sign -- ^ SoftFOL signature
                  -> [AS_Anno.Named SPTerm] -- ^ list of named SoftFOL terms
                                            --   containing axioms
-                -> [FreeDefMorphism SoftFOLMorphism] -- ^ freeness constraints
+                -> [FreeDefMorphism SPTerm SoftFOLMorphism] -- ^ freeness constraints
                  -> SoftFOLProverState
 spassProverState sign oSens' _ = SoftFOLProverState{
     initialLogicalPart = foldl insertSentence

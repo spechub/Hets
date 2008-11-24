@@ -94,7 +94,7 @@ mathServBrokerGUI :: String -- ^ theory name
                   -> Theory Sign Sentence ProofTree
                   -- ^ theory consisting of a SoftFOL.Sign.Sign
                   --   and a list of Named SoftFOL.Sign.Sentence
-                  -> [FreeDefMorphism SoftFOLMorphism] -- ^ freeness constraints
+                  -> [FreeDefMorphism SPTerm SoftFOLMorphism] -- ^ freeness constraints
                   -> IO([Proof_status ProofTree])
                      -- ^ proof status for each goal
 mathServBrokerGUI thName th freedefs =
@@ -113,7 +113,7 @@ mathServBrokerCMDLautomatic ::
         -> Tactic_script -- ^ default tactic script
         -> Theory Sign Sentence ProofTree
            -- ^ theory consisting of a signature and a list of Named sentence
-        -> [FreeDefMorphism SoftFOLMorphism] -- ^ freeness constraints
+        -> [FreeDefMorphism SPTerm SoftFOLMorphism] -- ^ freeness constraints
         -> IO (Result.Result ([Proof_status ProofTree]))
            -- ^ Proof status for goals and lemmas
 mathServBrokerCMDLautomatic thName defTS th freedefs =
@@ -134,7 +134,7 @@ mathServBrokerCMDLautomaticBatch ::
         -> Tactic_script -- ^ default tactic script
         -> Theory Sign Sentence ProofTree -- ^ theory consisting of a
            --   'SoftFOL.Sign.Sign' and a list of Named 'SoftFOL.Sign.Sentence'
-        -> [FreeDefMorphism SoftFOLMorphism] -- ^ freeness constraints
+        -> [FreeDefMorphism SPTerm SoftFOLMorphism] -- ^ freeness constraints
         -> IO (Concurrent.ThreadId,Concurrent.MVar ())
            -- ^ fst: identifier of the batch thread for killing it
            --   snd: MVar to wait for the end of the thread

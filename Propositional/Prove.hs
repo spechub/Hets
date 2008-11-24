@@ -90,7 +90,7 @@ propConsChecker = LP.mkProverTemplate zchaffS top consCheck
 
 consCheck :: String -> LP.TheoryMorphism Sig.Sign AS_BASIC.FORMULA
              PMorphism.Morphism ProofTree
-          -> [LP.FreeDefMorphism PMorphism.Morphism] -- ^ free definitions
+          -> [LP.FreeDefMorphism AS_BASIC.FORMULA PMorphism.Morphism] -- ^ free definitions
           -> IO([LP.Proof_status ProofTree])
 consCheck thName tm _ =
     case LP.t_target tm of
@@ -164,7 +164,7 @@ consCheck thName tm _ =
 -}
 zchaffProveGUI :: String -- ^ theory name
           -> LP.Theory Sig.Sign AS_BASIC.FORMULA ProofTree
-          -> [LP.FreeDefMorphism PMorphism.Morphism] -- ^ free definitions
+          -> [LP.FreeDefMorphism AS_BASIC.FORMULA PMorphism.Morphism] -- ^ free definitions
           -> IO([LP.Proof_status ProofTree]) -- ^ proof status for each goal
 zchaffProveGUI thName th freedefs =
     genericATPgui (atpFun thName) True (LP.prover_name zchaffProver) thName th
@@ -204,7 +204,7 @@ zchaffProveCMDLautomatic ::
         -> LP.Tactic_script -- ^ default tactic script
         -> LP.Theory Sig.Sign AS_BASIC.FORMULA ProofTree  -- ^ theory consisting of a
                                 -- signature and a list of Named sentence
-        -> [LP.FreeDefMorphism PMorphism.Morphism] -- ^ free definitions
+        -> [LP.FreeDefMorphism AS_BASIC.FORMULA PMorphism.Morphism] -- ^ free definitions
         -> IO (Result.Result ([LP.Proof_status ProofTree]))
            -- ^ Proof status for goals and lemmas
 zchaffProveCMDLautomatic thName defTS th freedefs =
@@ -225,7 +225,7 @@ zchaffProveCMDLautomaticBatch ::
         -> LP.Tactic_script -- ^ default tactic script
         -> LP.Theory Sig.Sign AS_BASIC.FORMULA ProofTree -- ^ theory consisting of a
            --   signature and a list of Named sentences
-        -> [LP.FreeDefMorphism PMorphism.Morphism] -- ^ free definitions
+        -> [LP.FreeDefMorphism AS_BASIC.FORMULA PMorphism.Morphism] -- ^ free definitions
         -> IO (Concurrent.ThreadId,Concurrent.MVar ())
            -- ^ fst: identifier of the batch thread for killing it
            --   snd: MVar to wait for the end of the thread

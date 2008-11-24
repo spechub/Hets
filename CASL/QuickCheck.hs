@@ -569,7 +569,7 @@ quickCheckGUI :: String -- ^ theory name
            -> Theory CASLSign CASLFORMULA ProofTree
            -- ^ theory consisting of a signature
            --   and a list of named sentences
-           -> [FreeDefMorphism CASLMor] -- ^ freeness constraints
+           -> [FreeDefMorphism CASLFORMULA CASLMor] -- ^ freeness constraints
            -> IO([Proof_status ProofTree]) -- ^ proof status for each goal
 quickCheckGUI thName th freedefs = genericATPgui (atpFun thName) True
     (prover_name quickCheckProver) thName th freedefs emptyProofTree
@@ -586,7 +586,7 @@ quickCheckCMDLautomatic ::
         -> Tactic_script -- ^ default tactic script
         -> Theory CASLSign CASLFORMULA ProofTree
            -- ^ theory consisting of a signature and a list of Named sentence
-        -> [FreeDefMorphism CASLMor] -- ^ freeness constraints
+        -> [FreeDefMorphism CASLFORMULA CASLMor] -- ^ freeness constraints
         -> IO (Result.Result ([Proof_status ProofTree]))
            -- ^ Proof status for goals and lemmas
 quickCheckCMDLautomatic thName defTS th freedefs =
@@ -607,7 +607,7 @@ quickCheckCMDLautomaticBatch ::
         -> Tactic_script -- ^ default tactic script
         -> Theory CASLSign CASLFORMULA ProofTree -- ^ theory consisting of a
            --   signature and a list of named sentences
-        -> [FreeDefMorphism CASLMor] -- ^ freeness constraints
+        -> [FreeDefMorphism CASLFORMULA CASLMor] -- ^ freeness constraints
         -> IO (ThreadId,MVar ())
            -- ^ fst: identifier of the batch thread for killing it
            --   snd: MVar to wait for the end of the thread

@@ -72,7 +72,7 @@ data PelletSetting = PelletSetting
 -- * Prover implementation
 pelletProverState :: Sign
                  -> [Named Sentence]
-                 -> [FreeDefMorphism (DefaultMorphism Sign)] -- ^ freeness constraints
+                 -> [FreeDefMorphism Sentence (DefaultMorphism Sign)] -- ^ freeness constraints
                  -> PelletProverState
 pelletProverState sig oSens _ = PelletProverState
          { ontologySign = sig
@@ -128,7 +128,7 @@ insertOWLSentence pps s =
 -}
 pelletGUI :: String -- ^ theory name
            -> Theory Sign Sentence ProofTree
-           -> [FreeDefMorphism (DefaultMorphism Sign)] -- ^ freeness constraints
+           -> [FreeDefMorphism Sentence (DefaultMorphism Sign)] -- ^ freeness constraints
            -> IO([Proof_status ProofTree]) -- ^ proof status for each goal
 pelletGUI thName th freedefs =
     genericATPgui (atpFun thName) True (prover_name pelletProver) thName th
@@ -146,7 +146,7 @@ pelletCMDLautomatic ::
         -> Tactic_script -- ^ default tactic script
         -> Theory Sign Sentence ProofTree
            -- ^ theory consisting of a signature and a list of Named sentence
-        -> [FreeDefMorphism (DefaultMorphism Sign)] -- ^ freeness constraints
+        -> [FreeDefMorphism Sentence (DefaultMorphism Sign)] -- ^ freeness constraints
         -> IO (Result.Result ([Proof_status ProofTree]))
            -- ^ Proof status for goals and lemmas
 pelletCMDLautomatic thName defTS th freedefs =
@@ -167,7 +167,7 @@ pelletCMDLautomaticBatch ::
         -> Tactic_script -- ^ default tactic script
         -> Theory Sign Sentence ProofTree -- ^ theory consisting of a
            --   'SoftFOL.Sign.Sign' and a list of Named 'SoftFOL.Sign.Sentence'
-        -> [FreeDefMorphism (DefaultMorphism Sign)] -- ^ freeness constraints
+        -> [FreeDefMorphism Sentence (DefaultMorphism Sign)] -- ^ freeness constraints
         -> IO (Concurrent.ThreadId,Concurrent.MVar ())
            -- ^ fst: identifier of the batch thread for killing it
            --   snd: MVar to wait for the end of the thread
@@ -229,7 +229,7 @@ getEnvSec s = getEnvDef s ""
 
 consCheck :: String
           -> TheoryMorphism Sign Sentence (DefaultMorphism Sign) ProofTree
-          -> [FreeDefMorphism (DefaultMorphism Sign)] -- ^ freeness constraints
+          -> [FreeDefMorphism Sentence (DefaultMorphism Sign)] -- ^ freeness constraints
           -> IO([Proof_status ProofTree])
 consCheck thName tm freedefs =
     case t_target tm of

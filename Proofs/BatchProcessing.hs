@@ -254,7 +254,7 @@ genericCMDLautomatic ::
         -> ATPTactic_script -- ^ default prover specific tactic script
         -> Theory sign sentence proof_tree
            -- ^ theory consisting of a signature and a list of Named sentence
-        -> [FreeDefMorphism morphism] -- ^ freeness constraints
+        -> [FreeDefMorphism sentence morphism] -- ^ freeness constraints
         -> proof_tree -- ^ initial empty proof_tree
         -> IO (Result ([Proof_status proof_tree]))
            -- ^ proof status for goals and lemmas
@@ -307,7 +307,7 @@ genericCMDLautomaticBatch ::
         -> ATPTactic_script -- ^ default prover specific tactic script
         -> Theory sign sentence proof_tree
            -- ^ theory consisting of a signature and a list of Named sentence
-        -> [FreeDefMorphism mor] -- ^ freeness constraints
+        -> [FreeDefMorphism sentence mor] -- ^ freeness constraints
         -> proof_tree -- ^ initial empty proof_tree
         -> IO (Conc.ThreadId,Conc.MVar ())
            -- ^ fst: identifier of the batch thread for killing it
