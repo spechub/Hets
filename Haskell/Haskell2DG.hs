@@ -32,7 +32,6 @@ import Logic.Grothendieck
 
 import Static.GTheory
 import Static.DevGraph
-import Driver.WriteFn
 import Driver.Options
 
 anaHaskellFile :: HetcatsOpts -> FilePath -> IO (Maybe (LIB_NAME, LibEnv))
@@ -48,7 +47,7 @@ anaHaskellFile opts file = do
            putIfVerbose opts 0 $ unlines $ map show es
            return Nothing
          Result _ (Just (_, sig, sens)) -> do
-          let (bas, dir, _) = fileparse downloadExtensions file
+          let (bas, _, _) = fileparse downloadExtensions file
               mName = mkSimpleId bas
               name = makeName $ mName
               node_contents = newNodeLab name DGBasic
@@ -66,5 +65,4 @@ anaHaskellFile opts file = do
                           nodeSig
               dg2 = dg1 { globalEnv = gEnv }
               libEnv = Map.singleton ln dg2
-          writeSpecFiles opts (pathAndBase dir moduleS) libEnv ln dg2
           return $ Just (ln, libEnv)

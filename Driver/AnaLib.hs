@@ -31,7 +31,6 @@ import qualified Common.Lib.SizedList as SizedList
 
 import Driver.Options
 import Driver.ReadFn
-import Driver.WriteFn
 
 import qualified Data.Map as Map
 import Data.List (isSuffixOf)
@@ -48,7 +47,6 @@ anaLibReadPrfs opts file = do
       Nothing -> return Nothing
       Just (ln, libEnv) -> do
         nEnv <- readPrfFiles opts libEnv
-        writeSpecFiles (removePrfOut opts) file nEnv ln $ lookupDGraph ln nEnv
         return $ Just (ln, nEnv)
 
 -- | lookup an env or read and analyze a file
@@ -74,7 +72,6 @@ anaLibExt opts file libEnv = do
         Nothing -> return Nothing
         Just (ln, lenv) -> do
             let nEnv = if hasPrfOut opts then automatic ln lenv else lenv
-            writeSpecFiles opts file nEnv ln $ lookupDGraph ln nEnv
             return $ Just (ln, nEnv)
 
 readPrfFile :: HetcatsOpts -> LibEnv -> LIB_NAME -> IO LibEnv

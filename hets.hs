@@ -21,6 +21,9 @@ import System.Environment (getArgs)
 
 import Driver.Options
 import Driver.AnaLib
+import Driver.WriteFn
+
+import Static.DevGraph
 
 #ifndef NOOWLLOGIC
 import OWL.OWLAnalysis
@@ -94,6 +97,9 @@ processFile opts file = do
         return Nothing
 #endif
       _ -> anaLib opts file
+    case res of
+      Just (ln, nEnv) -> writeSpecFiles opts file nEnv ln $ lookupDGraph ln nEnv
+      _ -> return ()
     case guiType opts of
       NoGui -> return ()
       UseGui -> do

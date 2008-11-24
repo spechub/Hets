@@ -78,10 +78,7 @@ import qualified OMDoc.OMDocXml as OMDocXML
 
 import qualified OMDoc.Util as Util
 
-import Driver.WriteFn (writeSpecFiles)
-
 import qualified System.Directory as System.Directory
-
 import qualified Data.Char as Char
 
 {- |
@@ -98,10 +95,9 @@ mLibEnvFromOMDocFile hco file =
   Control.Exception.catch
     (
       do
-        (ln, dg, lenv) <- libEnvFromOMDocFile
+        (ln, _, lenv) <- libEnvFromOMDocFile
           (emptyGlobalOptions { hetsOpts = hco })
           file
-        writeSpecFiles hco file lenv ln dg
         return (Just (ln, lenv))
     )
     (\_ -> putIfVerbose hco 0 "Error loading OMDoc!" >> return Nothing)
