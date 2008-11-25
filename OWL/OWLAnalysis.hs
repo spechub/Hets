@@ -164,12 +164,13 @@ structureAna file opt ontoMap =
 -- simpleLibEnv and simpleLibName builded two simple lib-entities for
 -- showGraph
 simpleLibEnv :: FilePath -> DGraph -> LibEnv
-simpleLibEnv filename dg =
-    Map.singleton (simpleLibName filename) dg
+simpleLibEnv filename dg = let
+  minNode = minimum $ nodesDG dg
+  nodeSig = NodeSig minNode $ signOf $ dgn_theory $ labDG dg minNode
+  g_sign = G_sign OWL (mkExtSign emptySign) startSigId
+  in Map.singleton (simpleLibName filename) dg
            { globalEnv = Map.singleton (mkSimpleId "")
-                (SpecEntry (ExtGenSig (JustNode nodeSig) [] g_sign nodeSig))}
-       where nodeSig = NodeSig 0 g_sign
-             g_sign = G_sign OWL (mkExtSign emptySign) startSigId
+              (SpecEntry (ExtGenSig (EmptyNode $ Logic OWL) [] g_sign nodeSig))}
 
 simpleLibName :: FilePath -> LIB_NAME
 simpleLibName s = Lib_id $ Direct_link ("library_" ++ s) nullRange

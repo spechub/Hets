@@ -18,7 +18,6 @@ import Control.Monad
 import Text.ParserCombinators.Parsec
 import Text.PrettyPrint.HughesPJ (render)
 import Data.List (partition, (\\))
-import Data.Graph.Inductive.Graph as Graph
 
 import Common.AS_Annotation
 import Common.Id
@@ -214,7 +213,7 @@ modelSparQCheck opts gTh@(G_theory lid (ExtSign sign0 _) _ sens0 _) i =
 writeTheoryFiles :: HetcatsOpts -> [OutType] -> FilePath -> LibEnv
                  -> GlobalAnnos -> LIB_NAME -> SIMPLE_ID -> Int -> IO ()
 writeTheoryFiles opts specOutTypes filePrefix lenv ga ln i n =
-    unless (maybe True isDGRef $ lab (dgBody $ lookupDGraph ln lenv) n) $
+    unless (isDGRef $ labDG (lookupDGraph ln lenv) n) $
     case computeTheory False lenv ln n of
           Result ds Nothing -> do
                  putIfVerbose opts 0 $ "could not compute theory of spec "
