@@ -480,12 +480,15 @@ annotation = do
 
 optAnnos :: CharParser st a -> CharParser st ([Annotation], a)
 optAnnos p = do
-  as <- option [] annotations
+  as <- annotations
   a <- p
   return (as, a)
 
 annotations :: CharParser st [Annotation]
-annotations = do
+annotations = option [] realAnnotations
+
+realAnnotations :: CharParser st [Annotation]
+realAnnotations = do
   pkeyword annotationsC
   as <- sepByComma $ optAnnos annotation
   return $ map snd as -- annoted annotations not supported yet
@@ -500,7 +503,7 @@ equivOrDisjoint = choice
 
 entityAnnos :: QName -> EntityType -> CharParser st [Axiom]
 entityAnnos qn ty = do
-    as <- annotations
+    as <- realAnnotations
     return [PlainAxiom as $ Declaration $ Entity ty qn]
 
 classFrameBit :: QName -> CharParser st [Axiom]
@@ -585,7 +588,7 @@ objectFrameBit ouri = let opExp = OpURI ouri in do
       $ InverseObjectProperties opExp i) ds
   <|> do
     pkeyword subPropertyChainC
-    as <- option [] annotations
+    as <- annotations
     os <- sepBy1 objectPropertyExpr (keyword oS)
     return [PlainAxiom as
       $ SubObjectPropertyOf (SubObjectPropertyChain os) opExp]
@@ -726,7 +729,7 @@ basicSpec = do
   nss <- many nsEntry
   option () $ pkeyword ontologyC >> uriP >> return ()
   many importEntry
-  many annotations
+  many realAnnotations
   as <- frames
   return emptyOntologyFile
     { ontology = emptyOntology

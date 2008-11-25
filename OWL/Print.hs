@@ -45,9 +45,6 @@ printSign s =
    in vcat (map (\ (c, l) -> text $ namespaceC ++" " ++ c ++ " <" ++ l ++">")
            $ Map.toList $ namespaceMap s)
    $++$ text ontologyC <+> pon
-   $++$ vcat (map (\ d -> text (annotationsC ++ " data-entity")
-                   <+> printEntity (Entity Datatype d))
-             $ Set.toList $ datatypes s)
    $++$ vcat (map (\ c -> classStart <+> pretty c) $ Set.toList ps)
    $++$ vcat (map (\ c -> classStart <+> pretty c) $ Set.toList ds)
    $++$ vcat (map (\ o -> opStart <+> pretty o) $ Set.toList $ indValuedRoles s)
@@ -140,7 +137,7 @@ instance Pretty Constant where
     pretty (Constant lexi ty) =
      text (if take 1 lexi == "\"" then lexi else show lexi) <> case ty of
       Typed u -> text cTypeS <> pretty u
-      Untyped tag -> text asP <> text tag
+      Untyped tag -> if null tag then empty else text asP <> text tag
 
 instance Pretty Sentence where
     pretty = printSentence
@@ -173,9 +170,6 @@ printAssertion (Assertion a p s b) = indStart <+> pretty s $+$
    text factsC <+> case p of
      Positive -> d
      Negative -> text notS <+> parens d
-
-printEntity :: Entity -> Doc
-printEntity (Entity ty u) = text (show ty) <> parens (pretty u)
 
 printAxiom :: Axiom -> Doc
 printAxiom axiom = case axiom of
