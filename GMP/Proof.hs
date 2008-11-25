@@ -6,8 +6,8 @@ import Data.List (delete, intersect, nub)
 -- data type for fomulas
 data Form = Var Int --Var Char (Maybe Int)  -- variables
           | Not !Form             -- ¬A
-	        | Box !Form             -- [] A
-	        | Conj !Form !Form      -- A/\B
+          | Box !Form             -- [] A
+          | Conj !Form !Form      -- A/\B
   deriving (Eq)
 
 type Sequent =  [Form]     -- defines a sequent
@@ -108,7 +108,7 @@ conj (as) = [ [ (p: delete f as) , ( q: delete f as )] | f@(Conj p q ) <- as]
 boxI :: Sequent -> [[Sequent]]
 boxI (xs) = let as = [ (Not p) | (Not(Box p)) <- xs]
             in [ [ p:as] | (Box p) <- xs ]  ++
-						   [ [ (Not q):delete g xs] | g@(Not (Box q)) <- xs ] -- T rule
+                                                   [ [ (Not q):delete g xs] | g@(Not (Box q)) <- xs ] -- T rule
 tRule :: Sequent -> [[ Sequent ]]
 tRule (xs) = [ [ (Not p):delete f xs] | f@(Not (Box p)) <- xs ] -- T rule
 
@@ -157,7 +157,7 @@ level 0 = [var 0, var 1, neg $ var 0, neg $ var 1 ]
 level n = let pbox = map box [ x | i <- [0 .. (n-1)], x <- (level i)]
               nbox = map (neg . box)  [ x | i <- [0 .. (n-1)], x <- (level i)]
           in
-					pbox ++ nbox ++ [ p /\ q | p <- pbox, q <- nbox] ++ [neg (p /\ q) | p <- pbox, q <- nbox ]
+                                        pbox ++ nbox ++ [ p /\ q | p <- pbox, q <- nbox] ++ [neg (p /\ q) | p <- pbox, q <- nbox ]
 
 tforms :: [ (Sequent, Sequent) ]
 tforms = [ ([neg a, neg $ box a, b ], [neg $ box a, b])  | a <- level 2, b <- level 2]
@@ -166,6 +166,6 @@ ttest :: [ (Sequent, Sequent) ] -> String
 ttest [] = []
 ttest ( (s1, s2):as ) =
   let s1p = (sprovable s1) ;
-	    s2p = (sprovable s2)
+            s2p = (sprovable s2)
   in if (s1p /= s2p) then "GOTCHA: " ++ (show s1) ++ (show s2) ++ "<"
-	                   else "*" ++ (ttest as)
+                           else "*" ++ (ttest as)
