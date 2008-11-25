@@ -267,7 +267,7 @@ runAllTests = do
 runTest :: (String
             -> LProver.Tactic_script
             -> LProver.Theory Sign Sentence ProofTree
-            -> [LProver.FreeDefMorphism SoftFOLMorphism]
+            -> [LProver.FreeDefMorphism Sentence SoftFOLMorphism]
             -> IO (Result ([LProver.Proof_status ProofTree]))
            )
         -> String -- ^ prover name for proof status in case of error
@@ -303,7 +303,7 @@ runTestBatch :: Maybe Int -- ^ seconds to pass before thread will be killed
                   -> String
                   -> LProver.Tactic_script
                   -> LProver.Theory Sign Sentence ProofTree
-                  -> [LProver.FreeDefMorphism SoftFOLMorphism]
+                  -> [LProver.FreeDefMorphism Sentence SoftFOLMorphism]
                   -> IO (Concurrent.ThreadId,Concurrent.MVar ())
                  )
               -> String -- ^ prover name
@@ -326,7 +326,7 @@ runTestBatch2 :: Bool -- ^ True means try to read intermediate results
                   -> String
                   -> LProver.Tactic_script
                   -> LProver.Theory Sign Sentence ProofTree
-                  -> [LProver.FreeDefMorphism SoftFOLMorphism]
+                  -> [LProver.FreeDefMorphism Sentence SoftFOLMorphism]
                   -> IO (Concurrent.ThreadId,Concurrent.MVar ())
                  )
               -> String -- ^ prover name
