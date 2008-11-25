@@ -627,24 +627,24 @@ createTypedVarOM sort varname =
 
 findOriginId ::SORT ->(Maybe OMDoc.OMDocRef, OMDoc.XmlId, OMDoc.XmlId)
 findOriginId
-	(Id.Id ts cs _)
-	=
+        (Id.Id ts cs _)
+        =
   let
-  	(uName', origin', cdbase') =
-  		case ts of
-    		[t] | Id.tokStr t == "gnOMS" ->
-      			case cs of
-              		[uName, origin, cdbase] ->
-                  		((show uName), (show origin), (show cdbase))
-              		[uName,  origin] -> ((show uName), (show origin), "")
-               		_ -> error "unexptected predicate name"
-    		_ -> error ""
-  	
-  	cdbase''=URI.parseURI cdbase'
+        (uName', origin', cdbase') =
+                case ts of
+                [t] | Id.tokStr t == "gnOMS" ->
+                        case cs of
+                        [uName, origin, cdbase] ->
+                                ((show uName), (show origin), (show cdbase))
+                        [uName,  origin] -> ((show uName), (show origin), "")
+                        _ -> error "unexptected predicate name"
+                _ -> error ""
+
+        cdbase''=URI.parseURI cdbase'
     --origin=origin'
-  	xmlid=adjustStringForXmlName uName'		
+        xmlid=adjustStringForXmlName uName'
   in
-  	(cdbase'', origin', xmlid)
+        (cdbase'', origin', xmlid)
 
 
 
@@ -675,28 +675,28 @@ createATPOM sort =
 
 -- | create an XML-representation of a 'SORT'.
 createSymbolForSortOM::
-	SORT -- ^ sort to represent
+        SORT -- ^ sort to represent
   ->OMDoc.OMSymbol
 createSymbolForSortOM
   s
   =
   let
-  	(sortbase, sortorigin, sortxmlid) = findOriginId s
+        (sortbase, sortorigin, sortxmlid) = findOriginId s
   in
-  	OMDoc.mkOMS sortbase sortorigin sortxmlid
-  	
+        OMDoc.mkOMS sortbase sortorigin sortxmlid
+
 -- | create an xml-representation for a predication
 createSymbolForPredicationOM::
-	SORT
-	->OMDoc.OMSymbol
+        SORT
+        ->OMDoc.OMSymbol
 createSymbolForPredicationOM
-	s
-	=
+        s
+        =
   let
-  	(predbase, predorigin, predxmlid) =
-  		findOriginId s
+        (predbase, predorigin, predxmlid) =
+                findOriginId s
   in
-  	OMDoc.mkOMS predbase predorigin predxmlid	
+        OMDoc.mkOMS predbase predorigin predxmlid
 
 
 -- | transform a list of variable declarations
