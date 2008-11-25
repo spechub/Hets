@@ -12,7 +12,7 @@ Portability :  non-portable(DevGraph)
 Writing various formats, according to Hets options
 -}
 
-module Driver.WriteFn where
+module Driver.WriteFn (writeSpecFiles) where
 
 import Control.Monad
 import Text.ParserCombinators.Parsec
@@ -96,13 +96,7 @@ writeLibEnv opts filePrefix lenv ln ot =
 #endif
       GraphOut (Dot showInternalNodeLabels) -> writeVerbFile opts f
         $ dotGraph showInternalNodeLabels dg
-      _ -> do
-        doDump opts "PrintStat" $ putStrLn $ printStatistics dg
-        doDump opts "DGraph" $ putStrLn $ showDoc dg ""
-        doDump opts "LogicGraph" $ putStrLn $ showDoc logicGraph ""
-        doDump opts "LibEnv" $
-               writeVerbFile opts (filePrefix ++ ".lenv") $
-                    shows (DG.prettyLibEnv lenv) "\n"
+      _ -> return ()
 
 writeSoftFOL :: HetcatsOpts -> FilePath -> G_theory -> LIB_NAME -> SIMPLE_ID
              -> SPFType -> Int -> String -> IO ()
@@ -284,3 +278,9 @@ writeSpecFiles opts file lenv ln dg = do
             SpecEntry (ExtGenSig _ _ _ (NodeSig n _)) -> n : l
             _ -> l) [] gctx
     doDump opts "GlobalAnnos" $ putStrLn $ showGlobalDoc ga ga ""
+    doDump opts "PrintStat" $ putStrLn $ printStatistics dg
+    doDump opts "DGraph" $ putStrLn $ showDoc dg ""
+    doDump opts "LogicGraph" $ putStrLn $ showDoc logicGraph ""
+    doDump opts "LibEnv" $
+               writeVerbFile opts (filePrefix ++ ".lenv") $
+                    shows (DG.prettyLibEnv lenv) "\n"
