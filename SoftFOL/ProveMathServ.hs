@@ -98,7 +98,7 @@ mathServBrokerGUI :: String -- ^ theory name
                   -> IO([Proof_status ProofTree])
                      -- ^ proof status for each goal
 mathServBrokerGUI thName th freedefs =
-    genericATPgui (atpFun thName) False (prover_name mathServBroker) thName th 
+    genericATPgui (atpFun thName) False (prover_name mathServBroker) thName th
                   freedefs emptyProofTree
 
 -- ** command line functions

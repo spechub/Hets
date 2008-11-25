@@ -388,15 +388,15 @@ inducedFromToMorphism imap (ExtSign sig _) (ExtSign tSig _) =
 
 signatureColimit :: Gr Sign.Sign (Int, Morphism.Morphism)
                  -> Result.Result (Sign.Sign, Map.Map Int Morphism.Morphism)
-signatureColimit graph = do 
+signatureColimit graph = do
  let graph1 = nmap Sign.items $ emap (\(x,y) -> (x, Morphism.propMap y)) graph
      (set, maps) = renameSorts $ computeColimitSet graph1
      cSig = Sign.Sign{Sign.items = set}
- return (cSig, 
-         Map.fromList $ map (\(i, n) -> 
+ return (cSig,
+         Map.fromList $ map (\(i, n) ->
                               (i, Morphism.Morphism{
-                                    Morphism.source = n, 
+                                    Morphism.source = n,
                                     Morphism.target = cSig,
                                     Morphism.propMap = maps Map.! i
-                                  }))$ labNodes graph) 
-  
+                                  }))$ labNodes graph)
+

@@ -77,7 +77,7 @@ instance Syntax Temporal
 
 -- | Instance of Logic for propositional logc
 instance Logic Temporal
-    ()                                  -- Sublogics 
+    ()                                  -- Sublogics
     AS_BASIC.BASIC_SPEC                 -- basic_spec
     AS_BASIC.FORMULA                    -- sentence
     ()                                  -- symb_items
@@ -189,7 +189,7 @@ instance Syntax Temporal AS_BASIC.BASIC_SPEC () () where
 -- | Instance of Logic for propositional logc
 instance Logic Temporal
       -- erstmal (), spaeter Datentyp fuer Sublogiken
-    Sublogic.PropSL                    -- Sublogics 
+    Sublogic.PropSL                    -- Sublogics
     AS_BASIC.BASIC_SPEC                -- basic_spec
     AS_BASIC.FORMULA                   -- sentence
     ()                -- symb_items

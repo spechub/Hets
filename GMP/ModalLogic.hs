@@ -13,7 +13,7 @@ module ModalLogic where
 import qualified Data.Map as Map
 
 -- | Datatype for holding modal formulae of a certain type
-data Boole a = F | T | Not (Boole a) | And (Boole a) (Boole a) | At a 
+data Boole a = F | T | Not (Boole a) | And (Boole a) (Boole a) | At a
   deriving (Eq, Ord, Show)
 
 -- | Datatype for a modal formulae of type "l" wrapped under K modal logic
@@ -48,7 +48,7 @@ class Logic a b | a -> b, b -> a where
 
 -- | Logic instance for K modal logic
 instance Logic K RK where
-  match ((Implies n p)::Clause (K c)) = 
+  match ((Implies n p)::Clause (K c)) =
     let i = length n; cStrip (K x) = x
         substHead = (i+1,cStrip(head p))
         substTail = zip [1..i] (map cStrip n)
@@ -57,7 +57,7 @@ instance Logic K RK where
   subclauses (Implies n p) = [Implies n [l] | l <- p]
 -- | Logic instance for KD modal logic
 instance Logic KD RKD where
-  match ((Implies n p):: Clause (KD c)) = 
+  match ((Implies n p):: Clause (KD c)) =
     let i = length n; cStrip (KD x) = x
         substHead = (i+1,cStrip(head p))
         substTail = zip [1..i] (map cStrip n)

@@ -67,7 +67,7 @@ getCFreeDefLinks dg tgt =
       myfilter p = filter ( \ ((_, _, lbl) : _) -> p $ dgl_type lbl)
   in (myfilter isFreeEdge paths, myfilter isCofreeEdge paths)
 
-mkFreeDefMor :: [Named sentence] -> morphism -> morphism 
+mkFreeDefMor :: [Named sentence] -> morphism -> morphism
                 -> FreeDefMorphism sentence morphism
 mkFreeDefMor sens m1 m2 = FreeDefMorphism
   { freeDefMorphism = m1
@@ -78,7 +78,7 @@ mkFreeDefMor sens m1 m2 = FreeDefMorphism
 getFreeDefMorphism :: Logic lid sublogics
          basic_spec sentence symb_items symb_map_items
           sign morphism symbol raw_symbol proof_tree =>
-   lid -> LibEnv -> LIB_NAME -> DGraph -> [LEdge DGLinkLab] 
+   lid -> LibEnv -> LIB_NAME -> DGraph -> [LEdge DGLinkLab]
    -> Maybe (FreeDefMorphism sentence morphism)
 getFreeDefMorphism lid libEnv ln dg path = case path of
   [] -> error "getFreeDefMorphism"
@@ -107,7 +107,7 @@ getFreeDefMorphism lid libEnv ln dg path = case path of
 getCFreeDefMorphs :: Logic lid sublogics
          basic_spec sentence symb_items symb_map_items
           sign morphism symbol raw_symbol proof_tree =>
-   lid -> LibEnv -> LIB_NAME -> DGraph -> Node  
+   lid -> LibEnv -> LIB_NAME -> DGraph -> Node
    -> [FreeDefMorphism sentence morphism]
 getCFreeDefMorphs lid libEnv ln dg node = let
   (frees, cofrees) = getCFreeDefLinks dg node

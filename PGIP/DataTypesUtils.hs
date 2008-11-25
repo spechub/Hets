@@ -61,46 +61,46 @@ import Logic.Grothendieck
 add2hist :: [UndoRedoElem] -> CMDL_State ->  CMDL_State
 add2hist descr st
  = let intst = add2history (intState st) [] descr
-   in st { 
+   in st {
          intState = intst }
 
 -- | Given a list of selected theory generate an Id comorphism to the
 -- first selected theory
-getIdComorphism :: [Int_NodeInfo] -> Maybe AnyComorphism 
-getIdComorphism ls 
- = case ls of 
+getIdComorphism :: [Int_NodeInfo] -> Maybe AnyComorphism
+getIdComorphism ls
+ = case ls of
     [] -> Nothing
     (Element st _):_ ->
-       case sublogicOfTheory st of 
+       case sublogicOfTheory st of
         (G_sublogics lid sub) -> Just $ Comorphism (mkIdComorphism lid sub)
 
 
 -- | Generates the string containing the prompter
 generatePrompter :: CMDL_State -> String
 generatePrompter st
- = case i_state $ intState st of 
+ = case i_state $ intState st of
     Nothing ->  prompterHead $ prompter st
     Just ist ->
      let pst = prompter st
          els = case elements ist of
                 []  -> []
-                el:[] -> case el of 
-                          Element sm _ ->"."++(theoryName sm) 
-                el:_ -> case el of 
+                el:[] -> case el of
+                          Element sm _ ->"."++(theoryName sm)
+                el:_ -> case el of
                           Element sm _ ->"." ++(theoryName sm)++ ".."
-         cm = case elements ist of 
+         cm = case elements ist of
                [] -> []
-               _-> case cComorphism ist of 
+               _-> case cComorphism ist of
                     Nothing -> []
-                    Just cm' -> 
-                     case getIdComorphism $ elements ist of 
+                    Just cm' ->
+                     case getIdComorphism $ elements ist of
                       Nothing -> []
                       Just ocm ->
                         case cm' == ocm of
                           True -> []
                           False -> "*"
      in (delExtension $ fileLoaded pst) ++ els ++ cm ++ (prompterHead pst)
-                       
+
 
 -- | Given a list of node names and the list of all nodes
 -- the function returns all the nodes that have their name
@@ -120,8 +120,8 @@ obtainGoalNodeList state input ls
 -- | Returns the list of all nodes that are goals,
 -- taking care of the up to date status
 getAllGoalNodes :: CMDL_State ->  [LNode DGNodeLab]
-getAllGoalNodes st 
- = case i_state $ intState st of 
+getAllGoalNodes st
+ = case i_state $ intState st of
     Nothing -> []
     Just ist ->
       filter (\(nb,nd) ->
@@ -148,18 +148,18 @@ getTh :: CMDL_UseTranslation -> Int -> CMDL_State -> Maybe G_theory
 getTh useTrans x st
  = let
     -- compute the theory for a given node
-       fn n = case i_state $ intState st of 
-               Nothing -> Nothing 
+       fn n = case i_state $ intState st of
+               Nothing -> Nothing
                Just ist ->
-                case computeTheory False (i_libEnv ist) (i_ln ist) n of 
-                 Result _ (Just (_, th)) -> Just th 
+                case computeTheory False (i_libEnv ist) (i_ln ist) n of
+                 Result _ (Just (_, th)) -> Just th
                  _                       -> Nothing
-       
+
    in
     case useTrans of
      Dont_translate -> fn x
      Do_translate ->
-      case i_state $ intState st of 
+      case i_state $ intState st of
        Nothing -> Nothing
        Just ist ->
         case elements ist of

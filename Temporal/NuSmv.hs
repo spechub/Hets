@@ -47,7 +47,7 @@ identifier =  liftM2 (:) idFirstChar (many idConsecutiveChar) <?> "identifier"
   where
     idFirstChar =  letter
                <|> char '_'
-        
+
     idConsecutiveChar =  idFirstChar
                      <|> digit
                      <|> char '$'
@@ -176,50 +176,50 @@ basicExpr :: Parser Expr
 basicExpr =  implExpr
   where
     implExpr =  chainr1 equivExpr (token "->" >> return Impl)
-    
+
     equivExpr =  chainl1 orExpr (token "<->" >> return Equiv)
-    
+
     orExpr =  chainl1 andExpr ((token "|" >> return Or) <|>
                                (keyword "xor" >> return Xor) <|>
                                (keyword "xnor" >> return Xnor))
-    
+
     andExpr =  chainl1 eqExpr (token "&" >> return And)
-    
+
     eqExpr =  chainl1 inExpr ((token "=" >> return Eq) <|>
                               (token "!=" >> return Neq) <|>
                               (try (token "<=" >> return Leq)) <|>
                               (try (token ">=" >> return Geq)) <|>
                               (token "<" >> return Lt) <|>
                               (token ">" >> return Gt))
-    
+
     inExpr =  chainl1 unionExpr (keyword "in" >> return In)
-    
+
     unionExpr =  chainl1 shiftExpr (keyword "union" >> return Union)
-    
+
     shiftExpr =  chainl1 modExpr ((try (token ">>" >> return Bsr)) <|>
                                   (try (token "<<" >> return Bsl)))
-    
+
     modExpr =  chainl1 addSubExpr (keyword "mod" >> return Mod)
-    
+
     addSubExpr =  chainl1 multDivExpr ((token "+" >> return Add) <|>
                                        (token "-" >> return Sub))
-    
+
     multDivExpr =  chainl1 negateExpr ((token "*" >> return Mult) <|>
                                        (token "/" >> return Div))
-    
+
     negateExpr =  (token "-" >> (liftM Neg negateExpr)) <|>
                   concatExpr
-    
+
     concatExpr =  chainl1 selectExpr (try (token "::") >> return Concat)
-    
+
     selectExpr =  do expr <- notExpr
                      option expr (do token "[" <?> "selector"
                                      bits <- sepBy1 bit (token "[")
                                      return (foldl Select expr bits))
-    
+
     notExpr =  (token "!" >> (liftM Not notExpr)) <|>
                primaryExpr
-    
+
     primaryExpr =  parenthesizedExpr <|>
                    (liftM Set (between (token "{") (token "}")
                               (sepBy1 implExpr (char ',' >> ws)))) <|>
@@ -230,9 +230,9 @@ basicExpr =  implExpr
                          Var ["case"]  -> caseExpr
                          Var ["next"]  -> liftM Next parenthesizedExpr
                          _             -> return expr)
-    
+
     parenthesizedExpr =  between (token "(") (token ")") implExpr
-    
+
     caseExpr = liftM Case (manyTill (do lhs <- implExpr
                                         token ":"
                                         rhs <- implExpr
@@ -263,10 +263,10 @@ constantExpr =  (constantA <?> "integer constant") <|>
     constantA =  do char '-'
                     value <- many1 digit
                     range (negate (read value))
-                    
+
     constantB =  do char '0'
                     constantC <|> constantD
-                    
+
     constantC =  do base <- oneOf "bBoOdDhH"
                     width <- many digit
                     char '_'
@@ -275,7 +275,7 @@ constantExpr =  (constantA <?> "integer constant") <|>
                                'o' -> many1 (octDigit <|> char '_')
                                'd' -> many1 (digit    <|> char '_')
                                'h' -> many1 (hexDigit <|> char '_')
-                    
+
                     let width' = case width of
                                    "" -> case toLower base of
                                            'b' -> 1 * length value
@@ -283,35 +283,35 @@ constantExpr =  (constantA <?> "integer constant") <|>
                                            'd' -> error "Cannot calculate width of decimal integers"
                                            'h' -> 4 * length value
                                    _  -> read width
-                    
+
                     let value' = case toLower base of
                                    'b' -> error "Cannot decode binary integer"
                                    'o' -> read ("0o" ++ (filter (/= '_') value))
                                    'd' -> read (filter (/= '_') value)
                                    'h' -> read ("0x" ++ (filter (/= '_') value))
-                    
+
                     return (Word width' value')
-                    
+
     constantD =  do value <- many digit
                     case value of
                       "" -> return (Bool False)
                       _  -> range (read ('0':value))
-                      
+
     constantE =  do char '1'
                     value <- many digit
                     case value of
                       "" -> return (Bool True)
                       _  -> range (read ('1':value))
-                      
+
     constantF =  do value <- many1 digit
                     range (read value)
-                    
+
     constantG =  do value <- sepBy1 identifier (char '.')
                     case value of
                       ["FALSE"] -> return (Bool False)
                       ["TRUE"]  -> return (Bool True)
                       _         -> return (Var value)
-    
+
     range x =  (string ".." >> liftM (Range x) integer)
            <|> (return (Int x))
 
@@ -410,7 +410,7 @@ instance Show Element where
 showElement (VarDecl vars) =  concat [ "VAR", concatMap showVar vars, "\n" ]
   where
     showVar (id, ty) =  concat [ " ", id, " : ", showType ty, ";" ]
-    
+
 showElement (IVarDecl vars) =  concat [ "IVAR", concatMap showVar vars, "\n" ]
   where
     showVar (id, ty) =  concat [ " ", id, " : ", showType ty, ";" ]
@@ -494,7 +494,7 @@ element =  varDecl
                                     token ";"
                                     return (id, ty))
                   return (VarDecl vars)
-    
+
     ivarDecl =  do keyword "IVAR"
                    vars <- many1 (do id <- (reserved keywords identifier) << ws
                                      token ":"
@@ -502,7 +502,7 @@ element =  varDecl
                                      token ";"
                                      return (id, ty))
                    return (IVarDecl vars)
-    
+
     defineDecl =  do keyword "DEFINE"
                      defs <- many1 (do id <- (reserved keywords identifier) << ws
                                        token ":="
@@ -510,27 +510,27 @@ element =  varDecl
                                        token ";"
                                        return (id, expr))
                      return (DefineDecl defs)
-    
+
     constDecl =  do keyword "CONSTANTS"
                     consts <- sepBy1 (reserved keywords identifier << ws) (token ",")
                     token ";"
                     return (ConstDecl consts)
-    
+
     initConstraint =  do keyword "INIT"
                          expr <- basicExpr
                          optional (token ";")
                          return (Init expr)
-    
+
     invarConstraint =  do keyword "INVAR"
                           expr <- basicExpr
                           optional (token ";")
                           return (Invar expr)
-    
+
     transConstraint =  do keyword "TRANS"
                           expr <- basicExpr
                           optional (token ";")
                           return (Trans expr)
-    
+
     assign =  do keyword "ASSIGN"
                  assigns <- many1 (do lhs <- assignLhs
                                       token ":="
@@ -551,17 +551,17 @@ element =  varDecl
                         return (NextValue id)
                  <|> do id <- complexId
                         return (CurrentValue id)
-  
+
     fairness =  do keyword "FAIRNESS"
                    expr <- basicExpr
                    optional (token ";")
                    return (Fairness expr)
-    
+
     justice =  do keyword "JUSTICE"
                   expr <- basicExpr
                   optional (token ";")
                   return (Justice expr)
-    
+
     compassion =  do keyword "COMPASSION"
                      token "("
                      exprA <- basicExpr
@@ -581,23 +581,23 @@ typeSpec =  boolSpec
   where
     boolSpec =  do keyword "boolean"
                    return BoolType
-    
+
     wordSpec =  do keyword "word"
                    token "["
                    width <- integer
                    token "]"
                    return (WordType width)
-    
+
     enumSpec =  do token "{"
                    values <- sepBy1 (liftM Symbol identifier <|> liftM Number integer) (ws >> token ",")
                    token "}"
                    return (EnumType values)
-    
+
     rangeSpec =  do from <- integer
                     token ".."
                     to <- integer
                     return (RangeType from to)
-    
+
     arraySpec =  do keyword "array"
                     from <- integer
                     token ".."

@@ -10,7 +10,7 @@ Portability :  non-portable (imports HTk)
 Utilities on top of HTk
 -}
 
-module GUI.HTkUtils 
+module GUI.HTkUtils
   ( LBGoalView (..)
   , LBStatusIndicator (..)
   , EnableWid (..)

@@ -19,7 +19,7 @@ module Interfaces.DataTypes
        , IntIState(..)
        , Int_NodeInfo(..)
        , UndoRedoElem(..)
-       , ListChange(..) 
+       , ListChange(..)
        ) where
 
 
@@ -34,20 +34,20 @@ import Interfaces.GenericATPState
 
 
 -- | Internal state of the interface, it contains the development graph
--- and a full history. While this in most cases describes the state of 
+-- and a full history. While this in most cases describes the state of
 -- development graph at a given time for GUI it is not the same for the
 -- PGIP ( it does not describe selected nodes). If one switches from one
 -- interface to the other passing this informations should be sufficient
--- with minimal loss of information ( like selected nodes, unfinished 
+-- with minimal loss of information ( like selected nodes, unfinished
 -- script .. and so on)
 data IntState = IntState {
-   -- global history management 
+   -- global history management
      i_hist  :: IntHistory,
    -- internal state
      i_state :: Maybe IntIState
     }
 
--- | Contains the detailed global history as two list, a list of actions 
+-- | Contains the detailed global history as two list, a list of actions
 -- for undo, and a list of action for redo commands
 data IntHistory = IntHistory {
    -- | history for undo command, a list of command descriptions
@@ -57,20 +57,20 @@ data IntHistory = IntHistory {
   }
 
 
--- | Contains command description needed for undo/redo actions and 
+-- | Contains command description needed for undo/redo actions and
 -- for displaying commands in the history
 data Int_CmdHistoryDescription = Int_CmdHistoryDescription {
-  -- | command name, used for displaying history elements 
+  -- | command name, used for displaying history elements
   cmdName       :: String,
   -- | libname needed to undo actions
   cmdDescription :: [UndoRedoElem]
   }
 
--- | History elements for the proof state, only LIB_NAME would be used 
+-- | History elements for the proof state, only LIB_NAME would be used
 -- by GUI/ because it keeps track only to changes to the development graph,
 -- the other are for PGIP but in order to integrate both they should use
 -- same structure
-data UndoRedoElem = 
+data UndoRedoElem =
    UseThmChange Bool
  | Save2FileChange Bool
  | ProverChange (Maybe G_prover)
@@ -82,7 +82,7 @@ data UndoRedoElem =
  | IStateChange (Maybe IntIState)
  | DgCommandChange LIB_NAME
 
-data ListChange = 
+data ListChange =
    AxiomsChange [String] Int
  | GoalsChange [String] Int
  | NodesChange [Int_NodeInfo]
@@ -93,7 +93,7 @@ data IntIState = IntIState {
     i_libEnv              :: LibEnv,
     i_ln                  :: LIB_NAME,
     -- these are PGIP specific, but they need to be treated by the common
-    -- history mechanism , therefore they need to be here 
+    -- history mechanism , therefore they need to be here
     elements                 :: [Int_NodeInfo],
     cComorphism           :: Maybe AnyComorphism,
     prover                :: Maybe G_prover,

@@ -134,11 +134,11 @@ munf vars phi = munf' (nnfS phi)
         munf' (DiamondPast phi)  =  DiamondPast (munf' phi)
         munf' (BoxPast phi)      =  BoxPast (munf' phi)
         munf' (A phi)            =  Snot (munf' (E (nnfP (Pnot phi))))
-        munf' (E (SF phi))       =  Sand (munf' phi) phiinf 
+        munf' (E (SF phi))       =  Sand (munf' phi) phiinf
         munf' (E (Por phi psi))  =  Sor (munf' (E phi)) (munf' (E psi))
         munf' (E (X phi))        =  Sand (Diamond (munf' (E phi))) phiinf
         munf' (E (Pand phi psi)) =  error "Read the fucking book, pg. 100"
-        
+
         phiinf = Nu (Set.findMin vars) (Diamond (Var (Set.findMin vars)))
 
 
@@ -149,20 +149,20 @@ munf vars phi = munf' (nnfS phi)
 {-                                                                            -}
 {------------------------------------------------------------------------------}
 
--- 
+--
 -- We assume that the considered formulas fulfill the following syntactic
 -- requirements, that can be achieved without loss of generality:
--- 
+--
 --   * We only consider formulas in guarded normal form, so that every bound
 --     variable occurs in the scope of a modal operator. Moreover, we assume
 --     negation normal form, so that negation symbols only occur before
 --     variables (that are not bound).
--- 
+--
 --   * We assume that every bound variable is bound only once and has no free
 --     occurrences, so that we can define for a formula an associated function
 --     that maps a bound variable to the unique subformula where the variable
 --     is bound.
--- 
+--
 
 d :: (Eq a) => StateFormula a -> a -> Maybe (StateFormula a)
 
@@ -209,9 +209,9 @@ localCheck (k, s) phi = localCheck' s phi Set.empty
                                                                                 Nu _ _ -> False
                                                                         else
                                                                             localCheck' s d' callStack
-        
+
         disj2 callStack =  flip Set.fold True  $ \(s, phi) b -> b && localCheck' s phi callStack
-        
+
         conj2 callStack =  flip Set.fold False $ \(s, phi) b -> b || localCheck' s phi callStack
 
 

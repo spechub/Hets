@@ -7,7 +7,7 @@ import Data.List
 data Box b c = Box b (Boole c)
 -- data BBox b c = BBox b (Boole c) (Boole c)
 
-{- | Class for Formulas where 
+{- | Class for Formulas where
  -       a is the "input" logic type
  -       b is the index type corresponding to a
  -       c is the "result" logic type

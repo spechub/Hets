@@ -70,7 +70,7 @@ showConsistencyChecker _ descr dgraph  = postGUIAsync $ do
   onClicked btnDisplay $ return ()
   onClicked btnDetails $ return ()
   onClicked btnCheckConsistency $ return ()
-  
+
   widgetShow window
 
 setFinderListSelector :: MV.TreeView -> IO ()

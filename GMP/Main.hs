@@ -21,7 +21,7 @@ import IO
 
 -- | Main parsing unit for checking provability/satisfiability
 run :: (Eq a, Form a b c) => Parser (Boole a) -> String -> IO ()
-run parser input = 
+run parser input =
   case (parse parser "" input) of
     Left err -> do putStr "parse error at "
                    print err
@@ -66,13 +66,13 @@ indexToInt c = case c of
                  "P"  -> 5; "HM" -> 6
                  "M"  -> 7; _    -> error "Main.indexToInt"
 
--- | Function for displying user help 
+-- | Function for displying user help
 showHelp :: IO()
 showHelp = do
     putStrLn ( "Usage:\n" ++
                "    ./main -p <path> <N> <L1> <L2> .. <LN>\n" ++
                "    ./main -t <test> <N> <L1> <L2> .. <LN>\n\n" ++
-               "<N>:     a natural number >0 specifing the number of " ++ 
+               "<N>:     a natural number >0 specifing the number of " ++
                         "combined/embedded logics\n" ++
                "<Lx>:    each logic can be one of the following cases:\n" ++
                "              K  - K Modal Logic\n" ++

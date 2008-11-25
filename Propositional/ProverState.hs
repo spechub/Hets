@@ -26,7 +26,7 @@ data PropProverState = PropProverState
     {
       initialAxioms    :: [AS_Anno.Named AS.FORMULA]
     , initialSignature :: Sign.Sign
-    , freeDefs         :: [LP.FreeDefMorphism AS.FORMULA PMorphism.Morphism] 
+    , freeDefs         :: [LP.FreeDefMorphism AS.FORMULA PMorphism.Morphism]
     } deriving (Show)
 
 -- | function to create prover state
@@ -36,7 +36,7 @@ propProverState :: Sign.Sign                  -- Input Signature
                 -> PropProverState
 propProverState sign aSens freedefs =
     let
-        axioms = PUtil.prepareSenNames transSenName 
+        axioms = PUtil.prepareSenNames transSenName
                                        $ filter AS_Anno.isAxiom aSens
     in
       foldl insertSentence
@@ -54,7 +54,7 @@ insertSentence pState frm =
     let
         sign     = initialSignature pState
         axs      = initialAxioms    pState
-        freedefs = freeDefs         pState  
+        freedefs = freeDefs         pState
     in
       PropProverState
       {

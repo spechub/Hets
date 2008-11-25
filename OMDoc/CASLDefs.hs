@@ -40,7 +40,7 @@ module OMDoc.CASLDefs
   getCASLSign
   )
   where
-  
+
 import qualified Data.Map as Map
 import Syntax.AS_Library
 import qualified Data.Set as Set
@@ -70,7 +70,7 @@ type WithOriginNode a = WithOrigin a Graph.Node
 -- their wrapped elements are equal.
 instance (Eq a, Eq b)=>Eq (WithOrigin a b) where
   wo1 == wo2 = woOrigin wo1 == woOrigin wo2 && woItem wo1 == woItem wo2
-  
+
 -- | 'Ord' instance for 'WithOrigin'
 --
 -- 'WithOrigin'-objects are ordered by their wrapped elements unless they are
@@ -94,7 +94,7 @@ type CollectionMap =
   Map.Map
     (LIB_NAME, Graph.Node)
     (Map.Map LIB_NAME (Set.Set (IdentifierWON, String)))
-    
+
 -- | 'Identifier'S with origins
 type IdentifierWON = WithOriginNode Identifier
 
@@ -115,7 +115,7 @@ data Identifier =
   -- | for generated predicates ('Induction.inductionScheme')
   | IdGaPred Id PredType
   deriving Show
-  
+
 
 -- | uniform types for 'Identifier'
 data IdentifierType = IdTNodeName | IdTId | IdTOpM | IdTPred | IdTSens | IdTGaPred
@@ -130,7 +130,7 @@ getIdType (IdOpM {}) = IdTOpM
 getIdType (IdPred {}) = IdTPred
 getIdType (IdSens {}) = IdTSens
 getIdType (IdGaPred {}) = IdTGaPred
-  
+
 -- | uniformly project the 'Id' an 'Identifier' refers to
 getIdId::Identifier->Id
 getIdId (IdNodeName i) = i
@@ -166,8 +166,8 @@ instance Ord Identifier where
 
 instance (Show a, Show b)=>Show (WithOrigin a b) where
   show wo = (show (woItem wo)) ++ " Origin:(" ++ (show (woOrigin wo)) ++ ")"
-  
-  
+
+
 -- | check type compatibility for two predicates
 compatiblePredicate::Rel.Rel SORT->PredType->PredType->Bool
 compatiblePredicate sortrel pt1 pt2 =
@@ -194,8 +194,8 @@ compatibleTypes _ [] _ = False
 compatibleTypes _ _ [] = False
 compatibleTypes sortrel (s1:r1) (s2:r2) =
   (isTypeOrSubType sortrel s1 s2) && (compatibleTypes sortrel r1 r2)
-  
-  
+
+
 -- | check if a type t1 is a subtype of a type t2
 --
 -- Returns 'True' iff the first sort is the same as the second sort
@@ -210,7 +210,7 @@ isTypeOrSubType::
 isTypeOrSubType sortrel givensort neededsort =
   (givensort == neededsort)
     || (Rel.path givensort neededsort sortrel)
-    
+
 
 
 -- | This type is used for constructing unique names for
@@ -402,7 +402,7 @@ findIdPredsForId
         compPr
   in
     if null eqpr then comp else eqpr
-    
+
 findIdOpsForId
   ::Rel.Rel SORT
   ->OpType

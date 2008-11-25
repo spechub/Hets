@@ -82,9 +82,9 @@ commandDgAll fn state
        do
         case fn (i_ln ist) (i_libEnv ist) of
          Result _ (Just nwLibEnv) ->
-         -- Name of function is not known here, so an empty text is 
-         -- added as name, in a later stage (Shell.hs) the name will 
-         -- be inserted 
+         -- Name of function is not known here, so an empty text is
+         -- added as name, in a later stage (Shell.hs) the name will
+         -- be inserted
            return $ add2hist [IStateChange $ Just ist] $ state {
               intState = (intState state) {
                            i_state=Just$ emptyIntIState nwLibEnv $ i_ln ist}
@@ -154,9 +154,9 @@ cUse input state
                            -- the interface can recover
                return$ genErrorMsg ("Unable to load library "++input) state
     Just (nwLn, nwLibEnv) ->
-                 return 
+                 return
                    state {
-                     intState = IntState { 
+                     intState = IntState {
                           i_hist = IntHistory { undoList = [],
                                                 redoList = []
                                               },
@@ -200,12 +200,12 @@ cDgThmHideShift input state
               Nothing -> return $ genErrorMsg (concat $ map diagString diag)
                                   state
                -- ADD TO HISTORY ??
-              Just newEnv -> 
+              Just newEnv ->
                  return $ add2hist [IStateChange $ Just dgState] $
                      genMessage tmpErrs' []
                     state {
-                       intState = 
-                        (intState state) { 
+                       intState =
+                        (intState state) {
                          i_state =Just $ emptyIntIState newEnv $ i_ln dgState
                          }
                            }
@@ -295,14 +295,14 @@ cDgSelect input state
                                ) listNodes
           --      oldH = history state
                 nwist = emptyIntIState (i_libEnv dgState) (i_ln dgState)
-             return $ add2hist [IStateChange $ Just dgState] $ 
+             return $ add2hist [IStateChange $ Just dgState] $
                    genMessage tmpErrs' []
                  state {
                    -- add the prove state to the status
                    -- containing all information selected
                    -- in the input
-                   intState = (intState state) { 
-                               i_state = Just nwist { 
+                   intState = (intState state) {
+                               i_state = Just nwist {
                                           elements = elems,
                                           cComorphism = getIdComorphism elems
                                           } }
@@ -337,8 +337,8 @@ cDgSelectAll state
       return $ add2hist [IStateChange $ Just dgState] $ state {
               -- add the prove state to the status containing
               -- all information selected in the input
-              intState = (intState state) { 
-                           i_state = Just nwist { 
+              intState = (intState state) {
+                           i_state = Just nwist {
                                           elements = elems,
                                           cComorphism = getIdComorphism elems
                                             } }

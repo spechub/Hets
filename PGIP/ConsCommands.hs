@@ -145,8 +145,8 @@ cConsistCheck state
               return $ add2hist [(DgCommandChange $i_ln nwpS),
                                  (ListChange hist)] $
                           state {
-                            intState = (intState state) { 
-                               i_state = Just $ pS { 
+                            intState = (intState state) {
+                               i_state = Just $ pS {
                                             elements = nwls } }
                              }
 
@@ -175,7 +175,7 @@ cConsistCheckAll state
              let nwSt = add2hist [ListChange [NodesChange $ elements pS]] $
                           state {
                            intState = (intState state) {
-                              i_state = Just $ pS { 
+                              i_state = Just $ pS {
                                                   elements = ls' } } }
              cConsistCheck nwSt
 

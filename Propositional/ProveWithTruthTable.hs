@@ -135,20 +135,20 @@ reduceModel :: Sig.Sign -> Model -> Model
 reduceModel sig m = Set.intersection m (items sig)
 
 leq :: Model -> Model -> Bool
-leq = Set.isSubsetOf 
+leq = Set.isSubsetOf
 
 isMin :: Bool -> Model -> [Model] -> Bool
 isMin isCo m models =
    all (\m' -> if isCo then leq m' m else leq m m') models
 
-evalFree :: Model 
-              -> LP.FreeDefMorphism FORMULA PMorphism.Morphism 
+evalFree :: Model
+              -> LP.FreeDefMorphism FORMULA PMorphism.Morphism
               -> Bool
-evalFree m freedef = 
+evalFree m freedef =
   let diffsig = Sign ((items freetar) `Set.difference` (items freesrc))
       mred = reduceModel freesrc m
-      modelsOverMred = map (mred `amalg`) (allModels diffsig) 
-      modelClass = foldr (filter . (flip eval)) modelsOverMred freeth 
+      modelsOverMred = map (mred `amalg`) (allModels diffsig)
+      modelClass = foldr (filter . (flip eval)) modelsOverMred freeth
   in isMin isCo m modelClass
   where freemor = LP.freeDefMorphism freedef
         freesrc = PMorphism.source freemor
@@ -365,7 +365,7 @@ runTt pState cfg _ _thName nGoal =
       else do
        let axs = PState.initialAxioms pState
            freedefs = PState.freeDefs pState
-           nameFree fd = 
+           nameFree fd =
               AS_Anno.makeNamed (if LP.isCofree fd then "cofree" else "free")
                                 (FreeConstraint fd)
            sens = map (AS_Anno.mapNamed Formula) axs ++ map nameFree freedefs

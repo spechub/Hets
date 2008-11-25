@@ -73,7 +73,7 @@ consCheck :: String -> TheoryMorphism Sign Sentence (DefaultMorphism Sign) ()
           -> a -> IO([Proof_status ()])
 consCheck thName tm freedefs = case t_target tm of
     Theory sig nSens -> let (axs, _) = getAxioms $ toNamedList nSens in
-       isaProve (thName ++ "_c") 
+       isaProve (thName ++ "_c")
            (Theory sig
                $ markAsGoal $ toThSens $ if null axs then [] else
                    [ makeNamed inconsistentS $ mkRefuteSen $ termAppl notOp

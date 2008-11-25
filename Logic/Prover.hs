@@ -262,7 +262,7 @@ data ProverTemplate theory sentence morphism sublogics proof_tree = Prover
       -- input: imported theories, theory name, theory (incl. goals)
       -- output: proof status for goals and lemmas
       proveCMDLautomatic :: Maybe (String -> Tactic_script
-                         -> theory -> [FreeDefMorphism sentence morphism] 
+                         -> theory -> [FreeDefMorphism sentence morphism]
                          ->IO (Result ([Proof_status proof_tree]))),
       -- blocks until a result is determined
       -- input: theory name, Tactic_script,

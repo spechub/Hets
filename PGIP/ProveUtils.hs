@@ -7,7 +7,7 @@ Maintainer  : r.pascanu@jacobs-university.de
 Stability   : provisional
 Portability : portable
 
-PGIP.ProveUtils offer a list of commands for preparing the theory for 
+PGIP.ProveUtils offer a list of commands for preparing the theory for
 proving
 -}
 
@@ -44,10 +44,10 @@ cParseScript tLimit extOpts (Tactic_script ts)
  = let time_limit = case getTLimit ts of
                      Nothing -> tLimit
                      Just t -> t
-       opts = case ts of 
+       opts = case ts of
                [] -> extOpts
                _  -> extractTLimit ts
-   in ATPTactic_script { 
+   in ATPTactic_script {
            ts_timeLimit = time_limit,
            ts_extraOpts = opts
            }

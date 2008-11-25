@@ -96,9 +96,9 @@ cProver input state =
                                                 ++" this name found") state
                    Just (p,_)-> return $ add2hist [ProverChange$ prover pS]$
                                     state {
-                                         intState = (intState state) { 
+                                         intState = (intState state) {
                                             i_state = Just pS {
-                                                        prover = Just p 
+                                                        prover = Just p
                                               }
                                          }
                                  }
@@ -136,8 +136,8 @@ cProver input state =
                               $ add2hist [ProverChange $ prover pS]
                                 state {
                                   intState = (intState state) {
-                                    i_state = Just pS { 
-                                               prover = Just p 
+                                    i_state = Just pS {
+                                               prover = Just p
                                                }
                                      }
                                   }
@@ -167,10 +167,10 @@ cConsChecker input state =
                     Nothing -> return $ genErrorMsg ("No applicable "++
                                  "consistency checker with this name found")
                                  state
-                    Just (p,_) -> return $ add2hist 
-                                    [ConsCheckerChange $consChecker pS] 
+                    Just (p,_) -> return $ add2hist
+                                    [ConsCheckerChange $consChecker pS]
                                     state {
-                                      intState = (intState state) { 
+                                      intState = (intState state) {
                                          i_state = Just pS {
                                              consChecker = Just p }
                                           }
@@ -193,8 +193,8 @@ cConsChecker input state =
                       ++"command. Using comorphism :"
                       ++ language_name cid) []
                       state {
-                       intState = (intState state) { 
-                         i_state = Just pS { 
+                       intState = (intState state) {
+                         i_state = Just pS {
                                     cComorphism = Just nCm,
                                     consChecker = Just p }
                                   }
@@ -202,7 +202,7 @@ cConsChecker input state =
            Just (p,_) -> return
                            $add2hist [ConsCheckerChange $ consChecker pS]$
                             state {
-                            intState = (intState state) { 
+                            intState = (intState state) {
                               i_state = Just pS{
                                           consChecker = Just p } } }
 

@@ -85,7 +85,7 @@ cShowDgGoals state
     Just dgState ->
      do
      -- compute list of node goals
-     let nodeGoals = nodeNames $ getAllGoalNodes state 
+     let nodeGoals = nodeNames $ getAllGoalNodes state
 
          -- list of all nodes
          ls  = getAllNodes dgState

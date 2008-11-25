@@ -15,7 +15,7 @@ allClauses x = case x of
                            List.map (addNegative h) (allClauses t)
                  _   -> [Implies [] []]
 
--- | Extract the modal atoms from a formula 
+-- | Extract the modal atoms from a formula
 getMA :: Eq a => Boole a -> [Boole a]
 getMA x = case x of
             And phi psi -> (getMA phi) `List.union` (getMA psi)
@@ -24,8 +24,8 @@ getMA x = case x of
             _           -> []
 
 -- | Substitution of modal atoms within a "Boole" expression
-subst :: Eq a => Boole a -> Clause (Boole a) -> Boole a 
-subst x s@(Implies neg pos) = 
+subst :: Eq a => Boole a -> Clause (Boole a) -> Boole a
+subst x s@(Implies neg pos) =
   case x of
     And phi psi -> And (subst phi s) (subst psi s)
     Not phi     -> Not (subst phi s)
@@ -56,7 +56,7 @@ cnf phi = List.map (\(Implies x y) -> Implies y x) (dnf (Not phi))
 provable :: (Eq a, Form a b c) => Boole a -> Bool
 provable _ = True
 {-
-provable phi = 
+provable phi =
   let unwrap (Subst x) = Map.elems x
   in all (\c -> any (all provable) (List.map unwrap.snd (match c))) (cnf phi)
 -}

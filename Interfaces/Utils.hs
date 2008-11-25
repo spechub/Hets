@@ -1,13 +1,13 @@
 {- |
 Module      :$Header$
-Description : utilitary functions 
+Description : utilitary functions
 Copyright   : uni-bremen and DFKI
 License     : similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 Maintainer  : r.pascanu@jacobs-university.de
 Stability   : provisional
 Portability : portable
 
-Interfaces.Utils contains different utilitary functions for the 
+Interfaces.Utils contains different utilitary functions for the
 abstract interface
 
 -}
@@ -33,12 +33,12 @@ import Common.LibName
 getAllNodes :: IntIState  -> [LNode DGNodeLab]
 getAllNodes st
  = labNodesDG $ lookupDGraph (i_ln st) (i_libEnv st)
- 
+
 -- | Returns the list of all edges, if it is not up to date
 -- the funcrion recomputes the list
 getAllEdges :: IntIState -> [LEdge DGLinkLab]
 getAllEdges st
- = labEdgesDG $ lookupDGraph (i_ln st) (i_libEnv st) 
+ = labEdgesDG $ lookupDGraph (i_ln st) (i_libEnv st)
 
 
 -- | Constructor for CMDLProofGUIState datatype
@@ -50,18 +50,18 @@ initNodeInfo:: (Logic lid1 sublogics1
 initNodeInfo ps nb
  = Element ps nb
 
-emptyIntIState :: LibEnv -> LIB_NAME -> IntIState 
-emptyIntIState le ln = 
-  IntIState { 
+emptyIntIState :: LibEnv -> LIB_NAME -> IntIState
+emptyIntIState le ln =
+  IntIState {
     i_libEnv = le,
-    i_ln  = ln, 
+    i_ln  = ln,
     elements = [],
     cComorphism = Nothing,
     prover = Nothing,
     consChecker = Nothing,
     save2file = False,
     useTheorems = False,
-    script = ATPTactic_script { 
+    script = ATPTactic_script {
                  ts_timeLimit = 20,
                  ts_extraOpts = [] },
     loadScript = False
@@ -74,15 +74,15 @@ conservativityRule = DGRule "ConservativityCheck"
 
 -- | check conservativity of the edge
 checkconservativityEdge ::  LEdge DGLinkLab -> LibEnv ->
-                              LIB_NAME -> 
+                              LIB_NAME ->
                             ([ConservativityChecker sign sentence morphism]
-                            -> IO (Res.Result (conservativityChecker 
-                                      sign sentence morphism)))            
+                            -> IO (Res.Result (conservativityChecker
+                                      sign sentence morphism)))
                             ->  IO (String , LibEnv)
-checkconservativityEdge (source,target,linklab) libEnv ln choser = do 
+checkconservativityEdge (source,target,linklab) libEnv ln choser = do
   let libEnv' = case convertToNf ln libEnv target of
                   Result _ (Just lE) -> lE
-                       -- replace error with some method to return it 
+                       -- replace error with some method to return it
                        -- (PGIP deals with error in its own way)
                   _ -> error "checkconservativityOfEdge: convertToNf"
   let (_, thTar) =

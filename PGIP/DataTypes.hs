@@ -56,7 +56,7 @@ data CMDL_UseTranslation =
 -- might use at any time.
 data CMDL_State = CMDL_State {
   -- | Interface state (should be common for any interface)
-  intState :: IntState, 
+  intState :: IntState,
   -- | promter of the interface
   prompter        :: CMDL_PrompterState,
   -- | open comment

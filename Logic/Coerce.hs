@@ -153,12 +153,12 @@ coerceRawSymbolMap ::
       -> m (EndoMap raw_symbol2)
 coerceRawSymbolMap l1 l2 msg m1 = primCoerce l1 l2 msg m1
 
-coerceFreeDefMorphism :: 
+coerceFreeDefMorphism ::
   (Logic  lid1 sublogics1 basic_spec1 sentence1 symb_items1 symb_map_items1
                 sign1 morphism1 symbol1 raw_symbol1 proof_tree1,
    Logic  lid2 sublogics2 basic_spec2 sentence2 symb_items2 symb_map_items2
                 sign2 morphism2 symbol2 raw_symbol2 proof_tree2,
-   Monad m) => lid1 -> lid2 -> String 
-                -> FreeDefMorphism sentence1 morphism1 
+   Monad m) => lid1 -> lid2 -> String
+                -> FreeDefMorphism sentence1 morphism1
                 -> m (FreeDefMorphism sentence2 morphism2)
 coerceFreeDefMorphism l1 l2 msg freedef = primCoerce l1 l2 msg freedef

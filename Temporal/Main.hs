@@ -17,26 +17,26 @@ main :: IO ()
 main = do args <- getArgs
           file <- if length args == 1 then doesFileExist (args !! 0)
                                       else return False
-                                      
+
           formula <- if file then readFile (args !! 0)
                              else return (concat (intersperse " " args))
-                             
+
           let filename = if file then args !! 0
                                  else "<<arguments>>"
-          
+
           case parse (Casl.parser CaslToLtl.expr) filename formula of
                Left e1  -> do putStrLn (show e1)
                               exitFailure
-                             
+
                Right cf -> case CaslToLtl.convert cf of
                                 Nothing -> do putStrLn "Not a LTL formula."
                                               exitFailure
-                                              
+
                                 Just lf -> do i <- hWaitForInput stdin 0
                                               when i $ do contents <- getContents
                                                           case parse NuSmv.program "<<input>>" contents of
                                                                Left e2     -> do putStrLn (show e2)
                                                                                  exitFailure
-                                                                              
+
                                                                Right model -> do putStrLn (show model)
                                               putStrLn (show lf)

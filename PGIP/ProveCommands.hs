@@ -61,11 +61,11 @@ cDropTranslations state =
    Just pS ->
     case cComorphism pS of
      Nothing -> return state
-     Just _ -> return $ 
-       add2hist [CComorphismChange $ cComorphism pS] $ 
+     Just _ -> return $
+       add2hist [CComorphismChange $ cComorphism pS] $
         state {
-          intState = (intState state ) { 
-           i_state = Just $ pS { 
+          intState = (intState state ) {
+           i_state = Just $ pS {
               cComorphism = getIdComorphism $ elements pS } }
          }
 
@@ -87,19 +87,19 @@ cTranslate input state =
        -- generated
        Nothing -> return $ genErrorMsg "No theory selected" state
        Just ocm ->
-        case compComorphism ocm cm of 
+        case compComorphism ocm cm of
             Nothing ->
-             return $ genErrorMsg "Can not add comorphism" state 
+             return $ genErrorMsg "Can not add comorphism" state
             Just smth ->
               return $ genMessage [] "Adding comorphism"
                      $ add2hist [CComorphismChange $ cComorphism pS] $
                       state {
-                        intState = (intState state) { 
-                         i_state = Just pS { 
+                        intState = (intState state) {
+                         i_state = Just pS {
                                     cComorphism = Just smth } }
                           }
 
-        
+
 parseElements :: CMDL_ListAction -> [String] -> CMDL_GoalAxiom
                  -> [Int_NodeInfo]
                  -> ([Int_NodeInfo],[ListChange])
@@ -133,11 +133,11 @@ parseElements action gls gls_axm elems (acc1,acc2)
                    ActionSet -> filter (fn allgls) gls
                    ActionAdd ->
                         nub $ (selgls)++ filter (fn allgls) gls
-          nwelm = case gls_axm of 
+          nwelm = case gls_axm of
                    ChangeGoals  -> Element (st {selectedGoals = gls'}) nb
                    ChangeAxioms -> Element (st {includedAxioms= gls'}) nb
-          hchg = case gls_axm of 
-                   ChangeGoals  -> GoalsChange (selectedGoals  st) nb 
+          hchg = case gls_axm of
+                   ChangeGoals  -> GoalsChange (selectedGoals  st) nb
                    ChangeAxioms -> AxiomsChange(includedAxioms st) nb
        in parseElements action gls gls_axm ll (nwelm:acc1,hchg:acc2)
 
@@ -160,7 +160,7 @@ cGoalsAxmGeneral action gls_axm input state
                            ls ([],[])
         return $ add2hist [ListChange hist] $
                     state {
-                      intState = (intState state) { 
+                      intState = (intState state) {
                         i_state = Just pS {
                                          elements = ls'
                                          }
@@ -204,9 +204,9 @@ cProve state
             return $ add2hist [(DgCommandChange $ i_ln nwpS),
                                (ListChange hist)] $
                          state {
-                           intState = (intState state) { 
-                            i_state = Just $ pS { 
-                                              elements = nwls } } 
+                           intState = (intState state) {
+                            i_state = Just $ pS {
+                                              elements = nwls } }
                             }
 
 -- | Proves all goals in the nodes selected using all axioms and
@@ -234,9 +234,9 @@ cProveAll state
                                     }) nb ) ls
             let nwSt = add2hist [ListChange [NodesChange $ elements pS]] $
                       state {
-                       intState = (intState state) { 
-                         i_state = Just $ pS { 
-                                           elements = ls' } } } 
+                       intState = (intState state) {
+                         i_state = Just $ pS {
+                                           elements = ls' } } }
             cProve nwSt
 
 -- | Sets the use theorems flag of the interface
@@ -248,8 +248,8 @@ cSetUseThms val state
      do
       return $ add2hist [UseThmChange $ useTheorems pS] $
           state {
-           intState = (intState state) { 
-             i_state=  Just pS { 
+           intState = (intState state) {
+             i_state=  Just pS {
                              useTheorems = val } } }
 
 -- | Sets the save2File value to either true or false
@@ -261,7 +261,7 @@ cSetSave2File val state
      do
       return $ add2hist [Save2FileChange $ save2file ps] $
           state {
-            intState = (intState state) { 
+            intState = (intState state) {
              i_state = Just ps { save2file = val } } }
 
 
@@ -286,7 +286,7 @@ cNotACommand input state
                   oldextOpts = ts_extraOpts olds
               let nwSt = state {
                           intState = (intState state) {
-                           i_state = Just pS { 
+                           i_state = Just pS {
                              script = olds { ts_extraOpts = s:oldextOpts }
                              } } }
               return $ add2hist [ScriptChange $ script pS] nwSt
@@ -303,8 +303,8 @@ cEndScript state
       True ->
        do
         let nwSt= state {
-                    intState = (intState state) { 
-                     i_state = Just ps { 
+                    intState = (intState state) {
+                     i_state = Just ps {
                        loadScript = False } } }
         return $ add2hist [LoadScriptChange $ loadScript ps] nwSt
 
@@ -318,9 +318,9 @@ cStartScript state
      Just ps ->
       return $ add2hist [LoadScriptChange $ loadScript ps] $
               state {
-                intState = (intState state) { 
-                  i_state = Just ps { 
-                                 loadScript = True } } } 
+                intState = (intState state) {
+                  i_state = Just ps {
+                                 loadScript = True } } }
 
 -- sets a time limit
 cTimeLimit :: String -> CMDL_State-> IO CMDL_State
@@ -336,7 +336,7 @@ cTimeLimit input state
          let oldS = script ps
          return $ add2hist [ScriptChange $ script ps] $
                state {
-                 intState = (intState state) { 
-                  i_state = Just ps { 
+                 intState = (intState state) {
+                  i_state = Just ps {
                               script = oldS {   ts_timeLimit = inpVal } } } }
 

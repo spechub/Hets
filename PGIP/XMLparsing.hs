@@ -380,15 +380,15 @@ processCmds cmds state pgipState
                    _ -> return (nwSt, genErrAnswer (errorMsg $ output nwSt)
                                     nPGIP)
      (XML_CloseTheory _) :l -> do
-                  case i_state $ intState state of 
-                   Nothing -> 
+                  case i_state $ intState state of
+                   Nothing ->
                      processCmds l state $ addToMsg "Theory closed" [] pgipSt
                    Just ist -> do
-                     let nwSt = 
+                     let nwSt =
                           add2hist [IStateChange $ Just ist] $
                                state {
-                                intState = (intState state) { 
-                                  i_state = Just $ emptyIntIState 
+                                intState = (intState state) {
+                                  i_state = Just $ emptyIntIState
                                              (i_libEnv ist) (i_ln ist)
                                              }
                                 }

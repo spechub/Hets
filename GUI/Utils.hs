@@ -29,7 +29,7 @@ module GUI.Utils
   ) where
 
 #ifdef GTKGLADE
-import GUI.GtkUtils 
+import GUI.GtkUtils
   ( infoDialog
   , errorDialog
   , warningDialog

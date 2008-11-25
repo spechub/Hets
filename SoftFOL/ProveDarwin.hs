@@ -94,7 +94,7 @@ darwinGUI :: String -- ^ theory name
            -> [FreeDefMorphism SPTerm SoftFOLMorphism] -- ^ freeness constraints
            -> IO([Proof_status ProofTree]) -- ^ proof status for each goal
 darwinGUI thName th freedefs =
-    genericATPgui (atpFun thName) True (prover_name darwinProver) thName th 
+    genericATPgui (atpFun thName) True (prover_name darwinProver) thName th
                   freedefs emptyProofTree
 
 -- ** command line functions

@@ -92,7 +92,7 @@ vampireGUI :: String -- ^ theory name
           -> [FreeDefMorphism SPTerm SoftFOLMorphism] -- ^ freeness constraints
            -> IO([Proof_status ProofTree]) -- ^ proof status for each goal
 vampireGUI thName th freedefs =
-    genericATPgui (atpFun thName) True (prover_name vampire) thName th 
+    genericATPgui (atpFun thName) True (prover_name vampire) thName th
                  freedefs emptyProofTree
 
 -- ** command line functions

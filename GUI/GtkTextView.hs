@@ -41,13 +41,13 @@ showTextView title = postGUIAsync $ do
      all tags need to be stored in the tagtable of the buffer.
   -}
   tagTable <- textBufferGetTagTable buffer
-  
+
   -- create a tag for red text
   coloredTag <- textTagNew Nothing
   set coloredTag [ textTagForeground := "red" ]
   -- add tag to table
   textTagTableAdd tagTable coloredTag
-  
+
   -- create a tag for red backgrounded text
   backgroundTag <- textTagNew Nothing
   set backgroundTag [ textTagBackground := "red" ]

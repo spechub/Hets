@@ -73,20 +73,20 @@ shellacCmd cmd
       else return ()
     putShellSt newState
 
- 
+
 register2history :: CMDL_CmdDescription -> IO CMDL_State -> IO CMDL_State
 register2history dscr state_io
- = do 
+ = do
     state <- state_io
     let oldHistory = i_hist $ intState  state
     case undoList oldHistory of
        [] -> return state
-       h:r -> case cmdName h of 
+       h:r -> case cmdName h of
                [] ->do
-                     let nwh = h { 
+                     let nwh = h {
                                 cmdName = head $ cmdNames dscr }
-                     return $ state { 
-                         intState = (intState state) { 
+                     return $ state {
+                         intState = (intState state) {
                             i_hist = oldHistory {
                                undoList = nwh:r,
                                redoList = []
@@ -96,55 +96,55 @@ register2history dscr state_io
 
 -- process a comment line
 processComment :: CMDL_State -> String -> CMDL_State
-processComment st inp 
- = case isInfixOf "}%" inp of 
+processComment st inp
+ = case isInfixOf "}%" inp of
     True -> st { openComment = False }
     False -> st
 
 -- gets the function
 getFn :: CMDL_CmdDescription -> (CMDL_State -> IO CMDL_State)
-getFn desc 
- = case cmdFn desc of 
-    CmdNoInput fn -> fn 
+getFn desc
+ = case cmdFn desc of
+    CmdNoInput fn -> fn
     CmdWithInput fn -> fn (cmdInput desc)
 
 -- adds a line to the script
 addToScript :: CMDL_State -> IntIState -> String -> CMDL_State
-addToScript st ist str 
+addToScript st ist str
  = let olds = script ist
        oldextOpts = ts_extraOpts olds
    in st {
         intState = (intState st) {
-                     i_state = Just ist { 
+                     i_state = Just ist {
                        script = olds { ts_extraOpts = str:oldextOpts } }
           } }
 
 
 checkCom :: CMDL_CmdDescription -> CMDL_State -> IO CMDL_State
-checkCom descr state 
-  = 
+checkCom descr state
+  =
     --check the priority of the current command
-    case cmdPriority descr of 
+    case cmdPriority descr of
      CmdNoPriority ->
       -- check if there is open comment
-      case openComment state of 
+      case openComment state of
        True -> return $ processComment state $ cmdInput descr
-       False -> 
-        case i_state $ intState state of 
+       False ->
+        case i_state $ intState state of
          Nothing -> register2history descr $ (getFn descr) state
          Just ist ->
           -- check if there is inside a script
           case loadScript ist of
-           False->register2history descr $ (getFn descr) state 
-           True->return$addToScript state ist 
+           False->register2history descr $ (getFn descr) state
+           True->return$addToScript state ist
                          ((head $ cmdNames descr) ++ " " ++ (cmdInput descr))
      CmdGreaterThanComments ->
       case i_state $ intState state of
-       Nothing -> register2history descr $ (getFn descr) state 
+       Nothing -> register2history descr $ (getFn descr) state
        Just ist ->
-        case loadScript ist of 
-         False -> register2history descr $ (getFn descr) state 
-         True ->return$addToScript state ist 
+        case loadScript ist of
+         False -> register2history descr $ (getFn descr) state
+         True ->return$addToScript state ist
                         ((head $ cmdNames descr)++ " " ++(cmdInput descr))
      CmdGreaterThanScriptAndComments ->
         (getFn descr) state

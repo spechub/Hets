@@ -33,9 +33,9 @@ import Interfaces.DataTypes
 emptyCMDL_State ::  CMDL_State
 emptyCMDL_State =
    CMDL_State {
-      intState = IntState { 
+      intState = IntState {
                   i_state = Nothing,
-                  i_hist = IntHistory { 
+                  i_hist = IntHistory {
                               undoList = [],
                               redoList = [] }
                         },

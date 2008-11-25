@@ -64,8 +64,8 @@ andFormula flag logics = do
       return $ And f g
   <?> "GMPParser.andFormula"
 
-          
-{- | Parse a primitive formula: T, F, ~f, <i>f, [i]f, 
+
+{- | Parse a primitive formula: T, F, ~f, <i>f, [i]f,
  -   where i stands for an index, f for a formula/boolean expression -}
 -- primFormula :: ModalOperator -> [GenParser Char st a] -> GenParser Char st (Boole a)
 primFormula flag logics =  do string "T"
@@ -83,7 +83,7 @@ primFormula flag logics =  do string "T"
                        <|> do f <- atomFormula flag logics
                               return f
                        <?> "GMPParser.primFormula"
-                      
+
 
 --modalAtom :: ModalOperator -> [Int] -> GenParser Char st (Boole a)
 atomFormula flag logics =  do char '<'
@@ -141,7 +141,7 @@ parenFormula flag logics = do char '('
 
 -- | Parse integer number
 natural :: GenParser Char st Integer
-natural = fmap read $ many1 digit 
+natural = fmap read $ many1 digit
 
 -- | Parser for Coalition Logic index
 parseCindex :: Parser [Int]
@@ -150,7 +150,7 @@ parseCindex =  do -- checks whether there are more numbers to be parsed
                                        return False
                                 <|> do char '}'
                                        return True
-                                <?> "Parser.parseCindex.stop"                  
+                                <?> "Parser.parseCindex.stop"
                   -- checks whether the index is of the for x1,..,x&
                   let normalParser l =  do x <- natural
                                            let n = fromInteger x
@@ -200,7 +200,7 @@ parseKDindex = return ()
 
 -- | Parser for Probability Logic index
 parsePindex :: Parser Rational
-parsePindex = 
+parsePindex =
     do x <- natural
        let auxP n =  do char '/'
                         m<-natural
@@ -211,7 +211,7 @@ parsePindex =
                                       in case tmp of
                                            True -> 1
                                            _    -> 1 + noDig (div n 10)
-                        let rat n = toRational(fromInteger n / 
+                        let rat n = toRational(fromInteger n /
                                                fromInteger (10^(noDig n)))
                         let res = toRational n + rat m
                         return res
