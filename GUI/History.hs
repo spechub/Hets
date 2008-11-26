@@ -88,7 +88,7 @@ instance Show Prove where
         (maybe "# no prover chosen" ("prover " ++) $ prover p) ++ "\n\n"
         ++
         -- proven goals
-        (unlines $ map (goalToString p) $ provenGoals p)
+        (joinWith '\n' $ map (goalToString p) $ provenGoals p)
 
 -- This represents the information about a proved goal
 data ProvenGoal = ProvenGoal {name      :: String,   -- name of the goal
