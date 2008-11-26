@@ -10,6 +10,7 @@ CASL/test
 HasCASL/doc
 HasCASL/test
 Haskell/todo
+Haskell/test
 Common/doc
 Common/test
 Common/LaTeX_maps.svmono.hs
@@ -19,6 +20,10 @@ Static/test
 Comorphisms/test
 GUI/cgi-files
 SoftFOL/tests
+OWL/java
+OWL/tests
+
+OMDoc/Basic
 
 ToHaskell
 Hets.cabal
