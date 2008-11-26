@@ -65,7 +65,7 @@ public class LocalityChecker {
 		boolean l = eval.isLocal(elem, sign);
 		if (!l)
 		    {
-			System.out.println("Non-local axiom: ");
+			System.out.print("Non-local axiom: ");
 			System.out.println(elem);
 			System.out.println("");
 		    }

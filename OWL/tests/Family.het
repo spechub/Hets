@@ -31,6 +31,14 @@ spec FamilyBase =
   Individual: clara
 end
 
+spec Conser =
+     FamilyBase
+then
+     Class: Dog
+     
+     ObjectProperty: likesBones
+end
+
 spec Family =
 FamilyBase
 then %implies

@@ -16,7 +16,6 @@ __SROIQ__
 module OWL.Logic_OWL where
 
 import Common.AS_Annotation
-import Common.DefaultMorphism
 import Common.Doc
 import Common.DocUtils
 import Common.ProofTree
@@ -32,8 +31,11 @@ import OWL.ATC_OWL ()
 import OWL.Sign
 import OWL.StaticAnalysis
 import OWL.Sublogic
+import OWL.Morphism
+import Common.Consistency
 #ifdef UNI_PACKAGE
 import OWL.ProvePellet
+import OWL.Conservativity
 #endif
 
 data OWL = OWL deriving Show
@@ -41,8 +43,6 @@ data OWL = OWL deriving Show
 instance Language OWL where
  description _ =
   "OWL DL -- Web Ontology Language Description Logic http://wwww.w3c.org/"
-
-type OWL_Morphism = DefaultMorphism Sign
 
 instance Syntax OWL OntologyFile () () where
     parse_basic_spec OWL = Just basicSpec
@@ -65,7 +65,7 @@ instance StaticAnalysis OWL OntologyFile Sentence
       empty_signature OWL = emptySign
       signature_union OWL s = return . addSign s
       final_union OWL = signature_union OWL
-      inclusion OWL = defaultInclusion isSubSign
+      inclusion OWL = owlInclusion
 
 {-   this function will be implemented in OWL.Taxonomy
          theory_to_taxonomy OWL = convTaxo
@@ -80,6 +80,10 @@ instance Logic OWL OWL_SL OntologyFile Sentence () ()
 #ifdef UNI_PACKAGE
          provers OWL = [pelletProver]
          cons_checkers OWL = [pelletConsChecker]
+         conservativityCheck OWL =
+             [
+              ConservativityChecker "Locality_BOTTOM_BOTTOM" conserCheck
+             ]
 #endif
 
 instance SemiLatticeWithTop (OWL_SL) where
