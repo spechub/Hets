@@ -31,12 +31,21 @@ spec FamilyBase =
   Individual: clara
 end
 
+spec NotConser =
+     FamilyBase
+then %cons
+   Class: Mother SubclassOf: Parent
+   Individual: mary Types: Grandmother
+end
+
 spec Conser =
      FamilyBase
-then
-     Class: Dog
-     
+then %cons
+     Class: Animal
+
      ObjectProperty: likesBones
+
+     Class: Dog SubclassOf: likesBones some Animal
 end
 
 spec Family =

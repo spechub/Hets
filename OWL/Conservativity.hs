@@ -22,7 +22,6 @@ import OWL.Sign
 import OWL.Morphism
 import Common.Result
 import Common.Consistency
-import qualified Data.Set as Set
 import System.IO.Unsafe
 import OWL.Print(printOWLBasicTheory)
 import Common.DefaultMorphism
@@ -57,16 +56,13 @@ doConservCheck :: Sign              -- ^ Signature of Onto 1
                -> OWL_Morphism      -- ^ Morhpism
                -> [Named Sentence]  -- ^ Formulas of Onto 2
                -> IO (Result (Maybe (ConsistencyStatus, [Sentence])))
-doConservCheck sig1 sen1 mor sen2 =
+doConservCheck sig1 _ mor sen2 =
     case (isInclusionDefaultMorphism mor) of
       False -> return $ fail "Morphism is not an inclusion"
       True  ->
           do
-            let s1   = Set.fromList $ map sentence $ filter (isAxiom) sen1
-                s2   = Set.fromList $ map sentence $ filter (isAxiom) sen2
-                sens = Set.difference s2 s1
-                nSen = filter (\x -> Set.member (sentence x) sens) sen2
-                ontoFile = printOWLBasicTheory (codOfDefaultMorphism mor, nSen)
+            let ontoFile = printOWLBasicTheory
+                 (codOfDefaultMorphism mor, filter isAxiom sen2)
                 sigFile  = printOWLBasicTheory (sig1, [])
             runLocalityChecker (show ontoFile) (show sigFile)
 
@@ -121,6 +117,8 @@ runLocalityChecker onto sig =
                    res <- parseOutput outh errh proch
                    return res
                 )
+            removeFile ontoFile
+            removeFile sigFile
             return result
 
 parseOutput :: Handle        -- ^ handel of stdout
@@ -128,31 +126,24 @@ parseOutput :: Handle        -- ^ handel of stdout
             -> ProcessHandle -- ^ handel of process
             -> IO ((Result (Maybe (ConsistencyStatus, [Sentence]))), [String])
 parseOutput outh _ proc =
-    collectLines []
+    collectLines
     where
-      collectLines ls =
+      collectLines =
           do
-            procState <- getProcessExitCode proc
+            procState <- waitForProcess proc
+            ls1 <- hGetContents outh
+            let ls = lines ls1
             case procState of
-              Nothing               ->
-                  do
-                    iseof <- hIsEOF outh
-                    if (iseof)
-                     then
-                         collectLines ls
-                     else
-                         do
-                           line <- hGetLine outh
-                           collectLines (ls ++ [line])
-              Just (ExitFailure 10) ->
+              ExitFailure 10 ->
                   do
                     return $ (return $ Just (Conservative,[]), ls)
-              Just (ExitFailure 20) ->
+              ExitFailure 20 ->
                   do
                     return $ (fail $ unlines ls, ls)
               x                     ->
                   do
-                    return $ (fail ("Internal program error: " ++ show x), ls)
+                    return $ (fail ("Internal program error: " ++
+                                    show x ++ "\n" ++ unlines ls), ls)
 
 timeWatch :: Int -> IO ((Result (Maybe (ConsistencyStatus, [Sentence]))), [String])
            -> IO ((Result (Maybe (ConsistencyStatus, [Sentence]))), [String])
