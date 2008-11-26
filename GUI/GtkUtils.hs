@@ -46,7 +46,7 @@ import qualified GUI.Glade.Utils as Utils
 import Static.GTheory (G_theory)
 import Common.DocUtils (showDoc)
 
-import Control.Concurrent
+import Control.Concurrent (forkIO)
 
 import System.Directory (removeFile, getTemporaryDirectory)
 import System.IO (hFlush, hClose, hPutStr, openTempFile)
@@ -106,14 +106,16 @@ dialog messageType title message mAction = postGUISync $ do
   choice <- case response of
     ResponseOk -> return True
     ResponseYes -> return True
-    ResponseNo -> return False
     _ -> return False
 
-  case mAction of
-    Just action -> action choice
-    Nothing -> return ()
   widgetDestroy dlg
-  return choice
+  case choice of
+    True -> case mAction of
+      Just action -> do
+        forkIO $ action choice
+        return choice
+      Nothing -> return choice
+    False -> return choice
 
 -- | create a window which displays a given text
 infoDialog :: String -- ^ Title
@@ -143,7 +145,7 @@ questionDialog :: String  -- ^ Title
                -> String  -- ^ Message
                -> Maybe (Bool -> IO ()) -- ^ Action on Yes
                -> IO Bool
-questionDialog  = dialog MessageError
+questionDialog  = dialog MessageQuestion
 
 -- Filedialogs for opening and saving
 

@@ -105,6 +105,7 @@ import Data.Graph.Inductive.Graph (Node, LEdge, LNode)
 import qualified Data.Map as Map
 
 import Control.Monad(foldM, filterM)
+import Control.Concurrent (forkIO)
 import Control.Concurrent.MVar
 
 -- | Locks the global lock and runs function
@@ -669,14 +670,16 @@ proveAtNode checkCons gInfo@(GInfo { libEnvIORef = ioRefProofStatus
             res <- basicInferenceNode checkCons logicGraph libNode ln
                 guiMVar le ch
             runProveAtNode gInfo (descr, dgn') res
+            unlockLocal dgn'
       case checkCons || not (hasIncomingHidingEdge dgraph' $ snd libNode) of
-        True -> action
+        True -> do
+          forkIO action
+          return ()
         False -> do
           warningDialog "Warning"
                         "This node has incoming hiding links!\n Prove anyway?"
                         $ Just (\ _ -> action)
           return ()
-  unlockLocal dgn'
 
 runProveAtNode :: GInfo -> LNode DGNodeLab
                -> Res.Result (LibEnv, Res.Result G_theory) -> IO ()
