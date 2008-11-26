@@ -101,6 +101,12 @@ fromShATermToNS att0 ix =
              (att2, (name', take (length uri' -2) (tail uri')))}}
       u -> fromShATermError "OWL.NS" u
 
+isLangTag :: String -> Bool
+isLangTag t = case splitOn '-' t of
+  p : r -> length p <= 4 && all isAlpha p &&
+           all (\ e -> length e <= 8 && all isAlphaNum e) r
+  _ -> False
+
 instance ShATermConvertible Constant where
     toShATermAux att0 (Constant a (Typed b)) = do
         (att1, a') <- toShATerm' att0 (a ++ "^^")
@@ -120,7 +126,10 @@ instance ShATermConvertible Constant where
             ShAAppl "UntypedConstant" [a] _ ->
                     case fromShATerm' a att0 of { (att1, a') ->
                       let (b, c) = span (/='@') a'
-                      in  (att1, Constant b $ Untyped $ drop 1 c ) }
+                          t = drop 1 c
+                      in  (att1, if isLangTag t then
+                               Constant b $ Untyped t
+                               else Constant a' $ Untyped "") }
             u -> fromShATermError "Constant" u
 
 instance ShATermConvertible Entity where
