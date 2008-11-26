@@ -532,8 +532,7 @@ classFrame :: CharParser st [Axiom]
 classFrame = do
   pkeyword classC
   curi <- owlClassUri
-  las <- many $ classFrameBit curi
-  let as = concat las
+  as <- flat $ many $ classFrameBit curi
   return $ if null as
     then [PlainAxiom [] $ Declaration $ Entity OWLClass curi]
     else as
@@ -597,7 +596,10 @@ objectPropertyFrame :: CharParser st [Axiom]
 objectPropertyFrame = do
   pkeyword objectPropertyC
   ouri <- uriP
-  flat $ many $ objectFrameBit ouri
+  as <- flat $ many $ objectFrameBit ouri
+  return $ if null as
+    then [PlainAxiom [] $ Declaration $ Entity ObjectProperty ouri]
+    else as
 
 dataPropExprAList :: CharParser st [([Annotation], DataPropertyExpression)]
 dataPropExprAList = sepByComma $ optAnnos uriP
@@ -636,7 +638,10 @@ dataPropertyFrame :: CharParser st [Axiom]
 dataPropertyFrame = do
   pkeyword dataPropertyC
   duri <- uriP
-  flat $ many $ dataFrameBit duri
+  as <- flat $ many $ dataFrameBit duri
+  return $ if null as
+    then [PlainAxiom [] $ Declaration $ Entity DataProperty duri]
+    else as
 
 sameOrDifferent :: CharParser st SameOrDifferent
 sameOrDifferent = choice
@@ -674,7 +679,10 @@ individualFrame :: CharParser st [Axiom]
 individualFrame = do
   pkeyword individualC
   iuri <- individualUri
-  flat $ many $ iFrameBit iuri
+  as <- flat $ many $ iFrameBit iuri
+  return $ if null as
+    then [PlainAxiom [] $ Declaration $ Entity Individual iuri]
+    else as
 
 equivOrDisjointKeyword :: String -> CharParser st EquivOrDisjoint
 equivOrDisjointKeyword ext =
