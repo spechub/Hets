@@ -20,7 +20,8 @@ import OWL.ColonKeywords
 import qualified Data.Map as Map
 import Data.Typeable
 
--- | it is unclear how full IRIs are represented
+{- | full or abbreviated IRIs with a possible uri for the prefix
+     or a local part following a hash sign -}
 data QName = QN
   { namePrefix :: String
   -- ^ the name prefix part of a qualified name \"namePrefix:localPart\"
