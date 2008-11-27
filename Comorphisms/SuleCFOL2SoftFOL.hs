@@ -910,7 +910,7 @@ findTypes sign s m t = case t of
               else case minimalSupers sign s s2 of
                 [su] -> Map.insert cst (CVar su, j) m
                 _ -> error ("inconsistent variable: " ++ show cst)
-          _ -> error ("inconsistent symbol: " ++ show cst)
+          _ -> m
     _ -> error "findTypes"
 
 toForm :: Monad m => CASLSign -> RMap -> SPTerm -> m (RMap, FORMULA ())
