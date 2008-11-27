@@ -1,0 +1,11 @@
+<project default="java-files">
+
+  <target name="java-libs">
+    <ant antfile="build.xml" dir="./OWL/java" target="java-libs" inheritAll="false"/>
+  </target>
+
+  <target name="java-files">
+    <ant antfile="build.xml" dir="./OWL/java" target="install" inheritAll="false"/>
+  </target>
+
+</project>

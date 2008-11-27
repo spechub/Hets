@@ -36,6 +36,8 @@
     <target name="compile" depends="compile-loc,compile-ren"/>
     <target name="jar" depends="jar-loc,jar-ren"/>
     <target name="install" depends="install-loc,install-ren"/>
+    <target name="make-libs" depends="owl-api,get"/>
+    <target name="java-libs" depends="make-libs,copy-libs"/>
 
     <target name="install-loc" depends="jar-loc">
       <copy file="${builddir}/OWLLocality.jar" todir="../"/>
