@@ -74,6 +74,9 @@ instance Comorphism
     where
       sourceLogic OWL2CASL    = OWL
       sourceSublogic OWL2CASL = sl_top
+                                {
+                                  datatype = OWLNoDatatypes
+                                }
       targetLogic OWL2CASL    = CASL
       mapSublogic OWL2CASL _  = Just $ cFol
         { cons_features = emptyMapConsFeature }
