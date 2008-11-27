@@ -6,7 +6,6 @@ import com.clarkparsia.modularity.locality.SyntacticLocalityEvaluator;
 
 import org.semanticweb.owl.apibinding.OWLManager;
 import org.semanticweb.owl.io.OWLXMLOntologyFormat;
-import org.semanticweb.owl.io.OWLObjectRenderer;
 import org.semanticweb.owl.model.*;
 
 import java.net.URI;
@@ -14,11 +13,7 @@ import java.net.URI;
 import java.util.Set;
 import java.util.Iterator;
 
-import java.io.*;
-
 import org.semanticweb.owl.io.ToStringRenderer;
-
-import uk.ac.manchester.cs.owl.mansyntaxrenderer.*;
 
 public class LocalityChecker {
 
@@ -64,7 +59,6 @@ public class LocalityChecker {
     {
 	boolean local = true;
 	out = org.semanticweb.owl.io.ToStringRenderer.getInstance();
-	out.setRenderer(new ManchesterOWLSyntaxOWLObjectRendererImpl());
 	SyntacticLocalityEvaluator eval = 
 	    new SyntacticLocalityEvaluator(com.clarkparsia.modularity.locality.LocalityClass.BOTTOM_BOTTOM); 
 	//let's try the bottom evaluator first
