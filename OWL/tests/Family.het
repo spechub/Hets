@@ -34,7 +34,8 @@ end
 spec NotConser =
      FamilyBase
 then %cons
-   Class: Mother SubclassOf: Parent
+   Class: MotherWithManyChildren EquivalentTo: Mother and (hasChild max 2)
+   Class: Hybrid  EquivalentTo: Woman and not Man
    Individual: mary Types: Grandmother
 end
 

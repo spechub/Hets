@@ -56,14 +56,14 @@ doConservCheck :: Sign              -- ^ Signature of Onto 1
                -> OWL_Morphism      -- ^ Morhpism
                -> [Named Sentence]  -- ^ Formulas of Onto 2
                -> IO (Result (Maybe (ConsistencyStatus, [Sentence])))
-doConservCheck sig1 _ mor sen2 =
+doConservCheck sig1 sen1 mor sen2 =
     case (isInclusionDefaultMorphism mor) of
       False -> return $ fail "Morphism is not an inclusion"
       True  ->
           do
             let ontoFile = printOWLBasicTheory
                  (codOfDefaultMorphism mor, filter isAxiom sen2)
-                sigFile  = printOWLBasicTheory (sig1, [])
+                sigFile  = printOWLBasicTheory (sig1, filter isAxiom sen1)
             runLocalityChecker (show ontoFile) (show sigFile)
 
 getEnvSec :: String -> IO String

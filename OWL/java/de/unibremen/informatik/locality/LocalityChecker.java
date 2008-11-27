@@ -30,6 +30,7 @@ public class LocalityChecker {
 	try 
 	    {
 		loader(args[0], args[1]);
+		//print();
 		boolean local = checker();
 		System.out.print("Result: ");
 		if (local)
@@ -61,7 +62,6 @@ public class LocalityChecker {
 	while (it.hasNext())
 	    {
 		OWLAxiom elem = it.next();
-		it.remove();
 		boolean l = eval.isLocal(elem, sign);
 		if (!l)
 		    {
@@ -72,6 +72,24 @@ public class LocalityChecker {
 		local = local && l;
 	    }
 	return local;
+    }
+
+    private static void print()
+    {
+	System.out.println("Axioms:");
+	Iterator<OWLAxiom> it = axioms.iterator();
+	while (it.hasNext())
+	    {
+		OWLAxiom elem = it.next();
+		System.out.println(elem); 
+	    }
+	System.out.println("\nSignature:");
+	Iterator<OWLEntity> itE = sign.iterator();
+	while (itE.hasNext())
+	    {
+		OWLEntity elemE = itE.next();
+		System.out.println(elemE); 
+	    }	
     }
 
     private static void loader(String onto, String sig) throws OWLOntologyCreationException
