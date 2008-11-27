@@ -1,0 +1,70 @@
+<project default="install">
+
+    <property name="libdir" value="./lib"/>
+    <property name="builddir" value="build"/>
+    <property name="classesdir" value="${builddir}/classes"/>
+    <property name="bin-name" value="OWLLocality.jar"/>
+    <property name="target-vm" value="1.5"/>
+
+    <path id="classpath">
+        <fileset dir="${libdir}">
+            <include name="*.jar"/>
+        </fileset>
+    </path>
+
+    <target name="clean">
+        <delete dir="${builddir}"/>
+    </target>
+
+    <target name="compile-loc">
+        <mkdir dir="${classesdir}/locality"/>
+        <javac srcdir="./" destdir="${classesdir}/locality" debug="on" target="${target-vm}">
+            <classpath refid="classpath"/>
+	    <include name="de/unibremen/informatik/locality/*.java"/>
+        </javac>
+    </target>
+
+    <target name="compile-ren">
+        <mkdir dir="${classesdir}/atermRenderer"/>
+        <javac srcdir="./" destdir="${classesdir}/atermRenderer" debug="on" target="${target-vm}">
+            <classpath refid="classpath"/>
+	    <include name="de/unibremen/informatik/atermRenderer/*.java"/>
+        </javac>
+    </target>
+
+
+    <target name="compile" depends="compile-loc,compile-ren"/>
+    <target name="jar" depends="jar-loc,jar-ren"/>
+    <target name="install" depends="install-loc,install-ren"/>
+
+    <target name="install-loc" depends="jar-loc">
+      <copy file="${builddir}/OWLLocality.jar" todir="../"/>
+    </target>
+
+    <target name="install-ren" depends="jar-ren">
+      <copy file="${builddir}/OWL2ATerm.jar" todir="../"/>
+    </target>
+
+    <target name="jar-loc" depends="compile-loc">
+      <jar basedir="${classesdir}/locality" destfile="${builddir}/OWLLocality.jar">
+	<manifest>
+	  <attribute name="Title" value="OWL Locality Checker"/>
+	  <attribute name="Built-By" value="${user.name}"/>
+	  <attribute name="Main-Class" value="de.unibremen.informatik.locality.LocalityChecker"/>
+	  <attribute name="Class-Path" value="lib/owlapi-bin.jar"/>	  
+	</manifest>
+      </jar>
+    </target>
+
+    <target name="jar-ren" depends="compile-ren">
+      <jar basedir="${classesdir}/atermRenderer" destfile="${builddir}/OWL2ATerm.jar">
+	<manifest>
+	  <attribute name="Title" value="OWL ATerm Renderer"/>
+	  <attribute name="Built-By" value="${user.name}"/>
+	  <attribute name="Main-Class" value="de.unibremen.informatik.atermRenderer.OWL2ATerm"/>
+	  <attribute name="Class-Path" value="lib/owlapi-bin.jar lib/aterm-java-1.6.jar"/>	  
+	</manifest>
+      </jar>
+    </target>    
+      
+</project>
