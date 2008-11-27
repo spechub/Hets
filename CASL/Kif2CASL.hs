@@ -56,7 +56,10 @@ kif2CASLFormula x = case x of
   Literal QWord v -> Strong_equation (Mixfix_token $ toVar v)
                   trueTerm
                   nullRange
-  _ -> error $ "kif2CASLFormula : cannot translate" ++ show (ppListOfList x)
+  Literal AtWord v -> Strong_equation (Mixfix_token $ toVar v)
+                  trueTerm
+                  nullRange
+  _ -> error $ "kif2CASLFormula : cannot translate " ++ show x
 
 trueTerm :: TERM ()
 trueTerm = varOrConst $ toSimpleId "True"
@@ -70,6 +73,7 @@ toVar v = toSimpleId $ 'v' : tail v
 kif2CASLTerm :: ListOfList -> TERM ()
 kif2CASLTerm ll = case ll of
     Literal QWord v -> Mixfix_token $ toVar v
+    Literal AtWord v -> Mixfix_token $ toVar v
     Literal _ s -> varOrConst $ toSimpleId s
     -- a formula in place of a term; coerce to Booleans
     List (Literal l f : args) ->

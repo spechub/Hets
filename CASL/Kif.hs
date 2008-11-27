@@ -17,9 +17,10 @@ import Text.ParserCombinators.Parsec
 import qualified Text.PrettyPrint.HughesPJ as Doc
 import Data.Char
 
-data StringKind = Quoted | KToken | QWord
+data StringKind = Quoted | KToken | QWord | AtWord deriving Show
 
 data ListOfList = Literal StringKind String | List [ListOfList]
+     deriving Show
 
 -- | skip white spaces and comments for the lexer
 
@@ -39,7 +40,7 @@ isKTokenChar c = isPrint c && not (elem c "()\";" || isSpace c)
 scanLiteral :: CharParser st ListOfList
 scanLiteral = do
   s@(c : _) <- many1 (satisfy isKTokenChar)
-  return $ Literal (if c == '?' then QWord else KToken) s
+  return $ Literal (if c == '?' then QWord else if c=='@' then AtWord else KToken) s
 
 eolOrEof :: GenParser Char st ()
 eolOrEof = (oneOf "\n\r" >> return ()) <|> eof
