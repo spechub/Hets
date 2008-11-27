@@ -854,8 +854,7 @@ extractCASLModel sign (ProofTree output) =
     Right ts -> do
       let (_, idMap, _) = transSign sign
           rMap = getSignMap idMap
-          allfs = map (\ (FormAnno _ (Name n) _ t _) -> (n, t)) ts
-          rfs = filter ((/= "interpretation_domain") . fst) allfs
+          rfs = map (\ (FormAnno _ (Name n) _ t _) -> (n, t)) ts
           (rs, ofs) = partition ((== "interpretation_atoms") . fst) rfs
       (nm, _) <- mapAccumLM (toForm sign) rMap $ map snd $ rs ++ ofs
       let nops = Map.filter (\ v -> case v of
@@ -924,7 +923,12 @@ toForm sign m t = case t of
         return $ (Map.union m m2, Quantification (toQuant q) nvs nf nullRange)
     SPComplexTerm SPEqual [a1, a2] -> do
         let nm = case (getType m a1, getType m a2) of
-              (Nothing, Nothing) -> m
+              (Nothing, Nothing) ->
+                  let srts = sortSet sign in
+                  if Set.size srts == 1 then
+                      let ty = Set.findMin srts in
+                      findTypes sign ty (findTypes sign ty m a1) a2
+                  else m
               (Just t1, Nothing) ->
                 findTypes sign t1 (findTypes sign t1 m a1) a2
               (Nothing, Just t2) ->
