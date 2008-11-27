@@ -20,7 +20,8 @@ install:
 	ant install
 
 clean: 
-	ant clean
+	ant clean	
+
 get:
 	curl http://smi-protege.stanford.edu/svn/*checkout*/protege-pellet-reasoner/trunk/lib/aterm-java-1.6.jar > ./lib/aterm-java-1.6.jar
 
