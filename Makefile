@@ -762,7 +762,8 @@ initialize_installer:
 	@echo "  -> make"
 	@echo and wait until it is finished
 
-initialize_java: java-libs java-files
+initialize_java:
+	ant -q init
 
 java-libs:
 	ant -q java-libs

@@ -12,4 +12,6 @@
     <ant antfile="build.xml" dir="./OWL/java" target="clean" inheritAll="false"/>
   </target>
 
+  <target name="init" depends="java-libs,java-files"/>
+
 </project>
