@@ -5,7 +5,7 @@
   </target>
 
   <target name="java-files">
-    <ant antfile="build.xml" dir="./OWL/java" target="install" inheritAll="false"/>
+    <ant antfile="build.xml" dir="./OWL/java" target="java-files" inheritAll="false"/>
   </target>
 
 </project>

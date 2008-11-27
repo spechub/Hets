@@ -1,10 +1,10 @@
 <project default="install">
 
-    <property name="libdir" value="./lib"/>
-    <property name="builddir" value="build"/>
+    <property name="libdir"     value="./lib"/>
+    <property name="builddir"   value="build"/>
     <property name="classesdir" value="${builddir}/classes"/>
-    <property name="bin-name" value="OWLLocality.jar"/>
-    <property name="target-vm" value="1.5"/>
+    <property name="bin-name"   value="OWLLocality.jar"/>
+    <property name="target-vm"  value="1.5"/>
 
     <path id="classpath">
         <fileset dir="${libdir}">
@@ -16,15 +16,12 @@
         <delete dir="${builddir}"/>
     </target>
 
-    <target name="compile-loc">
+    <target name="compile">
         <mkdir dir="${classesdir}/locality"/>
         <javac srcdir="./" destdir="${classesdir}/locality" debug="on" target="${target-vm}">
             <classpath refid="classpath"/>
 	    <include name="de/unibremen/informatik/locality/*.java"/>
         </javac>
-    </target>
-
-    <target name="compile-ren">
         <mkdir dir="${classesdir}/atermRenderer"/>
         <javac srcdir="./" destdir="${classesdir}/atermRenderer" debug="on" target="${target-vm}">
             <classpath refid="classpath"/>
@@ -32,22 +29,15 @@
         </javac>
     </target>
 
+    <target name="java-files" depends="install"/>
+    <target name="java-libs" depends="owl-api,get,copy-libs"/>
 
-    <target name="compile" depends="compile-loc,compile-ren"/>
-    <target name="jar" depends="jar-loc,jar-ren"/>
-    <target name="install" depends="install-loc,install-ren"/>
-    <target name="make-libs" depends="owl-api,get"/>
-    <target name="java-libs" depends="make-libs,copy-libs"/>
-
-    <target name="install-loc" depends="jar-loc">
+    <target name="install" depends="jar">
       <copy file="${builddir}/OWLLocality.jar" todir="../"/>
-    </target>
-
-    <target name="install-ren" depends="jar-ren">
       <copy file="${builddir}/OWL2ATerm.jar" todir="../"/>
     </target>
 
-    <target name="jar-loc" depends="compile-loc">
+    <target name="jar" depends="compile">
       <jar basedir="${classesdir}/locality" destfile="${builddir}/OWLLocality.jar">
 	<manifest>
 	  <attribute name="Title" value="OWL Locality Checker"/>
@@ -56,9 +46,6 @@
 	  <attribute name="Class-Path" value="lib/owlapi-bin.jar"/>	  
 	</manifest>
       </jar>
-    </target>
-
-    <target name="jar-ren" depends="compile-ren">
       <jar basedir="${classesdir}/atermRenderer" destfile="${builddir}/OWL2ATerm.jar">
 	<manifest>
 	  <attribute name="Title" value="OWL ATerm Renderer"/>
@@ -67,7 +54,7 @@
 	  <attribute name="Class-Path" value="lib/owlapi-bin.jar lib/aterm-java-1.6.jar"/>	  
 	</manifest>
       </jar>
-    </target>    
+    </target> 
 
     <target name="owl-api">
       <ant antfile="build.xml" dir="./OwlApi/antbuild/" target="binjar" inheritAll="false"/>
@@ -81,8 +68,7 @@
 
     <target name="get">
       <get src="http://smi-protege.stanford.edu/svn/*checkout*/protege-pellet-reasoner/trunk/lib/aterm-java-1.6.jar"
-	   dest="${libdir}/aterm-java-1.6.jar"
-	   />
+	   dest="${libdir}/aterm-java-1.6.jar"/>
     </target>
 
 </project>
