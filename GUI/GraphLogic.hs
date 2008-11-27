@@ -685,12 +685,13 @@ runProveAtNode :: GInfo -> LNode DGNodeLab
                -> Res.Result (LibEnv, Res.Result G_theory) -> IO ()
 runProveAtNode gInfo (v, dgnode) res = case maybeResult res of
     Just (le, tres) -> do
+        let nodetext = getDGNodeName dgnode ++ " node: " ++ show v
         case maybeResult tres of
           Just gth -> createTextSaveDisplay
-            ("Model for " ++ getDGNodeName dgnode ++ " node: " ++ show v)
+            ("Model for " ++ nodetext)
             "model.log"  $ showDoc gth ""
           Nothing -> case diags tres of
-            [] -> return ()
+            [] -> infoDialog ("Result for " ++ nodetext) "no model found"
             ds ->
               createTextDisplay "Error" (showRelDiags 2 ds) [HTk.size(50,10)]
         proofMenu gInfo $ mergeDGNodeLab gInfo

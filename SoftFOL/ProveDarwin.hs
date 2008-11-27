@@ -152,7 +152,7 @@ consCheck :: String
 consCheck thName tm freedefs = case t_target tm of
     Theory sig nSens -> let
         saveTPTP = False
-        timeLimitI = 800
+        timeLimitI = 20
         tac      = Tactic_script $ show $ ATPTactic_script
                                            {ts_timeLimit = timeLimitI,
                                             ts_extraOpts = [extraOptions]
