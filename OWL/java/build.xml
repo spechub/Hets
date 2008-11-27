@@ -66,5 +66,21 @@
 	</manifest>
       </jar>
     </target>    
-      
+
+    <target name="owl-api">
+      <ant antfile="build.xml" dir="./OwlApi/antbuild/" target="binjar" inheritAll="false"/>
+      <copy file="./OwlApi/antbuild/build/owlapi-bin.jar" todir="${libdir}"/>
+    </target>
+
+    <target name="copy-libs">
+      <copy file="${libdir}/aterm-java-1.6.jar" todir="../lib/"/>
+      <copy file="${libdir}/owlapi-bin.jar" todir="../lib/"/>
+    </target>
+
+    <target name="get">
+      <get src="http://smi-protege.stanford.edu/svn/*checkout*/protege-pellet-reasoner/trunk/lib/aterm-java-1.6.jar"
+	   dest="${libdir}/aterm-java-1.6.jar"
+	   />
+    </target>
+
 </project>

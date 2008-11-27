@@ -15,16 +15,14 @@ store:
 	ant jar
 
 install:
-	cp lib/aterm-java-1.6.jar ../lib/
-	cp lib/owlapi-bin.jar ../lib/
+	ant copy-libs
 	ant install
 
 clean: 
 	ant clean	
 
 get:
-	curl http://smi-protege.stanford.edu/svn/*checkout*/protege-pellet-reasoner/trunk/lib/aterm-java-1.6.jar > ./lib/aterm-java-1.6.jar
+	ant get
 
 ant: 
-	ant -f OwlApi/antbuild/build.xml binjar
-	cp OwlApi/antbuild/build/owlapi-bin.jar ./lib/
+	ant owl-api
