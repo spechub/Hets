@@ -1,4 +1,4 @@
-package org.hets.owl11.atermRender;
+package de.unibremen.informatik.atermRenderer;
 
 import org.semanticweb.owl.io.OWLFunctionalSyntaxOntologyFormat;
 import org.semanticweb.owl.io.OWLRendererException;

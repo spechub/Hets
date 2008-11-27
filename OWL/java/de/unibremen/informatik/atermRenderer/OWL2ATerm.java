@@ -1,6 +1,6 @@
-package org.hets.owl11.atermRender;
+package de.unibremen.informatik.atermRenderer;
 
-import org.hets.owl11.atermRender.OWLATermStorer;
+import de.unibremen.informatik.atermRenderer.OWLATermStorer;
 import org.semanticweb.owl.apibinding.OWLManager;
 import org.semanticweb.owl.model.OWLException;
 import org.semanticweb.owl.model.OWLOntology;

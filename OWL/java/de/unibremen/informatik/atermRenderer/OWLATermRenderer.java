@@ -1,4 +1,4 @@
-package org.hets.owl11.atermRender;
+package  de.unibremen.informatik.atermRenderer;
 
 import org.semanticweb.owl.io.AbstractOWLRenderer;
 import org.semanticweb.owl.io.OWLRendererException;

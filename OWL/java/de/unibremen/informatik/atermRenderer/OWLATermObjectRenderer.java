@@ -1,4 +1,4 @@
-package org.hets.owl11.atermRender;
+package de.unibremen.informatik.atermRenderer;
 
 import org.coode.xml.OWLOntologyNamespaceManager;
 import org.semanticweb.owl.model.*;

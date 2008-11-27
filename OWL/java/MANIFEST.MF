@@ -1,3 +1,3 @@
 Manifest-Version: 1.0
-Main-Class: org.hets.owl11.atermRender.OWL2ATerm
+Main-Class: de.unibremen.informatik.atermRenderer.OWL2ATerm
 Class-Path: lib/owlapi-bin.jar lib/aterm-java-1.6.jar

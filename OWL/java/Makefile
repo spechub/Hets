@@ -10,16 +10,16 @@ small-world: compile store install
 
 compile:
 
-	$(JC) -target $(TARGET) -cp $(INCLUDES) ./org/hets/owl11/atermRender/OWLATermFormat.java
-	$(JC) -target $(TARGET) -cp $(INCLUDES) ./org/hets/owl11/atermRender/ATermFunc.java
-	$(JC) -target $(TARGET) -cp $(INCLUDES) ./org/hets/owl11/atermRender/OWLATermObjectRenderer.java
-	$(JC) -target $(TARGET) -cp $(INCLUDES) ./org/hets/owl11/atermRender/OWLATermRenderer.java
-	$(JC) -target $(TARGET) -cp $(INCLUDES) ./org/hets/owl11/atermRender/OWLATermStorer.java
-	$(JC) -target $(TARGET) -cp $(INCLUDES) ./org/hets/owl11/atermRender/OWL2ATerm.java
+	$(JC) -target $(TARGET) -cp $(INCLUDES) ./de/unibremen/informatik/atermRenderer/OWLATermFormat.java
+	$(JC) -target $(TARGET) -cp $(INCLUDES) ./de/unibremen/informatik/atermRenderer/ATermFunc.java
+	$(JC) -target $(TARGET) -cp $(INCLUDES) ./de/unibremen/informatik/atermRenderer/OWLATermObjectRenderer.java
+	$(JC) -target $(TARGET) -cp $(INCLUDES) ./de/unibremen/informatik/atermRenderer/OWLATermRenderer.java
+	$(JC) -target $(TARGET) -cp $(INCLUDES) ./de/unibremen/informatik/atermRenderer/OWLATermStorer.java
+	$(JC) -target $(TARGET) -cp $(INCLUDES) ./de/unibremen/informatik/atermRenderer/OWL2ATerm.java
 	$(JC) -target $(TARGET) -cp $(INCLUDES) ./de/unibremen/informatik/locality/LocalityChecker.java
 
 store:
-	jar cmf ./MANIFEST.MF OWL2ATerm.jar org/hets/owl11/atermRender/*.class 
+	jar cmf ./MANIFEST.MF OWL2ATerm.jar de/unibremen/informatik/atermRenderer/*.class 
 	jar cmf ./MANIFEST-LOCALITY.MF OWLLocality.jar de/unibremen/informatik/locality/*.class
 
 install:
@@ -29,7 +29,7 @@ install:
 	cp OWLLocality.jar ..
 
 clean: 
-	rm -r OWL2ATerm.jar OWLLocality.jar ./org/hets/owl11/atermRender/*.class lib/*.jar de/unibremen/informatik/locality/*.class
+	rm -r OWL2ATerm.jar OWLLocality.jar ./de/unibremen/informatik/atermRenderer/*.class lib/*.jar de/unibremen/informatik/locality/*.class
 
 get:
 	ant -f OwlApi/antbuild/build.xml
