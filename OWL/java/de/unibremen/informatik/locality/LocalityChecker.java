@@ -6,6 +6,7 @@ import com.clarkparsia.modularity.locality.SyntacticLocalityEvaluator;
 
 import org.semanticweb.owl.apibinding.OWLManager;
 import org.semanticweb.owl.io.OWLXMLOntologyFormat;
+import org.semanticweb.owl.io.OWLObjectRenderer;
 import org.semanticweb.owl.model.*;
 
 import java.net.URI;
@@ -13,10 +14,17 @@ import java.net.URI;
 import java.util.Set;
 import java.util.Iterator;
 
+import java.io.*;
+
+import org.semanticweb.owl.io.ToStringRenderer;
+
+import uk.ac.manchester.cs.owl.mansyntaxrenderer.*;
+
 public class LocalityChecker {
 
     private static Set<OWLEntity> sign;
     private static Set<OWLAxiom> axioms;
+    private static ToStringRenderer out;
 
     public static void main(String[] args)
     {
@@ -55,6 +63,8 @@ public class LocalityChecker {
     private static Boolean checker()
     {
 	boolean local = true;
+	out = org.semanticweb.owl.io.ToStringRenderer.getInstance();
+	out.setRenderer(new ManchesterOWLSyntaxOWLObjectRendererImpl());
 	SyntacticLocalityEvaluator eval = 
 	    new SyntacticLocalityEvaluator(com.clarkparsia.modularity.locality.LocalityClass.BOTTOM_BOTTOM); 
 	//let's try the bottom evaluator first
@@ -66,7 +76,7 @@ public class LocalityChecker {
 		if (!l)
 		    {
 			System.out.print("Non-local axiom: ");
-			System.out.println(elem);
+			System.out.println(out.getRendering(elem));
 			System.out.println("");
 		    }
 		local = local && l;
