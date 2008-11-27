@@ -8,4 +8,8 @@
     <ant antfile="build.xml" dir="./OWL/java" target="java-files" inheritAll="false"/>
   </target>
 
+  <target name="java-clean">
+    <ant antfile="build.xml" dir="./OWL/java" target="clean" inheritAll="false"/>
+  </target>
+
 </project>

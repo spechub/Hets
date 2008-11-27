@@ -761,3 +761,14 @@ initialize_installer:
 	@echo "  -> cd $(INSTALLER_DIR)"
 	@echo "  -> make"
 	@echo and wait until it is finished
+
+initialize_java: java-libs java-files
+
+java-libs:
+	ant -q java-libs
+
+java-files:
+	ant -q java-files
+
+java-clean: 
+	ant -q java-clean
