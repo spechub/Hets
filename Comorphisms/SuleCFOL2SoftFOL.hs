@@ -869,7 +869,7 @@ extractCASLModel sign (ProofTree output) =
       sens <- mapM (\ (n, f) -> do
          (_, cf) <- toForm nsign nm f
          return $ makeNamed n $ simplifyFormula id cf) rfs
-      return (nsign, sens)
+      return (nsign, filter ((/= False_atom nullRange) . sentence) sens)
     Left err -> fail $ showErr err
 
 type RMap = Map.Map SPIdentifier (CType, Maybe Id)
