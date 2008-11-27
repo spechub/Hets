@@ -18,12 +18,12 @@
 
     <target name="compile">
         <mkdir dir="${classesdir}/locality"/>
-        <javac srcdir="./" destdir="${classesdir}/locality" debug="on" target="${target-vm}">
+        <javac srcdir="./" destdir="${classesdir}/locality" debug="on" target="${target-vm}" nowarn="off">
             <classpath refid="classpath"/>
 	    <include name="de/unibremen/informatik/locality/*.java"/>
         </javac>
         <mkdir dir="${classesdir}/atermRenderer"/>
-        <javac srcdir="./" destdir="${classesdir}/atermRenderer" debug="on" target="${target-vm}">
+        <javac srcdir="./" destdir="${classesdir}/atermRenderer" debug="on" target="${target-vm}" nowarn="off">
             <classpath refid="classpath"/>
 	    <include name="de/unibremen/informatik/atermRenderer/*.java"/>
         </javac>
