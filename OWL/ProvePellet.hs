@@ -22,8 +22,6 @@ import OWL.Sign
 import OWL.Print
 import OWL.Sublogic
 
-import HTk
-
 import GUI.GenericATP
 import Interfaces.GenericATPState
 import GUI.Utils (createTextSaveDisplay, infoDialog)
@@ -47,6 +45,7 @@ import System.IO
 import System.Process
 import System.Directory
 
+import Control.Monad (when)
 import Control.Concurrent
 import Control.Concurrent.MVar
 

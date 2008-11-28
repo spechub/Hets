@@ -36,13 +36,14 @@ import Data.List (isPrefixOf)
 import Data.Time (timeToTimeOfDay)
 import Data.Time.Clock (UTCTime(..), secondsToDiffTime, getCurrentTime)
 
+import Control.Monad (when)
 import qualified Control.Concurrent as Concurrent
 
 import System.Cmd
 import System.Exit
 import System.IO
 import System.Process
-import HTk
+
 import GUI.GenericATP
 import Interfaces.GenericATPState
 import GUI.Utils (infoDialog)

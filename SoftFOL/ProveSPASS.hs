@@ -35,7 +35,7 @@ import SoftFOL.ProverState
 
 import ChildProcess as CP
 import ProcessClasses
-import HTk
+import Destructible
 
 import GUI.GenericATP
 import Interfaces.GenericATPState
@@ -46,6 +46,7 @@ import qualified Common.Result as Result
 import Common.ProofTree
 import Common.Utils (splitOn)
 
+import Control.Monad (when)
 import qualified Control.Concurrent as Concurrent
 import qualified Control.Exception as Exception
 import System.Exit

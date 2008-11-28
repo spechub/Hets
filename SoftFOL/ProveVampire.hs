@@ -29,10 +29,9 @@ import qualified Common.AS_Annotation as AS_Anno
 import qualified Common.Result as Result
 import Common.ProofTree
 
+import Control.Monad (when)
 import qualified Control.Concurrent as Concurrent
 import qualified Control.Exception as Exception
-
-import HTk
 
 import GUI.GenericATP
 import Interfaces.GenericATPState

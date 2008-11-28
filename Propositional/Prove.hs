@@ -35,8 +35,8 @@ import qualified Interfaces.GenericATPState as ATPState
 import GUI.GenericATP
 import GUI.Utils (infoDialog)
 
-import HTk
 import ChildProcess as CP
+import Destructible
 
 import Common.ProofTree
 import Common.Utils (readMaybe)
@@ -45,6 +45,7 @@ import qualified Common.Id as Id
 import qualified Common.OrderedMap as OMap
 import qualified Common.Result as Result
 
+import Control.Monad (when)
 import qualified Control.Concurrent as Concurrent
 import qualified Control.Exception as Exception
 import Data.Char

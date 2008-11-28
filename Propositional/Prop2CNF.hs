@@ -35,32 +35,38 @@ module Propositional.Prop2CNF
     )
     where
 
-import qualified SoftFOL.ProverState as PState
-import qualified Propositional.Prop2CASLHelpers as P2C
-import qualified Comorphisms.SuleCFOL2SoftFOL as C2S
-import qualified Logic.Comorphism as Com
-import qualified SoftFOL.Sign as Sig
-import qualified Propositional.Sign as PSign
-import qualified Common.Result as Result
-import qualified Propositional.AS_BASIC_Propositional as PBasic
-import qualified Common.AS_Annotation as AS_Anno
-import qualified SoftFOL.Conversions as Conv
-import qualified SoftFOL.DFGParser as SParse
-import qualified Common.Id as Id
-import qualified Data.Set as Set
-import qualified SoftFOL.Translate as Translate
-import qualified CASL.Logic_CASL as CLogic
-import qualified Logic.Coerce as LC
-import Propositional.ChildMessage
-
 import ChildProcess as CP
 import ProcessClasses
+import Destructible
 
+import qualified Comorphisms.SuleCFOL2SoftFOL as C2S
+
+import qualified Logic.Coerce as LC
+import qualified Logic.Comorphism as Com
+
+import Propositional.ChildMessage
+import qualified Propositional.AS_BASIC_Propositional as PBasic
+import qualified Propositional.Prop2CASLHelpers as P2C
+import qualified Propositional.Sign as PSign
+
+import qualified SoftFOL.Conversions as Conv
+import qualified SoftFOL.DFGParser as SParse
+import qualified SoftFOL.ProverState as PState
+import qualified SoftFOL.Sign as Sig
+import qualified SoftFOL.Translate as Translate
+
+import qualified CASL.Logic_CASL as CLogic
+
+import Common.DocUtils
+import qualified Common.AS_Annotation as AS_Anno
+import qualified Common.Id as Id
+import qualified Common.Result as Result
+
+import Control.Monad (when)
+import qualified Control.Exception as Exception
+import qualified Data.Set as Set
 import Data.List
 import Data.Maybe
-import HTk
-import qualified Control.Exception as Exception
-import Common.DocUtils
 import Text.ParserCombinators.Parsec
 
 safeDFGFiles ::Bool

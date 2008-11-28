@@ -39,8 +39,6 @@ import qualified Interfaces.GenericATPState as ATPState
 import GUI.GenericATP
 import GUI.Utils (infoDialog, createTextSaveDisplay)
 
-import HTk
-
 import Common.ProofTree
 import qualified Common.AS_Annotation as AS_Anno
 import qualified Common.Id as Id
