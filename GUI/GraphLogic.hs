@@ -104,7 +104,7 @@ import Data.List(partition)
 import Data.Graph.Inductive.Graph (Node, LEdge, LNode)
 import qualified Data.Map as Map
 
-import Control.Monad(foldM, filterM)
+import Control.Monad
 import Control.Concurrent (forkIO)
 import Control.Concurrent.MVar
 
@@ -676,9 +676,10 @@ proveAtNode checkCons gInfo@(GInfo { libEnvIORef = ioRefProofStatus
           forkIO action
           return ()
         False -> do
-          warningDialog "Warning"
+          b <- warningDialog "Warning"
                         "This node has incoming hiding links!\n Prove anyway?"
                         $ Just (\ _ -> action)
+          unless b $ unlockLocal dgn'
           return ()
 
 runProveAtNode :: GInfo -> LNode DGNodeLab
