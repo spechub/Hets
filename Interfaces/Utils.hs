@@ -21,7 +21,7 @@ module Interfaces.Utils
 
 
 import Interfaces.DataTypes
-import Interfaces.GenericATPState
+import GUI.GenericATPState
 import Data.Graph.Inductive.Graph
 import Static.DevGraph
 import Proofs.AbstractState

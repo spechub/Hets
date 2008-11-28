@@ -27,7 +27,7 @@ module PGIP.Shell
 
 import Interfaces.DataTypes
 import Interfaces.Utils
-import Interfaces.GenericATPState
+import GUI.GenericATPState
 import PGIP.DataTypes
 import PGIP.Utils
 import PGIP.DataTypesUtils
