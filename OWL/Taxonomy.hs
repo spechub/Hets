@@ -54,17 +54,20 @@ onto2Tax :: TaxoGraphKind
          -> MMiSSOntology
          -> Sign -> [Named Sentence]
          -> Result MMiSSOntology
-onto2Tax _ inOnto sig sens =
-    do
-      cs <- unsafePerformIO $ runClassifier sig sens
-      let tree = relBuilder cs
-          subRel = Rel.transReduce $ foldl (\x y -> x `Rel.union` y)
+onto2Tax gk inOnto sig sens =
+    case gk of
+      KSubsort -> fail "Dear user, this logic is single sorted, sorry!"
+      KConcept ->
+          do
+            cs <- unsafePerformIO $ runClassifier sig sens
+            let tree = relBuilder cs
+                subRel = Rel.transReduce $ foldl (\x y -> x `Rel.union` y)
                    Rel.empty tree
-          superRel = Rel.irreflex $ Rel.transpose subRel
-          superMap = Rel.toMap superRel
-          classes  = Set.toList $ Set.map fst $ Rel.toSet subRel
-      ontos <- makeMiss inOnto superMap classes
-      return ontos
+                superRel = Rel.irreflex $ Rel.transpose subRel
+                superMap = Rel.toMap superRel
+                classes  = Set.toList $ Set.map fst $ Rel.toSet subRel
+            ontos <- makeMiss inOnto superMap classes
+            return ontos
 
 dropClutter :: [Char] -> [Char]
 dropClutter a =
