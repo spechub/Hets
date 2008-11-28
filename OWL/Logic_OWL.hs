@@ -36,6 +36,7 @@ import Common.Consistency
 #ifdef UNI_PACKAGE
 import OWL.ProvePellet
 import OWL.Conservativity
+import OWL.Taxonomy
 #endif
 
 data OWL = OWL deriving Show
@@ -66,6 +67,7 @@ instance StaticAnalysis OWL OntologyFile Sentence
       signature_union OWL s = return . addSign s
       final_union OWL = signature_union OWL
       inclusion OWL = owlInclusion
+      theory_to_taxonomy OWL = onto2Tax
 
 {-   this function will be implemented in OWL.Taxonomy
          theory_to_taxonomy OWL = convTaxo
