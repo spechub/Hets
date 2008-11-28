@@ -429,7 +429,7 @@ pollForResults lid acm mStop mData mState done
  =do
   let toPrint ls=map(\x->let txt = "Goal "++(P.goalName x)++" is "
                          in case P.goalStatus x of
-                             P.Open     ->txt++"still open."
+                             P.Open _   ->txt++"still open."
                              P.Disproved->txt++"disproved."
                              P.Proved _ ->txt++"proved.") ls
   d <- takeMVar mData

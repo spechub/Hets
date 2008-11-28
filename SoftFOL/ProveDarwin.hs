@@ -172,7 +172,7 @@ consCheck thName tm freedefs = case t_target tm of
                   infoDialog "Darwin prover" "Darwin not found"
                   return [Proof_status
                     { goalName = thName
-                    , goalStatus = Open
+                    , goalStatus = openGoalStatus
                     , usedAxioms = getAxioms
                     , proverName = prover_name darwinProver
                     , proofTree  = ProofTree "Darwin not found"
@@ -204,8 +204,9 @@ consCheck thName tm freedefs = case t_target tm of
              in case exitCode of
                   ExitSuccess -> outState
                   ExitFailure i -> outState
-                    { goalStatus = if elem i [2, 105, 112] then Open else
-                        Disproved }
+                    { goalStatus = if elem i [2, 105, 112]
+                        then Open $ Reason [show exitCode]
+                        else Disproved }
         getAxioms = let
               fl = formulaLists $ initialLogicalPart proverStateI
               fs = concatMap formulae $ filter isAxiomFormula fl

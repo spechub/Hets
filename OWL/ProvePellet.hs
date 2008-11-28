@@ -190,12 +190,12 @@ spamOutput ps =
         dTree = proofTree ps
     in
       case dStat of
-        Open -> createTextSaveDisplay "Pellet prover" ("./"++ dName ++".pellet.log")
-                (
-                 "I was not able to find a model for the goal " ++
-                 dName ++". :( \n" ++
-                 show dTree
-                )
+        Open (Reason l) ->
+            createTextSaveDisplay "Pellet prover" ("./"++ dName ++".pellet.log")
+              $ unlines
+              $ ("I was not able to find a model for the goal "
+                 ++ dName ++ ". :(")
+              : show dTree :l
         Disproved -> createTextSaveDisplay "Pellet prover" (dName ++".pellet.owl")
                 (
                  "Your theory " ++
@@ -280,33 +280,15 @@ consCheck thName tm freedefs =
                    spamOutput outState
                    removeFile timeTmpFile
                    return [outState]
-                (True,False) -> do
-                   infoDialog "Pellet prover" "Pellet not executable"
-                   return [Proof_status
-                           {
-                            goalName = thName
-                           , goalStatus = Open
-                           , usedAxioms = getAxioms
-                           , proverName = (prover_name pelletProver)
-                           , proofTree  = ProofTree "Pellet not executable"
-                           , usedTime = timeToTimeOfDay $
-                                        secondsToDiffTime 0
-                           ,tacticScript  = tac
+                (b, _) -> do
+                   let mess = "Pellet not " ++
+                         if b then "executable" else "found"
+                   infoDialog "Pellet prover" mess
+                   return [(openProof_status thName (prover_name pelletProver)
+                           $ ProofTree mess)
+                           { usedAxioms = getAxioms
+                           , tacticScript = tac
                            }]
-                (False,_) -> do
-                   infoDialog "Pellet prover" "Pellet not found"
-                   return [Proof_status
-                           {
-                            goalName = thName
-                           , goalStatus = Open
-                           , usedAxioms = getAxioms
-                           , proverName = (prover_name pelletProver)
-                           , proofTree  = ProofTree "Pellet not found"
-                           , usedTime = timeToTimeOfDay $
-                                        secondsToDiffTime 0
-                           ,tacticScript  = tac
-                           }]
-
 
           proof_statM :: ExitCode -> String ->  [String]
                       -> Int -> Proof_status ProofTree
@@ -354,7 +336,7 @@ consCheck thName tm freedefs =
                     Proof_status
                     {
                      goalName = thName
-                    , goalStatus = Open
+                    , goalStatus = openGoalStatus
                     , usedAxioms = getAxioms
                     , proverName = (prover_name pelletProver)
                     , proofTree  = ProofTree (unlines out
@@ -400,7 +382,7 @@ consCheck thName tm freedefs =
                            killThread tid1 `catch` (\e -> putStrLn (show e))
                            return (Proof_status{
                                goalName = thName
-                             , goalStatus = Open
+                             , goalStatus = openGoalStatus
                              , usedAxioms = getAxioms
                              , proverName = (prover_name pelletProver)
                              , proofTree  = ProofTree ("\n\n" ++ "timeout")

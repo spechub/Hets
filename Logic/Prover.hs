@@ -177,19 +177,38 @@ data TheoryMorphism sign sen mor proof_tree = TheoryMorphism
 -- e.g. the file name, or the script itself, or a configuration string
 data Tactic_script = Tactic_script String deriving (Eq, Ord, Show)
 
+-- | failure reason
+data Reason = Reason [String]
+
+instance Ord Reason where
+  compare _ _ = EQ
+
+instance Eq Reason where
+  a == b = compare a b == EQ
+
 -- | enumeration type representing the status of a goal
-data GoalStatus = Open | Disproved
-    | Proved (Maybe Bool) -- ^ Just True means consistent; Nothing don't know
+data GoalStatus =
+    Open Reason -- ^ failure reason
+  | Disproved
+  | Proved (Maybe Bool) -- ^ Just True means consistent; Nothing don't know
     deriving (Eq, Ord)
  -- needed for automated theorem provers like SPASS;
  -- provers like Isabelle set it to Nothing
 
 instance Show GoalStatus where
     show gs = case gs of
-        Open -> "Open"
+        Open (Reason l) -> unlines $ "Open" : l
         Disproved -> "Disproved"
         Proved mc -> "Proved" ++ maybe ""
             ( \ c -> "(" ++ (if c then "" else "in") ++ "consistent)") mc
+
+isOpenGoal :: GoalStatus -> Bool
+isOpenGoal gs = case gs of
+  Open _ -> True
+  _ -> False
+
+openGoalStatus :: GoalStatus
+openGoalStatus = Open $ Reason []
 
 -- | data type representing the proof status for a goal or
 data Proof_status proof_tree = Proof_status
@@ -210,7 +229,7 @@ openProof_status :: Ord pt => String -- ^ name of the goal
                  -> pt -> Proof_status pt
 openProof_status goalname provername proof_tree = Proof_status
    { goalName = goalname
-   , goalStatus = Open
+   , goalStatus = openGoalStatus
    , usedAxioms = []
    , proverName = provername
    , proofTree = proof_tree

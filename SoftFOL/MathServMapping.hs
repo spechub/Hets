@@ -119,14 +119,13 @@ mapProverResult atpResult timeRes cfg nGoal prName =
 
 {- |
   Maps the status message from MathServ results to GoalStatus.
-  RegExp are used.
 -}
 mapToGoalStatus :: MWStatus -- ^ goal status
                 -> GoalStatus -- ^ final parsed goal status
-mapToGoalStatus stat = case (foAtpStatus stat) of
+mapToGoalStatus stat = case foAtpStatus stat of
         Solved Theorem            -> Proved Nothing
         Solved CounterSatisfiable -> Disproved
-        _                         -> Open
+        s                         -> Open $ Reason [show s]
 
 {- |
   Gets the prover name from MathServResponse and extracts the name only

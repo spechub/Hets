@@ -579,18 +579,16 @@ proofManagementGUI lid prGuiAcs
             done)      +> (selectOpenGoals >>> do
              s <- Conc.takeMVar stateMVar
              clearSelection lb
-             let isOpenGoal (_,st) =
+             let isOpen (_, st) =
                      let thst = thmStatus st
                      in if null thst
                         then True
                         else case maximum $ map snd $ thst of
                              BasicProof _ pst ->
-                                 case goalStatus pst of
-                                 Open -> True
-                                 _ -> False
+                                 isOpenGoal $ goalStatus pst
                              _ -> False
              mapM_ (\ i -> selection i lb)
-                   (findIndices isOpenGoal $ OMap.toList $ goalMap s)
+                   (findIndices isOpen $ OMap.toList $ goalMap s)
              enableWidsUponSelection lb goalSpecificWids
              s' <- updateStatusSublogic s
              Conc.putMVar stateMVar s'

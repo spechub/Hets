@@ -83,10 +83,7 @@ adjustOrSetConfig f prName k pt m = if (Map.member k m)
                                                (f $ emptyConfig prName k pt) m
 
 filterOpenGoals :: GenericConfigsMap proof_tree -> GenericConfigsMap proof_tree
-filterOpenGoals = Map.filter isOpenGoal
-    where isOpenGoal cf = case (goalStatus $ proof_status cf) of
-                              Open -> True
-                              _    -> False
+filterOpenGoals = Map.filter $ isOpenGoal . goalStatus . proof_status
 
 {- |
   Checks whether a goal in the results map is marked as proved.

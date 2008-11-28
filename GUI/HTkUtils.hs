@@ -260,7 +260,7 @@ indicatorFromProof_status st = case goalStatus st of
                                   else LBIndicatorProvedInconsistent)
                      mc
   Disproved -> LBIndicatorDisproved
-  Open      -> LBIndicatorOpen
+  Open _    -> LBIndicatorOpen
 
 -- | Converts a 'BasicProof' into a 'LBStatusIndicator'
 indicatorFromBasicProof :: BasicProof

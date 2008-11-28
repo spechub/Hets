@@ -156,9 +156,9 @@ initialGenericState prName ips trSenName th freedefs pt =
           updateTactic_script prStat gn =
             maybe prStat
                   (\senSt ->
-                    let validThmStatus = filter (\tStatus ->
-                            (goalStatus tStatus == Open) &&
-                            (not $ tacticScript tStatus == Tactic_script ""))
+                    let validThmStatus = filter (\ tStatus ->
+                            isOpenGoal (goalStatus tStatus) &&
+                            not (tacticScript tStatus == Tactic_script ""))
                                                 $ thmStatus senSt
                     in  if null validThmStatus
                           then prStat

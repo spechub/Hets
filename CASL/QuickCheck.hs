@@ -100,7 +100,7 @@ runQuickCheck qm cfg _saveFile _thName nGoal = do
        gstat = case res of
           Just True -> Proved Nothing
           Just False -> Disproved
-          Nothing -> Open
+          Nothing -> openGoalStatus
        setStatus pstat = pstat { goalStatus = gstat,
                                  proverName = "QuickCheck",
                                  proofTree = ProofTree diagstr }
