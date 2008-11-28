@@ -111,11 +111,11 @@ exclude s = not $
     , "OWL.StructureAnalysis", "OWL.OWLAnalysis"
     , "OWL.ProvePellet"
     , "Haskell.Haskell2DG", "Haskell.CreateModules"
-    , "Comorphisms.KnownProvers", "GUI.GenericATPState", "PGIP.Utils"
+    , "Comorphisms.KnownProvers", "Interfaces.GenericATPState", "PGIP.Utils"
     , "GUI.Utils", "GUI.ProofManagement" -- Proofs
     , "Proofs.Automatic", "Driver.Options" -- Static
     , "Proofs.EdgeUtils", "Proofs.StatusUtils" -- Driver
-    , "Proofs.BatchProcessing", "GUI.GenericATPState"
+    , "Proofs.BatchProcessing", "Interfaces.GenericATPState"
     , "GUI.GenericATP", "SoftFOL.CreateDFGDoc"
     , "SoftFOL.MathServMapping", "SoftFOL.ProveMathServ"
     , "SoftFOL.ProveDarwin", "SoftFOL.ProveSPASS"

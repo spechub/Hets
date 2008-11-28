@@ -44,7 +44,7 @@ import System.IO
 import System.Process
 import HTk
 import GUI.GenericATP
-import GUI.GenericATPState
+import Interfaces.GenericATPState
 import GUI.Utils (infoDialog)
 import Proofs.BatchProcessing
 

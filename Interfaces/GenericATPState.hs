@@ -13,7 +13,7 @@ Used by GUI.GenericATP.
 
 -}
 
-module GUI.GenericATPState where
+module Interfaces.GenericATPState where
 
 import Logic.Prover
 

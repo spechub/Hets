@@ -38,7 +38,7 @@ import ProcessClasses
 import HTk
 
 import GUI.GenericATP
-import GUI.GenericATPState
+import Interfaces.GenericATPState
 import Proofs.BatchProcessing
 
 import qualified Common.AS_Annotation as AS_Anno
@@ -91,7 +91,7 @@ atpFun thName = ATPFunctions
 
 {- |
   Parses a given default tactic script into a
-  'GUI.GenericATPState.ATPTactic_script' if possible. Otherwise a default
+  'Interfaces.GenericATPState.ATPTactic_script' if possible. Otherwise a default
   SPASS tactic script is returned.
 -}
 parseSpassTactic_script :: Tactic_script

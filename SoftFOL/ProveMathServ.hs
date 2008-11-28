@@ -43,7 +43,7 @@ import qualified Control.Exception as Exception
 import HTk
 
 import GUI.GenericATP
-import GUI.GenericATPState
+import Interfaces.GenericATPState
 import Proofs.BatchProcessing
 
 -- * Prover implementation

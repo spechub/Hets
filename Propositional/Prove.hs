@@ -31,7 +31,7 @@ import Proofs.BatchProcessing
 
 import qualified Logic.Prover as LP
 
-import qualified GUI.GenericATPState as ATPState
+import qualified Interfaces.GenericATPState as ATPState
 import GUI.GenericATP
 import GUI.Utils (infoDialog)
 
@@ -171,7 +171,7 @@ zchaffProveGUI thName th freedefs =
                   freedefs emptyProofTree
 {- |
   Parses a given default tactic script into a
-  'GUI.GenericATPState.ATPTactic_script' if possible.
+  'Interfaces.GenericATPState.ATPTactic_script' if possible.
 -}
 parseZchaffTactic_script :: LP.Tactic_script
                         -> ATPState.ATPTactic_script
@@ -180,7 +180,7 @@ parseZchaffTactic_script =
 
 {- |
   Parses a given default tactic script into a
-  'GUI.GenericATPState.ATPTactic_script' if possible. Otherwise a default
+  'Interfaces.GenericATPState.ATPTactic_script' if possible. Otherwise a default
   prover's tactic script is returned.
 -}
 parseTactic_script :: Int -- ^ default time limit (standard:

@@ -50,7 +50,7 @@ import Control.Concurrent.MVar
 import System.Posix.Signals
 import System.IO
 
-import GUI.GenericATPState
+import Interfaces.GenericATPState
 import Interfaces.DataTypes
 
 -- | Drops any seleceted comorphism

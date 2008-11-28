@@ -40,7 +40,7 @@ import GUI.Utils (createTextSaveDisplay)
 import GUI.HTkUtils ( LBGoalView (..), LBStatusIndicator (..), EnableWid (..)
                     , populateGoalsListBox, indicatorFromProof_status
                     , enableWids, disableWids, enableWidsUponSelection)
-import GUI.GenericATPState
+import Interfaces.GenericATPState
 import GUI.PrintUtils
 
 import Proofs.BatchProcessing

@@ -35,7 +35,7 @@ import Propositional.Sublogic(PropSL,top)
 
 import qualified Logic.Prover as LP
 
-import qualified GUI.GenericATPState as ATPState
+import qualified Interfaces.GenericATPState as ATPState
 import GUI.GenericATP
 import GUI.Utils (infoDialog, createTextSaveDisplay)
 

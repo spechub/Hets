@@ -52,7 +52,7 @@ import Control.Concurrent.MVar
 
 import System.IO
 
-import GUI.GenericATPState
+import Interfaces.GenericATPState
 
 getProversAutomatic :: [AnyComorphism] -> [(G_prover, AnyComorphism)]
 getProversAutomatic = foldl addProvers []

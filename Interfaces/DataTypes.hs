@@ -30,7 +30,7 @@ import Common.LibName
 import Proofs.AbstractState
 import Logic.Comorphism
 import Logic.Logic
-import GUI.GenericATPState
+import Interfaces.GenericATPState
 
 
 -- | Internal state of the interface, it contains the development graph

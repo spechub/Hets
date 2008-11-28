@@ -26,7 +26,7 @@ import SoftFOL.Sign
 
 import Data.Maybe
 
-import GUI.GenericATPState
+import Interfaces.GenericATPState
 
 {- |
   Name of the prover if MathServ was called via Broker.

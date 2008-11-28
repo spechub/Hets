@@ -47,7 +47,7 @@ import Control.Concurrent.MVar
 import System.IO
 
 import GUI.GenericATP
-import GUI.GenericATPState
+import Interfaces.GenericATPState
 
 import Proofs.BatchProcessing
 

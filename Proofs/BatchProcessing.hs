@@ -36,7 +36,7 @@ import qualified Control.Exception as Exception
 import qualified Control.Concurrent as Conc
 import Control.Monad (when)
 
-import GUI.GenericATPState
+import Interfaces.GenericATPState
 
 -- * Non-interactive Batch Prover
 

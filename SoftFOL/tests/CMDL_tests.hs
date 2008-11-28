@@ -3,7 +3,7 @@
 -}
 module Main where
 
-import GUI.GenericATPState
+import Interfaces.GenericATPState
 import qualified Logic.Prover as LProver
 
 import SoftFOL.Sign

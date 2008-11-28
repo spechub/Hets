@@ -25,7 +25,7 @@ import OWL.Sublogic
 import HTk
 
 import GUI.GenericATP
-import GUI.GenericATPState
+import Interfaces.GenericATPState
 import GUI.Utils (createTextSaveDisplay, infoDialog)
 
 import Proofs.BatchProcessing
@@ -663,7 +663,7 @@ configTimeLimit cfg =
 
 {- |
   Parses a given default tactic script into a
-  'GUI.GenericATPState.ATPTactic_script' if possible. Otherwise a default
+  'Interfaces.GenericATPState.ATPTactic_script' if possible. Otherwise a default
   prover's tactic script is returned.
 -}
 parseTactic_script :: Int -- ^ default time limit (standard:

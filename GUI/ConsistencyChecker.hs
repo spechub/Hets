@@ -32,7 +32,7 @@ import Space
 import ScrollBar
 
 import GUI.Utils
-import GUI.GenericATPState
+import Interfaces.GenericATPState
 
 -- ** Constants
 

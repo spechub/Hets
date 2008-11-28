@@ -18,7 +18,7 @@ import Logic.Prover
 import Common.Doc
 import qualified Data.Map as Map
 
-import GUI.GenericATPState
+import Interfaces.GenericATPState
 
 -- * pretty printing functions
 

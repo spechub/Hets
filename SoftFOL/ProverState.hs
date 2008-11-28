@@ -33,7 +33,7 @@ import qualified Control.Exception as Exception
 import Data.Maybe
 
 import GUI.GenericATP (guiDefaultTimeLimit)
-import GUI.GenericATPState
+import Interfaces.GenericATPState
 
 -- * Data structures
 
@@ -144,7 +144,7 @@ configTimeLimit cfg =
 
 {- |
   Parses a given default tactic script into a
-  'GUI.GenericATPState.ATPTactic_script' if possible. Otherwise a default
+  'Interfaces.GenericATPState.ATPTactic_script' if possible. Otherwise a default
   prover's tactic script is returned.
 -}
 parseTactic_script :: Int -- ^ default time limit (standard:

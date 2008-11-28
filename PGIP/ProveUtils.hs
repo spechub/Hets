@@ -16,7 +16,7 @@ module PGIP.ProveUtils
        ) where
 
 import Logic.Prover
-import GUI.GenericATPState
+import Interfaces.GenericATPState
 import List
 
 -- reads an integer from a string
