@@ -42,8 +42,6 @@ import System.Directory
 import Control.Concurrent
 import Control.Concurrent.MVar
 
-import Debug.Trace
-
 import qualified Data.Foldable as Fold
 import qualified Common.Lib.Rel as Rel
 import qualified Data.Map as Map
@@ -59,60 +57,45 @@ onto2Tax :: TaxoGraphKind
 onto2Tax _ inOnto sig sens =
     do
       cs <- unsafePerformIO $ runClassifier sig sens
-      let tree = treeBuilder cs
-          subRel = foldl (\x y -> x `Rel.union` y) Rel.empty $
-                   map tree2assocs tree
-          superRel = Rel.transpose subRel
+      let tree = relBuilder cs
+          subRel = Rel.transReduce $ foldl (\x y -> x `Rel.union` y)
+                   Rel.empty tree
+          superRel = Rel.irreflex $ Rel.transpose subRel
           superMap = Rel.toMap superRel
-          classes  = nub $ concat $ map getClasses tree
-      ontos <- trace (show subRel) $ makeMiss inOnto superMap classes
+          classes  = Set.toList $ Set.map fst $ Rel.toSet subRel
+      ontos <- makeMiss inOnto superMap classes
       return ontos
 
-data Tree a = Empty | Node a [Tree a]
-            deriving (Eq, Ord, Show)
+dropClutter :: [Char] -> [Char]
+dropClutter a =
+    case (stripPrefix "unamed:" a) of
+      Nothing -> a
+      Just b  -> b
 
+-- | Generation of a MissOntology
 makeMiss :: MMiSSOntology
             -> Map.Map String (Set.Set String)
             -> [String]
             -> Result MMiSSOntology
 makeMiss o r s =
     do
-      onto <- Fold.foldlM (\x y -> fromWithError $ insertClass x y ""
+      onto <- Fold.foldlM (\x y -> fromWithError $ insertClass x
+                                   (dropClutter y) ""
                            (
                             case Map.lookup y r of
                               Nothing -> []
-                              Just z  -> Set.toList z
+                              Just z  -> Set.toList $ Set.map dropClutter z
                            )
                            Nothing) o s
       return onto
 
-getClasses :: Tree String -> [String]
-getClasses t =
-    case t of
-      Empty     -> []
-      Node a [] -> a:[]
-      Node a ts -> a:(concat $ map getClasses ts)
-
-childreN :: t -> Tree t1 -> [(t, t1)]
-childreN a t =
-    case t of
-      Empty     -> []
-      Node b _  -> [(a,b)]
-
-tree2assocs :: Tree String -> Rel.Rel String
-tree2assocs t =
-    case t of
-      Empty     -> Rel.empty
-      Node _ [] -> Rel.empty
-      Node a ts -> (Rel.fromList $ concat $ map (childreN a) ts)
-                   `Rel.union` (foldl (\x y -> (tree2assocs y)
-                                       `Rel.union` x) Rel.empty ts)
-
-treeBuilder :: String ->
-               [Tree String]
-treeBuilder tr = map treeBuild $
+-- | Builder for all relations
+relBuilder :: String ->
+               [Rel.Rel String]
+relBuilder tr = map relBuild $
                  splitter $ map (tail) $ filter (/= []) $ lines tr
 
+-- | splitter for output
 splitter :: [String] -> [[String]]
 splitter ls =
     case ls of
@@ -123,17 +106,24 @@ splitter ls =
           in
             [(h:l)] ++ splitter r
 
-treeBuild :: [String]
-          -> Tree String
-treeBuild s =
+-- | builder for a single relation
+relBuild :: [String]
+          -> Rel.Rel String
+relBuild s =
     case s of
-      []     -> Empty
+      []     -> Rel.empty
       (t:ts) ->
           let
               nt = map (drop 3) ts
               children = splitter nt
           in
-            Node t (map treeBuild children)
+            let
+                ch  = (foldl (\x y -> x `Rel.union` y) Rel.empty) $
+                      map relBuild children
+                suc = map head $ children
+            in
+              Rel.insert t t
+              $ (Rel.fromList $ zip (repeat t) suc) `Rel.union` ch
 
 -- | Invocation of Pellet
 runClassifier :: Sign
