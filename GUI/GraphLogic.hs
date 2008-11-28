@@ -669,7 +669,7 @@ proveAtNode checkCons gInfo@(GInfo { libEnvIORef = ioRefProofStatus
             guiMVar <- newMVar Nothing
             res <- basicInferenceNode checkCons logicGraph libNode ln
                 guiMVar le ch
-            runProveAtNode gInfo (descr, dgn') res
+            runProveAtNode checkCons gInfo (descr, dgn') res
             unlockLocal dgn'
       case checkCons || not (hasIncomingHidingEdge dgraph' $ snd libNode) of
         True -> do
@@ -682,17 +682,16 @@ proveAtNode checkCons gInfo@(GInfo { libEnvIORef = ioRefProofStatus
           unless b $ unlockLocal dgn'
           return ()
 
-runProveAtNode :: GInfo -> LNode DGNodeLab
+runProveAtNode :: Bool -> GInfo -> LNode DGNodeLab
                -> Res.Result (LibEnv, Res.Result G_theory) -> IO ()
-runProveAtNode gInfo (v, dgnode) res = case maybeResult res of
+runProveAtNode checkCons gInfo (v, dgnode) res = case maybeResult res of
     Just (le, tres) -> do
         let nodetext = getDGNodeName dgnode ++ " node: " ++ show v
-        case maybeResult tres of
+        when checkCons $ case maybeResult tres of
           Just gth -> createTextSaveDisplay
             ("Model for " ++ nodetext)
             "model.log"  $ showDoc gth ""
           Nothing -> case diags tres of
-            [] -> infoDialog ("Result for " ++ nodetext) "no model found"
             ds ->
               createTextDisplay "Error" (showRelDiags 2 ds) [HTk.size(50,10)]
         proofMenu gInfo $ mergeDGNodeLab gInfo

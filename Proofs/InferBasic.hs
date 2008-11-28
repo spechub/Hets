@@ -193,8 +193,8 @@ basicInferenceNode checkCons lg (ln, node) libname guiMVar libEnv ch = do
                       Just (sign''', sens''') -> Result ds $ Just $
                          G_theory lidS (mkExtSign sign''') startSigId
                               (toThSens sens''') startThId
-                    _ -> Result [] Nothing
-                  _ -> Result [] Nothing
+                    st -> fail $ "prover status is: " ++ show st
+                  _ -> fail "no unique cons checkers found"
              -- ??? Borrowing to be implemented
             return (libEnv', resT)
           else do -- proving
