@@ -287,20 +287,9 @@ createGlobalMenu gInfo@(GInfo { gi_LIB_NAME = ln
     , Button "Show Library Graph" $ ral $ showLibGraph gInfo showLib
     , Button "Save Graph for uDrawGraph" $ ral
              $ saveUDGraph gInfo (mapNodeTypes opts) $ mapEdgeTypes opts
-    , Button "Save proof-script" $ ral $ askSaveProofScript gInfo
+    , Button "Save proof-script" $ ral $ askSaveProofScript ch
     ])
   ]
-
--- | Displays a Save-As dialog and writes the proof-script.
-askSaveProofScript :: GInfo -> IO ()
-askSaveProofScript (GInfo { commandHist = ch }) =
-  do
-    file <- getProofScriptFileName ch
-    evnt <- newFileDialogStr "Save as..." file
-    maybeFilePath <- HTk.sync evnt
-    case maybeFilePath of
-      Just filePath -> saveCommandHistory ch filePath
-      Nothing -> fail "Could not save file."
 
 -- | A list of all Node Types
 createNodeTypes :: GInfo -> ConvFunc -> LibFunc

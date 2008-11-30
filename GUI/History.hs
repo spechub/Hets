@@ -15,18 +15,20 @@ module GUI.History (CommandHistory,
                     initCommandHistory,
                     addMenuItemToHist,
                     addProveToHist,
-                    getProofScriptFileName,
-                    saveCommandHistory) where
+                    askSaveProofScript) where
 
 import Common.OrderedMap (keys)
 import Common.Utils (joinWith, splitOn)
 import Driver.Options (rmSuffix)
+import FileDialog (newFileDialogStr)
+import GUI.Utils (infoDialog)
 import Logic.Comorphism (AnyComorphism(..))
 import Logic.Grothendieck (SigId(..))
 import Logic.Logic (language_name)
 import Logic.Prover
 import Proofs.AbstractState
 import Static.GTheory (G_theory(..))
+import qualified HTk
 
 import Control.Monad (when)
 import Data.IORef
@@ -257,6 +259,21 @@ getLastProve (CommandHistory{hist = c}) =
                else case last h of
                         ProveCommand p -> Just p
                         _              -> Nothing
+
+-- | Displays a Save-As dialog and writes the proof-script.
+askSaveProofScript :: CommandHistory -> IO ()
+askSaveProofScript ch =
+    do
+    h <- readIORef $ hist ch
+    if null h
+        then infoDialog "Information" "The history is empty. No file written."
+        else do
+             f <- getProofScriptFileName ch
+             evnt <- newFileDialogStr "Save as..." f
+             maybeFilePath <- HTk.sync evnt
+             case maybeFilePath of
+                 Just filePath -> saveCommandHistory ch filePath
+                 Nothing -> fail "Could not save proof-script."
 
 -- Saves the history of commands in a file.
 saveCommandHistory :: CommandHistory -> String -> IO ()
