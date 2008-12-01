@@ -60,8 +60,8 @@ onto2Tax gk inOnto sig sens =
       KConcept ->
           do
             cs <- unsafePerformIO $ runClassifier sig sens
-            let tree = relBuilder cs
-                subRel = Rel.transReduce $ foldl (\x y -> x `Rel.union` y)
+            tree <- relBuilder cs
+            let subRel = Rel.transReduce $ foldl (\x y -> x `Rel.union` y)
                    Rel.empty tree
                 superRel = Rel.irreflex $ Rel.transpose subRel
                 superMap = Rel.toMap superRel
@@ -94,9 +94,20 @@ makeMiss o r s =
 
 -- | Builder for all relations
 relBuilder :: String ->
-               [Rel.Rel String]
-relBuilder tr = map relBuild $
-                 splitter $ map (tail) $ filter (/= []) $ lines tr
+              Result [Rel.Rel String]
+relBuilder tr =
+    let
+        ln = filter (/= []) $ lines tr
+        err = (or $ map (isPrefixOf "ERROR: ") ln)
+              || ln == []
+    in
+      if err
+       then
+           fail ("Classification via Pellet failed! Ontology "
+                 ++ "might be inconsistent!")
+       else
+           return $ map relBuild $
+               splitter $ map (tail) $ ln
 
 -- | splitter for output
 splitter :: [String] -> [[String]]
@@ -134,7 +145,7 @@ runClassifier :: Sign
               -> IO (Result String)
 runClassifier sig sen =
     do
-      let th      = show $ printOWLBasicTheory (sig, sen)
+      let th      = show $ printOWLBasicTheory (sig, filter (isAxiom) sen)
           options = "classify "
           tmpFile = "PelletClassifier"
           timeLimit = 800
@@ -167,6 +178,7 @@ runClassifier sig sen =
                          do
                            return $ fail ls
                 )
+              removeFile timeTmpFile
               return $ outState
         (True,False) -> do
           return $ fail "Pellet prover" "Pellet not executable"

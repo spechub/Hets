@@ -43,20 +43,23 @@ toolName :: String
 toolName = "owl_locality"
 
 -- | Conservativity Check for Propositional Logic
-conserCheck :: (Sign, [Named Sentence])      -- ^ Initial sign and formulas
+conserCheck :: String                        -- ^ Conser type
+           -> (Sign, [Named Sentence])       -- ^ Initial sign and formulas
            -> OWL_Morphism                   -- ^ morhpism between specs
            -> [Named Sentence]               -- ^ Formulas of extended spec
            -> Result (Maybe (ConsistencyStatus, [Sentence]))
-conserCheck (sig, forms) mor nForms = unsafePerformIO $
-                                      doConservCheck sig forms mor nForms
+conserCheck ct (sig, forms) mor nForms = unsafePerformIO $
+                                      doConservCheck "OWLLocality.jar" ct sig forms mor nForms
 
 -- | Real conservativity check in IO Monad
-doConservCheck :: Sign              -- ^ Signature of Onto 1
+doConservCheck :: String            -- ^ Jar name
+               -> String            -- ^ Conser Type
+               -> Sign              -- ^ Signature of Onto 1
                -> [Named Sentence]  -- ^ Formulas of Onto 1
                -> OWL_Morphism      -- ^ Morhpism
                -> [Named Sentence]  -- ^ Formulas of Onto 2
                -> IO (Result (Maybe (ConsistencyStatus, [Sentence])))
-doConservCheck sig1 sen1 mor sen2 =
+doConservCheck jar ct sig1 sen1 mor sen2 =
     case (isInclusionDefaultMorphism mor) of
       False -> return $ fail "Morphism is not an inclusion"
       True  ->
@@ -64,16 +67,16 @@ doConservCheck sig1 sen1 mor sen2 =
             let ontoFile = printOWLBasicTheory
                  (codOfDefaultMorphism mor, filter isAxiom sen2)
                 sigFile  = printOWLBasicTheory (sig1, filter isAxiom sen1)
-            runLocalityChecker (show ontoFile) (show sigFile)
+            runLocalityChecker jar ct (show ontoFile) (show sigFile)
 
 getEnvSec :: String -> IO String
 getEnvSec s = getEnvDef s ""
 
-check4Tool :: IO (Bool, Bool)
-check4Tool =
+check4Tool :: String -> IO (Bool, Bool)
+check4Tool jar =
     do
       pPath     <- getEnvSec "HETS_OWL_TOOLS"
-      progTh    <- doesFileExist $ pPath ++ "/" ++ "OWLLocality.jar"
+      progTh    <- doesFileExist $ pPath ++ "/" ++ jar
       progEx <- if (progTh)
                  then
                      do
@@ -84,13 +87,15 @@ check4Tool =
       return $ (progTh, progEx)
 
 -- | Invoke the Java checker
-runLocalityChecker :: String            -- ^ Ontology
+runLocalityChecker :: String            -- ^ Jar name
+                   -> String            -- ^ Conser Type
+                   -> String            -- ^ Ontology
                    -> String            -- ^ String
                    -> IO (Result (Maybe (ConsistencyStatus, [Sentence])))
-runLocalityChecker onto sig =
+runLocalityChecker jar ct onto sig =
   do
     let timeLimit = 800
-    (progTh, _) <- check4Tool
+    (progTh, _) <- check4Tool jar
     case progTh of
       False ->
           do
@@ -105,7 +110,7 @@ runLocalityChecker onto sig =
                           "-" ++ (show $ utctDayTime t) ++ ".onto.owl"
                 sigFile  = tempDir ++ "/" ++ baseName ++ (show $ utctDay t)
                            ++ "-" ++ (show $ utctDayTime t) ++ ".sig.owl"
-            let command = "java -jar OWLLocality.jar file://" ++ ontoFile ++ " file://" ++ sigFile
+            let command = "java -jar " ++ jar ++ " file://" ++ ontoFile ++ " file://" ++ sigFile ++ " " ++ ct
             writeFile ontoFile onto
             writeFile sigFile sig
             (result, _) <-

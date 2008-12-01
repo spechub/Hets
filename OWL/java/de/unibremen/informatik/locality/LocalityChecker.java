@@ -23,18 +23,33 @@ public class LocalityChecker {
 
     public static void main(String[] args)
     {
-	if (args.length != 2) 
+	if (args.length != 3) 
 	    {
 		System.out.println("Usage: LocalityChecker <URI> " +
-                                   "<SignatureURI>");
+                                   "<SignatureURI> <LocalityType>");
 		System.exit(1);
+	    }
+
+	LocalityClass cl = com.clarkparsia.modularity.locality.LocalityClass.BOTTOM_BOTTOM;
+
+	if (args[2].equals("TOP_BOTTOM"))
+	    {
+		cl = com.clarkparsia.modularity.locality.LocalityClass.TOP_BOTTOM;
+	    }
+	else if (args[2].equals("TOP_TOP"))
+	    {
+		cl = com.clarkparsia.modularity.locality.LocalityClass.TOP_TOP;
+	    }
+	else
+	    {
+		cl = com.clarkparsia.modularity.locality.LocalityClass.BOTTOM_BOTTOM;
 	    }
 
 	try 
 	    {
 		loader(args[0], args[1]);
 		//print();
-		boolean local = checker();
+		boolean local = checker(cl);
 		System.out.print("Result: ");
 		if (local)
 		    {
@@ -55,12 +70,12 @@ public class LocalityChecker {
 	    }
     }
 
-    private static Boolean checker()
+    private static Boolean checker(LocalityClass cl)
     {
 	boolean local = true;
 	out = org.semanticweb.owl.io.ToStringRenderer.getInstance();
 	SyntacticLocalityEvaluator eval = 
-	    new SyntacticLocalityEvaluator(com.clarkparsia.modularity.locality.LocalityClass.BOTTOM_BOTTOM); 
+	    new SyntacticLocalityEvaluator(cl); 
 	//let's try the bottom evaluator first
 	Iterator<OWLAxiom> it = axioms.iterator();
 	while (it.hasNext())

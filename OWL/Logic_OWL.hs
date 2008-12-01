@@ -84,7 +84,12 @@ instance Logic OWL OWL_SL OntologyFile Sentence () ()
          cons_checkers OWL = [pelletConsChecker]
          conservativityCheck OWL =
              [
-              ConservativityChecker "Locality_BOTTOM_BOTTOM" conserCheck
+              ConservativityChecker "Locality_BOTTOM_BOTTOM" (conserCheck
+                                                              "BOTTOM_BOTTOM")
+             ,ConservativityChecker "Locality_TOP_BOTTOM" (conserCheck
+                                                           "TOP_BOTTOM")
+             ,ConservativityChecker "Locality_TOP_TOP" (conserCheck
+                                                        "TOP_TOP")
              ]
 #endif
 
