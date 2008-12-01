@@ -362,16 +362,10 @@ runminisat pState cfg saveDIMACS thName nGoal =
                                ATPState.proof_status =
                                    (defaultProof_status [])
                                    {
-                                     LP.goalName = thName
-                                   , LP.goalStatus = LP.openGoalStatus
-                                   , LP.usedAxioms = []
-                                   , LP.proverName = (LP.prover_name minisatProver)
-                                   , LP.proofTree  = ProofTree ("Unkown")
+                                     LP.goalStatus = LP.openGoalStatus
+                                   , LP.proofTree  = ProofTree "Unkown"
                                    , LP.usedTime = timeToTimeOfDay $
                                                    secondsToDiffTime 0
-                                   , LP.tacticScript  = LP.Tactic_script $ show $ ATPState.ATPTactic_script
-                                                        {ATPState.ts_timeLimit = configTimeLimit cfg,
-                                                         ATPState.ts_extraOpts = []}
                                    }
                              })
               _ -> return $
