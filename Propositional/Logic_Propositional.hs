@@ -49,6 +49,7 @@ import qualified Propositional.ProveWithTruthTable as ProveTT
 #endif
 import qualified Propositional.Prove as Prove
 import Propositional.Conservativity
+import qualified  Propositional.ProveMinisat as ProveMini
 #endif
 
 -- | Lid for propositional logic
@@ -114,13 +115,16 @@ instance Logic Propositional
     -- supplied provers
       provers Propositional = []
 #ifdef UNI_PACKAGE
-        ++ (unsafeProverCheck "zchaff" "PATH "
+        ++ (unsafeProverCheck "zchaff" "PATH"
                               Prove.zchaffProver)
+        ++ (unsafeProverCheck "minisat" "PATH"
+                              ProveMini.minisatProver)
 #ifdef TABULAR_PACKAGE
                               ++[ProveTT.ttProver]
 #endif
       cons_checkers Propositional = []
          ++ (unsafeProverCheck "zchaff" "PATH" Prove.propConsChecker)
+         ++ (unsafeProverCheck "minisat" "PATH" ProveMini.minisatConsChecker)
 #ifdef TABULAR_PACKAGE
          ++ [ProveTT.ttConsistencyChecker]
 #endif
