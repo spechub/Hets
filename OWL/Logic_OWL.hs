@@ -33,6 +33,7 @@ import OWL.StaticAnalysis
 import OWL.Sublogic
 import OWL.Morphism
 import Common.Consistency
+import Common.ProverTools
 #ifdef UNI_PACKAGE
 import OWL.ProvePellet
 import OWL.Conservativity
@@ -80,17 +81,18 @@ instance Logic OWL OWL_SL OntologyFile Sentence () ()
     -- default implementations are fine
     -- the prover uses HTk and IO functions from uni
 #ifdef UNI_PACKAGE
-         provers OWL = [pelletProver]
-         cons_checkers OWL = [pelletConsChecker]
-         conservativityCheck OWL =
-             [
-              ConservativityChecker "Locality_BOTTOM_BOTTOM" (conserCheck
-                                                              "BOTTOM_BOTTOM")
-             ,ConservativityChecker "Locality_TOP_BOTTOM" (conserCheck
-                                                           "TOP_BOTTOM")
-             ,ConservativityChecker "Locality_TOP_TOP" (conserCheck
-                                                        "TOP_TOP")
-             ]
+         provers OWL = unsafeFileCheck "pellet.sh" "PELLET_PATH" pelletProver
+         cons_checkers OWL = unsafeFileCheck "pellet.sh" "PELLET_PATH" pelletConsChecker
+         conservativityCheck OWL = [] ++
+           (unsafeFileCheck "OWLLocality.jar" "HETS_OWL_TOOLS"
+              (ConservativityChecker "Locality_BOTTOM_BOTTOM" (conserCheck
+                                                              "BOTTOM_BOTTOM"))) ++
+           (unsafeFileCheck "OWLLocality.jar" "HETS_OWL_TOOLS"
+              (ConservativityChecker "Locality_TOP_BOTTOM" (conserCheck
+                                                              "TOP_BOTTOM"))) ++
+           (unsafeFileCheck "OWLLocality.jar" "HETS_OWL_TOOLS"
+              (ConservativityChecker "Locality_TOP_TOP" (conserCheck
+                                                              "TOP_TOP")))
 #endif
 
 instance SemiLatticeWithTop (OWL_SL) where

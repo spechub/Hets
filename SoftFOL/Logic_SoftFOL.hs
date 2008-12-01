@@ -27,6 +27,7 @@ import SoftFOL.Sign
 import SoftFOL.Print
 import SoftFOL.Conversions
 import SoftFOL.Morphism
+import Common.ProverTools
 
 #ifdef UNI_PACKAGE
 import SoftFOL.ProveSPASS
@@ -80,11 +81,11 @@ instance Logic SoftFOL () () Sentence () ()
     -- again default implementations are fine
     -- the prover uses HTk and IO functions from uni
 #ifdef UNI_PACKAGE
-         provers SoftFOL = [spassProver
+         provers SoftFOL = (unsafeProverCheck "SPASS" "PATH" spassProver) ++
 #ifndef NOMATHSERVER
-                           , mathServBroker,vampire
+                           [mathServBroker,vampire]
 #endif
-                           , darwinProver]
-         cons_checkers SoftFOL = [darwinConsChecker]
+                           ++ (unsafeProverCheck "darwin" "PATH" darwinProver)
+         cons_checkers SoftFOL = (unsafeProverCheck "darwin" "PATH"
+                                                    darwinConsChecker)
 #endif
-

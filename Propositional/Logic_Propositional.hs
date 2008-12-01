@@ -41,6 +41,7 @@ import qualified Propositional.Symbol as Symbol
 import qualified Propositional.Parse_AS_Basic as Parse_AS
 import qualified Propositional.Analysis as Analysis
 import qualified Propositional.Sublogic as Sublogic
+import Common.ProverTools
 
 #ifdef UNI_PACKAGE
 #ifdef TABULAR_PACKAGE
@@ -111,25 +112,25 @@ instance Logic Propositional
       top_sublogic Propositional  = Sublogic.top
       all_sublogics Propositional = Sublogic.sublogics_all
     -- supplied provers
+      provers Propositional = []
 #ifdef UNI_PACKAGE
-      provers Propositional = [Prove.zchaffProver
+        ++ (unsafeProverCheck "zchaff" "PATH "
+                              Prove.zchaffProver)
 #ifdef TABULAR_PACKAGE
-                              ,ProveTT.ttProver
+                              ++[ProveTT.ttProver]
 #endif
-                              ]
-      cons_checkers Propositional =
-         [Prove.propConsChecker
+      cons_checkers Propositional = []
+         ++ (unsafeProverCheck "zchaff" "PATH" Prove.propConsChecker)
 #ifdef TABULAR_PACKAGE
-         ,ProveTT.ttConsistencyChecker
+         ++ [ProveTT.ttConsistencyChecker]
 #endif
-         ]
-      conservativityCheck Propositional =
-          [
-           ConservativityChecker "sKizzo" conserCheck
+      conservativityCheck Propositional = []
+          ++(unsafeProverCheck "sKizzo" "PATH"
+             (ConservativityChecker "sKizzo" conserCheck))
 #ifdef TABULAR_PACKAGE
-          ,ConservativityChecker "Truth Tables" ProveTT.ttConservativityChecker
+          ++[ConservativityChecker "Truth Tables"
+                                    ProveTT.ttConservativityChecker]
 #endif
-          ]
 #endif
 
 
