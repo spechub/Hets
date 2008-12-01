@@ -116,7 +116,7 @@ consCheck thName tm _ =
             outputHf <- openFile tmpFile ReadWriteMode
             hPutStr outputHf dimacsOutput
             hClose outputHf
-            (_,_,_,pid) <- runInteractiveCommand ("minisat " ++ tmpFile)
+            (_,_,_,pid) <- runInteractiveCommand ("minisat \"" ++ tmpFile ++ "\"")
             exitCode <- waitForProcess pid
             removeFile tmpFile
             case exitCode of
@@ -280,7 +280,7 @@ runminisat pState cfg saveDIMACS thName nGoal =
       retVal <- case timeLimit of
                   Nothing -> runStuff zFileName
                   Just t  -> timeWatch t $ runStuff zFileName
-      removeFile zFileName
+      --removeFile zFileName
       return retVal
     where
       defaultProof_status opts =
@@ -325,7 +325,7 @@ runminisat pState cfg saveDIMACS thName nGoal =
                              })
       runStuff zFileName =
           do
-            (_,outHandle,_,pid) <- runInteractiveCommand ("minisat " ++ zFileName)
+            (_,outHandle,_,pid) <- runInteractiveCommand ("minisat \"" ++ zFileName ++"\"")
             startTime <- getCurrentTime
             let stTime = utctDayTime startTime
             exCode <- waitForProcess pid
