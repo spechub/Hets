@@ -287,7 +287,8 @@ createGlobalMenu gInfo@(GInfo { gi_LIB_NAME = ln
     , Button "Show Library Graph" $ ral $ showLibGraph gInfo showLib
     , Button "Save Graph for uDrawGraph" $ ral
              $ saveUDGraph gInfo (mapNodeTypes opts) $ mapEdgeTypes opts
-    , Button "Save proof-script" $ ral $ askSaveProofScript ch
+    , Button "Save proof-script" $ ral
+             $ askSaveProofScript (gi_GraphInfo gInfo) ch
     ])
   ]
 

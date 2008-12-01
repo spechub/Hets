@@ -21,6 +21,7 @@ import Common.OrderedMap (keys)
 import Common.Utils (joinWith, splitOn)
 import Driver.Options (rmSuffix)
 import FileDialog (newFileDialogStr)
+import GUI.GraphAbstraction (GraphInfo, showTemporaryMessage)
 import GUI.Utils (infoDialog)
 import Logic.Comorphism (AnyComorphism(..))
 import Logic.Grothendieck (SigId(..))
@@ -261,8 +262,8 @@ getLastProve (CommandHistory{hist = c}) =
                         _              -> Nothing
 
 -- | Displays a Save-As dialog and writes the proof-script.
-askSaveProofScript :: CommandHistory -> IO ()
-askSaveProofScript ch =
+askSaveProofScript :: GraphInfo -> CommandHistory -> IO ()
+askSaveProofScript graphInfo ch =
     do
     h <- readIORef $ hist ch
     if null h
@@ -272,8 +273,12 @@ askSaveProofScript ch =
              evnt <- newFileDialogStr "Save as..." f
              maybeFilePath <- HTk.sync evnt
              case maybeFilePath of
-                 Just filePath -> saveCommandHistory ch filePath
-                 Nothing -> fail "Could not save proof-script."
+                 Just filePath -> do
+                    showTemporaryMessage graphInfo "Saving proof-script..."
+                    saveCommandHistory ch filePath
+                    showTemporaryMessage graphInfo $ "Proof-script saved to " ++
+                                                     filePath ++ "!"
+                 Nothing -> showTemporaryMessage graphInfo $ "Aborted!"
 
 -- Saves the history of commands in a file.
 saveCommandHistory :: CommandHistory -> String -> IO ()
