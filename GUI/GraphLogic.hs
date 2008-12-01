@@ -693,7 +693,7 @@ runProveAtNode checkCons gInfo (v, dgnode) res = case maybeResult res of
             "model.log"  $ showDoc gth ""
           Nothing -> case diags tres of
             ds -> infoDialog nodetext
-              $ unlines $ "no model found" : map diagString ds
+              $ unlines $ "could not (re-)construct a model" : map diagString ds
         proofMenu gInfo $ mergeDGNodeLab gInfo
           (v, labDG (lookupDGraph (gi_LIB_NAME gInfo) le) v)
     Nothing -> return ()
