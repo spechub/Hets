@@ -332,7 +332,7 @@ runminisat pState cfg saveDIMACS thName nGoal =
             endTime <- getCurrentTime
             let edTime = utctDayTime endTime
             let usedTime = timeToTimeOfDay $ edTime - stTime
-            out  <- hGetContents outHandle
+            out <- hGetContents outHandle
             case exCode of
               ExitFailure 20 ->
                   do
@@ -345,7 +345,7 @@ runminisat pState cfg saveDIMACS thName nGoal =
                                        (defaultProof_status [])
                                        {LP.goalStatus = LP.Proved $ Nothing
                                        , LP.usedAxioms = filter (/=(AS_Anno.senAttr nGoal)) usedAxs
-                                       , LP.proofTree = ProofTree $ out }
+                                       , LP.proofTree = ProofTree out }
                                  , ATPState.timeUsed = usedTime
                                  })
               ExitFailure 10 -> return $
@@ -354,7 +354,7 @@ runminisat pState cfg saveDIMACS thName nGoal =
                                          {
                                            ATPState.proof_status =
                                                (defaultProof_status []) {LP.goalStatus = LP.Disproved
-                                                                        ,LP.proofTree  = ProofTree $ out
+                                                                        ,LP.proofTree  = ProofTree out
                                                                         }} )
               ExitSuccess    -> return $ (ATPState.ATPSuccess,
                              cfg
