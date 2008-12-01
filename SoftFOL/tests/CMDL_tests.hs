@@ -157,16 +157,16 @@ runBatchTests =
     ,runTestBatch2 True (Just 12) spassProveCMDLautomaticBatch "SPASS"
                  "[Test]ExtPartialOrder" theoryExt
                  (("gone",LProver.Proved Nothing) :
-                  zip ["ga_comm_inf","ga_comm_sup"] (repeat LProver.Open))
+                  zip ["ga_comm_inf","ga_comm_sup"] (repeat LProver.openGoalStatus))
 
     ,runTestBatch2 True (Just 12) darwinCMDLautomaticBatch "Darwin"
                  "[Test]ExtPartialOrder" theoryExt
                  (("gone", LProver.Proved (Just True)):
-                 (zip ["ga_comm_sup"] (repeat LProver.Open)))
+                 (zip ["ga_comm_sup"] (repeat LProver.openGoalStatus)))
 
     ,runTestBatch2 True (Just 20) vampireCMDLautomaticBatch "Vampire"
                  "[Test]ExtPartialOrder" theoryExt
-                  (zip ["gone","ga_comm_sup"] (repeat LProver.Open))
+                  (zip ["gone","ga_comm_sup"] (repeat LProver.openGoalStatus))
     ] >>= (exitOnBool . and)
 
 runMathServTest :: IO ()
@@ -208,7 +208,7 @@ runAllTests = do
     ,runTest darwinCMDLautomatic "Darwin" "[Test]Foo2" theoryExt
                 [("gone",LProver.Proved (Just True))]
     ,runTest vampireCMDLautomatic "Vampire" "[Test]ExtPartialOrder" theoryExt
-                [("gone",LProver.Open)]
+                [("gone",LProver.openGoalStatus)]
     ,runTest mathServBrokerCMDLautomatic "MathServ"
                 "[Test]ExtPartialOrder" theoryExt
                 [("gone",LProver.Proved Nothing)]
@@ -246,18 +246,18 @@ runAllTests = do
     ,runTestBatch (Just 12) spassProveCMDLautomaticBatch "SPASS"
                  "[Test]ExtPartialOrder" theoryExt
                  (("gone",LProver.Proved Nothing) :
-                  zip ["ga_comm_inf","ga_comm_sup"] (repeat LProver.Open))
+                  zip ["ga_comm_inf","ga_comm_sup"] (repeat LProver.openGoalStatus))
     ,runTestBatch (Just 20) darwinCMDLautomaticBatch "Darwin"
                  "[Test]ExtPartialOrder" theoryExt
                  (("gone", LProver.Proved (Just True)):
-                 (zip ["ga_comm_sup"] (repeat LProver.Open)))
+                 (zip ["ga_comm_sup"] (repeat LProver.openGoalStatus)))
     ,runTestBatch (Just 20) vampireCMDLautomaticBatch "Vampire"
                  "[Test]ExtPartialOrder" theoryExt
-                  (zip ["gone","ga_comm_sup"] (repeat LProver.Open))
+                  (zip ["gone","ga_comm_sup"] (repeat LProver.openGoalStatus))
     ,runTestBatch (Just 25) mathServBrokerCMDLautomaticBatch "MathServ"
                  "[Test]ExtPartialOrder" theoryExt
                  (("gone",LProver.Proved Nothing) :
-                  zip ["ga_comm_inf","ga_comm_sup"] (repeat LProver.Open))
+                  zip ["ga_comm_inf","ga_comm_sup"] (repeat LProver.openGoalStatus))
     ] >>= (exitOnBool . and)
 
 {- |
