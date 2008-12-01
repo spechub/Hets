@@ -29,14 +29,12 @@ import qualified Control.Concurrent as Conc
 import HTk hiding (value)
 import qualified HTk (value)
 import SpinButton
-import Messages
-import TextDisplay
 import Separator
 import XSelection
 import Space
 import ScrollBar
 
-import GUI.Utils (createTextSaveDisplay)
+import GUI.Utils
 import GUI.HTkUtils ( LBGoalView (..), LBStatusIndicator (..), EnableWid (..)
                     , populateGoalsListBox, indicatorFromProof_status
                     , enableWids, disableWids, enableWidsUponSelection)
@@ -710,7 +708,7 @@ genericATPgui atpFun isExtraOptions prName thName th freedefs pt = do
                  then done
                  else do
                  case retval of
-                   ATPError m -> errorMess m
+                   ATPError m -> errorDialog "Error" m
                    _ -> return ()
                  let s'' = s'{
                      configsMap =
@@ -799,7 +797,7 @@ genericATPgui atpFun isExtraOptions prName thName th freedefs pt = do
                                updateDisplay st True lb statusLabel timeEntry
                                             optionsEntry axiomsLb
                                case retval of
-                                ATPError m -> errorMess m
+                                ATPError m -> errorDialog "Error" m
                                 _ -> return ()
                                batchModeRunning <-
                                    isBatchModeRunning mVar_batchId
@@ -853,7 +851,6 @@ genericATPgui atpFun isExtraOptions prName thName th freedefs pt = do
       +> (help >>> do
             createTextDisplay (prName ++ " Help")
                               (proverHelpText atpFun)
-                              [size (80, 30)]
             done)
       +> (saveConfiguration >>> do
             s <- Conc.readMVar stateMVar
@@ -898,7 +895,7 @@ genericATPgui atpFun isExtraOptions prName thName th freedefs pt = do
        Conc.tryTakeMVar tIdMVar >>=
         maybe (return False) (\ tId -> Conc.putMVar tIdMVar tId >> return True)
 
-    noGoalSelected = errorMess "Please select a goal first."
+    noGoalSelected = errorDialog "Error" "Please select a goal first."
     prepareLP prS s goal inclProvedThs =
        let (beforeThis, afterThis) =
               splitAt (maybe (error "GUI.GenericATP: goal shoud be found") id $

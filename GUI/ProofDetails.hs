@@ -19,13 +19,14 @@ import qualified Common.OrderedMap as OMap
 import Data.List
 import Data.IORef
 
+import GUI.Utils (fileSaveDialog)
+
 import System.Directory
 
 import HTk hiding (font)
 import qualified HTk (font)
 import XSelection
 import ScrollBox
-import FileDialog
 
 import Proofs.AbstractState
 import Logic.Comorphism
@@ -285,9 +286,9 @@ doShowProofDetails prGUISt =
         +>
            save >>> do disable qBut; disable sBut
                        curDir <- getCurrentDirectory
-                       selev <- newFileDialogStr "Save file"
-                                    (curDir++'/':thName++"-proof-details.txt")
-                       mfile <- sync selev
+                       let f = curDir++'/':thName++"-proof-details.txt"
+                       mfile <- fileSaveDialog f [ ("Text",["*.txt"])
+                                                 , ("All Files",["*"])] Nothing 
                        maybe done (\fp -> writeTextToFile ed fp) mfile
                        enable qBut; enable sBut
                        done

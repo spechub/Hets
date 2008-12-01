@@ -61,25 +61,16 @@ import Proofs.InferBasic(basicInferenceNode)
 import Proofs.StatusUtils(lookupHistory, removeContraryChanges)
 import Proofs.TheoremHideShift
 
-import GUI.Utils (listBox, createTextSaveDisplay)
 import GUI.Taxonomy (displayConceptGraph,displaySubsortGraph)
 import GUI.DGTranslation(getDGLogic)
 import GUI.GraphTypes
 import qualified GUI.GraphAbstraction as GA
-import GUI.Utils ( displayTheoryWithWarning
-                 , warningDialog
-                 , infoDialog
-                 , errorDialog
-                 )
+import GUI.Utils
 
 import GraphConfigure
-import TextDisplay(createTextDisplay)
 import InfoBus(encapsulateWaitTermAct)
 import DialogWin (useHTk)
-import Messages(warningMess, errorMess)
 import qualified HTk
-import Configuration(size)
-import FileDialog(newFileDialogStr)
 
 import Common.DocUtils (showDoc)
 import Common.AS_Annotation (isAxiom)
@@ -222,12 +213,12 @@ reloadLib iorle opts ioruplibs ln = do
           case mFunc of
             Just func -> case openlock $ lookupDGraph ln newle of
               Just lock -> putMVar lock func
-              Nothing -> errorMess "Reload: Can't set openlock in DevGraph"
+              Nothing -> errorDialog "Error"
+                                     "Reload: Can't set openlock in DevGraph"
             Nothing -> return ()
           writeIORef iorle $ newle
         Nothing ->
-          errorMess $ "Error when reloading file "
-            ++ show file
+          errorDialog "Error" $ "Error when reloading file " ++ show file
 
 -- | Reloads libraries if nessesary
 reloadLibs :: IORef LibEnv -> HetcatsOpts -> [(LIB_NAME, LIB_NAME)]
@@ -449,17 +440,18 @@ openProofStatus gInfo@(GInfo { libEnvIORef = ioRefProofStatus
                              }) file convGraph showLib = do
     mh <- readVerbose opts ln file
     case mh of
-      Nothing -> errorMess $ "Could not read proof status from file '"
-                             ++ file ++ "'"
+      Nothing -> errorDialog "Error" $ "Could not read proof status from file '"
+                               ++ file ++ "'"
       Just h -> do
           let libfile = libNameToFile opts ln
           m <- anaLib opts { outtypes = [] } libfile
           case m of
-            Nothing -> errorMess $ "Could not read original development graph"
-                                   ++ " from '" ++ libfile ++  "'"
+            Nothing -> errorDialog "Error"
+                         $ "Could not read original development graph from '"
+                           ++ libfile ++  "'"
             Just (_, libEnv) -> case Map.lookup ln libEnv of
-                Nothing -> errorMess $ "Could not get original development"
-                                       ++ " graph for '" ++ showDoc ln "'"
+                Nothing -> errorDialog "Error" $ "Could not get original"
+                             ++ "development graph for '" ++ showDoc ln "'"
                 Just dg -> do
                     lockGlobal gInfo
                     oldEnv <- readIORef ioRefProofStatus
@@ -541,7 +533,6 @@ showNodeInfo descr dgraph = do
                if isInternalNode dgnode then ("internal " ++) else id)
               "node " ++ getDGNodeName dgnode ++ " " ++ show descr
   createTextDisplay title (title ++ "\n" ++ showDoc dgnode "")
-    [HTk.size(70, 30)]
 
 {- |
    fetches the theory from a node inside the IO Monad
@@ -557,7 +548,8 @@ lookupTheoryOfNode proofStatusRef ln descr = do
 showDiagMess :: HetcatsOpts -> [Diagnosis] -> IO ()
 showDiagMess opts ds = let es = Res.filterDiags (verbose opts) ds in
   if null es then return () else
-  (if hasErrors es then errorMess else warningMess) $ unlines $ map show es
+  (if hasErrors es then errorDialog "Error" else infoDialog "Info") $ unlines
+     $ map show es
 
 {- | outputs the theory of a node in a window;
 used by the node menu defined in initializeGraph-}
@@ -597,7 +589,7 @@ translateTheoryOfNode
          -- let the user choose one
          sel <- listBox "Choose a node logic translation" $ map show paths
          case sel of
-           Nothing -> warningMess "no node logic translation chosen"
+           Nothing -> errorDialog "Error" "no node logic translation chosen"
            Just i -> do
              Comorphism cid <- return (paths!!i)
              -- adjust lid's
@@ -623,7 +615,7 @@ showProofStatusOfNode _ descr dgraph = do
   let dgnode = labDG dgraph descr
       stat = showStatusAux dgnode
       title =  "Proof status of node "++showName (dgn_name dgnode)
-  createTextDisplay title stat [HTk.size(105,55)]
+  createTextDisplay title stat
 
 showStatusAux :: DGNodeLab -> String
 showStatusAux dgnode =
@@ -662,7 +654,7 @@ proveAtNode checkCons gInfo@(GInfo { libEnvIORef = ioRefProofStatus
   locked <- tryLockLocal dgn'
   case locked of
     False -> do
-      createTextDisplay "Error" "Proofwindow already open" [HTk.size(30,10)]
+      errorDialog "Error" "Proofwindow already open"
     True -> do
       let action = do
             le <- readIORef ioRefProofStatus
@@ -678,7 +670,7 @@ proveAtNode checkCons gInfo@(GInfo { libEnvIORef = ioRefProofStatus
         False -> do
           b <- warningDialog "Warning"
                         "This node has incoming hiding links!\n Prove anyway?"
-                        $ Just (\ _ -> action)
+                        $ Just action
           unless b $ unlockLocal dgn'
           return ()
 
@@ -793,7 +785,7 @@ checkconservativityOfEdge _ gInfo@(GInfo{gi_LIB_NAME = ln,
                        _ -> "Could not determine whether link is conservative"
             myDiags = showRelDiags 2 ds
         createTextDisplay "Result of conservativity check"
-                        (showRes ++ "\n" ++ myDiags) [HTk.size(50,50)]
+                        (showRes ++ "\n" ++ myDiags)
         let
             consShow = case res of
                         Just (Just (cst, _)) -> cst
@@ -927,17 +919,17 @@ openTranslateGraph libEnv ln opts (Res.Result diagsSl mSublogic) convGraph
     -- (see GUI.DGTranslation.getDGLogic), the process need not to go on.
     let myErrMess = showDiagMess opts in
     if hasErrors diagsSl then myErrMess diagsSl else case mSublogic of
-      Nothing -> errorMess "the maximal sublogic is not found."
+      Nothing -> errorDialog "Error" "the maximal sublogic is not found."
       Just sublogic -> do
         let paths = findComorphismPaths logicGraph sublogic
         if null paths then
-            errorMess "This graph has no comorphism to translation."
+            errorDialog "Error" "This graph has no comorphism to translation."
            else do
              -- the user choose one
            sel <- listBox "Choose a logic translation"
                   $ map show paths
            case sel of
-             Nothing -> warningMess "no logic translation chosen"
+             Nothing -> errorDialog "Error" "no logic translation chosen"
              Just j -> do
                        -- graph translation.
                let Res.Result diagsTrans mLEnv =
@@ -975,9 +967,9 @@ saveUDGraph gInfo@(GInfo { gi_GraphInfo = graphInfo
                          , gi_LIB_NAME = ln
                          , gi_hetcatsOpts = opts
                          }) nodemap linkmap = do
-  evnt <- newFileDialogStr "Save as..."
-                           $ (rmSuffix $ libNameToFile opts ln) ++ ".udg"
-  maybeFilePath <- HTk.sync evnt
+  maybeFilePath <- fileSaveDialog ((rmSuffix $ libNameToFile opts ln) ++ ".udg")
+                                  [ ("uDrawGraph",["*.udg"])
+                                  , ("All Files", ["*"])] Nothing
   case maybeFilePath of
     Just filepath -> do
       GA.showTemporaryMessage graphInfo "Converting graph..."

@@ -48,7 +48,8 @@ import Common.DocUtils (showDoc)
 
 import Control.Concurrent (forkIO)
 
-import System.Directory (removeFile, getTemporaryDirectory)
+import System.Directory (removeFile, getTemporaryDirectory, doesFileExist)
+import System.FilePath (takeFileName, takeDirectory)
 import System.IO (hFlush, hClose, hPutStr, openTempFile)
 
 import Monad (mapM_)
@@ -88,9 +89,9 @@ stopMainLoop = postGUISync $ do
 dialog :: MessageType -- ^ Dialogtype
        -> String -- ^ Title
        -> String -- ^ Message
-       -> Maybe (Bool -> IO()) -- ^ Action on Ok, Yes
+       -> Maybe (IO()) -- ^ Action on Ok, Yes
        -> IO Bool
-dialog messageType title message mAction = postGUISync $ do
+dialog messageType title message mAction = do
   dlg <- case messageType of
     MessageInfo ->
       messageDialogNew Nothing [] messageType ButtonsOk message
@@ -112,7 +113,7 @@ dialog messageType title message mAction = postGUISync $ do
   case choice of
     True -> case mAction of
       Just action -> do
-        forkIO $ action choice
+        forkIO $ action
         return choice
       Nothing -> return choice
     False -> return choice
@@ -121,7 +122,7 @@ dialog messageType title message mAction = postGUISync $ do
 infoDialog :: String -- ^ Title
            -> String -- ^ Message
            -> IO ()
-infoDialog title message = do
+infoDialog title message = postGUISync $ do
   dialog MessageInfo title message Nothing
   return ()
 
@@ -129,23 +130,25 @@ infoDialog title message = do
 errorDialog :: String -- ^ Title
             -> String -- ^ Message
             -> IO ()
-errorDialog title message = do
+errorDialog title message = postGUISync $ do
   dialog MessageError title message Nothing
   return ()
 
 -- | create a window which displays a given warning and ask for continue
 warningDialog :: String -- ^ Title
               -> String -- ^ Message
-              -> Maybe (Bool -> IO ()) -- ^ Action on Ok
+              -> Maybe (IO ()) -- ^ Action on Ok
               -> IO Bool
-warningDialog = dialog MessageWarning
+warningDialog title message mAction =
+  postGUISync $ dialog MessageWarning title message mAction
 
 -- | create a window which displays a given question
 questionDialog :: String  -- ^ Title
                -> String  -- ^ Message
-               -> Maybe (Bool -> IO ()) -- ^ Action on Yes
+               -> Maybe (IO ()) -- ^ Action on Yes
                -> IO Bool
-questionDialog  = dialog MessageQuestion
+questionDialog title message mAction =
+  postGUISync $ dialog MessageQuestion title message mAction
 
 -- Filedialogs for opening and saving
 
@@ -156,16 +159,22 @@ fileDialog :: FileChooserAction -- ^ Action
            -> IO (Maybe FilePath)
 fileDialog fAction fname filters mAction = do
   dlg <- case fAction of
-    FileChooserActionOpen ->
-      fileChooserDialogNew Nothing Nothing FileChooserActionOpen
-                           [ (stockCancel, ResponseCancel)
-                           , (stockOpen,   ResponseAccept)]
-    FileChooserActionSave ->
-      fileChooserDialogNew Nothing Nothing FileChooserActionSave
-                           [ (stockCancel, ResponseCancel)
-                           , (stockSave,   ResponseAccept)]
+    FileChooserActionOpen -> do
+      dlg' <-fileChooserDialogNew Nothing Nothing FileChooserActionOpen
+                                  [ (stockCancel, ResponseCancel)
+                                  , (stockOpen,   ResponseAccept)]
+      fileChooserSetCurrentFolder dlg' $ takeDirectory fname 
+      fileChooserSetFilename dlg' $ takeFileName fname
+      return dlg'
+    FileChooserActionSave -> do
+      dlg' <- fileChooserDialogNew Nothing Nothing FileChooserActionSave
+                                   [ (stockCancel, ResponseCancel)
+                                   , (stockSave,   ResponseAccept)]
+      fileChooserSetCurrentFolder dlg' $ takeDirectory fname
+      fileChooserSetCurrentName dlg' $ takeFileName fname
+      return dlg'
     _ -> error "FileDialog: Wrong Type"
-  fileChooserSetFilename dlg fname
+
   mapM_ (\ (name, pattern) -> do
           fileFilter <- fileFilterNew
           mapM_ (fileFilterAddPattern fileFilter) pattern
@@ -179,11 +188,20 @@ fileDialog fAction fname filters mAction = do
     ResponseAccept -> do
       mpath <- fileChooserGetFilename dlg
       case mpath of
-        Just path -> case mAction of
-          Just action -> action path
-          Nothing -> return ()
-        Nothing -> return ()
-      return mpath
+        Just path -> do
+          exist <- doesFileExist path
+          answer <- case exist of
+            True -> dialog MessageQuestion "File already exist"
+                           "Are you sure to overwrite existing file?" Nothing
+            False -> return True
+          case answer of
+            True -> case mAction of
+              Just action -> do
+                action path
+                return mpath
+              Nothing -> return mpath
+            False -> return Nothing
+        Nothing -> return Nothing
     _ -> return Nothing
   widgetDestroy dlg
   return ret
@@ -248,9 +266,9 @@ setListData view getT listData = do
 -- | Display text in an uneditable, scrollable editor. Not blocking!
 textView :: String -- ^ Title
          -> String -- ^ Message
-         -> FilePath -- ^ Filename
+         -> Maybe (FilePath) -- ^ Filename
          -> IO ()
-textView title message file = postGUIAsync $ do
+textView title message mfile = postGUIAsync $ do
   xml     <- getGladeXML Utils.get
   -- get objects
   dlg    <- xmlGetWidget xml castToDialog "TextView"
@@ -268,15 +286,19 @@ textView title message file = postGUIAsync $ do
   end <- textBufferGetEndIter buffer
   textBufferApplyTag buffer font start end
 
-  btnSave <- dialogAddButton dlg stockSave ResponseNone
-  btnClose <- dialogAddButton dlg stockClose ResponseNone
+  case mfile of
+    Just file -> do
+      btnSave <- dialogAddButton dlg stockSave ResponseNone
+      onClicked btnSave $ do
+        fileDialog FileChooserActionSave file
+                   [("Nothing", ["*"]), ("Text", ["*.txt"])]
+                   $ Just (\ filepath -> writeFile filepath message)
+        return ()
+      return ()
+    Nothing -> return ()
 
+  btnClose <- dialogAddButton dlg stockClose ResponseNone
   onClicked btnClose $ widgetDestroy dlg
-  onClicked btnSave $ do
-    fileDialog FileChooserActionSave file
-               [("Nothing", ["*"]), ("Text", ["*.txt"])]
-               $ Just (\ filepath -> writeFile filepath message)
-    return ()
 
   widgetShow dlg
   return ()
@@ -287,7 +309,7 @@ displayTheory :: String -- ^ Kind of theory
               -> G_theory -- ^ Theory
               -> IO ()
 displayTheory kind name gth =
-  textView ( kind ++ " of " ++ name) (showDoc gth "\n") $ name ++ ".het"
+  textView ( kind ++ " of " ++ name) (showDoc gth "\n") $ Just $ name ++ ".het"
 
 -- | displays a theory with warning in a window
 displayTheoryWithWarning :: String -- ^ Kind of theory
@@ -297,4 +319,4 @@ displayTheoryWithWarning :: String -- ^ Kind of theory
                          -> IO ()
 displayTheoryWithWarning kind name warning gth =
   textView (kind ++ " of " ++ name) (warning ++ (showDoc gth "\n"))
-           (name ++ ".het")
+           $ Just $ name ++ ".het"

@@ -20,9 +20,8 @@ module GUI.History (CommandHistory,
 import Common.OrderedMap (keys)
 import Common.Utils (joinWith, splitOn)
 import Driver.Options (rmSuffix)
-import FileDialog (newFileDialogStr)
 import GUI.GraphAbstraction (GraphInfo, showTemporaryMessage)
-import GUI.Utils (infoDialog)
+import GUI.Utils (infoDialog, fileSaveDialog)
 import Logic.Comorphism (AnyComorphism(..))
 import Logic.Grothendieck (SigId(..))
 import Logic.Logic (language_name)
@@ -270,8 +269,8 @@ askSaveProofScript graphInfo ch =
         then infoDialog "Information" "The history is empty. No file written."
         else do
              f <- getProofScriptFileName ch
-             evnt <- newFileDialogStr "Save as..." f
-             maybeFilePath <- HTk.sync evnt
+             maybeFilePath <- fileSaveDialog f [ ("Proof-Script",["*.hpf"])
+                                               , ("All Files", ["*"])] Nothing
              case maybeFilePath of
                  Just filePath -> do
                     showTemporaryMessage graphInfo "Saving proof-script..."

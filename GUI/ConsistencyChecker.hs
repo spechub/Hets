@@ -24,8 +24,6 @@ import GHC.Read
 
 import HTk
 import SpinButton
-import Messages
-import TextDisplay
 import Separator
 import XSelection
 import Space

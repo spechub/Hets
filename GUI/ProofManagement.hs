@@ -29,9 +29,8 @@ import qualified HTk (value)
 import Separator
 import Space
 import XSelection
-import Messages(errorMess)
 
-import GUI.Utils (createTextSaveDisplay, displayTheoryWithWarning)
+import GUI.Utils
 import GUI.HTkUtils ( LBGoalView (..), LBStatusIndicator (..), EnableWid (..)
                     , populateGoalsListBox, indicatorFromBasicProof
                     , enableWids, disableWids, enableWidsUponSelection)
@@ -649,7 +648,7 @@ proofManagementGUI lid prGuiAcs
             Result.Result ds ms'' <- fineGrainedSelectionF prGuiAcs prState
             s'' <- case ms'' of
                    Nothing -> do
-                       errorMess (showRelDiags 2 ds)
+                       errorDialog "Error" (showRelDiags 2 ds)
                        return s'
                    Just res -> return res
             let s''' = s'' { proverRunning = False
@@ -669,7 +668,7 @@ proofManagementGUI lid prGuiAcs
             Result.Result ds ms'' <- proveF prGuiAcs prState
             s'' <- case ms'' of
                    Nothing -> do
-                       errorMess (showRelDiags 2 ds)
+                       errorDialog "Error" (showRelDiags 2 ds)
                        return s'
                    Just res -> return res
             let s''' = s''{proverRunning = False,

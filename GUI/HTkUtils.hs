@@ -15,9 +15,14 @@ module GUI.HTkUtils
   , LBStatusIndicator (..)
   , EnableWid (..)
   , listBox
+  , errorMess
+  , confirmMess
+  , messageMess
   , askFileNameAndSave
+  , createTextDisplay
   , createTextSaveDisplay
-  , createInfoWindow
+  , newFileDialogStr
+  , fileDialogStr
   , createInfoDisplayWithTwoButtons
   , displayTheory
   , displayTheoryWithWarning
@@ -33,6 +38,8 @@ module GUI.HTkUtils
 
 import System.Directory
 
+import Messages(errorMess, confirmMess, messageMess)
+import TextDisplay(createTextDisplay)
 import HTk hiding (font)
 import qualified HTk (font)
 import ScrollBox
@@ -65,23 +72,6 @@ listBox title entries =
       +> (closeWindow >>> do
             destroy main
             return Nothing ))
-
--- | create a window which displays a given text
-createInfoWindow :: String  -- ^ title of the window
-                  -> String  -- ^ text to be shown
-                  -> IO()
-createInfoWindow title txt =
-  do
-    win <- createToplevel [text title]
-    frame <- newFrame win [relief Groove, borderwidth (cm 0.05)]
-    label <- newLabel frame [text txt, HTk.font (Helvetica, Roman, 18::Int)]
-    okButton <- newButton frame [text "OK", width 12]
-    pack frame [Side AtTop, Fill Both, Expand On]
-    pack label [Side AtTop, Expand Off, PadY 10]
-    pack okButton [Side AtTop, PadX 8, PadY 5]
-    quit <- clicked okButton
-    spawnEvent (forever (quit >>> (do destroy win; return ())))
-    return ()
 
 {- | it creates a window which displays the given text and provides two
      buttons and passes the given action on if the button 2 is pressed,

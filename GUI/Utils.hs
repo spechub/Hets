@@ -18,10 +18,14 @@ module GUI.Utils
   , askFileNameAndSave
 
 #if (defined GTKGLADE || defined UNI_PACKAGE)
+  , createTextDisplay
   , infoDialog
   , errorDialog
   , warningDialog
   , questionDialog
+
+  , fileOpenDialog
+  , fileSaveDialog
 
   , displayTheory
   , displayTheoryWithWarning
@@ -35,6 +39,7 @@ import GUI.GtkUtils
   , warningDialog
   , questionDialog
   , fileSaveDialog
+  , fileOpenDialog
   , listChoice
   , textView
   , displayTheory
@@ -48,14 +53,20 @@ listBox :: String -- ^ Title
 listBox = listChoice
 
 -- | Display some (longish) text in an uneditable, scrollable editor.
+createTextDisplay :: String -- ^ Title
+                  -> String -- ^ Message
+                  -> IO ()
+createTextDisplay t m = textView t m Nothing
+
+-- | Display some (longish) text in an uneditable, scrollable editor.
 createTextSaveDisplay :: String -- ^ Title
                       -> FilePath -- ^ Filename
                       -> String -- ^ Message
                       -> IO ()
-createTextSaveDisplay t f m = textView t m f
+createTextSaveDisplay t f m = textView t m $ Just f
 
 -- | opens a FileDialog and saves to the selected file if Save is clicked
-askFileNameAndSave :: String -- ^ default filename for saving the text
+askFileNameAndSave :: FilePath -- ^ default filename for saving the text
                    -> String -- ^ text to be saved
                    -> IO ()
 askFileNameAndSave f m = do
@@ -65,8 +76,14 @@ askFileNameAndSave f m = do
 #elif defined UNI_PACKAGE
 import GUI.HTkUtils
   ( listBox
+  , errorMess
+  , confirmMess
+  , messageMess
+  , createTextDisplay
   , createTextSaveDisplay
   , askFileNameAndSave
+  , newFileDialogStr
+  , fileDialogStr
   , createInfoWindow
   , createInfoDisplayWithTwoButtons
   , displayTheory
@@ -78,37 +95,69 @@ import Data.IORef
 infoDialog :: String -- ^ Title
            -> String -- ^ Message
            -> IO ()
-infoDialog = createInfoWindow
+infoDialog _ m = messageMess m
 
 -- | create a window which displays a given error
 errorDialog :: String -- ^ Title
             -> String -- ^ Message
             -> IO ()
-errorDialog = createInfoWindow
+errorDialog _ m = errorMess m
 
 -- | create a window which displays a given warning and ask for continue
 warningDialog :: String -- ^ Title
               -> String -- ^ Message
               -> Maybe (Bool -> IO ()) -- ^ Action on Ok
               -> IO Bool
-warningDialog = questionDialog
+warningDialog _ m mAction = do
+  ret <- confirmMess m
+  case ret of
+    True -> case mAction of
+      Just action -> action
+      Nothing -> return ()
+    False -> return ()
+  return ret
 
 -- | create a window which displays a given question
 questionDialog :: String  -- ^ Title
                -> String  -- ^ Message
                -> Maybe (Bool -> IO ()) -- ^ Action on Yes
                -> IO Bool
-questionDialog t m ma = do
-  iorRet <- newIORef False
-  createInfoDisplayWithTwoButtons t m "Ok"
-    (do
-      writeIORef iorRet True
-      case ma of
-        Just a -> a True
-        Nothing -> return ()
-    )
-  ret <- readIORef iorRet
-  return ret
+questionDialog _ m mAction = do
+  ret <- confirmMess m
+  case ret of
+    True -> case mAction of
+      Just action -> action
+      Nothing -> return ()
+    False -> return ()
+  return ret 
+
+fileOpenDialog :: FilePath -- ^ Defaultname for file
+               -> [(String, [String])] -- ^ Filter (name, pattern list)
+               -> Maybe (FilePath -> IO ()) -- ^ Action on open
+               -> IO (Maybe FilePath)
+fileOpenDialog f _ mAction = do
+  evnt <- fileDialogStr "Open..." f
+  mPath <- HTk.sync evnt
+  case mPath of
+    Just path -> case mAction of
+      Just action -> action path
+      Nothing -> return ()
+    Nothing -> return ()
+  return mPath
+
+fileSaveDialog :: FilePath -- ^ Defaultname for file
+               -> [(String, [String])] -- ^ Filter (name, pattern list)
+               -> Maybe (FilePath -> IO ()) -- ^ Action on save
+               -> IO (Maybe FilePath)
+fileSaveDialog f _ mAction = do
+  evnt <- newFileDialogStr "Save as..." f
+  mPath <- HTk.sync evnt
+  case mPath of
+    Just path -> case mAction of
+      Just action -> action path
+      Nothing -> return ()
+    Nothing -> return ()
+  return mPath
 
 #else
 import GUI.ConsoleUtils (listBox, createTextSaveDisplay, askFileNameAndSave)

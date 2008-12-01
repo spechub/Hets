@@ -21,6 +21,7 @@ import GUI.GraphTypes
 import GUI.GraphLogic
 import GUI.ShowLogicGraph(showLogicGraph)
 import GUI.History
+import GUI.Utils
 #ifdef GTKGLADE
 import GUI.GtkLinkTypeChoice
 import GUI.GtkConsistencyChecker
@@ -49,7 +50,6 @@ import Common.Result as Res
 import Driver.Options
 import Driver.ReadFn(libNameToFile)
 
-import FileDialog(fileDialogStr, newFileDialogStr)
 import GraphDisp(emptyArcTypeParms, emptyNodeTypeParms)
 import GraphConfigure
 import DaVinciGraph
@@ -159,8 +159,8 @@ createGraph gInfo@(GInfo { gi_LIB_NAME = ln
 createOpen :: GInfo -> FilePath -> ConvFunc -> LibFunc -> Maybe (IO ())
 createOpen gInfo file convGraph showLib = Just (
   do
-    evnt <- fileDialogStr "Open..." file
-    maybeFilePath <- HTk.sync evnt
+    maybeFilePath <- fileOpenDialog file [ ("Proof", ["*.prf"])
+                                         , ("All Files", ["*"])] Nothing
     case maybeFilePath of
       Just filePath -> do
         openProofStatus gInfo filePath convGraph showLib
@@ -176,8 +176,8 @@ createSave gInfo file = Just (saveProofStatus gInfo file)
 createSaveAs :: GInfo -> FilePath -> Maybe (IO ())
 createSaveAs gInfo file = Just (
   do
-    evnt <- newFileDialogStr "Save as..." file
-    maybeFilePath <- HTk.sync evnt
+    maybeFilePath <- fileSaveDialog file [ ("Proof", ["*.prf"])
+                                         , ("All Files", ["*"])] Nothing
     case maybeFilePath of
       Just filePath -> saveProofStatus gInfo filePath
       Nothing -> fail "Could not save file."
