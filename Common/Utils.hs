@@ -180,7 +180,7 @@ getEnvSave :: a -- ^ default value
            -> (String -> Maybe a) -- ^ parse and check value of variable;
                          -- for every b the default value is returned
            -> IO a
-getEnvSave defValue envVar readFun = do
+getEnvSave defValue envVar readFun =
     getEnvironment >>= return . maybe defValue (maybe defValue id . readFun)
       . lookup envVar
 
