@@ -79,17 +79,15 @@ import GUI.HTkUtils
   , errorMess
   , confirmMess
   , messageMess
-  , createTextDisplay
   , createTextSaveDisplay
   , askFileNameAndSave
   , newFileDialogStr
   , fileDialogStr
-  , createInfoDisplayWithTwoButtons
   , displayTheory
   , displayTheoryWithWarning
   , sync
   )
-import Data.IORef
+import qualified GUI.HTkUtils (createTextDisplay)
 
 -- | create a window which displays a given text
 infoDialog :: String -- ^ Title
@@ -106,13 +104,13 @@ errorDialog _ m = errorMess m
 -- | create a window which displays a given warning and ask for continue
 warningDialog :: String -- ^ Title
               -> String -- ^ Message
-              -> Maybe (Bool -> IO ()) -- ^ Action on Ok
+              -> Maybe (IO ()) -- ^ Action on Ok
               -> IO Bool
 warningDialog _ m mAction = do
   ret <- confirmMess m
   case ret of
     True -> case mAction of
-      Just action -> action ret
+      Just action -> action
       Nothing -> return ()
     False -> return ()
   return ret
@@ -120,13 +118,13 @@ warningDialog _ m mAction = do
 -- | create a window which displays a given question
 questionDialog :: String  -- ^ Title
                -> String  -- ^ Message
-               -> Maybe (Bool -> IO ()) -- ^ Action on Yes
+               -> Maybe (IO ()) -- ^ Action on Yes
                -> IO Bool
 questionDialog _ m mAction = do
   ret <- confirmMess m
   case ret of
     True -> case mAction of
-      Just action -> action ret
+      Just action -> action
       Nothing -> return ()
     False -> return ()
   return ret
@@ -158,6 +156,12 @@ fileSaveDialog f _ mAction = do
       Nothing -> return ()
     Nothing -> return ()
   return mPath
+
+-- | Display some (longish) text in an uneditable, scrollable editor.
+createTextDisplay :: String -- ^ Title
+                  -> String -- ^ Message
+                  -> IO ()
+createTextDisplay t m = GUI.HTkUtils.createTextDisplay t m []
 
 #else
 import GUI.ConsoleUtils (listBox, createTextSaveDisplay, askFileNameAndSave)
