@@ -84,10 +84,10 @@ import GUI.HTkUtils
   , askFileNameAndSave
   , newFileDialogStr
   , fileDialogStr
-  , createInfoWindow
   , createInfoDisplayWithTwoButtons
   , displayTheory
   , displayTheoryWithWarning
+  , sync
   )
 import Data.IORef
 
@@ -112,7 +112,7 @@ warningDialog _ m mAction = do
   ret <- confirmMess m
   case ret of
     True -> case mAction of
-      Just action -> action
+      Just action -> action ret
       Nothing -> return ()
     False -> return ()
   return ret
@@ -126,10 +126,10 @@ questionDialog _ m mAction = do
   ret <- confirmMess m
   case ret of
     True -> case mAction of
-      Just action -> action
+      Just action -> action ret
       Nothing -> return ()
     False -> return ()
-  return ret 
+  return ret
 
 fileOpenDialog :: FilePath -- ^ Defaultname for file
                -> [(String, [String])] -- ^ Filter (name, pattern list)
@@ -137,7 +137,7 @@ fileOpenDialog :: FilePath -- ^ Defaultname for file
                -> IO (Maybe FilePath)
 fileOpenDialog f _ mAction = do
   evnt <- fileDialogStr "Open..." f
-  mPath <- HTk.sync evnt
+  mPath <- sync evnt
   case mPath of
     Just path -> case mAction of
       Just action -> action path
@@ -151,7 +151,7 @@ fileSaveDialog :: FilePath -- ^ Defaultname for file
                -> IO (Maybe FilePath)
 fileSaveDialog f _ mAction = do
   evnt <- newFileDialogStr "Save as..." f
-  mPath <- HTk.sync evnt
+  mPath <- sync evnt
   case mPath of
     Just path -> case mAction of
       Just action -> action path

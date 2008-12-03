@@ -33,6 +33,7 @@ module GUI.HTkUtils
   , enableWids
   , disableWids
   , enableWidsUponSelection
+  , sync
   )
   where
 
@@ -44,6 +45,7 @@ import HTk hiding (font)
 import qualified HTk (font)
 import ScrollBox
 import FileDialog
+import Events (sync)
 
 import Logic.Prover
 import Static.GTheory
