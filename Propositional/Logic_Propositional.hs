@@ -49,7 +49,7 @@ import qualified Propositional.ProveWithTruthTable as ProveTT
 #endif
 import qualified Propositional.Prove as Prove
 import Propositional.Conservativity
-import qualified  Propositional.ProveMinisat as ProveMini
+import qualified Propositional.ProveMinisat as ProveMini
 #endif
 
 -- | Lid for propositional logic
