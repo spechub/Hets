@@ -312,7 +312,7 @@ parseDarwinOut :: Handle        -- ^ handel of stdout
                -> ProcessHandle -- ^ handel of process
                -> IO (ExitCode, [String], Int)
                        -- ^ (exit code, complete output, used time)
-parseDarwinOut outh _ proc = do
+parseDarwinOut outh _ procHndl = do
     --darwin does not write to stderr here, so ignore output
     --err <- hGetLine errh
     --if null err then
@@ -325,18 +325,18 @@ parseDarwinOut outh _ proc = do
       iseof <- hIsEOF outh
       if iseof then
           do -- ec <- isProcessRun proc
-             waitForProcess proc
+             waitForProcess procHndl
              return (exCode, reverse output, to)
         else do
           line <- hGetLine outh
           if  "Couldn't find eprover" `isPrefixOf` line
             then do
-              waitForProcess proc
+              waitForProcess procHndl
               return (ExitFailure 2, line : output, to)
             else if "Try darwin -h for further information" `isPrefixOf` line
                   -- error by running darwin.
               then do
-                waitForProcess proc
+                waitForProcess procHndl
                 return (ExitFailure 2, line : output, to)
               else if "SZS status" `isPrefixOf` line && not stateFound
                 then let state' = words line !! 2 in
@@ -351,7 +351,7 @@ parseDarwinOut outh _ proc = do
                   else readLineAndParse (exCode, line : output, to)
                          stateFound
      failure -> do
-       waitForProcess proc
+       waitForProcess procHndl
        return (failure, output, to)
 
    checkSZSState szsState =
@@ -393,7 +393,7 @@ parseDarwinOut outh _ proc = do
 
     -- check if darwin running
    isProcessRun = do
-      exitcode <- getProcessExitCode proc
+      exitcode <- getProcessExitCode procHndl
       case exitcode of
         Nothing -> return ExitSuccess
         Just (ExitFailure i) -> return (ExitFailure i)

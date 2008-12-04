@@ -130,24 +130,24 @@ parseOutput :: Handle        -- ^ handel of stdout
             -> Handle        -- ^ handel of stderr
             -> ProcessHandle -- ^ handel of process
             -> IO ((Result (Maybe (ConsistencyStatus, [Sentence]))), [String])
-parseOutput outh _ proc =
+parseOutput outh _ procHndl =
     collectLines
     where
       collectLines =
           do
-            procState <- waitForProcess proc
+            procState <- waitForProcess procHndl
             ls1 <- hGetContents outh
             let ls = lines ls1
             case procState of
               ExitFailure 10 ->
                   do
-                    return $ (return $ Just (Conservative,[]), ls)
+                    return (return $ Just (Conservative,[]), ls)
               ExitFailure 20 ->
                   do
-                    return $ (fail $ unlines ls, ls)
+                    return (fail $ unlines ls, ls)
               x                     ->
                   do
-                    return $ (fail ("Internal program error: " ++
+                    return (fail ("Internal program error: " ++
                                     show x ++ "\n" ++ unlines ls), ls)
 
 timeWatch :: Int -> IO ((Result (Maybe (ConsistencyStatus, [Sentence]))), [String])
