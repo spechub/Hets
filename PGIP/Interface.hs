@@ -1,5 +1,6 @@
+{-# OPTIONS -cpp #-}
 {- |
-Module      :$Header$
+Module      : $Header$
 Description : The definition of CMDL interface for
               standard input and file input
 Copyright   : uni-bremen and DFKI
@@ -16,7 +17,11 @@ module PGIP.Interface where
 
 
 import System.Console.Shell
+#ifdef EDITLINE
+import System.Console.Shell.Backend.Editline
+#else
 import System.Console.Shell.Backend.Compatline
+#endif
 import System.IO
 
 import PGIP.Shell
@@ -59,7 +64,11 @@ cmdlRunShell files
       state <- recursiveApplyUse  files emptyCMDL_State
       runShell stdShellDescription
                 {defaultCompletions= Just (cmdlCompletionFn getCommands) }
+#ifdef EDITLINE
+              editlineBackend
+#else
               compatlineBackend
+#endif
               state
 
 -- | The function processes the file of instructions

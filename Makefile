@@ -311,7 +311,7 @@ cpp_sources = \
     Comorphisms/LogicList.hs Comorphisms/LogicGraph.hs \
     Comorphisms/KnownProvers.hs hets.hs $(happy_files) \
     PGIP/InfoCommands.hs OWL/Logic_OWL.hs GUI/ShowGraph.hs \
-    VSE/Logic_VSE.hs Common/Exception.hs
+    VSE/Logic_VSE.hs Common/Exception.hs PGIP/Interface.hs
 
 # unused, remove when header files are gone
 genrule_header_files = $(wildcard ATC/*.header.hs)

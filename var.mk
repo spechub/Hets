@@ -23,6 +23,12 @@ ifneq ($(findstring 0.9, $(SHELLACVERSION)),)
 SHELLAC_PACKAGE = -DSHELLAC
 endif
 
+EDITLINEVERSION = $(shell $(HCPKG) field Shellac-editline version)
+ifneq ($(findstring 0.9, $(EDITLINEVERSION)),)
+EDITLINE_PACKAGE = -DEDITLINE
+SHELLAC_PACKAGE = -DSHELLAC
+endif
+
 HXTFILTERVERSION = $(shell $(HCPKG) field hxt-filter version)
 ifneq ($(findstring 8., $(HXTFILTERVERSION)),)
 HXTFILTER_PACKAGE = -DHXTFILTER
@@ -59,7 +65,7 @@ endif
 
 HC_OPTS_WITHOUTGLADE = -threaded -fglasgow-exts -fallow-overlapping-instances \
   $(HAXML_PACKAGE) $(UNI_PACKAGE) $(SHELLAC_PACKAGE) $(HXTFILTER_PACKAGE) \
-  $(PFE_FLAGS) $(TABULAR_PACKAGE) $(NOMATHSERVER) \
+  $(PFE_FLAGS) $(TABULAR_PACKAGE) $(EDITLINE_PACKAGE) $(NOMATHSERVER) \
   -DCASLEXTENSIONS
 
 HC_OPTS = $(HC_OPTS_WITHOUTGLADE) $(GLADE_PACKAGE)
