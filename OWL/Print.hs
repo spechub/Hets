@@ -105,6 +105,8 @@ printNegatedPrimary d = let r = parens $ pretty d in case d of
   ObjectComplementOf _ -> r
   ObjectValuesFrom _ _ _ -> r
   DataValuesFrom _ _ _ _ -> r
+  ObjectHasValue _ _ -> r
+  DataHasValue _ _ -> r
   _ -> printPrimary d
 
 instance Pretty ObjectPropertyExpression where
