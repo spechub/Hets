@@ -23,7 +23,7 @@ import Common.Result
 
 import Data.List
 import Data.Maybe (isJust)
-import qualified Control.Exception as Exception
+import qualified Common.Exception as Exception
 import qualified Control.Concurrent as Conc
 
 import HTk hiding (value)

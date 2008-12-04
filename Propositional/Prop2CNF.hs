@@ -63,7 +63,7 @@ import qualified Common.Id as Id
 import qualified Common.Result as Result
 
 import Control.Monad (when)
-import qualified Control.Exception as Exception
+import qualified Common.Exception as Exception
 import qualified Data.Set as Set
 import Data.List
 import Data.Maybe

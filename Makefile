@@ -311,7 +311,7 @@ cpp_sources = \
     Comorphisms/LogicList.hs Comorphisms/LogicGraph.hs \
     Comorphisms/KnownProvers.hs hets.hs $(happy_files) \
     PGIP/InfoCommands.hs OWL/Logic_OWL.hs GUI/ShowGraph.hs \
-    VSE/Logic_VSE.hs
+    VSE/Logic_VSE.hs Common/Exception.hs
 
 # unused, remove when header files are gone
 genrule_header_files = $(wildcard ATC/*.header.hs)
@@ -771,5 +771,5 @@ java-libs:
 java-files:
 	ant -q java-files
 
-java-clean: 
+java-clean:
 	ant -q java-clean
