@@ -58,12 +58,9 @@ import Data.List (find)
 
 import Debug.Trace (trace)
 
-import qualified System.IO.Error as System.IO.Error
-
 import Driver.Options
 
 import Control.Monad
-import Control.Exception as Control.Exception
 
 import qualified Network.URI as URI
 
@@ -92,7 +89,7 @@ mLibEnvFromOMDocFile::
   ->FilePath -- ^ the file to load
   ->IO (Maybe (ASL.LIB_NAME, LibEnv))
 mLibEnvFromOMDocFile hco file =
-  Control.Exception.catch
+  catch
     (
       do
         (ln, _, lenv) <- libEnvFromOMDocFile
