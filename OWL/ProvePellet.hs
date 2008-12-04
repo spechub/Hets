@@ -192,13 +192,9 @@ spamOutput ps =
         Open (Reason l) ->
             createTextSaveDisplay "Pellet prover" ("./"++ dName ++".pellet.log")
               $ unlines
-              $ ("I was not able to find a model for the goal "
-                 ++ dName ++ ". :(")
-              : show dTree :l
+                (show dTree :l)
         Disproved -> createTextSaveDisplay "Pellet prover" (dName ++".pellet.owl")
                 (
-                 "Your theory " ++
-                 dName ++" has no model. :( \n" ++
                  show dTree
                 )
         Proved (Just True) ->     -- consistent
@@ -249,46 +245,6 @@ consCheck thName tm freedefs =
           saveFileName  = (reverse $ fst $ span (/='/') $ reverse thName)
           tmpFileName   = saveFileName
 
-          runPelletRealM :: IO([Proof_status ProofTree])
-          runPelletRealM = do
-              (progTh, progEx) <- check4Pellet
-              case (progTh, progEx) of
-                (True,True) -> do
-                   when saveOWL
-                          (writeFile (saveFileName ++".owl") problemS)
-                   t <- getCurrentTime
-                   tempDir <- getTemporaryDirectory
-                   let timeTmpFile = tempDir ++ "/" ++ tmpFileName
-                                     ++ (show $ utctDay t) ++
-                                     "-" ++ (show $ utctDayTime t) ++ ".owl"
-                       tmpURI = "file://"++timeTmpFile
-                   writeFile timeTmpFile $ problemS
-                   let command = "sh pellet.sh "
-                                 ++ simpleOptions ++ extraOptions
-                                 ++ tmpURI
-                   pPath     <- getEnvSec "PELLET_PATH"
-                   setCurrentDirectory(pPath)
-                   outState <- timeWatch timeLimitI $
-                     (do
-                       (_, outh, errh, proch) <- runInteractiveCommand command
-                       (exCode, output, tUsed) <- parsePelletOut outh errh proch
-                       let outState = proof_statM exCode simpleOptions
-                                              output tUsed
-                       return outState
-                     )
-                   spamOutput outState
-                   removeFile timeTmpFile
-                   return [outState]
-                (b, _) -> do
-                   let mess = "Pellet not " ++
-                         if b then "executable" else "found"
-                   infoDialog "Pellet prover" mess
-                   return [(openProof_status thName (prover_name pelletProver)
-                           $ ProofTree mess)
-                           { usedAxioms = getAxioms
-                           , tacticScript = tac
-                           }]
-
           proof_statM :: ExitCode -> String ->  [String]
                       -> Int -> Proof_status ProofTree
           proof_statM exitCode _ out tUsed =
@@ -326,7 +282,7 @@ consCheck thName tm freedefs =
                     , goalStatus = Disproved
                     , usedAxioms = getAxioms
                     , proverName = (prover_name pelletProver)
-                    , proofTree = ProofTree "can not run pellet."
+                    , proofTree = ProofTree "Cannot run pellet."
                     ,usedTime = timeToTimeOfDay $
                                 secondsToDiffTime $ toInteger tUsed
                     ,tacticScript  = tac
@@ -343,6 +299,19 @@ consCheck thName tm freedefs =
                                                     unlines out)
                     ,usedTime = timeToTimeOfDay $
                                 secondsToDiffTime 0
+                    ,tacticScript  = tac
+                    }
+                ExitFailure 4 ->   -- error by runing pellet
+                    Proof_status
+                    {
+                     goalName = thName
+                    , goalStatus = Disproved
+                    , usedAxioms = getAxioms
+                    , proverName = (prover_name pelletProver)
+                    , proofTree = ProofTree ("Pellet returned an error.\n"
+                                             ++ unlines out)
+                    ,usedTime = timeToTimeOfDay $
+                                secondsToDiffTime $ toInteger tUsed
                     ,tacticScript  = tac
                     }
                 ExitFailure _ ->    -- another errors
@@ -390,7 +359,47 @@ consCheck thName tm freedefs =
                              ,tacticScript  = tac
                              })
         in
-          runPelletRealM
+          do
+              (progTh, progEx) <- check4Pellet
+              case (progTh, progEx) of
+                (True,True) -> do
+                   when saveOWL
+                          (writeFile (saveFileName ++".owl") problemS)
+                   t <- getCurrentTime
+                   tempDir <- getTemporaryDirectory
+                   let timeTmpFile = tempDir ++ "/" ++ tmpFileName
+                                     ++ (show $ utctDay t) ++
+                                     "-" ++ (show $ utctDayTime t) ++ ".owl"
+                       tmpURI = "file://"++timeTmpFile
+                   writeFile timeTmpFile $ problemS
+                   let command = "sh pellet.sh "
+                                 ++ simpleOptions ++ extraOptions
+                                 ++ tmpURI
+                   pPath     <- getEnvSec "PELLET_PATH"
+                   setCurrentDirectory(pPath)
+                   outState <- timeWatch timeLimitI $
+                     (do
+                       (_, outh, errh, proch) <- runInteractiveCommand command
+                       waitForProcess proch
+                       outp  <- hGetContents outh
+                       eOut    <- hGetContents errh
+                       let (exCode, output, tUsed) = analyseOutput outp eOut
+                       let outState = proof_statM exCode simpleOptions
+                                              output tUsed
+                       return outState
+                     )
+                   spamOutput outState
+                   removeFile timeTmpFile
+                   return [outState]
+                (b, _) -> do
+                   let mess = "Pellet not " ++
+                         if b then "executable" else "found"
+                   infoDialog "Pellet prover" mess
+                   return [(openProof_status thName (prover_name pelletProver)
+                           $ ProofTree mess)
+                           { usedAxioms = getAxioms
+                           , tacticScript = tac
+                           }]
 
 check4Pellet :: IO (Bool, Bool)
 check4Pellet =
@@ -416,18 +425,8 @@ runPellet :: PelletProverState
            -> Named Sentence -- ^ goal to prove
            -> IO (ATPRetval, GenericConfig ProofTree)
            -- ^ (retval, configuration with proof status and complete output)
-runPellet sps cfg savePellet thName nGoal = do
-  -- putStrLn ("running Pellet...")
-  runPelletReal
-
-  where
-    simpleOptions = extraOpts cfg
-    tLimit        = timeLimit cfg
-    extraOptions  = "entail -e "
-    goalSuffix    = '_' : senAttr nGoal
-    saveFileName  = thName ++ goalSuffix
-    tmpFileName   = reverse (takeWhile (/= '/') $ reverse thName) ++ goalSuffix
-    runPelletReal = do
+runPellet sps cfg savePellet thName nGoal =
+    do
       (progTh, progEx) <- check4Pellet
       case (progTh,progEx) of
         (True,True) -> do
@@ -454,16 +453,22 @@ runPellet sps cfg savePellet thName nGoal = do
             Nothing ->
                 do
                   (_, outh, errh, proch) <- runInteractiveCommand command
-                  (exCode, output, tUsed) <- parsePelletOut outh errh proch
-                  return $ (proof_stat exCode simpleOptions output tUsed,
-                            output, tUsed)
+                  waitForProcess proch
+                  output  <- hGetContents outh
+                  eOut    <- hGetContents errh
+                  let (exCode, outp, tUsed) = analyseOutput output eOut
+                  return $ (proof_stat exCode simpleOptions outp tUsed,
+                            outp, tUsed)
             Just tm  ->
                 timeWatchP tm
                   (do
                     (_, outh, errh, proch) <- runInteractiveCommand command
-                    (exCode, output, tUsed) <- parsePelletOut outh errh proch
-                    return $ (proof_stat exCode simpleOptions output tUsed,
-                            output, tUsed)
+                    waitForProcess proch
+                    output  <- hGetContents outh
+                    eOut    <- hGetContents errh
+                    let (exCode, outp, tUsed) = analyseOutput output eOut
+                    return $ (proof_stat exCode simpleOptions outp tUsed,
+                            outp, tUsed)
                     )
           removeFile timeTmpFile
           removeFile entailsFile
@@ -480,6 +485,14 @@ runPellet sps cfg savePellet thName nGoal = do
             (ATPError "Could not find pellet prover. Is $PELLET_PATH set?",
                   emptyConfig (prover_name pelletProver)
                               (senAttr nGoal) emptyProofTree)
+
+  where
+    simpleOptions = extraOpts cfg
+    tLimit        = timeLimit cfg
+    extraOptions  = "entail -e "
+    goalSuffix    = '_' : senAttr nGoal
+    saveFileName  = thName ++ goalSuffix
+    tmpFileName   = reverse (takeWhile (/= '/') $ reverse thName) ++ goalSuffix
 
     timeWatchP :: Int -> IO ((ATPRetval, Proof_status ProofTree), [String], Int)
                      -> IO ((ATPRetval, Proof_status ProofTree), [String] , Int)
@@ -545,64 +558,38 @@ runPellet sps cfg savePellet thName nGoal = do
 
     getAxioms = []
 
-parsePelletOut :: Handle        -- ^ handel of stdout
-               -> Handle        -- ^ handel of stderr
-               -> ProcessHandle -- ^ handel of process
-               -> IO (ExitCode, [String], Int)
-                       -- ^ (exit code, complete output, used time)
-parsePelletOut outh _ proc = do
-    --pellet does not write to stderr here, so ignore output
-    --err <- hGetLine errh
-    --if null err then
-  readLineAndParse (ExitFailure 1, [], -1)
-  where
-   readLineAndParse (exCode, output, to) = do
-    -- putStrLn $ show exCode
-    procState <- isProcessRun
-    case procState of
-     ExitSuccess -> do
-      iseof <- hIsEOF outh
-      if iseof then
-          do -- ec <- isProcessRun proc
-             -- putStrLn "eof"
-             waitForProcess proc
-             return (exCode, output, to)
-        else do
-          line <-hGetLine outh
-          -- putStrLn $ show line
+analyseOutput :: String -> String -> (ExitCode, [String], Int)
+analyseOutput err outp =
+    let
+        errL = lines err
+        outL = lines outp
+        anaHelp x [] = x
+        anaHelp (exCode, output, to) (line:ls) =
           let (okey, ovalue) = span (/=':') line
+          in
           if "Usage: java Pellet" `isPrefixOf` line
              -- error by running pellet.
-            then do waitForProcess proc
-                    return (ExitFailure 2, (output ++ [line]), to)
+            then (ExitFailure 2, (output ++ [line]), to)
             else if okey == "Consistent"    -- consistent state
                    then if (tail $ tail ovalue) == "Yes" then
-                           readLineAndParse (ExitSuccess, (output ++ [line]), to)
-                          else readLineAndParse (ExitFailure 1, (output ++ [line]), to)
+                           anaHelp (ExitSuccess, (output ++ [line]), to) ls
+                          else anaHelp (ExitFailure 1, (output ++ [line]), to) ls
                    else if "Time" `isPrefixOf` okey  -- get cup time
-                           then readLineAndParse (exCode, (output ++ [line]),
-                           ((read $ fst $ span (/=' ') $ tail ovalue)::Int))
+                           then anaHelp (exCode, (output ++ [line]),
+                           ((read $ fst $ span (/=' ') $ tail ovalue)::Int)) ls
                            else if "All axioms are entailed" `isPrefixOf` line
                                 then
-                                    readLineAndParse (ExitSuccess, (output ++ [line]), to)
+                                    anaHelp (ExitSuccess, (output ++ [line]), to) ls
                                 else if "Non-entailments:" `isPrefixOf` line
                                      then
-                                         do
-                                           readLineAndParse (ExitFailure 5, (output ++ [line]), to)
-                                     else
-                                         readLineAndParse
-                                         (exCode, (output ++ [line]), to)
-
-     failure -> do waitForProcess proc
-                   return (failure, output, to)
-
-    -- check if pellet running
-   isProcessRun = do
-      exitcode <- getProcessExitCode proc
-      case exitcode of
-        Nothing -> return ExitSuccess
-        Just (ExitFailure i) -> return (ExitFailure i)
-        Just ExitSuccess     -> return ExitSuccess
+                                           anaHelp (ExitFailure 5, (output ++ [line]), to) ls
+                                     else if "ERROR:" `isPrefixOf` line
+                                          then
+                                              anaHelp (ExitFailure 4, (output ++ [line]), to) ls
+                                          else
+                                              anaHelp (exCode, (output ++ [line]), to) ls
+    in
+      anaHelp (ExitFailure 1, [], -1) (outL ++ errL)
 
 showOWLProblemS ::  String -- ^ theory name
                -> PelletProverState -- ^ prover state containing
