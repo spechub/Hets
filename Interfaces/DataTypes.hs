@@ -22,9 +22,6 @@ module Interfaces.DataTypes
        , ListChange(..)
        ) where
 
-
--- import Interface.GenericATPState
-
 import Static.DevGraph
 import Common.LibName
 import Proofs.AbstractState
@@ -50,14 +47,13 @@ data IntState = IntState {
 -- | Contains the detailed global history as two list, a list of actions
 -- for undo, and a list of action for redo commands
 data IntHistory = IntHistory {
-   -- | history for undo command, a list of command descriptions
+  -- | history for undo command, a list of command descriptions
   undoList :: [Int_CmdHistoryDescription],
   -- | history for redo command, a list of command descriptions
   redoList :: [Int_CmdHistoryDescription]
   }
 
-
--- | Contains command description needed for undo/redo actions and
+-- | Contains command description needed for undo\/redo actions and
 -- for displaying commands in the history
 data Int_CmdHistoryDescription = Int_CmdHistoryDescription {
   -- | command name, used for displaying history elements
@@ -67,7 +63,7 @@ data Int_CmdHistoryDescription = Int_CmdHistoryDescription {
   }
 
 -- | History elements for the proof state, only LIB_NAME would be used
--- by GUI/ because it keeps track only to changes to the development graph,
+-- by GUI because it keeps track only to changes to the development graph,
 -- the other are for PGIP but in order to integrate both they should use
 -- same structure
 data UndoRedoElem =
@@ -104,7 +100,6 @@ data IntIState = IntIState {
     loadScript            :: Bool
     }
 
-
 data Int_NodeInfo = forall lid1 sublogics1
          basic_spec1 sentence1 symb_items1 symb_map_items1
          sign1 morphism1 symbol1 raw_symbol1 proof_tree1 .
@@ -112,5 +107,3 @@ data Int_NodeInfo = forall lid1 sublogics1
          symb_items1 symb_map_items1 sign1 morphism1
          symbol1 raw_symbol1 proof_tree1 =>
      Element (ProofState lid1 sentence1) Int
-
-
