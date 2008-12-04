@@ -1088,9 +1088,27 @@ public class OWLATermObjectRenderer implements OWLObjectVisitor {
     }
 
 
+    private String reverseLookUp(URI uri)
+    {
+	String baseURI = uri.getScheme() + ":" +
+	    uri.getSchemeSpecificPart() +"#";
+	String ns = nsm.getPrefixForNamespace(baseURI);
+	String ty = uri.getFragment();
+	if (ns == null)
+	    {
+		return baseURI + "#" + ty;
+	    }
+	else
+	    {
+		return ns + ":" + ty;
+	    }
+    }
+
     public void visit(OWLTypedConstant node) {
-    		String cons = modSpecialCodes(node.getLiteral()) + "^^" + node.getDataType().getURI().toString();
-    		term = af.factory.makeAppl(af.typedConstantFunc, af.factory.parse("\"" + cons + "\""));
+	String lit = modSpecialCodes(node.getLiteral());
+	URI uri = node.getDataType().getURI();
+	String pa = this.reverseLookUp(uri);
+	term = af.factory.makeAppl(af.typedConstantFunc, af.factory.parse("\"" + lit + "^^" + pa + "\""));
     }
 
     private String modSpecialCodes(String literal) {
