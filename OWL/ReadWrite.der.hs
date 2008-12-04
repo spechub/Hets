@@ -29,14 +29,11 @@ instance ShATermConvertible QName where
 toShATermAux_QName :: ATermTable -> QName -> IO (ATermTable, Int)
 toShATermAux_QName att0 = toShATermAux att0 . showQN
 
-fromShATermAux_QName :: Int -> ATermTable -> (ATermTable, QName)
-fromShATermAux_QName ix att = (att,
-      case getShATerm ix att of
-       ShAAppl idName _ _ ->
-         if null idName || idName == "\"\"" then nullQName
+string2QName :: String -> QName
+string2QName idName' =
+         if null idName' then nullQName
           else
-           let idName' = read idName::String
-               (idName'', isFull) =
+           let (idName'', isFull) =
                    if head idName' == '<' && last idName' == '>' then
                                (init $ tail idName', True)
                              else (idName', False)
@@ -53,6 +50,12 @@ fromShATermAux_QName ix att = (att,
                                QN "" (tail loc2) isFull ns
                                      else QN "" ns isFull ""
                           else QN pre loc1 isFull ""
+
+fromShATermAux_QName :: Int -> ATermTable -> (ATermTable, QName)
+fromShATermAux_QName ix att = (att,
+      case getShATerm ix att of
+       ShAAppl idName _ _ -> if null idName then nullQName else
+             string2QName $ read idName
        u -> fromShATermError "OWL.QName" u)
 
 instance ShATermConvertible OntologyFile where
@@ -122,7 +125,7 @@ instance ShATermConvertible Constant where
             ShAAppl "TypedConstant" [a] _ ->
                     case fromShATerm' a att0 of { (att1, a') ->
                       let (b, c) = span (/='^') a'
-                      in (att1, Constant b $ Typed $ mkQName $ drop 2 c) }
+                      in (att1, Constant b $ Typed $ string2QName $ drop 2 c) }
             ShAAppl "UntypedConstant" [a] _ ->
                     case fromShATerm' a att0 of { (att1, a') ->
                       let (b, c) = span (/='@') a'
