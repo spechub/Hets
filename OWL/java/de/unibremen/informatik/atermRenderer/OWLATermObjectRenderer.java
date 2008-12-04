@@ -104,6 +104,22 @@ public class OWLATermObjectRenderer implements OWLObjectVisitor {
         namespaceMap.put(namespace, prefix);
     }
 
+    private String reverseLookUp(URI uri)
+    {
+	String baseURI = uri.getScheme() + ":" +
+	    uri.getSchemeSpecificPart() +"#";
+	String ns = nsm.getPrefixForNamespace(baseURI);
+	String ty = uri.getFragment();
+	if (ns == null)
+	    {
+		return baseURI + "#" + ty;
+	    }
+	else
+	    {
+		return ns + ":" + ty;
+	    }
+    }
+
     private ATermAppl renderNamespaces() {
 		AFun nsFun1 = af.nsFunc1; 
 		AFun nsFun2 =  af.nsFunc2;
@@ -1085,23 +1101,6 @@ public class OWLATermObjectRenderer implements OWLObjectVisitor {
     		System.err.println("error by data range facet restriction: " + node);
     		e.printStackTrace();
     	}
-    }
-
-
-    private String reverseLookUp(URI uri)
-    {
-	String baseURI = uri.getScheme() + ":" +
-	    uri.getSchemeSpecificPart() +"#";
-	String ns = nsm.getPrefixForNamespace(baseURI);
-	String ty = uri.getFragment();
-	if (ns == null)
-	    {
-		return baseURI + "#" + ty;
-	    }
-	else
-	    {
-		return ns + ":" + ty;
-	    }
     }
 
     public void visit(OWLTypedConstant node) {
