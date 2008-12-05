@@ -23,7 +23,7 @@ Library
   build-depends: network, mtl, html, regex-compat, syb-generics, HTTP,
      hxt >= 8.0.0, hxt-filter >= 8.0.0, dataenc >= 0.11, template-haskell
   if flag(splitBase)
-    build-depends: base >= 3.0, array, containers, old-time
+    build-depends: base >= 3.0 && < 4, array, containers, old-time
   else
     build-depends: base < 3.0
   extensions:CPP,
