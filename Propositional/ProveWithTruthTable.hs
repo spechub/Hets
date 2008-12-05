@@ -147,7 +147,8 @@ evalFree m freedef =
       mred = reduceModel freesrc m
       modelsOverMred = map (mred `amalg`) (allModels diffsig)
       modelClass = foldr (filter . (flip eval)) modelsOverMred freeth
-  in isMin isCo m modelClass
+  in all (eval m) freeth        -- the model satisfies the axioms ...
+     && isMin isCo m modelClass -- ... and is the minimal one that does so
   where freemor = LP.freeDefMorphism freedef
         freesrc = PMorphism.source freemor
         freetar = PMorphism.target freemor
@@ -388,6 +389,7 @@ runTt pState cfg _ _thName nGoal =
                       }
            rows = map mkRow models
            isOK = and (map rIsOK rows)
+           consistent = or (map rIsModel rows)
            table = TruthTable { thead = heading,
                                 trows = rows
                               }
@@ -397,10 +399,10 @@ runTt pState cfg _ _thName nGoal =
                     "o = OK, premises are not fulfilled, hence conclusion is irrelevant\n"
            body = legend++"\n"++render id (renderTT table)
        let status = (defaultProof_status nGoal)
-                        { LP.goalStatus = if isOK then LP.Proved $ Nothing
-                                                  else LP.Disproved,
-                          LP.usedAxioms = map AS_Anno.senAttr sens
-                        }
+                     { LP.goalStatus = if isOK then LP.Proved $ Just consistent
+                                               else LP.Disproved,
+                       LP.usedAxioms = map AS_Anno.senAttr sens
+                     }
        return (ATPState.ATPSuccess,
                cfg{ATPState.proof_status = status,
                    ATPState.resultOutput = [body]})
