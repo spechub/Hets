@@ -14,6 +14,12 @@ class Fact
 
     public static void main (String[] args)
     {
+	if (args.length < 1) 
+	    {
+		System.out.println("owl_fact <Ontology>");
+		System.exit(1);
+	    }
+
 	try
 	    {
 		OWLOntologyManager manager = 
@@ -23,7 +29,14 @@ class Fact
 		OWLOntology ontology = 
 		    manager.loadOntologyFromPhysicalURI(physicalURI);
 		Boolean cons = reasoner.isConsistent(ontology);
-		System.out.println(cons);
+		if (cons)
+		    {
+			System.out.println("consistent");
+		    }
+		else
+		    {
+			System.out.println("inconsistent");
+		    }
 	    }
 	catch (OWLOntologyCreationException e)
 	    {
