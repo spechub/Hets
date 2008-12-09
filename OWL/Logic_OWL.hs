@@ -68,7 +68,9 @@ instance StaticAnalysis OWL OntologyFile Sentence
       signature_union OWL s = return . addSign s
       final_union OWL = signature_union OWL
       inclusion OWL = owlInclusion
+#ifdef UNI_PACKAGE
       theory_to_taxonomy OWL = onto2Tax
+#endif
 
 {-   this function will be implemented in OWL.Taxonomy
          theory_to_taxonomy OWL = convTaxo
