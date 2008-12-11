@@ -43,7 +43,7 @@ terminationProof fs dms
     | proof == "YES\n" = Just True
     | proof == "MAYBE\n" = Nothing
     | proof == "NO\n" = Just False
-    | otherwise = error "CASL.CCC.TerminationProof.<terminationProof>"
+    | otherwise = Nothing
     where
     allVar vs = nub $ concat vs
     varsStr vars str
