@@ -63,7 +63,6 @@ instance Ord QName where
     else if null n2 then GT else compare (b1, l1, n1) (b2, l2, n2)
 
 type URI = QName
-type IRI = String
 type URIreference = QName
 
 -- | prefix -> localname
