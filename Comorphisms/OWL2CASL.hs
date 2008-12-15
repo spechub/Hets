@@ -53,12 +53,12 @@ instance Comorphism
     OWL_SL          -- sublogics domain
     OntologyFile    -- Basic spec domain
     OS.Sentence     -- sentence domain
-    ()              -- symbol items domain
+    SymbItems       -- symbol items domain
     ()              -- symbol map items domain
     OS.Sign         -- signature domain
     OWL_Morphism    -- morphism domain
-    ()              -- symbol domain
-    ()              -- rawsymbol domain
+    Entity          -- symbol domain
+    RawSymb         -- rawsymbol domain
     ProofTree       -- proof tree codomain
     CASL            -- lid codomain
     CASL_Sublogics  -- sublogics codomain

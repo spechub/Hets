@@ -46,28 +46,34 @@ instance Language OWL where
  description _ =
   "OWL DL -- Web Ontology Language Description Logic http://wwww.w3c.org/"
 
-instance Syntax OWL OntologyFile () () where
+instance Syntax OWL OntologyFile SymbItems () where
     parse_basic_spec OWL = Just basicSpec
-
+    parse_symb_items OWL = Just symbItems
 -- OWL DL logic
 
-instance Sentences OWL Sentence Sign OWL_Morphism () where
+instance Sentences OWL Sentence Sign OWL_Morphism Entity where
     map_sen OWL _ s = return s
     print_named OWL namedSen =
         pretty (sentence namedSen) <>
           if isAxiom namedSen then empty else space <> text "%implied"
 
 instance StaticAnalysis OWL OntologyFile Sentence
-               () ()
+               SymbItems ()
                Sign
                OWL_Morphism
-               () ()   where
+               Entity RawSymb where
 {- these functions are be implemented in OWL.StaticAna and OWL.Sign: -}
       basic_analysis OWL = Just basicOWLAnalysis
+      stat_symb_items OWL = return . concatMap
+          (\ (SymbItems m us) -> case m of
+               Nothing -> map AnUri us
+               Just ty -> map (ASymbol . Entity ty) us)
       empty_signature OWL = emptySign
       signature_union OWL s = return . addSign s
       final_union OWL = signature_union OWL
       inclusion OWL = owlInclusion
+      cogenerated_sign OWL = fail "cogenerated_sign OWL nyi"
+      generated_sign OWL = fail "cogenerated_sign OWL nyi"
 #ifdef UNI_PACKAGE
       theory_to_taxonomy OWL = onto2Tax
 #endif
@@ -76,9 +82,9 @@ instance StaticAnalysis OWL OntologyFile Sentence
          theory_to_taxonomy OWL = convTaxo
 -}
 
-instance Logic OWL OWL_SL OntologyFile Sentence () ()
+instance Logic OWL OWL_SL OntologyFile Sentence SymbItems ()
                Sign
-               OWL_Morphism () () ProofTree where
+               OWL_Morphism Entity RawSymb ProofTree where
     --     stability _ = Testing
     -- default implementations are fine
     -- the prover uses HTk and IO functions from uni
@@ -119,11 +125,23 @@ instance MinSublogic OWL_SL Sign where
 instance ProjectSublogic OWL_SL Sign where
     projectSublogic = pr_sig
 
+instance MinSublogic OWL_SL SymbItems where
+    minSublogic _ = sl_top
+
+instance MinSublogic OWL_SL Entity where
+    minSublogic _ = sl_top
+
 instance MinSublogic OWL_SL () where
     minSublogic _ = sl_top
 
 instance MinSublogic OWL_SL OntologyFile where
     minSublogic = sl_o_file
+
+instance ProjectSublogicM OWL_SL SymbItems where
+    projectSublogicM _ i = Just i
+
+instance ProjectSublogicM OWL_SL Entity where
+    projectSublogicM _ i = Just i
 
 instance ProjectSublogicM OWL_SL () where
     projectSublogicM _ _ = return ()

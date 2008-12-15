@@ -153,7 +153,7 @@ anaPlainAxiom pa = case pa of
 -- | static analysis of ontology with incoming sign.
 basicOWLAnalysis ::
     (OntologyFile, Sign, GlobalAnnos) ->
-        Result (OntologyFile, ExtSign Sign (), [Named Sentence])
+        Result (OntologyFile, ExtSign Sign Entity, [Named Sentence])
 basicOWLAnalysis (ofile, inSign, _) =
     let ns = namespaces ofile
         diags1 = foldl (++) [] (map isNamespaceInImport

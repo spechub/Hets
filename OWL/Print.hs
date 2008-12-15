@@ -58,6 +58,18 @@ instance Pretty QName where
 printURIreference :: QName -> Doc
 printURIreference = text . showQN
 
+instance Pretty SymbItems where
+  pretty (SymbItems m us) = maybe empty (keyword . show) m
+    <+> ppWithCommas us
+
+instance Pretty RawSymb where
+  pretty rs = case rs of
+    ASymbol e -> pretty e
+    AnUri u -> pretty u
+
+instance Pretty Entity where
+  pretty (Entity ty e) = keyword (show ty) <+> pretty e
+
 instance Pretty SignAxiom where
     pretty = text . show
 

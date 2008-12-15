@@ -517,6 +517,8 @@ fromATC_Axiom ix att0 = case getShATerm ix att0 of
         (att2, PlainAxiom a' $ Declaration b') }}
     u -> fromShATermError "Axiom" u
 
+{-! for SymbItems derive : ShATermConvertible !-}
+{-! for EntityType derive : ShATermConvertible !-}
 {-! for Ontology derive : ShATermConvertible !-}
 {-! for Annotation derive : ShATermConvertible !-}
 {-! for ObjectPropertyExpression derive : ShATermConvertible !-}

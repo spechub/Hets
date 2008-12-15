@@ -111,6 +111,13 @@ data EntityType =
 -- | Syntax of Entities
 data Entity = Entity EntityType URI deriving (Typeable, Show, Eq, Ord)
 
+-- | symbol items for hets
+data SymbItems = SymbItems (Maybe EntityType) [URI]
+    deriving (Typeable, Show, Eq)
+
+-- | raw symbols
+data RawSymb = ASymbol Entity | AnUri URI deriving (Typeable, Show, Eq, Ord)
+
 type LexicalForm = String
 type LanguageTag = String
 
