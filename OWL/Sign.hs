@@ -135,3 +135,11 @@ isSubSign a b =
        && Set.isSubsetOf (dataValuedRoles a) (dataValuedRoles b)
        && Set.isSubsetOf (annotationRoles a) (annotationRoles b)
        && Set.isSubsetOf (individuals a) (individuals b)
+
+symOf :: Sign -> Set.Set Entity
+symOf s = Set.unions
+  [ Set.map (Entity OWLClass) $ concepts s
+  , Set.map (Entity Datatype) $ datatypes s
+  , Set.map (Entity ObjectProperty) $ indValuedRoles s
+  , Set.map (Entity DataProperty) $ dataValuedRoles s
+  , Set.map (Entity Individual) $ individuals s ]

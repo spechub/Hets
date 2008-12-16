@@ -10,7 +10,7 @@ Portability :  portable
 static analysis of basic specifications for OWL 1.1.
 -}
 
-module OWL.StaticAnalysis (basicOWLAnalysis) where
+module OWL.StaticAnalysis (basicOWLAnalysis, modEntity) where
 
 import OWL.Namespace
 import OWL.Sign
@@ -25,16 +25,19 @@ import Common.GlobalAnnotations
 import Common.ExtSign
 import Common.Lib.State
 
-addEntity :: Entity -> State Sign ()
-addEntity (Entity ty u) = do
+modEntity :: (URI -> Set.Set URI -> Set.Set URI) -> Entity -> State Sign ()
+modEntity f (Entity ty u) = do
   s <- get
-  let ins = Set.insert u
+  let chg = f u
   put $ case ty of
-    Datatype -> s { datatypes = ins $ datatypes s }
-    OWLClass -> s { concepts = ins $ concepts s }
-    ObjectProperty -> s { indValuedRoles = ins $ indValuedRoles s }
-    DataProperty -> s { dataValuedRoles = ins $ dataValuedRoles s }
-    Individual -> s { individuals = ins $ individuals s }
+    Datatype -> s { datatypes = chg $ datatypes s }
+    OWLClass -> s { concepts = chg $ concepts s }
+    ObjectProperty -> s { indValuedRoles = chg $ indValuedRoles s }
+    DataProperty -> s { dataValuedRoles = chg $ dataValuedRoles s }
+    Individual -> s { individuals = chg $ individuals s }
+
+addEntity :: Entity -> State Sign ()
+addEntity = modEntity Set.insert
 
 anaAxiom :: Axiom -> State Sign [Named Sentence]
 anaAxiom an = case an of

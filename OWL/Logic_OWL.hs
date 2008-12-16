@@ -56,6 +56,7 @@ instance Sentences OWL Sentence Sign OWL_Morphism Entity where
     print_named OWL namedSen =
         pretty (sentence namedSen) <>
           if isAxiom namedSen then empty else space <> text "%implied"
+    sym_of OWL = symOf
 
 instance StaticAnalysis OWL OntologyFile Sentence
                SymbItems ()
@@ -72,7 +73,10 @@ instance StaticAnalysis OWL OntologyFile Sentence
       signature_union OWL s = return . addSign s
       final_union OWL = signature_union OWL
       inclusion OWL = owlInclusion
-      cogenerated_sign OWL = fail "cogenerated_sign OWL nyi"
+      matches OWL e@(Entity _ u) r = case r of
+        ASymbol s -> s == e
+        AnUri s -> s == u
+      cogenerated_sign OWL = cogeneratedSign
       generated_sign OWL = fail "cogenerated_sign OWL nyi"
 #ifdef UNI_PACKAGE
       theory_to_taxonomy OWL = onto2Tax
