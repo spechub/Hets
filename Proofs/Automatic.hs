@@ -58,16 +58,16 @@ automaticRecursiveFromList ln proofstatus ls =
 {- | automatically applies all rules to the library
    denoted by the library name of the given proofstatus-}
 automatic :: LIB_NAME -> LibEnv -> LibEnv
-automatic ln le = let nLib = localInference ln $ automaticRecursive ln le in
+automatic ln le = let nLib = localInference ln $ automaticRecursive 9 ln le in
   Map.intersectionWith (\ odg ndg ->
       groupHistory odg (DGRule "automatic") ndg) le nLib
 
 {- | applies the rules recursively until no further changes can be made -}
-automaticRecursive :: LIB_NAME -> LibEnv -> LibEnv
-automaticRecursive ln proofstatus =
+automaticRecursive :: Int -> LIB_NAME -> LibEnv -> LibEnv
+automaticRecursive count ln proofstatus =
   let auxProofstatus = automaticApplyRules ln proofstatus
-  in if noChange proofstatus auxProofstatus then auxProofstatus
-     else automaticRecursive ln auxProofstatus
+  in if noChange proofstatus auxProofstatus || count < 1 then auxProofstatus
+     else automaticRecursive (count - 1) ln auxProofstatus
 
 -- | list of rules to use
 rules :: [LIB_NAME -> LibEnv -> LibEnv]
