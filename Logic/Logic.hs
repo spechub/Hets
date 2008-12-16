@@ -257,10 +257,10 @@ class (Language lid, Category sign morphism, Ord sentence,
       ----------------------- symbols ---------------------------
       -- | set of symbols for a signature
       sym_of :: lid -> sign -> Set.Set symbol
-      sym_of _ _ = Set.empty
+      sym_of l _ =  error $ statErrMsg l "sym_of"
       -- | symbol map for a signature morphism
       symmap_of :: lid -> morphism -> EndoMap symbol
-      symmap_of _ _ = Map.empty
+      symmap_of l _ = error $ statErrMsg l "symmap_of"
       -- | symbols have a name, see CASL RefMan p. 192
       sym_name :: lid -> symbol -> Id
       sym_name l _ = error $ statErrMsg l "sym_name"
