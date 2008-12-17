@@ -163,8 +163,8 @@ y1 : d;
 y2 : d
 program def = \ x : s . () %(pe_def)%
 program tt = \ x : s . () %(pe_tt)%
-forall x : s; y : t . x res y = (x as s)
-forall x : s; y : t . fst (x, y) = (x as s)
+forall s : Type; t : Type; x : s; y : t . x res y = (x as s)
+forall s : Type; t : Type; x : s; y : t . fst (x, y) = (x as s)
 program (var snd : s * t ->? t) (x, y : t) : t = y %(pe_snd)%
 . fst = __res__
 forall s : Type . (\ x : s . eq (x, x)) = tt
@@ -175,6 +175,7 @@ program __ <<=[f] __ = eq %(pe___<<=__)%
 program f <<= g = f <<= g %(pe___<<=__)%
 forall p : Pcpo; f : p --> p . f (Y f) = Y f
 forall p : Pcpo; f : p --> p; x : p . f x = x => Y f <<= x
+forall c : Cpo; p : Pcpo
 . undefined
   = (Y ((\ x' : c --> p . x') as (c --> p) --> c --> p) as c --> p)
 free type bool ::= false | true %(ga_bool)%

@@ -29,7 +29,8 @@ forall a : Type; b : Type; x_1_1 : a; x_1_2 : b
 . snd (Pair (x_1_1, x_1_2)) = x_1_2              %(ga_select_snd)%
 free type Pair(a : Type)(b : Type) ::= Pair (fst : a; snd : b)
                                                        %(ga_Pair)%
-forall a : a; b : b . f (a, b) = (Pair (a, b) as Pair a b)
+forall a : Type; b : Type; a : a; b : b
+. f (a, b) = (Pair (a, b) as Pair a b)
 program g (Pair (a, b)) = a %(pe_g)%
 ### Hint 1.5, is type variable 'a'
 ### Hint 1.8, is type variable 'b'

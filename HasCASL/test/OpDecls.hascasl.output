@@ -100,7 +100,7 @@ op z : s
 . l3 = ((a <= b <= c) as s)
 . l4 = ((a <= b <= c) as s)
 . l5 = (((op a : s), (op b : s), c) as s * s * s)
-. y = ((a <= (var x : s) <= a) as s)
+forall x : s . y = ((a <= (var x : s) <= a) as s)
 . z = ((op __+__ : s * s -> s) (x as s, x as t as s) as s)
 . x in s %(bla_label)%
 . x in t

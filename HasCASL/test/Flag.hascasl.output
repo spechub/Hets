@@ -29,8 +29,8 @@ b : Logical;
 x : Flag a
 forall a : Type; x : Flag a . mkf (getl x) = x
 forall a : Type; b : Logical . getl (mkf b : Flag a) = b
-. sg = ((mkf forall x, y : a . x = y) as Flag a)
-. c = (getl (sg : Flag a) as Unit)
+forall a : Type . sg = ((mkf forall x, y : a . x = y) as Flag a)
+forall a : Type . c = (getl (sg : Flag a) as Unit)
 ### Hint 1.6, is type variable 'a'
 ### Hint 5.8, not a kind 'Flag a'
 ### Hint 5.20, not a class 'Logical'

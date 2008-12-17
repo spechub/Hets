@@ -25,9 +25,12 @@ op twice3 : forall a : Type; b < a : Type . (a ->? b) * a ->? b
 vars
 f : a ->? b;
 x : a
-forall f : a ->? b; x : a . twice2 f x = (f (f x) as b)
+forall a : Type; b < a : Type; f : a ->? b; x : a
+. twice2 f x = (f (f x) as b)
+forall a : Type; b < a : Type
 . twice3
   = ((\ (f : a ->? b, x : a) . f (f x)) as (a ->? b) * a ->? b)
+forall a : Type; b < a : Type
 . twice
   = ((\ (f : a ->? a)(x : a) . f (f x)) as (a ->? b) -> a ->? b)
 forall a : Type; b < a : Type; f : a ->? b; x : a
