@@ -43,6 +43,7 @@ import qualified Common.Lib.Rel as Rel
 import Common.Id
 import Common.Result
 import Common.DocUtils
+import Common.Utils
 import Common.Lib.State
 
 import Data.List as List
@@ -261,6 +262,13 @@ mkTypedTerm trm ty = case trm of
       else TypedTerm trm Inferred ty ps
     _ -> TypedTerm trm Inferred ty nullRange
 
+lesserTypeScheme :: Env -> TypeScheme -> TypeScheme -> Bool
+lesserTypeScheme e (TypeScheme args1 t1 _) (TypeScheme args2 t2 _) =
+   if null args1 && null args2 then lesserType e t1 t2 else False
+
+lesserOpInfo :: Env -> OpInfo -> OpInfo -> Bool
+lesserOpInfo e o1 = lesserTypeScheme e (opType o1) . opType
+
 -- | infer type of term (or a pattern if the Bool is True)
 infer :: Bool -> Maybe Type -> Term
       -> State Env [(Subst, Constraints, Type, Term)]
@@ -300,8 +308,10 @@ infer isP mt trm = do
                Just (VarDefn t) ->
                  infer isP mt $ QualVar $ VarDecl i t Other ps
                Nothing -> do
-                    insts <- mapM (instOpInfo tys) $ Set.toList
-                             $ Map.findWithDefault Set.empty i as
+                    insts <- mapM (instOpInfo tys)
+                       $ keepMins (lesserOpInfo e)
+                       $ Set.toList
+                       $ Map.findWithDefault Set.empty i as
                     let ls = map ( \ (ty, is, cs, oi) ->
                               (eps, ty, is, case mt of
                                Just inTy -> insertC (Subtyping ty inTy) cs

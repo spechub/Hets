@@ -1,0 +1,11 @@
+type Int < Rat; Rat < Real
+
+op 0 : Int
+op 0 : Rat
+op 0 : Real
+
+free types
+     SWPoint ::= SWPoint(x:Real;y:Real;z:Real);
+     SWArc ::= SWArc(Center:SWPoint;Start:SWPoint;End:SWPoint);
+
+op arc1:SWArc=SWArc(SWPoint(0,0,0),SWPoint(0,0,0),SWPoint(0,0,0))
