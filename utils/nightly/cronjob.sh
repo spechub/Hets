@@ -52,11 +52,12 @@ date
 rm -rf Hets
 svn co https://svn-agbkb.informatik.uni-bremen.de/Hets/trunk Hets
 cd Hets
+ant init
 time $MAKE
 time $MAKE check
 $MAKE release
 date
-(cd Hets; $MAKE depend; time $MAKE)
+(cd Hets; ant init; $MAKE depend; time $MAKE)
 cd ..
 }
 
