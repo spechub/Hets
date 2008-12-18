@@ -47,7 +47,7 @@ INLINEAXIOMS_deps = utils/InlineAxioms/InlineAxioms.hs \
     Modal/Parse_AS.hs Modal/ModalSign.hs Modal/Print_AS.hs Modal/StatAna.hs
 
 PERL = perl
-HAPPY = happy -sga
+APPY = happy -sga
 GENRULES = utils/genRules
 GENRULECALL = $(GENRULES) -r Typeable -r ShATermConvertible \
     -i Data.Typeable -i Common.ATerm.Lib
@@ -78,7 +78,7 @@ GTK_GLADE_HSFILES = $(subst .glade,.hs,$(GTK_GLADE_FILES))
 
 derived_sources += $(GTK_GLADE_HSFILES)
 
-logics = CASL HasCASL Isabelle Modal CoCASL COL CspCASL CASL_DL SoftFOL \
+logics = CASL HasCASL Isabelle Modal Temporal CoCASL COL CspCASL CASL_DL SoftFOL \
      ConstraintCASL Propositional OWL RelationalScheme VSE OMDoc
 
 TESTTARGETFILES += CASL/fromKif.hs CASL/capa.hs HasCASL/hacapa.hs \
@@ -275,6 +275,7 @@ Propositional_files = Propositional/Sign.hs Propositional/Morphism.hs \
 RS_files = RelationalScheme/AS.hs RelationalScheme/Sign.hs
 
 Modal_files = Modal/AS_Modal.hs Modal/ModalSign.hs
+Temporal_files = Temporal/AS_BASIC_Temporal.hs Temporal/Sign.hs
 ConstraintCASL_files = ConstraintCASL/AS_ConstraintCASL.hs
 CoCASL_files = CoCASL/AS_CoCASL.hs CoCASL/CoCASLSign.hs
 COL_files = COL/AS_COL.hs COL/COLSign.hs
@@ -538,6 +539,9 @@ Isabelle/ATC_Isabelle.der.hs: $(Isabelle_files) $(GENRULES)
 
 Modal/ATC_Modal.der.hs: $(Modal_files) $(GENRULES)
 	$(GENRULECALL) -i CASL.ATC_CASL -o $@ $(Modal_files)
+
+Temporal/ATC_Temporal.der.hs: $(Temporal_files) $(GENRULES)
+	$(GENRULECALL) -i CASL.ATC_CASL -o $@ $(Temporal_files)
 
 ConstraintCASL/ATC_ConstraintCASL.der.hs: $(ConstraintCASL_files) $(GENRULES)
 	$(GENRULECALL) -i CASL.ATC_CASL -o $@ $(ConstraintCASL_files)
