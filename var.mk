@@ -64,8 +64,11 @@ TESTTARGETFILES += Taxonomy/taxonomyTool.hs OWL/OWLParser.hs \
 endif
 
 HC_OPTS_WITHOUTGLADE = -threaded -fglasgow-exts -fallow-overlapping-instances \
+  $(NOMATHSERVER) \
   $(HAXML_PACKAGE) $(UNI_PACKAGE) $(SHELLAC_PACKAGE) $(HXTFILTER_PACKAGE) \
-  $(PFE_FLAGS) $(TABULAR_PACKAGE) $(EDITLINE_PACKAGE) $(NOMATHSERVER) \
-  -DCASLEXTENSIONS
+  $(PFE_FLAGS) $(TABULAR_PACKAGE) $(EDITLINE_PACKAGE) -DCASLEXTENSIONS
+
+# for profiling (or a minimal hets) comment out the previous two package lines
+# and the $(GLADE_PACKAGE) below
 
 HC_OPTS = $(HC_OPTS_WITHOUTGLADE) $(GLADE_PACKAGE)
