@@ -47,7 +47,7 @@ INLINEAXIOMS_deps = utils/InlineAxioms/InlineAxioms.hs \
     Modal/Parse_AS.hs Modal/ModalSign.hs Modal/Print_AS.hs Modal/StatAna.hs
 
 PERL = perl
-APPY = happy -sga
+HAPPY = happy -sga
 GENRULES = utils/genRules
 GENRULECALL = $(GENRULES) -r Typeable -r ShATermConvertible \
     -i Data.Typeable -i Common.ATerm.Lib
