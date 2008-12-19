@@ -1,4 +1,3 @@
-{-# OPTIONS -cpp #-}
 {- |
 Module      :  $Header$
 Description :  GUI for showing and saving proof details.
@@ -24,17 +23,7 @@ import GUI.Utils (fileSaveDialog)
 
 import System.Directory
 
-#ifdef UNIVERSION2
-import HTk.Toplevel.HTk hiding (font)
-import qualified HTk.Toplevel.HTk as HTk (font)
-import HTk.Devices.XSelection
-import HTk.Toolkit.ScrollBox
-#else
-import HTk hiding (font)
-import qualified HTk (font)
-import XSelection
-import ScrollBox
-#endif
+import GUI.HTkUtils
 
 import Proofs.AbstractState
 import Logic.Comorphism
@@ -231,7 +220,7 @@ doShowProofDetails prGUISt =
     win       <- createToplevel [text winTitleStr]
     bFrame    <- newFrame win [relief Groove, borderwidth (cm 0.05)]
     winTitle  <- newLabel bFrame [text winTitleStr,
-                                  HTk.font (Helvetica, Roman, 18::Int)]
+                                  font (Helvetica, Roman, 18::Int)]
     btnBox    <- newHBox bFrame []
     tsBut     <- newButton btnBox [text expand_tacticScripts, width 18]
     ptBut     <- newButton btnBox [text expand_proofTrees, width 18]

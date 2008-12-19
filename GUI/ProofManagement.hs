@@ -27,24 +27,18 @@ import Data.List
 import qualified Control.Concurrent as Conc
 
 #ifdef UNIVERSION2
-import HTk.Toplevel.HTk hiding (value)
-import qualified HTk.Toplevel.HTk as HTk (value)
 import HTk.Toolkit.Separator
 import HTk.Widgets.Space
 import HTk.Devices.XSelection
 #else
-import HTk hiding (value)
-import qualified HTk (value)
 import Separator
 import Space
 import XSelection
 #endif
 
 import GUI.Utils
-import GUI.HTkUtils as HTk
-  ( LBGoalView (..), LBStatusIndicator (..), EnableWid (..)
-  , populateGoalsListBox, indicatorFromBasicProof
-  , enableWids, disableWids, enableWidsUponSelection)
+import GUI.HTkUtils as HTk hiding
+  (createTextSaveDisplay, displayTheoryWithWarning)
 import GUI.ProofDetails
 
 import Proofs.AbstractState
@@ -53,9 +47,6 @@ import Logic.Logic
 import Logic.Prover
 import qualified Comorphisms.KnownProvers as KnownProvers
 import Static.GTheory
-
--- debugging
--- import Debug.Trace
 
 -- * Proof Management GUI
 

@@ -36,8 +36,7 @@ module GUI.HTkUtils
   , module ScrollBox
   , module SimpleForm
   , module TextDisplay
-  )
-  where
+  ) where
 
 import System.Directory
 

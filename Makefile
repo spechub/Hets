@@ -321,7 +321,6 @@ cpp_sources = hets.hs $(happy_files) \
     GUI/GraphLogic.hs \
     GUI/GraphMenu.hs \
     GUI/HTkUtils.hs \
-    GUI/ProofDetails.hs \
     GUI/ProofManagement.hs \
     GUI/ShowGraph.hs \
     GUI/UDGUtils.hs \
