@@ -28,34 +28,24 @@ import qualified Common.Exception as Exception
 import qualified Control.Concurrent as Conc
 
 #ifdef UNIVERSION2
-import HTk.Toplevel.HTk hiding (value)
-import qualified HTk.Toplevel.HTk as HTk (value)
 import HTk.Toolkit.SpinButton
 import HTk.Toolkit.Separator
 import HTk.Devices.XSelection
 import HTk.Widgets.Space
-import HTk.Widgets.ScrollBar
 #else
-import HTk hiding (value)
-import qualified HTk (value)
 import SpinButton
 import Separator
 import XSelection
 import Space
-import ScrollBar
 #endif
 
 import GUI.Utils
-import GUI.HTkUtils ( LBGoalView (..), LBStatusIndicator (..), EnableWid (..)
-                    , populateGoalsListBox, indicatorFromProof_status
-                    , enableWids, disableWids, enableWidsUponSelection)
-import Interfaces.GenericATPState
+import GUI.HTkUtils hiding (createTextSaveDisplay, createTextDisplay)
 import GUI.PrintUtils
 
-import Proofs.BatchProcessing
+import Interfaces.GenericATPState
 
--- debugging
-import Debug.Trace
+import Proofs.BatchProcessing
 
 {- |
   Utility function to set the time limit of a Config.
@@ -195,8 +185,9 @@ getValueSafe :: Int -- ^ default time limt
                        -- parse error
 getValueSafe defaultTimeLimit timeEntry =
     Exception.catchJust Exception.userErrors ((getValue timeEntry) :: IO Int)
-                  (\ s -> trace ("Warning: Error "++show s++" was ignored")
-                                (return defaultTimeLimit))
+      $ \ s -> do
+         putStrLn $ "Warning: Error " ++ show s ++ " was ignored"
+         return defaultTimeLimit
 
 {- |
   reads passed ENV-variable and if it exists and has an Int-value this value is
@@ -273,9 +264,9 @@ updateDisplay st updateLb goalsLb statusLabel timeEntry optionsEntry axiomsLb =
                in do
                 statusLabel # text label
                 statusLabel # foreground (show color)
-                timeEntry # HTk.value t'
-                optionsEntry # HTk.value opts'
-                axiomsLb # HTk.value (usedAxs::[String])
+                timeEntry # value t'
+                optionsEntry # value opts'
+                axiomsLb # value (usedAxs::[String])
                 return ())
           (currentGoal st)
 
@@ -311,7 +302,7 @@ newOptionsFrame con updateFn isExtraOps = do
   pack timeLimitLine [Expand On, Side AtRight, Anchor East]
 
   (timeEntry :: Entry Int) <- newEntry timeLimitLine [width 18,
-                                              HTk.value guiDefaultTimeLimit]
+                                              value guiDefaultTimeLimit]
   pack timeEntry []
 
   timeSpinner <- newSpinButton timeLimitLine (updateFn timeEntry) []
@@ -418,7 +409,7 @@ genericATPgui atpFun isExtraOptions prName thName th freedefs pt = do
                                               (setTimeLimit t')
                                               prName goal pt (configsMap sEnt)}
                       Conc.putMVar stateMVar s'
-                      timeEntry # HTk.value
+                      timeEntry # value
                                     (maybe guiDefaultTimeLimit
                                            id
                                            (timeLimit $
@@ -469,7 +460,7 @@ genericATPgui atpFun isExtraOptions prName thName th freedefs pt = do
   pack statusLabel [Anchor West]
   axiomsFrame <- newFrame rc2 []
   pack axiomsFrame [Expand On, Anchor West, Fill Both]
-  axiomsLb <- newListBox axiomsFrame [HTk.value $ ([]::[String]),
+  axiomsLb <- newListBox axiomsFrame [value $ ([]::[String]),
                                       bg "white",exportSelection False,
                                       selectMode Browse,
                                       height 6, width 19] :: IO (ListBox String)
@@ -526,7 +517,7 @@ genericATPgui atpFun isExtraOptions prName thName th freedefs pt = do
                     let t' = case sp of
                               Up -> curEntTL+10
                               _ -> max batchTLimit (curEntTL-10)
-                    tEntry # HTk.value t'
+                    tEntry # value t'
                     done))
                  isExtraOptions
 
@@ -551,7 +542,7 @@ genericATPgui atpFun isExtraOptions prName thName th freedefs pt = do
   when enableSaveCheckBox $
        pack saveProblem_batch_checkBox [Expand Off, Fill None, Side AtBottom]
 
-  batchTimeEntry # HTk.value batchTLimit
+  batchTimeEntry # value batchTLimit
 
   -- separator 2
   sp1_2 <- newSpace b (cm 0.15) []
@@ -765,7 +756,7 @@ genericATPgui atpFun isExtraOptions prName thName th freedefs pt = do
             -- get options for this batch run
             curEntTL <- (getValueSafe batchTLimit batchTimeEntry) :: IO Int
             let tLimit = if curEntTL > 0 then curEntTL else batchTLimit
-            batchTimeEntry # HTk.value tLimit
+            batchTimeEntry # value tLimit
             extOpts <- (getValue batchOptionsEntry) :: IO String
             let extOpts' = words extOpts
                 openGoalsMap =  filterOpenGoals $ configsMap s

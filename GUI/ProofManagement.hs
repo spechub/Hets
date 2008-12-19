@@ -37,7 +37,7 @@ import XSelection
 #endif
 
 import GUI.Utils
-import GUI.HTkUtils as HTk hiding
+import GUI.HTkUtils hiding
   (createTextSaveDisplay, displayTheoryWithWarning)
 import GUI.ProofDetails
 
@@ -125,7 +125,7 @@ populatePathsListBox :: ListBox String
                      -> KnownProvers.KnownProversMap
                      -> IO ()
 populatePathsListBox lb prvs = do
-  lb # HTk.value (Map.keys prvs)
+  lb # value (Map.keys prvs)
   return ()
 
 populateAxiomsList ::
@@ -136,7 +136,7 @@ populateAxiomsList ::
     -> IO ()
 populateAxiomsList lbAxs s =
     do aM' <- axiomMap s
-       lbAxs # HTk.value (map (\(k,sen) -> if (wasTheorem sen) then "(Th) "++k
+       lbAxs # value (map (\(k,sen) -> if (wasTheorem sen) then "(Th) "++k
                                            else k) $
                               OMap.toList aM')
        return ()
@@ -443,7 +443,7 @@ proofManagementGUI lid prGuiAcs
 
   pathsFrame <- newFrame rhb4 []
   pack pathsFrame []
-  pathsLb <- newListBox pathsFrame [HTk.value $ ([]::[String]), bg "white",
+  pathsLb <- newListBox pathsFrame [value $ ([]::[String]), bg "white",
                                     selectMode Single, exportSelection False,
                                     height 4, width 28] :: IO (ListBox String)
   pack pathsLb [Expand On, Side AtLeft, Fill Both]
@@ -519,7 +519,7 @@ proofManagementGUI lid prGuiAcs
   populateGoalsListBox lb (goalsView initState)
   populateAxiomsList lbAxs initState
   populatePathsListBox pathsLb (proversMap initState)
-  lbThs # HTk.value (OMap.keys (goalMap initState))
+  lbThs # value (OMap.keys (goalMap initState))
   doSelectAllEntries True lb
   doSelectAllEntries True lbAxs
   doSelectAllEntries True lbThs
