@@ -117,14 +117,14 @@ mapG_theory (Comorphism cid) (G_theory lid (ExtSign sign _) ind1 sens ind2) =
 -- | Translation of a G_theory along a GMorphism
 translateG_theory :: GMorphism -> G_theory -> Result G_theory
 translateG_theory (GMorphism cid _ _ morphism2 _)
-                      (G_theory lid (ExtSign sign _) _ sens ind)  = do
+                      (G_theory lid (ExtSign sign _) _ sens _)  = do
   let tlid = targetLogic cid
   bTh <- coerceBasicTheory lid (sourceLogic cid)
                     "translateG_theory" (sign, toNamedList sens)
   (_, sens'') <- wrapMapTheory cid bTh
   sens''' <- mapM (mapNamedM $ map_sen tlid morphism2) sens''
   return $ G_theory tlid (mkExtSign $ cod morphism2)
-             startSigId (toThSens sens''') ind
+             startSigId (toThSens sens''') startThId
 
 -- | Join the sentences of two G_theories
 joinG_sentences :: Monad m => G_theory -> G_theory -> m G_theory
