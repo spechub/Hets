@@ -12,11 +12,7 @@ Instance of class Logic for temporal logic
    Also the instances for Syntax and Category.
 -}
 
-module Temporal.Logic_Temporal
-    (module Temporal.Logic_Temporal
-          , Sign
-          , Morphism
-    ) where
+module Temporal.Logic_Temporal where
 
 import Logic.Logic
 
