@@ -99,9 +99,7 @@ translate the given sentence list to the same resulting sentence list. -}
 isSameTranslation :: G_theory -> GMorphism -> [LEdge DGLinkLab] -> Bool
 isSameTranslation th morphism path =
   case calculateMorphismOfPath path of
-      Just morphismOfPath ->
-         maybeResult (translateG_theory morphism th) ==
-                     maybeResult (translateG_theory morphismOfPath th)
+      Just morphismOfPath -> morphism == morphismOfPath
       Nothing -> False
 
 -- | local inference
