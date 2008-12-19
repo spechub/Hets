@@ -1,3 +1,4 @@
+{-# OPTIONS -cpp #-}
 {- |
 Module      :  $Header$
 Copyright   :  (c) K. Luettich, Rene Wagner, Uni Bremen 2002-2005
@@ -19,7 +20,6 @@ module GUI.HTkUtils
   , confirmMess
   , messageMess
   , askFileNameAndSave
-  , createTextDisplay
   , createTextSaveDisplay
   , newFileDialogStr
   , fileDialogStr
@@ -32,19 +32,32 @@ module GUI.HTkUtils
   , enableWids
   , disableWids
   , enableWidsUponSelection
-  , sync
+  , module HTk
+  , module ScrollBox
+  , module SimpleForm
+  , module TextDisplay
   )
   where
 
 import System.Directory
 
-import Messages(errorMess, confirmMess, messageMess)
-import TextDisplay(createTextDisplay)
-import HTk hiding (font)
-import qualified HTk (font)
+#ifdef UNIVERSION2
+import Util.Messages
+import HTk.Toplevel.HTk as HTk hiding (x, y, value, font)
+import qualified HTk.Toplevel.HTk as HTk (font, value)
+import HTk.Toolkit.ScrollBox as ScrollBox
+import HTk.Toolkit.SimpleForm as SimpleForm
+import HTk.Toolkit.TextDisplay as TextDisplay
+import HTk.Toolkit.FileDialog
+#else
+import Messages
+import HTk hiding (x, y, value, font)
+import qualified HTk (font, value)
 import ScrollBox
+import SimpleForm
+import TextDisplay
 import FileDialog
-import Events (sync)
+#endif
 
 import Logic.Prover
 import Static.GTheory
@@ -56,7 +69,7 @@ listBox :: String -> [String] -> IO (Maybe Int)
 listBox title entries =
   do
     main <- createToplevel [text title]
-    lb  <- newListBox main [value entries, bg "white", size (100, 39)] ::
+    lb  <- newListBox main [HTk.value entries, bg "white", size (100, 39)] ::
              IO (ListBox String)
     pack lb [Side AtLeft, Expand On, Fill Both]
     scb <- newScrollBar main []
@@ -101,7 +114,7 @@ createTextSaveDisplayExt title fname txt conf upost =
      pack q [Side AtRight, PadX 8, PadY 5]
      pack s [Side AtLeft, PadX 5, PadY 5]
      ed # state Normal
-     ed # value txt
+     ed # HTk.value txt
      ed # state Disabled
      forceFocus ed
      (editClicked, _) <- bindSimple ed (ButtonPress (Just 1))
@@ -209,7 +222,7 @@ populateGoalsListBox :: ListBox String -- ^ listbox
                      -> IO ()
 populateGoalsListBox lb v = do
   selectedOld <- (getSelection lb) :: IO (Maybe [Int])
-  lb # value (toString v)
+  lb # HTk.value (toString v)
   maybe (return ()) (mapM_ (\n -> selection n lb)) selectedOld
   where
     toString = map (\ LBGoalView {statIndicator = i, goalDescription = d} ->

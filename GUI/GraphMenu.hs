@@ -50,12 +50,8 @@ import Common.Result as Res
 import Driver.Options
 import Driver.ReadFn(libNameToFile)
 
-import GraphDisp(emptyArcTypeParms, emptyNodeTypeParms)
-import GraphConfigure
-import DaVinciGraph
-import Broadcaster(newSimpleBroadcaster,applySimpleUpdate)
-import Sources(toSimpleSource)
-import qualified HTk
+import GUI.UDGUtils
+import qualified GUI.HTkUtils as HTk
 
 import Control.Concurrent.MVar
 

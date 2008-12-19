@@ -305,14 +305,33 @@ derived_sources += $(drifted_files) Driver/Version.hs $(happy_files) \
     $(inline_axiom_files) Modal/ModalSystems.hs $(hs_der_files)
 
 # sources that have {-# OPTIONS -cpp #-}
-cpp_sources = \
-    CASL/Logic_CASL.hs Isabelle/CreateTheories.hs \
-    SoftFOL/Logic_SoftFOL.hs GUI/Utils.hs Driver/WriteFn.hs \
-    Propositional/Logic_Propositional.hs GUI/GraphMenu.hs \
-    Comorphisms/LogicList.hs Comorphisms/LogicGraph.hs \
-    Comorphisms/KnownProvers.hs hets.hs $(happy_files) \
-    PGIP/InfoCommands.hs OWL/Logic_OWL.hs GUI/ShowGraph.hs \
-    VSE/Logic_VSE.hs Common/Exception.hs PGIP/Interface.hs
+cpp_sources = hets.hs $(happy_files) \
+    CASL/Logic_CASL.hs \
+    Common/Exception.hs \
+    Common/UniUtils.hs \
+    Comorphisms/KnownProvers.hs \
+    Comorphisms/LogicGraph.hs \
+    Comorphisms/LogicList.hs \
+    Driver/WriteFn.hs \
+    GUI/AbstractGraphView.hs \
+    GUI/GenericATP.hs \
+    GUI/GraphAbstraction.hs \
+    GUI/GraphLogic.hs \
+    GUI/GraphMenu.hs \
+    GUI/HTkUtils.hs \
+    GUI/ProofDetails.hs \
+    GUI/ProofManagement.hs \
+    GUI/ShowGraph.hs \
+    GUI/UDGUtils.hs \
+    GUI/Utils.hs \
+    Isabelle/CreateTheories.hs \
+    OWL/Logic_OWL.hs \
+    PGIP/InfoCommands.hs \
+    PGIP/Interface.hs \
+    Propositional/Logic_Propositional.hs \
+    SoftFOL/Logic_SoftFOL.hs \
+    Temporal/Logic_Temporal.hs \
+    VSE/Logic_VSE.hs \
 
 # unused, remove when header files are gone
 genrule_header_files = $(wildcard ATC/*.header.hs)

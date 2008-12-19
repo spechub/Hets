@@ -1,3 +1,4 @@
+{-# OPTIONS -cpp #-}
 {- |
 Module      :  $Header$
 Description :  GUI for showing and saving proof details.
@@ -23,10 +24,17 @@ import GUI.Utils (fileSaveDialog)
 
 import System.Directory
 
+#ifdef UNIVERSION2
+import HTk.Toplevel.HTk hiding (font)
+import qualified HTk.Toplevel.HTk as HTk (font)
+import HTk.Devices.XSelection
+import HTk.Toolkit.ScrollBox
+#else
 import HTk hiding (font)
 import qualified HTk (font)
 import XSelection
 import ScrollBox
+#endif
 
 import Proofs.AbstractState
 import Logic.Comorphism
@@ -288,7 +296,7 @@ doShowProofDetails prGUISt =
                        curDir <- getCurrentDirectory
                        let f = curDir++'/':thName++"-proof-details.txt"
                        mfile <- fileSaveDialog f [ ("Text",["*.txt"])
-                                                 , ("All Files",["*"])] Nothing 
+                                                 , ("All Files",["*"])] Nothing
                        maybe done (\fp -> writeTextToFile ed fp) mfile
                        enable qBut; enable sBut
                        done

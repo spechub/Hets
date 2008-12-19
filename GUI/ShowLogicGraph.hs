@@ -12,14 +12,8 @@ display the logic graph
 
 module GUI.ShowLogicGraph (showLogicGraph, showLG) where
 
--- for graph display
-import DaVinciGraph
-import GraphDisp
-import GraphConfigure
-
--- for windows display
-import TextDisplay
-import Configuration
+import GUI.UDGUtils as UDG
+import GUI.HTkUtils
 
 --  data structure
 import Comorphisms.LogicGraph
@@ -62,10 +56,10 @@ makeNodeMenu :: (  GraphAllConfig graph graphParms node
                   -> nodeTypeParms value
 makeNodeMenu (_ ::
        Graph graph graphParms node nodeType nodeTypeParms arc
-          arcType arcTypeParms) showValue logicNodeMenu color =
+          arcType arcTypeParms) showMyValue logicNodeMenu color =
                logicNodeMenu $$$
                Ellipse $$$
-               ValueTitle showValue $$$
+               ValueTitle showMyValue $$$
                Color color $$$
                emptyNodeTypeParms
 
@@ -102,11 +96,11 @@ showLogicGraph
           arcType arcTypeParms) =
     do
            -- disp s tD = debug (s ++ (show tD))
-       logicG <- newGraph displaySrt (GlobalMenu (Menu Nothing [
+       logicG <- newGraph displaySrt (GlobalMenu (UDG.Menu Nothing [
                 Button "Show detailed logic graph" (showHSG) ]) $$
                                       graphParms displaySrt "Logic Graph"
                                      )
-       let logicNodeMenu = LocalMenu(Menu (Just "Info")
+       let logicNodeMenu = LocalMenu(UDG.Menu (Just "Info")
                [Button "Tools" (\lg -> createTextDisplay
                       ("Parsers, Provers and Cons_Checker of "
                        ++ show lg) (showTools lg) [size(80,25)]),
@@ -256,7 +250,7 @@ showLogicGraph
                                      (graphParms displaySrt "SubLogic Graph")
                  let listG_Sublogics = -- map (\sbl -> G_sublogics sublid sbl)
                                        (all_sublogics sublid)
-                     subNodeMenu = LocalMenu (Menu Nothing [])
+                     subNodeMenu = LocalMenu (UDG.Menu Nothing [])
                      subNodeTypeParms =
                          subNodeMenu $$$
                          Ellipse $$$
@@ -273,7 +267,7 @@ showLogicGraph
                          Map.findWithDefault
                               (error "lookupSublogic: node not found")
                               g_sl slAndNodes
-                     subArcMenu = LocalMenu( Menu Nothing [])
+                     subArcMenu = LocalMenu(UDG.Menu Nothing [])
                      subArcTypeParms = subArcMenu $$$
                                        Color "green" $$$
                                        nullSubArcTypeParms
@@ -306,7 +300,7 @@ showHetSublogicGraph
     do
        logicG <- newGraph displaySrt (graphParms displaySrt
                                                 "Heterogeneous Sublogic Graph")
-       let logicNodeMenu = LocalMenu(Menu (Just "Info")
+       let logicNodeMenu = LocalMenu(UDG.Menu (Just "Info")
                [Button "Tools" (\lg -> createTextDisplay
                       ("Parsers, Provers and Cons_Checker of "
                        ++ show lg) (showTools lg) [size(80,25)]),

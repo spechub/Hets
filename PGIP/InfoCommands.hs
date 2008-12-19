@@ -43,8 +43,7 @@ module PGIP.InfoCommands
 
 
 #ifdef UNI_PACKAGE
-import Events
-import Destructible
+import Common.UniUtils
 import GUI.Taxonomy
 import GUI.ShowGraph
 #endif

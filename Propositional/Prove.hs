@@ -35,8 +35,7 @@ import qualified Interfaces.GenericATPState as ATPState
 import GUI.GenericATP
 import GUI.Utils (infoDialog)
 
-import ChildProcess as CP
-import Destructible
+import Common.UniUtils as CP
 
 import Common.ProofTree
 import Common.Utils (readMaybe)

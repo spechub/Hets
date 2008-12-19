@@ -1,3 +1,4 @@
+{-# OPTIONS -cpp #-}
 {- |
 Module      :  $Header$
 Description :  Generic Prover GUI.
@@ -26,6 +27,15 @@ import Data.Maybe (isJust)
 import qualified Common.Exception as Exception
 import qualified Control.Concurrent as Conc
 
+#ifdef UNIVERSION2
+import HTk.Toplevel.HTk hiding (value)
+import qualified HTk.Toplevel.HTk as HTk (value)
+import HTk.Toolkit.SpinButton
+import HTk.Toolkit.Separator
+import HTk.Devices.XSelection
+import HTk.Widgets.Space
+import HTk.Widgets.ScrollBar
+#else
 import HTk hiding (value)
 import qualified HTk (value)
 import SpinButton
@@ -33,6 +43,7 @@ import Separator
 import XSelection
 import Space
 import ScrollBar
+#endif
 
 import GUI.Utils
 import GUI.HTkUtils ( LBGoalView (..), LBStatusIndicator (..), EnableWid (..)

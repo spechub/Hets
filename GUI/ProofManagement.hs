@@ -1,3 +1,4 @@
+{-# OPTIONS -cpp #-}
 {- |
 Module      :  $Header$
 Description :  Goal management GUI.
@@ -24,16 +25,26 @@ import Common.ExtSign
 import Data.List
 
 import qualified Control.Concurrent as Conc
+
+#ifdef UNIVERSION2
+import HTk.Toplevel.HTk hiding (value)
+import qualified HTk.Toplevel.HTk as HTk (value)
+import HTk.Toolkit.Separator
+import HTk.Widgets.Space
+import HTk.Devices.XSelection
+#else
 import HTk hiding (value)
 import qualified HTk (value)
 import Separator
 import Space
 import XSelection
+#endif
 
 import GUI.Utils
-import GUI.HTkUtils ( LBGoalView (..), LBStatusIndicator (..), EnableWid (..)
-                    , populateGoalsListBox, indicatorFromBasicProof
-                    , enableWids, disableWids, enableWidsUponSelection)
+import GUI.HTkUtils as HTk
+  ( LBGoalView (..), LBStatusIndicator (..), EnableWid (..)
+  , populateGoalsListBox, indicatorFromBasicProof
+  , enableWids, disableWids, enableWidsUponSelection)
 import GUI.ProofDetails
 
 import Proofs.AbstractState

@@ -33,9 +33,7 @@ import SoftFOL.Sign
 import SoftFOL.Translate
 import SoftFOL.ProverState
 
-import ChildProcess as CP
-import ProcessClasses
-import Destructible
+import Common.UniUtils as CP
 
 import GUI.GenericATP
 import Interfaces.GenericATPState

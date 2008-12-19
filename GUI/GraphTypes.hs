@@ -28,6 +28,7 @@ module GUI.GraphTypes
 import GUI.GraphAbstraction(GraphInfo, initgraphs)
 import GUI.ProofManagement (GUIMVar)
 import GUI.History(CommandHistory, emptyCommandHistory)
+import GUI.UDGUtils
 
 import Static.DevGraph
 
@@ -40,9 +41,6 @@ import Data.IORef
 import qualified Data.Map as Map
 
 import Control.Concurrent.MVar
-
-import DaVinciGraph
-import GraphDisp
 
 data InternalNames = InternalNames
                      { showNames :: Bool

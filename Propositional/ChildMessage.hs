@@ -13,8 +13,7 @@ get the output from a childProcess
 
 module Propositional.ChildMessage (parseIt) where
 
-import ProcessClasses
-import ChildProcess
+import Common.UniUtils
 import System.Exit
 
 parseIt :: ChildProcess -> (String -> Bool) -> IO String

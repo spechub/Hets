@@ -37,7 +37,7 @@ import GUI.GraphTypes
 import GUI.GraphLogic( convert, applyChanges, hideNodes)
 import qualified GUI.GraphAbstraction as GA
 
-import qualified HTk
+import qualified GUI.HTkUtils as HTk
 
 import Data.IORef
 import qualified Data.Map as Map(lookup, insert)

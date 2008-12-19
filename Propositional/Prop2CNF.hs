@@ -35,9 +35,7 @@ module Propositional.Prop2CNF
     )
     where
 
-import ChildProcess as CP
-import ProcessClasses
-import Destructible
+import Common.UniUtils as CP
 
 import qualified Comorphisms.SuleCFOL2SoftFOL as C2S
 

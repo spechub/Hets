@@ -18,14 +18,8 @@ import Driver.AnaLib
 
 import Static.DevGraph
 
--- for graph display
-import DaVinciGraph
-import GraphDisp
-import GraphConfigure
-
--- for windows display
-import TextDisplay(createTextDisplay)
-import Configuration(size)
+import GUI.UDGUtils as UDG
+import GUI.HTkUtils
 
 import GUI.GraphTypes
 import GUI.GraphLogic(getLibDeps, hideNodes)
@@ -52,7 +46,7 @@ showLibGraph gInfo@(GInfo {windowCount = wc}) = do
   depGRef <- newIORef daVinciSort
   nodeArcRef <- newIORef (([],[])::NodeArcList)
   let
-    globalMenu = GlobalMenu (Menu Nothing [
+    globalMenu = GlobalMenu (UDG.Menu Nothing [
                    Button "Reload Libraries"
                      (reload gInfo depGRef nodeArcRef)
                    ])
@@ -96,7 +90,7 @@ addNodesAndArcs gInfo@(GInfo { libEnvIORef = ioRefProofStatus
   let
     lookup' x y = Map.findWithDefault (error "lookup': node not found") y x
     keys = Map.keys le
-    subNodeMenu = LocalMenu( Menu Nothing [
+    subNodeMenu = LocalMenu(UDG.Menu Nothing [
       Button "Show Graph" $ mShowGraph gInfo,
       Button "Show spec/View Names" $ showSpec le])
     subNodeTypeParms = subNodeMenu $$$
@@ -108,7 +102,7 @@ addNodesAndArcs gInfo@(GInfo { libEnvIORef = ioRefProofStatus
   subNodeList <- mapM (newNode depG subNodeType) keys
   let
     nodes' = Map.fromList $ zip keys subNodeList
-    subArcMenu = LocalMenu( Menu Nothing [])
+    subArcMenu = LocalMenu(UDG.Menu Nothing [])
     subArcTypeParms = subArcMenu $$$
                       ValueTitle id $$$
                       Color (getColor opts Black False False) $$$

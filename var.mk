@@ -38,7 +38,7 @@ endif
 
 UNIVERSION = $(shell $(HCPKG) field uni-uDrawGraph version)
 ifneq ($(findstring 2., $(UNIVERSION)),)
-UNI_PACKAGE= -DUNI_PACKAGE
+UNI_PACKAGE = -DUNI_PACKAGE -DUNIVERSION2
 endif
 
 PROGRAMATICAVERSION = $(shell $(HCPKG) field programatica version)
@@ -59,6 +59,9 @@ uni_dirs = ../uni/davinci ../uni/graphs ../uni/events \
 uni_sources = $(wildcard $(addsuffix /haddock/*.hs, $(uni_dirs))) \
     $(wildcard ../uni/htk/haddock/*/*.hs)
 endif
+endif
+
+ifneq ($(strip $(UNI_PACKAGE)),)
 TESTTARGETFILES += Taxonomy/taxonomyTool.hs OWL/OWLParser.hs \
     Taxonomy/taxonomyTool.hs SoftFOL/tests/CMDL_tests.hs
 endif

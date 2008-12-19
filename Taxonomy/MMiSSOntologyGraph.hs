@@ -17,11 +17,8 @@ import Control.Monad
 import Data.IORef
 import Data.Char
 
-import DaVinciGraph
-import GraphDisp
-import GraphConfigure
-import qualified HTk as H
-import qualified SimpleForm as S
+import GUI.UDGUtils
+import qualified GUI.HTkUtils as S
 import Taxonomy.MMiSSOntology
 
 import qualified Data.Map as Map
@@ -34,7 +31,7 @@ import qualified GUI.AbstractGraphView as A
 
 displayClassGraph :: MMiSSOntology -> Maybe String -> IO A.OurGraph
 displayClassGraph onto startClass = do
-    H.initHTk []
+    S.initHTk []
     ginfo <- A.initgraphs
     classGraph <- case startClass of
         Nothing -> return $ getPureClassGraph $ getClassGraph onto

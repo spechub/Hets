@@ -1,3 +1,4 @@
+{-# OPTIONS -cpp #-}
 {- |
 Module      :  $Header$
 Description :  Interface for graph viewing and abstraction
@@ -47,12 +48,14 @@ module GUI.GraphAbstraction
     , activateGraphWindow
     ) where
 
-import DaVinciGraph
-import DaVinciBasic
+import GUI.UDGUtils
+#ifdef UNIVERSION2
+import qualified UDrawGraph.Types as DVT
+import Reactor.BSem
+#else
 import qualified DaVinciTypes as DVT
-import GraphDisp
-import GraphConfigure
 import BSem
+#endif
 
 import ATC.DevGraph ()
 import Static.DevGraph (DGLinkLab, EdgeId(..),DGEdgeType,DGNodeType)

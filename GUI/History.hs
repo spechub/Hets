@@ -28,7 +28,6 @@ import Logic.Logic (language_name)
 import Logic.Prover
 import Proofs.AbstractState
 import Static.GTheory (G_theory(..))
-import qualified HTk
 
 import Control.Monad (when)
 import Data.IORef
