@@ -133,21 +133,6 @@ consCheck thName tm _ =
                   -> [AS_Anno.Named AS_BASIC.FORMULA]
         getAxioms f = map (AS_Anno.makeNamed "consistency" . AS_Anno.sentence) $ filter AS_Anno.isAxiom f
 
-        searchResult :: Handle -> IO Bool
-        searchResult hf = do
-            eof <- hIsEOF hf
-            if eof then
-                return False
-              else
-               do
-                line <- hGetLine hf
-                putStrLn line
-                if line == "RESULT:\tUNSAT" then
-                      return True
-                  else if line == "RESULT:\tSAT" then
-                          return False
-                         else searchResult hf
-
 -- ** GUI
 
 {- |
