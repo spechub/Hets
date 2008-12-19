@@ -43,16 +43,14 @@ import System.Directory
 
 #ifdef UNIVERSION2
 import Util.Messages
-import HTk.Toplevel.HTk as HTk hiding (x, y, value, font)
-import qualified HTk.Toplevel.HTk as HTk (font, value)
+import HTk.Toplevel.HTk as HTk hiding (x, y)
 import HTk.Toolkit.ScrollBox as ScrollBox
 import HTk.Toolkit.SimpleForm as SimpleForm
 import HTk.Toolkit.TextDisplay as TextDisplay
 import HTk.Toolkit.FileDialog
 #else
 import Messages
-import HTk hiding (x, y, value, font)
-import qualified HTk (font, value)
+import HTk hiding (x, y)
 import ScrollBox
 import SimpleForm
 import TextDisplay
@@ -69,7 +67,7 @@ listBox :: String -> [String] -> IO (Maybe Int)
 listBox title entries =
   do
     main <- createToplevel [text title]
-    lb  <- newListBox main [HTk.value entries, bg "white", size (100, 39)] ::
+    lb  <- newListBox main [value entries, bg "white", size (100, 39)] ::
              IO (ListBox String)
     pack lb [Side AtLeft, Expand On, Fill Both]
     scb <- newScrollBar main []
@@ -102,7 +100,7 @@ createTextSaveDisplayExt :: String -- ^ title of the window
 createTextSaveDisplayExt title fname txt conf upost =
   do win <- createToplevel [text title]
      b   <- newFrame win  [relief Groove, borderwidth (cm 0.05)]
-     t   <- newLabel b [text title, HTk.font (Helvetica, Roman, 18::Int)]
+     t   <- newLabel b [text title, font (Helvetica, Roman, 18::Int)]
      q   <- newButton b [text "Close", width 12]
      s   <- newButton b [text "Save", width 12]
      (sb, ed) <- newScrollBox b (\p-> newEditor p conf) []
@@ -114,7 +112,7 @@ createTextSaveDisplayExt title fname txt conf upost =
      pack q [Side AtRight, PadX 8, PadY 5]
      pack s [Side AtLeft, PadX 5, PadY 5]
      ed # state Normal
-     ed # HTk.value txt
+     ed # value txt
      ed # state Disabled
      forceFocus ed
      (editClicked, _) <- bindSimple ed (ButtonPress (Just 1))
@@ -222,7 +220,7 @@ populateGoalsListBox :: ListBox String -- ^ listbox
                      -> IO ()
 populateGoalsListBox lb v = do
   selectedOld <- (getSelection lb) :: IO (Maybe [Int])
-  lb # HTk.value (toString v)
+  lb # value (toString v)
   maybe (return ()) (mapM_ (\n -> selection n lb)) selectedOld
   where
     toString = map (\ LBGoalView {statIndicator = i, goalDescription = d} ->
