@@ -27,7 +27,7 @@ SOURCE_PATHS = . utils/itcor \
     Syntax Static GUI HasCASL Haskell Modal CoCASL COL ConstraintCASL \
     CspCASL ATC Proofs Comorphisms Isabelle Driver Modifications \
     Taxonomy CASL_DL SoftFOL OWL OMDoc PGIP Propositional RelationalScheme \
-    VSE Interfaces
+    VSE Interfaces Temporal
 
 # the 'replacing spaces' example was taken from the (GNU) Make info manual
 empty =
@@ -78,8 +78,8 @@ GTK_GLADE_HSFILES = $(subst .glade,.hs,$(GTK_GLADE_FILES))
 
 derived_sources += $(GTK_GLADE_HSFILES)
 
-logics = CASL HasCASL Isabelle Modal Temporal CoCASL COL CspCASL CASL_DL SoftFOL \
-     ConstraintCASL Propositional OWL RelationalScheme VSE OMDoc
+logics = CASL HasCASL Isabelle Modal Temporal CoCASL COL CspCASL CASL_DL \
+    SoftFOL ConstraintCASL Propositional OWL RelationalScheme VSE OMDoc
 
 TESTTARGETFILES += CASL/fromKif.hs CASL/capa.hs HasCASL/hacapa.hs \
     Haskell/wrap.hs Isabelle/isa.hs Syntax/hetpa.hs \
@@ -275,7 +275,9 @@ Propositional_files = Propositional/Sign.hs Propositional/Morphism.hs \
 RS_files = RelationalScheme/AS.hs RelationalScheme/Sign.hs
 
 Modal_files = Modal/AS_Modal.hs Modal/ModalSign.hs
-Temporal_files = Temporal/AS_BASIC_Temporal.hs Temporal/Sign.hs
+Temporal_files = Temporal/AS_BASIC_Temporal.hs Temporal/Sign.hs \
+    Temporal/Symbol.hs Temporal/Morphism.hs
+
 ConstraintCASL_files = ConstraintCASL/AS_ConstraintCASL.hs
 CoCASL_files = CoCASL/AS_CoCASL.hs CoCASL/CoCASLSign.hs
 COL_files = COL/AS_COL.hs COL/COLSign.hs

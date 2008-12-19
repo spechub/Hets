@@ -1,3 +1,16 @@
+{- |
+Module      :  $Header$
+Description :  Abstract syntax of temporal basic specifications
+Copyright   :  (c) Klaus Hartke, Uni Bremen 2008
+License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
+
+Maintainer  :  Christian.Maeder@dfki.de
+Stability   :  provisional
+Portability :  portable
+
+Abstract syntax of temporal Basic_spec, Formula, Symb_items and Symb_map_items.
+-}
+
 module Temporal.AS_BASIC_Temporal
     (
       FORMULA(..)
@@ -7,11 +20,20 @@ module Temporal.AS_BASIC_Temporal
     , SYMB_MAP_ITEMS (..)      -- Symbol map
     ) where
 
+import Common.DocUtils
+import Common.Doc
+
 data BASIC_SPEC = Basic_spec
                   deriving Show
 
+instance Pretty BASIC_SPEC where
+   pretty = text . show
+
 data FORMULA = Formula
-               deriving Show
+               deriving (Show, Eq, Ord)
+
+instance Pretty FORMULA where
+   pretty = text . show
 
 data SYMB_ITEMS = Symb_items
                   deriving (Show, Eq)

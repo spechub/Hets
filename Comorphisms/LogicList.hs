@@ -43,7 +43,7 @@ import Logic.Grothendieck
 import CASL.Logic_CASL  -- also serves as default logic
 import HasCASL.Logic_HasCASL
 import Propositional.Logic_Propositional
--- import Temporal.Logic_Temporal
+import Temporal.Logic_Temporal
 #ifdef PROGRAMATICA
 import Haskell.Logic_Haskell
 #endif
@@ -65,20 +65,29 @@ import OWL.Logic_OWL
 #endif
 
 logicList :: [AnyLogic]
-logicList = [Logic CASL, Logic HasCASL,
+logicList =
+  [ Logic CASL
+  , Logic HasCASL
+  , Logic Isabelle
+  , Logic SoftFOL
+  , Logic Propositional
 #ifdef PROGRAMATICA
-             Logic Haskell,
+  , Logic Haskell
 #endif
 #ifdef CASLEXTENSIONS
-             Logic CoCASL, Logic Modal, Logic CspCASL, -- Logic COL,
-             Logic CASL_DL, Logic ConstraintCASL,
-             Logic RelScheme, Logic VSE,
+  , Logic CoCASL
+  , Logic Modal
+  , Logic Temporal
+  , Logic CspCASL
+  , Logic CASL_DL
+  , Logic ConstraintCASL
+  , Logic RelScheme
+  , Logic VSE
 #endif
 #ifndef NOOWLLOGIC
-             Logic OWL,
+  , Logic OWL
 #endif
-             Logic Isabelle,Logic SoftFOL,
-            Logic Propositional]
+  ]
 
 addLogicName :: AnyLogic -> (String,AnyLogic)
 addLogicName l@(Logic lid) = (language_name lid, l)

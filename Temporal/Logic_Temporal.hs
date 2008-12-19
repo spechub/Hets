@@ -26,7 +26,7 @@ import Temporal.Morphism as Morphism
 import qualified Temporal.Symbol as Symbol
 
 import Temporal.AS_BASIC_Temporal as AS_BASIC
-
+import Temporal.ATC_Temporal ()
 
 -- | Lid for termporal logic
 data Temporal = Temporal deriving Show
