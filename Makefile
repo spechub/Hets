@@ -332,7 +332,6 @@ cpp_sources = hets.hs $(happy_files) \
     PGIP/Interface.hs \
     Propositional/Logic_Propositional.hs \
     SoftFOL/Logic_SoftFOL.hs \
-    Temporal/Logic_Temporal.hs \
     VSE/Logic_VSE.hs \
 
 # unused, remove when header files are gone
