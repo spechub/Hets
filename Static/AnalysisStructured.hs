@@ -376,23 +376,32 @@ ana_SPEC addSyms lg dg nsig name opts sp = case sp of
            ++ " but was given " ++ show (length afitargs)) pos
     _ -> fatal_error
                  ("Structured specification " ++ spstr ++ " not found") pos
+
+  -- analyse "data SPEC1 SPEC2"
   Data (Logic lidD) (Logic lidP) asp1 asp2 pos -> do
       let sp1 = item asp1
           sp2 = item asp2
           adj = adjustPos pos
+      -- look for the inclusion comorphism from the current logic's data logic
+      -- into the current logic itself
       Comorphism cid <- adj $ logicInclusion lg (Logic lidD) (Logic lidP)
       let lidD' = sourceLogic cid
           lidP' = targetLogic cid
           dname = inc name
+      -- analyse SPEC1
       (sp1', NodeSig n' (G_sign lid' sigma' _), dg') <-
          ana_SPEC False lg dg (EmptyNode (Logic lidD)) dname opts sp1
+      -- force the result to be in the data logic
       sigmaD <- adj $ coerceSign lid' lidD' "Analysis of data spec" sigma'
+      -- translate SPEC1's signature along the comorphism
       (sigmaD', sensD') <- adj $ ext_map_sign cid sigmaD
+      -- create a development graph link for this translation
       let (nsig2@(NodeSig node _), dg1) = insGTheory dg' dname DGData
             $ G_theory lidP' sigmaD' startSigId (toThSens sensD') startThId
           dg2 = insLink dg1 (GMorphism cid sigmaD startSigId
                              (ext_ide sigmaD') startMorId)
                 GlobalDef SeeTarget n' node
+      -- analyse SPEC2
       (sp2', nsig3, dg3) <-
           ana_SPEC addSyms lg dg2 (JustNode nsig2) name opts sp2
       return (Data (Logic lidD) (Logic lidP)
