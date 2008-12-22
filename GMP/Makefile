@@ -1,11 +1,11 @@
 call:
 	./ghc-call
 
-test:
-	cd examples; make
+#test:
+#	cd examples; make
 
 clean:
 	rm *.hi *.o
 
-distclean: clean
+distclean: 
 	rm main 
