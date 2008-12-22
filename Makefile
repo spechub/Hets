@@ -54,6 +54,7 @@ GENRULECALL = $(GENRULES) -r Typeable -r ShATermConvertible \
 DRIFT = utils/DrIFT
 INLINEAXIOMS = utils/outlineAxioms
 HADDOCK = haddock
+HADDOCKVERSION = $(shell $(HADDOCK) --version)
 
 OSBYUNAME = $(shell uname)
 ifneq ($(findstring SunOS, $(OSBYUNAME)),)
@@ -433,6 +434,16 @@ count: $(sources)
 ### Documentation via haddock
 doc: docs/index.html
 
+ifneq ($(findstring 2.,$(HADDOCKVERSION)),)
+HADDOCK_OPTS = $(addprefix --optghc=, $(HC_OPTS))
+docs/index.html:
+	$(RM) -r docs
+	mkdir docs
+	$(HADDOCK) -o docs -h -v -s ../%F \
+            -t 'Hets - the Heterogeneous Tool Set' \
+            -p Hets-Haddock-Prologue.txt $(HADDOCK_OPTS) \
+             $(filter-out Test.hs, $(wildcard *.hs))
+else
 # generate haddock documentation with links to sources
 # the interface treatment is stolen from uni/mk/suffix.mk
 docs/index.html: $(doc_sources)
@@ -446,6 +457,7 @@ docs/index.html: $(doc_sources)
         $(HADDOCK) -o docs -h -v -s ../%F $$HINTERFACES \
             -t 'Hets - the Heterogeneous Tool Set' \
             -p Hets-Haddock-Prologue.txt $(doc_sources)
+endif
 
 # sources are not copied here
 apache_doc:
