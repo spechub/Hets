@@ -13,7 +13,7 @@ import Taxonomy.MMiSSOntology
 import Taxonomy.MMiSSOntologyGraph
 import Data.Graph.Inductive.Graphviz
 
-import HTk
+import GUI.HTkUtils
 
 main :: IO ()
 main =
