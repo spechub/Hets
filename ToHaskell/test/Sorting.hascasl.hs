@@ -54,7 +54,8 @@ insert_1sort :: List_FNat_J -> List_FNat_J
 is_1ordered :: List_FNat_J -> Bool
 permutation :: (List_FNat_J, List_FNat_J) -> Bool
 permutation
-    =   error{-((List_FNat_J, List_FNat_J) -> Bool)-}
+    =
+        error{-((List_FNat_J, List_FNat_J) -> Bool)-}
             "permutation"
 prec :: Nat -> Nat
 sorter :: List_FNat_J -> List_FNat_J
@@ -66,7 +67,8 @@ a___2_L_E_2 (A__0, x) = True
 a___2_L_E_2 ((Succ x), A__0) = False
 a___2_L_E_2 ((Succ x), (Succ y)) = a___2_L_E_2 (x, y)
 a___2_L_E_2 (x, y)
-    =   (\ (a, b, c) -> if b then a else c)
+    =
+        (\ (a, b, c) -> if b then a else c)
             (True,
              error{-(((,) Nat Nat) -> Bool)-}
                  "equality at Sorting.hascasl:14,7"
@@ -76,11 +78,13 @@ data List_FNat_J = Cons !(Nat, List_FNat_J) | Nil
 is_1ordered Nil = True
 is_1ordered (Cons (x, Nil)) = True
 is_1ordered (Cons (x, (Cons (y, a__L))))
-    =   uncurry{-Bool Bool Bool-} (&&)
+    =
+        uncurry{-Bool Bool Bool-} (&&)
             (a___2_L_E_2 (x, y), is_1ordered (Cons (y, a__L)))
 insert (x, Nil) = Cons (x, Nil)
 insert (x, (Cons (y, a__L)))
-    =   (\ (a, b, c) -> if b then a else c)
+    =
+        (\ (a, b, c) -> if b then a else c)
             (Cons (x, insert (y, a__L)), a___2_L_E_2 (x, y),
              Cons (y, insert (x, a__L)))
 insert_1sort Nil = Nil

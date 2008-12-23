@@ -30,11 +30,13 @@ neg :: Bool -> Bool
 vee :: (Bool, Bool) -> Bool
 wedge :: (Bool, Bool) -> Bool
 neg x
-    =   case x of
+    =
+        case x of
             False -> True
             True -> False
 wedge (x, y)
-    =   case (x, y) of
+    =
+        case (x, y) of
             (False, False) -> False
             (True, False) -> False
             (False, True) -> False

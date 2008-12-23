@@ -31,14 +31,14 @@ data FiniteSet a1 = FiniteSet
 a___2_P_2
     :: (FiniteSet a, FiniteSet a) -> FiniteSet a
 a___2_P_2
-    =   error{-((FiniteSet a, FiniteSet a) ->
-                FiniteSet a)-}
+    =
+        error{-((FiniteSet a, FiniteSet a) -> FiniteSet a)-}
             "a___2_P_2"
 a___2_M_2
     :: (FiniteSet a, FiniteSet a) -> FiniteSet a
 a___2_M_2
-    =   error{-((FiniteSet a, FiniteSet a) ->
-                FiniteSet a)-}
+    =
+        error{-((FiniteSet a, FiniteSet a) -> FiniteSet a)-}
             "a___2_M_2"
 a___b_2_r :: a -> FiniteSet a
 a___b_2_r = error{-(a -> FiniteSet a)-} "a___b_2_r"

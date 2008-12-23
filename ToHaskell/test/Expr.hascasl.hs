@@ -23,11 +23,13 @@ b :: Bool -> Bool
 notA :: Bool
 a = True
 notA
-    =   case a of
+    =
+        case a of
             True -> False
             False -> True
 b_02
-    =   let x = True
+    =
+        let x = True
             y = False
             z = x
             {-
