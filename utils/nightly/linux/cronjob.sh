@@ -11,7 +11,14 @@ export CASL_LIB=$HETS_LIB
 cd /local/home/maeder/haskell
 . ../cronjob.sh
 
+ssh bigmac launchctl load /home/maeder/Library/LaunchAgents/makeHets.plist
+ssh m29 launchctl load /home/maeder/Library/LaunchAgents/makeHets.plist
+
 makeHets
+
+ssh bigmac date
+ssh m29 date
+
 makeLibCheck
 installHetsBinary linux
 chgrp linuxbkb hets
