@@ -1,4 +1,4 @@
-{-# OPTIONS -fallow-undecidable-instances #-}
+{-# LANGUAGE UndecidableInstances #-}
 {- |
 Module      :  $Header$
 Description :  central interface (type class) for logics in Hets

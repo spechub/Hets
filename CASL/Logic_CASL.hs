@@ -1,4 +1,4 @@
-{-# OPTIONS -fallow-undecidable-instances -cpp #-}
+{-# OPTIONS -cpp #-}
 {- |
 Module      :  $Header$
 Description :  Instance of class Logic for the CASL logic

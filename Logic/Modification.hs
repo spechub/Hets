@@ -1,4 +1,4 @@
-{-# OPTIONS -fglasgow-exts -fallow-undecidable-instances #-}
+{-# LANGUAGE UndecidableInstances #-}
 {- |
 Module      :  $Header$
 Description :  interface (type class) for comorphism modifications in Hets

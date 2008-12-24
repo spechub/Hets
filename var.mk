@@ -66,7 +66,7 @@ TESTTARGETFILES += Taxonomy/taxonomyTool.hs OWL/OWLParser.hs \
     Taxonomy/taxonomyTool.hs SoftFOL/tests/CMDL_tests.hs
 endif
 
-HC_OPTS_WITHOUTGLADE = -threaded -fglasgow-exts -fallow-overlapping-instances \
+HC_OPTS_WITHOUTGLADE = -threaded -fglasgow-exts -XOverlappingInstances \
   $(NOMATHSERVER) \
   $(HAXML_PACKAGE) $(UNI_PACKAGE) $(SHELLAC_PACKAGE) $(HXTFILTER_PACKAGE) \
   $(PFE_FLAGS) $(TABULAR_PACKAGE) $(EDITLINE_PACKAGE) -DCASLEXTENSIONS

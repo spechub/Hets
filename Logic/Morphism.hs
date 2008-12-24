@@ -1,5 +1,5 @@
-{-# OPTIONS -fglasgow-exts -fallow-undecidable-instances #-}
-{-# OPTIONS -fallow-incoherent-instances #-}
+{-# LANGUAGE UndecidableInstances #-}
+{-# LANGUAGE IncoherentInstances #-}
 {- |
 Module      :  $Header$
 Description :  interface (type class) for logic projections (morphisms) in Hets

@@ -1,4 +1,4 @@
-{-# OPTIONS -fglasgow-exts -fallow-undecidable-instances #-}
+{-# LANGUAGE UndecidableInstances #-}
 -- institution modification
 -- CASL -------------------------id------------------> CASL
 -- CASL ---CASL2Modal----> ModalCASL --Modal2CASL----> CASL
