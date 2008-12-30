@@ -139,6 +139,7 @@ anaLibFileOrGetEnv lgraph opts libenv libname file = ResultT $ do
              case mgc of
                  Nothing -> runResultT $ do
                      lift $ putIfVerbose opts 1 $ "Deleting " ++ envFile
+                     lift $ removeFile envFile
                      anaSourceFile lgraph opts libenv file
                  Just (ld, gc) -> do
                      write_LIB_DEFN (globalAnnos gc) file opts ld
