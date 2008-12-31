@@ -6,6 +6,8 @@ Description: The Heterogeneous Tool Set
 build-type: Simple
 build-depends:
     base >= 3.0.1.0
+  , filepath
+  , ghc-prim
   , array >= 0.1.0.0
   , containers >= 0.1.0.1
   , directory >= 1.0.0.0
@@ -20,26 +22,28 @@ build-depends:
   , old-time >= 1.0.0.0
   , unix >= 2.3.0.0
   , network >= 2.1.0.0
-  , dataenc >= 0.11
-  , Shellac >= 0.9
-  , Shellac-compatline >= 0.9
+  , Shellac >= 0.9.5
+  , Shellac-editline >= 0.9.5
   , HaXml >= 1.13.2
   , HaXml <= 1.13.3
-  , HTTP >= 3001.0.4
   , hxt >= 8.0.0
   , hxt-filter >= 8.0.0
-  , uni-htk >= 1.1
+  , uni-htk >= 2.0
   , uni-util
   , uni-posixutil
   , uni-events
   , uni-reactor
-  , uni-graphs >= 1.1
-  , uni-davinci >= 1.1
+  , uni-graphs >= 2.0
+  , uni-uDrawGraph >= 2.0
   , HAIFA >= 0.11
   , syb-generics == 2.9
   , programatica == 1.0
+  , tabular >= 0.1
+  , gtk >= 0.9.13
+  , glade >= 0.9.13
 executable: hets
 main-is: hets.hs
 extensions: OverlappingInstances
-ghc-options: -fglasgow-exts -DUNI_PACKAGE
-  -DCASLEXTENSIONS -DPROGRAMATICA -DHAXML_PACKAGE
+ghc-options: -fglasgow-exts -DUNI_PACKAGE -DUNIVERSION2 -DHXTFILTER
+  -DCASLEXTENSIONS -DPROGRAMATICA -DHAXML_PACKAGE -DTABULAR_PACKAGE
+  -DSHELLAC -DEDITLINE -DGTKGLADE
