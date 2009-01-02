@@ -35,6 +35,7 @@ import Common.Id
 import Common.Result
 
 import Data.List (partition, find)
+import Data.Maybe (catMaybes)
 
 {-
 inducedFromMorphism :: RawSymbolMap -> sign -> Result morphism
@@ -106,10 +107,10 @@ inducedFromMorphism :: (Pretty e, Pretty f) => m -> (e -> e -> Bool)
 inducedFromMorphism extEm _isSubExt rmap sigma = do
   -- ??? Missing: check preservation of overloading relation
   -- first check: do all source raw symbols match with source signature?
-  let syms = symOf sigma
+  let syms = Set.toList $ symOf sigma
       sortsSigma = sortSet sigma
       incorrectRsyms = Map.foldWithKey
-        (\rsy _ -> if any (matchesND rsy) $ Set.toList syms
+        (\ rsy _ -> if any (matchesND rsy) syms
                     then id
                     else Set.insert rsy)
         Set.empty
@@ -175,10 +176,10 @@ sortFun rmap s =
                  $ getRange rsys
     where
     -- get all raw symbols to which s is mapped to
-    rsys = Set.unions $ map ( \ x -> case Map.lookup x rmap of
-                 Nothing -> Set.empty
-                 Just r -> Set.singleton r)
-               [ASymbol $ idToSortSymbol s, AnID s, AKindedId SortKind s]
+    rsys = Set.fromList $ catMaybes $ map (flip Map.lookup rmap)
+               [ ASymbol $ idToSortSymbol s
+               , AKindedSymb Implicit s
+               , AKindedSymb Sorts_kind s ]
 
   {- to a Fun_map, add everything resulting from mapping (id, ots)
   according to rmap -}
@@ -188,8 +189,8 @@ opFun rmap sort_Map ide ots m =
     -- first consider all directly mapped profiles
     let (ots1,m1) = Set.fold (directOpMap rmap sort_Map ide) (Set.empty,m) ots
     -- now try the remaining ones with (un)kinded raw symbol
-    in case (Map.lookup (AKindedId FunKind ide) rmap,
-                Map.lookup (AnID ide) rmap) of
+    in case (Map.lookup (AKindedSymb Ops_kind ide) rmap,
+                Map.lookup (AKindedSymb Implicit ide) rmap) of
        (Just rsy1, Just rsy2) ->
           do m' <- m
              plain_error m'
@@ -229,15 +230,14 @@ mappedOpSym sort_Map ide ot rsy =
              (opSym ++ "type " ++ showDoc ot'
               " but should be mapped to type " ++
               showDoc (mapOpType sort_Map ot)"") $ getRange rsy
-      AnID ide' -> return (ide', kind)
-      AKindedId FunKind ide' -> return (ide', kind)
+      AKindedSymb k ide' | elem k [Implicit, Ops_kind] -> return (ide', kind)
       _ -> plain_error (ide, kind)
                (opSym ++ "symbol of wrong kind: " ++ showDoc rsy "")
                $ getRange rsy
 
     -- insert mapping of op symbol (ide,ot) to raw symbol rsy into m
 insertmapOpSym :: Sort_map -> Id -> RawSymbol -> OpType
-               ->  Result Fun_map -> Result Fun_map
+               -> Result Fun_map -> Result Fun_map
 insertmapOpSym sort_Map ide rsy ot m = do
       m1 <- m
       (ide', kind') <- mappedOpSym sort_Map ide ot rsy
@@ -264,8 +264,8 @@ predFun rmap sort_Map ide pts m =
     let (pts1,m1) = Set.fold (directPredMap rmap sort_Map ide)
                     (Set.empty,m) pts
     -- now try the remaining ones with (un)kinded raw symbol
-    in case (Map.lookup (AKindedId PredKind ide) rmap,
-                Map.lookup (AnID ide) rmap) of
+    in case (Map.lookup (AKindedSymb Preds_kind ide) rmap,
+                Map.lookup (AKindedSymb Implicit ide) rmap) of
        (Just rsy1, Just rsy2) ->
           do m' <- m
              plain_error m'
@@ -304,8 +304,7 @@ mappedPredSym sort_Map ide pt rsy =
              (predSym ++ "type " ++ showDoc pt'
               " but should be mapped to type " ++
               showDoc (mapPredType sort_Map pt) "") $ getRange rsy
-      AnID ide' -> return ide'
-      AKindedId PredKind ide' -> return ide'
+      AKindedSymb k ide' | elem k [Implicit, Preds_kind] -> return ide'
       _ -> plain_error ide
                (predSym ++ "symbol of wrong kind: " ++ showDoc rsy "")
                $ getRange rsy

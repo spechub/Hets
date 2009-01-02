@@ -22,7 +22,6 @@ import qualified Common.Lib.Rel as Rel
 import Common.Doc
 import Common.DocUtils
 import Common.Id
-import Common.Keywords
 import Common.Result
 
 import Control.Exception (assert)
@@ -31,19 +30,16 @@ import Control.Monad
 type SymbolSet = Set.Set Symbol
 type SymbolMap = Map.Map Symbol Symbol
 
-data RawSymbol = ASymbol Symbol | AnID Id | AKindedId Kind Id
+data RawSymbol = ASymbol Symbol | AKindedSymb SYMB_KIND Id
                  deriving (Show, Eq, Ord)
 
 instance GetRange RawSymbol where
     getRange rs = case rs of
         ASymbol s -> getRange s
-        AnID i -> getRange i
-        AKindedId _ i -> getRange i
+        AKindedSymb _ i -> getRange i
 
 type RawSymbolSet = Set.Set RawSymbol
 type RawSymbolMap = Map.Map RawSymbol RawSymbol
-
-data Kind = SortKind | FunKind | PredKind deriving (Show, Eq, Ord)
 
 type Sort_map = Map.Map SORT SORT
 -- always use the partial profile as key!
@@ -116,23 +112,22 @@ embedMorphism extEm a b = Morphism
   , pred_map = Map.empty
   , extended_map = extEm }
 
-symbTypeToKind :: SymbType -> Kind
+symbTypeToKind :: SymbType -> SYMB_KIND
 symbTypeToKind st = case st of
-  OpAsItemType _ -> FunKind
-  PredAsItemType _ -> PredKind
-  SortAsItemType -> SortKind
+  OpAsItemType _ -> Ops_kind
+  PredAsItemType _ -> Preds_kind
+  SortAsItemType -> Sorts_kind
 
 symbolToRaw :: Symbol -> RawSymbol
 symbolToRaw sym = ASymbol sym
 
 idToRaw :: Id -> RawSymbol
-idToRaw x = AnID x
+idToRaw x = AKindedSymb Implicit x
 
 rawSymName :: RawSymbol -> Id
 rawSymName rs = case rs of
   ASymbol sym -> symName sym
-  AnID i -> i
-  AKindedId _ i -> i
+  AKindedSymb _ i -> i
 
 symOf :: Sign f e -> SymbolSet
 symOf sigma = let
@@ -191,20 +186,12 @@ statSymbItems sl =
 
 symbToRaw :: SYMB_KIND -> SYMB -> Result RawSymbol
 symbToRaw k si = case si of
-  Symb_id idt -> return $ symbKindToRaw k idt
+  Symb_id idt -> return $ AKindedSymb k idt
   Qual_id idt t _ -> typedSymbKindToRaw k idt t
-
-symbKindToRaw :: SYMB_KIND -> Id -> RawSymbol
-symbKindToRaw sk idt = case sk of
-    Implicit -> AnID idt
-    _ -> AKindedId (case sk of
-      Sorts_kind -> SortKind
-      Preds_kind -> PredKind
-      _ -> FunKind) idt
 
 typedSymbKindToRaw :: SYMB_KIND -> Id -> TYPE -> Result RawSymbol
 typedSymbKindToRaw k idt t = let
-     err = plain_error (AnID idt)
+     err = plain_error (AKindedSymb Implicit idt)
               (showDoc idt ":" ++ showDoc t
                "does not have kind" ++ showDoc k "") nullRange
      aSymb = ASymbol $ case t of
@@ -220,7 +207,10 @@ typedSymbKindToRaw k idt t = let
     Sorts_kind -> err
     Ops_kind -> case t of
         P_type _ -> err
-        _ -> return aSymb
+        A_type _ -> do
+          appendDiags [mkDiag Warning "qualify name as pred or op" idt]
+          return aSymb
+        O_type _ -> return aSymb
     Preds_kind -> case t of
         O_type _ -> err
         A_type s -> return $ ASymbol $
@@ -291,11 +281,11 @@ morphismToSymbMapAux b mor = let
 matches :: Symbol -> RawSymbol -> Bool
 matches x@(Symbol idt k) rs = case rs of
     ASymbol y -> x == y
-    AnID di -> idt == di
-    AKindedId rk di -> let res = idt == di in case (k, rk) of
-        (SortAsItemType, SortKind) -> res
-        (OpAsItemType _, FunKind) -> res
-        (PredAsItemType _, PredKind) -> res
+    AKindedSymb rk di -> let res = idt == di in case (k, rk) of
+        (_, Implicit) -> res
+        (SortAsItemType, Sorts_kind) -> res
+        (OpAsItemType _, Ops_kind) -> res
+        (PredAsItemType _, Preds_kind) -> res
         _ -> False
 
 idMor :: m -> Sign f e -> Morphism f e m
@@ -506,17 +496,10 @@ isInjective m = isSortInjective m && let
     in sumSize os == sumSize (inducedOpMap sm (fun_map m) os)
        && sumSize ps == sumSize (inducedPredMap sm (pred_map m) ps)
 
-instance Pretty Kind where
-  pretty k = keyword $ case k of
-      SortKind -> sortS
-      FunKind -> opS
-      PredKind -> predS
-
 instance Pretty RawSymbol where
   pretty rsym = case rsym of
     ASymbol sy -> pretty sy
-    AnID i -> pretty i
-    AKindedId k i -> pretty k <+> pretty i
+    AKindedSymb k i -> pretty k <+> pretty i
 
 printMorphism :: (f -> Doc) -> (e -> Doc) -> (m -> Doc) -> Morphism f e m
               -> Doc

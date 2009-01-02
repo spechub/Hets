@@ -323,7 +323,7 @@ data SYMB_MAP_ITEMS = Symb_map_items SYMB_KIND [SYMB_OR_MAP] Range
 
 data SYMB_KIND = Implicit | Sorts_kind
                | Ops_kind | Preds_kind
-                 deriving (Show, Eq)
+                 deriving (Show, Eq, Ord)
 
 data SYMB = Symb_id Id
           | Qual_id Id TYPE Range
