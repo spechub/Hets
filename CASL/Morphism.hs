@@ -160,17 +160,18 @@ statSymbMapItems sl = do
 
 symbOrMapToRaw :: SYMB_KIND -> SYMB_OR_MAP -> Result (RawSymbol, RawSymbol)
 symbOrMapToRaw k sm = do
-  let (u, v) = case sm of
-         Symb s -> (s, s)
-         Symb_map s t _ -> (s, t)
-      ws = case sm of
-             Symb_map (Symb_id a) (Symb_id b) _ | a == b ->
-               [mkDiag Hint "unneeded identical mapping of" a]
-             _ -> []
-  appendDiags ws
-  w <- symbToRaw k u
-  x <- symbToRaw k v
-  return (w, x)
+  case sm of
+    Symb s -> do
+      v <- symbToRaw k s
+      return (v, v)
+    Symb_map s t _ -> do
+      appendDiags $ case (s, t) of
+        (Symb_id a, Symb_id b) | a == b ->
+          [mkDiag Hint "unneeded identical mapping of" a]
+        _ -> []
+      w <- symbToRaw k s
+      x <- symbToRaw k t
+      return (w, x)
 
 statSymbItems :: [SYMB_ITEMS] -> Result [RawSymbol]
 statSymbItems sl =
@@ -203,14 +204,15 @@ typedSymbKindToRaw k idt t = let
            let ot = OpType {opKind = Total, opArgs = [], opRes = s}
            in idToOpSymbol idt ot
     in case k of
-    Implicit -> return aSymb
+    Implicit -> case t of
+      A_type _ -> do
+          appendDiags [mkDiag Warning "qualify name as pred or op" idt]
+          return aSymb
+      _ -> return aSymb
     Sorts_kind -> err
     Ops_kind -> case t of
         P_type _ -> err
-        A_type _ -> do
-          appendDiags [mkDiag Warning "qualify name as pred or op" idt]
-          return aSymb
-        O_type _ -> return aSymb
+        _ -> return aSymb
     Preds_kind -> case t of
         O_type _ -> err
         A_type s -> return $ ASymbol $
