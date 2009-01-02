@@ -138,8 +138,7 @@ $(LEX_DIR)Gen/HsLexerGen: $(LEX_DIR)Gen/*.hs $(LEX_DIR)Spec/*.hs \
 	strip $@
 
 logics += Haskell
-derived_sources += Haskell/PreludeString.hs $(LEX_DIR)/HsLex.hs \
-    $(LEX_DIR)Gen/HsLexerGen
+derived_sources += Haskell/PreludeString.hs
 
 APPENDPRELUDESTRING = utils/appendHaskellPreludeString \
     Haskell/ProgramaticaPrelude.hs
@@ -201,8 +200,6 @@ non_sources = Common/LaTeX_maps.svmono.hs Common/CaslLanguage.hs ./Test.hs \
 
 sources = hets.hs $(filter-out $(non_sources), \
     $(wildcard $(addsuffix /[A-Z]*hs, $(SOURCE_PATHS))))
-
-objects = $(sources:%.hs=%.o)
 
 drifted_files = Common/AS_Annotation.hs \
     CASL/AS_Basic_CASL.hs Modal/AS_Modal.hs \
@@ -358,8 +355,6 @@ doc_sources = $(filter-out $(nondoc_sources), $(sources) $(hspp_sources))
 tax_sources = Taxonomy/AbstractGraphView.hs Taxonomy/MMiSSOntology.hs \
     Taxonomy/MMiSSOntologyGraph.hs Taxonomy/OntoParser.hs
 
-tax_objects = $(patsubst %.hs, %.o, $(tax_sources))
-
 ####################################################################
 ### targets
 
@@ -404,10 +399,6 @@ hets-opt:
 hets-optimized: $(derived_sources)
 	$(HC) --make -O -o hets hets.hs $(HC_OPTS)
 	strip hets
-
-hets-old: $(objects)
-	$(RM) $@
-	$(HC) -o hets $(HC_OPTS) $(objects)
 
 cgi:
 	$(MAKE) distclean
