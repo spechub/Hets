@@ -28,6 +28,7 @@ import Common.Doc
 import Common.DocUtils
 
 import Data.List (isPrefixOf)
+import Control.Monad (when, unless)
 
 -- constants have empty argument lists
 data OpType = OpType {opKind :: OpKind, opArgs :: [SORT], opRes :: SORT}
@@ -69,10 +70,10 @@ idToSortSymbol :: Id -> Symbol
 idToSortSymbol idt = Symbol idt SortAsItemType
 
 idToOpSymbol :: Id -> OpType -> Symbol
-idToOpSymbol idt typ = Symbol idt (OpAsItemType typ)
+idToOpSymbol idt = Symbol idt . OpAsItemType
 
 idToPredSymbol :: Id -> PredType -> Symbol
-idToPredSymbol idt typ = Symbol idt (PredAsItemType typ)
+idToPredSymbol idt = Symbol idt . PredAsItemType
 
 dummy :: Sign f s -> a -> ()
 dummy _ _ = ()
@@ -249,7 +250,7 @@ interOpMapSet m = Map.filter (not . Set.null)
    $ rmOrAddParts False t) m
 
 uniteCASLSign :: Sign () () -> Sign () () -> Sign () ()
-uniteCASLSign a b = addSig (\_ _ -> ()) a b
+uniteCASLSign = addSig (\_ _ -> ())
 
 addRel :: Ord a => Rel.Rel a -> Rel.Rel a -> Rel.Rel a
 addRel a = Rel.irreflex . Rel.transClosure . Rel.union a
@@ -320,9 +321,9 @@ addAnnoSet :: Annoted a -> Symbol -> State.State (Sign f e) ()
 addAnnoSet a s = do
   addSymbol s
   let v = Set.union (Set.fromList $ l_annos a) $ Set.fromList $ r_annos a
-  if Set.null v then return () else do
+  unless (Set.null v) $ do
     e <- State.get
-    State.put e { annoMap = Map.insertWith (Set.union) s v $ annoMap e }
+    State.put e { annoMap = Map.insertWith Set.union s v $ annoMap e }
 
 addSymbol :: Symbol -> State.State (Sign f e) ()
 addSymbol s = do
@@ -340,11 +341,10 @@ addSort sk a s = do
       State.put e { sortSet = Set.insert s m }
       addDiags $ checkNamePrefix s
   case sk of
-    NonEmptySorts -> if Set.member s em then do
+    NonEmptySorts -> when (Set.member s em) $ do
         e2 <- State.get
         State.put e2 { emptySortSet = Set.delete s em }
         addDiags [mkDiag Warning "redeclared sort as non-empty" s]
-      else return ()
     PossiblyEmptySorts -> if known then
       addDiags [mkDiag Warning "non-empty sort remains non-empty" s]
       else do
@@ -354,7 +354,8 @@ addSort sk a s = do
 
 hasSort :: Sign f e -> SORT -> [Diagnosis]
 hasSort e s =
-    if Set.member s $ sortSet e then [] else [mkDiag Error "unknown sort" s]
+    [ mkDiag Error "unknown sort" s
+    | not $ Set.member s $ sortSet e ]
 
 checkSorts :: [SORT] -> State.State (Sign f e) ()
 checkSorts s = do
@@ -366,7 +367,7 @@ addSubsort = addSubsortOrIso True
 
 addSubsortOrIso :: Bool -> SORT -> SORT -> State.State (Sign f e) ()
 addSubsortOrIso b super sub = do
-  if b then checkSorts [super, sub] else return ()
+  when b $ checkSorts [super, sub]
   e <- State.get
   let r = sortRel e
   State.put e { sortRel = (if b then id else Rel.insert super sub)
@@ -380,18 +381,16 @@ addSubsortOrIso b super sub = do
         if  Rel.path sub super r
         then addDiags [Diag Warning ("sorts are isomorphic" ++ rel) p]
         else addDiags [Diag Warning ("added subsort cycle by" ++ rel) p]
-      else if Rel.path sub super r
-           then addDiags [Diag Hint ("redeclared subsort" ++ rel) p]
-           else return ()
+      else when (Rel.path sub super r)
+           $ addDiags [Diag Hint ("redeclared subsort" ++ rel) p]
     else if Rel.path super sub r then
       if Rel.path sub super r
       then addDiags [Diag Hint ("redeclared isomoprhic sorts" ++ rel) p]
       else addDiags [Diag Warning ("subsort '" ++
         showDoc super "' made isomorphic by" ++ rel) $ posOfId super]
-    else if Rel.path sub super r
-         then addDiags [Diag Warning ("subsort  '" ++
+    else when (Rel.path sub super r)
+         $ addDiags [Diag Warning ("subsort  '" ++
            showDoc sub "' made isomorphic by" ++ rel) p]
-         else return()
 
 closeSubsortRel :: State.State (Sign f e) ()
 closeSubsortRel=
@@ -399,9 +398,9 @@ closeSubsortRel=
        State.put e { sortRel = Rel.transClosure $ sortRel e }
 
 checkNamePrefix :: Id -> [Diagnosis]
-checkNamePrefix i = if isPrefixOf genNamePrefix $ showId i "" then
-    [mkDiag Warning "identifier may conflict with generated names" i]
-    else []
+checkNamePrefix i =
+    [ mkDiag Warning "identifier may conflict with generated names" i
+    | isPrefixOf genNamePrefix $ showId i ""]
 
 alsoWarning :: String -> String -> Id -> [Diagnosis]
 alsoWarning new old i = let is = ' ' : showId i "'" in
