@@ -23,7 +23,6 @@ import CASL.Sign
 import CASL.AS_Basic_CASL
 import CASL.Morphism
 import CASL.Quantification
-import CASL.CCC.FreeTypes
 
 import VSE.Logic_VSE
 import VSE.As
