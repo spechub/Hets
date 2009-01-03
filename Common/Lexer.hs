@@ -14,10 +14,11 @@ according to chapter II.4 (Lexical Symbols) of the CASL reference manual
 
 module Common.Lexer where
 
-import Data.Char (digitToInt, isDigit, ord)
 import Common.Id
 import Text.ParserCombinators.Parsec
 import qualified Text.ParserCombinators.Parsec.Pos as Pos
+import Data.Char (digitToInt, isDigit, ord)
+import Data.List (isPrefixOf)
 
 -- * positions from "Text.ParserCombinators.Parsec.Pos" starting at (1,1)
 
@@ -151,7 +152,7 @@ scanDotWords = scanDot <:> scanAnyWords
 
 -- see ParsecToken.number
 value :: Int -> String -> Int
-value base s = foldl (\x d -> base*x + (digitToInt d)) 0 s
+value base = foldl (\ x d -> base * x + digitToInt d) 0
 
 simpleEscape :: CharParser st String
 simpleEscape = single (oneOf "'\"\\ntrvbfa?")
@@ -190,7 +191,7 @@ scanString = flat (many (caslChar <|> (char '\'' >> return "\\\'")))
     `enclosedBy` char '"' <?> "literal string"
 
 isString :: Token -> Bool
-isString t = take 1 (tokStr t) == "\""
+isString = isPrefixOf "\"" . tokStr
 
 parseString :: Parser a -> String -> a
 parseString p s = case parse p "" s of
@@ -198,11 +199,10 @@ parseString p s = case parse p "" s of
                   Right x -> x
 
 splitString :: Parser a -> String -> (a, String)
-splitString p s =
-    let ph = do hd <- p;
-                tl <- getInput;
-                return (hd, tl)
-        in parseString ph s
+splitString p = parseString $ do
+  hd <- p
+  tl <- getInput
+  return (hd, tl)
 
 -- * digit, number, fraction, float
 
@@ -210,35 +210,36 @@ getNumber :: CharParser st String
 getNumber = many1 digit
 
 scanFloat :: CharParser st String
-scanFloat = getNumber <++> (option ""
-             (try $ char '.' <:> getNumber)
-              <++> option ""
-              (char 'E' <:> option "" (single $ oneOf "+-")
-               <++> getNumber))
+scanFloat = getNumber
+  <++> (option "" (try $ char '.' <:> getNumber)
+        <++> option "" (char 'E' <:> option "" (single $ oneOf "+-")
+                        <++> getNumber))
 
 scanDigit :: CharParser st String
 scanDigit = single digit
 
 isNumber :: Token -> Bool
 isNumber t = case tokStr t of
-  c:_:_ -> isDigit c
-  _     -> False
+  c : _ : _ -> isDigit c
+  _ -> False
 
 isFloating :: Token -> Bool
 -- precondition: isNumber
-isFloating t = any (\ c -> c == '.' || c == 'E') $ tokStr t
+isFloating = any (flip elem ".E") . tokStr
 
 -- * nested comment outs
 
 nestedComment :: String -> String -> CharParser st String
-nestedComment op@(oh : ot : _) cl@(ch : ct : _) =
+nestedComment op cl = case (op, cl) of
+  (oh : ot : _, ch : ct : _) ->
     try (string op) <++>
-    flat (many $ single (noneOf [oh, ch]
-                        <|> try (char ch << notFollowedBy (char ct))
-                        <|> try (char oh << notFollowedBy (char ot))
-                        ) <|> nestedComment op cl)
+    flat (many $ single
+          (noneOf [oh, ch]
+           <|> try (char ch << notFollowedBy (char ct))
+           <|> try (char oh << notFollowedBy (char ot)))
+          <|> nestedComment op cl)
     <++> string cl
-nestedComment _ _ = error "nestedComment"
+  _ -> error "nestedComment"
 
 plainBlock :: String -> String -> CharParser st String
 plainBlock op cl = try (string op) >> manyTill anyChar (try $ string cl)
@@ -266,14 +267,15 @@ getPos = fmap fromSourcePos getPosition
 
 -- only skip to an annotation if it's on the same or next line
 skipSmart :: CharParser st ()
-skipSmart = do p <- getPosition
-               try (do skip
-                       q <- getPosition
-                       if Pos.sourceLine q <= Pos.sourceLine p + 1
-                           then return ()
-                           else notFollowedBy (char '%') >> return ()
-                   )
-                <|> return ()
+skipSmart = do
+  p <- getPosition
+  try (do
+      skip
+      q <- getPosition
+      if Pos.sourceLine q <= Pos.sourceLine p + 1
+        then return ()
+        else notFollowedBy (char '%') >> return ())
+    <|> return ()
 
 -- * keywords WORDS or NO-BRACKET-SIGNS
 
@@ -300,9 +302,9 @@ pluralKeyword s = pToken (keyWord (string s <++> option "" (string "s")))
 -- | check for keywords (depending on lexem class)
 toKey :: String -> CharParser st String
 toKey s = let p = string s in
-              if last s `elem` "[]{}(),;" then p
-                 else if last s `elem` signChars then keySign p
-                      else keyWord p
+  if last s `elem` "[]{}(),;" then p
+  else if last s `elem` signChars then keySign p
+       else keyWord p
 
 -- * some separator parsers
 

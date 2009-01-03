@@ -30,6 +30,7 @@ module Common.ConvertLiteral
 import Common.Id
 import Common.GlobalAnnotations
 import Data.Char (isDigit)
+import Data.List (isPrefixOf)
 
 -- * test if term is a literal
 
@@ -87,7 +88,7 @@ isGenString splt ga i trs = case getLiteralType ga i of
           stringTest ii = case getLiteralType ga ii of
                           StringNull -> True
                           _ -> case ii of
-                               Id [t] [] _ -> take 1 (tokStr t) == "\'"
+                               Id [t] [] _ -> isPrefixOf "'" $ tokStr t
                                _           -> False
 
 isGenList :: SplitM a -> GlobalAnnos -> Id -> [a] -> Bool

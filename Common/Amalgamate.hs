@@ -51,7 +51,7 @@ readShowAux l s = case find ( \ (p, _) -> isPrefixOf p s) l of
 
 -- | input all possible values and read one as it is shown
 readShow :: Show a => [a] -> ReadS a
-readShow l = readShowAux $ map ( \ o -> (show o, o)) l
+readShow = readShowAux . map ( \ o -> (show o, o))
 
 -- | possible CASL amalgamability options
 caslAmalgOpts :: [CASLAmalgOpt]
