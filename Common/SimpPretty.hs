@@ -72,7 +72,7 @@ p <> q = Beside p q
 -- Displaying @SDoc@ values.
 
 instance Show SDoc where
-  showsPrec _prec doc cont = showSDoc doc cont
+  showsPrec = const showSDoc
 
 -- | Renders the document as a string using the default style
 render :: SDoc -> String
@@ -96,7 +96,7 @@ writeFileSDoc fp sd =
         hClose h
 
 showSDoc :: SDoc -> String -> String
-showSDoc doc = fullRender showString (.) doc
+showSDoc = fullRender showString (.)
 
 fullRender :: (String -> a) -> (a -> a -> a) -> SDoc -> a
 fullRender txt comp doc

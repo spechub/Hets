@@ -24,7 +24,7 @@ instance Monad m => Functor (ResultT m) where
         return $ fmap f r
 
 instance Monad m => Monad (ResultT m) where
-    return a = ResultT $ return $ return a
+    return = ResultT . return . return
     m >>= k = ResultT $ do
         r@(Result e v) <- runResultT m
         case v of
@@ -32,7 +32,7 @@ instance Monad m => Monad (ResultT m) where
           Just a -> do
                 s <- runResultT $ k a
                 return $ joinResult r s
-    fail s = ResultT $ return $ fail s
+    fail = ResultT . return . fail
 
 instance MonadTrans ResultT where
     lift m = ResultT $ do

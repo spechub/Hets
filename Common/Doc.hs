@@ -463,14 +463,14 @@ foldDoc r d = case d of
 
 idRecord :: DocRecord Doc
 idRecord = DocRecord
-    { foldEmpty = \ _ -> Empty
-    , foldAnnoDoc = \ _ -> AnnoDoc
-    , foldIdDoc = \ _ -> IdDoc
-    , foldIdApplDoc = \ _ -> IdApplDoc
-    , foldText = \ _ -> Text
-    , foldCat = \ _ -> Cat
-    , foldAttr = \ _ -> Attr
-    , foldChangeGlobalAnnos = \ _ -> ChangeGlobalAnnos
+    { foldEmpty = const Empty
+    , foldAnnoDoc = const AnnoDoc
+    , foldIdDoc = const IdDoc
+    , foldIdApplDoc = const IdApplDoc
+    , foldText = const Text
+    , foldCat = const Cat
+    , foldAttr = const Attr
+    , foldChangeGlobalAnnos = const ChangeGlobalAnnos
     }
 
 anyRecord :: DocRecord a
@@ -494,7 +494,7 @@ toText ga = toTextAux . codeOut ga (mkPrecIntMap $ prec_annos ga)
 
 toTextAux :: Doc -> Pretty.Doc
 toTextAux = foldDoc anyRecord
-    { foldEmpty = \ _ -> Pretty.empty
+    { foldEmpty = const Pretty.empty
     , foldText = \ _ k s -> case k of
           TopKey n -> Pretty.text $ s ++ replicate (n - length s) ' '
           _ -> Pretty.text s
@@ -531,7 +531,7 @@ toLatex ga d = let dm = Map.map (Map.! DF_LATEX) .
 -- avoid too many tabs
 toLatexRecord :: Set.Set Id -> Bool -> DocRecord Pretty.Doc
 toLatexRecord dis tab = anyRecord
-    { foldEmpty = \ _ -> Pretty.empty
+    { foldEmpty = const Pretty.empty
     , foldText = \ _ k s -> textToLatex dis False k s
     , foldCat = \ (Cat c os) _ _ ->
           if any isNative os then Pretty.hcat $
@@ -646,7 +646,7 @@ symbolToLatex s =
 
 getDeclIds :: Doc -> Set.Set Id
 getDeclIds = foldDoc anyRecord
-    { foldEmpty = \ _ -> Set.empty
+    { foldEmpty = const Set.empty
     , foldText = \ _ _ _ -> Set.empty
     , foldCat = \ _ _ c -> Set.unions c
     , foldAttr = \ _ _ d -> d
@@ -768,7 +768,7 @@ cCommaT :: Map.Map Id [Token] -> [Id] -> [Doc]
 cCommaT m = punctuate comma . map (codeOutId IdAppl m)
 
 codeCompIds :: Map.Map Id [Token] -> [Id] -> Doc
-codeCompIds m cs = brackets $ fcat $ cCommaT m cs
+codeCompIds m = brackets . fcat . cCommaT m
 
 codeOutId :: LabelKind -> Map.Map Id [Token] -> Id -> Doc
 codeOutId lk m i = fcat $ case Map.lookup i m of
@@ -884,7 +884,7 @@ codeOutAppl :: GlobalAnnos -> PrecMap -> Maybe Display_format
             -> Map.Map Id [Token] -> Doc -> [Doc] -> Doc
 codeOutAppl ga precs md m origDoc args = case origDoc of
   IdApplDoc isPred i@(Id ts cs _) aas ->
-    let mk t = codeToken $ tokStr t
+    let mk = codeToken . tokStr
         pa = prec_annos ga
         assocs = assoc_annos ga
         mx = maxWeight precs

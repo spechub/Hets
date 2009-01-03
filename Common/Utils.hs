@@ -122,14 +122,14 @@ splitOn x xs = let (l, r) = break (== x) xs in
   File::Basename. It removes the directory part of a filepath.
 -}
 basename :: FilePath -> FilePath
-basename fp = (\ (_path, basen) -> basen) (stripDir fp)
+basename = snd . stripDir
 
 {- |
   A function inspired by a perl function from the standard perl-module
   File::Basename. It gives the directory part of a filepath.
 -}
 dirname :: FilePath -> FilePath
-dirname fp = (\ (path, _basen) -> path) (stripDir fp)
+dirname = fst . stripDir
 
 {- |
   A function inspired by a perl function from the standard perl-module
@@ -146,9 +146,9 @@ fileparse sufs fp = let (path,base) = stripDir fp
                     in (base',path,suf)
 
 stripDir :: FilePath -> (FilePath,FilePath)
-stripDir fp =
+stripDir =
     (\ (x, y) -> (if null y then "./" else reverse y, reverse x))
-    (break (== '/') (reverse fp))
+    . break (== '/') . reverse
 
 stripSuffix :: [String] -> FilePath -> (FilePath,Maybe String)
 stripSuffix suf fp = case filter justs $ map (stripSuf fp) suf of
@@ -181,8 +181,8 @@ getEnvSave :: a -- ^ default value
                          -- for every b the default value is returned
            -> IO a
 getEnvSave defValue envVar readFun =
-    getEnvironment >>= return . maybe defValue (maybe defValue id . readFun)
-      . lookup envVar
+    liftM (maybe defValue (maybe defValue id . readFun)
+           . lookup envVar) getEnvironment
 
 -- | get environment variable
 getEnvDef :: String -- ^ environment variable

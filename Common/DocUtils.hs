@@ -114,7 +114,7 @@ splitRAnnos r = case r of
 
 -- | add global annotations for proper mixfix printing
 useGlobalAnnos :: GlobalAnnos -> Doc -> Doc
-useGlobalAnnos ga = changeGlobalAnnos (const ga)
+useGlobalAnnos = changeGlobalAnnos . const
 
 -- | like punctuate but prepends the symbol to all tail elements
 prepPunctuate :: Doc -> [Doc] -> [Doc]

@@ -69,8 +69,9 @@ checkLines ga p =
        putStr (unlines (scanLines ga p (lines s) 1))
 
 scanLines :: GlobalAnnos -> StringParser -> [String] -> Line -> [String]
-scanLines _ _ [] _ = []
-scanLines ga p (x:l) n = (parseLine ga p x n) : (scanLines ga p l (n+1))
+scanLines ga p inp (x : l) n = case inp of
+  [] -> []
+  x : l -> parseLine ga p x n : scanLines ga p l (n + 1)
 
 parseLine :: GlobalAnnos -> StringParser -> String -> Line -> String
 parseLine ga p line n =

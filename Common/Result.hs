@@ -113,7 +113,7 @@ instance Functor Result where
     fmap f (Result errs m) = Result errs $ fmap f m
 
 instance Monad Result where
-  return x = Result [] $ Just x
+  return = Result [] . Just
   r@(Result e m) >>= f = case m of
       Nothing -> Result e Nothing
       Just x -> joinResult r $ f x
@@ -237,8 +237,8 @@ prettySingleSourceRange sp = let
                ++ showPos ma {sourceName = ""} ""
 
 prettyRange :: [Pos] -> Doc
-prettyRange ps = sepByCommas $ map prettySingleSourceRange
-    $ groupBy (\ p1 p2 -> sourceName p1 == sourceName p2) $ sort ps
+prettyRange = sepByCommas . map prettySingleSourceRange
+    . groupBy (\ p1 p2 -> sourceName p1 == sourceName p2) . sort
 
 relevantDiagKind :: Int -> DiagKind -> Bool
 relevantDiagKind v k = case k of
@@ -277,7 +277,7 @@ instance Pretty Diagnosis where
                            _        -> False
 
 instance GetRange Diagnosis where
-    getRange d = diagPos d
+    getRange = diagPos
 
 instance Pretty a => Pretty (Result a) where
     pretty (Result ds m) = vcat $ pretty m : map pretty ds

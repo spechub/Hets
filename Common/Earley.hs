@@ -262,7 +262,7 @@ scanItem addType (trm, t)
           else []
 
 scan :: (a -> a -> a) -> (a, Token) -> [Item a] -> [Item a]
-scan f term = concatMap (scanItem f term)
+scan f = concatMap . scanItem f
 
 mkAmbigs :: ToExpr a -> Item a -> [a]
 mkAmbigs toExpr p@Item{ args = l, ambigArgs = aArgs } =
@@ -312,7 +312,7 @@ getWeight side = case side of
     ARight -> rWeight
 
 getNewWeight :: AssocEither -> GlobalAnnos -> Item a -> Id -> Id
-getNewWeight side ga argItem = nextWeight side ga $ getWeight side argItem
+getNewWeight side ga = nextWeight side ga . getWeight side
 
 -- | check precedences of an argument and a top-level operator.
 checkPrecs :: GlobalAnnos -> Item a -> Item a -> Bool
@@ -338,8 +338,8 @@ complete toExpr ga table items =
         in reducedItems ++ items
 
 doPredict :: [Item a] -> ([Item a], [Item a])
-doPredict items = partition ( \ Item{ rest = ts } ->
-                      not (null ts) && head ts == termTok) items
+doPredict = partition ( \ Item{ rest = ts } ->
+                      not (null ts) && head ts == termTok)
 
 ordItem :: Item a -> Item a -> Ordering
 ordItem Item{ index = i1, rest = r1, rule = n1 }
@@ -395,9 +395,9 @@ nextChart addType toExpr ga st term@(_, tok) = let
     { prevTable = nextTable
     , currIndex = nextIdx
     , currItems = doPredict completedItems
-    , solveDiags = (if null scannedItems then
-        [Diag Error ("unexpected mixfix token: " ++ tokStr tok) $ tokPos tok]
-        else []) ++ solveDiags st }
+    , solveDiags =
+        [ Diag Error ("unexpected mixfix token: " ++ tokStr tok) $ tokPos tok
+        | null scannedItems ] ++ solveDiags st }
 
 -- | add intermediate diagnostic messages
 mixDiags :: [Diagnosis] -> Chart a -> Chart a

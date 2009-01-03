@@ -19,7 +19,7 @@ type POrder a = a -> a -> Maybe Ordering
 
 -- Ord a implies a total order
 totalOrder :: Ord a => POrder a
-totalOrder x y = Just (compare x y)
+totalOrder x = Just . compare x
 
 -- | split a list of elements into equivalence classes
 equivBy :: POrder a -> [a] -> [[a]]
