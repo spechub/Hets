@@ -19,7 +19,7 @@ import CASL.Sign
 import CASL.Fold
 import Common.Id
 
-makeInjOrProj :: (OP_TYPE -> Id) -> FunKind -> Range -> TERM f -> SORT
+makeInjOrProj :: (OP_TYPE -> Id) -> OpKind -> Range -> TERM f -> SORT
               -> TERM f
 makeInjOrProj mkName fk pos argument to =
     let from = sortOfTerm argument

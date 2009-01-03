@@ -204,7 +204,7 @@ procOpMapping subSortMap opName set r = do
     profMap <- mkProfMapOp opName subSortMap set
     return $ al ++ Map.foldWithKey procProfMapOpMapping [] profMap
   where
-    procProfMapOpMapping :: [SORT] -> (FunKind,Set.Set [Maybe PRED_NAME])
+    procProfMapOpMapping :: [SORT] -> (OpKind, Set.Set [Maybe PRED_NAME])
                          -> [Named (FORMULA ())] -> [Named (FORMULA ())]
     procProfMapOpMapping sl (kind, spl) = genArgRest
         (genSenName "o" opName $ length sl) (genOpEquation kind opName) sl spl
@@ -285,7 +285,7 @@ mkProfMapPred ssm = Set.fold seperate Map.empty
           pt2preds = map (lkupPRED_NAME ssm) . predArgs
 
 mkProfMapOp :: OP_NAME -> SubSortMap -> Set.Set OpType
-              -> Result (Map.Map [SORT] (FunKind, Set.Set [Maybe PRED_NAME]))
+              -> Result (Map.Map [SORT] (OpKind, Set.Set [Maybe PRED_NAME]))
 mkProfMapOp opName ssm = Set.fold seperate (return Map.empty)
     where seperate ot r = do
               mp <- r
@@ -331,10 +331,10 @@ genPredication :: PRED_NAME -> [SORT] -> [TERM f] -> FORMULA f
 genPredication pName sl ts = Predication (Qual_pred_name pName
    (Pred_type sl nullRange) nullRange) ts nullRange
 
-genOpEquation :: FunKind -> OP_NAME -> [SORT] -> [TERM f] -> FORMULA f
+genOpEquation :: OpKind -> OP_NAME -> [SORT] -> [TERM f] -> FORMULA f
 genOpEquation kind opName sl terms =
-    Strong_equation sortedFunTerm resTerm nullRange
-    where sortedFunTerm = Sorted_term (Application (Qual_op_name opName
+    Strong_equation sortedOpTerm resTerm nullRange
+    where sortedOpTerm = Sorted_term (Application (Qual_op_name opName
               opType nullRange) argTerms nullRange) resSort nullRange
           opType = Op_type kind argSorts resSort nullRange
           argTerms = init terms

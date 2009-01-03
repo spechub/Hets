@@ -182,7 +182,7 @@ renameOpSymbols graph opsList morMap sigmaRel phiSRel = let
     getKeys node = Map.keys $ (Map.!) rezMap node
     nonId ((id1, optype), (id2, fkind)) = id1 /= id2 || opKind optype /= fkind
    in Map.fromList $ map (\n -> (n, ((Map.!) phiSRel n)
-      {fun_map = Map.fromList $
+      {op_map = Map.fromList $
          map (\ ((i1, opT), (i2, k)) -> ((i1, opT{opKind=Partial}), (i2, k)))
       $ filter nonId $
       zip (getKeys n)
@@ -587,7 +587,7 @@ preImageCls phi clsFunS clsFunT cls = filter
    Map.keys clsFunS
 
 applyMor :: Morphism f e m -> (Id, OpType) -> (Id, OpType)
-applyMor phi (i, optype) = mapOpSym (sort_map phi) (fun_map phi) (i, optype)
+applyMor phi (i, optype) = mapOpSym (sort_map phi) (op_map phi) (i, optype)
 
 orderByOutgoingEdges :: [LEdge (Int,Morphism f e m)] ->
      Gr (Sign f e)(Int, Morphism f e m) -> Map.Map Node Int ->

@@ -159,7 +159,7 @@ inducedFromMorphism extEm _isSubExt rmap sigma = do
   -- return assembled morphism
   return (embedMorphism extEm sigma sigma')
     { sort_map = sort_Map
-    , fun_map = op_Map
+    , op_map = op_Map
     , pred_map = pred_Map }
 
   -- the sorts of the source signature
@@ -181,10 +181,10 @@ sortFun rmap s =
                , AKindedSymb Implicit s
                , AKindedSymb Sorts_kind s ]
 
-  {- to a Fun_map, add everything resulting from mapping (id, ots)
+  {- to a Op_map, add everything resulting from mapping (id, ots)
   according to rmap -}
 opFun :: RawSymbolMap -> Sort_map -> Id -> Set.Set OpType
-      -> Result Fun_map -> Result Fun_map
+      -> Result Op_map -> Result Op_map
 opFun rmap sort_Map ide ots m =
     -- first consider all directly mapped profiles
     let (ots1,m1) = Set.fold (directOpMap rmap sort_Map ide) (Set.empty,m) ots
@@ -208,8 +208,8 @@ opFun rmap sort_Map ide ots m =
     -- try to map an operation symbol directly
     -- collect all opTypes that cannot be mapped directly
 directOpMap :: RawSymbolMap -> Sort_map -> Id -> OpType
-            -> (Set.Set OpType,Result Fun_map)
-            -> (Set.Set OpType,Result Fun_map)
+            -> (Set.Set OpType, Result Op_map)
+            -> (Set.Set OpType, Result Op_map)
 directOpMap rmap sort_Map ide' ot (ots',m') =
       case Map.lookup (ASymbol (idToOpSymbol ide' ot)) rmap of
         Just rsy ->
@@ -217,7 +217,7 @@ directOpMap rmap sort_Map ide' ot (ots',m') =
         Nothing -> (Set.insert ot ots',m')
 
     -- map op symbol (ide,ot) to raw symbol rsy
-mappedOpSym :: Sort_map -> Id -> OpType -> RawSymbol -> Result (Id,FunKind)
+mappedOpSym :: Sort_map -> Id -> OpType -> RawSymbol -> Result (Id, OpKind)
 mappedOpSym sort_Map ide ot rsy =
     let opSym = "Operation symbol " ++ showDoc (idToOpSymbol ide ot)
                 " is mapped to "
@@ -237,7 +237,7 @@ mappedOpSym sort_Map ide ot rsy =
 
     -- insert mapping of op symbol (ide,ot) to raw symbol rsy into m
 insertmapOpSym :: Sort_map -> Id -> RawSymbol -> OpType
-               -> Result Fun_map -> Result Fun_map
+               -> Result Op_map -> Result Op_map
 insertmapOpSym sort_Map ide rsy ot m = do
       m1 <- m
       (ide', kind') <- mappedOpSym sort_Map ide ot rsy
@@ -246,7 +246,7 @@ insertmapOpSym sort_Map ide rsy ot m = do
     -- insert mapping of op symbol (ide, ot) to itself into m
 
 -- map the ops in the source signature
-mapOps :: Sort_map -> Fun_map -> Id -> Set.Set OpType -> OpMap -> OpMap
+mapOps :: Sort_map -> Op_map -> Id -> Set.Set OpType -> OpMap -> OpMap
 mapOps sort_Map op_Map ide ots m =
     Set.fold mapOp m ots
     where
@@ -283,8 +283,8 @@ predFun rmap sort_Map ide pts m =
     -- try to map a predicate symbol directly
     -- collect all predTypes that cannot be mapped directly
 directPredMap :: RawSymbolMap -> Sort_map -> Id -> PredType
-              -> (Set.Set PredType,Result Pred_map)
-              -> (Set.Set PredType,Result Pred_map)
+              -> (Set.Set PredType, Result Pred_map)
+              -> (Set.Set PredType, Result Pred_map)
 directPredMap rmap sort_Map ide pt (pts,m) =
       case Map.lookup (ASymbol (idToPredSymbol ide pt)) rmap of
         Just rsy ->
@@ -481,8 +481,8 @@ extendSymbMap akmap sym1 sym2 =
 -- may lead to the same pair, we have to associate a list of symbols
 -- (and corresponding symbol sets) with each pair.
 -- Hence, PosMap really is a pair to two maps.
-type PosMap = (Map.Map Symbol (SymbolSet,(Bool,Int)),
-               Map.Map (Bool,Int) [(Symbol,SymbolSet)])
+type PosMap = (Map.Map Symbol (SymbolSet, (Bool, Int)),
+               Map.Map (Bool, Int) [(Symbol, SymbolSet)])
 
 -- Some basic operations on PosMap
 
@@ -491,13 +491,13 @@ postponeEntry :: Symbol -> SymbolSet -> Bool
 postponeEntry sym symset =
   Set.null (Set.filter (preservesName sym) symset) && Set.size symset > 1
 
-removeFromPosmap :: Symbol -> (Bool,Int) -> PosMap -> PosMap
+removeFromPosmap :: Symbol -> (Bool, Int) -> PosMap -> PosMap
 removeFromPosmap sym card (posmap1,posmap2) =
   (Map.delete sym posmap1,
    Map.update removeSym1 card posmap2)
   where
   removeSym [] = []
-  removeSym ((x,y):l) = if x==sym then l else (x,y):removeSym l
+  removeSym ((x,y):l) = if x == sym then l else (x, y) : removeSym l
   removeSym1 l = case removeSym l of
     [] -> Nothing
     l1 -> Just l1
@@ -506,7 +506,7 @@ addToPosmap :: Symbol -> SymbolSet -> PosMap -> PosMap
 addToPosmap sym symset (posmap1,posmap2) =
   (Map.insert sym (symset,card) posmap1,
    listInsert card (sym,symset) posmap2)
-  where card = (postponeEntry sym symset,Set.size symset)
+  where card = (postponeEntry sym symset, Set.size symset)
 
 -- restrict posmap such that each symbol from symset1 is only mapped
 -- to symbols from symset2
@@ -514,17 +514,16 @@ restrictPosMap :: SymbolSet -> SymbolSet -> PosMap -> PosMap
 restrictPosMap symset1' symset2 posmap' =
   Set.fold restrictPosMap1 posmap' symset1'
   where
-  restrictPosMap1 sym1 posmap@(posmap1,_posmap2)  =
+  restrictPosMap1 sym1 posmap@(posmap1, _posmap2)  =
     case Map.lookup sym1 posmap1 of
       Nothing -> posmap
-      Just (symset1,card) ->
+      Just (symset1, card) ->
          addToPosmap sym1 (symset1 `Set.intersection` symset2)
           $ removeFromPosmap sym1 card posmap
 
 -- for each sub/supersort s of sym1 in sigma1, restrict the possible
 -- mappings of s in posmap to sub/supersorts of sym2 in sigma2
-restrictSorts ::
-                Symbol -> Symbol -> Sign f e -> Sign f e -> PosMap -> PosMap
+restrictSorts :: Symbol -> Symbol -> Sign f e -> Sign f e -> PosMap -> PosMap
 restrictSorts sym1 sym2 sigma1 sigma2 posmap =
   restrictPosMap subsyms1 subsyms2
     $ restrictPosMap supersyms1 supersyms2 posmap
@@ -541,7 +540,7 @@ restrictSorts sym1 sym2 sigma1 sigma2 posmap =
   supersyms2 = Set.map idToSortSymbol super2
 
 -- remove all sort mappings that map s1 to a sort different from s2
-removeIncompatibleSortMaps :: Maybe PosMap -> (SORT,SORT) -> Maybe PosMap
+removeIncompatibleSortMaps :: Maybe PosMap -> (SORT, SORT) -> Maybe PosMap
 removeIncompatibleSortMaps Nothing _ = Nothing
 removeIncompatibleSortMaps (Just posmap@(posmap1,_posmap2)) (s1,s2) =
   case Map.lookup sym1 posmap1 of
@@ -686,11 +685,11 @@ tryToInduce2 sigma1 sigma2 akmap posmap sym1 sym2 akmapSoFar = do
                 tryToInduce sigma1 sigma2 akmap1 posmap2
              _ -> return Nothing
        -- 6./7. uniqueness check
-       case (akmap',akmapSoFar1) of
+       case (akmap', akmapSoFar1) of
          -- stop backtracking next time if there haven't been new sort maps
-         (Nothing,Nothing) -> return Nothing
-         (Just smap,Nothing) -> return $ Just smap
-         (Nothing,Just smap) -> return $ Just smap
+         (Nothing, Nothing) -> return Nothing
+         (Just smap, Nothing) -> return $ Just smap
+         (Nothing, Just smap) -> return $ Just smap
          (Just smap1, Just smap2) ->
             let shorten = Map.filterWithKey (/=) in
             fatal_error (shows

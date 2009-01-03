@@ -232,7 +232,7 @@ data PredTypeXNWON = PredTypeXNWON {predArgsXNWON :: [XmlNamedWONSORT]}
   deriving (Show, Eq, Ord)
 
 -- | an operator with xml-name and origin
-data OpTypeXNWON = OpTypeXNWON { opKindX :: FunKind, opArgsXNWON :: [XmlNamedWONSORT], opResXNWON :: XmlNamedWONSORT }
+data OpTypeXNWON = OpTypeXNWON { opKindX :: OpKind, opArgsXNWON :: [XmlNamedWONSORT], opResXNWON :: XmlNamedWONSORT }
   deriving (Show, Eq, Ord)
 
 -- | tries to find the 'pure' sort among named sorts

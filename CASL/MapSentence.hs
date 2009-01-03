@@ -41,7 +41,7 @@ mapMorphism mf m = (mapRecord $ mf m)
 
 nullMor :: Morphism f e m -> Bool
 nullMor m =
-    Map.null (sort_map m) && Map.null (fun_map m) && Map.null (pred_map m)
+    Map.null (sort_map m) && Map.null (op_map m) && Map.null (pred_map m)
 
 mapTerm :: MapSen f e m -> Morphism f e m -> TERM f -> TERM f
 mapTerm mf = foldTerm . mapMorphism mf
@@ -51,7 +51,7 @@ mapSen mf m = if nullMor m then id else foldFormula $ mapMorphism mf m
 
 mapOpSymb :: Morphism f e m -> OP_SYMB -> OP_SYMB
 mapOpSymb m (Qual_op_name i t ps) =
-   let (j, ty) = mapOpSym (sort_map m) (fun_map m) (i, toOpType t)
+   let (j, ty) = mapOpSym (sort_map m) (op_map m) (i, toOpType t)
    in Qual_op_name j (toOP_TYPE ty) ps
 mapOpSymb _ (Op_name os) =
     error $ "mapOpSymb: unexpected op symb: " ++ show os

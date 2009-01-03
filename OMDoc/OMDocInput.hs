@@ -2170,7 +2170,7 @@ createDGLinkFromLinkSpecification
           (embedMorphism () Hets.emptyCASLSign Hets.emptyCASLSign)
             { sort_map = sortmap
             , pred_map = predmap
-            , fun_map = opmap }
+            , op_map = opmap }
   in
     if (ls_fromname ls) /= (ts_name tsFrom) || (ls_toname ls) /= (ts_name tsTo)
       then

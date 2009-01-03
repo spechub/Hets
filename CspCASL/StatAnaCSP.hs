@@ -21,7 +21,7 @@ import qualified Data.Map as Map
 import qualified Data.Maybe as Maybe
 import qualified Data.Set as S
 
-import CASL.AS_Basic_CASL (FORMULA(..), FunKind(..), SORT, TERM(..), VAR,
+import CASL.AS_Basic_CASL (FORMULA(..), OpKind(..), SORT, TERM(..), VAR,
                            VAR_DECL(..))
 import CASL.MixfixParser (emptyMix, Mix(..), makeRules, mkIdSets,
                           resolveFormula, resolveMixfix, unite)
@@ -473,7 +473,7 @@ anaRenamingItem inAl ri = do
 -- find all unary operations of that kind with that name in the CASL
 -- signature, and return a set of corresponding communication types
 -- for those operations.
-getUnaryOpsById :: Id -> FunKind -> State CspCASLSign (S.Set CommType)
+getUnaryOpsById :: Id -> OpKind -> State CspCASLSign (S.Set CommType)
 getUnaryOpsById ri kind = do
     sig <- get
     let opsWithId = Map.findWithDefault S.empty ri (opMap sig)

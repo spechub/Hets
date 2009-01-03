@@ -277,7 +277,7 @@ type OpsMapDGWO = Map.Map NodeNameWO OpsWO
 -- Tests for emptyness of sort- function- and predicate-map.
 isEmptyMorphism:: Morphism a b c ->Bool
 isEmptyMorphism m =
-  Map.null (sort_map m) && Map.null (fun_map m) && Map.null (pred_map m)
+  Map.null (sort_map m) && Map.null (op_map m) && Map.null (pred_map m)
 
 -- | returns an empty 'CASL.Morphism.Morphism'
 emptyCASLMorphism:: CASL.Morphism.Morphism () () ()
@@ -2672,7 +2672,7 @@ traceIdentifierOrigin
           opmap = opMap caslsign
           nonBlockingEdges =
             findNonBlockingEdges
-              (Map.toList . fun_map)
+              (Map.toList . op_map)
               (\(_, (toopid, _)) i -> toopid == i)
               inEdges
         in
@@ -2980,14 +2980,14 @@ traceRealIdentifierOrigins
           opmap = opMap caslsign
           morphismSearches =
             findMorphismSearches
-              (Map.toList . fun_map)
+              (Map.toList . op_map)
               (\(_, (tos, _)) i -> tos == i)
               (\((oldname, oldtype), _) -> IdOpM oldname oldtype mc isGen)
               dg
               inEdges
           nonBlockingEdges =
             findNonBlockingEdges
-              (Map.toList . fun_map)
+              (Map.toList . op_map)
               (\(_, (toopid, _)) i -> toopid == i)
               inEdges
         in
@@ -3196,7 +3196,7 @@ traceIdentifierOrigins
                   case
                     filter
                       (\(_, (toopid, _)) -> toopid == opid)
-                      (Map.toList (fun_map caslmorph))
+                      (Map.toList (op_map caslmorph))
                   of
                     [] -> True
                     _ -> False

@@ -294,7 +294,7 @@ mappedops fromOpIds e_fname caslmorph toOpIds ln collectionMap uniqueNames
           mo ++ [ ((oname, oorigin), (nname, norigin)) ]
         )
         []
-        (Morphism.fun_map caslmorph)
+        (Morphism.op_map caslmorph)
 
 findOrigin
   ::Hets.CollectionMap

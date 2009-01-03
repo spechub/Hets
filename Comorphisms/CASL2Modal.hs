@@ -70,7 +70,7 @@ mapSig sign =
 mapMor :: CASLMor -> ModalMor
 mapMor m = (embedMorphism emptyMorExt (mapSig $ msource m) $ mapSig $ mtarget m)
   { sort_map = sort_map m
-  , fun_map = fun_map m
+  , op_map = op_map m
   , pred_map = pred_map m }
 
 mapSym :: Symbol -> Symbol

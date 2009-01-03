@@ -94,11 +94,11 @@ mapMor inMor =
         ms = trSign $ msource inMor
         mt = trSign $ mtarget inMor
         sm = sort_map inMor
-        fm = fun_map inMor
+        fm = op_map inMor
         pm = pred_map inMor
     in return (embedMorphism () ms mt)
         { sort_map = sm
-        , fun_map = fm
+        , op_map = fm
         , pred_map = pm }
 
 -- ^ we forget additional information in the signature

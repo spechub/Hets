@@ -55,7 +55,7 @@ minCoDatatype (CoDatatype_decl _ l _) =
 minCoAlternative :: COALTERNATIVE -> CoCASL_Sublogics
 minCoAlternative a = case a of
     Co_construct fk _ l _ ->
-        foldl sublogics_max (sl_funkind fk) $ map minCoComponents l
+        foldl sublogics_max (sl_opkind fk) $ map minCoComponents l
     CoSubsorts _ _ -> need_sub
 
 minCoComponents :: COCOMPONENTS -> CoCASL_Sublogics

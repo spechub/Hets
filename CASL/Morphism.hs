@@ -43,14 +43,14 @@ type RawSymbolMap = Map.Map RawSymbol RawSymbol
 
 type Sort_map = Map.Map SORT SORT
 -- always use the partial profile as key!
-type Fun_map = Map.Map (Id, OpType) (Id, FunKind)
+type Op_map = Map.Map (Id, OpType) (Id, OpKind)
 type Pred_map = Map.Map (Id, PredType) Id
 
 data Morphism f e m = Morphism
   { msource :: Sign f e
   , mtarget :: Sign f e
   , sort_map :: Sort_map
-  , fun_map :: Fun_map
+  , op_map :: Op_map
   , pred_map :: Pred_map
   , extended_map :: m
   } deriving (Show, Eq)
@@ -67,7 +67,7 @@ type CASLMor = Morphism () () ()
 
 isInclusionMorphism :: (m -> Bool) -> Morphism f e m -> Bool
 isInclusionMorphism f m = f (extended_map m) && Map.null (sort_map m)
-  && Map.null (pred_map m) && isInclFunMap (fun_map m)
+  && Map.null (pred_map m) && isInclOpMap (op_map m)
 
 mapSort :: Sort_map -> SORT -> SORT
 mapSort sorts s = Map.findWithDefault s s sorts
@@ -77,17 +77,17 @@ mapOpType sorts t = if Map.null sorts then t else
   t { opArgs = map (mapSort sorts) $ opArgs t
     , opRes = mapSort sorts $ opRes t }
 
-mapOpTypeK :: Sort_map -> FunKind -> OpType -> OpType
+mapOpTypeK :: Sort_map -> OpKind -> OpType -> OpType
 mapOpTypeK sorts k t = makeTotal k $ mapOpType sorts t
 
-makeTotal :: FunKind -> OpType -> OpType
+makeTotal :: OpKind -> OpType -> OpType
 makeTotal fk t = case fk of
   Total -> t { opKind = Total }
   _ -> t
 
-mapOpSym :: Sort_map -> Fun_map -> (Id, OpType) -> (Id, OpType)
-mapOpSym sMap fMap (i, ot) = let mot = mapOpType sMap ot in
-  case Map.lookup (i, ot {opKind = Partial} ) fMap of
+mapOpSym :: Sort_map -> Op_map -> (Id, OpType) -> (Id, OpType)
+mapOpSym sMap oMap (i, ot) = let mot = mapOpType sMap ot in
+  case Map.lookup (i, ot {opKind = Partial} ) oMap of
     Nothing -> (i, mot)
     Just (j, k) -> (j, makeTotal k mot)
 
@@ -100,15 +100,15 @@ mapPredType sorts t = if Map.null sorts then t else
   t { predArgs = map (mapSort sorts) $ predArgs t }
 
 mapPredSym :: Sort_map -> Pred_map -> (Id, PredType) -> (Id, PredType)
-mapPredSym sMap fMap (i, pt) =
-    (Map.findWithDefault i (i, pt) fMap, mapPredType sMap pt)
+mapPredSym sMap oMap (i, pt) =
+    (Map.findWithDefault i (i, pt) oMap, mapPredType sMap pt)
 
 embedMorphism :: m -> Sign f e -> Sign f e -> Morphism f e m
 embedMorphism extEm a b = Morphism
   { msource = a
   , mtarget = b
   , sort_map = Map.empty
-  , fun_map = Map.empty
+  , op_map = Map.empty
   , pred_map = Map.empty
   , extended_map = extEm }
 
@@ -229,10 +229,10 @@ symbMapToMorphism extEm sigma1 sigma2 smap = let
     of Just sym -> let t = symName sym in if s == t then m else
                            Map.insert s t m
        Nothing -> m
-  fun_map1 = Map.foldWithKey mapFun Map.empty (opMap sigma1)
+  op_map1 = Map.foldWithKey mapOp Map.empty (opMap sigma1)
   pred_map1 = Map.foldWithKey mapPred Map.empty (predMap sigma1)
-  mapFun i ots m = Set.fold (insFun i) m ots
-  insFun i ot m =
+  mapOp i ots m = Set.fold (insOp i) m ots
+  insOp i ot m =
     case Map.lookup (Symbol {symName = i, symbType = OpAsItemType ot}) smap
     of Just sym -> let j = symName sym in case symbType sym of
          OpAsItemType oty -> let k = opKind oty in
@@ -249,7 +249,7 @@ symbMapToMorphism extEm sigma1 sigma2 smap = let
        _ -> m
   in return (embedMorphism extEm sigma1 sigma2)
      { sort_map = sort_map1
-     , fun_map = fun_map1
+     , op_map = op_map1
      , pred_map = pred_map1 }
 
 morphismToSymbMap :: Morphism f e m -> SymbolMap
@@ -259,7 +259,7 @@ morphismToSymbMapAux :: Bool -> Morphism f e m -> SymbolMap
 morphismToSymbMapAux b mor = let
     src = msource mor
     sorts = sort_map mor
-    ops = fun_map mor
+    ops = op_map mor
     preds = pred_map mor
     sortSymMap = Set.fold
       (\ s -> let t = mapSort sorts s in
@@ -299,20 +299,20 @@ composeM comp mor1 mor2 = if mtarget mor1 == msource mor2 then do
   let sMap1 = sort_map mor1
       src = msource mor1
       tar = mtarget mor2
-      fMap1 = fun_map mor1
+      oMap1 = op_map mor1
       pMap1 = pred_map mor1
       sMap2 = sort_map mor2
-      fMap2 = fun_map mor2
+      oMap2 = op_map mor2
       pMap2 = pred_map mor2
       sMap = if Map.null sMap2 then sMap1 else Set.fold ( \ i ->
                                let j = mapSort sMap2 (mapSort sMap1 i) in
                                if i == j then id else Map.insert i j)
                 Map.empty $ sortSet src
-      fMap = if Map.null fMap2 then fMap1 else
+      oMap = if Map.null oMap2 then oMap1 else
                  Map.foldWithKey ( \ i t m ->
                    Set.fold ( \ ot ->
-                       let (ni, nt) = mapOpSym sMap2 fMap2 $
-                                      mapOpSym sMap1 fMap1 (i, ot)
+                       let (ni, nt) = mapOpSym sMap2 oMap2 $
+                                      mapOpSym sMap1 oMap1 (i, ot)
                            k = opKind nt
                        in assert (mapOpTypeK sMap k ot == nt) $
                           if i == ni && opKind ot == k then id else
@@ -330,7 +330,7 @@ composeM comp mor1 mor2 = if mtarget mor1 == msource mor2 then do
   let emb = embedMorphism extComp src tar
   return $ emb
      { sort_map = sMap
-     , fun_map  = fMap
+     , op_map  = oMap
      , pred_map = pMap }
  else fail "target of first and source of second morphism are different"
 
@@ -349,7 +349,7 @@ legalSign sigma =
                         && all legalSort (opArgs t)
         legalPredType t = all legalSort (predArgs t)
 
-inducedOpMap :: Sort_map -> Fun_map -> OpMap -> OpMap
+inducedOpMap :: Sort_map -> Op_map -> OpMap -> OpMap
 inducedOpMap sm fm os = Map.foldWithKey
   ( \ i -> flip $ Set.fold ( \ ot ->
       let (j, nt) = mapOpSym sm fm (i, ot)
@@ -371,12 +371,12 @@ legalMor mor =
   in legalSign s1
   && Set.isSubsetOf (msorts $ sortSet s1) (sortSet s2)
   && Set.isSubsetOf (msorts $ emptySortSet s1) (emptySortSet s2)
-  && isSubOpMap (inducedOpMap sm (fun_map mor) $ opMap s1) (opMap s2)
+  && isSubOpMap (inducedOpMap sm (op_map mor) $ opMap s1) (opMap s2)
   && isSubMapSet (inducedPredMap sm (pred_map mor) $ predMap s1) (predMap s2)
   && legalSign s2
 
-isInclFunMap :: Fun_map -> Bool
-isInclFunMap = all (\ ((i, _), (j, k)) -> i == j && k == Total) . Map.toList
+isInclOpMap :: Op_map -> Bool
+isInclOpMap = all (\ ((i, _), (j, k)) -> i == j && k == Total) . Map.toList
 
 idOrInclMorphism :: (e -> e -> Bool) -> Morphism f e m -> Morphism f e m
 idOrInclMorphism isSubExt m =
@@ -384,7 +384,7 @@ idOrInclMorphism isSubExt m =
       tar = mtarget m
   in if isSubSig isSubExt tar src then m
      else let diffOpMap = diffMapSet (opMap src) $ opMap tar in
-          m { fun_map = Map.fromList $ concatMap (\ (i, s) ->
+          m { op_map = Map.fromList $ concatMap (\ (i, s) ->
               map (\ t -> ((i, t), (i, Total)))
                  $ Set.toList s) $ Map.toList diffOpMap }
 
@@ -422,8 +422,8 @@ morphismUnionM uniteM addSigExt mor1 mor2 =
       s2 = msource mor2
       us1 = Set.difference (sortSet s1) $ Map.keysSet smap1
       us2 = Set.difference (sortSet s2) $ Map.keysSet smap2
-      omap1 = fun_map mor1
-      omap2 = fun_map mor2
+      omap1 = op_map mor1
+      omap2 = op_map mor2
       uo1 = foldr delOp (opMap s1) $ Map.keys omap1
       uo2 = foldr delOp (opMap s2) $ Map.keys omap2
       delOp (n, ot) m = diffMapSet m $ Map.singleton n $
@@ -474,7 +474,7 @@ morphismUnionM uniteM addSigExt mor1 mor2 =
     return
       (embedMorphism (uniteM (extended_map mor1) $ extended_map mor2) s3 s4)
       { sort_map = Map.filterWithKey (/=) smap
-      , fun_map = Map.filterWithKey
+      , op_map = Map.filterWithKey
         (\ (i, ot) (j, k) -> i /= j || k == Total && Set.member ot
          (Map.findWithDefault Set.empty i o3)) omap
       , pred_map = Map.filterWithKey (\ (i, _) j -> i /= j) pmap }
@@ -495,7 +495,7 @@ isInjective m = isSortInjective m && let
     sm = sort_map m
     os = opMap src
     ps = predMap src
-    in sumSize os == sumSize (inducedOpMap sm (fun_map m) os)
+    in sumSize os == sumSize (inducedOpMap sm (op_map m) os)
        && sumSize ps == sumSize (inducedPredMap sm (pred_map m) ps)
 
 instance Pretty RawSymbol where
@@ -508,7 +508,7 @@ printMorphism :: (f -> Doc) -> (e -> Doc) -> (m -> Doc) -> Morphism f e m
 printMorphism fF fE fM mor =
     let src = msource mor
         tar = mtarget mor
-        ops = fun_map mor
+        ops = op_map mor
         prSig s = specBraces (space <> printSign fF fE s)
         srcD = prSig src
     in if isInclusionMorphism (const True) mor then

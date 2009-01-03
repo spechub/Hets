@@ -56,7 +56,7 @@ module CASL.Sublogic
     -- * computes the sublogic of a given element
     , sl_sig_items
     , sl_basic_spec
-    , sl_funkind
+    , sl_opkind
     , sl_op_type
     , sl_sentence
     , sl_symb_items
@@ -668,10 +668,10 @@ sl_symbtype st = case st of
     _ -> bottom
 
 sl_optype :: Lattice a => OpType -> CASL_SL a
-sl_optype k = sl_funkind $ opKind k
+sl_optype k = sl_opkind $ opKind k
 
-sl_funkind :: Lattice a => FunKind -> CASL_SL a
-sl_funkind fk = case fk of
+sl_opkind :: Lattice a => OpKind -> CASL_SL a
+sl_opkind fk = case fk of
     Partial -> need_part
     _ -> bottom
 
@@ -1019,7 +1019,7 @@ pr_morphism :: Lattice a => CASL_SL a -> Morphism f e m
 pr_morphism l m =
      m { msource = pr_sign l $ msource m
        , mtarget = pr_sign l $ mtarget m
-       , fun_map = pr_fun_map l $ fun_map m
+       , op_map = pr_op_map l $ op_map m
        , pred_map = pr_pred_map l $ pred_map m }
 
 -- predicates only rely on the has_pred feature, so the map
@@ -1028,12 +1028,12 @@ pr_morphism l m =
 pr_pred_map :: CASL_SL a -> Pred_map -> Pred_map
 pr_pred_map l x = if (has_pred l) then x else Map.empty
 
-pr_fun_map :: Lattice a => CASL_SL a -> Fun_map -> Fun_map
-pr_fun_map l m = Map.filterWithKey (pr_fun_map_entry l) m
+pr_op_map :: Lattice a => CASL_SL a -> Op_map -> Op_map
+pr_op_map l m = Map.filterWithKey (pr_op_map_entry l) m
 
-pr_fun_map_entry :: Lattice a => CASL_SL a -> (Id, OpType)
-                 -> (Id, FunKind) -> Bool
-pr_fun_map_entry l (_, t) (_, b) =
+pr_op_map_entry :: Lattice a => CASL_SL a -> (Id, OpType)
+                 -> (Id, OpKind) -> Bool
+pr_op_map_entry l (_, t) (_, b) =
                  if (has_part l) then True
                  else ((in_x l t sl_optype) && b == Partial)
 

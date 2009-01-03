@@ -30,7 +30,7 @@ import Common.DocUtils
 import Data.List (isPrefixOf)
 
 -- constants have empty argument lists
-data OpType = OpType {opKind :: FunKind, opArgs :: [SORT], opRes :: SORT}
+data OpType = OpType {opKind :: OpKind, opArgs :: [SORT], opRes :: SORT}
               deriving (Show, Eq, Ord)
 
 data PredType = PredType {predArgs :: [SORT]} deriving (Show, Eq, Ord)

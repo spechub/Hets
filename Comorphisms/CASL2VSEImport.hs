@@ -229,10 +229,10 @@ mapMor m = let
                 ]
            )
            renSorts
- renOps = Map.keys $ fun_map m
+ renOps = Map.keys $ op_map m
  opsProcs = Map.fromList $
             map (\ (idN, oT@(OpType _ w s)) -> let
-                   (idN', _) = (fun_map m) Map.! (idN, oT)
+                   (idN', _) = (op_map m) Map.! (idN, oT)
                                                in
                   ((mkGenName idN,
                     OpType Partial w s)  ,
@@ -258,7 +258,7 @@ mapMor m = let
   m
   { msource = sig1
   , mtarget = sig2
-  , fun_map = Map.union (Map.union eqOps opsProcs) $ fun_map m
+  , op_map = Map.union (Map.union eqOps opsProcs) $ op_map m
   , pred_map = Map.union (Map.union restrPreds predProcs) $ pred_map m
   , extended_map = emptyMorExt
   }

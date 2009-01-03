@@ -106,7 +106,7 @@ instance Comorphism CASL2SubCFOL
         = return
         mor { msource = encodeSig (sortsWithBottom m src Set.empty) src
             , mtarget = encodeSig (sortsWithBottom m tar Set.empty) tar
-            , fun_map = Map.map (\ (i, _) -> (i, Total)) $ fun_map mor }
+            , op_map = Map.map (\ (i, _) -> (i, Total)) $ op_map mor }
     map_sentence (CASL2SubCFOL b m) sig sen = let
         fbsrts = botFormulaSorts sen
         bsrts = sortsWithBottom m sig fbsrts

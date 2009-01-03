@@ -28,15 +28,15 @@ import CASL.Fold
 import CASL.Inject
 import Common.Id
 
-projRecord :: FunKind -> (f -> f) -> Record f (FORMULA f) (TERM f)
+projRecord :: OpKind -> (f -> f) -> Record f (FORMULA f) (TERM f)
 projRecord fk mf = (mapRecord mf)
   { foldCast = \ _ st s ps -> projectUnique fk ps st s
   , foldMembership = \ _ t s ps -> Definedness (projectUnique fk ps t s) ps }
 
-projTerm :: FunKind -> (f -> f) -> TERM f -> TERM f
+projTerm :: OpKind -> (f -> f) -> TERM f -> TERM f
 projTerm fk = foldTerm . projRecord fk
 
-projFormula :: FunKind -> (f -> f) -> FORMULA f -> FORMULA f
+projFormula :: OpKind -> (f -> f) -> FORMULA f -> FORMULA f
 projFormula fk = foldFormula . projRecord fk
 
 uniqueProjName :: OP_TYPE -> Id
@@ -55,7 +55,7 @@ uniqueBotName t = case t of
     Op_type _ [] to _ -> mkUniqueName botTok [to]
     _ -> error "CASL.Project.uniqueBotName"
 
-projectUnique :: FunKind -> Range -> TERM f -> SORT -> TERM f
+projectUnique :: OpKind -> Range -> TERM f -> SORT -> TERM f
 projectUnique = makeInjOrProj uniqueProjName
 
 rename :: OP_SYMB -> OP_SYMB

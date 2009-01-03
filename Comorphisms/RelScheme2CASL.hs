@@ -107,7 +107,7 @@ mapMorphism phi = let
    msource = ssign,
    mtarget = mapSign $ SRel.codomain phi,
    sort_map = Map.empty,
-   fun_map =  Map.fromList $
+   op_map = Map.fromList $
      map (\(tab,(c1,c2)) -> let
           t = head $ filter (\tb -> SRel.t_name tb == tab) $
               Set.toList $ SRel.tables $ SRel.domain phi

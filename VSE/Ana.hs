@@ -481,7 +481,7 @@ mapProcId m i = case lookupProc i $ msource m of
 
 mapProcIdProfile :: Morphism f Procs VSEMorExt -> Id -> Profile -> Id
 mapProcIdProfile m i p = case profileToOpType p of
-  Just t -> fst $ mapOpSym (sort_map m) (fun_map m) (i, t)
+  Just t -> fst $ mapOpSym (sort_map m) (op_map m) (i, t)
   Nothing -> fst $ mapPredSym (sort_map m) (pred_map m)
     (i, profileToPredType p)
 

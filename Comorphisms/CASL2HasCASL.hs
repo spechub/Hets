@@ -76,7 +76,7 @@ instance Comorphism CASL2HasCASL
     is_weakly_amalgamable CASL2HasCASL = True
     isInclusionComorphism CASL2HasCASL = True
 
-fromOpType :: CasS.OpType -> Cas.FunKind -> TypeScheme
+fromOpType :: CasS.OpType -> Cas.OpKind -> TypeScheme
 fromOpType ot ok =
     let args = map toType $ CasS.opArgs ot
         arg = mkProductType args
@@ -144,7 +144,7 @@ mapMor m = let tm = CasM.sort_map m
                           ((i, fromOpType ot (CasS.opKind ot)),
                            (j, mapTypeOfScheme (mapType tm)
                                     $ fromOpType ot t)))
-                    $ Map.toList $ CasM.fun_map m
+                    $ Map.toList $ CasM.op_map m
                f2 = map ( \ ((i, pt), j) ->
                           let sc = fromPredType pt
                           in ((i, sc), (j, mapTypeOfScheme (mapType tm) sc)))
@@ -176,7 +176,7 @@ toSentence sig f = case f of
    Cas.Sort_gen_ax cs b -> let
        (sorts, ops, smap) = Cas.recover_Sort_gen_ax cs
        genKind = if b then Free else Generated
-       mapPart :: Cas.FunKind -> Partiality
+       mapPart :: Cas.OpKind -> Partiality
        mapPart cp = case cp of
                 Cas.Total -> HasCASL.As.Total
                 Cas.Partial -> HasCASL.As.Partial

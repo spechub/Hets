@@ -106,7 +106,7 @@ mapMorphism oMor =
                              Map.empty $ predMap cdm
                     False ->
                         Map.empty
-      let funs = case inc of
+      let ops = case inc of
                    True  ->
                        Map.foldWithKey (\x ot b ->
                                             Set.fold (\ots p ->
@@ -122,7 +122,7 @@ mapMorphism oMor =
                    msource      = cdm
                  , mtarget      = ccd
                  , sort_map     = sorts
-                 , fun_map      = funs
+                 , op_map       = ops
                  , pred_map     = preds
                  , extended_map = ()
                  }

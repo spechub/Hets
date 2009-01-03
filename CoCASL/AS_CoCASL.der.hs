@@ -39,7 +39,7 @@ data CODATATYPE_DECL = CoDatatype_decl SORT [Annoted COALTERNATIVE] Range
                      -- pos: "::=", "|"s
                        deriving Show
 
-data COALTERNATIVE = Co_construct FunKind (Maybe OP_NAME) [COCOMPONENTS] Range
+data COALTERNATIVE = Co_construct OpKind (Maybe OP_NAME) [COCOMPONENTS] Range
                    -- True if Total, pos: "(", semi colons, ")"
                  | CoSubsorts [SORT] Range
                    -- pos: sort, commas

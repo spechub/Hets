@@ -47,7 +47,7 @@ qualifySig nodeId libId m sig = do
       sm = Set.fold (\ s -> Map.insert s
                     $ mkOrReuseQualSortName (sort_map m) nodeId libId s)
            Map.empty ss
-      om = createFunMap $ qualOverloaded (Map.map fst $ fun_map m)
+      om = createOpMorMap $ qualOverloaded (Map.map fst $ op_map m)
            nodeId libId (mapOpType sm) (\ o -> o { opKind = Partial }) os
       pm = Map.map fst
            $ qualOverloaded (pred_map m) nodeId libId (mapPredType sm) id ps
@@ -60,7 +60,7 @@ qualifySig nodeId libId m sig = do
         , predMap = inducedPredMap sm pm ps }
   return ((embedMorphism () sig tar)
     { sort_map = sm
-    , fun_map = om
+    , op_map = om
     , pred_map = pm }, monotonicities sig)
 
 qualOverloaded :: Ord a => Map.Map (Id, a) Id -> SIMPLE_ID -> LIB_ID
@@ -80,9 +80,9 @@ qualOverloaded rn nodeId libId f g =
                     _ -> mkQualName nodeId libId $ mkOverloadedId n i, f e)) m1
            $ zip r [2 ..]) Map.empty
 
-createFunMap :: Map.Map (Id, OpType) (Id, OpType)
-             -> Map.Map (Id, OpType) (Id, FunKind)
-createFunMap = Map.map (\ (i, t) -> (i, opKind t))
+createOpMorMap :: Map.Map (Id, OpType) (Id, OpType)
+             -> Map.Map (Id, OpType) (Id, OpKind)
+createOpMorMap = Map.map (\ (i, t) -> (i, opKind t))
 
 inverseMorphism :: (m -> Result m) -> Morphism f e m -> Result (Morphism f e m)
 inverseMorphism invExt m = do
@@ -96,7 +96,7 @@ inverseMorphism invExt m = do
       nss = Set.map (mapSort sm) ss
       nos = inducedOpMap sm fm os
       nps = inducedPredMap sm pm ps
-      fm = fun_map m
+      fm = op_map m
       pm = pred_map m
       ntar = tar
         { sortSet = nss
@@ -118,5 +118,5 @@ inverseMorphism invExt m = do
     $ fail "no injective CASL pred mapping"
   return (embedMorphism iExt ntar src)
     { sort_map = ism
-    , fun_map = ifm
+    , op_map = ifm
     , pred_map = ipm }

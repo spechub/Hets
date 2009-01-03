@@ -170,7 +170,7 @@ mapMor m = (embedMorphism ()
     (caslSign $ transSig $ msource m)
     $ caslSign $ transSig $ mtarget m)
   { sort_map = sort_map m
-  , fun_map = fun_map m
+  , op_map = op_map m
   , pred_map = pred_map m }
 
 mapSym :: Symbol -> Symbol

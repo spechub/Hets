@@ -205,7 +205,7 @@ imageOfMorphism m =
              opMap = Map.foldWithKey
                        (\ident ots l ->
                            Set.fold (\ot l' -> insertOp
-                             (mapOpSym sortMap funMap (ident,ot)) l') l ots)
+                             (mapOpSym sortMap oMap (ident,ot)) l') l ots)
                        Map.empty (opMap src),
              predMap = Map.foldWithKey
                          (\ident pts l ->
@@ -216,7 +216,7 @@ imageOfMorphism m =
     where sig = mtarget m
           src = msource m
           sortMap = sort_map m
-          funMap = fun_map m
+          oMap = op_map m
           insertOp (ident,ot) opM =
             case Map.lookup ident opM of
               Nothing -> Map.insert ident (Set.singleton ot) opM

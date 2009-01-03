@@ -275,7 +275,7 @@ isMorphOp :: CASLDiag
           -> Bool
 isMorphOp diag (srcNode, srcOp) (targetNode, targetOp) =
     let checkEdges [] = False
-        checkEdges ((sn, tn,(_, Morphism { sort_map=sm, fun_map=fm })) : edgs) =
+        checkEdges ((sn, tn,(_, Morphism { sort_map=sm, op_map=fm })) : edgs) =
             if sn == srcNode &&
                tn == targetNode &&
                mapOpSym sm fm srcOp == targetOp
@@ -378,7 +378,7 @@ simeqOp_tau sink =
     let -- tagEdge: for given morphism m create a list of pairs
         -- (a, b) where a is DiagOp from the source signature that
         -- is mapped by m to b
-        tagEdge (sn, Morphism { msource=src, sort_map = sm, fun_map = fm }) =
+        tagEdge (sn, Morphism { msource=src, sort_map = sm, op_map = fm }) =
             map (\srcOp -> ((sn, srcOp), mapOpSym sm fm srcOp))
                 (concatMap ( \ (i, s) ->
                         map ( \ ot -> (i, ot)) $ Set.toList s)

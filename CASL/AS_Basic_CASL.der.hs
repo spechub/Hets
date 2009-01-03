@@ -72,9 +72,9 @@ data OP_ITEM f = Op_decl [OP_NAME] OP_TYPE [OP_ATTR f] Range
                -- pos: "="
                deriving Show
 
-data FunKind = Total | Partial deriving (Show, Eq, Ord)
+data OpKind = Total | Partial deriving (Show, Eq, Ord)
 
-data OP_TYPE = Op_type FunKind [SORT] SORT Range
+data OP_TYPE = Op_type OpKind [SORT] SORT Range
                -- pos: "*"s, "->" ; if null [SORT] then Range = [] or pos: "?"
                deriving (Show, Eq, Ord)
 
@@ -84,7 +84,7 @@ args_OP_TYPE (Op_type _ args _ _) = args
 res_OP_TYPE :: OP_TYPE -> SORT
 res_OP_TYPE (Op_type _ _ res _) = res
 
-data OP_HEAD = Op_head FunKind [ARG_DECL] SORT Range
+data OP_HEAD = Op_head OpKind [ARG_DECL] SORT Range
                -- pos: "(", semicolons, ")", colon
                deriving Show
 
@@ -114,13 +114,13 @@ data DATATYPE_DECL = Datatype_decl SORT [Annoted ALTERNATIVE] Range
                      -- pos: "::=", "|"s
                      deriving Show
 
-data ALTERNATIVE = Alt_construct FunKind OP_NAME [COMPONENTS] Range
+data ALTERNATIVE = Alt_construct OpKind OP_NAME [COMPONENTS] Range
                    -- pos: "(", semi colons, ")" optional "?"
                  | Subsorts [SORT] Range
                    -- pos: sort, commas
                    deriving Show
 
-data COMPONENTS = Cons_select FunKind [OP_NAME] SORT Range
+data COMPONENTS = Cons_select OpKind [OP_NAME] SORT Range
                   -- pos: commas, colon or ":?"
                 | Sort SORT
                   deriving Show

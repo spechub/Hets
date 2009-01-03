@@ -76,7 +76,7 @@ instance Comorphism CoCASL2CoSubCFOL
         in return mor
             { msource = encodeSig (mkBSrts src) src
             , mtarget = encodeSig (mkBSrts tar) tar
-            , fun_map = Map.map (\ (i, _) -> (i, Total)) $ fun_map mor }
+            , op_map = Map.map (\ (i, _) -> (i, Total)) $ op_map mor }
     map_sentence CoCASL2CoSubCFOL sig  sen =
         return $ simplifyFormula simC_FORMULA $ codeCoFormula
            (sortsWithBottom (formulaTreatment defaultCASL2SubCFOL)
