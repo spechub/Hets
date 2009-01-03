@@ -566,13 +566,12 @@ makeUnit b t ty ni i =
 ana_PRED_ITEM :: (GetRange f, Pretty f) => Min f e -> Mix b s f e
               -> Annoted (PRED_ITEM f)
               -> State (Sign f e) (Annoted (PRED_ITEM f))
-ana_PRED_ITEM mef mix ap =
-    case item ap of
-    Pred_decl preds ty _ ->
-        do mapM (addPred ap $ toPredType ty) preds
-           return ap
-    Pred_defn i phd@(Pred_head args rs) at ps ->
-        do let lb = getRLabel at
+ana_PRED_ITEM mef mix ap = case item ap of
+    Pred_decl preds ty _ -> do
+      mapM_ (addPred ap $ toPredType ty) preds
+      return ap
+    Pred_defn i phd@(Pred_head args rs) at ps -> do
+           let lb = getRLabel at
                lab = if null lb then getRLabel ap else lb
                ty = Pred_type (sortsOfArgs args) rs
                vs = map (\ (Arg_decl v s qs) -> (Var_decl v s qs)) args
@@ -598,8 +597,7 @@ ana_PRED_ITEM mef mix ap =
                return ap {item = Pred_defn i phd at { item = resF } ps}
 
 -- full function type of a selector (result sort is component sort)
-data Component = Component { compId :: Id, compType :: OpType }
-                 deriving (Show)
+data Component = Component { compId :: Id, compType :: OpType } deriving Show
 
 instance Eq Component where
     Component i1 t1 == Component i2 t2 =
