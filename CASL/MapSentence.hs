@@ -17,7 +17,6 @@ import CASL.Sign
 import CASL.Morphism
 import CASL.AS_Basic_CASL
 import CASL.Fold
-import qualified Data.Map as Map
 
 mapSrt :: Morphism f e m -> SORT -> SORT
 mapSrt m = mapSort (sort_map m)
@@ -39,15 +38,12 @@ mapMorphism mf m = (mapRecord $ mf m)
        newConstrs = map (mapConstr m) constrs in Sort_gen_ax newConstrs isFree
      }
 
-nullMor :: Morphism f e m -> Bool
-nullMor m =
-    Map.null (sort_map m) && Map.null (op_map m) && Map.null (pred_map m)
-
 mapTerm :: MapSen f e m -> Morphism f e m -> TERM f -> TERM f
 mapTerm mf = foldTerm . mapMorphism mf
 
 mapSen :: MapSen f e m -> Morphism f e m -> FORMULA f -> FORMULA f
-mapSen mf m = if nullMor m then id else foldFormula $ mapMorphism mf m
+mapSen mf m = if isInclusionMorphism (const True) m then id else
+  foldFormula $ mapMorphism mf m
 
 mapOpSymb :: Morphism f e m -> OP_SYMB -> OP_SYMB
 mapOpSymb m (Qual_op_name i t ps) =
