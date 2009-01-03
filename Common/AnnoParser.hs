@@ -15,12 +15,12 @@ Parsers for annotations and annoted items
    uses Lexer, Keywords and Token rather than CaslLanguage
 -}
 
-module Common.Anno_Parser
+module Common.AnnoParser
     ( annotationL
     , annotations
     , fromPos
-    , parse_anno
-    , some_id
+    , parseAnno
+    , parseAnnoId
     ) where
 
 import Text.ParserCombinators.Parsec
@@ -33,12 +33,13 @@ import Common.Id as Id
 import Common.Keywords
 import Common.AS_Annotation
 import qualified Data.Map as Map
+import Data.List (isSuffixOf)
 
 comment :: GenParser Char st Annotation
 comment = commentLine <|> commentGroup
 
-some_id :: GenParser Char st Id
-some_id = mixId keys keys where keys = ([], [])
+parseAnnoId :: GenParser Char st Id
+parseAnnoId = mixId keys keys where keys = ([], [])
 
 charOrEof :: Char -> GenParser Char st ()
 charOrEof c = (char c >> return ()) <|> eof
@@ -48,7 +49,7 @@ newlineOrEof = lookAhead $ charOrEof '\n'
 
 mkLineAnno :: String -> Annote_text
 mkLineAnno s = let r = unwords $ words s in Line_anno $
-  (if not (null r) && take 1 s == " " then " " else "") ++ r
+  [' ' | not (null r) && take 1 s == " "] ++ r
 
 commentLine :: GenParser Char st Annotation
 commentLine = do
@@ -62,24 +63,22 @@ dec :: Pos -> Pos
 dec p = Id.incSourceColumn p (-2)
 
 mylines :: String -> [String]
-mylines s = let strip = unwords . words in case lines s ++
-    if drop (length s - 1) s == "\n" then [""] else [] of
+mylines s = let strip = unwords . words in
+  case lines s ++ ["" | isSuffixOf "\n" s] of
   [] -> []
   [x] -> let x0 = strip x in
          [if null x0 then x0
-          else (if head x == ' ' then " " else "")  ++ x0
-                   ++ if last x == ' ' then " " else ""]
+          else [' ' | head x == ' ']  ++ x0 ++ [' ' | last x == ' ']]
   (x : r) ->
      let x0 = strip x
          e = last r
          e0 = strip e
          needsBlank = not (null x0) && head x == ' '
-         addBlank y = (if not (null y) && needsBlank
-                       then " " else "") ++ y
+         addBlank y = [' ' | not (null y) && needsBlank] ++ y
      in addBlank x0 : map (addBlank . strip) (init r)
         ++ [if null e then e
-            else if null e0 then if needsBlank then " " else ""
-            else addBlank e0 ++ if last e == ' ' then " " else ""]
+            else if null e0 then [' ' | needsBlank]
+            else addBlank e0 ++ [' ' | last e == ' ']]
 
 commentGroup :: GenParser Char st Annotation
 commentGroup = do
@@ -94,7 +93,7 @@ annote = anno_label <|> do
     p <- getPos
     i <- try anno_ident
     anno <- annote_group p i <|> annote_line p i
-    case parse_anno anno p of
+    case parseAnno anno p of
       Left  err -> do
         setPosition (errorPos err)
         fail (tail (showErrorMessages "or" "unknown parse error"
@@ -138,15 +137,15 @@ annotations = many (annotationL << skip)
 -----------------------------------------
 
 commaIds :: GenParser Char st [Id]
-commaIds = commaSep1 some_id
+commaIds = commaSep1 parseAnnoId
 
 annoArg :: Annote_text -> String
 annoArg txt = case txt of
   Line_anno str -> str
   Group_anno ls -> unlines ls
 
-parse_anno :: Annotation -> Pos -> Either ParseError Annotation
-parse_anno anno sp =
+parseAnno :: Annotation -> Pos -> Either ParseError Annotation
+parseAnno anno sp =
     case anno of
     Unparsed_anno (Annote_word kw) txt qs ->
         case lookup kw $ swapTable semantic_anno_table of
@@ -173,14 +172,13 @@ fromPos p = Pos.newPos (Id.sourceName p) (Id.sourceLine p) (Id.sourceColumn p)
 
 parse_internal :: GenParser Char () a -> Pos -> [Char]
                -> Either ParseError a
-parse_internal p sp inp = parse (do setPosition $ fromPos sp
-                                    skip
-                                    res <- p
-                                    eof
-                                    return res
-                                )
-                                (Id.sourceName sp)
-                                inp
+parse_internal p sp = parse
+  (do
+    setPosition $ fromPos sp
+    skip
+    res <- p
+    eof
+    return res) (Id.sourceName sp)
 
 checkForPlaces :: [Token] -> GenParser Char st [Token]
 checkForPlaces ts =
@@ -206,7 +204,7 @@ prec_anno, number_anno, string_anno, list_anno, floating_anno
     :: Range -> GenParser Char st Annotation
 prec_anno ps = do
     left_ids <- braces commaIds
-    sign <- (try (string "<>") <|> (string "<")) << skip
+    sign <- (try (string "<>") <|> string "<") << skip
     right_ids <- braces commaIds
     return $ Prec_anno
                (if sign == "<" then Lower else BothDirections)
@@ -215,15 +213,15 @@ prec_anno ps = do
                ps
 
 number_anno ps = do
-    n <- some_id
+    n <- parseAnnoId
     return $ Number_anno n ps
 
 list_anno ps = do
     bs <- caslListBrackets
     commaT
-    ni <- some_id
+    ni <- parseAnnoId
     commaT
-    ci <- some_id
+    ci <- parseAnnoId
     return $ List_anno bs ni ci ps
 
 string_anno ps  = literal_2ids_anno ps String_anno
@@ -233,14 +231,14 @@ floating_anno ps = literal_2ids_anno ps Float_anno
 literal_2ids_anno :: Range -> (Id -> Id -> Range -> Annotation)
                 -> GenParser Char st Annotation
 literal_2ids_anno ps con = do
-    i1 <- some_id
+    i1 <- parseAnnoId
     commaT
-    i2 <- some_id
+    i2 <- parseAnnoId
     return $ con i1 i2 ps
 
 display_anno :: Range -> GenParser Char st Annotation
 display_anno ps = do
-    ident <- some_id
+    ident <- parseAnnoId
     tls <- many $ foldl1 (<|>) $ map disp_symb display_format_table
     return (Display_anno ident tls ps)
     where  disp_symb (df_symb, symb) =

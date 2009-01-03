@@ -15,7 +15,7 @@ module CASL_DL.PredefinedGlobalAnnos (caslDLGlobalAnnos) where
 import Text.ParserCombinators.Parsec
 
 import Common.AS_Annotation (Annotation)
-import Common.Anno_Parser (annotations)
+import Common.AnnoParser (annotations)
 
 caslDLGlobalAnnos :: [Annotation]
 caslDLGlobalAnnos =

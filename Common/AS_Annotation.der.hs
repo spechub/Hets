@@ -152,7 +152,7 @@ data Annoted a = Annoted
     , r_annos :: [Annotation] } deriving (Show, Ord, Eq)
 
 notImplied :: Annoted a -> Bool
-notImplied a = not $ any isImplied $ r_annos a
+notImplied = not . any isImplied . r_annos
 
 -- | naming or labelling sentences
 data SenAttr s a = SenAttr

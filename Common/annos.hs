@@ -15,7 +15,7 @@ module Main where
 
 import Common.Token
 import Common.RunParsers
-import Common.Anno_Parser
+import Common.AnnoParser
 import Common.Doc
 import Common.DocUtils
 import Common.AnalyseAnnos

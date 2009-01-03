@@ -14,19 +14,18 @@ Some functions for building and accessing the datastructures of
 
 module Common.AnalyseAnnos (addGlobalAnnos, store_literal_map) where
 
-import Common.Id
 import Common.AS_Annotation
 import Common.DocUtils
 import Common.GlobalAnnotations
-import Common.Result
-import Control.Monad(foldM)
-
-import Text.ParserCombinators.Parsec
+import Common.Id
 import Common.Lexer (bind)
-import Data.List(partition)
-
+import Common.Result
 import qualified Common.Lib.Rel as Rel
+
 import qualified Data.Map as Map
+import Data.List (partition)
+import Control.Monad (foldM)
+import Text.ParserCombinators.Parsec
 
 -- | add global annotations
 addGlobalAnnos :: GlobalAnnos -> [Annotation] -> Result GlobalAnnos
@@ -53,7 +52,9 @@ addGlobalAnnos ga all_annos = do
 
 -- | add precedences
 store_prec_annos :: PrecedenceGraph -> [Annotation] -> Result PrecedenceGraph
-store_prec_annos pgr ans = fmap Rel.transClosure $
+store_prec_annos pgr ans =
+  let showRel = showSepList (showString "\n") showIdPair . Rel.toList in
+    fmap Rel.transClosure $
     foldM ( \ p0 an -> case an of
             Prec_anno prc lIds hIds _ ->
                  foldM (\ p1 li ->
@@ -87,7 +88,6 @@ store_prec_annos pgr ans = fmap Rel.transClosure $
                              ) p1 hIds
                        ) p0 lIds
             _ -> return p0) pgr ans
-    where showRel r = showSepList (showString "\n") showIdPair $ Rel.toList r
 
 -- | add associative ids
 store_assoc_annos :: AssocMap ->  [Annotation] -> Result AssocMap

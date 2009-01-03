@@ -48,8 +48,8 @@ import Syntax.AS_Library
 
 -- the following module provides the ability to parse the "unparsed-anno"
 import Text.ParserCombinators.Parsec (parse)
-import qualified Common.Anno_Parser (annotations,parse_anno)
-import Common.Lexer(skip)
+import Common.AnnoParser (annotations, parseAnno)
+import Common.Lexer (skip)
 
 -- |
 -- like the chomp from Perl
@@ -367,14 +367,14 @@ toAnnoList ai att = from_sml_ShATerm $ getATermByIndex1 ai att
 
 parse_anno :: Range -> String -> Annotation
 parse_anno _pos_l inp =
-    case parse (skip >> Common.Anno_Parser.annotations) "" inp of
+    case parse (skip >> annotations) "" inp of
        Right [x]  -> x
        _          -> error ("something strange happend to \"" ++
                              inp ++ "\" during ATerm Conversion")
 
 parse_disp_anno :: Id -> Range -> String -> Annotation
 parse_disp_anno i pos_l inp =
-    case Common.Anno_Parser.parse_anno (Unparsed_anno (Annote_word "display")
+    case parseAnno (Unparsed_anno (Annote_word "display")
                                          (Group_anno [inp']) pos_l) pos of
        Left err   -> error $ "internal parse error at " ++ show err
        Right x  -> x

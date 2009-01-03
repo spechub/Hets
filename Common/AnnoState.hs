@@ -24,7 +24,7 @@ import Common.Token
 import Common.Id
 import Common.Keywords
 import Common.AS_Annotation
-import Common.Anno_Parser
+import Common.AnnoParser
 import Text.ParserCombinators.Parsec
 import Data.List(delete)
 
@@ -39,12 +39,11 @@ instance AParsable () where
   aparser = pzero
 
 -- | just the list of currently collected annotations
-data AnnoState st = AnnoState { toAnnos :: [Annotation]
-                              , userState :: st }
+data AnnoState st = AnnoState { toAnnos :: [Annotation], userState :: st }
 
 -- | no annotations
 emptyAnnos :: st -> AnnoState st
-emptyAnnos st = AnnoState [] st
+emptyAnnos = AnnoState []
 
 -- | add further annotations to the input state
 parseAnnos :: AnnoState a -> GenParser Char st (AnnoState a)
@@ -116,13 +115,11 @@ tryItemEnd l = try $ do
 -- | keywords that indicate a new item for 'tryItemEnd'.
 -- the quantifier exists does not start a new item.
 startKeyword :: [String]
-startKeyword = dotS:cDot:
-                   (delete existsS casl_reserved_words)
+startKeyword = dotS : cDot : delete existsS casl_reserved_words
 
 -- | parse preceding annotations and the following item
-annoParser :: AParser st a
-           -> AParser st (Annoted a)
-annoParser parser = bind addLeftAnno annos parser
+annoParser :: AParser st a -> AParser st (Annoted a)
+annoParser = bind addLeftAnno annos
 
 -- | parse an item list preceded and followed by annotations
 annosParser :: AParser st a
@@ -169,24 +166,35 @@ wrapAnnos p = try (addAnnos >> p) << addAnnos
 
 -- | parse an annoted keyword
 asKey :: String -> AParser st Token
-asKey s = wrapAnnos $ pToken $ toKey s
+asKey = wrapAnnos . pToken . toKey
 
 -- * annoted keywords
-anComma, anSemi :: AParser st Token
+anComma :: AParser st Token
 anComma = wrapAnnos Common.Lexer.commaT
+
+anSemi :: AParser st Token
 anSemi = wrapAnnos Common.Lexer.semiT
 
-equalT, colonT, lessT, dotT :: AParser st Token
+equalT :: AParser st Token
 equalT = wrapAnnos $ pToken $
          (((lookAhead $ keySign $ string exEqual)
                           >> unexpected exEqual)
          <|> keySign (string equalS))
 
+colonT :: AParser st Token
 colonT = asKey colonS
+
+lessT :: AParser st Token
 lessT = asKey lessS
+
+dotT :: AParser st Token
 dotT = asKey dotS <|> asKey cDot <?> "dot"
 
-asT, barT, forallT :: AParser st Token
+asT :: AParser st Token
 asT = asKey asS
+
+barT :: AParser st Token
 barT = asKey barS
+
+forallT :: AParser st Token
 forallT = asKey forallS

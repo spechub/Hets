@@ -57,7 +57,7 @@ import Common.Id
 import Common.Keywords
 import Common.GlobalAnnotations
 import Common.AS_Annotation
-import Common.Anno_Parser
+import Common.AnnoParser
 import Common.AnalyseAnnos
 import Common.Result
 import qualified Data.Map as Map

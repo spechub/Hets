@@ -17,7 +17,7 @@ module Common.RunParsers (exec, StringParser, toStringParser, fromAParser)
 import Common.Lexer((<<), parseString)
 import Text.ParserCombinators.Parsec
 import Text.ParserCombinators.Parsec.Pos
-import Common.Anno_Parser
+import Common.AnnoParser
 import Common.AnnoState
 import Common.DocUtils
 import Common.GlobalAnnotations

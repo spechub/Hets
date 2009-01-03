@@ -17,7 +17,7 @@ identifiers and annotations as well as their parsing and printing.
 
  * "Common.AnalyseAnnos"         analysis of annotations
 
- * "Common.Anno_Parser"          parsing annotations
+ * "Common.AnnoParser"          parsing annotations
 
  * "Common.AnnoState"            parser state keeping annotations
 

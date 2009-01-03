@@ -30,7 +30,7 @@ import Common.Prec
 import Common.ConvertMixfixToken
 import Common.Lib.State
 import Common.AnnoState
-import Common.Anno_Parser
+import Common.AnnoParser
 import qualified Data.Map as Map
 import qualified Data.Set as Set
 

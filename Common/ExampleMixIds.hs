@@ -14,7 +14,7 @@ mixfix identifiers for testing CASL's and HasCASL's mixfix analysis
 module Common.ExampleMixIds (stdOpsL, stdPreds, mkIds) where
 
 import Common.Id
-import Common.Anno_Parser
+import Common.AnnoParser
 import Common.Lexer
 import qualified Data.Set as Set
 
@@ -34,7 +34,7 @@ stdPredsL =
   , "__/=__", "even__", "odd__", "__isEmpty", "__<=__<=__" ]
 
 mkIds :: [String] -> Set.Set Id
-mkIds = Set.fromList . map (parseString some_id)
+mkIds = Set.fromList . map (parseString parseAnnoId)
 
 stdPreds :: Set.Set Id
 stdPreds = mkIds stdPredsL

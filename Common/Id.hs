@@ -306,7 +306,7 @@ splitMixToken (h:l) =
            else (h:toks, pls)
 
 -- | return open and closing list bracket and a compound list
--- from a bracket 'Id'  (parsed by 'Common.Anno_Parser.caslListBrackets')
+-- from a bracket 'Id'  (parsed by 'Common.AnnoParser.caslListBrackets')
 getListBrackets :: Id -> ([Token], [Token], [Id])
 getListBrackets (Id b cs _) =
     let (b1, rest) = break isPlace b
