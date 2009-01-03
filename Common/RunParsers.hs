@@ -30,64 +30,61 @@ type StringParser = GlobalAnnos -> AParser () String
 fromAParser :: Pretty a => AParser () a -> StringParser
 fromAParser p ga = fmap (\ a -> showGlobalDoc ga a "") p
 
-toStringParser :: Pretty a => (GlobalAnnos -> AParser () a)
-               -> StringParser
+toStringParser :: Pretty a => (GlobalAnnos -> AParser () a) -> StringParser
 toStringParser p ga = fmap (\ a -> showGlobalDoc ga a "") $ p ga
 
 exec :: [(String, StringParser)] -> [(String, StringParser)] -> IO ()
-exec lps fps = do l <- getArgs
-                  if null l then
-                     parseSpec emptyGlobalAnnos $ snd  $ head $ fps
-                     else do let opt = head l
-                                 lps' = filter (\(s, _) -> s == opt) lps
-                                 fps' = filter (\(s, _) -> s == opt) fps
-                             ga <- if not $ null $ tail l then
-                                   do let annoFile = head (tail l)
-                                      str <- readFile annoFile
-                                      maybe (error "run parser")
-                                             return $ maybeResult
-                                             $ addGlobalAnnos emptyGlobalAnnos
-                                             $ parseString annotations str
-                                      -- should not fail
-                                      -- but may return empty annos
-                                   else return emptyGlobalAnnos
-                             if null lps' && null fps' then
-                                do putStrLn ("unknown option: " ++ opt)
-                                   p <- getProgName
-                                   putStrLn("Usage: "++p++
-                                      " [OPTIONS] <Annotations> < infile")
-                                   putStrLn "where OPTIONS is one of:"
-                                   putStrLn $ unwords
-                                              (map fst lps ++ map fst fps)
-                                else if null lps'
-                                     then parseSpec ga $ snd $ head fps'
-                                     else checkLines ga $ snd $ head lps'
+exec lps fps = do
+  l <- getArgs
+  case l of
+   [] -> parseSpec emptyGlobalAnnos $ snd $ head $ fps
+   opt : tl -> do
+    let lps' = filter (\(s, _) -> s == opt) lps
+        fps' = filter (\(s, _) -> s == opt) fps
+    ga <- case tl of
+     [] -> return emptyGlobalAnnos
+     annoFile : _ -> do
+        str <- readFile annoFile
+        maybe (error "run parser") return $ maybeResult
+          $ addGlobalAnnos emptyGlobalAnnos
+          $ parseString annotations str
+          -- should not fail
+          -- but may return empty annos
+    case (lps', fps') of
+      ([], []) -> do
+        putStrLn ("unknown option: " ++ opt)
+        p <- getProgName
+        putStrLn $ "Usage: " ++ p ++ " [OPTIONS] <Annotations> < infile"
+        putStrLn "where OPTIONS is one of:"
+        putStrLn $ unwords $ map fst lps ++ map fst fps
+      ([], (_, hd) : _) -> parseSpec ga hd
+      ((_, hd) : _, _) -> checkLines ga hd
 
 checkLines :: GlobalAnnos -> StringParser -> IO ()
 checkLines ga p =
-    do s <- getContents
-       putStr (unlines (scanLines ga p (lines s) 1))
+  getContents >>= putStr . unlines . scanLines ga p 1 . lines
 
-scanLines :: GlobalAnnos -> StringParser -> [String] -> Line -> [String]
-scanLines ga p inp n = case inp of
+scanLines :: GlobalAnnos -> StringParser -> Line -> [String] -> [String]
+scanLines ga p n inp = case inp of
   [] -> []
-  x : l -> parseLine ga p x n : scanLines ga p l (n + 1)
+  x : l -> parseLine ga p x n : scanLines ga p (n + 1) l
 
 parseLine :: GlobalAnnos -> StringParser -> String -> Line -> String
 parseLine ga p line n =
     let pos = setSourceLine (initialPos "") n
-        parser = do setPosition pos
-                    i <- p ga
-                    eof
-                    return i
+        parser = do
+          setPosition pos
+          i <- p ga
+          eof
+          return i
         in showParse $ runParser parser (emptyAnnos ()) "" line
 
 parseSpec :: GlobalAnnos -> StringParser -> IO ()
-parseSpec ga p = do str <- getContents
-                    putStrLn $ showParse $
-                             runParser (p ga << eof) (emptyAnnos ()) "" str
+parseSpec ga p =
+  getContents >>= putStrLn . showParse
+    . runParser (p ga << eof) (emptyAnnos ()) ""
 
 showParse :: Either ParseError String -> String
 showParse e = case e of
-                     Left err -> "parse error at " ++ showErr err ++ "\n"
-                     Right x -> x
+  Left err -> "parse error at " ++ showErr err ++ "\n"
+  Right x -> x
