@@ -191,12 +191,11 @@ checkFreeType (osig,osens) m fsn
     oldPredMap = predMap sig
     fconstrs = concat $ map constraintOfAxiom (ofs ++ fs)
     (srts,constructors_o,_) = recover_Sort_gen_ax fconstrs
-    constructors = constructorOverload tsig op_map constructors_o
+    constructors = constructorOverload tsig (opMap tsig) constructors_o
     f_Inhabited = inhabited oSorts fconstrs
     gens = intersect nSorts srts
     fsorts = filter (\s-> not $ elem s esorts) $ intersect nSorts srts
     nefsorts = filter (\s->not $ elem s f_Inhabited) fsorts
-    op_map = opMap $ tsig
     axioms = filter (\f-> (not $ isSortGen f) &&
                           (not $ is_Membership f) &&
                           (not $ is_ex_quanti f)) fs
@@ -345,30 +344,20 @@ checkVar_App :: (Eq f) => TERM f -> Bool
 checkVar_App (Application _ ts _) = noDuplation $ concat $ map varOfTerm ts
 checkVar_App _ = error "CASL.CCC.FreeTypes<checkVar_App>"
 
-
 -- |  no variable occurs twice in a leading predication
 checkVar_Pred :: (Eq f) => FORMULA f -> Bool
 checkVar_Pred (Predication _ ts _) = noDuplation $ concat $ map varOfTerm ts
 checkVar_Pred _ = error "CASL.CCC.FreeTypes<checkVar_Pred>"
 
-
--- check whether all element are identic
-allIdentic :: (Eq a) => [a] -> Bool
-allIdentic ts = if (length $ nub ts) <= 1 then True
-                else False
-
-
 -- | there are no duplicate items in a list
 noDuplation :: (Eq a) => [a] -> Bool
-noDuplation l = if (length $ nub l) == (length l) then True
-                else False
+noDuplation l = length (nub l) == length l
 
 -- | create all possible pairs from a list
-pairs :: [a] -> [(a,a)]
-pairs ps= if length ps <=1 then []
-          else (map (\x'->((head ps),x')) $ tail ps) ++
-               (pairs $ tail ps)
-
+pairs :: [a] -> [(a, a)]
+pairs ps = case ps of
+  hd : tl@(_ : _) -> map (\ x -> (hd, x)) tl ++ pairs tl
+  _ -> []
 
 -- | get the patterns of a term
 patternsOfTerm :: TERM f -> [TERM f]
