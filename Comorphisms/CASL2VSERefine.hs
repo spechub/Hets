@@ -811,7 +811,7 @@ mapCASLSenAux f = case f of
   True_atom _ps -> return $ True_atom nullRange
   False_atom _ps -> return $ False_atom nullRange
   Strong_equation t1 t2 _ps -> do
-     let sort1 = sortTerm t1
+     let sort1 = sortOfTerm t1
      n1 <- freshIndex sort1 -- (typeof t1)
      prg1 <- mapCASLTerm n1 t1
      n2 <- freshIndex sort1 -- (typeof t2)
@@ -845,11 +845,11 @@ mapCASLSenAux f = case f of
      --         xn2 := prg2;
      --         xn := gn_eq_s(xn1,xn2) :> xn = True  "
   Predication pn as _qs -> do
-     indexes <- mapM (\ argi -> freshIndex $ sortTerm argi) as
+     indexes <- mapM (\ argi -> freshIndex $ sortOfTerm argi) as
      prgs <- mapM (\(ti, i) -> mapCASLTerm i ti) $ zip as indexes
      let xvars = map (\(ti,i) ->
                      Qual_var (genToken $ "x" ++ show i)
-                              (sortTerm ti) nullRange ) $ zip as indexes
+                              (sortOfTerm ti) nullRange ) $ zip as indexes
      n <- freshIndex uBoolean
      let asgn = if not $ null prgs then
                        foldr1 (\p1 p2 -> Ranged (Seq p1 p2) nullRange) prgs
@@ -964,10 +964,10 @@ mapCASLTerm n t = case t of
       Ranged (Assign (genToken $ "x" ++ show n)
                (Qual_var v s nullRange)) nullRange
   Application opsym as _qs  -> do
-   indexes <- mapM (\ argi -> freshIndex $ sortTerm argi) as
+   indexes <- mapM (\ argi -> freshIndex $ sortOfTerm argi) as
    let xvars = map (\(ti,i) ->
                      Qual_var (genToken $ "x" ++ show i)
-                              (sortTerm ti) nullRange ) $ zip as indexes
+                              (sortOfTerm ti) nullRange ) $ zip as indexes
    prgs <- mapM (\(ti, i) -> mapCASLTerm i ti) $ zip as indexes
    let asgn = if not $ null prgs then
                        foldr1 (\p1 p2 -> Ranged (Seq p1 p2) nullRange) prgs

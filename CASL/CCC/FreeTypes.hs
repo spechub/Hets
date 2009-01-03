@@ -11,7 +11,7 @@ Portability :  non-portable (imports Logic.Logic)
 Consistency checking of free types
 -}
 
-module CASL.CCC.FreeTypes where
+module CASL.CCC.FreeTypes (checkFreeType) where
 
 import CASL.Sign                -- Sign, OpType
 import CASL.Morphism
@@ -19,7 +19,6 @@ import CASL.AS_Basic_CASL       -- FORMULA, OP_{NAME,SYMB}, TERM, SORT, VAR
 import qualified Data.Map as Map
 import qualified Data.Set as Set
 import qualified Common.Lib.Rel as Rel
-import CASL.CCC.SignFuns
 import CASL.CCC.TermFormula
 import CASL.CCC.TerminationProof
 import Common.AS_Annotation
@@ -27,6 +26,24 @@ import Common.Consistency
 import Common.Result
 import Common.Id
 import Data.List (nub,intersect,delete)
+
+inhabited :: [SORT] -> [Constraint] -> [SORT]
+inhabited sorts constrs = iterateInhabited sorts
+    where (_,ops,_)=recover_Sort_gen_ax constrs
+          argsRes=concat $
+                    map (\os-> case os of
+                                 Op_name _->[]
+                                 Qual_op_name _ ot _->
+                                     case ot of
+                                       Op_type _ args res _ -> [(args,res)]
+                        ) ops
+          iterateInhabited l =
+                    if l==newL then newL else iterateInhabited newL
+                            where newL =foldr (\(ags,rs) l'->
+                                                  if (all (\s->elem s l') ags)
+                                                      && (not (elem rs l'))
+                                                  then rs:l'
+                                                  else l') l argsRes
 
 {------------------------------------------------------------------------
    function checkFreeType:
@@ -420,17 +437,6 @@ resultTerm f = case f of
                  Existl_equation _ t _ -> [t]
                  _ -> [varOrConst (mkSimpleId "unknown")]
 
--- | get the sort of a term
-sortTerm :: TERM f -> SORT
-sortTerm t = case t of
-               Qual_var _ s _ -> s
-               Application (Op_name _) _ _ ->
-                 genName "unknown"
-               Application (Qual_op_name _ ot _) _ _ ->
-                 res_OP_TYPE ot
-               _ -> genName "unknown"
-
-
 -- | create the proof obligation for a pair of overlapped formulas
 overlapQuery :: Eq f => ((FORMULA f,[(TERM f,TERM f)]),
                          (FORMULA f,[(TERM f,TERM f)])) -> FORMULA f
@@ -517,7 +523,7 @@ completePatterns cons pas
                          filter (\a-> (isVar $ head a) ||
                                       ((opN $ head $ a) == o)) p) $
                          snd $ head $
-                         filter (\sc-> fst sc == (sortTerm $
+                         filter (\sc-> fst sc == (sortOfTerm $
                                                   head $ head p)) s_cons
           p_g p = map (\p'-> if isVar $ head p'
                              then (take (maximum $ map (length.arguOfTerm.head)

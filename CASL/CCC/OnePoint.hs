@@ -21,8 +21,6 @@ import CASL.Morphism
 import CASL.AS_Basic_CASL       -- FORMULA, OP_{NAME,SYMB}, TERM, SORT, VAR
 import qualified Data.Map as Map
 import qualified Data.Set as Set
-import qualified Common.Lib.Rel as Rel
-
 
 {-
 We use a three valued logic to evaluate a formula in a one-point expansion
@@ -196,37 +194,6 @@ evaluateOnePointFORMULA sig (Sort_gen_ax constrs _)=
 evaluateOnePointFORMULA _ (ExtFORMULA _)=error "Fehler ExtFORMULA"
 
 evaluateOnePointFORMULA _ _=error "Fehler" -- or Just False
-
--- | Compute the image of a signature morphism
-imageOfMorphism :: Morphism f e m  -> Sign f e
-imageOfMorphism m =
-        sig {sortSet = Set.map (mapSort sortMap) (sortSet src),
-             sortRel = Rel.map (mapSort sortMap) (sortRel src),
-             opMap = Map.foldWithKey
-                       (\ident ots l ->
-                           Set.fold (\ot l' -> insertOp
-                             (mapOpSym sortMap oMap (ident,ot)) l') l ots)
-                       Map.empty (opMap src),
-             predMap = Map.foldWithKey
-                         (\ident pts l ->
-                             Set.fold (\pt l' -> insertPred
-                               (mapPredSym sortMap pMap (ident,pt)) l') l pts)
-                         Map.empty (predMap src)
-            }
-    where sig = mtarget m
-          src = msource m
-          sortMap = sort_map m
-          oMap = op_map m
-          insertOp (ident,ot) opM =
-            case Map.lookup ident opM of
-              Nothing -> Map.insert ident (Set.singleton ot) opM
-              Just ots -> Map.insert ident (Set.insert ot ots) opM
-          pMap = pred_map m
-          insertPred (ident,pt) predM =
-            case Map.lookup ident predM of
-              Nothing -> Map.insert ident (Set.singleton pt) predM
-              Just pts -> Map.insert ident (Set.insert pt pts) predM
-
 
 -- | Test whether a signature morphism adds new supersorts
 addsNewSupersorts :: Morphism f e m -> Bool

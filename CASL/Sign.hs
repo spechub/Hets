@@ -445,7 +445,7 @@ sortOfTerm t = case t of
     Sorted_term _ ty _ -> ty
     Cast _ ty _ -> ty
     Conditional t1 _ _ _ -> sortOfTerm t1
-    _ -> error "sortOfTerm"
+    _ -> genName "unknown"
 
 -- | create binding if variables are non-null
 mkForall :: [VAR_DECL] -> FORMULA f -> Range -> FORMULA f

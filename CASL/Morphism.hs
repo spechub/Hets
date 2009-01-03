@@ -330,7 +330,7 @@ composeM comp mor1 mor2 = if mtarget mor1 == msource mor2 then do
   let emb = embedMorphism extComp src tar
   return $ emb
      { sort_map = sMap
-     , op_map  = oMap
+     , op_map = oMap
      , pred_map = pMap }
  else fail "target of first and source of second morphism are different"
 
@@ -348,6 +348,22 @@ legalSign sigma =
         legalOpType t = legalSort (opRes t)
                         && all legalSort (opArgs t)
         legalPredType t = all legalSort (predArgs t)
+
+-- | the image of a signature morphism
+imageOfMorphism :: Morphism f e m  -> Sign f e
+imageOfMorphism mor =
+  let src = msource mor
+      sm = sort_map mor
+      om = op_map mor
+      ms = mapSort sm
+      msorts = Set.map ms
+  in (mtarget mor)
+  { sortSet = msorts $ sortSet src
+  , sortRel = Rel.map ms $ sortRel src
+  , emptySortSet = msorts $ emptySortSet src
+  , opMap = inducedOpMap sm om $ opMap src
+  , assocOps = inducedOpMap sm om $ assocOps src
+  , predMap = inducedPredMap sm (pred_map mor) $ predMap src }
 
 inducedOpMap :: Sort_map -> Op_map -> OpMap -> OpMap
 inducedOpMap sm fm os = Map.foldWithKey

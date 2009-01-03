@@ -91,32 +91,21 @@ inverseMorphism invExt m = do
       ss = sortSet src
       os = opMap src
       ps = predMap src
-      tar = mtarget m
       sm = sort_map m
-      nss = Set.map (mapSort sm) ss
-      nos = inducedOpMap sm fm os
-      nps = inducedPredMap sm pm ps
-      fm = op_map m
+      om = op_map m
       pm = pred_map m
-      ntar = tar
-        { sortSet = nss
-        , sortRel = Rel.map (mapSort sm) $ sortRel src
-        , emptySortSet = Set.map (mapSort sm) $ emptySortSet src
-        , opMap = nos
-        , assocOps = inducedOpMap sm fm $ assocOps src
-        , predMap = nps }
       ism = Map.fromList $ map (\ (s1, s2) -> (s2, s1)) $ Map.toList sm
-      ifm = Map.fromList $ map (\ ((i, t), (j, k)) ->
-                  ((j, mapOpType sm t), (i, k))) $ Map.toList fm
+      iom = Map.fromList $ map (\ ((i, t), (j, k)) ->
+                  ((j, mapOpType sm t), (i, k))) $ Map.toList om
       ipm = Map.fromList $ map (\ ((i, t), j) ->
                   ((j, mapPredType sm t), i)) $ Map.toList pm
-  unless (ss == Set.map (mapSort ism) nss)
+  unless (ss == Set.map (mapSort ism . mapSort sm) ss)
     $ fail "no injective CASL sort mapping"
-  unless (os == inducedOpMap ism ifm nos)
+  unless (os == inducedOpMap ism iom (inducedOpMap sm om os))
     $ fail "no injective CASL op mapping"
-  unless (ps == inducedPredMap ism ipm nps)
+  unless (ps == inducedPredMap ism ipm (inducedPredMap sm pm ps))
     $ fail "no injective CASL pred mapping"
-  return (embedMorphism iExt ntar src)
+  return (embedMorphism iExt (imageOfMorphism m) src)
     { sort_map = ism
-    , op_map = ifm
+    , op_map = iom
     , pred_map = ipm }
