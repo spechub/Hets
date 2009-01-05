@@ -177,16 +177,20 @@ symbOrMapToRaw k sm = do
       let mkS = AKindedSymb Sorts_kind
       case (s, t) of
         (Qual_id _ t1 _, Qual_id _ t2 _) -> case (t1, t2) of
-          (O_type (Op_type k1 args1 res1 _), O_type (Op_type k2 args2 res2 _))
-            | length args1 == length args2 && k2 <= k1 ->
+          (O_type (Op_type _ args1 res1 _), O_type (Op_type _ args2 res2 _))
+            | length args1 == length args2 -> -- ignore partiality
             return $ (w, x) : (mkS res1, mkS res2)
               : zipWith (\ s1 s2 -> (mkS s1, mkS s2)) args1 args2
           (P_type (Pred_type args1 _), P_type (Pred_type args2 _))
             | length args1 == length args2 ->
             return $ (w, x)
               : zipWith (\ s1 s2 -> (mkS s1, mkS s2)) args1 args2
-          (O_type (Op_type Partial [] res1 _), A_type s2) ->
+          (O_type (Op_type _ [] res1 _), A_type s2) ->
             return [(w, x), (mkS res1, mkS s2)]
+          (A_type s1, O_type (Op_type _ [] res2 _)) ->
+            return [(w, x), (mkS s1, mkS res2)]
+          (A_type s1, A_type s2) ->
+            return [(w, x), (mkS s1, mkS s2)]
           _ -> fail $ "profiles '" ++ showDoc t1 "' and '"
                ++ showDoc t2 "' do not match"
         _ -> return [(w, x)]
