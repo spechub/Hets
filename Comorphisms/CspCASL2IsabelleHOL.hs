@@ -26,6 +26,7 @@ import qualified Comorphisms.CASL2PCFOL as CASL2PCFOL
 import qualified Comorphisms.CASL2SubCFOL as CASL2SubCFOL
 import qualified Comorphisms.CFOL2IsabelleHOL as CFOL2IsabelleHOL
 import Comorphisms.CFOL2IsabelleHOL(IsaTheory)
+import CspCASL.AS_CspCASL_Process (PROCESS_NAME)
 import CspCASL.Logic_CspCASL
 import CspCASL.AS_CspCASL
 import CspCASL.Trans_CspProver
@@ -48,7 +49,7 @@ instance Language CspCASL2IsabelleHOL where
 
 instance Comorphism CspCASL2IsabelleHOL
                CspCASL ()
-               CspBasicSpec CspCASLSentence SYMB_ITEMS SYMB_MAP_ITEMS
+               CspBasicSpec CspCASLSen SYMB_ITEMS SYMB_MAP_ITEMS
                CspCASLSign
                CspMorphism
                () () ()
@@ -70,24 +71,28 @@ instance Comorphism CspCASL2IsabelleHOL
 -- Functions for translating CspCasl theories and sentences to IsabelleHOL
 
 -- | Translate CspCASL theories to Isabelle
-transCCTheory :: (CspCASLSign, [Named CspCASLSentence]) -> Result IsaTheory
+transCCTheory :: (CspCASLSign, [Named CspCASLSen]) -> Result IsaTheory
 transCCTheory ccTheory =
     let ccSign = fst ccTheory
         ccSens = snd ccTheory
+
         caslSign = ccSig2CASLSign ccSign
+        cspSign = ccSig2CspSign ccSign
+
         casl2pcfol = (map_theory CASL2PCFOL.CASL2PCFOL)
         pcfol2cfol = (map_theory CASL2SubCFOL.defaultCASL2SubCFOL)
         cfol2isabelleHol = (map_theory CFOL2IsabelleHOL.CFOL2IsabelleHOL)
         sortList = Set.toList(CASLSign.sortSet caslSign)
-        --fakeType = Type {typeId = "Fake_Type" , typeSort = [], typeArgs =[]}
+        fakeType = Type {typeId = "Fake_Type" , typeSort = [], typeArgs =[]}
     in do -- Remove Subsorting from the CASL part of the CspCASL specification
           translation1 <- casl2pcfol (caslSign,[])
           -- Next Remove partial functions
           translation2 <- pcfol2cfol translation1
           -- Next Translate to IsabelleHOL code
           translation3 <- cfol2isabelleHol translation2
-          -- Next add the preAlpabet construction to the IsabelleHOL code
-          return $ addCspCaslSentences ccSens
+          -- Next add the preAlphabet construction to the IsabelleHOL code
+          return $ addProcMap ccSens caslSign
+                 $ addProcNameDatatype cspSign
                  $ addAllIntegrationTheorems sortList ccSign
                  $ addAllChooseFunctions sortList
                  $ addAllBarTypes sortList
@@ -98,35 +103,94 @@ transCCTheory ccTheory =
                  $ addAllCompareWithFun ccSign
                  $ addPreAlphabet sortList
                  $ addWarning
+                 -- hack: show the casl sentences
+                 --  addConst (show(ccSens)) fakeType
                  $ translation3
 
--- This is not implemented in a sensible way yet and is not used
-transCCSentence :: CspCASLSign -> CspCASLSentence -> Result IsaSign.Sentence
-transCCSentence _ (CspCASLSentence pn _ _) =
+-- BUG This is not implemented in a sensible way yet and is not used
+transCCSentence :: CspCASLSign -> CspCASLSen -> Result IsaSign.Sentence
+transCCSentence _ (ProcessEq pn _ _ _) =
     do return (mkSen (Const (mkVName (show pn))
                                 (Disp (Type "byeWorld" [] []) TFun Nothing)))
 
--- | Add a list of CspCASL sentences to an Isabelle theory
-addCspCaslSentences :: [Named CspCASLSentence] -> IsaTheory -> IsaTheory
-addCspCaslSentences namedSens isaTh =
-    -- Create datatype for process names
-    -- crate constant
-    -- create primrec
-      -- create list of equations -- one for each sentence
-    foldl addCspCaslSentence isaTh namedSens
+--------------------------------------------------------------------------
+-- Functions for adding the process name datatype to an Isabelle theory --
+--------------------------------------------------------------------------
 
--- | Add a single CspCASL sentence to an Isabelle theory
-addCspCaslSentence :: IsaTheory -> Named CspCASLSentence -> IsaTheory
-addCspCaslSentence isaTh namedSen =
-    let sen = sentence namedSen
-    in case sen of
-         CspCASLSentence pn _ proc ->
-             let name = show pn
-                 t1 = conDouble name
-                 t2 = transProcess proc
-             in addDef name t1 t2 isaTh
+-- | Add process name datatype which has a constructor for each
+--   process name (along with the arguments for the process) in the
+--   CspCASL Signature to an Isabelle theory
+addProcNameDatatype  :: CspSign -> IsaTheory -> IsaTheory
+addProcNameDatatype cspSign isaTh =
+    let -- Create a list of pairs of process names and thier profiles
+        procSetList = Map.toList (procSet cspSign)
+        procNameDomainEntry = mkProcNameDE procSetList
+    in updateDomainTab procNameDomainEntry isaTh
 
--- Functions for adding the PreAlphabet datatype to an Isabelle theory
+
+-- | Make a proccess name Domain Entry from ...
+mkProcNameDE :: [(PROCESS_NAME, ProcProfile)] -> DomainEntry
+mkProcNameDE processes =
+    let -- The a list of pairs of constructors and their arguments
+        constructors = map mk_cons processes
+        -- Take a proccess name and its argument sorts (also its
+        -- commAlpha - thrown away) and make a pair representing the
+        -- constructor and the argument types
+        mk_cons (procName, (ProcProfile sorts _)) =
+            (mkVName (mkProcNameConstructor procName), map sortToTyp sorts)
+        -- Turn a sort in to a Typ suitable for the domain entry The
+        -- processes need to have arguments of the bar variants of
+        -- the sorts not the original sorts
+        sortToTyp sort = Type {typeId = mkSortBarString sort,
+                               typeSort = [isaTerm],
+                               typeArgs = []}
+    in
+    (procNameType, constructors)
+
+-------------------------------------------------------------------------
+-- Functions adding the process map fucntion to an Isabelle theory     --
+-------------------------------------------------------------------------
+
+-- | Add the fucction procMap to an Isabelle theory. This function
+--   maps process names to real processes build using the same names
+--   and the alphabet i.e., ProcName => (ProcName, Alphabet) proc. We
+--   need to know the CspCASL sentences and the casl signature (data
+--   part)
+addProcMap :: [Named CspCASLSen] -> CASLSign.Sign () () -> IsaTheory ->
+              IsaTheory
+addProcMap namedSens caslSign isaTh =
+    let
+        -- Build new Isabelle theory with additional constant
+        isaThWithConst = addConst procMapS  procMapType isaTh
+        -- Get the plain sentences from the named senetences
+        sens = map (\namedsen -> sentence namedsen) namedSens
+        -- Filter so we only have proccess equations and no CASL senetences
+        processEqs = filter isProcessEq sens
+        -- the term representing the procMap that tajes a term as a
+        -- parameter
+        procMapTerm = termAppl (conDouble procMapS)
+        -- Make a single equation for the primrec from a process equation
+        -- BUG HERE - this next part is not right - underscore is bad
+        mkEq (ProcessEq procName vars _ proc) =
+            let -- Make the name (string) for this process
+                procNameString = convertProcessName2String procName
+                -- Change the name to a term
+                procNameTerm = conDouble procNameString
+                -- Turn the list of variables into a list of Isabelle
+                -- free variables
+                varTerms = [] -- BUG - should be somehting like map (\x -> mkFree (show x)) vars
+                 -- Make a lhs term built of termAppl applied to the
+                 -- proccess name and the variables
+                lhs = procMapTerm (foldl termAppl (procNameTerm) varTerms)
+                rhs = transProcess caslSign proc
+             in binEq lhs rhs
+        -- Build equations for primrec using process equations
+        eqs = map mkEq processEqs
+    in addPrimRec eqs isaThWithConst
+
+-------------------------------------------------------------------------
+-- Functions for adding the PreAlphabet datatype to an Isabelle theory --
+-------------------------------------------------------------------------
 
 -- | Add the PreAlphabet (built from a list of sorts) to an Isabelle theory
 addPreAlphabet :: [SORT] -> IsaTheory -> IsaTheory
@@ -141,21 +205,20 @@ mkPreAlphabetDE sorts =
          map (\sort ->
                   (mkVName (mkPreAlphabetConstructor sort),
                                [Type {typeId = convertSort2String sort,
-                                               typeSort = [isaTerm],
-                                                          typeArgs = []}])
+                                      typeSort = [isaTerm],
+                                      typeArgs = []}])
              ) sorts
     )
 
--- Functions for adding the eq functions and the compare_with
--- functions to an Isabelle theory
+----------------------------------------------------------------
+-- Functions for adding the eq functions and the compare_with --
+-- functions to an Isabelle theory                            --
+----------------------------------------------------------------
 
 -- | Add the eq function to an Isabelle theory using a list of sorts
 addEqFun :: [SORT] -> IsaTheory -> IsaTheory
 addEqFun sortList isaTh =
-    let preAlphabetType = Type {typeId = preAlphabetS,
-                                typeSort = [],
-                                typeArgs =[]}
-        eqtype = mkFunType preAlphabetType $ mkFunType preAlphabetType boolType
+    let eqtype = mkFunType preAlphabetType $ mkFunType preAlphabetType boolType
         isaThWithConst = addConst eq_PreAlphabetS eqtype isaTh
         mkEq sort =
             let x = mkFree "x"
@@ -182,9 +245,6 @@ addAllCompareWithFun ccSign isaTh =
 addCompareWithFun :: CspCASLSign -> IsaTheory -> SORT -> IsaTheory
 addCompareWithFun ccSign isaTh sort =
     let sortList = Set.toList(CASLSign.sortSet ccSign)
-        preAlphabetType = Type {typeId = preAlphabetS,
-                                typeSort = [],
-                                typeArgs =[]}
         sortType = Type {typeId = convertSort2String sort, typeSort = [],
                                   typeArgs =[]}
         funName = mkCompareWithFunName sort
@@ -231,7 +291,9 @@ addCompareWithFun ccSign isaTh sort =
         eqs = map mkEq sortList
     in  addPrimRec eqs isaThWithConst
 
--- Functions for producing the Justification theorems
+--------------------------------------------------------
+-- Functions for producing the Justification theorems --
+--------------------------------------------------------
 
 -- | Add all justification theorems to an Isabelle Theory. We need to
 --   the CspCASL signature and the PFOL Signature to pass it on. We
@@ -408,6 +470,10 @@ addTransitivityTheorem sorts sortRel isaTh =
                  }
     in addThreomWithProof name thmConds thmConcl proof' isaTh
 
+--------------------------------------------------------------
+-- Functions for producing instances of equivalence classes --
+--------------------------------------------------------------
+
 -- | Function to add preAlphabet as an equivalence relation to an
 --   Isabelle theory
 addInstansanceOfEquiv :: IsaTheory  -> IsaTheory
@@ -433,16 +499,14 @@ addInstansanceOfEquiv  isaTh =
        $ addInstanceOf preAlphabetS [] eqvSort eqvProof
        $ isaTh
 
+-------------------------------------------------------------
+-- Functions for producing the alphabet type and bar types --
+-------------------------------------------------------------
+
 -- | Function to add the Alphabet type (type synonym) to an Isabelle theory
 addAlphabetType :: IsaTheory -> IsaTheory
 addAlphabetType  isaTh =
-    let preAlphabetType = Type {typeId = preAlphabetS,
-                                typeSort = [],
-                                typeArgs =[]}
-        preAlphabetQuotType = Type {typeId = quotS,
-                             typeSort = [],
-                             typeArgs =[preAlphabetType]}
-        isaTh_sign = fst isaTh
+    let isaTh_sign = fst isaTh
         isaTh_sign_tsig = tsig isaTh_sign
         myabbrs = abbrs isaTh_sign_tsig
         abbrsNew = Map.insert alphabetS ([], preAlphabetQuotType) myabbrs
@@ -459,11 +523,8 @@ addAllBarTypes sorts isaTh = foldl addBarType isaTh sorts
 -- | Function to add the bar types of a sort to an Isabelle theory.
 addBarType :: IsaTheory -> SORT -> IsaTheory
 addBarType isaTh sort =
-    let sortBarString = convertSort2String sort ++ barExtS
+    let sortBarString = mkSortBarString sort
         barType = Type {typeId = sortBarString, typeSort = [], typeArgs =[]}
-        alphabetType = Type {typeId = alphabetS,
-                             typeSort = [],
-                             typeArgs =[]}
         isaTh_sign = fst isaTh
         isaTh_sen = snd isaTh
         x = mkFree "x"
@@ -537,12 +598,16 @@ addChooseFunctionLemma isaTh sort =
         proof' = IsaProof [Apply (Other ("unfold " ++ chooseFunName ++ "_def")),
                            Apply (SubgoalTac subgoalTacTerm),
                            Apply(Simp),
-                           Apply(Other ("unfold " ++ quotEqualityS)),
+                           Apply(SimpAdd Nothing [quotEqualityS]),
                            Apply(Other ("unfold "++ preAlphabetSimS
                                            ++ "_def")),
                            Apply(Auto)]
                            Done
     in  addThreomWithProof chooseFunName thmConds thmConcl proof' isaTh
+
+------------------------------------------------------
+-- Functions for producing the integration theorems --
+------------------------------------------------------
 
 -- | Add all the integration theorems. We need to know all the sorts
 --   to produce all the theorems.
@@ -572,7 +637,8 @@ addIntegrationTheorem_A ccSign isaTh (s1,s2) =
         lhs = if (null commonSuperList)
               then false
               else
-                  -- pick any common sort - we should pick the top most one.
+                  -- BUG pick any common sort for now (this does hold
+                  -- and is valid) we should pick the top most one.
                   let s' = head commonSuperList
                   in binEq (mkInjection s1 s' x) (mkInjection s2 s' y)
         thmConds = []
@@ -588,8 +654,12 @@ addIntegrationTheorem_A ccSign isaTh (s1,s2) =
                            Done
     in  addThreomWithProof "IntegrationTheorem_A" thmConds thmConcl proof' isaTh
 
--- Function to help keep strings consistent
+----------------------------------------------
+-- Function to help keep strings consistent --
+----------------------------------------------
 
+-- | String of the name of the function to compare eqaulity of two
+--   elements of the PreAlphabet
 eq_PreAlphabetS :: String
 eq_PreAlphabetS = "eq_PreAlphabet"
 
@@ -602,12 +672,6 @@ binEq_PreAlphabet = binVNameAppl eq_PreAlphabetV
 
 quotEqualityS :: String
 quotEqualityS = "quot_equality"
-
-preAlphabetS :: String
-preAlphabetS = "PreAlphabet"
-
-quotS :: String
-quotS = "quot"
 
 reflexivityTheoremS :: String
 reflexivityTheoremS = "eq_refl"
@@ -768,7 +832,10 @@ getCollectionNotDefBotAx sorts =
 
 -- Function that returns the constructor of PreAlphabet for a given sort
 mkPreAlphabetConstructor :: SORT -> String
-mkPreAlphabetConstructor sort = "C_" ++ (show sort)
+mkPreAlphabetConstructor sort = "C_" ++ (convertSort2String sort)
+
+mkProcNameConstructor :: PROCESS_NAME -> String
+mkProcNameConstructor pn = show pn
 
 -- Function that takes a sort and outputs a the function name for the
 -- corresponing compare_with function
@@ -780,7 +847,15 @@ mkCompareWithFunName sort = ("compare_with_" ++ (mkPreAlphabetConstructor sort))
 mkChooseFunName :: SORT -> String
 mkChooseFunName sort = ("choose_" ++ (mkPreAlphabetConstructor sort))
 
--- Functions for manipulating an Isabelle theory
+
+
+-- Converts a SORT in to the corresponding bar sort represented as a
+-- string
+mkSortBarString :: SORT -> String
+mkSortBarString s = convertSort2String s ++ barExtS
+---------------------------------------------------
+-- Functions for manipulating an Isabelle theory --
+---------------------------------------------------
 
 -- Add a single constant to the signature of an Isabelle theory
 addConst :: String -> Typ -> IsaTheory -> IsaTheory
@@ -844,7 +919,9 @@ addDef name lhs rhs isaTh =
         namedSen = (makeNamed name sen)
     in (isaTh_sign, isaTh_sen ++ [namedSen])
 
--- Code below this line is junk
+----------------------------------
+-- Code below this line is junk --
+----------------------------------
 
 -- Add a warning to an Isabelle theory
 addWarning :: IsaTheory -> IsaTheory

@@ -23,8 +23,8 @@ import CspCASL.AS_CspCASL
 import CspCASL.AS_CspCASL_Process
 import CspCASL.CspCASL_Keywords
 
-instance Pretty CspCASLSentence where
-    pretty _ = empty
+import qualified Data.Set as S
+
 
 instance Pretty CspBasicSpec where
     pretty = printCspBasicSpec
@@ -144,6 +144,15 @@ printProcess pr = case pr of
          (pretty les) <+> alpar_sep <+> (pretty res) <+>
          alpar_close <+> (glue pr q)
         )
+    FQProcess p commAlpha _ ->
+        let commAlphaList = S.toList commAlpha
+            prettyComms cs = sepByCommas (map pretty cs)
+        in brackets(pretty p) <> text "_" <> braces (prettyComms commAlphaList)
+
+instance Pretty CommType where
+    pretty (CommTypeSort s) = pretty s
+    pretty (CommTypeChan (TypedChanName c s)) =  parens (sepByCommas [pretty c, pretty s])
+
 
 -- glue and prec_comp decide whether the child in the parse tree needs
 -- to be parenthesised or not.  Parentheses are necessary if the

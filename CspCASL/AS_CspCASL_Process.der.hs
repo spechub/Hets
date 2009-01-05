@@ -20,10 +20,14 @@ module CspCASL.AS_CspCASL_Process (
     PROCESS(..),
     PROCESS_NAME,
     RENAMING,
+    CommAlpha(..),
+    CommType(..),
+    TypedChanName(..)
 ) where
 
 import CASL.AS_Basic_CASL (FORMULA, SORT, TERM, VAR)
 import Common.Id
+import qualified Data.Set as Set
 
 -- DrIFT command
 {-! global: GetRange !-}
@@ -46,13 +50,26 @@ data EVENT_SET = EventSet [COMM_TYPE] Range
 
 type RENAMING = [Id]
 
-
 type CHANNEL_NAME = SIMPLE_ID
 
 type PROCESS_NAME = SIMPLE_ID
 
 type COMM_TYPE = SIMPLE_ID
 
+-- | A process communication alphabet consists of a set of sort names
+-- and typed channel names.
+data TypedChanName = TypedChanName CHANNEL_NAME SORT
+                     deriving (Eq, Ord, Show)
+
+data CommType = CommTypeSort SORT
+              | CommTypeChan TypedChanName
+                deriving (Eq, Ord)
+
+instance Show CommType where
+    show (CommTypeSort s) = show s
+    show (CommTypeChan (TypedChanName c s)) = show (c, s)
+
+type CommAlpha = Set.Set CommType
 
 -- |CSP-CASL process expressions.
 
@@ -95,4 +112,7 @@ data PROCESS
     | ConditionalProcess (FORMULA ()) PROCESS PROCESS Range
     -- | Named process
     | NamedProcess PROCESS_NAME [TERM ()] Range
+    -- | Fully qualified process. The range here shall be the same as
+    -- | in the process.
+    | FQProcess PROCESS CommAlpha Range
     deriving (Eq, Ord, Show)

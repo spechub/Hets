@@ -16,15 +16,22 @@ signatures for CSP-CASL
 
 module CspCASL.SignCSP where
 
-import CspCASL.AS_CspCASL_Process (CHANNEL_NAME, PROCESS_NAME)
+import CspCASL.AS_CspCASL_Process (CHANNEL_NAME, PROCESS_NAME,
+    PROCESS(..), CommAlpha(..), CommType(..), TypedChanName(..))
 
-import CASL.AS_Basic_CASL (SORT)
+import CspCASL.AS_CspCASL ()
+import CspCASL.Print_CspCASL
+
+import CASL.AS_Basic_CASL (FORMULA, SORT)
 import CASL.Sign (emptySign, Sign, extendedInfo, sortRel)
 import CASL.Morphism (Morphism)
 
-import qualified Common.Doc as Doc
-import qualified Common.DocUtils as DocUtils
-import Common.Id (Id, SIMPLE_ID)
+import Common.AS_Annotation (Named)
+
+import Common.Doc
+import Common.DocUtils
+
+import Common.Id (Id, SIMPLE_ID, mkSimpleId, nullRange)
 import Common.Lib.Rel (predecessors)
 import Common.Result
 
@@ -37,22 +44,10 @@ import qualified Data.Set as Set
 data ProcProfile = ProcProfile [SORT] CommAlpha
                    deriving (Eq, Show)
 
--- | A process communication alphabet consists of a set of sort names
--- and typed channel names.
-data TypedChanName = TypedChanName CHANNEL_NAME SORT
-                     deriving (Eq, Ord, Show)
-data CommType = CommTypeSort SORT
-              | CommTypeChan TypedChanName
-                deriving (Eq, Ord)
-instance Show CommType where
-    show (CommTypeSort s) = show s
-    show (CommTypeChan (TypedChanName c s)) = show (c, s)
-
-type CommAlpha = Set.Set CommType
-
 type ChanNameMap = Map.Map CHANNEL_NAME SORT
 type ProcNameMap = Map.Map PROCESS_NAME ProcProfile
 type ProcVarMap = Map.Map SIMPLE_ID SORT
+type ProcVarList = [(SIMPLE_ID, SORT)]
 
 -- Close a communication alphabet under CASL subsort
 closeCspCommAlpha :: CspCASLSign -> CommAlpha -> CommAlpha
@@ -98,6 +93,9 @@ cspSubsortCloseSorts sig sorts =
 data CspSign = CspSign
     { chans :: ChanNameMap
     , procSet :: ProcNameMap
+    -- | Added for uniformity to the CASL static analysis. After
+    --   static analysis this is the empty list.
+    , ccSentences :: [Named CspCASLSen]
     } deriving (Eq, Show)
 
 -- | A CspCASL signature is a CASL signature with a CSP process
@@ -106,6 +104,9 @@ type CspCASLSign = Sign () CspSign
 
 ccSig2CASLSign :: CspCASLSign -> Sign () ()
 ccSig2CASLSign sigma = sigma { extendedInfo = () }
+
+ccSig2CspSign :: CspCASLSign -> CspSign
+ccSig2CspSign sigma = extendedInfo sigma
 
 -- | Empty CspCASL signature.
 emptyCspCASLSign :: CspCASLSign
@@ -116,6 +117,7 @@ emptyCspSign :: CspSign
 emptyCspSign = CspSign
     { chans = Map.empty
     , procSet = Map.empty
+    , ccSentences =[]
     }
 
 -- | Compute union of two CSP process signatures.
@@ -169,7 +171,44 @@ emptyCspAddMorphism = CspAddMorphism
   }
 
 -- dummy instances, need to be elaborated!
-instance DocUtils.Pretty CspSign where
-  pretty = Doc.text . show
-instance DocUtils.Pretty CspAddMorphism where
-  pretty = Doc.text . show
+instance Pretty CspSign where
+  pretty = text . show
+instance Pretty CspAddMorphism where
+  pretty = text . show
+
+-- Sentences
+
+-- A CspCASl senetence is either a CASL formula or a Procsses
+-- equation. A process equation has on the LHS a process name, a list
+-- of parameters which are qualified variables (which are terms), a
+-- constituent communication alphabet and finally on the RHS a fully
+-- qualified process.
+data CspCASLSen = CASLSen (FORMULA ())
+                | ProcessEq PROCESS_NAME ProcVarList CommAlpha PROCESS
+                  deriving (Show, Eq, Ord)
+
+instance Pretty CspCASLSen where
+    -- Not implemented yet - the pretty printing of the casl sentences
+    pretty(CASLSen _) = text "Pretty printing for CASLSen not implemented yet"
+    pretty(ProcessEq pn varList alpha proc) =
+        let varDoc = if (null varList)
+                     then empty
+                     else parens $ sepByCommas $ map pretty (map fst varList)
+        in pretty pn <+> varDoc <+> equals <+> pretty proc
+
+emptyCCSen :: CspCASLSen
+emptyCCSen =
+    let emptyProcName = mkSimpleId "empty"
+        emptyVarList = []
+        emptyAlphabet = Set.empty
+        emptyProc = Skip nullRange
+    in ProcessEq emptyProcName emptyVarList emptyAlphabet emptyProc
+
+isCASLSen :: CspCASLSen -> Bool
+isCASLSen (CASLSen _) = True
+isCASLSen _           = False
+
+isProcessEq :: CspCASLSen -> Bool
+isProcessEq (ProcessEq _ _ _ _) = True
+isProcessEq _ = False
+

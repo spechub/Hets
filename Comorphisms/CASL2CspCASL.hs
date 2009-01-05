@@ -25,7 +25,7 @@ import CASL.Morphism
 
 -- CspCASL
 import CspCASL.Logic_CspCASL
-import CspCASL.AS_CspCASL (CspBasicSpec (..), CspCASLSentence, emptyCCSentence)
+import CspCASL.AS_CspCASL (CspBasicSpec (..))
 import CspCASL.SignCSP
 
 -- | The identity of the comorphism
@@ -40,7 +40,7 @@ instance Comorphism CASL2CspCASL
                CASLMor
                Symbol RawSymbol ProofTree
                CspCASL ()
-               CspBasicSpec CspCASLSentence SYMB_ITEMS SYMB_MAP_ITEMS
+               CspBasicSpec CspCASLSen SYMB_ITEMS SYMB_MAP_ITEMS
                CspCASLSign
                CspMorphism
                () () () where
@@ -72,5 +72,5 @@ mapMor m =
   , op_map = op_map m
   , pred_map = pred_map m }
 
-mapSen :: CASLFORMULA -> CspCASLSentence
-mapSen _ = emptyCCSentence
+mapSen :: CASLFORMULA -> CspCASLSen
+mapSen _ = emptyCCSen

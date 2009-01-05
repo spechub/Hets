@@ -71,8 +71,8 @@ instance MorphismExtension SignCSP.CspSign SignCSP.CspAddMorphism where
 
 -- | Instance of Sentences for CspCASL (missing)
 instance Sentences CspCASL
-    AS_CspCASL.CspCASLSentence -- sentence (missing)
-    SignCSP.CspCASLSign         -- signature
+    SignCSP.CspCASLSen   -- sentence (missing)
+    SignCSP.CspCASLSign     -- signature
     SignCSP.CspMorphism     -- morphism
     ()                      -- symbol (?)
     where
@@ -101,7 +101,7 @@ instance Syntax CspCASL
 instance Logic CspCASL
     ()                      -- Sublogics (missing)
     AS_CspCASL.CspBasicSpec -- basic_spec
-    AS_CspCASL.CspCASLSentence -- sentence (missing)
+    SignCSP.CspCASLSen   -- sentence (missing)
     SYMB_ITEMS              -- symb_items
     SYMB_MAP_ITEMS          -- symb_map_items
     SignCSP.CspCASLSign         -- signature
@@ -117,7 +117,7 @@ instance Logic CspCASL
 -- | Static Analysis for CspCASL
 instance StaticAnalysis CspCASL
     AS_CspCASL.CspBasicSpec -- basic_spec
-    AS_CspCASL.CspCASLSentence -- sentence (missing)
+    SignCSP.CspCASLSen   -- sentence (missing)
     SYMB_ITEMS              -- symb_items
     SYMB_MAP_ITEMS          -- symb_map_items
     SignCSP.CspCASLSign         -- signature

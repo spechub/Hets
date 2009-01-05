@@ -19,9 +19,12 @@ module Comorphisms.CFOL2IsabelleHOL
     , IsaTheory
     , SignTranslator
     , FormulaTranslator
+    , getAssumpsToks
+    , formTrCASL
     , quantifyIsa
     , quantify
     , transSort
+    , transRecord
     , transOP_SYMB
     ) where
 
