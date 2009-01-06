@@ -160,6 +160,7 @@ mapSym s = let i = CasS.symName s in
         idToOpSymbol initialEnv i $ fromOpType ot $ CasS.opKind ot
     CasS.PredAsItemType pt -> idToOpSymbol initialEnv i $ fromPredType pt
     CasS.SortAsItemType -> idToTypeSymbol initialEnv i rStar
+    _ -> error "Comorphisms.CASL2HasCASL.mapSym"
 
 toQuant :: Cas.QUANTIFIER -> Quantifier
 toQuant Cas.Universal = Universal

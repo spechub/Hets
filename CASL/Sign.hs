@@ -146,6 +146,7 @@ instance Pretty Symbol where
   pretty sy = let n = pretty (symName sy) in
     case symbType sy of
        SortAsItemType -> n
+       OtherTypeKind s -> text s <+> n
        PredAsItemType pt -> let p = n <+> colon <+> pretty pt in
          case predArgs pt of
            [_] -> text predS <+> p
@@ -159,7 +160,7 @@ instance Pretty SymbType where
   pretty st = case st of
      OpAsItemType ot -> pretty ot
      PredAsItemType pt -> space <> pretty pt
-     SortAsItemType -> empty
+     _ -> empty
 
 printSign :: (f -> Doc) -> (e -> Doc) -> Sign f e -> Doc
 printSign _ fE s = let
@@ -212,8 +213,11 @@ addMapSet :: (Ord a, Ord b) => Map.Map a (Set.Set b) -> Map.Map a (Set.Set b)
           -> Map.Map a (Set.Set b)
 addMapSet = Map.unionWith Set.union
 
+mkPartial :: OpType -> OpType
+mkPartial o = o { opKind = Partial }
+
 makePartial :: Set.Set OpType -> Set.Set OpType
-makePartial = Set.mapMonotonic (\ o -> o { opKind = Partial })
+makePartial = Set.mapMonotonic mkPartial
 
 --  | remove (True) or add (False) partial op if it is included as total
 rmOrAddParts :: Bool -> Set.Set OpType -> Set.Set OpType

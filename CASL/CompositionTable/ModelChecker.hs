@@ -45,8 +45,7 @@ extractAnnotations m =
 extractAnnotation :: (Symbol, Set.Set Annotation) -> Maybe (OP_SYMB, String)
 extractAnnotation (Symbol symbname symbtype, set) = case symbtype of
     OpAsItemType _ -> Just (createOpSymb symbname symbtype, getAnno set)
-    PredAsItemType _ -> Nothing
-    SortAsItemType -> Nothing
+    _ -> Nothing
 
 createOpSymb :: Id -> SymbType -> OP_SYMB
 createOpSymb i st = case st of

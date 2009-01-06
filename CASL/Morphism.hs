@@ -87,7 +87,7 @@ makeTotal fk t = case fk of
 
 mapOpSym :: Sort_map -> Op_map -> (Id, OpType) -> (Id, OpType)
 mapOpSym sMap oMap (i, ot) = let mot = mapOpType sMap ot in
-  case Map.lookup (i, ot {opKind = Partial} ) oMap of
+  case Map.lookup (i, mkPartial ot) oMap of
     Nothing -> (i, mot)
     Just (j, k) -> (j, makeTotal k mot)
 
@@ -117,6 +117,7 @@ symbTypeToKind st = case st of
   OpAsItemType _ -> Ops_kind
   PredAsItemType _ -> Preds_kind
   SortAsItemType -> Sorts_kind
+  OtherTypeKind s -> OtherKinds s
 
 symbolToRaw :: Symbol -> RawSymbol
 symbolToRaw = ASymbol
@@ -226,7 +227,6 @@ typedSymbKindToRaw k idt t = let
           appendDiags [mkDiag Warning "qualify name as pred or op" idt]
           return aSymb
       _ -> return aSymb
-    Sorts_kind -> err
     Ops_kind -> case t of
         P_type _ -> err
         _ -> return aSymb
@@ -236,6 +236,7 @@ typedSymbKindToRaw k idt t = let
                     let pt = PredType {predArgs = [s]}
                     in idToPredSymbol idt pt
         P_type _ -> return aSymb
+    _ -> err
 
 symbMapToMorphism :: m -> Sign f e -> Sign f e
                   -> SymbolMap -> Result (Morphism f e m)
@@ -254,7 +255,7 @@ symbMapToMorphism extEm sigma1 sigma2 smap = let
     of Just sym -> let j = symName sym in case symbType sym of
          OpAsItemType oty -> let k = opKind oty in
             if j == i && opKind ot == k then m
-            else Map.insert (i, ot {opKind = Partial}) (j, k) m
+            else Map.insert (i, mkPartial ot) (j, k) m
          _ -> m
        _ -> m
   mapPred i pts m = Set.fold (insPred i) m pts
@@ -333,7 +334,7 @@ composeM comp mor1 mor2 = if mtarget mor1 == msource mor2 then do
                            k = opKind nt
                        in assert (mapOpTypeK sMap k ot == nt) $
                           if i == ni && opKind ot == k then id else
-                          Map.insert (i, ot {opKind = Partial }) (ni, k)) m t)
+                          Map.insert (i, mkPartial ot) (ni, k)) m t)
                      Map.empty $ opMap src
       pMap = if Map.null pMap2 then pMap1 else
                  Map.foldWithKey ( \ i t m ->
@@ -460,7 +461,7 @@ morphismUnionM uniteM addSigExt mor1 mor2 =
       uo1 = foldr delOp (opMap s1) $ Map.keys omap1
       uo2 = foldr delOp (opMap s2) $ Map.keys omap2
       delOp (n, ot) m = diffMapSet m $ Map.singleton n $
-                    Set.fromList [ot {opKind = Partial}, ot {opKind = Total}]
+                    Set.fromList [mkPartial ot, makeTotal Total ot]
       uo = addOpMapSet uo1 uo2
       pmap1 = pred_map mor1
       pmap2 = pred_map mor2
@@ -487,7 +488,7 @@ morphismUnionM uniteM addSigExt mor1 mor2 =
                 ++ showDoc ot { opKind = t } " to "
                 ++ showId j " and " ++ showId k "") nullRange : ds, m))
            (sds, omap1) (Map.toList omap2 ++ concatMap
-              ( \ (a, s) -> map ( \ ot -> ((a, ot {opKind = Partial}),
+              ( \ (a, s) -> map ( \ ot -> ((a, mkPartial ot),
                                            (a, opKind ot)))
               $ Set.toList s) (Map.toList uo))
       (pds, pmap) = foldr ( \ (isc@(i, pt), j) (ds, m) ->

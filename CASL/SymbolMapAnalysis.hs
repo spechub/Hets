@@ -242,7 +242,7 @@ insertmapOpSym sort_Map ide rsy ot m = do
       m1 <- m
       (ide', kind') <- mappedOpSym sort_Map ide ot rsy
       return $ if ide == ide' && kind' == opKind ot then m1 else
-                   Map.insert (ide, ot {opKind = Partial}) (ide', kind') m1
+                   Map.insert (ide, mkPartial ot) (ide', kind') m1
     -- insert mapping of op symbol (ide, ot) to itself into m
 
 -- map the ops in the source signature
@@ -469,6 +469,7 @@ extendSymbMap akmap sym1 sym2 =
       PredAsItemType pt2 -> all (compatibleSorts akmap)
                               $ zip (predArgs pt1) (predArgs pt2)
       _ -> False
+    _ -> False
   then Just $ Map.insert sym1 sym2 akmap
   else Nothing
 
@@ -751,11 +752,13 @@ revealSym sy sigma1 = case symbType sy of  -- 4.1.
     SortAsItemType ->      -- 4.1.1.
       sigma1 {sortSet = Set.insert (symName sy) $ sortSet sigma1}
     OpAsItemType ot ->     -- 4.1.2./4.1.3.
-      sigma1 {sortSet = foldr Set.insert (sortSet sigma1) (opRes ot:opArgs ot),
-              opMap = Rel.setInsert (symName sy) ot $ opMap sigma1}
+      sigma1 { sortSet = foldr Set.insert (sortSet sigma1)
+               $ opRes ot : opArgs ot
+             , opMap = Rel.setInsert (symName sy) ot $ opMap sigma1 }
     PredAsItemType pt ->   -- 4.1.4.
-      sigma1 {sortSet = foldr Set.insert (sortSet sigma1) (predArgs pt),
-              predMap = Rel.setInsert (symName sy) pt $ predMap sigma1}
+      sigma1 { sortSet = foldr Set.insert (sortSet sigma1) $ predArgs pt
+             , predMap = Rel.setInsert (symName sy) pt $ predMap sigma1 }
+    _ -> sigma1 -- extend this for the type variable e
   -- 5./6.
 
 {-
@@ -802,9 +805,11 @@ cogeneratedSign extEm isSubExt symset sigma =
       Set.delete sy symset1'
     PredAsItemType _ ->   -- 3.1.2
       Set.delete sy symset1'
-  profileContains _ SortAsItemType = False
-  profileContains s (OpAsItemType ot) = elem s $ opRes ot : opArgs ot
-  profileContains s (PredAsItemType pt) = elem s $ predArgs pt
+    _ ->  symset1'
+  profileContains s symbT = elem s $ case symbT of
+    OpAsItemType ot -> opRes ot : opArgs ot
+    PredAsItemType pt -> predArgs pt
+    _ -> [] -- for other kinds the profiles need to be looked up
 
 finalUnion :: (e -> e -> e) -- ^ join signature extensions
            -> Sign f e -> Sign f e -> Result (Sign f e)
