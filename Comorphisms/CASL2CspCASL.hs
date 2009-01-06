@@ -43,7 +43,7 @@ instance Comorphism CASL2CspCASL
                CspBasicSpec CspCASLSen SYMB_ITEMS SYMB_MAP_ITEMS
                CspCASLSign
                CspMorphism
-               () () () where
+               Symbol RawSymbol () where
     sourceLogic CASL2CspCASL = CASL
     sourceSublogic CASL2CspCASL = SL.top
     targetLogic CASL2CspCASL = CspCASL

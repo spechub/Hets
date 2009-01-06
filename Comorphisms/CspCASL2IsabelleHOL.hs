@@ -17,6 +17,8 @@ module Comorphisms.CspCASL2IsabelleHOL (
 ) where
 
 import CASL.AS_Basic_CASL
+import CASL.Sign (Symbol)
+import CASL.Morphism (RawSymbol)
 import qualified CASL.Inject as CASLInject
 import qualified CASL.Sign as CASLSign
 import Common.AS_Annotation
@@ -52,7 +54,7 @@ instance Comorphism CspCASL2IsabelleHOL
                CspBasicSpec CspCASLSen SYMB_ITEMS SYMB_MAP_ITEMS
                CspCASLSign
                CspMorphism
-               () () ()
+               Symbol RawSymbol ()
                Isabelle () () IsaSign.Sentence () ()
                IsaSign.Sign
                IsabelleMorphism () () ()  where

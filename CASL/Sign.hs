@@ -39,26 +39,12 @@ data PredType = PredType {predArgs :: [SORT]} deriving (Show, Eq, Ord)
 type OpMap = Map.Map Id (Set.Set OpType)
 
 data SymbType = SortAsItemType
+              | OtherTypeKind String
               | OpAsItemType OpType
                 -- since symbols do not speak about totality, the totality
                 -- information in OpType has to be ignored
               | PredAsItemType PredType
-                deriving Show
-
--- Ordering and equality of symbol types has to ingore totality information
-instance Ord SymbType where
-  compare st1 st2 = case (st1, st2) of
-    (SortAsItemType, SortAsItemType) -> EQ
-    (SortAsItemType, _) -> LT
-    (OpAsItemType ot1, OpAsItemType ot2) ->
-      compare (opArgs ot1, opRes ot1) (opArgs ot2, opRes ot2)
-    (OpAsItemType _, SortAsItemType) -> GT
-    (OpAsItemType _, PredAsItemType _) -> LT
-    (PredAsItemType pt1, PredAsItemType pt2) -> compare pt1 pt2
-    (PredAsItemType _, _) -> GT
-
-instance Eq SymbType where
-  t1 == t2 = compare t1 t2 == EQ
+                deriving (Show, Eq, Ord)
 
 data Symbol = Symbol {symName :: Id, symbType :: SymbType}
               deriving (Show, Eq, Ord)

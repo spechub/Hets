@@ -44,7 +44,7 @@ instance Comorphism CspCASL2Modal
                CspBasicSpec CspCASLSen SYMB_ITEMS SYMB_MAP_ITEMS
                CspCASLSign
                CspMorphism
-               () () ()
+               Symbol RawSymbol ()
                Modal ()
                M_BASIC_SPEC ModalFORMULA SYMB_ITEMS SYMB_MAP_ITEMS
                MSign
@@ -76,7 +76,7 @@ mapMor m = (embedMorphism emptyMorExt (mapSig $ msource m) $ mapSig $ mtarget m)
     -- ??? add modalities
 
 
-mapSym :: () -> Symbol
+mapSym :: Symbol -> Symbol
 mapSym = error "CspCASL2Modal.mapSym not yet implemented"
    -- needs to be changed once modal symbols are added
 

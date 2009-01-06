@@ -74,7 +74,7 @@ instance Sentences CspCASL
     SignCSP.CspCASLSen   -- sentence (missing)
     SignCSP.CspCASLSign     -- signature
     SignCSP.CspMorphism     -- morphism
-    ()                      -- symbol (?)
+    Symbol               -- symbol
     where
       parse_sentence CspCASL = Nothing
       map_sen CspCASL mor sen =
@@ -106,8 +106,8 @@ instance Logic CspCASL
     SYMB_MAP_ITEMS          -- symb_map_items
     SignCSP.CspCASLSign         -- signature
     SignCSP.CspMorphism     -- morphism
-    ()                      -- symbol (missing)
-    ()                      -- raw_symbol (missing)
+    Symbol
+    RawSymbol
     ()                      -- proof_tree (missing)
     where
       stability CspCASL = Experimental
@@ -122,8 +122,8 @@ instance StaticAnalysis CspCASL
     SYMB_MAP_ITEMS          -- symb_map_items
     SignCSP.CspCASLSign         -- signature
     SignCSP.CspMorphism     -- morphism
-    ()                      -- symbol (missing)
-    ()                      -- raw_symbol (missing)
+    Symbol
+    RawSymbol
     where
       basic_analysis CspCASL =
           Just StatAnaCSP.basicAnalysisCspCASL

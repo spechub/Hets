@@ -29,6 +29,7 @@ import CASL.MixfixParser (emptyMix, Mix(..), makeRules, mkIdSets,
                           resolveFormula, resolveMixfix, unite)
 import CASL.Overload (minExpFORMULA, oneExpTerm)
 import CASL.Sign
+import CASL.Morphism (RawSymbol)
 import CASL.StaticAna (allOpIds, allPredIds)
 import Common.AS_Annotation
 import Common.Result
@@ -48,7 +49,7 @@ import CspCASL.SignCSP
 import qualified Data.Set as Set
 
 basicAnalysisCspCASL :: (CspBasicSpec, CspCASLSign, GlobalAnnos)
-        -> Result (CspBasicSpec, ExtSign CspCASLSign (),
+        -> Result (CspBasicSpec, ExtSign CspCASLSign Symbol,
                    [Named CspCASLSen])
 basicAnalysisCspCASL (cc, sigma, ga) =
     let Result es mga = mergeGlobalAnnos ga $ globAnnos sigma
