@@ -18,7 +18,6 @@ module CspCASL.StatAnaCSP where
 
 import qualified Control.Monad as Monad
 import qualified Data.Map as Map
-import qualified Data.Maybe as Maybe
 import qualified Data.Set as S
 -- liam added the following, they should be deleted from imports when
 -- liams temp code is removed: Op_name mkSimpleId mkInfix OP_SYMB(..),
@@ -36,7 +35,7 @@ import Common.Result
 import Common.GlobalAnnotations
 import Common.ConvertGlobalAnnos
 import qualified Common.Lib.Rel as Rel
-import Common.Id (getRange, Id, simpleIdToId, nullRange)
+import Common.Id (getRange, Id, simpleIdToId)
 import Common.Lib.State
 import Common.ExtSign
 
@@ -256,10 +255,10 @@ anaProcTerm proc gVars lVars = case proc of
                    FQProcess (Chaos es range) comms range)
     PrefixProcess e p range ->
         do addDiags [mkDiag Debug "Prefix" proc]
-           (evComms, rcvMap) <- anaEvent e (lVars `Map.union` gVars)
+           (evComms, rcvMap, fqEvent) <- anaEvent e (lVars `Map.union` gVars)
            (comms, pFQTerm) <- anaProcTerm p gVars (rcvMap `Map.union` lVars)
            return (comms `S.union` evComms,
-                   FQProcess (PrefixProcess e pFQTerm range) (comms `S.union` evComms) range)
+                   FQProcess (PrefixProcess fqEvent pFQTerm range) (comms `S.union` evComms) range)
     InternalPrefixProcess v s p range ->
         do addDiags [mkDiag Debug "Internal prefix" proc]
            checkSorts [s] -- check sort is known
@@ -339,14 +338,17 @@ anaProcTerm proc gVars lVars = case proc of
            (qComms, qFQTerm) <- anaProcTerm q gVars lVars
            -- mfs is the fully qualified formula version of f
            mfs <- anaFormulaCspCASL (gVars `Map.union` lVars) f
-           addDiags [mkDiag Debug "Formula" f]
-           addDiags [mkDiag Debug "FQFormula" (Maybe.fromJust mfs)]
+           let fFQ = case mfs of
+                       Nothing -> f -- use olf formula as the fully qualified version
+                       Just fs -> fs -- use the real fully qualified formula
            let fComms = case mfs of
                           Nothing -> S.empty
                           Just fs -> formulaComms fs
-           return (S.unions [pComms, qComms, fComms],
-                   FQProcess (ConditionalProcess (Maybe.fromJust mfs) pFQTerm qFQTerm range)
-                                 (S.unions [pComms, qComms, fComms]) range)
+           let newAlpha = S.unions [pComms, qComms, fComms]
+           let fqProc = FQProcess (ConditionalProcess
+                                   (fFQ) pFQTerm qFQTerm range)
+                        newAlpha range
+           return (newAlpha, fqProc)
 
 -- | Statically analyse a CspCASL "named process" term.
 anaNamedProc :: PROCESS -> PROCESS_NAME -> [TERM ()] -> ProcVarMap ->
@@ -408,50 +410,74 @@ anaCommType sig alpha ct =
 
 -- Static analysis of events
 
--- | Statically analyse a CspCASL event.
-anaEvent :: EVENT -> ProcVarMap -> State CspCASLSign (CommAlpha, ProcVarMap)
+-- | Statically analyse a CspCASL event. Returns a constituent
+--   communication alphabet of the event, mapping for any new
+--   locally bound variables and a fully qualified version of the event.
+anaEvent :: EVENT -> ProcVarMap -> State CspCASLSign (CommAlpha, ProcVarMap, EVENT)
 anaEvent e vars = case e of
-                    TermEvent t _ -> anaTermEvent t vars
-                    ChanSend c t _ -> anaChanSend c t vars
-                    ChanNonDetSend c v s _ -> anaChanBinding c v s
-                    ChanRecv c v s _ -> anaChanBinding c v s
+                    TermEvent t r ->
+                        do (alpha, newVars, fqTerm) <- anaTermEvent t vars
+                           return (alpha, newVars, TermEvent fqTerm r)
+                    ChanSend c t r ->
+                        -- BUG - not returning a fully qualified event
+                        do (alpha, newVars, fqTerm) <- anaChanSend c t vars
+                           return (alpha, newVars, ChanSend c fqTerm r)
+                    ChanNonDetSend c v s r ->
+                        -- BUG - not returning a fully qualified event
+                        do (alpha, newVars) <- anaChanBinding c v s
+                           return (alpha, newVars, ChanNonDetSend c v s r)
+                    ChanRecv c v s r ->
+                        -- BUG - not returning a fully qualified event
+                        do (alpha, newVars) <- anaChanBinding c v s
+                           return (alpha, newVars, ChanRecv c v s r)
 
--- | Statically analyse a CspCASL term event.
+-- | Statically analyse a CspCASL term event. Returns a constituent
+--   communication alphabet of the event and a mapping for any new
+--   locally bound variables and the fully qualified version of the
+--   term.
 anaTermEvent :: (TERM ()) -> ProcVarMap ->
-                State CspCASLSign (CommAlpha, ProcVarMap)
+                State CspCASLSign (CommAlpha, ProcVarMap, TERM ())
 anaTermEvent t vars = do
   mt <- anaTermCspCASL vars t
-  let alpha = case mt of
-                Just at -> [(CommTypeSort (sortOfTerm at))]
-                Nothing -> []
-  return (S.fromList alpha, Map.empty)
+  let (alpha, t') = case mt of
+                      -- return the alphabet and the fully qualified term
+                      Just at -> ([(CommTypeSort (sortOfTerm at))], at)
+                      -- return the empty alphabet and the original term
+                      Nothing -> ([], t)
+  return (S.fromList alpha, Map.empty, t')
 
--- | Statically analyse a CspCASL channel send event.
+-- | Statically analyse a CspCASL channel send event. Returns a constituent
+--   communication alphabet of the event and a mapping for any new
+--   locally bound variables and the fully qualified version of the
+--   term.
 anaChanSend :: CHANNEL_NAME -> (TERM ()) -> ProcVarMap ->
-                State CspCASLSign (CommAlpha, ProcVarMap)
+                State CspCASLSign (CommAlpha, ProcVarMap, TERM ())
 anaChanSend c t vars = do
   sig <- get
   let ext = extendedInfo sig
   case c `Map.lookup` (chans ext) of
     Nothing -> do
       addDiags [mkDiag Error "unknown channel" c]
-      return (S.empty, Map.empty)
+      return (S.empty, Map.empty, t)
     Just chanSort -> do
       mt <- anaTermCspCASL vars t
       case mt of
         Nothing -> -- CASL analysis failed
-                   return (S.empty, Map.empty)
+                   -- Use old term as the fully qualified term
+                   return (S.empty, Map.empty, t)
         (Just at) ->
             do mc <- ccTermCast at chanSort
                case mc of
                  Nothing -> -- cast failed
-                            return (S.empty, Map.empty)
+                            -- Use old term as the fully qualified term
+                            return (S.empty, Map.empty, t)
                  (Just ct) ->
                      do let castSort = sortOfTerm ct
                             alpha = [CommTypeSort castSort
                                     ,CommTypeChan $ TypedChanName c castSort
                                     ]
-                        return (S.fromList alpha, Map.empty)
+                        -- Use the real fully qualified term
+                        return (S.fromList alpha, Map.empty, ct)
 
 -- | Statically analyse a CspCASL "binding" channel event (which is
 -- either a channel nondeterministic send event or a channel receive
@@ -598,7 +624,7 @@ ccTermCast t cSort =
 anaFormulaCspCASL :: ProcVarMap -> (FORMULA ()) ->
                      State CspCASLSign (Maybe (FORMULA ()))
 anaFormulaCspCASL pm f = do
-    addDiags [mkDiag Debug "anaFormulaCspCASL" ()]
+    addDiags [mkDiag Debug "anaFormulaCspCASL" f]
     sig <- get
     let newVars = Map.union pm (varMap sig)
         sigext = sig { varMap = newVars }

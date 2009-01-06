@@ -181,9 +181,9 @@ cspProver_renamingAltOpPrio = 84
 
 -- Conditional operator symbols
 cspProver_conditionalS :: String
-cspProver_conditionalS = "CONDITIONAL"
+cspProver_conditionalS = "IF"
 cspProver_conditionalAltS :: String
-cspProver_conditionalAltS = "(CONDITIONAL _ THEN _ ELSE _)"
+cspProver_conditionalAltS = "(IF _ THEN _ ELSE _)"
 cspProver_conditionalAltArgPrios :: [Int]
 cspProver_conditionalAltArgPrios = [900,88,88]
 cspProver_conditionalAltArgOpPrio :: Int

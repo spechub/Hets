@@ -178,11 +178,11 @@ instance Pretty CspAddMorphism where
 
 -- Sentences
 
--- A CspCASl senetence is either a CASL formula or a Procsses
--- equation. A process equation has on the LHS a process name, a list
--- of parameters which are qualified variables (which are terms), a
--- constituent communication alphabet and finally on the RHS a fully
--- qualified process.
+-- | A CspCASl senetence is either a CASL formula or a Procsses
+--   equation. A process equation has on the LHS a process name, a
+--   list of parameters which are qualified variables (which are
+--   terms), a constituent( or is it permitted ?) communication alphabet and
+--   finally on the RHS a fully qualified process.
 data CspCASLSen = CASLSen (FORMULA ())
                 | ProcessEq PROCESS_NAME ProcVarList CommAlpha PROCESS
                   deriving (Show, Eq, Ord)
