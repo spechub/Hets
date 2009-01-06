@@ -40,11 +40,13 @@ import CASL.Logic_CASL
 import CASL.Morphism
 import CASL.Sign
 import CASL.SymbolParser
+import qualified Data.Set as Set
 
 --import CspCASL.AS_CspCASL
 import qualified CspCASL.AS_CspCASL as AS_CspCASL
 import qualified CspCASL.ATC_CspCASL()
 import qualified CspCASL.CspCASL_Keywords as CspCASL_Keywords
+import qualified CspCASL.Morphism as CspCASL_Morphism
 import qualified CspCASL.Parse_CspCASL as Parse_CspCASL
 import qualified CspCASL.Print_CspCASL ()
 import qualified CspCASL.SignCSP as SignCSP
@@ -81,6 +83,7 @@ instance Sentences CspCASL
         if isInclusionMorphism isInclusionMorphismExtension mor
         then return sen
         else fail "renaming in map_sen CspCASL not implemented"
+      sym_of CspCASL = CspCASL_Morphism.symOf
 
 -- | Syntax of CspCASL
 instance Syntax CspCASL
