@@ -82,7 +82,7 @@ mapOpTypeK sorts k = makeTotal k . mapOpType sorts
 
 makeTotal :: OpKind -> OpType -> OpType
 makeTotal fk t = case fk of
-  Total -> t { opKind = Total }
+  Total -> mkTotal t
   _ -> t
 
 mapOpSym :: Sort_map -> Op_map -> (Id, OpType) -> (Id, OpType)
@@ -299,8 +299,10 @@ morphismToSymbMapAux b mor = let
   in foldr Map.union sortSymMap [opSymMap, predSymMap]
 
 matches :: Symbol -> RawSymbol -> Bool
-matches x@(Symbol idt k) rs = case rs of
-    ASymbol y -> x == y
+matches (Symbol idt k) rs = case rs of
+    ASymbol (Symbol id2 k2) -> idt == id2 && case (k, k2) of
+     (OpAsItemType ot, OpAsItemType ot2) -> compatibleOpTypes ot ot2
+     _ -> k == k2
     AKindedSymb rk di -> let res = idt == di in case (k, rk) of
         (_, Implicit) -> res
         (SortAsItemType, Sorts_kind) -> res
@@ -461,7 +463,7 @@ morphismUnionM uniteM addSigExt mor1 mor2 =
       uo1 = foldr delOp (opMap s1) $ Map.keys omap1
       uo2 = foldr delOp (opMap s2) $ Map.keys omap2
       delOp (n, ot) m = diffMapSet m $ Map.singleton n $
-                    Set.fromList [mkPartial ot, makeTotal Total ot]
+                    Set.fromList [mkPartial ot, mkTotal ot]
       uo = addOpMapSet uo1 uo2
       pmap1 = pred_map mor1
       pmap2 = pred_map mor2

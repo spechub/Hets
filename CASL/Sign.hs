@@ -216,6 +216,9 @@ addMapSet = Map.unionWith Set.union
 mkPartial :: OpType -> OpType
 mkPartial o = o { opKind = Partial }
 
+mkTotal :: OpType -> OpType
+mkTotal o = o { opKind = Total }
+
 makePartial :: Set.Set OpType -> Set.Set OpType
 makePartial = Set.mapMonotonic mkPartial
 
@@ -290,7 +293,7 @@ isSubMapSet = Map.isSubmapOfBy Set.isSubsetOf
 isSubOpMap :: OpMap -> OpMap -> Bool
 isSubOpMap = Map.isSubmapOfBy $ \ s t ->
   Set.fold ( \ e r -> r && (Set.member e t || case opKind e of
-    Partial -> Set.member e {opKind = Total} t
+    Partial -> Set.member (mkTotal e) t
     Total -> False)) True s
 
 isSubSig :: (e -> e -> Bool) -> Sign f e -> Sign f e -> Bool

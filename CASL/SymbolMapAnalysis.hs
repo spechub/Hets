@@ -211,10 +211,16 @@ directOpMap :: RawSymbolMap -> Sort_map -> Id -> OpType
             -> (Set.Set OpType, Result Op_map)
             -> (Set.Set OpType, Result Op_map)
 directOpMap rmap sort_Map ide' ot (ots',m') =
-      case Map.lookup (ASymbol (idToOpSymbol ide' ot)) rmap of
-        Just rsy ->
-          (ots',insertmapOpSym sort_Map ide' rsy ot m')
-        Nothing -> (Set.insert ot ots',m')
+  case lookupOpSymbol rmap ide' ot of
+    Just rsy -> (ots', insertmapOpSym sort_Map ide' rsy ot m')
+    Nothing -> (Set.insert ot ots', m')
+
+lookupOpSymbol :: RawSymbolMap -> Id -> OpType -> Maybe RawSymbol
+lookupOpSymbol rmap ide' ot = let mkS = idToOpSymbol ide' in
+  case Map.lookup (ASymbol (mkS $ mkPartial ot)) rmap of
+    Nothing -> Map.lookup
+      (ASymbol (mkS $ mkTotal ot)) rmap
+    res -> res
 
     -- map op symbol (ide,ot) to raw symbol rsy
 mappedOpSym :: Sort_map -> Id -> OpType -> RawSymbol -> Result (Id, OpKind)
