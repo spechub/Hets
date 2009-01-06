@@ -127,6 +127,14 @@ addCspProcSig a b =
       , procSet = procSet a `Map.union` procSet b
       }
 
+-- | Compute difference of two CSP process signatures.
+diffCspProcSig :: CspSign -> CspSign -> CspSign
+diffCspProcSig a b =
+    a { chans = chans a `Map.difference` chans b
+      , procSet = procSet a `Map.difference` procSet b
+      }
+
+
 -- XXX looks incomplete!
 isInclusion :: CspSign -> CspSign -> Bool
 isInclusion _ _ = True

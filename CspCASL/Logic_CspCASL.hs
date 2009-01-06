@@ -40,6 +40,8 @@ import CASL.Logic_CASL
 import CASL.Morphism
 import CASL.Sign
 import CASL.SymbolParser
+import CASL.SymbolMapAnalysis
+
 import qualified Data.Set as Set
 
 --import CspCASL.AS_CspCASL
@@ -84,6 +86,7 @@ instance Sentences CspCASL
         then return sen
         else fail "renaming in map_sen CspCASL not implemented"
       sym_of CspCASL = CspCASL_Morphism.symOf
+      symmap_of CspCASL = morphismToSymbMap
 
 -- | Syntax of CspCASL
 instance Syntax CspCASL
@@ -138,3 +141,10 @@ instance StaticAnalysis CspCASL
           SignCSP.isInclusion const -- this is still wrong
       signature_union CspCASL s =
           return . addSig SignCSP.addCspProcSig s
+      induced_from_morphism CspCASL = inducedFromMorphism
+                                      SignCSP.emptyCspAddMorphism
+                                      SignCSP.isInclusion
+      induced_from_to_morphism CspCASL = inducedFromToMorphism
+                                         SignCSP.emptyCspAddMorphism
+                                         SignCSP.isInclusion
+                                         SignCSP.diffCspProcSig
