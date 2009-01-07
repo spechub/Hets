@@ -39,12 +39,10 @@ data EVENT
     | ChanRecv CHANNEL_NAME VAR SORT Range
     deriving (Show,Ord, Eq)
 
-
 -- |Event sets are sets of communication types.
 
 data EVENT_SET = EventSet [COMM_TYPE] Range
     deriving (Show,Ord, Eq)
-
 
 -- |CSP renamings are predicate names or op names.
 

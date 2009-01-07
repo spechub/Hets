@@ -148,7 +148,7 @@ printProcess pr = case pr of
         let commAlphaList = S.toList commAlpha
             prettyComms cs = sepByCommas (map pretty cs)
         in brackets(pretty p) <> text "_" <> braces (prettyComms commAlphaList)
-          -- (pretty p)
+           -- pretty p
 
 instance Pretty CommType where
     pretty (CommTypeSort s) = pretty s

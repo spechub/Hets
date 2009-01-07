@@ -43,7 +43,7 @@ import qualified Data.Set as Set
 -- | A process has zero or more parameter sorts, and a communication
 -- alphabet.
 data ProcProfile = ProcProfile [SORT] CommAlpha
-                   deriving (Eq, Show)
+                   deriving (Eq, Show)             
 
 type ChanNameMap = Map.Map CHANNEL_NAME SORT
 type ProcNameMap = Map.Map PROCESS_NAME ProcProfile
