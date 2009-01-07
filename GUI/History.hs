@@ -148,7 +148,7 @@ menuItems = [
 
 -- If at least one goal was proved and the prove is not the same as last time
 -- the prove gets added, otherwise not.
-addProveToHist :: CommandHistory
+addProveToHist :: CommandHistory 
         -> ProofState lid sentence         -- current proofstate
         -> Maybe (G_prover, AnyComorphism) -- possible used translation
         -> [Proof_status proof_tree]       -- goals included in prove

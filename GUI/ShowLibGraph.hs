@@ -35,6 +35,8 @@ import qualified Data.Map as Map
 import Control.Concurrent.MVar
 import Control.Concurrent(threadDelay)
 
+import Interfaces.DataTypes
+
 type NodeArcList = ([DaVinciNode LIB_NAME],[DaVinciArc (IO String)])
 
 {- | Creates a  new uDrawGraph Window and shows the Library Dependency Graph of
@@ -64,15 +66,19 @@ showLibGraph gInfo@(GInfo {windowCount = wc}) = do
 
 -- | Reloads all Libraries and the Library Dependency Graph
 reload :: GInfo -> IORef DaVinciGraphTypeSyn -> IORef NodeArcList -> IO()
-reload gInfo@(GInfo {gi_LIB_NAME = ln,
-                     gi_hetcatsOpts = opts
+reload gInfo@(GInfo {gi_hetcatsOpts = opts
                     }) depGRef nodeArcRef = do
-  depG <- readIORef depGRef
-  (nodes', arcs) <- readIORef nodeArcRef
-  let
+ ost <- readIORef $ intState gInfo
+ case i_state ost of 
+  Nothing -> return ()
+  Just ist -> do  
+   let ln = i_ln ist
+   depG <- readIORef depGRef
+   (nodes', arcs) <- readIORef nodeArcRef
+   let
     libfile = libNameToFile opts ln
-  m <- anaLib opts { outtypes = [] } libfile
-  case m of
+   m <- anaLib opts { outtypes = [] } libfile
+   case m of
     Nothing -> fail $
       "Error when reloading file '" ++ libfile ++  "'"
     Just (_, _) -> do
@@ -84,10 +90,13 @@ reload gInfo@(GInfo {gi_LIB_NAME = ln,
 
 -- | Adds the Librarys and the Dependencies to the Graph
 addNodesAndArcs :: GInfo -> DaVinciGraphTypeSyn -> IORef NodeArcList -> IO ()
-addNodesAndArcs gInfo@(GInfo { libEnvIORef = ioRefProofStatus
-                             , gi_hetcatsOpts = opts}) depG nodeArcRef = do
-  le <- readIORef ioRefProofStatus
-  let
+addNodesAndArcs gInfo@(GInfo { gi_hetcatsOpts = opts}) depG nodeArcRef = do
+ ost <- readIORef $ intState gInfo
+ case i_state ost of 
+  Nothing -> return ()
+  Just ist -> do
+   let 
+    le = i_libEnv ist
     lookup' x y = Map.findWithDefault (error "lookup': node not found") y x
     keys = Map.keys le
     subNodeMenu = LocalMenu(UDG.Menu Nothing [
@@ -98,22 +107,22 @@ addNodesAndArcs gInfo@(GInfo { libEnvIORef = ioRefProofStatus
                        ValueTitle (\ x -> return (show x)) $$$
                        Color (getColor opts Green True True) $$$
                        emptyNodeTypeParms
-  subNodeType <- newNodeType depG subNodeTypeParms
-  subNodeList <- mapM (newNode depG subNodeType) keys
-  let
+   subNodeType <- newNodeType depG subNodeTypeParms
+   subNodeList <- mapM (newNode depG subNodeType) keys
+   let
     nodes' = Map.fromList $ zip keys subNodeList
     subArcMenu = LocalMenu(UDG.Menu Nothing [])
     subArcTypeParms = subArcMenu $$$
                       ValueTitle id $$$
                       Color (getColor opts Black False False) $$$
                       emptyArcTypeParms
-  subArcType <- newArcType depG subArcTypeParms
-  let
+   subArcType <- newArcType depG subArcTypeParms
+   let
     insertSubArc = \ (node1, node2) -> newArc depG subArcType (return "")
                        (lookup' nodes' node1) (lookup' nodes' node2)
-  subArcList <- mapM insertSubArc $  Rel.toList $ Rel.intransKernel $
+   subArcList <- mapM insertSubArc $  Rel.toList $ Rel.intransKernel $
     Rel.transClosure $ Rel.fromList $ getLibDeps le
-  writeIORef nodeArcRef (subNodeList, subArcList)
+   writeIORef nodeArcRef (subNodeList, subArcList)
 
 mShowGraph :: GInfo -> LIB_NAME -> IO()
 mShowGraph gInfo@(GInfo {gi_hetcatsOpts = opts}) ln = do

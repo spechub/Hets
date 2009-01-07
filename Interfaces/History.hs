@@ -36,8 +36,15 @@ data UndoOrRedo =
  | DoRedo
 
 
-add2history :: IntState -> String -> [UndoRedoElem] -> IntState
-add2history st name descr
+-- write2Hist :: IORef IntState -> String -> [UndoRedoElem] -> IO()
+-- write2Hist iost name descr
+--  = do 
+--    ost <- readIORef iost 
+--    let nwst = add2history name ost descr
+--    writeIORef iost nwst
+
+add2history :: String -> IntState -> [UndoRedoElem] -> IntState
+add2history name st descr
  = case undoList $ i_hist st of
     [] ->  let nwEl = Int_CmdHistoryDescription {
                              cmdName = name,

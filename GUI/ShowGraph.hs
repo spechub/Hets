@@ -39,6 +39,8 @@ import Common.UniUtils
 import Data.IORef
 import Control.Concurrent.MVar
 
+import Interfaces.DataTypes
+
 showGraph :: FilePath -> HetcatsOpts ->
              Maybe (LIB_NAME, -- filename
                     LibEnv    -- DGraphs for imported modules
@@ -54,12 +56,14 @@ showGraph file opts env = case env of
     (gInfo,wishInst) <- initializeConverter
     useHTk -- All messages are displayed in TK dialog windows
     -- from this point on
-    writeIORef (libEnvIORef gInfo) le
-    ch <- (initCommandHistory file)
-    let gInfo' = gInfo { gi_LIB_NAME = ln
-                       , gi_hetcatsOpts = opts
-                       , commandHist = ch
-                       }
+    ost <- readIORef $ intState gInfo
+    let nwst = case i_state ost of 
+                Nothing -> ost
+                Just ist -> ost{ i_state = Just $ ist { i_libEnv = le
+                                                      , i_ln = ln} }
+    writeIORef (intState gInfo) nwst
+--    ch <- (initCommandHistory file)
+    let gInfo' = gInfo { gi_hetcatsOpts = opts     }
     showLibGraph gInfo'
     mShowGraph gInfo' ln
     takeMVar $ exitMVar gInfo'

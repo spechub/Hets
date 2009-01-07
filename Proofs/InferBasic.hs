@@ -50,7 +50,7 @@ import Comorphisms.KnownProvers
 
 import GUI.Utils
 import GUI.ProofManagement
-import GUI.History(CommandHistory, addProveToHist)
+-- import GUI.History(CommandHistory, addProveToHist)
 
 import qualified Common.Lib.Graph as Tree
 import Data.Graph.Inductive.Basic (elfilter)
@@ -152,9 +152,12 @@ proveTheory _ p =
 -- | applies basic inference to a given node
 basicInferenceNode :: Bool -- ^ True = CheckConsistency; False = Prove
                    -> LogicGraph -> (LIB_NAME,Node) -> LIB_NAME
-                   -> GUIMVar -> LibEnv -> CommandHistory
+                   -> GUIMVar -> LibEnv 
+                   -- -> CommandHistory
                    -> IO (Result (LibEnv, Result G_theory))
-basicInferenceNode checkCons lg (ln, node) libname guiMVar libEnv ch = do
+basicInferenceNode checkCons lg (ln, node) libname guiMVar libEnv 
+ -- ch 
+ = do
       let dGraph = lookupDGraph libname libEnv
       runResultT $ do
         -- compute the theory of the node, and its name
@@ -210,8 +213,8 @@ basicInferenceNode checkCons lg (ln, node) libname guiMVar libEnv ch = do
             kpMap <- liftR $ knownProversGUI
             newTh <- ResultT $
                    proofManagementGUI lid1 ProofActions {
-                       proveF = (proveKnownPMap lg ch freedefs),
-                       fineGrainedSelectionF = (proveFineGrainedSelect lg ch freedefs),
+                       proveF = (proveKnownPMap lg freedefs),
+                       fineGrainedSelectionF = (proveFineGrainedSelect lg  freedefs),
                        recalculateSublogicF  =
                                      recalculateSublogicAndSelectedTheory }
                                            thName
@@ -237,10 +240,10 @@ basicInferenceSubTree :: Bool -- ^ True = CheckConsistency; False = Prove
                    -> LogicGraph
                    -> (LIB_NAME,Node)
                    -> GUIMVar
-                   -> CommandHistory
+                   -- -> CommandHistory
                    -> LibEnv
                    -> IO (Result (LibEnv, Result G_theory))
-basicInferenceSubTree checkCons lg (ln, node) guiMVar ch libEnv = do
+basicInferenceSubTree checkCons lg (ln, node) guiMVar libEnv = do
       let dGraph = lookupDGraph ln libEnv
       runResultT $ do
         -- compute the theory of the node, and its name
@@ -307,8 +310,8 @@ basicInferenceSubTree checkCons lg (ln, node) guiMVar ch libEnv = do
             kpMap <- liftR $ knownProversGUI
             newTh <- ResultT $
                    proofManagementGUI lid1 ProofActions {
-                       proveF = (proveKnownPMap lg ch freedefs),
-                       fineGrainedSelectionF = (proveFineGrainedSelect lg ch freedefs),
+                       proveF = (proveKnownPMap lg freedefs),
+                       fineGrainedSelectionF = (proveFineGrainedSelect lg freedefs),
                        recalculateSublogicF  =
                                      recalculateSublogicAndSelectedTheory }
                                            thName
@@ -339,12 +342,13 @@ proveKnownPMap :: (Logic lid sublogics1
                symbol1
                raw_symbol1
                proof_tree1) =>
-       LogicGraph -> CommandHistory
+       LogicGraph 
+       -- -> CommandHistory
     -> [FreeDefMorphism sentence morphism1]
     -> ProofState lid sentence -> IO (Result (ProofState lid sentence))
-proveKnownPMap lg ch freedefs st =
-    maybe (proveFineGrainedSelect lg ch freedefs st)
-          (callProver st ch False freedefs) $
+proveKnownPMap lg  freedefs st =
+    maybe (proveFineGrainedSelect lg freedefs st)
+          (callProver st False freedefs) $
           lookupKnownProver st ProveGUI
 
 callProver :: (Logic lid sublogics1
@@ -358,10 +362,11 @@ callProver :: (Logic lid sublogics1
                raw_symbol1
                proof_tree1) =>
        ProofState lid sentence
-    -> CommandHistory -> Bool -- indicates if a translation was chosen
+    -- -> CommandHistory 
+    -> Bool -- indicates if a translation was chosen
     -> [FreeDefMorphism sentence morphism1]
     -> (G_prover,AnyComorphism) -> IO (Result (ProofState lid sentence))
-callProver st ch trans_chosen freedefs p_cm@(_,acm) =
+callProver st trans_chosen freedefs p_cm@(_,acm) =
        runResultT $ do
         G_theory_with_prover lid th p <- liftR $ prepareForProving st p_cm
         let freedefs1 = maybe [] id $
@@ -371,8 +376,8 @@ callProver st ch trans_chosen freedefs p_cm@(_,acm) =
         ps <- lift $ proveTheory lid p (theoryName st) th freedefs1
         -- lift $ putStrLn $ show ps
         let st' = markProved acm lid ps st
-        lift $ addProveToHist ch st'
-            (if trans_chosen then Just p_cm else Nothing) ps
+--        lift $ addProveToHist ch st'
+--            (if trans_chosen then Just p_cm else Nothing) ps
         return st'
 
 proveFineGrainedSelect ::
@@ -386,10 +391,10 @@ proveFineGrainedSelect ::
                symbol1
                raw_symbol1
                proof_tree1) =>
-       LogicGraph -> CommandHistory
+       LogicGraph -- -> CommandHistory
     -> [FreeDefMorphism sentence morphism1]
     -> ProofState lid sentence -> IO (Result (ProofState lid sentence))
-proveFineGrainedSelect lg ch freedefs st =
+proveFineGrainedSelect lg freedefs st =
     runResultT $ do
        let sl = sublogicOfTheory st
            cmsToProvers =
@@ -399,4 +404,4 @@ proveFineGrainedSelect lg ch freedefs st =
                       filter hasModelExpansion $ findComorphismPaths lg sl
        pr <- selectProver cmsToProvers
        ResultT $ callProver st{lastSublogic = sublogicOfTheory st,
-                               comorphismsToProvers = cmsToProvers} ch True freedefs pr
+                               comorphismsToProvers = cmsToProvers} True freedefs pr

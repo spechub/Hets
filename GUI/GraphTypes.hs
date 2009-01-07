@@ -27,7 +27,7 @@ module GUI.GraphTypes
 
 import GUI.GraphAbstraction(GraphInfo, initgraphs)
 import GUI.ProofManagement (GUIMVar)
-import GUI.History(CommandHistory, emptyCommandHistory)
+-- import GUI.History(CommandHistory, emptyCommandHistory)
 import GUI.UDGUtils
 
 import Static.DevGraph
@@ -42,6 +42,10 @@ import qualified Data.Map as Map
 
 import Control.Concurrent.MVar
 
+import Interfaces.DataTypes
+import Interfaces.Utils
+
+
 data InternalNames = InternalNames
                      { showNames :: Bool
                      , updater :: [(String,(String -> String) -> IO ())]
@@ -50,16 +54,17 @@ data InternalNames = InternalNames
 -- | Global datatype for all GUI functions
 data GInfo = GInfo
              { -- Global
-               libEnvIORef :: IORef LibEnv
+               intState :: IORef IntState
+--               libEnvIORef :: IORef LibEnv
              , gi_hetcatsOpts :: HetcatsOpts
              , windowCount :: MVar Integer
              , exitMVar :: MVar ()
              , globalLock :: MVar ()
-             , globalHist :: MVar ([[LIB_NAME]],[[LIB_NAME]])
-             , commandHist :: CommandHistory
+--             , globalHist :: MVar ([[LIB_NAME]],[[LIB_NAME]])
+--             , commandHist :: CommandHistory
              , functionLock :: MVar ()
                -- Local
-             , gi_LIB_NAME :: LIB_NAME
+--             , gi_LIB_NAME :: LIB_NAME
              , gi_GraphInfo :: GraphInfo
              , internalNamesIORef :: IORef InternalNames
              , proofGUIMVar :: GUIMVar
@@ -93,7 +98,17 @@ data Colors = Black
 -- | Creates an empty GInfo
 emptyGInfo :: IO GInfo
 emptyGInfo = do
-  iorLE <- newIORef emptyLibEnv
+  let ihist = IntHistory { 
+                 undoList = [], 
+                 redoList = [] }
+      istate = emptyIntIState emptyLibEnv $ Lib_id $ Indirect_link 
+                                        "" nullRange "" noTime
+      st = IntState { 
+            i_state = Just istate,
+            i_hist  = ihist }
+  
+  intSt <- newIORef st
+--  iorLE <- newIORef emptyLibEnv
   graphInfo <- initgraphs
   iorIN <- newIORef $ InternalNames False []
   guiMVar <- newEmptyMVar
@@ -101,10 +116,12 @@ emptyGInfo = do
   fl <- newEmptyMVar
   exit <- newEmptyMVar
   wc <- newMVar 0
-  gh <- newMVar ([],[])
-  ch <- emptyCommandHistory
-  return $ GInfo { libEnvIORef = iorLE
-                  , gi_LIB_NAME = Lib_id $ Indirect_link "" nullRange "" noTime
+--  gh <- newMVar ([],[])
+--  ch <- emptyCommandHistory
+  return $ GInfo {
+  --              libEnvIORef = iorLE
+  --             , gi_LIB_NAME = Lib_id $ Indirect_link "" nullRange "" noTime
+                   intState = intSt
                  , gi_GraphInfo = graphInfo
                  , internalNamesIORef = iorIN
                  , gi_hetcatsOpts = defaultHetcatsOpts
@@ -112,8 +129,8 @@ emptyGInfo = do
                  , windowCount = wc
                  , exitMVar = exit
                  , globalLock = gl
-                 , globalHist = gh
-                 , commandHist = ch
+  --             , globalHist = gh
+  --             , commandHist = ch
                  , functionLock = fl
                  }
 
@@ -123,8 +140,16 @@ copyGInfo gInfo newLN = do
   graphInfo <- initgraphs
   iorIN <- newIORef $ InternalNames False []
   guiMVar <- newEmptyMVar
-  return $ gInfo { gi_LIB_NAME = newLN
-                 , gi_GraphInfo = graphInfo
+  intSt <- readIORef $ intState gInfo
+  let intSt' = intSt { 
+                i_state = case i_state intSt of 
+                           Nothing -> Nothing
+                           Just st -> Just $ st {
+                                                 i_ln = newLN}
+                    }
+  writeIORef (intState gInfo) $ intSt'
+  return $ gInfo { -- gi_LIB_NAME = newLN
+                   gi_GraphInfo = graphInfo
                  , internalNamesIORef = iorIN
                  , proofGUIMVar = guiMVar
                  }

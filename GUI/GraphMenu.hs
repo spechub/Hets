@@ -55,6 +55,10 @@ import qualified GUI.HTkUtils as HTk
 
 import Control.Concurrent.MVar
 
+
+import Interfaces.DataTypes
+import Interfaces.History 
+
 -- | Adds to the DGNodeType list style options for each type
 nodeTypes :: HetcatsOpts
           -> [( DGNodeType -- Nodetype
@@ -134,20 +138,25 @@ mapEdgeTypes opts = Map.fromList $ map (\ (e, l, c, _, _) -> (e, (l, c)))
 
 -- | Creates the graph. Runs makegraph
 createGraph :: GInfo -> String -> ConvFunc -> LibFunc -> IO ()
-createGraph gInfo@(GInfo { gi_LIB_NAME = ln
-                         , gi_GraphInfo = actGraphInfo
+createGraph gInfo@(GInfo { gi_GraphInfo = actGraphInfo
                          , gi_hetcatsOpts = opts
                          }) title convGraph showLib = do
-  let file = rmSuffix (libNameToFile opts ln) ++ prfSuffix
-  deselectEdgeTypes <- newIORef []
-  GA.makegraphExt actGraphInfo
+ ost <- readIORef $ intState gInfo
+ case i_state ost of 
+  Nothing -> return ()
+  Just ist -> do
+   let ln = i_ln ist 
+       file = rmSuffix (libNameToFile opts ln) ++ prfSuffix
+   deselectEdgeTypes <- newIORef []
+   globMenu <- createGlobalMenu gInfo convGraph showLib deselectEdgeTypes
+   GA.makegraphExt actGraphInfo
                   title
                   (createOpen gInfo file convGraph showLib)
                   (createSave gInfo file)
                   (createSaveAs gInfo file)
                   (createClose gInfo)
                   (Just (createExit gInfo))
-                  (createGlobalMenu gInfo convGraph showLib deselectEdgeTypes)
+                  globMenu
                   (createNodeTypes gInfo convGraph showLib)
                   (createEdgeTypes gInfo)
 
@@ -181,13 +190,16 @@ createSaveAs gInfo file = Just (
 
 -- | Returns the save-function
 createClose :: GInfo -> IO Bool
-createClose (GInfo { gi_LIB_NAME = ln
-                   , libEnvIORef = ioRefProofStatus
-                   , windowCount = wc
+createClose gInfo@(GInfo { windowCount = wc
                    , exitMVar = exit
                    }) = do
-  le <- readIORef ioRefProofStatus
-  case Map.lookup ln le of
+ ost <- readIORef $ intState gInfo
+ case i_state ost of 
+  Nothing -> return False
+  Just ist -> do
+   let le = i_libEnv ist
+       ln = i_ln ist
+   case Map.lookup ln le of
     Just dgraph -> do
       case openlock dgraph of
         Just lock -> do
@@ -198,11 +210,11 @@ createClose (GInfo { gi_LIB_NAME = ln
         Nothing -> error $ "MVar of " ++ show ln ++ " not initialized"
     Nothing -> error $ "development graph with libname " ++ show ln
                        ++" does not exist"
-  count <- takeMVar wc
-  case count == 1 of
+   count <- takeMVar wc
+   case count == 1 of
     True -> putMVar exit ()
     False -> putMVar wc $ count - 1
-  return True
+   return True
 
 -- | Returns the save-function
 createExit :: GInfo -> IO ()
@@ -211,82 +223,87 @@ createExit (GInfo {exitMVar = exit}) = do
 
 -- | Creates the global menu
 createGlobalMenu :: GInfo -> ConvFunc -> LibFunc -> IORef [String]
-                 -> [GlobalMenu]
-createGlobalMenu gInfo@(GInfo { gi_LIB_NAME = ln
-                              , gi_hetcatsOpts = opts
-                              , commandHist = ch
+                 -> IO [GlobalMenu]
+createGlobalMenu gInfo@(GInfo { gi_hetcatsOpts = opts
 #ifdef GTKGLADE
                               , gi_GraphInfo = gi
                               }) convGraph showLib deselectEdgeTypes =
 #else
                               }) convGraph showLib _ =
 #endif
-  let ral x = runAndLock gInfo x in
-  [GlobalMenu (Menu Nothing
-    [ Button "Undo" $ ral $ undo gInfo True
-    , Button "Redo" $ ral $ undo gInfo False
-    , Button "Reload" $ ral $ reload gInfo
-    , Menu (Just "Unnamed nodes")
+ do 
+ ost <- readIORef $ intState gInfo
+ case i_state ost of 
+  Nothing -> return []
+  Just ist -> do
+   let ral x = runAndLock gInfo x 
+       ln = i_ln ist
+   return 
+    [GlobalMenu (Menu Nothing
+     [ Button "Undo" $ ral $ undo gInfo True
+     , Button "Redo" $ ral $ undo gInfo False
+     , Button "Reload" $ ral $ reload gInfo
+     , Menu (Just "Unnamed nodes")
         [ Button "Hide/show names" $ ral $ hideShowNames gInfo True
         , Button "Hide nodes" $ ral $ hideNodes gInfo
         , Button "Show nodes" $ ral $ showNodes gInfo
       ]
-    , Button "Focus node" $ ral $ focusNode gInfo
+     , Button "Focus node" $ ral $ focusNode gInfo
 #ifdef GTKGLADE
-    , Button "Select Linktypes" $ showLinkTypeChoice deselectEdgeTypes
+     , Button "Select Linktypes" $ showLinkTypeChoice deselectEdgeTypes
                                 $ (\ eList -> ral $ do
                                     GA.showAll gi
                                     GA.hideSetOfEdgeTypes gi eList
                                     GA.redisplay gi
                                   )
 #endif
-    , Menu (Just "Proofs") $ map (\ (str, cmd) ->
-       Button str $ addMenuItemToHist ch str >>
-                  (ral $ performProofAction gInfo
+     , Menu (Just "Proofs") $ map (\ (str, cmd) ->
+       -- History ? or just some partial history in ch ?
+        Button str $ (ral $ performProofAction gInfo
                   $ proofMenu gInfo $ return . return . cmd ln
                   . Map.map undoRedo))
-       [ ("Automatic", automatic)
-       , ("Global Subsumption", globSubsume)
-       , ("Global Decomposition", globDecomp)
-       , ("Local Inference", localInference)
-       , ("Local Decomposition (merge of rules)", locDecomp)
-       , ("Composition (merge of rules)", composition)
-       , ("Composition - creating new links", compositionCreatingEdges)
-       ] ++
-       [Button "Hide Theorem Shift" $
-               (addMenuItemToHist ch "Hide Theorem Shift") >>
+        [ ("Automatic", automatic)
+        , ("Global Subsumption", globSubsume)
+        , ("Global Decomposition", globDecomp)
+        , ("Local Inference", localInference)
+        , ("Local Decomposition (merge of rules)", locDecomp)
+        , ("Composition (merge of rules)", composition)
+        , ("Composition - creating new links", compositionCreatingEdges)
+        ] ++
+        [Button "Hide Theorem Shift" $
+               -- (addMenuItemToHist ch "Hide Theorem Shift") >>
                (ral $ performProofAction gInfo
                $ proofMenu gInfo $ fmap return . interactiveHideTheoremShift ln)
-       ] ++
-       map (\ (str, cmd) ->
-              Button str $ (addMenuItemToHist ch str) >>
-                  (ral $ performProofAction gInfo
-                  $ proofMenu gInfo $ return . cmd ln))
-       [ ("Theorem Hide Shift", theoremHideShift)
-       , ("Compute Colimit", computeColimit)
-       , ("Compute normal forms", convertNodesToNf)
-       ] ++
-       [ Menu (Just "Flattening") $ map ( \ (str, cmd) ->
-          Button str $ ral $ performProofAction gInfo
-                     $ proofMenu gInfo $ return . cmd)
-             [ ("Importings", libEnv_flattening_imports)
-             , ("Disjoint unions", libEnv_flattening_dunions)
-             , ("Importings and renamings", libEnv_flattening_renamings)
-             , ("Hiding", libEnv_flattening_hiding)
-             , ("Heterogeneity", libEnv_flattening_heterogen)
-             , ("Qualify all names", qualifyLibEnv)]]
-    , Button "Dump LibEnv" $ do
-         le <- readIORef $ libEnvIORef gInfo
-         print $ prettyLibEnv le
-    , Button "Translate Graph" $ ral $ translateGraph gInfo convGraph showLib
-    , Button "Show Logic Graph" $ ral $ showLogicGraph daVinciSort
-    , Button "Show Library Graph" $ ral $ showLibGraph gInfo showLib
-    , Button "Save Graph for uDrawGraph" $ ral
-             $ saveUDGraph gInfo (mapNodeTypes opts) $ mapEdgeTypes opts
-    , Button "Save proof-script" $ ral
-             $ askSaveProofScript (gi_GraphInfo gInfo) ch
-    ])
-  ]
+        ] ++
+        map (\ (str, cmd) ->
+               Button str $ -- (addMenuItemToHist ch str) >>
+                   (ral $ performProofAction gInfo
+                   $ proofMenu gInfo $ return . cmd ln))
+        [ ("Theorem Hide Shift", theoremHideShift)
+        , ("Compute Colimit", computeColimit)
+        , ("Compute normal forms", convertNodesToNf)
+        ] ++
+        [ Menu (Just "Flattening") $ map ( \ (str, cmd) ->
+           Button str $ ral $ performProofAction gInfo
+                      $ proofMenu gInfo $ return . cmd)
+              [ ("Importings", libEnv_flattening_imports)
+              , ("Disjoint unions", libEnv_flattening_dunions)
+              , ("Importings and renamings", libEnv_flattening_renamings)
+              , ("Hiding", libEnv_flattening_hiding)
+              , ("Heterogeneity", libEnv_flattening_heterogen)
+              , ("Qualify all names", qualifyLibEnv)]]
+     , Button "Dump LibEnv" $ do
+          let le = i_libEnv ist
+          print $ prettyLibEnv le
+     , Button "Translate Graph" $ ral $ translateGraph gInfo convGraph showLib
+     , Button "Show Logic Graph" $ ral $ showLogicGraph daVinciSort
+     , Button "Show Library Graph" $ ral $ showLibGraph gInfo showLib
+     , Button "Save Graph for uDrawGraph" $ ral
+              $ saveUDGraph gInfo (mapNodeTypes opts) $ mapEdgeTypes opts
+--     , Button "Save proof-script" $ ral
+--              $ askSaveProofScript (gi_GraphInfo gInfo) ch
+     ])
+    ]
 
 -- | A list of all Node Types
 createNodeTypes :: GInfo -> ConvFunc -> LibFunc
@@ -382,8 +399,14 @@ createMenuButton :: String -> (Int -> DGraph -> IO ())
 createMenuButton title menuFun gInfo =
                     (Button title
                       (\ (_, descr) ->
-                        do le <- readIORef $ libEnvIORef gInfo
-                           let dGraph = lookupDGraph (gi_LIB_NAME gInfo) le
+                        do 
+                         ost <- readIORef $ intState gInfo
+                         case i_state ost of 
+                          Nothing -> return ()
+                          Just ist -> do 
+                           let le = i_libEnv ist
+                               ln = i_ln ist
+                               dGraph = lookupDGraph ln le
                            runAndLock gInfo $  menuFun descr dGraph
                            return ()
                        )
@@ -402,14 +425,20 @@ createLocalMenuButtonTranslateTheory gInfo =
    (added by KL)
 -}
 createLocalMenuTaxonomy :: GInfo -> ButtonMenu GA.NodeValue
-createLocalMenuTaxonomy ginfo@(GInfo { gi_LIB_NAME = ln
-                                     , libEnvIORef = le }) =
+createLocalMenuTaxonomy ginfo =
   (Menu (Just "Taxonomy graphs")
         [ createMenuButton "Subsort graph" (passTh displaySubsortGraph) ginfo
         , createMenuButton "Concept graph" (passTh displayConceptGraph) ginfo
         ])
   where passTh displayFun descr _ =
-          do r <- lookupTheoryOfNode le ln descr
+         do 
+          ost <- readIORef $ intState ginfo
+          case i_state ost of 
+           Nothing -> return ()
+           Just ist -> do 
+             let ln = i_ln ist
+                 le = i_libEnv ist
+             r <- lookupTheoryOfNode le ln descr
              case r of
                Res.Result [] (Just (_le',n, gth)) ->
                   displayFun (showDoc n "") gth

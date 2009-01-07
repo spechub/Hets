@@ -43,6 +43,8 @@ import Data.IORef
 import qualified Data.Map as Map(lookup, insert)
 import Control.Concurrent.MVar
 
+import Interfaces.DataTypes
+
 initializeConverter :: IO (GInfo,HTk.HTk)
 initializeConverter = do
   wishInst <- HTk.initHTk [HTk.withdrawMainWin]
@@ -53,13 +55,16 @@ initializeConverter = do
     abstract graph and returns the descriptor of the latter, the
     graphInfo it is contained in and the conversion maps. -}
 convertGraph :: ConvFunc
-convertGraph gInfo@(GInfo { libEnvIORef = ioRefProofStatus
-                          , gi_GraphInfo = actGraphInfo
-                          , gi_LIB_NAME = libname
+convertGraph gInfo@(GInfo { gi_GraphInfo = actGraphInfo
                           , windowCount = wc
                           }) title showLib = do
-  libEnv <- readIORef ioRefProofStatus
-  case Map.lookup libname libEnv of
+ ost <- readIORef $ intState gInfo
+ case i_state ost of 
+  Nothing -> error "Something went wrong, no library loaded"
+  Just ist -> do
+   let libEnv = i_libEnv ist
+       libname = i_ln ist
+   case Map.lookup libname libEnv of
     Just dgraph -> do
       case openlock dgraph of
         Just lock -> do
@@ -86,8 +91,9 @@ convertGraph gInfo@(GInfo { libEnvIORef = ioRefProofStatus
                              ++" is already open"
         Nothing -> do
           lock <- newEmptyMVar
-          writeIORef ioRefProofStatus
-            $ Map.insert libname dgraph{openlock = Just lock} libEnv
+          let nwle = Map.insert libname dgraph{openlock = Just lock} libEnv
+              nwst = ost { i_state = Just $ ist { i_libEnv = nwle}}
+          writeIORef (intState gInfo) nwst
           convertGraph gInfo title showLib
     Nothing -> error $ "development graph with libname " ++ show libname
                        ++" does not exist"
@@ -95,6 +101,11 @@ convertGraph gInfo@(GInfo { libEnvIORef = ioRefProofStatus
 -- | initializes an empty abstract graph with the needed node and edge types,
 -- return type equals the one of convertGraph
 initializeGraph :: GInfo -> String -> LibFunc -> IO ()
-initializeGraph gInfo@(GInfo { gi_LIB_NAME = ln }) title showLib = do
-  let title' = (title ++ " for " ++ show ln)
-  createGraph gInfo title' (convertGraph) (showLib)
+initializeGraph gInfo title showLib = do
+ ost <- readIORef $ intState gInfo
+ case i_state ost of 
+  Nothing -> return ()
+  Just ist -> do
+   let ln = i_ln ist
+       title' = (title ++ " for " ++ show ln)
+   createGraph gInfo title' (convertGraph) (showLib)

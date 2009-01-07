@@ -60,7 +60,7 @@ import Logic.Grothendieck
 
 add2hist :: [UndoRedoElem] -> CMDL_State ->  CMDL_State
 add2hist descr st
- = let intst = add2history (intState st) [] descr
+ = let intst = add2history [] (intState st)  descr
    in st {
          intState = intst }
 

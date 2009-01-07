@@ -293,7 +293,6 @@ cDgSelect input state
                        (\x -> case x of
                                (n,_) -> selectANode n dgState
                                ) listNodes
-          --      oldH = history state
                 nwist = emptyIntIState (i_libEnv dgState) (i_ln dgState)
              return $ add2hist [IStateChange $ Just dgState] $
                    genMessage tmpErrs' []
@@ -306,9 +305,6 @@ cDgSelect input state
                                           elements = elems,
                                           cComorphism = getIdComorphism elems
                                           } }
-               --    history = oldH {
-               --         undoInstances = ([],[]):(undoInstances oldH),
-               --         redoInstances = []},
                    }
 
 
@@ -331,7 +327,6 @@ cDgSelectAll state
                    (\x -> case x of
                            (n,_) -> selectANode n dgState
                            ) lsNodes
-         -- oldH = history state
           nwist = emptyIntIState (i_libEnv dgState) (i_ln dgState)
                -- ADD TO HISTORY
       return $ add2hist [IStateChange $ Just dgState] $ state {
@@ -342,8 +337,4 @@ cDgSelectAll state
                                           elements = elems,
                                           cComorphism = getIdComorphism elems
                                             } }
-        --      history = oldH {
-        --                 undoInstances= ([],[]):(undoInstances oldH),
-        --                 redoInstances= []
-        --                 },
               }
