@@ -81,13 +81,14 @@ instance Sentences CspCASL
     SignCSP.CspMorphism     -- morphism
     Symbol               -- symbol
     where
-      parse_sentence CspCASL = Nothing
       map_sen CspCASL mor sen =
         if isInclusionMorphism isInclusionMorphismExtension mor
         then return sen
         else fail "renaming in map_sen CspCASL not implemented"
+      parse_sentence CspCASL = Nothing
       sym_of CspCASL = CspCASL_Morphism.symOf
       symmap_of CspCASL = morphismToSymbMap
+      sym_name CspCASL = symName
       simplify_sen CspCASL = SimplifySen.simplifySen
 
 -- | Syntax of CspCASL
