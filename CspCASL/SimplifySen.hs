@@ -59,18 +59,22 @@ simplifyProc sigma proc =
       Interleaving p q range ->
           Interleaving (simplifyProc sigma p) (simplifyProc sigma q) range
       SynchronousParallel p q range ->
-          SynchronousParallel (simplifyProc sigma p) (simplifyProc sigma q) range
+          SynchronousParallel (simplifyProc sigma p)
+                                  (simplifyProc sigma q) range
       GeneralisedParallel p es q range ->
-          GeneralisedParallel (simplifyProc sigma p) es (simplifyProc sigma q) range
+          GeneralisedParallel (simplifyProc sigma p) es
+                                  (simplifyProc sigma q) range
       AlphabetisedParallel p esp esq q range ->
-          AlphabetisedParallel (simplifyProc sigma p) esp esq (simplifyProc sigma q) range
+          AlphabetisedParallel (simplifyProc sigma p) esp esq
+                                   (simplifyProc sigma q) range
       Hiding p es range ->
           Hiding (simplifyProc sigma p) es range
       RenamingProcess p r range ->
           RenamingProcess (simplifyProc sigma p) r range
       ConditionalProcess f p q range ->
           ConditionalProcess (simplifyCASLSen caslSign f)
-                                 (simplifyProc sigma p) (simplifyProc sigma q) range
+                                 (simplifyProc sigma p)
+                                 (simplifyProc sigma q) range
       NamedProcess name args range ->
           NamedProcess name args range
       FQProcess p alpha range ->
