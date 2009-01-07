@@ -265,7 +265,7 @@ data CspCASLSen = CASLSen (FORMULA ())
 
 instance Pretty CspCASLSen where
     -- Not implemented yet - the pretty printing of the casl sentences
-    pretty(CASLSen _) = text "Pretty printing for CASLSen not implemented yet"
+    pretty(CASLSen f) = pretty f
     pretty(ProcessEq pn varList alpha proc) =
         let varDoc = if (null varList)
                      then empty

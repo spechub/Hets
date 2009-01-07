@@ -73,4 +73,4 @@ mapMor m =
   , pred_map = pred_map m }
 
 mapSen :: CASLFORMULA -> CspCASLSen
-mapSen _ = emptyCCSen
+mapSen f = CASLSen f
