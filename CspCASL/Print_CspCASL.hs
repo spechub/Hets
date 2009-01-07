@@ -148,10 +148,12 @@ printProcess pr = case pr of
         let commAlphaList = S.toList commAlpha
             prettyComms cs = sepByCommas (map pretty cs)
         in brackets(pretty p) <> text "_" <> braces (prettyComms commAlphaList)
+          -- (pretty p)
 
 instance Pretty CommType where
     pretty (CommTypeSort s) = pretty s
-    pretty (CommTypeChan (TypedChanName c s)) =  pretty c -- BUG ?  - this is the old version  :  parens (sepByCommas [pretty c, pretty s])
+    pretty (CommTypeChan (TypedChanName c s)) =  pretty c
+-- BUG ?  - this is the old version : parens (sepByCommas [pretty c, pretty s])
 
 
 -- glue and prec_comp decide whether the child in the parse tree needs
