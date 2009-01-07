@@ -28,7 +28,6 @@ import CASL.MixfixParser (emptyMix, Mix(..), makeRules, mkIdSets,
                           resolveFormula, resolveMixfix, unite)
 import CASL.Overload (minExpFORMULA, oneExpTerm)
 import CASL.Sign
-import CASL.Morphism (RawSymbol)
 import CASL.StaticAna (allOpIds, allPredIds)
 import Common.AS_Annotation
 import Common.Result
@@ -44,6 +43,7 @@ import CspCASL.AS_CspCASL_Process
 import CspCASL.LocalTop (Obligation(..), unmetObs)
 import CspCASL.Print_CspCASL ()
 import CspCASL.SignCSP
+import CspCASL.Morphism(makeChannelNameSymbol, makeProcNameSymbol)
 
 import qualified Data.Set as Set
 -- | The first element of the returned pair (CspBasicSpec) is the same
@@ -120,7 +120,12 @@ anaChannelName s m chanName = do
               addDiags [mkDiag Error err chanName]
               return m
       else case Map.lookup chanName m of
-             Nothing -> return (Map.insert chanName s m) -- insert new.
+             Nothing ->
+                 -- Add the channel name as a symbol to the list of
+                 -- newly defined symbols - which is stored in the CASL
+                 -- signature
+                 do addSymbol (makeChannelNameSymbol chanName)
+                    return (Map.insert chanName s m) -- insert new.
              Just e ->
                if e == s
                  then do let warn = "channel redeclared with same sort"
@@ -159,6 +164,10 @@ anaProcDecl name argSorts (ProcAlphabet commTypes _) = do
                 -- build alphabet: set of CommType values
                 alpha <- Monad.foldM (anaCommType sig) S.empty commTypes
                 let profile = (ProcProfile argSorts alpha)
+                -- Add the process name as a symbol to the list of
+                -- newly defined symbols - which is stored in the CASL
+                -- signature
+                addSymbol (makeProcNameSymbol name)
                 return (Map.insert name profile oldProcDecls)
     vds <- gets envDiags
     put sig { extendedInfo = ext {procSet = newProcDecls }
