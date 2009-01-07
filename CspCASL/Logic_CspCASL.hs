@@ -52,6 +52,7 @@ import qualified CspCASL.Morphism as CspCASL_Morphism
 import qualified CspCASL.Parse_CspCASL as Parse_CspCASL
 import qualified CspCASL.Print_CspCASL ()
 import qualified CspCASL.SignCSP as SignCSP
+import qualified CspCASL.SimplifySen as SimplifySen
 import qualified CspCASL.StatAnaCSP as StatAnaCSP
 
 -- | Lid for CspCASL
@@ -87,6 +88,7 @@ instance Sentences CspCASL
         else fail "renaming in map_sen CspCASL not implemented"
       sym_of CspCASL = CspCASL_Morphism.symOf
       symmap_of CspCASL = morphismToSymbMap
+      simplify_sen CspCASL = SimplifySen.simplifySen
 
 -- | Syntax of CspCASL
 instance Syntax CspCASL

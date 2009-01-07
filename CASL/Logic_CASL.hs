@@ -224,7 +224,7 @@ instance Sentences CASL CASLFORMULA CASLSign CASLMor Symbol where
       sym_of CASL = symOf
       symmap_of CASL = morphismToSymbMap
       sym_name CASL = symName
-      simplify_sen CASL = simplifySen dummyMin dummy
+      simplify_sen CASL = simplifyCASLSen
       print_named CASL = printTheoryFormula
 
 instance StaticAnalysis CASL CASLBasicSpec CASLFORMULA

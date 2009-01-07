@@ -12,7 +12,7 @@ Simplification of formulas and terms for output after analysis
 
 -}
 
-module CASL.SimplifySen(simplifySen, simplifyTerm, rmTypesT) where
+module CASL.SimplifySen(simplifyCASLSen, simplifySen, simplifyTerm, rmTypesT) where
 
 import Common.Id
 import Common.Result
@@ -24,6 +24,9 @@ import CASL.Overload
 
 {- | simplifies formula\/term informations for 'show theory' of
    HETS-graph representation.  -}
+simplifyCASLSen :: Sign () e -> FORMULA () -> FORMULA ()
+simplifyCASLSen = simplifySen dummyMin dummy
+
 simplifySen :: (GetRange f, Pretty f) =>
                (Min f e) -- ^ extension type analysis
             -> (Sign f e -> f -> f) -- ^ simplifySen for ExtFORMULA

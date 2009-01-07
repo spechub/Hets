@@ -179,14 +179,7 @@ emptyCspAddMorphism = CspAddMorphism
   , processMap = Map.empty
   }
 
-
-
-
-
-
-
-
-
+-- | Pretty printing for CspCASL signatures
 instance Pretty CspSign where
   pretty = printCspSign
 
@@ -200,8 +193,7 @@ printCspSign sigma =
                     _ -> (keyword channelsS) <+> printChanNameMap (chans sigma)
               proc_part = (keyword processS) <+> printProcNameMap (procSet sigma)
 
-
-
+-- | Pretty printing for channel name maps
 instance Pretty ChanNameMap where
   pretty = printChanNameMap
 
@@ -211,8 +203,7 @@ printChanNameMap chanMap =
         where printChan (chanName, sort) =
                   (pretty chanName) <+> colon <+> (pretty sort)
 
-
-
+-- | Pretty printing for process name maps
 instance Pretty ProcNameMap where
   pretty = printProcNameMap
 
@@ -222,8 +213,7 @@ printProcNameMap procNameMap =
     where printProcName (procName, procProfile) =
               (pretty procName) <+> pretty procProfile
 
-
-
+-- | Pretty printing for process profiles
 instance Pretty ProcProfile where
   pretty = printProcProfile
 
@@ -233,24 +223,9 @@ printProcProfile (ProcProfile sorts commAlpha) =
     where printArgs [] = empty
           printArgs args = parens $ ppWithCommas args
 
-
-
+-- | Pretty printing for Csp morphisms
 instance Pretty CspAddMorphism where
   pretty = text . show
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 -- Sentences
 
