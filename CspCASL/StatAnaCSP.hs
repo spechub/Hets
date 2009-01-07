@@ -19,9 +19,6 @@ module CspCASL.StatAnaCSP where
 import qualified Control.Monad as Monad
 import qualified Data.Map as Map
 import qualified Data.Set as S
--- liam added the following, they should be deleted from imports when
--- liams temp code is removed: Op_name mkSimpleId mkInfix OP_SYMB(..),
--- OP_TYPE(..)
 import CASL.AS_Basic_CASL (FORMULA(..), OpKind(..), SORT, TERM(..), VAR,
                            VAR_DECL(..))
 import CASL.MixfixParser (emptyMix, Mix(..), makeRules, mkIdSets,
@@ -242,8 +239,8 @@ anaProcTerm proc gVars lVars = case proc of
     NamedProcess name args range ->
         -- BUG - Not returning a complete fully qualified process
         do addDiags [mkDiag Debug "Named process" proc]
-           al <- anaNamedProc proc name args (lVars `Map.union` gVars)
-           let fqProc = FQProcess (NamedProcess name args range) al range
+           (al, fqArgs) <- anaNamedProc proc name args (lVars `Map.union` gVars)
+           let fqProc = FQProcess (NamedProcess name fqArgs range) al range
            return (al, fqProc)
     Skip range ->
         do addDiags [mkDiag Debug "Skip" proc]
@@ -382,9 +379,11 @@ anaProcTerm proc gVars lVars = case proc of
                         newAlpha range
            return (newAlpha, fqProc)
 
--- | Statically analyse a CspCASL "named process" term.
+-- | Statically analyse a CspCASL "named process" term. Return the
+--   permitted alphabet of the process and also a list of the fully qualified
+--   version of the inputted terms.
 anaNamedProc :: PROCESS -> PROCESS_NAME -> [TERM ()] -> ProcVarMap ->
-                State CspCASLSign CommAlpha
+                State CspCASLSign (CommAlpha, [TERM ()])
 anaNamedProc proc pn terms procVars = do
     sig <- get
     let ext = extendedInfo sig
@@ -393,24 +392,40 @@ anaNamedProc proc pn terms procVars = do
     case prof of
       Just (ProcProfile varSorts permAlpha) ->
         if (length terms) == (length varSorts)
-          then do mapM (anaNamedProcTerm procVars) (zip terms varSorts)
-                  return permAlpha
+          then do fqTerms <- mapM (anaNamedProcTerm procVars) (zip terms varSorts)
+                  -- Return the permitted alphabet of the process and
+                  -- the fully qualifed terms
+                  return (permAlpha, fqTerms)
           else do let err = "wrong number of arguments in named process"
                   addDiags [mkDiag Error err proc]
-                  return S.empty
+                  -- Return the empty alphabet and the original
+                  -- terms. There is an error in the spec.
+                  return (S.empty, terms)
       Nothing ->
         do addDiags [mkDiag Error "unknown process name" proc]
-           return S.empty
+           -- Return the empty alphabet and the original
+           -- terms. There is an error in the spec.
+           return (S.empty, terms)
 
 -- | Statically analysis a CASL term occurring in a CspCASL "named
 -- process" term.
-anaNamedProcTerm :: ProcVarMap -> ((TERM ()), SORT) -> State CspCASLSign ()
+anaNamedProcTerm :: ProcVarMap -> ((TERM ()), SORT) -> State CspCASLSign (TERM ())
 anaNamedProcTerm pm (t, expSort) = do
     mt <- anaTermCspCASL pm t
     case mt of
-      Nothing -> return () -- CASL term analysis failed
-      (Just at) -> do ccTermCast at expSort -- attempt cast; don't need result
-                      return ()
+      Nothing -> return t -- CASL term analysis failed. Use old term
+                          -- as the fully qualified term, there is a
+                          -- error in the spec anyway.
+      (Just at) -> do at' <- ccTermCast at expSort -- attempt cast;
+                      case at' of
+                        Nothing -> -- Use old term as the fully
+                                   -- qualified term, there is a error
+                                   -- in the spec anyway.
+                               return t
+                        (Just at'') -> return at'' -- Use the fully
+                                                   -- qualified
+                                                   -- (possibly cast)
+                                                   -- term
 
 -- Static analysis of event sets and communication types
 
@@ -494,22 +509,26 @@ anaChanSend c t vars = do
     Just chanSort -> do
       mt <- anaTermCspCASL vars t
       case mt of
-        Nothing -> -- CASL analysis failed
-                   -- Use old term as the fully qualified term
+        Nothing -> -- CASL analysis failed Use old term as the fully
+                   -- qualified term, there is an error in the spec
                    return (S.empty, Map.empty, t)
         (Just at) ->
             do mc <- ccTermCast at chanSort
                case mc of
-                 Nothing -> -- cast failed
-                            -- Use old term as the fully qualified term
+                 Nothing -> -- cast failed Use old term as the fully
+                            -- qualified term, there is an error in
+                            -- the spec
                             return (S.empty, Map.empty, t)
                  (Just ct) ->
                      do let castSort = sortOfTerm ct
                             alpha = [CommTypeSort castSort
                                     ,CommTypeChan $ TypedChanName c castSort
                                     ]
-                        -- Use the real fully qualified term
-                        return (S.fromList alpha, Map.empty, ct)
+                        -- Use the real fully qualified term. We do
+                        -- not want to use a cast term here. A cast
+                        -- must be possible, but we do not want to
+                        -- force it!
+                        return (S.fromList alpha, Map.empty, at)
 
 -- | Statically analyse a CspCASL "binding" channel event (which is
 -- either a channel nondeterministic send event or a channel receive
