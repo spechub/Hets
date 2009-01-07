@@ -20,6 +20,7 @@ import CspCASL.AS_CspCASL_Process (CHANNEL_NAME, PROCESS_NAME,
     PROCESS(..), CommAlpha(..), CommType(..), TypedChanName(..))
 
 import CspCASL.AS_CspCASL ()
+import CspCASL.CspCASL_Keywords
 import CspCASL.Print_CspCASL
 
 import CASL.AS_Basic_CASL (FORMULA, SORT)
@@ -178,11 +179,78 @@ emptyCspAddMorphism = CspAddMorphism
   , processMap = Map.empty
   }
 
--- dummy instances, need to be elaborated!
+
+
+
+
+
+
+
+
 instance Pretty CspSign where
-  pretty = text . show
+  pretty = printCspSign
+
+printCspSign :: CspSign -> Doc
+printCspSign sigma =
+    chan_part $+$ proc_part
+        where chan_part =
+                  case (Map.size $ chans sigma) of
+                    0 -> empty
+                    1 -> (keyword channelS) <+> printChanNameMap (chans sigma)
+                    _ -> (keyword channelsS) <+> printChanNameMap (chans sigma)
+              proc_part = (keyword processS) <+> printProcNameMap (procSet sigma)
+
+
+
+instance Pretty ChanNameMap where
+  pretty = printChanNameMap
+
+printChanNameMap :: ChanNameMap -> Doc
+printChanNameMap chanMap =
+    vcat $ punctuate semi $ map printChan $ Map.toList chanMap
+        where printChan (chanName, sort) =
+                  (pretty chanName) <+> colon <+> (pretty sort)
+
+
+
+instance Pretty ProcNameMap where
+  pretty = printProcNameMap
+
+printProcNameMap :: ProcNameMap -> Doc
+printProcNameMap procNameMap =
+    vcat $ punctuate semi $ map printProcName $ Map.toList procNameMap
+    where printProcName (procName, procProfile) =
+              (pretty procName) <+> pretty procProfile
+
+
+
+instance Pretty ProcProfile where
+  pretty = printProcProfile
+
+printProcProfile :: ProcProfile -> Doc
+printProcProfile (ProcProfile sorts commAlpha) =
+    printArgs sorts <+> colon <+> (ppWithCommas $ Set.toList commAlpha)
+    where printArgs [] = empty
+          printArgs args = parens $ ppWithCommas args
+
+
+
 instance Pretty CspAddMorphism where
   pretty = text . show
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 -- Sentences
 

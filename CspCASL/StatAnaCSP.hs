@@ -46,7 +46,11 @@ import CspCASL.Print_CspCASL ()
 import CspCASL.SignCSP
 
 import qualified Data.Set as Set
-
+-- | The first element of the returned pair (CspBasicSpec) is the same
+--   as the inputted version just with some very minor optimisations -
+--   none in our case, but for CASL - brackets are otimized. This all
+--   that happens, the mixfixed terms are still mixed fixed terms in
+--   the returned version.
 basicAnalysisCspCASL :: (CspBasicSpec, CspCASLSign, GlobalAnnos)
         -> Result (CspBasicSpec, ExtSign CspCASLSign Symbol,
                    [Named CspCASLSen])
@@ -227,88 +231,104 @@ anaProcTerm :: PROCESS -> ProcVarMap -> ProcVarMap ->
                State CspCASLSign (CommAlpha, PROCESS)
 anaProcTerm proc gVars lVars = case proc of
     NamedProcess name args range ->
+        -- BUG - Not returning a complete fully qualified process
         do addDiags [mkDiag Debug "Named process" proc]
            al <- anaNamedProc proc name args (lVars `Map.union` gVars)
-           return (al,
-                   FQProcess (NamedProcess name args range) al range)
+           let fqProc = FQProcess (NamedProcess name args range) al range
+           return (al, fqProc)
     Skip range ->
         do addDiags [mkDiag Debug "Skip" proc]
-           return (S.empty,
-                   FQProcess (Skip range) S.empty range)
+           let fqProc = FQProcess (Skip range) S.empty range
+           return (S.empty, fqProc)
     Stop range ->
         do addDiags [mkDiag Debug "Stop" proc]
-           return (S.empty,
-                   FQProcess (Stop range) S.empty range)
+           let fqProc = FQProcess (Stop range) S.empty range
+           return (S.empty, fqProc)
     Div range ->
         do addDiags [mkDiag Debug "Div" proc]
-           return (S.empty,
-                   FQProcess (Div range) S.empty range)
+           let fqProc = FQProcess (Div range) S.empty range
+           return (S.empty, fqProc)
     Run es range ->
+        -- BUG - Not returning a complete fully qualified process
         do addDiags [mkDiag Debug "Run" proc]
            comms <- anaEventSet es
-           return (comms,
-                   FQProcess (Run es range) comms range)
+           let fqProc = FQProcess (Run es range) comms range
+           return (comms, fqProc)
     Chaos es range ->
+        -- BUG - Not returning a complete fully qualified process
         do addDiags [mkDiag Debug "Chaos" proc]
            comms <- anaEventSet es
-           return (comms,
-                   FQProcess (Chaos es range) comms range)
+           let fqProc = FQProcess (Chaos es range) comms range
+           return (comms, fqProc)
     PrefixProcess e p range ->
         do addDiags [mkDiag Debug "Prefix" proc]
            (evComms, rcvMap, fqEvent) <- anaEvent e (lVars `Map.union` gVars)
            (comms, pFQTerm) <- anaProcTerm p gVars (rcvMap `Map.union` lVars)
-           return (comms `S.union` evComms,
-                   FQProcess (PrefixProcess fqEvent pFQTerm range) (comms `S.union` evComms) range)
+           let newAlpha = comms `S.union` evComms
+           let fqProc = FQProcess (PrefixProcess fqEvent pFQTerm range) newAlpha range
+           return (newAlpha, fqProc)
     InternalPrefixProcess v s p range ->
+        -- BUG - Not returning a complete fully qualified process
         do addDiags [mkDiag Debug "Internal prefix" proc]
            checkSorts [s] -- check sort is known
            (comms, pFQTerm) <- anaProcTerm p gVars (Map.insert v s lVars)
-           return (S.insert (CommTypeSort s) comms,
-                   FQProcess (InternalPrefixProcess v s pFQTerm range) (S.insert (CommTypeSort s) comms) range)
+           let newAlpha = S.insert (CommTypeSort s) comms
+           let fqProc = FQProcess (InternalPrefixProcess v s pFQTerm range) newAlpha range
+           return (newAlpha, fqProc)
     ExternalPrefixProcess v s p range ->
+        -- BUG - Not returning a complete fully qualified process
         do addDiags [mkDiag Debug "External prefix" proc]
            checkSorts [s] -- check sort is known
            (comms, pFQTerm) <- anaProcTerm p gVars (Map.insert v s lVars)
-           return (S.insert (CommTypeSort s) comms,
-                   FQProcess (ExternalPrefixProcess v s pFQTerm range) (S.insert (CommTypeSort s) comms) range)
+           let newAlpha = S.insert (CommTypeSort s) comms
+           let fqProc = FQProcess (ExternalPrefixProcess v s pFQTerm range) newAlpha range
+           return (newAlpha, fqProc)
     Sequential p q range ->
         do addDiags [mkDiag Debug "Sequential" proc]
            (pComms, pFQTerm) <- anaProcTerm p gVars lVars
            (qComms, qFQTerm) <- anaProcTerm q gVars Map.empty
-           return (pComms `S.union` qComms,
-                   FQProcess (Sequential pFQTerm qFQTerm range) (pComms `S.union` qComms) range)
+           let newAlpha = pComms `S.union` qComms
+           let fqProc = FQProcess (Sequential pFQTerm qFQTerm range) newAlpha range
+           return (newAlpha, fqProc)
     InternalChoice p q range ->
         do addDiags [mkDiag Debug "InternalChoice" proc]
            (pComms, pFQTerm) <- anaProcTerm p gVars lVars
            (qComms, qFQTerm) <- anaProcTerm q gVars lVars
-           return (pComms `S.union` qComms,
-                   FQProcess (InternalChoice pFQTerm qFQTerm range) (pComms `S.union` qComms) range)
+           let newAlpha = pComms `S.union` qComms
+           let fqProc = FQProcess (InternalChoice pFQTerm qFQTerm range) newAlpha range
+           return (newAlpha, fqProc)
     ExternalChoice p q range ->
         do addDiags [mkDiag Debug "ExternalChoice" proc]
            (pComms, pFQTerm) <- anaProcTerm p gVars lVars
            (qComms, qFQTerm) <- anaProcTerm q gVars lVars
-           return (pComms `S.union` qComms,
-                   FQProcess (ExternalChoice pFQTerm qFQTerm range) (pComms `S.union` qComms) range)
+           let newAlpha = pComms `S.union` qComms
+           let fqProc = FQProcess (ExternalChoice pFQTerm qFQTerm range) newAlpha range
+           return (newAlpha, fqProc)
     Interleaving p q range ->
         do addDiags [mkDiag Debug "Interleaving" proc]
            (pComms, pFQTerm) <- anaProcTerm p gVars lVars
            (qComms, qFQTerm) <- anaProcTerm q gVars lVars
-           return (pComms `S.union` qComms,
-                   FQProcess (Interleaving pFQTerm qFQTerm range) (pComms `S.union` qComms) range)
+           let newAlpha = pComms `S.union` qComms
+           let fqProc = FQProcess (Interleaving pFQTerm qFQTerm range) newAlpha range
+           return (newAlpha, fqProc)
     SynchronousParallel p q range ->
         do addDiags [mkDiag Debug "Synchronous" proc]
            (pComms, pFQTerm) <- anaProcTerm p gVars lVars
            (qComms, qFQTerm) <- anaProcTerm q gVars lVars
-           return (pComms `S.union` qComms,
-                   FQProcess (SynchronousParallel pFQTerm qFQTerm range) (pComms `S.union` qComms) range)
+           let newAlpha = pComms `S.union` qComms
+           let fqProc = FQProcess (SynchronousParallel pFQTerm qFQTerm range) newAlpha range
+           return (newAlpha, fqProc)
     GeneralisedParallel p es q range ->
+        -- BUG - Not returning a complete fully qualified process
         do addDiags [mkDiag Debug "Generalised parallel" proc]
            (pComms, pFQTerm) <- anaProcTerm p gVars lVars
            synComms <- anaEventSet es
            (qComms, qFQTerm) <- anaProcTerm q gVars lVars
-           return (S.unions [pComms, qComms, synComms],
-                   FQProcess (GeneralisedParallel pFQTerm es qFQTerm range) (S.unions [pComms, qComms, synComms]) range)
+           let newAlpha = S.unions [pComms, qComms, synComms]
+           let fqProc = FQProcess (GeneralisedParallel pFQTerm es qFQTerm range) newAlpha range
+           return (newAlpha, fqProc)
     AlphabetisedParallel p esp esq q range ->
+        -- BUG - Not returning a complete fully qualified process
         do addDiags [mkDiag Debug "Alphabetised parallel" proc]
            (pComms, pFQTerm) <- anaProcTerm p gVars lVars
            pSynComms <- anaEventSet esp
@@ -318,9 +338,11 @@ anaProcTerm proc gVars lVars = case proc of
            (qComms, qFQTerm) <- anaProcTerm q gVars lVars
            checkCommAlphaSub qSynComms qComms proc
                                  "alphabetised parallel, right"
-           return (pComms `S.union` qComms,
-                   FQProcess (AlphabetisedParallel pFQTerm esp esq qFQTerm range) (pComms `S.union` qComms) range)
+           let newAlpha = pComms `S.union` qComms
+           let fqProc = FQProcess (AlphabetisedParallel pFQTerm esp esq qFQTerm range) newAlpha range
+           return (newAlpha, fqProc)
     Hiding p es range ->
+        -- BUG - Not returning a complete fully qualified process
         do addDiags [mkDiag Debug "Hiding" proc]
            (pComms, pFQTerm) <- anaProcTerm p gVars lVars
            hidComms <- anaEventSet es
@@ -330,8 +352,9 @@ anaProcTerm proc gVars lVars = case proc of
         do addDiags [mkDiag Debug "Renaming" proc]
            (pComms, pFQTerm) <- anaProcTerm p gVars lVars
            renAlpha <- anaRenaming r
-           return (pComms `S.union` renAlpha,
-                   FQProcess (RenamingProcess pFQTerm r range) (pComms `S.union` renAlpha) range)
+           let newAlpha = pComms `S.union` renAlpha
+           let fqProc = FQProcess (RenamingProcess pFQTerm r range) (pComms `S.union` renAlpha) range
+           return (newAlpha, fqProc)
     ConditionalProcess f p q range ->
         do addDiags [mkDiag Debug "Conditional" proc]
            (pComms, pFQTerm) <- anaProcTerm p gVars lVars
@@ -339,7 +362,7 @@ anaProcTerm proc gVars lVars = case proc of
            -- mfs is the fully qualified formula version of f
            mfs <- anaFormulaCspCASL (gVars `Map.union` lVars) f
            let fFQ = case mfs of
-                       Nothing -> f -- use olf formula as the fully qualified version
+                       Nothing -> f -- use old formula as the fully qualified version
                        Just fs -> fs -- use the real fully qualified formula
            let fComms = case mfs of
                           Nothing -> S.empty

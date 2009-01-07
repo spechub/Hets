@@ -151,7 +151,7 @@ printProcess pr = case pr of
 
 instance Pretty CommType where
     pretty (CommTypeSort s) = pretty s
-    pretty (CommTypeChan (TypedChanName c s)) =  parens (sepByCommas [pretty c, pretty s])
+    pretty (CommTypeChan (TypedChanName c s)) =  pretty c -- BUG ?  - this is the old version  :  parens (sepByCommas [pretty c, pretty s])
 
 
 -- glue and prec_comp decide whether the child in the parse tree needs
