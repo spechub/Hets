@@ -15,6 +15,8 @@ module Comorphisms.SuleCFOL2SoftFOL
     (SuleCFOL2SoftFOL(..), SuleCFOL2SoftFOLInduction(..))
     where
 
+import Debug.Trace
+
 import Control.Exception
 
 import Logic.Logic as Logic
@@ -407,7 +409,8 @@ makeGen r@(Result ods omv) nf =
                           Result ods (Just (oMap',iMap',
                                             rList ++ genPairs,
                                             eSens ++ eSens')))
-                 else mkError ("Non-injective sort mappings cannot " ++
+                 else mkError ("Sort generation constraints with " ++
+                               "non-injective sort mappings cannot " ++
                                "be translated to SoftFOL") mp
       where -- compute standard form of sort generation constraints
             (srts,ops,mp) = recover_Sort_gen_ax constrs
@@ -447,13 +450,12 @@ makeGen r@(Result ods omv) nf =
                                         (varTerm $ transOP_SYMB iMap o)
                 -- an injection? then quantify existentially
                 -- (for the injection's argument)
+                -- since injections are identities, we can leave them out
                 else SPQuantTerm SPExists
                  [ typedVarTerm var2
                    $ maybe (error "lookup failed") id
                    $ lookupSPId (head args) (CSort) iMap ]
-                 (mkEq (varTerm v)
-                  (compTerm (SPCustomSymbol $ transOP_SYMB iMap o)
-                   [varTerm var2]))
+                 (mkEq (varTerm v) (varTerm var2))
             disjunct _ _ = error "unqualified operation symbol"
             -- make disjunction out of all the alternatives
             disj v os = case map (disjunct v) os of
@@ -850,6 +852,7 @@ isSingleSorted sign =
 extractCASLModel :: CASLSign -> ProofTree
                  -> Result (CASLSign, [Named (FORMULA ())])
 extractCASLModel sign (ProofTree output) =
+ trace output $
   case parse tptpModel "" output of
     Right ts -> do
       let (_, idMap, _) = transSign sign
