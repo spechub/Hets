@@ -230,26 +230,29 @@ isSubTypeSig t1 t2 =
 
 -------------------- from src/Pure/sign.ML ------------------------
 
-data BaseSig = Main_thy  -- ^ main theory of higher order logic (HOL)
-             | MainHC_thy  -- ^ extend main theory of HOL logic for HasCASL
-             | MainHCPairs_thy  -- ^ for HasCASL translation to bool pairs
-             | HOLCF_thy   -- ^ higher order logic for continuous functions
-             | HsHOLCF_thy  -- ^ HOLCF for Haskell
-             | HsHOL_thy  -- ^ HOL for Haskell
-             | MHsHOL_thy
-             | MHsHOLCF_thy
-               deriving (Eq, Ord, Show)
+data BaseSig =
+    Main_thy  -- ^ main theory of higher order logic (HOL)
+  | MainHC_thy  -- ^ extend main theory of HOL logic for HasCASL
+  | MainHCPairs_thy  -- ^ for HasCASL translation to bool pairs
+  | HOLCF_thy   -- ^ higher order logic for continuous functions
+  | HsHOLCF_thy  -- ^ HOLCF for Haskell
+  | HsHOL_thy  -- ^ HOL for Haskell
+  | MHsHOL_thy
+  | MHsHOLCF_thy
+  | CspHOLComplex_thy
+    deriving (Eq, Ord, Show)
              {- possibly simply supply a theory like MainHC as string
                 or recursively as Isabelle.Sign -}
 
 data Sign = Sign
-    { theoryName :: String,
-      baseSig :: BaseSig, -- like Main etc.
-      tsig :: TypeSig,
-      constTab :: ConstTab,  -- value cons with type
-      domainTab :: DomainTab,
-      showLemmas :: Bool
-    } deriving (Eq, Show)
+  { theoryName :: String
+  , baseSig :: BaseSig -- like Main etc.
+  , imports :: [String] -- additional imports
+  , tsig :: TypeSig
+  , constTab :: ConstTab  -- value cons with type
+  , domainTab :: DomainTab
+  , showLemmas :: Bool
+  } deriving (Eq, Show)
 
  {- list of datatype definitions
     each of these consists of a list of (mutually recursive) datatypes
@@ -266,12 +269,13 @@ type DomainTab = [[DomainEntry]]
 type DomainEntry = (Typ, [(VName, [Typ])])
 
 emptySign :: Sign
-emptySign = Sign { theoryName = "thy",
-                   baseSig = Main_thy,
-                   tsig = emptyTypeSig,
-                   constTab = Map.empty,
-                   domainTab = [],
-                   showLemmas = False }
+emptySign = Sign
+  { theoryName = "thy"
+  , baseSig = Main_thy
+  , tsig = emptyTypeSig
+  , constTab = Map.empty
+  , domainTab = []
+  , showLemmas = False }
 
 isSubSign :: Sign -> Sign -> Bool
 isSubSign s1 s2 =
