@@ -31,7 +31,7 @@ import Common.Result
 import Common.GlobalAnnotations
 import Common.ConvertGlobalAnnos
 import qualified Common.Lib.Rel as Rel
-import Common.Id (getRange, Id, simpleIdToId)
+import Common.Id (getRange, Id, nullRange, simpleIdToId)
 import Common.Lib.State
 import Common.ExtSign
 
@@ -461,22 +461,32 @@ anaCommType sig alpha ct =
 --   communication alphabet of the event, mapping for any new
 --   locally bound variables and a fully qualified version of the event.
 anaEvent :: EVENT -> ProcVarMap -> State CspCASLSign (CommAlpha, ProcVarMap, EVENT)
-anaEvent e vars = case e of
-                    TermEvent t r ->
-                        do (alpha, newVars, fqTerm) <- anaTermEvent t vars
-                           return (alpha, newVars, TermEvent fqTerm r)
-                    ChanSend c t r ->
-                        -- BUG - not returning a fully qualified event
-                        do (alpha, newVars, fqTerm) <- anaChanSend c t vars
-                           return (alpha, newVars, ChanSend c fqTerm r)
-                    ChanNonDetSend c v s r ->
-                        -- BUG - not returning a fully qualified event
-                        do (alpha, newVars) <- anaChanBinding c v s
-                           return (alpha, newVars, ChanNonDetSend c v s r)
-                    ChanRecv c v s r ->
-                        -- BUG - not returning a fully qualified event
-                        do (alpha, newVars) <- anaChanBinding c v s
-                           return (alpha, newVars, ChanRecv c v s r)
+anaEvent e vars =
+    case e of
+      TermEvent t r ->
+          do (alpha, newVars, fqTerm) <- anaTermEvent t vars
+             let fqEvent = FQEvent e Nothing fqTerm r
+             return (alpha, newVars, fqEvent)
+      ChanSend c t r ->
+          do -- mfqChan is a maybe fully qualified
+             -- channel. It will ne Nothing if
+             -- annChanSend failed - i.e. we forget
+             -- about the channel.
+            (alpha, newVars, mfqChan, fqTerm) <- anaChanSend c t vars
+            let fqEvent = FQEvent e mfqChan fqTerm r
+            return (alpha, newVars, fqEvent)
+      ChanNonDetSend c v s r ->
+          -- mfqChan is the same as in chanSend case.
+          -- fqVar is the fully qualfied version of the variable.
+          do (alpha, newVars, mfqChan, fqVar) <- anaChanBinding c v s
+             let fqEvent = FQEvent e mfqChan fqVar r
+             return (alpha, newVars, fqEvent)
+      ChanRecv c v s r ->
+          -- mfqChan is the same as in chanSend case.
+          -- fqVar is the fully qualfied version of the variable.
+          do (alpha, newVars, mfqChan, fqVar) <- anaChanBinding c v s
+             let fqEvent = FQEvent e mfqChan fqVar r
+             return (alpha, newVars, fqEvent)
 
 -- | Statically analyse a CspCASL term event. Returns a constituent
 --   communication alphabet of the event and a mapping for any new
@@ -493,32 +503,36 @@ anaTermEvent t vars = do
                       Nothing -> ([], t)
   return (S.fromList alpha, Map.empty, t')
 
--- | Statically analyse a CspCASL channel send event. Returns a constituent
---   communication alphabet of the event and a mapping for any new
---   locally bound variables and the fully qualified version of the
---   term.
+-- | Statically analyse a CspCASL channel send event. Returns a
+--   constituent communication alphabet of the event, a mapping for
+--   any new locally bound variables, a fully qualified channel (if
+--   possible) and the fully qualified version of the term.
 anaChanSend :: CHANNEL_NAME -> (TERM ()) -> ProcVarMap ->
-                State CspCASLSign (CommAlpha, ProcVarMap, TERM ())
+                State CspCASLSign (CommAlpha, ProcVarMap,
+                                   (Maybe (CHANNEL_NAME, SORT)), TERM ())
 anaChanSend c t vars = do
   sig <- get
   let ext = extendedInfo sig
   case c `Map.lookup` (chans ext) of
     Nothing -> do
       addDiags [mkDiag Error "unknown channel" c]
-      return (S.empty, Map.empty, t)
+      -- Use old term as the fully qualified term and forget about the
+      -- channel, there is an error in the spec
+      return (S.empty, Map.empty, Nothing, t)
     Just chanSort -> do
       mt <- anaTermCspCASL vars t
       case mt of
-        Nothing -> -- CASL analysis failed Use old term as the fully
-                   -- qualified term, there is an error in the spec
-                   return (S.empty, Map.empty, t)
+        Nothing -> -- CASL analysis failed. Use old term as the fully
+                   -- qualified term and forget about the channel,
+                   -- there is an error in the spec.
+                   return (S.empty, Map.empty, Nothing, t)
         (Just at) ->
             do mc <- ccTermCast at chanSort
                case mc of
-                 Nothing -> -- cast failed Use old term as the fully
-                            -- qualified term, there is an error in
-                            -- the spec
-                            return (S.empty, Map.empty, t)
+                 Nothing -> -- cast failed. Use old term as the fully
+                            -- qualified term, and forget about the
+                            -- channel there is an error in the spec.
+                            return (S.empty, Map.empty, Nothing, t)
                  (Just ct) ->
                      do let castSort = sortOfTerm ct
                             alpha = [CommTypeSort castSort
@@ -528,13 +542,17 @@ anaChanSend c t vars = do
                         -- not want to use a cast term here. A cast
                         -- must be possible, but we do not want to
                         -- force it!
-                        return (S.fromList alpha, Map.empty, at)
+                        return (S.fromList alpha, Map.empty,
+                                 Just (c, chanSort), at)
 
 -- | Statically analyse a CspCASL "binding" channel event (which is
 -- either a channel nondeterministic send event or a channel receive
--- event).
+-- event). Returns a constituent communication alphabet of the event,
+-- a mapping for any new locally bound variables, a fully qualified
+-- channel (if possible) and the fully qualified version of the
+-- variable.
 anaChanBinding :: CHANNEL_NAME -> VAR -> SORT ->
-                   State CspCASLSign (CommAlpha, ProcVarMap)
+                   State CspCASLSign (CommAlpha, ProcVarMap, (Maybe (CHANNEL_NAME, SORT)), TERM ())
 anaChanBinding c v s = do
   checkSorts [s] -- check sort is known
   sig <- get
@@ -542,17 +560,29 @@ anaChanBinding c v s = do
   case c `Map.lookup` (chans ext) of
     Nothing -> do
       addDiags [mkDiag Error "unknown channel" c]
-      return (S.empty, Map.empty)
+      -- No fully qualified channel, use Nothing - there is a error in
+      -- the spec anyway. Use the real fully qualified variable
+      -- version with a nullRange.
+      return (S.empty, Map.empty, Nothing, (Qual_var v s nullRange))
     Just chanSort -> do
       if s `S.member` (chanSort `S.insert` (subsorts chanSort))
         then do let alpha = [CommTypeSort s
                             ,CommTypeChan (TypedChanName c s)]
                 let binding = [(v, s)]
-                return (S.fromList alpha, Map.fromList binding)
+                              -- Return the alphabet, var mapping, the
+                              -- fully qualfied channel and fully
+                              -- qualfied variable
+                return (S.fromList alpha, Map.fromList binding,
+                             (Just (c,chanSort)), (Qual_var v s nullRange))
         else do let err = "sort not a subsort of channel's sort"
                 addDiags [mkDiag Error err s]
-                return (S.empty, Map.empty)
-            where subsorts = Rel.predecessors (sortRel sig)
+                         -- There is a error in the spec, but return
+                         -- the alphabet, var mapping, the fully
+                         -- qualfied channel and fully qualfied
+                         -- variable - as we can.
+                return (S.empty, Map.empty, (Just (c,chanSort)),
+                             (Qual_var v s nullRange))
+                    where subsorts = Rel.predecessors (sortRel sig)
 
 -- Static analysis of renaming and renaming items
 

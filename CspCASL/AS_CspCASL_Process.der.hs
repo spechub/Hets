@@ -20,7 +20,7 @@ module CspCASL.AS_CspCASL_Process (
     PROCESS(..),
     PROCESS_NAME,
     RENAMING,
-    CommAlpha(..),
+    CommAlpha,
     CommType(..),
     TypedChanName(..)
 ) where
@@ -37,6 +37,20 @@ data EVENT
     | ChanSend CHANNEL_NAME (TERM ()) Range
     | ChanNonDetSend CHANNEL_NAME VAR SORT Range
     | ChanRecv CHANNEL_NAME VAR SORT Range
+    -- | A fully qualified event contains the event being
+    -- | qualified. The channel of the fully qualified event should be
+    -- | -- nothing if the contained event is a TermEvent - as this
+    -- | does -- not have a channel. The channel should match the
+    -- | contained -- event's channel if the contained event is not a
+    -- | TermEvent, -- where the sort of the channel is also recorded
+    -- | in the pair. The -- fully qualified term's event should be
+    -- | the fully qualified -- version of the contained events'
+    -- | term. The range of the fully -- qualified event should always
+    -- | be the same as the range of the -- contained event. In the
+    -- | case of a fully qualified ChanNonDetSend and ChanRecv the
+    -- | variable becomes a fully qualified CASL term based on the
+    -- | variable and its sort.
+    | FQEvent EVENT (Maybe (CHANNEL_NAME, SORT)) (TERM ()) Range
     deriving (Show,Ord, Eq)
 
 -- |Event sets are sets of communication types.

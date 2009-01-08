@@ -152,7 +152,7 @@ printProcess pr = case pr of
 
 instance Pretty CommType where
     pretty (CommTypeSort s) = pretty s
-    pretty (CommTypeChan (TypedChanName c s)) =  pretty c
+    pretty (CommTypeChan (TypedChanName c s)) =  parens (pretty c <+> comma <+> pretty s)
 -- BUG ?  - this is the old version : parens (sepByCommas [pretty c, pretty s])
 
 
@@ -227,16 +227,17 @@ instance Pretty EVENT where
     pretty = printEvent
 
 printEvent :: EVENT -> Doc
-printEvent (TermEvent t _) = pretty t
-printEvent (ChanSend cn t _) = (pretty cn) <+>
-                           (text chan_sendS) <+>
-                           (pretty t)
-printEvent (ChanNonDetSend cn v s _) =
-    (pretty cn) <+> (text chan_sendS) <+>
-     (pretty v) <+> (text svar_sortS) <+> (pretty s)
-printEvent (ChanRecv cn v s _) =
-    (pretty cn) <+> (text chan_receiveS) <+>
-     (pretty v) <+> (text svar_sortS) <+> (pretty s)
+printEvent e =
+    case e of
+      TermEvent t _ -> pretty t
+      ChanSend cn t _ -> (pretty cn) <+> (text chan_sendS) <+> (pretty t)
+      ChanNonDetSend cn v s _ -> (pretty cn) <+> (text chan_sendS) <+>
+                                 (pretty v) <+> (text svar_sortS) <+> (pretty s)
+      ChanRecv cn v s _ -> (pretty cn) <+> (text chan_receiveS) <+>
+                           (pretty v) <+> (text svar_sortS) <+> (pretty s)
+      FQEvent e mfqChan fqVar _ -> pretty e <+>
+                                   brackets(brackets(pretty mfqChan <+>
+                                                   semi <+> pretty fqVar))
 
 instance Pretty EVENT_SET where
     pretty = printEventSet

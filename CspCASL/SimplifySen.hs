@@ -19,16 +19,23 @@ import CASL.SimplifySen (simplifyCASLSen)
 import CspCASL.AS_CspCASL_Process
 import CspCASL.SignCSP
 
+
+-- FOR NOW - Do not simply sentences.
+
 -- | Simplify a CspCASL sentence for before pretty printing, e.g. for
 -- | "show theory". typically this replaces fully quallified CASL by
 -- | non fully qualified CASL so that it is readable.
 simplifySen :: CspCASLSign -> CspCASLSen -> CspCASLSen
-simplifySen sigma sen =
-    case sen of
-      CASLSen f ->
-          let caslSign = ccSig2CASLSign sigma
-          in CASLSen $ simplifyCASLSen caslSign f
-      ProcessEq pn var alpha p -> ProcessEq pn var alpha ( p) -- (simplifyProc sigma p)
+simplifySen sigma sen = sen
+
+
+-- simplifySen :: CspCASLSign -> CspCASLSen -> CspCASLSen
+-- simplifySen sigma sen =
+--     case sen of
+--       CASLSen f ->
+--           let caslSign = ccSig2CASLSign sigma
+--           in CASLSen $ simplifyCASLSen caslSign f
+--       ProcessEq pn var alpha p -> ProcessEq pn var alpha (simplifyProc sigma p)
 
 simplifyProc :: CspCASLSign -> PROCESS -> PROCESS
 simplifyProc sigma proc =
