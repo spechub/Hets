@@ -14,6 +14,7 @@ The embedding comorphism from CASL to Isabelle-HOL.
 module Comorphisms.CFOL2IsabelleHOL
     ( CFOL2IsabelleHOL(..)
     , transTheory
+    , transVar
     , typeToks
     , mapSen
     , IsaTheory

@@ -15,7 +15,7 @@ Provides transformations from Csp Processes to Isabelle terms
 module CspCASL.Trans_CspProver where
 
 import qualified CASL.AS_Basic_CASL as CASL_AS_Basic_CASL
-import qualified CASL.Fold as CASL_Fold
+import CASL.Fold as CASL_Fold
 import qualified CASL.Sign as CASL_Sign
 
 import Common.Id
@@ -152,7 +152,10 @@ transCaslTerm caslSign caslTerm =
         trForm = CFOL2IsabelleHOL.formTrCASL
         strs = CFOL2IsabelleHOL.getAssumpsToks caslSign
     in CASL_Fold.foldTerm (CFOL2IsabelleHOL.transRecord
-                                           caslSign tyToks trForm strs) caslTerm
+                                           caslSign tyToks trForm strs)
+     { foldQual_var = \ _ v s _ -> termAppl (conDouble $ "choose_" ++ show s)
+                      $ mkFree $ CFOL2IsabelleHOL.transVar strs v }
+     caslTerm
 
 
 -- My own version of transRecord
