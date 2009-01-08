@@ -35,7 +35,7 @@ import Common.Id
 import Common.Result
 
 import Data.List (partition, find)
-import Data.Maybe (catMaybes)
+import Data.Maybe (catMaybes, isJust)
 
 {-
 inducedFromMorphism :: RawSymbolMap -> sign -> Result morphism
@@ -379,8 +379,40 @@ inducedFromToMorphism :: (Eq e, Eq f, Pretty f, Pretty e, Pretty m)
                       -> RawSymbolMap
                       -> ExtSign (Sign f e) Symbol
                       -> ExtSign (Sign f e) Symbol -> Result (Morphism f e m)
-inducedFromToMorphism extEm isSubExt diffExt rmap (ExtSign sigma1 sy1)
-  (ExtSign sigma2 sy2) = do
+inducedFromToMorphism extEm isSubExt diffExt rmap sig1@(ExtSign _ sy1)
+  sig2@(ExtSign _ sy2) =
+    let iftm rm = inducedFromToMorphismAux extEm isSubExt diffExt rm sig1 sig2
+        isOk = isJust . resultToMaybe
+        res = iftm rmap
+    in if isOk res then res else
+       let filt = Set.filter $ (== SortAsItemType) . symbType
+           ss2 = filt sy2
+           ss1 = Set.difference (filt sy1) ss2
+       in if Set.size ss1 < 6 && Set.size ss2 < 8 then
+          case filter isOk $ map (iftm . Map.union rmap . Map.fromList)
+            $ combine (map ASymbol $ Set.toList ss1)
+            $ map ASymbol $ Set.toList ss2 of
+            [x] -> x
+            _ -> res
+          else res
+
+combine :: [a] -> [a] -> [[(a, a)]]
+combine l1 l2 = map (zip l1) $ takeKFromN l1 l2
+
+takeKFromN :: [b] -> [a] -> [[a]]
+takeKFromN s l = case s of
+  [] -> [[]]
+  _ : r -> [ a : b | a <- l, b <- takeKFromN r l]
+
+inducedFromToMorphismAux :: (Eq e, Eq f, Pretty f, Pretty e, Pretty m)
+                      => m -- ^ extended morphism
+                      -> (e -> e -> Bool) -- ^ subsignature test of extensions
+                      -> (e -> e -> e) -- ^ difference of extensions
+                      -> RawSymbolMap
+                      -> ExtSign (Sign f e) Symbol
+                      -> ExtSign (Sign f e) Symbol -> Result (Morphism f e m)
+inducedFromToMorphismAux extEm isSubExt diffExt rmap (ExtSign sigma1 _)
+  (ExtSign sigma2 _) = do
   -- 1. use rmap to get a renaming...
   mor1 <- inducedFromMorphism extEm isSubExt rmap sigma1
   -- 1.1 ... is the renamed source signature contained in the target signature?
@@ -390,15 +422,6 @@ inducedFromToMorphism extEm isSubExt diffExt rmap (ExtSign sigma1 sy1)
    then composeM (\ _ _ -> return extEm) mor1
             $ idOrInclMorphism isSubExt
             $ embedMorphism extEm inducedSign sigma2
-   -- no => OK, we've to take the hard way
-   else let so1 = Set.findMin sy1
-            so2 = Set.findMin sy2 in
-        if Map.null rmap && Set.size sy1 == 1 && Set.size sy2 == 1
-           && symbType so1 == SortAsItemType && symbType so1 == SortAsItemType
-           then return mor1
-                    { mtarget = sigma2
-                    , sort_map = Map.singleton (symName so1)
-                                 $ symName so2 }
    else fatal_error
          ("No signature morphism for symbol map found.\n" ++
           "The following mapped symbols are missing in the target signature:\n"
