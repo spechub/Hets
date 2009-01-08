@@ -118,30 +118,18 @@ transSort sort = let sortBarString = convertSort2String sort ++ barExtS
 transRenaming :: RENAMING -> Term
 transRenaming _ = conDouble "not yet done"
 
-
-
--- BUG - I dont think these functions are correct
 transTerm_with_class :: CASL_Sign.Sign () () -> CASL_AS_Basic_CASL.TERM () ->
                         Term
 transTerm_with_class caslSign caslTerm =
+    let strs = CFOL2IsabelleHOL.getAssumpsToks caslSign in
     case caslTerm of
       -- if the term is just a variable then we just translate the
       -- variable to isabelle
-      CASL_AS_Basic_CASL.Qual_var _ _ _ -> transCaslTerm caslSign caslTerm
+      CASL_AS_Basic_CASL.Qual_var v _ _ ->
+          mkFree $ CFOL2IsabelleHOL.transVar strs v
       -- otherwise we add a classOp around it and translate the inside of
       -- it with the translator that adds a chooseOp
-      _ -> classOp (transTerm_with_choose caslSign caslTerm)
-
-transTerm_with_choose :: CASL_Sign.Sign () () -> CASL_AS_Basic_CASL.TERM () ->
-                        Term
-transTerm_with_choose caslSign caslTerm =
-    case caslTerm of
-      -- if the term is just a variable then we need to apply the choose
-      -- function
-      CASL_AS_Basic_CASL.Qual_var _ _ _ -> termAppl (conDouble "choose")
-                                 (transCaslTerm caslSign caslTerm)
-      -- otherwise we just translate it to Isabelle
-      _ -> transCaslTerm caslSign caslTerm
+      _ -> classOp (transCaslTerm caslSign caslTerm)
 
 -- | Translate a CASL Term to an Isabelle Term using the exact
 --   translation as is done in the comorphism composition
@@ -156,33 +144,3 @@ transCaslTerm caslSign caslTerm =
      { foldQual_var = \ _ v s _ -> termAppl (conDouble $ "choose_" ++ show s)
                       $ mkFree $ CFOL2IsabelleHOL.transVar strs v }
      caslTerm
-
-
--- My own version of transRecord
--- transRecord_Term :: CASL.Sign.Sign f e -> Set.Set String -> FormulaTranslator f e
---             -> Set.Set String -> Record f Term Term
--- transRecord_Term sign tyToks tr toks = Record
---     { foldSimpleId = error "transRecord_Term: Simple_id"
---     , foldQual_var = \ _ v _ _ -> mkFree $ transVar toks v
---     , foldApplication = \ _ opsymb args _ ->
---           foldl termAppl (con $ transOP_SYMB sign tyToks opsymb) args
---     , foldSorted_term = \ _ t _ _ -> t -- no subsorting assumed
---     , foldCast = \ _ t _ _ -> t -- no subsorting assumed
---     , foldConditional = \ _  t1 phi t2 _ -> -- equal types assumed
---           If phi t1 t2 NotCont
---     , foldMixfix_qual_pred = error "transRecord_Term: Mixfix_qual_pred"
---     , foldMixfix_term = error "transRecord_Term: Mixfix_term"
---     , foldMixfix_token = error "transRecord_Term: Mixfix_token"
---     , foldMixfix_sorted_term = error "transRecord_Term: Mixfix_sorted_term"
---     , foldMixfix_cast = error "transRecord_Term: Mixfix_cast"
---     , foldMixfix_parenthesized = error "transRecord_Term: Mixfix_parenthesized"
---     , foldMixfix_bracketed = error "transRecord_Term: Mixfix_bracketed"
---     , foldMixfix_braced = error "transRecord_Term: Mixfix_braced"
---     }
-
--- transVar :: Set.Set String -> VAR -> String
--- transVar toks v = let
---     s = showIsaConstT (simpleIdToId v) baseSign
---     renVar t = if Set.member t toks then renVar $ "X_" ++ t else t
---     in renVar s
-
