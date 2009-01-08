@@ -54,10 +54,9 @@ data Indexname = Indexname
 
 {- Types are classified by sorts. -}
 
-data IsaClass  = IsaClass String
-                 deriving (Ord, Eq, Show)
+data IsaClass = IsaClass String deriving (Ord, Eq, Show)
 
-type Sort  = [IsaClass]
+type Sort = [IsaClass]
 
 {- The sorts attached to TFrees and TVars specify the sort of
   that variable -}
@@ -272,6 +271,7 @@ emptySign :: Sign
 emptySign = Sign
   { theoryName = "thy"
   , baseSig = Main_thy
+  , imports = []
   , tsig = emptyTypeSig
   , constTab = Map.empty
   , domainTab = []
