@@ -107,6 +107,8 @@ transEvent caslSign ev =
       ChanSend _ _ _ -> conDouble "ChanSendNotYetDone"
       ChanNonDetSend _ _ _ _ -> conDouble "ChanNonDetSendNotYetDone"
       ChanRecv _ _ _ _ -> conDouble "ChanRecvNotYetDone"
+      -- BUG - this is not done at all
+      FQEvent ev' mfqChan fqTerm r -> transEvent caslSign (TermEvent fqTerm r)
 
 transVar :: CASL_AS_Basic_CASL.VAR -> Term
 transVar v = conDouble $ tokStr v
