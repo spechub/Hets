@@ -1,0 +1,23 @@
+logic CspCASL
+
+spec test =
+  data {
+    sort mySort < mySuper
+    ops c : mySort;
+	d : mySort;
+	myFun : mySort -> mySuper
+    pred p: mySort
+
+    var x:mySort
+
+    axioms myFun(c) = d;
+    x = d}
+
+  channel
+    C:mySuper
+
+  process
+
+    A : mySuper;
+    A = d -> myFun(d) -> [] x :: mySort -> x -> myFun(x) -> SKIP
+end
