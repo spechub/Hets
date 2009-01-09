@@ -1,0 +1,38 @@
+library Buffer
+
+logic CASL
+
+spec List =
+  sort Elem
+  free type List ::= nil | cons(Elem; List)
+  ops last: List -> Elem;
+      rest: List -> List
+end
+
+spec List2 = List then
+     op first : List -> Elem
+end
+
+logic CspCASL
+
+spec Buffer =
+  data List
+  channel read, write : Elem
+  process Buf(List): read, write, List;
+          EmptyBuffer : read,write, List;
+          Buf(l)= read? x :: Elem -> Buf( cons(x,nil) ) []
+                  (if l=nil then STOP else write!last(l) -> Buf( rest(l) ))
+          EmptyBuffer = Buf(nil)
+end
+
+spec Buffer2 =
+  data List2
+  channel read, write : Elem
+  process Buf(List): read, write, List;
+          EmptyBuffer : read,write, List;
+          Buf(l)= read? x :: Elem -> Buf( cons(x,nil) ) []
+                  (if l=nil then STOP else write!first(l) -> Buf( rest(l) ))
+          EmptyBuffer = Buf(nil)
+end
+
+view Hugo: Buffer to Buffer2
