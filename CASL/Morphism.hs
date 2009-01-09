@@ -154,8 +154,20 @@ statSymbMapItems sl = do
   let st (Symb_map_items kind l _) = do
         appendDiags $ checkSymbList l
         fmap concat $ mapM (symbOrMapToRaw kind) l
-      insertRsys m1 (rsy1, rsy2) = case Map.lookup rsy1 m1 of
-          Nothing -> return $ Map.insert rsy1 rsy2 m1
+      insertRsys m1 (rsy1, rsy2) = let m3 = Map.insert rsy1 rsy2 m1 in
+        case Map.lookup rsy1 m1 of
+          Nothing -> return $ case rsy1 of
+            ASymbol (Symbol i SortAsItemType) ->
+              case Map.lookup (AKindedSymb Implicit i) m1 of
+                Just (AKindedSymb Implicit j) | rawSymName rsy2 == j -> m1
+                _ -> m3
+            AKindedSymb Implicit i ->
+              let rsy3 = ASymbol (Symbol i SortAsItemType) in
+              case Map.lookup rsy3 m1 of
+                Just (ASymbol (Symbol j SortAsItemType))
+                  | rawSymName rsy2 == j -> Map.delete rsy3 m3
+                _ -> m3
+            _ -> m3
           Just rsy3 -> if rsy2 == rsy3 then return m1 else
               plain_error m1 ("Symbol " ++ showDoc rsy1 " mapped twice to "
                 ++ showDoc rsy2 " and " ++ showDoc rsy3 "") nullRange
@@ -175,7 +187,7 @@ symbOrMapToRaw k sm = do
         _ -> []
       w <- symbToRaw k s
       x <- symbToRaw k t
-      let mkS = AKindedSymb Sorts_kind
+      let mkS =  ASymbol . idToSortSymbol
       case (s, t) of
         (Qual_id _ t1 _, Qual_id _ t2 _) -> case (t1, t2) of
           (O_type (Op_type _ args1 res1 _), O_type (Op_type _ args2 res2 _))
@@ -205,7 +217,9 @@ statSymbItems sl =
 
 symbToRaw :: SYMB_KIND -> SYMB -> Result RawSymbol
 symbToRaw k si = case si of
-  Symb_id idt -> return $ AKindedSymb k idt
+  Symb_id idt -> return $ case k of
+    Sorts_kind -> ASymbol $ idToSortSymbol idt
+    _ -> AKindedSymb k idt
   Qual_id idt t _ -> typedSymbKindToRaw k idt t
 
 typedSymbKindToRaw :: SYMB_KIND -> Id -> TYPE -> Result RawSymbol

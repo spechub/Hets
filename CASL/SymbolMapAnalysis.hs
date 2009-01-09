@@ -178,8 +178,7 @@ sortFun rmap s =
     -- get all raw symbols to which s is mapped to
     rsys = Set.fromList $ catMaybes $ map (flip Map.lookup rmap)
                [ ASymbol $ idToSortSymbol s
-               , AKindedSymb Implicit s
-               , AKindedSymb Sorts_kind s ]
+               , AKindedSymb Implicit s ]
 
   {- to a Op_map, add everything resulting from mapping (id, ots)
   according to rmap -}
@@ -381,20 +380,28 @@ inducedFromToMorphism :: (Eq e, Eq f, Pretty f, Pretty e, Pretty m)
                       -> ExtSign (Sign f e) Symbol -> Result (Morphism f e m)
 inducedFromToMorphism extEm isSubExt diffExt rmap sig1@(ExtSign _ sy1)
   sig2@(ExtSign _ sy2) =
-    let iftm rm = inducedFromToMorphismAux extEm isSubExt diffExt rm sig1 sig2
+    let iftm rm =
+            (inducedFromToMorphismAux extEm isSubExt diffExt rm sig1 sig2, rm)
         isOk = isJust . resultToMaybe
-        res = iftm rmap
+        res = fst $ iftm rmap
+        pos = concatMapRange getRange $ Map.keys rmap
     in if isOk res then res else
        let filt = Set.filter $ (== SortAsItemType) . symbType
            ss2 = filt sy2
-           ss1 = Set.difference (filt sy1) ss2
-       in if Set.size ss1 < 6 && Set.size ss2 < 8 then
-          case filter isOk $ map (iftm . Map.union rmap . Map.fromList)
+           ss1 = Set.filter (\ s -> not $ any (matches s) $ Map.keys rmap)
+                 $ Set.difference (filt sy1) ss2
+           prod = Set.size ss1 * Set.size ss2
+       in if prod < 19 then
+          case filter (isOk . fst) $ map (iftm . Map.union rmap . Map.fromList)
             $ combine (map ASymbol $ Set.toList ss1)
             $ map ASymbol $ Set.toList ss2 of
-            [x] -> x
-            _ -> res
-          else res
+            [(r, m)] -> (if prod > 1 && Map.size m > 1 then warning else hint)
+              () ("derived symbol map:\n" ++ showDoc m "") pos >> r
+            (_, m1) : (_, m2) : _ -> fatal_error
+              ("ambiguous symbol map1:\n" ++ showDoc m1 "\n"
+               ++ "ambiguous symbol map2:\n" ++ showDoc m2 "") pos
+            [] -> res
+          else warning () "too many possibilities for symbol maps" pos >> res
 
 combine :: [a] -> [a] -> [[(a, a)]]
 combine l1 l2 = map (zip l1) $ takeKFromN l1 l2
