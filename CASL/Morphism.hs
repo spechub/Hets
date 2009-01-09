@@ -322,6 +322,7 @@ matches (Symbol idt k) rs = case rs of
         (SortAsItemType, Sorts_kind) -> res
         (OpAsItemType _, Ops_kind) -> res
         (PredAsItemType _, Preds_kind) -> res
+        (OtherTypeKind s, OtherKinds t) -> t == s && res
         _ -> False
 
 idMor :: m -> Sign f e -> Morphism f e m

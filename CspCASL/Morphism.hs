@@ -21,23 +21,24 @@ import qualified CASL.Morphism as CASL_Morphism
 import Common.Id(simpleIdToId)
 import CspCASL.AS_CspCASL_Process (CHANNEL_NAME, PROCESS_NAME)
 import CspCASL.SignCSP
+import CspCASL.CspCASL_Keywords
 
 import qualified Data.Map as Map
 import qualified Data.Set as Set
 
 channelNameSymbType :: SymbType
-channelNameSymbType = OtherTypeKind "CHANNEL_KIND"
+channelNameSymbType = OtherTypeKind channelS
 
 processNameSymbType :: SymbType
-processNameSymbType = OtherTypeKind "PROC_NAME_KIND"
+processNameSymbType = OtherTypeKind processS
 
 -- | Calculate the set of symbols for a CspCASL signature
 symOf :: CspCASLSign -> Set.Set Symbol
 symOf sigma =
     let caslSymbols = CASL_Morphism.symOf sigma -- Get CASL symbols
         cspExt = extendedInfo sigma
-        chanNames = Set.fromList $ Map.keys (chans cspExt) -- Get the channel names
-        procNames = Set.fromList $ Map.keys (procSet cspExt) -- Get the process names
+        chanNames = Map.keysSet (chans cspExt) -- Get the channel names
+        procNames = Map.keysSet (procSet cspExt) -- Get the process names
         -- Make channel symbols from names
         chanNameSymbols = Set.map makeChannelNameSymbol chanNames
         -- Make process name symbols from names

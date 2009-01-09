@@ -42,12 +42,9 @@ import CASL.Sign
 import CASL.SymbolParser
 import CASL.SymbolMapAnalysis
 
-import qualified Data.Set as Set
-
---import CspCASL.AS_CspCASL
 import qualified CspCASL.AS_CspCASL as AS_CspCASL
 import qualified CspCASL.ATC_CspCASL()
-import qualified CspCASL.CspCASL_Keywords as CspCASL_Keywords
+import CspCASL.CspCASL_Keywords
 import qualified CspCASL.Morphism as CspCASL_Morphism
 import qualified CspCASL.Parse_CspCASL as Parse_CspCASL
 import qualified CspCASL.Print_CspCASL ()
@@ -100,9 +97,9 @@ instance Syntax CspCASL
       parse_basic_spec CspCASL =
           Just Parse_CspCASL.cspBasicSpec
       parse_symb_items CspCASL =
-          Just $ symbItems CspCASL_Keywords.csp_casl_keywords
+          Just $ symbItemsExt [channelS, processS] csp_casl_keywords
       parse_symb_map_items CspCASL =
-          Just $ symbMapItems CspCASL_Keywords.csp_casl_keywords
+          Just $ symbMapItemsExt [channelS, processS] csp_casl_keywords
 
 -- lattices (for sublogics) missing
 
@@ -136,8 +133,9 @@ instance StaticAnalysis CspCASL
     where
       basic_analysis CspCASL =
           Just StatAnaCSP.basicAnalysisCspCASL
-      stat_symb_map_items CspCASL = error "Logic_CspCASL.hs"
-      stat_symb_items CspCASL = error "Logic_CspCASL.hs"
+      stat_symb_map_items CspCASL = statSymbMapItems
+      stat_symb_items CspCASL = statSymbItems
+      matches CspCASL = CASL.Morphism.matches
       empty_signature CspCASL = SignCSP.emptyCspCASLSign
       inclusion CspCASL =
           sigInclusion SignCSP.emptyCspAddMorphism
