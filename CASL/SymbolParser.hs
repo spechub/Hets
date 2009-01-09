@@ -11,7 +11,12 @@ Portability :  portable
 Parsing symbols for translations and reductions
 -}
 
-module CASL.SymbolParser where
+module CASL.SymbolParser
+  ( symbItems
+  , symbItemsExt
+  , symbMapItems
+  , symbMapItemsExt
+  ) where
 
 import Common.Id
 import Common.Keywords
@@ -54,24 +59,27 @@ symbMap ks =
          <|> return (Symb s)
 
 -- | parse a kind keyword
-symbKind :: GenParser Char st (SYMB_KIND, Token)
-symbKind = try(
-        do q <- pluralKeyword opS
-           return (Ops_kind, q)
-        <|>
-        do q <- pluralKeyword predS
-           return (Preds_kind, q)
-        <|>
-        do q <- pluralKeyword sortS
-           return (Sorts_kind, q)) <?> "kind"
+symbKind :: [String] -> GenParser Char st (SYMB_KIND, Token)
+symbKind kinds =
+  choice (map (\ (v, s) -> do
+    q <- pluralKeyword s
+    return (v, q)) $
+  (Sorts_kind, sortS) : (Ops_kind, opS) : (Preds_kind, predS)
+  : map (\ s -> (OtherKinds s, s)) kinds) <?> "kind"
 
--- | parse a possible kinded list of comma separated symbols
+-- | parse a possible kinded list of comma separated CASL symbols
 symbItems :: [String] -> GenParser Char st SYMB_ITEMS
-symbItems ks =
+symbItems = symbItemsExt []
+
+{- | Parse a possible kinded list of comma separated symbols.
+     First argument is a list of additional symbol kinds (like "sort").
+     Second argument is a list of keywords to avoid as identifiers. -}
+symbItemsExt :: [String] -> [String] -> GenParser Char st SYMB_ITEMS
+symbItemsExt kinds ks =
     do (is, ps) <- symbs ks
        return (Symb_items Implicit is $ catRange ps)
     <|>
-    do (k, p) <- symbKind
+    do (k, p) <- symbKind kinds
        (is, ps) <- symbs ks
        return (Symb_items k is $ catRange $ p:ps)
 
@@ -84,13 +92,17 @@ symbs ks =
             return (s:is, c:ps)
          <|> return ([s], [])
 
--- | parse a possible kinded list of symbol mappings
+-- | parse a possible kinded list of CASL symbol mappings
 symbMapItems :: [String] -> GenParser Char st SYMB_MAP_ITEMS
-symbMapItems ks =
+symbMapItems = symbMapItemsExt []
+
+-- | parse a possible kinded list of symbol mappings
+symbMapItemsExt :: [String] -> [String] -> GenParser Char st SYMB_MAP_ITEMS
+symbMapItemsExt kinds ks =
     do (is, ps) <- symbMaps ks
        return (Symb_map_items Implicit is $ catRange $ ps)
     <|>
-    do (k, p) <- symbKind
+    do (k, p) <- symbKind kinds
        (is, ps) <- symbMaps ks
        return (Symb_map_items k is $ catRange $ p : ps)
 
