@@ -18,6 +18,7 @@ module CspCASL.StatAnaCSP where
 
 import qualified Control.Monad as Monad
 import qualified Data.Map as Map
+import qualified Data.Maybe as Maybe
 import qualified Data.Set as S
 import CASL.AS_Basic_CASL (FORMULA(..), OpKind(..), SORT, TERM(..), VAR,
                            VAR_DECL(..))
@@ -42,7 +43,6 @@ import CspCASL.Print_CspCASL ()
 import CspCASL.SignCSP
 import CspCASL.Morphism(makeChannelNameSymbol, makeProcNameSymbol)
 
-import qualified Data.Set as Set
 -- | The first element of the returned pair (CspBasicSpec) is the same
 --   as the inputted version just with some very minor optimisations -
 --   none in our case, but for CASL - brackets are otimized. This all
@@ -158,8 +158,10 @@ anaProcDecl name argSorts (ProcAlphabet commTypes _) = do
                 return oldProcDecls
         else do -- new process declation
                 checkSorts argSorts -- check argument sorts are known
-                -- build alphabet: set of CommType values
-                alpha <- Monad.foldM (anaCommType sig) S.empty commTypes
+                -- build alphabet: set of CommType values. We do not
+                -- need the fully qualfied commTypes that are returned
+                -- (these area used for analysing Event Sets)
+                (alpha, _ ) <- Monad.foldM (anaCommType sig) (S.empty, []) commTypes
                 let profile = (ProcProfile argSorts alpha)
                 -- Add the process name as a symbol to the list of
                 -- newly defined symbols - which is stored in the CASL
@@ -185,7 +187,13 @@ anaProcEq (ParmProcname pn vs) proc = do
     case prof of
          -- Only analyse a process if its name (and thus profile) is known
          Just (ProcProfile procArgs procAlpha) ->
-             do  gVars <- anaProcVars pn procArgs vs -- compute global vars
+             do  gVars <- anaProcVars pn procArgs vs -- compute global
+                 -- vars Change a procVarList to a FQProcVarList We do
+                 -- not care about the range as we are building fully
+                 -- qualified variables and they have already been
+                 -- checked to be ok.
+                 let mkFQProcVar (v,s) = Qual_var v s nullRange
+                 let fqGVars = map mkFQProcVar gVars
                  (termAlpha, fqProc) <- anaProcTerm proc (Map.fromList gVars) Map.empty
                  checkCommAlphaSub termAlpha procAlpha proc "process equation"
                  -- Save the diags from the checkCommAlphaSub
@@ -197,35 +205,39 @@ anaProcEq (ParmProcname pn vs) proc = do
                                 -- alphabet be for this process?
                                 -- probably the same as the inner one!
                                 (makeNamed ("ProcHugo")
-                                               (ProcessEq pn gVars
-                                                          Set.empty
+                                               (ProcessEq pn fqGVars
+                                                          S.empty
                                                           fqProc)):ccsens
                               }
                          }
                  return ()
          Nothing ->
-             do addDiags [mkDiag Error "process equation for unknown process" pn]
+             do addDiags [mkDiag Error
+                          "process equation for unknown process" pn]
                 return ()
     return ()
 
 -- | Statically analyse a CspCASL process equation's global variable
 -- names.
 anaProcVars :: PROCESS_NAME -> [SORT] -> [VAR] -> State CspCASLSign ProcVarList
-anaProcVars pn ss vs = do
-    case (compare (length ss) (length vs)) of
-       LT -> do addDiags [mkDiag Error "too many process arguments" pn]
-                return []
-       GT -> do addDiags [mkDiag Error "not enough process arguments" pn]
-                return []
-       EQ -> Monad.foldM anaProcVar [] (zip vs ss)
+anaProcVars pn ss vs =
+    do vars <-
+           case (compare (length ss) (length vs)) of
+             LT -> do addDiags [mkDiag Error "too many process arguments" pn]
+                      return []
+             GT -> do addDiags [mkDiag Error "not enough process arguments" pn]
+                      return []
+             EQ -> Monad.foldM anaProcVar [] (zip vs ss)
+       return $ reverse $ vars
 
 -- | Statically analyse a CspCASL process-global variable name.
 anaProcVar :: ProcVarList -> (VAR, SORT) -> State CspCASLSign ProcVarList
 anaProcVar old (v, s) = do
     if v `elem` (map fst old)
-       then do addDiags [mkDiag Error "process argument declared more than once" v]
+       then do addDiags [mkDiag Error
+                         "process argument declared more than once" v]
                return old
-       else return (old ++ [(v, s)])
+       else return ((v,s) : old)
 
 -- Static analysis of process terms
 
@@ -237,7 +249,6 @@ anaProcTerm :: PROCESS -> ProcVarMap -> ProcVarMap ->
                State CspCASLSign (CommAlpha, PROCESS)
 anaProcTerm proc gVars lVars = case proc of
     NamedProcess name args range ->
-        -- BUG - Not returning a complete fully qualified process
         do addDiags [mkDiag Debug "Named process" proc]
            (al, fqArgs) <- anaNamedProc proc name args (lVars `Map.union` gVars)
            let fqProc = FQProcess (NamedProcess name fqArgs range) al range
@@ -255,16 +266,14 @@ anaProcTerm proc gVars lVars = case proc of
            let fqProc = FQProcess (Div range) S.empty range
            return (S.empty, fqProc)
     Run es range ->
-        -- BUG - Not returning a complete fully qualified process
         do addDiags [mkDiag Debug "Run" proc]
-           comms <- anaEventSet es
-           let fqProc = FQProcess (Run es range) comms range
+           (comms, fqEs) <- anaEventSet es
+           let fqProc = FQProcess (Run fqEs range) comms range
            return (comms, fqProc)
     Chaos es range ->
-        -- BUG - Not returning a complete fully qualified process
         do addDiags [mkDiag Debug "Chaos" proc]
-           comms <- anaEventSet es
-           let fqProc = FQProcess (Chaos es range) comms range
+           (comms, fqEs) <- anaEventSet es
+           let fqProc = FQProcess (Chaos fqEs range) comms range
            return (comms, fqProc)
     PrefixProcess e p range ->
         do addDiags [mkDiag Debug "Prefix" proc]
@@ -325,41 +334,38 @@ anaProcTerm proc gVars lVars = case proc of
            let fqProc = FQProcess (SynchronousParallel pFQTerm qFQTerm range) newAlpha range
            return (newAlpha, fqProc)
     GeneralisedParallel p es q range ->
-        -- BUG - Not returning a complete fully qualified process
         do addDiags [mkDiag Debug "Generalised parallel" proc]
            (pComms, pFQTerm) <- anaProcTerm p gVars lVars
-           synComms <- anaEventSet es
+           (synComms, fqEs) <- anaEventSet es
            (qComms, qFQTerm) <- anaProcTerm q gVars lVars
            let newAlpha = S.unions [pComms, qComms, synComms]
-           let fqProc = FQProcess (GeneralisedParallel pFQTerm es qFQTerm range) newAlpha range
+           let fqProc = FQProcess (GeneralisedParallel pFQTerm fqEs qFQTerm range) newAlpha range
            return (newAlpha, fqProc)
     AlphabetisedParallel p esp esq q range ->
-        -- BUG - Not returning a complete fully qualified process
         do addDiags [mkDiag Debug "Alphabetised parallel" proc]
            (pComms, pFQTerm) <- anaProcTerm p gVars lVars
-           pSynComms <- anaEventSet esp
+           (pSynComms, fqEsp) <- anaEventSet esp
            checkCommAlphaSub pSynComms pComms proc
                                  "alphabetised parallel, left"
-           qSynComms <- anaEventSet esq
+           (qSynComms, fqEsq) <- anaEventSet esq
            (qComms, qFQTerm) <- anaProcTerm q gVars lVars
            checkCommAlphaSub qSynComms qComms proc
                                  "alphabetised parallel, right"
            let newAlpha = pComms `S.union` qComms
-           let fqProc = FQProcess (AlphabetisedParallel pFQTerm esp esq qFQTerm range) newAlpha range
+           let fqProc = FQProcess (AlphabetisedParallel pFQTerm fqEsp fqEsq qFQTerm range) newAlpha range
            return (newAlpha, fqProc)
     Hiding p es range ->
-        -- BUG - Not returning a complete fully qualified process
         do addDiags [mkDiag Debug "Hiding" proc]
            (pComms, pFQTerm) <- anaProcTerm p gVars lVars
-           hidComms <- anaEventSet es
+           (hidComms, fqEs) <- anaEventSet es
            return (pComms `S.union` hidComms,
-                   FQProcess (Hiding pFQTerm es range) (pComms `S.union` hidComms) range)
-    RenamingProcess p r range ->
+                   FQProcess (Hiding pFQTerm fqEs range) (pComms `S.union` hidComms) range)
+    RenamingProcess p renaming range ->
         do addDiags [mkDiag Debug "Renaming" proc]
            (pComms, pFQTerm) <- anaProcTerm p gVars lVars
-           renAlpha <- anaRenaming r
+           (renAlpha, fqRenaming) <- anaRenaming renaming
            let newAlpha = pComms `S.union` renAlpha
-           let fqProc = FQProcess (RenamingProcess pFQTerm r range) (pComms `S.union` renAlpha) range
+           let fqProc = FQProcess (RenamingProcess pFQTerm fqRenaming range) (pComms `S.union` renAlpha) range
            return (newAlpha, fqProc)
     ConditionalProcess f p q range ->
         do addDiags [mkDiag Debug "Conditional" proc]
@@ -368,7 +374,11 @@ anaProcTerm proc gVars lVars = case proc of
            -- mfs is the fully qualified formula version of f
            mfs <- anaFormulaCspCASL (gVars `Map.union` lVars) f
            let fFQ = case mfs of
-                       Nothing -> f -- use old formula as the fully qualified version
+                       Nothing -> f -- use old formula as the fully
+                                    -- qualified version - there is a
+                                    -- error in the spec anyway as the
+                                    -- formula could not be fully
+                                    -- qualified.
                        Just fs -> fs -- use the real fully qualified formula
            let fComms = case mfs of
                           Nothing -> S.empty
@@ -378,6 +388,7 @@ anaProcTerm proc gVars lVars = case proc of
                                    (fFQ) pFQTerm qFQTerm range)
                         newAlpha range
            return (newAlpha, fqProc)
+    FQProcess _ _ _ -> error "CspCASL.StatAnaCSP.anaProcTerm: Unexpected FQProcess"
 
 -- | Statically analyse a CspCASL "named process" term. Return the
 --   permitted alphabet of the process and also a list of the fully qualified
@@ -429,29 +440,49 @@ anaNamedProcTerm pm (t, expSort) = do
 
 -- Static analysis of event sets and communication types
 
--- | Statically analyse a CspCASL event set.
-anaEventSet :: EVENT_SET -> State CspCASLSign CommAlpha
-anaEventSet (EventSet es _) = do
-  sig <- get
-  comms <- Monad.foldM (anaCommType sig) S.empty es
-  vds <- gets envDiags
-  put sig { envDiags = vds }
-  return comms
+-- | Statically analyse a CspCASL event set. Returns the alphabet of
+--   the event set and a fully qualified version of the event set.
+anaEventSet :: EVENT_SET -> State CspCASLSign (CommAlpha, EVENT_SET)
+anaEventSet eventSet =
+    case eventSet of
+      EventSet es r ->
+          do sig <- get
+             -- fqEsElems is built the reversed order for efficiency.
+             (comms, fqEsElems) <- Monad.foldM (anaCommType sig)
+                                   (S.empty, []) es
+             vds <- gets envDiags
+             put sig { envDiags = vds }
+             -- reverse the list inside the event set
+             return (comms, FQEventSet (reverse fqEsElems) r)
+      FQEventSet _ _ ->
+          error "CspCASL.StatAnaCSP.anaEventSet: Unexpected FQEventSet"
 
--- | Statically analyse a CspCASL communication type.
-anaCommType :: CspCASLSign -> CommAlpha -> COMM_TYPE ->
-               State CspCASLSign CommAlpha
-anaCommType sig alpha ct =
+-- | Statically analyse a CspCASL communication type. Returns the
+--   extended alphabet and the extended list of fully qualified event
+--   set elements - [CommType].
+anaCommType :: CspCASLSign -> (CommAlpha, [CommType]) -> COMM_TYPE ->
+               State CspCASLSign (CommAlpha, [CommType])
+anaCommType sig (alpha, fqEsElems) ct =
     if ctSort `S.member` (sortSet sig)
-      then -- ct is a sort name; insert sort into alpha
-        do return (S.insert (CommTypeSort ctSort) alpha)
+      then -- ct is a sort name; insert sort into alpha and add a sort
+           -- to the fully qualified event set elements.
+        do let newAlpha = S.insert (CommTypeSort ctSort) alpha
+           let newFqEsElems = (CommTypeSort ctSort) : fqEsElems
+           return (newAlpha, newFqEsElems)
       else -- ct not a sort name, so should be a channel name
         case Map.lookup ct (chans $ extendedInfo sig) of
-          Just s -> -- ct is a channel name; insert typed chan name into alpha
-                    return (S.insert (mkTypedChan ct s) alpha)
+          Just s -> -- ct is a channel name; insert typed chan name
+                    -- into alpha and add typed channel to the fully
+                    -- qualified event set elemenets.
+                    let newAlpha = S.insert (mkTypedChan ct s) alpha
+                        newFqEsElems = (mkTypedChan ct s) : fqEsElems
+                    in return (newAlpha, newFqEsElems)
           Nothing -> do let err = "not a sort or channel name"
                         addDiags [mkDiag Error err ct]
-                        return alpha
+                        -- failed, thus error in spec, return the
+                        -- unmodified alphabet and the unmodifled
+                        -- fully qualified event set elements.
+                        return (alpha, fqEsElems)
         where ctSort = simpleIdToId ct
               mkTypedChan c s = CommTypeChan $ TypedChanName c s
 
@@ -487,6 +518,8 @@ anaEvent e vars =
           do (alpha, newVars, mfqChan, fqVar) <- anaChanBinding c v s
              let fqEvent = FQEvent e mfqChan fqVar r
              return (alpha, newVars, fqEvent)
+      FQEvent _ _ _ _ ->
+          error "CspCASL.StatAnaCSP.anaEvent: Unexpected FQEvent"
 
 -- | Statically analyse a CspCASL term event. Returns a constituent
 --   communication alphabet of the event and a mapping for any new
@@ -586,27 +619,41 @@ anaChanBinding c v s = do
 
 -- Static analysis of renaming and renaming items
 
--- | Statically analyse a CspCASL renaming.
-anaRenaming :: RENAMING -> State CspCASLSign CommAlpha
-anaRenaming r = do al <- Monad.foldM anaRenamingItem S.empty r
-                   return al
+-- | Statically analyse a CspCASL renaming. Returns the alphabet and
+-- | the fully qualified renaming.
+anaRenaming :: RENAMING -> State CspCASLSign (CommAlpha, RENAMING)
+anaRenaming renaming = case renaming of
+  Renaming r -> do
+    (al, fqRenamingTermsMaybes) <- Monad.foldM anaRenamingItem (S.empty, []) r
+    return (al, FQRenaming (Maybe.catMaybes fqRenamingTermsMaybes))
+  FQRenaming _ ->
+      error "CspCASL.StatAnaCSP.anaRenaming: Unexpected FQRenaming"
 
--- | Statically analyse a CspCASL renaming item.
-anaRenamingItem :: CommAlpha -> Id -> State CspCASLSign CommAlpha
-anaRenamingItem inAl ri = do
-    totOps <- getUnaryOpsById ri Total
-    if (not $ S.null totOps)
-      then return (inAl `S.union` totOps)
-      else do parOps <- getUnaryOpsById ri Partial
-              if (not $ S.null parOps)
-                then return (inAl `S.union` parOps)
-                else do preds <- getBinPredsById ri
-                        if (not $ S.null preds)
-                          then return (inAl `S.union` preds)
-                          else do let err = ("renaming item not a binary " ++
-                                             "operation or predicate name")
-                                  addDiags [mkDiag Error err ri]
-                                  return inAl
+-- | Statically analyse a CspCASL renaming item. Return the alphabet
+-- | and the fully qualified list of renaming functions and predicates.
+anaRenamingItem :: (CommAlpha, [Maybe (TERM ())]) -> Id ->
+                   State CspCASLSign (CommAlpha, [Maybe (TERM ())])
+anaRenamingItem (inAl, fqRenamingTerms) ri = do
+-- BUG -- too many nothings - should only be one
+  totOps <- getUnaryOpsById ri Total
+  if (not $ S.null totOps)
+    then return (inAl `S.union` totOps, fqRenamingTerms)
+    else do
+      parOps <- getUnaryOpsById ri Partial
+      if not (S.null parOps)
+        then return (inAl `S.union` parOps, fqRenamingTerms)
+        else do
+          preds <- getBinPredsById ri
+          if not (S.null preds)
+            then return (inAl `S.union` preds, fqRenamingTerms)
+            else do
+              let err = "renaming item not a binary "
+                        ++ "operation or predicate name"
+              addDiags [mkDiag Error err ri]
+              -- return the original alphabet and the original fully qualified
+              -- terms with out any modification - there is an error
+              -- in the spec.
+              return (inAl, fqRenamingTerms)
 
 -- | Given a CASL identifier and a `function kind' (total or partial),
 -- find all unary operations of that kind with that name in the CASL

@@ -110,7 +110,7 @@ printProcess pr = case pr of
         (pretty p) <+> hiding_proc <+> (pretty es)
     RenamingProcess p r _ ->
         ((pretty p) <+>
-         ren_proc_open <+> (ppWithCommas r) <+> ren_proc_close)
+         ren_proc_open <+> (pretty r) <+> ren_proc_close)
     -- precedence 3
     Sequential p q _ ->
         (pretty p) <+> sequential <+> (glue pr q)
@@ -147,15 +147,19 @@ printProcess pr = case pr of
     FQProcess p commAlpha _ ->
         let commAlphaList = S.toList commAlpha
             prettyComms cs = sepByCommas (map pretty cs)
-        in brackets(pretty p) <> text "_" <> braces (prettyComms commAlphaList)
+        in brackets(pretty p) <> text "_" <>
+           braces (prettyComms commAlphaList)
            -- pretty p
 
 instance Pretty CommType where
     pretty (CommTypeSort s) = pretty s
-    pretty (CommTypeChan (TypedChanName c s)) =  parens (pretty c <+> comma <+> pretty s)
--- BUG ?  - this is the old version : parens (sepByCommas [pretty c, pretty s])
+    pretty (CommTypeChan (TypedChanName c s)) =
+        parens (pretty c <+> comma <+> pretty s)
 
-
+instance Pretty RENAMING where
+    pretty renaming = case renaming of
+                        Renaming ids -> ppWithCommas ids
+                        FQRenaming fqTerms -> ppWithCommas fqTerms
 -- glue and prec_comp decide whether the child in the parse tree needs
 -- to be parenthesised or not.  Parentheses are necessary if the
 -- right-child is at the same level of precedence as the parent but is
@@ -227,8 +231,8 @@ instance Pretty EVENT where
     pretty = printEvent
 
 printEvent :: EVENT -> Doc
-printEvent e =
-    case e of
+printEvent ev =
+    case ev of
       TermEvent t _ -> pretty t
       ChanSend cn t _ -> (pretty cn) <+> (text chan_sendS) <+> (pretty t)
       ChanNonDetSend cn v s _ -> (pretty cn) <+> (text chan_sendS) <+>
@@ -243,4 +247,7 @@ instance Pretty EVENT_SET where
     pretty = printEventSet
 
 printEventSet :: EVENT_SET -> Doc
-printEventSet (EventSet es _) = ppWithCommas es
+printEventSet eventSet =
+    case eventSet of
+      EventSet es _ -> ppWithCommas es
+      FQEventSet es _ -> ppWithCommas es

@@ -19,7 +19,7 @@ module CspCASL.AS_CspCASL_Process (
     EVENT_SET(..),
     PROCESS(..),
     PROCESS_NAME,
-    RENAMING,
+    RENAMING (..),
     CommAlpha,
     CommType(..),
     TypedChanName(..)
@@ -38,29 +38,32 @@ data EVENT
     | ChanNonDetSend CHANNEL_NAME VAR SORT Range
     | ChanRecv CHANNEL_NAME VAR SORT Range
     -- | A fully qualified event contains the event being
-    -- | qualified. The channel of the fully qualified event should be
-    -- | -- nothing if the contained event is a TermEvent - as this
-    -- | does -- not have a channel. The channel should match the
-    -- | contained -- event's channel if the contained event is not a
-    -- | TermEvent, -- where the sort of the channel is also recorded
-    -- | in the pair. The -- fully qualified term's event should be
-    -- | the fully qualified -- version of the contained events'
-    -- | term. The range of the fully -- qualified event should always
-    -- | be the same as the range of the -- contained event. In the
-    -- | case of a fully qualified ChanNonDetSend and ChanRecv the
-    -- | variable becomes a fully qualified CASL term based on the
-    -- | variable and its sort.
+    --   qualified. The channel of the fully qualified event should be
+    --   nothing if the contained event is a TermEvent - as this does
+    --   not have a channel. The channel should match the contained
+    --   event's channel if the contained event is not a TermEvent,
+    --   where the sort of the channel is also recorded in the
+    --   pair. The fully qualified term's event should be the fully
+    --   qualified version of the contained events' term. The range of
+    --   the fully qualified event should always be the same as the
+    --   range of the contained event. In the case of a fully
+    --   qualified ChanNonDetSend and ChanRecv the variable becomes a
+    --   fully qualified CASL term based on the variable and its sort.
     | FQEvent EVENT (Maybe (CHANNEL_NAME, SORT)) (TERM ()) Range
     deriving (Show,Ord, Eq)
 
 -- |Event sets are sets of communication types.
 
 data EVENT_SET = EventSet [COMM_TYPE] Range
-    deriving (Show,Ord, Eq)
+               -- | FQEvent set distinguishes between channel names and Sorts
+               | FQEventSet [CommType] Range
+                 deriving (Show,Ord, Eq)
 
 -- |CSP renamings are predicate names or op names.
 
-type RENAMING = [Id]
+data RENAMING = Renaming [Id]
+              | FQRenaming [TERM ()]
+                deriving (Show,Ord, Eq)
 
 type CHANNEL_NAME = SIMPLE_ID
 

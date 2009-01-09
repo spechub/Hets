@@ -239,7 +239,7 @@ formula = do f <- CASL.Formula.formula csp_casl_keywords
 -- problem.
 
 renaming :: AParser st RENAMING
-renaming = (parseId csp_casl_keywords) `sepBy` commaT
+renaming =  fmap Renaming $ (parseId csp_casl_keywords) `sepBy` commaT
 
 -- Variables come from CASL/Hets.
 

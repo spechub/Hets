@@ -23,7 +23,7 @@ import CspCASL.AS_CspCASL ()
 import CspCASL.CspCASL_Keywords
 import CspCASL.Print_CspCASL
 
-import CASL.AS_Basic_CASL (FORMULA, SORT)
+import CASL.AS_Basic_CASL (FORMULA, SORT, TERM)
 import CASL.Sign (emptySign, Sign, extendedInfo, sortRel)
 import CASL.Morphism (Morphism)
 
@@ -49,6 +49,9 @@ type ChanNameMap = Map.Map CHANNEL_NAME SORT
 type ProcNameMap = Map.Map PROCESS_NAME ProcProfile
 type ProcVarMap = Map.Map SIMPLE_ID SORT
 type ProcVarList = [(SIMPLE_ID, SORT)]
+-- | FQProcVarList should only contain fully qualified CASL variables
+--   which are TERMs
+type FQProcVarList = [TERM ()]
 
 -- Close a communication alphabet under CASL subsort
 closeCspCommAlpha :: CspCASLSign -> CommAlpha -> CommAlpha
@@ -235,7 +238,7 @@ instance Pretty CspAddMorphism where
 --   terms), a constituent( or is it permitted ?) communication alphabet and
 --   finally on the RHS a fully qualified process.
 data CspCASLSen = CASLSen (FORMULA ())
-                | ProcessEq PROCESS_NAME ProcVarList CommAlpha PROCESS
+                | ProcessEq PROCESS_NAME FQProcVarList CommAlpha PROCESS
                   deriving (Show, Eq, Ord)
 
 instance Pretty CspCASLSen where
@@ -244,7 +247,7 @@ instance Pretty CspCASLSen where
     pretty(ProcessEq pn varList alpha proc) =
         let varDoc = if (null varList)
                      then empty
-                     else parens $ sepByCommas $ map pretty (map fst varList)
+                     else parens $ sepByCommas $ map pretty varList
         in pretty pn <+> varDoc <+> equals <+> pretty proc
 
 emptyCCSen :: CspCASLSen
