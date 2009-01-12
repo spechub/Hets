@@ -16,7 +16,7 @@ module Common.LogicT (
   LogicT(..), bagofN, reflect
 ) where
 
-import Monad
+import Control.Monad
 import Control.Monad.Trans
 
 class MonadTrans t => LogicT t where

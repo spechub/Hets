@@ -39,7 +39,7 @@ import Comorphisms.LogicGraph
 import Proofs.AbstractState
 import Control.Monad.Trans
 import Data.List
-import Directory
+import System.Directory
 import Static.DevGraph
 import Static.GTheory
 import System.IO

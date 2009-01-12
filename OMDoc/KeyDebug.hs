@@ -18,7 +18,7 @@ import OMDoc.Util
 import qualified Data.Map as Map
 import System.IO (putStrLn)
 import Debug.Trace (trace)
-import Char (toLower)
+import Data.Char (toLower)
 import Data.List (find)
 import Common.Utils (getEnvDef)
 import qualified System.IO.Unsafe as SysUnsafe
@@ -34,7 +34,7 @@ instance Show DbgKeyPolicy where
         show KPContains = "contains"
 
 stringToPolicy::String->Maybe DbgKeyPolicy
-stringToPolicy = _stringToPolicy . (map Char.toLower)
+stringToPolicy = _stringToPolicy . (map toLower)
         where
         _stringToPolicy::String->Maybe DbgKeyPolicy
         _stringToPolicy ('e':_) = Just KPExact

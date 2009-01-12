@@ -10,7 +10,7 @@ module Common.SFKT (
   SFKT, runM, observe
 ) where
 
-import Monad
+import Control.Monad
 import Control.Monad.Trans
 import Common.LogicT
 

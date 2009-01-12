@@ -14,39 +14,39 @@ Prelude
 -}
 
 module PGIP.Utils
-       ( isWhiteSpace
-       , trim
-       , trimLeft
-       , trimRight
-       , decomposeIntoGoals
-       , obtainNodeList
-       , createEdgeNames
-       , obtainEdgeList
-       , obtainGoalEdgeList
-       , unfinishedEdgeName
-       , stripComments
-       , lastChar
-       , lastString
-       , getInt
-       , safeTail
-       , fileFilter
-       , fileExtend
-       , prettyPrintList
-       , prettyPrintErrList
-       , nodeContainsGoals
-       , edgeContainsGoals
-       , checkIntString
-       , delExtension
-       , checkPresenceProvers
-       , getPaths
-       )where
+  ( isWhiteSpace
+  , trim
+  , trimLeft
+  , trimRight
+  , decomposeIntoGoals
+  , obtainNodeList
+  , createEdgeNames
+  , obtainEdgeList
+  , obtainGoalEdgeList
+  , unfinishedEdgeName
+  , stripComments
+  , lastChar
+  , lastString
+  , getInt
+  , safeTail
+  , fileFilter
+  , fileExtend
+  , prettyPrintList
+  , prettyPrintErrList
+  , nodeContainsGoals
+  , edgeContainsGoals
+  , checkIntString
+  , delExtension
+  , checkPresenceProvers
+  , getPaths
+  ) where
 
 import Data.List
 import Data.Char
 import Data.Graph.Inductive.Graph
 import Static.GTheory
 import Static.DevGraph
-import System
+import System.Environment
 import System.Directory
 import Common.AS_Annotation
 import qualified Common.OrderedMap as OMap

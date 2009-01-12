@@ -29,7 +29,7 @@ import Common.LibName
 import Common.Result
 
 import qualified Data.Map as Map
-import qualified List as List (nub)
+import qualified Data.List as List (nub)
 import Data.Maybe
 import Data.Graph.Inductive.Graph
 import Control.Exception

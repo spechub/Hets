@@ -19,8 +19,8 @@ module CspCASL.LocalTop (
 ) where
 
 import qualified Data.Set as S
-import List
-import Maybe
+import Data.List
+import Data.Maybe
 
 -- A relation is a set of pairs.
 type Relation a b = S.Set (a, b)
@@ -75,7 +75,7 @@ cartesian x = S.fromDistinctAscList [(i,j) | i <- xs, j <- xs]
 
 -- Given a set of Maybes, filter to keep only the Justs
 stripMaybe :: Ord a => S.Set (Maybe a) -> S.Set a
-stripMaybe x = S.fromList $ Maybe.catMaybes $ S.toList x
+stripMaybe x = S.fromList $ catMaybes $ S.toList x
 
 -- Given a binary relation, compute its reflexive closure.
 reflexiveClosure :: Ord a => BinaryRelation a -> BinaryRelation a
