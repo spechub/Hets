@@ -25,7 +25,7 @@ import CASL.Parse_AS_Basic
 import CASL.SymbolParser
 import CASL.SimplifySen
 import CASL.ToDoc
-import CASL.Logic_CASL (SignExtension(..))
+import CASL.Logic_CASL () -- instance Category VSESign VSEMor
 
 import VSE.As
 import VSE.Parse

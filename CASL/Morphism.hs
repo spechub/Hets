@@ -63,6 +63,24 @@ emptyMorExt = DefMorExt
 instance Pretty (DefMorExt e) where
   pretty _ = empty
 
+class MorphismExtension m where
+   ideMorphismExtension :: m
+   composeMorphismExtension :: m -> m -> Result m
+   inverseMorphismExtension :: m -> Result m
+   isInclusionMorphismExtension :: m -> Bool
+
+instance MorphismExtension () where
+   ideMorphismExtension = ()
+   composeMorphismExtension _ = return
+   inverseMorphismExtension = return
+   isInclusionMorphismExtension _ = True
+
+instance MorphismExtension (DefMorExt e) where
+   ideMorphismExtension = emptyMorExt
+   composeMorphismExtension _ = return
+   inverseMorphismExtension = return
+   isInclusionMorphismExtension _ = True
+
 type CASLMor = Morphism () () ()
 
 isInclusionMorphism :: (m -> Bool) -> Morphism f e m -> Bool

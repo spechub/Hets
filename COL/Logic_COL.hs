@@ -28,7 +28,7 @@ import CASL.AS_Basic_CASL
 import CASL.Parse_AS_Basic
 import CASL.MapSentence
 import CASL.SymbolParser
-import CASL.Logic_CASL (SignExtension(..))
+import CASL.Logic_CASL ()
 import Logic.Logic
 
 data COL = COL deriving Show

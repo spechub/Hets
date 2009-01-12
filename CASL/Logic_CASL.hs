@@ -17,7 +17,6 @@ module CASL.Logic_CASL where
 
 import Common.AS_Annotation
 import Common.Lexer((<<))
-import Common.Result
 import Common.ProofTree
 import Common.Consistency
 
@@ -91,33 +90,9 @@ type CASLBasicSpec = BASIC_SPEC () () ()
 trueC :: a -> b -> Bool
 trueC _ _ = True
 
-class MorphismExtension e m | m -> e where
-   ideMorphismExtension :: e -> m
-   composeMorphismExtension :: m -> m -> Result m
-   inverseMorphismExtension :: m -> Result m
-   isInclusionMorphismExtension :: m -> Bool
-
-instance MorphismExtension () () where
-   ideMorphismExtension _ = ()
-   composeMorphismExtension _ = return
-   inverseMorphismExtension = return
-   isInclusionMorphismExtension _ = True
-
-instance MorphismExtension e (DefMorExt e) where
-   ideMorphismExtension _ = emptyMorExt
-   composeMorphismExtension _ = return
-   inverseMorphismExtension = return
-   isInclusionMorphismExtension _ = True
-
-class SignExtension e where
-    isSubSignExtension :: e -> e -> Bool
-
-instance SignExtension () where
-    isSubSignExtension _ _ = True
-
-instance (Eq f, Eq e, Eq m, MorphismExtension e m) =>
+instance (Eq f, Eq e, Eq m, MorphismExtension m) =>
     Category (Sign f e) (Morphism f e m) where
-    ide sig = idMor (ideMorphismExtension (extendedInfo sig)) sig
+    ide sig = idMor ideMorphismExtension sig
     inverse = inverseMorphism inverseMorphismExtension
     comp = composeM composeMorphismExtension
     dom = msource

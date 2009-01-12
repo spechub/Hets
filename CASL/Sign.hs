@@ -112,6 +112,12 @@ emptySign e = Sign
     , globAnnos = emptyGlobalAnnos
     , extendedInfo = e }
 
+class SignExtension e where
+    isSubSignExtension :: e -> e -> Bool
+
+instance SignExtension () where
+    isSubSignExtension _ _ = True
+
 -- | proper subsorts (possibly excluding input sort)
 subsortsOf :: SORT -> Sign f e -> Set.Set SORT
 subsortsOf s e = Rel.predecessors (sortRel e) s

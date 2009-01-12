@@ -34,7 +34,7 @@ import CASL.MapSentence
 import CASL.SymbolParser
 import CASL.Taxonomy
 import CASL.SimplifySen
-import CASL.Logic_CASL (SignExtension(..))
+import CASL.Logic_CASL ()
 import CASL_DL.Sublogics
 
 import Logic.Logic

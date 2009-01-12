@@ -65,8 +65,8 @@ instance SignExtension SignCSP.CspSign where
   isSubSignExtension = SignCSP.isInclusion
 
 -- | Instance for CspCASL morphism extension (used for Category)
-instance MorphismExtension SignCSP.CspSign SignCSP.CspAddMorphism where
-  ideMorphismExtension _ = SignCSP.emptyCspAddMorphism
+instance MorphismExtension SignCSP.CspAddMorphism where
+  ideMorphismExtension = SignCSP.emptyCspAddMorphism
   composeMorphismExtension = SignCSP.composeCspAddMorphism
   inverseMorphismExtension = SignCSP.inverseCspAddMorphism
   isInclusionMorphismExtension _ = True -- missing!
