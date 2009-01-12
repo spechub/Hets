@@ -33,7 +33,7 @@ import Common.Id as Id
 import Common.Keywords
 import Common.AS_Annotation
 import qualified Data.Map as Map
-import Data.List (isSuffixOf)
+import Data.List
 
 comment :: GenParser Char st Annotation
 comment = commentLine <|> commentGroup
@@ -49,7 +49,7 @@ newlineOrEof = lookAhead $ charOrEof '\n'
 
 mkLineAnno :: String -> Annote_text
 mkLineAnno s = let r = unwords $ words s in Line_anno $
-  [' ' | not (null r) && take 1 s == " "] ++ r
+  [' ' | not (null r) && isPrefixOf " " s] ++ r
 
 commentLine :: GenParser Char st Annotation
 commentLine = do

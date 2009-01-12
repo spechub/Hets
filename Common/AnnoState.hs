@@ -176,8 +176,8 @@ anSemi :: AParser st Token
 anSemi = wrapAnnos Common.Lexer.semiT
 
 equalT :: AParser st Token
-equalT = wrapAnnos $ pToken $
-         (((lookAhead $ keySign $ string exEqual)
+equalT = wrapAnnos $ pToken
+         ((lookAhead (keySign $ string exEqual)
                           >> unexpected exEqual)
          <|> keySign (string equalS))
 
