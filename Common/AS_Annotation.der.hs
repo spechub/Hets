@@ -15,6 +15,7 @@ Datastructures for annotations of (Het)CASL.
 
 module Common.AS_Annotation where
 import Common.Id
+import Data.Maybe
 
 -- DrIFT command
 {-! global: GetRange !-}
@@ -46,8 +47,8 @@ display_format_table = toTable [ DF_HTML, DF_LATEX, DF_RTF ]
 -- in 'display_format_table'
 lookupDisplayFormat :: Display_format -> String
 lookupDisplayFormat df =
-    maybe (error "lookupDisplayFormat: unknown display format")
-          id $ lookup df display_format_table
+    fromMaybe (error "lookupDisplayFormat: unknown display format")
+        $ lookup df display_format_table
 
 -- | precedence 'Lower' means less and 'BothDirections' means less and greater.
 -- 'Higher' means greater but this is syntactically not allowed in 'Prec_anno'.
@@ -73,8 +74,8 @@ semantic_anno_table =
 -- in 'semantic_anno_table'
 lookupSemanticAnno :: Semantic_anno -> String
 lookupSemanticAnno sa =
-    maybe (error "lookupSemanticAnno: no semantic anno")
-          id $ lookup sa semantic_anno_table
+    fromMaybe (error "lookupSemanticAnno: no semantic anno")
+        $ lookup sa semantic_anno_table
 
 -- | all possible annotations (without comment-outs)
 data Annotation = -- | constructor for comments or unparsed annotes
