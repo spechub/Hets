@@ -193,8 +193,7 @@ statSymbMapItems sl = do
   foldM insertRsys Map.empty (concat ls)
 
 symbOrMapToRaw :: SYMB_KIND -> SYMB_OR_MAP -> Result [(RawSymbol, RawSymbol)]
-symbOrMapToRaw k sm = do
-  case sm of
+symbOrMapToRaw k sm = case sm of
     Symb s -> do
       v <- symbToRaw k s
       return [(v, v)]
