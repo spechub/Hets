@@ -429,7 +429,9 @@ createLinks dg (nd, lb) (hd:tl) =
                                dgl_type = GlobalDef,
                                dgl_origin = DGLinkFlatteningThree,
                                dgl_id = defaultEdgeId })
-   u_dg = changeDGH dg $ InsertEdge n_edg
+   u_dg = case tryToGetEdge n_edg dg of
+            Nothing -> changeDGH dg $ InsertEdge n_edg
+            Just _ -> dg
    n_dg = groupHistory dg flat3 u_dg
   in
    createLinks n_dg (nd, lb) tl
