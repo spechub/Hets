@@ -112,15 +112,11 @@ updateDGOnly g c =
   case c of
     InsertNode n -> (insLNodeDG n g, InsertNode n)
     DeleteNode n -> (delLNodeDG n g, DeleteNode n)
-    InsertEdge e -> case tryToGetEdge e g of
-      Nothing -> let (newEdge, ng) = insLEdgeDG e g in
-        (ng, InsertEdge newEdge)
-      Just ne ->
-        if elem (getEdgeId e) [defaultEdgeId, getEdgeId ne]
-        then (g, InsertEdge ne)
-        else error "Proofs.EdgeUtils.updateDGOnly"
+    InsertEdge e -> let (newEdge, ng) = insLEdgeDG e g in
+      (ng, InsertEdge newEdge)
     DeleteEdge e -> (delLEdgeDG e g, DeleteEdge e)
-    SetNodeLab _ n -> let (newG, o) = labelNodeDG n g in (newG, SetNodeLab o n)
+    SetNodeLab _ n -> let (newG, o) = labelNodeDG n g in
+      (newG, SetNodeLab o n)
 
 -- -------------------------------------
 -- methods to check the type of an edge
