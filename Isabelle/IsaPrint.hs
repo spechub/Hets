@@ -37,10 +37,11 @@ printIsaTheory tn sign sens = let
     ld = "$HETS_LIB/Isabelle/"
     use = text usesS <+> doubleQuotes (text $ ld ++ "prelude")
     in text theoryS <+> text tn
-    $+$ text importsS <+> (if case b of
+    $+$ text importsS <+> fsep ((if case b of
         Main_thy -> False
         HOLCF_thy -> False
         _ -> True then doubleQuotes $ text $ ld ++ bs else text bs)
+        : map (doubleQuotes . text) (imports sign))
     $+$ use
     $+$ text beginS
     $++$ printTheoryBody sign sens
