@@ -6,7 +6,7 @@ License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
 Maintainer  :  Christian.Maeder@dfki.de
 Stability   :  provisional
-Portability :  portable
+Portability :  non-portable (MPTC+FD)
 
 Symbols and signature morphisms for the CASL logic
 -}
@@ -63,20 +63,20 @@ emptyMorExt = DefMorExt
 instance Pretty (DefMorExt e) where
   pretty _ = empty
 
-class MorphismExtension m where
-   ideMorphismExtension :: m
+class MorphismExtension e m | m -> e where
+   ideMorphismExtension :: e -> m
    composeMorphismExtension :: m -> m -> Result m
    inverseMorphismExtension :: m -> Result m
    isInclusionMorphismExtension :: m -> Bool
 
-instance MorphismExtension () where
-   ideMorphismExtension = ()
+instance MorphismExtension () () where
+   ideMorphismExtension _ = ()
    composeMorphismExtension _ = return
    inverseMorphismExtension = return
    isInclusionMorphismExtension _ = True
 
-instance MorphismExtension (DefMorExt e) where
-   ideMorphismExtension = emptyMorExt
+instance MorphismExtension e (DefMorExt e) where
+   ideMorphismExtension _ = emptyMorExt
    composeMorphismExtension _ = return
    inverseMorphismExtension = return
    isInclusionMorphismExtension _ = True
