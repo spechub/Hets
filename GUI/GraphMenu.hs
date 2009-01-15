@@ -20,7 +20,7 @@ import qualified GUI.GraphAbstraction as GA
 import GUI.GraphTypes
 import GUI.GraphLogic
 import GUI.ShowLogicGraph(showLogicGraph)
-import GUI.History
+-- import GUI.History
 import GUI.Utils
 #ifdef GTKGLADE
 import GUI.GtkLinkTypeChoice
@@ -29,6 +29,8 @@ import GUI.GtkConsistencyChecker
 
 import Data.IORef
 import qualified Data.Map as Map
+import Data.List(isPrefixOf)
+import System.Directory (getCurrentDirectory)
 
 import Static.DevGraph
 import Static.PrintDevGraph
@@ -54,10 +56,11 @@ import GUI.UDGUtils
 import qualified GUI.HTkUtils as HTk
 
 import Control.Concurrent.MVar
+import Common.Utils (joinWith)
+
 
 
 import Interfaces.DataTypes
-import Interfaces.History
 
 -- | Adds to the DGNodeType list style options for each type
 nodeTypes :: HetcatsOpts
@@ -167,8 +170,8 @@ createOpen gInfo file convGraph showLib = Just (
     maybeFilePath <- fileOpenDialog file [ ("Proof", ["*.prf"])
                                          , ("All Files", ["*"])] Nothing
     case maybeFilePath of
-      Just filePath -> do
-        openProofStatus gInfo filePath convGraph showLib
+      Just fPath -> do
+        openProofStatus gInfo fPath convGraph showLib
         return ()
       Nothing -> fail "Could not open file."
   )
@@ -184,7 +187,7 @@ createSaveAs gInfo file = Just (
     maybeFilePath <- fileSaveDialog file [ ("Proof", ["*.prf"])
                                          , ("All Files", ["*"])] Nothing
     case maybeFilePath of
-      Just filePath -> saveProofStatus gInfo filePath
+      Just fPath -> saveProofStatus gInfo fPath
       Nothing -> fail "Could not save file."
   )
 
@@ -260,7 +263,7 @@ createGlobalMenu gInfo@(GInfo { gi_hetcatsOpts = opts
      , Menu (Just "Proofs") $ map (\ (str, cmd) ->
        -- History ? or just some partial history in ch ?
         Button str $ (ral $ performProofAction gInfo
-                  $ proofMenu gInfo $ return . return . cmd ln
+                  $ proofMenu gInfo str $ return . return . cmd ln
                   . Map.map undoRedo))
         [ ("Automatic", automatic)
         , ("Global Subsumption", globSubsume)
@@ -273,19 +276,20 @@ createGlobalMenu gInfo@(GInfo { gi_hetcatsOpts = opts
         [Button "Hide Theorem Shift" $
                -- (addMenuItemToHist ch "Hide Theorem Shift") >>
                (ral $ performProofAction gInfo
-               $ proofMenu gInfo $ fmap return . interactiveHideTheoremShift ln)
+               $ proofMenu gInfo "Hide Theoren Shift" $ 
+                               fmap return . interactiveHideTheoremShift ln)
         ] ++
         map (\ (str, cmd) ->
                Button str $ -- (addMenuItemToHist ch str) >>
                    (ral $ performProofAction gInfo
-                   $ proofMenu gInfo $ return . cmd ln))
+                   $ proofMenu gInfo str $ return . cmd ln))
         [ ("Theorem Hide Shift", theoremHideShift)
         , ("Compute Colimit", computeColimit)
         , ("Compute normal forms", convertNodesToNf)
         ] ++
         [ Menu (Just "Flattening") $ map ( \ (str, cmd) ->
            Button str $ ral $ performProofAction gInfo
-                      $ proofMenu gInfo $ return . cmd)
+                      $ proofMenu gInfo str $ return . cmd)
               [ ("Importings", libEnv_flattening_imports)
               , ("Disjoint unions", libEnv_flattening_dunions)
               , ("Importings and renamings", libEnv_flattening_renamings)
@@ -300,8 +304,8 @@ createGlobalMenu gInfo@(GInfo { gi_hetcatsOpts = opts
      , Button "Show Library Graph" $ ral $ showLibGraph gInfo showLib
      , Button "Save Graph for uDrawGraph" $ ral
               $ saveUDGraph gInfo (mapNodeTypes opts) $ mapEdgeTypes opts
---     , Button "Save proof-script" $ ral
---              $ askSaveProofScript (gi_GraphInfo gInfo) ch
+     , Button "Save proof-script" $ ral
+              $ askSaveProofScript (gi_GraphInfo gInfo) $ intState gInfo
      ])
     ]
 
@@ -508,3 +512,43 @@ createLocalMenuValueTitleShowConservativity = ValueTitle
       (None, _) -> ""
       (_, LeftOpen) -> show c ++ "?"
       _ -> show c
+
+-- Suggests a proof-script filename.
+getProofScriptFileName :: String -> IO FilePath
+getProofScriptFileName f
+    | "/" `isPrefixOf` f = return $ f ++ ".hpf"
+    | otherwise          = do
+                           dir <- getCurrentDirectory
+                           return $ dir ++ '/':f ++ ".hpf"
+
+
+-- | Displays a Save-As dialog and writes the proof-script.
+askSaveProofScript :: GA.GraphInfo -> IORef IntState -> IO ()
+askSaveProofScript graphInfo ch =
+    do
+    h <- readIORef $ ch
+    case undoList $ i_hist h of
+     [] -> infoDialog "Information" "The history is empty. No file written."
+     _ -> do 
+      ff <- getProofScriptFileName $ rmSuffix $ filename h
+      maybeFilePath<- fileSaveDialog ff [("Proof Script",["*.hpf"])
+                                         , ("All Files", ["*"])] Nothing
+      case maybeFilePath of 
+        Just fPath -> do
+           GA.showTemporaryMessage graphInfo "Saving proof script ..."
+           saveCommandHistory ch fPath
+           GA.showTemporaryMessage graphInfo $ "Proof script saved to " ++
+                                            fPath ++ "!"
+        Nothing -> GA.showTemporaryMessage graphInfo $ "Aborted!"
+
+-- Saves the history of commands in a file.
+saveCommandHistory :: IORef IntState -> String -> IO ()
+saveCommandHistory c f =
+    do
+    h <- readIORef c
+    let history = ["# automatically generated hets proof-script", "",
+                   "use " ++ (filename h), ""] ++ (reverse $ map cmdName
+                                                     $ undoList $ i_hist h)
+    writeFile f $ joinWith '\n' history
+
+

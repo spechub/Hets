@@ -42,7 +42,9 @@ emptyCMDL_State =
                   i_state = Nothing,
                   i_hist = IntHistory {
                               undoList = [],
-                              redoList = [] }
+                              redoList = []},
+                  filename = []
+
                         },
       prompter = CMDL_PrompterState {
                     fileLoaded = [],
@@ -73,9 +75,9 @@ cmdlRunShell files
 
 -- | The function processes the file of instructions
 cmdlProcessFile :: String -> IO CMDL_State
-cmdlProcessFile filename =
+cmdlProcessFile flnm =
         (runShell fileShellDescription
-                 (fileBackend filename)
+                 (fileBackend flnm)
                  emptyCMDL_State) `catch`
                                (\_ -> return emptyCMDL_State )
 

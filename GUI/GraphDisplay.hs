@@ -68,15 +68,15 @@ convertGraph gInfo@(GInfo { gi_GraphInfo = actGraphInfo
     Just dgraph -> do
       case openlock dgraph of
         Just lock -> do
-          notopen <- tryPutMVar lock $ \ hist -> do
+          notopen <- tryPutMVar lock $ \ hst -> do
             hhn <- GA.hasHiddenNodes actGraphInfo
             case hhn of
               True -> do
                 GA.showAll actGraphInfo
-                applyChanges actGraphInfo hist
+                applyChanges actGraphInfo hst
                 hideNodes gInfo
               False ->
-                applyChanges actGraphInfo hist
+                applyChanges actGraphInfo hst
             GA.redisplay actGraphInfo
           case notopen of
             True -> do

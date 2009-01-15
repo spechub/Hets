@@ -29,6 +29,9 @@ import Static.DevGraph
 import qualified Data.Map as Map
 import Data.List
 
+
+import Control.Concurrent.MVar
+
 -- | Datatype used to differentiate between the two actions (so that code does
 -- not get duplicated
 data UndoOrRedo =
@@ -44,40 +47,40 @@ data UndoOrRedo =
 --    writeIORef iost nwst
 
 add2history :: String -> IntState -> [UndoRedoElem] -> IntState
-add2history name st descr
+add2history nm st descr
  = case undoList $ i_hist st of
     [] ->  let nwEl = Int_CmdHistoryDescription {
-                             cmdName = name,
+                             cmdName = nm,
                              cmdDescription = descr }
-               hist = i_hist st
-           in st{i_hist=hist{ undoList = nwEl:(undoList hist) } }
+               hst = i_hist st
+           in st{i_hist=hst{ undoList = nwEl:(undoList hst) } }
     h:r ->
       case cmdName h of
-       [] -> let nwEl = h { cmdName = name,
+       [] -> let nwEl = h { cmdName = nm,
                             cmdDescription = descr ++ (cmdDescription h) }
-                 hist = i_hist st
-             in st{i_hist=hist{ undoList = nwEl:r }}
+                 hst = i_hist st
+             in st{i_hist=hst{ undoList = nwEl:r }}
        _ -> let nwEl = Int_CmdHistoryDescription {
-                             cmdName = name,
+                             cmdName = nm,
                              cmdDescription = descr }
-                hist = i_hist st
-             in st{i_hist=hist{ undoList = nwEl :h:r } }
+                hst = i_hist st
+             in st{i_hist=hst{ undoList = nwEl :h:r } }
 
 
 
 
 -- | Undo or redo a command that modified the development graph
-undoRedoDgCmd :: UndoOrRedo -> IntState -> LIB_NAME -> IntState
+undoRedoDgCmd :: UndoOrRedo -> IntState -> LIB_NAME -> IO IntState
 undoRedoDgCmd actionType state ln =
   case i_state state of
     -- should I return an error message??
-   Nothing ->  state
-   Just dgS ->
+   Nothing ->  return state
+   Just dgS -> do
      let
          -- take ln from the history storage ??
          -- in contrast to GUI here you operate with only one ln at a time
          dg = lookupDGraph ln (i_libEnv dgS)
-         dg' = fst $( case actionType of
+         (dg',changes) = ( case actionType of
                        DoUndo -> undoHistStep
                        DoRedo -> redoHistStep) dg
          newEnv = Map.insert ln dg' (i_libEnv dgS)
@@ -86,7 +89,16 @@ undoRedoDgCmd actionType state ln =
                                             i_libEnv = newEnv
                                             }
                        }
-     in newst
+     case openlock dg' of 
+      Nothing -> return newst
+      Just lock -> do
+        mvar <- tryTakeMVar lock
+        case mvar of 
+          Nothing -> return newst
+          Just applyHist -> do
+            applyHist changes
+            putMVar lock applyHist
+            return newst
 
 
 
@@ -133,19 +145,18 @@ processList ls elems acc
 
 
 -- | Process one step of undo or redo
-processAny :: UndoOrRedo -> IntState -> IntState
-processAny actype state =
-  let hist = case actype of
+processAny :: UndoOrRedo -> IntState -> IO IntState
+processAny actype state = do
+  let hst = case actype of
               -- find out the list of actions according to the action
               -- (undo/redo)
               DoUndo -> undoList $ i_hist state
               DoRedo -> redoList $ i_hist state
-  in
-   case hist of
-    [] -> state
-    x:l->
+  case hst of
+    [] -> return state
+    x:l-> do
+       (nwst,ch) <- processUndoRedoElems actype (cmdDescription x) state []
        let
-         (nwst,ch) = processUndoRedoElems actype (cmdDescription x) state []
          x' = x { cmdDescription = ch }
          nwstate = case actype of
                     DoUndo -> nwst {
@@ -160,72 +171,72 @@ processAny actype state =
                                         undoList = x':(undoList$i_hist state)
                                         }
                               }
-       in nwstate
+       return nwstate
 
 
 -- | Process a list of undo or redo changes
 processUndoRedoElems :: UndoOrRedo -> [UndoRedoElem] -> IntState
-                           -> [UndoRedoElem] ->(IntState,[UndoRedoElem])
+                           -> [UndoRedoElem] ->IO (IntState,[UndoRedoElem])
 processUndoRedoElems actype ls state acc
  = case i_state state of
-    Nothing -> (state,[])
+    Nothing -> return (state,[])
     Just ist ->
      case ls of
-      [] -> (state,acc)
-      (UseThmChange sw):l ->
+      [] -> return (state,acc)
+      (UseThmChange sw):l -> do
          let nwst = state {
                       i_state = Just $ ist { useTheorems = sw } }
              ch   = UseThmChange $ useTheorems ist
-         in processUndoRedoElems actype l nwst (ch:acc)
-      (Save2FileChange sw):l ->
+         processUndoRedoElems actype l nwst (ch:acc)
+      (Save2FileChange sw):l -> do
          let nwst = state {
                       i_state = Just $ ist { save2file = sw }  }
              ch   = Save2FileChange $ save2file ist
-         in processUndoRedoElems actype l nwst (ch:acc)
-      (ProverChange nwp):l ->
+         processUndoRedoElems actype l nwst (ch:acc)
+      (ProverChange nwp):l -> do
          let nwst = state {
                       i_state = Just $ ist { prover = nwp } }
              ch   = ProverChange $ prover ist
-         in processUndoRedoElems actype l nwst (ch:acc)
-      (ConsCheckerChange nwc):l ->
+         processUndoRedoElems actype l nwst (ch:acc)
+      (ConsCheckerChange nwc):l -> do
          let nwst = state {
                       i_state = Just $ ist { consChecker = nwc} }
              ch   = ConsCheckerChange $ consChecker ist
-         in processUndoRedoElems actype l nwst (ch:acc)
-      (ScriptChange nws):l ->
+         processUndoRedoElems actype l nwst (ch:acc)
+      (ScriptChange nws):l -> do
          let nwst = state {
                       i_state = Just $ ist { script = nws } }
              ch   = ScriptChange $ script ist
-         in processUndoRedoElems actype l nwst (ch:acc)
-      (LoadScriptChange sw):l ->
+         processUndoRedoElems actype l nwst (ch:acc)
+      (LoadScriptChange sw):l -> do
          let nwst = state {
                       i_state = Just $ ist { loadScript = sw } }
              ch   = LoadScriptChange $ loadScript ist
-         in processUndoRedoElems actype l nwst (ch:acc)
-      (CComorphismChange nwc):l ->
+         processUndoRedoElems actype l nwst (ch:acc)
+      (CComorphismChange nwc):l -> do
          let nwst = state {
                       i_state = Just $ ist { cComorphism = nwc} }
              ch   = CComorphismChange $ cComorphism ist
-         in processUndoRedoElems actype l nwst (ch:acc)
-      (DgCommandChange nln):l ->
-         let nwst = undoRedoDgCmd actype state nln
-             ch   = DgCommandChange nln
-         in processUndoRedoElems actype l nwst (ch:acc)
-      (ListChange nls):l ->
+         processUndoRedoElems actype l nwst (ch:acc)
+      (DgCommandChange nln):l -> do
+         nwst <- undoRedoDgCmd actype state nln
+         let ch = DgCommandChange nln
+         processUndoRedoElems actype l nwst (ch:acc)
+      (ListChange nls):l -> do
          let (nwels,lc) = processList nls (elements ist) []
              nwst = state {
                      i_state = Just $ ist { elements = nwels } }
              ch   = ListChange lc
-         in processUndoRedoElems actype l nwst (ch:acc)
-      (IStateChange nist):l ->
+         processUndoRedoElems actype l nwst (ch:acc)
+      (IStateChange nist):l -> do
          let nwst = state { i_state = nist }
              ch   = IStateChange $ Just ist
-         in processUndoRedoElems actype l nwst (ch:acc)
+         processUndoRedoElems actype l nwst (ch:acc)
 
 
-undoOneStep :: IntState -> IntState
+undoOneStep :: IntState -> IO IntState
 undoOneStep = processAny DoUndo
 
 
-redoOneStep :: IntState -> IntState
+redoOneStep :: IntState -> IO IntState
 redoOneStep = processAny DoRedo

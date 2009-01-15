@@ -160,7 +160,8 @@ cUse input state
                           i_hist = IntHistory { undoList = [],
                                                 redoList = []
                                               },
-                          i_state = Just $   emptyIntIState nwLibEnv nwLn
+                          i_state = Just $   emptyIntIState nwLibEnv nwLn,
+                          filename = file
                           },
                      prompter = (prompter state) {
                                           fileLoaded = file }

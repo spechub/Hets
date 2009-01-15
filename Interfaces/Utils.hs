@@ -17,6 +17,14 @@ module Interfaces.Utils
          , getAllEdges
          , initNodeInfo
          , emptyIntIState
+         , addProveToHist
+         , proofTreeToProve
+         , wasProved
+         , convertGoal
+         , parseTimeLimit
+         , mergeGoals
+         , emptyCommandHistory
+         , addCommandHistoryToState
          ) where
 
 
@@ -27,6 +35,22 @@ import Static.DevGraph
 import Proofs.AbstractState
 import Logic.Logic
 import Common.LibName
+import Data.List (isPrefixOf, stripPrefix)
+import Driver.Options(rmSuffix)
+import Data.Maybe (fromMaybe)
+import System.Directory (getCurrentDirectory)
+import Data.IORef
+import Logic.Comorphism ( AnyComorphism(..))
+-- import Logic.Grothendieck( SigId(..))
+-- import Logic.Logic( language_name)
+import Logic.Prover
+import Proofs.AbstractState
+import Static.GTheory (G_theory(..))
+
+import Control.Monad(when)
+import Common.OrderedMap (keys)
+import Common.Utils(joinWith, splitOn)
+import Common.Result
 
 -- | Returns the list of all nodes, if it is not up to date
 -- the function recomputes the list
@@ -68,107 +92,126 @@ emptyIntIState le ln =
     }
 
 
-{--
-conservativityRule :: DGRule
-conservativityRule = DGRule "ConservativityCheck"
 
--- | check conservativity of the edge
-checkconservativityEdge ::  LEdge DGLinkLab -> LibEnv ->
-                              LIB_NAME ->
-                            ([ConservativityChecker sign sentence morphism]
-                            -> IO (Res.Result (conservativityChecker
-                                      sign sentence morphism)))
-                            ->  IO (String , LibEnv)
-checkconservativityEdge (source,target,linklab) libEnv ln choser = do
-  let libEnv' = case convertToNf ln libEnv target of
-                  Result _ (Just lE) -> lE
-                       -- replace error with some method to return it
-                       -- (PGIP deals with error in its own way)
-                  _ -> error "checkconservativityOfEdge: convertToNf"
-  let (_, thTar) =
-        case computeTheory True libEnv' ln target of
-          Res.Result _ (Just th1) -> th1
-              -- replace the error with something else ?
-          _ -> error "checkconservativityOfEdge: computeTheory"
-  G_theory lid _sign _ sensTar _ <- return thTar
-  GMorphism cid _ _ morphism2 _ <- return $ dgl_morphism linklab
-  Just (GMorphism cid' _ _ morphism3 _) <- return $
-                  dgn_sigma $ labDG (lookupDGraph ln libEnv') target
-  morphism2' <- coerceMorphism (targetLogic cid) lid
-                "checkconservativityOfEdge2" morphism2
-  morphism3' <- coerceMorphism (targetLogic cid') lid
-                "checkconservativityOfEdge3" morphism3
-  let compMor = case comp morphism2' morphism3' of
-               Res.Result _ (Just phi) -> phi
-                    -- replace error with something else ?
-               _ -> error "checkconservativtiyOfEdge: comp"
-  let (_le', thSrc) =
-        case computeTheory False libEnv' ln source of
-          Res.Result _ (Just th1) -> th1
-               -- replace the error with something else ?
-          _ -> error "checkconservativityOfEdge: computeTheory"
-  G_theory lid1 sign1 _ sensSrc1 _ <- return thSrc
-  sign2 <- coerceSign lid1 lid "checkconservativityOfEdge.coerceSign" sign1
-  sensSrc2 <- coerceThSens lid1 lid "checkconservativityOfEdge1" sensSrc1
-  let transSensSrc = propagateErrors
-        $ mapThSensValueM (map_sen lid compMor) sensSrc2
-  if length (conservativityCheck lid) < 1
-   then
-       do
-        return ("No conservativity checkers available", libEnv')
-   else
+-- Create an empty command history 
+emptyCommandHistory :: IORef IntState -> IO (Result CommandHistory)
+emptyCommandHistory st = do 
+  ch <- newIORef []
+  ost <- readIORef st
+  ff <- tryRemoveAbsolutePathComponent $ filename ost
+  return $ Result [] $ Just $ CommandHistory { hist = ch, 
+                                               filePath = rmSuffix ff}
+
+-- If an absolute path is given,
+-- it tries to remove the current working directory as prefix of it.
+tryRemoveAbsolutePathComponent :: String -> IO String
+tryRemoveAbsolutePathComponent f 
+   | "/" `isPrefixOf` f = do 
+                           dir <- getCurrentDirectory
+                           return $ fromMaybe f (stripPrefix (dir ++ "/") f)
+   | otherwise        = return f
+
+-- If the last command in history is a prove it gets returned.
+getLastProve :: CommandHistory -> IO (Maybe Prove)
+getLastProve (CommandHistory{hist = c}) =
     do
-     checkerR <- choser $ conservativityCheck lid
-     if Res.hasErrors $ Res.diags checkerR
-      then
-       do
-        return ("No conservativity checker chosen", libEnv')
-      else
-       do
-        let chCons =  checkConservativity $
-                      maybe (error "checkconservativityOfEdge4") id
-                            $ Res.maybeResult $ checkerR
-        let Res.Result ds res =
-                chCons
-                   (plainSign sign2, toNamedList sensSrc2)
-                   compMor $ toNamedList
-                               (sensTar `OMap.difference` transSensSrc)
-            showObls [] = ""
-            showObls obls = ", provided that the following proof obligations "
-                            ++ "can be discharged:\n"
-                            ++ concatMap (flip showDoc "\n") obls
-            showRes = case res of
-                       Just (Just (cst, obls)) -> "The link is "
-                        ++ showConsistencyStatus cst ++ showObls obls
-                       _ -> "Could not determine whether link is conservative"
-            myDiags = showRelDiags 2 ds
---        createTextDisplay "Result of conservativity check"
---                        (showRes ++ "\n" ++ myDiags) [HTk.size(50,50)]
---        let
-            consShow = case res of
-                        Just (Just (cst, _)) -> cst
-                        _                    -> Unknown "Unknown"
-            GlobalThm proven conserv _ = dgl_type linklab
-            consNew  = if ((show conserv) == (showToComply consShow))
-                        then
-                            Proven conservativityRule emptyProofBasis
-                        else
-                            LeftOpen
-            provenEdge = (source
-                         ,target
-                         ,linklab
-                          {
-                            dgl_type = GlobalThm proven conserv consNew
-                          }
-                         )
-            changes = [ DeleteEdge (source,target,linklab)
-                      , InsertEdge provenEdge ]
-            newGr = lookupDGraph ln libEnv'
-            nextGr = changesDGH newGr changes
-            newLibEnv = Map.insert ln
-              (groupHistory newGr conservativityRule nextGr) libEnv'
-        -- applyChanges actGraphInfo history
-        return ( (showRes ++ "\n" ++ myDiags), newLibEnv)
+    h <- readIORef c
+    return $ if null h
+               then Nothing
+               else case last h of
+                        ProveCommand p -> Just p
+                        _              -> Nothing
 
 
---}
+
+-- If at least one goal was proved and the prove is not the same as last time
+-- the prove gets added, otherwise not.
+addProveToHist :: CommandHistory 
+        -> ProofState lid sentence         -- current proofstate
+        -> Maybe (G_prover, AnyComorphism) -- possible used translation
+        -> [Proof_status proof_tree]       -- goals included in prove
+        -> IO ()
+addProveToHist ch st pcm pt
+    | null $ filter (wasProved) pt = return ()
+    | otherwise = do
+                  p' <- proofTreeToProve st pcm pt
+                  mp <- getLastProve ch
+                  case mp of
+                      Just p  -> when (p /= p') (addProve ch st p')
+                      Nothing -> addProve ch st p'
+ 
+-- Converts a list of proof-trees to a prove
+proofTreeToProve :: ProofState lid sentence  -- current proofstate
+     -> Maybe (G_prover, AnyComorphism) -- possible used translation
+     -> [Proof_status proof_tree] -- goals included in prove
+     -> IO Prove
+proofTreeToProve st pcm pt = 
+  do
+  -- selected prover
+  let prvr = maybe (selectedProver st) (Just . getProverName .fst ) pcm
+  -- selected translation
+      trans = maybe Nothing (Just . snd) pcm
+  -- 1. filter out the not proven goals
+  -- 2. reverse the list, because the last proven goals are on top
+  -- 3. convert all proof-trees to goals
+  -- 4. merge goals with same used axioms
+      goals = mergeGoals $ reverse $ map (convertGoal) $ filter (wasProved) pt
+  -- axioms to include in prove
+      allax = case theory st of 
+                 G_theory _ _ _ axs _ -> keys axs
+  return $ Prove { usedProver = prvr,
+                   translation = trans,
+                   provenGoals = goals,
+                   allAxioms = allax}
+
+-- This checks wether a goal was proved or not
+wasProved :: Proof_status proof_Tree -> Bool
+wasProved g = case goalStatus g of 
+    Proved _  -> True
+    _         -> False
+
+-- Converts a proof-tree into a goal.
+convertGoal :: Proof_status proof_tree -> ProvenGoal
+convertGoal pt = 
+  ProvenGoal {name = goalName pt, axioms = usedAxioms pt, time_Limit = tLimit}
+  where
+     (Tactic_script scrpt) = tacticScript pt
+     tLimit = maybe 20 (read) (parseTimeLimit $ splitOn '\n' scrpt)
+
+-- Parses time-limit from the tactic-script of a goal.
+parseTimeLimit :: [String] -> Maybe String
+parseTimeLimit l = 
+    if null l' then Nothing else Just $ drop (length tlStr) $ last l'
+    where 
+       l' = filter (isPrefixOf tlStr) l 
+       tlStr = "Time limit: "
+
+-- Merges goals with the same used axioms into one goal.
+mergeGoals :: [ProvenGoal] -> [ProvenGoal]
+mergeGoals []     = []
+mergeGoals (h:[]) = [h]
+mergeGoals (h:t) | mergeAble h h' = mergeGoals $ (merge h h'):(tail t)
+                 | otherwise      = h:(mergeGoals t)
+                 where
+                    h' = head t 
+                    mergeAble :: ProvenGoal -> ProvenGoal -> Bool
+                    mergeAble a b = axioms a == axioms b &&
+                                    time_Limit a == time_Limit b
+                    merge :: ProvenGoal -> ProvenGoal -> ProvenGoal
+                    merge a b = a{name = name a ++ ' ':(name b)}
+
+
+
+addCommandHistoryToState :: CommandHistory -> IORef IntState -> IO (Result ())
+addCommandHistoryToState ch ioSt
+ = do
+    ost <- readIORef ioSt
+    lsch <- readIORef $ hist ch 
+    let z = Int_CmdHistoryDescription { 
+             cmdName = joinWith '\n' $ map (show) lsch,
+             cmdDescription = [ IStateChange $ i_state ost ]
+             }
+        nwst = ost { i_hist = (i_hist ost) { 
+                                undoList = z: (undoList $ i_hist ost)}}
+    writeIORef ioSt nwst
+    return $ Result [] $ Just ()

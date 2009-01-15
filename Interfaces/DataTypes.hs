@@ -20,14 +20,28 @@ module Interfaces.DataTypes
        , Int_NodeInfo(..)
        , UndoRedoElem(..)
        , ListChange(..)
+       , CommandHistory(..)
+       , Prove(..)
+       , ProvenGoal(..)
+       , Command(..)
+--       , Node(..)
+       , getLastNode
+       , addProve
+       , addToHist
        ) where
 
 import Static.DevGraph
 import Common.LibName
+import Common.Utils(joinWith, splitOn)
 import Proofs.AbstractState
 import Logic.Comorphism
 import Logic.Logic
 import Interfaces.GenericATPState
+import Data.IORef
+import Data.List (stripPrefix)
+import Logic.Grothendieck( SigId(..))
+import Control.Monad(when)
+import Static.GTheory(G_theory(..))
 
 
 -- | Internal state of the interface, it contains the development graph
@@ -41,7 +55,9 @@ data IntState = IntState {
    -- global history management
      i_hist  :: IntHistory,
    -- internal state
-     i_state :: Maybe IntIState
+     i_state :: Maybe IntIState,
+   -- file name 
+     filename :: String
     }
 
 -- | Contains the detailed global history as two list, a list of actions
@@ -78,6 +94,50 @@ data UndoRedoElem =
  | IStateChange (Maybe IntIState)
  | DgCommandChange LIB_NAME
 
+
+data CommandHistory = CommandHistory { hist :: IORef [Command], 
+                                       filePath :: String}
+                                      
+
+data Command =  NodeChange Node | ProveCommand Prove 
+               deriving Eq
+
+instance Show Command where 
+    show (NodeChange n)   = show n
+    show (ProveCommand p) = show p
+
+-- This is used to recognize a change of node between proofs
+data Node = Node Int String deriving Eq
+
+instance Show Node where 
+   show (Node _ nName) =  
+      "\n# " ++ (replicate 78 '-') ++ "\n\ndg basic " ++ nName ++ "\n"
+
+
+data Prove = Prove {usedProver      :: Maybe String,
+                    translation :: Maybe AnyComorphism,
+                    provenGoals :: [ProvenGoal],
+                    allAxioms   :: [String]
+                    } deriving Eq
+
+instance Show Prove where
+   show p =
+      "drop-translations\n"
+      -- selected translation
+      ++ (maybe "" (unlines . splitComorphism) $ translation p)
+      -- selected prover
+      ++ (maybe "# no prover chosen" ("prover "++) $ usedProver p) ++ "\n\n"
+      -- proven goals
+      ++ (joinWith '\n' $ map (goalToString p) $ provenGoals p)
+
+-- This represents the information about a proved goal
+data ProvenGoal = ProvenGoal {name :: String, -- name of the goal
+                              axioms :: [String], -- used axioms in the prove
+                              time_Limit :: Int -- chosen time-limit
+                              } deriving Eq
+
+
+
 data ListChange =
    AxiomsChange [String] Int
  | GoalsChange [String] Int
@@ -107,3 +167,60 @@ data Int_NodeInfo = forall lid1 sublogics1
          symb_items1 symb_map_items1 sign1 morphism1
          symbol1 raw_symbol1 proof_tree1 =>
      Element (ProofState lid1 sentence1) Int
+
+
+
+goalToString :: Prove -> ProvenGoal -> String
+goalToString p g = 
+    "set goals" ++ (name g)
+    ++
+    -- axioms to include in prove
+    '\n':(if (allAxioms p == axioms g) || (null $ axioms g)
+                then "set-all axioms"
+                else "set axioms " ++ (joinWith ' ' $ axioms g))
+    ++
+    -- selected time-limit 
+    "\nset time-limit " ++ (show $ time_Limit g) ++ "\nprove\n"
+
+-- Splits the comorphism string into its translations.
+splitComorphism :: AnyComorphism -> [String]
+splitComorphism (Comorphism cid) = 
+   map ("translate "++) $ tail $ splitOn ';' $ language_name cid
+
+
+
+-- Returns the last nodechange in the history.
+getLastNode :: CommandHistory -> IO (Maybe Node)
+getLastNode (CommandHistory{hist = c}) =
+    do
+    h <- readIORef c
+    let h' = [n | NodeChange n <- h]
+    return $ if null h' then Nothing else Just $ last h'
+
+dropName :: String -> String -> String
+dropName fch s = maybe s (tail) (stripPrefix fch s)
+
+addProve :: CommandHistory -> ProofState lid sentence -> Prove -> IO ()
+addProve ch st p =
+            do
+            -- Create new NodeChange and compare it with last found NodeChange.
+            let (SigId nId) = gTheorySignIdx $ theory st
+            let nc' = NodeChange $ Node nId ( dropName (filePath ch)$
+                                                      theoryName st)
+            mn <- getLastNode ch
+            -- Add new NodeChange if it doesn't match.
+            case mn of
+                Just n  -> when (NodeChange n /= nc') (addToHist ch nc')
+                Nothing -> addToHist ch nc'
+            -- Finally add the prove.
+            addToHist ch $ ProveCommand p
+
+
+
+
+-- Adds a single command to the history.
+addToHist :: CommandHistory -> Command -> IO ()
+addToHist (CommandHistory {hist = c}) cm =
+    readIORef c >>= (\h -> writeIORef c $ h ++ [cm])
+
+

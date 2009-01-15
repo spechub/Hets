@@ -155,10 +155,10 @@ cGoalsAxmGeneral action gls_axm input state
       ls ->
        do
         let gls = words input
-        let (ls',hist) = parseElements action gls
+        let (ls',hst) = parseElements action gls
                            gls_axm
                            ls ([],[])
-        return $ add2hist [ListChange hist] $
+        return $ add2hist [ListChange hst] $
                     state {
                       intState = (intState state) {
                         i_state = Just pS {
@@ -197,12 +197,12 @@ cProve state
                              }
             let nwls=concatMap(\(Element _ x) ->
                                               selectANode x nwpS) ls
-                hist=concatMap(\(Element stt x)  ->
+                hst=concatMap(\(Element stt x)  ->
                                  (AxiomsChange (includedAxioms stt) x):
                                  (GoalsChange (selectedGoals stt) x):
                                    []) ls
             return $ add2hist [(DgCommandChange $ i_ln nwpS),
-                               (ListChange hist)] $
+                               (ListChange hst)] $
                          state {
                            intState = (intState state) {
                             i_state = Just $ pS {

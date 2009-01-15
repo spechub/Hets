@@ -22,7 +22,6 @@ import Common.LibName
 import GUI.GraphDisplay
 import GUI.GraphTypes
 import GUI.ShowLibGraph
-import GUI.History(initCommandHistory)
 #ifdef GTKGLADE
 import GUI.GtkUtils(startMainLoop, stopMainLoop)
 #endif
@@ -60,7 +59,8 @@ showGraph file opts env = case env of
     let nwst = case i_state ost of
                 Nothing -> ost
                 Just ist -> ost{ i_state = Just $ ist { i_libEnv = le
-                                                      , i_ln = ln} }
+                                                      , i_ln = ln},
+                                 filename = file}
     writeIORef (intState gInfo) nwst
 --    ch <- (initCommandHistory file)
     let gInfo' = gInfo { gi_hetcatsOpts = opts     }

@@ -408,7 +408,7 @@ showEdgeInfo state (x,y,dglab@(DGLink morp _ org _ ) )
      nameOf x' l =case find (\(nb,_)->nb==x') l of
                    Nothing->"Unknown node"
                    Just (_, n) -> showName $ dgn_name n
-     name = "dgl_name :"++(nameOf x ls)++" -> "++
+     nm = "dgl_name :"++(nameOf x ls)++" -> "++
                (nameOf y ls) ++ "\n"
      orig = "dgl_origin :"++(show $ org)++"\n"
      homog= "dgl_homogeneous :"++ (show $ isHomogeneous morp)
@@ -432,7 +432,7 @@ showEdgeInfo state (x,y,dglab@(DGLink morp _ org _ ) )
                "provenhidingthm"->"proven hiding theorem"
                _                ->"unknown type"
                 ) ++ "\n"
-    in name++orig++homog++ltype
+    in nm++orig++homog++ltype
 
 
  -- show all information of selection
@@ -690,8 +690,8 @@ cDisplayGraph state
      do
       -- obtain the name of the last loaded library for
       -- documentation/debugging reasons
-      let filename = fileLoaded $  prompter state
-      showGraph filename defaultHetcatsOpts ( Just
+      let flnm = fileLoaded $  prompter state
+      showGraph flnm defaultHetcatsOpts ( Just
                    (i_ln dgState, i_libEnv dgState))
       return state
 #endif

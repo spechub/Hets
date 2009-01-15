@@ -34,6 +34,8 @@ import Proofs.Global
 import Proofs.HideTheoremShift
 import Proofs.TheoremHideShift
 import Proofs.Local
+import Proofs.ComputeColimit
+
 import PGIP.UndoRedo
 
 -- | Generates a shellac command that requires input
@@ -139,6 +141,9 @@ getCommands
    : (genCmd ["dg-all loc-infer"] CmdNoPriority ReqNothing
               "apply local inference to all edges" $
               CmdNoInput $ commandDgAll $ wrapResultDgAll localInference)
+   : (genCmd ["dg-all compColimit"] CmdNoPriority ReqNothing
+              "computes colimits in the graph" $ 
+              CmdNoInput $ commandDgAll $ computeColimit)
    : (genCmd ["dg-all loc-decomp"] CmdNoPriority ReqNothing
               "apply local decomposition to all edges" $
               CmdNoInput $ commandDgAll $ wrapResultDgAll locDecomp)

@@ -16,7 +16,7 @@ module GUI.Utils
   ( listBox
   , createTextSaveDisplay
   , askFileNameAndSave
-
+  , strToCmd
 #if (defined GTKGLADE || defined UNI_PACKAGE)
   , createTextDisplay
   , infoDialog
@@ -32,6 +32,7 @@ module GUI.Utils
 #endif
   ) where
 
+
 #ifdef GTKGLADE
 import GUI.GtkUtils
   ( infoDialog
@@ -45,6 +46,7 @@ import GUI.GtkUtils
   , displayTheory
   , displayTheoryWithWarning
   )
+
 
 -- | create a window with title and list of options, return selected option
 listBox :: String -- ^ Title
@@ -166,3 +168,38 @@ createTextDisplay t m = GUI.HTkUtils.createTextDisplay t m []
 #else
 import GUI.ConsoleUtils (listBox, createTextSaveDisplay, askFileNameAndSave)
 #endif
+
+strToCmd :: String -> String
+strToCmd str =
+  case str of
+   "Automatic"                             -> "dg-all auto"
+   "Global Subsumption"                    -> "dg-all glob-subsume"
+   "Global Decomposition"                  -> "dg-all glob-decomp"
+   "Local Inference"                       -> "dg-all loc-infer"
+   "Local Decomposition (merge of rules)"  -> "dg-all loc-decomp"
+   "Composition (merge of rules)"          -> "dg-all comp"
+   "Composition - creating new links"      -> "dg-all comp-new"
+   "Hide Theorem Shift"                    -> "dg-all thm-hide"
+   "Theorem Hide Shift"                    -> "dg-all hide-thm"
+   "Compute Colimit"                       -> 
+                   "# unknown Compute Colimit command"
+   "Compute normal forms"                  ->
+                   "# unknown Compute normal forms command"
+   "Importings"                            ->
+                   "# unknown Flattening -> Importings command"
+   "Disjoint unions"                       ->
+                   "# unknown Flattening -> Disjoint unions command"
+   "Importings and renamings"              ->
+                   "# unknown Flattening -> Importings and renamings command"
+   "Hiding"                                ->
+                   "# unknown Flattening -> Hiding command"
+   "Heterogeneity"                         ->
+                   "# unknown Flattening -> Heterogeneity command"
+   "Qualify all names"                     ->
+                   "# unknown Flattening -> Qulify all names command"
+   "mergeDGNodeLab"                        -> 
+                   "# unknown mergeDGNodeLab command"
+   _ -> "# unknown command :"++ str
+
+
+

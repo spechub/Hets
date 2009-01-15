@@ -129,10 +129,10 @@ runAndLock (GInfo { functionLock = lock
 
 -- | Undo one step of the History
 undo :: GInfo -> Bool -> IO ()
-undo gInfo@(GInfo { gi_GraphInfo = actGraph }) isUndo =
+undo gInfo isUndo = 
  do
   intSt <- readIORef $ intState gInfo
-  let nwSt = if isUndo then undoOneStep intSt else redoOneStep intSt
+  nwSt <- if isUndo then undoOneStep intSt else redoOneStep intSt 
   writeIORef (intState gInfo) nwSt
   remakeGraph gInfo
 
@@ -215,7 +215,7 @@ reloadLibs iorst opts deps ioruplibs ln = do
  ost <- readIORef iorst
  case i_state ost of
   Nothing -> return False
-  Just _ist -> do
+  Just _ -> do
    uplibs <- readIORef ioruplibs
    case elem ln uplibs of
     True -> return True
@@ -484,12 +484,13 @@ openProofStatus gInfo@(GInfo { gi_hetcatsOpts = opts
 
 -- | apply a rule of the development graph calculus
 proofMenu :: GInfo
+             -> String
              -> (LibEnv -> IO (Res.Result LibEnv))
              -> IO ()
 proofMenu gInfo@(GInfo { gi_GraphInfo = actGraphInfo
                        , gi_hetcatsOpts = hOpts
                        , proofGUIMVar = guiMVar
-                       }) proofFun = do
+                       }) str proofFun = do
  ost <- readIORef $ intState gInfo
  case i_state ost of
   Nothing -> return ()
@@ -522,7 +523,8 @@ proofMenu gInfo@(GInfo { gi_GraphInfo = actGraphInfo
             print $ prettyHistory history
           let lln = map (\x-> [DgCommandChange x]) $ calcGlobalHistory
                                                    proofStatus newProofStatus
-              nst = foldl (add2history "dg rule") ost lln
+              nmStr = strToCmd str
+              nst = foldl (add2history nmStr) ost lln 
       --        (calcGlobalHistory proofStatus newProofStatus : guHist, grHist)
           applyChanges actGraphInfo $ reverse
             $ flatHistory history
@@ -690,8 +692,8 @@ proveAtNode checkCons gInfo descr dgraph = do
     True -> do
       let action = do
             guiMVar <- newMVar Nothing
-            res <- basicInferenceNode checkCons logicGraph libNode ln
-                guiMVar le
+            res <- basicInferenceNode checkCons logicGraph 
+                libNode ln   guiMVar le (intState gInfo)
             -- add to history ch
             runProveAtNode checkCons gInfo (descr, dgn') res
             unlockLocal dgn'
@@ -725,8 +727,9 @@ runProveAtNode checkCons gInfo (v, dgnode) res = case maybeResult res of
           Nothing -> case diags tres of
             ds -> infoDialog nodetext
               $ unlines $ "could not (re-)construct a model" : map diagString ds
-        proofMenu gInfo $ mergeDGNodeLab gInfo
+        proofMenu gInfo "mergeDGNodeLab" $ mergeDGNodeLab gInfo
           (v, labDG (lookupDGraph ln le) v)
+        mergeHistoryLast2Entries gInfo
   Nothing -> return ()
 
 mergeDGNodeLab :: GInfo -> LNode DGNodeLab -> LibEnv -> IO (Res.Result LibEnv)
@@ -1111,11 +1114,11 @@ link2String linkmap (nodeid1, nodeid2, edge) = do
     Nothing -> error $ "SaveGraph: can't lookup linktype: " ++ show ltype
     Just (l, c) -> return (l, c)
   let
-    name   = "\"" ++ (show linkid) ++ ":" ++ (show nodeid1) ++ "->"
+    nm   = "\"" ++ (show linkid) ++ ":" ++ (show nodeid1) ++ "->"
              ++ (show nodeid2) ++ "\""
     color' = "a(\"EDGECOLOR\",\"" ++ color ++ "\"),"
     line'  = "a(\"EDGEPATTERN\",\"" ++ (map toLower $ show line) ++ "\")"
-  return $ "l(" ++ name ++ ",e(\"" ++ show ltype ++ "\","
+  return $ "l(" ++ nm ++ ",e(\"" ++ show ltype ++ "\","
            ++ "[" ++ color' ++ line' ++"],"
            ++ "r(\"" ++ (show nodeid2) ++ "\")))"
 
