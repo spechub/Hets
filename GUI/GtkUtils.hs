@@ -163,7 +163,7 @@ fileDialog fAction fname filters mAction = do
       dlg' <-fileChooserDialogNew Nothing Nothing FileChooserActionOpen
                                   [ (stockCancel, ResponseCancel)
                                   , (stockOpen,   ResponseAccept)]
-      fileChooserSetCurrentFolder dlg' $ takeDirectory fname 
+      fileChooserSetCurrentFolder dlg' $ takeDirectory fname
       fileChooserSetFilename dlg' $ takeFileName fname
       return dlg'
     FileChooserActionSave -> do

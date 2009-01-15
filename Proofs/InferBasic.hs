@@ -152,11 +152,11 @@ proveTheory _ p =
 -- | applies basic inference to a given node
 basicInferenceNode :: Bool -- ^ True = CheckConsistency; False = Prove
                    -> LogicGraph -> (LIB_NAME,Node) -> LIB_NAME
-                   -> GUIMVar -> LibEnv 
+                   -> GUIMVar -> LibEnv
                    -- -> CommandHistory
                    -> IO (Result (LibEnv, Result G_theory))
-basicInferenceNode checkCons lg (ln, node) libname guiMVar libEnv 
- -- ch 
+basicInferenceNode checkCons lg (ln, node) libname guiMVar libEnv
+ -- ch
  = do
       let dGraph = lookupDGraph libname libEnv
       runResultT $ do
@@ -342,7 +342,7 @@ proveKnownPMap :: (Logic lid sublogics1
                symbol1
                raw_symbol1
                proof_tree1) =>
-       LogicGraph 
+       LogicGraph
        -- -> CommandHistory
     -> [FreeDefMorphism sentence morphism1]
     -> ProofState lid sentence -> IO (Result (ProofState lid sentence))
@@ -362,7 +362,7 @@ callProver :: (Logic lid sublogics1
                raw_symbol1
                proof_tree1) =>
        ProofState lid sentence
-    -- -> CommandHistory 
+    -- -> CommandHistory
     -> Bool -- indicates if a translation was chosen
     -> [FreeDefMorphism sentence morphism1]
     -> (G_prover,AnyComorphism) -> IO (Result (ProofState lid sentence))

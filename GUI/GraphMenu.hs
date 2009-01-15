@@ -57,7 +57,7 @@ import Control.Concurrent.MVar
 
 
 import Interfaces.DataTypes
-import Interfaces.History 
+import Interfaces.History
 
 -- | Adds to the DGNodeType list style options for each type
 nodeTypes :: HetcatsOpts
@@ -142,10 +142,10 @@ createGraph gInfo@(GInfo { gi_GraphInfo = actGraphInfo
                          , gi_hetcatsOpts = opts
                          }) title convGraph showLib = do
  ost <- readIORef $ intState gInfo
- case i_state ost of 
+ case i_state ost of
   Nothing -> return ()
   Just ist -> do
-   let ln = i_ln ist 
+   let ln = i_ln ist
        file = rmSuffix (libNameToFile opts ln) ++ prfSuffix
    deselectEdgeTypes <- newIORef []
    globMenu <- createGlobalMenu gInfo convGraph showLib deselectEdgeTypes
@@ -194,7 +194,7 @@ createClose gInfo@(GInfo { windowCount = wc
                    , exitMVar = exit
                    }) = do
  ost <- readIORef $ intState gInfo
- case i_state ost of 
+ case i_state ost of
   Nothing -> return False
   Just ist -> do
    let le = i_libEnv ist
@@ -231,14 +231,14 @@ createGlobalMenu gInfo@(GInfo { gi_hetcatsOpts = opts
 #else
                               }) convGraph showLib _ =
 #endif
- do 
+ do
  ost <- readIORef $ intState gInfo
- case i_state ost of 
+ case i_state ost of
   Nothing -> return []
   Just ist -> do
-   let ral x = runAndLock gInfo x 
+   let ral x = runAndLock gInfo x
        ln = i_ln ist
-   return 
+   return
     [GlobalMenu (Menu Nothing
      [ Button "Undo" $ ral $ undo gInfo True
      , Button "Redo" $ ral $ undo gInfo False
@@ -399,11 +399,11 @@ createMenuButton :: String -> (Int -> DGraph -> IO ())
 createMenuButton title menuFun gInfo =
                     (Button title
                       (\ (_, descr) ->
-                        do 
+                        do
                          ost <- readIORef $ intState gInfo
-                         case i_state ost of 
+                         case i_state ost of
                           Nothing -> return ()
-                          Just ist -> do 
+                          Just ist -> do
                            let le = i_libEnv ist
                                ln = i_ln ist
                                dGraph = lookupDGraph ln le
@@ -431,11 +431,11 @@ createLocalMenuTaxonomy ginfo =
         , createMenuButton "Concept graph" (passTh displayConceptGraph) ginfo
         ])
   where passTh displayFun descr _ =
-         do 
+         do
           ost <- readIORef $ intState ginfo
-          case i_state ost of 
+          case i_state ost of
            Nothing -> return ()
-           Just ist -> do 
+           Just ist -> do
              let ln = i_ln ist
                  le = i_libEnv ist
              r <- lookupTheoryOfNode le ln descr

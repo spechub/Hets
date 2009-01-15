@@ -129,10 +129,10 @@ runAndLock (GInfo { functionLock = lock
 
 -- | Undo one step of the History
 undo :: GInfo -> Bool -> IO ()
-undo gInfo@(GInfo { gi_GraphInfo = actGraph }) isUndo = 
+undo gInfo@(GInfo { gi_GraphInfo = actGraph }) isUndo =
  do
   intSt <- readIORef $ intState gInfo
-  let nwSt = if isUndo then undoOneStep intSt else redoOneStep intSt 
+  let nwSt = if isUndo then undoOneStep intSt else redoOneStep intSt
   writeIORef (intState gInfo) nwSt
   remakeGraph gInfo
 
@@ -143,8 +143,8 @@ reload gInfo@(GInfo { gi_hetcatsOpts = opts
                     }) = do
   lockGlobal gInfo
   oldst <- readIORef $ intState gInfo
-  case i_state oldst of 
-   Nothing -> do 
+  case i_state oldst of
+   Nothing -> do
                unlockGlobal gInfo
                return ()
    Just ist -> do
@@ -176,8 +176,8 @@ getDep ln le = map (\ (_, x) -> (ln, dgn_libname x)) $
 reloadLib :: IORef IntState -> HetcatsOpts -> IORef [LIB_NAME] -> LIB_NAME
           -> IO ()
 reloadLib iorst opts ioruplibs ln = do
- ost <- readIORef iorst 
- case i_state ost of 
+ ost <- readIORef iorst
+ case i_state ost of
   Nothing -> return ()
   Just ist -> do
    mfile <- existsAnSource opts {intype = GuessIn}
@@ -202,7 +202,7 @@ reloadLib iorst opts ioruplibs ln = do
               Nothing -> errorDialog "Error"
                                      "Reload: Can't set openlock in DevGraph"
             Nothing -> return ()
-          let nwst = ost { i_state = Just ist { 
+          let nwst = ost { i_state = Just ist {
                                        i_libEnv = newle } }
           writeIORef iorst $ nwst
         Nothing ->
@@ -213,7 +213,7 @@ reloadLibs :: IORef IntState -> HetcatsOpts -> [(LIB_NAME, LIB_NAME)]
            -> IORef [LIB_NAME] -> LIB_NAME -> IO Bool
 reloadLibs iorst opts deps ioruplibs ln = do
  ost <- readIORef iorst
- case i_state ost of 
+ case i_state ost of
   Nothing -> return False
   Just _ist -> do
    uplibs <- readIORef ioruplibs
@@ -231,7 +231,7 @@ reloadLibs iorst opts deps ioruplibs ln = do
           return True
         False -> do
           ost' <- readIORef iorst
-          case i_state ost' of 
+          case i_state ost' of
            Nothing -> return False
            Just ist' -> do
             let le = i_libEnv ist'
@@ -255,7 +255,7 @@ remakeGraph :: GInfo -> IO ()
 remakeGraph gInfo@(GInfo { gi_GraphInfo = actGraphInfo
                          }) = do
   ost <- readIORef $ intState gInfo
-  case i_state ost of 
+  case i_state ost of
    Nothing -> return ()
    Just ist -> do
     let le = i_libEnv ist
@@ -295,9 +295,9 @@ hideNodes gInfo@(GInfo { gi_GraphInfo = actGraphInfo
                  }) = do
   hhn <- GA.hasHiddenNodes actGraphInfo
   ost <- readIORef $ intState gInfo
-  case i_state ost of 
+  case i_state ost of
    Nothing -> return ()
-   Just ist -> do 
+   Just ist -> do
     case hhn of
      True ->
        GA.showTemporaryMessage actGraphInfo "Nodes already hidden ..."
@@ -377,7 +377,7 @@ getShortPaths (p:r) =
 focusNode :: GInfo -> IO ()
 focusNode gInfo@(GInfo { gi_GraphInfo = grInfo }) = do
  ost <- readIORef $ intState gInfo
- case i_state ost of 
+ case i_state ost of
   Nothing -> return ()
   Just ist -> do
    let le = i_libEnv ist
@@ -394,9 +394,9 @@ translateGraph :: GInfo -> ConvFunc -> LibFunc -> IO ()
 translateGraph gInfo@(GInfo { gi_hetcatsOpts = opts
                       }) convGraph showLib = do
  ost <- readIORef $ intState gInfo
- case i_state ost of 
+ case i_state ost of
   Nothing -> return ()
-  Just ist -> do 
+  Just ist -> do
    let le = i_libEnv ist
        ln = i_ln ist
    openTranslateGraph le ln opts (getDGLogic le) convGraph showLib
@@ -433,9 +433,9 @@ saveProofStatus :: GInfo -> FilePath -> IO ()
 saveProofStatus gInfo@(GInfo { gi_hetcatsOpts = opts
                        }) file = encapsulateWaitTermAct $ do
   ost <- readIORef $ intState gInfo
-  case i_state ost of 
+  case i_state ost of
    Nothing -> return ()
-   Just ist -> do 
+   Just ist -> do
     let proofStatus = i_libEnv ist
         ln = i_ln ist
     writeShATermFile file (ln, lookupHistory ln proofStatus)
@@ -447,7 +447,7 @@ openProofStatus :: GInfo -> FilePath -> ConvFunc -> LibFunc
 openProofStatus gInfo@(GInfo { gi_hetcatsOpts = opts
                              }) file convGraph showLib = do
  ost <- readIORef $ intState gInfo
- case i_state ost of 
+ case i_state ost of
   Nothing -> return ()
   Just ist -> do
     let ln = i_ln ist
@@ -482,7 +482,7 @@ openProofStatus gInfo@(GInfo { gi_hetcatsOpts = opts
                     GA.layoutImproveAll actGraphInfo
                     GA.activateGraphWindow actGraphInfo
 
--- | apply a rule of the development graph calculus 
+-- | apply a rule of the development graph calculus
 proofMenu :: GInfo
              -> (LibEnv -> IO (Res.Result LibEnv))
              -> IO ()
@@ -491,7 +491,7 @@ proofMenu gInfo@(GInfo { gi_GraphInfo = actGraphInfo
                        , proofGUIMVar = guiMVar
                        }) proofFun = do
  ost <- readIORef $ intState gInfo
- case i_state ost of 
+ case i_state ost of
   Nothing -> return ()
   Just ist -> do
    let ln = i_ln ist
@@ -520,9 +520,9 @@ proofMenu gInfo@(GInfo { gi_GraphInfo = actGraphInfo
           doDump hOpts "PrintHistory" $ do
             putStrLn "History"
             print $ prettyHistory history
-          let lln = map (\x-> [DgCommandChange x]) $ calcGlobalHistory 
+          let lln = map (\x-> [DgCommandChange x]) $ calcGlobalHistory
                                                    proofStatus newProofStatus
-              nst = foldl (add2history "dg rule") ost lln 
+              nst = foldl (add2history "dg rule") ost lln
       --        (calcGlobalHistory proofStatus newProofStatus : guHist, grHist)
           applyChanges actGraphInfo $ reverse
             $ flatHistory history
@@ -575,7 +575,7 @@ getTheoryOfNode :: GInfo -> Int -> DGraph -> IO ()
 getTheoryOfNode gInfo@(GInfo { gi_GraphInfo = actGraphInfo
                              }) descr dgraph = do
  ost <- readIORef $ intState gInfo
- case i_state ost of 
+ case i_state ost of
   Nothing -> return ()
   Just ist -> do
    let le = i_libEnv ist
@@ -603,7 +603,7 @@ translateTheoryOfNode :: GInfo -> Int -> DGraph -> IO ()
 translateTheoryOfNode
   gInfo@(GInfo {gi_hetcatsOpts = opts}) node dgraph = do
  ost <- readIORef $ intState gInfo
- case i_state ost of 
+ case i_state ost of
   Nothing -> return ()
   Just ist -> do
     let libEnv = i_libEnv ist
@@ -666,7 +666,7 @@ showStatusAux dgnode =
 proveAtNode :: Bool -> GInfo -> Int -> DGraph -> IO ()
 proveAtNode checkCons gInfo descr dgraph = do
  ost <- readIORef $ intState gInfo
- case i_state ost of 
+ case i_state ost of
   Nothing -> return ()
   Just ist -> do
    let ln = i_ln ist
@@ -695,7 +695,7 @@ proveAtNode checkCons gInfo descr dgraph = do
             -- add to history ch
             runProveAtNode checkCons gInfo (descr, dgn') res
             unlockLocal dgn'
-      case checkCons || 
+      case checkCons ||
            ( isNormalFormNode dgraph' (snd libNode) ||
             not (hasIncomingHidingEdge dgraph' $ snd libNode)) of
         True -> do
@@ -713,7 +713,7 @@ runProveAtNode :: Bool -> GInfo -> LNode DGNodeLab
 runProveAtNode checkCons gInfo (v, dgnode) res = case maybeResult res of
   Just (le, tres) -> do
    ost <- readIORef $ intState gInfo
-   case i_state ost of 
+   case i_state ost of
     Nothing -> return ()
     Just ist -> do
         let ln = i_ln ist
@@ -732,7 +732,7 @@ runProveAtNode checkCons gInfo (v, dgnode) res = case maybeResult res of
 mergeDGNodeLab :: GInfo -> LNode DGNodeLab -> LibEnv -> IO (Res.Result LibEnv)
 mergeDGNodeLab gInfo (v, new_dgn) le = do
  ost <- readIORef $ intState gInfo
- case i_state ost of 
+ case i_state ost of
   Nothing -> return (Result [] (Just le))
   Just ist -> do
    let ln = i_ln ist
@@ -762,7 +762,7 @@ checkconservativityOfEdge :: Int -> GInfo -> Maybe (LEdge DGLinkLab) -> IO ()
 checkconservativityOfEdge _ gInfo@(GInfo{ gi_GraphInfo = _actGraphInfo})
                            (Just (source,target,linklab)) = do
  ost <- readIORef $ intState gInfo
- case i_state ost of 
+ case i_state ost of
   Nothing -> return ()
   Just ist -> do
    let ln = i_ln ist
@@ -921,7 +921,7 @@ showReferencedLibrary :: Int -> GInfo -> ConvFunc -> LibFunc -> IO ()
 showReferencedLibrary descr gInfo
                       convGraph showLib = do
  ost <- readIORef $ intState gInfo
- case i_state ost of 
+ case i_state ost of
   Nothing -> return ()
   Just ist -> do
    let ln = i_ln ist
@@ -996,7 +996,7 @@ openTranslateGraph libEnv ln opts (Res.Result diagsSl mSublogic) convGraph
                                      ost <- readIORef $ intState gI
                                      let nwst = case i_state ost of
                                                  Nothing -> ost
-                                                 Just ist -> 
+                                                 Just ist ->
                                                   ost{i_state = Just ist{
                                                        i_libEnv = newLibEnv,
                                                        i_ln = ln }}
@@ -1027,7 +1027,7 @@ saveUDGraph gInfo@(GInfo { gi_GraphInfo = graphInfo
                          , gi_hetcatsOpts = opts
                          }) nodemap linkmap = do
   ost <- readIORef $ intState gInfo
-  case i_state ost of 
+  case i_state ost of
    Nothing -> return ()
    Just ist -> do
     let ln = i_ln ist
@@ -1048,7 +1048,7 @@ nodes2String :: GInfo -> Map.Map DGNodeType (Shape value, String)
              -> IO String
 nodes2String gInfo@(GInfo { gi_GraphInfo = graphInfo }) nodemap linkmap = do
  ost <- readIORef $ intState gInfo
- case i_state ost of 
+ case i_state ost of
   Nothing -> return []
   Just ist -> do
    let le = i_libEnv ist
@@ -1087,9 +1087,9 @@ links2String :: GInfo -> Map.Map DGEdgeType (EdgePattern GA.EdgeValue, String)
 links2String gInfo@(GInfo { gi_GraphInfo = graphInfo
                     })  linkmap nodeid = do
  ost <- readIORef $ intState gInfo
- case i_state ost of 
+ case i_state ost of
   Nothing -> return []
-  Just ist -> do 
+  Just ist -> do
    let ln = i_ln ist
        le = i_libEnv ist
    edges <- filterM (\(src,_,edge) -> do

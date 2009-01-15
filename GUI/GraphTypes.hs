@@ -98,15 +98,15 @@ data Colors = Black
 -- | Creates an empty GInfo
 emptyGInfo :: IO GInfo
 emptyGInfo = do
-  let ihist = IntHistory { 
-                 undoList = [], 
+  let ihist = IntHistory {
+                 undoList = [],
                  redoList = [] }
-      istate = emptyIntIState emptyLibEnv $ Lib_id $ Indirect_link 
+      istate = emptyIntIState emptyLibEnv $ Lib_id $ Indirect_link
                                         "" nullRange "" noTime
-      st = IntState { 
+      st = IntState {
             i_state = Just istate,
             i_hist  = ihist }
-  
+
   intSt <- newIORef st
 --  iorLE <- newIORef emptyLibEnv
   graphInfo <- initgraphs
@@ -141,8 +141,8 @@ copyGInfo gInfo newLN = do
   iorIN <- newIORef $ InternalNames False []
   guiMVar <- newEmptyMVar
   intSt <- readIORef $ intState gInfo
-  let intSt' = intSt { 
-                i_state = case i_state intSt of 
+  let intSt' = intSt {
+                i_state = case i_state intSt of
                            Nothing -> Nothing
                            Just st -> Just $ st {
                                                  i_ln = newLN}

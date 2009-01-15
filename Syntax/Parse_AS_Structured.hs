@@ -202,7 +202,7 @@ specC lG = do
     let spD = annoParser $ specD lG
         rest = spD >>= translation_list lG Translation Reduction
     l@(Logic lid) <- lookupCurrentLogic "specC" lG
-    -- if the current logic has an associated data_logic, 
+    -- if the current logic has an associated data_logic,
     -- parse "data SPEC1 SPEC2", where SPEC1 is in the data_logic
     -- SPEC1 needs to be a basic spec or a grouped spec
     -- SPEC2 is in the currrent logic

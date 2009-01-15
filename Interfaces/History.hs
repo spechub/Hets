@@ -38,8 +38,8 @@ data UndoOrRedo =
 
 -- write2Hist :: IORef IntState -> String -> [UndoRedoElem] -> IO()
 -- write2Hist iost name descr
---  = do 
---    ost <- readIORef iost 
+--  = do
+--    ost <- readIORef iost
 --    let nwst = add2history name ost descr
 --    writeIORef iost nwst
 

@@ -72,8 +72,8 @@ automaticRecursive count ln proofstatus =
      else automaticRecursive (count - 1) ln auxProofstatus
 
 wrapTheoremHideShift :: LIB_NAME -> LibEnv -> LibEnv
-wrapTheoremHideShift ln libEnv = 
- case maybeResult $ theoremHideShift ln libEnv of 
+wrapTheoremHideShift ln libEnv =
+ case maybeResult $ theoremHideShift ln libEnv of
    Nothing -> libEnv
    Just libEnv' -> libEnv'
 

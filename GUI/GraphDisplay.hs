@@ -59,7 +59,7 @@ convertGraph gInfo@(GInfo { gi_GraphInfo = actGraphInfo
                           , windowCount = wc
                           }) title showLib = do
  ost <- readIORef $ intState gInfo
- case i_state ost of 
+ case i_state ost of
   Nothing -> error "Something went wrong, no library loaded"
   Just ist -> do
    let libEnv = i_libEnv ist
@@ -103,7 +103,7 @@ convertGraph gInfo@(GInfo { gi_GraphInfo = actGraphInfo
 initializeGraph :: GInfo -> String -> LibFunc -> IO ()
 initializeGraph gInfo title showLib = do
  ost <- readIORef $ intState gInfo
- case i_state ost of 
+ case i_state ost of
   Nothing -> return ()
   Just ist -> do
    let ln = i_ln ist

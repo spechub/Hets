@@ -57,7 +57,7 @@ showGraph file opts env = case env of
     useHTk -- All messages are displayed in TK dialog windows
     -- from this point on
     ost <- readIORef $ intState gInfo
-    let nwst = case i_state ost of 
+    let nwst = case i_state ost of
                 Nothing -> ost
                 Just ist -> ost{ i_state = Just $ ist { i_libEnv = le
                                                       , i_ln = ln} }

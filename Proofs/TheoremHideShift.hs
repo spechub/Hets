@@ -271,8 +271,8 @@ theoremHideShiftAux ln proofStatus nodeList = do
                      nodesDG $ lookupDGraph ln proofStatus
   let
      auxGraph = lookupDGraph ln auxProofstatus
-     nodesWHiding = filter 
-                    (\n -> hasIngoingHidingDef proofStatus ln n 
+     nodesWHiding = filter
+                    (\n -> hasIngoingHidingDef proofStatus ln n
                            && (not $ isNormalFormNode auxGraph n)) nodeList
      -- all nodes with incoming hiding links
      -- all the theorem links entering these nodes

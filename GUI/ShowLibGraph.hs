@@ -69,9 +69,9 @@ reload :: GInfo -> IORef DaVinciGraphTypeSyn -> IORef NodeArcList -> IO()
 reload gInfo@(GInfo {gi_hetcatsOpts = opts
                     }) depGRef nodeArcRef = do
  ost <- readIORef $ intState gInfo
- case i_state ost of 
+ case i_state ost of
   Nothing -> return ()
-  Just ist -> do  
+  Just ist -> do
    let ln = i_ln ist
    depG <- readIORef depGRef
    (nodes', arcs) <- readIORef nodeArcRef
@@ -92,10 +92,10 @@ reload gInfo@(GInfo {gi_hetcatsOpts = opts
 addNodesAndArcs :: GInfo -> DaVinciGraphTypeSyn -> IORef NodeArcList -> IO ()
 addNodesAndArcs gInfo@(GInfo { gi_hetcatsOpts = opts}) depG nodeArcRef = do
  ost <- readIORef $ intState gInfo
- case i_state ost of 
+ case i_state ost of
   Nothing -> return ()
   Just ist -> do
-   let 
+   let
     le = i_libEnv ist
     lookup' x y = Map.findWithDefault (error "lookup': node not found") y x
     keys = Map.keys le
