@@ -11,7 +11,7 @@ Portability :  needs POSIX
 call an adaption of VSE II to hets
 -}
 
-module VSE.Prove (vse) where
+module VSE.Prove where
 
 import Logic.Prover
 import VSE.As
@@ -74,16 +74,18 @@ myGetChar cp h = catch (fmap JustChar $ hGetChar h) $ \ _ -> do
     Nothing -> Wait
     Just _ -> Stop
 
-readMyMsg :: ProcessHandle -> Handle -> String -> IO ()
+readMyMsg :: ProcessHandle -> Handle -> String -> IO String
 readMyMsg cp h expect = do
   mc <- myGetChar cp h
   case mc of
     Wait -> readMyMsg cp h expect
-    Stop -> return ()
+    Stop -> return ""
     JustChar c -> do
       r <- readUntilMatchParen cp h [c]
-      unless (isPrefixOf (prx expect) $ dropWhile (/= '(') $ reverse r)
+      let rr = reverse r
+      unless (isPrefixOf (prx expect) $ dropWhile (/= '(') rr)
         $ putStrLn $ "an error occurred when waiting for: " ++ expect
+      return rr
 
 sendMyMsg :: Handle -> String -> IO ()
 sendMyMsg cp str = catch (hPutStrLn cp str >> hFlush cp) $ \ _ -> return ()
@@ -97,8 +99,8 @@ readRest cp out str = do
     JustChar c -> readRest cp out $ c : str
 
 parseSymbol :: Parser SExpr
-parseSymbol = skipWhite $ do
-  fmap SSymbol $ many1 $ satisfy $ \ c -> not (isSpace c || elem c "()")
+parseSymbol = skipWhite
+  $ fmap SSymbol $ many1 $ satisfy $ \ c -> not (isSpace c || elem c "()")
 
 parseList :: Parser SExpr
 parseList = do
