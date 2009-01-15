@@ -28,6 +28,7 @@ module Proofs.Automatic (automatic, automaticFromList) where
 import Proofs.Global
 import Proofs.Local
 import Proofs.HideTheoremShift
+import Proofs.TheoremHideShift
 
 import Static.DevGraph
 
@@ -36,6 +37,7 @@ import qualified Common.Lib.SizedList as SizedList
 
 import qualified Data.Map as Map
 import Data.Graph.Inductive.Graph
+import Common.Result
 
 automaticFromList :: LIB_NAME ->  [LEdge DGLinkLab] -> LibEnv -> LibEnv
 automaticFromList ln ls libEnv =
@@ -58,7 +60,7 @@ automaticRecursiveFromList ln proofstatus ls =
 {- | automatically applies all rules to the library
    denoted by the library name of the given proofstatus-}
 automatic :: LIB_NAME -> LibEnv -> LibEnv
-automatic ln le = let nLib = localInference ln $ automaticRecursive 9 ln le in
+automatic ln le = let nLib = localInference ln $ automaticRecursive 2 ln le in
   Map.intersectionWith (\ odg ndg ->
       groupHistory odg (DGRule "automatic") ndg) le nLib
 
@@ -69,14 +71,20 @@ automaticRecursive count ln proofstatus =
   in if noChange proofstatus auxProofstatus || count < 1 then auxProofstatus
      else automaticRecursive (count - 1) ln auxProofstatus
 
+wrapTheoremHideShift :: LIB_NAME -> LibEnv -> LibEnv
+wrapTheoremHideShift ln libEnv = 
+ case maybeResult $ theoremHideShift ln libEnv of 
+   Nothing -> libEnv
+   Just libEnv' -> libEnv'
+
 -- | list of rules to use
 rules :: [LIB_NAME -> LibEnv -> LibEnv]
 rules =
-    [automaticHideTheoremShift
+    [ automaticHideTheoremShift
     , locDecomp
     , globDecomp
     , globSubsume
-         -- , theoremHideShift
+    , wrapTheoremHideShift
     ]
 
 rulesWithGoals :: [LIB_NAME -> [LEdge DGLinkLab] -> LibEnv -> LibEnv]

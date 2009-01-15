@@ -247,15 +247,20 @@ hasIngoingHidingDef libEnv ln node =
      hidingDefEdges = filter (liftE isHidingDef ) ingoingEdges
      globalDefEdges = filter (liftE isGlobalDef) ingoingEdges
      next = map (\ (s, _, _) ->  s) globalDefEdges
+     isNormalFormNode = case dgn_nf nodelab of 
+                         Just n -> node == n
+                         _ -> False
  in
- if isDGRef nodelab then
-   -- if the referenced node has incoming hiding links
-   -- then the reference is also treated as with hiding
-   let DGRef refLib refNode = nodeInfo nodelab
-   in hasIngoingHidingDef libEnv refLib refNode
+ if isNormalFormNode then False
  else
-  not (null hidingDefEdges)
-   || or (map (hasIngoingHidingDef libEnv ln) next)
+  if isDGRef nodelab then
+    -- if the referenced node has incoming hiding links
+    -- then the reference is also treated as with hiding
+    let DGRef refLib refNode = nodeInfo nodelab
+    in hasIngoingHidingDef libEnv refLib refNode
+  else
+   not (null hidingDefEdges)
+    || or (map (hasIngoingHidingDef libEnv ln) next)
 
 ------------------------------------------------
 -- Theorem hide shift and  auxiliaries
