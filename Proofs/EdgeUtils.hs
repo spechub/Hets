@@ -397,9 +397,17 @@ adoptEdgesAux node areIngoingEdges (src,tgt,edgelab) =
 getAllOpenNodeGoals :: [DGNodeLab] -> [DGNodeLab]
 getAllOpenNodeGoals = filter hasOpenGoals
 
+isNormalFormNode :: DGraph -> Node -> Bool
+isNormalFormNode dgraph node =
+ let 
+   nodelab = labDG dgraph node
+ in case dgn_nf nodelab of 
+      Just n -> node == n
+      _ -> False
+
 hasIncomingHidingEdge :: DGraph -> Node -> Bool
 hasIncomingHidingEdge dgraph n =
-  let
+  let 
     inEdges = innDG dgraph n
     precs = map (\ (s,_,_) -> s) $ filter (liftE isGlobalDef) inEdges
   in

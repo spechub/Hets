@@ -247,12 +247,7 @@ hasIngoingHidingDef libEnv ln node =
      hidingDefEdges = filter (liftE isHidingDef ) ingoingEdges
      globalDefEdges = filter (liftE isGlobalDef) ingoingEdges
      next = map (\ (s, _, _) ->  s) globalDefEdges
-     isNormalFormNode = case dgn_nf nodelab of 
-                         Just n -> node == n
-                         _ -> False
  in
- if isNormalFormNode then False
- else
   if isDGRef nodelab then
     -- if the referenced node has incoming hiding links
     -- then the reference is also treated as with hiding
@@ -276,8 +271,9 @@ theoremHideShiftAux ln proofStatus nodeList = do
                      nodesDG $ lookupDGraph ln proofStatus
   let
      auxGraph = lookupDGraph ln auxProofstatus
-
-     nodesWHiding = filter (hasIngoingHidingDef proofStatus ln) nodeList
+     nodesWHiding = filter 
+                    (\n -> hasIngoingHidingDef proofStatus ln n 
+                           && (not $ isNormalFormNode auxGraph n)) nodeList
      -- all nodes with incoming hiding links
      -- all the theorem links entering these nodes
      -- have to replaced by theorem links with the same origin

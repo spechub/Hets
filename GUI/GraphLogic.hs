@@ -215,7 +215,7 @@ reloadLibs iorst opts deps ioruplibs ln = do
  ost <- readIORef iorst
  case i_state ost of 
   Nothing -> return False
-  Just ist -> do
+  Just _ist -> do
    uplibs <- readIORef ioruplibs
    case elem ln uplibs of
     True -> return True
@@ -590,7 +590,7 @@ getTheoryOfNode gInfo@(GInfo { gi_GraphInfo = actGraphInfo
         displayTheoryWithWarning "Theory" (getNameOfNode n dgraph)
                                  (addHasInHidingWarning dgraph n) gth
         let newGr = lookupDGraph ln le'
-        let history = snd $ splitHistory (lookupDGraph ln le) newGr
+            history = snd $ splitHistory (lookupDGraph ln le) newGr
         applyChanges actGraphInfo $ reverse $ flatHistory history
         let nwst = ost { i_state = Just $ist { i_libEnv = le'} }
         writeIORef (intState gInfo) nwst
@@ -695,7 +695,9 @@ proveAtNode checkCons gInfo descr dgraph = do
             -- add to history ch
             runProveAtNode checkCons gInfo (descr, dgn') res
             unlockLocal dgn'
-      case checkCons || not (hasIncomingHidingEdge dgraph' $ snd libNode) of
+      case checkCons || 
+           ( isNormalFormNode dgraph' (snd libNode) ||
+            not (hasIncomingHidingEdge dgraph' $ snd libNode)) of
         True -> do
           forkIO action
           return ()
