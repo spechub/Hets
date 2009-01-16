@@ -97,14 +97,16 @@ gWeaklyAmalgamableCocone diag =
                              (mor Map.! n) startMorId)) $
          labNodes graph
     return (gth, morFun)
- else
-      if not $ isConnected diag then fail "Graph is not connected"
+ else if not $ isConnected diag then fail "Graph is not connected"
       else if not $ isThin $ removeIdentities diag then
            fail "Graph is not thin" else do
              let funDesc = initDescList diag
              --graph <- observe $ hetWeakAmalgCocone diag funDesc
              allGraphs <- runM Nothing $ hetWeakAmalgCocone diag funDesc
-             let graph = head allGraphs
+             case allGraphs of 
+              [] -> fail "could not compute cocone"
+              _ -> do
+               let graph = head allGraphs
                -- TO DO: modify this function so it would return
                -- all possible answers and offer them as choices to the user
-             buildStrMorphisms diag graph
+               buildStrMorphisms diag graph
