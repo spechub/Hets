@@ -31,9 +31,10 @@ Here is the place where the class Logic is instantiated for CspCASL.
 
 -}
 
-module CspCASL.Logic_CspCASL(CspCASL(CspCASL)) where
+module CspCASL.Logic_CspCASL(GenCspCASL(CspCASL), CspCASL) where
 
 import Logic.Logic
+import Logic.Prover
 
 import CASL.AS_Basic_CASL
 import CASL.Logic_CASL
@@ -52,10 +53,13 @@ import qualified CspCASL.SignCSP as SignCSP
 import qualified CspCASL.SimplifySen as SimplifySen
 import qualified CspCASL.StatAnaCSP as StatAnaCSP
 
--- | Lid for CspCASL
-data CspCASL = CspCASL deriving (Show)
+-- | a generic logic id for CspCASL with different semantics
+data GenCspCASL a = CspCASL deriving (Show)
 
-instance Language CspCASL
+-- the top-level logic with the loosest semantics (and without provers)
+type CspCASL = GenCspCASL ()
+
+instance Language (GenCspCASL a)
     where
       description _ =
         "CspCASL - see\n\n"++
@@ -72,7 +76,7 @@ instance MorphismExtension SignCSP.CspSign SignCSP.CspAddMorphism where
   isInclusionMorphismExtension _ = True -- missing!
 
 -- | Instance of Sentences for CspCASL (missing)
-instance Sentences CspCASL
+instance Sentences (GenCspCASL a)
     SignCSP.CspCASLSen   -- sentence (missing)
     SignCSP.CspCASLSign     -- signature
     SignCSP.CspMorphism     -- morphism
@@ -89,7 +93,7 @@ instance Sentences CspCASL
       simplify_sen CspCASL = SimplifySen.simplifySen
 
 -- | Syntax of CspCASL
-instance Syntax CspCASL
+instance Syntax (GenCspCASL a)
     AS_CspCASL.CspBasicSpec -- basic_spec
     SYMB_ITEMS              -- symb_items
     SYMB_MAP_ITEMS          -- symb_map_items
@@ -103,8 +107,22 @@ instance Syntax CspCASL
 
 -- lattices (for sublogics) missing
 
+
+class CspCASLSemantics a where
+  cspProvers :: a
+    -> [Prover SignCSP.CspCASLSign SignCSP.CspCASLSen SignCSP.CspMorphism () ()]
+
+{- further dummy types for the trace of the failure semantics can be added
+   and made an instance of CspCASLSemantics.
+   "identity" Comorphisms between these different logics still need to be
+   defined.
+ -}
+
+instance CspCASLSemantics () where
+    cspProvers _ = []
+
 -- | Instance of Logic for CspCASL
-instance Logic CspCASL
+instance CspCASLSemantics a => Logic (GenCspCASL a)
     ()                      -- Sublogics (missing)
     AS_CspCASL.CspBasicSpec -- basic_spec
     SignCSP.CspCASLSen   -- sentence (missing)
@@ -119,9 +137,10 @@ instance Logic CspCASL
       stability CspCASL = Experimental
       data_logic CspCASL = Just (Logic CASL)
       empty_proof_tree _ = ()
+      provers CspCASL = cspProvers (undefined :: a)
 
 -- | Static Analysis for CspCASL
-instance StaticAnalysis CspCASL
+instance StaticAnalysis (GenCspCASL a)
     AS_CspCASL.CspBasicSpec -- basic_spec
     SignCSP.CspCASLSen   -- sentence (missing)
     SYMB_ITEMS              -- symb_items

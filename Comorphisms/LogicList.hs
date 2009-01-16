@@ -78,7 +78,7 @@ logicList =
   , Logic CoCASL
   , Logic Modal
   , Logic Temporal
-  , Logic CspCASL
+  , Logic (CspCASL :: CspCASL)
   , Logic CASL_DL
   , Logic ConstraintCASL
   , Logic RelScheme
