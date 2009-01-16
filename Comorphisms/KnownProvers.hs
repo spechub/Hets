@@ -46,6 +46,7 @@ import SoftFOL.Logic_SoftFOL (SoftFOL(..))
 import Isabelle.Logic_Isabelle (Isabelle(..))
 import qualified Propositional.Logic_Propositional as Prop
 import VSE.Logic_VSE (VSE(..))
+import CspCASL.Logic_CspCASL
 
 import Comorphisms.Prop2CASL
 import Comorphisms.CASL2SubCFOL
@@ -89,17 +90,16 @@ knownProversWithKind :: ProverKind -> Result KnownProversMap
 knownProversWithKind pk =
     do isaCs <- isaComorphisms
        spassCs <- spassComorphisms
-       zchaffCS <- zchaffComorphisms
        qCs <- quickCheckComorphisms
-#ifndef NOOWLLOGIC
-       pelletCS <- pelletComorphisms
-#endif
        return $ foldl insProvers Map.empty $
-              isaCs ++ spassCs ++ zchaffCS ++ qCs
+              isaCs ++ spassCs
+              ++ [ Comorphism $ mkIdComorphism Prop.Propositional PS.top ]
+              ++ qCs
 #ifndef NOOWLLOGIC
-              ++ pelletCS
+              ++ [ Comorphism $ mkIdComorphism OWL sl_top ]
 #endif
-              ++ [Comorphism $ mkIdComorphism VSE ()]
+              ++ [ Comorphism $ mkIdComorphism VSE ()
+                 , Comorphism $ mkIdComorphism (CspCASL::CspCASL) () ]
        where insProvers kpm cm =
               case cm of
                 Comorphism cid ->
@@ -143,19 +143,25 @@ isaComorphisms = do
 #endif
        -- Propositional
        prop2IHOL <- compComorphism (Comorphism Prop2CASL) subpc2IHOL
-       return [Comorphism (mkIdComorphism Isabelle ()),
-               Comorphism CFOL2IsabelleHOL, subpc2IHOLviaHasCASL, subpc2IHOL,
+       return
+         [ Comorphism $ mkIdComorphism Isabelle ()
+         , Comorphism CFOL2IsabelleHOL
+         , subpc2IHOLviaHasCASL
+         , subpc2IHOL
 #ifdef CASLEXTENSIONS
-               co2IHOL, mod2IHOL,casl_dl2CASL,
+         , co2IHOL
+         , mod2IHOL
+         , casl_dl2CASL
 #endif
 #ifdef PROGRAMATICA
-               Comorphism Haskell2IsabelleHOLCF,
+         , Comorphism Haskell2IsabelleHOLCF
 #endif
 #ifndef NOOWLLOGIC
-               owl2HOL,
+         , owl2HOL
 #endif
-               subHasCASL, Comorphism PCoClTyConsHOL2PairsInIsaHOL,
-               prop2IHOL ]
+         , subHasCASL
+         , Comorphism PCoClTyConsHOL2PairsInIsaHOL
+         , prop2IHOL ]
 
 spassComorphisms :: Result [AnyComorphism]
 spassComorphisms =
@@ -165,12 +171,12 @@ spassComorphisms =
            idCASL_sub = Comorphism (mkIdComorphism CASL max_sub_SPASS)
            idCASL_nosub = Comorphism (mkIdComorphism CASL max_nosub_SPASS)
            compSPASS x = compComorphism x (Comorphism SuleCFOL2SoftFOL)
-       partOut <- (compComorphism idCASL_sub (Comorphism defaultCASL2SubCFOL)
-                   >>= compSPASS)
-       partSubOut <- (compComorphism (Comorphism CASL2PCFOL)
+       partOut <- compComorphism idCASL_sub (Comorphism defaultCASL2SubCFOL)
+                   >>= compSPASS
+       partSubOut <- compComorphism (Comorphism CASL2PCFOL)
                                      (Comorphism defaultCASL2SubCFOL)
-                      >>= (compComorphism idCASL_nosub)
-                      >>= compSPASS)
+                      >>= compComorphism idCASL_nosub
+                      >>= compSPASS
 #ifdef CASLEXTENSIONS
        prop2SPASS <- compComorphism (Comorphism Prop2CASL) partOut
        casl_dl2SPASS <- compComorphism (Comorphism CASL_DL2CASL) partOut
@@ -180,29 +186,19 @@ spassComorphisms =
 #endif
        -- Fixme: constraint empty mapping is not available after Modal2CASL
        -- mod2SPASS <- compComorphism (Comorphism Modal2CASL) partSubOut
-       return [Comorphism (mkIdComorphism SoftFOL ()),
-               Comorphism SuleCFOL2SoftFOL,partOut,partSubOut
+       return
+         [ Comorphism $ mkIdComorphism SoftFOL ()
+         , Comorphism SuleCFOL2SoftFOL
+         , partOut
+         , partSubOut
 #ifdef CASLEXTENSIONS
-              ,prop2SPASS,casl_dl2SPASS
+         , prop2SPASS
+         , casl_dl2SPASS
 #endif
 #ifndef NOOWLLOGIC
-              , owl2spass
+         , owl2spass
 #endif
-              ]
-
-zchaffComorphisms :: Result [AnyComorphism]
-zchaffComorphisms = return
-                    [
-                     Comorphism (mkIdComorphism Prop.Propositional PS.top)
-                    ]
-
-#ifndef NOOWLLOGIC
-pelletComorphisms :: Result [AnyComorphism]
-pelletComorphisms = return
-                    [
-                     Comorphism (mkIdComorphism OWL sl_top)
-                    ]
-#endif
+         ]
 
 quickCheckComorphisms :: Result [AnyComorphism]
 quickCheckComorphisms = do
@@ -221,6 +217,6 @@ showAllKnownProvers =
 showKnownProvers :: KnownProversMap -> IO ()
 showKnownProvers km =
     do putStrLn "-----------\nKnownProvers:"
-       putStrLn $ unlines $ map form $ Map.toList $ km
-    where form (name,cl) =
-              name ++ concatMap (\c -> "\n       "++show c) cl
+       putStrLn $ unlines $ map form $ Map.toList km
+    where form (name, cl) =
+              name ++ concatMap (("\n       " ++) . show) cl

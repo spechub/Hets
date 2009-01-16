@@ -121,7 +121,7 @@ class CspCASLSemantics a where
  -}
 
 instance CspCASLSemantics () where
-    cspProvers _ = []
+    cspProvers _ = [cspCASLProver]
 
 -- | Instance of Logic for CspCASL
 instance CspCASLSemantics a => Logic (GenCspCASL a)
