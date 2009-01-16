@@ -705,7 +705,13 @@ proveAtNode checkCons gInfo descr dgraph = do
           return ()
         False -> do
           b <- warningDialog "Warning"
-                        "This node has incoming hiding links!\n Prove anyway?"
+                        ("This node has incoming hiding links!\n" ++
+                         "You should compute the normal form first, " ++
+                         "preferably by applying Proofs -> TheoremHideShift, " ++
+                         "otherwise the flattened theory may be too weak." ++
+                         "In particular, disproving and consistency checks" ++
+                         "might produce wrong results." ++
+                         " Prove anyway?")
                         $ Just action
           unless b $ unlockLocal dgn'
           return ()
