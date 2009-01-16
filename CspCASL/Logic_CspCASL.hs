@@ -53,6 +53,8 @@ import qualified CspCASL.SignCSP as SignCSP
 import qualified CspCASL.SimplifySen as SimplifySen
 import qualified CspCASL.StatAnaCSP as StatAnaCSP
 
+import CspCASLProver.CspCASLProver(cspCASLProver)
+
 -- | a generic logic id for CspCASL with different semantics
 data GenCspCASL a = CspCASL deriving (Show)
 
@@ -125,10 +127,10 @@ instance CspCASLSemantics () where
 instance CspCASLSemantics a => Logic (GenCspCASL a)
     ()                      -- Sublogics (missing)
     AS_CspCASL.CspBasicSpec -- basic_spec
-    SignCSP.CspCASLSen   -- sentence (missing)
+    SignCSP.CspCASLSen      -- sentence (missing)
     SYMB_ITEMS              -- symb_items
     SYMB_MAP_ITEMS          -- symb_map_items
-    SignCSP.CspCASLSign         -- signature
+    SignCSP.CspCASLSign     -- signature
     SignCSP.CspMorphism     -- morphism
     Symbol
     RawSymbol
@@ -142,10 +144,10 @@ instance CspCASLSemantics a => Logic (GenCspCASL a)
 -- | Static Analysis for CspCASL
 instance StaticAnalysis (GenCspCASL a)
     AS_CspCASL.CspBasicSpec -- basic_spec
-    SignCSP.CspCASLSen   -- sentence (missing)
+    SignCSP.CspCASLSen      -- sentence (missing)
     SYMB_ITEMS              -- symb_items
     SYMB_MAP_ITEMS          -- symb_map_items
-    SignCSP.CspCASLSign         -- signature
+    SignCSP.CspCASLSign     -- signature
     SignCSP.CspMorphism     -- morphism
     Symbol
     RawSymbol
