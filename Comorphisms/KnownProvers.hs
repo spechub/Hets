@@ -32,7 +32,7 @@ import System.Exit (exitFailure)
 
 import Common.Result
 
-import Logic.Logic (provers) -- hiding (top)
+import Logic.Logic (provers, AnyLogic(Logic), top_sublogic) -- hiding (top)
 import Logic.Coerce()
 import Logic.Grothendieck
 import Logic.Comorphism
@@ -40,13 +40,6 @@ import Logic.Prover (prover_name,hasProverKind,ProverKind(..))
 
 import CASL.Logic_CASL
 import CASL.Sublogic
-import qualified Propositional.Sublogic as PS
-
-import SoftFOL.Logic_SoftFOL (SoftFOL(..))
-import Isabelle.Logic_Isabelle (Isabelle(..))
-import qualified Propositional.Logic_Propositional as Prop
-import VSE.Logic_VSE (VSE(..))
-import CspCASL.Logic_CspCASL
 
 import Comorphisms.Prop2CASL
 import Comorphisms.CASL2SubCFOL
@@ -61,8 +54,6 @@ import Comorphisms.Modal2CASL
 import Comorphisms.CASL_DL2CASL
 #endif
 #ifndef NOOWLLOGIC
-import OWL.Logic_OWL
-import OWL.Sublogic
 import Comorphisms.OWL2CASL
 #endif
 import Comorphisms.PCoClTyConsHOL2PairsInIsaHOL
@@ -71,6 +62,7 @@ import Comorphisms.HasCASL2PCoClTyConsHOL
 import Comorphisms.Haskell2IsabelleHOLCF
 #endif
 import Comorphisms.SuleCFOL2SoftFOL
+import Comorphisms.LogicList
 
 type KnownProversMap = Map.Map String [AnyComorphism]
 type KnownConsCheckersMap = Map.Map String [AnyComorphism]
@@ -79,10 +71,13 @@ type KnownConsCheckersMap = Map.Map String [AnyComorphism]
 defaultGUIProver :: String
 defaultGUIProver = "SPASS"
 
-
 -- | a map of known prover names implemanting a GUI interface
 knownProversGUI :: Result KnownProversMap
 knownProversGUI = knownProversWithKind ProveGUI
+
+idComorphisms :: [AnyComorphism]
+idComorphisms = map (\ (Logic lid) ->
+   Comorphism $ mkIdComorphism lid $ top_sublogic lid) logicList
 
 -- | a map of known prover names for a specific prover kind
 -- to a list of simple (composed) comorphisms
@@ -92,14 +87,7 @@ knownProversWithKind pk =
        spassCs <- spassComorphisms
        qCs <- quickCheckComorphisms
        return $ foldl insProvers Map.empty $
-              isaCs ++ spassCs
-              ++ [ Comorphism $ mkIdComorphism Prop.Propositional PS.top ]
-              ++ qCs
-#ifndef NOOWLLOGIC
-              ++ [ Comorphism $ mkIdComorphism OWL sl_top ]
-#endif
-              ++ [ Comorphism $ mkIdComorphism VSE ()
-                 , Comorphism $ mkIdComorphism (CspCASL::CspCASL) () ]
+              idComorphisms ++ isaCs ++ spassCs ++ qCs
        where insProvers kpm cm =
               case cm of
                 Comorphism cid ->
@@ -144,8 +132,7 @@ isaComorphisms = do
        -- Propositional
        prop2IHOL <- compComorphism (Comorphism Prop2CASL) subpc2IHOL
        return
-         [ Comorphism $ mkIdComorphism Isabelle ()
-         , Comorphism CFOL2IsabelleHOL
+         [ Comorphism CFOL2IsabelleHOL
          , subpc2IHOLviaHasCASL
          , subpc2IHOL
 #ifdef CASLEXTENSIONS
@@ -187,8 +174,7 @@ spassComorphisms =
        -- Fixme: constraint empty mapping is not available after Modal2CASL
        -- mod2SPASS <- compComorphism (Comorphism Modal2CASL) partSubOut
        return
-         [ Comorphism $ mkIdComorphism SoftFOL ()
-         , Comorphism SuleCFOL2SoftFOL
+         [ Comorphism SuleCFOL2SoftFOL
          , partOut
          , partSubOut
 #ifdef CASLEXTENSIONS
