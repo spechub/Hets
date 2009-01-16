@@ -419,5 +419,7 @@ hasIncomingHidingEdge dgraph n =
 addHasInHidingWarning :: DGraph -> Node -> String
 addHasInHidingWarning dgraph n
      | hasIncomingHidingEdge dgraph n =
-           "< Warning: this node has incoming hiding links ! >\n"
+           "< Warning: this node has incoming hiding links ! \n" ++
+           "  The theory shown here may be too weak. \n" ++
+           "  Use the normal form of the node instead. >\n"
      | otherwise = ""
