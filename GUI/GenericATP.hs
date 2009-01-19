@@ -41,7 +41,6 @@ import Space
 
 import GUI.Utils
 import GUI.HTkUtils hiding (createTextSaveDisplay, createTextDisplay)
-import GUI.PrintUtils
 
 import Interfaces.GenericATPState
 
