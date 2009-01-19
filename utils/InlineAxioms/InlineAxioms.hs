@@ -66,7 +66,7 @@ import Common.ExtSign
 import Common.Utils
 
 import System.Environment
-import Data.Char (ord, isSpace)
+import Data.Char (ord)
 import Data.List (nub, isPrefixOf, intersperse)
 
 -- avoid the whole Logic (and uni) overhead
