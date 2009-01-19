@@ -29,6 +29,9 @@ module Common.Utils
   , getEnvDef
   , filterMapWithList
   , composeMap
+  , trim
+  , trimLeft
+  , trimRight
   ) where
 
 import Data.Char
@@ -38,6 +41,18 @@ import qualified Data.Set as Set
 
 import System.Environment
 import Control.Monad
+
+-- | trims a string both on left and right hand side
+trim :: String -> String
+trim = trimRight . trimLeft
+
+-- | trims a string only on the left side
+trimLeft :: String -> String
+trimLeft = dropWhile isSpace
+
+-- | trims a string only on the right side
+trimRight :: String -> String
+trimRight = reverse . trimLeft . reverse
 
 {- | The 'nubWith' function accepts as an argument a \"stop list\" update
 function and an initial stop list. The stop list is a set of list elements
