@@ -6,7 +6,7 @@ License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
 Maintainer  :  rainer25@informatik.uni-bremen.de
 Stability   :  provisional
-Portability :  ?
+Portability :  non-portable (regex-base needs MPTC+FD)
 
 Data structures and initialising functions for Prover state and configurations.
 Used by GUI.GenericATP.
@@ -25,14 +25,14 @@ import qualified Common.AS_Annotation as AS_Anno
 import Common.ProofUtils
 import Common.Result
 import Common.Id
+import Common.Doc
 
 import Data.List
-import Data.Time (TimeOfDay,midnight)
+import Data.Time (TimeOfDay, midnight)
 
 import Control.Monad
 
 import Text.Regex
-
 
 -- * Data Structures
 
@@ -52,7 +52,7 @@ data GenericConfig proof_tree = GenericConfig {
     resultOutput :: [String],
     -- | global time used in milliseconds
     timeUsed :: TimeOfDay
-                               } deriving (Eq, Ord, Show)
+    } deriving (Eq, Ord, Show)
 
 {- |
   Creates an empty GenericConfig with a given goal name.
@@ -285,3 +285,29 @@ instance Read ATPTactic_script where
                               ts_extraOpts = (read $ sl !! 1) :: [String]}
                   , "")])
                 readMatch
+
+{- |
+  Pretty printing of prover configuration.
+-}
+printCfgText :: Map.Map ATPIdentifier (GenericConfig proof_tree)
+             -> Doc -- ^ prover configuration
+printCfgText mp = text "* Configuration *" $+$ dc
+             $++$ text "* Results *" $+$ dr
+  where
+  (dc, dr) = Map.foldWithKey (\ k cfg (dCfg, dRes) ->
+      let r = proof_status cfg
+      in
+      ((quotes (text k) <+> equals <+> specBraces (
+          text "goalStatus" <+> equals <+>
+                            (text.show.goalStatus) r <> comma
+          $+$ text "timeLimitExceeded" <+> equals <+>
+                            (text.show.timeLimitExceeded) cfg <> comma
+          $+$ text "timeUsed" <+> equals <+>
+                            (text.show.timeUsed) cfg
+          $+$ text "tacticScript" <+> equals <+>
+                            (text.show.tacticScript) r
+          ) $+$ dCfg),
+       (text "Output of goal" <+> quotes (text k) <> colon
+            $+$ vcat (map text $ resultOutput cfg)
+          $++$ dRes)))
+    (empty, empty) mp
