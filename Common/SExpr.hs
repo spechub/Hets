@@ -11,10 +11,17 @@ Portability :  portable
 S-Expressions for the translation from HasCASL, CASL and VSE to OMDoc
 -}
 
-module Common.SExpr where
+module Common.SExpr
+  ( SExpr(..)
+  , prettySExpr
+  , idToSSymbol
+  , transToken
+  , transString
+  ) where
 
 import Common.Doc
 import Common.Id
+import Common.LibName
 import Common.ProofUtils
 import qualified Data.Map as Map
 import Data.Char
@@ -29,7 +36,12 @@ prettySExpr sexpr = case sexpr of
 -- | transform an overloaded identifier
 idToSSymbol :: Int -> Id -> SExpr
 idToSSymbol n i = SSymbol
-  $ transId i . (if n < 2 then id else showString "_O" . shows n) $ ""
+  $ transQualId i . (if n < 2 then id else showString "_O" . shows n) $ ""
+
+transQualId :: Id -> ShowS
+transQualId j@(Id _ cs _) = transId $ case cs of
+  i : _ | isQualName j -> i
+  _ -> j
 
 transId :: Id -> ShowS
 transId (Id ts cs _) =
