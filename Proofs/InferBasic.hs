@@ -22,23 +22,21 @@ Proof rule "basic inference" in the development graphs calculus.
 
 -}
 
-module Proofs.InferBasic (basicInferenceNode, basicInferenceSubTree) where
+module Proofs.InferBasic (basicInferenceNode) where
 
 import Static.GTheory
 import Static.DevGraph
-import Proofs.DGFlattening(singleTree_flattening_dunions)
 
 import Proofs.EdgeUtils
 import Proofs.AbstractState
 import Proofs.TheoremHideShift
+import qualified Proofs.VSE as VSE
 
 import Common.ExtSign
 import Common.LibName
 import Common.Result
 import Common.ResultT
 import Common.AS_Annotation
-
-import Control.Monad.Trans
 
 import Logic.Logic
 import Logic.Prover
@@ -50,7 +48,7 @@ import Comorphisms.KnownProvers
 
 import GUI.Utils
 import GUI.ProofManagement
--- import GUI.History(CommandHistory, addProveToHist)
+
 import Interfaces.DataTypes
 import Interfaces.Utils
 import Data.IORef
@@ -60,6 +58,7 @@ import Data.Graph.Inductive.Basic (elfilter)
 import Data.Graph.Inductive.Graph
 import Data.Maybe
 import qualified Data.Map as Map
+import Control.Monad.Trans
 
 getCFreeDefLinks :: DGraph -> Node
                         -> ([[LEdge DGLinkLab]], [[LEdge DGLinkLab]])
@@ -138,8 +137,8 @@ cons_check :: Logic lid sublogics
            -> String -> TheoryMorphism sign sentence morphism proof_tree
            -> [FreeDefMorphism sentence morphism]
            -> IO([Proof_status proof_tree])
-cons_check _ c =
-    maybe (\ _ _ -> fail "proveGUI not implemented") id (proveGUI c)
+cons_check _ =
+    fromMaybe (\ _ _ -> fail "proveGUI not implemented") . proveGUI
 
 proveTheory :: Logic lid sublogics
               basic_spec sentence symb_items symb_map_items
@@ -148,17 +147,17 @@ proveTheory :: Logic lid sublogics
            -> String -> Theory sign sentence proof_tree
            -> [FreeDefMorphism sentence morphism]
            -> IO([Proof_status proof_tree])
-proveTheory _ p =
-    maybe (\ _ _ -> fail "proveGUI not implemented") id (proveGUI p)
+proveTheory _ =
+    fromMaybe (\ _ _ -> fail "proveGUI not implemented") . proveGUI
 
 
 -- | applies basic inference to a given node
-basicInferenceNode :: Bool -- ^ True = CheckConsistency; False = Prove
+basicInferenceNode :: Maybe Bool
+                   -- ^ True = consistency; False = Prove; Nothing = structured
                    -> LogicGraph -> (LIB_NAME,Node) -> LIB_NAME
-                   -> GUIMVar -> LibEnv
-                   -> IORef IntState 
+                   -> GUIMVar -> LibEnv -> IORef IntState
                    -> IO (Result (LibEnv, Result G_theory))
-basicInferenceNode checkCons lg (ln, node) libname guiMVar libEnv intSt 
+basicInferenceNode checkCons lg (ln, node) libname guiMVar libEnv intSt
  = do
       let dGraph = lookupDGraph libname libEnv
       runResultT $ do
@@ -172,7 +171,8 @@ basicInferenceNode checkCons lg (ln, node) libname guiMVar libEnv intSt
         -- select a suitable translation and prover
 
             cms = filter hasModelExpansion $ findComorphismPaths lg sublogic
-        if checkCons then do
+        case checkCons of
+          Just True -> do
             (G_cons_checker lid4 cc, Comorphism cid) <-
                  selectProver $ getConsCheckers cms
             let lidT = targetLogic cid
@@ -202,7 +202,7 @@ basicInferenceNode checkCons lg (ln, node) libname guiMVar libEnv intSt
                   _ -> fail "no unique cons checkers found"
              -- ??? Borrowing to be implemented
             return (libEnv', resT)
-          else do -- proving
+          Just False -> do -- proving
             -- get known Provers
 
 -----------------------------------------------------------------------------
@@ -213,19 +213,16 @@ basicInferenceNode checkCons lg (ln, node) libname guiMVar libEnv intSt
           4. Add it to definition of IsaProve -}
             ch <- ResultT $ emptyCommandHistory intSt
             let freedefs = getCFreeDefMorphs lid1 libEnv' ln dGraph node
-            kpMap <- liftR $ knownProversGUI
+            kpMap <- liftR knownProversGUI
             newTh <- ResultT $
-                   proofManagementGUI lid1 ProofActions {
-                       proveF = (proveKnownPMap lg ch freedefs),
-                       fineGrainedSelectionF = (proveFineGrainedSelect lg ch freedefs),
-                       recalculateSublogicF  =
-                                     recalculateSublogicAndSelectedTheory }
-                                           thName
-                                           (addHasInHidingWarning dGraph node)
-                                           thForProof
-                                           kpMap
-                                           (getProvers ProveGUI sublogic cms)
-                                           guiMVar
+                   proofManagementGUI lid1 ProofActions
+                     { proveF = proveKnownPMap lg ch freedefs
+                     , fineGrainedSelectionF =
+                           proveFineGrainedSelect lg ch freedefs
+                     , recalculateSublogicF  =
+                                     recalculateSublogicAndSelectedTheory
+                     } thName (addHasInHidingWarning dGraph node) thForProof
+                       kpMap (getProvers ProveGUI sublogic cms) guiMVar
             -- update the development graph
             -- todo: throw out the stuff about edges
             -- instead, mark proven things as proven in the node
@@ -238,105 +235,7 @@ basicInferenceNode checkCons lg (ln, node) libname guiMVar libEnv intSt
                                          (node, newContents)
             return ( Map.insert libname nextDGraph libEnv'
                    , Result [] Nothing)
-
--- | applies basic inference to a given node and whole import tree above
-basicInferenceSubTree :: Bool -- ^ True = CheckConsistency; False = Prove
-                   -> LogicGraph
-                   -> (LIB_NAME,Node)
-                   -> GUIMVar
-                   -> IORef IntState
-                   -> LibEnv
-                   -> IO (Result (LibEnv, Result G_theory))
-basicInferenceSubTree checkCons lg (ln, node) guiMVar intSt libEnv = do
-      let dGraph = lookupDGraph ln libEnv
-      runResultT $ do
-        -- compute the theory of the node, and its name
-        -- may contain proved theorems
-        (libEnv', thForProof@(G_theory lid1 (ExtSign sign _) _ axs _)) <-
-             liftR $ computeTheory False libEnv ln node
-        let thName = shows (getLIB_ID ln) "_"
-                     ++ getNameOfNode node dGraph
-            sublogic = sublogicOfTh thForProof
-        -- select a suitable translation and prover
-            cms = filter hasModelExpansion $ findComorphismPaths lg sublogic
-        -- incoming nodes consideration
-            in_nds = map (\ (x,_,_) -> x) (innDG dGraph node)
-            in_labs = map (\ x -> (x,labDG dGraph x)) in_nds
-            in_theories = map (\ (x,y) -> (x,y,dgn_theory y)) in_labs
-            in_sublogics = map (\ (x,y,z) -> (x,y,z,sublogicOfTh z)) in_theories
-            in_cms = map (\ (x,y,z,t) ->
-              (x,y,z,filter (\ cm -> elem cm (propagateErrors isaComorphisms))
-                    $ findComorphismPaths lg t)) in_sublogics
-            in_changed = map (\ (x,y,z,t) -> case t of
-                [] ->    return $ error "no comorphism's found"
-                hd : _ -> do
-                  n_theory <- mapG_theory hd z
-                  return $ SetNodeLab y (x,y {dgn_theory = n_theory})) in_cms
-            u_dGraph = changesDGH dGraph (map propagateErrors in_changed)
-            n_dGraph = groupHistory dGraph (DGRule "BasicInference-Conjectured")
-                       u_dGraph
-            f_libEnv = propagateErrors $ singleTree_flattening_dunions
-                       (Map.insert ln n_dGraph libEnv') ln node
-            f_dGraph = lookupDGraph ln f_libEnv
-        if checkCons then do
-            (G_cons_checker lid4 cc, Comorphism cid) <-
-                 selectProver $ getConsCheckers cms
-            let lidT = targetLogic cid
-                lidS = sourceLogic cid
-            bTh'@(sign', _) <- coerceBasicTheory lid1 lidS ""
-                   (sign, toNamedList axs)
-            -- Borrowing: translate theory
-            (sign'', sens'') <- liftR $ wrapMapTheory cid bTh'
-            incl <- liftR $ inclusion lidT (empty_signature lidT) sign''
-            let mor = TheoryMorphism
-                      { t_source = empty_theory lidT,
-                        t_target = Theory sign'' (toThSens sens''),
-                        t_morphism = incl }
-            cc' <- coerceConsChecker lid4 lidT "" cc
-            pts <- lift $ cons_check lidT cc' thName mor
-              $ getCFreeDefMorphs lidT f_libEnv ln f_dGraph node
-            let resT = case pts of
-                  [pt] -> case goalStatus pt of
-                    Proved (Just True) -> let
-                      Result ds ms = extractModel cid sign' $ proofTree pt
-                      in case ms of
-                      Nothing -> Result ds Nothing
-                      Just (sign''', sens''') -> Result ds $ Just $
-                         G_theory lidS (mkExtSign sign''') startSigId
-                              (toThSens sens''') startThId
-                    _ -> Result [] Nothing
-                  _ -> Result [] Nothing
-             -- ??? to be implemented
-            return (f_libEnv, resT)
-          else do -- proving
-            -- get known Provers
-            ch <- ResultT $ emptyCommandHistory intSt
-            let freedefs = getCFreeDefMorphs lid1 f_libEnv ln f_dGraph node
-            kpMap <- liftR $ knownProversGUI
-            newTh <- ResultT $
-                   proofManagementGUI lid1 ProofActions {
-                       proveF = (proveKnownPMap lg ch freedefs),
-                       fineGrainedSelectionF = (proveFineGrainedSelect lg ch freedefs),
-                       recalculateSublogicF  =
-                                     recalculateSublogicAndSelectedTheory }
-                                           thName
-                                           (addHasInHidingWarning f_dGraph node)
-                                           thForProof
-                                           kpMap
-                                           (getProvers ProveGUI sublogic cms)
-                                           guiMVar
-            -- update the development graph
-            -- todo: throw out the stuff about edges
-            -- instead, mark proven things as proven in the node
-            -- TODO: Reimplement stuff
-            ResultT $ addCommandHistoryToState ch intSt
-            let
-                oldContents = labDG f_dGraph node
-                newContents = oldContents{dgn_theory = newTh}
-                -- update the graph with the new node lab
-                nextDGraph = changeDGH f_dGraph $ SetNodeLab oldContents
-                                         (node, newContents)
-            return (Map.insert ln nextDGraph f_libEnv, Result [] Nothing)
+          Nothing -> ResultT $ VSE.prove cms (ln, node) libEnv'
 
 proveKnownPMap :: (Logic lid sublogics1
                basic_spec1
@@ -368,24 +267,22 @@ callProver :: (Logic lid sublogics1
                raw_symbol1
                proof_tree1) =>
        ProofState lid sentence
-     -> CommandHistory 
+     -> CommandHistory
     -> Bool -- indicates if a translation was chosen
     -> [FreeDefMorphism sentence morphism1]
     -> (G_prover,AnyComorphism) -> IO (Result (ProofState lid sentence))
 callProver st intSt trans_chosen freedefs p_cm@(_,acm) =
        runResultT $ do
         G_theory_with_prover lid th p <- liftR $ prepareForProving st p_cm
-        let freedefs1 = maybe [] id $
+        let freedefs1 = fromMaybe [] $
                   mapM (coerceFreeDefMorphism (logicId st) lid
                            "Logic.InferBasic: callProver")
                           freedefs
         ps <- lift $ proveTheory lid p (theoryName st) th freedefs1
         -- lift $ putStrLn $ show ps
         let st' = markProved acm lid ps st
-        lift $ addProveToHist intSt st' 
-              (if trans_chosen then Just p_cm else Nothing) ps 
---        lift $ addProveToHist ch st'
---            (if trans_chosen then Just p_cm else Nothing) ps
+        lift $ addProveToHist intSt st'
+              (if trans_chosen then Just p_cm else Nothing) ps
         return st'
 
 proveFineGrainedSelect ::
@@ -412,5 +309,5 @@ proveFineGrainedSelect lg intSt freedefs st =
                       filter hasModelExpansion $ findComorphismPaths lg sl
        pr <- selectProver cmsToProvers
        ResultT $ callProver st{lastSublogic = sublogicOfTheory st,
-                               comorphismsToProvers = cmsToProvers} 
+                               comorphismsToProvers = cmsToProvers}
                                intSt True freedefs pr

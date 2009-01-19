@@ -99,6 +99,7 @@ import System.Directory(getModificationTime)
 import Data.IORef
 import Data.Char(toLower)
 import Data.List(partition)
+import Data.Maybe
 import Data.Graph.Inductive.Graph (Node, LEdge, LNode)
 import qualified Data.Map as Map
 
@@ -125,14 +126,14 @@ runAndLock (GInfo { functionLock = lock
       GA.activateGraphWindow actGraphInfo
     False ->
       GA.showTemporaryMessage actGraphInfo
-        $ "an other function is still working ... please wait ..."
+        "an other function is still working ... please wait ..."
 
 -- | Undo one step of the History
 undo :: GInfo -> Bool -> IO ()
-undo gInfo isUndo = 
+undo gInfo isUndo =
  do
   intSt <- readIORef $ intState gInfo
-  nwSt <- if isUndo then undoOneStep intSt else redoOneStep intSt 
+  nwSt <- if isUndo then undoOneStep intSt else redoOneStep intSt
   writeIORef (intState gInfo) nwSt
   remakeGraph gInfo
 
@@ -149,9 +150,9 @@ reload gInfo@(GInfo { gi_hetcatsOpts = opts
                return ()
    Just ist -> do
     let
-     oldle = i_libEnv ist
-     ln = i_ln ist
-     libdeps =Rel.toList$ Rel.intransKernel$ Rel.transClosure$ Rel.fromList
+      oldle = i_libEnv ist
+      ln = i_ln ist
+      libdeps = Rel.toList$ Rel.intransKernel$ Rel.transClosure$ Rel.fromList
               $ getLibDeps oldle
     ioruplibs <- newIORef ([] :: [LIB_NAME])
     writeIORef ioruplibs []
@@ -164,13 +165,12 @@ reload gInfo@(GInfo { gi_hetcatsOpts = opts
 
 -- | Creates a list of all LIB_NAME pairs, which have a dependency
 getLibDeps :: LibEnv -> [(LIB_NAME, LIB_NAME)]
-getLibDeps le =
-  concat $ map (\ ln -> getDep ln le) $ Map.keys le
+getLibDeps le = concatMap (\ ln -> getDep ln le) $ Map.keys le
 
 -- | Creates a list of LIB_NAME pairs for the fist argument
 getDep :: LIB_NAME -> LibEnv -> [(LIB_NAME, LIB_NAME)]
-getDep ln le = map (\ (_, x) -> (ln, dgn_libname x)) $
-  filter (isDGRef . snd) $ labNodesDG $ lookupDGraph ln le
+getDep ln = map (\ (_, x) -> (ln, dgn_libname x)) .
+  filter (isDGRef . snd) . labNodesDG . lookupDGraph ln
 
 -- | Reloads a library
 reloadLib :: IORef IntState -> HetcatsOpts -> IORef [LIB_NAME] -> LIB_NAME
@@ -195,7 +195,7 @@ reloadLib iorst opts ioruplibs ln = do
       case mres of
         Just (_, newle) -> do
           uplibs <- readIORef ioruplibs
-          writeIORef ioruplibs $ ln:uplibs
+          writeIORef ioruplibs $ ln : uplibs
           case mFunc of
             Just func -> case openlock $ lookupDGraph ln newle of
               Just lock -> putMVar lock func
@@ -204,7 +204,7 @@ reloadLib iorst opts ioruplibs ln = do
             Nothing -> return ()
           let nwst = ost { i_state = Just ist {
                                        i_libEnv = newle } }
-          writeIORef iorst $ nwst
+          writeIORef iorst nwst
         Nothing ->
           errorDialog "Error" $ "Error when reloading file " ++ show file
 
@@ -221,10 +221,10 @@ reloadLibs iorst opts deps ioruplibs ln = do
     True -> return True
     False -> do
       let
-        deps' = map (snd) $ filter (\ (ln',_) -> ln == ln') deps
+        deps' = map snd $ filter (\ (ln',_) -> ln == ln') deps
       res <- mapM (reloadLibs iorst opts deps ioruplibs) deps'
       let
-        libupdate = foldl (\ u r -> if r then True else u) False res
+        libupdate = foldl (flip (||)) False res
       case libupdate of
         True -> do
           reloadLib iorst opts ioruplibs ln
@@ -286,7 +286,7 @@ showNodes gInfo@(GInfo { gi_GraphInfo = actGraphInfo
       GA.showTemporaryMessage actGraphInfo "Revealing hidden nodes ..."
       GA.showAll actGraphInfo
       hideShowNames gInfo False
-    False -> do
+    False ->
       GA.showTemporaryMessage actGraphInfo "No hidden nodes found ..."
 
 -- | hides all unnamed internal nodes that are proven
@@ -297,11 +297,9 @@ hideNodes gInfo@(GInfo { gi_GraphInfo = actGraphInfo
   ost <- readIORef $ intState gInfo
   case i_state ost of
    Nothing -> return ()
-   Just ist -> do
-    case hhn of
-     True ->
+   Just ist -> if hhn then
        GA.showTemporaryMessage actGraphInfo "Nodes already hidden ..."
-     False -> do
+     else do
        GA.showTemporaryMessage actGraphInfo "Hiding unnamed nodes..."
        let le = i_libEnv ist
            ln = i_ln ist
@@ -330,22 +328,20 @@ compressTypes (t1:t2:r) = case t1 > t2 of
 
 -- | returns a list of compressed edges
 getCompressedEdges :: DGraph -> [Node] -> [(Node,Node,DGEdgeType)]
-getCompressedEdges dg hidden =
-  filterDuplicates $ getShortPaths $ concat
-                   $ map (\ e@(_,t,_) -> map (e:) $ getPaths dg t hidden [])
-                         inEdges
+getCompressedEdges dg hidden = filterDuplicates $ getShortPaths
+  $ concatMap (\ e@(_,t,_) -> map (e:) $ getPaths dg t hidden []) inEdges
   where
     inEdges = filter (\ (_,t,_) -> elem t hidden)
-                     $ concat $ map (outDG dg)
+                     $ concatMap (outDG dg)
                      $ foldr (\ n i -> if elem n hidden
                                        || elem n i then i else n:i) []
-                     $ map (\ (s,_,_) -> s) $ concat $ map (innDG dg) hidden
+                     $ map (\ (s,_,_) -> s) $ concatMap (innDG dg) hidden
 
 -- | filter duplicate paths
 filterDuplicates :: [(Node,Node,DGEdgeType)]
                  -> [(Node,Node,DGEdgeType)]
 filterDuplicates [] = []
-filterDuplicates ((s,t,et):r) = edge:filterDuplicates others
+filterDuplicates ((s, t, et) : r) = edge : filterDuplicates others
   where
     (same,others) = partition (\ (s',t',_) -> s == s' && t == t') r
     edge = (s,t,compressTypes $ et:map (\ (_,_,et') -> et') same)
@@ -354,7 +350,7 @@ filterDuplicates ((s,t,et):r) = edge:filterDuplicates others
 getPaths :: DGraph -> Node -> [Node] -> [Node] -> [[LEdge DGLinkLab]]
 getPaths dg node hidden seen' = case elem node hidden of
   True -> case edges /= [] of
-    True -> concat $ map (\ e@(_,t,_) -> map (e:) $ getPaths dg t hidden seen)
+    True -> concatMap (\ e@(_,t,_) -> map (e:) $ getPaths dg t hidden seen)
                          edges
     False -> []
   False -> [[]]
@@ -366,8 +362,8 @@ getPaths dg node hidden seen' = case elem node hidden of
 getShortPaths :: [[LEdge DGLinkLab]]
               -> [(Node,Node,DGEdgeType)]
 getShortPaths [] = []
-getShortPaths (p:r) =
-  ((s,t,compressTypes $ map (\ (_,_,e) -> getRealDGLinkType e) p))
+getShortPaths (p : r) =
+  (s, t, compressTypes $ map (\ (_,_,e) -> getRealDGLinkType e) p)
     : getShortPaths r
   where
     (s,_,_) = head p
@@ -499,12 +495,12 @@ proofMenu gInfo@(GInfo { gi_GraphInfo = actGraphInfo
    filled <- tryPutMVar guiMVar Nothing
    if not filled
     then readMVar guiMVar >>=
-                  (maybe (putIfVerbose hOpts 0 "proofMenu: ignored Nothing")
+                  maybe (putIfVerbose hOpts 0 "proofMenu: ignored Nothing")
                          (\ w -> do
                              putIfVerbose hOpts 4 $
                                   "proofMenu: Ignored Proof command; " ++
                                   "maybe a proof window is still open?"
-                             HTk.putWinOnTop w))
+                             HTk.putWinOnTop w)
     else do
       lockGlobal gInfo
       let proofStatus = i_libEnv ist
@@ -524,7 +520,7 @@ proofMenu gInfo@(GInfo { gi_GraphInfo = actGraphInfo
           let lln = map (\x-> [DgCommandChange x]) $ calcGlobalHistory
                                                    proofStatus newProofStatus
               nmStr = strToCmd str
-              nst = foldl (add2history nmStr) ost lln 
+              nst = foldl (add2history nmStr) ost lln
       --        (calcGlobalHistory proofStatus newProofStatus : guHist, grHist)
           applyChanges actGraphInfo $ reverse
             $ flatHistory history
@@ -533,13 +529,13 @@ proofMenu gInfo@(GInfo { gi_GraphInfo = actGraphInfo
           unlockGlobal gInfo
           hideShowNames gInfo False
           mGUIMVar <- tryTakeMVar guiMVar
-          maybe (fail $ "should be filled with Nothing after proof attempt")
+          maybe (fail "should be filled with Nothing after proof attempt")
                 (const $ return ())
                 mGUIMVar
 
 calcGlobalHistory :: LibEnv -> LibEnv -> [LIB_NAME]
 calcGlobalHistory old new = let
-    length' = \ ln -> SizedList.size . proofHistory . lookupDGraph ln
+    length' ln = SizedList.size . proofHistory . lookupDGraph ln
     changes = filter (\ ln -> length' ln old < length' ln new) $ Map.keys old
   in concatMap (\ ln -> replicate (length' ln new - length' ln old) ln) changes
 
@@ -560,16 +556,19 @@ showNodeInfo descr dgraph = do
    (added by KL based on code in getTheoryOfNode) -}
 lookupTheoryOfNode :: LibEnv -> LIB_NAME -> Int
                    -> IO (Res.Result (LibEnv, Node, G_theory))
-lookupTheoryOfNode libEnv ln descr = do
+lookupTheoryOfNode libEnv ln descr =
   return $ do
     (libEnv', gth) <- computeTheory True libEnv ln descr
     return (libEnv', descr, gth)
 
-showDiagMess :: HetcatsOpts -> [Diagnosis] -> IO ()
-showDiagMess opts ds = let es = Res.filterDiags (verbose opts) ds in
+showDiagMessAux :: Int -> [Diagnosis] -> IO ()
+showDiagMessAux v ds = let es = Res.filterDiags v ds in
   if null es then return () else
   (if hasErrors es then errorDialog "Error" else infoDialog "Info") $ unlines
      $ map show es
+
+showDiagMess :: HetcatsOpts -> [Diagnosis] -> IO ()
+showDiagMess = showDiagMessAux . verbose
 
 {- | outputs the theory of a node in a window;
 used by the node menu defined in initializeGraph-}
@@ -665,7 +664,7 @@ showStatusAux dgnode =
              else ""
 
 -- | start local theorem proving or consistency checking at a node
-proveAtNode :: Bool -> GInfo -> Int -> DGraph -> IO ()
+proveAtNode :: Maybe Bool -> GInfo -> Int -> DGraph -> IO ()
 proveAtNode checkCons gInfo descr dgraph = do
  ost <- readIORef $ intState gInfo
  case i_state ost of
@@ -687,17 +686,16 @@ proveAtNode checkCons gInfo descr dgraph = do
       return (dgraph',dgn')
    locked <- tryLockLocal dgn'
    case locked of
-    False -> do
-      errorDialog "Error" "Proofwindow already open"
+    False -> errorDialog "Error" "Proofwindow already open"
     True -> do
-      let action = do
+      let checkCons2 = fromMaybe False checkCons
+          action = do
             guiMVar <- newMVar Nothing
-            res <- basicInferenceNode checkCons logicGraph 
-                libNode ln   guiMVar le (intState gInfo)
-            -- add to history ch
-            runProveAtNode checkCons gInfo (descr, dgn') res
+            res <- basicInferenceNode checkCons logicGraph libNode ln
+                guiMVar le (intState gInfo)
+            runProveAtNode checkCons2 gInfo (descr, dgn') res
             unlockLocal dgn'
-      case checkCons ||
+      case checkCons2 ||
            ( isNormalFormNode dgraph' (snd libNode) ||
             not (hasIncomingHidingEdge dgraph' $ snd libNode)) of
         True -> do
@@ -736,7 +734,7 @@ runProveAtNode checkCons gInfo (v, dgnode) res = case maybeResult res of
         proofMenu gInfo "mergeDGNodeLab" $ mergeDGNodeLab gInfo
           (v, labDG (lookupDGraph ln le) v)
         mergeHistoryLast2Entries gInfo
-  Nothing -> return ()
+  Nothing -> showDiagMessAux 2 $ diags res
 
 mergeDGNodeLab :: GInfo -> LNode DGNodeLab -> LibEnv -> IO (Res.Result LibEnv)
 mergeDGNodeLab gInfo (v, new_dgn) le = do
@@ -826,8 +824,8 @@ checkconservativityOfEdge _ gInfo@(GInfo{ gi_GraphInfo = _actGraphInfo})
        else
         do
          let chCons =  checkConservativity $
-                       maybe (error "checkconservativityOfEdge4") id
-                             $ Res.maybeResult $ checkerR
+                       fromMaybe (error "checkconservativityOfEdge4")
+                             $ Res.maybeResult checkerR
          let Res.Result ds res =
                  chCons
                     (plainSign sign2, toNamedList sensSrc2)
@@ -849,7 +847,7 @@ checkconservativityOfEdge _ gInfo@(GInfo{ gi_GraphInfo = _actGraphInfo})
                         Just (Just (cst, _)) -> cst
                         _                    -> Unknown "Unknown"
             GlobalThm proven conserv _ = dgl_type linklab
-            consNew  = if ((show conserv) == (showToComply consShow))
+            consNew  = if show conserv == showToComply consShow
                         then
                             Proven conservativityRule emptyProofBasis
                         else
@@ -882,17 +880,16 @@ conservativityChoser :: [ConservativityChecker sign sentence morphism]
                      -> IO
                          (Res.Result (ConservativityChecker
                           sign sentence morphism))
-conservativityChoser checkers =
-    case length $ checkers of
-      0 -> return $ fail "No conservativity checkers available"
-      1 -> return $ return $ head $ checkers
+conservativityChoser checkers = case checkers of
+      [] -> return $ fail "No conservativity checkers available"
+      [hd] -> return $ return hd
       _ ->
           do
             chosenOne <- listBox "Pick a conservativity checker"
                          $ map checker_id checkers
             case chosenOne of
               Nothing -> return $ fail "No conservativity checker chosen"
-              Just i  -> return $ return $ (checkers !! i)
+              Just i  -> return $ return $ checkers !! i
 
 -- | converts a DGraph
 convert :: GA.GraphInfo -> DGraph -> IO ()
@@ -1049,7 +1046,7 @@ saveUDGraph gInfo@(GInfo { gi_GraphInfo = graphInfo
       nstring <- nodes2String gInfo nodemap linkmap
       writeFile filepath nstring
       GA.showTemporaryMessage graphInfo $ "Graph stored to " ++ filepath ++ "!"
-     Nothing -> GA.showTemporaryMessage graphInfo $ "Aborted!"
+     Nothing -> GA.showTemporaryMessage graphInfo "Aborted!"
 
 -- | Converts the nodes of the graph to String representation
 nodes2String :: GInfo -> Map.Map DGNodeType (Shape value, String)
@@ -1084,9 +1081,9 @@ node2String gInfo nodemap linkmap (nid, dgnode) = do
   let
     object = "a(\"OBJECT\",\"" ++ label ++ "\"),"
     color' = "a(\"COLOR\",\"" ++ color ++ "\"),"
-    shape' = "a(\"_GO\",\"" ++ (map toLower $ show shape) ++ "\")"
+    shape' = "a(\"_GO\",\"" ++ map toLower (show shape) ++ "\")"
   links  <- links2String gInfo linkmap nid
-  return $ "l(\"" ++ (show nid) ++ "\",n(\"" ++ show ntype ++ "\","
+  return $ "l(\"" ++ show nid ++ "\",n(\"" ++ show ntype ++ "\","
            ++ "[" ++ object ++ color' ++ shape' ++ "],"
            ++ "\n  [" ++ links ++ "]))"
 
@@ -1101,12 +1098,12 @@ links2String gInfo@(GInfo { gi_GraphInfo = graphInfo
   Just ist -> do
    let ln = i_ln ist
        le = i_libEnv ist
-   edges <- filterM (\(src,_,edge) -> do
-                      let eid = dgl_id edge
-                      b <- GA.isHiddenEdge graphInfo eid
-                      return $ (not b) && src == nodeid)
-                     $ labEdgesDG $ lookupDGraph ln le
-   foldM (\s edge -> do
+   edges <- filterM (\ (src, _, edge) -> do
+     let eid = dgl_id edge
+     b <- GA.isHiddenEdge graphInfo eid
+     return $ not b && src == nodeid)
+       $ labEdgesDG $ lookupDGraph ln le
+   foldM (\ s edge -> do
           s' <- link2String linkmap edge
           return $ s ++ (if s /= "" then ",\n   " else "") ++ s') "" edges
 
@@ -1120,13 +1117,13 @@ link2String linkmap (nodeid1, nodeid2, edge) = do
     Nothing -> error $ "SaveGraph: can't lookup linktype: " ++ show ltype
     Just (l, c) -> return (l, c)
   let
-    nm   = "\"" ++ (show linkid) ++ ":" ++ (show nodeid1) ++ "->"
-             ++ (show nodeid2) ++ "\""
+    nm   = "\"" ++ show linkid ++ ":" ++ show nodeid1 ++ "->"
+             ++ show nodeid2 ++ "\""
     color' = "a(\"EDGECOLOR\",\"" ++ color ++ "\"),"
-    line'  = "a(\"EDGEPATTERN\",\"" ++ (map toLower $ show line) ++ "\")"
+    line'  = "a(\"EDGEPATTERN\",\"" ++ map toLower (show line) ++ "\")"
   return $ "l(" ++ nm ++ ",e(\"" ++ show ltype ++ "\","
            ++ "[" ++ color' ++ line' ++"],"
-           ++ "r(\"" ++ (show nodeid2) ++ "\")))"
+           ++ "r(\"" ++ show nodeid2 ++ "\")))"
 
 -- | Returns the name of the Node
 getNodeLabel :: GInfo -> DGNodeLab -> IO String

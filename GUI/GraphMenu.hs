@@ -20,7 +20,6 @@ import qualified GUI.GraphAbstraction as GA
 import GUI.GraphTypes
 import GUI.GraphLogic
 import GUI.ShowLogicGraph(showLogicGraph)
--- import GUI.History
 import GUI.Utils
 #ifdef GTKGLADE
 import GUI.GtkLinkTypeChoice
@@ -87,8 +86,7 @@ nodeTypes opts = map
 
 -- | A Map of all nodetypes and their properties.
 mapNodeTypes :: HetcatsOpts -> Map.Map DGNodeType (Shape GA.NodeValue, String)
-mapNodeTypes opts = Map.fromList $ map (\ (n, s, c) -> (n, (s, c)))
-                                       $ nodeTypes opts
+mapNodeTypes = Map.fromList . map (\ (n, s, c) -> (n, (s, c))) . nodeTypes
 
 -- | Adds to the DGEdgeType list style options for each type
 edgeTypes :: HetcatsOpts
@@ -134,10 +132,10 @@ edgeTypes opts = map
   ) listDGEdgeTypes
 
 -- | A Map of all edgetypes and their properties.
-mapEdgeTypes :: HetcatsOpts
-             -> Map.Map DGEdgeType (EdgePattern GA.EdgeValue, String)
-mapEdgeTypes opts = Map.fromList $ map (\ (e, l, c, _, _) -> (e, (l, c)))
-                                       $ edgeTypes opts
+mapEdgeTypes
+  :: HetcatsOpts -> Map.Map DGEdgeType (EdgePattern GA.EdgeValue, String)
+mapEdgeTypes =
+  Map.fromList . map (\ (e, l, c, _, _) -> (e, (l, c))) . edgeTypes
 
 -- | Creates the graph. Runs makegraph
 createGraph :: GInfo -> String -> ConvFunc -> LibFunc -> IO ()
@@ -178,7 +176,7 @@ createOpen gInfo file convGraph showLib = Just (
 
 -- | Returns the save-function
 createSave :: GInfo -> FilePath -> Maybe (IO ())
-createSave gInfo file = Just (saveProofStatus gInfo file)
+createSave gInfo = Just . saveProofStatus gInfo
 
 -- | Returns the saveas-function
 createSaveAs :: GInfo -> FilePath -> Maybe (IO ())
@@ -203,8 +201,7 @@ createClose gInfo@(GInfo { windowCount = wc
    let le = i_libEnv ist
        ln = i_ln ist
    case Map.lookup ln le of
-    Just dgraph -> do
-      case openlock dgraph of
+    Just dgraph -> case openlock dgraph of
         Just lock -> do
           notopen <- isEmptyMVar lock
           case notopen of
@@ -221,25 +218,20 @@ createClose gInfo@(GInfo { windowCount = wc
 
 -- | Returns the save-function
 createExit :: GInfo -> IO ()
-createExit (GInfo {exitMVar = exit}) = do
-  putMVar exit ()
+createExit (GInfo {exitMVar = exit}) = putMVar exit ()
 
 -- | Creates the global menu
 createGlobalMenu :: GInfo -> ConvFunc -> LibFunc -> IORef [String]
                  -> IO [GlobalMenu]
 createGlobalMenu gInfo@(GInfo { gi_hetcatsOpts = opts
-#ifdef GTKGLADE
                               , gi_GraphInfo = gi
                               }) convGraph showLib deselectEdgeTypes =
-#else
-                              }) convGraph showLib _ =
-#endif
  do
  ost <- readIORef $ intState gInfo
  case i_state ost of
   Nothing -> return []
   Just ist -> do
-   let ral x = runAndLock gInfo x
+   let ral = runAndLock gInfo
        ln = i_ln ist
    return
     [GlobalMenu (Menu Nothing
@@ -254,7 +246,7 @@ createGlobalMenu gInfo@(GInfo { gi_hetcatsOpts = opts
      , Button "Focus node" $ ral $ focusNode gInfo
 #ifdef GTKGLADE
      , Button "Select Linktypes" $ showLinkTypeChoice deselectEdgeTypes
-                                $ (\ eList -> ral $ do
+                                  (\ eList -> ral $ do
                                     GA.showAll gi
                                     GA.hideSetOfEdgeTypes gi eList
                                     GA.redisplay gi
@@ -262,9 +254,9 @@ createGlobalMenu gInfo@(GInfo { gi_hetcatsOpts = opts
 #endif
      , Menu (Just "Proofs") $ map (\ (str, cmd) ->
        -- History ? or just some partial history in ch ?
-        Button str $ (ral $ performProofAction gInfo
+        Button str $ ral $ performProofAction gInfo
                   $ proofMenu gInfo str $ return . return . cmd ln
-                  . Map.map undoRedo))
+                  . Map.map undoRedo)
         [ ("Automatic", automatic)
         , ("Global Subsumption", globSubsume)
         , ("Global Decomposition", globDecomp)
@@ -273,16 +265,15 @@ createGlobalMenu gInfo@(GInfo { gi_hetcatsOpts = opts
         , ("Composition (merge of rules)", composition)
         , ("Composition - creating new links", compositionCreatingEdges)
         ] ++
-        [Button "Hide Theorem Shift" $
-               -- (addMenuItemToHist ch "Hide Theorem Shift") >>
-               (ral $ performProofAction gInfo
-               $ proofMenu gInfo "Hide Theoren Shift" $ 
-                               fmap return . interactiveHideTheoremShift ln)
+        [Button "Hide Theorem Shift"
+               $ ral $ performProofAction gInfo
+               $ proofMenu gInfo "Hide Theoren Shift" $
+                               fmap return . interactiveHideTheoremShift ln
         ] ++
         map (\ (str, cmd) ->
-               Button str $ -- (addMenuItemToHist ch str) >>
-                   (ral $ performProofAction gInfo
-                   $ proofMenu gInfo str $ return . cmd ln))
+               Button str
+                   $ ral $ performProofAction gInfo
+                   $ proofMenu gInfo str $ return . cmd ln)
         [ ("Theorem Hide Shift", theoremHideShift)
         , ("Compute Colimit", computeColimit)
         , ("Compute normal forms", convertNodesToNf)
@@ -348,6 +339,7 @@ createLocalMenuNode gInfo = LocalMenu (Menu (Just "node menu") $ map ($ gInfo)
   , createLocalMenuTaxonomy
   , createLocalMenuButtonShowProofStatusOfNode
   , createLocalMenuButtonProveAtNode
+  , createLocalMenuButtonProveStructured
 #ifdef GTKGLADE
   , createLocalMenuButtonConsistencyChecker
 #endif
@@ -400,21 +392,17 @@ type ButtonMenu a = MenuPrim (Maybe String) (a -> IO ())
 -- | menu button for local menus
 createMenuButton :: String -> (Int -> DGraph -> IO ())
                  -> GInfo -> ButtonMenu GA.NodeValue
-createMenuButton title menuFun gInfo =
-                    (Button title
-                      (\ (_, descr) ->
-                        do
-                         ost <- readIORef $ intState gInfo
-                         case i_state ost of
-                          Nothing -> return ()
-                          Just ist -> do
-                           let le = i_libEnv ist
-                               ln = i_ln ist
-                               dGraph = lookupDGraph ln le
-                           runAndLock gInfo $  menuFun descr dGraph
-                           return ()
-                       )
-                    )
+createMenuButton title menuFun gInfo = Button title
+  $ \ (_, descr) -> do
+    ost <- readIORef $ intState gInfo
+    case i_state ost of
+      Nothing -> return ()
+      Just ist -> do
+        let le = i_libEnv ist
+            ln = i_ln ist
+            dGraph = lookupDGraph ln le
+        runAndLock gInfo $  menuFun descr dGraph
+        return ()
 
 createLocalMenuButtonShowTheory :: GInfo -> ButtonMenu GA.NodeValue
 createLocalMenuButtonShowTheory gInfo =
@@ -429,11 +417,9 @@ createLocalMenuButtonTranslateTheory gInfo =
    (added by KL)
 -}
 createLocalMenuTaxonomy :: GInfo -> ButtonMenu GA.NodeValue
-createLocalMenuTaxonomy ginfo =
-  (Menu (Just "Taxonomy graphs")
-        [ createMenuButton "Subsort graph" (passTh displaySubsortGraph) ginfo
-        , createMenuButton "Concept graph" (passTh displayConceptGraph) ginfo
-        ])
+createLocalMenuTaxonomy ginfo = Menu (Just "Taxonomy graphs")
+  [ createMenuButton "Subsort graph" (passTh displaySubsortGraph) ginfo
+  , createMenuButton "Concept graph" (passTh displayConceptGraph) ginfo ]
   where passTh displayFun descr _ =
          do
           ost <- readIORef $ intState ginfo
@@ -456,7 +442,12 @@ createLocalMenuButtonShowProofStatusOfNode gInfo =
 createLocalMenuButtonProveAtNode :: GInfo -> ButtonMenu GA.NodeValue
 createLocalMenuButtonProveAtNode gInfo =
   createMenuButton "Prove" (\descr dgraph -> performProofAction gInfo
-    (proveAtNode False gInfo descr dgraph)) gInfo
+    (proveAtNode (Just False) gInfo descr dgraph)) gInfo
+
+createLocalMenuButtonProveStructured :: GInfo -> ButtonMenu GA.NodeValue
+createLocalMenuButtonProveStructured gInfo =
+  createMenuButton "Prove Structured" (\descr dgraph -> performProofAction gInfo
+    (proveAtNode Nothing gInfo descr dgraph)) gInfo
 
 #ifdef GTKGLADE
 createLocalMenuButtonConsistencyChecker :: GInfo -> ButtonMenu GA.NodeValue
@@ -467,11 +458,11 @@ createLocalMenuButtonConsistencyChecker gInfo =
 
 createLocalMenuButtonCCCAtNode :: GInfo -> ButtonMenu GA.NodeValue
 createLocalMenuButtonCCCAtNode gInfo =
-  createMenuButton "Check consistency" (proveAtNode True gInfo) gInfo
+  createMenuButton "Check consistency" (proveAtNode (Just True) gInfo) gInfo
 
 createLocalMenuButtonShowNodeInfo :: GInfo -> ButtonMenu GA.NodeValue
-createLocalMenuButtonShowNodeInfo gInfo =
-  createMenuButton "Show node info" showNodeInfo gInfo
+createLocalMenuButtonShowNodeInfo =
+  createMenuButton "Show node info" showNodeInfo
 
 -- * methods to create the local menus for the edges
 
@@ -526,20 +517,20 @@ getProofScriptFileName f
 askSaveProofScript :: GA.GraphInfo -> IORef IntState -> IO ()
 askSaveProofScript graphInfo ch =
     do
-    h <- readIORef $ ch
+    h <- readIORef ch
     case undoList $ i_hist h of
      [] -> infoDialog "Information" "The history is empty. No file written."
-     _ -> do 
+     _ -> do
       ff <- getProofScriptFileName $ rmSuffix $ filename h
       maybeFilePath<- fileSaveDialog ff [("Proof Script",["*.hpf"])
                                          , ("All Files", ["*"])] Nothing
-      case maybeFilePath of 
+      case maybeFilePath of
         Just fPath -> do
            GA.showTemporaryMessage graphInfo "Saving proof script ..."
            saveCommandHistory ch fPath
            GA.showTemporaryMessage graphInfo $ "Proof script saved to " ++
                                             fPath ++ "!"
-        Nothing -> GA.showTemporaryMessage graphInfo $ "Aborted!"
+        Nothing -> GA.showTemporaryMessage graphInfo "Aborted!"
 
 -- Saves the history of commands in a file.
 saveCommandHistory :: IORef IntState -> String -> IO ()
@@ -547,7 +538,7 @@ saveCommandHistory c f =
     do
     h <- readIORef c
     let history = ["# automatically generated hets proof-script", "",
-                   "use " ++ (filename h), ""] ++ (reverse $ map cmdName
+                   "use " ++ filename h, ""] ++ reverse (map cmdName
                                                      $ undoList $ i_hist h)
     writeFile f $ joinWith '\n' history
 
