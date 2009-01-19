@@ -63,6 +63,7 @@ import Common.Id (Id (Id), Token (Token))
 import Common.Result
 import Common.AS_Annotation (SenAttr)
 import Common.ExtSign
+import Common.Utils
 
 import System.Environment
 import Data.Char (ord, isSpace)
@@ -429,15 +430,9 @@ processFile prog file = do
              "  Don't touch! Original source follows as comment.\n-}\n\n{-\n"
                ++ src ++ "\n-}\n\n"
                ++ unlines
-               (map trimr $ lines $ HP.prettyPrint $ parseInline hsMod)
+               (map trimRight $ lines $ HP.prettyPrint $ parseInline hsMod)
        ParseFailed loc err -> fail $
            err ++ " in '" ++ file ++ "' line " ++ show (srcLine loc)
-
-triml :: String -> String
-triml = dropWhile isSpace
-
-trimr :: String -> String
-trimr = reverse . triml . reverse
 
 main :: IO ()
 main = do args <- getArgs
