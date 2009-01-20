@@ -1,0 +1,23 @@
+library Imports
+
+spec Nat =
+  free type Nat ::= Zero | Succ(Nat)
+  op plus : Nat * Nat -> Nat
+  vars n, m : Nat
+  . plus(Zero, n) = n
+  . plus(Succ(n), m) = Succ(plus(n, m))
+  . plus(n, Zero) = n %implied
+  . plus(m, Succ(n)) = Succ(plus(m, n)) %implied
+  . plus(n, m) = plus(m, n) %implied
+
+
+spec List = Nat then
+  free type List ::= Nil | Cons(Nat; List)
+  op length __ : List -> Nat
+  vars e : Nat; l, l1, l2 : List
+  . length Nil = Zero
+  . length Cons(e, l) = Succ(length l)
+  op app : List * List -> List
+  . app(Nil, l) = l
+  . app(Cons(e, l), l2) = Cons(e, app(l, l2))
+  . length app(l1, l2) = plus(length l1, length l2) %implied
