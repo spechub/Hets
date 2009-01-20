@@ -18,17 +18,20 @@ module Proofs.VSE where
 
 import Static.GTheory
 import Static.DevGraph
+import Static.PrintDevGraph
 import Static.DGTranslation
 
 import Proofs.DGFlattening
 import Proofs.QualifyNames
 
 import Common.ExtSign
+import Common.Id
 import Common.LibName
 import Common.Result
 import Common.ResultT
 import Common.SExpr
 import Common.Utils
+import Common.Lib.Graph (Gr)
 
 import Logic.Prover
 import Logic.Comorphism
@@ -40,8 +43,10 @@ import VSE.Prove
 import VSE.ToSExpr
 import Comorphisms.CASL2VSE
 
+import Data.Char
+import Data.Maybe
 import Data.Graph.Inductive.Basic (elfilter)
-import Data.Graph.Inductive.Graph (Node, labNodes)
+import Data.Graph.Inductive.Graph hiding (out)
 
 import Control.Monad.Trans
 import System.Process
@@ -62,6 +67,10 @@ getImportedNodes known dg node =
       ns = Set.toList $ Set.delete node $ Set.difference ps known
 -}
 
+thName :: LIB_NAME -> LNode DGNodeLab -> String
+thName ln (n, lbl) = map (\ c -> if elem c "/,[]: " then '-' else c)
+           $ shows (getLIB_ID ln) "_" ++ getDGNodeName lbl ++ "_" ++ show n
+
 -- | applies basic inference to a given node and whole import tree above
 prove :: [AnyComorphism] -> (LIB_NAME, Node) -> LibEnv
       -> IO (Result (LibEnv, Result G_theory))
@@ -70,31 +79,36 @@ prove _cms (ln, _node) libEnv =
     libEnv' <- liftR $ preprocess libEnv
     let dGraph = elfilter (isGlobalDef . dgl_type) $ dgBody
            $ lookupDGraph ln libEnv'
-        ns = map snd $ labNodes dGraph
+        nls = labNodes dGraph
+        ns = map snd nls
         errfile = "hetvse.out"
-        thName lbl = map (\ c -> if elem c "/,[]: " then '-' else c)
-                          $ shows (getLIB_ID ln) "_" ++ getDGNodeName lbl
     ts <- liftR $ mapM
       (\ lbl -> do
          G_theory lid (ExtSign sign0 _) _ sens0 _ <- return $ dgn_theory lbl
          (sign1, sens1) <- coerceBasicTheory lid VSE ""
             (sign0, toNamedList sens0)
-         return $ addUniformRestr sign1 sens1) ns
+         let (sign2, sens2) = addUniformRestr sign1 sens1
+         return
+           ( show $ prettySExpr
+             $ qualVseSignToSExpr (mkSimpleId $ getDGNodeName lbl)
+               (getLIB_ID ln) sign2
+           , show $ prettySExpr
+             $ SList $ map (namedSenToSExpr sign2) sens2)) ns
     lift $ do
        vseBin <- getEnvDef "HETS_VSE" "hetsvse"
        (inp, out, _, cp) <-
            runInteractiveProcess vseBin ["-std"] Nothing Nothing
        readMyMsg cp out nameP
-       sendMyMsg inp $ "(" ++ unlines (map thName ns) ++ ")"
-       mapM_ (const $ readMyMsg cp out linksP >> sendMyMsg inp "nil") ns
+       sendMyMsg inp $ "(" ++ unlines (map (thName ln) nls) ++ ")"
+       mapM_ (\ nl -> do
+           readMyMsg cp out linksP
+           sendMyMsg inp $ getLinksTo ln dGraph nl) nls
        mapM_ (\ (fsig, _) -> do
            readMyMsg cp out sigP
-           -- only the non-imported bits need to be sent
-           sendMyMsg inp $ show $ prettySExpr $ vseSignToSExpr fsig) ts
-       mapM_ (\ (fsig, sens) -> do
+           sendMyMsg inp fsig) ts
+       mapM_ (\ (_, sens) -> do
            readMyMsg cp out lemsP
-           sendMyMsg inp $ show $ prettySExpr
-             $ SList $ map (namedSenToSExpr fsig) sens) ts
+           sendMyMsg inp sens) ts
        ms <- getProcessExitCode cp
        case ms of
          Just _ -> do
@@ -111,4 +125,14 @@ prove _cms (ln, _node) libEnv =
            return []
     return (libEnv, Result [] Nothing)
 
+getLinksTo :: LIB_NAME -> Gr DGNodeLab DGLinkLab -> LNode DGNodeLab -> String
+getLinksTo ln dg (n, lbl) = show $ prettySExpr $ SList
+  $ map (\ (s, _, el) -> SList
+    [ SSymbol "definition-link"
+    , SSymbol $ filter (not . isSpace) $ showEdgeId $ dgl_id el
+    , SSymbol $ thName ln (s, fromMaybe (error "getLinksTo") $ lab dg s)
+    , SSymbol $ thName ln (n, lbl)
+    , SList [SSymbol "global"]
+    , SList [SSymbol "morphism"]])
+  $ filter (\ (s, _, _) -> s /= n) $ inn dg n
 

@@ -24,10 +24,12 @@ import CASL.ToSExpr
 
 import Common.AS_Annotation
 import Common.Id
+import Common.LibName
 import Common.ProofUtils
 import Common.SExpr
 
 import qualified Data.Map as Map
+import qualified Data.Set as Set
 import Data.Char (toLower)
 import Data.List(sortBy)
 
@@ -47,7 +49,7 @@ addUniformRestr sig nsens = let
    let
     (genSorts, genOps, _maps) = recover_Sort_gen_ax constrs
     genUniform sorts ops s = let
-      hasResSort sn (Qual_op_name _ opType _) = (res_OP_TYPE opType) == sn
+      hasResSort sn (Qual_op_name _ opType _) = res_OP_TYPE opType == sn
       hasResSort _ _ = error "should have qual names"
       ctors = sortBy (\ (Qual_op_name _ (Op_type _ args1 _ _) _)
                         (Qual_op_name _ (Op_type _ args2 _ _) _) ->
@@ -77,9 +79,10 @@ addUniformRestr sig nsens = let
                                           in
         case recCalls of
          [] -> Ranged (
-                Block ([Var_decl [genToken "y"] s nullRange] ++
-              (map (\ (a,i) -> Var_decl [genToken $ "x" ++ show i] a nullRange)
-              $ zip args [1::Int ..]))
+                Block (Var_decl [genToken "y"] s nullRange
+                  : map (\ (a,i) -> Var_decl
+                         [genToken $ "x" ++ show i] a nullRange)
+                  (zip args [1::Int ..]))
               (Ranged (Seq
                 (Ranged
                    (Assign (genToken "y") (Qual_var (genToken "x") sn nullRange)
@@ -123,17 +126,17 @@ addUniformRestr sig nsens = let
                           prg)nullRange))
                 nullRange )) nullRange) ) nullRange
          _ -> Ranged (
-                 Block ([Var_decl [genToken "y"] s nullRange] ++
-                (map (\ (a,i) -> Var_decl
+                 Block (Var_decl [genToken "y"] s nullRange
+                   : map (\ (a,i) -> Var_decl
                                   [genToken $ "x" ++ show i] a nullRange)
-                 $ zip args [1::Int ..]))
+                   (zip args [1::Int ..]))
                 (Ranged (Seq (Ranged (Assign (genToken "y")
                                       (Qual_var (genToken "x") sn nullRange)
                                      ) nullRange)
                              (Ranged
                               (Seq recCallsSeq
                                (Ranged (Seq
-                                  ((Ranged
+                                  (Ranged
                                     (Assign
                                       (genToken  "y")
                                      (Application
@@ -146,7 +149,6 @@ addUniformRestr sig nsens = let
                                        zip decls args)
                                       nullRange))
                                    nullRange)
-                                 )
                                 (Ranged (If (Strong_equation
                                  ( Application
                                  ( Qual_op_name
@@ -307,8 +309,8 @@ paramToSExpr (Procparam k s) = SList
   [ SSymbol $ map toLower $ show k
   , sortToSSymbol s ]
 
-procsToSExprs :: Sign f Procs -> [SExpr]
-procsToSExprs sig =
+procsToSExprs :: (Id -> Bool) -> Sign f Procs -> [SExpr]
+procsToSExprs f sig =
     map (\ (n, pr@(Profile as _)) -> case profileToOpType pr of
       Nothing -> SList
         [ SSymbol "procedure"
@@ -319,7 +321,8 @@ procsToSExprs sig =
         , opIdToSSymbol sig n ot
         , SList $ map sortToSSymbol $ opArgs ot
         , sortToSSymbol $ opRes ot ])
-    $ Map.toList $ procsMap $ extendedInfo sig
+    $ Map.toList $ Map.filterWithKey (\ i _ -> f i)
+    $ procsMap $ extendedInfo sig
 
 vseSignToSExpr :: Sign f Procs -> SExpr
 vseSignToSExpr sig =
@@ -327,4 +330,18 @@ vseSignToSExpr sig =
     SList $ SSymbol "signature" : sortSignToSExprs sig
       : predMapToSExprs sig (diffMapSet (predMap sig) $ procsToPredMap e)
       ++ opMapToSExprs sig (diffOpMapSet (opMap sig) $ procsToOpMap e)
-      ++ procsToSExprs sig
+      ++ procsToSExprs (const True) sig
+
+qualVseSignToSExpr :: SIMPLE_ID -> LIB_ID -> Sign f Procs -> SExpr
+qualVseSignToSExpr nodeId libId sig =
+  let e = extendedInfo sig in
+    SList $ SSymbol "signature" : sortSignToSExprs sig
+          { sortSet = Set.filter (isQualNameFrom nodeId libId)
+            $ sortSet sig }
+      : predMapToSExprs sig
+            (Map.filterWithKey (\ i _ -> isQualNameFrom nodeId libId i)
+            $ diffMapSet (predMap sig) $ procsToPredMap e)
+      ++ opMapToSExprs sig
+            (Map.filterWithKey (\ i _ -> isQualNameFrom nodeId libId i)
+            $ diffOpMapSet (opMap sig) $ procsToOpMap e)
+      ++ procsToSExprs (isQualNameFrom nodeId libId) sig

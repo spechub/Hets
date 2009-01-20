@@ -29,6 +29,12 @@ mkQualName :: SIMPLE_ID -> LIB_ID -> Id -> Id
 mkQualName nodeId libId i =
   Id omTs [i, simpleIdToId nodeId, libIdToId libId] $ posOfId i
 
+isQualNameFrom :: SIMPLE_ID -> LIB_ID -> Id -> Bool
+isQualNameFrom nodeId libId i@(Id _ cs _) = case cs of
+  _ : n : l : _ ->
+      isQualName i && n == simpleIdToId nodeId && libIdToId libId == l
+  _ -> False
+
 isQualName :: Id -> Bool
 isQualName (Id ts cs _) = case cs of
   _ : _ : _ -> ts == omTs
@@ -98,10 +104,10 @@ instance Ord LIB_ID where
   Indirect_link _ _ _ _ <= _ = False
 
 instance Eq LIB_NAME where
-  ln1 == ln2 = getLIB_ID ln1 == getLIB_ID ln2
+  ln1 == ln2 = compare ln1 ln2 == EQ
 
 instance Ord LIB_NAME where
-  ln1 <= ln2 = getLIB_ID ln1 <= getLIB_ID ln2
+  compare ln1 ln2 = compare (getLIB_ID ln1) $ getLIB_ID ln2
 
 instance Pretty LIB_NAME where
     pretty l = case l of
