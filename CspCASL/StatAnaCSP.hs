@@ -625,14 +625,14 @@ anaRenaming :: RENAMING -> State CspCASLSign (CommAlpha, RENAMING)
 anaRenaming renaming = case renaming of
   Renaming r -> do
     (al, fqRenamingTermsMaybes) <- Monad.foldM anaRenamingItem (S.empty, []) r
-    return (al, FQRenaming (Maybe.catMaybes fqRenamingTermsMaybes))
+    return (al, FQRenaming fqRenamingTermsMaybes)
   FQRenaming _ ->
       error "CspCASL.StatAnaCSP.anaRenaming: Unexpected FQRenaming"
 
 -- | Statically analyse a CspCASL renaming item. Return the alphabet
 -- | and the fully qualified list of renaming functions and predicates.
-anaRenamingItem :: (CommAlpha, [Maybe (TERM ())]) -> Id ->
-                   State CspCASLSign (CommAlpha, [Maybe (TERM ())])
+anaRenamingItem :: (CommAlpha, [TERM ()]) -> Id ->
+                   State CspCASLSign (CommAlpha, [TERM ()])
 anaRenamingItem (inAl, fqRenamingTerms) ri = do
 -- BUG -- too many nothings - should only be one
   totOps <- getUnaryOpsById ri Total
@@ -650,9 +650,9 @@ anaRenamingItem (inAl, fqRenamingTerms) ri = do
               let err = "renaming item not a binary "
                         ++ "operation or predicate name"
               addDiags [mkDiag Error err ri]
-              -- return the original alphabet and the original fully qualified
-              -- terms with out any modification - there is an error
-              -- in the spec.
+              -- return the original alphabet and the original fully
+              -- qualified terms (renamings) with out any modification
+              -- as there is an error in the spec.
               return (inAl, fqRenamingTerms)
 
 -- | Given a CASL identifier and a `function kind' (total or partial),
