@@ -40,14 +40,11 @@ import Driver.Options(rmSuffix)
 import Data.Maybe (fromMaybe)
 import System.Directory (getCurrentDirectory)
 import Data.IORef
-import Logic.Comorphism ( AnyComorphism(..))
--- import Logic.Grothendieck( SigId(..))
--- import Logic.Logic( language_name)
+import Logic.Comorphism (AnyComorphism(..))
 import Logic.Prover
 import Proofs.AbstractState
 import Static.GTheory (G_theory(..))
 
-import Control.Monad(when)
 import Common.OrderedMap (keys)
 import Common.Utils(joinWith, splitOn)
 import Common.Result
@@ -93,40 +90,27 @@ emptyIntIState le ln =
 
 
 
--- Create an empty command history 
+-- Create an empty command history
 emptyCommandHistory :: IORef IntState -> IO (Result CommandHistory)
-emptyCommandHistory st = do 
+emptyCommandHistory st = do
   ch <- newIORef []
   ost <- readIORef st
   ff <- tryRemoveAbsolutePathComponent $ filename ost
-  return $ Result [] $ Just $ CommandHistory { hist = ch, 
+  return $ Result [] $ Just $ CommandHistory { hist = ch,
                                                filePath = rmSuffix ff}
 
 -- If an absolute path is given,
 -- it tries to remove the current working directory as prefix of it.
 tryRemoveAbsolutePathComponent :: String -> IO String
-tryRemoveAbsolutePathComponent f 
-   | "/" `isPrefixOf` f = do 
+tryRemoveAbsolutePathComponent f
+   | "/" `isPrefixOf` f = do
                            dir <- getCurrentDirectory
                            return $ fromMaybe f (stripPrefix (dir ++ "/") f)
    | otherwise        = return f
 
--- If the last command in history is a prove it gets returned.
-getLastProve :: CommandHistory -> IO (Maybe Prove)
-getLastProve (CommandHistory{hist = c}) =
-    do
-    h <- readIORef c
-    return $ if null h
-               then Nothing
-               else case last h of
-                        ProveCommand p -> Just p
-                        _              -> Nothing
-
-
-
 -- If at least one goal was proved and the prove is not the same as last time
 -- the prove gets added, otherwise not.
-addProveToHist :: CommandHistory 
+addProveToHist :: CommandHistory
         -> ProofState lid sentence         -- current proofstate
         -> Maybe (G_prover, AnyComorphism) -- possible used translation
         -> [Proof_status proof_tree]       -- goals included in prove
@@ -134,18 +118,16 @@ addProveToHist :: CommandHistory
 addProveToHist ch st pcm pt
     | null $ filter (wasProved) pt = return ()
     | otherwise = do
-                  p' <- proofTreeToProve st pcm pt
-                  mp <- getLastProve ch
-                  case mp of
-                      Just p  -> when (p /= p') (addProve ch st p')
-                      Nothing -> addProve ch st p'
- 
+                  p <- proofTreeToProve ch st pcm pt
+                  addProve ch p
+
 -- Converts a list of proof-trees to a prove
-proofTreeToProve :: ProofState lid sentence  -- current proofstate
+proofTreeToProve :: CommandHistory
+     -> ProofState lid sentence  -- current proofstate
      -> Maybe (G_prover, AnyComorphism) -- possible used translation
      -> [Proof_status proof_tree] -- goals included in prove
      -> IO Prove
-proofTreeToProve st pcm pt = 
+proofTreeToProve ch st pcm pt =
   do
   -- selected prover
   let prvr = maybe (selectedProver st) (Just . getProverName .fst ) pcm
@@ -157,22 +139,27 @@ proofTreeToProve st pcm pt =
   -- 4. merge goals with same used axioms
       goals = mergeGoals $ reverse $ map (convertGoal) $ filter (wasProved) pt
   -- axioms to include in prove
-      allax = case theory st of 
+      allax = case theory st of
                  G_theory _ _ _ axs _ -> keys axs
-  return $ Prove { usedProver = prvr,
+      nodeName = dropName (filePath ch) $ theoryName st
+  return $ Prove { nodeNameStr = nodeName,
+                   usedProver = prvr,
                    translation = trans,
                    provenGoals = goals,
                    allAxioms = allax}
 
+dropName :: String -> String -> String
+dropName fch s = maybe s (tail) (stripPrefix fch s)
+
 -- This checks wether a goal was proved or not
 wasProved :: Proof_status proof_Tree -> Bool
-wasProved g = case goalStatus g of 
+wasProved g = case goalStatus g of
     Proved _  -> True
     _         -> False
 
 -- Converts a proof-tree into a goal.
 convertGoal :: Proof_status proof_tree -> ProvenGoal
-convertGoal pt = 
+convertGoal pt =
   ProvenGoal {name = goalName pt, axioms = usedAxioms pt, time_Limit = tLimit}
   where
      (Tactic_script scrpt) = tacticScript pt
@@ -180,10 +167,10 @@ convertGoal pt =
 
 -- Parses time-limit from the tactic-script of a goal.
 parseTimeLimit :: [String] -> Maybe String
-parseTimeLimit l = 
+parseTimeLimit l =
     if null l' then Nothing else Just $ drop (length tlStr) $ last l'
-    where 
-       l' = filter (isPrefixOf tlStr) l 
+    where
+       l' = filter (isPrefixOf tlStr) l
        tlStr = "Time limit: "
 
 -- Merges goals with the same used axioms into one goal.
@@ -193,7 +180,7 @@ mergeGoals (h:[]) = [h]
 mergeGoals (h:t) | mergeAble h h' = mergeGoals $ (merge h h'):(tail t)
                  | otherwise      = h:(mergeGoals t)
                  where
-                    h' = head t 
+                    h' = head t
                     mergeAble :: ProvenGoal -> ProvenGoal -> Bool
                     mergeAble a b = axioms a == axioms b &&
                                     time_Limit a == time_Limit b
@@ -206,12 +193,12 @@ addCommandHistoryToState :: CommandHistory -> IORef IntState -> IO (Result ())
 addCommandHistoryToState ch ioSt
  = do
     ost <- readIORef ioSt
-    lsch <- readIORef $ hist ch 
-    let z = Int_CmdHistoryDescription { 
+    lsch <- readIORef $ hist ch
+    let z = Int_CmdHistoryDescription {
              cmdName = joinWith '\n' $ map (show) lsch,
              cmdDescription = [ IStateChange $ i_state ost ]
              }
-        nwst = ost { i_hist = (i_hist ost) { 
+        nwst = ost { i_hist = (i_hist ost) {
                                 undoList = z: (undoList $ i_hist ost)}}
     writeIORef ioSt nwst
     return $ Result [] $ Just ()
