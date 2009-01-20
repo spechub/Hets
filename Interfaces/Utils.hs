@@ -119,7 +119,7 @@ addProveToHist ch st pcm pt
     | null $ filter (wasProved) pt = return ()
     | otherwise = do
                   p <- proofTreeToProve ch st pcm pt
-                  addProve ch p
+                  addToHist ch $ ProveCommand p
 
 -- Converts a list of proof-trees to a prove
 proofTreeToProve :: CommandHistory

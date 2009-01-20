@@ -25,7 +25,6 @@ module Interfaces.DataTypes
        , ProvenGoal(..)
        , Command(..)
 --       , Node(..)
-       , addProve
        , addToHist
        ) where
 
@@ -168,9 +167,6 @@ goalToString p g =
 splitComorphism :: AnyComorphism -> [String]
 splitComorphism (Comorphism cid) =
    map ("translate "++) $ tail $ splitOn ';' $ language_name cid
-
-addProve :: CommandHistory -> Prove -> IO ()
-addProve ch p = addToHist ch $ ProveCommand p
 
 -- Adds a single command to the history.
 addToHist :: CommandHistory -> Command -> IO ()
