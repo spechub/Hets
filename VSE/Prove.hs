@@ -126,13 +126,13 @@ parseSExprs = do
   skipJunk
   sepEndBy parseSExpr skipJunk
 
-findState :: String -> SExpr -> [String] -> [String]
-findState str sexpr l = case sexpr of
+findState :: SExpr -> [(String, String)] -> [(String, String)]
+findState sexpr l = case sexpr of
   SList (SSymbol "API::SET-SENTENCE" : SSymbol nodeStr :
          SList (SSymbol "API::ASENTENCE" : SSymbol senStr :
                 SSymbol "API::OBLIGATION" : SSymbol "API::PROVED" : _) : _)
-    | nodeStr == "API::" ++ map toUpper str && isPrefixOf "API::" senStr
-    -> drop 5 senStr : l
+    | isPrefixOf "API::" nodeStr && isPrefixOf "API::" senStr
+    -> (drop 5 nodeStr, drop 5 senStr) : l
   _ -> l
 
 prove :: String -> Theory VSESign Sentence () -> a -> IO [Proof_status ()]
@@ -170,7 +170,8 @@ prove ostr (Theory sig thsens) _freedefs = do
                  Just n -> (openVseProofStatus n)
                    { goalStatus = Proved Nothing
                    , usedAxioms = map senAttr disAxs } : r) []
-          $ foldr (findState str) [] l
+          $ map snd $ filter ((== map toUpper str) . fst)
+          $ foldr findState [] l
         Left e -> do
           print e
           writeFile errfile res
