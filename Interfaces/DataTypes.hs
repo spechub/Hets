@@ -172,7 +172,7 @@ data Int_NodeInfo = forall lid1 sublogics1
 
 goalToString :: Prove -> ProvenGoal -> String
 goalToString p g = 
-    "set goals" ++ (name g)
+    "set goals " ++ (name g)
     ++
     -- axioms to include in prove
     '\n':(if (allAxioms p == axioms g) || (null $ axioms g)
