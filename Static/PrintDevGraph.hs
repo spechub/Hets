@@ -16,6 +16,8 @@ module Static.PrintDevGraph
     , printTh
     , prettyHistElem
     , prettyHistory
+    , prettyGr
+    , showEdgeId
     , showLEdge
     ) where
 
@@ -260,7 +262,7 @@ instance Pretty DGChange where
     SetNodeLab _ n -> prettyLNode n
 
 prettyGr :: Tree.Gr DGNodeLab DGLinkLab -> Doc
-prettyGr g = vcat (map (prettyLNode) $ labNodes g)
+prettyGr g = vcat (map prettyLNode $ labNodes g)
   $+$ vcat (map prettyLEdge $ labEdges g)
 
 prettyImport :: MaybeNode -> Doc
