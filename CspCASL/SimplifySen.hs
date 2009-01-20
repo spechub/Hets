@@ -23,7 +23,7 @@ import CspCASL.SignCSP
 -- FOR NOW - Do not simply sentences.
 
 -- | Simplify a CspCASL sentence for before pretty printing, e.g. for
--- | "show theory". typically this replaces fully quallified CASL by
+-- | "show theory". Typically this replaces fully quallified CASL by
 -- | non fully qualified CASL so that it is readable.
 simplifySen :: CspCASLSign -> CspCASLSen -> CspCASLSen
 simplifySen sigma sen = sen
@@ -53,10 +53,6 @@ simplifyProc sigma proc =
           Chaos es range
       PrefixProcess e p range ->
           PrefixProcess e (simplifyProc sigma p) range
-      ExternalPrefixProcess v s p range ->
-          ExternalPrefixProcess v s (simplifyProc sigma p) range
-      InternalPrefixProcess v s p range ->
-          InternalPrefixProcess v s (simplifyProc sigma p) range
       Sequential p q range ->
           Sequential (simplifyProc sigma p) (simplifyProc sigma q) range
       ExternalChoice p q range ->

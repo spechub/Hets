@@ -33,10 +33,23 @@ import qualified Data.Set as Set
 {-! global: GetRange !-}
 
 data EVENT
+    -- | @t -> p@ - Term prefix
     = TermEvent (TERM ()) Range
+    -- | @[] var :: s -> p@ - External nondeterministic prefix choice
+    | ExternalPrefixChoice VAR SORT Range
+    -- | @|~| var :: s -> p@ - Internal nondeterministic prefix choice
+    | InternalPrefixChoice VAR SORT Range
+    -- | @c ! t -> p@ - Channel send
     | ChanSend CHANNEL_NAME (TERM ()) Range
+    -- | @c ! var :: s -> p@ - Channel nondeterministic send
     | ChanNonDetSend CHANNEL_NAME VAR SORT Range
+    -- | @c ? var :: s -> p@ - Channel recieve
     | ChanRecv CHANNEL_NAME VAR SORT Range
+
+
+--BUG - need better documentation here - after adding
+--external/internal prefix choice
+
     -- | A fully qualified event contains the event being
     --   qualified. The channel of the fully qualified event should be
     --   nothing if the contained event is a TermEvent - as this does
@@ -99,15 +112,8 @@ data PROCESS
     | Run EVENT_SET Range
     -- | @Chaos es@ - Accept\/refuse any event in es, forever
     | Chaos EVENT_SET Range
-
-
-
-    -- | @es -> p@ - Prefix process
+    -- | @event -> p@ - Prefix process
     | PrefixProcess EVENT PROCESS Range
-    -- | @[] var : es -> p@ - External nondeterministic prefix choice
-    | ExternalPrefixProcess VAR SORT PROCESS Range
-    -- | @|~| var : es -> p@ - Internal nondeterministic prefix choice
-    | InternalPrefixProcess VAR SORT PROCESS Range
     -- | @p ; q@ - Sequential process
     | Sequential PROCESS PROCESS Range
     -- | @p [] q@ - External choice

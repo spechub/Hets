@@ -114,18 +114,8 @@ printProcess pr = case pr of
     -- precedence 3
     Sequential p q _ ->
         (pretty p) <+> sequential <+> (glue pr q)
-    PrefixProcess ev p _ ->
-        (pretty ev) <+> prefix_proc <+> (glue pr p)
-    InternalPrefixProcess v s p _ ->
-        (internal_choice <+> (pretty v) <+>
-         (text svar_sortS) <+> (pretty s) <+>
-         prefix_proc <+> (glue pr p)
-        )
-    ExternalPrefixProcess v s p _ ->
-        (external_choice <+> (pretty v) <+>
-         (text svar_sortS) <+> (pretty s) <+>
-         prefix_proc <+> (glue pr p)
-        )
+    PrefixProcess event p _ ->
+        (pretty event) <+> prefix_proc <+> (glue pr p)
     -- precedence 4
     InternalChoice p q _ ->
         (pretty p) <+> internal_choice <+> (glue pr q)
@@ -185,17 +175,8 @@ prec_comp x y =
       RenamingProcess _ _ _ ->
           case y of Hiding _ _ _ -> True
                     _ -> False
-      Sequential _ _ _ ->
-          case y of InternalPrefixProcess _ _ _ _ -> True
-                    ExternalPrefixProcess _ _ _ _ -> True
-                    _ -> False
+      Sequential _ _ _ -> False
       PrefixProcess _ _ _ ->
-          case y of Sequential _ _ _ -> True
-                    _ -> False
-      InternalPrefixProcess _ _ _ _ ->
-          case y of Sequential _ _ _ -> True
-                    _ -> False
-      ExternalPrefixProcess _ _ _ _ ->
           case y of Sequential _ _ _ -> True
                     _ -> False
       ExternalChoice _ _ _ ->
@@ -234,14 +215,22 @@ printEvent :: EVENT -> Doc
 printEvent ev =
     case ev of
       TermEvent t _ -> pretty t
+      InternalPrefixChoice v s _ -> internal_choice <+> (pretty v) <+>
+                                     (text svar_sortS) <+> (pretty s) <+>
+                                     prefix_proc
+      ExternalPrefixChoice v s _ -> external_choice <+> (pretty v) <+>
+                                     (text svar_sortS) <+> (pretty s) <+>
+                                     prefix_proc
       ChanSend cn t _ -> (pretty cn) <+> (text chan_sendS) <+> (pretty t)
       ChanNonDetSend cn v s _ -> (pretty cn) <+> (text chan_sendS) <+>
                                  (pretty v) <+> (text svar_sortS) <+> (pretty s)
       ChanRecv cn v s _ -> (pretty cn) <+> (text chan_receiveS) <+>
                            (pretty v) <+> (text svar_sortS) <+> (pretty s)
       FQEvent e mfqChan fqVar _ -> pretty e <+>
-                                   brackets(brackets(pretty mfqChan <+>
-                                                   semi <+> pretty fqVar))
+                                   text "<" <> text "<" <>
+                                            (pretty mfqChan <+>
+                                             semi <+> pretty fqVar) <>
+                                   text ">" <> text ">"
 
 instance Pretty EVENT_SET where
     pretty = printEventSet

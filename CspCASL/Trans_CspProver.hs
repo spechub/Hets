@@ -54,17 +54,10 @@ transProcess caslSign pr = case pr of
     -- precedence 3
     Sequential p q _ ->
         cspProver_sequenceOp (transProcess caslSign p) (transProcess caslSign q)
+    -- BUG - this is not right yet
     PrefixProcess ev p _ ->
         cspProver_action_prefixOp (transEvent caslSign ev)
                                   (transProcess caslSign p)
-    InternalPrefixProcess v s p _ ->
-        cspProver_internal_prefix_choiceOp (transVar v)
-                                           (transSort s)
-                                           (transProcess caslSign p)
-    ExternalPrefixProcess v s p _ ->
-        cspProver_external_prefix_choiceOp (transVar v)
-                                           (transSort s)
-                                           (transProcess caslSign p)
     -- precedence 4
     InternalChoice p q _ ->
         cspProver_internal_choiceOp (transProcess caslSign p)
@@ -100,10 +93,17 @@ transEventSet evs =
     in case evs of
          EventSet commTypes _ -> Set $ FixedSet $ map tranCommType commTypes
 
+-- BUG - this is not right yet
 transEvent :: CASL_Sign.Sign () () -> EVENT -> Term
 transEvent caslSign ev =
     case ev of
       TermEvent caslTerm _ -> transTerm_with_class caslSign caslTerm
+      InternalPrefixChoice v s _ ->
+          conDouble "ChanSendNotYetDone"
+          -- cspProver_internal_prefix_choiceOp (transVar v) (transSort s)
+      ExternalPrefixChoice v s _ ->
+          conDouble "ChanSendNotYetDone"
+          -- cspProver_external_prefix_choiceOp (transVar v) (transSort s)
       ChanSend _ _ _ -> conDouble "ChanSendNotYetDone"
       ChanNonDetSend _ _ _ _ -> conDouble "ChanNonDetSendNotYetDone"
       ChanRecv _ _ _ _ -> conDouble "ChanRecvNotYetDone"

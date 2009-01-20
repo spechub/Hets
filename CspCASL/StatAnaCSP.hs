@@ -282,22 +282,6 @@ anaProcTerm proc gVars lVars = case proc of
            let newAlpha = comms `S.union` evComms
            let fqProc = FQProcess (PrefixProcess fqEvent pFQTerm range) newAlpha range
            return (newAlpha, fqProc)
-    InternalPrefixProcess v s p range ->
-        -- BUG - Not returning a complete fully qualified process
-        do addDiags [mkDiag Debug "Internal prefix" proc]
-           checkSorts [s] -- check sort is known
-           (comms, pFQTerm) <- anaProcTerm p gVars (Map.insert v s lVars)
-           let newAlpha = S.insert (CommTypeSort s) comms
-           let fqProc = FQProcess (InternalPrefixProcess v s pFQTerm range) newAlpha range
-           return (newAlpha, fqProc)
-    ExternalPrefixProcess v s p range ->
-        -- BUG - Not returning a complete fully qualified process
-        do addDiags [mkDiag Debug "External prefix" proc]
-           checkSorts [s] -- check sort is known
-           (comms, pFQTerm) <- anaProcTerm p gVars (Map.insert v s lVars)
-           let newAlpha = S.insert (CommTypeSort s) comms
-           let fqProc = FQProcess (ExternalPrefixProcess v s pFQTerm range) newAlpha range
-           return (newAlpha, fqProc)
     Sequential p q range ->
         do addDiags [mkDiag Debug "Sequential" proc]
            (pComms, pFQTerm) <- anaProcTerm p gVars lVars
@@ -494,29 +478,43 @@ anaCommType sig (alpha, fqEsElems) ct =
 anaEvent :: EVENT -> ProcVarMap -> State CspCASLSign (CommAlpha, ProcVarMap, EVENT)
 anaEvent e vars =
     case e of
-      TermEvent t r ->
-          do (alpha, newVars, fqTerm) <- anaTermEvent t vars
-             let fqEvent = FQEvent e Nothing fqTerm r
+      TermEvent t range ->
+          do addDiags [mkDiag Debug "Term event" e]
+             (alpha, newVars, fqTerm) <- anaTermEvent t vars
+             let fqEvent = FQEvent e Nothing fqTerm range
              return (alpha, newVars, fqEvent)
-      ChanSend c t r ->
-          do -- mfqChan is a maybe fully qualified
+      InternalPrefixChoice v s range ->
+          do addDiags [mkDiag Debug "Internal prefix event" e]
+             (alpha, newVars, fqVar) <- anaPrefixChoice v s
+             let fqEvent = FQEvent e Nothing fqVar range
+             return (alpha, newVars, fqEvent)
+      ExternalPrefixChoice v s range ->
+          do addDiags [mkDiag Debug "External prefix event" e]
+             (alpha, newVars, fqVar) <- anaPrefixChoice v s
+             let fqEvent = FQEvent e Nothing fqVar range
+             return (alpha, newVars, fqEvent)
+      ChanSend c t range ->
+          do addDiags [mkDiag Debug "Channel send event" e]
+             -- mfqChan is a maybe fully qualified
              -- channel. It will ne Nothing if
              -- annChanSend failed - i.e. we forget
              -- about the channel.
-            (alpha, newVars, mfqChan, fqTerm) <- anaChanSend c t vars
-            let fqEvent = FQEvent e mfqChan fqTerm r
-            return (alpha, newVars, fqEvent)
-      ChanNonDetSend c v s r ->
-          -- mfqChan is the same as in chanSend case.
-          -- fqVar is the fully qualfied version of the variable.
-          do (alpha, newVars, mfqChan, fqVar) <- anaChanBinding c v s
-             let fqEvent = FQEvent e mfqChan fqVar r
+             (alpha, newVars, mfqChan, fqTerm) <- anaChanSend c t vars
+             let fqEvent = FQEvent e mfqChan fqTerm range
              return (alpha, newVars, fqEvent)
-      ChanRecv c v s r ->
-          -- mfqChan is the same as in chanSend case.
-          -- fqVar is the fully qualfied version of the variable.
-          do (alpha, newVars, mfqChan, fqVar) <- anaChanBinding c v s
-             let fqEvent = FQEvent e mfqChan fqVar r
+      ChanNonDetSend c v s range ->
+          do addDiags [mkDiag Debug "Channel nondeterministic send event" e]
+             -- mfqChan is the same as in chanSend case.
+             -- fqVar is the fully qualfied version of the variable.
+             (alpha, newVars, mfqChan, fqVar) <- anaChanBinding c v s
+             let fqEvent = FQEvent e mfqChan fqVar range
+             return (alpha, newVars, fqEvent)
+      ChanRecv c v s range ->
+          do addDiags [mkDiag Debug "Channel receive event" e]
+             -- mfqChan is the same as in chanSend case.
+             -- fqVar is the fully qualfied version of the variable.
+             (alpha, newVars, mfqChan, fqVar) <- anaChanBinding c v s
+             let fqEvent = FQEvent e mfqChan fqVar range
              return (alpha, newVars, fqEvent)
       FQEvent _ _ _ _ ->
           error "CspCASL.StatAnaCSP.anaEvent: Unexpected FQEvent"
@@ -535,6 +533,20 @@ anaTermEvent t vars = do
                       -- return the empty alphabet and the original term
                       Nothing -> ([], t)
   return (S.fromList alpha, Map.empty, t')
+
+
+-- | Statically analyse a CspCASL internal or external prefix choice
+--   event. Returns a constituent communication alphabet of the event
+--   and a mapping for any new locally bound variables and the fully
+--   qualified version of the variable.
+anaPrefixChoice :: VAR -> SORT ->
+                   State CspCASLSign (CommAlpha, ProcVarMap, TERM ())
+anaPrefixChoice v s = do
+  checkSorts [s] -- check sort is known
+  let alpha = S.singleton $ CommTypeSort s
+  let binding = Map.singleton v s
+  let fqVar = Qual_var v s nullRange
+  return (alpha, binding, fqVar)
 
 -- | Statically analyse a CspCASL channel send event. Returns a
 --   constituent communication alphabet of the event, a mapping for
