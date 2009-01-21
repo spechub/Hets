@@ -45,35 +45,39 @@ data EVENT
     | ChanNonDetSend CHANNEL_NAME VAR SORT Range
     -- | @c ? var :: s -> p@ - Channel recieve
     | ChanRecv CHANNEL_NAME VAR SORT Range
-
-
---BUG - need better documentation here - after adding
---external/internal prefix choice
-
-    -- | A fully qualified event contains the event being
-    --   qualified. The channel of the fully qualified event should be
-    --   nothing if the contained event is a TermEvent - as this does
-    --   not have a channel. The channel should match the contained
-    --   event's channel if the contained event is not a TermEvent,
-    --   where the sort of the channel is also recorded in the
-    --   pair. The fully qualified term's event should be the fully
-    --   qualified version of the contained events' term. The range of
-    --   the fully qualified event should always be the same as the
-    --   range of the contained event. In the case of a fully
-    --   qualified ChanNonDetSend and ChanRecv the variable becomes a
-    --   fully qualified CASL term based on the variable and its sort.
+    -- | A fully qualified event contains the (non-fully qualified)
+    --   event being qualified. There other parameters depend on the
+    --   underlying type of the event.
+    --
+    --   For TermEvent, the fully qualified channel should be nothing
+    --   and the fully qualified term should be the fully qualified
+    --   CASL term version of the term being communicated in the inner
+    --   process.
+    --
+    --   For ExternalPrefixChoice and InternalPrefixChoice, the fully
+    --   qualified channel should be nothing and the fully qualified
+    --   term should be the fully qualified CASL variable version (a
+    --   term) of the inner process's variable.
+    --
+    --   For ChanSend, the fully qualified channel should be the fully
+    --   qualified channel of the underlying event and the fully
+    --   qualified term should be the fully qualified CASL term
+    --   version of the term being communicated in the inner process.
+    --
+    --  For ChanNonDetSend and ChanRecv, the fully qualified channel
+    --   should be the fully qualified channel of the underlying event
+    --   and the fully qualified CASL variable version (a term) of the
+    --   inner process's variable
     | FQEvent EVENT (Maybe (CHANNEL_NAME, SORT)) (TERM ()) Range
     deriving (Show,Ord, Eq)
 
--- |Event sets are sets of communication types.
-
+-- | Event sets are sets of communication types.
 data EVENT_SET = EventSet [COMM_TYPE] Range
                -- | FQEvent set distinguishes between channel names and Sorts
                | FQEventSet [CommType] Range
                  deriving (Show,Ord, Eq)
 
--- |CSP renamings are predicate names or op names.
-
+-- | CSP renamings are predicate names or op names.
 data RENAMING = Renaming [Id]
               | FQRenaming [TERM ()]
                 deriving (Show,Ord, Eq)
@@ -99,8 +103,7 @@ instance Show CommType where
 
 type CommAlpha = Set.Set CommType
 
--- |CSP-CASL process expressions.
-
+-- | CSP-CASL process expressions.
 data PROCESS
     -- | @Skip@ - Terminate immediately
     = Skip Range
