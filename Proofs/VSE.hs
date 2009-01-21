@@ -53,19 +53,11 @@ import System.Process
 import Text.ParserCombinators.Parsec
 
 preprocess :: LibEnv -> Result LibEnv
-preprocess le = libEnv_flattening_heterogen le
-  >>= libEnv_flattening_hiding
+preprocess le = libEnv_flattening_hiding le
+  >>= libEnv_flattening_renamings
   >>= libEnv_flattening_dunions
   >>= qualifyLibEnv
   >>= flip libEnv_translation (Comorphism CASL2VSE)
-
-{-
-getImportedNodes :: Set.Set Node -> DGraph -> Node -> [LNode DGNodeLab]
-getImportedNodes known dg node =
-  let (pres, _, lab , _) = safeContextDG "Proofs.VSE" dg node
-      ps = Set.fromList $ map snd pres
-      ns = Set.toList $ Set.delete node $ Set.difference ps known
--}
 
 thName :: LIB_NAME -> LNode DGNodeLab -> String
 thName ln (n, lbl) = map (\ c -> if elem c "/,[]: " then '-' else c)
