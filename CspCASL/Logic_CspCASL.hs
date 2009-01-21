@@ -134,8 +134,7 @@ class Show a => CspCASLSemantics a where
    defined.
  -}
 
-instance CspCASLSemantics () where
-    cspProvers _ = [cspCASLProver]
+instance CspCASLSemantics ()
 
 data Trace = Trace deriving Show
 data Failure = Failure deriving Show
@@ -146,7 +145,9 @@ traceCspCASL = GenCspCASL Trace
 failureCspCASL :: GenCspCASL Failure
 failureCspCASL = GenCspCASL Failure
 
-instance CspCASLSemantics Trace
+instance CspCASLSemantics Trace where
+    cspProvers _ = [cspCASLProver]
+
 instance CspCASLSemantics Failure
 
 -- | Instance of Logic for CspCASL

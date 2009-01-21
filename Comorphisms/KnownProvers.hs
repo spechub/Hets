@@ -52,6 +52,7 @@ import Comorphisms.CoCASL2CoSubCFOL
 import Comorphisms.CoCFOL2IsabelleHOL
 import Comorphisms.Modal2CASL
 import Comorphisms.CASL_DL2CASL
+import CspCASL.Comorphisms
 #endif
 #ifndef NOOWLLOGIC
 import Comorphisms.OWL2CASL
@@ -88,6 +89,7 @@ knownProversWithKind pk =
        qCs <- quickCheckComorphisms
        return $ foldl insProvers Map.empty $
               idComorphisms ++ isaCs ++ spassCs ++ qCs
+              ++ [Comorphism cspCASLTrace]
        where insProvers kpm cm =
               case cm of
                 Comorphism cid ->
