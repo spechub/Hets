@@ -13,6 +13,7 @@ Printing abstract syntax of CSP-CASL
 -}
 module CspCASL.Print_CspCASL where
 
+import CASL.AS_Basic_CASL (SORT, TERM)
 import CASL.ToDoc ()
 
 import Common.Doc
@@ -115,7 +116,7 @@ printProcess pr = case pr of
     Sequential p q _ ->
         (pretty p) <+> sequential <+> (glue pr q)
     PrefixProcess event p _ ->
-        (pretty event) <+> prefix_proc <+> (glue pr p)
+        (pretty event) <+> prefix_proc $+$ (glue pr p)
     -- precedence 4
     InternalChoice p q _ ->
         (pretty p) <+> internal_choice <+> (glue pr q)
@@ -137,8 +138,8 @@ printProcess pr = case pr of
     FQProcess p commAlpha _ ->
         let commAlphaList = S.toList commAlpha
             prettyComms cs = sepByCommas (map pretty cs)
-        in brackets(pretty p) <> text "_" <>
-           braces (prettyComms commAlphaList)
+        in text "[" <+> (pretty p) <> text "]" <+> text "_" <>
+             braces (prettyComms commAlphaList)
            -- pretty p
 
 instance Pretty CommType where
@@ -211,26 +212,66 @@ prec_comp x y =
 instance Pretty EVENT where
     pretty = printEvent
 
+
+-- | print an event.
 printEvent :: EVENT -> Doc
 printEvent ev =
     case ev of
       TermEvent t _ -> pretty t
-      InternalPrefixChoice v s _ -> internal_choice <+> (pretty v) <+>
-                                     (text svar_sortS) <+> (pretty s) <+>
-                                     prefix_proc
-      ExternalPrefixChoice v s _ -> external_choice <+> (pretty v) <+>
-                                     (text svar_sortS) <+> (pretty s) <+>
-                                     prefix_proc
+      InternalPrefixChoice v s _ ->
+          internal_choice <+> (pretty v) <+> (text svar_sortS) <+> (pretty s)
+      ExternalPrefixChoice v s _ ->
+          external_choice <+> (pretty v) <+> (text svar_sortS) <+> (pretty s)
       ChanSend cn t _ -> (pretty cn) <+> (text chan_sendS) <+> (pretty t)
-      ChanNonDetSend cn v s _ -> (pretty cn) <+> (text chan_sendS) <+>
-                                 (pretty v) <+> (text svar_sortS) <+> (pretty s)
-      ChanRecv cn v s _ -> (pretty cn) <+> (text chan_receiveS) <+>
-                           (pretty v) <+> (text svar_sortS) <+> (pretty s)
-      FQEvent e mfqChan fqVar _ -> pretty e <+>
-                                   text "<" <> text "<" <>
-                                            (pretty mfqChan <+>
-                                             semi <+> pretty fqVar) <>
-                                   text ">" <> text ">"
+      ChanNonDetSend cn v s _ ->
+          (pretty cn) <+> (text chan_sendS) <+> (pretty v)
+                          <+> (text svar_sortS) <+> (pretty s)
+      ChanRecv cn v s _ ->
+          (pretty cn) <+> (text chan_receiveS) <+> (pretty v)
+                          <+> (text svar_sortS) <+> (pretty s)
+      FQEvent e mfqChan fqVar _ -> printFQEvent e mfqChan fqVar
+
+-- | Print a fully qualified event. We need the fully qualified
+--   channel (if there is one) and the fully qualified term (which may
+--   be an event or a variable). these will be passed in fro mthe
+--   printEvent that actually has access to the fully qualfied parts
+--   of this fully qualified event.
+printFQEvent :: EVENT -> Maybe (CHANNEL_NAME, SORT) -> TERM () -> Doc
+printFQEvent ev mfqChan t =
+    -- We only need to know the underlysing event type as we already
+    -- have all the fully qualified information.
+    case ev of
+      -- mfqChan shoudl be nothing
+      -- t is the fully qualified term to send
+      TermEvent _ _ -> pretty t
+      -- mfqChan shoudl be nothing
+      -- t is the fully qualified variable
+      InternalPrefixChoice _ _ _ -> internal_choice <+> pretty t
+      -- mfqChan shoudl be nothing
+      -- t is the fully qualified variable
+      ExternalPrefixChoice _ _ _ -> external_choice <+> pretty t
+      -- mfqChan should be the fully qualified channel
+      -- t is the fully qualified term to send
+      ChanSend _ _ _ ->
+          case mfqChan of
+            Just (cn, s) -> (pretty cn) <> colon <> (pretty s)
+                            <+> (text chan_sendS) <+> (pretty t)
+            Nothing -> text "Error: Case ChanSend in printFQEvent in CspCASL.Print_CspCASL "
+      -- mfqChan should be the fully qualified channel
+      -- t is the fully qualified variable
+      ChanNonDetSend _ _ _ _ ->
+          case mfqChan of
+            Just (cn, s) -> (pretty cn) <> colon <> (pretty s)
+                            <+> (text chan_sendS) <+> (pretty t)
+            Nothing -> text "Error: Case ChanNonDetSend in printFQEvent in CspCASL.Print_CspCASL"
+      ChanRecv _ _ _ _ ->
+          case mfqChan of
+            Just (cn, s) -> (pretty cn) <> colon <> (pretty s)
+                            <+> (text chan_receiveS) <+> (pretty t)
+            Nothing -> text "Error: Case ChanRecv in printFQEvent in CspCASL.Print_CspCASL"
+
+      -- This option should be impossible
+      FQEvent _ _ _ _ -> text "Error: Case FQEvent in printFQEvent in CspCASL.Print_CspCASL"
 
 instance Pretty EVENT_SET where
     pretty = printEventSet
