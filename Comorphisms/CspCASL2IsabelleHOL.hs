@@ -58,7 +58,7 @@ instance Comorphism CspCASL2IsabelleHOL
                Isabelle () () IsaSign.Sentence () ()
                IsaSign.Sign
                IsabelleMorphism () () ()  where
-    sourceLogic CspCASL2IsabelleHOL = CspCASL
+    sourceLogic CspCASL2IsabelleHOL = cspCASL
     sourceSublogic CspCASL2IsabelleHOL = ()
     targetLogic CspCASL2IsabelleHOL = Isabelle
     mapSublogic _cid _sl = Just ()

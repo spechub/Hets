@@ -46,7 +46,7 @@ instance Comorphism CASL2CspCASL
                Symbol RawSymbol () where
     sourceLogic CASL2CspCASL = CASL
     sourceSublogic CASL2CspCASL = SL.top
-    targetLogic CASL2CspCASL = CspCASL
+    targetLogic CASL2CspCASL = cspCASL
     mapSublogic CASL2CspCASL _ = Just ()
     map_theory CASL2CspCASL = return . simpleTheoryMapping mapSig mapSen
     map_morphism CASL2CspCASL = return . mapMor

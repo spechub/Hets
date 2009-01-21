@@ -50,7 +50,7 @@ instance Comorphism CspCASL2Modal
                MSign
                ModalMor
                Symbol RawSymbol () where
-    sourceLogic CspCASL2Modal = CspCASL
+    sourceLogic CspCASL2Modal = cspCASL
     sourceSublogic CspCASL2Modal = ()
     targetLogic CspCASL2Modal = Modal
     mapSublogic CspCASL2Modal _ = Just ()
