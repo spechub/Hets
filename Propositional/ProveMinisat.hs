@@ -94,7 +94,8 @@ consCheck thName tm _ =
     case LP.t_target tm of
       LP.Theory sig nSens -> do
             let axioms = getAxioms $ snd $ unzip $ OMap.toList nSens
-                tmpFile = "/tmp/" ++ (thName ++ "_cc.dimacs")
+                thName_clean = map (\c -> if c == '/' then '_' else c) thName
+                tmpFile = "/tmp/" ++ (thName_clean ++ "_cc.dimacs")
             dimacsOutput <-  PC.ioDIMACSProblem (thName ++ "_cc")
                              sig ( [(AS_Anno.makeNamed "myAxioms" $
                                      AS_BASIC.Implication
