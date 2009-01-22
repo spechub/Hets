@@ -24,58 +24,36 @@ module CspCASLProver.CspCASLProver
     ( cspCASLProver
     ) where
 
+import Common.AS_Annotation ()
+
+-- import qualified Comorphisms.CASL2PCFOL as CASL2PCFOL
+-- import qualified Comorphisms.CASL2SubCFOL as CASL2SubCFOL
+-- import qualified Comorphisms.CFOL2IsabelleHOL as CFOL2IsabelleHOL
+
 import CspCASL.SignCSP (CspCASLSign, CspCASLSen, CspMorphism)
+-- also may need ccSig2CASLSign from above
+
+import qualified Data.Map as Map
 
 import Logic.Prover
+-- import Logic.Comorphism (map_theory)
 
-
-import qualified Isabelle.IsaSign as Isa
--- import Isabelle.IsaConsts
-import Isabelle.IsaPrint (getAxioms, printIsaTheory)
 import Isabelle.IsaParse (parseTheory)
-import Isabelle.Translate (transString)
-import Isabelle.MarkSimp (markSimp, markThSimp)
+import Isabelle.IsaPrint (printIsaTheory)
 import Isabelle.IsaProve (isaProve, prepareTheory)
-
-import Common.AS_Annotation
--- import Common.DocUtils
--- import Common.DefaultMorphism
-import Common.ProofUtils (prepareSenNames)
--- import Common.Utils (getEnvDef)
-import qualified Data.Map as Map
--- import qualified Data.Set as Set
+import qualified Isabelle.IsaSign as Isa
+-- import Isabelle.MarkSimp (markSimp, markThSimp)
+-- import Isabelle.Translate (transString)
 
 import Text.ParserCombinators.Parsec (parse)
--- import Data.Char
--- import Data.List (isSuffixOf)
--- import Control.Monad
-
--- import System.Directory
--- import System.Exit
--- import System.Cmd
 
 -- | The string that Hets uses as CspCASLProver
 cspCASLProverS :: String
 cspCASLProverS = "CspCASLProver"
 
--- openCspCASLProof_status :: String -> Proof_status ()
--- openCspCASLProof_status n = openProof_status n cspCASLProverS ()
-
 -- | The wrapper function that is CspCASL Prover
 cspCASLProver :: Prover CspCASLSign CspCASLSen CspMorphism () ()
 cspCASLProver = mkProverTemplate cspCASLProverS () cspCASLProverProve
-
--- mkIsaTheory :: Theory CspCASLSign CspCASLSen () -> Theory Isa.Sign Isa.Sentence ()
--- mkIsaTheory (Theory sig nSens) = Theory Isa.emptySign Map.empty
-
--- | The main cspCASLProver function
-cspCASLProverProve :: String -> Theory CspCASLSign CspCASLSen () -> a -> IO([Proof_status ()])
-cspCASLProverProve thName ccTh _freedefs = do
-    -- We can use this to do the proof on the final file - but first
-    -- we need to generate the other 4 files - 1 for each part
-    let isaThy = Theory Isa.emptySign Map.empty
-    writeIsaTheory "liamtest" isaThy
-    isaProve thName isaThy ()
 
 -- | Write out an Isabelle Theory. The theory should just run through
 --   in Isabelle without any user interactions. This is based heavily
@@ -95,7 +73,7 @@ writeIsaTheory thName th = do
       thyFile = thBaseName ++ ".thy.liam"
   -- | Check if the Isabelle theory is a valid Isabelle theory
   case parse parseTheory thyFile thy of
-    Right (ho, bo) -> do
+    Right _ -> do
       -- prepareThyFiles (ho, bo) thyFile thy
       -- removeDepFiles thBaseName thms
       -- isabelle <- getEnvDef "HETS_ISABELLE" "Isabelle"
@@ -109,7 +87,58 @@ writeIsaTheory thName th = do
     -- | as it cannot be parsed.
     Left err -> do
       putStrLn $ show err
-      putStrLn $ "Sorry, a generated theory cannot be parsed, see: " ++ thyFile
+      putStrLn $ "Sorry, a generated theory cannot be parsed, see: "
+                   ++ thyFile
       writeFile thyFile thy
       putStrLn "Aborting Isabelle proof attempt"
       return ()
+
+-- | The main cspCASLProver function
+cspCASLProverProve :: String -> Theory CspCASLSign CspCASLSen () -> a ->
+                      IO([Proof_status ()])
+cspCASLProverProve thName (Theory ccSign _) _freedefs = do
+  -- Generate all theory files and then allow interactive proving on
+  -- the main file.
+  writeIsaTheory (thName ++ "_dataenc.thy") (produceDataEncoding ccSign)
+  writeIsaTheory (thName ++ "_alphabet.thy") produceAlphabet
+  writeIsaTheory (thName ++ "_integrationThms.thy") produceIntegrationTheorems
+  writeIsaTheory (thName ++ "_processes.thy") produceProcesses
+  isaProve thName produceProcessRefinements ()
+
+-- | Produce the Isabelle theory of the data part of a CspCASL
+-- | specification
+produceDataEncoding :: CspCASLSign -> Theory Isa.Sign Isa.Sentence ()
+produceDataEncoding _ = -- ccSign =
+    let -- caslSign = ccSig2CASLSign ccSign
+        -- Comorphisms
+        -- casl2pcfol = (map_theory CASL2PCFOL.CASL2PCFOL)
+        -- pcfol2cfol = (map_theory CASL2SubCFOL.defaultCASL2SubCFOL)
+        -- cfol2isabelleHol = (map_theory CFOL2IsabelleHOL.CFOL2IsabelleHOL)
+          -- Remove Subsorting from the CASL part of the CspCASL
+          -- specification
+        -- trans1 <- casl2pcfol (caslSign,[])
+          -- Next Remove partial functions
+        -- trans2 <- pcfol2cfol trans1
+          -- Next Translate to IsabelleHOL code
+        -- trans3 <- cfol2isabelleHol trans2
+    in Theory Isa.emptySign Map.empty
+
+-- | Produce the Isabelle theory which contains the Alphabet and
+--   Justification Theorems
+produceAlphabet :: Theory Isa.Sign Isa.Sentence ()
+produceAlphabet = Theory Isa.emptySign Map.empty
+
+-- | Produce the Isabelle theory which contains the Integration
+--   Theorems on data
+produceIntegrationTheorems :: Theory Isa.Sign Isa.Sentence ()
+produceIntegrationTheorems = Theory Isa.emptySign Map.empty
+
+-- | Produce the Isabelle theory which contains the Process
+-- | Translations
+produceProcesses :: Theory Isa.Sign Isa.Sentence ()
+produceProcesses = Theory Isa.emptySign Map.empty
+
+-- | Produce the Isabelle theory which contains the Data Theorems
+--   place holder code and the Process Refinement theorems
+produceProcessRefinements :: Theory Isa.Sign Isa.Sentence ()
+produceProcessRefinements = Theory Isa.emptySign Map.empty

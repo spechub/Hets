@@ -14,7 +14,7 @@ Simplification of CspCASL sentences for output after analysis
 
 module CspCASL.SimplifySen(simplifySen) where
 
-import CASL.SimplifySen (simplifyCASLSen)
+import CASL.SimplifySen (simplifyCASLSen, simplifyCASLTerm)
 
 import Common.Id(genToken, Range)
 
@@ -36,7 +36,14 @@ simplifySen sigma sen =
           in CASLSen $ simplifyCASLSen caslSign f
       ProcessEq pn var alpha p ->
           -- Simpliy the process
-          ProcessEq pn var alpha (simplifyProc sigma p)
+          let simpVar = simplifyFQProcVarList sigma var
+              simpP = simplifyProc sigma p
+          in ProcessEq pn simpVar alpha simpP
+
+simplifyFQProcVarList :: CspCASLSign -> FQProcVarList -> FQProcVarList
+simplifyFQProcVarList sigma fqvars =
+    let caslSign = ccSig2CASLSign sigma
+    in map (simplifyCASLTerm caslSign) fqvars
 
 -- | Simplifies the fully qualified CASL data and simplifies the fully
 --   qualified processes down to non-fully qualified processes.
