@@ -558,7 +558,7 @@ existEqualOp =
 
 strongEqualOp :: Isa.Term
 strongEqualOp =
-  con $ VName "strongEqualOp" $ Just $ AltSyntax "(_ =e=/ _)"  [50, 51] 50
+  con $ VName "strongEqualOp" $ Just $ AltSyntax "(_ =s=/ _)"  [50, 51] 50
 
 unpackOp :: FunType -> Isa.Term
 unpackOp ft = case ft of
