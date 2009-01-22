@@ -49,8 +49,8 @@ hc2isaNames =
   , "lift2unit", "liftUnit", "liftUnit2partial", "liftUnit2bool"
   , "liftUnit2unit", "bool2partial", "curryOp", "uncurryOp", "unpack2bool"
   , "partial2bool", "unpack2partial", "unpackBool", "unpackPartial"
-  , "resOp", "whenElseOp", "exEqualOp", "ifImplOp", "flip"
-  , "makePartial", "makeTotal", "noneOp"]
+  , "resOp", "whenElseOp", "exEqualOp", "existEqualOp", "ifImplOp", "flip"
+  , "makePartial", "makeTotal", "noneOp", "strongEqualOp"]
 
 isaPrelude :: IsaPreludes
 isaPrelude = IsaPreludes

@@ -500,16 +500,16 @@ notV = VName cNot $ Just $ AltSyntax "~/ _" [40] 40
 -- * VNames of binary operators
 
 conjV :: VName
-conjV = VName conj $ Just $ AltSyntax "(_ &/ _)"   [36, 35] 35
+conjV = VName conj $ Just $ AltSyntax "(_ &/ _)" [36, 35] 35
 
 disjV :: VName
-disjV = VName disj $ Just $ AltSyntax "(_ |/ _)"   [31, 30] 30
+disjV = VName disj $ Just $ AltSyntax "(_ |/ _)" [31, 30] 30
 
 implV :: VName
 implV = VName impl $ Just $ AltSyntax "(_ -->/ _)" [26, 25] 25
 
 eqV :: VName
-eqV   = VName eq   $ Just $ AltSyntax "(_ =/ _)"   [50, 51] 50
+eqV = VName eq $ Just $ AltSyntax "(_ =/ _)" [50, 51] 50
 
 plusV :: VName
 plusV = VName plusS $ Just $ AltSyntax "(_ +/ _)" [65, 66] 65

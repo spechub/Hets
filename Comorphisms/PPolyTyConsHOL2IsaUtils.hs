@@ -331,9 +331,6 @@ unitOp = Tuplex [] NotCont
 noneOp :: Isa.Term
 noneOp = conDouble "noneOp"
 
-exEqualOp :: Isa.Term
-exEqualOp = conDouble "exEqualOp"
-
 whenElseOp :: Isa.Term
 whenElseOp = conDouble "whenElseOp"
 
@@ -382,8 +379,8 @@ transTerm sign tyToks toks pVars trm = case trm of
               | opId == implId -> unCurry implV
               | opId == infixIf -> (fTy, ifImplOp)
               | opId == eqvId -> unCurry eqV
-              | opId == exEq -> (fTy, exEqualOp)
-              | opId == eqId -> (instfTy, cf $ termAppl uncurryOp $ con eqV)
+              | opId == exEq -> (instfTy, cf $ termAppl uncurryOp existEqualOp)
+              | opId == eqId -> (instfTy, cf $ termAppl uncurryOp strongEqualOp)
               | opId == notId -> (fTy, notOp)
               | opId == defId -> (instfTy, cf defOp)
               | opId == whenElse -> (fTy, whenElseOp)
@@ -555,6 +552,14 @@ lift2bool = conDouble "lift2bool"
 lift2partial = conDouble "lift2partial"
 mkPartial = conDouble "makePartial"
 
+existEqualOp :: Isa.Term
+existEqualOp =
+  con $ VName "existEqualOp" $ Just $ AltSyntax "(_ =e=/ _)"  [50, 51] 50
+
+strongEqualOp :: Isa.Term
+strongEqualOp =
+  con $ VName "strongEqualOp" $ Just $ AltSyntax "(_ =e=/ _)"  [50, 51] 50
+
 unpackOp :: FunType -> Isa.Term
 unpackOp ft = case ft of
     UnitType -> conDouble "unpack2bool"
@@ -652,19 +657,20 @@ flipOp = conDouble flipS
 
 mkTermAppl :: Isa.Term -> Isa.Term -> Isa.Term
 mkTermAppl fun arg = case (fun, arg) of
-      (App (Const uc _) b _, Tuplex [l, r] _)
-          | new uc == uncurryOpS
-              -> case (isEquallyLifted l r, b) of
-                   (Just (_, la, ra), Const bin _) | new bin == eq ->
-                       mkTermAppl (mkTermAppl b la) ra
-                   _ -> mkTermAppl (mkTermAppl b l) r
+      (App (Const uc _) b _, Tuplex [l, r] _) | new uc == uncurryOpS ->
+        let res = mkTermAppl (mkTermAppl b l) r in case b of
+          Const bin _ | elem (new bin) [eq, "existEqualOp", "strongEqualOp"] ->
+            case isEquallyLifted l r of
+              Just (_, la, ra) -> mkTermAppl (mkTermAppl (con eqV) la) ra
+              _ -> if isLifted l || isLifted r
+                   then mkTermAppl (mkTermAppl (con eqV) l) r
+                   else res
+          _ -> res
       (App (Const mp _) f _, Tuplex [a, b] c)
           | new mp == "mapFst" -> Tuplex [mkTermAppl f a, b] c
           | new mp == "mapSnd" -> Tuplex [a, mkTermAppl f b] c
       (Const mp _, Tuplex [a, b] _)
           | new mp == "ifImplOp" -> binImpl b a
-          | new mp == "exEqualOp" && (isLifted a || isLifted b) ->
-            mkTermAppl (mkTermAppl uncurryOp (con eqV)) arg
       (Const mp _, Tuplex [Tuplex [a, b] _, c] d)
           | new mp == "whenElseOp" -> case isEquallyLifted a c of
               Just (f, na, nc) -> mkTermAppl f $ If b na nc d
