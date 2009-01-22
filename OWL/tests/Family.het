@@ -58,4 +58,15 @@ then %implies
    EquivalentTo: Woman
 end
 
+logic CASL
 
+spec LittleFamily = 
+     FamilyBase
+then
+     pred oneChildFamily : Thing * Thing * Thing
+
+     forall a,b,c:Thing
+     . oneChildFamily (a,b,c) <=> Mother(a) /\ Father(b) /\ 
+       hasHusband(a,b) /\ hasChild(a,c) /\ hasChild(b,c) /\
+       (forall x : Thing . (hasChild(a,x) \/ hasChild(b,x)) => c = x)
+end

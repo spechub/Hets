@@ -82,6 +82,7 @@ instance Comorphism
         { cons_features = emptyMapConsFeature }
       map_theory OWL2CASL     = mapTheory
       map_morphism OWL2CASL   = mapMorphism
+      isInclusionComorphism OWL2CASL = True
 
 -- | Mapping of OWL morphisms to CASL morphisms
 mapMorphism :: OWL_Morphism
