@@ -12,7 +12,8 @@ Supposed to be working for CASL extensions as well.
 
 -}
 
-module CASL.ColimSign(signColimit, extCASLColimit, renameSorts) where
+module CASL.ColimSign(signColimit, extCASLColimit, renameSorts,
+                      applyMor, applyMorP) where
 
 import CASL.Sign
 import CASL.Morphism
@@ -553,7 +554,7 @@ loopMorphisms :: [LEdge (Int, Morphism f e m)] ->
                  Gr (Sign f e)(Int, Morphism f e m) ->
                  Map.Map Node (Map.Map (Id, OpType) String) ->
                  Map.Map Node Int -> Map.Map Node (Map.Map (Id, OpType) String)
-loopMorphisms list graph clsFun oEdges= case list of
+loopMorphisms list graph clsFun oEdges = case list of
    [] -> clsFun
    (sn, tn, (_,phi)):xs -> let
      -- get the list of equiv classes in target node
@@ -561,7 +562,8 @@ loopMorphisms list graph clsFun oEdges= case list of
      clsFun1 = renameViaMorphism graph (sn, tn, phi) equivClassesList clsFun
      val = (Map.!) oEdges sn
      oEdges1 = Map.insert sn (val-1) oEdges
-     xs1 = orderByOutgoingEdges xs graph oEdges1
+     xs1 = reverse $ orderByOutgoingEdges xs graph oEdges1
+         -- changed order the nodes are considered
     in loopMorphisms xs1 graph clsFun1 oEdges1
 
 renameViaMorphism :: Gr (Sign f e)(Int, Morphism f e m) ->
@@ -1082,3 +1084,4 @@ colimitAssoc graph sig morMap = let
                                             assocOpList )) idList}
   morMap1 = Map.map (\ phi -> phi{mtarget = sig1}) morMap
  in (sig1, morMap1)
+
