@@ -31,8 +31,7 @@ import Data.Maybe (isJust, fromJust)
 inhabited :: [SORT] -> [Constraint] -> [SORT]
 inhabited sorts constrs = iterateInhabited sorts
     where (_,ops,_)=recover_Sort_gen_ax constrs
-          argsRes=concat $
-                    map (\os-> case os of
+          argsRes=concatMap (\os-> case os of
                                  Op_name _->[]
                                  Qual_op_name _ ot _->
                                      case ot of
@@ -41,24 +40,24 @@ inhabited sorts constrs = iterateInhabited sorts
           iterateInhabited l =
                     if l==newL then newL else iterateInhabited newL
                             where newL =foldr (\(ags,rs) l'->
-                                                  if (all (\s->elem s l') ags)
-                                                      && (not (elem rs l'))
+                                                  if all (\s->elem s l') ags
+                                                      && not (elem rs l')
                                                   then rs:l'
                                                   else l') l argsRes
 
 getFs :: [Named (FORMULA ())] -> [FORMULA ()]
-getFs fsn = map sentence (filter is_user_or_sort_gen fsn)
+getFs = map sentence . filter is_user_or_sort_gen
 
 getOfs:: [Named (FORMULA ())] -> [FORMULA ()]
-getOfs osens = map sentence (filter is_user_or_sort_gen osens)
+getOfs = map sentence . filter is_user_or_sort_gen
 
 getExAxioms :: [Named (FORMULA ())] -> [FORMULA ()]
-getExAxioms fsn = filter is_ex_quanti $ getFs fsn
+getExAxioms = filter is_ex_quanti . getFs
 
 getAxioms :: [Named (FORMULA ())] -> [FORMULA ()]
-getAxioms fsn = filter (\f-> (not $ isSortGen f) &&
+getAxioms = filter (\f-> (not $ isSortGen f) &&
                              (not $ is_Membership f) &&
-                             (not $ is_ex_quanti f)) $ getFs fsn
+                             (not $ is_ex_quanti f)) . getFs
 
 getInfoSubsort :: Morphism () () ()
     -> [Named (FORMULA ())] -> [FORMULA ()]
@@ -68,7 +67,7 @@ getInfoSubsort m fsn = info_subsort
         memberships = filter (\f-> is_Membership f) fs
         tsig = mtarget m
         esorts = Set.toList $ emptySortSet tsig
-        info_subsort = concat $ map (infoSubsort esorts) memberships
+        info_subsort = concatMap (infoSubsort esorts) memberships
 
 getAxGroup :: [Named (FORMULA ())]
     -> Maybe [(Either OP_SYMB PRED_SYMB, [FORMULA ()])]
@@ -86,7 +85,7 @@ getConstructors osens m fsn = constructors
         fs = getFs fsn
         ofs = getOfs osens
         tsig = mtarget m
-        fconstrs = concat $ map constraintOfAxiom (ofs ++ fs)
+        fconstrs = concatMap constraintOfAxiom (ofs ++ fs)
         (_,constructors_o,_) = recover_Sort_gen_ax fconstrs
         constructors = constructorOverload tsig (opMap tsig) constructors_o
 {-
@@ -98,9 +97,9 @@ getOverlapQuery fsn = overlap_query
         axGroup = getAxGroup fsn
         axPairs =
             case axGroup of
-              Just sym_fs -> concat $ map pairs $ map snd sym_fs
+              Just sym_fs -> concatMap pairs $ map snd sym_fs
               Nothing -> error "CASL.CCC.FreeTypes.<axPairs>"
-        olPairs = filter (\a-> checkPatterns $
+        olPairs = filter (\a-> checkPatterns
                            (patternsOfAxiom $ fst a,
                             patternsOfAxiom $ snd a)) axPairs
         subst (f1,f2) = ((f1,sb1),(f2,sb2))
@@ -114,8 +113,8 @@ getOverlapQuery fsn = overlap_query
                                           (tail pa2,s2))
                  | isVar $ head pa2 = st ((tail pa1,s1),
                                           (tail pa2,s2++[(head pa1,head pa2)]))
-                 | otherwise = st (((patternsOfTerm $ head pa1)++(tail pa1),s1),
-                                   ((patternsOfTerm $ head pa2)++(tail pa2),s2))
+                 | otherwise = st (((patternsOfTerm $ head pa1)++ tail pa1, s1),
+                                   ((patternsOfTerm $ head pa2)++ tail pa2, s2))
         olPairsWithS = map subst olPairs
         overlap_qu = map overlapQuery olPairsWithS
         overlap_query = map (\f-> Quantification Universal
@@ -155,18 +154,18 @@ getOPreds m fsn = oPreds
                                 Just (Right _) -> True
                                 _ -> False) axioms
        find_pt (ident,pt) = case Map.lookup ident oldPredMap of
-                              Nothing -> False
-                              Just pts -> Set.member pt pts
+                                Nothing -> False
+                                Just pts -> Set.member pt pts
        oPreds = filter (\a-> find_pt $ head $ filterPred $ leadingSym a) pred_fs
 
 getNSorts :: Sign () () -> Morphism () () () -> [Id]
 getNSorts osig m = nSorts
     where
         tsig = mtarget m
-        oldSorts = (sortSet osig)
-        allSorts = sortSet $ tsig
+        oldSorts = sortSet osig
+        allSorts = sortSet tsig
         newSorts = Set.filter (\s-> not $ Set.member s oldSorts) allSorts
-        nSorts = Set.toList newSorts        
+        nSorts = Set.toList newSorts
 
 getDataStatus :: (Sign () (),[Named (FORMULA ())]) -> Morphism () () ()
     -> [Named (FORMULA ())] -> ConsistencyStatus
@@ -178,7 +177,7 @@ getDataStatus (osig,osens) m fsn = dataStatus
         sR = Rel.toList $ sortRel tsig
         subs = map fst sR
         nSorts = getNSorts osig m
-        fconstrs = concat $ map constraintOfAxiom (ofs ++ fs)
+        fconstrs = concatMap constraintOfAxiom (ofs ++ fs)
         (srts,_,_) = recover_Sort_gen_ax fconstrs
         gens = intersect nSorts srts
         dataStatus = if null nSorts then Definitional
@@ -193,10 +192,9 @@ getNotComplete osens m fsn = not_complete
     where
         constructors = getConstructors osens m fsn
         axGroup = getAxGroup fsn
-        axGroups =
-            case axGroup of
-              Just sym_fs -> map snd sym_fs
-              Nothing -> error "CASL.CCC.FreeTypes.<axGroups>"
+        axGroups = case axGroup of
+                       Just sym_fs -> map snd sym_fs
+                       Nothing -> error "CASL.CCC.FreeTypes.<axGroups>"
         not_complete = filter (\f'-> not $ completePatterns constructors $
                                     map patternsOfAxiom f') axGroups
 
@@ -209,7 +207,7 @@ getConStatus (osig,osens) m fsn = conStatus
         oOps = getOOps m fsn
         oPreds = getOPreds m fsn
         overlap_query = getOverlapQuery fsn
-        defStatus = if null $ (oOps ++ oPreds ++ ex_axioms ++ overlap_query)
+        defStatus = if null (oOps ++ oPreds ++ ex_axioms ++ overlap_query)
                     then Definitional
                     else Conservative
         conStatus = min dataStatus defStatus
@@ -232,19 +230,19 @@ checkDefinitional :: [Named (FORMULA ())]
     -> Maybe (Result (Maybe (ConsistencyStatus,[FORMULA ()])))
 checkDefinitional fsn
     | elem Nothing l_Syms =
-        let pos = snd $ head $ filter (\f'-> (fst f') == Nothing) $
+        let pos = snd $ head $ filter (\f'-> fst f' == Nothing) $
                   map leadingSymPos _axioms
         in Just $ warning Nothing "axiom is not definitional" pos
-    | not $ null $ un_p_axioms =
-        let pos = getRange $ (take 1 un_p_axioms)
+    | not $ null un_p_axioms =
+        let pos = getRange $ take 1 un_p_axioms
         in Just $ warning Nothing "partial axiom is not definitional" pos
-    | (length dom_l) /= (length $ nub $ dom_l) =
-        let pos = getRange $ (take 1 dualDom)
+    | length dom_l /= (length $ nub dom_l) =
+        let pos = getRange $ take 1 dualDom
             dualOS = head $ filter (\o-> elem o $ delete o dom_l) dom_l
             dualDom = filter (\f-> domain_os f dualOS) p_axioms
         in Just $ warning Nothing "partial axiom is not definitional" pos
-    | not $ null $ pcheck =
-        let pos = getRange $ (take 1 pcheck)
+    | not $ null pcheck =
+        let pos = getRange $ take 1 pcheck
         in Just $ warning Nothing "partial axiom is not definitional" pos
     | otherwise = Nothing
     where
@@ -288,11 +286,11 @@ checkSort (osig,osens) m fsn
     | null fsn && null nSorts = Just $ return (Just (Conservative,[]))
     | not $ null notFreeSorts =
         let (Id ts _ pos) = head notFreeSorts
-            sname = concat $ map tokStr ts
+            sname = concatMap tokStr ts
         in Just $ warning Nothing (sname ++ " is not freely generated") pos
     | not $ null nefsorts =
         let (Id ts _ pos) = head nefsorts
-            sname = concat $ map tokStr ts
+            sname = concatMap tokStr ts
         in Just $
              warning (Just (Inconsistent,[])) (sname ++ " is not inhabited") pos
     | otherwise = Nothing
@@ -300,15 +298,13 @@ checkSort (osig,osens) m fsn
         fs = getFs fsn
         ofs = getOfs osens
         tsig = mtarget m
-        oldSorts = (sortSet osig)
+        oldSorts = sortSet osig
         oSorts = Set.toList oldSorts
         esorts = Set.toList $ emptySortSet tsig
         nSorts = getNSorts osig m
-        axOfS = filter (\f-> (isSortGen f) ||
-                             (is_Membership f)) fs
-        notFreeSorts = filter (\s->(is_free_gen_sort s axOfS) == Just False)
-                           nSorts
-        fconstrs = concat $ map constraintOfAxiom (ofs ++ fs)
+        axOfS = filter (\f-> isSortGen f || is_Membership f) fs
+        notFreeSorts = filter (\s->is_free_gen_sort s axOfS ==Just False) nSorts
+        fconstrs = concatMap constraintOfAxiom (ofs ++ fs)
         (srts,_,_) = recover_Sort_gen_ax fconstrs
         f_Inhabited = inhabited oSorts fconstrs
         fsorts = filter (\s-> not $ elem s esorts) $ intersect nSorts srts
@@ -318,30 +314,28 @@ checkLeadingTerms :: [Named (FORMULA ())] -> Morphism () () ()
    -> [Named (FORMULA ())]
    -> Maybe (Result (Maybe (ConsistencyStatus,[FORMULA ()])))
 checkLeadingTerms osens m fsn
-    | not $ and $ map (checkTerms tsig constructors) $
-      map arguOfTerm leadingTerms=
+    | not $ all (checkTerms tsig constructors) (map arguOfTerm leadingTerms) =
         let (Application os _ _) = tt
             tt = head $ filter (\t->not $ checkTerms tsig constructors $
-                                    arguOfTerm t) $ leadingTerms
+                                    arguOfTerm t) leadingTerms
             pos = axiomRangeforTerm _axioms tt
-        in Just $ warning Nothing ("a leading term of " ++ (opSymName os) ++
+        in Just $ warning Nothing ("a leading term of " ++ opSymName os ++
            " consists of not only variables and constructors") pos
-    | not $ and $ map (checkTerms tsig constructors) $
-      map arguOfPred leadingPreds=
+    | not $ all (checkTerms tsig constructors) (map arguOfPred leadingPreds) =
         let (Predication ps _ pos) = quanti pf
             pf = head $ filter (\p->not $ checkTerms tsig constructors $
-                                    arguOfPred p) $ leadingPreds
+                                    arguOfPred p) leadingPreds
         in Just $
-           warning Nothing ("a leading predicate of " ++ (predSymName ps) ++
+           warning Nothing ("a leading predicate of " ++ predSymName ps ++
            " consists of not only variables and constructors") pos
-    | not $ and $ map checkVar_App leadingTerms =
+    | not $ all checkVar_App leadingTerms =
         let (Application os _ _) = tt
             tt = head $ filter (\t->not $ checkVar_App t) leadingTerms
             pos = axiomRangeforTerm _axioms tt
         in Just $
            warning Nothing ("a variable occurs twice in a leading term of " ++
            opSymName os) pos
-    | not $ and $ map checkVar_Pred leadingPreds =
+    | not $ all checkVar_Pred leadingPreds =
         let (Predication ps _ pos) = quanti pf
             pf = head $ filter (\p->not $ checkVar_Pred p) leadingPreds
         in Just $ warning Nothing ("a variable occurs twice in a leading " ++
@@ -353,12 +347,12 @@ checkLeadingTerms osens m fsn
         axioms = getAxioms fsn
         _axioms = map quanti axioms
         ltp = map leading_Term_Predication _axioms       --  leading_term_pred
-        leadingTerms = concat $ map (\tp->case tp of
+        leadingTerms = concatMap (\tp->case tp of
                                              Just (Left t)->[t]
-                                             _ -> []) $ ltp      -- leading Term
-        leadingPreds = concat $ map (\tp->case tp of
+                                             _ -> []) ltp      -- leading Term
+        leadingPreds = concatMap (\tp->case tp of
                                              Just (Right f)->[f]
-                                             _ -> []) $ ltp
+                                             _ -> []) ltp
 
 {-
    check the sufficient completeness
@@ -369,7 +363,7 @@ checkIncomplete :: [Named (FORMULA ())] -> Morphism () () ()
 checkIncomplete osens m fsn
     | not $ null notcomplete =
         let symb_p = leadingSymPos $ head $ head notcomplete
-            pos = snd $ symb_p
+            pos = snd symb_p
             sname = case (fst symb_p) of
                       Just (Left opS) -> opSymName opS
                       Just (Right pS) -> predSymName pS
@@ -462,10 +456,10 @@ groupAxioms phis = do
         filterA (p:ps) symb=
             let fp=fst p
                 p'= if elem fp symb then []
-                    else [(fp,snd $ unzip $ filter (\x->(fst x)==fp) (p:ps))]
-                symb'= if not $ (elem fp symb) then fp:symb
+                    else [(fp,snd $ unzip $ filter (\x->fst x == fp) (p:ps))]
+                symb'= if not $ elem fp symb then fp:symb
                        else symb
-            in p'++(filterA ps symb')
+            in p' ++ filterA ps symb'
 
 
 filterOp :: Maybe (Either OP_SYMB PRED_SYMB) -> [(OP_NAME,OpType)]
@@ -489,19 +483,18 @@ checkTerms sig cons ts = all checkT ts
   where checkT (Sorted_term tt _ _) = checkT tt
         checkT (Qual_var _ _ _) = True
         checkT (Application subop subts _) =
-            (isCons sig cons subop) &&
-            (all checkT subts)
+            isCons sig cons subop && all checkT subts
         checkT _ = False
 
 
 -- |  no variable occurs twice in a leading term
 checkVar_App :: (Eq f) => TERM f -> Bool
-checkVar_App (Application _ ts _) = noDuplation $ concat $ map varOfTerm ts
+checkVar_App (Application _ ts _) = noDuplation $ concatMap varOfTerm ts
 checkVar_App _ = error "CASL.CCC.FreeTypes<checkVar_App>"
 
 -- |  no variable occurs twice in a leading predication
 checkVar_Pred :: (Eq f) => FORMULA f -> Bool
-checkVar_Pred (Predication _ ts _) = noDuplation $ concat $ map varOfTerm ts
+checkVar_Pred (Predication _ ts _) = noDuplation $ concatMap varOfTerm ts
 checkVar_Pred _ = error "CASL.CCC.FreeTypes<checkVar_Pred>"
 
 -- | there are no duplicate items in a list
@@ -543,11 +536,9 @@ checkPatterns (ps1,ps2)
         | ps1 == ps2 = True
         | (isVar $ head ps1) ||
           (isVar $ head ps2) = checkPatterns (tail ps1,tail ps2)
-        | otherwise = if sameOps_App (head ps1) (head ps2)
-                      then checkPatterns $
-                           ((patternsOfTerm $ head ps1)++(tail ps1),
-                            (patternsOfTerm $ head ps2)++(tail ps2))
-                      else False
+        | otherwise = sameOps_App (head ps1) (head ps2) &&
+                        checkPatterns ((patternsOfTerm $ head ps1) ++ tail ps1,
+                                       (patternsOfTerm $ head ps2) ++ tail ps2)
 
 
 -- | get the axiom from left hand side of a implication,
@@ -587,22 +578,19 @@ overlapQuery :: Eq f => ((FORMULA f,[(TERM f,TERM f)]),
 overlapQuery ((a1,s1),(a2,s2)) =
         case leadingSym a1 of
           Just (Left _)
-            | (containNeg a1) &&
-              (not $ containNeg a2) ->
+            | containNeg a1 && (not $ containNeg a2) ->
                 Implication (Conjunction [con1,con2] nullRange)
                             (Negation (Definedness resT2 nullRange)
                                       nullRange)
                             True
                             nullRange
-            | (containNeg a2) &&
-              (not $ containNeg a1)->
+            | containNeg a2 && (not $ containNeg a1) ->
                 Implication (Conjunction [con1,con2] nullRange)
                             (Negation (Definedness resT1 nullRange)
                                       nullRange)
                             True
                             nullRange
-            | (containNeg a1) &&
-              (containNeg a2) ->
+            | containNeg a1 && containNeg a2 ->
                 True_atom nullRange
             | otherwise ->
                 Implication (Conjunction [con1,con2] nullRange)
@@ -610,20 +598,17 @@ overlapQuery ((a1,s1),(a2,s2)) =
                             True
                             nullRange
           Just (Right _)
-            | (containNeg a1) &&
-              (not $ containNeg a2) ->
+            | containNeg a1 && (not $ containNeg a2) ->
                 Implication (Conjunction [con1,con2] nullRange)
                             (Negation resA2 nullRange)
                             True
                             nullRange
-            | (containNeg a2) &&
-              (not $ containNeg a1) ->
+            | containNeg a2 && (not $ containNeg a1) ->
                 Implication (Conjunction [con1,con2] nullRange)
                             (Negation resA1 nullRange)
                             True
                             nullRange
-            | (containNeg a1) &&
-              (containNeg a2) ->
+            | containNeg a1 && containNeg a2 ->
                 True_atom nullRange
             | otherwise ->
                 Implication (Conjunction [con1,con2] nullRange)
@@ -631,9 +616,9 @@ overlapQuery ((a1,s1),(a2,s2)) =
                             True
                             nullRange
           _ -> error "CASL.CCC.FreeTypes.<overlapQuery>"
-      where cond = concat $ map conditionAxiom [a1,a2]
-            resT = concat $ map resultTerm [a1,a2]
-            resA = concat $ map resultAxiom [a1,a2]
+      where cond = concatMap conditionAxiom [a1,a2]
+            resT = concatMap resultTerm [a1,a2]
+            resA = concatMap resultAxiom [a1,a2]
             con1 = substiF s1 $ head cond
             con2 = substiF s2 $ last cond
             resT1 = substitute s1 $ head resT
@@ -647,29 +632,27 @@ completePatterns :: (Eq f) => [OP_SYMB] -> ([[TERM f]]) -> Bool
 completePatterns cons pas
     | all null pas = True
     | all isVar $ map head pas = completePatterns cons (map tail pas)
-    | otherwise = if elem (con_ts $ map head pas) s_cons
-                  then all id $ map (completePatterns cons) $ pa_group pas
-                  else False
+    | otherwise = elem (con_ts $ map head pas) s_cons &&
+                  (all id $ map (completePatterns cons) $ pa_group pas)
     where s_op_os c = case c of
                         Op_name _ -> []
                         Qual_op_name on ot _ -> [(res_OP_TYPE ot,on)]
-          s_sum sns = map (\s->(s, map snd $ filter (\c-> (fst c)==s) sns)) $
+          s_sum sns = map (\s->(s, map snd $ filter (\c-> fst c == s) sns)) $
                       nub $ map fst sns
-          s_cons = s_sum $ concat $ map s_op_os cons
+          s_cons = s_sum $ concatMap s_op_os cons
           s_op_t t = case t of
                        Application os _ _ -> s_op_os os
                        _ -> []
-          con_ts ts = head $ s_sum $ concat $ map s_op_t ts
+          con_ts = head . s_sum . concatMap s_op_t
           opN t = case t of
                     Application os _ _ -> opSymbName os
                     _ -> genName "unknown"
-          pa_group p = map p_g $ map (\o->
+          pa_group p = map (p_g . (\o->
                          filter (\a-> (isVar $ head a) ||
-                                      ((opN $ head $ a) == o)) p) $
-                         snd $ head $
-                         filter (\sc-> fst sc == (sortOfTerm $
-                                                  head $ head p)) s_cons
+                                      ((opN $ head a) == o)) p))
+                         (snd $ head $ filter (\sc-> fst sc == (sortOfTerm $
+                                                  head $ head p)) s_cons)
           p_g p = map (\p'-> if isVar $ head p'
-                             then (take (maximum $ map (length.arguOfTerm.head)
-                                  p) $ repeat $ head p') ++ tail p'
+                             then replicate (maximum $ map
+                                (length.arguOfTerm.head) p) (head p') ++ tail p'
                              else (arguOfTerm $ head p') ++ tail p') p
