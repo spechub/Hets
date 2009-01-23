@@ -33,8 +33,10 @@ import Driver.Options
 import Driver.ReadFn
 
 import qualified Data.Map as Map
+import qualified Data.Set as Set
 import Data.List (isSuffixOf)
 import Control.Monad
+import Data.Maybe
 
 anaLibReadPrfs :: HetcatsOpts -> FilePath -> IO (Maybe (LIB_NAME, LibEnv))
 anaLibReadPrfs opts file = do
@@ -66,7 +68,7 @@ anaLib opts fname = do
 anaLibExt :: HetcatsOpts -> FilePath -> LibEnv -> IO (Maybe (LIB_NAME, LibEnv))
 anaLibExt opts file libEnv = do
     Result ds res <- runResultT $ anaLibFileOrGetEnv logicGraph opts
-                     libEnv (fileToLibName opts file) file
+      Set.empty libEnv (fileToLibName opts file) file
     showDiags opts ds
     case res of
         Nothing -> return Nothing
@@ -80,10 +82,9 @@ readPrfFile opts ps ln = do
         prfFile = rmSuffix fname ++ prfSuffix
     recent <- checkRecentEnv opts prfFile fname
     h <- if recent then
-          fmap (maybe SizedList.empty id) $ readVerbose opts ln prfFile
+          fmap (fromMaybe SizedList.empty) $ readVerbose opts ln prfFile
        else return SizedList.empty
     return $ Map.update (Just . applyProofHistory h) ln ps
 
 readPrfFiles :: HetcatsOpts -> LibEnv -> IO LibEnv
-readPrfFiles opts le = do
-    foldM (readPrfFile opts) le $ Map.keys le
+readPrfFiles opts le = foldM (readPrfFile opts) le $ Map.keys le

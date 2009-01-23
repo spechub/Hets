@@ -45,6 +45,7 @@ import Driver.WriteLibDefn
 
 import Data.Graph.Inductive.Graph
 import qualified Data.Map as Map
+import qualified Data.Set as Set
 import Data.List
 
 import Control.Monad
@@ -53,14 +54,17 @@ import Control.Monad.Trans
 import System.Directory
 import System.Time
 
+-- a set of library names to check for cyclic imports
+type LNS = Set.Set LIB_NAME
+
 -- | parsing and static analysis for files
 -- Parameters: logic graph, default logic, file name
-anaSourceFile :: LogicGraph -> HetcatsOpts -> LibEnv -> FilePath
+anaSourceFile :: LogicGraph -> HetcatsOpts -> LNS -> LibEnv -> FilePath
               -> ResultT IO (LIB_NAME, LibEnv)
-anaSourceFile lgraph opts libenv fname = ResultT $ do
+anaSourceFile lgraph opts topLns libenv fname = ResultT $ do
   fname' <- existsAnSource opts {intype = GuessIn} fname
   case fname' of
-    Nothing -> do
+    Nothing ->
         return $ fail $ "a file for input '" ++ fname ++ "' not found."
     Just file ->
         if any (flip isSuffixOf file) [envSuffix, prfSuffix] then
@@ -75,13 +79,13 @@ anaSourceFile lgraph opts libenv fname = ResultT $ do
                            then file
                            else curDir ++ '/':file
         putIfVerbose opts 2 $ "Reading file " ++ absolutePath
-        runResultT $ anaString lgraph opts libenv input absolutePath mt
+        runResultT $ anaString lgraph opts topLns libenv input absolutePath mt
 
 -- | parsing and static analysis for string (=contents of file)
 -- Parameters: logic graph, default logic, contents of file, filename
-anaString :: LogicGraph -> HetcatsOpts -> LibEnv -> String
+anaString :: LogicGraph -> HetcatsOpts -> LNS -> LibEnv -> String
           -> FilePath -> ClockTime -> ResultT IO (LIB_NAME, LibEnv)
-anaString lgraph opts libenv input file mt = do
+anaString lgraph opts topLns libenv input file mt = do
   let Result ds mast = read_LIB_DEFN_M lgraph opts file input mt
   case mast of
     Just ast@(Lib_defn ln _ _ ans) -> case analysis opts of
@@ -101,7 +105,7 @@ anaString lgraph opts libenv input file mt = do
                        ++ "' does not match library name '" ++
                           libstring ++ "'"
                lift $ putIfVerbose opts 1 $ "Analyzing library " ++ show ln
-          (_,ld, _, lenv) <- ana_LIB_DEFN lgraph opts libenv ast
+          (_,ld, _, lenv) <- ana_LIB_DEFN lgraph opts topLns libenv ast
           case Map.lookup ln lenv of
               Nothing -> error $ "anaString: missing library: " ++ show ln
               Just dg -> lift $ do
@@ -111,10 +115,10 @@ anaString lgraph opts libenv input file mt = do
                   return (ln, lenv)
     Nothing -> liftR $ Result ds Nothing
 
--- lookup/read a library
-anaLibFile :: LogicGraph -> HetcatsOpts -> LibEnv -> LIB_NAME
-              -> ResultT IO (LIB_NAME, LibEnv)
-anaLibFile lgraph opts libenv ln =
+-- lookup or read a library
+anaLibFile :: LogicGraph -> HetcatsOpts -> LNS -> LibEnv -> LIB_NAME
+           -> ResultT IO (LIB_NAME, LibEnv)
+anaLibFile lgraph opts topLns libenv ln =
     let lnstr = show ln in case Map.lookup ln libenv of
     Just _ -> do
         analyzing opts $ "from " ++ lnstr
@@ -123,14 +127,14 @@ anaLibFile lgraph opts libenv ln =
         putMessageIORes opts 1 $ "Downloading " ++ lnstr ++ " ..."
         res <- anaLibFileOrGetEnv lgraph
             (if recurse opts then opts else opts { outtypes = [] })
-                  libenv ln $ libNameToFile opts ln
+            (Set.insert ln topLns) libenv ln $ libNameToFile opts ln
         putMessageIORes opts 1 $ "... loaded " ++ lnstr
         return res
 
--- lookup/read a library
-anaLibFileOrGetEnv :: LogicGraph -> HetcatsOpts -> LibEnv
-              -> LIB_NAME -> FilePath -> ResultT IO (LIB_NAME, LibEnv)
-anaLibFileOrGetEnv lgraph opts libenv libname file = ResultT $ do
+-- | lookup or read a library
+anaLibFileOrGetEnv :: LogicGraph -> HetcatsOpts -> LNS -> LibEnv
+                   -> LIB_NAME -> FilePath -> ResultT IO (LIB_NAME, LibEnv)
+anaLibFileOrGetEnv lgraph opts topLns libenv libname file = ResultT $ do
      let envFile = rmSuffix file ++ envSuffix
      recent_envFile <- checkRecentEnv opts envFile file
      if recent_envFile
@@ -140,7 +144,7 @@ anaLibFileOrGetEnv lgraph opts libenv libname file = ResultT $ do
                  Nothing -> runResultT $ do
                      lift $ putIfVerbose opts 1 $ "Deleting " ++ envFile
                      lift $ removeFile envFile
-                     anaSourceFile lgraph opts libenv file
+                     anaSourceFile lgraph opts topLns libenv file
                  Just (ld, gc) -> do
                      write_LIB_DEFN (globalAnnos gc) file opts ld
                           -- get all DGRefs from DGraph
@@ -152,22 +156,22 @@ anaLibFileOrGetEnv lgraph opts libenv libname file = ResultT $ do
                                  if Map.member ln p_libEnv then
                                     return p_libEnv
                                     else fmap snd $ anaLibFile lgraph
-                                         opts p_libEnv ln
+                                         opts topLns p_libEnv ln
                                else ioLibEnv)
                          (return $ Map.insert libname gc libenv)
                          $ labNodesDG gc
                      return $ Result ds $ fmap
                                 ( \ rEnv -> (libname, rEnv)) mEnv
-        else runResultT $ anaSourceFile lgraph opts libenv file
+        else runResultT $ anaSourceFile lgraph opts topLns libenv file
 
 -- | analyze a LIB_DEFN
 -- Parameters: logic graph, default logic, opts, library env, LIB_DEFN
 -- call this function as follows:
 -- do Result diags res <- runResultT (ana_LIB_DEFN ...)
 --    mapM_ (putStrLn . show) diags
-ana_LIB_DEFN :: LogicGraph -> HetcatsOpts -> LibEnv -> LIB_DEFN
+ana_LIB_DEFN :: LogicGraph -> HetcatsOpts -> LNS -> LibEnv -> LIB_DEFN
              -> ResultT IO (LIB_NAME,LIB_DEFN, DGraph, LibEnv)
-ana_LIB_DEFN lgraph opts libenv (Lib_defn ln alibItems pos ans) = do
+ana_LIB_DEFN lgraph opts topLns libenv (Lib_defn ln alibItems pos ans) = do
   gannos <- showDiags1 opts $ liftR $ addGlobalAnnos emptyGlobalAnnos ans
   let dg = emptyDG
   (libItems', dg1, libenv', _) <- foldM ana
@@ -184,7 +188,7 @@ ana_LIB_DEFN lgraph opts libenv (Lib_defn ln alibItems pos ans) = do
           _ -> lG
     in ResultT (do
       Result diags2 res <-
-         runResultT $ ana_LIB_ITEM newLG opts libenv1 dg1 libItem
+         runResultT $ ana_LIB_ITEM newLG opts topLns libenv1 dg1 libItem
       runResultT $ showDiags1 opts (liftR (Result diags2 res))
       let mRes = case res of
              Just (libItem', dg1', libenv1') ->
@@ -215,9 +219,8 @@ ana_GENERICITY lg dg opts name
     gen@(Genericity params@(Params psps) imps@(Imported isps) pos) =
   case psps of
   [] -> do -- no parameter ...
-    when (not (null isps))
-      (plain_error () "Parameterless specifications must not have imports"
-       pos)
+    unless (null isps) $ plain_error ()
+      "Parameterless specifications must not have imports" pos
     l <- lookupCurrentLogic "GENERICITY" lg
     return (gen, GenericitySig (EmptyNode l) [] $ EmptyNode l, dg)
   _ -> do
@@ -267,23 +270,22 @@ ana_IMPORTS lg dg opts name imps@(Imported asps) = do
     -- ??? emptyExplicit stuff needs to be added here
 
 -- | analyse a LIB_ITEM
-ana_LIB_ITEM :: LogicGraph -> HetcatsOpts -> LibEnv -> DGraph -> LIB_ITEM
-             -> ResultT IO (LIB_ITEM, DGraph, LibEnv)
-ana_LIB_ITEM lgraph opts libenv dg itm = case itm of
+ana_LIB_ITEM :: LogicGraph -> HetcatsOpts -> LNS -> LibEnv -> DGraph
+             -> LIB_ITEM -> ResultT IO (LIB_ITEM, DGraph, LibEnv)
+ana_LIB_ITEM lgraph opts topLns libenv dg itm = case itm of
   Spec_defn spn gen asp pos -> do
     let spstr = tokStr spn
     analyzing opts $ "spec " ++ spstr
     (gen', GenericitySig imp params allparams, dg') <-
-      liftR (ana_GENERICITY lgraph dg opts
-             (extName "P" (makeName spn)) gen)
+      liftR $ ana_GENERICITY lgraph dg opts (extName "P" (makeName spn)) gen
     (sp', body, dg'') <-
       liftR (ana_SPEC True lgraph dg'
              allparams (makeName spn) opts (item asp))
     let libItem' = Spec_defn spn gen' (replaceAnnoted sp' asp) pos
         genv = globalEnv dg
     if Map.member spn genv
-      then liftR (plain_error (libItem', dg'', libenv)
-                  (alreadyDefined spstr) pos)
+      then liftR $ plain_error (libItem', dg'', libenv)
+               (alreadyDefined spstr) pos
       else return
         ( libItem'
         , dg'' { globalEnv = Map.insert spn (SpecEntry
@@ -291,17 +293,15 @@ ana_LIB_ITEM lgraph opts libenv dg itm = case itm of
         , libenv)
   View_defn vn gen vt gsis pos -> do
     analyzing opts $ "view " ++ tokStr vn
-    liftR (ana_VIEW_DEFN lgraph libenv dg opts vn gen vt gsis pos)
+    liftR $ ana_VIEW_DEFN lgraph libenv dg opts vn gen vt gsis pos
   Arch_spec_defn asn asp pos -> do
     let asstr = tokStr asn
     analyzing opts $ "arch spec " ++ asstr
-    (archSig, dg', asp') <-
-      liftR (ana_ARCH_SPEC lgraph dg opts (item asp))
+    (archSig, dg', asp') <- liftR $ ana_ARCH_SPEC lgraph dg opts $ item asp
     let asd' = Arch_spec_defn asn (replaceAnnoted asp' asp) pos
         genv = globalEnv dg'
     if Map.member asn genv
-      then liftR (plain_error (asd', dg', libenv)
-                  (alreadyDefined asstr) pos)
+      then liftR $ plain_error (asd', dg', libenv) (alreadyDefined asstr) pos
       else return (asd', dg'
              { globalEnv = Map.insert asn (ArchEntry archSig) genv },
              libenv)
@@ -309,13 +309,12 @@ ana_LIB_ITEM lgraph opts libenv dg itm = case itm of
     let usstr = tokStr usn
     analyzing opts $ "unit spec " ++ usstr
     l <- lookupCurrentLogic "Unit_spec_defn" lgraph
-    (unitSig, dg', usp') <- liftR (ana_UNIT_SPEC lgraph dg opts
-                                      (EmptyNode l) usp)
+    (unitSig, dg', usp') <-
+        liftR $ ana_UNIT_SPEC lgraph dg opts (EmptyNode l) usp
     let usd' = Unit_spec_defn usn usp' pos
         genv = globalEnv dg'
     if Map.member usn genv
-      then liftR (plain_error (itm, dg', libenv)
-                  (alreadyDefined usstr) pos)
+      then liftR $ plain_error (itm, dg', libenv) (alreadyDefined usstr) pos
       else return (usd', dg'
              { globalEnv = Map.insert usn (UnitEntry unitSig) genv },
              libenv)
@@ -325,32 +324,37 @@ ana_LIB_ITEM lgraph opts libenv dg itm = case itm of
       ++ rnstr ++ "\n  (refinement analysis not implemented yet)"
     let genv = globalEnv dg
     if Map.member rn genv
-      then liftR (plain_error (itm, dg, libenv)
-                             (alreadyDefined rnstr)
-                             pos)
-      else return ( itm, dg { globalEnv = Map.insert rn (RefEntry) genv }
+      then liftR $ plain_error (itm, dg, libenv) (alreadyDefined rnstr) pos
+      else return ( itm, dg { globalEnv = Map.insert rn RefEntry genv }
                   , libenv)
   Logic_decl (Logic_name logTok _) _ -> do
     logNm <- lookupLogic "LOGIC DECLARATION:" (tokStr logTok) lgraph
     putMessageIORes opts 1 $ "logic " ++ show logNm
     return (itm, dg, libenv)
-  Download_items ln items _ -> do
-  -- we take as the default logic for imported libs
-  -- the global default logic
-    (ln', libenv') <- anaLibFile lgraph opts libenv ln
-    if ln == ln' then case Map.lookup ln libenv' of
-      Nothing -> error $ "Internal error: did not find library " ++
-                     show ln ++ " available: " ++ show (Map.keys libenv')
-      Just dg' -> do
-        (genv1, dg1) <-
-            liftR $ foldM (ana_ITEM_NAME_OR_MAP libenv' ln $ globalEnv dg')
-              (globalEnv dg, dg) items
-        gannos'' <- liftR $ globalAnnos dg `mergeGlobalAnnos` globalAnnos dg'
-        return (itm, dg1
-              { globalAnnos = gannos''
-              , globalEnv = genv1 }, libenv')
-      else liftR $ fail $ "downloaded library '" ++ show ln'
-            ++ "' does not match library name '" ++ shows ln "'"
+  Download_items ln items _ -> if Set.member ln topLns then
+    liftR $ mkError "illegal cyclic library import"
+      $ Set.map getLIB_ID topLns
+    else do
+        (ln', libenv') <- anaLibFile lgraph opts topLns libenv ln
+        if ln == ln' then case Map.lookup ln libenv' of
+          Nothing -> error $ "Internal error: did not find library "
+            ++ show ln ++ " available: " ++ show (Map.keys libenv')
+          Just dg' -> do
+            dg1 <- liftR $ anaItemNamesOrMaps libenv' ln dg' dg items
+            return (itm, dg1, libenv')
+          else liftR $ mkError ("downloaded library '" ++ show ln'
+            ++ "' does not match library name") $ getLIB_ID ln
+
+-- the first DGraph dg' is that of the imported library
+anaItemNamesOrMaps :: LibEnv -> LIB_NAME -> DGraph -> DGraph
+                   -> [ITEM_NAME_OR_MAP] -> Result DGraph
+anaItemNamesOrMaps libenv' ln dg' dg items = do
+  (genv1, dg1) <- foldM
+    (ana_ITEM_NAME_OR_MAP libenv' ln $ globalEnv dg') (globalEnv dg, dg) items
+  gannos'' <- globalAnnos dg `mergeGlobalAnnos` globalAnnos dg'
+  return dg1
+    { globalAnnos = gannos''
+    , globalEnv = genv1 }
 
 -- | analyse genericity and view type and construct gmorphism
 ana_VIEW_DEFN :: LogicGraph -> LibEnv -> DGraph -> HetcatsOpts -> SIMPLE_ID
@@ -463,7 +467,7 @@ getActualParent libenv ln n =
 
 refNodesigs :: LibEnv -> LIB_NAME -> DGraph -> [(Maybe SIMPLE_ID, NodeSig)]
             -> (DGraph, [NodeSig])
-refNodesigs libenv ln = mapAccumR (refNodesig libenv ln)
+refNodesigs libenv = mapAccumR . refNodesig libenv
 
 refExtsig :: LibEnv -> LIB_NAME -> DGraph -> Maybe SIMPLE_ID -> ExtGenSig
           -> (DGraph, ExtGenSig)
