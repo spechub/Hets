@@ -26,6 +26,7 @@ import Common.Consistency
 import Common.Result
 import Common.Id
 import Data.List (nub,intersect,delete)
+import Data.Maybe (isJust, fromJust)
 
 inhabited :: [SORT] -> [Constraint] -> [SORT]
 inhabited sorts constrs = iterateInhabited sorts
@@ -44,6 +45,365 @@ inhabited sorts constrs = iterateInhabited sorts
                                                       && (not (elem rs l'))
                                                   then rs:l'
                                                   else l') l argsRes
+
+getFs :: [Named (FORMULA ())] -> [FORMULA ()]
+getFs fsn = map sentence (filter is_user_or_sort_gen fsn)
+
+getOfs:: [Named (FORMULA ())] -> [FORMULA ()]
+getOfs osens = map sentence (filter is_user_or_sort_gen osens)
+
+getExAxioms :: [Named (FORMULA ())] -> [FORMULA ()]
+getExAxioms fsn = filter is_ex_quanti $ getFs fsn
+
+getAxioms :: [Named (FORMULA ())] -> [FORMULA ()]
+getAxioms fsn = filter (\f-> (not $ isSortGen f) &&
+                             (not $ is_Membership f) &&
+                             (not $ is_ex_quanti f)) $ getFs fsn
+
+getInfoSubsort :: Morphism () () ()
+    -> [Named (FORMULA ())] -> [FORMULA ()]
+getInfoSubsort m fsn = info_subsort
+    where
+        fs = getFs fsn
+        memberships = filter (\f-> is_Membership f) fs
+        tsig = mtarget m
+        esorts = Set.toList $ emptySortSet tsig
+        info_subsort = concat $ map (infoSubsort esorts) memberships
+
+getAxGroup :: [Named (FORMULA ())]
+    -> Maybe [(Either OP_SYMB PRED_SYMB, [FORMULA ()])]
+getAxGroup fsn = axGroup
+    where
+        axioms = getAxioms fsn
+        _axioms = map quanti axioms
+        ax_without_dom = filter (not.isDomain) _axioms
+        axGroup = groupAxioms ax_without_dom
+
+getConstructors :: [Named (FORMULA ())] -> Morphism () () ()
+    -> [Named (FORMULA ())] -> [OP_SYMB]
+getConstructors osens m fsn = constructors
+    where
+        fs = getFs fsn
+        ofs = getOfs osens
+        tsig = mtarget m
+        fconstrs = concat $ map constraintOfAxiom (ofs ++ fs)
+        (_,constructors_o,_) = recover_Sort_gen_ax fconstrs
+        constructors = constructorOverload tsig (opMap tsig) constructors_o
+{-
+   check that patterns do not overlap, if not, return proof obligation.
+-}
+getOverlapQuery :: [Named (FORMULA ())] -> [FORMULA ()]
+getOverlapQuery fsn = overlap_query
+    where
+        axGroup = getAxGroup fsn
+        axPairs =
+            case axGroup of
+              Just sym_fs -> concat $ map pairs $ map snd sym_fs
+              Nothing -> error "CASL.CCC.FreeTypes.<axPairs>"
+        olPairs = filter (\a-> checkPatterns $
+                           (patternsOfAxiom $ fst a,
+                            patternsOfAxiom $ snd a)) axPairs
+        subst (f1,f2) = ((f1,sb1),(f2,sb2))
+          where p1= patternsOfAxiom f1
+                p2= patternsOfAxiom f2
+                (sb1,sb2) = st ((p1,[]),(p2,[]))
+                st ((pa1,s1),(pa2,s2))
+                 | null pa1 =(s1,s2)
+                 | head pa1 == head pa2 = st ((tail pa1,s1),(tail pa2,s2))
+                 | isVar $ head pa1 = st ((tail pa1,s1++[(head pa2,head pa1)]),
+                                          (tail pa2,s2))
+                 | isVar $ head pa2 = st ((tail pa1,s1),
+                                          (tail pa2,s2++[(head pa1,head pa2)]))
+                 | otherwise = st (((patternsOfTerm $ head pa1)++(tail pa1),s1),
+                                   ((patternsOfTerm $ head pa2)++(tail pa2),s2))
+        olPairsWithS = map subst olPairs
+        overlap_qu = map overlapQuery olPairsWithS
+        overlap_query = map (\f-> Quantification Universal
+                                                  (varDeclOfF f)
+                                                  f
+                                                  nullRange) overlap_qu
+
+{-
+  check if leading symbols are new (not in the image of morphism),
+        if not, return it as proof obligation
+-}
+getOOps :: Morphism () () () -> [Named (FORMULA ())] -> [FORMULA ()]
+getOOps m fsn = oOps
+    where
+        sig = imageOfMorphism m
+        oldOpMap = opMap sig
+        axioms = getAxioms fsn
+        op_fs = filter (\f-> case leadingSym f of
+                               Just (Left _) -> True
+                               _ -> False) axioms
+        find_ot (ident,ot) = case Map.lookup ident oldOpMap of
+                               Nothing -> False
+                               Just ots -> Set.member ot ots
+        oOps = filter (\a-> find_ot $ head $ filterOp $ leadingSym a) op_fs
+
+{-
+  check if leading symbols are new (not in the image of morphism),
+        if not, return it as proof obligation
+-}
+getOPreds :: Morphism () () () -> [Named (FORMULA ())] -> [FORMULA ()]
+getOPreds m fsn = oPreds
+    where
+       sig = imageOfMorphism m
+       oldPredMap = predMap sig
+       axioms = getAxioms fsn
+       pred_fs = filter (\f-> case leadingSym f of
+                                Just (Right _) -> True
+                                _ -> False) axioms
+       find_pt (ident,pt) = case Map.lookup ident oldPredMap of
+                              Nothing -> False
+                              Just pts -> Set.member pt pts
+       oPreds = filter (\a-> find_pt $ head $ filterPred $ leadingSym a) pred_fs
+
+getNSorts :: Sign () () -> Morphism () () () -> [Id]
+getNSorts osig m = nSorts
+    where
+        tsig = mtarget m
+        oldSorts = (sortSet osig)
+        allSorts = sortSet $ tsig
+        newSorts = Set.filter (\s-> not $ Set.member s oldSorts) allSorts
+        nSorts = Set.toList newSorts        
+
+getDataStatus :: (Sign () (),[Named (FORMULA ())]) -> Morphism () () ()
+    -> [Named (FORMULA ())] -> ConsistencyStatus
+getDataStatus (osig,osens) m fsn = dataStatus
+    where
+        fs = getFs fsn
+        ofs = getOfs osens
+        tsig = mtarget m
+        sR = Rel.toList $ sortRel tsig
+        subs = map fst sR
+        nSorts = getNSorts osig m
+        fconstrs = concat $ map constraintOfAxiom (ofs ++ fs)
+        (srts,_,_) = recover_Sort_gen_ax fconstrs
+        gens = intersect nSorts srts
+        dataStatus = if null nSorts then Definitional
+                     else if not $ null $ filter (\s-> (not $ elem s subs) &&
+                             (not $ elem s gens)) nSorts
+                     then Conservative
+                     else Monomorphic
+
+getNotComplete :: [Named (FORMULA ())] -> Morphism () () ()
+    -> [Named (FORMULA ())] -> [[FORMULA ()]]
+getNotComplete osens m fsn = not_complete
+    where
+        constructors = getConstructors osens m fsn
+        axGroup = getAxGroup fsn
+        axGroups =
+            case axGroup of
+              Just sym_fs -> map snd sym_fs
+              Nothing -> error "CASL.CCC.FreeTypes.<axGroups>"
+        not_complete = filter (\f'-> not $ completePatterns constructors $
+                                    map patternsOfAxiom f') axGroups
+
+getConStatus :: (Sign () (),[Named (FORMULA ())]) -> Morphism () () ()
+    -> [Named (FORMULA ())] -> ConsistencyStatus
+getConStatus (osig,osens) m fsn = conStatus
+    where
+        dataStatus = getDataStatus (osig,osens) m fsn
+        ex_axioms = getExAxioms fsn
+        oOps = getOOps m fsn
+        oPreds = getOPreds m fsn
+        overlap_query = getOverlapQuery fsn
+        defStatus = if null $ (oOps ++ oPreds ++ ex_axioms ++ overlap_query)
+                    then Definitional
+                    else Conservative
+        conStatus = min dataStatus defStatus
+
+getObligations :: Morphism () () () -> [Named (FORMULA ())] -> [FORMULA ()]
+getObligations m fsn = obligations
+    where
+        ex_axioms = getExAxioms fsn
+        oOps = getOOps m fsn
+        oPreds = getOPreds m fsn
+        info_subsort = getInfoSubsort m fsn
+        overlap_query = getOverlapQuery fsn
+        obligations = oOps ++ oPreds ++ ex_axioms ++ info_subsort ++
+                      overlap_query
+
+{-
+   check the definitional form of the partial axioms
+-}
+checkDefinitional :: [Named (FORMULA ())]
+    -> Maybe (Result (Maybe (ConsistencyStatus,[FORMULA ()])))
+checkDefinitional fsn
+    | elem Nothing l_Syms =
+        let pos = snd $ head $ filter (\f'-> (fst f') == Nothing) $
+                  map leadingSymPos _axioms
+        in Just $ warning Nothing "axiom is not definitional" pos
+    | not $ null $ un_p_axioms =
+        let pos = getRange $ (take 1 un_p_axioms)
+        in Just $ warning Nothing "partial axiom is not definitional" pos
+    | (length dom_l) /= (length $ nub $ dom_l) =
+        let pos = getRange $ (take 1 dualDom)
+            dualOS = head $ filter (\o-> elem o $ delete o dom_l) dom_l
+            dualDom = filter (\f-> domain_os f dualOS) p_axioms
+        in Just $ warning Nothing "partial axiom is not definitional" pos
+    | not $ null $ pcheck =
+        let pos = getRange $ (take 1 pcheck)
+        in Just $ warning Nothing "partial axiom is not definitional" pos
+    | otherwise = Nothing
+    where
+        axioms = getAxioms fsn
+        l_Syms = map leadingSym axioms        -- leading_Symbol
+        _axioms = map quanti axioms
+        p_axioms = filter partialAxiom _axioms           -- all partial axioms
+        pax_with_def = filter containDef p_axioms
+        pax_without_def = filter (not.containDef) p_axioms
+        un_p_axioms = filter (not.correctDef) pax_with_def
+        dom_l = domainOpSymbs p_axioms
+        pcheck = filter (\f-> case leadingSym f of
+                                  Just (Left opS) -> elem opS dom_l
+                                  _               -> False) pax_without_def
+
+{-
+  call the symbols in the image of the signature morphism "new"
+
+- each new sort must be a free type,
+  i.e. it must occur in a sort generation constraint that is marked as free
+    (Sort_gen_ax constrs True)
+    such that the sort is in srts,
+        where (srts,ops,_)=recover_Sort_gen_ax constrs
+    if not, output "don't know"
+  and there must be one term of that sort (inhabited)
+    if not, output "no"
+- group the axioms according to their leading operation/predicate symbol,
+  i.e. the f resp. the p in
+  forall x_1:s_n .... x_n:s_n .                  f(t_1,...,t_m)=t
+  forall x_1:s_n .... x_n:s_n .       phi =>      f(t_1,...,t_m)=t
+                                  Implication  Application  Strong_equation
+  forall x_1:s_n .... x_n:s_n .                  p(t_1,...,t_m)<=>phi
+  forall x_1:s_n .... x_n:s_n .    phi1  =>      p(t_1,...,t_m)<=>phi
+                                 Implication   Predication    Equivalence
+  if there are axioms not being of this form, output "don't know"
+-}
+checkSort :: (Sign () (),[Named (FORMULA ())]) -> Morphism () () ()
+    -> [Named (FORMULA ())]
+    -> Maybe (Result (Maybe (ConsistencyStatus,[FORMULA ()])))
+checkSort (osig,osens) m fsn
+    | null fsn && null nSorts = Just $ return (Just (Conservative,[]))
+    | not $ null notFreeSorts =
+        let (Id ts _ pos) = head notFreeSorts
+            sname = concat $ map tokStr ts
+        in Just $ warning Nothing (sname ++ " is not freely generated") pos
+    | not $ null nefsorts =
+        let (Id ts _ pos) = head nefsorts
+            sname = concat $ map tokStr ts
+        in Just $
+             warning (Just (Inconsistent,[])) (sname ++ " is not inhabited") pos
+    | otherwise = Nothing
+    where
+        fs = getFs fsn
+        ofs = getOfs osens
+        tsig = mtarget m
+        oldSorts = (sortSet osig)
+        oSorts = Set.toList oldSorts
+        esorts = Set.toList $ emptySortSet tsig
+        nSorts = getNSorts osig m
+        axOfS = filter (\f-> (isSortGen f) ||
+                             (is_Membership f)) fs
+        notFreeSorts = filter (\s->(is_free_gen_sort s axOfS) == Just False)
+                           nSorts
+        fconstrs = concat $ map constraintOfAxiom (ofs ++ fs)
+        (srts,_,_) = recover_Sort_gen_ax fconstrs
+        f_Inhabited = inhabited oSorts fconstrs
+        fsorts = filter (\s-> not $ elem s esorts) $ intersect nSorts srts
+        nefsorts = filter (\s->not $ elem s f_Inhabited) fsorts
+
+checkLeadingTerms :: [Named (FORMULA ())] -> Morphism () () ()
+   -> [Named (FORMULA ())]
+   -> Maybe (Result (Maybe (ConsistencyStatus,[FORMULA ()])))
+checkLeadingTerms osens m fsn
+    | not $ and $ map (checkTerms tsig constructors) $
+      map arguOfTerm leadingTerms=
+        let (Application os _ _) = tt
+            tt = head $ filter (\t->not $ checkTerms tsig constructors $
+                                    arguOfTerm t) $ leadingTerms
+            pos = axiomRangeforTerm _axioms tt
+        in Just $ warning Nothing ("a leading term of " ++ (opSymName os) ++
+           " consists of not only variables and constructors") pos
+    | not $ and $ map (checkTerms tsig constructors) $
+      map arguOfPred leadingPreds=
+        let (Predication ps _ pos) = quanti pf
+            pf = head $ filter (\p->not $ checkTerms tsig constructors $
+                                    arguOfPred p) $ leadingPreds
+        in Just $
+           warning Nothing ("a leading predicate of " ++ (predSymName ps) ++
+           " consists of not only variables and constructors") pos
+    | not $ and $ map checkVar_App leadingTerms =
+        let (Application os _ _) = tt
+            tt = head $ filter (\t->not $ checkVar_App t) leadingTerms
+            pos = axiomRangeforTerm _axioms tt
+        in Just $
+           warning Nothing ("a variable occurs twice in a leading term of " ++
+           opSymName os) pos
+    | not $ and $ map checkVar_Pred leadingPreds =
+        let (Predication ps _ pos) = quanti pf
+            pf = head $ filter (\p->not $ checkVar_Pred p) leadingPreds
+        in Just $ warning Nothing ("a variable occurs twice in a leading " ++
+           "predicate of " ++ predSymName ps) pos
+    | otherwise = Nothing
+    where
+        tsig = mtarget m
+        constructors = getConstructors osens m fsn
+        axioms = getAxioms fsn
+        _axioms = map quanti axioms
+        ltp = map leading_Term_Predication _axioms       --  leading_term_pred
+        leadingTerms = concat $ map (\tp->case tp of
+                                             Just (Left t)->[t]
+                                             _ -> []) $ ltp      -- leading Term
+        leadingPreds = concat $ map (\tp->case tp of
+                                             Just (Right f)->[f]
+                                             _ -> []) $ ltp
+
+{-
+   check the sufficient completeness
+-}
+checkIncomplete :: [Named (FORMULA ())] -> Morphism () () ()
+    -> [Named (FORMULA ())]
+    -> Maybe (Result (Maybe (ConsistencyStatus,[FORMULA ()])))
+checkIncomplete osens m fsn
+    | not $ null notcomplete =
+        let symb_p = leadingSymPos $ head $ head notcomplete
+            pos = snd $ symb_p
+            sname = case (fst symb_p) of
+                      Just (Left opS) -> opSymName opS
+                      Just (Right pS) -> predSymName pS
+                      _ -> error "CASL.CCC.FreeTypes.<Symb_Name>"
+        in Just $
+           warning (Just (Conservative,obligations)) ("the definition of " ++
+           sname ++ " is not complete") pos
+   | otherwise = Nothing
+   where
+       notcomplete = getNotComplete osens m fsn
+       obligations = getObligations m fsn
+
+checkTerminal  :: (Sign () (),[Named (FORMULA ())]) -> Morphism () () ()
+    -> [Named (FORMULA ())]
+    -> Maybe (Result (Maybe (ConsistencyStatus,[FORMULA ()])))
+checkTerminal (osig,osens) m fsn
+    | (not $ null fs_terminalProof) && (proof /= Just True)=
+        if proof == Just False
+            then Just $ warning (Just (Conservative,obligations))
+                 "not terminating" nullRange
+            else Just $ warning (Just (Conservative,obligations))
+                 "cannot prove termination" nullRange
+    | not $ null obligations = Just $ return (Just (conStatus,obligations))
+    | otherwise = Nothing
+    where
+        fs = getFs fsn
+        fs_terminalProof = filter (\f->(not $ isSortGen f) &&
+                                       (not $ is_Membership f) &&
+                                       (not $ is_ex_quanti f) &&
+                                       (not $ isDomain f)) fs
+        domains = domainList fs
+        proof = terminationProof fs_terminalProof domains
+        obligations = getObligations m fsn
+        conStatus = getConStatus (osig,osens) m fsn
 
 {------------------------------------------------------------------------
    function checkFreeType:
@@ -78,224 +438,19 @@ checkFreeType :: (Sign () (),[Named (FORMULA ())]) -> Morphism () () ()
                  -> [Named (FORMULA ())]
                  -> Result (Maybe (ConsistencyStatus,[FORMULA ()]))
 checkFreeType (osig,osens) m fsn
-    | null fsn && null nSorts = return (Just (Conservative,[]))
-    | not $ null notFreeSorts =
-        let (Id ts _ pos) = head notFreeSorts
-            sname = concat $ map tokStr ts
-        in warning Nothing (sname ++ " is not freely generated") pos
-    | not $ null nefsorts =
-        let (Id ts _ pos) = head nefsorts
-            sname = concat $ map tokStr ts
-        in warning (Just (Inconsistent,[])) (sname ++ " is not inhabited") pos
-    | elem Nothing l_Syms =
-        let pos = snd $ head $ filter (\f'-> (fst f') == Nothing) $
-                  map leadingSymPos _axioms
-        in warning Nothing "axiom is not definitional" pos
-    | not $ null $ un_p_axioms =
-        let pos = getRange $ (take 1 un_p_axioms)
-        in warning Nothing "partial axiom is not definitional" pos
-    | (length dom_l) /= (length $ nub $ dom_l) =
-        let pos = getRange $ (take 1 dualDom)
-            dualOS = head $ filter (\o-> elem o $ delete o dom_l) dom_l
-            dualDom = filter (\f-> domain_os f dualOS) p_axioms
-        in warning Nothing "partial axiom is not definitional" pos
-    | not $ null $ pcheck =
-        let pos = getRange $ (take 1 pcheck)
-        in warning Nothing "partial axiom is not definitional" pos
-    | not $ and $ map (checkTerms tsig constructors) $
-      map arguOfTerm leadingTerms=
-        let (Application os _ _) = tt
-            tt= head $ filter (\t->not $ checkTerms tsig constructors $
-                                   arguOfTerm t) $ leadingTerms
-            pos = axiomRangeforTerm _axioms tt
-        in warning Nothing ("a leading term of " ++ (opSymName os) ++
-           " consists of not only variables and constructors") pos
-    | not $ and $ map (checkTerms tsig constructors) $
-      map arguOfPred leadingPreds=
-        let (Predication ps _ pos) = quanti pf
-            pf= head $ filter (\p->not $ checkTerms tsig constructors $
-                                   arguOfPred p) $ leadingPreds
-        in warning Nothing ("a leading predicate of " ++ (predSymName ps) ++
-           " consists of not only variables and constructors") pos
-    | not $ and $ map checkVar_App leadingTerms =
-        let (Application os _ _) = tt
-            tt = head $ filter (\t->not $ checkVar_App t) leadingTerms
-            pos = axiomRangeforTerm _axioms tt
-        in warning Nothing ("a variable occurs twice in a leading term of " ++
-                            opSymName os) pos
-    | not $ and $ map checkVar_Pred leadingPreds =
-        let (Predication ps _ pos) = quanti pf
-            pf = head $ filter (\p->not $ checkVar_Pred p) leadingPreds
-        in warning Nothing ("a variable occurs twice in a leading " ++
-                            "predicate of " ++ predSymName ps) pos
-    | not $ null notcomplete =
-        let symb_p = leadingSymPos $ head $ head notcomplete
-            pos = snd $ symb_p
-            sname = case (fst symb_p) of
-                      Just (Left opS) -> opSymName opS
-                      Just (Right pS) -> predSymName pS
-                      _ -> error "CASL.CCC.FreeTypes.<Symb_Name>"
-        in warning (Just (Conservative,obligations)) ("the definition of " ++
-                         sname ++ " is not complete") pos
-    | (not $ null fs_terminalProof) && (proof /= Just True)=
-         if proof == Just False
-         then warning (Just (Conservative,obligations))
-                      "not terminating" nullRange
-         else warning (Just (Conservative,obligations))
-                      "cannot prove termination" nullRange
-    | not $ null obligations =
-        return (Just (conStatus,obligations))
-    | otherwise = return (Just (conStatus,[]))
-{-
-  call the symbols in the image of the signature morphism "new"
-
-- each new sort must be a free type,
-  i.e. it must occur in a sort generation constraint that is marked as free
-    (Sort_gen_ax constrs True)
-    such that the sort is in srts,
-        where (srts,ops,_)=recover_Sort_gen_ax constrs
-    if not, output "don't know"
-  and there must be one term of that sort (inhabited)
-    if not, output "no"
-- group the axioms according to their leading operation/predicate symbol,
-  i.e. the f resp. the p in
-  forall x_1:s_n .... x_n:s_n .                  f(t_1,...,t_m)=t
-  forall x_1:s_n .... x_n:s_n .       phi =>      f(t_1,...,t_m)=t
-                                  Implication  Application  Strong_equation
-  forall x_1:s_n .... x_n:s_n .                  p(t_1,...,t_m)<=>phi
-  forall x_1:s_n .... x_n:s_n .    phi1  =>      p(t_1,...,t_m)<=>phi
-                                 Implication   Predication    Equivalence
-  if there are axioms not being of this form, output "don't know"
--}
+    | isJust definitional = fromJust definitional
+    | isJust sort         = fromJust sort
+    | isJust leadingTerms = fromJust leadingTerms
+    | isJust incomplete   = fromJust incomplete
+    | isJust terminal     = fromJust terminal
+    | otherwise           = return (Just (conStatus,[]))
     where
-    fs = map sentence (filter is_user_or_sort_gen fsn)
-    fs_terminalProof = filter (\f->(not $ isSortGen f) &&
-                                   (not $ is_Membership f) &&
-                                   (not $ is_ex_quanti f) &&
-                                   (not $ isDomain f)) fs
-    ofs = map sentence (filter is_user_or_sort_gen osens)
-    sig = imageOfMorphism m
-    tsig = mtarget m
-    oldSorts = (sortSet osig)
-    oSorts = Set.toList oldSorts
-    allSorts = sortSet $ tsig
-    esorts = Set.toList $ emptySortSet tsig
-    newSorts = Set.filter (\s-> not $ Set.member s oldSorts) allSorts
-    nSorts = Set.toList newSorts
-    sR = Rel.toList $ sortRel tsig
-    subs = map fst sR
-    axOfS = filter (\f-> (isSortGen f) ||
-                         (is_Membership f)) fs
-    notFreeSorts = filter (\s->(is_free_gen_sort s axOfS) == Just False) nSorts
-    oldOpMap = opMap sig
-    oldPredMap = predMap sig
-    fconstrs = concat $ map constraintOfAxiom (ofs ++ fs)
-    (srts,constructors_o,_) = recover_Sort_gen_ax fconstrs
-    constructors = constructorOverload tsig (opMap tsig) constructors_o
-    f_Inhabited = inhabited oSorts fconstrs
-    gens = intersect nSorts srts
-    fsorts = filter (\s-> not $ elem s esorts) $ intersect nSorts srts
-    nefsorts = filter (\s->not $ elem s f_Inhabited) fsorts
-    axioms = filter (\f-> (not $ isSortGen f) &&
-                          (not $ is_Membership f) &&
-                          (not $ is_ex_quanti f)) fs
-    memberships = filter (\f-> is_Membership f) fs
-    info_subsort = concat $ map (infoSubsort esorts) memberships
-    dataStatus = if null nSorts then Definitional
-                 else if not $ null $ filter (\s-> (not $ elem s subs) &&
-                         (not $ elem s gens)) nSorts
-                 then Conservative
-                 else Monomorphic
-    _axioms = map quanti axioms
-    l_Syms = map leadingSym axioms        -- leading_Symbol
-{-
-   check the definitional form of the partial axioms
--}
-    p_axioms = filter partialAxiom _axioms           -- all partial axioms
-    pax_with_def = filter containDef p_axioms
-    ax_without_dom = filter (not.isDomain) _axioms
-    pax_without_def = filter (not.containDef) p_axioms
-    un_p_axioms = filter (not.correctDef) pax_with_def
-    dom_l = domainOpSymbs p_axioms
-    pcheck = filter (\f-> case leadingSym f of
-                            Just (Left opS) ->
-                              elem opS dom_l
-                            _ -> False) pax_without_def
-    domains = domainList fs
-{-
-  check if leading symbols are new (not in the image of morphism),
-        if not, return it as proof obligation
--}
-    op_fs = filter (\f-> case leadingSym f of
-                           Just (Left _) -> True
-                           _ -> False) axioms
-    pred_fs = filter (\f-> case leadingSym f of
-                             Just (Right _) -> True
-                             _ -> False) axioms
-    find_ot (ident,ot) = case Map.lookup ident oldOpMap of
-                           Nothing -> False
-                           Just ots -> Set.member ot ots
-    find_pt (ident,pt) = case Map.lookup ident oldPredMap of
-                           Nothing -> False
-                           Just pts -> Set.member pt pts
-    oOps = filter (\a-> find_ot $ head $ filterOp $ leadingSym a) op_fs
-    oPreds = filter (\a-> find_pt $ head $ filterPred $ leadingSym a) pred_fs
-{-
-   the leading terms consist of variables and constructors only
--}
-    ltp = map leading_Term_Predication _axioms       --  leading_term_pred
-    leadingTerms = concat $ map (\tp->case tp of
-                                         Just (Left t)->[t]
-                                         _ -> []) $ ltp      -- leading Term
-    leadingPreds = concat $ map (\tp->case tp of
-                                        Just (Right f)->[f]
-                                        _ -> []) $ ltp
-{-
-   check that patterns do not overlap, if not, return proof obligation.
--}
-    axGroup = groupAxioms ax_without_dom
-    axPairs =
-        case axGroup of
-          Just sym_fs -> concat $ map pairs $ map snd sym_fs
-          Nothing -> error "CASL.CCC.FreeTypes.<axPairs>"
-    olPairs = filter (\a-> checkPatterns $
-                       (patternsOfAxiom $ fst a,
-                        patternsOfAxiom $ snd a)) axPairs
-    subst (f1,f2) = ((f1,sb1),(f2,sb2))
-      where p1= patternsOfAxiom f1
-            p2= patternsOfAxiom f2
-            (sb1,sb2) = st ((p1,[]),(p2,[]))
-            st ((pa1,s1),(pa2,s2))
-              | null pa1 =(s1,s2)
-              | head pa1 == head pa2 = st ((tail pa1,s1),(tail pa2,s2))
-              | isVar $ head pa1 = st ((tail pa1,s1++[(head pa2,head pa1)]),
-                                       (tail pa2,s2))
-              | isVar $ head pa2 = st ((tail pa1,s1),
-                                       (tail pa2,s2++[(head pa1,head pa2)]))
-              | otherwise = st (((patternsOfTerm $ head pa1)++(tail pa1),s1),
-                                ((patternsOfTerm $ head pa2)++(tail pa2),s2))
-    olPairsWithS = map subst olPairs
-    overlap_qu = map overlapQuery olPairsWithS
-    overlap_query = map (\f-> Quantification Universal
-                                              (varDeclOfF f)
-                                              f
-                                              nullRange) overlap_qu
-{-
-   check the sufficient completeness
--}
-    axGroups =
-        case axGroup of
-          Just sym_fs -> map snd sym_fs
-          Nothing -> error "CASL.CCC.FreeTypes.<axGroups>"
-    notcomplete = filter (\f'-> not $ completePatterns constructors $
-                                map patternsOfAxiom f') axGroups
-    ex_axioms = filter is_ex_quanti $ fs
-    proof = terminationProof fs_terminalProof domains
-    obligations = oOps ++ oPreds ++ ex_axioms ++ info_subsort ++ overlap_query
-    defStatus = if null $ (oOps ++ oPreds ++ ex_axioms ++ overlap_query)
-                then Definitional
-                else Conservative
-    conStatus = min dataStatus defStatus
+        definitional = checkDefinitional fsn
+        sort         = checkSort (osig,osens) m fsn
+        leadingTerms = checkLeadingTerms osens m fsn
+        incomplete   = checkIncomplete osens m fsn
+        terminal     = checkTerminal (osig,osens) m fsn
+        conStatus    = getConStatus (osig,osens) m fsn
 
 -- | group the axioms according to their leading symbol,
 --   output Nothing if there is some axiom in incorrect form
