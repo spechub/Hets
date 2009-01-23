@@ -68,8 +68,7 @@ initNodeInfo:: (Logic lid1 sublogics1
          sign1 morphism1 symbol1 raw_symbol1 proof_tree1) =>
          ProofState lid1 sentence1 -> Int
          -> Int_NodeInfo
-initNodeInfo ps nb
- = Element ps nb
+initNodeInfo = Element
 
 emptyIntIState :: LibEnv -> LIB_NAME -> IntIState
 emptyIntIState le ln =
@@ -96,8 +95,8 @@ emptyCommandHistory st = do
   ch <- newIORef []
   ost <- readIORef st
   ff <- tryRemoveAbsolutePathComponent $ filename ost
-  return $ Result [] $ Just $ CommandHistory { hist = ch,
-                                               filePath = rmSuffix ff}
+  return $ Result [] $ Just CommandHistory { hist = ch,
+                                             filePath = rmSuffix ff}
 
 -- If an absolute path is given,
 -- it tries to remove the current working directory as prefix of it.
@@ -116,7 +115,7 @@ addProveToHist :: CommandHistory
         -> [Proof_status proof_tree]       -- goals included in prove
         -> IO ()
 addProveToHist ch st pcm pt
-    | null $ filter (wasProved) pt = return ()
+    | null $ filter wasProved pt = return ()
     | otherwise = do
                   p <- proofTreeToProve ch st pcm pt
                   addToHist ch $ ProveCommand p
@@ -137,19 +136,19 @@ proofTreeToProve ch st pcm pt =
   -- 2. reverse the list, because the last proven goals are on top
   -- 3. convert all proof-trees to goals
   -- 4. merge goals with same used axioms
-      goals = mergeGoals $ reverse $ map (convertGoal) $ filter (wasProved) pt
+      goals = mergeGoals $ reverse $ map convertGoal $ filter wasProved pt
   -- axioms to include in prove
       allax = case theory st of
                  G_theory _ _ _ axs _ -> keys axs
       nodeName = dropName (filePath ch) $ theoryName st
-  return $ Prove { nodeNameStr = nodeName,
-                   usedProver = prvr,
-                   translation = trans,
-                   provenGoals = goals,
-                   allAxioms = allax}
+  return Prove { nodeNameStr = nodeName,
+                 usedProver = prvr,
+                 translation = trans,
+                 provenGoals = goals,
+                 allAxioms = allax}
 
 dropName :: String -> String -> String
-dropName fch s = maybe s (tail) (stripPrefix fch s)
+dropName fch s = maybe s tail (stripPrefix fch s)
 
 -- This checks wether a goal was proved or not
 wasProved :: Proof_status proof_Tree -> Bool
@@ -163,7 +162,7 @@ convertGoal pt =
   ProvenGoal {name = goalName pt, axioms = usedAxioms pt, time_Limit = tLimit}
   where
      (Tactic_script scrpt) = tacticScript pt
-     tLimit = maybe 20 (read) (parseTimeLimit $ splitOn '\n' scrpt)
+     tLimit = maybe 20 read (parseTimeLimit $ splitOn '\n' scrpt)
 
 -- Parses time-limit from the tactic-script of a goal.
 parseTimeLimit :: [String] -> Maybe String
@@ -177,15 +176,15 @@ parseTimeLimit l =
 mergeGoals :: [ProvenGoal] -> [ProvenGoal]
 mergeGoals []     = []
 mergeGoals (h:[]) = [h]
-mergeGoals (h:t) | mergeAble h h' = mergeGoals $ (merge h h'):(tail t)
-                 | otherwise      = h:(mergeGoals t)
+mergeGoals (h:t) | mergeAble h h' = mergeGoals $ merge h h':tail t
+                 | otherwise      = h:mergeGoals t
                  where
                     h' = head t
                     mergeAble :: ProvenGoal -> ProvenGoal -> Bool
                     mergeAble a b = axioms a == axioms b &&
                                     time_Limit a == time_Limit b
                     merge :: ProvenGoal -> ProvenGoal -> ProvenGoal
-                    merge a b = a{name = name a ++ ' ':(name b)}
+                    merge a b = a{name = name a ++ ' ':name b}
 
 
 
@@ -195,7 +194,7 @@ addCommandHistoryToState ch ioSt
     ost <- readIORef ioSt
     lsch <- readIORef $ hist ch
     let z = Int_CmdHistoryDescription {
-             cmdName = joinWith '\n' $ map (show) lsch,
+             cmdName = joinWith '\n' $ map show lsch,
              cmdDescription = [ IStateChange $ i_state ost ]
              }
         nwst = ost { i_hist = (i_hist ost) {

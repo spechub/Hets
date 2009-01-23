@@ -28,6 +28,7 @@ import Common.Id
 import Common.Doc
 
 import Data.List
+import Data.Maybe (fromMaybe)
 import Data.Time (TimeOfDay, midnight)
 
 import Control.Monad
@@ -82,8 +83,7 @@ getConfig :: (Ord proof_tree) =>
           -> proof_tree -- ^ initial empty proof_tree
           -> GenericConfigsMap proof_tree
           -> GenericConfig proof_tree
-getConfig prName genid pt m = maybe (emptyConfig prName genid pt)
-                                id lookupId
+getConfig prName genid pt m = fromMaybe (emptyConfig prName genid pt) lookupId
   where
     lookupId = Map.lookup genid m
 
@@ -158,7 +158,7 @@ initialGenericState prName ips trSenName th freedefs pt =
                   (\senSt ->
                     let validThmStatus = filter (\ tStatus ->
                             isOpenGoal (goalStatus tStatus) &&
-                            not (tacticScript tStatus == Tactic_script ""))
+                            tacticScript tStatus /= Tactic_script "")
                                                 $ thmStatus senSt
                     in  if null validThmStatus
                           then prStat
@@ -281,7 +281,7 @@ instance Read ATPTactic_script where
           readMatch = matchRegex re_atp ts
       in  maybe []
                 (\sl -> [(ATPTactic_script {
-                              ts_timeLimit = (read $ sl !! 0) :: Int,
+                              ts_timeLimit = (read $ head sl) :: Int,
                               ts_extraOpts = (read $ sl !! 1) :: [String]}
                   , "")])
                 readMatch

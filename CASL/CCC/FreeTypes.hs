@@ -75,7 +75,7 @@ getAxGroup fsn = axGroup
     where
         axioms = getAxioms fsn
         _axioms = map quanti axioms
-        ax_without_dom = filter (not.isDomain) _axioms
+        ax_without_dom = filter (not . isDomain) _axioms
         axGroup = groupAxioms ax_without_dom
 
 getConstructors :: [Named (FORMULA ())] -> Morphism () () ()
@@ -88,6 +88,7 @@ getConstructors osens m fsn = constructors
         fconstrs = concatMap constraintOfAxiom (ofs ++ fs)
         (_,constructors_o,_) = recover_Sort_gen_ax fconstrs
         constructors = constructorOverload tsig (opMap tsig) constructors_o
+
 {-
    check that patterns do not overlap, if not, return proof obligation.
 -}
@@ -97,11 +98,10 @@ getOverlapQuery fsn = overlap_query
         axGroup = getAxGroup fsn
         axPairs =
             case axGroup of
-              Just sym_fs -> concatMap pairs $ map snd sym_fs
+              Just sym_fs -> concatMap (pairs . snd) sym_fs
               Nothing -> error "CASL.CCC.FreeTypes.<axPairs>"
         olPairs = filter (\ (a, b) -> checkPatterns
-                           (patternsOfAxiom a,
-                            patternsOfAxiom b)) axPairs
+                           (patternsOfAxiom a, patternsOfAxiom b)) axPairs
         subst (f1, f2) = ((f1, reverse sb1), (f2, reverse sb2))
           where (sb1, sb2) = st ((patternsOfAxiom f1, []),
                                  (patternsOfAxiom f2, []))
@@ -115,10 +115,8 @@ getOverlapQuery fsn = overlap_query
                   _ -> (s1, s2)
         olPairsWithS = map subst olPairs
         overlap_qu = map overlapQuery olPairsWithS
-        overlap_query = map (\f-> Quantification Universal
-                                                  (varDeclOfF f)
-                                                  f
-                                                  nullRange) overlap_qu
+        overlap_query = map (\f-> Quantification Universal (varDeclOfF f) f
+                                nullRange) overlap_qu
 
 {-
   check if leading symbols are new (not in the image of morphism),
@@ -289,8 +287,8 @@ checkSort (osig,osens) m fsn
     | not $ null nefsorts =
         let (Id ts _ pos) = head nefsorts
             sname = concatMap tokStr ts
-        in Just $
-             warning (Just (Inconsistent,[])) (sname ++ " is not inhabited") pos
+        in Just $ warning (Just (Inconsistent,[])) 
+                      (sname ++ " is not inhabited") pos
     | otherwise = Nothing
     where
         fs = getFs fsn
@@ -455,8 +453,7 @@ groupAxioms phis = do
             let fp=fst p
                 p'= if elem fp symb then []
                     else [(fp,snd $ unzip $ filter (\x->fst x == fp) (p:ps))]
-                symb'= if not $ elem fp symb then fp:symb
-                       else symb
+                symb'= if not $ elem fp symb then fp:symb else symb
             in p' ++ filterA ps symb'
 
 
@@ -578,14 +575,12 @@ overlapQuery ((a1,s1),(a2,s2)) =
           Just (Left _)
             | containNeg a1 && (not $ containNeg a2) ->
                 Implication (Conjunction [con1,con2] nullRange)
-                            (Negation (Definedness resT2 nullRange)
-                                      nullRange)
+                            (Negation (Definedness resT2 nullRange) nullRange)
                             True
                             nullRange
             | containNeg a2 && (not $ containNeg a1) ->
                 Implication (Conjunction [con1,con2] nullRange)
-                            (Negation (Definedness resT1 nullRange)
-                                      nullRange)
+                            (Negation (Definedness resT1 nullRange) nullRange)
                             True
                             nullRange
             | containNeg a1 && containNeg a2 ->
