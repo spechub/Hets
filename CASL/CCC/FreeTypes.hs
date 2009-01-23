@@ -99,22 +99,20 @@ getOverlapQuery fsn = overlap_query
             case axGroup of
               Just sym_fs -> concatMap pairs $ map snd sym_fs
               Nothing -> error "CASL.CCC.FreeTypes.<axPairs>"
-        olPairs = filter (\a-> checkPatterns
-                           (patternsOfAxiom $ fst a,
-                            patternsOfAxiom $ snd a)) axPairs
-        subst (f1,f2) = ((f1,sb1),(f2,sb2))
-          where p1= patternsOfAxiom f1
-                p2= patternsOfAxiom f2
-                (sb1,sb2) = st ((p1,[]),(p2,[]))
-                st ((pa1,s1),(pa2,s2))
-                 | null pa1 =(s1,s2)
-                 | head pa1 == head pa2 = st ((tail pa1,s1),(tail pa2,s2))
-                 | isVar $ head pa1 = st ((tail pa1,s1++[(head pa2,head pa1)]),
-                                          (tail pa2,s2))
-                 | isVar $ head pa2 = st ((tail pa1,s1),
-                                          (tail pa2,s2++[(head pa1,head pa2)]))
-                 | otherwise = st (((patternsOfTerm $ head pa1)++ tail pa1, s1),
-                                   ((patternsOfTerm $ head pa2)++ tail pa2, s2))
+        olPairs = filter (\ (a, b) -> checkPatterns
+                           (patternsOfAxiom a,
+                            patternsOfAxiom b)) axPairs
+        subst (f1, f2) = ((f1, reverse sb1), (f2, reverse sb2))
+          where (sb1, sb2) = st ((patternsOfAxiom f1, []),
+                                 (patternsOfAxiom f2, []))
+                st ((pa1, s1), (pa2, s2)) = case (pa1, pa2) of
+                  (hd1 : tl1, hd2 : tl2)
+                    | hd1 == hd2 -> st ((tl1, s1), (tl2, s2))
+                    | isVar hd1 -> st ((tl1, (hd2, hd1) : s1), (tl2, s2))
+                    | isVar hd2 -> st ((tl1, s1), (tl2, (hd1, hd2) : s2))
+                    | otherwise -> st ((patternsOfTerm hd1 ++ tl1, s1),
+                                       (patternsOfTerm hd2 ++ tl2, s2))
+                  _ -> (s1, s2)
         olPairsWithS = map subst olPairs
         overlap_qu = map overlapQuery olPairsWithS
         overlap_query = map (\f-> Quantification Universal
