@@ -71,7 +71,7 @@ writeIsaTheory thName th = do
       --  $ By Auto
       thy = shows (printIsaTheory thBaseName sig $ axs ++ ths) "\n"
       thyFile = thBaseName ++ ".thy.liam"
-  -- | Check if the Isabelle theory is a valid Isabelle theory
+  -- check if the Isabelle theory is a valid Isabelle theory
   case parse parseTheory thyFile thy of
     Right _ -> do
       -- prepareThyFiles (ho, bo) thyFile thy
@@ -83,8 +83,8 @@ writeIsaTheory thName th = do
       --    else return []
       writeFile thyFile thy
       return ()
-    -- | The Isabelle theory is not a valid theory (according to Hets)
-    -- | as it cannot be parsed.
+    -- The Isabelle theory is not a valid theory (according to Hets)
+    -- as it cannot be parsed.
     Left err -> do
       putStrLn $ show err
       putStrLn $ "Sorry, a generated theory cannot be parsed, see: "
