@@ -102,6 +102,7 @@ import Data.List(partition)
 import Data.Maybe
 import Data.Graph.Inductive.Graph (Node, LEdge, LNode)
 import qualified Data.Map as Map
+import qualified Data.Set as Set
 
 import Control.Monad
 import Control.Concurrent (forkIO)
@@ -152,8 +153,7 @@ reload gInfo@(GInfo { gi_hetcatsOpts = opts
     let
       oldle = i_libEnv ist
       ln = i_ln ist
-      libdeps = Rel.toList$ Rel.intransKernel$ Rel.transClosure$ Rel.fromList
-              $ getLibDeps oldle
+      libdeps = getLibDeps oldle
     ioruplibs <- newIORef ([] :: [LIB_NAME])
     writeIORef ioruplibs []
     reloadLibs (intState gInfo) opts libdeps ioruplibs ln
@@ -165,12 +165,10 @@ reload gInfo@(GInfo { gi_hetcatsOpts = opts
 
 -- | Creates a list of all LIB_NAME pairs, which have a dependency
 getLibDeps :: LibEnv -> [(LIB_NAME, LIB_NAME)]
-getLibDeps le = concatMap (\ ln -> getDep ln le) $ Map.keys le
-
--- | Creates a list of LIB_NAME pairs for the fist argument
-getDep :: LIB_NAME -> LibEnv -> [(LIB_NAME, LIB_NAME)]
-getDep ln = map (\ (_, x) -> (ln, dgn_libname x)) .
-  filter (isDGRef . snd) . labNodesDG . lookupDGraph ln
+getLibDeps = Rel.toList . Rel.intransKernel . Rel.transClosure
+  . Rel.fromSet . Map.foldWithKey (\ ln dg s -> foldr (\ x ->
+        if isDGRef x then Set.insert (ln, dgn_libname x) else id) s
+        $ map snd $ labNodesDG dg) Set.empty
 
 -- | Reloads a library
 reloadLib :: IORef IntState -> HetcatsOpts -> IORef [LIB_NAME] -> LIB_NAME

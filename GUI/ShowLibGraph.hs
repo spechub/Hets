@@ -27,7 +27,6 @@ import GUI.GraphDisplay
 import qualified GUI.GraphAbstraction as GA
 
 import Common.LibName
-import qualified Common.Lib.Rel as Rel
 
 import Data.IORef
 import qualified Data.Map as Map
@@ -118,10 +117,9 @@ addNodesAndArcs gInfo@(GInfo { gi_hetcatsOpts = opts}) depG nodeArcRef = do
                       emptyArcTypeParms
    subArcType <- newArcType depG subArcTypeParms
    let
-    insertSubArc = \ (node1, node2) -> newArc depG subArcType (return "")
+    insertSubArc (node1, node2) = newArc depG subArcType (return "")
                        (lookup' nodes' node1) (lookup' nodes' node2)
-   subArcList <- mapM insertSubArc $  Rel.toList $ Rel.intransKernel $
-    Rel.transClosure $ Rel.fromList $ getLibDeps le
+   subArcList <- mapM insertSubArc $ getLibDeps le
    writeIORef nodeArcRef (subNodeList, subArcList)
 
 mShowGraph :: GInfo -> LIB_NAME -> IO()
@@ -141,11 +139,9 @@ mShowGraph gInfo@(GInfo {gi_hetcatsOpts = opts}) ln = do
 
 -- | Displays the Specs of a Library in a Textwindow
 showSpec :: LibEnv -> LIB_NAME -> IO()
-showSpec le ln = do
-  let
-    ge = globalEnv $ lookupDGraph ln le
-    sp = unlines $ map show $ Map.keys $ ge
-  createTextDisplay ("Contents of " ++ show ln) sp [size(80,25)]
+showSpec le ln = let
+  sp = unlines . map show . Map.keys . globalEnv $ lookupDGraph ln le
+  in createTextDisplay ("Contents of " ++ show ln) sp [size(80,25)]
 
 close :: GInfo -> IO Bool
 close (GInfo { exitMVar = exit'
@@ -158,5 +154,4 @@ close (GInfo { exitMVar = exit'
   return True
 
 exit :: GInfo -> IO ()
-exit (GInfo {exitMVar = exit'}) = do
-  putMVar exit' ()
+exit (GInfo {exitMVar = exit'}) = putMVar exit' ()
