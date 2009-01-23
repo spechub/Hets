@@ -81,6 +81,7 @@ import Comorphisms.CspCASL2IsabelleHOL
 import CspCASL.Comorphisms
 import Comorphisms.CASL_DL2CASL
 import Comorphisms.RelScheme2CASL
+import Comorphisms.CASL2VSE
 import Comorphisms.CASL2VSERefine
 import Comorphisms.CASL2VSEImport
 #endif
@@ -111,7 +112,7 @@ addUnionNames (c1@(Comorphism cid1), c2@(Comorphism cid2)) =
 addMorphismName :: AnyMorphism -> (String, AnyMorphism)
 addMorphismName m@(Morphism cid) = (language_name cid, m)
 
-addModificationName :: AnyModification -> (String,AnyModification)
+addModificationName :: AnyModification -> (String, AnyModification)
 addModificationName m@(Modification cid) = (language_name cid, m)
 
 comorphismList :: [AnyComorphism]
@@ -133,6 +134,7 @@ comorphismList =
     , Comorphism CoCASL2CoSubCFOL
     , Comorphism CoCFOL2IsabelleHOL
     , Comorphism RelScheme2CASL
+    , Comorphism CASL2VSE
     , Comorphism CASL2VSEImport
     , Comorphism CASL2VSERefine
 #endif
