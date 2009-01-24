@@ -89,26 +89,30 @@ transProcess caslSign pr = case pr of
 transEventSet :: EVENT_SET -> Term
 transEventSet evs =
     let
-        tranCommType ct = conDouble $ (tokStr ct) ++ barExtS
+        -- tran_COMM_TYPE ct = conDouble $ (tokStr ct) ++ barExtS
+        -- tran_commType ct = conDouble $ (tokStr ct) ++ barExtS
     in case evs of
-         EventSet commTypes _ -> Set $ FixedSet $ map tranCommType commTypes
+         EventSet _ _ -> conDouble "ChanSendNotYetDone"
+           -- Set $ FixedSet $ map tran_COMM_TYPE commTypes
+         FQEventSet _ _ -> conDouble "ChanSendNotYetDone"
+           -- Set $ FixedSet $ map tranCommType commTypes
 
 -- BUG - this is not right yet
 transEvent :: CASL_Sign.Sign () () -> EVENT -> Term
 transEvent caslSign ev =
     case ev of
       TermEvent caslTerm _ -> transTerm_with_class caslSign caslTerm
-      InternalPrefixChoice v s _ ->
+      InternalPrefixChoice _ _ _ ->
           conDouble "ChanSendNotYetDone"
           -- cspProver_internal_prefix_choiceOp (transVar v) (transSort s)
-      ExternalPrefixChoice v s _ ->
+      ExternalPrefixChoice _ _ _ ->
           conDouble "ChanSendNotYetDone"
           -- cspProver_external_prefix_choiceOp (transVar v) (transSort s)
       ChanSend _ _ _ -> conDouble "ChanSendNotYetDone"
       ChanNonDetSend _ _ _ _ -> conDouble "ChanNonDetSendNotYetDone"
       ChanRecv _ _ _ _ -> conDouble "ChanRecvNotYetDone"
       -- BUG - this is not done at all
-      FQEvent ev' mfqChan fqTerm r -> transEvent caslSign (TermEvent fqTerm r)
+      FQEvent _ _ fqTerm r -> transEvent caslSign (TermEvent fqTerm r)
 
 transVar :: CASL_AS_Basic_CASL.VAR -> Term
 transVar v = conDouble $ tokStr v

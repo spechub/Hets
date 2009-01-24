@@ -13,11 +13,11 @@ Abstract syntax of CSP-CASL processes.
 -}
 module CspCASL.AS_CspCASL where
 
-import Common.Doc
-import Common.DocUtils
+import Common.Doc()
+import Common.DocUtils()
 import Common.Id
 
-import CASL.AS_Basic_CASL (SORT, VAR, FORMULA)
+import CASL.AS_Basic_CASL (SORT, VAR)
 
 import CspCASL.AS_CspCASL_Process (CHANNEL_NAME, COMM_TYPE, PROCESS(..),
                                    PROCESS_NAME)

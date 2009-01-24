@@ -85,7 +85,7 @@ transCCTheory ccTheory =
         pcfol2cfol = (map_theory CASL2SubCFOL.defaultCASL2SubCFOL)
         cfol2isabelleHol = (map_theory CFOL2IsabelleHOL.CFOL2IsabelleHOL)
         sortList = Set.toList(CASLSign.sortSet caslSign)
-        fakeType = Type {typeId = "Fake_Type" , typeSort = [], typeArgs =[]}
+        -- fakeType = Type {typeId = "Fake_Type" , typeSort = [], typeArgs =[]}
     in do -- Remove Subsorting from the CASL part of the CspCASL specification
           translation1 <- casl2pcfol (caslSign,[])
           -- Next Remove partial functions
@@ -111,8 +111,11 @@ transCCTheory ccTheory =
 
 -- BUG This is not implemented in a sensible way yet and is not used
 transCCSentence :: CspCASLSign -> CspCASLSen -> Result IsaSign.Sentence
-transCCSentence _ (ProcessEq pn _ _ _) =
-    do return (mkSen (Const (mkVName (show pn))
+transCCSentence _ (ProcessEq pn _ _ _) = do
+  return (mkSen (Const (mkVName (show pn))
+                                (Disp (Type "byeWorld" [] []) TFun Nothing)))
+transCCSentence _ _ = do
+  return (mkSen (Const (mkVName ("a"))
                                 (Disp (Type "byeWorld" [] []) TFun Nothing)))
 
 --------------------------------------------------------------------------
@@ -173,7 +176,7 @@ addProcMap namedSens caslSign isaTh =
         procMapTerm = termAppl (conDouble procMapS)
         -- Make a single equation for the primrec from a process equation
         -- BUG HERE - this next part is not right - underscore is bad
-        mkEq (ProcessEq procName vars _ proc) =
+        mkEq (ProcessEq procName _ _ proc) =
             let -- Make the name (string) for this process
                 procNameString = convertProcessName2String procName
                 -- Change the name to a term
@@ -553,9 +556,6 @@ addAllChooseFunctions sorts isaTh =
 addChooseFunction ::  IsaTheory -> SORT -> IsaTheory
 addChooseFunction isaTh sort =
     let --constant
-        alphabetType = Type {typeId = alphabetS,
-                             typeSort = [],
-                             typeArgs =[]}
         sortType = Type {typeId = convertSort2String sort,
                          typeSort = [],
                          typeArgs =[]}
