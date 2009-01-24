@@ -12,9 +12,21 @@ CspCASLProver allows interactive theorem proving on CspCASL
 specifications. See CspCASL.hs for details on the specification
 language CspCASL.
 
+"CspCASLProver.Consts" conatins constants and related fucntions for
+CspCASLProver.
+
 "CspCASLProver.CspCASLProver" is an interactive interface to the
 Isabelle prover (instanisated with CspProver). The encoding of CspCASL
 into IsabelleHOL requires the generation of several Isabelle theories
 where only the final theory requires user interaction.
+
+"CspCASLProver.IsabelleUtils" contains utilities for CspCASLProver
+related to Isabelle. The functions here typically manipulate Isabelle
+signatures.
+
+"CspCASLProver.Utils" contains utilities for CspCASLProver related to
+the actual construction of Isabelle theories.
+
+
 -}
 module CspCASLProver where

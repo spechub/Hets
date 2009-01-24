@@ -17,14 +17,14 @@ signatures for CSP-CASL
 module CspCASL.SignCSP where
 
 import CspCASL.AS_CspCASL_Process (CHANNEL_NAME, PROCESS_NAME,
-    PROCESS(..), CommAlpha(..), CommType(..), TypedChanName(..))
+    PROCESS(..), CommAlpha, CommType(..), TypedChanName(..))
 
 import CspCASL.AS_CspCASL ()
 import CspCASL.CspCASL_Keywords
-import CspCASL.Print_CspCASL
+import CspCASL.Print_CspCASL ()
 
-import CASL.AS_Basic_CASL (FORMULA, SORT, TERM)
-import CASL.Sign (emptySign, Sign, extendedInfo, sortRel)
+import CASL.AS_Basic_CASL (CASLFORMULA, SORT, TERM)
+import CASL.Sign (CASLSign, emptySign, Sign, extendedInfo, sortRel)
 import CASL.Morphism (Morphism)
 
 import Common.AS_Annotation (Named)
@@ -106,7 +106,7 @@ data CspSign = CspSign
 -- signature in the extendedInfo part.
 type CspCASLSign = Sign () CspSign
 
-ccSig2CASLSign :: CspCASLSign -> Sign () ()
+ccSig2CASLSign :: CspCASLSign -> CASLSign
 ccSig2CASLSign sigma = sigma { extendedInfo = () }
 
 ccSig2CspSign :: CspCASLSign -> CspSign
@@ -237,14 +237,13 @@ instance Pretty CspAddMorphism where
 --   list of parameters which are qualified variables (which are
 --   terms), a constituent( or is it permitted ?) communication alphabet and
 --   finally on the RHS a fully qualified process.
-data CspCASLSen = CASLSen (FORMULA ())
+data CspCASLSen = CASLSen (CASLFORMULA)
                 | ProcessEq PROCESS_NAME FQProcVarList CommAlpha PROCESS
                   deriving (Show, Eq, Ord)
 
 instance Pretty CspCASLSen where
-    -- Not implemented yet - the pretty printing of the casl sentences
     pretty(CASLSen f) = pretty f
-    pretty(ProcessEq pn varList alpha proc) =
+    pretty(ProcessEq pn varList _ proc) =
         let varDoc = if (null varList)
                      then empty
                      else parens $ sepByCommas $ map pretty varList
