@@ -23,7 +23,9 @@ import Static.DGTranslation
 
 import Proofs.DGFlattening
 import Proofs.QualifyNames
+import Proofs.EdgeUtils
 
+import Common.AS_Annotation
 import Common.ExtSign
 import Common.Id
 import Common.LibName
@@ -32,10 +34,12 @@ import Common.ResultT
 import Common.SExpr
 import Common.Utils
 import Common.Lib.Graph (Gr)
+import qualified Common.OrderedMap as OMap
 
 import Logic.Prover
 import Logic.Comorphism
 import Logic.Coerce
+import Logic.Logic
 
 import VSE.Logic_VSE
 
@@ -45,6 +49,8 @@ import Comorphisms.CASL2VSE
 
 import Data.Char
 import Data.Maybe
+import qualified Data.Map as Map
+import qualified Data.Set as Set
 import Data.Graph.Inductive.Basic (elfilter)
 import Data.Graph.Inductive.Graph hiding (out)
 
@@ -86,7 +92,7 @@ prove _cms (ln, _node) libEnv =
                (getLIB_ID ln) sign2
            , show $ prettySExpr
              $ SList $ map (namedSenToSExpr sign2) sens2)) ns
-    lift $ do
+    nLibEnv <- lift $ do
        vseBin <- getEnvDef "HETS_VSE" "hetsvse"
        (inp, out, _, cp) <-
            runInteractiveProcess vseBin ["-std"] Nothing Nothing
@@ -105,17 +111,44 @@ prove _cms (ln, _node) libEnv =
        case ms of
          Just _ -> do
            putStrLn $ vseBin ++ " unavailable"
-           return []
+           return libEnv
          Nothing -> do
            revres <- readRest cp out ""
            let res = reverse revres
            case parse parseSExprs errfile res of
-             Right l -> mapM_ (print . prettySExpr) l
+             Right l -> let lemMap = readLemmas l in
+               return $ foldr (\ (n, lbl) le ->
+                 let str = map toUpper $ thName ln (n, lbl)
+                     lems = Set.fromList $ Map.findWithDefault [] str lemMap
+                 in if Set.null lems then le else let
+                     dg = lookupDGraph ln le
+                     in case lab (dgBody dg) n of
+                     Nothing -> le -- node missing in original graph
+                     Just olbl -> case dgn_theory olbl of
+                       G_theory lid sig sigId sens _ -> let
+                         axs = Map.keys $ OMap.filter isAxiom sens
+                         nsens = OMap.mapWithKey (\ name sen ->
+                             if not (isAxiom sen) && Set.member
+                                  (map toUpper $ transString name) lems
+                             then sen {
+                                 senAttr = ThmStatus $
+                                     (Comorphism CASL2VSE,
+                                     BasicProof lid $
+                                       (openProof_status name "VSEstruct"
+                                       $ empty_proof_tree lid)
+                                       { usedAxioms = axs
+                                       , goalStatus = Proved Nothing })
+                                     : thmStatus sen }
+                             else sen) sens
+                         ndg = changeDGH dg $ SetNodeLab olbl
+                               (n, olbl { dgn_theory =
+                                 G_theory lid sig sigId nsens startThId })
+                        in Map.insert ln ndg le) libEnv nls
              Left e -> do
                writeFile errfile res
                print e
-           return []
-    return (libEnv, Result [] Nothing)
+               return libEnv
+    return (nLibEnv, Result [] Nothing)
 
 getLinksTo :: LIB_NAME -> Gr DGNodeLab DGLinkLab -> LNode DGNodeLab -> String
 getLinksTo ln dg (n, lbl) = show $ prettySExpr $ SList
