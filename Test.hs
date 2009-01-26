@@ -22,6 +22,7 @@ import Common.AS_Annotation
 import System.Environment
 import Data.Graph.Inductive.Graph
 import qualified Data.Map as Map
+import qualified Data.Set as Set
 import Data.Maybe
 import Data.List
 
@@ -66,7 +67,7 @@ main = do
 
 proceed :: FilePath -> ResultT IO (LIB_NAME, LibEnv)
 proceed fname = do
-  anaSourceFile logicGraph myHetcatsOpts emptyLibEnv fname
+  anaSourceFile logicGraph myHetcatsOpts Set.empty emptyLibEnv fname
 
 -- read in a CASL file and return the basic theory
 getCASLSigSens ::    String -- filename
