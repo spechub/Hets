@@ -95,8 +95,8 @@ evaluateOnePointFORMULA sig (Disjunction fs _)=
 evaluateOnePointFORMULA sig (Implication f1 f2 _ _)=
         let p1=evaluateOnePointFORMULA sig f1
             p2=evaluateOnePointFORMULA sig f2
-        in if p1==(Just False) || p2==(Just True) then Just True
-           else if p1==(Just True) && p2==(Just False) then Just False
+        in if p1 == Just False || p2 == Just True then Just True
+           else if p1 == Just True && p2 == Just False then Just False
                                                        else Nothing
 
 evaluateOnePointFORMULA sig (Equivalence f1 f2 _) =
@@ -132,19 +132,19 @@ evaluateOnePointFORMULA sig (Definedness (Sorted_term _ sort _) _)=
             False -> Just True
 
 evaluateOnePointFORMULA sig (Existl_equation (Sorted_term _ sort1 _) (Sorted_term _ sort2 _) _)=
-        if (Set.member sort1 (sortSet sig)==False)
-             && (Set.member sort2 (sortSet sig)==False) then Just True
+        if not (Set.member sort1 (sortSet sig))
+             && not (Set.member sort2 (sortSet sig)) then Just True
         else Nothing
 
 evaluateOnePointFORMULA sig (Strong_equation (Sorted_term _ sort1 _) (Sorted_term _ sort2 _) _)=
-        if (Set.member sort1 (sortSet sig)==False)
-             && (Set.member sort2 (sortSet sig)==False) then Just True
+        if not (Set.member sort1 (sortSet sig))
+             && not (Set.member sort2 (sortSet sig)) then Just True
         else Nothing
 
 -- todo: auch pruefen, ob Sorte von t in sortSet sig
 evaluateOnePointFORMULA sig (Membership (Sorted_term _ sort1 _) sort2 _)=
-        if (Set.member sort1 (sortSet sig)==False)
-             && (Set.member sort2 (sortSet sig)==False) then Just True
+        if not (Set.member sort1 (sortSet sig))
+             && not (Set.member sort2 (sortSet sig)) then Just True
         else Nothing
 
 evaluateOnePointFORMULA _ (Mixfix_formula _)= error "Fehler Mixfix_formula"
@@ -172,7 +172,7 @@ evaluateOnePointFORMULA _ (Unparsed_formula _ _)= error "Fehler Unparsed_formula
 evaluateOnePointFORMULA sig (Sort_gen_ax constrs _)=
       let (srts,ops,_)=recover_Sort_gen_ax constrs
           sorts = sortSet sig
-          argsAndres=concat $ map (\os-> case os of
+          argsAndres=concatMap (\os-> case os of
                                           Op_name _->[]
                                           Qual_op_name _ ot _->
                                             case ot of
@@ -181,8 +181,8 @@ evaluateOnePointFORMULA sig (Sort_gen_ax constrs _)=
           iterateInhabited l =
                     if l==newL then newL else iterateInhabited newL
                              where newL =foldr (\ (as,rs) l'->
-                                                  if (all (\s->elem s l') as)
-                                                      && (not (elem rs l'))
+                                                  if all (\s->elem s l') as
+                                                      && not (elem rs l')
                                                   then rs:l'
                                                   else l') l argsAndres
     --      inhabited = iterateInhabited []

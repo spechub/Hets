@@ -59,8 +59,8 @@ terminationProof fs dms
              "eq(_,_) -> false\n" ++
              "when_else(t1,true,t2) -> t1\n" ++
              "when_else(t1,false,t2) -> t2\n"
-    c_vars = ("(VAR t t1 t2 " ++ (varsStr (allVar $ map varOfAxiom $
-                                fs) "") ++ ")\n")
+    c_vars = ("(VAR t t1 t2 " ++ (varsStr (allVar $ map varOfAxiom fs) "") ++ 
+              ")\n")
     c_axms = axhead ++ (axiomTrs fs "") ++ ")\n"
     ipath = "/Input.trs"
     opath = "/Result.txt"
@@ -72,8 +72,7 @@ terminationProof fs dms
                 system ("java -jar " ++ aprovePath ++ " -u cli -m " ++
                         "wst -p plain " ++ tmpDir ++
                         ipath ++ " | head -n 1 > " ++ tmpDir ++ opath)
-                res <- readFile (tmpDir ++ opath)
-                return res)
+                readFile (tmpDir ++ opath))
 
 
 -- | get the name of a operation symbol
@@ -95,15 +94,12 @@ term_trs :: TERM f -> String
 term_trs t =
   case (term t) of
     Qual_var var _ _ -> tokStr var
-    Application (Op_name opn) [] _ ->
-        idStr opn
+    Application (Op_name opn) [] _ -> idStr opn
     Application (Qual_op_name opn _ _) ts _ ->
         if null ts then (idStr opn)
         else ((idStr opn) ++ "(" ++ terms_pa ts ++")")
-    Sorted_term t' _ _ ->
-        term_trs t'
-    Cast t' _ _ ->
-        term_trs t'
+    Sorted_term t' _ _ -> term_trs t'
+    Cast t' _ _ -> term_trs t'
     Conditional t1 f t2 _ ->
         ("when_else("++(term_trs t1)++","++
          (t_f_str f)++","++(term_trs t2)++")")
@@ -122,7 +118,7 @@ term_trs t =
 terms_pa :: [TERM f] -> String
 terms_pa ts =
     if null ts then ""
-    else tail $ concat $ map (\s->","++s) $ map term_trs ts
+    else tail $ concatMap ((\s->',':s) . term_trs) ts
 
 
 -- | translate a casl axiom to TRS-rule:
@@ -134,10 +130,8 @@ axiom_trs :: (Eq f) => FORMULA f -> [(TERM f,FORMULA f)] -> String
 axiom_trs f doms =
   case (quanti f) of
     Quantification _ _ f' _ -> axiom_trs f' doms
-    Conjunction fs _ ->
-        conj_sub fs ++ " -> true"
-    Disjunction fs _ ->
-        disj_sub fs ++ " -> true"
+    Conjunction fs _ -> conj_sub fs ++ " -> true"
+    Disjunction fs _ -> disj_sub fs ++ " -> true"
     Implication f1 f2 _ _ ->
         case f2 of
           Equivalence f3 f4 _ ->
@@ -160,15 +154,11 @@ axiom_trs f doms =
                             " | def(" ++ (term_trs t) ++ ") -> open"
                 _ -> (axiom_trs f2 doms) ++  " | " ++
                      (axiom_trs f1 doms)
-    Equivalence f1 f2 _ ->
-         (axiom_trs f1 doms) ++ " | " ++
-         (axiom_trs f2 doms)
+    Equivalence f1 f2 _ -> (axiom_trs f1 doms) ++ " | " ++ (axiom_trs f2 doms)
     Negation f' _ ->
         case f' of
-          Conjunction fs _ ->
-              conj_sub fs ++ " -> false"
-          Disjunction fs _ ->
-              disj_sub fs ++ " -> false"
+          Conjunction fs _ -> conj_sub fs ++ " -> false"
+          Disjunction fs _ -> disj_sub fs ++ " -> false"
           Predication p_s ts _ ->
               if null ts
               then (predSymName p_s) ++ " -> false"
@@ -181,8 +171,7 @@ axiom_trs f doms =
     Predication p_s ts _ ->
         if null ts then (predSymName p_s) ++ " -> true"
         else (predSymName p_s) ++ "(" ++ (terms_pa ts) ++ ") -> true"
-    Definedness t _ ->
-        "def(" ++ (term_trs t) ++ ") -> open"
+    Definedness t _ -> "def(" ++ (term_trs t) ++ ") -> open"
     Strong_equation t1 t2 _ ->
         case t2 of
           Conditional tt1 ff tt2 _ ->
@@ -205,31 +194,24 @@ axiom_sub :: FORMULA f -> String
 axiom_sub f =
   case (quanti f) of
     Quantification _ _ f' _ -> axiom_sub f'
-    Conjunction fs _ ->
-        conj_sub fs
-    Disjunction fs _ ->
-        disj_sub fs
+    Conjunction fs _ -> conj_sub fs
+    Disjunction fs _ -> disj_sub fs
     Negation f' _ ->
         case f' of
-          Conjunction fs _ ->
-              "not(" ++ conj_sub fs ++ ")"
-          Disjunction fs _ ->
-              "not(" ++ disj_sub fs ++ ")"
+          Conjunction fs _ -> "not(" ++ conj_sub fs ++ ")"
+          Disjunction fs _ -> "not(" ++ disj_sub fs ++ ")"
           Predication p_s ts _ ->
               if null ts then "not(" ++ (predSymName p_s) ++ ")"
               else "not(" ++ (predSymName p_s) ++ "(" ++ (terms_pa ts) ++ "))"
           Strong_equation t1 t2 _ ->
               "not(eq(" ++ (term_trs t1) ++ "," ++ (term_trs t2) ++ "))"
           _ -> error "CASL.CCC.TerminationProof.str_substr.<Negation>"
-    True_atom _ ->
-        "true"
-    False_atom _ ->
-        "false"
+    True_atom _ -> "true"
+    False_atom _ -> "false"
     Predication p_s ts _ ->
         if null ts then (predSymName p_s)
         else (predSymName p_s) ++ "(" ++ (terms_pa ts) ++ ")"
-    Definedness t _ ->
-        "def(" ++ (term_trs t) ++ ")"
+    Definedness t _ -> "def(" ++ (term_trs t) ++ ")"
     Strong_equation t1 t2 _ ->
         "eq(" ++ (term_trs t1) ++ "," ++ (term_trs t2) ++ ")"
     _ -> error "CASL.CCC.TerminationProof.axiom_sub.<axiom_sub>"
@@ -239,7 +221,7 @@ axiom_sub f =
 conj_sub :: [FORMULA f] -> String
 conj_sub fs =
   if length fs == 2 then ("and(" ++ (axiom_sub $ head fs) ++ "," ++
-                                   (axiom_sub $ last fs) ++ ")")
+                                    (axiom_sub $ last fs) ++ ")")
   else ("and(" ++ (axiom_sub $ head fs) ++ "," ++
                   (conj_sub $ tail fs) ++ ")")
 
@@ -248,6 +230,6 @@ conj_sub fs =
 disj_sub :: [FORMULA f] -> String
 disj_sub fs =
   if length fs == 2 then ("or(" ++ (axiom_sub $ head fs) ++ "," ++
-                                  (axiom_sub $ last fs) ++ ")")
+                                   (axiom_sub $ last fs) ++ ")")
   else ("or(" ++ (axiom_sub $ head fs) ++ "," ++
                  (disj_sub $ tail fs) ++ ")")

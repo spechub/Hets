@@ -160,6 +160,32 @@ getNSorts osig m = nSorts
         newSorts = Set.filter (not . flip Set.member oldSorts) allSorts
         nSorts = Set.toList newSorts
 
+getNotFreeSorts :: Sign () () -> Morphism () () ()
+    -> [Named (FORMULA ())] -> [SORT]
+getNotFreeSorts osig m fsn = notFreeSorts
+    where
+        fs = getFs fsn
+        axOfS = filter (\f-> isSortGen f || is_Membership f) fs
+        nSorts = getNSorts osig m
+        notFreeSorts = filter (\s->is_free_gen_sort s axOfS ==Just False) nSorts
+
+getNefsorts :: (Sign () (),[Named (FORMULA ())]) -> Morphism () () ()
+    -> [Named (FORMULA ())] -> [SORT]
+getNefsorts (osig,osens) m fsn = nefsorts
+    where
+        fs = getFs fsn
+        ofs = getOfs osens
+        tsig = mtarget m
+        oldSorts = sortSet osig
+        oSorts = Set.toList oldSorts
+        esorts = Set.toList $ emptySortSet tsig
+        nSorts = getNSorts osig m
+        fconstrs = concatMap constraintOfAxiom (ofs ++ fs)
+        (srts,_,_) = recover_Sort_gen_ax fconstrs
+        f_Inhabited = inhabited oSorts fconstrs
+        fsorts = filter (\s-> not $ elem s esorts) $ intersect nSorts srts
+        nefsorts = filter (\s->not $ elem s f_Inhabited) fsorts
+
 getDataStatus :: (Sign () (),[Named (FORMULA ())]) -> Morphism () () ()
     -> [Named (FORMULA ())] -> ConsistencyStatus
 getDataStatus (osig,osens) m fsn = dataStatus
@@ -288,21 +314,10 @@ checkSort (osig,osens) m fsn
                       (sname ++ " is not inhabited") pos
     | otherwise = Nothing
     where
-        fs = getFs fsn
-        ofs = getOfs osens
-        tsig = mtarget m
-        oldSorts = sortSet osig
-        oSorts = Set.toList oldSorts
-        esorts = Set.toList $ emptySortSet tsig
         nSorts = getNSorts osig m
-        axOfS = filter (\f-> isSortGen f || is_Membership f) fs
-        notFreeSorts = filter (\s->is_free_gen_sort s axOfS ==Just False) nSorts
-        fconstrs = concatMap constraintOfAxiom (ofs ++ fs)
-        (srts,_,_) = recover_Sort_gen_ax fconstrs
-        f_Inhabited = inhabited oSorts fconstrs
-        fsorts = filter (\s-> not $ elem s esorts) $ intersect nSorts srts
-        nefsorts = filter (\s->not $ elem s f_Inhabited) fsorts
-
+        notFreeSorts = getNotFreeSorts osig m fsn
+        nefsorts = getNefsorts (osig,osens) m fsn         
+           
 checkLeadingTerms :: [Named (FORMULA ())] -> Morphism () () ()
    -> [Named (FORMULA ())]
    -> Maybe (Result (Maybe (ConsistencyStatus,[FORMULA ()])))

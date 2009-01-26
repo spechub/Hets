@@ -21,7 +21,7 @@ import qualified Common.Lib.Rel as Rel
 import CASL.Sign
 import Common.AS_Annotation
 import Common.Id
-import Data.List (nub)
+import Data.List (nub, isPrefixOf)
 -- import Common.DocUtils
 
 
@@ -46,8 +46,8 @@ is_ex_quanti f =
       Quantification Existential _ _ _ -> True
       Quantification Unique_existential _ _ _ -> True
       Quantification _ _ f' _ -> is_ex_quanti f'
-      Implication f1 f2 _ _ -> (is_ex_quanti f1) || (is_ex_quanti f2)
-      Equivalence f1 f2 _ -> (is_ex_quanti f1) || (is_ex_quanti f2)
+      Implication f1 f2 _ _ -> is_ex_quanti f1 || is_ex_quanti f2
+      Equivalence f1 f2 _ -> is_ex_quanti f1 || is_ex_quanti f2
       Negation f' _ -> is_ex_quanti f'
       _ -> False
 
@@ -57,12 +57,12 @@ constraintOfAxiom :: FORMULA f -> [Constraint]
 constraintOfAxiom f =
     case f of
       Sort_gen_ax constrs _ -> constrs
-      _ ->[]
+      _ -> []
 
 
 is_user_or_sort_gen :: Named (FORMULA f) -> Bool
-is_user_or_sort_gen ax = take 12 name == "ga_generated" ||
-                         take 3 name /= "ga_"
+is_user_or_sort_gen ax = "ga_generated" `isPrefixOf` name ||
+                         not ("ga_" `isPrefixOf` name)
     where name = senAttr ax
 
 
@@ -91,18 +91,14 @@ is_free_gen_sort :: SORT -> [FORMULA f] -> Maybe Bool
 is_free_gen_sort _ [] = Nothing
 is_free_gen_sort s (f:fs) =
   case f of
-    Sort_gen_ax csts isFree
-      | any ((== s) . newSort) csts
-        -> Just isFree
+    Sort_gen_ax csts isFree | any ((== s) . newSort) csts -> Just isFree
     _ -> is_free_gen_sort s fs
 
 
 -- | check whether it is the domain of a partial function
 isDomain :: FORMULA f -> Bool
 isDomain f = case (quanti f) of
-               Equivalence (Definedness _ _) f' _ ->
-                 if containDef f' then False
-                 else True
+               Equivalence (Definedness _ _) f' _ -> not (containDef f')
                Definedness _ _ -> True
                _ -> False
 
@@ -135,9 +131,7 @@ correctDef :: FORMULA f -> Bool
 correctDef f = case (quanti f) of
              Implication _ (Definedness _ _) _ _ -> False
              Implication (Definedness _ _) _ _ _ -> True
-             Equivalence (Definedness _ _) f' _ ->
-               if containDef f' then False
-               else True
+             Equivalence (Definedness _ _) f' _ -> not (containDef f')
              Negation (Definedness _ _) _ -> True
              Definedness _ _ -> True
              _ -> False
@@ -145,27 +139,24 @@ correctDef f = case (quanti f) of
 
 -- | extract all partial function symbols, their domains are defined
 domainOpSymbs :: [FORMULA f] -> [OP_SYMB]
-domainOpSymbs fs = concat $ map domOpS fs
+domainOpSymbs fs = concatMap domOpS fs
   where domOpS f = case (quanti f) of
-                     Equivalence (Definedness t _) _ _ ->
-                       [opSymbOfTerm t]
+                     Equivalence (Definedness t _) _ _ -> [opSymbOfTerm t]
                      _ -> []
 
 
 -- | check whether a formula gives the domain of a partial function
 domain_os :: FORMULA f -> OP_SYMB -> Bool
 domain_os f os = case (quanti f) of
-                   Equivalence (Definedness t _) _ _ ->
-                     opSymbOfTerm t == os
+                   Equivalence (Definedness t _) _ _ -> opSymbOfTerm t == os
                    _ -> False
 
 
 -- | extract the domain-list of partial functions
 domainList :: [FORMULA f] -> [(TERM f,FORMULA f)]
-domainList fs = concat $ map dm fs
+domainList fs = concatMap dm fs
   where dm f = case (quanti f) of
-                 Equivalence (Definedness t _) f' _ ->
-                   [(t,f')]
+                 Equivalence (Definedness t _) f' _ -> [(t,f')]
                  _ -> []
 
 
@@ -195,7 +186,7 @@ isOp_Pred f =
       Quantification _ _ f' _ -> isOp_Pred f'
       Negation f' _ -> isOp_Pred f'
       Implication _ f' _ _ -> isOp_Pred f'
-      Equivalence f1 f2 _ -> (isOp_Pred f1) && (isOp_Pred f2)
+      Equivalence f1 f2 _ -> isOp_Pred f1 && isOp_Pred f2
       Definedness _ _ -> False
       Predication _ _ _ -> True
       Existl_equation t _ _ -> case (term t) of
@@ -239,8 +230,8 @@ varOfTerm :: Eq f => TERM f -> [TERM f]
 varOfTerm t = case t of
                 Qual_var _ _ _ -> [t]
                 Sorted_term t' _ _ -> varOfTerm  t'
-                Application _ ts _ -> if length ts==0 then []
-                                      else nub $ concat $ map varOfTerm ts
+                Application _ ts _ -> if null ts then []
+                                      else nub $ concatMap varOfTerm ts
                 _ -> []
 
 
@@ -266,11 +257,11 @@ varOfAxiom :: FORMULA f -> [VAR]
 varOfAxiom f =
   case f of
     Quantification Universal v_d _ _ ->
-        concat $ map (\(Var_decl vs _ _)-> vs) v_d
+        concatMap (\(Var_decl vs _ _)-> vs) v_d
     Quantification Existential v_d _ _ ->
-        concat $ map (\(Var_decl vs _ _)-> vs) v_d
+        concatMap (\(Var_decl vs _ _)-> vs) v_d
     Quantification Unique_existential v_d _ _ ->
-        concat $ map (\(Var_decl vs _ _)-> vs) v_d
+        concatMap (\(Var_decl vs _ _)-> vs) v_d
     _ -> []
 
 
@@ -278,18 +269,12 @@ varOfAxiom f =
 predSymbsOfAxiom :: (FORMULA f) -> [PRED_SYMB]
 predSymbsOfAxiom f =
     case f of
-      Quantification _ _ f' _ ->
-          predSymbsOfAxiom f'
-      Conjunction fs _ ->
-          concat $ map predSymbsOfAxiom fs
-      Disjunction fs _ ->
-          concat $ map predSymbsOfAxiom fs
-      Implication f1 f2 _ _ ->
-          (predSymbsOfAxiom f1) ++ (predSymbsOfAxiom f2)
-      Equivalence f1 f2 _ ->
-          (predSymbsOfAxiom f1) ++ (predSymbsOfAxiom f2)
-      Negation f' _ ->
-          predSymbsOfAxiom f'
+      Quantification _ _ f' _ -> predSymbsOfAxiom f'
+      Conjunction fs _ -> concatMap predSymbsOfAxiom fs
+      Disjunction fs _ -> concatMap predSymbsOfAxiom fs
+      Implication f1 f2 _ _ -> predSymbsOfAxiom f1 ++ predSymbsOfAxiom f2
+      Equivalence f1 f2 _ -> predSymbsOfAxiom f1 ++ predSymbsOfAxiom f2
+      Negation f' _ -> predSymbsOfAxiom f'
       Predication p_s _ _ -> [p_s]
       _ -> []
 
@@ -307,9 +292,7 @@ infoSubsort :: [SORT] -> FORMULA f -> [FORMULA f]
 infoSubsort sts f =
     case f of
       Quantification Universal v (Equivalence (Membership _ s _) f1 _) _ ->
-          if not $ elem s sts
-          then [Quantification Existential v f1 nullRange]
-          else []
+           [Quantification Existential v f1 nullRange | not $ elem s sts]
       _ -> []
 
 
@@ -405,15 +388,15 @@ opTyp_Axiom f =
 
 -- | extract the overloaded constructors
 constructorOverload :: Sign f e -> OpMap -> [OP_SYMB] -> [OP_SYMB]
-constructorOverload s opm os = concat $ map (\ o1 -> cons_Overload o1) os
+constructorOverload s opm os = concatMap (\ o1 -> cons_Overload o1) os
     where cons_Overload o =
               case o of
                 Op_name _ -> [o]
                 Qual_op_name on1 ot _ ->
                     case Map.lookup on1 opm of
                       Nothing -> []
-                      Just op_t -> concat $ map (\opt->cons on1 ot opt) $
-                                   (Set.toList $ op_t)
+                      Just op_t -> concatMap (\opt->cons on1 ot opt)
+                                   (Set.toList op_t)
           cons on opt1 opt2 =
               case (leqF s (toOpType opt1) opt2) of
                 True -> [(Qual_op_name on (toOP_TYPE opt2) nullRange)]
@@ -425,8 +408,7 @@ isCons :: Sign f e -> [OP_SYMB] -> OP_SYMB -> Bool
 isCons s cons os =
     case cons of
       [] -> False
-      _ -> if is_Cons (head cons) os then True
-           else isCons s (tail cons) os
+      _ -> is_Cons (head cons) os || isCons s (tail cons) os
     where is_Cons (Op_name _) _ = False
           is_Cons _ (Op_name _) = False
           is_Cons (Qual_op_name on1 ot1 _) (Qual_op_name on2 ot2 _)
@@ -438,7 +420,7 @@ isCons s cons os =
 -- | check whether a sort is the others super sort
 isSupersort :: Sign f e -> SORT -> SORT -> Bool
 isSupersort sig s1 s2 = elem s1 slist
-    where sM = Rel.toMap $ sortRel $ sig
+    where sM = Rel.toMap $ sortRel sig
           slist = case Map.lookup s2 sM of
                     Nothing -> [s2]
                     Just sts -> Set.toList $ Set.insert s2 sts
@@ -450,14 +432,12 @@ isSupersortS sig s1 s2
     | length s1 /= length s2 = False
     | otherwise = supS s1 s2
     where supS [] [] = True
-          supS sts1 sts2 = if isSupersort sig (head sts1) (head sts2)
-                           then supS (tail sts1) (tail sts2)
-                           else False
-
+          supS sts1 sts2 = isSupersort sig (head sts1) (head sts2) &&
+                           supS (tail sts1) (tail sts2)
 
 -- | translate id to string
 idStr :: Id -> String
-idStr (Id ts _ _) = concat $ map tokStr ts
+idStr (Id ts _ _) = concatMap tokStr ts
 
 
 -- | replaces variables by terms in a term
@@ -484,7 +464,7 @@ substitute subs t =
       Mixfix_braced (map (substitute subs) ts) r
     _ -> t
   where subst [] tt = tt
-        subst (x:xs) tt = if tt == (snd x) then (fst x)
+        subst (x:xs) tt = if tt == snd x then fst x
                           else subst xs tt
 
 
@@ -492,19 +472,13 @@ substitute subs t =
 substiF :: Eq f => [(TERM f,TERM f)] -> FORMULA f -> FORMULA f
 substiF subs f =
   case f of
-    Quantification q v f' r ->
-      Quantification q v (substiF subs f') r
-    Conjunction fs r ->
-      Conjunction (map (substiF subs) fs) r
-    Disjunction fs r ->
-      Disjunction (map (substiF subs) fs) r
-    Implication f1 f2 b r ->
-      Implication (substiF subs f1) (substiF subs f2) b r
-    Equivalence f1 f2 r ->
-      Equivalence (substiF subs f1) (substiF subs f2) r
+    Quantification q v f' r -> Quantification q v (substiF subs f') r
+    Conjunction fs r -> Conjunction (map (substiF subs) fs) r
+    Disjunction fs r -> Disjunction (map (substiF subs) fs) r
+    Implication f1 f2 b r -> Implication (substiF subs f1) (substiF subs f2) b r
+    Equivalence f1 f2 r -> Equivalence (substiF subs f1) (substiF subs f2) r
     Negation f' r -> Negation (substiF subs f') r
-    Predication ps ts r ->
-      Predication ps (map (substitute subs) ts) r
+    Predication ps ts r -> Predication ps (map (substitute subs) ts) r
     Existl_equation t1 t2 r ->
       Existl_equation (substitute subs t1) (substitute subs t2) r
     Strong_equation t1 t2 r ->
@@ -522,15 +496,6 @@ sameOps_App app1 app2 = case (term app1) of
                                 Application ops2 _ _ -> ops1==ops2
                                 _ -> False
                           _ -> False
-
-
--- | check whether a string is a substring of another
-subStr :: String -> String -> Bool
-subStr [] _ = True
-subStr _ [] = False
-subStr xs ys = if (head xs) == (head ys) &&
-                  xs == take (length xs) ys then True
-               else subStr xs (tail ys)
 
 
 -- | get the axiom range of a term
@@ -554,38 +519,29 @@ varDeclOfF :: Eq f => FORMULA f -> [VAR_DECL]
 varDeclOfF f =
     case f of
       Quantification _ vds _ _ -> vds
-      Conjunction fs _ ->
-        concatVD $ nub $ concat $ map varDeclOfF fs
-      Disjunction fs _ ->
-        concatVD $ nub $ concat $ map varDeclOfF fs
-      Implication f1 f2 _ _ ->
-        concatVD $ nub $ (varDeclOfF f1) ++ (varDeclOfF f2)
-      Equivalence f1 f2 _ ->
-        concatVD $ nub $ (varDeclOfF f1) ++ (varDeclOfF f2)
-      Negation f' _ ->
-        varDeclOfF f'
-      Predication _ ts _ ->
-        varD $ nub $ concat $ map varOfTerm ts
-      Definedness t _ ->
-        varD $ varOfTerm t
-      Existl_equation t1 t2 _ ->
-        varD $ nub $ (varOfTerm t1) ++ (varOfTerm t2)
-      Strong_equation t1 t2 _ ->
-        varD $ nub $ (varOfTerm t1) ++ (varOfTerm t2)
+      Conjunction fs _ -> concatVD $ nub $ concatMap varDeclOfF fs
+      Disjunction fs _ -> concatVD $ nub $ concatMap varDeclOfF fs
+      Implication f1 f2 _ _ -> concatVD $ nub $ varDeclOfF f1 ++ varDeclOfF f2
+      Equivalence f1 f2 _ -> concatVD $ nub $ varDeclOfF f1 ++ varDeclOfF f2
+      Negation f' _ -> varDeclOfF f'
+      Predication _ ts _ -> varD $ nub $ concatMap varOfTerm ts
+      Definedness t _ -> varD $ varOfTerm t
+      Existl_equation t1 t2 _ -> varD $ nub $ varOfTerm t1 ++ varOfTerm t2
+      Strong_equation t1 t2 _ -> varD $ nub $ varOfTerm t1 ++ varOfTerm t2
       _ -> []
   where varD [] = []
         varD vars@(v:vs) =
             case v of
               Qual_var _ s r ->
-                (Var_decl (nub $ map varOfV $
-                           filter (\v'-> (sortOfV v') == s) vars) s r):
-                (varD $ filter (\v'-> (sortOfV v') /= s) vs)
+                Var_decl (nub $ map varOfV $
+                           filter (\v'-> sortOfV v' == s) vars) s r:
+                (varD $ filter (\v'-> sortOfV v' /= s) vs)
               _ -> error "CASL.CCC.TermFormula<varD>"
         concatVD [] = []
         concatVD vd@((Var_decl _ s r):vds) =
-            (Var_decl (nub $ concat $ map vOfVD $
-                       filter (\v'-> (sortOfVarD v') == s) vd) s r):
-            (concatVD $ filter (\v'-> (sortOfVarD v') /= s) vds)
+            Var_decl (nub $ concatMap vOfVD $
+                       filter (\v'-> sortOfVarD v' == s) vd) s r:
+            (concatVD $ filter (\v'-> sortOfVarD v' /= s) vds)
         vOfVD (Var_decl vs _ _) = vs
         sortOfV (Qual_var _ s _) = s
         sortOfV _ = error "CASL.CCC.TermFormula<sortOfV>"
