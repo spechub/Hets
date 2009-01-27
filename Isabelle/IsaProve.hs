@@ -197,7 +197,9 @@ isaProve thName th _freedefs = do
         (if null useaxs then [] else [Using $ map senAttr useaxs])
         $ By Auto
       thy = shows (printIsaTheory thBaseName sig
-        $ axs ++ map (mapNamed $ \ t -> t { thmProof = defaultProof }) ths)
+        $ axs ++ map (mapNamed $ \ t -> case t of
+           Sentence {} -> t { thmProof = defaultProof }
+           _ -> t) ths)
         "\n"
       thyFile = thBaseName ++ ".thy"
   case parse parseTheory thyFile thy of
