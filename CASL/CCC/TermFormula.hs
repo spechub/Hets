@@ -21,7 +21,8 @@ import qualified Common.Lib.Rel as Rel
 import CASL.Sign
 import Common.AS_Annotation
 import Common.Id
-import Data.List (nub, isPrefixOf)
+import Common.Utils (nubOrd)
+import Data.List (isPrefixOf)
 -- import Common.DocUtils
 
 
@@ -226,12 +227,12 @@ opSymbOfTerm t = case term t of
 
 
 -- | extract all variables of a term
-varOfTerm :: Eq f => TERM f -> [TERM f]
+varOfTerm :: Ord f => TERM f -> [TERM f]
 varOfTerm t = case t of
                 Qual_var _ _ _ -> [t]
                 Sorted_term t' _ _ -> varOfTerm  t'
                 Application _ ts _ -> if null ts then []
-                                      else nub $ concatMap varOfTerm ts
+                                      else nubOrd $ concatMap varOfTerm ts
                 _ -> []
 
 
@@ -515,31 +516,31 @@ sortOfVarD (Var_decl _ s _) = s
 
 
 -- | get or create a variable declaration for a formula
-varDeclOfF :: Eq f => FORMULA f -> [VAR_DECL]
+varDeclOfF :: Ord f => FORMULA f -> [VAR_DECL]
 varDeclOfF f =
     case f of
       Quantification _ vds _ _ -> vds
-      Conjunction fs _ -> concatVD $ nub $ concatMap varDeclOfF fs
-      Disjunction fs _ -> concatVD $ nub $ concatMap varDeclOfF fs
-      Implication f1 f2 _ _ -> concatVD $ nub $ varDeclOfF f1 ++ varDeclOfF f2
-      Equivalence f1 f2 _ -> concatVD $ nub $ varDeclOfF f1 ++ varDeclOfF f2
+      Conjunction fs _ -> concatVD $ nubOrd $ concatMap varDeclOfF fs
+      Disjunction fs _ -> concatVD $ nubOrd $ concatMap varDeclOfF fs
+      Implication f1 f2 _ _ -> concatVD $ nubOrd $ varDeclOfF f1 ++ varDeclOfF f2
+      Equivalence f1 f2 _ -> concatVD $ nubOrd $ varDeclOfF f1 ++ varDeclOfF f2
       Negation f' _ -> varDeclOfF f'
-      Predication _ ts _ -> varD $ nub $ concatMap varOfTerm ts
+      Predication _ ts _ -> varD $ nubOrd $ concatMap varOfTerm ts
       Definedness t _ -> varD $ varOfTerm t
-      Existl_equation t1 t2 _ -> varD $ nub $ varOfTerm t1 ++ varOfTerm t2
-      Strong_equation t1 t2 _ -> varD $ nub $ varOfTerm t1 ++ varOfTerm t2
+      Existl_equation t1 t2 _ -> varD $ nubOrd $ varOfTerm t1 ++ varOfTerm t2
+      Strong_equation t1 t2 _ -> varD $ nubOrd $ varOfTerm t1 ++ varOfTerm t2
       _ -> []
   where varD [] = []
         varD vars@(v:vs) =
             case v of
               Qual_var _ s r ->
-                Var_decl (nub $ map varOfV $
+                Var_decl (nubOrd $ map varOfV $
                            filter (\v'-> sortOfV v' == s) vars) s r:
                 (varD $ filter (\v'-> sortOfV v' /= s) vs)
               _ -> error "CASL.CCC.TermFormula<varD>"
         concatVD [] = []
         concatVD vd@((Var_decl _ s r):vds) =
-            Var_decl (nub $ concatMap vOfVD $
+            Var_decl (nubOrd $ concatMap vOfVD $
                        filter (\v'-> sortOfVarD v' == s) vd) s r:
             (concatVD $ filter (\v'-> sortOfVarD v' /= s) vds)
         vOfVD (Var_decl vs _ _) = vs

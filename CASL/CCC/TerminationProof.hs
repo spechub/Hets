@@ -18,12 +18,11 @@ import CASL.AS_Basic_CASL
 -- import Common.DocUtils
 import CASL.CCC.TermFormula
 import Common.Id
-import Common.Utils (getEnvDef)
+import Common.Utils (getEnvDef, nubOrd)
 import System.Cmd
 import System.IO.Unsafe
 import System.Directory
 -- import Debug.Trace
-import Data.List (nub)
 
 {-
    Automatic termination proof
@@ -37,7 +36,7 @@ import Data.List (nub)
    if a equation system is terminal, then it is computable.
 -}
 
-terminationProof :: Eq f => [FORMULA f] -> [(TERM f,FORMULA f)] -> Maybe Bool
+terminationProof :: Ord f => [FORMULA f] -> [(TERM f,FORMULA f)] -> Maybe Bool
 terminationProof fs dms
     | null fs = Just True
     | proof == "YES\n" = Just True
@@ -45,7 +44,7 @@ terminationProof fs dms
     | proof == "NO\n" = Just False
     | otherwise = Nothing
     where
-    allVar vs = nub $ concat vs
+    allVar vs = nubOrd $ concat vs
     varsStr vars str
         | null vars = str
         | otherwise = if null str then varsStr (tail vars) (tokStr $ head vars)
