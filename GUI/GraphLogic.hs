@@ -515,10 +515,11 @@ proofMenu gInfo@(GInfo { gi_GraphInfo = actGraphInfo
           doDump hOpts "PrintHistory" $ do
             putStrLn "History"
             print $ prettyHistory history
-          let lln = map (\x-> [DgCommandChange x]) $ calcGlobalHistory
+          let lln = map (\x-> DgCommandChange x) $ calcGlobalHistory
                                                    proofStatus newProofStatus
               nmStr = strToCmd str
-              nst = foldl (add2history nmStr) ost lln
+              nst = add2history nmStr ost lln
+      --        nst = foldl (add2history nmStr) ost lln
       --        (calcGlobalHistory proofStatus newProofStatus : guHist, grHist)
           applyChanges actGraphInfo $ reverse
             $ flatHistory history
