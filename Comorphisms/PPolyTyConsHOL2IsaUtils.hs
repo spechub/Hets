@@ -417,7 +417,7 @@ transTerm sign tyToks toks pVars trm = case trm of
     LetTerm As.Let peqs body _ -> do
         (nPVars, nEqs) <- transLetEqs sign tyToks toks pVars peqs
         (bTy, bTrm) <- transTerm sign tyToks toks nPVars body
-        return (bTy, Isa.Let nEqs bTrm)
+        return (bTy, mkLetAppl nEqs bTrm)
     TupleTerm ts@(_ : _) _ -> do
         nTs <- mapM (transTerm sign tyToks toks pVars) ts
         return $ foldl1 ( \ (s, p) (t, e) ->
@@ -675,6 +675,9 @@ mkTermAppl fun arg = case (fun, arg) of
           | new mp == "whenElseOp" -> case isEquallyLifted a c of
               Just (f, na, nc) -> mkTermAppl f $ If b na nc d
               Nothing -> If b a c d
+      (App (Const mp _) f _, App (Const mp2 _) arg2 _)
+          | new mp == "mapPartial" && new mp2 == "makePartial" ->
+             mkTermAppl mkPartial $ mkTermAppl f arg2
       (App (Const mp _) f c, _)
           | new mp == "liftUnit2bool" -> let af = mkTermAppl f unitOp in
              case arg of
@@ -732,11 +735,17 @@ simpForOption l v nF nArg = do
    , (termAppl conSome v,
       if new l == "mapPartial" then mkTermAppl mkPartial nF else nF)]
 
+mkLetAppl :: [(Isa.Term, Isa.Term)] -> Isa.Term -> Isa.Term
+mkLetAppl eqs inTrm = case inTrm of
+  App (Const mp _) arg _ | new mp == "makePartial" ->
+    mkTermAppl mkPartial $ Isa.Let eqs arg
+  _ -> Isa.Let eqs inTrm
+
 simpForPairs :: Simplifier
 simpForPairs l v2 nF nArg = do
   n <- freshIndex
   let v1 = mkFree $ "Xb" ++ show n
-  return $ Isa.Let [(Tuplex [v1, v2] NotCont, nArg)] $
+  return $ mkLetAppl [(Tuplex [v1, v2] NotCont, nArg)] $
      If v1 (if new l == "mapPartial" then mkTermAppl mkPartial nF else nF)
             (if new l == "lift2bool" then false else noneOp) NotCont
 
