@@ -20,4 +20,4 @@ spec List = Nat then
   op app : List * List -> List
   . app(Nil, l) = l
   . app(Cons(e, l), l2) = Cons(e, app(l, l2))
-  . length app(l1, l2) = plus(length l1, length l2) %implied
+  . length app(l1, l2) = plus(length l1, length l2) %(len_app)% %implied

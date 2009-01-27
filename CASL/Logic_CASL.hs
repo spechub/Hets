@@ -247,7 +247,7 @@ instance Logic CASL CASL_Sublogics
              [
              ConservativityChecker "CCC" checkFreeType
              ]
-         empty_proof_tree CASL = error "instance Logic CASL"
+         empty_proof_tree CASL = emptyProofTree
 #ifdef UNI_PACKAGE
          provers CASL = [quickCheckProver]
 #endif

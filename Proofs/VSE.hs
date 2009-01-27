@@ -39,7 +39,6 @@ import qualified Common.OrderedMap as OMap
 import Logic.Prover
 import Logic.Comorphism
 import Logic.Coerce
-import Logic.Logic
 
 import VSE.Logic_VSE
 
@@ -133,12 +132,9 @@ prove _cms (ln, _node) libEnv =
                              then sen {
                                  senAttr = ThmStatus $
                                      (Comorphism CASL2VSE,
-                                     BasicProof lid $
-                                       (openProof_status name "VSEstruct"
-                                       $ empty_proof_tree lid)
-                                       { usedAxioms = axs
-                                       , goalStatus = Proved Nothing })
-                                     : thmStatus sen }
+                                     BasicProof VSE $
+                                       mkVseProofStatus name axs)
+                                       : thmStatus sen }
                              else sen) sens
                          ndg = changeDGH dg $ SetNodeLab olbl
                                (n, olbl { dgn_theory =

@@ -33,8 +33,10 @@ import Text.ParserCombinators.Parsec
 vseProverName :: String
 vseProverName = "VSE"
 
-openVseProofStatus :: String -> Proof_status ()
-openVseProofStatus n = openProof_status n vseProverName ()
+mkVseProofStatus :: String -> [String] -> Proof_status ()
+mkVseProofStatus n axs = (openProof_status n vseProverName ())
+   { goalStatus = Proved Nothing
+   , usedAxioms = axs }
 
 vse :: Prover VSESign Sentence VSEMor () ()
 vse = mkProverTemplate vseProverName () prove
@@ -173,9 +175,7 @@ prove ostr (Theory sig thsens) _freedefs = do
         Right l -> return
           $ foldr (\ s r -> case Map.lookup s rMap of
                  Nothing -> r
-                 Just n -> (openVseProofStatus n)
-                   { goalStatus = Proved Nothing
-                   , usedAxioms = map senAttr disAxs } : r) []
+                 Just n -> mkVseProofStatus n (map senAttr disAxs) : r) []
           $ Map.findWithDefault [] (map toUpper str)
           $ readLemmas l
         Left e -> do
