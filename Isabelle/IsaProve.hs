@@ -198,7 +198,7 @@ isaProve thName th _freedefs = do
         $ By Auto
       thy = shows (printIsaTheory thBaseName sig
         $ axs ++ map (mapNamed $ \ t -> case t of
-           Sentence {} -> t { thmProof = defaultProof }
+           Sentence { thmProof = Nothing } -> t { thmProof = defaultProof }
            _ -> t) ths)
         "\n"
       thyFile = thBaseName ++ ".thy"
