@@ -288,8 +288,10 @@ createGlobalMenu gInfo@(GInfo { gi_hetcatsOpts = opts
               , ("Heterogeneity", libEnv_flattening_heterogen)
               , ("Qualify all names", qualifyLibEnv)]]
      , Button "Dump LibEnv" $ do
-          let le = i_libEnv ist
-          print $ prettyLibEnv le
+          ost2 <- readIORef $ intState gInfo
+          case i_state ost2 of
+            Nothing -> putStrLn "no lib"
+            Just ist2 -> print $ prettyLibEnv $ i_libEnv ist2
      , Button "Translate Graph" $ ral $ translateGraph gInfo convGraph showLib
      , Button "Show Logic Graph" $ ral $ showLogicGraph daVinciSort
      , Button "Show Library Graph" $ ral $ showLibGraph gInfo showLib
