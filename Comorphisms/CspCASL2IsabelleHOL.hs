@@ -1,7 +1,7 @@
 {- |
 Module      :  $Header$
-Description :  embedding from CspCASL to Isabelle-HOL
-Copyright   :  (c) Andy Gimblett, Liam O'Reilly and Markus Roggenbach,
+Description :  to be deleted soon
+Copyright   :  (c) Liam O'Reilly and Markus Roggenbach,
                    Swansea University 2008
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
@@ -805,8 +805,8 @@ getCollectionEmbInjAx sortRel =
                          )
     in map mkEmbInjAxName [0 .. (length(sortRel) - 1)]
 
--- This function is not implemented in a satisfactory way
--- Return the list of strings of all gn_totality axioms
+-- | Return the list of strings of all gn_totality axiom names. This
+--   function is not implemented in a satisfactory way.
 getCollectionTotAx :: CASLSign.CASLSign -> [String]
 getCollectionTotAx pfolSign =
     let opList = Map.toList $ CASLSign.opMap pfolSign
@@ -832,7 +832,7 @@ getCollectionNotDefBotAx sorts =
                                        else ("_" ++ show i)))
     in map mkNotDefBotAxName [0 .. (length(sorts) - 1)]
 
--- Function that returns the constructor of PreAlphabet for a given sort
+-- Function that returns the constructor of PreAlphabet for a given
 mkPreAlphabetConstructor :: SORT -> String
 mkPreAlphabetConstructor sort = "C_" ++ (convertSort2String sort)
 

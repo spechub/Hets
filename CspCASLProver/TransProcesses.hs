@@ -12,19 +12,21 @@ Portability :  portable
 Provides translations from Csp Processes to Isabelle terms
 
 -}
-module CspCASL.Trans_CspProver where
+module CspCASLProver.TransProcesses
+    ( transProcess
+    )where
 
 import qualified CASL.AS_Basic_CASL as CASL_AS_Basic_CASL
 import CASL.Fold as CASL_Fold
 import qualified CASL.Sign as CASL_Sign
 
-import Common.Id
+-- import Common.Id (tokStr)
 
 import qualified Comorphisms.CFOL2IsabelleHOL as CFOL2IsabelleHOL
 
 import CspCASL.AS_CspCASL_Process
-import CspCASL.CspProver_Consts
-import CspCASL.Trans_Consts
+import CspCASLProver.Consts
+import CspCASLProver.CspProverConsts
 
 import Isabelle.IsaSign
 import Isabelle.IsaConsts
@@ -114,12 +116,11 @@ transEvent caslSign ev =
       -- BUG - this is not done at all
       FQEvent _ _ fqTerm r -> transEvent caslSign (TermEvent fqTerm r)
 
-transVar :: CASL_AS_Basic_CASL.VAR -> Term
-transVar v = conDouble $ tokStr v
+-- transVar :: CASL_AS_Basic_CASL.VAR -> Term
+-- transVar v = conDouble $ tokStr v
 
-transSort :: CASL_AS_Basic_CASL.SORT -> Term
-transSort sort = let sortBarString = convertSort2String sort ++ barExtS
-                 in conDouble  sortBarString
+-- transSort :: CASL_AS_Basic_CASL.SORT -> Term
+-- transSort sort = conDouble $ mkSortBarString sort
 
 transRenaming :: RENAMING -> Term
 transRenaming _ = conDouble "not yet done"

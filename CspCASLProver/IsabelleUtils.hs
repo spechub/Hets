@@ -14,25 +14,96 @@ typically manipulate Isabelle signatures.
 -}
 
 module CspCASLProver.IsabelleUtils
-    ( updateDomainTab
+    ( addConst
+    , addDef
+    , addInstanceOf
+    , addPrimRec
+    , addTheoremWithProof
+    , updateDomainTab
     , writeIsaTheory
     ) where
 
+import Common.AS_Annotation (makeNamed, SenAttr(..))
+
+import Comorphisms.CFOL2IsabelleHOL (IsaTheory)
+
+--import CspCASLProver.Consts
+
+import qualified Data.Map as Map
+
+import Isabelle.IsaConsts (primrecS)
 import Isabelle.IsaParse (parseTheory)
 import Isabelle.IsaPrint (printIsaTheory)
 import Isabelle.IsaProve (prepareTheory)
-import Isabelle.IsaSign  (DomainEntry, Sentence, Sign(..))
+import Isabelle.IsaSign  (DomainEntry, IsaProof(..), mkCond, mkSen
+                         , mkVName, Sentence(..), Sign(..), Sort
+                         , Term(..), Typ(..))
 
 import Logic.Prover (Theory)
 
 import Text.ParserCombinators.Parsec (parse)
 
+-- | Add a single constant to the signature of an Isabelle theory
+addConst :: String -> Typ -> IsaTheory -> IsaTheory
+addConst cName cType isaTh =
+    let isaTh_sign = fst isaTh
+        isaTh_sen = snd isaTh
+        isaTh_sign_ConstTab = constTab isaTh_sign
+        isaTh_sign_ConstTabUpdated =
+            Map.insert (mkVName cName) cType isaTh_sign_ConstTab
+        isaTh_sign_updated = isaTh_sign {
+                               constTab = isaTh_sign_ConstTabUpdated
+                             }
+    in (isaTh_sign_updated, isaTh_sen)
+
+-- | Function to add a def command to an Isabelle theory
+addDef :: String -> Term -> Term -> IsaTheory -> IsaTheory
+addDef name lhs rhs isaTh =
+    let isaTh_sign = fst isaTh
+        isaTh_sen = snd isaTh
+        sen = ConstDef (IsaEq lhs rhs)
+        namedSen = (makeNamed name sen)
+    in (isaTh_sign, isaTh_sen ++ [namedSen])
+
+-- | Function to add an instance of command to an Isabelle theory. The
+--   sort parameters here are basically strings.
+addInstanceOf :: String -> [Sort] -> Sort -> IsaProof -> IsaTheory -> IsaTheory
+addInstanceOf name args res pr isaTh =
+    let isaTh_sign = fst isaTh
+        isaTh_sen = snd isaTh
+        sen = Instance name args res pr
+        namedSen = (makeNamed name sen)
+    in (isaTh_sign, isaTh_sen ++ [namedSen])
+
+-- | Add a primrec defintion to the sentences of an Isabelle theory
+addPrimRec :: [Term] -> IsaTheory -> IsaTheory
+addPrimRec terms isaTh =
+    let isaTh_sign = fst isaTh
+        isaTh_sen = snd isaTh
+        recDef = RecDef {keyWord = primrecS, senTerms = [terms]}
+        namedRecDef = (makeNamed "what_does_this_word_do?" recDef) {
+                        isAxiom = False,
+                        isDef = True}
+    in (isaTh_sign, isaTh_sen ++ [namedRecDef])
+
+-- | Add a theorem with proof to an Isabelle theory
+addTheoremWithProof :: String -> [Term] -> Term -> IsaProof -> IsaTheory ->
+                      IsaTheory
+addTheoremWithProof name conds concl proof' isaTh =
+    let isaTh_sign = fst isaTh
+        isaTh_sen = snd isaTh
+        sen = if (null conds)
+              then ((mkSen concl) {thmProof = Just proof'})
+              else ((mkCond conds concl) {thmProof = Just proof'})
+        namedSen = (makeNamed name sen) {isAxiom = False}
+    in (isaTh_sign, isaTh_sen ++ [namedSen])
+
 -- | Add a DomainEntry to the domain tab of an Isabelle signature.
-updateDomainTab :: DomainEntry  -> Sign -> Sign
-updateDomainTab domEnt isaSign =
+updateDomainTab :: DomainEntry  -> IsaTheory -> IsaTheory
+updateDomainTab domEnt (isaSign, isaSens) =
     let oldDomTab = domainTab isaSign
         isaSignUpdated = isaSign {domainTab = (oldDomTab ++ [[domEnt]])}
-    in isaSignUpdated
+    in (isaSignUpdated, isaSens)
 
 -- | Write out an Isabelle Theory. The theory should just run through
 --   in Isabelle without any user interactions. This is based heavily
