@@ -73,11 +73,12 @@ anaVars te vv t = case vv of
         else mkError "product type expected" topTy
 
 -- | lift a analysis function to annotated items
-mapAnMaybe :: (Monad m) => (a -> m (Maybe b)) -> [Annoted a] -> m [Annoted b]
+mapAnMaybe :: (Monad m) => (Annoted a -> m (Maybe b)) -> [Annoted a]
+           -> m [Annoted b]
 mapAnMaybe f al = do
-    il <- mapAnM f al
-    return $ map ( \ a -> replaceAnnoted (fromJust $ item a) a) $
-           filter (isJust . item) il
+    il <- mapM f al
+    return $ map ( \ (i, a) -> replaceAnnoted (fromJust i) a) $
+           filter (isJust . fst) $ zip il al
 
 -- | analyse annotated type items
 anaTypeItems :: GenKind -> [Annoted TypeItem] -> State Env [Annoted TypeItem]
@@ -105,12 +106,12 @@ addDataSen tys = do
               $ DatatypeSen ds) { isDef = True }
     if null tys then return () else appendSentences [sen]
 
-ana1TypeItem :: TypeItem -> State Env (Maybe TypeItem)
-ana1TypeItem t = case t of
+ana1TypeItem :: Annoted TypeItem -> State Env (Maybe TypeItem)
+ana1TypeItem t = case item t of
     Datatype d -> do
-        md <- ana1Datatype d
+        md <- ana1Datatype $ replaceAnnoted d t
         return $ fmap Datatype md
-    _ -> return $ Just t
+    i -> return $ Just i
 
 anaTypeDecl :: [TypePattern] -> Kind -> Range -> State Env (Maybe TypeItem)
 anaTypeDecl pats kind ps = do
@@ -183,9 +184,9 @@ anaSubtypeDecl pats t ps = do
           return $ if null nis then Nothing else
                        Just $ SubtypeDecl newPats newT ps
 
-anaSubtypeDefn :: TypePattern -> Vars -> Type
+anaSubtypeDefn :: Annoted TypeItem -> TypePattern -> Vars -> Type
                -> (Annoted Term) -> Range -> State Env (Maybe TypeItem)
-anaSubtypeDefn pat v t f ps = do
+anaSubtypeDefn aitm pat v t f ps = do
     let Result ds m = convertTypePattern pat
     addDiags ds
     case m of
@@ -220,8 +221,10 @@ anaSubtypeDefn pat v t f ps = do
                     Just (newF, resF) -> do
                       addTypeId True NoTypeDefn fullKind i
                       addSuperType ty universe (i, nAs)
-                      appendSentences [makeNamedSen $ replaceAnnoted (Formula
-                                $ mkEnvForall e (item resF) ps) resF]
+                      let lab1 = getRLabel resF
+                          lab = if null lab1 then getRLabel aitm else lab1
+                      appendSentences [makeNamed lab
+                        $ Formula $ mkEnvForall e (item resF) ps]
                       return $ Just $ SubtypeDefn (TypePattern i nAs nullRange)
                                     v ty newF ps
 
@@ -259,23 +262,24 @@ anaAliasType pat mk sc ps = do
                          else Nothing
 
 -- | analyse a 'TypeItem'
-anaTypeItem :: GenKind -> [DataPat] -> TypeItem
+anaTypeItem :: GenKind -> [DataPat] -> Annoted TypeItem
             -> State Env (Maybe TypeItem)
-anaTypeItem gk tys itm = case itm of
+anaTypeItem gk tys aitm = case item aitm of
     TypeDecl pats kind ps -> anaTypeDecl pats kind ps
     SubtypeDecl pats t ps -> anaSubtypeDecl pats t ps
     IsoDecl pats ps -> anaIsoDecl pats ps
-    SubtypeDefn pat v t f ps -> anaSubtypeDefn pat v t f ps
+    SubtypeDefn pat v t f ps -> anaSubtypeDefn aitm pat v t f ps
     AliasType pat mk sc ps -> anaAliasType pat mk sc ps
     Datatype d -> do
-        mD <- anaDatatype gk tys d
+        mD <- anaDatatype gk tys $ replaceAnnoted d aitm
         case mD of
           Nothing -> return Nothing
           Just newD -> return $ Just $ Datatype newD
 
 -- | pre-analyse a data type for 'anaDatatype'
-ana1Datatype :: DatatypeDecl -> State Env (Maybe DatatypeDecl)
-ana1Datatype (DatatypeDecl pat kind alts derivs ps) = do
+ana1Datatype :: Annoted DatatypeDecl -> State Env (Maybe DatatypeDecl)
+ana1Datatype aitm = do
+    let DatatypeDecl pat kind alts derivs ps = item aitm
     cm <- gets classMap
     let Result cs (Just rk) = anaKindM kind cm
         k = if null cs then kind else universe
@@ -316,10 +320,10 @@ addDataSubtype (DataPat _ nAs _ rt) k st = case st of
 
 -- | analyse a pre-analysed data type given all data patterns of the type item
 anaDatatype :: GenKind -> [DataPat]
-            -> DatatypeDecl -> State Env (Maybe DatatypeDecl)
-anaDatatype genKind tys d = case d of
-    DatatypeDecl (TypePattern i nAs _) k alts _ _ -> do
-       dt@(DataPat _ _ rk rt) <- dataPatToType d
+            -> Annoted DatatypeDecl -> State Env (Maybe DatatypeDecl)
+anaDatatype genKind tys d = case item d of
+    itd@(DatatypeDecl (TypePattern i nAs _) k alts _ _) -> do
+       dt@(DataPat _ _ rk rt) <- dataPatToType itd
        let fullKind = typeArgsListToKind nAs k
        tvs <- gets localTypeVars
        mapM_ (addTypeVarDecl False) $ map nonVarTypeArg nAs
@@ -351,7 +355,7 @@ anaDatatype genKind tys d = case d of
                     $ Set.fromList newAlts
            addTypeId True (DatatypeDefn de) fullKind i
            appendSentences $ makeDataSelEqs de srt
-           return $ Just d
+           return $ Just itd
     _ -> error "anaDatatype (not preprocessed)"
 
 -- | analyse a pseudo type (represented as a 'TypeScheme')

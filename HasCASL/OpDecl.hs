@@ -156,9 +156,10 @@ anaOpItem br oi = do
                return $ replaceAnnoted Nothing oi
 
 -- | analyse a program equation
-anaProgEq :: ProgEq -> State Env (Maybe ProgEq)
-anaProgEq pe@(ProgEq _ _ q) =
-    do rp <- resolve (LetTerm Program [pe] (BracketTerm Parens [] q) q)
+anaProgEq :: Annoted ProgEq -> State Env (Maybe ProgEq)
+anaProgEq ape = do
+       let pe@(ProgEq _ _ q) = item ape
+       rp <- resolve (LetTerm Program [pe] (BracketTerm Parens [] q) q)
        case rp of
          Just t@(LetTerm _ (rpe@(ProgEq _ _ _) : _) _ _) -> do
            mp <- typeCheck Nothing t
