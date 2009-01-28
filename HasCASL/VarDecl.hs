@@ -32,6 +32,7 @@ import HasCASL.ParseTerm
 import HasCASL.As
 import HasCASL.AsUtils
 import HasCASL.FoldType
+import HasCASL.FoldTerm
 import HasCASL.Le
 import HasCASL.PrintLe
 import HasCASL.ClassAna
@@ -39,6 +40,17 @@ import HasCASL.TypeAna
 import HasCASL.Unify
 import HasCASL.Merge
 import HasCASL.Builtin
+
+-- | quantify
+mkEnvForall :: Env -> Term -> Range -> Term
+mkEnvForall e t ps =
+  let tys = Set.fromList $ map (fst . snd) $ concatMap (leaves (>= 0))
+            $ getAllTypes t
+      tyVs = map ( \ (i, TypeVarDefn v vk rk c) -> GenTypeVarDecl $
+                   TypeArg i v vk rk c Other ps) $ Map.toList
+             $ Map.filterWithKey ( \ i _ -> Set.member i tys) $ localTypeVars e
+      vs = tyVs ++ map GenVarDecl (Set.toList $ freeVars t)
+  in if null vs then t else QuantifiedTerm Universal vs t ps
 
 anaStarType :: Type -> State Env (Maybe Type)
 anaStarType t = fmap (fmap snd) $ anaType (Just universe, t)

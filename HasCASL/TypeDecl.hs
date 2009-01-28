@@ -217,9 +217,11 @@ anaSubtypeDefn pat v t f ps = do
                   putLocalVars vs
                   case mf of
                     Nothing -> return Nothing
-                    Just (newF, _) -> do
+                    Just (newF, resF) -> do
                       addTypeId True NoTypeDefn fullKind i
                       addSuperType ty universe (i, nAs)
+                      appendSentences [makeNamedSen $ replaceAnnoted (Formula
+                                $ mkEnvForall e (item resF) ps) resF]
                       return $ Just $ SubtypeDefn (TypePattern i nAs nullRange)
                                     v ty newF ps
 

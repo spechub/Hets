@@ -15,6 +15,7 @@ module HasCASL.FoldTerm where
 
 import HasCASL.As
 import Common.Id
+import qualified Data.Set as Set
 
 data FoldRec a b = FoldRec
     { foldQualVar :: Term -> VarDecl -> a
@@ -107,4 +108,29 @@ getAllTypes = foldTerm FoldRec
     , foldMixfixTerm = \ _ tts -> concat tts
     , foldBracketTerm = \ _ _ tts _ -> concat tts
     , foldProgEq = \ _ ps ts _ -> ps ++ ts
+    }
+
+freeVars :: Term -> Set.Set VarDecl
+freeVars = foldTerm FoldRec
+    { foldQualVar = \ _ t -> Set.singleton t
+    , foldQualOp = \ _ _ _ _ _ _ _ -> Set.empty
+    , foldApplTerm = \ _ t1 t2 _ -> Set.union t1 t2
+    , foldTupleTerm = \ _ tts _ -> Set.unions tts
+    , foldTypedTerm = \ _ ts _ _ _ -> ts
+    , foldAsPattern = \ _ t ts _ -> Set.insert t ts
+    , foldQuantifiedTerm = \ _ _ gvs ts _ -> Set.difference ts $
+         foldr ( \ gv -> case gv of
+           GenVarDecl t -> Set.insert t
+           _ -> id) Set.empty gvs
+    , foldLambdaTerm = \ _ pats _ ts _ -> Set.difference ts $ Set.unions pats
+    , foldCaseTerm = \ _ ts tts _ -> Set.difference
+          (Set.unions $ ts : map snd tts) $ Set.unions $ map fst tts
+    , foldLetTerm = \ _ _ tts ts _ -> Set.difference
+          (Set.unions $ ts : map snd tts) $ Set.unions $ map fst tts
+    , foldResolvedMixTerm = \ _ _ _ tts _ -> Set.unions tts
+    , foldTermToken = \ _ _ -> Set.empty
+    , foldMixTypeTerm = \ _ _ _ _ -> Set.empty
+    , foldMixfixTerm = \ _ tts -> Set.unions tts
+    , foldBracketTerm = \ _ _ tts _ -> Set.unions tts
+    , foldProgEq = \ _ ps ts _ -> (ps, ts)
     }

@@ -76,15 +76,16 @@ vars = fmap Var var <|> do
 subTypeDefn :: (TypePattern, Token) -> AParser st TypeItem
 subTypeDefn (s, e) = do
     a <- annos
-    o <- oBraceT
+    o <- oBraceT << addAnnos
     v <- vars
     c <- colT
     t <- parseType
     d <- dotT -- or bar
     f <- term
+    a2 <- annos
     p <- cBraceT
     let qs = toRange e [o,c,d] p
-    return $ SubtypeDefn s v t (Annoted f qs a []) qs
+    return $ SubtypeDefn s v t (Annoted f qs a a2) qs
 
 subTypeDecl :: ([TypePattern], [Token]) -> AParser st TypeItem
 subTypeDecl (l, p) = do

@@ -33,8 +33,6 @@ import Common.Doc
 import Common.Lexer ((<<), skip)
 
 import HasCASL.As
-import HasCASL.FoldTerm
-import HasCASL.FoldType
 import HasCASL.HToken
 import HasCASL.TypeAna
 import HasCASL.VarDecl
@@ -156,41 +154,6 @@ anaOpItem br oi = do
                putLocalVars vs
                putLocalTypeVars tvs
                return $ replaceAnnoted Nothing oi
-
-freeVars :: Term -> Set.Set VarDecl
-freeVars = foldTerm FoldRec
-    { foldQualVar = \ _ t -> Set.singleton t
-    , foldQualOp = \ _ _ _ _ _ _ _ -> Set.empty
-    , foldApplTerm = \ _ t1 t2 _ -> Set.union t1 t2
-    , foldTupleTerm = \ _ tts _ -> Set.unions tts
-    , foldTypedTerm = \ _ ts _ _ _ -> ts
-    , foldAsPattern = \ _ t ts _ -> Set.insert t ts
-    , foldQuantifiedTerm = \ _ _ gvs ts _ -> Set.difference ts $
-         foldr ( \ gv -> case gv of
-           GenVarDecl t -> Set.insert t
-           _ -> id) Set.empty gvs
-    , foldLambdaTerm = \ _ pats _ ts _ -> Set.difference ts $ Set.unions pats
-    , foldCaseTerm = \ _ ts tts _ -> Set.difference
-          (Set.unions $ ts : map snd tts) $ Set.unions $ map fst tts
-    , foldLetTerm = \ _ _ tts ts _ -> Set.difference
-          (Set.unions $ ts : map snd tts) $ Set.unions $ map fst tts
-    , foldResolvedMixTerm = \ _ _ _ tts _ -> Set.unions tts
-    , foldTermToken = \ _ _ -> Set.empty
-    , foldMixTypeTerm = \ _ _ _ _ -> Set.empty
-    , foldMixfixTerm = \ _ tts -> Set.unions tts
-    , foldBracketTerm = \ _ _ tts _ -> Set.unions tts
-    , foldProgEq = \ _ ps ts _ -> (ps, ts) }
-
--- | quantify
-mkEnvForall :: Env -> Term -> Range -> Term
-mkEnvForall e t ps =
-  let tys = Set.fromList $ map (fst . snd) $ concatMap (leaves (>= 0))
-            $ getAllTypes t
-      tyVs = map ( \ (i, TypeVarDefn v vk rk c) -> GenTypeVarDecl $
-                   TypeArg i v vk rk c Other ps) $ Map.toList
-             $ Map.filterWithKey ( \ i _ -> Set.member i tys) $ localTypeVars e
-      vs = tyVs ++ map GenVarDecl (Set.toList $ freeVars t)
-  in if null vs then t else QuantifiedTerm Universal vs t ps
 
 -- | analyse a program equation
 anaProgEq :: ProgEq -> State Env (Maybe ProgEq)
