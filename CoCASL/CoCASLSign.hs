@@ -26,22 +26,27 @@ data CoCASLSign = CoCASLSign
 emptyCoCASLSign :: CoCASLSign
 emptyCoCASLSign = CoCASLSign Rel.empty Rel.empty Map.empty
 
+closeConsRel :: CoCASLSign -> CoCASLSign
+closeConsRel s =
+  s { constructs = irreflexClosure $ constructs s
+    , sees = irreflexClosure $ sees s }
+
 addCoCASLSign :: CoCASLSign -> CoCASLSign -> CoCASLSign
-addCoCASLSign a b = a
-  { sees = addRel (sees a) $ sees b
-  , constructs = addRel (constructs a) $ constructs b
+addCoCASLSign a b = closeConsRel a
+  { sees = Rel.union (sees a) $ sees b
+  , constructs = Rel.union (constructs a) $ constructs b
   , constructors = addOpMapSet (constructors a) $ constructors b }
 
 interCoCASLSign :: CoCASLSign -> CoCASLSign -> CoCASLSign
-interCoCASLSign a b = a
+interCoCASLSign a b = closeConsRel a
   { sees = interRel (sees a) $ sees b
   , constructs = interRel (constructs a) $ constructs b
   , constructors = interOpMapSet (constructors a) $ constructors b }
 
 diffCoCASLSign :: CoCASLSign -> CoCASLSign -> CoCASLSign
-diffCoCASLSign a b = a
-  { sees = diffRel (sees a) $ sees b
-  , constructs = diffRel (constructs a) $ constructs b
+diffCoCASLSign a b = closeConsRel a
+  { sees = Rel.difference (sees a) $ sees b
+  , constructs = Rel.difference (constructs a) $ constructs b
   , constructors = diffMapSet (constructors a) $ constructors b }
 
 isSubCoCASLSign :: CoCASLSign -> CoCASLSign -> Bool

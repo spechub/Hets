@@ -189,15 +189,20 @@ printSign fE s = let
 
 -- working with Sign
 
-diffRel :: Ord a => Rel.Rel a -> Rel.Rel a -> Rel.Rel a
-diffRel a = Rel.irreflex . Rel.transClosure . Rel.difference a
+irreflexClosure :: Ord a => Rel.Rel a -> Rel.Rel a
+irreflexClosure = Rel.irreflex . Rel.transClosure
+
+closeSortRel :: Sign f e -> Sign f e
+closeSortRel s =
+  s { sortRel = irreflexClosure $ sortRel s }
 
 diffSig :: (e -> e -> e) -> Sign f e -> Sign f e -> Sign f e
-diffSig dif a b = let s = sortSet a `Set.difference` sortSet b in a
+diffSig dif a b = let s = sortSet a `Set.difference` sortSet b in
+  closeSortRel a
   { sortSet = s
   , emptySortSet = Set.difference s
       $ nonEmptySortSet a `Set.difference` nonEmptySortSet b
-  , sortRel = diffRel (sortRel a) $ sortRel b
+  , sortRel = Rel.difference (sortRel a) $ sortRel b
   , opMap = opMap a `diffOpMapSet` opMap b
   , assocOps = assocOps a `diffOpMapSet` assocOps b
   , predMap = predMap a `diffMapSet` predMap b
@@ -251,18 +256,16 @@ interOpMapSet m = Map.filter (not . Set.null)
 uniteCASLSign :: Sign () () -> Sign () () -> Sign () ()
 uniteCASLSign = addSig (\_ _ -> ())
 
-addRel :: Ord a => Rel.Rel a -> Rel.Rel a -> Rel.Rel a
-addRel a = Rel.irreflex . Rel.transClosure . Rel.union a
-
 nonEmptySortSet :: Sign f e -> Set.Set Id
 nonEmptySortSet s = Set.difference (sortSet s) $ emptySortSet s
 
 addSig :: (e -> e -> e) -> Sign f e -> Sign f e -> Sign f e
-addSig ad a b = let s = sortSet a `Set.union` sortSet b in a
+addSig ad a b = let s = sortSet a `Set.union` sortSet b in
+  closeSortRel a
   { sortSet = s
   , emptySortSet = Set.difference s
       $ nonEmptySortSet a `Set.union` nonEmptySortSet b
-  , sortRel = addRel (sortRel a) $ sortRel b
+  , sortRel = Rel.union (sortRel a) $ sortRel b
   , opMap = addOpMapSet (opMap a) $ opMap b
   , assocOps = addOpMapSet (assocOps a) $ assocOps b
   , predMap = addMapSet (predMap a) $ predMap b
@@ -270,11 +273,12 @@ addSig ad a b = let s = sortSet a `Set.union` sortSet b in a
   , extendedInfo = ad (extendedInfo a) $ extendedInfo b }
 
 interRel :: Ord a => Rel.Rel a -> Rel.Rel a -> Rel.Rel a
-interRel a = Rel.irreflex . Rel.transClosure . Rel.fromSet
+interRel a = Rel.fromSet
   . Set.intersection (Rel.toSet a) . Rel.toSet
 
 interSig :: (e -> e -> e) -> Sign f e -> Sign f e -> Sign f e
-interSig ef a b = let s = sortSet a `Set.intersection` sortSet b in a
+interSig ef a b = let s = sortSet a `Set.intersection` sortSet b in
+  closeSortRel a
   { sortSet = s
   , emptySortSet = Set.difference s
       $ nonEmptySortSet a `Set.intersection` nonEmptySortSet b

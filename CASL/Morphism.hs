@@ -403,19 +403,29 @@ legalSign sigma =
 
 -- | the image of a signature morphism
 imageOfMorphism :: Morphism f e m  -> Sign f e
-imageOfMorphism mor =
-  let src = msource mor
-      sm = sort_map mor
-      om = op_map mor
-      ms = mapSort sm
+imageOfMorphism m = imageOfMorphismAux (const $ extendedInfo $ mtarget m) m
+
+-- | the generalized image of a signature morphism
+imageOfMorphismAux :: (Morphism f e m -> e) -> Morphism f e m  -> Sign f e
+imageOfMorphismAux fE m =
+  inducedSignAux (\ _ _ _ _ _ -> fE m)
+         (sort_map m) (op_map m) (pred_map m) (extended_map m) (msource m)
+
+type InducedSign f e m r =
+  Sort_map -> Op_map -> Pred_map -> m -> Sign f e -> r
+
+-- | the induced signature image of a signature morphism
+inducedSignAux :: InducedSign f e m e -> InducedSign f e m (Sign f e)
+inducedSignAux f sm om pm em src =
+  let ms = mapSort sm
       msorts = Set.map ms
-  in (mtarget mor)
+  in (emptySign $ f sm om pm em src)
   { sortSet = msorts $ sortSet src
   , sortRel = Rel.map ms $ sortRel src
   , emptySortSet = msorts $ emptySortSet src
   , opMap = inducedOpMap sm om $ opMap src
   , assocOps = inducedOpMap sm om $ assocOps src
-  , predMap = inducedPredMap sm (pred_map mor) $ predMap src }
+  , predMap = inducedPredMap sm pm $ predMap src }
 
 inducedOpMap :: Sort_map -> Op_map -> OpMap -> OpMap
 inducedOpMap sm fm = Map.foldWithKey
