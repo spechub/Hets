@@ -571,13 +571,13 @@ instance Pretty RawSymbol where
     ASymbol sy -> pretty sy
     AKindedSymb k i -> pretty k <+> pretty i
 
-printMorphism :: (f -> Doc) -> (e -> Doc) -> (m -> Doc) -> Morphism f e m
+printMorphism :: (e -> Doc) -> (m -> Doc) -> Morphism f e m
               -> Doc
-printMorphism fF fE fM mor =
+printMorphism fE fM mor =
     let src = msource mor
         tar = mtarget mor
         ops = op_map mor
-        prSig s = specBraces (space <> printSign fF fE s)
+        prSig s = specBraces (space <> printSign fE s)
         srcD = prSig src
     in if isInclusionMorphism (const True) mor then
            if isSubSig (\ _ _ -> True) tar src then
@@ -595,6 +595,6 @@ printMorphism fF fE fM mor =
           $+$ fM (extended_map mor)
       , colon <+> srcD, mapsto <+> prSig tar ]
 
-instance (Pretty e, Pretty f, Pretty m) =>
+instance (Pretty e, Show f, Pretty m) =>
     Pretty (Morphism f e m) where
-       pretty = printMorphism pretty pretty pretty
+       pretty = printMorphism pretty pretty

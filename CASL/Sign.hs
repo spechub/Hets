@@ -87,7 +87,7 @@ data Sign f e = Sign
     } deriving Show
 
 -- better ignore assoc flags for equality
-instance (Eq f, Eq e) => Eq (Sign f e) where
+instance Eq e => Eq (Sign f e) where
     e1 == e2 =
         sortSet e1 == sortSet e2 &&
         emptySortSet e1 == emptySortSet e2 &&
@@ -128,7 +128,7 @@ supersortsOf s e = Rel.succs (sortRel e) s
 
 toOP_TYPE :: OpType -> OP_TYPE
 toOP_TYPE OpType { opArgs = args, opRes = res, opKind = k } =
-    Op_type k  args res nullRange
+    Op_type k args res nullRange
 
 toPRED_TYPE :: PredType -> PRED_TYPE
 toPRED_TYPE PredType { predArgs = args } = Pred_type args nullRange
@@ -145,8 +145,8 @@ instance Pretty OpType where
 instance Pretty PredType where
   pretty = pretty . toPRED_TYPE
 
-instance (Pretty f, Pretty e) => Pretty (Sign f e) where
-    pretty = printSign pretty pretty
+instance (Show f, Pretty e) => Pretty (Sign f e) where
+    pretty = printSign pretty
 
 instance Pretty Symbol where
   pretty sy = let n = pretty (symName sy) in
@@ -168,8 +168,8 @@ instance Pretty SymbType where
      PredAsItemType pt -> space <> pretty pt
      _ -> empty
 
-printSign :: (f -> Doc) -> (e -> Doc) -> Sign f e -> Doc
-printSign _ fE s = let
+printSign :: (e -> Doc) -> Sign f e -> Doc
+printSign fE s = let
   printRel (supersort, subsorts) =
             ppWithCommas (Set.toList subsorts) <+> text lessS <+>
                idDoc supersort

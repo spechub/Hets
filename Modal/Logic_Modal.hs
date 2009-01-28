@@ -33,8 +33,6 @@ import CASL.SymbolParser
 import CASL.Taxonomy
 import CASL.Logic_CASL ()
 
-import Common.DocUtils
-
 data Modal = Modal deriving Show
 
 instance Language Modal  where
@@ -75,7 +73,7 @@ instance Sentences Modal ModalFORMULA MSign ModalMor Symbol where
       symmap_of Modal = morphismToSymbMap
       sym_name Modal = symName
       simplify_sen Modal = simplifySen minExpForm simModal
-      print_sign Modal sig = printSign pretty
+      print_sign Modal sig = printSign
           (printModalSign $ simplifySen minExpForm simModal sig) sig
 
 -- simplifySen for ExtFORMULA
@@ -96,7 +94,7 @@ instance StaticAnalysis Modal M_BASIC_SPEC ModalFORMULA
                MSign
                ModalMor
                Symbol RawSymbol where
-         basic_analysis Modal = Just $ basicModalAnalysis
+         basic_analysis Modal = Just basicModalAnalysis
          stat_symb_map_items Modal = statSymbMapItems
          stat_symb_items Modal = statSymbItems
 
