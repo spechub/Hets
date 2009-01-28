@@ -47,7 +47,7 @@ instance Comorphism CASL2VSE
                VSEMor
                Symbol RawSymbol () where
     sourceLogic CASL2VSE = CASL
-    sourceSublogic CASL2VSE = SL.top
+    sourceSublogic CASL2VSE = SL.cFol
     targetLogic CASL2VSE = VSE
     mapSublogic CASL2VSE _ = Just ()
     map_theory CASL2VSE = return . simpleTheoryMapping mapSig toSen
