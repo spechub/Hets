@@ -65,7 +65,7 @@ w : m List;
 x : tuple3 r s t;
 y : tuple3 r s;
 z : m [__]
-forall x : t . x = x
+forall x : t . (x in s3) <=> x = x
 ### Hint 7.6, not a kind '[r]'
 ### Hint 7.8-7.10, a non-compound list: [r]
 ### Hint 7.14, not a kind '{s}'

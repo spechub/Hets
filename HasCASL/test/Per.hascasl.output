@@ -39,7 +39,9 @@ forall S : Type; r : Set (S * S)
 forall S : Type; r : Set (S * S)
 . transitive r
   <=> forall x, y, z : S . r (x, y) /\ r (y, z) => r (x, y)
-forall S : Type; r : Set (S * S) . symmetric r /\ transitive r
+forall S : Type
+. forall r : Set (S * S)
+  . (r in PER S) <=> symmetric r /\ transitive r
 forall S : Type; r : PER S; x : S . x isIn dom r <=> (x, x) isIn r
 ### Hint 1.7, is type variable 'S'
 ### Hint 3.20,

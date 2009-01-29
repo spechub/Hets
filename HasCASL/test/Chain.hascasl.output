@@ -27,8 +27,9 @@ op sup : forall a : Cpo . Chain a ->? a %(fun)%
 vars
 c : Chain a;
 x : ? a
-forall a : -Cpo; s : Nat ->? a
-. forall n : Nat . def s n => s n <= s (n + 1)
+forall a : -Cpo
+. forall s : Nat ->? a
+  . (s in Chain a) <=> forall n : Nat . def s n => s n <= s (n + 1)
 forall a : Cpo; c : Chain a; x : ? a
 . sup c <= x <=> forall n : Nat . c n <= x
 ### Warning 1.7, unchanged class 'Cpo'

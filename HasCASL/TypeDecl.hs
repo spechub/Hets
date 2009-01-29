@@ -33,6 +33,7 @@ import Common.Result
 
 import HasCASL.As
 import HasCASL.AsUtils
+import HasCASL.Builtin
 import HasCASL.Le
 import HasCASL.ClassAna
 import HasCASL.TypeAna
@@ -56,10 +57,10 @@ anaFormula at = do
               Nothing -> Nothing
               Just e -> Just (at { item = t }, at { item = e })
 
-anaVars :: Env -> Vars -> Type -> Result [VarDecl]
+anaVars :: Env -> Vars -> Type -> Result Term
 anaVars te vv t = case vv of
-    Var v -> return [VarDecl v t Other nullRange]
-    VarTuple vs _ -> let
+    Var v -> return $ QualVar $ VarDecl v t Other nullRange
+    VarTuple vs ps -> let
         (topTy, ts) = getTypeAppl t
         n = length ts in
         if n > 1 && lesserType te topTy (toProdType n nullRange) then
@@ -67,7 +68,7 @@ anaVars te vv t = case vv of
                   let lrs = zipWith (anaVars te) vs ts
                       lms = map maybeResult lrs in
                       if all isJust lms then
-                         return $ concatMap fromJust lms
+                         return $ TupleTerm (map fromJust lms) ps
                          else Result (concatMap diags lrs) Nothing
                else mkError "wrong arity" topTy
         else mkError "product type expected" topTy
@@ -201,6 +202,8 @@ anaSubtypeDefn aitm pat v t f ps = do
           Just ty -> do
             let nAs = catMaybes newAs
                 fullKind = typeArgsListToKind nAs universe
+                jTy = TypeName i (typeArgsListToRawKind nAs rStar) 0
+                aTy = mkTypeAppl jTy $ map typeArgToType nAs
             e <- get
             let Result es mvds = anaVars e v $ monoType ty
             addDiags es
@@ -210,7 +213,8 @@ anaSubtypeDefn aitm pat v t f ps = do
                 return Nothing
               else case mvds of
                 Nothing -> return Nothing
-                Just vds -> do
+                Just vtt -> do
+                  let vds = extractVars vtt
                   checkUniqueVars vds
                   vs <- gets localVars
                   mapM_ (addLocalVar True) vds
@@ -224,7 +228,10 @@ anaSubtypeDefn aitm pat v t f ps = do
                       let lab1 = getRLabel resF
                           lab = if null lab1 then getRLabel aitm else lab1
                       appendSentences [makeNamed lab
-                        $ Formula $ mkEnvForall e (item resF) ps]
+                        $ Formula $ mkEnvForall e (
+                              mkForall (map GenVarDecl vds)
+                              $ mkLogTerm eqvId ps
+                              (TypedTerm vtt InType aTy ps) $ item resF) ps]
                       return $ Just $ SubtypeDefn (TypePattern i nAs nullRange)
                                     v ty newF ps
 
