@@ -58,7 +58,7 @@ baseSign = MainHC_thy
 transAssumps :: GlobalAnnos -> Set.Set String -> Assumps -> Result ConstTab
 transAssumps ga toks = foldM insertOps Map.empty . Map.toList where
   insertOps m (name, ops) =
-      let chk t = isPlainFunType t
+      let chk = isPlainFunType
       in case map opType $ Set.toList ops of
           [TypeScheme _ op _ ] -> do
               ty <- funType op
@@ -213,8 +213,8 @@ transDataEntry env tyToks (DataEntry tm tyId gk tyArgs rk alts) =
     in case gk of
     Le.Free -> do
       nalts <- mapM (transAltDefn env tyToks tm tyArgs dt i) $ Set.toList alts
-      let transDName ti ta = Type (showIsaTypeT ti baseSign) []
-                             $ map transTypeArg ta
+      let transDName ti = Type (showIsaTypeT ti baseSign) []
+                             . map transTypeArg
       return (transDName i tyArgs, nalts)
     _ -> fatal_error ("not a free type: "  ++ show i)
          $ posOfId i
@@ -395,8 +395,8 @@ transTerm sign tyToks toks pVars trm = case trm of
                       Existential -> exS
                       Unique -> ex1S
             quantify phi' gvd = case gvd of
-                GenVarDecl (VarDecl var _ _ _) -> do
-                    return $ termAppl (conDouble $ qname)
+                GenVarDecl (VarDecl var _ _ _) ->
+                    return $ termAppl (conDouble qname)
                                $ Abs (Isa.Free $ transVar toks var)
                                  phi' NotCont
                 GenTypeVarDecl _ ->  return phi'
@@ -408,11 +408,9 @@ transTerm sign tyToks toks pVars trm = case trm of
         p@(ty, _) <- transTerm sign tyToks toks pVars body
         appendDiags $ case q of
             Partial -> []
-            Total -> if isPartialVal ty
-                     then [Diag Warning
-                           ("partial lambda body in total abstraction: "
-                          ++ showDoc body "") r]
-                     else []
+            Total -> [Diag Warning
+              ("partial lambda body in total abstraction: "
+               ++ showDoc body "") r | isPartialVal ty]
         foldM (abstraction sign tyToks toks) p $ reverse pats
     LetTerm As.Let peqs body _ -> do
         (nPVars, nEqs) <- transLetEqs sign tyToks toks pVars peqs
@@ -598,7 +596,7 @@ adjustTypes aTy rTy ty = case (aTy, ty) of
         ((res2Ty, f2), (arg2Ty, a2)) <- adjustTypes c rTy d
         ((res1Ty, f1), (arg1Ty, a1)) <- adjustTypes a
                 (if res2Ty then makePartialVal rTy else rTy) b
-        return $ ((res1Ty || res2Ty,
+        return ((res1Ty || res2Ty,
              mkCompFun (mkLiftFun LiftFst f1) $ mkLiftFun LiftSnd f2),
                   (PairType arg1Ty arg2Ty,
                    mkCompFun (mkMapFun MapSnd a2) $ mkMapFun MapFst a1))
@@ -614,8 +612,7 @@ adjustTypes aTy rTy ty = case (aTy, ty) of
     (_, TypeVar _) -> return ((False, IdOp), (aTy, IdOp))
     (ApplType i1 l1, ApplType i2 l2) | i1 == i2 && length l1 == length l2
         -> do l <- mapM (\ (a, b) -> adjustTypes a rTy b) $ zip l1 l2
-              if or (map (fst . fst) l) || or
-                 (map (isNotIdOp . snd . snd) l)
+              if any (fst . fst) l || any (isNotIdOp . snd . snd) l
                 then fail "cannot adjust type application"
                 else return ((False, IdOp),
                              (ApplType i1 $ map (fst . snd) l, IdOp))
@@ -729,7 +726,7 @@ type Simplifier = VName
   -> State Int Isa.Term
 
 simpForOption :: Simplifier
-simpForOption l v nF nArg = do
+simpForOption l v nF nArg =
   return $ Case nArg
    [ (conDouble "None", if new l == "lift2bool" then false else noneOp)
    , (termAppl conSome v,
@@ -779,7 +776,7 @@ mkApp sign tyToks toks pVars f arg = do
          FunType a r -> do
              ((rTy, fConv), (_, aConv)) <-
                adjustPos (getRange [f, arg]) $ adjustTypes a r aTy
-             return $ (if rTy then makePartialVal r else r,
+             return (if rTy then makePartialVal r else r,
                 mkTermAppl (applConv fConv fTrm)
                              $ applConv aConv aTrm)
          PartialVal (FunType a r) -> do
