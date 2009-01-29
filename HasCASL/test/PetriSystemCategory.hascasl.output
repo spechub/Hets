@@ -288,6 +288,26 @@ free type Boolean ::= False | True %(ga_Boolean)%
 forall Elem : Type; B : MultiSet Elem
 . let S = MultiSetToSet B in
   forall x : Elem . x isIn S <=> freq (x, B) > 0
+forall p : Set P; post : T ->? MultiSet P; pre : T ->? MultiSet P
+. (dom pre = dom post
+   /\ forall p1 : MultiSet P
+      . p1 isIn range pre => MultiSetToSet p1 subset p)
+  /\ forall p1 : MultiSet P
+     . p1 isIn range pre => MultiSetToSet p1 subset p
+forall hp : P ->? P; ht : T ->? T; n1 : Net; n2 : Net
+. hp :: places n1 --> places n2
+  /\ ht :: transitions n1 --> transitions n2
+  /\ forall t : T
+     . t isIn transitions n1
+       => freeMap hp (preMap n1 t) = preMap n2 (ht t)
+          /\ freeMap hp (postMap n1 t) = postMap n2 (ht t)
+forall m : Marking; n : Net
+. let (p, pre1, post1) = n in forall x : P . x isIn m => x isIn p
+forall hp : P ->? P; ht : T ->? T; sys1 : System; sys2 : System
+. ((net sys1, hp, ht, net sys2) in HomNet)
+  /\ forall p : P
+     . (pred __<=__ : Nat * Nat)
+       (freq (p, marking sys1), freq (hp p, marking sys2))
 forall h1 : HomSys; h2 : HomSys
 . def (op __o__ : HomSys * HomSys ->? HomSys) (h2, h1)
   => (op __o__ : HomSys * HomSys ->? HomSys) (h2, h1)

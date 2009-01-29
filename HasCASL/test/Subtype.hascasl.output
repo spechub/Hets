@@ -49,6 +49,8 @@ x : a;
 y : b
 forall a : Type; b < a : Type; f : a ->? b; x : a
 . twice f x = f (f x)
+forall a : Type; b : Type; f : a -> b
+. forall x, y : a . f x = f y => x = y
 forall a < b : Type; b : Type; x : a; y : b . down y = x
 forall a < b : Type; b : Type; x : a . down (up x : b) = x
 forall a < b : Type; b : Type; y : b
