@@ -53,7 +53,7 @@ instance Syntax COL C_BASIC_SPEC
          parse_symb_map_items COL = Just $ symbMapItems col_reserved_words
 
 instance Sentences COL COLFORMULA CSign COLMor Symbol where
-      map_sen COL m = return . mapSen (\ _ -> id) m
+      map_sen COL m = return . mapSen (const id) m
       parse_sentence COL = Nothing
       sym_of COL = symOf
       symmap_of COL = morphismToSymbMap
@@ -75,15 +75,14 @@ instance StaticAnalysis COL C_BASIC_SPEC COLFORMULA
          matches COL = CASL.Morphism.matches
 
          empty_signature COL = emptySign emptyCOLSign
-         signature_union COL sigma1 sigma2 =
-           return $ addSig addCOLSign sigma1 sigma2
+         signature_union COL sigma1 =
+           return . addSig addCOLSign sigma1
          morphism_union COL = morphismUnion (const id) addCOLSign
          final_union COL = finalUnion addCOLSign
          inclusion COL = sigInclusion emptyMorExt isSubCOLSign diffCOLSign
          cogenerated_sign COL = cogeneratedSign emptyMorExt isSubCOLSign
          generated_sign COL = generatedSign emptyMorExt isSubCOLSign
-         induced_from_morphism COL =
-             inducedFromMorphism emptyMorExt isSubCOLSign
+         induced_from_morphism COL = inducedFromMorphism emptyMorExt
          induced_from_to_morphism COL =
              inducedFromToMorphism emptyMorExt isSubCOLSign diffCOLSign
 

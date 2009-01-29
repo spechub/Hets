@@ -72,7 +72,7 @@ instance StaticAnalysis VSE VSEBasicSpec Sentence
                VSESign
                VSEMor
                Symbol RawSymbol where
-         basic_analysis VSE = Just $ basicAna
+         basic_analysis VSE = Just basicAna
          stat_symb_map_items VSE = statSymbMapItems
          stat_symb_items VSE = statSymbItems
 
@@ -91,9 +91,10 @@ instance StaticAnalysis VSE VSEBasicSpec Sentence
          generated_sign VSE s = fmap correctTarget
            . generatedSign emptyMorExt isSubProcsMap s
          induced_from_morphism VSE rm = fmap correctTarget
-           . inducedFromMorphism emptyMorExt isSubProcsMap rm
+           . inducedFromMorphismExt inducedExt emptyMorExt rm
          induced_from_to_morphism VSE rm s1 = fmap correctTarget
-           . inducedFromToMorphism emptyMorExt isSubProcsMap diffProcs rm s1
+           . inducedFromToMorphismExt inducedExt emptyMorExt isSubProcsMap
+               diffProcs rm s1
 
 instance Logic VSE ()
                VSEBasicSpec Sentence SYMB_ITEMS SYMB_MAP_ITEMS

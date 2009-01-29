@@ -110,8 +110,7 @@ instance StaticAnalysis Modal M_BASIC_SPEC ModalFORMULA
          inclusion Modal = sigInclusion emptyMorExt isSubModalSign diffModalSign
          cogenerated_sign Modal = cogeneratedSign emptyMorExt isSubModalSign
          generated_sign Modal = generatedSign emptyMorExt isSubModalSign
-         induced_from_morphism Modal =
-             inducedFromMorphism emptyMorExt isSubModalSign
+         induced_from_morphism Modal = inducedFromMorphism emptyMorExt
          induced_from_to_morphism Modal =
              inducedFromToMorphism emptyMorExt isSubModalSign diffModalSign
          theory_to_taxonomy Modal = convTaxo

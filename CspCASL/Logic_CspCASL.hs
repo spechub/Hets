@@ -75,7 +75,7 @@ type CspCASL = GenCspCASL ()
 
 instance Show a => Language (GenCspCASL a) where
       language_name (GenCspCASL a) = "CspCASL"
-        ++ let s = show a in if s == "()" then "" else "_" ++ s
+        ++ let s = show a in if s == "()" then "" else '_' : s
       description _ =
         "CspCASL - see\n\n"++
         "http://www.cs.swan.ac.uk/~csmarkus/ProcessesAndData/"
@@ -190,7 +190,7 @@ instance Show a => StaticAnalysis (GenCspCASL a)
       signature_union (GenCspCASL _) s =
           return . addSig SignCSP.addCspProcSig s
       induced_from_morphism (GenCspCASL _) = inducedFromMorphism
-          SignCSP.emptyCspAddMorphism SignCSP.isInclusion
+          SignCSP.emptyCspAddMorphism
       induced_from_to_morphism (GenCspCASL _) = inducedFromToMorphism
           SignCSP.emptyCspAddMorphism SignCSP.isInclusion
           SignCSP.diffCspProcSig

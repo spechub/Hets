@@ -31,6 +31,7 @@ module VSE.Ana
   , minExpForm
   , simpDlformula
   , correctTarget
+  , inducedExt
   , toSen
   , VSEMorExt
   , VSEMor
@@ -163,7 +164,7 @@ boolSig = (emptySign emptyProcs)
   , opMap = uOpMap }
 
 lookupProc :: Id -> Sign f Procs -> Maybe Profile
-lookupProc i sig = Map.lookup i $ procsMap $ extendedInfo sig
+lookupProc i = Map.lookup i . procsMap . extendedInfo
 
 procsSign :: Sign f Procs -> Sign f Procs
 procsSign sig = (emptySign emptyProcs)
@@ -331,9 +332,8 @@ minExpProg invars res sig p@(Ranged prg r) = let
     Just s -> do
       nt <- oneExpT sig $ Sorted_term t s r
       checkTerm nt
-      if Set.member v invars then
-         Result [mkDiag Warning "assignment to input variable" v] $ Just ()
-         else return ()
+      when (Set.member v invars)
+        $ Result [mkDiag Warning "assignment to input variable" v] $ Just ()
       return $ Ranged (Assign v nt) r
   Call f -> case f of
     Predication ps ts _ -> let i = predSymbName ps in
@@ -480,10 +480,12 @@ mapProcId m i = case lookupProc i $ msource m of
   Nothing -> error $ "VSE.mapProcId unknown " ++ show i
 
 mapProcIdProfile :: Morphism f Procs VSEMorExt -> Id -> Profile -> Id
-mapProcIdProfile m i p = case profileToOpType p of
-  Just t -> fst $ mapOpSym (sort_map m) (op_map m) (i, t)
-  Nothing -> fst $ mapPredSym (sort_map m) (pred_map m)
-    (i, profileToPredType p)
+mapProcIdProfile m = mapProcIdProfileExt (sort_map m) (op_map m) (pred_map m)
+
+mapProcIdProfileExt :: Sort_map -> Op_map -> Pred_map -> Id -> Profile -> Id
+mapProcIdProfileExt sm om pm i p = case profileToOpType p of
+  Just t -> fst $ mapOpSym sm om (i, t)
+  Nothing -> fst $ mapPredSym sm pm (i, profileToPredType p)
 
 mapMorDefproc :: Morphism f Procs VSEMorExt -> Defproc -> Defproc
 mapMorDefproc m (Defproc k i vs p r) =
@@ -557,12 +559,14 @@ instance FreeVars Dlformula where
 
 -- | adjust procs map in morphism target signature
 correctTarget :: Morphism f Procs VSEMorExt -> Morphism f Procs VSEMorExt
-correctTarget m = let tar = mtarget m in m
-  { mtarget = correctSign tar
-    { extendedInfo = Procs $ Map.fromList
-      $ map (\ (i, p) -> (mapProcIdProfile m i p, mapProfile (sort_map m) p))
-      $ Map.toList $ procsMap $ extendedInfo tar }
+correctTarget m = m
+  { mtarget = correctSign $ mtarget m
   , msource = correctSign $ msource m }
+
+inducedExt :: InducedSign f Procs VSEMorExt Procs
+inducedExt sm om pm _ = Procs . Map.fromList
+    . map (\ (i, p) -> (mapProcIdProfileExt sm om pm i p, mapProfile sm p))
+    . Map.toList . procsMap . extendedInfo
 
 correctSign :: Sign f Procs -> Sign f Procs
 correctSign sig = sig

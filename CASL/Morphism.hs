@@ -345,7 +345,7 @@ matches (Symbol idt k) rs = case rs of
 idMor :: m -> Sign f e -> Morphism f e m
 idMor extEm sigma = embedMorphism extEm sigma sigma
 
-composeM :: (Eq e, Eq f) => (m -> m -> Result m)
+composeM :: Eq e => (m -> m -> Result m)
          -> Morphism f e m -> Morphism f e m -> Result (Morphism f e m)
 composeM comp mor1 mor2 = if mtarget mor1 == msource mor2 then do
   let sMap1 = sort_map mor1

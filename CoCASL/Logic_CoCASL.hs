@@ -70,7 +70,7 @@ instance StaticAnalysis CoCASL C_BASIC_SPEC CoCASLFORMULA
                CSign
                CoCASLMor
                Symbol RawSymbol where
-         basic_analysis CoCASL = Just $ basicCoCASLAnalysis
+         basic_analysis CoCASL = Just basicCoCASLAnalysis
          stat_symb_map_items CoCASL = statSymbMapItems
          stat_symb_items CoCASL = statSymbItems
 
@@ -87,8 +87,7 @@ instance StaticAnalysis CoCASL C_BASIC_SPEC CoCASLFORMULA
              sigInclusion emptyMorExt isSubCoCASLSign diffCoCASLSign
          cogenerated_sign CoCASL = cogeneratedSign emptyMorExt isSubCoCASLSign
          generated_sign CoCASL = generatedSign emptyMorExt isSubCoCASLSign
-         induced_from_morphism CoCASL =
-             inducedFromMorphism emptyMorExt isSubCoCASLSign
+         induced_from_morphism CoCASL = inducedFromMorphism emptyMorExt
          induced_from_to_morphism CoCASL =
              inducedFromToMorphism emptyMorExt isSubCoCASLSign diffCoCASLSign
 
@@ -105,7 +104,7 @@ instance MinSL Bool C_BASIC_ITEM where
     minSL = minCBaseItem
 
 instance ProjForm Bool C_FORMULA where
-    projForm _ f = Just $ ExtFORMULA f
+    projForm _ = Just . ExtFORMULA
 
 instance ProjSigItem Bool C_SIG_ITEM C_FORMULA where
     projSigItems _ s = (Just $ Ext_SIG_ITEMS s, [])

@@ -131,7 +131,7 @@ class Lattice a => ProjForm a f where
     projForm :: CASL_SL a -> f -> Maybe (FORMULA f)
 
 instance Lattice a => ProjForm a () where
-    projForm _ f = Just $ ExtFORMULA f
+    projForm _ = Just . ExtFORMULA
 
 class (Lattice a, ProjForm a f) => ProjSigItem a s f where
     projSigItems :: CASL_SL a -> s -> (Maybe (SIG_ITEMS s f), [SORT])
@@ -194,7 +194,7 @@ instance Lattice a => ProjectSublogicM (CASL_SL a) Symbol where
 -- CASL logic
 
 instance Sentences CASL CASLFORMULA CASLSign CASLMor Symbol where
-      map_sen CASL m = return . mapSen (\ _ -> id) m
+      map_sen CASL m = return . mapSen (const id) m
       parse_sentence CASL = Just (fmap item (aFormula [] << eof))
       sym_of CASL = symOf
       symmap_of CASL = morphismToSymbMap
@@ -207,7 +207,7 @@ instance StaticAnalysis CASL CASLBasicSpec CASLFORMULA
                CASLSign
                CASLMor
                Symbol RawSymbol where
-         basic_analysis CASL = Just $ basicCASLAnalysis
+         basic_analysis CASL = Just basicCASLAnalysis
          stat_symb_map_items CASL = statSymbMapItems
          stat_symb_items CASL = statSymbItems
          signature_colimit CASL diag = return $ signColimit diag extCASLColimit
@@ -229,7 +229,7 @@ instance StaticAnalysis CASL CASLBasicSpec CASLFORMULA
          inclusion CASL = sigInclusion () trueC const
          cogenerated_sign CASL = cogeneratedSign () trueC
          generated_sign CASL = generatedSign () trueC
-         induced_from_morphism CASL = inducedFromMorphism () trueC
+         induced_from_morphism CASL = inducedFromMorphism ()
          induced_from_to_morphism CASL = inducedFromToMorphism () trueC const
          theory_to_taxonomy CASL = convTaxo
 

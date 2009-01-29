@@ -101,7 +101,7 @@ instance StaticAnalysis CASL_DL DL_BASIC_SPEC DLFORMULA
                DLSign
                DLMor
                Symbol RawSymbol where
-         basic_analysis CASL_DL = Just $ basicCASL_DLAnalysis
+         basic_analysis CASL_DL = Just basicCASL_DLAnalysis
          stat_symb_map_items CASL_DL sml =
              statSymbMapItems sml >>= checkSymbolMapDL
          stat_symb_items CASL_DL = statSymbItems
@@ -118,12 +118,11 @@ instance StaticAnalysis CASL_DL DL_BASIC_SPEC DLFORMULA
              sigInclusion emptyMorExt isSubCASL_DLSign diffCASL_DLSign
          cogenerated_sign CASL_DL = cogeneratedSign emptyMorExt isSubCASL_DLSign
          generated_sign CASL_DL = generatedSign emptyMorExt isSubCASL_DLSign
-         induced_from_morphism CASL_DL =
-             inducedFromMorphism emptyMorExt isSubCASL_DLSign
+         induced_from_morphism CASL_DL = inducedFromMorphism emptyMorExt
          induced_from_to_morphism CASL_DL =
              inducedFromToMorphism emptyMorExt isSubCASL_DLSign diffCASL_DLSign
-         theory_to_taxonomy CASL_DL tgk mo sig sen =
-             convTaxo tgk mo (extendSortRelWithTopSort sig) sen
+         theory_to_taxonomy CASL_DL tgk mo =
+             convTaxo tgk mo . extendSortRelWithTopSort
 
 -- | extend the sort relation with sort Thing for the taxonomy display
 extendSortRelWithTopSort :: Sign f e -> Sign f e
@@ -145,22 +144,22 @@ instance MinSublogic CASL_DL_SL DLFORMULA where
     minSublogic _ = SROIQ
 
 instance ProjectSublogic CASL_DL_SL DLMor where
-    projectSublogic _ i = i
+    projectSublogic _ = id
 
 instance MinSublogic CASL_DL_SL DLMor where
     minSublogic _ = SROIQ
 
 instance ProjectSublogic CASL_DL_SL DLSign where
-    projectSublogic _ i = i
+    projectSublogic _ = id
 
 instance MinSublogic CASL_DL_SL DLSign where
     minSublogic _ = SROIQ
 
 instance ProjectSublogicM CASL_DL_SL SYMB_MAP_ITEMS where
-    projectSublogicM _ i = Just $ i
+    projectSublogicM _ = Just
 
 instance ProjectSublogicM CASL_DL_SL SYMB_ITEMS where
-    projectSublogicM _ i = Just $ i
+    projectSublogicM _ = Just
 
 instance MinSublogic CASL_DL_SL SYMB_MAP_ITEMS where
     minSublogic _ = SROIQ
@@ -169,7 +168,7 @@ instance MinSublogic CASL_DL_SL SYMB_ITEMS where
     minSublogic _ = SROIQ
 
 instance ProjectSublogic CASL_DL_SL DL_BASIC_SPEC where
-    projectSublogic _ i = i
+    projectSublogic _ = id
 
 instance MinSublogic CASL_DL_SL DL_BASIC_SPEC where
     minSublogic _ = SROIQ
@@ -182,10 +181,10 @@ instance SemiLatticeWithTop CASL_DL_SL where
     top      = SROIQ
 
 instance ProjectSublogic CASL_DL_SL Symbol where
-    projectSublogic _ i = i
+    projectSublogic _ = id
 
 instance ProjectSublogicM CASL_DL_SL Symbol where
-    projectSublogicM _ i = Just $ i
+    projectSublogicM _ = Just
 
 instance MinSublogic CASL_DL_SL Symbol where
     minSublogic _ = SROIQ

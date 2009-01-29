@@ -56,7 +56,7 @@ instance Syntax ConstraintCASL ConstraintCASLBasicSpec
 
 instance Sentences ConstraintCASL ConstraintCASLFORMULA
                    ConstraintCASLSign ConstraintCASLMor Symbol where
-      map_sen ConstraintCASL m = return . mapSen (\ _ -> id) m
+      map_sen ConstraintCASL m = return . mapSen (const id) m
       parse_sentence ConstraintCASL = Just (fmap item (aFormula [] << eof))
       sym_of ConstraintCASL = symOf
       symmap_of ConstraintCASL = morphismToSymbMap
@@ -86,7 +86,7 @@ instance StaticAnalysis ConstraintCASL
          inclusion ConstraintCASL = sigInclusion () trueC const
          cogenerated_sign ConstraintCASL = cogeneratedSign () trueC
          generated_sign ConstraintCASL = generatedSign () trueC
-         induced_from_morphism ConstraintCASL = inducedFromMorphism () trueC
+         induced_from_morphism ConstraintCASL = inducedFromMorphism ()
          induced_from_to_morphism ConstraintCASL =
              inducedFromToMorphism () trueC const
          theory_to_taxonomy ConstraintCASL =

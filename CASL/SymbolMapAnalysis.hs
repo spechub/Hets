@@ -15,6 +15,8 @@ Symbol map analysis for the CASL logic.
 module CASL.SymbolMapAnalysis
     ( inducedFromMorphism
     , inducedFromToMorphism
+    , inducedFromMorphismExt
+    , inducedFromToMorphismExt
     , cogeneratedSign
     , generatedSign
     , finalUnion
@@ -102,9 +104,13 @@ Output: morphims "Mrph": Sigma1 -> "Sigma2".
 10. Compute transitive closure of subsorting relation in Sigma2.
 -}
 
-inducedFromMorphism :: (Pretty e, Pretty f) => m -> (e -> e -> Bool)
-                    -> RawSymbolMap -> Sign f e -> Result (Morphism f e m)
-inducedFromMorphism extEm _isSubExt rmap sigma = do
+inducedFromMorphism :: (Pretty e, Show f) => m -> RawSymbolMap -> Sign f e
+                    -> Result (Morphism f e m)
+inducedFromMorphism = inducedFromMorphismExt $ \ _ _ _ _ s -> extendedInfo s
+
+inducedFromMorphismExt :: (Pretty e, Show f) => InducedSign f e m e -> m
+                       -> RawSymbolMap -> Sign f e -> Result (Morphism f e m)
+inducedFromMorphismExt extInd extEm rmap sigma = do
   -- ??? Missing: check preservation of overloading relation
   -- first check: do all source raw symbols match with source signature?
   let syms = Set.toList $ symOf sigma
@@ -142,22 +148,9 @@ inducedFromMorphism extEm _isSubExt rmap sigma = do
   -- compute the pred map (as a Map)
   pred_Map <- Map.foldWithKey (predFun rmap sort_Map)
               (return Map.empty) (predMap sigma)
-  -- compute target signature
-  let smap = mapSort sort_Map
-      omap = mapOps sort_Map op_Map
-      sigma' =
-        sigma
-            {sortSet = Set.map smap sortsSigma,
-             emptySortSet = Set.map smap $ emptySortSet sigma,
-             sortRel = Rel.irreflex $ Rel.transClosure $
-                         Rel.map smap (sortRel sigma),
-             opMap = Map.foldWithKey omap Map.empty (opMap sigma),
-             assocOps = Map.foldWithKey omap Map.empty (assocOps sigma),
-             predMap = Map.foldWithKey (mapPreds sort_Map pred_Map)
-                       Map.empty (predMap sigma),
-             varMap = Map.empty}
   -- return assembled morphism
-  return (embedMorphism extEm sigma sigma')
+  return (embedMorphism extEm sigma $ closeSortRel
+          $ inducedSignAux extInd sort_Map op_Map pred_Map extEm sigma)
     { sort_map = sort_Map
     , op_map = op_Map
     , pred_map = pred_Map }
@@ -250,15 +243,6 @@ insertmapOpSym sort_Map ide rsy ot m = do
                    Map.insert (ide, mkPartial ot) (ide', kind') m1
     -- insert mapping of op symbol (ide, ot) to itself into m
 
--- map the ops in the source signature
-mapOps :: Sort_map -> Op_map -> Id -> Set.Set OpType -> OpMap -> OpMap
-mapOps sort_Map op_Map ide ots m =
-    Set.fold mapOp m ots
-    where
-    mapOp ot m1 =
-      let (ide',ot') = mapOpSym sort_Map op_Map (ide,ot)
-      in Rel.setInsert ide' ot' m1
-
   {- to a Pred_map, add evering resulting from mapping (ide,pts)
   according to rmap -}
 
@@ -323,16 +307,6 @@ insertmapPredSym sort_Map ide rsy pt m = do
       return $ if ide' == ide then m1 else Map.insert (ide, pt) ide' m1
     -- insert mapping of pred symbol (ide,pt) to itself into m
 
-  -- map the preds in the source signature
-mapPreds :: Sort_map -> Pred_map -> Id -> Set.Set PredType
-         -> Map.Map Id (Set.Set PredType) -> Map.Map Id (Set.Set PredType)
-mapPreds sort_Map pred_Map ide pts m =
-    Set.fold mapPred m pts
-    where
-    mapPred pt m1 =
-      let (ide',pt') = mapPredSym sort_Map pred_Map (ide,pt)
-      in Rel.setInsert ide' pt' m1
-
 {-
 inducedFromToMorphism :: RawSymbolMap -> sign -> sign -> Result morphism
 
@@ -371,17 +345,27 @@ may lead to unacceptable run-time for signatures with just about 10 symbols
 -}
 
 -- the main function
-inducedFromToMorphism :: (Eq e, Eq f, Pretty f, Pretty e, Pretty m)
+inducedFromToMorphism :: (Eq e, Show f, Pretty e, Pretty m)
                       => m -- ^ extended morphism
                       -> (e -> e -> Bool) -- ^ subsignature test of extensions
                       -> (e -> e -> e) -- ^ difference of extensions
                       -> RawSymbolMap
                       -> ExtSign (Sign f e) Symbol
                       -> ExtSign (Sign f e) Symbol -> Result (Morphism f e m)
-inducedFromToMorphism extEm isSubExt diffExt rmap sig1@(ExtSign _ sy1)
+inducedFromToMorphism = inducedFromToMorphismExt $ \ _ _ _ _ s -> extendedInfo s
+
+inducedFromToMorphismExt :: (Eq e, Show f, Pretty e, Pretty m)
+                      => InducedSign f e m e
+                      -> m -- ^ extended morphism
+                      -> (e -> e -> Bool) -- ^ subsignature test of extensions
+                      -> (e -> e -> e) -- ^ difference of extensions
+                      -> RawSymbolMap
+                      -> ExtSign (Sign f e) Symbol
+                      -> ExtSign (Sign f e) Symbol -> Result (Morphism f e m)
+inducedFromToMorphismExt extInd extEm isSubExt diffExt rmap sig1@(ExtSign _ sy1)
   sig2@(ExtSign _ sy2) =
-    let iftm rm =
-            (inducedFromToMorphismAux extEm isSubExt diffExt rm sig1 sig2, rm)
+    let iftm rm = (inducedFromToMorphismAuxExt extInd extEm isSubExt diffExt
+                   rm sig1 sig2, rm)
         isOk = isJust . resultToMaybe
         res = fst $ iftm rmap
         pos = concatMapRange getRange $ Map.keys rmap
@@ -404,24 +388,25 @@ inducedFromToMorphism extEm isSubExt diffExt rmap sig1@(ExtSign _ sy1)
           else warning () "too many possibilities for symbol maps" pos >> res
 
 combine :: [a] -> [a] -> [[(a, a)]]
-combine l1 l2 = map (zip l1) $ takeKFromN l1 l2
+combine l1 = map (zip l1) . takeKFromN l1
 
 takeKFromN :: [b] -> [a] -> [[a]]
 takeKFromN s l = case s of
   [] -> [[]]
   _ : r -> [ a : b | a <- l, b <- takeKFromN r l]
 
-inducedFromToMorphismAux :: (Eq e, Eq f, Pretty f, Pretty e, Pretty m)
-                      => m -- ^ extended morphism
+inducedFromToMorphismAuxExt :: (Eq e, Show f, Pretty e, Pretty m)
+                      => InducedSign f e m e
+                      -> m -- ^ extended morphism
                       -> (e -> e -> Bool) -- ^ subsignature test of extensions
                       -> (e -> e -> e) -- ^ difference of extensions
                       -> RawSymbolMap
                       -> ExtSign (Sign f e) Symbol
                       -> ExtSign (Sign f e) Symbol -> Result (Morphism f e m)
-inducedFromToMorphismAux extEm isSubExt diffExt rmap (ExtSign sigma1 _)
-  (ExtSign sigma2 _) = do
+inducedFromToMorphismAuxExt extInd extEm isSubExt diffExt rmap
+  (ExtSign sigma1 _) (ExtSign sigma2 _) = do
   -- 1. use rmap to get a renaming...
-  mor1 <- inducedFromMorphism extEm isSubExt rmap sigma1
+  mor1 <- inducedFromMorphismExt extInd extEm rmap sigma1
   -- 1.1 ... is the renamed source signature contained in the target signature?
   let inducedSign = mtarget mor1
   if isSubSig isSubExt inducedSign sigma2
@@ -522,13 +507,12 @@ Output: signature "Sigma1"<=Sigma.
 cogeneratedSign :: m -> (e -> e -> Bool) -> SymbolSet -> Sign f e
                 -> Result (Morphism f e m)
 cogeneratedSign extEm isSubExt symset sigma =
-  if {-trace ("symset "++show symset++"\nsymset0 "++show symset0)-}
-           (not (symset `Set.isSubsetOf` symset0))   -- 2.
-   then let diffsyms = symset Set.\\ symset0 in
+  if Set.isSubsetOf symset symset0   -- 2.
+   then generatedSign extEm isSubExt symset1 sigma -- 4./5.
+   else let diffsyms = symset Set.\\ symset0 in
         fatal_error ("Hiding: The following symbols "
             ++ showDoc diffsyms " are not in the signature")
         $ getRange diffsyms
-   else generatedSign extEm isSubExt symset1 sigma -- 4./5.
   where
   symset0 = symOf sigma   -- 1.
   symset1 = Set.fold revealSym' symset0 symset  -- 3.
