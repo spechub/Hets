@@ -777,12 +777,14 @@ mkApp sign tyToks toks pVars f arg = do
           _ -> mkError "wrong function type"  f
     case fTy of
          FunType a r -> do
-             ((rTy, fConv), (_, aConv)) <- adjustTypes a r aTy
+             ((rTy, fConv), (_, aConv)) <-
+               adjustPos (getRange [f, arg]) $ adjustTypes a r aTy
              return $ (if rTy then makePartialVal r else r,
                 mkTermAppl (applConv fConv fTrm)
                              $ applConv aConv aTrm)
          PartialVal (FunType a r) -> do
-             ((_, fConv), (_, aConv)) <- adjustTypes a r aTy
+             ((_, fConv), (_, aConv)) <-
+               adjustPos (getRange [f, arg]) $ adjustTypes a r aTy
              let resTy = makePartialVal r
              return (resTy, mkTermAppl (mkTermAppl (mkTermAppl
                               (unpackOp r) $ convFun fConv) fTrm)
