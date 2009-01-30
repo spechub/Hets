@@ -36,6 +36,7 @@ import Common.Utils
 import Common.Lib.Graph (Gr)
 import qualified Common.OrderedMap as OMap
 
+import Logic.Logic
 import Logic.Prover
 import Logic.Comorphism
 import Logic.Coerce
@@ -45,6 +46,7 @@ import VSE.Logic_VSE
 import VSE.Prove
 import VSE.ToSExpr
 import Comorphisms.CASL2VSE
+import CASL.Logic_CASL
 
 import Data.Char
 import Data.Maybe
@@ -57,12 +59,12 @@ import Control.Monad.Trans
 import System.Process
 import Text.ParserCombinators.Parsec
 
-preprocess :: LibEnv -> Result LibEnv
-preprocess le = libEnv_flattening_hiding le
+preprocess :: Maybe AnyComorphism -> LibEnv -> Result LibEnv
+preprocess mcm le = libEnv_flattening_hiding le
   >>= libEnv_flattening_renamings
   >>= libEnv_flattening_dunions
   >>= qualifyLibEnv
-  >>= flip libEnv_translation (Comorphism CASL2VSE)
+  >>= maybe return (flip libEnv_translation) mcm
 
 thName :: LIB_NAME -> LNode DGNodeLab -> String
 thName ln (n, lbl) = map (\ c -> if elem c "/,[]: " then '-' else c)
@@ -71,9 +73,13 @@ thName ln (n, lbl) = map (\ c -> if elem c "/,[]: " then '-' else c)
 -- | applies basic inference to a given node and whole import tree above
 prove :: [AnyComorphism] -> (LIB_NAME, Node) -> LibEnv
       -> IO (Result (LibEnv, Result G_theory))
-prove _cms (ln, _node) libEnv =
+prove _cms (ln, node) libEnv =
   runResultT $ do
-    libEnv' <- liftR $ preprocess libEnv
+    let oLbl = labDG (lookupDGraph ln libEnv) node
+    G_theory olid _ _ _ _ <- return $ dgn_theory oLbl
+    let mcm = if Logic CASL == Logic olid then Just (Comorphism CASL2VSE) else
+             Nothing
+    libEnv' <- liftR $ preprocess mcm libEnv
     let dGraph = elfilter (isGlobalDef . dgl_type) $ dgBody
            $ lookupDGraph ln libEnv'
         nls = labNodes dGraph
