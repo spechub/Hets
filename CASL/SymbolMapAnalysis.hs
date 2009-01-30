@@ -106,7 +106,7 @@ Output: morphims "Mrph": Sigma1 -> "Sigma2".
 
 inducedFromMorphism :: (Pretty e, Show f) => m -> RawSymbolMap -> Sign f e
                     -> Result (Morphism f e m)
-inducedFromMorphism = inducedFromMorphismExt $ \ _ _ _ _ s -> extendedInfo s
+inducedFromMorphism = inducedFromMorphismExt $ \ _ _ _ _ -> extendedInfo
 
 inducedFromMorphismExt :: (Pretty e, Show f) => InducedSign f e m e -> m
                        -> RawSymbolMap -> Sign f e -> Result (Morphism f e m)
@@ -352,7 +352,7 @@ inducedFromToMorphism :: (Eq e, Show f, Pretty e, Pretty m)
                       -> RawSymbolMap
                       -> ExtSign (Sign f e) Symbol
                       -> ExtSign (Sign f e) Symbol -> Result (Morphism f e m)
-inducedFromToMorphism = inducedFromToMorphismExt $ \ _ _ _ _ s -> extendedInfo s
+inducedFromToMorphism = inducedFromToMorphismExt $ \ _ _ _ _ -> extendedInfo
 
 inducedFromToMorphismExt :: (Eq e, Show f, Pretty e, Pretty m)
                       => InducedSign f e m e
