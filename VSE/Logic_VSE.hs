@@ -22,6 +22,7 @@ import CASL.Morphism
 import CASL.MapSentence
 import CASL.SymbolMapAnalysis
 import CASL.Parse_AS_Basic
+import CASL.Qualify
 import CASL.SymbolParser
 import CASL.SimplifySen
 import CASL.ToDoc
@@ -76,6 +77,7 @@ instance StaticAnalysis VSE VSEBasicSpec Sentence
          stat_symb_map_items VSE = statSymbMapItems
          stat_symb_items VSE = statSymbItems
 
+         qualify VSE = qualifySigExt inducedExt emptyMorExt
          symbol_to_raw VSE = symbolToRaw
          id_to_raw VSE = idToRaw
          matches VSE = CASL.Morphism.matches

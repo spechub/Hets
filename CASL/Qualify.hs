@@ -11,14 +11,17 @@ Portability :  portable
 Code out overloading and qualify all names
 -}
 
-module CASL.Qualify (qualifySig, inverseMorphism) where
+module CASL.Qualify
+  ( qualifySig
+  , qualifySigExt
+  , inverseMorphism
+  ) where
 
 import CASL.AS_Basic_CASL
 import CASL.Sign
 import CASL.Morphism
 import CASL.Monoton
 
-import qualified Common.Lib.Rel as Rel
 import Common.AS_Annotation
 import Common.Id
 import Common.LibName
@@ -40,7 +43,12 @@ mkOrReuseQualSortName sm nodeId libId i =
 
 qualifySig :: SIMPLE_ID -> LIB_ID -> Morphism f e () -> Sign f e
            -> Result (Morphism f e (), [Named (FORMULA f)])
-qualifySig nodeId libId m sig = do
+qualifySig = qualifySigExt (\ _ _ _ _ -> extendedInfo) ()
+
+qualifySigExt :: InducedSign f e m e -> m -> SIMPLE_ID -> LIB_ID
+              -> Morphism f e m -> Sign f e
+              -> Result (Morphism f e m, [Named (FORMULA f)])
+qualifySigExt extInd extEm nodeId libId m sig = do
   let ps = predMap sig
       os = opMap sig
       ss = sortSet sig
@@ -51,14 +59,7 @@ qualifySig nodeId libId m sig = do
            nodeId libId (mapOpType sm) (\ o -> o { opKind = Partial }) os
       pm = Map.map fst
            $ qualOverloaded (pred_map m) nodeId libId (mapPredType sm) id ps
-      tar = sig
-        { sortSet = Set.map (mapSort sm) ss
-        , sortRel = Rel.map (mapSort sm) $ sortRel sig
-        , emptySortSet = Set.map (mapSort sm) $ emptySortSet sig
-        , opMap = inducedOpMap sm om os
-        , assocOps = inducedOpMap sm om $ assocOps sig
-        , predMap = inducedPredMap sm pm ps }
-  return ((embedMorphism () sig tar)
+  return ((embedMorphism extEm sig $ inducedSignAux extInd sm om pm extEm sig)
     { sort_map = sm
     , op_map = om
     , pred_map = pm }, monotonicities sig)
