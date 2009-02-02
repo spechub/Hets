@@ -11,7 +11,10 @@ Portability :  portable
 Convert global annotations to a list of annotations
 -}
 
-module Common.ConvertGlobalAnnos where
+module Common.ConvertGlobalAnnos
+  ( mergeGlobalAnnos
+  , c_lit_an
+  ) where
 
 import Common.Id
 import Common.GlobalAnnotations
@@ -23,7 +26,8 @@ import Common.Doc
 import Common.DocUtils
 
 import qualified Data.Map as Map
-import Data.List (partition)
+import qualified Data.Set as Set
+import Data.List (partition, groupBy, sortBy)
 
 instance Pretty GlobalAnnos where
     pretty = printGlobalAnnos
@@ -41,8 +45,17 @@ mergeGlobalAnnos :: GlobalAnnos -> GlobalAnnos -> Result GlobalAnnos
 mergeGlobalAnnos ga1 = addGlobalAnnos ga1 . convertGlobalAnnos
 
 c_prec :: PrecedenceGraph -> [Annotation]
-c_prec pg = map (\ (x, y) -> Prec_anno (precRel pg x y) [x] [y] nullRange)
-            $ filter (uncurry (/=)) $ Rel.toList pg
+c_prec pg =
+    let cs = Rel.sccOfClosure pg
+    in map (\ l -> let (f, r) = splitAt (div (length l) 2) l in
+                   Prec_anno BothDirections f r nullRange)
+           (filter ((> 1) . length) $ map Set.toList cs)
+       ++ map (\ l@((_, s) : _) ->
+        Prec_anno Lower (map fst l) (Set.toList s) nullRange)
+        (groupBy (\ a b -> snd a == snd b)
+          $ sortBy (\ a b -> compare (snd a) $ snd b)
+            $ Map.toList $ Rel.toMap $ Rel.transReduce $ Rel.irreflex
+               $ Rel.collaps cs pg)
 
 c_assoc :: AssocMap -> [Annotation]
 c_assoc am =
@@ -59,16 +72,17 @@ c_displ dm =
         -- m2::[(ID,[(Display_format,String)])]
     in map (\ (i, x) -> Display_anno i x nullRange) m2
 
-c_lit_an :: LiteralAnnos->[Annotation]
-c_lit_an la = let str = case string_lit la of
-                             Just (x, y) -> [String_anno x y nullRange]
-                             _ -> []
-                  lis = map (\ (br, (n, con)) -> List_anno br n con nullRange)
-                         (Map.toList $ list_lit la)
-                  number = case number_lit la of
-                                 Just x -> [Number_anno x nullRange]
-                                 _ -> []
-                  flo = case float_lit la of
-                                 Just (a, b) -> [Float_anno a b nullRange]
-                                 _ -> []
-              in str ++ lis ++ number ++ flo
+c_lit_an :: LiteralAnnos -> [Annotation]
+c_lit_an la = let
+  str = case string_lit la of
+          Just (x, y) -> [String_anno x y nullRange]
+          _ -> []
+  lis = map (\ (br, (n, con)) -> List_anno br n con nullRange)
+          $ Map.toList $ list_lit la
+  number = case number_lit la of
+             Just x -> [Number_anno x nullRange]
+             _ -> []
+  flo = case float_lit la of
+          Just (a, b) -> [Float_anno a b nullRange]
+          _ -> []
+  in str ++ lis ++ number ++ flo

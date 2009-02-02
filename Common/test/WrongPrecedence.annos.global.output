@@ -1,5 +1,4 @@
 %prec({a} < {b})%
-%prec({a} < {c})%
 %prec({b} < {c})%
 %left_assoc(a, b, c)%
 %right_assoc(d)%

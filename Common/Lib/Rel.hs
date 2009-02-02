@@ -37,7 +37,7 @@ module Common.Lib.Rel
     , succs, predecessors, irreflex, sccOfClosure
     , transClosure, fromList, toList, image, toPrecMap
     , intransKernel, mostRight, restrict, delSet
-    , toSet, fromSet, topSort, nodes
+    , toSet, fromSet, topSort, nodes, collaps
     , transpose, transReduce, setInsert
     , fromDistinctMap, locallyFiltered, flatSet, partSet
     ) where
