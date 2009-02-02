@@ -145,7 +145,7 @@ setToMap s = Map.fromDistinctAscList $
              List.map (\ a -> (a, ())) $ Set.toList s
 
 {- | transitive reduction (minimal relation with the same transitive closure)
-     of a transitively closed DAG. -}
+     of a transitively closed DAG (i.e. without cycles)! -}
 transReduce :: Ord a => Rel a -> Rel a
 transReduce (Rel m) = Rel $ rmNull $
 -- keep all (i, j) in rel for which no c with (i, c) and (c, j) in rel
