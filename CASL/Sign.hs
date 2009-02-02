@@ -174,16 +174,21 @@ printSign fE s = let
             ppWithCommas (Set.toList subsorts) <+> text lessS <+>
                idDoc supersort
   esorts = emptySortSet s
+  srel = sortRel s
+  cs = Rel.sccOfClosure $ Rel.transClosure srel
   nsorts = Set.difference (sortSet s) esorts in
     (if Set.null nsorts then empty else text (sortS++sS) <+>
        sepByCommas (map idDoc (Set.toList nsorts))) $+$
     (if Set.null esorts then empty else text (esortS++sS) <+>
        sepByCommas (map idDoc (Set.toList esorts))) $+$
-    (if Rel.null (sortRel s) then empty
+    (if Rel.null srel then empty
       else text (sortS++sS) <+>
-       (fsep $ punctuate semi $ map printRel $ Map.toList
-         $ Rel.toMap $ Rel.transpose $ Rel.intransKernel
-         $ Rel.transClosure $ sortRel s))
+       (fsep $ punctuate semi $
+          map (fsep . punctuate (space <> equals) . map pretty)
+           (filter ((> 1) . length) $ map Set.toList cs)
+         ++ map printRel (Map.toList
+         $ Rel.toMap $ Rel.transpose $ Rel.transReduce $ Rel.irreflex
+         $ Rel.collaps cs srel)))
     $+$ printSetMap (text opS) empty (opMap s)
     $+$ printSetMap (text predS) space (predMap s)
     $+$ fE (extendedInfo s)

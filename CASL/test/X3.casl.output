@@ -1,5 +1,5 @@
 (sorts s, t
- sorts t < s; s < t
+ sorts s = t
  op g : s -> t
  op g : s ->? s,
  [forall v1 : s . def g(v1)])
