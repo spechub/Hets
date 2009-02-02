@@ -37,6 +37,7 @@ import Common.Result
 import Common.Lib.State
 import qualified Data.Map as Map
 import qualified Data.Set as Set
+import Control.Monad
 
 inducedFromMorphism :: RawSymbolMap -> Env -> Result Morphism
 inducedFromMorphism rmap1 sigma = do
@@ -71,6 +72,16 @@ inducedFromMorphism rmap1 sigma = do
                   m1 <- m
                   return $ if s == s' then m1 else Map.insert s s' m1)
               (return Map.empty) $ Map.toList srcClassMap
+    tarClassMap0 <- foldM (\ m (i, k) ->
+       let ni = Map.findWithDefault i i myClassIdMap
+           nk = mapClassInfo myClassIdMap k
+       in case Map.lookup ni m of
+         Nothing -> return $ Map.insert ni nk m
+         Just ok -> do
+           mk <- mergeClassInfo ok nk
+           return $ Map.insert ni mk m)
+       Map.empty $ Map.toList srcClassMap
+    let tarClassMap = minimizeClassMap tarClassMap0
   -- compute the type map (as a Map)
     myTypeIdMap <- foldr
               (\ (s, ti) m ->
@@ -78,18 +89,18 @@ inducedFromMorphism rmap1 sigma = do
                   m1 <- m
                   return $ if s == s' then m1 else Map.insert s s' m1)
               (return Map.empty) $ Map.toList srcTypeMap
-  -- compute the op map (as a Map)
-    let tarTypeMap = addUnit (classMap sigma) $ Map.foldWithKey
-                       ( \ i k m -> Map.insert
-                         (Map.findWithDefault i i myTypeIdMap)
-                         (mapTypeInfo myClassIdMap myTypeIdMap k) m)
-                       Map.empty srcTypeMap
-        tarClassMap = Map.foldWithKey
-                       ( \ i k m -> Map.insert
-                         (Map.findWithDefault i i myClassIdMap)
-                         (mapClassInfo myClassIdMap k) m)
-                       Map.empty srcClassMap
+    tarTypeMap0 <- foldM (\ m (i, k) ->
+       let ni = Map.findWithDefault i i myTypeIdMap
+           nk = mapTypeInfo myClassIdMap myTypeIdMap k
+       in case Map.lookup ni m of
+         Nothing -> return $ Map.insert ni nk m
+         Just ok -> do
+           mk <- mergeTypeInfo tarClassMap ok nk
+           return $ Map.insert ni mk m)
+       Map.empty $ Map.toList srcTypeMap
+    let tarTypeMap = addUnit (classMap sigma) tarTypeMap0
         tarAliases = filterAliases tarTypeMap
+  -- compute the op map (as a Map)
     op_Map <- Map.foldWithKey
       (opFun rmap sigma myClassIdMap tarAliases myTypeIdMap)
       (return Map.empty) assMap

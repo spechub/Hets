@@ -52,7 +52,7 @@ addSuperType :: Type -> Kind -> (Id, [TypeArg]) -> State Env ()
 addSuperType t ak p@(i, nAs) = case t of
     TypeName j _ v -> if v /= 0 then
          addDiags[mkDiag Error ("illegal type variable as supertype") j]
-         else addSuperId j ak i
+         else addSuperId i ak j
     _ -> case etaReduce ak nAs t of
         Just (nk, rAs, rT) -> addSuperType rT nk (i, rAs)
         Nothing -> case t of
@@ -94,7 +94,7 @@ newTypeIdentifier i = do
 
 -- | add second identifier as super type of known first identifier
 addSuperId :: Id -> Kind -> Id -> State Env ()
-addSuperId j kind i = do
+addSuperId i kind j = do
     tm <- gets typeMap
     cm <- gets classMap
     if i == j then return () -- silently ignore

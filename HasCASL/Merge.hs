@@ -13,9 +13,11 @@ merging parts of local environment
 
 module HasCASL.Merge
     ( merge
+    , mergeTypeInfo
     , mergeTypeDefn
     , mergeOpInfo
     , addUnit
+    , minimizeClassMap
     ) where
 
 import Common.Id
@@ -115,11 +117,14 @@ mergeOpInfo o1 o2 = do
 mergeTypeMap :: ClassMap -> TypeMap -> TypeMap -> Result TypeMap
 mergeTypeMap cm = mergeMap $ mergeTypeInfo cm
 
+minimizeClassMap :: ClassMap -> ClassMap
+minimizeClassMap cm = Map.map (\ ci -> ci { classKinds =
+                          keepMinKinds cm [classKinds ci] }) cm
+
 merge :: Env -> Env -> Result Env
 merge e1 e2 = do
     cMap <- mergeMap mergeClassInfo (classMap e1) $ classMap e2
-    let clMap = Map.map (\ ci -> ci { classKinds =
-                          keepMinKinds cMap [classKinds ci] }) cMap
+    let clMap = minimizeClassMap cMap
     tMap <- mergeTypeMap clMap (typeMap e1) $ typeMap e2
     let tAs = filterAliases tMap
     as <- mergeMap mergeOpInfos (assumps e1) $ assumps e2
