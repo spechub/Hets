@@ -300,7 +300,7 @@ infoSubsort sts f =
 -- | extract the leading symbol from a formula
 leadingSym :: FORMULA f -> Maybe (Either OP_SYMB PRED_SYMB)
 leadingSym f = do
-  tp<-leading_Term_Predication f
+  tp <- leading_Term_Predication f
   return (extract_leading_symb tp)
 
 
@@ -309,7 +309,7 @@ leadingSymPos :: GetRange f => FORMULA f
               -> (Maybe (Either OP_SYMB PRED_SYMB), Range)
 leadingSymPos f = leading (f,False,False,False)
   where
-  leading (f1,b1,b2,b3)= case (f1,b1,b2,b3) of
+  leading (f1,b1,b2,b3) = case (f1,b1,b2,b3) of
                            ((Quantification _ _ f' _),_,_,_)  ->
                                leading (f',b1,b2,b3)
                            ((Negation f' _),_,_,False) ->
@@ -339,7 +339,7 @@ leadingSymPos f = leading (f,False,False,False)
 leading_Term_Predication :: FORMULA f -> Maybe (Either (TERM f) (FORMULA f))
 leading_Term_Predication f = leading (f,False,False,False)
   where
-  leading (f1,b1,b2,b3)= case (f1,b1,b2,b3) of
+  leading (f1,b1,b2,b3) = case (f1,b1,b2,b3) of
                            ((Quantification _ _ f' _),_,_,_)  ->
                                leading (f',b1,b2,b3)
                            ((Negation f' _),_,_,False) ->
@@ -535,14 +535,14 @@ varDeclOfF f =
             case v of
               Qual_var _ s r ->
                 Var_decl (nubOrd $ map varOfV $
-                           filter (\v'-> sortOfV v' == s) vars) s r:
-                (varD $ filter (\v'-> sortOfV v' /= s) vs)
+                           filter (\ v' -> sortOfV v' == s) vars) s r:
+                (varD $ filter (\ v' -> sortOfV v' /= s) vs)
               _ -> error "CASL.CCC.TermFormula<varD>"
         concatVD [] = []
         concatVD vd@((Var_decl _ s r):vds) =
             Var_decl (nubOrd $ concatMap vOfVD $
-                       filter (\v'-> sortOfVarD v' == s) vd) s r:
-            (concatVD $ filter (\v'-> sortOfVarD v' /= s) vds)
+                       filter (\ v' -> sortOfVarD v' == s) vd) s r:
+            (concatVD $ filter (\ v' -> sortOfVarD v' /= s) vds)
         vOfVD (Var_decl vs _ _) = vs
         sortOfV (Qual_var _ s _) = s
         sortOfV _ = error "CASL.CCC.TermFormula<sortOfV>"

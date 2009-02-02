@@ -36,8 +36,7 @@ inhabited sorts constrs = iterateInhabited sorts
                                  Op_name _->[]
                                  Qual_op_name _ ot _->
                                      case ot of
-                                       Op_type _ args res _ -> [(args,res)]
-                        ) ops
+                                       Op_type _ args res _ -> [(args,res)]) ops
           iterateInhabited l =
                     if l == newL then newL else iterateInhabited newL
                             where newL = foldr (\ (ags, rs) l'->
@@ -139,16 +138,16 @@ getOOps m fsn = let
         if not, return it as proof obligation
 -}
 getOPreds :: Morphism () () () -> [Named (FORMULA ())] -> [FORMULA ()]
-getOPreds m fsn = let
-       sig = imageOfMorphism m
-       oldPredMap = predMap sig
-       axioms = getAxioms fsn
-       pred_fs = filter (\ f -> case leadingSym f of
-                                Just (Right _) -> True
-                                _ -> False) axioms
-       find_pt (ident,pt) = case Map.lookup ident oldPredMap of
-                                Nothing -> False
-                                Just pts -> Set.member pt pts
+getOPreds m fsn = 
+    let sig = imageOfMorphism m
+        oldPredMap = predMap sig
+        axioms = getAxioms fsn
+        pred_fs = filter (\ f -> case leadingSym f of
+                                 Just (Right _) -> True
+                                 _ -> False) axioms
+        find_pt (ident,pt) = case Map.lookup ident oldPredMap of
+                                 Nothing -> False
+                                 Just pts -> Set.member pt pts
     in filter (find_pt . head . filterPred . leadingSym) pred_fs
 
 getNSorts :: Sign () () -> Morphism () () () -> [Id]
@@ -202,8 +201,8 @@ getDataStatus (osig,osens) m fsn = dataStatus
         dataStatus = if null nSorts then Definitional
                      else if any (\ s -> not (elem s subs) &&
                              not (elem s gens)) nSorts
-                     then Conservative
-                     else Monomorphic
+                          then Conservative
+                          else Monomorphic
 
 getNotComplete :: [Named (FORMULA ())] -> Morphism () () ()
     -> [Named (FORMULA ())] -> [[FORMULA ()]]
@@ -459,11 +458,11 @@ groupAxioms :: [FORMULA f] -> Maybe [(Either OP_SYMB PRED_SYMB,[FORMULA f])]
 groupAxioms phis = do
   symbs <- mapM leadingSym phis
   return (filterA (zip symbs phis) [])
-  where filterA [] _=[]
-        filterA (p:ps) symb=
-            let fp=fst p
+  where filterA [] _ = []
+        filterA (p:ps) symb =
+            let fp = fst p
                 p'= if elem fp symb then []
-                    else [(fp,snd $ unzip $ filter (\x->fst x == fp) (p:ps))]
+                    else [(fp,snd $ unzip $ filter (\ x -> fst x == fp) (p:ps))]
                 symb'= if not $ elem fp symb then fp:symb else symb
             in p' ++ filterA ps symb'
 
@@ -540,9 +539,8 @@ checkPatterns :: (Eq f) => ([TERM f],[TERM f]) -> Bool
 checkPatterns (ps1, ps2) = case (ps1, ps2) of
   (hd1 : tl1, hd2 : tl2) ->
       if isVar hd1 || isVar hd2 then checkPatterns (tl1, tl2)
-      else sameOps_App hd1 hd2
-        && checkPatterns (patternsOfTerm hd1 ++ tl1,
-                          patternsOfTerm hd2 ++ tl2)
+      else sameOps_App hd1 hd2 && checkPatterns (patternsOfTerm hd1 ++ tl1,
+                                                 patternsOfTerm hd2 ++ tl2)
   _ -> True
 
 -- | get the axiom from left hand side of a implication,
@@ -583,38 +581,30 @@ overlapQuery ((a1,s1),(a2,s2)) =
             | containNeg a1 && (not $ containNeg a2) ->
                 Implication (Conjunction [con1,con2] nullRange)
                             (Negation (Definedness resT2 nullRange) nullRange)
-                            True
-                            nullRange
+                            True nullRange
             | containNeg a2 && (not $ containNeg a1) ->
                 Implication (Conjunction [con1,con2] nullRange)
                             (Negation (Definedness resT1 nullRange) nullRange)
-                            True
-                            nullRange
-            | containNeg a1 && containNeg a2 ->
-                True_atom nullRange
+                            True nullRange
+            | containNeg a1 && containNeg a2 -> True_atom nullRange
             | otherwise ->
                 Implication (Conjunction [con1,con2] nullRange)
                             (Strong_equation resT1 resT2 nullRange)
-                            True
-                            nullRange
+                            True nullRange
           Just (Right _)
             | containNeg a1 && (not $ containNeg a2) ->
                 Implication (Conjunction [con1,con2] nullRange)
                             (Negation resA2 nullRange)
-                            True
-                            nullRange
+                            True nullRange
             | containNeg a2 && (not $ containNeg a1) ->
                 Implication (Conjunction [con1,con2] nullRange)
                             (Negation resA1 nullRange)
-                            True
-                            nullRange
-            | containNeg a1 && containNeg a2 ->
-                True_atom nullRange
+                            True nullRange
+            | containNeg a1 && containNeg a2 -> True_atom nullRange
             | otherwise ->
                 Implication (Conjunction [con1,con2] nullRange)
                             (Conjunction [resA1,resA2] nullRange)
-                            True
-                            nullRange
+                            True nullRange
           _ -> error "CASL.CCC.FreeTypes.<overlapQuery>"
       where cond = concatMap conditionAxiom [a1,a2]
             resT = concatMap resultTerm [a1,a2]

@@ -116,8 +116,7 @@ term_trs t =
 -- | translate a list of casl terms to the patterns of a term in TRS
 terms_pa :: [TERM f] -> String
 terms_pa ts =
-    if null ts then ""
-    else tail $ concatMap ((\s->',':s) . term_trs) ts
+    if null ts then "" else tail $ concatMap ((\s->',':s) . term_trs) ts
 
 
 -- | translate a casl axiom to TRS-rule:
@@ -140,7 +139,7 @@ axiom_trs f doms =
           _ ->
               case f1 of
                 Definedness t _ ->
-                    let dm = filter (\d -> sameOps_App t (fst d)) doms
+                    let dm = filter (\ d -> sameOps_App t (fst d)) doms
                         phi = snd $ head dm
                         te = fst $ head dm
                         p1 = arguOfTerm te
