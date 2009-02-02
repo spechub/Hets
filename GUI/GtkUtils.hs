@@ -48,7 +48,8 @@ import Common.DocUtils (showDoc)
 
 import Control.Concurrent (forkIO)
 
-import System.Directory (removeFile, getTemporaryDirectory, doesFileExist)
+import System.Directory ( removeFile, getTemporaryDirectory, doesFileExist
+                        , canonicalizePath)
 import System.FilePath (takeFileName, takeDirectory)
 import System.IO (hFlush, hClose, hPutStr, openTempFile)
 
@@ -157,7 +158,8 @@ fileDialog :: FileChooserAction -- ^ Action
            -> [(String, [String])] -- ^ Filter (name, pattern list)
            -> Maybe (FilePath -> IO ()) -- ^ Action on open
            -> IO (Maybe FilePath)
-fileDialog fAction fname filters mAction = do
+fileDialog fAction fname' filters mAction = do
+  fname <- canonicalizePath fname'
   dlg <- case fAction of
     FileChooserActionOpen -> do
       dlg' <-fileChooserDialogNew Nothing Nothing FileChooserActionOpen
