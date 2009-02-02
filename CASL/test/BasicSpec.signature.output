@@ -3,10 +3,7 @@ sorts ABCDEFGHIJKLMONOPQRSTUVWXYZ, Boolean, Char, Data1, Data2,
       a'b''2, a_b_c, ab2, ab_2_3_a, abc, abcdefghijlklmnopqrstuvwxyz, b,
       c, d, e, nat, s, t, x0123456789,
       ÀÁÂÃÄÅÆÇÈÉÊËÌÍÎÏÑÒÓÔÕÖØÙÚÛÜÝ‗אבגדהוזחטיךכלםמןסעףפץצרשתûü‎ÿ
-sorts Data1 < Data2; Nat, Pos < Int; Pos < Nat;
-      Int, Nat, Pos < Rat; b, c, d, e < a; a, c, d, e < b;
-      a, b, d, e < c; a, b, c, e < d; a, b, c, d < e; s1, s2, t < s;
-      s, s1, s2 < t
+sorts Data1 < Data2; Nat < Int; Pos < Nat; Int < Rat; t < s; s < t
 op ' ' : Char
 op '!' : Char
 op '!' : s
