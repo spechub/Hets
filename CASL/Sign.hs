@@ -182,7 +182,7 @@ printSign fE s = let
     (if Rel.null (sortRel s) then empty
       else text (sortS++sS) <+>
        (fsep $ punctuate semi $ map printRel $ Map.toList
-                       $ Rel.toMap $ Rel.transpose $ sortRel s))
+         $ Rel.toMap $ Rel.transpose $ Rel.transReduce $ sortRel s))
     $+$ printSetMap (text opS) empty (opMap s)
     $+$ printSetMap (text predS) space (predMap s)
     $+$ fE (extendedInfo s)
