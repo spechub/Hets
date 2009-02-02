@@ -754,7 +754,7 @@ mergeDGNodeLab gInfo (v, new_dgn) le = do
 showEdgeInfo :: Int -> Maybe (LEdge DGLinkLab) -> IO ()
 showEdgeInfo descr me = case me of
   Just e@(_, _, l) -> let estr = showLEdge e in
-    infoDialog ("Info of " ++ estr)
+    createTextDisplay ("Info of " ++ estr)
       (estr ++ "\n" ++ showDoc l "")
   Nothing -> errorDialog "Error"
     ("edge " ++ show descr ++ " has no corresponding edge"
