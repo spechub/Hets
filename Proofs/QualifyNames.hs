@@ -42,25 +42,28 @@ import qualified Data.Map as Map
 import qualified Data.Set as Set
 import Control.Monad
 
-foldWithKeyM :: Monad m => (k -> v -> a -> m a) -> a -> Map.Map k v -> m a
-foldWithKeyM f a = foldM (flip $ uncurry f) a . Map.toList
+mapWithKeyM :: (Ord k, Monad m) => (k -> a -> m b) -> Map.Map k a
+            -> m (Map.Map k b)
+mapWithKeyM f = foldM (\ m (k, a) -> do
+   b <- f k a
+   return $ Map.insert k b m) Map.empty . Map.toList
 
 qualifyLibEnv :: LibEnv -> Result LibEnv
-qualifyLibEnv le = foldWithKeyM qualifyDGraph le le
+qualifyLibEnv = mapWithKeyM qualifyDGraph
 
 topsortedNodes :: DynGraph g => g DGNodeLab DGLinkLab -> [LNode DGNodeLab]
 topsortedNodes dg = reverse $ postorderF $ dffWith
    (\ (_, n, nl, _) -> (n, nl)) (nodes dg)
      $ efilter (\ (s, t, el) -> s /= t && isDefEdge (dgl_type el)) dg
 
-qualifyDGraph :: LIB_NAME -> DGraph -> LibEnv -> Result LibEnv
-qualifyDGraph ln dg le = do
+qualifyDGraph :: LIB_NAME -> DGraph -> Result DGraph
+qualifyDGraph ln dg = do
   let es = map (\ (_, _, lb) -> dgl_id lb) $ labEdgesDG dg
   unless (Set.size (Set.fromList es) == length es) $
     fail $ "inkonsistent graph for library " ++ showDoc ln ""
-  (dg1, le1) <- foldM (qualifyLabNode ln) (dg, le)
+  dg1 <- foldM (qualifyLabNode ln) dg
     $ topsortedNodes $ dgBody dg
-  return $ Map.insert ln (groupHistory dg (DGRule "Qualified-Names") dg1) le1
+  return $ groupHistory dg (DGRule "Qualified-Names") dg1
 
 -- consider that loops are part of innDG and outDG that should not be handled
 -- twice
@@ -75,9 +78,9 @@ constructUnion lid hd l = case l of
     Just m -> constructUnion lid m tl
     Nothing -> constructUnion lid sd tl
 
-qualifyLabNode :: LIB_NAME -> (DGraph, LibEnv) -> LNode DGNodeLab
-               -> Result (DGraph, LibEnv)
-qualifyLabNode ln (dg, le) (n, lb) = let
+qualifyLabNode :: LIB_NAME -> DGraph -> LNode DGNodeLab
+               -> Result DGraph
+qualifyLabNode ln dg (n, lb) = let
   noLoop (x, y, _) = x /= y
   inss = filter noLoop $ innDG dg n
   allOuts = outDG dg n in
@@ -106,10 +109,8 @@ qualifyLabNode ln (dg, le) (n, lb) = let
         nAllouts <- mapM (composeWithMorphism False gm1 grm) allOuts
         let (nouts, nloops) = partition noLoop nAllouts
         nAllinss <- mapM (composeWithMorphism True gm1 grm) $ nloops ++ inss
-        let changes = map DeleteEdge (allOuts ++ inss)
+        return $ changesDGH dg $ map DeleteEdge (allOuts ++ inss)
               ++ SetNodeLab lb (n, nlb) : map InsertEdge (nAllinss ++ nouts)
-            changedDG = changesDGH dg changes
-        return (changedDG, le)
 
 -- consider that hiding edges have a reverse morphism
 
