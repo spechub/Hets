@@ -13,6 +13,7 @@ Translation of development graphs along comorphisms
 
 module Static.DGTranslation
     ( libEnv_translation
+    , dg_translation
     ) where
 
 import Static.GTheory

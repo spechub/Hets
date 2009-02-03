@@ -21,7 +21,6 @@ import Static.DevGraph
 import Static.PrintDevGraph
 import Static.DGTranslation
 
-import Proofs.DGFlattening
 import Proofs.QualifyNames
 import Proofs.EdgeUtils
 
@@ -33,7 +32,6 @@ import Common.Result
 import Common.ResultT
 import Common.SExpr
 import Common.Utils
-import Common.Lib.Graph (Gr)
 import qualified Common.OrderedMap as OMap
 
 import Logic.Logic
@@ -52,37 +50,40 @@ import Data.Char
 import Data.Maybe
 import qualified Data.Map as Map
 import qualified Data.Set as Set
-import Data.Graph.Inductive.Basic (elfilter)
+import Data.Graph.Inductive.Basic (elfilter, gfold)
 import Data.Graph.Inductive.Graph hiding (out)
 
 import Control.Monad.Trans
 import System.Process
 import Text.ParserCombinators.Parsec
 
-preprocess :: Maybe AnyComorphism -> LibEnv -> Result LibEnv
-preprocess mcm le = libEnv_flattening_hiding le
-  >>= libEnv_flattening_renamings
-  >>= libEnv_flattening_dunions
-  >>= qualifyLibEnv
-  >>= maybe return (flip libEnv_translation) mcm
-
 thName :: LIB_NAME -> LNode DGNodeLab -> String
 thName ln (n, lbl) = map (\ c -> if elem c "/,[]: " then '-' else c)
            $ shows (getLIB_ID ln) "_" ++ getDGNodeName lbl ++ "_" ++ show n
+
+getSubGraph :: Node -> DGraph -> DGraph
+getSubGraph n dg =
+    let g = dgBody dg
+        ns = nodes g
+        sns = gfold pre' (\ c s -> Set.insert (node' c) s)
+          (\ m s -> Set.union s $ fromMaybe Set.empty m, Set.empty) [n] g
+    in foldr delNodeDG dg $ Set.toList $ Set.difference (Set.fromList ns) sns
 
 -- | applies basic inference to a given node and whole import tree above
 prove :: [AnyComorphism] -> (LIB_NAME, Node) -> LibEnv
       -> IO (Result (LibEnv, Result G_theory))
 prove _cms (ln, node) libEnv =
   runResultT $ do
-    let oLbl = labDG (lookupDGraph ln libEnv) node
+    let dg1 = lookupDGraph ln libEnv
+        dg2 = dg1 { dgBody = elfilter (isGlobalDef . dgl_type) $ dgBody dg1 }
+        dg3 = getSubGraph node dg2
+        oLbl = labDG dg3 node
+    dg4 <- liftR $ qualifyDGraph ln dg3
     G_theory olid _ _ _ _ <- return $ dgn_theory oLbl
     let mcm = if Logic CASL == Logic olid then Just (Comorphism CASL2VSE) else
              Nothing
-    libEnv' <- liftR $ preprocess mcm libEnv
-    let dGraph = elfilter (isGlobalDef . dgl_type) $ dgBody
-           $ lookupDGraph ln libEnv'
-        nls = labNodes dGraph
+    dGraph <- liftR $ maybe return (flip dg_translation) mcm dg4
+    let nls = labNodesDG dGraph
         ns = map snd nls
         errfile = "hetvse.out"
     ts <- liftR $ mapM
@@ -152,14 +153,14 @@ prove _cms (ln, node) libEnv =
                return libEnv
     return (nLibEnv, Result [] Nothing)
 
-getLinksTo :: LIB_NAME -> Gr DGNodeLab DGLinkLab -> LNode DGNodeLab -> String
+getLinksTo :: LIB_NAME -> DGraph -> LNode DGNodeLab -> String
 getLinksTo ln dg (n, lbl) = show $ prettySExpr $ SList
   $ map (\ (s, _, el) -> SList
     [ SSymbol "definition-link"
     , SSymbol $ filter (not . isSpace) $ showEdgeId $ dgl_id el
-    , SSymbol $ thName ln (s, fromMaybe (error "getLinksTo") $ lab dg s)
+    , SSymbol $ thName ln (s, labDG dg s)
     , SSymbol $ thName ln (n, lbl)
     , SList [SSymbol "global"]
     , SList [SSymbol "morphism"]])
-  $ filter (\ (s, _, _) -> s /= n) $ inn dg n
+  $ filter (\ (s, _, _) -> s /= n) $ innDG dg n
 
