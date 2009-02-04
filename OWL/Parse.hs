@@ -377,6 +377,7 @@ primaryOrDataRange = do
         <|> fmap (Right . DatatypeRestriction (DRDatatype u))
             (bracketsP $ sepByComma facetValuePair)
         <|> return (if elem (localPart u) datatypeKeys
+                       && elem (namePrefix u) ["", "xsd"]
               then Right $ DRDatatype u
               else Left $ OWLClassDescription u) -- could still be a datatypeUri
     <|> do
