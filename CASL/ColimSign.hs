@@ -47,10 +47,10 @@ signColimit graph extColimit = let
  (setSort0, funSort0) = computeColimitSet sortGraph
  (setSort, funSort) = renameSorts (setSort0, funSort0)
  sigmaSort = (emptySign $ error "err"){sortSet=setSort}
- phiSort = Map.fromList $
-    map(\ (node, s)-> (node, (embedMorphism (error "err") s sigmaSort)
-                          {sort_map = (Map.!) funSort node})) $
-    labNodes graph
+ phiSort = Map.fromList
+   $ map (\ (node, s)-> (node, (embedMorphism (error "err") s sigmaSort)
+           {sort_map = Map.filterWithKey (/=) $ funSort Map.! node}))
+   $ labNodes graph
  relS = computeSubsorts graph funSort
  sigmaRel = sigmaSort{sortRel = relS}
  phiRel = Map.map (\ phi -> phi{mtarget = sigmaRel}) phiSort
