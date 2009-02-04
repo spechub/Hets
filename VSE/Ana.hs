@@ -36,6 +36,7 @@ module VSE.Ana
   , VSEMorExt
   , VSEMor
   , VSEBasicSpec
+  , extVSEColimit
   ) where
 
 import Control.Monad
@@ -67,6 +68,9 @@ import CASL.SimplifySen
 
 import VSE.As
 import VSE.Fold
+
+import Data.Graph.Inductive.Graph
+import Common.Lib.Graph
 
 type VSESign = Sign Dlformula Procs
 
@@ -585,3 +589,17 @@ mapProfile m (Profile l r) = Profile
 
 toSen :: CASLFORMULA -> Sentence
 toSen = foldFormula $ mapRecord (error "CASL2VSEImport.mapSen")
+
+extVSEColimit :: Gr Procs (Int, VSEMorExt) ->
+                  Map.Map Int VSEMor ->
+                  (Procs, Map.Map Int VSEMorExt)
+extVSEColimit graph morMap = let
+  procs = Map.fromList $ nub $
+          concatMap (\(n, Procs p) -> let
+            phi = morMap Map.! n
+           in map (\(idN, profile) ->
+                    (mapProcId phi idN, mapProfile (sort_map phi) profile)) $
+              Map.toList p) $
+          labNodes graph
+ in (Procs procs, Map.fromList $ map (\n -> (n, emptyMorExt)) $
+                  nodes graph)

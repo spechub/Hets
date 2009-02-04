@@ -27,6 +27,7 @@ import CASL.SymbolParser
 import CASL.SimplifySen
 import CASL.ToDoc
 import CASL.Logic_CASL () -- instance Category VSESign VSEMor
+import CASL.ColimSign
 
 import VSE.As
 import VSE.Parse
@@ -76,6 +77,7 @@ instance StaticAnalysis VSE VSEBasicSpec Sentence
          basic_analysis VSE = Just basicAna
          stat_symb_map_items VSE = statSymbMapItems
          stat_symb_items VSE = statSymbItems
+         signature_colimit VSE diag = return $ signColimit diag extVSEColimit
 
          qualify VSE = qualifySigExt inducedExt emptyMorExt
          symbol_to_raw VSE = symbolToRaw
