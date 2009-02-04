@@ -38,6 +38,8 @@ import VSE.Prove(vse)
 #endif
 import Logic.Logic
 
+import qualified Data.Map as Map
+
 data VSE = VSE deriving Show
 
 instance Language VSE where
@@ -77,8 +79,9 @@ instance StaticAnalysis VSE VSEBasicSpec Sentence
          basic_analysis VSE = Just basicAna
          stat_symb_map_items VSE = statSymbMapItems
          stat_symb_items VSE = statSymbItems
-         signature_colimit VSE diag = return $ signColimit diag extVSEColimit
-
+         signature_colimit VSE diag =
+           let (sig, mmor) = signColimit diag extVSEColimit
+           in return (correctSign sig, Map.map correctTarget mmor)
          qualify VSE = qualifySigExt inducedExt emptyMorExt
          symbol_to_raw VSE = symbolToRaw
          id_to_raw VSE = idToRaw

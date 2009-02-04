@@ -30,6 +30,7 @@ module VSE.Ana
   , mapDlformula
   , minExpForm
   , simpDlformula
+  , correctSign
   , correctTarget
   , inducedExt
   , toSen
