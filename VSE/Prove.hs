@@ -58,15 +58,26 @@ prx = ("(API::GET-" ++)
 
 data MaybeChar = Wait | Stop | JustChar Char
 
+vseErrFile :: String
+vseErrFile = "hetsvse.out"
+
 readUntilMatchParen :: ProcessHandle -> Handle -> String -> IO String
-readUntilMatchParen cp h str =
+readUntilMatchParen = readUntilMatchParenAux 10000
+
+readUntilMatchParenAux :: Int -> ProcessHandle -> Handle -> String -> IO String
+readUntilMatchParenAux n cp h str =
   let os = length $ filter (== '(') str
       cs = length $ filter (== ')') str
-  in if os == cs && os > 0 then return str
+  in if n < 1 then do
+    appendFile vseErrFile $ "readUntilMatchParen failed after\n" ++ str ++ "\n"
+    return ""
+  else if os == cs && os > 0 then return str
   else do
   mc <- myGetChar cp h
   case mc of
-    Wait -> readUntilMatchParen cp h str
+    Wait -> do
+      appendFile vseErrFile "waiting for character ...\n"
+      readUntilMatchParenAux (n - 1) cp h str
     Stop -> return str
     JustChar c -> readUntilMatchParen cp h $ c : str
 
@@ -78,17 +89,27 @@ myGetChar cp h = catch (fmap JustChar $ hGetChar h) $ \ _ -> do
     Just _ -> Stop
 
 readMyMsg :: ProcessHandle -> Handle -> String -> IO String
-readMyMsg cp h expect = do
+readMyMsg = readMyMsgAux 1000
+
+readMyMsgAux :: Int -> ProcessHandle -> Handle -> String -> IO String
+readMyMsgAux n cp h expect = if n < 1 then do
+    appendFile vseErrFile $ "gave up waiting for: " ++ expect ++ "\n"
+    return ""
+  else do
   mc <- myGetChar cp h
   case mc of
-    Wait -> readMyMsg cp h expect
+    Wait -> do
+      appendFile vseErrFile "waiting for first character ...\n"
+      readMyMsgAux (n - 1) cp h expect
     Stop -> return ""
     JustChar c -> do
       r <- readUntilMatchParen cp h [c]
       let rr = reverse r
-      unless (isPrefixOf (prx expect) $ dropWhile (/= '(') rr)
-        $ putStrLn $ "an error occurred when waiting for: " ++ expect
-      return rr
+      if isPrefixOf (prx expect) $ dropWhile (/= '(') rr
+        then return rr else do
+        appendFile vseErrFile $ "waiting for '" ++ expect  ++ "' got:\n" ++ rr
+          ++ "\ntrying again\n"
+        readMyMsgAux (n - 1) cp h expect -- try again
 
 sendMyMsg :: Handle -> String -> IO ()
 sendMyMsg cp str = catch (hPutStrLn cp str >> hFlush cp) $ \ _ -> return ()
@@ -151,7 +172,6 @@ prove ostr (Theory sig thsens) _freedefs = do
       (disAxs, disGoals) = partition isAxiom oSens
       rMap = Map.fromList $ map (\ SenAttr { senAttr = n } ->
                 (map toUpper $ transString n, n)) disGoals
-      errfile = "hetvse.out"
   vseBin <- getEnvDef "HETS_VSE" "hetsvse"
   (inp, out, _, cp) <-
       runInteractiveProcess vseBin ["-std"] Nothing Nothing
@@ -166,12 +186,12 @@ prove ostr (Theory sig thsens) _freedefs = do
   ms <- getProcessExitCode cp
   case ms of
     Just _ -> do
-      putStrLn $ vseBin ++ " unavailable"
+      appendFile vseErrFile $ vseBin ++ " unavailable\n"
       return []
     Nothing -> do
       revres <- readRest cp out ""
       let res = reverse revres
-      case parse parseSExprs errfile res of
+      case parse parseSExprs vseErrFile res of
         Right l -> return
           $ foldr (\ s r -> case Map.lookup s rMap of
                  Nothing -> r
@@ -180,5 +200,5 @@ prove ostr (Theory sig thsens) _freedefs = do
           $ readLemmas l
         Left e -> do
           print e
-          writeFile errfile res
+          appendFile vseErrFile $ res ++ "\n"
           return []

@@ -85,7 +85,6 @@ prove _cms (ln, node) libEnv =
     dGraph <- liftR $ maybe return (flip dg_translation) mcm dg4
     let nls = labNodesDG dGraph
         ns = map snd nls
-        errfile = "hetvse.out"
     ts <- liftR $ mapM
       (\ lbl -> do
          G_theory lid (ExtSign sign0 _) _ sens0 _ <- return $ dgn_theory lbl
@@ -121,7 +120,7 @@ prove _cms (ln, node) libEnv =
          Nothing -> do
            revres <- readRest cp out ""
            let res = reverse revres
-           case parse parseSExprs errfile res of
+           case parse parseSExprs vseErrFile res of
              Right l -> let lemMap = readLemmas l in
                return $ foldr (\ (n, lbl) le ->
                  let str = map toUpper $ thName ln (n, lbl)
@@ -148,7 +147,7 @@ prove _cms (ln, node) libEnv =
                                  G_theory lid sig sigId nsens startThId })
                         in Map.insert ln ndg le) libEnv nls
              Left e -> do
-               writeFile errfile res
+               appendFile vseErrFile res
                print e
                return libEnv
     return (nLibEnv, Result [] Nothing)
