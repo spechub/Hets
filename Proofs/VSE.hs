@@ -115,7 +115,7 @@ prove _cms (ln, node) libEnv =
        ms <- getProcessExitCode cp
        case ms of
          Just _ -> do
-           putStrLn $ vseBin ++ " unavailable"
+           appendFile vseErrFile $ vseBin ++ " unavailable\n"
            return libEnv
          Nothing -> do
            revres <- readRest cp out ""
@@ -147,7 +147,7 @@ prove _cms (ln, node) libEnv =
                                  G_theory lid sig sigId nsens startThId })
                         in Map.insert ln ndg le) libEnv nls
              Left e -> do
-               appendFile vseErrFile res
+               appendFile vseErrFile $ res ++ "\n"
                print e
                return libEnv
     return (nLibEnv, Result [] Nothing)
