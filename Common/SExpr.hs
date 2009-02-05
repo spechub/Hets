@@ -39,9 +39,7 @@ idToSSymbol n i = SSymbol
   $ transQualId i . (if n < 2 then id else showString "_O" . shows n) $ ""
 
 transQualId :: Id -> ShowS
-transQualId j@(Id _ cs _) = transId $ case cs of
-  i : _ | isQualName j -> i
-  _ -> j
+transQualId = transId . unQualName
 
 transId :: Id -> ShowS
 transId (Id ts cs _) =

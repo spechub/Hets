@@ -31,14 +31,19 @@ mkQualName nodeId libId i =
 
 isQualNameFrom :: SIMPLE_ID -> LIB_ID -> Id -> Bool
 isQualNameFrom nodeId libId i@(Id _ cs _) = case cs of
-  _ : n : l : _ ->
-      isQualName i && n == simpleIdToId nodeId && libIdToId libId == l
-  _ -> False
+  _ : n : l : _ | isQualName i ->
+      n == simpleIdToId nodeId && libIdToId libId == l
+  _ -> True
 
 isQualName :: Id -> Bool
 isQualName (Id ts cs _) = case cs of
   _ : _ : _ -> ts == omTs
   _ -> False
+
+unQualName :: Id -> Id
+unQualName j@(Id _ cs _) = case cs of
+  i : _ | isQualName j -> i
+  _ -> j
 
 libIdToId :: LIB_ID -> Id
 libIdToId li = let

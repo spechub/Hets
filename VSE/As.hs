@@ -24,6 +24,7 @@ import Common.Id
 import Common.Doc
 import Common.DocUtils
 import Common.Result
+import Common.LibName
 
 import CASL.AS_Basic_CASL
 import CASL.ToDoc (recoverType, printALTERNATIVE)
@@ -214,14 +215,22 @@ instance Pretty VSEforms where
                , semiAnnos (printRESTRTYPE_DECL restr) l
                , text "]%"]
 
+genSortName :: String -> SORT -> Id
+genSortName str s@(Id ts cs ps) = case cs of
+  [] -> genName $ str ++ show s
+  i : r | isQualName s -> Id ts (genSortName str i : r) ps
+  _ -> Id [genToken $ str ++ show (Id ts [] ps)] cs ps
+
+{- since such names are generated out of sentences, the qualification
+   of the sort may be misleading -}
 gnUniformName :: SORT -> Id
-gnUniformName s = genName $ "uniform_" ++ show s
+gnUniformName = genSortName "uniform_" . unQualName
 
 gnRestrName :: SORT -> Id
-gnRestrName s = genName $ "restr_" ++ show s
+gnRestrName = genSortName "restr_"
 
 gnEqName :: SORT -> Id
-gnEqName s = genName $ "eq_" ++ show s
+gnEqName = genSortName "eq_"
 
 genVars :: [SORT] -> [(Token, SORT)]
 genVars sl = map (\ (t, n) -> (genNumVar "x" n, t)) $ zip sl [1 :: Int ..]
