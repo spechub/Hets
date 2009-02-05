@@ -27,6 +27,7 @@ import Data.Graph.Inductive.Graph as Graph
 import qualified Data.Map as Map
 import qualified Data.Set as Set
 import Data.List
+import Logic.Logic(EndoMap)
 
 extCASLColimit :: Gr () (Int, ()) ->
                   Map.Map Int CASLMor ->
