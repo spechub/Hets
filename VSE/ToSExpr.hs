@@ -191,7 +191,7 @@ addUniformRestr sig nsens = let
           (Dlformula Diamond ( Ranged
             (Call $ Predication
               (Qual_pred_name
-                (restr Map.! s)
+                (Map.findWithDefault (gnRestrName s) s restr)
                 (Pred_type [s] nullRange) nullRange)
                [Qual_var (genToken "x") s nullRange] nullRange) nullRange)
             (True_atom nullRange))

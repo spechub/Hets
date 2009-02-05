@@ -506,7 +506,7 @@ mapDlformula m (Ranged f r) = case f of
    Ranged
     (RestrictedConstraint
        (map (MapSen.mapConstr m) constr)
-       (Map.fromList $ map (\(s,i) -> (sort_map m Map.! s, mapProcId m i)) $
+       (Map.fromList $ map (\(s,i) -> (mapSort (sort_map m) s, mapProcId m i)) $
         Map.toList restr)
     flag ) r
 
@@ -597,7 +597,7 @@ extVSEColimit :: Gr Procs (Int, VSEMorExt) ->
 extVSEColimit graph morMap = let
   procs = Map.fromList $ nub $
           concatMap (\(n, Procs p) -> let
-            phi = morMap Map.! n
+            phi = Map.findWithDefault (error "extVSEColimit") n morMap
            in map (\(idN, profile) ->
                     (mapProcId phi idN, mapProfile (sort_map phi) profile)) $
               Map.toList p) $

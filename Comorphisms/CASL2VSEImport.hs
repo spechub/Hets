@@ -81,8 +81,8 @@ mkIfProg f =
 mapSig :: CASLSign -> (VSESign, [Named Sentence])
 mapSig sign =
  let wrapSort (procsym, axs) s = let
-        restrName = genName $ "restr_" ++ show s
-        eqName = genName $ "eq_" ++ show s
+        restrName = gnRestrName s
+        eqName = gnEqName s
         sProcs = [(restrName, Profile [Procparam In s] Nothing),
                   (eqName,
                      Profile [Procparam In s, Procparam In s]
@@ -206,59 +206,24 @@ mapNamedSen = mapNamed toSen
 
 mapMor :: CASLMor -> VSEMor
 mapMor m = let
- renSorts = Map.keys $ sort_map m
- eqOps = Map.fromList $ map
-         (\s -> ((genName $ "eq_" ++ show s,
-                OpType Partial [s,s] (uBoolean)) ,
-                (genName $ "eq_" ++
-                                  (show $ (sort_map m) Map.!s ),
-                Partial )
-         ))
-         renSorts
- restrPreds = Map.fromList $ concatMap
-           (\s -> [(
-               (genName $ "restr_" ++ show s,
-                PredType [s,s]),
-               genName $ "restr_" ++
-                                  show ((sort_map m) Map.!s)),
-               (
-               (genName $ "uniform_" ++ show s,
-                PredType [s,s]),
-               genName $ "uniform_" ++
-                                  show ((sort_map m) Map.!s))
-                ]
-           )
-           renSorts
- renOps = Map.keys $ op_map m
- opsProcs = Map.fromList $
-            map (\ (idN, oT@(OpType _ w s)) -> let
-                   (idN', _) = (op_map m) Map.! (idN, oT)
-                                               in
-                  ((mkGenName idN,
-                    OpType Partial w s)  ,
-                   (mkGenName idN',
-                    Partial)
-                  )
-                )
-            renOps
- renPreds = Map.keys $ pred_map m
- predProcs = Map.fromList $
-            map (\ (idN, pT@(PredType w)) -> let
-                   idN' = (pred_map m) Map.! (idN, pT)
-                                               in
-                  ((mkGenName idN,
-                    PredType w)  ,
-                   mkGenName idN'
-                  )
-                )
-            renPreds
- (sig1,_) = mapSig $ msource m
- (sig2,_) = mapSig $ mtarget m
-           in
-  m
-  { msource = sig1
-  , mtarget = sig2
-  , op_map = Map.union (Map.union eqOps opsProcs) $ op_map m
-  , pred_map = Map.union (Map.union restrPreds predProcs) $ pred_map m
+  sm = Map.toList $ sort_map m
+  om = op_map m
+  pm = pred_map m
+  eqOps = Map.fromList $ map (\ (s, t) ->
+    ((gnEqName s, OpType Partial [s, s] uBoolean)
+    ,(gnEqName t, Partial))) sm
+  restrPreds = Map.fromList $ concatMap (\ (s, t) ->
+    [ (( gnRestrName s, PredType [s, s]), gnRestrName t)
+    , (( gnUniformName s, PredType [s, s]), gnUniformName t) ]) sm
+  opsProcs = Map.fromList $ map (\ ((idN, OpType _ w s), (idN', _)) ->
+    ((mkGenName idN, OpType Partial w s)
+    ,(mkGenName idN', Partial))) $ Map.toList om
+  predProcs = Map.fromList $ map (\ ((idN, PredType w), idN') ->
+    ((mkGenName idN, PredType w), mkGenName idN')) $ Map.toList pm
+  in m
+  { msource = fst $ mapSig $ msource m
+  , mtarget = fst $ mapSig $ mtarget m
+  , op_map = Map.union (Map.union eqOps opsProcs) om
+  , pred_map = Map.union (Map.union restrPreds predProcs) pm
   , extended_map = emptyMorExt
   }

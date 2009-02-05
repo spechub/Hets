@@ -214,6 +214,15 @@ instance Pretty VSEforms where
                , semiAnnos (printRESTRTYPE_DECL restr) l
                , text "]%"]
 
+gnUniformName :: SORT -> Id
+gnUniformName s = genName $ "uniform_" ++ show s
+
+gnRestrName :: SORT -> Id
+gnRestrName s = genName $ "restr_" ++ show s
+
+gnEqName :: SORT -> Id
+gnEqName s = genName $ "eq_" ++ show s
+
 printRESTRTYPE_DECL :: Map.Map SORT Id -> DATATYPE_DECL -> Doc
 printRESTRTYPE_DECL restr (Datatype_decl s a r)=
     let pa = printAnnoted printALTERNATIVE in case a of
@@ -222,7 +231,7 @@ printRESTRTYPE_DECL restr (Datatype_decl s a r)=
     h : t  -> sep [idLabelDoc s, colon <> colon <> sep
                       ((equals <+> pa h) :
                        map ((bar <+>) . pa) t), text "restricted by",
-                   pretty $ restr Map.! s]
+                   pretty $ Map.findWithDefault (gnRestrName s) s restr]
 
 prettyProcdefs :: [Defproc] -> Doc
 prettyProcdefs ps = vcat
