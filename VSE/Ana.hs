@@ -615,8 +615,8 @@ vseMorExt m = let
     ((gnEqName s, OpType Partial [s, s] uBoolean)
     ,(gnEqName t, Partial))) sm
   restrPreds = Map.fromList $ concatMap (\ (s, t) ->
-    [ (( gnRestrName s, PredType [s, s]), gnRestrName t)
-    , (( gnUniformName s, PredType [s, s]), gnUniformName t) ]) sm
+    [ (( gnRestrName s, PredType [s]), gnRestrName t)
+    , (( gnUniformName s, PredType [s]), gnUniformName t) ]) sm
   opsProcs = Map.fromList $ map (\ ((idN, OpType _ w s), (idN', _)) ->
     ((mkGenName idN, OpType Partial w s)
     ,(mkGenName idN', Partial))) $ Map.toList om
