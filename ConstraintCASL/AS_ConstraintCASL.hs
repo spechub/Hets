@@ -3,7 +3,7 @@ Module      :  $Header$
 Copyright   :  (c) Florian Mossakowski, Uni Bremen 2006
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
-Maintainer  :  fmossa@informatik.uni-bremen.de
+Maintainer  :  till@informatik.uni-bremen.de
 Stability   :  provisional
 Portability :  portable
 
