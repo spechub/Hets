@@ -90,13 +90,13 @@ mapSig sign =
         sSens = [makeNamed ("ga_restriction_" ++ show s) $ ExtFORMULA $
                  mkRanged
                   (Defprocs
-                   [Defproc Proc restrName [genToken "x"]
+                   [Defproc Proc restrName [xVar]
                    (mkRanged (Block [] (mkRanged Skip)))
                            nullRange])
                 ,makeNamed ("ga_equality_" ++ show s) $ ExtFORMULA $
                  mkRanged
                   (Defprocs
-                   [Defproc Func eqName (map mkSimpleId ["x","y"])
+                   [Defproc Func eqName (map mkSimpleId ["x", "y"])
                    (mkRanged (Block [] (mkIfProg (Strong_equation
                         (Qual_var (mkSimpleId "x") s nullRange)
                         (Qual_var (mkSimpleId "y") s nullRange)
@@ -115,10 +115,7 @@ mapSig sign =
                         Profile
                            (map (Procparam In) $ opArgs profile)
                            (Just $ opRes profile))) opTypes
-       fSens = map (\ (OpType fKind w s) -> let
-                      vars = map (\(t,n) -> (genToken ("x" ++ (show n)), t)) $
-                             zip w [1::Int ..]
-                                      in
+       fSens = map (\ (OpType fKind w s) -> let vars = genVars w in
                    makeNamed "" $ ExtFORMULA $ Ranged
                      (Defprocs
                        [Defproc
@@ -126,25 +123,24 @@ mapSig sign =
                          ( Ranged (Block []
                          (Ranged
                             (Block
-                              [Var_decl [genToken "y"] s nullRange]
+                              [Var_decl [yVar] s nullRange]
                               (Ranged
                                 (Seq
-
                                  (Ranged
                                    (Assign
-                                     (genToken "y")
+                                     yVar
                                      (Application
                                       (Qual_op_name i
                                         (Op_type fKind w s nullRange)
                                        nullRange )
-                                      (map  (\(v,ss) ->
+                                      (map  (\(v, ss) ->
                                               Qual_var v ss nullRange) vars)
                                       nullRange))
                                    nullRange)
 
                                  (Ranged
                                    (Return
-                                    (Qual_var (genToken "y") s nullRange))
+                                    (Qual_var yVar s nullRange))
                                    nullRange)
 
                                 )--end seq
@@ -158,7 +154,7 @@ mapSig sign =
                    ) opTypes
                                             in
        (procsym ++ fProcs, axs ++ fSens)
-     (opProcs, opSens) = foldl wrapOp ([],[]) $
+     (opProcs, opSens) = foldl wrapOp ([], []) $
                                         Map.toList $ opMap sign
      wrapPred (procsym, axs) (i, predTypeSet) = let
        predTypes = Set.toList predTypeSet
@@ -166,11 +162,8 @@ mapSig sign =
        pProcs = map (\profile -> (procName,
                         Profile
                            (map (Procparam In) $ predArgs profile)
-                           (Just $ uBoolean))) predTypes
-       pSens = map (\ (PredType w) -> let
-                      vars = map (\(t,n) -> (genToken ("x" ++ (show n)), t)) $
-                             zip w [1::Int ..]
-                                      in
+                           (Just uBoolean))) predTypes
+       pSens = map (\ (PredType w) -> let vars = genVars w in
                    makeNamed "" $ ExtFORMULA $ mkRanged
                      (Defprocs
                        [Defproc
@@ -179,11 +172,9 @@ mapSig sign =
                                (Predication
                                         (Qual_pred_name
                                           i
-                                         (Pred_type
-                                           (map snd vars)
-                                           nullRange)
+                                         (Pred_type w nullRange)
                                         nullRange)
-                                        (map (\(v,ss) ->
+                                        (map (\(v, ss) ->
                                                Qual_var v ss nullRange) vars)
                                        nullRange))))
                           nullRange]
@@ -206,24 +197,11 @@ mapNamedSen = mapNamed toSen
 
 mapMor :: CASLMor -> VSEMor
 mapMor m = let
-  sm = Map.toList $ sort_map m
-  om = op_map m
-  pm = pred_map m
-  eqOps = Map.fromList $ map (\ (s, t) ->
-    ((gnEqName s, OpType Partial [s, s] uBoolean)
-    ,(gnEqName t, Partial))) sm
-  restrPreds = Map.fromList $ concatMap (\ (s, t) ->
-    [ (( gnRestrName s, PredType [s, s]), gnRestrName t)
-    , (( gnUniformName s, PredType [s, s]), gnUniformName t) ]) sm
-  opsProcs = Map.fromList $ map (\ ((idN, OpType _ w s), (idN', _)) ->
-    ((mkGenName idN, OpType Partial w s)
-    ,(mkGenName idN', Partial))) $ Map.toList om
-  predProcs = Map.fromList $ map (\ ((idN, PredType w), idN') ->
-    ((mkGenName idN, PredType w), mkGenName idN')) $ Map.toList pm
+  (om, pm) = vseMorExt m
   in m
   { msource = fst $ mapSig $ msource m
   , mtarget = fst $ mapSig $ mtarget m
-  , op_map = Map.union (Map.union eqOps opsProcs) om
-  , pred_map = Map.union (Map.union restrPreds predProcs) pm
+  , op_map = Map.union om $ op_map m
+  , pred_map = Map.union pm $ pred_map m
   , extended_map = emptyMorExt
   }

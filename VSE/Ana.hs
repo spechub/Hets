@@ -38,6 +38,7 @@ module VSE.Ana
   , VSEMor
   , VSEBasicSpec
   , extVSEColimit
+  , vseMorExt
   ) where
 
 import Control.Monad
@@ -604,3 +605,21 @@ extVSEColimit graph morMap = let
           labNodes graph
  in (Procs procs, Map.fromList $ map (\n -> (n, emptyMorExt)) $
                   nodes graph)
+
+vseMorExt :: CASLMor -> (Op_map, Pred_map)
+vseMorExt m = let
+  sm = Map.toList $ sort_map m
+  om = op_map m
+  pm = pred_map m
+  eqOps = Map.fromList $ map (\ (s, t) ->
+    ((gnEqName s, OpType Partial [s, s] uBoolean)
+    ,(gnEqName t, Partial))) sm
+  restrPreds = Map.fromList $ concatMap (\ (s, t) ->
+    [ (( gnRestrName s, PredType [s, s]), gnRestrName t)
+    , (( gnUniformName s, PredType [s, s]), gnUniformName t) ]) sm
+  opsProcs = Map.fromList $ map (\ ((idN, OpType _ w s), (idN', _)) ->
+    ((mkGenName idN, OpType Partial w s)
+    ,(mkGenName idN', Partial))) $ Map.toList om
+  predProcs = Map.fromList $ map (\ ((idN, PredType w), idN') ->
+    ((mkGenName idN, PredType w), mkGenName idN')) $ Map.toList pm
+  in (Map.union eqOps opsProcs, Map.union restrPreds predProcs)

@@ -96,9 +96,13 @@ type SIMPLE_ID = Token
 mkSimpleId :: String -> Token
 mkSimpleId s = Token s nullRange
 
--- | create a numbered simple identifer (for variables)
+-- | create a numbered string
+mkNumStr :: String -> Int -> String
+mkNumStr str n = str ++ show n
+
+-- | create a numbered simple identifier (for variables)
 mkNumVar :: String -> Int -> Token
-mkNumVar str n = mkSimpleId (str ++ show n)
+mkNumVar str = mkSimpleId . mkNumStr str
 
 -- | test if the first character indicates a legal simple CASL identifier
 isSimpleToken :: Token -> Bool
@@ -171,6 +175,10 @@ genNamePrefix = "gn_"
 -- | create a generated simple identifier
 genToken :: String -> Token
 genToken str = mkSimpleId $ genNamePrefix ++ str
+
+-- | create a generated, numbered variable
+genNumVar :: String -> Int -> Token
+genNumVar str = genToken . mkNumStr str
 
 -- | create a generated identifier
 genName :: String -> Id

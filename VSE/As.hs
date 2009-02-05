@@ -223,6 +223,15 @@ gnRestrName s = genName $ "restr_" ++ show s
 gnEqName :: SORT -> Id
 gnEqName s = genName $ "eq_" ++ show s
 
+genVars :: [SORT] -> [(Token, SORT)]
+genVars sl = map (\ (t, n) -> (genNumVar "x" n, t)) $ zip sl [1 :: Int ..]
+
+xVar :: Token
+xVar = genToken "x"
+
+yVar :: Token
+yVar = genToken "y"
+
 printRESTRTYPE_DECL :: Map.Map SORT Id -> DATATYPE_DECL -> Doc
 printRESTRTYPE_DECL restr (Datatype_decl s a r)=
     let pa = printAnnoted printALTERNATIVE in case a of
