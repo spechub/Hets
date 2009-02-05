@@ -64,7 +64,7 @@ data EVENT
     --   qualified term should be the fully qualified CASL term
     --   version of the term being communicated in the inner process.
     --
-    --  For ChanNonDetSend and ChanRecv, the fully qualified channel
+    --   For ChanNonDetSend and ChanRecv, the fully qualified channel
     --   should be the fully qualified channel of the underlying event
     --   and the fully qualified CASL variable version (a term) of the
     --   inner process's variable

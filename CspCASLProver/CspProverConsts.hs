@@ -12,25 +12,26 @@ Portability :  portable
 Isabelle Abstract syntax constants for CSP-Prover operations.
 -}
 
-module CspCASLProver.CspProverConsts (
-    cspProver_skipOp,
-    cspProver_stopOp,
-    cspProver_divOp,
-    cspProver_runOp,
-    cspProver_chaosOp,
-    cspProver_action_prefixOp,
-    cspProver_external_prefix_choiceOp,
-    cspProver_internal_prefix_choiceOp,
-    cspProver_sequenceOp,
-    cspProver_external_choiceOp,
-    cspProver_internal_choiceOp,
-    cspProver_interleavingOp,
-    cspProver_synchronousOp,
-    cspProver_general_parallelOp,
-    cspProver_alphabetised_parallelOp,
-    cspProver_hidingOp,
-    cspProver_renamingOp,
-    cspProver_conditionalOp
+module CspCASLProver.CspProverConsts
+    ( cspProver_NamedProcOp
+    , cspProver_skipOp
+    , cspProver_stopOp
+    , cspProver_divOp
+    , cspProver_runOp
+    , cspProver_chaosOp
+    , cspProver_action_prefixOp
+    , cspProver_external_prefix_choiceOp
+    , cspProver_internal_prefix_choiceOp
+    , cspProver_sequenceOp
+    , cspProver_external_choiceOp
+    , cspProver_internal_choiceOp
+    , cspProver_interleavingOp
+    , cspProver_synchronousOp
+    , cspProver_general_parallelOp
+    , cspProver_alphabetised_parallelOp
+    , cspProver_hidingOp
+    , cspProver_renamingOp
+    , cspProver_conditionalOp
 ) where
 
 import Isabelle.IsaSign as IsaSign
@@ -38,6 +39,16 @@ import Isabelle.IsaConsts (binVNameAppl, con, termAppl)
 
 -- Symbols for CspProver
 -- These symbols and priorities have come from the CSP-Prover source code
+
+-- | Name Process symbol
+cspProver_NamedProcS :: String
+cspProver_NamedProcS = "Proc_name"
+cspProver_NamedProcAltS :: String
+cspProver_NamedProcAltS = "($ _)"
+cspProver_NamedProcAltArgPrios :: [Int]
+cspProver_NamedProcAltArgPrios = [900]
+cspProver_NamedProcAltOpPrio :: Int
+cspProver_NamedProcAltOpPrio = 90
 
 -- | SKIP primitive process symbol
 cspProver_skipS :: String
@@ -191,6 +202,14 @@ cspProver_conditionalAltArgOpPrio = 88
 
 -- Isabelle Terms representing the operations for CspProver
 
+-- | Name Process operator
+cspProver_NamedProcOp :: Term -> Term
+cspProver_NamedProcOp =
+    makeUnaryCspProverOp cspProver_NamedProcS
+                         cspProver_NamedProcAltS
+                         cspProver_NamedProcAltArgPrios
+                         cspProver_NamedProcAltOpPrio
+
 -- | SKIP primitive process operator
 cspProver_skipOp :: Term
 cspProver_skipOp = makeCspProverOpNoAlt cspProver_skipS
@@ -322,7 +341,14 @@ makeCspProverOpNoAlt opName =
     con $ VName opName $ Nothing
 
 -- | Create an Isabelle Term representing a CspProver operator with
---   alternative syntax
+--   alternative syntax for a single parameter
+makeUnaryCspProverOp :: String -> String -> [Int] -> Int -> Term -> Term
+makeUnaryCspProverOp opName altSyntax altArgPrios altOpPrio t1 =
+    let vname = VName opName $ Just $ AltSyntax altSyntax altArgPrios altOpPrio
+    in termAppl (con vname) t1
+
+-- | Create an Isabelle Term representing a CspProver operator with
+--   alternative syntax for two parameters
 makeBinCspProverOp :: String -> String -> [Int] -> Int -> Term -> Term -> Term
 makeBinCspProverOp opName altSyntax altArgPrios altOpPrio t1 t2 =
     let vname = VName opName $ Just $ AltSyntax altSyntax altArgPrios altOpPrio

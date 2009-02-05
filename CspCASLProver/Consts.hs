@@ -31,9 +31,13 @@ module CspCASLProver.Consts
     , preAlphabetSimS
     , preAlphabetType
     , mkChooseFunName
+    , mkChooseFunOp
     , mkCompareWithFunName
     , mkPreAlphabetConstructor
+    , mkPreAlphabetConstructorOp
     , mkProcNameConstructor
+    , mkSortBarAbsOp
+    , mkSortBarRepOp
     , mkSortBarString
     , mkThyNameAlphabet
     , mkThyNameDataEnc
@@ -120,10 +124,15 @@ eqvTypeClassS  = "eqv"
 equivTypeClassS :: String
 equivTypeClassS  = "equiv"
 
--- | Function that takes a sort and outputs a the function name for the
+-- | Function that takes a sort and outputs the function name for the
 --   corresponing choose function
 mkChooseFunName :: SORT -> String
 mkChooseFunName sort = ("choose_" ++ (mkPreAlphabetConstructor sort))
+
+-- | Function that takes a sort and outputs the Isabelle function for the
+--   corresponing choose function
+mkChooseFunOp :: SORT -> Term -> Term
+mkChooseFunOp s = termAppl (conDouble (mkChooseFunName s))
 
 -- | Function that takes a sort and outputs the function name for the
 --   corresponing compare_with function
@@ -135,6 +144,11 @@ mkCompareWithFunName sort = ("compare_with_" ++ (mkPreAlphabetConstructor sort))
 mkPreAlphabetConstructor :: SORT -> String
 mkPreAlphabetConstructor sort = "C_" ++ (convertSort2String sort)
 
+-- | Function that returns the (Isabelle function for the) constructor of
+--   PreAlphabet for a given sort
+mkPreAlphabetConstructorOp :: SORT -> Term -> Term
+mkPreAlphabetConstructorOp s = termAppl (conDouble (mkPreAlphabetConstructor s))
+
 -- | Given a process name this fucntion returns a unique constructor for that
 --   process name. This is a helper functin when buildign the process name data
 --   type.
@@ -145,6 +159,30 @@ mkProcNameConstructor pn = show pn
 -- string
 mkSortBarString :: SORT -> String
 mkSortBarString s = convertSort2String s ++ barExtS
+
+-- | Given a sort this function produces the function name (string) of the built
+--   in Isabelle fucntion that corresponds to the abstraction function of the
+--   type that sort_bar.
+mkSortBarAbsString :: SORT -> String
+mkSortBarAbsString s = "Abs_" ++ convertSort2String s ++ barExtS
+
+-- | Given a sort this function produces the a function on the abstract syntax
+--   of Isabelle that represents the built in Isabelle fucntion that corresponds
+--   to the abstraction function of the type sort_bar.
+mkSortBarAbsOp :: SORT -> Term -> Term
+mkSortBarAbsOp s = termAppl (conDouble (mkSortBarAbsString s))
+
+-- | Given a sort this function produces the function name (string) of the built
+--   in Isabelle fucntion that corresponds to the representation function of the
+--   type sort_bar.
+mkSortBarRepString :: SORT -> String
+mkSortBarRepString s = "Rep_" ++ convertSort2String s ++ barExtS
+
+-- | Given a sort this function produces the a function on the abstract syntax
+--   of Isabelle that represents the built in Isabelle fucntion that corresponds
+--   to the representation function of the type sort_bar.
+mkSortBarRepOp :: SORT -> Term -> Term
+mkSortBarRepOp s = termAppl (conDouble (mkSortBarRepString s))
 
 -- | Created a name for the theory file which stores the alphabet
 --   construction for CspCASLProver.

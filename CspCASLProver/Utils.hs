@@ -29,6 +29,7 @@ module CspCASLProver.Utils
     ) where
 
 import CASL.AS_Basic_CASL (SORT, OpKind(..))
+import qualified CASL.Fold as CASL_Fold
 import qualified CASL.Sign as CASLSign
 import qualified CASL.Inject as CASLInject
 
@@ -36,6 +37,7 @@ import Common.AS_Annotation (makeNamed, Named, SenAttr(..))
 import qualified Common.Lib.Rel as Rel
 
 import Comorphisms.CFOL2IsabelleHOL (IsaTheory)
+import qualified Comorphisms.CFOL2IsabelleHOL as CFOL2IsabelleHOL
 
 import CspCASL.AS_CspCASL_Process (PROCESS_NAME)
 import CspCASL.SignCSP (CspSign(..), ProcProfile(..), CspCASLSen(..)
@@ -438,14 +440,15 @@ addChooseFunction isaTh sort =
         x = mkFree "x"
         y = mkFree "y"
         contentsOp = termAppl (conDouble "contents")
-        chooseOp = termAppl (conDouble chooseFunName)
         sortConsOp = termAppl (conDouble (mkPreAlphabetConstructor sort))
         bin_eq = binEq (classOp $ sortConsOp y) x
         subset = SubSet y sortType bin_eq
-        lhs = chooseOp x
+        lhs = mkChooseFunOp sort $ x
         rhs = contentsOp (Set subset)
-    in  addDef chooseFunName lhs rhs -- Add defintion to theory
-      $ addConst chooseFunName chooseFunType isaTh -- Add constant to theory
+    in  -- Add defintion to theory
+        addDef chooseFunName lhs rhs
+        -- Add constant to theory
+      $ addConst chooseFunName chooseFunType isaTh
 
 -- | Add a single choose function lemma for a given sort to an
 --   Isabelle theory.  The following Isabelle code is produced by this
@@ -460,7 +463,6 @@ addChooseFunctionLemma isaTh sort =
         chooseFunName = mkChooseFunName sort
         x = mkFree "x"
         y = mkFree "y"
-        chooseOp = termAppl (conDouble chooseFunName)
         sortConsOp = termAppl (conDouble (mkPreAlphabetConstructor sort))
         -- theorm
         subgoalTacTermLhsBinEq = binEq (classOp $ sortConsOp y)
@@ -469,7 +471,7 @@ addChooseFunctionLemma isaTh sort =
         subgoalTacTermRhs = Set $ FixedSet [x]
         subgoalTacTerm = binEq subgoalTacTermLhs subgoalTacTermRhs
         thmConds = []
-        thmConcl = binEq (chooseOp $ classOp $ sortConsOp x) x
+        thmConcl = binEq (mkChooseFunOp sort $ classOp $ sortConsOp x) x
         proof' = IsaProof [Apply (Other ("unfold " ++ chooseFunName ++ "_def")),
                            Apply (SubgoalTac subgoalTacTerm),
                            Apply(Simp),
@@ -580,6 +582,13 @@ addProcMap :: [Named CspCASLSen] -> CASLSign.Sign () () -> IsaTheory ->
               IsaTheory
 addProcMap namedSens caslSign isaTh =
     let
+        -- Translate a fully qualified variable (CASL term) to Isabelle
+        tyToks = CFOL2IsabelleHOL.typeToks caslSign
+        trForm = CFOL2IsabelleHOL.formTrCASL
+        strs = CFOL2IsabelleHOL.getAssumpsToks caslSign
+        transVar fqVar = CASL_Fold.foldTerm
+                         (CFOL2IsabelleHOL.transRecord
+                          caslSign tyToks trForm strs) fqVar
         -- Extend Isabelle theory with additional constant
         isaThWithConst = addConst procMapS  procMapType isaTh
         -- Get the plain sentences from the named senetences
@@ -590,19 +599,16 @@ addProcMap namedSens caslSign isaTh =
         -- parameter
         procMapTerm = termAppl (conDouble procMapS)
         -- Make a single equation for the primrec from a process equation
-        -- BUG HERE - this next part is not right - underscore is bad
-        mkEq (ProcessEq procName _ _ proc) =
+        mkEq (ProcessEq procName fqVars _ proc) =
             let -- Make the name (string) for this process
                 procNameString = convertProcessName2String procName
                 -- Change the name to a term
                 procNameTerm = conDouble procNameString
                 -- Turn the list of variables into a list of Isabelle
                 -- free variables
-                varTerms = [] -- BUG - should be somehting like map (\x -> mkFree (show x)) vars
-                 -- Make a lhs term built of termAppl applied to the
-                 -- proccess name and the variables
+                varTerms = map transVar fqVars
                 lhs = procMapTerm (foldl termAppl (procNameTerm) varTerms)
-                rhs = transProcess caslSign proc
+                rhs = transProcess caslSign fqVars proc
              in binEq lhs rhs
         -- Build equations for primrec using process equations
         eqs = map mkEq processEqs
@@ -634,23 +640,9 @@ addProcMap namedSens caslSign isaTh =
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
 ----------------------------------------------
 -- Function to help keep strings consistent --
 ----------------------------------------------
-
-
 
 -- | Return the list of strings of all gn_totality axiom names. This
 --   function is not implemented in a satisfactory way.
