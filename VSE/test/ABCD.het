@@ -1,0 +1,12 @@
+spec a =
+  sort s
+  op p : s
+
+spec b =
+  sort s
+  op q : s
+
+spec d =
+  a and b
+  then
+  . p = q
