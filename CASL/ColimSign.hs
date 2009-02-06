@@ -50,7 +50,7 @@ signColimit graph extColimit = let
  sigmaSort = (emptySign $ error "err"){sortSet=setSort}
  phiSort = Map.fromList
    $ map (\ (node, s)-> (node, (embedMorphism (error "err") s sigmaSort)
-           {sort_map = Map.filterWithKey (/=) $ funSort Map.! node}))
+           {sort_map = funSort Map.! node}))
    $ labNodes graph
  relS = computeSubsorts graph funSort
  sigmaRel = sigmaSort{sortRel = relS}
@@ -62,7 +62,9 @@ signColimit graph extColimit = let
  (extInfo, extMaps) = extColimit extGraph phiAssoc
  sigmaExt = sigAssoc{extendedInfo = extInfo}
  phiExt = Map.mapWithKey
-    (\ node phi -> phi{mtarget = sigmaExt, extended_map = (Map.!) extMaps node})
+    (\ node phi -> phi{mtarget = sigmaExt,
+                       sort_map = Map.filterWithKey (/=) $ sort_map phi,
+                       extended_map = (Map.!) extMaps node})
     phiAssoc
  in (sigmaExt, phiExt)
 
