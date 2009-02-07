@@ -13,9 +13,10 @@ Consistency checking of free types
 
 module CASL.CCC.FreeTypes (checkFreeType) where
 
-import CASL.Sign                -- Sign, OpType
-import CASL.Morphism
 import CASL.AS_Basic_CASL       -- FORMULA, OP_{NAME,SYMB}, TERM, SORT, VAR
+import CASL.MapSentence (mapSen)
+import CASL.Morphism
+import CASL.Sign                -- Sign, OpType
 import qualified Data.Map as Map
 import qualified Data.Set as Set
 import qualified Common.Lib.Rel as Rel
@@ -26,7 +27,7 @@ import Common.Consistency
 import Common.Result
 import Common.Id
 import Common.Utils
-import Data.List (intersect,delete)
+import Data.List ((\\), intersect, delete)
 import Data.Maybe
 
 inhabited :: [SORT] -> [Constraint] -> [SORT]
@@ -437,20 +438,24 @@ checkTerminal (osig, osens) m fsn
 checkFreeType :: (Sign () (),[Named (FORMULA ())]) -> Morphism () () ()
                  -> [Named (FORMULA ())]
                  -> Result (Maybe (ConsistencyStatus,[FORMULA ()]))
-checkFreeType (osig,osens) m fsn
+checkFreeType (osig, osens) m fsn
     | isJust definitional = fromJust definitional
     | isJust sort         = fromJust sort
     | isJust leadingTerms = fromJust leadingTerms
     | isJust incomplete   = fromJust incomplete
     | isJust terminal     = fromJust terminal
-    | otherwise           = return (Just (conStatus,[]))
+    | otherwise           = return (Just (conStatus, []))
     where
-        definitional = checkDefinitional fsn
-        sort         = checkSort (osig,osens) m fsn
-        leadingTerms = checkLeadingTerms osens m fsn
-        incomplete   = checkIncomplete osens m fsn
-        terminal     = checkTerminal (osig,osens) m fsn
-        conStatus    = getConStatus (osig,osens) m fsn
+        fsn' = combine fsn $ 
+                  map sentence fsn \\ map (mapSen (const id) m . sentence) osens
+        definitional = checkDefinitional fsn'
+        sort         = checkSort (osig, osens) m fsn'
+        leadingTerms = checkLeadingTerms osens m fsn'
+        incomplete   = checkIncomplete osens m fsn'
+        terminal     = checkTerminal (osig, osens) m fsn'
+        conStatus    = getConStatus (osig, osens) m fsn'
+        combine :: [Named (FORMULA ())] -> [FORMULA ()] -> [Named (FORMULA ())]
+        combine orig new = [ o | o <- orig, n <- new, sentence o == n ]
 
 -- | group the axioms according to their leading symbol,
 --   output Nothing if there is some axiom in incorrect form
