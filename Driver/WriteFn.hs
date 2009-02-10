@@ -107,7 +107,7 @@ writeSoftFOL opts f gTh ln i c n msg = do
              "could not translate to " ++ msg ++ " file: " ++ f)
           ( \ d -> do
               let str = shows d "\n"
-                  forget p = fmap (const ()) p
+                  forget = fmap (const ())
               case parse (if n == 0 then forget parseSPASS else forget tptp)
                    f str of
                 Left err -> putIfVerbose opts 0 $ show err
@@ -116,11 +116,13 @@ writeSoftFOL opts f gTh ln i c n msg = do
 
 writeIsaFile :: HetcatsOpts -> FilePath -> G_theory -> LIB_NAME -> SIMPLE_ID
              -> IO ()
-writeIsaFile opts fp raw_gTh ln i = case createIsaTheory raw_gTh of
-    Result ds Nothing -> do
+writeIsaFile opts fp raw_gTh ln i = do
+  let Result ds mTh = createIsaTheory raw_gTh
+  showDiags opts ds
+  case mTh of
+    Nothing ->
       putIfVerbose opts 0 $ "could not translate to Isabelle theory: " ++ fp
-      putIfVerbose opts 2 $ unlines $ map show ds
-    Result _ (Just (sign, sens)) -> do
+    Just (sign, sens) -> do
       let tn = reverse (takeWhile (/= '/') $ reverse $ show $ getLIB_ID ln)
                    ++ "_" ++ show i
           sf = shows (printIsaTheory tn sign sens) "\n"
@@ -213,24 +215,24 @@ modelSparQCheck opts gTh@(G_theory lid (ExtSign sign0 _) _ sens0 _) i =
 writeTheoryFiles :: HetcatsOpts -> [OutType] -> FilePath -> LibEnv
                  -> GlobalAnnos -> LIB_NAME -> SIMPLE_ID -> Int -> IO ()
 writeTheoryFiles opts specOutTypes filePrefix lenv ga ln i n =
-    unless (isDGRef $ labDG (lookupDGraph ln lenv) n) $
-    case computeTheory False lenv ln n of
-          Result ds Nothing -> do
-                 putIfVerbose opts 0 $ "could not compute theory of spec "
-                                  ++ show i
-                 putIfVerbose opts 2 $ unlines $ map show ds
-          Result _ (Just (_lenv', raw_gTh0)) -> do
+    unless (isDGRef $ labDG (lookupDGraph ln lenv) n) $ do
+    let Result ds mcTh = computeTheory False lenv ln n
+    showDiags opts ds
+    case mcTh of
+      Nothing -> putIfVerbose opts 0 $ "could not compute theory of spec "
+                 ++ show i
+      Just (_lenv', raw_gTh0) -> do
                     -- what do I do with lenv' here?
             let tr = transNames opts
-                resTh = if null tr then return (raw_gTh0, "") else do
+                Result es mTh = if null tr then return (raw_gTh0, "") else do
                    comor <- lookupCompComorphism (map tokStr tr) logicGraph
                    tTh <- mapG_theory comor raw_gTh0
                    return (tTh, show comor)
-            case resTh of
-             Result es Nothing -> do
+            showDiags opts es
+            case mTh of
+             Nothing ->
                putIfVerbose opts 0 "could not translate theory"
-               putIfVerbose opts 0 $ unlines $ map show es
-             Result _ (Just (raw_gTh, tStr)) -> do
+             Just (raw_gTh, tStr) -> do
                unless (null tStr) $
                    putIfVerbose opts 2 $ "Translated using comorphism " ++ tStr
                putIfVerbose opts 4 $ "Sublogic of " ++ show i ++ ": " ++
