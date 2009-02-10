@@ -608,6 +608,8 @@ sl_component s = case s of
 sl_term :: Term -> Sublogic
 sl_term t = sublogic_max (get_logic t) $ sl_t t
 
+-- typed in- or as-terms would also indicate subtyping
+-- but we rely on the subtypes in the signature
 sl_t :: Term -> Sublogic
 sl_t trm = case trm of
     QualVar vd -> sl_varDecl vd
@@ -728,6 +730,8 @@ sl_sentence s = sublogicUp $ case s of
     ProgEqSen _ ts pq -> sublogic_max (sl_typeScheme ts) $ sl_progEq pq
     DatatypeSen l -> comp_list $ map sl_dataEntry l
 
+-- a missing constructor identifier also indicates subtyping
+-- but checking super types is enough for subtype detection
 sl_altDefn :: AltDefn -> Sublogic
 sl_altDefn (Construct _ l p m) = comp_list $ sl_partiality p :
     map sl_type l ++ map sl_selector (concat m)
