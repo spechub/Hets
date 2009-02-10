@@ -90,7 +90,8 @@ t2term = foldTerm mapRec
         Just sty -> if eqStrippedType ty sty
           then if q == InType then unitTerm trueId ps else ntrm
           else case q of
-            InType -> mkTerm defId defType [sty] ps ntrm
+            InType -> mkTerm defId defType [ty] ps
+              $ mkTerm projName (mkInjOrProjType PFunArr) [sty, ty] ps ntrm
             AsType ->
                 mkTerm projName (mkInjOrProjType PFunArr) [sty, ty] ps ntrm
             _ -> mkTerm injName (mkInjOrProjType FunArr) [sty, ty] ps ntrm }
