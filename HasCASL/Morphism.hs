@@ -45,11 +45,11 @@ disjointKeys m1 m2 = let d = Map.keysSet $ Map.intersection m1 m2 in
 
 -- | map a kind along an identifier map
 mapKindI :: IdMap -> Kind -> Kind
-mapKindI jm = mapKind $ (\ a -> Map.findWithDefault a a jm)
+mapKindI jm = mapKind (\ a -> Map.findWithDefault a a jm)
 
 -- | map a kind along a signature morphism (variance is preserved)
 mapKinds :: Morphism -> Kind -> Kind
-mapKinds mor  = mapKindI $ classIdMap mor
+mapKinds = mapKindI . classIdMap
 
 -- | only rename the kinds in a type
 mapKindsOfType :: IdMap -> TypeMap -> IdMap -> Type -> Type
@@ -99,19 +99,18 @@ mapDataEntry jm tm im fm de@(DataEntry dm i k args rk alts) =
         newargs = map (mapTypeArg jm tm im) args
     in DataEntry tim i k newargs rk $ Set.map
            (mapAlt jm tm tim fm newargs
-           $ patToType (Map.findWithDefault i i tim) args rk) alts
+           $ patToType (Map.findWithDefault i i tim) newargs rk) alts
 
 mapAlt :: IdMap -> TypeMap -> IdMap -> FunMap -> [TypeArg] -> Type -> AltDefn
        -> AltDefn
-mapAlt jm tm im fm args dt c@(Construct mi ts p sels) =
-    case mi of
+mapAlt jm tm im fm args dt (Construct mi ts p sels) =
+    let newTs = map (mapTypeE jm tm im) ts in case mi of
     Just i ->
-      let sc = TypeScheme args
-             (getFunType dt p $ map (mapTypeE jm tm im) ts) nullRange
+      let sc = TypeScheme args (getFunType dt p newTs) nullRange
           (j, TypeScheme _ ty _) = mapFunSym jm tm im fm (i, sc)
           in Construct (Just j) ts (getPartiality ts ty) $
              map (map (mapSel jm tm im fm args dt)) sels
-    Nothing -> c
+    Nothing -> Construct mi newTs p sels
 
 mapSel :: IdMap -> TypeMap -> IdMap -> FunMap -> [TypeArg] -> Type -> Selector
        -> Selector
