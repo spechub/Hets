@@ -98,8 +98,8 @@ getSelScheme (DataPat _ args _ rt) p t =
 
 -- | remove variances from generalized type arguments
 toDataPat :: DataEntry -> DataPat
-toDataPat (DataEntry _ i _ args rk _) =
-  DataPat i (map nonVarTypeArg args) rk $ patToType i args rk
+toDataPat (DataEntry im i _ args rk _) = let j = Map.findWithDefault i i im in
+  DataPat j (map nonVarTypeArg args) rk $ patToType j args rk
 
 -- | create selector equations for a data type
 makeDataSelEqs :: DataPat -> [AltDefn] -> [Named Sentence]

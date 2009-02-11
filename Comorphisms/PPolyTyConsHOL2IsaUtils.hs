@@ -14,10 +14,11 @@ partial values are interpreted
 
 module Comorphisms.PPolyTyConsHOL2IsaUtils where
 
-import HasCASL.Le as Le
 import HasCASL.As as As
 import HasCASL.AsUtils
 import HasCASL.Builtin
+import HasCASL.DataAna
+import HasCASL.Le as Le
 import HasCASL.Unify (substGen)
 
 import Isabelle.IsaSign as Isa
@@ -207,12 +208,11 @@ transDataEntries env tyToks t@(dt, tys, cs) l = do
 
 -- datatype with name (tyId) + args (tyArgs) and alternatives
 transDataEntry :: Env -> Set.Set String -> DataEntry -> Result DomainEntry
-transDataEntry env tyToks (DataEntry tm tyId gk tyArgs rk alts) =
-    let i = Map.findWithDefault tyId tyId tm
-        dt = patToType i tyArgs rk
+transDataEntry env tyToks de@(DataEntry _ _ gk _ _ alts) =
+    let dp@(DataPat i tyArgs _ _) = toDataPat de
     in case gk of
     Le.Free -> do
-      nalts <- mapM (transAltDefn env tyToks tm tyArgs dt i) $ Set.toList alts
+      nalts <- mapM (transAltDefn env tyToks dp) $ Set.toList alts
       let transDName ti = Type (showIsaTypeT ti baseSign) []
                              . map transTypeArg
       return (transDName i tyArgs, nalts)
@@ -224,19 +224,20 @@ transTypeArg :: TypeArg -> Typ
 transTypeArg ta = TFree (showIsaTypeT (getTypeVar ta) baseSign) []
 
 -- datatype alternatives/constructors
-transAltDefn :: Env -> Set.Set String -> IdMap -> [TypeArg] -> Type -> Id
-             -> AltDefn -> Result (VName, [Typ])
-transAltDefn env tyToks tm args dt tyId alt = case alt of
-    Construct (Just opId) ts Total _ -> do
-        let mTs = map (mapType tm) ts
-            sc = TypeScheme args (getFunType dt Total mTs) nullRange
-        nts <- mapM funType mTs
+transAltDefn :: Env -> Set.Set String -> DataPat -> AltDefn
+             -> Result (VName, [Typ])
+transAltDefn env tyToks dp alt = case alt of
+  Construct mi ts p _ -> case mi of
+    Just opId -> case p of
+      Total -> do
+        let sc = getConstrScheme dp p ts
+        nts <- mapM funType ts
         -- extract overloaded opId number
         return (transOpId env tyToks opId sc, case nts of
                 [TupleType l] -> map transFunType l
                 _ -> map transFunType nts)
-    _ -> fatal_error ("not a total constructor: " ++ show tyId)
-         $ posOfId tyId
+      Partial -> mkError "not a total constructor" opId
+    Nothing -> mkError "no support for data subtypes" ts
 
 -- * Formulas
 

@@ -26,12 +26,13 @@ import Common.ExtSign
 import qualified Data.Map as Map
 import qualified Data.Set as Set
 
-import HasCASL.Logic_HasCASL
-import HasCASL.Sublogic
 import HasCASL.As
 import HasCASL.AsUtils
 import HasCASL.Builtin
+import HasCASL.DataAna
 import HasCASL.Le as HC
+import HasCASL.Logic_HasCASL
+import HasCASL.Sublogic
 
 import Haskell.Logic_Haskell as HS
 import Haskell.HatParser hiding(TypeInfo, Kind)
@@ -127,8 +128,8 @@ findUniqueId env uid ts =
 -- to the top datatype of the abstract syntax of haskell.
 translateSig :: Env -> [HsDecl]
 translateSig env =
-    (concat $ map (translateTypeInfo env) $ Map.toList $ typeMap env)
-    ++ (concatMap translateAssump $ distinctOpIds 2 $ Map.toList
+    concatMap (translateTypeInfo env) (Map.toList $ typeMap env)
+    ++ concatMap translateAssump (distinctOpIds 2 $ Map.toList
                       $ Map.map Set.toList $ assumps env)
 
 -------------------------------------------------------------------------
@@ -140,7 +141,7 @@ translateTypeInfo :: Env -> (Id, TypeInfo) -> [HsDecl]
 translateTypeInfo env (tid,info) =
   let hsname = mkHsIdent UpperId tid
       hsTyName = hsTyCon hsname
-      mkTp l = foldl hsTyApp hsTyName l
+      mkTp = foldl hsTyApp hsTyName
       k = typeKind info
       loc = toProgPos $ posOfId tid
       ddecl = hsDataDecl loc
@@ -162,15 +163,14 @@ isSameId tid (TypeName tid2 _ _) = tid == tid2
 isSameId _tid _ty = False
 
 typeSynonym :: SrcLoc -> HsType -> Type -> HsDecl
-typeSynonym loc hsname ty =
-  hsTypeDecl loc hsname (translateType ty)
+typeSynonym loc hsname = hsTypeDecl loc hsname . translateType
 
 kindToTypeArgs :: Int -> RawKind -> [HsType]
 kindToTypeArgs i k = case k of
     ClassKind _ -> []
-    FunKind _ _ kr ps -> (hsTyVar $ mkSName ("a" ++ show i)
+    FunKind _ _ kr ps -> (hsTyVar $ mkSName ('a' : show i)
                                    $ toProgPos ps)
-                      : kindToTypeArgs (i+1) kr
+                      : kindToTypeArgs (i + 1) kr
 
 getAliasArgs :: Type -> [HsType]
 getAliasArgs ty = case ty of
@@ -180,7 +180,7 @@ getAliasArgs ty = case ty of
     _ -> []
 
 getArg :: TypeArg -> HsType
-getArg ta = hsTyVar $ mkHsIdent LowerId $ getTypeVar ta
+getArg = hsTyVar . mkHsIdent LowerId . getTypeVar
 
 getAliasType :: Type -> HsType
 getAliasType ty = case ty of
@@ -190,14 +190,11 @@ getAliasType ty = case ty of
     _ -> translateType ty
 
 -- | Translation of an alternative constructor for a datatype definition.
-translateAltDefn :: Env -> Id -> [TypeArg] -> RawKind -> IdMap -> AltDefn
+translateAltDefn :: Env -> DataPat-> AltDefn
                  -> [HsConDecl HsType [HsType]]
-translateAltDefn env dt args rk im (Construct muid origTs p _) =
-    let ts = map (mapType im) origTs
-    in case muid of
+translateAltDefn env dp (Construct muid ts p _) = case muid of
     Just uid -> let loc = toProgPos $ posOfId uid
-                    sc = TypeScheme (map nonVarTypeArg args)
-                         (getFunType (patToType dt args rk) p ts) nullRange
+                    sc = getConstrScheme dp p ts
                     -- resolve overloading
                     (c, ui) = translateId env uid sc
                 in case c of
@@ -208,8 +205,8 @@ translateAltDefn env dt args rk im (Construct muid origTs p _) =
     Nothing -> []
 
 translateDt :: Env -> DataEntry -> Named HsDecl
-translateDt env (DataEntry im i _ args rk alts) =
-         let j = Map.findWithDefault i i im
+translateDt env de@(DataEntry _ i _ args _ alts) =
+         let dp@(DataPat j _ _ _) = toDataPat de
              loc = toProgPos $ posOfId i
              hsname = mkHsIdent UpperId j
              hsTyName = hsTyCon hsname
@@ -217,7 +214,7 @@ translateDt env (DataEntry im i _ args rk alts) =
          in
          (makeNamed ("ga_" ++ showId j "") $ hsDataDecl loc
                        [] -- empty HsContext
-                       tp (concatMap (translateAltDefn env j args rk im)
+                       tp (concatMap (translateAltDefn env dp)
                            $ Set.toList alts)
                        derives) { isDef = True }
 
@@ -273,7 +270,7 @@ toProgPos p = if isNullRange p then loc0
                      in SrcLoc n (1000 + (l-1) * 80 + c) l c
 
 mkSName :: String -> SrcLoc -> SN HsName
-mkSName s p = SN (UnQual s) p
+mkSName = SN . UnQual
 
 mkHsIdent :: IdCase -> Id -> SN HsName
 mkHsIdent c i = mkSName (translateIdWithType c i) $ toProgPos $ posOfId i
@@ -436,10 +433,9 @@ cleanSig ds sens =
         _ -> True)
        ds
 
-
 expUndef :: SrcLoc -> String -> HsExp
-expUndef loc s = rec $ HsApp (rec $ HsId $ HsVar $ mkSName "error" loc)
-                       $ rec $ HsLit loc $ HsString s
+expUndef loc = rec . HsApp (rec $ HsId $ HsVar $ mkSName "error" loc)
+                   . rec . HsLit loc . HsString
 
 -- For the definition of an undefined function.
 -- Takes the name of the function as argument.
