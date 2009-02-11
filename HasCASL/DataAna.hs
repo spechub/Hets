@@ -13,6 +13,9 @@ analyse alternatives of data types
 
 module HasCASL.DataAna
     ( DataPat(..)
+    , toDataPat
+    , getConstrScheme
+    , getSelScheme
     , anaAlts
     , makeDataSelEqs
     ) where
@@ -49,12 +52,12 @@ genTuple n m (Select _ ty _ : sels) =
 
 genSelVars :: Int -> [[Selector]]  -> [[VarDecl]]
 genSelVars _ [] = []
-genSelVars n (ts:sels)  =
+genSelVars n (ts : sels)  =
     genTuple n 1 ts : genSelVars (n + 1) sels
 
 makeSelTupleEqs :: DataPat -> Term -> Int -> Int -> [Selector] -> [Named Term]
-makeSelTupleEqs dt@(DataPat _ tArgs _ rt) ct n m (Select mi ty p : sels) =
-    let sc = TypeScheme (map nonVarTypeArg tArgs) (getSelType rt p ty) nullRange
+makeSelTupleEqs dt ct n m (Select mi ty p : sels) =
+    let sc = getSelScheme dt p ty
     in (case mi of
      Just i -> let
                   vt = QualVar $ mkSelVar n m ty
@@ -72,23 +75,35 @@ makeSelEqs dt ct n (sel:sels) =
 makeSelEqs _ _ _ _ = []
 
 makeAltSelEqs :: DataPat -> AltDefn -> [Named Term]
-makeAltSelEqs dt@(DataPat _ args _ rt) (Construct mc ts p sels) =
+makeAltSelEqs dt@(DataPat _ iargs _ _) (Construct mc ts p sels) =
     case mc of
     Nothing -> []
     Just c -> let
-      iargs = map nonVarTypeArg args
-      sc = TypeScheme iargs (getFunType rt p ts) nullRange
       vars = genSelVars 1 sels
-      ars = map ( \ vs -> mkTupleTerm (map QualVar vs) nullRange) vars
-      ct = mkApplTerm (mkOpTerm c sc) ars
+      ars = mkSelArgs vars
+      ct = mkApplTerm (mkOpTerm c $ getConstrScheme dt p ts) ars
       in map (mapNamed (mkForall (map GenTypeVarDecl iargs
            ++ map GenVarDecl (concat vars)))) $ makeSelEqs dt ct 1 sels
 
+mkSelArgs :: [[VarDecl]] -> [Term]
+mkSelArgs = map (\ vs -> mkTupleTerm (map QualVar vs) nullRange)
+
+getConstrScheme :: DataPat -> Partiality -> [Type] -> TypeScheme
+getConstrScheme (DataPat _ args _ rt) p ts =
+  TypeScheme args (getFunType rt p ts) nullRange
+
+getSelScheme :: DataPat -> Partiality -> Type -> TypeScheme
+getSelScheme (DataPat _ args _ rt) p t =
+  TypeScheme args (getSelType rt p t) nullRange
+
+-- | remove variances from generalized type arguments
+toDataPat :: DataEntry -> DataPat
+toDataPat (DataEntry _ i _ args rk _) =
+  DataPat i (map nonVarTypeArg args) rk $ patToType i args rk
+
 -- | create selector equations for a data type
-makeDataSelEqs :: DataEntry -> Type -> [Named Sentence]
-makeDataSelEqs (DataEntry _ i _ args rk alts) rt = map (mapNamed Formula)
-    $ concatMap (makeAltSelEqs $ DataPat i args rk rt)
-        $ Set.toList alts
+makeDataSelEqs :: DataPat -> [AltDefn] -> [Named Sentence]
+makeDataSelEqs dp = map (mapNamed Formula) . concatMap (makeAltSelEqs dp)
 
 -- | analyse the alternatives of a data type
 anaAlts :: [DataPat] -> DataPat -> [Alternative] -> Env -> Result [AltDefn]
@@ -134,7 +149,7 @@ anaCompType tys (DataPat _ tArgs _ _) t te = do
     (_, ct) <- anaStarTypeM t te
     let ds = unboundTypevars True tArgs ct
     if null ds then return () else Result ds Nothing
-    mapM (checkMonomorphRecursion ct te) tys
+    mapM_ (checkMonomorphRecursion ct te) tys
     return $ generalize tArgs ct
 
 checkMonomorphRecursion :: Type -> Env -> DataPat -> Result ()
@@ -162,3 +177,8 @@ subIds :: TypeMap -> Id -> Set.Set Id
 subIds tm i = foldr ( \ j s ->
                  if Set.member i $ superIds tm j then
                       Set.insert j s else s) Set.empty $ Map.keys tm
+
+
+
+
+

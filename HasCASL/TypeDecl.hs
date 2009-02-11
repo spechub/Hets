@@ -178,8 +178,7 @@ anaSubtypeDecl pats t ps = do
             _ -> do
                 addDiags es
                 return $ Just $ TypeDecl newPats universe ps
-      Just ((rk, ks), newT) -> do
-        nonUniqueKind ks rk t $ \ kind -> do
+      Just ((rk, ks), newT) -> nonUniqueKind ks rk t $ \ kind -> do
           mapM_ (addTypePattern NoTypeDefn kind) is
           mapM_ (addSuperType newT $ rawToKind rk) nis
           return $ if null nis then Nothing else
@@ -330,7 +329,8 @@ anaDatatype :: GenKind -> [DataPat]
             -> Annoted DatatypeDecl -> State Env (Maybe DatatypeDecl)
 anaDatatype genKind tys d = case item d of
     itd@(DatatypeDecl (TypePattern i nAs _) k alts _ _) -> do
-       dt@(DataPat _ _ rk rt) <- dataPatToType itd
+       -- recompute data pattern rather than looking it up in tys
+       dt@(DataPat _ _ rk _) <- dataPatToType itd
        let fullKind = typeArgsListToKind nAs k
        tvs <- gets localTypeVars
        mapM_ (addTypeVarDecl False) $ map nonVarTypeArg nAs
@@ -343,25 +343,22 @@ anaDatatype genKind tys d = case item d of
              ( \ (Construct mc ts _ _) l -> case mc of
                Nothing -> ts ++ l
                Just _ -> l) [] newAlts
-           let srt = generalize nAs rt
-               gArgs = genTypeArgs nAs
-               iArgs = map nonVarTypeArg gArgs
+           let gArgs = genTypeArgs nAs
+               de = DataEntry Map.empty i genKind gArgs rk
+                    $ Set.fromList newAlts
+               dp = toDataPat de
            mapM_ ( \ (Construct mc tc p sels) -> case mc of
                Nothing -> return ()
                Just c -> do
-                 let sc = TypeScheme iArgs (getFunType srt p tc) nullRange
+                 let sc = getConstrScheme dp p tc
                  addOpId c sc Set.empty (ConstructData i)
                  mapM_ ( \ (Select ms ts pa) -> case ms of
-                   Just s -> do
-                     let selSc = TypeScheme iArgs (getSelType srt pa ts)
-                                 nullRange
-                     addOpId s selSc Set.empty $ SelectData
+                   Just s ->
+                     addOpId s (getSelScheme dp pa ts) Set.empty $ SelectData
                          (Set.singleton $ ConstrInfo c sc) i
                    Nothing -> return False) $ concat sels) newAlts
-           let de = DataEntry Map.empty i genKind gArgs rk
-                    $ Set.fromList newAlts
            addTypeId True (DatatypeDefn de) fullKind i
-           appendSentences $ makeDataSelEqs de srt
+           appendSentences $ makeDataSelEqs dp newAlts
            return $ Just itd
     _ -> error "anaDatatype (not preprocessed)"
 
