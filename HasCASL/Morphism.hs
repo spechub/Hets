@@ -14,15 +14,15 @@ mapping entities of morphisms
 
 module HasCASL.Morphism where
 
-import HasCASL.Le
-import HasCASL.PrintLe
 import HasCASL.As
-import HasCASL.FoldType
-import HasCASL.TypeAna
-import HasCASL.AsUtils
 import HasCASL.AsToLe
+import HasCASL.AsUtils
+import HasCASL.FoldType
+import HasCASL.Le
 import HasCASL.MapTerm
 import HasCASL.Merge
+import HasCASL.PrintLe
+import HasCASL.TypeAna
 
 import Common.DocUtils
 import Common.Doc
@@ -104,22 +104,23 @@ mapDataEntry jm tm im fm de@(DataEntry dm i k args rk alts) =
 mapAlt :: IdMap -> TypeMap -> IdMap -> FunMap -> [TypeArg] -> Type -> AltDefn
        -> AltDefn
 mapAlt jm tm im fm args dt (Construct mi ts p sels) =
-    let newTs = map (mapTypeE jm tm im) ts in case mi of
-    Just i ->
-      let sc = TypeScheme args (getFunType dt p newTs) nullRange
-          (j, TypeScheme _ ty _) = mapFunSym jm tm im fm (i, sc)
-          in Construct (Just j) ts (getPartiality ts ty) $
-             map (map (mapSel jm tm im fm args dt)) sels
+  let newTs = map (mapTypeE jm tm im) ts in case mi of
+    Just i -> let
+        sc = TypeScheme args (getFunType dt p newTs) nullRange
+        (j, TypeScheme _ ty _) = mapFunSym jm tm im fm (i, sc)
+        in Construct (Just j) newTs (getPartiality newTs ty)
+            $ map (map (mapSel jm tm im fm args dt)) sels
     Nothing -> Construct mi newTs p sels
 
 mapSel :: IdMap -> TypeMap -> IdMap -> FunMap -> [TypeArg] -> Type -> Selector
        -> Selector
-mapSel jm tm im fm args dt s@(Select mid t p) = case mid of
-    Nothing -> s
+mapSel jm tm im fm args dt (Select mid t p) =
+  let newT = mapTypeE jm tm im t in case mid of
+    Nothing -> Select mid newT p
     Just i -> let
-        sc = TypeScheme args (getSelType dt p $ mapTypeE jm tm im t) nullRange
+        sc = TypeScheme args (getSelType dt p newT) nullRange
         (j, TypeScheme _ ty _) = mapFunSym jm tm im fm (i, sc)
-        in Select (Just j) t $ getPartiality [dt] ty
+        in Select (Just j) newT $ getPartiality [dt] ty
 
 -- | get the partiality from a constructor type
 -- with a given number of curried arguments
