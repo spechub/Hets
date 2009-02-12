@@ -59,7 +59,7 @@ anaFormula at = do
 
 anaVars :: Env -> Vars -> Type -> Result Term
 anaVars te vv t = case vv of
-    Var v -> return $ QualVar $ VarDecl v t Other nullRange
+    Var v -> return $ QualVar $ VarDecl v t Other $ posOfId v
     VarTuple vs ps -> let
         (topTy, ts) = getTypeAppl t
         n = length ts in
