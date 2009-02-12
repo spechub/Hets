@@ -641,7 +641,7 @@ maintainer-clean: distclean package_clean
 
 ### interactive
 ghci: $(derived_sources)
-	$(HC)i $(HC_OPTS_WITHOUTGLADE)
+	$(HC)i $(HC_OPTS)
 
 ### christian's target
 ### CASL parser
