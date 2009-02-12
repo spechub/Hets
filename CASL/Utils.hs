@@ -14,8 +14,6 @@ Utilities for CASL and its comorphisms
 
 module CASL.Utils where
 
-import Control.Exception (assert)
-
 import Data.Maybe
 import Data.List
 
@@ -63,28 +61,27 @@ build_vMap :: [VAR_DECL] -> [VAR_DECL] -> FreshVARMap f
 build_vMap vDecls f_vDecls =
     Map.fromList (concat (zipWith toTups vDecls f_vDecls))
     where toTups (Var_decl vars1 sor1 _) (Var_decl vars2 sor2 _) =
-              assert (sor1 == sor2)
-                     (zipWith (toTup sor1) vars1 vars2)
+            if sor1 == sor2 then zipWith (toTup sor1) vars1 vars2
+            else error "CASL.Utils.build_vMap"
           toTup s v1 v2 = (v1,toVarTerm v2 s)
 
 -- | specialised lookup in FreshVARMap that ensures that the VAR with
 -- the correct type (SORT) is replaced
 lookup_vMap :: VAR -> SORT -> FreshVARMap f -> Maybe (TERM f)
-lookup_vMap v s m =
+lookup_vMap v s =
     maybe Nothing
           (\ t@(Qual_var _ s' _) -> if s==s' then Just t else Nothing)
-          (Map.lookup v m)
+          . Map.lookup v
 
 -- | specialized delete that deletes all shadowed variables
 delete_vMap :: [VAR_DECL] -> FreshVARMap f -> FreshVARMap f
-delete_vMap vDecls m = foldr Map.delete m vars
-    where vars = concatMap (\ (Var_decl vs _ _) -> vs) vDecls
-
+delete_vMap vDecls m = foldr Map.delete m
+  $ concatMap (\ (Var_decl vs _ _) -> vs) vDecls
 
 replaceVarsRec :: FreshVARMap f -> (f -> f) -> Record f (FORMULA f) (TERM f)
 replaceVarsRec m mf = (mapRecord mf)
      { foldQual_var = \ qv v s _ ->
-           maybe qv id (lookup_vMap v s m)
+           fromMaybe qv $ lookup_vMap v s m
      , foldQuantification = \ (Quantification q vs f ps) _ _ _ _ ->
                let nm = delete_vMap vs m
                in Quantification q vs (replace_varsF nm mf f) ps
@@ -96,7 +93,7 @@ replace_varsF :: FreshVARMap f
              -> (f -> f)
              -- ^ this function replaces Qual_var in ExtFORMULA
              -> FORMULA f -> FORMULA f
-replace_varsF m mf phi = foldFormula (replaceVarsRec m mf) phi
+replace_varsF m = foldFormula . replaceVarsRec m
 
 codeOutUniqueRecord :: (f -> f) -> (f -> f) -> Record f (FORMULA f) (TERM f)
 codeOutUniqueRecord rf mf = (mapRecord mf)
@@ -104,8 +101,8 @@ codeOutUniqueRecord rf mf = (mapRecord mf)
          case q of
          Unique_existential -> let
             eqForms (Var_decl vars1 sor1 _) (Var_decl vars2 sor2 _) =
-              assert (sor1 == sor2)
-                     (zipWith (eqFor sor1) vars1 vars2)
+              if sor1 == sor2 then zipWith (eqFor sor1) vars1 vars2
+              else error "codeOutUniqueRecord1"
             eqFor s v1 v2 = Strong_equation (toSortTerm (toVarTerm v1 s))
                                           (toSortTerm (toVarTerm v2 s))
                                           nullRange
@@ -121,7 +118,7 @@ codeOutUniqueRecord rf mf = (mapRecord mf)
             genVar t i = mkSimpleId $ tokStr t ++ '_' : show i
             nVar aSet v =
               let v' = fromJust (find (not . flip Set.member aSet)
-                                 ([genVar v (i :: Int) | i<-[1..]]))
+                                 [genVar v (i :: Int) | i<-[1..]])
               in (Set.insert v' aSet,v')
             (vSet', vDecl')  = fresh_vars Set.empty vDecl
             (_vSet'', vDecl'')  = fresh_vars vSet' vDecl
@@ -131,11 +128,11 @@ codeOutUniqueRecord rf mf = (mapRecord mf)
                            (Implication
                               (Conjunction [f'_rep_x,f'_rep_y] nullRange)
                               implForm True ps) nullRange
-            implForm = assert (not (null vDecl))
-                       (let fs = concat (zipWith eqForms vDecl' vDecl'')
-                        in (if length fs == 1
-                               then head fs
-                               else Conjunction fs nullRange))
+            implForm = let fs = concat (zipWith eqForms vDecl' vDecl'') in
+              case fs of
+                [] -> error "codeOutUniqueRecord2"
+                [hd] -> hd
+                _ -> Conjunction fs nullRange
             in Conjunction
                    [Quantification Existential vDecl f' ps,
                     allForm] ps
@@ -153,7 +150,7 @@ codeOutUniqueExtF :: (f -> f)
                   -> (f -> f)
                   -- ^ codes out Unique_existential in ExtFORMULA
                   -> FORMULA f -> FORMULA f
-codeOutUniqueExtF rf mf phi = foldFormula (codeOutUniqueRecord rf mf) phi
+codeOutUniqueExtF rf = foldFormula . codeOutUniqueRecord rf
 
 codeOutCondRecord :: (Eq f) => (f -> f)
                   -> Record f (FORMULA f) (TERM f)
@@ -243,7 +240,7 @@ expansion of conditionals according to CASL-Ref-Manual:
 codeOutConditionalF :: (Eq f) =>
                        (f -> f)
                     -> FORMULA f -> FORMULA f
-codeOutConditionalF fun = foldFormula (codeOutCondRecord fun)
+codeOutConditionalF = foldFormula . codeOutCondRecord
 
 findConditionalRecord :: Record f (Maybe (TERM f)) (Maybe (TERM f))
 findConditionalRecord =
@@ -252,8 +249,8 @@ findConditionalRecord =
     { foldConditional = \ cond _ _ _ _ -> Just cond }
 
 findConditionalT :: TERM f -> Maybe (TERM f)
-findConditionalT t =
-    foldOnlyTerm (error "findConditionalT") findConditionalRecord t
+findConditionalT =
+    foldOnlyTerm (error "findConditionalT") findConditionalRecord
 
 substConditionalRecord :: (Eq f)
                        => TERM f -- ^ Conditional to search for
@@ -270,8 +267,7 @@ substConditionalF :: (Eq f)
                   => TERM f -- ^ Conditional to search for
                   -> TERM f -- ^ newly inserted term
                   -> FORMULA f -> FORMULA f
-substConditionalF c t f =
-    foldFormula (substConditionalRecord c t) f
+substConditionalF c = foldFormula . substConditionalRecord c
 
 {- |
   Subsitute predications with strong equation if it is equivalent to.
@@ -286,8 +282,7 @@ eqSubstRecord eqPredSet extFun =
               else Predication psymb tList rng
 
 substEqPreds :: Set.Set PRED_SYMB -> (f -> f) -> FORMULA f -> FORMULA f
-substEqPreds eqPredSet extFun f =
-     foldFormula (eqSubstRecord eqPredSet extFun) f
+substEqPreds eqPredSet = foldFormula . eqSubstRecord eqPredSet
 
 -- | adds Sorted_term to a Qual_var term
 toSortTerm :: TERM f -> TERM f
@@ -296,4 +291,4 @@ toSortTerm _ = error "CASL2TopSort.toSortTerm: can only handle Qual_var"
 
 -- | generates from a variable and sort an Qual_var term
 toVarTerm :: VAR -> SORT -> TERM f
-toVarTerm vs s = (Qual_var vs s nullRange)
+toVarTerm vs s = Qual_var vs s nullRange
