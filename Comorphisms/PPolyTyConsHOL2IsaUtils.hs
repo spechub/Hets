@@ -266,7 +266,9 @@ transSentence sign tyToks simpF s = case s of
         TupleType _ -> error "transSentence: TupleType"
         ApplType _ _ -> error "transSentence: ApplType"
         _ -> return $ mkSen true
-    DatatypeSen _ -> return $ mkSen true
+    DatatypeSen ls -> if all (\ (DataEntry _ _ gk _ _ _) -> gk == Generated) ls
+      then transSentence sign tyToks simpF $ Le.Formula $ inductionScheme ls
+      else return $ mkSen true
     ProgEqSen _ _ (ProgEq _ _ r) -> warning (mkSen true)
         "translation of sentence not implemented" r
 

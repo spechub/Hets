@@ -18,6 +18,7 @@ module HasCASL.DataAna
     , getSelScheme
     , anaAlts
     , makeDataSelEqs
+    , inductionScheme
     ) where
 
 import Data.Maybe
@@ -38,22 +39,32 @@ import HasCASL.Unify
 -- | description of polymorphic data types
 data DataPat = DataPat Id [TypeArg] RawKind Type
 
+mkVarDecl :: Id -> Type -> VarDecl
+mkVarDecl i t = VarDecl i t Other nullRange
+
 mkSelId :: Range -> String -> Int -> Int -> Id
 mkSelId p str n m = mkId
-    [Token (str ++ "_" ++ show n ++ "_" ++ show m) p]
+    [Token (str ++ "_" ++ (if n < 1 then "" else show n ++ "_") ++ show m) p]
 
 mkSelVar :: Int -> Int -> Type -> VarDecl
-mkSelVar n m ty = VarDecl (mkSelId (getRange ty) "x" n m) ty  Other nullRange
+mkSelVar n m ty = mkVarDecl (mkSelId (getRange ty) "x" n m) ty
 
 genTuple :: Int -> Int -> [Selector] -> [VarDecl]
 genTuple _ _ [] = []
 genTuple n m (Select _ ty _ : sels) =
     mkSelVar n m ty : genTuple n (m + 1) sels
 
-genSelVars :: Int -> [[Selector]]  -> [[VarDecl]]
-genSelVars _ [] = []
-genSelVars n (ts : sels)  =
-    genTuple n 1 ts : genSelVars (n + 1) sels
+genSelVars :: Int -> [[Selector]] -> [[VarDecl]]
+genSelVars n sels = case sels of
+  [ts] -> [genTuple 0 1 ts]
+  _ -> if all (\ l -> not (null l) && null (tail l)) sels
+       then map (: []) $ genTuple 0 1 $ map head sels
+       else genSelVarsAux n sels
+
+genSelVarsAux :: Int -> [[Selector]]  -> [[VarDecl]]
+genSelVarsAux _ [] = []
+genSelVarsAux n (ts : sels)  =
+    genTuple n 1 ts : genSelVarsAux (n + 1) sels
 
 makeSelTupleEqs :: DataPat -> Term -> Int -> Int -> [Selector] -> [Named Term]
 makeSelTupleEqs dt ct n m (Select mi ty p : sels) =
@@ -178,7 +189,57 @@ subIds tm i = foldr ( \ j s ->
                  if Set.member i $ superIds tm j then
                       Set.insert j s else s) Set.empty $ Map.keys tm
 
+mkPredVar :: DataPat -> VarDecl
+mkPredVar (DataPat i _ _ rt) = let ps = posOfId i in
+  mkVarDecl (if isSimpleId i then mkId [mkSimpleId $ "p_" ++ show i]
+             else Id [mkSimpleId "p"] [i] ps) (predType ps rt)
 
+mkPredAppl :: DataPat -> Term -> Term
+mkPredAppl dp t = mkApplTerm (QualVar $ mkPredVar dp) [t]
 
+mkPredToVarAppl :: DataPat -> VarDecl -> Term
+mkPredToVarAppl dp = mkPredAppl dp . QualVar
 
+mkConclusion :: DataPat -> Term
+mkConclusion dp@(DataPat _ _ _ ty) =
+  let v = mkVarDecl (mkId [mkSimpleId "x"]) ty
+  in mkForall [GenVarDecl v] $ mkPredToVarAppl dp v
 
+mkPremise :: Map.Map Type DataPat -> DataPat -> AltDefn -> [Term]
+mkPremise m dp (Construct mc ts p sels) =
+    case mc of
+    Nothing -> []
+    Just c -> let
+      vars = genSelVars 1 sels
+      findHypo vd@(VarDecl _ ty _ _) =
+        fmap (flip mkPredToVarAppl vd) $ Map.lookup ty m
+      flatVars = concat vars
+      indHypos = catMaybes $ map findHypo flatVars
+      indConcl = mkPredAppl dp
+        $ mkApplTerm (mkOpTerm c $ getConstrScheme dp p ts)
+        $ mkSelArgs vars
+      in [mkForall (map GenVarDecl flatVars) $
+          if null indHypos then indConcl else
+           mkLogTerm implId nullRange (mkConjunct indHypos) indConcl]
+
+mkConjunct :: [Term] -> Term
+mkConjunct ts = if null ts then error "HasCASL.DataAna.mkConjunct" else
+  toBinJunctor andId ts nullRange
+
+mkPremises :: Map.Map Type DataPat -> DataEntry -> [Term]
+mkPremises m de@(DataEntry _ _ _ _ _ alts) =
+    concatMap (mkPremise m $ toDataPat de) $ Set.toList alts
+
+joinTypeArgs :: [DataPat] -> Map.Map Id TypeArg
+joinTypeArgs = foldr (\ (DataPat _ iargs _ _) m ->
+   foldr (\ ta -> Map.insert (getTypeVar ta) ta) m iargs) Map.empty
+
+inductionScheme :: [DataEntry] -> Term
+inductionScheme des =
+    let dps = map toDataPat des
+        m = Map.fromList $ map (\ dp@(DataPat _ _ _ ty) -> (ty, dp)) dps
+    in mkForall (map GenTypeVarDecl (Map.elems $ joinTypeArgs dps)
+                 ++ map (GenVarDecl . mkPredVar) dps)
+       $ mkLogTerm implId nullRange
+         (mkConjunct $ concatMap (mkPremises m) des)
+         $ mkConjunct $ map mkConclusion dps
