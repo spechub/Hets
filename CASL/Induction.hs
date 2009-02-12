@@ -17,11 +17,12 @@ module CASL.Induction (inductionScheme, generateInductionLemmas) where
 import CASL.AS_Basic_CASL
 import CASL.Sign
 import CASL.Fold
+import CASL.Overload (combine)
+import CASL.Quantification (flatVAR_DECLs)
 import Common.AS_Annotation as AS_Anno
 import Common.Id
 import Common.Result
 import Common.DocUtils
-import Data.List
 import Data.Maybe
 
 -- | derive a second-order induction scheme from a sort generation constraint
@@ -29,11 +30,11 @@ import Data.Maybe
 -- | symbols P[s], where s is a sort
 inductionScheme :: Pretty f =>  [Constraint] -> Result (FORMULA f)
 inductionScheme constrs =
-  induction constrs (map predSubst constrs)
+  induction $ map predSubst constrs
   where sorts = map newSort constrs
         injective = isInjectiveList sorts
-        predSubst constr t =
-          Predication predSymb [t] nullRange
+        predSubst constr =
+          (constr, \ t -> Predication predSymb [t] nullRange)
           where
           predSymb = Qual_pred_name ident typ nullRange
           Id ts cs ps =
@@ -48,15 +49,15 @@ inductionScheme constrs =
 -- | sort generation constraint for this list of formulas
 -- | It is assumed that the (original) sorts of the constraint
 -- | match the sorts of the free variables
-instantiateSortGen :: Pretty f =>  [Constraint] -> [(FORMULA f,VAR,SORT)]
+instantiateSortGen :: Pretty f =>  [(Constraint, (FORMULA f, VAR))]
                         -> Result (FORMULA f)
-instantiateSortGen constrs phis =
-  induction constrs (map substFormula phis)
-  where substFormula (phi,v,_) t = substitute v t phi
+instantiateSortGen phis =
+  induction (map substFormula phis)
+  where substFormula (c, (phi, v)) = (c, \ t -> substitute v t phi)
 
 -- | substitute a term for a variable in a formula
 substitute :: Pretty f =>  VAR -> TERM f -> FORMULA f -> FORMULA f
-substitute v t = foldFormula $
+substitute v t = foldFormula
  (mapRecord id) { foldQual_var = \ t2 v2 _ _ ->
                   if v == v2 then t else t2
                 , foldQuantification = \ t2 q vs p r ->
@@ -66,61 +67,57 @@ substitute v t = foldFormula $
 
 -- | derive an induction scheme from a sort generation constraint
 -- | using substitutions as induction predicates
-induction :: Pretty f =>  [Constraint] -> [TERM f -> FORMULA f]
+induction :: Pretty f => [(Constraint, TERM f -> FORMULA f)]
           -> Result (FORMULA f)
-induction constrs substs =
- if not (length constrs == length substs)
-  then fail "CASL.Induction.induction: argument lists must have equal length"
-  else do
-   let mkVar i = mkSimpleId ("x_"++show i)
-       sortInfo = zip3 constrs substs
-                   (zip (map mkVar [1..length constrs]) (map newSort constrs))
-       mkConclusion (_,subst,v) =
+induction constrSubsts = do
+   let mkVar i = mkSimpleId ("x_" ++ show i)
+       sortInfo = zipWith (\ (cs, sub) i -> (cs, sub, (mkVar i, newSort cs)))
+         constrSubsts [1 :: Int ..]
+       mkConclusion (_, subst, v) =
          Quantification Universal [mkVarDecl v] (subst (mkVarTerm v)) nullRange
        inductionConclusion = mkConj $ map mkConclusion sortInfo
-   inductionPremises <- mapM (mkPrems substs) sortInfo
+   inductionPremises <- mapM (mkPrems $ map snd constrSubsts) sortInfo
    let inductionPremise = mkConj $ concat inductionPremises
    return $ Implication inductionPremise inductionConclusion True nullRange
 
 -- | construct premise set for the induction scheme
 -- | for one sort in the constraint
-mkPrems :: Pretty f =>  [TERM f -> FORMULA f]
-            -> (Constraint, TERM f -> FORMULA f, (VAR,SORT))
+mkPrems :: Pretty f => [TERM f -> FORMULA f]
+            -> (Constraint, TERM f -> FORMULA f, (VAR, SORT))
             -> Result [FORMULA f]
 mkPrems substs info@(constr,_,_) = mapM (mkPrem substs info) (opSymbs constr)
 
 -- | construct a premise for the induction scheme for one constructor
 mkPrem :: Pretty f =>  [TERM f -> FORMULA f]
-           -> (Constraint, TERM f -> FORMULA f, (VAR,SORT))
-           -> (OP_SYMB,[Int])
+           -> (Constraint, TERM f -> FORMULA f, (VAR, SORT))
+           -> (OP_SYMB, [Int])
            -> Result (FORMULA f)
 mkPrem substs (_,subst,_)
        (opSym@(Qual_op_name _ (Op_type _ argTypes _ _) _), idx) =
   return $ if null qVars then phi
             else Quantification Universal (map mkVarDecl qVars) phi nullRange
   where
-  vars = map mkVar [1..length argTypes]
-  mkVar i = mkSimpleId ("y_"++show i)
-  qVars = zip vars argTypes
+  qVars = zipWith (\ a i -> (mkVar i, a)) argTypes [1 :: Int ..]
+  mkVar i = mkSimpleId ("y_" ++ show i)
   phi = if null indHyps then indConcl
            else Implication (mkConj indHyps) indConcl True nullRange
   indConcl = subst (Application opSym (map mkVarTerm qVars) nullRange)
   indHyps = mapMaybe indHyp (zip qVars idx)
-  indHyp (v1,i) =
-    if i<0 then Nothing -- leave out sorts from outside the constraint
-     else Just ((substs!!i) (mkVarTerm v1))
-mkPrem _ _ (opSym,_) =
+  indHyp (v1, i) =
+    if i < 0 then Nothing -- leave out sorts from outside the constraint
+     else Just $ (substs !! i) $ mkVarTerm v1
+mkPrem _ _ (opSym, _) =
   fail ("CASL.Induction. mkPrems: "
         ++ "unqualified operation symbol occuring in constraint: "
         ++ show opSym)
 
 -- | turn sorted variable into variable delcaration
-mkVarDecl :: (VAR,SORT) -> VAR_DECL
-mkVarDecl (v,s) = Var_decl [v] s nullRange
+mkVarDecl :: (VAR, SORT) -> VAR_DECL
+mkVarDecl (v, s) = Var_decl [v] s nullRange
 
 -- | turn sorted variable into term
-mkVarTerm :: Pretty f =>  (VAR,SORT) -> TERM f
-mkVarTerm (v,s) = Qual_var v s nullRange
+mkVarTerm :: Pretty f =>  (VAR, SORT) -> TERM f
+mkVarTerm (v, s) = Qual_var v s nullRange
 
 -- | optimized conjunction
 mkConj :: Pretty f =>  [FORMULA f] -> FORMULA f
@@ -128,17 +125,14 @@ mkConj [] = False_atom nullRange
 mkConj [phi] = phi
 mkConj phis = Conjunction phis nullRange
 
-
 -- !! documentation is missing
 generateInductionLemmas :: Pretty f =>  (Sign f e, [Named (FORMULA f)])
                         -> (Sign f e, [Named (FORMULA f)])
-generateInductionLemmas (sig,axs) =
-   (sig,axs ++ inductionAxs)
-   where
+generateInductionLemmas (sig, axs) = (sig, axs ++ inductionAxs) where
    sortGens = filter isSortGen (map sentence axs)
    goals = filter (not . isAxiom) axs
-   inductionAxs = fromJust $ maybeResult $
-                    generateInductionLemmasAux sortGens goals
+   inductionAxs = fromJust $ maybeResult
+     $ generateInductionLemmasAux sortGens goals
 
 -- | determine whether a formula is a sort generation constraint
 isSortGen :: FORMULA a -> Bool
@@ -146,17 +140,18 @@ isSortGen (Sort_gen_ax _ _) = True
 isSortGen _ = False
 
 generateInductionLemmasAux
-  :: Pretty f =>  [FORMULA f] -- ^ only Sort_gen_ax of a theory
+  :: Pretty f => [FORMULA f] -- ^ only Sort_gen_ax of a theory
   -> [AS_Anno.Named (FORMULA f)] -- ^ all goals of a theory
   -> Result ([AS_Anno.Named (FORMULA f)])
 -- ^ all the generated induction lemmas
 -- and the labels are derived from the goal-names
 generateInductionLemmasAux sort_gen_axs goals =
-    mapM (\ (cons,formulas) -> do
-            formula <- instantiateSortGen cons $
-                map (\ (Constraint {newSort = s},(f,varsorts)) ->
-                       let vs = findVar s varsorts
-                       in  (removeVarsort vs s $ sentence f, vs, s))
+    mapM (\ (cons, formulas) -> do
+            formula <- instantiateSortGen
+                $ map (\ (c, (f, varsorts)) ->
+                       let s = newSort c
+                           vs = findVar s varsorts
+                       in (c, (removeVarsort vs s $ sentence f, vs)))
                     $ zip cons formulas
 
             let sName = (if null formulas then id else tail)
@@ -165,10 +160,9 @@ generateInductionLemmasAux sort_gen_axs goals =
             return $ makeNamed sName formula
          )
          -- returns big list containing tuples of constraints and a matching
-         -- combination (list) of goals. The list is from the following type:
-         -- ( [Constraint], [ (FORMULA, [(VAR,SORT)]) ] )
-         (concat $ map (\ (Sort_gen_ax c _) ->
-                          map (\combi -> (c,combi)) $ constraintGoals c)
+         -- combination (list) of goals.
+         (concatMap (\ (Sort_gen_ax c _) ->
+                          map (\ combi -> (c, combi)) $ constraintGoals c)
                        sort_gen_axs)
   where
     findVar s [] = error ("CASL.generateInductionLemmas:\n"
@@ -177,42 +171,23 @@ generateInductionLemmasAux sort_gen_axs goals =
     removeVarsort v s f = case f of
       Quantification Universal varDecls formula rng ->
         let vd' = newVarDecls varDecls
-        in  if (null vd') then formula
+        in  if null vd' then formula
             else Quantification Universal vd' formula rng
       _ -> f
       where
         newVarDecls = filter (\ (Var_decl vs _ _) -> not $ null vs) .
             map (\ var_decl@(Var_decl vars varsort r) ->
-                   if varsort==s
+                   if varsort == s
                      then Var_decl (filter (not . (==) v) vars) s r
                      else var_decl)
     uniQuantGoals =
             foldr ( \ goal l -> case sentence goal of
                                   Quantification Universal varDecl _ _ ->
-                                     (goal, concatVarDecl varDecl) : l
+                                     (goal, flatVAR_DECLs varDecl) : l
                                   _ -> l) [] goals
     -- For each constraint we get a list of goals out of uniQuantGoals
     -- which contain the constraint's newSort. Afterwards all combinations
     -- are created.
-    constraintGoals cons = combination [] $
-              map (\ c -> filter (or . map ((newSort c ==) . snd) . snd)
-                                 uniQuantGoals) (sort cons)
-
-{- | A common type list combinator. Given a list of x elements where
-   each element contains a list of possibilities for this
-   position. The result will be a list of all combinations, where each
-   combination consists of x elements.  Each combination is reversed
-   sorted if the possibilities where sorted before.  So you have to
-   (map reverse) for resorting.  -}
-combination :: [a]
-            -- ^ List of elements each combination will have as preamble.
-            -- Normally this value should be the empty list.
-            -> [[a]] -> [[a]]
-combination headL [] = [headL]
-combination headL (comb:restL) =
-    foldr (\ s l -> (combination (s:headL) restL) ++ l)
-          [] comb
-
-concatVarDecl :: [VAR_DECL] -> [(VAR,SORT)]
-concatVarDecl = foldl (\ vList (Var_decl v s _) ->
-                             vList ++ map (\vl -> (vl, s)) v) []
+    constraintGoals = combine
+      . map (\ c -> filter (any ((newSort c ==) . snd) . snd)
+                                 uniQuantGoals)
