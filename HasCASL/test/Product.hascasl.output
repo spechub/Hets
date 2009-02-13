@@ -51,17 +51,17 @@ op z : SWPoint -> Real
        %(selector of constructor(s)
        SWPoint : Real * Real * Real -> SWPoint)%
 forall x_1 : Real; x_2 : Real; x_3 : Real
-. x (SWPoint (x_1, x_2, x_3)) = x_1_1              %(ga_select_x)%
+. x (SWPoint (x_1, x_2, x_3)) = x_1                %(ga_select_x)%
 forall x_1 : Real; x_2 : Real; x_3 : Real
-. y (SWPoint (x_1, x_2, x_3)) = x_1_2              %(ga_select_y)%
+. y (SWPoint (x_1, x_2, x_3)) = x_2                %(ga_select_y)%
 forall x_1 : Real; x_2 : Real; x_3 : Real
-. z (SWPoint (x_1, x_2, x_3)) = x_1_3              %(ga_select_z)%
+. z (SWPoint (x_1, x_2, x_3)) = x_3                %(ga_select_z)%
 forall x_1 : SWPoint; x_2 : SWPoint; x_3 : SWPoint
-. Center (SWArc (x_1, x_2, x_3)) = x_1_1      %(ga_select_Center)%
+. Center (SWArc (x_1, x_2, x_3)) = x_1        %(ga_select_Center)%
 forall x_1 : SWPoint; x_2 : SWPoint; x_3 : SWPoint
-. Start (SWArc (x_1, x_2, x_3)) = x_1_2        %(ga_select_Start)%
+. Start (SWArc (x_1, x_2, x_3)) = x_2          %(ga_select_Start)%
 forall x_1 : SWPoint; x_2 : SWPoint; x_3 : SWPoint
-. End (SWArc (x_1, x_2, x_3)) = x_1_3            %(ga_select_End)%
+. End (SWArc (x_1, x_2, x_3)) = x_3              %(ga_select_End)%
 free type SWPoint ::= SWPoint (x : Real; y : Real; z : Real)
 free type SWArc ::=
           SWArc (Center : SWPoint; Start : SWPoint; End : SWPoint)

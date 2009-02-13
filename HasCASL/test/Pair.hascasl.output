@@ -24,9 +24,9 @@ op snd : forall a : Type; b : Type . Pair a b -> b
          %(selector of constructor(s)
          Pair : forall a : Type; b : Type . a * b -> Pair a b)%
 forall a : Type; b : Type; x_1 : a; x_2 : b
-. fst (Pair (x_1, x_2)) = x_1_1                  %(ga_select_fst)%
+. fst (Pair (x_1, x_2)) = x_1                    %(ga_select_fst)%
 forall a : Type; b : Type; x_1 : a; x_2 : b
-. snd (Pair (x_1, x_2)) = x_1_2                  %(ga_select_snd)%
+. snd (Pair (x_1, x_2)) = x_2                    %(ga_select_snd)%
 free type Pair(a : Type)(b : Type) ::= Pair (fst : a; snd : b)
                                                        %(ga_Pair)%
 forall a : Type; b : Type; a : a; b : b

@@ -49,52 +49,46 @@ mkSelId p str n m = mkId
 mkSelVar :: Int -> Int -> Type -> VarDecl
 mkSelVar n m ty = mkVarDecl (mkSelId (getRange ty) "x" n m) ty
 
-genTuple :: Int -> Int -> [Selector] -> [VarDecl]
+genTuple :: Int -> Int -> [Selector] -> [(Selector, VarDecl)]
 genTuple _ _ [] = []
-genTuple n m (Select _ ty _ : sels) =
-    mkSelVar n m ty : genTuple n (m + 1) sels
+genTuple n m (s@(Select _ ty _) : sels) =
+    (s, mkSelVar n m ty) : genTuple n (m + 1) sels
 
-genSelVars :: Int -> [[Selector]] -> [[VarDecl]]
+genSelVars :: Int -> [[Selector]] -> [[(Selector, VarDecl)]]
 genSelVars n sels = case sels of
   [ts] -> [genTuple 0 1 ts]
   _ -> if all isSingle sels
        then map (: []) $ genTuple 0 1 $ map head sels
        else genSelVarsAux n sels
 
-genSelVarsAux :: Int -> [[Selector]]  -> [[VarDecl]]
+genSelVarsAux :: Int -> [[Selector]]  -> [[(Selector, VarDecl)]]
 genSelVarsAux _ [] = []
 genSelVarsAux n (ts : sels)  =
     genTuple n 1 ts : genSelVarsAux (n + 1) sels
 
-makeSelTupleEqs :: DataPat -> Term -> Int -> Int -> [Selector] -> [Named Term]
-makeSelTupleEqs dt ct n m (Select mi ty p : sels) =
-    let sc = getSelScheme dt p ty
-    in (case mi of
+makeSelTupleEqs :: DataPat -> Term -> [(Selector, VarDecl)] -> [Named Term]
+makeSelTupleEqs dt ct = concatMap (\ (Select mi ty p, v) -> case mi of
      Just i -> let
-                  vt = QualVar $ mkSelVar n m ty
-                  eq = mkEqTerm eqId ty nullRange
-                       (mkApplTerm (mkOpTerm i sc) [ct]) vt
-              in [makeNamed ("ga_select_" ++ show i) eq]
+         sc = getSelScheme dt p ty
+         eq = mkEqTerm eqId ty nullRange
+              (mkApplTerm (mkOpTerm i sc) [ct]) $ QualVar v
+         in [makeNamed ("ga_select_" ++ show i) eq]
      _ -> [])
-    ++ makeSelTupleEqs dt ct n (m + 1) sels
-makeSelTupleEqs _ _ _ _ [] = []
 
-makeSelEqs :: DataPat -> Term -> Int -> [[Selector]] -> [Named Term]
-makeSelEqs dt ct n (sel:sels) =
-    makeSelTupleEqs dt ct n 1 sel
-    ++ makeSelEqs dt ct (n + 1) sels
-makeSelEqs _ _ _ _ = []
+makeSelEqs :: DataPat -> Term -> [[(Selector, VarDecl)]] -> [Named Term]
+makeSelEqs dt ct = concatMap $ makeSelTupleEqs dt ct
 
 makeAltSelEqs :: DataPat -> AltDefn -> [Named Term]
 makeAltSelEqs dt@(DataPat _ iargs _ _) (Construct mc ts p sels) =
     case mc of
     Nothing -> []
     Just c -> let
-      vars = genSelVars 1 sels
+      selvars = genSelVars 1 sels
+      vars = map (map snd) selvars
       ars = mkSelArgs vars
       ct = mkApplTerm (mkOpTerm c $ getConstrScheme dt p ts) ars
       in map (mapNamed (mkForall (map GenTypeVarDecl iargs
-           ++ map GenVarDecl (concat vars)))) $ makeSelEqs dt ct 1 sels
+           ++ map GenVarDecl (concat vars)))) $ makeSelEqs dt ct selvars
 
 mkSelArgs :: [[VarDecl]] -> [Term]
 mkSelArgs = map (\ vs -> mkTupleTerm (map QualVar vs) nullRange)
@@ -210,7 +204,7 @@ mkPremise m dp (Construct mc ts p sels) =
     case mc of
     Nothing -> []
     Just c -> let
-      vars = genSelVars 1 sels
+      vars = map (map snd) $ genSelVars 1 sels
       findHypo vd@(VarDecl _ ty _ _) =
         fmap (flip mkPredToVarAppl vd) $ Map.lookup ty m
       flatVars = concat vars
