@@ -180,7 +180,7 @@ vars x, y, i_add_res, i_pred_res, i_succ_res, i_zero_res,
  . DEFPROCS
     PROCEDURE nlz_uniform(x)
     BEGIN
-     DECLARE i_zero_res2 : bin := x, pred_n : bin;
+     DECLARE i_zero_res2 : bin := x;
      BEGIN
       i_zero(i_zero_res2) ;
       IF i_zero_res2 = x
