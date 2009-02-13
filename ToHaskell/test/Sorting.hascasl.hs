@@ -61,7 +61,7 @@ prec :: Nat -> Nat
 sorter :: List_FNat_J -> List_FNat_J
 sorter
     = error{-(List_FNat_J -> List_FNat_J)-} "sorter"
-prec (Succ x_11_11) = x_11_11
+prec (Succ x_11) = x_11
 data Nat = A__0 | Succ !Nat
 a___2_L_E_2 (A__0, x) = True
 a___2_L_E_2 ((Succ x), A__0) = False

@@ -24,6 +24,6 @@ prec |-> Prelude.prec, Value
 module Dummy where
 f :: Nat -> Nat
 prec :: Nat -> Nat
-prec (Suc x_11_11) = x_11_11
+prec (Suc x_11) = x_11
 data Nat = Suc !Nat | Zero
 f x = Suc x

@@ -20,5 +20,5 @@ myhead |-> Prelude.myhead, Value
 -}
 module Dummy where
 myhead :: (List a) -> a
-myhead (Cons{-a-} (x_11_11, x_11_12)) = x_11_11
+myhead (Cons{-a-} (x_11, x_12)) = x_11
 data List a = Cons !(a, List a) | Nil
