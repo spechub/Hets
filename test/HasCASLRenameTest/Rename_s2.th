@@ -9,7 +9,7 @@ op c2 : t2 -> t2 %(constructor)%
 op o2 : t2 %(op)%
 op s2 : t2 -> t2 %(selector of constructor(s) c2 : t2 -> t2)%
 
-forall x_1_1 : t2 . s2 (c2 x_1_1) = x_1_1; %(ga_select_s)%
+forall x_1 : t2 . s2 (c2 x_1) = x_1; %(ga_select_s)%
 
 type t2 ::= c2 (s2 : t2); %(ga_t)%
 
