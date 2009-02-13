@@ -339,7 +339,7 @@ minExpProg invars res sig p@(Ranged prg r) = let
       nt <- oneExpT sig $ Sorted_term t s r
       checkTerm nt
       when (Set.member v invars)
-        $ Result [mkDiag Warning "assignment to input variable" v] $ Just ()
+        $ appendDiags [mkDiag Warning "assignment to input variable" v]
       return $ Ranged (Assign v nt) r
   Call f -> case f of
     Predication ps ts _ -> let i = predSymbName ps in
@@ -370,8 +370,8 @@ minExpProg invars res sig p@(Ranged prg r) = let
       checkTerm nt
       return $ Ranged (Return nt) r
   Block vs q -> do
-    let (_, sign') = runState (mapM_ addVars vs) sig { envDiags = [] }
-    Result (envDiags sign') $ Just ()
+    let sign' = execState (mapM_ addVSEVars vs) sig { envDiags = [] }
+    appendDiags $ envDiags sign'
     np <- minExpProg invars res sign' q
     return $ Ranged (Block vs np) r
   Seq p1 p2 -> do
@@ -389,6 +389,12 @@ minExpProg invars res sig p@(Ranged prg r) = let
     checkCond c
     np <- minExpProg invars res sig q
     return $ Ranged (While c np) r
+
+addVSEVars :: VAR_DECL -> State (Sign f Procs) ()
+addVSEVars vd@(Var_decl vs _ _) = do
+    addVars vd
+    p <- gets $ procsMap . extendedInfo
+    mapM_ (addDiags . checkWithOtherMap "var" "procedure" p . simpleIdToId) vs
 
 minProcdecl :: Sign () Procs -> Defproc -> Result Defproc
 minProcdecl sig (Defproc k i vs p r) = case lookupProc i sig of
