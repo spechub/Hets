@@ -57,7 +57,7 @@ genTuple n m (Select _ ty _ : sels) =
 genSelVars :: Int -> [[Selector]] -> [[VarDecl]]
 genSelVars n sels = case sels of
   [ts] -> [genTuple 0 1 ts]
-  _ -> if all (\ l -> not (null l) && null (tail l)) sels
+  _ -> if all isSingle sels
        then map (: []) $ genTuple 0 1 $ map head sels
        else genSelVarsAux n sels
 
