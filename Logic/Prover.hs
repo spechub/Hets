@@ -255,7 +255,7 @@ goalUsedInProof pst = case goalStatus pst of
     _ -> fail "not a proof"
 
 -- | different kinds of prover interfaces
-data ProverKind = ProveGUI | ProveCMDLautomatic | ProveCMDLinteractive
+data ProverKind = ProveGUI | ProveCMDLautomatic
 
 -- | determine if a prover kind is implemented
 hasProverKind :: ProverKind -> ProverTemplate x s m y z -> Bool
@@ -263,7 +263,6 @@ hasProverKind pk pt = case pk of
     ProveGUI -> isJust $ proveGUI pt
     ProveCMDLautomatic ->
         isJust (proveCMDLautomatic pt) && isJust (proveCMDLautomaticBatch pt)
-    ProveCMDLinteractive -> isJust $ proveCMDLinteractive pt
 
 data FreeDefMorphism sentence morphism = FreeDefMorphism
   { freeDefMorphism :: morphism
@@ -283,13 +282,9 @@ data ProverTemplate theory sentence morphism sublogics proof_tree = Prover
       proveCMDLautomatic :: Maybe (String -> Tactic_script
                          -> theory -> [FreeDefMorphism sentence morphism]
                          ->IO (Result ([Proof_status proof_tree]))),
-      -- blocks until a result is determined
       -- input: theory name, Tactic_script,
       --        theory (incl. goals, but only the first one is tried)
       -- output: proof status for goals and lemmas
-      proveCMDLinteractive :: Maybe (String -> Tactic_script
-                         -> theory -> [FreeDefMorphism sentence morphism] -> IO (Result ([Proof_status proof_tree]))),
-      -- input, output: see above
       proveCMDLautomaticBatch ::
           Maybe (Bool -- 1.
                  -> Bool -- 2.
@@ -325,7 +320,6 @@ mkProverTemplate str sl fct = Prover
     , prover_sublogic = sl
     , proveGUI = Just fct
     , proveCMDLautomatic = Nothing
-    , proveCMDLinteractive = Nothing
     , proveCMDLautomaticBatch = Nothing }
 
 type ConsChecker sign sentence sublogics morphism proof_tree =
