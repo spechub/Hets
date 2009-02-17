@@ -1,4 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!--   ?xml-stylesheet type="text/xsl" href="identity.xsl"? -->
 
 <omdoc xmlns:dc="http://purl.org/dc/elements/1.1/" 
        xmlns="http://omdoc.org/ns"
@@ -7,214 +8,88 @@
        xml:id="casl.omdoc">
 
 <metadata>
- <dc:creator role="aut">Immanuel Normann</dc:creator>
- <dc:date action="created">2005-04-20T00:00:00</dc:date>
+ <dc:creator role="aut">Ewaryst Schulz</dc:creator>
+ <dc:date action="created">2009-02-17T00:00:00</dc:date>
  <dc:title>The CASL logic language</dc:title>
  <dc:rights>GPL</dc:rights>
 </metadata>
 
   <theory xml:id="casl">
-    <metadata>
-      <dc:title>The new CASL logic language</dc:title>
-    </metadata>
 
-    <!--  Type  -->
+   <metadata>
+     <dc:title>The new CASL logic language</dc:title>
+   </metadata>
 
-    <symbol role="semantic-attribution" name="type"/>
+   <imports xml:id="pl1-imports" from="pl1.omdoc#pl1"/>
 
-    <!--  Quantification  -->
+   <symbol name="eq">
+     <metadata>
+       <dc:description>
+           <OMOBJ xmlns="http://www.openmath.org/OpenMath"><OMS cd="casl" name="eq"/></OMOBJ>
+       is the strong equality on any sort except bool.</dc:description>
+     </metadata>
+   </symbol>
 
-    <symbol name="quantification">
-      <metadata>
-	<dc:description>
-	  HetsDataType:
-	  data FORMULA f = Quantification QUANTIFIER [VAR_DECL] (FORMULA f) [Pos]
-	       -- pos: QUANTIFIER, semi colons, dot
-	</dc:description>
-      </metadata>
+   <symbol name="eeq">
+     <metadata>
+       <dc:description>
+           <OMOBJ xmlns="http://www.openmath.org/OpenMath"><OMS cd="casl" name="eeq"/></OMOBJ>
+       is the existential equality on any sort except bool.</dc:description>
+     </metadata>
+   </symbol>
+
+  <symbol name="existsunique" xml:id="casl.existsunique">
+   <metadata><dc:subject>existsunique</dc:subject>
+   <dc:description>
+    <OMOBJ xmlns="http://www.openmath.org/OpenMath"><OMS cd="casl" name="existsunique"/></OMOBJ>
+    is the binding symbol for the unique existential ("there exists exactly one") quantifier.
+  </dc:description>
+</metadata>
+  </symbol>
+
+    <!-- Definedness, Membership -->
+
+    <symbol name="defined">
+   <metadata><dc:subject>defined</dc:subject>
+   <dc:description>
+    <OMOBJ xmlns="http://www.openmath.org/OpenMath"><OMS cd="casl" name="defined"/></OMOBJ>
+    is the definedness predicate.
+  </dc:description>
+</metadata>
     </symbol>
 
-    <symbol role="binder" name="universal">
-      <metadata>
-	<dc:description>
-	  HetsDataType:
-	  data QUANTIFIER = Universal
-	</dc:description>
-      </metadata>
+    <symbol name="in" xml:id="casl.in">
+   <metadata><dc:subject>in</dc:subject>
+   <dc:description>
+    <OMOBJ xmlns="http://www.openmath.org/OpenMath"><OMS cd="casl" name="in"/></OMOBJ>
+    is the membership (object,sort-) predicate.
+  </dc:description>
+</metadata>
     </symbol>
 
-    <symbol name="existential">
-      <metadata>
-	<dc:description>
-	  HetsDataType:
-	  data QUANTIFIER = Existential
-	</dc:description>
-      </metadata>
+  <symbol name="if" xml:id="casl.if">
+   <metadata><dc:subject>if</dc:subject>
+   <dc:description>
+    <OMOBJ xmlns="http://www.openmath.org/OpenMath"><OMS cd="casl" name="if"/></OMOBJ>
+    is the ternary if/then/else operator.
+  </dc:description>
+</metadata>
+  </symbol>
+
+    <symbol name="cast" xml:id="casl.cast">
+   <metadata><dc:subject>cast</dc:subject>
+   <dc:description>
+    <OMOBJ xmlns="http://www.openmath.org/OpenMath"><OMS cd="casl" name="cast"/></OMOBJ>
+    is the downcast (object,sort-) operator.
+  </dc:description>
+</metadata>
     </symbol>
 
-    <symbol name="unique-existential">
-      <metadata>
-	<dc:description>
-	  HetsDataType:
-	  data QUANTIFIER = Unique_existential
-	</dc:description>
-      </metadata>
-    </symbol>
+    <omtext xml:id="CDComment1" type="comment">
+     <CMP>The upcast is realised by an attribution around the term, such as
+    for typing of bound variables</CMP>
+    </omtext>
 
-    <!--  Conjunction, Disjunction, Implication, Equivalence, Negation -->
-
-    <symbol name="conjunction">
-      <metadata>
-	<dc:description>
-	  HetsDataType:
-	  data FORMULA f = Conjunction [FORMULA f] [Pos]
-	       -- pos: "/\"s
-	</dc:description>
-      </metadata>
-    </symbol>
-
-    <symbol name="disjunction">
-      <metadata>
-	<dc:description>
-	  HetsDataType:
-	  data FORMULA f = Disjunction [FORMULA f] [Pos]
-	       -- pos: "\/"s
-	</dc:description>
-      </metadata>
-    </symbol>
-
-    <symbol name="implication">
-      <metadata>
-	<dc:description>
-	  HetsDataType:
-	  data FORMULA f = Implication (FORMULA f) (FORMULA f) Bool [Pos]
-	       -- pos: "=&gt;" or "if" (True -&gt; "=&gt;")
-	</dc:description>
-      </metadata>
-    </symbol>
-
-    <symbol name="equivalence">
-      <metadata>
-	<dc:description>
-	  HetsDataType:
-	  data FORMULA f = Equivalence (FORMULA f) (FORMULA f) [Pos]
-	       -- pos: "&lt;=&gt;"
-	</dc:description>
-      </metadata>
-    </symbol>
-
-    <symbol name="negation">
-      <metadata>
-	<dc:description>
-	  HetsDataType:
-	  data FORMULA f = Negation (FORMULA f) [Pos]
-	       -- pos: not
-	</dc:description>
-      </metadata>
-    </symbol>
-
-    <!--  True and False  -->
-
-    <symbol name="true">
-      <metadata>
-	<dc:description>
-	  HetsDataType:
-	  data FORMULA f = True_atom [Pos]
-	       -- pos: true
-	</dc:description>
-      </metadata>
-    </symbol>
-
-    <symbol name="false">
-      <metadata>
-	<dc:description>
-	  HetsDataType:
-	  data FORMULA f = False_atom [Pos]
-	       -- pos: false
-	</dc:description>
-      </metadata>
-    </symbol>
-
-    <!-- Predication, Definedness, Existl_equation, Strong_equation, Membership -->
-
-    <symbol name="predication">
-      <metadata>
-	<dc:description>
-	  HetsDataType:
-	  data FORMULA f = Predication PRED_SYMB [TERM f] [Pos]
-               -- pos: opt. "(",commas,")"
-	</dc:description>
-      </metadata>
-    </symbol>
-    <symbol name="definedness">
-      <metadata>
-	<dc:description>
-	  HetsDataType:
-	  data FORMULA f = Definedness (TERM f) [Pos]
-	       -- pos: def
-	</dc:description>
-      </metadata>
-    </symbol>
-    <symbol name="existential-equation">
-      <metadata>
-	<dc:description>
-	  HetsDataType:
-	  data FORMULA f = Existl_equation (TERM f) (TERM f) [Pos]
-               -- pos: =e=
-	</dc:description>
-      </metadata>
-    </symbol>
-    <symbol name="strong-equation">
-      <metadata>
-	<dc:description>
-	  HetsDataType:
-	  data FORMULA f = Strong_equation (TERM f) (TERM f) [Pos]
-	       -- pos: =
-	</dc:description>
-      </metadata>
-    </symbol>
-
-    <symbol name="membership">
-      <metadata>
-	<dc:description>
-	  HetsDataType:
-	  data FORMULA f = Membership (TERM f) SORT [Pos]
-               -- pos: in
-	</dc:description>
-      </metadata>
-    </symbol>
-
-    <!-- Example for some symbols -->
-
-    <example xml:id="ex1" for="#universal #equivalence #negation" type="for">
-      <CMP>forall x:real . not(x~x) iff false</CMP>
-      <OMOBJ xmlns="http://www.openmath.org/OpenMath">
-	<OMBIND>
-	  <OMS cd="casl" name="universal"/>
-	  <OMBVAR>
-	    <OMATTR>
-	      <OMATP>
-		<OMS cd="casl" name="type"/>
-		<OMS cd="reflexive-ralation" name="real"/>
-	      </OMATP>
-	      <OMV name="x"/>
-	    </OMATTR>
-	  </OMBVAR>
-	  <OMA>
-	    <OMS cd="casl" name="equivalence"/>
-	    <OMA>
-	      <OMS cd="casl" name="negation"/>
-	      <OMA>
-		<OMS cd="reflexive-ralation" name="refl"/>
-		<OMV name="x"/>
-		<OMV name="x"/>
-	      </OMA>
-	    </OMA>
-	    <OMS cd="casl" name="false"/>
-	  </OMA>
-	</OMBIND>
-      </OMOBJ>
-    </example>
 
   </theory>
 </omdoc>
