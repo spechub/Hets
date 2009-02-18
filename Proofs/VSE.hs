@@ -31,7 +31,6 @@ import Common.LibName
 import Common.Result
 import Common.ResultT
 import Common.SExpr
-import Common.Utils
 import qualified Common.OrderedMap as OMap
 
 import Logic.Logic
@@ -54,8 +53,6 @@ import Data.Graph.Inductive.Basic (elfilter, gfold)
 import Data.Graph.Inductive.Graph hiding (out)
 
 import Control.Monad.Trans
-import System.Process
-import Text.ParserCombinators.Parsec
 
 thName :: LIB_NAME -> LNode DGNodeLab -> String
 thName ln (n, lbl) = map (\ c -> if elem c "/,[]: " then '-' else c)
@@ -98,10 +95,7 @@ prove _cms (ln, node) libEnv =
            , show $ prettySExpr
              $ SList $ map (namedSenToSExpr sign2) sens2)) ns
     nLibEnv <- lift $ do
-       vseBin <- getEnvDef "HETS_VSE" "hetsvse"
-       (inp, out, _, cp) <-
-           runInteractiveProcess vseBin ["-std"] Nothing Nothing
-       readMyMsg cp out nameP
+       (inp, out, cp) <- prepareAndCallVSE
        sendMyMsg inp $ "(" ++ unlines (map (thName ln) nls) ++ ")"
        mapM_ (\ nl -> do
            readMyMsg cp out linksP
@@ -112,17 +106,10 @@ prove _cms (ln, node) libEnv =
        mapM_ (\ (_, sens) -> do
            readMyMsg cp out lemsP
            sendMyMsg inp sens) ts
-       ms <- getProcessExitCode cp
+       ms <- readFinalVSEOutput cp out
        case ms of
-         Just _ -> do
-           appendFile vseErrFile $ vseBin ++ " unavailable\n"
-           return libEnv
-         Nothing -> do
-           revres <- readRest cp out ""
-           let res = reverse revres
-           case parse parseSExprs vseErrFile res of
-             Right l -> let lemMap = readLemmas l in
-               return $ foldr (\ (n, lbl) le ->
+         Nothing -> return libEnv
+         Just lemMap -> return $ foldr (\ (n, lbl) le ->
                  let str = map toUpper $ thName ln (n, lbl)
                      lems = Set.fromList $ Map.findWithDefault [] str lemMap
                  in if Set.null lems then le else let
@@ -146,10 +133,6 @@ prove _cms (ln, node) libEnv =
                                (n, olbl { dgn_theory =
                                  G_theory lid sig sigId nsens startThId })
                         in Map.insert ln ndg le) libEnv nls
-             Left e -> do
-               appendFile vseErrFile $ res ++ "\n"
-               print e
-               return libEnv
     return (nLibEnv, Result [] Nothing)
 
 getLinksTo :: LIB_NAME -> DGraph -> LNode DGNodeLab -> String

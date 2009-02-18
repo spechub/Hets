@@ -159,6 +159,32 @@ findState sexpr = case sexpr of
     -> Just (drop 5 nodeStr, drop 5 senStr)
   _ -> Nothing
 
+prepareAndCallVSE :: IO (Handle, Handle, ProcessHandle)
+prepareAndCallVSE = do
+  vseBin <- getEnvDef "HETS_VSE" "hetsvse"
+  (inp, out, _, cp) <-
+      runInteractiveProcess vseBin ["-std"] Nothing Nothing
+  readMyMsg cp out nameP
+  return (inp, out, cp)
+
+readFinalVSEOutput :: ProcessHandle -> Handle
+                   -> IO (Maybe (Map.Map String [String]))
+readFinalVSEOutput cp out = do
+  ms <- getProcessExitCode cp
+  case ms of
+    Just _ -> do
+      appendFile vseErrFile "hetsvse unavailable\n"
+      return Nothing
+    Nothing -> do
+      revres <- readRest cp out ""
+      let res = reverse revres
+      case parse parseSExprs vseErrFile res of
+        Right l -> return $ Just $ readLemmas l
+        Left e -> do
+          print e
+          appendFile vseErrFile $ res ++ "\n"
+          return Nothing
+
 readLemmas :: [SExpr] -> Map.Map String [String]
 readLemmas =
   foldr (\ (node, sen) -> Map.insertWith (++) node [sen]) Map.empty
@@ -172,10 +198,7 @@ prove ostr (Theory sig thsens) _freedefs = do
       (disAxs, disGoals) = partition isAxiom oSens
       rMap = Map.fromList $ map (\ SenAttr { senAttr = n } ->
                 (map toUpper $ transString n, n)) disGoals
-  vseBin <- getEnvDef "HETS_VSE" "hetsvse"
-  (inp, out, _, cp) <-
-      runInteractiveProcess vseBin ["-std"] Nothing Nothing
-  readMyMsg cp out nameP
+  (inp, out, cp) <- prepareAndCallVSE
   sendMyMsg inp $ "(" ++ str ++ ")"
   readMyMsg cp out linksP
   sendMyMsg inp "nil"
@@ -183,22 +206,11 @@ prove ostr (Theory sig thsens) _freedefs = do
   sendMyMsg inp $ show $ prettySExpr $ vseSignToSExpr fsig
   readMyMsg cp out lemsP
   sendMyMsg inp $ show $ prettySExpr $ SList $ map (namedSenToSExpr fsig) sens
-  ms <- getProcessExitCode cp
+  ms <- readFinalVSEOutput cp out
   case ms of
-    Just _ -> do
-      appendFile vseErrFile $ vseBin ++ " unavailable\n"
-      return []
-    Nothing -> do
-      revres <- readRest cp out ""
-      let res = reverse revres
-      case parse parseSExprs vseErrFile res of
-        Right l -> return
+    Nothing -> return []
+    Just lemMap -> return
           $ foldr (\ s r -> case Map.lookup s rMap of
                  Nothing -> r
                  Just n -> mkVseProofStatus n (map senAttr disAxs) : r) []
-          $ Map.findWithDefault [] (map toUpper str)
-          $ readLemmas l
-        Left e -> do
-          print e
-          appendFile vseErrFile $ res ++ "\n"
-          return []
+          $ Map.findWithDefault [] (map toUpper str) lemMap
