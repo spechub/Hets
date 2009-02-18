@@ -159,7 +159,7 @@ getLinksTo ln dg (n, lbl) = show $ prettySExpr $ SList
     , SSymbol $ filter (not . isSpace) $ showEdgeId $ dgl_id el
     , SSymbol $ thName ln (s, labDG dg s)
     , SSymbol $ thName ln (n, lbl)
-    , SList [SSymbol "global"]
+    , SSymbol "global"
     , SList [SSymbol "morphism"]])
   $ filter (\ (s, _, _) -> s /= n) $ innDG dg n
 
