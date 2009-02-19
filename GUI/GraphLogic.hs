@@ -194,14 +194,16 @@ reloadLib iorst opts ioruplibs ln = do
         Just (_, newle) -> do
           uplibs <- readIORef ioruplibs
           writeIORef ioruplibs $ ln : uplibs
-          case mFunc of
-            Just func -> case openlock $ lookupDGraph ln newle of
-              Just lock -> putMVar lock func
-              Nothing -> errorDialog "Error"
-                                     "Reload: Can't set openlock in DevGraph"
-            Nothing -> return ()
-          let nwst = ost { i_state = Just ist {
-                                       i_libEnv = newle } }
+          nle <- case mFunc of
+            Just func -> do
+              lock <- case openlock $ lookupDGraph ln newle of
+                Just lock -> return lock
+                Nothing -> newEmptyMVar
+              putMVar lock func
+              return $ Map.insert ln (lookupDGraph ln newle)
+                                  {openlock = Just lock} newle
+            Nothing -> return newle
+          let nwst = ost { i_state = Just ist { i_libEnv = nle } }
           writeIORef iorst nwst
         Nothing ->
           errorDialog "Error" $ "Error when reloading file " ++ show file
@@ -704,10 +706,10 @@ proveAtNode checkCons gInfo descr dgraph = do
           b <- warningDialog "Warning"
                         ("This node has incoming hiding links!\n" ++
                          "You should compute the normal form first, " ++
-                         "preferably by applying Proofs -> TheoremHideShift, " ++
-                         "otherwise the flattened theory may be too weak." ++
-                         "In particular, disproving and consistency checks" ++
-                         "might produce wrong results." ++
+                         "preferably by applying Proofs -> TheoremHideShift," ++
+                         " otherwise the flattened theory may be too weak. " ++
+                         "In particular, disproving and consistency checks " ++
+                         "might produce wrong results. " ++
                          " Prove anyway?")
                         $ Just action
           unless b $ unlockLocal dgn'
@@ -804,8 +806,8 @@ checkconservativityOfEdge _ gInfo@(GInfo{ gi_GraphInfo = actGraphInfo})
    if length (conservativityCheck lid) < 1
     then
        do
-        infoDialog "Result of conservativity check"
-                   "No conservativity checkers available"
+        errorDialog "Result of conservativity check"
+                    "No conservativity checkers available"
         let nwst = ost {i_state = Just $ist{ i_libEnv=libEnv'}}
         writeIORef (intState gInfo) nwst
         unlockGlobal gInfo
@@ -815,8 +817,8 @@ checkconservativityOfEdge _ gInfo@(GInfo{ gi_GraphInfo = actGraphInfo})
       if Res.hasErrors $ Res.diags checkerR
        then
         do
-         infoDialog "Result of conservativity check"
-                    "No conservativity checker chosen"
+         errorDialog "Result of conservativity check"
+                     "No conservativity checker chosen"
          let nwst = ost {i_state = Just $ ist { i_libEnv = libEnv'}}
          writeIORef (intState gInfo) nwst
          unlockGlobal gInfo
