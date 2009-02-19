@@ -765,7 +765,7 @@ conservativityRule = DGRule "ConservativityCheck"
 
 -- | check conservativity of the edge
 checkconservativityOfEdge :: Int -> GInfo -> Maybe (LEdge DGLinkLab) -> IO ()
-checkconservativityOfEdge _ gInfo@(GInfo{ gi_GraphInfo = _actGraphInfo})
+checkconservativityOfEdge _ gInfo@(GInfo{ gi_GraphInfo = actGraphInfo})
                            (Just (source,target,linklab)) = do
  ost <- readIORef $ intState gInfo
  case i_state ost of
@@ -864,7 +864,9 @@ checkconservativityOfEdge _ gInfo@(GInfo{ gi_GraphInfo = _actGraphInfo})
              nextGr = changesDGH newGr changes
              newLibEnv = Map.insert ln
               (groupHistory newGr conservativityRule nextGr) libEnv'
-         -- applyChanges actGraphInfo history
+             history = snd $ splitHistory (lookupDGraph ln libEnv) nextGr
+         applyChanges actGraphInfo $ reverse
+            $ flatHistory history
          let nwst = ost { i_state = Just $ ist { i_libEnv = newLibEnv}}
          writeIORef (intState gInfo) nwst
          unlockGlobal gInfo
