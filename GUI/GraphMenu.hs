@@ -57,8 +57,6 @@ import qualified GUI.HTkUtils as HTk
 import Control.Concurrent.MVar
 import Common.Utils (joinWith)
 
-
-
 import Interfaces.DataTypes
 
 -- | Adds to the DGNodeType list style options for each type
@@ -469,10 +467,8 @@ createLocalMenuButtonShowNodeInfo =
 -- * methods to create the local menus for the edges
 
 createLocalEdgeMenu :: GInfo -> LocalMenu GA.EdgeValue
-createLocalEdgeMenu gInfo =
-  LocalMenu (Menu (Just "edge menu")
-                  [ createLocalMenuButtonShowEdgeInfo gInfo
-                  , createLocalMenuButtonCheckconservativityOfEdge gInfo])
+createLocalEdgeMenu gInfo = LocalMenu $ Menu (Just "edge menu")
+  [createLocalMenuButtonShowEdgeInfo gInfo]
 
 createLocalEdgeMenuThmEdge :: GInfo -> LocalMenu GA.EdgeValue
 createLocalEdgeMenuThmEdge gInfo =
