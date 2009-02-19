@@ -479,7 +479,7 @@ instance SublogicName () where
 {- Type class logic. The central type class of Hets, providing the
    interface for logics. This type class is instantiated for many logics,
    and it is used for the logic independent parts of Hets.
-   It hence provides an sbatraction barrier between logic specific and
+   It hence provides an abstraction barrier between logic specific and
    logic indepdendent code.
    This type class extends the class StaticAnalysis by a sublogic mechanism.
    Sublogics are important since they avoid the need to provide an own
