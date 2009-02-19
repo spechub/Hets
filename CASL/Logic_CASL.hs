@@ -44,6 +44,7 @@ import CASL.SimplifySen
 import CASL.CCC.FreeTypes
 import CASL.CCC.OnePoint () -- currently unused
 import CASL.Qualify
+import CASL.OMDoc
 #ifdef UNI_PACKAGE
 import CASL.QuickCheck
 #endif
@@ -248,6 +249,9 @@ instance Logic CASL CASL_Sublogics
              ConservativityChecker "CCC" checkFreeType
              ]
          empty_proof_tree CASL = emptyProofTree
+         export_signToOmdoc CASL = exportSignToOmdoc
+         export_morphismToOmdoc CASL = exportMorphismToOmdoc
+         export_senToOmdoc CASL = exportSenToOmdoc
 #ifdef UNI_PACKAGE
          provers CASL = [quickCheckProver]
 #endif
