@@ -825,7 +825,7 @@ checkconservativityOfEdge _ gInfo@(GInfo{ gi_GraphInfo = actGraphInfo})
          let chCons =  checkConservativity $
                        fromMaybe (error "checkconservativityOfEdge4")
                              $ Res.maybeResult checkerR
-         let Res.Result ds res =
+             Res.Result ds res =
                  chCons
                     (plainSign sign2, toNamedList sensSrc2)
                     compMor $ toNamedList
@@ -841,32 +841,37 @@ checkconservativityOfEdge _ gInfo@(GInfo{ gi_GraphInfo = actGraphInfo})
              myDiags = showRelDiags 2 ds
          createTextDisplay "Result of conservativity check"
                          (showRes ++ "\n" ++ myDiags)
-         let
-            consShow = case res of
+         let consShow = case res of
                         Just (Just (cst, _)) -> cst
                         _                    -> Unknown "Unknown"
-            GlobalThm proven conserv _ = dgl_type linklab
-            consNew  = if show conserv == showToComply consShow
+             consNew csv = if show csv == showToComply consShow
                         then
                             Proven conservativityRule emptyProofBasis
                         else
                             LeftOpen
-            provenEdge = (source
+             (newDglType, change) = case dgl_type linklab of
+               GlobalThm proven conserv _ ->
+                 (GlobalThm proven conserv $ consNew conserv, True)
+               LocalThm proven conserv _ ->
+                 (LocalThm proven conserv $ consNew conserv, True)
+               t -> (t, False)
+             provenEdge = (source
                          ,target
                          ,linklab
                           {
-                            dgl_type = GlobalThm proven conserv consNew
+                            dgl_type = newDglType
                           }
                          )
-            changes = [ DeleteEdge (source,target,linklab)
-                      , InsertEdge provenEdge ]
-         let newGr = lookupDGraph ln libEnv'
+             changes = if change then [ DeleteEdge (source,target,linklab)
+                      , InsertEdge provenEdge ] else []
+             newGr = lookupDGraph ln libEnv'
              nextGr = changesDGH newGr changes
              newLibEnv = Map.insert ln
-              (groupHistory newGr conservativityRule nextGr) libEnv'
+               (groupHistory newGr conservativityRule nextGr) libEnv'
              history = snd $ splitHistory (lookupDGraph ln libEnv) nextGr
          applyChanges actGraphInfo $ reverse
             $ flatHistory history
+         GA.redisplay actGraphInfo
          let nwst = ost { i_state = Just $ ist { i_libEnv = newLibEnv}}
          writeIORef (intState gInfo) nwst
          unlockGlobal gInfo
