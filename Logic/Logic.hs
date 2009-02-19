@@ -133,6 +133,8 @@ import qualified Data.Set as Set
 import qualified Data.Map as Map
 import Data.Typeable
 
+import qualified OMDoc.DataTypes as OMDoc
+
 -- | Stability of logic implementations
 data Stability = Stable | Testing | Unstable | Experimental
      deriving (Eq, Show)
@@ -550,6 +552,27 @@ class (StaticAnalysis lid
          empty_proof_tree :: lid -> proof_tree
          empty_proof_tree l = error $ statErrMsg l "empty_proof_tree"
 
+         ----------------------- OMDoc ---------------------------
+         export_signToOmdoc :: lid -> SIMPLE_ID -> LIB_ID -> sign
+                           -> [OMDoc.TCElement]
+         -- default implementation
+         export_signToOmdoc lid _ _ _ =
+             error $ "exportSignToOmdoc not yet implemented "
+                       ++ "for logic " ++ (show lid)
+
+         export_morphismToOmdoc :: lid -> SIMPLE_ID -> LIB_ID -> morphism
+                               -> [OMDoc.TCElement]
+         -- default implementation
+         export_morphismToOmdoc lid _ _ _ = 
+             error $ "exportMorphismToOmdoc not yet implemented "
+                       ++ "for logic " ++ (show lid)
+
+         export_senToOmdoc :: lid -> SIMPLE_ID -> LIB_ID -> sign
+                          -> Named sentence -> [OMDoc.TCElement]
+         -- default implementation
+         export_senToOmdoc lid _ _ _ _  =
+             error $ "exportSenToOmdoc not yet implemented "
+                       ++ "for logic " ++ (show lid)
 ----------------------------------------------------------------
 -- Derived functions
 ----------------------------------------------------------------
