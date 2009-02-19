@@ -1,5 +1,4 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!--   ?xml-stylesheet type="text/xsl" href="identity.xsl"? -->
 
 <omdoc xmlns:dc="http://purl.org/dc/elements/1.1/" 
        xmlns="http://omdoc.org/ns"
@@ -89,7 +88,6 @@
      <CMP>The upcast is realised by an attribution around the term, such as
     for typing of bound variables</CMP>
     </omtext>
-
 
   </theory>
 </omdoc>
