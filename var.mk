@@ -1,6 +1,6 @@
 # to be include by Makefile
 
-HC = ghc
+HC = ghc -optl-s -fno-gen-manifest
 HCPKG = ghc-pkg
 
 TABULARVERSION = $(shell $(HCPKG) field tabular version)

@@ -16,7 +16,6 @@ depend:
 
 hets: hets.o
 	$(HC) --make -O -o $@ hets.hs $(HC_OPTS) -w
-	strip hets
 
 %.o: %.hs
 	@$(HC) -v0 -w -c -O $< $(HC_OPTS)
@@ -29,7 +28,6 @@ hets: hets.o
 
 hets.cgi:
 	$(HC) --make -O GUI/hets_cgi.hs -o $@ $(HC_OPTS) -w
-	strip hets.cgi
 
 ###############
 ### clean up
