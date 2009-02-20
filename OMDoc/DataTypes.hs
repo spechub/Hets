@@ -20,15 +20,20 @@ module OMDoc.DataTypes where
 -}
 
 
--- | Theory constitutive Elements for OMDoc
+
+
+-- | OMDoc root element with libname and children
+data OMDoc = OMDoc String [TLElement]
+
+-- | Top level elements for OMDoc
+data TLElement = TLTheory String [TCElement]
+               | TLView
+                 deriving (Show, Eq, Ord)
+
+-- | Theory constitutive elements for OMDoc
 data TCElement = TCAxiomOrTheorem Bool String OMElement
                | TCSymbol String OMElement
                | TCImport
-                 deriving (Show, Eq, Ord)
-
--- | Top level Elements for OMDoc
-data TLElement = TLTheory [TCElement]
-               | TLView
                  deriving (Show, Eq, Ord)
 
 -- | Names used for OpenMath variables and symbols
