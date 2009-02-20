@@ -14,10 +14,12 @@ Translation of development graphs along comorphisms
 module Static.DGTranslation
     ( libEnv_translation
     , dg_translation
+    , getDGLogic
     ) where
 
 import Static.GTheory
 import Static.DevGraph
+import Static.PrintDevGraph
 
 import Logic.Logic
 import Logic.Coerce
@@ -45,7 +47,7 @@ libEnv_translation libEnv comorphism =
          updateGc (k1:kr) le diagnosis =
              let gc = lookupDGraph k1 le
                  Result diagTran gc' = dg_translation gc comorphism
-             in  updateGc kr (Map.update (\_ -> gc') k1 le)
+             in  updateGc kr (Map.update (const gc') k1 le)
                      (diagnosis ++ diagTran)
 
 dg_translation :: DGraph -> AnyComorphism -> Result DGraph
@@ -93,7 +95,7 @@ dg_translation  gc acm@(Comorphism cidMor) =
                                    $ minSublogic $ dom newMor
                    in
 -- ("old:\n" ++ showDoc lsign "\nnew:\n" ++ showDoc newSign "\n\n")
-                       return $ assert (slNewSign == domMor) $
+                       return $ assert (slNewSign == domMor)
                              (from, to,
                                   links{dgl_morphism= GMorphism cid2
                                          (mkExtSign newSign)
@@ -112,7 +114,7 @@ dg_translation  gc acm@(Comorphism cidMor) =
  updateNodes (node, dgNodeLab) =
      case fTh node $ dgn_theory dgNodeLab of
        Result diagsT maybeTh ->
-           maybe (Result diagsT (Nothing))
+           maybe (Result diagsT Nothing)
               (\th' -> Result diagsT
                        (Just (node, dgNodeLab {dgn_theory = th'
                                               ,dgn_nf = Nothing
@@ -141,3 +143,79 @@ dg_translation  gc acm@(Comorphism cidMor) =
 showFromTo :: Node -> Node -> DGraph -> String
 showFromTo from to gc =
     "from " ++ getNameOfNode from gc ++ " to " ++ getNameOfNode to gc
+
+-- | get the maximal sublogic of a graph.
+-- | each DGraph and each node will be tested, in order to find
+-- | the maximal sublogic of th Graph.
+-- | All edges and nodes will be searched also in the meantime, so as to test,
+-- | whether the GMorphism of edges is homogeneous, and the logics of nodes are
+-- | equal.
+getDGLogic :: LibEnv -> Result G_sublogics
+getDGLogic libEnv =
+    let sublogicsMap = map (getSublogicFromDGraph libEnv)
+                           (Map.keys libEnv)
+    in  foldr comResSublogics (Result [] Nothing) sublogicsMap
+
+getSublogicFromDGraph :: LibEnv -> LIB_NAME -> Result G_sublogics
+getSublogicFromDGraph le ln =
+    let edgesList = labEdgesDG gc
+        nodesList = labNodesDG gc
+        slList1   = map testAndGetSublogicFromEdge edgesList
+        slList2   = map (getSubLogicsFromNodes $ getFirstLogic nodesList)
+                        nodesList
+    in  foldr comResSublogics (Result [] Nothing) (slList1 ++ slList2)
+
+  where
+    gc = lookupDGraph ln le
+
+    testAndGetSublogicFromEdge :: LEdge DGLinkLab -> Result G_sublogics
+    testAndGetSublogicFromEdge l@(_, _,
+             DGLink gm@(GMorphism cid' (ExtSign lsign _) _ lmorphism _) _ _ _)
+        =
+          if isHomogeneous gm then
+              Result [] (comSublogics g_mor g_sign)
+              else Result [mkDiag Error
+                           ("the " ++ showLEdge l ++
+                            " is not homogeneous.") () ] Nothing
+
+         where g_mor = G_sublogics (targetLogic cid') $ minSublogic lmorphism
+               g_sign = G_sublogics (sourceLogic cid') $ minSublogic lsign
+
+
+    getSubLogicsFromNodes :: AnyLogic -> LNode DGNodeLab
+                          -> Result G_sublogics
+    getSubLogicsFromNodes logic (_, lnode) =
+        case dgn_theory lnode of
+          th@(G_theory lid _ _ _ _) ->
+              if Logic lid == logic then
+                  Result [] (Just $ sublogicOfTh th)
+                 else Result [mkDiag Error
+                              ("the node " ++ getDGNodeName lnode ++
+                               "  has a different logic \"" ++ show lid ++
+                               "\" as the logic of Graph \"" ++ show logic ++
+                               " is not homogeneous.") () ] Nothing
+
+    getFirstLogic :: [LNode DGNodeLab] -> AnyLogic
+    getFirstLogic list =
+        case dgn_theory $ snd $ head list of
+          G_theory lid _ _ _ _ ->
+              Logic lid
+
+
+comResSublogics :: Result G_sublogics
+                -> Result G_sublogics
+                -> Result G_sublogics
+comResSublogics (Result diags1 msubl1@(Just subl1))
+                    (Result diags2 msubl2) =
+               case msubl2 of
+                 Nothing -> Result (diags1 ++ diags2) msubl1
+                 Just subl2 ->
+                     Result (diags1 ++ diags2) $ comSublogics subl1 subl2
+comResSublogics (Result diags1 Nothing) (Result diags2 _) =
+    Result (diags1 ++ diags2) Nothing
+
+comSublogics :: G_sublogics -> G_sublogics -> Maybe G_sublogics
+comSublogics (G_sublogics lid1 l1) (G_sublogics lid2 l2) =
+    case coerceSublogic lid1 lid2 "coerce Sublogic" l1 of
+      Just sl -> Just (G_sublogics lid2 (join sl l2))
+      Nothing -> Nothing
