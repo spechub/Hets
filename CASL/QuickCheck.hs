@@ -120,10 +120,10 @@ watchdogIO time process = do
   res <- takeMVar mvar
   case res of
     Just x -> do
-           killThread tid2 `catch` (\e -> putStrLn (show e))
+           killThread tid2 `catch` print
            return (ATPSuccess,x)
     Nothing -> do
-           killThread tid1 `catch` (\e -> putStrLn (show e))
+           killThread tid1 `catch` print
            return (ATPTLimitExceeded,fail "time limit exceeded")
 
 -- * QModels
@@ -221,8 +221,8 @@ concatAssignment (Variable_Assignment qm l1) (Variable_Assignment _ l2) =
 -- * The quickcheck model checker
 
 quickCheck :: QModel -> AS_Anno.Named CASLFORMULA -> Result Bool
-quickCheck qm nSen =
-  calculateFormula True qm (emptyAssignment qm) $ AS_Anno.sentence nSen
+quickCheck qm =
+  calculateFormula True qm (emptyAssignment qm) . AS_Anno.sentence
 
 -- needed for instance Monad (Either ([Diagnosis], Maybe a))
 -- in calculateQuantification
@@ -288,17 +288,17 @@ match1 args (vars,body) = do
   let subst = concat substs
   if consistent subst then return (body,subst) else Nothing
 
-match2 :: CASLTERM -> CASLTERM -> Maybe [(VAR,CASLTERM)]
-match2 (Qual_var v _ _) t = Just [(v,t)]
-match2 (Application opsymb1 terms1 _) (Application opsymb2 terms2 _) = do
+match2 :: CASLTERM -> CASLTERM -> Maybe [(VAR, CASLTERM)]
+match2 (Qual_var v _ _) t = Just [(v, t)]
+match2 (Application opsymb1 terms1 _) (Application opsymb2 terms2 _) =
    -- direct match of operation symbols?
-   if (opsymb1 == opsymb2) then do
+   if opsymb1 == opsymb2 then do
      substs <- mapM (uncurry match2) (zip terms1 terms2)
      return (concat substs)
    --  if not, try to exploit overloading relation
     else do
-      let (opsymb1',terms1',w1) = stripInj opsymb1 terms1
-          (opsymb2',terms2',w2) = stripInj opsymb2 terms2
+      let (opsymb1', terms1', w1) = stripInj opsymb1 terms1
+          (opsymb2', terms2', w2) = stripInj opsymb2 terms2
       when (opSymbName opsymb1' /= opSymbName opsymb2' || w1 /= w2) Nothing
       substs <- mapM (uncurry match2) (zip terms1' terms2')
       return (concat substs)
@@ -306,19 +306,15 @@ match2 (Sorted_term t1 _ _) t2 = match2 t1 t2
 match2 t1 (Sorted_term t2 _ _) = match2 t1 t2
 match2 _ _ = Nothing
 
--- | test whether an operation symbol is an injection
-isInjection :: OP_SYMB -> Bool
-isInjection opsymb = take 7 (show (opSymbName opsymb)) == "gn_inj_"
-
 -- | strip off the injections of an application
 stripInj :: OP_SYMB -> [CASLTERM] -> (OP_SYMB,[CASLTERM],[SORT])
 stripInj opsymb terms =
   let (opsymb',terms') =
-        case (isInjection opsymb, terms) of
+        case (isInjName $ opSymbName opsymb, terms) of
           (True,[Application o ts _]) -> (o,ts)
           _ -> (opsymb,terms)
       strip1 t1@(Application o [t2] _) =
-        if isInjection o then t2 else t1
+        if isInjName $ opSymbName o then t2 else t1
       strip1 t1 = t1
       terms'' = map strip1 terms'
   in (opsymb',terms'',map sortOfTerm terms'')
@@ -367,19 +363,18 @@ calculateFormula isOuter qm varass f = case f of
                        _ -> return ()
           )
        res
-    Disjunction formulas _ -> do
+    Disjunction formulas _ ->
         foldl ternaryOr (return False)
                (map (calculateFormula False qm varass) formulas)
-    Implication f1 f2 _ _ -> do
+    Implication f1 f2 _ _ ->
         ternaryOr (fmap not (calculateFormula False qm varass f1))
                   (calculateFormula False qm varass f2)
     Equivalence f1 f2 _ -> do
         res1 <- calculateFormula False qm varass f1
         res2 <- calculateFormula False qm varass f2
         return (res1 == res2)
-    Negation f1 _ -> do
-        res <- calculateFormula False qm varass f1
-        return (not res)
+    Negation f1 _ ->
+        fmap not $ calculateFormula False qm varass f1
     True_atom _ -> return True
     False_atom _ -> return False
     Strong_equation term1 term2 _ -> do
@@ -445,7 +440,7 @@ calculateQuantification isOuter qm varass qf = case qf of
                            ++" not fulfilled: at least two assignments found:\n"
                            ++show ass1++"\n"++show ass2++"\n") nullRange)
             return False
-          Left (msgs,Nothing) -> do
+          Left (msgs, Nothing) ->
             Result msgs Nothing
   _ -> fail "calculateQuantification wrongly applied"
 
@@ -557,7 +552,7 @@ atpFun _thName = ATPFunctions
                                       proverOutput = ".none2",
                                       theoryConfiguration = ".none3"},
       runProver = runQuickCheck,
-      createProverOptions = \_ -> []}
+      createProverOptions = const [] }
 
 -- ** GUI
 

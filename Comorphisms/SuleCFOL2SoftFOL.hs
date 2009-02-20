@@ -82,7 +82,7 @@ type IdType_SPId_Map = Map.Map Id (Map.Map CType SPIdentifier)
 -- | specialized lookup for IdType_SPId_Map
 lookupSPId :: Id -> CType -> IdType_SPId_Map ->
           Maybe SPIdentifier
-lookupSPId i t m = maybe Nothing (\ m' -> Map.lookup t m') (Map.lookup i m)
+lookupSPId i t = maybe Nothing (Map.lookup t) . Map.lookup i
 
 -- | specialized insert (with error) for IdType_SPId_Map
 insertSPId :: Id -> CType ->
@@ -227,11 +227,10 @@ partArities len = part 0 Set.empty
                                   then acc
                                   else Set.insert ar_i acc) rest
 
-partOverload :: (Show a,Ord a) => (a -> a -> Bool)
+partOverload :: Ord a => (a -> a -> Bool) -> Set.Set (Set.Set a)
              -> Set.Set (Set.Set a)
-             -> Set.Set (Set.Set a)
-partOverload leq = Set.fold part Set.empty
-    where part s = Set.union (Set.fromList $ Rel.partSet leq s)
+partOverload leq =
+  Set.fold (Set.union . Set.fromList . Rel.partSet leq) Set.empty
 
 transPredMap :: IdType_SPId_Map ->
                 CSign.Sign e f ->
@@ -317,7 +316,7 @@ transOpType ot = (map transIdSort (CSign.opArgs ot),
                   transIdSort (CSign.opRes ot))
 
 transPredType :: CSign.PredType -> [SPIdentifier]
-transPredType pt = map transIdSort (CSign.predArgs pt)
+transPredType = map transIdSort . CSign.predArgs
 
 -- | translate every Id as Sort
 transIdSort :: Id -> SPIdentifier
@@ -425,24 +424,20 @@ makeGen r@(Result ods omv) nf =
                 where ((newOpMap,newIdMap),cons) =
                           mapAccumL mkInjOp (opM,idMap) ops_of_s
                       ops_of_s = List.filter (hasTheSort s) ops
-                      s' = maybe (error $ "SuleCFOL2SoftFOL.makeGen: "
+                      s' = fromMaybe (error $ "SuleCFOL2SoftFOL.makeGen: "
                                         ++ "No mapping found for '"
-                                        ++ shows s "'") id
+                                        ++ shows s "'")
                                  (lookupSPId s CSort idMap)
             -- is an operation a constant or an injection ?
             -- (we currently can translate only these)
             isConstorInj o =
-              nullArgs o ||
-              take 7 (show (opSymbName o)) == "gn_inj_"
+              nullArgs o || isInjName (opSymbName o)
             -- generate sentences for one sort
-            eSen os s = if all isConstorInj os
-                        then [makeNamed (newName s) (SPQuantTerm SPForall
-                                            [typedVarTerm var1 $
-                                             maybe (error "lookup failed")
-                                                   id
-                                                   (lookupSPId s (CSort) iMap)]
-                                            (disj var1 os))]
-                        else []
+            eSen os s = [ makeNamed (newName s) (SPQuantTerm SPForall
+                            [typedVarTerm var1
+                             $ fromMaybe (error "lookup failed")
+                             (lookupSPId s CSort iMap)] (disj var1 os))
+                        | all isConstorInj os ]
             -- generate sentences: compute one disjunct (for one alternative)
             disjunct v o@(Qual_op_name _ (Op_type _ args _ _) _) =
               -- a constant? then just compare with it
@@ -453,8 +448,8 @@ makeGen r@(Result ods omv) nf =
                 -- since injections are identities, we can leave them out
                 else SPQuantTerm SPExists
                  [ typedVarTerm var2
-                   $ maybe (error "lookup failed") id
-                   $ lookupSPId (head args) (CSort) iMap ]
+                   $ fromMaybe (error "lookup failed")
+                   $ lookupSPId (head args) CSort iMap ]
                  (mkEq (varTerm v) (varTerm var2))
             disjunct _ _ = error "unqualified operation symbol"
             -- make disjunction out of all the alternatives
@@ -465,10 +460,10 @@ makeGen r@(Result ods omv) nf =
             -- generate enough variables
             var = fromJust (find (\ x ->
                       not (Set.member (mkSimpleId x) usedIds))
-                            ("X":["X" ++ show i | i <- [(1::Int)..]]))
+                            ("X" : ['X' : show i | i <- [(1::Int)..]]))
             var1 = mkSimpleId var
             var2 = mkSimpleId $ var ++ "a"
-            varTerm v = simpTerm (spSym v)
+            varTerm = simpTerm . spSym
             newName s = "ga_exhaustive_generated_sort_" ++ show (pretty s)
             usedIds = elemsSPId_Set iMap
             nullArgs o = case o of
@@ -486,7 +481,7 @@ mkInjOp (opM,idMap) qo@(Qual_op_name i ot _) =
               insertSPId i (COp ot') i' idMap),
              (i', transOpType ot'))
        else ((opM,idMap),
-             (maybe err id lsid,
+             (fromMaybe err lsid,
               transOpType ot'))
     where i' = disSPOId CKOp (transId CKOp i)
                         (utype (transOpType ot')) usedNames
@@ -515,7 +510,7 @@ mkInjSentences idMap = Map.foldWithKey genInjs []
                                         simpTerm (spSym var)])) : fs
           var = mkSimpleId $
             fromJust (find (\ x -> not (Set.member (mkSimpleId x) usedIds))
-                          ("Y":["Y" ++ show i | i <- [(1::Int)..]]))
+                          ("Y" : [ 'Y' : show i | i <- [(1::Int)..]]))
           newName o a r = "ga_" ++ o ++ '_' : a ++ '_' : r ++ "_id"
           usedIds = elemsSPId_Set idMap
 
@@ -555,8 +550,8 @@ nonEmptySortSens emptySorts sm =
     where extSen s = makeNamed ("ga_non_empty_sort_" ++ show s) $ SPQuantTerm
                      SPExists [varTerm] $ compTerm (spSym s) [varTerm]
               where varTerm = simpTerm $ spSym $ mkSimpleId $ newVar s
-          newVar s = fromJust $ find (\ x -> x /= show s)
-                          $ "Y" : ["Y" ++ show i | i <- [(1::Int)..]]
+          newVar s = fromJust $ find (/= show s)
+                          $ "Y" : ['Y' : show i | i <- [(1::Int)..]]
 
 disjointTopSorts :: CSign.Sign f e -> IdType_SPId_Map -> [Named SPTerm]
 disjointTopSorts sign idMap = let
@@ -576,7 +571,7 @@ disjointTopSorts sign idMap = let
                [ compTerm (spSym t1) [v1]
                , compTerm (spSym t2) [v2]]
               $ compTerm SPNot [mkEq v1 v2]) $ pairs $
-                map (\ t -> maybe (transIdSort t) id
+                map (\ t -> fromMaybe (transIdSort t)
                      $ lookupSPId t CSort idMap) l
 
 transTheory :: (Pretty f, Eq f) =>
@@ -623,7 +618,7 @@ transTheory trSig trForm (sign,sens) =
                       Qual_pred_name pn pt _ -> insertPredToSet pn pt newMap)
                     Map.empty eqPreds) }
         insertPredToSet pId pType pMap =
-              if (Map.member pId pMap)
+              if Map.member pId pMap
                 then Map.adjust insPredSet pId pMap
                 else Map.insert pId (insPredSet Set.empty) pMap
             where
@@ -684,16 +679,14 @@ findEqPredicates (eqPreds, sens) sen =
   are inserted which will be checked using
   'Comorphisms.SuleCFOL2SoftFOL.hasSortedVarTerm'.
 -}
-sortedVarTermList :: [TERM f]
-                  -> [(VAR, SORT)]
-sortedVarTermList ts = mapMaybe hasSortedVarTerm ts
+sortedVarTermList :: [TERM f] -> [(VAR, SORT)]
+sortedVarTermList = mapMaybe hasSortedVarTerm
 
 {- |
   Finds a 'CASL.AS_Basic_CASL.Qual_var' term recursively if super term(s) is
   'CASL.AS_Basic_CASL.Sorted_term' or 'CASL.AS_Basic_CASL.Cast'.
 -}
-hasSortedVarTerm :: TERM f
-                 -> Maybe (VAR, SORT)
+hasSortedVarTerm :: TERM f -> Maybe (VAR, SORT)
 hasSortedVarTerm t = case t of
     Qual_var v s _     -> Just (v,s)
     Sorted_term tx _ _ -> hasSortedVarTerm tx
@@ -705,14 +698,14 @@ hasSortedVarTerm t = case t of
 
 transOP_SYMB :: IdType_SPId_Map -> OP_SYMB -> SPIdentifier
 transOP_SYMB idMap qo@(Qual_op_name op ot _) =
-    maybe (error ("SuleCFOL2SoftFOL.transOP_SYMB: unknown op: " ++ show qo))
-          id (lookupSPId op (COp (CSign.toOpType ot)) idMap)
+    fromMaybe (error $ "SuleCFOL2SoftFOL.transOP_SYMB: unknown op: " ++ show qo)
+        (lookupSPId op (COp (CSign.toOpType ot)) idMap)
 transOP_SYMB _ (Op_name _) = error "SuleCFOL2SoftFOL: unqualified operation"
 
 transPRED_SYMB :: IdType_SPId_Map -> PRED_SYMB -> SPIdentifier
-transPRED_SYMB idMap qp@(Qual_pred_name p pt _) = maybe
-    (error ("SuleCFOL2SoftFOL.transPRED_SYMB: unknown pred: " ++ show qp))
-          id (lookupSPId p (CPred (CSign.toPredType pt)) idMap)
+transPRED_SYMB idMap qp@(Qual_pred_name p pt _) = fromMaybe
+    (error $ "SuleCFOL2SoftFOL.transPRED_SYMB: unknown pred: " ++ show qp)
+          (lookupSPId p (CPred (CSign.toPredType pt)) idMap)
 transPRED_SYMB _ (Pred_name _) =
     error "SuleCFOL2SoftFOL: unqualified predicate"
 
@@ -735,9 +728,10 @@ transVarTup (usedIds,idMap) (v,s) =
     ((Set.insert sid usedIds,
       insertSPId vi (CVar s) sid $ deleteSPId vi (CVar s) idMap)
     , (sid,spSort))
-    where spSort = maybe (error ("SuleCFOL2SoftFOL: translation of sort \"" ++
-                                showDoc s "\" not found"))
-                         id (lookupSPId s CSort idMap)
+    where spSort = fromMaybe
+            (error $ "SuleCFOL2SoftFOL: translation of sort \"" ++
+             showDoc s "\" not found")
+            (lookupSPId s CSort idMap)
           vi = simpleIdToId v
           sid = disSPOId CKVar (transId CKVar vi)
                     [mkSimpleId $ "_Va_" ++ showDoc s "_Va"]
@@ -746,9 +740,9 @@ transVarTup (usedIds,idMap) (v,s) =
 mapSen :: (Eq f, Pretty f) => Bool
        -> FormulaTranslator f e
        -> CSign.Sign f e -> FORMULA f -> SPTerm
-mapSen siSo trForm sign phi = transFORM siSo (Set.empty) sign
+mapSen siSo trForm sign = transFORM siSo Set.empty sign
                                         ((\ (_,x,_) -> x) (transSign sign))
-                                        trForm phi
+                                        trForm
 
 transFORM :: (Eq f, Pretty f) => Bool -- ^ single sorted flag
           -> Set.Set PRED_SYMB -- ^ list of predicates to substitute
@@ -923,7 +917,7 @@ toForm sign m t = case t of
         (nm, nf) <- toForm sign rm frm
         let m2 = foldr Map.delete nm vs
             nvs = catMaybes $ map (toVar nm) vars
-        return $ (Map.union m m2, Quantification (toQuant q) nvs nf nullRange)
+        return (Map.union m m2, Quantification (toQuant q) nvs nf nullRange)
     SPComplexTerm SPEqual [a1, a2] -> do
         let nm = case (getType m a1, getType m a2) of
               (Nothing, Nothing) ->
@@ -939,8 +933,8 @@ toForm sign m t = case t of
               (Just t1, Just t2) ->
                 findTypes sign t2 (findTypes sign t1 m a1) a2
         let check = case (getType nm a1, getType nm a2) of
-              (Just t1, Just t2) -> if t1 == t2 then True
-                else have_common_supersorts True sign t1 t2
+              (Just t1, Just t2) -> t1 == t2
+                || have_common_supersorts True sign t1 t2
               _ -> True
         return $ case (toTERM nm a1, toTERM nm a2) of
             (Just t3, Just t4) | check ->
