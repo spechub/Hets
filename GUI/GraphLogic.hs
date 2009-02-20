@@ -55,7 +55,7 @@ import Comorphisms.LogicGraph(logicGraph)
 import Static.GTheory
 import Static.DevGraph
 import Static.PrintDevGraph
-import Static.DGTranslation(libEnv_translation)
+import Static.DGTranslation(libEnv_translation, getDGLogic)
 
 import Proofs.EdgeUtils
 import Proofs.InferBasic(basicInferenceNode)
@@ -63,7 +63,6 @@ import Proofs.StatusUtils(lookupHistory, removeContraryChanges)
 import Proofs.TheoremHideShift
 
 import GUI.Taxonomy (displayConceptGraph,displaySubsortGraph)
-import GUI.DGTranslation(getDGLogic)
 import GUI.GraphTypes
 import qualified GUI.GraphAbstraction as GA
 import GUI.Utils
@@ -984,7 +983,7 @@ openTranslateGraph :: LibEnv -> LIB_NAME -> HetcatsOpts
 openTranslateGraph libEnv ln opts (Res.Result diagsSl mSublogic) convGraph
   showLib =
     -- if an error existed by the search of maximal sublogicn
-    -- (see GUI.DGTranslation.getDGLogic), the process need not to go on.
+    -- (see DGTranslation.getDGLogic), the process need not to go on.
     let myErrMess = showDiagMess opts in
     if hasErrors diagsSl then myErrMess diagsSl else case mSublogic of
       Nothing -> errorDialog "Error" "the maximal sublogic is not found."
