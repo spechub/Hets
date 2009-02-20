@@ -135,7 +135,6 @@ $(LEX_DIR)Gen/HsLexerGen: $(LEX_DIR)Gen/*.hs $(LEX_DIR)Spec/*.hs \
            -i$(PFE_TOOLDIR)/base/lib \
 	   -i$(LEX_DIR) -i$(LEX_DIR)Gen -i$(LEX_DIR)Spec \
               $@.hs -o $@
-	strip $@
 
 logics += Haskell
 derived_sources += Haskell/PreludeString.hs
@@ -398,7 +397,6 @@ hets-opt:
 
 hets-optimized: $(derived_sources)
 	$(HC) --make -O -o hets hets.hs $(HC_OPTS)
-	strip hets
 
 cgi:
 	$(MAKE) distclean
@@ -408,7 +406,6 @@ cgi:
 
 hets.cgi: $(sources) GUI/hets_cgi.hs
 	ghc --make GUI/hets_cgi.hs -o $@ $(HC_OPTS) -O
-	strip hets.cgi
 
 hets_maintainers.txt: $(sources)
 	@echo 'File : Maintainer' > $@
@@ -474,19 +471,17 @@ post_doc4apache:
 derivedSources: $(derived_sources) $(hspp_sources)
 
 $(DRIFT): $(DRIFT_deps)
-	(cd utils/DrIFT-src; $(HC) --make DrIFT.hs -o ../DrIFT && \
-            strip ../DrIFT)
+	(cd utils/DrIFT-src; $(HC) --make DrIFT.hs -o ../DrIFT)
 
 $(GENRULES): $(DRIFT) $(GENERATERULES_deps)
 	(cd utils/GenerateRules; \
             $(HC) --make -i../DrIFT-src -i../.. $(HC_WARN) \
-                GenerateRules.hs -o ../genRules && strip ../genRules)
+                GenerateRules.hs -o ../genRules)
 
 # "-package hssource" for ghc-5.04.2
 $(INLINEAXIOMS): $(INLINEAXIOMS_deps)
 	$(HC) --make utils/InlineAxioms/InlineAxioms.hs $(HC_WARN) $(HC_PROF) \
             -i../.. -o $(INLINEAXIOMS)
-	strip $(INLINEAXIOMS)
 
 utils/appendHaskellPreludeString: utils/appendHaskellPreludeString.hs
 	$(HC) --make -o $@ $<
@@ -528,7 +523,6 @@ pack/install-%.jar: pack/install-%.xml pack/UserInputSpec-%.xml hets.in hets
 
 utils/genItCorrections: $(GENITCORRECTIONS_deps)
 	$(HC) --make -o $@ $<
-	strip $@
 
 pretty/LaTeX_maps.hs: utils/words.pl utils/genItCorrections \
     pretty/words.input pretty/fonts.input pretty/width-table.tex.templ
