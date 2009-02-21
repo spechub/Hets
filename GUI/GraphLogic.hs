@@ -130,12 +130,14 @@ runAndLock (GInfo { functionLock = lock
 
 -- | Undo one step of the History
 undo :: GInfo -> Bool -> IO ()
-undo gInfo isUndo =
+undo gInfo@(GInfo { gi_GraphInfo = actGraphInfo }) isUndo =
  do
+  hhn <- GA.hasHiddenNodes actGraphInfo
   intSt <- readIORef $ intState gInfo
   nwSt <- if isUndo then undoOneStep intSt else redoOneStep intSt
   writeIORef (intState gInfo) nwSt
-  remakeGraph gInfo
+  if hhn then hideNodes gInfo else return ()
+  GA.redisplay actGraphInfo
 
 -- | reloads the Library of the DevGraph
 reload :: GInfo -> IO()
