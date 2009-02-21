@@ -106,7 +106,7 @@ data GANodeType = GANodeType
 
 data GAEdgeType = GAEdgeType
   { udgEdgeType :: DaVinciArcType EdgeValue
-  , udgCompressed :: DaVinciArcType EdgeValue
+  , udgCompressed :: (DaVinciArcType EdgeValue, DaVinciArcType EdgeValue)
   , gaeHidden :: Bool
   }
 
@@ -199,16 +199,21 @@ makegraphExt gi title open save saveAs close exit menus nTypeParams
                     FileMenuAct ExitMenuOption exit $$
                     emptyGraphParms)
                     menus
-      (nTypeNames,nTypeParams1) = unzip nTypeParams
-      (eTypeNames,eTypeParams1) = unzip eTypeParams
-      eTypeParams2 = map (LocalMenu (Button "Expand" (\ _ -> do
+      (nTypeNames,nTypeParams') = unzip nTypeParams
+      (eTypeNames,eTypeParams') = unzip eTypeParams
+      eTypeParamsCO = map (LocalMenu (Button "Expand" (\ _ -> do
                                                        showAll gi
                                                        redisplay gi)) $$$)
-                     $ map (Color "purple2" $$$) eTypeParams1
+                          eTypeParams'
+      eTypeParamsCP = map (LocalMenu (Button "Expand" (\ _ -> do
+                                                       showAll gi
+                                                       redisplay gi)) $$$)
+                     $ map (Color "purple2" $$$) eTypeParams'
   graph <- newGraph graphtool graphParms
-  nTypes <- mapM (newNodeType graph) nTypeParams1
-  eTypes <- mapM (newArcType graph) eTypeParams1
-  cTypes <- mapM (newArcType graph) eTypeParams2
+  nTypes <- mapM (newNodeType graph) nTypeParams'
+  eTypes <- mapM (newArcType graph) eTypeParams'
+  cTypesO <- mapM (newArcType graph) eTypeParamsCO
+  cTypesP <- mapM (newArcType graph) eTypeParamsCP
   let g = AbstractionGraph
             { theGraph = graph
             , nodes = Map.empty
@@ -216,10 +221,10 @@ makegraphExt gi title open save saveAs close exit menus nTypeParams
             , nodeTypes = Map.fromList $ zip nTypeNames
                 $ map (\ nt -> GANodeType { udgNodeType = nt }) nTypes
             , edgeTypes = Map.fromList $ zip eTypeNames
-                $ map (\ (et,ct) -> GAEdgeType { udgEdgeType = et
-                                               , udgCompressed = ct
-                                               , gaeHidden = False })
-                $ zip eTypes cTypes
+                $ map (\ (et,ctO,ctP) -> GAEdgeType { udgEdgeType = et
+                                                    , udgCompressed = (ctO,ctP)
+                                                    , gaeHidden = False })
+                $ zip3 eTypes cTypesO cTypesP
             , compressedEdges = []
             }
   writeIORef gi g
@@ -291,7 +296,7 @@ hideNode gi nId = do
 -- | Hides a set of nodes
 hideNodes :: GraphInfo -- ^ The graph
           -> [NodeId] -- ^ IDs of the nodes to hide
-          -> [(NodeId, NodeId, DGEdgeType)] -- ^ A list of new edges
+          -> [(NodeId, NodeId, (DGEdgeType, Bool))] -- ^ A list of new edges
           -> IO ()
 hideNodes gi nIds compedges = do
   threadDelay 300000
@@ -396,15 +401,17 @@ getEdgeAux g nIdFrom nIdTo eType f =
 
 -- | Adds an compressed edge
 addCompressedEdge :: GraphInfo -- ^ The graph
-                  -> (NodeId, NodeId, DGEdgeType) -- ^ source, target, edgetype
+                  -> (NodeId, NodeId, (DGEdgeType, Bool)) -- ^ src,tar,(et,orig)
                   -> IO ()
-addCompressedEdge gi (nIdFrom, nIdTo, eType) = do
+addCompressedEdge gi (nIdFrom, nIdTo, (eType, orig)) = do
   g <- readIORef gi
   let gaeV = ("", EdgeId 0, Nothing)
   edge' <- case getEdgeAux g nIdFrom nIdTo eType (not . gaeHidden) of
-      Just (nFrom, nTo, gaeT) ->
-          fmap Just $ newArc (theGraph g) (udgCompressed gaeT) gaeV nFrom nTo
-      Nothing -> return Nothing
+    Just (nFrom, nTo, gaeT) ->
+      fmap Just $ newArc (theGraph g)
+                         ((if orig then fst else snd) $ udgCompressed gaeT)
+                         gaeV nFrom nTo
+    Nothing -> return Nothing
   let edge = GAEdge { udgEdge = edge'
                     , gaeType = eType
                     , ganFrom = nIdFrom

@@ -320,15 +320,14 @@ selectNodesByType dg types =
          $ filter (\ (_, n) -> elem (getRealDGNodeType n) types) $ labNodesDG dg
 
 -- | compresses a list of types to the highest one
-compressTypes :: [DGEdgeType] -> DGEdgeType
-compressTypes [] = error "compressTypes: wrong usage"
-compressTypes (t:[]) = t
-compressTypes (t1:t2:r) = case t1 > t2 of
-  True -> compressTypes (t1:r)
-  False -> compressTypes (t2:r)
+compressTypes :: Bool -> [DGEdgeType] -> (DGEdgeType, Bool)
+compressTypes _ [] = error "compressTypes: wrong usage"
+compressTypes b (t:[]) = (t,b)
+compressTypes b (t1:t2:r) = if t1 == t2 then compressTypes b (t1:r) else
+  if t1 > t2 then compressTypes False (t1:r) else compressTypes False (t2:r)
 
 -- | returns a list of compressed edges
-getCompressedEdges :: DGraph -> [Node] -> [(Node,Node,DGEdgeType)]
+getCompressedEdges :: DGraph -> [Node] -> [(Node,Node,(DGEdgeType, Bool))]
 getCompressedEdges dg hidden = filterDuplicates $ getShortPaths
   $ concatMap (\ e@(_,t,_) -> map (e:) $ getPaths dg t hidden []) inEdges
   where
@@ -339,13 +338,14 @@ getCompressedEdges dg hidden = filterDuplicates $ getShortPaths
                      $ map (\ (s,_,_) -> s) $ concatMap (innDG dg) hidden
 
 -- | filter duplicate paths
-filterDuplicates :: [(Node,Node,DGEdgeType)]
-                 -> [(Node,Node,DGEdgeType)]
+filterDuplicates :: [(Node,Node,(DGEdgeType, Bool))]
+                 -> [(Node,Node,(DGEdgeType, Bool))]
 filterDuplicates [] = []
-filterDuplicates ((s, t, et) : r) = edge : filterDuplicates others
+filterDuplicates ((s, t, (et,b)) : r) = edge : filterDuplicates others
   where
     (same,others) = partition (\ (s',t',_) -> s == s' && t == t') r
-    edge = (s,t,compressTypes $ et:map (\ (_,_,et') -> et') same)
+    b' = and $ b : map (\ (_,_,(_,b'')) -> b'') same
+    edge = (s,t,compressTypes b' $ et : map (\ (_,_,(et',_)) -> et') same)
 
 -- | returns the pahts of a given node through hidden nodes
 getPaths :: DGraph -> Node -> [Node] -> [Node] -> [[LEdge DGLinkLab]]
@@ -361,10 +361,10 @@ getPaths dg node hidden seen' = case elem node hidden of
 
 -- | returns source and target node of a path with the compressed type
 getShortPaths :: [[LEdge DGLinkLab]]
-              -> [(Node,Node,DGEdgeType)]
+              -> [(Node,Node,(DGEdgeType,Bool))]
 getShortPaths [] = []
 getShortPaths (p : r) =
-  (s, t, compressTypes $ map (\ (_,_,e) -> getRealDGLinkType e) p)
+  (s, t, compressTypes True $ map (\ (_,_,e) -> getRealDGLinkType e) p)
     : getShortPaths r
   where
     (s,_,_) = head p
