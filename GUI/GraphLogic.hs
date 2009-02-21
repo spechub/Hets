@@ -34,6 +34,7 @@ module GUI.GraphLogic
     , checkconservativityOfEdge
     , convert
     , hideNodes
+    , hideNewProvedEdges
     , getLibDeps
     , hideShowNames
     , showNodes
@@ -97,7 +98,7 @@ import System.Directory(getModificationTime)
 
 import Data.IORef
 import Data.Char(toLower)
-import Data.List(partition)
+import Data.List(partition, delete)
 import Data.Maybe
 import Data.Graph.Inductive.Graph (Node, LEdge, LNode)
 import qualified Data.Map as Map
@@ -292,8 +293,7 @@ showNodes gInfo@(GInfo { gi_GraphInfo = actGraphInfo
 
 -- | hides all unnamed internal nodes that are proven
 hideNodes :: GInfo -> IO ()
-hideNodes gInfo@(GInfo { gi_GraphInfo = actGraphInfo
-                 }) = do
+hideNodes gInfo@(GInfo { gi_GraphInfo = actGraphInfo }) = do
   hhn <- GA.hasHiddenNodes actGraphInfo
   ost <- readIORef $ intState gInfo
   case i_state ost of
@@ -312,6 +312,30 @@ hideNodes gInfo@(GInfo { gi_GraphInfo = actGraphInfo
                                          , isLocallyEmpty = True}]
            edges = getCompressedEdges dg nodes
        GA.hideNodes actGraphInfo nodes edges
+
+-- | hides all proven edges created not initialy
+hideNewProvedEdges :: GInfo -> IO ()
+hideNewProvedEdges gInfo@(GInfo { gi_GraphInfo = actGraphInfo }) = do
+  ost <- readIORef $ intState gInfo
+  case i_state ost of
+   Nothing -> return ()
+   Just ist -> do
+     let ph = SizedList.toList $ proofHistory
+                               $ lookupDGraph (i_ln ist) $ i_libEnv ist
+         edges = foldl (\ e c -> case c of
+                         InsertEdge (_, _, lbl) -> (dgl_id lbl):e
+                         DeleteEdge (_, _, lbl) -> delete (dgl_id lbl) e
+                         _ -> e
+                       ) [] $ flattenHistory ph []
+     mapM_ (GA.hideEdge actGraphInfo) edges
+     GA.redisplay actGraphInfo
+
+-- | generates from list of HistElem one list of DGChanges
+flattenHistory :: [HistElem] -> [DGChange] -> [DGChange]
+flattenHistory [] cs = cs
+flattenHistory ((HistElem c):r) cs = flattenHistory r $ c:cs
+flattenHistory ((HistGroup _ ph):r) cs =
+  flattenHistory r $ flattenHistory (SizedList.toList ph) cs
 
 -- | selects all nodes of a type with outgoing edges
 selectNodesByType :: DGraph -> [DGNodeType] -> [Node]

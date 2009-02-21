@@ -133,7 +133,7 @@ data IntIState = IntIState {
     i_ln                  :: LIB_NAME,
     -- these are PGIP specific, but they need to be treated by the common
     -- history mechanism , therefore they need to be here
-    elements                 :: [Int_NodeInfo],
+    elements              :: [Int_NodeInfo],
     cComorphism           :: Maybe AnyComorphism,
     prover                :: Maybe G_prover,
     consChecker           :: Maybe G_cons_checker,

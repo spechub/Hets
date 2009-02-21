@@ -250,6 +250,7 @@ createGlobalMenu gInfo@(GInfo { gi_hetcatsOpts = opts
                                     GA.redisplay gi
                                   )
 #endif
+     , Button "Hide new proven links" $ ral $ hideNewProvedEdges gInfo
      , Menu (Just "Proofs") $ map (\ (str, cmd) ->
        -- History ? or just some partial history in ch ?
         Button str $ ral $ performProofAction gInfo

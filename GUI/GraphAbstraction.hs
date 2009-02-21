@@ -37,6 +37,7 @@ module GUI.GraphAbstraction
     -- * Edge interface
     , addEdge
     , delEdge
+    , hideEdge
     , hideSetOfEdgeTypes
     , isHiddenEdge
     , hasHiddenEdges

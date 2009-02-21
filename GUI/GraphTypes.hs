@@ -56,16 +56,12 @@ data InternalNames = InternalNames
 data GInfo = GInfo
              { -- Global
                intState :: IORef IntState
---               libEnvIORef :: IORef LibEnv
              , gi_hetcatsOpts :: HetcatsOpts
              , windowCount :: MVar Integer
              , exitMVar :: MVar ()
              , globalLock :: MVar ()
---             , globalHist :: MVar ([[LIB_NAME]],[[LIB_NAME]])
---             , commandHist :: CommandHistory
              , functionLock :: MVar ()
                -- Local
---             , gi_LIB_NAME :: LIB_NAME
              , gi_GraphInfo :: GraphInfo
              , internalNamesIORef :: IORef InternalNames
              , proofGUIMVar :: GUIMVar
@@ -110,7 +106,6 @@ emptyGInfo = do
             filename = []}
 
   intSt <- newIORef st
---  iorLE <- newIORef emptyLibEnv
   graphInfo <- initgraphs
   iorIN <- newIORef $ InternalNames False []
   guiMVar <- newEmptyMVar
@@ -118,11 +113,7 @@ emptyGInfo = do
   fl <- newEmptyMVar
   exit <- newEmptyMVar
   wc <- newMVar 0
---  gh <- newMVar ([],[])
---  ch <- emptyCommandHistory
   return $ GInfo {
-  --              libEnvIORef = iorLE
-  --             , gi_LIB_NAME = Lib_id $ Indirect_link "" nullRange "" noTime
                    intState = intSt
                  , gi_GraphInfo = graphInfo
                  , internalNamesIORef = iorIN
@@ -131,8 +122,6 @@ emptyGInfo = do
                  , windowCount = wc
                  , exitMVar = exit
                  , globalLock = gl
-  --             , globalHist = gh
-  --             , commandHist = ch
                  , functionLock = fl
                  }
 
@@ -150,8 +139,7 @@ copyGInfo gInfo newLN = do
                                                  i_ln = newLN}
                     }
   writeIORef (intState gInfo) $ intSt'
-  return $ gInfo { -- gi_LIB_NAME = newLN
-                   gi_GraphInfo = graphInfo
+  return $ gInfo { gi_GraphInfo = graphInfo
                  , internalNamesIORef = iorIN
                  , proofGUIMVar = guiMVar
                  }
