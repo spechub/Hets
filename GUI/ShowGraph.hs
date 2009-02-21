@@ -37,6 +37,7 @@ import Common.UniUtils
 
 import Data.IORef
 import Control.Concurrent.MVar
+import Control.Exception
 
 import Interfaces.DataTypes
 
@@ -50,9 +51,20 @@ showGraph file opts env = case env of
                      ++ " in a graphical window"
     putIfVerbose opts 3 "Initializing Converter"
 #ifdef GTKGLADE
-    startMainLoop
+    eitherGTK <- try startMainLoop
+    case eitherGTK of
+      Right () -> return ()
+      Left e -> do
+        putIfVerbose opts 5 $ "Error: " ++ show (e::IOException)
+        error $ "Cant initialize gtk."
 #endif
-    (gInfo,wishInst) <- initializeConverter
+    eitherHTK <- try initializeConverter
+    (gInfo,wishInst) <- case eitherHTK of
+      Right a -> return a
+      Left e -> do
+        putIfVerbose opts 5 $ "Error: " ++ show (e::IOException)
+        error $ "Cant initialize GUI."
+    
     useHTk -- All messages are displayed in TK dialog windows
     -- from this point on
     ost <- readIORef $ intState gInfo
