@@ -77,7 +77,6 @@ import Comorphisms.Modal2CASL
 import Comorphisms.CASL2CoCASL
 import Comorphisms.CASL2CspCASL
 import Comorphisms.CspCASL2Modal
-import Comorphisms.CspCASL2IsabelleHOL
 import CspCASL.Comorphisms
 import Comorphisms.CASL_DL2CASL
 import Comorphisms.RelScheme2CASL
@@ -126,7 +125,6 @@ comorphismList =
     , Comorphism CASL2CoCASL
     , Comorphism CASL2CspCASL
     , Comorphism CspCASL2Modal
-    , Comorphism CspCASL2IsabelleHOL
     , Comorphism cspCASLTrace
     , Comorphism cspCASLFailure
     , Comorphism CASL_DL2CASL
