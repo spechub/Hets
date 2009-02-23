@@ -80,7 +80,7 @@ cspCASLProverProve thName (Theory ccSign ccSensThSens) _freedefs =
       -- Data translation failed
       putStrLn $ "Sorry, could not encode the data part:" ++ (show diag)
       return []
-    Just (dataThSig, dataThSens, pfolSign) -> do
+    Just (dataThSig, dataThSens, pcfolSign, cfolSign) -> do
       -- Data translation succeeded
       -- Write out the data encoding
       writeIsaTheory (mkThyNameDataEnc thName)
@@ -88,7 +88,7 @@ cspCASLProverProve thName (Theory ccSign ccSensThSens) _freedefs =
       -- Generate and write out the preAlpbate, justification theorems
       -- and the instances code.
       writeIsaTheory (mkThyNamePreAlphabet thName)
-                         (producePreAlphabet thName caslSign pfolSign)
+                         (producePreAlphabet thName caslSign pcfolSign)
       -- Generate and write out the Alpbatet construction, bar types
       -- and choose functions.
       writeIsaTheory (mkThyNameAlphabet thName)
@@ -98,21 +98,19 @@ cspCASLProverProve thName (Theory ccSign ccSensThSens) _freedefs =
                          (produceIntegrationTheorems thName caslSign)
       -- Generate and Isabelle to prove the process refinements (also produces
       -- the processes)
-      writeIsaTheory ("LIAMLIAMLIAM")
-                         (produceProcesses thName ccSign ccNamedSens)
-
-      isaProve thName (produceProcesses thName ccSign ccNamedSens) ()
+      isaProve thName (produceProcesses thName ccSign ccNamedSens pcfolSign
+                                        cfolSign) ()
 
 -- | Produce the Isabelle theory of the data part of a CspCASL
---   specification. The data transalation can fail. If it does fail
---   there will be an error message. Its arguments are the CASL
---   signature from the data part and a list of the named CASL
---   sentences from the data part. Returned are the Isabelle
---   signature, Isabelle named sentences and also the CASL signature
---   of the data part after translation to pcfol (i.e. with out
---   subsorting).
+--   specification. The data transalation can fail. If it does fail there will
+--   be an error message. Its arguments are the CASL signature from the data
+--   part and a list of the named CASL sentences from the data part. Returned
+--   are the Isabelle signature, Isabelle named sentences and also the CASL
+--   signature of the data part after translation to pcfol (i.e. with out
+--   subsorting) and cfol (i.e. with out subsorting and partiality).
 produceDataEncoding :: CASLSign -> [Named CASLFORMULA] ->
-                       Result (Isa.Sign, [Named Isa.Sentence], CASLSign)
+                       Result (Isa.Sign, [Named Isa.Sentence], CASLSign,
+                                  CASLSign)
 produceDataEncoding caslSign caslNamedSens =
     let -- Comorphisms
         casl2pcfol = (wrapMapTheory CASL2PCFOL.CASL2PCFOL)
@@ -120,12 +118,12 @@ produceDataEncoding caslSign caslNamedSens =
         cfol2isabelleHol = (wrapMapTheory CFOL2IsabelleHOL.CFOL2IsabelleHOL)
     in do -- Remove Subsorting from the CASL part of the CspCASL
           -- specification
-          th1 <- casl2pcfol (caslSign, caslNamedSens)
+          th_pcfol <- casl2pcfol (caslSign, caslNamedSens)
           -- Next Remove partial functions
-          th2 <- pcfol2cfol th1
+          th_cfol <- pcfol2cfol th_pcfol
           -- Next Translate to IsabelleHOL code
-          (th3Sig, th3Sens) <- cfol2isabelleHol th2
-          return (th3Sig, th3Sens, fst th1)
+          (th_isa_Sig, th_isa_Sens) <- cfol2isabelleHol th_cfol
+          return (th_isa_Sig, th_isa_Sens, fst th_pcfol, fst th_cfol)
 
 -- | Produce the Isabelle theory which contains the PreAlphabet,
 --   Justification Theorems and also the instances code. We need the
@@ -183,11 +181,13 @@ produceIntegrationTheorems thName caslSign =
                            $ (isaSignEmpty,[])
     in Theory isaSign (toThSens isaSens)
 
--- | Produce the Isabelle theory which contains the Process
--- | Translations and process refinement theorems.
+-- | Produce the Isabelle theory which contains the Process Translations and
+--   process refinement theorems. We -- need the PCFOL and CFOL signatures of
+--   the data part after translation to PCFOL and CFOL to pass -- along to the
+--   process translation.
 produceProcesses :: String -> CspCASLSign -> [Named CspCASLSen] ->
-                    Theory Isa.Sign Isa.Sentence ()
-produceProcesses thName ccSign ccNnamedSens =
+                    CASLSign -> CASLSign -> Theory Isa.Sign Isa.Sentence ()
+produceProcesses thName ccSign ccNnamedSens pcfolSign cfolSign =
     let caslSign = ccSig2CASLSign ccSign
         cspSign =  ccSig2CspSign ccSign
         --  Isabelle sgnature which imports the integration theorems encoding
@@ -196,7 +196,7 @@ produceProcesses thName ccSign ccNnamedSens =
                                                     , cspFThyS] }
         -- Start with our empty isabelle theory and add the
         -- processes the the process refinement theorems.
-        (isaSign, isaSens) = addProcMap ccNnamedSens caslSign
+        (isaSign, isaSens) = addProcMap ccNnamedSens caslSign pcfolSign cfolSign
                            $ addProcNameDatatype cspSign
                            $ (isaSignEmpty,[])
     in Theory isaSign (toThSens isaSens)

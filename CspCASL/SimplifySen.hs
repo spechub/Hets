@@ -21,12 +21,9 @@ import Common.Id(genToken, Range)
 import CspCASL.AS_CspCASL_Process
 import CspCASL.SignCSP
 
-
--- FOR NOW - Do not simply sentences.
-
 -- | Simplify a CspCASL sentence for before pretty printing, e.g. for
--- | "show theory". Typically this replaces fully quallified CASL by
--- | non fully qualified CASL so that it is readable.
+--   "show theory". Typically this replaces fully quallified CASL by
+--   non fully qualified CASL so that it is readable.
 simplifySen :: CspCASLSign -> CspCASLSen -> CspCASLSen
 simplifySen sigma sen =
     case sen of

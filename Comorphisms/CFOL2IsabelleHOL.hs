@@ -24,6 +24,7 @@ module Comorphisms.CFOL2IsabelleHOL
     , formTrCASL
     , quantifyIsa
     , quantify
+    , transFORMULA
     , transSort
     , transRecord
     , transOP_SYMB

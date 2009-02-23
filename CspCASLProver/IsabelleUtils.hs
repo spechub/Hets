@@ -23,7 +23,8 @@ module CspCASLProver.IsabelleUtils
     , writeIsaTheory
     ) where
 
-import Common.AS_Annotation (makeNamed, SenAttr(..))
+import Common.AS_Annotation (makeNamed, Named, SenAttr(..))
+import Common.ProofUtils (prepareSenNames)
 
 import Comorphisms.CFOL2IsabelleHOL (IsaTheory)
 
@@ -33,13 +34,13 @@ import qualified Data.Map as Map
 
 import Isabelle.IsaConsts (primrecS)
 import Isabelle.IsaParse (parseTheory)
-import Isabelle.IsaPrint (printIsaTheory)
-import Isabelle.IsaProve (prepareTheory)
+import Isabelle.IsaPrint (getAxioms, printIsaTheory)
 import Isabelle.IsaSign  (DomainEntry, IsaProof(..), mkCond, mkSen
                          , mkVName, Sentence(..), Sign(..), Sort
                          , Term(..), Typ(..))
+import Isabelle.Translate (transString)
 
-import Logic.Prover (Theory)
+import Logic.Prover (Theory(..), toNamedList)
 
 import Text.ParserCombinators.Parsec (parse)
 
@@ -97,6 +98,19 @@ addTheoremWithProof name conds concl proof' isaTh =
               else ((mkCond conds concl) {thmProof = Just proof'})
         namedSen = (makeNamed name sen) {isAxiom = False}
     in (isaTh_sign, isaTh_sen ++ [namedSen])
+
+-- | Prepare a theory for writing it out to a file. This function is based off
+--   the function Isabelle.IsaProve.prepareTheory. The difference being that
+--   this function does not mark axioms nor theorms as to be added to the
+--   simplifier in Isabelle.
+prepareTheory :: Theory Sign Sentence ()
+    -> (Sign, [Named Sentence], [Named Sentence], Map.Map String String)
+prepareTheory (Theory sig nSens) = let
+    oSens = toNamedList nSens
+    nSens' = prepareSenNames transString oSens
+    (disAxs, disGoals) = getAxioms nSens'
+    in (sig, disAxs, disGoals,
+       Map.fromList $ zip (map senAttr nSens') $ map senAttr oSens)
 
 -- | Add a DomainEntry to the domain tab of an Isabelle signature.
 updateDomainTab :: DomainEntry  -> IsaTheory -> IsaTheory

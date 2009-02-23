@@ -136,3 +136,6 @@ generateAxioms sig = map (mapNamed $ renameFormula id) $ concat $
 
 f2Formula :: FORMULA f -> FORMULA f
 f2Formula = projFormula Partial id . injFormula id
+
+t2Term :: TERM f -> TERM f
+t2Term = projTerm Partial id . injTerm id

@@ -296,6 +296,9 @@ codeRecord uniBot bsrts mf = (mapRecord mf)
 codeFormula :: Bool -> Set.Set SORT -> FORMULA () -> FORMULA ()
 codeFormula b bsorts = foldFormula (codeRecord b bsorts $ error "CASL2SubCFol")
 
+codeTerm :: Bool -> Set.Set SORT -> TERM () -> TERM ()
+codeTerm b bsorts = foldTerm (codeRecord b bsorts $ error "CASL2SubCFol")
+
 rmDefsRecord :: Set.Set SORT -> (f -> f) ->  Record f (FORMULA f) (TERM f)
 rmDefsRecord  bsrts mf = (mapRecord mf)
     { foldDefinedness = \ _ t ps -> defined bsrts t (sortOfTerm t) ps }
@@ -312,3 +315,6 @@ botSorts mf = (constRecord mf Set.unions Set.empty)
 
 botFormulaSorts :: FORMULA f -> Set.Set SORT
 botFormulaSorts = foldFormula (botSorts $ const Set.empty)
+
+botTermSorts :: TERM f -> Set.Set SORT
+botTermSorts = foldTerm (botSorts $ const Set.empty)

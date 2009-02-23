@@ -482,9 +482,9 @@ addChooseFunctionLemma isaTh sort =
                            Done
     in  addTheoremWithProof chooseFunName thmConds thmConcl proof' isaTh
 
-------------------------------------------------------
--- Functions for producing the integration theorems --
-------------------------------------------------------
+-------------------------------------------------------------
+-- Functions for producing the integration theorems        --
+-------------------------------------------------------------
 
 -- | Add all the integration theorems. We need to know all the sorts
 --   to produce all the theorems. We need to know the CASL signature
@@ -573,14 +573,16 @@ mkProcNameDE processes =
 -- Functions adding the process map function to an Isabelle theory     --
 -------------------------------------------------------------------------
 
--- | Add the function procMap to an Isabelle theory. This function
---   maps process names to real processes build using the same names
---   and the alphabet i.e., ProcName => (ProcName, Alphabet) proc. We
---   need to know the CspCASL sentences and the casl signature (data
---   part)
-addProcMap :: [Named CspCASLSen] -> CASLSign.Sign () () -> IsaTheory ->
-              IsaTheory
-addProcMap namedSens caslSign isaTh =
+-- | Add the function procMap to an Isabelle theory. This function maps process
+--   names to real processes build using the same names and the alphabet i.e.,
+--   ProcName => (ProcName, Alphabet) proc. We need to know the CspCASL
+--   sentences and the casl signature (data part). We need the PCFOL and CFOL
+--   signatures of the data part after translation to PCFOL and CFOL to pass
+--   along the process translation.
+addProcMap :: [Named CspCASLSen] -> CASLSign.Sign () () ->
+              CASLSign.Sign () () -> CASLSign.Sign () () ->
+              IsaTheory -> IsaTheory
+addProcMap namedSens caslSign pcfolSign cfolSign isaTh =
     let
         -- Translate a fully qualified variable (CASL term) to Isabelle
         tyToks = CFOL2IsabelleHOL.typeToks caslSign
@@ -608,41 +610,18 @@ addProcMap namedSens caslSign isaTh =
                 -- free variables
                 varTerms = map transVar fqVars
                 lhs = procMapTerm (foldl termAppl (procNameTerm) varTerms)
-                rhs = transProcess caslSign fqVars proc
+                rhs = transProcess caslSign pcfolSign cfolSign fqVars proc
              in binEq lhs rhs
+        -- to avoid warnings we specify the behaviour on CASL sentences. This
+        -- should never be called as they have been filtered out.
+        mkEq(CASLSen _ ) = error "CspCASLProver.Utils.addProcMap: Unexpected CASLSen, Expected ProcessEq"
         -- Build equations for primrec using process equations
         eqs = map mkEq processEqs
     in addPrimRec eqs isaThWithConst
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-----------------------------------------------
--- Function to help keep strings consistent --
-----------------------------------------------
+------------------------------------------------------------
+-- Basic function to help keep strings consistent         --
+------------------------------------------------------------
 
 -- | Return the list of strings of all gn_totality axiom names. This
 --   function is not implemented in a satisfactory way.
@@ -689,9 +668,9 @@ getDefinedOp :: [SORT] -> SORT -> Term -> Term
 getDefinedOp sorts s t =
     termAppl (con $ VName (getDefinedName sorts s) $ Nothing) t
 
--- | Return the term representing the injection of a term from one sort to another
---   note: the term is returned if both sorts are the same
---   This function is not implemented in a satisfactory way
+-- | Return the term representing the injection of a term from one sort to
+--   another. Note: the term is returned if both sorts are the same. This
+--   function is not implemented in a satisfactory way.
 mkInjection :: SORT -> SORT -> Term -> Term
 mkInjection s s' t =
     let injName = getInjectionName s s'
@@ -701,8 +680,9 @@ mkInjection s s' t =
         injOp = Const {
                   termName= VName {
                               new = ("X_" ++ injName),
-                              altSyn = Just (AltSyntax ((replace injName '_' "'_")
-                                                        ++ "/'(_')") [3] 999)
+                              altSyn = Just (AltSyntax
+                                             ((replace injName '_' "'_")
+                                              ++ "/'(_')") [3] 999)
                             },
                   termType = Hide {
                                typ = Type {
@@ -718,7 +698,6 @@ mkInjection s s' t =
        then t
        else termAppl injOp t
 
-
 -- | Return the list of string of all embedding_injectivity axioms
 --   produced by the translation CASL2PCFOL; CASL2SubCFOL. This
 --   function is not implemented in a satisfactory way.
@@ -730,8 +709,9 @@ getCollectionEmbInjAx sortRel =
                                     else ("_" ++ show i))
                          )
     in map mkEmbInjAxName [0 .. (length(sortRel) - 1)]
--- This function is not implemented in a satisfactory way
--- Return the list of strings of all ga_notDefBottom axioms
+
+-- | Return the list of strings of all ga_notDefBottom axioms. This function is
+--   not implemented in a satisfactory way
 getCollectionNotDefBotAx :: [SORT] -> [String]
 getCollectionNotDefBotAx sorts =
     let mkNotDefBotAxName = (\i -> "ga_notDefBottom"
@@ -740,36 +720,36 @@ getCollectionNotDefBotAx sorts =
                                        else ("_" ++ show i)))
     in map mkNotDefBotAxName [0 .. (length(sorts) - 1)]
 
--- This function is not implemented in a satisfactory way
--- Return the list of string of all decomposition theorem names that we generate
+-- | Return the list of string of all decomposition theorem names that we
+--   generate. This function is not implemented in a satisfactory way
 getColDecompositionThmName :: [(SORT,SORT)] -> [String]
 getColDecompositionThmName sortRel =
     let tripples = [(s1,s2,s3) |
                     (s1,s2) <- sortRel, (s2',s3) <- sortRel, s2==s2']
     in map getDecompositionThmName tripples
 
--- Produce the theorem name of the decomposition theorem that we produce
+-- | Produce the theorem name of the decomposition theorem that we produce for a
+--   gievn tripple of sorts.
 getDecompositionThmName :: (SORT,SORT,SORT) -> String
 getDecompositionThmName (s, s', s'') =
     "decomposition_" ++ (convertSort2String s) ++ "_" ++ (convertSort2String s')
                     ++ "_" ++ (convertSort2String s'')
 
--- This function is not implemented in a satisfactory way
--- Return the list of strings of the injectivity theorem names
--- that we generate
+-- | Return the list of strings of the injectivity theorem names that we
+--   generate.  This function is not implemented in a satisfactory way
 getColInjectivityThmName :: [(SORT,SORT)] -> [String]
 getColInjectivityThmName sortRel = map getInjectivityThmName sortRel
 
--- Produce the theorem name of the injectivity theorem that we produce
+-- | Produce the theorem name of the injectivity theorem that we produce for a
+--   gievn pair of sorts.
 getInjectivityThmName :: (SORT,SORT) -> String
 getInjectivityThmName (s, s') =
     "injectivity_" ++ (convertSort2String s) ++ "_" ++ (convertSort2String s')
 
 
-
--- This function is not implemented in a satisfactory way. Return the
--- list of strings of all transitivity axioms produced by the
--- translation CASL2PCFOL; CASL2SubCFOL
+-- | Return the list of strings of all the transitivity axioms names produced by
+--   the translation CASL2PCFOL; CASL2SubCFOL. This function is not implemented
+--   in a satisfactory way.
 getCollectionTransAx :: [(SORT,SORT)] -> [String]
 getCollectionTransAx sortRel =
     let tripples = [(s1,s2,s3) |
@@ -780,4 +760,3 @@ getCollectionTransAx sortRel =
                                     else ("_" ++ show i))
                          )
     in  map mkEmbInjAxName [0 .. (length(tripples) - 1)]
-

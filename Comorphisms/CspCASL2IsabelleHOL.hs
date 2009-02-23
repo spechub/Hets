@@ -189,6 +189,9 @@ addProcMap namedSens caslSign isaTh =
                 lhs = procMapTerm (foldl termAppl (procNameTerm) varTerms)
                 rhs = transProcess caslSign proc
              in binEq lhs rhs
+        -- to avoid warnings we specify the behaviour on CASL sentences. This
+        -- should never be called as they have been filtered out.
+        mkEq(CASLSen _ ) = error "Comorphisms.CspCASL2Isabelle.addProcMap: Unexpected CASLSen, Expected ProcessEq"
         -- Build equations for primrec using process equations
         eqs = map mkEq processEqs
     in addPrimRec eqs isaThWithConst
