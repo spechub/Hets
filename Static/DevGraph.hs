@@ -42,6 +42,7 @@ import Logic.Comorphism
 import Logic.Grothendieck
 import Logic.Prover
 
+import qualified Common.Lib.Rel as Rel
 import qualified Common.Lib.Graph as Tree
 import qualified Common.Lib.SizedList as SizedList
 import qualified Common.OrderedMap as OMap
@@ -55,6 +56,7 @@ import Control.Exception (assert)
 
 import Data.Char (toLower)
 import Data.Graph.Inductive.Graph as Graph
+import Data.Maybe (fromMaybe)
 import qualified Data.Map as Map
 import qualified Data.Set as Set
 
@@ -140,11 +142,13 @@ showConsState :: DGNodeInfo -> String
 showConsState l =
   (if getConsState False l then "open" else "proven") ++ "_cons"
 
--- | node inscriptions in development graphs
+-- | node inscriptions in development graphs.
+-- Nothing entries indicate "not computed yet"
 data DGNodeLab =
   DGNodeLab
   { dgn_name :: NodeName        -- name in the input language
   , dgn_theory :: G_theory       -- local theory
+  , hasHiding :: Maybe Bool      -- has this node an ingoing hiding link
   , dgn_nf :: Maybe Node         -- normal form, for Theorem-Hide-Shift
   , dgn_sigma :: Maybe GMorphism -- inclusion of signature into nf signature
   , nodeInfo :: DGNodeInfo
@@ -645,6 +649,7 @@ newInfoNodeLab :: NodeName -> DGNodeInfo -> G_theory -> DGNodeLab
 newInfoNodeLab name info gTh = DGNodeLab
   { dgn_name = name
   , dgn_theory = gTh
+  , hasHiding = Nothing
   , dgn_nf = Nothing
   , dgn_sigma = Nothing
   , nodeInfo = info
@@ -1037,3 +1042,45 @@ isLocalDef :: DGLinkType -> Bool
 isLocalDef lt = case lt of
     LocalDef -> True
     _ -> False
+
+isHidingDef :: DGLinkType -> Bool
+isHidingDef lt = case lt of
+    HidingDef -> True
+    _ -> False
+
+{- | mark all nodes if they have incoming hiding nodes.
+   Assume reference nodes to other libraries being properly marked already.
+   Also assumme that the nodes are numbered in topological order wrt
+   definition links.
+-}
+markHiding :: LibEnv -> DGraph -> DGraph
+markHiding le dgraph =
+  foldl (\ dg (n, lbl) -> let
+     ingoingEdges = innDG dg n
+     hidingDefEdges = filter (liftE isHidingDef ) ingoingEdges
+     globalDefEdges = filter (liftE isGlobalDef) ingoingEdges
+     next = map (\ (s, _, _) ->  s) globalDefEdges
+     in fst $ labelNodeDG (n, lbl { hasHiding = Just
+          $ if isDGRef lbl
+            then nodeHasHiding (lookupDGraph (dgn_libname lbl) le)
+                 $ dgn_node lbl
+            else not (null hidingDefEdges) || any (nodeHasHiding dg) next }) dg)
+     dgraph $ labNodesDG dgraph
+
+nodeHasHiding :: DGraph -> Node -> Bool
+nodeHasHiding dg n = fromMaybe (error "nodeHasHiding") $ hasHiding $ labDG dg n
+
+-- | Creates a LIB_NAME relation wrt dependencies via reference nodes
+getLibDepRel :: LibEnv -> Rel.Rel LIB_NAME
+getLibDepRel = Rel.transClosure
+  . Rel.fromSet . Map.foldWithKey (\ ln dg s -> foldr (\ x ->
+        if isDGRef x then Set.insert (ln, dgn_libname x) else id) s
+        $ map snd $ labNodesDG dg) Set.empty
+
+getTopsortedLibs :: LibEnv -> [LIB_NAME]
+getTopsortedLibs = concatMap Set.toList . reverse . Rel.topSort . getLibDepRel
+
+markAllHiding :: LibEnv -> LibEnv
+markAllHiding libEnv =
+ foldl (\ le ln -> Map.update (Just . markHiding le) ln le) libEnv
+    $ getTopsortedLibs libEnv

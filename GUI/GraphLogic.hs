@@ -102,7 +102,6 @@ import Data.List(partition, delete)
 import Data.Maybe
 import Data.Graph.Inductive.Graph (Node, LEdge, LNode)
 import qualified Data.Map as Map
-import qualified Data.Set as Set
 
 import Control.Monad
 import Control.Concurrent (forkIO)
@@ -167,10 +166,7 @@ reload gInfo@(GInfo { gi_hetcatsOpts = opts
 
 -- | Creates a list of all LIB_NAME pairs, which have a dependency
 getLibDeps :: LibEnv -> [(LIB_NAME, LIB_NAME)]
-getLibDeps = Rel.toList . Rel.intransKernel . Rel.transClosure
-  . Rel.fromSet . Map.foldWithKey (\ ln dg s -> foldr (\ x ->
-        if isDGRef x then Set.insert (ln, dgn_libname x) else id) s
-        $ map snd $ labNodesDG dg) Set.empty
+getLibDeps = Rel.toList . Rel.intransKernel . getLibDepRel
 
 -- | Reloads a library
 reloadLib :: IORef IntState -> HetcatsOpts -> IORef [LIB_NAME] -> LIB_NAME

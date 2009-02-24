@@ -175,11 +175,6 @@ isHidingEdge edge = case edge of
     HidingThm _ _ -> True
     _ -> False
 
-isHidingDef :: DGLinkType -> Bool
-isHidingDef lt = case lt of
-    HidingDef -> True
-    _ -> False
-
 isHidingThm :: DGLinkType -> Bool
 isHidingThm edge = case edge of
     HidingThm _ _ -> True

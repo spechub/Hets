@@ -98,7 +98,8 @@ convertToNf ln libEnv node = do
        libEnv' <- convertToNf refLib libEnv refNode
        let
          refGraph' = lookupDGraph refLib libEnv'
-         Just refNf = dgn_nf $ labDG refGraph' refNode
+         refLbl = labDG refGraph' refNode
+         Just refNf = dgn_nf refLbl
               -- the normal form just computed ^
          refNodelab = labDG refGraph' refNf
               -- the label of the normal form ^
@@ -106,18 +107,16 @@ convertToNf ln libEnv node = do
               -- the new reference node in the old graph ^
          NodeName tt _ss _ii = dgn_name nodelab
          nfName = mkSimpleId $ "NormalForm" ++ show tt ++ show node
-         refLab = DGNodeLab{
+         refLab = refNodelab {
                     dgn_name = NodeName nfName (show nfName) 0,
-                    dgn_theory  = dgn_theory $ refNodelab,
                     dgn_nf = Just nfNode,
                     dgn_sigma = Just $ ide $ dgn_sign refNodelab,
-                    nodeInfo = DGRef{ref_libname = dgn_libname nodelab,
-                                     ref_node = refNf},
+                    nodeInfo = newRefInfo refLib refNf,
                     dgn_lock = Nothing
                   }
          newLab = nodelab{
                     dgn_nf = Just nfNode,
-                    dgn_sigma = dgn_sigma $ labDG refGraph' $ dgn_node nodelab
+                    dgn_sigma = dgn_sigma refLbl
                   }
          chLab = SetNodeLab nodelab (node, newLab)
          changes = [InsertNode (nfNode, refLab), chLab]
@@ -138,20 +137,12 @@ convertToNf ln libEnv node = do
             -- the label of the new node
                 NodeName tt ss _ii = dgn_name nodelab
                 nfName = mkSimpleId $ "NormalForm" ++ show tt ++ show node
-                nfLabel = DGNodeLab{
-                       dgn_name = NodeName nfName ss 0,
-                       dgn_theory = sign,
-                       dgn_nf = Just nfNode, -- is its own nf
-                       dgn_sigma =  Just $ ide $ signOf sign, -- id morphism
-                       nodeInfo = DGNode{
-                                     node_origin = DGProof,
-                                     node_cons_status = Nothing
-                                  },
-                       dgn_lock = Nothing
-                      }
+                nfLabel = (newNodeLab (NodeName nfName ss 0) DGProof sign)
+                  { dgn_nf = Just nfNode, -- is its own nf
+                    dgn_sigma =  Just $ ide $ signOf sign -- id morphism
+                  }
             -- the new label for node
-                newLab = (newNodeLab (dgn_name nodelab) DGProof
-                                   (dgn_theory nodelab))
+                newLab = nodelab
                      { dgn_nf = Just nfNode,
                        dgn_sigma = Just $ mmap Map.! (g Map.! node)
                      }

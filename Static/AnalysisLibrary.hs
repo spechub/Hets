@@ -105,7 +105,8 @@ anaString lgraph opts topLns libenv input file mt = do
                        ++ "' does not match library name '" ++
                           libstring ++ "'"
                lift $ putIfVerbose opts 1 $ "Analyzing library " ++ show ln
-          (_,ld, _, lenv) <- ana_LIB_DEFN lgraph opts topLns libenv ast
+          (_,ld, _, lenv0) <- ana_LIB_DEFN lgraph opts topLns libenv ast
+          let lenv = markAllHiding lenv0
           case Map.lookup ln lenv of
               Nothing -> error $ "anaString: missing library: " ++ show ln
               Just dg -> lift $ do
@@ -170,7 +171,7 @@ anaLibFileOrGetEnv lgraph opts topLns libenv libname file = ResultT $ do
 -- do Result diags res <- runResultT (ana_LIB_DEFN ...)
 --    mapM_ (putStrLn . show) diags
 ana_LIB_DEFN :: LogicGraph -> HetcatsOpts -> LNS -> LibEnv -> LIB_DEFN
-             -> ResultT IO (LIB_NAME,LIB_DEFN, DGraph, LibEnv)
+             -> ResultT IO (LIB_NAME, LIB_DEFN, DGraph, LibEnv)
 ana_LIB_DEFN lgraph opts topLns libenv (Lib_defn ln alibItems pos ans) = do
   gannos <- showDiags1 opts $ liftR $ addGlobalAnnos emptyGlobalAnnos ans
   let dg = emptyDG
