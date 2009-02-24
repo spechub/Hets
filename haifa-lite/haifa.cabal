@@ -4,6 +4,7 @@ Cabal-Version:  >= 1.2
 license:        GPL
 license-file:   COPYING
 maintainer:     S.Foster@dcs.shef.ac.uk
+build-type:     Simple
 flag splitBase
   description: Choose the new smaller, split-up base package.
 Library
@@ -20,7 +21,7 @@ Library
          Org.W3.N2001.XMLSchema_instance,
          Org.Xmlsoap.Schemas.Soap.Envelope,
          Text.XML.HXT.Aliases
-  build-depends: network, mtl, html, regex-compat, syb-generics, HTTP,
+  build-depends: network, mtl, html, regex-compat, syb-generics, HTTP < 4000,
      hxt >= 8.0.0, hxt-filter >= 8.0.0, dataenc >= 0.11, template-haskell
   if flag(splitBase)
     build-depends: base >= 3.0 && < 4, array, containers, old-time
