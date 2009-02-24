@@ -1,3 +1,4 @@
+{-# OPTIONS -cpp #-}
 {- |
 Module      :  $Header$
 Description :  Interface to the VSE prover
@@ -28,7 +29,11 @@ import Data.List
 import qualified Data.Map as Map
 import System.Process
 import System.IO
+import System.Directory
 import Text.ParserCombinators.Parsec
+#ifdef TAR_PACKAGE
+import qualified Codec.Archive.Tar as Tar
+#endif
 
 vseProverName :: String
 vseProverName = "VSE"
@@ -159,6 +164,35 @@ findState sexpr = case sexpr of
     -> Just (drop 5 nodeStr, drop 5 senStr)
   _ -> Nothing
 
+specDir :: String
+specDir = "specifications"
+
+allSpecFile :: String
+allSpecFile = "all-specifications"
+
+allSpecInDir :: String
+allSpecInDir = specDir ++ "/" ++ allSpecFile
+
+#ifdef TAR_PACKAGE
+createVSETarFile :: FilePath -> IO ()
+createVSETarFile tar = do
+  renameFile allSpecFile allSpecInDir
+  Tar.create (tar ++ ".tar") "." specDir
+
+moveVSEFiles :: FilePath -> IO ()
+moveVSEFiles str = do
+  let tarFile = str ++ ".tar"
+  hasTarFile <- doesFileExist tarFile
+  hasSpecDir <- doesDirectoryExist specDir
+  hasAllSpecFile <- doesFileExist allSpecFile
+  when (hasSpecDir && hasAllSpecFile) $ do
+     createVSETarFile (specDir ++ ".bak")
+     removeDirectoryRecursive specDir
+  when hasTarFile $ do
+    Tar.extract "." tarFile
+    renameFile allSpecInDir allSpecFile
+#endif
+
 prepareAndCallVSE :: IO (Handle, Handle, ProcessHandle)
 prepareAndCallVSE = do
   vseBin <- getEnvDef "HETS_VSE" "hetsvse"
@@ -198,6 +232,9 @@ prove ostr (Theory sig thsens) _freedefs = do
       (disAxs, disGoals) = partition isAxiom oSens
       rMap = Map.fromList $ map (\ SenAttr { senAttr = n } ->
                 (map toUpper $ transString n, n)) disGoals
+#ifdef TAR_PACKAGE
+  moveVSEFiles ostr
+#endif
   (inp, out, cp) <- prepareAndCallVSE
   sendMyMsg inp $ "(" ++ str ++ ")"
   readMyMsg cp out linksP
@@ -207,6 +244,9 @@ prove ostr (Theory sig thsens) _freedefs = do
   readMyMsg cp out lemsP
   sendMyMsg inp $ show $ prettySExpr $ SList $ map (namedSenToSExpr fsig) sens
   ms <- readFinalVSEOutput cp out
+#ifdef TAR_PACKAGE
+  createVSETarFile ostr
+#endif
   case ms of
     Nothing -> return []
     Just lemMap -> return

@@ -1,3 +1,4 @@
+{-# OPTIONS -cpp #-}
 {- |
 Module      :  $Header$
 Description :  Interface to send structured theories to the VSE prover
@@ -75,6 +76,7 @@ prove _cms (ln, node) libEnv =
         dg2 = dg1 { dgBody = elfilter (isGlobalDef . dgl_type) $ dgBody dg1 }
         dg3 = getSubGraph node dg2
         oLbl = labDG dg3 node
+        ostr = thName ln (node, oLbl)
     dg4 <- liftR $ qualifyDGraph ln dg3
     G_theory olid _ _ _ _ <- return $ dgn_theory oLbl
     let mcm = if Logic CASL == Logic olid then Just (Comorphism CASL2VSE) else
@@ -95,6 +97,9 @@ prove _cms (ln, node) libEnv =
            , show $ prettySExpr
              $ SList $ map (namedSenToSExpr sign2) sens2)) ns
     nLibEnv <- lift $ do
+#ifdef TAR_PACKAGE
+       moveVSEFiles ostr
+#endif
        (inp, out, cp) <- prepareAndCallVSE
        sendMyMsg inp $ "(" ++ unlines (map (thName ln) nls) ++ ")"
        mapM_ (\ nl -> do
@@ -107,6 +112,9 @@ prove _cms (ln, node) libEnv =
            readMyMsg cp out lemsP
            sendMyMsg inp sens) ts
        ms <- readFinalVSEOutput cp out
+#ifdef TAR_PACKAGE
+       createVSETarFile ostr
+#endif
        case ms of
          Nothing -> return libEnv
          Just lemMap -> return $ foldr (\ (n, lbl) le ->

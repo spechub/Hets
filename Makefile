@@ -329,6 +329,8 @@ cpp_sources = hets.hs $(happy_files) \
     Propositional/Logic_Propositional.hs \
     SoftFOL/Logic_SoftFOL.hs \
     VSE/Logic_VSE.hs \
+    VSE/Prove.hs \
+    Proof/VSE.hs
 
 # unused, remove when header files are gone
 genrule_header_files = $(wildcard ATC/*.header.hs)

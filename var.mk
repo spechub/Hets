@@ -3,6 +3,11 @@
 HC = ghc -optl-s -fno-gen-manifest
 HCPKG = ghc-pkg
 
+TARVERSION = $(shell $(HCPKG) field tar version)
+ifneq ($(findstring 0.2, $(TARVERSION)),)
+TAR_PACKAGE = -DTAR_PACKAGE
+endif
+
 TABULARVERSION = $(shell $(HCPKG) field tabular version)
 ifneq ($(findstring 0.1, $(TABULARVERSION)),)
 TABULAR_PACKAGE = -DTABULAR_PACKAGE
@@ -67,7 +72,7 @@ TESTTARGETFILES += Taxonomy/taxonomyTool.hs OWL/OWLParser.hs \
 endif
 
 HC_OPTS_WITHOUTGLADE = -threaded -fglasgow-exts -XOverlappingInstances \
-  $(NOMATHSERVER) \
+  $(NOMATHSERVER) $(TAR_PACKAGE) \
   $(HAXML_PACKAGE) $(UNI_PACKAGE) $(SHELLAC_PACKAGE) $(HXTFILTER_PACKAGE) \
   $(PFE_FLAGS) $(TABULAR_PACKAGE) $(EDITLINE_PACKAGE) -DCASLEXTENSIONS
 
