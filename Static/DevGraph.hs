@@ -55,7 +55,9 @@ import Control.Concurrent.MVar
 import Control.Exception (assert)
 
 import Data.Char (toLower)
+import Data.Graph.Inductive.Basic
 import Data.Graph.Inductive.Graph as Graph
+import Data.Graph.Inductive.Query.DFS
 import Data.Maybe (fromMaybe)
 import qualified Data.Map as Map
 import qualified Data.Set as Set
@@ -1048,10 +1050,22 @@ isHidingDef lt = case lt of
     HidingDef -> True
     _ -> False
 
+isDefEdge :: DGLinkType -> Bool
+isDefEdge edge = case edge of
+    GlobalDef -> True
+    LocalDef  -> True
+    HidingDef -> True
+    FreeDef _ -> True
+    CofreeDef _ -> True
+    _ -> False
+
+topsortedNodes :: DGraph -> [LNode DGNodeLab]
+topsortedNodes dgraph = let dg = dgBody dgraph in
+  reverse $ postorderF $ dffWith (\ (_, n, nl, _) -> (n, nl)) (nodes dg)
+    $ efilter (\ (s, t, el) -> s /= t && isDefEdge (dgl_type el)) dg
+
 {- | mark all nodes if they have incoming hiding nodes.
    Assume reference nodes to other libraries being properly marked already.
-   Also assumme that the nodes are numbered in topological order wrt
-   definition links.
 -}
 markHiding :: LibEnv -> DGraph -> DGraph
 markHiding le dgraph =
@@ -1065,7 +1079,7 @@ markHiding le dgraph =
             then nodeHasHiding (lookupDGraph (dgn_libname lbl) le)
                  $ dgn_node lbl
             else not (null hidingDefEdges) || any (nodeHasHiding dg) next }) dg)
-     dgraph $ labNodesDG dgraph
+     dgraph $ topsortedNodes dgraph
 
 nodeHasHiding :: DGraph -> Node -> Bool
 nodeHasHiding dg n = fromMaybe (error "nodeHasHiding") $ hasHiding $ labDG dg n

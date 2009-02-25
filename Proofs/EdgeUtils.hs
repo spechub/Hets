@@ -130,13 +130,6 @@ isProven edge = case edge of
            Just (Proven _ _) -> True
            _ -> False
 
-isDefEdge :: DGLinkType -> Bool
-isDefEdge edge = case edge of
-    GlobalDef -> True
-    LocalDef  -> True
-    HidingDef -> True
-    _ -> False
-
 isGlobalEdge :: DGLinkType -> Bool
 isGlobalEdge edge = case edge of
     GlobalDef -> True

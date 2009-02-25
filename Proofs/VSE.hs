@@ -82,7 +82,7 @@ prove _cms (ln, node) libEnv =
     let mcm = if Logic CASL == Logic olid then Just (Comorphism CASL2VSE) else
              Nothing
     dGraph <- liftR $ maybe return (flip dg_translation) mcm dg4
-    let nls = topsortedNodes $ dgBody dGraph
+    let nls = topsortedNodes dGraph
         ns = map snd nls
     ts <- liftR $ mapM
       (\ lbl -> do
