@@ -1,12 +1,14 @@
 #!/bin/bash -x
 
-PATH=/home/pub-bkb/bin:/usr/local/bin:/usr/bin/:/usr/local/X11/bin:/usr/ccs/bin:/home/pkgs/teTeX/3.0/bin/i686-pc-solaris2.10
+PATH=/home/pub-bkb/bin:/usr/bin/:/usr/ccs/bin:/opt/csw/bin:/opt/csw/gcc4/bin
 UDG_HOME=/home/pub-bkb/uDrawGraph-3.1
 HETS_LIB=/local/home/maeder/haskell/Hets-lib
+LD_LIBRARY_PATH=/home/wwwuser/maeder/cgi-bin
 
 export PATH
 export UDG_HOME
 export HETS_LIB
+export LD_LIBRARY_PATH
 
 cd /local/home/maeder/haskell
 
