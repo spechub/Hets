@@ -695,17 +695,17 @@ proveAtNode checkCons gInfo descr dgraph = do
    let ln = i_ln ist
        le = i_libEnv ist
        dgn = labDG dgraph descr
-       libNode = (ln,descr)
-   (dgraph',dgn') <- case hasLock dgn of
-    True -> return (dgraph, dgn)
+       libNode = (ln, descr)
+   dgn' <- case hasLock dgn of
+    True -> return dgn
     False -> do
       lockGlobal gInfo
-      (dgraph',dgn') <- initLocking (lookupDGraph ln le) (descr, dgn)
+      (dgraph', dgn') <- initLocking (lookupDGraph ln le) (descr, dgn)
       let nwle = Map.insert ln dgraph' le
           nwst = ost { i_state = Just $ ist { i_libEnv = nwle} }
       writeIORef (intState gInfo) nwst
       unlockGlobal gInfo
-      return (dgraph',dgn')
+      return dgn'
    locked <- tryLockLocal dgn'
    case locked of
     False -> errorDialog "Error" "Proofwindow already open"
@@ -718,8 +718,7 @@ proveAtNode checkCons gInfo descr dgraph = do
             runProveAtNode checkCons2 gInfo (descr, dgn') res
             unlockLocal dgn'
       case checkCons2 ||
-           ( isNormalFormNode dgraph' (snd libNode) ||
-            not (hasIncomingHidingEdge dgraph' $ snd libNode)) of
+            not (labelHasHiding dgn') of
         True -> do
           forkIO action
           return ()
@@ -795,11 +794,8 @@ checkconservativityOfEdge _ gInfo@(GInfo{ gi_GraphInfo = actGraphInfo})
   Nothing -> return ()
   Just ist -> do
    let ln = i_ln ist
-       libEnv = i_libEnv ist
+       libEnv' = i_libEnv ist
    lockGlobal gInfo
-   let libEnv' = case convertToNf ln libEnv target of
-                   Result _ (Just lE) -> lE
-                   _ -> error "checkconservativityOfEdge: convertToNf"
    let (_, thTar) =
         case computeTheory True libEnv' ln target of
           Res.Result _ (Just th1) -> th1
@@ -829,8 +825,6 @@ checkconservativityOfEdge _ gInfo@(GInfo{ gi_GraphInfo = actGraphInfo})
        do
         errorDialog "Result of conservativity check"
                     "No conservativity checkers available"
-        let nwst = ost {i_state = Just $ist{ i_libEnv=libEnv'}}
-        writeIORef (intState gInfo) nwst
         unlockGlobal gInfo
     else
      do
@@ -840,8 +834,6 @@ checkconservativityOfEdge _ gInfo@(GInfo{ gi_GraphInfo = actGraphInfo})
         do
          errorDialog "Result of conservativity check"
                      "No conservativity checker chosen"
-         let nwst = ost {i_state = Just $ ist { i_libEnv = libEnv'}}
-         writeIORef (intState gInfo) nwst
          unlockGlobal gInfo
        else
         do
@@ -887,11 +879,11 @@ checkconservativityOfEdge _ gInfo@(GInfo{ gi_GraphInfo = actGraphInfo})
                          )
              changes = if change then [ DeleteEdge (source,target,linklab)
                       , InsertEdge provenEdge ] else []
-             newGr = lookupDGraph ln libEnv'
-             nextGr = changesDGH newGr changes
+             dg = lookupDGraph ln libEnv'
+             nextGr = changesDGH dg changes
              newLibEnv = Map.insert ln
-               (groupHistory newGr conservativityRule nextGr) libEnv'
-             history = snd $ splitHistory (lookupDGraph ln libEnv) nextGr
+               (groupHistory dg conservativityRule nextGr) libEnv'
+             history = snd $ splitHistory dg nextGr
          applyChanges actGraphInfo $ reverse
             $ flatHistory history
          GA.redisplay actGraphInfo

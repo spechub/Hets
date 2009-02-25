@@ -1012,7 +1012,7 @@ initLocking dg (node, dgn) = do
 
 -- | returns the DGraph that belongs to the given library name
 lookupDGraph :: LIB_NAME -> LibEnv -> DGraph
-lookupDGraph = Map.findWithDefault (error "lookupDGraph")
+lookupDGraph ln = Map.findWithDefault (error $ "lookupDGraph " ++ show ln) ln
 
 isGlobalDef :: DGLinkType -> Bool
 isGlobalDef lt = case lt of
@@ -1101,5 +1101,5 @@ getTopsortedLibs le = let
 
 markAllHiding :: LibEnv -> LibEnv
 markAllHiding libEnv =
-  foldl (\ le ln -> Map.update (Just . markHiding le) ln le) libEnv
+  foldl (\ le ln -> Map.adjust (markHiding le) ln le) libEnv
     $ getTopsortedLibs libEnv

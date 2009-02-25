@@ -51,6 +51,7 @@ import Static.GTheory
 import Static.DevGraph
 import Proofs.EdgeUtils
 import Proofs.TheoremHideShift
+import Proofs.NormalForm
 import Common.Result
 import Common.ExtSign
 import Common.LibName
@@ -219,48 +220,20 @@ libEnv_flattening_renamings libEnv =
         return $ Map.fromList new_lib_env
 
 -- this function performs flattening of hiding links for a given developement graph
-dg_flattening_hiding :: LibEnv -> LIB_NAME -> DGraph
-dg_flattening_hiding lib_Env lib_name =
-  let
-   dg = lookupDGraph lib_name lib_Env
-   nods = nodesDG dg
-   nf_dg = applyUpdNf lib_Env lib_name dg nods
-   l_edges = labEdgesDG dg
+dg_flattening_hiding :: DGraph -> DGraph
+dg_flattening_hiding dg = let
    hids = Prelude.filter (\ (_,_,x) -> (case dgl_type x of
                                          HidingDef -> True
-                                         _ -> False)) l_edges
+                                         _ -> False)) $ labEdgesDG dg
   -- no need to care about references either, as nodes are preserved
   -- after flattening, as well as references.
-   n_dg = changesDGH nf_dg $ map DeleteEdge hids
-  in groupHistory nf_dg flat5 n_dg
-     where
-      applyUpdNf :: LibEnv
-                    -> LIB_NAME
-                    -> DGraph
-                    -> [Node]
-                    -> DGraph
-      applyUpdNf lib_Envi lib_Name dg l_nodes =
-       case l_nodes of
-        [] ->  dg
-        hd : tl -> let
-          new_Lib = propagateErrors $ convertToNf lib_Name
-                                                  lib_Envi
-                                                  hd
-          new_dg = lookupDGraph lib_Name new_Lib
-         in
-          applyUpdNf new_Lib lib_Name new_dg tl
+   n_dg = changesDGH dg $ map DeleteEdge hids
+  in groupHistory dg flat5 n_dg
 
 -- this function performs flattening of heterogeniety for the whole library
 libEnv_flattening_hiding :: LibEnv -> Result LibEnv
-libEnv_flattening_hiding libEnvi =
- let
-  new_lib_env = Prelude.map (\ (x,_) ->
-       let
-        z = dg_flattening_hiding libEnvi x
-       in
-        (x, z)) $ Map.toList libEnvi
- in
-  return $ Map.fromList new_lib_env
+libEnv_flattening_hiding =
+  fmap (Map.map dg_flattening_hiding) . normalFormLibEnv
 
 -- this function performs flattening of heterogeniety
 -- for a given developement graph

@@ -385,29 +385,11 @@ adoptEdgesAux node areIngoingEdges (src,tgt,edgelab) =
 getAllOpenNodeGoals :: [DGNodeLab] -> [DGNodeLab]
 getAllOpenNodeGoals = filter hasOpenGoals
 
-isNormalFormNode :: DGraph -> Node -> Bool
-isNormalFormNode dgraph node =
- let
-   nodelab = labDG dgraph node
- in case dgn_nf nodelab of
-      Just n -> node == n
-      _ -> False
-
-hasIncomingHidingEdge :: DGraph -> Node -> Bool
-hasIncomingHidingEdge dgraph n =
-  let
-    inEdges = innDG dgraph n
-    precs = map (\ (s,_,_) -> s) $ filter (liftE isGlobalDef) inEdges
-  in
-    any (liftE isHidingEdge) inEdges
-    || (or $ map (hasIncomingHidingEdge dgraph) precs)
-
 {- | return a warning text if the given node has incoming hiding edge,
      otherwise just an empty string. -}
 addHasInHidingWarning :: DGraph -> Node -> String
-addHasInHidingWarning dgraph n
-     | hasIncomingHidingEdge dgraph n =
+addHasInHidingWarning dgraph n = if labelHasHiding $ labDG dgraph n then
            "< Warning: this node has incoming hiding links ! \n" ++
            "  The theory shown here may be too weak. \n" ++
            "  Use the normal form of the node instead. >\n"
-     | otherwise = ""
+      else ""
