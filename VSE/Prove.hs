@@ -29,9 +29,9 @@ import Data.List
 import qualified Data.Map as Map
 import System.Process
 import System.IO
-import System.Directory
 import Text.ParserCombinators.Parsec
 #ifdef TAR_PACKAGE
+import System.Directory
 import qualified Codec.Archive.Tar as Tar
 #endif
 
