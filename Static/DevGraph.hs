@@ -58,7 +58,7 @@ import Data.Char (toLower)
 import Data.Graph.Inductive.Basic
 import Data.Graph.Inductive.Graph as Graph
 import Data.Graph.Inductive.Query.DFS
-import Data.Maybe (fromMaybe)
+import Data.Maybe
 import qualified Data.Map as Map
 import qualified Data.Set as Set
 
@@ -222,12 +222,9 @@ getRealDGNodeType dgnlab = DGNodeType
 -- | Creates a list with all DGNodeType types
 listDGNodeTypes :: [DGNodeType]
 listDGNodeTypes =
-  [ DGNodeType { nonRefType = ref
-               , isLocallyEmpty = isEmpty'}
-  | ref <-
-    [ RefType ] ++
-      [ NonRefType { isProvenCons = proven
-                   , isInternalSpec = spec }
+  [ DGNodeType { nonRefType = ref, isLocallyEmpty = isEmpty' }
+  | ref <- RefType :
+      [ NonRefType { isProvenCons = proven, isInternalSpec = spec }
       | proven <- [True, False]
       , spec <- [True, False]
       ]
@@ -594,7 +591,7 @@ showExt (NodeName _ s i) = s ++ if i == 0 then "" else show i
 
 showName :: NodeName -> String
 showName a@(NodeName n _ _) = let ext = showExt a in
-    show n ++ if ext == "" then "" else "_" ++ ext
+    show n ++ if null ext then ext else '_' : ext
 
 makeName :: SIMPLE_ID -> NodeName
 makeName n = NodeName n "" 0
@@ -659,7 +656,7 @@ newInfoNodeLab name info gTh = DGNodeLab
 
 -- | create a new node label using 'newNodeInfo' and 'newInfoNodeLab'
 newNodeLab :: NodeName -> DGOrigin -> G_theory -> DGNodeLab
-newNodeLab name orig = newInfoNodeLab name $ newNodeInfo orig
+newNodeLab name = newInfoNodeLab name . newNodeInfo
 
 -- ** handle the lock of a node
 
@@ -683,7 +680,7 @@ unlockLocal = treatNodeLock $ \ lock ->
 
 -- | checks if locking MVar is initialized
 hasLock :: DGNodeLab -> Bool
-hasLock = maybe False (const True) . dgn_lock
+hasLock = isJust . dgn_lock
 
 -- ** handle edge numbers and proof bases
 
@@ -814,7 +811,7 @@ isEmptyDG = isEmpty . dgBody
 
 -- | checks if a given node belongs to a given DG
 gelemDG :: Node -> DGraph -> Bool
-gelemDG n = (gelem n) . dgBody
+gelemDG n = gelem n . dgBody
 
 -- | get the number of nodes of a given DG
 noNodesDG :: DGraph -> Int
@@ -842,7 +839,7 @@ edgesDG = edges . dgBody
 
 -- | tries to get the label of the given node in a given DG
 labDG :: DGraph -> Node -> DGNodeLab
-labDG dg = maybe (error "labDG") id . lab (dgBody dg)
+labDG dg = fromMaybe (error "labDG") . lab (dgBody dg)
 
 -- | get the name of a node from the number of node
 getNameOfNode :: Node -> DGraph -> String
@@ -866,12 +863,12 @@ contextDG = context . dgBody
 safeContext :: (Show a, Show b, Graph gr) => String -> gr a b -> Node
             -> Context a b
 safeContext err g v =
-  maybe (error $ err ++ ": Match Exception, Node: " ++ show v) id
-  $ fst $ match v g
+  fromMaybe (error $ err ++ ": Match Exception, Node: " ++ show v)
+  . fst $ match v g
 
 -- | get the context and throw input string as error message
 safeContextDG :: String -> DGraph -> Node -> Context DGNodeLab DGLinkLab
-safeContextDG s dg n = safeContext s (dgBody dg) n
+safeContextDG s = safeContext s . dgBody
 
 -- ** manipulate graph
 
@@ -958,7 +955,7 @@ insEdgesDG = flip $ foldr insEdgeDG
 
 -- | merge a list of lnodes and ledges into a given DG
 mkGraphDG :: [LNode DGNodeLab] -> [LEdge DGLinkLab] -> DGraph -> DGraph
-mkGraphDG ns ls dg = insEdgesDG ls $ insNodesDG ns dg
+mkGraphDG ns ls = insEdgesDG ls . insNodesDG ns
 
 -- ** handle proof history
 
@@ -1013,7 +1010,7 @@ initLocking dg (node, dgn) = do
 
 -- | returns the DGraph that belongs to the given library name
 lookupDGraph :: LIB_NAME -> LibEnv -> DGraph
-lookupDGraph ln = Map.findWithDefault (error "lookupDGraph") ln
+lookupDGraph = Map.findWithDefault (error "lookupDGraph")
 
 isGlobalDef :: DGLinkType -> Bool
 isGlobalDef lt = case lt of
@@ -1081,8 +1078,11 @@ markHiding le dgraph =
             else not (null hidingDefEdges) || any (nodeHasHiding dg) next }) dg)
      dgraph $ topsortedNodes dgraph
 
+labelHasHiding :: DGNodeLab -> Bool
+labelHasHiding = fromMaybe (error "labelHasHiding") . hasHiding
+
 nodeHasHiding :: DGraph -> Node -> Bool
-nodeHasHiding dg n = fromMaybe (error "nodeHasHiding") $ hasHiding $ labDG dg n
+nodeHasHiding dg = labelHasHiding . labDG dg
 
 -- | Creates a LIB_NAME relation wrt dependencies via reference nodes
 getLibDepRel :: LibEnv -> Rel.Rel LIB_NAME
