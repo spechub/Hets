@@ -100,6 +100,7 @@ dgOriginHeder o = case o of
     DGFitView _ -> "fitting-view"
     DGFitViewA _ -> "fitting view (actual parameters)"
     DGProof -> "proof-construct"
+    DGNormalForm n -> "normal-form(" ++ shows n ")"
     DGintegratedSCC -> "OWL spec with integrated strongly connected components"
     DGFlattening -> "flattening"
 
@@ -120,6 +121,9 @@ instance Pretty DGNodeLab where
     [ text "Origin:" <+> pretty (nodeInfo l)
     , if hasOpenGoals l then text "has open goals" else
       if hasSenKind (const True) l then Doc.empty else text "locally empty"
+    , case hasHiding l of
+        Just b -> if b then text "has ingoing hiding link" else Doc.empty
+        _ -> text "uncomputed ingoing hiding links"
     , case dgn_nf l of
         Nothing -> Doc.empty
         Just n -> text "normal form:" <+> text (showNodeId n)

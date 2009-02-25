@@ -37,12 +37,13 @@ import Static.PrintDevGraph
 import Proofs.EdgeUtils
 import Proofs.QualifyNames
 import Proofs.DGFlattening
+import Proofs.NormalForm
 import Proofs.Automatic(automatic)
 import Proofs.Global(globSubsume, globDecomp)
 import Proofs.Local(localInference, locDecomp)
 import Proofs.Composition(composition, compositionCreatingEdges)
 import Proofs.HideTheoremShift(interactiveHideTheoremShift)
-import Proofs.TheoremHideShift(theoremHideShift, convertNodesToNf)
+import Proofs.TheoremHideShift(theoremHideShift)
 import Proofs.ComputeColimit(computeColimit)
 
 import Common.DocUtils(showDoc)
@@ -275,7 +276,7 @@ createGlobalMenu gInfo@(GInfo { gi_hetcatsOpts = opts
                    $ proofMenu gInfo str $ return . cmd ln)
         [ ("Theorem Hide Shift", theoremHideShift)
         , ("Compute Colimit", computeColimit)
-        , ("Compute normal forms", convertNodesToNf)
+        , ("Compute normal forms", const normalFormLibEnv)
         ] ++
         [ Menu (Just "Flattening") $ map ( \ (str, cmd) ->
            Button str $ ral $ performProofAction gInfo

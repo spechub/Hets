@@ -58,6 +58,7 @@ import Data.Char (toLower)
 import Data.Graph.Inductive.Basic
 import Data.Graph.Inductive.Graph as Graph
 import Data.Graph.Inductive.Query.DFS
+import Data.List
 import Data.Maybe
 import qualified Data.Map as Map
 import qualified Data.Set as Set
@@ -118,6 +119,7 @@ data DGOrigin =
   | DGFitView SIMPLE_ID
   | DGFitViewA SIMPLE_ID
   | DGProof
+  | DGNormalForm Node
   | DGintegratedSCC
   | DGFlattening
     deriving (Show, Eq)
@@ -1087,14 +1089,17 @@ nodeHasHiding dg = labelHasHiding . labDG dg
 -- | Creates a LIB_NAME relation wrt dependencies via reference nodes
 getLibDepRel :: LibEnv -> Rel.Rel LIB_NAME
 getLibDepRel = Rel.transClosure
-  . Rel.fromSet . Map.foldWithKey (\ ln dg s -> foldr (\ x ->
-        if isDGRef x then Set.insert (ln, dgn_libname x) else id) s
-        $ map snd $ labNodesDG dg) Set.empty
+  . Rel.fromSet . Map.foldWithKey (\ ln dg s ->
+    foldr (\ x -> if isDGRef x then Set.insert (ln, dgn_libname x) else id) s
+      $ map snd $ labNodesDG dg) Set.empty
 
 getTopsortedLibs :: LibEnv -> [LIB_NAME]
-getTopsortedLibs = concatMap Set.toList . reverse . Rel.topSort . getLibDepRel
+getTopsortedLibs le = let
+  ls = concatMap Set.toList . reverse . Rel.topSort $ getLibDepRel le
+  allLs = Map.keys le
+  in (allLs \\ ls) ++ ls
 
 markAllHiding :: LibEnv -> LibEnv
 markAllHiding libEnv =
- foldl (\ le ln -> Map.update (Just . markHiding le) ln le) libEnv
+  foldl (\ le ln -> Map.update (Just . markHiding le) ln le) libEnv
     $ getTopsortedLibs libEnv
