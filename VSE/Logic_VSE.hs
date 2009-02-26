@@ -92,11 +92,12 @@ instance StaticAnalysis VSE VSEBasicSpec Sentence
          intersection VSE = interSigM interProcs
          morphism_union VSE = morphismUnionM (const id) unionProcs
          final_union VSE = addSigM unionProcs
-         inclusion VSE = sigInclusion emptyMorExt isSubProcsMap diffProcs
+         is_subsig VSE = isSubSig isSubProcsMap
+         subsig_inclusion VSE = sigInclusion emptyMorExt
          cogenerated_sign VSE s = fmap correctTarget
-           . cogeneratedSign emptyMorExt isSubProcsMap s
+           . cogeneratedSign emptyMorExt s
          generated_sign VSE s = fmap correctTarget
-           . generatedSign emptyMorExt isSubProcsMap s
+           . generatedSign emptyMorExt s
          induced_from_morphism VSE rm = fmap correctTarget
            . inducedFromMorphismExt inducedExt emptyMorExt rm
          induced_from_to_morphism VSE rm s1 = fmap correctTarget

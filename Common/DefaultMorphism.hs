@@ -56,8 +56,6 @@ legalDefaultMorphism legalSign (MkMorphism s t _) =
 mkDefaultMorphism :: sign -> sign -> DefaultMorphism sign
 mkDefaultMorphism s1 s2 = MkMorphism s1 s2 False
 
-defaultInclusion :: (Monad m) => (sign -> sign -> Bool) -> sign -> sign
-                 -> m (DefaultMorphism sign)
-defaultInclusion isSubSig s1 s2 =
-    if isSubSig s1 s2 then return $ MkMorphism s1 s2 True else
-    fail "non subsignatures for inclusion"
+defaultInclusion :: Monad m => sign -> sign -> m (DefaultMorphism sign)
+defaultInclusion s1 s2 = return $ MkMorphism s1 s2 True
+

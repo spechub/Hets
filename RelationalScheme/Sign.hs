@@ -182,10 +182,7 @@ idMor t = RSMorphism
             }
 
 rsInclusion :: RSTables -> RSTables -> Result RSMorphism
-rsInclusion t1 t2 =
-    case t1 `isRSSubsig` t2 of
-        False -> fatal_error ((show t1) ++ "\nis not subsignature of\n" ++ (show t2)) nullRange
-        True  -> return $ RSMorphism
+rsInclusion t1 t2 = return $ RSMorphism
             {
                 domain   = t1
             ,   codomain = t2

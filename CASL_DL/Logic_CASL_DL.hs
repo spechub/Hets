@@ -114,10 +114,10 @@ instance StaticAnalysis CASL_DL DL_BASIC_SPEC DLFORMULA
          signature_union CASL_DL s = return . addSig addCASL_DLSign s
          morphism_union CASL_DL = morphismUnion (const id) addCASL_DLSign
          final_union CASL_DL = finalUnion addCASL_DLSign
-         inclusion CASL_DL =
-             sigInclusion emptyMorExt isSubCASL_DLSign diffCASL_DLSign
-         cogenerated_sign CASL_DL = cogeneratedSign emptyMorExt isSubCASL_DLSign
-         generated_sign CASL_DL = generatedSign emptyMorExt isSubCASL_DLSign
+         is_subsig CASL_DL = isSubSig isSubCASL_DLSign
+         subsig_inclusion CASL_DL = sigInclusion emptyMorExt
+         cogenerated_sign CASL_DL = cogeneratedSign emptyMorExt
+         generated_sign CASL_DL = generatedSign emptyMorExt
          induced_from_morphism CASL_DL = inducedFromMorphism emptyMorExt
          induced_from_to_morphism CASL_DL =
              inducedFromToMorphism emptyMorExt isSubCASL_DLSign diffCASL_DLSign

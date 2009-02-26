@@ -412,8 +412,7 @@ inducedFromToMorphismAuxExt extInd extEm isSubExt diffExt rmap
   if isSubSig isSubExt inducedSign sigma2
    -- yes => we are done
    then composeM (\ _ _ -> return extEm) mor1
-            $ idOrInclMorphism isSubExt
-            $ embedMorphism extEm inducedSign sigma2
+            $ idOrInclMorphism $ embedMorphism extEm inducedSign sigma2
    else fatal_error
          ("No signature morphism for symbol map found.\n" ++
           "The following mapped symbols are missing in the target signature:\n"
@@ -448,15 +447,15 @@ Output: signature "Sigma1"<=Sigma.
 7. return the inclusion of sigma1 into sigma.
 -}
 
-generatedSign :: m -> (e -> e -> Bool) -> SymbolSet -> Sign f e
+generatedSign :: m -> SymbolSet -> Sign f e
               -> Result (Morphism f e m)
-generatedSign extEm isSubExt sys sigma =
+generatedSign extEm sys sigma =
   if not (sys `Set.isSubsetOf` symset)   -- 2.
    then let diffsyms = sys Set.\\ symset in
         fatal_error ("Revealing: The following symbols "
                      ++ showDoc diffsyms " are not in the signature")
         $ getRange diffsyms
-   else return $ idOrInclMorphism isSubExt $ embedMorphism extEm sigma2 sigma
+   else return $ idOrInclMorphism $ embedMorphism extEm sigma2 sigma
   -- 7.
   where
   symset = symOf sigma   -- 1.
@@ -504,11 +503,11 @@ Output: signature "Sigma1"<=Sigma.
 5. return the inclusion of sigma1 into sigma.
 -}
 
-cogeneratedSign :: m -> (e -> e -> Bool) -> SymbolSet -> Sign f e
+cogeneratedSign :: m -> SymbolSet -> Sign f e
                 -> Result (Morphism f e m)
-cogeneratedSign extEm isSubExt symset sigma =
+cogeneratedSign extEm symset sigma =
   if Set.isSubsetOf symset symset0   -- 2.
-   then generatedSign extEm isSubExt symset1 sigma -- 4./5.
+   then generatedSign extEm symset1 sigma -- 4./5.
    else let diffsyms = symset Set.\\ symset0 in
         fatal_error ("Hiding: The following symbols "
             ++ showDoc diffsyms " are not in the signature")

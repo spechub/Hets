@@ -72,7 +72,8 @@ instance StaticAnalysis SoftFOL () Sentence
                Sign
                SoftFOLMorphism SFSymbol ()  where
          empty_signature SoftFOL = emptySign
-         inclusion SoftFOL = defaultInclusion (const $ const True)
+         is_subsig SoftFOL _ _ = True
+         subsig_inclusion SoftFOL = defaultInclusion
 
 instance Logic SoftFOL () () Sentence () ()
                Sign

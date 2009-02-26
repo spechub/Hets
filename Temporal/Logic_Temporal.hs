@@ -104,7 +104,8 @@ instance StaticAnalysis Temporal
         where
           basic_analysis           Temporal = Nothing -- Just Analysis.basicTemporalAnalysis
           empty_signature          Temporal = Sign.emptySig
-          inclusion                Temporal = Morphism.inclusionMap
+          is_subsig                Temporal = Sign.isSubSigOf
+          subsig_inclusion       Temporal s = return . Morphism.inclusionMap s
           signature_union          Temporal = Sign.sigUnion
           symbol_to_raw            Temporal = Symbol.symbolToRaw
           id_to_raw                Temporal = Symbol.idToRaw

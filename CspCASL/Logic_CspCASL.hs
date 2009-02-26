@@ -184,9 +184,9 @@ instance Show a => StaticAnalysis (GenCspCASL a)
       stat_symb_items (GenCspCASL _) = statSymbItems
       matches (GenCspCASL _) = CASL.Morphism.matches
       empty_signature (GenCspCASL _) = SignCSP.emptyCspCASLSign
-      inclusion (GenCspCASL _) = sigInclusion
+      is_subsig (GenCspCASL _) = isSubSig SignCSP.isInclusion
+      subsig_inclusion (GenCspCASL _) = sigInclusion
           SignCSP.emptyCspAddMorphism
-          SignCSP.isInclusion const -- this is still wrong
       signature_union (GenCspCASL _) s =
           return . addSig SignCSP.addCspProcSig s
       induced_from_morphism (GenCspCASL _) = inducedFromMorphism

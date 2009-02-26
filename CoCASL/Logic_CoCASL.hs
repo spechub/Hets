@@ -83,10 +83,10 @@ instance StaticAnalysis CoCASL C_BASIC_SPEC CoCASLFORMULA
          intersection CoCASL s = return . interSig interCoCASLSign s
          morphism_union CoCASL = morphismUnion (const id) addCoCASLSign
          final_union CoCASL = finalUnion addCoCASLSign
-         inclusion CoCASL =
-             sigInclusion emptyMorExt isSubCoCASLSign diffCoCASLSign
-         cogenerated_sign CoCASL = cogeneratedSign emptyMorExt isSubCoCASLSign
-         generated_sign CoCASL = generatedSign emptyMorExt isSubCoCASLSign
+         is_subsig CoCASL = isSubSig isSubCoCASLSign
+         subsig_inclusion CoCASL = sigInclusion emptyMorExt
+         cogenerated_sign CoCASL = cogeneratedSign emptyMorExt
+         generated_sign CoCASL = generatedSign emptyMorExt
          induced_from_morphism CoCASL = inducedFromMorphism emptyMorExt
          induced_from_to_morphism CoCASL =
              inducedFromToMorphism emptyMorExt isSubCoCASLSign diffCoCASLSign

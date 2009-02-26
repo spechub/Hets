@@ -456,27 +456,21 @@ legalMor mor =
 isInclOpMap :: Op_map -> Bool
 isInclOpMap = all (\ ((i, _), (j, k)) -> i == j && k == Total) . Map.toList
 
-idOrInclMorphism :: (e -> e -> Bool) -> Morphism f e m -> Morphism f e m
-idOrInclMorphism isSubExt m =
-  let src = msource m
-      tar = mtarget m
-  in if isSubSig isSubExt tar src then m
-     else let diffOpMap = diffMapSet (opMap src) $ opMap tar in
+idOrInclMorphism :: Morphism f e m -> Morphism f e m
+idOrInclMorphism m =
+  let src = opMap $ msource m
+      tar = opMap $ mtarget m
+  in if isSubOpMap tar src then m
+     else let diffOpMap = diffMapSet src tar in
           m { op_map = Map.fromList $ concatMap (\ (i, s) ->
               map (\ t -> ((i, t), (i, Total)))
                  $ Set.toList s) $ Map.toList diffOpMap }
 
 sigInclusion :: (Pretty f, Pretty e)
              => m -- ^ computed extended morphism
-             -> (e -> e -> Bool) -- ^ subsignature test of extensions
-             -> (e -> e -> e) -- ^ difference of signature extensions
              -> Sign f e -> Sign f e -> Result (Morphism f e m)
-sigInclusion extEm isSubExt diffExt sigma1 sigma2 =
-  if isSubSig isSubExt sigma1 sigma2 then
-     return $ idOrInclMorphism isSubExt $ embedMorphism extEm sigma1 sigma2
-  else Result [Diag Error
-          ("Attempt to construct inclusion between non-subsignatures:\n"
-           ++ showDoc (diffSig diffExt sigma1 sigma2) "") nullRange] Nothing
+sigInclusion extEm sigma1 =
+     return . idOrInclMorphism . embedMorphism extEm sigma1
 
 addSigM :: Monad m => (e -> e -> m e) -> Sign f e -> Sign f e -> m (Sign f e)
 addSigM f a b = do

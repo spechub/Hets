@@ -83,9 +83,10 @@ instance StaticAnalysis ConstraintCASL
          signature_union ConstraintCASL s = return . addSig const s
          morphism_union ConstraintCASL = morphismUnion (const id) const
          final_union ConstraintCASL = finalUnion const
-         inclusion ConstraintCASL = sigInclusion () trueC const
-         cogenerated_sign ConstraintCASL = cogeneratedSign () trueC
-         generated_sign ConstraintCASL = generatedSign () trueC
+         is_subsig ConstraintCASL = isSubSig trueC
+         subsig_inclusion ConstraintCASL = sigInclusion ()
+         cogenerated_sign ConstraintCASL = cogeneratedSign ()
+         generated_sign ConstraintCASL = generatedSign ()
          induced_from_morphism ConstraintCASL = inducedFromMorphism ()
          induced_from_to_morphism ConstraintCASL =
              inducedFromToMorphism () trueC const

@@ -13,7 +13,6 @@ Morphisms for OWL
 
 module OWL.Morphism
   ( OWL_Morphism
-  , owlInclusion
   , cogeneratedSign
   ) where
 
@@ -31,11 +30,8 @@ import Control.Monad
 
 type OWL_Morphism = DefaultMorphism Sign
 
-owlInclusion :: Monad m => Sign -> Sign -> m (DefaultMorphism Sign)
-owlInclusion = defaultInclusion isSubSign
-
 cogeneratedSign :: Set.Set Entity -> Sign -> Result OWL_Morphism
 cogeneratedSign s sign =
   let sig2 = execState (mapM_ (modEntity Set.delete) $ Set.toList s) sign
-  in owlInclusion sig2 sign
-
+  in if isSubSign sig2 sign then defaultInclusion sig2 sign else
+         fail "non OWL subsignatures for cogeneratedSign"

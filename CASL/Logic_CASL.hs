@@ -227,9 +227,10 @@ instance StaticAnalysis CASL CASLBasicSpec CASLFORMULA
          intersection CASL s = return . interSig const s
          morphism_union CASL = morphismUnion (const id) const
          final_union CASL = finalUnion const
-         inclusion CASL = sigInclusion () trueC const
-         cogenerated_sign CASL = cogeneratedSign () trueC
-         generated_sign CASL = generatedSign () trueC
+         is_subsig CASL = isSubSig trueC
+         subsig_inclusion CASL = sigInclusion ()
+         cogenerated_sign CASL = cogeneratedSign ()
+         generated_sign CASL = generatedSign ()
          induced_from_morphism CASL = inducedFromMorphism ()
          induced_from_to_morphism CASL = inducedFromToMorphism () trueC const
          theory_to_taxonomy CASL = convTaxo

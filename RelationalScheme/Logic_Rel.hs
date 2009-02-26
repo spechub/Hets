@@ -79,5 +79,6 @@ instance StaticAnalysis RelScheme
     where
       basic_analysis RelScheme  = Just $ basic_Rel_analysis
       empty_signature RelScheme = emptyRSSign
-      inclusion RelScheme       = rsInclusion
+      is_subsig RelScheme = isRSSubsig
+      subsig_inclusion RelScheme = rsInclusion
       signature_union RelScheme = uniteSig

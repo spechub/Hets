@@ -107,9 +107,10 @@ instance StaticAnalysis Modal M_BASIC_SPEC ModalFORMULA
          intersection Modal s = return . interSig interModalSign s
          morphism_union Modal = morphismUnion (const id) addModalSign
          final_union Modal = finalUnion addModalSign
-         inclusion Modal = sigInclusion emptyMorExt isSubModalSign diffModalSign
-         cogenerated_sign Modal = cogeneratedSign emptyMorExt isSubModalSign
-         generated_sign Modal = generatedSign emptyMorExt isSubModalSign
+         is_subsig Modal = isSubSig isSubModalSign
+         subsig_inclusion Modal = sigInclusion emptyMorExt
+         cogenerated_sign Modal = cogeneratedSign emptyMorExt
+         generated_sign Modal = generatedSign emptyMorExt
          induced_from_morphism Modal = inducedFromMorphism emptyMorExt
          induced_from_to_morphism Modal =
              inducedFromToMorphism emptyMorExt isSubModalSign diffModalSign

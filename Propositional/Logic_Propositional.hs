@@ -152,7 +152,8 @@ instance StaticAnalysis Propositional
           basic_analysis Propositional           =
               Just $ Analysis.basicPropositionalAnalysis
           empty_signature Propositional          = Sign.emptySig
-          inclusion Propositional                = Morphism.inclusionMap
+          is_subsig Propositional                = Sign.isSubSigOf
+          subsig_inclusion Propositional s = return . Morphism.inclusionMap s
           signature_union Propositional          = Sign.sigUnion
           symbol_to_raw Propositional            = Symbol.symbolToRaw
           id_to_raw     Propositional            = Symbol.idToRaw

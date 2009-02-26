@@ -79,9 +79,10 @@ instance StaticAnalysis COL C_BASIC_SPEC COLFORMULA
            return . addSig addCOLSign sigma1
          morphism_union COL = morphismUnion (const id) addCOLSign
          final_union COL = finalUnion addCOLSign
-         inclusion COL = sigInclusion emptyMorExt isSubCOLSign diffCOLSign
-         cogenerated_sign COL = cogeneratedSign emptyMorExt isSubCOLSign
-         generated_sign COL = generatedSign emptyMorExt isSubCOLSign
+         is_subsig COL = isSubSig isSubCOLSign
+         subsig_inclusion COL = sigInclusion emptyMorExt
+         cogenerated_sign COL = cogeneratedSign emptyMorExt
+         generated_sign COL = generatedSign emptyMorExt
          induced_from_morphism COL = inducedFromMorphism emptyMorExt
          induced_from_to_morphism COL =
              inducedFromToMorphism emptyMorExt isSubCOLSign diffCOLSign

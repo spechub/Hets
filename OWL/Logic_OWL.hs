@@ -16,6 +16,7 @@ __SROIQ__
 module OWL.Logic_OWL where
 
 import Common.AS_Annotation
+import Common.DefaultMorphism
 import Common.Doc
 import Common.DocUtils
 import Common.ProofTree
@@ -72,7 +73,8 @@ instance StaticAnalysis OWL OntologyFile Sentence
       empty_signature OWL = emptySign
       signature_union OWL s = return . addSign s
       final_union OWL = signature_union OWL
-      inclusion OWL = owlInclusion
+      is_subsig OWL = isSubSign
+      subsig_inclusion OWL = defaultInclusion
       matches OWL e@(Entity _ u) r = case r of
         ASymbol s -> s == e
         AnUri s -> s == u

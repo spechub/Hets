@@ -190,14 +190,6 @@ compMor m1 m2 = if mtarget m1 == msource m2 then
                      $ Map.toList $ assumps src }
   else fail "intermediate signatures of morphisms do not match"
 
-inclusionMor :: Env -> Env -> Result Morphism
-inclusionMor e1 e2 =
-  if isSubEnv e1 e2
-     then return (mkMorphism e1 e2)
-     else Result [Diag Error
-          ("Attempt to construct inclusion between non-subsignatures:\n"
-           ++ showEnvDiff e1 e2) nullRange] Nothing
-
 showEnvDiff :: Env -> Env -> String
 showEnvDiff e1 e2 =
     "Signature 1:\n" ++ showDoc e1 "\nSignature 2:\n"
