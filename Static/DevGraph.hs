@@ -152,7 +152,7 @@ data DGNodeLab =
   DGNodeLab
   { dgn_name :: NodeName        -- name in the input language
   , dgn_theory :: G_theory       -- local theory
-  , hasHiding :: Maybe Bool      -- has this node an ingoing hiding link
+  , labelHasHiding :: Bool      -- has this node an ingoing hiding link
   , dgn_nf :: Maybe Node         -- normal form, for Theorem-Hide-Shift
   , dgn_sigma :: Maybe GMorphism -- inclusion of signature into nf signature
   , nodeInfo :: DGNodeInfo
@@ -650,7 +650,7 @@ newInfoNodeLab :: NodeName -> DGNodeInfo -> G_theory -> DGNodeLab
 newInfoNodeLab name info gTh = DGNodeLab
   { dgn_name = name
   , dgn_theory = gTh
-  , hasHiding = Nothing
+  , labelHasHiding = False
   , dgn_nf = Nothing
   , dgn_sigma = Nothing
   , nodeInfo = info
@@ -1070,18 +1070,15 @@ markHiding :: LibEnv -> DGraph -> DGraph
 markHiding le dgraph =
   foldl (\ dg (n, lbl) -> let
      ingoingEdges = innDG dg n
-     hidingDefEdges = filter (liftE isHidingDef ) ingoingEdges
-     globalDefEdges = filter (liftE isGlobalDef) ingoingEdges
-     next = map (\ (s, _, _) ->  s) globalDefEdges
-     in fst $ labelNodeDG (n, lbl { hasHiding = Just
-          $ if isDGRef lbl
+     defEdges = filter (liftE isDefEdge) ingoingEdges
+     hidingDefEdges = filter (liftE isHidingDef ) defEdges
+     next = map (\ (s, _, _) ->  s) defEdges
+     in fst $ labelNodeDG (n, lbl { labelHasHiding =
+            if isDGRef lbl
             then nodeHasHiding (lookupDGraph (dgn_libname lbl) le)
                  $ dgn_node lbl
             else not (null hidingDefEdges) || any (nodeHasHiding dg) next }) dg)
      dgraph $ topsortedNodes dgraph
-
-labelHasHiding :: DGNodeLab -> Bool
-labelHasHiding = fromMaybe (error "labelHasHiding") . hasHiding
 
 nodeHasHiding :: DGraph -> Node -> Bool
 nodeHasHiding dg = labelHasHiding . labDG dg

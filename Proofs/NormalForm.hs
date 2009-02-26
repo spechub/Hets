@@ -101,7 +101,6 @@ normalFormDG libEnv dgraph = foldM (\ dg (node, nodelab) ->
                 nfName = mkSimpleId $ "NormalForm" ++ show tt ++ show node
                 nfLabel = (newNodeLab (NodeName nfName ss 0)
                   (DGNormalForm node) sign)
-                  { hasHiding = Just False } -- avoid recomputations
                 newLab = nodelab -- the new label for node
                      { dgn_nf = Just nfNode,
                        dgn_sigma = Just $ mmap Map.! (g Map.! node)
