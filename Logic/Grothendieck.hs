@@ -703,7 +703,7 @@ genCompInclusion f mor1 mor2 = do
 -- | Composition of two Grothendieck signature morphisms
 -- | with itermediate inclusion
 compInclusion :: LogicGraph -> GMorphism -> GMorphism -> Result GMorphism
-compInclusion = genCompInclusion . ginclusion
+compInclusion = genCompInclusion . inclusionAux False
 
 -- | Find all (composites of) comorphisms starting from a given logic
 findComorphismPaths :: LogicGraph ->  G_sublogics -> [AnyComorphism]
