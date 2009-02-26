@@ -50,7 +50,7 @@ normalFormLNS lns libEnv = foldM (\ le ln -> do
   newDg <- normalFormDG le dg
   return $ Map.insert ln
     (groupHistory dg normalFormRule newDg) le)
-  libEnv $ lns
+  libEnv lns
 
 normalFormDG :: LibEnv -> DGraph -> Result DGraph
 normalFormDG libEnv dgraph = foldM (\ dg (node, nodelab) ->
@@ -148,11 +148,11 @@ computeDiagram dgraph nodeList (gd, g) =
        -- TO DO: no local links, and why edges with s=t are removed
        --        add normal form nodes
        -- sources of each edge must be added as new nodes
-       nodeIds = zip (newNodes (length $ concat $ map snd defInEdges) gd)
+       nodeIds = zip (newNodes (length $ concatMap snd defInEdges) gd)
                      $ concatMap (\(n,l) -> map (\x -> (n,x)) l ) defInEdges
        newLNodes = zip (map fst nodeIds) $
                    map (\ (s,_,_) -> dgn_theory $ labDG dgraph s) $
-                   concat $  map snd defInEdges
+                   concatMap snd defInEdges
        g0 = Map.fromList $
                      map (\ (newS, (_newT, (s,_t, _))) -> (newS,s)) nodeIds
        morphEdge (n1,(n2, (_, _, el))) =
