@@ -153,7 +153,7 @@ instance Eq G_sign where
 
 instance Ord G_sign where
   compare (G_sign l1 sigma1 s1) (G_sign l2 sigma2 s2) =
-    if (s1 > startSigId && s2 > startSigId) then compare s1 s2 else
+    if s1 > startSigId && s2 > startSigId && s1 == s2 then EQ else
      compare (coerceSign l1 l2 "Eq G_sign" sigma1) $ Just sigma2
 
 -- | prefer a faster subsignature test if possible
@@ -258,7 +258,7 @@ data G_sublogics = forall lid sublogics
 instance Show G_sublogics where
     show (G_sublogics lid sub) = language_name lid ++ case sublogicName sub of
       [] -> ""
-      h -> "." ++ h
+      h -> '.' : h
 
 instance Eq G_sublogics where
     g1 == g2 = compare g1 g2 == EQ
@@ -401,7 +401,7 @@ lookupCompComorphism nameList logicGraph = do
 
 -- | find a comorphism in a logic graph
 lookupComorphism :: Monad m => String -> LogicGraph -> m AnyComorphism
-lookupComorphism coname = lookupCompComorphism $ splitOn ';' coname
+lookupComorphism= lookupCompComorphism . splitOn ';'
 
 -- | find a modification in a logic graph
 lookupModification :: (Monad m) => String -> LogicGraph -> m AnyModification
@@ -492,8 +492,8 @@ instance Ord GMorphism where
     (GMorphism cid2 sigma2 in2 mor2 in2') =
       case compare (Comorphism cid1, G_sign (sourceLogic cid1) sigma1 in1)
             (Comorphism cid2, G_sign (sourceLogic cid2) sigma2 in2) of
-        EQ -> if in1' > startMorId && in2' > startMorId
-          then compare in1' in2' else
+        EQ -> if in1' > startMorId && in2' > startMorId && in1' == in2'
+          then EQ else
           compare (coerceMorphism (targetLogic cid1) (targetLogic cid2)
                    "Eq GMorphism.coerceMorphism" mor1) (Just mor2)
         r -> r
@@ -716,26 +716,24 @@ findComorphismPaths lg (G_sublogics lid sub) =
   iterateComp n l = -- (l::[(AnyComorphism,[AnyComorphism])]) =
     if n>1 || l==newL then newL else iterateComp (n+1) newL
     where
-    newL = nub (l ++ (concat (map extend l)))
+    newL = nub $ l ++ concatMap extend l
     -- extend comorphism list in all directions, but no cylces
     extend (coMor, cmps) =
        let addCoMor c =
             case compComorphism coMor c of
               Nothing -> Nothing
               Just c1 -> Just (c1, c : cmps)
-        in catMaybes $ map addCoMor $ filter (not . (`elem` cmps)) $ coMors
+        in catMaybes . map addCoMor $ filter (not . (`elem` cmps)) coMors
 
 -- | finds first comorphism with a matching sublogic
 findComorphism ::Monad m => G_sublogics -> [AnyComorphism] -> m AnyComorphism
 findComorphism _ [] = fail "No matching comorphism found"
-findComorphism gsl@(G_sublogics lid sub) ((Comorphism cid):rest) =
-    let l2 = sourceLogic cid
-        rec = findComorphism gsl rest in
-   if language_name lid == language_name l2
-      then if isSubElem (forceCoerceSublogic lid l2 sub) $ sourceSublogic cid
-              then return $ Comorphism cid
-              else rec
-      else rec
+findComorphism gsl@(G_sublogics lid sub) (Comorphism cid : rest) =
+    let l2 = sourceLogic cid in
+    if language_name lid == language_name l2
+      && isSubElem (forceCoerceSublogic lid l2 sub) (sourceSublogic cid)
+    then return $ Comorphism cid
+    else findComorphism gsl rest
 
 -- | check transportability of Grothendieck signature morphisms
 -- | (currently returns false for heterogeneous morphisms)
