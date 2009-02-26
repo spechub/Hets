@@ -9,6 +9,8 @@ Portability :  non-portable
 
 CASL signature colimits, computed component-wise.
 Supposed to be working for CASL extensions as well.
+based on
+<http://www.informatik.uni-bremen.de/~till/papers/colimits.ps>
 
 -}
 
