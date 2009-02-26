@@ -665,10 +665,10 @@ toG_morphism (GMorphism cid _ _ mor i) = G_morphism (targetLogic cid) mor i
 
 gSigCoerce :: LogicGraph -> G_sign -> AnyLogic
            -> Result (G_sign, AnyComorphism)
-gSigCoerce logicGraph g@(G_sign lid1 sigma1 _) l2@(Logic lid2) =
+gSigCoerce lg g@(G_sign lid1 sigma1 _) l2@(Logic lid2) =
   if language_name lid1 == language_name lid2
     then return (g, idComorphism l2) else do
-    cmor@(Comorphism i) <- logicInclusion logicGraph (Logic lid1) l2
+    cmor@(Comorphism i) <- logicInclusion lg (Logic lid1) l2
     ExtSign sigma1' _ <-
         coerceSign lid1 (sourceLogic i) "gSigCoerce of signature" sigma1
     (sigma1'', _) <- map_sign i sigma1'
@@ -677,14 +677,18 @@ gSigCoerce logicGraph g@(G_sign lid1 sigma1 _) l2@(Logic lid2) =
 
 -- | inclusion morphism between two Grothendieck signatures
 ginclusion :: LogicGraph -> G_sign -> G_sign -> Result GMorphism
-ginclusion logicGraph (G_sign lid1 sigma1 ind) (G_sign lid2 sigma2 _) = do
-    Comorphism i <- logicInclusion logicGraph (Logic lid1) (Logic lid2)
+ginclusion = inclusionAux True
+
+inclusionAux :: Bool -> LogicGraph -> G_sign -> G_sign -> Result GMorphism
+inclusionAux guard lg (G_sign lid1 sigma1 ind) (G_sign lid2 sigma2 _) = do
+    Comorphism i <- logicInclusion lg (Logic lid1) (Logic lid2)
     ext1@(ExtSign sigma1' _) <-
         coerceSign lid1 (sourceLogic i) "Inclusion of signatures" sigma1
     (sigma1'',_) <- map_sign i sigma1'
     ExtSign sigma2' _ <-
         coerceSign lid2 (targetLogic i) "Inclusion of signatures" sigma2
-    mor <- inclusion (targetLogic i) sigma1'' sigma2'
+    mor <- (if guard then inclusion else subsig_inclusion)
+        (targetLogic i) sigma1'' sigma2'
     return (GMorphism i ext1 ind mor startMorId)
 
 genCompInclusion :: (G_sign -> G_sign -> Result GMorphism)
@@ -699,7 +703,7 @@ genCompInclusion f mor1 mor2 = do
 -- | Composition of two Grothendieck signature morphisms
 -- | with itermediate inclusion
 compInclusion :: LogicGraph -> GMorphism -> GMorphism -> Result GMorphism
-compInclusion lg = genCompInclusion (ginclusion lg)
+compInclusion = genCompInclusion . ginclusion
 
 -- | Find all (composites of) comorphisms starting from a given logic
 findComorphismPaths :: LogicGraph ->  G_sublogics -> [AnyComorphism]

@@ -254,7 +254,7 @@ prepareForConsChecking st (G_cons_checker lid4 p, Comorphism cid) =
                    "Proofs.InferBasic.callProver: basic theory"
                    (sign, toNamedList sens)
         (sign'',sens'') <- wrapMapTheory cid bTh'
-        incl <- inclusion lidT (empty_signature lidT) sign''
+        incl <- subsig_inclusion lidT (empty_signature lidT) sign''
         let mor = TheoryMorphism
                     { t_source = empty_theory lidT,
                       t_target = Theory sign'' (toThSens sens''),

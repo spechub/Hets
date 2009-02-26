@@ -181,7 +181,7 @@ basicInferenceNode checkCons lg (ln, node) libname guiMVar libEnv intSt
                    (sign, toNamedList axs)
             -- Borrowing: translate theory
             (sign'', sens'') <- liftR $ wrapMapTheory cid bTh'
-            incl <- liftR $ inclusion lidT (empty_signature lidT) sign''
+            incl <- liftR $ subsig_inclusion lidT (empty_signature lidT) sign''
             let mor = TheoryMorphism
                       { t_source = empty_theory lidT,
                         t_target = Theory sign'' (toThSens sens''),

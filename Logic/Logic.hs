@@ -418,8 +418,6 @@ class ( Syntax lid basic_spec symb_items symb_map_items
             is injective -}
          is_injective :: lid -> morphism -> Bool
          is_injective _ _ = False -- safe default
-
-         ------------------- generate taxonomy from theory ----------------
          -- | generate an ontological taxonomy, if this makes sense
          theory_to_taxonomy :: lid
                             -> TaxoGraphKind
@@ -428,7 +426,7 @@ class ( Syntax lid basic_spec symb_items symb_map_items
                             -> Result MMiSSOntology
          theory_to_taxonomy l _ _ _ _ = statErr l "theory_to_taxonomy"
 
--- | subsignatures, see CASL RefMan p. 194
+-- | guarded inclusion
 inclusion :: StaticAnalysis lid basic_spec sentence symb_items symb_map_items
              sign morphism symbol raw_symbol
           => lid -> sign -> sign ->  Result morphism
