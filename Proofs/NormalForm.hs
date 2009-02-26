@@ -13,6 +13,7 @@ compute normal forms
 
 module Proofs.NormalForm
     ( normalFormLibEnv
+    , normalForm
     ) where
 
 import Logic.Logic
@@ -35,13 +36,21 @@ import Control.Monad
 normalFormRule :: DGRule
 normalFormRule = DGRule "NormalForm"
 
+-- | compute normal form for a library and imported libs
+normalForm :: LIB_NAME -> LibEnv -> Result LibEnv
+normalForm ln le = normalFormLNS (dependentLibs ln le) le
+
+-- | compute norm form for all libraries
 normalFormLibEnv :: LibEnv -> Result LibEnv
-normalFormLibEnv libEnv = foldM (\ le ln -> do
+normalFormLibEnv le = normalFormLNS (getTopsortedLibs le) le
+
+normalFormLNS :: [LIB_NAME] -> LibEnv -> Result LibEnv
+normalFormLNS lns libEnv = foldM (\ le ln -> do
   let dg = lookupDGraph ln le
   newDg <- normalFormDG le dg
   return $ Map.insert ln
     (groupHistory dg normalFormRule newDg) le)
-  libEnv $ getTopsortedLibs libEnv
+  libEnv $ lns
 
 normalFormDG :: LibEnv -> DGraph -> Result DGraph
 normalFormDG libEnv dgraph = foldM (\ dg (node, nodelab) ->

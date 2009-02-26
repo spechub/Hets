@@ -74,7 +74,7 @@ automaticRecursive count ln proofstatus =
 
 wrapTheoremHideShift :: LIB_NAME -> LibEnv -> LibEnv
 wrapTheoremHideShift ln libEnv =
- case maybeResult $ normalFormLibEnv libEnv >>= theoremHideShift ln of
+ case maybeResult $ normalForm ln libEnv >>= theoremHideShift ln of
    Nothing -> libEnv
    Just libEnv' -> libEnv'
 

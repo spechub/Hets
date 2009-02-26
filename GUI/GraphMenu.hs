@@ -276,7 +276,7 @@ createGlobalMenu gInfo@(GInfo { gi_hetcatsOpts = opts
                    $ proofMenu gInfo str $ return . cmd ln)
         [ ("Theorem Hide Shift", theoremHideShift)
         , ("Compute Colimit", computeColimit)
-        , ("Compute normal forms", const normalFormLibEnv)
+        , ("Compute normal form", normalForm)
         ] ++
         [ Menu (Just "Flattening") $ map ( \ (str, cmd) ->
            Button str $ ral $ performProofAction gInfo

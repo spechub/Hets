@@ -1090,11 +1090,24 @@ getLibDepRel = Rel.transClosure
     foldr (\ x -> if isDGRef x then Set.insert (ln, dgn_libname x) else id) s
       $ map snd $ labNodesDG dg) Set.empty
 
+topsortedLibsWithImports :: Rel.Rel LIB_NAME -> [LIB_NAME]
+topsortedLibsWithImports = concatMap Set.toList . Rel.topSort
+
+{- | Get imported libs in topological order, i.e.  lib(s) without imports first.
+     The input lib-name will be last -}
+dependentLibs :: LIB_NAME -> LibEnv -> [LIB_NAME]
+dependentLibs ln le =
+  let rel = getLibDepRel le
+      ts = topsortedLibsWithImports rel
+      is = Set.toList (Rel.succs rel ln)
+  in reverse $ ln : intersect ts is
+
 getTopsortedLibs :: LibEnv -> [LIB_NAME]
 getTopsortedLibs le = let
-  ls = concatMap Set.toList . reverse . Rel.topSort $ getLibDepRel le
-  allLs = Map.keys le
-  in (allLs \\ ls) ++ ls
+  rel = getLibDepRel le
+  ls = reverse $ topsortedLibsWithImports rel
+  restLs = Set.toList $ Set.difference (Map.keysSet le) $ Rel.nodes rel
+  in ls ++ restLs
 
 markAllHiding :: LibEnv -> LibEnv
 markAllHiding libEnv =
