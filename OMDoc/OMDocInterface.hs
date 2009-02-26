@@ -434,7 +434,7 @@ mkRecognizer = Recognizer
 
 -- | Inclusion-Conservativity
 data Conservativity = CNone | CMonomorphism | CDefinitional | CConservative
-  deriving Eq
+  deriving (Eq, Ord)
 
 instance Show Conservativity where
   show CNone = "none"
@@ -469,7 +469,7 @@ data Inclusion =
         , inclusionId :: Maybe XmlId
         , inclusionConservativity :: Conservativity
       }
-  deriving (Show, Eq)
+  deriving (Show, Eq, Ord)
 
 instance Pretty Inclusion where
   pretty = text . show
@@ -483,14 +483,14 @@ data Morphism =
       , morphismBase  :: [XmlId]
       , morphismRequations :: [ ( MText, MText ) ]
     }
-    deriving (Show, Eq)
+    deriving (Show, Eq, Ord)
 
 instance Pretty Morphism where
   pretty m = text $ show m
 
 -- Mathematical Text (incomplete)
 data MText = MTextText String | MTextTerm String | MTextPhrase String | MTextOM OMObject
-  deriving (Show, Eq)
+  deriving (Show, Eq, Ord)
 
 -- OMDoc Mathematical Object
 data OMDocMathObject = OMOMOBJ OMObject | OMLegacy String | OMMath String

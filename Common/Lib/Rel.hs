@@ -47,7 +47,7 @@ import qualified Data.Map as Map
 import qualified Data.Set as Set
 import qualified Data.List as List
 
-data Rel a = Rel { toMap :: Map.Map a (Set.Set a) } deriving Eq
+data Rel a = Rel { toMap :: Map.Map a (Set.Set a) } deriving (Eq, Ord)
 -- the invariant is that set values are never empty
 
 fromDistinctMap :: Map.Map a (Set.Set a) -> Rel a

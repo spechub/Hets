@@ -31,10 +31,6 @@ import Common.Result
 import qualified Data.Set as Set
 import qualified Data.Map as Map
 
-instance Eq Morphism where
-  m1 == m2 = (msource m1, mtarget m1, typeIdMap m1, classIdMap m1, funMap m1)
-     == (msource m2, mtarget m2, typeIdMap m2, classIdMap m2, funMap m2)
-
 disjointKeys :: (Ord a, Pretty a, Monad m) => Map.Map a b -> Map.Map a c
              -> m ()
 disjointKeys m1 m2 = let d = Map.keysSet $ Map.intersection m1 m2 in

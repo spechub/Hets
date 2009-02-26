@@ -39,7 +39,17 @@ data Sign = Sign
     , values :: Map.Map (HsIdentI PNT) (Scheme PNT)
     , scope :: Scope
     , fixities :: Map.Map (HsIdentI (SN String)) HsFixity
-    } deriving (Show, Eq)
+    } deriving Show
+
+instance Eq Sign where
+    a == b = compare a b == EQ
+
+instance Ord Sign where
+  compare a b = compare
+    ( Map.keysSet $ types a, Map.keysSet $ values a, scope a
+    , Map.keysSet $ fixities a, length $ instances a)
+    ( Map.keysSet $ types b, Map.keysSet $ values b, scope b
+    , Map.keysSet $ fixities b, length $ instances b)
 
 diffSign :: Sign -> Sign -> Sign
 diffSign e1 e2 = emptySign
@@ -66,10 +76,10 @@ instance Eq (TypeInfo i) where
     _ == _ = True
 
 instance Eq (TiDecl PNT) where
-    s1 == s2 = show s1 == show s2
+   a == b = compare a b == EQ
 
 instance Ord (TiDecl PNT) where
-    s1 <= s2 = show s1 <= show s2
+    compare a b = compare (show a) (show b)
 
 instance Pretty (TiDecl PNT) where
     pretty = text . pp

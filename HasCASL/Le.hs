@@ -31,7 +31,7 @@ import Common.Prec
 data ClassInfo = ClassInfo
     { rawKind :: RawKind
     , classKinds :: Set.Set Kind
-    } deriving (Show, Eq)
+    } deriving (Show, Eq, Ord)
 
 -- | mapping class identifiers to their definition
 type ClassMap = Map.Map Id ClassInfo
@@ -77,8 +77,12 @@ data TypeInfo = TypeInfo
     } deriving Show
 
 instance Eq TypeInfo where
-   t1 == t2 = (typeKind t1, otherTypeKinds t1, superTypes t1)
-              == (typeKind t2, otherTypeKinds t2, superTypes t2)
+    a == b = compare a b == EQ
+
+instance Ord TypeInfo where
+   compare t1 t2 = compare
+     (typeKind t1, otherTypeKinds t1, superTypes t1)
+     (typeKind t2, otherTypeKinds t2, superTypes t2)
 
 -- | mapping type identifiers to their definition
 type TypeMap = Map.Map Id TypeInfo
@@ -173,8 +177,12 @@ data Env = Env
     } deriving Show
 
 instance Eq Env where
-    e1 == e2 = (classMap e1, typeMap e1, assumps e1) ==
-              (classMap e2, typeMap e2, assumps e2)
+    a == b = compare a b == EQ
+
+instance Ord Env where
+  compare e1 e2 = compare
+    (classMap e1, typeMap e1, assumps e1)
+    (classMap e2, typeMap e2, assumps e2)
 
 -- | the empty environment (fresh variables start with 1)
 initialEnv :: Env
@@ -293,7 +301,7 @@ data Morphism = Morphism
     , typeIdMap :: IdMap
     , classIdMap :: IdMap
     , funMap :: FunMap
-    } deriving Show
+    } deriving (Show, Eq, Ord)
 
 -- | construct morphism for subsignatures
 mkMorphism :: Env -> Env -> Morphism

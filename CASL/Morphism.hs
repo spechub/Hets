@@ -53,9 +53,9 @@ data Morphism f e m = Morphism
   , op_map :: Op_map
   , pred_map :: Pred_map
   , extended_map :: m
-  } deriving (Show, Eq)
+  } deriving (Show, Eq, Ord)
 
-data DefMorExt e = DefMorExt deriving (Show, Eq)
+data DefMorExt e = DefMorExt deriving (Show, Eq, Ord)
 
 emptyMorExt :: DefMorExt e
 emptyMorExt = DefMorExt

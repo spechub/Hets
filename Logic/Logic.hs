@@ -173,8 +173,9 @@ class Show lid => Language lid where
      category of sets and injective maps, legal_mor would check
      injectivity. Since Eq is a subclass of Category, it is also
      possible to impose a quotient on the types for objects and morphisms.
+     Require Ord instances only for efficiency, i.e. in sets or maps.
 -}
-class (Eq object, Eq morphism)
+class (Ord object, Ord morphism)
     => Category object morphism | morphism -> object where
          -- | identity morphisms
          ide :: object -> morphism
@@ -191,7 +192,7 @@ class (Eq object, Eq morphism)
          -- | is a value of type morphism denoting a legal  morphism?
          legal_mor :: morphism -> Bool
 
-instance Eq sign => Category sign (DefaultMorphism sign) where
+instance Ord sign => Category sign (DefaultMorphism sign) where
     dom = domOfDefaultMorphism
     cod = codOfDefaultMorphism
     ide = ideOfDefaultMorphism
@@ -563,7 +564,7 @@ class (StaticAnalysis lid
          export_morphismToOmdoc :: lid -> SIMPLE_ID -> LIB_ID -> morphism
                                -> [OMDoc.TCElement]
          -- default implementation
-         export_morphismToOmdoc lid _ _ _ = 
+         export_morphismToOmdoc lid _ _ _ =
              error $ "exportMorphismToOmdoc not yet implemented "
                        ++ "for logic " ++ (show lid)
 

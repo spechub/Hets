@@ -24,7 +24,7 @@ data ModalSign = ModalSign
   , rigidPreds :: Map.Map Id (Set.Set PredType)
   , modies :: Map.Map SIMPLE_ID [AnModFORM]
   , termModies :: Map.Map Id [AnModFORM] --SORT
-  } deriving (Show, Eq)
+  } deriving (Show, Eq, Ord)
 
 emptyModalSign :: ModalSign
 emptyModalSign = ModalSign Map.empty Map.empty Map.empty Map.empty

@@ -36,7 +36,7 @@ data Paramkind = In | Out deriving (Show, Eq, Ord)
 data Procparam = Procparam Paramkind SORT deriving (Show, Eq, Ord)
 
 -- | procedure or function declaration
-data Profile = Profile [Procparam] (Maybe SORT) deriving (Show, Eq)
+data Profile = Profile [Procparam] (Maybe SORT) deriving (Show, Eq, Ord)
 
 -- | further VSE signature entries
 data Sigentry = Procedure Id Profile Range deriving (Show, Eq)
@@ -102,7 +102,7 @@ data ProcKind = Proc | Func deriving (Show, Eq, Ord)
 -- | procedure definitions as basic items becoming sentences
 data Defproc = Defproc ProcKind Id [VAR] Program Range deriving (Show, Eq, Ord)
 
-data Procs = Procs { procsMap :: Map.Map Id Profile } deriving (Show, Eq)
+data Procs = Procs { procsMap :: Map.Map Id Profile } deriving (Show, Eq, Ord)
 
 emptyProcs :: Procs
 emptyProcs = Procs Map.empty

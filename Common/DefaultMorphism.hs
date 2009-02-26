@@ -30,7 +30,7 @@ data DefaultMorphism sign = MkMorphism
   { domOfDefaultMorphism :: sign
   , codOfDefaultMorphism :: sign
   , isInclusionDefaultMorphism :: Bool
-  } deriving (Show, Eq)
+  } deriving (Show, Eq, Ord)
 
 instance Pretty a => Pretty (DefaultMorphism a) where
     pretty = printDefaultMorphism pretty

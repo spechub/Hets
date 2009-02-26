@@ -144,14 +144,17 @@ data G_sign = forall lid sublogics
          basic_spec sentence symb_items symb_map_items
           sign morphism symbol raw_symbol proof_tree => G_sign
     { gSignLogic :: lid
-    , gSign :: (ExtSign sign symbol)
+    , gSign :: ExtSign sign symbol
     , gSignSelfIdx :: SigId -- ^ index to lookup this 'G_sign' in sign map
     } deriving Typeable
 
 instance Eq G_sign where
-  G_sign l1 sigma1 s1 == G_sign l2 sigma2 s2 =
-    (s1 > startSigId && s2 > startSigId && s1 == s2) ||
-     coerceSign l1 l2 "Eq G_sign" sigma1 == Just sigma2
+  a == b = compare a b == EQ
+
+instance Ord G_sign where
+  compare (G_sign l1 sigma1 s1) (G_sign l2 sigma2 s2) =
+    if (s1 > startSigId && s2 > startSigId) then compare s1 s2 else
+     compare (coerceSign l1 l2 "Eq G_sign" sigma1) $ Just sigma2
 
 -- | prefer a faster subsignature test if possible
 isHomSubGsign :: G_sign -> G_sign -> Bool
@@ -482,13 +485,18 @@ data GMorphism = forall cid lid1 sublogics1
     } deriving Typeable
 
 instance Eq GMorphism where
-  GMorphism cid1 sigma1 in1 mor1 in1' == GMorphism cid2 sigma2 in2 mor2 in2'
-     = Comorphism cid1 == Comorphism cid2
-       && G_sign (sourceLogic cid1) sigma1 in1 ==
-          G_sign (sourceLogic cid2) sigma2 in2
-       && (in1' > startMorId && in2' > startMorId && in1' == in2'
-          || coerceMorphism (targetLogic cid1) (targetLogic cid2)
-                   "Eq GMorphism.coerceMorphism" mor1 == Just mor2)
+    a == b = compare a b == EQ
+
+instance Ord GMorphism where
+  compare (GMorphism cid1 sigma1 in1 mor1 in1')
+    (GMorphism cid2 sigma2 in2 mor2 in2') =
+      case compare (Comorphism cid1, G_sign (sourceLogic cid1) sigma1 in1)
+            (Comorphism cid2, G_sign (sourceLogic cid2) sigma2 in2) of
+        EQ -> if in1' > startMorId && in2' > startMorId
+          then compare in1' in2' else
+          compare (coerceMorphism (targetLogic cid1) (targetLogic cid2)
+                   "Eq GMorphism.coerceMorphism" mor1) (Just mor2)
+        r -> r
 
 isHomogeneous :: GMorphism -> Bool
 isHomogeneous (GMorphism cid _ _ _ _) =

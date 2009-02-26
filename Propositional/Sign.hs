@@ -39,7 +39,7 @@ import Common.DocUtils
 
 -- | Datatype for propositional Signatures
 -- Signatures are just sets
-newtype Sign = Sign {items :: Set.Set Id} deriving (Eq, Show)
+newtype Sign = Sign {items :: Set.Set Id} deriving (Eq, Ord, Show)
 
 instance Pretty Sign where
     pretty = printSign

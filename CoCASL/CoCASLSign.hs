@@ -21,7 +21,7 @@ data CoCASLSign = CoCASLSign
   { sees :: Rel.Rel SORT
   , constructs :: Rel.Rel SORT
   , constructors :: OpMap
-  } deriving (Show, Eq)
+  } deriving (Show, Eq, Ord)
 
 emptyCoCASLSign :: CoCASLSign
 emptyCoCASLSign = CoCASLSign Rel.empty Rel.empty Map.empty

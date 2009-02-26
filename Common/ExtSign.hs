@@ -24,8 +24,11 @@ data Ord symbol => ExtSign sign symbol = ExtSign
   , nonImportedSymbols :: (Set.Set symbol)
   } deriving Show
 
-instance (Ord symbol, Eq sign) => Eq (ExtSign sign symbol) where
-  ExtSign s1 _ == ExtSign s2 _ = s1 == s2
+instance (Ord symbol, Ord sign) => Eq (ExtSign sign symbol) where
+    a == b = compare a b == EQ
+
+instance (Ord symbol, Ord sign) => Ord (ExtSign sign symbol) where
+  compare (ExtSign s1 _) (ExtSign s2 _) = compare s1 s2
 
 instance (Pretty sign, Ord symbol, Pretty symbol)
     => Pretty (ExtSign sign symbol) where

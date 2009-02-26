@@ -91,7 +91,7 @@ type CASLBasicSpec = BASIC_SPEC () () ()
 trueC :: a -> b -> Bool
 trueC _ _ = True
 
-instance (Eq f, Eq e, Eq m, MorphismExtension e m) =>
+instance (Ord f, Ord e, Ord m, MorphismExtension e m) =>
     Category (Sign f e) (Morphism f e m) where
     ide sig = idMor (ideMorphismExtension $ extendedInfo sig) sig
     inverse = inverseMorphism inverseMorphismExtension

@@ -88,13 +88,13 @@ data Sign f e = Sign
 
 -- better ignore assoc flags for equality
 instance Eq e => Eq (Sign f e) where
-    e1 == e2 =
-        sortSet e1 == sortSet e2 &&
-        emptySortSet e1 == emptySortSet e2 &&
-        sortRel e1 == sortRel e2 &&
-        opMap e1 == opMap e2 &&
-        predMap e1 == predMap e2 &&
-        extendedInfo e1 == extendedInfo e2
+    a == b = compare a {extendedInfo = ()} b {extendedInfo = ()} == EQ
+      && extendedInfo a == extendedInfo b
+
+instance Ord e => Ord (Sign f e) where
+  compare a b = compare
+    (sortSet a, emptySortSet a, sortRel a, opMap a, predMap a, extendedInfo a)
+    (sortSet b, emptySortSet b, sortRel b, opMap b, predMap b, extendedInfo b)
 
 emptySign :: e -> Sign f e
 emptySign e = Sign

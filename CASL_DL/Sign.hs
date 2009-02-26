@@ -28,17 +28,17 @@ import Control.Exception
 data CASL_DLSign =
     CASL_DLSign { annoProperties  :: Map.Map SIMPLE_ID PropertyType
                 , annoPropertySens :: [AnnoAppl]
-                } deriving (Show, Eq)
+                } deriving (Show, Eq, Ord)
 
 data PropertyType = AnnoProperty
-                  | OntoProperty deriving (Show,Eq)
+                  | OntoProperty deriving (Show, Eq, Ord)
 
 data AnnoAppl = AnnoAppl SIMPLE_ID Id AnnoLiteral
-              deriving (Show,Eq)
+                deriving (Show, Eq, Ord)
 
 data AnnoLiteral = AL_Term (TERM DL_FORMULA)
                  | AL_Id   Id
-              deriving (Show,Eq)
+                   deriving (Show, Eq, Ord)
 
 emptyCASL_DLSign :: CASL_DLSign
 emptyCASL_DLSign = CASL_DLSign Map.empty []

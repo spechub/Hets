@@ -19,7 +19,7 @@ import Common.Id
 
 data COLSign = COLSign { constructors :: Set.Set Id
                        , observers :: Map.Map Id Int
-                       } deriving (Show, Eq)
+                       } deriving (Show, Eq, Ord)
 
 emptyCOLSign :: COLSign
 emptyCOLSign = COLSign Set.empty Map.empty

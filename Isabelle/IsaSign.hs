@@ -205,7 +205,7 @@ data TypeSig =
     abbrs:: Abbrs, -- constructor name, variable names, type.
     arities:: Arities }
     -- actually isa-instances. the former field tycons can be computed.
-    deriving (Eq, Show)
+    deriving (Eq, Ord, Show)
 
 emptyTypeSig :: TypeSig
 emptyTypeSig = TySg {
@@ -251,7 +251,7 @@ data Sign = Sign
   , constTab :: ConstTab  -- value cons with type
   , domainTab :: DomainTab
   , showLemmas :: Bool
-  } deriving (Eq, Show)
+  } deriving (Eq, Ord, Show)
 
  {- list of datatype definitions
     each of these consists of a list of (mutually recursive) datatypes

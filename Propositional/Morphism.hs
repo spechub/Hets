@@ -20,18 +20,17 @@ Definition of morphisms for propositional logic
 -}
 
 module Propositional.Morphism
-    (
-     Morphism (..)               -- datatype for Morphisms
-    ,pretty                      -- pretty printing
-    ,idMor                       -- identity morphism
-    ,isLegalMorphism             -- check if morhpism is ok
-    ,composeMor                  -- composition
-    ,inclusionMap                -- inclusion map
-    ,mapSentence                 -- map of sentences
-    ,mapSentenceH                -- map of sentences, without Result type
-    ,applyMap                    -- application function for maps
-    ,applyMorphism               -- application function for morphism
-    ) where
+  ( Morphism (..)               -- datatype for Morphisms
+  , pretty                      -- pretty printing
+  , idMor                       -- identity morphism
+  , isLegalMorphism             -- check if morhpism is ok
+  , composeMor                  -- composition
+  , inclusionMap                -- inclusion map
+  , mapSentence                 -- map of sentences
+  , mapSentenceH                -- map of sentences, without Result type
+  , applyMap                    -- application function for maps
+  , applyMorphism               -- application function for morphism
+  ) where
 
 import qualified Data.Map as Map
 import qualified Data.Set as Set
@@ -47,14 +46,13 @@ import Common.DocUtils
 -- | maps of sets
 
 data Morphism = Morphism
-    {
-       source :: Sign
-     , target :: Sign
-     , propMap :: Map.Map Id Id
-    } deriving (Eq, Show)
+  { source :: Sign
+  , target :: Sign
+  , propMap :: Map.Map Id Id
+  } deriving (Eq, Ord, Show)
 
 instance Pretty Morphism where
-    pretty = printMorphism
+  pretty = printMorphism
 
 -- | Constructs an id-morphism as the diagonal
 

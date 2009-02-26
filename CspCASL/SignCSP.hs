@@ -43,7 +43,7 @@ import qualified Data.Set as Set
 -- | A process has zero or more parameter sorts, and a communication
 -- alphabet.
 data ProcProfile = ProcProfile [SORT] CommAlpha
-                   deriving (Eq, Show)
+                   deriving (Eq, Ord, Show)
 
 type ChanNameMap = Map.Map CHANNEL_NAME SORT
 type ProcNameMap = Map.Map PROCESS_NAME ProcProfile
@@ -100,7 +100,7 @@ data CspSign = CspSign
     -- | Added for uniformity to the CASL static analysis. After
     --   static analysis this is the empty list.
     , ccSentences :: [Named CspCASLSen]
-    } deriving (Eq, Show)
+    } deriving (Eq, Ord, Show)
 
 -- | A CspCASL signature is a CASL signature with a CSP process
 -- signature in the extendedInfo part.
@@ -149,7 +149,7 @@ isInclusion _ _ = True
 data CspAddMorphism = CspAddMorphism
     { channelMap :: Map.Map Id Id
     , processMap :: Map.Map Id Id
-    } deriving (Eq, Show)
+    } deriving (Eq, Ord, Show)
 
 composeIdMaps :: Map.Map Id Id -> Map.Map Id Id -> Map.Map Id Id
 composeIdMaps m1 m2 = Map.foldWithKey (\ i j -> case Map.lookup j m2 of

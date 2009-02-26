@@ -51,7 +51,7 @@ data Morphism = Morphism
        source :: Sign
      , target :: Sign
      , propMap :: Map.Map Id Id
-    } deriving (Eq, Show)
+    } deriving (Eq, Ord, Show)
 
 instance Pretty Morphism where
     pretty = printMorphism
