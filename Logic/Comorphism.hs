@@ -402,13 +402,13 @@ data AnyComorphism = forall cid lid1 sublogics1
       Comorphism cid deriving Typeable -- used for GTheory
 
 instance Eq AnyComorphism where
-  Comorphism cid1 == Comorphism cid2 =
-     constituents cid1 == constituents cid2
-  -- need to be refined, using comorphism translations !!!
+    a == b = compare a b == EQ
 
 instance Ord AnyComorphism where
-  Comorphism cid1 < Comorphism cid2 =
-     constituents cid1 < constituents cid2
+  compare (Comorphism cid1) (Comorphism cid2) = compare
+     (language_name cid1, constituents cid1)
+     (language_name cid2, constituents cid2)
+  -- maybe needs to be refined, using comorphism translations?
 
 instance Show AnyComorphism where
   show (Comorphism cid) = language_name cid
