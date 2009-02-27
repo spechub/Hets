@@ -154,7 +154,9 @@ instance Eq G_sign where
 instance Ord G_sign where
   compare (G_sign l1 sigma1 s1) (G_sign l2 sigma2 s2) =
     if s1 > startSigId && s2 > startSigId && s1 == s2 then EQ else
-     compare (coerceSign l1 l2 "Eq G_sign" sigma1) $ Just sigma2
+    case compare (language_name l1) $ language_name l2 of
+      EQ -> compare (coerceSign l1 l2 "Eq G_sign" sigma1) $ Just sigma2
+      r -> r
 
 -- | prefer a faster subsignature test if possible
 isHomSubGsign :: G_sign -> G_sign -> Bool
@@ -202,8 +204,13 @@ instance Pretty G_symbol where
     pretty (G_symbol _ s) = pretty s
 
 instance Eq G_symbol where
-  (G_symbol i1 s1) == (G_symbol i2 s2) =
-     language_name i1 == language_name i2 && coerceSymbol i1 i2 s1 == s2
+    a == b = compare a b == EQ
+
+instance Ord G_symbol where
+  compare (G_symbol l1 s1) (G_symbol l2 s2) =
+    case compare (language_name l1) $ language_name l2 of
+      EQ -> compare (coerceSymbol l1 l2 s1) s2
+      r -> r
 
 -- | Grothendieck symbol lists
 data G_symb_items_list = forall lid sublogics
@@ -265,9 +272,9 @@ instance Eq G_sublogics where
 
 instance Ord G_sublogics where
     compare (G_sublogics lid1 l1) (G_sublogics lid2 l2) =
-       case compare (language_name lid1) $ language_name lid2 of
-         EQ -> compare (forceCoerceSublogic lid1 lid2 l1) l2
-         r -> r
+      case compare (language_name lid1) $ language_name lid2 of
+        EQ -> compare (forceCoerceSublogic lid1 lid2 l1) l2
+        r -> r
 
 isProperSublogic :: G_sublogics -> G_sublogics -> Bool
 isProperSublogic a@(G_sublogics lid1 l1) b@(G_sublogics lid2 l2) =
@@ -495,7 +502,8 @@ instance Ord GMorphism where
         EQ -> if in1' > startMorId && in2' > startMorId && in1' == in2'
           then EQ else
           compare (coerceMorphism (targetLogic cid1) (targetLogic cid2)
-                   "Eq GMorphism.coerceMorphism" mor1) (Just mor2)
+                   "Ord GMorphism.coerceMorphism" mor1) (Just mor2)
+          -- this coersion will succeed, because cid1 and cid2 are equal
         r -> r
 
 isHomogeneous :: GMorphism -> Bool
