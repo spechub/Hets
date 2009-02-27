@@ -45,7 +45,7 @@ flatHistory h = if SizedList.null h then [] else
 contraryRedo :: SizedList.SizedList HistElem -> SizedList.SizedList HistElem
 contraryRedo = SizedList.map $ \ he -> case he of
   HistElem c -> HistElem $ negateChange c
-  HistGroup r l -> HistGroup r $  SizedList.reverse $ contraryRedo l
+  HistGroup r l -> HistGroup r $ SizedList.reverse $ contraryRedo l
 
 undoHistStep :: DGraph -> (DGraph, [DGChange])
 undoHistStep dg = let h = proofHistory dg in
@@ -90,7 +90,7 @@ undoRedo :: DGraph -> DGraph
 undoRedo g = let
   rh = redoHistory g
   he1 = HistGroup (DGRule "RedoRedo") $ SizedList.reverse rh
-  he2 = HistGroup (DGRule "UndoRedo") $ SizedList.reverse rh
+  he2 = HistGroup (DGRule "UndoRedo") $ contraryRedo rh
   he3 = HistGroup (DGRule "LeftOverRedo") $ SizedList.fromList [he2, he1]
   in if SizedList.null rh then g else g
       { proofHistory = SizedList.cons he3 $ proofHistory g
