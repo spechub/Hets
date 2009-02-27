@@ -47,10 +47,10 @@ lookupHistory ln = proofHistory . lookupDGraph ln
 -}
 removeContraryChanges :: [DGChange] -> [DGChange]
 removeContraryChanges [] = []
-removeContraryChanges (change:changes) =
+removeContraryChanges (change : changes) =
   case contraryChange of
     Just c -> removeContraryChanges (removeChange c changes)
-    Nothing -> change:(removeContraryChanges changes)
+    Nothing -> change : removeContraryChanges changes
   where
     contraryChange =
       case getContraryChange change of
@@ -82,6 +82,7 @@ removeChange c1@(DeleteNode (n,_)) (c2:rest) =
   if case c2 of
      InsertEdge (n1,n2,_) -> n==n1 || n==n2
      DeleteEdge (n1,n2,_) -> n==n1 || n==n2
+     SetNodeLab _ (m, _) -> n == m
      _ -> False
    then removeChange c1 rest
    else c2:removeChange c1 rest
