@@ -218,6 +218,7 @@ data InclComorphism lid sublogics = InclComorphism
   { inclusion_logic :: lid
   , inclusion_source_sublogic :: sublogics
   , inclusion_target_sublogic :: sublogics }
+  deriving Show
 
 -- | construction of an identity comorphism
 mkIdComorphism :: (Logic lid sublogics
@@ -245,24 +246,16 @@ mkInclComorphism lid srcSub trgSub =
     else fail ("mkInclComorphism: first sublogic must be a "++
                "subElem of the second sublogic")
 
-instance Logic lid sublogics
-        basic_spec sentence symb_items symb_map_items
-        sign morphism symbol raw_symbol proof_tree =>
-   Show (InclComorphism lid sublogics)
-   where
-   show = language_name
-
-instance Logic lid sublogics
-        basic_spec sentence symb_items symb_map_items
-        sign morphism symbol raw_symbol proof_tree =>
-         Language (InclComorphism lid sublogics) where
-           language_name (InclComorphism lid sub_src sub_trg) =
-             let sblName = sublogicName sub_src in
-               if sub_src == sub_trg
-               then "id_" ++ language_name lid ++
+instance (Language lid, Eq sublogics, Show sublogics, SublogicName sublogics)
+    => Language (InclComorphism lid sublogics) where
+        language_name (InclComorphism lid sub_src sub_trg) =
+            let sblName = sublogicName sub_src
+                lname = language_name lid
+            in if sub_src == sub_trg
+               then "id_" ++ lname ++
                     if null sblName
                     then "" else "." ++ sblName
-               else "incl_" ++ language_name lid ++ ":" ++
+               else "incl_" ++ lname ++ ":" ++
                     sblName ++ "->" ++ sublogicName sub_trg
 
 instance Logic lid sublogics
@@ -424,8 +417,7 @@ idComorphism (Logic lid) = Comorphism (mkIdComorphism lid (top_sublogic lid))
 
 -- | Test whether a comporphism is the identity
 isIdComorphism :: AnyComorphism -> Bool
-isIdComorphism (Comorphism cid) =
-  constituents cid == []
+isIdComorphism (Comorphism cid) = null $ constituents cid
 
 -- * Properties of comorphisms
 
