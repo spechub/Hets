@@ -1,6 +1,6 @@
 # to be include by Makefile
 
-HC = ghc -optl-s -fno-gen-manifest
+HC = ghc -optl-s
 HCPKG = ghc-pkg
 
 TARVERSION = $(shell $(HCPKG) field tar version)
