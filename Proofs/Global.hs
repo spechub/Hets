@@ -236,7 +236,7 @@ globDecompForOneEdgeAux target (dgraph, proof_basis) path =
     hp@(node, _, lbl) : rpath -> let
       lbltype = dgl_type lbl
       isHiding = isHidingDef lbltype
-      morphismPath = if isHiding then rpath ++ [hp] else path
+      morphismPath = if isHiding then rpath else path
       morphism = case calculateMorphismOfPath morphismPath of
         Just morph -> morph
         Nothing -> error "globDecomp: could not determine morphism of new edge"
