@@ -177,7 +177,7 @@ allSpecInDir = specDir ++ "/" ++ allSpecFile
 createVSETarFile :: FilePath -> IO ()
 createVSETarFile tar = do
   renameFile allSpecFile allSpecInDir
-  Tar.create (tar ++ ".tar") "." specDir
+  Tar.create (tar ++ ".tar") "" [specDir]
 
 moveVSEFiles :: FilePath -> IO ()
 moveVSEFiles str = do
@@ -189,7 +189,7 @@ moveVSEFiles str = do
      createVSETarFile (specDir ++ ".bak")
      removeDirectoryRecursive specDir
   when hasTarFile $ do
-    Tar.extract "." tarFile
+    Tar.extract "" tarFile
     renameFile allSpecInDir allSpecFile
 #endif
 

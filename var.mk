@@ -4,7 +4,7 @@ HC = ghc -optl-s
 HCPKG = ghc-pkg
 
 TARVERSION = $(shell $(HCPKG) field tar version)
-ifneq ($(findstring 0.2, $(TARVERSION)),)
+ifneq ($(findstring 0.3, $(TARVERSION)),)
 TAR_PACKAGE = -DTAR_PACKAGE
 endif
 
