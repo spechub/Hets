@@ -198,7 +198,7 @@ globDecomp ::LIB_NAME -> LibEnv -> LibEnv
 globDecomp ln proofStatus =
     let dgraph = lookupDGraph ln proofStatus
         globalThmEdges = labEdgesDG dgraph
-    in -- trace (show $ refNodes dgraph)
+    in
     globDecompFromList ln globalThmEdges proofStatus
 
 {- auxiliary function for globDecomp (above)
@@ -233,10 +233,10 @@ globDecompForOneEdgeAux :: Node -> (DGraph, ProofBasis)
 globDecompForOneEdgeAux target (dgraph, proof_basis) path =
   case path of
     [] -> error "globDecompForOneEdgeAux"
-    (node, _, lbl) : rpath -> let
+    hp@(node, _, lbl) : rpath -> let
       lbltype = dgl_type lbl
       isHiding = isHidingDef lbltype
-      morphismPath = if isHiding then rpath else path
+      morphismPath = if isHiding then rpath ++ [hp] else path
       morphism = case calculateMorphismOfPath morphismPath of
         Just morph -> morph
         Nothing -> error "globDecomp: could not determine morphism of new edge"
