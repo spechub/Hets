@@ -45,8 +45,8 @@ data FORMULA = True
              | Disjunction [FORMULA]
              | Implication FORMULA FORMULA
              | Equivalence FORMULA FORMULA
-             | Forall VARIABLE TERM FORMULA
-             | Exists VARIABLE TERM FORMULA
+             | Forall [VARIABLE] TERM FORMULA
+             | Exists [VARIABLE] TERM FORMULA
                deriving (Show, Eq)
 
 
