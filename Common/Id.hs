@@ -156,6 +156,7 @@ data Id = Id
     { getTokens :: [Token]
     , getComps :: [Id]
     , rangeOfId :: Range }
+    deriving (Eq, Ord)
     -- pos of square brackets and commas of a compound list
 
 instance Show Id where
@@ -253,14 +254,6 @@ mkUniqueInjName from to = mkUniqueName injToken [from, to]
 
 isInjName :: Id -> Bool
 isInjName = isPrefixOf (show injName) . show
-
--- ignore positions
-instance Eq Id where
-    Id tops1 ids1 _ == Id tops2 ids2 _ = (tops1, ids1) == (tops2, ids2)
-
--- ignore positions
-instance Ord Id where
-    Id tops1 ids1 _ <= Id tops2 ids2 _ = (tops1, ids1) <= (tops2, ids2)
 
 -- | the postfix type identifier
 typeId :: Id
