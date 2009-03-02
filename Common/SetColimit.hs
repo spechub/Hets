@@ -18,10 +18,6 @@ Computes the colimit of an arbitrary diagram in Set:
 
 module Common.SetColimit(
     computeColimitSet
-  , updateComp
-  , initialDegrees
-  , updateDegrees
-  , orderByIncomingEdges
   )
  where
 
@@ -35,10 +31,12 @@ compose :: (Ord a) => Set.Set (a, Int) ->
                       Map.Map (a, Int) (a, Int) ->
                       Map.Map (a, Int) (a, Int) ->
                       Map.Map (a, Int) (a, Int)
-compose s f g = Map.fromList $
-                map (\x -> let y = Map.findWithDefault x x f in
-                            (x, Map.findWithDefault y y g))
-                $ Set.toList s
+compose s f g = Set.fold ( \ i h ->
+                               let
+                                i' = Map.findWithDefault i i f
+                                j = Map.findWithDefault i' i' g in
+                               if i == j then h else Map.insert i j h)
+                Map.empty s
 
 coeq :: (Ord a) =>
         Set.Set (a, Int) -> Set.Set (a, Int) ->
@@ -69,10 +67,11 @@ computeColimitSet :: (Ord a) =>
 computeColimitSet graph = let
    unionSet = foldl Set.union Set.empty $
                map (\(n, s) -> Set.map (\x -> (x, n)) s) $ labNodes graph
-   inclMap = Map.fromList $ map (\ (n, _) ->(n, Map.empty)) $ labNodes graph
+   inclMap = Map.fromAscList $ map (\ (n, _) ->(n, Map.empty)) $ labNodes graph
    (colim, morMap) = computeCoeqs graph (unionSet, inclMap) $ labEdges graph
    morMap' = Map.map
-               (\f -> Map.fromList $ map (\((x,_),z) -> (x,z))$  Map.toList f)
+               (\f -> Map.fromAscList $ map (\((x,_),z) -> (x,z))$
+                      Map.toList f)
                morMap
   in (colim, morMap')
 
@@ -94,53 +93,13 @@ computeCoeqs graph (colim, morMap) edgeList =
      morMap' = Map.fromList $
                map (\(n, g) ->let
                      Just nset = lab graph n
-                              in(n, Map.fromList $
+                              in(n, Map.fromAscList $
                                map (\x -> let
                                       y = Map.findWithDefault x x g
                                      in (x,Map.findWithDefault y y coeqMor)) $
                                Set.toList $ Set.map (\x-> (x,n)) nset ))
                $ Map.toList  morMap
     in computeCoeqs graph (colim', morMap') edges'
-
----------
-
--- functions needed in CASL/ColimSign
--- will be probably removed after ColimSign is reimplemented
-
---mapping assigning to each node the number of incoming edges
---will be updated when choosing a node
-initialDegrees :: Gr a b -> Map.Map Node Int
-initialDegrees graph = let nodeList = nodes graph in
-  Map.fromList $ zip nodeList $ map (indeg graph) nodeList
-
---decrease the number of incoming edges for all the successors of a node
-updateDegrees :: Gr a b -> Node -> Map.Map Node Int -> Map.Map Node Int
-updateDegrees graph hnode incomEdges = let
-  nList = suc graph hnode
-  insertFromList f list = case list of
-    [] -> f
-    x:xs -> let oldValue = (Map.!) f x
-                f1 = Map.insert x (oldValue-1) f
-            in insertFromList f1 xs
- in insertFromList incomEdges nList
-
-orderByIncomingEdges :: [Node] -> Gr a b -> Map.Map Node Int -> [Node]
-orderByIncomingEdges [] _ _ = []
-orderByIncomingEdges (x:xs) gr incomEdges =
- ( orderByIncomingEdges
-   (filter (\z->((Map.!) incomEdges z) <= ((Map.!) incomEdges x))xs)
-   gr incomEdges) ++ [x] ++
- ( orderByIncomingEdges
-   (filter (\z->((Map.!) incomEdges z) > ((Map.!) incomEdges x))xs)
-   gr incomEdges)
-
---updates the value in a key
--- of a function assigned to a key by a higher order function
-updateComp :: (Ord a, Ord c) => a -> b -> c -> Map.Map c (Map.Map a b)
-  -> Map.Map c (Map.Map a b)
-updateComp x1 y1 x f =
-  let fx = Map.insert x1 y1 ((Map.!) f x)
-  in Map.insert x fx f
 
 
 
