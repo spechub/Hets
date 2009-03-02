@@ -58,6 +58,7 @@ import CASL_DL.Logic_CASL_DL
 import ConstraintCASL.Logic_ConstraintCASL
 import RelationalScheme.Logic_Rel
 import VSE.Logic_VSE
+import DFOL.Logic_DFOL
 import OMDoc.Logic_OMDoc ()
 #endif
 #ifndef NOOWLLOGIC

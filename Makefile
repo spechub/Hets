@@ -71,7 +71,7 @@ SETUPPREFIX = --prefix=$(HOME)/.ghc/$(ARCH)-$(OSBYUNAME)-hets-packages
 
 SETUPPACKAGE = ../$(SETUP) clean; \
     ../$(SETUP) configure $(SETUPPREFIX) --user; \
-    ../$(SETUP) build; ../$(SETUP) haddock; ../$(SETUP) install --user
+    ../$(SETUP) build; ../$(SETUP) install --user
 
 # list glade files
 GTK_GLADE_FILES = $(wildcard GUI/Glade/*.glade)
