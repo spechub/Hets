@@ -43,9 +43,9 @@ import Logic.Prover
 import System.IO
 import System.Time
 import System.Cmd (system)
+import System.Directory
 import System.Exit
 import System.Environment (getEnv)
-import System.Posix.Process
 
 import qualified Data.Map as Map
 import qualified Data.List as List
@@ -65,13 +65,11 @@ parseOWL filename  =
        then
          error "empty file name!"
        else do
-           pid <- getProcessID
            currTime <- getClockTime
            calend <- toCalendarTime currTime
-           let tmpFile = "/tmp/" ++ (basename filename) ++ "-"
-                         ++ (show pid) ++ "-" ++ (buildTime calend)
-                         ++ ".term"
-              --           "/home/jiang/tmp/output.aterm"
+           tmpDir <- getTemporaryDirectory
+           (tmpFile, _) <- openTempFile tmpDir $
+             basename filename ++ "-" ++ buildTime calend ++ ".term"
            if checkUri filename
                then
                  do exitCode <-
@@ -79,7 +77,7 @@ parseOWL filename  =
                                 ++ filename ++
                                " " ++ tmpFile)
                     run exitCode tmpFile
-               else if (head filename) == '/'
+               else if head filename == '/'
                      then
                       do
                         exitCode <-
@@ -94,9 +92,9 @@ parseOWL filename  =
                            run exitCode tmpFile
 
        where buildTime cTime =
-                 (show $ ctYear cTime) ++ (show $ ctMonth cTime) ++
-                 (show $ ctDay cTime) ++ (show $ ctHour cTime) ++
-                 (show $ ctMin cTime) ++ (show $ ctSec cTime)
+                 show (ctYear cTime) ++ show (ctMonth cTime)
+                 ++ show (ctDay cTime) ++ show (ctHour cTime)
+                 ++ show (ctMin cTime) ++ show (ctSec cTime)
 
              run :: ExitCode -> FilePath -> IO OntologyMap
              run exitCode tmpFile
@@ -106,7 +104,7 @@ parseOWL filename  =
                        t <- parseProc tmpFile
                        -- system ("cat  " ++ tmpFile)
                        return t
-                 | otherwise =  error ("process stop! " ++ (show exitCode))
+                 | otherwise =  error ("process stop! " ++ show exitCode)
 
 -- | parse the tmp-ATerm-file from java-owl-parser
 parseProc :: FilePath -> IO OntologyMap
