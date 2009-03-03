@@ -376,7 +376,7 @@ transTerm sign tyToks toks pVars trm = case trm of
           ()
               | opId == trueId -> (fTy, true)
               | opId == falseId -> (fTy, false)
-              | opId == botId -> (fTy, noneOp)
+              | opId == botId -> (instfTy, cf noneOp)
               | opId == andId -> unCurry conjV
               | opId == orId -> unCurry disjV
               | opId == implId -> unCurry implV
@@ -386,8 +386,8 @@ transTerm sign tyToks toks pVars trm = case trm of
               | opId == eqId -> (instfTy, cf $ termAppl uncurryOp strongEqualOp)
               | opId == notId -> (fTy, notOp)
               | opId == defId -> (instfTy, cf defOp)
-              | opId == whenElse -> (fTy, whenElseOp)
-              | opId == resId -> (fTy, resOp)
+              | opId == whenElse -> (instfTy, cf whenElseOp)
+              | opId == resId -> (instfTy, cf resOp)
               | otherwise -> (instfTy,
                             cf $ (for (isPlainFunType fTy - 1)
                                   $ termAppl uncurryOp)
