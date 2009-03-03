@@ -32,12 +32,13 @@ data TLElement = TLTheory String [TCElement]
 
 -- | Theory constitutive elements for OMDoc
 data TCElement = TCAxiomOrTheorem Bool String OMElement
+               | TCComment String
                | TCSymbol String OMElement
                | TCImport
                  deriving (Show, Eq, Ord)
 
 -- | Names used for OpenMath variables and symbols
-data OMName = OMName String deriving (Show, Eq, Ord)
+data OMName = OMName { name :: String } deriving (Show, Eq, Ord)
 
 -- | attribute-name attribute-value pair
 data OMAttribute = OMAttr OMElement OMElement
@@ -45,7 +46,9 @@ data OMAttribute = OMAttr OMElement OMElement
 
 -- | CD contains the reference to the content dictionary
 -- | as name and eventually the CDBase entry
-data OMCD = CD String (Maybe String) deriving (Show, Eq, Ord)
+data OMCD = CD { cd :: String,
+                 cdbase :: (Maybe String)}
+            deriving (Show, Eq, Ord)
 
 -- | Elements for Open Math
 data OMElement =
@@ -60,7 +63,5 @@ data OMElement =
   | OMA [OMElement]
     -- | Bindersymbol, bound vars, body
   | OMBIND OMElement [OMElement] OMElement
-    -- | Comment
-  | OMC String
   deriving (Show, Eq, Ord)
 
