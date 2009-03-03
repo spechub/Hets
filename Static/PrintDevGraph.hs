@@ -238,7 +238,10 @@ instance Pretty DGLinkLab where
     [ text "Origin:" <+> pretty (dgl_origin l)
     , text "Type:" <+> pretty (dgl_type l)
     , text "Signature Morphism:"
-    , pretty $ dgl_morphism l]
+    , pretty $ dgl_morphism l
+    , case dgl_type l of
+        HidingThm gm _ -> text "with hiding morphism:" $+$ pretty gm
+        _ -> Doc.empty ]
 
 -- | pretty print a labelled node
 prettyGenLNode :: (a -> Doc) -> LNode a -> Doc
