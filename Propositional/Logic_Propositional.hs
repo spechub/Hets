@@ -73,7 +73,7 @@ instance Category Sign.Sign Morphism.Morphism where
     -- tests if the morphism is ok
     legal_mor f = Morphism.isLegalMorphism f
     -- composition of morphisms
-    comp f g = Morphism.composeMor f g
+    composeMorphisms f g = Morphism.composeMor f g
 
 -- | Instance of Sentences for propositional logic
 instance Sentences Propositional AS_BASIC.FORMULA

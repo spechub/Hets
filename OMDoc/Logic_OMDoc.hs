@@ -49,9 +49,7 @@ instance Category OMDoc_Sign OMDoc_Morphism where
       , s
       , s
     )
-  comp (m1, s1, _) (m2, _, t2) =
-    if (OMDoc.inclusionTo m1) == (OMDoc.inclusionFrom m2)
-      then
+  composeMorphisms (m1, s1, _) (m2, _, t2) =
         let
           im1' = OMDoc.inclusionMorphism m1
           im2' = OMDoc.inclusionMorphism m2
@@ -85,8 +83,6 @@ instance Category OMDoc_Sign OMDoc_Morphism where
                   )
         in
           return $ (m1 { OMDoc.inclusionMorphism = compim }, s1, t2)
-      else
-        fail "target of first and source of second morphism are different"
   dom (_, s, _) = s
   cod (_, _, t) = t
   legal_mor (m, s, t) =

@@ -36,7 +36,7 @@ instance Category
                 dom          = domain
                 cod          = codomain
                 ide          = idMor
-                comp         = comp_rst_mor
+                composeMorphisms = comp_rst_mor
 
 -- ^ Instance of Sentences for Rel
 instance Sentences RelScheme Sentence Sign RSMorphism RSSymbol where

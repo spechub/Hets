@@ -67,7 +67,7 @@ instance Syntax HasCASL BasicSpec
 
 instance Category Env Morphism where
     ide = ideMor
-    comp = compMor
+    composeMorphisms = compMor
     isInclusion = isInclMor
     dom = msource
     cod = mtarget

@@ -159,7 +159,7 @@ compIdMap im1 im2 = if Map.null im2 then im1 else Map.foldWithKey ( \ i j ->
     if i == k then Map.delete i else Map.insert i k) im2 im1
 
 compMor :: Morphism -> Morphism -> Result Morphism
-compMor m1 m2 = if mtarget m1 == msource m2 then
+compMor m1 m2 =
      let  tm1 = typeIdMap m1
           tm2 = typeIdMap m2
           im = compIdMap tm1 tm2
@@ -188,7 +188,6 @@ compMor m1 m2 = if mtarget m1 == msource m2 then
                           map ( \ o -> ((k, mapTypeScheme cm tm im
                                         $ opType o), ())) $ Set.toList os)
                      $ Map.toList $ assumps src }
-  else fail "intermediate signatures of morphisms do not match"
 
 showEnvDiff :: Env -> Env -> String
 showEnvDiff e1 e2 =

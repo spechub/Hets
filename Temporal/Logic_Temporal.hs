@@ -38,12 +38,12 @@ instance Category
     Sign.Sign
     Morphism.Morphism
     where
-        ide         = Morphism.idMor                -- Identity morphism
-        dom         = Morphism.source               -- Returns the domain of a morphism
-        cod         = Morphism.target               -- Returns the codomain of a morphism
-        legal_mor f = Morphism.isLegalMorphism f    -- Tests if the morphism is ok
-        comp f g    = Morphism.composeMor f g       -- Composition of morphisms
-
+        ide         = Morphism.idMor  -- Identity morphism
+        dom         = Morphism.source -- Returns the domain of a morphism
+        cod         = Morphism.target -- Returns the codomain of a morphism
+        legal_mor f = Morphism.isLegalMorphism f -- Tests if the morphism is ok
+        composeMorphisms f g = Morphism.composeMor f g
+        -- Composition of morphisms
 
 -- | Instance of Sentences for temporal logic
 instance Sentences Temporal

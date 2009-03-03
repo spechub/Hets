@@ -347,7 +347,7 @@ idMor extEm sigma = embedMorphism extEm sigma sigma
 
 composeM :: Eq e => (m -> m -> Result m)
          -> Morphism f e m -> Morphism f e m -> Result (Morphism f e m)
-composeM comp mor1 mor2 = if mtarget mor1 == msource mor2 then do
+composeM comp mor1 mor2 = do
   let sMap1 = sort_map mor1
       src = msource mor1
       tar = mtarget mor2
@@ -384,7 +384,6 @@ composeM comp mor1 mor2 = if mtarget mor1 == msource mor2 then do
      { sort_map = sMap
      , op_map = oMap
      , pred_map = pMap }
- else fail "target of first and source of second morphism are different"
 
 legalSign :: Sign f e -> Bool
 legalSign sigma =

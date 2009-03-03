@@ -179,8 +179,9 @@ class (Ord object, Ord morphism)
     => Category object morphism | morphism -> object where
          -- | identity morphisms
          ide :: object -> morphism
-         -- | composition, in diagrammatic order
-         comp :: morphism -> morphism -> Result morphism
+         -- | composition, in diagrammatic order,
+         --   if intermediate objects are equal (not checked!)
+         composeMorphisms :: morphism -> morphism -> Result morphism
          -- | domain and codomain of morphisms
          dom, cod :: morphism -> object
          -- | the inverse of a morphism
@@ -192,12 +193,16 @@ class (Ord object, Ord morphism)
          -- | is a value of type morphism denoting a legal  morphism?
          legal_mor :: morphism -> Bool
 
+comp :: Category object morphism => morphism -> morphism -> Result morphism
+comp m1 m2 = if cod m1 == dom m2 then composeMorphisms m1 m2 else
+  fail "target of first and source of second morphism are different"
+
 instance Ord sign => Category sign (DefaultMorphism sign) where
     dom = domOfDefaultMorphism
     cod = codOfDefaultMorphism
     ide = ideOfDefaultMorphism
     isInclusion = isInclusionDefaultMorphism
-    comp = compOfDefaultMorphism
+    composeMorphisms = compOfDefaultMorphism
     legal_mor = legalDefaultMorphism (const True)
 
 {- | Abstract syntax, parsing and printing.

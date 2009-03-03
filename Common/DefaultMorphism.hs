@@ -43,11 +43,10 @@ printDefaultMorphism fA (MkMorphism s t b) =
 ideOfDefaultMorphism :: sign -> DefaultMorphism sign
 ideOfDefaultMorphism s = MkMorphism s s True
 
-compOfDefaultMorphism :: (Monad m, Eq sign) => DefaultMorphism sign
+compOfDefaultMorphism :: Monad m => DefaultMorphism sign
                       -> DefaultMorphism sign -> m (DefaultMorphism sign)
-compOfDefaultMorphism (MkMorphism s1 s b1) (MkMorphism s2 s3 b2) =
-    if s == s2 then return $ MkMorphism s1 s3 $ min b1 b2 else
-    fail "intermediate signatures are different"
+compOfDefaultMorphism (MkMorphism s1 _ b1) (MkMorphism _ s3 b2) =
+    return $ MkMorphism s1 s3 $ min b1 b2
 
 legalDefaultMorphism :: (sign -> Bool) -> DefaultMorphism sign -> Bool
 legalDefaultMorphism legalSign (MkMorphism s t _) =

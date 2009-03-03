@@ -534,7 +534,7 @@ instance Category G_sign GMorphism where
     GMorphism (mkIdComorphism lid (top_sublogic lid))
               sigma ind (ide s) startMorId
   --  composition of Grothendieck signature morphisms
-  comp (GMorphism r1 sigma1 ind1 mor1 _)
+  composeMorphisms (GMorphism r1 sigma1 ind1 mor1 _)
        (GMorphism r2 _sigma2 _ mor2 _) =
     do let lid1 = sourceLogic r1
            lid2 = targetLogic r1

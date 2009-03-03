@@ -79,13 +79,10 @@ applyMap pmap idt = Map.findWithDefault idt idt pmap
 composeMor :: Morphism -> Morphism -> Result Morphism
 composeMor f g =
   let fSource = source f
-      fTarget = target f
-      gSource = source g
       gTarget = target g
       fMap    = propMap f
       gMap    = propMap g
-  in if fTarget /= gSource then fail "Morphisms are not composable" else
-  return Morphism
+  in return Morphism
   { source = fSource
   , target = gTarget
   , propMap = if Map.null gMap then fMap else
