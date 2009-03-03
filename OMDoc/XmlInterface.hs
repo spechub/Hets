@@ -5,7 +5,7 @@
 
 {- |
 Module      :  $Header$
-Description :  OMDoc-to-XML conversion
+Description :  OMDoc-to/from-XML conversion
 Copyright   :  (c) Ewaryst Schulz, DFKI 2009
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
@@ -13,13 +13,18 @@ Maintainer  :  ewaryst.schulz@dfki.de
 Stability   :  provisional
 Portability :  non-portable(Logic)
 
-Implementation of the OMDoc-Datatype to XML transformation, there and back
+The transformation of the OMDoc intermediate representation to and from XML.
 -}
 
 
 
 module OMDoc.XmlInterface
-  where
+    ( XmlRepresentable
+    , listToXml
+    , listFromXml
+    , makeComment
+    , testXmlOut
+    ) where
 
 import OMDoc.DataTypes
 import Text.XML.Light

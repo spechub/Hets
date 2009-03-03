@@ -8,7 +8,7 @@ Maintainer  :  Ewaryst.Schulz@dfki.de
 Stability   :  provisional
 Portability :  portable
 
-data types for OMDoc
+Datatypes for an intermediate OMDoc Representation.
 -}
 module OMDoc.DataTypes where
 
@@ -22,10 +22,10 @@ module OMDoc.DataTypes where
 
 
 
--- | OMDoc root element with libname and children
+-- | OMDoc root element with libname and a list of toplevel elements
 data OMDoc = OMDoc String [TLElement]
 
--- | Top level elements for OMDoc
+-- | Toplevel elements for OMDoc
 data TLElement = TLTheory String [TCElement]
                | TLView
                  deriving (Show, Eq, Ord)
@@ -40,12 +40,13 @@ data TCElement = TCAxiomOrTheorem Bool String OMElement
 -- | Names used for OpenMath variables and symbols
 data OMName = OMName { name :: String } deriving (Show, Eq, Ord)
 
--- | attribute-name attribute-value pair
+-- | Attribute-name/attribute-value pair used to represent the type
+-- of an type-annotated term
 data OMAttribute = OMAttr OMElement OMElement
                       deriving (Show, Eq, Ord)
 
 -- | CD contains the reference to the content dictionary
--- | as name and eventually the CDBase entry
+-- and eventually the cdbase entry
 data OMCD = CD { cd :: String,
                  cdbase :: (Maybe String)}
             deriving (Show, Eq, Ord)
@@ -59,7 +60,7 @@ data OMElement =
     -- | Attributed element needed for type annotations of elements
   | OMATTT OMElement OMAttribute
     -- | Application to a list of arguments,
-    -- | first argument is usually the functionhead
+    -- first argument is usually the functionhead
   | OMA [OMElement]
     -- | Bindersymbol, bound vars, body
   | OMBIND OMElement [OMElement] OMElement
