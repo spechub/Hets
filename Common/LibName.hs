@@ -40,6 +40,21 @@ isQualName (Id ts cs _) = case cs of
   _ : _ : _ -> ts == omTs
   _ -> False
 
+getLibId :: Id -> Id
+getLibId j@(Id _ cs _) = case cs of
+  [_, _, i] | isQualName j -> i
+            | otherwise ->
+                error "Check by isQualName before calling getLibId!"
+  _ -> error "Check by isQualName before calling getLibId!"
+
+getNodeId :: Id -> Id
+getNodeId j@(Id _ cs _) = case cs of
+  [_, i, _] | isQualName j -> i
+            | otherwise ->
+                error "Check by isQualName before calling getNodeId!"
+  _ -> error "Check by isQualName before calling getNodeId!"
+
+
 unQualName :: Id -> Id
 unQualName j@(Id _ cs _) = case cs of
   i : _ | isQualName j -> i
@@ -77,6 +92,10 @@ updFilePathOfLibId fp mt li = case li of
 
 data VERSION_NUMBER = Version_number [String] Range deriving (Show, Eq)
                       -- pos: "version", start of first string
+
+-- | the identifier of a specification, combining the specid and the libid
+data SPEC_ID = SPEC_ID { specid :: Id,
+                         libid :: Maybe LIB_ID }
 
 type URL = String
 type PATH = String
