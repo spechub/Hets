@@ -284,14 +284,12 @@ getAllGlobPathsBetween dgraph src tgt =
 getAllPathsOfTypeBetween :: DGraph -> (DGLinkType -> Bool) -> Node
                          -> Node -> [[LEdge DGLinkLab]]
 getAllPathsOfTypeBetween dgraph isType src tgt =
-    Tree.getPathsTo src tgt
-    $ elfilter (isType . dgl_type)
-    $ dgBody dgraph
+    Tree.getPathsTo src tgt . elfilter (isType . dgl_type) $ dgBody dgraph
 
 -- | return all non-cyclic paths starting from the given node
 getAllPathsOfTypeFrom :: DGraph -> Node -> [[LEdge DGLinkLab]]
 getAllPathsOfTypeFrom dgraph src =
-   Tree.getPaths src $ dgBody dgraph
+   Tree.getPaths src . elfilter (not . isHidingEdge . dgl_type) $ dgBody dgraph
 
 -- ----------------------------------------
 -- methods to check and select proof basis

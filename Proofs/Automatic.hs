@@ -81,7 +81,8 @@ wrapTheoremHideShift ln libEnv =
 -- | list of rules to use
 rules :: [LIB_NAME -> LibEnv -> LibEnv]
 rules =
-    [ locDecomp
+    [ automaticHideTheoremShift
+    , locDecomp
     , globDecomp
     , globSubsume
     , wrapTheoremHideShift
