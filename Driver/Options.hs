@@ -94,7 +94,7 @@ genTermS = "gen_trm"
 treeS = "tree."
 bafS = ".baf"
 
-graphS, ppS, envS, deltaS, prfS, owlS, omdocS, hsS :: String
+graphS, ppS, envS, deltaS, prfS, owlS, omdocS, hsS, experimentalS :: String
 graphS = "graph."
 ppS = "pp."
 envS = "env"
@@ -103,6 +103,7 @@ prfS = "prf"
 owlS = "owl"
 omdocS = "omdoc"
 hsS = "hs"
+experimentalS = "exp"
 
 tptpS, dfgS, cS :: String
 tptpS = "tptp"
@@ -324,6 +325,7 @@ data OutType =
   | EnvOut
   | OWLOut
   | OmdocOut
+  | ExperimentalOut -- ^ for testing new functionality
   | HaskellOut
   | ThyFile -- ^ isabelle theory file
   | DfgFile SPFType -- ^ SPASS input file
@@ -340,6 +342,7 @@ instance Show OutType where
     EnvOut -> envS
     OWLOut -> owlS
     OmdocOut -> omdocS
+    ExperimentalOut -> experimentalS
     HaskellOut -> hsS
     ThyFile -> "thy"
     DfgFile t -> dfgS ++ show t
@@ -350,7 +353,8 @@ instance Show OutType where
 
 plainOutTypeList :: [OutType]
 plainOutTypeList =
-  [Prf, EnvOut, OWLOut, OmdocOut, HaskellOut, ThyFile, ComptableXml]
+  [Prf, EnvOut, OWLOut, OmdocOut, ExperimentalOut,
+      HaskellOut, ThyFile, ComptableXml]
 
 outTypeList :: [OutType]
 outTypeList = let dl = [Delta, Fully] in

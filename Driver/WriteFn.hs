@@ -30,7 +30,7 @@ import qualified Data.Map as Map
 import Common.SExpr
 
 import Logic.Coerce
-import Logic.Logic (language_name)
+import Logic.Logic
 import Logic.Grothendieck
 import Comorphisms.LogicGraph
 
@@ -77,6 +77,8 @@ import Driver.WriteLibDefn
 #ifdef HXTFILTER
 import OMDoc.OMDocOutput
 #endif
+
+import OMDoc.XmlInterface
 
 writeVerbFile :: HetcatsOpts -> FilePath -> String -> IO ()
 writeVerbFile opts f str = do
@@ -150,6 +152,14 @@ writeTheory opts filePrefix ga
     ThyFile -> writeIsaFile opts fp raw_gTh ln i
     DfgFile c -> writeSoftFOL opts f raw_gTh ln i c 0 "DFG"
     TPTPFile c -> writeSoftFOL opts f raw_gTh ln i c 1 "TPTP"
+
+    ExperimentalOut -> do
+      when (language_name lid == language_name CASL) $ do
+        (sign, sens) <- coerceBasicTheory lid CASL "" th
+        testXmlOut (f ++ ".xml")
+          $ listToXml (export_signToOmdoc CASL i (getLIB_ID ln) sign)
+          ++ concatMap (listToXml . export_senToOmdoc CASL i (getLIB_ID ln) sign) sens
+
     TheoryFile d -> do
       if null $ show d then
         writeVerbFile opts f $ shows (DG.printTh ga i raw_gTh) "\n"
@@ -253,6 +263,7 @@ writeSpecFiles opts file lenv ln dg = do
             ThyFile -> True
             DfgFile _  -> True
             TPTPFile _ -> True
+            ExperimentalOut -> True
             TheoryFile _ -> True
             SigFile _ -> True
             OWLOut -> True
