@@ -28,58 +28,67 @@ import CASL.Fold
 import CASL.Quantification
 
 exportSignToOmdoc :: SIMPLE_ID -> LIB_ID -> Sign f e -> [TCElement]
--- exportSignToOmdoc sid libid sign = []
-exportSignToOmdoc _ _ _ = []
+exportSignToOmdoc _ _ sign =
+    [TCComment $ "sortSet\n" ++ show (sortSet sign)
+     ++ "\n___________________\nemptySortSet\n" ++ show (emptySortSet sign)
+     ++ "\n___________________\nopMap\n" ++ show (opMap sign)
+     ++ "\n___________________\npredMap\n" ++ show (predMap sign)
+     ++ "\n___________________\ndeclaredSymbols\n" ++ show (declaredSymbols sign)]
+
 
 exportMorphismToOmdoc :: SIMPLE_ID -> LIB_ID -> Morphism f e ()
                       -> [TCElement]
--- exportMorphismToOmdoc sid libid morphism = []
+-- exportMorphismToOmdoc sid lid morphism = []
 exportMorphismToOmdoc _ _ _ = []
 
 exportSenToOmdoc :: SIMPLE_ID -> LIB_ID -> Sign f e -> Named(FORMULA f)
                  -> [TCElement]
--- exportSenToOmdoc sid libid sign formula = 
-exportSenToOmdoc _ _ sign formula = 
+-- exportSenToOmdoc sid lid sign formula = 
+exportSenToOmdoc sid lid sign formula = 
     [TCAxiomOrTheorem True (senAttr formula) $ foldFormula 
-                 (omdocRec sign (\_ -> mydummy1 "extension not supported"))
-                 (sentence formula)]
+     (omdocRec (SPEC_ID (simpleIdToId sid) (Just lid))
+               sign (\_ -> error "CASL extension not supported."))
+     (sentence formula)]
 
-
--- Name unter: (senAttr formula)
 
 sfail :: String -> Range -> a
 sfail s r = error $ show (Diag Error ("unexpected " ++ s) r)
 
-{- 
-need functions:
-predefined casl-content dictionaries
--}
-
-mydummy1 :: String -> OMElement
-mydummy1 = OMC
-
-mydummy :: OMElement
-mydummy = mydummy1 "dummy"
-
-showElem :: Show a => String -> a -> String
-showElem s x = s ++ "[" ++ show x ++ "]"
-
-showDummy :: Show a => String -> a -> OMElement
-showDummy s = mydummy1 . (showElem s)
+idToOmdoc :: SPEC_ID -> Id -> OMElement
+idToOmdoc spid s
+    | isQualName s = buildOMS "yesqual" (SPEC_ID (getNodeId s) Nothing) (unQualName s)
+    | otherwise = buildOMS "noqual" spid s
 
 
+-- | probably outsource this to a generic module
+buildOMS :: String -> SPEC_ID -> Id -> OMElement
+buildOMS str (SPEC_ID sid lid) i = OMS 
+                                 (CD (str ++ (show sid)) (case lid of
+                                                   Nothing -> Nothing
+                                                   (Just l) -> Just (show l)))
+                                 $ OMName $ show i
 
-sortToOmdoc :: Id -> OMElement
-sortToOmdoc s = showDummy "sort" s
+sortToOmdoc :: SPEC_ID -> Id -> OMElement
+sortToOmdoc = idToOmdoc
 
-sortToOmdocAttribute :: Id -> OMAttribute
-sortToOmdocAttribute s = OMAttr (st_const "Type") $ sortToOmdoc s
+funToOmdoc :: SPEC_ID -> OP_SYMB -> OMElement
+funToOmdoc spid (Qual_op_name i _ _) = idToOmdoc spid i
+funToOmdoc spid (Op_name i) = idToOmdoc spid i
+
+predToOmdoc :: SPEC_ID -> PRED_SYMB -> OMElement
+predToOmdoc spid (Qual_pred_name i _ _) = idToOmdoc spid i
+predToOmdoc spid (Pred_name i) = idToOmdoc spid i
+
+-- | type attributes for terms can only consist of a single sort
+sortToOmdocAttribute :: SPEC_ID -> Id -> OMAttribute
+sortToOmdocAttribute spid s = OMAttr (st_const "type") $ sortToOmdoc spid s
 
 varToOmdoc :: Token -> OMElement
-varToOmdoc v = OMV $ OMName $ showElem "var" v
+varToOmdoc v = OMV $ OMName $ tokStr v
 
-varDeclToOMDoc :: (VAR, SORT) -> OMElement
-varDeclToOMDoc (v, s) = OMATTT (varToOmdoc v) (sortToOmdocAttribute s)
+-- | typed vars can only be typed by a single sort
+varDeclToOMDoc :: SPEC_ID -> (VAR, SORT) -> OMElement
+varDeclToOMDoc spid (v, s) = OMATTT (varToOmdoc v) (sortToOmdocAttribute spid s)
 
 
 
@@ -105,16 +114,15 @@ casl_const n = OMS (CD "casl" Nothing) $ OMName n
 
 
 
-omdocRec :: Sign f e -> (f -> OMElement)
+omdocRec :: SPEC_ID -> Sign f e -> (f -> OMElement)
          -> Record f OMElement OMElement
--- omdocRec sign mf = Record
-omdocRec _ mf = Record
+omdocRec spid sign mf = Record
     { foldQuantification = \ _ q vs f _ ->
       let s = case q of
                 Universal -> pl1_const "forall"
                 Existential -> pl1_const "exists"
                 Unique_existential -> casl_const "existsunique"
-          vl = map varDeclToOMDoc $ flatVAR_DECLs vs
+          vl = map (varDeclToOMDoc spid) $ flatVAR_DECLs vs
       in OMBIND s vl f
     , foldConjunction = \ _ fs _ -> OMA $ (pl0_const "and") : fs
     , foldDisjunction = \ _ fs _ -> OMA $ (pl0_const "or") : fs
@@ -126,18 +134,20 @@ omdocRec _ mf = Record
     , foldNegation = \ _ f _ -> (OMA [(pl0_const "not") , f])
     , foldTrue_atom = \ _ _ -> tv_const "true"
     , foldFalse_atom = \ _ _ -> tv_const "false"
-    , foldPredication = \ _ p ts _ -> OMA $ (showDummy "pred" p) : ts
+    , foldPredication = \ _ p ts _ -> OMA $ (predToOmdoc spid p) : ts
     , foldDefinedness = \ _ t _ -> OMA [(casl_const "def"), t]
     , foldExistl_equation = \ _ t1 t2 _ -> (OMA [(casl_const "eeq") , t1, t2])
     , foldStrong_equation = \ _ t1 t2 _ -> (OMA [(casl_const "eq") , t1, t2])
-    , foldMembership = \ _ t s _ -> (OMA [(casl_const "in") , t, sortToOmdoc s])
+    , foldMembership = \ _ t s _ ->
+                       (OMA [(casl_const "in") , t, sortToOmdoc spid s])
     , foldMixfix_formula = \ t _ -> sfail "Mixfix_formula" $ getRange t
-    , foldSort_gen_ax = \ t _ _ -> sfail "Sort_gen_ax" $ getRange t
+    , foldSort_gen_ax = \ t _ _ -> OMA []
     , foldExtFORMULA = \ _ f -> mf f
     , foldQual_var = \ _ v _ _ -> varToOmdoc v
-    , foldApplication = \ _ o ts _ -> OMA $ (showDummy "fun" o) : ts
+    , foldApplication = \ _ o ts _ -> OMA $ (funToOmdoc spid o) : ts
     , foldSorted_term = \ _ r _ _ -> r
-    , foldCast = \ _ t s _ -> (OMA [(casl_const "cast") , t, sortToOmdoc s])
+    , foldCast = \ _ t s _ ->
+                 (OMA [(casl_const "cast") , t, sortToOmdoc spid s])
     , foldConditional = \ _ e f t _ -> (OMA [(casl_const "if") , e , t, f])
     , foldMixfix_qual_pred = \ _ p -> sfail "Mixfix_qual_pred" $ getRange p
     , foldMixfix_term = \ (Mixfix_term ts) _ ->
@@ -148,3 +158,33 @@ omdocRec _ mf = Record
     , foldMixfix_parenthesized = \ _ _ r -> sfail "Mixfix_parenthesized" r
     , foldMixfix_bracketed = \ _ _ r -> sfail "Mixfix_bracketed" r
     , foldMixfix_braced = \ _ _ r -> sfail "Mixfix_braced" r }
+
+
+{-
+signToOmdoc :: Sign a e -> [TCElement]
+signToOmdoc sign = sortSignToOmdoc sign
+  : predMapToOmdoc sign (predMap sign) ++ opMapToOmdoc sign (opMap sign)
+
+sortSignToOmdoc :: Sign a e -> [TCElement]
+sortSignToOmdoc sign =
+    SList (SSymbol "sorts"
+      : map sortToSSymbol (Set.toList $ sortSet sign))
+
+predMapToOmdoc :: Sign a e -> Map.Map Id (Set.Set PredType) -> [SExpr]
+predMapToOmdoc sign pm =
+    concatMap (\ (p, ts) -> map (\ t ->
+       SList [ SSymbol "predicate"
+             , predIdToSSymbol sign p t
+             , SList $ map sortToSSymbol $ predArgs t ]) $ Set.toList ts)
+      $ Map.toList pm
+
+opMapToOmdoc :: Sign a e -> OpMap -> [SExpr]
+opMapToOmdoc sign om =
+    concatMap (\ (p, ts) -> map (\ t ->
+       SList [ SSymbol "function"
+             , opIdToSSymbol sign p t
+             , SList $ map sortToSSymbol $ opArgs t
+             , sortToSSymbol $ opRes t ]) $ Set.toList ts)
+      $ Map.toList om
+
+-}
