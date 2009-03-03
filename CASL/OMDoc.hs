@@ -8,10 +8,14 @@ Maintainer  :  ewaryst.schulz@dfki.de
 Stability   :  provisional
 Portability :  non-portable(Logic)
 
-Implementation of the interface functions from Logic
+CASL implementation of the interface functions export_signToOmdoc, export_morphismToOmdoc, export_senToOmdoc from class Logic. The actual instantiation can be found in module CASL.Logic_CASL.
 -}
+
 module CASL.OMDoc
-  where
+    ( exportSignToOmdoc
+    , exportMorphismToOmdoc
+    , exportSenToOmdoc
+    ) where
 
 import OMDoc.DataTypes
 
@@ -27,14 +31,22 @@ import CASL.Morphism
 import CASL.Fold
 import CASL.Quantification
 
+import Data.Map as Map
+import Data.Set as Set
+
 exportSignToOmdoc :: SIMPLE_ID -> LIB_ID -> Sign f e -> [TCElement]
 exportSignToOmdoc _ _ sign =
+    Set.toList (Set.map (sortSignToOmdoc sign) (sortSet sign))
+ ++ Map.elems (mapWithKey (funSignToOmdoc sign) (opMap sign))
+ ++ Map.elems (mapWithKey (predSignToOmdoc sign) (predMap sign))
+
+{-
     [TCComment $ "sortSet\n" ++ show (sortSet sign)
      ++ "\n___________________\nemptySortSet\n" ++ show (emptySortSet sign)
      ++ "\n___________________\nopMap\n" ++ show (opMap sign)
      ++ "\n___________________\npredMap\n" ++ show (predMap sign)
      ++ "\n___________________\ndeclaredSymbols\n" ++ show (declaredSymbols sign)]
-
+-}
 
 exportMorphismToOmdoc :: SIMPLE_ID -> LIB_ID -> Morphism f e ()
                       -> [TCElement]
@@ -43,7 +55,6 @@ exportMorphismToOmdoc _ _ _ = []
 
 exportSenToOmdoc :: SIMPLE_ID -> LIB_ID -> Sign f e -> Named(FORMULA f)
                  -> [TCElement]
--- exportSenToOmdoc sid lid sign formula = 
 exportSenToOmdoc sid lid sign formula = 
     [TCAxiomOrTheorem True (senAttr formula) $ foldFormula 
      (omdocRec (SPEC_ID (simpleIdToId sid) (Just lid))
@@ -122,7 +133,7 @@ omdocRec spid sign mf = Record
                 Universal -> pl1_const "forall"
                 Existential -> pl1_const "exists"
                 Unique_existential -> casl_const "existsunique"
-          vl = map (varDeclToOMDoc spid) $ flatVAR_DECLs vs
+          vl = Prelude.map (varDeclToOMDoc spid) $ flatVAR_DECLs vs
       in OMBIND s vl f
     , foldConjunction = \ _ fs _ -> OMA $ (pl0_const "and") : fs
     , foldDisjunction = \ _ fs _ -> OMA $ (pl0_const "or") : fs
@@ -160,31 +171,32 @@ omdocRec spid sign mf = Record
     , foldMixfix_braced = \ _ _ r -> sfail "Mixfix_braced" r }
 
 
+sortSignToOmdoc :: Sign a e -> SORT -> TCElement
+sortSignToOmdoc sign s = TCComment $ show s
 {-
-signToOmdoc :: Sign a e -> [TCElement]
-signToOmdoc sign = sortSignToOmdoc sign
-  : predMapToOmdoc sign (predMap sign) ++ opMapToOmdoc sign (opMap sign)
-
-sortSignToOmdoc :: Sign a e -> [TCElement]
-sortSignToOmdoc sign =
     SList (SSymbol "sorts"
       : map sortToSSymbol (Set.toList $ sortSet sign))
+-}
 
-predMapToOmdoc :: Sign a e -> Map.Map Id (Set.Set PredType) -> [SExpr]
-predMapToOmdoc sign pm =
+predSignToOmdoc :: Sign a e -> Id -> (Set.Set PredType) -> TCElement
+predSignToOmdoc sign p ptypes = TCComment $ (show p) ++ "\n" ++ (show ptypes)
+
+{-
     concatMap (\ (p, ts) -> map (\ t ->
        SList [ SSymbol "predicate"
              , predIdToSSymbol sign p t
              , SList $ map sortToSSymbol $ predArgs t ]) $ Set.toList ts)
       $ Map.toList pm
+-}
 
-opMapToOmdoc :: Sign a e -> OpMap -> [SExpr]
-opMapToOmdoc sign om =
+funSignToOmdoc :: Sign a e -> Id -> (Set.Set OpType) -> TCElement
+funSignToOmdoc sign f ftypes = TCComment $ (show f) ++ "\n" ++ (show ftypes)
+
+{-
     concatMap (\ (p, ts) -> map (\ t ->
        SList [ SSymbol "function"
              , opIdToSSymbol sign p t
              , SList $ map sortToSSymbol $ opArgs t
              , sortToSSymbol $ opRes t ]) $ Set.toList ts)
       $ Map.toList om
-
 -}
