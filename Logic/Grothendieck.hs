@@ -540,35 +540,35 @@ instance Category G_sign GMorphism where
            lid2 = targetLogic r1
            lid3 = sourceLogic r2
            lid4 = targetLogic r2
-       -- coercion between target of first and
-       --   source of second Grothendieck morphism
-       mor1' <- coerceMorphism lid2 lid3 "Grothendieck.comp" mor1
-       -- map signature morphism component of first Grothendieck morphism
-       --  along the comorphism component of the second one ...
-       mor1'' <- map_morphism r2 mor1'
-       -- and then compose the result with the signature morphism component
-       --   of first one
-       mor <- comp mor1'' mor2
-       -- if the first comorphism is the identity...
-       if isIdComorphism (Comorphism r1) &&
-          case coerceSublogic lid2 lid3 "Grothendieck.comp"
+       -- if the second comorphism is the identity then simplify immediately
+       if isIdComorphism (Comorphism r2) then do
+           mor2' <- coerceMorphism lid4 lid2 "Grothendieck.comp" mor2
+           mor' <- composeMorphisms mor1 mor2'
+           return (GMorphism r1 sigma1 ind1 mor' startMorId)
+         else do
+         -- coercion between target of first and
+         --   source of second Grothendieck morphism
+         mor1' <- coerceMorphism lid2 lid3 "Grothendieck.comp" mor1
+         -- map signature morphism component of first Grothendieck morphism
+         --  along the comorphism component of the second one ...
+         mor1'' <- map_morphism r2 mor1'
+         -- and then compose the result with the signature morphism component
+         --   of first one
+         mor <- composeMorphisms mor1'' mor2
+         -- also if the first comorphism is the identity...
+         if isIdComorphism (Comorphism r1) &&
+           case coerceSublogic lid2 lid3 "Grothendieck.comp"
                               (targetSublogic r1) of
-            Just sl1 -> maybe (error ("Logic.Grothendieck: Category "++
+             Just sl1 -> maybe (error ("Logic.Grothendieck: Category "++
                                       "instance.comp: no mapping for " ++
                                       show sl1))
                               (isSubElem (targetSublogic r2))
                               (mapSublogic r2 sl1)
-            _ -> False
-         -- ... then things simplify ...
-         then do
-           sigma1' <- coerceSign lid1 lid3 "Grothendieck.comp" sigma1
-           return (GMorphism r2 sigma1' ind1 mor startMorId)
-         -- ... also, if the second comorphism is the identity ...
-         else if isIdComorphism (Comorphism r2)
-           then do mor2' <- coerceMorphism lid4 lid2 "Grothendieck.comp" mor2
-                   mor' <- comp mor1 mor2'
-                   return (GMorphism r1 sigma1 ind1 mor' startMorId)
-           -- ... if not, use the composite comorphism
+             _ -> False
+               -- ... then things simplify ...
+           then do
+             sigma1' <- coerceSign lid1 lid3 "Grothendieck.comp" sigma1
+             return (GMorphism r2 sigma1' ind1 mor startMorId)
            else return $ GMorphism (CompComorphism r1 r2)
                 sigma1 ind1 mor startMorId
   dom (GMorphism r sigma ind _mor _) =
@@ -705,8 +705,8 @@ genCompInclusion f mor1 mor2 = do
   let sigma1 = cod mor1
       sigma2 = dom mor2
   incl <- f sigma1 sigma2
-  mor <- comp mor1 incl
-  comp mor mor2
+  mor <- composeMorphisms mor1 incl
+  composeMorphisms mor mor2
 
 -- | Composition of two Grothendieck signature morphisms
 -- | with itermediate inclusion
