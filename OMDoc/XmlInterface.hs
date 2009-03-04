@@ -218,20 +218,19 @@ instance XmlRepresentable OMAttribute where
 ---------------------------------------------------------------------
 -- TESTPART:
 
--- hets -v2 -o exp -n "Nat" -O "/home/ewaryst/temp/omdtests" Basic/Numbers.casl
+-- hets -v2 -o exp -n "Nat3" -O "/home/ewaryst/temp/omdtests" TestSuite/Correct/Ewitest.casl
 
 -- 
 -- h <- readFile "/tmp/Numbers.xml" >>= (\x -> return $ Hide $ Data.Maybe.fromJust $ parseXMLDoc x)
 
 -- fmap (length . show . (filter (\x -> case x of (CRef _) -> True ; _ -> False)) . elContent) h
 
-testXmlOut :: String -> [Content] -> IO ()
-testXmlOut filename l = 
-    writeFile filename $ ppTopElement $
-              Element el_omdoc [] ((makeComment "Testoutput"):l) Nothing
+testXmlOut :: [Content] -> String
+testXmlOut l = ppTopElement $
+               Element el_omdoc [] ((makeComment "Testoutput"):l) Nothing
 
-testXmlOut2 :: String -> [Element] -> IO ()
-testXmlOut2 filename l = testXmlOut filename $ Prelude.map Elem l
+testXmlOut2 :: [Element] -> String
+testXmlOut2 l = testXmlOut $ Prelude.map Elem l
 
 collectQNames :: (Set QName) -> Element -> (Set QName)
 collectQNames s (Element q _ c _) = insert q $ unions $ Prelude.map (collectQNames s) $ onlyElems c
