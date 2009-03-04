@@ -18,6 +18,7 @@ import Control.Monad
 import Text.ParserCombinators.Parsec
 import Text.PrettyPrint.HughesPJ (render)
 import Data.List (partition, (\\))
+import Data.Maybe
 
 import Common.AS_Annotation
 import Common.Id
@@ -70,6 +71,7 @@ import Static.DotGraph
 import qualified Static.PrintDevGraph as DG
 import Proofs.StatusUtils
 import Proofs.TheoremHideShift (theoremsToAxioms, computeTheory)
+import Proofs.QualifyNames
 
 import Driver.Options
 import Driver.WriteLibDefn
@@ -253,7 +255,7 @@ writeTheoryFiles opts specOutTypes filePrefix lenv ga ln i n =
 
 writeSpecFiles :: HetcatsOpts -> FilePath -> LibEnv -> LIB_NAME -> DGraph
                -> IO ()
-writeSpecFiles opts file lenv ln dg = do
+writeSpecFiles opts file lenv0 ln dg = do
     let gctx = globalEnv dg
         ga = globalAnnos dg
         ns = specNames opts
@@ -272,6 +274,9 @@ writeSpecFiles opts file lenv ln dg = do
             _ -> False) outTypes
         allSpecs = null ns
         ignore = null specOutTypes && modelSparQ opts == ""
+        lenv = if elem (show ExperimentalOut) $ map show outTypes
+               then fromJust $ maybeResult $ qualifyLibEnv lenv0 else lenv0
+
     mapM_ (writeLibEnv opts filePrefix lenv ln) $
           if null $ dumpOpts opts then outTypes else EnvOut : outTypes
     mapM_ ( \ i -> case Map.lookup i gctx of
