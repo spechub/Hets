@@ -158,9 +158,10 @@ writeTheory opts filePrefix ga
     ExperimentalOut -> do
       when (language_name lid == language_name CASL) $ do
         (sign, sens) <- coerceBasicTheory lid CASL "" th
-        testXmlOut (f ++ ".xml")
-          $ listToXml (export_signToOmdoc CASL i (getLIB_ID ln) sign)
-          ++ concatMap (listToXml . export_senToOmdoc CASL i (getLIB_ID ln) sign) sens
+        writeVerbFile opts (f ++ ".xml") $ testXmlOut 
+                       $ listToXml (export_signToOmdoc CASL i (getLIB_ID ln) sign)
+                       ++ concatMap (listToXml . export_senToOmdoc
+                                     CASL i (getLIB_ID ln) sign) sens
 
     TheoryFile d -> do
       if null $ show d then
