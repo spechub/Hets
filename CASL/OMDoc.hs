@@ -34,6 +34,9 @@ import CASL.Quantification
 import Data.Map as Map
 import Data.Set as Set
 
+-- | the identifier of a specification, combining the specid and the libid
+data SPEC_ID = SPEC_ID Id (Maybe LIB_ID)
+
 exportSignToOmdoc :: SIMPLE_ID -> LIB_ID -> Sign f e -> [TCElement]
 exportSignToOmdoc sid lid sign =
     Set.toList (Set.map (sortSignToOmdoc spid sign) (sortSet sign))
@@ -56,8 +59,8 @@ exportMorphismToOmdoc _ _ _ = []
 
 exportSenToOmdoc :: SIMPLE_ID -> LIB_ID -> Sign f e -> Named(FORMULA f)
                  -> [TCElement]
-exportSenToOmdoc sid lid sign formula = 
-    [TCAxiomOrTheorem True (senAttr formula) $ foldFormula 
+exportSenToOmdoc sid lid sign formula =
+    [TCAxiomOrTheorem True (senAttr formula) $ foldFormula
      (omdocRec (SPEC_ID (simpleIdToId sid) (Just lid))
                sign (\_ -> error "CASL extension not supported."))
      (sentence formula)]

@@ -93,10 +93,6 @@ updFilePathOfLibId fp mt li = case li of
 data VERSION_NUMBER = Version_number [String] Range deriving (Show, Eq)
                       -- pos: "version", start of first string
 
--- | the identifier of a specification, combining the specid and the libid
-data SPEC_ID = SPEC_ID { specid :: Id,
-                         libid :: Maybe LIB_ID }
-
 type URL = String
 type PATH = String
 
