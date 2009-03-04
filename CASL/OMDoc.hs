@@ -35,10 +35,11 @@ import Data.Map as Map
 import Data.Set as Set
 
 exportSignToOmdoc :: SIMPLE_ID -> LIB_ID -> Sign f e -> [TCElement]
-exportSignToOmdoc _ _ sign =
-    Set.toList (Set.map (sortSignToOmdoc sign) (sortSet sign))
- ++ Map.elems (mapWithKey (funSignToOmdoc sign) (opMap sign))
- ++ Map.elems (mapWithKey (predSignToOmdoc sign) (predMap sign))
+exportSignToOmdoc sid lid sign =
+    Set.toList (Set.map (sortSignToOmdoc spid sign) (sortSet sign))
+ ++ Map.elems (mapWithKey (funSignToOmdoc spid sign) (opMap sign))
+ ++ Map.elems (mapWithKey (predSignToOmdoc spid sign) (predMap sign))
+     where spid = (SPEC_ID (simpleIdToId sid) (Just lid))
 
 {-
     [TCComment $ "sortSet\n" ++ show (sortSet sign)
@@ -65,19 +66,53 @@ exportSenToOmdoc sid lid sign formula =
 sfail :: String -> Range -> a
 sfail s r = error $ show (Diag Error ("unexpected " ++ s) r)
 
-idToOmdoc :: SPEC_ID -> Id -> OMElement
-idToOmdoc spid s
-    | isQualName s = buildOMS "yesqual" (SPEC_ID (getNodeId s) Nothing) (unQualName s)
-    | otherwise = buildOMS "noqual" spid s
+-- | Given an operator or predicate signature we construct the according
+-- type by currying and using bool as rangetype for predicates
+buildType :: SPEC_ID -> OpKind -> [SORT] -> Maybe SORT -> OMElement
+buildType spid _ [] (Just r) = (sortToOmdoc spid r)
+buildType spid total domain range =
+    foldr (addType spid)
+              (OMA [typeconstr, (sortToOmdoc spid s), rangeelem])
+              rest
+        where
+          typeconstr = case total of Total -> st_const "funtype"
+                                     Partial -> casl_const "partialfuntype"
+          s = last domain
+          rest = init domain
+          rangeelem = case range of Nothing -> (tv_const "bool")
+                                    Just r -> (sortToOmdoc spid r)
+
+addType :: SPEC_ID -> SORT -> OMElement -> OMElement
+addType spid s elm = OMA [(st_const "funtype"), (sortToOmdoc spid s), elm]
+
+
+-- | the qualified name of an identifier consisting of
+--   the name, the spec and the lib
+data NameTriple = NameTriple { getName :: String,
+                               getSpecName :: String,
+                               getLibName :: (Maybe String) } deriving Show
 
 
 -- | probably outsource this to a generic module
-buildOMS :: String -> SPEC_ID -> Id -> OMElement
-buildOMS str (SPEC_ID sid lid) i = OMS 
-                                 (CD (str ++ (show sid)) (case lid of
-                                                   Nothing -> Nothing
-                                                   (Just l) -> Just (show l)))
-                                 $ OMName $ show i
+buildOMS :: NameTriple -> OMElement
+buildOMS (NameTriple i s l) = OMS (CD s l) $ OMName i
+
+{-
+-- attempt to solve the gn_Over problem, but didn't work
+transitiveUnQualName :: Id -> Id
+transitiveUnQualName i
+    | isQualName i = transitiveUnQualName $ unQualName i
+    | otherwise = i
+-}
+
+idToNameTriple :: SPEC_ID -> Id -> NameTriple
+idToNameTriple (SPEC_ID sid lid) s
+    | isQualName s = NameTriple (show $ unQualName s)
+                     (show $ getNodeId s) Nothing
+    | otherwise = NameTriple (show s) (show sid) (fmap show lid)
+
+idToOmdoc :: SPEC_ID -> Id -> OMElement
+idToOmdoc spid s = buildOMS $ idToNameTriple spid s
 
 sortToOmdoc :: SPEC_ID -> Id -> OMElement
 sortToOmdoc = idToOmdoc
@@ -152,7 +187,7 @@ omdocRec spid sign mf = Record
     , foldMembership = \ _ t s _ ->
                        (OMA [(casl_const "in") , t, sortToOmdoc spid s])
     , foldMixfix_formula = \ t _ -> sfail "Mixfix_formula" $ getRange t
-    , foldSort_gen_ax = \ t _ _ -> OMA []
+    , foldSort_gen_ax = \ _ cs b -> OMV $ OMName $ "sgax (" ++ (show b) ++ "): " ++ (show cs)
     , foldExtFORMULA = \ _ f -> mf f
     , foldQual_var = \ _ v _ _ -> varToOmdoc v
     , foldApplication = \ _ o ts _ -> OMA $ (funToOmdoc spid o) : ts
@@ -171,32 +206,33 @@ omdocRec spid sign mf = Record
     , foldMixfix_braced = \ _ _ r -> sfail "Mixfix_braced" r }
 
 
-sortSignToOmdoc :: Sign a e -> SORT -> TCElement
-sortSignToOmdoc sign s = TCComment $ show s
+sortSignToOmdoc :: SPEC_ID -> Sign a e -> SORT -> TCElement
+sortSignToOmdoc spid _ s =
+    TCSymbol (getName $ idToNameTriple spid s) Nothing Typ
+
+
+predSignToOmdoc :: SPEC_ID -> Sign a e -> Id -> (Set.Set PredType) -> TCElement
+predSignToOmdoc spid _ p ptypes =
+    TCSymbol
+    (getName $ idToNameTriple spid p)
+    (Just (buildType spid Total (predArgs $ Set.findMin ptypes) Nothing))
+    Obj
+
+
+funSignToOmdoc :: SPEC_ID -> Sign a e -> Id -> (Set.Set OpType) -> TCElement
+funSignToOmdoc spid _ f ftypes =
+    TCSymbol
+    (getName $ idToNameTriple spid f)
+    (Just $ buildType spid opkind opargs $ Just oprange)
+    Obj
+        where
+          otype = (Set.findMin ftypes)
+          opkind = opKind otype
+          opargs = opArgs otype
+          oprange = opRes otype
+
 {-
-    SList (SSymbol "sorts"
-      : map sortToSSymbol (Set.toList $ sortSet sign))
+    TCComment $ show (f,ftypes)
 -}
 
-predSignToOmdoc :: Sign a e -> Id -> (Set.Set PredType) -> TCElement
-predSignToOmdoc sign p ptypes = TCComment $ (show p) ++ "\n" ++ (show ptypes)
 
-{-
-    concatMap (\ (p, ts) -> map (\ t ->
-       SList [ SSymbol "predicate"
-             , predIdToSSymbol sign p t
-             , SList $ map sortToSSymbol $ predArgs t ]) $ Set.toList ts)
-      $ Map.toList pm
--}
-
-funSignToOmdoc :: Sign a e -> Id -> (Set.Set OpType) -> TCElement
-funSignToOmdoc sign f ftypes = TCComment $ (show f) ++ "\n" ++ (show ftypes)
-
-{-
-    concatMap (\ (p, ts) -> map (\ t ->
-       SList [ SSymbol "function"
-             , opIdToSSymbol sign p t
-             , SList $ map sortToSSymbol $ opArgs t
-             , sortToSSymbol $ opRes t ]) $ Set.toList ts)
-      $ Map.toList om
--}
