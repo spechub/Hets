@@ -31,17 +31,29 @@ data TLElement = TLTheory String [TCElement]
                  deriving (Show, Eq, Ord)
 
 -- | Theory constitutive elements for OMDoc
-data TCElement = TCAxiomOrTheorem Bool String OMElement
-               | TCComment String
-               | TCSymbol String OMElement
-               | TCImport
-                 deriving (Show, Eq, Ord)
+data TCElement =
+    -- | An axiom or theorem element
+    TCAxiomOrTheorem Bool String OMElement
+    -- | A comment, only for development purposes
+  | TCComment String
+    -- | Symbol to represent sorts, constants, predicate symbols, etc.
+  | TCSymbol String (Maybe OMElement) SymbolRole
+    -- | Import statements for referencing other theories
+  | TCImport
+    deriving (Show, Eq, Ord)
+
+-- | Roles of the declared symbols can be object or type
+data SymbolRole = Obj | Typ deriving (Eq, Ord)
+
+instance Show SymbolRole where
+    show Obj = "object"
+    show Typ = "type"
 
 -- | Names used for OpenMath variables and symbols
 data OMName = OMName { name :: String } deriving (Show, Eq, Ord)
 
 -- | Attribute-name/attribute-value pair used to represent the type
--- of an type-annotated term
+-- of a type-annotated term
 data OMAttribute = OMAttr OMElement OMElement
                       deriving (Show, Eq, Ord)
 

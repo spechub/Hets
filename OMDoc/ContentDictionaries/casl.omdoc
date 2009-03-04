@@ -46,6 +46,21 @@
 </metadata>
   </symbol>
 
+    <omtext xml:id="function-types" type="comment">
+     <CMP>Functions with multiple arguments are typed using currying and its type
+          is constructed with the <OMS cd="simpletypes" name="funtype"/> symbol. Partial functions are
+          constructed the same way but the innermost arrow (symbol) is replaced
+          by the <OMS cd="casl" name="partialfuntype"/> symbol declared beneath.</CMP>
+    </omtext>
+
+   <symbol name="partialfuntype">
+     <metadata>
+       <dc:description>
+           <OMOBJ xmlns="http://www.openmath.org/OpenMath"><OMS cd="casl" name="partialfuntype"/></OMOBJ>
+       is the type constructor for partial function types.</dc:description>
+     </metadata>
+   </symbol>
+
     <!-- Definedness, Membership -->
 
     <symbol name="defined">
@@ -84,7 +99,7 @@
 </metadata>
     </symbol>
 
-    <omtext xml:id="CDComment1" type="comment">
+    <omtext xml:id="upcast-by-attribution" type="comment">
      <CMP>The upcast is realised by an attribution around the term, such as
     for typing of bound variables</CMP>
     </omtext>

@@ -20,6 +20,7 @@ The transformation of the OMDoc intermediate representation to and from XML.
 
 module OMDoc.XmlInterface
     ( XmlRepresentable
+    , toXml
     , listToXml
     , listFromXml
     , makeComment
@@ -37,8 +38,8 @@ omdoc_current_version = "1.2"
 
 -- | often used element names
 el_omdoc, el_theory, el_view, el_axiom, el_theorem, el_symbol, el_import
- , el_fmp, el_omobj, el_ombind, el_oms, el_ombvar, el_omattr, el_omatp
- , el_omv, el_oma :: QName
+ , el_type, el_fmp, el_omobj, el_ombind, el_oms, el_ombvar, el_omattr
+ , el_omatp, el_omv, el_oma :: QName
 
 el_omdoc = (blank_name { qName = "omdoc" })
 el_theory = (blank_name { qName = "theory" })
@@ -47,6 +48,7 @@ el_axiom = (blank_name { qName = "axiom" })
 el_theorem = (blank_name { qName = "theorem" })
 el_symbol = (blank_name { qName = "symbol" })
 el_import = (blank_name { qName = "import" })
+el_type = (blank_name { qName = "type" })
 el_fmp = (blank_name { qName = "FMP" })
 el_omobj = (blank_name { qName = "OMOBJ" })
 el_ombind = (blank_name { qName = "OMBIND" })
@@ -62,12 +64,13 @@ el_axiom_or_theorem True = el_axiom
 el_axiom_or_theorem False = el_theorem
 
 -- | often used attribute names
-at_id, at_version, at_cd, at_name :: QName
+at_id, at_version, at_cd, at_name, at_role :: QName
 
 at_id = (blank_name { qName = "id", qPrefix = Just "xml" })
 at_version = (blank_name { qName = "version" })
 at_cd = (blank_name { qName = "cd" })
 at_name = (blank_name { qName = "name" })
+at_role = (blank_name { qName = "role" })
 
 
 {- |
@@ -132,10 +135,14 @@ instance XmlRepresentable TCElement where
             Nothing]
           Nothing]
          Nothing)
-    toXml (TCSymbol sid symtype) = 
+    toXml (TCSymbol sid symtype role) = 
         (Elem $ Element el_symbol
-         [Attr at_name sid]
-         [toXml symtype]
+         [Attr at_name sid, Attr at_role (show role)]
+         (case symtype of Nothing -> []
+                          Just st -> [Elem $ Element el_type []
+                                      [Elem $ Element el_omobj []
+                                                [toXml st] Nothing]
+                                     Nothing])
          Nothing)
     toXml (TCComment c) = (makeComment c)
     toXml TCImport = 
@@ -158,7 +165,7 @@ instance XmlRepresentable TCElement where
 -- | OpenMath elements to XML and back
 instance XmlRepresentable OMElement where
     toXml (OMS d n) = (Elem $ Element el_oms
-                       [Attr at_name (name n), Attr at_cd (cd d)]
+                       [Attr at_cd (cd d), Attr at_name (name n)]
                        []
                        Nothing)
     toXml (OMV n) = (Elem $ Element el_omv [Attr at_name (name n)] [] Nothing)
