@@ -50,7 +50,9 @@ qualifyLibEnv :: LibEnv -> Result LibEnv
 qualifyLibEnv = mapWithKeyM qualifyDGraph
 
 qualifyDGraph :: LIB_NAME -> DGraph -> Result DGraph
-qualifyDGraph ln dg = do
+qualifyDGraph ln dg =
+  addErrorDiag "qualification failed for" (getLIB_ID ln)
+  $ do
   let es = map (\ (_, _, lb) -> dgl_id lb) $ labEdgesDG dg
   unless (Set.size (Set.fromList es) == length es) $
     fail $ "inkonsistent graph for library " ++ showDoc ln ""

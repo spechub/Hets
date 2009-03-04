@@ -19,6 +19,7 @@ module Common.Result
   , mkNiceDiag
   , isErrorDiag
   , hasErrors
+  , addErrorDiag
   , checkUniqueness
   , Result(..)
   , appendDiags
@@ -85,6 +86,11 @@ isErrorDiag d = case diagKind d of
 -- | Check whether a diagnosis list contains errors
 hasErrors :: [Diagnosis] -> Bool
 hasErrors = any isErrorDiag
+
+-- | add a further error message to explain a failure
+addErrorDiag :: (GetRange a, Pretty a) => String -> a -> Result b -> Result b
+addErrorDiag str a r@(Result ds ms) = if hasErrors ds then
+  Result (mkDiag Error str a : ds) ms else r
 
 -- | add range to a diagnosis
 adjustDiagPos :: Range -> Diagnosis -> Diagnosis

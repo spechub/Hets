@@ -54,7 +54,8 @@ dg_translation :: DGraph -> AnyComorphism -> Result DGraph
 dg_translation  gc acm@(Comorphism cidMor) =
     let labNodesList = labNodesDG gc
         labEdgesList = labEdgesDG gc
-    in do
+    in addErrorDiag ("translation failed via: " ++ language_name cidMor) ()
+       $ do
         resOfEdges <- mapR updateEdges labEdgesList
         resOfNodes <- mapR updateNodes labNodesList
         return $ mkGraphDG resOfNodes resOfEdges emptyDG

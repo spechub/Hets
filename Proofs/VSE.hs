@@ -86,13 +86,17 @@ prove _cms (ln, node) libEnv =
         ns = map snd nls
     ts <- liftR $ mapM
       (\ lbl -> do
+         let lbln = getDGNodeName lbl
          G_theory lid (ExtSign sign0 _) _ sens0 _ <- return $ dgn_theory lbl
-         (sign1, sens1) <- coerceBasicTheory lid VSE ""
-            (sign0, toNamedList sens0)
+         (sign1, sens1) <-
+           addErrorDiag "failure when proving VSE nodes of" (getLIB_ID ln)
+           $ coerceBasicTheory lid VSE
+             ("cannot cast untranslated node '" ++ lbln ++ "'")
+             (sign0, toNamedList sens0)
          let (sign2, sens2) = addUniformRestr sign1 sens1
          return
            ( show $ prettySExpr
-             $ qualVseSignToSExpr (mkSimpleId $ getDGNodeName lbl)
+             $ qualVseSignToSExpr (mkSimpleId lbln)
                (getLIB_ID ln) sign2
            , show $ prettySExpr
              $ SList $ map (namedSenToSExpr sign2) sens2)) ns

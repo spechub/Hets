@@ -26,20 +26,20 @@ import ATC.ExtSign ()
 
 -- coercion using the language name
 primCoerce :: (Typeable a, Typeable b, Language lid1, Language lid2,
-          Monad m) => lid1 -> lid2 -> String -> a -> m b
+               Monad m) => lid1 -> lid2 -> String -> a -> m b
 primCoerce i1 i2 err a =
   if language_name i1 == language_name i2
-     then return $ fromDyn (toDyn a) $ error "mcoerce"
-     else fail (err1++"Logic "++ language_name i1 ++ " expected, but "
-                ++ language_name i2 ++ " found")
-  where err1 = if err=="" then "" else err++": "
+     then return $ fromDyn (toDyn a) $ error "primCoerce"
+     else fail $ (if null err then "" else err ++ ": ") ++ "Logic "
+              ++ language_name i2 ++ " expected, but "
+              ++ language_name i1 ++ " found"
 
 unsafeCoerce :: (Typeable a, Typeable b, Language lid1, Language lid2)
-               => lid1 -> lid2 -> a -> b
+             => lid1 -> lid2 -> a -> b
 unsafeCoerce i1 i2 a = maybe (error "unsafeCoerce") id $ primCoerce i1 i2 "" a
 
 coerceToResult :: (Typeable a, Typeable b, Language lid1, Language lid2) =>
-           lid1 -> lid2 -> Range -> a -> Result b
+                  lid1 -> lid2 -> Range -> a -> Result b
 coerceToResult i1 i2 pos a = adjustPos pos $ primCoerce i1 i2 "" a
 
 coerceSublogic ::
