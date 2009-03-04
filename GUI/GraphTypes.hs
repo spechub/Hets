@@ -61,6 +61,8 @@ data GInfo = GInfo
              , exitMVar :: MVar ()
              , globalLock :: MVar ()
              , functionLock :: MVar ()
+             , libGraphLock :: MVar ()
+             , openGraphs :: IORef (Map.Map LIB_NAME GInfo)
                -- Local
              , gi_GraphInfo :: GraphInfo
              , internalNamesIORef :: IORef InternalNames
@@ -71,7 +73,7 @@ data GInfo = GInfo
      functions in GraphMenu and GraphLogic. -}
 type ConvFunc = GInfo -> String -> LibFunc -> IO ()
 
-type LibFunc =  GInfo -> IO DaVinciGraphTypeSyn
+type LibFunc =  GInfo -> IO ()
 
 type DaVinciGraphTypeSyn =
      Graph DaVinciGraph
@@ -104,17 +106,17 @@ emptyGInfo = do
             i_state = Just istate,
             i_hist  = ihist,
             filename = []}
-
   intSt <- newIORef st
   graphInfo <- initgraphs
+  oGraphs <- newIORef Map.empty 
   iorIN <- newIORef $ InternalNames False []
   guiMVar <- newEmptyMVar
   gl <- newEmptyMVar
   fl <- newEmptyMVar
   exit <- newEmptyMVar
+  lgl  <- newEmptyMVar
   wc <- newMVar 0
-  return $ GInfo {
-                   intState = intSt
+  return $ GInfo { intState = intSt
                  , gi_GraphInfo = graphInfo
                  , internalNamesIORef = iorIN
                  , gi_hetcatsOpts = defaultHetcatsOpts
@@ -123,6 +125,8 @@ emptyGInfo = do
                  , exitMVar = exit
                  , globalLock = gl
                  , functionLock = fl
+                 , libGraphLock = lgl
+                 , openGraphs = oGraphs 
                  }
 
 -- | Creates an empty GInfo
@@ -139,10 +143,13 @@ copyGInfo gInfo newLN = do
                                                  i_ln = newLN}
                     }
   writeIORef (intState gInfo) $ intSt'
-  return $ gInfo { gi_GraphInfo = graphInfo
-                 , internalNamesIORef = iorIN
-                 , proofGUIMVar = guiMVar
-                 }
+  let gInfo' = gInfo { gi_GraphInfo = graphInfo
+                     , internalNamesIORef = iorIN
+                     , proofGUIMVar = guiMVar
+                     }
+  oGraphs <- readIORef $ openGraphs gInfo
+  writeIORef (openGraphs gInfo) $ Map.insert newLN gInfo' oGraphs
+  return gInfo'
 
 {- | Acquire the global lock. If already locked it waits till it is unlocked
      again.-}

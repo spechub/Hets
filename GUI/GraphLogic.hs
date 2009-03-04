@@ -15,7 +15,6 @@ These are then assembled to the GUI in "GUI.GraphMenu".
 
 module GUI.GraphLogic
     ( undo
-    , reload
     , performProofAction
     , openProofStatus
     , saveProofStatus
@@ -35,7 +34,6 @@ module GUI.GraphLogic
     , convert
     , hideNodes
     , hideNewProvedEdges
-    , getLibDeps
     , hideShowNames
     , showNodes
     , translateGraph
@@ -86,15 +84,12 @@ import Common.ExtSign
 import Common.LibName
 import Common.Result as Res
 import qualified Common.OrderedMap as OMap
-import qualified Common.Lib.Rel as Rel
 import qualified Common.Lib.SizedList as SizedList
 
 import Driver.Options
 import Driver.WriteLibDefn(writeShATermFile)
 import Driver.ReadFn(libNameToFile, readVerbose)
-import Driver.AnaLib(anaLibExt, anaLib)
-
-import System.Directory(getModificationTime)
+import Driver.AnaLib(anaLib)
 
 import Data.IORef
 import Data.Char(toLower)
@@ -130,8 +125,7 @@ runAndLock (GInfo { functionLock = lock
 
 -- | Undo one step of the History
 undo :: GInfo -> Bool -> IO ()
-undo gInfo@(GInfo { gi_GraphInfo = actGraphInfo }) isUndo =
- do
+undo gInfo@(GInfo { gi_GraphInfo = actGraphInfo }) isUndo = do
   hhn <- GA.hasHiddenNodes actGraphInfo
   intSt <- readIORef $ intState gInfo
   nwSt <- if isUndo then undoOneStep intSt else redoOneStep intSt
@@ -139,6 +133,7 @@ undo gInfo@(GInfo { gi_GraphInfo = actGraphInfo }) isUndo =
   if hhn then hideNodes gInfo else return ()
   GA.redisplay actGraphInfo
 
+{-
 -- | reloads the Library of the DevGraph
 reload :: GInfo -> IO()
 reload gInfo@(GInfo { gi_hetcatsOpts = opts
@@ -147,40 +142,26 @@ reload gInfo@(GInfo { gi_hetcatsOpts = opts
   lockGlobal gInfo
   oldst <- readIORef $ intState gInfo
   case i_state oldst of
-   Nothing -> do
-               unlockGlobal gInfo
-               return ()
-   Just ist -> do
-    let
-      oldle = i_libEnv ist
-      ln = i_ln ist
-      libdeps = getLibDeps oldle
-    ioruplibs <- newIORef ([] :: [LIB_NAME])
-    writeIORef ioruplibs []
-    reloadLibs (intState gInfo) opts libdeps ioruplibs ln
-    unlockGlobal gInfo
-    libs <- readIORef ioruplibs
-    case libs of
-      [] -> GA.showTemporaryMessage actGraphInfo "Reload not needed!"
-      _ -> remakeGraph gInfo
-
--- | Creates a list of all LIB_NAME pairs, which have a dependency
-getLibDeps :: LibEnv -> [(LIB_NAME, LIB_NAME)]
-getLibDeps = Rel.toList . Rel.intransKernel . getLibDepRel
+    Nothing -> do
+      unlockGlobal gInfo
+      return ()
+    Just ist -> do
+      let oldle = i_libEnv ist
+          ln = i_ln ist
+          libdeps = dependentLibs ln oldle
+      reloaded <- reloadLibs gInfo opts libdeps False
+      unlockGlobal gInfo
+      GA.showTemporaryMessage actGraphInfo $
+                              if reloaded then "Reload complete!"
+                                else "Reload not needed!"
 
 -- | Reloads a library
-reloadLib :: IORef IntState -> HetcatsOpts -> IORef [LIB_NAME] -> LIB_NAME
-          -> IO ()
-reloadLib iorst opts ioruplibs ln = do
- ost <- readIORef iorst
- case i_state ost of
-  Nothing -> return ()
-  Just ist -> do
-   mfile <- existsAnSource opts {intype = GuessIn}
-           $ rmSuffix $ libNameToFile opts ln
-   case mfile of
+reloadLib :: IORef IntState -> HetcatsOpts -> LIB_NAME -> FilePath -> IO ()
+reloadLib iorst opts ln file = do
+  ost <- readIORef iorst
+  case i_state ost of
     Nothing -> return ()
-    Just file -> do
+    Just ist -> do
       let le = i_libEnv ist
       mFunc <- case openlock $ lookupDGraph ln le of
         Just lock -> tryTakeMVar lock
@@ -190,8 +171,6 @@ reloadLib iorst opts ioruplibs ln = do
       mres <- anaLibExt opts file le'
       case mres of
         Just (_, newle) -> do
-          uplibs <- readIORef ioruplibs
-          writeIORef ioruplibs $ ln : uplibs
           nle <- case mFunc of
             Just func -> do
               lock <- case openlock $ lookupDGraph ln newle of
@@ -207,46 +186,33 @@ reloadLib iorst opts ioruplibs ln = do
           errorDialog "Error" $ "Error when reloading file " ++ show file
 
 -- | Reloads libraries if nessesary
-reloadLibs :: IORef IntState -> HetcatsOpts -> [(LIB_NAME, LIB_NAME)]
-           -> IORef [LIB_NAME] -> LIB_NAME -> IO Bool
-reloadLibs iorst opts deps ioruplibs ln = do
- ost <- readIORef iorst
- case i_state ost of
-  Nothing -> return False
-  Just _ -> do
-   uplibs <- readIORef ioruplibs
-   case elem ln uplibs of
-    True -> return True
-    False -> do
-      let
-        deps' = map snd $ filter (\ (ln',_) -> ln == ln') deps
-      res <- mapM (reloadLibs iorst opts deps ioruplibs) deps'
-      let
-        libupdate = foldl (flip (||)) False res
-      case libupdate of
+reloadLibs :: GInfo -> HetcatsOpts -> [LIB_NAME] -> Bool -> IO Bool
+reloadLibs _ _ [] reloaded = return reloaded
+reloadLibs gInfo opts (ln:lns) reloaded = do
+  mfile <- existsAnSource opts {intype = GuessIn}
+                          $ rmSuffix $ libNameToFile opts ln
+  case mfile of
+    Nothing -> do
+      errorDialog "Error" $ "File not found: " ++ libNameToFile opts ln
+      return False
+    Just file -> do
+      oldTime <- do
+        ost <- readIORef $ intState gInfo
+        case i_state ost of
+          Nothing -> return $ TOD 0 0
+          Just ist -> do
+            let newln:_ = filter (ln ==) $ Map.keys $ i_libEnv ist
+            return $ getModTime $ getLIB_ID newln
+      newTime <- getModificationTime file
+      case reloaded || oldTime < newTime of
+        False -> reloadLibs gInfo opts lns False
         True -> do
-          reloadLib iorst opts ioruplibs ln
-          return True
-        False -> do
-          ost' <- readIORef iorst
-          case i_state ost' of
-           Nothing -> return False
-           Just ist' -> do
-            let le = i_libEnv ist'
-            let
-             newln:_ = filter (ln ==) $ Map.keys le
-            mfile <- existsAnSource opts $ rmSuffix $ libNameToFile opts ln
-            case mfile of
-              Nothing -> return False
-              Just file -> do
-               newmt <- getModificationTime file
-               let
-                libupdate' = (getModTime $ getLIB_ID newln) < newmt
-               case libupdate' of
-                False -> return False
-                True -> do
-                  reloadLib iorst opts ioruplibs ln
-                  return True
+          reloadLib (intState gInfo) opts ln file
+          oGraphs <- readIORef $ openGraphs gInfo
+          case Map.lookup ln oGraphs of
+            Just gInfo' -> remakeGraph gInfo'
+            Nothing -> return ()
+          reloadLibs gInfo opts lns True
 
 -- | Deletes the old edges and nodes of the Graph and makes new ones
 remakeGraph :: GInfo -> IO ()
@@ -263,6 +229,7 @@ remakeGraph gInfo@(GInfo { gi_GraphInfo = actGraphInfo
     GA.clear actGraphInfo
     convert actGraphInfo dgraph
     hideNodes gInfo
+-}
 
 -- | Toggles to display internal node names
 hideShowNames :: GInfo -> Bool -> IO ()

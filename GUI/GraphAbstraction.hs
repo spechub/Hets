@@ -47,6 +47,7 @@ module GUI.GraphAbstraction
     , showTemporaryMessage
     , deactivateGraphWindow
     , activateGraphWindow
+    , closeGraphWindow
     ) where
 
 import GUI.UDGUtils
@@ -568,3 +569,8 @@ deactivateGraphWindow = doInGraphContext (DVT.Window DVT.Deactivate)
 activateGraphWindow :: GraphInfo -- ^ The graph
                     -> IO ()
 activateGraphWindow = doInGraphContext (DVT.Window DVT.Activate)
+
+-- | Closes the Window
+closeGraphWindow :: GraphInfo -- ^ The graph
+                 -> IO ()
+closeGraphWindow = doInGraphContext (DVT.Menu $ DVT.File DVT.Close)

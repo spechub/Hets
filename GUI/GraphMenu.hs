@@ -188,11 +188,11 @@ createSaveAs gInfo file = Just (
       Nothing -> fail "Could not save file."
   )
 
--- | Returns the save-function
+-- | Returns the close-function
 createClose :: GInfo -> IO Bool
 createClose gInfo@(GInfo { windowCount = wc
-                   , exitMVar = exit
-                   }) = do
+                         , exitMVar = exit
+                         }) = do
  ost <- readIORef $ intState gInfo
  case i_state ost of
   Nothing -> return False
@@ -213,9 +213,11 @@ createClose gInfo@(GInfo { windowCount = wc
    case count == 1 of
     True -> putMVar exit ()
     False -> putMVar wc $ count - 1
+   oGraphs <- readIORef $ openGraphs gInfo
+   writeIORef (openGraphs gInfo) $ Map.delete ln oGraphs
    return True
 
--- | Returns the save-function
+-- | Returns the exit-function
 createExit :: GInfo -> IO ()
 createExit (GInfo {exitMVar = exit}) = putMVar exit ()
 
@@ -236,7 +238,6 @@ createGlobalMenu gInfo@(GInfo { gi_hetcatsOpts = opts
     [GlobalMenu (Menu Nothing
      [ Button "Undo" $ ral $ undo gInfo True
      , Button "Redo" $ ral $ undo gInfo False
-     , Button "Reload" $ ral $ reload gInfo
      , Menu (Just "Unnamed nodes")
         [ Button "Hide/show names" $ ral $ hideShowNames gInfo True
         , Button "Hide nodes" $ ral $ hideNodes gInfo

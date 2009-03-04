@@ -19,14 +19,16 @@ import Driver.AnaLib
 import Static.DevGraph
 
 import GUI.UDGUtils as UDG
-import GUI.HTkUtils
+--import GUI.HTkUtils
+import GUI.Utils
 
 import GUI.GraphTypes
-import GUI.GraphLogic(getLibDeps, hideNodes)
+import GUI.GraphLogic(hideNodes)
 import GUI.GraphDisplay
 import qualified GUI.GraphAbstraction as GA
 
 import Common.LibName
+import qualified Common.Lib.Rel as Rel
 
 import Data.IORef
 import qualified Data.Map as Map
@@ -41,51 +43,78 @@ type NodeArcList = ([DaVinciNode LIB_NAME],[DaVinciArc (IO String)])
 {- | Creates a  new uDrawGraph Window and shows the Library Dependency Graph of
      the given LibEnv.-}
 showLibGraph :: LibFunc
-showLibGraph gInfo@(GInfo {windowCount = wc}) = do
-  count <- takeMVar wc
-  putMVar wc $ count + 1
-  depGRef <- newIORef daVinciSort
-  nodeArcRef <- newIORef (([],[])::NodeArcList)
-  let
-    globalMenu = GlobalMenu (UDG.Menu Nothing [
-                   Button "Reload Libraries"
-                     (reload gInfo depGRef nodeArcRef)
-                   ])
-    graphParms = globalMenu $$
-                 GraphTitle "Library Graph" $$
-                 OptimiseLayout True $$
-                 AllowClose (close gInfo) $$
-                 FileMenuAct ExitMenuOption (Just (exit gInfo)) $$
-                 emptyGraphParms
-  depG <- newGraph daVinciSort graphParms
-  addNodesAndArcs gInfo depG nodeArcRef
-  writeIORef depGRef depG
-  redraw depG
-  return depG
-
--- | Reloads all Libraries and the Library Dependency Graph
-reload :: GInfo -> IORef DaVinciGraphTypeSyn -> IORef NodeArcList -> IO()
-reload gInfo@(GInfo {gi_hetcatsOpts = opts
-                    }) depGRef nodeArcRef = do
- ost <- readIORef $ intState gInfo
- case i_state ost of
-  Nothing -> return ()
-  Just ist -> do
-   let ln = i_ln ist
-   depG <- readIORef depGRef
-   (nodes', arcs) <- readIORef nodeArcRef
-   let
-    libfile = libNameToFile opts ln
-   m <- anaLib opts { outtypes = [] } libfile
-   case m of
-    Nothing -> fail $
-      "Error when reloading file '" ++ libfile ++  "'"
-    Just (_, _) -> do
-      mapM_ (deleteArc depG) arcs
-      mapM_ (deleteNode depG) nodes'
+showLibGraph gInfo@(GInfo { windowCount = wc
+                          , libGraphLock = lock}) = do
+  isEmpty <- isEmptyMVar lock
+  case isEmpty of
+    False -> return ()
+    True -> do
+      putMVar lock ()
+      count <- takeMVar wc
+      putMVar wc $ count + 1
+      depGRef <- newIORef daVinciSort
+      nodeArcRef <- newIORef (([],[])::NodeArcList)
+      let
+        globalMenu = GlobalMenu (UDG.Menu Nothing [
+                       Button "Reload Libraries"
+                         (reloadLibGraph gInfo depGRef nodeArcRef)
+                       ])
+        graphParms = globalMenu $$
+                     GraphTitle "Library Graph" $$
+                     OptimiseLayout True $$
+                     AllowClose (close gInfo) $$
+                     FileMenuAct ExitMenuOption (Just (exit gInfo)) $$
+                     emptyGraphParms
+      depG <- newGraph daVinciSort graphParms
       addNodesAndArcs gInfo depG nodeArcRef
       writeIORef depGRef depG
       redraw depG
+
+-- | Reloads all Libraries and the Library Dependency Graph
+reloadLibGraph :: GInfo -> IORef DaVinciGraphTypeSyn -> IORef NodeArcList
+               -> IO ()
+reloadLibGraph gInfo depGRef nodeArcRef = do
+  warningDialog "Reload library"
+                ("Are you sure to reload Library?\nAll open development graph"
+                 ++ " windows will be closed and all proofs will be lost!")
+                $ Just $ reloadLibGraph' gInfo depGRef nodeArcRef
+  return ()
+
+-- | Reloads all Libraries and the Library Dependency Graph
+reloadLibGraph' :: GInfo -> IORef DaVinciGraphTypeSyn -> IORef NodeArcList
+                -> IO ()
+reloadLibGraph' gInfo@(GInfo { gi_hetcatsOpts = opts }) depGRef nodeArcRef = do
+  closeOpenWindows gInfo
+  return ()
+  ost <- readIORef $ intState gInfo
+  case i_state ost of
+    Nothing -> return ()
+    Just ist -> do
+      let ln = i_ln ist
+      putStrLn $ show ln
+      depG <- readIORef depGRef
+      (nodes', arcs) <- readIORef nodeArcRef
+      let libfile = libNameToFile opts ln
+      m <- anaLib opts { outtypes = [] } libfile
+      case m of
+        Nothing -> errorDialog "Error" $ "Error when reloading file '"
+                                         ++ libfile ++  "'"
+        Just (_, _) -> do
+          mapM_ (deleteArc depG) arcs
+          mapM_ (deleteNode depG) nodes'
+          addNodesAndArcs gInfo depG nodeArcRef
+          writeIORef depGRef depG
+          redraw depG
+
+-- | Reloads the open graphs
+closeOpenWindows :: GInfo -> IO ()
+closeOpenWindows (GInfo { openGraphs = iorOpenGrpahs
+                        , windowCount = wCount }) = do
+  oGrpahs <- readIORef iorOpenGrpahs
+  mapM (GA.closeGraphWindow . gi_GraphInfo) $ Map.elems oGrpahs
+  writeIORef iorOpenGrpahs Map.empty
+  takeMVar wCount
+  putMVar wCount 1
 
 -- | Adds the Librarys and the Dependencies to the Graph
 addNodesAndArcs :: GInfo -> DaVinciGraphTypeSyn -> IORef NodeArcList -> IO ()
@@ -122,7 +151,11 @@ addNodesAndArcs gInfo@(GInfo { gi_hetcatsOpts = opts}) depG nodeArcRef = do
    subArcList <- mapM insertSubArc $ getLibDeps le
    writeIORef nodeArcRef (subNodeList, subArcList)
 
-mShowGraph :: GInfo -> LIB_NAME -> IO()
+-- | Creates a list of all LIB_NAME pairs, which have a dependency
+getLibDeps :: LibEnv -> [(LIB_NAME, LIB_NAME)]
+getLibDeps = Rel.toList . Rel.intransKernel . getLibDepRel
+
+mShowGraph :: GInfo -> LIB_NAME -> IO ()
 mShowGraph gInfo@(GInfo {gi_hetcatsOpts = opts}) ln = do
   putIfVerbose opts 3 "Converting Graph"
   gInfo' <- copyGInfo gInfo ln
@@ -139,14 +172,17 @@ mShowGraph gInfo@(GInfo {gi_hetcatsOpts = opts}) ln = do
 
 -- | Displays the Specs of a Library in a Textwindow
 showSpec :: LibEnv -> LIB_NAME -> IO()
-showSpec le ln = let
-  sp = unlines . map show . Map.keys . globalEnv $ lookupDGraph ln le
-  in createTextDisplay ("Contents of " ++ show ln) sp [size(80,25)]
+showSpec le ln = 
+  createTextDisplay ("Contents of " ++ show ln)
+                    $ unlines . map show . Map.keys . globalEnv
+                    $ lookupDGraph ln le
 
 close :: GInfo -> IO Bool
 close (GInfo { exitMVar = exit'
              , windowCount = wc
+             , libGraphLock = lock
              }) = do
+  takeMVar lock
   count <- takeMVar wc
   case count == 1 of
     True -> putMVar exit' ()
