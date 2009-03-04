@@ -1,49 +1,139 @@
 name: Hets
-version: 0.87
-Cabal-Version: >= 1.2.2
-License-File: LICENSE.txt
+version: 0.91
 Description: The Heterogeneous Tool Set
+homepage: http://www.dfki.de/sks/hets
+bug-reports: http://trac.informatik.uni-bremen.de:8080/hets
+License: LGPL
+License-File: LICENSE.txt
+Author:
+  2007 Cui Jian <ken@informatik.uni-bremen.de>
+  2007 Hendrik Iben <hiben@informatik.uni-bremen.de>
+  2007 Klaus Luettich <luettich@informatik.uni-bremen.de>
+  2007 Paolo Torrini <paolot@informatik.uni-bremen.de>
+  2007 Rainer Grabbe <rainer@informatik.uni-bremen.de>
+  2008 Andy Gimblett <a.m.gimblett@swansea.ac.uk>
+  2008 Heng Jiang <jiang@informatik.uni-bremen.de>
+  2008 Igor Stassiy <i.stassiy@jacobs-university.de>
+  2008 Mingyi Liu <xinga@informatik.uni-bremen.de>
+  2009 Christian.Maeder@dfki.de
+  2009 Dominik Luecke <luecke@informatik.uni-bremen.de>
+  2009 Ewaryst.Schulz@dfki.de
+  2009 Liam O'Reilly <csliam@swansea.ac.uk>
+  2009 Markus.Gross@dfki.de
+  2009 Mihai.Codescu@dfki.de
+  2009 Razvan Pascanu <r.pascanu@jacobs-university.de>
+  2009 Thiemo Wiedemeyer <raider@informatik.uni-bremen.de>
+  2009 Till.Mossakowski@dfki.de
+Maintainer: hets-devel@informatik.uni-bremen.de
+Copyright: 2006-2009 DFKI GmbH Bremen, Uni Bremen
+Stability: Experimental
 build-type: Simple
-build-depends:
-    base >= 3.0.1.0
-  , filepath
-  , ghc-prim
-  , array >= 0.1.0.0
-  , containers >= 0.1.0.1
-  , directory >= 1.0.0.0
-  , pretty >= 1.0.0.0
-  , process >= 1.0.0.0
-  , haskell98 >= 1.0.1.0
-  , mtl >= 1.1.0.0
-  , parsec >= 2.1.0.0
-  , regex-compat >= 0.71.0.1
-  , fgl >= 5.4.1.1
-  , time >= 1.1.2.0
-  , old-time >= 1.0.0.0
-  , unix >= 2.3.0.0
-  , network >= 2.1.0.0
-  , Shellac >= 0.9.5
-  , Shellac-editline >= 0.9.5
-  , HaXml >= 1.13.2
-  , HaXml <= 1.13.3
-  , hxt >= 8.0.0
-  , hxt-filter >= 8.0.0
-  , uni-htk >= 2.0
-  , uni-util
-  , uni-posixutil
-  , uni-events
-  , uni-reactor
-  , uni-graphs >= 2.0
-  , uni-uDrawGraph >= 2.0
-  , HAIFA >= 0.11
-  , syb-generics == 2.9
-  , programatica == 1.0
-  , tabular >= 0.1
-  , gtk >= 0.9.13
-  , glade >= 0.9.13
-executable: hets
-main-is: hets.hs
-extensions: OverlappingInstances
-ghc-options: -fglasgow-exts -DUNI_PACKAGE -DUNIVERSION2 -DHXTFILTER
-  -DCASLEXTENSIONS -DPROGRAMATICA -DHAXML_PACKAGE -DTABULAR_PACKAGE
-  -DSHELLAC -DEDITLINE -DGTKGLADE
+Cabal-Version: >= 1.4
+
+flag uniform
+  description: use HTk and uDrawGraph binding form the uniform workbench
+    svn co https://svn-agbkb.informatik.uni-bremen.de/uni/trunk uni
+    http://www.informatik.uni-bremen.de/uDrawGraph
+
+flag haxml
+  description: use old HaXml-1.13.3 binding for CASL.CompositionTable.ToXml
+
+flag programatica
+  description: use programatica for the haskell logic
+    http://programatica.cs.pdx.edu/
+    installed via "make" within Hets if cvs sources are checked out
+    in the same parent directory as Hets
+
+flag tabular
+  description: use truth table prover
+
+flag tar
+  description: save VSE proofs in tar archives
+
+flag shellac
+  description: use Shellac for the command line interface
+
+flag hxtfilter
+  description: use old hxt-filter package for
+    - old OMDoc round-tripping
+    - HAIFA for MathServer and Vampire remote provers
+       HAIFA is based on syb-generics and both packages are
+       part of the Hets sources and installed via "make"
+    - PGIP xml interface
+
+flag gtkglade
+  description: gtk and glade packages for a better user interface
+
+Executable hets
+  Main-is: hets.hs
+  build-depends:
+      array >= 0.1.0.0
+    , base >= 3.0.1.0
+    , containers >= 0.1.0.1
+    , directory >= 1.0.0.0
+    , fgl >= 5.4.1.1
+    , filepath
+    , ghc-prim
+    , haskell98 >= 1.0.1.0
+    , mtl >= 1.1.0.0
+    , network >= 2.1.0.0
+    , old-time >= 1.0.0.0
+    , parsec >= 2.1.0.0
+    , pretty >= 1.0.0.0
+    , process >= 1.0.0.0
+    , time >= 1.1.2.0
+    , xml >= 1.3 && <= 1.4
+  cpp-options: -DCASLEXTENSIONS
+  extensions: OverlappingInstances
+  ghc-options: -fglasgow-exts
+
+  if flag(uniform)
+    build-depends:
+        regex-compat >= 0.71.0.1
+      , uni-events
+      , uni-graphs >= 2.0 && <= 3.0
+      , uni-htk >= 2.0 && <= 3.0
+      , uni-posixutil
+      , uni-reactor
+      , uni-uDrawGraph >= 2.0 && <= 3.0
+      , uni-util >= 2.0 && <= 3.0
+    cpp-options: -DUNI_PACKAGE -DUNIVERSION2
+
+  if flag(haxml)
+    build-depends: HaXml >= 1.13.2 && <= 1.13.3
+    cpp-options: -DHAXML_PACKAGE
+
+  if flag(programatica)
+    build-depends: programatica == 1.0
+    cpp-options: -DPROGRAMATICA
+
+  if flag(tabular)
+    build-depends: tabular >= 0.1 && <= 0.2
+    cpp-options: -DHAXML_PACKAGE
+
+  if flag(tar)
+    build-depends: tar >= 0.3 && <= 0.4
+    cpp-options: -DTAR_PACKAGE
+
+  if flag(shellac)
+    build-depends:
+        Shellac >= 0.9.5 && <= 0.10
+      , Shellac-editline >= 0.9.5 && <= 0.10
+      , unix >= 2.3.0.0
+    cpp-options: -DSHELLAC -DEDITLINE
+
+  if flag(hxtfilter)
+    build-depends:
+        HAIFA >= 0.11
+      , hxt >= 8.0.0
+      , hxt-filter >= 8.0.0
+      , syb-generics == 2.9
+    cpp-options: -DHXTFILTER
+  else
+    cpp-options: -DNOMATHSERVER
+
+  if flag(gtkglade)
+    build-depends:
+        glade >= 0.9.13
+      , gtk >= 0.9.13
+    cpp-options: -DGTKGLADE
