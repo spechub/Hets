@@ -59,6 +59,7 @@ import Data.Graph.Inductive.Graph hiding (empty)
 import Data.List (tails)
 import Data.Maybe(fromJust,isJust)
 import qualified Data.Map as Map
+import qualified Data.Set as Set
 import Control.Monad
 import Common.Id
 
@@ -242,14 +243,14 @@ dg_flattening_heterogen libEnv ln = do
  let
   dg = lookupDGraph ln libEnv
   l_edges = labEdgesDG dg
-  nds = nodesDG dg
   het_comorph = Prelude.filter (\ (_,_,x) ->
                  let
                   comorph = dgl_morphism x
                  in
                   not $ isHomogeneous comorph) l_edges
   het_del_changes = Prelude.map DeleteEdge het_comorph
-  updLib = updateNodes libEnv ln nds
+  updLib = updateNodes libEnv ln . Set.toList . Set.fromList
+    $ map ( \(_, t, _) -> t) het_comorph
   udg = lookupDGraph ln updLib
   ndg = changesDGH udg het_del_changes
  return $ groupHistory udg flat6 ndg
