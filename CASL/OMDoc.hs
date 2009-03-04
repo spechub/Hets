@@ -57,6 +57,7 @@ exportMorphismToOmdoc :: SIMPLE_ID -> LIB_ID -> Morphism f e ()
 -- exportMorphismToOmdoc sid lid morphism = []
 exportMorphismToOmdoc _ _ _ = []
 
+
 exportSenToOmdoc :: SIMPLE_ID -> LIB_ID -> Sign f e -> Named(FORMULA f)
                  -> [TCElement]
 exportSenToOmdoc sid lid sign formula =
@@ -68,6 +69,21 @@ exportSenToOmdoc sid lid sign formula =
 
 sfail :: String -> Range -> a
 sfail s r = error $ show (Diag Error ("unexpected " ++ s) r)
+
+
+buildADTsFromConstraints :: SPEC_ID -> Sign f e -> [Constraint] -> Bool
+                         -> OMElement
+buildADTsFromConstraints spid sign cs b = 
+    OMA $ (OMV $ OMName "sgax") : Prelude.map (buildADTFromConstraint spid b) cs
+--    OMV $ OMName $ "sgax (" ++ (show b) ++ "): " ++ (show $ cs)    
+
+buildADTFromConstraint :: SPEC_ID -> Bool -> Constraint -> OMElement
+buildADTFromConstraint spid b (Constraint s l ss) = 
+    OMA $ Prelude.map ((funToOmdoc spid) . fst) l
+
+
+-- TODO: Question, where to get the types of the constructors from??
+--    OMV $ OMName $ "sgax (" ++ (show b) ++ ", " ++ (show (s == ss)) ++ ": " ++ (show l)    
 
 -- | Given an operator or predicate signature we construct the according
 -- type by currying and using bool as rangetype for predicates
@@ -190,7 +206,7 @@ omdocRec spid sign mf = Record
     , foldMembership = \ _ t s _ ->
                        (OMA [(casl_const "in") , t, sortToOmdoc spid s])
     , foldMixfix_formula = \ t _ -> sfail "Mixfix_formula" $ getRange t
-    , foldSort_gen_ax = \ _ cs b -> OMV $ OMName $ "sgax (" ++ (show b) ++ "): " ++ (show cs)
+    , foldSort_gen_ax = \ _ cs b -> buildADTsFromConstraints spid sign cs b 
     , foldExtFORMULA = \ _ f -> mf f
     , foldQual_var = \ _ v _ _ -> varToOmdoc v
     , foldApplication = \ _ o ts _ -> OMA $ (funToOmdoc spid o) : ts
