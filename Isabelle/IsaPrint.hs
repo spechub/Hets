@@ -17,6 +17,7 @@ module Isabelle.IsaPrint
     , printIsaTheory
     , getAxioms
     , printNamedSen
+    , printTerm
     ) where
 
 import Isabelle.IsaSign
