@@ -12,7 +12,13 @@ utility function for translation from HasCASL to Isabelle leaving open how
 partial values are interpreted
 -}
 
-module Comorphisms.PPolyTyConsHOL2IsaUtils where
+module Comorphisms.PPolyTyConsHOL2IsaUtils
+  ( mapTheory
+  , simpForPairs
+  , simpForOption
+  , typeToks
+  , transSentence
+  ) where
 
 import HasCASL.As as As
 import HasCASL.AsUtils
@@ -23,6 +29,7 @@ import HasCASL.Unify (substGen)
 
 import Isabelle.IsaSign as Isa
 import Isabelle.IsaConsts
+import Isabelle.IsaPrint
 import Isabelle.Translate
 
 import Common.DocUtils
@@ -34,7 +41,7 @@ import Common.Lib.State
 import Common.AS_Annotation
 import Common.GlobalAnnotations
 
-import Data.List (elemIndex)
+import Data.List
 import Data.Maybe (catMaybes, isNothing)
 import Control.Monad (foldM)
 
@@ -255,12 +262,15 @@ transSentence :: Env -> Set.Set String -> Simplifier -> Le.Sentence
               -> Result Isa.Sentence
 transSentence sign tyToks simpF s = case s of
     Le.Formula trm -> do
-      (ty, t) <-
-          transTerm sign tyToks (getAssumpsToks $ assumps sign) Set.empty trm
+      ITC ty t cs <-
+        transTerm sign tyToks (getAssumpsToks $ assumps sign) Set.empty trm
+      let bt = foldr binConj (case ty of
+                 PartialVal _ -> mkTermAppl partial2bool t
+                 _ -> t) $ condToList cs
+          st = mkSimplifiedSen simpF bt
       case ty of
-        BoolType -> return $ mkSimplifiedSen simpF t
-        PartialVal _ ->
-          return $ mkSimplifiedSen simpF $ mkTermAppl partial2bool t
+        BoolType -> return st
+        PartialVal _ -> return st
         FunType _ _ -> error "transSentence: FunType"
         PairType _ _ -> error "transSentence: PairType"
         TupleType _ -> error "transSentence: TupleType"
@@ -293,25 +303,25 @@ transOpId sign tyToks op ts@(TypeScheme _ ty _) =
           Nothing  -> error $ "transOpId " ++ show op
 
 transLetEq :: Env -> Set.Set String -> Set.Set String -> Set.Set VarDecl
-           -> ProgEq -> Result ((As.Term, Isa.Term), (FunType, Isa.Term))
+           -> ProgEq -> Result ((As.Term, Isa.Term), IsaTermCond)
 transLetEq sign tyToks toks pVars (ProgEq pat trm r) = do
     (_, op) <- transPattern sign tyToks toks pat
-    p@(ty, _) <- transTerm sign tyToks toks pVars trm
+    p@(ITC ty _ _) <- transTerm sign tyToks toks pVars trm
     if isPartialVal ty && not (isQualVar pat) then fatal_error
            ("rhs must not be partial for a tuple currently: "
             ++ showDoc trm "") r
        else return ((pat, op), p)
 
 transLetEqs :: Env -> Set.Set String -> Set.Set String -> Set.Set VarDecl
-            -> [ProgEq] -> Result (Set.Set VarDecl, [(Isa.Term, Isa.Term)])
+            -> [ProgEq] -> Result (Set.Set VarDecl, [(Isa.Term, IsaTermCond)])
 transLetEqs sign tyToks toks pVars es = case es of
     [] -> return (pVars, [])
     e : r -> do
-      ((pat, op), (ty, ot)) <- transLetEq sign tyToks toks pVars e
+      ((pat, op), pt@(ITC ty _ _)) <- transLetEq sign tyToks toks pVars e
       (newPVars, newEs) <- transLetEqs sign tyToks toks (if isPartialVal ty
                              then Set.insert (getQualVar pat) pVars
                              else pVars) r
-      return (newPVars, (op, ot) : newEs)
+      return (newPVars, (op, pt) : newEs)
 
 isQualVar :: As.Term -> Bool
 isQualVar trm = case trm of
@@ -340,6 +350,9 @@ whenElseOp = conDouble "whenElseOp"
 resOp :: Isa.Term
 resOp = conDouble "resOp"
 
+makeTotal :: Isa.Term
+makeTotal = conDouble "makeTotal"
+
 uncurryOpS :: String
 uncurryOpS = "uncurryOp"
 
@@ -355,43 +368,97 @@ curryOp = conDouble curryOpS
 for :: Int -> (a -> a) -> a -> a
 for n f a = if n <= 0 then a else for (n - 1) f $ f a
 
+data IsaTermCond = ITC FunType Isa.Term Cond
+
+data Cond = None
+  | Cond Isa.Term
+  | CondList [Cond]
+  | PairCond Cond Cond
+
+instance Show Cond where
+  show c = case c of
+    None -> "none"
+    Cond t -> show $ printTerm t
+    CondList l -> intercalate " & " $ map show l
+    PairCond p1 p2 -> '(' : shows p1 ", " ++ shows p2 ")"
+
+noCond :: Cond
+noCond = None
+
+joinCond :: Cond -> Cond -> Cond
+joinCond c1 c2 = let
+  toCs c = case c of
+          CondList cs -> cs
+          None -> []
+          _ -> [c]
+  in case toCs c1 ++ toCs c2 of
+       [] -> None
+       cs -> CondList cs
+
+pairCond :: Cond -> Cond -> Cond
+pairCond c1 c2 = case (c1, c2) of
+  (None, None) -> None
+  _ -> PairCond c1 c2
+
+condToList :: Cond -> [Isa.Term]
+condToList c = case c of
+  None -> []
+  Cond t -> [t]
+  CondList cs -> concatMap condToList cs
+  PairCond c1 c2 -> condToList c1 ++ condToList c2
+
 {- pass tokens that must not be used as variable names and pass those
 variables that are partial because they have been computed in a
 let-term. -}
 transTerm :: Env -> Set.Set String -> Set.Set String -> Set.Set VarDecl
-          -> As.Term -> Result (FunType, Isa.Term)
+          -> As.Term -> Result IsaTermCond
 transTerm sign tyToks toks pVars trm = case trm of
     QualVar vd@(VarDecl var t _ _) -> do
         fTy <- funType t
-        return ( if Set.member vd pVars then makePartialVal fTy else fTy
-               , Isa.Free $ transVar toks var)
+        let vt = Isa.Free $ transVar toks var
+        return $ if Set.member vd pVars then
+          case fTy of
+            UnitType -> ITC (makePartialVal fTy) vt None
+            _ -> ITC fTy (termAppl makeTotal vt) $ Cond $ termAppl defOp vt
+          else ITC fTy vt None
     QualOp _ (PolyId opId _ _) ts@(TypeScheme targs ty _) is _ _ -> do
         fTy <- funType ty
         instfTy <- funType $ substGen (if null is then Map.empty else
                     Map.fromList $ zipWith (\ (TypeArg _ _ _ _ i _ _) t
                                                 -> (i, t)) targs is) ty
         let cf = mkTermAppl (convFun $ instType fTy instfTy)
-            unCurry f = (fTy, termAppl uncurryOp $ con f)
+            unCurry f = let rf = termAppl uncurryOp $ con f in
+              ITC fTy rf noCond
         return $ case () of
           ()
-              | opId == trueId -> (fTy, true)
-              | opId == falseId -> (fTy, false)
-              | opId == botId -> (instfTy, cf noneOp)
+              | opId == trueId -> ITC fTy true noCond
+              | opId == falseId -> ITC fTy false noCond
+              | opId == botId -> case instfTy of
+                  PartialVal t -> ITC t (termAppl makeTotal noneOp) $ Cond false
+                  _ -> ITC instfTy (cf noneOp) None
               | opId == andId -> unCurry conjV
               | opId == orId -> unCurry disjV
               | opId == implId -> unCurry implV
-              | opId == infixIf -> (fTy, ifImplOp)
+              | opId == infixIf -> ITC fTy ifImplOp noCond
               | opId == eqvId -> unCurry eqV
-              | opId == exEq -> (instfTy, cf $ termAppl uncurryOp existEqualOp)
-              | opId == eqId -> (instfTy, cf $ termAppl uncurryOp strongEqualOp)
-              | opId == notId -> (fTy, notOp)
-              | opId == defId -> (instfTy, cf defOp)
-              | opId == whenElse -> (instfTy, cf whenElseOp)
-              | opId == resId -> (instfTy, cf resOp)
-              | otherwise -> (instfTy,
-                            cf $ (for (isPlainFunType fTy - 1)
+              | opId == exEq -> let
+                  ef = cf $ termAppl uncurryOp existEqualOp
+                  in ITC instfTy ef noCond
+              | opId == eqId -> let
+                  ef = cf $ termAppl uncurryOp strongEqualOp
+                  in ITC instfTy ef noCond
+              | opId == notId -> ITC fTy notOp noCond
+              | opId == defId -> ITC instfTy (cf defOp) noCond
+              | opId == whenElse -> ITC instfTy (cf whenElseOp) noCond
+              | opId == resId -> ITC instfTy (cf resOp) noCond
+              | otherwise -> let
+                  ef = cf $ (for (isPlainFunType fTy - 1)
                                   $ termAppl uncurryOp)
-                             $ con $ transOpId sign tyToks opId ts)
+                             $ con $ transOpId sign tyToks opId ts
+                  in case instfTy of
+                       PartialVal t -> ITC t (termAppl makeTotal ef)
+                         $ Cond $ termAppl defOp ef
+                       _ -> ITC instfTy ef noCond
     QuantifiedTerm quan varDecls phi _ -> do
         let qname = case quan of
                       Universal -> allS
@@ -403,12 +470,12 @@ transTerm sign tyToks toks pVars trm = case trm of
                                $ Abs (Isa.Free $ transVar toks var)
                                  phi' NotCont
                 GenTypeVarDecl _ ->  return phi'
-        (ty, psi) <- transTerm sign tyToks toks pVars phi
+        ITC ty psi cs <- transTerm sign tyToks toks pVars phi
         psiR <- foldM quantify psi $ reverse varDecls
-        return (ty, psiR)
+        return $ ITC ty psiR cs
     TypedTerm t _q _ty _ -> transTerm sign tyToks toks pVars t
     LambdaTerm pats q body r -> do
-        p@(ty, _) <- transTerm sign tyToks toks pVars body
+        p@(ITC ty _ _) <- transTerm sign tyToks toks pVars body
         appendDiags $ case q of
             Partial -> []
             Total -> [Diag Warning
@@ -417,13 +484,15 @@ transTerm sign tyToks toks pVars trm = case trm of
         foldM (abstraction sign tyToks toks) p $ reverse pats
     LetTerm As.Let peqs body _ -> do
         (nPVars, nEqs) <- transLetEqs sign tyToks toks pVars peqs
-        (bTy, bTrm) <- transTerm sign tyToks toks nPVars body
-        return (bTy, mkLetAppl nEqs bTrm)
+        ITC bTy bTrm defCs <- transTerm sign tyToks toks nPVars body
+        let pEs = map (\ (p, ITC _ t _) -> (p, t)) nEqs
+            cs = foldl joinCond noCond $ map (\ (_, ITC _ _ c) -> c) nEqs
+        return $ ITC bTy (mkLetAppl pEs bTrm) $ joinCond cs defCs
     TupleTerm ts@(_ : _) _ -> do
         nTs <- mapM (transTerm sign tyToks toks pVars) ts
-        return $ foldl1 ( \ (s, p) (t, e) ->
-                          (PairType s t, Tuplex [p, e] NotCont)) nTs
-    TupleTerm [] _ -> return (UnitType, unitOp)
+        return $ foldl1 ( \ (ITC s p cs) (ITC t e cr) ->
+          ITC (PairType s t) (Tuplex [p, e] NotCont) $ pairCond cs cr) nTs
+    TupleTerm [] _ -> return $ ITC UnitType unitOp noCond
     ApplTerm t1 t2 _ -> mkApp sign tyToks toks pVars t1 t2
     _ -> fatal_error ("cannot translate term: " ++ showDoc trm "")
          $ getRange trm
@@ -768,30 +837,33 @@ simplify simpF trm = case trm of
     _ -> return trm
 
 mkApp :: Env -> Set.Set String -> Set.Set String -> Set.Set VarDecl -> As.Term
-      -> As.Term -> Result (FunType, Isa.Term)
+      -> As.Term -> Result IsaTermCond
 mkApp sign tyToks toks pVars f arg = do
-    (fTy, fTrm) <- transTerm sign tyToks toks pVars f
-    (aTy, aTrm) <- transTerm sign tyToks toks pVars arg
+    fTr@(ITC fTy fTrm fCs) <- transTerm sign tyToks toks pVars f
+    ITC aTy aTrm aCs <- transTerm sign tyToks toks pVars arg
     let pv = case arg of -- dummy application of a unit argument
-          TupleTerm [] _ -> return (fTy, fTrm)
+          TupleTerm [] _ -> return fTr
           _ -> mkError "wrong function type"  f
+        cs = joinCond fCs aCs
     case fTy of
          FunType a r -> do
              ((rTy, fConv), (_, aConv)) <-
                adjustPos (getRange [f, arg]) $ adjustTypes a r aTy
-             return (if rTy then makePartialVal r else r,
-                mkTermAppl (applConv fConv fTrm)
-                             $ applConv aConv aTrm)
+             let frTy = if rTy then makePartialVal r else r
+                 pTrm = mkTermAppl (applConv fConv fTrm)
+                   $ applConv aConv aTrm
+             return $ ITC frTy pTrm cs
          PartialVal (FunType a r) -> do
              ((_, fConv), (_, aConv)) <-
                adjustPos (getRange [f, arg]) $ adjustTypes a r aTy
              let resTy = makePartialVal r
-             return (resTy, mkTermAppl (mkTermAppl (mkTermAppl
+                 pTrm = mkTermAppl (mkTermAppl (mkTermAppl
                               (unpackOp r) $ convFun fConv) fTrm)
-                            $ applConv aConv aTrm)
+                            $ applConv aConv aTrm
+             return $ ITC resTy pTrm cs
          PartialVal _ -> pv
          BoolType -> pv
-         _ -> mkError "not a function type"  f
+         _ -> mkError "not a function type" f
 
 -- * translation of lambda abstractions
 
@@ -805,17 +877,20 @@ isPatternType trm = case trm of
 transPattern :: Env -> Set.Set String -> Set.Set String -> As.Term
              -> Result (FunType, Isa.Term)
 transPattern sign tyToks toks pat = do
-    p@(ty, _) <- transTerm sign tyToks toks Set.empty pat
+    ITC ty trm cs <- transTerm sign tyToks toks Set.empty pat
     case pat of
       TupleTerm [] _ -> return (ty, mkFree "_")
-      _ -> if not (isPatternType pat) || isPartialVal ty then
+      _ -> if not (isPatternType pat) || isPartialVal ty
+              || case cs of
+                   None -> False
+                   _ -> True then
         fatal_error ("illegal pattern for Isabelle: " ++ showDoc pat "")
              $ getRange pat
-       else return p
+       else return (ty, trm)
 
 -- form Abs(pattern term)
-abstraction :: Env -> Set.Set String -> Set.Set String -> (FunType, Isa.Term)
-            -> As.Term -> Result (FunType, Isa.Term)
-abstraction sign tyToks toks (ty, body) pat = do
+abstraction :: Env -> Set.Set String -> Set.Set String -> IsaTermCond -> As.Term
+            -> Result IsaTermCond
+abstraction sign tyToks toks (ITC ty body cs) pat = do
     (pTy, nPat) <- transPattern sign tyToks toks pat
-    return (FunType pTy ty, Abs nPat body NotCont)
+    return $ ITC (FunType pTy ty) (Abs nPat body NotCont) cs
