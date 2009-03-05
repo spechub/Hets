@@ -79,8 +79,9 @@ theoremHideShiftForEdge dg edge@(source, target, edgeLab) =
     provenEdge = (source, target, edgeLab
         { dgl_type = GlobalThm (Proven thmHideShift pbasis)
             conservativity conservStatus
-        , dgl_origin = DGLinkProof })
-    in changesDGH dg' [DeleteEdge edge, InsertEdge provenEdge]
+        , dgl_origin = DGLinkProof
+        , dgl_id = defaultEdgeId })
+    in insertDGLEdge provenEdge $ changeDGH dg' $ DeleteEdge edge
 
 theoremHideShiftForEdgeAux :: DGraph -> LEdge DGLinkLab
                            -> Result (DGraph, ProofBasis)
