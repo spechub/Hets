@@ -53,9 +53,11 @@ module GUI.GraphAbstraction
 import GUI.UDGUtils
 #ifdef UNIVERSION2
 import qualified UDrawGraph.Types as DVT
+import Events.Destructible as Destructible
 import Reactor.BSem
 #else
 import qualified DaVinciTypes as DVT
+import Destructible
 import BSem
 #endif
 
@@ -573,4 +575,7 @@ activateGraphWindow = doInGraphContext (DVT.Window DVT.Activate)
 -- | Closes the Window
 closeGraphWindow :: GraphInfo -- ^ The graph
                  -> IO ()
-closeGraphWindow = doInGraphContext (DVT.Menu $ DVT.File DVT.Close)
+closeGraphWindow gi = do
+  g <- readIORef gi
+  let Graph dg = theGraph g
+  destroy $ getDaVinciGraphContext dg
