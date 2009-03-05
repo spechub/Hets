@@ -6,64 +6,59 @@ Description :  Abstract syntax for first-order logic with dependent types (DFOL)
 module DFOL.AS_BASIC_DFOL 
     (
       SIG (..)                 -- datatype for signatures
-    , CONTEXT                  -- datatype for contexts
-    , TYPE	               -- datatype for types
-    , TERM                     -- datatype for terms
+    , CONTEXT (..)             -- datatype for contexts
+    , TYPE (..) 	       -- datatype for types
+    , TERM (..)                -- datatype for terms
     , FORMULA (..)             -- datatype for formulas
     , BASIC_SPEC (..)          -- Basic Spec    
     ) where
 
-import Common.Id as Id
+import Common.Id
 import Common.Doc
 import Common.DocUtils
 
-type VARIABLE = Id.Token
-type CONSTANT = Id.Token
-
+type NAME = Token
 
 -- grammar for signatures
-data SIG = Sig [(CONSTANT, TYPE)]
+data SIG = Sig [(NAME, TYPE)]
            deriving (Show, Eq)
 
 -- grammar for contexts 
-data CONTEXT = Context [(VARIABLE, TYPE)]
+data CONTEXT = Context [(NAME, TYPE)]
                deriving (Show, Eq)
 
 -- grammar for types 
 data TYPE = Sort
           | Form
           | Univ TERM
-          | Pi [(VARIABLE, TYPE)] TYPE
+          | Pi [(NAME, TYPE)] TYPE
             deriving (Show, Eq)
 
 -- grammar for terms
-data TERM = Var VARIABLE
-          | Appl TERM TERM
+data TERM = Identifier NAME
+          | Appl TERM [TERM]
             deriving (Show, Eq)
 
-			
 --grammar for formulas
-data FORMULA = True
-             | False
+data FORMULA = T
+             | F
              | Pred TERM 
-             | Equality TYPE TERM TERM 
+             | Equality TERM TERM 
              | Negation FORMULA
              | Conjunction [FORMULA]
              | Disjunction [FORMULA]
              | Implication FORMULA FORMULA
              | Equivalence FORMULA FORMULA
-             | Forall [(VARIABLE, TYPE)] TERM FORMULA
-             | Exists [(VARIABLE, TYPE)] TERM FORMULA
+             | Forall [(NAME, TYPE)] FORMULA
+             | Exists [(NAME, TYPE)] FORMULA
                deriving (Show, Eq)
-
 
 -- a DFOL specification
 data BASIC_SPEC = Basic_spec SIG [FORMULA] 
                   deriving Show
 
-
 -- pretty printing
-{-instance Pretty FORMULA where
+instance Pretty FORMULA where
     pretty = printFormula
 instance Pretty BASIC_SPEC where
     pretty = printBasicSpec
@@ -76,52 +71,50 @@ instance Pretty TYPE where
 instance Pretty TERM where
     pretty = printTerm
 
-
 -- pretty printing for basic specs
 printBasicSpec :: BASIC_SPEC -> Doc
---printBasicSpec (Basic_spec sig axioms) = hsep $ pretty sig map pretty axioms
+printBasicSpec (Basic_spec sig axioms) = (pretty sig) $+$ (vcat $ map pretty axioms)
 
 -- pretty printing for formulas
 printFormula :: FORMULA -> Doc
-printFormula (Negation f) = notDoc
-                            <> lparen <> printFormula f <> rparen
-printFormula (Conjunction xs) = parens $
-                                sepByArbitrary andDoc
-                                $ map printFormula xs
-printFormula (Disjunction xs) = parens $
-                                sepByArbitrary orDoc
-                                $ map printFormula xs
-printFormula (Implication x y) = parens $ printFormula x <>
-                                 implies <> printFormula y
-printFormula (Equivalence x y) = parens $ printFormula x <>
-                                 equiv <> printFormula y
-printFormula (True) = text "True"
-printFormula (False) = text "False"
-printFormula (Pred x) = printTerm x
-printFormula (Equality _ x y) = parens $ printTerm x <>
-                                equals <> printTerm y
-printFormula (Forall xs) = parens $
-                                sepByArbitrary andDoc
-                                $ map printFormula xs 
-
+printFormula (Negation f) = notDoc <+> printFormula f
+printFormula (Conjunction xs) = parens $ sepBy andDoc $ map printFormula xs
+printFormula (Disjunction xs) = parens $ sepBy orDoc $ map printFormula xs                                
+printFormula (Implication x y) = parens $ printFormula x <+> implies <+> printFormula y
+printFormula (Equivalence x y) = parens $ printFormula x <+> equiv <+> printFormula y
+printFormula (T) = text "True"
+printFormula (F) = text "False"
+printFormula (Pred x) = pretty x
+printFormula (Equality x y) = parens $ pretty x <+> equals <+> pretty y
+printFormula (Forall xs f) = parens $ forallDoc <+> (hsep $ map printDecl xs) <+> printFormula f 
+printFormula (Exists xs f) = parens $ exists <+> (hsep $ map printDecl xs) <+> printFormula f
 			
 -- pretty printing for terms
 printTerm :: TERM -> Doc
---printTerm (Var var) = pretty var
---printTerm (Appl f a) = parens $ printTerm f <> printTerm a
+printTerm (Identifier x) = pretty x
+printTerm (Appl f xs) = parens $ pretty f <+> (hsep $ map pretty xs)
 
 -- pretty printing for types
 printType :: TYPE -> Doc
---printType (Sort) = text "Sort"
---printType (Form) = text "Form"
---printType (Univ t) = text "Univ" <> parens $ printTerm t
---printType (Pi xs t) = text "Pi" <> map (\(v, t) -> pretty v <> text ":" <> pretty t <> ". ") xs <> pretty x 
+printType (Sort) = text "Sort"
+printType (Form) = text "Form"
+printType (Univ t) = pretty t
+printType (Pi xs x) = text "Pi" <+> (hsep $ map printDecl xs) <+> printType x 
 
 -- pretty printing for contexts
 printContext :: CONTEXT -> Doc
---printType (Context xs) = parens $ map (\(v, t) -> pretty v <> text ":" <> pretty t <> ".") xs)
+printContext (Context xs) = parens $ hsep $ map printDecl xs
 
- -- pretty printing for signatures
+-- pretty printing for signatures
 printSignature :: SIG -> Doc
---printSignature (Sig xs) = hsep $ map (\(c, t) -> pretty c <> text ":" <> pretty t) xs
--}
+printSignature (Sig xs) = vcat $ map (\(c, t) -> pretty c <+> text "::" <+> pretty t) xs
+
+-- auxiliary functions
+sepBy :: Doc -> [Doc] -> Doc
+sepBy _ [] = text ""
+sepBy _ (x:[]) = x
+sepBy separator (x:xs) = x <+> separator
+                           <+> (sepBy separator xs)
+
+printDecl :: (NAME, TYPE) -> Doc
+printDecl (n, t) = pretty n <+> text ":" <+> pretty t <> text "."
