@@ -264,9 +264,13 @@ transSentence sign tyToks simpF s = case s of
     Le.Formula trm -> do
       ITC ty t cs <-
         transTerm sign tyToks (getAssumpsToks $ assumps sign) Set.empty trm
-      let bt = foldr binConj (case ty of
-                 PartialVal _ -> mkTermAppl partial2bool t
-                 _ -> t) $ condToList cs
+      let et = case ty of
+                 PartialVal _ -> mkTermAppl defOp t
+                 _ -> t
+          bt = case nub $ condToList cs of
+                 [] -> et
+                 ncs -> if et == true then foldr1 binConj ncs else
+                            foldr binConj et ncs
           st = mkSimplifiedSen simpF bt
       case ty of
         BoolType -> return st
@@ -570,7 +574,7 @@ convFun :: ConvFun -> Isa.Term
 convFun cvf = case cvf of
     IdOp -> idOp
     Bool2partial -> bool2partial
-    Partial2bool -> partial2bool
+    Partial2bool -> defOp
     LiftUnit rTy -> case rTy of
        UnitType -> liftUnit2unit
        BoolType -> liftUnit2bool
@@ -600,8 +604,7 @@ convFun cvf = case cvf of
     ArgFun cv -> mkTermAppl (termAppl flipOp compOp) $ convFun cv
     ResFun cv -> mkTermAppl compOp $ convFun cv
 
-mapFst, mapSnd, mapPartial, idOp, bool2partial,
-    partial2bool, constNil, constTrue,
+mapFst, mapSnd, mapPartial, idOp, bool2partial, constNil, constTrue,
     liftUnit2unit, liftUnit2bool, liftUnit2partial, liftUnit, lift2unit,
     lift2bool, lift2partial, mkPartial :: Isa.Term
 
@@ -610,7 +613,6 @@ mapSnd = conDouble "mapSnd"
 mapPartial = conDouble "mapPartial"
 idOp = conDouble "id"
 bool2partial = conDouble "bool2partial"
-partial2bool = conDouble "partial2bool"
 constNil = conDouble "constNil"
 constTrue = conDouble "constTrue"
 liftUnit2unit = conDouble "liftUnit2unit"
@@ -639,7 +641,7 @@ unpackOp fTrm isPf ft fConv = if isPf then mkTermAppl
     _ ->  conDouble "unpack2partial") $ convFun fConv) fTrm
   else applConv fConv fTrm
 
--- True means require result type to be partial
+-- True means function type result was partial
 adjustMkAppl :: Isa.Term -> Cond -> Bool -> FunType -> FunType
              -> IsaTermCond -> Result IsaTermCond
 adjustMkAppl fTrm fCs isPf aTy rTy (ITC ty aTrm aCs) = do
@@ -720,7 +722,7 @@ isEquallyLifted :: Isa.Term -> Isa.Term -> Maybe (Isa.Term, Isa.Term, Isa.Term)
 isEquallyLifted l r = case (l, r) of
     (App ft@(Const f _) la _,
      App (Const g _) ra _)
-        | f == g && elem (new f) ["makePartial", "partial2bool", "bool2partial"]
+        | f == g && elem (new f) ["makePartial", defOpS, "bool2partial"]
             -> Just (ft, la, ra)
     _ -> Nothing
 
@@ -771,16 +773,15 @@ mkTermAppl fun arg = case (fun, arg) of
                _ -> If arg af noneOp c
       (App (Const mp _) _ _, _)
           | new mp == "liftUnit2unit" -> arg
-          | new mp == "lift2unit" -> mkTermAppl (conDouble "partial2bool") arg
+          | new mp == "lift2unit" -> mkTermAppl defOp arg
       (App (App (Const cmp _) f _) g c, _)
           | new cmp == compS -> mkTermAppl f $ mkTermAppl g arg
           | new cmp == curryOpS -> mkTermAppl f $ Tuplex [g, arg] c
           | new cmp == flipS -> mkTermAppl (mkTermAppl f arg) g
       (Const d _, App (Const sm _) a _)
-          | new d == "defOp" && new sm == "makePartial" -> true
-          | new d == "partial2bool" && new sm == "makePartial" -> true
-          | new d == "partial2bool" && new sm == "bool2partial"
-            || new d == "bool2partial" && new sm == "partial2bool" -> a
+          | new d == defOpS && new sm == "makePartial" -> true
+          | new d == defOpS && new sm == "bool2partial"
+            || new d == "bool2partial" && new sm == defOpS -> a
           | new d == "curryOp" && new sm == uncurryOpS -> a
       (Const i _, _)
           | new i == "bool2partial" ->
@@ -793,7 +794,7 @@ mkTermAppl fun arg = case (fun, arg) of
           | new i == "constTrue" -> true
           | new i == "constNil" -> unitOp
       (Const i _, Tuplex [] _)
-          | new i == "partial2bool" -> false
+          | new i == defOpS -> false
       _ -> termAppl fun arg
 
 freshIndex :: State Int Int
