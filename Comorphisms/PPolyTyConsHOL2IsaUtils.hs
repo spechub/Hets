@@ -630,12 +630,23 @@ strongEqualOp :: Isa.Term
 strongEqualOp =
   con $ VName "strongEqualOp" $ Just $ AltSyntax "(_ =s=/ _)"  [50, 51] 50
 
-unpackOp :: FunType -> Isa.Term
-unpackOp ft = case ft of
+unpackOp :: Isa.Term -> Bool -> FunType -> ConvFun -> Isa.Term
+unpackOp fTrm isPf ft fConv = if isPf then mkTermAppl
+  (mkTermAppl (case ft of
     UnitType -> conDouble "unpack2bool"
     BoolType -> conDouble "unpackBool"
     PartialVal _ -> conDouble "unpackPartial"
-    _ ->  conDouble "unpack2partial"
+    _ ->  conDouble "unpack2partial") $ convFun fConv) fTrm
+  else applConv fConv fTrm
+
+-- True means require result type to be partial
+adjustMkAppl :: Isa.Term -> Cond -> Bool -> FunType -> FunType
+             -> IsaTermCond -> Result IsaTermCond
+adjustMkAppl fTrm fCs isPf aTy rTy (ITC ty aTrm aCs) = do
+  ((pfTy, fConv), (_, aConv)) <- adjustTypes aTy rTy ty
+  return $ ITC (if isPf || pfTy then makePartialVal rTy else rTy)
+    (mkTermAppl (unpackOp fTrm isPf rTy fConv) $ applConv aConv aTrm)
+    $ joinCond fCs aCs
 
 -- True means require result type to be partial
 adjustTypes :: FunType -> FunType -> FunType
@@ -840,27 +851,13 @@ mkApp :: Env -> Set.Set String -> Set.Set String -> Set.Set VarDecl -> As.Term
       -> As.Term -> Result IsaTermCond
 mkApp sign tyToks toks pVars f arg = do
     fTr@(ITC fTy fTrm fCs) <- transTerm sign tyToks toks pVars f
-    ITC aTy aTrm aCs <- transTerm sign tyToks toks pVars arg
+    aTr <- transTerm sign tyToks toks pVars arg
     let pv = case arg of -- dummy application of a unit argument
           TupleTerm [] _ -> return fTr
           _ -> mkError "wrong function type"  f
-        cs = joinCond fCs aCs
-    case fTy of
-         FunType a r -> do
-             ((rTy, fConv), (_, aConv)) <-
-               adjustPos (getRange [f, arg]) $ adjustTypes a r aTy
-             let frTy = if rTy then makePartialVal r else r
-                 pTrm = mkTermAppl (applConv fConv fTrm)
-                   $ applConv aConv aTrm
-             return $ ITC frTy pTrm cs
-         PartialVal (FunType a r) -> do
-             ((_, fConv), (_, aConv)) <-
-               adjustPos (getRange [f, arg]) $ adjustTypes a r aTy
-             let resTy = makePartialVal r
-                 pTrm = mkTermAppl (mkTermAppl (mkTermAppl
-                              (unpackOp r) $ convFun fConv) fTrm)
-                            $ applConv aConv aTrm
-             return $ ITC resTy pTrm cs
+    adjustPos (getRange [f, arg]) $ case fTy of
+         FunType a r -> adjustMkAppl fTrm fCs False a r aTr
+         PartialVal (FunType a r) -> adjustMkAppl fTrm fCs True a r aTr
          PartialVal _ -> pv
          BoolType -> pv
          _ -> mkError "not a function type" f
