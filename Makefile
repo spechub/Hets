@@ -600,7 +600,8 @@ clean: bin_clean o_clean clean_pretty
 
 ### removes all *.o, *.hi and *.p_o files in all subdirectories
 o_clean:
-	find . -name \*.o -o -name \*.hi -o -name \*.p_o | xargs $(RM)
+	find . -name \*.o -o -name \*.hi -o -name \*.p_o \
+        -o -name \*.exe -o -name \*.exe.manifest | xargs $(RM)
 
 ### remove binaries
 bin_clean:
