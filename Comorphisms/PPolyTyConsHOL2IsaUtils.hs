@@ -397,6 +397,7 @@ joinCond c1 c2 = let
           _ -> [c]
   in case toCs c1 ++ toCs c2 of
        [] -> None
+       [s] -> s
        cs -> CondList cs
 
 pairCond :: Cond -> Cond -> Cond
