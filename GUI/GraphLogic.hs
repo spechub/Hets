@@ -769,13 +769,14 @@ checkconservativityOfEdge _ gInfo@(GInfo{ gi_GraphInfo = actGraphInfo})
           _ -> error "checkconservativityOfEdge: computeTheory"
    G_theory lid _sign _ sensTar _ <- return thTar
    GMorphism cid _ _ morphism2 _ <- return $ dgl_morphism linklab
-   Just (GMorphism cid' _ _ morphism3 _) <- return $
-                  dgn_sigma $ labDG (lookupDGraph ln libEnv') target
    morphism2' <- coerceMorphism (targetLogic cid) lid
                 "checkconservativityOfEdge2" morphism2
-   morphism3' <- coerceMorphism (targetLogic cid') lid
-                "checkconservativityOfEdge3" morphism3
-   let compMor = case comp morphism2' morphism3' of
+   let compMor = case dgn_sigma $ labDG (lookupDGraph ln libEnv') target of
+         Nothing -> morphism2'
+         Just (GMorphism cid' _ _ morphism3 _) -> case
+           do morphism3' <- coerceMorphism (targetLogic cid') lid
+                 "checkconservativityOfEdge3" morphism3
+              comp morphism2' morphism3' of
                 Res.Result _ (Just phi) -> phi
                 _ -> error "checkconservativtiyOfEdge: comp"
    let (_le', thSrc) =
