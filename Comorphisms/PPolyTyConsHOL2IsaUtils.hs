@@ -723,7 +723,7 @@ isEquallyLifted :: Isa.Term -> Isa.Term -> Maybe (Isa.Term, Isa.Term, Isa.Term)
 isEquallyLifted l r = case (l, r) of
     (App ft@(Const f _) la _,
      App (Const g _) ra _)
-        | f == g && elem (new f) ["makePartial", defOpS, "bool2partial"]
+        | f == g && elem (new f) ["makePartial", "bool2partial"]
             -> Just (ft, la, ra)
     _ -> Nothing
 
