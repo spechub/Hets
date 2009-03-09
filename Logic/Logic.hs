@@ -566,22 +566,23 @@ class (StaticAnalysis lid
                            -> [OMDoc.TCElement]
          -- default implementation
          export_signToOmdoc lid _ _ _ =
-             error $ "exportSignToOmdoc not yet implemented "
+             error $ "export_signToOmdoc not yet implemented "
                        ++ "for logic " ++ (show lid)
 
          export_morphismToOmdoc :: lid -> SIMPLE_ID -> LIB_ID -> morphism
                                -> [OMDoc.TCElement]
          -- default implementation
          export_morphismToOmdoc lid _ _ _ =
-             error $ "exportMorphismToOmdoc not yet implemented "
+             error $ "export_morphismToOmdoc not yet implemented "
                        ++ "for logic " ++ (show lid)
 
          export_senToOmdoc :: lid -> SIMPLE_ID -> LIB_ID -> sign
                           -> Named sentence -> [OMDoc.TCElement]
          -- default implementation
          export_senToOmdoc lid _ _ _ _  =
-             error $ "exportSenToOmdoc not yet implemented "
+             error $ "export_senToOmdoc not yet implemented "
                        ++ "for logic " ++ (show lid)
+
 ----------------------------------------------------------------
 -- Derived functions
 ----------------------------------------------------------------
