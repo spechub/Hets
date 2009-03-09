@@ -24,12 +24,15 @@ import Common.Id
 import Common.LibName
 import Common.Result
 
+import Common.DocUtils
+
 import CASL.AS_Basic_CASL
 import CASL.ATC_CASL ()
 import CASL.Sign
 import CASL.Morphism
 import CASL.Fold
 import CASL.Quantification
+import CASL.ToDoc
 
 import Data.Map as Map
 import Data.Set as Set
@@ -37,53 +40,87 @@ import Data.Set as Set
 -- | the identifier of a specification, combining the specid and the libid
 data SPEC_ID = SPEC_ID Id (Maybe LIB_ID)
 
-exportSignToOmdoc :: SIMPLE_ID -> LIB_ID -> Sign f e -> [TCElement]
+exportSignToOmdoc ::  (Show f, Pretty e) => SIMPLE_ID -> LIB_ID -> Sign f e -> [TCElement]
 exportSignToOmdoc sid lid sign =
     Set.toList (Set.map (sortSignToOmdoc spid sign) (sortSet sign))
  ++ Map.elems (mapWithKey (funSignToOmdoc spid sign) (opMap sign))
  ++ Map.elems (mapWithKey (predSignToOmdoc spid sign) (predMap sign))
      where spid = (SPEC_ID (simpleIdToId sid) (Just lid))
 
-{-
-    [TCComment $ "sortSet\n" ++ show (sortSet sign)
-     ++ "\n___________________\nemptySortSet\n" ++ show (emptySortSet sign)
-     ++ "\n___________________\nopMap\n" ++ show (opMap sign)
-     ++ "\n___________________\npredMap\n" ++ show (predMap sign)
-     ++ "\n___________________\ndeclaredSymbols\n" ++ show (declaredSymbols sign)]
--}
-
 exportMorphismToOmdoc :: SIMPLE_ID -> LIB_ID -> Morphism f e ()
                       -> [TCElement]
--- exportMorphismToOmdoc sid lid morphism = []
+--exportMorphismToOmdoc sid lid morphism = []
 exportMorphismToOmdoc _ _ _ = []
 
 
-exportSenToOmdoc :: SIMPLE_ID -> LIB_ID -> Sign f e -> Named(FORMULA f)
+exportSenToOmdoc :: Pretty f => SIMPLE_ID -> LIB_ID -> Sign f e -> Named(FORMULA f)
                  -> [TCElement]
-exportSenToOmdoc sid lid sign formula =
-    [TCAxiomOrTheorem True (senAttr formula) $ foldFormula
-     (omdocRec (SPEC_ID (simpleIdToId sid) (Just lid))
+exportSenToOmdoc sid lid sign f =
+    let spid  = (SPEC_ID (simpleIdToId sid) (Just lid))
+        sname = (senAttr f)
+        sen   = sentence f
+    in
+      case sen of
+        Sort_gen_ax cs b -> [TCComment $ show $ printTheoryFormula f,
+                             buildADTsFromConstraints spid sign cs b]
+        _ -> [TCAxiomOrTheorem True sname $ foldFormula
+              (omdocRec spid
                sign (\_ -> error "CASL extension not supported."))
-     (sentence formula)]
-
+              sen]
 
 sfail :: String -> Range -> a
 sfail s r = error $ show (Diag Error ("unexpected " ++ s) r)
 
 
+-------------------------- ADT --------------------------
+
 buildADTsFromConstraints :: SPEC_ID -> Sign f e -> [Constraint] -> Bool
-                         -> OMElement
-buildADTsFromConstraints spid sign cs b = 
-    OMA $ (OMV $ OMName "sgax") : Prelude.map (buildADTFromConstraint spid b) cs
---    OMV $ OMName $ "sgax (" ++ (show b) ++ "): " ++ (show $ cs)    
+                         -> TCElement
+buildADTsFromConstraints spid _ cs b = 
+    TCADT $ Prelude.map (buildADTSortDef spid b) cs
 
-buildADTFromConstraint :: SPEC_ID -> Bool -> Constraint -> OMElement
-buildADTFromConstraint spid b (Constraint s l ss) = 
-    OMA $ Prelude.map ((funToOmdoc spid) . fst) l
+buildADTSortDef :: SPEC_ID -> Bool -> Constraint -> OmdADT
+buildADTSortDef spid b (Constraint s l _) = 
+    ADTSortDef (idToName spid s) b $
+    Prelude.map (buildADTConstructor spid . fst) l
+
+buildADTConstructor :: SPEC_ID -> OP_SYMB -> OmdADT
+buildADTConstructor spid (Qual_op_name n (Op_type _ args _ _) _) =
+    ADTConstr (idToName spid n) $ Prelude.map (buildADTArgument spid) args
+
+buildADTConstructor _ (Op_name (Id _ _ r)) = sfail "No_qual_op" r
+
+-- No support for selectors
+buildADTArgument :: SPEC_ID -> SORT -> OmdADT
+buildADTArgument spid s = ADTArg (sortToOmdoc spid s) Nothing
 
 
--- TODO: Question, where to get the types of the constructors from??
---    OMV $ OMName $ "sgax (" ++ (show b) ++ ", " ++ (show (s == ss)) ++ ": " ++ (show l)    
+-------------------------- Theory constitutive --------------------------
+
+sortSignToOmdoc :: SPEC_ID -> Sign a e -> SORT -> TCElement
+sortSignToOmdoc spid _ s =
+    TCSymbol (idToName spid s) Nothing Typ
+
+
+-- assuming here the the set of pred types contains only one Element!
+predSignToOmdoc :: SPEC_ID -> Sign a e -> Id -> (Set.Set PredType) -> TCElement
+predSignToOmdoc spid _ p ptypes =
+    TCSymbol
+    (idToName spid p)
+    (Just (buildType spid Total (predArgs $ Set.findMin ptypes) Nothing))
+    Obj
+
+
+-- assuming here the the set of op types contains only one Element!
+funSignToOmdoc :: SPEC_ID -> Sign a e -> Id -> (Set.Set OpType) -> TCElement
+funSignToOmdoc spid _ f ftypes =
+    TCSymbol
+    (idToName spid f)
+    (Just $ buildObjectType spid $ Set.findMin ftypes)
+    Obj
+
+
+-------------------------- types --------------------------
 
 -- | Given an operator or predicate signature we construct the according
 -- type by currying and using bool as rangetype for predicates
@@ -101,9 +138,15 @@ buildType spid total domain range =
           rangeelem = case range of Nothing -> (tv_const "bool")
                                     Just r -> (sortToOmdoc spid r)
 
+buildObjectType :: SPEC_ID -> OpType -> OMElement
+buildObjectType spid (OpType opkind opargs oprange) =
+    buildType spid opkind opargs (Just oprange)
+
 addType :: SPEC_ID -> SORT -> OMElement -> OMElement
 addType spid s elm = OMA [(st_const "funtype"), (sortToOmdoc spid s), elm]
 
+
+-------------------------- Names --------------------------
 
 -- | the qualified name of an identifier consisting of
 --   the name, the spec and the lib
@@ -112,23 +155,24 @@ data NameTriple = NameTriple { getName :: String,
                                getLibName :: (Maybe String) } deriving Show
 
 
--- | probably outsource this to a generic module
-buildOMS :: NameTriple -> OMElement
-buildOMS (NameTriple i s l) = OMS (CD s l) $ OMName i
+-- gn_Over has still to be outcoded
 
-{-
--- attempt to solve the gn_Over problem, but didn't work
-transitiveUnQualName :: Id -> Id
-transitiveUnQualName i
-    | isQualName i = transitiveUnQualName $ unQualName i
-    | otherwise = i
--}
-
+idToName :: SPEC_ID -> Id -> String
+idToName spid = getName . (idToNameTriple spid)
+                    
 idToNameTriple :: SPEC_ID -> Id -> NameTriple
 idToNameTriple (SPEC_ID sid lid) s
     | isQualName s = NameTriple (show $ unQualName s)
                      (show $ getNodeId s) Nothing
     | otherwise = NameTriple (show s) (show sid) (fmap show lid)
+
+
+
+-------------------------- OpenMath --------------------------
+
+-- | probably outsource this to a generic module
+buildOMS :: NameTriple -> OMElement
+buildOMS (NameTriple i s l) = OMS (CD s l) $ OMName i
 
 idToOmdoc :: SPEC_ID -> Id -> OMElement
 idToOmdoc spid s = buildOMS $ idToNameTriple spid s
@@ -156,7 +200,6 @@ varDeclToOMDoc :: SPEC_ID -> (VAR, SORT) -> OMElement
 varDeclToOMDoc spid (v, s) = OMATTT (varToOmdoc v) (sortToOmdocAttribute spid s)
 
 
-
 -- | Predefined truthval constants: false, true
 tv_const :: String -> OMElement
 tv_const n = OMS (CD "truthval" Nothing) $ OMName n
@@ -181,7 +224,7 @@ casl_const n = OMS (CD "casl" Nothing) $ OMName n
 
 omdocRec :: SPEC_ID -> Sign f e -> (f -> OMElement)
          -> Record f OMElement OMElement
-omdocRec spid sign mf = Record
+omdocRec spid _ mf = Record
     { foldQuantification = \ _ q vs f _ ->
       let s = case q of
                 Universal -> pl1_const "forall"
@@ -206,7 +249,9 @@ omdocRec spid sign mf = Record
     , foldMembership = \ _ t s _ ->
                        (OMA [(casl_const "in") , t, sortToOmdoc spid s])
     , foldMixfix_formula = \ t _ -> sfail "Mixfix_formula" $ getRange t
-    , foldSort_gen_ax = \ _ cs b -> buildADTsFromConstraints spid sign cs b 
+    , foldSort_gen_ax = \ t _ _ -> sfail
+                        "Sort generating axioms should be filtered out before!"
+                        $ getRange t
     , foldExtFORMULA = \ _ f -> mf f
     , foldQual_var = \ _ v _ _ -> varToOmdoc v
     , foldApplication = \ _ o ts _ -> OMA $ (funToOmdoc spid o) : ts
@@ -224,34 +269,5 @@ omdocRec spid sign mf = Record
     , foldMixfix_bracketed = \ _ _ r -> sfail "Mixfix_bracketed" r
     , foldMixfix_braced = \ _ _ r -> sfail "Mixfix_braced" r }
 
-
-sortSignToOmdoc :: SPEC_ID -> Sign a e -> SORT -> TCElement
-sortSignToOmdoc spid _ s =
-    TCSymbol (getName $ idToNameTriple spid s) Nothing Typ
-
-
-predSignToOmdoc :: SPEC_ID -> Sign a e -> Id -> (Set.Set PredType) -> TCElement
-predSignToOmdoc spid _ p ptypes =
-    TCSymbol
-    (getName $ idToNameTriple spid p)
-    (Just (buildType spid Total (predArgs $ Set.findMin ptypes) Nothing))
-    Obj
-
-
-funSignToOmdoc :: SPEC_ID -> Sign a e -> Id -> (Set.Set OpType) -> TCElement
-funSignToOmdoc spid _ f ftypes =
-    TCSymbol
-    (getName $ idToNameTriple spid f)
-    (Just $ buildType spid opkind opargs $ Just oprange)
-    Obj
-        where
-          otype = (Set.findMin ftypes)
-          opkind = opKind otype
-          opargs = opArgs otype
-          oprange = opRes otype
-
-{-
-    TCComment $ show (f,ftypes)
--}
 
 
