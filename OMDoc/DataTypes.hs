@@ -34,12 +34,29 @@ data TLElement = TLTheory String [TCElement]
 data TCElement =
     -- | An axiom or theorem element
     TCAxiomOrTheorem Bool String OMElement
-    -- | A comment, only for development purposes
-  | TCComment String
     -- | Symbol to represent sorts, constants, predicate symbols, etc.
   | TCSymbol String (Maybe OMElement) SymbolRole
+    -- | Algebraic Data Type represents free/generated types
+  | TCADT [OmdADT]
     -- | Import statements for referencing other theories
   | TCImport
+    -- | A comment, only for development purposes
+  | TCComment String
+    deriving (Show, Eq, Ord)
+
+
+-- | The flattened structure of an Algebraic Data Type
+data OmdADT =
+    -- | A single sort given by name, free? and a list of constructors
+    ADTSortDef String Bool [OmdADT]
+    -- | A constructor given by its name and a list of arguments
+  | ADTConstr String [OmdADT]
+    -- | An argument with type and evtually a selector
+  | ADTArg OMElement (Maybe OmdADT)
+    -- | The selector has a name and is total (True) or partial (False)
+  | ADTSelector String Bool
+    -- | Insort elements point to other sortdefs and inherit their structure
+  | ADTInsort String
     deriving (Show, Eq, Ord)
 
 -- | Roles of the declared symbols can be object or type
