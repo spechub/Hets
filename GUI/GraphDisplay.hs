@@ -55,23 +55,22 @@ initializeConverter = do
     abstract graph and returns the descriptor of the latter, the
     graphInfo it is contained in and the conversion maps. -}
 convertGraph :: ConvFunc
-convertGraph gInfo@(GInfo { gi_GraphInfo = actGraphInfo
+convertGraph gInfo@(GInfo { graphInfo = gi
                           , windowCount = wc
-                          }) title showLib = do
+                          , libName = ln }) title showLib = do
  ost <- readIORef $ intState gInfo
  case i_state ost of
   Nothing -> error "Something went wrong, no library loaded"
   Just ist -> do
    let libEnv = i_libEnv ist
-       libname = i_ln ist
-   case Map.lookup libname libEnv of
+   case Map.lookup ln libEnv of
     Just dgraph -> do
       case openlock dgraph of
         Just lock -> do
           notopen <- tryPutMVar lock $ \ hst -> do
-            hhn <- GA.hasHiddenNodes actGraphInfo
-            if hhn then GA.showAll actGraphInfo else return ()
-            applyChanges actGraphInfo hst
+            hhn <- GA.hasHiddenNodes gi
+            if hhn then GA.showAll gi else return ()
+            applyChanges gi hst
           case notopen of
             True -> do
               count <- takeMVar wc
@@ -79,17 +78,17 @@ convertGraph gInfo@(GInfo { gi_GraphInfo = actGraphInfo
               initializeGraph gInfo title showLib
               if (isEmptyDG dgraph) then return ()
                 else do
-                  convert actGraphInfo dgraph
+                  convert gi dgraph
                   return ()
-            False -> error $ "development graph with libname " ++ show libname
+            False -> error $ "development graph with libname " ++ show ln
                              ++" is already open"
         Nothing -> do
           lock <- newEmptyMVar
-          let nwle = Map.insert libname dgraph{openlock = Just lock} libEnv
+          let nwle = Map.insert ln dgraph{openlock = Just lock} libEnv
               nwst = ost { i_state = Just $ ist { i_libEnv = nwle}}
           writeIORef (intState gInfo) nwst
           convertGraph gInfo title showLib
-    Nothing -> error $ "development graph with libname " ++ show libname
+    Nothing -> error $ "development graph with libname " ++ show ln
                        ++" does not exist"
 
 -- | initializes an empty abstract graph with the needed node and edge types,
@@ -99,7 +98,6 @@ initializeGraph gInfo title showLib = do
  ost <- readIORef $ intState gInfo
  case i_state ost of
   Nothing -> return ()
-  Just ist -> do
-   let ln = i_ln ist
-       title' = (title ++ " for " ++ show ln)
+  Just _ -> do
+   let title' = title ++ " for " ++ (show $ libName gInfo)
    createGraph gInfo title' (convertGraph) (showLib)

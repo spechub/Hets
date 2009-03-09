@@ -17,6 +17,7 @@ module Interfaces.Utils
          , getAllEdges
          , initNodeInfo
          , emptyIntIState
+         , emptyIntState
          , addProveToHist
          , proofTreeToProve
          , wasProved
@@ -30,24 +31,31 @@ module Interfaces.Utils
 
 import Interfaces.DataTypes
 import Interfaces.GenericATPState
+
 import Data.Graph.Inductive.Graph
-import Static.DevGraph
-import Proofs.AbstractState
-import Logic.Logic
-import Common.LibName
-import Data.List (isPrefixOf, stripPrefix)
-import Driver.Options(rmSuffix)
 import Data.Maybe (fromMaybe)
-import System.Directory (getCurrentDirectory)
+import Data.List (isPrefixOf, stripPrefix)
 import Data.IORef
+
+import Static.DevGraph
+import Static.GTheory (G_theory(..))
+
+import Proofs.AbstractState
+import Proofs.AbstractState
+
+import Driver.Options(rmSuffix)
+
+import System.Directory (getCurrentDirectory)
+
 import Logic.Comorphism (AnyComorphism(..))
 import Logic.Prover
-import Proofs.AbstractState
-import Static.GTheory (G_theory(..))
+import Logic.Logic
 
 import Common.OrderedMap (keys)
 import Common.Utils(joinWith, splitOn)
 import Common.Result
+import Common.LibName
+import Common.Id(nullRange)
 
 -- | Returns the list of all nodes, if it is not up to date
 -- the function recomputes the list
@@ -87,7 +95,15 @@ emptyIntIState le ln =
     loadScript = False
     }
 
-
+emptyIntState :: IntState
+emptyIntState =
+    IntState { i_state = Just $ emptyIntIState emptyLibEnv $ Lib_id $
+                                               Indirect_link "" nullRange
+                                                             "" noTime
+             , i_hist  = IntHistory { undoList = []
+                                    , redoList = [] }
+             , filename = []
+             }
 
 -- Create an empty command history
 emptyCommandHistory :: IORef IntState -> IO (Result CommandHistory)

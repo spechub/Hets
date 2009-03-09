@@ -15,7 +15,7 @@ module GUI.ShowGraph
     (showGraph)
 where
 
-import Driver.Options
+import Driver.Options(HetcatsOpts,putIfVerbose)
 import Static.DevGraph
 import Common.LibName
 
@@ -64,7 +64,7 @@ showGraph file opts env = case env of
       Left e -> do
         putIfVerbose opts 5 $ "Error: " ++ show (e::IOException)
         error $ "Cant initialize GUI."
-    
+
     useHTk -- All messages are displayed in TK dialog windows
     -- from this point on
     ost <- readIORef $ intState gInfo
@@ -74,8 +74,8 @@ showGraph file opts env = case env of
                                                       , i_ln = ln},
                                  filename = file}
     writeIORef (intState gInfo) nwst
---    ch <- (initCommandHistory file)
-    let gInfo' = gInfo { gi_hetcatsOpts = opts     }
+    let gInfo' = gInfo { hetcatsOpts = opts
+                       , libName = ln }
     showLibGraph gInfo'
     mShowGraph gInfo' ln
     takeMVar $ exitMVar gInfo'

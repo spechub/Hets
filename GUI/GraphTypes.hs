@@ -22,7 +22,7 @@ module GUI.GraphTypes
     , lockGlobal
     , tryLockGlobal
     , unlockGlobal
-    , mergeHistoryLast2Entries 
+    , mergeHistoryLast2Entries
     )
     where
 
@@ -30,8 +30,6 @@ import GUI.GraphAbstraction(GraphInfo, initgraphs)
 import GUI.ProofManagement (GUIMVar)
 -- import GUI.History(CommandHistory, emptyCommandHistory)
 import GUI.UDGUtils
-
-import Static.DevGraph
 
 import Common.LibName
 import Common.Id(nullRange)
@@ -56,7 +54,7 @@ data InternalNames = InternalNames
 data GInfo = GInfo
              { -- Global
                intState :: IORef IntState
-             , gi_hetcatsOpts :: HetcatsOpts
+             , hetcatsOpts :: HetcatsOpts
              , windowCount :: MVar Integer
              , exitMVar :: MVar ()
              , globalLock :: MVar ()
@@ -64,7 +62,8 @@ data GInfo = GInfo
              , libGraphLock :: MVar ()
              , openGraphs :: IORef (Map.Map LIB_NAME GInfo)
                -- Local
-             , gi_GraphInfo :: GraphInfo
+             , libName :: LIB_NAME
+             , graphInfo :: GraphInfo
              , internalNamesIORef :: IORef InternalNames
              , proofGUIMVar :: GUIMVar
              }
@@ -73,7 +72,7 @@ data GInfo = GInfo
      functions in GraphMenu and GraphLogic. -}
 type ConvFunc = GInfo -> String -> LibFunc -> IO ()
 
-type LibFunc =  GInfo -> IO ()
+type LibFunc = GInfo -> IO ()
 
 type DaVinciGraphTypeSyn =
      Graph DaVinciGraph
@@ -97,18 +96,9 @@ data Colors = Black
 -- | Creates an empty GInfo
 emptyGInfo :: IO GInfo
 emptyGInfo = do
-  let ihist = IntHistory {
-                 undoList = [],
-                 redoList = [] }
-      istate = emptyIntIState emptyLibEnv $ Lib_id $ Indirect_link
-                                        "" nullRange "" noTime
-      st = IntState {
-            i_state = Just istate,
-            i_hist  = ihist,
-            filename = []}
-  intSt <- newIORef st
-  graphInfo <- initgraphs
-  oGraphs <- newIORef Map.empty 
+  intSt <- newIORef emptyIntState
+  gi <- initgraphs
+  oGraphs <- newIORef Map.empty
   iorIN <- newIORef $ InternalNames False []
   guiMVar <- newEmptyMVar
   gl <- newEmptyMVar
@@ -116,39 +106,36 @@ emptyGInfo = do
   exit <- newEmptyMVar
   lgl  <- newEmptyMVar
   wc <- newMVar 0
-  return $ GInfo { intState = intSt
-                 , gi_GraphInfo = graphInfo
-                 , internalNamesIORef = iorIN
-                 , gi_hetcatsOpts = defaultHetcatsOpts
-                 , proofGUIMVar = guiMVar
+  return $ GInfo { -- Global
+                   intState = intSt
+                 , hetcatsOpts = defaultHetcatsOpts
                  , windowCount = wc
                  , exitMVar = exit
                  , globalLock = gl
                  , functionLock = fl
                  , libGraphLock = lgl
-                 , openGraphs = oGraphs 
+                 , openGraphs = oGraphs
+                   -- Local
+                 , libName = Lib_id $ Indirect_link "" nullRange "" noTime
+                 , graphInfo = gi
+                 , internalNamesIORef = iorIN
+                 , proofGUIMVar = guiMVar
                  }
 
 -- | Creates an empty GInfo
 copyGInfo :: GInfo -> LIB_NAME -> IO GInfo
-copyGInfo gInfo newLN = do
-  graphInfo <- initgraphs
+copyGInfo gInfo ln = do
+  gi <- initgraphs
   iorIN <- newIORef $ InternalNames False []
   guiMVar <- newEmptyMVar
-  intSt <- readIORef $ intState gInfo
-  let intSt' = intSt {
-                i_state = case i_state intSt of
-                           Nothing -> Nothing
-                           Just st -> Just $ st {
-                                                 i_ln = newLN}
-                    }
-  writeIORef (intState gInfo) $ intSt'
-  let gInfo' = gInfo { gi_GraphInfo = graphInfo
+  -- Change local parts
+  let gInfo' = gInfo { libName = ln
+                     , graphInfo = gi
                      , internalNamesIORef = iorIN
                      , proofGUIMVar = guiMVar
                      }
   oGraphs <- readIORef $ openGraphs gInfo
-  writeIORef (openGraphs gInfo) $ Map.insert newLN gInfo' oGraphs
+  writeIORef (openGraphs gInfo) $ Map.insert ln gInfo' oGraphs
   return gInfo'
 
 {- | Acquire the global lock. If already locked it waits till it is unlocked
@@ -205,23 +192,23 @@ getColor opts c v l = case Map.lookup (c, v, l) colors of
                   ++ show c
 
 
--- combine last two history entries into one entry (both steps are undone 
--- in one call 
+-- combine last two history entries into one entry (both steps are undone
+-- in one call
 mergeHistoryLast2Entries :: GInfo -> IO ()
 mergeHistoryLast2Entries gInfo = do
    ost <- readIORef $ intState gInfo
    let ulst = undoList $ i_hist ost
-   case ulst of 
+   case ulst of
     x:y:m -> do
-              let z = Int_CmdHistoryDescription { 
+              let z = Int_CmdHistoryDescription {
                           cmdName = (cmdName x) ++ "\n"++ (cmdName y),
-                          cmdDescription = (cmdDescription x) ++ 
+                          cmdDescription = (cmdDescription x) ++
                                            (cmdDescription y) }
-                  nwst= ost { 
-                         i_hist = (i_hist ost) { 
+                  nwst= ost {
+                         i_hist = (i_hist ost) {
                                      undoList = z:m
                                      }
                            }
               writeIORef (intState gInfo) nwst
-              return ()   
+              return ()
     _ -> return ()

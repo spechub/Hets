@@ -49,7 +49,8 @@ import Proofs.ComputeColimit(computeColimit)
 import Common.DocUtils(showDoc)
 import Common.Result as Res
 
-import Driver.Options
+import Driver.Options(HetcatsOpts,rmSuffix,prfSuffix,showDiags
+                     ,defaultHetcatsOpts)
 import Driver.ReadFn(libNameToFile)
 
 import GUI.UDGUtils
@@ -138,18 +139,17 @@ mapEdgeTypes =
 
 -- | Creates the graph. Runs makegraph
 createGraph :: GInfo -> String -> ConvFunc -> LibFunc -> IO ()
-createGraph gInfo@(GInfo { gi_GraphInfo = actGraphInfo
-                         , gi_hetcatsOpts = opts
-                         }) title convGraph showLib = do
+createGraph gInfo@(GInfo { graphInfo = gi
+                         , hetcatsOpts = opts
+                         , libName = ln }) title convGraph showLib = do
  ost <- readIORef $ intState gInfo
  case i_state ost of
   Nothing -> return ()
-  Just ist -> do
-   let ln = i_ln ist
-       file = rmSuffix (libNameToFile opts ln) ++ prfSuffix
+  Just _ -> do
+   let file = rmSuffix (libNameToFile opts ln) ++ prfSuffix
    deselectEdgeTypes <- newIORef []
    globMenu <- createGlobalMenu gInfo convGraph showLib deselectEdgeTypes
-   GA.makegraphExt actGraphInfo
+   GA.makegraphExt gi
                   title
                   (createOpen gInfo file convGraph showLib)
                   (createSave gInfo file)
@@ -192,13 +192,12 @@ createSaveAs gInfo file = Just (
 createClose :: GInfo -> IO Bool
 createClose gInfo@(GInfo { windowCount = wc
                          , exitMVar = exit
-                         }) = do
+                         , libName = ln }) = do
  ost <- readIORef $ intState gInfo
  case i_state ost of
   Nothing -> return False
   Just ist -> do
    let le = i_libEnv ist
-       ln = i_ln ist
    case Map.lookup ln le of
     Just dgraph -> case openlock dgraph of
         Just lock -> do
@@ -224,16 +223,16 @@ createExit (GInfo {exitMVar = exit}) = putMVar exit ()
 -- | Creates the global menu
 createGlobalMenu :: GInfo -> ConvFunc -> LibFunc -> IORef [String]
                  -> IO [GlobalMenu]
-createGlobalMenu gInfo@(GInfo { gi_hetcatsOpts = opts
-                              , gi_GraphInfo = gi
-                              }) convGraph showLib deselectEdgeTypes =
+createGlobalMenu gInfo@(GInfo { hetcatsOpts = opts
+                              , graphInfo = gi
+                              , libName = ln })
+                 convGraph showLib deselectEdgeTypes =
  do
  ost <- readIORef $ intState gInfo
  case i_state ost of
   Nothing -> return []
-  Just ist -> do
+  Just _ -> do
    let ral = runAndLock gInfo
-       ln = i_ln ist
    return
     [GlobalMenu (Menu Nothing
      [ Button "Undo" $ ral $ undo gInfo True
@@ -299,14 +298,14 @@ createGlobalMenu gInfo@(GInfo { gi_hetcatsOpts = opts
      , Button "Save Graph for uDrawGraph" $ ral
               $ saveUDGraph gInfo (mapNodeTypes opts) $ mapEdgeTypes opts
      , Button "Save proof-script" $ ral
-              $ askSaveProofScript (gi_GraphInfo gInfo) $ intState gInfo
+              $ askSaveProofScript (graphInfo gInfo) $ intState gInfo
      ])
     ]
 
 -- | A list of all Node Types
 createNodeTypes :: GInfo -> ConvFunc -> LibFunc
                 -> [(DGNodeType,DaVinciNodeTypeParms GA.NodeValue)]
-createNodeTypes gInfo@(GInfo {gi_hetcatsOpts = opts}) cGraph showLib = map
+createNodeTypes gInfo@(GInfo {hetcatsOpts = opts}) cGraph showLib = map
   (\ (n, s, c) ->
     ( n
     , case nonRefType n of
@@ -320,7 +319,7 @@ createNodeTypes gInfo@(GInfo {gi_hetcatsOpts = opts}) cGraph showLib = map
 
 -- | the edge types (share strings to avoid typos)
 createEdgeTypes :: GInfo -> [(DGEdgeType,DaVinciArcTypeParms GA.EdgeValue)]
-createEdgeTypes gInfo@(GInfo {gi_hetcatsOpts = opts}) =
+createEdgeTypes gInfo@(GInfo {hetcatsOpts = opts}) =
   map (\(title, look, color, thm, extra) ->
         (title, look
             $$$ Color color
@@ -395,14 +394,13 @@ type ButtonMenu a = MenuPrim (Maybe String) (a -> IO ())
 -- | menu button for local menus
 createMenuButton :: String -> (Int -> DGraph -> IO ())
                  -> GInfo -> ButtonMenu GA.NodeValue
-createMenuButton title menuFun gInfo = Button title
+createMenuButton title menuFun gInfo@(GInfo { libName = ln }) = Button title
   $ \ (_, descr) -> do
     ost <- readIORef $ intState gInfo
     case i_state ost of
       Nothing -> return ()
       Just ist -> do
         let le = i_libEnv ist
-            ln = i_ln ist
             dGraph = lookupDGraph ln le
         runAndLock gInfo $  menuFun descr dGraph
         return ()
@@ -420,23 +418,21 @@ createLocalMenuButtonTranslateTheory gInfo =
    (added by KL)
 -}
 createLocalMenuTaxonomy :: GInfo -> ButtonMenu GA.NodeValue
-createLocalMenuTaxonomy ginfo = Menu (Just "Taxonomy graphs")
-  [ createMenuButton "Subsort graph" (passTh displaySubsortGraph) ginfo
-  , createMenuButton "Concept graph" (passTh displayConceptGraph) ginfo ]
-  where passTh displayFun descr _ =
-         do
-          ost <- readIORef $ intState ginfo
-          case i_state ost of
-           Nothing -> return ()
-           Just ist -> do
-             let ln = i_ln ist
-                 le = i_libEnv ist
-             r <- lookupTheoryOfNode le ln descr
-             case r of
-               Res.Result [] (Just (_le',n, gth)) ->
-                  displayFun (showDoc n "") gth
-          -- le is the changed LibEnv, have to modify
-               Res.Result ds _ -> showDiags defaultHetcatsOpts ds
+createLocalMenuTaxonomy ginfo@(GInfo { libName = ln }) =
+  Menu (Just "Taxonomy graphs")
+    [ createMenuButton "Subsort graph" (passTh displaySubsortGraph) ginfo
+    , createMenuButton "Concept graph" (passTh displayConceptGraph) ginfo ]
+  where
+    passTh displayFun descr _ = do
+      ost <- readIORef $ intState ginfo
+      case i_state ost of
+        Nothing -> return ()
+        Just ist -> do
+         let le = i_libEnv ist
+         r <- lookupTheoryOfNode le ln descr
+         case r of
+           Res.Result [] (Just (_le',n, gth)) -> displayFun (showDoc n "") gth
+           Res.Result ds _ -> showDiags defaultHetcatsOpts ds
 
 createLocalMenuButtonShowProofStatusOfNode :: GInfo -> ButtonMenu GA.NodeValue
 createLocalMenuButtonShowProofStatusOfNode gInfo =
@@ -516,7 +512,7 @@ getProofScriptFileName f
 
 -- | Displays a Save-As dialog and writes the proof-script.
 askSaveProofScript :: GA.GraphInfo -> IORef IntState -> IO ()
-askSaveProofScript graphInfo ch =
+askSaveProofScript gi ch =
     do
     h <- readIORef ch
     case undoList $ i_hist h of
@@ -527,11 +523,11 @@ askSaveProofScript graphInfo ch =
                                          , ("All Files", ["*"])] Nothing
       case maybeFilePath of
         Just fPath -> do
-           GA.showTemporaryMessage graphInfo "Saving proof script ..."
+           GA.showTemporaryMessage gi "Saving proof script ..."
            saveCommandHistory ch fPath
-           GA.showTemporaryMessage graphInfo $ "Proof script saved to " ++
+           GA.showTemporaryMessage gi $ "Proof script saved to " ++
                                             fPath ++ "!"
-        Nothing -> GA.showTemporaryMessage graphInfo "Aborted!"
+        Nothing -> GA.showTemporaryMessage gi "Aborted!"
 
 -- Saves the history of commands in a file.
 saveCommandHistory :: IORef IntState -> String -> IO ()

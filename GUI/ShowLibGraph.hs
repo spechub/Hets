@@ -19,7 +19,6 @@ import Driver.AnaLib
 import Static.DevGraph
 
 import GUI.UDGUtils as UDG
---import GUI.HTkUtils
 import GUI.Utils
 
 import GUI.GraphTypes
@@ -37,6 +36,7 @@ import Control.Concurrent.MVar
 import Control.Concurrent(threadDelay)
 
 import Interfaces.DataTypes
+import Interfaces.Utils
 
 type NodeArcList = ([DaVinciNode LIB_NAME],[DaVinciArc (IO String)])
 
@@ -83,42 +83,45 @@ reloadLibGraph gInfo depGRef nodeArcRef = do
 -- | Reloads all Libraries and the Library Dependency Graph
 reloadLibGraph' :: GInfo -> IORef DaVinciGraphTypeSyn -> IORef NodeArcList
                 -> IO ()
-reloadLibGraph' gInfo@(GInfo { gi_hetcatsOpts = opts }) depGRef nodeArcRef = do
+reloadLibGraph' gInfo@(GInfo { hetcatsOpts = opts
+                             , libName = ln }) depGRef nodeArcRef = do
   closeOpenWindows gInfo
-  return ()
-  ost <- readIORef $ intState gInfo
-  case i_state ost of
-    Nothing -> return ()
-    Just ist -> do
-      let ln = i_ln ist
-      putStrLn $ show ln
-      depG <- readIORef depGRef
-      (nodes', arcs) <- readIORef nodeArcRef
-      let libfile = libNameToFile opts ln
-      m <- anaLib opts { outtypes = [] } libfile
-      case m of
-        Nothing -> errorDialog "Error" $ "Error when reloading file '"
-                                         ++ libfile ++  "'"
-        Just (_, _) -> do
-          mapM_ (deleteArc depG) arcs
-          mapM_ (deleteNode depG) nodes'
-          addNodesAndArcs gInfo depG nodeArcRef
-          writeIORef depGRef depG
-          redraw depG
+  depG <- readIORef depGRef
+  (nodes', arcs) <- readIORef nodeArcRef
+  let libfile = libNameToFile opts ln
+  m <- anaLib opts { outtypes = [] } libfile
+  case m of
+    Nothing -> errorDialog "Error" $ "Error when reloading file '"
+                                     ++ libfile ++  "'"
+    Just (_, le) -> do
+      mapM_ (deleteArc depG) arcs
+      mapM_ (deleteNode depG) nodes'
+      addNodesAndArcs gInfo depG nodeArcRef
+      writeIORef depGRef depG
+      redraw depG
+      let ost = emptyIntState
+          nwst = case i_state ost of
+            Nothing -> ost
+            Just ist -> ost{ i_state = Just $ ist { i_libEnv = le
+                                                  , i_ln = ln}
+                           , filename = libfile}
+      writeIORef (intState gInfo) nwst
+      mShowGraph gInfo ln
+
 
 -- | Reloads the open graphs
 closeOpenWindows :: GInfo -> IO ()
 closeOpenWindows (GInfo { openGraphs = iorOpenGrpahs
                         , windowCount = wCount }) = do
   oGrpahs <- readIORef iorOpenGrpahs
-  mapM (GA.closeGraphWindow . gi_GraphInfo) $ Map.elems oGrpahs
+  mapM (GA.closeGraphWindow . graphInfo) $ Map.elems oGrpahs
   writeIORef iorOpenGrpahs Map.empty
   takeMVar wCount
   putMVar wCount 1
 
 -- | Adds the Librarys and the Dependencies to the Graph
 addNodesAndArcs :: GInfo -> DaVinciGraphTypeSyn -> IORef NodeArcList -> IO ()
-addNodesAndArcs gInfo@(GInfo { gi_hetcatsOpts = opts}) depG nodeArcRef = do
+addNodesAndArcs gInfo@(GInfo { hetcatsOpts = opts}) depG nodeArcRef = do
  ost <- readIORef $ intState gInfo
  case i_state ost of
   Nothing -> return ()
@@ -156,23 +159,23 @@ getLibDeps :: LibEnv -> [(LIB_NAME, LIB_NAME)]
 getLibDeps = Rel.toList . Rel.intransKernel . getLibDepRel
 
 mShowGraph :: GInfo -> LIB_NAME -> IO ()
-mShowGraph gInfo@(GInfo {gi_hetcatsOpts = opts}) ln = do
+mShowGraph gInfo@(GInfo {hetcatsOpts = opts}) ln = do
   putIfVerbose opts 3 "Converting Graph"
   gInfo' <- copyGInfo gInfo ln
   convertGraph gInfo' "Development Graph" showLibGraph
-  let gv = gi_GraphInfo gInfo'
-  GA.deactivateGraphWindow gv
+  let gi = graphInfo gInfo'
+  GA.deactivateGraphWindow gi
   hideNodes gInfo'
-  GA.redisplay gv
+  GA.redisplay gi
   threadDelay 2000000
-  GA.layoutImproveAll gv
-  GA.showTemporaryMessage gv "Development Graph initialized."
-  GA.activateGraphWindow gv
+  GA.layoutImproveAll gi
+  GA.showTemporaryMessage gi "Development Graph initialized."
+  GA.activateGraphWindow gi
   return ()
 
 -- | Displays the Specs of a Library in a Textwindow
 showSpec :: LibEnv -> LIB_NAME -> IO()
-showSpec le ln = 
+showSpec le ln =
   createTextDisplay ("Contents of " ++ show ln)
                     $ unlines . map show . Map.keys . globalEnv
                     $ lookupDGraph ln le
