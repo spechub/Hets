@@ -15,7 +15,7 @@ import List
 import Ratio
 import Maybe
 import GMP.IneqSolver
--- import Debug.Trace
+import Debug.Trace
 -- import Hugs.Observe
 -- trace :: String -> a -> a; trace _ a = a;
 
@@ -245,7 +245,7 @@ pmlbnd (rps,rns) =
 main code
 ---------
 -}
-{- Code not needed in CoLoSS+Parser
+--Code not needed in CoLoSS+Parser
 
 -- syntactic sugar
 (-->) :: L a -> L a -> L a
@@ -253,17 +253,17 @@ phi --> psi = Or (Neg phi) psi
 
 (/\) :: L a -> L a -> L a
 phi /\ psi = And phi psi
--}
+
 
 (\/) :: L a -> L a -> L a
 phi \/ psi = Or phi psi
 
-{-
+
 (<->) :: L a -> L a -> L a
 phi <-> psi = (phi --> psi) /\ (psi --> phi)
 
 p :: Int -> L a; p x = Atom x
--}
+
 
 -- negation
 neg :: L a -> L a; neg F = T; neg T = F; neg a = Neg a
@@ -271,7 +271,7 @@ neg :: L a -> L a; neg F = T; neg T = F; neg a = Neg a
 nneg :: L a -> L a; nneg F = T; nneg T = F; nneg (Neg phi) = phi; nneg phi = (Neg phi)
 
 
-{- Code not needed in CoLoSS + Parser
+-- Code not needed in CoLoSS + Parser
 
 infixr 8 /\
 infixr 6 \/
@@ -297,7 +297,7 @@ mpretty :: (Logic a) => [[L a]] -> String
 mpretty [] = "\n\t...finished"
 mpretty (m:ms) = "\n\t" ++ (show (map pretty m)) ++ mpretty(ms)
 
--}
+
 
 -- avoids []->[[]], otherwise F matches F
 listify :: [a] -> [[a]]
@@ -427,16 +427,16 @@ cnf phi = map (\(Clause (x, y)) -> (Clause (y, x))) (allsat (Neg phi))
 -- also any matching is in general a cnf and all of its clauses must hold
 provable :: (Logic a) => L a -> Bool
 -- without tracing:
-provable phi = all (\c -> any (all provable) ( match c)) (cnf phi)
+-- provable phi = all (\c -> any (all provable) ( match c)) (cnf phi)
 -- uncomment the following to enable tracing
-{-
+
 provable phi =	let cnfphi = cnf phi; cnflen = length cnfphi;
 				in	trace ("\n  rtp cnf: (" ++ (show cnflen) ++ ") " ++ show(map prettycl cnfphi) 
-					++ "\n  \tof " ++ (pretty phi)) $ 
+			 		++ "\n  \tof " ++ (pretty phi)) $ 
 						all (\c -> any (all provable) (
 					trace ("\n  rtp clause: " ++ (prettycl c) ++ " \n\tMatchings:" ++ (mpretty $ match c)) $ 
 						match c)) (cnfphi) 
--}
+
 
 -- clause to formula: avoids uneccessary Ts and Fs and prunes if possible
 c2f ::  (Eq a) => Clause a -> L a
