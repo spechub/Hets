@@ -258,6 +258,10 @@ transVar toks v = let
 mkSimplifiedSen :: Simplifier -> Isa.Term -> Isa.Sentence
 mkSimplifiedSen simpF t = mkSen $ evalState (simplify simpF t) 0
 
+mkBinConj :: Isa.Term -> Isa.Term -> Isa.Term
+mkBinConj t1 t2 = if t1 == true then t2 else if t2 == true then t1 else
+  binConj t1 t2
+
 transSentence :: Env -> Set.Set String -> Simplifier -> Le.Sentence
               -> Result Isa.Sentence
 transSentence sign tyToks simpF s = case s of
@@ -267,10 +271,7 @@ transSentence sign tyToks simpF s = case s of
       let et = case ty of
                  PartialVal _ -> mkTermAppl defOp t
                  _ -> t
-          bt = case nub $ condToList cs of
-                 [] -> et
-                 ncs -> if et == true then foldr1 binConj ncs else
-                            foldr binConj et ncs
+          bt = integrateCondInBool et cs
           st = mkSimplifiedSen simpF bt
       case ty of
         BoolType -> return st
@@ -346,7 +347,7 @@ unitOp :: Isa.Term
 unitOp = Tuplex [] NotCont
 
 noneOp :: Isa.Term
-noneOp = conDouble "noneOp"
+noneOp = conDouble "undefinedOp"
 
 whenElseOp :: Isa.Term
 whenElseOp = conDouble "whenElseOp"
@@ -450,7 +451,7 @@ transTerm sign tyToks toks pVars trm = case trm of
                   ef = cf $ termAppl uncurryOp existEqualOp
                   in ITC instfTy ef noCond
               | opId == eqId -> let
-                  ef = cf $ termAppl uncurryOp strongEqualOp
+                  ef = cf $ termAppl uncurryOp $ con eqV
                   in ITC instfTy ef noCond
               | opId == notId -> ITC fTy notOp noCond
               | opId == defId -> ITC instfTy (cf defOp) noCond
@@ -639,10 +640,6 @@ existEqualOp :: Isa.Term
 existEqualOp =
   con $ VName "existEqualOp" $ Just $ AltSyntax "(_ =e=/ _)"  [50, 51] 50
 
-strongEqualOp :: Isa.Term
-strongEqualOp =
-  con $ VName "strongEqualOp" $ Just $ AltSyntax "(_ =s=/ _)"  [50, 51] 50
-
 unpackOp :: Isa.Term -> Bool -> FunType -> ConvFun -> Isa.Term
 unpackOp fTrm isPf ft fConv = let isaF = convFun fConv in
   if isPf then mkTermAppl
@@ -656,11 +653,12 @@ unpackOp fTrm isPf ft fConv = let isaF = convFun fConv in
 integrateCondInBool :: Isa.Term -> Cond -> Isa.Term
 integrateCondInBool trm c = case nub $ condToList c of
   [] -> trm
-  ncs -> if trm == true then foldr1 binConj ncs else foldr binConj trm ncs
+  ncs -> foldr mkBinConj trm ncs
 
 integrateCondInPartial :: Isa.Term -> Cond -> Isa.Term
 integrateCondInPartial trm c = let b = cond2bool c in
-  if b == true then trm else If b trm noneOp NotCont
+  if b == true then trm else
+  mkTermAppl (mkTermAppl (conDouble "restrictOp") trm) b
 
 integrateCondInTotal :: Isa.Term -> Cond -> Isa.Term
 integrateCondInTotal = integrateCondInPartial . mkTermAppl mkPartial
@@ -671,7 +669,7 @@ addCond trm c = joinCond (Cond trm) c
 cond2bool :: Cond -> Isa.Term
 cond2bool c = case nub $ condToList c of
   [] -> true
-  ncs -> foldr1 binConj ncs
+  ncs -> foldr1 mkBinConj ncs
 
 -- adjust actual argument to expected argument type of function
 -- considering a definedness conditions
@@ -839,11 +837,11 @@ isLifted t = case t of
 
 splitArg :: Isa.Term -> (Isa.Term, Isa.Term)
 splitArg arg = case arg of
-  If b p (Const n _) _ | new n == "noneOp" ->
+  App (App (Const n _) p _) b _ | new n == "restrictOp" ->
       case p of
         App (Const pp _) t _ | new pp == "makePartial"
             -> (b, t)
-        _ -> (binConj b $ mkTermAppl defOp p, mkTermAppl makeTotal p)
+        _ -> (mkBinConj b $ mkTermAppl defOp p, mkTermAppl makeTotal p)
   _ -> (mkTermAppl defOp arg, mkTermAppl makeTotal arg)
 
 flipS :: String
@@ -856,19 +854,17 @@ mkTermAppl :: Isa.Term -> Isa.Term -> Isa.Term
 mkTermAppl fun arg = case (fun, arg) of
       (App (Const uc _) b _, Tuplex [l, r] _) | new uc == uncurryOpS ->
         let res = mkTermAppl (mkTermAppl b l) r in case b of
-          Const bin _ | elem (new bin) [eq, "existEqualOp", "strongEqualOp"] ->
+          Const bin _ | elem (new bin) [eq, "existEqualOp"] ->
             case isEquallyLifted l r of
               Just (_, la, ra) -> mkTermAppl (mkTermAppl (con eqV) la) ra
               _ -> if isLifted l || isLifted r
                    then mkTermAppl (mkTermAppl (con eqV) l) r
                    else let
-                     eqn = new bin
                      (lb, lt) = splitArg l
                      (rb, rt) = splitArg r
-                   in if eqn == "existEqualOp" then
-                      If (binConj lb rb)
-                        (mkTermAppl (mkTermAppl (con eqV) lt) rt)
-                        false NotCont
+                   in if new bin == "existEqualOp" then
+                      mkBinConj lb $ mkBinConj rb
+                      $ mkTermAppl (mkTermAppl (con eqV) lt) rt
                       else res
           _ -> res
       (App (Const mp _) f _, Tuplex [a, b] c)
