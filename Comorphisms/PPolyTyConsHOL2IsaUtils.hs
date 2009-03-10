@@ -514,16 +514,16 @@ instType f1 f2 = case (f1, f2) of
     (FunType a c, FunType b d) ->
          let c2 = instType c d
              c1 = instType a b
-        in  mkCompFun (mkResFun c2) $ mkArgFun $ invertConv c1
+        in mkCompFun (mkResFun c2) $ mkArgFun $ invertConv c1
     _ -> IdOp
 
 invertConv :: ConvFun -> ConvFun
 invertConv c = case c of
     Partial2bool -> Bool2partial
-    MapFun mv cf -> MapFun mv $ invertConv cf
-    ResFun cf -> ResFun $ invertConv cf
-    ArgFun cf -> ArgFun $ invertConv cf
-    CompFun c1 c2 -> CompFun (invertConv c2) (invertConv c1)
+    MapFun mv cf -> mkMapFun mv $ invertConv cf
+    ResFun cf -> mkResFun $ invertConv cf
+    ArgFun cf -> mkArgFun $ invertConv cf
+    CompFun c1 c2 -> mkCompFun (invertConv c2) (invertConv c1)
     _ -> IdOp
 
 data MapFun = MapFst | MapSnd | MapPartial
@@ -531,7 +531,15 @@ data MapFun = MapFst | MapSnd | MapPartial
 data LiftFun = LiftFst | LiftSnd
 
 data ConvFun =
-    IdOp | ConstNil | ConstTrue | MkPartial | Bool2partial | Partial2bool
+    IdOp
+  | Bool2partial
+  | Partial2bool
+  | Bool2bool
+  | Unit2bool
+  | Bool2unit
+  | Partial2partial
+  | MkPartial
+  | MkTotal
   | CompFun ConvFun ConvFun
   | MapFun MapFun ConvFun
   | LiftFun LiftFun ConvFun
@@ -576,6 +584,12 @@ convFun cvf = case cvf of
     IdOp -> idOp
     Bool2partial -> bool2partial
     Partial2bool -> defOp
+    Bool2bool -> idOp
+    Unit2bool -> constTrue
+    Bool2unit -> constNil
+    Partial2partial -> idOp
+    MkPartial -> mkPartial
+    MkTotal -> makeTotal
     LiftUnit rTy -> case rTy of
        UnitType -> liftUnit2unit
        BoolType -> liftUnit2bool
@@ -587,11 +601,7 @@ convFun cvf = case cvf of
             BoolType -> lift2bool
             PartialVal _ -> lift2partial
             _ -> mapPartial
-    CompFun f1 f2 ->
-        mkTermAppl (mkTermAppl compOp $ convFun f1) $ convFun f2
-    ConstNil -> constNil
-    ConstTrue -> constTrue
-    MkPartial -> mkPartial
+    CompFun f1 f2 -> mkTermAppl (mkTermAppl compOp $ convFun f1) $ convFun f2
     MapFun mf cv -> mkTermAppl (mapFun mf) $ convFun cv
     LiftFun lf cv -> let ccv = convFun cv in case lf of
         LiftFst -> mkTermAppl (mkTermAppl compOp
@@ -634,22 +644,81 @@ strongEqualOp =
   con $ VName "strongEqualOp" $ Just $ AltSyntax "(_ =s=/ _)"  [50, 51] 50
 
 unpackOp :: Isa.Term -> Bool -> FunType -> ConvFun -> Isa.Term
-unpackOp fTrm isPf ft fConv = if isPf then mkTermAppl
+unpackOp fTrm isPf ft fConv = let isaF = convFun fConv in
+  if isPf then mkTermAppl
   (mkTermAppl (case ft of
     UnitType -> conDouble "unpack2bool"
     BoolType -> conDouble "unpackBool"
     PartialVal _ -> conDouble "unpackPartial"
-    _ ->  conDouble "unpack2partial") $ convFun fConv) fTrm
-  else applConv fConv fTrm
+    _ ->  conDouble "unpack2partial") isaF) fTrm
+  else mkTermAppl isaF fTrm
+
+integrateCondInBool :: Isa.Term -> Cond -> Isa.Term
+integrateCondInBool trm c = case nub $ condToList c of
+  [] -> trm
+  ncs -> if trm == true then foldr1 binConj ncs else foldr binConj trm ncs
+
+integrateCondInPartial :: Isa.Term -> Cond -> Isa.Term
+integrateCondInPartial trm c = let b = cond2bool c in
+  if b == true then trm else If b trm noneOp NotCont
+
+integrateCondInTotal :: Isa.Term -> Cond -> Isa.Term
+integrateCondInTotal = integrateCondInPartial . mkTermAppl mkPartial
+
+addCond :: Isa.Term -> Cond -> Cond
+addCond trm c = joinCond (Cond trm) c
+
+cond2bool :: Cond -> Isa.Term
+cond2bool c = case nub $ condToList c of
+  [] -> true
+  ncs -> foldr1 binConj ncs
+
+-- adjust actual argument to expected argument type of function
+-- considering a definedness conditions
+adjustArgType :: FunType -> FunType -> Result ConvFun
+adjustArgType aTy ty = case (aTy, ty) of
+    (TupleType l, _) -> adjustArgType (foldl1 PairType l) ty
+    (_, TupleType l) -> adjustArgType aTy $ foldl1 PairType l
+    (BoolType, BoolType) -> return Bool2bool
+    (UnitType, UnitType) -> return IdOp
+    (PartialVal _, BoolType) -> return Bool2partial
+    (BoolType, PartialVal _) -> return Partial2bool
+    (UnitType, BoolType) -> return Bool2unit
+    (BoolType, UnitType) -> return Unit2bool
+    (PartialVal a, PartialVal b) -> do
+        c <- adjustArgType a b
+        return $ mkCompFun Partial2partial c
+    (a, PartialVal b) -> do
+        c <- adjustArgType a b
+        return $ mkCompFun MkTotal c
+    (PartialVal a, b) -> do
+        c <- adjustArgType a b
+        return $ mkCompFun MkPartial c
+    (PairType e1 e2, PairType a1 a2) -> do
+        c1 <- adjustArgType e1 a1
+        c2 <- adjustArgType e2 a2
+        return $ mkCompFun (mkMapFun MapSnd c2) $ mkMapFun MapFst c1
+    (FunType a c, FunType b d) -> do
+        aC <- adjustArgType b a
+        dC <- adjustArgType c d
+        return $ mkCompFun (mkResFun dC) $ mkArgFun aC
+    (TypeVar _, _) -> return IdOp
+    (_, TypeVar _) -> return IdOp
+    (ApplType i1 l1, ApplType i2 l2) | i1 == i2 && length l1 == length l2
+        -> do l <- mapM (\ (a, b) -> adjustArgType a b) $ zip l1 l2
+              if any isNotIdOp l
+                then fail "cannot adjust type application"
+                else return IdOp
+    _ -> fail "cannot adjust argument type"
 
 -- True means function type result was partial
-adjustMkAppl :: Isa.Term -> Cond -> Bool -> FunType -> FunType
+adjustMkApplOrig :: Isa.Term -> Cond -> Bool -> FunType -> FunType
              -> IsaTermCond -> Result IsaTermCond
-adjustMkAppl fTrm fCs isPf aTy rTy (ITC ty aTrm aCs) = do
+adjustMkApplOrig fTrm fCs isPf aTy rTy (ITC ty aTrm aCs) = do
   ((pfTy, fConv), (_, aConv)) <- adjustTypes aTy rTy ty
   return $ ITC (if isPf || pfTy then makePartialVal rTy else rTy)
-    (mkTermAppl (unpackOp fTrm isPf rTy fConv) $ applConv aConv aTrm)
-    $ joinCond fCs aCs
+    (mkTermAppl (unpackOp fTrm isPf rTy fConv)
+    $ mkTermAppl (convFun aConv) aTrm) $ joinCond fCs aCs
 
 -- True means require result type to be partial
 adjustTypes :: FunType -> FunType -> FunType
@@ -662,7 +731,7 @@ adjustTypes aTy rTy ty = case (aTy, ty) of
     (PartialVal _, BoolType) -> return ((False, IdOp), (aTy, Bool2partial))
     (BoolType, PartialVal _) -> return ((False, IdOp), (aTy, Partial2bool))
     (_, BoolType) -> return ((True, LiftUnit rTy), (ty, IdOp))
-    (BoolType, _) -> return ((False, IdOp), (aTy, ConstTrue))
+    (BoolType, _) -> return ((False, IdOp), (aTy, Unit2bool))
     (PartialVal a, PartialVal b) -> do
         q@(fp, (argTy, aTrm)) <- adjustTypes a rTy b
         return $ case argTy of
@@ -691,9 +760,8 @@ adjustTypes aTy rTy ty = case (aTy, ty) of
         ((cB, cF), (dT, dC)) <- adjustTypes c rTy d
         if cB || isNotIdOp cF
           then fail "cannot adjust result types of function type"
-          else return ((False, IdOp),
-                       (FunType aT dT,
-                        mkCompFun aF $ mkCompFun (mkResFun dC) $ mkArgFun aC))
+          else return ((False, IdOp), (FunType aT dT,
+                 mkCompFun aF $ mkCompFun (mkResFun dC) $ mkArgFun aC))
     (TypeVar _, _) -> return ((False, IdOp), (ty, IdOp))
     (_, TypeVar _) -> return ((False, IdOp), (aTy, IdOp))
     (ApplType i1 l1, ApplType i2 l2) | i1 == i2 && length l1 == length l2
@@ -704,19 +772,56 @@ adjustTypes aTy rTy ty = case (aTy, ty) of
                              (ApplType i1 $ map (fst . snd) l, IdOp))
     _ -> fail "cannot adjust types"
 
-applConv :: ConvFun -> Isa.Term -> Isa.Term
-applConv cnv t = case cnv of
-    IdOp -> t
-    _ -> mkTermAppl (convFun cnv) t
+adjustMkAppl :: Isa.Term -> Cond -> Bool -> FunType -> FunType
+             -> IsaTermCond -> Result IsaTermCond
+adjustMkAppl fTrm fCs isPf aTy rTy (ITC ty aTrm aCs) = do
+    aConv <- adjustArgType aTy ty
+    let (natrm, nacs) = applConv aConv (aTrm, aCs)
+        (nftrm, nfcs) = if isPf
+          then (mkTermAppl makeTotal fTrm, addCond (mkTermAppl defOp fTrm) fCs)
+          else (fTrm, fCs)
+    return $ ITC rTy (mkTermAppl nftrm natrm) $ joinCond nfcs nacs
+
+applConv :: ConvFun -> (Isa.Term, Cond) -> (Isa.Term, Cond)
+applConv cnv (t, c) = let r = (mkTermAppl (convFun cnv) t, c) in case cnv of
+    IdOp -> (t, c)
+    Bool2partial -> (mkTermAppl bool2partial $ integrateCondInBool t c, None)
+    Partial2bool -> (cond2bool $ addCond (mkTermAppl defOp t) c, None)
+    Bool2bool -> (integrateCondInBool t c, None)
+    Unit2bool -> (true, c)
+    Bool2unit -> (unitOp, addCond t c)
+    Partial2partial -> (integrateCondInPartial t c, None)
+    MkPartial -> (integrateCondInTotal t c, None)
+    MkTotal -> (mkTermAppl makeTotal t, addCond (mkTermAppl defOp t) c)
+    CompFun f1 f2 -> applConv f1 $ applConv f2 (t, c)
+    MapFun mf cv -> case t of
+      Tuplex [t1, t2] _ -> let
+        (c1, c2) = case c of
+          PairCond p1 p2 -> (p1, p2)
+          _ -> (c, c)
+        in case mf of
+        MapFst -> let
+          (nt1, nc1) = applConv cv (t1, c1)
+          in (Tuplex [nt1, t2] NotCont, PairCond nc1 c2)
+        MapSnd -> let
+          (nt2, nc2) = applConv cv $ (t2, c2)
+          in (Tuplex [t1, nt2] NotCont, PairCond c1 nc2)
+        MapPartial -> r
+      _ -> r
+    _ -> r
 
 mkArgFun :: ConvFun -> ConvFun
 mkArgFun c = case c of
     IdOp -> c
+    Bool2bool -> c
+    Partial2partial -> c
     _ -> ArgFun c
 
 mkResFun :: ConvFun -> ConvFun
 mkResFun c = case c of
     IdOp -> c
+    Bool2bool -> c
+    Partial2partial -> c
     _ -> ResFun c
 
 isEquallyLifted :: Isa.Term -> Isa.Term -> Maybe (Isa.Term, Isa.Term, Isa.Term)
@@ -731,6 +836,15 @@ isLifted :: Isa.Term -> Bool
 isLifted t = case t of
     App (Const f _) _ _ | new f == "makePartial" -> True
     _ -> False
+
+splitArg :: Isa.Term -> (Isa.Term, Isa.Term)
+splitArg arg = case arg of
+  If b p (Const n _) _ | new n == "noneOp" ->
+      case p of
+        App (Const pp _) t _ | new pp == "makePartial"
+            -> (b, t)
+        _ -> (binConj b $ mkTermAppl defOp p, mkTermAppl makeTotal p)
+  _ -> (mkTermAppl defOp arg, mkTermAppl makeTotal arg)
 
 flipS :: String
 flipS = "flip"
@@ -747,7 +861,15 @@ mkTermAppl fun arg = case (fun, arg) of
               Just (_, la, ra) -> mkTermAppl (mkTermAppl (con eqV) la) ra
               _ -> if isLifted l || isLifted r
                    then mkTermAppl (mkTermAppl (con eqV) l) r
-                   else res
+                   else let
+                     eqn = new bin
+                     (lb, lt) = splitArg l
+                     (rb, rt) = splitArg r
+                   in if eqn == "existEqualOp" then
+                      If (binConj lb rb)
+                        (mkTermAppl (mkTermAppl (con eqV) lt) rt)
+                        false NotCont
+                      else res
           _ -> res
       (App (Const mp _) f _, Tuplex [a, b] c)
           | new mp == "mapFst" -> Tuplex [mkTermAppl f a, b] c
@@ -857,9 +979,11 @@ mkApp sign tyToks toks pVars f arg = do
     let pv = case arg of -- dummy application of a unit argument
           TupleTerm [] _ -> return fTr
           _ -> mkError "wrong function type"  f
+    -- change this boolean to obtain the previous translation
+    let adjstAppl = if True then adjustMkAppl else adjustMkApplOrig
     adjustPos (getRange [f, arg]) $ case fTy of
-         FunType a r -> adjustMkAppl fTrm fCs False a r aTr
-         PartialVal (FunType a r) -> adjustMkAppl fTrm fCs True a r aTr
+         FunType a r -> adjstAppl fTrm fCs False a r aTr
+         PartialVal (FunType a r) -> adjstAppl fTrm fCs True a r aTr
          PartialVal _ -> pv
          BoolType -> pv
          _ -> mkError "not a function type" f
