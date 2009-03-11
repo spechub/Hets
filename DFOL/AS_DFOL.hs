@@ -3,43 +3,44 @@ Module      :  $Header$
 Description :  Abstract syntax for first-order logic with dependent types (DFOL)
 -}
 
-module DFOL.AS_BASIC_DFOL 
+module DFOL.AS_DFOL 
     (
-      SIG (..)                 -- datatype for signatures
+      SPEC (..)                -- datatype for specifications
+    , SPEC_ITEM (..)           -- datatype for specification items  
     , CONTEXT (..)             -- datatype for contexts
     , TYPE (..) 	       -- datatype for types
     , TERM (..)                -- datatype for terms
-    , FORMULA (..)             -- datatype for formulas
-    , BASIC_SPEC (..)          -- Basic Spec    
+    , FORMULA (..)             -- datatype for formulas    
     ) where
 
 import Common.Id
 import Common.Doc
 import Common.DocUtils
+import Common.AnnoState
 
 type NAME = Token
 
--- grammar for signatures
-data SIG = Sig [(NAME, TYPE)]
-           deriving (Show, Eq)
+-- a DFOL specification
+data SPEC = Spec [Annoted SPEC_ITEM] 
+            deriving Show
+			
+data SPEC_ITEM = Decl NAME TYPE
+               | Axiom FORMULA
+                 deriving Show  			
 
--- grammar for contexts 
-data CONTEXT = Context [(NAME, TYPE)]
-               deriving (Show, Eq)
-
--- grammar for types 
 data TYPE = Sort
           | Form
           | Univ TERM
           | Pi [(NAME, TYPE)] TYPE
             deriving (Show, Eq)
 
--- grammar for terms
 data TERM = Identifier NAME
           | Appl TERM [TERM]
             deriving (Show, Eq)
 
---grammar for formulas
+data CONTEXT = Context [(NAME, TYPE)]
+               deriving (Show, Eq)
+			
 data FORMULA = T
              | F
              | Pred TERM 
@@ -53,29 +54,28 @@ data FORMULA = T
              | Exists [(NAME, TYPE)] FORMULA
                deriving (Show, Eq)
 
--- a DFOL specification
-data BASIC_SPEC = Basic_spec SIG [FORMULA] 
-                  deriving Show
 
 -- pretty printing
-instance Pretty FORMULA where
-    pretty = printFormula
-instance Pretty BASIC_SPEC where
-    pretty = printBasicSpec
-instance Pretty SIG where
-    pretty = printSignature
-instance Pretty CONTEXT where
-    pretty = printContext
+instance Pretty SPEC where
+    pretty = printSpec
+instance Pretty SPEC_ITEM where
+    pretty = printSpecItem
 instance Pretty TYPE where
     pretty = printType
 instance Pretty TERM where
     pretty = printTerm
+instance Pretty FORMULA where
+    pretty = printFormula
+instance Pretty CONTEXT where
+    pretty = printContext
 
--- pretty printing for basic specs
-printBasicSpec :: BASIC_SPEC -> Doc
-printBasicSpec (Basic_spec sig axioms) = (pretty sig) $+$ (vcat $ map pretty axioms)
+printSpec :: SPEC -> Doc
+printSpec (Spec xs) = vcat $ map pretty xs
 
--- pretty printing for formulas
+printSpecItem :: SPEC_ITEM -> Doc
+printSpecItem (Decl n t) = pretty n <+> text "::" <+> pretty t
+printSpecItem (Axiom f) = pretty f
+
 printFormula :: FORMULA -> Doc
 printFormula (Negation f) = notDoc <+> printFormula f
 printFormula (Conjunction xs) = parens $ sepBy andDoc $ map printFormula xs
@@ -86,35 +86,27 @@ printFormula (T) = text "True"
 printFormula (F) = text "False"
 printFormula (Pred x) = pretty x
 printFormula (Equality x y) = parens $ pretty x <+> equals <+> pretty y
-printFormula (Forall xs f) = parens $ forallDoc <+> (hsep $ map printDecl xs) <+> printFormula f 
-printFormula (Exists xs f) = parens $ exists <+> (hsep $ map printDecl xs) <+> printFormula f
+printFormula (Forall xs f) = parens $ forallDoc <+> (hsep $ map printVar xs) <+> printFormula f 
+printFormula (Exists xs f) = parens $ exists <+> (hsep $ map printVar xs) <+> printFormula f
 			
--- pretty printing for terms
 printTerm :: TERM -> Doc
 printTerm (Identifier x) = pretty x
 printTerm (Appl f xs) = parens $ pretty f <+> (hsep $ map pretty xs)
 
--- pretty printing for types
 printType :: TYPE -> Doc
 printType (Sort) = text "Sort"
 printType (Form) = text "Form"
 printType (Univ t) = pretty t
-printType (Pi xs x) = text "Pi" <+> (hsep $ map printDecl xs) <+> printType x 
+printType (Pi xs x) = text "Pi" <+> (hsep $ map printVar xs) <+> printType x 
 
--- pretty printing for contexts
 printContext :: CONTEXT -> Doc
-printContext (Context xs) = parens $ hsep $ map printDecl xs
+printContext (Context xs) = parens $ hsep $ map printVar xs
 
--- pretty printing for signatures
-printSignature :: SIG -> Doc
-printSignature (Sig xs) = vcat $ map (\(c, t) -> pretty c <+> text "::" <+> pretty t) xs
-
--- auxiliary functions
+-- auxiliary functions for printing
 sepBy :: Doc -> [Doc] -> Doc
 sepBy _ [] = text ""
 sepBy _ (x:[]) = x
-sepBy separator (x:xs) = x <+> separator
-                           <+> (sepBy separator xs)
+sepBy separator (x:xs) = x <+> separator <+> (sepBy separator xs)
 
-printDecl :: (NAME, TYPE) -> Doc
-printDecl (n, t) = pretty n <+> text ":" <+> pretty t <> text "."
+printVar :: (NAME, TYPE) -> Doc
+printVar (n, t) = pretty n <+> text ":" <+> pretty t <> text "."

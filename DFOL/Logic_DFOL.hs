@@ -1,3 +1,3 @@
 module DFOL.Logic_DFOL where
 
-import DFOL.AS_BASIC_DFOL
+import DFOL.AS_DFOL
