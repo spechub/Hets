@@ -479,13 +479,14 @@ transTerm sign tyToks toks pVars trm = case trm of
         return $ ITC ty psiR cs
     TypedTerm t _q _ty _ -> transTerm sign tyToks toks pVars t
     LambdaTerm pats q body r -> do
-        p@(ITC ty _ _) <- transTerm sign tyToks toks pVars body
+        p@(ITC ty _ ncs) <- transTerm sign tyToks toks pVars body
         appendDiags $ case q of
             Partial -> []
             Total -> [Diag Warning
               ("partial lambda body in total abstraction: "
-               ++ showDoc body "") r | isPartialVal ty]
-        foldM (abstraction sign tyToks toks) p $ reverse pats
+               ++ showDoc body "") r
+                  | isPartialVal ty || cond2bool ncs /= true ]
+        foldM (abstraction sign tyToks toks) (integrateCond p) $ reverse pats
     LetTerm As.Let peqs body _ -> do
         (nPVars, nEqs) <- transLetEqs sign tyToks toks pVars peqs
         ITC bTy bTrm defCs <- transTerm sign tyToks toks nPVars body
@@ -500,6 +501,16 @@ transTerm sign tyToks toks pVars trm = case trm of
     ApplTerm t1 t2 _ -> mkApp sign tyToks toks pVars t1 t2
     _ -> fatal_error ("cannot translate term: " ++ showDoc trm "")
          $ getRange trm
+
+integrateCond :: IsaTermCond -> IsaTermCond
+integrateCond (ITC ty trm cs) = if cond2bool cs == true then
+  ITC ty trm None
+  else case ty of
+    PartialVal _ -> ITC ty (mkTermAppl (integrateCondInPartial cs) trm) None
+    BoolType -> ITC ty (mkTermAppl (integrateCondInBool cs) trm) None
+    _ -> ITC (makePartialVal ty)
+         (mkTermAppl (integrateCondInTotal cs) trm) None
+    -- return partial result type
 
 instType :: FunType -> FunType -> ConvFun
 instType f1 f2 = case (f1, f2) of
@@ -602,7 +613,7 @@ convFun cnd cvf = case cvf of
     Bool2unit -> constNil
     Partial2partial -> integrateCondInPartial cnd
     MkPartial b -> if b
-      then metaComp (integrateCondInPartial cnd) mkPartial
+      then integrateCondInTotal cnd
       else mkPartial
     MkTotal -> makeTotal
     LiftUnit rTy -> case rTy of
@@ -672,6 +683,9 @@ integrateCondInPartial c = let b = cond2bool c in
 
 metaComp :: Isa.Term -> Isa.Term -> Isa.Term
 metaComp = mkTermAppl . mkTermAppl compOp
+
+integrateCondInTotal :: Cond -> Isa.Term
+integrateCondInTotal c = metaComp (integrateCondInPartial c) mkPartial
 
 addCond :: Isa.Term -> Cond -> Cond
 addCond trm c = joinCond (Cond trm) c
