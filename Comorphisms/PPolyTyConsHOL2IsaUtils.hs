@@ -269,9 +269,10 @@ transSentence sign tyToks simpF s = case s of
       ITC ty t cs <-
         transTerm sign tyToks (getAssumpsToks $ assumps sign) Set.empty trm
       let et = case ty of
-                 PartialVal _ -> mkTermAppl defOp t
+                 PartialVal UnitType -> mkTermAppl defOp t
                  _ -> t
-          bt = integrateCondInBool et cs
+          bt = if et == true then cond2bool cs else
+                   mkTermAppl (integrateCondInBool cs) et
           st = mkSimplifiedSen simpF bt
       case ty of
         BoolType -> return st
@@ -387,9 +388,6 @@ instance Show Cond where
     CondList l -> intercalate " & " $ map show l
     PairCond p1 p2 -> '(' : shows p1 ", " ++ shows p2 ")"
 
-noCond :: Cond
-noCond = None
-
 joinCond :: Cond -> Cond -> Cond
 joinCond c1 c2 = let
   toCs c = case c of
@@ -432,31 +430,31 @@ transTerm sign tyToks toks pVars trm = case trm of
         instfTy <- funType $ substGen (if null is then Map.empty else
                     Map.fromList $ zipWith (\ (TypeArg _ _ _ _ i _ _) t
                                                 -> (i, t)) targs is) ty
-        let cf = mkTermAppl (convFun $ instType fTy instfTy)
+        let cf = mkTermAppl (convFun None $ instType fTy instfTy)
             unCurry f = let rf = termAppl uncurryOp $ con f in
-              ITC fTy rf noCond
+              ITC fTy rf None
         return $ case () of
           ()
-              | opId == trueId -> ITC fTy true noCond
-              | opId == falseId -> ITC fTy false noCond
+              | opId == trueId -> ITC fTy true None
+              | opId == falseId -> ITC fTy false None
               | opId == botId -> case instfTy of
                   PartialVal t -> ITC t (termAppl makeTotal noneOp) $ Cond false
                   _ -> ITC instfTy (cf noneOp) None
               | opId == andId -> unCurry conjV
               | opId == orId -> unCurry disjV
               | opId == implId -> unCurry implV
-              | opId == infixIf -> ITC fTy ifImplOp noCond
+              | opId == infixIf -> ITC fTy ifImplOp None
               | opId == eqvId -> unCurry eqV
               | opId == exEq -> let
                   ef = cf $ termAppl uncurryOp existEqualOp
-                  in ITC instfTy ef noCond
+                  in ITC instfTy ef None
               | opId == eqId -> let
                   ef = cf $ termAppl uncurryOp $ con eqV
-                  in ITC instfTy ef noCond
-              | opId == notId -> ITC fTy notOp noCond
-              | opId == defId -> ITC instfTy (cf defOp) noCond
-              | opId == whenElse -> ITC instfTy (cf whenElseOp) noCond
-              | opId == resId -> ITC instfTy (cf resOp) noCond
+                  in ITC instfTy ef None
+              | opId == notId -> ITC fTy notOp None
+              | opId == defId -> ITC instfTy (cf defOp) None
+              | opId == whenElse -> ITC instfTy (cf whenElseOp) None
+              | opId == resId -> ITC instfTy (cf resOp) None
               | otherwise -> let
                   ef = cf $ (for (isPlainFunType fTy - 1)
                                   $ termAppl uncurryOp)
@@ -464,7 +462,7 @@ transTerm sign tyToks toks pVars trm = case trm of
                   in case instfTy of
                        PartialVal t -> ITC t (termAppl makeTotal ef)
                          $ Cond $ termAppl defOp ef
-                       _ -> ITC instfTy ef noCond
+                       _ -> ITC instfTy ef None
     QuantifiedTerm quan varDecls phi _ -> do
         let qname = case quan of
                       Universal -> allS
@@ -492,13 +490,13 @@ transTerm sign tyToks toks pVars trm = case trm of
         (nPVars, nEqs) <- transLetEqs sign tyToks toks pVars peqs
         ITC bTy bTrm defCs <- transTerm sign tyToks toks nPVars body
         let pEs = map (\ (p, ITC _ t _) -> (p, t)) nEqs
-            cs = foldl joinCond noCond $ map (\ (_, ITC _ _ c) -> c) nEqs
+            cs = foldl joinCond None $ map (\ (_, ITC _ _ c) -> c) nEqs
         return $ ITC bTy (mkLetAppl pEs bTrm) $ joinCond cs defCs
     TupleTerm ts@(_ : _) _ -> do
         nTs <- mapM (transTerm sign tyToks toks pVars) ts
         return $ foldl1 ( \ (ITC s p cs) (ITC t e cr) ->
           ITC (PairType s t) (Tuplex [p, e] NotCont) $ pairCond cs cr) nTs
-    TupleTerm [] _ -> return $ ITC UnitType unitOp noCond
+    TupleTerm [] _ -> return $ ITC UnitType unitOp None
     ApplTerm t1 t2 _ -> mkApp sign tyToks toks pVars t1 t2
     _ -> fatal_error ("cannot translate term: " ++ showDoc trm "")
          $ getRange trm
@@ -507,7 +505,7 @@ instType :: FunType -> FunType -> ConvFun
 instType f1 f2 = case (f1, f2) of
     (TupleType l1, _) -> instType (foldl1 PairType l1) f2
     (_, TupleType l2) -> instType f1 $ foldl1 PairType l2
-    (PartialVal (TypeVar _), BoolType) -> Partial2bool
+    (PartialVal (TypeVar _), BoolType) -> Partial2bool True
     (PairType a c, PairType b d) ->
         let c2 = instType c d
             c1 = instType a b
@@ -520,7 +518,12 @@ instType f1 f2 = case (f1, f2) of
 
 invertConv :: ConvFun -> ConvFun
 invertConv c = case c of
-    Partial2bool -> Bool2partial
+    Partial2bool _ -> Bool2partial False
+    Bool2partial _ -> Partial2bool False
+    Unit2bool _ -> Bool2unit
+    Bool2unit -> Unit2bool False
+    MkPartial _ -> MkTotal
+    MkTotal -> MkPartial False
     MapFun mv cf -> mkMapFun mv $ invertConv cf
     ResFun cf -> mkResFun $ invertConv cf
     ArgFun cf -> mkArgFun $ invertConv cf
@@ -531,15 +534,19 @@ data MapFun = MapFst | MapSnd | MapPartial
 
 data LiftFun = LiftFst | LiftSnd
 
+{- the additional Bool indicates condition integration
+   Bool2bool and Partial2partial musst be mapped to IdOp
+   if the conditions should be ignored.
+   Bool2Unit and MkTotal can propagate out conditions -}
 data ConvFun =
     IdOp
-  | Bool2partial
-  | Partial2bool
+  | Bool2partial Bool
+  | Partial2bool Bool
   | Bool2bool
-  | Unit2bool
+  | Unit2bool Bool
   | Bool2unit
   | Partial2partial
-  | MkPartial
+  | MkPartial Bool
   | MkTotal
   | CompFun ConvFun ConvFun
   | MapFun MapFun ConvFun
@@ -580,16 +587,23 @@ mapFun mf = case mf of
 compOp :: Isa.Term
 compOp = con compV
 
-convFun :: ConvFun -> Isa.Term
-convFun cvf = case cvf of
+convFun :: Cond -> ConvFun -> Isa.Term
+convFun cnd cvf = case cvf of
     IdOp -> idOp
-    Bool2partial -> bool2partial
-    Partial2bool -> defOp
-    Bool2bool -> idOp
-    Unit2bool -> constTrue
+    Bool2partial b -> if b
+      then metaComp bool2partial $ integrateCondInBool cnd
+      else bool2partial
+    Partial2bool b -> if b
+      then metaComp (integrateCondInBool cnd) defOp
+      else defOp
+    Bool2bool -> integrateCondInBool cnd
+    Unit2bool b -> if b
+      then integrateCondInBool cnd else constTrue
     Bool2unit -> constNil
-    Partial2partial -> idOp
-    MkPartial -> mkPartial
+    Partial2partial -> integrateCondInPartial cnd
+    MkPartial b -> if b
+      then metaComp (integrateCondInPartial cnd) mkPartial
+      else mkPartial
     MkTotal -> makeTotal
     LiftUnit rTy -> case rTy of
        UnitType -> liftUnit2unit
@@ -602,19 +616,16 @@ convFun cvf = case cvf of
             BoolType -> lift2bool
             PartialVal _ -> lift2partial
             _ -> mapPartial
-    CompFun f1 f2 -> mkTermAppl (mkTermAppl compOp $ convFun f1) $ convFun f2
-    MapFun mf cv -> mkTermAppl (mapFun mf) $ convFun cv
-    LiftFun lf cv -> let ccv = convFun cv in case lf of
-        LiftFst -> mkTermAppl (mkTermAppl compOp
-                     $ mkTermAppl (mkTermAppl compOp uncurryOp) flipOp)
-                   $ mkTermAppl (mkTermAppl compOp
-                                $ mkTermAppl (mkTermAppl compOp
-                                $ mkTermAppl compOp ccv) flipOp) curryOp
-        LiftSnd -> mkTermAppl (mkTermAppl compOp uncurryOp) $
-                   mkTermAppl (mkTermAppl compOp $ mkTermAppl compOp ccv)
+    CompFun f1 f2 -> metaComp (convFun cnd f1) $ convFun cnd f2
+    MapFun mf cv -> mkTermAppl (mapFun mf) $ convFun cnd cv
+    LiftFun lf cv -> let ccv = convFun cnd cv in case lf of
+        LiftFst -> metaComp (metaComp uncurryOp flipOp)
+                   $ metaComp (metaComp (mkTermAppl compOp ccv) flipOp)
                    curryOp
-    ArgFun cv -> mkTermAppl (termAppl flipOp compOp) $ convFun cv
-    ResFun cv -> mkTermAppl compOp $ convFun cv
+        LiftSnd -> metaComp uncurryOp $ metaComp (mkTermAppl compOp ccv)
+                   curryOp
+    ArgFun cv -> mkTermAppl (termAppl flipOp compOp) $ convFun cnd cv
+    ResFun cv -> mkTermAppl compOp $ convFun cnd cv
 
 mapFst, mapSnd, mapPartial, idOp, bool2partial, constNil, constTrue,
     liftUnit2unit, liftUnit2bool, liftUnit2partial, liftUnit, lift2unit,
@@ -641,7 +652,7 @@ existEqualOp =
   con $ VName "existEqualOp" $ Just $ AltSyntax "(_ =e=/ _)"  [50, 51] 50
 
 unpackOp :: Isa.Term -> Bool -> FunType -> ConvFun -> Isa.Term
-unpackOp fTrm isPf ft fConv = let isaF = convFun fConv in
+unpackOp fTrm isPf ft fConv = let isaF = convFun None fConv in
   if isPf then mkTermAppl
   (mkTermAppl (case ft of
     UnitType -> conDouble "unpack2bool"
@@ -650,18 +661,17 @@ unpackOp fTrm isPf ft fConv = let isaF = convFun fConv in
     _ ->  conDouble "unpack2partial") isaF) fTrm
   else mkTermAppl isaF fTrm
 
-integrateCondInBool :: Isa.Term -> Cond -> Isa.Term
-integrateCondInBool trm c = case nub $ condToList c of
-  [] -> trm
-  ncs -> foldr mkBinConj trm ncs
+integrateCondInBool :: Cond -> Isa.Term
+integrateCondInBool c = let b = cond2bool c in
+  if b == true then idOp else mkTermAppl (con conjV) b
 
-integrateCondInPartial :: Isa.Term -> Cond -> Isa.Term
-integrateCondInPartial trm c = let b = cond2bool c in
-  if b == true then trm else
-  mkTermAppl (mkTermAppl (conDouble "restrictOp") trm) b
+integrateCondInPartial :: Cond -> Isa.Term
+integrateCondInPartial c = let b = cond2bool c in
+  if b == true then idOp else
+  mkTermAppl (mkTermAppl flipOp (conDouble "restrictOp")) b
 
-integrateCondInTotal :: Isa.Term -> Cond -> Isa.Term
-integrateCondInTotal = integrateCondInPartial . mkTermAppl mkPartial
+metaComp :: Isa.Term -> Isa.Term -> Isa.Term
+metaComp = mkTermAppl . mkTermAppl compOp
 
 addCond :: Isa.Term -> Cond -> Cond
 addCond trm c = joinCond (Cond trm) c
@@ -679,10 +689,10 @@ adjustArgType aTy ty = case (aTy, ty) of
     (_, TupleType l) -> adjustArgType aTy $ foldl1 PairType l
     (BoolType, BoolType) -> return Bool2bool
     (UnitType, UnitType) -> return IdOp
-    (PartialVal _, BoolType) -> return Bool2partial
-    (BoolType, PartialVal _) -> return Partial2bool
+    (PartialVal UnitType, BoolType) -> return $ Bool2partial True
+    (BoolType, PartialVal UnitType) -> return $ Partial2bool True
     (UnitType, BoolType) -> return Bool2unit
-    (BoolType, UnitType) -> return Unit2bool
+    (BoolType, UnitType) -> return $ Unit2bool True
     (PartialVal a, PartialVal b) -> do
         c <- adjustArgType a b
         return $ mkCompFun Partial2partial c
@@ -691,15 +701,18 @@ adjustArgType aTy ty = case (aTy, ty) of
         return $ mkCompFun MkTotal c
     (PartialVal a, b) -> do
         c <- adjustArgType a b
-        return $ mkCompFun MkPartial c
+        return $ mkCompFun (MkPartial True) c
     (PairType e1 e2, PairType a1 a2) -> do
         c1 <- adjustArgType e1 a1
         c2 <- adjustArgType e2 a2
-        return $ mkCompFun (mkMapFun MapSnd c2) $ mkMapFun MapFst c1
-    (FunType a c, FunType b d) -> do
-        aC <- adjustArgType b a
-        dC <- adjustArgType c d
-        return $ mkCompFun (mkResFun dC) $ mkArgFun aC
+        return . mkCompFun (mkMapFun MapSnd c2) $ mkMapFun MapFst c1
+    (FunType a b, FunType c d) -> do
+        aC <- adjustArgType a c -- function a -> c (a fixed)
+        dC <- adjustArgType b d -- function d -> b (b fixed)
+        -- (d -> b) o (c -> d) o (a -> c) :: a -> b
+        -- not not integrate cond treatment via invertConv . invertConv
+        return . mkCompFun (mkResFun . invertConv $ invertConv dC)
+          . mkArgFun $ invertConv aC
     (TypeVar _, _) -> return IdOp
     (_, TypeVar _) -> return IdOp
     (ApplType i1 l1, ApplType i2 l2) | i1 == i2 && length l1 == length l2
@@ -711,12 +724,12 @@ adjustArgType aTy ty = case (aTy, ty) of
 
 -- True means function type result was partial
 adjustMkApplOrig :: Isa.Term -> Cond -> Bool -> FunType -> FunType
-             -> IsaTermCond -> Result IsaTermCond
+                 -> IsaTermCond -> Result IsaTermCond
 adjustMkApplOrig fTrm fCs isPf aTy rTy (ITC ty aTrm aCs) = do
   ((pfTy, fConv), (_, aConv)) <- adjustTypes aTy rTy ty
-  return $ ITC (if isPf || pfTy then makePartialVal rTy else rTy)
+  return . ITC (if isPf || pfTy then makePartialVal rTy else rTy)
     (mkTermAppl (unpackOp fTrm isPf rTy fConv)
-    $ mkTermAppl (convFun aConv) aTrm) $ joinCond fCs aCs
+    $ mkTermAppl (convFun None aConv) aTrm) $ joinCond fCs aCs
 
 -- True means require result type to be partial
 adjustTypes :: FunType -> FunType -> FunType
@@ -726,10 +739,12 @@ adjustTypes aTy rTy ty = case (aTy, ty) of
     (_, TupleType l) -> adjustTypes aTy rTy $ foldl1 PairType l
     (BoolType, BoolType) -> return ((False, IdOp), (ty, IdOp))
     (UnitType, UnitType) -> return ((False, IdOp), (ty, IdOp))
-    (PartialVal _, BoolType) -> return ((False, IdOp), (aTy, Bool2partial))
-    (BoolType, PartialVal _) -> return ((False, IdOp), (aTy, Partial2bool))
+    (PartialVal _, BoolType) ->
+        return ((False, IdOp), (aTy, Bool2partial False))
+    (BoolType, PartialVal _) ->
+        return ((False, IdOp), (aTy, Partial2bool False))
     (_, BoolType) -> return ((True, LiftUnit rTy), (ty, IdOp))
-    (BoolType, _) -> return ((False, IdOp), (aTy, Unit2bool))
+    (BoolType, _) -> return ((False, IdOp), (aTy, Unit2bool False))
     (PartialVal a, PartialVal b) -> do
         q@(fp, (argTy, aTrm)) <- adjustTypes a rTy b
         return $ case argTy of
@@ -744,7 +759,7 @@ adjustTypes aTy rTy ty = case (aTy, ty) of
         q@(fp, (argTy, aTrm)) <- adjustTypes a rTy b
         return $ case argTy of
             PartialVal _ -> q
-            _ -> (fp, (PartialVal argTy, mkCompFun MkPartial aTrm))
+            _ -> (fp, (PartialVal argTy, mkCompFun (MkPartial False) aTrm))
     (PairType a c, PairType b d) -> do
         ((res2Ty, f2), (arg2Ty, a2)) <- adjustTypes c rTy d
         ((res1Ty, f1), (arg1Ty, a1)) <- adjustTypes a
@@ -781,16 +796,20 @@ adjustMkAppl fTrm fCs isPf aTy rTy (ITC ty aTrm aCs) = do
     return $ ITC rTy (mkTermAppl nftrm natrm) $ joinCond nfcs nacs
 
 applConv :: ConvFun -> (Isa.Term, Cond) -> (Isa.Term, Cond)
-applConv cnv (t, c) = let r = (mkTermAppl (convFun cnv) t, c) in case cnv of
+applConv cnv (t, c) = let
+  rt = mkTermAppl (convFun c cnv) t
+  r = (rt, c)
+  rb = (rt, None)
+  in case cnv of
     IdOp -> (t, c)
-    Bool2partial -> (mkTermAppl bool2partial $ integrateCondInBool t c, None)
-    Partial2bool -> (cond2bool $ addCond (mkTermAppl defOp t) c, None)
-    Bool2bool -> (integrateCondInBool t c, None)
-    Unit2bool -> (true, c)
-    Bool2unit -> (unitOp, addCond t c)
-    Partial2partial -> (integrateCondInPartial t c, None)
-    MkPartial -> (integrateCondInTotal t c, None)
-    MkTotal -> (mkTermAppl makeTotal t, addCond (mkTermAppl defOp t) c)
+    Bool2partial b -> if b then rb else r
+    Partial2bool b -> if b then rb else r
+    Bool2bool -> rb
+    Unit2bool b -> if b then rb else r
+    Bool2unit -> (rt, addCond t c)
+    Partial2partial -> rb
+    MkPartial b -> if b then rb else r
+    MkTotal -> (rt, addCond (mkTermAppl defOp t) c)
     CompFun f1 f2 -> applConv f1 $ applConv f2 (t, c)
     MapFun mf cv -> case t of
       Tuplex [t1, t2] _ -> let
