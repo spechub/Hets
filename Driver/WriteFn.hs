@@ -81,6 +81,7 @@ import OMDoc.OMDocOutput
 #endif
 
 import OMDoc.XmlInterface
+import OMDoc.Export
 
 writeVerbFile :: HetcatsOpts -> FilePath -> String -> IO ()
 writeVerbFile opts f str = do
@@ -97,6 +98,11 @@ writeLibEnv opts filePrefix lenv ln ot =
 #ifdef HXTFILTER
       OmdocOut -> hetsToOMDoc opts (ln, lenv) f
 #endif
+
+      ExperimentalOut -> 
+          writeVerbFile opts (filePrefix ++ ".xml")
+            $ xmlOut $ exportDGraph ln (lookupDGraph ln lenv)
+
       GraphOut (Dot showInternalNodeLabels) -> writeVerbFile opts f
         $ dotGraph showInternalNodeLabels dg
       _ -> return ()
@@ -155,6 +161,7 @@ writeTheory opts filePrefix ga
     DfgFile c -> writeSoftFOL opts f raw_gTh ln i c 0 "DFG"
     TPTPFile c -> writeSoftFOL opts f raw_gTh ln i c 1 "TPTP"
 
+{-
     ExperimentalOut -> do
       when (language_name lid == language_name CASL) $ do
         (sign, sens) <- coerceBasicTheory lid CASL "" th
@@ -162,6 +169,7 @@ writeTheory opts filePrefix ga
                        $ listToXml (export_signToOmdoc CASL i (getLIB_ID ln) sign)
                        ++ concatMap (listToXml . export_senToOmdoc
                                      CASL i (getLIB_ID ln) sign) sens
+-}
 
     TheoryFile d -> do
       if null $ show d then
