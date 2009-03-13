@@ -73,7 +73,8 @@ el_axiom_or_theorem True = el_axiom
 el_axiom_or_theorem False = el_theorem
 
 -- | often used attribute names
-at_id, at_version, at_cd, at_name, at_role, at_type, at_total, at_for :: QName
+at_id, at_version, at_cd, at_name, at_role, at_type, at_total, at_for
+ , at_from, at_to :: QName
 
 at_id = (blank_name { qName = "id", qPrefix = Just "xml" })
 at_version = (blank_name { qName = "version" })
@@ -83,6 +84,8 @@ at_role = (blank_name { qName = "role" })
 at_type = (blank_name { qName = "type" })
 at_total = (blank_name { qName = "total" })
 at_for = (blank_name { qName = "for" })
+at_from = (blank_name { qName = "from" })
+at_to = (blank_name { qName = "to" })
 
 
 {- |
@@ -129,9 +132,9 @@ instance XmlRepresentable TLElement where
          [Attr at_id tid]
          (listToXml elms)
          Nothing)
-    toXml TLView = 
+    toXml (TLView (CD cdFrom _) (CD cdTo _)) = 
         (Elem $ Element el_view
-         []
+         [Attr at_from $ cdFrom, Attr at_to $ cdTo]
          []
          Nothing)
     fromXml (Element n _ _ _)
@@ -160,9 +163,9 @@ instance XmlRepresentable TCElement where
          Nothing
     toXml (TCADT sds) = (Elem $ Element el_adt [] (listToXml sds) Nothing)
     toXml (TCComment c) = (makeComment c)
-    toXml TCImport = 
+    toXml (TCImport (CD cd cdbase)) = 
         Elem $ Element el_import
-         []
+         [Attr at_from $ cd] -- ++ (show cdbase)]
          []
          Nothing
     fromXml (Element n _ _ _)
