@@ -158,7 +158,7 @@ data FunType = UnitType | BoolType
   | TupleType [FunType]
   | ApplType Id [FunType]
   | TypeVar Id
-    deriving Eq
+    deriving (Eq, Show)
 
 isPartialVal :: FunType -> Bool
 isPartialVal t = case t of
@@ -541,9 +541,9 @@ invertConv c = case c of
     CompFun c1 c2 -> mkCompFun (invertConv c2) (invertConv c1)
     _ -> IdOp
 
-data MapFun = MapFst | MapSnd | MapPartial
+data MapFun = MapFst | MapSnd | MapPartial deriving Show
 
-data LiftFun = LiftFst | LiftSnd
+data LiftFun = LiftFst | LiftSnd deriving Show
 
 {- the additional Bool indicates condition integration
    Bool2bool and Partial2partial musst be mapped to IdOp
@@ -566,6 +566,7 @@ data ConvFun =
   | LiftPartial FunType
   | ResFun ConvFun
   | ArgFun ConvFun
+    deriving Show
 
 isNotIdOp :: ConvFun -> Bool
 isNotIdOp f = case f of
@@ -609,7 +610,7 @@ convFun cnd cvf = case cvf of
       else defOp
     Bool2bool -> integrateCondInBool cnd
     Unit2bool b -> if b
-      then integrateCondInBool cnd else constTrue
+      then metaComp (integrateCondInBool cnd) constTrue else constTrue
     Bool2unit -> constNil
     Partial2partial -> integrateCondInPartial cnd
     MkPartial b -> if b
