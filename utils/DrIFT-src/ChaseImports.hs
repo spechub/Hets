@@ -65,7 +65,7 @@ chaseImports' text indats =
 
 -- break DERIVEPATH into it's components
 breakPaths :: String -> [String]
-breakPaths x = case break (== ':') x of
+breakPaths x = case break (flip elem ":;") x of
         (p, _ : pp) -> p : breakPaths pp
         (p, []) -> [p]
 
