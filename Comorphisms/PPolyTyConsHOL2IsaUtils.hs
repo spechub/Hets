@@ -430,12 +430,7 @@ transTerm sign tyToks collectConds toks pVars trm = case trm of
     QualVar vd@(VarDecl var t _ _) -> do
         fTy <- funType t
         let vt = Isa.Free $ transVar toks var
-        return $ if Set.member vd pVars then
-          case fTy of
-            UnitType -> ITC BoolType vt None
-            _ -> if collectConds then
-                     ITC fTy (termAppl makeTotal vt) $ Cond $ termAppl defOp vt
-                 else ITC (makePartialVal fTy) vt None
+        return $ if Set.member vd pVars then ITC (makePartialVal fTy) vt None
           else ITC fTy vt None
     QualOp _ (PolyId opId _ _) ts@(TypeScheme targs ty _) is _ _ -> do
         fTy <- funType ty
@@ -471,11 +466,7 @@ transTerm sign tyToks collectConds toks pVars trm = case trm of
                   ef = cf $ (for (isPlainFunType fTy - 1)
                                   $ termAppl uncurryOp)
                              $ con $ transOpId sign tyToks opId ts
-                  in case instfTy of
-                       PartialVal t | collectConds ->
-                         ITC t (termAppl makeTotal ef)
-                         $ Cond $ termAppl defOp ef
-                       _ -> ITC instfTy ef None
+                  in ITC instfTy ef None
     QuantifiedTerm quan varDecls phi _ -> do
         let qname = case quan of
                       Universal -> allS
