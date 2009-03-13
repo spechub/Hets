@@ -38,14 +38,15 @@ import Data.Map as Map
 import Data.Set as Set
 
 -- | the identifier of a specification, combining the specid and the libid
-data SPEC_ID = SPEC_ID Id (Maybe LIB_ID)
+data SPEC_ID = SPEC_ID Id Id deriving Show
 
 exportSignToOmdoc ::  (Show f, Pretty e) => SIMPLE_ID -> LIB_ID -> Sign f e -> [TCElement]
 exportSignToOmdoc sid lid sign =
-    Set.toList (Set.map (sortSignToOmdoc spid sign) (sortSet sign))
+    [TCComment $ "Signature of Spec: " ++ (show spid)]
+ ++ Set.toList (Set.map (sortSignToOmdoc spid sign) (sortSet sign))
  ++ Map.elems (mapWithKey (funSignToOmdoc spid sign) (opMap sign))
  ++ Map.elems (mapWithKey (predSignToOmdoc spid sign) (predMap sign))
-     where spid = (SPEC_ID (simpleIdToId sid) (Just lid))
+     where spid = (SPEC_ID (simpleIdToId sid) (libIdToId lid))
 
 exportMorphismToOmdoc :: SIMPLE_ID -> LIB_ID -> Morphism f e ()
                       -> [TCElement]
@@ -56,7 +57,7 @@ exportMorphismToOmdoc _ _ _ = []
 exportSenToOmdoc :: Pretty f => SIMPLE_ID -> LIB_ID -> Sign f e -> Named(FORMULA f)
                  -> [TCElement]
 exportSenToOmdoc sid lid sign f =
-    let spid  = (SPEC_ID (simpleIdToId sid) (Just lid))
+    let spid  = (SPEC_ID (simpleIdToId sid) (libIdToId lid))
         sname = (senAttr f)
         sen   = sentence f
     in
@@ -98,26 +99,34 @@ buildADTArgument spid s = ADTArg (sortToOmdoc spid s) Nothing
 -------------------------- Theory constitutive --------------------------
 
 sortSignToOmdoc :: SPEC_ID -> Sign a e -> SORT -> TCElement
-sortSignToOmdoc spid _ s =
-    TCSymbol (idToName spid s) Nothing Typ
+sortSignToOmdoc spid _ s
+    | isLocalId spid s = TCSymbol (idToName spid s) Nothing Typ
+    -- TODO: Have to be filtered completely
+    | otherwise = TCComment $ "nonlocal symbol: " ++ (show s)
 
 
 -- assuming here the the set of pred types contains only one Element!
 predSignToOmdoc :: SPEC_ID -> Sign a e -> Id -> (Set.Set PredType) -> TCElement
-predSignToOmdoc spid _ p ptypes =
-    TCSymbol
-    (idToName spid p)
-    (Just (buildType spid Total (predArgs $ Set.findMin ptypes) Nothing))
-    Obj
+predSignToOmdoc spid _ p ptypes
+    | isLocalId spid p =
+        TCSymbol
+        (idToName spid p)
+        (Just (buildType spid Total (predArgs $ Set.findMin ptypes) Nothing))
+        Obj
+    -- TODO: Have to be filtered completely
+    | otherwise = TCComment $ "nonlocal predicate: " ++ (show p)
 
 
 -- assuming here the the set of op types contains only one Element!
 funSignToOmdoc :: SPEC_ID -> Sign a e -> Id -> (Set.Set OpType) -> TCElement
-funSignToOmdoc spid _ f ftypes =
-    TCSymbol
-    (idToName spid f)
-    (Just $ buildObjectType spid $ Set.findMin ftypes)
-    Obj
+funSignToOmdoc spid _ f ftypes
+    | isLocalId spid f =
+        TCSymbol
+        (idToName spid f)
+        (Just $ buildObjectType spid $ Set.findMin ftypes)
+        Obj
+    -- TODO: Have to be filtered completely
+    | otherwise = TCComment $ "nonlocal function: " ++ (show f)
 
 
 -------------------------- types --------------------------
@@ -152,7 +161,7 @@ addType spid s elm = OMA [(st_const "funtype"), (sortToOmdoc spid s), elm]
 --   the name, the spec and the lib
 data NameTriple = NameTriple { getName :: String,
                                getSpecName :: String,
-                               getLibName :: (Maybe String) } deriving Show
+                               getLibName :: String } deriving Show
 
 
 -- gn_Over has still to be outcoded
@@ -163,16 +172,22 @@ idToName spid = getName . (idToNameTriple spid)
 idToNameTriple :: SPEC_ID -> Id -> NameTriple
 idToNameTriple (SPEC_ID sid lid) s
     | isQualName s = NameTriple (show $ unQualName s)
-                     (show $ getNodeId s) Nothing
-    | otherwise = NameTriple (show s) (show sid) (fmap show lid)
+                     (show $ getNodeId s) (show $ getLibId s)
+    | otherwise = NameTriple (show s) (show sid) (show lid)
 
+
+isLocalId :: SPEC_ID -> Id -> Bool
+isLocalId (SPEC_ID s l) i@(Id _ [_, s1, l1] _)
+    | isQualName i = (s == s1) && (l == l1)
+    | otherwise = True
+isLocalId _ _ = True
 
 
 -------------------------- OpenMath --------------------------
 
 -- | probably outsource this to a generic module
 buildOMS :: NameTriple -> OMElement
-buildOMS (NameTriple i s l) = OMS (CD s l) $ OMName i
+buildOMS (NameTriple i s l) = OMS (CD s $ Just l) $ OMName i
 
 idToOmdoc :: SPEC_ID -> Id -> OMElement
 idToOmdoc spid s = buildOMS $ idToNameTriple spid s
@@ -189,7 +204,7 @@ predToOmdoc spid (Qual_pred_name i _ _) = idToOmdoc spid i
 predToOmdoc spid (Pred_name i) = idToOmdoc spid i
 
 -- | type attributes for terms can only consist of a single sort
-sortToOmdocAttribute :: SPEC_ID -> Id -> OMAttribute
+sortToOmdocAttribute :: SPEC_ID -> SORT -> OMAttribute
 sortToOmdocAttribute spid s = OMAttr (st_const "type") $ sortToOmdoc spid s
 
 varToOmdoc :: Token -> OMElement
