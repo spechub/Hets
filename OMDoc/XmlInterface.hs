@@ -256,7 +256,8 @@ instance XmlRepresentable OMAttribute where
 ---------------------------------------------------------------------
 -- TESTPART:
 
--- hets -v2 -o exp -n "Nat3" -O "/home/ewaryst/temp/omdtests" MyTest.casl
+-- hets -v2 -o exp -n "Nat3" -O "/home/ewaryst/temp/omdtests" TestSuite/Correct/omdoc_output_test.casl
+
 
 -- 
 -- h <- readFile "/tmp/Numbers.xml" >>= (\x -> return $ Hide $ Data.Maybe.fromJust $ parseXMLDoc x)
