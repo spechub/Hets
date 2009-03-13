@@ -1,7 +1,7 @@
 {- |
 Module      :  $Header$
 Description :  Hets-to-OMDoc conversion
-Copyright   :  (c) Ewaryst Schulz, DFKI 2009
+Copyright   :  (c) Ewaryst Schulz, DFKI Bremen 2009
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
 Maintainer  :  ewaryst.schulz@dfki.de
@@ -62,6 +62,7 @@ exportSenToOmdoc sid lid sign f =
         sen   = sentence f
     in
       case sen of
+        -- CLEANUP: Remove the comment later
         Sort_gen_ax cs b -> [TCComment $ show $ printTheoryFormula f,
                              buildADTsFromConstraints spid sign cs b]
         _ -> [TCAxiomOrTheorem True sname $ foldFormula
@@ -101,7 +102,7 @@ buildADTArgument spid s = ADTArg (sortToOmdoc spid s) Nothing
 sortSignToOmdoc :: SPEC_ID -> Sign a e -> SORT -> TCElement
 sortSignToOmdoc spid _ s
     | isLocalId spid s = TCSymbol (idToName spid s) Nothing Typ
-    -- TODO: Have to be filtered completely
+    -- CLEANUP: Have to be filtered completely
     | otherwise = TCComment $ "nonlocal symbol: " ++ (show s)
 
 
@@ -113,7 +114,7 @@ predSignToOmdoc spid _ p ptypes
         (idToName spid p)
         (Just (buildType spid Total (predArgs $ Set.findMin ptypes) Nothing))
         Obj
-    -- TODO: Have to be filtered completely
+    -- CLEANUP: Have to be filtered completely
     | otherwise = TCComment $ "nonlocal predicate: " ++ (show p)
 
 
@@ -125,7 +126,7 @@ funSignToOmdoc spid _ f ftypes
         (idToName spid f)
         (Just $ buildObjectType spid $ Set.findMin ftypes)
         Obj
-    -- TODO: Have to be filtered completely
+    -- CLEANUP: Have to be filtered completely
     | otherwise = TCComment $ "nonlocal function: " ++ (show f)
 
 
