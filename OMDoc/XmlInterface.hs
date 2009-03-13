@@ -25,6 +25,7 @@ module OMDoc.XmlInterface
     , listFromXml
     , makeComment
     , testXmlOut
+    , xmlOut
     ) where
 
 import OMDoc.DataTypes
@@ -263,6 +264,10 @@ instance XmlRepresentable OMAttribute where
 -- h <- readFile "/tmp/Numbers.xml" >>= (\x -> return $ Hide $ Data.Maybe.fromJust $ parseXMLDoc x)
 
 -- fmap (length . show . (filter (\x -> case x of (CRef _) -> True ; _ -> False)) . elContent) h
+
+xmlOut :: XmlRepresentable a => a -> String
+xmlOut obj = case toXml obj of (Elem e) -> ppTopElement e
+                               c -> ppContent c
 
 testXmlOut :: [Content] -> String
 testXmlOut l = ppTopElement $
