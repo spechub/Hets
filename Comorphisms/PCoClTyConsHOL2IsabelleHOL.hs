@@ -47,8 +47,9 @@ instance Comorphism PCoClTyConsHOL2IsabelleHOL
     targetLogic PCoClTyConsHOL2IsabelleHOL = Isabelle
     mapSublogic cid sl = if sl `isSubElem` sourceSublogic cid
                        then Just () else Nothing
-    map_theory PCoClTyConsHOL2IsabelleHOL = mapTheory simpForOption
+    map_theory PCoClTyConsHOL2IsabelleHOL =
+        mapTheory (Old Lift2Case) simpForOption
     map_morphism = mapDefaultMorphism
     map_sentence PCoClTyConsHOL2IsabelleHOL sign phi =
-       transSentence sign (typeToks sign) simpForOption phi
+        transSentence sign (typeToks sign) (Old Lift2Case) simpForOption phi
     isInclusionComorphism PCoClTyConsHOL2IsabelleHOL = True

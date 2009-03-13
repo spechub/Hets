@@ -18,6 +18,8 @@ module Comorphisms.PPolyTyConsHOL2IsaUtils
   , simpForOption
   , typeToks
   , transSentence
+  , SimpKind(..)
+  , OldSimpKind(..)
   ) where
 
 import HasCASL.As as As
@@ -45,12 +47,12 @@ import Data.List
 import Data.Maybe (catMaybes, isNothing)
 import Control.Monad (foldM)
 
-mapTheory :: Simplifier -> (Env, [Named Le.Sentence])
+mapTheory :: SimpKind -> Simplifier -> (Env, [Named Le.Sentence])
           -> Result (Isa.Sign, [Named Isa.Sentence])
-mapTheory simpF (env, sens) = do
+mapTheory simK simpF (env, sens) = do
       let tyToks = typeToks env
       sign <- transSignature env tyToks
-      isens <- mapM (mapNamedM $ transSentence env tyToks simpF) sens
+      isens <- mapM (mapNamedM $ transSentence env tyToks simK simpF) sens
       (dt, _, _) <- foldM (transDataEntries env tyToks)
          ([], Set.empty, Set.empty) $ filter (not . null) $ map
            (\ ns -> case sentence ns of
@@ -255,25 +257,31 @@ transVar toks v = let
     renVar t = if Set.member t toks then renVar $ "X_" ++ t else t
     in mkVName $ renVar s
 
-mkSimplifiedSen :: Simplifier -> Isa.Term -> Isa.Sentence
-mkSimplifiedSen simpF t = mkSen $ evalState (simplify simpF t) 0
+mkSimplifiedSen :: OldSimpKind -> Simplifier -> Isa.Term -> Isa.Sentence
+mkSimplifiedSen simK simpF t = mkSen $ evalState (simplify simK simpF t) 0
 
 mkBinConj :: Isa.Term -> Isa.Term -> Isa.Term
 mkBinConj t1 t2 = if t1 == true then t2 else if t2 == true then t1 else
   binConj t1 t2
 
-transSentence :: Env -> Set.Set String -> Simplifier -> Le.Sentence
+data OldSimpKind = NoSimpLift | Lift2Restrict | Lift2Case deriving Eq
+
+data SimpKind = New | Old OldSimpKind deriving Eq
+
+transSentence :: Env -> Set.Set String -> SimpKind -> Simplifier -> Le.Sentence
               -> Result Isa.Sentence
-transSentence sign tyToks simpF s = case s of
+transSentence sign tyToks simK simpF s = case s of
     Le.Formula trm -> do
-      ITC ty t cs <-
-        transTerm sign tyToks (getAssumpsToks $ assumps sign) Set.empty trm
+      ITC ty t cs <- transTerm sign tyToks (simK == New)
+        (getAssumpsToks $ assumps sign) Set.empty trm
       let et = case ty of
                  PartialVal UnitType -> mkTermAppl defOp t
                  _ -> t
           bt = if et == true then cond2bool cs else
                    mkTermAppl (integrateCondInBool cs) et
-          st = mkSimplifiedSen simpF bt
+          st = mkSimplifiedSen (case simK of
+                Old osim -> osim
+                New -> NoSimpLift) simpF bt
       case ty of
         BoolType -> return st
         PartialVal _ -> return st
@@ -283,7 +291,8 @@ transSentence sign tyToks simpF s = case s of
         ApplType _ _ -> error "transSentence: ApplType"
         _ -> return $ mkSen true
     DatatypeSen ls -> if all (\ (DataEntry _ _ gk _ _ _) -> gk == Generated) ls
-      then transSentence sign tyToks simpF $ Le.Formula $ inductionScheme ls
+      then transSentence sign tyToks simK simpF . Le.Formula
+               $ inductionScheme ls
       else return $ mkSen true
     ProgEqSen _ _ (ProgEq _ _ r) -> warning (mkSen true)
         "translation of sentence not implemented" r
@@ -308,25 +317,26 @@ transOpId sign tyToks op ts@(TypeScheme _ ty _) =
           Just str -> str
           Nothing  -> error $ "transOpId " ++ show op
 
-transLetEq :: Env -> Set.Set String -> Set.Set String -> Set.Set VarDecl
+transLetEq :: Env -> Set.Set String -> Bool -> Set.Set String -> Set.Set VarDecl
            -> ProgEq -> Result ((As.Term, Isa.Term), IsaTermCond)
-transLetEq sign tyToks toks pVars (ProgEq pat trm r) = do
+transLetEq sign tyToks collectConds toks pVars (ProgEq pat trm r) = do
     (_, op) <- transPattern sign tyToks toks pat
-    p@(ITC ty _ _) <- transTerm sign tyToks toks pVars trm
+    p@(ITC ty _ _) <- transTerm sign tyToks collectConds toks pVars trm
     if isPartialVal ty && not (isQualVar pat) then fatal_error
            ("rhs must not be partial for a tuple currently: "
             ++ showDoc trm "") r
        else return ((pat, op), p)
 
-transLetEqs :: Env -> Set.Set String -> Set.Set String -> Set.Set VarDecl
-            -> [ProgEq] -> Result (Set.Set VarDecl, [(Isa.Term, IsaTermCond)])
-transLetEqs sign tyToks toks pVars es = case es of
+transLetEqs :: Env -> Set.Set String -> Bool -> Set.Set String
+            -> Set.Set VarDecl -> [ProgEq]
+            -> Result (Set.Set VarDecl, [(Isa.Term, IsaTermCond)])
+transLetEqs sign tyToks collectConds toks pVars es = case es of
     [] -> return (pVars, [])
     e : r -> do
-      ((pat, op), pt@(ITC ty _ _)) <- transLetEq sign tyToks toks pVars e
-      (newPVars, newEs) <- transLetEqs sign tyToks toks (if isPartialVal ty
-                             then Set.insert (getQualVar pat) pVars
-                             else pVars) r
+      ((pat, op), pt@(ITC ty _ _)) <-
+        transLetEq sign tyToks collectConds toks pVars e
+      (newPVars, newEs) <- transLetEqs sign tyToks collectConds toks
+        (if isPartialVal ty then Set.insert (getQualVar pat) pVars else pVars) r
       return (newPVars, (op, pt) : newEs)
 
 isQualVar :: As.Term -> Bool
@@ -414,16 +424,18 @@ condToList c = case c of
 {- pass tokens that must not be used as variable names and pass those
 variables that are partial because they have been computed in a
 let-term. -}
-transTerm :: Env -> Set.Set String -> Set.Set String -> Set.Set VarDecl
-          -> As.Term -> Result IsaTermCond
-transTerm sign tyToks toks pVars trm = case trm of
+transTerm :: Env -> Set.Set String -> Bool -> Set.Set String
+          -> Set.Set VarDecl -> As.Term -> Result IsaTermCond
+transTerm sign tyToks collectConds toks pVars trm = case trm of
     QualVar vd@(VarDecl var t _ _) -> do
         fTy <- funType t
         let vt = Isa.Free $ transVar toks var
         return $ if Set.member vd pVars then
           case fTy of
-            UnitType -> ITC (makePartialVal fTy) vt None
-            _ -> ITC fTy (termAppl makeTotal vt) $ Cond $ termAppl defOp vt
+            UnitType -> ITC BoolType vt None
+            _ -> if collectConds then
+                     ITC fTy (termAppl makeTotal vt) $ Cond $ termAppl defOp vt
+                 else ITC (makePartialVal fTy) vt None
           else ITC fTy vt None
     QualOp _ (PolyId opId _ _) ts@(TypeScheme targs ty _) is _ _ -> do
         fTy <- funType ty
@@ -460,7 +472,8 @@ transTerm sign tyToks toks pVars trm = case trm of
                                   $ termAppl uncurryOp)
                              $ con $ transOpId sign tyToks opId ts
                   in case instfTy of
-                       PartialVal t -> ITC t (termAppl makeTotal ef)
+                       PartialVal t | collectConds ->
+                         ITC t (termAppl makeTotal ef)
                          $ Cond $ termAppl defOp ef
                        _ -> ITC instfTy ef None
     QuantifiedTerm quan varDecls phi _ -> do
@@ -474,12 +487,12 @@ transTerm sign tyToks toks pVars trm = case trm of
                                $ Abs (Isa.Free $ transVar toks var)
                                  phi' NotCont
                 GenTypeVarDecl _ ->  return phi'
-        ITC ty psi cs <- transTerm sign tyToks toks pVars phi
+        ITC ty psi cs <- transTerm sign tyToks collectConds toks pVars phi
         psiR <- foldM quantify psi $ reverse varDecls
         return $ ITC ty psiR cs
-    TypedTerm t _q _ty _ -> transTerm sign tyToks toks pVars t
+    TypedTerm t _q _ty _ -> transTerm sign tyToks collectConds toks pVars t
     LambdaTerm pats q body r -> do
-        p@(ITC ty _ ncs) <- transTerm sign tyToks toks pVars body
+        p@(ITC ty _ ncs) <- transTerm sign tyToks collectConds toks pVars body
         appendDiags $ case q of
             Partial -> []
             Total -> [Diag Warning
@@ -488,17 +501,18 @@ transTerm sign tyToks toks pVars trm = case trm of
                   | isPartialVal ty || cond2bool ncs /= true ]
         foldM (abstraction sign tyToks toks) (integrateCond p) $ reverse pats
     LetTerm As.Let peqs body _ -> do
-        (nPVars, nEqs) <- transLetEqs sign tyToks toks pVars peqs
-        ITC bTy bTrm defCs <- transTerm sign tyToks toks nPVars body
+        (nPVars, nEqs) <- transLetEqs sign tyToks collectConds toks pVars peqs
+        ITC bTy bTrm defCs <-
+          transTerm sign tyToks collectConds toks nPVars body
         let pEs = map (\ (p, ITC _ t _) -> (p, t)) nEqs
             cs = foldl joinCond None $ map (\ (_, ITC _ _ c) -> c) nEqs
         return $ ITC bTy (mkLetAppl pEs bTrm) $ joinCond cs defCs
     TupleTerm ts@(_ : _) _ -> do
-        nTs <- mapM (transTerm sign tyToks toks pVars) ts
+        nTs <- mapM (transTerm sign tyToks collectConds toks pVars) ts
         return $ foldl1 ( \ (ITC s p cs) (ITC t e cr) ->
           ITC (PairType s t) (Tuplex [p, e] NotCont) $ pairCond cs cr) nTs
     TupleTerm [] _ -> return $ ITC UnitType unitOp None
-    ApplTerm t1 t2 _ -> mkApp sign tyToks toks pVars t1 t2
+    ApplTerm t1 t2 _ -> mkApp sign tyToks collectConds toks pVars t1 t2
     _ -> fatal_error ("cannot translate term: " ++ showDoc trm "")
          $ getRange trm
 
@@ -641,7 +655,7 @@ convFun cnd cvf = case cvf of
 
 mapFst, mapSnd, mapPartial, idOp, bool2partial, constNil, constTrue,
     liftUnit2unit, liftUnit2bool, liftUnit2partial, liftUnit, lift2unit,
-    lift2bool, lift2partial, mkPartial :: Isa.Term
+    lift2bool, lift2partial, mkPartial, restrict :: Isa.Term
 
 mapFst = conDouble "mapFst"
 mapSnd = conDouble "mapSnd"
@@ -658,6 +672,7 @@ lift2unit = conDouble "lift2unit"
 lift2bool = conDouble "lift2bool"
 lift2partial = conDouble "lift2partial"
 mkPartial = conDouble "makePartial"
+restrict = conDouble "restrictOp"
 
 existEqualOp :: Isa.Term
 existEqualOp =
@@ -680,7 +695,7 @@ integrateCondInBool c = let b = cond2bool c in
 integrateCondInPartial :: Cond -> Isa.Term
 integrateCondInPartial c = let b = cond2bool c in
   if b == true then idOp else
-  mkTermAppl (mkTermAppl flipOp (conDouble "restrictOp")) b
+  mkTermAppl (mkTermAppl flipOp restrict) b
 
 metaComp :: Isa.Term -> Isa.Term -> Isa.Term
 metaComp = mkTermAppl . mkTermAppl compOp
@@ -983,34 +998,44 @@ simpForPairs l v2 nF nArg = do
      If v1 (if new l == "mapPartial" then mkTermAppl mkPartial nF else nF)
             (if new l == "lift2bool" then false else noneOp) NotCont
 
-simplify :: Simplifier -> Isa.Term -> State Int Isa.Term
-simplify simpF trm = case trm of
+simplify :: OldSimpKind -> Simplifier -> Isa.Term -> State Int Isa.Term
+simplify simK simpF trm = case trm of
     App (App (Const l _) f _) arg _
-        | elem (new l) ["lift2bool", "lift2partial", "mapPartial"] -> do
+      | simK /= NoSimpLift && elem (new l)
+        ["lift2bool", "lift2partial", "mapPartial"] -> do
+     nArg <- simplify simK simpF arg
+     let lf = new l
+         res = simK == Lift2Restrict
+     if res && lf == "lift2partial" then return . mkTermAppl
+         (mkTermAppl restrict . mkTermAppl f $ mkTermAppl makeTotal nArg)
+         $ mkTermAppl defOp nArg
+         else if res && lf == "mapPartial" then return . mkTermAppl
+          (mkTermAppl restrict . mkTermAppl mkPartial
+                   . mkTermAppl f $ mkTermAppl makeTotal nArg)
+          $ mkTermAppl defOp nArg
+         else do
       n <- freshIndex
       let pvar = mkFree $ "Xc" ++ show n
-      nF <- simplify simpF $ mkTermAppl f pvar
-      nArg <- simplify simpF arg
+      nF <- simplify simK simpF $ mkTermAppl f pvar
       simpF l pvar nF nArg
     App f arg c -> do
-        nF <- simplify simpF f
-        nArg <- simplify simpF arg
+        nF <- simplify simK simpF f
+        nArg <- simplify simK simpF arg
         return $ App nF nArg c
     Abs v t c -> do
-        nT <- simplify simpF t
+        nT <- simplify simK simpF t
         return $ Abs v nT c
     _ -> return trm
 
-mkApp :: Env -> Set.Set String -> Set.Set String -> Set.Set VarDecl -> As.Term
-      -> As.Term -> Result IsaTermCond
-mkApp sign tyToks toks pVars f arg = do
-    fTr@(ITC fTy fTrm fCs) <- transTerm sign tyToks toks pVars f
-    aTr <- transTerm sign tyToks toks pVars arg
+mkApp :: Env -> Set.Set String -> Bool -> Set.Set String -> Set.Set VarDecl
+      -> As.Term -> As.Term -> Result IsaTermCond
+mkApp sign tyToks collectConds toks pVars f arg = do
+    fTr@(ITC fTy fTrm fCs) <- transTerm sign tyToks collectConds toks pVars f
+    aTr <- transTerm sign tyToks collectConds toks pVars arg
     let pv = case arg of -- dummy application of a unit argument
           TupleTerm [] _ -> return fTr
           _ -> mkError "wrong function type"  f
-    -- change this boolean to obtain the previous translation
-    let adjstAppl = if True then adjustMkAppl else adjustMkApplOrig
+        adjstAppl = if collectConds then adjustMkAppl else adjustMkApplOrig
     adjustPos (getRange [f, arg]) $ case fTy of
          FunType a r -> adjstAppl fTrm fCs False a r aTr
          PartialVal (FunType a r) -> adjstAppl fTrm fCs True a r aTr
@@ -1030,7 +1055,7 @@ isPatternType trm = case trm of
 transPattern :: Env -> Set.Set String -> Set.Set String -> As.Term
              -> Result (FunType, Isa.Term)
 transPattern sign tyToks toks pat = do
-    ITC ty trm cs <- transTerm sign tyToks toks Set.empty pat
+    ITC ty trm cs <- transTerm sign tyToks False toks Set.empty pat
     case pat of
       TupleTerm [] _ -> return (ty, mkFree "_")
       _ -> if not (isPatternType pat) || isPartialVal ty

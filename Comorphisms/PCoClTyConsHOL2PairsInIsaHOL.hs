@@ -47,9 +47,9 @@ instance Comorphism PCoClTyConsHOL2PairsInIsaHOL
     mapSublogic cid sl = if sl `isSubElem` sourceSublogic cid
                        then Just () else Nothing
     map_theory PCoClTyConsHOL2PairsInIsaHOL th = do
-      (sig, sens) <- mapTheory simpForPairs th
+      (sig, sens) <- mapTheory New simpForPairs th
       return (sig { baseSig = MainHCPairs_thy }, sens)
     map_morphism = mapDefaultMorphism
     map_sentence PCoClTyConsHOL2PairsInIsaHOL sign phi =
-       transSentence sign (typeToks sign) simpForPairs phi
+       transSentence sign (typeToks sign) New simpForPairs phi
     isInclusionComorphism PCoClTyConsHOL2PairsInIsaHOL = True
