@@ -322,6 +322,9 @@ floatingS = "floating"
 forallS :: String
 forallS = "forall"
 
+formS :: String
+formS = "form"
+
 freeS :: String
 freeS = "free"
 
@@ -393,6 +396,9 @@ ofS = "of"
 
 opS :: String
 opS = "op"
+
+piS :: String
+piS = "Pi"
 
 precS :: String
 precS = "prec"

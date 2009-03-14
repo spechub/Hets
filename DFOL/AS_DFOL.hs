@@ -4,43 +4,38 @@ Description :  Abstract syntax for first-order logic with dependent types (DFOL)
 -}
 
 module DFOL.AS_DFOL
-    (
-      SPEC (..)                -- datatype for specifications
-    , SPEC_ITEM (..)           -- datatype for specification items
-    , CONTEXT (..)             -- datatype for contexts
+   {- (
+      BASIC_SPEC (..)          -- datatype for specifications
+    , BASIC_ITEM (..)          -- datatype for specification items
     , TYPE (..)                -- datatype for types
     , TERM (..)                -- datatype for terms
     , FORMULA (..)             -- datatype for formulas
-    ) where
+    ) -} where
 
 import Common.AS_Annotation
 import Common.Id
 import Common.Doc
 import Common.DocUtils
-import Common.AnnoState
 
 type NAME = Token
 
 -- a DFOL specification
-data SPEC = Spec [Annoted SPEC_ITEM]
-            deriving Show
+data BASIC_SPEC = Basic_spec [Annoted BASIC_ITEM]
+                  deriving Show
 
-data SPEC_ITEM = Decl NAME TYPE
-               | Axiom FORMULA
-                 deriving Show
+data BASIC_ITEM = Decl [NAME] TYPE
+                | Axiom FORMULA
+                  deriving Show
 
 data TYPE = Sort
           | Form
           | Univ TERM
-          | Pi [(NAME, TYPE)] TYPE
+          | Pi [([NAME],TYPE)] TYPE
             deriving (Show, Eq)
 
 data TERM = Identifier NAME
           | Appl TERM [TERM]
             deriving (Show, Eq)
-
-data CONTEXT = Context [(NAME, TYPE)]
-               deriving (Show, Eq)
 
 data FORMULA = T
              | F
@@ -51,31 +46,28 @@ data FORMULA = T
              | Disjunction [FORMULA]
              | Implication FORMULA FORMULA
              | Equivalence FORMULA FORMULA
-             | Forall [(NAME, TYPE)] FORMULA
-             | Exists [(NAME, TYPE)] FORMULA
+             | Forall [([NAME],TYPE)] FORMULA
+             | Exists [([NAME],TYPE)] FORMULA
                deriving (Show, Eq)
 
-
 -- pretty printing
-instance Pretty SPEC where
-    pretty = printSpec
-instance Pretty SPEC_ITEM where
-    pretty = printSpecItem
+instance Pretty BASIC_SPEC where
+    pretty = printBasicSpec
+instance Pretty BASIC_ITEM where
+    pretty = printBasicItem
 instance Pretty TYPE where
     pretty = printType
 instance Pretty TERM where
     pretty = printTerm
 instance Pretty FORMULA where
     pretty = printFormula
-instance Pretty CONTEXT where
-    pretty = printContext
 
-printSpec :: SPEC -> Doc
-printSpec (Spec xs) = vcat $ map pretty xs
+printBasicSpec :: BASIC_SPEC -> Doc
+printBasicSpec (Basic_spec xs) = vcat $ map pretty xs
 
-printSpecItem :: SPEC_ITEM -> Doc
-printSpecItem (Decl n t) = pretty n <+> text "::" <+> pretty t
-printSpecItem (Axiom f) = pretty f
+printBasicItem :: BASIC_ITEM -> Doc
+printBasicItem (Decl ns t) = printNames ns <+> text "::" <+> printType t
+printBasicItem (Axiom f) = printFormula f
 
 printFormula :: FORMULA -> Doc
 printFormula (Negation f) = notDoc <+> printFormula f
@@ -100,14 +92,16 @@ printType (Form) = text "Form"
 printType (Univ t) = pretty t
 printType (Pi xs x) = text "Pi" <+> (hsep $ map printVar xs) <+> printType x
 
-printContext :: CONTEXT -> Doc
-printContext (Context xs) = parens $ hsep $ map printVar xs
-
 -- auxiliary functions for printing
 sepBy :: Doc -> [Doc] -> Doc
 sepBy _ [] = text ""
-sepBy _ (x:[]) = x
-sepBy separator (x:xs) = x <+> separator <+> (sepBy separator xs)
+sepBy _ [x] = x
+sepBy separator (x:xs) = x <+> separator <+> sepBy separator xs
 
-printVar :: (NAME, TYPE) -> Doc
-printVar (n, t) = pretty n <+> text ":" <+> pretty t <> text "."
+printNames :: [NAME] -> Doc
+printNames [] = text ""
+printNames [n] = pretty n
+printNames (n:ns) = pretty n <> comma <+> printNames ns
+
+printVar :: ([NAME], TYPE) -> Doc
+printVar (ns, t) = printNames ns <+> colon <+> pretty t <> dot  
