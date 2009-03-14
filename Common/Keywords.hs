@@ -233,7 +233,7 @@ ren_proc_openS = "[["
 ren_proc_closeS :: String
 ren_proc_closeS = "]]"
 
--- * letter keywords taken form Keywords.txt
+-- * letter keywords taken from Keywords.txt
 
 andS :: String
 andS = "and"
@@ -322,9 +322,6 @@ floatingS = "floating"
 forallS :: String
 forallS = "forall"
 
-formS :: String
-formS = "form"
-
 freeS :: String
 freeS = "free"
 
@@ -396,9 +393,6 @@ ofS = "of"
 
 opS :: String
 opS = "op"
-
-piS :: String
-piS = "Pi"
 
 precS :: String
 precS = "prec"
