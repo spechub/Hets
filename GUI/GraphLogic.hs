@@ -44,8 +44,7 @@ module GUI.GraphLogic
     , applyChanges
     ) where
 
-import Logic.Logic(conservativityCheck,map_sen, comp)
-import Logic.Coerce(coerceSign, coerceMorphism)
+import Logic.Coerce(coerceSign)
 import Logic.Grothendieck
 import Logic.Comorphism
 import Logic.Prover
@@ -79,7 +78,6 @@ import qualified GUI.HTkUtils as HTk
 
 import Common.DocUtils (showDoc)
 import Common.AS_Annotation (isAxiom)
-import Common.Consistency
 import Common.ExtSign
 import Common.LibName
 import Common.Result as Res
@@ -93,7 +91,7 @@ import Driver.AnaLib(anaLib)
 
 import Data.IORef
 import Data.Char(toLower)
-import Data.List(partition, delete)
+import Data.List(partition, delete, isPrefixOf)
 import Data.Maybe
 import Data.Graph.Inductive.Graph (Node, LEdge, LNode)
 import qualified Data.Map as Map
@@ -104,6 +102,7 @@ import Control.Concurrent.MVar
 
 import Interfaces.History
 import Interfaces.DataTypes
+import Interfaces.Utils
 
 -- | Locks the global lock and runs function
 runAndLock :: GInfo -> IO () -> IO ()
@@ -644,9 +643,11 @@ showEdgeInfo descr me = case me of
   Nothing -> errorDialog "Error"
     ("edge " ++ show descr ++ " has no corresponding edge"
      ++ "in the development graph")
-
+{-
 conservativityRule :: DGRule
 conservativityRule = DGRule "ConservativityCheck"
+-}
+
 
 -- | check conservativity of the edge
 checkconservativityOfEdge :: Int -> GInfo -> Maybe (LEdge DGLinkLab) -> IO ()
@@ -656,109 +657,29 @@ checkconservativityOfEdge _ gInfo@(GInfo{ graphInfo = gi
  ost <- readIORef $ intState gInfo
  case i_state ost of
   Nothing -> return ()
-  Just ist -> do
-   let libEnv' = i_libEnv ist
-   lockGlobal gInfo
-   let (_, thTar) =
-        case computeTheory True libEnv' ln target of
-          Res.Result _ (Just th1) -> th1
-          _ -> error "checkconservativityOfEdge: computeTheory"
-   G_theory lid _sign _ sensTar _ <- return thTar
-   GMorphism cid _ _ morphism2 _ <- return $ dgl_morphism linklab
-   morphism2' <- coerceMorphism (targetLogic cid) lid
-                "checkconservativityOfEdge2" morphism2
-   let compMor = case dgn_sigma $ labDG (lookupDGraph ln libEnv') target of
-         Nothing -> morphism2'
-         Just (GMorphism cid' _ _ morphism3 _) -> case
-           do morphism3' <- coerceMorphism (targetLogic cid') lid
-                 "checkconservativityOfEdge3" morphism3
-              comp morphism2' morphism3' of
-                Res.Result _ (Just phi) -> phi
-                _ -> error "checkconservativtiyOfEdge: comp"
-   let (_le', thSrc) =
-        case computeTheory False libEnv' ln source of
-          Res.Result _ (Just th1) -> th1
-          _ -> error "checkconservativityOfEdge: computeTheory"
-   G_theory lid1 sign1 _ sensSrc1 _ <- return thSrc
-   sign2 <- coerceSign lid1 lid "checkconservativityOfEdge.coerceSign" sign1
-   sensSrc2 <- coerceThSens lid1 lid "checkconservativityOfEdge1" sensSrc1
-   let transSensSrc = propagateErrors
-        $ mapThSensValueM (map_sen lid compMor) sensSrc2
-   if length (conservativityCheck lid) < 1
-    then
-       do
-        errorDialog "Result of conservativity check"
-                    "No conservativity checkers available"
-        unlockGlobal gInfo
-    else
-     do
-      checkerR <- conservativityChoser $ conservativityCheck lid
-      if Res.hasErrors $ Res.diags checkerR
-       then
-        do
-         errorDialog "Result of conservativity check"
-                     "No conservativity checker chosen"
-         unlockGlobal gInfo
-       else
-        do
-         let chCons =  checkConservativity $
-                       fromMaybe (error "checkconservativityOfEdge4")
-                             $ Res.maybeResult checkerR
-             Res.Result ds res =
-                 chCons
-                    (plainSign sign2, toNamedList sensSrc2)
-                    compMor $ toNamedList
-                                (sensTar `OMap.difference` transSensSrc)
-             showObls [] = ""
-             showObls obls= ", provided that the following proof obligations "
-                            ++ "can be discharged:\n"
-                            ++ concatMap (flip showDoc "\n") obls
-             showRes = case res of
-                       Just (Just (cst, obls)) -> "The link is "
-                        ++ showConsistencyStatus cst ++ showObls obls
-                       _ -> "Could not determine whether link is conservative"
-             myDiags = showRelDiags 2 ds
-         createTextDisplay "Result of conservativity check"
-                         (showRes ++ "\n" ++ myDiags)
-         let consShow = case res of
-                        Just (Just (cst, _)) -> cst
-                        _                    -> Unknown "Unknown"
-             consNew csv = if show csv == showToComply consShow
-                        then
-                            Proven conservativityRule emptyProofBasis
-                        else
-                            LeftOpen
-             (newDglType, change) = case dgl_type linklab of
-               GlobalThm proven conserv _ ->
-                 (GlobalThm proven conserv $ consNew conserv, True)
-               LocalThm proven conserv _ ->
-                 (LocalThm proven conserv $ consNew conserv, True)
-               t -> (t, False)
-             provenEdge = (source
-                         ,target
-                         ,linklab
-                          {
-                            dgl_type = newDglType
-                          }
-                         )
-             changes = if change then [ DeleteEdge (source,target,linklab)
-                      , InsertEdge provenEdge ] else []
-             dg = lookupDGraph ln libEnv'
-             nextGr = changesDGH dg changes
-             newLibEnv = Map.insert ln
-               (groupHistory dg conservativityRule nextGr) libEnv'
-             history = snd $ splitHistory dg nextGr
-         applyChanges gi $ reverse $ flatHistory history
-         GA.redisplay gi
-         let nwst = ost { i_state = Just $ ist { i_libEnv = newLibEnv}}
-         writeIORef (intState gInfo) nwst
-         unlockGlobal gInfo
+  Just ist ->
+   do
+    let libEnv' = i_libEnv ist
+    lockGlobal gInfo
+    (str,nwle,ph)<-checkConservativityEdge True (source,target,linklab)
+                        libEnv' ln
+    case isPrefixOf "No conservativity" str of
+     True ->do
+             errorDialog "Result of conservativity check" str
+             unlockGlobal gInfo
+     False -> do
+               createTextDisplay "Result of conservativity check" str
+               applyChanges gi $ reverse $ flatHistory ph
+               GA.redisplay gi
+               let nwst = ost { i_state = Just $ ist { i_libEnv = nwle}}
+               writeIORef (intState gInfo) nwst
+               unlockGlobal gInfo
 
 checkconservativityOfEdge descr _ Nothing =
       errorDialog "Error"
           ("edge " ++ show descr ++ " has no corresponding edge "
                 ++ "in the development graph")
-
+{-
 -- | Graphical choser for conservativity checkers
 conservativityChoser :: [ConservativityChecker sign sentence morphism]
                      -> IO
@@ -774,6 +695,7 @@ conservativityChoser checkers = case checkers of
             case chosenOne of
               Nothing -> return $ fail "No conservativity checker chosen"
               Just i  -> return $ return $ checkers !! i
+-}
 
 -- | converts a DGraph
 convert :: GA.GraphInfo -> DGraph -> IO ()

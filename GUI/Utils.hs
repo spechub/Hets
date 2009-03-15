@@ -181,7 +181,7 @@ strToCmd str =
    "Composition - creating new links"      -> "dg-all comp-new"
    "Hide Theorem Shift"                    -> "dg-all thm-hide"
    "Theorem Hide Shift"                    -> "dg-all hide-thm"
-   "Compute Colimit"                       -> 
+   "Compute Colimit"                       ->
                    "# unknown Compute Colimit command"
    "Compute normal forms"                  ->
                    "# unknown Compute normal forms command"
@@ -197,7 +197,7 @@ strToCmd str =
                    "# unknown Flattening -> Heterogeneity command"
    "Qualify all names"                     ->
                    "# unknown Flattening -> Qulify all names command"
-   "mergeDGNodeLab"                        -> 
+   "mergeDGNodeLab"                        ->
                    "# unknown mergeDGNodeLab command"
    _ -> "# unknown command :"++ str
 
