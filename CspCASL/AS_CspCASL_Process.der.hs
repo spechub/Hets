@@ -14,14 +14,15 @@ Abstract syntax of CSP-CASL processes.
 
 module CspCASL.AS_CspCASL_Process (
     CHANNEL_NAME,
+    CommAlpha,
+    CommType(..),
     COMM_TYPE,
     EVENT(..),
     EVENT_SET(..),
+    FQProcVarList,
     PROCESS(..),
     PROCESS_NAME,
     RENAMING (..),
-    CommAlpha,
-    CommType(..),
     TypedChanName(..)
 ) where
 
@@ -103,6 +104,10 @@ instance Show CommType where
 
 type CommAlpha = Set.Set CommType
 
+-- | FQProcVarList should only contain fully qualified CASL variables
+--   which are TERMs
+type FQProcVarList = [TERM ()]
+
 -- | CSP-CASL process expressions.
 data PROCESS
     -- | @Skip@ - Terminate immediately
@@ -138,7 +143,7 @@ data PROCESS
     -- | @if f then p else q@ - Conditional
     | ConditionalProcess (FORMULA ()) PROCESS PROCESS Range
     -- | Named process
-    | NamedProcess PROCESS_NAME [TERM ()] Range
+    | NamedProcess PROCESS_NAME FQProcVarList Range
     -- | Fully qualified process. The range here shall be the same as
     -- | in the process.
     | FQProcess PROCESS CommAlpha Range

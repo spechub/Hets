@@ -49,13 +49,16 @@ transProcess caslSign pcfolSign cfolSign globalVars pr =
     let -- Make translations with all the signatures filled in
         transFormula' = transFormula pcfolSign cfolSign globalVars
         transProcess' = transProcess caslSign pcfolSign cfolSign globalVars
+        -- Union all the event sets together in Isabelle using the Isabelle
+        -- binary union operator
+        union esList = foldr1 binUnion esList
     in case pr of
          -- precedence 0
          Skip _ -> cspProver_skipOp
          Stop _ -> cspProver_stopOp
          Div  _ -> cspProver_divOp
-         Run es _ -> App (cspProver_runOp) (transEventSet es) NotCont
-         Chaos es _ -> App (cspProver_chaosOp) (transEventSet es) NotCont
+         Run es _ -> App (cspProver_runOp) (head (transEventSet es)) NotCont
+         Chaos es _ -> App (cspProver_chaosOp) (head (transEventSet es)) NotCont
          NamedProcess pn fqParams _ ->
              let -- Make a process name term
                  pnTerm = conDouble $ convertProcessName2String pn
@@ -77,7 +80,7 @@ transProcess caslSign pcfolSign cfolSign globalVars pr =
                                          (transProcess' q)
          -- precedence 2
          Hiding p es _ ->
-             cspProver_hidingOp (transProcess' p) (transEventSet es)
+             cspProver_hidingOp (transProcess' p) (union (transEventSet es))
          RenamingProcess p r _ ->
              cspProver_renamingOp (transProcess' p) (transRenaming r)
          -- precedence 3
@@ -98,29 +101,37 @@ transProcess caslSign pcfolSign cfolSign globalVars pr =
              cspProver_synchronousOp (transProcess' p) (transProcess' q)
          GeneralisedParallel p es q _ ->
              cspProver_general_parallelOp (transProcess' p)
-                                              (transEventSet es)
+                                              (union (transEventSet es))
                                               (transProcess'  q)
 
          AlphabetisedParallel p les res q _ ->
              cspProver_alphabetised_parallelOp (transProcess' p)
-                                                   (transEventSet les)
-                                                   (transEventSet res)
+                                                   (union (transEventSet les))
+                                                   (union (transEventSet res))
                                                    (transProcess'  q)
          -- Just forget the fully qualified data i.e. the constituent
          -- communication alphabet. Translate as normal.
          FQProcess p _ _ ->
              transProcess'  p
 
-transEventSet :: EVENT_SET -> Term
+-- | Translate a fully qualified EventSet into a list Isabelle term.  Event Sets
+--   are treated differently in different CSP operators, so its up to the
+--   calling function to do somehting useful with the returned list.
+transEventSet :: EVENT_SET -> [Term]
 transEventSet evs =
-    let
-        -- tran_COMM_TYPE ct = conDouble $ (tokStr ct) ++ barExtS
-        -- tran_commType ct = conDouble $ (tokStr ct) ++ barExtS
-    in case evs of
-         EventSet _ _ -> conDouble "EventSetNotYetDone"
-           -- Set $ FixedSet $ map tran_COMM_TYPE commTypes
-         FQEventSet _ _ -> conDouble "FQEventSetNotYetDone"
-           -- Set $ FixedSet $ map tranCommType commTypes
+    case evs of
+      EventSet _ _ -> error "CspCASLProver.TransProcesses.transEventSet: Expected a FQEventSet not a non-FQEventSet";
+      FQEventSet comms _ -> map transCommType comms
+
+-- | Translate a fully qualified CommType into an Isabelle term.
+transCommType :: CommType -> Term
+transCommType comm =
+    case comm of
+      CommTypeSort sort -> conDouble $ mkSortBarString sort
+      CommTypeChan typedChanName ->
+          case typedChanName of
+            TypedChanName _ _ ->
+                error "CspCASLProver.TransProcesses.transCommType: Typed channel name translation not implemented"
 
 -- | Translate a process event into CspProver (Isabelle). We need to know the
 --   data pat (CASL signature) inorder to use the same translation for CASL

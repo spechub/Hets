@@ -1,5 +1,5 @@
 {- |
-Module      :
+Module      :  $Header$
 Description :  Isabelle Abstract syntax constants for CSP-Prover operations
 Copyright   :  (c) Liam O'Reilly and Markus Roggenbach,
                    Swansea University 2008

@@ -1,6 +1,6 @@
 {- |
 Module      :  $Header$
-Description :  interface to the CspCASLProver (Isabelle based) theorem prover
+Description :  Interface to the CspCASLProver (Isabelle based) theorem prover
 Copyright   :  (c) Liam O'Reilly and Markus Roggenbach, Swansea University 2009
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
@@ -20,13 +20,17 @@ Isabelle prover (instanisated with CspProver). The encoding of CspCASL
 into IsabelleHOL requires the generation of several Isabelle theories
 where only the final theory requires user interaction.
 
+"CspCASLProver.CspProverConsts" contains Isabelle abstract syntax constants for
+CSP-Prover operations
+
 "CspCASLProver.IsabelleUtils" contains utilities for CspCASLProver
 related to Isabelle. The functions here typically manipulate Isabelle
 signatures.
 
-"CspCASLProver.Utils" contains utilities for CspCASLProver related to
-the actual construction of Isabelle theories.
+"CspCASLProver.TransProcesses" contains functions that implement CspCASLProver's
+translation of processes from CspCASL to CspProver.
 
-
+"CspCASLProver.Utils" contains utilities for CspCASLProver related to the actual construction of
+Isabelle theories.
 -}
 module CspCASLProver where

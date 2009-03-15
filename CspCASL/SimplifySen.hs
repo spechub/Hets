@@ -16,7 +16,7 @@ module CspCASL.SimplifySen(simplifySen) where
 
 import CASL.SimplifySen (simplifyCASLSen, simplifyCASLTerm)
 
-import Common.Id(genToken, Range)
+-- import Common.Id(genToken, Range)
 
 import CspCASL.AS_CspCASL_Process
 import CspCASL.SignCSP
@@ -89,7 +89,7 @@ simplifyProc sigma proc =
                                  (simplifyProc sigma p)
                                  (simplifyProc sigma q) range
       NamedProcess name args range ->
-          NamedProcess name args range
+          NamedProcess name (simplifyFQProcVarList sigma args) range
       -- Throw away the FQProccess and just take the simplified inner
       -- process. The inner rocesses range will be equal to this
       -- processes range by construction.
@@ -118,26 +118,30 @@ simplifyEvent sigma event =
       -- may contain fully qualfied processes), so we simpliy just e.
       FQEvent e _ _ _ -> simplifyEvent sigma e
 
+
+-- I am not really sure what to do with the sorts at the moment, can they be
+-- compound sorts
+
 -- | Simplifies the fully qualified event sets but using the casl
 --   simplification of data and removed channel qualification.
 simplifyEventSet :: EVENT_SET -> EVENT_SET
-simplifyEventSet eventSet =
-    case eventSet of
-      -- This is a non-fully qualified event set anyway.
-      EventSet es r -> EventSet es r
-      FQEventSet fqEr r -> simplifyCommTypes fqEr r
+simplifyEventSet eventSet = eventSet
+--     case eventSet of
+--       -- This is a non-fully qualified event set anyway.
+--       EventSet es r -> EventSet es r
+--       FQEventSet fqEr r -> simplifyCommTypes fqEr r
 
 
 -- | Simplify a list of comm types. This is basically undoing the
 --   static analysis and chaning sorts and typed channel names back to
 --   just a list of identifiers containing mixed channels and
 --   sorts. This is why we return an EVENT_SET.
-simplifyCommTypes :: [CommType] -> Range -> EVENT_SET
-simplifyCommTypes commTypes r =
-    EventSet (map simplifyCommType commTypes) r
-    where
-      simplifyCommType ct =
-          case ct of
-            CommTypeSort s -> genToken $ show s
-            CommTypeChan (TypedChanName chanName _) -> chanName
+-- simplifyCommTypes :: [CommType] -> Range -> EVENT_SET
+-- simplifyCommTypes commTypes r =
+--     EventSet (map simplifyCommType commTypes) r
+--     where
+--       simplifyCommType ct =
+--           case ct of
+--             CommTypeSort s -> genToken $ show s
+--             CommTypeChan (TypedChanName chanName _) -> chanName
 

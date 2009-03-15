@@ -89,6 +89,9 @@ pairC = "pair"
 eqvSimS :: String
 eqvSimS = "eqvS"
 
+unionS :: String
+unionS = "op Un"
+
 -- * some stuff for Isabelle
 
 pcpoS :: String
@@ -333,13 +336,14 @@ binVNameAppl v t1 t2 = termAppl (termAppl (con v) t1) t2
 
 -- * TERM CONSTRUCTORS
 -- | binary junctors
-binConj, binDisj, binImpl, binEqv, binEq, binEqvSim :: Term -> Term -> Term
+binConj, binDisj, binImpl, binEqv, binEq, binEqvSim, binUnion :: Term -> Term -> Term
 binConj = binVNameAppl conjV
 binDisj = binVNameAppl disjV
 binImpl = binVNameAppl implV
 binEq = binVNameAppl eqV
 binEqv = binEq
 binEqvSim = binVNameAppl eqvSimV
+binUnion = binVNameAppl unionV
 
 -- | HOL function application
 termAppl :: Term -> Term -> Term
@@ -537,6 +541,9 @@ compV = VName compS $ Just $ AltSyntax "(_ o/ _)" [55, 56] 55
 
 eqvSimV :: VName
 eqvSimV = VName eqvSimS $ Just $ AltSyntax "(_ \\<sim>/ _)" [50,51] 50
+
+unionV :: VName
+unionV = VName unionS $ Just $ AltSyntax "(_ \\<union>/ _)" [65,66] 65
 
 -- **** keywords in theory files from the Isar Reference Manual 2005
 

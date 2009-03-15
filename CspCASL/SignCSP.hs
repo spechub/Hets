@@ -17,7 +17,7 @@ signatures for CSP-CASL
 module CspCASL.SignCSP where
 
 import CspCASL.AS_CspCASL_Process (CHANNEL_NAME, PROCESS_NAME,
-    PROCESS(..), CommAlpha, CommType(..), TypedChanName(..))
+    PROCESS(..), CommAlpha, CommType(..), TypedChanName(..), FQProcVarList)
 
 import CspCASL.AS_CspCASL ()
 import CspCASL.CspCASL_Keywords
@@ -49,9 +49,6 @@ type ChanNameMap = Map.Map CHANNEL_NAME SORT
 type ProcNameMap = Map.Map PROCESS_NAME ProcProfile
 type ProcVarMap = Map.Map SIMPLE_ID SORT
 type ProcVarList = [(SIMPLE_ID, SORT)]
--- | FQProcVarList should only contain fully qualified CASL variables
---   which are TERMs
-type FQProcVarList = [TERM ()]
 
 -- Close a communication alphabet under CASL subsort
 closeCspCommAlpha :: CspCASLSign -> CommAlpha -> CommAlpha
@@ -264,4 +261,3 @@ isCASLSen _           = False
 isProcessEq :: CspCASLSen -> Bool
 isProcessEq (ProcessEq _ _ _ _) = True
 isProcessEq _ = False
-

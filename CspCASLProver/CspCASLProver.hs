@@ -1,6 +1,6 @@
 {- |
 Module      :  $Header$
-Description :  interface to the CspCASLProver (Isabelle based) theorem prover
+Description :  Interface to the CspCASLProver (Isabelle based) theorem prover
 Copyright   :  (c) Liam O'Reilly and Markus Roggenbach, Swansea University 2009
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
