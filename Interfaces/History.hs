@@ -89,11 +89,11 @@ undoRedoDgCmd actionType state ln =
                                             i_libEnv = newEnv
                                             }
                        }
-     case openlock dg' of 
+     case openlock dg' of
       Nothing -> return newst
       Just lock -> do
         mvar <- tryTakeMVar lock
-        case mvar of 
+        case mvar of
           Nothing -> return newst
           Just applyHist -> do
             applyHist changes

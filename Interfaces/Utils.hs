@@ -1,3 +1,4 @@
+{-# OPTIONS -cpp #-}
 {- |
 Module      :$Header$
 Description : utilitary functions
@@ -26,6 +27,7 @@ module Interfaces.Utils
          , mergeGoals
          , emptyCommandHistory
          , addCommandHistoryToState
+         , checkConservativityEdge
          ) where
 
 
@@ -36,26 +38,38 @@ import Data.Graph.Inductive.Graph
 import Data.Maybe (fromMaybe)
 import Data.List (isPrefixOf, stripPrefix)
 import Data.IORef
+import Data.Map(insert)
 
 import Static.DevGraph
-import Static.GTheory (G_theory(..))
+import Static.GTheory
 
 import Proofs.AbstractState
-import Proofs.AbstractState
+import Proofs.TheoremHideShift
+import Proofs.EdgeUtils
 
 import Driver.Options(rmSuffix)
 
 import System.Directory (getCurrentDirectory)
 
-import Logic.Comorphism (AnyComorphism(..))
+import Logic.Comorphism
 import Logic.Prover
 import Logic.Logic
+import Logic.Grothendieck
+import Logic.Coerce
 
-import Common.OrderedMap (keys)
+import Common.OrderedMap (difference, keys)
 import Common.Utils(joinWith, splitOn)
 import Common.Result
 import Common.LibName
 import Common.Id(nullRange)
+import Common.Lib.SizedList as SizedList
+import Common.Consistency
+import Common.ExtSign
+import Common.DocUtils
+
+#ifdef UNI_PACKAGE
+import GUI.Utils
+#endif
 
 -- | Returns the list of all nodes, if it is not up to date
 -- the function recomputes the list
@@ -131,7 +145,7 @@ addProveToHist :: CommandHistory
         -> [Proof_status proof_tree]       -- goals included in prove
         -> IO ()
 addProveToHist ch st pcm pt
-    | null $ filter wasProved pt = return ()
+    | Prelude.null $ Prelude.filter wasProved pt = return ()
     | otherwise = do
                   p <- proofTreeToProve ch st pcm pt
                   addToHist ch $ ProveCommand p
@@ -152,7 +166,8 @@ proofTreeToProve ch st pcm pt =
   -- 2. reverse the list, because the last proven goals are on top
   -- 3. convert all proof-trees to goals
   -- 4. merge goals with same used axioms
-      goals = mergeGoals $ reverse $ map convertGoal $ filter wasProved pt
+      goals = mergeGoals $ Prelude.reverse $ Prelude.map convertGoal
+              $ Prelude.filter wasProved pt
   -- axioms to include in prove
       allax = case theory st of
                  G_theory _ _ _ axs _ -> keys axs
@@ -164,7 +179,7 @@ proofTreeToProve ch st pcm pt =
                  allAxioms = allax}
 
 dropName :: String -> String -> String
-dropName fch s = maybe s tail (stripPrefix fch s)
+dropName fch s = maybe s Prelude.tail (stripPrefix fch s)
 
 -- This checks wether a goal was proved or not
 wasProved :: Proof_status proof_Tree -> Bool
@@ -183,19 +198,20 @@ convertGoal pt =
 -- Parses time-limit from the tactic-script of a goal.
 parseTimeLimit :: [String] -> Maybe String
 parseTimeLimit l =
-    if null l' then Nothing else Just $ drop (length tlStr) $ last l'
+    if Prelude.null l' then Nothing else Just
+                               $ Prelude.drop (length tlStr) $ last l'
     where
-       l' = filter (isPrefixOf tlStr) l
+       l' = Prelude.filter (isPrefixOf tlStr) l
        tlStr = "Time limit: "
 
 -- Merges goals with the same used axioms into one goal.
 mergeGoals :: [ProvenGoal] -> [ProvenGoal]
 mergeGoals []     = []
 mergeGoals (h:[]) = [h]
-mergeGoals (h:t) | mergeAble h h' = mergeGoals $ merge h h':tail t
+mergeGoals (h:t) | mergeAble h h' = mergeGoals $ merge h h':Prelude.tail t
                  | otherwise      = h:mergeGoals t
                  where
-                    h' = head t
+                    h' = Prelude.head t
                     mergeAble :: ProvenGoal -> ProvenGoal -> Bool
                     mergeAble a b = axioms a == axioms b &&
                                     time_Limit a == time_Limit b
@@ -210,10 +226,131 @@ addCommandHistoryToState ch ioSt
     ost <- readIORef ioSt
     lsch <- readIORef $ hist ch
     let z = Int_CmdHistoryDescription {
-             cmdName = joinWith '\n' $ map show lsch,
+             cmdName = joinWith '\n' $ Prelude.map show lsch,
              cmdDescription = [ IStateChange $ i_state ost ]
              }
         nwst = ost { i_hist = (i_hist ost) {
                                 undoList = z: (undoList $ i_hist ost)}}
     writeIORef ioSt nwst
     return $ Result [] $ Just ()
+
+
+conservativityRule :: DGRule
+conservativityRule = DGRule "ConservativityCheck"
+
+conservativityChoser :: Bool ->[ConservativityChecker sign sentence morphism]
+                       -> IO
+                           (Result (ConservativityChecker
+                            sign sentence morphism))
+conservativityChoser useGUI checkers
+ =
+#ifdef UNI_PACKAGE
+  case useGUI of
+    True ->
+       case checkers of
+             [] -> return $ fail "No conservativity checker available"
+             [hd]-> return $ return hd
+             _ ->
+                 do
+                  chosenOne <- listBox "Pic a conservativity checker"
+                                $ Prelude.map checker_id checkers
+                  case chosenOne of
+                    Nothing -> return$fail "No conservativity checker chosen"
+                    Just i -> return $ return $ checkers !! i
+    False ->
+#endif
+        case checkers of
+             [] ->  return $ fail "No conservativity checker available"
+             hd:_-> return $ return hd
+
+
+checkConservativityEdge :: Bool -> (LEdge DGLinkLab) -> LibEnv -> LIB_NAME
+                           -> IO (String,LibEnv, ProofHistory)
+checkConservativityEdge useGUI (source,target,linklab) libEnv ln
+ = do
+    let (_,thTar) =
+         case computeTheory True libEnv ln target of
+          Result _ (Just th1) -> th1
+          _ -> error "checkconservativityOfEdge: computeTheory"
+    G_theory lid _sign _ sensTar _ <- return thTar
+    GMorphism cid _ _ morphism2 _ <- return $ dgl_morphism linklab
+    morphism2' <- coerceMorphism (targetLogic cid) lid
+                 "checkconservativityOfEdge" morphism2
+    let compMor = case dgn_sigma $ labDG (lookupDGraph ln libEnv) target of
+          Nothing -> morphism2'
+          Just (GMorphism cid' _ _ morphism3 _) -> case
+            do morphism3' <- coerceMorphism (targetLogic cid') lid
+                   "checkconservativityOfEdge" morphism3
+               comp morphism2' morphism3' of
+                 Result _ (Just phi) -> phi
+                 _ -> error "checkconservativityOfEdge: comp"
+    let (_le', thSrc) =
+         case computeTheory False libEnv ln source of
+           Result _ (Just th1) -> th1
+           _ -> error "checkconservativityOfEdge: computeTheory"
+    G_theory lid1 sign1 _ sensSrc1 _ <- return thSrc
+    sign2 <- coerceSign lid1 lid "checkconservativityOfEdge.coerceSign" sign1
+    sensSrc2 <- coerceThSens lid1 lid "checkconservativityOfEdge1" sensSrc1
+    let transSensSrc = propagateErrors
+         $ mapThSensValueM (map_sen lid compMor) sensSrc2
+    if length (conservativityCheck lid) < 1
+        then return ( "No conservativity checkers available"
+                    , libEnv
+                    , SizedList.empty)
+        else
+         do
+          checkerR <- conservativityChoser useGUI $ conservativityCheck lid
+          if hasErrors $ diags checkerR
+           then return ( "No conservativity checker chosen"
+                       , libEnv
+                       , SizedList.empty)
+           else
+            do
+             let chCons = checkConservativity $
+                          fromMaybe (error "checkconservativityOfEdge")
+                             $ maybeResult checkerR
+                 Result ds res =
+                     chCons
+                        (plainSign sign2, toNamedList sensSrc2)
+                        compMor $ toNamedList
+                                    (sensTar `difference` transSensSrc)
+                 showObls [] = ""
+                 showObls obls=", provided that the following proof "
+                               ++"obligations can be discharged:\n"
+                               ++ concatMap (flip showDoc "\n") obls
+                 showRes = case res of
+                           Just (Just (cst,obls)) -> "The link is "
+                            ++ showConsistencyStatus cst ++ showObls obls
+                           _ -> "Could not determine whether link is "
+                                 ++ "conservative"
+                 myDiags = showRelDiags 2 ds
+                 consShow = case res of
+                            Just (Just (cst, _)) -> cst
+                            _                    -> Unknown "Unknown"
+                 consNew csv = if show csv == showToComply consShow
+                            then
+                                Proven conservativityRule emptyProofBasis
+                            else
+                                LeftOpen
+                 (newDglType,change) = case dgl_type linklab of
+                   GlobalThm proven conserv _ ->
+                     (GlobalThm proven conserv $ consNew conserv, True)
+                   LocalThm proven conserv _ ->
+                     (LocalThm proven conserv $ consNew conserv, True)
+                   t -> (t,False)
+                 provenEdge = ( source
+                              , target
+                              , linklab { dgl_type = newDglType }
+                              )
+                 changes = if change then [ DeleteEdge (source,target,linklab)
+                          , InsertEdge provenEdge ] else []
+                 dg = lookupDGraph ln libEnv
+                 nextGr = changesDGH dg changes
+                 newLibEnv = insert ln
+                   (groupHistory dg conservativityRule nextGr) libEnv
+                 history = snd $ splitHistory dg nextGr
+             return ( showRes ++ "\n" ++myDiags
+                    , newLibEnv
+                    , history)
+
+
