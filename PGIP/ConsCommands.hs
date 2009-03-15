@@ -31,21 +31,21 @@ import PGIP.ProveConsistency
 import PGIP.DgCommands
 
 import Proofs.AbstractState
-import Proofs.TheoremHideShift
+-- import Proofs.TheoremHideShift
 
 import Static.DevGraph
 import Static.GTheory
 
-import Logic.Logic (conservativityCheck)
-import Logic.Coerce (coerceSign, coerceMorphism)
-import Logic.Grothendieck
-import Logic.Comorphism
-import Logic.Prover
+-- import Logic.Logic (conservativityCheck)
+-- import Logic.Coerce (coerceSign, coerceMorphism)
+-- import Logic.Grothendieck
+-- import Logic.Comorphism
+-- import Logic.Prover
 
-import Common.Consistency
-import Common.ExtSign
+-- import Common.Consistency
+-- import Common.ExtSign
 import Common.LibName
-import Common.Result as Res
+-- import Common.Result as Res
 import qualified Common.OrderedMap as OMap
 
 import Control.Concurrent
@@ -73,7 +73,7 @@ cConservCheck input state =
         do
          let lsNodes = getAllNodes dgState
              lsEdges = getAllEdges dgState
-         allList <- conservativityList lsNodes lsEdges
+         (allList,nle) <- conservativityList lsNodes lsEdges
                                   (i_libEnv dgState) (i_ln dgState)
          let edgLs = concatMap (\x -> case find (
                                         \(s1,_) -> s1 == x) allList of
@@ -83,14 +83,18 @@ cConservCheck input state =
                                         \(s1,_) -> s1 == x) allList of
                                        Nothing -> []
                                        Just (s1,s2) -> [(s1,s2)]) nbEdg
+             nwst = state {
+                     intState = (intState state) {
+                      i_state = Just dgState {
+                                       i_libEnv = nle} } }
          case edgLs++nbEdgLs of
           [] -> return $ genErrorMsg (tmpErrs ++ "No edge in input string\n")
-                                                             state
+                                                             nwst
           _ ->
            do
               return $ genMessage tmpErrs
                          (concatMap (\(s1,s2) -> s1++" : "++s2++"\n")
-                                       (edgLs ++ nbEdgLs) ) state
+                                       (edgLs ++ nbEdgLs) ) nwst
 
 
 -- checks conservativity for every possible node
@@ -101,12 +105,14 @@ cConservCheckAll state =
               return $ genErrorMsg "No library loaded" state
     Just dgState ->
      do
-      resTxt <- conservativityList (getAllNodes dgState)
+      (resTxt,nle) <- conservativityList (getAllNodes dgState)
                                    (getAllEdges dgState)
                                    (i_libEnv dgState)
                                    (i_ln dgState)
+      let nwst = state  { intState = (intState state) {
+                            i_state = Just dgState { i_libEnv = nle } } }
       return $ genMessage []
-                (concatMap (\(s1,s2) -> s1++" : "++s2++"\n") resTxt)  state
+                (concatMap (\(s1,s2) -> s1++" : "++s2++"\n") resTxt)  nwst
 
 
 -- applies consistency check to the input
@@ -183,15 +189,11 @@ cConsistCheckAll state
 -- applies conservativity check to a given list
 conservativityList:: [LNode DGNodeLab] ->
                      [LEdge DGLinkLab] ->
-                     LibEnv -> LIB_NAME -> IO [(String,String)]
+                     LibEnv -> LIB_NAME -> IO ([(String,String)], LibEnv)
 conservativityList lsN lsE le libname
  =
   do
    let
-  -- function that returns the name of a node given its number
-    nameOf x ls = case find(\(nb,_) -> nb == x) ls of
-                   Nothing -> "Unknown node"
-                   Just (_, nlab) -> showName $ dgn_name nlab
     ordFn x y = let (x1,x2,_) = x
                     (y1,y2,_) = y
                 in if (x1,x2) > (y1,y2) then GT
@@ -205,57 +207,32 @@ conservativityList lsN lsE le libname
                               _ -> map (\(x,y,edgLab) -> ((x,y,edgLab),
                                                                 False)) l)
                                                   edgs
-   allEds <- mapM (\((x,y,edgLab),vl) -> case vl of
-                             True->(edgeConservativityState
-                                               ((nameOf x lsN) ++ " -> " ++
-                                               (nameOf y lsN)) (x,y,edgLab)
-                                                    le libname)
-                             False -> (edgeConservativityState
-                                            ((nameOf x lsN) ++ " -> " ++
-                                            (show $ getInt $dgl_id edgLab) ++
-                                             " -> " ++
-                                             (nameOf y lsN)) (x,y,edgLab)
-                                                        le libname)) edgtm
+   allEds <- applyEdgeConservativity le libname edgtm [] lsN
    return allEds
 
-edgeConservativityState :: String->LEdge DGLinkLab -> LibEnv -> LIB_NAME
-                           -> IO (String,String)
-edgeConservativityState nm (source,target,linklab) libenv libname
- = do
-    let dgraph = lookupDGraph libname libenv
-        dgtar = labDG dgraph target
-    if isDGRef dgtar then return (nm,"no DGNode") else do
-        G_theory lid _ _ sens _ <- return $ dgn_theory dgtar
-        GMorphism cid _ _ morphism2 _ <- return $ dgl_morphism linklab
-        morphism2' <- coerceMorphism (targetLogic cid) lid
-                          "edgeConservativityState" morphism2
-        let (_le, th) = case computeTheory False libenv libname source of
-          -- le not used and should be !
-                   Res.Result _ (Just th1) -> th1
-                   _ -> error "edgeConservativityState: computeTheory"
-        G_theory lid1 sign1 _ sens1 _ <- return th
-        sign2 <- coerceSign lid1 lid "edgeConservativityState.coerceSign"
-                                    sign1
-        sens2 <- coerceThSens lid1 lid "" sens1
-        let Res.Result ds res =
-                if (length $ conservativityCheck lid) > 0
-                   then
-                       (checkConservativity (head $ conservativityCheck lid))
-                          (plainSign sign2, toNamedList sens2)
-                          morphism2' $ toNamedList sens
-                   else
-                       error "no conservativity checkers are defined"
-            showObls [] = ""
-            showObls obls = ", provided that the following proof obligations can be discharged:\n"++ concatMap ((++"\n").show) obls
-            showRes = case res of
-                       Just (Just (Inconsistent,obls)) ->
-                                     "not conservative" ++ showObls obls
-                       Just (Just (Conservative,obls)) ->
-                                     "conservative" ++ showObls obls
-                       Just (Just (Monomorphic,obls)) ->
-                                     "monomorphic" ++ showObls obls
-                       Just (Just (Definitional,obls)) ->
-                                     "definitional" ++ showObls obls
-                       _ -> "Could not determine whether link is conservative"
-            myDiags = showRelDiags 2 ds
-        return (nm,showRes++"\n"++myDiags)
+
+applyEdgeConservativity:: LibEnv -> LIB_NAME -> [(LEdge DGLinkLab,Bool)] ->
+                          [(String, String)] -> [LNode DGNodeLab] ->
+                          IO ([(String, String)], LibEnv)
+applyEdgeConservativity le ln ls acc lsN
+ =
+  do
+   let nameOf x lls = case find(\(nb,_)-> nb==x) lls of
+                      Nothing -> "Unknown node"
+                      Just (_,nlab) -> showName $ dgn_name nlab
+   case ls of
+    [] -> return (acc,le)
+    ((x,y,edgLab),vl):l ->
+      case vl of
+       True ->
+        do
+         (str,nwLe,_) <- checkConservativityEdge False (x,y,edgLab) le ln
+         let nm = (nameOf x lsN) ++ " -> " ++ (nameOf y lsN)
+         applyEdgeConservativity nwLe ln l ((nm,str):acc) lsN
+       False ->
+        do
+         (str,nwLe,_) <- checkConservativityEdge False (x,y,edgLab) le ln
+         let nm = (nameOf x lsN) ++ " -> " ++ (show $ getInt$dgl_id edgLab)
+                   ++ " -> " ++ (nameOf y lsN)
+         applyEdgeConservativity nwLe ln l ((nm,str):acc) lsN
+

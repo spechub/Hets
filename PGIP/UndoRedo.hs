@@ -28,7 +28,7 @@ cUndo :: CMDL_State -> IO CMDL_State
 cUndo state =
   case undoList $ i_hist $ intState state of
    [] -> return $ genMessage [] "Nothing to undo" state
-   action:_ -> 
+   action:_ ->
     do
      nwIntState <- undoOneStep $ intState state
      return $ genMessage [] ("Action '"++(cmdName action)
@@ -41,7 +41,7 @@ cRedo :: CMDL_State -> IO CMDL_State
 cRedo state =
    case redoList $ i_hist $ intState state of
     [] -> return $ genMessage [] "Nothing to redo" state
-    action:_ -> 
+    action:_ ->
       do
        nwIntState <- redoOneStep $ intState state
        return $ genMessage [] ("Action '"++(cmdName action)

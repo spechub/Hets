@@ -142,7 +142,7 @@ getCommands
               "apply local inference to all edges" $
               CmdNoInput $ commandDgAll $ wrapResultDgAll localInference)
    : (genCmd ["dg-all compColimit"] CmdNoPriority ReqNothing
-              "computes colimits in the graph" $ 
+              "computes colimits in the graph" $
               CmdNoInput $ commandDgAll $ computeColimit)
    : (genCmd ["dg-all loc-decomp"] CmdNoPriority ReqNothing
               "apply local decomposition to all edges" $
