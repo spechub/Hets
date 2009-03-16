@@ -88,7 +88,7 @@ printTerm t = pretty f
 printType :: TYPE -> Doc
 printType (Sort) = text "Sort"
 printType (Form) = text "Form"
-printType (Univ t) = pretty t
+printType (Univ t) = text "Univ" <+> pretty t
 printType (Pi xs x) = text "Pi" <+> (hsep $ map printVar xs) <+> printType x
 
 -- auxiliary functions for printing
@@ -101,7 +101,7 @@ printNames :: [NAME] -> Doc
 printNames ns = sepBy (text ", ") $ map pretty ns
 
 printVar :: ([NAME], TYPE) -> Doc
-printVar (ns, t) = printNames ns <+> colon <+> printType t <> dot  
+printVar (ns, (Univ t)) = printNames ns <+> colon <+> printTerm t <> dot  
 
 termCanForm :: TERM -> (NAME, [TERM])
 termCanForm (Identifier t) = (t, [])
