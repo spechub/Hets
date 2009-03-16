@@ -223,7 +223,8 @@ toTerm s f = case f of
     Cas.Strong_equation t1 t2 ps ->
         mkEqTerm eqId (typeOfTerm t1) ps (fromTERM s t1) $ fromTERM s t2
     Cas.Predication (Cas.Qual_pred_name i (Cas.Pred_type ts _) ps) args qs ->
-        let sc = simpleTypeScheme $ if null ts then unitTypeWithRange ps
+        let sc = simpleTypeScheme $ if null ts
+                 then mkLazyType $ unitTypeWithRange ps
                  else predType ps $ mkProductTypeWithRange (map toType ts) ps
             p = QualOp Pred (PolyId i [] ps) sc [] Infer ps
             in if null args then p else TypedTerm
