@@ -1,0 +1,190 @@
+{- |
+Module      :  $Header$
+Description :  Parser for first-order logic with dependent types (DFOL)
+-}
+
+module DFOL.Parse_AS_DFOL where
+
+--import Common.AS_Annotation
+import qualified Common.Lexer as Lexer
+import qualified Common.Keywords as Keywords
+import qualified Common.AnnoState as AnnoState
+import DFOL.AS_DFOL
+import Text.ParserCombinators.Parsec
+
+-- keywords which cannot appear as identifiers in a signature
+reserved :: [String]
+reserved = [Keywords.trueS,
+            Keywords.falseS,
+            Keywords.notS,
+            Keywords.forallS,
+            Keywords.existsS,
+            Keywords.axiomS]
+
+-- parser for basic spec
+basicSpecP :: AnnoState.AParser st BASIC_SPEC
+basicSpecP = (fmap Basic_spec $ AnnoState.annosParser $ basicItemP)
+             <|>
+             (Lexer.oBraceT >> Lexer.cBraceT >> (return $ Basic_spec []))
+
+-- parser for basic items
+basicItemP :: AnnoState.AParser st BASIC_ITEM
+basicItemP = do AnnoState.asKey Keywords.axiomS 
+                f <- formulaP
+                return $ Axiom f
+             <|>
+             do ns <- namesP
+                AnnoState.asKey "::" 
+                t <- typeP
+                return $ Decl ns t  
+                   
+-- parser for types          
+typeP :: AnnoState.AParser st TYPE
+typeP = do AnnoState.asKey "Sort"
+           return Sort 
+        <|> 
+        do AnnoState.asKey "Form"
+           return Form 
+        <|> 
+        do t <- termP
+           return $ Univ t
+        <|> 
+        do AnnoState.asKey "Pi"
+           vs <- varsP
+           t <- typeP
+           return $ Pi vs t
+
+-- parser for terms
+termP :: AnnoState.AParser st TERM
+termP = do f <- nameP
+           (do Lexer.oParenT
+               (as, _) <- termP `Lexer.separatedBy` AnnoState.anComma
+               Lexer.cParenT
+               return $ Appl (Identifier f) as
+            <|>
+            do return $ Identifier f)
+
+-- parsers for names
+nameP :: AnnoState.AParser st NAME
+nameP = Lexer.pToken $ Lexer.reserved reserved Lexer.scanAnyWords
+
+namesP :: AnnoState.AParser st [NAME]
+namesP = fmap fst $ nameP `Lexer.separatedBy` AnnoState.anComma             
+
+-- parser for variable declarations
+varP :: AnnoState.AParser st ([NAME], TYPE)
+varP = do ns <- namesP 
+          AnnoState.asKey Keywords.colonS
+          t <- typeP
+          return (ns, t) 
+
+varsP :: AnnoState.AParser st [([NAME], TYPE)]
+varsP = do (vs, _) <- varP `Lexer.separatedBy` AnnoState.dotT
+           AnnoState.dotT
+           return vs 
+
+-- parser for all formulas
+formulaP :: AnnoState.AParser st FORMULA
+formulaP = parenFormulaP
+           <|>
+ 	   forallP
+           <|>
+           existsP
+           <|>
+           formula1P
+
+-- parser for equivalences, implications, conjunctions, disjunctions, negations, equalities, and atomic formulas  
+formula1P :: AnnoState.AParser st FORMULA
+formula1P = do f <- formula2P
+               (-- equivalences
+                do AnnoState.asKey Keywords.equivS
+                   g <- formula2P
+                   return $ Equivalence f g  
+                <|> 
+                -- implications
+                do AnnoState.asKey Keywords.implS
+                   g <- formula2P
+                   return $ Implication f g
+                <|> 
+                -- all other cases 
+                return f)
+                      
+-- parser for conjunctions, disjunctions, negations, equalities, atomic formulas, and formulas in parentheses  
+formula2P :: AnnoState.AParser st FORMULA
+formula2P = parenFormulaP 
+            <|>
+            do f <- formula3P
+               (-- conjunctions
+                do AnnoState.asKey Keywords.lAnd
+                   (fs, _) <- formula3P `Lexer.separatedBy` (AnnoState.asKey Keywords.lAnd)  
+                   return $ Conjunction (f:fs)                     
+                <|>
+                -- disjunctions
+                do AnnoState.asKey Keywords.lOr
+                   (fs, _) <- formula3P `Lexer.separatedBy` (AnnoState.asKey Keywords.lOr)  
+                   return $ Disjunction (f:fs)
+                <|>
+                -- all other cases
+                return f)                              
+ 
+-- parser for negations, equalities, atomic formulas, and formulas in parentheses  
+formula3P :: AnnoState.AParser st FORMULA 
+formula3P = parenFormulaP 
+            <|>
+            negP
+            <|>
+            formula4P
+            <|>
+            trueP
+            <|>
+            falseP  
+
+-- parser for equalities and predicate formulas
+formula4P :: AnnoState.AParser st FORMULA 
+formula4P = do x <- termP
+               (-- equalities
+                do AnnoState.asKey "=="
+                   y <- termP
+                   return $ Equality x y          
+                <|>
+                -- predicates 
+                return (Pred x))
+
+-- parser for formulas enclosed in parentheses
+parenFormulaP :: AnnoState.AParser st FORMULA
+parenFormulaP = do Lexer.oParenT
+                   f <- formulaP
+                   Lexer.cParenT
+                   return f       
+
+-- parser for forall formulas
+forallP :: AnnoState.AParser st FORMULA
+forallP = do AnnoState.asKey Keywords.forallS
+             vs <- varsP
+             f <- formulaP
+             return $ Forall vs f
+
+-- parser for exists formulas
+existsP :: AnnoState.AParser st FORMULA
+existsP = do AnnoState.asKey Keywords.existsS
+             vs <- varsP
+             f <- formulaP
+             return $ Exists vs f
+           
+-- parser for negations
+negP :: AnnoState.AParser st FORMULA
+negP = do AnnoState.asKey Keywords.negS <|> AnnoState.asKey Keywords.notS  
+          f <- formula3P
+          return $ Negation f
+
+-- parser for true
+trueP :: AnnoState.AParser st FORMULA
+trueP = do AnnoState.asKey Keywords.trueS
+           return $ T  	    
+
+-- parser for false
+falseP :: AnnoState.AParser st FORMULA
+falseP = do AnnoState.asKey Keywords.falseS
+            return $ F  	
+
+

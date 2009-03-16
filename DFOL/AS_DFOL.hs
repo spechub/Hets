@@ -3,14 +3,7 @@ Module      :  $Header$
 Description :  Abstract syntax for first-order logic with dependent types (DFOL)
 -}
 
-module DFOL.AS_DFOL
-   {- (
-      BASIC_SPEC (..)          -- datatype for specifications
-    , BASIC_ITEM (..)          -- datatype for specification items
-    , TYPE (..)                -- datatype for types
-    , TERM (..)                -- datatype for terms
-    , FORMULA (..)             -- datatype for formulas
-    ) -} where
+module DFOL.AS_DFOL where
 
 import Common.AS_Annotation
 import Common.Id
@@ -67,24 +60,30 @@ printBasicSpec (Basic_spec xs) = vcat $ map pretty xs
 
 printBasicItem :: BASIC_ITEM -> Doc
 printBasicItem (Decl ns t) = printNames ns <+> text "::" <+> printType t
-printBasicItem (Axiom f) = printFormula f
+printBasicItem (Axiom f) = text "axiom" <+> printFormula f
 
 printFormula :: FORMULA -> Doc
-printFormula (Negation f) = notDoc <+> printFormula f
-printFormula (Conjunction xs) = parens $ sepBy andDoc $ map printFormula xs
-printFormula (Disjunction xs) = parens $ sepBy orDoc $ map printFormula xs
-printFormula (Implication x y) = parens $ printFormula x <+> implies <+> printFormula y
-printFormula (Equivalence x y) = parens $ printFormula x <+> equiv <+> printFormula y
-printFormula (T) = text "True"
-printFormula (F) = text "False"
+printFormula (Negation f) = notDoc <+> (parens $ printFormula f)
+printFormula (Conjunction xs) = sepBy (text " /\\ ") $ map parens $ map printFormula xs
+printFormula (Disjunction xs) = sepBy (text " \\/ ") $ map parens $ map printFormula xs
+printFormula (Implication x y) = (parens $ printFormula x) <+> implies <+> (parens $ printFormula y)
+printFormula (Equivalence x y) = (parens $ printFormula x) <+> equiv <+> (parens $ printFormula y)
+printFormula (T) = text "true"
+printFormula (F) = text "false"
 printFormula (Pred x) = pretty x
-printFormula (Equality x y) = parens $ pretty x <+> equals <+> pretty y
-printFormula (Forall xs f) = parens $ forallDoc <+> (hsep $ map printVar xs) <+> printFormula f
-printFormula (Exists xs f) = parens $ exists <+> (hsep $ map printVar xs) <+> printFormula f
+printFormula (Equality x y) = pretty x <+> equals <+> pretty y
+printFormula (Forall xs f) = forallDoc <+> (hsep $ map printVar xs) <+> printFormula f
+printFormula (Exists xs f) = exists <+> (hsep $ map printVar xs) <+> printFormula f
 
 printTerm :: TERM -> Doc
-printTerm (Identifier x) = pretty x
-printTerm (Appl f xs) = parens $ pretty f <+> (hsep $ map pretty xs)
+printTerm t = pretty f 
+              <> 
+              if as /= [] 
+                 then (parens $ sepBy (text ", ") $ map pretty as) 
+                 else text "" 
+              where 
+              f = fst $ termCanForm t
+              as = snd $ termCanForm t  
 
 printType :: TYPE -> Doc
 printType (Sort) = text "Sort"
@@ -96,12 +95,17 @@ printType (Pi xs x) = text "Pi" <+> (hsep $ map printVar xs) <+> printType x
 sepBy :: Doc -> [Doc] -> Doc
 sepBy _ [] = text ""
 sepBy _ [x] = x
-sepBy separator (x:xs) = x <+> separator <+> sepBy separator xs
+sepBy separator (x:xs) = x <> separator <> sepBy separator xs
 
 printNames :: [NAME] -> Doc
-printNames [] = text ""
-printNames [n] = pretty n
-printNames (n:ns) = pretty n <> comma <+> printNames ns
+printNames ns = sepBy (text ", ") $ map pretty ns
 
 printVar :: ([NAME], TYPE) -> Doc
-printVar (ns, t) = printNames ns <+> colon <+> pretty t <> dot  
+printVar (ns, t) = printNames ns <+> colon <+> printType t <> dot  
+
+termCanForm :: TERM -> (NAME, [TERM])
+termCanForm (Identifier t) = (t, [])
+termCanForm (Appl f args) = (fst $ termCanForm f, (snd $ termCanForm f) ++ args)
+
+
+
