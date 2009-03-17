@@ -31,6 +31,7 @@ module Propositional.Morphism
   , mapSentenceH                -- map of sentences, without Result type
   , applyMap                    -- application function for maps
   , applyMorphism               -- application function for morphism
+  , morphismUnion
   ) where
 
 import qualified Data.Map as Map
@@ -127,3 +128,25 @@ mapSentenceH mor frm = case frm of
   AS_BASIC.False_atom rn -> AS_BASIC.False_atom rn
   AS_BASIC.Predication predH -> AS_BASIC.Predication
       $ head $ getSimpleId $ applyMorphism mor $ Id.simpleIdToId predH
+
+morphismUnion :: Morphism -> Morphism -> Result.Result Morphism
+morphismUnion mor1 mor2 =
+  let pmap1 = propMap mor1
+      pmap2 = propMap mor2
+      p1 = source mor1
+      p2 = source mor2
+      up1 = Set.difference (items p1) $ Map.keysSet pmap1
+      up2 = Set.difference (items p2) $ Map.keysSet pmap2
+      (pds, pmap) = foldr ( \ (i, j) (ds, m) -> case Map.lookup i m of
+          Nothing -> (ds, Map.insert i j m)
+          Just k -> if j == k then (ds, m) else
+              (Diag Error
+               ("incompatible mapping of prop " ++ showId i " to "
+                ++ showId j " and " ++ showId k "")
+               nullRange : ds, m)) ([], pmap1)
+          (Map.toList pmap2 ++ map (\ a -> (a, a))
+                      (Set.toList $ Set.union up1 up2))
+   in if null pds then return Morphism
+      { source = unite p1 p2
+      , target = unite (target mor1) $ target mor2
+      , propMap = pmap } else Result pds Nothing

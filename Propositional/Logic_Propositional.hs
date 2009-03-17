@@ -38,7 +38,7 @@ import Propositional.Morphism as Morphism
 import qualified Propositional.AS_BASIC_Propositional as AS_BASIC
 import qualified Propositional.ATC_Propositional()
 import qualified Propositional.Symbol as Symbol
-import qualified Propositional.Parse_AS_Basic as Parse_AS
+import Propositional.Parse_AS_Basic as Parse_AS
 import qualified Propositional.Analysis as Analysis
 import qualified Propositional.Sublogic as Sublogic
 import Common.ProverTools
@@ -93,8 +93,8 @@ instance Sentences Propositional AS_BASIC.FORMULA
 instance Syntax Propositional AS_BASIC.BASIC_SPEC
     AS_BASIC.SYMB_ITEMS AS_BASIC.SYMB_MAP_ITEMS where
          parse_basic_spec Propositional = Just Parse_AS.basicSpec
-         parse_symb_items _ = Nothing
-         parse_symb_map_items _ = Nothing
+         parse_symb_items Propositional = Just symbItems
+         parse_symb_map_items Propositional = Just symbMapItems
 
 -- | Instance of Logic for propositional logc
 instance Logic Propositional
@@ -160,6 +160,7 @@ instance StaticAnalysis Propositional
           matches       Propositional            = Symbol.matches
           stat_symb_items Propositional          = Analysis.mkStatSymbItems
           stat_symb_map_items Propositional      = Analysis.mkStatSymbMapItem
+          morphism_union Propositional           = Morphism.morphismUnion
           induced_from_morphism Propositional    = Analysis.inducedFromMorphism
           induced_from_to_morphism Propositional =
               Analysis.inducedFromToMorphism

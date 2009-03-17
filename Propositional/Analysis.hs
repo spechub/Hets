@@ -26,7 +26,7 @@ module Propositional.Analysis
     where
 
 import qualified Propositional.AS_BASIC_Propositional as AS_BASIC
-import qualified Propositional.Sign as Sign
+import Propositional.Sign as Sign
 import qualified Common.GlobalAnnotations as GlobalAnnos
 import qualified Common.AS_Annotation as AS_Anno
 import qualified Common.Result as Result
@@ -237,10 +237,12 @@ basicPropositionalAnalysis
                     [AS_Anno.Named (AS_BASIC.FORMULA)])
 basicPropositionalAnalysis (bs, sig, _) =
    Result.Result diags $ if exErrs then Nothing else
-     Just (bs, mkExtSign sigItems, formulae)
+     Just (bs, ExtSign sigItems declaredSyms, formulae)
     where
       bsSig     = makeSig bs sig
       sigItems  = msign bsSig
+      declaredSyms = Set.map Symbol.Symbol
+        $ Set.difference (items sigItems) $ items sig
       bsForm    = makeFormulas bs sigItems
       formulae  = map formula bsForm
       diags     = map diagnosis bsForm ++ tdiagnosis bsSig

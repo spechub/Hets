@@ -19,17 +19,17 @@ I'd like to thank Christian Maeder for his help and advice.
 -}
 
 module Propositional.Parse_AS_Basic
-    (
-     basicSpec                      -- Parser for basic specs
-    )
-    where
+  ( basicSpec                      -- Parser for basic specs
+  , symbItems
+  , symbMapItems
+  ) where
 
 import qualified Common.AnnoState as AnnoState
 import qualified Common.AS_Annotation as Annotation
-import qualified Common.Id as Id
-import qualified Common.Keywords as Keywords
+import Common.Id as Id
+import Common.Keywords as Keywords
 import Common.Lexer as Lexer
-import qualified Propositional.AS_BASIC_Propositional as AS_BASIC
+import Propositional.AS_BASIC_Propositional as AS_BASIC
 import qualified Common.AS_Annotation as AS_Anno
 import Text.ParserCombinators.Parsec
 
@@ -168,3 +168,46 @@ parenFormula =
 -- | Toplevel parser for formulae
 aFormula :: AnnoState.AParser st (AS_Anno.Annoted AS_BASIC.FORMULA)
 aFormula = Lexer.bind AS_Anno.appendAnno (AnnoState.annoParser $ impFormula) AnnoState.lineAnnos
+
+-- | parsing a prop symbol
+symb :: GenParser Char st SYMB
+symb = fmap Symb_id propId
+
+-- | parsing one symbol or a mapping of one to a second symbol
+symbMap :: GenParser Char st SYMB_OR_MAP
+symbMap = do
+  s <- symb
+  do  f <- pToken $ toKey mapsTo
+      t <- symb
+      return (Symb_map s t $ tokPos f)
+    <|> return (Symb s)
+
+-- | Parse a list of comma separated symbols.
+symbItems :: GenParser Char st SYMB_ITEMS
+symbItems = do
+  (is, ps) <- symbs
+  return (Symb_items is $ catRange ps)
+
+-- | parse a comma separated list of symbols
+symbs :: GenParser Char st ([SYMB], [Token])
+symbs =
+    do s <- symb
+       do   c <- commaT `followedWith` symb
+            (is, ps) <- symbs
+            return (s:is, c:ps)
+         <|> return ([s], [])
+
+-- | parse a list of symbol mappings
+symbMapItems :: GenParser Char st SYMB_MAP_ITEMS
+symbMapItems = do
+  (is, ps) <- symbMaps
+  return (Symb_map_items is $ catRange $ ps)
+
+-- | parse a comma separated list of symbol mappings
+symbMaps :: GenParser Char st ([SYMB_OR_MAP], [Token])
+symbMaps = do
+  s <- symbMap
+  do  c <- commaT `followedWith` symb
+      (is, ps) <- symbMaps
+      return (s:is, c:ps)
+    <|> return ([s], [])

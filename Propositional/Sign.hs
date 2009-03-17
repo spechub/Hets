@@ -24,7 +24,7 @@ module Propositional.Sign
     ,pretty                        -- pretty printing
     ,isLegalSignature              -- is a signature ok?
     ,addToSig                      -- adds an id to the given Signature
-    ,unite                         -- union of sigantures
+    ,unite                         -- union of signatures
     ,emptySig                      -- empty signature
     ,isSubSigOf                    -- is subsiganture?
     ,sigDiff                       -- Difference of Signatures

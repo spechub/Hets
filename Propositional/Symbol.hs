@@ -31,7 +31,7 @@ import Common.DocUtils
 import qualified Data.Set as Set
 import qualified Data.Map as Map
 import qualified Propositional.Sign as Sign
-import qualified Propositional.Morphism as Morphism
+import Propositional.Morphism as Morphism
 
 -- | Datatype for symbols
 newtype Symbol = Symbol {symName :: Id.Id}
@@ -45,14 +45,14 @@ printSymbol x = pretty $ symName x
 
 -- | Extraction of symbols from a signature
 symOf :: Sign.Sign -> Set.Set Symbol
-symOf  x = Set.fold (\y -> Set.insert Symbol{symName = y}) Set.empty $
+symOf x = Set.fold (\y -> Set.insert Symbol{symName = y}) Set.empty $
            Sign.items x
 
 -- | Determines the symbol map of a morhpism
 getSymbolMap :: Morphism.Morphism -> Map.Map Symbol Symbol
-getSymbolMap f = Map.foldWithKey
-                 (\ k a -> Map.insert Symbol{symName=k} Symbol{symName=a})
-                 Map.empty $ Morphism.propMap f
+getSymbolMap f =
+  foldr (\ x -> Map.insert (Symbol x) (Symbol $ applyMap (propMap f) x))
+  Map.empty $ Set.toList $ Sign.items $ source f
 
 -- | Determines the name of a symbol
 getSymbolName :: Symbol -> Id.Id
