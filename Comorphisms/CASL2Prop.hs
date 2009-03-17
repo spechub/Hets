@@ -81,7 +81,7 @@ instance Comorphism CASL2Prop
       map_morphism CASL2Prop = mapMor
       has_model_expansion CASL2Prop = True
       is_weakly_amalgamable CASL2Prop = True
-      isInclusionComorphism CASL2Prop = True
+      isInclusionComorphism CASL2Prop = False
 
 -- | Translation of the signature
 mapSig :: CASLSign -> PSign.Sign
