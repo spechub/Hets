@@ -60,7 +60,7 @@ printBasicSpec (Basic_spec xs) = vcat $ map pretty xs
 
 printBasicItem :: BASIC_ITEM -> Doc
 printBasicItem (Decl ns t) = printNames ns <+> text "::" <+> printType t
-printBasicItem (Axiom f) = text "axiom" <+> printFormula f
+printBasicItem (Axiom f) = dot <> printFormula f
 
 printFormula :: FORMULA -> Doc
 printFormula (Negation f) = notDoc <+> (parens $ printFormula f)
@@ -71,9 +71,9 @@ printFormula (Equivalence x y) = (parens $ printFormula x) <+> equiv <+> (parens
 printFormula (T) = text "true"
 printFormula (F) = text "false"
 printFormula (Pred x) = pretty x
-printFormula (Equality x y) = pretty x <+> equals <+> pretty y
-printFormula (Forall xs f) = forallDoc <+> (hsep $ map printVar xs) <+> printFormula f
-printFormula (Exists xs f) = exists <+> (hsep $ map printVar xs) <+> printFormula f
+printFormula (Equality x y) = pretty x <+> text "==" <+> pretty y
+printFormula (Forall xs f) = forallDoc <+> printVars xs <+> printFormula f
+printFormula (Exists xs f) = exists <+> printVars xs <+> printFormula f
 
 printTerm :: TERM -> Doc
 printTerm t = pretty f 
@@ -88,8 +88,8 @@ printTerm t = pretty f
 printType :: TYPE -> Doc
 printType (Sort) = text "Sort"
 printType (Form) = text "Form"
-printType (Univ t) = text "Univ" <+> pretty t
-printType (Pi xs x) = text "Pi" <+> (hsep $ map printVar xs) <+> printType x
+printType (Univ t) = pretty t
+printType (Pi xs x) = text "Pi" <+> printVars xs <+> printType x
 
 -- auxiliary functions for printing
 sepBy :: Doc -> [Doc] -> Doc
@@ -101,7 +101,10 @@ printNames :: [NAME] -> Doc
 printNames ns = sepBy (text ", ") $ map pretty ns
 
 printVar :: ([NAME], TYPE) -> Doc
-printVar (ns, (Univ t)) = printNames ns <+> colon <+> printTerm t <> dot  
+printVar (ns, t) = printNames ns <+> colon <+> printType t
+
+printVars :: [([NAME], TYPE)] -> Doc  
+printVars xs = (sepBy (text "; ") $ map printVar xs) <> dot   
 
 termCanForm :: TERM -> (NAME, [TERM])
 termCanForm (Identifier t) = (t, [])
