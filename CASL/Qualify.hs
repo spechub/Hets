@@ -55,25 +55,29 @@ qualifySigExt extInd extEm nodeId libId m sig = do
       sm = Set.fold (\ s -> Map.insert s
                     $ mkOrReuseQualSortName (sort_map m) nodeId libId s)
            Map.empty ss
-      om = createOpMorMap $ qualOverloaded (Map.map fst $ op_map m)
+      sMap = Set.fold (flip Map.insert 1) Map.empty ss
+      om = createOpMorMap $ qualOverloaded sMap (Map.map fst $ op_map m)
            nodeId libId (mapOpType sm) (\ o -> o { opKind = Partial }) os
-      pm = Map.map fst
-           $ qualOverloaded (pred_map m) nodeId libId (mapPredType sm) id ps
+      oMap = Map.foldWithKey (\ i s ->
+             Map.insertWith (+) i $ Set.size s) sMap os
+      pm = Map.map fst $ qualOverloaded oMap (pred_map m) nodeId libId
+           (mapPredType sm) id ps
   return ((embedMorphism extEm sig $ inducedSignAux extInd sm om pm extEm sig)
     { sort_map = sm
     , op_map = om
     , pred_map = pm }, monotonicities sig)
 
-qualOverloaded :: Ord a => Map.Map (Id, a) Id -> SIMPLE_ID -> LIB_ID
-               -> (a -> a) -> (a -> a) -> Map.Map Id (Set.Set a)
+qualOverloaded :: Ord a => Map.Map Id Int -> Map.Map (Id, a) Id -> SIMPLE_ID
+               -> LIB_ID -> (a -> a) -> (a -> a) -> Map.Map Id (Set.Set a)
                -> Map.Map (Id, a) (Id, a)
-qualOverloaded rn nodeId libId f g =
-  Map.foldWithKey (\ i s m -> foldr (\ (e, n) -> let ge = g e in
+qualOverloaded oMap rn nodeId libId f g =
+  Map.foldWithKey (\ i s m -> foldr (\ (e, n) ->let ge = g e in
     Map.insert (i, ge)
       (case Map.lookup (i, ge) rn of
          Just j | isQualName j -> j
          _ -> mkQualName nodeId libId $ mkOverloadedId n i, f e)) m
-                  $ zip (Set.toList s) [1 ..]) Map.empty
+                  $ zip (Set.toList s) [1 + Map.findWithDefault 0 i oMap ..])
+    Map.empty
 
 createOpMorMap :: Map.Map (Id, OpType) (Id, OpType)
              -> Map.Map (Id, OpType) (Id, OpKind)
