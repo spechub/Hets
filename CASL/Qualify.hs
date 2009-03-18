@@ -32,7 +32,7 @@ import qualified Data.Map as Map
 import qualified Data.Set as Set
 
 mkOverloadedId :: Int -> Id -> Id
-mkOverloadedId n i =
+mkOverloadedId n i = if n <= 1 then i else
   Id [genToken "Over"] (i : map (stringToId  . (: [])) (show n)) $ posOfId i
 
 mkOrReuseQualSortName :: Sort_map -> SIMPLE_ID -> LIB_ID -> Id -> Id
@@ -68,18 +68,12 @@ qualOverloaded :: Ord a => Map.Map (Id, a) Id -> SIMPLE_ID -> LIB_ID
                -> (a -> a) -> (a -> a) -> Map.Map Id (Set.Set a)
                -> Map.Map (Id, a) (Id, a)
 qualOverloaded rn nodeId libId f g =
-  Map.foldWithKey (\ i s m -> case Set.toList s of
-      [] -> error "CASL.Qualify.qualOverloaded"
-      t : r -> let
-        gt = g t
-        m1 = Map.insert (i, gt) (case Map.lookup (i, gt) rn of
-                          Just j | isQualName j -> j
-                          _ -> mkQualName nodeId libId i, f t) m
-       in foldr (\ (e, n) -> let ge = g e in Map.insert (i, ge)
-                 (case Map.lookup (i, ge) rn of
-                    Just j | isQualName j -> j
-                    _ -> mkQualName nodeId libId $ mkOverloadedId n i, f e)) m1
-           $ zip r [2 ..]) Map.empty
+  Map.foldWithKey (\ i s m -> foldr (\ (e, n) -> let ge = g e in
+    Map.insert (i, ge)
+      (case Map.lookup (i, ge) rn of
+         Just j | isQualName j -> j
+         _ -> mkQualName nodeId libId $ mkOverloadedId n i, f e)) m
+                  $ zip (Set.toList s) [1 ..]) Map.empty
 
 createOpMorMap :: Map.Map (Id, OpType) (Id, OpType)
              -> Map.Map (Id, OpType) (Id, OpKind)
