@@ -26,31 +26,32 @@ Instance of class Logic for the propositional logic
 
 module Propositional.Logic_Propositional where
 
-import Common.ProofTree
-import Common.Consistency
-
-import ATC.ProofTree ()
-
 import Logic.Logic
 
-import Propositional.Sign as Sign
-import Propositional.Morphism as Morphism
-import qualified Propositional.AS_BASIC_Propositional as AS_BASIC
-import qualified Propositional.ATC_Propositional()
-import qualified Propositional.Symbol as Symbol
-import Propositional.Parse_AS_Basic as Parse_AS
-import qualified Propositional.Analysis as Analysis
-import qualified Propositional.Sublogic as Sublogic
-import Common.ProverTools
+import Propositional.Sign
+import Propositional.Morphism
+import Propositional.AS_BASIC_Propositional
+import Propositional.ATC_Propositional()
+import Propositional.Symbol as Symbol
+import Propositional.Parse_AS_Basic
+import Propositional.Analysis
+import Propositional.Sublogic as Sublogic
 
 #ifdef UNI_PACKAGE
 #ifdef TABULAR_PACKAGE
-import qualified Propositional.ProveWithTruthTable as ProveTT
+import Propositional.ProveWithTruthTable
 #endif
-import qualified Propositional.Prove as Prove
+import Propositional.Prove
 import Propositional.Conservativity
-import qualified Propositional.ProveMinisat as ProveMini
+import Propositional.ProveMinisat
 #endif
+
+import ATC.ProofTree ()
+import Common.ProofTree
+import Common.ProverTools
+import Common.Consistency
+
+import qualified Data.Map as Map
 
 -- | Lid for propositional logic
 data Propositional = Propositional deriving Show --lid
@@ -61,157 +62,154 @@ instance Language Propositional where
          "for more information please refer to\n"++
          "http://en.wikipedia.org/wiki/Propositional_logic"
 
-
 -- | Instance of Category for propositional logic
-instance Category Sign.Sign Morphism.Morphism where
+instance Category Sign Morphism where
     -- Identity morhpism
-    ide = Morphism.idMor
+    ide = idMor
     -- Returns the domain of a morphism
-    dom = Morphism.source
+    dom = source
     -- Returns the codomain of a morphism
-    cod = Morphism.target
+    cod = target
+    -- check if morphism is inclusion
+    isInclusion = Map.null . propMap
     -- tests if the morphism is ok
-    legal_mor f = Morphism.isLegalMorphism f
+    legal_mor = isLegalMorphism
     -- composition of morphisms
-    composeMorphisms f g = Morphism.composeMor f g
+    composeMorphisms = composeMor
 
 -- | Instance of Sentences for propositional logic
-instance Sentences Propositional AS_BASIC.FORMULA
-    Sign.Sign Morphism.Morphism Symbol.Symbol where
+instance Sentences Propositional FORMULA
+    Sign Morphism Symbol where
     -- returns the set of symbols
-    sym_of Propositional = Symbol.symOf
+    sym_of Propositional = symOf
     -- returns the symbol map
-    symmap_of Propositional = Symbol.getSymbolMap
+    symmap_of Propositional = getSymbolMap
     -- returns the name of a symbol
-    sym_name Propositional = Symbol.getSymbolName
+    sym_name Propositional = getSymbolName
     -- translation of sentences along signature morphism
-    map_sen Propositional = Morphism.mapSentence
+    map_sen Propositional = mapSentence
     -- there is nothing to leave out
     simplify_sen Propositional _ form = form
 
 -- | Syntax of Propositional logic
-instance Syntax Propositional AS_BASIC.BASIC_SPEC
-    AS_BASIC.SYMB_ITEMS AS_BASIC.SYMB_MAP_ITEMS where
-         parse_basic_spec Propositional = Just Parse_AS.basicSpec
+instance Syntax Propositional BASIC_SPEC
+    SYMB_ITEMS SYMB_MAP_ITEMS where
+         parse_basic_spec Propositional = Just basicSpec
          parse_symb_items Propositional = Just symbItems
          parse_symb_map_items Propositional = Just symbMapItems
 
 -- | Instance of Logic for propositional logc
 instance Logic Propositional
-    Sublogic.PropSL                    -- Sublogics
-    AS_BASIC.BASIC_SPEC                -- basic_spec
-    AS_BASIC.FORMULA                   -- sentence
-    AS_BASIC.SYMB_ITEMS                -- symb_items
-    AS_BASIC.SYMB_MAP_ITEMS            -- symb_map_items
-    Sign.Sign                          -- sign
-    Morphism.Morphism                  -- morphism
-    Symbol.Symbol                      -- symbol
-    Symbol.Symbol                      -- raw_symbol
+    PropSL                    -- Sublogics
+    BASIC_SPEC                -- basic_spec
+    FORMULA                   -- sentence
+    SYMB_ITEMS                -- symb_items
+    SYMB_MAP_ITEMS            -- symb_map_items
+    Sign                          -- sign
+    Morphism                  -- morphism
+    Symbol                      -- symbol
+    Symbol                      -- raw_symbol
     ProofTree                      -- proof_tree
     where
       stability Propositional     = Experimental
       top_sublogic Propositional  = Sublogic.top
-      all_sublogics Propositional = Sublogic.sublogics_all
+      all_sublogics Propositional = sublogics_all
     -- supplied provers
       provers Propositional = []
 #ifdef UNI_PACKAGE
-        ++ (unsafeProverCheck "zchaff" "PATH"
-                              Prove.zchaffProver)
-        ++ (unsafeProverCheck "minisat" "PATH"
-                              ProveMini.minisatProver)
+        ++ unsafeProverCheck "zchaff" "PATH" zchaffProver
+        ++ unsafeProverCheck "minisat" "PATH" minisatProver
 #ifdef TABULAR_PACKAGE
-                              ++[ProveTT.ttProver]
+        ++ [ttProver]
 #endif
       cons_checkers Propositional = []
-         ++ (unsafeProverCheck "zchaff" "PATH" Prove.propConsChecker)
-         ++ (unsafeProverCheck "minisat" "PATH" ProveMini.minisatConsChecker)
+         ++ unsafeProverCheck "zchaff" "PATH" propConsChecker
+         ++ unsafeProverCheck "minisat" "PATH" minisatConsChecker
 #ifdef TABULAR_PACKAGE
-         ++ [ProveTT.ttConsistencyChecker]
+         ++ [ttConsistencyChecker]
 #endif
       conservativityCheck Propositional = []
-          ++(unsafeProverCheck "sKizzo" "PATH"
-             (ConservativityChecker "sKizzo" conserCheck))
+          ++ unsafeProverCheck "sKizzo" "PATH"
+             (ConservativityChecker "sKizzo" conserCheck)
 #ifdef TABULAR_PACKAGE
-          ++[ConservativityChecker "Truth Tables"
-                                    ProveTT.ttConservativityChecker]
+          ++ [ConservativityChecker "Truth Tables" ttConservativityChecker]
 #endif
 #endif
 
 
 -- | Static Analysis for propositional logic
 instance StaticAnalysis Propositional
-    AS_BASIC.BASIC_SPEC                -- basic_spec
-    AS_BASIC.FORMULA                   -- sentence
-    AS_BASIC.SYMB_ITEMS                -- symb_items
-    AS_BASIC.SYMB_MAP_ITEMS            -- symb_map_items
-    Sign.Sign                          -- sign
-    Morphism.Morphism                  -- morphism
-    Symbol.Symbol                      -- symbol
-    Symbol.Symbol                      -- raw_symbol
+    BASIC_SPEC                -- basic_spec
+    FORMULA                   -- sentence
+    SYMB_ITEMS                -- symb_items
+    SYMB_MAP_ITEMS            -- symb_map_items
+    Sign                          -- sign
+    Morphism                  -- morphism
+    Symbol                      -- symbol
+    Symbol                      -- raw_symbol
         where
           basic_analysis Propositional           =
-              Just $ Analysis.basicPropositionalAnalysis
-          empty_signature Propositional          = Sign.emptySig
-          is_subsig Propositional                = Sign.isSubSigOf
-          subsig_inclusion Propositional s = return . Morphism.inclusionMap s
-          signature_union Propositional          = Sign.sigUnion
-          symbol_to_raw Propositional            = Symbol.symbolToRaw
-          id_to_raw     Propositional            = Symbol.idToRaw
+              Just basicPropositionalAnalysis
+          empty_signature Propositional          = emptySig
+          is_subsig Propositional                = isSubSigOf
+          subsig_inclusion Propositional s = return . inclusionMap s
+          signature_union Propositional          = sigUnion
+          symbol_to_raw Propositional            = symbolToRaw
+          id_to_raw     Propositional            = idToRaw
           matches       Propositional            = Symbol.matches
-          stat_symb_items Propositional          = Analysis.mkStatSymbItems
-          stat_symb_map_items Propositional      = Analysis.mkStatSymbMapItem
-          morphism_union Propositional           = Morphism.morphismUnion
-          induced_from_morphism Propositional    = Analysis.inducedFromMorphism
-          induced_from_to_morphism Propositional =
-              Analysis.inducedFromToMorphism
-          signature_colimit Propositional  = Analysis.signatureColimit
+          stat_symb_items Propositional          = mkStatSymbItems
+          stat_symb_map_items Propositional      = mkStatSymbMapItem
+          morphism_union Propositional           = morphismUnion
+          induced_from_morphism Propositional    = inducedFromMorphism
+          induced_from_to_morphism Propositional = inducedFromToMorphism
+          signature_colimit Propositional  = signatureColimit
 
 -- | Sublogics
-instance SemiLatticeWithTop Sublogic.PropSL where
-    join = Sublogic.sublogics_max
+instance SemiLatticeWithTop PropSL where
+    join = sublogics_max
     top  = Sublogic.top
 
-instance MinSublogic Sublogic.PropSL AS_BASIC.BASIC_SPEC where
-     minSublogic it = Sublogic.sl_basic_spec Sublogic.bottom it
+instance MinSublogic PropSL BASIC_SPEC where
+     minSublogic = sl_basic_spec bottom
 
-instance MinSublogic Sublogic.PropSL Sign.Sign where
-    minSublogic si = Sublogic.sl_sig Sublogic.bottom si
+instance MinSublogic PropSL Sign where
+    minSublogic = sl_sig bottom
 
-instance SublogicName Sublogic.PropSL where
-    sublogicName = Sublogic.sublogics_name
+instance SublogicName PropSL where
+    sublogicName = sublogics_name
 
-instance MinSublogic Sublogic.PropSL AS_BASIC.FORMULA where
-    minSublogic frm = Sublogic.sl_form Sublogic.bottom frm
+instance MinSublogic PropSL FORMULA where
+    minSublogic = sl_form bottom
 
-instance MinSublogic Sublogic.PropSL Symbol.Symbol where
-    minSublogic sym = Sublogic.sl_sym Sublogic.bottom sym
+instance MinSublogic PropSL Symbol where
+    minSublogic = sl_sym bottom
 
-instance MinSublogic Sublogic.PropSL AS_BASIC.SYMB_ITEMS where
-    minSublogic symit = Sublogic.sl_symit Sublogic.bottom symit
+instance MinSublogic PropSL SYMB_ITEMS where
+    minSublogic = sl_symit bottom
 
-instance MinSublogic Sublogic.PropSL Morphism.Morphism where
-    minSublogic symor = Sublogic.sl_mor Sublogic.bottom symor
+instance MinSublogic PropSL Morphism where
+    minSublogic = sl_mor bottom
 
-instance MinSublogic Sublogic.PropSL AS_BASIC.SYMB_MAP_ITEMS where
-    minSublogic sm = Sublogic.sl_symmap Sublogic.bottom sm
+instance MinSublogic PropSL SYMB_MAP_ITEMS where
+    minSublogic = sl_symmap bottom
 
-instance ProjectSublogicM Sublogic.PropSL Symbol.Symbol where
-    projectSublogicM = Sublogic.prSymbolM
+instance ProjectSublogicM PropSL Symbol where
+    projectSublogicM = prSymbolM
 
-instance ProjectSublogic Sublogic.PropSL Sign.Sign where
-    projectSublogic = Sublogic.prSig
+instance ProjectSublogic PropSL Sign where
+    projectSublogic = prSig
 
-instance ProjectSublogic Sublogic.PropSL Morphism.Morphism where
-    projectSublogic = Sublogic.prMor
+instance ProjectSublogic PropSL Morphism where
+    projectSublogic = prMor
 
-instance ProjectSublogicM Sublogic.PropSL AS_BASIC.SYMB_MAP_ITEMS where
-    projectSublogicM = Sublogic.prSymMapM
+instance ProjectSublogicM PropSL SYMB_MAP_ITEMS where
+    projectSublogicM = prSymMapM
 
-instance ProjectSublogicM Sublogic.PropSL AS_BASIC.SYMB_ITEMS where
-    projectSublogicM = Sublogic.prSymM
+instance ProjectSublogicM PropSL SYMB_ITEMS where
+    projectSublogicM = prSymM
 
-instance ProjectSublogic Sublogic.PropSL AS_BASIC.BASIC_SPEC where
-    projectSublogic = Sublogic.prBasicSpec
+instance ProjectSublogic PropSL BASIC_SPEC where
+    projectSublogic = prBasicSpec
 
-instance ProjectSublogicM Sublogic.PropSL AS_BASIC.FORMULA where
-    projectSublogicM = Sublogic.prFormulaM
+instance ProjectSublogicM PropSL FORMULA where
+    projectSublogicM = prFormulaM
