@@ -28,7 +28,6 @@ module Proofs.Automatic (automatic, automaticFromList) where
 import Proofs.Global
 import Proofs.Local
 import Proofs.HideTheoremShift
-import Proofs.NormalForm
 import Proofs.TheoremHideShift
 
 import Static.DevGraph
@@ -74,7 +73,7 @@ automaticRecursive count ln proofstatus =
 
 wrapTheoremHideShift :: LIB_NAME -> LibEnv -> LibEnv
 wrapTheoremHideShift ln libEnv =
- case maybeResult $ normalForm ln libEnv >>= theoremHideShift ln of
+ case maybeResult $ theoremHideShift ln libEnv of
    Nothing -> libEnv
    Just libEnv' -> libEnv'
 
