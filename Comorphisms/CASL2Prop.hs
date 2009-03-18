@@ -8,7 +8,10 @@ Maintainer  :  luecke@informatik.uni-bremen.de
 Stability   :  experimental
 Portability :  non-portable (imports Logic.Logic)
 
-a comorphism from CASL to Propositional.
+A comorphism from CASL to Propositional. The CASL sublogic does not precisely
+capture the valid domain of the translation. Sorts, ops and preds with
+arguments will be ignored. The translation will fail for non-propositional
+sentences.
 -}
 
 module Comorphisms.CASL2Prop (CASL2Prop (..)) where
@@ -77,7 +80,7 @@ instance Comorphism CASL2Prop
       map_theory CASL2Prop = mapTheory
       is_model_transportable CASL2Prop = True
       map_symbol CASL2Prop = mapSym
-      map_sentence CASL2Prop _ = return . trForm
+      map_sentence CASL2Prop _ = trForm
       map_morphism CASL2Prop = mapMor
       has_model_expansion CASL2Prop = True
       is_weakly_amalgamable CASL2Prop = True
@@ -104,7 +107,9 @@ mapMor mor = return PMor.Morphism
 -- | Mapping of a theory
 mapTheory :: (CASLSign, [Named CASLFORMULA])
   -> Result (PSign.Sign, [Named PBasic.FORMULA])
-mapTheory (sig, form) = return (mapSig sig, map trNamedForm form)
+mapTheory (sig, form) = do
+  sens <- mapM trNamedForm form
+  return (mapSig sig, sens)
 
 -- | Translation of symbols
 mapSym :: Symbol -> Set.Set PSymbol.Symbol
@@ -114,23 +119,32 @@ mapSym sym = case symbType sym of
   _ -> Set.empty
 
 -- | Helper for map theory
-trNamedForm :: Named CASLFORMULA -> Named PBasic.FORMULA
-trNamedForm = mapNamed trForm
+trNamedForm :: Named CASLFORMULA -> Result (Named PBasic.FORMULA)
+trNamedForm = mapNamedM trForm
 
 -- | Helper for map sentence and map theory
-trForm :: CASLFORMULA -> PBasic.FORMULA
+trForm :: CASLFORMULA -> Result PBasic.FORMULA
 trForm form = case form of
-  Negation fn rn -> PBasic.Negation (trForm fn) rn
-  Conjunction fn rn -> PBasic.Conjunction (map trForm fn) rn
-  Disjunction fn rn -> PBasic.Disjunction (map trForm fn) rn
-  Implication f1 f2 b rn -> let
-    t1 = trForm f1
-    t2 = trForm f2
-    in if b then PBasic.Implication t1 t2 rn else PBasic.Implication t2 t1 rn
-  Equivalence f1 f2 rn ->
-                PBasic.Equivalence (trForm f1) (trForm f2) rn
-  True_atom rn -> PBasic.True_atom rn
-  False_atom rn -> PBasic.False_atom rn
+  Negation fn rn -> do
+    t <- trForm fn
+    return $ PBasic.Negation t rn
+  Conjunction fn rn -> do
+    ts <- mapM trForm fn
+    return $ PBasic.Conjunction ts rn
+  Disjunction fn rn -> do
+    ts <- mapM trForm fn
+    return $ PBasic.Disjunction ts rn
+  Implication f1 f2 b rn -> do
+    t1 <- trForm f1
+    t2 <- trForm f2
+    return $ if b then PBasic.Implication t1 t2 rn else
+      PBasic.Implication t2 t1 rn
+  Equivalence f1 f2 rn -> do
+    t1 <- trForm f1
+    t2 <- trForm f2
+    return $ PBasic.Equivalence t1 t2 rn
+  True_atom rn -> return $ PBasic.True_atom rn
+  False_atom rn -> return $ PBasic.False_atom rn
   Predication (Qual_pred_name pid (Pred_type [] _) _) [] _ ->
-    PBasic.Predication $ mkSimpleId $ show pid
-  _ -> error $ "not a propositional formula: " ++ showDoc form ""
+    return . PBasic.Predication . mkSimpleId $ show pid
+  _ -> fail $ "not a propositional formula: " ++ showDoc form ""
