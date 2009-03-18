@@ -17,6 +17,7 @@ module Driver.AnaLib
     ) where
 
 import Proofs.Automatic
+import Proofs.NormalForm
 import Proofs.EdgeUtils
 
 import Static.DevGraph
@@ -73,7 +74,11 @@ anaLibExt opts file libEnv = do
     case res of
         Nothing -> return Nothing
         Just (ln, lenv) -> do
-            let nEnv = if hasPrfOut opts then automatic ln lenv else lenv
+            let envRes = if computeNormalForm opts then normalForm ln lenv else
+                  return lenv
+                envN = fromMaybe lenv $ maybeResult envRes
+                nEnv = if hasPrfOut opts then automatic ln envN else envN
+            showDiags opts $ diags envRes
             return $ Just (ln, nEnv)
 
 readPrfFile :: HetcatsOpts -> LibEnv -> LIB_NAME -> IO LibEnv
