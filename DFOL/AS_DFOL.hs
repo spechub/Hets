@@ -9,10 +9,11 @@ import Common.AS_Annotation
 import Common.Id
 import Common.Doc
 import Common.DocUtils
+import DFOL.Utils
 
 type NAME = Token
 
--- a DFOL specification
+-- grammar for a DFOL specification
 data BASIC_SPEC = Basic_spec [Annoted BASIC_ITEM]
                   deriving Show
 
@@ -23,6 +24,7 @@ data BASIC_ITEM = Decl [NAME] TYPE
 data TYPE = Sort
           | Form
           | Univ TERM
+          | Func [TYPE]
           | Pi [([NAME],TYPE)] TYPE
             deriving (Show, Eq)
 
@@ -43,6 +45,33 @@ data FORMULA = T
              | Exists [([NAME],TYPE)] FORMULA
                deriving (Show, Eq)
 
+-- converts a term into its canonical form f(x_1, ... x_n)
+termCanForm :: TERM -> (NAME, [TERM])
+termCanForm (Identifier t) = (t, [])
+termCanForm (Appl f args) = (fst $ termCanForm f, (snd $ termCanForm f) ++ args)
+
+-- determines the precedence of a formula
+formulaPrec :: FORMULA -> Int
+formulaPrec T = truePrec
+formulaPrec F = falsePrec
+formulaPrec Pred {} = predPrec
+formulaPrec Equality {} = equalPrec
+formulaPrec Negation {} = negPrec
+formulaPrec Disjunction {} = disjPrec
+formulaPrec Conjunction {} = conjPrec
+formulaPrec Implication {} = implPrec
+formulaPrec Equivalence {} = equivPrec
+formulaPrec Forall {} = forallPrec
+formulaPrec Exists {} = existsPrec
+
+-- determines the precedence of a type
+typePrec :: TYPE -> Int
+typePrec Sort = sortPrec
+typePrec Form = formPrec
+typePrec Univ {} = univPrec
+typePrec Func {} = funcPrec
+typePrec Pi {} = piPrec
+
 -- pretty printing
 instance Pretty BASIC_SPEC where
     pretty = printBasicSpec
@@ -55,41 +84,56 @@ instance Pretty TERM where
 instance Pretty FORMULA where
     pretty = printFormula
 
+-- print basic specifications
 printBasicSpec :: BASIC_SPEC -> Doc
 printBasicSpec (Basic_spec xs) = vcat $ map pretty xs
 
+-- print basic items
 printBasicItem :: BASIC_ITEM -> Doc
 printBasicItem (Decl ns t) = printNames ns <+> text "::" <+> printType t
 printBasicItem (Axiom f) = dot <> printFormula f
 
-printFormula :: FORMULA -> Doc
-printFormula (Negation f) = notDoc <+> (parens $ printFormula f)
-printFormula (Conjunction xs) = sepBy (text " /\\ ") $ map parens $ map printFormula xs
-printFormula (Disjunction xs) = sepBy (text " \\/ ") $ map parens $ map printFormula xs
-printFormula (Implication x y) = (parens $ printFormula x) <+> implies <+> (parens $ printFormula y)
-printFormula (Equivalence x y) = (parens $ printFormula x) <+> equiv <+> (parens $ printFormula y)
-printFormula (T) = text "true"
-printFormula (F) = text "false"
-printFormula (Pred x) = pretty x
-printFormula (Equality x y) = pretty x <+> text "==" <+> pretty y
-printFormula (Forall xs f) = forallDoc <+> printVars xs <+> printFormula f
-printFormula (Exists xs f) = exists <+> printVars xs <+> printFormula f
-
-printTerm :: TERM -> Doc
-printTerm t = pretty f 
-              <> 
-              if as /= [] 
-                 then (parens $ sepBy (text ", ") $ map pretty as) 
-                 else text "" 
-              where 
-              f = fst $ termCanForm t
-              as = snd $ termCanForm t  
-
+-- print types
 printType :: TYPE -> Doc
 printType (Sort) = text "Sort"
 printType (Form) = text "Form"
 printType (Univ t) = pretty t
+printType (Func ts) = sepBy (text " -> ") $ map (printSubType funcPrec) ts
 printType (Pi xs x) = text "Pi" <+> printVars xs <+> printType x
+
+printSubType :: Int -> TYPE -> Doc
+printSubType prec t = if (typePrec t) >= prec
+                         then parens $ printType t
+                         else printType t  
+-- print terms
+printTerm :: TERM -> Doc
+printTerm t = pretty f 
+              <> 
+              if as == [] 
+                 then text ""
+                 else (parens $ sepBy (text ", ") $ map pretty as) 
+              where 
+              f = fst $ termCanForm t
+              as = snd $ termCanForm t  
+
+-- print formulas
+printFormula :: FORMULA -> Doc
+printFormula (T) = text "true"
+printFormula (F) = text "false"
+printFormula (Pred x) = pretty x
+printFormula (Equality x y) = pretty x <+> text "==" <+> pretty y
+printFormula (Negation f) = notDoc <+> printSubFormula negPrec f
+printFormula (Conjunction xs) = sepBy (text " /\\ ") $ map (printSubFormula conjPrec) xs
+printFormula (Disjunction xs) = sepBy (text " \\/ ") $ map (printSubFormula disjPrec) xs
+printFormula (Implication x y) = printSubFormula implPrec x <+> implies <+> printSubFormula implPrec y
+printFormula (Equivalence x y) = printSubFormula equivPrec x <+> equiv <+> printSubFormula equivPrec y
+printFormula (Forall xs f) = forallDoc <+> printVars xs <+> printFormula f
+printFormula (Exists xs f) = exists <+> printVars xs <+> printFormula f
+
+printSubFormula :: Int -> FORMULA -> Doc
+printSubFormula prec f = if (formulaPrec f) > prec
+                            then parens $ printFormula f
+                            else printFormula f  
 
 -- auxiliary functions for printing
 sepBy :: Doc -> [Doc] -> Doc
@@ -105,10 +149,5 @@ printVar (ns, t) = printNames ns <+> colon <+> printType t
 
 printVars :: [([NAME], TYPE)] -> Doc  
 printVars xs = (sepBy (text "; ") $ map printVar xs) <> dot   
-
-termCanForm :: TERM -> (NAME, [TERM])
-termCanForm (Identifier t) = (t, [])
-termCanForm (Appl f args) = (fst $ termCanForm f, (snd $ termCanForm f) ++ args)
-
 
 

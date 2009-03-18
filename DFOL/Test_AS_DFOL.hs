@@ -26,17 +26,14 @@ a = Identifier aTok
 b = Identifier bTok
 plus = Identifier plusTok
 
-decl :: [([NAME], TYPE)]
-decl = [([mTok, nTok], Univ nat), 
-        ([aTok, bTok], Univ $ Appl mat [m, n])]	
-
 commut :: FORMULA
-commut = Forall decl $ Equality (Appl plus [a, b]) (Appl plus [b, a])
+commut = Forall [([mTok, nTok], Univ nat), ([aTok, bTok], Univ $ Appl mat [m, n])] $ Equality (Appl plus [a, b]) (Appl plus [b, a])
 
 spec :: BASIC_SPEC
 spec = Basic_spec [Annoted (Decl [natTok] Sort) (Range []) [] [],
-                   Annoted (Decl [matTok] $ Pi (take 2 decl) Sort) (Range []) [] [],
-                   Annoted (Decl [plusTok] $ Pi decl $ Univ $ Appl mat [m, n]) (Range []) [] [],
+                   Annoted (Decl [matTok] $ Func [Univ nat, Univ nat, Sort]) (Range []) [] [],
+                   Annoted (Decl [plusTok] $ Pi [([mTok, nTok], Univ nat)] $ Func [Univ $ Appl mat [m, n], Univ $ Appl mat [m, n], 
+                                                                                 Univ $ Appl mat [m, n]]) (Range []) [] [],
                    Annoted (Axiom commut) (Range []) [] []]
 
      

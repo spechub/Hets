@@ -5,9 +5,9 @@ Description :  Parser for first-order logic with dependent types (DFOL)
 -}
 
 module DFOL.Parse_AS_DFOL
-       (
+      {- (
            basicSpecP           -- parser for DFOL specifications
-       )  
+       )-}  
        where
 
 import qualified Common.Lexer as Lexer
@@ -45,25 +45,41 @@ basicItemP = do AnnoState.dotT
                 t <- typeP
                 return $ Decl ns t  
                    
--- parser for types          
+-- parser for all types          
 typeP :: AnnoState.AParser st TYPE
-typeP = do AnnoState.asKey "Sort"
-           return Sort 
-        <|> 
-        do AnnoState.asKey "Form"
-           return Form 
-        <|> 
-        do AnnoState.asKey "Univ"
-           t <- termP
-           return $ Univ t
-        <|> 
-        do AnnoState.asKey "Pi"
+typeP = do AnnoState.asKey "Pi"
            vs <- varsP
            t <- typeP
            return $ Pi vs t
         <|> 
-        do t <- termP
-           return $ Univ t
+        do t <- type1P
+           (do AnnoState.asKey Keywords.funS
+               (ts, _) <- type1P `Lexer.separatedBy` (AnnoState.asKey Keywords.funS)
+               return $ Func (t:ts)
+            <|>
+            return t)                 
+ 
+-- parser for basic types and types enclosed in parentheses          
+type1P :: AnnoState.AParser st TYPE
+type1P = do AnnoState.asKey "Sort"
+            return Sort 
+         <|> 
+         do AnnoState.asKey "Form"
+            return Form 
+         <|> 
+         do AnnoState.asKey "Univ"
+            Lexer.oParenT
+            t <- termP
+            Lexer.cParenT
+            return $ Univ t
+         <|> 
+         do t <- termP
+            return $ Univ t
+         <|> 
+         do Lexer.oParenT
+            t <- typeP
+            Lexer.cParenT
+            return t
                 
 -- parser for terms
 termP :: AnnoState.AParser st TERM
