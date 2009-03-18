@@ -14,6 +14,7 @@ translation of CASL to S-Expressions
 module CASL.ToSExpr where
 
 import CASL.Fold
+import CASL.Morphism
 import CASL.Sign
 import CASL.AS_Basic_CASL
 import CASL.Quantification
@@ -61,7 +62,7 @@ varDeclToSExpr (v, s) =
   SList [SSymbol "vardecl-indet", varToSSymbol v, sortToSSymbol s]
 
 sfail :: String -> Range -> a
-sfail s r = error $ show (Diag Error ("unexpected " ++ s) r)
+sfail s = error . show . Diag Error ("unexpected " ++ s)
 
 sRec :: Sign a e -> (f -> SExpr)
      -> Record f SExpr SExpr
@@ -124,18 +125,38 @@ sortSignToSExprs sign =
       : map sortToSSymbol (Set.toList $ sortSet sign))
 
 predMapToSExprs :: Sign a e -> Map.Map Id (Set.Set PredType) -> [SExpr]
-predMapToSExprs sign pm =
+predMapToSExprs sign =
     concatMap (\ (p, ts) -> map (\ t ->
        SList [ SSymbol "predicate"
              , predIdToSSymbol sign p t
              , SList $ map sortToSSymbol $ predArgs t ]) $ Set.toList ts)
-      $ Map.toList pm
+      . Map.toList
 
 opMapToSExprs :: Sign a e -> OpMap -> [SExpr]
-opMapToSExprs sign om =
+opMapToSExprs sign =
     concatMap (\ (p, ts) -> map (\ t ->
        SList [ SSymbol "function"
              , opIdToSSymbol sign p t
              , SList $ map sortToSSymbol $ opArgs t
              , sortToSSymbol $ opRes t ]) $ Set.toList ts)
-      $ Map.toList om
+      . Map.toList
+
+morToSExprs :: Morphism f e m -> [SExpr]
+morToSExprs m =
+  let src = msource m
+      tar = mtarget m
+      sm = sort_map m
+  in map (\ (s, t) -> SList [SSymbol "map", sortToSSymbol s, sortToSSymbol t])
+     (Map.toList sm)
+     ++ Map.foldWithKey (\ i s -> case Set.toList s of
+          [] -> id
+          ot : _ -> let (j, nt) = mapOpSym sm (op_map m) (i, ot) in
+             if i == j then id else
+               (SList [ SSymbol "map", opIdToSSymbol src i ot
+                      , opIdToSSymbol tar j nt] :)) [] (opMap src)
+     ++ Map.foldWithKey (\ i s -> case Set.toList s of
+          [] -> id
+          ot : _ -> let (j, nt) = mapPredSym sm (pred_map m) (i, ot) in
+             if i == j then id else
+               (SList [ SSymbol "map", predIdToSSymbol src i ot
+                      , predIdToSSymbol tar j nt] :)) [] (predMap src)

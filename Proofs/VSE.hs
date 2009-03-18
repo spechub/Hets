@@ -38,12 +38,14 @@ import Logic.Logic
 import Logic.Prover
 import Logic.Comorphism
 import Logic.Coerce
+import Logic.Grothendieck
 
 import VSE.Logic_VSE
 
 import VSE.Prove
 import VSE.ToSExpr
 import Comorphisms.CASL2VSE
+import CASL.ToSExpr
 import CASL.Logic_CASL
 
 import Data.Char
@@ -73,7 +75,7 @@ prove :: [AnyComorphism] -> (LIB_NAME, Node) -> LibEnv
 prove _cms (ln, node) libEnv =
   runResultT $ do
     let dg1 = lookupDGraph ln libEnv
-        dg2 = dg1 { dgBody = elfilter (isGlobalDef . dgl_type) $ dgBody dg1 }
+        dg2 = dg1 { dgBody = elfilter (isGlobalEdge . dgl_type) $ dgBody dg1 }
         dg3 = getSubGraph node dg2
         oLbl = labDG dg3 node
         ostr = thName ln (node, oLbl)
@@ -149,12 +151,25 @@ prove _cms (ln, node) libEnv =
 
 getLinksTo :: LIB_NAME -> DGraph -> LNode DGNodeLab -> String
 getLinksTo ln dg (n, lbl) = show $ prettySExpr $ SList
-  $ map (\ (s, _, el) -> SList
-    [ SSymbol "definition-link"
+  $ map (\ (s, _, el) -> let
+    ltype = dgl_type el
+    defl = isGlobalDef ltype
+    in SList $
+    [ SSymbol $ (if defl then "definition" else "theorem") ++ "-link"
     , SSymbol $ filter (not . isSpace) $ showEdgeId $ dgl_id el
     , SSymbol $ thName ln (s, labDG dg s)
     , SSymbol $ thName ln (n, lbl)
     , SSymbol "global"
-    , SList [SSymbol "morphism"]])
+    , SList $ SSymbol "morphism" : hetMorToSSexpr (dgl_morphism el)]
+    ++ if defl then [] else
+       [SSymbol $ if isProven ltype then "proven" else "open"])
   $ filter (\ (s, _, _) -> s /= n) $ innDG dg n
 
+hetMorToSSexpr :: GMorphism -> [SExpr]
+hetMorToSSexpr (GMorphism cid _ _ mor _) =
+  let tlid = targetLogic cid
+  in case coerceMorphism tlid VSE "" mor of
+       Just vsemor -> morToSExprs vsemor
+       Nothing -> case coerceMorphism tlid CASL "" mor of
+         Just cmor -> morToSExprs cmor
+         Nothing -> []
