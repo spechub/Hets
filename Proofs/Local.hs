@@ -129,9 +129,9 @@ localInferenceAux ln (libEnv, dgraph) ledge@(src, tgt, edgeLab) = let
     maybeThSrc = computeLocalTheory libEnv ln src
     in case maybeThSrc of
     Just thSrc ->
-      case (maybeResult (computeTheory False libEnv ln tgt),
+      case (maybeResult (computeTheory libEnv ln tgt),
                         maybeResult (translateG_theory morphism thSrc)) of
-        (Just (libEnv', G_theory lidTgt _ _ sensTgt _),
+        (Just (G_theory lidTgt _ _ sensTgt _),
               Just (G_theory lidSrc _ _ sensSrc _)) ->
           case maybeResult (coerceThSens lidTgt lidSrc "" sensTgt) of
             Nothing -> noChange
@@ -157,11 +157,11 @@ localInferenceAux ln (libEnv, dgraph) ledge@(src, tgt, edgeLab) = let
                   newEdge = (src, tgt, newLab)
                   oldContents = labDG dgraph tgt
                   (newLibEnv, graphWithChangedTheory) =
-                    if OMap.null goals then (libEnv', dgraph)
+                    if OMap.null goals then noChange
                     else let
                       dg = changeDGH dgraph
                            $ SetNodeLab oldContents (tgt, newContents)
-                      in (Map.adjust (const dg) ln libEnv', dg)
+                      in (Map.adjust (const dg) ln libEnv, dg)
                   newGraph = changesDGH graphWithChangedTheory
                         [DeleteEdge ledge, InsertEdge newEdge]
               in (newLibEnv, groupHistory dgraph locInferRule newGraph)

@@ -86,8 +86,8 @@ getFreeDefMorphism lid libEnv ln dg path = case path of
   [] -> error "getFreeDefMorphism"
   (s, t, l) : rp -> do
     gmor@(GMorphism cid _ _ fmor _) <- return $ dgl_morphism l
-    (_,(G_theory lidth (ExtSign _sign _) _ axs _)) <-
-       resultToMaybe $ computeTheory False libEnv ln s
+    G_theory lidth (ExtSign _sign _) _ axs _ <-
+       resultToMaybe $ computeTheory libEnv ln s
     if isHomogeneous gmor then do
         cfmor <- coerceMorphism (targetLogic cid) lid "getFreeDefMorphism1" fmor
         sens <- coerceSens lidth lid "getFreeDefMorphism4" (toNamedList axs)
@@ -163,8 +163,8 @@ basicInferenceNode checkCons lg (ln, node) libname guiMVar libEnv intSt
       runResultT $ do
         -- compute the theory of the node, and its name
         -- may contain proved theorems
-        (libEnv', thForProof@(G_theory lid1 (ExtSign sign _) _ axs _)) <-
-             liftR $ computeTheory False libEnv ln node
+        thForProof@(G_theory lid1 (ExtSign sign _) _ axs _) <-
+             liftR $ computeTheory libEnv ln node
         let thName = shows (getLIB_ID ln) "_"
                      ++ getNameOfNode node dGraph
             sublogic = sublogicOfTh thForProof
@@ -188,7 +188,7 @@ basicInferenceNode checkCons lg (ln, node) libname guiMVar libEnv intSt
                         t_morphism = incl }
             cc' <- coerceConsChecker lid4 lidT "" cc
             pts <- lift $ cons_check lidT cc' thName mor
-              $ getCFreeDefMorphs lidT libEnv' ln dGraph node
+              $ getCFreeDefMorphs lidT libEnv ln dGraph node
             let resT = case pts of
                   [pt] -> case goalStatus pt of
                     Proved (Just True) -> let
@@ -201,7 +201,7 @@ basicInferenceNode checkCons lg (ln, node) libname guiMVar libEnv intSt
                     st -> fail $ "prover status is: " ++ show st
                   _ -> fail "no unique cons checkers found"
              -- ??? Borrowing to be implemented
-            return (libEnv', resT)
+            return (libEnv, resT)
           Just False -> do -- proving
             -- get known Provers
 
@@ -212,7 +212,7 @@ basicInferenceNode checkCons lg (ln, node) libname guiMVar libEnv intSt
           3. Implement it with BasicInference to avoid GUI stuff
           4. Add it to definition of IsaProve -}
             ch <- ResultT $ emptyCommandHistory intSt
-            let freedefs = getCFreeDefMorphs lid1 libEnv' ln dGraph node
+            let freedefs = getCFreeDefMorphs lid1 libEnv ln dGraph node
             kpMap <- liftR knownProversGUI
             newTh <- ResultT $
                    proofManagementGUI lid1 ProofActions
@@ -233,9 +233,9 @@ basicInferenceNode checkCons lg (ln, node) libname guiMVar libEnv intSt
                 -- update the graph with the new node lab
                 nextDGraph = changeDGH dGraph $ SetNodeLab oldContents
                                          (node, newContents)
-            return ( Map.insert libname nextDGraph libEnv'
+            return ( Map.insert libname nextDGraph libEnv
                    , Result [] Nothing)
-          Nothing -> ResultT $ VSE.prove cms (ln, node) libEnv'
+          Nothing -> ResultT $ VSE.prove cms (ln, node) libEnv
 
 proveKnownPMap :: (Logic lid sublogics1
                basic_spec1

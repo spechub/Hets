@@ -14,8 +14,8 @@ Flattening importings - deleting all inclusion links,
  and inserting a new node, with new computed theory (computeTheory).
 
 Flattening non-disjoint unions - for each node with more than two importings
- modify importings in such a way that at each level, only non-disjoint signatures
- are imported.
+ modify importings in such a way that at each level, only non-disjoint
+ signatures are imported.
 
 Flattening renaming - deterimining renaming link,
 inserting a new node with the renaming morphism applied to theory of a
@@ -90,7 +90,7 @@ lookUpReferenceChain lib_Env libName nd = let
    Just (n_lib,n_nd) -> lookUpReferenceChain lib_Env n_lib n_nd
    Nothing -> (libName,nd)
 
--- this function performs flattening of import links for a given developement graph
+-- this function performs flattening of import links
 dg_flattening_imports :: LibEnv -> LIB_NAME -> Result DGraph
 dg_flattening_imports libEnv ln = do
  let
@@ -99,40 +99,36 @@ dg_flattening_imports libEnv ln = do
   -- part for dealing with the graph itself
   updLib = updateLib libEnv ln nds
   updDG = lookupDGraph ln updLib
+  -- it seems changes of the labels are lost and all edges are simply deleted
   n_dg = changesDGH dg $ map DeleteEdge $ labEdgesDG updDG
  return $ groupHistory dg flat1 n_dg
   where
    updateNode :: LibEnv
                  -> LIB_NAME
                  -> Node
-                 -> Result (LibEnv, DGChange)
+                 -> Result DGChange
    updateNode lib_Env l_n n =
     let
-     --(lib,nd) = lookUpReferenceChain lib_Env l_n n
      dg = lookupDGraph l_n lib_Env
      labRf = labDG dg n
       -- have to consider references here. computeTheory is applied
       -- to the node at the end of the chain of references only.
     in
      do
-      (libEnv2, ndgn_theory) <- computeTheory False lib_Env l_n n
-      return $(libEnv2,
-               SetNodeLab labRf (n,
-               labRf {dgn_theory = ndgn_theory}))
+      ndgn_theory <- computeTheory lib_Env l_n n
+      return $ SetNodeLab labRf (n, labRf {dgn_theory = ndgn_theory})
 
    updateLib :: LibEnv -> LIB_NAME -> [Node] -> LibEnv
    updateLib lib_Env l_n nds =
     case nds of
      [] ->  lib_Env
      hd : tl -> let
-               (libEnv2, change) = propagateErrors (updateNode lib_Env
-                                                              l_n
-                                                              hd)
-               ref_dg = lookupDGraph l_n libEnv2
+               change = propagateErrors (updateNode lib_Env l_n hd)
+               ref_dg = lookupDGraph l_n lib_Env
                u_dg = changeDGH ref_dg change
                new_dg = groupHistory ref_dg flat1 u_dg
               in
-               updateLib (Map.insert l_n new_dg libEnv2) l_n tl
+               updateLib (Map.insert l_n new_dg lib_Env) l_n tl
 
 -- this function performs flattening of imports for the whole library
 libEnv_flattening_imports :: LibEnv -> Result LibEnv
@@ -167,10 +163,10 @@ dg_flattening_renamings lib_Env l_n =
        name = dgn_name lv1
        n_node = getNewNodeDG d_graph
        nlv1 = (do
-                ( _, n_dgn_theory ) <- computeTheory True lib_Env l_n v1
+                n_dgn_theory <- computeTheory lib_Env l_n v1
                 return $ lv1 {dgn_theory = n_dgn_theory } )
        nlv2 = (do
-                ( _, n_dgn_theory ) <- computeTheory True lib_Env l_n v2
+                n_dgn_theory <- computeTheory lib_Env l_n v2
                 return $ lv2 {dgn_theory = n_dgn_theory } )
        n_lnode = (do
              t_dgn_theory <-
@@ -208,7 +204,7 @@ dg_flattening_renamings lib_Env l_n =
                 dev_g = updateDGWithChanges hd d_g
                in applyUpdDG tl $ groupHistory d_g flat4 dev_g
 
--- this function performs flattening of imports with renamings for a given developement graph
+-- this function performs flattening of imports with renamings
 libEnv_flattening_renamings :: LibEnv -> Result LibEnv
 libEnv_flattening_renamings libEnv =
        let
@@ -220,7 +216,7 @@ libEnv_flattening_renamings libEnv =
        in
         return $ Map.fromList new_lib_env
 
--- this function performs flattening of hiding links for a given developement graph
+-- this function performs flattening of hiding links
 dg_flattening_hiding :: DGraph -> DGraph
 dg_flattening_hiding dg = let
    hids = Prelude.filter (\ (_,_,x) -> (case dgl_type x of
@@ -265,15 +261,15 @@ dg_flattening_heterogen libEnv ln = do
       -- have to consider references here. computeTheory is applied to the
       -- node at the end of the chain of references only.
       (lname,nd) = lookUpReferenceChain lib_Env l_n hd
-      labRf = labDG (lookupDGraph lname lib_Env) nd
-      (libEnv2, change) = propagateErrors $ do
-        (le, ndgn_theory) <- computeTheory False lib_Env lname nd
-        return (le, SetNodeLab labRf (nd, labRf {dgn_theory = ndgn_theory}))
-      odg = lookupDGraph lname libEnv2
+      odg = lookupDGraph lname lib_Env
+      labRf = labDG odg nd
+      change = propagateErrors $ do
+        ndgn_theory <- computeTheory lib_Env lname nd
+        return $ SetNodeLab labRf (nd, labRf {dgn_theory = ndgn_theory})
       cdg = changeDGH odg change
       n_dg = groupHistory odg flat6 cdg
      in
-      (updateNodes (Map.insert lname n_dg libEnv2) l_n tl)
+      (updateNodes (Map.insert lname n_dg lib_Env) l_n tl)
 
 -- this function performs flattening of heterogeniety for the whole library
 libEnv_flattening_heterogen :: LibEnv -> Result LibEnv
@@ -551,7 +547,7 @@ singleTree_flattening_dunions libEnv libName nd =
 -- non-disjoint unions for the whole library
 libEnv_flattening_dunions :: LibEnv -> Result LibEnv
 libEnv_flattening_dunions lib = do
- new_lib_env <- mapM (\ (l_name,_) -> do
+ new_lib_env <- mapM (\ (l_name, _) -> do
          n_dg <- dg_flattening_dunions lib l_name
          return $ (l_name, n_dg)) $ Map.toList lib
  return $ Map.fromList new_lib_env

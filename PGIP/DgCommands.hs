@@ -219,7 +219,7 @@ selectANode x dgState
     -- computes the theory of a given node
     -- (i.e. solves DGRef cases and so on,
     -- see CASL Reference Manual, p.294, Def 4.9)
-    gth n = computeTheory False (i_libEnv dgState)
+    gth n = computeTheory (i_libEnv dgState)
                           (i_ln dgState)
                           n
     nodeName t=case find(\(n,_)-> n==t) $ getAllNodes dgState of
@@ -233,7 +233,7 @@ selectANode x dgState
     -- result as one element list, otherwise an
     -- empty list
       case gth x of
-       Result _ (Just (_le, th@(G_theory lid _ _ _ _))) ->
+       Result _ (Just th@(G_theory lid _ _ _ _)) ->
        -- le not used and should be
         do
          let sl = sublogicOfTh th

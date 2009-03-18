@@ -268,8 +268,8 @@ checkConservativityEdge :: Bool -> (LEdge DGLinkLab) -> LibEnv -> LIB_NAME
                            -> IO (String,LibEnv, ProofHistory)
 checkConservativityEdge useGUI (source,target,linklab) libEnv ln
  = do
-    let (_,thTar) =
-         case computeTheory True libEnv ln target of
+    let thTar =
+         case computeTheory libEnv ln target of
           Result _ (Just th1) -> th1
           _ -> error "checkconservativityOfEdge: computeTheory"
     G_theory lid _sign _ sensTar _ <- return thTar
@@ -284,8 +284,8 @@ checkConservativityEdge useGUI (source,target,linklab) libEnv ln
                comp morphism2' morphism3' of
                  Result _ (Just phi) -> phi
                  _ -> error "checkconservativityOfEdge: comp"
-    let (_le', thSrc) =
-         case computeTheory False libEnv ln source of
+    let thSrc =
+         case computeTheory libEnv ln source of
            Result _ (Just th1) -> th1
            _ -> error "checkconservativityOfEdge: computeTheory"
     G_theory lid1 sign1 _ sensSrc1 _ <- return thSrc

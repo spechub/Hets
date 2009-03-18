@@ -113,54 +113,38 @@ theoremHideShiftFromList ln ls =
   return . Map.adjust (theoremHideShiftAux ls) ln
 
 ----------------------------------------------------
-{- compute the theory of a node, using normal forms when available -}
+{- | compute the theory of a node, using normal forms when available -}
 
-computeTheory :: Bool -> LibEnv -> LIB_NAME -> Node ->
-                 Result (LibEnv, G_theory)
-computeTheory useNf libEnv ln n =
+computeTheory :: LibEnv -> LIB_NAME -> Node -> Result G_theory
+computeTheory libEnv ln n =
   let dg = lookupDGraph ln libEnv
       nodelab = labDG dg n
       isDefLink = liftOr isGlobalDef $ liftOr isLocalDef
         $ liftOr isFreeEdge isCofreeEdge
       inEdges = filter (liftE isDefLink) $ innDG dg n
       localTh = dgn_theory nodelab
-  in
-   if isDGRef nodelab then do
+  in if isDGRef nodelab then do
     let refLn = dgn_libname nodelab
         refNode = dgn_node nodelab
-    (_, refTh) <- computeTheory useNf libEnv refLn refNode
+    refTh <- computeTheory libEnv refLn refNode
     -- local sentences have to be mapped along dgn_sigma if refNode has hiding
     localTh' <- let
         dg' = lookupDGraph refLn libEnv
         newLab = labDG dg' refNode
-        in if useNf && labelHasHiding newLab then case dgn_sigma newLab of
-                Nothing -> return localTh
+        in case dgn_sigma newLab of
+             Nothing -> return localTh
                         -- normal form computation failed
-                Just phi ->  translateG_theory phi localTh
-           else return localTh
-    joinTh <- joinG_sentences (theoremsToAxioms refTh) localTh'
-    return (libEnv, joinTh)
-   else
-    if useNf && labelHasHiding nodelab then case dgn_nf nodelab of
-       Just nfN -> computeTheory False libEnv ln nfN
-       Nothing -> computeTheory False libEnv ln n
-        -- if it fails or colimits are not implemented,
-        -- use old version
-          -- set flag to False, so compute without checking hiding
-          -- for normal form node
-    else do
-     ths <- mapM (computePathTheory libEnv ln) $ sortBy
+             Just phi -> translateG_theory phi localTh
+    joinG_sentences (theoremsToAxioms refTh) localTh'
+   else do
+       ths <- mapM (computePathTheory libEnv ln) $ sortBy
             (\ (_, _, l1) (_, _, l2) -> compare (dgl_id l2) $ dgl_id l1) inEdges
-     ths' <- flatG_sentences localTh ths
-     return (libEnv, ths')
+       flatG_sentences localTh ths
 
 computePathTheory :: LibEnv -> LIB_NAME -> LEdge DGLinkLab -> Result G_theory
 computePathTheory libEnv ln e@(src, _, link) = do
   th <- if liftE isLocalDef e then computeLocalTheory libEnv ln src
-        else do
-          (_, th') <- computeTheory False libEnv ln src
-                      -- because this function is called only when flag is False
-          return th'
+        else computeTheory libEnv ln src
   -- translate theory and turn all imported theorems into axioms
   translateG_theory (dgl_morphism link) $ theoremsToAxioms th
 

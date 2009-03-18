@@ -99,7 +99,7 @@ writeLibEnv opts filePrefix lenv ln ot =
       OmdocOut -> hetsToOMDoc opts (ln, lenv) f
 #endif
 
-      ExperimentalOut -> 
+      ExperimentalOut ->
           writeVerbFile opts (filePrefix ++ ".xml")
             $ xmlOut $ exportDGraph ln (lookupDGraph ln lenv)
 
@@ -165,7 +165,7 @@ writeTheory opts filePrefix ga
     ExperimentalOut -> do
       when (language_name lid == language_name CASL) $ do
         (sign, sens) <- coerceBasicTheory lid CASL "" th
-        writeVerbFile opts (f ++ ".xml") $ testXmlOut 
+        writeVerbFile opts (f ++ ".xml") $ testXmlOut
                        $ listToXml (export_signToOmdoc CASL i (getLIB_ID ln) sign)
                        ++ concatMap (listToXml . export_senToOmdoc
                                      CASL i (getLIB_ID ln) sign) sens
@@ -237,13 +237,12 @@ writeTheoryFiles :: HetcatsOpts -> [OutType] -> FilePath -> LibEnv
                  -> GlobalAnnos -> LIB_NAME -> SIMPLE_ID -> Int -> IO ()
 writeTheoryFiles opts specOutTypes filePrefix lenv ga ln i n =
     unless (isDGRef $ labDG (lookupDGraph ln lenv) n) $ do
-    let Result ds mcTh = computeTheory False lenv ln n
+    let Result ds mcTh = computeTheory lenv ln n
     showDiags opts ds
     case mcTh of
       Nothing -> putIfVerbose opts 0 $ "could not compute theory of spec "
                  ++ show i
-      Just (_lenv', raw_gTh0) -> do
-                    -- what do I do with lenv' here?
+      Just raw_gTh0 -> do
             let tr = transNames opts
                 Result es mTh = if null tr then return (raw_gTh0, "") else do
                    comor <- lookupCompComorphism (map tokStr tr) logicGraph

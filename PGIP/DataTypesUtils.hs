@@ -150,11 +150,8 @@ getTh useTrans x st
     -- compute the theory for a given node
        fn n = case i_state $ intState st of
                Nothing -> Nothing
-               Just ist ->
-                case computeTheory False (i_libEnv ist) (i_ln ist) n of
-                 Result _ (Just (_, th)) -> Just th
-                 _                       -> Nothing
-
+               Just ist -> maybeResult $
+                 computeTheory (i_libEnv ist) (i_ln ist) n
    in
     case useTrans of
      Dont_translate -> fn x

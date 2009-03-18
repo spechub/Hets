@@ -447,8 +447,8 @@ lookupTheoryOfNode :: LibEnv -> LIB_NAME -> Int
                    -> IO (Res.Result (LibEnv, Node, G_theory))
 lookupTheoryOfNode libEnv ln descr =
   return $ do
-    (libEnv', gth) <- computeTheory True libEnv ln descr
-    return (libEnv', descr, gth)
+    gth <- computeTheory libEnv ln descr
+    return (libEnv, descr, gth)
 
 showDiagMessAux :: Int -> [Diagnosis] -> IO ()
 showDiagMessAux v ds = let es = Res.filterDiags v ds in
@@ -496,9 +496,9 @@ translateTheoryOfNode gInfo@(GInfo { hetcatsOpts = opts
   Nothing -> return ()
   Just ist -> do
     let libEnv = i_libEnv ist
-        Res.Result ds mEnv = computeTheory False libEnv ln node
-    case mEnv of
-      Just (_, th@(G_theory lid sign _ sens _)) -> do
+        Res.Result ds moTh = computeTheory libEnv ln node
+    case moTh of
+      Just th@(G_theory lid sign _ sens _) -> do
          -- find all comorphism paths starting from lid
          let paths = findComorphismPaths logicGraph (sublogicOfTh th)
          -- let the user choose one
