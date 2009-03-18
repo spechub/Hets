@@ -69,7 +69,7 @@ bracket s = "[" ++ s ++ "]"
 -- use the same strings for parsing and printing!
 verboseS, intypeS, outtypesS, skipS, structS, transS,
      guiS, libdirS, outdirS, amalgS, specS, recursiveS,
-     interactiveS, modelSparQS, connectS, xmlS, listenS :: String
+     interactiveS, modelSparQS, connectS, xmlS, listenS, normalFormS :: String
 
 modelSparQS = "modelSparQ"
 verboseS = "verbose"
@@ -88,6 +88,7 @@ interactiveS = "interactive"
 connectS = "connect"
 xmlS = "xml"
 listenS = "listen"
+normalFormS = "normal-form"
 
 genTermS, treeS, bafS :: String
 genTermS = "gen_trm"
@@ -140,6 +141,7 @@ data HetcatsOpts = HcOpt     -- for comments see usage info
   , connectH :: String
   , uncolored :: Bool
   , xmlFlag :: Bool
+  , computeNormalForm :: Bool
   , dumpOpts :: [String]
   , listen :: Int }
 
@@ -167,6 +169,7 @@ defaultHetcatsOpts = HcOpt
   , connectH = ""
   , uncolored = False
   , xmlFlag = False
+  , computeNormalForm = False
   , dumpOpts = []
   , listen   = -1 }
 
@@ -185,6 +188,7 @@ instance Show HetcatsOpts where
     ++ showEqOpt outdirS (outdir opts)
     ++ showEqOpt outtypesS (joinWith ',' $ map show $ outtypes opts)
     ++ (if recurse opts then showOpt recursiveS else "")
+    ++ (if computeNormalForm opts then showOpt normalFormS else "")
     ++ showEqOpt specS (joinWith ',' $ map show $ specNames opts)
     ++ showEqOpt transS (joinWith ':' $ map show $ transNames opts)
     ++ showEqOpt amalgS (tail $ init $ show $
@@ -200,6 +204,7 @@ data Flag =
   | Uncolored
   | Version
   | Recurse
+  | NormalForm
   | Help
   | Gui GuiType
   | Analysis AnaType
@@ -233,6 +238,7 @@ makeOpts opts flg = case flg of
     OutDir x   -> opts { outdir = x }
     OutTypes x -> opts { outtypes = x }
     Recurse    -> opts { recurse = True }
+    NormalForm -> opts { computeNormalForm = True }
     Specs x    -> opts { specNames = x }
     Trans x    -> opts { transNames = x }
     Verbose x  -> opts { verbose = x }
@@ -459,6 +465,8 @@ options = let
        ++ bS ++ tptpS ++ bracket cS)
     , Option ['R'] [recursiveS] (NoArg Recurse)
       "output also imported libraries"
+    , Option ['N'] [normalFormS] (NoArg NormalForm)
+      "compute normal forms (takes long)"
     , Option ['n'] [specS] (ReqArg parseSpecOpts "NSPECS")
       ("process specs option " ++ crS ++ listS ++ " SIMPLE-ID")
     , Option ['t'] [transS] (ReqArg parseTransOpt "TRANS")
