@@ -74,16 +74,16 @@ prove :: [AnyComorphism] -> (LIB_NAME, Node) -> LibEnv
       -> IO (Result (LibEnv, Result G_theory))
 prove _cms (ln, node) libEnv =
   runResultT $ do
-    let dg1 = lookupDGraph ln libEnv
+    qLibEnv <- liftR $ qualifyLibEnv libEnv
+    let dg1 = lookupDGraph ln qLibEnv
         dg2 = dg1 { dgBody = elfilter (isGlobalEdge . dgl_type) $ dgBody dg1 }
         dg3 = getSubGraph node dg2
         oLbl = labDG dg3 node
         ostr = thName ln (node, oLbl)
-    dg4 <- liftR $ qualifyDGraph ln dg3
     G_theory olid _ _ _ _ <- return $ dgn_theory oLbl
     let mcm = if Logic CASL == Logic olid then Just (Comorphism CASL2VSE) else
              Nothing
-    dGraph <- liftR $ maybe return (flip dg_translation) mcm dg4
+    dGraph <- liftR $ maybe return (flip dg_translation) mcm dg3
     let nls = topsortedNodes dGraph
         ns = map snd nls
     ts <- liftR $ mapM
