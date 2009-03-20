@@ -84,13 +84,13 @@ exportLinkLab _ _ _ = Nothing
 
 
 makeMorphism :: LIB_ID -> GMorphism -> TCElement
-makeMorphism _ (GMorphism cid _ _ mor _) = 
+makeMorphism _ (GMorphism cid _ _ mor _) =
     export_morphismToOmdoc (targetLogic cid) mor
 
 
 cdFromNode :: LIB_ID -> DGNodeLab -> OMCD
 cdFromNode libid lb =
-    CD (show $ getName $ dgn_name lb) $
+    CD (getDGNodeName lb) $
     Just $ show $ if isDGRef lb
                   then getLIB_ID $ ref_libname $ nodeInfo lb
                   else libid
