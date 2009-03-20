@@ -18,6 +18,8 @@ module OMDoc.Export
 
 import Logic.Logic
 import Logic.Prover
+import Logic.Grothendieck
+import Logic.Comorphism
 
 import Static.DevGraph
 import Static.GTheory
@@ -53,27 +55,37 @@ exportNodeLab libid dg (n, lb)
       in case dgn_theory lb of
         G_theory lid (ExtSign sig _) _ sens _ ->
          TLTheory (show specid) $
-          (catMaybes $ map (buildImport libid dg lb) $ (innDG dg n))
+          (catMaybes $ map (makeImport libid dg lb) $ (innDG dg n))
          ++ (export_signToOmdoc lid specid libid sig)
-         ++ (concatMap (export_senToOmdoc lid specid libid sig) $ toNamedList sens)
+         ++ (map (export_senToOmdoc lid specid libid sig) $ toNamedList sens)
 
-buildImport :: LIB_ID -> DGraph -> DGNodeLab -> LEdge DGLinkLab ->
+
+makeImport :: LIB_ID -> DGraph -> DGNodeLab -> LEdge DGLinkLab ->
                Maybe TCElement
-buildImport libid dg nlb (from, _, (DGLink _ GlobalDef _ _)) = Just $
+makeImport libid dg nlb (from, _, (DGLink mor GlobalDef _ _)) = Just $
     let
         fromnode = labDG dg from
-    in TCImport $ cdFromNode libid fromnode
+    in TCImport (cdFromNode libid fromnode) $ makeMorphism libid mor
 
-buildImport _ _ _ _ = Nothing
+makeImport _ _ _ _ = Nothing
+
 
 -- | Given a TheoremLink we compute the view
 exportLinkLab :: LIB_ID -> DGraph -> LEdge DGLinkLab -> Maybe TLElement
-exportLinkLab libid dg (from, to, (DGLink _ (GlobalThm _ c _) _ _)) = Just $
+exportLinkLab libid dg (from, to, (DGLink mor (GlobalThm _ c _) _ _)) = Just $
     let
         fromnode = labDG dg from
         tonode = labDG dg to
-    in TLView (cdFromNode libid fromnode) (cdFromNode libid tonode)
+    in TLView (cdFromNode libid fromnode)
+           (cdFromNode libid tonode)
+           $ makeMorphism libid mor
+
 exportLinkLab _ _ _ = Nothing
+
+
+makeMorphism :: LIB_ID -> GMorphism -> TCElement
+makeMorphism _ (GMorphism cid _ _ mor _) = 
+    export_morphismToOmdoc (targetLogic cid) mor
 
 
 cdFromNode :: LIB_ID -> DGNodeLab -> OMCD
@@ -82,3 +94,24 @@ cdFromNode libid lb =
     Just $ show $ if isDGRef lb
                   then getLIB_ID $ ref_libname $ nodeInfo lb
                   else libid
+
+
+
+{-
+data DGLinkLab = DGLink
+  { dgl_morphism :: GMorphism  -- signature morphism of link
+  , dgl_type :: DGLinkType     -- type: local, global, def, thm?
+  , dgl_origin :: DGLinkOrigin -- origin in input language
+  , dgl_id :: EdgeId          -- id of the edge
+  } deriving (Show, Eq)
+
+
+GMorphism
+    { gMorphismComor :: cid
+    , gMorphismSign :: ExtSign sign1 symbol1
+    , gMorphismSignIdx :: SigId -- ^ 'G_sign' index of source signature
+    , gMorphismMor :: morphism2
+    , gMorphismMorIdx :: MorId  -- ^ `G_morphism index of target morphism
+    } deriving Typeable
+-}
+

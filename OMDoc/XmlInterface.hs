@@ -30,7 +30,6 @@ module OMDoc.XmlInterface
 
 import OMDoc.DataTypes
 import Text.XML.Light
-import Data.Set
 import Data.Maybe
 
 -- | The implemented OMDoc version
@@ -41,7 +40,7 @@ omdoc_current_version = "1.2"
 el_omdoc, el_theory, el_view, el_axiom, el_theorem, el_symbol, el_import
  , el_type, el_fmp, el_omobj, el_ombind, el_oms, el_ombvar, el_omattr
  , el_omatp, el_omv, el_oma, el_adt, el_sortdef, el_constructor
- , el_argument, el_insort, el_selector :: QName
+ , el_argument, el_insort, el_selector, el_requation, el_morphism :: QName
 
 el_omdoc = (blank_name { qName = "omdoc" })
 el_theory = (blank_name { qName = "theory" })
@@ -67,6 +66,8 @@ el_constructor = (blank_name { qName = "constructor" })
 el_argument = (blank_name { qName = "argument" })
 el_insort = (blank_name { qName = "insort" })
 el_selector = (blank_name { qName = "selector" })
+el_requation = (blank_name { qName = "requation" })
+el_morphism = (blank_name { qName = "morphism" })
 
 el_axiom_or_theorem :: Bool -> QName
 el_axiom_or_theorem True = el_axiom
@@ -99,10 +100,10 @@ class XmlRepresentable a where
 
 
 listToXml :: XmlRepresentable a => [a] -> [Content]
-listToXml l = Prelude.map toXml l
+listToXml l = map toXml l
 
 listFromXml :: XmlRepresentable a => [Content] -> [a]
-listFromXml elms = catMaybes $ Prelude.map fromXml (onlyElems elms)
+listFromXml elms = catMaybes $ map fromXml (onlyElems elms)
 
 makeComment :: String -> Content
 makeComment s = Text $ CData CDataRaw ("<!-- " ++ s ++ " -->") Nothing
@@ -111,6 +112,11 @@ typeToXml :: OMElement -> Content
 typeToXml t = Elem $ Element el_type []
               [Elem $ Element el_omobj [] [toXml t] Nothing]
               Nothing
+
+requationToXml :: (OMElement, OMElement) -> Content
+requationToXml (from, to) = Elem $ Element el_requation []
+                            [toXml from, toXml to]
+                            Nothing
 
 -- | The root instance for representing OMDoc in XML
 instance XmlRepresentable OMDoc where
@@ -132,10 +138,10 @@ instance XmlRepresentable TLElement where
          [Attr at_id tid]
          (listToXml elms)
          Nothing)
-    toXml (TLView (CD cdFrom _) (CD cdTo _)) = 
+    toXml (TLView (CD cdFrom _) (CD cdTo _) mor) = 
         (Elem $ Element el_view
          [Attr at_from $ cdFrom, Attr at_to $ cdTo]
-         []
+         [toXml mor]
          Nothing)
     fromXml (Element n _ _ _)
         | n == el_theory = 
@@ -163,10 +169,15 @@ instance XmlRepresentable TCElement where
          Nothing
     toXml (TCADT sds) = (Elem $ Element el_adt [] (listToXml sds) Nothing)
     toXml (TCComment c) = (makeComment c)
-    toXml (TCImport (CD cd cdbase)) = 
+    toXml (TCImport (CD cd cdbase) mor) = 
         Elem $ Element el_import
          [Attr at_from $ cd] -- ++ (show cdbase)]
+         [toXml mor]
+         Nothing
+    toXml (TCMorphism mapping) = 
+        Elem $ Element el_morphism
          []
+         (map requationToXml mapping)
          Nothing
     fromXml (Element n _ _ _)
         | n == el_axiom = 
@@ -277,13 +288,15 @@ testXmlOut l = ppTopElement $
                Element el_omdoc [] ((makeComment "Testoutput"):l) Nothing
 
 testXmlOut2 :: [Element] -> String
-testXmlOut2 l = testXmlOut $ Prelude.map Elem l
+testXmlOut2 l = testXmlOut $ map Elem l
 
+{-
 collectQNames :: (Set QName) -> Element -> (Set QName)
-collectQNames s (Element q _ c _) = insert q $ unions $ Prelude.map (collectQNames s) $ onlyElems c
+collectQNames s (Element q _ c _) = insert q $ unions $ map (collectQNames s) $ onlyElems c
 
 allQNames :: Element -> [QName]
 allQNames e = Data.Set.toList $ collectQNames Data.Set.empty e
+-}
 
 getXml :: String -> IO Element
 getXml s = readFile s >>= (return . Data.Maybe.fromJust . parseXMLDoc)

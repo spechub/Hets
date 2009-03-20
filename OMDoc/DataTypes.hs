@@ -27,7 +27,7 @@ data OMDoc = OMDoc String [TLElement]
 
 -- | Toplevel elements for OMDoc
 data TLElement = TLTheory String [TCElement]
-               | TLView OMCD OMCD
+               | TLView OMCD OMCD TCElement
                  deriving (Show, Eq, Ord)
 
 -- | Theory constitutive elements for OMDoc
@@ -39,7 +39,9 @@ data TCElement =
     -- | Algebraic Data Type represents free/generated types
   | TCADT [OmdADT]
     -- | Import statements for referencing other theories
-  | TCImport OMCD
+  | TCImport OMCD TCElement
+    -- | Morphisms to specify signature mappings
+  | TCMorphism [(OMElement, OMElement)]
     -- | A comment, only for development purposes
   | TCComment String
     deriving (Show, Eq, Ord)
