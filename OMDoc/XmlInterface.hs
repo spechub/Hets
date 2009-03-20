@@ -44,7 +44,8 @@ el_omdoc, el_theory, el_view, el_axiom, el_theorem, el_symbol, el_import
 
 el_omdoc = (blank_name { qName = "omdoc" })
 el_theory = (blank_name { qName = "theory" })
-el_view = (blank_name { qName = "view" })
+-- has perhaps to be renamed to view, depends on the omdoc version
+el_view = (blank_name { qName = "theory-inclusion" })
 el_axiom = (blank_name { qName = "axiom" })
 el_theorem = (blank_name { qName = "theorem" })
 el_symbol = (blank_name { qName = "symbol" })
