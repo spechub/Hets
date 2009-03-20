@@ -24,7 +24,6 @@ module OMDoc.XmlInterface
     , listToXml
     , listFromXml
     , makeComment
-    , testXmlOut
     , xmlOut
     ) where
 
@@ -100,6 +99,11 @@ class XmlRepresentable a where
   fromXml :: Element -> Maybe a
 
 
+xmlOut :: XmlRepresentable a => a -> String
+xmlOut obj = case toXml obj of (Elem e) -> ppTopElement e
+                               c -> ppContent c
+
+
 listToXml :: XmlRepresentable a => [a] -> [Content]
 listToXml l = map toXml l
 
@@ -115,9 +119,11 @@ typeToXml t = Elem $ Element el_type []
               Nothing
 
 requationToXml :: (OMElement, OMElement) -> Content
-requationToXml (from, to) = Elem $ Element el_requation []
-                            [toXml from, toXml to]
-                            Nothing
+requationToXml (from, to) =
+    Elem $ Element el_requation []
+             [Elem $ Element el_omobj [] [toXml from] Nothing,
+              Elem $ Element el_omobj [] [toXml to] Nothing]
+    Nothing
 
 -- | The root instance for representing OMDoc in XML
 instance XmlRepresentable OMDoc where
@@ -170,9 +176,9 @@ instance XmlRepresentable TCElement where
          Nothing
     toXml (TCADT sds) = (Elem $ Element el_adt [] (listToXml sds) Nothing)
     toXml (TCComment c) = (makeComment c)
-    toXml (TCImport (CD cd cdbase) mor) = 
+    toXml (TCImport (CD c cdb) mor) = 
         Elem $ Element el_import
-         [Attr at_from $ cd] -- ++ (show cdbase)]
+         [Attr at_from $ c] -- ++ (show cdb)]
          [toXml mor]
          Nothing
     toXml (TCMorphism mapping) = 
@@ -259,88 +265,3 @@ instance XmlRepresentable OMAttribute where
     fromXml (Element _ _ _ _) = Nothing
         
 
-
----------------------------------------------------------------------
----------------------------------------------------------------------
----------------------------------------------------------------------
----------------------------------------------------------------------
-------------------------- END OF DOCUMENT ---------------------------
----------------------------------------------------------------------
----------------------------------------------------------------------
----------------------------------------------------------------------
----------------------------------------------------------------------
----------------------------------------------------------------------
--- TESTPART:
-
--- hets -v2 -o exp -n "Nat3" -O "/home/ewaryst/temp/omdtests" TestSuite/Correct/omdoc_output_test.casl
-
-
--- 
--- h <- readFile "/tmp/Numbers.xml" >>= (\x -> return $ Hide $ Data.Maybe.fromJust $ parseXMLDoc x)
-
--- fmap (length . show . (filter (\x -> case x of (CRef _) -> True ; _ -> False)) . elContent) h
-
-xmlOut :: XmlRepresentable a => a -> String
-xmlOut obj = case toXml obj of (Elem e) -> ppTopElement e
-                               c -> ppContent c
-
-testXmlOut :: [Content] -> String
-testXmlOut l = ppTopElement $
-               Element el_omdoc [] ((makeComment "Testoutput"):l) Nothing
-
-testXmlOut2 :: [Element] -> String
-testXmlOut2 l = testXmlOut $ map Elem l
-
-{-
-collectQNames :: (Set QName) -> Element -> (Set QName)
-collectQNames s (Element q _ c _) = insert q $ unions $ map (collectQNames s) $ onlyElems c
-
-allQNames :: Element -> [QName]
-allQNames e = Data.Set.toList $ collectQNames Data.Set.empty e
--}
-
-getXml :: String -> IO Element
-getXml s = readFile s >>= (return . Data.Maybe.fromJust . parseXMLDoc)
-
-
-data Hide a = Hide a
-
-instance Functor Hide where fmap f (Hide x) = Hide (f x)
-
-instance Show a => Show (Hide a) where show (Hide x) = take 300 (show x)
-
-theHidden :: (Hide a) -> a
-theHidden (Hide x) = x
-
-data MyD a = A a | N a | C a | S a deriving Show
-
-class DRep a where
-    toM :: a -> MyD String
-    fromM :: MyD String -> Maybe a
-
-
-instance DRep Char where
-    toM c = C [c]
-    fromM (C c) = Just (head c)
-    fromM _ = Nothing
-
-instance DRep String where
-    toM s = S s
-    fromM (S s) | s == "hallo" = Just "Es sagt hallo!"
-                | otherwise = Just s
-    fromM _ = Nothing
-
-instance DRep Integer where
-    toM n = N $ show n
-    fromM (N n) = Just (read n)
-    fromM (S s) | s == "hallo" = Just 100
-                | otherwise = Just $ 10000000 + (read s)
-    fromM _ = Nothing
-
-{- Tests:
-(fromM $ N "51231")::(Maybe Integer)
-(fromM $ S "100")::(Maybe Integer)
-toM 'a'
-toM 100
-
--}
