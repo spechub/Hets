@@ -32,13 +32,12 @@ import CASL.Sign
 import CASL.Morphism
 import CASL.Fold
 import CASL.Quantification
-import CASL.ToDoc
 
 import Data.Map as Map
 import Data.Set as Set
 
 -- | the identifier of a specification, combining the specid and the libid
-data SPEC_ID = SPEC_ID Id Id deriving Show
+data SPEC_ID = SPEC_ID Id Id | NOSPEC deriving Show
 
 exportSignToOmdoc ::  (Show f, Pretty e) => SIMPLE_ID -> LIB_ID -> Sign f e -> [TCElement]
 exportSignToOmdoc sid lid sign =
@@ -48,14 +47,18 @@ exportSignToOmdoc sid lid sign =
  ++ Map.elems (mapWithKey (predSignToOmdoc spid sign) (predMap sign))
      where spid = (SPEC_ID (simpleIdToId sid) (libIdToId lid))
 
-exportMorphismToOmdoc :: SIMPLE_ID -> LIB_ID -> Morphism f e ()
-                      -> [TCElement]
---exportMorphismToOmdoc sid lid morphism = []
-exportMorphismToOmdoc _ _ _ = []
+
+exportMorphismToOmdoc :: Morphism f e m -> TCElement
+--exportMorphismToOmdoc morphism = []
+--exportMorphismToOmdoc _ = error "not implemented yet"
+exportMorphismToOmdoc (Morphism _ _ sortmap opmap predmap _) = 
+    TCMorphism $ Map.elems (mapWithKey (makeSortMapEntry NOSPEC) sortmap)
+              ++ Map.elems (mapWithKey (makeOpMapEntry NOSPEC) opmap)
+              ++ Map.elems (mapWithKey (makePredMapEntry NOSPEC) predmap)
 
 
 exportSenToOmdoc :: Pretty f => SIMPLE_ID -> LIB_ID -> Sign f e -> Named(FORMULA f)
-                 -> [TCElement]
+                 -> TCElement
 exportSenToOmdoc sid lid sign f =
     let spid  = (SPEC_ID (simpleIdToId sid) (libIdToId lid))
         sname = (senAttr f)
@@ -63,12 +66,12 @@ exportSenToOmdoc sid lid sign f =
     in
       case sen of
         -- CLEANUP: Remove the comment later
-        Sort_gen_ax cs b -> [TCComment $ show $ printTheoryFormula f,
-                             buildADTsFromConstraints spid sign cs b]
-        _ -> [TCAxiomOrTheorem True sname $ foldFormula
-              (omdocRec spid
-               sign (\_ -> error "CASL extension not supported."))
-              sen]
+        Sort_gen_ax cs b -> makeADTsFromConstraints spid sign cs b
+        _ -> TCAxiomOrTheorem True sname $ foldFormula
+             (omdocRec spid
+              sign (\_ -> error "CASL extension not supported."))
+             sen
+
 
 sfail :: String -> Range -> a
 sfail s r = error $ show (Diag Error ("unexpected " ++ s) r)
@@ -76,25 +79,25 @@ sfail s r = error $ show (Diag Error ("unexpected " ++ s) r)
 
 -------------------------- ADT --------------------------
 
-buildADTsFromConstraints :: SPEC_ID -> Sign f e -> [Constraint] -> Bool
+makeADTsFromConstraints :: SPEC_ID -> Sign f e -> [Constraint] -> Bool
                          -> TCElement
-buildADTsFromConstraints spid _ cs b = 
-    TCADT $ Prelude.map (buildADTSortDef spid b) cs
+makeADTsFromConstraints spid _ cs b = 
+    TCADT $ Prelude.map (makeADTSortDef spid b) cs
 
-buildADTSortDef :: SPEC_ID -> Bool -> Constraint -> OmdADT
-buildADTSortDef spid b (Constraint s l _) = 
+makeADTSortDef :: SPEC_ID -> Bool -> Constraint -> OmdADT
+makeADTSortDef spid b (Constraint s l _) = 
     ADTSortDef (idToName spid s) b $
-    Prelude.map (buildADTConstructor spid . fst) l
+    Prelude.map (makeADTConstructor spid . fst) l
 
-buildADTConstructor :: SPEC_ID -> OP_SYMB -> OmdADT
-buildADTConstructor spid (Qual_op_name n (Op_type _ args _ _) _) =
-    ADTConstr (idToName spid n) $ Prelude.map (buildADTArgument spid) args
+makeADTConstructor :: SPEC_ID -> OP_SYMB -> OmdADT
+makeADTConstructor spid (Qual_op_name n (Op_type _ args _ _) _) =
+    ADTConstr (idToName spid n) $ Prelude.map (makeADTArgument spid) args
 
-buildADTConstructor _ (Op_name (Id _ _ r)) = sfail "No_qual_op" r
+makeADTConstructor _ (Op_name (Id _ _ r)) = sfail "No_qual_op" r
 
 -- No support for selectors
-buildADTArgument :: SPEC_ID -> SORT -> OmdADT
-buildADTArgument spid s = ADTArg (sortToOmdoc spid s) Nothing
+makeADTArgument :: SPEC_ID -> SORT -> OmdADT
+makeADTArgument spid s = ADTArg (sortToOmdoc spid s) Nothing
 
 
 -------------------------- Theory constitutive --------------------------
@@ -107,12 +110,13 @@ sortSignToOmdoc spid _ s
 
 
 -- assuming here the the set of pred types contains only one Element!
-predSignToOmdoc :: SPEC_ID -> Sign a e -> Id -> (Set.Set PredType) -> TCElement
+predSignToOmdoc :: SPEC_ID -> Sign a e -> Id -> (Set.Set PredType) ->
+                   TCElement
 predSignToOmdoc spid _ p ptypes
     | isLocalId spid p =
         TCSymbol
         (idToName spid p)
-        (Just (buildType spid Total (predArgs $ Set.findMin ptypes) Nothing))
+        (Just $ makePredType spid $ Set.findMin ptypes)
         Obj
     -- CLEANUP: Have to be filtered completely
     | otherwise = TCComment $ "nonlocal predicate: " ++ (show p)
@@ -124,7 +128,7 @@ funSignToOmdoc spid _ f ftypes
     | isLocalId spid f =
         TCSymbol
         (idToName spid f)
-        (Just $ buildObjectType spid $ Set.findMin ftypes)
+        (Just $ makeObjectType spid $ Set.findMin ftypes)
         Obj
     -- CLEANUP: Have to be filtered completely
     | otherwise = TCComment $ "nonlocal function: " ++ (show f)
@@ -134,9 +138,9 @@ funSignToOmdoc spid _ f ftypes
 
 -- | Given an operator or predicate signature we construct the according
 -- type by currying and using bool as rangetype for predicates
-buildType :: SPEC_ID -> OpKind -> [SORT] -> Maybe SORT -> OMElement
-buildType spid _ [] (Just r) = (sortToOmdoc spid r)
-buildType spid total domain range =
+makeType :: SPEC_ID -> OpKind -> [SORT] -> Maybe SORT -> OMElement
+makeType spid _ [] (Just r) = (sortToOmdoc spid r)
+makeType spid total domain range =
     foldr (addType spid)
               (OMA [typeconstr, (sortToOmdoc spid s), rangeelem])
               rest
@@ -148,9 +152,13 @@ buildType spid total domain range =
           rangeelem = case range of Nothing -> (tv_const "bool")
                                     Just r -> (sortToOmdoc spid r)
 
-buildObjectType :: SPEC_ID -> OpType -> OMElement
-buildObjectType spid (OpType opkind opargs oprange) =
-    buildType spid opkind opargs (Just oprange)
+makePredType :: SPEC_ID -> PredType -> OMElement
+makePredType spid (PredType predargs) =
+    makeType spid Total predargs Nothing
+
+makeObjectType :: SPEC_ID -> OpType -> OMElement
+makeObjectType spid (OpType opkind opargs oprange) =
+    makeType spid opkind opargs (Just oprange)
 
 addType :: SPEC_ID -> SORT -> OMElement -> OMElement
 addType spid s elm = OMA [(st_const "funtype"), (sortToOmdoc spid s), elm]
@@ -169,15 +177,19 @@ data NameTriple = NameTriple { getName :: String,
 
 idToName :: SPEC_ID -> Id -> String
 idToName spid = getName . (idToNameTriple spid)
-                    
+
 idToNameTriple :: SPEC_ID -> Id -> NameTriple
-idToNameTriple (SPEC_ID sid lid) s
+-- spid-structure
+idToNameTriple spid s
     | isQualName s = NameTriple (show $ unQualName s)
                      (show $ getNodeId s) (show $ getLibId s)
-    | otherwise = NameTriple (show s) (show sid) (show lid)
-
+    | otherwise = case spid of
+                    (SPEC_ID sid lid) ->
+                        NameTriple (show s) (show sid) (show lid)
+                    NOSPEC -> error $ "unqualified morphism entry" ++ show s
 
 isLocalId :: SPEC_ID -> Id -> Bool
+-- spid-structure
 isLocalId (SPEC_ID s l) i@(Id _ [_, s1, l1] _)
     | isQualName i = (s == s1) && (l == l1)
     | otherwise = True
@@ -187,11 +199,11 @@ isLocalId _ _ = True
 -------------------------- OpenMath --------------------------
 
 -- | probably outsource this to a generic module
-buildOMS :: NameTriple -> OMElement
-buildOMS (NameTriple i s l) = OMS (CD s $ Just l) $ OMName i
+makeOMS :: NameTriple -> OMElement
+makeOMS (NameTriple i s l) = OMS (CD s $ Just l) $ OMName i
 
 idToOmdoc :: SPEC_ID -> Id -> OMElement
-idToOmdoc spid s = buildOMS $ idToNameTriple spid s
+idToOmdoc spid s = makeOMS $ idToNameTriple spid s
 
 sortToOmdoc :: SPEC_ID -> Id -> OMElement
 sortToOmdoc = idToOmdoc
@@ -204,17 +216,17 @@ predToOmdoc :: SPEC_ID -> PRED_SYMB -> OMElement
 predToOmdoc spid (Qual_pred_name i _ _) = idToOmdoc spid i
 predToOmdoc spid (Pred_name i) = idToOmdoc spid i
 
--- | type attributes for terms can only consist of a single sort
-sortToOmdocAttribute :: SPEC_ID -> SORT -> OMAttribute
-sortToOmdocAttribute spid s = OMAttr (st_const "type") $ sortToOmdoc spid s
+-- | the object e1 and its type e2
+makeAttribution :: OMElement -> OMElement -> OMElement
+makeAttribution e1 e2 = OMATTT e1 $ OMAttr (st_const "type") e2
 
 varToOmdoc :: Token -> OMElement
 varToOmdoc v = OMV $ OMName $ tokStr v
 
 -- | typed vars can only be typed by a single sort
 varDeclToOMDoc :: SPEC_ID -> (VAR, SORT) -> OMElement
-varDeclToOMDoc spid (v, s) = OMATTT (varToOmdoc v) (sortToOmdocAttribute spid s)
-
+varDeclToOMDoc spid (v, s) = makeAttribution (varToOmdoc v) $
+                             sortToOmdoc spid s
 
 -- | Predefined truthval constants: false, true
 tv_const :: String -> OMElement
@@ -287,3 +299,57 @@ omdocRec spid _ mf = Record
 
 
 
+-------------------------- Morphisms --------------------------
+
+
+makeSortMapEntry :: SPEC_ID -> SORT -> SORT -> (OMElement, OMElement)
+makeSortMapEntry spid s1 s2 = (sortToOmdoc spid s1, sortToOmdoc spid s2)
+
+
+makeOpMapEntry :: SPEC_ID -> (Id, OpType) -> (Id, OpKind) ->
+                   (OMElement, OMElement)
+makeOpMapEntry spid (o1, ot) (o2, _) = 
+    (makeAttribution (idToOmdoc spid o1) $ makeObjectType spid ot,
+     idToOmdoc spid o2)
+
+makePredMapEntry :: SPEC_ID -> (Id, PredType) -> Id -> (OMElement, OMElement)
+makePredMapEntry spid (p1, pt) p2 = 
+    (makeAttribution (idToOmdoc spid p1) $ makePredType spid pt,
+     idToOmdoc spid p2)
+
+
+
+--------------------------------------------------------------------
+
+
+{-
+
+type CASLMor = Morphism () () () -- entspricht morphism2
+
+data Morphism f e m = Morphism
+  { msource :: Sign f e
+  , mtarget :: Sign f e
+  , sort_map :: Sort_map
+  , op_map :: Op_map
+  , pred_map :: Pred_map
+  , extended_map :: m
+  } deriving (Show, Eq, Ord)
+
+
+-- always use the partial profile as key!
+type Op_map = Map.Map (Id, OpType) (Id, OpKind)
+type Pred_map = Map.Map (Id, PredType) Id
+
+type Sort_map = Map.Map SORT SORT
+
+
+-- constants have empty argument lists
+data OpType = OpType {opKind :: OpKind, opArgs :: [SORT], opRes :: SORT}
+              deriving (Show, Eq, Ord)
+
+data OpKind = Total | Partial deriving (Show, Eq, Ord)
+
+type SORT = Id
+
+data PredType = PredType {predArgs :: [SORT]} deriving (Show, Eq, Ord)
+-}
