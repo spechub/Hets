@@ -35,7 +35,9 @@ import Proofs.HideTheoremShift
 import Proofs.TheoremHideShift
 import Proofs.Local
 import Proofs.ComputeColimit
-
+import Proofs.NormalForm
+import Proofs.DGFlattening
+import Proofs.QualifyNames
 import PGIP.UndoRedo
 
 -- | Generates a shellac command that requires input
@@ -141,9 +143,39 @@ getCommands
    : (genCmd ["dg-all loc-infer"] CmdNoPriority ReqNothing
               "apply local inference to all edges" $
               CmdNoInput $ commandDgAll $ wrapResultDgAll localInference)
-   : (genCmd ["dg-all compColimit"] CmdNoPriority ReqNothing
-              "computes colimits in the graph" $
+   : (genCmd ["compute Colimit"] CmdNoPriority ReqNothing
+              "computes the colimit" $
               CmdNoInput $ commandDgAll $ computeColimit)
+   : (genCmd ["compute normal form"] CmdNoPriority ReqNothing
+              "computes normal form" $
+              CmdNoInput $ commandDgAll $ normalForm)
+   : (genCmd ["flattening importings"] CmdNoPriority ReqNothing
+              ("Delete all inclusion links, and insert a new node"++
+              " with new computed theory") $ CmdNoInput $ commandDgAll $
+              (\_ le -> libEnv_flattening_imports le))
+   : (genCmd ["flattening disjoint unions"] CmdNoPriority ReqNothing
+             ("For each node with more than two importings modify " ++
+             "importings in such a way that at each level only " ++
+             " non disjoint signatures are imported") $ CmdNoInput $
+             commandDgAll $(\_ le -> libEnv_flattening_dunions le))
+   : (genCmd ["flattening renamings"] CmdNoPriority ReqNothing
+             ("Determines renaming link, inserts a new node with the " ++
+             "renaming morphism applied to theory of a source, deletes "++
+             "the link and sets a new inclusion link between a new node "++
+             "and the target node") $ CmdNoInput $ commandDgAll $
+             (\_ le -> libEnv_flattening_renamings le ))
+   : (genCmd ["flattening hiddings"] CmdNoPriority ReqNothing
+             ("For each link compute normal form if there is one and "++
+             " eliminate hiding links") $ CmdNoInput $ commandDgAll $
+             (\_ le -> libEnv_flattening_hiding le))
+   : (genCmd ["flattening heterogeneity"] CmdNoPriority ReqNothing
+             ("For each heterogeneous link compute theory of a target " ++
+             "node and eliminate heterogeneous link") $ CmdNoInput $
+             commandDgAll $ (\_ le -> libEnv_flattening_heterogen le))
+   : (genCmd ["qualify all names"] CmdNoPriority ReqNothing
+             ("Qualify and disambiguate all names in the nodes of the " ++
+             "development graph") $ CmdNoInput $ commandDgAll $
+             (\_ le -> qualifyLibEnv le))
    : (genCmd ["dg-all loc-decomp"] CmdNoPriority ReqNothing
               "apply local decomposition to all edges" $
               CmdNoInput $ commandDgAll $ wrapResultDgAll locDecomp)

@@ -39,6 +39,8 @@ module PGIP.Utils
   , delExtension
   , checkPresenceProvers
   , getPaths
+  , arrowLink
+  , checkArrowLink
   ) where
 
 import Data.List
@@ -138,23 +140,34 @@ trimLeft = dropWhile isWhiteSpace
 trimRight :: String -> String
 trimRight = reverse . dropWhile isWhiteSpace . reverse
 
+-- | Generates a string representing the type of link
+arrowLink ::DGLinkLab -> String
+arrowLink edgLab
+ = case dgl_type edgLab of
+    LocalDef -> " ..> "
+    LocalThm _ _ _ -> " ..> "
+    _ -> " -> "
+
+-- | Checks if the string starts with an arrow
+checkArrowLink :: String -> (Bool,String,String)
+checkArrowLink str
+ = case str of
+    '-':'>':l -> (True," -> ",l)
+    '.':'.':'>':l -> (True, " ..> ",l)
+    l -> (False, [],l)
+
 
 -- | Given a string inserts spaces before and after an
 -- arrow
 spacesAroundArrows :: String -> String -> String
 spacesAroundArrows s output
- = let
-    --function to tell if in the string follows a arrow
-    isArrow text = case take 2 $ trimLeft text of
-                     "->" ->True
-                     _    ->False
-   in case s of
+ = case s of
        [] -> output
        _  ->
-         case isArrow s of
-          True  -> spacesAroundArrows (drop 2 $ trimLeft s)
-                               (output ++" -> ")
-          False -> spacesAroundArrows (safeTail s)
+         case checkArrowLink $ trimLeft s of
+          (True,arr,rs)  -> spacesAroundArrows rs
+                               (output ++ arr)
+          (False,_,_) -> spacesAroundArrows (safeTail s)
                                (output ++ [head s])
 
 -- | Given a string the function decomposes it into 4 lists,
@@ -177,24 +190,26 @@ decomposeIntoGoals input
                1 -> (listNode, (word:listEdge), listNbEdge,listError)
                2 -> (listNode, listEdge, (word:listNbEdge),listError)
                _ -> (listNode, listEdge, listNbEdge, (word:listError))
-        "->":l -> case word of
-                   [] -> (listNode,listEdge,listNbEdge,
-                           (word:listError))
-                   _  -> parse l (nbOfArrows+1) (word++" -> ")
-                          True listNode listEdge listNbEdge listError
-        x:l -> case sw of
-                True -> parse l nbOfArrows (word++x) False
-                         listNode listEdge listNbEdge listError
-                False ->
-                 case nbOfArrows of
-                   0 -> parse l 0 x False
-                         (word:listNode) listEdge listNbEdge listError
-                   1 -> parse l 0 x False
-                         listNode (word:listEdge) listNbEdge listError
-                   2 -> parse l 0 x False
-                         listNode listEdge (word:listNbEdge) listError
-                   _ -> parse l 0 x False
-                         listNode listEdge listNbEdge (word:listError)
+        x:l -> case checkArrowLink x of
+                (True,arr,_) ->
+                  case word of
+                   [] -> (listNode, listEdge, listNbEdge, (word:listError))
+                   _  -> parse l (nbOfArrows+1) (word++arr) True
+                           listNode listEdge listNbEdge listError
+                (False,_,_) ->
+                  case sw of
+                   True -> parse l nbOfArrows (word++x) False
+                            listNode listEdge listNbEdge listError
+                   False ->
+                    case nbOfArrows of
+                     0 -> parse l 0 x False
+                           (word:listNode) listEdge listNbEdge listError
+                     1 -> parse l 0 x False
+                           listNode (word:listEdge) listNbEdge listError
+                     2 -> parse l 0 x False
+                           listNode listEdge (word:listNbEdge) listError
+                     _ -> parse l 0 x False
+                           listNode listEdge listNbEdge (word:listError)
    in parse nwInput 0 [] True [] [] [] []
 
 -- | mapAndSplit maps a function to a list. If the function can not
@@ -257,6 +272,8 @@ getInt val
     EdgeId v -> v
 
 
+
+
 -- | Given a list of edges and the complete list of all
 -- edges computes not only the names of edges but also the
 -- numbered name of edges
@@ -277,12 +294,15 @@ createEdgeNames lsN lsE
    edgs = groupBy ( \(x1,x2,_) (y1,y2,_)-> (x1,x2)==(y1,y2)) $
            sortBy ordFn lsE
    allEds= concatMap (\l -> case l of
-                             [(x,y,_)]->[((nameOf x lsN) ++ " -> " ++
+                             [(x,y,edgLab)]->[((nameOf x lsN) ++
+                                          (arrowLink edgLab) ++
                                           (nameOf y lsN))]
                              _ -> map (\(x,y,edgLab) ->
-                                   (nameOf x lsN) ++ " -> " ++
+                                   (nameOf x lsN) ++
+                                   arrowLink edgLab ++
                                      (show $ getInt $ dgl_id edgLab)
-                                     ++ " -> " ++  (nameOf y lsN)) l) edgs
+                                     ++ arrowLink edgLab
+                                     ++  (nameOf y lsN)) l) edgs
   in allEds
 
 
@@ -391,17 +411,18 @@ unfinishedEdgeName input
      -- then we have the consider last two words, or it
      -- is not an arrow and then we need to consider just
      -- the last word
-        case lastString $ words input of
-          "->" -> case prevPrevLast $ words input of
-                    "->"->(prev2PrevLast $ words input) ++
-                           " -> " ++ (prevLast $ words input)
-                           ++ " -> "
-                    _ ->(prevLast $ words input) ++ " -> "
+        case checkArrowLink $ lastString $ words input of
+          (True,arr1,_) ->
+            case checkArrowLink $ prevPrevLast $ words input of
+             (True,arr2,_) ->(prev2PrevLast $ words input) ++
+                           arr2 ++ (prevLast $ words input)
+                           ++ arr1
+             _ ->(prevLast $ words input) ++ arr1
           --anyhting else
-          _ -> case prevLast $ words input of
+          _ -> case checkArrowLink $ prevLast $ words input of
                 -- an entire edge name was just inserted
                 -- before and now we need a fresh new start
-                "->" -> []
+                (True,_,_) -> []
                 -- if just the first word of an edge was
                 -- inserted then return that
                 _ -> case lastString $ words input of
@@ -410,18 +431,17 @@ unfinishedEdgeName input
     False ->
      -- then we could be in the middle of the first node
      -- name, arrow or the second node name
-      case prevLast $ words input of
+      case checkArrowLink $ prevLast $ words input of
            -- in the middle of the last word
-          "->" -> case prev2PrevLast $ words input of
-                   "->"->(prev3PrevLast $ words input) ++
-                           " -> "++(prevPrevLast $ words
-                           input)++" -> "++(lastString $
-                           words input)
-                   _->(prevPrevLast $ words input) ++
-                        " -> " ++ (lastString $ words input)
-          _ -> case prevPrevLast $ words input of
+          (True,arr1,_) ->
+            case checkArrowLink $ prev2PrevLast $ words input of
+             (True,arr2,_)->(prev3PrevLast $ words input) ++
+                           arr2++(prevPrevLast $ words input) ++
+                           arr1++(lastString $ words input)
+             _->(prevPrevLast $ words input)++arr1++(lastString$ words input)
+          _ -> case checkArrowLink $ prevPrevLast $ words input of
                  -- in the middle of the first word
-                "->" -> lastString $ words input
+                (True,_,_) -> lastString $ words input
                 -- in the middle of the arrow
                 _ -> case prevLast $ words input of
                       [] -> lastString $ words input

@@ -267,7 +267,7 @@ createGlobalMenu gInfo@(GInfo { hetcatsOpts = opts
         ] ++
         [Button "Hide Theorem Shift"
                $ ral $ performProofAction gInfo
-               $ proofMenu gInfo "Hide Theoren Shift" $
+               $ proofMenu gInfo "Hide Theorem Shift" $
                                fmap return . interactiveHideTheoremShift ln
         ] ++
         map (\ (str, cmd) ->

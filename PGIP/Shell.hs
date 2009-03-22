@@ -417,17 +417,17 @@ cmdlCompletionFn allcmds allState input
           -- can also be a node name not only an edge name
            (tCN,bCN) = case isWhiteSpace $ lastChar input of
                          True ->
-                          case lastString $ words input of
+                          case checkArrowLink $ lastString $ words input of
                            -- we are in the middle of an
                            -- edge, we shouldn't look for
                            -- node names
-                           "->" -> ("Impossible to complete",
+                           (True,_,_) -> ("Impossible to complete",
                                      [])
                            -- it may be a node
                            _ -> ([], trimRight input)
                          False ->
-                          case penultimum $ words input of
-                           "->" -> ("Impossible to complete",
+                          case checkArrowLink $ penultimum $ words input of
+                           (True,_,_) -> ("Impossible to complete",
                                     [])
                            _ -> (lastString $ words input,
                                  unwords $ init
@@ -460,17 +460,17 @@ cmdlCompletionFn allcmds allState input
         -- can also be a node name not only an edge name
            (tCN,bCN) = case isWhiteSpace $ lastChar input of
                           True ->
-                           case lastString $ words input of
+                           case checkArrowLink $lastString $ words input of
                            -- we are in the middle of an
                            -- edge, we shouldn't look for
                            -- node names
-                            "->" ->("Impossible to complete",
+                            (True,_,_) ->("Impossible to complete",
                                      [])
                            --it may be a node
                             _ -> ([], trimRight input)
                           False ->
-                           case penultimum $ words input of
-                            "->" ->("Impossible to complete",
+                           case checkArrowLink $ penultimum $ words input of
+                            (True,_,_) ->("Impossible to complete",
                                     [])
                             _ -> (lastString $ words input,
                                   unwords $ init $
