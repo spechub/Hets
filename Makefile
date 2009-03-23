@@ -1,6 +1,6 @@
 # Makefile
 # $Id$
-# Author: (c) Klaus Lüttich, Christian Maeder, Uni Bremen 2002-2005
+# Author: (c) Klaus Luettich, Christian Maeder, Uni Bremen 2002-2005
 # Year:   2004
 
 # This Makefile will compile the new hets system and provides also
