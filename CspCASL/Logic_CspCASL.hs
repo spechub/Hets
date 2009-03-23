@@ -8,28 +8,11 @@ Maintainer  :  M.Roggenbach@swansea.ac.uk
 Stability   :  experimental
 Portability :  non-portable(import Logic.Logic)
 
-Here is the place where the class Logic is instantiated for CspCASL.
-   Also the instances for Syntax an Category.
--}
-{-
-   todo:
-     - writing real functions
-     - Modul Sign.hs mit CSP-CASL-Signaturen und Morphismen, basiernd
-       auf CASL.Sign
-          CSP-CASL-Signatur = (CASL-Sig,Menge von Kanalnamen)
-          CSP-CASL-Morphismus = (CASL-Morphismus, Kanalnamenabbildung)
-                      oder nur CASL-Morphismus
-          SYMB_ITEMS SYMB_MAP_ITEMS: erstmal von CASL (d.h. nur CASL-Morphismus)
-     - instance Sentences
-        Sätze = entweder CASL-Sätze oder CSP-CASL-Sätze
-        Rest soweit wie möglich von CASL übernehmen
-     - statische Analyse (gemäß Typ in Logic.Logic) schreiben
-       und unten für basic_analysis einhängen
-
-    Kür:
-     - Teillogiken (instance SemiLatticeWithTop ...)
-
--}
+Here is the place where the class Logic is instantiated for CspCASL.  A
+CspCASL signature is a CASL signature with a set of named channels and
+processes. Every process has a profile. Morphisms are supposed to allow
+renaming of channels and processes, too. Also sublogics (as a superset of some
+CASL sublogics) are still missing.  -}
 
 module CspCASL.Logic_CspCASL
   ( GenCspCASL(..)
