@@ -288,7 +288,7 @@ SoftFOL_files = SoftFOL/Sign.hs
 OWL_files = OWL/Sign.hs OWL/Sublogic.hs
 VSE_files = VSE/As.hs
 OMDoc_files = OMDoc/OMDocInterface.hs
-DFOL_files = DFOL/AS_DFOL.hs
+DFOL_files = DFOL/AS_DFOL.hs DFOL/Sign.hs DFOL/Morphism.hs
 
 atc_logic_files = $(foreach logic, $(logics), $(logic)/ATC_$(logic).der.hs)
 
