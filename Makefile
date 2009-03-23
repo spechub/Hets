@@ -80,7 +80,7 @@ GTK_GLADE_HSFILES = $(subst .glade,.hs,$(GTK_GLADE_FILES))
 derived_sources += $(GTK_GLADE_HSFILES)
 
 logics = CASL HasCASL Isabelle Modal Temporal CoCASL COL CspCASL CASL_DL \
-    SoftFOL ConstraintCASL Propositional OWL RelationalScheme VSE OMDoc
+    SoftFOL ConstraintCASL Propositional OWL RelationalScheme VSE OMDoc DFOL
 
 TESTTARGETFILES += CASL/fromKif.hs CASL/capa.hs HasCASL/hacapa.hs \
     Haskell/wrap.hs Isabelle/isa.hs Syntax/hetpa.hs \
@@ -288,6 +288,7 @@ SoftFOL_files = SoftFOL/Sign.hs
 OWL_files = OWL/Sign.hs OWL/Sublogic.hs
 VSE_files = VSE/As.hs
 OMDoc_files = OMDoc/OMDocInterface.hs
+DFOL_files = DFOL/AS_DFOL.hs
 
 atc_logic_files = $(foreach logic, $(logics), $(logic)/ATC_$(logic).der.hs)
 
@@ -588,6 +589,9 @@ VSE/ATC_VSE.der.hs: $(VSE_files) $(GENRULES)
 
 OMDoc/ATC_OMDoc.der.hs: $(OMDoc_files) $(GENRULES)
 	$(GENRULECALL) -i OMDoc.ATerm -o $@ $(OMDoc_files)
+
+DFOL/ATC_DFOL.der.hs: $(DFOL_files) $(GENRULES)
+	$(GENRULECALL)  -i ATC.AS_Annotation -o $@ $(DFOL_files)
 
 clean_genRules:
 	$(RM) $(generated_rule_files) $(gendrifted_files) $(hspp_sources) \
