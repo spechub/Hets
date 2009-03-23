@@ -148,7 +148,7 @@ createGraph gInfo@(GInfo { graphInfo = gi
   Just _ -> do
    let file = rmSuffix (libNameToFile opts ln) ++ prfSuffix
    deselectEdgeTypes <- newIORef []
-   globMenu <- createGlobalMenu gInfo convGraph showLib deselectEdgeTypes
+   globMenu <- createGlobalMenu gInfo showLib deselectEdgeTypes
    GA.makegraphExt gi
                   title
                   (createOpen gInfo file convGraph showLib)
@@ -221,12 +221,12 @@ createExit :: GInfo -> IO ()
 createExit (GInfo {exitMVar = exit}) = putMVar exit ()
 
 -- | Creates the global menu
-createGlobalMenu :: GInfo -> ConvFunc -> LibFunc -> IORef [String]
+createGlobalMenu :: GInfo -> LibFunc -> IORef [String]
                  -> IO [GlobalMenu]
 createGlobalMenu gInfo@(GInfo { hetcatsOpts = opts
                               , graphInfo = gi
                               , libName = ln })
-                 convGraph showLib deselectEdgeTypes =
+                 showLib deselectEdgeTypes =
  do
  ost <- readIORef $ intState gInfo
  case i_state ost of
@@ -292,7 +292,6 @@ createGlobalMenu gInfo@(GInfo { hetcatsOpts = opts
           case i_state ost2 of
             Nothing -> putStrLn "no lib"
             Just ist2 -> print $ prettyLibEnv $ i_libEnv ist2
-     , Button "Translate Graph" $ ral $ translateGraph gInfo convGraph showLib
      , Button "Show Logic Graph" $ ral $ showLogicGraph daVinciSort
      , Button "Show Library Graph" $ ral $ showLibGraph gInfo showLib
      , Button "Save Graph for uDrawGraph" $ ral

@@ -68,11 +68,9 @@ import GUI.Utils
 #ifdef UNIVERSION2
 import Graphs.GraphConfigure
 import Reactor.InfoBus(encapsulateWaitTermAct)
-import HTk.Toolkit.DialogWin (useHTk)
 #else
 import GraphConfigure
 import InfoBus(encapsulateWaitTermAct)
-import DialogWin (useHTk)
 #endif
 import qualified GUI.HTkUtils as HTk
 
@@ -275,16 +273,6 @@ focusNode gInfo@(GInfo { graphInfo = gi
    case selection of
     Just idx -> GA.focusNode gi $ fst $ idsnodes !! idx
     Nothing -> return ()
-
-translateGraph :: GInfo -> ConvFunc -> LibFunc -> IO ()
-translateGraph gInfo@(GInfo { hetcatsOpts = opts
-                            , libName = ln }) convGraph showLib = do
- ost <- readIORef $ intState gInfo
- case i_state ost of
-  Nothing -> return ()
-  Just ist -> do
-   let le = i_libEnv ist
-   openTranslateGraph le ln opts (getDGLogic le) convGraph showLib
 
 showLibGraph :: GInfo -> LibFunc -> IO ()
 showLibGraph gInfo showLib = do
@@ -643,11 +631,6 @@ showEdgeInfo descr me = case me of
   Nothing -> errorDialog "Error"
     ("edge " ++ show descr ++ " has no corresponding edge"
      ++ "in the development graph")
-{-
-conservativityRule :: DGRule
-conservativityRule = DGRule "ConservativityCheck"
--}
-
 
 -- | check conservativity of the edge
 checkconservativityOfEdge :: Int -> GInfo -> Maybe (LEdge DGLinkLab) -> IO ()
@@ -680,6 +663,9 @@ checkconservativityOfEdge descr _ Nothing =
           ("edge " ++ show descr ++ " has no corresponding edge "
                 ++ "in the development graph")
 {-
+conservativityRule :: DGRule
+conservativityRule = DGRule "ConservativityCheck"
+
 -- | Graphical choser for conservativity checkers
 conservativityChoser :: [ConservativityChecker sign sentence morphism]
                      -> IO
@@ -776,57 +762,44 @@ applyChangesAux ginfo change =
       GA.delEdge ginfo $ dgl_id lbl
 
 -- | display a window of translated graph with maximal sublogic.
-openTranslateGraph :: LibEnv -> LIB_NAME -> HetcatsOpts
-                   -> Res.Result G_sublogics -> ConvFunc -> LibFunc -> IO ()
-openTranslateGraph libEnv ln opts (Res.Result diagsSl mSublogic) convGraph
-  showLib =
-    -- if an error existed by the search of maximal sublogicn
-    -- (see DGTranslation.getDGLogic), the process need not to go on.
-    let myErrMess = showDiagMess opts in
-    if hasErrors diagsSl then myErrMess diagsSl else case mSublogic of
-      Nothing -> errorDialog "Error" "the maximal sublogic is not found."
-      Just sublogic -> do
-        let paths = findComorphismPaths logicGraph sublogic
-        if null paths then
-            errorDialog "Error" "This graph has no comorphism to translation."
-           else do
-             -- the user choose one
-           sel <- listBox "Choose a logic translation"
-                  $ map show paths
-           case sel of
-             Nothing -> errorDialog "Error" "no logic translation chosen"
-             Just j -> do
-                       -- graph translation.
-               let Res.Result diagsTrans mLEnv =
-                      libEnv_translation libEnv $ paths !! j
-               case mLEnv of
-                 Just newLibEnv -> do
-                   showDiagMess opts $ diagsSl ++ diagsTrans
-                   dg_showGraphAux
-                                   (\gI -> do
-                                     ost <- readIORef $ intState gI
-                                     let nwst = case i_state ost of
-                                                 Nothing -> ost
-                                                 Just ist ->
-                                                  ost{i_state = Just ist{
-                                                       i_libEnv = newLibEnv,
-                                                       i_ln = ln }}
-                                     writeIORef (intState gI) nwst
-                                     convGraph (gI{ hetcatsOpts = opts})
-                                               "translation Graph" showLib)
-                 Nothing -> myErrMess $ diagsSl ++ diagsTrans
-
-dg_showGraphAux :: (GInfo -> IO ()) -> IO ()
-dg_showGraphAux convFct = do
-  useHTk    -- All messages are displayed in TK dialog windows
-            -- from this point on
-  gInfo <- emptyGInfo
-  convFct gInfo
-  let gi = graphInfo gInfo
-  GA.deactivateGraphWindow gi
-  GA.redisplay gi
-  GA.layoutImproveAll gi
-  GA.activateGraphWindow gi
+translateGraph :: GInfo -> IO (Maybe LibEnv)
+translateGraph gInfo@(GInfo { hetcatsOpts = opts }) = do
+  ost <- readIORef $ intState gInfo
+  case i_state ost of
+    Nothing -> return Nothing
+    Just ist -> do
+      let
+        le = i_libEnv ist
+        Res.Result diagsSl mSublogic = getDGLogic le
+        myErrMess = showDiagMess opts
+        error' = errorDialog "Error"
+      if hasErrors diagsSl then do
+          myErrMess diagsSl
+          return Nothing
+        else case mSublogic of
+          Nothing -> do
+            error' "No maximal sublogic found."
+            return Nothing
+          Just sublogic -> do
+            let paths = findComorphismPaths logicGraph sublogic
+            if null paths then do
+                error' "This graph has no comorphism to translation."
+                return Nothing
+              else do
+                sel <- listBox "Choose a logic translation" $ map show paths
+                case sel of
+                  Nothing -> do
+                    error' "no logic translation chosen"
+                    return Nothing
+                  Just j -> do
+                    let Res.Result diag mle = libEnv_translation le $ paths !! j
+                    case mle of
+                      Just newLibEnv -> do
+                        showDiagMess opts $ diagsSl ++ diag
+                        return $ Just newLibEnv
+                      Nothing -> do
+                        myErrMess $ diagsSl ++ diag
+                        return Nothing
 
 -- DaVinciGraph to String
 -- Functions to convert a DaVinciGraph to a String to store as a .udg file

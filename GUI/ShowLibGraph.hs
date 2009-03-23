@@ -22,7 +22,7 @@ import GUI.UDGUtils as UDG
 import GUI.Utils
 
 import GUI.GraphTypes
-import GUI.GraphLogic(hideNodes)
+import GUI.GraphLogic(hideNodes, translateGraph)
 import GUI.GraphDisplay
 import qualified GUI.GraphAbstraction as GA
 
@@ -38,7 +38,7 @@ import Control.Concurrent(threadDelay)
 import Interfaces.DataTypes
 import Interfaces.Utils
 
-type NodeArcList = ([DaVinciNode LIB_NAME],[DaVinciArc (IO String)])
+type NodeEdgeList = ([DaVinciNode LIB_NAME],[DaVinciArc (IO String)])
 
 {- | Creates a  new uDrawGraph Window and shows the Library Dependency Graph of
      the given LibEnv.-}
@@ -52,53 +52,54 @@ showLibGraph gInfo@(GInfo { windowCount = wc
       putMVar lock ()
       count <- takeMVar wc
       putMVar wc $ count + 1
-      depGRef <- newIORef daVinciSort
-      nodeArcRef <- newIORef (([],[])::NodeArcList)
+      graph <- newIORef daVinciSort
+      nodesEdges <- newIORef (([],[])::NodeEdgeList)
       let
-        globalMenu = GlobalMenu (UDG.Menu Nothing [
-                       Button "Reload Libraries"
-                         (reloadLibGraph gInfo depGRef nodeArcRef)
-                       ])
+        globalMenu =
+          GlobalMenu (UDG.Menu Nothing
+            [ Button "Reload Library" $ reloadLibGraph gInfo graph nodesEdges
+            , Button "Translate Library" $ translate gInfo
+            ])
         graphParms = globalMenu $$
                      GraphTitle "Library Graph" $$
                      OptimiseLayout True $$
                      AllowClose (close gInfo) $$
                      FileMenuAct ExitMenuOption (Just (exit gInfo)) $$
                      emptyGraphParms
-      depG <- newGraph daVinciSort graphParms
-      addNodesAndArcs gInfo depG nodeArcRef
-      writeIORef depGRef depG
-      redraw depG
+      graph' <- newGraph daVinciSort graphParms
+      addNodesAndEdges gInfo graph' nodesEdges
+      writeIORef graph graph'
+      redraw graph'
 
 -- | Reloads all Libraries and the Library Dependency Graph
-reloadLibGraph :: GInfo -> IORef DaVinciGraphTypeSyn -> IORef NodeArcList
+reloadLibGraph :: GInfo -> IORef DaVinciGraphTypeSyn -> IORef NodeEdgeList
                -> IO ()
-reloadLibGraph gInfo depGRef nodeArcRef = do
+reloadLibGraph gInfo graph nodesEdges = do
   warningDialog "Reload library"
                 ("Are you sure to reload Library?\nAll open development graph"
                  ++ " windows will be closed and all proofs will be lost!")
-                $ Just $ reloadLibGraph' gInfo depGRef nodeArcRef
+                $ Just $ reloadLibGraph' gInfo graph nodesEdges
   return ()
 
 -- | Reloads all Libraries and the Library Dependency Graph
-reloadLibGraph' :: GInfo -> IORef DaVinciGraphTypeSyn -> IORef NodeArcList
+reloadLibGraph' :: GInfo -> IORef DaVinciGraphTypeSyn -> IORef NodeEdgeList
                 -> IO ()
 reloadLibGraph' gInfo@(GInfo { hetcatsOpts = opts
-                             , libName = ln }) depGRef nodeArcRef = do
-  closeOpenWindows gInfo
-  depG <- readIORef depGRef
-  (nodes', arcs) <- readIORef nodeArcRef
+                             , libName = ln }) graph nodesEdges = do
+  graph' <- readIORef graph
+  (nodes, edges) <- readIORef nodesEdges
   let libfile = libNameToFile opts ln
   m <- anaLib opts { outtypes = [] } libfile
   case m of
     Nothing -> errorDialog "Error" $ "Error when reloading file '"
                                      ++ libfile ++  "'"
     Just (_, le) -> do
-      mapM_ (deleteArc depG) arcs
-      mapM_ (deleteNode depG) nodes'
-      addNodesAndArcs gInfo depG nodeArcRef
-      writeIORef depGRef depG
-      redraw depG
+      closeOpenWindows gInfo
+      mapM_ (deleteArc graph') edges
+      mapM_ (deleteNode graph') nodes
+      addNodesAndEdges gInfo graph' nodesEdges
+      writeIORef graph graph'
+      redraw graph'
       let ost = emptyIntState
           nwst = case i_state ost of
             Nothing -> ost
@@ -108,6 +109,33 @@ reloadLibGraph' gInfo@(GInfo { hetcatsOpts = opts
       writeIORef (intState gInfo) nwst
       mShowGraph gInfo ln
 
+-- | Translate Graph
+translate :: GInfo -> IO ()
+translate gInfo = do
+  warningDialog "Translate library"
+                ("Are you sure to translate Library?\nAll open development "
+                 ++ "graph windows will be closed and all proofs will be lost!"
+                 ++ "\n\nThis operation can only be undone by reload.")
+                $ Just $ translate' gInfo
+  return ()
+
+-- | Translate Graph
+translate' :: GInfo -> IO ()
+translate' gInfo@(GInfo { hetcatsOpts = opts
+                        , libName = ln }) = do
+  mle <- translateGraph gInfo
+  case mle of
+    Just le -> do
+      closeOpenWindows gInfo
+      let ost = emptyIntState
+          nwst = case i_state ost of
+            Nothing -> ost
+            Just ist -> ost{ i_state = Just $ ist { i_libEnv = le
+                                                  , i_ln = ln}
+                           , filename = libNameToFile opts ln}
+      writeIORef (intState gInfo) nwst
+      mShowGraph gInfo ln
+    Nothing -> return ()
 
 -- | Reloads the open graphs
 closeOpenWindows :: GInfo -> IO ()
@@ -120,8 +148,8 @@ closeOpenWindows (GInfo { openGraphs = iorOpenGrpahs
   putMVar wCount 1
 
 -- | Adds the Librarys and the Dependencies to the Graph
-addNodesAndArcs :: GInfo -> DaVinciGraphTypeSyn -> IORef NodeArcList -> IO ()
-addNodesAndArcs gInfo@(GInfo { hetcatsOpts = opts}) depG nodeArcRef = do
+addNodesAndEdges :: GInfo -> DaVinciGraphTypeSyn -> IORef NodeEdgeList -> IO ()
+addNodesAndEdges gInfo@(GInfo { hetcatsOpts = opts}) graph nodesEdges = do
  ost <- readIORef $ intState gInfo
  case i_state ost of
   Nothing -> return ()
@@ -138,8 +166,8 @@ addNodesAndArcs gInfo@(GInfo { hetcatsOpts = opts}) depG nodeArcRef = do
                        ValueTitle (\ x -> return (show x)) $$$
                        Color (getColor opts Green True True) $$$
                        emptyNodeTypeParms
-   subNodeType <- newNodeType depG subNodeTypeParms
-   subNodeList <- mapM (newNode depG subNodeType) keys
+   subNodeType <- newNodeType graph subNodeTypeParms
+   subNodeList <- mapM (newNode graph subNodeType) keys
    let
     nodes' = Map.fromList $ zip keys subNodeList
     subArcMenu = LocalMenu(UDG.Menu Nothing [])
@@ -147,12 +175,12 @@ addNodesAndArcs gInfo@(GInfo { hetcatsOpts = opts}) depG nodeArcRef = do
                       ValueTitle id $$$
                       Color (getColor opts Black False False) $$$
                       emptyArcTypeParms
-   subArcType <- newArcType depG subArcTypeParms
-   let
-    insertSubArc (node1, node2) = newArc depG subArcType (return "")
-                       (lookup' nodes' node1) (lookup' nodes' node2)
+   subArcType <- newArcType graph subArcTypeParms
+   let insertSubArc (node1, node2) = newArc graph subArcType (return "")
+                                            (lookup' nodes' node1)
+                                            (lookup' nodes' node2)
    subArcList <- mapM insertSubArc $ getLibDeps le
-   writeIORef nodeArcRef (subNodeList, subArcList)
+   writeIORef nodesEdges (subNodeList, subArcList)
 
 -- | Creates a list of all LIB_NAME pairs, which have a dependency
 getLibDeps :: LibEnv -> [(LIB_NAME, LIB_NAME)]
