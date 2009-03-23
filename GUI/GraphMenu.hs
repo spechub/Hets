@@ -210,7 +210,9 @@ createClose gInfo@(GInfo { windowCount = wc
                        ++" does not exist"
    count <- takeMVar wc
    case count == 1 of
-    True -> putMVar exit ()
+    True -> do
+      GA.exitUDrawGraph $ graphInfo gInfo
+      putMVar exit ()
     False -> putMVar wc $ count - 1
    oGraphs <- readIORef $ openGraphs gInfo
    writeIORef (openGraphs gInfo) $ Map.delete ln oGraphs

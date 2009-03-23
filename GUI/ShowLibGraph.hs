@@ -38,6 +38,8 @@ import Control.Concurrent(threadDelay)
 import Interfaces.DataTypes
 import Interfaces.Utils
 
+import qualified UDrawGraph.Basic as DVB
+
 type NodeEdgeList = ([DaVinciNode LIB_NAME],[DaVinciArc (IO String)])
 
 {- | Creates a  new uDrawGraph Window and shows the Library Dependency Graph of
@@ -63,7 +65,7 @@ showLibGraph gInfo@(GInfo { windowCount = wc
         graphParms = globalMenu $$
                      GraphTitle "Library Graph" $$
                      OptimiseLayout True $$
-                     AllowClose (close gInfo) $$
+                     AllowClose (close gInfo graph) $$
                      FileMenuAct ExitMenuOption (Just (exit gInfo)) $$
                      emptyGraphParms
       graph' <- newGraph daVinciSort graphParms
@@ -208,15 +210,18 @@ showSpec le ln =
                     $ unlines . map show . Map.keys . globalEnv
                     $ lookupDGraph ln le
 
-close :: GInfo -> IO Bool
+close :: GInfo -> IORef DaVinciGraphTypeSyn -> IO Bool
 close (GInfo { exitMVar = exit'
              , windowCount = wc
              , libGraphLock = lock
-             }) = do
+             }) graph = do
   takeMVar lock
   count <- takeMVar wc
   case count == 1 of
-    True -> putMVar exit' ()
+    True -> do
+      Graph g <- readIORef graph
+      DVB.exitDaVinci $ getDaVinciGraphContext g
+      putMVar exit' ()
     False -> putMVar wc $ count - 1
   return True
 

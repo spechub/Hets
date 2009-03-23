@@ -48,15 +48,18 @@ module GUI.GraphAbstraction
     , deactivateGraphWindow
     , activateGraphWindow
     , closeGraphWindow
+    , exitUDrawGraph
     ) where
 
 import GUI.UDGUtils
 #ifdef UNIVERSION2
 import qualified UDrawGraph.Types as DVT
+import qualified UDrawGraph.Basic as DVB
 import Events.Destructible as Destructible
 import Reactor.BSem
 #else
 import qualified DaVinciTypes as DVT
+import qualified DaVinciBasic as DVB
 import Destructible
 import BSem
 #endif
@@ -579,3 +582,11 @@ closeGraphWindow gi = do
   g <- readIORef gi
   let Graph dg = theGraph g
   destroy $ getDaVinciGraphContext dg
+
+-- | Exits UDrawGraph
+exitUDrawGraph :: GraphInfo -- ^ The graph
+                 -> IO ()
+exitUDrawGraph gi = do
+  g <- readIORef gi
+  let Graph dg = theGraph g
+  DVB.exitDaVinci $ getDaVinciGraphContext dg
