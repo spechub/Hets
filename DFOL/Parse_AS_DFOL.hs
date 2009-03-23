@@ -5,9 +5,11 @@ Description :  Parser for first-order logic with dependent types (DFOL)
 -}
 
 module DFOL.Parse_AS_DFOL
-      {- (
-           basicSpecP           -- parser for DFOL specifications
-       )-}  
+       (
+           basicSpec           -- parser for DFOL specifications
+       ,   symbItems           -- parser for symbol lists
+       ,   symbMapItems        -- parser for symbol map lists  
+       )  
        where
 
 import qualified Common.Lexer as Lexer
@@ -29,10 +31,10 @@ reserved = [Keywords.trueS,
             "Pi"]
 
 -- parser for basic spec
-basicSpecP :: AnnoState.AParser st BASIC_SPEC
-basicSpecP = (fmap Basic_spec $ AnnoState.annosParser $ basicItemP)
-             <|>
-             (Lexer.oBraceT >> Lexer.cBraceT >> (return $ Basic_spec []))
+basicSpec :: AnnoState.AParser st BASIC_SPEC
+basicSpec = (fmap Basic_spec $ AnnoState.annosParser $ basicItemP)
+            <|>
+            (Lexer.oBraceT >> Lexer.cBraceT >> (return $ Basic_spec []))
 
 -- parser for basic items
 basicItemP :: AnnoState.AParser st BASIC_ITEM
@@ -210,4 +212,20 @@ falseP :: AnnoState.AParser st FORMULA
 falseP = do AnnoState.asKey Keywords.falseS
             return $ F  	
 
+-- parser for symbol items
+symbItems :: AnnoState.AParser st SYMB_ITEMS
+symbItems = fmap Symb_items $ namesP
+                              
+-- parser for symbol map items
+symbMapItems :: AnnoState.AParser st SYMB_MAP_ITEMS
+symbMapItems = do (xs, _) <- symbOrMap `Lexer.separatedBy` AnnoState.anComma
+                  return $ Symb_map_items xs
 
+-- parser for symbols or symbol maps
+symbOrMap :: AnnoState.AParser st SYMB_OR_MAP
+symbOrMap = do s <- nameP
+               (do AnnoState.asKey Keywords.mapsTo
+                   t <- nameP
+                   return $ Symb_map s t
+                <|> 
+                return (Symb s))

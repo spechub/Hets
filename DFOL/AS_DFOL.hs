@@ -13,7 +13,7 @@ import DFOL.Utils
 
 type NAME = Token
 
--- grammar for a DFOL specification
+-- grammar for basic specification
 data BASIC_SPEC = Basic_spec [Annoted BASIC_ITEM]
                   deriving Show
 
@@ -44,6 +44,19 @@ data FORMULA = T
              | Forall [([NAME],TYPE)] FORMULA
              | Exists [([NAME],TYPE)] FORMULA
                deriving (Show, Eq)
+
+-- grammar for symbols and symbol maps
+type SYMB = NAME
+
+data SYMB_ITEMS = Symb_items [SYMB]
+                  deriving (Show, Eq)
+
+data SYMB_MAP_ITEMS = Symb_map_items [SYMB_OR_MAP]
+                      deriving (Show, Eq)
+
+data SYMB_OR_MAP = Symb SYMB
+                 | Symb_map SYMB SYMB               
+                   deriving (Show, Eq)   
 
 -- converts a term into its canonical form f(x_1, ... x_n)
 termCanForm :: TERM -> (NAME, [TERM])
@@ -83,6 +96,12 @@ instance Pretty TERM where
     pretty = printTerm
 instance Pretty FORMULA where
     pretty = printFormula
+instance Pretty SYMB_ITEMS where
+    pretty = printSymbItems
+instance Pretty SYMB_MAP_ITEMS where
+    pretty = printSymbMapItems
+instance Pretty SYMB_OR_MAP where
+    pretty = printSymbOrMap
 
 -- print basic specifications
 printBasicSpec :: BASIC_SPEC -> Doc
@@ -134,6 +153,19 @@ printSubFormula :: Int -> FORMULA -> Doc
 printSubFormula prec f = if (formulaPrec f) > prec
                             then parens $ printFormula f
                             else printFormula f  
+
+-- print symbol items
+printSymbItems :: SYMB_ITEMS -> Doc
+printSymbItems (Symb_items xs) = sepBy (text ", ") $ map pretty xs
+
+-- print symbol map items
+printSymbMapItems :: SYMB_MAP_ITEMS -> Doc
+printSymbMapItems (Symb_map_items xs) = sepBy (text ", ") $ map pretty xs
+
+-- print symbol or map
+printSymbOrMap :: SYMB_OR_MAP -> Doc
+printSymbOrMap (Symb s) = pretty s
+printSymbOrMap (Symb_map s t) = pretty s <+> mapsto <+> pretty t  
 
 -- auxiliary functions for printing
 sepBy :: Doc -> [Doc] -> Doc
