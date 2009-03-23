@@ -1,0 +1,8 @@
+logic DFOL
+spec Matrices = Nat :: Sort
+Mat :: Nat -> Nat -> Sort
+plus :: Pi m, n : Nat. Mat(n, m) -> Mat(n, m) -> Mat(n, m)
+mult :: Pi p, q, r : Nat. Mat(p, q) -> Mat(q, r) -> Mat(p, r) 
+.forall n, m : Int; A, B : Mat(n,m). plus(A, B) == plus(B, A)
+.forall n, m : Int; A, B, C : Mat(n,m). plus(plus(A, B), C) == plus(A, plus(B, C))
+.forall p, q, r, s : Int; A : Mat(p, q); B : Mat(q, r); C : Mat(r, s). mult(mult(A, B), C) == mult(A, mult(B, C))
