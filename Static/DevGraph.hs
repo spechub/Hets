@@ -303,19 +303,21 @@ getThmTypeAux s = if isProvenThmLinkStatus s then "Proven" else "Unproven"
 getThmType :: ThmLinkStatus -> String
 getThmType = map toLower . getThmTypeAux
 
+data Scope = Local | Global deriving (Show, Eq, Ord)
+
+data LinkKind = DefLink | ThmLink ThmLinkStatus deriving (Show, Eq)
+
+data FreeOrCofree = Free | Cofree deriving (Show, Eq)
+
+data ConsStatus = ConsStatus Conservativity ThmLinkStatus deriving (Show, Eq)
+
 -- | Link types of development graphs
 --  Sect. IV:4.2 of the CASL Reference Manual explains them in depth
 data DGLinkType =
-    LocalDef
-  | GlobalDef
-  | HidingDef
-  | FreeDef MaybeNode -- the "parameter" node
-  | CofreeDef MaybeNode -- the "parameter" node
-  | LocalThm ThmLinkStatus Conservativity ThmLinkStatus
-    -- ??? Some more proof information is needed here (proof tree, ...)
-  | GlobalThm ThmLinkStatus Conservativity ThmLinkStatus
-  | HidingThm GMorphism ThmLinkStatus
-  | FreeThm GMorphism ThmLinkStatus
+    ScopedLink Scope LinkKind ConsStatus
+  | HidingDefLink
+  | FreeOrCofreeDefLink FreeOrCofree MaybeNode -- the "parameter" node
+  | HidingFreeOrCofreeThm (Maybe FreeOrCofree) GMorphism ThmLinkStatus
     -- DGLink S1 S2 m2 (DGLinkType m1 p) n
     -- corresponds to a span of morphisms
     -- S1 <--m1-- S --m2--> S2
@@ -324,10 +326,8 @@ data DGLinkType =
 -- | extract theorem link status from link type
 thmLinkStatus :: DGLinkType -> Maybe ThmLinkStatus
 thmLinkStatus t = case t of
-    LocalThm s _ _ -> Just s
-    GlobalThm s _ _ -> Just s
-    HidingThm _ s -> Just s
-    FreeThm _ s -> Just s
+    ScopedLink _ (ThmLink s) _ -> Just s
+    HidingFreeOrCofreeThm _ _ s -> Just s
     _ -> Nothing
 
 -- | link inscriptions in development graphs
@@ -340,23 +340,28 @@ data DGLinkLab = DGLink
 
 -- | describe the link type of the label
 getDGLinkType :: DGLinkLab -> String
-getDGLinkType lnk = let
-    isHom = isHomogeneous $ dgl_morphism lnk
-    het = if isHom then id else ("het" ++)
-    inc' = case dgl_morphism lnk of
-             GMorphism cid _ _ mor _ ->
-               if isInclusionComorphism cid && isInclusion mor
-               then (++ "Inc") else id
-    thmType = maybe "" getThmType $ thmLinkStatus $ dgl_type lnk
-    in inc' $ case dgl_type lnk of
-    GlobalDef -> if isHom then "globaldef" else "hetdef"
-    HidingDef -> "hidingdef"
-    LocalThm _ _ _ -> het "local" ++ thmType ++ "thm"
-    GlobalThm _ _ _ -> het thmType ++ "thm"
-    HidingThm _ _ -> thmType ++ "hidingthm"
-    FreeThm _ _ -> thmType ++ "thm"
-    LocalDef -> "localdef"
-    _  -> "def" -- FreeDef, CofreeDef
+getDGLinkType = map toLower . getDGEdgeTypeName . getRealDGLinkType
+
+-- | converts a DGEdgeType to a String
+getDGEdgeTypeName :: DGEdgeType -> String
+getDGEdgeTypeName e =
+  (if isInc e then (++ "Inc") else id)
+  $ getDGEdgeTypeModIncName $ edgeTypeModInc e
+
+getDGEdgeTypeModIncName :: DGEdgeTypeModInc -> String
+getDGEdgeTypeModIncName et = case et of
+  ThmType thm isPrvn ->
+    let prvn = (if isPrvn then "P" else "Unp") ++ "roven" in
+    case thm of
+      HidingThm -> prvn ++ "HidingThm"
+      FreeOrCofreeThm -> prvn ++ "Thm"
+      GlobalOrLocalThm scope isHom ->
+          let het = if isHom then id else ("Het" ++) in
+          het (case scope of
+                 Local -> "Local"
+                 Global -> if isHom then "Global" else "") ++ prvn ++ "Thm"
+  FreeOrCofreeDef -> "Def"
+  _ -> show et
 
 data DGEdgeType = DGEdgeType
   { edgeTypeModInc :: DGEdgeTypeModInc
@@ -364,50 +369,44 @@ data DGEdgeType = DGEdgeType
   deriving (Eq, Ord, Show)
 
 data DGEdgeTypeModInc =
-    HomGlobalDef
-  | HetGlobalDef
-  | HidingDefType
-  | LocalDefType
-  | FreeOrCofreeDef
+    GlobalDef
+  | HetDef
+  | HidingDef
+  | LocalDef
+  | FreeOrCofreeDef -- free or cofree
   | ThmType { thmEdgeType :: ThmTypes
             , isProvenEdge :: Bool }
   deriving (Eq, Ord, Show)
 
 data ThmTypes =
-    HidingThmType
-  | FreeThmType
-  | GlobalOrLocalThm { isLocalThmType :: Bool
+    HidingThm
+  | FreeOrCofreeThm
+  | GlobalOrLocalThm { isLocalThmType :: Scope
                      , isHomThm :: Bool }
   deriving (Eq, Ord, Show)
 
 -- | creates a DGEdgeType from a DGLinkLab
 getRealDGLinkType :: DGLinkLab -> DGEdgeType
-getRealDGLinkType lnk = DGEdgeType
+getRealDGLinkType lnk = let
+  gmor = dgl_morphism lnk
+  isHom = isHomogeneous gmor
+  in DGEdgeType
   { edgeTypeModInc = case dgl_type lnk of
-      GlobalDef -> case isHomogeneous $ dgl_morphism lnk of
-        True -> HomGlobalDef
-        False -> HetGlobalDef
-      HidingDef -> HidingDefType
-      LocalDef -> LocalDefType
-      FreeDef _ -> FreeOrCofreeDef
-      CofreeDef _ -> FreeOrCofreeDef
-      LocalThm s _ _ -> ThmType
-        { thmEdgeType = GlobalOrLocalThm
-          { isLocalThmType = True
-          , isHomThm = isHomogeneous $ dgl_morphism lnk }
-        , isProvenEdge = isProvenThmLinkStatus s }
-      GlobalThm s _ _ -> ThmType
-        { thmEdgeType = GlobalOrLocalThm
-          { isLocalThmType = False
-          , isHomThm = isHomogeneous $ dgl_morphism lnk }
-        , isProvenEdge = isProvenThmLinkStatus s }
-      HidingThm _ s -> ThmType
-        { thmEdgeType = HidingThmType
-        , isProvenEdge = isProvenThmLinkStatus s }
-      FreeThm _ s -> ThmType
-        { thmEdgeType = FreeThmType
-        , isProvenEdge = isProvenThmLinkStatus s }
-  , isInc = case dgl_morphism lnk of
+      ScopedLink scope lk _ -> case lk of
+          DefLink -> case scope of
+            Local -> LocalDef
+            Global -> if isHom then GlobalDef else HetDef
+          ThmLink st -> ThmType
+            { thmEdgeType = GlobalOrLocalThm scope isHom
+            , isProvenEdge = isProvenThmLinkStatus st }
+      HidingDefLink -> HidingDef
+      FreeOrCofreeDefLink _ _ -> FreeOrCofreeDef
+      HidingFreeOrCofreeThm mh _ st -> ThmType
+        { thmEdgeType = case mh of
+            Nothing -> HidingThm
+            _ -> FreeOrCofreeThm
+        , isProvenEdge = isProvenThmLinkStatus st }
+  , isInc = case gmor of
       GMorphism cid _ _ mor _ -> isInclusionComorphism cid && isInclusion mor
   }
 
@@ -417,52 +416,25 @@ listDGEdgeTypes =
   [ DGEdgeType { edgeTypeModInc = modinc
                , isInc = isInclusion' }
   | modinc <-
-    [ HomGlobalDef
-    , HetGlobalDef
-    , HidingDefType
-    , LocalDefType
+    [ GlobalDef
+    , HetDef
+    , HidingDef
+    , LocalDef
     , FreeOrCofreeDef ] ++
       [ ThmType { thmEdgeType = thmType
                 , isProvenEdge = proven}
       | thmType <-
-        [ HidingThmType
-        , FreeThmType] ++
+        [ HidingThm
+        , FreeOrCofreeThm] ++
           [ GlobalOrLocalThm { isLocalThmType = local
                              , isHomThm = hom}
-          | local <- [True, False]
+          | local <- [Local, Global]
           , hom <- [True, False]
           ]
       , proven <- [True, False]
       ]
   , isInclusion' <- [True, False]
   ]
-
--- | converts a DGEdgeType to a String
-getDGEdgeTypeName :: DGEdgeType -> String
-getDGEdgeTypeName e = case edgeTypeModInc e of
-    ThmType { thmEdgeType = thmType
-            , isProvenEdge = proven } -> case thmType of
-        GlobalOrLocalThm { isLocalThmType = True
-                         , isHomThm = hom } -> case hom of
-            True -> "Hom"
-            False -> "Het"
-          ++ "LocalThm"
-        GlobalOrLocalThm { isLocalThmType = False
-                         , isHomThm = hom } -> case hom of
-            True -> "Hom"
-            False -> "Het"
-          ++ "GlobalThm"
-        HidingThmType -> "HidingThm"
-        FreeThmType -> "FreeThm"
-      ++ case proven of
-        True -> "Proven"
-        False -> "Unproven"
-    HidingDefType -> "HidingDef"
-    LocalDefType -> "LocalDef"
-    t -> show t
-  ++ case isInc e of
-    True -> "Inc"
-    False -> ""
 
 -- ** types for global environments
 
@@ -1016,7 +988,7 @@ lookupDGraph ln = Map.findWithDefault (error $ "lookupDGraph " ++ show ln) ln
 
 isGlobalDef :: DGLinkType -> Bool
 isGlobalDef lt = case lt of
-    GlobalDef -> True
+    ScopedLink Global DefLink _ -> True
     _ -> False
 
 liftE :: (DGLinkType -> Bool) -> LEdge DGLinkLab -> Bool
@@ -1041,22 +1013,68 @@ computeLocalTheory libEnv ln node =
 
 isLocalDef :: DGLinkType -> Bool
 isLocalDef lt = case lt of
-    LocalDef -> True
+    ScopedLink Local DefLink _ -> True
     _ -> False
 
 isHidingDef :: DGLinkType -> Bool
 isHidingDef lt = case lt of
-    HidingDef -> True
+    HidingDefLink -> True
     _ -> False
 
 isDefEdge :: DGLinkType -> Bool
 isDefEdge edge = case edge of
-    GlobalDef -> True
-    LocalDef  -> True
-    HidingDef -> True
-    FreeDef _ -> True
-    CofreeDef _ -> True
+    ScopedLink _ DefLink _ -> True
+    HidingDefLink -> True
+    FreeOrCofreeDefLink _ _ -> True
     _ -> False
+
+isLocalEdge :: DGLinkType -> Bool
+isLocalEdge edge = case edge of
+    ScopedLink Local _ _  -> True
+    _ -> False
+
+isHidingEdge :: DGLinkType -> Bool
+isHidingEdge edge = case edge of
+    HidingDefLink -> True
+    HidingFreeOrCofreeThm Nothing _ _ -> True
+    _ -> False
+
+hidingThm :: GMorphism -> DGLinkType
+hidingThm m = HidingFreeOrCofreeThm Nothing m LeftOpen
+
+globalThm :: DGLinkType
+globalThm = localOrGlobalThm Global None
+
+localThm :: DGLinkType
+localThm = localOrGlobalThm Local None
+
+globalConsThm :: Conservativity -> DGLinkType
+globalConsThm = localOrGlobalThm Global
+
+localConsThm :: Conservativity -> DGLinkType
+localConsThm = localOrGlobalThm Local
+
+localOrGlobalThm :: Scope -> Conservativity -> DGLinkType
+localOrGlobalThm sc c =
+  ScopedLink sc (ThmLink LeftOpen) $ ConsStatus c LeftOpen
+
+localOrGlobalDef :: Scope -> DGLinkType
+localOrGlobalDef sc = ScopedLink sc DefLink $ ConsStatus None LeftOpen
+
+globalDef :: DGLinkType
+globalDef = localOrGlobalDef Global
+
+localDef :: DGLinkType
+localDef = localOrGlobalDef Local
+
+-- | returns the Conservativity if the given edge has one, otherwise none
+getConservativity :: LEdge DGLinkLab -> Conservativity
+getConservativity (_, _, edgeLab) = getCons $ dgl_type edgeLab
+
+getCons :: DGLinkType -> Conservativity
+getCons lt = case lt of
+    ScopedLink _ _ (ConsStatus cons _) -> cons
+    _ -> None
 
 topsortedNodes :: DGraph -> [LNode DGNodeLab]
 topsortedNodes dgraph = let dg = dgBody dgraph in

@@ -147,7 +147,7 @@ dg_flattening_renamings lib_Env l_n =
    l_edges = labEdgesDG dg
    renamings = Prelude.filter (\ (_,_,x) -> let l_type = getRealDGLinkType x in
      case l_type of
-       DGEdgeType { edgeTypeModInc = HomGlobalDef, isInc = False} -> True
+       DGEdgeType { edgeTypeModInc = GlobalDef, isInc = False} -> True
        _ -> False ) l_edges
    fin_dg = applyUpdDG renamings dg
   -- no need to care about references as each node
@@ -186,7 +186,7 @@ dg_flattening_renamings lib_Env l_n =
                  return (n_node,
                          v2,
                          label { dgl_morphism = ng_morphism,
-                                 dgl_type = GlobalDef ,
+                                 dgl_type = globalDef ,
                                  dgl_origin = DGLinkFlatteningFour,
                                  dgl_id = defaultEdgeId }) )
        change_dg = [SetNodeLab lv1 (v1, propagateErrors nlv1 ),
@@ -220,7 +220,7 @@ libEnv_flattening_renamings libEnv =
 dg_flattening_hiding :: DGraph -> DGraph
 dg_flattening_hiding dg = let
    hids = Prelude.filter (\ (_,_,x) -> (case dgl_type x of
-                                         HidingDef -> True
+                                         HidingDefLink -> True
                                          _ -> False)) $ labEdgesDG dg
   -- no need to care about references either, as nodes are preserved
   -- after flattening, as well as references.
@@ -396,7 +396,7 @@ createLinks dg (nd, lb) (hd:tl) =
    n_edg = propagateErrors $ do
       ng_morphism <- ginclusion logicGraph sign_source sign_target
       return (nd, hd, DGLink { dgl_morphism = ng_morphism,
-                               dgl_type = GlobalDef,
+                               dgl_type = globalDef,
                                dgl_origin = DGLinkFlatteningThree,
                                dgl_id = defaultEdgeId })
    u_dg = case tryToGetEdge n_edg dg of

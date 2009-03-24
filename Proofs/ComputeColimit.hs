@@ -52,7 +52,7 @@ insertColimitInGraph dgraph = do
       newNodeNr = getNewNodeDG dgraph
       edgeList = map (\n -> (n, newNodeNr,DGLink{
                     dgl_morphism = (Map.!)morFun n,
-                    dgl_type = GlobalDef,
+                    dgl_type = globalDef,
                     dgl_origin = SeeTarget,
                     dgl_id = defaultEdgeId})) $
                    nodes $ dgBody dgraph
@@ -103,7 +103,7 @@ gWeaklyAmalgamableCocone diag =
              let funDesc = initDescList diag
              --graph <- observe $ hetWeakAmalgCocone diag funDesc
              allGraphs <- runM Nothing $ hetWeakAmalgCocone diag funDesc
-             case allGraphs of 
+             case allGraphs of
               [] -> fail "could not compute cocone"
               _ -> do
                let graph = head allGraphs

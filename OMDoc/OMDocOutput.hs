@@ -398,11 +398,9 @@ createOMDefLink lenv ln (from, to, ll) uniqueNames {-names-} collectionMap =
           asOMDocFile $ unwrapLinkSource $ dgn_libname fromnode
         else
           ""
-    linktype =
-      case dgl_type ll of
-        (LocalDef {}) ->
-            OMDoc.ITLocal
-        _ -> OMDoc.ITGlobal
+    linktype = if isLocalDef $ dgl_type ll
+               then OMDoc.ITLocal
+               else OMDoc.ITGlobal
     mommorph = createOMMorphism lenv ln (from, to, ll) uniqueNames {-names-} collectionMap
     fromuri = case URI.parseURIReference (liburl ++ "#" ++ fromname) of
       Nothing ->
@@ -476,17 +474,9 @@ createXmlThmLinkOM lnum lenv ln (edge@(from, to, ll)) uniqueNames {-names-} coll
         else
           ""
     -- does this link get translated into an axiom-inclusion ?
-    isaxinc =
-      case dgl_type ll of
-        (Static.DevGraph.GlobalThm {}) -> False
-        (Static.DevGraph.LocalThm {}) -> True
-        _ -> error (e_fname ++ "corrupt data!")
+    isaxinc = isLocalEdge $ dgl_type ll
     -- translate conservativity
-    cons =
-      case dgl_type ll of
-        (Static.DevGraph.GlobalThm _ c _) -> consConv c
-        (Static.DevGraph.LocalThm _ c _) -> consConv c
-        _ -> error (e_fname ++ "corrupt data!")
+    cons = consConv . getCons $ dgl_type ll
     touri = case URI.parseURIReference (toliburl ++ "#" ++ toname) of
       Nothing -> error (e_fname ++ "Error parsing URI (to)!")
       (Just u) -> u
@@ -618,23 +608,9 @@ createOMMorphism
                         ++ mappedops fromOpIds e_fname caslmorph toOpIds ln
                                                 collectionMap uniqueNames fromRel from toRel to -- ++ unclashedSorts
     -- merging makes hiding easier also...
-    hidden =
-      case dgl_type ll of
-        (HidingDef {}) ->
-          mkHidingB fromIds toIds allmapped
-        (HidingThm {}) ->
-          mkHidingB fromIds toIds allmapped
-        _ ->
-          []
-    {-
-      case dgl_type ll of
-        (HidingDef {}) ->
-          mkHiding fromIdNameMapping toIdNameMapping allmapped
-        (HidingThm {}) ->
-          mkHiding fromIdNameMapping toIdNameMapping allmapped
-        _ -> []
-    -}
-    -- create requations
+    hidden = if isHidingEdge $ dgl_type ll
+             then mkHidingB fromIds toIds allmapped
+             else []
     reqs =
       foldl
         (\r ((f,(fb,fo)), (t,(tb,to'))) ->
@@ -736,15 +712,7 @@ filterDefLinks::
   ->[Graph.LEdge Static.DevGraph.DGLinkLab]
 filterDefLinks =
   filter
-    (\(_, _, ll) ->
-      case dgl_type ll of
-        (LocalDef {}) -> True
-        (GlobalDef {}) -> True
-        (HidingDef {}) -> True
-        (FreeDef {}) -> True
-        (CofreeDef {}) -> True
-        _ -> False
-    )
+    (\(_, _, ll) -> isDefEdge $ dgl_type ll)
 
 {- |
   filter theorem links (LocalThm, GlobalThm, HidingThm)
@@ -754,14 +722,7 @@ filterThmLinks::
   ->[Graph.LEdge Static.DevGraph.DGLinkLab]
 filterThmLinks =
   filter
-    (\(_, _, ll) ->
-      case dgl_type ll of
-        (LocalThm {}) -> True
-        (GlobalThm {}) -> True
-        (HidingThm {}) -> True
-        _ -> False
-    )
-
+    (\(_, _, ll) -> not . isDefEdge $ dgl_type ll)
 
 -- | translate operators representing sort constructors to
 --   OMDoc-ADT-constructors.

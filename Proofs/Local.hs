@@ -72,11 +72,10 @@ locDecompAux libEnv ln dgraph ledge@(src, tgt, edgeLab) = let
     filteredPaths = filterByTranslation th morphism pathsWithoutEdgeItself
     proofbasis = selectProofBasis dgraph ledge filteredPaths
     auxGraph = changeDGH dgraph $ DeleteEdge ledge
-    LocalThm _ conservativity conservStatus = dgl_type edgeLab
     locDecompRule = DGRuleWithEdge "Local-Decomposition" ledge
     newEdge = (src, tgt, edgeLab
-      { dgl_type = LocalThm (Proven locDecompRule proofbasis)
-          conservativity conservStatus
+      { dgl_type = setProof (Proven locDecompRule proofbasis)
+          $ dgl_type edgeLab
       , dgl_origin = DGLinkProof })
     newGraph = insertDGLEdge newEdge auxGraph
     in if not (isIdentityEdge ledge libEnv dgraph) && nullProofBasis proofbasis
@@ -148,11 +147,10 @@ localInferenceAux ln (libEnv, dgraph) ledge@(src, tgt, edgeLab) = let
                                  G_theory lid sig ind
                                    (sens `joinSens` goals'') startThId
                   newContents = oldContents { dgn_theory = newTh }
-                  LocalThm _ conservativity conservStatus = dgl_type edgeLab
                   locInferRule = DGRuleWithEdge "Local-Inference" ledge
                   newLab = edgeLab
-                    { dgl_type = LocalThm (Proven locInferRule emptyProofBasis)
-                        conservativity conservStatus
+                    { dgl_type = setProof (Proven locInferRule emptyProofBasis)
+                        $ dgl_type edgeLab
                     , dgl_origin = DGLinkProof }
                   newEdge = (src, tgt, newLab)
                   oldContents = labDG dgraph tgt

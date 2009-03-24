@@ -279,13 +279,13 @@ fetchOMRequationSymbols morph =
   in
     (hides, reqlist)
 
-defaultDGLinkType::DGLinkType
-defaultDGLinkType = GlobalDef
+defaultDGLinkType :: DGLinkType
+defaultDGLinkType = globalDef
 
-defaultDGOrigin::DGLinkOrigin
+defaultDGOrigin :: DGLinkOrigin
 defaultDGOrigin = DGLinkExtension
 
-defaultDGLinkLab::DGLinkLab
+defaultDGLinkLab :: DGLinkLab
 defaultDGLinkLab =
   DGLink Hets.emptyCASLGMorphism defaultDGLinkType defaultDGOrigin defaultEdgeId
 
@@ -1688,14 +1688,8 @@ processAllDefLinks
           ("Did: " ++ show didlist)
           processed
   where
-
-    isDefLink::LinkSpecification->Bool
-    isDefLink ls =
-      case ls_type ls of
-        LocalDef -> True
-        GlobalDef -> True
-        HidingDef -> True
-        _ -> False
+    isDefLink :: LinkSpecification->Bool
+    isDefLink = isDefEdge . ls_type
 
 performDefLinkSpecification::
     [UnprocessedItem]
@@ -1711,13 +1705,13 @@ performDefLinkSpecification
   =
   let
    r@(_{-newTS-}, _) =
-    if isDef (ls_type ls)
+    if isDefEdge (ls_type ls)
       then
         let
           (hidden, req) = ls_hreql ls
           -- Sorts
           fromSorts =
-            if isLocal (ls_type ls)
+            if isLocalEdge (ls_type ls)
               then
                 Set.filter
                   (\xns -> xnWOaToO xns == ts_nodenum tsFrom)
@@ -1771,7 +1765,7 @@ performDefLinkSpecification
               (Set.fromList newSorts)
           -- Predicates
           fromPreds =
-            if isLocal (ls_type ls)
+            if isLocalEdge (ls_type ls)
               then
                 Set.filter
                   (\(xnpid, _) -> xnWOaToO xnpid == ts_nodenum tsFrom)
@@ -1817,7 +1811,7 @@ performDefLinkSpecification
               (Set.fromList newPreds)
           -- Operators
           fromOps =
-            if isLocal (ls_type ls)
+            if isLocalEdge (ls_type ls)
               then
                 Set.filter
                   (\(xnoid, _) -> xnWOaToO xnoid == ts_nodenum tsFrom)
@@ -2008,19 +2002,7 @@ performDefLinkSpecification
             of
               Nothing -> s
               (Just s') -> s'
-        else
-          s
-
-    isLocal::DGLinkType->Bool
-    isLocal LocalDef = True
-    isLocal (LocalThm {}) = True
-    isLocal _ = False
-
-    isDef::DGLinkType->Bool
-    isDef LocalDef = True
-    isDef GlobalDef = True
-    isDef HidingDef = True
-    isDef _ = False
+        else s
 
 createDGLinkFromLinkSpecification::
     TheorySpecification
@@ -2038,7 +2020,7 @@ createDGLinkFromLinkSpecification
           (hidden, req) = ls_hreql ls
           -- Sorts
           fromSorts =
-            if isLocal (ls_type ls)
+            if isLocalEdge (ls_type ls)
               then
                 Set.filter
                   (\xns -> xnWOaToO xns == ts_nodenum tsFrom)
@@ -2080,7 +2062,7 @@ createDGLinkFromLinkSpecification
                 remappedSorts
           -- Predicates
           fromPreds =
-            if isLocal (ls_type ls)
+            if isLocalEdge (ls_type ls)
               then
                 Set.filter
                   (\(xnpid, _) -> xnWOaToO xnpid == ts_nodenum tsFrom)
@@ -2124,7 +2106,7 @@ createDGLinkFromLinkSpecification
                 remappedPreds
           -- Operators
           fromOps =
-            if isLocal (ls_type ls)
+            if isLocalEdge (ls_type ls)
               then
                 Set.filter
                   (\(xnoid, _) -> xnWOaToO xnoid == ts_nodenum tsFrom)
@@ -2187,12 +2169,6 @@ createDGLinkFromLinkSpecification
                 , dgl_id = defaultEdgeId
               }
         )
-  where
-
-    isLocal::DGLinkType->Bool
-    isLocal LocalDef = True
-    isLocal (LocalThm {}) = True
-    isLocal _ = False
 
 ffxiFromTheorySpecifications::
     GlobalOptions
@@ -2295,11 +2271,7 @@ createFinalDGraph
                 (Hets.getCASLSign (dgn_sign tonode))
             currentmorph = Hets.getCASLMorphLL edge
             newmorph =
-              if
-                case dgl_type edge of
-                  HidingDef -> True
-                  HidingThm {} -> True
-                  _ -> False
+              if isHidingEdge $ dgl_type edge
                 then
                   currentmorph
                     {
@@ -2650,11 +2622,11 @@ createLinkSpecificationsOM {-go-}_ omdoc theoryxnset aomset =
                   then
                     if isHiding
                       then
-                        defaultDGLinkLab { dgl_type = Static.DevGraph.HidingDef }
+                        defaultDGLinkLab { dgl_type = HidingDefLink }
                       else
                         defaultDGLinkLab
                   else
-                    defaultDGLinkLab { dgl_type = Static.DevGraph.LocalDef }
+                    defaultDGLinkLab { dgl_type = localDef }
                 ) {
                       dgl_morphism = hreqgmorph
                     , dgl_origin =
@@ -2697,28 +2669,17 @@ createLinkSpecificationsOM {-go-}_ omdoc theoryxnset aomset =
                     then
                       defaultDGLinkLab
                         {
-                          dgl_type =
-                            Static.DevGraph.HidingThm
-                              Hets.emptyCASLGMorphism
-                              Static.DevGraph.LeftOpen
+                          dgl_type = hidingThm Hets.emptyCASLGMorphism
                         }
                     else
                       defaultDGLinkLab
                         {
-                          dgl_type =
-                            Static.DevGraph.GlobalThm
-                              Static.DevGraph.LeftOpen
-                              cons
-                              Static.DevGraph.LeftOpen
+                          dgl_type = globalConsThm cons
                         }
                 else
                   defaultDGLinkLab
                     {
-                      dgl_type =
-                        Static.DevGraph.LocalThm
-                          Static.DevGraph.LeftOpen
-                          cons
-                          Static.DevGraph.LeftOpen
+                      dgl_type = localConsThm cons
                     }
               ) {
                     dgl_morphism = hreqgmorph

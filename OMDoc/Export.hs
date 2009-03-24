@@ -60,28 +60,22 @@ exportNodeLab libid dg (n, lb)
          ++ (map (export_senToOmdoc lid specid libid sig) $ toNamedList sens)
 
 
-makeImport :: LIB_ID -> DGraph -> DGNodeLab -> LEdge DGLinkLab ->
-               Maybe TCElement
-makeImport libid dg nlb (from, _, (DGLink mor GlobalDef _ _)) = Just $
-    let
-        fromnode = labDG dg from
-    in TCImport (cdFromNode libid fromnode) $ makeMorphism libid mor
-
-makeImport _ _ _ _ = Nothing
-
+makeImport :: LIB_ID -> DGraph -> DGNodeLab -> LEdge DGLinkLab
+           -> Maybe TCElement
+makeImport libid dg nlb (from, _, lbl) =
+  if isGlobalDef $ dgl_type lbl then
+  Just . TCImport (cdFromNode libid $ labDG dg from) . makeMorphism libid
+  $ dgl_morphism lbl
+  else Nothing
 
 -- | Given a TheoremLink we compute the view
 exportLinkLab :: LIB_ID -> DGraph -> LEdge DGLinkLab -> Maybe TLElement
-exportLinkLab libid dg (from, to, (DGLink mor (GlobalThm _ c _) _ _)) = Just $
-    let
-        fromnode = labDG dg from
-        tonode = labDG dg to
-    in TLView (cdFromNode libid fromnode)
-           (cdFromNode libid tonode)
-           $ makeMorphism libid mor
-
-exportLinkLab _ _ _ = Nothing
-
+exportLinkLab libid dg (from, to, lbl) = case dgl_type lbl of
+    ScopedLink Global (ThmLink _) _ ->
+       Just . TLView (cdFromNode libid $ labDG dg from)
+           (cdFromNode libid $ labDG dg to)
+           . makeMorphism libid $ dgl_morphism lbl
+    _ -> Nothing
 
 makeMorphism :: LIB_ID -> GMorphism -> TCElement
 makeMorphism _ (GMorphism cid _ _ mor _) =

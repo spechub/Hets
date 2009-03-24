@@ -98,35 +98,35 @@ edgeTypes :: HetcatsOpts
               )]
 edgeTypes opts = map
   ( (\ (e, l, c) -> case edgeTypeModInc e of -- Add menu options
-      ThmType { thmEdgeType = HidingThmType } -> (e, l, c, True,  False)
+      ThmType { thmEdgeType = HidingThm } -> (e, l, c, True,  False)
       ThmType _ _                             -> (e, l, c, True,  True)
       _                                       -> (e, l, c, False, False)
     )
   . (\ (e, l) -> case edgeTypeModInc e of -- Add colors
-      HidingDefType   -> (e, l, getColor opts Blue   True  $ not $ isInc e)
+      HidingDef       -> (e, l, getColor opts Blue   True  $ not $ isInc e)
       FreeOrCofreeDef -> (e, l, getColor opts Blue   False $ not $ isInc e)
       ThmType { thmEdgeType = thmType
               , isProvenEdge = False } -> case thmType of
-        GlobalOrLocalThm { isLocalThmType = True, isHomThm = False }
+        GlobalOrLocalThm { isLocalThmType = Local, isHomThm = False }
                       -> (e, l, getColor opts Coral  True  $ not $ isInc e)
-        HidingThmType -> (e, l, getColor opts Yellow False $ not $ isInc e)
+        HidingThm     -> (e, l, getColor opts Yellow False $ not $ isInc e)
         _             -> (e, l, getColor opts Coral  False $ not $ isInc e)
       ThmType { thmEdgeType = thmType
               , isProvenEdge = True } -> case thmType of
-        GlobalOrLocalThm { isLocalThmType = True, isHomThm = False }
+        GlobalOrLocalThm { isLocalThmType = Local, isHomThm = False }
                       -> (e, l, getColor opts Green  True  $ not $ isInc e)
-        HidingThmType -> (e, l, getColor opts Green  True  $ not $ isInc e)
+        HidingThm     -> (e, l, getColor opts Green  True  $ not $ isInc e)
         _             -> (e, l, getColor opts Green  False $ not $ isInc e)
       _               -> (e, l, getColor opts Black  False $ not $ isInc e)
     )
   . (\ e -> case edgeTypeModInc e of -- Add lineformat
-      ThmType { thmEdgeType = GlobalOrLocalThm { isLocalThmType = True
+      ThmType { thmEdgeType = GlobalOrLocalThm { isLocalThmType = Local
                                                , isHomThm = True } }
                    -> (e, Dashed)
       ThmType { thmEdgeType = GlobalOrLocalThm { isHomThm = False } }
                    -> (e, Double)
-      LocalDefType -> (e, Dashed)
-      HetGlobalDef -> (e, Double)
+      LocalDef     -> (e, Dashed)
+      HetDef       -> (e, Double)
       _            -> (e, Solid)
     )
   ) listDGEdgeTypes
@@ -491,8 +491,7 @@ createLocalMenuValueTitleShowConservativity :: ValueTitle GA.EdgeValue
 createLocalMenuValueTitleShowConservativity = ValueTitle
   (\ (_, _, maybeLEdge) -> case maybeLEdge of
     Just (_,_,edgelab) -> case dgl_type edgelab of
-      GlobalThm _ c status -> return (showCons c status)
-      LocalThm _ c status -> return (showCons c status)
+      ScopedLink _ _ (ConsStatus c status) -> return (showCons c status)
       _ -> return ""
     Nothing -> return "")
   where

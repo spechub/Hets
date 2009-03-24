@@ -240,7 +240,8 @@ instance Pretty DGLinkLab where
     , text "Signature Morphism:"
     , pretty $ dgl_morphism l
     , case dgl_type l of
-        HidingThm gm _ -> text "with hiding morphism:" $+$ pretty gm
+        HidingFreeOrCofreeThm Nothing gm _ ->
+          text "with hiding morphism:" $+$ pretty gm
         _ -> Doc.empty ]
 
 -- | pretty print a labelled node

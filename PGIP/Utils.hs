@@ -142,11 +142,10 @@ trimRight = reverse . dropWhile isWhiteSpace . reverse
 
 -- | Generates a string representing the type of link
 arrowLink ::DGLinkLab -> String
-arrowLink edgLab
- = case dgl_type edgLab of
-    LocalDef -> " ..> "
-    LocalThm _ _ _ -> " ..> "
-    _ -> " -> "
+arrowLink edgLab =
+  if isLocalEdge $ dgl_type edgLab
+    then " ..> "
+    else " -> "
 
 -- | Checks if the string starts with an arrow
 checkArrowLink :: String -> (Bool,String,String)

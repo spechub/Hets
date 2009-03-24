@@ -64,17 +64,14 @@ compositionCreatingEdgesAux dgraph (path : paths) =
     cons = case getConservativityOfPath path of
              Mono -> if isTransportable morph then Mono else Cons
              c -> c
-    consStatus = LeftOpen
-    newEdge = (src,
-               tgt,
-               DGLink {dgl_morphism = morph,
-                       dgl_type = (GlobalThm (Proven (Composition path)
-                                    $ foldl addEdgeId emptyProofBasis
-                                    $ map getEdgeId path))
-                       cons consStatus,
-                       dgl_origin = DGLinkProof,
-                       dgl_id = defaultEdgeId}
-              )
+    newEdge = (src, tgt, DGLink
+      { dgl_morphism = morph
+      , dgl_type = ScopedLink Global
+          (ThmLink (Proven (Composition path)
+                   $ foldl addEdgeId emptyProofBasis $ map getEdgeId path))
+          (ConsStatus cons LeftOpen)
+      , dgl_origin = DGLinkProof
+      , dgl_id = defaultEdgeId })
     newDGraph = insertDGLEdge newEdge dgraph
     newDGraph2 = deleteRedundantEdges newDGraph newEdge
     in groupHistory dgraph (Composition path) newDGraph2
@@ -93,8 +90,8 @@ deleteRedundantEdges dgraph (src, tgt, labl) = let
       , haveSameCons l labl ]
     haveSameCons :: DGLinkLab -> DGLinkLab -> Bool
     haveSameCons lab1 lab2 = case (dgl_type lab1, dgl_type lab2) of
-          (GlobalThm LeftOpen cons1 status1,
-           GlobalThm _ cons2 status2) ->
+          (ScopedLink Global (ThmLink LeftOpen) (ConsStatus cons1 status1),
+           ScopedLink Global (ThmLink _) (ConsStatus cons2 status2)) ->
              cons1 == cons2 &&
              isProvenThmLinkStatus status1 == isProvenThmLinkStatus status2
           _ -> False
@@ -157,16 +154,12 @@ compositionForOneEdgeAux edge@(src,tgt,labl) (path:paths)
   where
     cons = getConservativity edge
     pathCons = getConservativityOfPath path
-    consStatus = getConservativityStatus edge
-    newEdge = (src,
-               tgt,
-               DGLink {dgl_morphism = dgl_morphism labl,
-                       dgl_type = GlobalThm (Proven (Composition path)
-                                   $ foldl addEdgeId emptyProofBasis
-                                   $ map getEdgeId path) cons consStatus,
-                       dgl_origin = DGLinkProof,
-                       dgl_id = defaultEdgeId}
-              )
+    newEdge = (src, tgt, labl
+      { dgl_type = setProof (Proven (Composition path)
+          $ foldl addEdgeId emptyProofBasis $ map getEdgeId path)
+          $ dgl_type labl
+      , dgl_origin = DGLinkProof
+      , dgl_id = defaultEdgeId })
 
 {- | checks if the morphism of the given path is transportable. This
 is necessary for the composition of a path, if its conservativity is
@@ -180,22 +173,6 @@ handleConservativityMono newEdge path =
     Just morph -> if isTransportable morph then Just (newEdge,path)
                    else Nothing
 
-{- | returns the conservativity of the given edge -}
-getConservativity :: LEdge DGLinkLab -> Conservativity
-getConservativity (_,_,labl) =
-  case dgl_type labl of
-    LocalThm _ cons _ -> cons
-    GlobalThm _ cons _ -> cons
-    _ -> error "getConservativity"
-
 {- | returns the conservativity of the given path -}
 getConservativityOfPath :: [LEdge DGLinkLab] -> Conservativity
 getConservativityOfPath path = minimum [getConservativity e | e <- path]
-
-{- | returns the conservativity status of the given edge -}
-getConservativityStatus :: LEdge DGLinkLab -> ThmLinkStatus
-getConservativityStatus (_,_,labl) =
-  case dgl_type labl of
-    LocalThm _ _ consStatus -> consStatus
-    GlobalThm _ _ consStatus -> consStatus
-    _ -> error "getConservativityStatus"

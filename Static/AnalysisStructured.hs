@@ -63,12 +63,12 @@ coerceNode lg dg ns@(NodeSig n s@(G_sign lid1 _ _)) nn l2@(Logic lid2) =
       c <- logicInclusion lg (Logic lid1) l2
       gmor <- gEmbedComorphism c s
       case find (\ (_, _, l) -> dgl_origin l == SeeTarget
-          && dgl_type l == GlobalDef
+          && dgl_type l == globalDef
           && dgl_morphism l == gmor) $ outDG dg n of
         Nothing -> do
           let (ms@(NodeSig m _), dg2) =
                 insGSig dg (inc nn) DGTranslation $ cod gmor
-              dg3 = insLink dg2 gmor GlobalDef SeeTarget n m
+              dg3 = insLink dg2 gmor globalDef SeeTarget n m
           return (ms, dg3)
         Just (_, t, _) ->
             return (NodeSig t $ signOf $ dgn_theory $ labDG dg t, dg)
@@ -145,7 +145,7 @@ ana_SPEC addSyms lg dg nsig name opts sp = case sp of
          EmptyNode _ -> return dg'
          JustNode jn@(NodeSig n _) -> do
            incl <- adj $ ginclusion lg (getSig jn) gsig
-           return $ insLink dg' incl GlobalDef DGLinkExtension n node
+           return $ insLink dg' incl globalDef DGLinkExtension n node
        return (Basic_spec (G_basic_spec lid bspec') pos, ns, dg'')
   EmptySpec pos -> case nsig of
       EmptyNode _ -> do
@@ -166,7 +166,7 @@ ana_SPEC addSyms lg dg nsig name opts sp = case sp of
             insGSig dg' name DGTranslation $ cod mor
            -- ??? too simplistic for non-comorphism inter-logic translations
       return (Translation (replaceAnnoted sp1' asp) ren, ns,
-              insLink dg'' mor GlobalDef SeeTarget n' node)
+              insLink dg'' mor globalDef SeeTarget n' node)
   Reduction asp restr ->
    do let sp1 = item asp
       (sp1', NodeSig n' gsigma', dg') <-
@@ -181,7 +181,7 @@ ana_SPEC addSyms lg dg nsig name opts sp = case sp of
                    insGSig dg' name DGHiding $ dom hmor
            -- ??? too simplistic for non-comorphism inter-logic reductions
            return (Reduction (replaceAnnoted sp1' asp) restr, ns,
-                   insLink dg'' hmor HidingDef SeeTarget n' node)
+                   insLink dg'' hmor HidingDefLink SeeTarget n' node)
        Just tmor' -> do
         let gsigma1 = dom tmor'
             gsigma'' = cod tmor'
@@ -192,15 +192,15 @@ ana_SPEC addSyms lg dg nsig name opts sp = case sp of
            let (ns@(NodeSig node1 _), dg'') =
                    insGSig dg' name DGRevealing gsigma1
            return (Reduction (replaceAnnoted sp1' asp) restr, ns,
-                   insLink dg'' hmor HidingDef SeeTarget n' node1)
+                   insLink dg'' hmor HidingDefLink SeeTarget n' node1)
          else do
            let (NodeSig node1 _, dg'') =
                    insGSig dg' (extName "T" name) DGRevealing gsigma1
                (ns@(NodeSig node2 _), dg3) =
                    insGSig dg'' name DGRevealTranslation gsigma''
-               dg4 = insLink dg3 hmor HidingDef SeeTarget n' node1
+               dg4 = insLink dg3 hmor HidingDefLink SeeTarget n' node1
            return (Reduction (replaceAnnoted sp1' asp) restr, ns,
-                   insLink dg4 tmor' GlobalDef SeeTarget node1 node2)
+                   insLink dg4 tmor' globalDef SeeTarget node1 node2)
   Union [] pos -> adjustPos pos $ fail $ "empty union"
   Union asps pos ->
    do let sps = map item asps
@@ -215,7 +215,7 @@ ana_SPEC addSyms lg dg nsig name opts sp = case sp of
       let (ns@(NodeSig node _), dg2) = insGSig dg' name DGUnion gbigSigma
           insE dgl (NodeSig n gsigma) = do
             incl <- adj $ ginclusion lg gsigma gbigSigma
-            return $ insLink dgl incl GlobalDef SeeTarget n node
+            return $ insLink dgl incl globalDef SeeTarget n node
       dg3 <- foldM insE dg2 nsigs'
       return (Union (map (uncurry replaceAnnoted)
                          (zip (reverse sps') asps))
@@ -233,14 +233,12 @@ ana_SPEC addSyms lg dg nsig name opts sp = case sp of
                                          (iterate inc (extName "E" name)))))
                    asps
   Free_spec asp poss -> do
-      (nasp, nsig', dg') <-
-          anaPlainSpec addSyms lg opts dg nsig name DGFree (FreeDef nsig)
-          asp poss
+      (nasp, nsig', dg') <- anaPlainSpec addSyms lg opts dg nsig name DGFree
+        (FreeOrCofreeDefLink Free nsig) asp poss
       return (Free_spec nasp poss, nsig', dg')
   Cofree_spec asp poss -> do
-      (nasp, nsig', dg') <-
-          anaPlainSpec addSyms lg opts dg nsig name DGCofree (CofreeDef nsig)
-          asp poss
+      (nasp, nsig', dg') <- anaPlainSpec addSyms lg opts dg nsig name DGCofree
+        (FreeOrCofreeDefLink Cofree nsig) asp poss
       return (Cofree_spec nasp poss, nsig', dg')
   Local_spec asp asp' poss ->
    do let sp1 = item asp
@@ -275,7 +273,7 @@ ana_SPEC addSyms lg dg nsig name opts sp = case sp of
                          (replaceAnnoted sp2' asp')
                          poss, ns,
               insLink dg2 (gEmbed2 gsigma3 $ mkG_morphism lid mor3)
-                  HidingDef SeeTarget n'' node)
+                  HidingDefLink SeeTarget n'' node)
   Closed_spec asp pos ->
    do let sp1 = item asp
           l = getLogic nsig
@@ -288,11 +286,11 @@ ana_SPEC addSyms lg dg nsig name opts sp = case sp of
       let (ns@(NodeSig node gsigma2), dg2) = insGSig dg' name DGClosed gsigma''
       incl1 <- adj $ ginclusion lg gsigma gsigma2
       incl2 <- adj $ ginclusion lg gsigma' gsigma2
-      let dg3 = insLink dg2 incl2 GlobalDef SeeTarget n' node
+      let dg3 = insLink dg2 incl2 globalDef SeeTarget n' node
       return (Closed_spec (replaceAnnoted sp' asp) pos, ns, case nsig of
             EmptyNode _ -> dg3
             JustNode (NodeSig n _) ->
-                insLink dg3 incl1 GlobalDef DGLinkClosedLenv n node)
+                insLink dg3 incl1 globalDef DGLinkClosedLenv n node)
   Qualified_spec lognm@(Logic_name ln _) asp pos -> do
       let newLG = lg { currentLogic = tokStr ln }
       l <- lookupCurrentLogic "Qualified_spec" newLG
@@ -300,7 +298,7 @@ ana_SPEC addSyms lg dg nsig name opts sp = case sp of
             EmptyNode _ -> EmptyNode l
             _ -> nsig
       (nasp, nsig', dg') <-
-          anaPlainSpec addSyms lg opts dg newNSig name DGLogicQual GlobalDef
+          anaPlainSpec addSyms lg opts dg newNSig name DGLogicQual globalDef
           asp pos
       return (Qualified_spec lognm nasp pos, nsig', dg')
   Group asp pos -> do
@@ -326,16 +324,16 @@ ana_SPEC addSyms lg dg nsig name opts sp = case sp of
            let (fsig@(NodeSig node gsigma'), dg2) =
                  insGSig dg name (DGSpecInst spname) gsigmaB
            incl <- adj $ ginclusion lg gsigmaB gsigma'
-           return (sp, fsig, insLink dg2 incl GlobalDef SeeTarget nB node)
+           return (sp, fsig, insLink dg2 incl globalDef SeeTarget nB node)
          JustNode (NodeSig n sigma) -> do
            gsigma <- adj $ gsigUnion lg sigma gsigmaB
            let (fsig@(NodeSig node gsigma'), dg2) =
                  insGSig dg name (DGSpecInst spname) gsigma
            incl <- adj $ ginclusion lg gsigmaB gsigma'
-           let dg3 = insLink dg2 incl GlobalDef SeeTarget nB node
+           let dg3 = insLink dg2 incl globalDef SeeTarget nB node
            incl2 <- adj $ ginclusion lg sigma gsigma'
            return (sp, fsig,
-                   insLink dg3 incl2 GlobalDef SeeTarget n node)
+                   insLink dg3 incl2 globalDef SeeTarget n node)
       -- now the case with parameters
       (_, 0) -> do
        let fitargs = map item afitargs
@@ -359,12 +357,12 @@ ana_SPEC addSyms lg dg nsig name opts sp = case sp of
        (_, imor) <- gSigCoerce lg gsigmaB $ Logic $ sourceLogic cid
        tmor <- gEmbedComorphism imor gsigmaB
        morDelta'' <- comp tmor morDelta'
-       let dg4 = insLink dg3 morDelta'' GlobalDef SeeTarget nB node
+       let dg4 = insLink dg3 morDelta'' globalDef SeeTarget nB node
        dg5 <- case nsig of
              EmptyNode _ -> return dg4
              JustNode (NodeSig n sigma) -> do
                incl1 <- adj $ ginclusion lg sigma gsigmaRes'
-               return $ insLink dg4 incl1 GlobalDef SeeTarget n node
+               return $ insLink dg4 incl1 globalDef SeeTarget n node
        return (Spec_inst spname
                          (map (uncurry replaceAnnoted)
                               (zip (reverse fitargs') afitargs))
@@ -400,7 +398,7 @@ ana_SPEC addSyms lg dg nsig name opts sp = case sp of
             $ G_theory lidP' sigmaD' startSigId (toThSens sensD') startThId
           dg2 = insLink dg1 (GMorphism cid sigmaD startSigId
                              (ext_ide sigmaD') startMorId)
-                GlobalDef SeeTarget n' node
+                globalDef SeeTarget n' node
       -- analyse SPEC2
       (sp2', nsig3, dg3) <-
           ana_SPEC addSyms lg dg2 (JustNode nsig2) name opts sp2
@@ -432,7 +430,7 @@ parLink :: LogicGraph -> DGLinkOrigin -> G_sign -> Node -> DGraph -> NodeSig
         -> Result DGraph
 parLink lg orig gsigma' node dg (NodeSig nA_i sigA_i)= do
     incl <- ginclusion lg sigA_i gsigma'
-    return $ insLink dg incl GlobalDef orig nA_i node
+    return $ insLink dg incl globalDef orig nA_i node
 
 -- analysis of renamings
 ana_ren :: LogicGraph -> HetcatsOpts -> MaybeNode -> Range -> GMorphism
@@ -612,7 +610,7 @@ ana_FIT_ARG lg dg spname nsigI (NodeSig nP gsigmaP) opts name fv = case fv of
        ana_SPEC False lg dg nsigI name opts (item asp)
    gmor <- ana_Gmaps lg opts pos gsigmaP gsigA gsis
    return (Fit_spec (replaceAnnoted sp' asp) gsis pos,
-          insLink dg' (gEmbed gmor) (GlobalThm LeftOpen None LeftOpen)
+          insLink dg' (gEmbed gmor) globalThm
              (DGLinkSpecInst spname) nP nA, (gmor, nsigA))
   Fit_view vn afitargs pos -> let
        adj = adjustPos pos
@@ -633,8 +631,7 @@ ana_FIT_ARG lg dg spname nsigI (NodeSig nP gsigmaP) opts name fv = case fv of
          -- the subcase with empty import leads to a simpler dg
          EmptyNode _ -> do
            gmor <- ginclusion lg gsigmaP gsigmaS
-           return (fv, insLink dg gmor
-                  (GlobalThm LeftOpen None LeftOpen) (DGLinkFitView spname)
+           return (fv, insLink dg gmor globalThm (DGLinkFitView spname)
                    nP nSrc, (G_morphism lid morHom ind, target))
          -- the subcase with nonempty import
          JustNode (NodeSig nI _) -> do
@@ -659,14 +656,14 @@ ana_FIT_ARG lg dg spname nsigI (NodeSig nP gsigmaP) opts name fv = case fv of
                    insGSig dg name (DGFitViewA spname) gsigmaA
                (NodeSig n' _, dg2) =
                    insGSig dg1 (inc name) (DGFitView spname) gsigmaP
-               dg3 = insLink dg2 incl1 GlobalDef
+               dg3 = insLink dg2 incl1 globalDef
                      (DGLinkFitViewAImp spname) nI nA
-               dg4 = insLink dg3 incl3 GlobalDef
+               dg4 = insLink dg3 incl3 globalDef
                      (DGLinkFitViewImp spname) nI n'
-               dg5 = insLink dg4 incl2 GlobalDef SeeTarget nTar nA
-               dg6 = insLink dg5 incl4 GlobalDef SeeTarget nSrc n'
+               dg5 = insLink dg4 incl2 globalDef SeeTarget nTar nA
+               dg6 = insLink dg5 incl4 globalDef SeeTarget nSrc n'
                dg7 = insLink dg6 (ide gsigmaP)
-                     (GlobalThm LeftOpen None LeftOpen) SeeTarget nP n'
+                     globalThm SeeTarget nP n'
            return (fv, dg7, (mkG_morphism lid mor_I, ns))
       -- now the case with parameters
       (_, 0) -> do
@@ -701,13 +698,12 @@ ana_FIT_ARG lg dg spname nsigI (NodeSig nP gsigmaP) opts name fv = case fv of
        let dg4 = case nsigI of
               EmptyNode _ -> dg3
               JustNode (NodeSig nI _) -> let
-                dg3a = insLink dg3 incl2 GlobalDef
+                dg3a = insLink dg3 incl2 globalDef
                        (DGLinkFitViewAImp spname) nI nA
-                in insLink dg3a incl3 GlobalDef (DGLinkFitViewImp spname) nI n'
-           dg5 = insLink dg4 mor' GlobalDef SeeTarget nTar nA
-           dg6 = insLink dg5 incl4 GlobalDef SeeTarget nSrc n'
-           dg7 = insLink dg6 (ide gsigmaP)
-                 (GlobalThm LeftOpen None LeftOpen) SeeTarget nP n'
+                in insLink dg3a incl3 globalDef (DGLinkFitViewImp spname) nI n'
+           dg5 = insLink dg4 mor' globalDef SeeTarget nTar nA
+           dg6 = insLink dg5 incl4 globalDef SeeTarget nSrc n'
+           dg7 = insLink dg6 (ide gsigmaP) globalThm SeeTarget nP n'
        return (Fit_view vn
                         (map (uncurry replaceAnnoted)
                              (zip (reverse fitargs') afitargs))
@@ -863,17 +859,16 @@ ana_Extension (sps', nsig', dg', lg, opts, pos, addSyms) (name',asp') = do
               (plain_error () "Conflicting semantic annotations"
                 pos)
          -- %implied should not occur here
-         when (anno1==SA_implied)
+         when (anno1 == SA_implied)
               (plain_error ()
                "Annotation %implied should come after a BASIC-ITEM"
                 pos)
-         if anno1==SA_implies then do
+         if anno1 == SA_implies then do
            when (not (isHomSubGsign sig1 sig')) (plain_error ()
              "Signature must not be extended in presence of %implies"
              pos)
    -- insert a theorem link according to p. 319 of the CASL Reference Manual
-           return $ insLink dg1 (ide sig1)
-                  (GlobalThm LeftOpen None LeftOpen) DGLinkExtension n1 n'
+           return $ insLink dg1 (ide sig1) globalThm DGLinkExtension n1 n'
           else do
            let anno2 = case anno1 of
                 SA_cons -> Cons
@@ -885,7 +880,8 @@ ana_Extension (sps', nsig', dg', lg, opts, pos, addSyms) (name',asp') = do
            -- but for clarity, we leave it open here
            -- the interesting open proof obligation is anno2, of course
            incl <- ginclusion lg sig' sig1
-           return $ insLink dg1 incl (GlobalThm LeftOpen anno2 LeftOpen)
+           -- here conservativity of the global def-link should be set
+           return $ insLink dg1 incl (globalConsThm anno2)
                   DGLinkExtension n' n1
      _ -> return dg1
   return (sp1' : sps', JustNode nsig1, dg2, lg, opts, pos, True)

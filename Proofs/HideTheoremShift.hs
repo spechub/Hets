@@ -128,10 +128,9 @@ insertNewEdges (dgraph, proofbasis) edge =
 -}
 makeProvenHidingThmEdge :: ProofBasis -> LEdge DGLinkLab -> LEdge DGLinkLab
 makeProvenHidingThmEdge proofBasisEdges ledge@(src,tgt,edgeLab) =
-  let HidingThm hidingMorphism _ = dgl_type edgeLab
-  in (src, tgt, edgeLab
-       { dgl_type = HidingThm hidingMorphism
-           $ Proven (hideThmShiftRule ledge) proofBasisEdges
+  (src, tgt, edgeLab
+       { dgl_type = setProof (Proven (hideThmShiftRule ledge) proofBasisEdges)
+           $ dgl_type edgeLab
        , dgl_origin = DGLinkProof })
 
 {- | selects a proof basis for 'hide theorem shift' if there is one
@@ -143,7 +142,7 @@ findProofBaseForHideTheoremShift dgraph (ledge@(src,tgt, lb)) proofBaseSel = do
       pathsFromSrc = getAllPathsOfTypeFrom dgraph2 src
       pathsFromTgt = getAllPathsOfTypeFrom dgraph2 tgt
       possiblePathPairs = selectPathPairs pathsFromSrc pathsFromTgt
-      HidingThm hidingMorphism _ = dgl_type lb
+      HidingFreeOrCofreeThm Nothing hidingMorphism _ = dgl_type lb
       morphism = dgl_morphism lb
       pathPairsFilteredByMorphism
         = filterPairsByResultingMorphisms possiblePathPairs
@@ -248,7 +247,7 @@ createEdgeForPath path =
         let (_, t, _) = last path
         in (s, t,
                       DGLink { dgl_morphism = morphism
-                             , dgl_type = (GlobalThm LeftOpen None LeftOpen)
+                             , dgl_type = globalThm
                              , dgl_origin = DGLinkProof
                              , dgl_id = defaultEdgeId
                              }
@@ -302,12 +301,3 @@ compMaybeMorphisms morph1 morph2 =
     (Just m1, Just m2) -> resultToMaybe $ compInclusion logicGraph m1 m2
        -- This should be compInclusion, but this would need the logic graph
     _ -> Nothing
-
-{- returns the Conservativity if the given edge has one,
-   otherwise an error is raised -}
-getConservativity :: LEdge DGLinkLab -> Conservativity
-getConservativity (_,_,edgeLab) =
-  case dgl_type edgeLab of
-    (LocalThm _ cons _) -> cons
-    (GlobalThm _ cons _) -> cons
-    _ -> None

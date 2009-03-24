@@ -95,16 +95,15 @@ theoremHideShiftWithOneHidingDefEdgeAux hd@(hds, _, _) dgraph x@(s, t, lbl) =
        "SimpleTheoremHideShift.theoremHideShiftWithOneHidingDefEdgeAux"
     newGlobalEdge = (s, hds, DGLink
       { dgl_morphism = newMorphism
-      , dgl_type = GlobalThm LeftOpen None LeftOpen
+      , dgl_type = globalThm
       , dgl_origin = DGLinkProof
       , dgl_id = defaultEdgeId})
     (newDGraph, proofbasis) =
       tryToInsertEdgeAndSelectProofBasis dgraph newGlobalEdge emptyProofBasis
     -------- to insert a proven global theorem link ---------------
-    GlobalThm _ conservativity conservStatus = dgl_type lbl
     provenEdge = (s, t, lbl
-      { dgl_type = GlobalThm (Proven thmHideShift
-                              proofbasis) conservativity conservStatus
+      { dgl_type = setProof (Proven thmHideShift
+                              proofbasis) $ dgl_type lbl
       , dgl_origin = DGLinkProof })
   in changesDGH newDGraph [DeleteEdge x, InsertEdge provenEdge]
 

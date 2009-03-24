@@ -217,14 +217,13 @@ globDecompForOneEdge dgraph edge@(source, target, edgeLab) = let
              -- why not? [edge] : map ...
     (newGr,  proof_basis) = foldl
       (globDecompForOneEdgeAux target) (dgraph, emptyProofBasis) paths
-    GlobalThm _ conservativity conservStatus = dgl_type edgeLab
     provenEdge = (source, target, edgeLab
-        { dgl_type = GlobalThm (Proven (globDecompRule edge) proof_basis)
-            conservativity conservStatus
+        { dgl_type = setProof (Proven (globDecompRule edge) proof_basis)
+            $ dgl_type edgeLab
         , dgl_origin = DGLinkProof })
     in changesDGH newGr [DeleteEdge edge, InsertEdge provenEdge]
 
-{- auxiliary funktion for globDecompForOneEdge (above)
+{- auxiliary function for globDecompForOneEdge (above)
    actual implementation -}
 globDecompForOneEdgeAux :: Node -> (DGraph, ProofBasis)
                         -> [LEdge DGLinkLab]
@@ -242,10 +241,8 @@ globDecompForOneEdgeAux target (dgraph, proof_basis) path =
         Nothing -> error "globDecomp: could not determine morphism of new edge"
       newEdge = (node, target, DGLink
         { dgl_morphism = morphism
-        , dgl_type = if isHiding then
-            HidingThm (dgl_morphism $ lbl) LeftOpen
-            else (if isGlobalDef lbltype then
-                      GlobalThm else LocalThm) LeftOpen None LeftOpen
+        , dgl_type = if isHiding then hidingThm $ dgl_morphism lbl
+            else if isGlobalDef lbltype then globalThm else localThm
         , dgl_origin = DGLinkProof
         , dgl_id = defaultEdgeId })
       in case tryToGetEdge newEdge dgraph of
@@ -281,11 +278,10 @@ globSubsumeAux libEnv dgraph ledge@(src, tgt, edgeLab) =
       proofbasis = selectProofBasis dgraph ledge filteredPaths
   in if not (nullProofBasis proofbasis) || isIdentityEdge ledge libEnv dgraph
    then
-     let GlobalThm _ conservativity conservStatus = dgl_type edgeLab
-         globSubsumeRule = DGRuleWithEdge "Global-Subsumption" ledge
+     let globSubsumeRule = DGRuleWithEdge "Global-Subsumption" ledge
          newEdge = (src, tgt, edgeLab
-               { dgl_type = GlobalThm (Proven globSubsumeRule proofbasis)
-                   conservativity conservStatus
+               { dgl_type = setProof (Proven globSubsumeRule proofbasis)
+                   $ dgl_type edgeLab
                , dgl_origin = DGLinkProof })
          newDGraph = changesDGH dgraph [DeleteEdge ledge, InsertEdge newEdge]
      in groupHistory dgraph globSubsumeRule newDGraph

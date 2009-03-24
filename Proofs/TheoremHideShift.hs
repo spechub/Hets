@@ -75,10 +75,8 @@ theoremHideShiftForEdge dg edge@(source, target, edgeLab) =
   case maybeResult $ theoremHideShiftForEdgeAux dg edge of
    Nothing -> error "theoremHideShiftForEdgeAux"
    Just (dg', pbasis) -> let
-    GlobalThm _ conservativity conservStatus = dgl_type edgeLab
     provenEdge = (source, target, edgeLab
-        { dgl_type = GlobalThm (Proven thmHideShift pbasis)
-            conservativity conservStatus
+        { dgl_type = setProof (Proven thmHideShift pbasis) $ dgl_type edgeLab
         , dgl_origin = DGLinkProof
         , dgl_id = defaultEdgeId })
     in insertDGLEdge provenEdge $ changeDGH dg' $ DeleteEdge edge
@@ -93,7 +91,7 @@ theoremHideShiftForEdgeAux dg (sn, tn, llab) = do
   cmor <- comp phi muN
   let newEdge =(sn, nfNode, DGLink{
                  dgl_morphism = cmor,
-                 dgl_type = GlobalThm LeftOpen None LeftOpen,
+                 dgl_type = globalThm,
                  dgl_origin = DGLinkProof,
                  dgl_id = defaultEdgeId
                })

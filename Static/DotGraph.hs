@@ -20,15 +20,14 @@ import Logic.Grothendieck (isHomogeneous)
 
 edgeAttribute :: DGLinkType -> String
 edgeAttribute l = case l of
-    LocalDef -> " [style=bold"
-    GlobalDef -> " [style=bold"
-    HidingDef -> " [style=bold,arrowhead=vee"
-    FreeDef _ -> " [style=bold"
-    CofreeDef _ -> " [style=bold"
-    LocalThm _ _con _  -> " [arrowhead=onormal"
-    GlobalThm _ _con _ -> " [arrowhead=onormal"
-    HidingThm _ _ -> " [arrowhead=vee"
-    FreeThm _ _ -> " [arrowhead=onormal"
+  ScopedLink _ lk _ -> case lk of
+    DefLink -> " [style=bold"
+    _ -> " [arrowhead=onormal"
+  HidingDefLink -> " [style=bold,arrowhead=vee"
+  FreeOrCofreeDefLink _ _ -> " [style=bold"
+  HidingFreeOrCofreeThm mh _ _ -> case mh of
+    Nothing -> " [arrowhead=vee"
+    Just _ -> " [arrowhead=onormal"
 
 showNode :: DGraph -> Node -> String
 showNode dg n = case getNameOfNode n dg of

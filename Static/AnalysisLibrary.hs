@@ -239,7 +239,7 @@ ana_GENERICITY lg dg opts name
        let (NodeSig node _, dg3) = insGSig dg'' name DGFormalParams gsigmaP
            inslink dgl (NodeSig n sigma) = do
              incl <- adj $ ginclusion lg sigma gsigmaP
-             return $ insLink dgl incl GlobalDef SeeTarget n node
+             return $ insLink dgl incl globalDef SeeTarget n node
        dg4 <- foldM inslink dg3 nsigPs
        return (Genericity params' imps' pos,
          GenericitySig nsigI nsigPs $ JustNode $ NodeSig node gsigmaP, dg4)
@@ -379,7 +379,7 @@ ana_VIEW_DEFN lgraph libenv dg opts vn gen vt gsis pos = do
       let vsig = ExtViewSig src gmor
              $ ExtGenSig imp params (getMaybeSig allparams) tar
       return (View_defn vn gen' vt' gsis pos,
-                (insLink dg'' gmor (GlobalThm LeftOpen None LeftOpen)
+                (insLink dg'' gmor globalThm
                  (DGLinkView vn) nodeS nodeT)
                 -- 'LeftOpen' for conserv correct?
                 { globalEnv = Map.insert vn (ViewEntry vsig) genv }

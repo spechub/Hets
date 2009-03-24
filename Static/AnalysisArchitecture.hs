@@ -110,7 +110,7 @@ nodeSigUnion lgraph dg nodeSigs orig =
                      incl <- ginclusion lgraph sig sigUnion
                      return $ insEdgeDG (n, node, DGLink
                          { dgl_morphism = incl
-                         , dgl_type = GlobalDef
+                         , dgl_type = globalDef
                          , dgl_origin = SeeTarget
                          , dgl_id = getNewEdgeId dgv
                          }) dgv

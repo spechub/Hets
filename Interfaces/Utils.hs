@@ -332,12 +332,11 @@ checkConservativityEdge useGUI (source,target,linklab) libEnv ln
                                 Proven conservativityRule emptyProofBasis
                             else
                                 LeftOpen
-                 (newDglType,change) = case dgl_type linklab of
-                   GlobalThm proven conserv _ ->
-                     (GlobalThm proven conserv $ consNew conserv, True)
-                   LocalThm proven conserv _ ->
-                     (LocalThm proven conserv $ consNew conserv, True)
-                   t -> (t,False)
+                 (newDglType, change) = case dgl_type linklab of
+                   ScopedLink sc dl (ConsStatus conserv op) ->
+                     let np = consNew conserv in
+                     (ScopedLink sc dl $ ConsStatus conserv np, np /= op)
+                   t -> (t, False)
                  provenEdge = ( source
                               , target
                               , linklab { dgl_type = newDglType }
@@ -349,7 +348,7 @@ checkConservativityEdge useGUI (source,target,linklab) libEnv ln
                  newLibEnv = insert ln
                    (groupHistory dg conservativityRule nextGr) libEnv
                  history = snd $ splitHistory dg nextGr
-             return ( showRes ++ "\n" ++myDiags
+             return ( showRes ++ "\n" ++ myDiags
                     , newLibEnv
                     , history)
 

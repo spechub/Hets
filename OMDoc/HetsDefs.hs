@@ -2610,13 +2610,8 @@ makeCollectionMap
     (Map.keys lenv)
 
 -- | check if a link is a definitional link (LocaDef, GlobalDef, HidingDef)
-isDefLink::DGLinkLab->Bool
-isDefLink dgl =
-  case dgl_type dgl of
-    LocalDef -> True
-    GlobalDef -> True
-    HidingDef -> True
-    _ -> False
+isDefLink :: DGLinkLab -> Bool
+isDefLink = isDefEdge . dgl_type
 
 -- | try to find the origin of an identifier in the DevGraph
 traceIdentifierOrigin::

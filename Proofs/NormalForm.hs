@@ -119,7 +119,7 @@ normalFormDG libEnv dgraph = foldM (\ dg (node, nodelab) ->
             -- insert the new node and add edges from the predecessors
                 insNNF = InsertNode (nfNode, nfLabel)
                 makeEdge src tgt m = (src, tgt, DGLink { dgl_morphism = m
-                                              , dgl_type = GlobalDef
+                                              , dgl_type = globalDef
                                               , dgl_origin = DGLinkProof
                                               , dgl_id = defaultEdgeId
                                               })

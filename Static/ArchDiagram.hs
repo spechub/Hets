@@ -184,7 +184,7 @@ extendDGraph dg (NodeSig n _) morph orig = case cod morph of
         $ noSensGTheory lid tar ind
       linkContents = DGLink
         { dgl_morphism = morph
-        , dgl_type = GlobalDef
+        , dgl_type = globalDef
         , dgl_origin = SeeTarget
         , dgl_id = getNewEdgeId dg' }
       node = getNewNodeDG dg
@@ -206,7 +206,7 @@ extendDGraphRev dg (NodeSig n _) morph orig = case dom morph of
         $ noSensGTheory lid src ind
       linkContents = DGLink
         { dgl_morphism = morph
-        , dgl_type = GlobalDef
+        , dgl_type = globalDef
         , dgl_origin = SeeSource
         , dgl_id = getNewEdgeId dg' }
       node = getNewNodeDG dg

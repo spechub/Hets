@@ -124,68 +124,44 @@ updateDGOnly g c =
 
 isProven :: DGLinkType -> Bool
 isProven edge = case edge of
-    GlobalDef -> True
-    LocalDef  -> True
+    ScopedLink _ DefLink _  -> True
     _ -> case thmLinkStatus edge of
            Just (Proven _ _) -> True
            _ -> False
 
 isGlobalEdge :: DGLinkType -> Bool
 isGlobalEdge edge = case edge of
-    GlobalDef -> True
-    GlobalThm _ _ _ -> True
-    _ -> False
-
-isLocalEdge :: DGLinkType -> Bool
-isLocalEdge edge = case edge of
-    LocalDef  -> True
-    LocalThm _ _ _ -> True
+    ScopedLink Global _ _  -> True
     _ -> False
 
 isGlobalThm :: DGLinkType -> Bool
 isGlobalThm edge = case edge of
-    GlobalThm _ _ _ -> True
-    _ -> False
-
-isLocalThm :: DGLinkType -> Bool
-isLocalThm edge = case edge of
-    LocalThm _ _ _ -> True
+    ScopedLink Global (ThmLink _) _ -> True
     _ -> False
 
 isUnprovenGlobalThm :: DGLinkType -> Bool
 isUnprovenGlobalThm lt = case lt of
-    GlobalThm LeftOpen _ _ -> True
+    ScopedLink Global (ThmLink LeftOpen) _ -> True
     _ -> False
 
 isUnprovenLocalThm :: DGLinkType -> Bool
 isUnprovenLocalThm lt = case lt of
-    LocalThm LeftOpen _ _ -> True
-    _ -> False
-
-isHidingEdge :: DGLinkType -> Bool
-isHidingEdge edge = case edge of
-    HidingDef -> True
-    HidingThm _ _ -> True
-    _ -> False
-
-isHidingThm :: DGLinkType -> Bool
-isHidingThm edge = case edge of
-    HidingThm _ _ -> True
+    ScopedLink Local (ThmLink LeftOpen) _ -> True
     _ -> False
 
 isUnprovenHidingThm :: DGLinkType -> Bool
 isUnprovenHidingThm lt = case lt of
-    HidingThm _ LeftOpen -> True
+    HidingFreeOrCofreeThm Nothing _ LeftOpen -> True
     _ -> False
 
 isFreeEdge :: DGLinkType -> Bool
 isFreeEdge edge = case edge of
-    FreeDef _ -> True
+    FreeOrCofreeDefLink Free _ -> True
     _ -> False
 
 isCofreeEdge :: DGLinkType -> Bool
 isCofreeEdge edge = case edge of
-    CofreeDef _ -> True
+    FreeOrCofreeDefLink Cofree _ -> True
     _ -> False
 
 -- ----------------------------------------------------------------------------
@@ -347,17 +323,23 @@ calculateProofBasis rel = ProofBasis . foldr
      otherwise Nothing. -}
 tryToGetProofBasis :: DGLinkLab -> ProofBasis
 tryToGetProofBasis label = case dgl_type label of
-    GlobalThm (Proven _ pB) _ _ -> pB
-    LocalThm (Proven _ pB) _ _ -> pB
-    HidingThm _ (Proven _ pB) -> pB
+    ScopedLink _ (ThmLink (Proven _ pB)) _ -> pB
+    HidingFreeOrCofreeThm _ _ (Proven _ pB) -> pB
     _ -> emptyProofBasis
+
+setProof :: ThmLinkStatus -> DGLinkType -> DGLinkType
+setProof p lt = case lt of
+    ScopedLink sc (ThmLink _) cs -> ScopedLink sc (ThmLink p) cs
+    HidingFreeOrCofreeThm hm mor _ -> HidingFreeOrCofreeThm hm mor p
+    _ -> lt
 
 invalidateProof :: DGLinkType -> DGLinkType
 invalidateProof t = case t of
-    GlobalThm _ c _ -> GlobalThm LeftOpen c LeftOpen
-    LocalThm _ c _ -> LocalThm LeftOpen c LeftOpen
-    HidingThm m _ -> HidingThm m LeftOpen
-    FreeThm m _ -> FreeThm m LeftOpen
+    ScopedLink sc dl (ConsStatus c _) ->
+      ScopedLink sc (case dl of
+        ThmLink _ -> ThmLink LeftOpen
+        _ -> dl) $ ConsStatus c LeftOpen
+    HidingFreeOrCofreeThm mh gm _ -> HidingFreeOrCofreeThm mh gm LeftOpen
     _ -> t
 
 {- | adopts the edges of the old node to the new node -}
