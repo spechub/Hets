@@ -19,6 +19,8 @@ module Static.PrintDevGraph
     , prettyGr
     , showEdgeId
     , showLEdge
+    , dgOriginHeader
+    , dgLinkOriginHeader
     ) where
 
 import Static.GTheory
@@ -77,8 +79,8 @@ dgOriginSpec o = case o of
     DGFitViewA n -> Just n
     _ -> Nothing
 
-dgOriginHeder :: DGOrigin -> String
-dgOriginHeder o = case o of
+dgOriginHeader :: DGOrigin -> String
+dgOriginHeader o = case o of
     DGEmpty -> "empty-spec"
     DGBasic -> "basic-spec"
     DGExtension -> "extension"
@@ -105,7 +107,7 @@ dgOriginHeder o = case o of
     DGFlattening -> "flattening"
 
 instance Pretty DGOrigin where
-  pretty o = text (dgOriginHeder o) <+> pretty (dgOriginSpec o)
+  pretty o = text (dgOriginHeader o) <+> pretty (dgOriginSpec o)
 
 instance Pretty DGNodeInfo where
   pretty c = case c of
@@ -149,8 +151,8 @@ dgLinkOriginSpec o = case o of
     DGLinkFitViewAImp n -> Just n
     _ -> Nothing
 
-dgLinkOriginHeder :: DGLinkOrigin -> String
-dgLinkOriginHeder o = case o of
+dgLinkOriginHeader :: DGLinkOrigin -> String
+dgLinkOriginHeader o = case o of
     SeeTarget -> "see target"
     SeeSource -> "see source"
     DGLinkExtension -> "extension"
@@ -168,7 +170,7 @@ dgLinkOriginHeder o = case o of
     DGLinkFlatteningThree -> "result of flattening (3 -> 1)"
 
 instance Pretty DGLinkOrigin where
-  pretty o = text (dgLinkOriginHeder o) <+> pretty (dgLinkOriginSpec o)
+  pretty o = text (dgLinkOriginHeader o) <+> pretty (dgLinkOriginSpec o)
 
 -- | only shows the edge and node ids
 showLEdge :: LEdge DGLinkLab -> String

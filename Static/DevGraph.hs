@@ -54,7 +54,6 @@ import Common.LibName
 import Control.Concurrent.MVar
 import Control.Exception (assert)
 
-import Data.Char (toLower)
 import Data.Graph.Inductive.Basic
 import Data.Graph.Inductive.Graph as Graph
 import Data.Graph.Inductive.Query.DFS
@@ -295,14 +294,6 @@ isProvenThmLinkStatus tls = case tls of
   LeftOpen -> False
   _ -> True
 
--- | show theorem link status
-getThmTypeAux :: ThmLinkStatus -> String
-getThmTypeAux s = if isProvenThmLinkStatus s then "Proven" else "Unproven"
-
--- | show theorem link status (using lower case letter)
-getThmType :: ThmLinkStatus -> String
-getThmType = map toLower . getThmTypeAux
-
 data Scope = Local | Global deriving (Show, Eq, Ord)
 
 data LinkKind = DefLink | ThmLink ThmLinkStatus deriving (Show, Eq)
@@ -340,7 +331,7 @@ data DGLinkLab = DGLink
 
 -- | describe the link type of the label
 getDGLinkType :: DGLinkLab -> String
-getDGLinkType = map toLower . getDGEdgeTypeName . getRealDGLinkType
+getDGLinkType = getDGEdgeTypeName . getRealDGLinkType
 
 -- | converts a DGEdgeType to a String
 getDGEdgeTypeName :: DGEdgeType -> String

@@ -55,6 +55,7 @@ import PGIP.DataTypesUtils
 
 import Static.GTheory
 import Static.DevGraph
+import Static.PrintDevGraph
 
 import Common.DocUtils
 import Common.AS_Annotation
@@ -67,7 +68,6 @@ import qualified Data.Set as Set
 import Data.List
 import qualified Data.Map as Map
 
-import Logic.Grothendieck
 import Logic.Logic
 
 import Driver.Options
@@ -351,10 +351,10 @@ showNodeInfo::CMDL_State -> LNode DGNodeLab -> String
 showNodeInfo state (nb,nd)
  =let
     -- node name
-      name'= "dgn_name :" ++ showName (dgn_name nd) ++ "\n"
+      name'= "dgn_name : " ++ showName (dgn_name nd) ++ "\n"
       -- origin of the node
       orig'= if isDGRef nd then "dgn_orig : no origin (ref node)"
-             else "dgn_orig :" ++ show (dgn_origin nd) ++ "\n"
+             else "dgn_orig : " ++ dgOriginHeader (dgn_origin nd) ++ "\n"
       -- conservativity annotations
       th = getTh Do_translate nb state
   in
@@ -364,8 +364,8 @@ showNodeInfo state (nb,nd)
      let
       -- find out the sublogic of the theory if we found
       -- a theory
-      sublog = "   sublogic :"++(show
-                              $ sublogicOfTh t)++"\n"
+      sublog = "   sublogic :"++ show
+                              (sublogicOfTh t) ++ "\n"
       -- compute the number of axioms by counting the
       -- number of symbols of the signature !?
       nbAxm = "   number of axioms :"++(show $ OMap.size $
@@ -396,43 +396,43 @@ showNodeInfo state (nb,nd)
      in name' ++ orig' ++ th'
 
 
--- | Given and edge it returns the information that needs to
---be printed as a string
+-- | Given an edge it returns the information that needs to
+--   be printed as a string
 showEdgeInfo::CMDL_State -> LEdge DGLinkLab -> String
-showEdgeInfo state (x,y,dglab@(DGLink morp _ org _ ) )
- =case i_state $ intState state of
+showEdgeInfo state (x, y, dglab)
+ = case i_state $ intState state of
    Nothing -> ""
    Just dgS ->
     let
      ls = getAllNodes dgS
-     nameOf x' l =case find (\(nb,_)->nb==x') l of
-                   Nothing->"Unknown node"
+     nameOf x' l = case find ((== x') . fst) l of
+                   Nothing -> "Unknown node"
                    Just (_, n) -> showName $ dgn_name n
-     nm = "dgl_name :"++(nameOf x ls)++" -> "++
-               (nameOf y ls) ++ "\n"
-     orig = "dgl_origin :"++(show $ org)++"\n"
-     homog= "dgl_homogeneous :"++ (show $ isHomogeneous morp)
-                          ++ "\n"
-     ltype= "dgl_type :"++
-             (case getDGLinkType dglab of
-               "globaldef"->"global definition"
-               "def"->"local definition"
-               "hidingef"->"hiding definition"
-               "hetdef"->"het definitions"
-               "proventhm"->"global proven theorem"
-               "unproventhm"->"global unproven theorem"
-               "localproventhm"->"local proven theorem"
-               "localunproventhm"->"local unproven theorem"
-               "hetproventhm"->"het global proven theorem"
-               "hetunproventhm"->"het global unproven theorem"
-               "hetlocalproventhm"->"het local proven theorem"
-               "hetlocalunproventhm"->"het local unproven"++
-                                            "theorem"
-               "unprovenhidingthm"->"unproven hiding theorem"
-               "provenhidingthm"->"proven hiding theorem"
-               _                ->"unknown type"
-                ) ++ "\n"
-    in nm++orig++homog++ltype
+     nm = "dgl_name : "++ nameOf x ls ++ " -> " ++
+               nameOf y ls
+     orig = "dgl_origin : " ++ dgLinkOriginHeader (dgl_origin dglab)
+     defS = "definition"
+     mkDefS = (++ " " ++ defS)
+     ltype= "dgl_type : " ++
+       case edgeTypeModInc $  getRealDGLinkType dglab of
+         GlobalDef -> mkDefS "global"
+         HetDef -> mkDefS "het"
+         HidingDef -> mkDefS "hiding"
+         LocalDef -> mkDefS "local"
+         FreeOrCofreeDef -> defS
+         ThmType thm isPrvn ->
+           let prvn = (if isPrvn then "" else "un") ++ "proven"
+               thmS = "theorem"
+           in case thm of
+                HidingThm -> unwords [prvn, "hiding", thmS]
+                FreeOrCofreeThm -> unwords [prvn, thmS]
+                GlobalOrLocalThm scope isHom ->
+                   let het = if isHom then [] else ["het"]
+                       sc = case scope of
+                              Local -> "local"
+                              Global -> "global"
+                   in unwords $ het ++ [sc, prvn, thmS]
+    in unlines [nm, orig, ltype]
 
 
  -- show all information of selection
