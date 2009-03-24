@@ -48,6 +48,7 @@ module GUI.GraphAbstraction
     , deactivateGraphWindow
     , activateGraphWindow
     , closeGraphWindow
+    , destroyGraph
     , exitUDrawGraph
     ) where
 
@@ -583,10 +584,11 @@ closeGraphWindow gi = do
   let Graph dg = theGraph g
   destroy $ getDaVinciGraphContext dg
 
+-- | destroy graph
+destroyGraph :: OurGraph -> IO ()
+destroyGraph (Graph dg) = destroy $ getDaVinciGraphContext dg
+
 -- | Exits UDrawGraph
 exitUDrawGraph :: GraphInfo -- ^ The graph
                  -> IO ()
-exitUDrawGraph gi = do
-  g <- readIORef gi
-  let Graph dg = theGraph g
-  DVB.exitDaVinci $ getDaVinciGraphContext dg
+exitUDrawGraph gi = readIORef gi >>= destroyGraph . theGraph

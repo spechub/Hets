@@ -38,8 +38,6 @@ import Control.Concurrent(threadDelay)
 import Interfaces.DataTypes
 import Interfaces.Utils
 
-import qualified UDrawGraph.Basic as DVB
-
 type NodeEdgeList = ([DaVinciNode LIB_NAME],[DaVinciArc (IO String)])
 
 {- | Creates a  new uDrawGraph Window and shows the Library Dependency Graph of
@@ -219,8 +217,8 @@ close (GInfo { exitMVar = exit'
   count <- takeMVar wc
   case count == 1 of
     True -> do
-      Graph g <- readIORef graph
-      DVB.exitDaVinci $ getDaVinciGraphContext g
+      g <- readIORef graph
+      GA.destroyGraph g
       putMVar exit' ()
     False -> putMVar wc $ count - 1
   return True
