@@ -13,20 +13,20 @@ command = annotation global +++ annotation forType
 local = annotation loc
 
 global = do symbol "global"
-	    symbol ":"
-	    ts <- tag `sepby` symbol ","
+            symbol ":"
+            ts <- tag `sepby` symbol ","
             return (ts,Directive)
 
 forType = do symbol "for"
-	     ty <- cap
-	     symbol "derive"
-	     symbol ":"
-	     ts <- tag `sepby` symbol ","
+             ty <- cap
+             symbol "derive"
+             symbol ":"
+             ts <- tag `sepby` symbol ","
              return (ts,TypeName ty)
 
 loc = do symbol "derive"
-	 symbol ":"
-	 tag `sepby` symbol ","
+         symbol ":"
+         tag `sepby` symbol ","
 
 cap = token (do x <- upper
                 xs <- many alphanum
@@ -41,17 +41,17 @@ annotation x = do symbol "{-!"
 -- parser for module headers
 
 header = do symbol "module"
-	    cap
-	    opt (do skipNest (symbol "(") (symbol ")")
+            cap
+            opt (do skipNest (symbol "(") (symbol ")")
                     return [])
-	    symbol "where"
-	    many imports
+            symbol "where"
+            many imports
 
 imports = do symbol "import"
-	     opt (symbol "qualified")
-	     i <- cap
-	     opt (symbol "as" >> cap)
-	     opt (symbol "hiding")
-	     opt (do skipNest (symbol "(") (symbol ")")
+             opt (symbol "qualified")
+             i <- cap
+             opt (symbol "as" >> cap)
+             opt (symbol "hiding")
+             opt (do skipNest (symbol "(") (symbol ")")
                      return [])
              return i

@@ -4,7 +4,7 @@
 
 
 -- Copyright (c) 2002 John Meacham (john@foo.net)
--- 
+--
 -- Permission is hereby granted, free of charge, to any person obtaining a
 -- copy of this software and associated documentation files (the
 -- "Software"), to deal in the Software without restriction, including
@@ -12,10 +12,10 @@
 -- distribute, sublicense, and/or sell copies of the Software, and to
 -- permit persons to whom the Software is furnished to do so, subject to
 -- the following conditions:
--- 
+--
 -- The above copyright notice and this permission notice shall be included
 -- in all copies or substantial portions of the Software.
--- 
+--
 -- THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
 -- OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
 -- MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
@@ -32,15 +32,15 @@
 
 module GenUtil(
     -- * Functions
-    -- ** Error reporting 
+    -- ** Error reporting
     putErr,putErrLn,putErrDie,
-    -- ** Simple deconstruction 
+    -- ** Simple deconstruction
     fromLeft,fromRight,fsts,snds,splitEither,rights,lefts,
     -- ** System routines
     exitSuccess, System.exitFailure, epoch, lookupEnv,endOfTime,
     -- ** Random routines
     repMaybe,
-    liftT2, liftT3, liftT4, 
+    liftT2, liftT3, liftT4,
     snub, snubFst, sortFst, groupFst, foldl',
     fmapLeft,fmapRight,isDisjoint,isConjoint,
     -- ** Monad routines
@@ -48,7 +48,7 @@ module GenUtil(
     toMonadM, ioM, ioMp, foldlM, foldlM_, foldl1M, foldl1M_,
     -- ** Text Routines
     -- *** Quoting
-    shellQuote, simpleQuote, simpleUnquote, 
+    shellQuote, simpleQuote, simpleUnquote,
     -- *** Random
     concatInter,
     powerSet,
@@ -113,13 +113,13 @@ putErrLn :: String -> IO ()
 putErrLn s = putErr (s ++ "\n")
 
 
--- | write string and newline to standard error, 
+-- | write string and newline to standard error,
 -- then exit program with failure.
 putErrDie :: String -> IO a
 putErrDie s = putErrLn s >> System.exitFailure
 
 
--- | exit program successfully. 'exitFailure' is 
+-- | exit program successfully. 'exitFailure' is
 -- also exported from System.
 exitSuccess :: IO a
 exitSuccess = System.exitWith System.ExitSuccess
@@ -137,7 +137,7 @@ fromLeft _ = error "fromLeft"
 
 -- | recursivly apply function to value until it returns Nothing
 repMaybe :: (a -> Maybe a) -> a -> a
-repMaybe f e = case f e of 
+repMaybe f e = case f e of
     Just e' -> repMaybe f e'
     Nothing -> e
 
@@ -161,9 +161,9 @@ class Monad m => UniqueProducer m where
 --    peekUniq :: m Int
 --    modifyUniq :: (Int -> Int) -> m ()
 --    newUniq = do
---	v <- peekUniq
---	modifyUniq (+1) 
---	return v
+--      v <- peekUniq
+--      modifyUniq (+1)
+--      return v
 
 rtup a b = (b,a)
 triple a b c = (a,b,c)
@@ -226,14 +226,14 @@ foldl1M _ _ = error "foldl1M"
 
 foldlM_ :: Monad m => (a -> b -> m a) -> a -> [b] -> m ()
 foldlM_ f v xs = foldlM f v xs >> return ()
-     
+
 foldl1M_ ::Monad m => (a -> a -> m a)  -> [a] -> m ()
 foldl1M_ f xs = foldl1M f xs >> return ()
 
 -- | partition a list of eithers.
 splitEither :: [Either a b] -> ([a],[b])
-splitEither  (r:rs) = case splitEither rs of 
-    (xs,ys) -> case r of 
+splitEither  (r:rs) = case splitEither rs of
+    (xs,ys) -> case r of
         Left x -> (x:xs,ys)
         Right y -> (xs,y:ys)
 splitEither          [] = ([],[])
@@ -249,7 +249,7 @@ mapSnd    g (x,y) = (  x,g y)
 
 {-# INLINE mapFsts #-}
 {-# INLINE mapSnds #-}
-mapFsts f xs = [(f x, y) | (x,y) <- xs] 
+mapFsts f xs = [(f x, y) | (x,y) <- xs]
 mapSnds g xs = [(x, g y) | (x,y) <- xs]
 
 {-# INLINE rights #-}
@@ -271,7 +271,7 @@ ioMp action = catch (fmap return action) (\_ -> return mzero)
 paragraph :: Int -> String -> String
 paragraph maxn xs = drop 1 (f maxn (words xs)) where
     f n (x:xs) | lx < n = (' ':x) ++ f (n - lx) xs where
-        lx = length x + 1    
+        lx = length x + 1
     f _ (x:xs) = '\n': (x ++ f (maxn - length x) xs)
     f _ [] = "\n"
 
@@ -279,27 +279,27 @@ chunk :: Int -> [a] -> [[a]]
 chunk mw s | length s < mw = [s]
 chunk mw s = case splitAt mw s of (a,b) -> a : chunk mw b
 
-chunkText :: Int -> String -> String 
+chunkText :: Int -> String -> String
 chunkText mw s = concatMap (unlines . chunk mw) $ lines s
 
 {-
-paragraphBreak :: Int -> String -> String 
+paragraphBreak :: Int -> String -> String
 paragraphBreak  maxn xs = unlines (map ( unlines . map (unlines . chunk maxn) . lines . f maxn ) $ lines xs) where
     f _ "" = ""
     f n xs | length ss > 0 = if length ss + r rs > n then '\n':f maxn rs else ss where
-        (ss,rs) = span isSpace xs  
+        (ss,rs) = span isSpace xs
     f n xs = ns ++ f (n - length ns) rs where
-        (ns,rs) = span (not . isSpace) xs  
+        (ns,rs) = span (not . isSpace) xs
     r xs = length $ fst $ span (not . isSpace) xs
 -}
 
-paragraphBreak :: Int -> String -> String 
+paragraphBreak :: Int -> String -> String
 paragraphBreak  maxn xs = unlines $ (map f) $ lines xs where
     f s | length s <= maxn = s
     f s | isSpace (head b) = a ++ "\n" ++ f (dropWhile isSpace b)
         | all (not . isSpace) a = a ++ "\n" ++ f b
         | otherwise  = reverse (dropWhile isSpace sa) ++ "\n" ++ f (reverse ea ++ b) where
-            (ea, sa) = span (not . isSpace) $ reverse a 
+            (ea, sa) = span (not . isSpace) $ reverse a
             (a,b) = splitAt maxn s
 
 expandTabs' :: Int -> Int -> String -> String
@@ -322,7 +322,7 @@ tr as bs s = map (f as bs) s where
     f [] [] c = c
     f _ _ _ = error "invalid tr"
 
- 
+
 -- | quote strings 'rc' style. single quotes protect any characters between
 -- them, to get an actual single quote double it up. Inverse of 'simpleUnquote'
 simpleQuote :: [String] -> String
@@ -343,7 +343,7 @@ simpleUnquote s = f (dropWhile isSpace s)  where
     quote' a (x:xs) = quote' (x:a) xs
     quote' a [] = (reverse a, "")
 
--- | quote a set of strings as would be appropriate to pass them as 
+-- | quote a set of strings as would be appropriate to pass them as
 -- arguments to a 'sh' style shell
 shellQuote :: [String] -> String
 shellQuote ss = unwords (map f ss) where
@@ -376,16 +376,16 @@ fmapRight fn = fmap f where
 {-# SPECIALIZE isConjoint :: [Int] -> [Int] -> Bool #-}
 
 isDisjoint, isConjoint :: Eq a => [a] -> [a] -> Bool
-isConjoint xs ys = or [x == y | x <- xs, y <- ys] 
+isConjoint xs ys = or [x == y | x <- xs, y <- ys]
 isDisjoint xs ys = not (isConjoint xs ys)
 
--- | 'concat' composed with 'List.intersperse'. 
+-- | 'concat' composed with 'List.intersperse'.
 concatInter :: String -> [String] -> String
 concatInter x = concat . (intersperse x)
 
 -- | place spaces before each line in string.
-indentLines :: Int -> String -> String 
-indentLines n s = unlines $ map (replicate n ' ' ++)$ lines s 
+indentLines :: Int -> String -> String
+indentLines n s = unlines $ map (replicate n ' ' ++)$ lines s
 
 -- | trim blank lines at beginning and end of string
 trimBlankLines :: String -> String
@@ -434,7 +434,7 @@ powerSet (x:xs) = xss /\/ map (x:) xss
 
 (/\/)        :: [a] -> [a] -> [a]
 []     /\/ ys = ys
-(x:xs) /\/ ys = x : (ys /\/ xs)        
+(x:xs) /\/ ys = x : (ys /\/ xs)
 
 
 
@@ -461,5 +461,5 @@ showDuration x = st "d" dayI ++ st "h" hourI ++ st "m" minI ++ show secI ++ "s" 
         (dayI, hourI) = divMod hourI' 24
         (hourI', minI) = divMod minI' 60
         (minI',secI) = divMod x 60
-        st _ 0 = "" 
+        st _ 0 = ""
         st c n = show n ++ c
