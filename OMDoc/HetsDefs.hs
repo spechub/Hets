@@ -840,7 +840,8 @@ getFlatNames lenv =
         -- collect and label sentences
         senslist =
           concatMap
-            (\(nn, node) -> map (\x -> (nn, x)) $ zip [1..] (getNodeSentences node))
+            (\(nn, node) -> map (\x -> (nn, x)) $ zip [(1 :: Int) ..]
+                            (getNodeSentences node))
             dgnodes
         -- get constructors from sentences
         senscons =
