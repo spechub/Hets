@@ -1,9 +1,4 @@
-These source files ar adapted for the special purposes of HetCATS!
+These source files are adapted for the special purposes of Hets!
 
-See README-v1.0 for Copyright!
-
-INSTALL
--------
-
-ghc --make DrIFT.lhs -o DrIFT
-cp DrIFT ..
+for the most recent sources, license, and authors see:
+http://repetae.net/computer/haskell/DrIFT/
