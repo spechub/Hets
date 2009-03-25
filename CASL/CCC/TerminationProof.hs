@@ -58,7 +58,7 @@ terminationProof fs dms
              "eq(_,_) -> false\n" ++
              "when_else(t1,true,t2) -> t1\n" ++
              "when_else(t1,false,t2) -> t2\n"
-    c_vars = ("(VAR t t1 t2 " ++ (varsStr (allVar $ map varOfAxiom fs) "") ++ 
+    c_vars = ("(VAR t t1 t2 " ++ (varsStr (allVar $ map varOfAxiom fs) "") ++
               ")\n")
     c_axms = axhead ++ (axiomTrs fs "") ++ ")\n"
     ipath = "/Input.trs"

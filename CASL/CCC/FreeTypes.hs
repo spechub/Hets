@@ -139,7 +139,7 @@ getOOps m fsn = let
         if not, return it as proof obligation
 -}
 getOPreds :: Morphism () () () -> [Named (FORMULA ())] -> [FORMULA ()]
-getOPreds m fsn = 
+getOPreds m fsn =
     let sig = imageOfMorphism m
         oldPredMap = predMap sig
         axioms = getAxioms fsn
@@ -316,8 +316,8 @@ checkSort (osig, osens) m fsn
     where
         nSorts = getNSorts osig m
         notFreeSorts = getNotFreeSorts osig m fsn
-        nefsorts = getNefsorts (osig,osens) m fsn         
-           
+        nefsorts = getNefsorts (osig,osens) m fsn
+
 checkLeadingTerms :: [Named (FORMULA ())] -> Morphism () () ()
    -> [Named (FORMULA ())]
    -> Maybe (Result (Maybe (ConsistencyStatus,[FORMULA ()])))
@@ -446,7 +446,7 @@ checkFreeType (osig, osens) m fsn
     | isJust terminal     = fromJust terminal
     | otherwise           = return (Just (conStatus, []))
     where
-        fsn' = combine fsn $ 
+        fsn' = combine fsn $
                   map sentence fsn \\ map (mapSen (const id) m . sentence) osens
         definitional = checkDefinitional fsn'
         sort         = checkSort (osig, osens) m fsn'
@@ -631,7 +631,7 @@ completePatterns cons pas
     where s_op_os c = case c of
                         Op_name _ -> []
                         Qual_op_name on ot _ -> [(res_OP_TYPE ot,on)]
-          s_sum sns = map (\ s -> (s, map snd $ 
+          s_sum sns = map (\ s -> (s, map snd $
                       filter (\ c -> fst c == s) sns)) $ nubOrd $ map fst sns
           s_cons = s_sum $ concatMap s_op_os cons
           s_op_t t = case t of

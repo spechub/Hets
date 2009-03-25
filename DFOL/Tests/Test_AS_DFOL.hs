@@ -6,9 +6,9 @@ import DFOL.AS_DFOL
 import Common.Id
 import Common.AS_Annotation
 
-natTok, matTok, mTok, nTok, aTok, bTok, plusTok :: NAME 
+natTok, matTok, mTok, nTok, aTok, bTok, plusTok :: NAME
 
-natTok = Token "Nat" $ Range [] 
+natTok = Token "Nat" $ Range []
 matTok = Token "Mat" $ Range []
 mTok = Token "m" $ Range []
 nTok = Token "n" $ Range []
@@ -18,7 +18,7 @@ plusTok = Token "+" $ Range []
 
 nat, mat, m, n, a, b, plus :: TERM
 
-nat = Identifier natTok 
+nat = Identifier natTok
 mat = Identifier matTok
 m = Identifier mTok
 n = Identifier nTok
@@ -32,8 +32,8 @@ commut = Forall [([mTok, nTok], Univ nat), ([aTok, bTok], Univ $ Appl mat [m, n]
 spec :: BASIC_SPEC
 spec = Basic_spec [Annoted (Decl [natTok] Sort) (Range []) [] [],
                    Annoted (Decl [matTok] $ Func [Univ nat, Univ nat, Sort]) (Range []) [] [],
-                   Annoted (Decl [plusTok] $ Pi [([mTok, nTok], Univ nat)] $ Func [Univ $ Appl mat [m, n], Univ $ Appl mat [m, n], 
+                   Annoted (Decl [plusTok] $ Pi [([mTok, nTok], Univ nat)] $ Func [Univ $ Appl mat [m, n], Univ $ Appl mat [m, n],
                                                                                  Univ $ Appl mat [m, n]]) (Range []) [] [],
                    Annoted (Axiom commut) (Range []) [] []]
 
-     
+
