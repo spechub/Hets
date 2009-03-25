@@ -30,7 +30,7 @@ import Common.AS_Annotation
 main :: IO ()
 main = getArgs >>= mapM_ process
 
--- try with files ToHaskell/test/*.hascasl.hs
+-- try with files *.hascasl.hs in ToHaskell/test
 process :: FilePath -> IO ()
 process fn = do
     s <- readFile fn
