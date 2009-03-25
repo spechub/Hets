@@ -51,7 +51,7 @@ exportSignToOmdoc sid lid sign =
 exportMorphismToOmdoc :: Morphism f e m -> TCElement
 --exportMorphismToOmdoc morphism = []
 --exportMorphismToOmdoc _ = error "not implemented yet"
-exportMorphismToOmdoc (Morphism _ _ sortmap opmap predmap _) = 
+exportMorphismToOmdoc (Morphism _ _ sortmap opmap predmap _) =
     TCMorphism $ Map.elems (mapWithKey (makeSortMapEntry NOSPEC) sortmap)
               ++ Map.elems (mapWithKey (makeOpMapEntry NOSPEC) opmap)
               ++ Map.elems (mapWithKey (makePredMapEntry NOSPEC) predmap)
@@ -81,11 +81,11 @@ sfail s r = error $ show (Diag Error ("unexpected " ++ s) r)
 
 makeADTsFromConstraints :: SPEC_ID -> Sign f e -> [Constraint] -> Bool
                          -> TCElement
-makeADTsFromConstraints spid _ cs b = 
+makeADTsFromConstraints spid _ cs b =
     TCADT $ Prelude.map (makeADTSortDef spid b) cs
 
 makeADTSortDef :: SPEC_ID -> Bool -> Constraint -> OmdADT
-makeADTSortDef spid b (Constraint s l _) = 
+makeADTSortDef spid b (Constraint s l _) =
     ADTSortDef (idToName spid s) b $
     Prelude.map (makeADTConstructor spid . fst) l
 
@@ -308,12 +308,12 @@ makeSortMapEntry spid s1 s2 = (sortToOmdoc spid s1, sortToOmdoc spid s2)
 
 makeOpMapEntry :: SPEC_ID -> (Id, OpType) -> (Id, OpKind) ->
                    (OMElement, OMElement)
-makeOpMapEntry spid (o1, ot) (o2, _) = 
+makeOpMapEntry spid (o1, ot) (o2, _) =
     (makeAttribution (idToOmdoc spid o1) $ makeObjectType spid ot,
      idToOmdoc spid o2)
 
 makePredMapEntry :: SPEC_ID -> (Id, PredType) -> Id -> (OMElement, OMElement)
-makePredMapEntry spid (p1, pt) p2 = 
+makePredMapEntry spid (p1, pt) p2 =
     (makeAttribution (idToOmdoc spid p1) $ makePredType spid pt,
      idToOmdoc spid p2)
 

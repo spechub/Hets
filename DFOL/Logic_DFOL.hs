@@ -15,45 +15,45 @@ instance Language DFOL where
 
 -- instance of Category for DFOL
 instance Category Sign Morphism where
-   ide = idMorph                      
-   dom = object                   
-   cod = object                     
-   composeMorphisms = compMorph   
-   legal_mor = isValidMorph       
+   ide = idMorph
+   dom = object
+   cod = object
+   composeMorphisms = compMorph
+   legal_mor = isValidMorph
 
 -- syntax for DFOL
 instance Syntax DFOL BASIC_SPEC SYMB_ITEMS SYMB_MAP_ITEMS where
    parse_basic_spec DFOL = Just basicSpec
-   parse_symb_items DFOL = Just symbItems      
-   parse_symb_map_items DFOL = Just symbMapItems 
+   parse_symb_items DFOL = Just symbItems
+   parse_symb_map_items DFOL = Just symbMapItems
 
 -- sentences for DFOL
 instance Sentences DFOL () Sign Morphism ()
 
 -- static analysis for DFOL
-instance StaticAnalysis DFOL 
-   BASIC_SPEC       
+instance StaticAnalysis DFOL
+   BASIC_SPEC
    ()               -- no sentences yet
-   SYMB_ITEMS       
-   SYMB_MAP_ITEMS   
-   Sign             
-   Morphism             
-   ()               -- no symbols yet     
-   ()               -- no raw symbols yet  
+   SYMB_ITEMS
+   SYMB_MAP_ITEMS
+   Sign
+   Morphism
+   ()               -- no symbols yet
+   ()               -- no raw symbols yet
    where
    empty_signature DFOL = emptySig
-   
+
 
 -- instance of logic for DFOL
 instance Logic DFOL
-   ()               -- no sublogics yet 
-   BASIC_SPEC      
+   ()               -- no sublogics yet
+   BASIC_SPEC
    ()               -- no sentences yet
-   SYMB_ITEMS      
-   SYMB_MAP_ITEMS   
-   Sign             
-   Morphism         
-   ()               -- no symbols yet     
+   SYMB_ITEMS
+   SYMB_MAP_ITEMS
+   Sign
+   Morphism
+   ()               -- no symbols yet
    ()               -- no raw symbols yet
-   ()               -- no proof tree yet 
+   ()               -- no proof tree yet
 

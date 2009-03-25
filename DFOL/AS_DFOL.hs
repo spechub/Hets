@@ -55,8 +55,8 @@ data SYMB_MAP_ITEMS = Symb_map_items [SYMB_OR_MAP]
                       deriving (Show, Eq)
 
 data SYMB_OR_MAP = Symb SYMB
-                 | Symb_map SYMB SYMB               
-                   deriving (Show, Eq)   
+                 | Symb_map SYMB SYMB
+                   deriving (Show, Eq)
 
 -- converts a term into its canonical form f(x_1, ... x_n)
 termCanForm :: TERM -> (NAME, [TERM])
@@ -123,17 +123,17 @@ printType (Pi xs x) = text "Pi" <+> printVars xs <+> printType x
 printSubType :: Int -> TYPE -> Doc
 printSubType prec t = if (typePrec t) >= prec
                          then parens $ printType t
-                         else printType t  
+                         else printType t
 -- print terms
 printTerm :: TERM -> Doc
-printTerm t = pretty f 
-              <> 
-              if as == [] 
+printTerm t = pretty f
+              <>
+              if as == []
                  then text ""
-                 else (parens $ sepBy (text ", ") $ map pretty as) 
-              where 
+                 else (parens $ sepBy (text ", ") $ map pretty as)
+              where
               f = fst $ termCanForm t
-              as = snd $ termCanForm t  
+              as = snd $ termCanForm t
 
 -- print formulas
 printFormula :: FORMULA -> Doc
@@ -152,7 +152,7 @@ printFormula (Exists xs f) = exists <+> printVars xs <+> printFormula f
 printSubFormula :: Int -> FORMULA -> Doc
 printSubFormula prec f = if (formulaPrec f) > prec
                             then parens $ printFormula f
-                            else printFormula f  
+                            else printFormula f
 
 -- print symbol items
 printSymbItems :: SYMB_ITEMS -> Doc
@@ -165,7 +165,7 @@ printSymbMapItems (Symb_map_items xs) = sepBy (text ", ") $ map pretty xs
 -- print symbol or map
 printSymbOrMap :: SYMB_OR_MAP -> Doc
 printSymbOrMap (Symb s) = pretty s
-printSymbOrMap (Symb_map s t) = pretty s <+> mapsto <+> pretty t  
+printSymbOrMap (Symb_map s t) = pretty s <+> mapsto <+> pretty t
 
 -- auxiliary functions for printing
 sepBy :: Doc -> [Doc] -> Doc
@@ -179,7 +179,7 @@ printNames ns = sepBy (text ", ") $ map pretty ns
 printVar :: ([NAME], TYPE) -> Doc
 printVar (ns, t) = printNames ns <+> colon <+> printType t
 
-printVars :: [([NAME], TYPE)] -> Doc  
-printVars xs = (sepBy (text "; ") $ map printVar xs) <> dot   
+printVars :: [([NAME], TYPE)] -> Doc
+printVars xs = (sepBy (text "; ") $ map printVar xs) <> dot
 
 

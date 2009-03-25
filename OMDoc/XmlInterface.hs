@@ -127,40 +127,40 @@ requationToXml (from, to) =
 
 -- | The root instance for representing OMDoc in XML
 instance XmlRepresentable OMDoc where
-    toXml (OMDoc oid elms) = 
+    toXml (OMDoc oid elms) =
         (Elem $ Element el_omdoc
          [Attr at_version omdoc_current_version, Attr at_id oid]
          (listToXml elms)
          Nothing)
     fromXml (Element n _ _ _)
-        | n == el_omdoc = 
+        | n == el_omdoc =
             Nothing
         | otherwise = Nothing
 
 
 -- | toplevel OMDoc elements to XML and back
 instance XmlRepresentable TLElement where
-    toXml (TLTheory tid elms) = 
+    toXml (TLTheory tid elms) =
         (Elem $ Element el_theory
          [Attr at_id tid]
          (listToXml elms)
          Nothing)
-    toXml (TLView (CD cdFrom _) (CD cdTo _) mor) = 
+    toXml (TLView (CD cdFrom _) (CD cdTo _) mor) =
         (Elem $ Element el_view
          [Attr at_from $ cdFrom, Attr at_to $ cdTo]
          [toXml mor]
          Nothing)
     fromXml (Element n _ _ _)
-        | n == el_theory = 
+        | n == el_theory =
             Nothing
-        | n == el_view = 
+        | n == el_view =
             Nothing
         | otherwise = Nothing
 
 
 -- | theory constitutive OMDoc elements to XML and back
 instance XmlRepresentable TCElement where
-    toXml (TCAxiomOrTheorem b sid obj) = 
+    toXml (TCAxiomOrTheorem b sid obj) =
         Elem $ Element (el_axiom_or_theorem b) [Attr at_id sid]
          [Elem $ Element el_fmp []
           [Elem $ Element el_omobj []
@@ -168,7 +168,7 @@ instance XmlRepresentable TCElement where
             Nothing]
           Nothing]
          Nothing
-    toXml (TCSymbol sid symtype role) = 
+    toXml (TCSymbol sid symtype role) =
         Elem $ Element el_symbol
          [Attr at_name sid, Attr at_role (show role)]
          (case symtype of Nothing -> []
@@ -176,24 +176,24 @@ instance XmlRepresentable TCElement where
          Nothing
     toXml (TCADT sds) = (Elem $ Element el_adt [] (listToXml sds) Nothing)
     toXml (TCComment c) = (makeComment c)
-    toXml (TCImport (CD c cdb) mor) = 
+    toXml (TCImport (CD c cdb) mor) =
         Elem $ Element el_import
          [Attr at_from $ c] -- ++ (show cdb)]
          [toXml mor]
          Nothing
-    toXml (TCMorphism mapping) = 
+    toXml (TCMorphism mapping) =
         Elem $ Element el_morphism
          []
          (map requationToXml mapping)
          Nothing
     fromXml (Element n _ _ _)
-        | n == el_axiom = 
+        | n == el_axiom =
             Nothing
-        | n == el_theorem = 
+        | n == el_theorem =
             Nothing
-        | n == el_symbol = 
+        | n == el_symbol =
             Nothing
-        | n == el_import = 
+        | n == el_import =
             Nothing
         | otherwise = Nothing
 
@@ -244,13 +244,13 @@ instance XmlRepresentable OMElement where
          Nothing
 
     fromXml (Element n _ _ _)
-        | n == el_axiom = 
+        | n == el_axiom =
             Nothing
-        | n == el_theorem = 
+        | n == el_theorem =
             Nothing
-        | n == el_symbol = 
+        | n == el_symbol =
             Nothing
-        | n == el_import = 
+        | n == el_import =
             Nothing
         | otherwise = Nothing
 
@@ -263,5 +263,5 @@ instance XmlRepresentable OMAttribute where
           toXml e2]
          Nothing)
     fromXml (Element _ _ _ _) = Nothing
-        
+
 

@@ -19,7 +19,7 @@ idMorph sig = Morphism {object = sig}
 compMorph :: Morphism -> Morphism -> Result Morphism
 compMorph m1 m2 = if object m1 == object m2
                      then return m1
-                     else fail "Codomain of the first morphism must equal the domain of the second."                  
+                     else fail "Codomain of the first morphism must equal the domain of the second."
 
 isValidMorph :: Morphism -> Bool
 isValidMorph m = isValidSig $ object m
@@ -29,5 +29,5 @@ instance Pretty Morphism where
    pretty = printMorph
 
 printMorph :: Morphism -> Doc
-printMorph m = text "Identity on" <+> (pretty $ object m)     
+printMorph m = text "Identity on" <+> (pretty $ object m)
 

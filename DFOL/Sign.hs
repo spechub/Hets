@@ -17,7 +17,7 @@ emptySig = EmptySig
 
 -- determines whether a signature is valid
 isValidSig :: Sign -> Bool
-isValidSig _ = True 
+isValidSig _ = True
 
 -- pretty printing
 instance Pretty Sign where
