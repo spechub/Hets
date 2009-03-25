@@ -707,7 +707,7 @@ ignoredKeys :: [String]
 ignoredKeys =
     [ domainS, oopsS, refuteS, fixrecS, primrecS, declareS, usingS
     , dotDot, typedefS
-    , "sorry", "done", "by", "proof", "apply", "qed"
+    , "open", "sorry", "done", "by", "proof", "apply", "qed"
     , "classrel", "defaultsort", "nonterminls", "arities"
     , "syntax", "no_syntax", "translations"
     , "global", "local", "hide", "use", "setup", "method_setup"
