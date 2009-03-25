@@ -115,121 +115,121 @@ showPathFormula  phi                   False =  "(" ++ showPathFormula phi True 
 parser :: Parser a -> Parser (StateFormula a)
 parser var = between spaces eof stateImpl where
 
-	stateImpl =  chainl1 stateOr (do string "->"
-	                                 spaces
-	                                 return (Sor . Snot))
+        stateImpl =  chainl1 stateOr (do string "->"
+                                         spaces
+                                         return (Sor . Snot))
 
-	stateOr =  chainl1 stateAnd (do string "\\/"
-	                                spaces
-	                                return Sor)
+        stateOr =  chainl1 stateAnd (do string "\\/"
+                                        spaces
+                                        return Sor)
 
-	stateAnd =  chainl1 state (do string "/\\"
-	                              spaces
-	                              return Sand)
+        stateAnd =  chainl1 state (do string "/\\"
+                                      spaces
+                                      return Sand)
 
-	state =  (do char '('
-	             spaces
-	             x <- stateImpl
-	             char ')'
-	             spaces
-	             return x)
-	     <|> (do string "not"
-	             spaces
-	             liftM Snot state)
-	     <|> (do string "E"
-	             spaces
-	             liftM E pathImpl)
-	     <|> (do string "A"
-	             spaces
-	             liftM A pathImpl)
-	     <|> (do x <- string "<"
-	             y <- option "" (string "~")
-	             z <- string ">"
-	             spaces
-	             case concat [x, y, z] of
-	                  "<>"  -> liftM Diamond state
-	                  "<~>" -> liftM DiamondPast state)
-	     <|> (do x <- string "["
-	             y <- option "" (string "~")
-	             z <- string "]"
-	             spaces
-	             case concat [x, y, z] of
-	                  "[]"  -> liftM Box state
-	                  "[~]" -> liftM BoxPast state)
-	     <|> (do string "mu"
-	             space
-	             spaces
-	             x <- var
-	             spaces
-	             char '.'
-	             spaces
-	             liftM (Mu x) stateImpl)
-	     <|> (do string "nu"
-	             space
-	             spaces
-	             x <- var
-	             spaces
-	             char '.'
-	             spaces
-	             liftM (Nu x) stateImpl)
-	     <|> (do x <- var
-	             spaces
-	             return (Var x))
+        state =  (do char '('
+                     spaces
+                     x <- stateImpl
+                     char ')'
+                     spaces
+                     return x)
+             <|> (do string "not"
+                     spaces
+                     liftM Snot state)
+             <|> (do string "E"
+                     spaces
+                     liftM E pathImpl)
+             <|> (do string "A"
+                     spaces
+                     liftM A pathImpl)
+             <|> (do x <- string "<"
+                     y <- option "" (string "~")
+                     z <- string ">"
+                     spaces
+                     case concat [x, y, z] of
+                          "<>"  -> liftM Diamond state
+                          "<~>" -> liftM DiamondPast state)
+             <|> (do x <- string "["
+                     y <- option "" (string "~")
+                     z <- string "]"
+                     spaces
+                     case concat [x, y, z] of
+                          "[]"  -> liftM Box state
+                          "[~]" -> liftM BoxPast state)
+             <|> (do string "mu"
+                     space
+                     spaces
+                     x <- var
+                     spaces
+                     char '.'
+                     spaces
+                     liftM (Mu x) stateImpl)
+             <|> (do string "nu"
+                     space
+                     spaces
+                     x <- var
+                     spaces
+                     char '.'
+                     spaces
+                     liftM (Nu x) stateImpl)
+             <|> (do x <- var
+                     spaces
+                     return (Var x))
 
 
-	pathImpl =  chainl1 pathOr (do string "->"
-	                               spaces
-	                               return (Por . Pnot))
+        pathImpl =  chainl1 pathOr (do string "->"
+                                       spaces
+                                       return (Por . Pnot))
 
-	pathOr =  chainl1 pathAnd (do string "\\/"
-	                              spaces
-	                              return Por)
+        pathOr =  chainl1 pathAnd (do string "\\/"
+                                      spaces
+                                      return Por)
 
-	pathAnd =  chainl1 pathBinary (do string "/\\"
-	                                  spaces
-	                                  return Pand)
+        pathAnd =  chainl1 pathBinary (do string "/\\"
+                                          spaces
+                                          return Pand)
 
-	pathBinary = chainl1 pathUnary $ (do x <- option "" (string "~")
-	                                     y <- (string "W" <|> string "U" <|> string "B")
-	                                     z <- option "" (string "!")
-	                                     spaces
-	                                     case concat [x, y, z] of
-	                                          "W"   -> return W
-	                                          "U"   -> return U
-	                                          "B"   -> return B
-	                                          "W!"  -> return W'
-	                                          "U!"  -> return U'
-	                                          "B!"  -> return B'
-	                                          "~W"  -> return WPast
-	                                          "~U"  -> return UPast
-	                                          "~B"  -> return BPast
-	                                          "~W!" -> return WPast'
-	                                          "~U!" -> return UPast'
-	                                          "~B!" -> return BPast')
+        pathBinary = chainl1 pathUnary $ (do x <- option "" (string "~")
+                                             y <- (string "W" <|> string "U" <|> string "B")
+                                             z <- option "" (string "!")
+                                             spaces
+                                             case concat [x, y, z] of
+                                                  "W"   -> return W
+                                                  "U"   -> return U
+                                                  "B"   -> return B
+                                                  "W!"  -> return W'
+                                                  "U!"  -> return U'
+                                                  "B!"  -> return B'
+                                                  "~W"  -> return WPast
+                                                  "~U"  -> return UPast
+                                                  "~B"  -> return BPast
+                                                  "~W!" -> return WPast'
+                                                  "~U!" -> return UPast'
+                                                  "~B!" -> return BPast')
 
-	pathUnary =  (do char '('
-	                 spaces
-	                 x <- pathImpl
-	                 char ')'
-	                 spaces
-	                 return x)
-	         <|> (do string "not"
-	                 spaces
-	                 liftM Pnot pathUnary)
-	         <|> (do x <- option "" (string "~")
-	                 y <- (string "X" <|> string "G" <|> string "F")
-	                 z <- if concat [x, y] == "~X" then option "" (string "!")
-	                                               else return ""
-	                 spaces
-	                 case concat [x, y, z] of
-	                      "X"   -> liftM X      pathUnary
-	                      "G"   -> liftM G      pathUnary
-	                      "F"   -> liftM F      pathUnary
-	                      "~X"  -> liftM XPast  pathUnary
-	                      "~G"  -> liftM GPast  pathUnary
-	                      "~F"  -> liftM FPast  pathUnary
-	                      "~X!" -> liftM XPast' pathUnary)
-	         <|> liftM State state
+        pathUnary =  (do char '('
+                         spaces
+                         x <- pathImpl
+                         char ')'
+                         spaces
+                         return x)
+                 <|> (do string "not"
+                         spaces
+                         liftM Pnot pathUnary)
+                 <|> (do x <- option "" (string "~")
+                         y <- (string "X" <|> string "G" <|> string "F")
+                         z <- if concat [x, y] == "~X" then option "" (string "!")
+                                                       else return ""
+                         spaces
+                         case concat [x, y, z] of
+                              "X"   -> liftM X      pathUnary
+                              "G"   -> liftM G      pathUnary
+                              "F"   -> liftM F      pathUnary
+                              "~X"  -> liftM XPast  pathUnary
+                              "~G"  -> liftM GPast  pathUnary
+                              "~F"  -> liftM FPast  pathUnary
+                              "~X!" -> liftM XPast' pathUnary)
+                 <|> liftM State state
 
 
 {------------------------------------------------------------------------------}

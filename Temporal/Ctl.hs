@@ -45,7 +45,7 @@ class CTL m a s | m -> a s where
 (|=) :: (CTL m a s, Ord a, Ord s) =>  (m, s) -> Formula a -> Bool
 (m, s) |= phi =  Set.member s (sat m phi)
 
-sat :: (CTL m a s, Ord a, Ord s) =>  m -> Formula a -> Set s	
+sat :: (CTL m a s, Ord a, Ord s) =>  m -> Formula a -> Set s
 sat m Top                 =  states m
 sat m Bottom              =  Set.empty
 sat m (Atom a)            =  Set.filter (Set.member a . labels m) (states m)
