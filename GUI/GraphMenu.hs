@@ -93,14 +93,15 @@ edgeTypes :: HetcatsOpts
           -> [( DGEdgeType -- Edgetype
               , EdgePattern GA.EdgeValue -- Lineformat
               , String -- Color
-              , Bool -- Is theorem
-              , Bool -- Extra menu
+              , Bool -- has conservativity
               )]
 edgeTypes opts = map
   ( (\ (e, l, c) -> case edgeTypeModInc e of -- Add menu options
-      ThmType { thmEdgeType = HidingThm } -> (e, l, c, True,  False)
-      ThmType _ _                             -> (e, l, c, True,  True)
-      _                                       -> (e, l, c, False, False)
+      ThmType { thmEdgeType = GlobalOrLocalThm _ _ } -> (e, l, c, True)
+      GlobalDef -> (e, l, c, True)
+      HetDef -> (e, l, c, True)
+      LocalDef -> (e, l, c, True)
+      _ -> (e, l, c, False)
     )
   . (\ (e, l) -> case edgeTypeModInc e of -- Add colors
       HidingDef       -> (e, l, getColor opts Blue   True  $ not $ isInc e)
@@ -135,7 +136,7 @@ edgeTypes opts = map
 mapEdgeTypes
   :: HetcatsOpts -> Map.Map DGEdgeType (EdgePattern GA.EdgeValue, String)
 mapEdgeTypes =
-  Map.fromList . map (\ (e, l, c, _, _) -> (e, (l, c))) . edgeTypes
+  Map.fromList . map (\ (e, l, c, _) -> (e, (l, c))) . edgeTypes
 
 -- | Creates the graph. Runs makegraph
 createGraph :: GInfo -> String -> ConvFunc -> LibFunc -> IO ()
@@ -321,12 +322,12 @@ createNodeTypes gInfo@(GInfo {hetcatsOpts = opts}) cGraph showLib = map
 -- | the edge types (share strings to avoid typos)
 createEdgeTypes :: GInfo -> [(DGEdgeType,DaVinciArcTypeParms GA.EdgeValue)]
 createEdgeTypes gInfo@(GInfo {hetcatsOpts = opts}) =
-  map (\(title, look, color, thm, extra) ->
+  map (\(title, look, color, hasCons) ->
         (title, look
             $$$ Color color
-            $$$ (if thm then createLocalEdgeMenuThmEdge gInfo
+            $$$ (if hasCons then createLocalEdgeMenuConsEdge gInfo
                   else createLocalEdgeMenu gInfo)
-            $$$ (if extra then createLocalMenuValueTitleShowConservativity
+            $$$ (if hasCons then createLocalMenuValueTitleShowConservativity
                   $$$ emptyArcTypeParms :: DaVinciArcTypeParms GA.EdgeValue
                   else
                     emptyArcTypeParms :: DaVinciArcTypeParms GA.EdgeValue))
@@ -467,12 +468,12 @@ createLocalMenuButtonShowNodeInfo =
 -- * methods to create the local menus for the edges
 
 createLocalEdgeMenu :: GInfo -> LocalMenu GA.EdgeValue
-createLocalEdgeMenu gInfo = LocalMenu $ Menu (Just "edge menu")
+createLocalEdgeMenu gInfo = LocalMenu $ Menu (Just "short edge menu")
   [createLocalMenuButtonShowEdgeInfo gInfo]
 
-createLocalEdgeMenuThmEdge :: GInfo -> LocalMenu GA.EdgeValue
-createLocalEdgeMenuThmEdge gInfo =
-  LocalMenu (Menu (Just "thm egde menu")
+createLocalEdgeMenuConsEdge :: GInfo -> LocalMenu GA.EdgeValue
+createLocalEdgeMenuConsEdge gInfo =
+  LocalMenu (Menu (Just "egde menu")
                   [ createLocalMenuButtonShowEdgeInfo gInfo
                   , createLocalMenuButtonCheckconservativityOfEdge gInfo])
 
