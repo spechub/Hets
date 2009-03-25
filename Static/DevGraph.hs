@@ -376,13 +376,8 @@ data ThmTypes =
                      , isHomThm :: Bool }
   deriving (Eq, Ord, Show)
 
--- | creates a DGEdgeType from a DGLinkLab
-getRealDGLinkType :: DGLinkLab -> DGEdgeType
-getRealDGLinkType lnk = let
-  gmor = dgl_morphism lnk
-  isHom = isHomogeneous gmor
-  in DGEdgeType
-  { edgeTypeModInc = case dgl_type lnk of
+getHomEdgeType :: Bool -> DGLinkType -> DGEdgeTypeModInc
+getHomEdgeType isHom lt = case lt of
       ScopedLink scope lk _ -> case lk of
           DefLink -> case scope of
             Local -> LocalDef
@@ -397,6 +392,13 @@ getRealDGLinkType lnk = let
             Nothing -> HidingThm
             _ -> FreeOrCofreeThm
         , isProvenEdge = isProvenThmLinkStatus st }
+
+-- | creates a DGEdgeType from a DGLinkLab
+getRealDGLinkType :: DGLinkLab -> DGEdgeType
+getRealDGLinkType lnk = let
+  gmor = dgl_morphism lnk
+  in DGEdgeType
+  { edgeTypeModInc = getHomEdgeType (isHomogeneous gmor) $ dgl_type lnk
   , isInc = case gmor of
       GMorphism cid _ _ mor _ -> isInclusionComorphism cid && isInclusion mor
   }
@@ -1061,6 +1063,11 @@ localDef = localOrGlobalDef Local
 -- | returns the Conservativity if the given edge has one, otherwise none
 getConservativity :: LEdge DGLinkLab -> Conservativity
 getConservativity (_, _, edgeLab) = getCons $ dgl_type edgeLab
+
+getConsProof :: DGLinkType -> ThmLinkStatus
+getConsProof lt = case lt of
+    ScopedLink _ _ (ConsStatus _ st) -> st
+    _ -> LeftOpen
 
 getCons :: DGLinkType -> Conservativity
 getCons lt = case lt of

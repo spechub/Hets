@@ -43,7 +43,6 @@ import Data.Graph.Inductive.Graph as Graph
 import qualified Data.Map as Map
 import qualified Data.Set as Set
 import Data.List
-import Data.Char (isAlpha)
 
 printTh :: GlobalAnnos -> SIMPLE_ID -> G_theory -> Doc
 printTh oga sn g =
@@ -226,14 +225,15 @@ instance Pretty ThmLinkStatus where
         Proven r ls -> let s = proofBasis ls in
           fcat [parens (pretty r), if Set.null s then Doc.empty else pretty s]
 
-dgLinkTypeHeader :: DGLinkType -> String
-dgLinkTypeHeader = takeWhile isAlpha . show
-
 prettyThmLinkStatus :: DGLinkType -> Doc
 prettyThmLinkStatus = maybe Doc.empty pretty . thmLinkStatus
 
 instance Pretty DGLinkType where
-    pretty t = text (dgLinkTypeHeader t) <> prettyThmLinkStatus t
+    pretty t = text (getDGEdgeTypeModIncName $ getHomEdgeType True t)
+               <> prettyThmLinkStatus t
+               $+$ case getCons t of
+                     None -> Doc.empty
+                     c -> text (show c) <> pretty (getConsProof t)
 
 instance Pretty DGLinkLab where
   pretty l = vcat
