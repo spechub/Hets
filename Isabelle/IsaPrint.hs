@@ -667,7 +667,10 @@ instance Pretty ProofCommand where
 printProofCommand :: ProofCommand -> Doc
 printProofCommand pc =
     case pc of
-      Apply pm -> text applyS <+> pretty pm
+      Apply pms plus ->
+          let plusDoc = if plus then (text "+") else empty
+          in text applyS <+> (parens $
+                              (sepByCommas $ map pretty pms)) <> plusDoc
       Using ls -> text usingS <+> fsep (map text ls)
       Back -> text backS
       Defer x -> text deferS <+> pretty x
@@ -680,7 +683,7 @@ instance Pretty ProofEnd where
 printProofEnd :: ProofEnd -> Doc
 printProofEnd pe =
     case pe of
-      By pm -> text byS <+> pretty pm
+      By pm -> text byS <+> parens (pretty pm)
       DotDot -> text dotDot
       Done -> text doneS
       Oops -> text oopsS
@@ -707,15 +710,15 @@ printProofMethod pm =
       AutoSimpAdd m names -> let modDoc = case m of
                                             Just mod' -> parens $ pretty mod'
                                             Nothing -> empty
-                             in parens $ text autoS <+> text simpS <+>
+                             in text autoS <+> text simpS <+>
                                 modDoc <+> text "add:" <+> hsep (map text names)
       SimpAdd m names -> let modDoc = case m of
                                         Just mod' -> parens $ pretty mod'
                                         Nothing -> empty
-                         in parens $ text simpS <+> modDoc <+>
+                         in text simpS <+> modDoc <+>
                             text "add:" <+> hsep (map text names)
-      Induct var -> parens $ (text inductS) <+> doubleQuotes (printTerm var)
-      CaseTac t -> parens $ text caseTacS <+> doubleQuotes (printTerm t)
-      SubgoalTac t -> parens $  text subgoalTacS <+> doubleQuotes (printTerm t)
-      Insert ts -> parens $ text insertS <+> (hsep (map text ts))
-      Other s -> parens $ text s
+      Induct var -> (text inductS) <+> doubleQuotes (printTerm var)
+      CaseTac t -> text caseTacS <+> doubleQuotes (printTerm t)
+      SubgoalTac t -> text subgoalTacS <+> doubleQuotes (printTerm t)
+      Insert ts -> text insertS <+> (hsep (map text ts))
+      Other s -> text s

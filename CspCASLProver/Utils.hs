@@ -190,8 +190,7 @@ addReflexivityTheorem isaTh =
         thmConds = []
         thmConcl = binEq_PreAlphabet x x
         proof' = IsaProof {
-                   proof = [Apply (Induct x),
-                            Apply Auto],
+                   proof = [Apply [Induct x, Auto] False],
                    end = Done
                  }
     in addTheoremWithProof name thmConds thmConcl proof' isaTh
@@ -207,11 +206,12 @@ addSymmetryTheorem sorts isaTh =
         y = mkFree "y"
         thmConds = [binEq_PreAlphabet x y]
         thmConcl = binEq_PreAlphabet y x
-        inductY = concat $ map (\i -> [Prefer (i*numSorts+1),
-                                       Apply (Induct y)])
-                    [0..(numSorts-1)]
+        -- We want to induct Y then apply simp numSorts times and reapeat this
+        -- apply as many times as possibel, thus the true
+        inductY = [Apply ((Induct y):(replicate numSorts Simp)) True]
         proof' = IsaProof {
-                   proof = [Apply (Induct x)] ++ inductY ++ [Apply Auto],
+                   -- Add in front of inductY a apply induct on x
+                   proof = ((Apply [(Induct x)] False) : inductY),
                    end = Done
                  }
     in addTheoremWithProof name thmConds thmConcl proof' isaTh
@@ -251,18 +251,18 @@ addDecompositionTheorem pfolSign sorts sortRel isaTh (s1,s2,s3) =
         conds = []
         concl = binEq inj_s1_s2_s3_x inj_s1_s3_x
 
-        proof' = IsaProof [Apply(CaseTac (definedOp_s3 inj_s1_s2_s3_x)),
+        proof' = IsaProof [Apply[CaseTac (definedOp_s3 inj_s1_s2_s3_x)] False,
                            -- Case 1
-                           Apply(SubgoalTac(definedOp_s1 x)),
-                           Apply(Insert collectionTransAx),
-                           Apply(Simp),
-                           Apply(SimpAdd Nothing collectionTotAx),
+                           Apply[SubgoalTac(definedOp_s1 x)] False,
+                           Apply[Insert collectionTransAx] False,
+                           Apply[Simp] False,
+                           Apply[SimpAdd Nothing collectionTotAx] False,
 
                            -- Case 2
-                           Apply(SubgoalTac(
-                               termAppl notOp(definedOp_s3 inj_s1_s3_x))),
-                           Apply(SimpAdd Nothing collectionNotDefBotAx),
-                           Apply(SimpAdd Nothing collectionTotAx)]
+                           Apply[SubgoalTac(
+                               termAppl notOp(definedOp_s3 inj_s1_s3_x))] False,
+                           Apply[SimpAdd Nothing collectionNotDefBotAx] False,
+                           Apply[SimpAdd Nothing collectionTotAx] False]
                            Done
     in addTheoremWithProof name conds concl proof' isaTh
 
@@ -292,20 +292,24 @@ addInjectivityTheorem pfolSign sorts sortRel isaTh (s1,s2) =
         name = getInjectivityThmName(s1, s2)
         conds = [binEq injX injY]
         concl = binEq x y
-        proof' = IsaProof [Apply(CaseTac (definedOp_s2 injX)),
+        proof' = IsaProof [Apply [CaseTac (definedOp_s2 injX)] False,
                            -- Case 1
-                           Apply(SubgoalTac(definedOp_s1 x)),
-                           Apply(SubgoalTac(definedOp_s1 y)),
-                           Apply(Insert collectionEmbInjAx),
-                           Apply(Simp),
-                           Apply(SimpAdd Nothing collectionTotAx),
-                           Apply(SimpAdd (Just No_asm_use) collectionTotAx),
+                           Apply[SubgoalTac(definedOp_s1 x)] False,
+                           Apply[SubgoalTac(definedOp_s1 y)] False,
+                           Apply[Insert collectionEmbInjAx] False,
+                           Apply[Simp] False,
+                           Apply[SimpAdd Nothing collectionTotAx] False,
+                           Apply[SimpAdd (Just No_asm_use) collectionTotAx]
+                                False,
                            -- Case 2
-                           Apply(SubgoalTac(termAppl notOp (definedOp_s1 x))),
-                           Apply(SubgoalTac(termAppl notOp(definedOp_s1 y))),
-                           Apply(SimpAdd Nothing collectionNotDefBotAx),
-                           Apply(SimpAdd Nothing collectionTotAx),
-                           Apply(SimpAdd (Just No_asm_use) collectionTotAx)]
+                           Apply[SubgoalTac(termAppl notOp (definedOp_s1 x))]
+                                False,
+                           Apply[SubgoalTac(termAppl notOp(definedOp_s1 y))]
+                                False,
+                           Apply[SimpAdd Nothing collectionNotDefBotAx] False,
+                           Apply[SimpAdd Nothing collectionTotAx] False,
+                           Apply[SimpAdd (Just No_asm_use) collectionTotAx]
+                                False]
                            Done
     in addTheoremWithProof name conds concl proof' isaTh
 
@@ -324,22 +328,19 @@ addTransitivityTheorem sorts sortRel isaTh =
         z = mkFree "z"
         thmConds = [binEq_PreAlphabet x y, binEq_PreAlphabet y z]
         thmConcl = binEq_PreAlphabet x z
-        inductY = concat $ map (\i -> [Prefer (i*numSorts+1),
-                                       Apply (Induct y)])
-                  [0..(numSorts-1)]
-        inductZ = concat $ map (\i -> [Prefer (i*numSorts+1),
-                                       Apply (Induct z)])
-                  [0..((numSorts^(2::Int))-1)]
+        simpPlus = SimpAdd Nothing (colDecompThmNames ++ colInjThmNames)
+        -- We want to induct Y, Z and perfom simplification is a clever way,
+        -- namely,
+        -- apply(induct y, (induct z, simp * numSorts) * numSorts)+
+        inductZ = (Induct z):(replicate numSorts simpPlus)
+        inductYZ = ((Induct y):concat(replicate numSorts inductZ))
+        -- Main induction and simplification proof command
+        inductPC = [Apply inductYZ True]
         proof' = IsaProof {
-                   proof = [Apply (Induct x)] ++
-                            inductY ++
-                            inductZ ++
-                           [Apply (AutoSimpAdd Nothing
-                                  (colDecompThmNames ++ colInjThmNames))],
+                   proof = (Apply [Induct x] False : inductPC),
                    end = Done
                  }
     in addTheoremWithProof name thmConds thmConcl proof' isaTh
-
 
 --------------------------------------------------------------
 -- Functions for producing instances of equivalence classes --
@@ -352,14 +353,15 @@ addInstansanceOfEquiv  isaTh =
     let eqvSort = [IsaClass eqvTypeClassS]
         eqvProof = IsaProof []  (By (Other "intro_classes"))
         equivSort = [IsaClass equivTypeClassS]
-        equivProof = IsaProof [Apply (Other "intro_classes"),
-                               Apply (Other ("unfold " ++ preAlphabetSimS
-                                             ++ "_def")),
-                               Apply (Other ("rule " ++ reflexivityTheoremS)),
-                               Apply (Other ("rule " ++ transitivityS
-                                                ++", auto")),
-                               Apply (Other ("rule " ++ symmetryTheoremS
-                                                ++ ", simp"))]
+        equivProof = IsaProof [Apply [Other "intro_classes"] False,
+                               Apply [Other ("unfold " ++ preAlphabetSimS
+                                             ++ "_def")] False,
+                               Apply [Other ("rule " ++ reflexivityTheoremS)]
+                                     False,
+                               Apply [Other ("rule " ++ transitivityS
+                                                ++", auto")] False,
+                               Apply [Other ("rule " ++ symmetryTheoremS
+                                                ++ ", simp")] False]
                                Done
         x = mkFree "x"
         y = mkFree "y"
@@ -472,13 +474,14 @@ addChooseFunctionLemma isaTh sort =
         subgoalTacTerm = binEq subgoalTacTermLhs subgoalTacTermRhs
         thmConds = []
         thmConcl = binEq (mkChooseFunOp sort $ classOp $ sortConsOp x) x
-        proof' = IsaProof [Apply (Other ("unfold " ++ chooseFunName ++ "_def")),
-                           Apply (SubgoalTac subgoalTacTerm),
-                           Apply(Simp),
-                           Apply(SimpAdd Nothing [quotEqualityS]),
-                           Apply(Other ("unfold "++ preAlphabetSimS
-                                           ++ "_def")),
-                           Apply(Auto)]
+        proof' = IsaProof [Apply[Other ("unfold " ++ chooseFunName ++ "_def")]
+                                False,
+                           Apply[SubgoalTac subgoalTacTerm] False,
+                           Apply[Simp] False,
+                           Apply[SimpAdd Nothing [quotEqualityS]] False,
+                           Apply[Other ("unfold "++ preAlphabetSimS
+                                           ++ "_def")] False,
+                           Apply[Auto] False]
                            Done
     in  addTheoremWithProof chooseFunName thmConds thmConcl proof' isaTh
 
@@ -526,11 +529,11 @@ addIntegrationTheorem_A caslSign isaTh (s1,s2) =
         -- theorem names for proof
         colInjThmNames = getColInjectivityThmName sortRel
         colDecompThmNames = getColDecompositionThmName sortRel
-        proof' = IsaProof [Apply (SimpAdd Nothing [quotEqualityS]),
-                           Apply (Other ("unfold " ++ preAlphabetSimS
-                                             ++ "_def")),
-                           Apply (AutoSimpAdd Nothing
-                                  (colDecompThmNames ++ colInjThmNames))]
+        proof' = IsaProof [Apply [SimpAdd Nothing [quotEqualityS]] False,
+                           Apply [Other ("unfold " ++ preAlphabetSimS
+                                             ++ "_def")] False,
+                           Apply [AutoSimpAdd Nothing
+                                  (colDecompThmNames ++ colInjThmNames)] False]
                            Done
     in  addTheoremWithProof "IntegrationTheorem_A"
         thmConds thmConcl proof' isaTh

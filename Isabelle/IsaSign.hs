@@ -317,7 +317,11 @@ data IsaProof = IsaProof
     } deriving (Show, Eq, Ord)
 
 data ProofCommand
-    = Apply ProofMethod
+    -- | Apply a list of proof methods, which will be applied in sequence
+    --    withing the apply proof command. The boolean is if the + modifier
+    --    should be used at the end of the apply proof method. e.g. Apply(A,B,C)
+    --    True would represent the Isabelle proof command "apply(A,B,C)+"
+    = Apply [ProofMethod] Bool
     | Using [String]
     | Back
     | Defer Int
