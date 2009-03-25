@@ -22,6 +22,7 @@ module OMDoc.HetsDefs
     , makeUniqueNames
     , makeCollectionMap
     , makeUniqueIdNameMapping
+    , isDefLinkType
     , isDefLink
     , SentenceWO
     , WithOrigin (..)
@@ -2609,9 +2610,15 @@ makeCollectionMap
     Map.empty
     (Map.keys lenv)
 
+-- | check if link type is a definitional link but no free or cofree one
+isDefLinkType :: DGLinkType -> Bool
+isDefLinkType lt = case lt of
+  FreeOrCofreeDefLink _ _ -> False
+  _ -> isDefEdge lt
+
 -- | check if a link is a definitional link (LocaDef, GlobalDef, HidingDef)
 isDefLink :: DGLinkLab -> Bool
-isDefLink = isDefEdge . dgl_type
+isDefLink = isDefLinkType . dgl_type
 
 -- | try to find the origin of an identifier in the DevGraph
 traceIdentifierOrigin::

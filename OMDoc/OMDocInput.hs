@@ -1689,7 +1689,7 @@ processAllDefLinks
           processed
   where
     isDefLink :: LinkSpecification->Bool
-    isDefLink = isDefEdge . ls_type
+    isDefLink = Hets.isDefLinkType . ls_type
 
 performDefLinkSpecification::
     [UnprocessedItem]
@@ -1705,7 +1705,7 @@ performDefLinkSpecification
   =
   let
    r@(_{-newTS-}, _) =
-    if isDefEdge (ls_type ls)
+    if Hets.isDefLinkType (ls_type ls)
       then
         let
           (hidden, req) = ls_hreql ls
