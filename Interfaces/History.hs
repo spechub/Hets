@@ -158,17 +158,18 @@ processAny actype state = do
        (nwst,ch) <- processUndoRedoElems actype (cmdDescription x) state []
        let
          x' = x { cmdDescription = ch }
+         i_hist_state = i_hist state
          nwstate = case actype of
                     DoUndo -> nwst {
                               i_hist = IntHistory {
                                         undoList = l,
-                                        redoList =x':(redoList$ i_hist state)
+                                        redoList = x' : redoList i_hist_state
                                         }
                               }
                     DoRedo -> nwst {
                               i_hist = IntHistory {
                                         redoList = l,
-                                        undoList = x':(undoList$i_hist state)
+                                        undoList = x' : undoList i_hist_state
                                         }
                               }
        return nwstate

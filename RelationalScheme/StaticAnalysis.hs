@@ -115,7 +115,7 @@ analyse_relationship tbi reli =
             k2 <- mapM (analyse_RSQualidK rn tb) relCo
             let kl2 = Set.fromList $ map fromJust $ filter (\x -> case x of
                                  Nothing -> False
-                                 _       -> True) $map (\(_,y) -> y) k2
+                                 _       -> True) $ map (\(_,y) -> y) k2
             when (kl2 /= Set.map fst keyz2) (fatal_error ("Not all keys are used on the right hand side of: " ++
                 (show rel)) rn)
             return $ reli

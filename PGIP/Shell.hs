@@ -136,7 +136,7 @@ checkCom descr state
           -- check if there is inside a script
           case loadScript ist of
            False->register2history descr $ (getFn descr) state
-           True->return$addToScript state ist
+           True->return $ addToScript state ist
                          ((head $ cmdNames descr) ++ " " ++ (cmdInput descr))
      CmdGreaterThanComments ->
       case i_state $ intState state of
@@ -144,7 +144,7 @@ checkCom descr state
        Just ist ->
         case loadScript ist of
          False -> register2history descr $ (getFn descr) state
-         True ->return$addToScript state ist
+         True ->return $ addToScript state ist
                         ((head $ cmdNames descr)++ " " ++(cmdInput descr))
      CmdGreaterThanScriptAndComments ->
         (getFn descr) state
@@ -460,7 +460,7 @@ cmdlCompletionFn allcmds allState input
         -- can also be a node name not only an edge name
            (tCN,bCN) = case isWhiteSpace $ lastChar input of
                           True ->
-                           case checkArrowLink $lastString $ words input of
+                           case checkArrowLink $ lastString $ words input of
                            -- we are in the middle of an
                            -- edge, we shouldn't look for
                            -- node names
@@ -697,17 +697,15 @@ cmdlCompletionFn allcmds allState input
                            G_theory _ _ _ sens _ ->
                              OMap.keys $
                              OMap.filter
-                              (\s -> (not $ isAxiom s) &&
-                              (not $ isProvenSenStatus s)) sens)
+                              (\s -> not (isAxiom s) &&
+                               not (isProvenSenStatus s)) sens)
                                      $ elements pS
-   ReqNumber -> do
-                  let lst = words input
-                  case length lst of
-                   1 -> return $ map(\x -> (lst!!0)++" "++x)
+   ReqNumber -> case words input of
+                   [hd] -> return $ map((hd ++ " ") ++)
                                   ["0","1","2","3","4","5","6","7","8","9"]
-                   2 -> case isWhiteSpace$lastChar input of
+                   _ : _ : [] -> case isWhiteSpace $ lastChar input of
                           True -> return []
-                          False ->return $ map(\x -> input ++ x)
+                          False ->return $ map(input ++)
                                     ["0","1","2","3","4","5","6","7","8","9"]
                    _ -> return []
    ReqNothing -> do return []

@@ -119,10 +119,10 @@ getCommands
              CmdWithInput $ commandDg $ wrapResultDg localInferenceFromList)
    : (genCmd ["dg loc-decomp"] CmdNoPriority ReqGEdges
              "apply local decomposition to a list of edges" $
-             CmdWithInput $ commandDg $wrapResultDg locDecompFromList)
+             CmdWithInput $ commandDg $ wrapResultDg locDecompFromList)
    : (genCmd ["dg comp"] CmdNoPriority ReqGEdges
              "apply composition to a list of edges" $
-             CmdWithInput $ commandDg $wrapResultDg compositionFromList)
+             CmdWithInput $ commandDg $ wrapResultDg compositionFromList)
    : (genCmd ["dg comp-new"] CmdNoPriority ReqGEdges
          "apply composiiton with speculation of new edges to a list of edges"$
              CmdWithInput $ commandDg
@@ -157,7 +157,7 @@ getCommands
              ("For each node with more than two importings modify " ++
              "importings in such a way that at each level only " ++
              " non disjoint signatures are imported") $ CmdNoInput $
-             commandDgAll $(\_ le -> libEnv_flattening_dunions le))
+             commandDgAll $ const libEnv_flattening_dunions)
    : (genCmd ["flattening renamings"] CmdNoPriority ReqNothing
              ("Determines renaming link, inserts a new node with the " ++
              "renaming morphism applied to theory of a source, deletes "++

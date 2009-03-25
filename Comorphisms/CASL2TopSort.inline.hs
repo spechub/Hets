@@ -249,11 +249,11 @@ generateAxioms subSortMap pMap oMap = do
           hi_axs =
           -- generate subclass_of axioms derived from subsorts
           -- and non-emptyness axioms
-              Map.fold (\ (PredInfo { topSort_PI = ts
-                         , predicate_PI = subS
-                         , directSuperSorts_PI = set
-                         }) al ->
-               let supPreds =
+              Map.fold (\ prdInf al ->
+               let ts = topSort_PI prdInf
+                   subS = predicate_PI prdInf
+                   set = directSuperSorts_PI prdInf
+                   supPreds =
                      map (\ s ->
                             maybe (error ("CASL2TopSort: genAxioms:" ++
                                    " impossible happend: " ++ show s))

@@ -92,7 +92,7 @@ cProver input state =
                                 (getPName y)==inp) $
                            getProversAutomatic $ findComorphismPaths
                               logicGraph $ sublogicOfTh $ theory z of
-                   Nothing -> return $genErrorMsg ("No applicable prover with"
+                   Nothing -> return $ genErrorMsg ("No applicable prover with"
                                                 ++" this name found") state
                    Just (p,_)-> return $ add2hist [ProverChange$ prover pS]$
                                     state {
@@ -155,20 +155,20 @@ cConsChecker input state =
      --check that some theories are selected
      case elements pS of
       [] -> return $ genErrorMsg "Nothing selected" state
-      (Element z _):_ ->
+      Element z _ : _ ->
         -- see if any comorphism was used
         case cComorphism pS of
         --if none use the theory of the first selected node
         --to find possible comorphisms
         Nothing -> case find (\(y,_)->
-                                  (getPName y)==inp) $
-                             getConsCheckersAutomatic $findComorphismPaths
+                                  getPName y == inp) $
+                             getConsCheckersAutomatic $ findComorphismPaths
                                 logicGraph $ sublogicOfTh $ theory z of
                     Nothing -> return $ genErrorMsg ("No applicable "++
                                  "consistency checker with this name found")
                                  state
                     Just (p,_) -> return $ add2hist
-                                    [ConsCheckerChange $consChecker pS]
+                                    [ConsCheckerChange $ consChecker pS]
                                     state {
                                       intState = (intState state) {
                                          i_state = Just pS {
@@ -200,8 +200,8 @@ cConsChecker input state =
                                   }
                           }
            Just (p,_) -> return
-                           $add2hist [ConsCheckerChange $ consChecker pS]$
-                            state {
+                           $ add2hist [ConsCheckerChange $ consChecker pS]
+                            $ state {
                             intState = (intState state) {
                               i_state = Just pS{
                                           consChecker = Just p } } }

@@ -110,7 +110,7 @@ commandDg fn input state
      case (edg,nbEdg) of
        ([],[]) ->          -- leave the internal state intact so
                            -- that the interface can recover
-                 return $genErrorMsg (tmpErrs++"No edges in input string\n")
+                 return $ genErrorMsg (tmpErrs++"No edges in input string\n")
                               state
        (_,_) ->
         do
@@ -121,7 +121,7 @@ commandDg fn input state
                               lsEdges
             tmpErrs'  = tmpErrs ++ (prettyPrintErrList errs')
         case listEdges of
-         [] -> return $genErrorMsg (tmpErrs' ++ "No edge in input string\n")
+         [] -> return $ genErrorMsg (tmpErrs' ++ "No edge in input string\n")
                               state
          _  ->
            do
@@ -251,11 +251,8 @@ selectANode x dgState
                 )
          -- make so that nothing (no goals, no axioms) are
          -- selected initialy in the goal proof status
-         return (initNodeInfo tmp{
-                             selectedGoals =case selectedGoals tmp of
-                                             [] -> []
-                                             s:_-> [s]
-                                             } x)
+         return (initNodeInfo tmp
+                 { selectedGoals = take 1 $ selectedGoals tmp } x)
        _ -> []
 
 -- | function swithces interface in proving mode and also

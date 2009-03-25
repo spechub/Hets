@@ -379,7 +379,7 @@ diagDesc :: Diag
 diagDesc diag =
     let insNodeDesc g (n, DiagNode { dn_desc = desc }) =
             if desc == "" then g else insNode (n, desc) g
-    in foldl insNodeDesc Graph.empty (labNodes $diagGraph diag)
+    in foldl insNodeDesc Graph.empty . labNodes $ diagGraph diag
 
 -- | Create a sink consisting of incusion morphisms between
 -- signatures from given set of nodes and given signature.

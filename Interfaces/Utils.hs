@@ -47,7 +47,7 @@ import Proofs.AbstractState
 import Proofs.TheoremHideShift
 import Proofs.EdgeUtils
 
-import Driver.Options(rmSuffix)
+import Driver.Options (rmSuffix)
 
 import System.Directory (getCurrentDirectory)
 
@@ -58,11 +58,11 @@ import Logic.Grothendieck
 import Logic.Coerce
 
 import Common.OrderedMap (difference, keys)
-import Common.Utils(joinWith, splitOn)
+import Common.Utils (joinWith, splitOn)
 import Common.Result
 import Common.LibName
-import Common.Id(nullRange)
-import Common.Lib.SizedList as SizedList
+import Common.Id (nullRange)
+import qualified Common.Lib.SizedList as SizedList
 import Common.Consistency
 import Common.ExtSign
 import Common.DocUtils
@@ -242,27 +242,19 @@ conservativityChoser :: Bool ->[ConservativityChecker sign sentence morphism]
                        -> IO
                            (Result (ConservativityChecker
                             sign sentence morphism))
-conservativityChoser useGUI checkers
- =
+conservativityChoser useGUI checkers = case checkers of
+  [] -> return $ fail "No conservativity checker available"
+  hd : tl ->
 #ifdef UNI_PACKAGE
-  case useGUI of
-    True ->
-       case checkers of
-             [] -> return $ fail "No conservativity checker available"
-             [hd]-> return $ return hd
-             _ ->
-                 do
-                  chosenOne <- listBox "Pic a conservativity checker"
+    if useGUI && not (null tl) then do
+      chosenOne <- listBox "Pic a conservativity checker"
                                 $ Prelude.map checker_id checkers
-                  case chosenOne of
-                    Nothing -> return$fail "No conservativity checker chosen"
-                    Just i -> return $ return $ checkers !! i
-    False ->
+      case chosenOne of
+        Nothing -> return $ fail "No conservativity checker chosen"
+        Just i -> return $ return $ checkers !! i
+   else
 #endif
-        case checkers of
-             [] ->  return $ fail "No conservativity checker available"
-             hd:_-> return $ return hd
-
+   return $ return hd
 
 checkConservativityEdge :: Bool -> (LEdge DGLinkLab) -> LibEnv -> LIB_NAME
                            -> IO (String,LibEnv, ProofHistory)

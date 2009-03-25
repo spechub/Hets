@@ -267,8 +267,8 @@ dijkstra graph source target = let
    in if (u == tn) then shortPath gr sn p1 c1 [] tn
      else mainloop gr sn tn q1 d1 p1 c1
   shortPath gr sn p1 c s u = if (Map.!) p1 u == sn then (u:s, c)
-                               else shortPath gr sn p1 c (u:s)  $(Map.!) p1 u
- in foldM comp ((Map.!) com1 source) $ map ((Map.!) com1) $  nodeList
+                               else shortPath gr sn p1 c (u:s) $ (Map.!) p1 u
+ in foldM comp ((Map.!) com1 source) . map ((Map.!) com1) $ nodeList
 
 --  builds the arrows from the nodes of the original graph
 --  to the unique maximal node of the obtained graph

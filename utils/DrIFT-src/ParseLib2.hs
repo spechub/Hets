@@ -18,8 +18,8 @@ to the library have been made in the move from Gofer to Haskell:
      of tagging and untagging parsers with the P constructor.
 
 -----------------------------------------------------------------------------}
--- Added to April 1997, for offside rule, {- -} comments, annotations, 
--- extra characters in identifiers .. - 
+-- Added to April 1997, for offside rule, {- -} comments, annotations,
+-- extra characters in identifiers .. -
 -- extra combinator parsers for skipping over input
 
 
@@ -31,7 +31,7 @@ module ParseLib2
     many1_offside,many_offside,off,
     opt, skipUntil, skipUntilOff,skipUntilParse,skipNest) where
 
-import Char 
+import Char
 import Monad
 
 infixr 5 +++
@@ -52,7 +52,7 @@ instance Monad Parser where
    return v        = P (\pos inp -> [(v,inp)])
 
    -- >>=         :: Parser a -> (a -> Parser b) -> Parser b
-   (P p) >>= f     = P (\pos inp -> concat [papply (f v) pos out 
+   (P p) >>= f     = P (\pos inp -> concat [papply (f v) pos out
 						| (v,out) <- p pos inp])
    fail s          = P (\pos inp -> [])
 
@@ -77,7 +77,7 @@ set :: Pstring -> Parser Pstring
 set s = update (\_ -> s)
 
 fetch :: Parser Pstring
-fetch = update id 
+fetch = update id
 
 --- Other primitive parser combinators ---------------------------------------
 
@@ -197,7 +197,7 @@ spaces            :: Parser ()
 spaces             = do {many1 (sat isJunk); return ()}
 
 isJunk x = isSpace x || (not . isPrint) x || isControl x
-  
+
 comment :: Parser ()
 comment = onelinecomment `mplus` bracecomment
 
@@ -205,7 +205,7 @@ onelinecomment    :: Parser ()
 onelinecomment     = do {string "--"; many (sat (\x -> x /= '\n')); return ()}
 
 bracecomment      :: Parser ()
-bracecomment = skipNest 
+bracecomment = skipNest
 	 (do{string "{-"; sat (`notElem` ['!','@','*'])})
 	 (do{sat (`notElem` ['!','@','*']);string "-}"})
 
@@ -236,12 +236,12 @@ identifier ks      = token (do {x <- ident; if not (elem x ks) then return x
                                                                else mzero})
 --- Offside Parsers ---------------------------------------------------------
 
-many1_offside :: Parser a -> Parser [a] 
+many1_offside :: Parser a -> Parser [a]
 many1_offside p = do (pos,_) <- fetch
 		     vs <- setenv pos (many1 (off p))
                      return vs
 
-many_offside :: Parser a -> Parser [a] 
+many_offside :: Parser a -> Parser [a]
 many_offside p = many1_offside p +++ mzero
 
 
@@ -257,17 +257,17 @@ off p = do (dl,dc) <- env
 skipUntil :: Parser a -> Parser a
 skipUntil p = p +++ do token (many1 (sat (not . isSpace)))
                        skipUntil p
-			 
+
 skipNest :: Parser a -> Parser b -> Parser ()
-skipNest start finish  = let 
-    x = do{ finish;return()} 
-	+++ do{skipNest start finish;x} +++ do{item;x} 
+skipNest start finish  = let
+    x = do{ finish;return()}
+	+++ do{skipNest start finish;x} +++ do{item;x}
     in do{start; x}
-    
+
 -- this are messy, but make writing incomplete parsers a whole lot
 -- easier.
 skipUntilOff :: Parser a -> Parser [a]
-skipUntilOff p = fmap (concatMap justs) . many_offside $ 
+skipUntilOff p = fmap (concatMap justs) . many_offside $
         fmap Just p +++ fmap (const Nothing) (many1 (token (many1 item)))
 
 
@@ -277,7 +277,7 @@ skipUntilParse u p = fmap (concatMap justs) . many $
            token (char u)
            return (Just r)
         +++
-	do many . token . many1 . sat $(/= u)
+	do many . token . many1 . sat $ (/= u)
            token (char u)
            return Nothing
 
@@ -285,5 +285,5 @@ justs (Just a)  = [a]
 justs Nothing   = []
 
 
-opt p = p +++ return [] 
+opt p = p +++ return []
 

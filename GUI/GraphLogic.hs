@@ -468,8 +468,8 @@ getTheoryOfNode gInfo@(GInfo { graphInfo = gi
                                  (addHasInHidingWarning dgraph n) gth
         let newGr = lookupDGraph ln le'
             history = snd $ splitHistory (lookupDGraph ln le) newGr
-        applyChanges gi $ reverse $ flatHistory history
-        let nwst = ost { i_state = Just $ist { i_libEnv = le'} }
+        applyChanges gi . reverse $ flatHistory history
+        let nwst = ost { i_state = Just ist { i_libEnv = le'} }
         writeIORef (intState gInfo) nwst
         unlockGlobal gInfo
       _ -> return ()

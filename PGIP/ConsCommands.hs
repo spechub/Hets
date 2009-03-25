@@ -68,7 +68,7 @@ cConservCheck input state =
          tmpErrs = prettyPrintErrList errs
      case (edg,nbEdg) of
       ([],[]) ->
-        return $genErrorMsg( tmpErrs++"No edges in input string\n") state
+        return $ genErrorMsg( tmpErrs++"No edges in input string\n") state
       (_,_) ->
         do
          let lsNodes = getAllNodes dgState
@@ -148,7 +148,7 @@ cConsistCheck state
                                      (AxiomsChange (includedAxioms stt) x):
                                      (GoalsChange (selectedGoals stt) x):
                                         []) ls
-              return $ add2hist [(DgCommandChange $i_ln nwpS),
+              return $ add2hist [(DgCommandChange $ i_ln nwpS),
                                  (ListChange hst)] $
                           state {
                             intState = (intState state) {
@@ -228,11 +228,11 @@ applyEdgeConservativity le ln ls acc lsN
         do
          (str,nwLe,_) <- checkConservativityEdge False (x,y,edgLab) le ln
          let nm = (nameOf x lsN) ++ arrowLink edgLab ++ (nameOf y lsN)
-         applyEdgeConservativity nwLe ln l ((nm,str):acc) lsN
+         applyEdgeConservativity nwLe ln l ((nm, str) : acc) lsN
        False ->
         do
          (str,nwLe,_) <- checkConservativityEdge False (x,y,edgLab) le ln
-         let nm=(nameOf x lsN)++arrowLink edgLab++(show$ getInt$dgl_id edgLab)
-                   ++ arrowLink edgLab ++ (nameOf y lsN)
-         applyEdgeConservativity nwLe ln l ((nm,str):acc) lsN
-
+         let nm = nameOf x lsN ++ arrowLink edgLab
+                  ++ show (getInt $ dgl_id edgLab)
+                  ++ arrowLink edgLab ++ nameOf y lsN
+         applyEdgeConservativity nwLe ln l ((nm, str) : acc) lsN

@@ -465,7 +465,7 @@ cInfo::String -> CMDL_State -> IO CMDL_State
 cInfo input state
  = case i_state $ intState state of
     -- error message
-    Nothing -> return $genErrorMsg "No library loaded" state
+    Nothing -> return $ genErrorMsg "No library loaded" state
     Just dgS -> do
      let (nds,edg,nbEdg,errs) = decomposeIntoGoals input
          tmpErrs = prettyPrintErrList errs
@@ -657,16 +657,16 @@ cEdges state
 cUndoHistory :: CMDL_State -> IO CMDL_State
 cUndoHistory state
  = do
-    let undoH  = undoList $ i_hist $ intState state
-        undoH' = map(\x -> cmdName x) undoH
-    return $genMessage [] ("Undo history :\n"++ prettyPrintList undoH') state
+    let undoH  = undoList . i_hist $ intState state
+        undoH' = map cmdName undoH
+    return $ genMessage [] ("Undo history :\n"++ prettyPrintList undoH') state
 
 cRedoHistory :: CMDL_State -> IO CMDL_State
 cRedoHistory state
  = do
     let redoH  = redoList $ i_hist $ intState state
-        redoH' = map (\x -> cmdName x) redoH
-    return $genMessage [] ("Redo history :\n"++ prettyPrintList redoH') state
+        redoH' = map cmdName redoH
+    return $ genMessage [] ("Redo history :\n"++ prettyPrintList redoH') state
 
 -- print the name of all nodes
 cNodes::CMDL_State -> IO CMDL_State

@@ -440,10 +440,9 @@ ttConservativityChecker (_, srcSens) mor tarSens=
   let srcAxs        = filter AS_Anno.isAxiom srcSens
       tarAxs        = filter AS_Anno.isAxiom tarSens
       srcSig        = items $ PMorphism.source mor
-      imageSig      = Set.map (PMorphism.applyMorphism mor) $srcSig
+      imageSig      = Set.map (PMorphism.applyMorphism mor) $ srcSig
       imageSigList  =  Set.toList imageSig
       tarSig        = items $ PMorphism.target mor
---      tarSigList    = Set.toList tarSig
       newSig        = Set.difference tarSig imageSig
       sigSize       = Set.size tarSig
   in
