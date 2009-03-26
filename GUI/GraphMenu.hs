@@ -45,9 +45,10 @@ import Proofs.Composition(composition, compositionCreatingEdges)
 import Proofs.HideTheoremShift(interactiveHideTheoremShift)
 import Proofs.TheoremHideShift(theoremHideShift)
 import Proofs.ComputeColimit(computeColimit)
+import qualified Proofs.VSE as VSE
 
 import Common.DocUtils(showDoc)
-import Common.Result as Res
+import Common.Result
 
 import Driver.Options(HetcatsOpts,rmSuffix,prfSuffix,showDiags
                      ,defaultHetcatsOpts)
@@ -430,8 +431,8 @@ createLocalMenuTaxonomy ginfo@(GInfo { libName = ln }) =
          let le = i_libEnv ist
          r <- lookupTheoryOfNode le ln descr
          case r of
-           Res.Result [] (Just (_le',n, gth)) -> displayFun (showDoc n "") gth
-           Res.Result ds _ -> showDiags defaultHetcatsOpts ds
+           Result [] (Just (_le',n, gth)) -> displayFun (showDoc n "") gth
+           Result ds _ -> showDiags defaultHetcatsOpts ds
 
 createLocalMenuButtonShowProofStatusOfNode :: GInfo -> ButtonMenu GA.NodeValue
 createLocalMenuButtonShowProofStatusOfNode gInfo =
@@ -440,16 +441,22 @@ createLocalMenuButtonShowProofStatusOfNode gInfo =
 createLocalMenuButtonProveAtNode :: GInfo -> ButtonMenu GA.NodeValue
 createLocalMenuButtonProveAtNode gInfo =
   createMenuButton "Prove" (\descr dgraph -> performProofAction gInfo
-    (proveAtNode (Just False) gInfo descr dgraph)) gInfo
+    (proveAtNode False gInfo descr dgraph)) gInfo
 
 createLocalMenuButtonProveStructured :: GInfo -> ButtonMenu GA.NodeValue
 createLocalMenuButtonProveStructured gInfo =
-  createMenuButton "Prove Structured" (\descr dgraph -> performProofAction gInfo
-    (proveAtNode Nothing gInfo descr dgraph)) gInfo
+  createMenuButton "Prove VSE Structured"
+    (\ descr _ -> performProofAction gInfo (proveVSEStructured gInfo descr))
+    gInfo
+
+-- | call VSE structured
+proveVSEStructured :: GInfo -> Int -> IO ()
+proveVSEStructured gi n =
+  proofMenu gi ("VSE structured on " ++ show n) $ VSE.prove (libName gi, n)
 
 createLocalMenuButtonCCCAtNode :: GInfo -> ButtonMenu GA.NodeValue
 createLocalMenuButtonCCCAtNode gInfo =
-  createMenuButton "Check consistency" (proveAtNode (Just True) gInfo) gInfo
+  createMenuButton "Check consistency" (proveAtNode True gInfo) gInfo
 
 createLocalMenuButtonShowNodeInfo :: GInfo -> ButtonMenu GA.NodeValue
 createLocalMenuButtonShowNodeInfo =

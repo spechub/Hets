@@ -70,9 +70,8 @@ getSubGraph n dg =
     in foldr delNodeDG dg $ Set.toList $ Set.difference (Set.fromList ns) sns
 
 -- | applies basic inference to a given node and whole import tree above
-prove :: [AnyComorphism] -> (LIB_NAME, Node) -> LibEnv
-      -> IO (Result (LibEnv, Result G_theory))
-prove _cms (ln, node) libEnv =
+prove :: (LIB_NAME, Node) -> LibEnv -> IO (Result LibEnv)
+prove (ln, node) libEnv =
   runResultT $ do
     qLibEnv <- liftR $ qualifyLibEnv libEnv
     let dg1 = lookupDGraph ln qLibEnv
@@ -102,7 +101,7 @@ prove _cms (ln, node) libEnv =
                (getLIB_ID ln) sign2
            , show $ prettySExpr
              $ SList $ map (namedSenToSExpr sign2) sens2)) ns
-    nLibEnv <- lift $ do
+    lift $ do
 #ifdef TAR_PACKAGE
        moveVSEFiles ostr
 #endif
@@ -147,7 +146,6 @@ prove _cms (ln, node) libEnv =
                                (n, olbl { dgn_theory =
                                  G_theory lid sig sigId nsens startThId })
                         in Map.insert ln ndg le) libEnv nls
-    return (nLibEnv, Result [] Nothing)
 
 getLinksTo :: LIB_NAME -> DGraph -> LNode DGNodeLab -> String
 getLinksTo ln dg (n, lbl) = show $ prettySExpr $ SList

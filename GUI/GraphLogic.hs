@@ -78,7 +78,7 @@ import Common.DocUtils (showDoc)
 import Common.AS_Annotation (isAxiom)
 import Common.ExtSign
 import Common.LibName
-import Common.Result as Res
+import Common.Result
 import qualified Common.OrderedMap as OMap
 import qualified Common.Lib.SizedList as SizedList
 
@@ -357,7 +357,7 @@ openProofStatus gInfo@(GInfo { hetcatsOpts = opts
 -- | apply a rule of the development graph calculus
 proofMenu :: GInfo
              -> String
-             -> (LibEnv -> IO (Res.Result LibEnv))
+             -> (LibEnv -> IO (Result LibEnv))
              -> IO ()
 proofMenu gInfo@(GInfo { graphInfo = gi
                        , hetcatsOpts = hOpts
@@ -381,7 +381,7 @@ proofMenu gInfo@(GInfo { graphInfo = gi
       lockGlobal gInfo
       let proofStatus = i_libEnv ist
       putIfVerbose hOpts 4 "Proof started via \"Proofs\" menu"
-      Res.Result ds res <- proofFun proofStatus
+      Result ds res <- proofFun proofStatus
       putIfVerbose hOpts 4 "Analyzing result of proof"
       case res of
         Nothing -> do
@@ -432,14 +432,14 @@ showNodeInfo descr dgraph = do
    fetches the theory from a node inside the IO Monad
    (added by KL based on code in getTheoryOfNode) -}
 lookupTheoryOfNode :: LibEnv -> LIB_NAME -> Int
-                   -> IO (Res.Result (LibEnv, Node, G_theory))
+                   -> IO (Result (LibEnv, Node, G_theory))
 lookupTheoryOfNode libEnv ln descr =
   return $ do
     gth <- computeTheory libEnv ln descr
     return (libEnv, descr, gth)
 
 showDiagMessAux :: Int -> [Diagnosis] -> IO ()
-showDiagMessAux v ds = let es = Res.filterDiags v ds in
+showDiagMessAux v ds = let es = filterDiags v ds in
   if null es then return () else
   (if hasErrors es then errorDialog "Error" else infoDialog "Info") $ unlines
      $ map show es
@@ -459,7 +459,7 @@ getTheoryOfNode gInfo@(GInfo { graphInfo = gi
    let le = i_libEnv ist
    r <- lookupTheoryOfNode le ln descr
    case r of
-    Res.Result ds res -> do
+    Result ds res -> do
      showDiagMess (hetcatsOpts gInfo) ds
      case res of
       (Just (le', n, gth)) -> do
@@ -484,7 +484,7 @@ translateTheoryOfNode gInfo@(GInfo { hetcatsOpts = opts
   Nothing -> return ()
   Just ist -> do
     let libEnv = i_libEnv ist
-        Res.Result ds moTh = computeTheory libEnv ln node
+        Result ds moTh = computeTheory libEnv ln node
     case moTh of
       Just th@(G_theory lid sign _ sens _) -> do
          -- find all comorphism paths starting from lid
@@ -539,7 +539,7 @@ showStatusAux dgnode =
              else ""
 
 -- | start local theorem proving or consistency checking at a node
-proveAtNode :: Maybe Bool -> GInfo -> Int -> DGraph -> IO ()
+proveAtNode :: Bool -> GInfo -> Int -> DGraph -> IO ()
 proveAtNode checkCons gInfo@(GInfo { libName = ln }) descr dgraph = do
  ost <- readIORef $ intState gInfo
  case i_state ost of
@@ -560,14 +560,13 @@ proveAtNode checkCons gInfo@(GInfo { libName = ln }) descr dgraph = do
       return dgn'
    acquired <- tryLockLocal dgn'
    if acquired then do
-      let checkCons2 = fromMaybe False checkCons
-          action = do
+      let action = do
             guiMVar <- newMVar Nothing
             res <- basicInferenceNode checkCons logicGraph libNode ln
                 guiMVar le (intState gInfo)
-            runProveAtNode checkCons2 gInfo (descr, dgn') res
+            runProveAtNode checkCons gInfo (descr, dgn') res
             unlockLocal dgn'
-      if checkCons2 && labelHasHiding dgn' then do
+      if checkCons && labelHasHiding dgn' then do
           b <- warningDialog "Warning"
              (unwords $ hidingWarning ++ ["Try anyway?"]) $ Just action
           unless b $ unlockLocal dgn'
@@ -576,7 +575,7 @@ proveAtNode checkCons gInfo@(GInfo { libName = ln }) descr dgraph = do
     else errorDialog "Error" "Proofwindow already open"
 
 runProveAtNode :: Bool -> GInfo -> LNode DGNodeLab
-               -> Res.Result (LibEnv, Res.Result G_theory) -> IO ()
+               -> Result (LibEnv, Result G_theory) -> IO ()
 runProveAtNode checkCons gInfo@(GInfo { libName = ln }) (v, dgnode)
                res = case maybeResult res of
   Just (le, tres) -> do
@@ -596,7 +595,7 @@ runProveAtNode checkCons gInfo@(GInfo { libName = ln }) (v, dgnode)
     mergeHistoryLast2Entries gInfo
   Nothing -> showDiagMessAux 2 $ diags res
 
-mergeDGNodeLab :: GInfo -> LNode DGNodeLab -> LibEnv -> IO (Res.Result LibEnv)
+mergeDGNodeLab :: GInfo -> LNode DGNodeLab -> LibEnv -> IO (Result LibEnv)
 mergeDGNodeLab gInfo@( GInfo { libName = ln }) (v, new_dgn) le = do
  ost <- readIORef $ intState gInfo
  case i_state ost of
@@ -657,7 +656,7 @@ conservativityRule = DGRule "ConservativityCheck"
 -- | Graphical choser for conservativity checkers
 conservativityChoser :: [ConservativityChecker sign sentence morphism]
                      -> IO
-                         (Res.Result (ConservativityChecker
+                         (Result (ConservativityChecker
                           sign sentence morphism))
 conservativityChoser checkers = case checkers of
       [] -> return $ fail "No conservativity checkers available"
@@ -758,7 +757,7 @@ translateGraph gInfo@(GInfo { hetcatsOpts = opts }) = do
     Just ist -> do
       let
         le = i_libEnv ist
-        Res.Result diagsSl mSublogic = getDGLogic le
+        Result diagsSl mSublogic = getDGLogic le
         myErrMess = showDiagMess opts
         error' = errorDialog "Error"
       if hasErrors diagsSl then do
@@ -780,7 +779,7 @@ translateGraph gInfo@(GInfo { hetcatsOpts = opts }) = do
                     error' "no logic translation chosen"
                     return Nothing
                   Just j -> do
-                    let Res.Result diag mle = libEnv_translation le $ paths !! j
+                    let Result diag mle = libEnv_translation le $ paths !! j
                     case mle of
                       Just newLibEnv -> do
                         showDiagMess opts $ diagsSl ++ diag

@@ -30,7 +30,6 @@ import Static.DevGraph
 import Proofs.EdgeUtils
 import Proofs.AbstractState
 import Proofs.TheoremHideShift
-import qualified Proofs.VSE as VSE
 
 import Common.ExtSign
 import Common.LibName
@@ -152,8 +151,7 @@ proveTheory _ =
 
 
 -- | applies basic inference to a given node
-basicInferenceNode :: Maybe Bool
-                   -- ^ True = consistency; False = Prove; Nothing = structured
+basicInferenceNode :: Bool -- ^ True = consistency; False = Prove
                    -> LogicGraph -> (LIB_NAME,Node) -> LIB_NAME
                    -> GUIMVar -> LibEnv -> IORef IntState
                    -> IO (Result (LibEnv, Result G_theory))
@@ -171,8 +169,7 @@ basicInferenceNode checkCons lg (ln, node) libname guiMVar libEnv intSt
         -- select a suitable translation and prover
 
             cms = filter hasModelExpansion $ findComorphismPaths lg sublogic
-        case checkCons of
-          Just True -> do
+        if checkCons then do
             (G_cons_checker lid4 cc, Comorphism cid) <-
                  selectProver $ getConsCheckers cms
             let lidT = targetLogic cid
@@ -202,7 +199,7 @@ basicInferenceNode checkCons lg (ln, node) libname guiMVar libEnv intSt
                   _ -> fail "no unique cons checkers found"
              -- ??? Borrowing to be implemented
             return (libEnv, resT)
-          Just False -> do -- proving
+          else do -- proving
             -- get known Provers
 
 -----------------------------------------------------------------------------
@@ -235,7 +232,6 @@ basicInferenceNode checkCons lg (ln, node) libname guiMVar libEnv intSt
                                          (node, newContents)
             return ( Map.insert libname nextDGraph libEnv
                    , Result [] Nothing)
-          Nothing -> ResultT $ VSE.prove cms (ln, node) libEnv
 
 proveKnownPMap :: (Logic lid sublogics1
                basic_spec1
