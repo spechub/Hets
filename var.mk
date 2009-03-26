@@ -1,6 +1,6 @@
 # to be include by Makefile
 
-HC = ghc -optl-s -XTemplateHaskell
+HC = ghc -optl-s -XTemplateHaskell -XCPP
 HCPKG = ghc-pkg
 
 TARVERSION = $(shell $(HCPKG) field tar version)
