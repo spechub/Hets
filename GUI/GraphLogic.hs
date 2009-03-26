@@ -25,10 +25,10 @@ module GUI.GraphLogic
     , translateTheoryOfNode
     , displaySubsortGraph
     , displayConceptGraph
-    , lookupTheoryOfNode
     , showProofStatusOfNode
     , proveAtNode
     , showNodeInfo
+    , showDiagMess
     , showEdgeInfo
     , checkconservativityOfEdge
     , convert
@@ -380,7 +380,7 @@ proofMenu gInfo@(GInfo { graphInfo = gi
     else do
       lockGlobal gInfo
       let proofStatus = i_libEnv ist
-      putIfVerbose hOpts 4 "Proof started via \"Proofs\" menu"
+      putIfVerbose hOpts 4 "Proof started via menu"
       Result ds res <- proofFun proofStatus
       putIfVerbose hOpts 4 "Analyzing result of proof"
       case res of
@@ -390,18 +390,15 @@ proofMenu gInfo@(GInfo { graphInfo = gi
         Just newProofStatus -> do
           let newGr = lookupDGraph ln newProofStatus
               history = snd $ splitHistory (lookupDGraph ln proofStatus) newGr
-          doDump hOpts "PrintHistory" $ do
-            putStrLn "History"
-            print $ prettyHistory history
-          let lln = map (\x-> DgCommandChange x) $ calcGlobalHistory
+              lln = map DgCommandChange $ calcGlobalHistory
                                                    proofStatus newProofStatus
               nmStr = strToCmd str
               nst = add2history nmStr ost lln
-      --        nst = foldl (add2history nmStr) ost lln
-      --        (calcGlobalHistory proofStatus newProofStatus : guHist, grHist)
-          applyChanges gi $ reverse
-            $ flatHistory history
-          let nwst = nst { i_state = Just ist { i_libEnv=newProofStatus}}
+              nwst = nst { i_state = Just ist { i_libEnv=newProofStatus}}
+          doDump hOpts "PrintHistory" $ do
+            putStrLn "History"
+            print $ prettyHistory history
+          applyChanges gi $ reverse $ flatHistory history
           writeIORef (intState gInfo) nwst
           unlockGlobal gInfo
           hideShowNames gInfo False
@@ -428,16 +425,6 @@ showNodeInfo descr dgraph = do
               "node " ++ getDGNodeName dgnode ++ " " ++ show descr
   createTextDisplay title (title ++ "\n" ++ showDoc dgnode "")
 
-{- |
-   fetches the theory from a node inside the IO Monad
-   (added by KL based on code in getTheoryOfNode) -}
-lookupTheoryOfNode :: LibEnv -> LIB_NAME -> Int
-                   -> IO (Result (LibEnv, Node, G_theory))
-lookupTheoryOfNode libEnv ln descr =
-  return $ do
-    gth <- computeTheory libEnv ln descr
-    return (libEnv, descr, gth)
-
 showDiagMessAux :: Int -> [Diagnosis] -> IO ()
 showDiagMessAux v ds = let es = filterDiags v ds in
   if null es then return () else
@@ -448,34 +435,21 @@ showDiagMess :: HetcatsOpts -> [Diagnosis] -> IO ()
 showDiagMess = showDiagMessAux . verbose
 
 {- | outputs the theory of a node in a window;
-used by the node menu defined in initializeGraph-}
+     used by the node menu -}
 getTheoryOfNode :: GInfo -> Int -> DGraph -> IO ()
-getTheoryOfNode gInfo@(GInfo { graphInfo = gi
-                             , libName = ln }) descr dgraph = do
+getTheoryOfNode gInfo descr dgraph = do
  ost <- readIORef $ intState gInfo
  case i_state ost of
   Nothing -> return ()
   Just ist -> do
-   let le = i_libEnv ist
-   r <- lookupTheoryOfNode le ln descr
-   case r of
-    Result ds res -> do
-     showDiagMess (hetcatsOpts gInfo) ds
-     case res of
-      (Just (le', n, gth)) -> do
-        lockGlobal gInfo
-        displayTheoryWithWarning "Theory" (getNameOfNode n dgraph)
-                                 (addHasInHidingWarning dgraph n) gth
-        let newGr = lookupDGraph ln le'
-            history = snd $ splitHistory (lookupDGraph ln le) newGr
-        applyChanges gi . reverse $ flatHistory history
-        let nwst = ost { i_state = Just ist { i_libEnv = le'} }
-        writeIORef (intState gInfo) nwst
-        unlockGlobal gInfo
-      _ -> return ()
+    let Result ds res = computeTheory (i_libEnv ist) (libName gInfo) descr
+    showDiagMess (hetcatsOpts gInfo) ds
+    maybe (return ())
+        (displayTheoryWithWarning "Theory" (getNameOfNode descr dgraph)
+        $ addHasInHidingWarning dgraph descr) res
 
 {- | translate the theory of a node in a window;
-used by the node menu defined in initializeGraph-}
+     used by the node menu -}
 translateTheoryOfNode :: GInfo -> Int -> DGraph -> IO ()
 translateTheoryOfNode gInfo@(GInfo { hetcatsOpts = opts
                                    , libName = ln }) node dgraph = do

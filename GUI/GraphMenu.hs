@@ -12,9 +12,7 @@ Portability :  non-portable (imports Logic)
 Menu creation
 -}
 
-module GUI.GraphMenu
-  ( createGraph )
-  where
+module GUI.GraphMenu (createGraph) where
 
 import qualified GUI.GraphAbstraction as GA
 import GUI.GraphTypes
@@ -43,15 +41,13 @@ import Proofs.Global(globSubsume, globDecomp)
 import Proofs.Local(localInference, locDecomp)
 import Proofs.Composition(composition, compositionCreatingEdges)
 import Proofs.HideTheoremShift(interactiveHideTheoremShift)
-import Proofs.TheoremHideShift(theoremHideShift)
+import Proofs.TheoremHideShift(theoremHideShift, computeTheory)
 import Proofs.ComputeColimit(computeColimit)
 import qualified Proofs.VSE as VSE
 
-import Common.DocUtils(showDoc)
 import Common.Result
 
-import Driver.Options(HetcatsOpts,rmSuffix,prfSuffix,showDiags
-                     ,defaultHetcatsOpts)
+import Driver.Options(HetcatsOpts, rmSuffix, prfSuffix)
 import Driver.ReadFn(libNameToFile)
 
 import GUI.UDGUtils
@@ -413,26 +409,20 @@ createLocalMenuButtonTranslateTheory :: GInfo -> ButtonMenu GA.NodeValue
 createLocalMenuButtonTranslateTheory gInfo =
   createMenuButton "Translate theory" (translateTheoryOfNode gInfo) gInfo
 
-{- |
-   create a sub Menu for taxonomy visualisation
-   (added by KL)
--}
+-- | create a sub menu for taxonomy visualisation
 createLocalMenuTaxonomy :: GInfo -> ButtonMenu GA.NodeValue
-createLocalMenuTaxonomy ginfo@(GInfo { libName = ln }) =
-  Menu (Just "Taxonomy graphs")
-    [ createMenuButton "Subsort graph" (passTh displaySubsortGraph) ginfo
-    , createMenuButton "Concept graph" (passTh displayConceptGraph) ginfo ]
-  where
+createLocalMenuTaxonomy gInfo = let
     passTh displayFun descr _ = do
-      ost <- readIORef $ intState ginfo
+      ost <- readIORef $ intState gInfo
       case i_state ost of
         Nothing -> return ()
         Just ist -> do
-         let le = i_libEnv ist
-         r <- lookupTheoryOfNode le ln descr
-         case r of
-           Result [] (Just (_le',n, gth)) -> displayFun (showDoc n "") gth
-           Result ds _ -> showDiags defaultHetcatsOpts ds
+          let Result ds res = computeTheory (i_libEnv ist) (libName gInfo) descr
+          showDiagMess (hetcatsOpts gInfo) ds
+          maybe (return ()) (displayFun $ show descr) res
+    in Menu (Just "Taxonomy graphs")
+    [ createMenuButton "Subsort graph" (passTh displaySubsortGraph) gInfo
+    , createMenuButton "Concept graph" (passTh displayConceptGraph) gInfo ]
 
 createLocalMenuButtonShowProofStatusOfNode :: GInfo -> ButtonMenu GA.NodeValue
 createLocalMenuButtonShowProofStatusOfNode gInfo =
