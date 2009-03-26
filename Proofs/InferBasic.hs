@@ -275,7 +275,6 @@ callProver st intSt trans_chosen freedefs p_cm@(_,acm) =
                            "Logic.InferBasic: callProver")
                           freedefs
         ps <- lift $ proveTheory lid p (theoryName st) th freedefs1
-        -- lift $ putStrLn $ show ps
         let st' = markProved acm lid ps st
         lift $ addProveToHist intSt st'
               (if trans_chosen then Just p_cm else Nothing) ps

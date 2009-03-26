@@ -1,6 +1,6 @@
 {- |
 Module      :  $Header$
-Description :  local proof rukes for development graphs
+Description :  local proof rules for development graphs
 Copyright   :  (c) Jorina F. Gerken, Till Mossakowski, Uni Bremen 2002-2006
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 

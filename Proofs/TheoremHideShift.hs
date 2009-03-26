@@ -115,8 +115,7 @@ computeLabelTheory :: LibEnv -> DGraph -> LNode DGNodeLab -> Result G_theory
 computeLabelTheory libEnv dg (n, nodelab) =
   let localTh = dgn_theory nodelab in
   if isDGRef nodelab then do
-    let refLn = dgn_libname nodelab
-        refNode = dgn_node nodelab
+    let refNode = dgn_node nodelab
         dg' = lookupDGraph (dgn_libname nodelab) libEnv
         newLab = labDG dg' refNode
     refTh <- computeLabelTheory libEnv dg' (refNode, newLab)
