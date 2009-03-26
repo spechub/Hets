@@ -233,6 +233,8 @@ createGlobalMenu gInfo@(GInfo { hetcatsOpts = opts
   Nothing -> return []
   Just _ -> do
    let ral = runAndLock gInfo
+       performProofMenuAction str =
+           ral . performProofAction gInfo . proofMenu gInfo str
    return
     [GlobalMenu (Menu Nothing
      [ Button "Undo" $ ral $ undo gInfo True
@@ -254,8 +256,7 @@ createGlobalMenu gInfo@(GInfo { hetcatsOpts = opts
      , Button "Hide new proven links" $ ral $ hideNewProvedEdges gInfo
      , Menu (Just "Proofs") $ map (\ (str, cmd) ->
        -- History ? or just some partial history in ch ?
-        Button str $ ral $ performProofAction gInfo
-                  $ proofMenu gInfo str $ return . return . cmd ln
+        Button str . performProofMenuAction str $ return . return . cmd ln
                   . Map.map undoRedo)
         [ ("Automatic", automatic)
         , ("Global Subsumption", globSubsume)
@@ -266,21 +267,17 @@ createGlobalMenu gInfo@(GInfo { hetcatsOpts = opts
         , ("Composition - creating new links", compositionCreatingEdges)
         ] ++
         [Button "Hide Theorem Shift"
-               $ ral $ performProofAction gInfo
-               $ proofMenu gInfo "Hide Theorem Shift" $
-                               fmap return . interactiveHideTheoremShift ln
+               $ performProofMenuAction "Hide Theorem Shift"
+               $ fmap return . interactiveHideTheoremShift ln
         ] ++
         map (\ (str, cmd) ->
-               Button str
-                   $ ral $ performProofAction gInfo
-                   $ proofMenu gInfo str $ return . cmd ln)
+               Button str . performProofMenuAction str $ return . cmd ln)
         [ ("Theorem Hide Shift", theoremHideShift)
         , ("Compute Colimit", computeColimit)
         , ("Compute normal form", normalForm)
         ] ++
         [ Menu (Just "Flattening") $ map ( \ (str, cmd) ->
-           Button str $ ral $ performProofAction gInfo
-                      $ proofMenu gInfo str $ return . cmd)
+           Button str . performProofMenuAction str $ return . cmd)
               [ ("Importings", libEnv_flattening_imports)
               , ("Disjoint unions", libEnv_flattening_dunions)
               , ("Importings and renamings", libEnv_flattening_renamings)
