@@ -129,9 +129,6 @@ instance Pretty DGNodeLab where
     , case dgn_sigma l of
         Nothing -> Doc.empty
         Just gm -> text "normal form inclusion:" $+$ pretty gm
-    , case dgn_lock l of
-        Nothing -> Doc.empty
-        Just _ -> text "currently locked."
     , text "Local Theory:"
     , pretty $ dgn_theory l]
 
