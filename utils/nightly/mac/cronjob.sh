@@ -11,6 +11,7 @@ cd /Users/Shared/maeder/haskell
 makeHets
 makeLibCheck
 
+strip hets
 installHetsBinary mac
 chgrp macbkb hets
 \cp -fp hets /home/mac-bkb/bin/
