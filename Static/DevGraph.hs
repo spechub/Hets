@@ -979,10 +979,23 @@ initLocking dg (node, dgn) = do
 lookupDGraph :: LIB_NAME -> LibEnv -> DGraph
 lookupDGraph ln = Map.findWithDefault (error $ "lookupDGraph " ++ show ln) ln
 
-isGlobalDef :: DGLinkType -> Bool
-isGlobalDef lt = case lt of
-    ScopedLink Global DefLink _ -> True
-    _ -> False
+{- | compute the theory of a given node.
+   If this node is a DGRef, the referenced node is looked up first. -}
+computeLocalTheory :: Monad m => LibEnv -> LIB_NAME -> Node -> m G_theory
+computeLocalTheory libEnv ln =
+  computeLocalNodeTheory libEnv $ lookupDGraph ln libEnv
+
+computeLocalNodeTheory :: Monad m => LibEnv -> DGraph -> Node -> m G_theory
+computeLocalNodeTheory libEnv dg = computeLocalLabelTheory libEnv . labDG dg
+
+computeLocalLabelTheory :: Monad m => LibEnv -> DGNodeLab -> m G_theory
+computeLocalLabelTheory libEnv nodeLab =
+  if isDGRef nodeLab
+    then
+      computeLocalTheory libEnv (dgn_libname nodeLab) $ dgn_node nodeLab
+    else return $ dgn_theory nodeLab
+
+-- ** test link types
 
 liftE :: (DGLinkType -> Bool) -> LEdge DGLinkLab -> Bool
 liftE f (_, _, edgeLab) = f $ dgl_type edgeLab
@@ -991,18 +1004,10 @@ liftE f (_, _, edgeLab) = f $ dgl_type edgeLab
 liftOr :: (a -> Bool) -> (a -> Bool) -> a -> Bool
 liftOr f g x = f x || g x
 
-{- compute the theory of a given node.
-   If this node is a DGRef, the referenced node is looked up first. -}
-computeLocalTheory :: Monad m => LibEnv -> LIB_NAME -> Node -> m G_theory
-computeLocalTheory libEnv ln node =
-  if isDGRef nodeLab
-    then
-      computeLocalTheory libEnv refLn $ dgn_node nodeLab
-    else return $ dgn_theory nodeLab
-    where
-      dgraph = lookupDGraph ln libEnv
-      nodeLab = labDG dgraph node
-      refLn = dgn_libname nodeLab
+isGlobalDef :: DGLinkType -> Bool
+isGlobalDef lt = case lt of
+    ScopedLink Global DefLink _ -> True
+    _ -> False
 
 isLocalDef :: DGLinkType -> Bool
 isLocalDef lt = case lt of
@@ -1032,6 +1037,8 @@ isHidingEdge edge = case edge of
     HidingFreeOrCofreeThm Nothing _ _ -> True
     _ -> False
 
+-- ** create link types
+
 hidingThm :: GMorphism -> DGLinkType
 hidingThm m = HidingFreeOrCofreeThm Nothing m LeftOpen
 
@@ -1060,6 +1067,8 @@ globalDef = localOrGlobalDef Global
 localDef :: DGLinkType
 localDef = localOrGlobalDef Local
 
+-- ** link conservativity
+
 -- | returns the Conservativity if the given edge has one, otherwise none
 getConservativity :: LEdge DGLinkLab -> Conservativity
 getConservativity (_, _, edgeLab) = getCons $ dgl_type edgeLab
@@ -1074,12 +1083,45 @@ getCons lt = case lt of
     ScopedLink _ _ (ConsStatus cons _) -> cons
     _ -> None
 
+-- * bottom up traversal
+
+-- | Creates a LIB_NAME relation wrt dependencies via reference nodes
+getLibDepRel :: LibEnv -> Rel.Rel LIB_NAME
+getLibDepRel = Rel.transClosure
+  . Rel.fromSet . Map.foldWithKey (\ ln dg s ->
+    foldr (\ x -> if isDGRef x then Set.insert (ln, dgn_libname x) else id) s
+      $ map snd $ labNodesDG dg) Set.empty
+
+topsortedLibsWithImports :: Rel.Rel LIB_NAME -> [LIB_NAME]
+topsortedLibsWithImports = concatMap Set.toList . Rel.topSort
+
+getTopsortedLibs :: LibEnv -> [LIB_NAME]
+getTopsortedLibs le = let
+  rel = getLibDepRel le
+  ls = reverse $ topsortedLibsWithImports rel
+  restLs = Set.toList $ Set.difference (Map.keysSet le) $ Rel.nodes rel
+  in ls ++ restLs
+
+{- | Get imported libs in topological order, i.e.  lib(s) without imports first.
+     The input lib-name will be last -}
+dependentLibs :: LIB_NAME -> LibEnv -> [LIB_NAME]
+dependentLibs ln le =
+  let rel = getLibDepRel le
+      ts = topsortedLibsWithImports rel
+      is = Set.toList (Rel.succs rel ln)
+  in reverse $ ln : intersect ts is
+
 topsortedNodes :: DGraph -> [LNode DGNodeLab]
 topsortedNodes dgraph = let dg = dgBody dgraph in
   reverse $ postorderF $ dffWith (\ (_, n, nl, _) -> (n, nl)) (nodes dg)
     $ efilter (\ (s, t, el) -> s /= t && isDefEdge (dgl_type el)) dg
 
-{- | mark all nodes if they have incoming hiding nodes.
+-- * nodes with incoming hiding definition links
+
+nodeHasHiding :: DGraph -> Node -> Bool
+nodeHasHiding dg = labelHasHiding . labDG dg
+
+{- | mark all nodes if they have incoming hiding edges.
    Assume reference nodes to other libraries being properly marked already.
 -}
 markHiding :: LibEnv -> DGraph -> DGraph
@@ -1095,35 +1137,6 @@ markHiding le dgraph =
                  $ dgn_node lbl
             else not (null hidingDefEdges) || any (nodeHasHiding dg) next }) dg)
      dgraph $ topsortedNodes dgraph
-
-nodeHasHiding :: DGraph -> Node -> Bool
-nodeHasHiding dg = labelHasHiding . labDG dg
-
--- | Creates a LIB_NAME relation wrt dependencies via reference nodes
-getLibDepRel :: LibEnv -> Rel.Rel LIB_NAME
-getLibDepRel = Rel.transClosure
-  . Rel.fromSet . Map.foldWithKey (\ ln dg s ->
-    foldr (\ x -> if isDGRef x then Set.insert (ln, dgn_libname x) else id) s
-      $ map snd $ labNodesDG dg) Set.empty
-
-topsortedLibsWithImports :: Rel.Rel LIB_NAME -> [LIB_NAME]
-topsortedLibsWithImports = concatMap Set.toList . Rel.topSort
-
-{- | Get imported libs in topological order, i.e.  lib(s) without imports first.
-     The input lib-name will be last -}
-dependentLibs :: LIB_NAME -> LibEnv -> [LIB_NAME]
-dependentLibs ln le =
-  let rel = getLibDepRel le
-      ts = topsortedLibsWithImports rel
-      is = Set.toList (Rel.succs rel ln)
-  in reverse $ ln : intersect ts is
-
-getTopsortedLibs :: LibEnv -> [LIB_NAME]
-getTopsortedLibs le = let
-  rel = getLibDepRel le
-  ls = reverse $ topsortedLibsWithImports rel
-  restLs = Set.toList $ Set.difference (Map.keysSet le) $ Rel.nodes rel
-  in ls ++ restLs
 
 markAllHiding :: LibEnv -> LibEnv
 markAllHiding libEnv =
