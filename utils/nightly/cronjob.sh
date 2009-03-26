@@ -50,14 +50,14 @@ makeHets ()
 {
 date
 rm -rf Hets
-svn co https://svn-agbkb.informatik.uni-bremen.de/Hets/trunk Hets
+svn co --ignore-externals \
+  https://svn-agbkb.informatik.uni-bremen.de/Hets/trunk Hets
 cd Hets
-ant init
 time $MAKE
 time $MAKE check
 $MAKE release
 date
-(cd Hets; ant init; $MAKE depend; time $MAKE)
+(cd Hets; $MAKE depend; time $MAKE)
 cd ..
 }
 
@@ -112,7 +112,7 @@ checkHasCASL ()
 {
 date
 for i in HasCASL/*.het HasCASL/Metatheory/*.het;
-    do ./hets -v2 -o env,th,prf,pp.het,pp.tex $i; done
+    do ./hets -v2 -o env,th,pp.het,pp.tex $i; done
 if [ -z "$1" ]; then
   pdflatex HasCASL/Metatheory/HasCASL-Metatheory-Libraries.tex
 fi
