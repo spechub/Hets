@@ -558,10 +558,8 @@ proveAtNode checkCons gInfo@(GInfo { libName = ln }) descr dgraph = do
       writeIORef (intState gInfo) nwst
       unlockGlobal gInfo
       return dgn'
-   locked <- tryLockLocal dgn'
-   case locked of
-    False -> errorDialog "Error" "Proofwindow already open"
-    True -> do
+   acquired <- tryLockLocal dgn'
+   if acquired then do
       let checkCons2 = fromMaybe False checkCons
           action = do
             guiMVar <- newMVar Nothing
@@ -569,23 +567,13 @@ proveAtNode checkCons gInfo@(GInfo { libName = ln }) descr dgraph = do
                 guiMVar le (intState gInfo)
             runProveAtNode checkCons2 gInfo (descr, dgn') res
             unlockLocal dgn'
-      case checkCons2 ||
-            not (labelHasHiding dgn') of
-        True -> do
-          forkIO action
-          return ()
-        False -> do
+      if checkCons2 && labelHasHiding dgn' then do
           b <- warningDialog "Warning"
-                        ("This node has incoming hiding links!\n" ++
-                         "You should compute the normal form first, " ++
-                         "preferably by applying Proofs -> TheoremHideShift," ++
-                         " otherwise the flattened theory may be too weak. " ++
-                         "In particular, disproving and consistency checks " ++
-                         "might produce wrong results. " ++
-                         " Prove anyway?")
-                        $ Just action
+             (unwords $ hidingWarning ++ ["Try anyway?"]) $ Just action
           unless b $ unlockLocal dgn'
           return ()
+        else forkIO action >> return ()
+    else errorDialog "Error" "Proofwindow already open"
 
 runProveAtNode :: Bool -> GInfo -> LNode DGNodeLab
                -> Res.Result (LibEnv, Res.Result G_theory) -> IO ()

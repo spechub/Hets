@@ -369,7 +369,12 @@ getAllOpenNodeGoals = filter hasOpenGoals
      otherwise just an empty string. -}
 addHasInHidingWarning :: DGraph -> Node -> String
 addHasInHidingWarning dgraph n = if labelHasHiding $ labDG dgraph n then
-           "< Warning: this node has incoming hiding links ! \n" ++
-           "  The theory shown here may be too weak. \n" ++
-           "  Use the normal form of the node instead. >\n"
-      else ""
+       unlines $ "<Warning>" : map ("  " ++) hidingWarning ++ ["</Warning>"]
+       else ""
+
+hidingWarning :: [String]
+hidingWarning =
+  [ "This node has incoming hiding links!"
+  , "The theory shown may be too weak for proving."
+  , "A consistency check may wrongly succeed."
+  , "If possible use the normal form of this node." ]
