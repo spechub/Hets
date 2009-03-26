@@ -29,7 +29,7 @@ module Proofs.AbstractState
     , selectedGoalMap, axiomMap
     , recalculateSublogicAndSelectedTheory
     , GetPName (..)
-    , getGoals, markProved
+    , markProved
     , G_theory_with_prover (..)
     , G_theory_with_cons_checker (..)
     , prepareForProving
@@ -42,14 +42,12 @@ module Proofs.AbstractState
 
 import qualified Data.Map as Map
 import qualified Data.Set as Set
-import Data.Graph.Inductive.Graph
 import Data.Typeable
 
 import qualified Common.OrderedMap as OMap
 import Common.Result as Result
 import Common.AS_Annotation
 import Common.ExtSign
-import Common.LibName
 import Common.Utils
 
 import Logic.Logic
@@ -358,13 +356,6 @@ recalculateSublogicAndSelectedTheory st =
         return $ st { sublogicOfTheory = sLo,
                       selectedTheory = sTh,
                       proversMap = shrinkKnownProvers sLo (proversMap st) }
-
-
-getGoals :: LibEnv -> LIB_NAME -> LEdge DGLinkLab
-         -> Result G_theory
-getGoals libEnv ln (n,_,edge) = do
-  th <- computeLocalTheory libEnv ln n
-  translateG_theory (dgl_morphism edge) th
 
 class GetPName a where
     getPName :: a -> String
