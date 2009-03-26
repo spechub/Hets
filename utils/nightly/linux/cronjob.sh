@@ -22,7 +22,7 @@ ssh m29 date
 makeLibCheck
 installHetsBinary linux
 chgrp linuxbkb hets
-\cp -fp hets /home/linux-bkb/bin/
+\cp -fp hets /home/linux-bkb/hets/hets-latest/bin/
 
 copyStyForCgi
 latexBasicLibraries
@@ -43,8 +43,6 @@ makeCofiLib
 repackDocs
 
 moreChecks
-#checkEnvs
 checkPrfs
 date
 updateOMDoc
-updateLibForCgi
