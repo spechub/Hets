@@ -23,7 +23,7 @@ import GUI.ShowLogicGraph(showLogicGraph)
 import GUI.Utils
 #ifdef GTKGLADE
 import GUI.GtkLinkTypeChoice
-import GUI.GtkConsistencyChecker
+import GUI.GtkConsistencyChecker ()
 #endif
 
 import Data.IORef
@@ -344,9 +344,6 @@ createLocalMenuNode gInfo = LocalMenu (Menu (Just "node menu") $ map ($ gInfo)
   , createLocalMenuButtonShowProofStatusOfNode
   , createLocalMenuButtonProveAtNode
   , createLocalMenuButtonProveStructured
-#ifdef GTKGLADE
-  , createLocalMenuButtonConsistencyChecker
-#endif
   , createLocalMenuButtonCCCAtNode ]) $$$ emptyNodeTypeParms
 
 -- | local menu for the nodetypes spec and locallyEmpty_spec
@@ -449,13 +446,6 @@ createLocalMenuButtonProveStructured :: GInfo -> ButtonMenu GA.NodeValue
 createLocalMenuButtonProveStructured gInfo =
   createMenuButton "Prove Structured" (\descr dgraph -> performProofAction gInfo
     (proveAtNode Nothing gInfo descr dgraph)) gInfo
-
-#ifdef GTKGLADE
-createLocalMenuButtonConsistencyChecker :: GInfo -> ButtonMenu GA.NodeValue
-createLocalMenuButtonConsistencyChecker gInfo =
-  createMenuButton "Consistency checker"
-                   (showConsistencyChecker gInfo) gInfo
-#endif
 
 createLocalMenuButtonCCCAtNode :: GInfo -> ButtonMenu GA.NodeValue
 createLocalMenuButtonCCCAtNode gInfo =
