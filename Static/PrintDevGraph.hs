@@ -153,17 +153,17 @@ dgLinkOriginHeader o = case o of
     SeeSource -> "see source"
     DGLinkExtension -> "extension"
     DGLinkTranslation -> "OMDoc translation"
-    DGLinkClosedLenv -> "closed spec (inclusion of local environment)"
+    DGLinkClosedLenv -> "closed spec and local environment"
     DGLinkImports -> "OWL import"
     DGLinkSpecInst _ -> "instantiation-link"
     DGLinkFitSpec -> "fitting-spec-link"
     DGLinkView _ -> "view"
     DGLinkFitView _ -> "fitting view to"
-    DGLinkFitViewImp _ -> "fitting view (imports)"
-    DGLinkFitViewAImp _ -> "fitting view (imports and actual parameters)"
+    DGLinkFitViewImp _ -> "fitting view (import)"
+    DGLinkFitViewAImp _ -> "fitting view (actual parameter)"
     DGLinkProof -> "proof-link"
-    DGLinkFlatteningFour -> "result of flattening (4 -> 1)"
-    DGLinkFlatteningThree -> "result of flattening (3 -> 1)"
+    DGLinkFlatteningFour -> "flattening renaming"
+    DGLinkFlatteningThree -> "flattening non-disjoint union"
 
 instance Pretty DGLinkOrigin where
   pretty o = text (dgLinkOriginHeader o) <+> pretty (dgLinkOriginSpec o)

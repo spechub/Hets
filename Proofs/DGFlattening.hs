@@ -42,42 +42,43 @@ module Proofs.DGFlattening (dg_flattening_imports,
                             libEnv_flattening_heterogen, -- heterogeniety
                             singleTree_flattening_dunions
                             ) where
+import Common.ExtSign
+import Common.Id
+import Common.LibName
+import Common.Result
+import Comorphisms.LogicGraph
+import Control.Monad
+import Data.Graph.Inductive.Graph hiding (empty)
+import Data.List
+import Data.Maybe
+import Logic.Coerce
 import Logic.Grothendieck
 import Logic.Logic
-import Logic.Coerce
-import Comorphisms.LogicGraph
+import Proofs.EdgeUtils
+import Proofs.NormalForm
+import Proofs.TheoremHideShift
 import Static.DevGraph
 import Static.GTheory
-import Static.DevGraph
-import Proofs.EdgeUtils
-import Proofs.TheoremHideShift
-import Proofs.NormalForm
-import Common.Result
-import Common.ExtSign
-import Common.LibName
-import Data.Graph.Inductive.Graph hiding (empty)
-import Data.List (tails)
-import Data.Maybe(fromJust,isJust)
 import qualified Data.Map as Map
 import qualified Data.Set as Set
-import Control.Monad
-import Common.Id
 
--- change the strings to make them more expressive
-flat1 :: DGRule
-flat1 = DGRule "FlatteningOne"
+mkFlatStr :: String -> DGRule
+mkFlatStr = DGRule . ("Flattening " ++)
 
-flat3 :: DGRule
-flat3 = DGRule "FlatteningThree"
+flatImports :: DGRule
+flatImports = mkFlatStr "all imports"
 
-flat4 :: DGRule
-flat4 = DGRule "FlatteningFour"
+flatNonDisjUnion :: DGRule
+flatNonDisjUnion = mkFlatStr "non-disjoint union"
 
-flat5 :: DGRule
-flat5 = DGRule "FlatteningFive"
+flatRename :: DGRule
+flatRename = mkFlatStr "renaming"
 
-flat6 :: DGRule
-flat6 = DGRule "FlatteningSix"
+flatHide :: DGRule
+flatHide = mkFlatStr "hiding"
+
+flatHet :: DGRule
+flatHet = mkFlatStr "heterogeneity"
 
 
 -- given a node in a library, gives the node at the end of the reference chain
@@ -101,7 +102,7 @@ dg_flattening_imports libEnv ln = do
   updDG = lookupDGraph ln updLib
   -- it seems changes of the labels are lost and all edges are simply deleted
   n_dg = changesDGH dg $ map DeleteEdge $ labEdgesDG updDG
- return $ groupHistory dg flat1 n_dg
+ return $ groupHistory dg flatImports n_dg
   where
    updateNode :: LibEnv
                  -> LIB_NAME
@@ -126,7 +127,7 @@ dg_flattening_imports libEnv ln = do
                change = propagateErrors (updateNode lib_Env l_n hd)
                ref_dg = lookupDGraph l_n lib_Env
                u_dg = changeDGH ref_dg change
-               new_dg = groupHistory ref_dg flat1 u_dg
+               new_dg = groupHistory ref_dg flatImports u_dg
               in
                updateLib (Map.insert l_n new_dg lib_Env) l_n tl
 
@@ -202,7 +203,7 @@ dg_flattening_renamings lib_Env l_n =
       [] -> d_g
       hd : tl -> let
                 dev_g = updateDGWithChanges hd d_g
-               in applyUpdDG tl $ groupHistory d_g flat4 dev_g
+               in applyUpdDG tl $ groupHistory d_g flatRename dev_g
 
 -- this function performs flattening of imports with renamings
 libEnv_flattening_renamings :: LibEnv -> Result LibEnv
@@ -225,7 +226,7 @@ dg_flattening_hiding dg = let
   -- no need to care about references either, as nodes are preserved
   -- after flattening, as well as references.
    n_dg = changesDGH dg $ map DeleteEdge hids
-  in groupHistory dg flat5 n_dg
+  in groupHistory dg flatHide n_dg
 
 -- this function performs flattening of heterogeniety for the whole library
 libEnv_flattening_hiding :: LibEnv -> Result LibEnv
@@ -249,7 +250,7 @@ dg_flattening_heterogen libEnv ln = do
     $ map ( \(_, t, _) -> t) het_comorph
   udg = lookupDGraph ln updLib
   ndg = changesDGH udg het_del_changes
- return $ groupHistory udg flat6 ndg
+ return $ groupHistory udg flatHet ndg
   where
    updateNodes :: LibEnv
                   -> LIB_NAME
@@ -267,7 +268,7 @@ dg_flattening_heterogen libEnv ln = do
         ndgn_theory <- computeTheory lib_Env lname nd
         return $ SetNodeLab labRf (nd, labRf {dgn_theory = ndgn_theory})
       cdg = changeDGH odg change
-      n_dg = groupHistory odg flat6 cdg
+      n_dg = groupHistory odg flatHet cdg
      in
       (updateNodes (Map.insert lname n_dg lib_Env) l_n tl)
 
@@ -372,12 +373,9 @@ createLabels dg tripls = case tripls of
         labels = Prelude.map (\ (x,
                                  y,
                                  G_sign lid (ExtSign sign symb) ind) -> let
-             n_map = (\ z -> let
-                              NodeName sid _ _ = dgn_name $ labDG dg z
-                             in
-                              sid)
-             names = show $ Prelude.map n_map  x
-             s_id = mkSimpleId $ "Flattening 3:"++(names)
+             -- name intersection by interspersing a string for a SimpleId
+             s_id = mkSimpleId . intercalate "'"
+               $ map (flip getNameOfNode dg) x
              n_theory = noSensGTheory lid (ExtSign sign symb) ind
              n_name = makeName s_id
              n_info = newNodeInfo DGFlattening
@@ -402,7 +400,7 @@ createLinks dg (nd, lb) (hd:tl) =
    u_dg = case tryToGetEdge n_edg dg of
             Nothing -> changeDGH dg $ InsertEdge n_edg
             Just _ -> dg
-   n_dg = groupHistory dg flat3 u_dg
+   n_dg = groupHistory dg flatNonDisjUnion u_dg
   in
    createLinks n_dg (nd, lb) tl
 
@@ -456,7 +454,7 @@ createFirstLevel dg nds =
           labels = createLabels dg atch_level
           changes = Prelude.map InsertNode (propagateErrors labels)
           u_dg = changesDGH dg changes
-          n_dg = groupHistory dg flat3 u_dg
+          n_dg = groupHistory dg flatNonDisjUnion u_dg
           zero_level = Prelude.map (\ x ->
                         ([x],x,signOf $ dgn_theory (labDG n_dg x))) nds
           lnk_dg = linkLevels n_dg atch_level zero_level
@@ -488,7 +486,7 @@ createNewLevel c_dg nds tripls = case tripls of
             chngs = Prelude.map (\ x -> InsertNode(x))
                                 (propagateErrors labels)
             u_dg = changesDGH c_dg chngs
-            n_dg = groupHistory c_dg flat3 u_dg
+            n_dg = groupHistory c_dg flatNonDisjUnion u_dg
             lnk_dg = linkLevels n_dg atch_level tripls
            in
             (lnk_dg, atch_level)
