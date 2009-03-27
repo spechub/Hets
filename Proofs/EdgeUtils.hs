@@ -42,11 +42,6 @@ flatHistory h = if SizedList.null h then [] else
     HistElem c -> [c]
     HistGroup _ l -> flatHistory l) ++ flatHistory (SizedList.tail h)
 
-contraryRedo :: SizedList.SizedList HistElem -> SizedList.SizedList HistElem
-contraryRedo = SizedList.map $ \ he -> case he of
-  HistElem c -> HistElem $ negateChange c
-  HistGroup r l -> HistGroup r $ SizedList.reverse $ contraryRedo l
-
 undoHistStep :: DGraph -> (DGraph, [DGChange])
 undoHistStep dg = let h = proofHistory dg in
   if SizedList.null h then (dg, []) else let
@@ -85,21 +80,14 @@ applyReverseHistory l dg = if SizedList.null l then dg else
 changesDGH :: DGraph -> [DGChange] -> DGraph
 changesDGH = foldl' changeDGH
 
--- | empty redo stack by moving redo changes and their reverses to the history
-undoRedo :: DGraph -> DGraph
-undoRedo g = let
-  rh = redoHistory g
-  he1 = HistGroup (DGRule "RedoRedo") $ SizedList.reverse rh
-  he2 = HistGroup (DGRule "UndoRedo") $ contraryRedo rh
-  he3 = HistGroup (DGRule "LeftOverRedo") $ SizedList.fromList [he2, he1]
-  in if SizedList.null rh then g else g
-      { proofHistory = SizedList.cons he3 $ proofHistory g
-      , redoHistory = SizedList.empty }
+-- | forget redo stack
+clearRedo :: DGraph -> DGraph
+clearRedo g = g { redoHistory = SizedList.empty }
 
 -- | change the given DGraph and the history with the given DGChange.
 changeDGH :: DGraph -> DGChange -> DGraph
 changeDGH g c = let (ng, nc) = updateDGOnly g c in
-  addToProofHistoryDG (HistElem nc) $ undoRedo ng
+  addToProofHistoryDG (HistElem nc) $ clearRedo ng
 
 -- | change the given DGraph with a list of DGChange
 updateDGAndChanges :: DGraph -> [DGChange] -> (DGraph, [DGChange])

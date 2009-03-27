@@ -35,7 +35,6 @@ import System.Directory (getCurrentDirectory)
 import Static.DevGraph
 import Static.PrintDevGraph ()
 
-import Proofs.EdgeUtils
 import Proofs.QualifyNames
 import Proofs.DGFlattening
 import Proofs.NormalForm
@@ -255,8 +254,7 @@ createGlobalMenu gInfo@(GInfo { hetcatsOpts = opts
      , Button "Hide new proven links" $ ral $ hideNewProvedEdges gInfo
      , Menu (Just "Proofs") $ map (\ (str, cmd) ->
        -- History ? or just some partial history in ch ?
-        Button str . performProofMenuAction str $ return . return . cmd ln
-                  . Map.map undoRedo)
+        Button str . performProofMenuAction str $ return . return . cmd ln)
         [ ("Automatic", automatic)
         , ("Global Subsumption", globSubsume)
         , ("Global Decomposition", globDecomp)
