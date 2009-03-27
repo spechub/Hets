@@ -514,30 +514,29 @@ showStatusAux dgnode =
 
 -- | start local theorem proving or consistency checking at a node
 proveAtNode :: Bool -> GInfo -> Int -> DGraph -> IO ()
-proveAtNode checkCons gInfo@(GInfo { libName = ln }) descr dgraph = do
- ost <- readIORef $ intState gInfo
+proveAtNode checkCons gInfo descr dgraph = do
+ let ln = libName gInfo
+     iSt = intState gInfo
+ ost <- readIORef iSt
  case i_state ost of
   Nothing -> return ()
   Just ist -> do
    let le = i_libEnv ist
        dgn = labDG dgraph descr
-       libNode = (ln, descr)
-   dgn' <- case hasLock dgn of
-    True -> return dgn
-    False -> do
+   (dgraph', dgn', le') <- if hasLock dgn then return (dgraph, dgn, le) else do
       lockGlobal gInfo
       (dgraph', dgn') <- initLocking (lookupDGraph ln le) (descr, dgn)
       let nwle = Map.insert ln dgraph' le
           nwst = ost { i_state = Just $ ist { i_libEnv = nwle} }
-      writeIORef (intState gInfo) nwst
+      writeIORef iSt nwst
       unlockGlobal gInfo
-      return dgn'
+      return (dgraph', dgn', nwle)
    acquired <- tryLockLocal dgn'
    if acquired then do
       let action = do
             guiMVar <- newMVar Nothing
-            res <- basicInferenceNode checkCons logicGraph libNode ln
-                guiMVar le (intState gInfo)
+            res <- basicInferenceNode checkCons logicGraph ln dgraph'
+              (descr, dgn') guiMVar le' iSt
             runProveAtNode checkCons gInfo (descr, dgn') res
             unlockLocal dgn'
       if checkCons && labelHasHiding dgn' then do
@@ -549,39 +548,43 @@ proveAtNode checkCons gInfo@(GInfo { libName = ln }) descr dgraph = do
     else errorDialog "Error" "Proofwindow already open"
 
 runProveAtNode :: Bool -> GInfo -> LNode DGNodeLab
-               -> Result (LibEnv, Result G_theory) -> IO ()
-runProveAtNode checkCons gInfo@(GInfo { libName = ln }) (v, dgnode)
-               res = case maybeResult res of
-  Just (le, tres) -> do
-    ost <- readIORef $ intState gInfo
-    case i_state ost of
-      Nothing -> return ()
-      Just _ -> do
+               -> Result G_theory -> IO ()
+runProveAtNode checkCons gInfo (v, dgnode) (Result ds mres) =
+    if checkCons then do
         let nodetext = getDGNodeName dgnode ++ " node: " ++ show v
-        when checkCons $ case maybeResult tres of
+        case mres of
           Just gth -> createTextSaveDisplay ("Model for " ++ nodetext)
                                             "model.log" $ showDoc gth ""
-          Nothing -> case diags tres of
-            ds -> infoDialog nodetext $ unlines $ "could not (re-)construct a "
-                                                  : "model" : map diagString ds
-        proofMenu gInfo "mergeDGNodeLab" $
-                  mergeDGNodeLab gInfo (v, labDG (lookupDGraph ln le) v)
-    mergeHistoryLast2Entries gInfo
-  Nothing -> showDiagMessAux 2 $ diags res
-
-mergeDGNodeLab :: GInfo -> LNode DGNodeLab -> LibEnv -> IO (Result LibEnv)
-mergeDGNodeLab gInfo@( GInfo { libName = ln }) (v, new_dgn) le = do
- ost <- readIORef $ intState gInfo
- case i_state ost of
-  Nothing -> return (Result [] (Just le))
-  Just _ -> do
-   let dg = lookupDGraph ln le
-       old_dgn = labDG dg v
-   return $ do
-    theory <- joinG_sentences (dgn_theory old_dgn) $ dgn_theory new_dgn
-    let new_dgn' = old_dgn { dgn_theory = theory }
-        dg'' = changeDGH dg $ SetNodeLab old_dgn (v, new_dgn')
-    return $ Map.insert ln dg'' le
+          Nothing -> infoDialog nodetext $ unlines
+            $ "could not (re-)construct a" : "model" : map diagString ds
+    else let oldTh = dgn_theory dgnode in case mres of
+       Just newTh | newTh /= oldTh -> do
+         let Result es tres = joinG_sentences oldTh newTh
+             ln = libName gInfo
+             iSt = intState gInfo
+         showDiagMessAux 2 $ ds ++ es
+         case tres of
+           Just theory -> do
+             lockGlobal gInfo
+             ost <- readIORef iSt
+             case i_state ost of
+               Nothing -> unlockGlobal gInfo
+               Just iist -> do
+                 let le = i_libEnv iist
+                     dgraph = lookupDGraph ln le
+                     new_dgn = dgnode { dgn_theory = theory }
+                     newDg = changeDGH dgraph $ SetNodeLab dgnode (v, new_dgn)
+                     history = snd $ splitHistory dgraph newDg
+                     nst = add2history "" ost [DgCommandChange ln]
+                     nwst = nst
+                       { i_state = Just iist
+                         { i_libEnv = Map.insert ln newDg le } }
+                 applyChanges (graphInfo gInfo) $ reverse $ flatHistory history
+                 writeIORef iSt nwst
+                 unlockGlobal gInfo
+                 hideShowNames gInfo False
+           Nothing -> return ()
+       _ -> return ()
 
 -- | print the id, origin, type, proof-status and morphism of the edge
 showEdgeInfo :: Int -> Maybe (LEdge DGLinkLab) -> IO ()
@@ -601,8 +604,7 @@ checkconservativityOfEdge _ gInfo@(GInfo{ graphInfo = gi
  ost <- readIORef $ intState gInfo
  case i_state ost of
   Nothing -> return ()
-  Just ist ->
-   do
+  Just ist -> do
     let libEnv' = i_libEnv ist
     lockGlobal gInfo
     (str,nwle,ph)<-checkConservativityEdge True (source,target,linklab)

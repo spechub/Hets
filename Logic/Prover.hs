@@ -41,14 +41,7 @@ thmStatus :: SenStatus a tStatus -> [tStatus]
 thmStatus = getThmStatus . senAttr
 
 -- | the wrapped list of proof scripts or (AnyComorphism, BasicProof) pairs
-data ThmStatus a = ThmStatus { getThmStatus :: [a] } deriving Show
-
-instance Eq (ThmStatus a) where
-    _ == _ = True
-
--- Ord must be consistent with Eq
-instance Ord (ThmStatus a) where
-    compare _ _ = EQ
+data ThmStatus a = ThmStatus { getThmStatus :: [a] } deriving (Show, Eq, Ord)
 
 instance (Show b, Pretty a) => Pretty (SenAttr a b) where
     pretty = printSenStatus pretty
@@ -151,7 +144,7 @@ toNamedList :: ThSens a b -> [AS_Anno.Named a]
 toNamedList = map (uncurry toNamed) . OMap.toList
 
 toNamed :: String -> SenStatus a b -> AS_Anno.Named a
-toNamed k s = s { AS_Anno.senAttr    = k }
+toNamed k s = s { AS_Anno.senAttr = k }
 
 -- | putting Sentences from a list into a map
 toThSens :: Ord a => [AS_Anno.Named a] -> ThSens a b

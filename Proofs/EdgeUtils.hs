@@ -365,12 +365,17 @@ adoptEdgesAux node areIngoingEdges (src,tgt,edgelab) =
 getAllOpenNodeGoals :: [DGNodeLab] -> [DGNodeLab]
 getAllOpenNodeGoals = filter hasOpenGoals
 
+{- | return a warning text if the given label has incoming hiding edge,
+     otherwise just an empty string. -}
+hidingLabelWarning :: DGNodeLab -> String
+hidingLabelWarning lbl = if labelHasHiding lbl then
+       unlines $ "<Warning>" : map ("  " ++) hidingWarning ++ ["</Warning>"]
+       else ""
+
 {- | return a warning text if the given node has incoming hiding edge,
      otherwise just an empty string. -}
 addHasInHidingWarning :: DGraph -> Node -> String
-addHasInHidingWarning dgraph n = if labelHasHiding $ labDG dgraph n then
-       unlines $ "<Warning>" : map ("  " ++) hidingWarning ++ ["</Warning>"]
-       else ""
+addHasInHidingWarning dgraph = hidingLabelWarning . labDG dgraph
 
 hidingWarning :: [String]
 hidingWarning =

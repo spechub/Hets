@@ -26,6 +26,7 @@ module Proofs.TheoremHideShift
     ( theoremHideShift
     , theoremHideShiftFromList
     , computeTheory
+    , computeLabelTheory
     , theoremsToAxioms
     ) where
 

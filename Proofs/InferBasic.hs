@@ -56,7 +56,6 @@ import qualified Common.Lib.Graph as Tree
 import Data.Graph.Inductive.Basic (elfilter)
 import Data.Graph.Inductive.Graph
 import Data.Maybe
-import qualified Data.Map as Map
 import Control.Monad.Trans
 
 getCFreeDefLinks :: DGraph -> Node
@@ -150,21 +149,20 @@ proveTheory _ =
     fromMaybe (\ _ _ -> fail "proveGUI not implemented") . proveGUI
 
 
--- | applies basic inference to a given node
+{- | applies basic inference to a given node. The result is a theory which is
+     either a model after a consistency check or a new theory for the node
+     label -}
 basicInferenceNode :: Bool -- ^ True = consistency; False = Prove
-                   -> LogicGraph -> (LIB_NAME,Node) -> LIB_NAME
+                   -> LogicGraph -> LIB_NAME -> DGraph -> LNode DGNodeLab
                    -> GUIMVar -> LibEnv -> IORef IntState
-                   -> IO (Result (LibEnv, Result G_theory))
-basicInferenceNode checkCons lg (ln, node) libname guiMVar libEnv intSt
- = do
-      let dGraph = lookupDGraph libname libEnv
-      runResultT $ do
+                   -> IO (Result G_theory)
+basicInferenceNode checkCons lg ln dGraph n@(node, lbl) guiMVar libEnv intSt =
+  runResultT $ do
         -- compute the theory of the node, and its name
         -- may contain proved theorems
         thForProof@(G_theory lid1 (ExtSign sign _) _ axs _) <-
-             liftR $ computeTheory libEnv ln node
-        let thName = shows (getLIB_ID ln) "_"
-                     ++ getNameOfNode node dGraph
+             liftR $ computeLabelTheory libEnv dGraph n
+        let thName = shows (getLIB_ID ln) "_" ++ getDGNodeName lbl
             sublogic = sublogicOfTh thForProof
         -- select a suitable translation and prover
 
@@ -186,7 +184,7 @@ basicInferenceNode checkCons lg (ln, node) libname guiMVar libEnv intSt
             cc' <- coerceConsChecker lid4 lidT "" cc
             pts <- lift $ cons_check lidT cc' thName mor
               $ getCFreeDefMorphs lidT libEnv ln dGraph node
-            let resT = case pts of
+            liftR $ case pts of
                   [pt] -> case goalStatus pt of
                     Proved (Just True) -> let
                       Result ds ms = extractModel cid sign' $ proofTree pt
@@ -198,16 +196,7 @@ basicInferenceNode checkCons lg (ln, node) libname guiMVar libEnv intSt
                     st -> fail $ "prover status is: " ++ show st
                   _ -> fail "no unique cons checkers found"
              -- ??? Borrowing to be implemented
-            return (libEnv, resT)
-          else do -- proving
-            -- get known Provers
-
------------------------------------------------------------------------------
-{- GOALS:
-          1. Make a function that writes everything to files
-          2. Add it to definition of ProverTemplate
-          3. Implement it with BasicInference to avoid GUI stuff
-          4. Add it to definition of IsaProve -}
+          else do
             ch <- ResultT $ emptyCommandHistory intSt
             let freedefs = getCFreeDefMorphs lid1 libEnv ln dGraph node
             kpMap <- liftR knownProversGUI
@@ -218,20 +207,11 @@ basicInferenceNode checkCons lg (ln, node) libname guiMVar libEnv intSt
                            proveFineGrainedSelect lg ch freedefs
                      , recalculateSublogicF  =
                                      recalculateSublogicAndSelectedTheory
-                     } thName (addHasInHidingWarning dGraph node) thForProof
+                     } thName (hidingLabelWarning lbl) thForProof
                        kpMap (getProvers ProveGUI sublogic cms) guiMVar
-            -- update the development graph
-            -- todo: throw out the stuff about edges
-            -- instead, mark proven things as proven in the node
-            -- TODO: Reimplement stuff
+            -- what a side-effect for the command history!
             ResultT $ addCommandHistoryToState ch intSt
-            let oldContents = labDG dGraph node
-                newContents = oldContents{dgn_theory = newTh}
-                -- update the graph with the new node lab
-                nextDGraph = changeDGH dGraph $ SetNodeLab oldContents
-                                         (node, newContents)
-            return ( Map.insert libname nextDGraph libEnv
-                   , Result [] Nothing)
+            return newTh
 
 proveKnownPMap :: (Logic lid sublogics1
                basic_spec1
