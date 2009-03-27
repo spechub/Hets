@@ -19,18 +19,21 @@ import GUI.GraphTypes
 import GUI.GraphLogic
 import GUI.ShowLogicGraph(showLogicGraph)
 import GUI.Utils
+import GUI.UDGUtils
+import qualified GUI.HTkUtils as HTk
 #ifdef GTKGLADE
 import GUI.GtkLinkTypeChoice
 import GUI.GtkConsistencyChecker ()
 #endif
 
+import Control.Concurrent.MVar
 import Data.IORef
+import Data.List (isPrefixOf)
 import qualified Data.Map as Map
-import Data.List(isPrefixOf)
 import System.Directory (getCurrentDirectory)
 
 import Static.DevGraph
-import Static.PrintDevGraph
+import Static.PrintDevGraph ()
 
 import Proofs.EdgeUtils
 import Proofs.QualifyNames
@@ -46,15 +49,11 @@ import Proofs.ComputeColimit(computeColimit)
 import qualified Proofs.VSE as VSE
 
 import Common.Result
+import Common.Utils (joinWith)
+import Common.DocUtils
 
 import Driver.Options(HetcatsOpts, rmSuffix, prfSuffix)
 import Driver.ReadFn(libNameToFile)
-
-import GUI.UDGUtils
-import qualified GUI.HTkUtils as HTk
-
-import Control.Concurrent.MVar
-import Common.Utils (joinWith)
 
 import Interfaces.DataTypes
 
@@ -284,11 +283,12 @@ createGlobalMenu gInfo@(GInfo { hetcatsOpts = opts
               , ("Hiding", libEnv_flattening_hiding)
               , ("Heterogeneity", libEnv_flattening_heterogen)
               , ("Qualify all names", qualifyLibEnv)]]
-     , Button "Dump LibEnv" $ do
+     , Button "Dump Development Graph" $ do
           ost2 <- readIORef $ intState gInfo
           case i_state ost2 of
             Nothing -> putStrLn "no lib"
-            Just ist2 -> print $ prettyLibEnv $ i_libEnv ist2
+            Just ist2 -> print . pretty . lookupDGraph (i_ln ist2)
+              $ i_libEnv ist2
      , Button "Show Logic Graph" $ ral $ showLogicGraph daVinciSort
      , Button "Show Library Graph" $ ral $ showLibGraph gInfo showLib
      , Button "Save Graph for uDrawGraph" $ ral
