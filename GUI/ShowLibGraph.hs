@@ -213,11 +213,12 @@ close (GInfo { exitMVar = exit'
              , windowCount = wc
              , libGraphLock = lock
              }) = do
-  takeMVar lock
   count <- takeMVar wc
   if count <= 1
     then putMVar exit' ()
-    else putMVar wc $ count - 1
+    else do
+      putMVar wc $ count - 1
+      takeMVar lock
   return True
 
 exit :: GInfo -> IO ()
