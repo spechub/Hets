@@ -54,7 +54,7 @@ genRules flags files =
        let q@(rules, excs, is, outf) = anaFlags flags
            (datas, imports) = (( \ (x,y) -> (concat x,concat y)) . unzip) ids
            ds = datas \\ excs
-           rule = concat $ intersperse ", " rules
+           rule = intercalate ", " rules
            fileHead = -- add -fvia-C -O0 to reduce *.o sizes for macs
              "{-# OPTIONS -w #-}" ++
              "\n{- |\nModule      :  " ++ outf ++

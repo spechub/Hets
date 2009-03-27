@@ -27,8 +27,8 @@ import Common.Token
 import Common.Id
 import Common.LibName
 import Text.ParserCombinators.Parsec
-import Data.List(intersperse)
-import Data.Maybe(maybeToList)
+import Data.List (intercalate)
+import Data.Maybe (maybeToList)
 
 -- * Parsing functions
 
@@ -68,7 +68,7 @@ libId = do
     pos <- getPos
     path <- scanAnyWords `sepBy1` (string "/")
     skip
-    return $ Indirect_link (concat (intersperse "/" path)) (Range [pos])
+    return $ Indirect_link (intercalate "/" path) (Range [pos])
         "" noTime
     -- ??? URL need to be added
 

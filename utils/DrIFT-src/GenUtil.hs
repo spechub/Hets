@@ -50,7 +50,6 @@ module GenUtil(
     -- *** Quoting
     shellQuote, simpleQuote, simpleUnquote,
     -- *** Random
-    concatInter,
     powerSet,
     indentLines,
     buildTableLL,
@@ -378,10 +377,6 @@ fmapRight fn = fmap f where
 isDisjoint, isConjoint :: Eq a => [a] -> [a] -> Bool
 isConjoint xs ys = or [x == y | x <- xs, y <- ys]
 isDisjoint xs ys = not (isConjoint xs ys)
-
--- | 'concat' composed with 'List.intersperse'.
-concatInter :: String -> [String] -> String
-concatInter x = concat . (intersperse x)
 
 -- | place spaces before each line in string.
 indentLines :: Int -> String -> String

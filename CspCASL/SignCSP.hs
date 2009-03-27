@@ -23,7 +23,7 @@ import CspCASL.AS_CspCASL ()
 import CspCASL.CspCASL_Keywords
 import CspCASL.Print_CspCASL ()
 
-import CASL.AS_Basic_CASL (CASLFORMULA, SORT, TERM)
+import CASL.AS_Basic_CASL (CASLFORMULA, SORT)
 import CASL.Sign (CASLSign, emptySign, Sign, extendedInfo, sortRel)
 import CASL.Morphism (Morphism)
 

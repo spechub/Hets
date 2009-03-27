@@ -15,7 +15,7 @@ module Static.DotGraph (dotGraph) where
 
 import Data.Graph.Inductive.Graph
 import Static.DevGraph
-import Data.List (intersperse)
+import Data.List (intercalate)
 import Logic.Grothendieck (isHomogeneous)
 
 edgeAttribute :: DGLinkType -> String
@@ -44,7 +44,7 @@ dotEdge dg (n1, n2, link) =
 
 nodeAttribute :: Bool -> DGNodeLab -> String
 nodeAttribute showInternal la =
-   case concat $ intersperse "," (inter la ++
+   case intercalate "," (inter la ++
                                   (if isDGRef la
                                       then ["shape=box"]
                                       else []) ++

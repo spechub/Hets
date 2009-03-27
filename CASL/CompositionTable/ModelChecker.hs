@@ -63,7 +63,7 @@ getAnnoAux a = case a of
     _ -> ""
 
 showDiagStrings:: [Diagnosis] -> [Char]
-showDiagStrings = concat . intersperse "\n" . map diagString
+showDiagStrings = intercalate "\n" . map diagString
 
 modelCheckTest ::  [(OP_SYMB, String)] -> (Sign () (), [Named (FORMULA ())])
                -> Table -> Result Bool
@@ -177,7 +177,7 @@ instance Show VARIABLE_ASSIGNMENT where
 
 showAssignments :: [(VAR, Baserel)] -> String
 showAssignments xs =
-    "["++ concat (intersperse ", " $ map showSingleAssignment xs)  ++"]"
+    '[' : intercalate ", " (map showSingleAssignment xs) ++ "]"
 
 showSingleAssignment :: (VAR, Baserel) -> String
 showSingleAssignment (v, Baserel b) = show v ++ "->" ++ b

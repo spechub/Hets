@@ -391,10 +391,9 @@ checkSymbolMapDL rsm =
               else syms
           -- ds :: [RawSymbol] -> [Diagnosis]
           ds syms = [Diag Error
-                     ("Predefined CASL_DL symbols\n    cannot be mapped: "++
-                      concat (intersperse ", " $
-                              map (\x -> showDoc x "") syms))
-                     (minimum $ map getRange syms)]
+                     ("Predefined CASL_DL symbols\n    cannot be mapped: "
+                      ++ show (ppWithCommas syms))
+                     $ minimum $ map getRange syms]
 
 symOfPredefinedSign :: SymbolSet
 symOfPredefinedSign = symOf predefinedSign

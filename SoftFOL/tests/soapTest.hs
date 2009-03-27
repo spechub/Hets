@@ -21,7 +21,7 @@ import Org.Xmlsoap.Schemas.Soap.Envelope as ENV
 
 import Data.Generics2
 import Data.Typeable
-import Data.List (intersperse)
+import Data.List (intercalate)
 
 import Control.Monad (mapM_,when)
 
@@ -85,9 +85,9 @@ mkProveProblem mopts service operation =
                        "known operations: ProveProblemOpt, ProveProblemChoice"
      x
          | x `elem` services -> singleATP
-         | otherwise -> fail $ "unknown Service\nknown services: "++
-                          "\"Broker\", "++
-                          concat (intersperse ", " $ map show services)
+         | otherwise -> fail $ "unknown Service\nknown services: "
+                          ++ "\"Broker\", "
+                          ++ intercalate ", " (map show services)
     where singleATP =
            case operation of
             "ProveTPTPProblem" -> maybe ProveTPTPProblem

@@ -119,7 +119,7 @@ keepMins lt l = case l of
 joinWith :: a -- ^ seperator element
          -> [[a]] -- ^ list of lists of elements
          -> [a]
-joinWith sep = concat . intersperse [sep]
+joinWith sep = intercalate [sep]
 
 {- |
   A function inspired by the perl function split. A list is splitted

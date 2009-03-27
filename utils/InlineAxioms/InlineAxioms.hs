@@ -67,7 +67,7 @@ import Common.Utils
 
 import System.Environment
 import Data.Char (ord)
-import Data.List (nub, isPrefixOf, intersperse)
+import Data.List (nub, isPrefixOf, intercalate)
 
 -- avoid the whole Logic (and uni) overhead
 import CASL.AS_Basic_CASL (FORMULA)
@@ -94,10 +94,9 @@ class ToString x where
 
 showSign :: (ToString e) => Sign f e -> String
 showSign sig =
-    "(emptySign "++extendedInfoS++"){"++
-         concat (intersperse "," [sortSetS,sortRelS,opMapS,
-                                  assocOpsS,predMapS])++
-    "}"
+    "(emptySign " ++ extendedInfoS ++ "){"
+    ++ intercalate "," [sortSetS, sortRelS, opMapS, assocOpsS, predMapS]
+    ++ "}"
     where
      sortSetS = "sortSet = Set.fromList "++
                 toString (Set.toList $ sortSet sig)
@@ -137,7 +136,7 @@ instance ToString ModalSign where
     toString _ = error "inlineAxioms: toString not implemented for ModalSign"
 
 instance (ToString x) => ToString [x] where
-    toString l = '[': concat (intersperse "," $ map toString l) ++"]"
+    toString l = '[' : intercalate "," (map toString l) ++ "]"
 
 instance (Show a, ToString a, Show b) => ToString (SenAttr a b) where
     toString = show

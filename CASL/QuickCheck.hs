@@ -87,15 +87,13 @@ runQuickCheck qm cfg _saveFile _thName nGoal = do
        res <- takeMVar mVar
        return (ATPSuccess,res)
      Just t -> watchdogIO t $ return $ quickCheck qm nGoal
-   let fstr = show(printTheoryFormula(AS_Anno.mapNamed
-                        (simplifySen dummyMin dummy (sign qm)) nGoal))
-              ++ "\n"
-       showDiagStrings = concat . intersperse "\n" . map diagString
+   let fstr = show(printTheoryFormula $ AS_Anno.mapNamed
+                        (simplifySen dummyMin dummy (sign qm)) nGoal)
+       showDiagStrings = intercalate "\n" . map diagString -- no final newline
        diagstr = case (res,d) of
-          (Just True,_) -> showDiagStrings(take 10 d)
-          (_,[]) -> ""
-          _ -> "Formula failed: \n" ++ fstr ++
-               " some Counterexamples: \n"
+          (Just True, _) -> showDiagStrings(take 10 d)
+          (_, []) -> ""
+          _ -> unlines ["Formula failed: ", fstr, " some Counterexamples: "]
                ++ showDiagStrings(take 10 d)
        gstat = case res of
           Just True -> Proved Nothing
@@ -196,7 +194,7 @@ instance Show VARIABLE_ASSIGNMENT where
 
 showAssignments :: QModel -> [(VAR, CASLTERM)] -> String
 showAssignments qm xs =
-    "["++ concat (intersperse ", " $ map (showSingleAssignment qm) xs)  ++"]"
+    '[' : intercalate ", " (map (showSingleAssignment qm) xs) ++ "]"
 
 showSingleAssignment :: QModel -> (VAR, CASLTERM) -> String
 showSingleAssignment qm (v, t) =
@@ -208,8 +206,8 @@ emptyAssignment qm = Variable_Assignment qm []
 
 insertAssignment :: VARIABLE_ASSIGNMENT -> (VAR, CASLTERM)
                  -> VARIABLE_ASSIGNMENT
-insertAssignment (Variable_Assignment qm ass) (v,t) =
-  Variable_Assignment qm ((v,t):ass)
+insertAssignment (Variable_Assignment qm ass) (v, t) =
+  Variable_Assignment qm ((v, t) : ass)
 
 concatAssignment :: VARIABLE_ASSIGNMENT -> VARIABLE_ASSIGNMENT
                  -> VARIABLE_ASSIGNMENT

@@ -91,7 +91,7 @@ showGraph gr = unlines $ map
 
 showLinks :: Show b => [(Node, [b])] -> String
 showLinks = concatMap $ \ (v, l) -> " - " ++
-            concat (intersperse ", " $ map show l) ++ " -> " ++ shows v ";"
+            intercalate ", " (map show l) ++ " -> " ++ shows v ";"
 
 mkLoops :: Node -> [b] -> Adj b
 mkLoops v = map (\ e -> (e, v))
