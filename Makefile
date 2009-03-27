@@ -184,7 +184,7 @@ TESTTARGETS = Test.o $(subst .hs,,$(TESTTARGETFILES))
 HC_WARN = -Wall -fno-warn-orphans
 # INCLUDE_PATH =
 HC_INCLUDE = $(addprefix -i, $(INCLUDE_PATH))
-# uncomment for profiling (and comment out packages un var,mk)
+# uncomment for profiling (and comment out packages in var.mk)
 # HC_PROF = -prof -auto-all -osuf p_o +RTS -K100m -RTS
 # call resulting binary with a final +RTS -p to get a file <binary>.prof
 
