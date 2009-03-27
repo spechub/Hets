@@ -163,39 +163,42 @@ basicInferenceNode checkCons lg ln dGraph n@(node, lbl) guiMVar libEnv intSt =
         thForProof@(G_theory lid1 (ExtSign sign _) _ axs _) <-
              liftR $ computeLabelTheory libEnv dGraph n
         let thName = shows (getLIB_ID ln) "_" ++ getDGNodeName lbl
+            sens = toNamedList axs
             sublogic = sublogicOfTh thForProof
         -- select a suitable translation and prover
 
             cms = filter hasModelExpansion $ findComorphismPaths lg sublogic
-        if checkCons then do
+        if checkCons then if null sens then fail $ unlines
+               [ "Theory has no sentences so is trivially consistent"
+               , "or incomplete due to incoming hiding links." ]
+                else do
             (G_cons_checker lid4 cc, Comorphism cid) <-
                  selectProver $ getConsCheckers cms
             let lidT = targetLogic cid
                 lidS = sourceLogic cid
-            bTh'@(sign', _) <- coerceBasicTheory lid1 lidS ""
-                   (sign, toNamedList axs)
-            -- Borrowing: translate theory
-            (sign'', sens'') <- liftR $ wrapMapTheory cid bTh'
-            incl <- liftR $ subsig_inclusion lidT (empty_signature lidT) sign''
+            bTh'@(sig1, _) <- coerceBasicTheory lid1 lidS ""
+                   (sign, sens)
+            -- Borrowing?: translate theory
+            (sig2, sens2) <- liftR $ wrapMapTheory cid bTh'
+            incl <- liftR $ subsig_inclusion lidT (empty_signature lidT) sig2
             let mor = TheoryMorphism
                       { t_source = empty_theory lidT,
-                        t_target = Theory sign'' (toThSens sens''),
+                        t_target = Theory sig2 $ toThSens sens2,
                         t_morphism = incl }
             cc' <- coerceConsChecker lid4 lidT "" cc
             pts <- lift $ cons_check lidT cc' thName mor
-              $ getCFreeDefMorphs lidT libEnv ln dGraph node
+                $ getCFreeDefMorphs lidT libEnv ln dGraph node
             liftR $ case pts of
                   [pt] -> case goalStatus pt of
                     Proved (Just True) -> let
-                      Result ds ms = extractModel cid sign' $ proofTree pt
+                      Result ds ms = extractModel cid sig1 $ proofTree pt
                       in case ms of
                       Nothing -> Result ds Nothing
-                      Just (sign''', sens''') -> Result ds $ Just $
-                         G_theory lidS (mkExtSign sign''') startSigId
-                              (toThSens sens''') startThId
+                      Just (sig3, sens3) -> Result ds $ Just $
+                         G_theory lidS (mkExtSign sig3) startSigId
+                              (toThSens sens3) startThId
                     st -> fail $ "prover status is: " ++ show st
                   _ -> fail "no unique cons checkers found"
-             -- ??? Borrowing to be implemented
           else do
             ch <- ResultT $ emptyCommandHistory intSt
             let freedefs = getCFreeDefMorphs lid1 libEnv ln dGraph node
