@@ -188,7 +188,7 @@ dg_flattening_renamings lib_Env l_n =
                          v2,
                          label { dgl_morphism = ng_morphism,
                                  dgl_type = globalDef ,
-                                 dgl_origin = DGLinkFlatteningFour,
+                                 dgl_origin = DGLinkFlatteningRename,
                                  dgl_id = defaultEdgeId }) )
        change_dg = [SetNodeLab lv1 (v1, propagateErrors nlv1 ),
                     SetNodeLab lv2 (v2, propagateErrors nlv2 ),
@@ -395,7 +395,7 @@ createLinks dg (nd, lb) (hd:tl) =
       ng_morphism <- ginclusion logicGraph sign_source sign_target
       return (nd, hd, DGLink { dgl_morphism = ng_morphism,
                                dgl_type = globalDef,
-                               dgl_origin = DGLinkFlatteningThree,
+                               dgl_origin = DGLinkFlatteningUnion,
                                dgl_id = defaultEdgeId })
    u_dg = case tryToGetEdge n_edg dg of
             Nothing -> changeDGH dg $ InsertEdge n_edg

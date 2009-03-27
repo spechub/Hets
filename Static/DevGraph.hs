@@ -270,8 +270,8 @@ data DGLinkOrigin =
   | DGLinkFitViewImp SIMPLE_ID
   | DGLinkFitViewAImp SIMPLE_ID
   | DGLinkProof
-  | DGLinkFlatteningThree
-  | DGLinkFlatteningFour
+  | DGLinkFlatteningUnion
+  | DGLinkFlatteningRename
     deriving (Show, Eq)
 
 {- | Rules in the development graph calculus,

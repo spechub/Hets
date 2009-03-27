@@ -162,8 +162,8 @@ dgLinkOriginHeader o = case o of
     DGLinkFitViewImp _ -> "fitting view (import)"
     DGLinkFitViewAImp _ -> "fitting view (actual parameter)"
     DGLinkProof -> "proof-link"
-    DGLinkFlatteningFour -> "flattening renaming"
-    DGLinkFlatteningThree -> "flattening non-disjoint union"
+    DGLinkFlatteningUnion -> "flattening non-disjoint union"
+    DGLinkFlatteningRename -> "flattening renaming"
 
 instance Pretty DGLinkOrigin where
   pretty o = text (dgLinkOriginHeader o) <+> pretty (dgLinkOriginSpec o)
