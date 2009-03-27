@@ -18,7 +18,6 @@ module GUI.GraphLogic
     , performProofAction
     , openProofStatus
     , saveProofStatus
-    , nodeErr
     , proofMenu
     , showReferencedLibrary
     , getTheoryOfNode
@@ -413,10 +412,6 @@ calcGlobalHistory old new = let
     changes = filter (\ ln -> length' ln old < length' ln new) $ Map.keys old
   in concatMap (\ ln -> replicate (length' ln new - length' ln old) ln) changes
 
-nodeErr :: Int -> IO ()
-nodeErr descr = error $ "node with descriptor " ++ show descr
-                ++ " has no corresponding node in the development graph"
-
 showNodeInfo :: Int -> DGraph -> IO ()
 showNodeInfo descr dgraph = do
   let dgnode = labDG dgraph descr
@@ -586,67 +581,45 @@ runProveAtNode checkCons gInfo (v, dgnode) (Result ds mres) =
            Nothing -> return ()
        _ -> return ()
 
+edgeErr :: Int -> IO ()
+edgeErr descr = errorDialog "Error" $ "edge with descriptor " ++ show descr
+                ++ " not found in the development graph"
+
 -- | print the id, origin, type, proof-status and morphism of the edge
 showEdgeInfo :: Int -> Maybe (LEdge DGLinkLab) -> IO ()
 showEdgeInfo descr me = case me of
   Just e@(_, _, l) -> let estr = showLEdge e in
     createTextDisplay ("Info of " ++ estr)
       (estr ++ "\n" ++ showDoc l "")
-  Nothing -> errorDialog "Error"
-    ("edge " ++ show descr ++ " has no corresponding edge"
-     ++ "in the development graph")
+  Nothing -> edgeErr descr
 
 -- | check conservativity of the edge
 checkconservativityOfEdge :: Int -> GInfo -> Maybe (LEdge DGLinkLab) -> IO ()
-checkconservativityOfEdge _ gInfo@(GInfo{ graphInfo = gi
-                                        , libName = ln })
-                          (Just (source,target,linklab)) = do
- ost <- readIORef $ intState gInfo
- case i_state ost of
-  Nothing -> return ()
-  Just ist -> do
-    let libEnv' = i_libEnv ist
-    lockGlobal gInfo
-    (str,nwle,ph)<-checkConservativityEdge True (source,target,linklab)
-                        libEnv' ln
-    case isPrefixOf "No conservativity" str of
-     True ->do
-             errorDialog "Result of conservativity check" str
-             unlockGlobal gInfo
-     False -> do
-               createTextDisplay "Result of conservativity check" str
-               applyChanges gi $ reverse $ flatHistory ph
-               GA.redisplay gi
-               let nwst = ost { i_state = Just $ ist { i_libEnv = nwle}}
-               writeIORef (intState gInfo) nwst
-               unlockGlobal gInfo
+checkconservativityOfEdge descr gInfo me = case me of
+    Nothing -> edgeErr descr
+    Just lnk -> do
+      let iSt = intState gInfo
+          gi = graphInfo gInfo
+          ln = libName gInfo
+      ost <- readIORef iSt
+      case i_state ost of
+        Nothing -> return ()
+        Just iist -> do
+          lockGlobal gInfo
+          (str, nwle, ph) <- checkConservativityEdge True lnk (i_libEnv iist) ln
+          if isPrefixOf "No conservativity" str
+            then do
+              errorDialog "Result of conservativity check" str
+              unlockGlobal gInfo
+            else do
+              createTextDisplay "Result of conservativity check" str
+              applyChanges gi $ reverse $ flatHistory ph
+              GA.redisplay gi
+              let nst = add2history "" ost [DgCommandChange ln]
+                  nwst = nst { i_state = Just $ iist { i_libEnv = nwle}}
+              writeIORef iSt nwst
+              unlockGlobal gInfo
 
-checkconservativityOfEdge descr _ Nothing =
-      errorDialog "Error"
-          ("edge " ++ show descr ++ " has no corresponding edge "
-                ++ "in the development graph")
-{-
-conservativityRule :: DGRule
-conservativityRule = DGRule "ConservativityCheck"
-
--- | Graphical choser for conservativity checkers
-conservativityChoser :: [ConservativityChecker sign sentence morphism]
-                     -> IO
-                         (Result (ConservativityChecker
-                          sign sentence morphism))
-conservativityChoser checkers = case checkers of
-      [] -> return $ fail "No conservativity checkers available"
-      [hd] -> return $ return hd
-      _ ->
-          do
-            chosenOne <- listBox "Pick a conservativity checker"
-                         $ map checker_id checkers
-            case chosenOne of
-              Nothing -> return $ fail "No conservativity checker chosen"
-              Just i  -> return $ return $ checkers !! i
--}
-
--- | converts a DGraph
 convert :: GA.GraphInfo -> DGraph -> IO ()
 convert ginfo dgraph = do
   convertNodes ginfo dgraph
