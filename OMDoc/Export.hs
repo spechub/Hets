@@ -47,22 +47,18 @@ exportDGraph ln dg = let
 
 -- | DGNodeLab to TLTheory translation
 exportNodeLab :: LIB_ID -> DGraph -> LNode DGNodeLab -> Maybe TLElement
-exportNodeLab libid dg (n, lb)
-    | isDGRef lb = Nothing
-    | otherwise = Just $
-      let
-          specid = (mkSimpleId $ getDGNodeName lb)
-      in case dgn_theory lb of
-        G_theory lid (ExtSign sig _) _ sens _ ->
-         TLTheory (show specid) $
-          (catMaybes $ map (makeImport libid dg lb) $ (innDG dg n))
-         ++ (export_signToOmdoc lid specid libid sig)
-         ++ (map (export_senToOmdoc lid specid libid sig) $ toNamedList sens)
+exportNodeLab libid dg (n, lb) =
+  if isDGRef lb then Nothing else
+    let specid = mkSimpleId $ getDGNodeName lb
+    in case dgn_theory lb of
+    G_theory lid (ExtSign sig _) _ sens _ ->
+      Just . TLTheory (show specid)
+        $ catMaybes (map (makeImport libid dg) $ innDG dg n)
+        ++ export_signToOmdoc lid specid libid sig
+        ++ map (export_senToOmdoc lid specid libid sig) (toNamedList sens)
 
-
-makeImport :: LIB_ID -> DGraph -> DGNodeLab -> LEdge DGLinkLab
-           -> Maybe TCElement
-makeImport libid dg nlb (from, _, lbl) =
+makeImport :: LIB_ID -> DGraph -> LEdge DGLinkLab -> Maybe TCElement
+makeImport libid dg (from, _, lbl) =
   if isGlobalDef $ dgl_type lbl then
   Just . TCImport (cdFromNode libid $ labDG dg from) . makeMorphism libid
   $ dgl_morphism lbl
@@ -81,31 +77,9 @@ makeMorphism :: LIB_ID -> GMorphism -> TCElement
 makeMorphism _ (GMorphism cid _ _ mor _) =
     export_morphismToOmdoc (targetLogic cid) mor
 
-
 cdFromNode :: LIB_ID -> DGNodeLab -> OMCD
 cdFromNode libid lb =
     CD (getDGNodeName lb) $
     Just $ show $ if isDGRef lb
                   then getLIB_ID $ ref_libname $ nodeInfo lb
                   else libid
-
-
-
-{-
-data DGLinkLab = DGLink
-  { dgl_morphism :: GMorphism  -- signature morphism of link
-  , dgl_type :: DGLinkType     -- type: local, global, def, thm?
-  , dgl_origin :: DGLinkOrigin -- origin in input language
-  , dgl_id :: EdgeId          -- id of the edge
-  } deriving (Show, Eq)
-
-
-GMorphism
-    { gMorphismComor :: cid
-    , gMorphismSign :: ExtSign sign1 symbol1
-    , gMorphismSignIdx :: SigId -- ^ 'G_sign' index of source signature
-    , gMorphismMor :: morphism2
-    , gMorphismMorIdx :: MorId  -- ^ `G_morphism index of target morphism
-    } deriving Typeable
--}
-
