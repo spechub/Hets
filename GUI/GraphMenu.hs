@@ -189,6 +189,7 @@ createSaveAs gInfo file = Just (
 -- | Returns the close-function
 createClose :: GInfo -> IO Bool
 createClose gInfo@(GInfo { windowCount = wc
+                         , openGraphs = oGrRef
                          , exitMVar = exit
                          , libName = ln }) = do
  ost <- readIORef $ intState gInfo
@@ -207,13 +208,12 @@ createClose gInfo@(GInfo { windowCount = wc
     Nothing -> error $ "development graph with libname " ++ show ln
                        ++" does not exist"
    count <- takeMVar wc
-   case count == 1 of
-    True -> do
-      GA.exitUDrawGraph $ graphInfo gInfo
-      putMVar exit ()
-    False -> putMVar wc $ count - 1
-   oGraphs <- readIORef $ openGraphs gInfo
-   writeIORef (openGraphs gInfo) $ Map.delete ln oGraphs
+   if count <= 1
+     then putMVar exit ()
+     else do
+       putMVar wc $ count - 1
+       oGraphs <- readIORef oGrRef
+       writeIORef oGrRef $ Map.delete ln oGraphs
    return True
 
 -- | Returns the exit-function

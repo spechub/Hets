@@ -63,7 +63,7 @@ showLibGraph gInfo@(GInfo { windowCount = wc
         graphParms = globalMenu $$
                      GraphTitle "Library Graph" $$
                      OptimiseLayout True $$
-                     AllowClose (close gInfo graph) $$
+                     AllowClose (close gInfo) $$
                      FileMenuAct ExitMenuOption (Just (exit gInfo)) $$
                      emptyGraphParms
       graph' <- newGraph daVinciSort graphParms
@@ -75,11 +75,15 @@ showLibGraph gInfo@(GInfo { windowCount = wc
 reloadLibGraph :: GInfo -> IORef DaVinciGraphTypeSyn -> IORef NodeEdgeList
                -> IO ()
 reloadLibGraph gInfo graph nodesEdges = do
-  warningDialog "Reload library"
-                ("Are you sure to reload Library?\nAll open development graph"
-                 ++ " windows will be closed and all proofs will be lost!")
+  warningDialog "Reload library" warnTxt
                 $ Just $ reloadLibGraph' gInfo graph nodesEdges
   return ()
+
+warnTxt :: String
+warnTxt = unlines
+  [ "Are you sure to recreate Library?"
+  , "All development graph windows will be closed and proofs will be lost."
+  , "", "This operation can not be undone." ]
 
 -- | Reloads all Libraries and the Library Dependency Graph
 reloadLibGraph' :: GInfo -> IORef DaVinciGraphTypeSyn -> IORef NodeEdgeList
@@ -112,11 +116,7 @@ reloadLibGraph' gInfo@(GInfo { hetcatsOpts = opts
 -- | Translate Graph
 translate :: GInfo -> IO ()
 translate gInfo = do
-  warningDialog "Translate library"
-                ("Are you sure to translate Library?\nAll open development "
-                 ++ "graph windows will be closed and all proofs will be lost!"
-                 ++ "\n\nThis operation can only be undone by reload.")
-                $ Just $ translate' gInfo
+  warningDialog "Translate library" warnTxt $ Just $ translate' gInfo
   return ()
 
 -- | Translate Graph
@@ -208,19 +208,16 @@ showSpec le ln =
                     $ unlines . map show . Map.keys . globalEnv
                     $ lookupDGraph ln le
 
-close :: GInfo -> IORef DaVinciGraphTypeSyn -> IO Bool
+close :: GInfo -> IO Bool
 close (GInfo { exitMVar = exit'
              , windowCount = wc
              , libGraphLock = lock
-             }) graph = do
+             }) = do
   takeMVar lock
   count <- takeMVar wc
-  case count == 1 of
-    True -> do
-      g <- readIORef graph
-      GA.destroyGraph g
-      putMVar exit' ()
-    False -> putMVar wc $ count - 1
+  if count <= 1
+    then putMVar exit' ()
+    else putMVar wc $ count - 1
   return True
 
 exit :: GInfo -> IO ()

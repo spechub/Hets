@@ -49,7 +49,6 @@ module GUI.GraphAbstraction
     , activateGraphWindow
     , closeGraphWindow
     , destroyGraph
-    , exitUDrawGraph
     ) where
 
 import GUI.UDGUtils
@@ -579,16 +578,8 @@ activateGraphWindow = doInGraphContext (DVT.Window DVT.Activate)
 -- | Closes the Window
 closeGraphWindow :: GraphInfo -- ^ The graph
                  -> IO ()
-closeGraphWindow gi = do
-  g <- readIORef gi
-  let Graph dg = theGraph g
-  destroy $ getDaVinciGraphContext dg
+closeGraphWindow gi = readIORef gi >>= destroyGraph . theGraph
 
 -- | destroy graph
 destroyGraph :: OurGraph -> IO ()
 destroyGraph (Graph dg) = destroy $ getDaVinciGraphContext dg
-
--- | Exits UDrawGraph
-exitUDrawGraph :: GraphInfo -- ^ The graph
-                 -> IO ()
-exitUDrawGraph gi = readIORef gi >>= destroyGraph . theGraph
