@@ -28,7 +28,7 @@ casl.el) the path to your hets binary with the following line in your
 .emacs file or interactively for the current session via M-x
 set-variable:
 
-(setq hets-program "/Users/$HOME/bin/hets")
+(setq hets-program "~/bin/hets")
 
 If you don't set the variable explicitly the directories 
     "<path-to-here>/casl_el/../.."
