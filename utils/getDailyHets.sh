@@ -50,7 +50,15 @@ case `uname -s` in
                 exit 2;;
         esac;;
     *inux)
-        ARCH_DIR=linux ;;
+        case `uname -m` in
+             x86_64)
+                ARCH_DIR=linux64 ;;
+             i686) 
+                ARCH_DIR=linux ;;
+             *)
+                echo Unsupported Linux processor: `uname -m`
+                exit 2;;
+        esac;;
     Darwin)
         case `uname -p` in
             powerpc)
