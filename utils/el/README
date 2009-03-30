@@ -5,8 +5,8 @@ casl-indent.el) and it may be redistributed under the terms of the
 LICENCE.txt also found in this distribution.
 
 The Copyright of this emacs mode is held by the University of Bremen,
-Germany, Klaus Lüttich and Heng Jiang. Please contact for bug reports,
-comments and any other requests <hets-users@informatik.uni-bremen.de>.
+Germany, Klaus Luettich and Heng Jiang. Please contact for bug reports,
+comments and any other requests <hets-devel@informatik.uni-bremen.de>.
 
 This emacs mode provides syntax highlighting, indentation and analysis
 via hets for CASL and HetCASL specifications.
@@ -28,7 +28,7 @@ casl.el) the path to your hets binary with the following line in your
 .emacs file or interactively for the current session via M-x
 set-variable:
 
-(setq hets-program "/Users/luettich/bin/hets")
+(setq hets-program "/Users/$HOME/bin/hets")
 
 If you don't set the variable explicitly the directories 
     "<path-to-here>/casl_el/../.."
