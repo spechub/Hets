@@ -134,7 +134,7 @@ build-prepare :
             $(XMLFILE)-all.xml.in > $(XMLFILE)-all.xml
 	perl -ple "s/\@HETSOS/ix86\/Linux/g" $(XMLFILE)-all.xml \
             > $(XMLFILE)-linux.xml.in
-	perl -ple "s/\@HETSOS/ix86_64\/Linux/g" $(XMLFILE)-all.xml \
+	perl -ple "s/\@HETSOS/AMD64\/Linux/g" $(XMLFILE)-all.xml \
             > $(XMLFILE)-linux64.xml.in
 	perl -ple "s/\@HETSOS/sparc\/SunOS/g" $(XMLFILE)-all.xml \
             > $(XMLFILE)-solaris.xml.in
