@@ -790,7 +790,12 @@ initialize_installer:
 	@echo "  -> make"
 	@echo and wait until it is finished
 
-initialize_java:
+owl_java:
+	svn co \
+  https://owlapi.svn.sourceforge.net/svnroot/owlapi/owl1_1/trunk \
+  OWL/java/OwlApi
+
+initialize_java: owl_java
 	ant -q init
 
 java-libs:
