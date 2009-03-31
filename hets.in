@@ -46,7 +46,7 @@ if [ -d $INSTALL_PATH/Hets-lib ] ; then
     HETS_LIB=$INSTALL_PATH/Hets-lib
 fi
 
-HETS_OWL_TOOLS=$INSTALL_PATH/lib/hets
+HETS_OWL_TOOLS=$INSTALL_PATH/lib/hets/java
 UNIWISH=/usr/bin/wish
 HETS=$INSTALL_PATH/lib/hets/hets-$APP_VER
 HETS_APROVE=$INSTALL_PATH/lib/hets/java/AProVE.jar

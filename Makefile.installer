@@ -16,6 +16,7 @@ IZPACK_SAMPLE = $(IZPACK_PATH)/sample
 IZPACK_PACK = $(IZPACK_SAMPLE)/pack
 IZPACK_SPASS = $(IZPACK_SAMPLE)/SPASS
 IZPACK_HETS = $(IZPACK_SAMPLE)/hets
+IZPACK_JAVA = $(IZPACK_HETS)/java
 HETS_VERSION = 0.93
 SPASS_DIR_MAC = SPASS-3.0
 SPASS_MAC_BINARY = /home/mac-bkb/bin/SPASS
@@ -65,14 +66,17 @@ hets-download : hets-lib-checkout
         cp LIZENZ.txt $(IZPACK_PACK)/ ; \
         cp README.installer $(IZPACK_PACK)/README ; \
         mkdir -p $(IZPACK_HETS)/doc ; \
-        mkdir -p $(IZPACK_HETS)/java ; \
+        mkdir -p $(IZPACK_JAVA) ; \
+        mkdir -p $(IZPACK_JAVA)/lib ; \
         cp utils/el/*.el $(IZPACK_SAMPLE)/hets ; \
         cp hets.in $(IZPACK_HETS)/hets ; \
-        cp utils/getDailyHets.sh $(IZPACK_SAMPLE)/getDailyHets.sh ; \
-        cp OWL/owl_parser.installer $(IZPACK_HETS)/owl_parser ; \
-        cp OWL/OWL2ATerm.jar $(IZPACK_HETS)/java ; \
-        cp CASL/Termination/AProVE.jar \
-                $(IZPACK_HETS)/java ; \
+        cp utils/getDailyHets.sh $(IZPACK_SAMPLE) ; \
+        make -f Makefile.orig initialize_java ; \
+        cp OWL/owl_parser $(IZPACK_JAVA) ; \
+        cp OWL/owl_locality $(IZPACK_JAVA) ; \
+        cp OWL/*.jar $(IZPACK_JAVA) ; \
+        cp OWL/lib/*.jar $(IZPACK_JAVA)/lib ; \
+        cp CASL/Termination/AProVE.jar $(IZPACK_JAVA) ; \
         cp utils/hetcasl.sty docs/UserGuide.pdf $(IZPACK_HETS)/doc/ ; \
         cd .. ; \
         $(RM) -r Hets
