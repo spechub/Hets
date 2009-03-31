@@ -16,6 +16,7 @@ Control.OldException
 module Common.Exception
   ( Exception.catch
   , catchJust
+  , try
   , userErrors
   , Exception(..)
   , AsyncException(ThreadKilled)
