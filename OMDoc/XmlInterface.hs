@@ -176,9 +176,9 @@ instance XmlRepresentable TCElement where
          Nothing
     toXml (TCADT sds) = (Elem $ Element el_adt [] (listToXml sds) Nothing)
     toXml (TCComment c) = (makeComment c)
-    toXml (TCImport (CD c cdb) mor) =
+    toXml (TCImport (CD c _) mor) =
         Elem $ Element el_import
-         [Attr at_from $ c] -- ++ (show cdb)]
+         [Attr at_from $ c]
          [toXml mor]
          Nothing
     toXml (TCMorphism mapping) =
