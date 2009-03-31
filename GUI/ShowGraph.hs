@@ -37,7 +37,7 @@ import Common.UniUtils
 
 import Data.IORef
 import Control.Concurrent.MVar
-import Control.Exception
+import Common.Exception
 
 import Interfaces.DataTypes
 
@@ -55,15 +55,15 @@ showGraph file opts env = case env of
     case eitherGTK of
       Right () -> return ()
       Left e -> do
-        putIfVerbose opts 5 $ "Error: " ++ show (e::IOException)
-        error $ "Cant initialize gtk."
+        putIfVerbose opts 5 $ "Error: " ++ show e
+        error $ "Can't initialize GTK."
 #endif
     eitherHTK <- try initializeConverter
     (gInfo,wishInst) <- case eitherHTK of
       Right a -> return a
       Left e -> do
-        putIfVerbose opts 5 $ "Error: " ++ show (e::IOException)
-        error $ "Cant initialize GUI."
+        putIfVerbose opts 5 $ "Error: " ++ show e
+        error $ "Can't initialize GUI."
 
     useHTk -- All messages are displayed in TK dialog windows
     -- from this point on
