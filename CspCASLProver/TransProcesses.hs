@@ -28,7 +28,7 @@ import qualified Comorphisms.CASL2SubCFOL as CASL2SubCFOL
 import qualified Comorphisms.CFOL2IsabelleHOL as CFOL2IsabelleHOL
 
 import CspCASL.AS_CspCASL_Process
-import CspCASL.SignCSP
+import CspCASL.SignCSP ()
 
 import CspCASLProver.Consts
 import CspCASLProver.CspProverConsts
