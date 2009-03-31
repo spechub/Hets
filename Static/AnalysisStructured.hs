@@ -114,11 +114,15 @@ insLink dg (GMorphism cid sign si mor mi) ty orig n t =
        $ insLEdgeNubDG (n, t, link) dg
 
 -- | analyze a SPEC
--- first Parameter determines if incoming symbols shall be ignored
+-- Bool Parameter determines if incoming symbols shall be ignored
 -- options: here we need the info: shall only the structure be analysed?
-ana_SPEC :: Bool -> LogicGraph -> DGraph -> MaybeNode -> NodeName ->
-            HetcatsOpts -> SPEC -> Result (SPEC, NodeSig, DGraph)
-ana_SPEC addSyms lg dg nsig name opts sp = case sp of
+ana_SPEC :: Bool -> LogicGraph -> DGraph -> MaybeNode
+         -> NodeName -> HetcatsOpts -> SPEC -> Result (SPEC, NodeSig, DGraph)
+ana_SPEC = anaSpecAux None
+
+anaSpecAux :: Conservativity -> Bool -> LogicGraph -> DGraph -> MaybeNode
+         -> NodeName -> HetcatsOpts -> SPEC -> Result (SPEC, NodeSig, DGraph)
+anaSpecAux conser addSyms lg dg nsig name opts sp = case sp of
   Basic_spec (G_basic_spec lid bspec) pos ->
     do let adj = adjustPos pos
            curLogic = Logic lid
@@ -145,7 +149,8 @@ ana_SPEC addSyms lg dg nsig name opts sp = case sp of
          EmptyNode _ -> return dg'
          JustNode jn@(NodeSig n _) -> do
            incl <- adj $ ginclusion lg (getSig jn) gsig
-           return $ insLink dg' incl globalDef DGLinkExtension n node
+           return $ insLink dg' incl (globalConsDef conser)
+             DGLinkExtension n node
        return (Basic_spec (G_basic_spec lid bspec') pos, ns, dg'')
   EmptySpec pos -> case nsig of
       EmptyNode _ -> do
@@ -847,41 +852,29 @@ ana_Extension
     :: ([SPEC], MaybeNode, DGraph, LogicGraph, HetcatsOpts, Range, Bool)
     -> (NodeName, Annoted SPEC)
     -> Result ([SPEC], MaybeNode, DGraph, LogicGraph, HetcatsOpts, Range, Bool)
-ana_Extension (sps', nsig', dg', lg, opts, pos, addSyms) (name',asp') = do
-  (sp1', nsig1@(NodeSig n1 sig1), dg1) <-
-     ana_SPEC addSyms lg dg' nsig' name' opts (item asp')
-  let anno = find isSemanticAnno $ l_annos asp'
-  -- is the extension going between real nodes?
-  dg2 <- case (anno, nsig') of
-     (Just anno0@(Semantic_anno anno1 _), JustNode (NodeSig n' sig')) -> do
-         -- any other semantic annotation? that's an error
-         when (any (\an -> isSemanticAnno an && an/=anno0) $ l_annos asp')
-              (plain_error () "Conflicting semantic annotations"
-                pos)
-         -- %implied should not occur here
-         when (anno1 == SA_implied)
-              (plain_error ()
-               "Annotation %implied should come after a BASIC-ITEM"
-                pos)
-         if anno1 == SA_implies then do
-           when (not (isHomSubGsign sig1 sig')) (plain_error ()
-             "Signature must not be extended in presence of %implies"
-             pos)
-   -- insert a theorem link according to p. 319 of the CASL Reference Manual
-           return $ insLink dg1 (ide sig1) globalThm DGLinkExtension n1 n'
-          else do
-           let anno2 = case anno1 of
+ana_Extension (sps', nsig', dg', lg, opts, pos, addSyms) (name', asp') = do
+  let sannos = filter isSemanticAnno $ l_annos asp'
+      (sanno1, conflict, impliedA, impliesA) = case sannos of
+        f@(Semantic_anno anno1 _) : r -> (case anno1 of
                 SA_cons -> Cons
                 SA_def -> Def
                 SA_mono -> Mono
-                _ -> error "Static.AnalysisStructured: this cannot happen"
-     -- insert a theorem link according to p. 319 of the CASL Reference Manual
-     -- the theorem link is trivally proved by the parallel definition link,
-           -- but for clarity, we leave it open here
-           -- the interesting open proof obligation is anno2, of course
-           incl <- ginclusion lg sig' sig1
-           -- here conservativity of the global def-link should be set
-           return $ insLink dg1 incl (globalConsThm anno2)
-                  DGLinkExtension n' n1
-     _ -> return dg1
+                _ -> None, any (/= f) r,
+                     anno1 ==  SA_implied, anno1 == SA_implies)
+        _ -> (None, False, False, False)
+  when conflict $ plain_error () "Conflicting semantic annotations" pos
+  when impliedA $ plain_error ()
+    "Annotation %implied should come after a BASIC-ITEM" pos
+  -- attach conservativity to definition link
+  (sp1', nsig1@(NodeSig n1 sig1), dg1) <-
+     anaSpecAux sanno1 addSyms lg dg' nsig' name' opts (item asp')
+  dg2 <- if impliesA then case nsig' of
+    JustNode (NodeSig n' sig') -> do
+      -- is the extension going between real nodes?
+      when (not $ isHomSubGsign sig1 sig') $ plain_error ()
+        "Signature must not be extended in presence of %implies" pos
+    -- insert a theorem link according to p. 319 of the CASL Reference Manual
+      return $ insLink dg1 (ide sig1) globalThm DGImpliesLink n1 n'
+    _ -> return dg1
+   else return dg1
   return (sp1' : sps', JustNode nsig1, dg2, lg, opts, pos, True)

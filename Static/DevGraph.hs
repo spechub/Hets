@@ -259,6 +259,7 @@ newtype ProofBasis = ProofBasis { proofBasis :: Set.Set EdgeId }
 data DGLinkOrigin =
     SeeTarget
   | SeeSource
+  | DGImpliesLink
   | DGLinkExtension
   | DGLinkTranslation
   | DGLinkClosedLenv
@@ -1058,14 +1059,17 @@ localOrGlobalThm :: Scope -> Conservativity -> DGLinkType
 localOrGlobalThm sc c =
   ScopedLink sc (ThmLink LeftOpen) $ ConsStatus c LeftOpen
 
-localOrGlobalDef :: Scope -> DGLinkType
-localOrGlobalDef sc = ScopedLink sc DefLink $ ConsStatus None LeftOpen
+localOrGlobalDef :: Scope -> Conservativity -> DGLinkType
+localOrGlobalDef sc c = ScopedLink sc DefLink $ ConsStatus c LeftOpen
+
+globalConsDef :: Conservativity -> DGLinkType
+globalConsDef c = localOrGlobalDef Global c
 
 globalDef :: DGLinkType
-globalDef = localOrGlobalDef Global
+globalDef = localOrGlobalDef Global None
 
 localDef :: DGLinkType
-localDef = localOrGlobalDef Local
+localDef = localOrGlobalDef Local None
 
 -- ** link conservativity
 

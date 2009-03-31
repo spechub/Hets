@@ -151,6 +151,7 @@ dgLinkOriginHeader :: DGLinkOrigin -> String
 dgLinkOriginHeader o = case o of
     SeeTarget -> "see target"
     SeeSource -> "see source"
+    DGImpliesLink -> "reversed implies link of extension"
     DGLinkExtension -> "extension"
     DGLinkTranslation -> "OMDoc translation"
     DGLinkClosedLenv -> "closed spec and local environment"
