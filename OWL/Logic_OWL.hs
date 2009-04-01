@@ -37,6 +37,7 @@ import Common.Consistency
 import Common.ProverTools
 #ifdef UNI_PACKAGE
 import OWL.ProvePellet
+import OWL.ProveFact
 import OWL.Conservativity
 import OWL.Taxonomy
 #endif

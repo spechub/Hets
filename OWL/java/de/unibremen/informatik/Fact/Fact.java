@@ -32,10 +32,12 @@ class Fact
 		if (cons)
 		    {
 			System.out.println("consistent");
+			System.exit(10);
 		    }
 		else
 		    {
 			System.out.println("inconsistent");
+			System.exit(20);
 		    }
 	    }
 	catch (OWLOntologyCreationException e)
