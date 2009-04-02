@@ -75,7 +75,9 @@ constructUnion :: Logic lid sublogics
 constructUnion lid hd l = case l of
   [] -> hd
   sd : tl -> case maybeResult $ morphism_union lid hd sd of
-    Just m -> constructUnion lid m tl
+    Just m -> case maybeResult $ inverse m of
+      Just _ -> constructUnion lid m tl
+      Nothing -> constructUnion lid sd tl
     Nothing -> constructUnion lid sd tl
 
 updateRefNodes :: (LibEnv, Map.Map LIB_NAME RenameMap) -> DGraph
