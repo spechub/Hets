@@ -135,13 +135,27 @@ qualifyLabNode ln (dg, mormap) (n, lb) =
         return ( changesDGH dg $ ds ++ SetNodeLab lb (n, nlb) : is
                , Map.insert n gp mormap)
 
--- consider that hiding edges have a reverse morphism
--- special treatment for HidingThm needed, too
+-- consider that hiding definition links have a reverse morphism
+-- and hiding theorems are also special
 composeWithMorphism :: Bool -> GMorphism -> GMorphism -> LEdge DGLinkLab
                     -> Result (LEdge DGLinkLab)
 composeWithMorphism dir mor rmor (s, t, lb) = do
     let lmor = dgl_morphism lb
-    nmor <- addErrorDiag ("edge " ++ show (s, t, dgl_id lb)) ()
-            $ if dir /= isHidingEdge (dgl_type lb)
-            then comp lmor mor else comp rmor lmor
-    return (s, t, lb { dgl_morphism = nmor})
+        inmor = comp lmor mor
+        outmor = comp rmor lmor
+    nlb <- addErrorDiag
+      ((if dir then "in" else "out") ++ "-edge " ++ show (s, t, dgl_id lb)) ()
+      $ case dgl_type lb of
+        HidingDefLink -> do
+          nmor <- if dir then outmor else inmor
+          return lb { dgl_morphism = nmor }
+        HidingFreeOrCofreeThm Nothing hmor st -> if dir then do
+            nmor <- inmor
+            return lb { dgl_morphism = nmor }
+          else do
+            nhmor <- comp hmor mor
+            return lb { dgl_type = HidingFreeOrCofreeThm Nothing nhmor st }
+        _ -> do
+          nmor <- if dir then inmor else outmor
+          return lb { dgl_morphism = nmor }
+    return (s, t, nlb)
