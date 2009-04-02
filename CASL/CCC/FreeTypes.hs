@@ -24,8 +24,9 @@ import CASL.CCC.TermFormula
 import CASL.CCC.TerminationProof
 import Common.AS_Annotation
 import Common.Consistency
-import Common.Result
+import Common.DocUtils (showDoc)
 import Common.Id
+import Common.Result
 import Common.Utils
 import Data.List ((\\), intersect, delete)
 import Data.Maybe
@@ -249,20 +250,27 @@ checkDefinitional :: [Named (FORMULA ())]
     -> Maybe (Result (Maybe (ConsistencyStatus,[FORMULA ()])))
 checkDefinitional fsn
     | elem Nothing l_Syms =
-        let pos = snd $ head $ filter (isNothing . fst) $
-                  map leadingSymPos axioms'
-        in Just $ warning Nothing "axiom is not definitional" pos
+        let ax = quanti $ head [ a | a<-axioms, isNothing $ leadingSym a ]
+            pos = snd $ leadingSymPos ax
+        in Just $ warning Nothing ("The following " ++ prettyType ax ++ 
+               " is not definitional:\n" ++ flip showDoc "\n" ax) pos
     | not $ null un_p_axioms =
-        let pos = getRange $ take 1 un_p_axioms
-        in Just $ warning Nothing "partial axiom is not definitional" pos
+        let ax = head un_p_axioms
+            pos = getRange $ take 1 un_p_axioms
+        in Just $ warning Nothing ("The following partial " ++ prettyType ax ++ 
+               " is not definitional:\n" ++ flip showDoc "\n" ax) pos
     | length dom_l /= length (nubOrd dom_l) =
-        let pos = getRange $ take 1 dualDom
+        let ax = head dualDom
+            pos = getRange $ take 1 dualDom
             dualOS = head $ filter (\ o -> elem o $ delete o dom_l) dom_l
             dualDom = filter (\ f -> domain_os f dualOS) p_axioms
-        in Just $ warning Nothing "partial axiom is not definitional" pos
+        in Just $ warning Nothing ("The following partial " ++ prettyType ax ++ 
+               " is not definitional:\n" ++ flip showDoc "\n" ax) pos
     | not $ null pcheck =
-        let pos = getRange $ take 1 pcheck
-        in Just $ warning Nothing "partial axiom is not definitional" pos
+        let ax = head pcheck
+            pos = getRange $ take 1 pcheck
+        in Just $ warning Nothing ("The following partial " ++ prettyType ax ++ 
+               " is not definitional:\n" ++ flip showDoc "\n" ax) pos
     | otherwise = Nothing
     where
         axioms = getAxioms fsn
@@ -270,8 +278,8 @@ checkDefinitional fsn
         axioms' = map quanti axioms
         p_axioms = filter partialAxiom axioms'           -- all partial axioms
         pax_with_def = filter containDef p_axioms
-        pax_without_def = filter (not.containDef) p_axioms
-        un_p_axioms = filter (not.correctDef) pax_with_def
+        pax_without_def = filter (not . containDef) p_axioms
+        un_p_axioms = filter (not . correctDef) pax_with_def
         dom_l = domainOpSymbs p_axioms
         pcheck = filter (\ f -> case leadingSym f of
                                   Just (Left opS) -> elem opS dom_l
@@ -456,6 +464,26 @@ checkFreeType (osig, osens) m fsn
         conStatus    = getConStatus (osig, osens) m fsn'
         combine :: [Named (FORMULA ())] -> [FORMULA ()] -> [Named (FORMULA ())]
         combine orig new = [ o | o <- orig, n <- new, sentence o == n ]
+
+prettyType :: FORMULA () -> String
+prettyType fm = case fm of
+    Quantification _ _ _ _ -> "quantification"
+    Conjunction _ _        -> "conjunction"
+    Disjunction _ _        -> "disjunction"
+    Implication _ _ _ _    -> "implication"
+    Equivalence _ _ _      -> "equivalence"
+    Negation _ _           -> "negation"
+    True_atom _            -> "true atom"
+    False_atom _           -> "false atom"
+    Predication _ _ _      -> "predication"
+    Definedness _ _        -> "definedness"
+    Existl_equation _ _ _  -> "existantial equation"
+    Strong_equation _ _ _  -> "strong equation"
+    Membership _ _ _       -> "membership"
+    Mixfix_formula _       -> "mixfix formula"
+    Unparsed_formula _ _   -> "unparsed formula"
+    Sort_gen_ax _ _        -> "sort_gen_ax"
+    ExtFORMULA _           -> "extended formula"
 
 -- | group the axioms according to their leading symbol,
 --   output Nothing if there is some axiom in incorrect form
