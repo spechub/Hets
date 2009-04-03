@@ -370,8 +370,9 @@ consCheck thName tm freedefs =
                    let timeTmpFile = tempDir ++ "/" ++ tmpFileName
                                      ++ (show $ utctDay t) ++
                                      "-" ++ (show $ utctDayTime t) ++ ".owl"
-                       tmpURI = "file://"++timeTmpFile
+                       tmpURI = "file://" ++ timeTmpFile
                    writeFile timeTmpFile $ problemS
+                   putStrLn tmpURI
                    let command = "sh pellet.sh "
                                  ++ simpleOptions ++ extraOptions
                                  ++ tmpURI
