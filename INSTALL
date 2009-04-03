@@ -39,6 +39,11 @@ Use "gmake" (and "gtar" for unpacking) under solaris!
 When building hets directly from svn sources, just call "make" and install
 further ghc packages if errors occur.
 
+Installing HAIFA is a bit tricky, since it relies on hxt-filter-8.2.0
+which in turn relies on HTTP-3001.1.x but tries to grab HTTP-4000.0.x
+
+  cabal install hxt-filter-8.2.0 --preference=HTTP==3001.1.5
+
 Rather than building the binary yourself, you may try out one of our
 nightly created binaries (compressed with bzip2) or our installers.
 
