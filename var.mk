@@ -19,7 +19,7 @@ HAXML_PACKAGE = -DHAXML_PACKAGE
 endif
 
 GLADEVERSION = $(shell $(HCPKG) field glade version)
-ifneq ($(findstring 0.9.1, $(GLADEVERSION)),)
+ifneq ($(findstring 0., $(GLADEVERSION)),)
 GLADE_PACKAGE = -DGTKGLADE
 endif
 
