@@ -474,7 +474,7 @@ createLocalMenuValueTitleShowConservativity :: ValueTitle GA.EdgeValue
 createLocalMenuValueTitleShowConservativity = ValueTitle
   (\ (_, _, maybeLEdge) -> case maybeLEdge of
     Just (_,_,edgelab) -> case dgl_type edgelab of
-      ScopedLink _ _ (ConsStatus c status) -> return (showCons c status)
+      ScopedLink _ _ (ConsStatus c _ status) -> return (showCons c status)
       _ -> return ""
     Nothing -> return "")
   where

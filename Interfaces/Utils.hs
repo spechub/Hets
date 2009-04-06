@@ -327,14 +327,15 @@ checkConservativityEdge useGUI (source,target,linklab) libEnv ln
                  consShow = case res of
                             Just (Just (cst, _)) -> cst
                             _                    -> Unknown "Unknown"
-                 cs = consToCons consShow
-                 consNew csv = if cs >= csv
+                 cs' = consToCons consShow
+                 consNew csv = if cs' >= csv
                             then Proven conservativityRule emptyProofBasis
                             else LeftOpen
                  (newDglType, edgeChange) = case dgl_type linklab of
-                   ScopedLink sc dl (ConsStatus consv op) ->
+                   ScopedLink sc dl (ConsStatus consv cs op) ->
                      let np = consNew consv in
-                     (ScopedLink sc dl $ ConsStatus (max consv cs) np, np /= op)
+                     (ScopedLink sc dl $ 
+                      ConsStatus consv (max cs $ max consv cs') np, np /= op)
                    t -> (t, False)
                  provenEdge = ( source
                               , target

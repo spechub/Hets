@@ -69,7 +69,7 @@ compositionCreatingEdgesAux dgraph (path : paths) =
       , dgl_type = ScopedLink Global
           (ThmLink (Proven (Composition path)
                    $ foldl addEdgeId emptyProofBasis $ map getEdgeId path))
-          (ConsStatus cons LeftOpen)
+          (ConsStatus cons None LeftOpen)
       , dgl_origin = DGLinkProof
       , dgl_id = defaultEdgeId })
     newDGraph = insertDGLEdge newEdge dgraph
@@ -90,8 +90,8 @@ deleteRedundantEdges dgraph (src, tgt, labl) = let
       , haveSameCons l labl ]
     haveSameCons :: DGLinkLab -> DGLinkLab -> Bool
     haveSameCons lab1 lab2 = case (dgl_type lab1, dgl_type lab2) of
-          (ScopedLink Global (ThmLink LeftOpen) (ConsStatus cons1 status1),
-           ScopedLink Global (ThmLink _) (ConsStatus cons2 status2)) ->
+          (ScopedLink Global (ThmLink LeftOpen) (ConsStatus cons1 _ status1),
+           ScopedLink Global (ThmLink _) (ConsStatus cons2 _ status2)) ->
              cons1 == cons2 &&
              isProvenThmLinkStatus status1 == isProvenThmLinkStatus status2
           _ -> False

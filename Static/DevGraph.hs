@@ -301,7 +301,7 @@ data LinkKind = DefLink | ThmLink ThmLinkStatus deriving (Show, Eq)
 
 data FreeOrCofree = Free | Cofree deriving (Show, Eq)
 
-data ConsStatus = ConsStatus Conservativity ThmLinkStatus deriving (Show, Eq)
+data ConsStatus = ConsStatus Conservativity Conservativity ThmLinkStatus deriving (Show, Eq)
 
 -- | Link types of development graphs
 --  Sect. IV:4.2 of the CASL Reference Manual explains them in depth
@@ -1057,10 +1057,10 @@ localConsThm = localOrGlobalThm Local
 
 localOrGlobalThm :: Scope -> Conservativity -> DGLinkType
 localOrGlobalThm sc c =
-  ScopedLink sc (ThmLink LeftOpen) $ ConsStatus c LeftOpen
+  ScopedLink sc (ThmLink LeftOpen) $ ConsStatus c None LeftOpen
 
 localOrGlobalDef :: Scope -> Conservativity -> DGLinkType
-localOrGlobalDef sc c = ScopedLink sc DefLink $ ConsStatus c LeftOpen
+localOrGlobalDef sc c = ScopedLink sc DefLink $ ConsStatus c None LeftOpen
 
 globalConsDef :: Conservativity -> DGLinkType
 globalConsDef c = localOrGlobalDef Global c
@@ -1079,12 +1079,12 @@ getConservativity (_, _, edgeLab) = getCons $ dgl_type edgeLab
 
 getConsProof :: DGLinkType -> ThmLinkStatus
 getConsProof lt = case lt of
-    ScopedLink _ _ (ConsStatus _ st) -> st
+    ScopedLink _ _ (ConsStatus _  _ st) -> st
     _ -> LeftOpen
 
 getCons :: DGLinkType -> Conservativity
 getCons lt = case lt of
-    ScopedLink _ _ (ConsStatus cons _) -> cons
+    ScopedLink _ _ (ConsStatus cons _ _) -> cons
     _ -> None
 
 -- * bottom up traversal

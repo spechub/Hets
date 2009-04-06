@@ -323,10 +323,10 @@ setProof p lt = case lt of
 
 invalidateProof :: DGLinkType -> DGLinkType
 invalidateProof t = case t of
-    ScopedLink sc dl (ConsStatus c _) ->
+    ScopedLink sc dl (ConsStatus c _ _) ->
       ScopedLink sc (case dl of
         ThmLink _ -> ThmLink LeftOpen
-        _ -> dl) $ ConsStatus c LeftOpen
+        _ -> dl) $ ConsStatus c None LeftOpen
     HidingFreeOrCofreeThm mh gm _ -> HidingFreeOrCofreeThm mh gm LeftOpen
     _ -> t
 
