@@ -309,20 +309,12 @@ derived_sources += $(drifted_files) Driver/Version.hs $(happy_files) \
 cpp_sources = hets.hs $(happy_files) \
     CASL/Logic_CASL.hs \
     Common/Exception.hs \
-    Common/UniUtils.hs \
     Comorphisms/KnownProvers.hs \
     Comorphisms/LogicGraph.hs \
     Comorphisms/LogicList.hs \
     Driver/WriteFn.hs \
-    GUI/AbstractGraphView.hs \
-    GUI/GenericATP.hs \
-    GUI/GraphAbstraction.hs \
-    GUI/GraphLogic.hs \
     GUI/GraphMenu.hs \
-    GUI/HTkUtils.hs \
-    GUI/ProofManagement.hs \
     GUI/ShowGraph.hs \
-    GUI/UDGUtils.hs \
     GUI/Utils.hs \
     Isabelle/CreateTheories.hs \
     OWL/Logic_OWL.hs \
