@@ -365,7 +365,7 @@ checkConservativityEdge useGUI (source,target,linklab) libEnv ln
                  showObls [] = ""
                  showObls lst = ", provided that the following proof "
                                ++ "obligations can be discharged:\n"
-                               ++ (show $ Pretty.vsep $ map (print_named glid . 
+                               ++ (show $ Pretty.vsep $ map (print_named glid .
                                    mapNamed (simplify_sen glid sig1)) lst)
                  showRes = case res of
                            Just (Just (cst,_)) -> "The link is "

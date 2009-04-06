@@ -474,15 +474,15 @@ createLocalMenuValueTitleShowConservativity :: ValueTitle GA.EdgeValue
 createLocalMenuValueTitleShowConservativity = ValueTitle
   (\ (_, _, maybeLEdge) -> case maybeLEdge of
     Just (_,_,edgelab) -> case dgl_type edgelab of
-      ScopedLink _ _ (ConsStatus c _ status) -> return (showCons c status)
+      ScopedLink _ _ (ConsStatus c cp status) -> return (showCons c cp status)
       _ -> return ""
     Nothing -> return "")
   where
-    showCons :: Conservativity -> ThmLinkStatus -> String
-    showCons c status = case (c, status) of
-      (None, _) -> ""
-      (_, LeftOpen) -> show c ++ "?"
-      _ -> show c
+    showCons :: Conservativity -> Conservativity -> ThmLinkStatus -> String
+    showCons c cp status = case (c, cp, status) of
+      (None, _, _) -> ""
+      (_, _, LeftOpen) -> show c ++ "?"
+      _ -> show cp
 
 -- Suggests a proof-script filename.
 getProofScriptFileName :: String -> IO FilePath
