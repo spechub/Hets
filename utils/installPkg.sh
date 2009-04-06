@@ -10,7 +10,9 @@ esac
 if [ -n "$installdir" ]; then
 
 pkg=`echo $1 | sed -e s/-[0-9.]*$//`
-ver=`echo $1 | sed -e s/^[A-z-]*//`
+echo $pkg
+ver=`echo $1 | sed -e s/^[A-Za-z-]*//`
+echo $ver
 
 wget http://hackage.haskell.org/packages/archive/$pkg/$ver/$1.tar.gz
 $TAR zxf $1.tar.gz
