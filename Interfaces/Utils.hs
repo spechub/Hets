@@ -65,8 +65,8 @@ import Common.Id (nullRange)
 import qualified Common.Lib.SizedList as SizedList
 import Common.Consistency
 import Common.ExtSign
-import Common.DocUtils
-import Common.AS_Annotation (SenAttr(..), makeNamed)
+import Common.AS_Annotation (SenAttr(..), makeNamed, mapNamed)
+import qualified Common.Doc as Pretty
 
 #ifdef UNI_PACKAGE
 import GUI.Utils
@@ -308,22 +308,12 @@ checkConservativityEdge useGUI (source,target,linklab) libEnv ln
              let chCons = checkConservativity $
                           fromMaybe (error "checkconservativityOfEdge")
                              $ maybeResult checkerR
-                 inputThSens = toNamedList $ 
+                 inputThSens = toNamedList $
                                sensTar `OMap.difference` transSensSrc
                  Result ds res =
                      chCons
                         (plainSign sign2, toNamedList sensSrc2)
                         compMor inputThSens
-                 showObls [] = ""
-                 showObls obls=", provided that the following proof "
-                               ++"obligations can be discharged:\n"
-                               ++ concatMap (flip showDoc "\n") obls
-                 showRes = case res of
-                           Just (Just (cst,obls)) -> "The link is "
-                            ++ showConsistencyStatus cst ++ showObls obls
-                           _ -> "Could not determine whether link is "
-                                 ++ "conservative"
-                 myDiags = showRelDiags 2 ds
                  consShow = case res of
                             Just (Just (cst, _)) -> cst
                             _                    -> Unknown "Unknown"
@@ -334,7 +324,7 @@ checkConservativityEdge useGUI (source,target,linklab) libEnv ln
                  (newDglType, edgeChange) = case dgl_type linklab of
                    ScopedLink sc dl (ConsStatus consv cs op) ->
                      let np = consNew consv in
-                     (ScopedLink sc dl $ 
+                     (ScopedLink sc dl $
                       ConsStatus consv (max cs $ max consv cs') np, np /= op)
                    t -> (t, False)
                  provenEdge = ( source
@@ -347,29 +337,43 @@ checkConservativityEdge useGUI (source,target,linklab) libEnv ln
                       Just (Just (_, os)) -> os
                       _                   -> []
                  newSens = [ makeNamed "" o | o<-obligations ]
-                 namedNewSens = toThSens [ o { isAxiom = False } | 
-                                           o<-inputThSens, n<-newSens, 
+                 namedNewSens = toThSens [ o { isAxiom = False } |
+                                           o<-inputThSens, n<-newSens,
                                            sentence o == sentence n ]
              G_theory glid gsign gsigid gsens gid <- return $ dgn_theory nodelab
-             namedNewSens' <- coerceThSens lid glid "" namedNewSens      
+             namedNewSens' <- coerceThSens lid glid "" namedNewSens
              let oldSens = OMap.toList gsens
-                 -- Sort out the named sentences which have a different name, 
+                 -- Sort out the named sentences which have a different name,
                  -- but same sentence
                  mergedSens = nubBy (\(_,a) (_,b) -> sentence a == sentence b) $
                               oldSens ++ OMap.toList namedNewSens'
-                 (newTheory, nodeChange) = 
-                   (G_theory glid gsign gsigid (OMap.fromList mergedSens) gid, 
+                 (newTheory, nodeChange) =
+                   (G_theory glid gsign gsigid (OMap.fromList mergedSens) gid,
                     length oldSens /= length mergedSens)
                  newTargetNode = (target
                                  ,nodelab { dgn_theory = newTheory })
-                 nodeChanges = [ SetNodeLab nodelab newTargetNode | nodeChange ]      
-                 edgeChanges = if edgeChange then 
+                 nodeChanges = [ SetNodeLab nodelab newTargetNode | nodeChange ]
+                 edgeChanges = if edgeChange then
                           [ DeleteEdge (source,target,linklab)
                           , InsertEdge provenEdge ] else []
                  nextGr = changesDGH dg $ nodeChanges ++ edgeChanges
                  newLibEnv = insert ln
                    (groupHistory dg conservativityRule nextGr) libEnv
                  history = snd $ splitHistory dg nextGr
+                 sig1 = case gsign of
+                             ExtSign s1 _ -> s1
+                 showObls [] = ""
+                 showObls lst = ", provided that the following proof "
+                               ++ "obligations can be discharged:\n"
+                               ++ (show $ Pretty.vsep $ map (print_named glid . 
+                                   mapNamed (simplify_sen glid sig1)) lst)
+                 showRes = case res of
+                           Just (Just (cst,_)) -> "The link is "
+                            ++ showConsistencyStatus cst
+                            ++ (showObls $ toNamedList namedNewSens')
+                           _ -> "Could not determine whether link is "
+                                 ++ "conservative"
+                 myDiags = showRelDiags 2 ds
              return ( showRes ++ "\n" ++ myDiags
                     , newLibEnv
                     , history)
