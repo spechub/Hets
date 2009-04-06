@@ -50,9 +50,6 @@ inhabited sorts constrs = iterateInhabited sorts
 getFs :: [Named (FORMULA ())] -> [FORMULA ()]
 getFs = map sentence . filter is_user_or_sort_gen
 
-getOfs:: [Named (FORMULA ())] -> [FORMULA ()]
-getOfs = map sentence . filter is_user_or_sort_gen
-
 getExAxioms :: [Named (FORMULA ())] -> [FORMULA ()]
 getExAxioms = filter is_ex_quanti . getFs
 
@@ -84,7 +81,7 @@ getConstructors :: [Named (FORMULA ())] -> Morphism () () ()
 getConstructors osens m fsn = constructors
     where
         fs = getFs fsn
-        ofs = getOfs osens
+        ofs = getFs osens
         tsig = mtarget m
         fconstrs = concatMap constraintOfAxiom (ofs ++ fs)
         (_, constructors_o, _) = recover_Sort_gen_ax fconstrs
@@ -175,7 +172,7 @@ getNefsorts :: (Sign () (),[Named (FORMULA ())]) -> Morphism () () ()
 getNefsorts (osig, osens) m fsn = nefsorts
     where
         fs = getFs fsn
-        ofs = getOfs osens
+        ofs = getFs osens
         tsig = mtarget m
         oldSorts = sortSet osig
         oSorts = Set.toList oldSorts
@@ -192,7 +189,7 @@ getDataStatus :: (Sign () (),[Named (FORMULA ())]) -> Morphism () () ()
 getDataStatus (osig, osens) m fsn = dataStatus
     where
         fs = getFs fsn
-        ofs = getOfs osens
+        ofs = getFs osens
         tsig = mtarget m
         sR = Rel.toList $ sortRel tsig
         subs = map fst sR
