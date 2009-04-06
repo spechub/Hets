@@ -43,7 +43,7 @@ endif
 
 UNIVERSION = $(shell $(HCPKG) field uni-uDrawGraph version)
 ifneq ($(findstring 2., $(UNIVERSION)),)
-UNI_PACKAGE = -DUNI_PACKAGE -DUNIVERSION2
+UNI_PACKAGE = -DUNI_PACKAGE
 endif
 
 PROGRAMATICAVERSION = $(shell $(HCPKG) field programatica version)

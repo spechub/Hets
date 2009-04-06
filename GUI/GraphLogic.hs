@@ -1,4 +1,3 @@
-{-# OPTIONS -cpp #-}
 {- |
 Module      :  $Header$
 Description :  Logic for manipulating the graph in the  Central GUI
@@ -64,13 +63,8 @@ import GUI.GraphTypes
 import qualified GUI.GraphAbstraction as GA
 import GUI.Utils
 
-#ifdef UNIVERSION2
 import Graphs.GraphConfigure
 import Reactor.InfoBus(encapsulateWaitTermAct)
-#else
-import GraphConfigure
-import InfoBus(encapsulateWaitTermAct)
-#endif
 import qualified GUI.HTkUtils as HTk
 
 import Common.DocUtils (showDoc)

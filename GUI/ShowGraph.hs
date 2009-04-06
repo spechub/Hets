@@ -26,13 +26,8 @@ import GUI.ShowLibGraph
 import GUI.GtkUtils(startMainLoop, stopMainLoop)
 #endif
 
-#ifdef UNIVERSION2
 import Reactor.InfoBus (shutdown)
 import HTk.Toolkit.DialogWin (useHTk)
-#else
-import InfoBus (shutdown)
-import DialogWin (useHTk)
-#endif
 import Common.UniUtils
 
 import Data.IORef

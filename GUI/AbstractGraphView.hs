@@ -1,4 +1,3 @@
-{-# OPTIONS -cpp #-}
 {- |
 Module      :  $Header$
 Description :  Interface for graph viewing and abstraction
@@ -55,13 +54,8 @@ module GUI.AbstractGraphView
     ) where
 
 import GUI.UDGUtils
-#ifdef UNIVERSION2
 import qualified UDrawGraph.Types as DVT
 import Util.Computation
-#else
-import qualified DaVinciTypes as DVT
-import Computation
-#endif
 
 import ATC.DevGraph()
 import Static.DevGraph (DGLinkLab)

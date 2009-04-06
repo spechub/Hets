@@ -1,4 +1,3 @@
-{-# OPTIONS -cpp #-}
 {- |
 Module      :  $Header$
 Description :  wrapper for uDrawGraph utilities from the uniform workbench
@@ -21,18 +20,9 @@ module GUI.UDGUtils
   , module Sources
   ) where
 
-#ifdef UNIVERSION2
 import UDrawGraph.Graph as Graph
 import UDrawGraph.Basic as Basic
 import Graphs.GraphDisp  as GraphDisp
 import Graphs.GraphConfigure as GraphConfigure
 import Util.Broadcaster as Broadcaster
 import Util.Sources as Sources
-#else
-import DaVinciGraph as Graph
-import DaVinciBasic as Basic
-import GraphDisp
-import GraphConfigure
-import Broadcaster
-import Sources
-#endif

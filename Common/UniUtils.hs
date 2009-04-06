@@ -1,4 +1,3 @@
-{-# OPTIONS -cpp #-}
 {- |
 Module      :  $Header$
 Description :  wrapper for utilities from the uniform workbench
@@ -19,14 +18,7 @@ module Common.UniUtils
   , module Destructible
   ) where
 
-#ifdef UNIVERSION2
 import Posixutil.ChildProcess as ChildProcess
 import Posixutil.ProcessClasses as ProcessClasses
 import Events.Events as Events
 import Events.Destructible as Destructible
-#else
-import ChildProcess
-import ProcessClasses
-import Events
-import Destructible
-#endif

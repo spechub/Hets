@@ -1,4 +1,3 @@
-{-# OPTIONS -cpp #-}
 {- |
 Module      :  $Header$
 Description :  Goal management GUI.
@@ -26,15 +25,9 @@ import Data.List
 
 import qualified Control.Concurrent as Conc
 
-#ifdef UNIVERSION2
 import HTk.Toolkit.Separator
 import HTk.Widgets.Space
 import HTk.Devices.XSelection
-#else
-import Separator
-import Space
-import XSelection
-#endif
 
 import GUI.Utils
 import GUI.HTkUtils hiding

@@ -1,4 +1,3 @@
-{-# OPTIONS -cpp #-}
 {- |
 Module      :  $Header$
 Copyright   :  (c) K. Luettich, Rene Wagner, Uni Bremen 2002-2005
@@ -40,21 +39,12 @@ module GUI.HTkUtils
 
 import System.Directory
 
-#ifdef UNIVERSION2
 import Util.Messages
 import HTk.Toplevel.HTk as HTk hiding (x, y)
 import HTk.Toolkit.ScrollBox as ScrollBox
 import HTk.Toolkit.SimpleForm as SimpleForm
 import HTk.Toolkit.TextDisplay as TextDisplay
 import HTk.Toolkit.FileDialog
-#else
-import Messages
-import HTk hiding (x, y)
-import ScrollBox
-import SimpleForm
-import TextDisplay
-import FileDialog
-#endif
 
 import Logic.Prover
 import Static.GTheory

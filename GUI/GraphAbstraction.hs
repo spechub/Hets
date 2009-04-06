@@ -1,4 +1,3 @@
-{-# OPTIONS -cpp #-}
 {- |
 Module      :  $Header$
 Description :  Interface for graph viewing and abstraction
@@ -52,17 +51,10 @@ module GUI.GraphAbstraction
     ) where
 
 import GUI.UDGUtils
-#ifdef UNIVERSION2
 import qualified UDrawGraph.Types as DVT
 import qualified UDrawGraph.Basic as DVB
 import Events.Destructible as Destructible
 import Reactor.BSem
-#else
-import qualified DaVinciTypes as DVT
-import qualified DaVinciBasic as DVB
-import Destructible
-import BSem
-#endif
 
 import ATC.DevGraph ()
 import Static.DevGraph (DGLinkLab, EdgeId(..),DGEdgeType,DGNodeType)
