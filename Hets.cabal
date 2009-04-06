@@ -1,5 +1,5 @@
 name: Hets
-version: 0.91
+version: 0.94
 Description: The Heterogeneous Tool Set
 homepage: http://www.dfki.de/sks/hets
 bug-reports: http://trac.informatik.uni-bremen.de:8080/hets
@@ -109,7 +109,7 @@ Executable hets
 
   if flag(tabular)
     build-depends: tabular >= 0.1 && <= 0.2
-    cpp-options: -DHAXML_PACKAGE
+    cpp-options: -DTABULAR_PACKAGE
 
   if flag(tar)
     build-depends: tar >= 0.3 && <= 0.4
