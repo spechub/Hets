@@ -51,21 +51,6 @@ ifneq ($(findstring 1.0, $(PROGRAMATICAVERSION)),)
 PFE_FLAGS = -package programatica -DPROGRAMATICA
 endif
 
-ifeq ($(strip $(UNI_PACKAGE)),)
-UNI_PACKAGE_CONF = $(wildcard ../uni/uni-package.conf)
-ifneq ($(strip $(UNI_PACKAGE_CONF)),)
-UNI_PACKAGE = -package-conf $(UNI_PACKAGE_CONF) -DUNI_PACKAGE
-
-# some modules from uni for haddock
-# if uni/server is included also HaXml sources are needed
-uni_dirs = ../uni/davinci ../uni/graphs ../uni/events \
-    ../uni/reactor ../uni/util ../uni/posixutil
-
-uni_sources = $(wildcard $(addsuffix /haddock/*.hs, $(uni_dirs))) \
-    $(wildcard ../uni/htk/haddock/*/*.hs)
-endif
-endif
-
 ifneq ($(strip $(UNI_PACKAGE)),)
 TESTTARGETFILES += Taxonomy/taxonomyTool.hs OWL/OWLParser.hs \
     Taxonomy/taxonomyTool.hs SoftFOL/tests/CMDL_tests.hs
