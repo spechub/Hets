@@ -454,14 +454,15 @@ checkFreeType (osig, osens) m fsn
     | isJust terminal     = fromJust terminal
     | otherwise           = return (Just (conStatus, []))
     where
-        fsn' = combine fsn $
-                  map sentence fsn \\ map (mapSen (const id) m . sentence) osens
-        definitional = checkDefinitional fsn'
-        sort         = checkSort (osig, osens) m fsn'
-        leadingTerms = checkLeadingTerms osens m fsn'
-        incomplete   = checkIncomplete osens m fsn'
-        terminal     = checkTerminal (osig, osens) m fsn'
-        conStatus    = getConStatus (osig, osens) m fsn'
+        fsn' = filter isAxiom fsn
+        fsn'' = combine fsn' $
+                map sentence fsn' \\ map (mapSen (const id) m . sentence) osens
+        definitional = checkDefinitional fsn''
+        sort         = checkSort (osig, osens) m fsn''
+        leadingTerms = checkLeadingTerms osens m fsn''
+        incomplete   = checkIncomplete osens m fsn''
+        terminal     = checkTerminal (osig, osens) m fsn''
+        conStatus    = getConStatus (osig, osens) m fsn''
         combine :: [Named (FORMULA ())] -> [FORMULA ()] -> [Named (FORMULA ())]
         combine orig new = [ o | o <- orig, n <- new, sentence o == n ]
 

@@ -36,9 +36,9 @@ import Interfaces.GenericATPState
 
 import Data.Graph.Inductive.Graph
 import Data.Maybe (fromMaybe)
-import Data.List (isPrefixOf, stripPrefix)
+import Data.List (isPrefixOf, stripPrefix, nubBy)
 import Data.IORef
-import Data.Map(insert)
+import Data.Map (insert)
 
 import Static.DevGraph
 import Static.GTheory
@@ -57,7 +57,7 @@ import Logic.Logic
 import Logic.Grothendieck
 import Logic.Coerce
 
-import Common.OrderedMap (difference, keys)
+import qualified Common.OrderedMap as OMap
 import Common.Utils (joinWith, splitOn)
 import Common.Result
 import Common.LibName
@@ -66,6 +66,7 @@ import qualified Common.Lib.SizedList as SizedList
 import Common.Consistency
 import Common.ExtSign
 import Common.DocUtils
+import Common.AS_Annotation (SenAttr(..), makeNamed)
 
 #ifdef UNI_PACKAGE
 import GUI.Utils
@@ -170,7 +171,7 @@ proofTreeToProve ch st pcm pt =
               $ Prelude.filter wasProved pt
   -- axioms to include in prove
       allax = case theory st of
-                 G_theory _ _ _ axs _ -> keys axs
+                 G_theory _ _ _ axs _ -> OMap.keys axs
       nodeName = dropName (filePath ch) $ theoryName st
   return Prove { nodeNameStr = nodeName,
                  usedProver = prvr,
@@ -256,6 +257,12 @@ conservativityChoser useGUI checkers = case checkers of
 #endif
    return $ return hd
 
+consToCons :: ConsistencyStatus -> Conservativity
+consToCons Conservative = Cons
+consToCons Monomorphic  = Mono
+consToCons Definitional = Def
+consToCons _            = None
+
 checkConservativityEdge :: Bool -> (LEdge DGLinkLab) -> LibEnv -> LIB_NAME
                            -> IO (String,LibEnv, ProofHistory)
 checkConservativityEdge useGUI (source,target,linklab) libEnv ln
@@ -301,11 +308,12 @@ checkConservativityEdge useGUI (source,target,linklab) libEnv ln
              let chCons = checkConservativity $
                           fromMaybe (error "checkconservativityOfEdge")
                              $ maybeResult checkerR
+                 inputThSens = toNamedList $ 
+                               sensTar `OMap.difference` transSensSrc
                  Result ds res =
                      chCons
                         (plainSign sign2, toNamedList sensSrc2)
-                        compMor $ toNamedList
-                                    (sensTar `difference` transSensSrc)
+                        compMor inputThSens
                  showObls [] = ""
                  showObls obls=", provided that the following proof "
                                ++"obligations can be discharged:\n"
@@ -319,24 +327,45 @@ checkConservativityEdge useGUI (source,target,linklab) libEnv ln
                  consShow = case res of
                             Just (Just (cst, _)) -> cst
                             _                    -> Unknown "Unknown"
-                 consNew csv = if show csv == showToComply consShow
-                            then
-                                Proven conservativityRule emptyProofBasis
-                            else
-                                LeftOpen
-                 (newDglType, change) = case dgl_type linklab of
-                   ScopedLink sc dl (ConsStatus conserv op) ->
-                     let np = consNew conserv in
-                     (ScopedLink sc dl $ ConsStatus conserv np, np /= op)
+                 cs = consToCons consShow
+                 consNew csv = if cs >= csv
+                            then Proven conservativityRule emptyProofBasis
+                            else LeftOpen
+                 (newDglType, edgeChange) = case dgl_type linklab of
+                   ScopedLink sc dl (ConsStatus consv op) ->
+                     let np = consNew consv in
+                     (ScopedLink sc dl $ ConsStatus (max consv cs) np, np /= op)
                    t -> (t, False)
                  provenEdge = ( source
                               , target
                               , linklab { dgl_type = newDglType }
                               )
-                 changes = if change then [ DeleteEdge (source,target,linklab)
-                          , InsertEdge provenEdge ] else []
                  dg = lookupDGraph ln libEnv
-                 nextGr = changesDGH dg changes
+                 nodelab = labDG dg target
+                 obligations = case res of
+                      Just (Just (_, os)) -> os
+                      _                   -> []
+                 newSens = [ makeNamed "" o | o<-obligations ]
+                 namedNewSens = toThSens [ o { isAxiom = False } | 
+                                           o<-inputThSens, n<-newSens, 
+                                           sentence o == sentence n ]
+             G_theory glid gsign gsigid gsens gid <- return $ dgn_theory nodelab
+             namedNewSens' <- coerceThSens lid glid "" namedNewSens      
+             let oldSens = OMap.toList gsens
+                 -- Sort out the named sentences which have a different name, 
+                 -- but same sentence
+                 mergedSens = nubBy (\(_,a) (_,b) -> sentence a == sentence b) $
+                              oldSens ++ OMap.toList namedNewSens'
+                 (newTheory, nodeChange) = 
+                   (G_theory glid gsign gsigid (OMap.fromList mergedSens) gid, 
+                    length oldSens /= length mergedSens)
+                 newTargetNode = (target
+                                 ,nodelab { dgn_theory = newTheory })
+                 nodeChanges = [ SetNodeLab nodelab newTargetNode | nodeChange ]      
+                 edgeChanges = if edgeChange then 
+                          [ DeleteEdge (source,target,linklab)
+                          , InsertEdge provenEdge ] else []
+                 nextGr = changesDGH dg $ nodeChanges ++ edgeChanges
                  newLibEnv = insert ln
                    (groupHistory dg conservativityRule nextGr) libEnv
                  history = snd $ splitHistory dg nextGr
