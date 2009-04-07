@@ -481,6 +481,7 @@ createLocalMenuValueTitleShowConservativity = ValueTitle
     showCons :: Conservativity -> Conservativity -> ThmLinkStatus -> String
     showCons c cp status = case (c, cp, status) of
       (None, None, _) -> ""
+      (None, _, LeftOpen) -> ""
       (_, _, LeftOpen) -> show c ++ "?"
       _ -> show cp
 
