@@ -9,7 +9,7 @@ Maintainer  :  luecke@informatik.uni-bremen.de
 Stability   :  provisional
 Portability :  portable
 
-Here is the place where the class Logic is instantiated for OWL DL.
+Here is the place where the class Logic is instantiated for OWL.
 __SROIQ__
 -}
 
@@ -37,7 +37,7 @@ import Common.Consistency
 import Common.ProverTools
 #ifdef UNI_PACKAGE
 import OWL.ProvePellet
-import OWL.ProveFact
+--import OWL.ProveFact
 import OWL.Conservativity
 import OWL.Taxonomy
 #endif
@@ -51,7 +51,6 @@ instance Language OWL where
 instance Syntax OWL OntologyFile SymbItems () where
     parse_basic_spec OWL = Just basicSpec
     parse_symb_items OWL = Just symbItems
--- OWL DL logic
 
 instance Sentences OWL Sentence Sign OWL_Morphism Entity where
     map_sen OWL _ s = return s
