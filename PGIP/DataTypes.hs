@@ -34,7 +34,7 @@ module PGIP.DataTypes
 import Interfaces.DataTypes
 
 import System.IO
-import Network.Socket
+import Network
 
 data CMDL_GoalAxiom =
    ChangeGoals
