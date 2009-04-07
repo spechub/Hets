@@ -39,12 +39,12 @@ basicSpec = (fmap Basic_spec $ AnnoState.annosParser $ basicItemP)
 basicItemP :: AnnoState.AParser st BASIC_ITEM
 basicItemP = do AnnoState.dotT
                 f <- formulaP
-                return $ Axiom f
+                return $ Axiom_item f
              <|>
              do ns <- namesP
                 AnnoState.asKey "::"
                 t <- typeP
-                return $ Decl ns t
+                return $ Decl_item (ns, t)
 
 -- parser for all types
 typeP :: AnnoState.AParser st TYPE

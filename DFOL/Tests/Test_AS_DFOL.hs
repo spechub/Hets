@@ -30,10 +30,14 @@ commut :: FORMULA
 commut = Forall [([mTok, nTok], Univ nat), ([aTok, bTok], Univ $ Appl mat [m, n])] $ Equality (Appl plus [a, b]) (Appl plus [b, a])
 
 spec :: BASIC_SPEC
-spec = Basic_spec [Annoted (Decl [natTok] Sort) (Range []) [] [],
-                   Annoted (Decl [matTok] $ Func [Univ nat, Univ nat, Sort]) (Range []) [] [],
-                   Annoted (Decl [plusTok] $ Pi [([mTok, nTok], Univ nat)] $ Func [Univ $ Appl mat [m, n], Univ $ Appl mat [m, n],
-                                                                                 Univ $ Appl mat [m, n]]) (Range []) [] [],
-                   Annoted (Axiom commut) (Range []) [] []]
+spec = Basic_spec [Annoted (Decl_item ([natTok], Sort)) nullRange [] []]
+                   
+
+{-
+Annoted (Decl_item ([matTok], Func [Univ nat, Univ nat, Sort])) (Range []) [] [],
+                   Annoted (Decl_item ([plusTok], Pi [([mTok, nTok], Univ nat)] $ Func [Univ $ Appl mat [m, n], Univ $ Appl mat [m, n],
+                                                                                 Univ $ Appl mat [m, n]])) (Range []) [] [],
+                   Annoted (Axiom_item commut) (Range []) [] []]
+-}
 
 

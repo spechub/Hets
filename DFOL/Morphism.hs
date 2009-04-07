@@ -11,7 +11,7 @@ import Common.Doc
 import Common.DocUtils
 
 -- morphisms for DFOL - so far just the identity morphisms
-data Morphism = Morphism {object :: Sign} deriving (Show, Eq, Ord)
+data Morphism = Morphism {object :: Sign} deriving (Show, Ord, Eq)
 
 idMorph :: Sign -> Morphism
 idMorph sig = Morphism {object = sig}
@@ -22,7 +22,7 @@ compMorph m1 m2 = if object m1 == object m2
                      else fail "Codomain of the first morphism must equal the domain of the second."
 
 isValidMorph :: Morphism -> Bool
-isValidMorph m = isValidSig $ object m
+isValidMorph _ = True
 
 -- pretty printing
 instance Pretty Morphism where

@@ -5,6 +5,8 @@ import DFOL.Sign
 import DFOL.Morphism
 import DFOL.Parse_AS_DFOL
 import DFOL.ATC_DFOL ()
+import DFOL.Analysis_DFOL
+import DFOL.Symbol
 import Logic.Logic
 
 -- lid for first-order logic with dependent types
@@ -28,32 +30,34 @@ instance Syntax DFOL BASIC_SPEC SYMB_ITEMS SYMB_MAP_ITEMS where
    parse_symb_map_items DFOL = Just symbMapItems
 
 -- sentences for DFOL
-instance Sentences DFOL () Sign Morphism ()
+instance Sentences DFOL FORMULA Sign Morphism Symbol
 
 -- static analysis for DFOL
 instance StaticAnalysis DFOL
    BASIC_SPEC
-   ()               -- no sentences yet
+   FORMULA           
    SYMB_ITEMS
    SYMB_MAP_ITEMS
    Sign
    Morphism
-   ()               -- no symbols yet
-   ()               -- no raw symbols yet
+   Symbol     
+   Symbol
    where
+   basic_analysis DFOL = Just basicAnalysis
+   stat_symb_map_items DFOL = symbMapAnalysis
+   stat_symb_items DFOL = symbAnalysis
    empty_signature DFOL = emptySig
-
 
 -- instance of logic for DFOL
 instance Logic DFOL
-   ()               -- no sublogics yet
+   ()               -- no sublogics
    BASIC_SPEC
-   ()               -- no sentences yet
+   FORMULA               
    SYMB_ITEMS
    SYMB_MAP_ITEMS
    Sign
    Morphism
-   ()               -- no symbols yet
-   ()               -- no raw symbols yet
-   ()               -- no proof tree yet
+   Symbol  
+   Symbol
+   ()               -- no proof trees
 
