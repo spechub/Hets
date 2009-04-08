@@ -63,12 +63,12 @@ data SYMB_OR_MAP = Symb SYMB
 
 -- operations on a list of declarations
 getVarsFromDecls :: [DECL] -> Set.Set NAME
-getVarsFromDecls ds = Set.unions $ map Set.fromList $ map fst ds 
+getVarsFromDecls ds = Set.unions $ map Set.fromList $ map fst ds
 
 getTypeFromDecls :: NAME -> [DECL] -> Maybe TYPE
 getTypeFromDecls n ds = case result of
-                             Just (_,t) -> Just t  
-                             Nothing -> Nothing             
+                             Just (_,t) -> Just t
+                             Nothing -> Nothing
                         where result = find (\(ns,_) -> elem n ns) ds
 
 -- converts a term into its canonical form f(x_1, ... x_n)
@@ -76,8 +76,8 @@ termCanForm :: TERM -> TERM
 termCanForm (Identifier t) = (Identifier t)
 termCanForm (Appl f as) = case termF of
                                Identifier _ -> (Appl f as)
-                               Appl g bs -> (Appl g (bs ++ as))   
-                          where termF = termCanForm f    
+                               Appl g bs -> (Appl g (bs ++ as))
+                          where termF = termCanForm f
 
 -- converts a term into a form where a function is applied to exactly one argument
 termApplForm :: TERM -> TERM
@@ -92,16 +92,16 @@ substituteTermInType _ _ Sort = Sort
 substituteTermInType _ _ Form = Form
 substituteTermInType n val (Univ t) = Univ $ substituteTermInTerm n val t
 substituteTermInType n val (Func ts) = Func $ map (substituteTermInType n val) ts
-substituteTermInType n val (Pi ds t) = Pi (substituteTermInDecls n val ds) (substituteTermInType n val t)   
+substituteTermInType n val (Pi ds t) = Pi (substituteTermInDecls n val ds) (substituteTermInType n val t)
 
 substituteTermInTerm :: NAME -> TERM -> TERM -> TERM
 substituteTermInTerm n val (Identifier x) = if (x == n) then val else Identifier x
-substituteTermInTerm n val (Appl f as) = Appl (substituteTermInTerm n val f) $ map (substituteTermInTerm n val) as 
+substituteTermInTerm n val (Appl f as) = Appl (substituteTermInTerm n val f) $ map (substituteTermInTerm n val) as
 
-substituteTermInDecls :: NAME -> TERM -> [DECL] -> [DECL] 
+substituteTermInDecls :: NAME -> TERM -> [DECL] -> [DECL]
 substituteTermInDecls n val ds = map (substituteTermInDecl n val) ds
 
-substituteTermInDecl :: NAME -> TERM -> DECL -> DECL 
+substituteTermInDecl :: NAME -> TERM -> DECL -> DECL
 substituteTermInDecl n val (ns,t) = (ns, substituteTermInType n val t)
 
 substituteVarInType :: NAME -> NAME -> TYPE -> TYPE
@@ -109,19 +109,19 @@ substituteVarInType _ _ Sort = Sort
 substituteVarInType _ _ Form = Form
 substituteVarInType n1 n2 (Univ t) = Univ $ substituteVarInTerm n1 n2 t
 substituteVarInType n1 n2 (Func ts) = Func $ map (substituteVarInType n1 n2) ts
-substituteVarInType n1 n2 (Pi ds t) = Pi (substituteVarInDecls n1 n2 ds) (substituteVarInType n1 n2 t)   
+substituteVarInType n1 n2 (Pi ds t) = Pi (substituteVarInDecls n1 n2 ds) (substituteVarInType n1 n2 t)
 
 substituteVarInTerm :: NAME -> NAME -> TERM -> TERM
 substituteVarInTerm n1 n2 (Identifier x) = if (x == n1) then Identifier n2 else Identifier x
-substituteVarInTerm n1 n2 (Appl f as) = Appl (substituteVarInTerm n1 n2 f) $ map (substituteVarInTerm n1 n2) as 
+substituteVarInTerm n1 n2 (Appl f as) = Appl (substituteVarInTerm n1 n2 f) $ map (substituteVarInTerm n1 n2) as
 
-substituteVarInDecls :: NAME -> NAME -> [DECL] -> [DECL] 
+substituteVarInDecls :: NAME -> NAME -> [DECL] -> [DECL]
 substituteVarInDecls n1 n2 ds = map (substituteVarInDecl n1 n2) ds
 
-substituteVarInDecl :: NAME -> NAME -> DECL -> DECL 
+substituteVarInDecl :: NAME -> NAME -> DECL -> DECL
 substituteVarInDecl n1 n2 (ns,t) = (substituteVarInNames n1 n2 ns, substituteVarInType n1 n2 t)
 
-substituteVarInNames :: NAME -> NAME -> [NAME] -> [NAME] 
+substituteVarInNames :: NAME -> NAME -> [NAME] -> [NAME]
 substituteVarInNames n1 n2 ns = map (\n -> if n == n1 then n2 else n) ns
 
 -- returns a list of declared variables from within a type
@@ -167,12 +167,8 @@ instance Pretty SYMB_MAP_ITEMS where
     pretty = printSymbMapItems
 instance Pretty SYMB_OR_MAP where
     pretty = printSymbOrMap
-instance Pretty [NAME] where
-    pretty = printNames
 instance Pretty DECL where
     pretty = printDecl
-instance Pretty [DECL] where
-    pretty = printDecls
 
 printBasicSpec :: BASIC_SPEC -> Doc
 printBasicSpec (Basic_spec xs) = vcat $ map pretty xs
@@ -185,11 +181,12 @@ printType :: TYPE -> Doc
 printType (Sort) = text "Sort"
 printType (Form) = text "Form"
 printType (Univ t) = pretty t
-printType (Func ts) = sepBy (text " -> ") $ map (printSubType funcPrec) ts
+printType (Func ts) = fsep $ prepPunctuate (text "-> ")
+  $ map (printSubType funcPrec) ts
 printType (Pi xs x) = text "Pi" <+> printDecls xs <+> printType x
 
 printSubType :: Int -> TYPE -> Doc
-printSubType prec t = if (typePrec t) >= prec
+printSubType prec t = if typePrec t >= prec
                          then parens $ printType t
                          else printType t
 printTerm :: TERM -> Doc
@@ -197,7 +194,7 @@ printTerm t = printTermCanForm $ termCanForm t
 
 printTermCanForm :: TERM -> Doc
 printTermCanForm (Identifier x) = pretty x
-printTermCanForm (Appl f as) = pretty f <> (parens $ sepBy (text ", ") $ map pretty as)                  
+printTermCanForm (Appl f as) = pretty f <> parens (ppWithCommas as)
 
 printFormula :: FORMULA -> Doc
 printFormula (T) = text "true"
@@ -205,10 +202,14 @@ printFormula (F) = text "false"
 printFormula (Pred x) = pretty x
 printFormula (Equality x y) = pretty x <+> text "==" <+> pretty y
 printFormula (Negation f) = notDoc <+> printSubFormula negPrec f
-printFormula (Conjunction xs) = sepBy (text " /\\ ") $ map (printSubFormula conjPrec) xs
-printFormula (Disjunction xs) = sepBy (text " \\/ ") $ map (printSubFormula disjPrec) xs
-printFormula (Implication x y) = printSubFormula implPrec x <+> implies <+> printSubFormula implPrec y
-printFormula (Equivalence x y) = printSubFormula equivPrec x <+> equiv <+> printSubFormula equivPrec y
+printFormula (Conjunction xs) = fsep $ prepPunctuate (andDoc <> space)
+  $ map (printSubFormula conjPrec) xs
+printFormula (Disjunction xs) = fsep $ prepPunctuate (orDoc <> space)
+  $ map (printSubFormula disjPrec) xs
+printFormula (Implication x y) = printSubFormula implPrec x <+> implies
+  <+> printSubFormula implPrec y
+printFormula (Equivalence x y) = printSubFormula equivPrec x <+> equiv
+  <+> printSubFormula equivPrec y
 printFormula (Forall xs f) = forallDoc <+> printDecls xs <+> printFormula f
 printFormula (Exists xs f) = exists <+> printDecls xs <+> printFormula f
 
@@ -218,26 +219,20 @@ printSubFormula prec f = if (formulaPrec f) > prec
                             else printFormula f
 
 printSymbItems :: SYMB_ITEMS -> Doc
-printSymbItems (Symb_items xs) = sepBy (text ", ") $ map pretty xs
+printSymbItems (Symb_items xs) = ppWithCommas xs
 
 printSymbMapItems :: SYMB_MAP_ITEMS -> Doc
-printSymbMapItems (Symb_map_items xs) = sepBy (text ", ") $ map pretty xs
+printSymbMapItems (Symb_map_items xs) = ppWithCommas xs
 
 printSymbOrMap :: SYMB_OR_MAP -> Doc
 printSymbOrMap (Symb s) = pretty s
 printSymbOrMap (Symb_map s t) = pretty s <+> mapsto <+> pretty t
 
 printNames :: [NAME] -> Doc
-printNames ns = sepBy (text ", ") $ map pretty ns
+printNames = ppWithCommas
 
 printDecl :: DECL -> Doc
 printDecl (ns, t) = printNames ns <+> colon <+> printType t
 
 printDecls :: [DECL] -> Doc
-printDecls xs = (sepBy (text "; ") $ map printDecl xs) <> dot
-
--- auxiliary functions for printing
-sepBy :: Doc -> [Doc] -> Doc
-sepBy _ [] = text ""
-sepBy _ [x] = x
-sepBy separator (x:xs) = x <> separator <> sepBy separator xs
+printDecls xs = fsep (punctuate semi $ map printDecl xs) <> dot
