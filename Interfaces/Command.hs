@@ -14,6 +14,8 @@ command-line-interface (CMDL), and other tools
 
 module Interfaces.Command where
 
+import Data.Char
+
 data GlobCmd =
     Automatic
   | ThmHideShift
@@ -23,6 +25,7 @@ data GlobCmd =
   | LocalDecomp
   | LocalInference
   | Composition
+  | CompositionCreateEdges
   | Colimit
   | NormalForm
   | QualifyNames
@@ -39,12 +42,48 @@ data GlobCmd =
 globCmdList :: [GlobCmd]
 globCmdList = [minBound .. maxBound]
 
+menuTextGlobCmd :: GlobCmd -> String
+menuTextGlobCmd cmd = case cmd of
+  Automatic -> "Automatic"
+  ThmHideShift -> "Theorem-Hide-Shift"
+  HideThmShift -> "Hide-Theorem-Shift"
+  GlobDecomp -> "Global-Decomposition"
+  GlobSubsume -> "Global-Subsumption"
+  LocalDecomp -> "Local-Decomposition"
+  LocalInference -> "Local-Inference"
+  Composition -> "Proof composed edges"
+  CompositionCreateEdges -> "Create composed proven edges"
+  Colimit -> "Compute colimit"
+  NormalForm -> "Compute normal form"
+  QualifyNames -> "Qualify all names"
+  UndoCmd -> "Undo"
+  RedoCmd -> "Redo"
+  Importing -> "Importings"
+  DisjointUnion -> "Disjoint union"
+  Renaming -> "Renamings"
+  Hiding -> "Hiding"
+  Heterogeneity -> "Heterogeneity"
+
+isDgRule :: GlobCmd -> Bool
+isDgRule c = c <= LocalInference
+
 isFlatteningCmd :: GlobCmd -> Bool
-isFlatteningCmd c =  c >= Importing
+isFlatteningCmd c = c >= Importing
+
+isUndoOrRedo :: GlobCmd -> Bool
+isUndoOrRedo c = elem c [UndoCmd, RedoCmd]
+
+describeGlobCmd :: GlobCmd -> String
+describeGlobCmd c = let t = map toLower $ menuTextGlobCmd c in
+  if isDgRule c then "dg rule " ++ t
+  else if isFlatteningCmd c then "flattening out " ++ t
+  else if isUndoOrRedo c then t ++ " last change"
+  else t
 
 -- | select a named entity
 data SelectCmd =
-    Lib  -- allows to move to an imported library
+    File -- read library from file
+  | Lib  -- allows to move to an imported library
   | Node
   | Comorphism
   | Prover
@@ -57,11 +96,23 @@ data SelectCmd =
 selectCmdList :: [SelectCmd]
 selectCmdList = [minBound .. maxBound]
 
+describeSelectCmd :: SelectCmd -> String
+describeSelectCmd cmd = case cmd of
+  File -> "read file"
+  Lib -> "select library"
+  Node -> "select node"
+  Comorphism -> "choose translation"
+  Prover -> "choose prover"
+  Goal -> "set goal"
+  ConsistencyChecker -> "choose consistency checker"
+  Link -> "select link"
+  ConservativityChecker -> "choose conservativity checker"
+
 data InspectCmd =
     CmdList -- all possible commands
   | Libs  -- all imported libraries
   | Nodes -- of library
-  | Links
+  | Edges
   | UndoHist
   | RedoHist
   | NodeInfo -- of a selected node
@@ -73,11 +124,30 @@ data InspectCmd =
   | LocalAxioms
   | Taxonomy
   | Concept
-  | LinkInfo -- of a selected link
+  | EdgeInfo -- of a selected link
     deriving (Eq, Ord, Enum, Bounded)
 
 inspectCmdList :: [InspectCmd]
 inspectCmdList = [minBound .. maxBound]
+
+showInspectCmd :: InspectCmd -> String
+showInspectCmd cmd = case cmd of
+  CmdList -> "Commands"-- all possible commands
+  Libs -> "Library Names"
+  Nodes -> "Nodes"
+  Edges -> "Edges"
+  UndoHist -> "Undo-History"
+  RedoHist -> "Redo-History"
+  NodeInfo -> "Node-Info"
+  Theory -> "Computed Theory"
+  AllGoals -> "All Goals"
+  ProvenGoals -> "Proven Goals"
+  UnprovenGoals -> "Unproven Goals"
+  Axioms -> "All Axioms"
+  LocalAxioms -> "Local Axioms"
+  Taxonomy -> "Taxonomy"
+  Concept -> "Concept"
+  EdgeInfo -> "Edge-Info"
 
 data Command =
     GlobCmd GlobCmd
