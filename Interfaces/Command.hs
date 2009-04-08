@@ -28,13 +28,19 @@ data GlobCmd =
   | QualifyNames
   | UndoCmd
   | RedoCmd
-
-data FlattenCmd =
-    Importing
+    -- Flattening command
+  | Importing
   | DisjointUnion
   | Renaming
   | Hiding
   | Heterogeneity
+    deriving (Eq, Ord, Enum, Bounded)
+
+globCmdList :: [GlobCmd]
+globCmdList = [minBound .. maxBound]
+
+isFlatteningCmd :: GlobCmd -> Bool
+isFlatteningCmd c =  c >= Importing
 
 -- | select a named entity
 data SelectCmd =
@@ -46,8 +52,10 @@ data SelectCmd =
   | ConsistencyChecker
   | Link
   | ConservativityChecker
+    deriving (Enum, Bounded)
 
-data GoalKind = AllGoals | ProvenGoals | UnprovenGoals
+selectCmdList :: [SelectCmd]
+selectCmdList = [minBound .. maxBound]
 
 data InspectCmd =
     CmdList -- all possible commands
@@ -58,18 +66,30 @@ data InspectCmd =
   | RedoHist
   | NodeInfo -- of a selected node
   | Theory
-  | Goals GoalKind
+  | AllGoals
+  | ProvenGoals
+  | UnprovenGoals
   | Axioms
   | LocalAxioms
   | Taxonomy
   | Concept
   | LinkInfo -- of a selected link
+    deriving (Eq, Ord, Enum, Bounded)
+
+inspectCmdList :: [InspectCmd]
+inspectCmdList = [minBound .. maxBound]
 
 data Command =
-    GlobCommad GlobCmd
-  | FlattenCmd FlattenCmd
+    GlobCmd GlobCmd
   | SelectCmd SelectCmd String
   | TimeLimit Int -- set a time limit for an automatic  prover
   | SetAxioms [String] -- set the axiom list for an automatic  prover
   | IncludeProvenTheorems Bool -- should proven theorems be added as axioms
   | InspectCmd InspectCmd
+
+commandList :: [Command]
+commandList =
+  map GlobCmd globCmdList
+  ++ map (\ s -> SelectCmd s "") selectCmdList
+  ++ [TimeLimit (-1), SetAxioms [], IncludeProvenTheorems False]
+  ++ map InspectCmd inspectCmdList
