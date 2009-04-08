@@ -28,7 +28,6 @@ module GUI.GraphTypes
 
 import GUI.GraphAbstraction(GraphInfo, initgraphs)
 import GUI.ProofManagement (GUIMVar)
--- import GUI.History(CommandHistory, emptyCommandHistory)
 import GUI.UDGUtils
 
 import Common.LibName
