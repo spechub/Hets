@@ -58,7 +58,7 @@ import CASL_DL.Logic_CASL_DL
 import ConstraintCASL.Logic_ConstraintCASL
 import RelationalScheme.Logic_Rel
 import VSE.Logic_VSE
-import DFOL.Logic_DFOL ()
+import DFOL.Logic_DFOL
 import OMDoc.Logic_OMDoc ()
 #endif
 #ifndef NOOWLLOGIC
@@ -72,6 +72,7 @@ logicList =
   , Logic Isabelle
   , Logic SoftFOL
   , Logic Propositional
+  , Logic DFOL
 #ifdef PROGRAMATICA
   , Logic Haskell
 #endif

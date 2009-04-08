@@ -167,8 +167,6 @@ instance Pretty SYMB_MAP_ITEMS where
     pretty = printSymbMapItems
 instance Pretty SYMB_OR_MAP where
     pretty = printSymbOrMap
-instance Pretty DECL where
-    pretty = printDecl
 
 printBasicSpec :: BASIC_SPEC -> Doc
 printBasicSpec (Basic_spec xs) = vcat $ map pretty xs
@@ -181,7 +179,7 @@ printType :: TYPE -> Doc
 printType (Sort) = text "Sort"
 printType (Form) = text "Form"
 printType (Univ t) = pretty t
-printType (Func ts) = fsep $ prepPunctuate (text "-> ")
+printType (Func ts) = fsep $ prepPunctuate (text "-> ") 
   $ map (printSubType funcPrec) ts
 printType (Pi xs x) = text "Pi" <+> printDecls xs <+> printType x
 
