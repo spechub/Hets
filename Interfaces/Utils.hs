@@ -308,7 +308,8 @@ checkConservativityEdge useGUI (source,target,linklab) libEnv ln
              let chCons = checkConservativity $
                           fromMaybe (error "checkconservativityOfEdge")
                              $ maybeResult checkerR
-                 inputThSens = toNamedList $
+                 inputThSens = nubBy (\ a b -> sentence a == sentence b) $
+                               toNamedList $
                                sensTar `OMap.difference` transSensSrc
                  Result ds res =
                      chCons
