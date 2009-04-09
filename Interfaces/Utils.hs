@@ -149,14 +149,14 @@ addProveToHist ch st pcm pt
     | Prelude.null $ Prelude.filter wasProved pt = return ()
     | otherwise = do
                   p <- proofTreeToProve ch st pcm pt
-                  addToHist ch $ ProveCommand p
+                  addToHist ch p
 
 -- Converts a list of proof-trees to a prove
 proofTreeToProve :: CommandHistory
      -> ProofState lid sentence  -- current proofstate
      -> Maybe (G_prover, AnyComorphism) -- possible used translation
      -> [Proof_status proof_tree] -- goals included in prove
-     -> IO Prove
+     -> IO ProveCommand
 proofTreeToProve ch st pcm pt =
   do
   -- selected prover

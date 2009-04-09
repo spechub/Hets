@@ -21,10 +21,8 @@ module Interfaces.DataTypes
        , UndoRedoElem(..)
        , ListChange(..)
        , CommandHistory(..)
-       , Prove(..)
+       , ProveCommand(..)
        , ProvenGoal(..)
-       , Command(..)
---       , Node(..)
        , addToHist
        ) where
 
@@ -89,23 +87,19 @@ data UndoRedoElem =
  | DgCommandChange LIB_NAME
 
 
-data CommandHistory = CommandHistory { hist :: IORef [Command],
+data CommandHistory = CommandHistory { hist :: IORef [ProveCommand],
                                        filePath :: String}
 
 
-data Command = ProveCommand Prove deriving Eq
+data ProveCommand = Prove
+ { nodeNameStr :: String
+ , usedProver  :: Maybe String
+ , translation :: Maybe AnyComorphism
+ , provenGoals :: [ProvenGoal]
+ , allAxioms   :: [String]
+ } deriving Eq
 
-instance Show Command where
-    show (ProveCommand p) = show p
-
-data Prove = Prove {nodeNameStr :: String,
-                    usedProver  :: Maybe String,
-                    translation :: Maybe AnyComorphism,
-                    provenGoals :: [ProvenGoal],
-                    allAxioms   :: [String]
-                    } deriving Eq
-
-instance Show Prove where
+instance Show ProveCommand where
    show p =
       "\n# " ++ (replicate 78 '-') ++ "\n\ndg basic " ++ nodeNameStr p ++ "\n\n"
       ++ "drop-translations\n"
@@ -151,7 +145,7 @@ data Int_NodeInfo = forall lid1 sublogics1
          symbol1 raw_symbol1 proof_tree1 =>
      Element (ProofState lid1 sentence1) Int
 
-goalToString :: Prove -> ProvenGoal -> String
+goalToString :: ProveCommand -> ProvenGoal -> String
 goalToString p g =
     "set goals " ++ (name g)
     ++
@@ -169,6 +163,6 @@ splitComorphism (Comorphism cid) =
    map ("translate "++) $ tail $ splitOn ';' $ language_name cid
 
 -- Adds a single command to the history.
-addToHist :: CommandHistory -> Command -> IO ()
+addToHist :: CommandHistory -> ProveCommand -> IO ()
 addToHist (CommandHistory {hist = c}) cm =
     readIORef c >>= (\h -> writeIORef c $ h ++ [cm])
