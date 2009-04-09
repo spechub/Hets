@@ -19,8 +19,7 @@ The transformation of the OMDoc intermediate representation to and from XML.
 
 
 module OMDoc.XmlInterface
-    ( XmlRepresentable
-    , toXml
+    ( XmlRepresentable(toXml)
     , listToXml
     , listFromXml
     , makeComment
