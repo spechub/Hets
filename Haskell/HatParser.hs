@@ -60,27 +60,22 @@ import Text.ParserCombinators.Parsec
 import Data.Char
 
 instance Pretty HsDecls where
-    pretty = printHsDecls
-
-printHsDecls :: HsDecls -> Doc
-printHsDecls ds =
-    vcat (map (text . ((++) "\n") . pp) $ hsDecls ds)
+    pretty = vsep . map (text . pp) . hsDecls
 
 data HsDecls = HsDecls { hsDecls :: [HsDeclI (SN HsName)] } deriving (Show, Eq)
 
 hatParser :: GenParser Char st HsDecls
-hatParser = do p <- getPosition
-               s <- hStuff
-               let (l, c) = (sourceLine p, sourceColumn p)
-                   front = takeWhile (not . isSpace) $ dropWhile isSpace s
-                   s2 = if front == "module" then s else
-                            (replicate (l-2) '\n' ++
-                             "module Prelude where\n" ++
-                             replicate (c-1) ' ' ++ s)
-                   ts = pLexerPass0 True s2
-               case parseTokens P.parse (sourceName p) ts of
-                           Result _ (Just (HsModule _ _ _ _ ds)) ->
-                                     return $ HsDecls ds
-                           Result ds Nothing -> unexpected
-                               ('\n' : unlines (map diagString ds)
-                                 ++ "(in Haskell code after " ++ shows p ")")
+hatParser = do
+  p <- getPosition
+  s <- hStuff
+  let (l, c) = (sourceLine p, sourceColumn p)
+      front = takeWhile (not . isSpace) $ dropWhile isSpace s
+      s2 = if front == "module" then s else
+        unlines (replicate (l-2) "" ++ ["module Prelude where"])
+        ++ replicate (c-1) ' ' ++ s
+      ts = pLexerPass0 True s2
+  case parseTokens P.parse (sourceName p) ts of
+    Result _ (Just (HsModule _ _ _ _ ds)) -> return $ HsDecls ds
+    Result ds Nothing -> unexpected
+      $ unlines ("" : map diagString ds)
+      ++ "(in Haskell code after " ++ shows p ")"
