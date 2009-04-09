@@ -89,7 +89,9 @@ knownProversWithKind pk =
        qCs <- quickCheckComorphisms
        return $ foldl insProvers Map.empty $
               idComorphisms ++ isaCs ++ spassCs ++ qCs
+#ifdef CASLEXTENSIONS
               ++ [Comorphism cspCASLTrace]
+#endif
        where insProvers kpm cm =
               case cm of
                 Comorphism cid ->

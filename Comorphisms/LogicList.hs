@@ -43,7 +43,6 @@ import Logic.Grothendieck
 import CASL.Logic_CASL  -- also serves as default logic
 import HasCASL.Logic_HasCASL
 import Propositional.Logic_Propositional
-import Temporal.Logic_Temporal
 #ifdef PROGRAMATICA
 import Haskell.Logic_Haskell
 #endif
@@ -56,8 +55,10 @@ import CspCASL.Logic_CspCASL
 import COL.Logic_COL ()
 import CASL_DL.Logic_CASL_DL
 import ConstraintCASL.Logic_ConstraintCASL
-import RelationalScheme.Logic_Rel
 import VSE.Logic_VSE
+-- no CASL extension, but omit them as non-essential
+import RelationalScheme.Logic_Rel
+import Temporal.Logic_Temporal
 import DFOL.Logic_DFOL
 import OMDoc.Logic_OMDoc ()
 #endif
@@ -72,21 +73,21 @@ logicList =
   , Logic Isabelle
   , Logic SoftFOL
   , Logic Propositional
-  , Logic DFOL
 #ifdef PROGRAMATICA
   , Logic Haskell
 #endif
 #ifdef CASLEXTENSIONS
   , Logic CoCASL
   , Logic Modal
-  , Logic Temporal
   , Logic cspCASL
   , Logic traceCspCASL
   , Logic failureCspCASL
   , Logic CASL_DL
   , Logic ConstraintCASL
-  , Logic RelScheme
   , Logic VSE
+  , Logic RelScheme
+  , Logic Temporal
+  , Logic DFOL
 #endif
 #ifndef NOOWLLOGIC
   , Logic OWL
