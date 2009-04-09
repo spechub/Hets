@@ -31,19 +31,19 @@ module GUI.HTkUtils
   , enableWids
   , disableWids
   , enableWidsUponSelection
-  , module HTk
-  , module ScrollBox
-  , module SimpleForm
-  , module TextDisplay
+  , module HTk.Toplevel.HTk
+  , module HTk.Toolkit.ScrollBox
+  , module HTk.Toolkit.SimpleForm
+  , module HTk.Toolkit.TextDisplay
   ) where
 
 import System.Directory
 
 import Util.Messages
-import HTk.Toplevel.HTk as HTk hiding (x, y)
-import HTk.Toolkit.ScrollBox as ScrollBox
-import HTk.Toolkit.SimpleForm as SimpleForm
-import HTk.Toolkit.TextDisplay as TextDisplay
+import HTk.Toplevel.HTk hiding (x, y)
+import HTk.Toolkit.ScrollBox
+import HTk.Toolkit.SimpleForm
+import HTk.Toolkit.TextDisplay
 import HTk.Toolkit.FileDialog
 
 import Logic.Prover

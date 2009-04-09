@@ -12,13 +12,13 @@ Portability :  non-portable
 -}
 
 module Common.UniUtils
-  ( module ChildProcess
-  , module ProcessClasses
-  , module Events
-  , module Destructible
+  ( module Posixutil.ChildProcess
+  , module Posixutil.ProcessClasses
+  , module Events.Events
+  , module Events.Destructible
   ) where
 
-import Posixutil.ChildProcess as ChildProcess
-import Posixutil.ProcessClasses as ProcessClasses
-import Events.Events as Events
-import Events.Destructible as Destructible
+import Posixutil.ChildProcess
+import Posixutil.ProcessClasses
+import Events.Events
+import Events.Destructible
