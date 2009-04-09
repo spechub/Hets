@@ -29,8 +29,8 @@ serveLog :: String              -- ^ Port number or name; 514 is default
          -> IO ()
 serveLog port handlerfunc = withSocketsDo $
     do -- Look up the port.  Either raises an exception or returns
-       -- a nonempty list.  
-       addrinfos <- getAddrInfo 
+       -- a nonempty list.
+       addrinfos <- getAddrInfo
                     (Just (defaultHints {addrFlags = [AI_PASSIVE]}))
                     Nothing (Just port)
        let serveraddr = head addrinfos
@@ -54,7 +54,7 @@ serveLog port handlerfunc = withSocketsDo $
     where
           -- | Process incoming connection requests
           procRequests :: MVar () -> Socket -> IO ()
-          procRequests lock mastersock = 
+          procRequests lock mastersock =
               do (connsock, clientaddr) <- accept mastersock
                  handle lock Nothing clientaddr
                     "syslogtcpserver.hs: client connnected"
@@ -69,7 +69,7 @@ serveLog port handlerfunc = withSocketsDo $
                  messages <- hGetContents connhdl
                  mapM_ (handle lock (Just connhdl) clientaddr) (lines messages)
                  hClose connhdl
-                 handle lock (Just connhdl) clientaddr 
+                 handle lock (Just connhdl) clientaddr
                     "syslogtcpserver.hs: client disconnected"
 
           -- Lock the handler before passing data to it.
@@ -77,7 +77,7 @@ serveLog port handlerfunc = withSocketsDo $
           -- This type is the same as
           -- handle :: MVar () -> Handle -> SockAddr -> String -> IO ()
           handle lock h clientaddr msg =
-              withMVar lock 
+              withMVar lock
                  (\a -> handlerfunc h clientaddr msg >> return a)
 
 syslog :: Maybe Handle -> Facility -> Priority -> String -> IO ()
