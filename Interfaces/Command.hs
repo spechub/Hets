@@ -163,3 +163,13 @@ commandList =
   ++ map (\ s -> SelectCmd s "") selectCmdList
   ++ [TimeLimit (-1), SetAxioms [], IncludeProvenTheorems False]
   ++ map InspectCmd inspectCmdList
+
+{- unsafe commands are needed to
+delete or add
+Links, Nodes, Symbols from Signatures, and sentences
+
+A sequence of such unsafe operations should be check by hets, if they will
+result in a consistent development graph, possibly indicating why not.  -}
+
+
+
