@@ -99,7 +99,7 @@ and "OMDoc.OMDocXml" for a sample use
  * finite sets from Data.Set, see <http://www.haskell.org/ghc/docs/latest/html/libraries/containers/Data-Set.html>
 
  * finite graphs from the functional graph library (fgl), see
-   <http://www.haskell.org/ghc/docs/latest/html/libraries/fgl/Data-Graph-Inductive-Graph.html>
+   <http://web.engr.oregonstate.edu/~erwig/fgl/haskell/>
 
  * haifa-lite and syb-generics originally from
    <http://www.dcs.shef.ac.uk/~simonf/HAIFA.html>
