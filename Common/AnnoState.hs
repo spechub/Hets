@@ -121,9 +121,17 @@ startKeyword = dotS : cDot : delete existsS casl_reserved_words
 annoParser :: AParser st a -> AParser st (Annoted a)
 annoParser = bind addLeftAnno annos
 
+{- | parse preceding and consecutive trailing annotations of an item in
+     between.  Unlike 'annosParser' do not treat all trailing annotations as
+     preceding annotations of the next time.  -}
+trailingAnnosParser :: AParser st a -> AParser st [Annoted a]
+trailingAnnosParser p = do
+  l <- many1 $ bind appendAnno (annoParser p) lineAnnos
+  a <- annos -- append remaining annos to last item
+  return $ init l ++ [appendAnno (last l) a]
+
 -- | parse an item list preceded and followed by annotations
-annosParser :: AParser st a
-            -> AParser st [Annoted a]
+annosParser :: AParser st a -> AParser st [Annoted a]
 annosParser parser =
     do a <- annos
        l <- many1 $ bind (,) parser annos

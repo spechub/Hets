@@ -14,7 +14,6 @@ module DFOL.Parse_AS_DFOL
 import qualified Common.Lexer as Lexer
 import qualified Common.Keywords as Keywords
 import qualified Common.AnnoState as AnnoState
-import Common.AS_Annotation
 import DFOL.AS_DFOL
 import Text.ParserCombinators.Parsec
 
@@ -32,15 +31,9 @@ reserved = [Keywords.trueS,
 
 -- parser for basic spec
 basicSpec :: AnnoState.AParser st BASIC_SPEC
-basicSpec = fmap Basic_spec (many1 $ myAnnoParser basicItemP)
+basicSpec = fmap Basic_spec (AnnoState.trailingAnnosParser basicItemP)
             <|>
             (Lexer.oBraceT >> Lexer.cBraceT >> (return $ Basic_spec []))
-
-myAnnoParser :: AnnoState.AParser st a -> AnnoState.AParser st (Annoted a)
-myAnnoParser p = do
-  ap <- AnnoState.annoParser p
-  as <- AnnoState.lineAnnos
-  return $ appendAnno ap as
 
 -- parser for basic items
 basicItemP :: AnnoState.AParser st BASIC_ITEM
