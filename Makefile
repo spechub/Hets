@@ -426,7 +426,7 @@ docs/index.html:
 	$(HADDOCK) -o docs -h -v -s ../%F \
             -t 'Hets - the Heterogeneous Tool Set' \
             -p Hets-Haddock-Prologue.txt $(HADDOCK_OPTS) \
-             $(filter-out Test.hs, $(wildcard *.hs))
+             Syntax/ADoc.hs $(filter-out Test.hs, $(wildcard *.hs))
 else
 # generate haddock documentation with links to sources
 # the interface treatment is stolen from uni/mk/suffix.mk
