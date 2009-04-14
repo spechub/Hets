@@ -34,24 +34,21 @@ import qualified Common.AS_Annotation as AS_Anno
 import Text.ParserCombinators.Parsec
 
 propKeywords :: [String]
-propKeywords = [
-                Keywords.propS
-               ,Keywords.notS
-               ,Keywords.trueS
-               ,Keywords.falseS
-               ]
+propKeywords =
+  [ Keywords.propS
+  , Keywords.notS
+  , Keywords.trueS
+  , Keywords.falseS ]
 
 -- | Toplevel parser for basic specs
 basicSpec :: AnnoState.AParser st AS_BASIC.BASIC_SPEC
-basicSpec = (fmap AS_BASIC.Basic_spec $ AnnoState.annosParser $ parseBasicItems)
-            <|> (Lexer.oBraceT >> Lexer.cBraceT >> return (AS_BASIC.Basic_spec []))
+basicSpec =
+  fmap AS_BASIC.Basic_spec (AnnoState.annosParser parseBasicItems)
+  <|> (Lexer.oBraceT >> Lexer.cBraceT >> return (AS_BASIC.Basic_spec []))
 
 -- | Parser for basic items
 parseBasicItems :: AnnoState.AParser st AS_BASIC.BASIC_ITEMS
-parseBasicItems =
-   parsePredDecl
-   <|>
-   parseAxItems
+parseBasicItems = parsePredDecl <|> parseAxItems
 
 -- | parser for predicate declarations
 parsePredDecl :: AnnoState.AParser st AS_BASIC.BASIC_ITEMS
@@ -59,8 +56,8 @@ parsePredDecl = fmap AS_BASIC.Pred_decl predItem
 
 -- | parser for Axiom_items
 parseAxItems :: AnnoState.AParser st AS_BASIC.BASIC_ITEMS
-parseAxItems =
-    do d <- AnnoState.dotT
+parseAxItems = do
+       d <- AnnoState.dotT
        (fs, ds) <- aFormula `Lexer.separatedBy` AnnoState.dotT
        (_, an) <- AnnoState.optSemi
        let _  = Id.catRange (d:ds)
@@ -73,12 +70,11 @@ propId = Lexer.pToken $ Lexer.reserved propKeywords Lexer.scanAnyWords
 
 -- | parser for predicates = propositions
 predItem :: AnnoState.AParser st AS_BASIC.PRED_ITEM
-predItem =
-    do
-      v <- AnnoState.asKey (Keywords.propS++Keywords.sS) <|>
+predItem = do
+      v <- AnnoState.asKey (Keywords.propS ++ Keywords.sS) <|>
            AnnoState.asKey Keywords.propS
       (ps, cs) <- propId `Lexer.separatedBy` AnnoState.anComma
-      return $ AS_BASIC.Pred_item ps $ Id.catRange(v : cs)
+      return $ AS_BASIC.Pred_item ps $ Id.catRange $ v : cs
 
 -- | Parser for implies @=>@
 implKey :: AnnoState.AParser st Id.Token
@@ -129,8 +125,8 @@ primFormula =
 
 -- | Parser for formulae containing 'and' and 'or'
 andOrFormula :: AnnoState.AParser st AS_BASIC.FORMULA
-andOrFormula =
-               do f <- primFormula
+andOrFormula = do
+                  f <- primFormula
                   do c <- andKey
                      (fs, ps) <- primFormula `Lexer.separatedBy` andKey
                      return (AS_BASIC.Conjunction (f:fs) (Id.catRange (c:ps)))
@@ -142,8 +138,8 @@ andOrFormula =
 
 -- | Parser for formulae with implications
 impFormula :: AnnoState.AParser st AS_BASIC.FORMULA
-impFormula  =
-             do f <- andOrFormula
+impFormula = do
+                f <- andOrFormula
                 do c <- implKey
                    (fs, ps) <- andOrFormula `Lexer.separatedBy` implKey
                    return (makeImpl      (f:fs) (Id.catPosAux (c:ps)))
@@ -152,22 +148,24 @@ impFormula  =
                      g <- andOrFormula
                      return (AS_BASIC.Equivalence f g $ Id.tokPos c)
                   <|> return f
-                    where makeImpl   [f,g] p = AS_BASIC.Implication f g   (Id.Range p)
-                          makeImpl   (f:r) (c:p) =
-                                     AS_BASIC.Implication f (makeImpl r p)   (Id.Range [c])
+                    where makeImpl [f,g] p =
+                              AS_BASIC.Implication f g (Id.Range p)
+                          makeImpl (f:r) (c:p) = AS_BASIC.Implication f
+                              (makeImpl r p) (Id.Range [c])
                           makeImpl   _ _ =
                               error "makeImpl got illegal argument"
 
 -- | Parser for formulae with parentheses
 parenFormula :: AnnoState.AParser st AS_BASIC.FORMULA
-parenFormula =
-    do Lexer.oParenT << AnnoState.addAnnos
+parenFormula = do
+       Lexer.oParenT << AnnoState.addAnnos
        f <- impFormula << AnnoState.addAnnos
        Lexer.cParenT >> return f
 
 -- | Toplevel parser for formulae
 aFormula :: AnnoState.AParser st (AS_Anno.Annoted AS_BASIC.FORMULA)
-aFormula = Lexer.bind AS_Anno.appendAnno (AnnoState.annoParser $ impFormula) AnnoState.lineAnnos
+aFormula = Lexer.bind AS_Anno.appendAnno (AnnoState.annoParser impFormula)
+  AnnoState.lineAnnos
 
 -- | parsing a prop symbol
 symb :: GenParser Char st SYMB
@@ -190,8 +188,8 @@ symbItems = do
 
 -- | parse a comma separated list of symbols
 symbs :: GenParser Char st ([SYMB], [Token])
-symbs =
-    do s <- symb
+symbs = do
+       s <- symb
        do   c <- commaT `followedWith` symb
             (is, ps) <- symbs
             return (s:is, c:ps)
@@ -201,7 +199,7 @@ symbs =
 symbMapItems :: GenParser Char st SYMB_MAP_ITEMS
 symbMapItems = do
   (is, ps) <- symbMaps
-  return (Symb_map_items is $ catRange $ ps)
+  return (Symb_map_items is $ catRange ps)
 
 -- | parse a comma separated list of symbol mappings
 symbMaps :: GenParser Char st ([SYMB_OR_MAP], [Token])
