@@ -35,7 +35,7 @@ instance Comorphism DFOL2CASL
    sourceLogic DFOL2CASL = DFOL
    sourceSublogic DFOL2CASL = ()
    targetLogic DFOL2CASL = CASL_Logic.CASL
-   mapSublogic DFOL2CASL () = Nothing
+   mapSublogic DFOL2CASL () = Just CASL_Sublogic.caslTop
    map_theory DFOL2CASL = wrapInResult . theoryTransl
    map_symbol DFOL2CASL = error "map symbol nyi"
    map_sentence DFOL2CASL = \ sig -> wrapInResult . (senTransl sig)

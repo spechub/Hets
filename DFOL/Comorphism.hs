@@ -66,7 +66,7 @@ sigMapH (sym:syms) sig caslsig = case kind of
 
 -- generating axioms for a translated signature
 generateAxioms :: Sign -> [Named (CASL_AS.CASLFORMULA)]
-generateAxioms sig = sortAx ++ funcAx ++ predAx
+generateAxioms sig = predAx ++ funcAx ++ sortAx
                      where sorts = Set.toList $ getSymbolsByKind sig SortKind
                            funcs = Set.toList $ getSymbolsByKind sig FuncKind
                            preds = Set.toList $ getSymbolsByKind sig PredKind
@@ -76,11 +76,13 @@ generateAxioms sig = sortAx ++ funcAx ++ predAx
 
 -- generating axioms for translated predicate symbols
 generatePredAxioms :: Sign -> [NAME] -> [Named CASL_AS.CASLFORMULA]
-generatePredAxioms sig ps = map (generatePredAxiomsH sig) ps
+generatePredAxioms sig ps = concatMap (generatePredAxiomsH sig) ps
 
-generatePredAxiomsH :: Sign -> NAME -> Named CASL_AS.CASLFORMULA
+generatePredAxiomsH :: Sign -> NAME -> [Named CASL_AS.CASLFORMULA]
 generatePredAxiomsH sig p = 
-   makeNamed ("gen_pred_" ++ show p) formula  
+   if (length argNames == 0) 
+      then [] 
+      else [makeNamed ("gen_pred_" ++ show p) formula]
    where Just argNames = getArgumentNames p sig
          Just argTypes = getArgumentTypes p sig
          args = map makeVar argNames
@@ -94,30 +96,35 @@ generateFuncAxioms sig fs = concatMap (generateFuncAxiomsH sig) fs
 
 generateFuncAxiomsH :: Sign -> NAME -> [Named CASL_AS.CASLFORMULA]
 generateFuncAxiomsH sig f = 
-   [makeNamed ("gen_func_1_" ++ show f) formula1, 
-    makeNamed ("gen_func_2_" ++ show f) formula2]
+   if (length argNames == 0) 
+      then [makeNamed ("gen_func_1_" ++ show f) formula0]
+      else [makeNamed ("gen_func_1_" ++ show f) formula1, 
+            makeNamed ("gen_func_2_" ++ show f) formula2]
    where Just argNames = getArgumentNames f sig
          Just argTypes = getArgumentTypes f sig
          Just resultType = getReturnType f sig
          args = map makeVar argNames
          formula1 = makeForall argNames
                                (makeImplication (makeNegation (makeTypeHyps argTypes args sig))
-                                                (makeNegation (makeStrongEquation (makeApplication f args sig) bot)))
+                                                (makeStrongEquation (makeApplication f args sig) bot))
          formula2 = makeForall argNames
                                (makeImplication (makeTypeHyps argTypes args sig)
                                                 (makeTypeHyp resultType (makeApplication f args sig) sig))
+         formula0 = makeTypeHyp resultType (makeApplication f [] sig) sig
 
 -- generating axioms for translated sort symbols
 generateSortAxioms :: Sign -> [NAME] -> [Named CASL_AS.CASLFORMULA]
 generateSortAxioms sig ss = axioms1 ++ axioms2 ++ [axiom3] ++ axioms4
-                            where axioms1 = map (generateSortAxiomsH1 sig) ss
+                            where axioms1 = concatMap (generateSortAxiomsH1 sig) ss
                                   axioms2 = concatMap (generateSortAxiomsH2 sig) ss
                                   axiom3 = generateSortAxiomsH3 sig ss
                                   axioms4 = generateSortAxiomsH4 sig ss
       
-generateSortAxiomsH1 :: Sign -> NAME -> Named CASL_AS.CASLFORMULA
+generateSortAxiomsH1 :: Sign -> NAME -> [Named CASL_AS.CASLFORMULA]
 generateSortAxiomsH1 sig s = 
-   makeNamed ("gen_sort_1_" ++ show s) formula   
+   if (length argNames == 0) 
+      then []
+      else [makeNamed ("gen_sort_1_" ++ show s) formula]
    where Just argNames = getArgumentNames s sig
          Just argTypes = getArgumentTypes s sig
          args = map makeVar argNames
@@ -130,8 +137,10 @@ generateSortAxiomsH1 sig s =
 
 generateSortAxiomsH2 :: Sign -> NAME -> [Named CASL_AS.CASLFORMULA]
 generateSortAxiomsH2 sig s = 
-   [makeNamed ("gen_sort_2_" ++ show s) formula1, 
-    makeNamed ("gen_sort_3_" ++ show s) formula2]
+   if (ar == 0)
+      then [makeNamed ("gen_sort_2_" ++ show s) formula0]
+      else [makeNamed ("gen_sort_2_" ++ show s) formula1, 
+            makeNamed ("gen_sort_3_" ++ show s) formula2]
    where Just ar = getSymbolArity s sig
          argNames1 = makeArgNames "x" ar
          argNames2 = makeArgNames "y" ar
@@ -144,6 +153,7 @@ generateSortAxiomsH2 sig s =
          formula2 = makeForall (argNames1 ++ argNames2 ++ [elName])
                                (makeImplication (makeConjunction [makePredication s (args1 ++ [el]) sig, makePredication s (args2 ++ [el]) sig])
                                                 (makeConjunction $ map (\ (x,y) -> makeStrongEquation x y) $ zip args1 args2))
+         formula0 = makeNegation (makePredication s [bot] sig)
 
 generateSortAxiomsH3 :: Sign -> [NAME] -> Named CASL_AS.CASLFORMULA
 generateSortAxiomsH3 sig ss =  
@@ -156,11 +166,12 @@ generateSortAxiomsH3 sig ss =
          formula = makeForall [elName]
                               (makeImplication (makeNegation (makeStrongEquation el bot))
                                                (makeDisjunction $ map subformula ss))
-         subformula s = makeExists (argNames s)
-                                   (makePredication s ((args s) ++ [el]) sig)
+         subformula s = if (ar s == 0)
+                           then makePredication s [el] sig
+                           else makeExists (argNames s) (makePredication s ((args s) ++ [el]) sig)
      
 generateSortAxiomsH4 :: Sign -> [NAME] -> [Named CASL_AS.CASLFORMULA]          
-generateSortAxiomsH4 sig ss = map (generateSortAxiomsH4H sig) [ (s1,s2) | s1 <- ss, s2 <- ss, s1 /= s2 ]
+generateSortAxiomsH4 sig ss = map (generateSortAxiomsH4H sig) [ (s1,s2) | s1 <- ss, s2 <- ss, s1 < s2 ]
 
 generateSortAxiomsH4H :: Sign -> (NAME, NAME) -> Named CASL_AS.CASLFORMULA
 generateSortAxiomsH4H sig (s1,s2) = 

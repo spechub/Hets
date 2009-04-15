@@ -50,7 +50,7 @@ instance StaticAnalysis DFOL
 
 -- instance of logic for DFOL
 instance Logic DFOL
-   ()               -- no sublogics
+   ()
    BASIC_SPEC
    FORMULA               
    SYMB_ITEMS
@@ -59,5 +59,4 @@ instance Logic DFOL
    Morphism
    Symbol  
    Symbol
-   ()               -- no proof trees
-
+   ()
