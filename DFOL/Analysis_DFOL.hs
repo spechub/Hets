@@ -40,7 +40,7 @@ basicAnalysis :: (BASIC_SPEC, Sign, GlobalAnnos) -> Result.Result (BASIC_SPEC, E
 basicAnalysis (bs, sig, _) = if errs then Result.Result diag Nothing else Result.Result [] $ Just (bs, ExtSign newSig declaredSyms, formulae)
                              where Diagn diag1 newSig   = makeSig bs sig
                                    Diagn diag2 formulae = makeFormulas bs newSig                        
-                                   declaredSyms         = Set.map Symbol $ Set.difference (getSymbols newSig) (getSymbols sig)
+                                   declaredSyms         = Set.map Symbol $ Set.difference (getSymbols newSig) (getSymbols sig) 
                                    diag                 = diag1 ++ diag2                                     
  	                           errs                 = Result.hasErrors diag
 
@@ -66,16 +66,15 @@ addDeclToSig dec sig = if valid then Diagn [] $ addSymbolDecl dec sig else Diagn
 
 -- determines whether a declaration is valid w.r.t. a signature and a context 
 isValidDecl :: DECL -> Sign -> CONTEXT -> DIAGN Bool
-isValidDecl ([],_) _ _ = Diagn [] False  -- ADD DIAGN
 isValidDecl (ns,t) sig cont = andD [validNames, validType]
                               where validNames = areValidNames ns sig cont
                                     validType  = isValidType t sig cont 
 
 -- determines whether a variable declaration is valid w.r.t. a signature and a context 
 isValidVarDecl :: DECL -> Sign -> CONTEXT -> DIAGN Bool
-isValidVarDecl d@(_,t) sig cont = case t of
-                                       Univ _ -> isValidDecl d sig cont
-                                       _ -> Diagn [wrongDeclTypeError d cont] False
+isValidVarDecl d@(_,t) sig cont = andD [discourseType,validDec]
+                                  where discourseType = isDiscourseType t
+                                        validDec = isValidDecl d sig cont 
                                
 -- determines whether a list of names in a declaration is valid w.r.t. a signature and a context 
 areValidNames :: [NAME] -> Sign -> CONTEXT -> DIAGN Bool
@@ -91,16 +90,20 @@ isValidType :: TYPE -> Sign -> CONTEXT -> DIAGN Bool
 isValidType Sort _ _ = Diagn [] True
 isValidType Form _ _ = Diagn [] True
 isValidType (Univ t) sig cont = hasType t Sort sig cont
-isValidType (Func ts) sig cont = if (length ts < 2)
-                                    then Diagn [] False    -- ADD DIAGN
-                                    else andD $ map (\t -> isValidType t sig cont) ts
-isValidType (Pi [] _) _ _ = Diagn [] False -- ADD DIAGN
-isValidType (Pi [d] t) sig cont = andD [validDecl, validType]  
-                                  where validDecl = isValidVarDecl d sig cont
-                                        validType = isValidType t sig (addVarDecl d cont)
+isValidType (Func ts t) sig cont = andD [validDoms,validCod,discourseDoms]
+                                   where validDoms = andD $ map (\t1 -> isValidType t1 sig cont) ts
+                                         validCod  = isValidType t sig cont
+                                         discourseDoms = andD $ map isDiscourseType ts  
+isValidType (Pi [] t) sig cont = isValidType t sig cont
 isValidType (Pi (d:ds) t) sig cont = andD [validDecl, validType]                              
                                      where validDecl = isValidVarDecl d sig cont
                                            validType = isValidType (Pi ds t) sig (addVarDecl d cont)
+
+-- determines whether a type starts with Univ
+isDiscourseType :: TYPE -> DIAGN Bool
+isDiscourseType t = case t of
+                         Univ _ -> Diagn [] True
+                         _ -> Diagn [noDiscourseTypeError t] False 
 
 -- determines whether a term has the given type w.r.t. a signature and a context 
 hasType :: TERM -> TYPE -> Sign -> CONTEXT -> DIAGN Bool
@@ -125,43 +128,25 @@ getType (Appl f [a]) sig cont =
          Nothing -> Result.Result diagA Nothing 
          Just typeA -> case typeFM of
                             Nothing -> Result.Result diagF Nothing 
-                            Just (Func [dom,cod]) -> if (dom == typeA) 
+                            Just (Func [dom] cod) -> if (dom == typeA) 
                                                         then Result.Result [] $ Just cod 
                                                         else Result.Result [wrongTypeError dom typeA a cont] Nothing  
-                            Just (Func (t:ts)) -> if (t == typeA) 
-                                                     then Result.Result [] $ Just $ Func ts 
-                                                     else Result.Result [wrongTypeError t typeA a cont] Nothing
+                            Just (Func (dom:doms) cod) -> if (dom == typeA) 
+                                                             then Result.Result [] $ Just $ Func doms cod
+                                                             else Result.Result [wrongTypeError dom typeA a cont] Nothing
                             Just (Pi [([x],t)] typ) -> if (t == typeA) 
-                                                          then Result.Result [] $ Just $ substituteTermInType x a typ 
+                                                          then Result.Result [] $ Just $ substitute x a typ 
                                                           else Result.Result [wrongTypeError t typeA a cont] Nothing
                             Just (Pi (([x],t):ds) typ) -> if (t == typeA) 
-                                                             then Result.Result [] $ Just $ substituteTermInType x a $ Pi ds typ 
+                                                             then Result.Result [] $ Just $ substitute x a $ Pi ds typ 
                                                              else Result.Result [wrongTypeError t typeA a cont] Nothing
                             Just (Pi (((x:xs),t):ds) typ) -> if (t == typeA) 
-                                                                then Result.Result [] $ Just $ substituteTermInType x a $ Pi ((xs,t):ds) typ 
+                                                                then Result.Result [] $ Just $ substitute x a $ Pi ((xs,t):ds) typ 
                                                                 else Result.Result [wrongTypeError t typeA a cont] Nothing
-                            Just typeF -> Result.Result [noFunctionTypeError f typeF cont] Nothing
+                            Just typeF -> Result.Result [noFunctionTermError f typeF cont] Nothing
     where Result.Result diagF typeFM = getType f sig cont
           Result.Result diagA typeAM = getType a sig cont
 getType term sig cont = getType (termApplForm term) sig cont
-
--- renames variables in a Pi type to avoid variable capture
-alphaRename :: TYPE -> Sign -> CONTEXT -> TYPE
-alphaRename t sig cont = case t of
-                              Pi _ _ -> foldl (\ t1 (v1,v2) -> substituteVarInType v1 v2 t1) t varsRenames
-                              _ -> t
-                         where vars  = Set.toList $ getVarsInType t
-                               varsRenames = renameVars vars $ Set.union (getSymbols sig) (getVars cont)
-
--- renames all variables in the given list to avoid overlap with the given set of names 
-renameVars :: [NAME] -> Set.Set NAME -> [(NAME,NAME)]
-renameVars [] _ = []
-renameVars (var:vars) names = if (Set.notMember var names)
-                                 then let renamedVars = renameVars vars $ Set.insert var names
-                                          in (var,var):renamedVars
-                                 else let newVar = Token ((tokStr var) ++ "1") nullRange
-                                          ((_,renamedVar):renamedVars) = renameVars (newVar:vars) names
-                                          in (var,renamedVar):renamedVars                                                          
 
 -- FORMULAS                                                                  
 -- make a list of formulas for the given signature out of a basic spec
@@ -202,7 +187,7 @@ isValidFormula (Equality term1 term2) sig cont = case type1M of
                                                       Nothing -> Diagn diag1 False
                                                       Just type1 -> case type1 of
                                                                          Univ _ -> hasType term2 type1 sig cont
-                                                                         _ -> Diagn [noUnivTypeError term1 type1 cont] False
+                                                                         _ -> Diagn [noDiscourseTermError term1 type1 cont] False
                                                  where Result.Result diag1 type1M = getType term1 sig cont                                             
 isValidFormula (Negation f) sig cont = isValidFormula f sig cont
 isValidFormula (Conjunction fs) sig cont = andD $ map (\f -> isValidFormula f sig cont) fs  
@@ -241,12 +226,21 @@ makeSymbols :: SYMB_ITEMS -> [Symbol]
 makeSymbols (Symb_items symbs) = map Symbol symbs 
 
 -- ERROR MESSAGES
+redeclaredNamesError :: Set.Set NAME -> CONTEXT -> Result.Diagnosis
+redeclaredNamesError ns cont = Result.Diag
+                                 { Result.diagKind = Result.Error 
+                                 , Result.diagString = "Symbols or variables " ++ show ns ++ " declared previously in the context " 
+                                                       ++ (show $ pretty cont) ++ " or in the signature."
+                                 , Result.diagPos = nullRange
+                                 }
+
 unknownIdentifierError :: NAME -> CONTEXT -> Result.Diagnosis
 unknownIdentifierError n cont = Result.Diag 
                                   { Result.diagKind = Result.Error 
                                   , Result.diagString = "Unknown identifier " ++ (show $ pretty n) ++ " in the context " ++ (show $ pretty cont) 
                                   , Result.diagPos = nullRange
                                   }
+
 wrongTypeError :: TYPE -> TYPE -> TERM -> CONTEXT -> Result.Diagnosis 
 wrongTypeError type1 type2 term cont = Result.Diag 
                                          { Result.diagKind = Result.Error 
@@ -255,34 +249,26 @@ wrongTypeError type1 type2 term cont = Result.Diag
                                          , Result.diagPos = nullRange
                                          } 
 
-noFunctionTypeError :: TERM -> TYPE -> CONTEXT -> Result.Diagnosis
-noFunctionTypeError term t cont = Result.Diag
+noFunctionTermError :: TERM -> TYPE -> CONTEXT -> Result.Diagnosis
+noFunctionTermError term t cont = Result.Diag
                                     { Result.diagKind = Result.Error
                                     , Result.diagString = "Term " ++ (show $ pretty term) ++ " has the non-function type " ++ (show $ pretty t) ++  
                                                           " in the context " ++ (show $ pretty cont) ++ " and hence cannot be applied to an argument."
                                     , Result.diagPos = nullRange
                                     } 
 
-noUnivTypeError :: TERM -> TYPE -> CONTEXT -> Result.Diagnosis
-noUnivTypeError term t cont = Result.Diag 
-                                 { Result.diagKind = Result.Error 
-                                 , Result.diagString = "Term " ++ (show $ pretty term) ++ " has the non-discourse type " ++ (show $ pretty t) ++  
-                                                       " in the context " ++ (show $ pretty cont) ++ " and hence cannot be used in an equality."
-                                 , Result.diagPos = nullRange
-                                 }
+noDiscourseTermError :: TERM -> TYPE -> CONTEXT -> Result.Diagnosis
+noDiscourseTermError term t cont = Result.Diag 
+                                     { Result.diagKind = Result.Error 
+                                     , Result.diagString = "Term " ++ (show $ pretty term) ++ " has the non-discourse type " ++ (show $ pretty t) ++  
+                                                           " in the context " ++ (show $ pretty cont) ++ " and hence cannot be used in an equality."
+                                     , Result.diagPos = nullRange
+                                     }
 
-wrongDeclTypeError :: DECL -> CONTEXT -> Result.Diagnosis 
-wrongDeclTypeError d@(_,t) cont = Result.Diag 
-                                    { Result.diagKind = Result.Error 
-                                    , Result.diagString = "The declaration " ++ (show $ pretty d) ++ " has a non-discourse type " ++ (show $ pretty t) ++ 
-                                                          " in context " ++ (show $ pretty cont) 
-                                    , Result.diagPos = nullRange
-                                    }
-
-redeclaredNamesError :: Set.Set NAME -> CONTEXT -> Result.Diagnosis
-redeclaredNamesError ns cont = Result.Diag
-                                 { Result.diagKind = Result.Error 
-                                 , Result.diagString = "Symbols or variables " ++ show ns ++ " declared previously in the context " 
-                                                       ++ (show $ pretty cont) ++ " or in the signature."
-                                 , Result.diagPos = nullRange
-                                 }
+noDiscourseTypeError :: TYPE -> Result.Diagnosis
+noDiscourseTypeError t = Result.Diag 
+                           { Result.diagKind = Result.Error 
+                           , Result.diagString = "Type " ++ (show $ pretty t) ++ " is a non-discourse type (does not start with Univ) " ++ 
+                                                 "and hence cannot be used as a type of an argument."
+                           , Result.diagPos = nullRange
+                           }

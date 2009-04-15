@@ -56,7 +56,8 @@ typeP = do AnnoState.asKey "Pi"
         do t <- type1P
            (do AnnoState.asKey Keywords.funS
                (ts, _) <- type1P `Lexer.separatedBy` (AnnoState.asKey Keywords.funS)
-               return $ Func (t:ts)
+               let xs = t:ts
+               return $ Func (init xs) (last xs)
             <|>
             return t)
 

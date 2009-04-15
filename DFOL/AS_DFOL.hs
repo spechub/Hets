@@ -10,8 +10,6 @@ import Common.Id
 import Common.Doc
 import Common.DocUtils
 import DFOL.Utils
-import Data.List
-import qualified Data.Set as Set
 
 type NAME = Token
 type DECL = ([NAME],TYPE)
@@ -27,7 +25,7 @@ data BASIC_ITEM = Decl_item DECL
 data TYPE = Sort
           | Form
           | Univ TERM
-          | Func [TYPE]
+          | Func [TYPE] TYPE
           | Pi [DECL] TYPE
             deriving (Show, Ord, Eq)
 
@@ -61,24 +59,6 @@ data SYMB_OR_MAP = Symb SYMB
                  | Symb_map SYMB SYMB
                    deriving (Show, Eq)
 
--- operations on a list of declarations
-getVarsFromDecls :: [DECL] -> Set.Set NAME
-getVarsFromDecls ds = Set.unions $ map Set.fromList $ map fst ds
-
-getTypeFromDecls :: NAME -> [DECL] -> Maybe TYPE
-getTypeFromDecls n ds = case result of
-                             Just (_,t) -> Just t
-                             Nothing -> Nothing
-                        where result = find (\(ns,_) -> elem n ns) ds
-
--- converts a term into its canonical form f(x_1, ... x_n)
-termCanForm :: TERM -> TERM
-termCanForm (Identifier t) = (Identifier t)
-termCanForm (Appl f as) = case termF of
-                               Identifier _ -> (Appl f as)
-                               Appl g bs -> (Appl g (bs ++ as))
-                          where termF = termCanForm f
-
 -- converts a term into a form where a function is applied to exactly one argument
 termApplForm :: TERM -> TERM
 termApplForm (Identifier t) = Identifier t
@@ -86,48 +66,11 @@ termApplForm (Appl f []) = termApplForm f
 termApplForm (Appl f [a]) = Appl (termApplForm f) [a]
 termApplForm (Appl f as) = Appl (termApplForm $ Appl f $ init as) $ [last as]
 
--- substitutions
-substituteTermInType :: NAME -> TERM -> TYPE -> TYPE
-substituteTermInType _ _ Sort = Sort
-substituteTermInType _ _ Form = Form
-substituteTermInType n val (Univ t) = Univ $ substituteTermInTerm n val t
-substituteTermInType n val (Func ts) = Func $ map (substituteTermInType n val) ts
-substituteTermInType n val (Pi ds t) = Pi (substituteTermInDecls n val ds) (substituteTermInType n val t)
-
-substituteTermInTerm :: NAME -> TERM -> TERM -> TERM
-substituteTermInTerm n val (Identifier x) = if (x == n) then val else Identifier x
-substituteTermInTerm n val (Appl f as) = Appl (substituteTermInTerm n val f) $ map (substituteTermInTerm n val) as
-
-substituteTermInDecls :: NAME -> TERM -> [DECL] -> [DECL]
-substituteTermInDecls n val ds = map (substituteTermInDecl n val) ds
-
-substituteTermInDecl :: NAME -> TERM -> DECL -> DECL
-substituteTermInDecl n val (ns,t) = (ns, substituteTermInType n val t)
-
-substituteVarInType :: NAME -> NAME -> TYPE -> TYPE
-substituteVarInType _ _ Sort = Sort
-substituteVarInType _ _ Form = Form
-substituteVarInType n1 n2 (Univ t) = Univ $ substituteVarInTerm n1 n2 t
-substituteVarInType n1 n2 (Func ts) = Func $ map (substituteVarInType n1 n2) ts
-substituteVarInType n1 n2 (Pi ds t) = Pi (substituteVarInDecls n1 n2 ds) (substituteVarInType n1 n2 t)
-
-substituteVarInTerm :: NAME -> NAME -> TERM -> TERM
-substituteVarInTerm n1 n2 (Identifier x) = if (x == n1) then Identifier n2 else Identifier x
-substituteVarInTerm n1 n2 (Appl f as) = Appl (substituteVarInTerm n1 n2 f) $ map (substituteVarInTerm n1 n2) as
-
-substituteVarInDecls :: NAME -> NAME -> [DECL] -> [DECL]
-substituteVarInDecls n1 n2 ds = map (substituteVarInDecl n1 n2) ds
-
-substituteVarInDecl :: NAME -> NAME -> DECL -> DECL
-substituteVarInDecl n1 n2 (ns,t) = (substituteVarInNames n1 n2 ns, substituteVarInType n1 n2 t)
-
-substituteVarInNames :: NAME -> NAME -> [NAME] -> [NAME]
-substituteVarInNames n1 n2 ns = map (\n -> if n == n1 then n2 else n) ns
-
--- returns a list of declared variables from within a type
-getVarsInType :: TYPE -> Set.Set NAME
-getVarsInType (Pi ds t) = Set.union (getVarsFromDecls ds) (getVarsInType t)
-getVarsInType _ = Set.empty
+-- determines the canonical form of a term, i.e. the function symbol applied and the argument list
+termCanForm :: TERM -> (NAME, [TERM])
+termCanForm (Identifier x) = (x,[])
+termCanForm (Appl f as) = (x, bs ++ as)
+                          where (x,bs) = termCanForm f
 
 -- precedences - needed for pretty printing
 formulaPrec :: FORMULA -> Int
@@ -179,20 +122,19 @@ printType :: TYPE -> Doc
 printType (Sort) = text "Sort"
 printType (Form) = text "Form"
 printType (Univ t) = pretty t
-printType (Func ts) = fsep $ prepPunctuate (text "-> ") 
-  $ map (printSubType funcPrec) ts
+printType (Func ts t) = fsep $ prepPunctuate (text "-> ") $ map (printSubType funcPrec) (ts ++ [t])
 printType (Pi xs x) = text "Pi" <+> printDecls xs <+> printType x
 
 printSubType :: Int -> TYPE -> Doc
 printSubType prec t = if typePrec t >= prec
                          then parens $ printType t
                          else printType t
-printTerm :: TERM -> Doc
-printTerm t = printTermCanForm $ termCanForm t
 
-printTermCanForm :: TERM -> Doc
-printTermCanForm (Identifier x) = pretty x
-printTermCanForm (Appl f as) = pretty f <> parens (ppWithCommas as)
+printTerm :: TERM -> Doc
+printTerm t = if (as == [])
+                 then pretty x
+                 else pretty x <> parens (ppWithCommas as)
+              where (x,as) = termCanForm t 
 
 printFormula :: FORMULA -> Doc
 printFormula (T) = text "true"

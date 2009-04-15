@@ -14,7 +14,7 @@ import Common.DocUtils
 data Morphism = Morphism {object :: Sign} deriving (Show, Ord, Eq)
 
 idMorph :: Sign -> Morphism
-idMorph sig = Morphism {object = sig}
+idMorph sig = Morphism sig
 
 compMorph :: Morphism -> Morphism -> Result Morphism
 compMorph m1 m2 = if object m1 == object m2
