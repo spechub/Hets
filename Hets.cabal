@@ -68,7 +68,7 @@ Executable hets
   Main-is: hets.hs
   build-depends:
       array >= 0.1.0.0
-    , base >= 3.0.1.0
+    , base >= 4.0.0.0
     , containers >= 0.1.0.1
     , directory >= 1.0.0.0
     , fgl >= 5.4.1.1
