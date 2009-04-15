@@ -22,9 +22,7 @@ module GUI.GraphTypes
     , lockGlobal
     , tryLockGlobal
     , unlockGlobal
-    , mergeHistoryLast2Entries
-    )
-    where
+    ) where
 
 import GUI.GraphAbstraction(GraphInfo, initgraphs)
 import GUI.ProofManagement (GUIMVar)
@@ -189,25 +187,3 @@ getColor opts c v l = case Map.lookup (c, v, l) colors of
                   ++ (if v then "alternative " else "")
                   ++ (if l then "light " else "")
                   ++ show c
-
-
--- combine last two history entries into one entry (both steps are undone
--- in one call
-mergeHistoryLast2Entries :: GInfo -> IO ()
-mergeHistoryLast2Entries gInfo = do
-   ost <- readIORef $ intState gInfo
-   let ulst = undoList $ i_hist ost
-   case ulst of
-    x:y:m -> do
-              let z = Int_CmdHistoryDescription {
-                          cmdName = (cmdName x) ++ "\n"++ (cmdName y),
-                          cmdDescription = (cmdDescription x) ++
-                                           (cmdDescription y) }
-                  nwst= ost {
-                         i_hist = (i_hist ost) {
-                                     undoList = z:m
-                                     }
-                           }
-              writeIORef (intState gInfo) nwst
-              return ()
-    _ -> return ()
