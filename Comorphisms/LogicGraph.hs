@@ -69,6 +69,7 @@ import Comorphisms.PCoClTyConsHOL2IsabelleHOL
 import Comorphisms.PCoClTyConsHOL2PairsInIsaHOL
 import Comorphisms.HasCASL2PCoClTyConsHOL
 import Comorphisms.CASL2TopSort
+import Comorphisms.DFOL2CASL
 #ifdef CASLEXTENSIONS
 import Comorphisms.CoCFOL2IsabelleHOL
 import Comorphisms.CoCASL2CoPCFOL
@@ -121,6 +122,7 @@ comorphismList =
     , Comorphism CFOL2IsabelleHOL
     , Comorphism Prop2CASL
     , Comorphism CASL2Prop
+    , Comorphism DFOL2CASL
 #ifdef CASLEXTENSIONS
     , Comorphism CASL2Modal
     , Comorphism Modal2CASL
