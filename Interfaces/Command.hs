@@ -85,7 +85,7 @@ data SelectCmd =
     File -- read library from file
   | Lib  -- allows to move to an imported library
   | Node
-  | Comorphism
+  | ComorphismTranslation
   | Prover
   | Goal  -- a single goal for an automatic prover
   | ConsistencyChecker
@@ -101,7 +101,7 @@ describeSelectCmd cmd = case cmd of
   File -> "read file"
   Lib -> "select library"
   Node -> "select node"
-  Comorphism -> "choose translation"
+  ComorphismTranslation -> "choose translation"
   Prover -> "choose prover"
   Goal -> "set goal"
   ConsistencyChecker -> "choose consistency checker"
