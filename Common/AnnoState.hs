@@ -123,7 +123,7 @@ annoParser = bind addLeftAnno annos
 
 {- | parse preceding and consecutive trailing annotations of an item in
      between.  Unlike 'annosParser' do not treat all trailing annotations as
-     preceding annotations of the next time.  -}
+     preceding annotations of the next item.  -}
 trailingAnnosParser :: AParser st a -> AParser st [Annoted a]
 trailingAnnosParser p = do
   l <- many1 $ bind appendAnno (annoParser p) lineAnnos
