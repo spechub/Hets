@@ -44,16 +44,13 @@ import System.Exit (ExitCode(ExitSuccess), exitWith)
 
 #ifdef SHELLAC
 import PGIP.Interface
-#ifdef HXTFILTER
 import PGIP.XMLparsing
-#endif
 #endif
 
 main :: IO ()
 main = do
     getArgs >>= hetcatsOpts >>= \ opts ->
 #ifdef SHELLAC
-#ifdef HXTFILTER
      if connectP opts /= -1
      then
       cmdlConnect2Port (xmlFlag opts) (connectH opts) (connectP opts)
@@ -72,7 +69,6 @@ main = do
             cmdlRunShell (infiles opts)
           return ()
          else
-#endif
 #endif
           do
           putIfVerbose opts 3 ("Options: " ++ show opts)
