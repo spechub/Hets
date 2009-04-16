@@ -17,7 +17,79 @@ module PGIP.XMLstate where
 import Data.Time.Clock.POSIX (getPOSIXTime)
 import Common.Utils (getEnvDef)
 import System.IO (Handle)
-import Text.XML.HXT.Arrow
+import Text.XML.Light.Types
+import Text.XML.Light.Input
+
+
+genQName :: String -> QName 
+genQName str =
+   let qnameVal = blank_name
+   in qnameVal { qName = str }
+
+genPgipElem :: String -> Content
+genPgipElem str = 
+   Elem $ Element { 
+            elName = genQName "pgipelem",
+            elAttribs = [],
+            elContent = [Text $ CData CDataRaw str Nothing],
+            elLine    = Nothing }
+
+genNormalResponse :: String -> Content
+genNormalResponse str = 
+  Elem $ Element {
+          elName = genQName "normalresponse",
+          elAttribs = [],
+          elContent = [ Elem $ Element { 
+                         elName = genQName "pgmltext",
+                         elAttribs = [],
+                         elContent = [Text $ CData CDataRaw str Nothing],
+                         elLine = Nothing } ],
+          elLine = Nothing }
+
+genErrorResponse :: Bool -> String -> Content
+genErrorResponse fatality str =
+  case fatality of 
+   False ->
+    Elem $ Element { 
+          elName = genQName "errorresponse",
+          elAttribs = [],
+          elContent = [ Elem $ Element {
+                          elName = genQName "pgmltext",
+                          elAttribs = [],
+                          elContent = [Text $ CData CDataRaw str Nothing],
+                          elLine = Nothing } ],
+         elLine = Nothing }
+   True ->
+    Elem $ Element { 
+            elName = genQName "errorresponse",
+            elAttribs = [Attr { 
+                            attrKey = genQName "fatality",
+                            attrVal = "fatal" } ],
+            elContent = [ Elem $ Element { 
+                            elName = genQName "pgmltext",
+                            elAttribs = [],
+                            elContent = [Text $ CData CDataRaw str Nothing],
+                            elLine = Nothing } ],
+            elLine = Nothing }
+
+
+addToContent :: CMDL_PgipState -> Content -> CMDL_PgipState
+addToContent pgData cont
+ = pgData { 
+    xmlContent = case xmlContent pgData of 
+                  Elem tmpel ->
+                   Elem tmpel { elContent = (elContent tmpel) ++  [cont] } 
+                  _ -> xmlContent pgData
+       }
+
+addReadyXml :: CMDL_PgipState -> CMDL_PgipState
+addReadyXml pgData
+ = let el_ready = Elem $ Element { 
+                           elName = genQName "ready",
+                           elAttribs = [],
+                           elContent = [],
+                           elLine = Nothing }
+   in addToContent pgData el_ready 
 
 -- | State that keeps track of the comunication between Hets and the Broker
 data CMDL_PgipState = CMDL_PgipState {
@@ -25,7 +97,7 @@ data CMDL_PgipState = CMDL_PgipState {
                     name               :: String,
                     seqNb              :: Int,
                     theMsg             :: String,
-                    nonFatalErrMsg     :: String,
+                    xmlContent         :: Content,
                     hout               :: Handle,
                     hin                :: Handle,
                     stop               :: Bool,
@@ -43,10 +115,10 @@ genCMDL_PgipState swXML h_in h_out =
    return CMDL_PgipState {
      pgip_id            = pgId,
      name               = "Hets",
-     nonFatalErrMsg     = [],
      quietOutput        = False,
      seqNb              = 0,
      theMsg             = [],
+     xmlContent         = Elem blank_element { elName = genQName "pgip" },
      hin                = h_in,
      hout               = h_out,
      stop               = False,
@@ -68,34 +140,51 @@ genPgipID =
 -- | Concatenates the input string to the message stored in the state
 addToMsg :: String -> String -> CMDL_PgipState -> CMDL_PgipState
 addToMsg str errStr pgD
-  = pgD {
-     theMsg = (theMsg pgD) ++ str,
-     nonFatalErrMsg = (nonFatalErrMsg pgD) ++ errStr
-     }
+  = case theMsg pgD of
+     [] -> case str of 
+            [] -> case errStr of 
+                   [] -> pgD
+                   _  -> pgD { theMsg = errStr }
+            _  -> case errStr of 
+                   [] -> pgD { theMsg = str }
+                   _  -> pgD { theMsg = str ++ "\n" ++errStr }
+     _  -> case str of 
+            [] -> case errStr of 
+                   [] -> pgD
+                   _  -> pgD { theMsg = (theMsg pgD) ++ "\n" ++errStr }
+            _  -> case errStr of 
+                   [] -> pgD { theMsg = (theMsg pgD) ++ "\n" ++ str }
+                   _ -> pgD{ theMsg= (theMsg pgD)++"\n"++str++"\n"++errStr }
 
 
 -- | Resets the content of the message stored in the state
 resetMsg :: String -> CMDL_PgipState -> CMDL_PgipState
 resetMsg str pgD
    = pgD {
-      theMsg = str
+      theMsg = str,
+      xmlContent = convertPgipStateToXML pgD
       }
 
-
--- | Generates a pgip tag if it uses xml otherwise generates an empty xml
-genPgipTag :: CMDL_PgipState -> CMDL_PgipState
-genPgipTag pgipData =
-  let msg = ( "<pgip "
-              ++ "tag =\"" ++ (name pgipData) ++ "\" "
-              ++ "class=\"pg\" "
-              ++ "id=\""++ (pgip_id pgipData) ++"\" "
-              ++ "seq=\"" ++ (show $ seqNb pgipData) ++"\" "
-              ++ ">"
-              )
-  in case useXML pgipData of
-   True -> addToMsg msg [] pgipData
-   False -> pgipData
-
+convertPgipStateToXML :: CMDL_PgipState -> Content
+convertPgipStateToXML pgipData
+ = Elem $ Element {
+               elName     = genQName "pgip" ,
+               elAttribs  =   (Attr { 
+                                attrKey = genQName "tag",
+                                attrVal = name pgipData } )
+                            : (Attr { 
+                                attrKey = genQName "class",
+                                attrVal = "pg" } )
+                            : (Attr { 
+                                attrKey = genQName "id",
+                                attrVal = pgip_id pgipData } )
+                            : (Attr {
+                                attrKey = genQName "seq",
+                                attrVal = show $ seqNb pgipData } )
+                            : [],
+               elContent  = [],
+               elLine     = Nothing
+             }
 
 -- | List of all possible commands inside an XML  packet
 data CMDL_XMLcommands =
@@ -117,68 +206,98 @@ data CMDL_XMLcommands =
  | XML_CloseFile String
  | XML_LoadFile String deriving (Eq,Show)
 
+
+parseXMLTree :: [Content] -> [CMDL_XMLcommands] -> IO [CMDL_XMLcommands]
+parseXMLTree  xmltree acc
+ = do 
+    let getTextData someinf = case head $ elContent someinf of 
+                           Text smtxt -> cdData smtxt
+                           _ -> []
+    case xmltree of
+     []        -> return acc
+     (Elem info):ls -> 
+      case qName $ elName info of 
+       "proverinit"   ->
+           parseXMLTree ls (XML_ProverInit:acc)
+       "proverexit"   ->
+           parseXMLTree ls (XML_Exit:acc)
+       "startquiet"   ->
+           parseXMLTree ls (XML_StartQuiet:acc)
+       "stopquiet"    ->
+           parseXMLTree ls (XML_StopQuiet:acc)
+       "opengoal"     ->
+           do
+            let cnt = getTextData info
+            parseXMLTree ls ((XML_OpenGoal cnt):acc)
+       "proofstep"    ->
+           do
+            let cnt = getTextData info
+            parseXMLTree ls ((XML_Execute cnt):acc)
+       "closegoal"    ->
+           do 
+            let cnt = getTextData info
+            parseXMLTree ls ((XML_CloseGoal cnt):acc)
+       "giveupgoal"   ->
+           do
+            let cnt = getTextData info
+            parseXMLTree ls ((XML_GiveUpGoal cnt):acc)
+       "spurioscmd"   ->
+           do
+            let cnt = getTextData info
+            parseXMLTree ls ((XML_Execute cnt):acc)
+       "dostep"       ->
+           do
+            let cnt = getTextData info
+            parseXMLTree ls ((XML_Execute cnt):acc)
+       "editobj"      ->
+           do
+            let cnt = getTextData info
+            parseXMLTree ls ((XML_Execute cnt):acc)
+       "undostep"     ->
+            parseXMLTree ls (XML_Undo : acc)
+       "redostep"     ->
+            parseXMLTree ls (XML_Redo : acc)
+       "forget"       ->
+           do
+            let cnt = getTextData info
+            parseXMLTree ls ((XML_Forget cnt):acc)
+       "opentheory"   ->
+           do
+            let cnt = getTextData info
+            parseXMLTree ls ((XML_OpenTheory cnt) : acc)
+       "closetheory"  ->
+           do
+            let cnt = getTextData info
+            parseXMLTree ls ((XML_CloseTheory cnt) : acc)
+       "closefile"    ->
+           do
+            let cnt = getTextData info
+            parseXMLTree ls ((XML_CloseFile cnt) : acc)
+       "loadfile"     ->
+           do
+            let cnt = getTextData info
+            parseXMLTree ls ((XML_LoadFile cnt) : acc)
+       "askpgip"      ->
+           parseXMLTree ls (XML_Askpgip:acc)
+       "parsescript"  ->
+           do
+            let cnt = getTextData info
+            parseXMLTree ls ((XML_Execute cnt):acc)
+       _              ->
+           parseXMLTree ls acc
+     _: ls -> parseXMLTree ls acc
+
+
+
 -- | Given a packet (a normal string or a xml formated string), the function
 -- converts it into a list of commands
 parseMsg :: CMDL_PgipState -> String -> IO [CMDL_XMLcommands]
 parseMsg st input
  = do
-    let al = [(a_validate,v_0)]
-        lns = lines input
-    elemsNms <- case useXML st of
-                 True -> runX $ elementsName al input
-                 False -> return $ concatMap(\x -> case words x of
-                                                    [] -> []
-                                                    _ -> ["dostep"]) lns
-    elmsData<-case useXML st of
-               True -> runX $ elementsText al input
-               False -> return $ concatMap (\x -> case words x of
-                                                   [] -> []
-                                                   _ -> [x]) lns
-    let elems = map (\(nm,cnt) -> case nm  of
-                                         "proverinit" -> XML_ProverInit
-                                         "proverexit" -> XML_Exit
-                                         "startquiet" -> XML_StartQuiet
-                                         "stopquiet"  -> XML_StopQuiet
-                                         "opengoal"   -> XML_OpenGoal cnt
-                                         "proofstep"  -> XML_Execute cnt
-                                         "closegoal"  -> XML_CloseGoal cnt
-                                         "giveupgoal" -> XML_GiveUpGoal cnt
-                                         "spurioscmd" -> XML_Execute cnt
-                                         "dostep"     -> XML_Execute cnt
-                                         "editobj"    -> XML_Execute cnt
-                                         "undostep"   -> XML_Undo
-                                         "redostep"   -> XML_Redo
-                                         "forget"     -> XML_Forget cnt
-                                         "opentheory" -> XML_OpenTheory cnt
-                                         "closetheory"-> XML_CloseTheory cnt
-                                         "closefile"  -> XML_CloseFile cnt
-                                         "loadfile"   -> XML_LoadFile cnt
-                                         "askpgip"    -> XML_Askpgip
-                                         _            -> XML_Unknown nm
-                                 ) $ zip elemsNms elmsData
-    return elems
+    case useXML st of 
+      True  -> 
+        parseXMLTree (parseXML input) []
+      False -> return $ concatMap(\x -> case words x of 
+                                         [] -> []
+                                         _ -> [XML_Execute x]) $ lines input
 
-
--- | For a xml packet (contained into a string) the function extracts
--- the name of the tags
-elementsName :: Attributes -> String -> IOSArrow b String
-elementsName al src
- = readString al src
-   >>>
-   deep (isElem >>> hasName "pgip")
-   >>>
-   getChildren
-   >>>
-   getName
-
--- | For a xml packet (contained into a string) the function extracts
--- the text inside the tags
-elementsText :: Attributes -> String -> IOSArrow b String
-elementsText al src
- = readString al src
-   >>>
-   deep (isElem >>> hasName "pgip")
-   >>>
-   getChildren
-   >>>
-   (getChildren >>> getText) `orElse` getName
