@@ -245,31 +245,31 @@ getObligations m fsn = obligations
    check the definitional form of the partial axioms
 -}
 checkDefinitional :: [Named (FORMULA ())]
-    -> Result (Maybe (ConsistencyStatus,[FORMULA ()]))
+    -> Maybe (Result (Maybe (ConsistencyStatus,[FORMULA ()])))
 checkDefinitional fsn
     | elem Nothing l_Syms =
         let ax = quanti $ head [ a | a<-axioms, isNothing $ leadingSym a ]
             pos = snd $ leadingSymPos ax
-        in warning Nothing ("The following " ++ prettyType ax ++
+        in Just $ warning Nothing ("The following " ++ prettyType ax ++
                " is not definitional:\n" ++ flip showDoc "\n" ax) pos
     | not $ null un_p_axioms =
         let ax = head un_p_axioms
             pos = getRange $ take 1 un_p_axioms
-        in warning Nothing ("The following partial " ++ prettyType ax ++
+        in Just $ warning Nothing ("The following partial " ++ prettyType ax ++
                " is not definitional:\n" ++ flip showDoc "\n" ax) pos
     | length dom_l /= length (nubOrd dom_l) =
         let ax = head dualDom
             pos = getRange $ take 1 dualDom
             dualOS = head $ filter (\ o -> elem o $ delete o dom_l) dom_l
             dualDom = filter (\ f -> domain_os f dualOS) p_axioms
-        in warning Nothing ("The following partial " ++ prettyType ax ++
+        in Just $ warning Nothing ("The following partial " ++ prettyType ax ++
                " is not definitional:\n" ++ flip showDoc "\n" ax) pos
     | not $ null pcheck =
         let ax = head pcheck
             pos = getRange $ take 1 pcheck
-        in warning Nothing ("The following partial " ++ prettyType ax ++
+        in Just $ warning Nothing ("The following partial " ++ prettyType ax ++
                " is not definitional:\n" ++ flip showDoc "\n" ax) pos
-    | otherwise = return Nothing
+    | otherwise = Nothing
     where
         axioms = getAxioms fsn
         l_Syms = map leadingSym axioms        -- leading_Symbol
@@ -306,19 +306,19 @@ checkDefinitional fsn
 -}
 checkSort :: (Sign () (),[Named (FORMULA ())]) -> Morphism () () ()
     -> [Named (FORMULA ())]
-    -> Result (Maybe (ConsistencyStatus,[FORMULA ()]))
+    -> Maybe (Result (Maybe (ConsistencyStatus,[FORMULA ()])))
 checkSort (osig, osens) m fsn
-    | null fsn && null nSorts = return (Just (Conservative,[]))
+    | null fsn && null nSorts = Just $ return (Just (Conservative,[]))
     | not $ null notFreeSorts =
         let Id ts _ pos = head notFreeSorts
             sname = concatMap tokStr ts
-        in warning Nothing (sname ++ " is not freely generated") pos
+        in Just $ warning Nothing (sname ++ " is not freely generated") pos
     | not $ null nefsorts =
         let Id ts _ pos = head nefsorts
             sname = concatMap tokStr ts
-        in warning (Just (Inconsistent,[]))
+        in Just $ warning (Just (Inconsistent,[]))
                       (sname ++ " is not inhabited") pos
-    | otherwise = return Nothing
+    | otherwise = Nothing
     where
         nSorts = getNSorts osig m
         notFreeSorts = getNotFreeSorts osig m fsn
@@ -326,33 +326,36 @@ checkSort (osig, osens) m fsn
 
 checkLeadingTerms :: [Named (FORMULA ())] -> Morphism () () ()
    -> [Named (FORMULA ())]
-   -> Result (Maybe (ConsistencyStatus,[FORMULA ()]))
+   -> Maybe (Result (Maybe (ConsistencyStatus,[FORMULA ()])))
 checkLeadingTerms osens m fsn
     | not $ all (checkTerms tsig constructors) (map arguOfTerm leadingTerms) =
         let (Application os _ _) = tt
             tt = head $ filter (\ t -> not $ checkTerms tsig constructors $
                                     arguOfTerm t) leadingTerms
             pos = axiomRangeforTerm axioms' tt
-        in warning Nothing ("a leading term of " ++ opSymName os ++
+        in Just $ warning Nothing ("a leading term of " ++ opSymName os ++
            " consists of not only variables and constructors") pos
     | not $ all (checkTerms tsig constructors) (map arguOfPred leadingPreds) =
         let (Predication ps _ pos) = quanti pf
             pf = head $ filter (\ p -> not $ checkTerms tsig constructors $
                                     arguOfPred p) leadingPreds
-        in warning Nothing ("a leading predicate of " ++ predSymName ps ++
+        in Just $
+           warning Nothing ("a leading predicate of " ++ predSymName ps ++
            " consists of not only variables and constructors") pos
     | not $ all checkVar_App leadingTerms =
         let (Application os _ _) = tt
             tt = head $ filter (\ t -> not $ checkVar_App t) leadingTerms
             pos = axiomRangeforTerm axioms' tt
-        in warning Nothing ("a variable occurs twice in a leading term of " ++
+        in Just $
+           warning Nothing ("a variable occurs twice in a leading term of " ++
            opSymName os) pos
     | not $ all checkVar_Pred leadingPreds =
         let (Predication ps _ pos) = quanti pf
             pf = head $ filter (\ p -> not $ checkVar_Pred p) leadingPreds
-        in warning Nothing ("a variable occurs twice in a leading " ++
+        in Just $
+           warning Nothing ("a variable occurs twice in a leading " ++
            "predicate of " ++ predSymName ps) pos
-    | otherwise = return Nothing
+    | otherwise = Nothing
     where
         tsig = mtarget m
         constructors = getConstructors osens m fsn
@@ -371,7 +374,7 @@ checkLeadingTerms osens m fsn
 -}
 checkIncomplete :: [Named (FORMULA ())] -> Morphism () () ()
     -> [Named (FORMULA ())]
-    -> Result (Maybe (ConsistencyStatus,[FORMULA ()]))
+    -> Maybe (Result (Maybe (ConsistencyStatus,[FORMULA ()])))
 checkIncomplete osens m fsn
     | not $ null notcomplete =
         let symb_p = leadingSymPos $ head $ head notcomplete
@@ -380,25 +383,26 @@ checkIncomplete osens m fsn
                       Just (Left opS) -> opSymName opS
                       Just (Right pS) -> predSymName pS
                       _ -> error "CASL.CCC.FreeTypes.<Symb_Name>"
-        in warning (Just (Conservative,obligations)) ("the definition of " ++
+        in Just $ 
+           warning (Just (Conservative,obligations)) ("the definition of " ++
            sname ++ " is not complete") pos
-   | otherwise = return Nothing
+   | otherwise = Nothing
    where
        notcomplete = getNotComplete osens m fsn
        obligations = getObligations m fsn
 
 checkTerminal  :: (Sign () (),[Named (FORMULA ())]) -> Morphism () () ()
     -> [Named (FORMULA ())]
-    -> Result (Maybe (ConsistencyStatus,[FORMULA ()]))
+    -> Maybe (Result (Maybe (ConsistencyStatus,[FORMULA ()])))
 checkTerminal (osig, osens) m fsn
     | not (null fs_terminalProof) && proof /= Just True =
         if proof == Just False
-            then warning (Just (Conservative,obligations))
+            then Just $ warning (Just (Conservative,obligations))
                  "not terminating" nullRange
-            else warning (Just (Conservative,obligations))
+            else Just $ warning (Just (Conservative,obligations))
                  "cannot prove termination" nullRange
-    | not $ null obligations = return (Just (conStatus,obligations))
-    | otherwise = return Nothing
+    | not $ null obligations = Just $ return (Just (conStatus,obligations))
+    | otherwise = Nothing
     where
         fs = getFs fsn
         fs_terminalProof = filter (\ f ->
@@ -442,11 +446,11 @@ checkFreeType :: (Sign () (),[Named (FORMULA ())]) -> Morphism () () ()
                  -> [Named (FORMULA ())]
                  -> Result (Maybe (ConsistencyStatus,[FORMULA ()]))
 checkFreeType (osig, osens) m fsn
-    | isJust $ readResult definitional = definitional
-    | isJust $ readResult sort         = sort
-    | isJust $ readResult leadingTerms = leadingTerms
-    | isJust $ readResult incomplete   = incomplete
-    | isJust $ readResult terminal     = terminal
+    | isJust definitional = fromJust definitional
+    | isJust sort         = fromJust sort
+    | isJust leadingTerms = fromJust leadingTerms
+    | isJust incomplete   = fromJust incomplete
+    | isJust terminal     = fromJust terminal
     | otherwise                        = return (Just (conStatus, []))
     where
         fsn' = filter isAxiom $
@@ -459,7 +463,6 @@ checkFreeType (osig, osens) m fsn
         terminal     = checkTerminal (osig, osens) m fsn'
         conStatus    = getConStatus (osig, osens) m fsn'
         mapNamed f xs = [ x { sentence = f $ sentence x } | x<-xs ]
-        readResult = fromMaybe Nothing . maybeResult
 
 prettyType :: FORMULA () -> String
 prettyType fm = case fm of
