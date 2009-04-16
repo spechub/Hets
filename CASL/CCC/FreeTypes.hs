@@ -17,6 +17,7 @@ import CASL.AS_Basic_CASL       -- FORMULA, OP_{NAME,SYMB}, TERM, SORT, VAR
 import CASL.MapSentence (mapSen)
 import CASL.Morphism
 import CASL.Sign                -- Sign, OpType
+import CASL.SimplifySen (simplifyCASLSen)
 import qualified Data.Map as Map
 import qualified Data.Set as Set
 import qualified Common.Lib.Rel as Rel
@@ -244,31 +245,42 @@ getObligations m fsn = obligations
 {-
    check the definitional form of the partial axioms
 -}
-checkDefinitional :: [Named (FORMULA ())]
+checkDefinitional :: Sign () () -> [Named (FORMULA ())]
     -> Maybe (Result (Maybe (ConsistencyStatus,[FORMULA ()])))
-checkDefinitional fsn
+checkDefinitional osig fsn
     | elem Nothing l_Syms =
-        let ax = quanti $ head [ a | a<-axioms, isNothing $ leadingSym a ]
-            pos = snd $ leadingSymPos ax
-        in Just $ warning Nothing ("The following " ++ prettyType ax ++
-               " is not definitional:\n" ++ flip showDoc "\n" ax) pos
+        let ax = head [ a | a<-axioms, isNothing $ leadingSym a ]
+            ax' = quanti ax
+            pos = snd $ leadingSymPos ax'
+        in Just $ warning Nothing ("The following " ++ prettyType ax' ++
+               " is not definitional:\n" ++
+               (flip showDoc "\n" $ simplifyCASLSen osig ax)) pos
     | not $ null un_p_axioms =
-        let ax = head un_p_axioms
+        let ax = head $ filter (not . correctDef) $ filter containDef $
+                 filter partialAxiom axioms
+            ax' = head un_p_axioms
             pos = getRange $ take 1 un_p_axioms
-        in Just $ warning Nothing ("The following partial " ++ prettyType ax ++
-               " is not definitional:\n" ++ flip showDoc "\n" ax) pos
+        in Just $ warning Nothing ("The following partial " ++ prettyType ax' ++
+               " is not definitional:\n" ++
+               (flip showDoc "\n" $ simplifyCASLSen osig ax)) pos
     | length dom_l /= length (nubOrd dom_l) =
-        let ax = head dualDom
+        let ax = head $ filter (\ f -> domain_os f dualOS) $
+                 filter partialAxiom axioms
+            ax' = head dualDom
             pos = getRange $ take 1 dualDom
             dualOS = head $ filter (\ o -> elem o $ delete o dom_l) dom_l
             dualDom = filter (\ f -> domain_os f dualOS) p_axioms
-        in Just $ warning Nothing ("The following partial " ++ prettyType ax ++
-               " is not definitional:\n" ++ flip showDoc "\n" ax) pos
+        in Just $ warning Nothing ("The following partial " ++ prettyType ax' ++
+               " is not definitional:\n" ++
+               (flip showDoc "\n" $ simplifyCASLSen osig ax)) pos
     | not $ null pcheck =
-        let ax = head pcheck
+        let ax = head $ filter pcheckFunc $ filter (not . containDef) $
+                 filter partialAxiom axioms
+            ax' = head pcheck
             pos = getRange $ take 1 pcheck
-        in Just $ warning Nothing ("The following partial " ++ prettyType ax ++
-               " is not definitional:\n" ++ flip showDoc "\n" ax) pos
+        in Just $ warning Nothing ("The following partial " ++ prettyType ax' ++
+               " is not definitional:\n" ++
+               (flip showDoc "\n" $ simplifyCASLSen osig ax)) pos
     | otherwise = Nothing
     where
         axioms = getAxioms fsn
@@ -279,9 +291,10 @@ checkDefinitional fsn
         pax_without_def = filter (not . containDef) p_axioms
         un_p_axioms = filter (not . correctDef) pax_with_def
         dom_l = domainOpSymbs p_axioms
-        pcheck = filter (\ f -> case leadingSym f of
-                                  Just (Left opS) -> elem opS dom_l
-                                  _ -> False) pax_without_def
+        pcheck = filter pcheckFunc pax_without_def
+        pcheckFunc f = case leadingSym f of
+                         Just (Left opS) -> elem opS dom_l
+                         _ -> False
 
 {-
   call the symbols in the image of the signature morphism "new"
@@ -383,7 +396,7 @@ checkIncomplete osens m fsn
                       Just (Left opS) -> opSymName opS
                       Just (Right pS) -> predSymName pS
                       _ -> error "CASL.CCC.FreeTypes.<Symb_Name>"
-        in Just $ 
+        in Just $
            warning (Just (Conservative,obligations)) ("the definition of " ++
            sname ++ " is not complete") pos
    | otherwise = Nothing
@@ -456,7 +469,7 @@ checkFreeType (osig, osens) m fsn
         fsn' = filter isAxiom $
                deleteFirstsBy (\ a b -> sentence a == sentence b) fsn $
                mapNamed (mapSen (const id) m) osens
-        definitional = checkDefinitional fsn'
+        definitional = checkDefinitional osig fsn'
         sort         = checkSort (osig, osens) m fsn'
         leadingTerms = checkLeadingTerms osens m fsn'
         incomplete   = checkIncomplete osens m fsn'
