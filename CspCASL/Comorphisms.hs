@@ -60,7 +60,7 @@ instance (CspCASLSemantics a, CspCASLSemantics b)
     map_theory _ = return
     map_morphism _ = return
     map_sentence _ = \_ -> return
-    map_symbol _ = Set.singleton
+    map_symbol _ _ = Set.singleton
     is_model_transportable _ = True
     has_model_expansion _ = True
     is_weakly_amalgamable _ = True
