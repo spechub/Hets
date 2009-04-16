@@ -79,7 +79,7 @@ instance Comorphism
       mapSublogic CASL_DL2CASL _  = Just $ Sublogic.caslTop
                       { sub_features = LocFilSub
                       , cons_features = emptyMapConsFeature }
-      map_symbol  CASL_DL2CASL s  = Set.singleton s
+      map_symbol  CASL_DL2CASL _ s  = Set.singleton s
       map_sentence CASL_DL2CASL   = trSentence
       map_morphism CASL_DL2CASL   = mapMor
       map_theory   CASL_DL2CASL   = trTheory

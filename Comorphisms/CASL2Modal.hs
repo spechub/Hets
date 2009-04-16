@@ -54,7 +54,7 @@ instance Comorphism CASL2Modal
     map_theory CASL2Modal = return . simpleTheoryMapping mapSig mapSen
     map_morphism CASL2Modal = return . mapMor
     map_sentence CASL2Modal _ = return . mapSen
-    map_symbol CASL2Modal = Set.singleton . mapSym
+    map_symbol CASL2Modal _ = Set.singleton . mapSym
     has_model_expansion CASL2Modal = True
     is_weakly_amalgamable CASL2Modal = True
     isInclusionComorphism CASL2Modal = True

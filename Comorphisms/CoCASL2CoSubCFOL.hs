@@ -81,7 +81,7 @@ instance Comorphism CoCASL2CoSubCFOL
         return $ simplifyFormula simC_FORMULA $ codeCoFormula
            (sortsWithBottom (formulaTreatment defaultCASL2SubCFOL)
             sig $ botCoFormulaSorts sen) sen
-    map_symbol CoCASL2CoSubCFOL s =
+    map_symbol CoCASL2CoSubCFOL _ s =
         Set.singleton s {symbType = totalizeSymbType $ symbType s}
     has_model_expansion CoCASL2CoSubCFOL = True
     is_weakly_amalgamable CoCASL2CoSubCFOL = True

@@ -79,7 +79,7 @@ instance Comorphism CASL2Prop
       mapSublogic CASL2Prop = Just . mapSub
       map_theory CASL2Prop = mapTheory
       is_model_transportable CASL2Prop = True
-      map_symbol CASL2Prop = mapSym
+      map_symbol CASL2Prop _ = mapSym
       map_sentence CASL2Prop _ = trForm
       map_morphism CASL2Prop = mapMor
       has_model_expansion CASL2Prop = True

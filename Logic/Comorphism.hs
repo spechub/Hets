@@ -89,7 +89,7 @@ class (Language cid,
           -- with no sentence translation
           -- - but these are spans!
     map_sentence = failMapSentence
-    map_symbol :: cid -> symbol1 -> Set.Set symbol2
+    map_symbol :: cid -> sign1 -> symbol1 -> Set.Set symbol2
     map_symbol = errMapSymbol
     extractModel :: cid -> sign1 -> proof_tree2
                  -> Result (sign1, [Named sentence1])
@@ -170,8 +170,8 @@ errMapSymbol :: Comorphism cid
                 sign1 morphism1 symbol1 raw_symbol1 proof_tree1
             lid2 sublogics2 basic_spec2 sentence2 symb_items2 symb_map_items2
                 sign2 morphism2 symbol2 raw_symbol2 proof_tree2
-         => cid -> symbol1 -> Set.Set symbol2
-errMapSymbol cid _ = error $ "no symbol mapping for " ++ show cid
+         => cid -> sign1 -> symbol1 -> Set.Set symbol2
+errMapSymbol cid _ _ = error $ "no symbol mapping for " ++ show cid
 
 -- | use this function instead of 'map_theory'
 wrapMapTheory :: Comorphism cid
@@ -279,7 +279,7 @@ instance Logic lid sublogics
            map_theory _ = return
            map_morphism _ = return
            map_sentence _ = \_ -> return
-           map_symbol _ = Set.singleton
+           map_symbol _ _ = Set.singleton
            constituents cid =
                if inclusion_source_sublogic cid
                       == inclusion_target_sublogic cid
@@ -346,11 +346,22 @@ instance (Comorphism cid1
                   "Mapping signature morphism along comorphism"m2
           map_morphism cid2 m3
 
-   map_symbol (CompComorphism cid1 cid2) = \ s1 ->
-         let mycast = coerceSymbol (targetLogic cid1) (sourceLogic cid2)
-         in Set.unions
-                (map (map_symbol cid2 . mycast)
-                 (Set.toList (map_symbol cid1 s1)))
+   map_symbol (CompComorphism cid1 cid2) sig1 = let
+     th = map_sign cid1 sig1 in
+    case maybeResult th of
+     Nothing -> error "failed translating signature"
+     Just (sig2', _) -> let
+       th2 = coerceBasicTheory
+                (targetLogic cid1) (sourceLogic cid2)
+                "Mapping symbol along comorphism" (sig2', [])
+       in case maybeResult th2 of
+           Nothing -> error "failed coercing"
+           Just (sig2, _) ->
+            \ s1 ->
+              let mycast = coerceSymbol (targetLogic cid1) (sourceLogic cid2)
+              in Set.unions
+                (map (map_symbol cid2 sig2 . mycast)
+                 (Set.toList (map_symbol cid1 sig1 s1)))
 
    extractModel (CompComorphism cid1 cid2) sign pt3 =
      if isIdComorphism (Comorphism cid1) then do

@@ -25,12 +25,12 @@ instance Language DFOL2CASL where
    language_name DFOL2CASL = "DFOL2CASL"
 
 instance Comorphism DFOL2CASL
-   DFOL () BASIC_SPEC FORMULA SYMB_ITEMS SYMB_MAP_ITEMS 
+   DFOL () BASIC_SPEC FORMULA SYMB_ITEMS SYMB_MAP_ITEMS
         Sign Morphism Symbol Symbol ()
-   CASL_Logic.CASL CASL_Sublogic.CASL_Sublogics CASL_Logic.CASLBasicSpec 
-        CASL_AS.CASLFORMULA CASL_AS.SYMB_ITEMS CASL_AS.SYMB_MAP_ITEMS 
-        CASL_Sign.CASLSign CASL_Morphism.CASLMor CASL_Sign.Symbol 
-        CASL_Morphism.RawSymbol ProofTree  
+   CASL_Logic.CASL CASL_Sublogic.CASL_Sublogics CASL_Logic.CASLBasicSpec
+        CASL_AS.CASLFORMULA CASL_AS.SYMB_ITEMS CASL_AS.SYMB_MAP_ITEMS
+        CASL_Sign.CASLSign CASL_Morphism.CASLMor CASL_Sign.Symbol
+        CASL_Morphism.RawSymbol ProofTree
    where
    sourceLogic DFOL2CASL = DFOL
    sourceSublogic DFOL2CASL = ()

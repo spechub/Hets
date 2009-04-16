@@ -87,7 +87,7 @@ instance Comorphism CASL2TopSort
           { msource = sigSour
           , mtarget = sigTarg }
     map_sentence CASL2TopSort = transSen
-    map_symbol CASL2TopSort = Set.singleton . id
+    map_symbol CASL2TopSort _ = Set.singleton . id
 
 data PredInfo = PredInfo { topSort_PI    :: SORT
                          , directSuperSorts_PI :: Set.Set SORT

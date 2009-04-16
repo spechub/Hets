@@ -53,7 +53,7 @@ instance Comorphism CASL2VSE
     map_theory CASL2VSE = return . simpleTheoryMapping mapSig toSen
     map_morphism CASL2VSE = return . mapMor
     map_sentence CASL2VSE _ = return . toSen
-    map_symbol CASL2VSE = Set.singleton . mapSym
+    map_symbol CASL2VSE _ = Set.singleton . mapSym
     has_model_expansion CASL2VSE = True
     is_weakly_amalgamable CASL2VSE = True
     isInclusionComorphism CASL2VSE = True

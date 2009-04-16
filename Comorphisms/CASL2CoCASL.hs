@@ -58,7 +58,7 @@ instance Comorphism CASL2CoCASL
     map_theory CASL2CoCASL = return . simpleTheoryMapping mapSig mapSen
     map_morphism CASL2CoCASL = return . mapMor
     map_sentence CASL2CoCASL _ = return . mapSen
-    map_symbol CASL2CoCASL = Set.singleton . mapSym
+    map_symbol CASL2CoCASL _ = Set.singleton . mapSym
     has_model_expansion CASL2CoCASL = True
     is_weakly_amalgamable CASL2CoCASL = True
     isInclusionComorphism CASL2CoCASL = True

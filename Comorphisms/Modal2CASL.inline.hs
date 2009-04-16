@@ -71,7 +71,7 @@ instance Comorphism Modal2CASL
                      ++ map (mapNamed $ transSen sig) sens)
     map_morphism Modal2CASL = return . mapMor
     map_sentence Modal2CASL sig = return . transSen sig
-    map_symbol Modal2CASL = Set.singleton . mapSym
+    map_symbol Modal2CASL _ = Set.singleton . mapSym
     has_model_expansion Modal2CASL = True
     is_weakly_amalgamable Modal2CASL = True
 

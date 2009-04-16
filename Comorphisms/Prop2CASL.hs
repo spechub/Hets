@@ -74,7 +74,7 @@ instance Comorphism Prop2CASL
       mapSublogic Prop2CASL = Just . mapSub
       map_theory Prop2CASL = mapTheory
       is_model_transportable Prop2CASL = True
-      map_symbol Prop2CASL = mapSym
+      map_symbol Prop2CASL _ = mapSym
       map_sentence Prop2CASL = mapSentence
       map_morphism Prop2CASL = mapMor
       has_model_expansion Prop2CASL = True

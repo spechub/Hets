@@ -116,7 +116,7 @@ instance Comorphism CASL2SubCFOL
                  fail $ "CASL2SubCFOL: unexpected membership test or cast:\n"
                       ++ showDoc sen ""
              _ -> return $ simplifyFormula id $ codeFormula b bsrts sen
-    map_symbol (CASL2SubCFOL _ _) s =
+    map_symbol (CASL2SubCFOL _ _) _ s =
       Set.singleton s { symbType = totalizeSymbType $ symbType s }
     has_model_expansion (CASL2SubCFOL _ _) = True
     is_weakly_amalgamable (CASL2SubCFOL _ _) = True

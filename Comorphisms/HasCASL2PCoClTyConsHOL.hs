@@ -63,7 +63,7 @@ instance Comorphism HasCASL2PCoClTyConsHOL
         , mtarget = encodeSig $ mtarget mor }
       -- other components need not to be adapted!
     map_sentence HasCASL2PCoClTyConsHOL _ = return . f2Formula
-    map_symbol HasCASL2PCoClTyConsHOL = Set.singleton . id
+    map_symbol HasCASL2PCoClTyConsHOL _ = Set.singleton . id
     has_model_expansion HasCASL2PCoClTyConsHOL = True
     is_weakly_amalgamable HasCASL2PCoClTyConsHOL = True
 

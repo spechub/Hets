@@ -57,7 +57,7 @@ instance Comorphism CspCASL2Modal
     map_theory CspCASL2Modal = return . simpleTheoryMapping mapSig mapSen
     map_morphism CspCASL2Modal = return . mapMor
     map_sentence CspCASL2Modal _ = return . mapSen
-    map_symbol CspCASL2Modal = Set.singleton . mapSym
+    map_symbol CspCASL2Modal _ = Set.singleton . mapSym
 
 mapSig :: CspCASLSign -> MSign
 mapSig sign =

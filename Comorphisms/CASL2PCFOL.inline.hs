@@ -72,7 +72,7 @@ instance Comorphism CASL2PCFOL
               mtarget = encodeSig $ mtarget mor })
       -- other components need not to be adapted!
     map_sentence CASL2PCFOL _ = return . f2Formula
-    map_symbol CASL2PCFOL = Set.singleton . id
+    map_symbol CASL2PCFOL _ = Set.singleton . id
     has_model_expansion CASL2PCFOL = True
     is_weakly_amalgamable CASL2PCFOL = True
 
