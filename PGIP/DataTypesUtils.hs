@@ -31,6 +31,7 @@ module PGIP.DataTypesUtils
 import Interfaces.DataTypes
 import Interfaces.Utils
 import Interfaces.History
+import Interfaces.Command
 import PGIP.Utils
 import PGIP.DataTypes
 import Common.Result
@@ -58,36 +59,30 @@ import Logic.Comorphism
 import Logic.Grothendieck
 
 
-add2hist :: [UndoRedoElem] -> CMDL_State ->  CMDL_State
+add2hist :: [UndoRedoElem] -> CMDL_State -> CMDL_State
 add2hist descr st
- = let intst = add2history [] (intState st)  descr
-   in st {
-         intState = intst }
+ = let intst = add2history (CommentCmd "") (intState st)  descr
+   in st { intState = intst }
 
 -- | Given a list of selected theory generate an Id comorphism to the
 -- first selected theory
 getIdComorphism :: [Int_NodeInfo] -> Maybe AnyComorphism
-getIdComorphism ls
- = case ls of
+getIdComorphism ls = case ls of
     [] -> Nothing
-    (Element st _):_ ->
+    Element st _ : _ ->
        case sublogicOfTheory st of
-        (G_sublogics lid sub) -> Just $ Comorphism (mkIdComorphism lid sub)
-
+         G_sublogics lid sub -> Just $ Comorphism (mkIdComorphism lid sub)
 
 -- | Generates the string containing the prompter
 generatePrompter :: CMDL_State -> String
-generatePrompter st
- = case i_state $ intState st of
-    Nothing ->  prompterHead $ prompter st
+generatePrompter st = case i_state $ intState st of
+    Nothing -> prompterHead $ prompter st
     Just ist ->
      let pst = prompter st
          els = case elements ist of
                 []  -> []
-                el:[] -> case el of
-                          Element sm _ ->"."++(theoryName sm)
-                el:_ -> case el of
-                          Element sm _ ->"." ++(theoryName sm)++ ".."
+                Element sm _ : r -> '.' : theoryName sm
+                  ++ if null r then "" else ".."
          cm = case elements ist of
                [] -> []
                _-> case cComorphism ist of
@@ -99,7 +94,7 @@ generatePrompter st
                         case cm' == ocm of
                           True -> []
                           False -> "*"
-     in (delExtension $ fileLoaded pst) ++ els ++ cm ++ (prompterHead pst)
+     in delExtension (fileLoaded pst) ++ els ++ cm ++ prompterHead pst
 
 
 -- | Given a list of node names and the list of all nodes

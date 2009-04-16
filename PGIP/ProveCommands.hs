@@ -75,22 +75,21 @@ cTranslate::String -> CMDL_State -> IO CMDL_State
 cTranslate input state =
  case i_state $ intState state of
   -- nothing selected !
-  Nothing ->return $ genErrorMsg "Nothing selected" state
+  Nothing -> return $ genErrorMsg "Nothing selected" state
   Just pS ->
    -- parse the comorphism name
    case lookupComorphism_in_LG $ trim input of
     Result _ Nothing -> return $ genErrorMsg "Wrong comorphism name" state
     Result _ (Just cm) ->
-     do
       case cComorphism pS of
        -- when selecting some theory the Id comorphism is automatically
        -- generated
        Nothing -> return $ genErrorMsg "No theory selected" state
        Just ocm ->
         case compComorphism ocm cm of
-            Nothing ->
+            Result _ Nothing ->
              return $ genErrorMsg "Can not add comorphism" state
-            Just smth ->
+            Result _ (Just smth) ->
               return $ genMessage [] "Adding comorphism"
                      $ add2hist [CComorphismChange $ cComorphism pS] $
                       state {

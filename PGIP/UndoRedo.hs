@@ -15,9 +15,9 @@ module PGIP.UndoRedo
        , cRedo
        ) where
 
-
 import Interfaces.DataTypes
 import Interfaces.History
+import Interfaces.Command
 import PGIP.DataTypes
 import PGIP.DataTypesUtils
 import System.IO
@@ -25,26 +25,21 @@ import Data.List
 
 -- | Undoes the last command entered
 cUndo :: CMDL_State -> IO CMDL_State
-cUndo state =
-  case undoList $ i_hist $ intState state of
-   [] -> return $ genMessage [] "Nothing to undo" state
-   action:_ ->
-    do
-     nwIntState <- undoOneStep $ intState state
-     return $ genMessage [] ("Action '"++(cmdName action)
-                           ++ "' is now undone") $
-                           state {
-                            intState = nwIntState }
+cUndo = cdo True
 
 -- | Redoes the last undo command
 cRedo :: CMDL_State -> IO CMDL_State
-cRedo state =
-   case redoList $ i_hist $ intState state of
-    [] -> return $ genMessage [] "Nothing to redo" state
-    action:_ ->
+cRedo = cdo False
+
+cdo :: Bool -> CMDL_State -> IO CMDL_State
+cdo isUndo state =
+   let msg = (if isUndo then "un" else "re") ++ "do"
+   in case (if isUndo then undoList else redoList) . i_hist $ intState state of
+    [] -> return $ genMessage [] ("Nothing to " ++ msg) state
+    action : _ ->
       do
-       nwIntState <- redoOneStep $ intState state
-       return $ genMessage [] ("Action '"++(cmdName action)
-                          ++  "' is now redone") $
-                           state {
-                             intState = nwIntState }
+       nwIntState <- (if isUndo then undoOneStep else redoOneStep)
+         $ intState state
+       return . genMessage [] ("Action '"++ showCmd (command action)
+                               ++  "' is now " ++ msg ++ "ne")
+              $ state { intState = nwIntState }

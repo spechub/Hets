@@ -15,7 +15,7 @@ of Hets
 module Interfaces.DataTypes
        ( IntState(..)
        , IntHistory(..)
-       , Int_CmdHistoryDescription(..)
+       , CmdHistory(..)
        , IntIState(..)
        , Int_NodeInfo(..)
        , UndoRedoElem(..)
@@ -24,6 +24,7 @@ module Interfaces.DataTypes
        , ProveCommand(..)
        , ProvenGoal(..)
        , addToHist
+       , proveCommandToCommands
        ) where
 
 import Static.DevGraph
@@ -32,8 +33,10 @@ import Common.Utils(joinWith, splitOn)
 import Proofs.AbstractState
 import Logic.Comorphism
 import Logic.Logic
+import Interfaces.Command
 import Interfaces.GenericATPState
 import Data.IORef
+import Data.List
 
 
 -- | Internal state of the interface, it contains the development graph
@@ -56,18 +59,18 @@ data IntState = IntState {
 -- for undo, and a list of action for redo commands
 data IntHistory = IntHistory {
   -- | history for undo command, a list of command descriptions
-  undoList :: [Int_CmdHistoryDescription],
+  undoList :: [CmdHistory],
   -- | history for redo command, a list of command descriptions
-  redoList :: [Int_CmdHistoryDescription]
+  redoList :: [CmdHistory]
   }
 
 -- | Contains command description needed for undo\/redo actions and
 -- for displaying commands in the history
-data Int_CmdHistoryDescription = Int_CmdHistoryDescription {
+data CmdHistory = CmdHistory {
   -- | command name, used for displaying history elements
-  cmdName       :: String,
+  command :: Command,
   -- | libname needed to undo actions
-  cmdDescription :: [UndoRedoElem]
+  cmdHistory :: [UndoRedoElem]
   }
 
 -- | History elements for the proof state, only LIB_NAME would be used
@@ -90,7 +93,6 @@ data UndoRedoElem =
 data CommandHistory = CommandHistory { hist :: IORef [ProveCommand],
                                        filePath :: String}
 
-
 data ProveCommand = Prove
  { nodeNameStr :: String
  , usedProver  :: Maybe String
@@ -98,6 +100,27 @@ data ProveCommand = Prove
  , provenGoals :: [ProvenGoal]
  , allAxioms   :: [String]
  } deriving Eq
+
+proveCommandToCommands :: ProveCommand -> [Command]
+proveCommandToCommands p =
+  [ SelectCmd Node $ nodeNameStr p
+  , GlobCmd DropTranslation
+  ] ++ maybe []
+  (\ (Comorphism cid) -> map (SelectCmd ComorphismTranslation)
+   $ drop 1 $ splitOn ';' $ language_name cid) (translation p)
+  ++ maybe [] (( : []) . SelectCmd Prover) (usedProver p)
+  ++ concatMap (goalToCommands p) (provenGoals p)
+
+goalToCommands :: ProveCommand -> ProvenGoal -> [Command]
+goalToCommands p g =
+  let axs = axioms g -- there may be some axioms that are not in all axioms
+      aaxs = allAxioms p
+  in
+  [ SelectCmd Goal $ name g
+  , SetAxioms $ if null axs || not (null $ axs \\ aaxs)
+                then aaxs else axs
+  , TimeLimit $ time_Limit g
+  , GlobCmd ProveCurrent ]
 
 instance Show ProveCommand where
    show p =

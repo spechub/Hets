@@ -33,6 +33,8 @@ module Interfaces.Utils
 
 import Interfaces.DataTypes
 import Interfaces.GenericATPState
+import Interfaces.Command
+import Interfaces.History
 
 import Data.Graph.Inductive.Graph
 import Data.Maybe (fromMaybe)
@@ -222,17 +224,12 @@ mergeGoals (h:t) | mergeAble h h' = mergeGoals $ merge h h':Prelude.tail t
 
 
 addCommandHistoryToState :: CommandHistory -> IORef IntState -> IO (Result ())
-addCommandHistoryToState ch ioSt
- = do
+addCommandHistoryToState ch ioSt = do
     ost <- readIORef ioSt
     lsch <- readIORef $ hist ch
-    let z = Int_CmdHistoryDescription {
-             cmdName = joinWith '\n' $ Prelude.map show lsch,
-             cmdDescription = [ IStateChange $ i_state ost ]
-             }
-        nwst = ost { i_hist = (i_hist ost) {
-                                undoList = z: (undoList $ i_hist ost)}}
-    writeIORef ioSt nwst
+    writeIORef ioSt $ add2history
+       (GroupCmd $ concatMap proveCommandToCommands lsch)
+       ost [ IStateChange $ i_state ost ]
     return $ Result [] $ Just ()
 
 
@@ -264,7 +261,7 @@ consToCons Definitional = Def
 consToCons _            = None
 
 checkConservativityEdge :: Bool -> (LEdge DGLinkLab) -> LibEnv -> LIB_NAME
-                           -> IO (String,LibEnv, ProofHistory)
+                        -> IO (String, LibEnv, ProofHistory)
 checkConservativityEdge useGUI (source,target,linklab) libEnv ln
  = do
     let thTar =

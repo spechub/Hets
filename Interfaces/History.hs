@@ -19,6 +19,7 @@ module Interfaces.History
          ) where
 
 import Interfaces.DataTypes
+import Interfaces.Command
 import Common.LibName
 
 import Proofs.AbstractState
@@ -38,36 +39,14 @@ data UndoOrRedo =
    DoUndo
  | DoRedo
 
-
--- write2Hist :: IORef IntState -> String -> [UndoRedoElem] -> IO()
--- write2Hist iost name descr
---  = do
---    ost <- readIORef iost
---    let nwst = add2history name ost descr
---    writeIORef iost nwst
-
-add2history :: String -> IntState -> [UndoRedoElem] -> IntState
-add2history nm st descr
- = case undoList $ i_hist st of
-    [] ->  let nwEl = Int_CmdHistoryDescription {
-                             cmdName = nm,
-                             cmdDescription = descr }
-               hst = i_hist st
-           in st{i_hist=hst{ undoList = nwEl:(undoList hst) } }
-    h:r ->
-      case cmdName h of
-       [] -> let nwEl = h { cmdName = nm,
-                            cmdDescription = descr ++ (cmdDescription h) }
-                 hst = i_hist st
-             in st{i_hist=hst{ undoList = nwEl:r }}
-       _ -> let nwEl = Int_CmdHistoryDescription {
-                             cmdName = nm,
-                             cmdDescription = descr }
-                hst = i_hist st
-             in st{i_hist=hst{ undoList = nwEl :h:r } }
-
-
-
+add2history :: Command -> IntState -> [UndoRedoElem] -> IntState
+add2history nm st descr = let
+  hst = i_hist st
+  ul = undoList hst
+  nwEl = CmdHistory
+    { command = nm
+    , cmdHistory = descr }
+  in st { i_hist = hst { undoList = nwEl : ul } }
 
 -- | Undo or redo a command that modified the development graph
 undoRedoDgCmd :: UndoOrRedo -> IntState -> LIB_NAME -> IO IntState
@@ -155,9 +134,9 @@ processAny actype state = do
   case hst of
     [] -> return state
     x:l-> do
-       (nwst,ch) <- processUndoRedoElems actype (cmdDescription x) state []
+       (nwst,ch) <- processUndoRedoElems actype (cmdHistory x) state []
        let
-         x' = x { cmdDescription = ch }
+         x' = x { cmdHistory = ch }
          i_hist_state = i_hist state
          nwstate = case actype of
                     DoUndo -> nwst {

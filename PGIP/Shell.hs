@@ -25,6 +25,7 @@ module PGIP.Shell
        , cmdlCompletionFn
        ) where
 
+import Interfaces.Command
 import Interfaces.DataTypes
 import Interfaces.Utils
 import Interfaces.GenericATPState
@@ -81,14 +82,14 @@ register2history dscr state_io
     let oldHistory = i_hist $ intState  state
     case undoList oldHistory of
        [] -> return state
-       h:r -> case cmdName h of
-               [] ->do
+       h : r -> case command h of
+               CommentCmd _ ->do
                      let nwh = h {
-                                cmdName = head $ cmdNames dscr }
+                                command = cmdDescription dscr }
                      return $ state {
                          intState = (intState state) {
                             i_hist = oldHistory {
-                               undoList = nwh:r,
+                               undoList = nwh : r,
                                redoList = []
                              } } }
                _ -> return state
@@ -137,7 +138,7 @@ checkCom descr state
           case loadScript ist of
            False->register2history descr $ (getFn descr) state
            True->return $ addToScript state ist
-                         ((head $ cmdNames descr) ++ " " ++ (cmdInput descr))
+                         (cmdName descr ++ " " ++ cmdInput descr)
      CmdGreaterThanComments ->
       case i_state $ intState state of
        Nothing -> register2history descr $ (getFn descr) state
@@ -145,7 +146,7 @@ checkCom descr state
         case loadScript ist of
          False -> register2history descr $ (getFn descr) state
          True ->return $ addToScript state ist
-                        ((head $ cmdNames descr)++ " " ++(cmdInput descr))
+                        (cmdName descr ++ " " ++ cmdInput descr)
      CmdGreaterThanScriptAndComments ->
         (getFn descr) state
 
@@ -260,8 +261,8 @@ cCloseComment state
 subtractCommandName::[CMDL_CmdDescription] -> String -> String
 subtractCommandName allcmds input
  =let inp = trimLeft input
-      lst = concatMap(\x -> case find(\y -> isPrefixOf y inp)$
-                                            cmdNames x of
+      lst = concatMap(\ x -> case find(\y -> isPrefixOf y inp)
+                                            [cmdName x] of
                              Nothing -> []
                              Just tmp -> [tmp]) allcmds
   in drop (length $ head lst) inp
@@ -297,8 +298,8 @@ getTypeOf::[CMDL_CmdDescription] -> String -> CMDL_CmdRequirements
 getTypeOf allcmds input
  = let nwInput = getCmdName input
        tmp =concatMap(\x ->
-                       case find(\y -> y == nwInput )$
-                                             cmdNames x of
+                       case find(\y -> y == nwInput )
+                                             [cmdName x] of
                         Nothing -> []
                         Just _ -> [cmdReq x]) allcmds
    in case tmp of

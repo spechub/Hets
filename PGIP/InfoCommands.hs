@@ -72,6 +72,7 @@ import Logic.Logic
 
 import Driver.Options
 
+import Interfaces.Command
 import Interfaces.DataTypes
 import Interfaces.Utils
 
@@ -655,18 +656,17 @@ cEdges state
       return $ genMessage [] (prettyPrintList $ sort lsEdges) state
 
 cUndoHistory :: CMDL_State -> IO CMDL_State
-cUndoHistory state
- = do
-    let undoH  = undoList . i_hist $ intState state
-        undoH' = map cmdName undoH
-    return $ genMessage [] ("Undo history :\n"++ prettyPrintList undoH') state
+cUndoHistory = return . cHistory True
 
 cRedoHistory :: CMDL_State -> IO CMDL_State
-cRedoHistory state
- = do
-    let redoH  = redoList $ i_hist $ intState state
-        redoH' = map cmdName redoH
-    return $ genMessage [] ("Redo history :\n"++ prettyPrintList redoH') state
+cRedoHistory = return . cHistory False
+
+cHistory :: Bool -> CMDL_State -> CMDL_State
+cHistory isUndo state = genMessage []
+  (unlines $ ((if isUndo then "Un" else "Re") ++ "do history :")
+    : map (showCmd . command)
+      ((if isUndo then undoList else redoList) $ i_hist $ intState state)
+  ) state
 
 -- print the name of all nodes
 cNodes::CMDL_State -> IO CMDL_State

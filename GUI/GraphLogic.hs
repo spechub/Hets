@@ -91,6 +91,7 @@ import Control.Monad
 import Control.Concurrent (forkIO)
 import Control.Concurrent.MVar
 
+import Interfaces.Command
 import Interfaces.History
 import Interfaces.DataTypes
 import Interfaces.Utils
@@ -349,14 +350,14 @@ openProofStatus gInfo@(GInfo { hetcatsOpts = opts
 
 -- | apply a rule of the development graph calculus
 proofMenu :: GInfo
-             -> String
+             -> Command
              -> (LibEnv -> IO (Result LibEnv))
              -> IO ()
 proofMenu gInfo@(GInfo { graphInfo = gi
                        , hetcatsOpts = hOpts
                        , proofGUIMVar = guiMVar
                        , libName = ln
-                       }) str proofFun = do
+                       }) cmd proofFun = do
  ost <- readIORef $ intState gInfo
  case i_state ost of
   Nothing -> return ()
@@ -385,8 +386,7 @@ proofMenu gInfo@(GInfo { graphInfo = gi
               history = snd $ splitHistory (lookupDGraph ln proofStatus) newGr
               lln = map DgCommandChange $ calcGlobalHistory
                                                    proofStatus newProofStatus
-              nmStr = strToCmd str
-              nst = add2history nmStr ost lln
+              nst = add2history cmd ost lln
               nwst = nst { i_state = Just ist { i_libEnv=newProofStatus}}
           doDump hOpts "PrintHistory" $ do
             putStrLn "History"
@@ -539,8 +539,9 @@ proveAtNode checkCons gInfo descr dgraph = do
 runProveAtNode :: Bool -> GInfo -> LNode DGNodeLab
                -> Result G_theory -> IO ()
 runProveAtNode checkCons gInfo (v, dgnode) (Result ds mres) =
-    if checkCons then do
-        let nodetext = getDGNodeName dgnode ++ " node: " ++ show v
+     let nn = getDGNodeName dgnode in
+     if checkCons then do
+        let nodetext = nn ++ " node: " ++ show v
         case mres of
           Just gth -> createTextSaveDisplay ("Model for " ++ nodetext)
                                             "model.log" $ showDoc gth ""
@@ -564,7 +565,9 @@ runProveAtNode checkCons gInfo (v, dgnode) (Result ds mres) =
                      new_dgn = dgnode { dgn_theory = theory }
                      newDg = changeDGH dgraph $ SetNodeLab dgnode (v, new_dgn)
                      history = snd $ splitHistory dgraph newDg
-                     nst = add2history "" ost [DgCommandChange ln]
+                     nst = add2history
+                       (CommentCmd $ "basic inference done on " ++ nn ++ "\n")
+                           ost [DgCommandChange ln]
                      nwst = nst
                        { i_state = Just iist
                          { i_libEnv = Map.insert ln newDg le } }
@@ -591,7 +594,7 @@ showEdgeInfo descr me = case me of
 checkconservativityOfEdge :: Int -> GInfo -> Maybe (LEdge DGLinkLab) -> IO ()
 checkconservativityOfEdge descr gInfo me = case me of
     Nothing -> edgeErr descr
-    Just lnk -> do
+    Just lnk@(_, _, lbl) -> do
       let iSt = intState gInfo
           gi = graphInfo gInfo
           ln = libName gInfo
@@ -609,7 +612,8 @@ checkconservativityOfEdge descr gInfo me = case me of
               createTextDisplay "Result of conservativity check" str
               applyChanges gi $ reverse $ flatHistory ph
               GA.redisplay gi
-              let nst = add2history "" ost [DgCommandChange ln]
+              let nst = add2history (SelectCmd Link $ showDoc (dgl_id lbl) "")
+                        ost [DgCommandChange ln]
                   nwst = nst { i_state = Just $ iist { i_libEnv = nwle}}
               writeIORef iSt nwst
               unlockGlobal gInfo
@@ -623,7 +627,7 @@ convert ginfo dgraph = do
 and returns the resulting conversion maps
 if the graph is empty the conversion maps are returned unchanged-}
 convertNodes :: GA.GraphInfo -> DGraph -> IO ()
-convertNodes ginfo = mapM_ (convertNodesAux ginfo) .labNodesDG
+convertNodes ginfo = mapM_ (convertNodesAux ginfo) . labNodesDG
 
 {- | auxiliary function for convertNodes if the given list of nodes is
 emtpy, it returns the conversion maps unchanged otherwise it adds the

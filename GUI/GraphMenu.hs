@@ -17,7 +17,7 @@ module GUI.GraphMenu (createGraph) where
 import qualified GUI.GraphAbstraction as GA
 import GUI.GraphTypes
 import GUI.GraphLogic
-import GUI.ShowLogicGraph(showLogicGraph)
+import GUI.ShowLogicGraph (showLogicGraph)
 import GUI.Utils
 import GUI.UDGUtils
 import qualified GUI.HTkUtils as HTk
@@ -35,26 +35,19 @@ import System.Directory (getCurrentDirectory)
 import Static.DevGraph
 import Static.PrintDevGraph ()
 
-import Proofs.QualifyNames
-import Proofs.DGFlattening
-import Proofs.NormalForm
-import Proofs.Automatic(automatic)
-import Proofs.Global(globSubsume, globDecomp)
-import Proofs.Local(localInference, locDecomp)
-import Proofs.Composition(composition, compositionCreatingEdges)
-import Proofs.HideTheoremShift(interactiveHideTheoremShift)
-import Proofs.TheoremHideShift(theoremHideShift, computeTheory)
-import Proofs.ComputeColimit(computeColimit)
+import Proofs.TheoremHideShift (computeTheory)
 import qualified Proofs.VSE as VSE
 
 import Common.Result
 import Common.Utils (joinWith)
 import Common.DocUtils
 
-import Driver.Options(HetcatsOpts, rmSuffix, prfSuffix)
-import Driver.ReadFn(libNameToFile)
+import Driver.Options (HetcatsOpts, rmSuffix, prfSuffix)
+import Driver.ReadFn (libNameToFile)
 
 import Interfaces.DataTypes
+import Interfaces.Command
+import Interfaces.CmdAction
 
 -- | Adds to the DGNodeType list style options for each type
 nodeTypes :: HetcatsOpts
@@ -231,8 +224,10 @@ createGlobalMenu gInfo@(GInfo { hetcatsOpts = opts
   Nothing -> return []
   Just _ -> do
    let ral = runAndLock gInfo
-       performProofMenuAction str =
-           ral . performProofAction gInfo . proofMenu gInfo str
+       performProofMenuAction cmd =
+           ral . performProofAction gInfo . proofMenu gInfo cmd
+       mkGlobProofButton cmd =
+         Button (menuTextGlobCmd cmd) . performProofMenuAction (GlobCmd cmd)
    return
     [GlobalMenu (Menu Nothing
      [ Button "Undo" $ ral $ undo gInfo True
@@ -252,35 +247,13 @@ createGlobalMenu gInfo@(GInfo { hetcatsOpts = opts
                                   )
 #endif
      , Button "Hide new proven links" $ ral $ hideNewProvedEdges gInfo
-     , Menu (Just "Proofs") $ map (\ (str, cmd) ->
+     , Menu (Just "Proofs") $ map (\ (cmd, act) ->
        -- History ? or just some partial history in ch ?
-        Button str . performProofMenuAction str $ return . return . cmd ln)
-        [ ("Automatic", automatic)
-        , ("Global Subsumption", globSubsume)
-        , ("Global Decomposition", globDecomp)
-        , ("Local Inference", localInference)
-        , ("Local Decomposition (merge of rules)", locDecomp)
-        , ("Composition (merge of rules)", composition)
-        , ("Composition - creating new links", compositionCreatingEdges)
-        ] ++
-        [Button "Hide Theorem Shift"
-               $ performProofMenuAction "Hide Theorem Shift"
-               $ fmap return . interactiveHideTheoremShift ln
-        ] ++
-        map (\ (str, cmd) ->
-               Button str . performProofMenuAction str $ return . cmd ln)
-        [ ("Theorem Hide Shift", theoremHideShift)
-        , ("Compute Colimit", computeColimit)
-        , ("Compute normal form", normalForm)
-        ] ++
-        [ Menu (Just "Flattening") $ map ( \ (str, cmd) ->
-           Button str . performProofMenuAction str $ return . cmd)
-              [ ("Importings", libEnv_flattening_imports)
-              , ("Disjoint unions", libEnv_flattening_dunions)
-              , ("Importings and renamings", libEnv_flattening_renamings)
-              , ("Hiding", libEnv_flattening_hiding)
-              , ("Heterogeneity", libEnv_flattening_heterogen)
-              , ("Qualify all names", qualifyLibEnv)]]
+        mkGlobProofButton cmd $ return . return . act ln) globLibAct
+        ++ map (\ (cmd, act) -> mkGlobProofButton cmd $ return . act ln)
+           globLibResultAct
+        ++ [ Menu (Just "Flattening") $ map ( \ (cmd, act) ->
+           mkGlobProofButton cmd  $ return . act) globResultAct ]
      , Button "Dump Development Graph" $ do
           ost2 <- readIORef $ intState gInfo
           case i_state ost2 of
@@ -437,7 +410,8 @@ createLocalMenuButtonProveStructured gInfo =
 -- | call VSE structured
 proveVSEStructured :: GInfo -> Int -> IO ()
 proveVSEStructured gi n =
-  proofMenu gi ("VSE structured on " ++ show n) $ VSE.prove (libName gi, n)
+  proofMenu gi (SelectCmd Prover $ "VSE structured: " ++ show n)
+    $ VSE.prove (libName gi, n)
 
 createLocalMenuButtonCCCAtNode :: GInfo -> ButtonMenu GA.NodeValue
 createLocalMenuButtonCCCAtNode gInfo =
@@ -515,12 +489,9 @@ askSaveProofScript gi ch =
 
 -- Saves the history of commands in a file.
 saveCommandHistory :: IORef IntState -> String -> IO ()
-saveCommandHistory c f =
-    do
+saveCommandHistory c f = do
     h <- readIORef c
     let history = ["# automatically generated hets proof-script", "",
-                   "use " ++ filename h, ""] ++ reverse (map cmdName
-                                                     $ undoList $ i_hist h)
+                   "use " ++ filename h, ""]
+          ++ reverse (map (showCmd . command) $ undoList $ i_hist h)
     writeFile f $ joinWith '\n' history
-
-

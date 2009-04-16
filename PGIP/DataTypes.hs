@@ -15,6 +15,8 @@ interface.
 module PGIP.DataTypes
        ( CMDL_State(..)
        , CMDL_CmdDescription(..)
+       , cmdInput
+       , cmdName
        , CMDL_CmdPriority(..)
        , CMDL_CmdFnClasses(..)
        , CMDL_CmdRequirements(..)
@@ -32,6 +34,7 @@ module PGIP.DataTypes
 
 
 import Interfaces.DataTypes
+import Interfaces.Command
 
 import System.IO
 import Network
@@ -39,8 +42,6 @@ import Network
 data CMDL_GoalAxiom =
    ChangeGoals
  | ChangeAxioms
-
-
 
 data CMDL_ProverConsChecker =
    Use_prover
@@ -75,15 +76,17 @@ data CMDL_PrompterState = CMDL_PrompterState {
 -- | Description of a command ( in  order to have a uniform access to any of
 -- the commands
 data CMDL_CmdDescription = CMDL_CmdDescription {
-  cmdNames       :: [String],
-  cmdDescription :: String,
-  cmdInput       :: String,
+  cmdDescription :: Command,
   cmdPriority    :: CMDL_CmdPriority,
   cmdFn          :: CMDL_CmdFnClasses,
   cmdReq         :: CMDL_CmdRequirements
   }
 
+cmdInput :: CMDL_CmdDescription -> String
+cmdInput = cmdInputStr . cmdDescription
 
+cmdName :: CMDL_CmdDescription -> String
+cmdName = cmdNameStr . cmdDescription
 
 -- | Some commands have different status, for example 'end-script'
 -- needs to be processed even though the interface is in reading script
