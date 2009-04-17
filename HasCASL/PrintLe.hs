@@ -62,12 +62,12 @@ printAltDefn (Construct mi ts p sels) = case mi of
     Nothing -> text (typeS ++ sS) <+> ppWithCommas ts
 
 instance Pretty Selector where
-    pretty (Select mi t p) =
-        (case mi of
-        Just i -> pretty i <+> case p of
+    pretty (Select mi t p) = let d = pretty t in case mi of
+        Just i -> pretty i <+> (case p of
             Partial -> text colonQuMark
-            Total -> colon
-        Nothing -> empty) <+> pretty t
+            Total -> colon)
+            <+> if isSimpleType t then d else parens d
+        Nothing -> d
 
 instance Pretty TypeInfo where
     pretty (TypeInfo _ _ _ def) = pretty def

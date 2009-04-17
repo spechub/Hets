@@ -21,7 +21,7 @@ module HasCASL.DataAna
     , inductionScheme
     ) where
 
-import Data.Maybe
+import Data.Maybe (catMaybes)
 
 import qualified Data.Map as Map
 import qualified Data.Set as Set
@@ -137,12 +137,18 @@ anaComps tys rt te cs =
     do newCs <- mapM (anaComp tys rt te) cs
        return (mkProductType $ map fst newCs, map snd newCs)
 
+isPartialSelector :: Type -> Bool
+isPartialSelector ty = case ty of
+  TypeAppl (TypeName i _ _) _ -> i == lazyTypeId
+  _ -> False
+
 anaComp :: [DataPat] -> DataPat -> Env -> Component
         -> Result (Type, Selector)
 anaComp tys rt te (Selector s _ t _ _) =
     do ct <- anaCompType tys rt t te
        let (p, nct) = case getTypeAppl ct of
-             (TypeName i _ _, [lt]) | i == lazyTypeId -> (Partial, lt)
+             (TypeName i _ _, [lt]) | i == lazyTypeId
+                && isPartialSelector t -> (Partial, lt)
              _ -> (Total, ct)
        return (nct, Select (Just s) nct p)
 anaComp tys rt te (NoSelector t) =
