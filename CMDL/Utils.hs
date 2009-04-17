@@ -7,13 +7,13 @@ Maintainer  : r.pascanu@jacobs-university.de
 Stability   : provisional
 Portability : portable
 
-PGIP.Utils contains different basic functions that are
+CMDL.Utils contains different basic functions that are
 used throughout the CMDL interface and could not be found in
 Prelude
 
 -}
 
-module PGIP.Utils
+module CMDL.Utils
   ( isWhiteSpace
   , trim
   , trimLeft

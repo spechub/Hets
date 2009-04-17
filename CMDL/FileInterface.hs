@@ -7,12 +7,12 @@ Maintainer  : r.pascanu@jacobs-university.de
 Stability   : provisional
 Portability : portable
 
-PGIP.FileInterface describes the interface specific function
+CMDL.FileInterface describes the interface specific function
 for file input
 -}
 
 
-module PGIP.FileInterface
+module CMDL.FileInterface
         ( fileShellDescription
         , fileBackend
         , fileGetSingleChar
@@ -24,9 +24,9 @@ import System.Console.Shell
 import System.Console.Shell.Backend
 import System.IO
 
-import PGIP.DataTypes
-import PGIP.Commands
-import PGIP.StdInterface
+import CMDL.DataTypes
+import CMDL.Commands
+import CMDL.StdInterface
 
 import qualified Control.Exception as Ex
 

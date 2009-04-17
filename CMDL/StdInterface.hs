@@ -7,11 +7,11 @@ Maintainer  : r.pascanu@jacobs-university.de
 Stability   : provisional
 Portability : portable
 
-PGIP.StdInterface describes the interface specific function
+CMDL.StdInterface describes the interface specific function
 for standard input and file input
 -}
 
-module PGIP.StdInterface
+module CMDL.StdInterface
        ( stdShellDescription
        , basicOutput
        , recursiveApplyUse
@@ -22,10 +22,10 @@ import System.Console.Shell
 import System.Console.Shell.Backend
 import System.IO
 
-import PGIP.DataTypes
-import PGIP.DataTypesUtils
-import PGIP.Commands
-import PGIP.DgCommands
+import CMDL.DataTypes
+import CMDL.DataTypesUtils
+import CMDL.Commands
+import CMDL.DgCommands
 
 
 stdShellDescription :: ShellDescription CMDL_State

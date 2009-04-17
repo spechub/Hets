@@ -7,12 +7,12 @@ Maintainer  : r.pascanu@jacobs-university.de
 Stability   : provisional
 Portability : portable
 
-PGIP.ConsCommands contains all commands
+CMDL.ConsCommands contains all commands
 related to consistency\/conservativity checks
 
 -}
 
-module PGIP.ConsCommands
+module CMDL.ConsCommands
        (
          cConservCheck
        , cConservCheckAll
@@ -24,11 +24,11 @@ module PGIP.ConsCommands
 import Interfaces.DataTypes
 import Interfaces.Utils
 
-import PGIP.DataTypes
-import PGIP.Utils
-import PGIP.DataTypesUtils
-import PGIP.ProveConsistency
-import PGIP.DgCommands
+import CMDL.DataTypes
+import CMDL.Utils
+import CMDL.DataTypesUtils
+import CMDL.ProveConsistency
+import CMDL.DgCommands
 
 import Proofs.AbstractState
 -- import Proofs.TheoremHideShift

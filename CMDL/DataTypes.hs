@@ -7,12 +7,12 @@ Maintainer  : r.pascanu@jacobs-university.de
 Stability   : provisional
 Portability : portable
 
-PGIP.DataTypes describes the internal states(or datatypes) of the CMDL
+CMDL.DataTypes describes the internal states(or datatypes) of the CMDL
 interface.
 -}
 
 
-module PGIP.DataTypes
+module CMDL.DataTypes
        ( CMDL_State(..)
        , CMDL_CmdDescription(..)
        , cmdInput

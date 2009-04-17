@@ -7,10 +7,10 @@ Maintainer  : r.pascanu@jacobs-university.de
 Stability   : provisional
 Portability : portable
 
-PGIP.Commands contains the description of all commands available
+CMDL.Commands contains the description of all commands available
 -}
 
-module PGIP.Commands
+module CMDL.Commands
        ( getCommands
        , shellacCommands
        , shellacEvalFunc
@@ -22,14 +22,14 @@ import System.Console.Shell.ShellMonad
 import Interfaces.Command
 import Interfaces.CmdAction
 
-import PGIP.DataTypes
-import PGIP.ProveCommands
-import PGIP.InfoCommands
-import PGIP.DgCommands
-import PGIP.ProveConsistency
-import PGIP.ConsCommands
-import PGIP.Shell
-import PGIP.UndoRedo
+import CMDL.DataTypes
+import CMDL.ProveCommands
+import CMDL.InfoCommands
+import CMDL.DgCommands
+import CMDL.ProveConsistency
+import CMDL.ConsCommands
+import CMDL.Shell
+import CMDL.UndoRedo
 
 -- | Generates a shellac command that requires input
 shellacWithInput :: CMDL_CmdDescription -> String -> Sh CMDL_State ()

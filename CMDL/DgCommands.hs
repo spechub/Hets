@@ -7,11 +7,11 @@ Maintainer  : r.pascanu@jacobs-university.de
 Stability   : provisional
 Portability : portable
 
-PGIP.DgCommands contains all development graph commands
+CMDL.DgCommands contains all development graph commands
 that can be called from the CMDL interface
 -}
 
-module PGIP.DgCommands
+module CMDL.DgCommands
        ( commandDgAll
        , commandDg
        , cUse
@@ -25,9 +25,9 @@ module PGIP.DgCommands
 
 import Interfaces.DataTypes
 import Interfaces.Utils
-import PGIP.Utils
-import PGIP.DataTypes
-import PGIP.DataTypesUtils
+import CMDL.Utils
+import CMDL.DataTypes
+import CMDL.DataTypesUtils
 
 import Proofs.AbstractState
 import Proofs.TheoremHideShift

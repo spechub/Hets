@@ -7,11 +7,11 @@ Maintainer  : r.pascanu@jacobs-university.de
 Stability   : provisional
 Portability : portable
 
-PGIP.ProveConsistency contains prove and consistency check command
+CMDL.ProveConsistency contains prove and consistency check command
 -}
 
 
-module PGIP.ProveConsistency
+module CMDL.ProveConsistency
        ( cProver
        , cConsChecker
        , checkNode
@@ -24,9 +24,9 @@ module PGIP.ProveConsistency
 
 import Interfaces.DataTypes
 
-import PGIP.DataTypes
-import PGIP.DataTypesUtils
-import PGIP.Utils
+import CMDL.DataTypes
+import CMDL.DataTypesUtils
+import CMDL.Utils
 
 import Comorphisms.LogicGraph
 

@@ -7,12 +7,12 @@ Maintainer  : r.pascanu@jacobs-university.de
 Stability   : provisional
 Portability : portable
 
-PGIP.StringInterface describes the interface specific function
+CMDL.StringInterface describes the interface specific function
 for string input
 -}
 
 
-module PGIP.StringInterface
+module CMDL.StringInterface
         ( stringShellDescription
         , stringBackend
         , stringGetSingleChar
@@ -24,8 +24,8 @@ import System.Console.Shell
 import System.Console.Shell.Backend
 import System.IO
 
-import PGIP.DataTypes
-import PGIP.Commands
+import CMDL.DataTypes
+import CMDL.Commands
 
 
 import Control.Concurrent.MVar

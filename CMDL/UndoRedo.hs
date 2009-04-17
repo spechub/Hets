@@ -7,10 +7,10 @@ Maintainer  : r.pascanu@jacobs-university.de
 Stability   : provisional
 Portability : portable
 
-PGIP.UnDoRedo contains the implementation of the undo and redo commads
+CMDL.UnDoRedo contains the implementation of the undo and redo commads
 -}
 
-module PGIP.UndoRedo
+module CMDL.UndoRedo
        ( cUndo
        , cRedo
        ) where
@@ -18,8 +18,8 @@ module PGIP.UndoRedo
 import Interfaces.DataTypes
 import Interfaces.History
 import Interfaces.Command
-import PGIP.DataTypes
-import PGIP.DataTypesUtils
+import CMDL.DataTypes
+import CMDL.DataTypesUtils
 import System.IO
 import Data.List
 

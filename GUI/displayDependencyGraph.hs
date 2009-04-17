@@ -111,7 +111,7 @@ exclude s = not $
     , "OWL.StructureAnalysis", "OWL.OWLAnalysis"
     , "OWL.ProvePellet"
     , "Haskell.Haskell2DG", "Haskell.CreateModules"
-    , "Comorphisms.KnownProvers", "Interfaces.GenericATPState", "PGIP.Utils"
+    , "Comorphisms.KnownProvers", "Interfaces.GenericATPState", "CMDL.Utils"
     , "GUI.Utils", "GUI.ProofManagement" -- Proofs
     , "Proofs.Automatic", "Driver.Options" -- Static
     , "Proofs.EdgeUtils", "Proofs.StatusUtils" -- Driver

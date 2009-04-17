@@ -9,11 +9,11 @@ Maintainer  : r.pascanu@jacobs-university.de
 Stability   : provisional
 Portability : portable
 
-PGIP.Interface describes the interface specific function
+CMDL.Interface describes the interface specific function
 for standard input and file input
 -}
 
-module PGIP.Interface where
+module CMDL.Interface where
 
 
 import System.Console.Shell
@@ -24,13 +24,13 @@ import System.Console.Shell.Backend.Compatline
 #endif
 import System.IO
 
-import PGIP.Shell
-import PGIP.DataTypes
-import PGIP.Commands
+import CMDL.Shell
+import CMDL.DataTypes
+import CMDL.Commands
 
-import PGIP.StringInterface
-import PGIP.StdInterface
-import PGIP.FileInterface
+import CMDL.StringInterface
+import CMDL.StdInterface
+import CMDL.FileInterface
 
 import Interfaces.DataTypes
 

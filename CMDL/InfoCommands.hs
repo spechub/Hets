@@ -8,13 +8,13 @@ Maintainer  : r.pascanu@jacobs-university.de
 Stability   : provisional
 Portability : portable
 
-PGIP.InfoCommands contains all commands
+CMDL.InfoCommands contains all commands
 that provides information about the state
 of the development graph and selected
 theories
 -}
 
-module PGIP.InfoCommands
+module CMDL.InfoCommands
        ( cNodes
        , cShowDgGoals
        , cDisplayGraph
@@ -48,10 +48,10 @@ import GUI.Taxonomy
 import GUI.ShowGraph
 #endif
 
-import PGIP.DataTypes
-import PGIP.Utils
-import PGIP.Shell
-import PGIP.DataTypesUtils
+import CMDL.DataTypes
+import CMDL.Utils
+import CMDL.Shell
+import CMDL.DataTypesUtils
 
 import Static.GTheory
 import Static.DevGraph

@@ -7,11 +7,11 @@ Maintainer  : r.pascanu@jacobs-university.de
 Stability   : provisional
 Portability : portable
 
-PGIP.ProveCommands contains all commands (except prove\/consistency check)
+CMDL.ProveCommands contains all commands (except prove\/consistency check)
 related to prove mode
 -}
 
-module PGIP.ProveCommands
+module CMDL.ProveCommands
        ( cTranslate
        , cDropTranslations
        , cGoalsAxmGeneral
@@ -25,11 +25,11 @@ module PGIP.ProveCommands
        , cNotACommand
        ) where
 
-import PGIP.DataTypes
-import PGIP.DataTypesUtils
-import PGIP.Utils
-import PGIP.DgCommands
-import PGIP.ProveConsistency
+import CMDL.DataTypes
+import CMDL.DataTypesUtils
+import CMDL.Utils
+import CMDL.DgCommands
+import CMDL.ProveConsistency
 
 import Static.GTheory
 

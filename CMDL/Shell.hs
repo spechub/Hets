@@ -1,5 +1,5 @@
 {- |
-Module      :$Header$
+Module      : $Header$
 Description : shell related functions
 Copyright   : uni-bremen and DFKI
 License     : similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
@@ -7,12 +7,12 @@ Maintainer  : r.pascanu@jacobs-university.de
 Stability   : provisional
 Portability : portable
 
-PGIP.Shell contains almost all functions related the
+CMDL.Shell contains almost all functions related the
 the CMDL shell or shellac
 
 -}
 
-module PGIP.Shell
+module CMDL.Shell
        ( shellacCmd
        , cDetails
        , cComment
@@ -29,9 +29,9 @@ import Interfaces.Command
 import Interfaces.DataTypes
 import Interfaces.Utils
 import Interfaces.GenericATPState
-import PGIP.DataTypes
-import PGIP.Utils
-import PGIP.DataTypesUtils
+import CMDL.DataTypes
+import CMDL.Utils
+import CMDL.DataTypesUtils
 import Logic.Comorphism
 import Logic.Grothendieck
 import Logic.Prover
@@ -650,7 +650,7 @@ cmdlCompletionFn allcmds allState input
         -- then if it is a folder extend it
         let names' = filter (\x->isPrefixOf tC x) names
         names''<- case safeTail names' of
-                   -- check PGIP.CMDLUtils to see how it
+                   -- check CMDL.Utils to see how it
                    -- works, function should be done with
                    -- something like map but that can handle
                    -- functions with IO

@@ -7,11 +7,11 @@ Maintainer  : r.pascanu@jacobs-university.de
 Stability   : provisional
 Portability : portable
 
-PGIP.ProveUtils offer a list of commands for preparing the theory for
+CMDL.ProveUtils offer a list of commands for preparing the theory for
 proving
 -}
 
-module PGIP.ProveUtils
+module CMDL.ProveUtils
        ( cParseScript
        ) where
 

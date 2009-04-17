@@ -43,7 +43,7 @@ import Haskell.Haskell2DG
 import System.Exit (ExitCode(ExitSuccess), exitWith)
 
 #ifdef SHELLAC
-import PGIP.Interface
+import CMDL.Interface
 import PGIP.XMLparsing
 #endif
 

@@ -7,13 +7,13 @@ Maintainer  : r.pascanu@jacobs-university.de
 Stability   : provisional
 Portability : portable
 
-PGIP.Utils contains different basic functions that are
+CMDL.Utils contains different basic functions that are
 used throughout the CMDL interface and could not be found in
 Prelude
 
 -}
 
-module PGIP.DataTypesUtils
+module CMDL.DataTypesUtils
          ( getAllNodes
          , obtainGoalNodeList
          , getAllGoalNodes
@@ -32,8 +32,8 @@ import Interfaces.DataTypes
 import Interfaces.Utils
 import Interfaces.History
 import Interfaces.Command
-import PGIP.Utils
-import PGIP.DataTypes
+import CMDL.Utils
+import CMDL.DataTypes
 import Common.Result
 import Data.List
 import Data.Graph.Inductive.Graph

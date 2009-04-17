@@ -404,10 +404,10 @@ lookupKnownConsChecker st _ =
            findCC (pr_n,cms) =
                case filter (matchingCC pr_n) $ getConsCheckers
                     $ filter (lessSublogicComor sl) cms of
-                 [] -> fail ("PGIP.ProverConsistency.lookupKnownConsChecker"++
+                 [] -> fail ("CMDL.ProverConsistency.lookupKnownConsChecker"++
                                  ": no consistency checker found")
                  p:_ -> return p
-       in maybe ( fail ("PGIP.ProverConsistency.lookupKnownConsChecker: "++
+       in maybe ( fail ("CMDL.ProverConsistency.lookupKnownConsChecker: "++
                       "no matching known prover")) findCC mt
 
 

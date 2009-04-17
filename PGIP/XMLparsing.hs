@@ -17,12 +17,12 @@ import Network
 import System.IO
 
 import PGIP.XMLstate
-import PGIP.Interface
-import PGIP.DataTypes
+import CMDL.Interface
+import CMDL.DataTypes
 import Data.List
 import Interfaces.DataTypes
 import Interfaces.Utils
-import PGIP.DataTypesUtils
+import CMDL.DataTypesUtils
 import qualified Text.XML.Light.Types as XmlT
 import Text.XML.Light.Output
 
