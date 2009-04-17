@@ -15,6 +15,7 @@ import qualified Data.Map as Map
 import DFOL.Sign
 import DFOL.AS_DFOL
 import DFOL.Morphism
+import DFOL.Symbol
 
 import qualified CASL.Sign as CASL_Sign
 import qualified CASL.AS_Basic_CASL as CASL_AS
@@ -296,6 +297,17 @@ senTransl sig (Exists ds f) = makeExists varNames (makeConjunction [makeTypeHyps
 -- named sentence translation
 namedSenTransl :: Sign -> Named FORMULA -> Named CASL_AS.CASLFORMULA
 namedSenTransl sig nf = nf {sentence = senTransl sig $ sentence nf}                               
+
+-- symbol translation
+symbolTransl :: Sign -> Symbol -> Set.Set CASL_Sign.Symbol
+symbolTransl sig sym = Set.singleton $ CASL_Sign.Symbol (mkId [n])
+                            $ case kind of
+                                   PredKind -> CASL_Sign.PredAsItemType $ CASL_Sign.PredType (folType arity)
+                                   FuncKind -> CASL_Sign.OpAsItemType $ CASL_Sign.OpType CASL_AS.Total (folType arity) sort
+                                   SortKind -> CASL_Sign.PredAsItemType $ CASL_Sign.PredType (folType (arity+1))
+                       where n = name sym
+                             Just kind = getSymbolKind n sig
+                             Just arity = getSymbolArity n sig 
 
 -- creates a Result
 wrapInResult :: a -> Result a
