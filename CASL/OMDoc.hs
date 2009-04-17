@@ -200,7 +200,10 @@ isLocalId _ _ = True
 
 -- | probably outsource this to a generic module
 makeOMS :: NameTriple -> OMElement
-makeOMS (NameTriple i s l) = OMS (CD s $ Just l) $ OMName i
+makeOMS (NameTriple i s l) =
+-- special handling for library entries !??
+    OMS (CD s $ if l == "library" || l == "" then Nothing else Just l)
+            $ OMName i
 
 idToOmdoc :: SPEC_ID -> Id -> OMElement
 idToOmdoc spid s = makeOMS $ idToNameTriple spid s
@@ -227,6 +230,9 @@ varToOmdoc v = OMV $ OMName $ tokStr v
 varDeclToOMDoc :: SPEC_ID -> (VAR, SORT) -> OMElement
 varDeclToOMDoc spid (v, s) = makeAttribution (varToOmdoc v) $
                              sortToOmdoc spid s
+
+
+-- cdbase entries missing for predefined content dictionaries
 
 -- | Predefined truthval constants: false, true
 tv_const :: String -> OMElement
@@ -302,54 +308,19 @@ omdocRec spid _ mf = Record
 -------------------------- Morphisms --------------------------
 
 
-makeSortMapEntry :: SPEC_ID -> SORT -> SORT -> (OMElement, OMElement)
-makeSortMapEntry spid s1 s2 = (sortToOmdoc spid s1, sortToOmdoc spid s2)
-
+makeSortMapEntry :: SPEC_ID -> SORT -> SORT -> (OMName, OMElement)
+makeSortMapEntry spid s1 s2 = (OMName $ idToName spid s1, sortToOmdoc spid s2)
 
 makeOpMapEntry :: SPEC_ID -> (Id, OpType) -> (Id, OpKind) ->
-                   (OMElement, OMElement)
+                  (OMName, OMElement)
 makeOpMapEntry spid (o1, ot) (o2, _) =
-    (makeAttribution (idToOmdoc spid o1) $ makeObjectType spid ot,
-     idToOmdoc spid o2)
+    (OMName $ idToName spid o1, idToOmdoc spid o2)
 
-makePredMapEntry :: SPEC_ID -> (Id, PredType) -> Id -> (OMElement, OMElement)
+makePredMapEntry :: SPEC_ID -> (Id, PredType) -> Id -> (OMName, OMElement)
 makePredMapEntry spid (p1, pt) p2 =
-    (makeAttribution (idToOmdoc spid p1) $ makePredType spid pt,
-     idToOmdoc spid p2)
-
+    (OMName $ idToName spid p1, idToOmdoc spid p2)
 
 
 --------------------------------------------------------------------
 
 
-{-
-
-type CASLMor = Morphism () () () -- entspricht morphism2
-
-data Morphism f e m = Morphism
-  { msource :: Sign f e
-  , mtarget :: Sign f e
-  , sort_map :: Sort_map
-  , op_map :: Op_map
-  , pred_map :: Pred_map
-  , extended_map :: m
-  } deriving (Show, Eq, Ord)
-
-
--- always use the partial profile as key!
-type Op_map = Map.Map (Id, OpType) (Id, OpKind)
-type Pred_map = Map.Map (Id, PredType) Id
-
-type Sort_map = Map.Map SORT SORT
-
-
--- constants have empty argument lists
-data OpType = OpType {opKind :: OpKind, opArgs :: [SORT], opRes :: SORT}
-              deriving (Show, Eq, Ord)
-
-data OpKind = Total | Partial deriving (Show, Eq, Ord)
-
-type SORT = Id
-
-data PredType = PredType {predArgs :: [SORT]} deriving (Show, Eq, Ord)
--}
