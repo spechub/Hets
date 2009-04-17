@@ -25,11 +25,9 @@ OWL/tests
 OMDoc/Basic
 
 ToHaskell
-Hets.cabal
 docs
 doc
 ideas
-install.sh
 todo
 test
 
