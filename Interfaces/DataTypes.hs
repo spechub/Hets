@@ -29,7 +29,7 @@ module Interfaces.DataTypes
 
 import Static.DevGraph
 import Common.LibName
-import Common.Utils(joinWith, splitOn)
+import Common.Utils (splitOn)
 import Proofs.AbstractState
 import Logic.Comorphism
 import Logic.Logic
@@ -122,17 +122,6 @@ goalToCommands p g =
   , TimeLimit $ time_Limit g
   , GlobCmd ProveCurrent ]
 
-instance Show ProveCommand where
-   show p =
-      "\n# " ++ (replicate 78 '-') ++ "\n\ndg basic " ++ nodeNameStr p ++ "\n\n"
-      ++ "drop-translations\n"
-      -- selected translation
-      ++ (maybe "" (unlines . splitComorphism) $ translation p)
-      -- selected prover
-      ++ (maybe "# no prover chosen" ("prover "++) $ usedProver p) ++ "\n\n"
-      -- proven goals
-      ++ (joinWith '\n' $ map (goalToString p) $ provenGoals p)
-
 -- This represents the information about a proved goal
 data ProvenGoal = ProvenGoal {name :: String, -- name of the goal
                               axioms :: [String], -- used axioms in the prove
@@ -167,23 +156,6 @@ data Int_NodeInfo = forall lid1 sublogics1
          symb_items1 symb_map_items1 sign1 morphism1
          symbol1 raw_symbol1 proof_tree1 =>
      Element (ProofState lid1 sentence1) Int
-
-goalToString :: ProveCommand -> ProvenGoal -> String
-goalToString p g =
-    "set goals " ++ (name g)
-    ++
-    -- axioms to include in prove
-    '\n':(if (allAxioms p == axioms g) || (null $ axioms g)
-                then "set-all axioms"
-                else "set axioms " ++ (joinWith ' ' $ axioms g))
-    ++
-    -- selected time-limit
-    "\nset time-limit " ++ (show $ time_Limit g) ++ "\nprove\n"
-
--- Splits the comorphism string into its translations.
-splitComorphism :: AnyComorphism -> [String]
-splitComorphism (Comorphism cid) =
-   map ("translate "++) $ tail $ splitOn ';' $ language_name cid
 
 -- Adds a single command to the history.
 addToHist :: CommandHistory -> ProveCommand -> IO ()
