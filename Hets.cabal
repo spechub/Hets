@@ -97,7 +97,7 @@ Executable hets
       , uni-reactor
       , uni-uDrawGraph >= 2.0 && <= 3.0
       , uni-util >= 2.0 && <= 3.0
-    cpp-options: -DUNI_PACKAGE -DUNIVERSION2
+    cpp-options: -DUNI_PACKAGE
 
   if flag(haxml)
     build-depends: HaXml >= 1.13.2 && <= 1.13.3
