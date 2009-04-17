@@ -1,0 +1,41 @@
+type  t1 ::= c (s : ? (Unit -> Unit))
+type  t2 ::= c (s : ? Unit -> Unit)
+type  t2 ::= c (s : (? Unit -> Unit))
+type  t3 ::= c (s : Logical -> Unit)
+types
+t1 : Type;
+t2 : Type;
+t3 : Type
+op c : (Unit -> Unit) -> t1 %(constructor)%
+op c : (? Unit -> Unit) -> t2 %(constructor)%
+op c : (Logical -> Unit) -> t3 %(constructor)%
+op s : t2 -> ? Unit -> Unit
+       %(selector of constructor(s) c : (? Unit -> Unit) -> t2)%
+op s : t3 -> Logical -> Unit
+       %(selector of constructor(s) c : (Logical -> Unit) -> t3)%
+op s : t1 ->? Unit -> Unit
+       %(selector of constructor(s) c : (Unit -> Unit) -> t1)%
+forall x_1 : Unit -> Unit
+. (op s : t1 ->? Unit -> Unit) ((op c : (Unit -> Unit) -> t1) x_1)
+  = x_1                                            %(ga_select_s)%
+type t1 ::= c (s :? (Unit -> Unit)) %(ga_t1)%
+forall x_1 : ? Unit -> Unit
+. (op s : t2 -> ? Unit -> Unit)
+  ((op c : (? Unit -> Unit) -> t2) x_1)
+  = x_1                                            %(ga_select_s)%
+type t2 ::= c (s : (? Unit -> Unit)) %(ga_t2)%
+forall x_1 : ? Unit -> Unit
+. (op s : t2 -> ? Unit -> Unit)
+  ((op c : (? Unit -> Unit) -> t2) x_1)
+  = x_1                                            %(ga_select_s)%
+type t2 ::= c (s : (? Unit -> Unit)) %(ga_t2)%
+forall x_1 : Logical -> Unit
+. (op s : t3 -> Logical -> Unit)
+  ((op c : (Logical -> Unit) -> t3) x_1)
+  = x_1                                            %(ga_select_s)%
+type t3 ::= c (s : Logical -> Unit) %(ga_t3)%
+### Hint 3.6-3.25,
+repeated declaration of 'c' with type '(? Unit -> Unit) -> t2'
+### Hint 3.6-3.25,
+repeated declaration of 's' with type 't2 -> ? Unit -> Unit'
+### Hint 3.6, redeclared type 't2'

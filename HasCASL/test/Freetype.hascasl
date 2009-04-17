@@ -1,0 +1,4 @@
+type t1 ::= c(s:?(Unit->Unit))
+type t2 ::= c(s:?Unit->Unit)
+type t2 ::= c(s:(?Unit->Unit))
+type t3 ::= c(s:Logical->Unit)

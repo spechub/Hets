@@ -63,10 +63,11 @@ printAltDefn (Construct mi ts p sels) = case mi of
 
 instance Pretty Selector where
     pretty (Select mi t p) = let d = pretty t in case mi of
-        Just i -> pretty i <+> (case p of
+        Just i -> pretty i <+> case p of
             Partial -> text colonQuMark
-            Total -> colon)
-            <+> if isSimpleType t then d else parens d
+               <+> if isSimpleType t then d else parens d
+            Total -> colon
+               <+> if isPrefixOf "?" $ show d then parens d else d
         Nothing -> d
 
 instance Pretty TypeInfo where
