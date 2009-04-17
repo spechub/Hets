@@ -35,10 +35,6 @@ space = $(empty) $(empty)
 
 DRIFT_ENV = DERIVEPATH=$(subst $(space),:,$(PFE_PATHS))
 
-# override on commandline for other architectures
-INSTALLDIR = \
-    /home/www/agbkb/forschung/formal_methods/CoFI/hets/`utils/sysname.sh`
-
 DRIFT_deps = utils/DrIFT-src/*hs
 GENERATERULES_deps = utils/GenerateRules/*hs $(DRIFT_deps)
 GENITCORRECTIONS_deps = utils/itcor/GenItCorrections.hs
@@ -360,7 +356,7 @@ tax_sources = Taxonomy/AbstractGraphView.hs Taxonomy/MMiSSOntology.hs \
     maintainer-clean annos \
     check capa hacapa h2h h2hf showKP clean_genRules genRules \
     count doc apache_doc post_doc4apache fromKif \
-    derivedSources install_hets install release cgi ghci
+    derivedSources release cgi ghci
 
 .SECONDARY : %.hs %.d $(generated_rule_files) $(gen_inline_axiom_files)
 
@@ -499,15 +495,6 @@ release:
             find . -name .svn -o -name \*.o -o -name \*.hi | xargs $(RM) -r; \
             $(RM) clean.*; utils/replaceAllHeaders.sh)
 	$(TAR) cvf Hets.tar Hets
-
-install-hets:
-	chmod g+w hets
-	cp -p hets $(INSTALLDIR)/versions/hets-`cat version_nr`
-	cp -p version_nr $(INSTALLDIR)
-	(cd $(INSTALLDIR); $(RM) hets; \
-	    ln -s versions/hets-`cat version_nr` hets; $(RM) version_nr)
-
-install: hets-opt install-hets
 
 pack/install-%.jar: pack/install-%.xml pack/UserInputSpec-%.xml hets.in hets
        ## TODO: add more dependencies and use hets-opt
