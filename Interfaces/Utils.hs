@@ -20,7 +20,6 @@ module Interfaces.Utils
          , emptyIntIState
          , emptyIntState
          , addProveToHist
-         , proofTreeToProve
          , wasProved
          , convertGoal
          , parseTimeLimit
@@ -36,6 +35,7 @@ import Interfaces.GenericATPState
 import Interfaces.Command
 import Interfaces.History
 
+import Control.Monad (unless)
 import Data.Graph.Inductive.Graph
 import Data.Maybe (fromMaybe)
 import Data.List (isPrefixOf, stripPrefix, nubBy)
@@ -60,7 +60,7 @@ import Logic.Grothendieck
 import Logic.Coerce
 
 import qualified Common.OrderedMap as OMap
-import Common.Utils (joinWith, splitOn)
+import Common.Utils (splitOn)
 import Common.Result
 import Common.LibName
 import Common.Id (nullRange)
@@ -147,20 +147,16 @@ addProveToHist :: CommandHistory
         -> Maybe (G_prover, AnyComorphism) -- possible used translation
         -> [Proof_status proof_tree]       -- goals included in prove
         -> IO ()
-addProveToHist ch st pcm pt
-    | Prelude.null $ Prelude.filter wasProved pt = return ()
-    | otherwise = do
-                  p <- proofTreeToProve ch st pcm pt
-                  addToHist ch p
+addProveToHist ch st pcm pt = unless (null $ filter wasProved pt)
+  $ addToHist ch $ proofTreeToProve ch st pcm pt
 
 -- Converts a list of proof-trees to a prove
 proofTreeToProve :: CommandHistory
      -> ProofState lid sentence  -- current proofstate
      -> Maybe (G_prover, AnyComorphism) -- possible used translation
      -> [Proof_status proof_tree] -- goals included in prove
-     -> IO ProveCommand
+     -> ProveCommand
 proofTreeToProve ch st pcm pt =
-  do
   -- selected prover
   let prvr = maybe (selectedProver st) (Just . getProverName .fst ) pcm
   -- selected translation
@@ -175,7 +171,7 @@ proofTreeToProve ch st pcm pt =
       allax = case theory st of
                  G_theory _ _ _ axs _ -> OMap.keys axs
       nodeName = dropName (filePath ch) $ theoryName st
-  return Prove { nodeNameStr = nodeName,
+  in Prove { nodeNameStr = nodeName,
                  usedProver = prvr,
                  translation = trans,
                  provenGoals = goals,
@@ -275,9 +271,9 @@ checkConservativityEdge useGUI (source,target,linklab) libEnv ln
     let compMor = case dgn_sigma $ labDG (lookupDGraph ln libEnv) target of
           Nothing -> morphism2'
           Just (GMorphism cid' _ _ morphism3 _) -> case
-            do morphism3' <- coerceMorphism (targetLogic cid') lid
+            coerceMorphism (targetLogic cid') lid
                    "checkconservativityOfEdge" morphism3
-               comp morphism2' morphism3' of
+               >>= comp morphism2' of
                  Result _ (Just phi) -> phi
                  _ -> error "checkconservativityOfEdge: comp"
     let thSrc =
