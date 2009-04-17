@@ -79,7 +79,9 @@ makeMorphism _ (GMorphism cid _ _ mor _) =
 
 cdFromNode :: LIB_ID -> DGNodeLab -> OMCD
 cdFromNode libid lb =
+-- special handling for library entries !??
     CD (getDGNodeName lb) $
-    Just $ show $ if isDGRef lb
-                  then getLIB_ID $ ref_libname $ nodeInfo lb
-                  else libid
+    let cdbase = show $ if isDGRef lb
+                        then getLIB_ID $ ref_libname $ nodeInfo lb
+                        else libid
+    in if cdbase == "library" || cdbase == "" then Nothing else Just cdbase

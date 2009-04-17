@@ -38,12 +38,13 @@ omdoc_current_version = "1.2"
 el_omdoc, el_theory, el_view, el_axiom, el_theorem, el_symbol, el_import
  , el_type, el_fmp, el_omobj, el_ombind, el_oms, el_ombvar, el_omattr
  , el_omatp, el_omv, el_oma, el_adt, el_sortdef, el_constructor
- , el_argument, el_insort, el_selector, el_requation, el_morphism :: QName
+ , el_argument, el_insort, el_selector, el_requation, el_morphism
+ , el_conass :: QName
 
 el_omdoc = (blank_name { qName = "omdoc" })
 el_theory = (blank_name { qName = "theory" })
 -- has perhaps to be renamed to view, depends on the omdoc version
-el_view = (blank_name { qName = "theory-inclusion" })
+el_view = (blank_name { qName = "view" })
 el_axiom = (blank_name { qName = "axiom" })
 el_theorem = (blank_name { qName = "theorem" })
 el_symbol = (blank_name { qName = "symbol" })
@@ -67,6 +68,7 @@ el_insort = (blank_name { qName = "insort" })
 el_selector = (blank_name { qName = "selector" })
 el_requation = (blank_name { qName = "requation" })
 el_morphism = (blank_name { qName = "morphism" })
+el_conass = (blank_name { qName = "conass" })
 
 el_axiom_or_theorem :: Bool -> QName
 el_axiom_or_theorem True = el_axiom
@@ -74,7 +76,7 @@ el_axiom_or_theorem False = el_theorem
 
 -- | often used attribute names
 at_id, at_version, at_cd, at_name, at_role, at_type, at_total, at_for
- , at_from, at_to :: QName
+ , at_from, at_to, at_base :: QName
 
 at_id = (blank_name { qName = "id", qPrefix = Just "xml" })
 at_version = (blank_name { qName = "version" })
@@ -86,6 +88,7 @@ at_total = (blank_name { qName = "total" })
 at_for = (blank_name { qName = "for" })
 at_from = (blank_name { qName = "from" })
 at_to = (blank_name { qName = "to" })
+at_base = (blank_name { qName = "cdbase" })
 
 
 {- |
@@ -117,12 +120,34 @@ typeToXml t = Elem $ Element el_type []
               [Elem $ Element el_omobj [] [toXml t] Nothing]
               Nothing
 
+assignmentToXml :: (OMName, OMElement) -> Content
+assignmentToXml (OMName from, to) =
+    Elem $ Element el_conass
+             [Attr at_name from]
+             [Elem $ Element el_omobj [] [toXml to] Nothing]
+             Nothing
+
 requationToXml :: (OMElement, OMElement) -> Content
 requationToXml (from, to) =
     Elem $ Element el_requation []
              [Elem $ Element el_omobj [] [toXml from] Nothing,
               Elem $ Element el_omobj [] [toXml to] Nothing]
     Nothing
+
+
+uriEncodeOMS :: OMCD -> OMName -> String
+uriEncodeOMS cd (OMName name) = uriEncodeCD cd ++ "?" ++ name
+
+uriEncodeCD :: OMCD -> String
+uriEncodeCD (CD cd base) = (maybe "" id base) ++ "?" ++ cd
+
+tripleEncodeOMS :: OMCD -> OMName -> [Attr]
+tripleEncodeOMS cd (OMName name) = pairEncodeCD cd ++ [Attr at_name name]
+
+pairEncodeCD :: OMCD -> [Attr]
+pairEncodeCD (CD cd base) =
+    (maybe [] (\x -> [Attr at_base x]) base) ++ [Attr at_cd cd]
+
 
 -- | The root instance for representing OMDoc in XML
 instance XmlRepresentable OMDoc where
@@ -144,9 +169,9 @@ instance XmlRepresentable TLElement where
          [Attr at_id tid]
          (listToXml elms)
          Nothing)
-    toXml (TLView (CD cdFrom _) (CD cdTo _) mor) =
+    toXml (TLView from to mor) =
         (Elem $ Element el_view
-         [Attr at_from $ cdFrom, Attr at_to $ cdTo]
+         [Attr at_from $ uriEncodeCD from, Attr at_to $ uriEncodeCD to]
          [toXml mor]
          Nothing)
     fromXml (Element n _ _ _)
@@ -175,15 +200,15 @@ instance XmlRepresentable TCElement where
          Nothing
     toXml (TCADT sds) = (Elem $ Element el_adt [] (listToXml sds) Nothing)
     toXml (TCComment c) = (makeComment c)
-    toXml (TCImport (CD c _) mor) =
+    toXml (TCImport from mor) =
         Elem $ Element el_import
-         [Attr at_from $ c]
+         [Attr at_from $ uriEncodeCD from]
          [toXml mor]
          Nothing
     toXml (TCMorphism mapping) =
         Elem $ Element el_morphism
          []
-         (map requationToXml mapping)
+         (map assignmentToXml mapping)
          Nothing
     fromXml (Element n _ _ _)
         | n == el_axiom =
@@ -224,7 +249,7 @@ instance XmlRepresentable OmdADT where
 -- | OpenMath elements to XML and back
 instance XmlRepresentable OMElement where
     toXml (OMS d n) = Elem $ Element el_oms
-                       [Attr at_cd (cd d), Attr at_name (name n)]
+                       (tripleEncodeOMS d n)
                        []
                        Nothing
     toXml (OMV n) = Elem $ Element el_omv [Attr at_name (name n)] [] Nothing

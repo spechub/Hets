@@ -41,7 +41,7 @@ data TCElement =
     -- | Import statements for referencing other theories
   | TCImport OMCD TCElement
     -- | Morphisms to specify signature mappings
-  | TCMorphism [(OMElement, OMElement)]
+  | TCMorphism [(OMName, OMElement)]
     -- | A comment, only for development purposes
   | TCComment String
     deriving (Show, Eq, Ord)
