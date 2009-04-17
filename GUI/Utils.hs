@@ -16,7 +16,6 @@ module GUI.Utils
   ( listBox
   , createTextSaveDisplay
   , askFileNameAndSave
-  , strToCmd
 #if (defined GTKGLADE || defined UNI_PACKAGE)
   , createTextDisplay
   , infoDialog
@@ -46,7 +45,6 @@ import GUI.GtkUtils
   , displayTheory
   , displayTheoryWithWarning
   )
-
 
 -- | create a window with title and list of options, return selected option
 listBox :: String -- ^ Title
@@ -168,29 +166,3 @@ createTextDisplay t m = GUI.HTkUtils.createTextDisplay t m []
 #else
 import GUI.ConsoleUtils (listBox, createTextSaveDisplay, askFileNameAndSave)
 #endif
-
-strToCmd :: String -> String
-strToCmd str =
-  case str of
-   "Automatic"                             -> "dg-all auto"
-   "Global Subsumption"                    -> "dg-all glob-subsume"
-   "Global Decomposition"                  -> "dg-all glob-decomp"
-   "Local Inference"                       -> "dg-all loc-infer"
-   "Local Decomposition (merge of rules)"  -> "dg-all loc-decomp"
-   "Composition (merge of rules)"          -> "dg-all comp"
-   "Composition - creating new links"      -> "dg-all comp-new"
-   "Hide Theorem Shift"                    -> "dg-all thm-hide"
-   "Theorem Hide Shift"                    -> "dg-all hide-thm"
-   "Compute Colimit"                       -> "compute Colimit"
-   "Compute normal form"                  -> "compute normal form"
-   "Importings"                            -> "flattening importings"
-   "Disjoint unions"                       -> "flattening disjoint unions"
-   "Importings and renamings"              -> "flattening renamings"
-   "Hiding"                                -> "flattening hiddings"
-   "Heterogeneity"                         -> "flattening heterogeneity"
-   "Qualify all names"                     -> "qualify all names"
-   "mergeDGNodeLab"                        -> ""
-   _ -> "# unknown command :"++ str
-
-
-
