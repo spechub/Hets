@@ -122,8 +122,8 @@ type ParameterList = [Sort]
 
 data ModuleExpression = ModName { mod'name :: Qid }
                       | ModJoin { mod'left :: ModuleExpression, mod'right :: ModuleExpression }
-                      | ModRename { mod'module :: ModuleExpression, mod'rename :: RenamingSet }
-                      | ModInstantiate { mod'module :: ModuleExpression, mod'params :: ParameterList }
+                      | ModRename { mod'mod :: ModuleExpression, mod'rename :: RenamingSet }
+                      | ModInstantiate { mod'mod :: ModuleExpression, mod'params :: ParameterList }
     deriving (Show, Eq, Ord, Typeable)
 
 
@@ -145,9 +145,9 @@ type ParameterDeclList = [ParameterDecl]
   subsort Import < ImportList .
 -}
 
-data Import = Protecting { imp'module :: ModuleExpression }
-            | Extending  { imp'module :: ModuleExpression }
-            | Including  { imp'module :: ModuleExpression }
+data Import = Protecting { imp'mod :: ModuleExpression }
+            | Extending  { imp'mod :: ModuleExpression }
+            | Including  { imp'mod :: ModuleExpression }
     deriving (Show, Eq, Ord, Typeable)
 
 type ImportList = [Import]
