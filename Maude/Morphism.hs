@@ -30,13 +30,14 @@ import Maude.Meta
 import Maude.Symbol
 import Maude.Sentence
 
-import Maude.Sign hiding (empty, isLegal)
-import qualified Maude.Sign as Sign (empty, isLegal)
+import Maude.Sign (Sign)
+import qualified Maude.Sign as Sign
 
 import Data.Typeable (Typeable)
 import qualified Data.Map as Map
 import qualified Data.Set as Set
 
+import Common.Result (Result)
 import qualified Common.Result as Result
 
 -- for ShATermConvertible
@@ -85,18 +86,18 @@ insertRenaming rename mor = let
         op nam as cod dom = Op { op'name = nam, op'range = cod, op'domain = dom, op'attrs = as }
     in case rename of
         Sort'To {from = a, to = b} -> mor {
-                source = insertSort a src,
-                target = insertSort b tgt,
+                source = Sign.insertSort a src,
+                target = Sign.insertSort b tgt,
                 sortMap = Map.insert a b smap
             }
         Op'To {from = a, to = b} -> mor {
-                source = insertOpName a src,
-                target = insertOpName b tgt,
+                source = Sign.insertOpName a src,
+                target = Sign.insertOpName b tgt,
                 opMap = Map.insert a b omap
             }
         Op'Type'To {from = a, range = cod, domain = dom, to = b, attrs = as} -> mor {
-                source = insertOp (op a as cod dom) src,
-                target = insertOp (op b as cod dom) tgt,
+                source = Sign.insertOp (op a as cod dom) src,
+                target = Sign.insertOp (op b as cod dom) tgt,
                 opMap = Map.insert a b omap
             }
         Label'To {from = a, to = b} -> mor {
@@ -118,7 +119,7 @@ identity sign = Morphism {
     }
 
 -- | the composition of two Morphisms
-compose :: Morphism -> Morphism -> Result.Result Morphism
+compose :: Morphism -> Morphism -> Result Morphism
 compose f g
     | (target f) /= (source g) = fail "target of the first and source of the second morphism are different"
     | otherwise = let
