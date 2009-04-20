@@ -21,25 +21,25 @@ import Text.XML.Light.Types
 import Text.XML.Light.Input
 
 
-genQName :: String -> QName 
+genQName :: String -> QName
 genQName str =
    let qnameVal = blank_name
    in qnameVal { qName = str }
 
 genPgipElem :: String -> Content
-genPgipElem str = 
-   Elem $ Element { 
+genPgipElem str =
+   Elem $ Element {
             elName = genQName "pgipelem",
             elAttribs = [],
             elContent = [Text $ CData CDataRaw str Nothing],
             elLine    = Nothing }
 
 genNormalResponse :: String -> Content
-genNormalResponse str = 
+genNormalResponse str =
   Elem $ Element {
           elName = genQName "normalresponse",
           elAttribs = [],
-          elContent = [ Elem $ Element { 
+          elContent = [ Elem $ Element {
                          elName = genQName "pgmltext",
                          elAttribs = [],
                          elContent = [Text $ CData CDataRaw str Nothing],
@@ -48,9 +48,9 @@ genNormalResponse str =
 
 genErrorResponse :: Bool -> String -> Content
 genErrorResponse fatality str =
-  case fatality of 
+  case fatality of
    False ->
-    Elem $ Element { 
+    Elem $ Element {
           elName = genQName "errorresponse",
           elAttribs = [],
           elContent = [ Elem $ Element {
@@ -60,12 +60,12 @@ genErrorResponse fatality str =
                           elLine = Nothing } ],
          elLine = Nothing }
    True ->
-    Elem $ Element { 
+    Elem $ Element {
             elName = genQName "errorresponse",
-            elAttribs = [Attr { 
+            elAttribs = [Attr {
                             attrKey = genQName "fatality",
                             attrVal = "fatal" } ],
-            elContent = [ Elem $ Element { 
+            elContent = [ Elem $ Element {
                             elName = genQName "pgmltext",
                             elAttribs = [],
                             elContent = [Text $ CData CDataRaw str Nothing],
@@ -75,21 +75,21 @@ genErrorResponse fatality str =
 
 addToContent :: CMDL_PgipState -> Content -> CMDL_PgipState
 addToContent pgData cont
- = pgData { 
-    xmlContent = case xmlContent pgData of 
+ = pgData {
+    xmlContent = case xmlContent pgData of
                   Elem tmpel ->
-                   Elem tmpel { elContent = (elContent tmpel) ++  [cont] } 
+                   Elem tmpel { elContent = (elContent tmpel) ++  [cont] }
                   _ -> xmlContent pgData
        }
 
 addReadyXml :: CMDL_PgipState -> CMDL_PgipState
 addReadyXml pgData
- = let el_ready = Elem $ Element { 
+ = let el_ready = Elem $ Element {
                            elName = genQName "ready",
                            elAttribs = [],
                            elContent = [],
                            elLine = Nothing }
-   in addToContent pgData el_ready 
+   in addToContent pgData el_ready
 
 -- | State that keeps track of the comunication between Hets and the Broker
 data CMDL_PgipState = CMDL_PgipState {
@@ -141,18 +141,18 @@ genPgipID =
 addToMsg :: String -> String -> CMDL_PgipState -> CMDL_PgipState
 addToMsg str errStr pgD
   = case theMsg pgD of
-     [] -> case str of 
-            [] -> case errStr of 
+     [] -> case str of
+            [] -> case errStr of
                    [] -> pgD
                    _  -> pgD { theMsg = errStr }
-            _  -> case errStr of 
+            _  -> case errStr of
                    [] -> pgD { theMsg = str }
                    _  -> pgD { theMsg = str ++ "\n" ++errStr }
-     _  -> case str of 
-            [] -> case errStr of 
+     _  -> case str of
+            [] -> case errStr of
                    [] -> pgD
                    _  -> pgD { theMsg = (theMsg pgD) ++ "\n" ++errStr }
-            _  -> case errStr of 
+            _  -> case errStr of
                    [] -> pgD { theMsg = (theMsg pgD) ++ "\n" ++ str }
                    _ -> pgD{ theMsg= (theMsg pgD)++"\n"++str++"\n"++errStr }
 
@@ -169,13 +169,13 @@ convertPgipStateToXML :: CMDL_PgipState -> Content
 convertPgipStateToXML pgipData
  = Elem $ Element {
                elName     = genQName "pgip" ,
-               elAttribs  =   (Attr { 
+               elAttribs  =   (Attr {
                                 attrKey = genQName "tag",
                                 attrVal = name pgipData } )
-                            : (Attr { 
+                            : (Attr {
                                 attrKey = genQName "class",
                                 attrVal = "pg" } )
-                            : (Attr { 
+                            : (Attr {
                                 attrKey = genQName "id",
                                 attrVal = pgip_id pgipData } )
                             : (Attr {
@@ -209,14 +209,14 @@ data CMDL_XMLcommands =
 
 parseXMLTree :: [Content] -> [CMDL_XMLcommands] -> IO [CMDL_XMLcommands]
 parseXMLTree  xmltree acc
- = do 
-    let getTextData someinf = case head $ elContent someinf of 
+ = do
+    let getTextData someinf = case head $ elContent someinf of
                            Text smtxt -> cdData smtxt
                            _ -> []
     case xmltree of
      []        -> return acc
-     (Elem info):ls -> 
-      case qName $ elName info of 
+     (Elem info):ls ->
+      case qName $ elName info of
        "proverinit"   ->
            parseXMLTree ls (XML_ProverInit:acc)
        "proverexit"   ->
@@ -234,7 +234,7 @@ parseXMLTree  xmltree acc
             let cnt = getTextData info
             parseXMLTree ls ((XML_Execute cnt):acc)
        "closegoal"    ->
-           do 
+           do
             let cnt = getTextData info
             parseXMLTree ls ((XML_CloseGoal cnt):acc)
        "giveupgoal"   ->
@@ -294,10 +294,10 @@ parseXMLTree  xmltree acc
 parseMsg :: CMDL_PgipState -> String -> IO [CMDL_XMLcommands]
 parseMsg st input
  = do
-    case useXML st of 
-      True  -> 
+    case useXML st of
+      True  ->
         parseXMLTree (parseXML input) []
-      False -> return $ concatMap(\x -> case words x of 
+      False -> return $ concatMap(\x -> case words x of
                                          [] -> []
                                          _ -> [XML_Execute x]) $ lines input
 

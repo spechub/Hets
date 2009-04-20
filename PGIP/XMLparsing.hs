@@ -66,7 +66,7 @@ genHandShake pgipData
        el_abortfile      = genPgipElem "abortfile"
        el_changecwd      = genPgipElem "changecwd"
        el_systemcmd      = genPgipElem "systemcmd"
-       pgip_elems = 
+       pgip_elems =
               el_askpgip
             : el_askpgml
             : el_askprefs
@@ -97,7 +97,7 @@ genHandShake pgipData
             : el_undoitem
             : el_redoitem
             : el_aborttheory
-            : el_retracttheory 
+            : el_retracttheory
             : el_loadfile
             : el_openfile
             : el_closefile
@@ -110,14 +110,14 @@ genHandShake pgipData
          XmlT.elAttribs = [XmlT.Attr { XmlT.attrKey = genQName "version",
                                        XmlT.attrVal = "2.0" } ],
          XmlT.elContent = [
-            XmlT.Elem $ XmlT.Element { 
+            XmlT.Elem $ XmlT.Element {
                     XmlT.elName    = genQName "acceptedpgipelems",
                     XmlT.elAttribs = [],
                     XmlT.elContent = pgip_elems,
                     XmlT.elLine    = Nothing } ],
          XmlT.elLine = Nothing }
    in case useXML pgipData of
-       True -> addToContent pgipData xmlrootElem 
+       True -> addToContent pgipData xmlrootElem
        False -> pgipData
 
 -- | The function executes a communication step, i.e. waits for input,
@@ -243,9 +243,9 @@ cmdlRunXMLShell
 genAnswer :: String -> String -> CMDL_PgipState -> CMDL_PgipState
 genAnswer msgtxt errmsg st
  = case useXML st of
-     True ->  
+     True ->
       case errmsg of
-       [] -> addToContent st $ genNormalResponse $ msgtxt 
+       [] -> addToContent st $ genNormalResponse $ msgtxt
        _  -> addToContent (addToContent st $ genNormalResponse msgtxt) $
                       genErrorResponse False $ errmsg
      False -> addToMsg msgtxt errmsg st
@@ -282,7 +282,7 @@ processCmds cmds state pgipState
                              nwSt <- cmdlProcessString str state
                              case errorMsg $ output nwSt of
                               [] -> processCmds l nwSt $
-                                     genAnswer (outputMsg $ output nwSt) 
+                                     genAnswer (outputMsg $ output nwSt)
                                                (warningMsg $ output nwSt)
                                                nPGIP
                               _ -> return (nwSt, genErrAnswer

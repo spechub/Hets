@@ -134,7 +134,7 @@ printTerm :: TERM -> Doc
 printTerm t = if (as == [])
                  then pretty x
                  else pretty x <> parens (ppWithCommas as)
-              where (x,as) = termCanForm t 
+              where (x,as) = termCanForm t
 
 printFormula :: FORMULA -> Doc
 printFormula (T) = text "true"

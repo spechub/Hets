@@ -51,7 +51,7 @@ getVarTypeFromDecls n ds = case result of
 data KIND = SortKind
           | FuncKind
           | PredKind
-            deriving (Show, Ord, Eq)  
+            deriving (Show, Ord, Eq)
 
 type ARITY = Int
 
@@ -106,7 +106,7 @@ getSymbolKind n sig = case (getReturnType n sig) of
                            Just Sort -> Just SortKind
                            Just Form -> Just PredKind
                            Just _ -> Just FuncKind
-            
+
 -- get the symbol arity
 getSymbolArity :: NAME -> Sign -> Maybe ARITY
 getSymbolArity n sig = case (getArgumentTypes n sig) of
@@ -127,7 +127,7 @@ getArgumentTypes n sig = case typM of
 getArgumentTypesH :: TYPE -> [TYPE]
 getArgumentTypesH (Pi ds t) = types1 ++ types2
                               where types1 = concatMap (\ (ns,t1) -> take (length ns) $ repeat t1) ds
-                                    types2 = getArgumentTypesH t                                                                      
+                                    types2 = getArgumentTypesH t
 getArgumentTypesH (Func ts t) = ts ++ (getArgumentTypesH t)
 getArgumentTypesH _ = []
 
@@ -181,25 +181,25 @@ substituteInDecl n val (ns,t) = (ns, substitute n val t)
 
 -- renamings
 alphaRename :: TYPE -> Sign -> CONTEXT -> TYPE
-alphaRename t sig cont = alphaRenameH t 0 declaredSyms 
-                         where declaredSyms = Set.union (getSymbols sig) (getVars cont)  
+alphaRename t sig cont = alphaRenameH t 0 declaredSyms
+                         where declaredSyms = Set.union (getSymbols sig) (getVars cont)
 
 alphaRenameH :: TYPE -> Int -> Set.Set NAME -> TYPE
 alphaRenameH t i names = if (i >= length vars)
                             then t
                             else let var = vars !! i
-                                     in if (Set.notMember var names) 
+                                     in if (Set.notMember var names)
                                            then alphaRenameH t (i+1) $ Set.insert var names
-                                           else let newVar = renameVar var $ Set.union names 
-                                                      $ Set.fromList $ (take i vars) ++ (drop (i+1) vars)  
+                                           else let newVar = renameVar var $ Set.union names
+                                                      $ Set.fromList $ (take i vars) ++ (drop (i+1) vars)
                                                     newType = substituteVar var newVar t
                                                     in alphaRenameH newType (i+1) $ Set.insert newVar names
                          where vars = getVarsDeclaredInType t
-  
+
 renameVar :: NAME -> Set.Set NAME -> NAME
-renameVar var names = if (Set.notMember newVar names) then newVar else renameVar newVar names 
+renameVar var names = if (Set.notMember newVar names) then newVar else renameVar newVar names
                       where newVar = Token ((tokStr var) ++ "1") nullRange
-                         
+
 substituteVar :: NAME -> NAME -> TYPE -> TYPE
 substituteVar _ _ Sort = Sort
 substituteVar _ _ Form = Form

@@ -35,12 +35,12 @@ instance Sentences DFOL FORMULA Sign Morphism Symbol
 -- static analysis for DFOL
 instance StaticAnalysis DFOL
    BASIC_SPEC
-   FORMULA           
+   FORMULA
    SYMB_ITEMS
    SYMB_MAP_ITEMS
    Sign
    Morphism
-   Symbol     
+   Symbol
    Symbol
    where
    basic_analysis DFOL = Just basicAnalysis
@@ -52,11 +52,11 @@ instance StaticAnalysis DFOL
 instance Logic DFOL
    ()
    BASIC_SPEC
-   FORMULA               
+   FORMULA
    SYMB_ITEMS
    SYMB_MAP_ITEMS
    Sign
    Morphism
-   Symbol  
+   Symbol
    Symbol
    ()
