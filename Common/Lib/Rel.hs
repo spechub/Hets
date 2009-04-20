@@ -253,9 +253,6 @@ mostRightOfCollapsed r@(Rel m) = if Map.null m then Set.empty
                                            Set.singleton k == v) m
             else mr
 
-{--------------------------------------------------------------------
-  MostRight (Added by K.L.)
---------------------------------------------------------------------}
 {- |
 find s such that x in s => forall y . yRx or not yRx and not xRy
 
@@ -269,15 +266,12 @@ mostRight r = let
     cs = sccOfClosure r
     in expandCycle cs (mostRightOfCollapsed $ collaps cs r)
 
-{--------------------------------------------------------------------
-  intransitive kernel (Added by K.L.)
---------------------------------------------------------------------}
--- |
--- intransitive kernel of a reflexive and transitive closure
---
--- * precondition: (transClosure r == r)
---
--- * cycles are uniquely represented (according to Ord)
+{- |
+intransitive kernel of a reflexive and transitive closure
+
+ * precondition: (transClosure r == r)
+ * cycles are uniquely represented (according to Ord)
+-}
 intransKernel :: Ord a => Rel a -> Rel a
 intransKernel r =
     let cs = sccOfClosure r
@@ -291,12 +285,10 @@ addCycle c r = if Set.null c then error "Common.Lib.Rel.addCycle" else
     in insert m a $ foldr ( \ (x, y) -> insert x y) (delete a a r) $
        zip (Set.toList d) (Set.toList b)
 
-{--------------------------------------------------------------------
-  common transitive left element of two elements (Added by K.L.)
---------------------------------------------------------------------}
--- | calculates if two given elements have a common left element
---
--- * if one of the arguments is not present False is returned
+{- | calculates if two given elements have a common left element
+
+ * if one of the arguments is not present False is returned
+-}
 haveCommonLeftElem :: (Ord a) => a -> a -> Rel a -> Bool
 haveCommonLeftElem t1 t2 =
     Map.fold(\ e rs -> rs || (t1 `Set.member` e &&
@@ -318,9 +310,10 @@ flatSet = Set.fromList . List.map (\s -> if Set.null s
                          then error "Common.Lib.Rel.flatSet"
                          else Set.findMin s)
 
--- | checks if a given relation is locally filtered
---
--- precondition: the relation must already be closed by transitive closure
+{- | checks if a given relation is locally filtered
+
+ * precondition: the relation must already be closed by transitive closure
+-}
 locallyFiltered :: (Ord a) => Rel a -> Bool
 locallyFiltered rel = (check . flatSet . partSet iso . mostRight) rel
     where iso x y = member x y rel && member y x rel
@@ -328,4 +321,4 @@ locallyFiltered rel = (check . flatSet . partSet iso . mostRight) rel
                   Set.fold (\y rs -> rs &&
                                      not (haveCommonLeftElem x y rel)) True s'
                   && check s'
-              where (x,s') = Set.deleteFindMin s
+              where (x, s') = Set.deleteFindMin s
