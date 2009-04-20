@@ -116,7 +116,7 @@ getSymbolArity n sig = case (getArgumentTypes n sig) of
 
 -- get a list of symbols of the given kind
 getSymbolsByKind :: Sign -> KIND -> Set.Set NAME
-getSymbolsByKind sig kind = 
+getSymbolsByKind sig kind =
    Set.filter (\n -> (getSymbolKind n sig) == Just kind) $ getSymbols sig
 
 -- get the list of types of the arguments of the given symbol
@@ -127,10 +127,10 @@ getArgumentTypes n sig = case typM of
                          where typM = getSymbolType n sig
 
 getArgumentTypesH :: TYPE -> [TYPE]
-getArgumentTypesH (Pi ds t) = 
+getArgumentTypesH (Pi ds t) =
   types1 ++ types2
   where types1 = concatMap (\ (ns,t1) -> take (length ns) $ repeat t1) ds
-        types2 = getArgumentTypesH t                                                                      
+        types2 = getArgumentTypesH t
 getArgumentTypesH (Func ts t) = ts ++ (getArgumentTypesH t)
 getArgumentTypesH _ = []
 
@@ -148,16 +148,16 @@ getReturnTypeH t = t
 
 -- get the argument names
 getArgumentNames :: NAME -> Sign -> Maybe [NAME]
-getArgumentNames n sig = 
+getArgumentNames n sig =
   case typM of
        Nothing -> Nothing
        Just typ -> Just $ fillArgumentNames $ getArgumentNamesH typ
   where typM = getSymbolType n sig
 
 getArgumentNamesH :: TYPE -> [Maybe NAME]
-getArgumentNamesH (Pi ds t) = 
+getArgumentNamesH (Pi ds t) =
   (map Just $ getVarsFromDecls ds) ++ getArgumentNamesH t
-getArgumentNamesH (Func ts t) = 
+getArgumentNamesH (Func ts t) =
   (take (length ts) $ repeat Nothing) ++ getArgumentNamesH t
 getArgumentNamesH _ = []
 
@@ -166,7 +166,7 @@ fillArgumentNames ns = fillArgumentNamesH ns 0
 
 fillArgumentNamesH :: [Maybe NAME] -> Int -> [NAME]
 fillArgumentNamesH [] _ = []
-fillArgumentNamesH (nameM:namesM) i = 
+fillArgumentNamesH (nameM:namesM) i =
   case nameM of
        Just name -> name:(fillArgumentNamesH namesM i)
        Nothing -> (Token ("gen_x_" ++ show i) nullRange):
@@ -177,14 +177,14 @@ substitute :: NAME -> TERM -> TYPE -> TYPE
 substitute _ _ Sort = Sort
 substitute _ _ Form = Form
 substitute n val (Univ t) = Univ $ substituteInTerm n val t
-substitute n val (Func ts t) = 
+substitute n val (Func ts t) =
   Func (map (substitute n val) ts) (substitute n val t)
-substitute n val (Pi ds t) = 
+substitute n val (Pi ds t) =
   Pi (map (substituteInDecl n val) ds) (substitute n val t)
 
 substituteInTerm :: NAME -> TERM -> TERM -> TERM
 substituteInTerm n val (Identifier x) = if (x == n) then val else Identifier x
-substituteInTerm n val (Appl f as) = 
+substituteInTerm n val (Appl f as) =
   Appl (substituteInTerm n val f) $ map (substituteInTerm n val) as
 
 substituteInDecl :: NAME -> TERM -> DECL -> DECL
@@ -192,12 +192,12 @@ substituteInDecl n val (ns,t) = (ns, substitute n val t)
 
 -- renamings
 alphaRename :: TYPE -> Sign -> CONTEXT -> TYPE
-alphaRename t sig cont = 
-  alphaRenameH t 0 declaredSyms 
+alphaRename t sig cont =
+  alphaRenameH t 0 declaredSyms
   where declaredSyms = Set.union (getSymbols sig) (getVars cont)
 
 alphaRenameH :: TYPE -> Int -> Set.Set NAME -> TYPE
-alphaRenameH t i names = 
+alphaRenameH t i names =
   if (i >= length vars)
      then t
      else let var = vars !! i
@@ -213,7 +213,7 @@ alphaRenameH t i names =
   where vars = getVarsDeclaredInType t
 
 renameVar :: NAME -> Set.Set NAME -> NAME
-renameVar var names = if (Set.notMember newVar names) 
+renameVar var names = if (Set.notMember newVar names)
                          then newVar
                          else renameVar newVar names
                       where newVar = Token ((tokStr var) ++ "1") nullRange
@@ -222,23 +222,23 @@ substituteVar :: NAME -> NAME -> TYPE -> TYPE
 substituteVar _ _ Sort = Sort
 substituteVar _ _ Form = Form
 substituteVar n1 n2 (Univ t) = Univ $ substituteVarInTerm n1 n2 t
-substituteVar n1 n2 (Func ts t) = 
+substituteVar n1 n2 (Func ts t) =
   Func (map (substituteVar n1 n2) ts) (substituteVar n1 n2 t)
-substituteVar n1 n2 (Pi ds t) = 
+substituteVar n1 n2 (Pi ds t) =
   Pi (substituteVarInDecls n1 n2 ds) (substituteVar n1 n2 t)
 
 substituteVarInTerm :: NAME -> NAME -> TERM -> TERM
 substituteVarInTerm n1 n2 (Identifier x) = if (x == n1)
                                               then Identifier n2
                                               else Identifier x
-substituteVarInTerm n1 n2 (Appl f as) = 
+substituteVarInTerm n1 n2 (Appl f as) =
   Appl (substituteVarInTerm n1 n2 f) $ map (substituteVarInTerm n1 n2) as
 
 substituteVarInDecls :: NAME -> NAME -> [DECL] -> [DECL]
 substituteVarInDecls n1 n2 ds = map (substituteVarInDecl n1 n2) ds
 
 substituteVarInDecl :: NAME -> NAME -> DECL -> DECL
-substituteVarInDecl n1 n2 (ns,t) = 
+substituteVarInDecl n1 n2 (ns,t) =
   (substituteVarInNames n1 n2 ns, substituteVar n1 n2 t)
 
 substituteVarInNames :: NAME -> NAME -> [NAME] -> [NAME]
@@ -246,7 +246,7 @@ substituteVarInNames n1 n2 ns = map (\n -> if n == n1 then n2 else n) ns
 
 -- returns a list of declared variables from within a type
 getVarsDeclaredInType :: TYPE -> [NAME]
-getVarsDeclaredInType (Pi ds t) = 
+getVarsDeclaredInType (Pi ds t) =
   (getVarsFromDecls ds) ++ (getVarsDeclaredInType t)
 getVarsDeclaredInType _ = []
 
