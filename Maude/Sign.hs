@@ -54,7 +54,7 @@ data Sign = Sign {
         sorts :: SortSet,
         subsorts :: SubsortRel,
         ops :: OpMap
-    } deriving (Show, Eq, Typeable)
+    } deriving (Show, Eq, Ord, Typeable)
 
 -- TODO: Add real pretty-printing for Maude Signatures.
 instance Pretty Sign where

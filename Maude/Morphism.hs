@@ -55,7 +55,7 @@ data Morphism = Morphism {
         sortMap :: SortMap,
         opMap :: OpMap,
         labelMap :: LabelMap
-    } deriving (Show, Eq, Typeable)
+    } deriving (Show, Eq, Ord, Typeable)
 
 -- TODO: Add real pretty-printing for Maude Morphisms.
 instance Pretty Morphism where
