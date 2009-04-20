@@ -51,7 +51,6 @@ instance Category Sign.Sign Morphism.Morphism where
     composeMorphisms = Morphism.compose
     inverse = Morphism.inverse
     -- isInclusion = \_ -> False -- TODO: implement Category.isInclusion.
-    -- legal_obj = Sign.isLegal -- seems to be obsolete
     legal_mor = Morphism.isLegal
 
 
@@ -61,10 +60,7 @@ instance Sentences Maude Sentence.Sentence Sign.Sign Morphism.Morphism Symbol.Sy
     -- Uncommenting this signals a type error I don't understand...
     -- is_of_sign Maude = flip Sign.includesSentence
     map_sen Maude = Morphism.mapSentence
-    -- -- | simplification of sentences (leave out qualifications)
-    -- simplify_sen :: lid -> sign -> sentence -> sentence
-    -- simplify_sen _ _ = id  -- default implementation
-    -- simplify_sen Maude _ = id
+    simplify_sen Maude = Sign.simplifySentence
     -- -- | parsing of sentences
     -- parse_sentence :: lid -> Maybe (AParser st sentence)
     -- parse_sentence _ = Nothing
