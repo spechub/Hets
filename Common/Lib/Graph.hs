@@ -1,6 +1,7 @@
 {- |
 Module      :  $Header$
-Description :  Tree-based implementation of 'Graph' and 'DynGraph' using Data.Map
+Description :  Tree-based implementation of 'Graph' and 'DynGraph'
+  using Data.Map
 Copyright   :  (c) Martin Erwig, Christian Maeder and Uni Bremen 1999-2006
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
@@ -46,7 +47,7 @@ data GrContext a b = GrContext
 unsafeConstructGr :: Map.IntMap (GrContext a b) -> Gr a b
 unsafeConstructGr = Gr
 
-instance (Show a,Show b) => Show (Gr a b) where
+instance (Show a, Show b) => Show (Gr a b) where
   show (Gr g) = showGraph g
 
 instance Graph Gr where
@@ -80,14 +81,14 @@ instance DynGraph Gr where
       , nodePreds = Map.delete v pm } gr
 
 showGraph :: (Show a, Show b) => Map.IntMap (GrContext a b) -> String
-showGraph gr = unlines $ map
+showGraph = unlines . map
   (\ (v, c) ->
    shows v ": " ++ show (nodeLabel c)
    ++ showLinks
    ((case loops c of
        [] -> []
        l -> [(v, l)]) ++ Map.toList (nodeSuccs c)))
-  $ Map.toList gr
+  . Map.toList
 
 showLinks :: Show b => [(Node, [b])] -> String
 showLinks = concatMap $ \ (v, l) -> " - " ++
@@ -130,7 +131,8 @@ clearPred :: Node -> [b] -> GrContext a b -> GrContext a b
 clearPred v _ c = c { nodePreds = Map.delete v $ nodePreds c }
 
 updAdj :: Map.IntMap (GrContext a b) -> Map.IntMap [b]
-       -> ([b] -> GrContext a b -> GrContext a b) -> Map.IntMap (GrContext a b)
+       -> ([b] -> GrContext a b -> GrContext a b)
+       -> Map.IntMap (GrContext a b)
 updAdj g m f = Map.foldWithKey (\ v -> updGrContext v . f) g m
 
 updGrContext :: Node -> (GrContext a b -> GrContext a b)
@@ -215,7 +217,8 @@ delLEdge cmp (v, w, l) (Gr m) =
     Nothing -> error $ err ++ "no node: " ++ show v ++ " for edge: " ++ e
 
 -- | insert a labeled edge into a graph, returns False if edge exists
-insLEdge :: Bool -> (b -> b -> Ordering) -> LEdge b -> Gr a b -> (Gr a b, Bool)
+insLEdge :: Bool -> (b -> b -> Ordering) -> LEdge b -> Gr a b
+         -> (Gr a b, Bool)
 insLEdge failIfExist cmp (v, w, l) gr@(Gr m) =
   let e = showEdge v w
       err = "Common.Lib.Graph.insLEdge "
