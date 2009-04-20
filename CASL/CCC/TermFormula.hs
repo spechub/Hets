@@ -522,7 +522,8 @@ varDeclOfF f =
       Quantification _ vds _ _ -> vds
       Conjunction fs _ -> concatVD $ nubOrd $ concatMap varDeclOfF fs
       Disjunction fs _ -> concatVD $ nubOrd $ concatMap varDeclOfF fs
-      Implication f1 f2 _ _ -> concatVD $ nubOrd $ varDeclOfF f1 ++ varDeclOfF f2
+      Implication f1 f2 _ _ -> concatVD $ nubOrd $ varDeclOfF f1 ++
+                               varDeclOfF f2
       Equivalence f1 f2 _ -> concatVD $ nubOrd $ varDeclOfF f1 ++ varDeclOfF f2
       Negation f' _ -> varDeclOfF f'
       Predication _ ts _ -> varD $ nubOrd $ concatMap varOfTerm ts

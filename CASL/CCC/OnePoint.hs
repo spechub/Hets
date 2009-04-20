@@ -131,12 +131,14 @@ evaluateOnePointFORMULA sig (Definedness (Sorted_term _ sort _) _) =
             True -> Nothing
             False -> Just True
 
-evaluateOnePointFORMULA sig (Existl_equation (Sorted_term _ sort1 _) (Sorted_term _ sort2 _) _) =
+evaluateOnePointFORMULA sig (Existl_equation (Sorted_term _ sort1 _)
+    (Sorted_term _ sort2 _) _) =
         if not (Set.member sort1 (sortSet sig))
              && not (Set.member sort2 (sortSet sig)) then Just True
         else Nothing
 
-evaluateOnePointFORMULA sig (Strong_equation (Sorted_term _ sort1 _) (Sorted_term _ sort2 _) _) =
+evaluateOnePointFORMULA sig (Strong_equation (Sorted_term _ sort1 _)
+    (Sorted_term _ sort2 _) _) =
         if not (Set.member sort1 (sortSet sig))
              && not (Set.member sort2 (sortSet sig)) then Just True
         else Nothing
@@ -149,7 +151,8 @@ evaluateOnePointFORMULA sig (Membership (Sorted_term _ sort1 _) sort2 _)=
 
 evaluateOnePointFORMULA _ (Mixfix_formula _) = error "Fehler Mixfix_formula"
 
-evaluateOnePointFORMULA _ (Unparsed_formula _ _)= error "Fehler Unparsed_formula"
+evaluateOnePointFORMULA _ (Unparsed_formula _ _)= error
+                                                  "Fehler Unparsed_formula"
 
 {-
          compute recover_Sort_gen_ax constr, get (srts,ops,maps)
@@ -166,7 +169,8 @@ evaluateOnePointFORMULA _ (Unparsed_formula _ _)= error "Fehler Unparsed_formula
                  are either in the list L or are outside srts
               add the results sort (opRes) to the list L of inhabited sorts
          start with initial list, and iterate until iteration is stable
-         check whether srts is a sublist of the list resulting from the iteration
+         check whether srts is a sublist of the list resulting from the
+         iteration
 -}
 
 evaluateOnePointFORMULA sig (Sort_gen_ax constrs _) =
