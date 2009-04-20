@@ -262,7 +262,7 @@ makePredication p as sig =
        nr)
     as
     nr
-  where Just kind = getSymbolKind
+  where Just kind = getSymbolKind p sig
         Just arity = getSymbolArity p sig
         arity1 = if (kind == SortKind) then arity+1 else arity
 
