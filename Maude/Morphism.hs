@@ -122,7 +122,7 @@ identity sign = Morphism {
 -- | the composition of two Morphisms
 compose :: Morphism -> Morphism -> Result Morphism
 compose f g
-    | (target f) /= (source g) = fail "target of the first and source of the second morphism are different"
+    | target f /= source g = fail "target of the first and source of the second morphism are different"
     | otherwise = let
             apply mp nam = Map.findWithDefault nam nam mp
             map'map mp = apply (mp g) . apply (mp f)

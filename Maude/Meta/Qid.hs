@@ -48,13 +48,13 @@ fromString = Qid . Id.stringToId . translate
 -- Don't keep backticks at the beginning of a string.
 tick :: String -> String
 tick ('`':str) = tick str
-tick str = ('\'':str)
+tick str = '\'':str
 
 -- Escape a special character by prepending a backtick.
 -- Don't place backticks at the end of a string.
 backtick :: String -> String
 backtick "" = ""
-backtick str = ('`':str)
+backtick str = '`':str
 
 -- Translate the string to an identifier by masking all special characters.
 translate :: String -> String
@@ -67,7 +67,7 @@ escape char str
     | isSpace char = collapse $ backtick str
     | otherwise = char:str
     where
-        isSpecial ch = elem ch [ '(', ')', '[', ']', '{', '}', ',' ]
+        isSpecial ch = elem ch "()[]{},"
         isSpace ch = Char.isSpace ch || ch == '`'
 
 -- Sequences of backticks are collapsed into one.

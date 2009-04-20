@@ -152,15 +152,15 @@ simplifySentence _ = id
 
 -- insert a Sort into a Set of Sorts
 ins'sort :: Sort -> SortSet -> SortSet
-ins'sort sort set = Set.insert sort set
+ins'sort = Set.insert
 
 -- insert a Subsort declaration into a Subsort Relationship
 ins'subsort :: SubsortDecl -> SubsortRel -> SubsortRel
-ins'subsort sub rel = Rel.insert (subsort sub) (supersort sub) rel
+ins'subsort sub = Rel.insert (subsort sub) (supersort sub)
 
 -- insert an Operator name into an Operator Map
 ins'opName :: Symbol -> OpMap -> OpMap
-ins'opName name opmap = Map.insert name Set.empty opmap
+ins'opName name = Map.insert name Set.empty
 
 -- insert an Operator declaration into an Operator Map
 ins'op :: OpDecl -> OpMap -> OpMap
