@@ -74,9 +74,10 @@ sigMapH (sym:syms) sig csig =
        FuncKind -> 
          let funcs = CASL_Sign.opMap csig
              func = Map.singleton (mkId [sym]) $ Set.singleton
-                                               $ CASL_Sign.OpType CASL_AS.Total
-                                                                  (folType arity)
-                                                                  sort
+                                               $ CASL_Sign.OpType 
+                                                   CASL_AS.Total
+                                                   (folType arity)
+                                                   sort
              in sigMapH syms sig 
                  $ csig {CASL_Sign.opMap = CASL_Sign.addMapSet funcs func}
   where Just kind = getSymbolKind sym sig
@@ -104,9 +105,11 @@ generatePredAxiomsH sig p =
    where Just argNames = getArgumentNames p sig
          Just argTypes = getArgumentTypes p sig
          args = map makeVar argNames
-         formula = makeForall argNames
-                              (makeImplication (makeNegation (makeTypeHyps argTypes args sig))
-                                               (makeNegation (makePredication p args sig)))
+         formula = makeForall 
+                     argNames
+                     (makeImplication 
+                        (makeNegation (makeTypeHyps argTypes args sig))
+                        (makeNegation (makePredication p args sig)))
 
 -- generating axioms for translated function symbols
 generateFuncAxioms :: Sign -> [NAME] -> [Named CASL_AS.CASLFORMULA]
@@ -122,21 +125,27 @@ generateFuncAxiomsH sig f =
          Just argTypes = getArgumentTypes f sig
          Just resultType = getReturnType f sig
          args = map makeVar argNames
-         formula1 = makeForall argNames
-                               (makeImplication (makeNegation (makeTypeHyps argTypes args sig))
-                                                (makeStrongEquation (makeApplication f args sig) bot))
-         formula2 = makeForall argNames
-                               (makeImplication (makeTypeHyps argTypes args sig)
-                                                (makeTypeHyp resultType (makeApplication f args sig) sig))
+         formula1 = makeForall 
+                      argNames
+                      (makeImplication  
+                         (makeNegation (makeTypeHyps argTypes args sig))
+                         (makeStrongEquation (makeApplication f args sig) bot))
+         formula2 = makeForall 
+                      argNames
+                      (makeImplication 
+                         (makeTypeHyps argTypes args sig)
+                         (makeTypeHyp resultType 
+                                      (makeApplication f args sig) sig))
          formula0 = makeTypeHyp resultType (makeApplication f [] sig) sig
 
 -- generating axioms for translated sort symbols
 generateSortAxioms :: Sign -> [NAME] -> [Named CASL_AS.CASLFORMULA]
-generateSortAxioms sig ss = axioms1 ++ axioms2 ++ [axiom3] ++ axioms4
-                            where axioms1 = concatMap (generateSortAxiomsH1 sig) ss
-                                  axioms2 = concatMap (generateSortAxiomsH2 sig) ss
-                                  axiom3 = generateSortAxiomsH3 sig ss
-                                  axioms4 = generateSortAxiomsH4 sig ss
+generateSortAxioms sig ss = 
+  axioms1 ++ axioms2 ++ [axiom3] ++ axioms4
+  where axioms1 = concatMap (generateSortAxiomsH1 sig) ss
+        axioms2 = concatMap (generateSortAxiomsH2 sig) ss
+        axiom3 = generateSortAxiomsH3 sig ss
+        axioms4 = generateSortAxiomsH4 sig ss
       
 generateSortAxiomsH1 :: Sign -> NAME -> [Named CASL_AS.CASLFORMULA]
 generateSortAxiomsH1 sig s = 
@@ -148,10 +157,14 @@ generateSortAxiomsH1 sig s =
          args = map makeVar argNames
          elName = Token "gen_y" nr
          el = makeVar elName
-         formula = makeForall argNames
-                              (makeImplication (makeNegation (makeTypeHyps argTypes args sig))
-                                               (makeForall [elName]
-                                                           (makeNegation (makePredication s (args ++ [el]) sig))))
+         formula = makeForall 
+                     argNames
+                     (makeImplication 
+                        (makeNegation (makeTypeHyps argTypes args sig))
+                        (makeForall 
+                           [elName]
+                           (makeNegation 
+                              (makePredication s (args ++ [el]) sig))))
 
 generateSortAxiomsH2 :: Sign -> NAME -> [Named CASL_AS.CASLFORMULA]
 generateSortAxiomsH2 sig s = 
@@ -166,11 +179,18 @@ generateSortAxiomsH2 sig s =
          args1 = map makeVar argNames1
          args2 = map makeVar argNames2
          el = makeVar elName
-         formula1 = makeForall argNames1
-                               (makeNegation (makePredication s (args1 ++ [bot]) sig))
-         formula2 = makeForall (argNames1 ++ argNames2 ++ [elName])
-                               (makeImplication (makeConjunction [makePredication s (args1 ++ [el]) sig, makePredication s (args2 ++ [el]) sig])
-                                                (makeConjunction $ map (\ (x,y) -> makeStrongEquation x y) $ zip args1 args2))
+         formula1 = makeForall 
+                      argNames1
+                      (makeNegation (makePredication s (args1 ++ [bot]) sig))
+         formula2 = makeForall 
+                      (argNames1 ++ argNames2 ++ [elName])
+                      (makeImplication 
+                         (makeConjunction 
+                            [makePredication s (args1 ++ [el]) sig, 
+                             makePredication s (args2 ++ [el]) sig])
+                         (makeConjunction 
+                            $ map (\ (x,y) -> makeStrongEquation x y) 
+                            $ zip args1 args2))
          formula0 = makeNegation (makePredication s [bot] sig)
 
 generateSortAxiomsH3 :: Sign -> [NAME] -> Named CASL_AS.CASLFORMULA
@@ -181,15 +201,20 @@ generateSortAxiomsH3 sig ss =
          ar s = fromJust $ getSymbolArity s sig 
          argNames s = makeArgNames "x" (ar s)
          args s = map makeVar (argNames s)
-         formula = makeForall [elName]
-                              (makeImplication (makeNegation (makeStrongEquation el bot))
-                                               (makeDisjunction $ map subformula ss))
+         formula = makeForall 
+                     [elName]
+                     (makeImplication 
+                        (makeNegation (makeStrongEquation el bot))
+                        (makeDisjunction $ map subformula ss))
          subformula s = if (ar s == 0)
                            then makePredication s [el] sig
-                           else makeExists (argNames s) (makePredication s ((args s) ++ [el]) sig)
+                           else makeExists 
+                                  (argNames s) 
+                                  (makePredication s ((args s) ++ [el]) sig)
      
 generateSortAxiomsH4 :: Sign -> [NAME] -> [Named CASL_AS.CASLFORMULA]          
-generateSortAxiomsH4 sig ss = map (generateSortAxiomsH4H sig) [ (s1,s2) | s1 <- ss, s2 <- ss, s1 < s2 ]
+generateSortAxiomsH4 sig ss = 
+  map (generateSortAxiomsH4H sig) [ (s1,s2) | s1 <- ss, s2 <- ss, s1 < s2 ]
 
 generateSortAxiomsH4H :: Sign -> (NAME, NAME) -> Named CASL_AS.CASLFORMULA
 generateSortAxiomsH4H sig (s1,s2) = 
@@ -202,9 +227,11 @@ generateSortAxiomsH4H sig (s1,s2) =
          args1 = map makeVar argNames1
          args2 = map makeVar argNames2
          el = makeVar elName
-         formula = makeForall (argNames1 ++ argNames2 ++ [elName])
-                              (makeImplication (makePredication s1 (args1 ++ [el]) sig)
-                                               (makeNegation (makePredication s2 (args2 ++ [el]) sig)))
+         formula = makeForall 
+                     (argNames1 ++ argNames2 ++ [elName])
+                     (makeImplication 
+                        (makePredication s1 (args1 ++ [el]) sig)
+                        (makeNegation (makePredication s2 (args2 ++ [el]) sig)))
 -- make argument names
 makeArgNames :: String -> Int -> [NAME]
 makeArgNames var n = map (\ i -> Token (var ++ "_" ++ show i) nr) [1..n]
@@ -215,18 +242,33 @@ makeVar var = CASL_AS.Qual_var var sort nr
 
 -- make an application
 makeApplication :: NAME -> [CASL_AS.CASLTERM] -> Sign -> CASL_AS.CASLTERM
-makeApplication f as sig = CASL_AS.Application (CASL_AS.Qual_op_name (mkId [f]) (CASL_AS.Op_type CASL_AS.Total (folType arity) sort nr) nr) as nr
-                           where Just arity = getSymbolArity f sig
+makeApplication f as sig = 
+  CASL_AS.Application 
+    (CASL_AS.Qual_op_name 
+      (mkId [f]) 
+      (CASL_AS.Op_type CASL_AS.Total (folType arity) sort nr)
+      nr)
+    as
+    nr
+  where Just arity = getSymbolArity f sig
 
 -- make a predication
 makePredication :: NAME -> [CASL_AS.CASLTERM] -> Sign -> CASL_AS.CASLFORMULA
-makePredication p as sig = CASL_AS.Predication (CASL_AS.Qual_pred_name (mkId [p]) (CASL_AS.Pred_type (folType arity1) nr) nr) as nr 
-                           where Just kind = getSymbolKind p sig
-                                 Just arity = getSymbolArity p sig
-                                 arity1 = if (kind == SortKind) then arity+1 else arity
+makePredication p as sig = 
+  CASL_AS.Predication 
+    (CASL_AS.Qual_pred_name 
+       (mkId [p]) 
+       (CASL_AS.Pred_type (folType arity1) nr) 
+       nr) 
+    as
+    nr 
+  where Just kind = getSymbolKind
+        Just arity = getSymbolArity p sig
+        arity1 = if (kind == SortKind) then arity+1 else arity
 
 -- make a strong equation
-makeStrongEquation :: CASL_AS.CASLTERM -> CASL_AS.CASLTERM -> CASL_AS.CASLFORMULA
+makeStrongEquation :: CASL_AS.CASLTERM -> CASL_AS.CASLTERM 
+                      -> CASL_AS.CASLFORMULA
 makeStrongEquation t1 t2 = CASL_AS.Strong_equation t1 t2 nr
  
 -- make a negation
@@ -242,20 +284,26 @@ makeDisjunction :: [CASL_AS.CASLFORMULA] -> CASL_AS.CASLFORMULA
 makeDisjunction fs = CASL_AS.Disjunction fs nr
 
 -- make an implication
-makeImplication :: CASL_AS.CASLFORMULA -> CASL_AS.CASLFORMULA -> CASL_AS.CASLFORMULA
+makeImplication :: CASL_AS.CASLFORMULA -> CASL_AS.CASLFORMULA 
+                   -> CASL_AS.CASLFORMULA
 makeImplication f g = CASL_AS.Implication f g True nr
 
 -- make an equivalence
-makeEquivalence :: CASL_AS.CASLFORMULA -> CASL_AS.CASLFORMULA -> CASL_AS.CASLFORMULA
+makeEquivalence :: CASL_AS.CASLFORMULA -> CASL_AS.CASLFORMULA 
+                   -> CASL_AS.CASLFORMULA
 makeEquivalence f g = CASL_AS.Equivalence f g nr
 
 -- make a universal quantification
 makeForall :: [NAME] -> CASL_AS.CASLFORMULA -> CASL_AS.CASLFORMULA
-makeForall vars f = CASL_AS.Quantification CASL_AS.Universal [CASL_AS.Var_decl vars sort nr] f nr
+makeForall vars f = 
+  CASL_AS.Quantification 
+    CASL_AS.Universal [CASL_AS.Var_decl vars sort nr] f nr
 
 -- make an existential quantification
 makeExists :: [NAME] -> CASL_AS.CASLFORMULA -> CASL_AS.CASLFORMULA
-makeExists vars f = CASL_AS.Quantification CASL_AS.Existential [CASL_AS.Var_decl vars sort nr] f nr 
+makeExists vars f = 
+  CASL_AS.Quantification 
+    CASL_AS.Existential [CASL_AS.Var_decl vars sort nr] f nr 
 
 -- make a type hypothesis
 makeTypeHyp :: TYPE -> CASL_AS.CASLTERM -> Sign -> CASL_AS.CASLFORMULA
@@ -265,8 +313,10 @@ makeTypeHyp t term sig = makePredication s (args ++ [term]) sig
                                args = map (termTransl sig) as
 
 -- make type hypotheses
-makeTypeHyps :: [TYPE] -> [CASL_AS.CASLTERM] -> Sign -> CASL_AS.CASLFORMULA
-makeTypeHyps ts terms sig = makeConjunction $ map (\ (t, term) -> makeTypeHyp t term sig) $ zip ts terms
+makeTypeHyps :: [TYPE] -> [CASL_AS.CASLTERM] 
+                -> Sign -> CASL_AS.CASLFORMULA
+makeTypeHyps ts terms sig = 
+  makeConjunction $ map (\ (t, term) -> makeTypeHyp t term sig) $ zip ts terms
 
 -- term translation
 termTransl :: Sign -> TERM -> CASL_AS.CASLTERM
@@ -281,7 +331,8 @@ sigTransl :: Sign -> (CASL_Sign.CASLSign, [Named CASL_AS.CASLFORMULA])
 sigTransl sig = (sigMap sig, generateAxioms sig)
 
 -- theory translation
-theoryTransl :: (Sign, [Named FORMULA]) -> (CASL_Sign.CASLSign, [Named CASL_AS.CASLFORMULA])
+theoryTransl :: (Sign, [Named FORMULA]) -> 
+                (CASL_Sign.CASLSign, [Named CASL_AS.CASLFORMULA])
 theoryTransl (sig,fs) = (sigCASL, axCASL ++ fsCASL)
                         where (sigCASL, axCASL) = sigTransl sig
                               fsCASL = map (namedSenTransl sig) fs    
@@ -296,20 +347,27 @@ senTransl _ T = CASL_AS.True_atom nr
 senTransl _ F = CASL_AS.False_atom nr
 senTransl sig (Pred t) = makePredication p (map (termTransl sig) as) sig
                          where (p,as) = termCanForm t
-senTransl sig (Equality t1 t2) = makeStrongEquation (termTransl sig t1) (termTransl sig t2)
+senTransl sig (Equality t1 t2) = 
+  makeStrongEquation (termTransl sig t1) (termTransl sig t2)
 senTransl sig (Negation f) = makeNegation (senTransl sig f)
 senTransl sig (Conjunction fs) = makeConjunction (map (senTransl sig) fs)
 senTransl sig (Disjunction fs) = makeDisjunction (map (senTransl sig) fs)
-senTransl sig (Implication f g) = makeImplication (senTransl sig f) (senTransl sig g)
-senTransl sig (Equivalence f g) = makeEquivalence (senTransl sig f) (senTransl sig g)
-senTransl sig (Forall ds f) = makeForall varNames (makeImplication (makeTypeHyps types vars sig) (senTransl sig f))      
-                              where varNames = getVarsFromDecls ds
-                                    vars = map makeVar varNames
-                                    types = concatMap (\ (ns,t1) -> take (length ns) $ repeat t1) ds
-senTransl sig (Exists ds f) = makeExists varNames (makeConjunction [makeTypeHyps types vars sig, senTransl sig f])      
-                              where varNames = getVarsFromDecls ds
-                                    vars = map makeVar varNames 
-                                    types = concatMap (\ (ns,t1) -> take (length ns) $ repeat t1) ds
+senTransl sig (Implication f g) = 
+  makeImplication (senTransl sig f) (senTransl sig g)
+senTransl sig (Equivalence f g) = 
+  makeEquivalence (senTransl sig f) (senTransl sig g)
+senTransl sig (Forall ds f) = 
+  makeForall varNames 
+             (makeImplication (makeTypeHyps types vars sig) (senTransl sig f))      
+  where varNames = getVarsFromDecls ds
+        vars = map makeVar varNames
+        types = concatMap (\ (ns,t1) -> take (length ns) $ repeat t1) ds
+senTransl sig (Exists ds f) = 
+  makeExists varNames 
+             (makeConjunction [makeTypeHyps types vars sig, senTransl sig f])      
+  where varNames = getVarsFromDecls ds
+        vars = map makeVar varNames 
+        types = concatMap (\ (ns,t1) -> take (length ns) $ repeat t1) ds
 
 -- named sentence translation
 namedSenTransl :: Sign -> Named FORMULA -> Named CASL_AS.CASLFORMULA
@@ -317,14 +375,18 @@ namedSenTransl sig nf = nf {sentence = senTransl sig $ sentence nf}
 
 -- symbol translation
 symbolTransl :: Sign -> Symbol -> Set.Set CASL_Sign.Symbol
-symbolTransl sig sym = Set.singleton $ CASL_Sign.Symbol (mkId [n])
-                            $ case kind of
-                                   PredKind -> CASL_Sign.PredAsItemType $ CASL_Sign.PredType (folType arity)
-                                   FuncKind -> CASL_Sign.OpAsItemType $ CASL_Sign.OpType CASL_AS.Total (folType arity) sort
-                                   SortKind -> CASL_Sign.PredAsItemType $ CASL_Sign.PredType (folType (arity+1))
-                       where n = name sym
-                             Just kind = getSymbolKind n sig
-                             Just arity = getSymbolArity n sig 
+symbolTransl sig sym = 
+  Set.singleton $ CASL_Sign.Symbol (mkId [n])
+    $ case kind of
+           PredKind -> CASL_Sign.PredAsItemType 
+                         $ CASL_Sign.PredType (folType arity)
+           FuncKind -> CASL_Sign.OpAsItemType 
+                         $ CASL_Sign.OpType CASL_AS.Total (folType arity) sort
+           SortKind -> CASL_Sign.PredAsItemType 
+                         $ CASL_Sign.PredType (folType (arity+1))
+  where n = name sym
+        Just kind = getSymbolKind n sig
+        Just arity = getSymbolArity n sig 
 
 -- creates a Result
 wrapInResult :: a -> Result a
