@@ -301,7 +301,8 @@ data LinkKind = DefLink | ThmLink ThmLinkStatus deriving (Show, Eq)
 
 data FreeOrCofree = Free | Cofree deriving (Show, Eq)
 
-data ConsStatus = ConsStatus Conservativity Conservativity ThmLinkStatus deriving (Show, Eq)
+data ConsStatus = ConsStatus Conservativity Conservativity ThmLinkStatus
+  deriving (Show, Eq)
 
 -- | Link types of development graphs
 --  Sect. IV:4.2 of the CASL Reference Manual explains them in depth
