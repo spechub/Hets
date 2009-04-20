@@ -8,7 +8,9 @@ Maintainer  :  ewaryst.schulz@dfki.de
 Stability   :  provisional
 Portability :  non-portable(Logic)
 
-CASL implementation of the interface functions export_signToOmdoc, export_morphismToOmdoc, export_senToOmdoc from class Logic. The actual instantiation can be found in module CASL.Logic_CASL.
+CASL implementation of the interface functions export_signToOmdoc,
+export_morphismToOmdoc, export_senToOmdoc from class Logic. The actual
+instantiation can be found in module CASL.Logic_CASL.
 -}
 
 module CASL.OMDoc
@@ -39,7 +41,8 @@ import Data.Set as Set
 -- | the identifier of a specification, combining the specid and the libid
 data SPEC_ID = SPEC_ID Id Id | NOSPEC deriving Show
 
-exportSignToOmdoc ::  (Show f, Pretty e) => SIMPLE_ID -> LIB_ID -> Sign f e -> [TCElement]
+exportSignToOmdoc ::  (Show f, Pretty e) => SIMPLE_ID -> LIB_ID -> Sign f e ->
+                      [TCElement]
 exportSignToOmdoc sid lid sign =
     [TCComment $ "Signature of Spec: " ++ (show spid)]
  ++ Set.toList (Set.map (sortSignToOmdoc spid sign) (sortSet sign))
@@ -57,8 +60,8 @@ exportMorphismToOmdoc (Morphism _ _ sortmap opmap predmap _) =
               ++ Map.elems (mapWithKey (makePredMapEntry NOSPEC) predmap)
 
 
-exportSenToOmdoc :: Pretty f => SIMPLE_ID -> LIB_ID -> Sign f e -> Named(FORMULA f)
-                 -> TCElement
+exportSenToOmdoc :: Pretty f => SIMPLE_ID -> LIB_ID -> Sign f e
+                 -> Named(FORMULA f) -> TCElement
 exportSenToOmdoc sid lid sign f =
     let spid  = (SPEC_ID (simpleIdToId sid) (libIdToId lid))
         sname = (senAttr f)
@@ -255,7 +258,6 @@ casl_const :: String -> OMElement
 casl_const n = OMS (CD "casl" Nothing) $ OMName n
 
 
-
 omdocRec :: SPEC_ID -> Sign f e -> (f -> OMElement)
          -> Record f OMElement OMElement
 omdocRec spid _ mf = Record
@@ -302,7 +304,6 @@ omdocRec spid _ mf = Record
     , foldMixfix_parenthesized = \ _ _ r -> sfail "Mixfix_parenthesized" r
     , foldMixfix_bracketed = \ _ _ r -> sfail "Mixfix_bracketed" r
     , foldMixfix_braced = \ _ _ r -> sfail "Mixfix_braced" r }
-
 
 
 -------------------------- Morphisms --------------------------
