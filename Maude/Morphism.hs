@@ -22,6 +22,7 @@ module Maude.Morphism (
     symbolMap,
     identity,
     compose,
+    inverse,
     isLegal,
     mapSentence,
 ) where
@@ -137,6 +138,18 @@ compose f g
                 opMap = compose'map opMap getOps,
                 labelMap = compose'map labelMap getLabels
             }
+
+-- | the inverse of a Morphism
+inverse :: Morphism -> Result Morphism
+inverse mor = let
+        inverseMap = Map.foldWithKey (flip Map.insert) Map.empty
+    in return Morphism {
+        source = (target mor),
+        target = (source mor),
+        sortMap  = inverseMap (sortMap mor),
+        opMap    = inverseMap (opMap mor),
+        labelMap = inverseMap (labelMap mor)
+    }
 
 -- | check that a Morphism is legal
 isLegal :: Morphism -> Bool
