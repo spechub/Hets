@@ -48,7 +48,8 @@ instance Category Sign.Sign Morphism.Morphism where
     ide = Morphism.identity
     dom = Morphism.source
     cod = Morphism.target
-    comp = Morphism.compose
+    composeMorphisms = Morphism.compose
+    inverse = Morphism.inverse
     -- isInclusion = \_ -> False -- TODO: implement Category.isInclusion.
     -- legal_obj = Sign.isLegal -- seems to be obsolete
     legal_mor = Morphism.isLegal
