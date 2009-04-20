@@ -27,6 +27,7 @@ module Maude.Sign (
     insertOp,
     isLegal,
     includesSentence,
+    simplifySentence,
 ) where
 
 import Maude.Meta
@@ -136,13 +137,16 @@ isLegal sign = let
 
 -- | check that a Signature can include a Sentence
 includesSentence :: Sign -> Sentence -> Bool
--- includesSentence sign sen = True
 includesSentence sign sen = let
         ops'subset    = Set.isSubsetOf (getOps sen)    (getOps sign)
         sorts'subset  = Set.isSubsetOf (getSorts sen)  (getSorts sign)
         labels'subset = Set.isSubsetOf (getLabels sen) (getLabels sign)
     in all id [sorts'subset, ops'subset, labels'subset]
 
+-- | simplification of sentences (leave out qualifications)
+-- TODO: Add real implementation of simplification
+simplifySentence :: Sign -> Sentence -> Sentence
+simplifySentence _ = id
 
 --- Helper functions for inserting Signature members into their respective collections.
 
