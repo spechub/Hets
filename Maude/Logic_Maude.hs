@@ -22,6 +22,10 @@ module Maude.Logic_Maude where
 
 import Logic.Logic
 
+import Maude.Sign     (Sign)
+import Maude.Morphism (Morphism)
+import Maude.Symbol   (Symbol)
+import Maude.Sentence (Sentence)
 import qualified Maude.Sign     as Sign
 import qualified Maude.Morphism as Morphism
 import qualified Maude.Symbol   as Symbol
@@ -44,7 +48,7 @@ instance Language Maude where
 
 
 -- | Instance of Category for Maude
-instance Category Sign.Sign Morphism.Morphism where
+instance Category Sign Morphism where
     ide = Morphism.identity
     dom = Morphism.source
     cod = Morphism.target
@@ -55,7 +59,7 @@ instance Category Sign.Sign Morphism.Morphism where
 
 
 -- | Instance of Sentences for Maude
-instance Sentences Maude Sentence.Sentence Sign.Sign Morphism.Morphism Symbol.Symbol where
+instance Sentences Maude Sentence Sign Morphism Symbol where
     -- -- sentences -- --
     -- Uncommenting this signals a type error I don't understand...
     -- is_of_sign Maude = flip Sign.includesSentence
