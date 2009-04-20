@@ -84,6 +84,7 @@ data Attr =
     | Metadata String
     | Owise
     | Nonexec
+    | Print QidList
     deriving (Show, Eq, Ord, Typeable)
 
 type AttrSet = Set Attr
