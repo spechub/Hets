@@ -59,14 +59,16 @@ data SYMB_OR_MAP = Symb SYMB
                  | Symb_map SYMB SYMB
                    deriving (Show, Eq)
 
--- converts a term into a form where a function is applied to exactly one argument
+{- converts a term into a form where a function is applied to 
+   exactly one argument -}
 termApplForm :: TERM -> TERM
 termApplForm (Identifier t) = Identifier t
 termApplForm (Appl f []) = termApplForm f
 termApplForm (Appl f [a]) = Appl (termApplForm f) [a]
 termApplForm (Appl f as) = Appl (termApplForm $ Appl f $ init as) $ [last as]
 
--- determines the canonical form of a term, i.e. the function symbol applied and the argument list
+{- determines the canonical form of a term, i.e. the function symbol
+   applied and the argument list -}
 termCanForm :: TERM -> (NAME, [TERM])
 termCanForm (Identifier x) = (x,[])
 termCanForm (Appl f as) = (x, bs ++ as)
@@ -122,7 +124,8 @@ printType :: TYPE -> Doc
 printType (Sort) = text "Sort"
 printType (Form) = text "Form"
 printType (Univ t) = pretty t
-printType (Func ts t) = fsep $ prepPunctuate (text "-> ") $ map (printSubType funcPrec) (ts ++ [t])
+printType (Func ts t) = 
+  fsep $ prepPunctuate (text "-> ") $ map (printSubType funcPrec) (ts ++ [t])
 printType (Pi xs x) = text "Pi" <+> printDecls xs <+> printType x
 
 printSubType :: Int -> TYPE -> Doc

@@ -13,7 +13,8 @@ import Logic.Logic
 data DFOL = DFOL deriving Show
 
 instance Language DFOL where
-   description _ = "First-Order Logic with Dependent Types\n" ++ "developed by F. Rabe"
+   description _ = "First-Order Logic with Dependent Types\n" 
+                   ++ "developed by F. Rabe"
 
 -- instance of Category for DFOL
 instance Category Sign Morphism where

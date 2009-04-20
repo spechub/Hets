@@ -1,6 +1,6 @@
 {- |
 Module      :  $Header$
-Description :  Helper functions for the DFOL->CASL translation
+Description :  Helper functions for the DFOL -> CASL translation
 -}
 
 module DFOL.Comorphism where
@@ -34,7 +34,8 @@ botTok :: Token
 botTok = Token "Bot" nr
 
 bot :: CASL_AS.CASLTERM
-bot = CASL_AS.Application (CASL_AS.Qual_op_name (mkId [botTok]) (CASL_AS.Op_type CASL_AS.Total [] sort nr) nr) [] nr
+bot = CASL_AS.Application (CASL_AS.Qual_op_name (mkId [botTok]) 
+                          (CASL_AS.Op_type CASL_AS.Total [] sort nr) nr) [] nr
 
 -- constructing a FOL type of the specified arity
 folType :: Int -> [CASL_AS.SORT]
@@ -42,28 +43,44 @@ folType n = take n $ repeat sort
 
 -- signature map
 sigMap :: Sign -> CASL_Sign.CASLSign
-sigMap sig = sigMapH symbols sig caslSig2
-             where caslSig1 = CASL_Sign.emptySign ()
-                   caslSig2 = caslSig1 {CASL_Sign.sortSet = Set.singleton sort,
-                                        CASL_Sign.opMap = Map.singleton (mkId [botTok])
-                                                                $ Set.singleton $ CASL_Sign.OpType CASL_AS.Total [] sort}
-                   symbols = Set.toList $ getSymbols sig
+sigMap sig = 
+  sigMapH symbols sig caslSig2
+  where caslSig1 = CASL_Sign.emptySign ()
+        caslSig2 = caslSig1 {CASL_Sign.sortSet = Set.singleton sort, 
+                             CASL_Sign.opMap = Map.singleton (mkId [botTok])
+                                                  $ Set.singleton 
+                                                  $ CASL_Sign.OpType 
+                                                       CASL_AS.Total [] sort}
+        symbols = Set.toList $ getSymbols sig
 
 sigMapH :: [NAME] -> Sign -> CASL_Sign.CASLSign -> CASL_Sign.CASLSign
-sigMapH [] _ caslsig = caslsig
-sigMapH (sym:syms) sig caslsig = case kind of
-                                      SortKind -> let predis = CASL_Sign.predMap caslsig
-                                                      predi = Map.singleton (mkId [sym]) $ Set.singleton $ CASL_Sign.PredType $ folType (arity+1)
-                                                      in sigMapH syms sig $ caslsig {CASL_Sign.predMap = CASL_Sign.addMapSet predis predi}
-                                      PredKind -> let predis = CASL_Sign.predMap caslsig
-                                                      predi = Map.singleton (mkId [sym]) $ Set.singleton $ CASL_Sign.PredType $ folType arity
-                                                      in sigMapH syms sig $ caslsig {CASL_Sign.predMap = CASL_Sign.addMapSet predis predi}
-                                      FuncKind -> let funcs = CASL_Sign.opMap caslsig
-                                                      func = Map.singleton (mkId [sym])
-                                                                $ Set.singleton $ CASL_Sign.OpType CASL_AS.Total (folType arity) sort
-                                                      in sigMapH syms sig $ caslsig {CASL_Sign.opMap = CASL_Sign.addMapSet funcs func}
-                                      where Just kind = getSymbolKind sym sig
-                                            Just arity = getSymbolArity sym sig
+sigMapH [] _ csig = csig
+sigMapH (sym:syms) sig csig = 
+  case kind of 
+       SortKind -> 
+         let predis = CASL_Sign.predMap csig
+             predi = Map.singleton (mkId [sym]) $ Set.singleton
+                                                $ CASL_Sign.PredType
+                                                $ folType (arity+1)
+             in sigMapH syms sig 
+                 $ csig {CASL_Sign.predMap = CASL_Sign.addMapSet predis predi}
+       PredKind -> 
+         let predis = CASL_Sign.predMap csig
+             predi = Map.singleton (mkId [sym]) $ Set.singleton
+                                                $ CASL_Sign.PredType
+                                                $ folType arity  
+             in sigMapH syms sig 
+                 $ csig {CASL_Sign.predMap = CASL_Sign.addMapSet predis predi} 
+       FuncKind -> 
+         let funcs = CASL_Sign.opMap csig
+             func = Map.singleton (mkId [sym]) $ Set.singleton
+                                               $ CASL_Sign.OpType CASL_AS.Total
+                                                                  (folType arity)
+                                                                  sort
+             in sigMapH syms sig 
+                 $ csig {CASL_Sign.opMap = CASL_Sign.addMapSet funcs func}
+  where Just kind = getSymbolKind sym sig
+        Just arity = getSymbolArity sym sig
 
 -- generating axioms for a translated signature
 generateAxioms :: Sign -> [Named (CASL_AS.CASLFORMULA)]
@@ -80,9 +97,9 @@ generatePredAxioms :: Sign -> [NAME] -> [Named CASL_AS.CASLFORMULA]
 generatePredAxioms sig ps = concatMap (generatePredAxiomsH sig) ps
 
 generatePredAxiomsH :: Sign -> NAME -> [Named CASL_AS.CASLFORMULA]
-generatePredAxiomsH sig p =
-   if (length argNames == 0)
-      then []
+generatePredAxiomsH sig p = 
+   if (length argNames == 0) 
+      then [] 
       else [makeNamed ("gen_pred_" ++ show p) formula]
    where Just argNames = getArgumentNames p sig
          Just argTypes = getArgumentTypes p sig
@@ -96,10 +113,10 @@ generateFuncAxioms :: Sign -> [NAME] -> [Named CASL_AS.CASLFORMULA]
 generateFuncAxioms sig fs = concatMap (generateFuncAxiomsH sig) fs
 
 generateFuncAxiomsH :: Sign -> NAME -> [Named CASL_AS.CASLFORMULA]
-generateFuncAxiomsH sig f =
-   if (length argNames == 0)
+generateFuncAxiomsH sig f = 
+   if (length argNames == 0) 
       then [makeNamed ("gen_func_1_" ++ show f) formula0]
-      else [makeNamed ("gen_func_1_" ++ show f) formula1,
+      else [makeNamed ("gen_func_1_" ++ show f) formula1, 
             makeNamed ("gen_func_2_" ++ show f) formula2]
    where Just argNames = getArgumentNames f sig
          Just argTypes = getArgumentTypes f sig
@@ -120,10 +137,10 @@ generateSortAxioms sig ss = axioms1 ++ axioms2 ++ [axiom3] ++ axioms4
                                   axioms2 = concatMap (generateSortAxiomsH2 sig) ss
                                   axiom3 = generateSortAxiomsH3 sig ss
                                   axioms4 = generateSortAxiomsH4 sig ss
-
+      
 generateSortAxiomsH1 :: Sign -> NAME -> [Named CASL_AS.CASLFORMULA]
-generateSortAxiomsH1 sig s =
-   if (length argNames == 0)
+generateSortAxiomsH1 sig s = 
+   if (length argNames == 0) 
       then []
       else [makeNamed ("gen_sort_1_" ++ show s) formula]
    where Just argNames = getArgumentNames s sig
@@ -137,10 +154,10 @@ generateSortAxiomsH1 sig s =
                                                            (makeNegation (makePredication s (args ++ [el]) sig))))
 
 generateSortAxiomsH2 :: Sign -> NAME -> [Named CASL_AS.CASLFORMULA]
-generateSortAxiomsH2 sig s =
+generateSortAxiomsH2 sig s = 
    if (ar == 0)
       then [makeNamed ("gen_sort_2_" ++ show s) formula0]
-      else [makeNamed ("gen_sort_2_" ++ show s) formula1,
+      else [makeNamed ("gen_sort_2_" ++ show s) formula1, 
             makeNamed ("gen_sort_3_" ++ show s) formula2]
    where Just ar = getSymbolArity s sig
          argNames1 = makeArgNames "x" ar
@@ -157,11 +174,11 @@ generateSortAxiomsH2 sig s =
          formula0 = makeNegation (makePredication s [bot] sig)
 
 generateSortAxiomsH3 :: Sign -> [NAME] -> Named CASL_AS.CASLFORMULA
-generateSortAxiomsH3 sig ss =
-   makeNamed "gen_sort_4" formula
+generateSortAxiomsH3 sig ss =  
+   makeNamed "gen_sort_4" formula    
    where elName = Token "y" nr
          el = makeVar elName
-         ar s = fromJust $ getSymbolArity s sig
+         ar s = fromJust $ getSymbolArity s sig 
          argNames s = makeArgNames "x" (ar s)
          args s = map makeVar (argNames s)
          formula = makeForall [elName]
@@ -170,12 +187,12 @@ generateSortAxiomsH3 sig ss =
          subformula s = if (ar s == 0)
                            then makePredication s [el] sig
                            else makeExists (argNames s) (makePredication s ((args s) ++ [el]) sig)
-
-generateSortAxiomsH4 :: Sign -> [NAME] -> [Named CASL_AS.CASLFORMULA]
+     
+generateSortAxiomsH4 :: Sign -> [NAME] -> [Named CASL_AS.CASLFORMULA]          
 generateSortAxiomsH4 sig ss = map (generateSortAxiomsH4H sig) [ (s1,s2) | s1 <- ss, s2 <- ss, s1 < s2 ]
 
 generateSortAxiomsH4H :: Sign -> (NAME, NAME) -> Named CASL_AS.CASLFORMULA
-generateSortAxiomsH4H sig (s1,s2) =
+generateSortAxiomsH4H sig (s1,s2) = 
    makeNamed ("gen_sort_5_" ++ show s1 ++ "_" ++ show s2) formula
    where Just ar1 = getSymbolArity s1 sig
          Just ar2 = getSymbolArity s2 sig
@@ -203,7 +220,7 @@ makeApplication f as sig = CASL_AS.Application (CASL_AS.Qual_op_name (mkId [f]) 
 
 -- make a predication
 makePredication :: NAME -> [CASL_AS.CASLTERM] -> Sign -> CASL_AS.CASLFORMULA
-makePredication p as sig = CASL_AS.Predication (CASL_AS.Qual_pred_name (mkId [p]) (CASL_AS.Pred_type (folType arity1) nr) nr) as nr
+makePredication p as sig = CASL_AS.Predication (CASL_AS.Qual_pred_name (mkId [p]) (CASL_AS.Pred_type (folType arity1) nr) nr) as nr 
                            where Just kind = getSymbolKind p sig
                                  Just arity = getSymbolArity p sig
                                  arity1 = if (kind == SortKind) then arity+1 else arity
@@ -211,11 +228,11 @@ makePredication p as sig = CASL_AS.Predication (CASL_AS.Qual_pred_name (mkId [p]
 -- make a strong equation
 makeStrongEquation :: CASL_AS.CASLTERM -> CASL_AS.CASLTERM -> CASL_AS.CASLFORMULA
 makeStrongEquation t1 t2 = CASL_AS.Strong_equation t1 t2 nr
-
+ 
 -- make a negation
 makeNegation :: CASL_AS.CASLFORMULA -> CASL_AS.CASLFORMULA
 makeNegation f = CASL_AS.Negation f nr
-
+ 
 -- make a conjunction
 makeConjunction :: [CASL_AS.CASLFORMULA] -> CASL_AS.CASLFORMULA
 makeConjunction fs = CASL_AS.Conjunction fs nr
@@ -238,7 +255,7 @@ makeForall vars f = CASL_AS.Quantification CASL_AS.Universal [CASL_AS.Var_decl v
 
 -- make an existential quantification
 makeExists :: [NAME] -> CASL_AS.CASLFORMULA -> CASL_AS.CASLFORMULA
-makeExists vars f = CASL_AS.Quantification CASL_AS.Existential [CASL_AS.Var_decl vars sort nr] f nr
+makeExists vars f = CASL_AS.Quantification CASL_AS.Existential [CASL_AS.Var_decl vars sort nr] f nr 
 
 -- make a type hypothesis
 makeTypeHyp :: TYPE -> CASL_AS.CASLTERM -> Sign -> CASL_AS.CASLFORMULA
@@ -260,18 +277,18 @@ termTransl sig t = makeApplication f (map (termTransl sig) as) sig
                    where (f,as) = termCanForm t
 
 -- signature translation
-sigTransl :: Sign -> (CASL_Sign.CASLSign, [Named CASL_AS.CASLFORMULA])
+sigTransl :: Sign -> (CASL_Sign.CASLSign, [Named CASL_AS.CASLFORMULA]) 
 sigTransl sig = (sigMap sig, generateAxioms sig)
 
 -- theory translation
 theoryTransl :: (Sign, [Named FORMULA]) -> (CASL_Sign.CASLSign, [Named CASL_AS.CASLFORMULA])
 theoryTransl (sig,fs) = (sigCASL, axCASL ++ fsCASL)
                         where (sigCASL, axCASL) = sigTransl sig
-                              fsCASL = map (namedSenTransl sig) fs
+                              fsCASL = map (namedSenTransl sig) fs    
 
 -- morphism translation
 morphTransl :: Morphism -> CASL_Morphism.CASLMor
-morphTransl (Morphism sig) = CASL_Morphism.idMor () $ sigMap sig
+morphTransl (Morphism sig) = CASL_Morphism.idMor () $ sigMap sig 
 
 -- sentence translation
 senTransl :: Sign -> FORMULA -> CASL_AS.CASLFORMULA
@@ -285,18 +302,18 @@ senTransl sig (Conjunction fs) = makeConjunction (map (senTransl sig) fs)
 senTransl sig (Disjunction fs) = makeDisjunction (map (senTransl sig) fs)
 senTransl sig (Implication f g) = makeImplication (senTransl sig f) (senTransl sig g)
 senTransl sig (Equivalence f g) = makeEquivalence (senTransl sig f) (senTransl sig g)
-senTransl sig (Forall ds f) = makeForall varNames (makeImplication (makeTypeHyps types vars sig) (senTransl sig f))
+senTransl sig (Forall ds f) = makeForall varNames (makeImplication (makeTypeHyps types vars sig) (senTransl sig f))      
                               where varNames = getVarsFromDecls ds
                                     vars = map makeVar varNames
                                     types = concatMap (\ (ns,t1) -> take (length ns) $ repeat t1) ds
-senTransl sig (Exists ds f) = makeExists varNames (makeConjunction [makeTypeHyps types vars sig, senTransl sig f])
+senTransl sig (Exists ds f) = makeExists varNames (makeConjunction [makeTypeHyps types vars sig, senTransl sig f])      
                               where varNames = getVarsFromDecls ds
-                                    vars = map makeVar varNames
+                                    vars = map makeVar varNames 
                                     types = concatMap (\ (ns,t1) -> take (length ns) $ repeat t1) ds
 
 -- named sentence translation
 namedSenTransl :: Sign -> Named FORMULA -> Named CASL_AS.CASLFORMULA
-namedSenTransl sig nf = nf {sentence = senTransl sig $ sentence nf}
+namedSenTransl sig nf = nf {sentence = senTransl sig $ sentence nf}                               
 
 -- symbol translation
 symbolTransl :: Sign -> Symbol -> Set.Set CASL_Sign.Symbol
@@ -307,7 +324,7 @@ symbolTransl sig sym = Set.singleton $ CASL_Sign.Symbol (mkId [n])
                                    SortKind -> CASL_Sign.PredAsItemType $ CASL_Sign.PredType (folType (arity+1))
                        where n = name sym
                              Just kind = getSymbolKind n sig
-                             Just arity = getSymbolArity n sig
+                             Just arity = getSymbolArity n sig 
 
 -- creates a Result
 wrapInResult :: a -> Result a

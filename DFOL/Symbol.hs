@@ -1,6 +1,7 @@
 {- |
 Module      :  $Header$
-Description :  Symbol definition for first-order logic with dependent types (DFOL)
+Description :  Symbol definition for first-order logic 
+               with dependent types (DFOL)
 -}
 
 module DFOL.Symbol where

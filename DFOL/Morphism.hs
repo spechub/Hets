@@ -1,6 +1,7 @@
 {- |
 Module      :  $Header$
-Description :  Definition of signature morphisms for first-order logic with dependent types (DFOL)
+Description :  Definition of signature morphisms for 
+               first-order logic with dependent types (DFOL)
 -}
 
 module DFOL.Morphism where
@@ -17,9 +18,11 @@ idMorph :: Sign -> Morphism
 idMorph sig = Morphism sig
 
 compMorph :: Morphism -> Morphism -> Result Morphism
-compMorph m1 m2 = if object m1 == object m2
-                     then return m1
-                     else fail "Codomain of the first morphism must equal the domain of the second."
+compMorph m1 m2 = 
+  if object m1 == object m2
+     then return m1
+     else fail $ "Codomain of the first morphism "
+                 ++ "must equal the domain of the second."
 
 isValidMorph :: Morphism -> Bool
 isValidMorph _ = True
