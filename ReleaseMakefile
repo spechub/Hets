@@ -3,7 +3,7 @@
 # Author: (c) Christian Maeder, Uni Bremen 2002-2004
 # Year:   2004
 
-## Some varibles, which control the compilation
+## Some variables, which control the compilation
 include var.mk
 
 ### targets
