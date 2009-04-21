@@ -16,7 +16,6 @@ __SROIQ__
 module OWL.Logic_OWL where
 
 import Common.AS_Annotation
-import Common.DefaultMorphism
 import Common.Doc
 import Common.DocUtils
 import Common.ProofTree
@@ -37,7 +36,7 @@ import Common.Consistency
 import Common.ProverTools
 #ifdef UNI_PACKAGE
 import OWL.ProvePellet
---import OWL.ProveFact
+-- import OWL.ProveFact
 import OWL.Conservativity
 import OWL.Taxonomy
 #endif
@@ -48,12 +47,20 @@ instance Language OWL where
  description _ =
   "OWL DL -- Web Ontology Language Description Logic http://wwww.w3c.org/"
 
+instance Category Sign OWLMorphism where
+    ide sig = inclOWLMorphism sig sig
+    dom = osource
+    cod = otarget
+    legal_mor = legalMor
+    isInclusion = isOWLInclusion
+    composeMorphisms = composeMor
+
 instance Syntax OWL OntologyFile SymbItems SymbMapItems where
     parse_basic_spec OWL = Just basicSpec
     parse_symb_items OWL = Just symbItems
     parse_symb_map_items OWL = Just symbMapItems
 
-instance Sentences OWL Sentence Sign OWL_Morphism Entity where
+instance Sentences OWL Sentence Sign OWLMorphism Entity where
     map_sen OWL = const return
     print_named OWL namedSen =
         pretty (sentence namedSen) <>
@@ -63,7 +70,7 @@ instance Sentences OWL Sentence Sign OWL_Morphism Entity where
 instance StaticAnalysis OWL OntologyFile Sentence
                SymbItems SymbMapItems
                Sign
-               OWL_Morphism
+               OWLMorphism
                Entity RawSymb where
 {- these functions are be implemented in OWL.StaticAna and OWL.Sign: -}
       basic_analysis OWL = Just basicOWLAnalysis
@@ -73,7 +80,7 @@ instance StaticAnalysis OWL OntologyFile Sentence
       signature_union OWL s = return . addSign s
       final_union OWL = signature_union OWL
       is_subsig OWL = isSubSign
-      subsig_inclusion OWL = defaultInclusion
+      subsig_inclusion OWL s = return . inclOWLMorphism s
       matches OWL = matchesSym
       cogenerated_sign OWL = cogeneratedSign
       generated_sign OWL = fail "cogenerated_sign OWL nyi"
@@ -85,9 +92,9 @@ instance StaticAnalysis OWL OntologyFile Sentence
          theory_to_taxonomy OWL = convTaxo
 -}
 
-instance Logic OWL OWL_SL OntologyFile Sentence SymbItems SymbMapItems
+instance Logic OWL OWLSub OntologyFile Sentence SymbItems SymbMapItems
                Sign
-               OWL_Morphism Entity RawSymb ProofTree where
+               OWLMorphism Entity RawSymb ProofTree where
     --     stability _ = Testing
     -- default implementations are fine
     -- the prover uses HTk and IO functions from uni
@@ -107,48 +114,48 @@ instance Logic OWL OWL_SL OntologyFile Sentence SymbItems SymbMapItems
                $ conserCheck "TOP_TOP")
 #endif
 
-instance SemiLatticeWithTop OWL_SL where
+instance SemiLatticeWithTop OWLSub where
     join = sl_max
     top = sl_top
 
-instance SublogicName OWL_SL where
+instance SublogicName OWLSub where
     sublogicName = sl_name
 
-instance MinSublogic OWL_SL Sentence where
+instance MinSublogic OWLSub Sentence where
     minSublogic = sl_basic_spec
 
-instance MinSublogic OWL_SL OWL_Morphism where
+instance MinSublogic OWLSub OWLMorphism where
     minSublogic = sl_mor
 
-instance ProjectSublogic OWL_SL OWL_Morphism where
+instance ProjectSublogic OWLSub OWLMorphism where
     projectSublogic = pr_mor
 
-instance MinSublogic OWL_SL Sign where
+instance MinSublogic OWLSub Sign where
     minSublogic = sl_sig
 
-instance ProjectSublogic OWL_SL Sign where
+instance ProjectSublogic OWLSub Sign where
     projectSublogic = pr_sig
 
-instance MinSublogic OWL_SL SymbItems where
+instance MinSublogic OWLSub SymbItems where
     minSublogic = const sl_top
 
-instance MinSublogic OWL_SL SymbMapItems where
+instance MinSublogic OWLSub SymbMapItems where
     minSublogic = const sl_top
 
-instance MinSublogic OWL_SL Entity where
+instance MinSublogic OWLSub Entity where
     minSublogic = const sl_top
 
-instance MinSublogic OWL_SL OntologyFile where
+instance MinSublogic OWLSub OntologyFile where
     minSublogic = sl_o_file
 
-instance ProjectSublogicM OWL_SL SymbItems where
+instance ProjectSublogicM OWLSub SymbItems where
     projectSublogicM = const Just
 
-instance ProjectSublogicM OWL_SL SymbMapItems where
+instance ProjectSublogicM OWLSub SymbMapItems where
     projectSublogicM = const Just
 
-instance ProjectSublogicM OWL_SL Entity where
+instance ProjectSublogicM OWLSub Entity where
     projectSublogicM = const Just
 
-instance ProjectSublogic OWL_SL OntologyFile where
+instance ProjectSublogic OWLSub OntologyFile where
     projectSublogic = pr_o_file

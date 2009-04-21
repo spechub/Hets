@@ -11,10 +11,7 @@ Portability :  non-portable (via Logic.Logic)
 a not yet implemented comorphism
 -}
 
-module Comorphisms.OWL2CASL
-    (OWL2CASL(..)
-    )
-    where
+module Comorphisms.OWL2CASL (OWL2CASL(..)) where
 
 import Logic.Logic
 import Logic.Comorphism
@@ -25,7 +22,6 @@ import Control.Monad
 import Data.Char
 import qualified Data.Set as Set
 import qualified Data.Map as Map
-import Common.DefaultMorphism
 
 --OWL = domain
 import OWL.Logic_OWL
@@ -50,13 +46,13 @@ instance Language OWL2CASL
 instance Comorphism
     OWL2CASL        -- comorphism
     OWL             -- lid domain
-    OWL_SL          -- sublogics domain
+    OWLSub          -- sublogics domain
     OntologyFile    -- Basic spec domain
     OS.Sentence     -- sentence domain
     SymbItems       -- symbol items domain
     SymbMapItems    -- symbol map items domain
     OS.Sign         -- signature domain
-    OWL_Morphism    -- morphism domain
+    OWLMorphism     -- morphism domain
     Entity          -- symbol domain
     RawSymb         -- rawsymbol domain
     ProofTree       -- proof tree codomain
@@ -86,12 +82,11 @@ instance Comorphism
       has_model_expansion OWL2CASL = True
 
 -- | Mapping of OWL morphisms to CASL morphisms
-mapMorphism :: OWL_Morphism
-            -> Result CASLMor
+mapMorphism :: OWLMorphism -> Result CASLMor
 mapMorphism oMor =
     do
-      cdm <- mapSign $ domOfDefaultMorphism oMor
-      ccd <- mapSign $ codOfDefaultMorphism oMor
+      cdm <- mapSign $ osource oMor
+      ccd <- mapSign $ otarget oMor
       let sorts = Set.fold (\ x -> Map.insert x x) Map.empty $ sortSet cdm
           preds = Map.foldWithKey (\ x e b ->
               Set.fold (\ pt -> Map.insert (x, pt) x) b e)

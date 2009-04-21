@@ -12,21 +12,25 @@ Morphisms for OWL
 -}
 
 module OWL.Morphism
-  ( OWL_Morphism
+  ( OWLMorphism (..)
+  , isOWLInclusion
+  , inclOWLMorphism
+  , legalMor
+  , composeMor
   , cogeneratedSign
   , matchesSym
   , statSymbItems
   , statSymbMapItems
   ) where
 
-
 import OWL.AS
 import OWL.Print ()
 import OWL.Sign
 import OWL.StaticAnalysis
 
-import Common.DefaultMorphism
 import Common.DocUtils
+import Common.Doc
+import Common.Keywords
 import Common.Result
 import Common.Lib.State
 
@@ -35,12 +39,43 @@ import Data.Maybe
 import qualified Data.Map as Map
 import qualified Data.Set as Set
 
-type OWL_Morphism = DefaultMorphism Sign
+data OWLMorphism = OWLMorphism
+  { osource :: Sign
+  , otarget :: Sign
+  , mmaps :: Map.Map EntityType (Map.Map URI URI)
+  } deriving (Show, Eq, Ord)
 
-cogeneratedSign :: Set.Set Entity -> Sign -> Result OWL_Morphism
+inclOWLMorphism :: Sign -> Sign -> OWLMorphism
+inclOWLMorphism s t = OWLMorphism
+ { osource = s
+ , otarget = t
+ , mmaps = Map.empty }
+
+isOWLInclusion :: OWLMorphism -> Bool
+isOWLInclusion m = Map.null (mmaps m) && isSubSign (osource m) (otarget m)
+
+convertMMaps :: Map.Map EntityType (Map.Map URI URI) -> Map.Map Entity URI
+convertMMaps = Map.foldWithKey
+  (\ k e m -> Map.union m $ Map.mapKeys (Entity k) e) Map.empty
+
+-- also print the symbol mappings
+instance Pretty OWLMorphism where
+  pretty m = specBraces (pretty $ osource m)
+    $+$ text mapsTo <+> specBraces (pretty $ otarget m)
+
+-- check if mapped symbols are in the target signature, too
+legalMor :: OWLMorphism -> Bool
+legalMor m = let mm = convertMMaps $ mmaps m in
+  Set.isSubsetOf (Map.keysSet mm) $ symOf $ osource m
+
+-- composition currently only works for inclusions
+composeMor :: OWLMorphism -> OWLMorphism -> Result OWLMorphism
+composeMor m = return . inclOWLMorphism (osource m) . otarget
+
+cogeneratedSign :: Set.Set Entity -> Sign -> Result OWLMorphism
 cogeneratedSign s sign =
   let sig2 = execState (mapM_ (modEntity Set.delete) $ Set.toList s) sign
-  in if isSubSign sig2 sign then defaultInclusion sig2 sign else
+  in if isSubSign sig2 sign then return $ inclOWLMorphism sig2 sign else
          fail "non OWL subsignatures for cogeneratedSign"
 
 matchesSym :: Entity -> RawSymb -> Bool
@@ -69,7 +104,7 @@ statSymbMapItems =
   Map.empty
   . (concatMap
     $ \ (SymbMapItems m us) ->
-      let ps = map (\ (u, v) -> (u, maybe u id v)) us in
+      let ps = map (\ (u, v) -> (u, fromMaybe u v)) us in
       case m of
         Nothing -> map (\ (s, t) -> (AnUri s, AnUri t)) ps
         Just ty -> let mS = ASymbol . Entity ty in

@@ -23,8 +23,7 @@ import OWL.Morphism
 import Common.Result
 import Common.Consistency
 import System.IO.Unsafe
-import OWL.Print(printOWLBasicTheory)
-import Common.DefaultMorphism
+import OWL.Print (printOWLBasicTheory)
 
 import Common.Utils
 import System.Exit
@@ -45,23 +44,23 @@ toolName = "owl_locality"
 -- | Conservativity Check for Propositional Logic
 conserCheck :: String                        -- ^ Conser type
            -> (Sign, [Named Sentence])       -- ^ Initial sign and formulas
-           -> OWL_Morphism                   -- ^ morhpism between specs
+           -> OWLMorphism                    -- ^ morphism between specs
            -> [Named Sentence]               -- ^ Formulas of extended spec
            -> Result (Maybe (ConsistencyStatus, [Sentence]))
-conserCheck ct (sig, forms) mor nForms = unsafePerformIO $
-                                      doConservCheck "OWLLocality.jar" ct sig forms mor nForms
+conserCheck ct (sig, forms) mor =
+  unsafePerformIO . doConservCheck "OWLLocality.jar" ct sig forms mor
 
 -- | Real conservativity check in IO Monad
 doConservCheck :: String            -- ^ Jar name
                -> String            -- ^ Conser Type
                -> Sign              -- ^ Signature of Onto 1
                -> [Named Sentence]  -- ^ Formulas of Onto 1
-               -> OWL_Morphism      -- ^ Morhpism
+               -> OWLMorphism       -- ^ Morphism
                -> [Named Sentence]  -- ^ Formulas of Onto 2
                -> IO (Result (Maybe (ConsistencyStatus, [Sentence])))
 doConservCheck jar ct sig1 sen1 mor sen2 = do
   let ontoFile = printOWLBasicTheory
-        (codOfDefaultMorphism mor, filter isAxiom sen2)
+        (osource mor, filter isAxiom sen2)
       sigFile  = printOWLBasicTheory (sig1, filter isAxiom sen1)
   runLocalityChecker jar ct (show ontoFile) (show sigFile)
 
@@ -73,14 +72,14 @@ check4Tool jar =
     do
       pPath     <- getEnvSec "HETS_OWL_TOOLS"
       progTh    <- doesFileExist $ pPath ++ "/" ++ jar
-      progEx <- if (progTh)
+      progEx <- if progTh
                  then
                      do
                        progPerms <- getPermissions $ pPath ++ "/" ++ toolName
-                       return $ executable $ progPerms
+                       return $ executable progPerms
                  else
                      return False
-      return $ (progTh, progEx)
+      return (progTh, progEx)
 
 -- | Invoke the Java checker
 runLocalityChecker :: String            -- ^ Jar name
@@ -93,31 +92,26 @@ runLocalityChecker jar ct onto sig =
     let timeLimit = 800
     (progTh, _) <- check4Tool jar
     case progTh of
-      False ->
-          do
-            return $ fail (toolName ++ " not found")
+      False -> return $ fail $ toolName ++ " not found"
       True ->
           do
             t <- getCurrentTime
             tempDir <- getTemporaryDirectory
             toolPath <- getEnvSec "HETS_OWL_TOOLS"
             let baseName = "ConservativityCheck"
-            let ontoFile = tempDir ++ "/" ++ baseName ++ (show $ utctDay t) ++
-                          "-" ++ (show $ utctDayTime t) ++ ".onto.owl"
-                sigFile  = tempDir ++ "/" ++ baseName ++ (show $ utctDay t)
-                           ++ "-" ++ (show $ utctDayTime t) ++ ".sig.owl"
-            let command = "java -jar " ++ jar ++ " file://" ++ ontoFile ++ " file://" ++ sigFile ++ " " ++ ct
+                fileName = tempDir ++ "/" ++ baseName ++ show (utctDay t)
+                           ++ "-" ++ show (utctDayTime t)
+                ontoFile = fileName ++ ".onto.owl"
+                sigFile  = fileName ++ ".sig.owl"
+                command  = "java -jar " ++ jar ++ " file://" ++ ontoFile
+                           ++ " file://" ++ sigFile ++ " " ++ ct
             writeFile ontoFile onto
             writeFile sigFile sig
             (result, _) <-
-                timeWatch timeLimit
-                (
-                 do
-                   setCurrentDirectory(toolPath)
+                timeWatch timeLimit $ do
+                   setCurrentDirectory toolPath
                    (_, outh, errh, proch) <- runInteractiveCommand command
-                   res <- parseOutput outh errh proch
-                   return res
-                )
+                   parseOutput outh errh proch
             removeFile ontoFile
             removeFile sigFile
             return result
@@ -135,19 +129,14 @@ parseOutput outh _ procHndl =
             ls1 <- hGetContents outh
             let ls = lines ls1
             case procState of
-              ExitFailure 10 ->
-                  do
-                    return (return $ Just (Conservative,[]), ls)
-              ExitFailure 20 ->
-                  do
-                    return (fail $ unlines ls, ls)
-              x                     ->
-                  do
-                    return (fail ("Internal program error: " ++
+              ExitFailure 10 -> return (return $ Just (Conservative, []), ls)
+              ExitFailure 20 -> return (fail $ unlines ls, ls)
+              x -> return (fail ("Internal program error: " ++
                                     show x ++ "\n" ++ unlines ls), ls)
 
-timeWatch :: Int -> IO ((Result (Maybe (ConsistencyStatus, [Sentence]))), [String])
-           -> IO ((Result (Maybe (ConsistencyStatus, [Sentence]))), [String])
+timeWatch :: Int
+          -> IO (Result (Maybe (ConsistencyStatus, [Sentence])), [String])
+          -> IO (Result (Maybe (ConsistencyStatus, [Sentence])), [String])
 timeWatch time process =
         do
           mvar <- newEmptyMVar
@@ -158,8 +147,8 @@ timeWatch time process =
           res <- takeMVar mvar
           case res of
             Just z -> do
-                     killThread tid2 `catch` (\e -> putStrLn (show e))
-                     return z
+              killThread tid2 `catch` print
+              return z
             Nothing -> do
-                     killThread tid1 `catch` (\e -> putStrLn (show e))
-                     return $ (fail $ "Timelimit " ++ show time ++ " exceeded", [""])
+              killThread tid1 `catch` print
+              return (fail $ "Timelimit " ++ show time ++ " exceeded", [""])

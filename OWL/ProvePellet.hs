@@ -18,6 +18,7 @@ module OWL.ProvePellet (pelletProver,pelletGUI,pelletCMDLautomatic,
 
 import Logic.Prover
 
+import OWL.Morphism
 import OWL.Sign
 import OWL.Print
 import OWL.Sublogic
@@ -29,7 +30,6 @@ import GUI.Utils (createTextSaveDisplay, infoDialog)
 import Proofs.BatchProcessing
 
 import Common.AS_Annotation
-import Common.DefaultMorphism
 import Common.ProofTree
 import Common.Result as Result
 import Common.Utils
@@ -71,7 +71,7 @@ data PelletSetting = PelletSetting
 -- * Prover implementation
 pelletProverState :: Sign
                  -> [Named Sentence]
-                 -> [FreeDefMorphism Sentence (DefaultMorphism Sign)] -- ^ freeness constraints
+                 -> [FreeDefMorphism Sentence OWLMorphism] -- ^ freeness constraints
                  -> PelletProverState
 pelletProverState sig oSens _ = PelletProverState
          { ontologySign = sig
@@ -80,13 +80,13 @@ pelletProverState sig oSens _ = PelletProverState
 {- |
   The Prover implementation. First runs the batch prover (with graphical feedback), then starts the GUI prover.
 -}
-pelletProver :: Prover Sign Sentence (DefaultMorphism Sign) OWL_SL ProofTree
+pelletProver :: Prover Sign Sentence OWLMorphism OWLSub ProofTree
 pelletProver = (mkProverTemplate "Pellet" sl_top pelletGUI)
     { proveCMDLautomatic = Just pelletCMDLautomatic
     , proveCMDLautomaticBatch = Just pelletCMDLautomaticBatch }
 
-pelletConsChecker :: ConsChecker Sign Sentence OWL_SL
-                     (DefaultMorphism Sign) ProofTree
+pelletConsChecker :: ConsChecker Sign Sentence OWLSub
+                     OWLMorphism ProofTree
 pelletConsChecker = mkProverTemplate "Pellet Consistency Checker" sl_top
                     consCheck
 
@@ -96,7 +96,7 @@ pelletConsChecker = mkProverTemplate "Pellet Consistency Checker" sl_top
   line interface.
 -}
 atpFun :: String -- ^ theory name
-       -> ATPFunctions Sign Sentence (DefaultMorphism Sign) ProofTree PelletProverState
+       -> ATPFunctions Sign Sentence OWLMorphism ProofTree PelletProverState
 atpFun thName = ATPFunctions
     { initialProverState = pelletProverState,
       atpTransSenName = id,   -- transSenName,
@@ -127,7 +127,7 @@ insertOWLSentence pps s =
 -}
 pelletGUI :: String -- ^ theory name
            -> Theory Sign Sentence ProofTree
-           -> [FreeDefMorphism Sentence (DefaultMorphism Sign)] -- ^ freeness constraints
+           -> [FreeDefMorphism Sentence OWLMorphism] -- ^ freeness constraints
            -> IO([Proof_status ProofTree]) -- ^ proof status for each goal
 pelletGUI thName th freedefs =
     genericATPgui (atpFun thName) True (prover_name pelletProver) thName th
@@ -145,7 +145,7 @@ pelletCMDLautomatic ::
         -> Tactic_script -- ^ default tactic script
         -> Theory Sign Sentence ProofTree
            -- ^ theory consisting of a signature and a list of Named sentence
-        -> [FreeDefMorphism Sentence (DefaultMorphism Sign)] -- ^ freeness constraints
+        -> [FreeDefMorphism Sentence OWLMorphism] -- ^ freeness constraints
         -> IO (Result.Result ([Proof_status ProofTree]))
            -- ^ Proof status for goals and lemmas
 pelletCMDLautomatic thName defTS th freedefs =
@@ -166,7 +166,7 @@ pelletCMDLautomaticBatch ::
         -> Tactic_script -- ^ default tactic script
         -> Theory Sign Sentence ProofTree -- ^ theory consisting of a
            --   'SoftFOL.Sign.Sign' and a list of Named 'SoftFOL.Sign.Sentence'
-        -> [FreeDefMorphism Sentence (DefaultMorphism Sign)] -- ^ freeness constraints
+        -> [FreeDefMorphism Sentence OWLMorphism] -- ^ freeness constraints
         -> IO (Concurrent.ThreadId,Concurrent.MVar ())
            -- ^ fst: identifier of the batch thread for killing it
            --   snd: MVar to wait for the end of the thread
@@ -223,8 +223,8 @@ getEnvSec :: String -> IO String
 getEnvSec s = getEnvDef s ""
 
 consCheck :: String
-          -> TheoryMorphism Sign Sentence (DefaultMorphism Sign) ProofTree
-          -> [FreeDefMorphism Sentence (DefaultMorphism Sign)] -- ^ freeness constraints
+          -> TheoryMorphism Sign Sentence OWLMorphism ProofTree
+          -> [FreeDefMorphism Sentence OWLMorphism] -- ^ freeness constraints
           -> IO([Proof_status ProofTree])
 consCheck thName tm freedefs =
     case t_target tm of
@@ -232,7 +232,7 @@ consCheck thName tm freedefs =
         let
           saveOWL = False
           timeLimitI = 800
-          tac      = Tactic_script $ show $ ATPTactic_script
+          tac      = Tactic_script $ show ATPTactic_script
                       {ts_timeLimit = timeLimitI,
                        ts_extraOpts = [extraOptions]
                       }

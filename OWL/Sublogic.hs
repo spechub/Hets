@@ -13,28 +13,25 @@ __SROIQ__
 -}
 
 module OWL.Sublogic
-    (
-     OWL_SL(..)
-    ,NumberRestrictions(..)
-    ,OWLDatatypes(..)
-    ,sl_top
-    ,sl_bottom
-    ,sl_max
-    ,sl_name
-    ,sl_basic_spec
-    ,sl_o_file
-    ,sl_sig
-    ,sl_mor
-    ,pr_o_file
-    ,pr_sig
-    ,pr_mor
-    )
-    where
+    ( OWLSub(..)
+    , NumberRestrictions(..)
+    , OWLDatatypes(..)
+    , sl_top
+    , sl_bottom
+    , sl_max
+    , sl_name
+    , sl_basic_spec
+    , sl_o_file
+    , sl_sig
+    , sl_mor
+    , pr_o_file
+    , pr_sig
+    , pr_mor
+    ) where
 
 import OWL.AS
 import OWL.Morphism
 import OWL.Sign
-import Common.DefaultMorphism
 
 import qualified Data.Set as Set
 
@@ -44,7 +41,7 @@ data NumberRestrictions = None | Unqualified | Qualified
 data OWLDatatypes = OWLNoDatatypes | OWLDatatypes
                deriving (Show, Eq, Ord)
 
-data OWL_SL = OWL_SL
+data OWLSub = OWLSub
             {
               numberRestrictions :: NumberRestrictions
             , nominals :: Bool
@@ -57,8 +54,8 @@ data OWL_SL = OWL_SL
             } deriving (Show, Eq, Ord)
 
 -- | sROIQ(D)
-sl_top :: OWL_SL
-sl_top = OWL_SL
+sl_top :: OWLSub
+sl_top = OWLSub
       {
         numberRestrictions = Qualified
       , nominals = True
@@ -71,8 +68,8 @@ sl_top = OWL_SL
       }
 
 -- ALC
-sl_bottom :: OWL_SL
-sl_bottom = OWL_SL
+sl_bottom :: OWLSub
+sl_bottom = OWLSub
             {
               numberRestrictions = None
             , nominals = False
@@ -85,9 +82,9 @@ sl_bottom = OWL_SL
             }
 
 
-sl_max :: OWL_SL -> OWL_SL -> OWL_SL
+sl_max :: OWLSub -> OWLSub -> OWLSub
 sl_max sl1 sl2 =
-    OWL_SL
+    OWLSub
     {
       numberRestrictions = max (numberRestrictions sl1)
                            (numberRestrictions sl2)
@@ -108,43 +105,26 @@ sl_max sl1 sl2 =
     }
 
 -- | Naming for Description Logics
-sl_name :: OWL_SL -> String
+sl_name :: OWLSub -> String
 sl_name sl =
-    (if (complexRoleInclusions sl || addFeatures sl)
-       then
-           concat $
-                  [
-                   if (addFeatures sl) then "s" else ""
-                  ,"R"
-                  ]
-       else
-           concat $
-                  [
-                   if (roleTransitivity sl) then "S" else "ALC"
-                  ,if (roleHierarchy sl) then "H" else ""
-                  ]
-           )
-    ++
-    (concat $
-     [
-      if (nominals sl)         then "O" else ""
-     ,if (inverseRoles sl)     then "I" else ""
-     ,case numberRestrictions sl of
+    (if complexRoleInclusions sl || addFeatures sl
+       then (if addFeatures sl then "s" else "") ++ "R"
+       else (if roleTransitivity sl then "S" else "ALC")
+            ++ if roleHierarchy sl then "H" else "")
+    ++ (if nominals sl then "O" else "")
+    ++ (if inverseRoles sl then "I" else "")
+    ++ (case numberRestrictions sl of
         Qualified   -> "Q"
         Unqualified -> "N"
-        None        -> ""
-     ,if (datatype sl == OWLDatatypes) then "(D)" else ""
-     ])
+        None        -> "")
+    ++ if datatype sl == OWLDatatypes then "(D)" else ""
 
-requireQualNumberRestrictions :: OWL_SL -> OWL_SL
-requireQualNumberRestrictions sl = sl
-                                   {
-                                     numberRestrictions = Qualified
-                                   }
+requireQualNumberRestrictions :: OWLSub -> OWLSub
+requireQualNumberRestrictions sl = sl { numberRestrictions = Qualified }
 
-requireNumberRestrictions :: OWL_SL -> OWL_SL
+requireNumberRestrictions :: OWLSub -> OWLSub
 requireNumberRestrictions sl =
-    if (numberRestrictions sl /= Qualified)
+    if numberRestrictions sl /= Qualified
        then
            sl
            {
@@ -153,64 +133,64 @@ requireNumberRestrictions sl =
        else
            sl
 
-requireRoleTransitivity :: OWL_SL -> OWL_SL
+requireRoleTransitivity :: OWLSub -> OWLSub
 requireRoleTransitivity sl = sl
                              {
                                roleTransitivity = True
                              }
 
-requireRoleHierarchy :: OWL_SL -> OWL_SL
+requireRoleHierarchy :: OWLSub -> OWLSub
 requireRoleHierarchy sl = sl
                           {
                             roleHierarchy = True
                           }
 
-requireComplexRoleInclusions :: OWL_SL -> OWL_SL
+requireComplexRoleInclusions :: OWLSub -> OWLSub
 requireComplexRoleInclusions sl =
     (requireRoleHierarchy $ requireRoleTransitivity sl)
     {
       complexRoleInclusions = True
     }
 
-requireAddFeatures :: OWL_SL -> OWL_SL
+requireAddFeatures :: OWLSub -> OWLSub
 requireAddFeatures sl =
     (requireComplexRoleInclusions sl)
     {
       addFeatures = True
     }
 
-requireNominals :: OWL_SL -> OWL_SL
+requireNominals :: OWLSub -> OWLSub
 requireNominals sl = sl
                      {
                        nominals = True
                      }
 
-requireInverseRoles :: OWL_SL -> OWL_SL
+requireInverseRoles :: OWLSub -> OWLSub
 requireInverseRoles sl = sl
                          {
                            inverseRoles = True
                          }
 
-requireDatatype :: OWL_SL -> OWL_SL
+requireDatatype :: OWLSub -> OWLSub
 requireDatatype sl = sl
                       {
                         datatype = OWLDatatypes
                       }
 
 -- Sublogics
-sl_basic_spec :: Sentence -> OWL_SL
+sl_basic_spec :: Sentence -> OWLSub
 sl_basic_spec sen  =
     case sen of
       OWLAxiom ax -> sl_ax ax
       OWLFact  ax -> sl_ax ax
 
-sl_ax :: Axiom -> OWL_SL
+sl_ax :: Axiom -> OWLSub
 sl_ax ax =
     case ax of
       PlainAxiom _ pax -> sl_p_ax pax
       EntityAnno _    -> sl_bottom
 
-sl_p_ax :: PlainAxiom -> OWL_SL
+sl_p_ax :: PlainAxiom -> OWLSub
 sl_p_ax pax =
     case pax of
       SubClassOf sub super -> sl_max (sl_desc sub) (sl_desc super)
@@ -256,7 +236,7 @@ sl_p_ax pax =
       FunctionalDataProperty dp ->
           requireDatatype $ sl_data_prop dp
       SameOrDifferentIndividual _ _ ->
-          requireNominals $ sl_bottom
+          requireNominals sl_bottom
       ClassAssertion _ descr ->
           case descr of
             ObjectComplementOf (ObjectValuesFrom _ prop desc) ->
@@ -273,33 +253,33 @@ sl_p_ax pax =
       Declaration ent -> sl_ent ent
 
 sl_ent :: Entity
-       -> OWL_SL
+       -> OWLSub
 sl_ent (Entity et _) =
     case et of
-      Datatype -> requireDatatype $ sl_bottom
+      Datatype -> requireDatatype sl_bottom
       _        -> sl_bottom
 
 sl_data_prop :: DataPropertyExpression
-             -> OWL_SL
-sl_data_prop _ = requireDatatype $ sl_bottom
+             -> OWLSub
+sl_data_prop _ = requireDatatype sl_bottom
 
 sl_data_range :: DataRange
-              -> OWL_SL
+              -> OWLSub
 sl_data_range rn =
     requireDatatype $
     case rn of
       DRDatatype _            -> sl_bottom
       DataComplementOf c      -> sl_data_range c
-      DataOneOf _             -> requireNominals $ sl_bottom
+      DataOneOf _             -> requireNominals sl_bottom
       DatatypeRestriction c _ -> sl_data_range c
 
-sl_desc :: Description -> OWL_SL
+sl_desc :: Description -> OWLSub
 sl_desc des =
     case des of
       OWLClassDescription _    -> sl_bottom
       ObjectJunction _ dec     -> foldl sl_max sl_bottom $ map sl_desc dec
       ObjectComplementOf dec   -> sl_desc dec
-      ObjectOneOf _            -> requireNominals $ sl_bottom
+      ObjectOneOf _            -> requireNominals sl_bottom
       ObjectValuesFrom _ o d   -> sl_max (sl_obj_prop o) (sl_desc d)
       ObjectExistsSelf o       -> requireAddFeatures $ sl_obj_prop o
       ObjectHasValue o _       -> sl_obj_prop o
@@ -313,7 +293,7 @@ sl_desc des =
       DataCardinality c        -> requireDatatype $ sl_d_card c
 
 sl_d_card :: Cardinality DataPropertyExpression DataRange
-          -> OWL_SL
+          -> OWLSub
 sl_d_card (Cardinality _ _ dp x) =
     case x of
       Nothing -> requireDatatype $
@@ -324,7 +304,7 @@ sl_d_card (Cardinality _ _ dp x) =
                  sl_max (sl_data_prop dp) (sl_data_range y)
 
 sl_card :: Cardinality ObjectPropertyExpression Description
-          -> OWL_SL
+          -> OWLSub
 sl_card (Cardinality _ _ op x) =
     case x of
       Nothing -> requireNumberRestrictions $
@@ -333,7 +313,7 @@ sl_card (Cardinality _ _ op x) =
                  sl_max (sl_obj_prop op) (sl_desc y)
 
 sl_sub_obj_prop :: SubObjectPropertyExpression
-                -> OWL_SL
+                -> OWLSub
 sl_sub_obj_prop s =
     case s of
       OPExpression e -> requireRoleHierarchy $ sl_obj_prop e
@@ -342,40 +322,36 @@ sl_sub_obj_prop s =
                                   map sl_obj_prop e
 
 sl_obj_prop :: ObjectPropertyExpression
-            -> OWL_SL
+            -> OWLSub
 sl_obj_prop o =
     case o of
       OpURI _     -> sl_bottom
       InverseOp p -> requireInverseRoles $ sl_obj_prop p
 
-sl_o_file :: OntologyFile -> OWL_SL
-sl_o_file o = foldl sl_max sl_bottom $ map sl_ax $ axiomsList $ ontology o
+sl_o_file :: OntologyFile -> OWLSub
+sl_o_file = foldl sl_max sl_bottom . map sl_ax . axiomsList . ontology
 
-sl_sig :: Sign -> OWL_SL
+sl_sig :: Sign -> OWLSub
 sl_sig sig =
-    if ((Set.size $ dataValuedRoles sig) == 0 &&
-       (Set.size $ datatypes sig) == 0)
+    if Set.size (dataValuedRoles sig) == 0
+       && Set.size (datatypes sig) == 0
      then
          sl_bottom
      else
-         requireDatatype $ sl_bottom
+         requireDatatype sl_bottom
 
-sl_mor :: OWL_Morphism -> OWL_SL
-sl_mor mor = sl_max (sl_sig $ domOfDefaultMorphism mor)
-             (sl_sig $ codOfDefaultMorphism mor)
+sl_mor :: OWLMorphism -> OWLSub
+sl_mor mor = sl_max (sl_sig $ osource mor) $ sl_sig $ otarget mor
 
 -- projections along sublogics
-pr_mor :: OWL_SL -> OWL_Morphism -> OWL_Morphism
-pr_mor s a =
-    a
-    {
-      domOfDefaultMorphism = pr_sig s $ domOfDefaultMorphism a
-    , codOfDefaultMorphism = pr_sig s $ codOfDefaultMorphism a
-    }
+pr_mor :: OWLSub -> OWLMorphism -> OWLMorphism
+pr_mor s a = a
+    { osource = pr_sig s $ osource a
+    , otarget = pr_sig s $ otarget a }
 
-pr_sig :: OWL_SL -> Sign -> Sign
+pr_sig :: OWLSub -> Sign -> Sign
 pr_sig s a =
-    if (datatype s == OWLNoDatatypes)
+    if datatype s == OWLNoDatatypes
        then
            a
            {
@@ -385,7 +361,7 @@ pr_sig s a =
        else
            a
 
-pr_o_file :: OWL_SL -> OntologyFile -> OntologyFile
+pr_o_file :: OWLSub -> OntologyFile -> OntologyFile
 pr_o_file s a =
     let
         o = (ontology a)

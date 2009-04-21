@@ -281,7 +281,7 @@ CspCASL_files = CspCASL/AS_CspCASL.hs CspCASL/AS_CspCASL_Process.hs \
 
 CASL_DL_files = CASL_DL/AS_CASL_DL.hs CASL_DL/Sign.hs CASL_DL/Sublogics.hs
 SoftFOL_files = SoftFOL/Sign.hs
-OWL_files = OWL/Sign.hs OWL/Sublogic.hs
+OWL_files = OWL/Sign.hs OWL/Sublogic.hs OWL/Morphism.hs
 VSE_files = VSE/As.hs
 OMDoc_files = OMDoc/OMDocInterface.hs
 DFOL_files = DFOL/AS_DFOL.hs DFOL/Sign.hs DFOL/Morphism.hs DFOL/Symbol.hs
