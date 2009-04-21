@@ -201,7 +201,7 @@ instance Ord sign => Category sign (DefaultMorphism sign) where
     dom = domOfDefaultMorphism
     cod = codOfDefaultMorphism
     ide = ideOfDefaultMorphism
-    isInclusion = isInclusionDefaultMorphism
+    isInclusion = const True
     composeMorphisms = compOfDefaultMorphism
     legal_mor = legalDefaultMorphism (const True)
 

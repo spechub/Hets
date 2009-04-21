@@ -59,15 +59,11 @@ doConservCheck :: String            -- ^ Jar name
                -> OWL_Morphism      -- ^ Morhpism
                -> [Named Sentence]  -- ^ Formulas of Onto 2
                -> IO (Result (Maybe (ConsistencyStatus, [Sentence])))
-doConservCheck jar ct sig1 sen1 mor sen2 =
-    case (isInclusionDefaultMorphism mor) of
-      False -> return $ fail "Morphism is not an inclusion"
-      True  ->
-          do
-            let ontoFile = printOWLBasicTheory
-                 (codOfDefaultMorphism mor, filter isAxiom sen2)
-                sigFile  = printOWLBasicTheory (sig1, filter isAxiom sen1)
-            runLocalityChecker jar ct (show ontoFile) (show sigFile)
+doConservCheck jar ct sig1 sen1 mor sen2 = do
+  let ontoFile = printOWLBasicTheory
+        (codOfDefaultMorphism mor, filter isAxiom sen2)
+      sigFile  = printOWLBasicTheory (sig1, filter isAxiom sen1)
+  runLocalityChecker jar ct (show ontoFile) (show sigFile)
 
 getEnvSec :: String -> IO String
 getEnvSec s = getEnvDef s ""

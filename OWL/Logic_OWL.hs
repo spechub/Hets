@@ -54,7 +54,7 @@ instance Syntax OWL OntologyFile SymbItems SymbMapItems where
     parse_symb_map_items OWL = Just symbMapItems
 
 instance Sentences OWL Sentence Sign OWL_Morphism Entity where
-    map_sen OWL _ s = return s
+    map_sen OWL = const return
     print_named OWL namedSen =
         pretty (sentence namedSen) <>
           if isAxiom namedSen then empty else space <> text "%implied"
@@ -111,11 +111,11 @@ instance Logic OWL OWL_SL OntologyFile Sentence SymbItems SymbMapItems
                (conserCheck "TOP_TOP")))
 #endif
 
-instance SemiLatticeWithTop (OWL_SL) where
+instance SemiLatticeWithTop OWL_SL where
     join = sl_max
     top = sl_top
 
-instance SublogicName (OWL_SL) where
+instance SublogicName OWL_SL where
     sublogicName = sl_name
 
 instance MinSublogic OWL_SL Sentence where
@@ -142,9 +142,6 @@ instance MinSublogic OWL_SL SymbMapItems where
 instance MinSublogic OWL_SL Entity where
     minSublogic _ = sl_top
 
-instance MinSublogic OWL_SL () where
-    minSublogic _ = sl_top
-
 instance MinSublogic OWL_SL OntologyFile where
     minSublogic = sl_o_file
 
@@ -156,9 +153,6 @@ instance ProjectSublogicM OWL_SL SymbMapItems where
 
 instance ProjectSublogicM OWL_SL Entity where
     projectSublogicM _ i = Just i
-
-instance ProjectSublogicM OWL_SL () where
-    projectSublogicM _ _ = return ()
 
 instance ProjectSublogic OWL_SL OntologyFile where
     projectSublogic = pr_o_file

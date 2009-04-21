@@ -18,7 +18,6 @@ module Common.DefaultMorphism
   , ideOfDefaultMorphism
   , compOfDefaultMorphism
   , legalDefaultMorphism
-  , mkDefaultMorphism
   , defaultInclusion
   ) where
 
@@ -29,32 +28,26 @@ import Common.DocUtils
 data DefaultMorphism sign = MkMorphism
   { domOfDefaultMorphism :: sign
   , codOfDefaultMorphism :: sign
-  , isInclusionDefaultMorphism :: Bool
   } deriving (Show, Eq, Ord)
 
 instance Pretty a => Pretty (DefaultMorphism a) where
     pretty = printDefaultMorphism pretty
 
 printDefaultMorphism :: (a -> Doc) -> DefaultMorphism a -> Doc
-printDefaultMorphism fA (MkMorphism s t b) =
-    (if b then text "inclusion" else empty) $+$
-    specBraces (fA s) $+$ text mapsTo <+> specBraces (fA t)
+printDefaultMorphism fA (MkMorphism s t) =
+  text "inclusion" $+$ specBraces (fA s) $+$ text mapsTo <+> specBraces (fA t)
 
 ideOfDefaultMorphism :: sign -> DefaultMorphism sign
-ideOfDefaultMorphism s = MkMorphism s s True
+ideOfDefaultMorphism s = MkMorphism s s
 
 compOfDefaultMorphism :: Monad m => DefaultMorphism sign
-                      -> DefaultMorphism sign -> m (DefaultMorphism sign)
-compOfDefaultMorphism (MkMorphism s1 _ b1) (MkMorphism _ s3 b2) =
-    return $ MkMorphism s1 s3 $ min b1 b2
+  -> DefaultMorphism sign -> m (DefaultMorphism sign)
+compOfDefaultMorphism (MkMorphism s1 _) (MkMorphism _ s3) =
+    return $ MkMorphism s1 s3
 
 legalDefaultMorphism :: (sign -> Bool) -> DefaultMorphism sign -> Bool
-legalDefaultMorphism legalSign (MkMorphism s t _) =
-    legalSign s && legalSign t
-
-mkDefaultMorphism :: sign -> sign -> DefaultMorphism sign
-mkDefaultMorphism s1 s2 = MkMorphism s1 s2 False
+legalDefaultMorphism legalSign (MkMorphism s t) = legalSign s && legalSign t
 
 defaultInclusion :: Monad m => sign -> sign -> m (DefaultMorphism sign)
-defaultInclusion s1 s2 = return $ MkMorphism s1 s2 True
+defaultInclusion s = return . MkMorphism s
 

@@ -92,33 +92,13 @@ mapMorphism oMor =
     do
       cdm <- mapSign $ domOfDefaultMorphism oMor
       ccd <- mapSign $ codOfDefaultMorphism oMor
-      let inc = isInclusionDefaultMorphism oMor
-      let sorts = case inc of
-                    True  ->
-                        Set.fold (\x y -> Map.insert x x y) Map.empty $
-                           sortSet cdm
-                    False ->
-                        Map.empty
-      let preds = case inc of
-                    True  -> Map.foldWithKey (\x e b ->
-                                              Set.fold (\pt p ->
-                                                       Map.insert (x, pt) x p)
-                                              b e
-                                              )
-                             Map.empty $ predMap cdm
-                    False ->
-                        Map.empty
-      let ops = case inc of
-                   True  ->
-                       Map.foldWithKey (\x ot b ->
-                                            Set.fold (\ots p ->
-                                                          Map.insert (x, ots)
-                                                              (x, opKind ots) p
-                                                     ) b ot
-                                       )
-                                        Map.empty $ opMap cdm
-                   False ->
-                       Map.empty
+      let sorts = Set.fold (\ x -> Map.insert x x) Map.empty $ sortSet cdm
+          preds = Map.foldWithKey (\ x e b ->
+              Set.fold (\ pt -> Map.insert (x, pt) x) b e)
+            Map.empty $ predMap cdm
+          ops = Map.foldWithKey (\x ot b ->
+              Set.fold (\ ots -> Map.insert (x, ots) (x, opKind ots)) b ot)
+            Map.empty $ opMap cdm
       return $ Morphism
                  {
                    msource      = cdm
