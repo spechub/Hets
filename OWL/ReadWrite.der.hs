@@ -518,6 +518,7 @@ fromATC_Axiom ix att0 = case getShATerm ix att0 of
     u -> fromShATermError "Axiom" u
 
 {-! for SymbItems derive : ShATermConvertible !-}
+{-! for SymbMapItems derive : ShATermConvertible !-}
 {-! for EntityType derive : ShATermConvertible !-}
 {-! for Ontology derive : ShATermConvertible !-}
 {-! for Annotation derive : ShATermConvertible !-}

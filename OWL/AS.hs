@@ -115,6 +115,9 @@ data Entity = Entity EntityType URI deriving (Typeable, Show, Eq, Ord)
 data SymbItems = SymbItems (Maybe EntityType) [URI]
     deriving (Typeable, Show, Eq)
 
+data SymbMapItems = SymbMapItems (Maybe EntityType) [(URI, Maybe URI)]
+    deriving (Typeable, Show, Eq)
+
 -- | raw symbols
 data RawSymb = ASymbol Entity | AnUri URI deriving (Typeable, Show, Eq, Ord)
 

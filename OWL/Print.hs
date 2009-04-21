@@ -62,6 +62,15 @@ instance Pretty SymbItems where
   pretty (SymbItems m us) = maybe empty (keyword . show) m
     <+> ppWithCommas us
 
+instance Pretty SymbMapItems where
+  pretty (SymbMapItems m us) = maybe empty (keyword . show) m
+    <+> sepByCommas
+        (map (\ (s, ms) -> sep
+              [ pretty s
+              , case ms of
+                  Nothing -> empty
+                  Just t -> mapsto <+> pretty t]) us)
+
 instance Pretty RawSymb where
   pretty rs = case rs of
     ASymbol e -> pretty e

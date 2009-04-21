@@ -54,7 +54,7 @@ instance Comorphism
     OntologyFile    -- Basic spec domain
     OS.Sentence     -- sentence domain
     SymbItems       -- symbol items domain
-    ()              -- symbol map items domain
+    SymbMapItems    -- symbol map items domain
     OS.Sign         -- signature domain
     OWL_Morphism    -- morphism domain
     Entity          -- symbol domain

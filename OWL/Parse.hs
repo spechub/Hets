@@ -14,7 +14,7 @@ Manchester syntax parser for OWL 1.1
 <http://www.faqs.org/rfcs/rfc4646.html>
 -}
 
-module OWL.Parse (basicSpec, symbItems) where
+module OWL.Parse (basicSpec, symbItems, symbMapItems) where
 
 import OWL.AS
 import OWL.Keywords
@@ -198,12 +198,33 @@ symbItems = do
 
 -- | parse a comma separated list of uris
 symbs :: GenParser Char st [URI]
-symbs =
-    do u <- uriP
-       do   commaP `followedWith` uriP
-            us <- symbs
-            return $ u : us
-         <|> return [u]
+symbs = uriP >>= \ u -> do
+    commaP `followedWith` uriP
+    us <- symbs
+    return $ u : us
+  <|> return [u]
+
+-- | parse a possibly kinded list of comma separated symbol pairs
+symbMapItems :: GenParser Char st SymbMapItems
+symbMapItems = do
+  m <- optionMaybe entityType
+  uris <- symbPairs
+  return $ SymbMapItems m uris
+
+-- | parse a comma separated list of uri pairs
+symbPairs :: GenParser Char st [(URI, Maybe URI)]
+symbPairs = uriPair >>= \ u -> do
+    commaP `followedWith` uriP
+    us <- symbPairs
+    return $ u : us
+  <|> return [u]
+
+uriPair :: GenParser Char st (URI, Maybe URI)
+uriPair = uriP >>= \ u -> do
+    pToken $ toKey mapsTo
+    u2 <- uriP
+    return (u, Just u2)
+  <|> return (u, Nothing)
 
 datatypeUri :: CharParser st QName
 datatypeUri = fmap mkQName (choice $ map keyword datatypeKeys) <|> uriP

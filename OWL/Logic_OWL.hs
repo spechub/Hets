@@ -48,9 +48,10 @@ instance Language OWL where
  description _ =
   "OWL DL -- Web Ontology Language Description Logic http://wwww.w3c.org/"
 
-instance Syntax OWL OntologyFile SymbItems () where
+instance Syntax OWL OntologyFile SymbItems SymbMapItems where
     parse_basic_spec OWL = Just basicSpec
     parse_symb_items OWL = Just symbItems
+    parse_symb_map_items OWL = Just symbMapItems
 
 instance Sentences OWL Sentence Sign OWL_Morphism Entity where
     map_sen OWL _ s = return s
@@ -60,7 +61,7 @@ instance Sentences OWL Sentence Sign OWL_Morphism Entity where
     sym_of OWL = symOf
 
 instance StaticAnalysis OWL OntologyFile Sentence
-               SymbItems ()
+               SymbItems SymbMapItems
                Sign
                OWL_Morphism
                Entity RawSymb where
@@ -88,7 +89,7 @@ instance StaticAnalysis OWL OntologyFile Sentence
          theory_to_taxonomy OWL = convTaxo
 -}
 
-instance Logic OWL OWL_SL OntologyFile Sentence SymbItems ()
+instance Logic OWL OWL_SL OntologyFile Sentence SymbItems SymbMapItems
                Sign
                OWL_Morphism Entity RawSymb ProofTree where
     --     stability _ = Testing
@@ -96,17 +97,18 @@ instance Logic OWL OWL_SL OntologyFile Sentence SymbItems ()
     -- the prover uses HTk and IO functions from uni
 #ifdef UNI_PACKAGE
          provers OWL = unsafeFileCheck "pellet.sh" "PELLET_PATH" pelletProver
-         cons_checkers OWL = unsafeFileCheck "pellet.sh" "PELLET_PATH" pelletConsChecker
+         cons_checkers OWL =
+             unsafeFileCheck "pellet.sh" "PELLET_PATH" pelletConsChecker
          conservativityCheck OWL = [] ++
            (unsafeFileCheck "OWLLocality.jar" "HETS_OWL_TOOLS"
-              (ConservativityChecker "Locality_BOTTOM_BOTTOM" (conserCheck
-                                                              "BOTTOM_BOTTOM"))) ++
+              (ConservativityChecker "Locality_BOTTOM_BOTTOM"
+               (conserCheck "BOTTOM_BOTTOM"))) ++
            (unsafeFileCheck "OWLLocality.jar" "HETS_OWL_TOOLS"
-              (ConservativityChecker "Locality_TOP_BOTTOM" (conserCheck
-                                                              "TOP_BOTTOM"))) ++
+              (ConservativityChecker "Locality_TOP_BOTTOM"
+               (conserCheck "TOP_BOTTOM"))) ++
            (unsafeFileCheck "OWLLocality.jar" "HETS_OWL_TOOLS"
-              (ConservativityChecker "Locality_TOP_TOP" (conserCheck
-                                                              "TOP_TOP")))
+              (ConservativityChecker "Locality_TOP_TOP"
+               (conserCheck "TOP_TOP")))
 #endif
 
 instance SemiLatticeWithTop (OWL_SL) where
@@ -134,6 +136,9 @@ instance ProjectSublogic OWL_SL Sign where
 instance MinSublogic OWL_SL SymbItems where
     minSublogic _ = sl_top
 
+instance MinSublogic OWL_SL SymbMapItems where
+    minSublogic _ = sl_top
+
 instance MinSublogic OWL_SL Entity where
     minSublogic _ = sl_top
 
@@ -144,6 +149,9 @@ instance MinSublogic OWL_SL OntologyFile where
     minSublogic = sl_o_file
 
 instance ProjectSublogicM OWL_SL SymbItems where
+    projectSublogicM _ i = Just i
+
+instance ProjectSublogicM OWL_SL SymbMapItems where
     projectSublogicM _ i = Just i
 
 instance ProjectSublogicM OWL_SL Entity where
