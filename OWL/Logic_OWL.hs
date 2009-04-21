@@ -67,18 +67,14 @@ instance StaticAnalysis OWL OntologyFile Sentence
                Entity RawSymb where
 {- these functions are be implemented in OWL.StaticAna and OWL.Sign: -}
       basic_analysis OWL = Just basicOWLAnalysis
-      stat_symb_items OWL = return . concatMap
-          (\ (SymbItems m us) -> case m of
-               Nothing -> map AnUri us
-               Just ty -> map (ASymbol . Entity ty) us)
+      stat_symb_items OWL = return . statSymbItems
+      stat_symb_map_items OWL = statSymbMapItems
       empty_signature OWL = emptySign
       signature_union OWL s = return . addSign s
       final_union OWL = signature_union OWL
       is_subsig OWL = isSubSign
       subsig_inclusion OWL = defaultInclusion
-      matches OWL e@(Entity _ u) r = case r of
-        ASymbol s -> s == e
-        AnUri s -> s == u
+      matches OWL = matchesSym
       cogenerated_sign OWL = cogeneratedSign
       generated_sign OWL = fail "cogenerated_sign OWL nyi"
 #ifdef UNI_PACKAGE
@@ -99,16 +95,16 @@ instance Logic OWL OWL_SL OntologyFile Sentence SymbItems SymbMapItems
          provers OWL = unsafeFileCheck "pellet.sh" "PELLET_PATH" pelletProver
          cons_checkers OWL =
              unsafeFileCheck "pellet.sh" "PELLET_PATH" pelletConsChecker
-         conservativityCheck OWL = [] ++
-           (unsafeFileCheck "OWLLocality.jar" "HETS_OWL_TOOLS"
+         conservativityCheck OWL =
+           unsafeFileCheck "OWLLocality.jar" "HETS_OWL_TOOLS"
               (ConservativityChecker "Locality_BOTTOM_BOTTOM"
-               (conserCheck "BOTTOM_BOTTOM"))) ++
-           (unsafeFileCheck "OWLLocality.jar" "HETS_OWL_TOOLS"
+               $ conserCheck "BOTTOM_BOTTOM")
+           ++ unsafeFileCheck "OWLLocality.jar" "HETS_OWL_TOOLS"
               (ConservativityChecker "Locality_TOP_BOTTOM"
-               (conserCheck "TOP_BOTTOM"))) ++
-           (unsafeFileCheck "OWLLocality.jar" "HETS_OWL_TOOLS"
+               $ conserCheck "TOP_BOTTOM")
+           ++ unsafeFileCheck "OWLLocality.jar" "HETS_OWL_TOOLS"
               (ConservativityChecker "Locality_TOP_TOP"
-               (conserCheck "TOP_TOP")))
+               $ conserCheck "TOP_TOP")
 #endif
 
 instance SemiLatticeWithTop OWL_SL where
@@ -134,25 +130,25 @@ instance ProjectSublogic OWL_SL Sign where
     projectSublogic = pr_sig
 
 instance MinSublogic OWL_SL SymbItems where
-    minSublogic _ = sl_top
+    minSublogic = const sl_top
 
 instance MinSublogic OWL_SL SymbMapItems where
-    minSublogic _ = sl_top
+    minSublogic = const sl_top
 
 instance MinSublogic OWL_SL Entity where
-    minSublogic _ = sl_top
+    minSublogic = const sl_top
 
 instance MinSublogic OWL_SL OntologyFile where
     minSublogic = sl_o_file
 
 instance ProjectSublogicM OWL_SL SymbItems where
-    projectSublogicM _ i = Just i
+    projectSublogicM = const Just
 
 instance ProjectSublogicM OWL_SL SymbMapItems where
-    projectSublogicM _ i = Just i
+    projectSublogicM = const Just
 
 instance ProjectSublogicM OWL_SL Entity where
-    projectSublogicM _ i = Just i
+    projectSublogicM = const Just
 
 instance ProjectSublogic OWL_SL OntologyFile where
     projectSublogic = pr_o_file
