@@ -54,13 +54,12 @@ import Common.Consistency
 import qualified Data.Map as Map
 
 -- | Lid for propositional logic
-data Propositional = Propositional deriving Show --lid
+data Propositional = Propositional deriving Show
 
 instance Language Propositional where
-    description _ =
-        "Propositional Logic\n"++
-         "for more information please refer to\n"++
-         "http://en.wikipedia.org/wiki/Propositional_logic"
+    description _ = "Propositional Logic\n"
+        ++ "for more information please refer to\n"
+        ++ "http://en.wikipedia.org/wiki/Propositional_logic"
 
 -- | Instance of Category for propositional logic
 instance Category Sign Morphism where
@@ -89,7 +88,7 @@ instance Sentences Propositional FORMULA
     -- translation of sentences along signature morphism
     map_sen Propositional = mapSentence
     -- there is nothing to leave out
-    simplify_sen Propositional _ form = form
+    simplify_sen Propositional _ = simplify
 
 -- | Syntax of Propositional logic
 instance Syntax Propositional BASIC_SPEC
