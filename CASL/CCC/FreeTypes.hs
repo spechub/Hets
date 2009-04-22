@@ -253,16 +253,14 @@ checkDefinitional osig fsn
             ax' = quanti ax
             pos = snd $ leadingSymPos ax'
         in Just $ warning Nothing ("The following " ++ prettyType ax' ++
-               " is not definitional:\n" ++
-               (flip showDoc "\n" $ simplifyCASLSen osig ax)) pos
+               " is not definitional:\n" ++ formatAxiom ax) pos
     | not $ null un_p_axioms =
         let ax = head $ filter (not . correctDef) $ filter containDef $
                  filter partialAxiom axioms
             ax' = head un_p_axioms
             pos = getRange $ take 1 un_p_axioms
         in Just $ warning Nothing ("The following partial " ++ prettyType ax' ++
-               " is not definitional:\n" ++
-               (flip showDoc "\n" $ simplifyCASLSen osig ax)) pos
+               " is not definitional:\n" ++ formatAxiom ax) pos
     | length dom_l /= length (nubOrd dom_l) =
         let ax = head $ filter (\ f -> domain_os f dualOS) $
                  filter partialAxiom axioms
@@ -271,18 +269,18 @@ checkDefinitional osig fsn
             dualOS = head $ filter (\ o -> elem o $ delete o dom_l) dom_l
             dualDom = filter (\ f -> domain_os f dualOS) p_axioms
         in Just $ warning Nothing ("The following partial " ++ prettyType ax' ++
-               " is not definitional:\n" ++
-               (flip showDoc "\n" $ simplifyCASLSen osig ax)) pos
+               " is not definitional:\n" ++ formatAxiom ax) pos
     | not $ null pcheck =
         let ax = head $ filter pcheckFunc $ filter (not . containDef) $
                  filter partialAxiom axioms
             ax' = head pcheck
             pos = getRange $ take 1 pcheck
         in Just $ warning Nothing ("The following partial " ++ prettyType ax' ++
-               " is not definitional:\n" ++
-               (flip showDoc "\n" $ simplifyCASLSen osig ax)) pos
+               " is not definitional:\n" ++ formatAxiom ax) pos
     | otherwise = Nothing
     where
+        formatAxiom :: FORMULA () -> String
+        formatAxiom = flip showDoc "\n" . simplifyCASLSen osig
         axioms = getAxioms fsn
         l_Syms = map leadingSym axioms        -- leading_Symbol
         axioms' = map quanti axioms
