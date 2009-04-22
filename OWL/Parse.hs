@@ -28,9 +28,6 @@ import Text.ParserCombinators.Parsec
 import Data.Char
 import qualified Data.Map as Map
 
-entityTypes :: [EntityType]
-entityTypes = [minBound .. maxBound]
-
 characters :: [Character]
 characters = [minBound .. maxBound]
 

@@ -21,6 +21,7 @@ module OWL.Morphism
   , matchesSym
   , statSymbItems
   , statSymbMapItems
+  , inducedFromMor
   ) where
 
 import OWL.AS
@@ -30,7 +31,6 @@ import OWL.StaticAnalysis
 
 import Common.DocUtils
 import Common.Doc
-import Common.Keywords
 import Common.Result
 import Common.Lib.State
 
@@ -42,7 +42,7 @@ import qualified Data.Set as Set
 data OWLMorphism = OWLMorphism
   { osource :: Sign
   , otarget :: Sign
-  , mmaps :: Map.Map EntityType (Map.Map URI URI)
+  , mmaps :: Map.Map Entity URI
   } deriving (Show, Eq, Ord)
 
 inclOWLMorphism :: Sign -> Sign -> OWLMorphism
@@ -54,23 +54,68 @@ inclOWLMorphism s t = OWLMorphism
 isOWLInclusion :: OWLMorphism -> Bool
 isOWLInclusion m = Map.null (mmaps m) && isSubSign (osource m) (otarget m)
 
-convertMMaps :: Map.Map EntityType (Map.Map URI URI) -> Map.Map Entity URI
-convertMMaps = Map.foldWithKey
-  (\ k e m -> Map.union m $ Map.mapKeys (Entity k) e) Map.empty
+inducedElems :: Map.Map Entity URI -> [Entity]
+inducedElems = Map.elems . Map.mapWithKey (\ (Entity ty _) u -> Entity ty u)
 
--- also print the symbol mappings
+inducedSign :: Map.Map Entity URI -> Sign -> Sign
+inducedSign m = execState $ do
+    mapM_ (modEntity Set.delete) $ Map.keys m
+    mapM_ (modEntity Set.insert) $ inducedElems m
+
+inducedFromMor :: Map.Map RawSymb RawSymb -> Sign -> Result OWLMorphism
+inducedFromMor rm sig = do
+  let syms = symOf sig
+  mm <- foldM (\ m p -> case p of
+        (ASymbol s@(Entity _ v), ASymbol (Entity _ u)) ->
+            if Set.member s syms
+            then return $ if u == v then m else Map.insert s u m
+            else fail $ "unknown symbol: " ++ showDoc s ""
+        (AnUri v, AnUri u) -> case filter (flip Set.member syms)
+          $ map (\ ty -> Entity ty v) entityTypes of
+          [] -> fail $ "unknown symbol: " ++ showDoc v ""
+          l -> return $ if u == v then m else foldr (flip Map.insert u) m l
+        _ -> error "OWL.Morphism.inducedFromMor") Map.empty $ Map.toList rm
+  return OWLMorphism
+    { osource = sig
+    , otarget = inducedSign mm sig
+    , mmaps = mm }
+
 instance Pretty OWLMorphism where
-  pretty m = specBraces (pretty $ osource m)
-    $+$ text mapsTo <+> specBraces (pretty $ otarget m)
+  pretty m = let
+    s = osource m
+    srcD = specBraces $ space <> pretty s
+    t = otarget m
+    in if isOWLInclusion m then
+           if isSubSign t s then
+              fsep [text "identity morphism over", srcD]
+           else fsep
+             [ text "inclusion morphism of"
+             , srcD
+             , text "extended with"
+             , pretty $ Set.difference (symOf t) $ symOf s ]
+       else fsep
+         [ pretty $ mmaps m
+         , colon <+> srcD, mapsto <+> specBraces (space <> pretty t) ]
 
--- check if mapped symbols are in the target signature, too
 legalMor :: OWLMorphism -> Bool
-legalMor m = let mm = convertMMaps $ mmaps m in
-  Set.isSubsetOf (Map.keysSet mm) $ symOf $ osource m
+legalMor m = let mm = mmaps m in
+  Set.isSubsetOf (Map.keysSet mm) (symOf $ osource m)
+  && Set.isSubsetOf (Set.fromList $ inducedElems mm) (symOf $ otarget m)
 
--- composition currently only works for inclusions
 composeMor :: OWLMorphism -> OWLMorphism -> Result OWLMorphism
-composeMor m = return . inclOWLMorphism (osource m) . otarget
+composeMor m1 m2 =
+  let nm = Set.fold (\ s@(Entity ty u) -> let
+            t = case Map.lookup s $ mmaps m1 of
+              Nothing -> u
+              Just v -> v
+            r = case Map.lookup (Entity ty t) $ mmaps m2 of
+              Nothing -> t
+              Just w -> w
+            in if r == u then id else Map.insert s r) Map.empty
+           $ symOf $ osource m1
+  in return m1
+     { otarget = otarget m2
+     , mmaps = nm }
 
 cogeneratedSign :: Set.Set Entity -> Sign -> Result OWLMorphism
 cogeneratedSign s sign =
@@ -109,3 +154,5 @@ statSymbMapItems =
         Nothing -> map (\ (s, t) -> (AnUri s, AnUri t)) ps
         Just ty -> let mS = ASymbol . Entity ty in
                    map (\ (s, t) -> (mS s, mS t)) ps)
+
+

@@ -82,6 +82,7 @@ instance StaticAnalysis OWL OntologyFile Sentence
       is_subsig OWL = isSubSign
       subsig_inclusion OWL s = return . inclOWLMorphism s
       matches OWL = matchesSym
+      induced_from_morphism OWL = inducedFromMor
       cogenerated_sign OWL = cogeneratedSign
       generated_sign OWL = fail "cogenerated_sign OWL nyi"
 #ifdef UNI_PACKAGE

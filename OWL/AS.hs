@@ -111,6 +111,9 @@ data EntityType =
 -- | Syntax of Entities
 data Entity = Entity EntityType URI deriving (Typeable, Show, Eq, Ord)
 
+entityTypes :: [EntityType]
+entityTypes = [minBound .. maxBound]
+
 -- | symbol items for hets
 data SymbItems = SymbItems (Maybe EntityType) [URI]
     deriving (Typeable, Show, Eq)
