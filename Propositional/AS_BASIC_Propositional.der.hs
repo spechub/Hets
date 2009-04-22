@@ -17,8 +17,7 @@ Definition of abstract syntax for propositional logic
 -}
 
 module Propositional.AS_BASIC_Propositional
-    (
-      FORMULA (..)             -- datatype for Propositional Formulas
+    ( FORMULA (..)             -- datatype for Propositional Formulas
     , is_True_atom             -- True?
     , is_False_atom            -- False?
     , BASIC_ITEMS (..)         -- Items of a Basic Spec
@@ -33,6 +32,7 @@ module Propositional.AS_BASIC_Propositional
 import Common.Id as Id
 import Common.Doc
 import Common.DocUtils
+import Common.Keywords
 import Common.AS_Annotation as AS_Anno
 
 -- DrIFT command
@@ -120,48 +120,56 @@ instance Pretty PRED_ITEM where
 
 -- Pretty printing for formulas
 printFormula :: FORMULA -> Doc
-printFormula (Negation f _) = notDoc
-                            <> lparen <> printFormula f <> rparen
-printFormula (Conjunction xs _) = parens $
-                                  sepByArbitrary andDoc
-                                  $ map printFormula xs
-printFormula (Disjunction xs _) = parens $
-                                  sepByArbitrary orDoc
-                                  $ map printFormula xs
-printFormula (Implication x y _) = parens $ printFormula x <>
-                                   implies <> printFormula y
-printFormula (Equivalence x y _) = parens $ printFormula x <>
-                                   equiv <> printFormula y
-printFormula (True_atom  _) = text "True"
-printFormula (False_atom _) = text "False"
-printFormula (Predication x) = pretty x
+printFormula frm =
+  let ppf p f = (if p f then id else parens) $ printFormula f
+      isPrimForm f = case f of
+        True_atom _ -> True
+        False_atom _ -> True
+        Predication _ -> True
+        Negation _ _ -> True
+        _ -> False
+      isDisjForm f = case f of
+        Implication _ _ _ -> False
+        Equivalence _ _ _ -> False
+        _ -> True
 
--- Extended version of vcat
+  in case frm of
+  Negation f _ -> notDoc <+> ppf isPrimForm f
+  Conjunction xs _ -> sepByArbitrary andDoc
+    $ map ( \ f -> ppf isPrimForm f) xs
+  Disjunction xs _ -> sepByArbitrary orDoc
+    $ map ( \ f -> ppf (case f of
+        Conjunction _ _ -> const True
+        _ -> isPrimForm) f) xs
+  Implication x y _ -> ppf isDisjForm x <+> implies <+> ppf isDisjForm y
+  Equivalence x y _ -> ppf isDisjForm x <+> equiv <+> ppf isDisjForm y
+  True_atom  _ -> text trueS
+  False_atom _ -> text falseS
+  Predication x -> pretty x
+
 sepByArbitrary :: Doc -> [Doc] -> Doc
-sepByArbitrary _ [] = text ""
-sepByArbitrary _ (x:[]) = x
-sepByArbitrary separator (x:xs) = x <> separator
-                                  <> (sepByArbitrary separator xs)
+sepByArbitrary d = fsep . prepPunctuate (d <> space)
 
 printPredItem :: PRED_ITEM -> Doc
-printPredItem (Pred_item xs _) = hsep $ map pretty xs
+printPredItem (Pred_item xs _) = fsep $ map pretty xs
 
 printBasicSpec :: BASIC_SPEC -> Doc
-printBasicSpec (Basic_spec xs) = hsep $ map pretty xs
+printBasicSpec (Basic_spec xs) = vcat $ map pretty xs
 
 printBasicItems :: BASIC_ITEMS -> Doc
-printBasicItems (Axiom_items xs) = hsep $ map pretty xs
+printBasicItems (Axiom_items xs) = vcat $ map pretty xs
 printBasicItems (Pred_decl x) = pretty x
 
 printSymbol :: SYMB -> Doc
 printSymbol (Symb_id sym) = pretty sym
 
 printSymbItems :: SYMB_ITEMS -> Doc
-printSymbItems (Symb_items xs _) = hsep $ map pretty xs
+printSymbItems (Symb_items xs _) = fsep $ map pretty xs
 
 printSymbOrMap :: SYMB_OR_MAP -> Doc
 printSymbOrMap (Symb sym) = pretty sym
-printSymbOrMap (Symb_map source dest  _) = pretty source <> mapsto <> pretty dest
+printSymbOrMap (Symb_map source dest  _) =
+  pretty source <+> mapsto <+> pretty dest
 
 printSymbMapItems :: SYMB_MAP_ITEMS -> Doc
-printSymbMapItems (Symb_map_items xs _) = hsep $ map pretty xs
+printSymbMapItems (Symb_map_items xs _) = fsep $ map pretty xs
