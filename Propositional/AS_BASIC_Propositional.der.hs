@@ -27,7 +27,6 @@ module Propositional.AS_BASIC_Propositional
     , SYMB_MAP_ITEMS (..)      -- Symbol map
     , SYMB_OR_MAP (..)         -- Symbol or symbol map
     , PRED_ITEM (..)           -- Predicates
-    , simplify
     ) where
 
 import Common.Id as Id
@@ -142,38 +141,6 @@ printFormula frm =
   True_atom _ -> text trueS
   False_atom _ -> text falseS
   Predication x -> pretty x
-
-simplify :: FORMULA -> FORMULA
-simplify frm = case frm of
-  Negation f n -> case simplify f of
-    True_atom p -> False_atom p
-    False_atom p -> True_atom p
-    s -> Negation s n
-  Conjunction xs n -> case map simplify xs of
-    [] -> True_atom n
-    [x] -> x
-    l -> let
-      ls = concatMap (\ f -> case f of
-        Conjunction ys _ -> ys
-        _ -> [f]) l
-      in if any is_False_atom ls then False_atom n else Conjunction ls n
-  Disjunction xs n -> case map simplify xs of
-    [] -> False_atom n
-    [x] -> x
-    l -> let
-      ls = concatMap (\ f -> case f of
-        Disjunction ys _ -> ys
-        _ -> [f]) l
-      in if any is_True_atom ls then True_atom n else Disjunction ls n
-  Implication x y n -> case simplify x of
-    False_atom p -> True_atom p
-    s -> let t = simplify y in
-      if is_True_atom s then t else Implication s t n
-  Equivalence x y n ->
-    let s = simplify x
-        t = simplify y
-    in if s == t then True_atom n else Equivalence s t n
-  _ -> frm
 
 sepByArbitrary :: Doc -> [Doc] -> Doc
 sepByArbitrary d = fsep . prepPunctuate (d <> space)

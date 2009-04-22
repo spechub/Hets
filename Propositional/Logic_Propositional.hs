@@ -31,7 +31,8 @@ import Logic.Logic
 import Propositional.Sign
 import Propositional.Morphism
 import Propositional.AS_BASIC_Propositional
-import Propositional.ATC_Propositional()
+import Propositional.ATC_Propositional ()
+import Propositional.Fold
 import Propositional.Symbol as Symbol
 import Propositional.Parse_AS_Basic
 import Propositional.Analysis
