@@ -51,22 +51,50 @@ mapRecord = FoldRecord
   , foldFalse_atom = False_atom
   , foldPredication = Predication }
 
-nubSort :: [FORMULA] -> [FORMULA]
-nubSort = Set.toList . Set.fromList
+isNeg :: FORMULA -> Bool
+isNeg f = case f of
+  Negation _ _ -> True
+  _ -> False
 
-flatConj :: [FORMULA] -> [FORMULA]
-flatConj = nubSort
+getLits :: Set.Set FORMULA -> Set.Set FORMULA
+getLits = Set.fold (\ f -> case f of
+  Negation x _ -> Set.insert x
+  _ -> Set.insert f) Set.empty
+
+bothLits :: Set.Set FORMULA -> Bool
+bothLits fs = let
+  (ns, ps) = Set.partition isNeg fs
+  in not $ Set.null $ Set.intersection (getLits ns) (getLits ps)
+
+flatConj :: [FORMULA] -> Set.Set FORMULA
+flatConj = Set.fromList
   . concatMap (\ f -> case f of
       True_atom _ -> []
       Conjunction fs _ -> fs
       _ -> [f])
 
-flatDisj :: [FORMULA] -> [FORMULA]
-flatDisj = nubSort
+mkConj :: [FORMULA] -> Range -> FORMULA
+mkConj fs n = let s = flatConj fs in
+  if Set.member (False_atom nullRange) s || bothLits s then False_atom n else
+  case Set.toList s of
+    [] -> True_atom n
+    [x] -> x
+    ls -> Conjunction ls n
+
+flatDisj :: [FORMULA] -> Set.Set FORMULA
+flatDisj = Set.fromList
   . concatMap (\ f -> case f of
       False_atom _ -> []
       Disjunction fs _ -> fs
       _ -> [f])
+
+mkDisj :: [FORMULA] -> Range -> FORMULA
+mkDisj fs n = let s = flatDisj fs in
+  if Set.member (True_atom nullRange) s || bothLits s then True_atom n else
+  case Set.toList s of
+    [] -> False_atom n
+    [x] -> x
+    ls -> Disjunction ls n
 
 simplify :: FORMULA -> FORMULA
 simplify = foldFormula mapRecord
@@ -75,19 +103,12 @@ simplify = foldFormula mapRecord
     False_atom p -> True_atom p
     Negation g _ -> g
     s -> Negation s n
-  , foldConjunction = \ xs n -> let ls = flatConj xs in
-    if any is_False_atom ls then False_atom n else case ls of
-    [] -> True_atom n
-    [x] -> x
-    _ -> Conjunction ls n
-  , foldDisjunction = \ xs n ->  let ls = flatDisj xs in
-    if any is_True_atom ls then True_atom n else case ls of
-    [] -> False_atom n
-    [x] -> x
-    _ -> Disjunction ls n
+  , foldConjunction = mkConj
+  , foldDisjunction = mkDisj
   , foldImplication = \ x y n -> case x of
     False_atom p -> True_atom p
-    _ -> if is_True_atom x then y else Implication x y n
+    _ -> if x == y then True_atom n else
+         if is_True_atom x then y else Implication x y n
   , foldEquivalence = \ x y n -> case compare x y of
     LT -> Equivalence x y n
     EQ -> True_atom n
