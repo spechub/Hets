@@ -17,6 +17,8 @@ module Propositional.Fold where
 import Common.Id
 import Propositional.AS_BASIC_Propositional
 
+import qualified Data.Set as Set
+
 data FoldRecord a = FoldRecord
   { foldNegation :: a -> Range -> a
   , foldConjunction :: [a] -> Range -> a
@@ -49,6 +51,23 @@ mapRecord = FoldRecord
   , foldFalse_atom = False_atom
   , foldPredication = Predication }
 
+nubSort :: [FORMULA] -> [FORMULA]
+nubSort = Set.toList . Set.fromList
+
+flatConj :: [FORMULA] -> [FORMULA]
+flatConj = nubSort
+  . concatMap (\ f -> case f of
+      True_atom _ -> []
+      Conjunction fs _ -> fs
+      _ -> [f])
+
+flatDisj :: [FORMULA] -> [FORMULA]
+flatDisj = nubSort
+  . concatMap (\ f -> case f of
+      False_atom _ -> []
+      Disjunction fs _ -> fs
+      _ -> [f])
+
 simplify :: FORMULA -> FORMULA
 simplify = foldFormula mapRecord
   { foldNegation = \ f n -> case f of
@@ -56,26 +75,20 @@ simplify = foldFormula mapRecord
     False_atom p -> True_atom p
     Negation g _ -> g
     s -> Negation s n
-  , foldConjunction = \ xs n -> case xs of
+  , foldConjunction = \ xs n -> let ls = flatConj xs in
+    if any is_False_atom ls then False_atom n else case ls of
     [] -> True_atom n
     [x] -> x
-    _ -> let
-      ls = concatMap (\ f -> case f of
-        Conjunction ys _ -> ys
-        _ -> [f]) xs
-      in if any is_False_atom ls then False_atom n else Conjunction ls n
-  , foldDisjunction = \ xs n -> case xs of
+    _ -> Conjunction ls n
+  , foldDisjunction = \ xs n ->  let ls = flatDisj xs in
+    if any is_True_atom ls then True_atom n else case ls of
     [] -> False_atom n
     [x] -> x
-    _ -> let
-      ls = concatMap (\ f -> case f of
-        Disjunction ys _ -> ys
-        _ -> [f]) xs
-      in if any is_True_atom ls then True_atom n else Disjunction ls n
+    _ -> Disjunction ls n
   , foldImplication = \ x y n -> case x of
     False_atom p -> True_atom p
     _ -> if is_True_atom x then y else Implication x y n
-  , foldEquivalence = \ x y n ->
-    if x == y then True_atom n else Equivalence x y n }
-
-
+  , foldEquivalence = \ x y n -> case compare x y of
+    LT -> Equivalence x y n
+    EQ -> True_atom n
+    GT -> Equivalence y x n }
