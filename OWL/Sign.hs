@@ -65,15 +65,6 @@ data DomainOrRangeOrFunc a =
   | FuncProp a
     deriving (Show, Eq, Ord)
 
--- data RoleID = IVP IndividualvaluedPropertyID
---             | DVP DatavaluedPropertyID
---               deriving (Show,Eq,Ord)
-
-data Sentence =
-    OWLAxiom Axiom
-  | OWLFact Axiom
-    deriving (Show,Eq,Ord)
-
 emptySign :: Sign
 emptySign =  Sign
   { ontologyID = nullQName

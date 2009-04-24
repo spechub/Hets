@@ -120,14 +120,7 @@ instance PNamespace SignAxiom where
            Conceptmembership (renameNamespace tMap iId)
                              (renameNamespace tMap des)
 
-instance PNamespace Sentence where
-   propagateNspaces _ sent = sent
-   renameNamespace tMap sent =
-       case sent of
-       OWLAxiom axiom -> OWLAxiom (renameNamespace tMap axiom)
-       OWLFact fact   -> OWLFact  (renameNamespace tMap fact)
-
-instance PNamespace (Common.Annotation.Named Sentence) where
+instance PNamespace (Common.Annotation.Named Axiom) where
     propagateNspaces _ nsent = nsent
     renameNamespace tMap sent = sent {
         Common.Annotation.sentence = renameNamespace tMap

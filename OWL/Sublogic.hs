@@ -20,7 +20,7 @@ module OWL.Sublogic
     , sl_bottom
     , sl_max
     , sl_name
-    , sl_basic_spec
+    , sl_ax
     , sl_o_file
     , sl_sig
     , sl_mor
@@ -176,13 +176,6 @@ requireDatatype sl = sl
                       {
                         datatype = OWLDatatypes
                       }
-
--- Sublogics
-sl_basic_spec :: Sentence -> OWLSub
-sl_basic_spec sen  =
-    case sen of
-      OWLAxiom ax -> sl_ax ax
-      OWLFact  ax -> sl_ax ax
 
 sl_ax :: Axiom -> OWLSub
 sl_ax ax =

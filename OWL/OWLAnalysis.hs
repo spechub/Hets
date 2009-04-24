@@ -15,7 +15,7 @@ module OWL.OWLAnalysis (structureAna, parseOWL) where
 import OWL.AS
 import OWL.Namespace
 import OWL.Logic_OWL
-import OWL.ReadWrite()
+import OWL.ReadWrite ()
 import OWL.StaticAnalysis
 import OWL.Sign
 import OWL.StructureAnalysis
@@ -198,7 +198,7 @@ staticAna file opt (ontoMap, dg) =
            _            -> error "no devGraph..."
 
 -- | a map to save which node has been analysed.
-type SignMap = Map.Map Node (Sign, [Named Sentence])
+type SignMap = Map.Map Node (Sign, [Named Axiom])
 
 getBFSnodeList :: Node -> DGraph -> [LNode DGNodeLab]
 getBFSnodeList h dg = reverse $ map (matchNode dg) $ BFS.bfs h $ dgBody dg

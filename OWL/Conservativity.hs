@@ -11,42 +11,39 @@ This module implements conservativity checks for OWL 2.0 based on the
 the syntactic locality checker written in Java from the OWL-Api.
 -}
 
-module OWL.Conservativity
-    (
-     conserCheck
-    )
-    where
+module OWL.Conservativity (conserCheck) where
 
 import Common.AS_Annotation
-import OWL.Sign
-import OWL.Morphism
-import Common.Result
 import Common.Consistency
-import System.IO.Unsafe
-import OWL.Print (printOWLBasicTheory)
-
+import Common.Result
 import Common.Utils
-import System.Exit
-import System.IO
-import System.Process
-import System.Directory
 
 import Control.Concurrent
 import Control.Concurrent.MVar
-
 import Data.Time.Clock (UTCTime(..), getCurrentTime)
 
 import GUI.Utils ()
+
+import OWL.AS
+import OWL.Morphism
+import OWL.Print (printOWLBasicTheory)
+import OWL.Sign
+
+import System.Directory
+import System.Exit
+import System.IO
+import System.IO.Unsafe
+import System.Process
 
 toolName :: String
 toolName = "owl_locality"
 
 -- | Conservativity Check for Propositional Logic
 conserCheck :: String                        -- ^ Conser type
-           -> (Sign, [Named Sentence])       -- ^ Initial sign and formulas
+           -> (Sign, [Named Axiom])       -- ^ Initial sign and formulas
            -> OWLMorphism                    -- ^ morphism between specs
-           -> [Named Sentence]               -- ^ Formulas of extended spec
-           -> Result (Maybe (ConsistencyStatus, [Sentence]))
+           -> [Named Axiom]               -- ^ Formulas of extended spec
+           -> Result (Maybe (ConsistencyStatus, [Axiom]))
 conserCheck ct (sig, forms) mor =
   unsafePerformIO . doConservCheck "OWLLocality.jar" ct sig forms mor
 
@@ -54,10 +51,10 @@ conserCheck ct (sig, forms) mor =
 doConservCheck :: String            -- ^ Jar name
                -> String            -- ^ Conser Type
                -> Sign              -- ^ Signature of Onto 1
-               -> [Named Sentence]  -- ^ Formulas of Onto 1
+               -> [Named Axiom]  -- ^ Formulas of Onto 1
                -> OWLMorphism       -- ^ Morphism
-               -> [Named Sentence]  -- ^ Formulas of Onto 2
-               -> IO (Result (Maybe (ConsistencyStatus, [Sentence])))
+               -> [Named Axiom]  -- ^ Formulas of Onto 2
+               -> IO (Result (Maybe (ConsistencyStatus, [Axiom])))
 doConservCheck jar ct sig1 sen1 mor sen2 = do
   let ontoFile = printOWLBasicTheory
         (osource mor, filter isAxiom sen2)
@@ -86,7 +83,7 @@ runLocalityChecker :: String            -- ^ Jar name
                    -> String            -- ^ Conser Type
                    -> String            -- ^ Ontology
                    -> String            -- ^ String
-                   -> IO (Result (Maybe (ConsistencyStatus, [Sentence])))
+                   -> IO (Result (Maybe (ConsistencyStatus, [Axiom])))
 runLocalityChecker jar ct onto sig =
   do
     let timeLimit = 800
@@ -119,7 +116,7 @@ runLocalityChecker jar ct onto sig =
 parseOutput :: Handle        -- ^ handel of stdout
             -> Handle        -- ^ handel of stderr
             -> ProcessHandle -- ^ handel of process
-            -> IO ((Result (Maybe (ConsistencyStatus, [Sentence]))), [String])
+            -> IO ((Result (Maybe (ConsistencyStatus, [Axiom]))), [String])
 parseOutput outh _ procHndl =
     collectLines
     where
@@ -135,8 +132,8 @@ parseOutput outh _ procHndl =
                                     show x ++ "\n" ++ unlines ls), ls)
 
 timeWatch :: Int
-          -> IO (Result (Maybe (ConsistencyStatus, [Sentence])), [String])
-          -> IO (Result (Maybe (ConsistencyStatus, [Sentence])), [String])
+          -> IO (Result (Maybe (ConsistencyStatus, [Axiom])), [String])
+          -> IO (Result (Maybe (ConsistencyStatus, [Axiom])), [String])
 timeWatch time process =
         do
           mvar <- newEmptyMVar

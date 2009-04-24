@@ -18,6 +18,7 @@ module OWL.ProvePellet (pelletProver,pelletGUI,pelletCMDLautomatic,
 
 import Logic.Prover
 
+import OWL.AS
 import OWL.Morphism
 import OWL.Sign
 import OWL.Print
@@ -51,7 +52,7 @@ import Control.Concurrent.MVar
 
 data PelletProverState = PelletProverState
                         { ontologySign :: Sign
-                        , initialState :: [Named Sentence] }
+                        , initialState :: [Named Axiom] }
                          deriving (Show)
 data PelletProblem = PelletProblem
                    { identifier :: PelletID
@@ -70,8 +71,8 @@ data PelletSetting = PelletSetting
 
 -- * Prover implementation
 pelletProverState :: Sign
-                 -> [Named Sentence]
-                 -> [FreeDefMorphism Sentence OWLMorphism] -- ^ freeness constraints
+                 -> [Named Axiom]
+                 -> [FreeDefMorphism Axiom OWLMorphism] -- ^ freeness constraints
                  -> PelletProverState
 pelletProverState sig oSens _ = PelletProverState
          { ontologySign = sig
@@ -80,12 +81,12 @@ pelletProverState sig oSens _ = PelletProverState
 {- |
   The Prover implementation. First runs the batch prover (with graphical feedback), then starts the GUI prover.
 -}
-pelletProver :: Prover Sign Sentence OWLMorphism OWLSub ProofTree
+pelletProver :: Prover Sign Axiom OWLMorphism OWLSub ProofTree
 pelletProver = (mkProverTemplate "Pellet" sl_top pelletGUI)
     { proveCMDLautomatic = Just pelletCMDLautomatic
     , proveCMDLautomaticBatch = Just pelletCMDLautomaticBatch }
 
-pelletConsChecker :: ConsChecker Sign Sentence OWLSub
+pelletConsChecker :: ConsChecker Sign Axiom OWLSub
                      OWLMorphism ProofTree
 pelletConsChecker = mkProverTemplate "Pellet Consistency Checker" sl_top
                     consCheck
@@ -96,11 +97,11 @@ pelletConsChecker = mkProverTemplate "Pellet Consistency Checker" sl_top
   line interface.
 -}
 atpFun :: String -- ^ theory name
-       -> ATPFunctions Sign Sentence OWLMorphism ProofTree PelletProverState
+       -> ATPFunctions Sign Axiom OWLMorphism ProofTree PelletProverState
 atpFun thName = ATPFunctions
     { initialProverState = pelletProverState,
       atpTransSenName = id,   -- transSenName,
-      atpInsertSentence = insertOWLSentence,
+      atpInsertSentence = insertOWLAxiom,
       goalOutput = showOWLProblem thName,
       proverHelpText = "http://clarkparsia.com/pellet/\n",
       batchTimeEnv = "HETS_Pellet_BATCH_TIME_LIMIT",
@@ -111,13 +112,13 @@ atpFun thName = ATPFunctions
       createProverOptions = extraOpts}
 
 {- |
-  Inserts a named SoftFOL term into SoftFOL prover state.
+  Inserts a named OWL axiom into pellet prover state.
 -}
-insertOWLSentence :: PelletProverState -- ^ prover state containing
+insertOWLAxiom :: PelletProverState -- ^ prover state containing
                                       --   initial logical part
-                  -> Named Sentence -- ^ goal to add
+                  -> Named Axiom -- ^ goal to add
                   -> PelletProverState
-insertOWLSentence pps s =
+insertOWLAxiom pps s =
     pps{initialState = (initialState pps) ++ [s]}
 
 -- ** GUI
@@ -126,8 +127,8 @@ insertOWLSentence pps s =
   Invokes the generic prover GUI.
 -}
 pelletGUI :: String -- ^ theory name
-           -> Theory Sign Sentence ProofTree
-           -> [FreeDefMorphism Sentence OWLMorphism] -- ^ freeness constraints
+           -> Theory Sign Axiom ProofTree
+           -> [FreeDefMorphism Axiom OWLMorphism] -- ^ freeness constraints
            -> IO([Proof_status ProofTree]) -- ^ proof status for each goal
 pelletGUI thName th freedefs =
     genericATPgui (atpFun thName) True (prover_name pelletProver) thName th
@@ -143,9 +144,9 @@ pelletGUI thName th freedefs =
 pelletCMDLautomatic ::
            String -- ^ theory name
         -> Tactic_script -- ^ default tactic script
-        -> Theory Sign Sentence ProofTree
+        -> Theory Sign Axiom ProofTree
            -- ^ theory consisting of a signature and a list of Named sentence
-        -> [FreeDefMorphism Sentence OWLMorphism] -- ^ freeness constraints
+        -> [FreeDefMorphism Axiom OWLMorphism] -- ^ freeness constraints
         -> IO (Result.Result ([Proof_status ProofTree]))
            -- ^ Proof status for goals and lemmas
 pelletCMDLautomatic thName defTS th freedefs =
@@ -164,9 +165,8 @@ pelletCMDLautomaticBatch ::
            -- ^ used to store the result of the batch run
         -> String -- ^ theory name
         -> Tactic_script -- ^ default tactic script
-        -> Theory Sign Sentence ProofTree -- ^ theory consisting of a
-           --   'SoftFOL.Sign.Sign' and a list of Named 'SoftFOL.Sign.Sentence'
-        -> [FreeDefMorphism Sentence OWLMorphism] -- ^ freeness constraints
+        -> Theory Sign Axiom ProofTree -- ^ theory
+        -> [FreeDefMorphism Axiom OWLMorphism] -- ^ freeness constraints
         -> IO (Concurrent.ThreadId,Concurrent.MVar ())
            -- ^ fst: identifier of the batch thread for killing it
            --   snd: MVar to wait for the end of the thread
@@ -223,8 +223,8 @@ getEnvSec :: String -> IO String
 getEnvSec s = getEnvDef s ""
 
 consCheck :: String
-          -> TheoryMorphism Sign Sentence OWLMorphism ProofTree
-          -> [FreeDefMorphism Sentence OWLMorphism] -- ^ freeness constraints
+          -> TheoryMorphism Sign Axiom OWLMorphism ProofTree
+          -> [FreeDefMorphism Axiom OWLMorphism] -- ^ freeness constraints
           -> IO([Proof_status ProofTree])
 consCheck thName tm freedefs =
     case t_target tm of
@@ -423,7 +423,7 @@ runPellet :: PelletProverState
            -> GenericConfig ProofTree -- ^ configuration to use
            -> Bool -- ^ True means save TPTP file
            -> String -- ^ name of the theory in the DevGraph
-           -> Named Sentence -- ^ goal to prove
+           -> Named Axiom -- ^ goal to prove
            -> IO (ATPRetval, GenericConfig ProofTree)
            -- ^ (retval, configuration with proof status and complete output)
 runPellet sps cfg savePellet thName nGoal =
@@ -610,7 +610,7 @@ showOWLProblemS thName pst _ =
 showOWLProblem :: String -- ^ theory name
                -> PelletProverState -- ^ prover state containing
                                     -- initial logical part
-               -> Named Sentence -- ^ goal to print
+               -> Named Axiom -- ^ goal to print
                -> [String] -- ^ extra options
                -> IO String -- ^ formatted output of the goal
 showOWLProblem thName pst nGoal _ =
@@ -628,7 +628,7 @@ showOWLProblem thName pst nGoal _ =
   Generate a SoftFOL problem with time stamp while maybe adding a goal.
 -}
 genPelletProblemS :: String -> PelletProverState
-                -> Maybe (Named Sentence)
+                -> Maybe (Named Axiom)
                 -> PelletProblem
 genPelletProblemS thName pps m_nGoal =
        PelletProblem

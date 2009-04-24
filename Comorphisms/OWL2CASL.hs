@@ -28,6 +28,7 @@ import OWL.Logic_OWL
 import OWL.AS
 import OWL.Sublogic
 import OWL.Morphism
+import OWL.AS
 import qualified OWL.Sign as OS
 
 --CASL_DL = codomain
@@ -48,7 +49,7 @@ instance Comorphism
     OWL             -- lid domain
     OWLSub          -- sublogics domain
     OntologyFile    -- Basic spec domain
-    OS.Sentence     -- sentence domain
+    Axiom           -- sentence domain
     SymbItems       -- symbol items domain
     SymbMapItems    -- symbol map items domain
     OS.Sign         -- signature domain
@@ -200,7 +201,7 @@ predefinedSentences =
      nullRange
     ]
 
-mapTheory :: (OS.Sign, [Named OS.Sentence])
+mapTheory :: (OS.Sign, [Named Axiom])
              -> Result (CASLSign, [Named CASLFORMULA])
 mapTheory (owlSig, owlSens) =
     do
@@ -218,56 +219,17 @@ mapTheory (owlSig, owlSens) =
       return $ (nSig, predefinedSentences ++ cSens)
 
 -- | mapping of OWL to CASL_DL formulae
-mapSentence :: CASLSign                                    -- ^ CASL Signature
-            -> Named OS.Sentence                           -- ^ OWL Sentence
-            -> Result (Maybe(Named CASLFORMULA), CASLSign) -- ^ CASL_DL Sentence
-mapSentence cSig inSen =
-    let
-        sName = senAttr    inSen
-        sDef  = isDef      inSen
-        sAx   = isAxiom    inSen
-        wTh   = wasTheorem inSen
-        sen   = sentence   inSen
-        sAnno = simpAnno   inSen
-    in
-      case sen of
-        OS.OWLAxiom ax   ->
-            do
-              (outAx,outSig) <- mapAxiom cSig ax
-              case outAx of
-                Just outA ->
-                     return $ (Just $SenAttr
-                         {
-                           senAttr    = sName
-                         , isAxiom    = sAx
-                         , isDef      = sDef
-                         , wasTheorem = wTh
-                         , sentence   = outA
-                         , simpAnno   = sAnno
-                         }, outSig)
-                Nothing ->
-                    return (Nothing, outSig)
-        OS.OWLFact ax   ->
-            do
-              (outAx,outSig) <- mapAxiom cSig ax
-              case outAx of
-                Just outA ->
-                     return $ (Just $SenAttr
-                         {
-                           senAttr    = sName
-                         , isAxiom    = sAx
-                         , isDef      = sDef
-                         , wasTheorem = wTh
-                         , sentence   = outA
-                         , simpAnno   = sAnno
-                         }, outSig)
-                Nothing ->
-                    return (Nothing, outSig)
+mapSentence :: CASLSign                           -- ^ CASL Signature
+  -> Named Axiom                                  -- ^ OWL Sentence
+  -> Result (Maybe (Named CASLFORMULA), CASLSign) -- ^ CASL Sentence
+mapSentence cSig inSen = do
+    (outAx, outSig) <- mapAxiom cSig $ sentence inSen
+    return (fmap (flip mapNamed inSen . const) outAx, outSig)
 
 -- | Mapping of Axioms
-mapAxiom :: CASLSign                          -- ^ CASL Signature
-         -> Axiom                             -- ^ OWL Axiom
-         -> Result (Maybe CASLFORMULA,CASLSign)     -- ^ CASL_DL Formula
+mapAxiom :: CASLSign                             -- ^ CASL Signature
+         -> Axiom                                -- ^ OWL Axiom
+         -> Result (Maybe CASLFORMULA, CASLSign) -- ^ CASL Formula
 mapAxiom cSig ax =
     let
         a = 1

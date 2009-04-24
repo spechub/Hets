@@ -17,6 +17,7 @@ module OWL.Taxonomy
     )
     where
 
+import OWL.AS
 import OWL.Sign
 import OWL.Print
 
@@ -52,7 +53,7 @@ import qualified Data.Set as Set
 -- | Derivation of an Taxonomy for OWL
 onto2Tax :: TaxoGraphKind
          -> MMiSSOntology
-         -> Sign -> [Named Sentence]
+         -> Sign -> [Named Axiom]
          -> Result MMiSSOntology
 onto2Tax gk inOnto sig sens =
     case gk of
@@ -140,9 +141,7 @@ relBuild s =
               $ (Rel.fromList $ zip (repeat t) suc) `Rel.union` ch
 
 -- | Invocation of Pellet
-runClassifier :: Sign
-              -> [Named Sentence]
-              -> IO (Result String)
+runClassifier :: Sign -> [Named Axiom] -> IO (Result String)
 runClassifier sig sen =
     do
       let th      = show $ printOWLBasicTheory (sig, filter (isAxiom) sen)

@@ -39,14 +39,14 @@ modEntity f (Entity ty u) = do
 addEntity :: Entity -> State Sign ()
 addEntity = modEntity Set.insert
 
-anaAxiom :: Axiom -> State Sign [Named Sentence]
+anaAxiom :: Axiom -> State Sign [Named Axiom]
 anaAxiom an = case an of
   EntityAnno (EntityAnnotation _ e _) -> do
     addEntity e
     return []
   PlainAxiom as p -> do
     anaPlainAxiom p
-    return [findImplied as $ makeNamed "" $ OWLAxiom an]
+    return [findImplied as $ makeNamed "" an]
 
 anaObjPropExpr :: ObjectPropertyExpression -> State Sign ()
 anaObjPropExpr = addEntity . Entity ObjectProperty . getObjRoleFromExpression
@@ -156,7 +156,7 @@ anaPlainAxiom pa = case pa of
 -- | static analysis of ontology with incoming sign.
 basicOWLAnalysis ::
     (OntologyFile, Sign, GlobalAnnos) ->
-        Result (OntologyFile, ExtSign Sign Entity, [Named Sentence])
+        Result (OntologyFile, ExtSign Sign Entity, [Named Axiom])
 basicOWLAnalysis (ofile, inSign, _) =
     let ns = namespaces ofile
         diags1 = foldl (++) [] (map isNamespaceInImport
@@ -210,13 +210,13 @@ getObjRoleFromSubExpression sopExp =
       SubObjectPropertyChain expList ->
           map getObjRoleFromExpression expList
 
-findImplied :: [OWL.AS.Annotation] -> Named Sentence
-            -> Named Sentence
-findImplied anno sent
-    | isToProve anno = sent {isAxiom = False
-                            ,isDef = False
-                            ,wasTheorem = False}
-    | otherwise = sent {isAxiom = True}
+findImplied :: [OWL.AS.Annotation] -> Named Axiom -> Named Axiom
+findImplied anno sent =
+  if isToProve anno then sent
+         { isAxiom = False
+         , isDef = False
+         , wasTheorem = False }
+  else sent { isAxiom = True }
 
 isToProve :: [OWL.AS.Annotation] -> Bool
 isToProve [] = False

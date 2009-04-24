@@ -25,7 +25,7 @@ import OWL.Sign
 import qualified Data.Set as Set
 import qualified Data.Map as Map
 
-printOWLBasicTheory :: (Sign, [Named Sentence]) -> Doc
+printOWLBasicTheory :: (Sign, [Named Axiom]) -> Doc
 printOWLBasicTheory (s, l) =
   printSign s
   $++$ vsep (map (pretty . sentence) l)
@@ -161,14 +161,6 @@ instance Pretty Constant where
      text (if take 1 lexi == "\"" then lexi else show lexi) <> case ty of
       Typed u -> text cTypeS <> pretty u
       Untyped tag -> if null tag then empty else text asP <> text tag
-
-instance Pretty Sentence where
-    pretty = printSentence
-
-printSentence :: Sentence -> Doc
-printSentence sent = case sent of
-    OWLAxiom axiom -> pretty axiom
-    OWLFact fact -> pretty fact
 
 instance Pretty Axiom where
     pretty = printAxiom

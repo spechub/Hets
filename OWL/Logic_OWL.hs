@@ -60,19 +60,19 @@ instance Syntax OWL OntologyFile SymbItems SymbMapItems where
     parse_symb_items OWL = Just symbItems
     parse_symb_map_items OWL = Just symbMapItems
 
-instance Sentences OWL Sentence Sign OWLMorphism Entity where
-    map_sen OWL = const return
+instance Sentences OWL Axiom Sign OWLMorphism Entity where
+    map_sen OWL = const return -- this is still wrong for renamings!
     print_named OWL namedSen =
         pretty (sentence namedSen) <>
           if isAxiom namedSen then empty else space <> text "%implied"
     sym_of OWL = symOf
 
-instance StaticAnalysis OWL OntologyFile Sentence
+instance StaticAnalysis OWL OntologyFile Axiom
                SymbItems SymbMapItems
                Sign
                OWLMorphism
                Entity RawSymb where
-{- these functions are be implemented in OWL.StaticAna and OWL.Sign: -}
+{- these functions are implemented in OWL.StaticAna and OWL.Sign. -}
       basic_analysis OWL = Just basicOWLAnalysis
       stat_symb_items OWL = return . statSymbItems
       stat_symb_map_items OWL = statSymbMapItems
@@ -93,7 +93,7 @@ instance StaticAnalysis OWL OntologyFile Sentence
          theory_to_taxonomy OWL = convTaxo
 -}
 
-instance Logic OWL OWLSub OntologyFile Sentence SymbItems SymbMapItems
+instance Logic OWL OWLSub OntologyFile Axiom SymbItems SymbMapItems
                Sign
                OWLMorphism Entity RawSymb ProofTree where
     --     stability _ = Testing
@@ -122,8 +122,8 @@ instance SemiLatticeWithTop OWLSub where
 instance SublogicName OWLSub where
     sublogicName = sl_name
 
-instance MinSublogic OWLSub Sentence where
-    minSublogic = sl_basic_spec
+instance MinSublogic OWLSub Axiom where
+    minSublogic = sl_ax
 
 instance MinSublogic OWLSub OWLMorphism where
     minSublogic = sl_mor
