@@ -61,7 +61,7 @@ instance Syntax OWL OntologyFile SymbItems SymbMapItems where
     parse_symb_map_items OWL = Just symbMapItems
 
 instance Sentences OWL Axiom Sign OWLMorphism Entity where
-    map_sen OWL = const return -- this is still wrong for renamings!
+    map_sen OWL = mapSen
     print_named OWL namedSen =
         pretty (sentence namedSen) <>
           if isAxiom namedSen then empty else space <> text "%implied"
