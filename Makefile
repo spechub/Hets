@@ -172,6 +172,8 @@ hs_der_files += $(hs_clean_files)
 
 TESTDIRS += ToHaskell
 TESTTARGETFILES += Haskell/hana.hs Haskell/h2h.hs Haskell/h2hf.hs
+else
+PFE_FLAGS =
 endif
 # end of programatica stuff
 
