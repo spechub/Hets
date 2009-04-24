@@ -33,7 +33,7 @@ import qualified Data.Set as Set
 import Data.Graph.Inductive.Graph as Graph
 
 import Common.Lib.Graph as Tree
--- import Common.Amalgamate for now
+import Common.Amalgamate --for now
 import Common.ExtSign
 import Common.Result
 import Common.LogicT
@@ -46,21 +46,24 @@ import Logic.Coerce
 import Static.GTheory
 import Comorphisms.LogicGraph
 
+import Debug.Trace
+
 weakly_amalgamable_colimit :: StaticAnalysis lid
         basic_spec sentence symb_items symb_map_items
         sign morphism symbol raw_symbol
     => lid -> Tree.Gr sign (Int, morphism)
            -> Result (sign, Map.Map Int morphism)
 weakly_amalgamable_colimit l diag = do
-          (sig, sink) <- signature_colimit l diag
+          (sig, sink) <- trace (show l ++ (show $ length $ nodes diag)) $
+            signature_colimit l diag
           return (sig, sink)
 -- until amalgamability check is fixed, just return a colimit
-          -- amalgCheck <- ensures_amalgamability l
+ --          amalgCheck <- ensures_amalgamability l
 --             ([Cell, ColimitThinness], diag, Map.toList sink, Graph.empty)
 --           case amalgCheck of
 --             NoAmalgamation s -> fail $ "failed amalgamability test " ++ s
 --             DontKnow s -> fail $ "amalgamability test returns DontKnow: "++ s
---             _ -> return (sig, sink)
+--             _ -> trace "amalgamability test passed " $ return (sig, sink)
 
 -- | Grothendieck diagrams
 type GDiagram = Gr G_theory (Int, GMorphism)
@@ -121,9 +124,11 @@ isConnected graph = let
      [] -> avail
      n:ns -> let
        avail1 = Map.insert n False avail
-       nbs = filter ((Map.!) avail) $ neighbors graph n
+       nbs = filter (\x -> Map.findWithDefault (error "isconnected") x avail)
+             $ neighbors graph n
       in bfs (ns++nbs) avail1
-  in filter ((Map.!) (bfs [root] availNodes)) nodeList == []
+  in filter (\x -> Map.findWithDefault (error "iscon 2") x
+                   (bfs [root] availNodes)) nodeList == []
 
 -- | checks whether the graph is thin
 
@@ -189,7 +194,9 @@ initDescList graph =  let
       _ -> let
             nList'' = concat $
                       map (\y -> filter (\x -> if x `elem` Map.keys avail
-                                                then avail Map.! x
+                                                then
+                                               Map.findWithDefault (error "iDL")
+                                                x avail
                                                 else True ) $
                                  filter (\x -> x /= y) $
                                  pre graph y) nList
@@ -231,28 +238,32 @@ maxBounds funDesc n1 n2 = let
 
 --  dijsktra algorithm for finding the the shortest path between two nodes
 dijkstra :: GDiagram -> Node -> Node -> Result GMorphism
-dijkstra graph source target = let
+dijkstra graph source target = do
+ let
   dist = Map.insert source 0 $ Map.fromList $
          zip (nodes graph) $ repeat $  2 * (length $ edges graph)
   prev = if source == target then Map.insert source source Map.empty
-         else Map.empty --Map.empty
+         else Map.empty
   q = nodes graph
   com = case lab graph source of
     Nothing -> Map.empty --shouldnt be the case
     Just gt -> Map.insert source (ide $ signOf gt) Map.empty
-  (nodeList, com1) = mainloop graph source target q dist prev com
   extractMin queue dMap = let
    u =  head $
-     filter (\x -> (Map.!) dMap x == (minimum $ map ((Map.!)dMap) queue)) queue
+     filter (\x -> Map.findWithDefault (error "dijkstra") x dMap ==
+             (minimum $
+               map (\x1 -> Map.findWithDefault (error "dijkstra") x1 dMap)
+               queue))
+               queue
    in ( Set.toList $ Set.difference (Set.fromList queue) (Set.fromList [u]) , u)
   updateNeighbors d p c u gr = let
     outEdges = out gr u
     upNeighbor dMap pMap cMap uNode edgeList = case edgeList of
      [] -> (dMap, pMap, cMap)
      (_, v, (_, gmor)):edgeL  -> let
-       alt =  (Map.!) dMap uNode + 1
+       alt = ( Map.findWithDefault (error "dijkstra") uNode dMap) + 1
       in
-        if (alt >= (Map.!) dMap v) then
+        if (alt >= Map.findWithDefault (error "dijsktra") v dMap) then
           upNeighbor dMap pMap cMap uNode edgeL
         else let
       d1 = Map.insert v alt dMap
@@ -264,11 +275,16 @@ dijkstra graph source target = let
   mainloop gr sn tn qL d p c = let
    (q1, u) =  extractMin qL d
    (d1, p1, c1) = updateNeighbors d p c u gr
-   in if (u == tn) then shortPath gr sn p1 c1 [] tn
+   in if (u == tn) then shortPath sn p1 c1 [] tn
      else mainloop gr sn tn q1 d1 p1 c1
-  shortPath gr sn p1 c s u = if (Map.!) p1 u == sn then (u:s, c)
-                               else shortPath gr sn p1 c (u:s) $ (Map.!) p1 u
- in foldM comp ((Map.!) com1 source) . map ((Map.!) com1) $ nodeList
+  shortPath sn p1 c s u =
+   if not $ u `elem` Map.keys p1 then fail "path not found"
+    else let
+    x = Map.findWithDefault (error $ show u) u p1 in
+    if x == sn then return (u:s, c)
+     else shortPath sn p1 c (u:s) x
+ (nodeList, com1) <- mainloop graph source target q dist prev com
+ foldM comp ((Map.!) com1 source) . map ((Map.!) com1) $ nodeList
 
 --  builds the arrows from the nodes of the original graph
 --  to the unique maximal node of the obtained graph

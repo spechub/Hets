@@ -33,6 +33,9 @@ import qualified Data.Map as Map
 import Data.List (nub)
 import Control.Monad
 
+import Logic.Grothendieck
+import Static.GTheory
+
 normalFormRule :: DGRule
 normalFormRule = DGRule "NormalForm"
 
@@ -95,7 +98,8 @@ normalFormDG libEnv dgraph = foldM (\ dg (node, nodelab) ->
         let gd = insNode (node, dgn_theory nodelab) empty
             g0 = Map.fromList [(node, node)]
             (diagram, g) = computeDiagram dg [node] (gd, g0)
-            Result ds res = gWeaklyAmalgamableCocone diagram
+            fsub = finalSubcateg diagram
+            Result ds res = gWeaklyAmalgamableCocone fsub
             es = map (\ d -> if isErrorDiag d then d { diagKind = Warning }
                              else d) ds
         appendDiags es
@@ -103,7 +107,26 @@ normalFormDG libEnv dgraph = foldM (\ dg (node, nodelab) ->
           Nothing -> warning dg
                 ("cocone failure for " ++ getDGNodeName nodelab
                  ++ " (node " ++ shows node ")") nullRange
-          Just (sign, mmap) ->
+          Just (sign, mmap) -> do
+            -- we don't know that node is in fsub
+            -- if it's not, we have to find a tip accessible from node
+            -- and dgn_sigma = edgeLabel(node, tip); mmap (g Map.! tip)
+            morNode <- if node `elem` nodes fsub then let
+                        gn = Map.findWithDefault (error "gn") node g
+                        phi = Map.findWithDefault (error "mor") gn mmap
+                       in return phi else let
+                          leaves = filter (\x -> outdeg fsub x == 0) $
+                                     nodes fsub
+                          paths =  map (\(x, Result _ (Just f)) -> (x,f)) $
+                                      filter (\(_,y) ->
+                                               maybeResult y /= Nothing)
+                                      $ map (\x ->
+                                              (x, dijkstra diagram node x)) $
+                                        leaves
+                                          in
+                            case paths of
+                             [] -> fail "node should reach a tip"
+                             (xn, xf):_ -> comp xf $ mmap Map.! xn
             let nfNode = getNewNodeDG dg -- new node for normal form
                 NodeName tt ss _ = dgn_name nodelab
                           -- the label of the new node
@@ -112,7 +135,7 @@ normalFormDG libEnv dgraph = foldM (\ dg (node, nodelab) ->
                   (DGNormalForm node) sign)
                 newLab = nodelab -- the new label for node
                      { dgn_nf = Just nfNode,
-                       dgn_sigma = Just $ mmap Map.! (g Map.! node)
+                       dgn_sigma = Just morNode
                      }
             -- add the nf to the label of node
                 chLab = SetNodeLab nodelab (node, newLab)
@@ -125,9 +148,9 @@ normalFormDG libEnv dgraph = foldM (\ dg (node, nodelab) ->
                                               })
                 insStrMor = map (\ (x, f) -> InsertEdge $ makeEdge x nfNode f)
                   $ nub $ map (\ (x, y) -> (g Map.! x, y))
-                  $ Map.toList mmap
+                  $ (node, morNode):Map.toList mmap
                 allChanges = chLab : insNNF : insStrMor
-            in return $ changesDGH dg allChanges
+            trace (show $ length insStrMor)$ return $ changesDGH dg allChanges
   else return dg) dgraph $ topsortedNodes dgraph -- only change relevant nodes
 
 {- | computes the diagram associated to a node N in a development graph,
@@ -164,3 +187,32 @@ computeDiagram dgraph nodeList (gd, g) =
        gd' = insEdges newLEdges $ insNodes newLNodes gd
        g' = Map.union g g0
    in computeDiagram dgraph (map fst nodeIds) (gd', g')
+
+finalSubcateg :: GDiagram -> GDiagram
+finalSubcateg graph = let
+    leaves = filter (\(n,_) -> outdeg graph n == 0)$ labNodes graph
+ in buildGraph graph (map fst leaves) leaves [] $ nodes graph
+
+buildGraph :: GDiagram -> [Node]
+           -> [LNode G_theory]
+           -> [LEdge (Int, GMorphism)]
+           -> [Node]
+           -> GDiagram
+buildGraph oGraph leaves nList eList nodeList =
+ case nodeList of
+  [] -> mkGraph nList eList
+  n:nodeList' ->
+     case outdeg oGraph n of
+      1 -> buildGraph oGraph leaves nList eList nodeList'
+       -- the node is simply removed
+      0 -> buildGraph oGraph leaves nList eList nodeList'
+       -- the leaves have already been added to nList
+      _ -> let
+            Just l = lab oGraph n
+            nList' = (n, l):nList
+            eList' = map ( \(x, Result _ (Just y)) -> (n,x,(1::Int,y))) $
+                     filter (\x -> maybeResult (snd x) /= Nothing)
+                     $ map (\x -> (x, dijkstra oGraph n x)) leaves
+           in buildGraph oGraph leaves nList' (eList ++ eList') nodeList'
+       -- branch, must add n to the nList and edges in eList
+

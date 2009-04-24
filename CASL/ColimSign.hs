@@ -28,7 +28,7 @@ import Data.Graph.Inductive.Graph as Graph
 import qualified Data.Map as Map
 import qualified Data.Set as Set
 import Data.List
-import Logic.Logic(EndoMap)
+import Logic.Logic
 
 extCASLColimit :: Gr () (Int, ()) ->
                   Map.Map Int CASLMor ->
@@ -36,38 +36,45 @@ extCASLColimit :: Gr () (Int, ()) ->
 extCASLColimit graph _ = ((),Map.fromList $ zip (nodes graph) (repeat ()))
 
 --central function for computing CASL signature colimits
-signColimit :: Gr (Sign f e)(Int,Morphism f e m) ->
+signColimit :: (Category (Sign f e) (Morphism f e m)) =>
+               Gr (Sign f e)(Int,Morphism f e m) ->
                ( Gr e (Int, m) ->
                  Map.Map Int (Morphism f e m)
                  -> (e, Map.Map Int m)
                )
                ->
                (Sign f e, Map.Map Int (Morphism f e m))
-signColimit graph extColimit = let
- getSortMap (x, phi) = (x,sort_map phi)
- sortGraph = emap getSortMap $ nmap sortSet graph
- (setSort0, funSort0) = computeColimitSet sortGraph
- (setSort, funSort) = renameSorts (setSort0, funSort0)
- sigmaSort = (emptySign $ error "err"){sortSet=setSort}
- phiSort = Map.fromList
-   $ map (\ (node, s)-> (node, (embedMorphism (error "err") s sigmaSort)
-           {sort_map = funSort Map.! node}))
-   $ labNodes graph
- relS = computeSubsorts graph funSort
- sigmaRel = sigmaSort{sortRel = relS}
- phiRel = Map.map (\ phi -> phi{mtarget = sigmaRel}) phiSort
- (sigmaOp, phiOp) = computeColimitOp graph sigmaRel phiRel
- (sigmaPred, phiPred) = computeColimitPred graph sigmaOp phiOp
- (sigAssoc, phiAssoc) = colimitAssoc graph sigmaPred phiPred
- extGraph = emap (\(i, phi) -> (i, extended_map phi)) $ nmap extendedInfo graph
- (extInfo, extMaps) = extColimit extGraph phiAssoc
- sigmaExt = sigAssoc{extendedInfo = extInfo}
- phiExt = Map.mapWithKey
-    (\ node phi -> phi{mtarget = sigmaExt,
+signColimit graph extColimit =
+ case labNodes graph of
+  [] -> error "empty graph"
+  (n,sig):[] -> (sig, Map.fromAscList[(n, ide sig)])
+  _ -> let
+   getSortMap (x, phi) = (x,sort_map phi)
+   sortGraph = emap getSortMap $ nmap sortSet graph
+   (setSort0, funSort0) = computeColimitSet sortGraph
+   (setSort, funSort) = renameSorts (setSort0, funSort0)
+   sigmaSort = (emptySign $ error "err"){sortSet=setSort}
+   phiSort = Map.fromList
+    $ map (\ (node, s)-> (node, (embedMorphism (error "err") s sigmaSort)
+           {sort_map = Map.findWithDefault (error "sort_map") node funSort}))
+    $ labNodes graph
+   relS = computeSubsorts graph funSort
+   sigmaRel = sigmaSort{sortRel = relS}
+   phiRel = Map.map (\ phi -> phi{mtarget = sigmaRel}) phiSort
+   (sigmaOp, phiOp) = computeColimitOp graph sigmaRel phiRel
+   (sigmaPred, phiPred) = computeColimitPred graph sigmaOp phiOp
+   (sigAssoc, phiAssoc) = colimitAssoc graph sigmaPred phiPred
+   extGraph = emap (\(i, phi) -> (i, extended_map phi)) $
+              nmap extendedInfo graph
+   (extInfo, extMaps) = extColimit extGraph phiAssoc
+   sigmaExt = sigAssoc{extendedInfo = extInfo}
+   phiExt = Map.mapWithKey
+     (\ node phi -> phi{mtarget = sigmaExt,
                        sort_map = Map.filterWithKey (/=) $ sort_map phi,
-                       extended_map = (Map.!) extMaps node})
-    phiAssoc
- in (sigmaExt, phiExt)
+                       extended_map = Map.findWithDefault (error "ext_map")
+                                         node extMaps})
+     phiAssoc
+   in (sigmaExt, phiExt)
 
 -- method for adding the number as suffix of the id it pairs
 addSuffixToId :: (Id, Node) -> Id
@@ -84,19 +91,27 @@ renameSorts (set, fun) = let
    p:ps -> if length p == 1 then
      -- a single element with this name,it can be kept
     let s2 = Set.insert (fst $ head p) s1
-        updateF node = Map.union ((Map.!) f1 node) $
+        updateF node = Map.union (Map.findWithDefault (error "f1") node f1) $
                        Map.fromList $ map (\x -> (x, fst $ head p)) $
-                       filter (\x -> (Map.!)((Map.!) f0 node) x == head p) $
-                       Map.keys $ (Map.!) f0 node
+                       filter (\x -> Map.findWithDefault (error "fo(node)") x
+                                      (Map.findWithDefault (error "f0") node f0)
+                                     == head p) $
+                       Map.keys $ Map.findWithDefault (error "f0")
+                                   node f0
         f2 = Map.fromList $ zip (Map.keys f0) $ map updateF $ Map.keys f0
     in namePartitions ps f0 s2 f2
                 else
      --several elements with same name, the number is added at the end
     let s2 = Set.union s1 $ Set.fromList $ map addSuffixToId p
-        updateF node = Map.union ((Map.!) f1 node) $ Map.fromList $
-             map ( \x -> (x, addSuffixToId $ (Map.!)((Map.!) f0 node) x )) $
-             filter (\x -> ((Map.!)((Map.!) f0 node) x) `elem` p) $
-             Map.keys $ (Map.!) f0 node
+        updateF node = Map.union (Map.findWithDefault (error "f1") node f1) $
+             Map.fromList $
+             map ( \x -> (x, addSuffixToId $
+                                  Map.findWithDefault (error "addSuffixToId") x
+                                  (Map.findWithDefault (error "f0") node f0))) $
+             filter (\x -> (Map.findWithDefault (error "fo(node)") x
+                           (Map.findWithDefault (error "f0") node f0))
+                           `elem` p) $
+             Map.keys $ Map.findWithDefault (error "f0") node f0
         f2 = Map.fromList $ zip (Map.keys f0) $ map updateF $ Map.keys f0
     in namePartitions ps f0 s2 f2
  in namePartitions (partList set) fun (Set.empty) $
@@ -126,11 +141,15 @@ subsorts listNode graph rels colimF rel =
   [] -> rel
   x:xs -> case lab graph x of
     Nothing -> subsorts xs graph rels colimF rel
-    Just set -> subsorts xs graph rels colimF (Rel.transClosure $
-             Rel.union rel (Rel.fromList [ ((Map.!)((Map.!) colimF x) m ,
-                                           (Map.!)((Map.!) colimF x) n)
+    Just set -> let
+                  f = Map.findWithDefault (error "subsorts") x colimF
+                in subsorts xs graph rels colimF (Rel.transClosure $
+             Rel.union rel (Rel.fromList [ (
+                             Map.findWithDefault (error "f(m)") m f,
+                             Map.findWithDefault (error "f(n)") n f
+                                           )
               | m <- Set.elems set, n <- Set.elems set,
-                Rel.member m n ((Map.!) rels x) ]))
+                Rel.member m n (Map.findWithDefault (error "rels(x)") x rels)]))
 
 -- CASL signatures colimit on operation symbols
 
@@ -167,7 +186,7 @@ computeColimitOp graph sigmaRel phiSRel = let
  sigmaOps = sigmaRel{opMap = colim1}
  phiOps = Map.mapWithKey
           (\n phi -> phi{op_map =
-                         Map.findWithDefault (error "ops") n morMap3})
+                         Map.findWithDefault (error "op_map") n morMap3})
           phiSRel
  in (sigmaOps, phiOps)
 
@@ -232,7 +251,8 @@ buildOvrlAtNode graph' colim morMap ovrl names totalF nodeList =
        parts = leqClasses equivF oSet
        addParts rel equivList =
          foldl (\(r, f) l -> let l1 = map (\x -> Map.findWithDefault (x,n) x $
-                                            morMap Map.! n) l
+                                            Map.findWithDefault
+                                              (error "morMap(n)") n morMap) l
                         in case l1 of
                    [] -> error "addParts"
                    x:xs -> let
@@ -255,21 +275,27 @@ assignName :: (Set.Set ((Id, OpType), Int), Int) -> [Id] ->
               (Id, [Id])
 assignName (opSet,idx) givenNames namesFun =
  let opSetNames = Set.fold (\x f -> Map.unionWith (\a b -> a + b) f
-                                                 (namesFun Map.! x))
+                                                 ( Map.findWithDefault
+                                                    (error "namesFun") x
+                                                     namesFun))
                            Map.empty opSet
      availNames = filter (\x -> not $ x `elem` givenNames) $
                   Map.keys opSetNames
  in case availNames of
      [] -> let
        -- must generate name with the most frequent name idx and an origin
-        sndOrd x y= compare (opSetNames Map.! x) (opSetNames Map.! y)
+        sndOrd x y= compare
+                      (Map.findWithDefault (error "assignName") x opSetNames)
+                      (Map.findWithDefault (error "assignName") y opSetNames)
         avail' = sortBy sndOrd $ Map.keys opSetNames
         idN = head avail'
        in (appendNumber idN idx, givenNames)
      _ -> -- must take the most frequent available name and give it to the class
           -- and this name becomes given
           let
-         sndOrd x y= compare (opSetNames Map.! x) (opSetNames Map.! y)
+         sndOrd x y = compare
+                       (Map.findWithDefault (error "assignName") x opSetNames)
+                       (Map.findWithDefault (error "assignName") y opSetNames)
          avail' = sortBy sndOrd availNames
          idN = head $ reverse avail'
         in (idN, idN:givenNames)
@@ -292,14 +318,16 @@ nameSymbols graph morMap phi names ovrl totalOps = let
                              ((oldId,ot{opKind = Partial}), i)
                              totalOps
                            then Total else Partial
-                in mapOpType (sort_map $ phi Map.! i) ot{opKind = oKind'}) $
+                 imor = Map.findWithDefault (error "imor") i phi
+                in mapOpType (sort_map imor) ot{opKind = oKind'}) $
               set
     renameSymbols n f = let
         Just opSyms = lab graph n
         setKeys = filter (\x -> let y = Map.findWithDefault (x, n) x f
                                 in Set.member y set) $ Set.toList opSyms
         updateAtKey (i,o) ((i', o'), n') = let
-          o'' = mapOpType (sort_map $ phi Map.! n) o'
+          nmor = Map.findWithDefault (error "nmor") n phi
+          o'' = mapOpType (sort_map nmor) o'
           oKind = if Map.findWithDefault False
                              ((i',o'{opKind = Partial}), n')
                              totalOps
@@ -338,7 +366,7 @@ computeColimitPred graph sigmaOp phiOp = let
   sigmaPreds = sigmaOp{predMap = colim1}
   phiPreds = Map.mapWithKey
           (\n phi -> phi{pred_map =
-                         Map.findWithDefault (error "ops") n morMap2})
+                         Map.findWithDefault (error "pred_map") n morMap2})
           phiOp
  in (sigmaPreds, phiPreds)
 
@@ -398,9 +426,10 @@ buildPOvrlAtNode graph' colim morMap ovrl names nodeList =
                        names $ Set.toList pSet
        equivP (id1, pt1) (id2, pt2) = (id1 == id2) && leqP sig pt1 pt2
        parts = leqClasses equivP pSet
+       nmor = Map.findWithDefault (error "buildAtNode") n morMap
        addParts rel equivList =
-         foldl (\r l -> let l1 = map (\x -> Map.findWithDefault (x,n) x $
-                                            morMap Map.! n) l
+         foldl (\r l -> let l1 = map (\x ->
+                                  Map.findWithDefault (x,n) x nmor) l
                         in case l1 of
                    [] -> error "addParts"
                    x:xs -> let
@@ -418,7 +447,7 @@ assignPName :: (Set.Set ((Id, PredType), Int), Int) -> [Id] ->
               (Id, [Id])
 assignPName (pSet,idx) givenNames namesFun =
  let pSetNames = Set.fold (\x f -> Map.unionWith (\a b -> a + b) f
-                                                 (namesFun Map.! x))
+                            (Map.findWithDefault (error "pname") x namesFun))
                            Map.empty pSet
      availNames = filter (\x -> not $ x `elem` givenNames) $
                   Map.keys pSetNames
