@@ -29,12 +29,15 @@ import Common.LibName
 import Common.Result
 
 import Data.Graph.Inductive.Graph as Graph
+import Common.Lib.Graph
 import qualified Data.Map as Map
 import Data.List (nub)
 import Control.Monad
 
 import Logic.Grothendieck
 import Static.GTheory
+
+import Debug.Trace
 
 normalFormRule :: DGRule
 normalFormRule = DGRule "NormalForm"
@@ -118,11 +121,12 @@ normalFormDG libEnv dgraph = foldM (\ dg (node, nodelab) ->
                           leaves = filter (\x -> outdeg fsub x == 0) $
                                      nodes fsub
                           paths =  map (\(x, Result _ (Just f)) -> (x,f)) $
-                                      filter (\(_,y) ->
-                                               maybeResult y /= Nothing)
-                                      $ map (\x ->
+                                      --filter (\(_,y) ->
+                                      --         maybeResult y /= Nothing)
+                                      map (\x ->
                                               (x, dijkstra diagram node x)) $
-                                        leaves
+                                      filter (\x -> node `elem` subgraph
+                                                      diagram x) leaves
                                           in
                             case paths of
                              [] -> fail "node should reach a tip"
@@ -191,7 +195,21 @@ computeDiagram dgraph nodeList (gd, g) =
 finalSubcateg :: GDiagram -> GDiagram
 finalSubcateg graph = let
     leaves = filter (\(n,_) -> outdeg graph n == 0)$ labNodes graph
- in buildGraph graph (map fst leaves) leaves [] $ nodes graph
+ in -- trace (show $ map fst leaves)$
+--     trace (show$ edges graph)$
+    buildGraph graph (map fst leaves) leaves [] $ nodes graph
+
+subgraph :: Gr a b -> Node -> [Node]
+subgraph graph node = let
+   descs nList descList =
+    case nList of
+      [] -> descList
+      _ -> let
+             newDescs = concatMap (\x -> pre graph x) nList
+             nList' = filter (\x -> not $ x `elem` nList) newDescs
+             descList' = nub $ descList ++ newDescs
+           in descs nList' descList'
+ in descs [node] []
 
 buildGraph :: GDiagram -> [Node]
            -> [LNode G_theory]
@@ -210,9 +228,10 @@ buildGraph oGraph leaves nList eList nodeList =
       _ -> let
             Just l = lab oGraph n
             nList' = (n, l):nList
+            accesLeaves = filter (\x -> n `elem` subgraph oGraph x) leaves
             eList' = map ( \(x, Result _ (Just y)) -> (n,x,(1::Int,y))) $
-                     filter (\x -> maybeResult (snd x) /= Nothing)
-                     $ map (\x -> (x, dijkstra oGraph n x)) leaves
+                     --filter (\x -> maybeResult (snd x) /= Nothing) $
+                     map (\x -> (x, dijkstra oGraph n x)) accesLeaves
            in buildGraph oGraph leaves nList' (eList ++ eList') nodeList'
        -- branch, must add n to the nList and edges in eList
 
