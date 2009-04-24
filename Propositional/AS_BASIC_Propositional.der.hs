@@ -18,8 +18,6 @@ Definition of abstract syntax for propositional logic
 
 module Propositional.AS_BASIC_Propositional
     ( FORMULA (..)             -- datatype for Propositional Formulas
-    , is_True_atom             -- True?
-    , is_False_atom            -- False?
     , BASIC_ITEMS (..)         -- Items of a Basic Spec
     , BASIC_SPEC (..)          -- Basic Spec
     , SYMB_ITEMS (..)          -- List of symbols
@@ -52,35 +50,24 @@ data BASIC_ITEMS =
     deriving Show
 
 -- | Datatype for propositional formulas
-data FORMULA = Negation FORMULA Id.Range
-             -- pos: not
-             | Conjunction [FORMULA] Id.Range
-             -- pos: "/\"s
-             | Disjunction [FORMULA] Id.Range
-             -- pos: "\/"s
-             | Implication FORMULA FORMULA Id.Range
-             -- pos: "=>"
-             | Equivalence FORMULA FORMULA Id.Range
-             -- pos: "<=>"
-             | True_atom Id.Range
-             -- pos: "True"
-             | False_atom Id.Range
-             -- pos: "False
-             | Predication Id.Token
-             -- pos: Propositional Identifiers
-               deriving (Show, Eq, Ord)
-
--- | Value of the true atom
--- True is always true -P
-is_True_atom :: FORMULA -> Bool
-is_True_atom (True_atom _) = True
-is_True_atom _             = False
-
--- | Value of the false atom
--- and False if always false
-is_False_atom :: FORMULA -> Bool
-is_False_atom (False_atom _) = False
-is_False_atom _              = False
+data FORMULA =
+    False_atom Id.Range
+    -- pos: "False
+  | True_atom Id.Range
+    -- pos: "True"
+  | Predication Id.Token
+    -- pos: Propositional Identifiers
+  | Negation FORMULA Id.Range
+    -- pos: not
+  | Conjunction [FORMULA] Id.Range
+    -- pos: "/\"s
+  | Disjunction [FORMULA] Id.Range
+    -- pos: "\/"s
+  | Implication FORMULA FORMULA Id.Range
+    -- pos: "=>"
+  | Equivalence FORMULA FORMULA Id.Range
+    -- pos: "<=>"
+    deriving (Show, Eq, Ord)
 
 data SYMB_ITEMS = Symb_items [SYMB] Id.Range
                   -- pos: SYMB_KIND, commas
@@ -133,14 +120,14 @@ printFormula frm =
         Equivalence _ _ _ -> False
         _ -> True
   in case frm of
+  False_atom _ -> text falseS
+  True_atom _ -> text trueS
+  Predication x -> pretty x
   Negation f _ -> notDoc <+> ppf isPrimForm f
   Conjunction xs _ -> sepByArbitrary andDoc $ map (ppf isPrimForm) xs
   Disjunction xs _ -> sepByArbitrary orDoc $ map (ppf isPrimForm) xs
   Implication x y _ -> ppf isJunctForm x <+> implies <+> ppf isJunctForm y
   Equivalence x y _ -> ppf isJunctForm x <+> equiv <+> ppf isJunctForm y
-  True_atom _ -> text trueS
-  False_atom _ -> text falseS
-  Predication x -> pretty x
 
 sepByArbitrary :: Doc -> [Doc] -> Doc
 sepByArbitrary d = fsep . prepPunctuate (d <> space)

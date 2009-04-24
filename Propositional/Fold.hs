@@ -107,9 +107,28 @@ simplify = foldFormula mapRecord
   , foldDisjunction = mkDisj
   , foldImplication = \ x y n -> case x of
     False_atom p -> True_atom p
-    _ -> if x == y then True_atom n else
-         if is_True_atom x then y else Implication x y n
+    _ -> if x == y then True_atom n else case x of
+           True_atom _ -> y
+           False_atom _ -> True_atom n
+           Negation z _ | z == y -> x
+           _ -> case y of
+             Negation z _ | z == x -> x
+             _ -> Implication x y n
   , foldEquivalence = \ x y n -> case compare x y of
-    LT -> Equivalence x y n
+    LT -> case y of
+      Negation z _ | x == z -> False_atom n
+      _ -> Equivalence x y n
     EQ -> True_atom n
-    GT -> Equivalence y x n }
+    GT -> case x of
+      Negation z _ | z == y -> False_atom n
+      _ -> Equivalence y x n }
+
+elimEquiv :: FORMULA -> FORMULA
+elimEquiv = foldFormula mapRecord
+  { foldEquivalence = \ x y n ->
+    Conjunction [Implication x y n, Implication y x n] n }
+
+elimImpl :: FORMULA -> FORMULA
+elimImpl = foldFormula mapRecord
+  { foldImplication = \ x y n ->
+    Disjunction [Negation x n, y] n }
