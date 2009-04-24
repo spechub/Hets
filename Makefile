@@ -173,6 +173,8 @@ hs_der_files += $(hs_clean_files)
 TESTDIRS += ToHaskell
 TESTTARGETFILES += Haskell/hana.hs Haskell/h2h.hs Haskell/h2hf.hs
 else
+# unset this variable from var.mk because the programatica sources
+# are needed to created our sources!
 PFE_FLAGS =
 endif
 # end of programatica stuff
