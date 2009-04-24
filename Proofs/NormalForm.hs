@@ -150,7 +150,7 @@ normalFormDG libEnv dgraph = foldM (\ dg (node, nodelab) ->
                   $ nub $ map (\ (x, y) -> (g Map.! x, y))
                   $ (node, morNode):Map.toList mmap
                 allChanges = chLab : insNNF : insStrMor
-            trace (show $ length insStrMor)$ return $ changesDGH dg allChanges
+            return $ changesDGH dg allChanges
   else return dg) dgraph $ topsortedNodes dgraph -- only change relevant nodes
 
 {- | computes the diagram associated to a node N in a development graph,
