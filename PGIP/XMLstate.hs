@@ -19,12 +19,7 @@ import Common.Utils (getEnvDef)
 import System.IO (Handle)
 import Text.XML.Light.Types
 import Text.XML.Light.Input
-
-
-genQName :: String -> QName
-genQName str =
-   let qnameVal = blank_name
-   in qnameVal { qName = str }
+import PGIP.MarkPgip
 
 genPgipElem :: String -> Content
 genPgipElem str =
@@ -108,8 +103,8 @@ data CMDL_PgipState = CMDL_PgipState {
                     }
 
 -- | Generates an empty CMDL_PgipState
-genCMDL_PgipState :: Bool -> Handle -> Handle -> IO CMDL_PgipState
-genCMDL_PgipState swXML h_in h_out =
+genCMDL_PgipState :: Bool -> Handle -> Handle -> Int -> IO CMDL_PgipState
+genCMDL_PgipState swXML h_in h_out timeOut=
   do
    pgId <- genPgipID
    return CMDL_PgipState {
@@ -124,7 +119,7 @@ genCMDL_PgipState swXML h_in h_out =
      stop               = False,
      resendMsgIfTimeout = True,
      useXML             = swXML,
-     maxWaitTime        = 2000
+     maxWaitTime        = timeOut
      }
 
 -- | Generates the id of the session between Hets and the Broker
@@ -198,6 +193,7 @@ data CMDL_XMLcommands =
  | XML_CloseGoal String
  | XML_GiveUpGoal String
  | XML_Unknown String
+ | XML_ParseScript String
  | XML_Undo
  | XML_Redo
  | XML_Forget String
@@ -282,9 +278,9 @@ parseXMLTree  xmltree acc
        "parsescript"  ->
            do
             let cnt = getTextData info
-            parseXMLTree ls ((XML_Execute cnt):acc)
-       _              ->
-           parseXMLTree ls acc
+            parseXMLTree ls ((XML_ParseScript cnt):acc)
+       _              -> do
+           parseXMLTree ((elContent info)++ls) acc
      _: ls -> parseXMLTree ls acc
 
 
@@ -296,7 +292,9 @@ parseMsg st input
  = do
     case useXML st of
       True  ->
-        parseXMLTree (parseXML input) []
+       do 
+        dt <- parseXMLTree (parseXML input) []
+        return dt
       False -> return $ concatMap(\x -> case words x of
                                          [] -> []
                                          _ -> [XML_Execute x]) $ lines input

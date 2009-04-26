@@ -16,6 +16,7 @@ where
 import Network
 import System.IO
 
+import PGIP.MarkPgip
 import PGIP.XMLstate
 import CMDL.Interface
 import CMDL.DataTypes
@@ -131,11 +132,15 @@ communicationStep pgD st =
    case tmp of
     Nothing -> case resendMsgIfTimeout pgD of
                 True -> do
-                         -- appendFile "/tmp/razvan.txt" ("Output : "++
-                         --                      (theMsg pgD) ++ "\n")
-                         hPutStrLn (hout pgD) $ theMsg pgD
-                         hFlush $ hout pgD
-                         communicationStep pgD st
+                         let nwpgD = addToMsg (showContent $ xmlContent pgD)
+                                          [] pgD {
+                                              seqNb = (seqNb pgD) +1
+                                              }
+                         appendFile "/tmp/razvan.txt" ("Output : "++
+                                               (theMsg nwpgD) ++ "\n")
+                         hPutStrLn (hout nwpgD) $ theMsg nwpgD
+                         hFlush $ hout nwpgD
+                         communicationStep nwpgD st
                 False -> communicationStep pgD st
     Just smtxt -> do
                    appendFile "/tmp/razvan.txt" "Processing input"
@@ -144,7 +149,9 @@ communicationStep pgD st =
                    let nwPgipSt = case useXML pgD of
                                    True ->
                                     addToMsg (showContent $ xmlContent nwPgD)
-                                                     [] nwPgD
+                                                     [] nwPgD {
+                                                       seqNb = (seqNb nwPgD)+1
+                                                       }
                                    False -> nwPgD
                    appendFile "/tmp/razvan.txt" ("Output : "++ (theMsg pgD)++
                                                        "\n")
@@ -160,7 +167,7 @@ cmdlListen2Port swXML portNb
     putStrLn("Starting hets. Listen to port "++(show portNb))
     servSock <- listenOn $ PortNumber (fromIntegral portNb)
     (servH,_,_) <- accept servSock
-    pgData <- genCMDL_PgipState swXML servH servH
+    pgData <- genCMDL_PgipState swXML servH servH 1000
     let pgD = case swXML of
                True -> addReadyXml
                        $ genHandShake
@@ -181,7 +188,7 @@ cmdlConnect2Port swXML hostName portNb
  = do
     putStrLn ("Starting hets. Connecting to port "++(show portNb))
     sockH <- connectTo hostName $ PortNumber (fromIntegral portNb)
-    pgData <- genCMDL_PgipState swXML sockH sockH
+    pgData <- genCMDL_PgipState swXML sockH sockH 1000
     let pgD = case swXML of
                True -> addReadyXml
                        $ genHandShake
@@ -225,7 +232,7 @@ readPacket acc hf
 cmdlRunXMLShell :: IO CMDL_State
 cmdlRunXMLShell
  = do
-    pgData <- genCMDL_PgipState True stdin stdout
+    pgData <- genCMDL_PgipState True stdin stdout (-1)
     let pgD = addReadyXml
               $ genHandShake
               $ resetMsg [] pgData
@@ -266,8 +273,9 @@ processCmds :: [CMDL_XMLcommands] -> CMDL_State -> CMDL_PgipState ->
               IO (CMDL_State, CMDL_PgipState)
 processCmds cmds state pgipState
  = do
-    let pgipSt = pgipState {resendMsgIfTimeout = False,
-                            maxWaitTime = 2000}
+    let pgipSt = pgipState --{resendMsgIfTimeout = False,
+                           -- maxWaitTime = 2000}
+--    putStrLn $ show state
     case cmds of
      [] -> case useXML pgipSt of
             True -> return (state, addReadyXml pgipSt )
@@ -398,6 +406,8 @@ processCmds cmds state pgipState
      (XML_CloseFile _) :l -> do
                   processCmds l emptyCMDL_State (genAnswer "File closed" []
                                                        pgipSt)
+     (XML_ParseScript str) : _ -> do
+                 return (state,addToContent pgipSt (addPgipMarkUp str) )
      (XML_LoadFile str) : l -> do
                   appendFile "/tmp/razvan.txt" ("Output : "++(theMsg pgipSt)
                                                           ++ "\n")
