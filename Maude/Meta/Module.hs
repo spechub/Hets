@@ -5,8 +5,8 @@ import Maude.Meta.Term
 
 import Data.Set (Set)
 import Data.Typeable (Typeable)
-
 import qualified Data.Set as Set
+
 
 {-
 *** subsort declarations

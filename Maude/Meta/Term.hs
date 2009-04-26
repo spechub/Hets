@@ -4,6 +4,7 @@ import Maude.Meta.Qid
 
 import Data.Typeable (Typeable)
 
+
 {-
 *** types
   sorts Sort Kind Type .

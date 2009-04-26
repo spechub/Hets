@@ -5,17 +5,20 @@ module Maude.Meta.Qid (
     QidMap,
     qid,
     fromString,
-    toString
+    toString,
+    mapAsFunction
 ) where
 
 import Common.ATerm.Conversion
 import Common.DocUtils (Pretty)
 import qualified Common.Id as Id
 
-import Data.Map (Map)
 import Data.Set (Set)
+import Data.Map (Map)
 import Data.Typeable (Typeable)
 import qualified Data.Char as Char
+import qualified Data.Map as Map
+
 
 -- A Quoted Identifier
 newtype Qid = Qid { qid :: Id.Id }
@@ -74,3 +77,10 @@ escape char str
 collapse :: String -> String
 collapse ('`':'`':str) = '`':str
 collapse str = str
+
+
+--- Helper functions for the whole Metalevel
+
+-- Use a Map like a function, wich identity as the default operation.
+mapAsFunction :: (Ord a) => Map a a -> (a -> a)
+mapAsFunction mp name = Map.findWithDefault name name mp

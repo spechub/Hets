@@ -6,9 +6,8 @@ import Maude.Meta.Qid
 -- import Maude.Meta.Term
 import Maude.Meta.Module
 
+import Data.Set (Set)
 import qualified Data.Set as Set
-import qualified Data.Map as Map
--- import qualified Common.Lib.Rel as Rel
 
 
 class HasLabels a where
@@ -21,7 +20,7 @@ instance HasLabels Attr where
         Label l -> Set.singleton l
         _       -> Set.empty
     mapLabels mp attr = case attr of
-        Label l -> Label (mapToFunction mp l)
+        Label l -> Label (mapAsFunction mp l)
         _       -> attr
 
 
@@ -37,7 +36,7 @@ instance (HasLabels a, HasLabels b, HasLabels c) => HasLabels (a, b, c) where
     getLabels (a, b, c) = Set.union (getLabels a) (getLabels (b, c))
     mapLabels mp (a, b, c) = (mapLabels mp a, mapLabels mp b, mapLabels mp c)
 
-instance (Ord a, HasLabels a) => HasLabels (Set.Set a) where
+instance (Ord a, HasLabels a) => HasLabels (Set a) where
     getLabels = Set.fold (Set.union . getLabels) Set.empty
     mapLabels = Set.map . mapLabels
 
@@ -74,7 +73,3 @@ instance HasLabels Rule where
     mapLabels mp rl = case rl of
         Rl t1 t2 as    -> Rl t1 t2 (mapLabels mp as)
         Crl t1 t2 c as -> Crl t1 t2 c (mapLabels mp as)
-
-
-mapToFunction :: (Ord a) => Map.Map a a -> (a -> a)
-mapToFunction mp name = Map.findWithDefault name name mp

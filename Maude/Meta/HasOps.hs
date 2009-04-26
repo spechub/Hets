@@ -6,9 +6,8 @@ import Maude.Meta.Qid
 import Maude.Meta.Term
 import Maude.Meta.Module
 
+import Data.Set (Set)
 import qualified Data.Set as Set
-import qualified Data.Map as Map
--- import qualified Common.Lib.Rel as Rel
 
 
 class HasOps a where
@@ -21,7 +20,7 @@ instance HasOps Term where
         Term op ts -> Set.insert op (getOps ts)
         _          -> Set.empty
     mapOps mp term = case term of
-        Term op ts -> Term (mapToFunction mp op) (mapOps mp ts)
+        Term op ts -> Term (mapAsFunction mp op) (mapOps mp ts)
         _          -> term
 
 
@@ -37,7 +36,7 @@ instance (HasOps a, HasOps b, HasOps c) => HasOps (a, b, c) where
     getOps (a, b, c) = Set.union (getOps a) (getOps (b, c))
     mapOps mp (a, b, c) = (mapOps mp a, mapOps mp b, mapOps mp c)
 
-instance (Ord a, HasOps a) => HasOps (Set.Set a) where
+instance (Ord a, HasOps a) => HasOps (Set a) where
     getOps = Set.fold (Set.union . getOps) Set.empty
     mapOps = Set.map . mapOps
 
@@ -45,7 +44,7 @@ instance (Ord a, HasOps a) => HasOps (Set.Set a) where
 instance HasOps OpDecl where
     getOps = Set.singleton . op'name
     mapOps mp op = op {
-        op'name = mapToFunction mp (op'name op)
+        op'name = mapAsFunction mp (op'name op)
     }
 
 
@@ -91,7 +90,3 @@ instance HasOps Rule where
     mapOps mp rl = case rl of
         Rl t1 t2 as    -> Rl (mapOps mp t1) (mapOps mp t2) as
         Crl t1 t2 c as -> Crl (mapOps mp t1) (mapOps mp t2) (mapOps mp c) as
-
-
-mapToFunction :: (Ord a) => Map.Map a a -> (a -> a)
-mapToFunction mp name = Map.findWithDefault name name mp

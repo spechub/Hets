@@ -25,14 +25,15 @@ module Maude.Symbol (
 
 import Maude.Meta
 
-import qualified Data.Set as Set
-import qualified Data.Map as Map
+import Data.Set (Set)
+import Data.Map (Map)
 
 import Common.Id (Id)
 
-type Symbol    = Qid
-type SymbolSet = Set.Set Symbol
-type SymbolMap = Map.Map Symbol Symbol
+
+type Symbol = Qid
+type SymbolSet = Set Symbol
+type SymbolMap = Map Symbol Symbol
 
 toId :: Symbol -> Id
 toId = qid

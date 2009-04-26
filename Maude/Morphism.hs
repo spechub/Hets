@@ -23,6 +23,7 @@ module Maude.Morphism (
     identity,
     compose,
     inverse,
+    isInclusion,
     isLegal,
     mapSentence,
 ) where
@@ -34,22 +35,25 @@ import Maude.Sentence
 import Maude.Sign (Sign)
 import qualified Maude.Sign as Sign
 
+import Data.Set (Set)
+import Data.Map (Map)
 import Data.Typeable (Typeable)
-import qualified Data.Map as Map
 import qualified Data.Set as Set
+import qualified Data.Map as Map
 
 import Common.Result (Result)
 import qualified Common.Result as Result
 
 -- for ShATermConvertible
-import Common.ATerm.Conversion
+import Common.ATerm.Conversion (ShATermConvertible(..))
 -- for Pretty
-import Common.DocUtils (Pretty, pretty)
+import Common.DocUtils (Pretty(..))
 import qualified Common.Doc as Doc
 
-type SortMap = Map.Map Symbol Symbol
-type OpMap = Map.Map Symbol Symbol
-type LabelMap = Map.Map Symbol Symbol
+
+type SortMap = Map Symbol Symbol
+type OpMap = Map Symbol Symbol
+type LabelMap = Map Symbol Symbol
 
 data Morphism = Morphism {
         source :: Sign,
@@ -150,6 +154,11 @@ inverse mor = let
         opMap    = inverseMap (opMap mor),
         labelMap = inverseMap (labelMap mor)
     }
+
+-- | check that a Morphism is an Inclusion
+isInclusion :: Morphism -> Bool
+-- TODO: Implement Morphism.isInclusion.
+isInclusion mor = False
 
 -- | check that a Morphism is legal
 isLegal :: Morphism -> Bool

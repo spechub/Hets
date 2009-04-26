@@ -6,8 +6,10 @@ import Maude.Meta.Qid
 import Maude.Meta.Term
 import Maude.Meta.Module
 
+import Data.Set (Set)
 import qualified Data.Set as Set
-import qualified Data.Map as Map
+
+import Common.Lib.Rel (Rel)
 import qualified Common.Lib.Rel as Rel
 
 
@@ -18,7 +20,7 @@ class HasSorts a where
 
 instance HasSorts Sort where
     getSorts = Set.singleton
-    mapSorts = mapToFunction
+    mapSorts = mapAsFunction
 
 
 instance (HasSorts a) => HasSorts [a] where
@@ -33,11 +35,11 @@ instance (HasSorts a, HasSorts b, HasSorts c) => HasSorts (a, b, c) where
     getSorts (a, b, c) = Set.union (getSorts a) (getSorts (b, c))
     mapSorts mp (a, b, c) = (mapSorts mp a, mapSorts mp b, mapSorts mp c)
 
-instance (Ord a, HasSorts a) => HasSorts (Set.Set a) where
+instance (Ord a, HasSorts a) => HasSorts (Set a) where
     getSorts = Set.fold (Set.union . getSorts) Set.empty
     mapSorts = Set.map . mapSorts
 
-instance (Ord a, HasSorts a) => HasSorts (Rel.Rel a) where
+instance (Ord a, HasSorts a) => HasSorts (Rel a) where
     getSorts = getSorts . Rel.nodes
     mapSorts = Rel.map . mapSorts
 
@@ -112,7 +114,3 @@ instance HasSorts Rule where
     mapSorts mp rl = case rl of
         Rl t1 t2 as    -> Rl (mapSorts mp t1) (mapSorts mp t2) as
         Crl t1 t2 c as -> Crl (mapSorts mp t1) (mapSorts mp t2) (mapSorts mp c) as
-
-
-mapToFunction :: (Ord a) => Map.Map a a -> (a -> a)
-mapToFunction mp name = Map.findWithDefault name name mp

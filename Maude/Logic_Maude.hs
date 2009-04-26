@@ -31,6 +31,7 @@ import qualified Maude.Morphism as Morphism
 import qualified Maude.Symbol   as Symbol
 import qualified Maude.Sentence as Sentence
 
+
 -- | Lid for Maude
 data Maude = Maude
     deriving (Show, Eq)
@@ -54,25 +55,74 @@ instance Category Sign Morphism where
     cod = Morphism.target
     composeMorphisms = Morphism.compose
     inverse = Morphism.inverse
-    -- isInclusion = \_ -> False -- TODO: implement Category.isInclusion.
+    isInclusion = Morphism.isInclusion
     legal_mor = Morphism.isLegal
 
 
 -- | Instance of Sentences for Maude
 instance Sentences Maude Sentence Sign Morphism Symbol where
-    -- -- sentences -- --
-    -- Uncommenting this signals a type error I don't understand...
-    -- is_of_sign Maude = flip Sign.includesSentence
+    -- sentences --
+    is_of_sign Maude = flip Sign.includesSentence
     map_sen Maude = Morphism.mapSentence
     simplify_sen Maude = Sign.simplifySentence
-    -- -- | parsing of sentences
-    -- parse_sentence :: lid -> Maybe (AParser st sentence)
-    -- parse_sentence _ = Nothing
     -- parse_sentence Maude = Nothing
-    -- -- | print a sentence with comments
-    -- print_named :: lid -> Named sentence -> Doc
-    -- print_named _ = printAnnoted (addBullet . pretty) . fromLabelledSen
-    -- -- symbols -- --
+    -- print_sign Maude = pretty
+    -- print_named Maude = printAnnoted (addBullet . pretty) . fromLabelledSen
+    -- symbols --
     sym_name Maude = Symbol.toId
     sym_of Maude = Sign.symbols
     symmap_of Maude = Morphism.symbolMap
+
+
+-- | Instance of Syntax for Maude
+-- TODO: Implement real instance of Syntax for Maude
+instance Syntax Maude () () () where
+    -- parse_basic_spec
+    -- parse_symb_items
+    -- parse_symb_map_items
+
+-- | Instance of StaticAnalysis for Maude
+-- TODO: Implement real instance of StaticAnalysis for Maude
+instance StaticAnalysis Maude () Sentence () () Sign Morphism Symbol Symbol where
+    -- static analysis --
+    -- basic_analysis
+    -- stat_symb_map_items
+    -- stat_symb_items
+    -- amalgamation --
+    -- ensures_amalgamability
+    -- signature_colimit
+    -- qualify
+    -- symbols and raw symbols --
+    -- symbol_to_raw
+    -- id_to_raw
+    -- matches
+    -- operations on signatures and morphisms --
+    empty_signature Maude = Sign.empty
+    -- signature_union
+    -- intersection
+    -- final_union
+    -- morphism_union
+    -- is_subsig
+    -- subsig_inclusion
+    -- generated_sign
+    -- cogenerated_sign
+    -- induced_from_morphism
+    -- induced_from_to_morphism
+    -- is_transportable
+    -- is_injective
+    -- theory_to_taxonomy
+
+
+-- | Instance of Logic for Maude
+-- TODO: Implement real instance of Logic for Maude
+instance Logic Maude () () Sentence () () Sign Morphism Symbol Symbol () where
+    stability Maude = Experimental
+    -- data_logic
+    -- top_sublogic
+    -- all_sublogics
+    -- proj_sublogic_epsilon
+    -- provers --
+    -- provers
+    -- cons_checkers
+    -- conservativityCheck
+    -- empty_proof_tree

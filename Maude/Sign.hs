@@ -34,22 +34,24 @@ import Maude.Meta
 import Maude.Symbol
 import Maude.Sentence
 
+import Data.Map (Map)
 import Data.Typeable (Typeable)
-import qualified Data.Foldable as Fold
 import qualified Data.Set as Set
 import qualified Data.Map as Map
+import qualified Data.Foldable as Fold
 
+import Common.Lib.Rel (Rel)
 import qualified Common.Lib.Rel as Rel
 
 -- for ShATermConvertible
-import Common.ATerm.Conversion
+import Common.ATerm.Conversion (ShATermConvertible(..))
 -- for Pretty
 import Common.DocUtils (Pretty(..))
 import qualified Common.Doc as Doc
 
 
-type SubsortRel = Rel.Rel Sort
-type OpMap = Map.Map Symbol OpDeclSet
+type SubsortRel = Rel Sort
+type OpMap = Map Symbol OpDeclSet
 
 data Sign = Sign {
         sorts :: SortSet,
@@ -148,6 +150,7 @@ includesSentence sign sen = let
 simplifySentence :: Sign -> Sentence -> Sentence
 simplifySentence _ = id
 
+
 --- Helper functions for inserting Signature members into their respective collections.
 
 -- insert a Sort into a Set of Sorts
@@ -178,5 +181,5 @@ map'op mp op decls acc = let
     in Map.insert key val acc
 
 
-mapToFunction :: (Ord a) => Map.Map a a -> (a -> a)
+mapToFunction :: (Ord a) => Map a a -> (a -> a)
 mapToFunction mp name = Map.findWithDefault name name mp

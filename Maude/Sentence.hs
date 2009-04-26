@@ -25,7 +25,7 @@ import Maude.Meta
 import Data.Typeable (Typeable)
 
 -- for ShATermConvertible
-import Common.ATerm.Conversion
+import Common.ATerm.Conversion (ShATermConvertible(..))
 -- for Pretty
 import Common.DocUtils (Pretty(..))
 import qualified Common.Doc as Doc
@@ -33,6 +33,7 @@ import qualified Common.Doc as Doc
 
 data Sentence = MembAx MembAx
               | Equation Equation
+              -- We are excluding Rules for now.
     deriving (Show, Eq, Ord, Typeable)
 
 -- TODO: Add real pretty-printing for Maude Sentences.
