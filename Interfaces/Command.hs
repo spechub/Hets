@@ -40,8 +40,8 @@ data GlobCmd =
   | Renaming
   | Hiding
   | Heterogeneity
-  | ProveCurrent
-  | DropTranslation
+  | ProveCurrent  -- CMDL prover activation
+  | DropTranslation -- stop composing comorphisms to previous ones
     deriving (Eq, Ord, Enum, Bounded)
 
 globCmdList :: [GlobCmd]
