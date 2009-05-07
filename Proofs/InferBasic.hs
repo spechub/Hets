@@ -200,20 +200,17 @@ basicInferenceNode checkCons lg ln dGraph n@(node, lbl) guiMVar libEnv intSt =
                     st -> fail $ "prover status is: " ++ show st
                   _ -> fail "no unique cons checkers found"
           else do
-            ch <- ResultT $ emptyCommandHistory intSt
             let freedefs = getCFreeDefMorphs lid1 libEnv ln dGraph node
             kpMap <- liftR knownProversGUI
             newTh <- ResultT $
                    proofManagementGUI lid1 ProofActions
-                     { proveF = proveKnownPMap lg ch freedefs
+                     { proveF = proveKnownPMap lg intSt freedefs
                      , fineGrainedSelectionF =
-                           proveFineGrainedSelect lg ch freedefs
+                           proveFineGrainedSelect lg intSt freedefs
                      , recalculateSublogicF  =
                                      recalculateSublogicAndSelectedTheory
                      } thName (hidingLabelWarning lbl) thForProof
                        kpMap (getProvers ProveGUI sublogic cms) guiMVar
-            -- what a side-effect for the command history!
-            ResultT $ addCommandHistoryToState ch intSt
             return newTh
 
 proveKnownPMap :: (Logic lid sublogics1
@@ -227,7 +224,7 @@ proveKnownPMap :: (Logic lid sublogics1
                raw_symbol1
                proof_tree1) =>
        LogicGraph
-    -> CommandHistory
+    -> IORef IntState
     -> [FreeDefMorphism sentence morphism1]
     -> ProofState lid sentence -> IO (Result (ProofState lid sentence))
 proveKnownPMap lg intSt  freedefs st =
@@ -246,7 +243,7 @@ callProver :: (Logic lid sublogics1
                raw_symbol1
                proof_tree1) =>
        ProofState lid sentence
-     -> CommandHistory
+    -> IORef IntState
     -> Bool -- indicates if a translation was chosen
     -> [FreeDefMorphism sentence morphism1]
     -> (G_prover,AnyComorphism) -> IO (Result (ProofState lid sentence))
@@ -259,7 +256,7 @@ callProver st intSt trans_chosen freedefs p_cm@(_,acm) =
                           freedefs
         ps <- lift $ proveTheory lid p (theoryName st) th freedefs1
         let st' = markProved acm lid ps st
-        lift $ addProveToHist intSt st'
+        lift $ addCommandHistoryToState intSt st'
               (if trans_chosen then Just p_cm else Nothing) ps
         return st'
 
@@ -274,7 +271,8 @@ proveFineGrainedSelect ::
                symbol1
                raw_symbol1
                proof_tree1) =>
-       LogicGraph  -> CommandHistory
+       LogicGraph
+    -> IORef IntState
     -> [FreeDefMorphism sentence morphism1]
     -> ProofState lid sentence -> IO (Result (ProofState lid sentence))
 proveFineGrainedSelect lg intSt freedefs st =

@@ -20,23 +20,15 @@ module Interfaces.DataTypes
        , Int_NodeInfo(..)
        , UndoRedoElem(..)
        , ListChange(..)
-       , CommandHistory(..)
-       , ProveCommand(..)
-       , ProvenGoal(..)
-       , addToHist
-       , proveCommandToCommands
        ) where
 
 import Static.DevGraph
 import Common.LibName
-import Common.Utils (splitOn)
 import Proofs.AbstractState
 import Logic.Comorphism
 import Logic.Logic
 import Interfaces.Command
 import Interfaces.GenericATPState
-import Data.IORef
-import Data.List
 
 
 -- | Internal state of the interface, it contains the development graph
@@ -89,45 +81,6 @@ data UndoRedoElem =
  | IStateChange (Maybe IntIState)
  | DgCommandChange LIB_NAME
 
-
-data CommandHistory = CommandHistory { hist :: IORef [ProveCommand],
-                                       filePath :: String}
-
-data ProveCommand = Prove
- { nodeNameStr :: String
- , usedProver  :: Maybe String
- , translation :: Maybe AnyComorphism
- , provenGoals :: [ProvenGoal]
- , allAxioms   :: [String]
- } deriving Eq
-
-proveCommandToCommands :: ProveCommand -> [Command]
-proveCommandToCommands p =
-  [ SelectCmd Node $ nodeNameStr p
-  , GlobCmd DropTranslation
-  ] ++ maybe []
-  (\ (Comorphism cid) -> map (SelectCmd ComorphismTranslation)
-   $ drop 1 $ splitOn ';' $ language_name cid) (translation p)
-  ++ maybe [] (( : []) . SelectCmd Prover) (usedProver p)
-  ++ concatMap (goalToCommands p) (provenGoals p)
-
-goalToCommands :: ProveCommand -> ProvenGoal -> [Command]
-goalToCommands p g =
-  let axs = axioms g -- there may be some axioms that are not in all axioms
-      aaxs = allAxioms p
-  in
-  [ SelectCmd Goal $ name g
-  , SetAxioms $ if null axs || not (null $ axs \\ aaxs)
-                then aaxs else axs
-  , TimeLimit $ time_Limit g
-  , GlobCmd ProveCurrent ]
-
--- This represents the information about a proved goal
-data ProvenGoal = ProvenGoal {name :: String, -- name of the goal
-                              axioms :: [String], -- used axioms in the prove
-                              time_Limit :: Int -- chosen time-limit
-                              } deriving Eq
-
 data ListChange =
    AxiomsChange [String] Int
  | GoalsChange [String] Int
@@ -157,7 +110,3 @@ data Int_NodeInfo = forall lid1 sublogics1
          symbol1 raw_symbol1 proof_tree1 =>
      Element (ProofState lid1 sentence1) Int
 
--- Adds a single command to the history.
-addToHist :: CommandHistory -> ProveCommand -> IO ()
-addToHist (CommandHistory {hist = c}) cm =
-    readIORef c >>= (\h -> writeIORef c $ h ++ [cm])

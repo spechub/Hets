@@ -19,12 +19,8 @@ module Interfaces.Utils
          , initNodeInfo
          , emptyIntIState
          , emptyIntState
-         , addProveToHist
          , wasProved
-         , convertGoal
          , parseTimeLimit
-         , mergeGoals
-         , emptyCommandHistory
          , addCommandHistoryToState
          , checkConservativityEdge
          ) where
@@ -32,10 +28,9 @@ module Interfaces.Utils
 
 import Interfaces.DataTypes
 import Interfaces.GenericATPState
-import Interfaces.Command
+import qualified Interfaces.Command as IC
 import Interfaces.History
 
-import Control.Monad (unless)
 import Data.Graph.Inductive.Graph
 import Data.Maybe (fromMaybe)
 import Data.List (isPrefixOf, stripPrefix, nubBy)
@@ -50,7 +45,6 @@ import Proofs.TheoremHideShift
 import Proofs.EdgeUtils
 
 import Driver.Options (rmSuffix)
-
 import System.Directory (getCurrentDirectory)
 
 import Logic.Comorphism
@@ -122,15 +116,6 @@ emptyIntState =
              , filename = []
              }
 
--- Create an empty command history
-emptyCommandHistory :: IORef IntState -> IO (Result CommandHistory)
-emptyCommandHistory st = do
-  ch <- newIORef []
-  ost <- readIORef st
-  ff <- tryRemoveAbsolutePathComponent $ filename ost
-  return $ Result [] $ Just CommandHistory { hist = ch,
-                                             filePath = rmSuffix ff}
-
 -- If an absolute path is given,
 -- it tries to remove the current working directory as prefix of it.
 tryRemoveAbsolutePathComponent :: String -> IO String
@@ -140,42 +125,48 @@ tryRemoveAbsolutePathComponent f
                            return $ fromMaybe f (stripPrefix (dir ++ "/") f)
    | otherwise        = return f
 
--- If at least one goal was proved and the prove is not the same as last time
--- the prove gets added, otherwise not.
-addProveToHist :: CommandHistory
-        -> ProofState lid sentence         -- current proofstate
-        -> Maybe (G_prover, AnyComorphism) -- possible used translation
-        -> [Proof_status proof_tree]       -- goals included in prove
-        -> IO ()
-addProveToHist ch st pcm pt = unless (null $ filter wasProved pt)
-  $ addToHist ch $ proofTreeToProve ch st pcm pt
-
 -- Converts a list of proof-trees to a prove
-proofTreeToProve :: CommandHistory
-     -> ProofState lid sentence  -- current proofstate
-     -> Maybe (G_prover, AnyComorphism) -- possible used translation
-     -> [Proof_status proof_tree] -- goals included in prove
-     -> ProveCommand
-proofTreeToProve ch st pcm pt =
-  -- selected prover
-  let prvr = maybe (selectedProver st) (Just . getProverName .fst ) pcm
-  -- selected translation
+proofTreeToProve :: FilePath
+     -> ProofState lid sentence -- current proofstate
+     -> Maybe (G_prover, AnyComorphism)     -- possible used translation
+     -> [Proof_status proof_tree]           -- goals included in prove
+     -> [IC.Command]
+proofTreeToProve fn st pcm pt =
+    [ IC.SelectCmd IC.Node nodeName, IC.GlobCmd IC.DropTranslation ]
+    ++ maybe [] (\ (Comorphism cid) -> map (IC.SelectCmd
+                IC.ComorphismTranslation) $
+                drop 1 $ splitOn ';' $ language_name cid) trans
+    ++ maybe [] (( : []) . IC.SelectCmd IC.Prover) prvr
+    ++ concatMap goalToCommands goals
+    where
+      -- selected prover
+      prvr = maybe (selectedProver st) (Just . getProverName . fst) pcm
+      -- selected translation
       trans = maybe Nothing (Just . snd) pcm
-  -- 1. filter out the not proven goals
-  -- 2. reverse the list, because the last proven goals are on top
-  -- 3. convert all proof-trees to goals
-  -- 4. merge goals with same used axioms
-      goals = mergeGoals $ Prelude.reverse $ Prelude.map convertGoal
-              $ Prelude.filter wasProved pt
-  -- axioms to include in prove
-      allax = case theory st of
-                 G_theory _ _ _ axs _ -> OMap.keys axs
-      nodeName = dropName (filePath ch) $ theoryName st
-  in Prove { nodeNameStr = nodeName,
-                 usedProver = prvr,
-                 translation = trans,
-                 provenGoals = goals,
-                 allAxioms = allax}
+      -- 1. filter out the not proven goals
+      -- 2. reverse the list, because the last proven goals are on top
+      -- 3. convert all proof-trees to goals
+      -- 4. merge goals with same used axioms
+      goals = mergeGoals $ Prelude.reverse
+                  $ Prelude.map (\ x -> (goalName x, parseTimeLimit x))
+                  $ Prelude.filter wasProved pt
+      -- axioms to include in prove
+      allax = case theory st of G_theory _ _ _ axs _ -> OMap.keys axs
+      nodeName = dropName fn $ theoryName st
+      -- A goal is a pair of a name as String and time limit as Int
+      goalToCommands :: (String, Int) -> [IC.Command]
+      goalToCommands (n, t) =
+          [ IC.SelectCmd IC.Goal n, IC.SetAxioms allax, IC.TimeLimit t,
+            IC.GlobCmd IC.ProveCurrent ]
+
+-- Merge goals with the same time-limit
+mergeGoals :: [(String, Int)] -> [(String, Int)]
+mergeGoals []     = []
+mergeGoals (h:[]) = [h]
+mergeGoals ((n,l):t)  | l == l' = mergeGoals $ (n ++ ' ':n', l):Prelude.tail t
+                      | otherwise = (n,l):mergeGoals t
+    where
+        (n',l') = Prelude.head t
 
 dropName :: String -> String -> String
 dropName fch s = maybe s Prelude.tail (stripPrefix fch s)
@@ -187,46 +178,28 @@ wasProved g = case goalStatus g of
     _         -> False
 
 -- Converts a proof-tree into a goal.
-convertGoal :: Proof_status proof_tree -> ProvenGoal
-convertGoal pt =
-  ProvenGoal {name = goalName pt, axioms = usedAxioms pt, time_Limit = tLimit}
+parseTimeLimit :: Proof_status proof_tree -> Int
+parseTimeLimit pt =
+  if Prelude.null lns then 20 else read $ Prelude.drop (length tlStr) $ last lns
   where
-     (Tactic_script scrpt) = tacticScript pt
-     tLimit = maybe 20 read (parseTimeLimit $ splitOn '\n' scrpt)
+    (Tactic_script scrpt) = tacticScript pt
+    lns = Prelude.filter (isPrefixOf tlStr) $ splitOn '\n' scrpt
+    tlStr = "Time limit: "
 
--- Parses time-limit from the tactic-script of a goal.
-parseTimeLimit :: [String] -> Maybe String
-parseTimeLimit l =
-    if Prelude.null l' then Nothing else Just
-                               $ Prelude.drop (length tlStr) $ last l'
-    where
-       l' = Prelude.filter (isPrefixOf tlStr) l
-       tlStr = "Time limit: "
-
--- Merges goals with the same used axioms into one goal.
-mergeGoals :: [ProvenGoal] -> [ProvenGoal]
-mergeGoals []     = []
-mergeGoals (h:[]) = [h]
-mergeGoals (h:t) | mergeAble h h' = mergeGoals $ merge h h':Prelude.tail t
-                 | otherwise      = h:mergeGoals t
-                 where
-                    h' = Prelude.head t
-                    mergeAble :: ProvenGoal -> ProvenGoal -> Bool
-                    mergeAble a b = axioms a == axioms b &&
-                                    time_Limit a == time_Limit b
-                    merge :: ProvenGoal -> ProvenGoal -> ProvenGoal
-                    merge a b = a{name = name a ++ ' ':name b}
-
-
-
-addCommandHistoryToState :: CommandHistory -> IORef IntState -> IO (Result ())
-addCommandHistoryToState ch ioSt = do
-    ost <- readIORef ioSt
-    lsch <- readIORef $ hist ch
-    writeIORef ioSt $ add2history
-       (GroupCmd $ concatMap proveCommandToCommands lsch)
-       ost [ IStateChange $ i_state ost ]
-    return $ Result [] $ Just ()
+addCommandHistoryToState :: IORef IntState
+    -> ProofState lid sentence         -- current proofstate
+    -> Maybe (G_prover, AnyComorphism) -- possible used translation
+    -> [Proof_status proof_tree]       -- goals included in prove
+    -> IO (Result ())
+addCommandHistoryToState intSt st pcm pt
+    | null $ filter wasProved pt = return $ Result [] $ Just ()
+    | otherwise = do
+        ost <- readIORef intSt
+        fn <- tryRemoveAbsolutePathComponent $ filename ost
+        writeIORef intSt $ add2history
+           (IC.GroupCmd $ proofTreeToProve (rmSuffix fn) st pcm pt)
+           ost [ IStateChange $ i_state ost ]
+        return $ Result [] $ Just ()
 
 
 conservativityRule :: DGRule
