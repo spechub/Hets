@@ -34,8 +34,7 @@ import Static.DevGraph
 
 import GUI.GraphMenu
 import GUI.GraphTypes
-import GUI.GraphLogic( convert, applyChanges )
-import qualified GUI.GraphAbstraction as GA
+import GUI.GraphLogic( convert )
 
 import qualified GUI.HTkUtils as HTk
 
@@ -67,10 +66,7 @@ convertGraph gInfo@(GInfo { graphInfo = gi
     Just dgraph -> do
       case openlock dgraph of
         Just lock -> do
-          notopen <- tryPutMVar lock $ \ hst -> do
-            hhn <- GA.hasHiddenNodes gi
-            if hhn then GA.showAll gi else return ()
-            applyChanges gi hst
+          notopen <- tryPutMVar lock ()
           case notopen of
             True -> do
               count <- takeMVar wc

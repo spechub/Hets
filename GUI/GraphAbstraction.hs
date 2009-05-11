@@ -41,6 +41,8 @@ module GUI.GraphAbstraction
     , isHiddenEdge
     , hasHiddenEdges
     , changeEdgeType
+    -- * Update Graph
+    , applyChanges
     -- * Direct manipulation of uDrawGraph
     , layoutImproveAll
     , showTemporaryMessage
@@ -57,7 +59,7 @@ import Events.Destructible as Destructible
 import Reactor.BSem
 
 import ATC.DevGraph ()
-import Static.DevGraph (DGLinkLab, EdgeId(..),DGEdgeType,DGNodeType)
+import Static.DevGraph
 
 import Data.IORef
 import qualified Data.Map as Map
@@ -532,6 +534,28 @@ changeEdgeType gi eId eType = do
               { udgEdge = Just e
               , gaeType = eType } es }
           Nothing -> return () -- ignore error
+
+-- | apply the changes of first history item (computed by proof rules,
+-- see folder Proofs) to the displayed development graph
+applyChanges :: GraphInfo -> [DGChange] -> IO ()
+applyChanges gi changes = do
+  showAll gi
+  mapM_ (applyChangesAux gi) changes
+
+-- | auxiliary function for applyChanges
+applyChangesAux :: GraphInfo -> DGChange -> IO ()
+applyChangesAux gi change =
+  case change of
+    SetNodeLab _ (node, newLab) ->
+      changeNodeType gi node $ getRealDGNodeType newLab
+    InsertNode (node, nodelab) ->
+      addNode gi node (getRealDGNodeType nodelab) $ getDGNodeName nodelab
+    DeleteNode (node, _) ->
+      delNode gi node
+    InsertEdge e@(src, tgt, lbl) ->
+      addEdge gi (dgl_id lbl) (getRealDGLinkType lbl) src tgt "" $ Just e
+    DeleteEdge (_, _, lbl) ->
+      delEdge gi $ dgl_id lbl
 
 -- * direct manipulation of uDrawGraph
 

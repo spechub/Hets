@@ -39,7 +39,6 @@ module GUI.GraphLogic
     , runAndLock
     , saveUDGraph
     , focusNode
-    , applyChanges
     ) where
 
 import Logic.Coerce(coerceSign)
@@ -119,10 +118,19 @@ undo :: GInfo -> Bool -> IO ()
 undo gInfo@(GInfo { graphInfo = gi }) isUndo = do
   hhn <- GA.hasHiddenNodes gi
   intSt <- readIORef $ intState gInfo
-  nwSt <- if isUndo then undoOneStep intSt else redoOneStep intSt
+  nwSt <- if isUndo then undoOneStepWithUpdate intSt $ updateGraph gInfo
+                    else redoOneStepWithUpdate intSt $ updateGraph gInfo
   writeIORef (intState gInfo) nwSt
   if hhn then hideNodes gInfo else return ()
   GA.redisplay gi
+
+updateGraph :: GInfo -> LIB_NAME -> [DGChange] -> IO ()
+updateGraph gInfo ln changes = do
+  og <- readIORef $ openGraphs gInfo
+  case Map.lookup ln og of
+    Nothing -> return ()
+    Just (GInfo { graphInfo = gi }) -> do
+      GA.applyChanges gi $ removeContraryChanges changes
 
 -- | Toggles to display internal node names
 hideShowNames :: GInfo -> Bool -> IO ()
@@ -391,7 +399,7 @@ proofMenu gInfo@(GInfo { graphInfo = gi
           doDump hOpts "PrintHistory" $ do
             putStrLn "History"
             print $ prettyHistory history
-          applyChanges gi $ reverse $ flatHistory history
+          GA.applyChanges gi $ reverse $ flatHistory history
           writeIORef (intState gInfo) nwst
           unlockGlobal gInfo
           hideShowNames gInfo False
@@ -571,7 +579,8 @@ runProveAtNode checkCons gInfo (v, dgnode) (Result ds mres) =
                      nwst = nst
                        { i_state = Just iist
                          { i_libEnv = Map.insert ln newDg le } }
-                 applyChanges (graphInfo gInfo) $ reverse $ flatHistory history
+                 GA.applyChanges (graphInfo gInfo) $ reverse
+                                                   $ flatHistory history
                  writeIORef iSt nwst
                  unlockGlobal gInfo
                  hideShowNames gInfo False
@@ -610,7 +619,7 @@ checkconservativityOfEdge descr gInfo me = case me of
               unlockGlobal gInfo
             else do
               createTextDisplay "Result of conservativity check" str
-              applyChanges gi $ reverse $ flatHistory ph
+              GA.applyChanges gi $ reverse $ flatHistory ph
               GA.redisplay gi
               let nst = add2history (SelectCmd Link $ showDoc (dgl_id lbl) "")
                         ost [DgCommandChange ln]
@@ -674,26 +683,6 @@ showReferencedLibrary descr gInfo@(GInfo{ libName = ln })
       return ()
     Nothing -> error $ "The referenced library (" ++ show refLibname
                        ++ ") is unknown"
-
--- | apply the changes of first history item (computed by proof rules,
--- see folder Proofs) to the displayed development graph
-applyChanges :: GA.GraphInfo -> [DGChange] -> IO ()
-applyChanges ginfo = mapM_ (applyChangesAux ginfo) . removeContraryChanges
-
--- | auxiliary function for applyChanges
-applyChangesAux :: GA.GraphInfo -> DGChange -> IO ()
-applyChangesAux ginfo change =
-  case change of
-    SetNodeLab _ (node, newLab) ->
-      GA.changeNodeType ginfo node $ getRealDGNodeType newLab
-    InsertNode (node, nodelab) ->
-      GA.addNode ginfo node (getRealDGNodeType nodelab) $ getDGNodeName nodelab
-    DeleteNode (node, _) ->
-      GA.delNode ginfo node
-    InsertEdge e@(src, tgt, lbl) ->
-      GA.addEdge ginfo (dgl_id lbl) (getRealDGLinkType lbl) src tgt "" $ Just e
-    DeleteEdge (_, _, lbl) ->
-      GA.delEdge ginfo $ dgl_id lbl
 
 -- | display a window of translated graph with maximal sublogic.
 translateGraph :: GInfo -> IO (Maybe LibEnv)

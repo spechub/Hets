@@ -15,6 +15,8 @@ with history
 module Interfaces.History
          ( undoOneStep
          , redoOneStep
+         , undoOneStepWithUpdate
+         , redoOneStepWithUpdate
          , add2history
          ) where
 
@@ -49,8 +51,9 @@ add2history nm st descr = let
   in st { i_hist = hst { undoList = nwEl : ul } }
 
 -- | Undo or redo a command that modified the development graph
-undoRedoDgCmd :: UndoOrRedo -> IntState -> LIB_NAME -> IO IntState
-undoRedoDgCmd actionType state ln =
+undoRedoDgCmd :: UndoOrRedo -> IntState -> LIB_NAME -> ([DGChange] -> IO ())
+              -> IO IntState
+undoRedoDgCmd actionType state ln update =
   case i_state state of
     -- should I return an error message??
    Nothing ->  return state
@@ -68,23 +71,13 @@ undoRedoDgCmd actionType state ln =
                                             i_libEnv = newEnv
                                             }
                        }
-     case openlock dg' of
-      Nothing -> return newst
-      Just lock -> do
-        mvar <- tryTakeMVar lock
-        case mvar of
-          Nothing -> return newst
-          Just applyHist -> do
-            applyHist changes
-            putMVar lock applyHist
-            return newst
-
-
+     update changes
+     return newst
 
 -- | Analyze changes to the selected nodes, return new nodes plus a list
 -- of changes that would undo last changes
 processList :: [ListChange]-> [Int_NodeInfo]
-               -> [ListChange] -> ([Int_NodeInfo],[ListChange])
+            -> [ListChange] -> ([Int_NodeInfo],[ListChange])
 processList ls elems acc
  = case ls of
     -- if nothing to process return elements and changes
@@ -122,10 +115,10 @@ processList ls elems acc
        NodesChange nwelems ->
          processList l nwelems ((NodesChange elems):acc)
 
-
 -- | Process one step of undo or redo
-processAny :: UndoOrRedo -> IntState -> IO IntState
-processAny actype state = do
+processAny :: UndoOrRedo -> IntState -> (LIB_NAME -> [DGChange] -> IO ())
+           -> IO IntState
+processAny actype state update = do
   let hst = case actype of
               -- find out the list of actions according to the action
               -- (undo/redo)
@@ -134,7 +127,7 @@ processAny actype state = do
   case hst of
     [] -> return state
     x:l-> do
-       (nwst,ch) <- processUndoRedoElems actype (cmdHistory x) state []
+       (nwst,ch) <- processUndoRedoElems actype (cmdHistory x) state [] update
        let
          x' = x { cmdHistory = ch }
          i_hist_state = i_hist state
@@ -153,11 +146,11 @@ processAny actype state = do
                               }
        return nwstate
 
-
 -- | Process a list of undo or redo changes
 processUndoRedoElems :: UndoOrRedo -> [UndoRedoElem] -> IntState
-                           -> [UndoRedoElem] ->IO (IntState,[UndoRedoElem])
-processUndoRedoElems actype ls state acc
+                     -> [UndoRedoElem] -> (LIB_NAME -> [DGChange] -> IO ())
+                     -> IO (IntState,[UndoRedoElem])
+processUndoRedoElems actype ls state acc update
  = case i_state state of
     Nothing -> return (state,[])
     Just ist ->
@@ -167,56 +160,62 @@ processUndoRedoElems actype ls state acc
          let nwst = state {
                       i_state = Just $ ist { useTheorems = sw } }
              ch   = UseThmChange $ useTheorems ist
-         processUndoRedoElems actype l nwst (ch:acc)
+         processUndoRedoElems actype l nwst (ch:acc) update
       (Save2FileChange sw):l -> do
          let nwst = state {
                       i_state = Just $ ist { save2file = sw }  }
              ch   = Save2FileChange $ save2file ist
-         processUndoRedoElems actype l nwst (ch:acc)
+         processUndoRedoElems actype l nwst (ch:acc) update
       (ProverChange nwp):l -> do
          let nwst = state {
                       i_state = Just $ ist { prover = nwp } }
              ch   = ProverChange $ prover ist
-         processUndoRedoElems actype l nwst (ch:acc)
+         processUndoRedoElems actype l nwst (ch:acc) update
       (ConsCheckerChange nwc):l -> do
          let nwst = state {
                       i_state = Just $ ist { consChecker = nwc} }
              ch   = ConsCheckerChange $ consChecker ist
-         processUndoRedoElems actype l nwst (ch:acc)
+         processUndoRedoElems actype l nwst (ch:acc) update
       (ScriptChange nws):l -> do
          let nwst = state {
                       i_state = Just $ ist { script = nws } }
              ch   = ScriptChange $ script ist
-         processUndoRedoElems actype l nwst (ch:acc)
+         processUndoRedoElems actype l nwst (ch:acc) update
       (LoadScriptChange sw):l -> do
          let nwst = state {
                       i_state = Just $ ist { loadScript = sw } }
              ch   = LoadScriptChange $ loadScript ist
-         processUndoRedoElems actype l nwst (ch:acc)
+         processUndoRedoElems actype l nwst (ch:acc) update
       (CComorphismChange nwc):l -> do
          let nwst = state {
                       i_state = Just $ ist { cComorphism = nwc} }
              ch   = CComorphismChange $ cComorphism ist
-         processUndoRedoElems actype l nwst (ch:acc)
+         processUndoRedoElems actype l nwst (ch:acc) update
       (DgCommandChange nln):l -> do
-         nwst <- undoRedoDgCmd actype state nln
+         nwst <- undoRedoDgCmd actype state nln $ update nln
          let ch = DgCommandChange nln
-         processUndoRedoElems actype l nwst (ch:acc)
+         processUndoRedoElems actype l nwst (ch:acc) update
       (ListChange nls):l -> do
          let (nwels,lc) = processList nls (elements ist) []
              nwst = state {
                      i_state = Just $ ist { elements = nwels } }
              ch   = ListChange lc
-         processUndoRedoElems actype l nwst (ch:acc)
+         processUndoRedoElems actype l nwst (ch:acc) update
       (IStateChange nist):l -> do
          let nwst = state { i_state = nist }
              ch   = IStateChange $ Just ist
-         processUndoRedoElems actype l nwst (ch:acc)
-
+         processUndoRedoElems actype l nwst (ch:acc) update
 
 undoOneStep :: IntState -> IO IntState
-undoOneStep = processAny DoUndo
-
+undoOneStep ist = processAny DoUndo ist (\ _ _ -> return ())
 
 redoOneStep :: IntState -> IO IntState
-redoOneStep = processAny DoRedo
+redoOneStep ist = processAny DoRedo ist (\ _ _ -> return ())
+
+undoOneStepWithUpdate :: IntState -> (LIB_NAME -> [DGChange] -> IO ())
+                      -> IO IntState
+undoOneStepWithUpdate = processAny DoUndo
+
+redoOneStepWithUpdate :: IntState -> (LIB_NAME -> [DGChange] -> IO ())
+                      -> IO IntState
+redoOneStepWithUpdate = processAny DoRedo

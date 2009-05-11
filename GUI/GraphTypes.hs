@@ -103,21 +103,21 @@ emptyGInfo = do
   exit <- newEmptyMVar
   lgl  <- newEmptyMVar
   wc <- newMVar 0
-  return $ GInfo { -- Global
-                   intState = intSt
-                 , hetcatsOpts = defaultHetcatsOpts
-                 , windowCount = wc
-                 , exitMVar = exit
-                 , globalLock = gl
-                 , functionLock = fl
-                 , libGraphLock = lgl
-                 , openGraphs = oGraphs
-                   -- Local
-                 , libName = Lib_id $ Indirect_link "" nullRange "" noTime
-                 , graphInfo = gi
-                 , internalNamesIORef = iorIN
-                 , proofGUIMVar = guiMVar
-                 }
+  return GInfo { -- Global
+                 intState = intSt
+               , hetcatsOpts = defaultHetcatsOpts
+               , windowCount = wc
+               , exitMVar = exit
+               , globalLock = gl
+               , functionLock = fl
+               , libGraphLock = lgl
+               , openGraphs = oGraphs
+                 -- Local
+               , libName = Lib_id $ Indirect_link "" nullRange "" noTime
+               , graphInfo = gi
+               , internalNamesIORef = iorIN
+               , proofGUIMVar = guiMVar
+               }
 
 -- | Creates an empty GInfo
 copyGInfo :: GInfo -> LIB_NAME -> IO GInfo
