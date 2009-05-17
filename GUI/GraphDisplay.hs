@@ -34,7 +34,7 @@ import Static.DevGraph
 
 import GUI.GraphMenu
 import GUI.GraphTypes
-import GUI.GraphLogic( convert )
+import GUI.GraphAbstraction(convert)
 
 import qualified GUI.HTkUtils as HTk
 
