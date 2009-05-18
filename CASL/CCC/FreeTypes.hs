@@ -424,6 +424,29 @@ checkTerminal (osig, osens) m fsn
         obligations = getObligations m fsn
         conStatus = getConStatus (osig,osens) m fsn
 
+checkPositive :: [Named (FORMULA ())]
+    -> Maybe (Result (Maybe (ConsistencyStatus,[FORMULA ()])))
+checkPositive fsn
+    | allPos     = Just $ return (Just (Conservative, [])) nullRange
+    | otherwise  = Nothing
+    where
+        allPos = all checkPos $ getFs fsn
+        checkPos :: FORMULA () -> Bool
+        checkPos f =
+            case quanti f of
+                Conjunction     cs      _ -> all checkPos cs
+                Disjunction     ds      _ -> any checkPos ds
+                Implication     i1 i2 _ _ -> (not $ checkPos i1) || checkPos i2
+                Equivalence     e1 e2   _ -> checkPos e1 == checkPos e2
+                Negation        n       _ -> not $ checkPos n
+                True_atom               _ -> True
+                False_atom              _ -> False
+                Predication     _  _    _ -> True
+                Definedness     _       _ -> True
+                Existl_equation _  _    _ -> True
+                Strong_equation _  _    _ -> True
+                _                         -> False
+
 {------------------------------------------------------------------------
    function checkFreeType:
    - check if leading symbols are new (not in the image of morphism),
@@ -462,7 +485,8 @@ checkFreeType (osig, osens) m fsn
     | isJust leadingTerms = fromJust leadingTerms
     | isJust incomplete   = fromJust incomplete
     | isJust terminal     = fromJust terminal
-    | otherwise                        = return (Just (conStatus, []))
+    | isJust positive     = fromJust positive
+    | otherwise           = return (Just (conStatus, []))
     where
         fsn' = filter isAxiom $
                deleteFirstsBy (\ a b -> sentence a == sentence b) fsn $
@@ -472,6 +496,7 @@ checkFreeType (osig, osens) m fsn
         leadingTerms = checkLeadingTerms osens m fsn'
         incomplete   = checkIncomplete osens m fsn'
         terminal     = checkTerminal (osig, osens) m fsn'
+        positive     = checkPositive fsn'
         conStatus    = getConStatus (osig, osens) m fsn'
         mapNamed f xs = [ x { sentence = f $ sentence x } | x<-xs ]
 
