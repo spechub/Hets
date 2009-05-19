@@ -57,7 +57,7 @@ doConservCheck :: String            -- ^ Jar name
                -> IO (Result (Maybe (ConsistencyStatus, [Axiom])))
 doConservCheck jar ct sig1 sen1 mor sen2 = do
   let ontoFile = printOWLBasicTheory
-        (osource mor, filter isAxiom sen2)
+        (otarget mor, filter isAxiom sen2)
       sigFile  = printOWLBasicTheory (sig1, filter isAxiom sen1)
   runLocalityChecker jar ct (show ontoFile) (show sigFile)
 
