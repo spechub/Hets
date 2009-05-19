@@ -427,7 +427,7 @@ checkTerminal (osig, osens) m fsn
 checkPositive :: [Named (FORMULA ())]
     -> Maybe (Result (Maybe (ConsistencyStatus,[FORMULA ()])))
 checkPositive fsn
-    | allPos     = Just $ return (Just (Conservative, [])) nullRange
+    | allPos     = Just $ return (Just (Conservative, []))
     | otherwise  = Nothing
     where
         allPos = all checkPos $ getFs fsn

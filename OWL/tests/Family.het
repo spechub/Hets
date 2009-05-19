@@ -2,11 +2,21 @@ library DL/Family
 
 logic OWL
 
+spec FamilySkel=
+     Class: Person
+     Class: Female
+     Class: Woman EquivalentTo: Person and Female
+     Class: Man EquivalentTo:   Person and not Female
+	    DisjointWith: Woman
+     ObjectProperty: hasHusband
+     Class: Wife    EquivalentTo: Woman and hasHusband some Man
+end
+
 spec FamilyBase =
   Class: Person
   Class: Female
   Class: Woman   EquivalentTo: Person and Female
-  Class: Man     EquivalentTo: Person and not Woman
+  Class: Man     EquivalentTo: Person and not Female
 
   ObjectProperty: hasChild
   ObjectProperty: hasHusband
@@ -18,10 +28,10 @@ spec FamilyBase =
   Class: MotherWithManyChildren EquivalentTo: Mother and (hasChild min 3)
   Class: MotherWithoutDaughter  EquivalentTo: Mother and (hasChild only (not Woman))
   Class: Wife    EquivalentTo: Woman and hasHusband some Man
+  Class: Hybird  EquivalentTo: Man and Woman
   Class: Married
   Class: MarriedMother EquivalentTo: Mother and Married 
          SubclassOf: Female and Person
-  Class: Hybrid  EquivalentTo: Woman and Man
   Individual: mary Types: Mother
     Facts: 
         hasChild  john
@@ -30,6 +40,8 @@ spec FamilyBase =
         hasChild  clara
   Individual: clara
 end
+
+view v1: {FamilySkel with logic OWL2CASL} to {FamilyBase with logic OWL2CASL}
 
 spec NotConser =
      FamilyBase
