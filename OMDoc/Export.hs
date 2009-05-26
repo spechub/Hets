@@ -52,7 +52,7 @@ exportNodeLab libid dg (n, lb) =
     let specid = mkSimpleId $ getDGNodeName lb
     in case dgn_theory lb of
     G_theory lid (ExtSign sig _) _ sens _ ->
-      Just . TLTheory (show specid)
+      Just . TLTheory (show specid) (omdoc_metatheory lid)
         $ catMaybes (map (makeImport libid dg) $ innDG dg n)
         ++ export_signToOmdoc lid specid libid sig
         ++ map (export_senToOmdoc lid specid libid sig) (toNamedList sens)

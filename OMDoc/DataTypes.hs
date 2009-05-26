@@ -25,8 +25,9 @@ module OMDoc.DataTypes where
 -- | OMDoc root element with libname and a list of toplevel elements
 data OMDoc = OMDoc String [TLElement]
 
--- | Toplevel elements for OMDoc
-data TLElement = TLTheory String [TCElement]
+-- | Toplevel elements for OMDoc, theory with name, meta and content,
+-- view with from, to and morphism
+data TLElement = TLTheory String (Maybe OMCD) [TCElement]
                | TLView OMCD OMCD TCElement
                  deriving (Show, Eq, Ord)
 

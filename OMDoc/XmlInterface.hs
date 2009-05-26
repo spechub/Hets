@@ -32,13 +32,13 @@ import Data.Maybe
 
 -- | The implemented OMDoc version
 omdoc_current_version :: String
-omdoc_current_version = "1.2"
+omdoc_current_version = "1.6"
 
 -- | often used element names
 el_omdoc, el_theory, el_view, el_axiom, el_theorem, el_symbol, el_import
  , el_type, el_fmp, el_omobj, el_ombind, el_oms, el_ombvar, el_omattr
  , el_omatp, el_omv, el_oma, el_adt, el_sortdef, el_constructor
- , el_argument, el_insort, el_selector, el_requation, el_morphism
+ , el_argument, el_insort, el_selector, el_morphism
  , el_conass :: QName
 
 el_omdoc = (blank_name { qName = "omdoc" })
@@ -66,7 +66,6 @@ el_constructor = (blank_name { qName = "constructor" })
 el_argument = (blank_name { qName = "argument" })
 el_insort = (blank_name { qName = "insort" })
 el_selector = (blank_name { qName = "selector" })
-el_requation = (blank_name { qName = "requation" })
 el_morphism = (blank_name { qName = "morphism" })
 el_conass = (blank_name { qName = "conass" })
 
@@ -75,13 +74,14 @@ el_axiom_or_theorem True = el_axiom
 el_axiom_or_theorem False = el_theorem
 
 -- | often used attribute names
-at_id, at_version, at_cd, at_name, at_role, at_type, at_total, at_for
+at_version, at_cd, at_name, at_meta, at_role, at_type, at_total, at_for
  , at_from, at_to, at_base :: QName
 
-at_id = (blank_name { qName = "id", qPrefix = Just "xml" })
+-- at_id = (blank_name { qName = "id", qPrefix = Just "xml" })
 at_version = (blank_name { qName = "version" })
 at_cd = (blank_name { qName = "cd" })
 at_name = (blank_name { qName = "name" })
+at_meta = (blank_name { qName = "meta" })
 at_role = (blank_name { qName = "role" })
 at_type = (blank_name { qName = "type" })
 at_total = (blank_name { qName = "total" })
@@ -127,14 +127,6 @@ assignmentToXml (OMName from, to) =
              [Elem $ Element el_omobj [] [toXml to] Nothing]
              Nothing
 
-requationToXml :: (OMElement, OMElement) -> Content
-requationToXml (from, to) =
-    Elem $ Element el_requation []
-             [Elem $ Element el_omobj [] [toXml from] Nothing,
-              Elem $ Element el_omobj [] [toXml to] Nothing]
-    Nothing
-
-
 uriEncodeOMS :: OMCD -> OMName -> String
 uriEncodeOMS cd (OMName name) = uriEncodeCD cd ++ "?" ++ name
 
@@ -151,9 +143,9 @@ pairEncodeCD (CD cd base) =
 
 -- | The root instance for representing OMDoc in XML
 instance XmlRepresentable OMDoc where
-    toXml (OMDoc oid elms) =
+    toXml (OMDoc name elms) =
         (Elem $ Element el_omdoc
-         [Attr at_version omdoc_current_version, Attr at_id oid]
+         [Attr at_version omdoc_current_version, Attr at_name name]
          (listToXml elms)
          Nothing)
     fromXml (Element n _ _ _)
@@ -164,9 +156,11 @@ instance XmlRepresentable OMDoc where
 
 -- | toplevel OMDoc elements to XML and back
 instance XmlRepresentable TLElement where
-    toXml (TLTheory tid elms) =
+    toXml (TLTheory tname meta elms) =
         (Elem $ Element el_theory
-         [Attr at_id tid]
+         ((Attr at_name tname)
+           : case meta of Nothing -> []
+                          Just mtcd -> [Attr at_meta $ uriEncodeCD mtcd])
          (listToXml elms)
          Nothing)
     toXml (TLView from to mor) =
@@ -184,17 +178,17 @@ instance XmlRepresentable TLElement where
 
 -- | theory constitutive OMDoc elements to XML and back
 instance XmlRepresentable TCElement where
-    toXml (TCAxiomOrTheorem b sid obj) =
-        Elem $ Element (el_axiom_or_theorem b) [Attr at_id sid]
+    toXml (TCAxiomOrTheorem b sname obj) =
+        Elem $ Element (el_axiom_or_theorem b) [Attr at_name sname]
          [Elem $ Element el_fmp []
           [Elem $ Element el_omobj []
             [toXml obj]
             Nothing]
           Nothing]
          Nothing
-    toXml (TCSymbol sid symtype role) =
+    toXml (TCSymbol sname symtype role) =
         Elem $ Element el_symbol
-         [Attr at_name sid, Attr at_role (show role)]
+         [Attr at_name sname, Attr at_role (show role)]
          (case symtype of Nothing -> []
                           Just st -> [typeToXml st])
          Nothing
