@@ -253,6 +253,7 @@ instance Logic CASL CASL_Sublogics
          export_signToOmdoc CASL = exportSignToOmdoc
          export_morphismToOmdoc CASL = exportMorphismToOmdoc
          export_senToOmdoc CASL = exportSenToOmdoc
+         omdoc_metatheory CASL = omdocMetaTheory
 #ifdef UNI_PACKAGE
          provers CASL = [quickCheckProver]
 #endif

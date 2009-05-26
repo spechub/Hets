@@ -17,6 +17,7 @@ module CASL.OMDoc
     ( exportSignToOmdoc
     , exportMorphismToOmdoc
     , exportSenToOmdoc
+    , omdocMetaTheory
     ) where
 
 import OMDoc.DataTypes
@@ -40,6 +41,10 @@ import Data.Set as Set
 
 -- | the identifier of a specification, combining the specid and the libid
 data SPEC_ID = SPEC_ID Id Id | NOSPEC deriving Show
+
+omdocMetaTheory :: Maybe OMCD
+omdocMetaTheory = Just $ CD "casl" $ Just "http://cds.omdoc.org/logics/casl.omdoc"
+
 
 exportSignToOmdoc ::  (Show f, Pretty e) => SIMPLE_ID -> LIB_ID -> Sign f e ->
                       [TCElement]
@@ -107,7 +112,9 @@ makeADTArgument spid s = ADTArg (sortToOmdoc spid s) Nothing
 
 sortSignToOmdoc :: SPEC_ID -> Sign a e -> SORT -> TCElement
 sortSignToOmdoc spid _ s
-    | isLocalId spid s = TCSymbol (idToName spid s) Nothing Typ
+    | isLocalId spid s = TCSymbol (idToName spid s)
+                         (Just const_sort)
+                         Typ
     -- CLEANUP: Have to be filtered completely
     | otherwise = TCComment $ "nonlocal symbol: " ++ (show s)
 
@@ -139,21 +146,39 @@ funSignToOmdoc spid _ f ftypes
 
 -------------------------- types --------------------------
 
--- | Given an operator or predicate signature we construct the according
--- type by currying and using bool as rangetype for predicates
+-- | Given an operator or predicate signature we construct the according type
 makeType :: SPEC_ID -> OpKind -> [SORT] -> Maybe SORT -> OMElement
 makeType spid _ [] (Just r) = (sortToOmdoc spid r)
 makeType spid total domain range =
+    (OMA $ funtypeconstr : (Prelude.map (sortToOmdoc spid) args))
+         where
+           funtypeconstr = case total of
+                             Total -> case range of
+                                        Nothing -> const_predtype
+                                        _ -> const_funtype
+                             Partial -> const_partialfuntype
+           args = case range of Nothing -> domain
+                                Just r -> domain ++ [r]
+{-
+-- | Given an operator or predicate signature we construct the according
+-- type by currying and using bool as rangetype for predicates
+
     foldr (addType spid)
               (OMA [typeconstr, (sortToOmdoc spid s), rangeelem])
               rest
         where
-          typeconstr = case total of Total -> st_const "funtype"
-                                     Partial -> casl_const "partialfuntype"
+          typeconstr = case total of Total -> const_funtype
+                                     Partial -> const_partialfuntype
           s = last domain
           rest = init domain
-          rangeelem = case range of Nothing -> (tv_const "bool")
+          rangeelem = case range of Nothing -> (const_bool)
                                     Just r -> (sortToOmdoc spid r)
+
+
+addType :: SPEC_ID -> SORT -> OMElement -> OMElement
+addType spid s elm = OMA [const_funtype, (sortToOmdoc spid s), elm]
+
+-}
 
 makePredType :: SPEC_ID -> PredType -> OMElement
 makePredType spid (PredType predargs) =
@@ -162,10 +187,6 @@ makePredType spid (PredType predargs) =
 makeObjectType :: SPEC_ID -> OpType -> OMElement
 makeObjectType spid (OpType opkind opargs oprange) =
     makeType spid opkind opargs (Just oprange)
-
-addType :: SPEC_ID -> SORT -> OMElement -> OMElement
-addType spid s elm = OMA [(st_const "funtype"), (sortToOmdoc spid s), elm]
-
 
 -------------------------- Names --------------------------
 
@@ -224,7 +245,7 @@ predToOmdoc spid (Pred_name i) = idToOmdoc spid i
 
 -- | the object e1 and its type e2
 makeAttribution :: OMElement -> OMElement -> OMElement
-makeAttribution e1 e2 = OMATTT e1 $ OMAttr (st_const "type") e2
+makeAttribution e1 e2 = OMATTT e1 $ OMAttr const_type e2
 
 varToOmdoc :: Token -> OMElement
 varToOmdoc v = OMV $ OMName $ tokStr v
@@ -234,56 +255,70 @@ varDeclToOMDoc :: SPEC_ID -> (VAR, SORT) -> OMElement
 varDeclToOMDoc spid (v, s) = makeAttribution (varToOmdoc v) $
                              sortToOmdoc spid s
 
-
 -- cdbase entries missing for predefined content dictionaries
 
--- | Predefined truthval constants: false, true
-tv_const :: String -> OMElement
-tv_const n = OMS (CD "truthval" Nothing) $ OMName n
+const_casl :: String -> OMElement
+const_casl n = OMS (CD "casl" Nothing) $ OMName n
 
--- | Predefined simpletypes constants: funtype, type
-st_const :: String -> OMElement
-st_const n = OMS (CD "simpletypes" Nothing) $ OMName n
+const_true, const_false, const_sort, const_funtype, const_partialfuntype
+ , const_and, const_or, const_implies, const_implied, const_equivalent
+ , const_forall, const_exists, const_eq, const_eeq, const_existsunique
+ , const_def, const_in, const_if, const_cast, const_type, const_not
+ , const_predtype :: OMElement
 
--- | Predefined pl0 constants: not, and, or, implies, implied, equivalent
-pl0_const :: String -> OMElement
-pl0_const n = OMS (CD "pl0" Nothing) $ OMName n
+const_true = const_casl "true"
+const_false = const_casl "false"
 
--- | Predefined pl1 constants: forall, exists
-pl1_const :: String -> OMElement
-pl1_const n = OMS (CD "pl1" Nothing) $ OMName n
+const_funtype = const_casl "funtype"
+const_partialfuntype = const_casl "partialfuntype"
+const_predtype = const_casl "predtype"
+const_type = const_casl "type"
 
--- | Predefined casl constants: eq, eeq, existsunique, defined, in, if, cast
-casl_const :: String -> OMElement
-casl_const n = OMS (CD "casl" Nothing) $ OMName n
+const_not = const_casl "not"
+const_and = const_casl "and"
+const_or = const_casl "or"
+const_implies = const_casl "implies"
+const_implied = const_casl "implied"
+const_equivalent = const_casl "equivalent"
 
+const_forall = const_casl "forall"
+const_exists = const_casl "exists"
+
+const_eq = const_casl "eq"
+const_eeq = const_casl "eeq"
+const_existsunique = const_casl "existsunique"
+const_def = const_casl "def"
+const_in = const_casl "in"
+const_if = const_casl "if"
+const_cast = const_casl "cast"
+const_sort = const_casl "sort"
 
 omdocRec :: SPEC_ID -> Sign f e -> (f -> OMElement)
          -> Record f OMElement OMElement
 omdocRec spid _ mf = Record
     { foldQuantification = \ _ q vs f _ ->
       let s = case q of
-                Universal -> pl1_const "forall"
-                Existential -> pl1_const "exists"
-                Unique_existential -> casl_const "existsunique"
+                Universal -> const_forall
+                Existential -> const_exists
+                Unique_existential -> const_existsunique
           vl = Prelude.map (varDeclToOMDoc spid) $ flatVAR_DECLs vs
       in OMBIND s vl f
-    , foldConjunction = \ _ fs _ -> OMA $ (pl0_const "and") : fs
-    , foldDisjunction = \ _ fs _ -> OMA $ (pl0_const "or") : fs
+    , foldConjunction = \ _ fs _ -> OMA $ const_and : fs
+    , foldDisjunction = \ _ fs _ -> OMA $ const_or : fs
     , foldImplication = \ _ f1 f2 b _ ->
-        if b then (OMA [(pl0_const "implies") , f1, f2])
-        else (OMA [(pl0_const "implied") , f1, f2])
+        if b then (OMA [const_implies , f1, f2])
+        else (OMA [const_implied , f1, f2])
     , foldEquivalence = \ _ f1 f2 _ ->
-                        (OMA [(pl0_const "equivalent") , f1, f2])
-    , foldNegation = \ _ f _ -> (OMA [(pl0_const "not") , f])
-    , foldTrue_atom = \ _ _ -> tv_const "true"
-    , foldFalse_atom = \ _ _ -> tv_const "false"
+                        (OMA [const_equivalent , f1, f2])
+    , foldNegation = \ _ f _ -> (OMA [const_not , f])
+    , foldTrue_atom = \ _ _ -> const_true
+    , foldFalse_atom = \ _ _ -> const_false
     , foldPredication = \ _ p ts _ -> OMA $ (predToOmdoc spid p) : ts
-    , foldDefinedness = \ _ t _ -> OMA [(casl_const "def"), t]
-    , foldExistl_equation = \ _ t1 t2 _ -> (OMA [(casl_const "eeq") , t1, t2])
-    , foldStrong_equation = \ _ t1 t2 _ -> (OMA [(casl_const "eq") , t1, t2])
+    , foldDefinedness = \ _ t _ -> OMA [const_def, t]
+    , foldExistl_equation = \ _ t1 t2 _ -> (OMA [const_eeq , t1, t2])
+    , foldStrong_equation = \ _ t1 t2 _ -> (OMA [const_eq , t1, t2])
     , foldMembership = \ _ t s _ ->
-                       (OMA [(casl_const "in") , t, sortToOmdoc spid s])
+                       (OMA [const_in , t, sortToOmdoc spid s])
     , foldMixfix_formula = \ t _ -> sfail "Mixfix_formula" $ getRange t
     , foldSort_gen_ax = \ t _ _ -> sfail
                         "Sort generating axioms should be filtered out before!"
@@ -293,8 +328,8 @@ omdocRec spid _ mf = Record
     , foldApplication = \ _ o ts _ -> OMA $ (funToOmdoc spid o) : ts
     , foldSorted_term = \ _ r _ _ -> r
     , foldCast = \ _ t s _ ->
-                 (OMA [(casl_const "cast") , t, sortToOmdoc spid s])
-    , foldConditional = \ _ e f t _ -> (OMA [(casl_const "if") , e , t, f])
+                 (OMA [const_cast , t, sortToOmdoc spid s])
+    , foldConditional = \ _ e f t _ -> (OMA [const_if , e , t, f])
     , foldMixfix_qual_pred = \ _ p -> sfail "Mixfix_qual_pred" $ getRange p
     , foldMixfix_term = \ (Mixfix_term ts) _ ->
         sfail "Mixfix_term" $ getRange ts
