@@ -115,12 +115,10 @@ runAndLock (GInfo { functionLock = lock
 -- | Undo one step of the History
 undo :: GInfo -> Bool -> IO ()
 undo gInfo@(GInfo { graphInfo = gi }) isUndo = do
-  hhn <- GA.hasHiddenNodes gi
   intSt <- readIORef $ intState gInfo
   nwSt <- if isUndo then undoOneStepWithUpdate intSt $ updateGraph gInfo
                     else redoOneStepWithUpdate intSt $ updateGraph gInfo
   writeIORef (intState gInfo) nwSt
-  if hhn then hideNodes gInfo else return ()
   GA.redisplay gi
 
 updateGraph :: GInfo -> LIB_NAME -> [DGChange] -> IO ()
@@ -129,7 +127,9 @@ updateGraph gInfo ln changes = do
   case Map.lookup ln og of
     Nothing -> return ()
     Just (GInfo { graphInfo = gi }) -> do
-      GA.applyChanges gi $ removeContraryChanges changes
+      hhn <- GA.hasHiddenNodes gi
+      (nodes, edges) <- if hhn then hideNodesAux gInfo else return ([],[])
+      GA.applyChanges gi (removeContraryChanges changes) nodes edges
 
 -- | Toggles to display internal node names
 hideShowNames :: GInfo -> Bool -> IO ()
@@ -156,16 +156,19 @@ showNodes gInfo@(GInfo { graphInfo = gi
 
 -- | hides all unnamed internal nodes that are proven
 hideNodes :: GInfo -> IO ()
-hideNodes gInfo@(GInfo { graphInfo = gi
-                       , libName = ln }) = do
-  hhn <- GA.hasHiddenNodes gi
+hideNodes gInfo@(GInfo { graphInfo = gi }) = do
+  (nodes, edges) <- hideNodesAux gInfo
+  GA.showTemporaryMessage gi "Hiding unnamed nodes..."
+  GA.hideNodes gi nodes edges
+
+-- | hides all unnamed internal nodes that are proven
+hideNodesAux :: GInfo
+             -> IO ([GA.NodeId], [(GA.NodeId, GA.NodeId, DGEdgeType, Bool)])
+hideNodesAux gInfo@(GInfo { libName = ln }) = do
   ost <- readIORef $ intState gInfo
   case i_state ost of
-   Nothing -> return ()
-   Just ist -> if hhn then
-       GA.showTemporaryMessage gi "Nodes already hidden ..."
-     else do
-       GA.showTemporaryMessage gi "Hiding unnamed nodes..."
+   Nothing -> return ([], [])
+   Just ist -> do
        let le = i_libEnv ist
            dg = lookupDGraph ln le
            nodes = selectNodesByType dg [DGNodeType
@@ -174,7 +177,7 @@ hideNodes gInfo@(GInfo { graphInfo = gi
                                             , isInternalSpec = True}
                                           , isLocallyEmpty = True}]
            edges = getCompressedEdges dg nodes
-       GA.hideNodes gi nodes edges
+       return (nodes, edges)
 
 -- | hides all proven edges created not initialy
 hideNewProvedEdges :: GInfo -> IO ()
@@ -191,7 +194,7 @@ hideNewProvedEdges gInfo@(GInfo { graphInfo = gi
                          DeleteEdge (_, _, lbl) -> delete (dgl_id lbl) e
                          _ -> e
                        ) [] $ flattenHistory ph []
-     mapM_ (GA.hideEdge gi) edges
+     GA.hideEdges gi edges
      GA.redisplay gi
 
 -- | generates from list of HistElem one list of DGChanges
@@ -215,7 +218,7 @@ compressTypes b (t1:t2:r) = if t1 == t2 then compressTypes b (t1:r) else
   if t1 > t2 then compressTypes False (t1:r) else compressTypes False (t2:r)
 
 -- | returns a list of compressed edges
-getCompressedEdges :: DGraph -> [Node] -> [(Node,Node,(DGEdgeType, Bool))]
+getCompressedEdges :: DGraph -> [Node] -> [(Node,Node,DGEdgeType, Bool)]
 getCompressedEdges dg hidden = filterDuplicates $ getShortPaths
   $ concatMap (\ e@(_,t,_) -> map (e:) $ getPaths dg t hidden []) inEdges
   where
@@ -226,14 +229,15 @@ getCompressedEdges dg hidden = filterDuplicates $ getShortPaths
                      $ map (\ (s,_,_) -> s) $ concatMap (innDG dg) hidden
 
 -- | filter duplicate paths
-filterDuplicates :: [(Node,Node,(DGEdgeType, Bool))]
-                 -> [(Node,Node,(DGEdgeType, Bool))]
+filterDuplicates :: [(Node,Node,DGEdgeType, Bool)]
+                 -> [(Node,Node,DGEdgeType, Bool)]
 filterDuplicates [] = []
-filterDuplicates ((s, t, (et,b)) : r) = edge : filterDuplicates others
+filterDuplicates ((s, t, et, b) : r) = edge : filterDuplicates others
   where
-    (same,others) = partition (\ (s',t',_) -> s == s' && t == t') r
-    b' = and $ b : map (\ (_,_,(_,b'')) -> b'') same
-    edge = (s,t,compressTypes b' $ et : map (\ (_,_,(et',_)) -> et') same)
+    (same,others) = partition (\ (s',t', _, _) -> s == s' && t == t') r
+    b' = and $ b : map (\ (_,_,_,b'') -> b'') same
+    (et'', b''') = compressTypes b' $ et : map (\ (_,_,et',_) -> et') same
+    edge = (s,t,et'',b''')
 
 -- | returns the pahts of a given node through hidden nodes
 getPaths :: DGraph -> Node -> [Node] -> [Node] -> [[LEdge DGLinkLab]]
@@ -249,14 +253,15 @@ getPaths dg node hidden seen' = case elem node hidden of
 
 -- | returns source and target node of a path with the compressed type
 getShortPaths :: [[LEdge DGLinkLab]]
-              -> [(Node,Node,(DGEdgeType,Bool))]
+              -> [(Node,Node,DGEdgeType,Bool)]
 getShortPaths [] = []
 getShortPaths (p : r) =
-  (s, t, compressTypes True $ map (\ (_,_,e) -> getRealDGLinkType e) p)
+  (s, t, et, b)
     : getShortPaths r
   where
     (s,_,_) = head p
     (_,t,_) = last p
+    (et, b) = compressTypes True $ map (\ (_,_,e) -> getRealDGLinkType e) p
 
 -- | Let the user select a Node to focus
 focusNode :: GInfo -> IO ()
@@ -287,21 +292,10 @@ showLibGraph gInfo showLib = do
      will be hidden again.
 -}
 performProofAction :: GInfo -> IO () -> IO ()
-performProofAction gInfo@(GInfo { graphInfo = gi
-                                }) proofAction = do
-  let actionWithMessage = do
-          GA.showTemporaryMessage gi
-               "Applying development graph calculus proof rule..."
-          proofAction
-  hhn  <- GA.hasHiddenNodes gi
-  case hhn of
-    True -> do
-      showNodes gInfo
-      actionWithMessage
-      hideNodes gInfo
-    False -> actionWithMessage
-  GA.showTemporaryMessage gi
-                       "Development graph calculus proof rule finished."
+performProofAction (GInfo { graphInfo = gi }) proofAction = do
+  GA.showTemporaryMessage gi "Applying development graph calculus proof rule..."
+  proofAction
+  GA.showTemporaryMessage gi "Development graph calculus proof rule finished."
 
 saveProofStatus :: GInfo -> FilePath -> IO ()
 saveProofStatus gInfo@(GInfo { hetcatsOpts = opts
@@ -360,8 +354,7 @@ proofMenu :: GInfo
              -> Command
              -> (LibEnv -> IO (Result LibEnv))
              -> IO ()
-proofMenu gInfo@(GInfo { graphInfo = gi
-                       , hetcatsOpts = hOpts
+proofMenu gInfo@(GInfo { hetcatsOpts = hOpts
                        , proofGUIMVar = guiMVar
                        , libName = ln
                        }) cmd proofFun = do
@@ -398,8 +391,8 @@ proofMenu gInfo@(GInfo { graphInfo = gi
           doDump hOpts "PrintHistory" $ do
             putStrLn "History"
             print $ prettyHistory history
-          GA.applyChanges gi $ reverse $ flatHistory history
           writeIORef (intState gInfo) nwst
+          updateGraph gInfo ln (reverse $ flatHistory history)
           unlockGlobal gInfo
           hideShowNames gInfo False
           mGUIMVar <- tryTakeMVar guiMVar
@@ -578,9 +571,8 @@ runProveAtNode checkCons gInfo (v, dgnode) (Result ds mres) =
                      nwst = nst
                        { i_state = Just iist
                          { i_libEnv = Map.insert ln newDg le } }
-                 GA.applyChanges (graphInfo gInfo) $ reverse
-                                                   $ flatHistory history
                  writeIORef iSt nwst
+                 updateGraph gInfo ln (reverse $ flatHistory history)
                  unlockGlobal gInfo
                  hideShowNames gInfo False
            Nothing -> return ()
@@ -604,7 +596,6 @@ checkconservativityOfEdge descr gInfo me = case me of
     Nothing -> edgeErr descr
     Just lnk@(_, _, lbl) -> do
       let iSt = intState gInfo
-          gi = graphInfo gInfo
           ln = libName gInfo
       ost <- readIORef iSt
       case i_state ost of
@@ -618,12 +609,11 @@ checkconservativityOfEdge descr gInfo me = case me of
               unlockGlobal gInfo
             else do
               createTextDisplay "Result of conservativity check" str
-              GA.applyChanges gi $ reverse $ flatHistory ph
-              GA.redisplay gi
               let nst = add2history (SelectCmd Link $ showDoc (dgl_id lbl) "")
                         ost [DgCommandChange ln]
                   nwst = nst { i_state = Just $ iist { i_libEnv = nwle}}
               writeIORef iSt nwst
+              updateGraph gInfo ln (reverse $ flatHistory ph)
               unlockGlobal gInfo
 
 -- | show library referened by a DGRef node (=node drawn as a box)

@@ -13,7 +13,8 @@ Interface for graph viewing and abstraction.
 
 module GUI.GraphAbstraction
   ( -- * Types
-    NodeValue
+    NodeId
+  , NodeValue
   , EdgeValue
   , GraphInfo
   -- * Creation and display
@@ -27,7 +28,7 @@ module GUI.GraphAbstraction
   , hasHiddenNodes
   , focusNode
   -- * Edge interface
-  , hideEdge
+  , hideEdges
   , hideSetOfEdgeTypes
   , isHiddenEdge
   -- * Conversion and update of graph
@@ -75,6 +76,22 @@ type NodeId = Int
 type NodeValue = (String, NodeId)
 type EdgeValue = (String, EdgeId, Maybe (LEdge DGLinkLab))
 
+data GAChange
+  -- Node changes
+  = AddNode NodeId DGNodeType String Bool
+  | DelNode NodeId
+  | ChangeNodeType NodeId DGNodeType
+  | ShowNode NodeId
+  | HideNode NodeId
+  -- Edge changes
+  | AddEdge EdgeId DGEdgeType NodeId NodeId String (Maybe (LEdge DGLinkLab))
+  | DelEdge EdgeId
+  | ShowEdge EdgeId
+  | HideEdge EdgeId
+  -- Compressed edge changes
+  | AddCompEdge (NodeId, NodeId, DGEdgeType, Bool)
+  | DelCompEdge (NodeId, NodeId, DGEdgeType, Bool)
+
 -- | Internal node
 data GANode = GANode
   { udgNode :: Maybe (DaVinciNode NodeValue) -- ^ uDrawGraph node
@@ -109,7 +126,7 @@ data AbstractionGraph = AbstractionGraph
   , edges :: Map.Map EdgeId GAEdge
   , nodeTypes :: Map.Map DGNodeType GANodeType
   , edgeTypes :: Map.Map DGEdgeType GAEdgeType
-  , compressedEdges :: [GAEdge]
+  , compressedEdges :: Map.Map (NodeId, NodeId, DGEdgeType, Bool) GAEdge
   }
 
 type GraphInfo = IORef AbstractionGraph
@@ -164,7 +181,7 @@ initgraphs = do
             , edges = Map.empty
             , nodeTypes = Map.empty
             , edgeTypes = Map.empty
-            , compressedEdges = []
+            , compressedEdges = Map.empty
             }
   newIORef g
 
@@ -216,7 +233,7 @@ makegraph gi title open save saveAs close exit menus nTypeParms eTypeParms = do
                                             , udgCompressed = (ctO,ctP)
                                             , gaeHidden = False })
         $ zip3 eTypes cTypesO cTypesP
-    , compressedEdges = []
+    , compressedEdges = Map.empty
     }
 
 {- similar to lookup (for Map), but returns just the value if lookup was
@@ -242,13 +259,16 @@ addNode :: AbstractionGraph -- ^ The graph
         -> NodeId -- ^ ID of the node
         -> DGNodeType -- ^ ID of the nodetype
         -> String -- ^ Name of the node
+        -> Bool -- ^ Hidden
         -> IO AbstractionGraph
-addNode g nId nType nName = if Map.member nId $ nodes g
+addNode g nId nType nName hidden = if Map.member nId $ nodes g
   then error $ "addNode: Node with id " ++ show nId ++ " already exist!"
   else do
-    node' <- newNode (theGraph g) (udgNodeType $ get nType $ nodeTypes g)
-                     (nName,nId)
-    let node = GANode { udgNode = Just node'
+    node' <- if hidden then return Nothing else do
+      node'' <- newNode (theGraph g) (udgNodeType $ get nType $ nodeTypes g)
+                        (nName,nId)
+      return $ Just node''
+    let node = GANode { udgNode = node'
                       , ganType = nType
                       , ganValue = (nName, nId)
                       }
@@ -279,7 +299,7 @@ hideNode g nId = do
 -- | Hides a set of nodes
 hideNodes' :: AbstractionGraph -- ^ The graph
            -> [NodeId] -- ^ IDs of the nodes to hide
-           -> [(NodeId, NodeId, (DGEdgeType, Bool))] -- ^ A list of new edges
+           -> [(NodeId, NodeId, DGEdgeType, Bool)] -- ^ A list of new edges
            -> IO AbstractionGraph
 hideNodes' g nIds compedges = do
   g' <- showAll' g
@@ -287,7 +307,7 @@ hideNodes' g nIds compedges = do
   g''' <- foldM hideNode g'' nIds
   foldM addCompressedEdge g''' compedges
 
-hideNodes :: GraphInfo -> [NodeId] -> [(NodeId, NodeId, (DGEdgeType, Bool))]
+hideNodes :: GraphInfo -> [NodeId] -> [(NodeId, NodeId, DGEdgeType, Bool)]
           -> IO ()
 hideNodes gi nId comp = wrapperWrite (\ g -> hideNodes' g nId comp) gi
 
@@ -359,13 +379,11 @@ addEdge :: AbstractionGraph -- ^ The graph
         -> String -- ^ Name of the edge
         -> Maybe (LEdge DGLinkLab) -- ^ Label of the edge
         -> IO AbstractionGraph
-addEdge g' eId eType nIdFrom nIdTo eName eLabel = if Map.member eId $ edges g'
+addEdge g eId eType nIdFrom nIdTo eName eLabel = if Map.member eId $ edges g
   then error $ "addEdge: Edge with id " ++ show eId ++ " already exist!"
   else do
-    g <- if Map.member eId $ edges g' then delEdge g' eId
-           else return g'
     let gaeV = (eName, eId, eLabel)
-    edge' <- case getEdgeAux g nIdFrom nIdTo eType (not . gaeHidden) of
+    edge' <- case getEdgeAux g nIdFrom nIdTo eType of
       Just (nFrom, nTo, gaeT) ->
         fmap Just $ newArc (theGraph g) (udgEdgeType gaeT) gaeV nFrom nTo
       Nothing -> return Nothing
@@ -380,33 +398,15 @@ getEdgeAux :: AbstractionGraph
            -> NodeId
            -> NodeId
            -> DGEdgeType
-           -> (GAEdgeType -> Bool)
            -> Maybe (DaVinciNode NodeValue, DaVinciNode NodeValue, GAEdgeType)
-getEdgeAux g nIdFrom nIdTo eType f =
+getEdgeAux g nIdFrom nIdTo eType =
   let ns = nodes g
       gaeT = get eType $ edgeTypes g
   in case (udgNode $ get nIdFrom ns, udgNode $ get nIdTo ns) of
-    (Just nFrom, Just nTo) | f gaeT -> Just (nFrom, nTo, gaeT)
+    (Just nFrom, Just nTo) | f gaeT nIdFrom nIdTo -> Just (nFrom, nTo, gaeT)
     _ -> Nothing
-
--- | Adds an compressed edge
-addCompressedEdge :: AbstractionGraph -- ^ The graph
-                  -> (NodeId, NodeId, (DGEdgeType, Bool)) -- ^ src,tar,(et,orig)
-                  -> IO AbstractionGraph
-addCompressedEdge g (nIdFrom, nIdTo, (eType, orig)) = do
-  let gaeV = ("", EdgeId 0, Nothing)
-  edge' <- case getEdgeAux g nIdFrom nIdTo eType (not . gaeHidden) of
-    Just (nFrom, nTo, gaeT) ->
-      fmap Just $ newArc (theGraph g)
-                         ((if orig then fst else snd) $ udgCompressed gaeT)
-                         gaeV nFrom nTo
-    Nothing -> return Nothing
-  let edge = GAEdge { udgEdge = edge'
-                    , gaeType = eType
-                    , ganFrom = nIdFrom
-                    , ganTo = nIdTo
-                    , gaeValue = gaeV }
-  return g { compressedEdges = edge : compressedEdges g }
+  where f = (\et nf nt -> not (gaeHidden et || isHiddenNode' g nf
+                                            || isHiddenNode' g nt))
 
 -- | Deletes an edge
 delEdge :: AbstractionGraph -- ^ The graph
@@ -418,20 +418,49 @@ delEdge g eId = do
     Nothing -> return ()
   return g { edges = Map.delete eId $ edges g }
 
+-- | Adds an compressed edge
+addCompressedEdge :: AbstractionGraph -- ^ The graph
+                  -> (NodeId, NodeId, DGEdgeType, Bool) -- ^ src,tar,et,orig
+                  -> IO AbstractionGraph
+addCompressedEdge g ce@(nIdFrom, nIdTo, eType, orig) = do
+  let gaeV = ("", EdgeId 0, Nothing)
+  edge' <- case getEdgeAux g nIdFrom nIdTo eType of
+    Just (nFrom, nTo, gaeT) ->
+      fmap Just $ newArc (theGraph g)
+                         ((if orig then fst else snd) $ udgCompressed gaeT)
+                         gaeV nFrom nTo
+    Nothing -> return Nothing
+  let edge = GAEdge { udgEdge = edge'
+                    , gaeType = eType
+                    , ganFrom = nIdFrom
+                    , ganTo = nIdTo
+                    , gaeValue = gaeV }
+  return g { compressedEdges = Map.insert ce edge $ compressedEdges g }
+
+-- | Deletes an compressed edge
+delCompressedEdge :: AbstractionGraph -- ^ The graph
+                  -> (NodeId, NodeId, DGEdgeType, Bool)
+                  -> IO AbstractionGraph
+delCompressedEdge g ce  = do
+  case udgEdge $ get ce $ compressedEdges g of
+    Just edge -> deleteArc (theGraph g) edge
+    Nothing -> return ()
+  return g { compressedEdges = Map.delete ce $ compressedEdges g }
+
 -- | Deletes an compressed edge
 delCompressedEdges :: AbstractionGraph -- ^ The graph
                    -> IO AbstractionGraph
 delCompressedEdges g = do
   mapM_ (\ e -> case udgEdge e of
           Just edge -> deleteArc (theGraph g) edge
-          Nothing -> return ()) $ compressedEdges g
-  return g { compressedEdges = [] }
+          Nothing -> return ()) $ Map.elems $ compressedEdges g
+  return g { compressedEdges = Map.empty }
 
 -- | Hides an edge
-hideEdge' :: AbstractionGraph -- ^ The graph
-          -> EdgeId -- ^ ID of the edge
-          -> IO AbstractionGraph
-hideEdge' g eId = do
+hideEdge :: AbstractionGraph -- ^ The graph
+         -> EdgeId -- ^ ID of the edge
+         -> IO AbstractionGraph
+hideEdge g eId = do
   let edge = get eId $ edges g
   case udgEdge edge of
     Nothing -> return g
@@ -439,15 +468,18 @@ hideEdge' g eId = do
       deleteArc (theGraph g) edge'
       return g { edges = Map.insert eId edge { udgEdge = Nothing } $ edges g }
 
-hideEdge :: GraphInfo -> EdgeId -> IO ()
-hideEdge gi eId = wrapperWrite (\ g -> hideEdge' g eId) gi
+hideEdges' :: AbstractionGraph -> [EdgeId] -> IO AbstractionGraph
+hideEdges' = foldM hideEdge
+
+hideEdges :: GraphInfo -> [EdgeId] -> IO ()
+hideEdges gi eIds = wrapperWrite (\ g -> hideEdges' g eIds) gi
 
 -- | Hides incoming and outgoing edges of nodes
 hideEdgesOfNodes :: AbstractionGraph -- ^ The graph
                  -> [NodeId] -- ^ IDs of the nodes to hide
                  -> IO AbstractionGraph
 hideEdgesOfNodes g nIds = do
-  foldM hideEdge' g $ map fst
+  foldM hideEdge g $ map fst
         $ filter (\ (_,e) -> elem (ganTo e) nIds || elem (ganFrom e) nIds)
         $ Map.toList $ edges g
 
@@ -461,7 +493,7 @@ hideSetOfEdgeTypes' g eTypes = do
          ([], []) $ edges g'
       g' = g { edgeTypes = Map.mapWithKey
              (\ etId et -> et { gaeHidden = elem etId eTypes }) $ edgeTypes g }
-  g'' <- foldM hideEdge' g' hEdges
+  g'' <- foldM hideEdge g' hEdges
   foldM showEdge g'' sEdges
 
 hideSetOfEdgeTypes :: GraphInfo -> [DGEdgeType] -> IO ()
@@ -485,8 +517,7 @@ showEdge g eId = do
       edge = get eId es
   case udgEdge edge of
     Just _ -> return g
-    Nothing -> case getEdgeAux g (ganFrom edge) (ganTo edge) (gaeType edge)
-                               (const True) of
+    Nothing -> case getEdgeAux g (ganFrom edge) (ganTo edge) (gaeType edge) of
       Just (nFrom, nTo, gaeT) -> do
         edge' <- newArc (theGraph g) (udgEdgeType gaeT) (gaeValue edge) nFrom
                         nTo
@@ -499,25 +530,86 @@ showEdge g eId = do
 -- see folder Proofs) to the displayed development graph
 applyChanges' :: AbstractionGraph
               -> [DGChange]
+              -> [NodeId] -- ^ IDs of the nodes to hide
+              -> [(NodeId, NodeId, DGEdgeType, Bool)] -- ^ A list of new edges
               -> IO AbstractionGraph
-applyChanges' g changes = do
-  g' <- showAll' g
-  foldM applyChangesAux g' changes
+applyChanges' g dgchanges hn' ce' = do
+  -- 1. Split and convert changes
+  let (an,dn,cnt,ae,de) = convertChanges (reverse dgchanges) ([],[],[],[],[])
+  -- 2. Delete edges
+  g1 <- foldM applyChange g de
+  -- 3. Delete compressed edges
+  g2 <- foldM applyChange g1
+    $ foldl (\cs ce -> if notElem ce ce' then DelCompEdge ce : cs else cs) []
+    $ Map.keys $ compressedEdges g1
+  -- 4. Delete nodes
+  g3 <- foldM applyChange g2 dn
+  -- 5. Change nodeTypes
+  g4 <- foldM applyChange g3 cnt
+  -- 6. Show nodes
+  g5 <- foldM applyChange g4 $ map (\n -> ShowNode n)
+    $ filter (\ n -> isHiddenNode' g4 n && notElem n hn') $ Map.keys $ nodes g4
+  -- 7. Add nodes
+  g6 <- foldM applyChange g5
+    $ map (\ (AddNode nId nT nN _) -> AddNode nId nT nN $ elem nId hn') an
+  -- 8. Hide nodes
+  g7 <- foldM applyChange g6 $ map (\n -> HideNode n) hn'
+  -- 9. Show edges
+  g8 <- foldM applyChange g7 $ map (\e -> ShowEdge e)
+    $ filter (isHiddenEdge' g7) $ Map.keys $ edges g7
+  -- 10. Add edges
+  g9 <- foldM applyChange g8 ae
+  -- 11. Add compressed edges
+  let ce'' = Map.keys $ compressedEdges g9
+  foldM applyChange g9
+    $ foldl (\cs ce -> if elem ce ce'' then cs else AddCompEdge ce : cs) [] ce'
 
-applyChanges :: GraphInfo -> [DGChange] -> IO ()
-applyChanges gi changes = wrapperWrite (\ g -> applyChanges' g changes) gi
+applyChanges :: GraphInfo -> [DGChange] -> [NodeId]
+             -> [(NodeId, NodeId, DGEdgeType, Bool)] -> IO ()
+applyChanges gi changes nIds compedges =
+  wrapperWrite (\ g -> applyChanges' g changes nIds compedges) gi
 
--- | auxiliary function for applyChanges
-applyChangesAux :: AbstractionGraph -> DGChange -> IO AbstractionGraph
-applyChangesAux g change = case change of
-  SetNodeLab _ (node, newLab) ->
-    changeNodeType g node $ getRealDGNodeType newLab
+convertChanges :: [DGChange]
+               -> ([GAChange], [GAChange], [GAChange], [GAChange], [GAChange])
+               -> ([GAChange], [GAChange], [GAChange], [GAChange], [GAChange])
+convertChanges [] changes = changes
+convertChanges (c:r) (an, dn, cnt, ae, de) = case change of
+  AddNode _ _ _ _     -> convertChanges r (change : an, dn, cnt, ae, de)
+  DelNode _           -> convertChanges r (an, change : dn, cnt, ae, de)
+  ChangeNodeType _ _  -> convertChanges r (an, dn, change : cnt, ae, de)
+  AddEdge _ _ _ _ _ _ -> convertChanges r (an, dn, cnt, change : ae, de)
+  DelEdge _           -> convertChanges r (an, dn, cnt, ae, change : de)
+  _                   -> error "convertChanges: internal error!"
+  where
+    change = convertChange c
+
+convertChange :: DGChange
+              -> GAChange
+convertChange change = case change of
   InsertNode (node, nodelab) ->
-    addNode g node (getRealDGNodeType nodelab) $ getDGNodeName nodelab
-  DeleteNode (node, _) -> delNode g node
+    AddNode node (getRealDGNodeType nodelab) (getDGNodeName nodelab) False
+  DeleteNode (node, _) ->
+    DelNode node
+  SetNodeLab _ (node, newLab) ->
+    ChangeNodeType node $ getRealDGNodeType newLab
   InsertEdge e@(src, tgt, lbl) ->
-    addEdge g (dgl_id lbl) (getRealDGLinkType lbl) src tgt "" $ Just e
-  DeleteEdge (_, _, lbl) -> delEdge g $ dgl_id lbl
+    AddEdge (dgl_id lbl) (getRealDGLinkType lbl) src tgt "" $ Just e
+  DeleteEdge (_, _, lbl) ->
+    DelEdge $ dgl_id lbl
+
+applyChange :: AbstractionGraph -> GAChange -> IO AbstractionGraph
+applyChange g change = case change of
+  AddNode nId nT nN nH           -> addNode g nId nT nN nH
+  DelNode nId                    -> delNode g nId
+  ChangeNodeType nId nT          -> changeNodeType g nId nT
+  ShowNode nId                   -> showNode g nId
+  HideNode nId                   -> hideNode g nId
+  AddEdge eId eT nIdF nIdT eN eL -> addEdge g eId eT nIdF nIdT eN eL
+  DelEdge eId                    -> delEdge g eId
+  ShowEdge eId                   -> showEdge g eId
+  HideEdge eId                   -> hideEdge g eId
+  AddCompEdge ceId               -> addCompressedEdge g ceId
+  DelCompEdge ceId               -> delCompressedEdge g ceId
 
 convert' :: AbstractionGraph -> DGraph -> IO AbstractionGraph
 convert' g dg = do
@@ -540,7 +632,7 @@ conversion maps and afterwards calls itself with the remaining node
 list -}
 convertNodesAux :: AbstractionGraph -> LNode DGNodeLab -> IO AbstractionGraph
 convertNodesAux g (node, dgnode) =
-  addNode g node (getRealDGNodeType dgnode) $ getDGNodeName dgnode
+  addNode g node (getRealDGNodeType dgnode) (getDGNodeName dgnode) False
 
 {- | converts the edges of the development graph
 works the same way as convertNods does-}
