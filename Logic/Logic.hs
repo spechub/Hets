@@ -582,6 +582,10 @@ class (StaticAnalysis lid
              error $ "export_senToOmdoc not yet implemented "
                        ++ "for logic " ++ (show lid)
 
+         omdoc_metatheory :: lid -> Maybe OMDoc.OMCD
+         -- default implementation
+         omdoc_metatheory lid = Nothing
+
 ----------------------------------------------------------------
 -- Derived functions
 ----------------------------------------------------------------
