@@ -534,8 +534,10 @@ applyChanges' :: AbstractionGraph
               -> [(NodeId, NodeId, DGEdgeType, Bool)] -- ^ A list of new edges
               -> IO AbstractionGraph
 applyChanges' g dgchanges hn' ce' = do
-  -- 1. Split and convert changes
-  let (an,dn,cnt,ae,de) = convertChanges (reverse dgchanges) ([],[],[],[],[])
+  -- 1. Split and convert changes and filter duplicated node type changes
+  let (an,dn,cnt',ae,de) = convertChanges dgchanges ([],[],[],[],[])
+      (cnt,_) = foldl (\(cs, nIds) c@(ChangeNodeType nId _) -> if elem nId nIds
+                  then (cs, nIds) else (c:cs, nId:nIds)) ([], []) $ reverse cnt'
   -- 2. Delete edges
   g1 <- foldM applyChange g de
   -- 3. Delete compressed edges
