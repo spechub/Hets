@@ -303,10 +303,8 @@ checkConservativityEdge useGUI (source,target,linklab) libEnv ln
                  obligations = case res of
                       Just (Just (_, os)) -> os
                       _                   -> []
-                 newSens = [ makeNamed "" o | o<-obligations ]
-                 namedNewSens = toThSens [ o { isAxiom = False } |
-                                           o<-inputThSens, n<-newSens,
-                                           sentence o == sentence n ]
+                 namedNewSens = toThSens [ (makeNamed "" o) {isAxiom = False} |
+                                           o<-obligations ]
              G_theory glid gsign gsigid gsens gid <- return $ dgn_theory nodelab
              namedNewSens' <- coerceThSens lid glid "" namedNewSens
              let oldSens = OMap.toList gsens
