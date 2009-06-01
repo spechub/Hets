@@ -387,8 +387,8 @@ processCmds cmds state pgipState
                    [] -> processCmds l nwSt $
                           genAnswer (outputMsg $ output nwSt)
                                    (warningMsg $ output nwSt) pgipSt
-                   _ -> return (nwSt, genErrAnswer (errorMsg $ output nwSt)
-                                    pgipSt)
+                   _ -> processCmds [] nwSt $ genErrAnswer (errorMsg $ output nwSt)
+                                    pgipSt
      (XML_CloseTheory _) :l -> do
                   case i_state $ intState state of
                    Nothing ->
@@ -407,7 +407,7 @@ processCmds cmds state pgipState
                   processCmds l emptyCMDL_State (genAnswer "File closed" []
                                                        pgipSt)
      (XML_ParseScript str) : _ -> do
-                 return (state,addToContent pgipSt (addPgipMarkUp str) )
+                 processCmds []  state $ addToContent pgipSt (addPgipMarkUp str) 
      (XML_LoadFile str) : l -> do
                   appendFile "/tmp/razvan.txt" ("Output : "++(theMsg pgipSt)
                                                           ++ "\n")
