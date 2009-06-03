@@ -21,23 +21,30 @@ module Omega.Export
     , exportNodeLab
     ) where
 
+import Logic.Coerce
+import qualified Logic.Prover as P
 --import Logic.Logic
---import Logic.Prover
 --import Logic.Grothendieck
 --import Logic.Comorphism
+
+import HasCASL.Logic_HasCASL
+import qualified HasCASL.Le as Le
 
 import Static.DevGraph
 import Static.GTheory
 
-import Common.ExtSign
 import Common.Id
+import Common.ExtSign
 import Common.LibName
+import Common.AS_Annotation
 
 import Omega.DataTypes
+import Omega.Terms
 
 import Data.Graph.Inductive.Graph
 import Data.List
 import Data.Maybe
+import qualified Data.Map as Map
 
 -- | DGraph to Omega Library translation
 exportDGraph :: LIB_NAME -> DGraph -> Library
@@ -48,22 +55,38 @@ exportDGraph ln dg =
                   $ catMaybes $ map (exportNodeLab libid dg)
                   $ topsortedNodes dg
 
--- | DGNodeLab to String translation
+-- | DGNodeLab to Theory translation
 exportNodeLab :: LIB_ID -> DGraph -> LNode DGNodeLab -> Maybe Theory
-exportNodeLab libid dg (n, lb) =
+exportNodeLab _ dg (n, lb) =
     justWhen (not $ isDGRef lb) $
-    let specid = mkSimpleId $ getDGNodeName lb
-    in case dgn_theory lb of
-         G_theory lid (ExtSign sig _) _ sens _ ->
-             Theory (show specid)
-                    (catMaybes (map (makeImport libid dg) $ innDG dg n))
-                    []
-                   
-{-        ++ export_signToOmdoc lid specid libid sig
-        ++ map (export_senToOmdoc lid specid libid sig) (toNamedList sens)
--}
+    case dgn_theory lb of
+      G_theory lid (ExtSign sign _) _ sens _ ->
+          let theoryname = getDGNodeName lb
+              msg = "Omega Export: Try to coerce to HasCASL!"
+              e = error msg
+              (signature, sentences) =
+                  fromMaybe e $
+                  coerceBasicTheory lid HasCASL msg (sign, P.toNamedList sens)
+          in Theory theoryname
+                 (catMaybes (map (makeImport dg) $ innDG dg n))
+                 $ exportSign signature ++ exportSens sentences
 
-makeImport :: LIB_ID -> DGraph -> LEdge DGLinkLab -> Maybe String
-makeImport libid dg (from, _, lbl) =
+exportSign :: Le.Env -> [TCElement]
+-- need to filter the elements which are not locally defined but imported!
+exportSign Le.Env{ Le.assumps = ops } = map (TCSymbol . show) $ Map.keys ops
+
+exportSens :: [Named Le.Sentence] -> [TCElement]
+exportSens = catMaybes . (map exportSen)
+
+exportSen :: (Named Le.Sentence) -> Maybe TCElement
+exportSen SenAttr
+  { senAttr = name
+  , isAxiom = isAx
+  , sentence = (Le.Formula t) }
+    = Just $ TCAxiomOrTheorem (not isAx) name $ Var $ toTerm t
+exportSen _ = Nothing
+
+makeImport :: DGraph -> LEdge DGLinkLab -> Maybe String
+makeImport dg (from, _, lbl) =
   justWhen (isGlobalDef $ dgl_type lbl) $ getDGNodeName $ labDG dg from
 
