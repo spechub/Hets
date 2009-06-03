@@ -701,8 +701,8 @@ mapSubObjProp cSig prop oP num1 =
                      [Var_decl [mk_Name num1] thing nullRange, Var_decl [mk_Name num2] thing nullRange]
                      (
                       Implication
-                      l
                       r
+                      l
                       True
                       nullRange
                      )
