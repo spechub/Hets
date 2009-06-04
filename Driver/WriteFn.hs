@@ -80,8 +80,10 @@ import Driver.WriteLibDefn
 import OMDoc.OMDocOutput
 #endif
 
-import OMDoc.XmlInterface
-import OMDoc.Export
+--import OMDoc.XmlInterface
+--import OMDoc.Export
+import Omega.Export
+import Omega.ToLisp
 
 writeVerbFile :: HetcatsOpts -> FilePath -> String -> IO ()
 writeVerbFile opts f str = do
@@ -99,9 +101,15 @@ writeLibEnv opts filePrefix lenv ln ot =
       OmdocOut -> hetsToOMDoc opts (ln, lenv) f
 #endif
 
+{-
       ExperimentalOut ->
           writeVerbFile opts (filePrefix ++ ".xml")
             $ xmlOut $ exportDGraph ln (lookupDGraph ln lenv)
+-}
+
+      ExperimentalOut ->
+          writeVerbFile opts (filePrefix ++ ".lisp")
+            $ printLibrary $ exportDGraph ln (lookupDGraph ln lenv)
 
       GraphOut (Dot showInternalNodeLabels) -> writeVerbFile opts f
         $ dotGraph showInternalNodeLabels dg
@@ -282,8 +290,10 @@ writeSpecFiles opts file lenv0 ln dg = do
             _ -> False) outTypes
         allSpecs = null ns
         ignore = null specOutTypes && modelSparQ opts == ""
-        lenv = if elem (show ExperimentalOut) $ map show outTypes
-               then fromJust $ maybeResult $ qualifyLibEnv lenv0 else lenv0
+        -- experimental out needs the qualification of names:
+        lenv = if False && (elem (show ExperimentalOut) $ map show outTypes)
+               then fromJust $ maybeResult $ qualifyLibEnv lenv0
+               else lenv0
 
     mapM_ (writeLibEnv opts filePrefix lenv ln) $
           if null $ dumpOpts opts then outTypes else EnvOut : outTypes
