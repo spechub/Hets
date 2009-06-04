@@ -20,7 +20,7 @@ import System.Console.Shell
 #ifdef EDITLINE
 import System.Console.Shell.Backend.Editline
 #else
-import System.Console.Shell.Backend.Compatline
+import System.Console.Shell.Backend.Haskeline
 #endif
 import System.IO
 

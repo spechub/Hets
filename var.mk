@@ -23,8 +23,8 @@ ifneq ($(findstring 0., $(GLADEVERSION)),)
 GLADE_PACKAGE = -DGTKGLADE
 endif
 
-SHELLACVERSION = $(shell $(HCPKG) field Shellac-compatline version)
-ifneq ($(findstring 0.9, $(SHELLACVERSION)),)
+SHELLACVERSION = $(shell $(HCPKG) field Shellac-haskeline version)
+ifneq ($(findstring 0.2, $(SHELLACVERSION)),)
 SHELLAC_PACKAGE = -DSHELLAC
 endif
 
