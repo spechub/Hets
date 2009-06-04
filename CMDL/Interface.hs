@@ -69,7 +69,7 @@ cmdlRunShell files
 #ifdef EDITLINE
               editlineBackend
 #else
-              compatlineBackend
+              haskelineBackend
 #endif
               state
 
