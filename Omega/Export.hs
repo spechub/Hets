@@ -83,7 +83,7 @@ exportSen SenAttr
   { senAttr = name
   , isAxiom = isAx
   , sentence = (Le.Formula t) }
-    = Just $ TCAxiomOrTheorem (not isAx) name $ Var $ toTerm t
+    = Just $ TCAxiomOrTheorem (not isAx) name $ toTerm t
 exportSen _ = Nothing
 
 makeImport :: DGraph -> LEdge DGLinkLab -> Maybe String

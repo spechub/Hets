@@ -15,48 +15,79 @@ module Omega.Terms
     ( toTerm
     ) where
 
-import qualified Omega.DataTypes as DT
+import Omega.DataTypes as DT
 
 import HasCASL.FoldTerm
-import HasCASL.As
+import HasCASL.As as As
 
-toTerm :: Term -> String
+import Data.Maybe
+
+toTerm :: As.Term -> DT.Term
 toTerm = foldTerm toTermRec
 
-toTermRec :: FoldRec String String
+failInTermRec :: String -> a
+failInTermRec x = error $ "Occurence of " ++ x ++ " in toTermRec!"
+
+-- Structs: VarDecl PolyId GenVarDecl
+-- Enums: OpBrand Quantifier Partiality LetBrand
+
+quantifierName :: Quantifier -> String
+quantifierName Universal = "!"
+quantifierName Existential = "?"
+quantifierName Unique = "?!"
+
+lambdaName :: String
+lambdaName = "\\"
+
+tupleName :: String
+tupleName = "TUPLE"
+
+toTermRec :: FoldRec DT.Term DT.Term
 toTermRec = FoldRec
     { -- Term VarDecl
-      foldQualVar = \t v -> show (t, v)
-      -- Term -> OpBrand -> PolyId -> TypeScheme -> [Type] -> InstKind -> Range
-    , foldQualOp = \t o i ts tp k r -> show (t, o, i, ts, tp, k, r)
-    -- Term -> a -> a -> Range
-    , foldApplTerm = \t y z r -> show (t, y, z, r)
-    -- Term -> [a] -> Range
-    , foldTupleTerm = \t l r -> show (t, l, r)
-    -- Term -> a -> TypeQual -> Type -> Range
-    , foldTypedTerm = \t z tq tp r -> show (t, z, tq, tp, r)
-    -- Term -> VarDecl -> a -> Range
-    , foldAsPattern = \t v z r -> show (t, v, z, r)
-    -- Term -> Quantifier -> [GenVarDecl] -> a -> Range
-    , foldQuantifiedTerm = \t q v z r -> show (t, q, v, z, r)
-    -- Term -> [a] -> Partiality -> a -> Range
-    , foldLambdaTerm = \t y p z r -> show (t, y, p, z, r)
-    -- Term -> a -> [b] -> Range
-    , foldCaseTerm = \t x b r -> show (t, x, b, r)
-    -- Term -> LetBrand -> [b] -> a -> Range
-    , foldLetTerm = \t l b z r -> show (t, l, b, z, r)
-    -- Term -> Id -> [Type] -> [a] -> Range
-    , foldResolvedMixTerm = \t i tp z r -> show (t, i, tp, z, r)
-    -- Term -> Token
-    , foldTermToken = \t tk -> show (t, tk)
-    -- Term ->TypeQual -> Type -> Range
-    , foldMixTypeTerm = \t tpq tp r -> show (t, tpq, tp, r)
-    -- Term -> [a]
-    , foldMixfixTerm = \t z -> show (t, z)
-    -- Term -> BracketKind -> [a] -> Range
-    , foldBracketTerm = \t k z r -> show (t, k, z, r)
-    -- ProgEq -> a -> a -> Range
-    , foldProgEq = \p y z r -> show (p, y, z, r)
+      foldQualVar = \_ (VarDecl v _ _ _) -> DT.Var $ show v
+      -- Term OpBrand PolyId TypeScheme [Type] InstKind Range
+    , foldQualOp = \_ _ (PolyId i _ _) _ _ _ _ -> Symbol $ show i
+    -- Term a a Range
+    , foldApplTerm = \ (ApplTerm _ o2 _) y z _ ->
+                     App y
+                     -- flatten the tuple to an argument list
+                     $ case (o2, z) of (TupleTerm _ _, App _ l) -> l
+                                       _ -> [z]
+    -- Term [a] Range
+    , foldTupleTerm = \_ l _ -> App (Symbol tupleName) l
+    -- Term a TypeQual Type Range
+    , foldTypedTerm = \_ z _ _ _ -> z
+    -- Term Quantifier [GenVarDecl] a Range
+    , foldQuantifiedTerm =
+        \_ q vars z _ ->
+            let bvars =
+                    -- we skip the type variables
+                    (catMaybes
+                     $ map (\x -> case x of GenVarDecl (VarDecl v _ _ _)
+                                                -> Just $ DT.Var $ show v
+                                            _ -> Nothing) vars)
+            in if null bvars then z else Bind (quantifierName q) bvars z
+    -- Term [a] Partiality a Range
+    , foldLambdaTerm = \_ y _ z _ -> Bind lambdaName y z
+    -- Term VarDecl a Range
+    , foldAsPattern = \_ _ _ _ -> failInTermRec "AsPattern"
+    -- Term a [b] Range
+    , foldCaseTerm = \_ _ _ _ -> failInTermRec "CaseTerm"
+    -- Term LetBrand [b] a Range
+    , foldLetTerm = \_ _ _ _ _ -> failInTermRec "LetTerm"
+    -- ProgEq a a Range
+    , foldProgEq = \_ _ _ _ -> failInTermRec "ProgEq"
+    -- Term Id [Type] [a] Range
+    , foldResolvedMixTerm = \_ _ _ _ _ -> failInTermRec "ResolvedMixTerm"
+    -- Term Token
+    , foldTermToken = \_ _ -> failInTermRec "TermToken"
+    -- TermTypeQual Type Range
+    , foldMixTypeTerm = \_ _ _ _ -> failInTermRec "MixTypeTerm"
+    -- Term [a]
+    , foldMixfixTerm = \_ _ -> failInTermRec "MixfixTerm"
+    -- Term BracketKind [a] Range
+    , foldBracketTerm = \_ _ _ _ -> failInTermRec "BracketTerm"
     }
 
 
