@@ -3,6 +3,11 @@
 HC = ghc -optl-s -XTemplateHaskell
 HCPKG = ghc-pkg
 
+TIMEVERSION = $(shell $(HCPKG) field time version)
+ifneq ($(findstring 1.1.3, $(TIMEVERSION)),)
+TIME_PACKAGE = -DTIME_WITH_TYPEABLE
+endif
+
 TARVERSION = $(shell $(HCPKG) field tar version)
 ifneq ($(findstring 0.3, $(TARVERSION)),)
 TAR_PACKAGE = -DTAR_PACKAGE
@@ -57,7 +62,7 @@ TESTTARGETFILES += Taxonomy/taxonomyTool.hs OWL/OWLParser.hs \
 endif
 
 HC_OPTS_WITHOUTGLADE = -threaded -fglasgow-exts -XOverlappingInstances \
-  $(NOMATHSERVER) $(TAR_PACKAGE) \
+  $(NOMATHSERVER) $(TIME_PACKAGE) $(TAR_PACKAGE) \
   $(HAXML_PACKAGE) $(UNI_PACKAGE) $(SHELLAC_PACKAGE) $(HXTFILTER_PACKAGE) \
   $(PFE_FLAGS) $(TABULAR_PACKAGE) $(EDITLINE_PACKAGE) -DCASLEXTENSIONS
 

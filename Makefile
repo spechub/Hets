@@ -375,6 +375,7 @@ derived_sources += $(drifted_files) Driver/Version.hs $(happy_files) \
 cpp_sources = hets.hs $(happy_files) \
     CASL/Logic_CASL.hs \
     Common/Exception.hs \
+    Common/ATerm/ConvInstances.hs \
     Comorphisms/KnownProvers.hs \
     Comorphisms/LogicGraph.hs \
     Comorphisms/LogicList.hs \

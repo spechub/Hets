@@ -1,4 +1,4 @@
-{-# OPTIONS -fno-warn-missing-signatures #-}
+{-# OPTIONS -cpp -fno-warn-missing-signatures #-}
 {- |
 Module      :  $Header$
 Description :  special ShATermConvertible instances
@@ -502,10 +502,12 @@ fromShATermAux_ClockTime ix att0 =
                     (att2, TOD a' b') }}
             u -> fromShATermError "ClockTime" u
 
+#ifndef TIME_WITH_TYPEABLE
 timeOfDayTc = mkTyCon "Data.Time.TimeOfDay"
 
 instance Typeable TimeOfDay where
     typeOf _ = mkTyConApp timeOfDayTc []
+#endif
 
 instance ShATermConvertible TimeOfDay where
   toShATermAux = toShATermAux_TimeOfDay
