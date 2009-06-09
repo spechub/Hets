@@ -584,7 +584,7 @@ class (StaticAnalysis lid
 
          omdoc_metatheory :: lid -> Maybe OMDoc.OMCD
          -- default implementation
-         omdoc_metatheory lid = Nothing
+         omdoc_metatheory _lid = Nothing
 
 ----------------------------------------------------------------
 -- Derived functions
