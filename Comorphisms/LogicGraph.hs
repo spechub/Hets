@@ -66,6 +66,7 @@ import Comorphisms.Prop2CASL
 import Comorphisms.CASL2Prop
 import Comorphisms.HasCASL2IsabelleHOL
 import Comorphisms.PCoClTyConsHOL2IsabelleHOL
+import Comorphisms.MonadicHasCASLTranslation
 import Comorphisms.PCoClTyConsHOL2PairsInIsaHOL
 import Comorphisms.HasCASL2PCoClTyConsHOL
 import Comorphisms.CASL2TopSort
@@ -149,6 +150,7 @@ comorphismList =
     , Comorphism Haskell2IsabelleHOL
 #endif
     , Comorphism PCoClTyConsHOL2IsabelleHOL
+    , Comorphism MonadicHasCASL2IsabelleHOL
     , Comorphism PCoClTyConsHOL2PairsInIsaHOL
     , Comorphism HasCASL2IsabelleHOL
     , Comorphism SuleCFOL2SoftFOLInduction
