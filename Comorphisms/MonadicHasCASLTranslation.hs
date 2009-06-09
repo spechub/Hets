@@ -53,3 +53,4 @@ instance Comorphism MonadicHasCASL2IsabelleHOL
     map_sentence MonadicHasCASL2IsabelleHOL sign phi =
         transSentence sign (typeToks sign) (Old NoSimpLift) simpForOption phi
     isInclusionComorphism MonadicHasCASL2IsabelleHOL = True
+    has_model_expansion MonadicHasCASL2IsabelleHOL = True

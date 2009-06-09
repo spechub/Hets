@@ -53,3 +53,4 @@ instance Comorphism PCoClTyConsHOL2IsabelleHOL
     map_sentence PCoClTyConsHOL2IsabelleHOL sign phi =
         transSentence sign (typeToks sign) (Old Lift2Case) simpForOption phi
     isInclusionComorphism PCoClTyConsHOL2IsabelleHOL = True
+    has_model_expansion PCoClTyConsHOL2IsabelleHOL = True

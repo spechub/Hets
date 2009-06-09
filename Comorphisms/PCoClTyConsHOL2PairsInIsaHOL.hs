@@ -53,3 +53,4 @@ instance Comorphism PCoClTyConsHOL2PairsInIsaHOL
     map_sentence PCoClTyConsHOL2PairsInIsaHOL sign phi =
        transSentence sign (typeToks sign) New simpForPairs phi
     isInclusionComorphism PCoClTyConsHOL2PairsInIsaHOL = True
+    has_model_expansion PCoClTyConsHOL2PairsInIsaHOL = True
