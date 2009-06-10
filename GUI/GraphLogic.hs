@@ -114,22 +114,22 @@ runAndLock (GInfo { functionLock = lock
 
 -- | Undo one step of the History
 undo :: GInfo -> Bool -> IO ()
-undo gInfo@(GInfo { graphInfo = gi }) isUndo = do
+undo gInfo isUndo = do
   intSt <- readIORef $ intState gInfo
   nwSt <- if isUndo then undoOneStepWithUpdate intSt $ updateGraph gInfo
                     else redoOneStepWithUpdate intSt $ updateGraph gInfo
   writeIORef (intState gInfo) nwSt
-  GA.redisplay gi
 
-updateGraph :: GInfo -> LIB_NAME -> [DGChange] -> IO ()
-updateGraph gInfo ln changes = do
+updateGraph :: GInfo -> LIB_NAME -> [DGChange] -> DGraph -> IO ()
+updateGraph gInfo ln changes dg = do
   og <- readIORef $ openGraphs gInfo
   case Map.lookup ln og of
     Nothing -> return ()
     Just (GInfo { graphInfo = gi }) -> do
       hhn <- GA.hasHiddenNodes gi
-      (nodes, edges) <- if hhn then hideNodesAux gInfo else return ([],[])
+      let (nodes, edges) = if hhn then hideNodesAux dg else ([],[])
       GA.applyChanges gi (removeContraryChanges changes) nodes edges
+      GA.redisplay gi
 
 -- | Toggles to display internal node names
 hideShowNames :: GInfo -> Bool -> IO ()
@@ -156,28 +156,28 @@ showNodes gInfo@(GInfo { graphInfo = gi
 
 -- | hides all unnamed internal nodes that are proven
 hideNodes :: GInfo -> IO ()
-hideNodes gInfo@(GInfo { graphInfo = gi }) = do
-  (nodes, edges) <- hideNodesAux gInfo
-  GA.showTemporaryMessage gi "Hiding unnamed nodes..."
-  GA.hideNodes gi nodes edges
-
--- | hides all unnamed internal nodes that are proven
-hideNodesAux :: GInfo
-             -> IO ([GA.NodeId], [(GA.NodeId, GA.NodeId, DGEdgeType, Bool)])
-hideNodesAux gInfo@(GInfo { libName = ln }) = do
+hideNodes gInfo@(GInfo { graphInfo = gi
+                       , libName = ln }) = do
   ost <- readIORef $ intState gInfo
   case i_state ost of
-   Nothing -> return ([], [])
-   Just ist -> do
-       let le = i_libEnv ist
-           dg = lookupDGraph ln le
-           nodes = selectNodesByType dg [DGNodeType
-                                          { nonRefType = NonRefType
-                                            { isProvenCons = True
-                                            , isInternalSpec = True}
-                                          , isLocallyEmpty = True}]
-           edges = getCompressedEdges dg nodes
-       return (nodes, edges)
+    Nothing -> return ()
+    Just ist -> do
+      let le = i_libEnv ist
+          dg = lookupDGraph ln le
+          (nodes, edges) = hideNodesAux dg
+      GA.showTemporaryMessage gi "Hiding unnamed nodes..."
+      GA.applyChanges gi [] nodes edges
+
+-- | hides all unnamed internal nodes that are proven
+hideNodesAux :: DGraph
+             -> ([GA.NodeId], [(GA.NodeId, GA.NodeId, DGEdgeType, Bool)])
+hideNodesAux dg =
+  let nodes = selectNodesByType dg [DGNodeType { nonRefType = NonRefType
+                                                 { isProvenCons = True
+                                                 , isInternalSpec = True}
+                                               , isLocallyEmpty = True}]
+      edges = getCompressedEdges dg nodes
+  in (nodes, edges)
 
 -- | hides all proven edges created not initialy
 hideNewProvedEdges :: GInfo -> IO ()
@@ -194,7 +194,7 @@ hideNewProvedEdges gInfo@(GInfo { graphInfo = gi
                          DeleteEdge (_, _, lbl) -> delete (dgl_id lbl) e
                          _ -> e
                        ) [] $ flattenHistory ph []
-     GA.hideEdges gi edges
+     --GA.hideEdges gi edges
      GA.redisplay gi
 
 -- | generates from list of HistElem one list of DGChanges
@@ -206,9 +206,8 @@ flattenHistory ((HistGroup _ ph):r) cs =
 
 -- | selects all nodes of a type with outgoing edges
 selectNodesByType :: DGraph -> [DGNodeType] -> [Node]
-selectNodesByType dg types =
-  filter (\ n -> outDG dg n /= []) $ map fst
-         $ filter (\ (_, n) -> elem (getRealDGNodeType n) types) $ labNodesDG dg
+selectNodesByType dg types = filter (\ n -> outDG dg n /= []) $ map fst
+  $ filter (\ (_, n) -> elem (getRealDGNodeType n) types) $ labNodesDG dg
 
 -- | compresses a list of types to the highest one
 compressTypes :: Bool -> [DGEdgeType] -> (DGEdgeType, Bool)
@@ -392,7 +391,7 @@ proofMenu gInfo@(GInfo { hetcatsOpts = hOpts
             putStrLn "History"
             print $ prettyHistory history
           writeIORef (intState gInfo) nwst
-          updateGraph gInfo ln (reverse $ flatHistory history)
+          updateGraph gInfo ln (reverse $ flatHistory history) newGr
           unlockGlobal gInfo
           hideShowNames gInfo False
           mGUIMVar <- tryTakeMVar guiMVar
@@ -572,7 +571,7 @@ runProveAtNode checkCons gInfo (v, dgnode) (Result ds mres) =
                        { i_state = Just iist
                          { i_libEnv = Map.insert ln newDg le } }
                  writeIORef iSt nwst
-                 updateGraph gInfo ln (reverse $ flatHistory history)
+                 updateGraph gInfo ln (reverse $ flatHistory history) newDg
                  unlockGlobal gInfo
                  hideShowNames gInfo False
            Nothing -> return ()
@@ -614,6 +613,7 @@ checkconservativityOfEdge descr gInfo me = case me of
                   nwst = nst { i_state = Just $ iist { i_libEnv = nwle}}
               writeIORef iSt nwst
               updateGraph gInfo ln (reverse $ flatHistory ph)
+                          $ lookupDGraph ln nwle
               unlockGlobal gInfo
 
 -- | show library referened by a DGRef node (=node drawn as a box)

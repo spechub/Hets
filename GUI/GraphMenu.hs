@@ -243,7 +243,6 @@ createGlobalMenu gInfo@(GInfo { hetcatsOpts = opts
                                   (\ eList -> ral $ do
                                     GA.showAll gi
                                     GA.hideSetOfEdgeTypes gi eList
-                                    GA.redisplay gi
                                   )
 #endif
      , Button "Hide new proven links" $ ral $ hideNewProvedEdges gInfo
