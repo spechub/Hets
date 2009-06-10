@@ -1,6 +1,6 @@
 {- |
 Module      :  $Header$
-Description :  translating a HasCASL subset to pairs in Isabelle
+Description :  normalising translation of a HasCASL subset to Isabelle
 Copyright   :  (c) C. Maeder, DFKI 2006
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
@@ -9,7 +9,7 @@ Stability   :  provisional
 Portability :  non-portable (imports Logic.Logic)
 
 An embedding comorphism from HasCASL without subtypes to
-Isabelle-HOL.  Partial functions yield a pair with a bool component.
+Isabelle-HOL.
 -}
 
 module Comorphisms.PCoClTyConsHOL2PairsInIsaHOL
@@ -31,7 +31,7 @@ import Isabelle.Logic_Isabelle
 data PCoClTyConsHOL2PairsInIsaHOL = PCoClTyConsHOL2PairsInIsaHOL deriving Show
 
 instance Language PCoClTyConsHOL2PairsInIsaHOL where
-  language_name PCoClTyConsHOL2PairsInIsaHOL = "HasCASL2IsabelleBoolPair"
+  language_name PCoClTyConsHOL2PairsInIsaHOL = "NormalisingTranslation"
 
 instance Comorphism PCoClTyConsHOL2PairsInIsaHOL
                HasCASL Sublogic
@@ -47,10 +47,10 @@ instance Comorphism PCoClTyConsHOL2PairsInIsaHOL
     mapSublogic cid sl = if sl `isSubElem` sourceSublogic cid
                        then Just () else Nothing
     map_theory PCoClTyConsHOL2PairsInIsaHOL th = do
-      (sig, sens) <- mapTheory New simpForPairs th
-      return (sig { baseSig = MainHCPairs_thy }, sens)
+      (sig, sens) <- mapTheory New simpForOption th
+      return (sig { baseSig = MainHC_thy }, sens)
     map_morphism = mapDefaultMorphism
     map_sentence PCoClTyConsHOL2PairsInIsaHOL sign phi =
-       transSentence sign (typeToks sign) New simpForPairs phi
+       transSentence sign (typeToks sign) New simpForOption phi
     isInclusionComorphism PCoClTyConsHOL2PairsInIsaHOL = True
     has_model_expansion PCoClTyConsHOL2PairsInIsaHOL = True
