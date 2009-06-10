@@ -669,16 +669,6 @@ existEqualOp :: Isa.Term
 existEqualOp =
   con $ VName "existEqualOp" $ Just $ AltSyntax "(_ =e=/ _)"  [50, 51] 50
 
-unpackOp :: Isa.Term -> Bool -> FunType -> ConvFun -> Isa.Term
-unpackOp fTrm isPf ft fConv = let isaF = convFun None fConv in
-  if isPf then mkTermAppl
-  (mkTermAppl (case ft of
-    UnitType -> conDouble "unpack2bool"
-    BoolType -> conDouble "unpackBool"
-    PartialVal _ -> conDouble "unpackPartial"
-    _ ->  conDouble "unpack2partial") isaF) fTrm
-  else mkTermAppl isaF fTrm
-
 integrateCondInBool :: Cond -> Isa.Term
 integrateCondInBool c = let b = cond2bool c in
   if b == true then idOp else mkTermAppl (con conjV) b
@@ -743,13 +733,23 @@ adjustArgType aTy ty = case (aTy, ty) of
                 else return IdOp
     _ -> fail "cannot adjust argument type"
 
+unpackOp :: Isa.Term -> Bool -> Bool -> FunType -> ConvFun -> Isa.Term
+unpackOp fTrm isPf pfTy ft fConv = let isaF = convFun None fConv in
+  if isPf then mkTermAppl
+  (mkTermAppl (conDouble $ case if pfTy then makePartialVal ft else ft of
+    UnitType -> "unpack2bool"
+    BoolType -> "unpackBool"
+    PartialVal _ -> "unpackPartial"
+    _ -> "unpack2partial") isaF) fTrm
+  else mkTermAppl isaF fTrm
+
 -- True means function type result was partial
 adjustMkApplOrig :: Isa.Term -> Cond -> Bool -> FunType -> FunType
                  -> IsaTermCond -> Result IsaTermCond
 adjustMkApplOrig fTrm fCs isPf aTy rTy (ITC ty aTrm aCs) = do
   ((pfTy, fConv), (_, aConv)) <- adjustTypes aTy rTy ty
   return . ITC (if isPf || pfTy then makePartialVal rTy else rTy)
-    (mkTermAppl (unpackOp fTrm isPf rTy fConv)
+    (mkTermAppl (unpackOp fTrm isPf pfTy rTy fConv)
     $ mkTermAppl (convFun None aConv) aTrm) $ joinCond fCs aCs
 
 -- True means require result type to be partial
