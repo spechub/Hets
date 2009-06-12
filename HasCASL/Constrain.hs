@@ -113,8 +113,9 @@ freshLeaves ty = case ty of
     TypeName i k _ -> do
       (var, c) <- freshVar i
       return $ TypeName var k c
-    TypeAppl (TypeName l _ _) t | l == lazyTypeId ->
-      freshLeaves t
+    TypeAppl tl@(TypeName l _ _) t | l == lazyTypeId -> do
+      nt <- freshLeaves t
+      return $ TypeAppl tl nt
     TypeAppl f a -> case redStep ty of
         Just r -> freshLeaves r
         Nothing -> do
