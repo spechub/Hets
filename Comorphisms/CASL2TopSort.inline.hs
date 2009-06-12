@@ -88,6 +88,7 @@ instance Comorphism CASL2TopSort
           , mtarget = sigTarg }
     map_sentence CASL2TopSort = transSen
     map_symbol CASL2TopSort _ = Set.singleton . id
+    has_model_expansion CASL2TopSort = True
 
 data PredInfo = PredInfo { topSort_PI    :: SORT
                          , directSuperSorts_PI :: Set.Set SORT
