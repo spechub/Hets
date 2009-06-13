@@ -1,0 +1,1508 @@
+library GUM/GUM
+version 1.1
+
+%% developers: University of Bremen, SFB/TR8 Spatial Cognition, I1-[OntoSpace] http://www.ontospace.uni-bremen.de
+%% The Generalized Upper Model 3.0 (GUM 3.0) is a linguistically motivated ontology, which aims primarily to mediate between natural language and application components. It is based on the semantic perspective of natural language as described in Halliday and Matthiessen [1999]. Therefore the concepts of the GUM ontology are influenced strongly by the lexicogrammar of natural language and they are applicable in arbitrary domains. The complete model and all of its concepts and principles are described in detail in Bateman et al. [2006a], its underlying experimental linguistic results and language analysis are documented in Bateman et al. [2006b]. This version of the Generalized Upper Model 3.0 is expressed in CASL.
+%% GUM 3.0 is extended by a spatial module for dealing particularly with spatial language.
+
+
+%% relation "result" is named with capital "R" because of keyword conflict.
+
+%%------------------------
+%% GUM_Taxonomy
+%%------------------------
+
+spec GUM_Taxonomy =
+	sorts Configuration, Element, MultiConfiguration < Thing
+		forall x: Configuration . not(x in Element \/ x in MultiConfiguration)
+		forall x: Element . not(x in MultiConfiguration)
+		sorts BeingAndHaving, DoingAndHappening, SayingAndSensing < Configuration
+			forall x: BeingAndHaving . not(x in DoingAndHappening \/ x in SayingAndSensing)
+			forall x: DoingAndHappening . not(x in SayingAndSensing)
+			sorts Existence, Relating < BeingAndHaving
+				forall x: Existence . not(x in Relating)
+				sorts Circumstantial, GeneralizedPossession, GeneralizedPossessionInverse, Intensive < Relating
+					forall x: Circumstantial . not(x in GeneralizedPossession \/ x in GeneralizedPossessionInverse \/ x in Intensive)
+					forall x: GeneralizedPossession . not(x in GeneralizedPossessionInverse \/ x in Intensive)
+					forall x: GeneralizedPossessionInverse . not(x in Intensive)
+					sorts Causal, CircumstantialOther, GeneralizedLocating < Circumstantial
+						forall x: Causal . not(x in CircumstantialOther \/ x in GeneralizedLocating)
+						forall x: CircumstantialOther . not(x in GeneralizedLocating)
+					sorts AscriptionInverse, GeneralizedRoleRelation, NameOf, Ownership, PartWhole < GeneralizedPossession
+						forall x: AscriptionInverse . not(x in GeneralizedRoleRelation \/ x in NameOf \/ x in Ownership \/ x in PartWhole)
+						forall x: GeneralizedRoleRelation . not(x in NameOf \/ x in Ownership \/ x in PartWhole)
+						forall x: NameOf . not(x in Ownership \/ x in PartWhole)
+						forall x: Ownership . not(x in PartWhole)
+						sorts PropertyOf < AscriptionInverse
+						sorts Part < PartWhole
+							sorts ElementList < Part
+					sorts OwnedBy, PartOf < GeneralizedPossessionInverse
+						forall x: OwnedBy . not(x in PartOf)
+						sorts ElementOf < PartOf
+					sorts Ascription, Identity, Symbolization < Intensive
+						forall x: Ascription . not(x in Identity \/ x in Symbolization)
+						forall x: Identity . not(x in Symbolization)
+						sorts PropertyAscription, QuantityAscription < Ascription
+							forall x: PropertyAscription . not(x in QuantityAscription)
+							sorts AgePropertyAscription, ColorPropertyAscription, LogicalPropertyAscription, MaterialPropertyAscription, ModalPropertyAscription, ProvenancePropertyAscription, ScaledComparison, SizePropertyAscription, UsePropertyAscription < PropertyAscription
+								forall x: AgePropertyAscription . not(x in ColorPropertyAscription \/ x in LogicalPropertyAscription \/ x in MaterialPropertyAscription \/ x in ModalPropertyAscription \/ x in ProvenancePropertyAscription \/ x in ScaledComparison \/ x in SizePropertyAscription \/ x in UsePropertyAscription)
+								forall x: ColorPropertyAscription . not(x in LogicalPropertyAscription \/ x in MaterialPropertyAscription \/ x in ModalPropertyAscription \/ x in ProvenancePropertyAscription \/ x in ScaledComparison \/ x in SizePropertyAscription \/ x in UsePropertyAscription)
+								forall x: LogicalPropertyAscription . not(x in MaterialPropertyAscription \/ x in ModalPropertyAscription \/ x in ProvenancePropertyAscription \/ x in ScaledComparison \/ x in SizePropertyAscription \/ x in UsePropertyAscription)
+								forall x: MaterialPropertyAscription . not(x in ModalPropertyAscription \/ x in ProvenancePropertyAscription \/ x in ScaledComparison \/ x in SizePropertyAscription \/ x in UsePropertyAscription)
+								forall x: ModalPropertyAscription . not(x in ProvenancePropertyAscription \/ x in ScaledComparison \/ x in SizePropertyAscription \/ x in UsePropertyAscription)
+								forall x: ProvenancePropertyAscription . not(x in ScaledComparison \/ x in SizePropertyAscription \/ x in UsePropertyAscription)
+								forall x: ScaledComparison . not(x in SizePropertyAscription \/ x in UsePropertyAscription)
+								forall x: SizePropertyAscription . not(x in UsePropertyAscription)
+								sorts GreaterThanComparison, LessThanComparison < ScaledComparison
+									forall x: GreaterThanComparison . not(x in LessThanComparison)
+							sorts NumberFocusing, Quantity < QuantityAscription
+								forall x: NumberFocusing . not(x in Quantity)
+								sorts AtLeast, AtMost, Exactly, GreaterThan, LessThan < NumberFocusing
+									forall x: AtLeast . not(x in AtMost \/ x in Exactly \/ x in GreaterThan \/ x in LessThan)
+									forall x: AtMost . not(x in Exactly \/ x in GreaterThan \/ x in LessThan)
+									forall x: Exactly . not(x in GreaterThan \/ x in LessThan)
+									forall x: GreaterThan . not(x in LessThan)
+						sorts NameRelation, RolePlaying, Signification < Symbolization
+							forall x: NameRelation . not(x in RolePlaying \/ x in Signification)
+							forall x: RolePlaying . not(x in Signification)
+			sorts AffectingAction, NonAffectingAction < DoingAndHappening
+				forall x: AffectingAction . not(x in NonAffectingAction)
+				sorts CreativeMaterialAction, DispositiveMaterialAction < AffectingAction
+					forall x: CreativeMaterialAction . not(x in DispositiveMaterialAction)
+					sorts NameEvent < DispositiveMaterialAction
+				sorts Ambience, NonAffectingDoing, NonAffectingHappening < NonAffectingAction
+					forall x: Ambience . not(x in NonAffectingDoing \/ x in NonAffectingHappening)
+					forall x: NonAffectingDoing . not(x in NonAffectingHappening)
+					sorts Hailing, Raining, Snowing, Sunning, Winding < Ambience
+						forall x: Hailing . not(x in Raining \/ x in Snowing \/ x in Sunning \/ x in Winding)
+						forall x: Raining . not(x in Snowing \/ x in Sunning \/ x in Winding)
+						forall x: Snowing . not(x in Sunning \/ x in Winding)
+						forall x: Sunning . not(x in Winding)
+			sorts External, Internal < SayingAndSensing
+				forall x: External . not(x in Internal)
+				sorts BehavioralVerbal, NameEvent, ProperVerbal < External
+					forall x: BehavioralVerbal . not(x in NameEvent \/ x in ProperVerbal)
+					forall x: NameEvent . not(x in ProperVerbal)
+					sorts Addressing, NonAddressing < BehavioralVerbal
+						forall x: Addressing . not(x in NonAddressing)
+					sorts AddresseeOriented, MessageOriented, NonAddresseeOriented, NonMessageOriented < ProperVerbal
+						forall x: AddresseeOriented . not(x in MessageOriented \/ x in NonAddresseeOriented)
+						forall x: MessageOriented . not(x in NonMessageOriented)
+						sorts AddressingVerbal < AddresseeOriented
+						sorts MessageTransfer < MessageOriented
+						sorts CommunicativeAttitude, MessageTransfer < NonAddresseeOriented
+						sorts AddressingVerbal, CommunicativeAttitude < NonMessageOriented
+				sorts Cognition, Intention, MentalActive, MentalInactive, Perception, ReactionAndEmotion < Internal
+					forall x: Cognition . not(x in Intention \/ x in MentalActive \/ x in MentalInactive \/ x in Perception \/ x in ReactionAndEmotion)
+					forall x: Intention . not(x in MentalActive \/ x in MentalInactive \/ x in Perception \/ x in ReactionAndEmotion)
+					forall x: MentalActive . not(x in MentalInactive \/ x in Perception \/ x in ReactionAndEmotion)
+					forall x: MentalInactive . not(x in Perception \/ x in ReactionAndEmotion)
+					forall x: Perception . not(x in ReactionAndEmotion)
+						sorts Believe, Know, Think < Cognition
+							forall x: Believe . not(x in Know \/ x in Think)
+							forall x: Know . not(x in Think)
+						sorts Disliking, Fearing, Liking < ReactionAndEmotion
+							forall x: Disliking . not(x in Fearing \/ x in Liking)
+							forall x: Fearing . not(x in Liking)
+							sorts Striving, Wanting < Liking
+								forall x: Striving . not(x in Wanting)
+		sorts Circumstance, Process, SimpleQuality, SimpleThing < Element
+			forall x: Circumstance . not(x in SimpleQuality \/ x in Process \/ x in SimpleThing)
+			forall x: SimpleQuality . not(x in Process \/ x in SimpleThing)
+			forall x: Process . not(x in SimpleThing)
+			sorts SubjectMatter < Circumstance
+				sorts DiffuseMatter, SpecificMatter < SubjectMatter
+					forall x: DiffuseMatter . not(x in SpecificMatter)
+			sorts ClassAscription, LogicalQuality, MaterialWorldQuality, ModalQuality < SimpleQuality
+				forall x: ClassAscription . not(x in LogicalQuality \/ x in MaterialWorldQuality \/ x in ModalQuality)
+				forall x: LogicalQuality . not(x in MaterialWorldQuality \/ x in ModalQuality)
+				forall x: MaterialWorldQuality . not(x in ModalQuality)
+				sorts LogicalUniqueness < LogicalQuality
+				sorts DynamicQuality, NonScalableQuality, PolarQuality, ScalableQuality, StativeQuality, TaxonomicQuality < MaterialWorldQuality
+					forall x: DynamicQuality . not(x in NonScalableQuality \/ x in StativeQuality \/ x in TaxonomicQuality)
+					forall x: NonScalableQuality . not(x in ScalableQuality)
+					forall x: PolarQuality . not(x in TaxonomicQuality)
+					forall x: ScalableQuality . not(x in TaxonomicQuality)
+					sorts BehavioralQuality < DynamicQuality
+					sorts ClassQuality, StatusQuality < NonScalableQuality
+						forall x: ClassQuality . not(x in StatusQuality)
+						sorts MaterialClassQuality, ProvenanceClassQuality < ClassQuality
+							forall x: MaterialClassQuality . not(x in ProvenanceClassQuality)
+					sorts BehavioralQuality, EvaluativeQuality, SenseAndMeasureQuality, StatusQuality < PolarQuality
+						forall x: BehavioralQuality . not(x in EvaluativeQuality \/ x in SenseAndMeasureQuality \/ x in StatusQuality)
+						forall x: EvaluativeQuality . not(x in SenseAndMeasureQuality \/ x in StatusQuality)
+						forall x: SenseAndMeasureQuality . not(x in StatusQuality)
+						sorts Age, Color, Size < SenseAndMeasureQuality
+							forall x: Age . not(x in Color \/ x in Size)
+							forall x: Color . not(x in Size)
+					sorts BehavioralQuality, EvaluativeQuality, SenseAndMeasureQuality < ScalableQuality
+						forall x: BehavioralQuality . not(x in EvaluativeQuality \/ x in SenseAndMeasureQuality)
+						forall x: EvaluativeQuality . not(x in SenseAndMeasureQuality)
+					sorts ClassQuality, EvaluativeQuality, SenseAndMeasureQuality, StatusQuality < StativeQuality
+						forall x: ClassQuality . not(x in EvaluativeQuality \/ x in SenseAndMeasureQuality \/ x in StatusQuality)
+						forall x: EvaluativeQuality . not(x in SenseAndMeasureQuality \/ x in StatusQuality)
+						forall x: SenseAndMeasureQuality . not(x in StatusQuality)
+					sorts ClassQuality < TaxonomicQuality
+				sorts Conditional, NonConditional, NonVolitional, Volitional < ModalQuality
+					forall x: Conditional . not(x in NonConditional \/ x in NonVolitional \/ x in Volitional)
+					forall x: NonConditional . not(x in NonVolitional \/ x in Volitional)
+					forall x: NonVolitional . not(x in Volitional)
+					sorts Necessity, Possibility < NonVolitional
+						forall x: Necessity . not(x in Possibility)
+						sorts Ability, GeneralPossibility < Possibility
+							forall x: Ability . not(x in GeneralPossibility)
+			sorts ConsciousBeing, DecomposableObject, NamedObject, NonConsciousThing, NonDecomposableObject < SimpleThing
+				forall x: ConsciousBeing . not(x in NonConsciousThing)
+				forall x: DecomposableObject . not(x in NonDecomposableObject)
+				sorts Person < ConsciousBeing
+					sorts Female, Male < Person
+						forall x: Female . not(x in Male)
+				sorts OrderedObject, UMSet < DecomposableObject
+					sorts OrderedSet, SpaceInterval, TimeInterval < OrderedObject
+						forall x: OrderedSet . not(x in SpaceInterval \/ x in TimeInterval)
+						forall x: SpaceInterval . not(x in TimeInterval)
+						sorts OneOrTwoDLocation, ThreeDLocation < SpaceInterval
+							forall x: OneOrTwoDLocation . not(x in ThreeDLocation)
+						sorts Future, OneOrTwoDTime, Past, Present, ThreeDTime < TimeInterval
+							forall x: Future . not(x in OneOrTwoDTime \/ x in Past \/ x in Present \/ x in ThreeDTime)
+							forall x: OneOrTwoDTime . not(x in Past \/ x in Present \/ x in ThreeDTime)
+							forall x: Past . not(x in Present \/ x in ThreeDTime)
+							forall x: Present . not(x in ThreeDTime)
+					sorts DisjunctiveSet, OrderedSet < UMSet
+						forall x: DisjunctiveSet . not(x in OrderedSet)
+				sorts Abstraction, SpatialTemporal, Substance < NonConsciousThing
+					forall x: Abstraction . not(x in SpatialTemporal \/ x in Substance)
+					forall x: SpatialTemporal . not(x in Substance)
+					sorts NaturalNumber, UMSet, Word < Abstraction
+						forall x: NaturalNumber . not(x in UMSet \/ x in Word)
+						forall x: UMSet . not(x in Word)
+						sorts Name < Word
+					sorts SpatialObject, TemporalObject < SpatialTemporal
+						forall x: SpatialObject . not(x in TemporalObject)
+						sorts Space, SpaceInterval, SpacePoint < SpatialObject
+							forall x: Space . not(x in SpaceInterval \/ x in SpacePoint)
+							forall x: SpaceInterval . not(x in SpacePoint)
+							sorts ZeroDLocation < SpacePoint
+						sorts Time, TimeInterval, TimePoint < TemporalObject
+							forall x: Time . not(x in TimeInterval \/ x in TimePoint)
+							forall x: TimeInterval . not(x in TimePoint)
+							sorts ZeroDTime < TimePoint
+					sorts Space, Time < Substance
+					forall x: Space . not(x in Time)
+				sorts SpacePoint, Substance, TimePoint < NonDecomposableObject
+					forall x: SpacePoint . not(x in Substance \/ x in TimePoint)
+					forall x: Substance . not(x in TimePoint)
+		sorts Expansion, Projection < MultiConfiguration
+			forall x: Expansion . not(x in Projection)
+			sorts Elaboration, Enhancement, Extension < Expansion
+				forall x: Elaboration . not(x in Enhancement \/ x in Extension)
+				forall x: Enhancement . not(x in Extension)
+				sorts Conjunction, Disjunction < Extension
+					forall x: Conjunction . not(x in Disjunction)
+			sorts IdeaProjection, LocutionProjection, Quoting, Reporting < Projection
+				forall x: IdeaProjection . not(x in LocutionProjection)
+				forall x: Quoting . not(x in Reporting)
+				sorts IdeaQuoting, IdeaReporting < IdeaProjection
+					forall x: IdeaQuoting . not(x in IdeaReporting)
+				sorts LocutionQuoting, LocutionReporting < LocutionProjection
+					forall x: LocutionQuoting . not(x in LocutionReporting)
+				sorts IdeaQuoting, LocutionQuoting < Quoting
+					forall x: IdeaQuoting . not(x in LocutionQuoting)
+				sorts IdeaReporting, LocutionReporting < Reporting
+					forall x: IdeaReporting . not(x in LocutionReporting)
+end
+
+
+%%------------------------
+%% GUM relations
+%%------------------------
+
+spec GUM_Relations =
+	GUM_Taxonomy
+then
+	preds
+		accompaniment                        : Thing * SimpleThing;
+
+		actee                                : Thing * Thing;
+
+		actor                                : Thing * Thing;
+
+		additive                             : Thing * SimpleThing;
+
+		addressee                            : External * Thing;
+
+		agentive                             : Thing * Element;
+
+		alphaParticipantInMultiConfiguration : MultiConfiguration * Configuration;
+		alphaParticipantInMultiConfiguration : MultiConfiguration * MultiConfiguration;
+
+		alternative                          : Thing * SimpleThing;
+
+		anterior                             : Thing * Element;
+
+		attribuend                           : Thing * Thing;
+
+		attribute                            : Thing * Thing;
+
+		beneficiary                          : Thing * Thing;
+
+		betaParticipantInMultiConfiguration  : MultiConfiguration * Configuration;
+		betaParticipantInMultiConfiguration  : MultiConfiguration * MultiConfiguration;
+
+		carrier                              : Thing * SimpleThing;
+
+		causalRelation                       : Thing * Element;
+
+		causeEffect                          : Thing * Element;
+
+		circumstanceInConfiguration          : Thing * Element;
+
+		client                               : Thing * Element;
+
+		compareQuality                       : Thing * Thing;
+
+		comparison                           : Thing * Element;
+
+		concessive                           : Thing * Element;
+
+		concurrent                           : Thing * Element;
+
+		condition                            : Thing * Element;
+
+		difference                           : Thing * Element;
+
+		domain                               : Thing * Thing;
+
+		enablement                           : Thing * Element;
+
+		exclusive                            : Thing * SimpleThing;
+
+		exhaustiveDuration                   : Thing * TemporalObject;
+
+		existent                             : Existence * Thing;
+
+		extremal                             : Thing * Element;
+
+		follow                               : Thing * Element;
+
+		generalizedMeans                     : Thing * Element;
+
+		greater                              : Thing * Thing;
+
+		gumrelation                          : Thing * Thing;
+
+		hasConjunct                          : Thing * Thing;
+
+		hasDisjunct                          : Thing * Thing;
+
+		hasElaboration                       : Element * Thing;
+
+		hasEnhancement                       : Element * Thing;
+
+		hasExtension                         : Element * Thing;
+
+		hasModification                      : Element * Thing;
+
+		inclusive                            : Thing * SimpleThing;
+
+		instrumental                         : Thing * Element;
+
+		lesser                               : Thing * Thing;
+
+		manner                               : Thing * Element;
+
+		material                             : Thing * Thing;
+
+		metaMessage                          : Thing * Thing;
+
+		nonExhaustiveDuration                : Thing * TemporalObject;
+
+		nonExtremal                          : Thing * Element;
+
+		nonMetaMessage                       : Thing * Thing;
+
+		orderingRelation                     : Thing * Element;
+
+		participantInConfiguration           : Thing * Thing;
+
+		participantInMultiConfiguration      : MultiConfiguration * Configuration;
+		participantInMultiConfiguration      : MultiConfiguration * MultiConfiguration;
+
+		phenomenon                           : Internal * Thing;
+
+		possessed                            : Thing * Thing;
+
+		possessor                            : Thing * Thing;
+
+		posteriorExtremal                    : Thing * Element;
+
+		posterior                            : Thing * Element;
+
+		precede                              : Thing * Element;
+
+		processInConfiguration               : Configuration * Process;
+
+		processRange                         : DoingAndHappening * Thing;
+
+		prompt                               : Thing * Thing;
+
+		purpose                              : Thing * Element;
+
+		qualitativeTemporalExtent            : Thing * TemporalObject;
+
+		quantitativeTemporalExtent           : Thing * TemporalObject;
+
+		range                                : Thing * Thing;
+
+		reason                               : Thing * Element;
+
+		recipient                            : Thing * Thing;
+
+		Result                               : Thing * Thing;
+
+		sayer                                : External * Thing;
+
+		saying                               : Thing * Thing;
+
+		senser                               : Internal * ConsciousBeing;
+
+		similarity                           : Thing * Element;
+
+		since                                : Thing * Element;
+
+		spatialCircumstance                  : Thing * Element;
+
+		spatialTemporalCircumstance          : Thing * Element;
+
+		standard                             : Thing * Thing;
+
+		subjectMatter                        : Thing * Element;
+
+		temporalCircumstance                 : Thing * Element;
+		temporalCircumstance                 : Thing * Element;
+
+		temporalExtent                       : Thing * TemporalObject;
+
+		temporalInclusive                    : Thing * Element;
+
+		temporalLocating                     : Thing * Element;
+
+		temporalNonOrdering                  : Thing * Element;
+
+		temporalOrdering                     : Thing * Element;
+
+		temporalRelation                     : Thing * Element;
+then
+	forall c: Configuration; cB: ConsciousBeing; dAH: DoingAndHappening; e: Element; exi: Existence; ext: External; int: Internal; mC, mC0: MultiConfiguration; p: Process; sT: SimpleThing; t, t0: Thing; tempO: TemporalObject
+
+		. accompaniment(t,sT)                          => circumstanceInConfiguration(t,sT)
+
+		. actee(t,t0)                                  => participantInConfiguration(t,t0)
+
+		. actor(t,t0)                                  => participantInConfiguration(t,t0)
+
+		. additive(e,sT)                               => accompaniment(e,sT)
+
+		. addressee(ext,t)                             => participantInConfiguration(ext,t)
+
+		. agentive(t,e)                                => generalizedMeans(t,e)
+		. agentive(t,e)                                => participantInConfiguration(t,e)
+
+		. alphaParticipantInMultiConfiguration(mC,c)   => participantInMultiConfiguration(mC,c)
+		. alphaParticipantInMultiConfiguration(mC,mC0) => participantInMultiConfiguration(mC,mC0)
+
+		. alternative(e,sT)                            => accompaniment(e,sT)
+
+		. anterior(t,e)                                => temporalOrdering(t,e)
+
+		. attribuend(t,t0)                             => participantInConfiguration(t,t0)
+
+		. attribute(t,t0)                              => participantInConfiguration(t,t0)
+
+		. beneficiary(t,t0)                            => participantInConfiguration(t,t0)
+
+		. betaParticipantInMultiConfiguration(mC,c)    => participantInMultiConfiguration(mC,c)
+		. betaParticipantInMultiConfiguration(mC,mC0)  => participantInMultiConfiguration(mC,mC0)
+
+		. carrier(t,sT)                                => domain(t,sT)
+
+		. causalRelation(t,e)                          => circumstanceInConfiguration(t,e)
+
+		. causeEffect(t,e)                             => causalRelation(t,e)
+
+		. circumstanceInConfiguration(t,e)             => gumrelation(t,e)
+
+		. client(t,e)                                  => beneficiary(t,e)
+		. client(t,e)                                  => causalRelation(t,e)
+
+		. compareQuality(t,t0)                         => participantInConfiguration(t,t0)
+
+		. comparison(t,e)                              => circumstanceInConfiguration(t,e)
+
+		. concessive(t,e)                              => causalRelation(t,e)
+
+		. concurrent(t,e)                              => temporalOrdering(t,e)
+
+		. condition(t,e)                               => reason(t,e)
+
+		. difference(t,e)                              => comparison(t,e)
+
+		. domain(t,t0)                                 => participantInConfiguration(t,t0)
+
+		. enablement(t,e)                              => generalizedMeans(t,e)
+
+		. exclusive(e,sT)                              => accompaniment(e,sT)
+
+		. exhaustiveDuration(t,tempO)                  => qualitativeTemporalExtent(t,tempO)
+
+		. existent(exi,t)                              => participantInConfiguration(exi,t)
+
+		. extremal(t,e)                                => temporalOrdering(t,e)
+
+		. follow(t,e)                                  => nonExtremal(t,e)
+
+		. generalizedMeans(t,e)                        => circumstanceInConfiguration(t,e)
+
+		. greater(t,t0)                                => attribuend(t,t0)
+
+		. hasConjunct(t,t0)                            => gumrelation(t,t0)
+
+		. hasDisjunct(t,t0)                            => gumrelation(t,t0)
+
+		. hasElaboration(e,t)                          => hasModification(e,t)
+
+		. hasEnhancement(e,t)                          => hasModification(e,t)
+
+		. hasExtension(e,t)                            => hasModification(e,t)
+
+		. hasModification(e,t0)                        => gumrelation(e,t0)
+
+		. inclusive(e,sT)                              => accompaniment(e,sT)
+
+		. instrumental(t,e)                            => generalizedMeans(t,e)
+
+		. lesser(t,t0)                                 => attribuend(t,t0)
+
+		. manner(t,e)                                  => generalizedMeans(t,e)
+
+		. material(t,t0)                               => participantInConfiguration(t,t0)
+
+		. metaMessage(t,t0)                            => saying(t,t0)
+
+		. nonExhaustiveDuration(t,tempO)               => qualitativeTemporalExtent(t,tempO)
+
+		. nonExtremal(t,e)                             => temporalOrdering(t,e)
+
+		. nonMetaMessage(t,t0)                         => saying(t,t0)
+
+		. orderingRelation(t,e)                        => circumstanceInConfiguration(t,e)
+
+		. participantInConfiguration(t,t0)             => gumrelation(t,t0)
+
+		. participantInMultiConfiguration(mC,c)        => gumrelation(mC,c)
+		. participantInMultiConfiguration(mC,mC0)      => gumrelation(mC,mC0)
+
+		. phenomenon(int,t)                            => participantInConfiguration(int,t)
+
+		. possessed(t,t0)                              => participantInConfiguration(t,t0)
+
+		. possessor(t,t0)                              => participantInConfiguration(t,t0)
+
+		. posteriorExtremal(t,e)                       => extremal(t,e)
+		. posteriorExtremal(t,e)                       => posterior(t,e)
+
+		. posterior(t,e)                               => temporalOrdering(t,e)
+
+		. precede(t,e)                                 => anterior(t,e)
+		. precede(t,e)                                 => nonExtremal(t,e)
+
+		. processInConfiguration(c,p)                  => gumrelation(c,p)
+
+		. processRange(dAH,t)                          => actee(dAH,t)
+
+		. prompt(t,t0)                                 => participantInConfiguration(t,t0)
+
+		. purpose(t,e)                                 => causalRelation(t,e)
+
+		. qualitativeTemporalExtent(t,tempO)           => temporalExtent(t,tempO)
+
+		. quantitativeTemporalExtent(t,tempO)          => temporalExtent(t,tempO)
+
+		. range(t,t0)                                  => participantInConfiguration(t,t0)
+
+		. reason(t,e)                                  => causalRelation(t,e)
+
+		. recipient(t,t0)                              => beneficiary(t,t0)
+
+		. Result(t,t0)                                 => actee(t,t0)
+
+		. sayer(ext,t)                                 => participantInConfiguration(ext,t)
+
+		. saying(t,t0)                                 => participantInConfiguration(t,t0)
+
+		. senser(int,cB)                               => participantInConfiguration(int,cB)
+
+		. similarity(t,e)                              => comparison(t,e)
+
+		. since(t,e)                                   => posteriorExtremal(t,e)
+
+		. spatialCircumstance(t,e)                     => spatialTemporalCircumstance(t,e)
+
+		. spatialTemporalCircumstance(t,e)             => circumstanceInConfiguration(t,e)
+
+		. standard(t,t0)                               => participantInConfiguration(t,t0)
+
+		. subjectMatter(t,e)                           => circumstanceInConfiguration(t,e)
+
+		. temporalCircumstance(t,e)                    => spatialTemporalCircumstance(t,e)
+
+		. temporalExtent(t,tempO)                      => temporalCircumstance(t,tempO)
+
+		. temporalInclusive(t,e)                       => concurrent(t,e)
+
+		. temporalLocating(t,e)                        => temporalRelation(t,e)
+
+		. temporalNonOrdering(t,e)                     => temporalLocating(t,e)
+
+		. temporalOrdering(t,e)                        => orderingRelation(t,e)
+		. temporalOrdering(t,e)                        => temporalLocating(t,e)
+
+		. temporalRelation(t,e)                        => temporalCircumstance(t,e)
+
+%% Restrictions
+
+	forall x: AgePropertyAscription; y: Thing
+		. attribute(x,y) => y in Age
+
+	forall x: ColorPropertyAscription; y: Thing
+		. attribute(x,y) => y in Color
+
+	forall x: GreaterThanComparison; y: Thing
+		. attribute(x,y) => y in GreaterThan
+
+	forall x: LessThanComparison; y: Thing
+		. attribute(x,y) => y in LessThan
+
+	forall x: MaterialPropertyAscription; y: Thing
+		. attribute(x,y) => y in MaterialClassQuality
+
+	forall x: ModalPropertyAscription; y: Thing
+		. attribute(x,y) => y in ModalQuality
+
+	forall x: MultiConfiguration
+		. exists y: Configuration . alphaParticipantInMultiConfiguration(x,y) \/ exists y: MultiConfiguration . alphaParticipantInMultiConfiguration(x,y)
+		. exists y: Configuration . betaParticipantInMultiConfiguration(x,y) \/ exists y: MultiConfiguration . betaParticipantInMultiConfiguration(x,y)
+
+	forall x: ProvenancePropertyAscription; y: Thing
+		. attribute(x,y) => y in ProvenanceClassQuality
+
+	forall x: SizePropertyAscription; y: Thing
+		. attribute(x,y) => y in Size
+
+end
+
+
+%%------------------------
+%% GUM Modules Interface
+%%------------------------
+
+spec GUM_Modules_Interface =
+	GUM_Taxonomy
+with
+	Circumstance |-> GUM_Circumstance, DispositiveMaterialAction |-> GUM_DispositiveMaterialAction, Element |-> GUM_Element, GeneralizedLocating |-> GUM_GeneralizedLocating, NonAffectingDoing |-> GUM_NonAffectingDoing, SimpleQuality |-> GUM_SimpleQuality, SpatialTemporal |-> GUM_SpatialTemporal
+then
+	sorts DispositiveMaterialAction < AffectingAction
+		forall x: DispositiveMaterialAction . not(x in CreativeMaterialAction)
+		sorts GUM_DispositiveMaterialAction, GUM_Spatial_DispositiveMaterialAction < DispositiveMaterialAction
+			forall x: GUM_DispositiveMaterialAction . not(x in GUM_Spatial_DispositiveMaterialAction)
+
+	sorts GeneralizedLocating < Circumstantial
+		forall x: GeneralizedLocating . not(x in Causal \/ x in CircumstantialOther)
+		sorts GUM_GeneralizedLocating, GUM_Spatial_GeneralizedLocating < GeneralizedLocating
+			forall x: GUM_GeneralizedLocating . not(x in GUM_Spatial_GeneralizedLocating)
+
+	sorts Circumstance, SimpleQuality < GUM_Element
+		forall x: Circumstance . not(x in Process \/ x in SimpleQuality \/ x in SimpleThing)
+		forall x: SimpleQuality . not(x in Process \/ x in SimpleThing)
+		sorts GUM_Circumstance, GUM_Spatial_Circumstance < Circumstance
+			forall x: GUM_Circumstance . not(x in GUM_Spatial_Circumstance)
+		sorts GUM_SimpleQuality, GUM_Spatial_SimpleQuality < SimpleQuality
+			forall x: GUM_SimpleQuality . not(x in GUM_Spatial_SimpleQuality)
+
+	sorts NonAffectingDoing < NonAffectingAction
+		forall x: NonAffectingDoing . not(x in Ambience \/ x in NonAffectingHappening)
+		sorts GUM_NonAffectingDoing, GUM_Spatial_NonAffectingDoing < NonAffectingDoing
+			forall x: GUM_NonAffectingDoing . not(x in GUM_Spatial_NonAffectingDoing)
+
+	sorts SpatialTemporal < NonConsciousThing
+		forall x: SpatialTemporal . not(x in Abstraction \/ x in Substance)
+		sorts GUM_SpatialTemporal, GUM_Spatial_SpatialTemporal < SpatialTemporal
+			forall x: GUM_SpatialTemporal . not(x in GUM_Spatial_SpatialTemporal)
+
+	sorts Element < Thing
+		forall x: Element . not(x in Configuration \/ x in MultiConfiguration)
+		sorts GUM_Element, GUM_Spatial_Element < Element
+			forall x: GUM_Element . not(x in GUM_Spatial_Element)
+end
+
+
+%%------------------------
+%% GUM_Spatial_Taxonomy
+%%------------------------
+
+spec GUM_Spatial_Taxonomy =
+	GUM_Modules_Interface
+then
+	sorts GeneralizedLocation, GeneralizedRoute < GUM_Spatial_Circumstance
+		forall x: GeneralizedLocation . not(x in GeneralizedRoute)
+		sorts GeneralizedComplexLocation, GeneralizedPathLocation < GeneralizedLocation
+			forall x: GeneralizedComplexLocation . not(x in GeneralizedPathLocation)
+	sorts AffectingSpatialAction < GUM_Spatial_DispositiveMaterialAction
+		sorts AffectingMotion, AffectingOrienting < AffectingSpatialAction
+			forall x: AffectingMotion . not(x in AffectingOrienting)
+			sorts AffectingDirectedMotion, AffectingOrientationChange, AffectingSimpleMotion < AffectingMotion
+				forall x: AffectingDirectedMotion . not(x in AffectingOrientationChange \/ x in AffectingSimpleMotion)
+				forall x: AffectingOrientationChange . not(x in AffectingSimpleMotion)
+	sorts SpatialModality < GUM_Spatial_Element
+		sorts FunctionalSpatialModality, RelativeSpatialModality, SpatialDistanceModality < SpatialModality
+			sorts Access, Control, DenialOfFunctionalControl < FunctionalSpatialModality
+				forall x: Access . not(x in Control \/ x in DenialOfFunctionalControl)
+				forall x: Control . not(x in DenialOfFunctionalControl)
+				sorts FrontProjectionExternal, OverProjectionExternal, Proximal, Sequential, Surrounding, UnderProjectionExternal < Access
+					forall x: FrontProjectionExternal . not(x in OverProjectionExternal \/ x in Proximal \/ x in Sequential \/ x in Surrounding \/ x in UnderProjectionExternal)
+					forall x: OverProjectionExternal . not(x in Proximal \/ x in Sequential \/ x in Surrounding \/ x in UnderProjectionExternal)
+					forall x: Proximal . not(x in Sequential \/ x in Surrounding \/ x in UnderProjectionExternal)
+					forall x: Sequential . not(x in Surrounding \/ x in UnderProjectionExternal)
+					forall x: Surrounding . not(x in UnderProjectionExternal)
+				sorts Containment, Support < Control
+					forall x: Containment . not(x in Support)
+					sorts PathRepresentingInternal < Support
+			sorts Connection, Disjointness, Distribution, Parthood, ProjectionRelation, ShapeCommitting < RelativeSpatialModality
+				forall x: Connection . not(x in Disjointness \/ x in Distribution)
+				forall x: Disjointness . not(x in Distribution \/ x in Parthood \/ x in ShapeCommitting)
+				forall x: Distribution . not(x in Parthood \/ x in ProjectionRelation \/ x in ShapeCommitting)
+				forall x: ProjectionRelation . not(x in ShapeCommitting)
+				sorts AboveProjectionInternal, BackProjectionInternal, BelowProjectionInternal, Central, EastInternal, FrontProjectionInternal, LeftProjectionInternal, NorthInternal, Peripheral, RightProjectionInternal, SouthInternal, WestInternal < Parthood
+					forall x : AboveProjectionInternal . not(x in BackProjectionInternal \/ x in BelowProjectionInternal \/ x in Central \/ x in EastInternal \/ x in FrontProjectionInternal \/ x in LeftProjectionInternal \/ x in NorthInternal \/ x in Peripheral \/ x in RightProjectionInternal \/ x in SouthInternal \/ x in WestInternal)
+					forall x : BackProjectionInternal . not(x in BelowProjectionInternal \/ x in Central \/ x in EastInternal \/ x in FrontProjectionInternal \/ x in LeftProjectionInternal \/ x in NorthInternal \/ x in Peripheral \/ x in RightProjectionInternal \/ x in SouthInternal \/ x in WestInternal)
+					forall x : BelowProjectionInternal . not(x in Central \/ x in EastInternal \/ x in FrontProjectionInternal \/ x in LeftProjectionInternal \/ x in NorthInternal \/ x in Peripheral \/ x in RightProjectionInternal \/ x in SouthInternal \/ x in WestInternal)
+					forall x : Central . not(x in EastInternal \/ x in FrontProjectionInternal \/ x in LeftProjectionInternal \/ x in NorthInternal \/ x in Peripheral \/ x in RightProjectionInternal \/ x in SouthInternal \/ x in WestInternal)
+					forall x : EastInternal . not(x in FrontProjectionInternal \/ x in LeftProjectionInternal \/ x in NorthInternal \/ x in Peripheral \/ x in RightProjectionInternal \/ x in SouthInternal \/ x in WestInternal)
+					forall x : FrontProjectionInternal . not(x in LeftProjectionInternal \/ x in NorthInternal \/ x in Peripheral \/ x in RightProjectionInternal \/ x in SouthInternal \/ x in WestInternal)
+					forall x : LeftProjectionInternal . not(x in NorthInternal \/ x in Peripheral \/ x in RightProjectionInternal \/ x in SouthInternal \/ x in WestInternal)
+					forall x : NorthInternal . not(x in Peripheral \/ x in RightProjectionInternal \/ x in SouthInternal \/ x in WestInternal)
+					forall x : Peripheral . not(x in RightProjectionInternal \/ x in SouthInternal \/ x in WestInternal)
+					forall x : RightProjectionInternal . not(x in SouthInternal \/ x in WestInternal)
+					forall x : SouthInternal . not(x in WestInternal)
+				sorts AboveProjectionExternal, BackProjectionExternal, BelowProjectionExternal, DenialOfFunctionalControl, DirectionalRelation, EastExternal, FrontProjectionExternal, LeftProjectionExternal, NonProjectionAxial, NorthExternal, OverProjectionExternal, RightProjectionExternal, Sequential, SouthExternal, UnderProjectionExternal, WestExternal < Disjointness
+					forall x : AboveProjectionExternal . not(x in BackProjectionExternal \/ x in BelowProjectionExternal \/ x in DenialOfFunctionalControl \/ x in DirectionalRelation \/ x in EastExternal \/ x in FrontProjectionExternal \/ x in LeftProjectionExternal \/ x in NonProjectionAxial \/ x in NorthExternal \/ x in OverProjectionExternal \/ x in RightProjectionExternal \/ x in Sequential \/ x in SouthExternal \/ x in UnderProjectionExternal \/ x in WestExternal)
+					forall x : BackProjectionExternal . not(x in BelowProjectionExternal \/ x in DenialOfFunctionalControl \/ x in DirectionalRelation \/ x in EastExternal \/ x in FrontProjectionExternal \/ x in LeftProjectionExternal \/ x in NonProjectionAxial \/ x in NorthExternal \/ x in OverProjectionExternal \/ x in RightProjectionExternal \/ x in Sequential \/ x in SouthExternal \/ x in UnderProjectionExternal \/ x in WestExternal)
+					forall x : BelowProjectionExternal . not(x in DenialOfFunctionalControl \/ x in DirectionalRelation \/ x in EastExternal \/ x in FrontProjectionExternal \/ x in LeftProjectionExternal \/ x in NonProjectionAxial \/ x in NorthExternal \/ x in OverProjectionExternal \/ x in RightProjectionExternal \/ x in Sequential \/ x in SouthExternal \/ x in UnderProjectionExternal \/ x in WestExternal)
+					forall x : DenialOfFunctionalControl . not(x in DirectionalRelation \/ x in EastExternal \/ x in FrontProjectionExternal \/ x in LeftProjectionExternal \/ x in NonProjectionAxial \/ x in NorthExternal \/ x in OverProjectionExternal \/ x in RightProjectionExternal \/ x in Sequential \/ x in SouthExternal \/ x in UnderProjectionExternal \/ x in WestExternal)
+					forall x : DirectionalRelation . not(x in EastExternal \/ x in FrontProjectionExternal \/ x in LeftProjectionExternal \/ x in NonProjectionAxial \/ x in NorthExternal \/ x in OverProjectionExternal \/ x in RightProjectionExternal \/ x in Sequential \/ x in SouthExternal \/ x in UnderProjectionExternal \/ x in WestExternal)
+					forall x : EastExternal . not(x in FrontProjectionExternal \/ x in LeftProjectionExternal \/ x in NonProjectionAxial \/ x in NorthExternal \/ x in OverProjectionExternal \/ x in RightProjectionExternal \/ x in Sequential \/ x in SouthExternal \/ x in UnderProjectionExternal \/ x in WestExternal)
+					forall x : FrontProjectionExternal . not(x in LeftProjectionExternal \/ x in NonProjectionAxial \/ x in NorthExternal \/ x in OverProjectionExternal \/ x in RightProjectionExternal \/ x in Sequential \/ x in SouthExternal \/ x in UnderProjectionExternal \/ x in WestExternal)
+					forall x : LeftProjectionExternal . not(x in NonProjectionAxial \/ x in NorthExternal \/ x in OverProjectionExternal \/ x in RightProjectionExternal \/ x in Sequential \/ x in SouthExternal \/ x in UnderProjectionExternal \/ x in WestExternal)
+					forall x : NonProjectionAxial . not(x in NorthExternal \/ x in OverProjectionExternal \/ x in RightProjectionExternal \/ x in Sequential \/ x in SouthExternal \/ x in UnderProjectionExternal \/ x in WestExternal)
+					forall x : NorthExternal . not(x in OverProjectionExternal \/ x in RightProjectionExternal \/ x in Sequential \/ x in SouthExternal \/ x in UnderProjectionExternal \/ x in WestExternal)
+					forall x : OverProjectionExternal . not(x in RightProjectionExternal \/ x in Sequential \/ x in SouthExternal \/ x in UnderProjectionExternal \/ x in WestExternal)
+					forall x : RightProjectionExternal . not(x in Sequential \/ x in SouthExternal \/ x in UnderProjectionExternal \/ x in WestExternal)
+					forall x : Sequential . not(x in SouthExternal \/ x in UnderProjectionExternal \/ x in WestExternal)
+					forall x : SouthExternal . not(x in UnderProjectionExternal \/ x in WestExternal)
+					forall x : UnderProjectionExternal . not(x in WestExternal)
+					sorts GeneralDirectional, SpecificDirectional < DirectionalRelation
+						forall x: GeneralDirectional . not(x in SpecificDirectional)
+						sorts GeneralDistancing, GeneralNearing, MultipleDirectional < GeneralDirectional
+							forall x : GeneralDistancing . not(x in GeneralNearing \/ x in MultipleDirectional)
+							forall x : GeneralNearing . not(x in MultipleDirectional)
+						sorts ArcDirectional, CardinalDirectional, TopographicDirectional < SpecificDirectional
+							forall x: ArcDirectional . not(x in CardinalDirectional \/ x in TopographicDirectional)
+							forall x: CardinalDirectional . not(x in TopographicDirectional)
+							sorts East, North, South, West < CardinalDirectional
+								forall x: East . not(x in North \/ x in South \/ x in West)
+								forall x: North . not(x in South \/ x in West)
+								forall x: South . not(x in West)
+								sorts EastInternal, EastExternal < East
+									forall x : EastInternal . not(x in EastExternal)
+								sorts NorthInternal, NorthExternal < North
+									forall x : NorthInternal . not(x in NorthExternal)
+								sorts SouthInternal, SouthExternal < South
+									forall x : SouthInternal . not(x in SouthExternal)
+								sorts WestInternal, WestExternal < West
+									forall x : WestInternal . not(x in WestExternal)
+					sorts HeightNonProjectionAxial, RelativeNonProjectionAxial < NonProjectionAxial
+						forall x: HeightNonProjectionAxial . not(x in RelativeNonProjectionAxial)
+				sorts HorizontalProjection, VerticalProjection < ProjectionRelation
+					forall x: HorizontalProjection . not(x in VerticalProjection)
+					sorts FrontalProjection, LateralProjection < HorizontalProjection
+						forall x: FrontalProjection . not(x in LateralProjection)
+						sorts BackProjection, FrontProjection < FrontalProjection
+							forall x: BackProjection . not(x in FrontProjection)
+							sorts BackProjectionExternal, BackProjectionInternal < BackProjection
+								forall x: BackProjectionExternal . not(x in BackProjectionInternal)
+							sorts FrontProjectionExternal, FrontProjectionInternal < FrontProjection
+								forall x: FrontProjectionExternal . not(x in FrontProjectionInternal)
+						sorts LeftProjection, RightProjection < LateralProjection
+							forall x: LeftProjection . not(x in RightProjection)
+							sorts LeftProjectionExternal, LeftProjectionInternal < LeftProjection
+								forall x: LeftProjectionExternal . not(x in LeftProjectionInternal)
+							sorts RightProjectionExternal, RightProjectionInternal < RightProjection
+								forall x: RightProjectionExternal . not(x in RightProjectionInternal)
+					sorts AboveProjection, BelowProjection, OverProjectionExternal, UnderProjectionExternal < VerticalProjection
+						forall x: AboveProjection . not(x in BelowProjection \/ x in OverProjectionExternal \/ x in UnderProjectionExternal)
+						forall x: BelowProjection . not(x in OverProjectionExternal \/ x in UnderProjectionExternal)
+						forall x: OverProjectionExternal . not(x in UnderProjectionExternal)
+						sorts AboveProjectionExternal, AboveProjectionInternal < AboveProjection
+							forall x: AboveProjectionExternal . not(x in AboveProjectionInternal)
+						sorts BelowProjectionExternal, BelowProjectionInternal < BelowProjection
+							forall x: BelowProjectionExternal . not(x in BelowProjectionInternal)
+				sorts PathRepresenting, Surrounding < ShapeCommitting
+					forall x: PathRepresenting . not(x in Surrounding)
+					sorts PathRepresentingExternal, PathRepresentingInternal < PathRepresenting
+						forall x: PathRepresentingExternal . not(x in PathRepresentingInternal)
+			sorts AboveProjectionExternal, BackProjectionExternal, BelowProjectionExternal, FrontProjectionExternal, LeftProjectionExternal, NonProjectionAxial, OverProjectionExternal, PathRepresentingExternal, QualitativeDistance, QuantitativeDistance, RightProjectionExternal, UnderProjectionExternal < SpatialDistanceModality
+				forall x: AboveProjectionExternal . not(x in BackProjectionExternal \/ x in BelowProjectionExternal \/ x in FrontProjectionExternal \/ x in LeftProjectionExternal \/ x in NonProjectionAxial \/ x in OverProjectionExternal \/ x in PathRepresentingExternal \/ x in QualitativeDistance \/ x in QuantitativeDistance \/ x in RightProjectionExternal \/ x in UnderProjectionExternal)
+				forall x: BackProjectionExternal . not(x in BelowProjectionExternal \/ x in FrontProjectionExternal \/ x in LeftProjectionExternal \/ x in NonProjectionAxial \/ x in OverProjectionExternal \/ x in PathRepresentingExternal \/ x in QualitativeDistance \/ x in QuantitativeDistance \/ x in RightProjectionExternal \/ x in UnderProjectionExternal)
+				forall x: BelowProjectionExternal . not(x in FrontProjectionExternal \/ x in LeftProjectionExternal \/ x in NonProjectionAxial \/ x in OverProjectionExternal \/ x in PathRepresentingExternal \/ x in QualitativeDistance \/ x in QuantitativeDistance \/ x in RightProjectionExternal \/ x in UnderProjectionExternal)
+				forall x: FrontProjectionExternal . not(x in LeftProjectionExternal \/ x in NonProjectionAxial \/ x in OverProjectionExternal \/ x in PathRepresentingExternal \/ x in QualitativeDistance \/ x in QuantitativeDistance \/ x in RightProjectionExternal \/ x in UnderProjectionExternal)
+				forall x: LeftProjectionExternal . not(x in NonProjectionAxial \/ x in OverProjectionExternal \/ x in PathRepresentingExternal \/ x in QualitativeDistance \/ x in QuantitativeDistance \/ x in RightProjectionExternal \/ x in UnderProjectionExternal)
+				forall x: NonProjectionAxial . not(x in OverProjectionExternal \/ x in PathRepresentingExternal \/ x in QualitativeDistance \/ x in QuantitativeDistance \/ x in RightProjectionExternal \/ x in UnderProjectionExternal)
+				forall x: OverProjectionExternal . not(x in PathRepresentingExternal \/ x in QualitativeDistance \/ x in QuantitativeDistance \/ x in RightProjectionExternal \/ x in UnderProjectionExternal)
+				forall x: PathRepresentingExternal . not(x in QualitativeDistance \/ x in QuantitativeDistance \/ x in RightProjectionExternal \/ x in UnderProjectionExternal)
+				forall x: QualitativeDistance . not(x in QuantitativeDistance \/ x in RightProjectionExternal \/ x in UnderProjectionExternal)
+				forall x: QuantitativeDistance . not(x in RightProjectionExternal \/ x in UnderProjectionExternal)
+				forall x: RightProjectionExternal . not(x in UnderProjectionExternal)
+				sorts HeightNonProjectionAxial, RelativeNonProjectionAxial < NonProjectionAxial
+					forall x: HeightNonProjectionAxial . not(x in RelativeNonProjectionAxial)
+				sorts Distal, Proximal < QualitativeDistance
+					forall x: Distal . not(x in Proximal)
+	sorts SpatialLocating, TemporalLocating < GUM_Spatial_GeneralizedLocating
+		sorts SpatialTemporalLocating < SpatialLocating
+		sorts SpatialTemporalLocating < TemporalLocating
+	sorts NonAffectingSpatialDoing < GUM_Spatial_NonAffectingDoing
+		sorts NonAffectingMotion, NonAffectingOrienting < NonAffectingSpatialDoing
+			forall x: NonAffectingMotion . not(x in NonAffectingOrienting)
+			sorts NonAffectingDirectedMotion, NonAffectingOrientationChange, NonAffectingSimpleMotion < NonAffectingMotion
+				forall x: NonAffectingDirectedMotion . not(x in NonAffectingOrientationChange \/ x in NonAffectingSimpleMotion)
+				forall x: NonAffectingOrientationChange . not(x in NonAffectingSimpleMotion)
+	sorts SequentialQuality < GUM_Spatial_SimpleQuality
+	sorts DeicticSpatialTemporal, NonDeicticSpatialTemporal, QualitativeSpatialTemporal, QuantitativeSpatialTemporal < GUM_Spatial_SpatialTemporal
+		forall x: DeicticSpatialTemporal . not(x in NonDeicticSpatialTemporal \/ x in QualitativeSpatialTemporal \/ x in QuantitativeSpatialTemporal)
+		forall x: NonDeicticSpatialTemporal . not(x in QualitativeSpatialTemporal \/ x in QuantitativeSpatialTemporal)
+		forall x: QualitativeSpatialTemporal . not(x in QuantitativeSpatialTemporal)
+
+end
+
+%%------------------------
+%% GUM spatial relations
+%%------------------------
+
+spec GUM_Spatial_Relations =
+	GUM_Relations and
+	GUM_Spatial_Taxonomy
+then
+	preds
+		destination                : GeneralizedRoute * GeneralizedLocation;
+
+		direction                  : AffectingSpatialAction   * GeneralizedLocation;
+		direction                  : NonAffectingSpatialDoing * GeneralizedLocation;
+
+		hasSpatialModality         : GeneralizedLocation * SpatialModality;
+
+		locatum                    : Thing * Thing;
+
+		motionDirection            : AffectingSpatialAction   * GeneralizedLocation;
+		motionDirection            : NonAffectingSpatialDoing * GeneralizedLocation;
+
+		nextPathIndication         : GeneralizedPathLocation * GeneralizedPathLocation;
+
+		nextPathPlacement          : GeneralizedPathLocation * GeneralizedPathLocation;
+
+		orientationDirection       : AffectingSpatialAction   * GeneralizedLocation;
+		orientationDirection       : NonAffectingSpatialDoing * GeneralizedLocation;
+
+		pathIndication             : GeneralizedRoute * GeneralizedPathLocation;
+
+		pathPlacement              : GeneralizedRoute * GeneralizedPathLocation;
+
+		placement                  : AffectingSpatialAction   * GeneralizedLocation;
+		placement                  : NonAffectingSpatialDoing * GeneralizedLocation;
+		placement                  : SpatialLocating          * GeneralizedLocation;
+		placement                  : AffectingSpatialAction   * GeneralizedRoute;
+		placement                  : NonAffectingSpatialDoing * GeneralizedRoute;
+		placement                  : SpatialLocating          * GeneralizedRoute;
+
+		qualitativeAngleExtent     : Thing * Element;
+
+		qualitativeDistanceExtent  : Thing * Element;
+
+		qualitativeSpatialExtent   : Thing * Element;
+
+		quantitativeAngleExtent    : Thing * Element;
+
+		quantitativeDistanceExtent : Thing * Element;
+
+		quantitativeSpatialExtent  : Thing * Element;
+
+		relatum                    : GeneralizedLocation * Thing;
+
+		route                      : AffectingDirectedMotion       * GeneralizedRoute;
+		route                      : AffectingOrientationChange    * GeneralizedRoute;
+		route                      : NonAffectingDirectedMotion    * GeneralizedRoute;
+		route                      : NonAffectingOrientationChange * GeneralizedRoute;
+
+		source                     : GeneralizedRoute * GeneralizedLocation;
+
+		spatialExtent              : Thing * Element;
+		spatialPerspective         : Thing * Element;
+then
+	forall aDM: AffectingDirectedMotion; aOC: AffectingOrientationChange; aSA: AffectingSpatialAction; e: Element; gL: GeneralizedLocation; gPL, gPL0: GeneralizedPathLocation; gR: GeneralizedRoute; nADM: NonAffectingDirectedMotion; nAOC: NonAffectingOrientationChange; nASD: NonAffectingSpatialDoing; sL: SpatialLocating; sM: SpatialModality; t, t0: Thing
+		. destination(gR,gL)              => attribute(gR,gL)
+
+		. direction(aSA,gL)               => attribute(aSA,gL)
+		. direction(nASD,gL)              => attribute(nASD,gL)
+
+		. hasSpatialModality(gL,sM)       => gumrelation(gL,sM)
+
+		. locatum(t,t0)                   => attribute(t,t0)
+		. locatum(t,t0)                   => domain(t,t0)
+
+		. motionDirection(aSA,gL)         => attribute(aSA,gL)
+		. motionDirection(nASD,gL)        => attribute(nASD,gL)
+		. motionDirection(aSA,gL)         => direction(aSA,gL)
+		. motionDirection(nASD,gL)        => direction(nASD,gL)
+
+		. nextPathIndication(gPL,gPL0)    => attribute(gPL,gPL0)
+
+		. nextPathPlacement(gPL,gPL0)     => attribute(gPL,gPL0)
+
+		. orientationDirection(aSA,gL)    => attribute(aSA,gL)
+		. orientationDirection(nASD,gL)   => attribute(nASD,gL)
+		. orientationDirection(aSA,gL)    => direction(aSA,gL)
+		. orientationDirection(nASD,gL)   => direction(nASD,gL)
+
+		. pathIndication(gR,gPL)          => attribute(gR,gPL)
+
+		. pathPlacement(gR,gPL)           => attribute(gR,gPL)
+
+		. placement(aSA,gL)               => attribute(aSA,gL)
+		. placement(nASD,gL)              => attribute(nASD,gL)
+		. placement(sL,gL)                => attribute(sL,gL)
+		. placement(aSA,gR)               => attribute(aSA,gR)
+		. placement(nASD,gR)              => attribute(nASD,gR)
+		. placement(sL,gR)                => attribute(sL,gR)
+
+		. qualitativeAngleExtent(t,e)     => qualitativeSpatialExtent(t,e)
+
+		. qualitativeDistanceExtent(t,e)  => qualitativeSpatialExtent(t,e)
+
+		. quantitativeAngleExtent(t,e)    => quantitativeSpatialExtent(t,e)
+
+		. quantitativeDistanceExtent(t,e) => quantitativeSpatialExtent(t,e)
+
+		. relatum(gL,t)                   => attribute(gL,t)
+		. relatum(gL,t)                   => range(gL,t)
+
+		. spatialExtent(t,e)              => spatialCircumstance(t,e)
+
+		. qualitativeSpatialExtent(t,e)   => spatialExtent(t,e)
+
+		. quantitativeSpatialExtent(t,e)  => spatialExtent(t,e)
+
+		. route(aDM,gR)                   => attribute(aDM,gR)
+		. route(aOC,gR)                   => attribute(aOC,gR)
+		. route(nAOC,gR)                  => attribute(nAOC,gR)
+		. route(nADM,gR)                  => attribute(nADM,gR)
+
+		. source(gR,gL)                   => attribute(gR,gL)
+
+		. spatialPerspective(t,e)         => circumstanceInConfiguration(t,e)
+
+%% Restrictions
+
+	forall x: AffectingSpatialAction; y: GeneralizedRoute
+		. placement(x,y) => y in GeneralizedLocation
+
+	forall x: NonAffectingSpatialDoing; y: GeneralizedRoute
+		. placement(x,y) => y in GeneralizedLocation
+
+	forall x: SpatialLocating
+		. exists y: GeneralizedRoute . placement(x,y) \/ exists y: GeneralizedLocation . placement(x,y)
+
+end
+
+
+%%-----------------------------
+%% Begin OntoClean Definitions
+%%
+%% Thing                                     : OntoCleanProperty;
+%%
+%% Ability                                   : Rigid;
+%% AboveProjection                           : Rigid;
+%% AboveProjectionExternal                   : Rigid;
+%% AboveProjectionInternal                   : Rigid;
+%% Abstraction                               : Rigid;
+%% Access                                    : Rigid;
+
+%% AddresseeOriented                         : Dependent;
+%% AddresseeOriented                         : Rigid;
+
+%% Addressing                                : Dependent;
+%% Addressing                                : Rigid;
+
+%% AddressingVerbal                          : Dependent;
+%% AddressingVerbal                          : Rigid;
+
+%% AffectingAction                           : Dependent;
+%% AffectingAction                           : Rigid;
+
+%% AffectingDirectedMotion                   : Dependent;
+%% AffectingDirectedMotion                   : Rigid;
+
+%% AffectingMotion                           : Rigid;
+
+%% AffectingOrientationChange                : Dependent;
+%% AffectingOrientationChange                : Rigid;
+
+%% AffectingOrienting                        : Dependent;
+%% AffectingOrienting                        : Rigid;
+
+%% AffectingSimpleMotion                     : Rigid;
+%% AffectingSpatialAction                    : Rigid;
+%% Age                                       : Rigid;
+
+%% AgePropertyAscription                     : Dependent;
+%% AgePropertyAscription                     : Rigid;
+
+%% Ambience                                  : Dependent;
+%% Ambience                                  : Rigid;
+
+%% ArcDirectional                            : Rigid;
+
+%% Ascription                                : Dependent;
+%% Ascription                                : Rigid;
+
+%% AscriptionInverse                         : Dependent;
+%% AscriptionInverse                         : Rigid;
+
+%% AtLeast                                   : Dependent;
+%% AtLeast                                   : Rigid;
+
+%% AtMost                                    : Dependent;
+%% AtMost                                    : Rigid;
+
+%% BackProjection                            : Rigid;
+%% BackProjectionExternal                    : Rigid;
+%% BackProjectionInternal                    : Rigid;
+%% BehavioralQuality                         : Rigid;
+
+%% BehavioralVerbal                          : Dependent;
+%% BehavioralVerbal                          : Rigid;
+
+%% BeingAndHaving                            : Dependent;
+%% BeingAndHaving                            : Rigid;
+
+%% Believe                                   : Dependent;
+%% Believe                                   : Rigid;
+
+%% BelowProjection                           : Rigid;
+%% BelowProjectionExternal                   : Rigid;
+%% BelowProjectionInternal                   : Rigid;
+%% CardinalDirectional                       : Rigid;
+
+%% Causal                                    : Dependent;
+%% Causal                                    : Rigid;
+
+%% Central                                   : Rigid;
+%% Circumstance                              : Rigid;
+
+%% Circumstantial                            : Dependent;
+%% Circumstantial                            : Rigid;
+
+%% CircumstantialOther                       : Dependent;
+%% CircumstantialOther                       : Rigid;
+
+%% ClassAscription                           : Rigid;
+%% ClassQuality                              : Rigid;
+
+%% Cognition                                 : Dependent;
+%% Cognition                                 : Rigid;
+
+%% Color                                     : Rigid;
+
+%% ColorPropertyAscription                   : Dependent;
+%% ColorPropertyAscription                   : Rigid;
+
+%% CommunicativeAttitude                     : Dependent;
+%% CommunicativeAttitude                     : Rigid;
+
+%% Conditional                               : Rigid;
+
+%% Configuration                             : Dependent;
+%% Configuration                             : Rigid;
+
+%% Conjunction                               : Dependent;
+%% Conjunction                               : Rigid;
+
+%% Connection                                : Rigid;
+%% ConsciousBeing                            : Rigid;
+%% Containment                               : Rigid;
+%% Control                                   : Rigid;
+
+%% CreativeMaterialAction                    : Dependent;
+%% CreativeMaterialAction                    : Rigid;
+
+%% DecomposableObject                        : Rigid;
+%% DeicticSpatialTemporal                    : Rigid;
+%% DenialOfFunctionalControl                 : Rigid;
+%% DiffuseMatter                             : Rigid;
+%% DirectionalRelation                       : Rigid;
+%% Disjointness                              : Rigid;
+
+%% Disjunction                               : Dependent;
+%% Disjunction                               : Rigid;
+
+%% DisjunctiveSet                            : Rigid;
+
+%% Disliking                                 : Dependent;
+%% Disliking                                 : Rigid;
+
+%% DispositiveMaterialAction                 : Dependent;
+%% DispositiveMaterialAction                 : Rigid;
+
+%% Distal                                    : Rigid;
+%% Distribution                              : Rigid;
+
+%% DoingAndHappening                         : Dependent;
+%% DoingAndHappening                         : Rigid;
+
+%% DynamicQuality                            : Rigid;
+%% East                                      : Rigid;
+%% EastExternal                              : Rigid;
+%% EastInternal                              : Rigid;
+
+%% Elaboration                               : Dependent;
+%% Elaboration                               : Rigid;
+
+%% Element                                   : Rigid;
+
+%% ElementList                               : Dependent;
+%% ElementList                               : Rigid;
+
+%% ElementOf                                 : Dependent;
+%% ElementOf                                 : Rigid;
+
+%% Enhancement                               : Dependent;
+%% Enhancement                               : Rigid;
+
+%% EvaluativeQuality                         : Rigid;
+
+%% Exactly                                   : Dependent;
+%% Exactly                                   : Rigid;
+
+%% Existence                                 : Dependent;
+%% Existence                                 : Rigid;
+
+%% Expansion                                 : Dependent;
+%% Expansion                                 : Rigid;
+
+%% Extension                                 : Dependent;
+%% Extension                                 : Rigid;
+
+%% External                                  : Dependent;
+%% External                                  : Rigid;
+
+%% Fearing                                   : Dependent;
+%% Fearing                                   : Rigid;
+
+%% Female                                    : Rigid;
+%% FrontProjection                           : Rigid;
+%% FrontProjectionExternal                   : Rigid;
+%% FrontProjectionInternal                   : Rigid;
+%% FrontalProjection                         : Rigid;
+%% FunctionalSpatialModality                 : Rigid;
+%% Future                                    : Rigid;
+%% GUM_Circumstance                          : Rigid;
+%% GUM_DispositiveMaterialAction             : Rigid;
+%% GUM_Element                               : Rigid;
+%% GUM_GeneralizedLocating                   : Rigid;
+%% GUM_NonAffectingDoing                     : Rigid;
+%% GUM_SimpleQuality                         : Rigid;
+%% GUM_SpatialTemporal                       : Rigid;
+%% GUM_Spatial_Circumstance                  : Rigid;
+%% GUM_Spatial_DispositiveMaterialAction     : Rigid;
+%% GUM_Spatial_Element                       : Rigid;
+%% GUM_Spatial_GeneralizedLocating           : Rigid;
+%% GUM_Spatial_NonAffectingDoing             : Rigid;
+%% GUM_Spatial_SimpleQuality                 : Rigid;
+%% GUM_Spatial_SpatialTemporal               : Rigid;
+%% GeneralDirectional                        : Rigid;
+%% GeneralPossibility                        : Rigid;
+%% GeneralizedComplexLocation                : Rigid;
+
+%% GeneralizedLocating                       : Dependent;
+%% GeneralizedLocating                       : Rigid;
+
+%% GeneralizedLocation                       : Dependent;
+%% GeneralizedLocation                       : Rigid;
+
+%% GeneralizedPathLocation                   : Rigid;
+
+%% GeneralizedPossession                     : Dependent;
+%% GeneralizedPossession                     : Rigid;
+
+%% GeneralizedPossessionInverse              : Dependent;
+%% GeneralizedPossessionInverse              : Rigid;
+
+%% GeneralizedRoleRelation                   : Dependent;
+%% GeneralizedRoleRelation                   : Rigid;
+
+%% GeneralizedRoute                          : Rigid;
+
+%% GreaterThan                               : Dependent;
+%% GreaterThan                               : Rigid;
+
+%% GreaterThanComparison                     : Dependent;
+%% GreaterThanComparison                     : Rigid;
+
+%% Hailing                                   : Dependent;
+%% Hailing                                   : Rigid;
+
+%% HeightNonProjectionAxial                  : Rigid;
+%% HorizontalProjection                      : Rigid;
+
+%% IdeaProjection                            : Dependent;
+%% IdeaProjection                            : Rigid;
+
+%% IdeaQuoting                               : Dependent;
+%% IdeaQuoting                               : Rigid;
+
+%% IdeaReporting                             : Dependent;
+%% IdeaReporting                             : Rigid;
+
+%% Identity                                  : Dependent;
+%% Identity                                  : Rigid;
+
+%% Intensive                                 : Dependent;
+%% Intensive                                 : Rigid;
+
+%% Intention                                 : Dependent;
+%% Intention                                 : Rigid;
+
+%% Internal                                  : Dependent;
+%% Internal                                  : Rigid;
+
+%% Know                                      : Dependent;
+%% Know                                      : Rigid;
+
+%% LateralProjection                         : Rigid;
+%% LeftProjection                            : Rigid;
+%% LeftProjectionExternal                    : Rigid;
+%% LeftProjectionInternal                    : Rigid;
+
+%% LessThan                                  : Dependent;
+%% LessThan                                  : Rigid;
+
+%% LessThanComparison                        : Dependent;
+%% LessThanComparison                        : Rigid;
+
+%% Liking                                    : Dependent;
+%% Liking                                    : Rigid;
+
+%% LocutionProjection                        : Dependent;
+%% LocutionProjection                        : Rigid;
+
+%% LocutionQuoting                           : Dependent;
+%% LocutionQuoting                           : Rigid;
+
+%% LocutionReporting                         : Dependent;
+%% LocutionReporting                         : Rigid;
+
+%% LogicalPropertyAscription                 : Dependent;
+%% LogicalPropertyAscription                 : Rigid;
+
+%% LogicalQuality                            : Rigid;
+%% LogicalUniqueness                         : Rigid;
+%% Male                                      : Rigid;
+%% MaterialClassQuality                      : Rigid;
+
+%% MaterialPropertyAscription                : Dependent;
+%% MaterialPropertyAscription                : Rigid;
+
+%% MaterialWorldQuality                      : Rigid;
+
+%% MentalActive                              : Dependent;
+%% MentalActive                              : Rigid;
+
+%% MentalInactive                            : Dependent;
+%% MentalInactive                            : Rigid;
+
+%% MessageOriented                           : Dependent;
+%% MessageOriented                           : Rigid;
+
+%% MessageTransfer                           : Dependent;
+%% MessageTransfer                           : Rigid;
+
+%% ModalPropertyAscription                   : Dependent;
+%% ModalPropertyAscription                   : Rigid;
+
+%% ModalQuality                              : Rigid;
+
+%% MultiConfiguration                        : Dependent;
+%% MultiConfiguration                        : Rigid;
+
+%% MultipleDirectional                       : Rigid;
+%% Name                                      : Rigid;
+
+%% NameEvent                                 : Dependent;
+%% NameEvent                                 : Rigid;
+
+%% NameOf                                    : Dependent;
+%% NameOf                                    : Rigid;
+
+%% NameRelation                              : Dependent;
+%% NameRelation                              : Rigid;
+
+%% NamedObject                               : Rigid;
+%% NaturalNumber                             : Rigid;
+%% Necessity                                 : Rigid;
+
+%% NonAddresseeOriented                      : Dependent;
+%% NonAddresseeOriented                      : Rigid;
+
+%% NonAddressing                             : Dependent;
+%% NonAddressing                             : Rigid;
+
+%% NonAffectingAction                        : Dependent;
+%% NonAffectingAction                        : Rigid;
+
+%% NonAffectingDirectedMotion                : Dependent;
+%% NonAffectingDirectedMotion                : Rigid;
+
+%% NonAffectingDoing                         : Dependent;
+%% NonAffectingDoing                         : Rigid;
+
+%% NonAffectingHappening                     : Dependent;
+%% NonAffectingHappening                     : Rigid;
+
+%% NonAffectingMotion                        : Rigid;
+
+%% NonAffectingOrientationChange             : Dependent;
+%% NonAffectingOrientationChange             : Rigid;
+
+%% NonAffectingOrienting                     : Dependent;
+%% NonAffectingOrienting                     : Rigid;
+
+%% NonAffectingSimpleMotion                  : Rigid;
+%% NonAffectingSpatialDoing                  : Rigid;
+%% NonConditional                            : Rigid;
+%% NonConsciousThing                         : Rigid;
+%% NonDecomposableObject                     : Rigid;
+%% NonDeicticSpatialTemporal                 : Rigid;
+
+%% NonMessageOriented                        : Dependent;
+%% NonMessageOriented                        : Rigid;
+
+%% NonProjectionAxial                        : Rigid;
+%% NonScalableQuality                        : Rigid;
+%% NonVolitional                             : Rigid;
+%% North                                     : Rigid;
+%% NorthExternal                             : Rigid;
+%% NorthInternal                             : Rigid;
+
+%% NumberFocusing                            : Dependent;
+%% NumberFocusing                            : Rigid;
+
+%% OneOrTwoDLocation                         : Rigid;
+%% OneOrTwoDTime                             : Rigid;
+%% OrderedObject                             : Rigid;
+%% OrderedSet                                : Rigid;
+%% OverProjectionExternal                    : Rigid;
+
+%% OwnedBy                                   : Dependent;
+%% OwnedBy                                   : Rigid;
+
+%% Ownership                                 : Dependent;
+%% Ownership                                 : Rigid;
+
+%% Part                                      : Dependent;
+%% Part                                      : Rigid;
+
+%% PartOf                                    : Dependent;
+%% PartOf                                    : Rigid;
+
+%% PartWhole                                 : Dependent;
+%% PartWhole                                 : Rigid;
+
+%% Parthood                                  : Rigid;
+%% Past                                      : Rigid;
+%% PathRepresenting                          : Rigid;
+%% PathRepresentingExternal                  : Rigid;
+%% PathRepresentingInternal                  : Rigid;
+
+%% Perception                                : Dependent;
+%% Perception                                : Rigid;
+
+%% Peripheral                                : Rigid;
+%% Person                                    : Rigid;
+%% PolarQuality                              : Rigid;
+%% Possibility                               : Rigid;
+%% Present                                   : Rigid;
+%% Process                                   : Rigid;
+
+%% Projection                                : Dependent;
+%% Projection                                : Rigid;
+
+%% ProjectionRelation                        : Rigid;
+
+%% ProperVerbal                              : Dependent;
+%% ProperVerbal                              : Rigid;
+
+%% PropertyAscription                        : Dependent;
+%% PropertyAscription                        : Rigid;
+
+%% PropertyOf                                : Dependent;
+%% PropertyOf                                : Rigid;
+
+%% ProvenanceClassQuality                    : Rigid;
+
+%% ProvenancePropertyAscription              : Dependent;
+%% ProvenancePropertyAscription              : Rigid;
+
+%% Proximal                                  : Rigid;
+%% QualitativeDistance                       : Rigid;
+%% QualitativeSpatialTemporal                : Rigid;
+%% QuantitativeDistance                      : Rigid;
+%% QuantitativeSpatialTemporal               : Rigid;
+
+%% Quantity                                  : Dependent;
+%% Quantity                                  : Rigid;
+
+%% QuantityAscription                        : Dependent;
+%% QuantityAscription                        : Rigid;
+
+%% Quoting                                   : Dependent;
+%% Quoting                                   : Rigid;
+
+%% Raining                                   : Dependent;
+%% Raining                                   : Rigid;
+
+%% ReactionAndEmotion                        : Dependent;
+%% ReactionAndEmotion                        : Rigid;
+
+%% Relating                                  : Dependent;
+%% Relating                                  : Rigid;
+
+%% RelativeNonProjectionAxial                : Rigid;
+%% RelativeSpatialModality                   : Rigid;
+
+%% Reporting                                 : Dependent;
+%% Reporting                                 : Rigid;
+
+%% RightProjection                           : Rigid;
+%% RightProjectionExternal                   : Rigid;
+%% RightProjectionInternal                   : Rigid;
+
+%% RolePlaying                               : Dependent;
+%% RolePlaying                               : Rigid;
+
+%% SayingAndSensing                          : Dependent;
+%% SayingAndSensing                          : Rigid;
+
+%% ScalableQuality                           : Rigid;
+
+%% ScaledComparison                          : Dependent;
+%% ScaledComparison                          : Rigid;
+
+%% SenseAndMeasureQuality                    : Rigid;
+%% Sequential                                : Rigid;
+%% SequentialQuality                         : Rigid;
+%% ShapeCommitting                           : Rigid;
+
+%% Signification                             : Dependent;
+%% Signification                             : Rigid;
+
+%% SimpleQuality                             : Rigid;
+%% SimpleThing                               : Rigid;
+%% Size                                      : Rigid;
+
+%% SizePropertyAscription                    : Dependent;
+%% SizePropertyAscription                    : Rigid;
+
+%% Snowing                                   : Dependent;
+%% Snowing                                   : Rigid;
+
+%% South                                     : Rigid;
+%% SouthExternal                             : Rigid;
+%% SouthInternal                             : Rigid;
+%% Space                                     : Rigid;
+%% SpaceInterval                             : Rigid;
+%% SpacePoint                                : Rigid;
+%% SpatialDistanceModality                   : Rigid;
+
+%% SpatialLocating                           : Dependent;
+%% SpatialLocating                           : Rigid;
+
+%% SpatialModality                           : Rigid;
+%% SpatialObject                             : Rigid;
+%% SpatialTemporal                           : Rigid;
+%% SpatialTemporalLocating                   : Rigid;
+%% SpecificDirectional                       : Rigid;
+%% SpecificMatter                            : Rigid;
+%% StativeQuality                            : Rigid;
+%% StatusQuality                             : Rigid;
+
+%% Striving                                  : Dependent;
+%% Striving                                  : Rigid;
+
+%% SubjectMatter                             : Rigid;
+%% Substance                                 : Rigid;
+
+%% Sunning                                   : Dependent;
+%% Sunning                                   : Rigid;
+
+%% Support                                   : Rigid;
+%% Surrounding                               : Rigid;
+
+%% Symbolization                             : Dependent;
+%% Symbolization                             : Rigid;
+
+%% TaxonomicQuality                          : Rigid;
+%% TemporalLocating                          : Rigid;
+%% TemporalObject                            : Rigid;
+
+%% Think                                     : Dependent;
+%% Think                                     : Rigid;
+
+%% ThreeDLocation                            : Rigid;
+%% ThreeDTime                                : Rigid;
+%% Time                                      : Rigid;
+%% TimeInterval                              : Rigid;
+%% TimePoint                                 : Rigid;
+%% TopographicDirectional                    : Rigid;
+%% UMSet                                     : Rigid;
+%% UnderProjectionExternal                   : Rigid;
+
+%% UsePropertyAscription                     : Dependent;
+%% UsePropertyAscription                     : Rigid;
+
+%% VerticalProjection                        : Rigid;
+%% Volitional                                : Rigid;
+
+%% Wanting                                   : Dependent;
+%% Wanting                                   : Rigid;
+
+%% West                                      : Rigid;
+%% WestExternal                              : Rigid;
+%% WestInternal                              : Rigid;
+
+%% Winding                                   : Dependent;
+%% Winding                                   : Rigid;
+
+%% Word                                      : Rigid;
+%% ZeroDLocation                             : Rigid;
+%% ZeroDTime                                 : Rigid;
+
+%% End OntoClean Definitions
+%%-----------------------------
+
