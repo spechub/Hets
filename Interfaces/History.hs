@@ -63,11 +63,7 @@ undoRedoDgCmd actionType state ln update =
                        DoUndo -> undoHistStep
                        DoRedo -> redoHistStep) dg
          newEnv = Map.insert ln dg' (i_libEnv dgS)
-         newst = state {
-                        i_state = Just $ dgS {
-                                            i_libEnv = newEnv
-                                            }
-                       }
+         newst = state { i_state = Just $ dgS { i_libEnv = newEnv } }
      update changes dg'
      return newst
 
@@ -155,38 +151,31 @@ processUndoRedoElems actype ls state acc update
      case ls of
       [] -> return (state,acc)
       (UseThmChange sw):l -> do
-         let nwst = state {
-                      i_state = Just $ ist { useTheorems = sw } }
+         let nwst = state { i_state = Just $ ist { useTheorems = sw } }
              ch   = UseThmChange $ useTheorems ist
          processUndoRedoElems actype l nwst (ch:acc) update
       (Save2FileChange sw):l -> do
-         let nwst = state {
-                      i_state = Just $ ist { save2file = sw }  }
+         let nwst = state { i_state = Just $ ist { save2file = sw }  }
              ch   = Save2FileChange $ save2file ist
          processUndoRedoElems actype l nwst (ch:acc) update
       (ProverChange nwp):l -> do
-         let nwst = state {
-                      i_state = Just $ ist { prover = nwp } }
+         let nwst = state { i_state = Just $ ist { prover = nwp } }
              ch   = ProverChange $ prover ist
          processUndoRedoElems actype l nwst (ch:acc) update
       (ConsCheckerChange nwc):l -> do
-         let nwst = state {
-                      i_state = Just $ ist { consChecker = nwc} }
+         let nwst = state { i_state = Just $ ist { consChecker = nwc} }
              ch   = ConsCheckerChange $ consChecker ist
          processUndoRedoElems actype l nwst (ch:acc) update
       (ScriptChange nws):l -> do
-         let nwst = state {
-                      i_state = Just $ ist { script = nws } }
+         let nwst = state { i_state = Just $ ist { script = nws } }
              ch   = ScriptChange $ script ist
          processUndoRedoElems actype l nwst (ch:acc) update
       (LoadScriptChange sw):l -> do
-         let nwst = state {
-                      i_state = Just $ ist { loadScript = sw } }
+         let nwst = state { i_state = Just $ ist { loadScript = sw } }
              ch   = LoadScriptChange $ loadScript ist
          processUndoRedoElems actype l nwst (ch:acc) update
       (CComorphismChange nwc):l -> do
-         let nwst = state {
-                      i_state = Just $ ist { cComorphism = nwc} }
+         let nwst = state { i_state = Just $ ist { cComorphism = nwc} }
              ch   = CComorphismChange $ cComorphism ist
          processUndoRedoElems actype l nwst (ch:acc) update
       (DgCommandChange nln):l -> do
@@ -195,8 +184,7 @@ processUndoRedoElems actype ls state acc update
          processUndoRedoElems actype l nwst (ch:acc) update
       (ListChange nls):l -> do
          let (nwels,lc) = processList nls (elements ist) []
-             nwst = state {
-                     i_state = Just $ ist { elements = nwels } }
+             nwst = state { i_state = Just $ ist { elements = nwels } }
              ch   = ListChange lc
          processUndoRedoElems actype l nwst (ch:acc) update
       (IStateChange nist):l -> do

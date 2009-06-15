@@ -30,9 +30,10 @@ module GUI.GraphLogic
     , showEdgeInfo
     , checkconservativityOfEdge
     , hideNodes
-    , hideNewProvedEdges
+    , hideEdges
+    , toggleHideNodes
+    , toggleHideEdges
     , hideShowNames
-    , showNodes
     , translateGraph
     , showLibGraph
     , runAndLock
@@ -121,14 +122,17 @@ undo gInfo isUndo = do
   writeIORef (intState gInfo) nwSt
 
 updateGraph :: GInfo -> LIB_NAME -> [DGChange] -> DGraph -> IO ()
-updateGraph gInfo ln changes dg = do
-  og <- readIORef $ openGraphs gInfo
+updateGraph gInfo' ln changes dg = do
+  og <- readIORef $ openGraphs gInfo'
   case Map.lookup ln og of
     Nothing -> return ()
-    Just (GInfo { graphInfo = gi }) -> do
-      hhn <- GA.hasHiddenNodes gi
-      let (nodes, edges) = if hhn then hideNodesAux dg else ([],[])
-      GA.applyChanges gi (removeContraryChanges changes) nodes edges
+    Just (GInfo { graphInfo = gi
+                , options = opts }) -> do
+      flags <- readIORef opts
+      let (nodes, comp) = if flagHideNodes flags then hideNodesAux dg
+                          else ([],[])
+          edges = if flagHideEdges flags then hideEdgesAux dg else []
+      GA.applyChanges gi (removeContraryChanges changes) nodes edges comp
       GA.redisplay gi
 
 -- | Toggles to display internal node names
@@ -141,32 +145,17 @@ hideShowNames (GInfo { internalNamesIORef = showInternalNames
   mapM_ (\(s,upd) -> upd (\_ -> showItrn s)) $ updater intrn
   writeIORef showInternalNames $ intrn {showNames = showThem}
 
--- | shows all hidden nodes and edges
-showNodes :: GInfo -> IO ()
-showNodes gInfo@(GInfo { graphInfo = gi
-                       }) = do
-  hhn <- GA.hasHiddenNodes gi
-  case hhn of
-    True -> do
-      GA.showTemporaryMessage gi "Revealing hidden nodes ..."
-      GA.showAll gi
-      hideShowNames gInfo False
-    False ->
-      GA.showTemporaryMessage gi "No hidden nodes found ..."
-
 -- | hides all unnamed internal nodes that are proven
-hideNodes :: GInfo -> IO ()
-hideNodes gInfo@(GInfo { graphInfo = gi
-                       , libName = ln }) = do
-  ost <- readIORef $ intState gInfo
-  case i_state ost of
-    Nothing -> return ()
-    Just ist -> do
-      let le = i_libEnv ist
-          dg = lookupDGraph ln le
-          (nodes, edges) = hideNodesAux dg
-      GA.showTemporaryMessage gi "Hiding unnamed nodes..."
-      GA.applyChanges gi [] nodes edges
+hideNodes :: GInfo
+          -> IO ([GA.NodeId], [(GA.NodeId, GA.NodeId, DGEdgeType, Bool)])
+hideNodes gInfo@(GInfo { libName = ln
+                       , options = opts }) = do
+  flags <- readIORef opts
+  if not $ flagHideNodes flags then return ([],[]) else do
+    ost <- readIORef $ intState gInfo
+    case i_state ost of
+      Nothing -> return ([],[])
+      Just ist -> return $ hideNodesAux $ lookupDGraph ln $ i_libEnv ist
 
 -- | hides all unnamed internal nodes that are proven
 hideNodesAux :: DGraph
@@ -179,23 +168,48 @@ hideNodesAux dg =
       edges = getCompressedEdges dg nodes
   in (nodes, edges)
 
+toggleHideNodes :: GInfo -> IO ()
+toggleHideNodes gInfo@(GInfo { graphInfo = gi
+                             , options = opts }) = do
+  flags <- readIORef opts
+  let hide = not $ flagHideNodes flags
+  writeIORef opts $ flags { flagHideNodes = hide }
+  GA.showTemporaryMessage gi $ if hide then "Hiding unnamed nodes..."
+                               else "Revealing hidden nodes ..."
+  (nodes, comp) <- hideNodes gInfo
+  edges <- hideEdges gInfo
+  GA.applyChanges gi [] nodes edges comp
+
 -- | hides all proven edges created not initialy
-hideNewProvedEdges :: GInfo -> IO ()
-hideNewProvedEdges gInfo@(GInfo { graphInfo = gi
-                                , libName = ln }) = do
-  ost <- readIORef $ intState gInfo
-  case i_state ost of
-   Nothing -> return ()
-   Just ist -> do
-     let ph = SizedList.toList $ proofHistory
-                               $ lookupDGraph ln $ i_libEnv ist
-         edges = foldl (\ e c -> case c of
-                         InsertEdge (_, _, lbl) -> (dgl_id lbl):e
-                         DeleteEdge (_, _, lbl) -> delete (dgl_id lbl) e
-                         _ -> e
-                       ) [] $ flattenHistory ph []
-     --GA.hideEdges gi edges
-     GA.redisplay gi
+hideEdges :: GInfo -> IO [EdgeId]
+hideEdges gInfo@(GInfo { libName = ln
+                       , options = opts }) = do
+  flags <- readIORef opts
+  if not $ flagHideEdges flags then return [] else do
+    ost <- readIORef $ intState gInfo
+    case i_state ost of
+      Nothing -> return []
+      Just ist -> return $ hideEdgesAux $ lookupDGraph ln $ i_libEnv ist
+
+hideEdgesAux :: DGraph -> [EdgeId]
+hideEdgesAux dg =
+  foldl (\ e c -> case c of
+                    InsertEdge (_, _, lbl) -> (dgl_id lbl):e
+                    DeleteEdge (_, _, lbl) -> delete (dgl_id lbl) e
+                    _ -> e
+        ) [] $ flattenHistory (SizedList.toList $ proofHistory dg) []
+
+toggleHideEdges :: GInfo -> IO ()
+toggleHideEdges gInfo@(GInfo { graphInfo = gi
+                             , options = opts }) = do
+  flags <- readIORef opts
+  let hide = not $ flagHideEdges flags
+  writeIORef opts $ flags { flagHideEdges = hide }
+  GA.showTemporaryMessage gi $ if hide then "Hiding new proven edges..."
+                               else "Revealing hidden proven edges ..."
+  (nodes, comp) <- hideNodes gInfo
+  edges <- hideEdges gInfo
+  GA.applyChanges gi [] nodes edges comp
 
 -- | generates from list of HistElem one list of DGChanges
 flattenHistory :: [HistElem] -> [DGChange] -> [DGChange]
@@ -393,7 +407,6 @@ proofMenu gInfo@(GInfo { hetcatsOpts = hOpts
           writeIORef (intState gInfo) nwst
           updateGraph gInfo ln (reverse $ flatHistory history) newGr
           unlockGlobal gInfo
-          hideShowNames gInfo False
           mGUIMVar <- tryTakeMVar guiMVar
           maybe (fail "should be filled with Nothing after proof attempt")
                 (const $ return ())
@@ -573,7 +586,6 @@ runProveAtNode checkCons gInfo (v, dgnode) (Result ds mres) =
                  writeIORef iSt nwst
                  updateGraph gInfo ln (reverse $ flatHistory history) newDg
                  unlockGlobal gInfo
-                 hideShowNames gInfo False
            Nothing -> return ()
        _ -> return ()
 

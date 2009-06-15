@@ -17,23 +17,21 @@ module GUI.GraphAbstraction
   , NodeValue
   , EdgeValue
   , GraphInfo
-  -- * Creation and display
+    -- * Creation and display
   , initgraphs
   , makegraph
   , redisplay
   , showAll
-  -- * Node interface
+    -- * Node interface
   , isHiddenNode
-  , hasHiddenNodes
   , focusNode
-  -- * Edge interface
-  , hideEdges
+    -- * Edge interface
   , hideSetOfEdgeTypes
   , isHiddenEdge
-  -- * Conversion and update of graph
+    -- * Conversion and update of graph
   , applyChanges
   , convert
-  -- * Direct manipulation of uDrawGraph
+    -- * Direct manipulation of uDrawGraph
   , layoutImproveAll
   , showTemporaryMessage
   , deactivateGraphWindow
@@ -54,13 +52,14 @@ import Static.DevGraph
 import Data.IORef
 import Data.List (partition)
 import qualified Data.Map as Map
-import Data.Graph.Inductive.Graph (LEdge, LNode)
+import Data.Graph.Inductive.Graph (LEdge)
 import qualified Data.Graph.Inductive.Graph as Graph
 import Data.Maybe (isNothing)
 
 import Control.Monad (foldM)
 import Control.Concurrent (threadDelay)
 
+-- | uDrawGraph graph
 type OurGraph =
      Graph   DaVinciGraph
              DaVinciGraphParms
@@ -71,11 +70,16 @@ type OurGraph =
              DaVinciArcType
              DaVinciArcTypeParms
 
+-- | Node id type
 type NodeId = Int
 
+-- | Node value
 type NodeValue = (String, NodeId)
+
+-- | Edge value
 type EdgeValue = (String, EdgeId, Maybe (LEdge DGLinkLab))
 
+-- | Datastructure for changes, storing all needed information for change
 data GAChange
   -- Node changes
   = AddNode NodeId DGNodeType String Bool
@@ -109,18 +113,20 @@ data GAEdge = GAEdge
   , gaeValue :: EdgeValue -- ^ Holds the edgevalue for uDrawGraph edge
   }
 
+-- | Internal node type
 data GANodeType = GANodeType
   { udgNodeType :: DaVinciNodeType NodeValue
   }
 
+-- | Internal edge type
 data GAEdgeType = GAEdgeType
   { udgEdgeType :: DaVinciArcType EdgeValue
   , udgCompressed :: (DaVinciArcType EdgeValue, DaVinciArcType EdgeValue)
   , gaeHidden :: Bool
   }
 
--- Main datastructure for carrying around the graph,
--- both internally (nodes as integers), and at the daVinci level
+{- | Main datastructure for carrying around the graph,
+     both internally (nodes as integers), and at the daVinci level -}
 data AbstractionGraph = AbstractionGraph
   { theGraph :: OurGraph
   , nodes :: Map.Map NodeId GANode
@@ -130,6 +136,7 @@ data AbstractionGraph = AbstractionGraph
   , compressedEdges :: Map.Map (NodeId, NodeId, DGEdgeType, Bool) GAEdge
   }
 
+-- | IORef for main datastructure
 type GraphInfo = IORef AbstractionGraph
 
 instance Eq (DaVinciNode NodeValue) where
@@ -138,43 +145,48 @@ instance Eq (DaVinciNode NodeValue) where
 instance Eq (DaVinciArc EdgeValue) where
     (==) = eq1
 
-wrapperRead :: (AbstractionGraph -> IO ())
-            -> GraphInfo
+-- | Wrapper for functions with read access
+wrapperRead :: (AbstractionGraph -> IO ()) -- ^ Function to call
+            -> GraphInfo -- ^ The graph
             -> IO ()
 wrapperRead func gi = do
   g <- readIORef gi
   func g
 
-wrapperWrite :: (AbstractionGraph -> IO AbstractionGraph)
-             -> GraphInfo
+-- | Wrapper for functions with read and write access
+wrapperWrite :: (AbstractionGraph -> IO AbstractionGraph) -- ^ Function to call
+             -> GraphInfo -- ^ The graph
              -> IO ()
 wrapperWrite func gi = do
   g <- readIORef gi
   g' <- func g
   writeIORef gi g'
 
-wrapperBool :: (AbstractionGraph -> Bool)
-            -> GraphInfo
-            -> IO Bool
+-- | Wrapper for functions returning a boolean
+wrapperBool :: (AbstractionGraph -> Bool) -- ^ Function to call
+            -> GraphInfo -- ^ The graph
+            -> IO Bool -- ^ Return value
 wrapperBool func gi = do
   g <- readIORef gi
   return $ func g
 
 -- | Forces a redraw of the uDrawGraph and wait an amount of time
-redisplay' :: AbstractionGraph -> IO ()
+redisplay' :: AbstractionGraph -- ^ The graph
+           -> IO ()
 redisplay' g = do
   redraw (theGraph g)
   threadDelay 300000
 
-redisplay :: GraphInfo -> IO ()
+redisplay :: GraphInfo -- ^ The graph
+          -> IO ()
 redisplay = wrapperRead redisplay'
 
 -- | Creates an empty graph structure
-graphtool :: OurGraph
+graphtool :: OurGraph -- ^ uDrawGraph graph
 graphtool = daVinciSort
 
 -- | Creates the empty AbstractionGraph
-initgraphs :: IO GraphInfo
+initgraphs :: IO GraphInfo -- ^ The graph
 initgraphs = do
   let g = AbstractionGraph
             { theGraph = graphtool
@@ -187,16 +199,16 @@ initgraphs = do
   newIORef g
 
 -- | Creates the uDrawGraph graph
-makegraph :: GraphInfo
-          -> String     -- Title
-          -> Maybe (IO ()) -- FileOpen Menu
-          -> Maybe (IO ()) -- FileSave Menu
-          -> Maybe (IO ()) -- FileSaveAs Menu
-          -> IO Bool       -- FileClose Menu
-          -> Maybe (IO ()) -- FileExit Menu
-          -> [GlobalMenu]
-          -> [(DGNodeType,DaVinciNodeTypeParms NodeValue)]
-          -> [(DGEdgeType,DaVinciArcTypeParms EdgeValue)]
+makegraph :: GraphInfo -- ^ The graph
+          -> String     -- ^ Title
+          -> Maybe (IO ()) -- ^ FileOpen menu
+          -> Maybe (IO ()) -- ^ FileSave menu
+          -> Maybe (IO ()) -- ^ FileSaveAs menu
+          -> IO Bool       -- ^ FileClose menu
+          -> Maybe (IO ()) -- ^ FileExit menu
+          -> [GlobalMenu] -- ^ Edit menu
+          -> [(DGNodeType,DaVinciNodeTypeParms NodeValue)] -- ^ Node types
+          -> [(DGEdgeType,DaVinciArcTypeParms EdgeValue)] -- ^ Edge types
           -> IO ()
 makegraph gi title open save saveAs close exit menus nTypeParms eTypeParms = do
   let graphParms  =
@@ -213,7 +225,7 @@ makegraph gi title open save saveAs close exit menus nTypeParms eTypeParms = do
       (eTypeNames,eTypeParms') = unzip eTypeParms
       expand = (LocalMenu (Button "Expand" (\ _ -> do
                                              g <- readIORef gi
-                                             g' <- applyChanges' g [] [] []
+                                             g' <- applyChanges' g [] [] [] []
                                              writeIORef gi g'
                                              redisplay' g')) $$$)
       eTypeParmsCO = map expand eTypeParms'
@@ -237,13 +249,15 @@ makegraph gi title open save saveAs close exit menus nTypeParms eTypeParms = do
     , compressedEdges = Map.empty
     }
 
-{- similar to lookup (for Map), but returns just the value if lookup was
-   successful otherwise an error is raised. -}
+{- | similar to lookup (for Map), but returns just the value if lookup was
+     successful otherwise an error is raised. -}
 get :: (Show k, Ord k) => k -> Map.Map k a -> a
 get key = Map.findWithDefault (error $ "get: id unknown: " ++ show key) key
 
-showAll :: GraphInfo -> IO ()
-showAll gInfo = applyChanges gInfo [] [] []
+-- | Shows all hidden nodes and edges
+showAll :: GraphInfo -- ^ The graph
+        -> IO ()
+showAll gInfo = applyChanges gInfo [] [] [] []
 
 {- Functions for adding, deleting, changing and hidding nodes.-}
 
@@ -295,16 +309,11 @@ isHiddenNode' :: AbstractionGraph -- ^ The graph
               -> Bool
 isHiddenNode' g nId = isNothing $ udgNode $ get nId $ nodes g
 
-isHiddenNode :: GraphInfo -> NodeId -> IO Bool
+-- | Checks whether a node is hidden or not
+isHiddenNode :: GraphInfo -- ^ The graph
+             -> NodeId -- ^ ID of the node
+             -> IO Bool -- ^ Is hidden
 isHiddenNode gi nId = wrapperBool (\ g -> isHiddenNode' g nId) gi
-
--- | Checks if at least one hidden node exists
-hasHiddenNodes' :: AbstractionGraph -- ^ The graph
-                -> Bool
-hasHiddenNodes' = Map.fold (\ n b -> b || isNothing (udgNode n)) False . nodes
-
-hasHiddenNodes :: GraphInfo -> IO Bool
-hasHiddenNodes = wrapperBool hasHiddenNodes'
 
 -- | Shows a hidden node again
 showNode :: AbstractionGraph -- ^ The graph
@@ -343,7 +352,10 @@ focusNode' g nId = do
     Nothing -> errorDialog "Error" "focusNode: node is hidden!"
     Just node -> setNodeFocus (theGraph g) node
 
-focusNode :: GraphInfo -> NodeId -> IO ()
+-- | Focus a node
+focusNode :: GraphInfo -- ^ The graph
+          -> NodeId -- ^ ID of the node
+          -> IO ()
 focusNode gi nId = wrapperRead (\ g -> focusNode' g nId) gi
 
 {- Functions for adding, deleting, changing and hidding edges.-}
@@ -375,11 +387,13 @@ addEdge g eId eType nIdFrom nIdTo eName eLabel hidden =
                         , gaeValue = gaeV }
       return g { edges = Map.insert eId edge $ edges g }
 
-getEdgeAux :: AbstractionGraph
-           -> NodeId
-           -> NodeId
-           -> DGEdgeType
+-- | Gets uDrawGraph source and target node, edge type
+getEdgeAux :: AbstractionGraph -- ^ The graph
+           -> NodeId -- ^ ID of source node
+           -> NodeId -- ^ ID of target node
+           -> DGEdgeType -- ^ ID of the edgetype
            -> Maybe (DaVinciNode NodeValue, DaVinciNode NodeValue, GAEdgeType)
+              -- ^ uDrawGraph source and target node, edge type
 getEdgeAux g nIdFrom nIdTo eType =
   let ns = nodes g
       gaeT = get eType $ edgeTypes g
@@ -401,7 +415,7 @@ delEdge g eId = do
 
 -- | Adds an compressed edge
 addCompressedEdge :: AbstractionGraph -- ^ The graph
-                  -> (NodeId, NodeId, DGEdgeType, Bool) -- ^ src,tar,et,orig
+                  -> (NodeId, NodeId, DGEdgeType, Bool) -- ^ Compressed edge id
                   -> IO AbstractionGraph
 addCompressedEdge g ce@(nIdFrom, nIdTo, eType, orig) = do
   let gaeV = ("", EdgeId 0, Nothing)
@@ -420,7 +434,7 @@ addCompressedEdge g ce@(nIdFrom, nIdTo, eType, orig) = do
 
 -- | Deletes an compressed edge
 delCompressedEdge :: AbstractionGraph -- ^ The graph
-                  -> (NodeId, NodeId, DGEdgeType, Bool)
+                  -> (NodeId, NodeId, DGEdgeType, Bool) -- ^ Compressed edge id
                   -> IO AbstractionGraph
 delCompressedEdge g ce  = do
   case udgEdge $ get ce $ compressedEdges g of
@@ -440,12 +454,6 @@ hideEdge g eId = do
       deleteArc (theGraph g) edge'
       return g { edges = Map.insert eId edge { udgEdge = Nothing } $ edges g }
 
-hideEdges' :: AbstractionGraph -> [EdgeId] -> IO AbstractionGraph
-hideEdges' = foldM hideEdge
-
-hideEdges :: GraphInfo -> [EdgeId] -> IO ()
-hideEdges gi eIds = wrapperWrite (\ g -> hideEdges' g eIds) gi
-
 -- | Hides a set of edgetypes (type ids)
 hideSetOfEdgeTypes' :: AbstractionGraph -- ^ The graph
                     -> [DGEdgeType] -- ^ IDs of the edgetypes to hide
@@ -459,16 +467,22 @@ hideSetOfEdgeTypes' g eTypes = do
   g'' <- foldM hideEdge g' hEdges
   foldM showEdge g'' sEdges
 
-hideSetOfEdgeTypes :: GraphInfo -> [DGEdgeType] -> IO ()
+-- | Hides a set of edgetypes (type ids)
+hideSetOfEdgeTypes :: GraphInfo -- ^ The graph
+                   -> [DGEdgeType] -- ^ IDs of the edgetypes to hide
+                   -> IO ()
 hideSetOfEdgeTypes gi eT = wrapperWrite (\g -> hideSetOfEdgeTypes' g eT) gi
 
 -- | Checks whether an edge is hidden or not
 isHiddenEdge' :: AbstractionGraph -- ^ The graph
               -> EdgeId -- ^ ID of the edge
-              -> Bool
+              -> Bool -- ^ Is edge hidden
 isHiddenEdge' g eId = isNothing $ udgEdge $ get eId $ edges g
 
-isHiddenEdge :: GraphInfo -> EdgeId -> IO Bool
+-- | Checks whether an edge is hidden or not
+isHiddenEdge :: GraphInfo -- ^ The graph
+             -> EdgeId -- ^ ID of the edge
+             -> IO Bool -- ^ Is edge hidden
 isHiddenEdge gi eId = wrapperBool (\ g -> isHiddenEdge' g eId) gi
 
 -- | Shows a hidden edge again
@@ -489,14 +503,14 @@ showEdge g eId = do
 
 -- * Conversion and update of graph
 
--- | apply the changes of first history item (computed by proof rules,
--- see folder Proofs) to the displayed development graph
-applyChanges' :: AbstractionGraph
-              -> [DGChange]
+-- | Apply changes to the uDrawGraph graph
+applyChanges' :: AbstractionGraph -- ^ The graph
+              -> [DGChange] -- ^ List of changes
               -> [NodeId] -- ^ IDs of the nodes to hide
+              -> [EdgeId] -- ^ IDs of the edges to hide
               -> [(NodeId, NodeId, DGEdgeType, Bool)] -- ^ A list of new edges
               -> IO AbstractionGraph
-applyChanges' g dgchanges hnIds ce = do
+applyChanges' g dgchanges hnIds heIds' ce = do
   let
     -- split and convert changes
     (an',dn,cnt',ae',de) = convertChanges dgchanges ([],[],[],[],[])
@@ -505,8 +519,9 @@ applyChanges' g dgchanges hnIds ce = do
     dnIds = map (\(DelNode nId) -> nId) dn
     aeIds = map (\(AddEdge eId _ _ _ _ _ _) -> eId) ae'
     deIds = map (\(DelEdge eId) -> eId) de
-    heIds = map fst $ filter (\ (eId,e) -> notElem eId deIds &&
-      (elem (ganTo e) hnIds || elem (ganFrom e) hnIds)) $ Map.toList $ edges g
+    heIds = heIds' ++ (map fst $ filter (\ (eId,e) -> notElem eId deIds &&
+      notElem eId heIds' && (elem (ganTo e) hnIds || elem (ganFrom e) hnIds))
+      $ Map.toList $ edges g)
     -- filter multiple changes and changes for deleted and new nodes
     (cnt, new) = partition (\(ChangeNodeType nId _) -> notElem nId anIds)
       $ filter (\(ChangeNodeType nId _) -> notElem nId dnIds) $ fst
@@ -531,7 +546,8 @@ applyChanges' g dgchanges hnIds ce = do
              (\eId -> notElem eId aeIds && (not $ isHiddenEdge' g eId)) heIds
     -- mark as hidden if they would be hidden afterwards
     ae = map (\(AddEdge eId eT nIdF nIdT eN eL _) ->
-      AddEdge eId eT nIdF nIdT eN eL $ elem nIdF hnIds || elem nIdT hnIds) ae'
+      AddEdge eId eT nIdF nIdT eN eL $ elem nIdF hnIds || elem nIdT hnIds ||
+                                       elem eId heIds) ae'
     -- nodes to hide
     hn = map (\n -> HideNode n) $ filter
              (\nId -> notElem nId anIds && (not $ isHiddenNode' g nId)) hnIds
@@ -545,14 +561,22 @@ applyChanges' g dgchanges hnIds ce = do
     changes = de ++ dce ++ dn ++ cnt ++ sn ++ an ++ he ++ hn ++ se ++ ae ++ ace
   foldM applyChange g changes
 
-applyChanges :: GraphInfo -> [DGChange] -> [NodeId]
-             -> [(NodeId, NodeId, DGEdgeType, Bool)] -> IO ()
-applyChanges gi changes nIds compedges =
-  wrapperWrite (\ g -> applyChanges' g changes nIds compedges) gi
+-- | Apply changes to the uDrawGraph graph
+applyChanges :: GraphInfo -- ^ The graph
+             -> [DGChange] -- ^ List of changes
+             -> [NodeId] -- ^ IDs of the nodes to hide
+             -> [EdgeId] -- ^ IDs of the edges to hide
+             -> [(NodeId, NodeId, DGEdgeType, Bool)] -- ^ A list of new edges
+             -> IO ()
+applyChanges gi changes nIds eIds compedges =
+  wrapperWrite (\ g -> applyChanges' g changes nIds eIds compedges) gi
 
-convertChanges :: [DGChange]
+-- | Converts and splits DGChanges to GAChanges
+convertChanges :: [DGChange] -- ^ Development graph changes
                -> ([GAChange], [GAChange], [GAChange], [GAChange], [GAChange])
+                  -- ^ Graph abstraction changes
                -> ([GAChange], [GAChange], [GAChange], [GAChange], [GAChange])
+                  -- ^ Graph abstraction changes
 convertChanges [] changes = changes
 convertChanges (c:r) (an, dn, cnt, ae, de) = case change of
   AddNode _ _ _ _       -> convertChanges r (change : an, dn, cnt, ae, de)
@@ -564,7 +588,9 @@ convertChanges (c:r) (an, dn, cnt, ae, de) = case change of
   where
     change = convertChange c
 
-convertChange :: DGChange -> GAChange
+-- | Converts a DGChange to a GAChange
+convertChange :: DGChange -- ^ Development graph change
+              -> GAChange -- ^ Graph abstraction change
 convertChange change = case change of
   InsertNode (node, nodelab) ->
     AddNode node (getRealDGNodeType nodelab) (getDGNodeName nodelab) False
@@ -577,7 +603,10 @@ convertChange change = case change of
   DeleteEdge (_, _, lbl) ->
     DelEdge $ dgl_id lbl
 
-applyChange :: AbstractionGraph -> GAChange -> IO AbstractionGraph
+-- | Applies a change to the graph
+applyChange :: AbstractionGraph -- ^ The graph
+            -> GAChange -- ^ Change to apply
+            -> IO AbstractionGraph
 applyChange g change = case change of
   AddNode nId nT nN nH              -> addNode g nId nT nN nH
   DelNode nId                       -> delNode g nId
@@ -591,43 +620,18 @@ applyChange g change = case change of
   AddCompEdge ceId                  -> addCompressedEdge g ceId
   DelCompEdge ceId                  -> delCompressedEdge g ceId
 
-convert' :: AbstractionGraph -> DGraph -> IO AbstractionGraph
-convert' g dg = do
-  g' <- convertNodes g dg
-  convertEdges g' dg
-
-convert :: GraphInfo -> DGraph -> IO ()
-convert gi dg = wrapperWrite (\ g -> convert' g dg) gi
-
-{- | converts the nodes of the development graph, if it has any,
-and returns the resulting conversion maps
-if the graph is empty the conversion maps are returned unchanged-}
-convertNodes :: AbstractionGraph -> DGraph -> IO AbstractionGraph
-convertNodes g = foldM convertNodesAux g . labNodesDG
-
-{- | auxiliary function for convertNodes if the given list of nodes is
-emtpy, it returns the conversion maps unchanged otherwise it adds the
-converted first node to the abstract graph and to the affected
-conversion maps and afterwards calls itself with the remaining node
-list -}
-convertNodesAux :: AbstractionGraph -> LNode DGNodeLab -> IO AbstractionGraph
-convertNodesAux g (node, dgnode) =
-  addNode g node (getRealDGNodeType dgnode) (getDGNodeName dgnode) False
-
-{- | converts the edges of the development graph
-works the same way as convertNods does-}
-convertEdges :: AbstractionGraph -> DGraph -> IO AbstractionGraph
-convertEdges g = foldM convertEdgesAux g . labEdgesDG
-
--- | auxiliary function for convertEges
-convertEdgesAux :: AbstractionGraph -> LEdge DGLinkLab -> IO AbstractionGraph
-convertEdgesAux g e@(src, tar, lbl) =
-  addEdge g (dgl_id lbl) (getRealDGLinkType lbl) src tar "" (Just e) False
+-- | Converts a DGraph to a list of changes
+convert :: DGraph -- ^ The development graph
+        -> [DGChange]  -- ^ List of changes
+convert dg = (map (\n -> InsertNode n) $ labNodesDG dg)
+          ++ (map (\n -> InsertEdge n) $ labEdgesDG dg)
 
 -- * direct manipulation of uDrawGraph
 
 -- | execute in the context of the given graph
-doInGraphContext :: DVT.DaVinciCmd -> GraphInfo -> IO ()
+doInGraphContext :: DVT.DaVinciCmd -- ^ uDrawGraph command
+                 -> GraphInfo -- ^ The graph
+                 -> IO ()
 doInGraphContext cmd gi = do
   g <- readIORef gi
   let Graph dg = theGraph g
@@ -664,5 +668,6 @@ closeGraphWindow :: GraphInfo -- ^ The graph
 closeGraphWindow gi = readIORef gi >>= destroyGraph . theGraph
 
 -- | destroy graph
-destroyGraph :: OurGraph -> IO ()
+destroyGraph :: OurGraph  -- ^ uDrawGraph graph
+             -> IO ()
 destroyGraph (Graph dg) = destroy $ getDaVinciGraphContext dg

@@ -16,6 +16,7 @@ module GUI.GraphTypes
     , LibFunc
     , DaVinciGraphTypeSyn
     , Colors(..)
+    , Flags(..)
     , getColor
     , emptyGInfo
     , copyGInfo
@@ -47,6 +48,11 @@ data InternalNames = InternalNames
                      , updater :: [(String,(String -> String) -> IO ())]
                      }
 
+data Flags = Flags
+             { flagHideNodes :: Bool
+             , flagHideEdges :: Bool
+             }
+
 -- | Global datatype for all GUI functions
 data GInfo = GInfo
              { -- Global
@@ -63,6 +69,7 @@ data GInfo = GInfo
              , graphInfo :: GraphInfo
              , internalNamesIORef :: IORef InternalNames
              , proofGUIMVar :: GUIMVar
+             , options :: IORef Flags
              }
 
 {- | Type of the convertGraph function. Used as type of a parameter of some
@@ -97,6 +104,7 @@ emptyGInfo = do
   gi <- initgraphs
   oGraphs <- newIORef Map.empty
   iorIN <- newIORef $ InternalNames False []
+  flags <- newIORef $ Flags { flagHideNodes = True, flagHideEdges = True }
   guiMVar <- newEmptyMVar
   gl <- newEmptyMVar
   fl <- newEmptyMVar
@@ -117,6 +125,7 @@ emptyGInfo = do
                , graphInfo = gi
                , internalNamesIORef = iorIN
                , proofGUIMVar = guiMVar
+               , options = flags
                }
 
 -- | Creates an empty GInfo

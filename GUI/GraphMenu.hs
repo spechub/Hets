@@ -232,10 +232,10 @@ createGlobalMenu gInfo@(GInfo { hetcatsOpts = opts
     [GlobalMenu (Menu Nothing
      [ Button "Undo" $ ral $ undo gInfo True
      , Button "Redo" $ ral $ undo gInfo False
-     , Menu (Just "Unnamed nodes")
-        [ Button "Hide/show names" $ ral $ hideShowNames gInfo True
-        , Button "Hide nodes" $ ral $ hideNodes gInfo
-        , Button "Show nodes" $ ral $ showNodes gInfo
+     , Menu (Just "Hide/Show names/nodes/edges")
+        [ Button "Hide/Show internal names" $ ral $ hideShowNames gInfo True
+        , Button "Hide/Show proven nodes" $ ral $ toggleHideNodes gInfo
+        , Button "Hide/Show proven edges" $ ral $ toggleHideEdges gInfo
       ]
      , Button "Focus node" $ ral $ focusNode gInfo
 #ifdef GTKGLADE
@@ -245,7 +245,6 @@ createGlobalMenu gInfo@(GInfo { hetcatsOpts = opts
                                     GA.hideSetOfEdgeTypes gi eList
                                   )
 #endif
-     , Button "Hide new proven links" $ ral $ hideNewProvedEdges gInfo
      , Menu (Just "Proofs") $ map (\ (cmd, act) ->
        -- History ? or just some partial history in ch ?
         mkGlobProofButton cmd $ return . return . act ln) globLibAct

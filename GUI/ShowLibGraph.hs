@@ -22,7 +22,7 @@ import GUI.UDGUtils as UDG
 import GUI.Utils
 
 import GUI.GraphTypes
-import GUI.GraphLogic(hideNodes, translateGraph)
+import GUI.GraphLogic(translateGraph)
 import GUI.GraphDisplay
 import qualified GUI.GraphAbstraction as GA
 
@@ -33,7 +33,6 @@ import Data.IORef
 import qualified Data.Map as Map
 
 import Control.Concurrent.MVar
-import Control.Concurrent(threadDelay)
 
 import Interfaces.DataTypes
 import Interfaces.Utils
@@ -192,13 +191,7 @@ mShowGraph gInfo@(GInfo {hetcatsOpts = opts}) ln = do
   gInfo' <- copyGInfo gInfo ln
   convertGraph gInfo' "Development Graph" showLibGraph
   let gi = graphInfo gInfo'
-  GA.deactivateGraphWindow gi
-  hideNodes gInfo'
-  GA.redisplay gi
-  threadDelay 2000000
-  GA.layoutImproveAll gi
   GA.showTemporaryMessage gi "Development Graph initialized."
-  GA.activateGraphWindow gi
   return ()
 
 -- | Displays the Specs of a Library in a Textwindow

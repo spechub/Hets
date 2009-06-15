@@ -34,7 +34,8 @@ import Static.DevGraph
 
 import GUI.GraphMenu
 import GUI.GraphTypes
-import GUI.GraphAbstraction(convert)
+import GUI.GraphLogic(hideNodes, hideEdges)
+import GUI.GraphAbstraction
 
 import qualified GUI.HTkUtils as HTk
 
@@ -54,9 +55,9 @@ initializeConverter = do
     abstract graph and returns the descriptor of the latter, the
     graphInfo it is contained in and the conversion maps. -}
 convertGraph :: ConvFunc
-convertGraph gInfo@(GInfo { graphInfo = gi
-                          , windowCount = wc
-                          , libName = ln }) title showLib = do
+convertGraph gInfo@(GInfo { windowCount = wc
+                          , libName = ln
+                          , graphInfo = gi }) title showLib = do
  ost <- readIORef $ intState gInfo
  case i_state ost of
   Nothing -> error "Something went wrong, no library loaded"
@@ -74,8 +75,13 @@ convertGraph gInfo@(GInfo { graphInfo = gi
               initializeGraph gInfo title showLib
               if (isEmptyDG dgraph) then return ()
                 else do
-                  convert gi dgraph
-                  return ()
+                  deactivateGraphWindow gi
+                  (nodes, comp) <- hideNodes gInfo
+                  edges <- hideEdges gInfo
+                  applyChanges gi (convert dgraph) nodes edges comp
+                  redisplay gi
+                  layoutImproveAll gi
+                  activateGraphWindow gi
             False -> error $ "development graph with libname " ++ show ln
                              ++" is already open"
         Nothing -> do
