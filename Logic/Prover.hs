@@ -87,7 +87,7 @@ joinSens s1 s2 = let
     l2 = map (\ (x,e) -> (x,e {OMap.order = m + OMap.order e })) $
          sortBy cmpSnd $ Map.toList s2
     in Map.fromList $ mergeSens l1 $
-                         genericDisambigSens fst updN (OMap.keysSet s1) l2
+                         genericDisambigSens m fst updN (OMap.keysSet s1) l2
     where mergeSens [] l2 = l2
           mergeSens l1 [] = l1
           mergeSens l1@((k1, e1) : r1) l2@((k2, e2) : r2) =

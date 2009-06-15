@@ -43,21 +43,22 @@ prepareSenNames = map . reName
 -- | disambiguate sentence names
 disambiguateSens :: Set.Set String -> [Named a] -> [Named a]
 disambiguateSens =
-    genericDisambigSens senAttr ( \ n s -> reName (const n) s)
+    genericDisambigSens 0 senAttr ( \ n s -> reName (const n) s)
 
 -- | generically disambiguate lists with names
-genericDisambigSens :: (a -> String) -> (String -> a -> a) -> Set.Set String
-                    -> [a] -> [a]
-genericDisambigSens _ _ _ [] = []
-genericDisambigSens sel upd nameSet (ax : rest) =
+genericDisambigSens :: Int -> (a -> String) -> (String -> a -> a)
+                    -> Set.Set String -> [a] -> [a]
+genericDisambigSens _ _ _ _ [] = []
+genericDisambigSens c sel upd nameSet (ax : rest) =
   let name = sel ax in case Set.splitMember name nameSet of
   (_, False, _) ->
-      ax : genericDisambigSens sel upd (Set.insert name nameSet) rest
+      ax : genericDisambigSens c sel upd (Set.insert name nameSet) rest
   (_, _, greater) -> let
-      name' = head $ filter (not . flip Set.member greater)
-                          [name ++ '_' : show (i :: Int) | i <- [1..]]
+      n = until (not . flip Set.member greater . (name ++) . ('_' :) . show)
+              (+ 1) (c + 1)
+      name' = name ++ '_' : show n
       in upd name' ax :
-         genericDisambigSens sel upd (Set.insert name' nameSet) rest
+         genericDisambigSens n sel upd (Set.insert name' nameSet) rest
 
 nameAndDisambiguate :: [Named a] -> [Named a]
 nameAndDisambiguate = disambiguateSens Set.empty . nameSens
