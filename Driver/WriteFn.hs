@@ -80,10 +80,10 @@ import Driver.WriteLibDefn
 import OMDoc.OMDocOutput
 #endif
 
---import OMDoc.XmlInterface
---import OMDoc.Export
-import Omega.Export
-import Omega.ToLisp
+import OMDoc.XmlInterface
+import OMDoc.Export
+--import Omega.Export
+--import Omega.ToLisp
 
 writeVerbFile :: HetcatsOpts -> FilePath -> String -> IO ()
 writeVerbFile opts f str = do
@@ -101,15 +101,15 @@ writeLibEnv opts filePrefix lenv ln ot =
       OmdocOut -> hetsToOMDoc opts (ln, lenv) f
 #endif
 
-{-
       ExperimentalOut ->
           writeVerbFile opts (filePrefix ++ ".xml")
             $ xmlOut $ exportDGraph ln (lookupDGraph ln lenv)
--}
 
+{-
       ExperimentalOut ->
           writeVerbFile opts (filePrefix ++ ".lisp")
             $ printLibrary $ exportDGraph ln (lookupDGraph ln lenv)
+-}
 
       GraphOut (Dot showInternalNodeLabels) -> writeVerbFile opts f
         $ dotGraph showInternalNodeLabels dg
@@ -168,17 +168,6 @@ writeTheory opts filePrefix ga
     ThyFile -> writeIsaFile opts fp raw_gTh ln i
     DfgFile c -> writeSoftFOL opts f raw_gTh ln i c 0 "DFG"
     TPTPFile c -> writeSoftFOL opts f raw_gTh ln i c 1 "TPTP"
-
-{-
-    ExperimentalOut -> do
-      when (language_name lid == language_name CASL) $ do
-        (sign, sens) <- coerceBasicTheory lid CASL "" th
-        writeVerbFile opts (f ++ ".xml") $ testXmlOut
-                       $ listToXml (export_signToOmdoc CASL i (getLIB_ID ln) sign)
-                       ++ concatMap (listToXml . export_senToOmdoc
-                                     CASL i (getLIB_ID ln) sign) sens
--}
-
     TheoryFile d -> do
       if null $ show d then
         writeVerbFile opts f $ shows (DG.printTh ga i raw_gTh) "\n"
@@ -291,7 +280,7 @@ writeSpecFiles opts file lenv0 ln dg = do
         allSpecs = null ns
         ignore = null specOutTypes && modelSparQ opts == ""
         -- experimental out needs the qualification of names:
-        lenv = if False && (elem (show ExperimentalOut) $ map show outTypes)
+        lenv = if True && (elem (show ExperimentalOut) $ map show outTypes)
                then fromJust $ maybeResult $ qualifyLibEnv lenv0
                else lenv0
 
