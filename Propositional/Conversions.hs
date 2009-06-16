@@ -23,7 +23,7 @@ module Propositional.Conversions
 
 import qualified Propositional.AS_BASIC_Propositional as AS
 import qualified Common.AS_Annotation as AS_Anno
-import qualified Propositional.Prop2CNF as P2C
+import Propositional.Fold
 import qualified Propositional.Sign as Sig
 import qualified Common.Id as Id
 import qualified Propositional.Tools as PT
@@ -59,7 +59,7 @@ showDIMACSProblem :: String                     -- name of the theory
                   -> [AS_Anno.Named AS.FORMULA] -- Axioms
                   -> [AS_Anno.Named AS.FORMULA] -- Conjectures
                   -> IO String                  -- Output
-showDIMACSProblem name sig axs cons =
+showDIMACSProblem name fSig axs cons =
     let
         nakedCons   = map (AS_Anno.sentence) cons
         negatedCons = (\ncons ->
@@ -83,10 +83,8 @@ showDIMACSProblem name sig axs cons =
                       ) nakedCons
     in
               do
-                (tSig, tAxs) <- P2C.translateToCNF (sig, axs)
-                (tpSig, tCon) <- P2C.translateToCNF (sig, negatedCons)
-                let
-                    fSig         = Sig.unite tSig tpSig
+                let tAxs = map (AS_Anno.mapNamed cnf) axs
+                    tCon = map (AS_Anno.mapNamed cnf) negatedCons
                     tfAxs        = concat $ map PT.flatten $
                                    map AS_Anno.sentence tAxs
                     tfCon        = concat $ map PT.flatten $
