@@ -32,6 +32,7 @@ module Common.Utils
   , trim
   , trimLeft
   , trimRight
+  , combine
   ) where
 
 import Data.Char
@@ -41,6 +42,12 @@ import qualified Data.Set as Set
 
 import System.Environment
 import Control.Monad
+
+-- | Transform a list [l1,l2, ... ln] to (in sloppy notation)
+-- [[x1,x2, ... ,xn] | x1<-l1, x2<-l2, ... xn<-ln]
+combine      :: [[a]] -> [[a]]
+combine []    = [[]]
+combine (x:l) = concatMap ((`map` combine l) . (:)) x
 
 -- | trims a string both on left and right hand side
 trim :: String -> String

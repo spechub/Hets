@@ -25,6 +25,7 @@ module Propositional.AS_BASIC_Propositional
     , SYMB_MAP_ITEMS (..)      -- Symbol map
     , SYMB_OR_MAP (..)         -- Symbol or symbol map
     , PRED_ITEM (..)           -- Predicates
+    , isPrimForm
     ) where
 
 import Common.Id as Id
@@ -105,16 +106,18 @@ instance Pretty SYMB_OR_MAP where
 instance Pretty PRED_ITEM where
     pretty = printPredItem
 
--- Pretty printing for formulas
-printFormula :: FORMULA -> Doc
-printFormula frm =
-  let ppf p f = (if p f then id else parens) $ printFormula f
-      isPrimForm f = case f of
+isPrimForm :: FORMULA -> Bool
+isPrimForm f = case f of
         True_atom _ -> True
         False_atom _ -> True
         Predication _ -> True
         Negation _ _ -> True
         _ -> False
+
+-- Pretty printing for formulas
+printFormula :: FORMULA -> Doc
+printFormula frm =
+  let ppf p f = (if p f then id else parens) $ printFormula f
       isJunctForm f = case f of
         Implication _ _ _ -> False
         Equivalence _ _ _ -> False

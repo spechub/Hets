@@ -21,7 +21,6 @@ module CASL.Overload
   ( minExpFORMULA
   , oneExpTerm
   , Min
-  , combine
   , is_unambiguous
   , leqF
   , leqP
@@ -465,12 +464,6 @@ leqP' sign p1 =
 -- | Divide a Set (List) into equivalence classes w.r.t. eq
 leqClasses :: Ord a => (a -> a -> Bool) -> Set.Set a -> [[a]]
 leqClasses eq = map Set.toList . Rel.partSet eq
-
--- | Transform a list [l1,l2, ... ln] to (in sloppy notation)
--- [[x1,x2, ... ,xn] | x1<-l1, x2<-l2, ... xn<-ln]
-combine      :: [[a]] -> [[a]]
-combine []    = [[]]
-combine (x:l) = concatMap ((`map` combine l) . (:)) x
 
 cmpSubsort :: Sign f e -> POrder SORT
 cmpSubsort sign s1 s2 =

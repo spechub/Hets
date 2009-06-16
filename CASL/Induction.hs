@@ -17,12 +17,12 @@ module CASL.Induction (inductionScheme, generateInductionLemmas) where
 import CASL.AS_Basic_CASL
 import CASL.Sign
 import CASL.Fold
-import CASL.Overload (combine)
 import CASL.Quantification (flatVAR_DECLs)
 import Common.AS_Annotation as AS_Anno
 import Common.Id
 import Common.Result
 import Common.DocUtils
+import Common.Utils (combine)
 import Data.Maybe
 
 -- | derive a second-order induction scheme from a sort generation constraint

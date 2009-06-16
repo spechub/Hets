@@ -15,6 +15,7 @@ folding and simplification of propositional formulas
 module Propositional.Fold where
 
 import Common.Id
+import Common.Utils (combine)
 import Propositional.AS_BASIC_Propositional
 
 import qualified Data.Set as Set
@@ -66,6 +67,16 @@ bothLits fs = let
   (ns, ps) = Set.partition isNeg fs
   in not $ Set.null $ Set.intersection (getLits ns) (getLits ps)
 
+getConj :: FORMULA -> [FORMULA]
+getConj f = case f of
+  Conjunction xs _ -> xs
+  _ -> [f]
+
+getDisj :: FORMULA -> [FORMULA]
+getDisj f = case f of
+  Disjunction xs _ -> xs
+  _ -> [f]
+
 flatConj :: [FORMULA] -> Set.Set FORMULA
 flatConj = Set.fromList
   . concatMap (\ f -> case f of
@@ -79,7 +90,11 @@ mkConj fs n = let s = flatConj fs in
   case Set.toList s of
     [] -> True_atom n
     [x] -> x
-    ls -> Conjunction ls n
+    ls -> Conjunction (map (flip mkDisj n . Set.toList)
+      $ foldr (\ l ll ->
+        if any (flip Set.isSubsetOf l) ll then ll else
+          l : filter (not . Set.isSubsetOf l) ll) []
+      $ map (Set.fromList . getDisj) ls) n
 
 flatDisj :: [FORMULA] -> Set.Set FORMULA
 flatDisj = Set.fromList
@@ -94,7 +109,11 @@ mkDisj fs n = let s = flatDisj fs in
   case Set.toList s of
     [] -> False_atom n
     [x] -> x
-    ls -> Disjunction ls n
+    ls -> Disjunction (map (flip mkConj n . Set.toList)
+      $ foldr (\ l ll ->
+        if any (flip Set.isSubsetOf l) ll then ll else
+          l : filter (not . Set.isSubsetOf l) ll) []
+      $ map (Set.fromList . getConj) ls) n
 
 simplify :: FORMULA -> FORMULA
 simplify = foldFormula mapRecord
@@ -132,3 +151,30 @@ elimImpl :: FORMULA -> FORMULA
 elimImpl = foldFormula mapRecord
   { foldImplication = \ x y n ->
     Disjunction [Negation x n, y] n }
+
+negForm :: Range -> FORMULA -> FORMULA
+negForm r frm = case frm of
+  Negation f _ -> f
+  Conjunction xs n -> Disjunction (map (negForm r) xs) n
+  Disjunction xs n -> Conjunction (map (negForm r) xs) n
+  True_atom n -> False_atom n
+  False_atom n -> True_atom n
+  _ -> Negation frm r
+
+moveNegIn :: FORMULA -> FORMULA
+moveNegIn frm = case frm of
+  Negation f n -> negForm n f
+  Conjunction xs n -> Conjunction (map moveNegIn xs) n
+  Disjunction xs n -> Disjunction (map moveNegIn xs) n
+  _ -> frm
+
+distributeAndOverOr :: FORMULA -> FORMULA
+distributeAndOverOr f = case f of
+  Conjunction xs n -> mkConj (map distributeAndOverOr xs) n
+  Disjunction xs n -> if all isPrimForm xs then mkDisj xs n else
+    distributeAndOverOr
+    $ mkConj (map (flip mkDisj n) . combine $ map getConj xs) n
+  _ -> f
+
+cnf :: FORMULA -> FORMULA
+cnf = distributeAndOverOr . moveNegIn . elimImpl . elimEquiv
