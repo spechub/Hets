@@ -120,7 +120,7 @@ data SortGenerationFeatures =
         | SortGen { emptyMapping :: Bool
                     -- ^ Mapping of indexed sorts is empty
                   , onlyInjConstrs :: Bool
-                    -- ^ only injective constructors
+                    -- ^ only constructors that are subsort injections
                   } deriving (Show, Eq, Ord)
 
 joinSortGenFeature :: (Bool -> Bool -> Bool)
