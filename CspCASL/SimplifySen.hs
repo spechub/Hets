@@ -25,7 +25,10 @@ import CspCASL.SignCSP
 --   "show theory". Typically this replaces fully quallified CASL by
 --   non fully qualified CASL so that it is readable.
 simplifySen :: CspCASLSign -> CspCASLSen -> CspCASLSen
-simplifySen sigma sen =
+simplifySen sigma sen = sen
+
+simplifySen' :: CspCASLSign -> CspCASLSen -> CspCASLSen
+simplifySen' sigma sen =
     case sen of
       CASLSen f ->
           -- Use the CASL simplifySen function

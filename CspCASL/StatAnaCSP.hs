@@ -1,7 +1,8 @@
 {- |
 Module      :  $Id$
 Description :  Static analysis of CspCASL
-Copyright   :  (c) Andy Gimblett, Liam O'Reilly Markus Roggenbach, Swansea University 2008
+Copyright   :  (c) Andy Gimblett, Liam O'Reilly Markus Roggenbach,
+                   Swansea University 2008
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
 Maintainer  :  a.m.gimblett@swansea.ac.uk
@@ -161,7 +162,8 @@ anaProcDecl name argSorts (ProcAlphabet commTypes _) = do
                 -- build alphabet: set of CommType values. We do not
                 -- need the fully qualfied commTypes that are returned
                 -- (these area used for analysing Event Sets)
-                (alpha, _ ) <- Monad.foldM (anaCommType sig) (S.empty, []) commTypes
+                (alpha, _ ) <-
+                    Monad.foldM (anaCommType sig) (S.empty, []) commTypes
                 let profile = (ProcProfile argSorts alpha)
                 -- Add the process name as a symbol to the list of
                 -- newly defined symbols - which is stored in the CASL
@@ -194,7 +196,8 @@ anaProcEq (ParmProcname pn vs) proc = do
                  -- checked to be ok.
                  let mkFQProcVar (v,s) = Qual_var v s nullRange
                  let fqGVars = map mkFQProcVar gVars
-                 (termAlpha, fqProc) <- anaProcTerm proc (Map.fromList gVars) Map.empty
+                 (termAlpha, fqProc) <-
+                     anaProcTerm proc (Map.fromList gVars) Map.empty
                  checkCommAlphaSub termAlpha procAlpha proc "process equation"
                  -- Save the diags from the checkCommAlphaSub
                  vds <- gets envDiags
@@ -206,7 +209,7 @@ anaProcEq (ParmProcname pn vs) proc = do
                                 -- probably the same as the inner one!
                                 (makeNamed ("ProcHugo")
                                                (ProcessEq pn fqGVars
-                                                          S.empty
+                                                          procAlpha
                                                           fqProc)):ccsens
                               }
                          }
@@ -248,110 +251,113 @@ anaProcVar old (v, s) = do
 anaProcTerm :: PROCESS -> ProcVarMap -> ProcVarMap ->
                State CspCASLSign (CommAlpha, PROCESS)
 anaProcTerm proc gVars lVars = case proc of
-    NamedProcess name args range ->
+    NamedProcess name args r ->
         do addDiags [mkDiag Debug "Named process" proc]
            (al, fqArgs) <- anaNamedProc proc name args (lVars `Map.union` gVars)
-           let fqProc = FQProcess (NamedProcess name fqArgs range) al range
+           let fqProc = FQProcess (NamedProcess name fqArgs r) al r
            return (al, fqProc)
-    Skip range ->
+    Skip r ->
         do addDiags [mkDiag Debug "Skip" proc]
-           let fqProc = FQProcess (Skip range) S.empty range
+           let fqProc = FQProcess (Skip r) S.empty r
            return (S.empty, fqProc)
-    Stop range ->
+    Stop r ->
         do addDiags [mkDiag Debug "Stop" proc]
-           let fqProc = FQProcess (Stop range) S.empty range
+           let fqProc = FQProcess (Stop r) S.empty r
            return (S.empty, fqProc)
-    Div range ->
+    Div r ->
         do addDiags [mkDiag Debug "Div" proc]
-           let fqProc = FQProcess (Div range) S.empty range
+           let fqProc = FQProcess (Div r) S.empty r
            return (S.empty, fqProc)
-    Run es range ->
+    Run es r ->
         do addDiags [mkDiag Debug "Run" proc]
            (comms, fqEs) <- anaEventSet es
-           let fqProc = FQProcess (Run fqEs range) comms range
+           let fqProc = FQProcess (Run fqEs r) comms r
            return (comms, fqProc)
-    Chaos es range ->
+    Chaos es r ->
         do addDiags [mkDiag Debug "Chaos" proc]
            (comms, fqEs) <- anaEventSet es
-           let fqProc = FQProcess (Chaos fqEs range) comms range
+           let fqProc = FQProcess (Chaos fqEs r) comms r
            return (comms, fqProc)
-    PrefixProcess e p range ->
+    PrefixProcess e p r ->
         do addDiags [mkDiag Debug "Prefix" proc]
            (evComms, rcvMap, fqEvent) <- anaEvent e (lVars `Map.union` gVars)
            (comms, pFQTerm) <- anaProcTerm p gVars (rcvMap `Map.union` lVars)
            let newAlpha = comms `S.union` evComms
-           let fqProc = FQProcess (PrefixProcess fqEvent pFQTerm range) newAlpha range
+           let fqProc = FQProcess (PrefixProcess fqEvent pFQTerm r) newAlpha r
            return (newAlpha, fqProc)
-    Sequential p q range ->
+    Sequential p q r ->
         do addDiags [mkDiag Debug "Sequential" proc]
            (pComms, pFQTerm) <- anaProcTerm p gVars lVars
            (qComms, qFQTerm) <- anaProcTerm q gVars Map.empty
            let newAlpha = pComms `S.union` qComms
-           let fqProc = FQProcess (Sequential pFQTerm qFQTerm range) newAlpha range
+           let fqProc = FQProcess (Sequential pFQTerm qFQTerm r) newAlpha r
            return (newAlpha, fqProc)
-    InternalChoice p q range ->
+    InternalChoice p q r ->
         do addDiags [mkDiag Debug "InternalChoice" proc]
            (pComms, pFQTerm) <- anaProcTerm p gVars lVars
            (qComms, qFQTerm) <- anaProcTerm q gVars lVars
            let newAlpha = pComms `S.union` qComms
-           let fqProc = FQProcess (InternalChoice pFQTerm qFQTerm range) newAlpha range
+           let fqProc = FQProcess (InternalChoice pFQTerm qFQTerm r) newAlpha r
            return (newAlpha, fqProc)
-    ExternalChoice p q range ->
+    ExternalChoice p q r ->
         do addDiags [mkDiag Debug "ExternalChoice" proc]
            (pComms, pFQTerm) <- anaProcTerm p gVars lVars
            (qComms, qFQTerm) <- anaProcTerm q gVars lVars
            let newAlpha = pComms `S.union` qComms
-           let fqProc = FQProcess (ExternalChoice pFQTerm qFQTerm range) newAlpha range
+           let fqProc = FQProcess (ExternalChoice pFQTerm qFQTerm r) newAlpha r
            return (newAlpha, fqProc)
-    Interleaving p q range ->
+    Interleaving p q r ->
         do addDiags [mkDiag Debug "Interleaving" proc]
            (pComms, pFQTerm) <- anaProcTerm p gVars lVars
            (qComms, qFQTerm) <- anaProcTerm q gVars lVars
            let newAlpha = pComms `S.union` qComms
-           let fqProc = FQProcess (Interleaving pFQTerm qFQTerm range) newAlpha range
+           let fqProc = FQProcess (Interleaving pFQTerm qFQTerm r) newAlpha r
            return (newAlpha, fqProc)
-    SynchronousParallel p q range ->
+    SynchronousParallel p q r ->
         do addDiags [mkDiag Debug "Synchronous" proc]
            (pComms, pFQTerm) <- anaProcTerm p gVars lVars
            (qComms, qFQTerm) <- anaProcTerm q gVars lVars
            let newAlpha = pComms `S.union` qComms
-           let fqProc = FQProcess (SynchronousParallel pFQTerm qFQTerm range) newAlpha range
+           let fqProc = FQProcess (SynchronousParallel pFQTerm
+                                                       qFQTerm r) newAlpha r
            return (newAlpha, fqProc)
-    GeneralisedParallel p es q range ->
+    GeneralisedParallel p es q r ->
         do addDiags [mkDiag Debug "Generalised parallel" proc]
            (pComms, pFQTerm) <- anaProcTerm p gVars lVars
            (synComms, fqEs) <- anaEventSet es
            (qComms, qFQTerm) <- anaProcTerm q gVars lVars
            let newAlpha = S.unions [pComms, qComms, synComms]
-           let fqProc = FQProcess (GeneralisedParallel pFQTerm fqEs qFQTerm range) newAlpha range
+           let fqProc = FQProcess (GeneralisedParallel pFQTerm fqEs qFQTerm r)
+                                         newAlpha r
            return (newAlpha, fqProc)
-    AlphabetisedParallel p esp esq q range ->
+    AlphabetisedParallel p esp esq q r ->
         do addDiags [mkDiag Debug "Alphabetised parallel" proc]
            (pComms, pFQTerm) <- anaProcTerm p gVars lVars
            (pSynComms, fqEsp) <- anaEventSet esp
-           checkCommAlphaSub pSynComms pComms proc
-                                 "alphabetised parallel, left"
+           checkCommAlphaSub pSynComms pComms proc "alphabetised parallel, left"
            (qSynComms, fqEsq) <- anaEventSet esq
            (qComms, qFQTerm) <- anaProcTerm q gVars lVars
            checkCommAlphaSub qSynComms qComms proc
                                  "alphabetised parallel, right"
            let newAlpha = pComms `S.union` qComms
-           let fqProc = FQProcess (AlphabetisedParallel pFQTerm fqEsp fqEsq qFQTerm range) newAlpha range
+           let fqProc = FQProcess (AlphabetisedParallel pFQTerm fqEsp fqEsq
+                                                        qFQTerm r) newAlpha r
            return (newAlpha, fqProc)
-    Hiding p es range ->
+    Hiding p es r ->
         do addDiags [mkDiag Debug "Hiding" proc]
            (pComms, pFQTerm) <- anaProcTerm p gVars lVars
            (hidComms, fqEs) <- anaEventSet es
-           return (pComms `S.union` hidComms,
-                   FQProcess (Hiding pFQTerm fqEs range) (pComms `S.union` hidComms) range)
-    RenamingProcess p renaming range ->
+           return (pComms `S.union` hidComms, FQProcess (Hiding pFQTerm fqEs r)
+                                 (pComms `S.union` hidComms) r)
+    RenamingProcess p renaming r ->
         do addDiags [mkDiag Debug "Renaming" proc]
            (pComms, pFQTerm) <- anaProcTerm p gVars lVars
            (renAlpha, fqRenaming) <- anaRenaming renaming
            let newAlpha = pComms `S.union` renAlpha
-           let fqProc = FQProcess (RenamingProcess pFQTerm fqRenaming range) (pComms `S.union` renAlpha) range
+           let fqProc = FQProcess (RenamingProcess pFQTerm fqRenaming r)
+                                         (pComms `S.union` renAlpha) r
            return (newAlpha, fqProc)
-    ConditionalProcess f p q range ->
+    ConditionalProcess f p q r ->
         do addDiags [mkDiag Debug "Conditional" proc]
            (pComms, pFQTerm) <- anaProcTerm p gVars lVars
            (qComms, qFQTerm) <- anaProcTerm q gVars lVars
@@ -369,10 +375,11 @@ anaProcTerm proc gVars lVars = case proc of
                           Just fs -> formulaComms fs
            let newAlpha = S.unions [pComms, qComms, fComms]
            let fqProc = FQProcess (ConditionalProcess
-                                   (fFQ) pFQTerm qFQTerm range)
-                        newAlpha range
+                                   (fFQ) pFQTerm qFQTerm r)
+                        newAlpha r
            return (newAlpha, fqProc)
-    FQProcess _ _ _ -> error "CspCASL.StatAnaCSP.anaProcTerm: Unexpected FQProcess"
+    FQProcess _ _ _ ->
+        error "CspCASL.StatAnaCSP.anaProcTerm: Unexpected FQProcess"
 
 -- | Statically analyse a CspCASL "named process" term. Return the
 --   permitted alphabet of the process and also a list of the fully qualified
@@ -387,7 +394,8 @@ anaNamedProc proc pn terms procVars = do
     case prof of
       Just (ProcProfile varSorts permAlpha) ->
         if (length terms) == (length varSorts)
-          then do fqTerms <- mapM (anaNamedProcTerm procVars) (zip terms varSorts)
+          then do fqTerms <-
+                      mapM (anaNamedProcTerm procVars) (zip terms varSorts)
                   -- Return the permitted alphabet of the process and
                   -- the fully qualifed terms
                   return (permAlpha, fqTerms)
@@ -404,7 +412,8 @@ anaNamedProc proc pn terms procVars = do
 
 -- | Statically analysis a CASL term occurring in a CspCASL "named
 -- process" term.
-anaNamedProcTerm :: ProcVarMap -> ((TERM ()), SORT) -> State CspCASLSign (TERM ())
+anaNamedProcTerm :: ProcVarMap -> ((TERM ()), SORT) ->
+                    State CspCASLSign (TERM ())
 anaNamedProcTerm pm (t, expSort) = do
     mt <- anaTermCspCASL pm t
     case mt of
@@ -475,7 +484,8 @@ anaCommType sig (alpha, fqEsElems) ct =
 -- | Statically analyse a CspCASL event. Returns a constituent
 --   communication alphabet of the event, mapping for any new
 --   locally bound variables and a fully qualified version of the event.
-anaEvent :: EVENT -> ProcVarMap -> State CspCASLSign (CommAlpha, ProcVarMap, EVENT)
+anaEvent :: EVENT -> ProcVarMap ->
+            State CspCASLSign (CommAlpha, ProcVarMap, EVENT)
 anaEvent e vars =
     case e of
       TermEvent t range ->
@@ -496,7 +506,7 @@ anaEvent e vars =
       ChanSend c t range ->
           do addDiags [mkDiag Debug "Channel send event" e]
              -- mfqChan is a maybe fully qualified
-             -- channel. It will ne Nothing if
+             -- channel. It will be Nothing if
              -- annChanSend failed - i.e. we forget
              -- about the channel.
              (alpha, newVars, mfqChan, fqTerm) <- anaChanSend c t vars
@@ -597,7 +607,10 @@ anaChanSend c t vars = do
 -- channel (if possible) and the fully qualified version of the
 -- variable.
 anaChanBinding :: CHANNEL_NAME -> VAR -> SORT ->
-                   State CspCASLSign (CommAlpha, ProcVarMap, (Maybe (CHANNEL_NAME, SORT)), TERM ())
+                   State CspCASLSign( CommAlpha,
+                                      ProcVarMap,
+                                      (Maybe (CHANNEL_NAME, SORT)), TERM ()
+                                    )
 anaChanBinding c v s = do
   checkSorts [s] -- check sort is known
   sig <- get
@@ -614,18 +627,20 @@ anaChanBinding c v s = do
         then do let alpha = [CommTypeSort s
                             ,CommTypeChan (TypedChanName c s)]
                 let binding = [(v, s)]
-                              -- Return the alphabet, var mapping, the
-                              -- fully qualfied channel and fully
-                              -- qualfied variable
+                              -- Return the alphabet, var mapping, the fully
+                              -- qualfied channel and fully qualfied
+                              -- variable. Notice that the fully qualified
+                              -- channel's sort should be the lowest sort we can
+                              -- communicate in i.e. the sort of the variable.
                 return (S.fromList alpha, Map.fromList binding,
-                             (Just (c,chanSort)), (Qual_var v s nullRange))
+                             (Just (c,s)), (Qual_var v s nullRange))
         else do let err = "sort not a subsort of channel's sort"
                 addDiags [mkDiag Error err s]
                          -- There is a error in the spec, but return
                          -- the alphabet, var mapping, the fully
                          -- qualfied channel and fully qualfied
                          -- variable - as we can.
-                return (S.empty, Map.empty, (Just (c,chanSort)),
+                return (S.empty, Map.empty, (Just (c,s)),
                              (Qual_var v s nullRange))
                     where subsorts = Rel.predecessors (sortRel sig)
 

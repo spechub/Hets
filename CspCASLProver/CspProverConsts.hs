@@ -32,6 +32,7 @@ module CspCASLProver.CspProverConsts
     , cspProver_hidingOp
     , cspProver_renamingOp
     , cspProver_conditionalOp
+    , cspProver_chan_nondeterministic_sendOp
 ) where
 
 import Isabelle.IsaSign as IsaSign
@@ -200,6 +201,16 @@ cspProver_conditionalAltArgPrios = [900,88,88]
 cspProver_conditionalAltArgOpPrio :: Int
 cspProver_conditionalAltArgOpPrio = 88
 
+-- | Channel non-deterministic send operator symbols
+cspProver_chan_nondeterministic_sendS :: String
+cspProver_chan_nondeterministic_sendS = "Nondet_send_prefix"
+cspProver_chan_nondeterministic_sendAltS :: String
+cspProver_chan_nondeterministic_sendAltS = "(_ !? _ : _ -> _)"
+cspProver_chan_nondeterministic_sendAltArgPrios :: [Int]
+cspProver_chan_nondeterministic_sendAltArgPrios = [900,900,1000,80]
+cspProver_chan_nondeterministic_sendAltArgOpPrio :: Int
+cspProver_chan_nondeterministic_sendAltArgOpPrio = 80
+
 -- Isabelle Terms representing the operations for CspProver
 
 -- | Name Process operator
@@ -333,6 +344,16 @@ cspProver_conditionalOp  =
                        cspProver_conditionalAltS
                        cspProver_conditionalAltArgPrios
                        cspProver_conditionalAltArgOpPrio
+
+-- | Channel non-deterministic send operator
+cspProver_chan_nondeterministic_sendOp :: Term -> Term -> Term -> Term -> Term
+cspProver_chan_nondeterministic_sendOp  =
+    makeQuadCspProverOp cspProver_chan_nondeterministic_sendS
+                        cspProver_chan_nondeterministic_sendAltS
+                        cspProver_chan_nondeterministic_sendAltArgPrios
+                        cspProver_chan_nondeterministic_sendAltArgOpPrio
+
+
 
 -- | Create an Isabelle Term representing a (Unary) CspProver operator
 --   with no alternative syntax

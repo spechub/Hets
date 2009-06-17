@@ -17,26 +17,23 @@ signatures for CSP-CASL
 module CspCASL.SignCSP where
 
 import CspCASL.AS_CspCASL_Process (CHANNEL_NAME, PROCESS_NAME,
-    PROCESS(..), CommAlpha, CommType(..), TypedChanName(..), FQProcVarList)
+    PROCESS(..), CommAlpha, CommType(..), TypedChanName(..))
 
 import CspCASL.AS_CspCASL ()
 import CspCASL.CspCASL_Keywords
 import CspCASL.Print_CspCASL ()
 
-import CASL.AS_Basic_CASL (CASLFORMULA, SORT)
+import CASL.AS_Basic_CASL (CASLFORMULA, SORT, TERM)
 import CASL.Sign (CASLSign, emptySign, Sign, extendedInfo, sortRel)
-import CASL.Morphism (Morphism)
 
 import Common.AS_Annotation (Named)
 
 import Common.Doc
 import Common.DocUtils
 
-import Common.Id (Id, SIMPLE_ID, mkSimpleId, nullRange)
+import Common.Id (SIMPLE_ID, mkSimpleId, nullRange)
 import Common.Lib.Rel (predecessors)
-import Common.Result
 
-import Control.Monad (unless)
 import qualified Data.Map as Map
 import qualified Data.Set as Set
 
@@ -52,16 +49,20 @@ type ProcVarList = [(SIMPLE_ID, SORT)]
 
 -- Close a communication alphabet under CASL subsort
 closeCspCommAlpha :: CspCASLSign -> CommAlpha -> CommAlpha
-closeCspCommAlpha sig = Set.unions . Set.toList . Set.map (closeOneCspComm sig)
+closeCspCommAlpha sig =
+    Set.unions . Set.toList . Set.map (closeOneCspComm sig)
 
 -- Close one CommType under CASL subsort
 closeOneCspComm :: CspCASLSign -> CommType -> CommAlpha
 closeOneCspComm sig x = let
   mkTypedChan c s = CommTypeChan $ TypedChanName c s
-  subsorts s' = Set.singleton s' `Set.union` predecessors (sortRel sig) s'
+  subsorts s' =
+      Set.singleton s' `Set.union` predecessors (sortRel sig) s'
   in case x of
-    CommTypeSort s -> Set.map CommTypeSort (subsorts s)
-    CommTypeChan (TypedChanName c s) -> Set.map CommTypeSort (subsorts s)
+    CommTypeSort s ->
+        Set.map CommTypeSort (subsorts s)
+    CommTypeChan (TypedChanName c s) ->
+        Set.map CommTypeSort (subsorts s)
       `Set.union` Set.map (mkTypedChan c) (subsorts s)
 
 {- Will probably be useful, but doesn't appear to be right now.
@@ -86,7 +87,8 @@ stripMaybe x = Set.fromList $ Maybe.catMaybes $ Set.toList x
 cspSubsortCloseSorts :: CspCASLSign -> Set.Set SORT -> Set.Set SORT
 cspSubsortCloseSorts sig sorts =
     Set.unions subsort_sets
-        where subsort_sets = Set.toList $ Set.map (cspSubsortPreds sig) sorts
+        where subsort_sets =
+                  Set.toList $ Set.map (cspSubsortPreds sig) sorts
 
 -}
 
@@ -106,6 +108,7 @@ type CspCASLSign = Sign () CspSign
 ccSig2CASLSign :: CspCASLSign -> CASLSign
 ccSig2CASLSign sigma = sigma { extendedInfo = () }
 
+-- | Projection from CspCASL signature to Csp signature
 ccSig2CspSign :: CspCASLSign -> CspSign
 ccSig2CspSign sigma = extendedInfo sigma
 
@@ -135,49 +138,9 @@ diffCspProcSig a b =
       , procSet = procSet a `Map.difference` procSet b
       }
 
-
 -- XXX looks incomplete!
 isInclusion :: CspSign -> CspSign -> Bool
 isInclusion _ _ = True
-
-
--- XXX morphisms between CSP process signatures?
-
-data CspAddMorphism = CspAddMorphism
-    { channelMap :: Map.Map Id Id
-    , processMap :: Map.Map Id Id
-    } deriving (Eq, Ord, Show)
-
-composeIdMaps :: Map.Map Id Id -> Map.Map Id Id -> Map.Map Id Id
-composeIdMaps m1 m2 = Map.foldWithKey (\ i j -> case Map.lookup j m2 of
-  Nothing -> error "SignCsp.composeIdMaps"
-  Just k -> Map.insert i k) Map.empty m1
-
-composeCspAddMorphism :: CspAddMorphism -> CspAddMorphism
-                      -> Result CspAddMorphism
-composeCspAddMorphism m1 m2 = return emptyCspAddMorphism
-  { channelMap = composeIdMaps (channelMap m1) $ channelMap m2
-  , processMap = composeIdMaps (processMap m1) $ processMap m2 }
-
-inverseCspAddMorphism :: CspAddMorphism -> Result CspAddMorphism
-inverseCspAddMorphism cm = do
-  let chL = Map.toList $ channelMap cm
-      prL = Map.toList $ processMap cm
-      swap = map $ \ (a, b) -> (b, a)
-      isInj l = length l == Set.size (Set.fromList $ map snd l)
-  unless (isInj chL) $ fail "invertCspAddMorphism.channelMap"
-  unless (isInj prL) $ fail "invertCspAddMorphism.processMap"
-  return emptyCspAddMorphism
-    { channelMap = Map.fromList $ swap chL
-    , processMap = Map.fromList $ swap prL }
-
-type CspMorphism = Morphism () CspSign CspAddMorphism
-
-emptyCspAddMorphism :: CspAddMorphism
-emptyCspAddMorphism = CspAddMorphism
-  { channelMap = Map.empty -- ???
-  , processMap = Map.empty
-  }
 
 -- | Pretty printing for CspCASL signatures
 instance Pretty CspSign where
@@ -223,41 +186,49 @@ printProcProfile (ProcProfile sorts commAlpha) =
     where printArgs [] = empty
           printArgs args = parens $ ppWithCommas args
 
--- | Pretty printing for Csp morphisms
-instance Pretty CspAddMorphism where
-  pretty = text . show
-
 -- Sentences
+
+-- | FQProcVarList should only contain fully qualified CASL variables
+--   which are TERMs i.e. constructed via the TERM constructor
+--   Qual_var.
+type FQProcVarList = [TERM ()]
 
 -- | A CspCASl senetence is either a CASL formula or a Procsses
 --   equation. A process equation has on the LHS a process name, a
 --   list of parameters which are qualified variables (which are
---   terms), a constituent( or is it permitted ?) communication alphabet and
---   finally on the RHS a fully qualified process.
-data CspCASLSen = CASLSen (CASLFORMULA)
-                | ProcessEq PROCESS_NAME FQProcVarList CommAlpha PROCESS
-                  deriving (Show, Eq, Ord)
+--   terms), a constituent( or is it permitted ?) communication
+--   alphabet and finally on the RHS a fully qualified process.
+data CspCASLSen
+    = CASLSen (CASLFORMULA)
+    | ProcessEq PROCESS_NAME FQProcVarList CommAlpha PROCESS
+      deriving (Show, Eq, Ord)
 
 instance Pretty CspCASLSen where
     pretty(CASLSen f) = pretty f
-    pretty(ProcessEq pn varList _ proc) =
+    pretty(ProcessEq pn varList commAlpha proc) =
         let varDoc = if (null varList)
                      then empty
                      else parens $ sepByCommas $ map pretty varList
-        in pretty pn <+> varDoc <+> equals <+> pretty proc
+            commAlphaDoc = brackets ((text "CommAlpha:") <+>
+                                     (text $ show commAlpha))
+        in pretty pn <+> varDoc <+> commAlphaDoc <+>
+           equals <+> pretty proc
 
+-- | Empty CspCASL sentence
 emptyCCSen :: CspCASLSen
 emptyCCSen =
     let emptyProcName = mkSimpleId "empty"
         emptyVarList = []
         emptyAlphabet = Set.empty
         emptyProc = Skip nullRange
-    in ProcessEq emptyProcName emptyVarList emptyAlphabet emptyProc
+    in ProcessEq emptyProcName emptyVarList emptyAlphabet emptyProc -- BUG - this is incorrect
 
+-- | Test if a CspCASL sentence is a CASL sentence
 isCASLSen :: CspCASLSen -> Bool
 isCASLSen (CASLSen _) = True
 isCASLSen _           = False
 
+-- | Test if a CspCASL sentence is a Process Equation.
 isProcessEq :: CspCASLSen -> Bool
 isProcessEq (ProcessEq _ _ _ _) = True
 isProcessEq _ = False

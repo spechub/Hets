@@ -20,12 +20,16 @@ module CspCASLProver.Utils
     , addAllChooseFunctions
     , addAllCompareWithFun
     , addAllIntegrationTheorems
+    , addDataSetTypes
     , addEqFun
+    , addEventDataType
+    , addFlatTypes
     , addInstansanceOfEquiv
     , addJustificationTheorems
     , addPreAlphabet
     , addProcMap
     , addProcNameDatatype
+    , addProjFlatFun
     ) where
 
 import CASL.AS_Basic_CASL (SORT, OpKind(..))
@@ -40,8 +44,8 @@ import Comorphisms.CFOL2IsabelleHOL (IsaTheory)
 import qualified Comorphisms.CFOL2IsabelleHOL as CFOL2IsabelleHOL
 
 import CspCASL.AS_CspCASL_Process (PROCESS_NAME)
-import CspCASL.SignCSP (CspSign(..), ProcProfile(..), CspCASLSen(..)
-                       , isProcessEq)
+import CspCASL.SignCSP (ChanNameMap, CspSign(..), ProcProfile(..),
+                        CspCASLSen(..), isProcessEq)
 
 import CspCASLProver.Consts
 import CspCASLProver.IsabelleUtils
@@ -207,8 +211,11 @@ addSymmetryTheorem sorts isaTh =
         thmConds = [binEq_PreAlphabet x y]
         thmConcl = binEq_PreAlphabet y x
         -- We want to induct Y then apply simp numSorts times and reapeat this
-        -- apply as many times as possibel, thus the true
-        inductY = [Apply ((Induct y):(replicate numSorts Simp)) True]
+        -- apply as many times as possibe, thus the true at the end
+        -- inductY = [Apply ((Induct y):(replicate numSorts Simp)) True]
+        -- Bug in above in isabelle - does not work for all specs
+        -- Now we do induction on Y then auto
+        inductY = [Apply [Induct y, Auto] True]
         proof' = IsaProof {
                    -- Add in front of inductY a apply induct on x
                    proof = ((Apply [(Induct x)] False) : inductY),
@@ -377,7 +384,7 @@ addInstansanceOfEquiv  isaTh =
 -- Functions for producing the alphabet type               --
 -------------------------------------------------------------
 
--- | Function to add the Alphabet type (type synonym) to an Isabelle theory
+-- | Function to add the Alphabet type (type syonnym) to an Isabelle theory
 addAlphabetType :: IsaTheory -> IsaTheory
 addAlphabetType  isaTh =
     let isaTh_sign = fst isaTh
@@ -402,7 +409,7 @@ addAllBarTypes sorts isaTh = foldl addBarType isaTh sorts
 addBarType :: IsaTheory -> SORT -> IsaTheory
 addBarType isaTh sort =
     let sortBarString = mkSortBarString sort
-        barType = Type {typeId = sortBarString, typeSort = [], typeArgs =[]}
+        barType = mkSortBarType sort
         isaTh_sign = fst isaTh
         isaTh_sen = snd isaTh
         x = mkFree "x"
@@ -539,6 +546,110 @@ addIntegrationTheorem_A caslSign isaTh (s1,s2) =
         thmConds thmConcl proof' isaTh
 
 --------------------------------------------------------------------------
+-- Functions for adding the Event datatype and the channel encoding     --
+--------------------------------------------------------------------------
+
+-- | Add the Event datatype (built from a list of channels and the subsort
+--  relation) to an Isabelle theory. BUG
+addEventDataType :: Rel.Rel SORT -> ChanNameMap -> IsaTheory -> IsaTheory
+addEventDataType sortRel chanNameMap isaTh =
+    let eventDomainEntry = mkEventDE sortRel chanNameMap
+       -- Add to the isabelle signature the new domain entry
+    in updateDomainTab eventDomainEntry isaTh
+
+-- | Make a Domain Entry for the Event from a list of sorts. BUG
+mkEventDE :: Rel.Rel SORT -> ChanNameMap -> DomainEntry
+mkEventDE sortRel chanNameMap =
+    let flat = (mkVName flatS, [alphabetType])
+        -- Make a constuctor type pair for a channel with a target sort
+        mkCon (c, s) = (mkVName (mkEventChannelConstructor c s),
+                                 [mkSortBarType s])
+        -- Make pairs of channel and sorts, where the sorts are all the possible
+        -- predecessors of the sort of the channel.
+        mkChanSortPairs (cn,sort) =
+                -- get all predecessors including s
+            let subSorts = Set.insert sort (Rel.predecessors sortRel sort)
+                mkPair s = (cn,s)
+            in Set.toList $ Set.map mkPair subSorts
+        -- We build the event type out of the flat constructions and the list of
+        -- channel constructions
+    in (eventType, (flat:(map mkCon $ concat $ map mkChanSortPairs $
+                              Map.toList chanNameMap)))
+
+-- | Add the eq function to an Isabelle theory using a list of sorts
+addProjFlatFun :: IsaTheory -> IsaTheory
+addProjFlatFun isaTh =
+    let eqtype = mkFunType eventType alphabetType
+        isaThWithConst = addConst projFlatS eqtype isaTh
+        x = mkFree "x"
+        lhs = termAppl (conDouble projFlatS) flatX
+        flatX = termAppl (conDouble flatS) x
+        rhs = x
+        -- projFlat(Flat x) = x
+        eqs = [binEq lhs rhs]
+    in addPrimRec eqs isaThWithConst
+
+-- | Function to add all the Flat types. These capture the original sorts, but
+--   use the bar values instead wrapped up in the Flat constructor(the Flat
+--   channel). We use this as a set of normal communications (action prefix,
+--   send, recieve).
+addFlatTypes :: [SORT] -> IsaTheory -> IsaTheory
+addFlatTypes sorts isaTh = foldl addFlatType isaTh sorts
+
+-- | Function to add the flat type of a sort to an Isabelle theory.
+addFlatType :: IsaTheory -> SORT -> IsaTheory
+addFlatType isaTh sort =
+    let sortFlatString = mkSortFlatString sort
+        flatType = Type {typeId = sortFlatString, typeSort = [], typeArgs =[]}
+        isaTh_sign = fst isaTh
+        isaTh_sen = snd isaTh
+        x = mkFree "x"
+        y = mkFree "y"
+        flatY = termAppl (conDouble flatS) y
+        -- y in sort_Bar
+        condition1 = binMembership y (conDouble $ mkSortBarString sort)
+        -- x = Flat y
+        condition2 = binEq x flatY
+        -- y in sort_Bar /\ x = Flat y
+        condition_eq = binConj condition1 condition2
+        exist_eq = termAppl (conDouble exS) (Abs y condition_eq NotCont)
+        subset = SubSet x eventType exist_eq
+        proof' = AutoSimpAdd Nothing [(mkSortBarString sort) ++ "_def"]
+        sen = TypeDef flatType subset (IsaProof [] (By proof'))
+        namedSen = (makeNamed sortFlatString sen)
+    in (isaTh_sign, isaTh_sen ++ [namedSen])
+
+-- | Function to add all the Data Set types. These capture the original sorts by
+--   creating sets of the bar varients. We use these sets when communicating
+--   over a channel.
+addDataSetTypes :: [SORT] -> IsaTheory -> IsaTheory
+addDataSetTypes sorts isaTh = foldl addDataSetType isaTh sorts
+
+-- | Function to add the Data Set type of a sort to an Isabelle theory.
+addDataSetType :: IsaTheory -> SORT -> IsaTheory
+addDataSetType isaTh sort =
+    let sortDataSetString = mkSortDataSetString sort
+        dataSetType = Type {typeId = sortDataSetString,
+                            typeSort = [],
+                            typeArgs =[]}
+        isaTh_sign = fst isaTh
+        isaTh_sen = snd isaTh
+        x = mkFree "x"
+        y = mkFree "y"
+        -- y in sort_Bar
+        condition1 = binMembership y (conDouble $ mkSortBarString sort)
+        -- x = Abs_sort_Bar y
+        condition2 = binEq x ((mkSortBarAbsOp sort) y)
+        -- y in x_Bar /\ x = Flat y
+        condition_eq = binConj condition1 condition2
+        exist_eq = termAppl (conDouble exS) (Abs y condition_eq NotCont)
+        subset = SubSet x (mkSortBarType sort) exist_eq
+        proof' = AutoSimpAdd Nothing [(mkSortBarString sort) ++ "_def"]
+        sen = TypeDef dataSetType subset (IsaProof [] (By proof'))
+        namedSen = (makeNamed sortDataSetString sen)
+    in (isaTh_sign, isaTh_sen ++ [namedSen])
+
+--------------------------------------------------------------------------
 -- Functions for adding the process name datatype to an Isabelle theory --
 --------------------------------------------------------------------------
 
@@ -561,14 +672,10 @@ mkProcNameDE processes =
         -- Take a proccess name and its argument sorts (also its
         -- commAlpha - thrown away) and make a pair representing the
         -- constructor and the argument types
+        -- Note: The processes need to have arguments of the bar variants of the
+        -- sorts not the original sorts
         mk_cons (procName, (ProcProfile sorts _)) =
-            (mkVName (mkProcNameConstructor procName), map sortToTyp sorts)
-        -- Turn a sort in to a Typ suitable for the domain entry The
-        -- processes need to have arguments of the bar variants of
-        -- the sorts not the original sorts
-        sortToTyp sort = Type {typeId = mkSortBarString sort,
-                               typeSort = [isaTerm],
-                               typeArgs = []}
+            (mkVName (mkProcNameConstructor procName), map mkSortBarType sorts)
     in
     (procNameType, constructors)
 

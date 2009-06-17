@@ -27,6 +27,7 @@ import CASL.Morphism
 import CspCASL.Logic_CspCASL
 import CspCASL.AS_CspCASL (CspBasicSpec (..))
 import CspCASL.SignCSP
+import CspCASL.Morphism (CspMorphism, emptyCspAddMorphism)
 
 -- | The identity of the comorphism
 data CASL2CspCASL = CASL2CspCASL deriving (Show)

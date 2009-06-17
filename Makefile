@@ -288,7 +288,7 @@ CoCASL_files = CoCASL/AS_CoCASL.hs CoCASL/CoCASLSign.hs
 COL_files = COL/AS_COL.hs COL/COLSign.hs
 
 CspCASL_files = CspCASL/AS_CspCASL.hs CspCASL/AS_CspCASL_Process.hs \
-    CspCASL/SignCSP.hs
+    CspCASL/SignCSP.hs CspCASL/Morphism.hs
 
 CASL_DL_files = CASL_DL/AS_CASL_DL.hs CASL_DL/Sign.hs CASL_DL/Sublogics.hs
 SoftFOL_files = SoftFOL/Sign.hs

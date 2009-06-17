@@ -28,7 +28,7 @@ import qualified Comorphisms.CASL2SubCFOL as CASL2SubCFOL
 import qualified Comorphisms.CFOL2IsabelleHOL as CFOL2IsabelleHOL
 
 import CspCASL.AS_CspCASL_Process
-import CspCASL.SignCSP ()
+import CspCASL.SignCSP (FQProcVarList)
 
 import CspCASLProver.Consts
 import CspCASLProver.CspProverConsts
@@ -81,8 +81,8 @@ transProcess caslSign pcfolSign cfolSign globalVars pr =
          -- precedence 2
          Hiding p es _ ->
              cspProver_hidingOp (transProcess' p) (union (transEventSet es))
-         RenamingProcess p r _ ->
-             cspProver_renamingOp (transProcess' p) (transRenaming r)
+         RenamingProcess p re _ ->
+             cspProver_renamingOp (transProcess' p) (transRenaming re)
          -- precedence 3
          Sequential p q _ ->
              cspProver_sequenceOp (transProcess' p) (transProcess' q)
@@ -148,7 +148,7 @@ transEvent caslSign pcfolSign cfolSign globalVars event p =
     in case event of
       -- To use the fully qualified data we need to know what the underlying
       -- type of the process is
-      FQEvent ev _ fqTerm _ ->
+      FQEvent ev mfqc fqTerm _ ->
           case ev of
             TermEvent _ _ ->
                 -- Translate the term and make sure we do land in the
@@ -163,17 +163,35 @@ transEvent caslSign pcfolSign cfolSign globalVars event p =
                 -- is not really a variable of that sort. Here the variable and
                 -- sort are seperate operands of the CSPProver operator.
                 cspProver_internal_prefix_choiceOp
-                (transVar v) (transSort s) (transProcess' p)
+                (transVar v) (transSort s True) (transProcess' p)
             ExternalPrefixChoice v s _ ->
                 -- Use the nonfully qualified data instead of the fully
                 -- qualified data as it is easier in this case as the variable
                 -- is not really a variable of that sort. Here the variable and
                 -- sort are seperate operands of the CSPProver operator.
                 cspProver_external_prefix_choiceOp
-                  (transVar v) (transSort s)
+                  (transVar v) (transSort s True)
                                    (transProcess' p)
             ChanSend _ _ _ -> conDouble "ChanSendNotYetDone"
-            ChanNonDetSend _ _ _ _ -> conDouble "ChanNonDetSendNotYetDone"
+            ChanNonDetSend _ var varSort _ ->
+                -- We do not use the fully qualified variable (fqTerm) instead
+                -- we use the non fully qualified variable (var, varSort).
+                case mfqc of
+                  Nothing -> error "CspCASLProver.TransProcesses.transEvent: Missing fully qualified channel data"
+                  Just (chanName, chanSort) ->
+                      -- CspProvers channel non-deterministic channel send Op
+                      cspProver_chan_nondeterministic_sendOp
+                      -- The channel made of the name and the target sort of the
+                      -- channel
+                      (transChanName chanName chanSort)
+                      -- The translate variable
+                      (transVar var)
+                      -- The translate sort (channel version) of the set to
+                      -- receive from
+                      (transSort varSort False)
+                      -- The translated version of the rest of the process
+                      (transProcess' p)
+
             ChanRecv _ _ _ _ -> conDouble "ChanRecvNotYetDone"
             FQEvent _ _ _ _ -> error "CspCASLProver.TransProcesses.transEvent: A FQEvent should not contain a non-FQEvent";
       _ ->  error "CspCASLProver.TransProcesses.transEvent: Expected a FQEvent not a non-FQEvent";
@@ -184,10 +202,18 @@ transEvent caslSign pcfolSign cfolSign globalVars event p =
 transVar :: CASL_AS_Basic_CASL.VAR -> Term
 transVar v = conDouble $ tokStr v
 
--- | Translate a sort into CspProver (Isabelle). The result will be
---   the corresponding bar type for a given sort.
-transSort :: CASL_AS_Basic_CASL.SORT -> Term
-transSort sort = conDouble $ mkSortBarString sort
+-- | Translate a sort into CspProver (Isabelle). If toFlat = true then the
+--   result will be the corresponding flat type for a given sort else it will be
+--   the data set type for the given sort i.e. toFlat = true for normal
+--   communication, toFlat = false for channel communications
+transSort :: CASL_AS_Basic_CASL.SORT -> Bool -> Term
+transSort sort toFlat = if toFlat
+                        then conDouble $ mkSortFlatString sort
+                        else conDouble $ mkSortDataSetString sort
+
+transChanName :: CHANNEL_NAME -> CASL_AS_Basic_CASL.SORT -> Term
+transChanName chanName sort =
+    conDouble $ mkEventChannelConstructor chanName sort
 
 transRenaming :: RENAMING -> Term
 transRenaming _ = conDouble "RenamingNotDoneYet"

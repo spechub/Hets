@@ -26,19 +26,27 @@ module CspCASLProver.Consts
     , eq_PreAlphabetV
     , eqvTypeClassS
     , equivTypeClassS
+    , eventS
+    , eventType
+    , flatS
     , preAlphabetQuotType
     , preAlphabetS
     , preAlphabetSimS
     , preAlphabetType
+    , projFlatS
     , mkChooseFunName
     , mkChooseFunOp
     , mkCompareWithFunName
+    , mkEventChannelConstructor
     , mkPreAlphabetConstructor
     , mkPreAlphabetConstructorOp
     , mkProcNameConstructor
     , mkSortBarAbsOp
     , mkSortBarRepOp
     , mkSortBarString
+    , mkSortBarType
+    , mkSortDataSetString
+    , mkSortFlatString
     , mkThyNameAlphabet
     , mkThyNameDataEnc
     , mkThyNameIntThms
@@ -54,7 +62,7 @@ module CspCASLProver.Consts
     ) where
 
 import CASL.AS_Basic_CASL (SORT)
-import CspCASL.AS_CspCASL_Process (PROCESS_NAME)
+import CspCASL.AS_CspCASL_Process (CHANNEL_NAME, PROCESS_NAME)
 import Isabelle.IsaConsts (binVNameAppl, conDouble, mkFunType, termAppl)
 import Isabelle.IsaSign (BaseSig(..), Term, Typ(..), VName(..))
 import Isabelle.Translate(showIsaTypeT)
@@ -82,7 +90,7 @@ binEq_PreAlphabet = binVNameAppl eq_PreAlphabetV
 cCProverProcType :: Typ
 cCProverProcType = Type {typeId = procS,
                          typeSort = [],
-                         typeArgs =[procNameType, alphabetType]}
+                         typeArgs =[procNameType, eventType]}
 
 -- | Isabelle operation for the class operation
 classOp :: Term -> Term
@@ -104,6 +112,11 @@ convertProcessName2String = show
 cspFThyS :: String
 cspFThyS  = "CSP_F"
 
+-- | The string to use for the names of the data set types. See the channel
+--   construction and the event data type.
+dataSetS :: String
+dataSetS = "DataSet"
+
 -- | String of the name of the function to compare eqaulity of two
 --   elements of the PreAlphabet.
 eq_PreAlphabetS :: String
@@ -124,6 +137,22 @@ eqvTypeClassS  = "eqv"
 equivTypeClassS :: String
 equivTypeClassS  = "equiv"
 
+-- | String of the name of CspCASLProver's Event datatype.
+eventS :: String
+eventS = "Event"
+
+-- | Type for the CspCASLProver's Event datatype
+eventType :: Typ
+eventType = Type {typeId = eventS,
+                  typeSort = [],
+                  typeArgs =[]}
+
+-- | String of the name of constructor for a plain event without a channel,
+--   effectivly this is the channel whos name is Flat. Also used for the names
+--   of the flat types.
+flatS :: String
+flatS = "Flat"
+
 -- | Function that takes a sort and outputs the function name for the
 --   corresponing choose function
 mkChooseFunName :: SORT -> String
@@ -138,6 +167,11 @@ mkChooseFunOp s = termAppl (conDouble (mkChooseFunName s))
 --   corresponing compare_with function
 mkCompareWithFunName :: SORT -> String
 mkCompareWithFunName sort = ("compare_with_" ++ (mkPreAlphabetConstructor sort))
+
+-- | Function that takes a channel name and a target sort and produces the
+--   CspCASLProver's constructor for that channel with that target sort.
+mkEventChannelConstructor :: CHANNEL_NAME -> SORT -> String
+mkEventChannelConstructor c s = (show c) ++ "_" ++ (convertSort2String s)
 
 -- | Function that returns the constructor of PreAlphabet for a given
 --   sort
@@ -155,10 +189,26 @@ mkPreAlphabetConstructorOp s = termAppl (conDouble (mkPreAlphabetConstructor s))
 mkProcNameConstructor :: PROCESS_NAME -> String
 mkProcNameConstructor pn = show pn
 
--- | Converts a SORT in to the corresponding bar sort represented as a
+-- | Converts a sort in to the corresponding bar sort represented as a
 -- string
 mkSortBarString :: SORT -> String
 mkSortBarString s = convertSort2String s ++ barExtS
+
+-- | Converts a sort in to the corresponding bar sort type
+mkSortBarType :: SORT -> Typ
+mkSortBarType sort = Type {typeId = (mkSortBarString sort), typeSort = [], typeArgs =[]}
+
+-- | Converts a sort in to the corresponding Data Set type for that sort
+-- represented as a string. This is used in the construction of the channels and
+-- is linked with the type event.
+mkSortDataSetString :: SORT -> String
+mkSortDataSetString s = (convertSort2String s) ++ "_" ++ dataSetS
+
+-- | Converts asort in to the corresponding flat type for that sort represented
+-- as a string. This is used in the construction of the channels and is linked
+-- with the type event.
+mkSortFlatString :: SORT -> String
+mkSortFlatString s = (convertSort2String s) ++ "_" ++ flatS
 
 -- | Given a sort this function produces the function name (string) of the built
 --   in Isabelle fucntion that corresponds to the abstraction function of the
@@ -243,9 +293,14 @@ procNameType = Type {typeId = procNameS,
                      typeSort = [],
                      typeArgs =[]}
 
--- | name for CspProver's ('pn, 'a) proc type
+-- | Name for CspProver's ('pn, 'a) proc type
 procS :: String
 procS = "proc"
+
+-- | Name of CspCASLProver's function for projecting a Flat Event back to the
+--   type Alphabet
+projFlatS :: String
+projFlatS = "projFlat"
 
 -- | Name for IsabelleHOL quot type
 quotS :: String

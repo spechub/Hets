@@ -34,8 +34,9 @@ import qualified Comorphisms.CASL2PCFOL as CASL2PCFOL
 import qualified Comorphisms.CASL2SubCFOL as CASL2SubCFOL
 import qualified Comorphisms.CFOL2IsabelleHOL as CFOL2IsabelleHOL
 
-import CspCASL.SignCSP (ccSig2CASLSign, ccSig2CspSign, CspCASLSign
-                       , CspCASLSen(..) , CspMorphism)
+import CspCASL.SignCSP (ccSig2CASLSign, ccSig2CspSign, CspCASLSign, CspSign(..)
+                       , CspCASLSen(..))
+import CspCASL.Morphism (CspMorphism)
 
 import CspCASLProver.Consts
 import CspCASLProver.IsabelleUtils
@@ -189,8 +190,11 @@ produceProcesses :: String -> CspCASLSign -> [Named CspCASLSen] ->
                     CASLSign -> CASLSign -> Theory Isa.Sign Isa.Sentence ()
 produceProcesses thName ccSign ccNnamedSens pcfolSign cfolSign =
     let caslSign = ccSig2CASLSign ccSign
-        cspSign =  ccSig2CspSign ccSign
-        --  Isabelle sgnature which imports the integration theorems encoding
+        cspSign = ccSig2CspSign ccSign
+        sortList = Set.toList(sortSet caslSign)
+        sortRel' = sortRel caslSign
+        chanNameMap = chans cspSign
+        --  Isabelle signature which imports the integration theorems encoding
         --  and CSP_F
         isaSignEmpty = Isa.emptySign {Isa.imports = [mkThyNameIntThms thName
                                                     , cspFThyS] }
@@ -198,6 +202,10 @@ produceProcesses thName ccSign ccNnamedSens pcfolSign cfolSign =
         -- processes the the process refinement theorems.
         (isaSign, isaSens) = addProcMap ccNnamedSens caslSign pcfolSign cfolSign
                            $ addProcNameDatatype cspSign
+                           $ addDataSetTypes sortList
+                           $ addFlatTypes sortList
+                           $ addProjFlatFun
+                           $ addEventDataType sortRel' chanNameMap
                            $ (isaSignEmpty,[])
     in Theory isaSign (toThSens isaSens)
 

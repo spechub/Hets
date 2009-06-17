@@ -31,6 +31,7 @@ module CspCASL.CspProver_Consts (
     cspProver_hidingOp,
     cspProver_renamingOp,
     cspProver_conditionalOp
+    cspProver_chan_nondeterministic_sendOp,
 ) where
 
 import Isabelle.IsaSign as IsaSign
@@ -61,7 +62,7 @@ cspProver_chaosS = "??? CHAOS ??? - NOT YET DONE"
 
 -- Action prefix operator symbols
 cspProver_action_prefixS :: String
-cspProver_action_prefixS = "Action_prefix"
+cspProver_action_prefixS = "Act_prefix"
 cspProver_action_prefixAltS :: String
 cspProver_action_prefixAltS = "(_ -> _)"
 cspProver_action_prefixAltArgPrios :: [Int]
@@ -71,7 +72,7 @@ cspProver_action_prefixAltOpPrio = 80
 
 -- External prefix choice operator symbols
 cspProver_external_prefix_choiceS :: String
-cspProver_external_prefix_choiceS = "External_pre_choice"
+cspProver_external_prefix_choiceS = "Ext_pre_choice"
 cspProver_external_prefix_choiceAltS :: String
 cspProver_external_prefix_choiceAltS = "(? _:_ -> _)"
 cspProver_external_prefix_choiceAltArgPrios :: [Int]
@@ -81,7 +82,7 @@ cspProver_external_prefix_choiceAltOpPrio = 80
 
 -- Internal prefix choice operator symbols
 cspProver_internal_prefix_choiceS :: String
-cspProver_internal_prefix_choiceS = "Internal_pre_choice"
+cspProver_internal_prefix_choiceS = "Int_pre_choice"
 cspProver_internal_prefix_choiceAltS :: String
 cspProver_internal_prefix_choiceAltS = "(! _:_ -> _)"
 cspProver_internal_prefix_choiceAltArgPrios :: [Int]
@@ -188,6 +189,17 @@ cspProver_conditionalAltArgPrios :: [Int]
 cspProver_conditionalAltArgPrios = [900,88,88]
 cspProver_conditionalAltArgOpPrio :: Int
 cspProver_conditionalAltArgOpPrio = 88
+
+-- Channel Non-deterministic send operator symbols
+-- Only works if pretty printed using the alternative syntax
+cspProver_chan_nondeterministic_sendS :: String
+cspProver_chan_nondeterministic_sendS = "Nondet_send_prefix"
+cspProver_chan_nondeterministic_sendAltS :: String
+cspProver_chan_nondeterministic_sendAltS = "(_ !? _:_ -> _)"
+cspProver_chan_nondeterministic_sendAltArgPrios :: [Int]
+cspProver_chan_nondeterministic_sendAltArgPrios = [900,900,1000,80]
+cspProver_chan_nondeterministic_sendAltArgOpPrio :: Int
+cspProver_chan_nondeterministic_sendAltArgOpPrio = 80
 
 -- Isabelle Terms representing the operations for CspProver
 
@@ -314,6 +326,14 @@ cspProver_conditionalOp  =
                        cspProver_conditionalAltS
                        cspProver_conditionalAltArgPrios
                        cspProver_conditionalAltArgOpPrio
+
+-- | Conditional operator
+cspProver_chan_nondeterministic_sendOp :: Term -> Term -> Term -> Term
+cspProver_chan_nondeterministic_sendOp  =
+    makeQuadCspProverOp cspProver_chan_nondeterministic_sendS
+                       cspProver_chan_nondeterministic_sendAltS
+                       cspProver_chan_nondeterministic_sendAltArgPrios
+                       cspProver_chan_nondeterministic_sendAltArgOpPrio
 
 -- Create an Isabelle Term representing a (Unary) CspProver operator
 -- with no alternative syntax

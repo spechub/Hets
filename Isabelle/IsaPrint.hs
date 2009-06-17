@@ -591,7 +591,7 @@ printSign sig = let dt = sortBy cmpDomainEntries $ domainTab sig
         <+> and_docs (map printDomain dts)
     printDomain (t, ops) =
        printTyp (if isDomain then Quoted else Null) t <+> equals <+>
-       hsep (bar $ map printDOp ops)
+       fsep (bar $ map printDOp ops)
     printDOp (vn, args) = let opname = new vn in
        text opname <+> hsep (map (printDOpArg opname)
                             $ zip args [1 :: Int .. ])
@@ -710,15 +710,16 @@ printProofMethod pm =
       AutoSimpAdd m names -> let modDoc = case m of
                                             Just mod' -> parens $ pretty mod'
                                             Nothing -> empty
-                             in text autoS <+> text simpS <+>
-                                modDoc <+> text "add:" <+> hsep (map text names)
+                             in fsep $ [text autoS, text simpS, modDoc,
+                                             text "add:"] ++ map text names
+
       SimpAdd m names -> let modDoc = case m of
                                         Just mod' -> parens $ pretty mod'
                                         Nothing -> empty
-                         in text simpS <+> modDoc <+>
-                            text "add:" <+> hsep (map text names)
+                         in fsep $ [text simpS, modDoc, text "add:"] ++
+                            map text names
       Induct var -> (text inductS) <+> doubleQuotes (printTerm var)
       CaseTac t -> text caseTacS <+> doubleQuotes (printTerm t)
       SubgoalTac t -> text subgoalTacS <+> doubleQuotes (printTerm t)
-      Insert ts -> text insertS <+> (hsep (map text ts))
+      Insert ts ->  fsep $ (text insertS:(map text ts))
       Other s -> text s

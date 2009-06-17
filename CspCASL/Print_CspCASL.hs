@@ -144,7 +144,7 @@ printProcess pr = case pr of
 
 instance Pretty CommType where
     pretty (CommTypeSort s) = pretty s
-    pretty (CommTypeChan (TypedChanName c s)) =
+    pretty (CommTypeChan (TypedChanName c _)) =
         -- Only show the channel name
         pretty c
         -- parens (pretty c <+> comma <+> pretty s)

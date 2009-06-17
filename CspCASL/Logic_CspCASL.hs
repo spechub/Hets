@@ -53,7 +53,7 @@ data GenCspCASL a = GenCspCASL a deriving Show
 cspCASL :: GenCspCASL ()
 cspCASL = GenCspCASL ()
 
--- the top-level logic with the loosest semantics (and without provers)
+-- | The top-level logic with the loosest semantics (and without provers)
 type CspCASL = GenCspCASL ()
 
 instance Show a => Language (GenCspCASL a) where
@@ -66,24 +66,18 @@ instance Show a => Language (GenCspCASL a) where
 instance SignExtension SignCSP.CspSign where
   isSubSignExtension = SignCSP.isInclusion
 
--- | Instance for CspCASL morphism extension (used for Category)
-instance MorphismExtension SignCSP.CspSign SignCSP.CspAddMorphism where
-  ideMorphismExtension _ = SignCSP.emptyCspAddMorphism
-  composeMorphismExtension = SignCSP.composeCspAddMorphism
-  inverseMorphismExtension = SignCSP.inverseCspAddMorphism
-  isInclusionMorphismExtension _ = True -- missing!
-
--- | Instance of Sentences for CspCASL (missing)
+-- | Instance of Sentences for CspCASL
 instance Show a => Sentences (GenCspCASL a)
-    SignCSP.CspCASLSen   -- sentence (missing)
-    SignCSP.CspCASLSign     -- signature
-    SignCSP.CspMorphism     -- morphism
-    Symbol               -- symbol
+    -- sentence
+    SignCSP.CspCASLSen
+    -- signature
+    SignCSP.CspCASLSign
+    -- morphism
+    CspCASL_Morphism.CspMorphism
+    -- symbol
+    Symbol
     where
-      map_sen (GenCspCASL _) mor sen =
-        if isInclusionMorphism isInclusionMorphismExtension mor
-        then return sen
-        else fail "renaming in map_sen CspCASL not implemented"
+      map_sen (GenCspCASL _) = CspCASL_Morphism.mapSen
       parse_sentence (GenCspCASL _) = Nothing
       sym_of (GenCspCASL _) = CspCASL_Morphism.symOf
       symmap_of (GenCspCASL _) = morphismToSymbMap
@@ -105,10 +99,9 @@ instance Show a => Syntax (GenCspCASL a)
 
 -- lattices (for sublogics) missing
 
-
 class Show a => CspCASLSemantics a where
   cspProvers :: a
-    -> [Prover SignCSP.CspCASLSign SignCSP.CspCASLSen SignCSP.CspMorphism () ()]
+    -> [Prover SignCSP.CspCASLSign SignCSP.CspCASLSen CspCASL_Morphism.CspMorphism () ()]
   cspProvers _ = []
 
 {- further dummy types for the trace of the failure semantics can be added
@@ -135,16 +128,24 @@ instance CspCASLSemantics Failure
 
 -- | Instance of Logic for CspCASL
 instance CspCASLSemantics a => Logic (GenCspCASL a)
-    ()                      -- Sublogics (missing)
-    AS_CspCASL.CspBasicSpec -- basic_spec
-    SignCSP.CspCASLSen      -- sentence (missing)
-    SYMB_ITEMS              -- symb_items
-    SYMB_MAP_ITEMS          -- symb_map_items
-    SignCSP.CspCASLSign     -- signature
-    SignCSP.CspMorphism     -- morphism
+    -- Sublogics (missing)
+    ()
+    -- basic_spec
+    AS_CspCASL.CspBasicSpec
+    -- sentence
+    SignCSP.CspCASLSen
+    -- symb_items
+    SYMB_ITEMS
+    -- symb_map_items
+    SYMB_MAP_ITEMS
+    -- signature
+    SignCSP.CspCASLSign
+    -- morphism
+    CspCASL_Morphism.CspMorphism
     Symbol
     RawSymbol
-    ()                      -- proof_tree (missing)
+    -- proof_tree (missing)
+    ()
     where
       stability (GenCspCASL _) = Experimental
       data_logic (GenCspCASL _) = Just (Logic CASL)
@@ -153,27 +154,33 @@ instance CspCASLSemantics a => Logic (GenCspCASL a)
 
 -- | Static Analysis for CspCASL
 instance Show a => StaticAnalysis (GenCspCASL a)
-    AS_CspCASL.CspBasicSpec -- basic_spec
-    SignCSP.CspCASLSen      -- sentence (missing)
-    SYMB_ITEMS              -- symb_items
-    SYMB_MAP_ITEMS          -- symb_map_items
-    SignCSP.CspCASLSign     -- signature
-    SignCSP.CspMorphism     -- morphism
+    -- basic_spec
+    AS_CspCASL.CspBasicSpec
+    -- sentence
+    SignCSP.CspCASLSen
+    -- symb_items
+    SYMB_ITEMS
+    -- symb_map_items
+    SYMB_MAP_ITEMS
+    -- signature
+    SignCSP.CspCASLSign
+    -- morphism
+    CspCASL_Morphism.CspMorphism
     Symbol
     RawSymbol
     where
       basic_analysis (GenCspCASL _) = Just StatAnaCSP.basicAnalysisCspCASL
-      stat_symb_map_items (GenCspCASL _) = statSymbMapItems
-      stat_symb_items (GenCspCASL _) = statSymbItems
+      stat_symb_map_items (GenCspCASL _) = statSymbMapItems -- BUG???
+      stat_symb_items (GenCspCASL _) = statSymbItems -- BUG???
       matches (GenCspCASL _) = CASL.Morphism.matches
       empty_signature (GenCspCASL _) = SignCSP.emptyCspCASLSign
-      is_subsig (GenCspCASL _) = isSubSig SignCSP.isInclusion
+      is_subsig (GenCspCASL _) = isSubSig SignCSP.isInclusion -- BUG???
       subsig_inclusion (GenCspCASL _) = sigInclusion
-          SignCSP.emptyCspAddMorphism
+                                        CspCASL_Morphism.emptyCspAddMorphism -- BUG???
       signature_union (GenCspCASL _) s =
           return . addSig SignCSP.addCspProcSig s
       induced_from_morphism (GenCspCASL _) = inducedFromMorphism
-          SignCSP.emptyCspAddMorphism
+          CspCASL_Morphism.emptyCspAddMorphism
       induced_from_to_morphism (GenCspCASL _) = inducedFromToMorphism
-          SignCSP.emptyCspAddMorphism SignCSP.isInclusion
+          CspCASL_Morphism.emptyCspAddMorphism SignCSP.isInclusion
           SignCSP.diffCspProcSig

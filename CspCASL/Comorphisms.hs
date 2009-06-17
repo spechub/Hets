@@ -21,9 +21,10 @@ import CASL.AS_Basic_CASL
 import CASL.Morphism
 
 -- CspCASL
+import CspCASL.AS_CspCASL (CspBasicSpec (..))
+import CspCASL.Morphism
 import CspCASL.Logic_CspCASL
 import CspCASL.SignCSP
-import CspCASL.AS_CspCASL (CspBasicSpec (..))
 
 import qualified Data.Set as Set
 
