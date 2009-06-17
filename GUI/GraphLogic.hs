@@ -29,11 +29,12 @@ module GUI.GraphLogic
     , showDiagMess
     , showEdgeInfo
     , checkconservativityOfEdge
+    , hideNames
     , hideNodes
     , hideEdges
+    , toggleHideNames
     , toggleHideNodes
     , toggleHideEdges
-    , hideShowNames
     , translateGraph
     , showLibGraph
     , runAndLock
@@ -97,18 +98,19 @@ import Interfaces.Utils
 
 -- | Locks the global lock and runs function
 runAndLock :: GInfo -> IO () -> IO ()
-runAndLock (GInfo { functionLock = lock
-                  , graphInfo = gi
-                  }) function = do
+runAndLock gInfo@(GInfo { functionLock = lock
+                        , graphInfo = gi
+                        }) function = do
   locked <- tryPutMVar lock ()
   case locked of
     True -> do
       GA.deactivateGraphWindow gi
       function
-      takeMVar lock
       GA.redisplay gi
+      hideNames gInfo
       GA.layoutImproveAll gi
       GA.activateGraphWindow gi
+      takeMVar lock
     False ->
       GA.showTemporaryMessage gi
         "an other function is still working ... please wait ..."
@@ -122,28 +124,43 @@ undo gInfo isUndo = do
   writeIORef (intState gInfo) nwSt
 
 updateGraph :: GInfo -> LIB_NAME -> [DGChange] -> DGraph -> IO ()
-updateGraph gInfo' ln changes dg = do
+updateGraph gInfo'@(GInfo { libName = ln' }) ln changes dg = do
   og <- readIORef $ openGraphs gInfo'
   case Map.lookup ln og of
     Nothing -> return ()
-    Just (GInfo { graphInfo = gi
-                , options = opts }) -> do
+    Just gInfo@(GInfo { graphInfo = gi
+                      , options = opts }) -> do
       flags <- readIORef opts
       let (nodes, comp) = if flagHideNodes flags then hideNodesAux dg
                           else ([],[])
           edges = if flagHideEdges flags then hideEdgesAux dg else []
+      if ln' /= ln then GA.deactivateGraphWindow gi else return ()
       GA.applyChanges gi (removeContraryChanges changes) nodes edges comp
-      GA.redisplay gi
+      if ln' /= ln then do
+        GA.redisplay gi
+        hideNames gInfo
+        GA.layoutImproveAll gi
+        GA.activateGraphWindow gi
+        else return ()
 
 -- | Toggles to display internal node names
-hideShowNames :: GInfo -> Bool -> IO ()
-hideShowNames (GInfo { internalNamesIORef = showInternalNames
-                     }) toggle = do
-  (intrn::InternalNames) <- readIORef showInternalNames
-  let showThem = if toggle then not $ showNames intrn else showNames intrn
-      showItrn s = if showThem then s else ""
-  mapM_ (\(s,upd) -> upd (\_ -> showItrn s)) $ updater intrn
-  writeIORef showInternalNames $ intrn {showNames = showThem}
+hideNames :: GInfo -> IO ()
+hideNames (GInfo { options = opts
+                 , internalNames = updaterIORef }) = do
+  flags <- readIORef opts
+  updater <- readIORef updaterIORef
+  mapM_ (\(s,upd) -> upd (\_ -> if flagHideNames flags then "" else s)) updater
+
+-- | Toggles to display internal node names
+toggleHideNames :: GInfo -> IO ()
+toggleHideNames gInfo@(GInfo { graphInfo = gi
+                             , options = opts }) = do
+  flags <- readIORef opts
+  let hide = not $ flagHideNames flags
+  writeIORef opts $ flags { flagHideNames = hide }
+  (nodes, comp) <- hideNodes gInfo
+  edges <- hideEdges gInfo
+  GA.applyChanges gi [] nodes edges comp
 
 -- | hides all unnamed internal nodes that are proven
 hideNodes :: GInfo
@@ -798,10 +815,10 @@ link2String linkmap (nodeid1, nodeid2, edge) = do
 
 -- | Returns the name of the Node
 getNodeLabel :: GInfo -> DGNodeLab -> IO String
-getNodeLabel (GInfo {internalNamesIORef = ioRefInternal}) dgnode = do
-  internal <- readIORef ioRefInternal
+getNodeLabel (GInfo { options = opts }) dgnode = do
+  flags <- readIORef opts
   let ntype = getDGNodeType dgnode
-  return $ if (not $ showNames internal) &&
+  return $ if flagHideNames flags &&
        elem ntype ["open_cons__internal"
                   , "proven_cons__internal"
                   , "locallyEmpty__open_cons__internal"

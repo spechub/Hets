@@ -129,25 +129,31 @@ mapEdgeTypes =
 -- | Creates the graph. Runs makegraph
 createGraph :: GInfo -> String -> ConvFunc -> LibFunc -> IO ()
 createGraph gInfo@(GInfo { graphInfo = gi
-                         , hetcatsOpts = opts
+                         , hetcatsOpts = hetOpts
+                         , options = opts
                          , libName = ln }) title convGraph showLib = do
- ost <- readIORef $ intState gInfo
- case i_state ost of
-  Nothing -> return ()
-  Just _ -> do
-   let file = rmSuffix (libNameToFile opts ln) ++ prfSuffix
-   deselectEdgeTypes <- newIORef []
-   globMenu <- createGlobalMenu gInfo showLib deselectEdgeTypes
-   GA.makegraph gi
-                title
-                (createOpen gInfo file convGraph showLib)
-                (createSave gInfo file)
-                (createSaveAs gInfo file)
-                (createClose gInfo)
-                (Just (createExit gInfo))
-                globMenu
-                (createNodeTypes gInfo convGraph showLib)
-                (createEdgeTypes gInfo)
+  ost <- readIORef $ intState gInfo
+  case i_state ost of
+    Nothing -> return ()
+    Just _ -> do
+      let file = rmSuffix (libNameToFile hetOpts ln) ++ prfSuffix
+      deselectEdgeTypes <- newIORef []
+      globMenu <- createGlobalMenu gInfo showLib deselectEdgeTypes
+      GA.makeGraph gi
+                   title
+                   (createOpen gInfo file convGraph showLib)
+                   (createSave gInfo file)
+                   (createSaveAs gInfo file)
+                   (createClose gInfo)
+                   (Just (createExit gInfo))
+                   globMenu
+                   (createNodeTypes gInfo convGraph showLib)
+                   (createEdgeTypes gInfo)
+                   $ runAndLock gInfo $ do
+                       flags <- readIORef opts
+                       writeIORef opts $ flags { flagHideNodes = False
+                                               , flagHideEdges = False}
+                       GA.applyChanges gi [] [] [] []
 
 -- | Returns the open-function
 createOpen :: GInfo -> FilePath -> ConvFunc -> LibFunc -> Maybe (IO ())
@@ -233,9 +239,12 @@ createGlobalMenu gInfo@(GInfo { hetcatsOpts = opts
      [ Button "Undo" $ ral $ undo gInfo True
      , Button "Redo" $ ral $ undo gInfo False
      , Menu (Just "Hide/Show names/nodes/edges")
-        [ Button "Hide/Show internal names" $ ral $ hideShowNames gInfo True
-        , Button "Hide/Show proven nodes" $ ral $ toggleHideNodes gInfo
-        , Button "Hide/Show proven edges" $ ral $ toggleHideEdges gInfo
+        [ Button "Hide/Show internal node names"
+                 $ ral $ toggleHideNames gInfo
+        , Button "Hide/Show unnamed nodes without open proofs"
+                 $ ral $ toggleHideNodes gInfo
+        , Button "Hide/Show newly added proven edges"
+                 $ ral $ toggleHideEdges gInfo
       ]
      , Button "Focus node" $ ral $ focusNode gInfo
 #ifdef GTKGLADE
@@ -324,14 +333,13 @@ createLocalMenuNodeTypeSpec shape color gInfo =
 createLocalMenuNodeTypeInternal :: Shape GA.NodeValue -> String -> GInfo
                                 -> DaVinciNodeTypeParms GA.NodeValue
 createLocalMenuNodeTypeInternal shape color
-               gInfo@(GInfo {internalNamesIORef = showInternalNames}) =
+               gInfo@(GInfo { internalNames = updaterIORef }) =
                  shape $$$ Color color
                  $$$ ValueTitleSource (\ (s,_) -> do
                        b <- newSimpleBroadcaster ""
-                       intrn <- readIORef showInternalNames
+                       updater <- readIORef updaterIORef
                        let upd = (s,applySimpleUpdate b)
-                       writeIORef showInternalNames
-                                  $ intrn {updater = upd:updater intrn}
+                       writeIORef updaterIORef $ upd:updater
                        return $ toSimpleSource b)
                  $$$ createLocalMenuNode gInfo
 
@@ -367,7 +375,7 @@ createMenuButton title menuFun gInfo@(GInfo { libName = ln }) = Button title
       Just ist -> do
         let le = i_libEnv ist
             dGraph = lookupDGraph ln le
-        runAndLock gInfo $  menuFun descr dGraph
+        runAndLock gInfo $ menuFun descr dGraph
         return ()
 
 createLocalMenuButtonShowTheory :: GInfo -> ButtonMenu GA.NodeValue

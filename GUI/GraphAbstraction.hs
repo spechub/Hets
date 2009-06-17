@@ -18,8 +18,8 @@ module GUI.GraphAbstraction
   , EdgeValue
   , GraphInfo
     -- * Creation and display
-  , initgraphs
-  , makegraph
+  , initGraph
+  , makeGraph
   , redisplay
   , showAll
     -- * Node interface
@@ -186,8 +186,8 @@ graphtool :: OurGraph -- ^ uDrawGraph graph
 graphtool = daVinciSort
 
 -- | Creates the empty AbstractionGraph
-initgraphs :: IO GraphInfo -- ^ The graph
-initgraphs = do
+initGraph :: IO GraphInfo -- ^ The graph
+initGraph = do
   let g = AbstractionGraph
             { theGraph = graphtool
             , nodes = Map.empty
@@ -199,7 +199,7 @@ initgraphs = do
   newIORef g
 
 -- | Creates the uDrawGraph graph
-makegraph :: GraphInfo -- ^ The graph
+makeGraph :: GraphInfo -- ^ The graph
           -> String     -- ^ Title
           -> Maybe (IO ()) -- ^ FileOpen menu
           -> Maybe (IO ()) -- ^ FileSave menu
@@ -210,7 +210,9 @@ makegraph :: GraphInfo -- ^ The graph
           -> [(DGNodeType,DaVinciNodeTypeParms NodeValue)] -- ^ Node types
           -> [(DGEdgeType,DaVinciArcTypeParms EdgeValue)] -- ^ Edge types
           -> IO ()
-makegraph gi title open save saveAs close exit menus nTypeParms eTypeParms = do
+          -> IO ()
+makeGraph gi title open save saveAs close exit menus nTypeParms eTypeParms
+          expand = do
   let graphParms  =
         foldr ($$) (GraphTitle title $$
                     OptimiseLayout False $$

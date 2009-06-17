@@ -11,7 +11,6 @@ Portability :  non-portable (imports Logic)
 
 module GUI.GraphTypes
     ( GInfo(..)
-    , InternalNames(..)
     , ConvFunc
     , LibFunc
     , DaVinciGraphTypeSyn
@@ -25,7 +24,7 @@ module GUI.GraphTypes
     , unlockGlobal
     ) where
 
-import GUI.GraphAbstraction(GraphInfo, initgraphs)
+import GUI.GraphAbstraction(GraphInfo, initGraph)
 import GUI.ProofManagement (GUIMVar)
 import GUI.UDGUtils
 
@@ -42,15 +41,10 @@ import Control.Concurrent.MVar
 import Interfaces.DataTypes
 import Interfaces.Utils
 
-
-data InternalNames = InternalNames
-                     { showNames :: Bool
-                     , updater :: [(String,(String -> String) -> IO ())]
-                     }
-
 data Flags = Flags
              { flagHideNodes :: Bool
              , flagHideEdges :: Bool
+             , flagHideNames :: Bool
              }
 
 -- | Global datatype for all GUI functions
@@ -67,7 +61,7 @@ data GInfo = GInfo
                -- Local
              , libName :: LIB_NAME
              , graphInfo :: GraphInfo
-             , internalNamesIORef :: IORef InternalNames
+             , internalNames :: IORef [(String,(String -> String) -> IO ())]
              , proofGUIMVar :: GUIMVar
              , options :: IORef Flags
              }
@@ -101,10 +95,12 @@ data Colors = Black
 emptyGInfo :: IO GInfo
 emptyGInfo = do
   intSt <- newIORef emptyIntState
-  gi <- initgraphs
+  gi <- initGraph
   oGraphs <- newIORef Map.empty
-  iorIN <- newIORef $ InternalNames False []
-  flags <- newIORef $ Flags { flagHideNodes = True, flagHideEdges = True }
+  iorIN <- newIORef []
+  flags <- newIORef $ Flags { flagHideNodes = True
+                            , flagHideEdges = True
+                            , flagHideNames = True }
   guiMVar <- newEmptyMVar
   gl <- newEmptyMVar
   fl <- newEmptyMVar
@@ -123,7 +119,7 @@ emptyGInfo = do
                  -- Local
                , libName = Lib_id $ Indirect_link "" nullRange "" noTime
                , graphInfo = gi
-               , internalNamesIORef = iorIN
+               , internalNames = iorIN
                , proofGUIMVar = guiMVar
                , options = flags
                }
@@ -131,14 +127,18 @@ emptyGInfo = do
 -- | Creates an empty GInfo
 copyGInfo :: GInfo -> LIB_NAME -> IO GInfo
 copyGInfo gInfo ln = do
-  gi <- initgraphs
-  iorIN <- newIORef $ InternalNames False []
+  gi <- initGraph
+  iorIN <- newIORef []
   guiMVar <- newEmptyMVar
+  flags <- newIORef $ Flags { flagHideNodes = True
+                            , flagHideEdges = True
+                            , flagHideNames = True }
   -- Change local parts
   let gInfo' = gInfo { libName = ln
                      , graphInfo = gi
-                     , internalNamesIORef = iorIN
+                     , internalNames = iorIN
                      , proofGUIMVar = guiMVar
+                     , options = flags
                      }
   oGraphs <- readIORef $ openGraphs gInfo
   writeIORef (openGraphs gInfo) $ Map.insert ln gInfo' oGraphs
