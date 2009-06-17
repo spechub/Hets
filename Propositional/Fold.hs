@@ -178,3 +178,14 @@ distributeAndOverOr f = case f of
 
 cnf :: FORMULA -> FORMULA
 cnf = distributeAndOverOr . moveNegIn . elimImpl . elimEquiv
+
+distributeOrOverAnd :: FORMULA -> FORMULA
+distributeOrOverAnd f = case f of
+  Disjunction xs n -> mkDisj (map distributeOrOverAnd xs) n
+  Conjunction xs n -> if all isPrimForm xs then mkConj xs n else
+    distributeOrOverAnd
+    $ mkDisj (map (flip mkConj n) . combine $ map getDisj xs) n
+  _ -> f
+
+dnf :: FORMULA -> FORMULA
+dnf = distributeOrOverAnd . moveNegIn . elimImpl . elimEquiv
