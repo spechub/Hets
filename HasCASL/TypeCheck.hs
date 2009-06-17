@@ -53,7 +53,7 @@ substTerm :: Subst -> Term -> Term
 substTerm s = mapTerm (id, subst s)
 
 -- | mixfix and type resolution
-resolveTerm :: Maybe Type -> Term -> State Env (Maybe Term)
+resolveTerm :: Type -> Term -> State Env (Maybe Term)
 resolveTerm mt trm = do
     mtrm <- resolve trm
     case mtrm of
@@ -131,9 +131,9 @@ reduce alts = do
        return $ concat combs
 
 -- | type checking a term
-typeCheck :: Maybe Type -> Term -> State Env (Maybe Term)
-typeCheck mt trm =
-    do alts <- infer False mt trm >>= reduce
+typeCheck :: Type -> Term -> State Env (Maybe Term)
+typeCheck exTy trm =
+    do alts <- infer False (Just exTy) trm >>= reduce
        te <- get
        let p = getRange trm
            ga = globAnnos te

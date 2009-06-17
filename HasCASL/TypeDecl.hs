@@ -52,7 +52,7 @@ anaFormula at = do
     case rt of
       Nothing -> return Nothing
       Just t -> do
-          mt <- typeCheck (Just unitType) t
+          mt <- typeCheck unitType t
           return $ case mt of
               Nothing -> Nothing
               Just e -> Just (at { item = t }, at { item = e })

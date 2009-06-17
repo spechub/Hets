@@ -59,16 +59,13 @@ anaAttr (TypeScheme tvs ty _) b = case b of
        case mTy of
              Nothing -> do addDiags [mkDiag Error
                                      "unexpected type of operation" ty]
-                           mt <- resolveTerm Nothing trm
                            putTypeMap tm
-                           case mt of
-                                   Nothing -> return Nothing
-                                   Just t  -> return $ Just $ UnitOpAttr t ps
+                           return Nothing
              Just (t1, t2, t3) ->
                  do if t1 == t2 && t2 == t3 then return ()
                        else addDiags [mkDiag Error
                                  "unexpected type components of operation" ty]
-                    mt <- resolveTerm (Just t3) trm
+                    mt <- resolveTerm t3 trm
                     putTypeMap tm
                     case mt of Nothing -> return Nothing
                                Just t -> return $ Just $ UnitOpAttr t ps
@@ -123,7 +120,7 @@ anaOpItem br oi = do
                      (TypeName j _ _ , [lt]) | j == lazyTypeId -> (Partial, lt)
                      _ -> (Total, rty)
                    monoty = monoType ty
-               mt <- typeCheck Nothing $ TypedTerm rTrm AsType monoty ps
+               mt <- typeCheck monoty $ TypedTerm rTrm AsType monoty ps
                e <- get
                newSc <- generalizeS $ TypeScheme newArgs
                       (getFunType ty partial
@@ -162,7 +159,7 @@ anaProgEq ape = do
        rp <- resolve (LetTerm Program [pe] (BracketTerm Parens [] q) q)
        case rp of
          Just t@(LetTerm _ (rpe@(ProgEq _ _ _) : _) _ _) -> do
-           mp <- typeCheck Nothing t
+           mp <- typeCheck unitType t
            ga <- State.gets globAnnos
            case mp of
              Just (LetTerm _ (newPrg@(ProgEq newPat _ _) : _) _ _) ->
