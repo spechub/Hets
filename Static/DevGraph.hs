@@ -181,10 +181,9 @@ hasSenKind f dgn = case dgn_theory dgn of
 hasOpenGoals :: DGNodeLab -> Bool
 hasOpenGoals = hasSenKind (\ s -> not (isAxiom s) && not (isProvenSenStatus s))
 
--- | check if the node has an internal name (wrong for DGRef?)
+-- | check if the node has an internal name (wrong for DGRef!)
 isInternalNode :: DGNodeLab -> Bool
-isInternalNode l@DGNodeLab {dgn_name = n} =
-    if isDGRef l then null $ show $ getName n else isInternal n
+isInternalNode l@DGNodeLab {dgn_name = n} = not (isDGRef l) && isInternal n
 
 hasOpenConsStatus :: Bool -> DGNodeLab -> Bool
 hasOpenConsStatus b = getConsState b . nodeInfo
@@ -203,10 +202,9 @@ data NonRefType =
 -- | creates a DGNodeType from a DGNodeLab
 getRealDGNodeType :: DGNodeLab -> DGNodeType
 getRealDGNodeType dgnlab = DGNodeType
-  { nonRefType = case isDGRef dgnlab of
-      True -> RefType
-      False -> NonRefType { isProvenCons = getConsState True $ nodeInfo dgnlab
-                          , isInternalSpec = isInternalNode dgnlab }
+  { nonRefType = if isDGRef dgnlab then RefType else
+      NonRefType { isProvenCons = getConsState True $ nodeInfo dgnlab
+                 , isInternalSpec = isInternalNode dgnlab }
   , isLocallyEmpty = not $ hasOpenGoals dgnlab
   }
 

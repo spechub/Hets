@@ -818,5 +818,4 @@ getNodeLabel :: GInfo -> DGNodeLab -> IO String
 getNodeLabel (GInfo { options = opts }) dgnode = do
   flags <- readIORef opts
   return $ if flagHideNames flags && isInternalNode dgnode
-             && not (isDGRef dgnode)
            then "" else getDGNodeName dgnode
