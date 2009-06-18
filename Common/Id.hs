@@ -89,6 +89,9 @@ data Token = Token { tokStr :: String
 instance Show Token where
   show = tokStr
 
+instance Read Token where
+  readsPrec i s = map (\ (a, r) -> (mkSimpleId a, r)) $ readsPrec i s
+
 -- | simple ids are just tokens
 type SIMPLE_ID = Token
 
