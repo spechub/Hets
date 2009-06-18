@@ -38,6 +38,7 @@ import Driver.AnaLib
 
 import Common.LibName
 import Common.Result
+import Common.Utils (trim)
 
 import Data.Graph.Inductive.Graph
 import Data.List

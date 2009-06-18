@@ -43,6 +43,7 @@ import qualified Logic.Prover as P
 
 import Common.LibName
 import Common.Result
+import Common.Utils (trim)
 
 import Data.List
 import qualified Data.Map as Map
@@ -464,7 +465,7 @@ pollForResults lid acm mStop mData mState done
           Nothing -> pollForResults lid acm mStop mData mState done
        Just  (Element st node) ->
         do
-         putStrLn $ prettyPrintList ls
+         putStrLn $ unlines ls
          swapMVar mState $ Just $ Element (markProved acm lid l st) node
          tmp <- tryTakeMVar mStop
          case tmp of

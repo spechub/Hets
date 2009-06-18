@@ -14,11 +14,7 @@ Prelude
 -}
 
 module CMDL.Utils
-  ( isWhiteSpace
-  , trim
-  , trimLeft
-  , trimRight
-  , decomposeIntoGoals
+  ( decomposeIntoGoals
   , obtainNodeList
   , createEdgeNames
   , obtainEdgeList
@@ -31,7 +27,6 @@ module CMDL.Utils
   , safeTail
   , fileFilter
   , fileExtend
-  , prettyPrintList
   , prettyPrintErrList
   , nodeContainsGoals
   , edgeContainsGoals
@@ -52,6 +47,7 @@ import System.Environment
 import System.Directory
 import Common.AS_Annotation
 import qualified Common.OrderedMap as OMap
+import Common.Utils (trim, trimLeft)
 
 
 -- splits the paths in the PATH variable (separeted by
@@ -116,29 +112,6 @@ delExtension str = case find (=='.') str of
 -- | Checks if a string represents a int or not
 checkIntString :: String -> Bool
 checkIntString = not . any  (not . isDigit)
-
--- | List of all characters considered white spaces
-whiteSpaces ::String
-whiteSpaces = " \t\n\r\v"
-
-
--- | Predicate that tells if a character is a white space
--- or not
-isWhiteSpace ::Char -> Bool
-isWhiteSpace x = any (x==) whiteSpaces
-
--- | trims a string both on left and right hand side
-trim :: String -> String
-trim = reverse . dropWhile isWhiteSpace . reverse
-        . dropWhile isWhiteSpace
-
--- | trims a string only on the left side
-trimLeft :: String -> String
-trimLeft = dropWhile isWhiteSpace
-
--- | trims a string only on the right side
-trimRight :: String -> String
-trimRight = reverse . dropWhile isWhiteSpace . reverse
 
 -- | Generates a string representing the type of link
 arrowLink ::DGLinkLab -> String
@@ -404,7 +377,7 @@ unfinishedEdgeName input
                           reverse s
   in
   -- is the last character an empty space?
-   case isWhiteSpace $ lastChar input of
+   case isSpace $ lastChar input of
     True ->
      -- if so, then either the last word is an arrow, and
      -- then we have the consider last two words, or it
@@ -517,7 +490,6 @@ lastString ls
     [] -> ""
     _  -> last ls
 
-
 -- | The function nicely outputs a list of errors
 prettyPrintErrList:: [String]->String
 prettyPrintErrList list
@@ -528,9 +500,3 @@ prettyPrintErrList list
           x:ll -> tmpPrint ll $ ("Input "++x++
                        " could not be processed\n")++acc
    in tmpPrint list []
-
-
--- | The function nicely ouputs a list of strings
-prettyPrintList ::[String]->String
-prettyPrintList ls
- = unlines ls

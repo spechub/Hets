@@ -35,6 +35,7 @@ import Static.GTheory
 
 import Common.Result
 import qualified Common.OrderedMap as OMap
+import Common.Utils (trim)
 
 import Data.List
 

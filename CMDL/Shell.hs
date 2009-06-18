@@ -39,6 +39,7 @@ import Logic.Logic
 import Comorphisms.LogicGraph
 import Proofs.AbstractState
 import Control.Monad.Trans
+import Data.Char (isSpace)
 import Data.List
 import System.Directory
 import Static.DevGraph
@@ -47,7 +48,7 @@ import System.IO
 import System.Console.Shell.ShellMonad
 import qualified Common.OrderedMap as OMap
 import Common.AS_Annotation
-
+import Common.Utils (trimLeft, trimRight)
 
 -- | Creates a shellac command
 shellacCmd :: CMDL_CmdDescription -> Sh CMDL_State ()
@@ -324,7 +325,7 @@ cmdlCompletionFn allcmds allState input
        -- a pair, where the first element is what needs
        -- to be completed while the second is what is
        -- before the word that needs to be completed
-       let (tC,bC) = case isWhiteSpace $ lastChar input of
+       let (tC,bC) = case isSpace $ lastChar input of
                         -- if last character is a white space
                         -- then there is no word to complete
                          True  -> ([], trimRight input)
@@ -348,7 +349,7 @@ cmdlCompletionFn allcmds allState input
       do
         --the last unfinished word that needs to be
         --completed and what is before it
-       let (tC,bC) = case isWhiteSpace $ lastChar input of
+       let (tC,bC) = case isSpace $ lastChar input of
                         -- if last character is a white space
                         -- then there is no word to complete
                          True -> ([], trimRight input)
@@ -416,7 +417,7 @@ cmdlCompletionFn allcmds allState input
           -- same as in the ReqNode case just that we need
           -- to take care that the word we trying to complete
           -- can also be a node name not only an edge name
-           (tCN,bCN) = case isWhiteSpace $ lastChar input of
+           (tCN,bCN) = case isSpace $ lastChar input of
                          True ->
                           case checkArrowLink $ lastString $ words input of
                            -- we are in the middle of an
@@ -459,7 +460,7 @@ cmdlCompletionFn allcmds allState input
           -- same as in the ReqNode case just that we need
           -- to take care that the word we trying to complete
         -- can also be a node name not only an edge name
-           (tCN,bCN) = case isWhiteSpace $ lastChar input of
+           (tCN,bCN) = case isSpace $ lastChar input of
                           True ->
                            case checkArrowLink $ lastString $ words input of
                            -- we are in the middle of an
@@ -492,10 +493,10 @@ cmdlCompletionFn allcmds allState input
        return (filteredNodes ++ filteredEdges )
    ReqConsCheck ->
       do
-       let tC = case isWhiteSpace $ lastChar input of
+       let tC = case isSpace $ lastChar input of
                  True -> []
                  False -> lastString $ words input
-           bC = case isWhiteSpace $ lastChar input of
+           bC = case isSpace $ lastChar input of
                  True -> trimRight input
                  False -> unwords $ init $ words input
            addConsCheckers acc cm =
@@ -599,10 +600,10 @@ cmdlCompletionFn allcmds allState input
           case elements pS of
            [] -> return []
            (Element st _):_ ->
-              let tC = case isWhiteSpace $ lastChar input of
+              let tC = case isSpace $ lastChar input of
                         True -> []
                         False ->lastString $ words input
-                  bC = case isWhiteSpace $ lastChar input of
+                  bC = case isSpace $ lastChar input of
                         True -> trimRight input
                         False-> unwords $ init $ words input
                   cL = concatMap ( \(Comorphism cid) ->
@@ -616,7 +617,7 @@ cmdlCompletionFn allcmds allState input
    ReqFile ->
       do
         -- the incomplete path introduced until now
-        let initwd = case isWhiteSpace $ lastChar input of
+        let initwd = case isSpace $ lastChar input of
                       True -> []
                       False -> lastString $ words input
         -- the folder in which to look for (it might be
@@ -636,7 +637,7 @@ cmdlCompletionFn allcmds allState input
                                           '/' -> False
                                           _   -> True
                                        ) $ reverse initwd
-            bC = case isWhiteSpace $ lastChar input of
+            bC = case isSpace $ lastChar input of
                   True -> input
                   False -> (unwords $ init $ words input)
                                  ++" "++tmpPath
@@ -664,10 +665,10 @@ cmdlCompletionFn allcmds allState input
        Nothing-> return []
        Just pS->
         do
-         let tC =  case isWhiteSpace $ lastChar input of
+         let tC =  case isSpace $ lastChar input of
                     True -> []
                     False-> lastString $ words input
-             bC = case isWhiteSpace $ lastChar input of
+             bC = case isSpace $ lastChar input of
                     True -> trimRight input
                     False -> unwords $ init $ words input
          return $ map(\y-> bC++" "++y) $
@@ -682,10 +683,10 @@ cmdlCompletionFn allcmds allState input
        Nothing-> return []
        Just pS ->
         do
-         let tC = case isWhiteSpace $ lastChar input of
+         let tC = case isSpace $ lastChar input of
                    True -> []
                    False -> lastString $ words input
-             bC = case isWhiteSpace $ lastChar input of
+             bC = case isSpace $ lastChar input of
                    True -> trimRight input
                    False-> unwords $ init $ words input
          return $ map (\y->bC++" "++y) $
@@ -704,7 +705,7 @@ cmdlCompletionFn allcmds allState input
    ReqNumber -> case words input of
                    [hd] -> return $ map((hd ++ " ") ++)
                                   ["0","1","2","3","4","5","6","7","8","9"]
-                   _ : _ : [] -> case isWhiteSpace $ lastChar input of
+                   _ : _ : [] -> case isSpace $ lastChar input of
                           True -> return []
                           False ->return $ map(input ++)
                                     ["0","1","2","3","4","5","6","7","8","9"]
