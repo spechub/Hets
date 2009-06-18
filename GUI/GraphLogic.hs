@@ -817,10 +817,6 @@ link2String linkmap (nodeid1, nodeid2, edge) = do
 getNodeLabel :: GInfo -> DGNodeLab -> IO String
 getNodeLabel (GInfo { options = opts }) dgnode = do
   flags <- readIORef opts
-  let ntype = getDGNodeType dgnode
-  return $ if flagHideNames flags &&
-       elem ntype ["open_cons__internal"
-                  , "proven_cons__internal"
-                  , "locallyEmpty__open_cons__internal"
-                  , "locallyEmpty__proven_cons__internal"]
+  return $ if flagHideNames flags && isInternalNode dgnode
+             && not (isDGRef dgnode)
            then "" else getDGNodeName dgnode

@@ -189,16 +189,6 @@ isInternalNode l@DGNodeLab {dgn_name = n} =
 hasOpenConsStatus :: Bool -> DGNodeLab -> Bool
 hasOpenConsStatus b = getConsState b . nodeInfo
 
--- | gets the type of a development graph node as a string
-getDGNodeType :: DGNodeLab -> String
-getDGNodeType dgnodelab =
-    (if hasOpenGoals dgnodelab then id else ("locallyEmpty__" ++))
-    $ if isDGRef dgnodelab then "dg_ref" else
-      showConsState (nodeInfo dgnodelab) ++ "__"
-      ++ if isInternalNode dgnodelab
-         then "internal"
-         else "spec"
-
 data DGNodeType = DGNodeType
   { nonRefType :: NonRefType
   , isLocallyEmpty :: Bool }
