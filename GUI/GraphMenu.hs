@@ -39,7 +39,6 @@ import Proofs.TheoremHideShift (computeTheory)
 import qualified Proofs.VSE as VSE
 
 import Common.Result
-import Common.Utils (joinWith)
 import Common.DocUtils
 
 import Driver.Options (HetcatsOpts, rmSuffix, prfSuffix)
@@ -503,4 +502,4 @@ saveCommandHistory c f = do
     let history = ["# automatically generated hets proof-script", "",
                    "use " ++ filename h, ""]
           ++ reverse (map (showCmd . command) $ undoList $ i_hist h)
-    writeFile f $ joinWith '\n' history
+    writeFile f $ unlines history

@@ -186,16 +186,16 @@ instance Show HetcatsOpts where
     ++ (if listen opts /= -1 then showOpt listenS else "")
     ++ showEqOpt intypeS (show $ intype opts)
     ++ showEqOpt outdirS (outdir opts)
-    ++ showEqOpt outtypesS (joinWith ',' $ map show $ outtypes opts)
+    ++ showEqOpt outtypesS (intercalate "," $ map show $ outtypes opts)
     ++ (if recurse opts then showOpt recursiveS else "")
     ++ (if computeNormalForm opts then showOpt normalFormS else "")
-    ++ showEqOpt specS (joinWith ',' $ map show $ specNames opts)
-    ++ showEqOpt transS (joinWith ':' $ map show $ transNames opts)
+    ++ showEqOpt specS (intercalate "," $ map show $ specNames opts)
+    ++ showEqOpt transS (intercalate ":" $ map show $ transNames opts)
     ++ showEqOpt amalgS (tail $ init $ show $
                                       case caslAmalg opts of
                                       [] -> [NoAnalysis]
                                       l -> l)
-    ++ " " ++ joinWith ' ' (infiles opts)
+    ++ " " ++ intercalate " " (infiles opts)
 
 -- | every 'Flag' describes an option (see usage info)
 data Flag =
@@ -413,7 +413,7 @@ options = let
        ++ crS ++ "of one or more from:"
     crS = "\n  "
     bS = "| "
-    joinBar l = "(" ++ joinWith '|' l ++ ")" in
+    joinBar l = "(" ++ intercalate "|" l ++ ")" in
     [ Option ['v'] [verboseS] (OptArg parseVerbosity "0-5")
       "verbosity, default is -v1"
     , Option ['q'] ["quiet"] (NoArg Quiet)

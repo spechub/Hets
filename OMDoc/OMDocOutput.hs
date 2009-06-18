@@ -27,8 +27,6 @@ import qualified Common.LibName as ASL
 
 import Driver.Options
 
-import Common.Utils (joinWith)
-
 import Static.DevGraph
 import qualified Data.Graph.Inductive.Graph as Graph
 
@@ -48,7 +46,7 @@ import qualified Common.Lib.Rel as Rel
 
 import qualified Common.AS_Annotation as Ann
 
-import Data.List (find)
+import Data.List (find, intercalate)
 
 import Debug.Trace (trace)
 
@@ -1812,8 +1810,8 @@ createLibName libname = splitFile . fst . splitPath $ unwrapLinkSource libname
 -- name, second the path (without last delimiter)
 splitPath::String->(String, String)
 splitPath f = case explode "/" f of
-  [x] -> (x,"")
-  l -> (last l, joinWith '/' $ init l)
+  [x] -> (x, "")
+  l -> (last l, intercalate "/" $ init l)
 
 -- | returns the name of a file without extension
 splitFile::String->String
@@ -1824,7 +1822,7 @@ splitFile file =
     case (length filenameparts) of
             1 -> file
             2 -> case head filenameparts of
-                            "" -> "."++(last filenameparts)
+                            "" -> "." ++ last filenameparts
                             fn -> fn
             _ -> implode "." $ init filenameparts
 

@@ -13,11 +13,15 @@ Utility functions that can't be found in the libraries
 -}
 
 module Common.Utils
-  ( joinWith
+  ( combine
+  , trim
+  , trimLeft
+  , trimRight
   , nubOrd
   , nubOrdOn
   , readMaybe
   , mapAccumLM
+  , composeMap
   , keepMins
   , splitOn
   , basename
@@ -28,11 +32,6 @@ module Common.Utils
   , getEnvSave
   , getEnvDef
   , filterMapWithList
-  , composeMap
-  , trim
-  , trimLeft
-  , trimRight
-  , combine
   ) where
 
 import Data.Char
@@ -118,15 +117,6 @@ keepMins lt l = case l of
                  m = keepMins lt s
               in if any (\ y -> lt y x) s then m
                  else x : m
-
-{- |
-  A function inspired by perls join function. It joins a list of
-  lists of elements by seperating them with a seperator element.
--}
-joinWith :: a -- ^ seperator element
-         -> [[a]] -- ^ list of lists of elements
-         -> [a]
-joinWith sep = intercalate [sep]
 
 {- |
   A function inspired by the perl function split. A list is splitted
