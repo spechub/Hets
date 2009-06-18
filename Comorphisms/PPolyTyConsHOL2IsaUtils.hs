@@ -551,7 +551,7 @@ data MapFun = MapFst | MapSnd | MapPartial deriving Show
 data LiftFun = LiftFst | LiftSnd deriving Show
 
 {- the additional Bool indicates condition integration
-   Bool2bool and Partial2partial musst be mapped to IdOp
+   Bool2bool and Partial2partial must be mapped to IdOp
    if the conditions should be ignored.
    Bool2Unit and MkTotal can propagate out conditions -}
 data ConvFun =
@@ -728,7 +728,7 @@ adjustArgType aTy ty = case (aTy, ty) of
     (_, TypeVar _) -> return IdOp
     (ApplType i1 l1, ApplType i2 l2) | i1 == i2 && length l1 == length l2
         -> do l <- mapM (\ (a, b) -> adjustArgType a b) $ zip l1 l2
-              if any isNotIdOp l
+              if any (isNotIdOp . invertConv) l
                 then fail "cannot adjust type application"
                 else return IdOp
     _ -> fail "cannot adjust argument type"
