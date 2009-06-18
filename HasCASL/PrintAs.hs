@@ -335,7 +335,8 @@ rmTypeRec = mapRec
     , foldTypedTerm = \ _ nt q ty ps -> case q of
         Inferred -> nt
         _ -> case nt of
-          TypedTerm _ oq oty _ | oty == ty || oq == InType -> nt
+          TypedTerm tt oq oty _ | oty == ty || oq == InType ->
+            if q == AsType then TypedTerm tt q ty ps else nt
           QualVar (VarDecl _ oty _ _) | oty == ty -> nt
           _ -> TypedTerm nt q ty ps }
 
