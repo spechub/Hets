@@ -12,11 +12,11 @@ op a,b : t
 
 op c : s = a + b
 
-op d : s = ((a) + (a))
+op d : s = ((a) + (a)) : s
 
-op e : s * s -> s = __ + __  
+op e : s * s -> s = __ + __
 
-op f : s * s -> s = (__ + __)  
+op f : s * s -> s = (__ + __)
 
 op g : s * s = (a, b)
 
@@ -41,7 +41,7 @@ op l5 : s * s * s = (a, b, c)
 
 op x : s
 
-op y : s = (op a : s) <= (var x : s) <= (a : s) 
+op y : s = (op a : s) <= (var x : s) <= (a : s)
 
 op z : s = ( x as s) + ((x as t) as s)
 

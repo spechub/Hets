@@ -7,7 +7,7 @@ op    __+__ : t * t -> t
 op    __+__ : t -> t -> t
 ops   a, b : t
 op    c : s = a + b;
-op    d : s = a + a;
+op    d : s = a + a : s;
 op    e : s * s -> s = __+__;
 op    f : s * s -> s = __+__;
 op    g : s * s = (a, b);
@@ -44,7 +44,7 @@ op b : t %(op)%
 op c : s
        %[op= (op __+__ : s * s -> s) ((op a : s), (op b : s)) as s]%
 op d : s
-       %[op= (op __+__ : s * s -> s) ((op a : s), (op a : s)) as s]%
+       %[op= (op __+__ : s * s -> s) ((op a : s), (op a : s)) : s]%
 op e : s * s -> s %[op= (op __+__ : s * s -> s) as s * s -> s]%
 op f : s * s -> s %[op= (op __+__ : s * s -> s) as s * s -> s]%
 op g : s * s %[op= ((op a : s), (op b : s)) as s * s]%
@@ -86,7 +86,7 @@ op z : s
        (op __+__ : s * s -> s) ((op x : s) as s, (op x : s) as t as s) as
        s]%
 . c = ((op __+__ : s * s -> s) (a, b) as s)
-. d = ((op __+__ : s * s -> s) (a, a) as s)
+. d = ((op __+__ : s * s -> s) (a, a) : s)
 . e = ((op __+__ : s * s -> s) as s * s -> s)
 . f = ((op __+__ : s * s -> s) as s * s -> s)
 . g = (((op a : s), (op b : s)) as s * s)
@@ -127,10 +127,10 @@ in type of '((op a : s), (op b : s))'
   is not unifiable with type 's * s' (3.12)
 ### Hint 13.12-13.16, untypeable term (with type: t) '(a, b)'
 ### Hint 15.14-15.21,
-in type of '((op a : s), (op a : s))'
-  typename 't' (9.14)
-  is not unifiable with type 's * s' (15.21)
-### Hint 15.14-15.21, untypeable term (with type: t) '(a, a)'
+in type of '(op __+__ : t -> t -> t)'
+  typename 's' (15.26)
+  is not unifiable with type 't -> t' (9.24)
+### Hint 15.14-15.21, rejected 't < s' of '(op __+__ : t * t -> t)'
 ### Hint 17.8,
 no kind found for 's'
   expected: {Cpo}
