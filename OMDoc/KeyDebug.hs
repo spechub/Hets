@@ -13,14 +13,12 @@ specialized debugging functions
 
 module OMDoc.KeyDebug where
 
-import OMDoc.Util
-
 import qualified Data.Map as Map
 import System.IO (putStrLn)
 import Debug.Trace (trace)
 import Data.Char (toLower)
-import Data.List (find)
-import Common.Utils (getEnvDef)
+import Data.List (find, isPrefixOf, isInfixOf, intercalate)
+import Common.Utils (getEnvDef, splitOn, trim)
 import qualified System.IO.Unsafe as SysUnsafe
 
 type DbgKey = String
@@ -49,24 +47,24 @@ keysWithPolicy p keys = Map.singleton p keys
 processDbgKeys::String->(Map.Map DbgKeyPolicy [DbgKey], Map.Map DbgKeyPolicy [DbgKey])
 processDbgKeys s =
         let
-                pkeys = map (reverse . dropWhile (==' ') . reverse . dropWhile (==' ')) $ explode "," s
-                (enkeys, diskeys) = foldl (\(e,d) i -> if (head i) == '!' then (e,d++[drop 1 i]) else (e++[i],d)) ([],[]) pkeys
-                [enpolsep, dispolsep] = map (map (explode ":")) [enkeys, diskeys]
+                pkeys = map trim $ splitOn ',' s
+                (enkeys, diskeys) = foldl (\(e,d) i -> if head i == '!' then (e,d++[drop 1 i]) else (e++[i],d)) ([],[]) pkeys
+                [enpolsep, dispolsep] = map (map (splitOn ':')) [enkeys, diskeys]
                 ekwp = map (\ps ->
                         case ps of
                                 [] -> error "error in processDbgKeys..."
                                 [justakey] -> (KPExact, justakey)
                                 (p:ks) -> case stringToPolicy p of
-                                        Just policy -> (policy, implode ":" ks)
-                                        Nothing -> (KPExact, implode ":" (p:ks))
+                                        Just policy -> (policy, intercalate ":" ks)
+                                        Nothing -> (KPExact, intercalate ":" (p:ks))
                                         ) enpolsep
                 dkwp = map (\ps ->
                         case ps of
                                 [] -> error "error in processDbgKeys..."
                                 [justakey] -> (KPExact, justakey)
                                 (p:ks) -> case stringToPolicy p of
-                                        Just policy -> (policy, implode ":" ks)
-                                        Nothing -> (KPExact, implode ":" (p:ks))
+                                        Just policy -> (policy, intercalate ":" ks)
+                                        Nothing -> (KPExact, intercalate ":" (p:ks))
                                         ) dispolsep
                 [ekmap, dkmap] = map (foldl (\m (p,k) ->
                         Map.insert p ((Map.findWithDefault [] p m) ++ [k]) m
@@ -118,11 +116,11 @@ mergeDbgInf di1 di2 =
 policyElem::DbgKeyPolicy->[DbgKey]->DbgKey->Bool
 policyElem KPExact kl k = elem k kl
 policyElem KPPrefix kl k =
-        case (find (\key -> isPrefix key k) kl) of
+        case (find (\key -> isPrefixOf key k) kl) of
                 Nothing -> False
                 _ -> True
 policyElem KPContains kl k =
-        case (find (\key -> contains k key) kl) of
+        case (find (\key -> isInfixOf key k) kl) of
                 Nothing -> False
                 _ -> True
 
@@ -145,7 +143,7 @@ envDebug =
   do
     envdbg <- getEnvDef "OMDOC_DEBUG" ""
     return $
-      case trimString $ envdbg of
+      case trim $ envdbg of
         [] -> emptyDbgInf
         _ -> mkDebugKeys envdbg
 

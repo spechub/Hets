@@ -133,6 +133,7 @@ import qualified Logic.Prover as Prover
 import Logic.Coerce
 import Logic.Comorphism
 import Common.ExtSign
+import Common.Utils (trim)
 
 import qualified Common.OrderedMap as OMap
 
@@ -140,7 +141,7 @@ import qualified Common.Result as Result
 
 import Debug.Trace (trace)
 
-import Data.List (find, nub, partition)
+import Data.List (find, nub, partition, intercalate)
 
 import OMDoc.Util
 
@@ -321,15 +322,15 @@ instance Read Id where
     let
       (tokens, rest) = spanEsc (not . (flip elem "[]")) s
       tokenl = breakIfNonEsc "," tokens
-      token = map (\str -> Token (trimString $ unesc str) nullRange) tokenl
+      token = map (\str -> Token (trim $ unesc str) nullRange) tokenl
       idl = breakIfNonEsc "," rest
       ids = foldl (\ids' str ->
-        case ((readsPrec 0 (trimString str))::[(Id, String)]) of
+        case ((readsPrec 0 (trim str))::[(Id, String)]) of
           [] -> error ("Unable to parse \"" ++ str ++ "\"")
           ((newid,_):_) -> ids' ++ [newid]
           ) [] idl
     in
-      case (trimString rest) of
+      case (trim rest) of
         (']':_) -> [(Id token [] nullRange, "")]
         _ -> [(Id token ids nullRange, "")]
 
@@ -349,8 +350,8 @@ escapeForId (c:r) = c:escapeForId r
 idToString::Id->String
 idToString (Id toks ids _) =
                 "[" ++
-                (implode "," (map (\t -> escapeForId $ tokStr t) toks)) ++
-                (implode "," (map idToString ids)) ++
+                (intercalate "," (map (\t -> escapeForId $ tokStr t) toks)) ++
+                (intercalate "," (map idToString ids)) ++
                 "]"
 
 -- | encapsulates a node_name in an id

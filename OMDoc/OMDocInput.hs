@@ -54,7 +54,7 @@ import qualified Common.AS_Annotation as Ann
 import qualified Logic.Prover as Prover
 
 import Data.Maybe (fromMaybe)
-import Data.List (find)
+import Data.List (find, isPrefixOf)
 
 import Debug.Trace (trace)
 
@@ -1054,12 +1054,12 @@ createTheorySpecificationsOM
         preds =
           Set.filter
             (\(pname, _) ->
-              not $ Util.isPrefix "recognizer_" (xnName pname)
+              not $ isPrefixOf "recognizer_" (xnName pname)
             )
             $
             Set.fromList $ predsXNWONFromOMTheory Map.empty xntheoryset sorts aom
       in
-        if Util.isPrefix "ymmud-" (reverse theoid)
+        if isPrefixOf "ymmud-" (reverse theoid)
           then
             tsl
           else
@@ -2587,7 +2587,7 @@ createLinkSpecificationsOM {-go-}_ omdoc theoryxnset aomset =
     noDummyMap =
       Map.filterWithKey
         (\k _ ->
-          not $ Util.isPrefix "ymmud-" (reverse k)
+          not $ isPrefixOf "ymmud-" (reverse k)
         )
         removeLogicDefs
     imports' = omdocImportsMapToHetsImportsMap noDummyMap

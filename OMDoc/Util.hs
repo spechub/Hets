@@ -13,43 +13,8 @@ some utility functions
 module OMDoc.Util where
 
 import Data.Char (isSpace)
-import Data.List (isSuffixOf)
-
-listStart::forall a . Eq a => [a]->[a]->Bool
-listStart _ [] = True
-listStart [] _ = False
-listStart (l:ls) (x:lx) = (l==x) && (listStart ls lx)
-
-isPrefix::forall a . Eq a => [a]->[a]->Bool
-isPrefix [] _ = True
-isPrefix _ [] = False
-isPrefix (p:p' ) (s:s' ) = (p == s) && (isPrefix p' s')
-
-contains::forall a . Eq a => [a]->[a]->Bool
-contains [] [] = True
-contains [] _ = False
-contains l x = (listStart l x) || (contains (tail l) x)
-
-implode::forall a . [a]->[[a]]->[a]
-implode _ [] = []
-implode _ [last' ] = last'
-implode with (item:rest) = item ++ with ++ (implode with rest)
-
--- explode a list by the occurence of a sublist
-explode::forall a . Eq a => [a]->[a]->[[a]]
-explode by list =
-  (\(p,q) -> p++[q]) $ foldl (\(exploded, current) newchar ->
-    let
-      newcurrent = current ++ [newchar]
-    in
-      if isSuffixOf by newcurrent
-        then
-          (exploded ++ [ take ((length newcurrent)-length(by)) newcurrent ], [])
-        else
-          (exploded, newcurrent)
-  )
-    ([],[])
-    list
+import Data.List (isPrefixOf)
+import Common.Utils
 
 explodeNonEsc::String->String->[String]
 explodeNonEsc _ [] = []
@@ -59,11 +24,10 @@ explodeNonEsc by s =
   in
     [i] ++ explodeNonEsc by (drop (length by) r)
 
-
 spanTo::forall a . Eq a => [a]->[a]->([a],[a])
 spanTo _ [] = ([],[])
 spanTo by list =
-  if listStart list by
+  if isPrefixOf by list
     then
       ([], list)
     else
@@ -148,7 +112,7 @@ breakIfNonEsc chars =
 
 breakSepSpace::String->[String]
 breakSepSpace =
-  filter (not .null) . map trimString .
+  filter (not . null) . map trim .
       breakIfExt
         (\c -> (isSpace c, True))
         (\c1 c2 -> ((c1 /= '\\') && (isSpace c2), False, True))
@@ -205,12 +169,6 @@ tailorempty l = tail l
 lastorempty::forall a . [a]->[a]
 lastorempty [] = []
 lastorempty l = [last l]
-
-trim::(a->Bool)->[a]->[a]
-trim test list = dropWhile test (reverse (dropWhile test (reverse list)))
-
-trimString::String->String
-trimString = trim (isSpace)
 
 spanEsc::(Char->Bool)->String->(String, String)
 spanEsc _  [] = ([],[])

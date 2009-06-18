@@ -24,6 +24,7 @@ import CASL.Sign
 import CASL.AS_Basic_CASL as ABC
 import qualified Common.Id as Id
 import qualified Common.LibName as ASL
+import Common.Utils (splitOn)
 
 import Driver.Options
 
@@ -1809,7 +1810,7 @@ createLibName libname = splitFile . fst . splitPath $ unwrapLinkSource libname
 -- | separates the path and filename part from a filename, first element is the
 -- name, second the path (without last delimiter)
 splitPath::String->(String, String)
-splitPath f = case explode "/" f of
+splitPath f = case splitOn '/' f of
   [x] -> (x, "")
   l -> (last l, intercalate "/" $ init l)
 
@@ -1817,14 +1818,14 @@ splitPath f = case explode "/" f of
 splitFile::String->String
 splitFile file =
   let
-    filenameparts = explode "." file
+    filenameparts = splitOn '.' file
   in
     case (length filenameparts) of
             1 -> file
             2 -> case head filenameparts of
                             "" -> "." ++ last filenameparts
                             fn -> fn
-            _ -> implode "." $ init filenameparts
+            _ -> intercalate "." $ init filenameparts
 
 -- | prepend a path to a pathname
 fileSandbox::

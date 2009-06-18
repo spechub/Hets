@@ -13,22 +13,19 @@ XmlRepresentations for the OMDoc modelled in OMDoc.OMDocInterface
 module OMDoc.OMDocXml where
 
 import OMDoc.OMDocInterface
+import qualified OMDoc.Util as Util
+import qualified OMDoc.XmlHandling as XML
+
+import qualified Common.Base64 as Base64
+import Common.Utils (trim)
 
 import Text.XML.HXT.Parser ( (.>), (+=), (+++), getValue )
 import qualified Text.XML.HXT.Parser as HXT hiding (run, trace, when)
-import qualified OMDoc.XmlHandling as XML
 
 import qualified Network.URI as URI
-
-import qualified Data.List as List
-
-import Data.Char
-
-import qualified Common.Base64 as Base64
-
 import qualified Numeric as Numeric
-
-import qualified OMDoc.Util as Util
+import qualified Data.List as List
+import Data.Char
 
 import Debug.Trace (trace)
 
@@ -270,7 +267,7 @@ instance XmlRepresentable Theory where
         let
           comments = HXT.getXCmt t
           tcom =
-            case Util.trimString (HXT.xshow comments) of
+            case trim (HXT.xshow comments) of
               [] -> Nothing
               cs -> Just cs
           children = HXT.getChildren t
@@ -300,13 +297,13 @@ instance XmlRepresentable Imports where
             (Just m) ->
               case morphismHiding m of
                 [] -> XML.xmlNullFilter
-                h -> HXT.sattr "hiding" (Util.implode " " h)
+                h -> HXT.sattr "hiding" (List.intercalate " " h)
 {-
           if null (importsHiding imp)
             then
               XML.xmlNullFilter
             else
-              HXT.sattr "hiding" (Util.implode " " (importsHiding imp))
+              HXT.sattr "hiding" (List.intercalate " " (importsHiding imp))
 -}
         )-}
         +++
@@ -350,7 +347,7 @@ instance XmlRepresentable Imports where
               (not . null)
               $
               map
-                Util.trimString
+                trim
                   $
                   Util.explode
                     " "
@@ -496,7 +493,7 @@ instance XmlRepresentable Symbol where
         in
           case readsPrec 0 roles of
             [] ->
-              if Util.isPrefix "ymmud" (reverse sname)
+              if List.isPrefixOf "ymmud" (reverse sname)
                 then
                   Nothing
                 else
@@ -1495,13 +1492,13 @@ instance XmlRepresentable Morphism where
           then
             XML.xmlNullFilter
           else
-            HXT.sattr "hiding" (Util.implode " " (map (\h -> '#':h) (morphismHiding morphism)))
+            HXT.sattr "hiding" (List.intercalate " " (map (\h -> '#':h) (morphismHiding morphism)))
       baseattr =
         if null (morphismBase morphism)
           then
             XML.xmlNullFilter
           else
-            HXT.sattr "base" (Util.implode " " (map (\h -> '#':h) (morphismBase morphism)))
+            HXT.sattr "base" (List.intercalate " " (map (\h -> '#':h) (morphismBase morphism)))
       requations =
         if null (morphismRequations morphism)
           then
@@ -1547,7 +1544,7 @@ instance XmlRepresentable Morphism where
                     )
                     $
                     map
-                      Util.trimString
+                      trim
                       $
                       Util.explodeNonEsc
                         " "

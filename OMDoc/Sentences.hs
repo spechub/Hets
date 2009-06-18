@@ -13,30 +13,31 @@ methods responsible for sentences analysis
 module OMDoc.Sentences
   where
 
+import Static.DevGraph
+
 import qualified OMDoc.HetsDefs as Hets
 import OMDoc.CASLOutput
+import OMDoc.XmlHandling
+import OMDoc.OMDocDefs
+import qualified OMDoc.OMDocInterface as OMDoc
+
 import CASL.Sign
 import CASL.AS_Basic_CASL as ABC
-import qualified Common.Id as Id
-
 import qualified CASL.Induction as Induction
+
+import qualified Common.AS_Annotation as Ann
 import qualified Common.Result as Result
 import qualified Common.DocUtils as Pretty
+import qualified Common.Id as Id
 import Common.LibName
+import Common.Utils (trim)
 
-import Static.DevGraph
 import qualified Data.Graph.Inductive.Graph as Graph
-
 import qualified Data.Map as Map
-import qualified Common.AS_Annotation as Ann
+import Data.List (intercalate)
 
 import Debug.Trace (trace)
 
-import OMDoc.Util
-import OMDoc.XmlHandling
-import OMDoc.OMDocDefs
-
-import qualified OMDoc.OMDocInterface as OMDoc
 -- | translate a single named 'CASLFORMULA' to OMDoc.
 --
 -- This will result in either an /axiom/- or /definition/-element and a
@@ -91,7 +92,7 @@ wrapFormulaCMPOM
         sposl
     cmp = OMDoc.mkCMP (OMDoc.MTextText cmptext)
     cmpl =
-      if null $ trimString cmptext
+      if null $ trim cmptext
         then
           []
         else
@@ -544,7 +545,7 @@ processTermOM _ _ ln nn uniqueNames collectionMap vb
                     OMDoc.mkOMCommented
                       (
                         (show v) ++ " is qualified for "
-                        ++ (implode ", " matches)
+                        ++ (intercalate ", " matches)
                       )
                       (OMDoc.mkOMSimpleVar (show v))
                 else
@@ -554,7 +555,7 @@ processTermOM _ _ ln nn uniqueNames collectionMap vb
                       OMDoc.mkOMCommented
                         (
                           "Qualification mismatch: Expected one of \""
-                          ++ (implode ", " matches)
+                          ++ (intercalate ", " matches)
                           ++ "\" but \"" ++ sortxmlid ++ "\" found..."
 
                         )

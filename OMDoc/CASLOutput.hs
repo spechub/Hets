@@ -15,27 +15,23 @@ module called by createOMMorphism
 module OMDoc.CASLOutput where
 
 import qualified OMDoc.HetsDefs as Hets
+
 import qualified CASL.Morphism as Morphism
+import CASL.Sign
+import CASL.AS_Basic_CASL
+
 import qualified Common.LibName as ASL
+import qualified Common.Lib.Rel as Rel
+import Common.Utils (splitOn)
 
 import qualified Data.Graph.Inductive.Graph as Graph
-
 import qualified Data.Map as Map
-
-import Debug.Trace (trace)
-
+import Data.List (intercalate)
 import Data.Char (toLower)
-
-import OMDoc.Util
 
 import qualified Network.URI as URI
 
-import qualified Common.Lib.Rel as Rel
-
-import CASL.Sign
-import CASL.AS_Basic_CASL
-import qualified Data.Map as Map
-
+import Debug.Trace (trace)
 
 -- | Retrieve the XML-names for the sort meaning
 mappedsorts :: [(Hets.WithOrigin Hets.Identifier Graph.Node, String)]
@@ -374,7 +370,7 @@ asOMDocFile file =
   let
     parts = splitFile' file
     fullfilename = last parts
-    filenameparts = explode "." fullfilename
+    filenameparts = splitOn '.' fullfilename
     (filename, mfileext) =
       case (length filenameparts) of
         0 -> ("", Nothing)
@@ -382,7 +378,7 @@ asOMDocFile file =
         2 -> case head filenameparts of
           "" -> ("."++(last filenameparts), Nothing)
           fn -> (fn, Just (last filenameparts))
-        _ -> ( implode "." $ init filenameparts, Just (last filenameparts))
+        _ -> ( intercalate "." $ init filenameparts, Just (last filenameparts))
   in
     case mfileext of
       Nothing -> joinFile $ (init parts) ++ [filename ++ ".omdoc"]
@@ -392,9 +388,9 @@ asOMDocFile file =
           _ -> joinFile $ (init parts) ++ [filename ++ ".omdoc"]
   where
   splitFile' ::String->[String]
-  splitFile' = explode "/"
+  splitFile' = splitOn '/'
   joinFile::[String]->String
-  joinFile = implode "/"
+  joinFile = intercalate "/"
 
 -- | extract the source-component from a library name
 unwrapLinkSource::ASL.LIB_NAME->String
