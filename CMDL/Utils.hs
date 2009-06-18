@@ -23,7 +23,6 @@ module CMDL.Utils
   , stripComments
   , lastChar
   , lastString
-  , getInt
   , safeTail
   , fileFilter
   , fileExtend
@@ -238,14 +237,6 @@ edgeContainsGoals (_,_,l)
      Just LeftOpen -> True
      _             -> False
 
-getInt :: EdgeId -> Int
-getInt val
- = case val of
-    EdgeId v -> v
-
-
-
-
 -- | Given a list of edges and the complete list of all
 -- edges computes not only the names of edges but also the
 -- numbered name of edges
@@ -270,11 +261,11 @@ createEdgeNames lsN lsE
                                           (arrowLink edgLab) ++
                                           (nameOf y lsN))]
                              _ -> map (\(x,y,edgLab) ->
-                                   (nameOf x lsN) ++
+                                   nameOf x lsN ++
                                    arrowLink edgLab ++
-                                     (show $ getInt $ dgl_id edgLab)
+                                     showEdgeId (dgl_id edgLab)
                                      ++ arrowLink edgLab
-                                     ++  (nameOf y lsN)) l) edgs
+                                     ++ nameOf y lsN) l) edgs
   in allEds
 
 

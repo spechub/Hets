@@ -17,7 +17,6 @@ module Static.PrintDevGraph
     , prettyHistElem
     , prettyHistory
     , prettyGr
-    , showEdgeId
     , showLEdge
     , dgOriginHeader
     , dgLinkOriginHeader
@@ -132,9 +131,6 @@ instance Pretty DGNodeLab where
     , text "Local Theory:"
     , pretty $ dgn_theory l]
 
-showEdgeId :: EdgeId -> String
-showEdgeId (EdgeId i) = "edge " ++ show i
-
 instance Pretty EdgeId where
    pretty (EdgeId i) = text $ show i
 
@@ -171,7 +167,7 @@ instance Pretty DGLinkOrigin where
 
 -- | only shows the edge and node ids
 showLEdge :: LEdge DGLinkLab -> String
-showLEdge (s, t, l) = showEdgeId (dgl_id l)
+showLEdge (s, t, l) = "edge " ++ showEdgeId (dgl_id l)
   ++ " (" ++ showNodeId s ++ " --> " ++ show t ++ ")"
 
 -- | only print the origin and some notion of the tye of the label

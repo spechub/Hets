@@ -233,6 +233,6 @@ applyEdgeConservativity le ln ls acc lsN
         do
          (str,nwLe,_) <- checkConservativityEdge False (x,y,edgLab) le ln
          let nm = nameOf x lsN ++ arrowLink edgLab
-                  ++ show (getInt $ dgl_id edgLab)
+                  ++ showEdgeId (dgl_id edgLab)
                   ++ arrowLink edgLab ++ nameOf y lsN
          applyEdgeConservativity nwLe ln l ((nm, str) : acc) lsN

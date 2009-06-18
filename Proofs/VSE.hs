@@ -19,7 +19,6 @@ module Proofs.VSE where
 
 import Static.GTheory
 import Static.DevGraph
-import Static.PrintDevGraph
 import Static.DGTranslation
 
 import Proofs.QualifyNames
@@ -154,7 +153,7 @@ getLinksTo ln dg (n, lbl) = show $ prettySExpr $ SList
     defl = isGlobalDef ltype
     in SList $
     [ SSymbol $ (if defl then "definition" else "theorem") ++ "-link"
-    , SSymbol $ filter (not . isSpace) $ showEdgeId $ dgl_id el
+    , SSymbol $ "edge" ++ showEdgeId (dgl_id el)
     , SSymbol $ thName ln (s, labDG dg s)
     , SSymbol $ thName ln (n, lbl)
     , SSymbol "global"

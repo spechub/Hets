@@ -252,6 +252,9 @@ newtype EdgeId = EdgeId Int deriving (Show, Eq, Ord, Enum)
 startEdgeId :: EdgeId
 startEdgeId = EdgeId 0
 
+showEdgeId :: EdgeId -> String
+showEdgeId (EdgeId i) = show i
+
 -- | a set of used edges
 newtype ProofBasis = ProofBasis { proofBasis :: Set.Set EdgeId }
     deriving (Show, Eq, Ord)
