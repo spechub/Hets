@@ -15,6 +15,7 @@ module Logic.ExtSign where
 
 import qualified Data.Set as Set
 import qualified Data.Map as Map
+import Control.Monad
 import Common.Result
 import Common.DocUtils
 import Common.ExtSign
@@ -108,8 +109,25 @@ ext_induced_from_morphism :: Logic lid sublogics
         sign morphism symbol raw_symbol proof_tree
         => lid -> EndoMap raw_symbol -> ExtSign sign symbol
                -> Result morphism
-ext_induced_from_morphism l r (ExtSign s _) =
-    induced_from_morphism l r s
+ext_induced_from_morphism l rmap (ExtSign sigma _) = do
+  -- first check: do all source raw symbols match with source signature?
+  let syms = sym_of l sigma
+      wrongRsyms = Set.filter
+          ( \ rsy -> Set.null $ Set.filter (matchesND rsy) syms)
+          $ Map.keysSet rmap
+      matchesND rsy sy = let rsy2 = symbol_to_raw l sy in
+        rsy == rsy2 || matches l sy rsy
+        && Map.lookup rsy2 rmap == Nothing
+      (unknownSyms, directlyMappedSyms) = Set.partition
+             ( \ rsy -> Set.null $ Set.filter (\ sy -> matches l sy rsy) syms)
+             wrongRsyms
+  -- ... if not, generate an error
+  unless (Set.null unknownSyms)
+    $ fail $ "unknown symbols: " ++ showDoc unknownSyms ""
+  unless (Set.null directlyMappedSyms)
+    $ fail $ "symbols already mapped directly: "
+          ++ showDoc directlyMappedSyms ""
+  induced_from_morphism l rmap sigma
 
 ext_induced_from_to_morphism :: Logic lid sublogics
         basic_spec sentence symb_items symb_map_items

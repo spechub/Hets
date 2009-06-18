@@ -43,29 +43,9 @@ inducedFromMorphism :: RawSymbolMap -> Env -> Result Morphism
 inducedFromMorphism rmap1 sigma = do
     -- first check: do all source raw symbols match with source signature?
     rmap <- anaRawMap sigma sigma rmap1
-    let syms = symOf sigma
-        srcTypeMap = typeMap sigma
+    let srcTypeMap = typeMap sigma
         srcClassMap = classMap sigma
         assMap = assumps sigma
-        wrongRsyms = Set.filter
-          ( \ rsy -> Set.null $ Set.filter (matchesND rsy) syms)
-          $ Map.keysSet rmap
-        matchesND rsy sy =
-          sy `matchSymb` rsy &&
-          case rsy of
-            ASymbol _ -> True
-            -- unqualified raw symbols need some matching symbol
-            -- that is not directly mapped
-            _ -> Map.lookup (ASymbol sy) rmap == Nothing
-        (unknownSyms, directlyMappedSyms) = Set.partition
-             ( \ rsy -> Set.null $ Set.filter (`matchSymb` rsy) syms)
-             wrongRsyms
-  -- ... if not, generate an error
-    if Set.null unknownSyms then return () else
-        Result [mkDiag Error "unknown symbol(s)" unknownSyms] Nothing
-    if Set.null directlyMappedSyms then return () else
-        Result [mkDiag Error "symbol(s) already mapped directly"
-                directlyMappedSyms] Nothing
     myClassIdMap <- foldr
               (\ (s, ti) m ->
                do s' <- classFun sigma rmap s (rawKind ti)

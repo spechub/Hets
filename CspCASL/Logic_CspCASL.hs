@@ -170,13 +170,14 @@ instance Show a => StaticAnalysis (GenCspCASL a)
     RawSymbol
     where
       basic_analysis (GenCspCASL _) = Just StatAnaCSP.basicAnalysisCspCASL
-      stat_symb_map_items (GenCspCASL _) = statSymbMapItems -- BUG???
-      stat_symb_items (GenCspCASL _) = statSymbItems -- BUG???
+      stat_symb_map_items (GenCspCASL _) = statSymbMapItems
+      stat_symb_items (GenCspCASL _) = statSymbItems
+      symbol_to_raw (GenCspCASL _) = symbolToRaw
       matches (GenCspCASL _) = CASL.Morphism.matches
       empty_signature (GenCspCASL _) = SignCSP.emptyCspCASLSign
       is_subsig (GenCspCASL _) = isSubSig SignCSP.isInclusion -- BUG???
-      subsig_inclusion (GenCspCASL _) = sigInclusion
-                                        CspCASL_Morphism.emptyCspAddMorphism -- BUG???
+      subsig_inclusion (GenCspCASL _) =
+          sigInclusion CspCASL_Morphism.emptyCspAddMorphism -- BUG???
       signature_union (GenCspCASL _) s =
           return . addSig SignCSP.addCspProcSig s
       induced_from_morphism (GenCspCASL _) = inducedFromMorphism

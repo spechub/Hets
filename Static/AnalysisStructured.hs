@@ -448,12 +448,12 @@ ana_ren lg opts lenv pos gmor@(GMorphism r sigma ind1 mor _) gmap =
      if isStructured opts then return gmor else do
       sis1 <- coerceSymbMapItemsList lid lid2 "Analysis of renaming" sis
       rmap <- stat_symb_map_items lid2 sis1
-      mor1 <- induced_from_morphism lid2 rmap (cod mor)
+      mor1 <- ext_induced_from_morphism lid2 rmap $ makeExtSign lid2 $ cod mor
       case lenv of
         EmptyNode _ -> return ()
         JustNode (NodeSig _ (G_sign lidLenv sigmaLenv _)) -> do
           -- needs to be changed for logic translations
-          sigmaLenv' <- adj $ coerceSign lidLenv lid2
+          sigmaLenv' <- coerceSign lidLenv lid2
             "Analysis of renaming: logic translations not properly handeled"
             sigmaLenv -- see Calculi/Time/FlowOfTime.casl line 305
           let sysLenv = ext_sym_of lid2 sigmaLenv'
@@ -465,7 +465,7 @@ ana_ren lg opts lenv pos gmor@(GMorphism r sigma ind1 mor _) gmap =
           when (not $ Set.null forbiddenSys) $ plain_error () (
            "attempt to rename the following symbols from " ++
            "the local environment:\n" ++ showDoc forbiddenSys "") pos
-      mor2 <- adj $ comp mor mor1
+      mor2 <- comp mor mor1
       return $ GMorphism r sigma ind1 mor2 startMorId
     else do
       comor <- logicInclusion lg (Logic lid2) (Logic lid)
@@ -550,24 +550,24 @@ ana_RESTRICTION gSigma@(G_sign lid sigma _)
     Hidden rstr pos -> do
       mor <- foldM (ana_restr gSigma pos) (ide gSigma') rstr
       return (mor, Nothing)
-    Revealed (G_symb_map_items_list lid1 sis) pos -> do
+    Revealed (G_symb_map_items_list lid1 sis) pos ->
      let sys = ext_sym_of lid sigma -- local env
          sys' = ext_sym_of lid' sigma' -- "big" signature
-         adj = adjustPos pos
-     sis' <- adj $ coerceSymbMapItemsList lid1 lid'
+     in adjustPos pos $ do
+     sis' <- coerceSymbMapItemsList lid1 lid'
             "Analysis of restriction" sis
-     rmap <- adj $ stat_symb_map_items lid' sis'
+     rmap <- stat_symb_map_items lid' sis'
      let sys'' =
           Set.fromList
            [sy | sy <- Set.toList sys', rsy <-
                        Map.keys rmap, matches lid' sy rsy]
           -- domain of rmap intersected with sys'
           -- domain of rmap should be checked to match symbols from sys' ???
-     sys1 <- adj $ coerceSymbolSet lid lid' "Analysis of restriction" sys
+     sys1 <- coerceSymbolSet lid lid' "Analysis of restriction" sys
         -- ??? this is too simple in case that local env is translated
         -- to a different logic
-     mor1 <- adj $ ext_generated_sign lid' (sys1 `Set.union` sys'') sigma'
-     mor2 <- adj $ induced_from_morphism lid' rmap (dom mor1)
+     mor1 <- ext_generated_sign lid' (sys1 `Set.union` sys'') sigma'
+     mor2 <- ext_induced_from_morphism lid' rmap $ makeExtSign lid' $ dom mor1
      return (gEmbed (mkG_morphism lid' mor1),
              Just (gEmbed (mkG_morphism lid' mor2)))
 
@@ -579,7 +579,7 @@ ana_Gmaps lg opts pos psig@(G_sign lidP sigmaP _) (G_sign lidA sigmaA _) gsis
   adj $ if isStructured opts
     then return $ mkG_morphism lidP $ ext_ide sigmaP
     else if null gsis then do
-        sigmaA' <- adj $ coerceSign lidA lidP "ana_Gmaps" sigmaA
+        sigmaA' <- coerceSign lidA lidP "ana_Gmaps" sigmaA
         fmap (mkG_morphism lidP) $
           ext_induced_from_to_morphism lidP Map.empty sigmaP sigmaA'
       else do
@@ -588,9 +588,9 @@ ana_Gmaps lg opts pos psig@(G_sign lidP sigmaP _) (G_sign lidA sigmaA _) gsis
       rmap <- stat_symb_map_items lid sis
       let noMatch sig r = Set.null $ Set.filter
             (\ s -> matches lid s r) $ ext_sym_of lid sig
-      (G_sign lidP' sigmaP'' _, _) <- adj $ gSigCoerce lg psig (Logic lid)
-      sigmaP' <- adj $ coerceSign lidP' lid "ana_Gmaps1" sigmaP''
-      sigmaA' <- adj $ coerceSign lidA lid "ana_Gmaps2" sigmaA
+      (G_sign lidP' sigmaP'' _, _) <- gSigCoerce lg psig (Logic lid)
+      sigmaP' <- coerceSign lidP' lid "ana_Gmaps1" sigmaP''
+      sigmaA' <- coerceSign lidA lid "ana_Gmaps2" sigmaA
       let unknowns = filter (noMatch sigmaP') (Map.keys rmap)
             ++ filter (noMatch sigmaA') (Map.elems rmap)
       if null unknowns then fmap (mkG_morphism lid)

@@ -112,36 +112,12 @@ inducedFromMorphismExt :: (Pretty e, Show f) => InducedSign f e m e -> m
                        -> RawSymbolMap -> Sign f e -> Result (Morphism f e m)
 inducedFromMorphismExt extInd extEm rmap sigma = do
   -- ??? Missing: check preservation of overloading relation
-  -- first check: do all source raw symbols match with source signature?
-  let syms = Set.toList $ symOf sigma
-      sortsSigma = sortSet sigma
-      incorrectRsyms = Map.foldWithKey
-        (\ rsy _ -> if any (matchesND rsy) syms
-                    then id
-                    else Set.insert rsy)
-        Set.empty
-        rmap
-      matchesND rsy sy =
-        sy `matches` rsy &&
-        case rsy of
-          ASymbol _ -> True
-          -- unqualified raw symbols need some matching symbol
-          -- that is not directly mapped
-          _ -> Map.lookup (ASymbol sy) rmap == Nothing
-  -- ... if not, generate an error
-  if Set.null incorrectRsyms then return () else fatal_error
-       ("the following symbols: "
-        ++ showDoc incorrectRsyms
-        "\nare already mapped directly or do not match with signature\n"
-        ++ showDoc sigma "")
-       $ getRange incorrectRsyms
-
   -- compute the sort map (as a Map)
   sort_Map <- Set.fold (\ s m -> do
                 s' <- sortFun rmap s
                 m1 <- m
                 return $ if s' == s then m1 else Map.insert s s' m1)
-              (return Map.empty) sortsSigma
+              (return Map.empty) (sortSet sigma)
   -- compute the op map (as a Map)
   op_Map <- Map.foldWithKey (opFun rmap sort_Map)
               (return Map.empty) (opMap sigma)
