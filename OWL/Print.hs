@@ -15,6 +15,7 @@ module OWL.Print (printOWLBasicTheory, printAxiom) where
 import Common.AS_Annotation
 import Common.Doc
 import Common.DocUtils
+import Common.Id
 import Common.Keywords
 
 import OWL.AS
@@ -70,6 +71,8 @@ instance Pretty SymbMapItems where
               , case ms of
                   Nothing -> empty
                   Just t -> mapsto <+> pretty t]) us)
+
+instance GetRange RawSymb -- no position by default
 
 instance Pretty RawSymb where
   pretty rs = case rs of

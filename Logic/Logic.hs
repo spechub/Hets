@@ -300,7 +300,8 @@ statErrMsg lid str = "Logic." ++ str ++ " nyi for: " ++ language_name lid
 -}
 class ( Syntax lid basic_spec symb_items symb_map_items
       , Sentences lid sentence sign morphism symbol
-      , Ord raw_symbol, Pretty raw_symbol, Typeable raw_symbol)
+      , GetRange raw_symbol, Ord raw_symbol, Pretty raw_symbol
+      , Typeable raw_symbol)
     => StaticAnalysis lid
         basic_spec sentence symb_items symb_map_items
         sign morphism symbol raw_symbol

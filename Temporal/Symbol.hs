@@ -40,6 +40,9 @@ newtype Symbol = Symbol {symName :: Id.Id}
 instance Pretty Symbol where
     pretty = printSymbol
 
+instance Id.GetRange Symbol where
+    getRange = Id.getRange . symName
+
 printSymbol :: Symbol -> Doc
 printSymbol x = pretty $ symName x
 

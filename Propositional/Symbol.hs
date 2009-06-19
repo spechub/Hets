@@ -37,6 +37,9 @@ import Propositional.Morphism as Morphism
 newtype Symbol = Symbol {symName :: Id.Id}
             deriving (Show, Eq, Ord)
 
+instance Id.GetRange Symbol where
+    getRange = Id.getRange . symName
+
 instance Pretty Symbol where
     pretty = printSymbol
 
