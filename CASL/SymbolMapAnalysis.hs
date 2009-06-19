@@ -20,7 +20,8 @@ module CASL.SymbolMapAnalysis
     , cogeneratedSign
     , generatedSign
     , finalUnion
-    )  where
+    , constMorphExt
+    ) where
 
 import CASL.Sign
 import CASL.AS_Basic_CASL
@@ -104,11 +105,18 @@ Output: morphims "Mrph": Sigma1 -> "Sigma2".
 10. Compute transitive closure of subsorting relation in Sigma2.
 -}
 
+type InducedMorphism f e m = RawSymbolMap -> Sign f e -> Sort_map -> Result m
+
+constMorphExt :: m -> InducedMorphism f e m
+constMorphExt m _ _ _ = return m
+
 inducedFromMorphism :: (Pretty e, Show f) => m -> RawSymbolMap -> Sign f e
                     -> Result (Morphism f e m)
-inducedFromMorphism = inducedFromMorphismExt $ \ _ _ _ _ -> extendedInfo
+inducedFromMorphism =
+  inducedFromMorphismExt (\ _ _ _ _ -> extendedInfo) . constMorphExt
 
-inducedFromMorphismExt :: (Pretty e, Show f) => InducedSign f e m e -> m
+inducedFromMorphismExt :: (Pretty e, Show f) => InducedSign f e m e
+                       -> InducedMorphism f e m
                        -> RawSymbolMap -> Sign f e -> Result (Morphism f e m)
 inducedFromMorphismExt extInd extEm rmap sigma = do
   -- ??? Missing: check preservation of overloading relation
@@ -124,9 +132,10 @@ inducedFromMorphismExt extInd extEm rmap sigma = do
   -- compute the pred map (as a Map)
   pred_Map <- Map.foldWithKey (predFun rmap sort_Map)
               (return Map.empty) (predMap sigma)
+  em <- extEm rmap sigma sort_Map
   -- return assembled morphism
-  return (embedMorphism extEm sigma $ closeSortRel
-          $ inducedSignAux extInd sort_Map op_Map pred_Map extEm sigma)
+  return (embedMorphism em sigma $ closeSortRel
+          $ inducedSignAux extInd sort_Map op_Map pred_Map em sigma)
     { sort_map = sort_Map
     , op_map = op_Map
     , pred_map = pred_Map }
@@ -328,11 +337,12 @@ inducedFromToMorphism :: (Eq e, Show f, Pretty e, Pretty m)
                       -> RawSymbolMap
                       -> ExtSign (Sign f e) Symbol
                       -> ExtSign (Sign f e) Symbol -> Result (Morphism f e m)
-inducedFromToMorphism = inducedFromToMorphismExt $ \ _ _ _ _ -> extendedInfo
+inducedFromToMorphism =
+  inducedFromToMorphismExt (\ _ _ _ _ -> extendedInfo) . constMorphExt
 
 inducedFromToMorphismExt :: (Eq e, Show f, Pretty e, Pretty m)
                       => InducedSign f e m e
-                      -> m -- ^ extended morphism
+                      -> InducedMorphism f e m -- ^ compute extended morphism
                       -> (e -> e -> Bool) -- ^ subsignature test of extensions
                       -> (e -> e -> e) -- ^ difference of extensions
                       -> RawSymbolMap
@@ -373,7 +383,7 @@ takeKFromN s l = case s of
 
 inducedFromToMorphismAuxExt :: (Eq e, Show f, Pretty e, Pretty m)
                       => InducedSign f e m e
-                      -> m -- ^ extended morphism
+                      -> InducedMorphism f e m -- ^ compute extended morphism
                       -> (e -> e -> Bool) -- ^ subsignature test of extensions
                       -> (e -> e -> e) -- ^ difference of extensions
                       -> RawSymbolMap
@@ -385,10 +395,13 @@ inducedFromToMorphismAuxExt extInd extEm isSubExt diffExt rmap
   mor1 <- inducedFromMorphismExt extInd extEm rmap sigma1
   -- 1.1 ... is the renamed source signature contained in the target signature?
   let inducedSign = mtarget mor1
+      em = extended_map mor1
   if isSubSig isSubExt inducedSign sigma2
    -- yes => we are done
-   then composeM (\ _ _ -> return extEm) mor1
-            $ idOrInclMorphism $ embedMorphism extEm inducedSign sigma2
+   then composeM (\ _ _ -> return em) mor1 $ idOrInclMorphism
+     $ embedMorphism em inducedSign sigma2
+     -- here the empty mapping should be used, but it will be overwritten
+     -- by the first argument of composeM
    else fatal_error
          ("No signature morphism for symbol map found.\n" ++
           "The following mapped symbols are missing in the target signature:\n"

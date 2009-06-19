@@ -99,10 +99,10 @@ instance StaticAnalysis VSE VSEBasicSpec Sentence
          generated_sign VSE s = fmap correctTarget
            . generatedSign emptyMorExt s
          induced_from_morphism VSE rm = fmap correctTarget
-           . inducedFromMorphismExt inducedExt emptyMorExt rm
+           . inducedFromMorphismExt inducedExt (constMorphExt emptyMorExt) rm
          induced_from_to_morphism VSE rm s1 = fmap correctTarget
-           . inducedFromToMorphismExt inducedExt emptyMorExt isSubProcsMap
-               diffProcs rm s1
+           . inducedFromToMorphismExt inducedExt (constMorphExt emptyMorExt)
+             isSubProcsMap diffProcs rm s1
 
 instance Logic VSE ()
                VSEBasicSpec Sentence SYMB_ITEMS SYMB_MAP_ITEMS
