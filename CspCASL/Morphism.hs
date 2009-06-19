@@ -20,17 +20,18 @@ module CspCASL.Morphism
     , mapSen
     , CspCASL.Morphism.symOf
     , inducedCspSign
+    , inducedCspMorphExt
     ) where
 
-import CASL.AS_Basic_CASL (FORMULA, TERM)
+import CASL.AS_Basic_CASL (FORMULA, TERM, SYMB_KIND(..))
 import CASL.Sign as CASL_Sign
 import CASL.Morphism as CASL_Morphism
 import qualified CASL.MapSentence as CASL_MapSen
 
 import Common.Doc
 import Common.DocUtils
-import Common.Id(simpleIdToId)
-import Common.Result(Result)
+import Common.Id
+import Common.Result
 
 import Control.Monad (unless)
 
@@ -323,8 +324,49 @@ mapProcProfile sm cm (ProcProfile sl cs) =
   ProcProfile (map (mapSort sm) sl) $ Set.map (mapCommTypeAux sm cm) cs
 
 mapCommTypeAux :: Sort_map -> Map.Map CHANNEL_NAME CHANNEL_NAME
-            -> CommType -> CommType
+               -> CommType -> CommType
 mapCommTypeAux sm cm ct = case ct of
    CommTypeSort s -> CommTypeSort $ mapSort sm s
    CommTypeChan (TypedChanName c s) ->
      CommTypeChan $ TypedChanName (Map.findWithDefault c c cm) $ mapSort sm s
+
+inducedCspMorphExt :: RawSymbolMap -> CspSign -> Result CspAddMorphism
+inducedCspMorphExt rmap sig = do
+  cm <- Map.foldWithKey (insFun channelS rmap)
+              (return Map.empty) (chans sig)
+  pm <- Map.foldWithKey (insFun processS rmap)
+              (return Map.empty) (procSet sig)
+  return emptyCspAddMorphism
+    { channelMap = cm
+    , processMap = pm }
+
+insFun :: String -> RawSymbolMap -> Token -> a -> Result (Map.Map Token Token)
+       -> Result (Map.Map Token Token)
+insFun k rmap tok _ rcm = do
+  cm <- rcm
+  let t = simpleIdToId tok
+  case (Map.lookup (ASymbol $ Symbol t $ OtherTypeKind k) rmap,
+        Map.lookup (AKindedSymb (OtherKinds k) t) rmap,
+        Map.lookup (AKindedSymb Implicit t) rmap) of
+    (Just rsy, _, _) -> insertSym k tok rsy cm
+    (Nothing, Just rsy, Nothing) -> insertSym k tok rsy cm
+    (Nothing, Nothing, Just rsy) -> insertSym k tok rsy cm
+    (Nothing, Nothing, Nothing) -> return cm
+    (Nothing, Just rsy1, Just rsy2) ->
+             plain_error cm
+               (k ++ " symbol " ++ show tok
+                ++ " is mapped twice: " ++ showDoc (rsy1, rsy2) "")
+               $ appRange (getRange rsy1) $ getRange rsy2
+
+insertSym :: String -> Token -> RawSymbol -> Map.Map Token Token
+          -> Result (Map.Map Token Token)
+insertSym k c rsy cm = case rsy of
+      ASymbol (Symbol (Id [i] [] _) st)
+        | st == OtherTypeKind k && isSimpleToken i ->
+        return $ if i == c then cm else Map.insert c i cm
+      AKindedSymb ok (Id [i] [] _)
+        | elem ok [Implicit, OtherKinds k] && isSimpleToken i ->
+        return $ if i == c then cm else Map.insert c i cm
+      _ -> plain_error cm
+               (k ++ " symbol can not be mapped to: " ++ showDoc rsy "")
+               $ getRange rsy

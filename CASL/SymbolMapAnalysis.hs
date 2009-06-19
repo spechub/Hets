@@ -105,10 +105,10 @@ Output: morphims "Mrph": Sigma1 -> "Sigma2".
 10. Compute transitive closure of subsorting relation in Sigma2.
 -}
 
-type InducedMorphism f e m = RawSymbolMap -> Sign f e -> Sort_map -> Result m
+type InducedMorphism e m = RawSymbolMap -> e -> Result m
 
-constMorphExt :: m -> InducedMorphism f e m
-constMorphExt m _ _ _ = return m
+constMorphExt :: m -> InducedMorphism e m
+constMorphExt m _ _ = return m
 
 inducedFromMorphism :: (Pretty e, Show f) => m -> RawSymbolMap -> Sign f e
                     -> Result (Morphism f e m)
@@ -116,7 +116,7 @@ inducedFromMorphism =
   inducedFromMorphismExt (\ _ _ _ _ -> extendedInfo) . constMorphExt
 
 inducedFromMorphismExt :: (Pretty e, Show f) => InducedSign f e m e
-                       -> InducedMorphism f e m
+                       -> InducedMorphism e m
                        -> RawSymbolMap -> Sign f e -> Result (Morphism f e m)
 inducedFromMorphismExt extInd extEm rmap sigma = do
   -- ??? Missing: check preservation of overloading relation
@@ -132,7 +132,7 @@ inducedFromMorphismExt extInd extEm rmap sigma = do
   -- compute the pred map (as a Map)
   pred_Map <- Map.foldWithKey (predFun rmap sort_Map)
               (return Map.empty) (predMap sigma)
-  em <- extEm rmap sigma sort_Map
+  em <- extEm rmap $ extendedInfo sigma
   -- return assembled morphism
   return (embedMorphism em sigma $ closeSortRel
           $ inducedSignAux extInd sort_Map op_Map pred_Map em sigma)
@@ -342,7 +342,7 @@ inducedFromToMorphism =
 
 inducedFromToMorphismExt :: (Eq e, Show f, Pretty e, Pretty m)
                       => InducedSign f e m e
-                      -> InducedMorphism f e m -- ^ compute extended morphism
+                      -> InducedMorphism e m -- ^ compute extended morphism
                       -> (e -> e -> Bool) -- ^ subsignature test of extensions
                       -> (e -> e -> e) -- ^ difference of extensions
                       -> RawSymbolMap
@@ -383,7 +383,7 @@ takeKFromN s l = case s of
 
 inducedFromToMorphismAuxExt :: (Eq e, Show f, Pretty e, Pretty m)
                       => InducedSign f e m e
-                      -> InducedMorphism f e m -- ^ compute extended morphism
+                      -> InducedMorphism e m -- ^ compute extended morphism
                       -> (e -> e -> Bool) -- ^ subsignature test of extensions
                       -> (e -> e -> e) -- ^ difference of extensions
                       -> RawSymbolMap

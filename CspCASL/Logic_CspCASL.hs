@@ -38,7 +38,7 @@ import CASL.SymbolMapAnalysis
 import qualified CspCASL.AS_CspCASL as AS_CspCASL
 import qualified CspCASL.ATC_CspCASL()
 import CspCASL.CspCASL_Keywords
-import qualified CspCASL.Morphism as CspCASL_Morphism
+import CspCASL.Morphism as CspCASL_Morphism
 import qualified CspCASL.Parse_CspCASL as Parse_CspCASL
 import qualified CspCASL.Print_CspCASL ()
 import qualified CspCASL.SignCSP as SignCSP
@@ -180,8 +180,11 @@ instance Show a => StaticAnalysis (GenCspCASL a)
           sigInclusion CspCASL_Morphism.emptyCspAddMorphism -- BUG???
       signature_union (GenCspCASL _) s =
           return . addSig SignCSP.addCspProcSig s
-      induced_from_morphism (GenCspCASL _) = inducedFromMorphism
-          CspCASL_Morphism.emptyCspAddMorphism
-      induced_from_to_morphism (GenCspCASL _) = inducedFromToMorphism
-          CspCASL_Morphism.emptyCspAddMorphism SignCSP.isInclusion
+      induced_from_morphism (GenCspCASL _) = inducedFromMorphismExt
+          (\ sm _ _ m sig -> inducedCspSign sm m $ extendedInfo sig)
+          inducedCspMorphExt
+      induced_from_to_morphism (GenCspCASL _) = inducedFromToMorphismExt
+          (\ sm _ _ m sig -> inducedCspSign sm m $ extendedInfo sig)
+          inducedCspMorphExt
+          SignCSP.isInclusion
           SignCSP.diffCspProcSig
