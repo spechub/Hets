@@ -140,7 +140,7 @@ sortFun rmap s =
     else if Set.null $ Set.deleteMin rsys then
           return $ rawSymName $ Set.findMin rsys -- take the unique rsy
           else plain_error s  -- ambiguity! generate an error
-                 ("Sort " ++ showId s
+                 ("sort " ++ showId s
                   " is mapped ambiguously: "  ++ showDoc rsys "")
                  $ getRange rsys
     where
@@ -162,7 +162,7 @@ opFun rmap sort_Map ide ots m =
        (Just rsy1, Just rsy2) ->
           do m' <- m
              plain_error m'
-               ("Operation " ++ showId ide
+               ("operation " ++ showId ide
                 " is mapped twice: "
                 ++ showDoc (rsy1, rsy2) "")
                $ appRange (getRange rsy1) $ getRange rsy2
@@ -193,7 +193,7 @@ lookupOpSymbol rmap ide' ot = let mkS = idToOpSymbol ide' in
     -- map op symbol (ide,ot) to raw symbol rsy
 mappedOpSym :: Sort_map -> Id -> OpType -> RawSymbol -> Result (Id, OpKind)
 mappedOpSym sort_Map ide ot rsy =
-    let opSym = "Operation symbol " ++ showDoc (idToOpSymbol ide ot)
+    let opSym = "operation symbol " ++ showDoc (idToOpSymbol ide ot)
                 " is mapped to "
         kind = opKind ot
     in case rsy of
@@ -234,7 +234,7 @@ predFun rmap sort_Map ide pts m =
        (Just rsy1, Just rsy2) ->
           do m' <- m
              plain_error m'
-               ("Predicate " ++ showId ide
+               ("predicate " ++ showId ide
                 " is mapped twice: " ++
                 showDoc (rsy1, rsy2) "")
                $ appRange (getRange rsy1) $ getRange rsy2
@@ -259,7 +259,7 @@ directPredMap rmap sort_Map ide pt (pts,m) =
     -- map pred symbol (ide,pt) to raw symbol rsy
 mappedPredSym :: Sort_map -> Id -> PredType -> RawSymbol -> Result Id
 mappedPredSym sort_Map ide pt rsy =
-    let predSym = "Predicate symbol " ++ showDoc (idToPredSymbol ide pt)
+    let predSym = "predicate symbol " ++ showDoc (idToPredSymbol ide pt)
                   " is mapped to "
     in case rsy of
       ASymbol (Symbol ide' (PredAsItemType pt')) ->
