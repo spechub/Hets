@@ -50,7 +50,7 @@ checkExtSign :: Logic lid sublogics
         => lid -> String -> ExtSign sign symbol -> Result (ExtSign sign symbol)
 checkExtSign l msg e@(ExtSign s sy) = let sys = sym_of l s in
     if Set.isSubsetOf sy sys then return e else
-        fail $ "inconsistent symbol set in extended signature: " ++ msg ++ "\n"
+        error $ "inconsistent symbol set in extended signature: " ++ msg ++ "\n"
              ++ showDoc e "\rwith unknown symbols\n"
              ++ showDoc (Set.difference sy sys) ""
 
@@ -123,10 +123,10 @@ ext_induced_from_morphism l rmap (ExtSign sigma _) = do
              wrongRsyms
   -- ... if not, generate an error
   unless (Set.null unknownSyms)
-    $ fail $ "unknown symbols: " ++ showDoc unknownSyms ""
+    $ Result [mkDiag Error "unknown symbols" unknownSyms] $ Just ()
   unless (Set.null directlyMappedSyms)
-    $ fail $ "symbols already mapped directly: "
-          ++ showDoc directlyMappedSyms ""
+    $ Result [mkDiag Error "symbols already mapped directly" directlyMappedSyms]
+      $ Just ()
   induced_from_morphism l rmap sigma
 
 ext_induced_from_to_morphism :: Logic lid sublogics
