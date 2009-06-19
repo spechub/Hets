@@ -128,7 +128,7 @@ apply_comp_c_map i imap imor =
         apply_comp_c_maph ih imaph imorh =
           case Map.lookup ih $ column_map imorh of
             Just iM -> do
-                oM <- comp_c_map (col_map imaph) (col_map iM)
+                let oM = composeMap (col_map imaph) (col_map iM)
                 return (ih, RSTMap oM)
             Nothing -> fail "apply_comp_c_map"
     in case Map.lookup i $ column_map imap of
@@ -141,7 +141,7 @@ apply_comp_c_map i imap imor =
 comp_rst_mor ::   RSMorphism -> RSMorphism -> Result RSMorphism
 comp_rst_mor mor1 mor2 =
     do
-        t_map <- composeMap (table_map mor1) (table_map mor2)
+        let t_map = composeMap (table_map mor1) (table_map mor2)
         c_map <- mapM (\x -> apply_comp_c_map x mor1 mor2) $ map t_name $
             Set.toList $ tables $ domain $ mor1
         let cm_map = Map.fromList c_map
@@ -152,10 +152,6 @@ comp_rst_mor mor1 mor2 =
                 ,   table_map  = t_map
                 ,   column_map = cm_map
                 }
-
-comp_c_map :: (Show b, Ord c, Ord b, Ord a, Monad m) =>
-               Map.Map a b -> Map.Map b c -> m (Map.Map a c)
-comp_c_map c1 c2 = composeMap c1 c2
 
 emptyRSSign :: RSTables
 emptyRSSign =  RSTables

@@ -28,6 +28,7 @@ import Common.DocUtils
 import Common.Doc
 import Common.Id
 import Common.Result
+import Common.Utils (composeMap)
 import qualified Data.Set as Set
 import qualified Data.Map as Map
 
@@ -91,7 +92,7 @@ getDatatypeIds (DataEntry _ i _ _ _ alts) =
 
 mapDataEntry :: IdMap -> TypeMap -> IdMap -> FunMap -> DataEntry -> DataEntry
 mapDataEntry jm tm im fm de@(DataEntry dm i k args rk alts) =
-    let tim = Map.intersection (compIdMap dm im) $ setToMap $ getDatatypeIds de
+    let tim = Map.intersection (composeMap dm im) $ setToMap $ getDatatypeIds de
         newargs = map (mapTypeArg jm tm im) args
     in DataEntry tim i k newargs rk $ Set.map
            (mapAlt jm tm tim fm newargs
@@ -153,19 +154,14 @@ mapFunSym jm tm im fm (i, sc) =
 ideMor :: Env -> Morphism
 ideMor e = mkMorphism e e
 
-compIdMap :: IdMap -> IdMap -> IdMap
-compIdMap im1 im2 = if Map.null im2 then im1 else Map.foldWithKey ( \ i j ->
-    let k = Map.findWithDefault j j im2 in
-    if i == k then Map.delete i else Map.insert i k) im2 im1
-
 compMor :: Morphism -> Morphism -> Result Morphism
 compMor m1 m2 =
      let  tm1 = typeIdMap m1
           tm2 = typeIdMap m2
-          im = compIdMap tm1 tm2
+          im = composeMap tm1 tm2
           cm1 = classIdMap m1
           cm2 = classIdMap m2
-          cm = compIdMap cm1 cm2
+          cm = composeMap cm1 cm2
           fm2 = funMap m2
           fm1 = funMap m1
           tar = mtarget m2

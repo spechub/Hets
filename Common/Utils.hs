@@ -103,11 +103,11 @@ mapAccumLM f s l = case l of
     return (s'', y : ys)
 
 -- | composition of arbitrary maps
-composeMap :: (Monad m, Ord a, Ord b, Ord c, Show b) =>
-                Map.Map a b -> Map.Map b c -> m (Map.Map a c)
-composeMap in1 in2 = foldM (\ m1 (x,y)  -> case Map.lookup y in2 of
-   Nothing -> fail $ "Item " ++ show y ++ " not found in target map"
-   Just z  -> return $ Map.insert x z m1) Map.empty $ Map.toList in1
+composeMap :: Ord a => Map.Map a a -> Map.Map a a -> Map.Map a a
+composeMap m1 m2 =
+    if Map.null m2 then m1 else Map.foldWithKey ( \ i j ->
+    let k = Map.findWithDefault j j m2 in
+    if i == k then Map.delete i else Map.insert i k) m2 m1
 
 -- | keep only minimal elements
 keepMins :: (a -> a -> Bool) -> [a] -> [a]

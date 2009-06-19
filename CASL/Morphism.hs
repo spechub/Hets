@@ -23,6 +23,7 @@ import Common.Doc
 import Common.DocUtils
 import Common.Id
 import Common.Result
+import Common.Utils (composeMap)
 
 import Control.Exception (assert)
 import Control.Monad
@@ -356,10 +357,7 @@ composeM comp mor1 mor2 = do
       sMap2 = sort_map mor2
       oMap2 = op_map mor2
       pMap2 = pred_map mor2
-      sMap = if Map.null sMap2 then sMap1 else Set.fold ( \ i ->
-                               let j = mapSort sMap2 (mapSort sMap1 i) in
-                               if i == j then id else Map.insert i j)
-                Map.empty $ sortSet src
+      sMap = composeMap sMap1 sMap2
       oMap = if Map.null oMap2 then oMap1 else
                  Map.foldWithKey ( \ i t m ->
                    Set.fold ( \ ot ->

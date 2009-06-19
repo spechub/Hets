@@ -28,10 +28,10 @@ import CASL.Sign as CASL_Sign
 import CASL.Morphism as CASL_Morphism
 import qualified CASL.MapSentence as CASL_MapSen
 
-import Common.Doc
 import Common.DocUtils
 import Common.Id
 import Common.Result
+import Common.Utils (composeMap)
 
 import Control.Monad (unless)
 
@@ -81,21 +81,12 @@ data CspAddMorphism = CspAddMorphism
     , processMap :: Map.Map PROCESS_NAME PROCESS_NAME
     } deriving (Eq, Ord, Show)
 
--- | Compose two Maps. We use this for Composing the channel and
---   process maps of a CspAddMorphism.
-composeMaps :: (Ord a, Ord b) => Map.Map a b -> Map.Map b c ->
-               Map.Map a c
-composeMaps m1 m2 =
-    Map.foldWithKey (\ i j -> case Map.lookup j m2 of
-                                Nothing -> error "SignCsp.composeMaps"
-                                Just k -> Map.insert i k) Map.empty m1
-
 -- | Compose two CspAddMorphisms
 composeCspAddMorphism :: CspAddMorphism -> CspAddMorphism
                       -> Result CspAddMorphism
 composeCspAddMorphism m1 m2 = return emptyCspAddMorphism
-  { channelMap = composeMaps (channelMap m1) $ channelMap m2
-  , processMap = composeMaps (processMap m1) $ processMap m2 }
+  { channelMap = composeMap (channelMap m1) $ channelMap m2
+  , processMap = composeMap (processMap m1) $ processMap m2 }
 
 -- | Calculate the inverse of a CspAddMorphism
 inverseCspAddMorphism :: CspAddMorphism -> Result CspAddMorphism
@@ -127,7 +118,9 @@ emptyCspAddMorphism =
 
 -- | Pretty printing for Csp morphisms
 instance Pretty CspAddMorphism where
-  pretty = text . show
+  pretty m = pretty $ Map.union
+             (Map.mapKeys makeChannelNameSymbol $ channelMap m)
+             $ Map.mapKeys makeProcNameSymbol $ processMap m
 
 -- | Instance for CspCASL morphism extension (used for Category)
 instance CASL_Morphism.MorphismExtension CspSign CspAddMorphism
@@ -135,7 +128,8 @@ instance CASL_Morphism.MorphismExtension CspSign CspAddMorphism
       ideMorphismExtension _ = emptyCspAddMorphism
       composeMorphismExtension = composeCspAddMorphism
       inverseMorphismExtension = inverseCspAddMorphism
-      isInclusionMorphismExtension _ = True -- missing! BUG
+      isInclusionMorphismExtension m =
+        Map.null (channelMap m) && Map.null (processMap m)
 
 -- Application of morhisms to sentences
 

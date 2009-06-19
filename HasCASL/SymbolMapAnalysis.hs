@@ -34,6 +34,7 @@ import Common.DocUtils
 import Common.Id
 import Common.ExtSign
 import Common.Result
+import Common.Utils (composeMap)
 import Common.Lib.State
 import qualified Data.Map as Map
 import qualified Data.Set as Set
@@ -126,7 +127,7 @@ mapTypeInfo jm im ti =
 mapTypeDefn :: IdMap -> TypeDefn -> TypeDefn
 mapTypeDefn im td = case td of
     DatatypeDefn de@(DataEntry tm i k args rk alts) ->
-        DatatypeDefn (DataEntry (Map.intersection (compIdMap tm im) $
+        DatatypeDefn (DataEntry (Map.intersection (composeMap tm im) $
               setToMap $ getDatatypeIds de) i k args rk alts)
     AliasTypeDefn sc -> AliasTypeDefn $ mapType im sc
     _ -> td
