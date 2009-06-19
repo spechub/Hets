@@ -18,12 +18,13 @@ module CspCASL.Morphism
     , makeChannelNameSymbol
     , makeProcNameSymbol
     , mapSen
-    , symOf
+    , CspCASL.Morphism.symOf
+    , inducedCspSign
     ) where
 
 import CASL.AS_Basic_CASL (FORMULA, TERM)
 import CASL.Sign as CASL_Sign
-import qualified CASL.Morphism as CASL_Morphism
+import CASL.Morphism as CASL_Morphism
 import qualified CASL.MapSentence as CASL_MapSen
 
 import Common.Doc
@@ -168,19 +169,7 @@ mapCommAlpha mor commAlpha = Set.map (mapCommType mor) commAlpha
 
 -- | Apply a signature morphism to a CommType
 mapCommType :: CspMorphism -> CommType -> CommType
-mapCommType mor comm =
-    let mapSort' = CASL_MapSen.mapSrt mor
-        mapChannelName' = mapChannelName mor
-    in case comm of
-      CommTypeSort s ->
-          -- Just map the morphism over the sort
-          CommTypeSort (mapSort' s)
-      CommTypeChan typedChanName ->
-          case typedChanName of
-            TypedChanName chanName chanSort ->
-                -- Just map the morphism over the sort and channel name
-                CommTypeChan $ TypedChanName (mapChannelName' chanName)
-                                 (mapSort' chanSort)
+mapCommType mor = mapCommTypeAux (sort_map mor) (channelMap $ extended_map mor)
 
 -- | Apply a signature morphism to a process
 mapProc :: CspMorphism -> PROCESS -> PROCESS
@@ -301,7 +290,7 @@ mapCASLFormula mor f =
     CASL_MapSen.mapSen (error "CspCASL.Morphism.mapCASLFormula") mor f
 
 -- | Apply a signature morphism to a channel name
-mapChannelName ::  CspMorphism -> CHANNEL_NAME -> CHANNEL_NAME
+mapChannelName :: CspMorphism -> CHANNEL_NAME -> CHANNEL_NAME
 mapChannelName mor cn =
     let chanMap = channelMap $ CASL_Morphism.extended_map mor
     -- Find look up the new channel name, if it does not exist then
@@ -315,3 +304,27 @@ mapProcessName mor pn =
     -- Find look up the new process name, if it does not exist then
     -- use the original name.
     in Map.findWithDefault pn pn procMap
+
+inducedCspSign :: Sort_map -> CspAddMorphism -> CspSign -> CspSign
+inducedCspSign sm m sig = let
+  cm = channelMap m
+  newChans = Map.foldWithKey (\ c s ->
+    Map.insert (Map.findWithDefault c c cm)
+       (mapSort sm s)) Map.empty $ chans sig
+  newProcs = Map.foldWithKey (\ p f ->
+    Map.insert (Map.findWithDefault p p $ processMap m)
+       (mapProcProfile sm cm f)) Map.empty $ procSet sig
+  in sig { chans = newChans
+         , procSet = newProcs }
+
+mapProcProfile :: Sort_map -> Map.Map CHANNEL_NAME CHANNEL_NAME
+               -> ProcProfile -> ProcProfile
+mapProcProfile sm cm (ProcProfile sl cs) =
+  ProcProfile (map (mapSort sm) sl) $ Set.map (mapCommTypeAux sm cm) cs
+
+mapCommTypeAux :: Sort_map -> Map.Map CHANNEL_NAME CHANNEL_NAME
+            -> CommType -> CommType
+mapCommTypeAux sm cm ct = case ct of
+   CommTypeSort s -> CommTypeSort $ mapSort sm s
+   CommTypeChan (TypedChanName c s) ->
+     CommTypeChan $ TypedChanName (Map.findWithDefault c c cm) $ mapSort sm s
