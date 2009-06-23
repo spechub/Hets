@@ -478,7 +478,8 @@ transTerm sign tyToks collectConds toks pVars trm = case trm of
                                $ Abs (Isa.Free $ transVar toks var)
                                  phi' NotCont
                 GenTypeVarDecl _ ->  return phi'
-        ITC ty psi cs <- transTerm sign tyToks collectConds toks pVars phi
+        ITC ty psi cs <- fmap integrateCond
+          $ transTerm sign tyToks collectConds toks pVars phi
         psiR <- foldM quantify psi $ reverse varDecls
         return $ ITC ty psiR cs
     TypedTerm t _q _ty _ -> transTerm sign tyToks collectConds toks pVars t
