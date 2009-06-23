@@ -81,7 +81,8 @@ cdFromNode :: LIB_ID -> DGNodeLab -> OMCD
 cdFromNode libid lb =
 -- special handling for library entries !??
     CD (getDGNodeName lb) $
-    let cdbase = show $ if isDGRef lb
-                        then getLIB_ID $ ref_libname $ nodeInfo lb
-                        else libid
-    in if cdbase == "library" || cdbase == "" then Nothing else Just cdbase
+    let omcdbase = show $ if isDGRef lb
+                          then getLIB_ID $ ref_libname $ nodeInfo lb
+                          else libid
+    in if omcdbase == "library" || omcdbase == ""
+       then Nothing else Just omcdbase

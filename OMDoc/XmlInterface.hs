@@ -51,7 +51,7 @@ el_symbol = (blank_name { qName = "symbol" })
 el_import = (blank_name { qName = "import" })
 el_type = (blank_name { qName = "type" })
 el_fmp = (blank_name { qName = "FMP" })
-el_omobj = (blank_name { qName = "OMOBJ" })
+el_omobj = (blank_name { qName = "OMOBJ" , qPrefix = Just "om" })
 el_ombind = (blank_name { qName = "OMBIND" })
 el_oms = (blank_name { qName = "OMS" })
 el_ombvar = (blank_name { qName = "OMBVAR" })
@@ -90,6 +90,9 @@ at_from = (blank_name { qName = "from" })
 at_to = (blank_name { qName = "to" })
 at_base = (blank_name { qName = "cdbase" })
 
+attr_om :: Attr
+attr_om = Attr (blank_name { qName = "om" , qPrefix = Just "xmlns" })
+          "http://www.openmath.org/OpenMath"
 
 {- |
   this class defines the interface to read from and write to XML
@@ -117,35 +120,37 @@ makeComment s = Text $ CData CDataRaw ("<!-- " ++ s ++ " -->") Nothing
 
 typeToXml :: OMElement -> Content
 typeToXml t = Elem $ Element el_type []
-              [Elem $ Element el_omobj [] [toXml t] Nothing]
+              [Elem $ Element el_omobj [attr_om] [toXml t] Nothing]
               Nothing
 
 assignmentToXml :: (OMName, OMElement) -> Content
 assignmentToXml (OMName from, to) =
     Elem $ Element el_conass
              [Attr at_name from]
-             [Elem $ Element el_omobj [] [toXml to] Nothing]
+             [Elem $ Element el_omobj [attr_om] [toXml to] Nothing]
              Nothing
 
-uriEncodeOMS :: OMCD -> OMName -> String
-uriEncodeOMS cd (OMName name) = uriEncodeCD cd ++ "?" ++ name
+-- don't need it now
+--uriEncodeOMS :: OMCD -> OMName -> String
+--uriEncodeOMS omcd (OMName omname) = uriEncodeCD omcd ++ "?" ++ omname
 
 uriEncodeCD :: OMCD -> String
-uriEncodeCD (CD cd base) = (maybe "" id base) ++ "?" ++ cd
+uriEncodeCD (CD omcd base) = (maybe "" id base) ++ "?" ++ omcd
 
 tripleEncodeOMS :: OMCD -> OMName -> [Attr]
-tripleEncodeOMS cd (OMName name) = pairEncodeCD cd ++ [Attr at_name name]
+tripleEncodeOMS omcd (OMName omname)
+    = pairEncodeCD omcd ++ [Attr at_name omname]
 
 pairEncodeCD :: OMCD -> [Attr]
-pairEncodeCD (CD cd base) =
-    (maybe [] (\x -> [Attr at_base x]) base) ++ [Attr at_cd cd]
+pairEncodeCD (CD omcd base) =
+    (maybe [] (\x -> [Attr at_base x]) base) ++ [Attr at_cd omcd]
 
 
 -- | The root instance for representing OMDoc in XML
 instance XmlRepresentable OMDoc where
-    toXml (OMDoc name elms) =
+    toXml (OMDoc omname elms) =
         (Elem $ Element el_omdoc
-         [Attr at_version omdoc_current_version, Attr at_name name]
+         [Attr at_version omdoc_current_version, Attr at_name omname]
          (listToXml elms)
          Nothing)
     fromXml (Element n _ _ _)
@@ -181,7 +186,7 @@ instance XmlRepresentable TCElement where
     toXml (TCAxiomOrTheorem b sname obj) =
         Elem $ Element (el_axiom_or_theorem b) [Attr at_name sname]
          [Elem $ Element el_fmp []
-          [Elem $ Element el_omobj []
+          [Elem $ Element el_omobj [attr_om]
             [toXml obj]
             Nothing]
           Nothing]
