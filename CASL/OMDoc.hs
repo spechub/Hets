@@ -349,11 +349,11 @@ makeSortMapEntry spid s1 s2 = (OMName $ idToName spid s1, sortToOmdoc spid s2)
 
 makeOpMapEntry :: SPEC_ID -> (Id, OpType) -> (Id, OpKind) ->
                   (OMName, OMElement)
-makeOpMapEntry spid (o1, ot) (o2, _) =
+makeOpMapEntry spid (o1, _) (o2, _) =
     (OMName $ idToName spid o1, idToOmdoc spid o2)
 
 makePredMapEntry :: SPEC_ID -> (Id, PredType) -> Id -> (OMName, OMElement)
-makePredMapEntry spid (p1, pt) p2 =
+makePredMapEntry spid (p1, _) p2 =
     (OMName $ idToName spid p1, idToOmdoc spid p2)
 
 
