@@ -147,6 +147,8 @@ rawKindOfType = foldType FoldTypeRec
 -- | subtyping relation
 lesserType :: Env -> Type -> Type -> Bool
 lesserType te t1 t2 = case (t1, t2) of
+    (TypeName _ _ _, TypeAppl (TypeName l _ _) t) | l == lazyTypeId ->
+       lesserType te t1 t
     (TypeAppl c1 a1, TypeAppl c2 a2) ->
         let b1 = lesserType te a1 a2
             b2 = lesserType te a2 a1
@@ -159,6 +161,9 @@ lesserType te t1 t2 = case (t1, t2) of
                             _ -> b
                         else b
             _ -> error "lesserType: no FunKind") && lesserType te c1 c2
+        || case c2 of
+             (TypeName l _ _) | l == lazyTypeId -> lesserType te t1 a2
+             _ -> False
     (TypeName i1 _ _, TypeName i2 _ _) | i1 == i2 -> True
     (TypeName i k _, _) -> case Map.lookup i $ localTypeVars te of
         Nothing -> case Map.lookup i $ typeMap te of
