@@ -41,6 +41,7 @@ import qualified Data.Map as Map
 import qualified Data.Set as Set
 import qualified Common.Lib.Rel as Rel
 import Common.Id
+import Common.GlobalAnnotations
 import Common.Result
 import Common.DocUtils
 import Common.Utils
@@ -48,6 +49,7 @@ import Common.Lib.State
 
 import Data.List as List
 import Data.Maybe (catMaybes)
+import Control.Monad (unless)
 
 substTerm :: Subst -> Term -> Term
 substTerm s = mapTerm (id, subst s)
@@ -130,6 +132,16 @@ reduce alts = do
                                      substTerm s2 tr)]) alts
        return $ concat combs
 
+checkForUninstantiatedVars :: GlobalAnnos -> Term -> Range -> State Env ()
+checkForUninstantiatedVars ga t p = let
+  tys = getAllVarTypes t
+  in unless (null tys) $ addDiags
+    [(mkDiag Error ("in term '" ++ showGlobalDoc ga t
+                    "'\n are uninstantiated type variables")
+      $ Set.toList $ Set.unions
+      $ map (Set.fromList . map (fst . snd) . leaves (> 0)) tys)
+     {diagPos = p}]
+
 -- | type checking a term
 typeCheck :: Type -> Term -> State Env (Maybe Term)
 typeCheck exTy trm =
@@ -137,50 +149,43 @@ typeCheck exTy trm =
        te <- get
        let p = getRange trm
            ga = globAnnos te
-       if null alts then
-          do addDiags [mkNiceDiag ga Error "no typing for" trm]
-             return Nothing
-          else if null $ tail alts then do
-               let (_, cs, ty, t) = head alts
-                   (ds, rcs) = simplify te cs
-                   es = map ( \ d -> d {diagKind = Hint, diagPos = p}) ds
-                   tys = getAllVarTypes t
-               addDiags es
-               if Set.null rcs then return ()
-                  else addDiags [(mkDiag Error ("in term '"
+       case alts of
+         [] -> do
+           addDiags [mkNiceDiag ga Error "no typing for" trm]
+           return Nothing
+         [(_, cs, ty, t)] -> do
+           let (ds, rcs) = simplify te cs
+               es = map ( \ d -> d {diagKind = Hint, diagPos = p}) ds
+           addDiags es
+           unless (Set.null rcs)
+                 $ addDiags [(mkDiag Error ("in term '"
                              ++ showGlobalDoc ga t "' of type '"
                              ++ showDoc ty "'\n unresolved constraints")
                                  rcs){diagPos = p}]
-               if null tys then return ()
-                  else addDiags [(mkDiag Error ("in term '"
-                             ++ showGlobalDoc ga t
-                             "'\n are uninstantiated type variables")
-                                 $ Set.toList $ Set.unions $ map
-                                    (Set.fromList . map (fst . snd) .
-                                        leaves (> 0)) tys)
-                                 {diagPos = p}]
-               return $ Just t
-          else let alts3 = filter ( \ (_, cs, _, _) ->
+           checkForUninstantiatedVars ga t p
+           return $ Just t
+         _ -> do
+           let alts3 = filter ( \ (_, cs, _, _) ->
                              Set.null $ snd $ simplify te cs) alts
-                   falts = typeNub te q2p alts3 in
-               if null falts then do
-                  addDiags [mkNiceDiag ga Error
-                            "no constraint resolution for" trm]
-                  addDiags $ map (\ (_, cs, _, _) -> (mkDiag Hint
+               falts = typeNub te q2p alts3
+           case falts of
+             [] -> do
+               addDiags [mkNiceDiag ga Error "no constraint resolution for" trm]
+               addDiags $ map (\ (_, cs, _, _) -> (mkDiag Hint
                             "simplification failed for" cs){diagPos = p}) alts
-                  return Nothing
-               else if null $ tail falts then
-                    let (_, _, _, t) = head falts in
-                    return $ Just t
-                    else
-                    do addDiags [Diag Error
+               return Nothing
+             [(_, _, _, t)] -> do
+               checkForUninstantiatedVars ga t p
+               return $ Just t
+             _ -> do
+               addDiags [Diag Error
                          ("ambiguous typings\n " ++
                           showSepList ("\n " ++)
                           ( \ (n, t) -> shows n . (". " ++) . showDoc t)
                           (zip [1..(5::Int)] $ map ( \ (_,_,_,t) ->
                                           t) falts) "")
                             p]
-                       return Nothing
+               return Nothing
 
 freshTypeVar :: Term -> State Env Type
 freshTypeVar t =

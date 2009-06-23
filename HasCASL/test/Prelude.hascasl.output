@@ -259,6 +259,10 @@ ambiguous typings
 = \ ((var x : s), (var y : t)) . (def y) und (def x)
  2. (\ ((var x : s), (var y : t)) . def (x res y))
 = \ ((var x : s), (var y : t)) . (def y) und (def x)
+*** Error 66.7,
+in term '(op fst : forall s : Type; t : Type . s * t -> s) = __res__'
+ are uninstantiated type variables
+'[_v77_s, _v78_t]'
 ### Hint 72.11,
 no kind found for 's'
   expected: {Cpo}
