@@ -20,6 +20,8 @@ import System.IO (Handle)
 import Text.XML.Light.Types
 import Text.XML.Light.Input
 import PGIP.MarkPgip
+import List
+import Data.Char
 
 genPgipElem :: String -> Content
 genPgipElem str =
@@ -91,6 +93,7 @@ data CMDL_PgipState = CMDL_PgipState {
                     pgip_id            :: String,
                     name               :: String,
                     seqNb              :: Int,
+                    refSeqNb           :: Maybe String,
                     theMsg             :: String,
                     xmlContent         :: Content,
                     hout               :: Handle,
@@ -111,7 +114,8 @@ genCMDL_PgipState swXML h_in h_out timeOut=
      pgip_id            = pgId,
      name               = "Hets",
      quietOutput        = False,
-     seqNb              = 0,
+     seqNb              = 1,
+     refSeqNb           = Nothing,
      theMsg             = [],
      xmlContent         = Elem blank_element { elName = genQName "pgip" },
      hin                = h_in,
@@ -162,24 +166,30 @@ resetMsg str pgD
 
 convertPgipStateToXML :: CMDL_PgipState -> Content
 convertPgipStateToXML pgipData
- = Elem $ Element {
-               elName     = genQName "pgip" ,
-               elAttribs  =   (Attr {
-                                attrKey = genQName "tag",
-                                attrVal = name pgipData } )
-                            : (Attr {
-                                attrKey = genQName "class",
-                                attrVal = "pg" } )
-                            : (Attr {
-                                attrKey = genQName "id",
-                                attrVal = pgip_id pgipData } )
-                            : (Attr {
-                                attrKey = genQName "seq",
-                                attrVal = show $ seqNb pgipData } )
-                            : [],
-               elContent  = [],
-               elLine     = Nothing
-             }
+ = let baseElem = Element { 
+                   elName     = genQName "pgip",
+                   elAttribs  = (Attr {
+                                  attrKey = genQName "tag",
+                                  attrVal = name pgipData })
+                              : (Attr {
+                                  attrKey = genQName "class",
+                                  attrVal = "pg"} )
+                              : (Attr { 
+                                  attrKey = genQName "id",
+                                  attrVal = pgip_id pgipData })
+                              : (Attr {
+                                  attrKey = genQName "seq",
+                                  attrVal = show $ seqNb pgipData})
+                              : [],
+                   elContent  = [],
+                   elLine     = Nothing}
+   in case refSeqNb pgipData of 
+    Nothing -> Elem baseElem
+    Just v  -> Elem $ baseElem { 
+                 elAttribs = (Attr { 
+                                 attrKey = genQName "refseq",
+                                 attrVal = v})
+                           : (elAttribs baseElem) }
 
 -- | List of all possible commands inside an XML  packet
 data CMDL_XMLcommands =
@@ -201,6 +211,24 @@ data CMDL_XMLcommands =
  | XML_CloseTheory String
  | XML_CloseFile String
  | XML_LoadFile String deriving (Eq,Show)
+
+getRefseqNb :: String -> Maybe String 
+getRefseqNb input
+ = let xmlTree = parseXML input
+       elRef =  find (\x -> case x of 
+                          Elem dt ->
+                            (qName $ elName dt) == "pgip" 
+                          _      -> False ) xmlTree
+   in case elRef of 
+        Nothing -> Nothing
+        Just el ->
+         case el of 
+          Elem dt ->
+           case find (\x -> (qName $ attrKey x) == "seq") $ elAttribs dt of
+            Nothing -> Nothing
+            Just elatr ->
+                  Just  $ attrVal elatr 
+          _       -> Nothing
 
 
 parseXMLTree :: [Content] -> [CMDL_XMLcommands] -> IO [CMDL_XMLcommands]

@@ -143,21 +143,32 @@ communicationStep pgD st =
                          communicationStep nwpgD st
                 False -> communicationStep pgD st
     Just smtxt -> do
-                   appendFile "/tmp/razvan.txt" "Processing input"
                    cmds <- parseMsg pgD smtxt
-                   (nwSt, nwPgD) <-processCmds cmds st $ resetMsg [] pgD
-                   let nwPgipSt = case useXML pgD of
-                                   True ->
-                                    addToMsg (showContent $ xmlContent nwPgD)
-                                                     [] nwPgD {
-                                                       seqNb = (seqNb nwPgD)+1
-                                                       }
-                                   False -> nwPgD
-                   appendFile "/tmp/razvan.txt" ("Output : "++ (theMsg pgD)++
-                                                       "\n")
-                   hPutStrLn (hout pgD) $ theMsg nwPgipSt
-                   hFlush $ hout pgD
-                   return (nwPgipSt, nwSt)
+                   let refseqNb = getRefseqNb smtxt
+                   (nwSt, nwPgD) <-processCmds cmds st $ resetMsg [] $
+                                            pgD {
+                                              refSeqNb = refseqNb }
+                   case useXML pgD of 
+                    True -> do
+                             let nwPgipSt = addToMsg (showContent $ xmlContent nwPgD) 
+                                               []  nwPgD {
+                                                    seqNb = (seqNb nwPgD)+1 }
+                             hPutStrLn (hout pgD) $ theMsg nwPgipSt
+                             hFlush $ hout pgD
+                             let refNb = case refseqNb of 
+                                          Just rNb -> " refseq=\""++rNb++"\" "
+                                          Nothing -> " "
+                                 mSg = "<pgip tag=\"Hets\" class=\"pg\" id=\""++
+                                        (pgip_id pgD) ++"\""++ refNb ++ " seq=\"" ++
+                                        show ((seqNb pgD)+1)++"\"><ready /></pgip>"
+                             hPutStrLn (hout pgD) $ mSg
+                             hFlush $ hout pgD
+                             return (nwPgipSt { seqNb = (seqNb nwPgipSt)+1}, nwSt)
+
+                    False -> do
+                              hPutStrLn (hout pgD) $ theMsg nwPgD
+                              hFlush $ hout pgD
+                              return (nwPgD, nwSt)
 
 
 -- | Comunicates over a port at which the prover should listen

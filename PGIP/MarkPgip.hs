@@ -15,6 +15,7 @@ module PGIP.MarkPgip
 where
 
 import Text.XML.Light
+import Common.Utils(trim)
 
 genQName :: String -> QName
 genQName str =
@@ -22,8 +23,19 @@ genQName str =
    in qnameVal { qName = str }
 
 genProofStep :: String -> Content
-genProofStep str = 
-  Elem $ Element {
+genProofStep str =
+  case trim str of 
+   [] -> Elem $ Element {
+                 elName = genQName "whitespace",
+                 elAttribs = [],
+                 elContent = [Text $ CData CDataRaw str Nothing],
+                 elLine = Nothing }
+   '#':_ -> Elem $ Element {
+                  elName = genQName "comment",
+                  elAttribs = [],
+                  elContent = [Text $ CData CDataRaw str Nothing],
+                  elLine = Nothing }
+   _ ->  Elem $ Element {
            elName = genQName "proofstep",
            elAttribs = [],
            elContent = [Text $ CData CDataRaw str Nothing],
@@ -37,7 +49,7 @@ addPgipMarkUp str
         parseResult = Elem $ Element { 
                               elName = genQName "parseresult",
                               elAttribs = [],
-                              elContent = contents,
+                              elContent =  contents, 
                               elLine = Nothing }
     in parseResult
 
