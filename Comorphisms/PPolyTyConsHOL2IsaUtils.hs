@@ -514,6 +514,7 @@ integrateCond (ITC ty trm cs) = if cond2bool cs == true then
   else case ty of
     PartialVal _ -> ITC ty (mkTermAppl (integrateCondInPartial cs) trm) None
     BoolType -> ITC ty (mkTermAppl (integrateCondInBool cs) trm) None
+    UnitType -> ITC BoolType (cond2bool cs) None
     _ -> ITC (makePartialVal ty)
          (mkTermAppl (integrateCondInTotal cs) trm) None
     -- return partial result type
