@@ -384,15 +384,16 @@ instance Show Delta where
 
 -- | 'PrettyType' describes the type of output we want the pretty-printer
 -- to generate
-data PrettyType = PrettyAscii | PrettyLatex
+data PrettyType = PrettyAscii | PrettyLatex | PrettyXml
 
 instance Show PrettyType where
   show p = case p of
     PrettyAscii -> "het"
     PrettyLatex -> "tex"
+    PrettyXml -> "xml"
 
 prettyList :: [PrettyType]
-prettyList = [PrettyAscii, PrettyLatex]
+prettyList = [PrettyAscii, PrettyLatex, PrettyXml]
 
 -- | 'GraphType' describes the type of Graph that we want generated
 data GraphType =
