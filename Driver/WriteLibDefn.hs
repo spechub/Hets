@@ -39,6 +39,7 @@ import ATC.DevGraph ()
 
 import Syntax.AS_Library (LIB_DEFN())
 import Syntax.Print_AS_Library ()
+import Syntax.ToXml
 
 import Driver.Options
 
@@ -59,11 +60,15 @@ write_LIB_DEFN ga file opts ld = do
     let (odir, filePrefix) = getFilePrefix opts file
         filename ty = filePrefix ++ "." ++ show ty
         verbMesg ty = putIfVerbose opts 2 $ "Writing file: " ++ filename ty
+        printXml ty = do
+          verbMesg ty
+          writeFile (filename ty) $ printLibDefnXml ld
         printAscii ty = do
           verbMesg ty
           write_casl_asc opts ga (filename ty) ld
         write_type :: OutType -> IO ()
         write_type t = case t of
+            PrettyOut PrettyXml -> printXml t
             PrettyOut PrettyAscii -> printAscii t
             PrettyOut PrettyLatex -> do
                 verbMesg t
