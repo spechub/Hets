@@ -28,28 +28,44 @@ genProofStep str =
    [] -> Elem $ Element {
                  elName = genQName "whitespace",
                  elAttribs = [],
-                 elContent = [Text $ CData CDataRaw str Nothing],
+                 elContent = [Text $ CData CDataRaw (str++"\n") Nothing],
                  elLine = Nothing }
    '#':_ -> Elem $ Element {
                   elName = genQName "comment",
                   elAttribs = [],
-                  elContent = [Text $ CData CDataRaw str Nothing],
+                  elContent = [Text $ CData CDataRaw (str++"\n") Nothing],
                   elLine = Nothing }
    _ ->  Elem $ Element {
-           elName = genQName "proofstep",
+           elName = genQName "theoryitem",
            elAttribs = [],
-           elContent = [Text $ CData CDataRaw str Nothing],
+           elContent = [Text $ CData CDataRaw (str++"\n") Nothing],
            elLine = Nothing }
 
 -- | adds structure to unstructured code 
 addPgipMarkUp :: String -> Content
 addPgipMarkUp str 
- = 
-    let contents = map genProofStep $ lines str
+ =
+    let allLines = lines str
+        contents = map genProofStep $ tail allLines
+        opTheory = Elem $ Element {
+                    elName = genQName "opentheory",
+                    elAttribs = [Attr {
+                                  attrKey = genQName "thyname",
+                                  attrVal = "whatever"
+                                      }],
+                    elContent = [Text $ CData CDataRaw 
+                                     ((head allLines)++"\n") Nothing],
+                    elLine = Nothing }
+        clTheory = Elem $ Element {
+                    elName = genQName "closetheory",
+                    elAttribs = [],
+                    elContent = [],
+                    elLine = Nothing }
         parseResult = Elem $ Element { 
                               elName = genQName "parseresult",
                               elAttribs = [],
-                              elContent =  contents, 
+                              elContent = [opTheory] ++
+                                          contents++[clTheory] , 
                               elLine = Nothing }
     in parseResult
 

@@ -288,7 +288,11 @@ parseXMLTree  xmltree acc
        "opentheory"   ->
            do
             let cnt = getTextData info
-            parseXMLTree ls ((XML_OpenTheory cnt) : acc)
+            parseXMLTree ls ((XML_Execute cnt) : acc)
+       "theoryitem" ->
+           do
+            let cnt = getTextData info
+            parseXMLTree ls ((XML_Execute cnt):acc)
        "closetheory"  ->
            do
             let cnt = getTextData info

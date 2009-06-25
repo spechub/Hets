@@ -148,6 +148,12 @@ communicationStep pgD st =
                    (nwSt, nwPgD) <-processCmds cmds st $ resetMsg [] $
                                             pgD {
                                               refSeqNb = refseqNb }
+                   appendFile "/tmp/razvan2.txt" ("OUT1:: ::"++
+                                          (outputMsg $ output nwSt)++"\n\n") 
+                   appendFile "/tmp/razvan2.txt" ("OUT2:: ::"++
+                                          (warningMsg $ output nwSt)++"\n\n")
+                   appendFile "/tmp/razvan2.txt" ("OUT3:: ::"++
+                                          (errorMsg $ output nwSt)++"\n\n")
                    case useXML pgD of 
                     True -> do
                              let nwPgipSt = addToMsg (showContent $ xmlContent nwPgD) 
