@@ -15,7 +15,8 @@ module Maude.Logic_Maude where
 
 import Logic.Logic
 
-import Maude.AS_Maude (MaudeText)
+import Maude.AS_Maude (MaudeText(..))
+import Maude.Parse (mStuff)
 import Maude.Sign     (Sign)
 import Maude.Morphism (Morphism)
 import Maude.Symbol   (Symbol)
@@ -71,7 +72,7 @@ instance Sentences Maude Sentence Sign Morphism Symbol where
 -- | Instance of Syntax for Maude
 -- TODO: Implement real instance of Syntax for Maude
 instance Syntax Maude MaudeText () () where
-    -- parse_basic_spec
+    parse_basic_spec Maude = Just $ fmap MaudeText mStuff
     -- parse_symb_items
     -- parse_symb_map_items
 
