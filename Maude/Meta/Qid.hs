@@ -22,7 +22,7 @@ import qualified Data.Map as Map
 
 -- A Quoted Identifier
 newtype Qid = Qid { qid :: Id.Id }
-    deriving (Show, Eq, Ord, Typeable, Pretty)
+    deriving (Show, Eq, Ord, Typeable, Pretty, Id.GetRange)
 
 -- TODO: Replace dummy implementation for ShATermConvertible Qid.
 instance ShATermConvertible Qid where

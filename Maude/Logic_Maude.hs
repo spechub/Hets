@@ -8,20 +8,14 @@ Maintainer  :  mkhl@informatik.uni-bremen.de
 Stability   :  experimental
 Portability :  non-portable (imports Logic.Logic)
 
-Instance of class Logic for Maude.
-    Also instances of Syntax and Category.
-    ... sometime in the future, that is.
--}
-{-
-  Ref.
-
-  ...
+Instance of class Logic for Maude. See <http://maude.cs.uiuc.edu/>
 -}
 
 module Maude.Logic_Maude where
 
 import Logic.Logic
 
+import Maude.AS_Maude (MaudeText)
 import Maude.Sign     (Sign)
 import Maude.Morphism (Morphism)
 import Maude.Symbol   (Symbol)
@@ -76,14 +70,15 @@ instance Sentences Maude Sentence Sign Morphism Symbol where
 
 -- | Instance of Syntax for Maude
 -- TODO: Implement real instance of Syntax for Maude
-instance Syntax Maude () () () where
+instance Syntax Maude MaudeText () () where
     -- parse_basic_spec
     -- parse_symb_items
     -- parse_symb_map_items
 
 -- | Instance of StaticAnalysis for Maude
 -- TODO: Implement real instance of StaticAnalysis for Maude
-instance StaticAnalysis Maude () Sentence () () Sign Morphism Symbol Symbol where
+instance StaticAnalysis Maude MaudeText Sentence () () Sign Morphism Symbol
+    Symbol where
     -- static analysis --
     -- basic_analysis
     -- stat_symb_map_items
@@ -115,7 +110,8 @@ instance StaticAnalysis Maude () Sentence () () Sign Morphism Symbol Symbol wher
 
 -- | Instance of Logic for Maude
 -- TODO: Implement real instance of Logic for Maude
-instance Logic Maude () () Sentence () () Sign Morphism Symbol Symbol () where
+instance Logic Maude () MaudeText Sentence () () Sign Morphism Symbol Symbol
+    () where
     stability Maude = Experimental
     -- data_logic
     -- top_sublogic
