@@ -488,7 +488,7 @@ ttConservativityChecker (_, srcSens) mor tarSens=
                   "conservative"
           legend = "Legend:\n"++
                    "M = model of the axioms\n"++
-                   "+ = OK, has expanion\n"++
+                   "+ = OK, has expansion\n"++
                    "- = not OK, has no expansion, "++
                        "hence conservativity fails\n"++
                    "o = OK, not a model of the axioms, "++
