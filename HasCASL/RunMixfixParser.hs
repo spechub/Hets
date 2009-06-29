@@ -51,4 +51,4 @@ resolveTerm ga = do
        return $ do
            Result (filter isErrorDiag $ envDiags fEnv) $ Just ()
            getResolved (shows . toText ga . printTerm . parenTerm)
-                    (getRange trm) (toMixTerm sIds iEnv) chart
+                    (getRange trm) (toMixTerm iEnv) chart

@@ -305,8 +305,10 @@ infer isP mt trm = do
                                    inTy, TypedTerm qv Inferred inTy ps)]
         ResolvedMixTerm i tys ts ps -> case (Map.lookup i bs, ts) of
           (Just j, hd : rt@(_ : _)) -> case reverse rt of
-            lt : ft -> infer isP mt $ ResolvedMixTerm j tys
-                (reverse $ LambdaTerm [hd] Partial lt ps : ft) ps
+            lt : ft -> do
+              pat <- anaPattern (Map.keysSet as) hd
+              infer isP mt $ ResolvedMixTerm j tys
+                (reverse $ LambdaTerm [pat] Partial lt ps : ft) ps
             [] -> error "ResolvedMixTerm: binder"
           _ ->
             if null ts then case Map.lookup i vs of

@@ -18,6 +18,7 @@ module HasCASL.MixAna
   , getPolyIds
   , iterateCharts
   , toMixTerm
+  , anaPattern
   ) where
 
 import Common.GlobalAnnotations
@@ -108,7 +109,7 @@ iterateCharts :: GlobalAnnos -> Set.Set Id -> Set.Set [Id] -> [Term]
 iterateCharts ga sIds compIds terms chart = do
     e <- get
     let self = iterateCharts ga sIds compIds
-        oneStep = nextChart addType (toMixTerm sIds e) ga chart
+        oneStep = nextChart addType (toMixTerm e) ga chart
         vs = localVars e
         tm = typeMap e
     case terms of
@@ -251,8 +252,8 @@ bracketTermToTypes e t = case t of
       maybe (error "bracketTermToTypes1") id $ mapM termToType tys
     _ -> error "bracketTermToTypes2"
 
-toMixTerm :: Set.Set Id -> Env -> Id -> [Term] -> Range -> Term
-toMixTerm sIds e i ar qs =
+toMixTerm :: Env -> Id -> [Term] -> Range -> Term
+toMixTerm e i ar qs =
     if i == applId then assert (length ar == 2) $
            let [op, arg] = ar in mkPatAppl op arg qs
     else if i == tupleId || i == unitId then
@@ -264,10 +265,7 @@ toMixTerm sIds e i ar qs =
         let (far, tar : sar) =
                 splitAt (placeCount $ mkId $ fst $ splitMixToken ts) ar
         in ResolvedMixTerm j (bracketTermToTypes e tar) (far ++ sar) qs
-      _ -> let bs = binders e in case ar of
-          hd : tl | Map.member i bs ->
-               ResolvedMixTerm i [] (evalState (anaPattern sIds hd) e : tl) qs
-          _ -> ResolvedMixTerm i [] ar qs
+      _ -> ResolvedMixTerm i [] ar qs
 
 getKnowns :: Id -> Set.Set Token
 getKnowns (Id ts cs _) =
@@ -291,7 +289,7 @@ resolver isPat trm = do
     chart <- iterateCharts ga sIds (getCompoundLists e) [trm]
       $ initChart addRule ruleS
     let Result ds mr = getResolved (showDoc . parenTerm) (getRange trm)
-          (toMixTerm sIds e) chart
+          (toMixTerm e) chart
     addDiags ds
     if isPat then case mr of
       Nothing -> return mr
