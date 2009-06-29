@@ -2,7 +2,7 @@
 
 getNumberOfLines ()
 {
-   wc -l $1 |expand|tr -s " " | cut -d " " -f1,2 | tr -d -c [0-9]
+   wc -l $1 | tr -s " " | cut -d " " -f1,2 | tr -d -c [0-9]
 }
 
 #parameters: progr option annofile infile outfile set?
