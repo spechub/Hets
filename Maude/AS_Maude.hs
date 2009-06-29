@@ -50,7 +50,7 @@ data Renaming = SortRenaming Sort Sort
 newtype MaudeText = MaudeText String deriving (Show, Typeable)
 
 instance Pretty MaudeText where
-  pretty (MaudeText s) = text s
+  pretty (MaudeText s) = specBraces $ text s
 
 instance ShATermConvertible MaudeText where
   toShATermAux att0 (MaudeText a) = do
