@@ -403,14 +403,14 @@ infer isP trm = do
               (s, cs, typ, QuantifiedTerm quant decls tr ps)) rs
         LambdaTerm pats part resTrm ps -> do
             ls <- checkList True (map (const Nothing) pats) pats
-            rs <- mapM ( \ ( s, cs, pats, nps) -> do
+            rs <- mapM ( \ ( s, cs, patys, nps) -> do
                        mapM_ (addLocalVar True) $ concatMap extractVars nps
                        es <- infer False resTrm
                        putLocalVars vs
                        return $ map ( \ (s2, cr, rty, rtm) ->
                                       let s3 = compSubst s s2
                                           typ = getFunType (subst s rty)
-                                             part $ map (subst s2) pats
+                                             part $ map (subst s2) patys
                                       in
                                       (s3, joinC (substC s2 cs) $ substC s cr
                                       , typ,
