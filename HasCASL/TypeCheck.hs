@@ -49,7 +49,7 @@ import Common.Lib.State
 
 import Data.List as List
 import Data.Maybe (catMaybes)
-import Control.Monad (unless)
+import Control.Monad (when, unless)
 
 substTerm :: Subst -> Term -> Term
 substTerm s = mapTerm (id, subst s)
@@ -95,7 +95,7 @@ checkList :: Bool -> [Maybe Type] -> [Term]
           -> State Env [(Subst, Constraints, [Type], [Term])]
 checkList isP mtys trms = case (mtys, trms) of
     (ty : rty, trm : rt) -> do
-      fts <- infer isP ty trm >>= reduce
+      fts <- inferWithMaybeType isP ty trm >>= reduce
       combs <- mapM ( \ (sf, cs, tyf, tf) -> do
                       vs <- gets localVars
                       putLocalVars $ substVarTypes sf vs
@@ -145,7 +145,7 @@ checkForUninstantiatedVars ga t p = let
 -- | type checking a term
 typeCheck :: Type -> Term -> State Env (Maybe Term)
 typeCheck exTy trm =
-    do alts <- infer False (Just exTy) trm >>= reduce
+    do alts <- inferWithMaybeType False (Just exTy) trm >>= reduce
        te <- get
        let p = getRange trm
            ga = globAnnos te
@@ -205,21 +205,19 @@ warnEmpty mt trm res = do
       else return ()
 
 -- | infer type of application, consider lifting for lazy types
-inferAppl :: Bool -> Range -> Maybe Type -> Term  -> Term
+inferAppl :: Bool -> Range -> Term  -> Term
           -> State Env [(Subst, Constraints, Type, Term)]
-inferAppl isP ps mt t1 t2 = do
+inferAppl isP ps t1 t2 = do
     aty <- case t2 of
              TupleTerm [] _ -> return unitType
              _ -> freshTypeVar t2
-    rty <- case mt of
-             Nothing -> freshTypeVar t1
-             Just ty -> return ty
+    rty <- freshTypeVar t1
     let mfrty = Just $ mkFunArrType aty PFunArr rty
         mlrty = Just $ TypeAppl lazyTypeConstr rty
-    ops <- infer isP mfrty t1 >>= reduce
+    ops <- inferWithMaybeType isP mfrty t1 >>= reduce
     lops <- case t2 of
         TupleTerm [] _ -> do
-            laps <- infer isP mlrty t1 >>= reduce
+            laps <- inferWithMaybeType isP mlrty t1 >>= reduce
             if null ops then warnEmpty mlrty t1 laps else return ()
             return laps
         _ -> do
@@ -240,7 +238,7 @@ inferAppl isP ps mt t1 t2 = do
                     msfty = Just sfty
                 vs <- gets localVars
                 putLocalVars $ substVarTypes sf vs
-                args <- infer isP msfty t2 >>= reduce
+                args <- inferWithMaybeType isP msfty t2 >>= reduce
                 warnEmpty msfty t2 args
                 putLocalVars vs
                 let combs2 = map ( \ (sa, ca, _, ta) ->
@@ -261,11 +259,14 @@ mkTypedTerm trm ty = case trm of
     TupleTerm ts ps | not (null ts) -> let
       n = length ts
       (topTy, tArgs) = getTypeAppl ty
-      in if n > 1 && topTy  == toProdType n nullRange
+      in if n > 1 && topTy  == toProdType n ps
              && length tArgs == n then
       TupleTerm (zipWith mkTypedTerm ts tArgs) ps
       else TypedTerm trm Inferred ty ps
-    _ -> TypedTerm trm Inferred ty nullRange
+    LetTerm br eqs inTrm ps -> LetTerm br eqs (mkTypedTerm inTrm ty) ps
+    QuantifiedTerm quant decls t ps ->
+        QuantifiedTerm quant decls (mkTypedTerm t ty) ps
+    _ -> TypedTerm trm Inferred ty $ getRange trm
 
 lesserTypeScheme :: Env -> TypeScheme -> TypeScheme -> Bool
 lesserTypeScheme e (TypeScheme args1 t1 _) (TypeScheme args2 t2 _) =
@@ -274,10 +275,24 @@ lesserTypeScheme e (TypeScheme args1 t1 _) (TypeScheme args2 t2 _) =
 lesserOpInfo :: Env -> OpInfo -> OpInfo -> Bool
 lesserOpInfo e o1 = lesserTypeScheme e (opType o1) . opType
 
+addSuperType :: Type -> [(Subst, Constraints, Type, Term)]
+             -> [(Subst, Constraints, Type, Term)]
+addSuperType inTy =
+  map (\ (s, c, ty, t) -> let nTy = subst s inTy in
+       ( s, insertC (Subtyping ty nTy) c, nTy, mkTypedTerm t nTy))
+
 -- | infer type of term (or a pattern if the Bool is True)
-infer :: Bool -> Maybe Type -> Term
-      -> State Env [(Subst, Constraints, Type, Term)]
-infer isP mt trm = do
+inferWithMaybeType :: Bool -> Maybe Type -> Term
+                   -> State Env [(Subst, Constraints, Type, Term)]
+inferWithMaybeType isP mt trm = do
+  rs <- infer isP trm
+  return $ case mt of
+    Nothing -> rs
+    Just ty -> addSuperType ty rs
+
+-- | infer type of term (or a pattern if the Bool is True)
+infer :: Bool -> Term -> State Env [(Subst, Constraints, Type, Term)]
+infer isP trm = do
     e <- get
     let tm = typeMap e
         as = assumps e
@@ -285,11 +300,7 @@ infer isP mt trm = do
         vs = localVars e
         ga = globAnnos e
     case trm of
-        qv@(QualVar (VarDecl _ ty _ ps))  -> return $
-            case mt of
-              Nothing -> [(eps, noC, ty, qv)]
-              Just inTy -> [(eps, insertC (Subtyping ty inTy) noC,
-                             inTy, TypedTerm qv Inferred inTy ps)]
+        qv@(QualVar (VarDecl _ ty _ _))  -> return [(eps, noC, ty, qv)]
         QualOp br i sc tys k ps -> do
             ms <- instOpInfo tys OpInfo { opType = sc
                                         , opAttrs = Set.empty
@@ -299,33 +310,27 @@ infer isP mt trm = do
                 Just (ty, inst, cs, _) ->
                     let qv = TypedTerm (QualOp br i sc inst k ps)
                              Inferred ty ps
-                    in case mt of
-                    Nothing -> [(eps, cs, ty, qv)]
-                    Just inTy -> [(eps, insertC (Subtyping ty inTy) cs,
-                                   inTy, TypedTerm qv Inferred inTy ps)]
+                    in [(eps, cs, ty, qv)]
         ResolvedMixTerm i tys ts ps -> case (Map.lookup i bs, ts) of
           (Just j, hd : rt@(_ : _)) -> case reverse rt of
             lt : ft -> do
               pat <- anaPattern (Map.keysSet as) hd
-              infer isP mt $ ResolvedMixTerm j tys
+              infer isP $ ResolvedMixTerm j tys
                 (reverse $ LambdaTerm [pat] Partial lt ps : ft) ps
             [] -> error "ResolvedMixTerm: binder"
           _ ->
             if null ts then case Map.lookup i vs of
                Just (VarDefn t) ->
-                 infer isP mt $ QualVar $ VarDecl i t Other ps
+                 infer isP $ QualVar $ VarDecl i t Other ps
                Nothing -> do
                     insts <- mapM (instOpInfo tys)
                        $ keepMins (lesserOpInfo e)
                        $ Set.toList
                        $ Map.findWithDefault Set.empty i as
                     let ls = map ( \ (ty, is, cs, oi) ->
-                              (eps, ty, is, case mt of
-                               Just inTy -> insertC (Subtyping ty inTy) cs
-                               Nothing -> cs, oi)) $ catMaybes insts
-                    if null ls then
+                              (eps, ty, is, cs, oi)) $ catMaybes insts
+                    when (null ls) $
                         addDiags [mkDiag Hint "no type found for" i]
-                      else return ()
                     return $ map
                       ( \ (s, ty, is, cs, oi) ->
                         let od = opDefn oi
@@ -340,64 +345,43 @@ infer isP mt trm = do
                            sc -> TypedTerm (QualOp br (PolyId i [] ps)
                                             sc is ik ps)
                                        Inferred ty ps)) ls
-            else inferAppl isP ps mt (ResolvedMixTerm i tys [] ps)
+            else inferAppl isP ps (ResolvedMixTerm i tys [] ps)
                  $ mkTupleTerm ts ps
-        ApplTerm t1 t2 ps -> inferAppl isP ps mt t1 t2
-        TupleTerm ts ps -> if null ts then return
-            [(eps, case mt of
-              Nothing -> noC
-              Just ty -> insertC (Subtyping unitType ty) noC,
-              unitType, trm)]
-            else do
-                ls <- checkList isP (map (const Nothing) ts) ts
-                return $ map ( \ (su, cs, tys, trms) ->
-                    let nTy = mkProductTypeWithRange tys ps in
-                               (su, case mt of
-                                Nothing -> cs
-                                Just ty -> insertC (Subtyping nTy
-                                                   $ subst su ty) cs, nTy,
-                                mkTupleTerm trms ps)) ls
+        ApplTerm t1 t2 ps -> inferAppl isP ps t1 t2
+        TupleTerm ts ps -> if null ts then return [(eps, noC, unitType, trm)]
+          else do
+            ls <- checkList isP (map (const Nothing) ts) ts
+            return $ map ( \ (su, cs, tys, trms) ->
+              (su, cs, mkProductTypeWithRange tys ps, mkTupleTerm trms ps)) ls
         TypedTerm t qual ty ps -> do
             case qual of
                 InType -> do
                     vTy <- freshTypeVar t
-                    rs <- infer False Nothing t
+                    rs <- infer False t
                     return $ map ( \ (s, cs, typ, tr) ->
                            let sTy = subst s ty in
-                               (s,  insertC (Subtyping sTy vTy)
-                               $ insertC (Subtyping typ vTy)
-                               $ case mt of
-                                 Nothing -> cs
-                                 Just jTy -> insertC (Subtyping (subst s jTy)
-                                                      unitType) cs,
-                                 unitType,
-                                 TypedTerm tr qual sTy ps)) rs
+                               ( s, insertC (Subtyping sTy vTy)
+                                     $ insertC (Subtyping typ vTy) cs
+                               , unitType, TypedTerm tr qual sTy ps)) rs
                 AsType -> do
                     vTy <- freshTypeVar t
-                    rs <- infer False Nothing t
+                    rs <- infer False t
                     return $ map ( \ (s, cs, typ, tr) ->
                         let sTy = subst s ty in
-                                (s, insertC (Subtyping sTy vTy)
-                                $ insertC (Subtyping typ vTy)
-                                $ case mt of
-                                 Nothing -> cs
-                                 Just jTy -> insertC (Subtyping sTy
-                                                      $ subst s jTy) cs,
-                                 sTy, TypedTerm tr qual sTy ps)) rs
+                                ( s, insertC (Subtyping sTy vTy)
+                                       $ insertC (Subtyping typ vTy) cs
+                                , sTy, TypedTerm tr qual sTy ps)) rs
                 _ -> do
                     let decl = case t of
                           ResolvedMixTerm _ tys ts _
                               | isP && null tys && null ts && qual == OfType
                               -> True
                           _ -> False
-                    rs <- infer isP (if decl then Nothing else Just ty) t
+                    rs0 <- infer isP t
+                    let rs = if decl then rs0 else addSuperType ty rs0
                     return $ map ( \ (s, cs, _, tr) ->
                           let sTy = subst s ty in
-                                (s, case mt of
-                                 Nothing -> cs
-                                 Just jTy -> insertC (Subtyping sTy
-                                                      $ subst s jTy) cs,
-                                 sTy, case tr of
+                                (s, cs, sTy, case tr of
                                  QualVar (VarDecl vp _ po _)
                                      | decl -- shadow
                                      -> QualVar (VarDecl vp sTy po ps)
@@ -412,15 +396,11 @@ infer isP mt trm = do
                                       else TypedTerm tr qual sTy ps)) rs
         QuantifiedTerm quant decls t ps -> do
             mapM_ addGenVarDecl decls
-            rs <- infer False (Just unitType) t
+            rs <- fmap (addSuperType unitType) $ infer False t
             putLocalVars vs
             putTypeMap tm
             return $ map ( \ (s, cs, typ, tr) ->
-                        (s, case mt of
-                         Nothing -> cs
-                         Just ty -> insertC (Subtyping (subst s ty)
-                                             unitType) cs,
-                         typ, QuantifiedTerm quant decls tr ps)) rs
+              (s, cs, typ, QuantifiedTerm quant decls tr ps)) rs
         LambdaTerm pats part resTrm ps -> do
             pvs <- mapM freshTypeVar pats
             rty <- freshTypeVar resTrm
@@ -428,28 +408,22 @@ infer isP mt trm = do
             ls <- checkList True (map Just pvs) pats
             rs <- mapM ( \ ( s, cs, _, nps) -> do
                        mapM_ (addLocalVar True) $ concatMap extractVars nps
-                       es <- infer False (Just $ subst s rty) resTrm
+                       es <- fmap (addSuperType $ subst s rty)
+                         $ infer False resTrm
                        putLocalVars vs
                        return $ map ( \ (s2, cr, _, rtm) ->
                                       let s3 = compSubst s s2
                                           typ = subst s3 myty in
-                                      (s3, joinC (substC s2 cs) $
-                                       case mt of
-                                       Nothing -> cr
-                                       Just ty -> insertC (Subtyping typ
-                                                          $ subst s3 ty) cr,
-                                       typ, TypedTerm
+                                      (s3, joinC (substC s2 cs) cr, typ,
+                                       TypedTerm
                                        (LambdaTerm nps part rtm ps)
                                        Inferred typ ps)) es) ls
             return $ concat rs
         CaseTerm ofTrm eqs ps -> do
-            ts <- infer False Nothing ofTrm
-            rty <- case mt of
-                   Nothing -> freshTypeVar trm
-                   Just ty -> return ty
-            if null ts then addDiags [mkNiceDiag ga Hint
+            ts <- infer False ofTrm
+            rty <- freshTypeVar trm
+            when (null ts) $ addDiags [mkNiceDiag ga Hint
                                       "unresolved of-term in case" ofTrm]
-                else return ()
             rs <- mapM ( \ (s1, cs, oty, otrm) -> do
                  es <- inferCaseEqs oty (subst s1 rty) eqs
                  return $ map ( \ (s2, cr, _, ty, nes) ->
@@ -463,7 +437,7 @@ infer isP mt trm = do
             rs <- mapM ( \ (s1, cs, _, nes) -> do
                mapM_ (addLocalVar True) $ concatMap
                          ( \ (ProgEq p _ _) -> extractVars p) nes
-               ts <- infer False mt inTrm
+               ts <- infer False inTrm
                return $ map ( \ (s2, cr, ty, nt) ->
                               (compSubst s1 s2,
                                substC s2 cs `joinC` cr,
@@ -471,7 +445,7 @@ infer isP mt trm = do
             putLocalVars vs
             return $ concat rs
         AsPattern (VarDecl v _ ok qs) pat ps -> do
-           pats <- infer True mt pat
+           pats <- infer True pat
            return $ map ( \ (s1, cs, t1, p1) -> (s1, cs, t1,
                           AsPattern (VarDecl v t1 ok qs) p1 ps)) pats
         _ -> do ty <- freshTypeVar trm
@@ -499,7 +473,7 @@ inferLetEqs es = do
 inferCaseEq :: Type -> Type -> ProgEq
             -> State Env [(Subst, Constraints, Type, Type, ProgEq)]
 inferCaseEq pty tty (ProgEq pat trm ps) = do
-   pats1 <- infer True (Just pty) pat >>= reduce
+   pats1 <- inferWithMaybeType True (Just pty) pat >>= reduce
    e <- get
    let pats = filter ( \ (_, _, _, p) -> isPat e p) pats1
        ga = globAnnos e
@@ -509,7 +483,8 @@ inferCaseEq pty tty (ProgEq pat trm ps) = do
    vs <- gets localVars
    es <- mapM ( \ (s, cs, ty, p) -> do
                 mapM_ (addLocalVar True) $ extractVars p
-                ts <- infer False (Just $  subst s tty) trm >>= reduce
+                ts <- inferWithMaybeType False (Just $ subst s tty) trm
+                  >>= reduce
                 putLocalVars vs
                 return $ map ( \ (st, cr, tyt, t) ->
                        (compSubst s st,

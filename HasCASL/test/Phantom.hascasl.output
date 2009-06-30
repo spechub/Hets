@@ -19,4 +19,4 @@ forall a : Type . c <=> b[a]
 *** Error 6.5,
 in term '(op c : Logical) <=> (op b : forall a : Type . dummy a)'
  are uninstantiated type variables
-'[_v11_a]'
+'[_v13_a]'

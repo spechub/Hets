@@ -45,11 +45,11 @@ types
 Alg := \ F : Functor . \ a : Type . F a -> a;
 ParamDT := \ G : PolyBifunctor . \ a : Type . InitialCarrier (G a)
 vars
-F : DTFunctor %(var_144)%;
-G : PolyBifunctor %(var_193)%;
-a : Type %(var_145)%;
-b : Type %(var_141)%;
-c : Type %(var_35)%
+F : DTFunctor %(var_163)%;
+G : PolyBifunctor %(var_213)%;
+a : Type %(var_164)%;
+b : Type %(var_160)%;
+c : Type %(var_42)%
 op __::__->__ : forall F : Functor; a : Type; b : Type
                 . Pred ((a -> b) * Alg F a * Alg F b)
                 %(op)%

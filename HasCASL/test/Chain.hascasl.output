@@ -13,13 +13,13 @@ vars  x : ? a; c : Chain a
 types
 Chain : Cpo -> Type;
 Nat : Type;
-gn_t25 : -Type -> +Type -> Type
+gn_t28 : -Type -> +Type -> Type
 type
-gn_t25 < __->?__
+gn_t28 < __->?__
 type
-Chain := gn_t25 Nat
+Chain := gn_t28 Nat
 var
-a : Cpo %(var_26)%
+a : Cpo %(var_29)%
 op 1 : Nat %(op)%
 op __+__ : Nat * Nat -> Nat %(op)%
 op __<=__ : forall a : -Cpo . Pred (a * a) %(fun)%

@@ -67,12 +67,12 @@ in term '(op fail : forall a : Type; m : Monad . m a)
 in term '(op fail : forall a : Type; m : Monad . m a)
 = (op emptySet : forall a : Type . Set a)'
  are uninstantiated type variables
-'[_v11_a]'
+'[_v12_a]'
 *** Error 27.8,
 in term '(op fail : forall a : Type; m : Monad . m a)
 = (op empty : forall a : Type . List a)'
  are uninstantiated type variables
-'[_v21_a]'
+'[_v23_a]'
 ### Hint 31.15-31.17,
 no kind found for 'm a'
   expected: {Cpo}

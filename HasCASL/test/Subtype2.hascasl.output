@@ -14,18 +14,18 @@ Nat : Type;
 S : Type;
 T : Type;
 gn_t1 : +Type -> Type;
-gn_t15 : +Type -> Type;
-gn_t16 : -Type -> +Type -> Type;
+gn_t16 : +Type -> Type;
+gn_t17 : -Type -> +Type -> Type;
 gn_t2 : -Type -> +Type -> Type
 types
 Nat < Int;
-gn_t16 < __->__;
+gn_t17 < __->__;
 gn_t2 < __->__
 types
 Binary := gn_t1 T;
-Inj := gn_t15 Int;
+Inj := gn_t16 Int;
 gn_t1 := gn_t2 (S * S);
-gn_t15 := gn_t16 Int
+gn_t16 := gn_t17 Int
 vars
 a < b : Type %(var_5)%;
 b : Type %(var_4)%

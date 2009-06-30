@@ -77,7 +77,7 @@ forall a : Type; p : Bool; w : a; x : a
 *** Error 10.3,
 in term 'not def (op bot : forall a : Type . ? a)'
  are uninstantiated type variables
-'[_v77_a]'
+'[_v98_a]'
 ### Hint 13.7, not a class 'a'
 ### Hint 13.13, not a class 'b'
 ### Hint 13.19, not a kind 'Sum a b'
@@ -97,3 +97,13 @@ no kind found for 'Bool'
 no kind found for 'Bool'
   expected: {Cppo}
      found: {Type}
+### Hint 23.8-23.20,
+in type of '((op True : Bool),
+ (op inl : forall a : Type; b : Type . a -> Sum a b) ())'
+  typename 'Unit' (19.23)
+  is not unifiable with type 'Sum Unit _v266_b' (19.18)
+### Hint 24.8-24.21,
+in type of '((op False : Bool),
+ (op inr : forall a : Type; b : Type . b -> Sum a b) ())'
+  typename 'Unit' (19.23)
+  is not unifiable with type 'Sum _v288_a Unit' (19.18)
