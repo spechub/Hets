@@ -246,6 +246,10 @@ prettyRange :: [Pos] -> Doc
 prettyRange = sepByCommas . map prettySingleSourceRange
     . groupBy (\ p1 p2 -> sourceName p1 == sourceName p2) . sort
 
+-- Added this instance because prettyRange is not exported
+instance Pretty Range where
+    pretty = prettyRange . rangeToList
+
 relevantDiagKind :: Int -> DiagKind -> Bool
 relevantDiagKind v k = case k of
     Error -> True
