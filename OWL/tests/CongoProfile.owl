@@ -37,7 +37,7 @@
 <owl:Ontology rdf:about="">
     <owl:versionInfo>
       $Id: CongoProfile.owl,v 1.3onInfo>
-      $Id: CongoProfile.owl 4169 2005-04-30 14:40:34Z jiang $
+      $Id$
     </owl:versionInfo>
     <rdfs:comment>
       OWL-S Coalition: CongoBuy Example for OWL-S release

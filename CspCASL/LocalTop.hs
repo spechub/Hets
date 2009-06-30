@@ -1,5 +1,5 @@
 {- |
-Module      :  $Id: StatAnaCSP.hs 9274 2007-11-29 20:55:26Z gimblett $
+Module      :  $Id$
 Description :  Local top element analysis for CspCASL specifications
 Copyright   :  (c) Andy Gimblett, Swansea University 2007
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt

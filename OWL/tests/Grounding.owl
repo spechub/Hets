@@ -29,7 +29,7 @@
 
 <owl:Ontology rdf:about="">
   <owl:versionInfo>
-    $Id: Grounding.owl,v 1.34 2004/09/28 06:58:53 martin Exp $
+    $Id$
   </owl:versionInfo>
   <rdfs:comment>
     Upper-level OWL ontology for Groundings that employ WSDL.

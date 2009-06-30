@@ -25,7 +25,7 @@ into Internet Explorer.
 
   <owl:Ontology rdf:about="">
     <owl:versionInfo>
-      $Id: ActorDefault.owl,v 1.7 2004/09/28 06:58:52 martin Exp $
+      $Id$
     </owl:versionInfo> 
     <rdfs:comment>
       Actor Default Properties

@@ -10,7 +10,7 @@
 >
 
 <owl:Ontology rdf:about="">
-  <owl:versionInfo>$Id: Country.owl 6298 2006-05-09 15:04:33Z 2luettich $</owl:versionInfo>
+  <owl:versionInfo>$Id$</owl:versionInfo>
   <rdfs:comment>
 
 This is a temporary placeholder/stub.  There is a more substantive Country

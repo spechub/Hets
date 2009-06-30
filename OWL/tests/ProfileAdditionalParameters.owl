@@ -27,7 +27,7 @@ into Internet Explorer.
 
   <owl:Ontology rdf:about="">
     <owl:versionInfo>
-      $Id: ProfileAdditionalParameters.owl,v 1.10 2004/09/28 06:58:53 martin Exp $
+      $Id$
     </owl:versionInfo> 
     <rdfs:comment>
       Process and Service Coalition

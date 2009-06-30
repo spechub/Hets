@@ -27,7 +27,7 @@ Download the source for a version with unexpanded entities.
  
   <owl:Ontology rdf:about="">
     <owl:versionInfo>
-      $Id: Concepts.owl 4169 2005-04-30 14:40:34Z jiang $
+      $Id$
     </owl:versionInfo>
     <rdfs:comment>
       DAML-S Coalition: Concepts used by the BravoAir

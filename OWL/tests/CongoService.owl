@@ -30,7 +30,7 @@
 
  <owl:Ontology rdf:about="">
    <owl:versionInfo>
-     $Id: CongoService.owl 4169 2005-04-30 14:40:34Z jiang $
+     $Id$
    </owl:versionInfo>
    <rdfs:comment> 
    This ontology represents the OWL-S service description for the

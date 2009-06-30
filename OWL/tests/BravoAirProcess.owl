@@ -32,7 +32,7 @@
   xml:base="&DEFAULT;">
 
   <owl:Ontology rdf:about="">
-    <owl:versionInfo>$Id: BravoAirProcess.owl 4169 2005-04-30 14:40:34Z jiang $</owl:versionInfo>
+    <owl:versionInfo>$Id$</owl:versionInfo>
     <rdfs:comment>OWL-S Coalition: BravoAir Example for OWL-S Process Model</rdfs:comment>
     <owl:imports rdf:resource="&service;"/>
     <owl:imports rdf:resource="&process;"/>
