@@ -13,7 +13,6 @@ get annotated strings of 'BASIC_SPEC'
 
 module CASL.ToAnnStrList where
 
-import Common.Id
 import Common.Keywords
 import Common.Doc
 import Common.DocUtils

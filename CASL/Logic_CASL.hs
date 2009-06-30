@@ -19,6 +19,7 @@ import Common.AS_Annotation
 import Common.Lexer((<<))
 import Common.ProofTree
 import Common.Consistency
+import Common.DocUtils
 
 import ATC.ProofTree ()
 
@@ -29,6 +30,7 @@ import Logic.Logic
 import CASL.AS_Basic_CASL
 import CASL.Parse_AS_Basic
 import CASL.ToDoc
+import CASL.ToAnnStrList
 import CASL.SymbolParser
 import CASL.MapSentence
 import CASL.Amalgamability
@@ -109,6 +111,7 @@ instance Syntax CASL CASLBasicSpec
          parse_basic_spec CASL = Just $ basicSpec []
          parse_symb_items CASL = Just $ symbItems []
          parse_symb_map_items CASL = Just $ symbMapItems []
+         toAnnotedStrings CASL = basicSpec2annStrList pretty pretty pretty
 
 -- lattices (for sublogics)
 

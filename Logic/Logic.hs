@@ -223,10 +223,12 @@ class (Language lid, PrintTypeConv basic_spec,
          parse_symb_items :: lid -> Maybe(AParser st symb_items)
          -- | parser for symbol maps
          parse_symb_map_items :: lid -> Maybe(AParser st symb_map_items)
+         toAnnotedStrings :: lid -> basic_spec -> [Annoted String]
          -- default implementations
          parse_basic_spec _ = Nothing
          parse_symb_items _ = Nothing
          parse_symb_map_items _ = Nothing
+         toAnnotedStrings _ _ = []
 
 {- | Sentences, provers and symbols.
      Provers capture the entailment relation between sets of sentences
