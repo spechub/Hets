@@ -291,6 +291,12 @@ date
 for i in */*.prf; do ./hets -v2 -o th $i; done
 }
 
+checkHpfs ()
+{
+date
+for i in *.hpf Basic/*.hpf Calculi/*/*.hpf; do ./hets -v2 $i; done
+}
+
 updateOMDoc ()
 {
 svn co https://svn-agbkb.informatik.uni-bremen.de/Hets-OMDoc/trunk Hets-OMDoc
