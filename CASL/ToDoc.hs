@@ -21,6 +21,11 @@ module CASL.ToDoc
     , ListCheck(..)
     , recoverType
     , printALTERNATIVE
+    , typeString
+    , printVarDecl
+    , printSortItem
+    , printOpItem
+    , printPredItem
     ) where
 
 import Common.Id
