@@ -13,7 +13,7 @@ is able to analyse heterogeneous and in particular CASL
 specifications.
 
 The sources need to be compiled using ghc Glasgow Haskell Compiler
-(www.haskell.org/ghc) version 6.8.x! Haskell as a logic is also
+(www.haskell.org/ghc) version 6.8.x or 6.10.x! Haskell as a logic is also
 a part of Hets via "Programatica" (http://programatica.cs.pdx.edu/).
 
 Beside output written to the console (stdout) or to files, hets can
@@ -43,7 +43,13 @@ For proving Mac users may need to set HETS_ISABELLE, so that Isabelle finds
 Aquamacs.
 
 export HETS_ISABELLE="isabelle-interface -p \
-  '/Applications/Aquamacs\ Emacs.app/Contents/MacOS/Aquamacs\ Emacs'" 
+  '/Applications/Aquamacs\ Emacs.app/Contents/MacOS/Aquamacs\ Emacs'"
+
+Further environment variables for provers are:
+
+  PELLET_PATH
+  HETS_OWL_TOOLS
+  HETS_APROVE
 
 If you need to build the hets binary follow the instructions in
 INSTALL, alternatively try to get a binary or a complete installer from:
