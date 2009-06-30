@@ -402,19 +402,18 @@ infer isP trm = do
             return $ map ( \ (s, cs, typ, tr) ->
               (s, cs, typ, QuantifiedTerm quant decls tr ps)) rs
         LambdaTerm pats part resTrm ps -> do
-            pvs <- mapM freshTypeVar pats
-            rty <- freshTypeVar resTrm
-            let myty = getFunType rty part pvs
-            ls <- checkList True (map Just pvs) pats
-            rs <- mapM ( \ ( s, cs, _, nps) -> do
+            ls <- checkList True (map (const Nothing) pats) pats
+            rs <- mapM ( \ ( s, cs, pats, nps) -> do
                        mapM_ (addLocalVar True) $ concatMap extractVars nps
-                       es <- fmap (addSuperType $ subst s rty)
-                         $ infer False resTrm
+                       es <- infer False resTrm
                        putLocalVars vs
-                       return $ map ( \ (s2, cr, _, rtm) ->
+                       return $ map ( \ (s2, cr, rty, rtm) ->
                                       let s3 = compSubst s s2
-                                          typ = subst s3 myty in
-                                      (s3, joinC (substC s2 cs) cr, typ,
+                                          typ = getFunType (subst s rty)
+                                             part $ map (subst s2) pats
+                                      in
+                                      (s3, joinC (substC s2 cs) $ substC s cr
+                                      , typ,
                                        TypedTerm
                                        (LambdaTerm nps part rtm ps)
                                        Inferred typ ps)) es) ls

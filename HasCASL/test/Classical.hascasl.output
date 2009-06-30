@@ -20,7 +20,7 @@ op    epsilon : Pred t -> t
 . (exists x : t . pr x) => pr (epsilon pr)
 . p \/ not p; %implied
 var
-t : Type %(var_92)%
+t : Type %(var_88)%
 op choose : forall t : Type . Pred t ->? t %(op)%
 op epsilon : forall t : Type . Pred t -> t %(op)%
 vars
@@ -62,31 +62,31 @@ forall p : Logical . p \/ not p %implied
 ### Hint 14.32,
 in type of '(var a : Logical)'
   typename 'Unit'
-  is not unifiable with type 'Unit ->? _v124' (14.32)
+  is not unifiable with type 'Unit ->? _v116' (14.32)
 ### Hint 18.23, not a class 'Logical'
 ### Hint 18.41,
 in type of '(var a : Logical)'
   typename 'Unit'
-  is not unifiable with type 'Unit ->? _v162' (18.41)
+  is not unifiable with type 'Unit ->? _v154' (18.41)
 ### Hint 18.55,
 in type of '(var a : Logical)'
   typename 'Unit'
-  is not unifiable with type 'Unit ->? _v168' (18.55)
+  is not unifiable with type 'Unit ->? _v160' (18.55)
 ### Hint 18.63,
 in type of '(var a : Logical)'
   typename 'Unit'
-  is not unifiable with type 'Unit ->? _v169' (18.63)
+  is not unifiable with type 'Unit ->? _v161' (18.63)
 ### Hint 20.13, not a class 't'
 ### Hint 20.36, not a class 'Logical'
 ### Hint 21.16, not a class 't'
 ### Hint 21.30,
 in type of '(var a : Logical)'
   typename 'Unit'
-  is not unifiable with type 'Unit ->? _v190' (21.30)
+  is not unifiable with type 'Unit ->? _v182' (21.30)
 ### Hint 21.38,
 in type of '(var a : Logical)'
   typename 'Unit'
-  is not unifiable with type 'Unit ->? _v191' (21.38)
+  is not unifiable with type 'Unit ->? _v183' (21.38)
 ### Hint 23.7, not a class 't'
 ### Hint 23.10, not a class 't'
 ### Hint 27.30, not a class 't'

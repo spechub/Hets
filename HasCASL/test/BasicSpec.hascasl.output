@@ -170,25 +170,25 @@ no typing for 'program all (p : ? s) : ? Unit = eq (p, tt)'
 ### Hint 30.14, rebound variable 'x'
 ### Hint 30.40, no type found for 't1'
 ### Hint 30.40, no type found for 't1'
-### Hint 30.40, untypeable term (with type: ? _v61) 't1'
+### Hint 30.40, untypeable term (with type: ? _v59) 't1'
 ### Hint 30.40-30.52,
-untypeable term (with type: ? _v55 * ? _v57_b) '(t1 (), t2 ())'
+untypeable term (with type: ? _v53 * ? _v55_b) '(t1 (), t2 ())'
 *** Error 30.38,
 no typing for
 'program And (x, y : ? Unit) : ? Unit = t1 () res t2 ()'
 *** Error 32.12, unexpected mixfix token: impl
 *** Error 34.12, unexpected mixfix token: or
 ### Hint 37.27, no type found for 'all'
-### Hint 37.27, untypeable term (with type: _v71 ->? _v72) 'all'
+### Hint 37.27, untypeable term (with type: _v69 ->? _v70) 'all'
 *** Error 37.25,
 no typing for
 'program ex (p : ? s) : ? Unit
          = all \ r : ? Unit . (all \ x : s . p x impl r) impl r'
 ### Hint 40.20, no type found for 'all'
-### Hint 40.20, untypeable term (with type: _v79 ->? _v80) 'all'
+### Hint 40.20, untypeable term (with type: _v77 ->? _v78) 'all'
 ### Hint 40.3, rebound variable 'ff'
 ### Hint 40.20, no type found for 'all'
-### Hint 40.20, untypeable term (with type: _v81 ->? _v82) 'all'
+### Hint 40.20, untypeable term (with type: _v79 ->? _v80) 'all'
 *** Error 40.18,
 no typing for 'program ff () : ? Unit = all \ r : ? Unit . r ()'
 ### Hint 45.9, not a class 't'

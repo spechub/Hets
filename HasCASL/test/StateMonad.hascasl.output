@@ -13,7 +13,7 @@ type
 ST := \ state : Type . \ a : Type . state ->? a * state
 vars
 a : Type %(var_2)%;
-b : Type %(var_43)%;
+b : Type %(var_38)%;
 m : Type -> Type %(var_1)%;
 state : Type %(var_3)%
 op __>>=__ : forall m : Type -> Type; a : Type; b : Type
@@ -55,10 +55,10 @@ in type of '((var p : ST state a), (var q : a ->? ST state b))'
   typename 'a' (10.35)
   is not unifiable with type 'a * state' (10.18)
 ### Hint 13.3-13.9,
-untypeable term (with type: _v64_v54_m _v55_a * (_v55_a -> _v64_v54_m _v56_b))
+untypeable term (with type: _v59_v49_m _v50_a * (_v50_a -> _v59_v49_m _v51_b))
 '(p, q)'
 ### Hint 13.5-13.54,
-untypeable term (with type: ? _v48_a * ? _v48_a)
+untypeable term (with type: ? _v43_a * ? _v43_a)
 '(p >>= q, \ s2 : state . let (z, s2) = p s1 in q z s2)'
 *** Error 13.5,
 no typing for

@@ -101,9 +101,9 @@ no kind found for 'Bool'
 in type of '((op True : Bool),
  (op inl : forall a : Type; b : Type . a -> Sum a b) ())'
   typename 'Unit' (19.23)
-  is not unifiable with type 'Sum Unit _v266_b' (19.18)
+  is not unifiable with type 'Sum Unit _v250_b' (19.18)
 ### Hint 24.8-24.21,
 in type of '((op False : Bool),
  (op inr : forall a : Type; b : Type . b -> Sum a b) ())'
   typename 'Unit' (19.23)
-  is not unifiable with type 'Sum _v288_a Unit' (19.18)
+  is not unifiable with type 'Sum _v272_a Unit' (19.18)
