@@ -151,5 +151,6 @@ needs to be fixed.
 >rectype = do
 >       s <- variable
 >       symbol "::"
+>       opt $ symbol "!"
 >       t <- type0
 >       return (s,t)
