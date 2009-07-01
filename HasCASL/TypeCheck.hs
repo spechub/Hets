@@ -95,7 +95,7 @@ checkList :: Bool -> [Maybe Type] -> [Term]
           -> State Env [(Subst, Constraints, [Type], [Term])]
 checkList isP mtys trms = case (mtys, trms) of
     (ty : rty, trm : rt) -> do
-      fts <- inferWithMaybeType isP ty trm >>= reduce
+      fts <- inferWithMaybeType isP ty trm
       combs <- mapM ( \ (sf, cs, tyf, tf) -> do
                       vs <- gets localVars
                       putLocalVars $ substVarTypes sf vs
@@ -145,7 +145,7 @@ checkForUninstantiatedVars ga t p = let
 -- | type checking a term
 typeCheck :: Type -> Term -> State Env (Maybe Term)
 typeCheck exTy trm =
-    do alts <- inferWithMaybeType False (Just exTy) trm >>= reduce
+    do alts <- inferWithMaybeType False (Just exTy) trm
        te <- get
        let p = getRange trm
            ga = globAnnos te
@@ -214,10 +214,10 @@ inferAppl isP ps t1 t2 = do
     rty <- freshTypeVar t1
     let mfrty = Just $ mkFunArrType aty PFunArr rty
         mlrty = Just $ TypeAppl lazyTypeConstr rty
-    ops <- inferWithMaybeType isP mfrty t1 >>= reduce
+    ops <- inferWithMaybeType isP mfrty t1
     lops <- case t2 of
         TupleTerm [] _ -> do
-            laps <- inferWithMaybeType isP mlrty t1 >>= reduce
+            laps <- inferWithMaybeType isP mlrty t1
             if null ops then warnEmpty mlrty t1 laps else return ()
             return laps
         _ -> do
@@ -238,7 +238,7 @@ inferAppl isP ps t1 t2 = do
                     msfty = Just sfty
                 vs <- gets localVars
                 putLocalVars $ substVarTypes sf vs
-                args <- inferWithMaybeType isP msfty t2 >>= reduce
+                args <- inferWithMaybeType isP msfty t2
                 warnEmpty msfty t2 args
                 putLocalVars vs
                 let combs2 = map ( \ (sa, ca, _, ta) ->
@@ -286,7 +286,7 @@ inferWithMaybeType :: Bool -> Maybe Type -> Term
                    -> State Env [(Subst, Constraints, Type, Term)]
 inferWithMaybeType isP mt trm = do
   rs <- infer isP trm
-  return $ case mt of
+  reduce $ case mt of
     Nothing -> rs
     Just ty -> addSuperType ty rs
 
@@ -472,7 +472,7 @@ inferLetEqs es = do
 inferCaseEq :: Type -> Type -> ProgEq
             -> State Env [(Subst, Constraints, Type, Type, ProgEq)]
 inferCaseEq pty tty (ProgEq pat trm ps) = do
-   pats1 <- inferWithMaybeType True (Just pty) pat >>= reduce
+   pats1 <- inferWithMaybeType True (Just pty) pat
    e <- get
    let pats = filter ( \ (_, _, _, p) -> isPat e p) pats1
        ga = globAnnos e
@@ -483,7 +483,6 @@ inferCaseEq pty tty (ProgEq pat trm ps) = do
    es <- mapM ( \ (s, cs, ty, p) -> do
                 mapM_ (addLocalVar True) $ extractVars p
                 ts <- inferWithMaybeType False (Just $ subst s tty) trm
-                  >>= reduce
                 putLocalVars vs
                 return $ map ( \ (st, cr, tyt, t) ->
                        (compSubst s st,
