@@ -71,7 +71,7 @@ no kind found for 'Set S'
 ### Hint 9.6-9.14,
 in type of '((var g : Graph N E), (var g' : Graph N E))'
   typename '__->?__' (2.19)
-  is not unifiable with type 'Graph' (8.17)
+  is not unifiable with type '__*__*__ (Set N)' (8.23)
 ### Hint 9.6-9.14,
 untypeable term (with type: (_v15_S ->? Unit) * (_v15_S ->? Unit))
 '(g, g')'

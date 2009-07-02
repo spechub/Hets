@@ -27,7 +27,6 @@ var   G : PolyBifunctor
 type  ParamDT G a := InitialCarrier (G a)
 type  ParamDT G : DTFunctor
 vars  l : ParamDT G a; f : a -> a
-. map f l = fold initialAlg l;
 classes
 DTFunctor < Type -> Type;
 Functor < Type -> Type;
@@ -81,8 +80,6 @@ F : Functor; a : Type; b : Type; c : Type; f : a -> b; g : b -> c
 forall
 F : DTFunctor; a : Type; alpha : Alg F a; g : InitialCarrier F -> a
 . g :: initialAlg -> alpha <=> g = fold alpha
-forall G : PolyBifunctor; a : Type; f : a -> a; l : ParamDT G a
-. map f l = fold initialAlg l
 ### Hint 1.6, is type variable 'a'
 ### Hint 1.8, is type variable 'b'
 ### Hint 1.10, is type variable 'c'
@@ -139,17 +136,12 @@ no kind found for 'a -> b'
 ### Hint 33.23, not a class 'a'
 ### Hint 33.23, not a class 'a'
 ### Hint 33.22, rebound variable 'f'
-### Hint 34.3,
-constrain '(\ a : Type . InitialCarrier (G a)) : Functor' is unprovable
-  known kinds are: {Type -> Type}
-*** Error 34.3,
-in term '(op map :
- forall a : Type; b : Type; F : Functor . (a -> b) -> F a -> F b)
-(var f : a -> a)
-(var l : ParamDT G a)
-= (op fold :
-   forall F : DTFunctor; a : Type . Alg F a -> InitialCarrier F -> a)
-  (op initialAlg : forall F : DTFunctor . Alg F (InitialCarrier F))
-  (var l : ParamDT G a)' of type 'Unit'
- unresolved constraints
-'{(\ a : Type . InitialCarrier (G a)) : Functor}'
+### Hint 34.9,
+in type of '(var l : ParamDT G a)'
+  type 'InitialCarrier' (30.21)
+  is not unifiable with differently kinded type '_v240_v236_v229_F' (9.21)
+### Hint 34.9, untypeable term (with type: _v240_v236_v229_F a) 'l'
+### Hint 34.3-34.29,
+untypeable term (with type: ? _v219_a * ? _v219_a)
+'(map f l, fold initialAlg l)'
+*** Error 34.3, no typing for 'map f l = fold initialAlg l'

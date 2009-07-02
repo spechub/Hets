@@ -148,7 +148,8 @@ partEqShapes = filter ( \ p -> case p of
 
 -- pre: shapeMatchPairList succeeds
 shapeMgu :: TypeMap -> [(Type, Type)] -> [(Type, Type)] -> State Int Subst
-shapeMgu te knownAtoms cs = let (atoms, sts) = span isAtomic cs in case sts of
+shapeMgu te knownAtoms cs = let (atoms, sts) = span isAtomic cs in
+  case sts of
   [] -> return eps
   p@(t1, t2) : tl -> let
    newKnowns = knownAtoms ++ partEqShapes atoms
@@ -171,19 +172,11 @@ shapeMgu te knownAtoms cs = let (atoms, sts) = span isAtomic cs in case sts of
              return $ compSubst s r
        else error ("shapeMgu1a: " ++ showDoc t1 " < " ++ showDoc t2 "")
     (_, TypeName _ _ _) -> shapeMgu te newKnowns $ (t2, t1) : tl
-    (TypeAppl f1 a1, TypeAppl f2 a2) -> let
-        (ry1, Result _ ms1) = case redStep t1 of
-            Just r1 -> (r1, shapeMatch te r1 t2)
-            Nothing -> (t1, fail "shapeMatch1")
-        (ry2, Result _ ms2) = case redStep t2 of
-            Just r2 -> (r2, shapeMatch te t1 r2)
-            Nothing -> (t2, fail "shapeMatch2")
-        res = shapeMgu te newKnowns $ (f1, f2) : (a1, a2) : tl
-        in case ms1 of
-               Nothing -> case ms2 of
-                   Nothing -> res
-                   Just _ -> shapeMgu te newKnowns $ (t1, ry2) : tl
-               Just _ -> shapeMgu te newKnowns $ (ry1, t2) : tl
+    (TypeAppl f1 a1, TypeAppl f2 a2) -> case redStep t1 of
+      Just r1 -> shapeMgu te newKnowns $ (r1, t2) : tl
+      Nothing -> case redStep t2 of
+        Just r2 -> shapeMgu te newKnowns $ (t1, r2) : tl
+        Nothing -> shapeMgu te newKnowns $ (f1, f2) : (a1, a2) : tl
     _ -> if t1 == t2 then shapeMgu te newKnowns tl else
          error $ "shapeMgu2: " ++ showDoc t1 " < " ++ showDoc t2 ""
 
@@ -214,7 +207,8 @@ inclusions cs = let (atoms, sts) = partition isAtomic cs in
                Just r2 -> inclusions $ (t1, r2) : tl
              Just r1 -> inclusions $ (r1, t2) : tl
 
-shapeUnify :: TypeMap -> [(Type, Type)] -> State Int (Subst, [(Type, Type)])
+shapeUnify :: TypeMap -> [(Type, Type)]
+           -> State Int (Subst, [(Type, Type)])
 shapeUnify te l = do
     s <- shapeMgu te [] l
     return (s, inclusions $ substPairList s l)
@@ -269,7 +263,8 @@ shapeRel te cs =
         subL = toListC subS
     in case shapeMatchPairList (typeMap te) subL of
        Result ds Nothing -> return $ Result ds Nothing
-       _ -> do (s1, atoms) <- shapeUnify (typeMap te) subL
+       _ -> do
+               (s1, atoms) <- shapeUnify (typeMap te) subL
                let r = Rel.transClosure $ Rel.fromList atoms
                    es = Map.foldWithKey ( \ t1 st l1 ->
                              case t1 of

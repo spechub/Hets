@@ -32,7 +32,6 @@ type instance ST state : Monad
 vars  a, b : Type
 type  ST state a := state ->? a * state
 vars  x : a; p : ST state a; q : a ->? ST state b
-. (ret x : ST state a) = \ s : state . (x, s);
 classes
 Functor < Type -> Type;
 Monad < Type -> Type;
@@ -97,8 +96,6 @@ forall a : Type; m : Monad; t : MonadT; x : a
 forall
 a : Type; b : Type; m : Monad; t : MonadT; p : m a; q : a -> m b
 . lift (p >>= q) = lift p >>= \ y : a .! lift (q y) : t m b
-forall a : Type; state : Type; x : a
-. (ret x : ST state a) = \ s : state . (x, s)
 ### Hint 2.7, is type variable 'f'
 ### Hint 2.19, is type variable 'a'
 ### Hint 2.22, is type variable 'b'
@@ -281,31 +278,32 @@ no kind found for 'a'
 ### Hint 35.13, rebound variable 'p'
 ### Hint 35.29, not a kind 'a ->? ST state b'
 ### Hint 35.28, rebound variable 'q'
-### Hint 36.3,
-constrain '(\ a : Type . state ->? a * state) : Monad' is unprovable
-  known kinds are: {Type -> Type}
+### Hint 36.3-36.9,
+in type of '(op ret : forall m : Monad; a : Type . a -> m a) (var x : a) :
+ST state a'
+  typename 'a' (35.10)
+  is not unifiable with type 'a * state' (36.20)
+### Hint 36.3-36.42,
+untypeable term (with type: ? _v906_a * ? _v906_a)
+'(ret x : ST state a, \ s : state . (x, s))'
 *** Error 36.3,
-in term '((op ret : forall m : Monad; a : Type . a -> m a) (var x : a) :
- ST state a)
-= \ s : state . ((var x : a), (var s : state))' of type 'Unit'
- unresolved constraints
-'{(\ a : Type . state ->? a * state) : Monad}'
+no typing for '(ret x : ST state a) = \ s : state . (x, s)'
 ### Hint 37.3-37.9,
 in type of '((var p : ST state a), (var q : a ->? ST state b))'
   typename 'a' (35.31)
   is not unifiable with type 'a * state' (35.25)
 ### Hint 37.3-37.9,
-untypeable term (with type: _v945_v932_m _v933_a * (_v933_a -> _v945_v932_m _v934_b))
+untypeable term (with type: _v940_v927_m _v928_a * (_v928_a -> _v940_v927_m _v929_b))
 '(p, q)'
 ### Hint 37.3-37.9,
 in type of '((var p : ST state a), (var q : a ->? ST state b))'
   typename 'a' (35.31)
   is not unifiable with type 'a * state' (35.25)
 ### Hint 37.3-37.9,
-untypeable term (with type: _v954_v935_m _v936_a * (_v936_a ->? _v954_v935_m _v937_b))
+untypeable term (with type: _v949_v930_m _v931_a * (_v931_a ->? _v949_v930_m _v932_b))
 '(p, q)'
 ### Hint 37.5-37.54,
-untypeable term (with type: ? _v926_a * ? _v926_a)
+untypeable term (with type: ? _v921_a * ? _v921_a)
 '(p >>= q, \ s1 : state . let (z, s2) = p s1 in q z s2)'
 *** Error 37.5,
 no typing for

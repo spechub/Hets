@@ -150,23 +150,15 @@ match tm rel p1@(b1, ty1) p2@(b2, ty2) =
         else uniResult "typename" ty1
                             "is not unifiable with type" ty2
     (_, TypeName _ _ _) -> match tm rel p2 p1
-    (TypeAppl f1 a1, TypeAppl f2 a2) ->
-      let res = do
+    (TypeAppl f1 a1, TypeAppl f2 a2) -> case redStep ty1 of
+       Just ry1 -> match tm rel (b1, ry1) p2
+       Nothing -> case redStep ty2 of
+         Just ry2 -> match tm rel p1 (b2, ry2)
+         Nothing -> do
             s1 <- match tm rel (b1, f1) (b2, f2)
             s2 <- match tm rel (b1, if b1 then subst s1 a1 else a1)
                    (b2, if b2 then subst s1 a2 else a2)
             return $ compSubst s1 s2
-          res1@(Result _ ms1) = case redStep ty1 of
-              Just ry1 -> match tm rel (b1, ry1) p2
-              Nothing -> fail "match1"
-          res2@(Result _ ms2) = case redStep ty2 of
-              Just ry2 -> match tm rel p1 (b2, ry2)
-              Nothing -> fail "match2"
-      in case ms1 of
-               Nothing -> case ms2 of
-                   Nothing -> res
-                   Just _ -> res2
-               Just _ -> res1
     _ -> if ty1 == ty2 then return eps else
              uniResult "type" ty1 "is not unifiable with type" ty2
   else uniResult "type" ty1 "is not unifiable with differently kinded type" ty2
