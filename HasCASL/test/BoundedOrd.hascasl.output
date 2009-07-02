@@ -53,8 +53,8 @@ Unit : Ord;
 __*__ : +Ord -> +Ord -> Ord;
 __->?__ : -Ord -> +Ord -> Ord
 vars
-a : Cpo %(var_209)%;
-b : Ord %(var_142)%
+a : Cpo %(var_46)%;
+b : Ord %(var_32)%
 op __<=__ : forall a : Cpo . Pred (a * a) %(op)%
 op __<=__ : forall a : Ord . Pred (a * a) %(op)%
 op __<=__ : forall a : Ord; b : Ord . Pred ((a ->? b) * (a ->? b))
@@ -170,9 +170,9 @@ no kind found for 'a ->? b'
 ### Hint 37.9-37.10,
 in type of '((), ())'
   typename 'Unit'
-  is not unifiable with type '_v148_a ->? _v149_b' (33.29)
+  is not unifiable with type '_v36_a ->? _v37_b' (33.29)
 ### Hint 37.9-37.10,
-untypeable term (with type: (_v148_a ->? _v149_b) * (_v148_a ->? _v149_b))
+untypeable term (with type: (_v36_a ->? _v37_b) * (_v36_a ->? _v37_b))
 '((), ())'
 ### Hint 40.8, not a kind '? a'
 ### Hint 40.7, rebound variable 'x'
@@ -181,36 +181,16 @@ untypeable term (with type: (_v148_a ->? _v149_b) * (_v148_a ->? _v149_b))
 ### Hint 41.3-41.8,
 in type of '((var x : ? a), (var y : ? a))'
   typename 'a' (40.14)
-  is not unifiable with type '_v169_a ->? _v170_b' (33.29)
+  is not unifiable with type '_v40_a ->? _v41_b' (33.29)
 ### Hint 41.3-41.8,
-untypeable term (with type: (_v169_a ->? _v170_b) * (_v169_a ->? _v170_b))
+untypeable term (with type: (_v40_a ->? _v41_b) * (_v40_a ->? _v41_b))
 '(x, y)'
-### Hint 41.18,
-in type of '(var x : ? a)'
-  typename 'a' (40.14)
-  is not unifiable with type 'Unit ->? _v189' (41.18)
-### Hint 41.25,
-in type of '(var x : ? a)'
-  typename 'a' (40.14)
-  is not unifiable with type 'Unit ->? _v205' (41.25)
-### Hint 41.32,
-in type of '(var y : ? a)'
-  typename 'a' (40.14)
-  is not unifiable with type 'Unit ->? _v206' (41.32)
-### Hint 41.25,
-in type of '(var x : ? a)'
-  typename 'a' (40.14)
-  is not unifiable with type 'Unit ->? _v207' (41.25)
-### Hint 41.32,
-in type of '(var y : ? a)'
-  typename 'a' (40.14)
-  is not unifiable with type 'Unit ->? _v208' (41.32)
 ### Hint 41.25-41.34,
 in type of '((var x : ? a) (), (var y : ? a) ())'
   typename 'a' (40.14)
-  is not unifiable with type '_v193_a ->? _v194_b' (33.29)
+  is not unifiable with type '_v44_a ->? _v45_b' (33.29)
 ### Hint 41.25-41.34,
-untypeable term (with type: (_v193_a ->? _v194_b) * (_v193_a ->? _v194_b))
+untypeable term (with type: (_v44_a ->? _v45_b) * (_v44_a ->? _v45_b))
 '(x (), y ())'
 ### Warning 43.7, refined class 'Cpo'
 ### Hint 44.5, is type variable 'a'

@@ -10,8 +10,8 @@ a : Type %(var_1)%;
 b < a : Type %(var_2)%
 op twice : forall a : Type; b < a : Type . (a ->? b) -> a ->? b
            %[op=
-           (\ f : a ->? a; x : a
-            . (var f : a ->? a) ((var f : a ->? a) (var x : a)))
+           (\ f : a ->? b; x : a
+            . (var f : a ->? b) ((var f : a ->? b) (var x : a)))
            as (a ->? b) -> a ->? b]%
 op twice2 : forall a : Type; b < a : Type . (a ->? b) -> a ->? b
             %[op=
@@ -32,7 +32,7 @@ forall a : Type; b < a : Type
   = ((\ (f : a ->? b, x : a) . f (f x)) as (a ->? b) * a ->? b)
 forall a : Type; b < a : Type
 . twice
-  = ((\ (f : a ->? a)(x : a) . f (f x)) as (a ->? b) -> a ->? b)
+  = ((\ (f : a ->? b)(x : a) . f (f x)) as (a ->? b) -> a ->? b)
 forall a : Type; b < a : Type; f : a ->? b; x : a
 . twice f x = f (f x)
 ### Hint 1.6, is type variable 'a'

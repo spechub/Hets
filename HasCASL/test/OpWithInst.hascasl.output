@@ -32,10 +32,10 @@ Funct < Type -> Type
 type
 s : Type
 vars
-F : Funct %(var_23)%;
+F : Funct %(var_8)%;
 a : Type %(var_1)%;
 b : Type %(var_2)%;
-f : Funct %(var_22)%
+f : Funct %(var_7)%
 op __=[s]__ : forall a : Type . a * a -> Unit %(op)%
 op a : s %(op)%
 op f[a] : forall a : Type . a -> Unit %(op)%
@@ -138,7 +138,7 @@ no kind found for 'a'
 for type scheme 'a * a -> Unit' wrong length of instantiation list
 '[s, s]'
 ### Hint 35.4-35.16,
-untypeable term (with type: _v34 ->? _v35)
+untypeable term
 '(op __=[s]__ : forall a : Type . a * a -> Unit)[s, s]'
 *** Error 35.4-35.53,
 no typing for
@@ -158,8 +158,7 @@ for type scheme 'a * a -> Unit' wrong length of instantiation list
 '[s, s : Type]'
 ### Hint 36.6-36.22, no type found for '__=[s]__'
 ### Hint 36.6-36.26,
-untypeable term (with type: _v36 ->? _v37)
-'__ =[s][s, s : Type] __ : s * s -> Unit'
+untypeable term '__ =[s][s, s : Type] __ : s * s -> Unit'
 *** Error 36.3-36.47,
 no typing for '(__ =[s][s, s : Type] __ : s * s -> Unit) (a, a)'
 ### Hint 37.7-37.9, is compound list '[s]'

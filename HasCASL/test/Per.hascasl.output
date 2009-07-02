@@ -14,14 +14,14 @@ vars  x : S; r : PER S
 types
 PER : Type -> Type;
 Set : Type -> Type;
-gn_t109[PER] : Type -> +Type -> Type;
-gn_t110[gn_t109[PER]] : -Type -> +Type -> Type
+gn_t10[gn_t9[PER]] : -Type -> +Type -> Type;
+gn_t9[PER] : Type -> +Type -> Type
 type
-gn_t110[gn_t109[PER]] < __->?__
+gn_t10[gn_t9[PER]] < __->?__
 types
-PER := \ S : Type . gn_t109[PER] S Unit;
+PER := \ S : Type . gn_t9[PER] S Unit;
 Set := \ S : Type . S ->? Unit;
-gn_t109[PER] := \ S : Type . gn_t110[gn_t109[PER]] (S * S)
+gn_t9[PER] := \ S : Type . gn_t10[gn_t9[PER]] (S * S)
 var
 S : Type %(var_1)%
 op __isIn__ : forall S : Type . S * Set S ->? Unit %(op)%

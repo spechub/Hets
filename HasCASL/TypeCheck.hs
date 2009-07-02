@@ -208,48 +208,37 @@ warnEmpty mt trm res = do
 inferAppl :: Bool -> Range -> Term  -> Term
           -> State Env [(Subst, Constraints, Type, Term)]
 inferAppl isP ps t1 t2 = do
-    aty <- case t2 of
-             TupleTerm [] _ -> return unitType
-             _ -> freshTypeVar t2
-    rty <- freshTypeVar t1
-    let mfrty = Just $ mkFunArrType aty PFunArr rty
-        mlrty = Just $ TypeAppl lazyTypeConstr rty
-    ops <- inferWithMaybeType isP mfrty t1
-    lops <- case t2 of
-        TupleTerm [] _ -> do
-            laps <- inferWithMaybeType isP mlrty t1
-            if null ops then warnEmpty mlrty t1 laps else return ()
-            return laps
-        _ -> do
-          warnEmpty mfrty t1 ops
-          return []
-    let allOps = ops ++ lops
-    if null allOps then return [] else do
-        e <- get
-        combs <- mapM ( \ (sf, cf, funty, tf) -> do
-                let (sfty, frty) = case getTypeAppl funty of
+    ops <- infer isP t1
+    warnEmpty Nothing t1 ops
+    vs <- gets localVars
+    e <- get
+    combs <- mapM ( \ (sf, cf, funty, tf) -> do
+        (ok, sfty, frty, sub) <- case getTypeAppl funty of
                           (topTy, [paty, prty]) |
                             lesserType e topTy $ toFunType PFunArr ->
-                                (paty, prty)
+                                return (True, Just paty, prty, False)
                           (topTy, [prty]) |
                             lesserType e topTy lazyTypeConstr ->
-                                (unitType, prty)
-                          _ -> (subst sf aty, subst sf rty)
-                    msfty = Just sfty
-                vs <- gets localVars
+                                return (True, Just unitType, prty, False)
+                          (TypeName _ _ c, []) | c > 0 -> do
+                            rty <- freshTypeVar t1
+                            return (True, Nothing, rty, True)
+                          _ -> return (False, Nothing, funty, False)
+        if ok then do
                 putLocalVars $ substVarTypes sf vs
-                args <- inferWithMaybeType isP msfty t2
-                warnEmpty msfty t2 args
+                args <- inferWithMaybeType isP sfty t2
+                warnEmpty sfty t2 args
                 putLocalVars vs
-                let combs2 = map ( \ (sa, ca, _, ta) ->
-                        let sr = compSubst sf sa
-                            nTy = subst sa frty in
-                          [(sr, joinC ca $ substC sa cf, nTy,
-                            TypedTerm (ApplTerm tf
-                            (mkTypedTerm ta $ subst sa sfty) ps)
-                            Inferred nTy ps)]) args
-                return $ concat combs2) allOps
-        return $ concat combs
+                return $ map ( \ (sa, ca, arty, ta) ->
+                        let nTy = subst sa frty in
+                          (compSubst sf sa, (if sub then
+                               insertC (Subtyping (subst sa funty)
+                                $ mkFunArrType arty PFunArr nTy) else id)
+                              $ joinC ca $ substC sa cf, nTy,
+                            TypedTerm (ApplTerm tf ta ps)
+                            Inferred nTy ps)) args
+            else return []) ops
+    reduce $ concat combs
 
 getAllVarTypes :: Term -> [Type]
 getAllVarTypes = filter (not . null . leaves (> 0)) . getAllTypes

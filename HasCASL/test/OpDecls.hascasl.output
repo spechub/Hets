@@ -85,23 +85,23 @@ op z : s
        %[op=
        (op __+__ : s * s -> s) ((op x : s) as s, (op x : s) as t as s) as
        s]%
-. c = ((a + b) as s)
-. d = ((a + a) as s)
+. c = ((op __+__ : s * s -> s) ((op a : s), (op b : s)) as s)
+. d = ((op __+__ : s * s -> s) ((op a : s), (op a : s)) as s)
 . e = ((op __+__ : s * s -> s) as s * s -> s)
 . f = ((op __+__ : s * s -> s) as s * s -> s)
 . g = (((op a : s), (op b : s)) as s * s)
-. h = ((a + b) as s)
-. i = ((a + b) as s)
-. i1 = (incr a as s)
-. i2 = (incr a as s)
-. i3 = (incr a as s)
-. l1 = ((a <= b <= c) as s)
+. h = ((op __+__ : s * s -> s) ((op a : s), (op b : s)) as s)
+. i = ((op __+__ : s * s -> s) ((op a : s), (op b : s)) as s)
+. i1 = (incr (op a : s) as s)
+. i2 = (incr (op a : s) as s)
+. i3 = (incr (op a : s) as s)
+. l1 = (((op a : s) <= (op b : s) <= c) as s)
 . l2 = (__<=__<=__ as s * s * s -> s)
-. l3 = ((a <= b <= c) as s)
-. l4 = ((a <= b <= c) as s)
+. l3 = (((op a : s) <= (op b : s) <= c) as s)
+. l4 = (((op a : s) <= (op b : s) <= c) as s)
 . l5 = (((op a : s), (op b : s), c) as s * s * s)
-forall x : s . y = ((a <= (var x : s) <= a) as s)
-. z = (((x as s) + (x as t as s)) as s)
+forall x : s . y = ((a <= (var x : s) <= (op a : s)) as s)
+. z = ((op __+__ : s * s -> s) (x as s, x as t as s) as s)
 . x in s %(bla_label)%
 . x in t
 ### Hint 7.14,
