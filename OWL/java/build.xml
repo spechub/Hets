@@ -21,7 +21,7 @@
 	<mkdir dir="../lib/native/i686"/>
 	<mkdir dir="../lib/native/x86_64"/>
 	<get src="http://factplusplus.googlecode.com/files/FaCTpp-OWLAPI-v1.2.0.jar" dest="${libdir}/FaCTpp-OWLAPI-v1.2.0.jar"/>
-        <javac srcdir="./" destdir="${classesdir}/Fact" debug="on" target="${target-vm}" nowarn="off">
+        <javac srcdir="./" destdir="${classesdir}/Fact" debug="on" target="${target-vm}" nowarn="off" source="1.5">
             <classpath refid="classpath"/>
 	    <include name="de/unibremen/informatik/Fact/*.java"/>
         </javac>
@@ -41,12 +41,12 @@
 
     <target name="compile">
         <mkdir dir="${classesdir}/locality"/>
-        <javac srcdir="./" destdir="${classesdir}/locality" debug="on" target="${target-vm}" nowarn="off">
+        <javac srcdir="./" destdir="${classesdir}/locality" debug="on" target="${target-vm}" nowarn="off" source="1.5">
             <classpath refid="classpath"/>
 	    <include name="de/unibremen/informatik/locality/*.java"/>
         </javac>
         <mkdir dir="${classesdir}/atermRenderer"/>
-        <javac srcdir="./" destdir="${classesdir}/atermRenderer" debug="on" target="${target-vm}" nowarn="off">
+        <javac srcdir="./" destdir="${classesdir}/atermRenderer" debug="on" target="${target-vm}" nowarn="off" source="1.5">
             <classpath refid="classpath"/>
 	    <include name="de/unibremen/informatik/atermRenderer/*.java"/>
         </javac>
