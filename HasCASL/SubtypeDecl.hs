@@ -90,7 +90,7 @@ generalizeT sc@(TypeScheme args ty p) = do
 newTypeIdentifier :: Id -> State Env Id
 newTypeIdentifier i = do
    n <- toEnvState inc
-   return $ simpleIdToId $ Token (genNamePrefix ++ "t" ++ show n) $ posOfId i
+   return $ Id [genToken $ "t" ++ show n] [i] $ posOfId i
 
 -- | add second identifier as super type of known first identifier
 addSuperId :: Id -> Kind -> Id -> State Env ()

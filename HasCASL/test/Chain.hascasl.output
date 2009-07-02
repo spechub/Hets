@@ -13,11 +13,11 @@ vars  x : ? a; c : Chain a
 types
 Chain : Cpo -> Type;
 Nat : Type;
-gn_t28 : -Type -> +Type -> Type
+gn_t28[Chain] : -Type -> +Type -> Type
 type
-gn_t28 < __->?__
+gn_t28[Chain] < __->?__
 type
-Chain := gn_t28 Nat
+Chain := gn_t28[Chain] Nat
 var
 a : Cpo %(var_29)%
 op 1 : Nat %(op)%

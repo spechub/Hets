@@ -129,43 +129,51 @@ P : Type;
 Set : Type -> Type;
 System : Type;
 T : Type;
-gn_t1000 : +Type -> +Type -> +Type -> Type;
-gn_t1001 : +Type -> +Type -> +Type -> +Type -> Type;
-gn_t242 : +Type -> Type;
-gn_t243 : +Type -> +Type -> Type;
-gn_t244 : +Type -> +Type -> +Type -> Type;
-gn_t693 : +Type -> Type;
-gn_t694 : +Type -> +Type -> Type;
-gn_t695 : +Type -> +Type -> +Type -> Type;
-gn_t696 : +Type -> +Type -> +Type -> +Type -> Type;
-gn_t746 : +Type -> Type;
-gn_t747 : +Type -> +Type -> Type;
-gn_t998 : +Type -> Type;
-gn_t999 : +Type -> +Type -> Type
+gn_t1000[gn_t999[gn_t998[HomSys]]] : +Type ->
+                                     +Type -> +Type -> Type;
+gn_t1001[gn_t1000[gn_t999[gn_t998[HomSys]]]] : +Type ->
+                                               +Type -> +Type -> +Type -> Type;
+gn_t242[Net] : +Type -> Type;
+gn_t243[gn_t242[Net]] : +Type -> +Type -> Type;
+gn_t244[gn_t243[gn_t242[Net]]] : +Type -> +Type -> +Type -> Type;
+gn_t693[HomNet] : +Type -> Type;
+gn_t694[gn_t693[HomNet]] : +Type -> +Type -> Type;
+gn_t695[gn_t694[gn_t693[HomNet]]] : +Type ->
+                                    +Type -> +Type -> Type;
+gn_t696[gn_t695[gn_t694[gn_t693[HomNet]]]] : +Type ->
+                                             +Type -> +Type -> +Type -> Type;
+gn_t746[System] : +Type -> Type;
+gn_t747[gn_t746[System]] : +Type -> +Type -> Type;
+gn_t998[HomSys] : +Type -> Type;
+gn_t999[gn_t998[HomSys]] : +Type -> +Type -> Type
 types
-gn_t1001 < __*__*__*__;
-gn_t244 < __*__*__;
-gn_t696 < __*__*__*__;
-gn_t747 < __*__
+gn_t1001[gn_t1000[gn_t999[gn_t998[HomSys]]]] < __*__*__*__;
+gn_t244[gn_t243[gn_t242[Net]]] < __*__*__;
+gn_t696[gn_t695[gn_t694[gn_t693[HomNet]]]] < __*__*__*__;
+gn_t747[gn_t746[System]] < __*__
 types
-HomNet := gn_t693 Net;
-HomSys := gn_t998 System;
+HomNet := gn_t693[HomNet] Net;
+HomSys := gn_t998[HomSys] System;
 Map := \ S : Type . S ->? S;
 MapMultiSet := \ S : Type . MultiSet S ->? MultiSet S;
 Marking := MultiSet P;
 MultiSet := \ Elem : Type . Elem ->? Nat;
-Net := gn_t242 (T ->? MultiSet P);
+Net := gn_t242[Net] (T ->? MultiSet P);
 Set := \ S : Type . S ->? Unit;
-System := gn_t746 Marking;
-gn_t1000 := gn_t1001 System;
-gn_t242 := gn_t243 (T ->? MultiSet P);
-gn_t243 := gn_t244 (Set P);
-gn_t693 := gn_t694 (T ->? T);
-gn_t694 := gn_t695 (P ->? P);
-gn_t695 := gn_t696 Net;
-gn_t746 := gn_t747 Net;
-gn_t998 := gn_t999 (T ->? T);
-gn_t999 := gn_t1000 (P ->? P)
+System := gn_t746[System] Marking;
+gn_t1000[gn_t999[gn_t998[HomSys]]]
+:= gn_t1001[gn_t1000[gn_t999[gn_t998[HomSys]]]] System;
+gn_t242[Net] := gn_t243[gn_t242[Net]] (T ->? MultiSet P);
+gn_t243[gn_t242[Net]] := gn_t244[gn_t243[gn_t242[Net]]] (Set P);
+gn_t693[HomNet] := gn_t694[gn_t693[HomNet]] (T ->? T);
+gn_t694[gn_t693[HomNet]]
+:= gn_t695[gn_t694[gn_t693[HomNet]]] (P ->? P);
+gn_t695[gn_t694[gn_t693[HomNet]]]
+:= gn_t696[gn_t695[gn_t694[gn_t693[HomNet]]]] Net;
+gn_t746[System] := gn_t747[gn_t746[System]] Net;
+gn_t998[HomSys] := gn_t999[gn_t998[HomSys]] (T ->? T);
+gn_t999[gn_t998[HomSys]]
+:= gn_t1000[gn_t999[gn_t998[HomSys]]] (P ->? P)
 vars
 Elem : Type %(var_6)%;
 S : Type %(var_55)%;
@@ -763,277 +771,367 @@ no kind found for 'HomSys'
 ### Hint 112.16, not a class 'HomSys'
 ### Hint 113.10-113.15,
 in type of '((var h2 : HomSys), (var h1 : HomSys))'
-  typename 'gn_t747' (93.8)
-  is not unifiable with type 'gn_t244 (P ->? Unit)' (71.34)
+  typename 'gn_t747[gn_t746[System]]' (93.8)
+  is not unifiable with type 'gn_t244[gn_t243[gn_t242[Net]]] (P ->? Unit)' (71.34)
 ### Hint 113.10-113.15,
-untypeable term (with type: gn_t696 (gn_t244 (P ->? Unit) (T ->? P ->? Nat) (T ->? P ->? Nat))
+untypeable term (with type: gn_t696[gn_t695[gn_t694[gn_t693[HomNet]]]]
+(gn_t244[gn_t243[gn_t242[Net]]] (P ->? Unit) (T ->? P ->? Nat)
+ (T ->? P ->? Nat))
 (P ->? P)
 (T ->? T)
-(gn_t244 (P ->? Unit) (T ->? P ->? Nat) (T ->? P ->? Nat))
+(gn_t244[gn_t243[gn_t242[Net]]] (P ->? Unit) (T ->? P ->? Nat)
+ (T ->? P ->? Nat))
 *
-gn_t696 (gn_t244 (P ->? Unit) (T ->? P ->? Nat) (T ->? P ->? Nat))
+gn_t696[gn_t695[gn_t694[gn_t693[HomNet]]]]
+(gn_t244[gn_t243[gn_t242[Net]]] (P ->? Unit) (T ->? P ->? Nat)
+ (T ->? P ->? Nat))
 (P ->? P)
 (T ->? T)
-(gn_t244 (P ->? Unit) (T ->? P ->? Nat) (T ->? P ->? Nat)))
+(gn_t244[gn_t243[gn_t242[Net]]] (P ->? Unit) (T ->? P ->? Nat)
+ (T ->? P ->? Nat)))
 '(h2, h1)'
 ### Hint 113.10-113.15,
 in type of '((var h2 : HomSys), (var h1 : HomSys))'
   typename '__->?__' (54.17)
-  is not unifiable with type 'gn_t1000 (P ->? P)' (102.54)
+  is not unifiable with type 'gn_t1000[gn_t999[gn_t998[HomSys]]] (P ->? P)' (102.54)
 ### Hint 113.10-113.15,
 untypeable term (with type: (_v1253_v1012_V ->? _v1260_v1013_U) *
 (_v1256_v1014_S ->? _v1253_v1012_V))
 '(h2, h1)'
 ### Hint 113.22-113.27,
 in type of '((var h2 : HomSys), (var h1 : HomSys))'
-  typename 'gn_t747' (93.8)
-  is not unifiable with type 'gn_t244 (P ->? Unit)' (71.34)
+  typename 'gn_t747[gn_t746[System]]' (93.8)
+  is not unifiable with type 'gn_t244[gn_t243[gn_t242[Net]]] (P ->? Unit)' (71.34)
 ### Hint 113.22-113.27,
-untypeable term (with type: gn_t696 (gn_t244 (P ->? Unit) (T ->? P ->? Nat) (T ->? P ->? Nat))
+untypeable term (with type: gn_t696[gn_t695[gn_t694[gn_t693[HomNet]]]]
+(gn_t244[gn_t243[gn_t242[Net]]] (P ->? Unit) (T ->? P ->? Nat)
+ (T ->? P ->? Nat))
 (P ->? P)
 (T ->? T)
-(gn_t244 (P ->? Unit) (T ->? P ->? Nat) (T ->? P ->? Nat))
+(gn_t244[gn_t243[gn_t242[Net]]] (P ->? Unit) (T ->? P ->? Nat)
+ (T ->? P ->? Nat))
 *
-gn_t696 (gn_t244 (P ->? Unit) (T ->? P ->? Nat) (T ->? P ->? Nat))
+gn_t696[gn_t695[gn_t694[gn_t693[HomNet]]]]
+(gn_t244[gn_t243[gn_t242[Net]]] (P ->? Unit) (T ->? P ->? Nat)
+ (T ->? P ->? Nat))
 (P ->? P)
 (T ->? T)
-(gn_t244 (P ->? Unit) (T ->? P ->? Nat) (T ->? P ->? Nat)))
+(gn_t244[gn_t243[gn_t242[Net]]] (P ->? Unit) (T ->? P ->? Nat)
+ (T ->? P ->? Nat)))
 '(h2, h1)'
 ### Hint 113.22-113.27,
 in type of '((var h2 : HomSys), (var h1 : HomSys))'
   typename '__->?__' (54.17)
-  is not unifiable with type 'gn_t1000 (P ->? P)' (102.54)
+  is not unifiable with type 'gn_t1000[gn_t999[gn_t998[HomSys]]] (P ->? P)' (102.54)
 ### Hint 113.22-113.27,
 untypeable term (with type: (_v1553_v1312_V ->? _v1560_v1313_U) *
 (_v1556_v1314_S ->? _v1553_v1312_V))
 '(h2, h1)'
 ### Hint 114.11,
 in type of '(var h1 : HomSys)'
-  typename 'gn_t747' (93.8)
-  is not unifiable with type 'gn_t244 (P ->? Unit)' (71.34)
+  typename 'gn_t747[gn_t746[System]]' (93.8)
+  is not unifiable with type 'gn_t244[gn_t243[gn_t242[Net]]] (P ->? Unit)' (71.34)
 ### Hint 114.11,
-untypeable term (with type: gn_t696 (gn_t244 (P ->? Unit) (T ->? P ->? Nat) (T ->? P ->? Nat))
+untypeable term (with type: gn_t696[gn_t695[gn_t694[gn_t693[HomNet]]]]
+(gn_t244[gn_t243[gn_t242[Net]]] (P ->? Unit) (T ->? P ->? Nat)
+ (T ->? P ->? Nat))
 (P ->? P)
 (T ->? T)
-(gn_t244 (P ->? Unit) (T ->? P ->? Nat) (T ->? P ->? Nat)))
+(gn_t244[gn_t243[gn_t242[Net]]] (P ->? Unit) (T ->? P ->? Nat)
+ (T ->? P ->? Nat)))
 'h1'
 ### Hint 114.11,
 in type of '(var h1 : HomSys)'
   typename '__->?__' (47.15)
-  is not unifiable with type 'gn_t1000 (P ->? P)' (102.54)
+  is not unifiable with type 'gn_t1000[gn_t999[gn_t998[HomSys]]] (P ->? P)' (102.54)
 ### Hint 114.11,
 untypeable term (with type: _v1677_v1564_S ->? _v1565_V) 'h1'
 ### Hint 114.25,
 in type of '(var h2 : HomSys)'
-  typename 'gn_t747' (93.8)
-  is not unifiable with type 'gn_t244 (P ->? Unit)' (71.34)
+  typename 'gn_t747[gn_t746[System]]' (93.8)
+  is not unifiable with type 'gn_t244[gn_t243[gn_t242[Net]]] (P ->? Unit)' (71.34)
 ### Hint 114.25,
-untypeable term (with type: gn_t696 (gn_t244 (P ->? Unit) (T ->? P ->? Nat) (T ->? P ->? Nat))
+untypeable term (with type: gn_t696[gn_t695[gn_t694[gn_t693[HomNet]]]]
+(gn_t244[gn_t243[gn_t242[Net]]] (P ->? Unit) (T ->? P ->? Nat)
+ (T ->? P ->? Nat))
 (P ->? P)
 (T ->? T)
-(gn_t244 (P ->? Unit) (T ->? P ->? Nat) (T ->? P ->? Nat)))
+(gn_t244[gn_t243[gn_t242[Net]]] (P ->? Unit) (T ->? P ->? Nat)
+ (T ->? P ->? Nat)))
 'h2'
 ### Hint 114.40,
 in type of '(var h1 : HomSys)'
-  typename 'gn_t747' (93.8)
-  is not unifiable with type 'gn_t244 (P ->? Unit)' (71.34)
+  typename 'gn_t747[gn_t746[System]]' (93.8)
+  is not unifiable with type 'gn_t244[gn_t243[gn_t242[Net]]] (P ->? Unit)' (71.34)
 ### Hint 114.40,
-untypeable term (with type: gn_t696 (gn_t244 (P ->? Unit) (T ->? P ->? Nat) (T ->? P ->? Nat))
+untypeable term (with type: gn_t696[gn_t695[gn_t694[gn_t693[HomNet]]]]
+(gn_t244[gn_t243[gn_t242[Net]]] (P ->? Unit) (T ->? P ->? Nat)
+ (T ->? P ->? Nat))
 (P ->? P)
 (T ->? T)
-(gn_t244 (P ->? Unit) (T ->? P ->? Nat) (T ->? P ->? Nat)))
+(gn_t244[gn_t243[gn_t242[Net]]] (P ->? Unit) (T ->? P ->? Nat)
+ (T ->? P ->? Nat)))
 'h1'
 ### Hint 114.15-114.40,
 in type of '((op placesMap : HomSys -> P ->? P) (var h2 : HomSys),
  (op placesMap : HomSys -> P ->? P) (var h1 : HomSys))'
   typename '__->?__' (107.33)
-  is not unifiable with type 'gn_t1001
-(gn_t747 (gn_t244 (P ->? Unit) (T ->? P ->? Nat) (T ->? P ->? Nat))
+  is not unifiable with type 'gn_t1001[gn_t1000[gn_t999[gn_t998[HomSys]]]]
+(gn_t747[gn_t746[System]]
+ (gn_t244[gn_t243[gn_t242[Net]]] (P ->? Unit) (T ->? P ->? Nat)
+  (T ->? P ->? Nat))
  (P ->? Nat))
 (P ->? P)' (102.54)
 ### Hint 114.15-114.40,
-untypeable term (with type: gn_t1001
-(gn_t747 (gn_t244 (P ->? Unit) (T ->? P ->? Nat) (T ->? P ->? Nat))
+untypeable term (with type: gn_t1001[gn_t1000[gn_t999[gn_t998[HomSys]]]]
+(gn_t747[gn_t746[System]]
+ (gn_t244[gn_t243[gn_t242[Net]]] (P ->? Unit) (T ->? P ->? Nat)
+  (T ->? P ->? Nat))
  (P ->? Nat))
 (P ->? P)
 (T ->? T)
-(gn_t747 (gn_t244 (P ->? Unit) (T ->? P ->? Nat) (T ->? P ->? Nat))
+(gn_t747[gn_t746[System]]
+ (gn_t244[gn_t243[gn_t242[Net]]] (P ->? Unit) (T ->? P ->? Nat)
+  (T ->? P ->? Nat))
  (P ->? Nat))
 *
-gn_t1001
-(gn_t747 (gn_t244 (P ->? Unit) (T ->? P ->? Nat) (T ->? P ->? Nat))
+gn_t1001[gn_t1000[gn_t999[gn_t998[HomSys]]]]
+(gn_t747[gn_t746[System]]
+ (gn_t244[gn_t243[gn_t242[Net]]] (P ->? Unit) (T ->? P ->? Nat)
+  (T ->? P ->? Nat))
  (P ->? Nat))
 (P ->? P)
 (T ->? T)
-(gn_t747 (gn_t244 (P ->? Unit) (T ->? P ->? Nat) (T ->? P ->? Nat))
+(gn_t747[gn_t746[System]]
+ (gn_t244[gn_t243[gn_t242[Net]]] (P ->? Unit) (T ->? P ->? Nat)
+  (T ->? P ->? Nat))
  (P ->? Nat)))
 '(placesMap h2, placesMap h1)'
 ### Hint 114.25,
 in type of '(var h2 : HomSys)'
-  typename 'gn_t747' (93.8)
-  is not unifiable with type 'gn_t244 (P ->? Unit)' (71.34)
+  typename 'gn_t747[gn_t746[System]]' (93.8)
+  is not unifiable with type 'gn_t244[gn_t243[gn_t242[Net]]] (P ->? Unit)' (71.34)
 ### Hint 114.25,
-untypeable term (with type: gn_t696 (gn_t244 (P ->? Unit) (T ->? P ->? Nat) (T ->? P ->? Nat))
+untypeable term (with type: gn_t696[gn_t695[gn_t694[gn_t693[HomNet]]]]
+(gn_t244[gn_t243[gn_t242[Net]]] (P ->? Unit) (T ->? P ->? Nat)
+ (T ->? P ->? Nat))
 (P ->? P)
 (T ->? T)
-(gn_t244 (P ->? Unit) (T ->? P ->? Nat) (T ->? P ->? Nat)))
+(gn_t244[gn_t243[gn_t242[Net]]] (P ->? Unit) (T ->? P ->? Nat)
+ (T ->? P ->? Nat)))
 'h2'
 ### Hint 114.40,
 in type of '(var h1 : HomSys)'
-  typename 'gn_t747' (93.8)
-  is not unifiable with type 'gn_t244 (P ->? Unit)' (71.34)
+  typename 'gn_t747[gn_t746[System]]' (93.8)
+  is not unifiable with type 'gn_t244[gn_t243[gn_t242[Net]]] (P ->? Unit)' (71.34)
 ### Hint 114.40,
-untypeable term (with type: gn_t696 (gn_t244 (P ->? Unit) (T ->? P ->? Nat) (T ->? P ->? Nat))
+untypeable term (with type: gn_t696[gn_t695[gn_t694[gn_t693[HomNet]]]]
+(gn_t244[gn_t243[gn_t242[Net]]] (P ->? Unit) (T ->? P ->? Nat)
+ (T ->? P ->? Nat))
 (P ->? P)
 (T ->? T)
-(gn_t244 (P ->? Unit) (T ->? P ->? Nat) (T ->? P ->? Nat)))
+(gn_t244[gn_t243[gn_t242[Net]]] (P ->? Unit) (T ->? P ->? Nat)
+ (T ->? P ->? Nat)))
 'h1'
 ### Hint 114.15-114.40,
 in type of '((op placesMap : HomSys -> P ->? P) (var h2 : HomSys),
  (op placesMap : HomSys -> P ->? P) (var h1 : HomSys))'
   typename '__->?__' (107.33)
-  is not unifiable with type 'gn_t696 (gn_t244 (P ->? Unit) (T ->? P ->? Nat) (T ->? P ->? Nat))
+  is not unifiable with type 'gn_t696[gn_t695[gn_t694[gn_t693[HomNet]]]]
+(gn_t244[gn_t243[gn_t242[Net]]] (P ->? Unit) (T ->? P ->? Nat)
+ (T ->? P ->? Nat))
 (P ->? P)' (79.35)
 ### Hint 114.15-114.40,
-untypeable term (with type: gn_t696 (gn_t244 (P ->? Unit) (T ->? P ->? Nat) (T ->? P ->? Nat))
+untypeable term (with type: gn_t696[gn_t695[gn_t694[gn_t693[HomNet]]]]
+(gn_t244[gn_t243[gn_t242[Net]]] (P ->? Unit) (T ->? P ->? Nat)
+ (T ->? P ->? Nat))
 (P ->? P)
 (T ->? T)
-(gn_t244 (P ->? Unit) (T ->? P ->? Nat) (T ->? P ->? Nat))
+(gn_t244[gn_t243[gn_t242[Net]]] (P ->? Unit) (T ->? P ->? Nat)
+ (T ->? P ->? Nat))
 *
-gn_t696 (gn_t244 (P ->? Unit) (T ->? P ->? Nat) (T ->? P ->? Nat))
+gn_t696[gn_t695[gn_t694[gn_t693[HomNet]]]]
+(gn_t244[gn_t243[gn_t242[Net]]] (P ->? Unit) (T ->? P ->? Nat)
+ (T ->? P ->? Nat))
 (P ->? P)
 (T ->? T)
-(gn_t244 (P ->? Unit) (T ->? P ->? Nat) (T ->? P ->? Nat)))
+(gn_t244[gn_t243[gn_t242[Net]]] (P ->? Unit) (T ->? P ->? Nat)
+ (T ->? P ->? Nat)))
 '(placesMap h2, placesMap h1)'
 ### Hint 114.25,
 in type of '(var h2 : HomSys)'
-  typename 'gn_t747' (93.8)
-  is not unifiable with type 'gn_t244 (P ->? Unit)' (71.34)
+  typename 'gn_t747[gn_t746[System]]' (93.8)
+  is not unifiable with type 'gn_t244[gn_t243[gn_t242[Net]]] (P ->? Unit)' (71.34)
 ### Hint 114.25,
-untypeable term (with type: gn_t696 (gn_t244 (P ->? Unit) (T ->? P ->? Nat) (T ->? P ->? Nat))
+untypeable term (with type: gn_t696[gn_t695[gn_t694[gn_t693[HomNet]]]]
+(gn_t244[gn_t243[gn_t242[Net]]] (P ->? Unit) (T ->? P ->? Nat)
+ (T ->? P ->? Nat))
 (P ->? P)
 (T ->? T)
-(gn_t244 (P ->? Unit) (T ->? P ->? Nat) (T ->? P ->? Nat)))
+(gn_t244[gn_t243[gn_t242[Net]]] (P ->? Unit) (T ->? P ->? Nat)
+ (T ->? P ->? Nat)))
 'h2'
 ### Hint 114.40,
 in type of '(var h1 : HomSys)'
-  typename 'gn_t747' (93.8)
-  is not unifiable with type 'gn_t244 (P ->? Unit)' (71.34)
+  typename 'gn_t747[gn_t746[System]]' (93.8)
+  is not unifiable with type 'gn_t244[gn_t243[gn_t242[Net]]] (P ->? Unit)' (71.34)
 ### Hint 114.40,
-untypeable term (with type: gn_t696 (gn_t244 (P ->? Unit) (T ->? P ->? Nat) (T ->? P ->? Nat))
+untypeable term (with type: gn_t696[gn_t695[gn_t694[gn_t693[HomNet]]]]
+(gn_t244[gn_t243[gn_t242[Net]]] (P ->? Unit) (T ->? P ->? Nat)
+ (T ->? P ->? Nat))
 (P ->? P)
 (T ->? T)
-(gn_t244 (P ->? Unit) (T ->? P ->? Nat) (T ->? P ->? Nat)))
+(gn_t244[gn_t243[gn_t242[Net]]] (P ->? Unit) (T ->? P ->? Nat)
+ (T ->? P ->? Nat)))
 'h1'
 ### Hint 114.59,
 in type of '(var h2 : HomSys)'
-  typename 'gn_t747' (93.8)
-  is not unifiable with type 'gn_t244 (P ->? Unit)' (71.34)
+  typename 'gn_t747[gn_t746[System]]' (93.8)
+  is not unifiable with type 'gn_t244[gn_t243[gn_t242[Net]]] (P ->? Unit)' (71.34)
 ### Hint 114.59,
-untypeable term (with type: gn_t696 (gn_t244 (P ->? Unit) (T ->? P ->? Nat) (T ->? P ->? Nat))
+untypeable term (with type: gn_t696[gn_t695[gn_t694[gn_t693[HomNet]]]]
+(gn_t244[gn_t243[gn_t242[Net]]] (P ->? Unit) (T ->? P ->? Nat)
+ (T ->? P ->? Nat))
 (P ->? P)
 (T ->? T)
-(gn_t244 (P ->? Unit) (T ->? P ->? Nat) (T ->? P ->? Nat)))
+(gn_t244[gn_t243[gn_t242[Net]]] (P ->? Unit) (T ->? P ->? Nat)
+ (T ->? P ->? Nat)))
 'h2'
 ### Hint 114.79,
 in type of '(var h1 : HomSys)'
-  typename 'gn_t747' (93.8)
-  is not unifiable with type 'gn_t244 (P ->? Unit)' (71.34)
+  typename 'gn_t747[gn_t746[System]]' (93.8)
+  is not unifiable with type 'gn_t244[gn_t243[gn_t242[Net]]] (P ->? Unit)' (71.34)
 ### Hint 114.79,
-untypeable term (with type: gn_t696 (gn_t244 (P ->? Unit) (T ->? P ->? Nat) (T ->? P ->? Nat))
+untypeable term (with type: gn_t696[gn_t695[gn_t694[gn_t693[HomNet]]]]
+(gn_t244[gn_t243[gn_t242[Net]]] (P ->? Unit) (T ->? P ->? Nat)
+ (T ->? P ->? Nat))
 (P ->? P)
 (T ->? T)
-(gn_t244 (P ->? Unit) (T ->? P ->? Nat) (T ->? P ->? Nat)))
+(gn_t244[gn_t243[gn_t242[Net]]] (P ->? Unit) (T ->? P ->? Nat)
+ (T ->? P ->? Nat)))
 'h1'
 ### Hint 114.44-114.79,
 in type of '((op transitionsMap : HomSys -> T ->? T) (var h2 : HomSys),
  (op transitionsMap : HomSys -> T ->? T) (var h1 : HomSys))'
   typename '__->?__' (108.38)
-  is not unifiable with type 'gn_t1001
-(gn_t747 (gn_t244 (P ->? Unit) (T ->? P ->? Nat) (T ->? P ->? Nat))
+  is not unifiable with type 'gn_t1001[gn_t1000[gn_t999[gn_t998[HomSys]]]]
+(gn_t747[gn_t746[System]]
+ (gn_t244[gn_t243[gn_t242[Net]]] (P ->? Unit) (T ->? P ->? Nat)
+  (T ->? P ->? Nat))
  (P ->? Nat))
 (P ->? P)' (102.54)
 ### Hint 114.44-114.79,
-untypeable term (with type: gn_t1001
-(gn_t747 (gn_t244 (P ->? Unit) (T ->? P ->? Nat) (T ->? P ->? Nat))
+untypeable term (with type: gn_t1001[gn_t1000[gn_t999[gn_t998[HomSys]]]]
+(gn_t747[gn_t746[System]]
+ (gn_t244[gn_t243[gn_t242[Net]]] (P ->? Unit) (T ->? P ->? Nat)
+  (T ->? P ->? Nat))
  (P ->? Nat))
 (P ->? P)
 (T ->? T)
-(gn_t747 (gn_t244 (P ->? Unit) (T ->? P ->? Nat) (T ->? P ->? Nat))
+(gn_t747[gn_t746[System]]
+ (gn_t244[gn_t243[gn_t242[Net]]] (P ->? Unit) (T ->? P ->? Nat)
+  (T ->? P ->? Nat))
  (P ->? Nat))
 *
-gn_t1001
-(gn_t747 (gn_t244 (P ->? Unit) (T ->? P ->? Nat) (T ->? P ->? Nat))
+gn_t1001[gn_t1000[gn_t999[gn_t998[HomSys]]]]
+(gn_t747[gn_t746[System]]
+ (gn_t244[gn_t243[gn_t242[Net]]] (P ->? Unit) (T ->? P ->? Nat)
+  (T ->? P ->? Nat))
  (P ->? Nat))
 (P ->? P)
 (T ->? T)
-(gn_t747 (gn_t244 (P ->? Unit) (T ->? P ->? Nat) (T ->? P ->? Nat))
+(gn_t747[gn_t746[System]]
+ (gn_t244[gn_t243[gn_t242[Net]]] (P ->? Unit) (T ->? P ->? Nat)
+  (T ->? P ->? Nat))
  (P ->? Nat)))
 '(transitionsMap h2, transitionsMap h1)'
 ### Hint 114.59,
 in type of '(var h2 : HomSys)'
-  typename 'gn_t747' (93.8)
-  is not unifiable with type 'gn_t244 (P ->? Unit)' (71.34)
+  typename 'gn_t747[gn_t746[System]]' (93.8)
+  is not unifiable with type 'gn_t244[gn_t243[gn_t242[Net]]] (P ->? Unit)' (71.34)
 ### Hint 114.59,
-untypeable term (with type: gn_t696 (gn_t244 (P ->? Unit) (T ->? P ->? Nat) (T ->? P ->? Nat))
+untypeable term (with type: gn_t696[gn_t695[gn_t694[gn_t693[HomNet]]]]
+(gn_t244[gn_t243[gn_t242[Net]]] (P ->? Unit) (T ->? P ->? Nat)
+ (T ->? P ->? Nat))
 (P ->? P)
 (T ->? T)
-(gn_t244 (P ->? Unit) (T ->? P ->? Nat) (T ->? P ->? Nat)))
+(gn_t244[gn_t243[gn_t242[Net]]] (P ->? Unit) (T ->? P ->? Nat)
+ (T ->? P ->? Nat)))
 'h2'
 ### Hint 114.79,
 in type of '(var h1 : HomSys)'
-  typename 'gn_t747' (93.8)
-  is not unifiable with type 'gn_t244 (P ->? Unit)' (71.34)
+  typename 'gn_t747[gn_t746[System]]' (93.8)
+  is not unifiable with type 'gn_t244[gn_t243[gn_t242[Net]]] (P ->? Unit)' (71.34)
 ### Hint 114.79,
-untypeable term (with type: gn_t696 (gn_t244 (P ->? Unit) (T ->? P ->? Nat) (T ->? P ->? Nat))
+untypeable term (with type: gn_t696[gn_t695[gn_t694[gn_t693[HomNet]]]]
+(gn_t244[gn_t243[gn_t242[Net]]] (P ->? Unit) (T ->? P ->? Nat)
+ (T ->? P ->? Nat))
 (P ->? P)
 (T ->? T)
-(gn_t244 (P ->? Unit) (T ->? P ->? Nat) (T ->? P ->? Nat)))
+(gn_t244[gn_t243[gn_t242[Net]]] (P ->? Unit) (T ->? P ->? Nat)
+ (T ->? P ->? Nat)))
 'h1'
 ### Hint 114.44-114.79,
 in type of '((op transitionsMap : HomSys -> T ->? T) (var h2 : HomSys),
  (op transitionsMap : HomSys -> T ->? T) (var h1 : HomSys))'
   typename '__->?__' (108.38)
-  is not unifiable with type 'gn_t696 (gn_t244 (P ->? Unit) (T ->? P ->? Nat) (T ->? P ->? Nat))
+  is not unifiable with type 'gn_t696[gn_t695[gn_t694[gn_t693[HomNet]]]]
+(gn_t244[gn_t243[gn_t242[Net]]] (P ->? Unit) (T ->? P ->? Nat)
+ (T ->? P ->? Nat))
 (P ->? P)' (79.35)
 ### Hint 114.44-114.79,
-untypeable term (with type: gn_t696 (gn_t244 (P ->? Unit) (T ->? P ->? Nat) (T ->? P ->? Nat))
+untypeable term (with type: gn_t696[gn_t695[gn_t694[gn_t693[HomNet]]]]
+(gn_t244[gn_t243[gn_t242[Net]]] (P ->? Unit) (T ->? P ->? Nat)
+ (T ->? P ->? Nat))
 (P ->? P)
 (T ->? T)
-(gn_t244 (P ->? Unit) (T ->? P ->? Nat) (T ->? P ->? Nat))
+(gn_t244[gn_t243[gn_t242[Net]]] (P ->? Unit) (T ->? P ->? Nat)
+ (T ->? P ->? Nat))
 *
-gn_t696 (gn_t244 (P ->? Unit) (T ->? P ->? Nat) (T ->? P ->? Nat))
+gn_t696[gn_t695[gn_t694[gn_t693[HomNet]]]]
+(gn_t244[gn_t243[gn_t242[Net]]] (P ->? Unit) (T ->? P ->? Nat)
+ (T ->? P ->? Nat))
 (P ->? P)
 (T ->? T)
-(gn_t244 (P ->? Unit) (T ->? P ->? Nat) (T ->? P ->? Nat)))
+(gn_t244[gn_t243[gn_t242[Net]]] (P ->? Unit) (T ->? P ->? Nat)
+ (T ->? P ->? Nat)))
 '(transitionsMap h2, transitionsMap h1)'
 ### Hint 114.59,
 in type of '(var h2 : HomSys)'
-  typename 'gn_t747' (93.8)
-  is not unifiable with type 'gn_t244 (P ->? Unit)' (71.34)
+  typename 'gn_t747[gn_t746[System]]' (93.8)
+  is not unifiable with type 'gn_t244[gn_t243[gn_t242[Net]]] (P ->? Unit)' (71.34)
 ### Hint 114.59,
-untypeable term (with type: gn_t696 (gn_t244 (P ->? Unit) (T ->? P ->? Nat) (T ->? P ->? Nat))
+untypeable term (with type: gn_t696[gn_t695[gn_t694[gn_t693[HomNet]]]]
+(gn_t244[gn_t243[gn_t242[Net]]] (P ->? Unit) (T ->? P ->? Nat)
+ (T ->? P ->? Nat))
 (P ->? P)
 (T ->? T)
-(gn_t244 (P ->? Unit) (T ->? P ->? Nat) (T ->? P ->? Nat)))
+(gn_t244[gn_t243[gn_t242[Net]]] (P ->? Unit) (T ->? P ->? Nat)
+ (T ->? P ->? Nat)))
 'h2'
 ### Hint 114.79,
 in type of '(var h1 : HomSys)'
-  typename 'gn_t747' (93.8)
-  is not unifiable with type 'gn_t244 (P ->? Unit)' (71.34)
+  typename 'gn_t747[gn_t746[System]]' (93.8)
+  is not unifiable with type 'gn_t244[gn_t243[gn_t242[Net]]] (P ->? Unit)' (71.34)
 ### Hint 114.79,
-untypeable term (with type: gn_t696 (gn_t244 (P ->? Unit) (T ->? P ->? Nat) (T ->? P ->? Nat))
+untypeable term (with type: gn_t696[gn_t695[gn_t694[gn_t693[HomNet]]]]
+(gn_t244[gn_t243[gn_t242[Net]]] (P ->? Unit) (T ->? P ->? Nat)
+ (T ->? P ->? Nat))
 (P ->? P)
 (T ->? T)
-(gn_t244 (P ->? Unit) (T ->? P ->? Nat) (T ->? P ->? Nat)))
+(gn_t244[gn_t243[gn_t242[Net]]] (P ->? Unit) (T ->? P ->? Nat)
+ (T ->? P ->? Nat)))
 'h1'
 ### Hint 114.86,
 in type of '(var h2 : HomSys)'
-  typename 'gn_t747' (93.8)
-  is not unifiable with type 'gn_t244 (P ->? Unit)' (71.34)
+  typename 'gn_t747[gn_t746[System]]' (93.8)
+  is not unifiable with type 'gn_t244[gn_t243[gn_t242[Net]]] (P ->? Unit)' (71.34)
 ### Hint 114.86,
-untypeable term (with type: gn_t696 (gn_t244 (P ->? Unit) (T ->? P ->? Nat) (T ->? P ->? Nat))
+untypeable term (with type: gn_t696[gn_t695[gn_t694[gn_t693[HomNet]]]]
+(gn_t244[gn_t243[gn_t242[Net]]] (P ->? Unit) (T ->? P ->? Nat)
+ (T ->? P ->? Nat))
 (P ->? P)
 (T ->? T)
-(gn_t244 (P ->? Unit) (T ->? P ->? Nat) (T ->? P ->? Nat)))
+(gn_t244[gn_t243[gn_t242[Net]]] (P ->? Unit) (T ->? P ->? Nat)
+ (T ->? P ->? Nat)))
 'h2'

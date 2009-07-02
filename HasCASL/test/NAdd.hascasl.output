@@ -5,18 +5,18 @@ type  Nat < Nadd
 types
 Nadd : Type;
 Nat : Type;
-gn_t1 : +Type -> Type;
-gn_t2 : -Type -> +Type -> Type;
-gn_t3 : +Type -> Type;
-gn_t4 : -Type -> +Type -> Type
+gn_t1[Nadd] : +Type -> Type;
+gn_t2[gn_t1[Nadd]] : -Type -> +Type -> Type;
+gn_t3[Nat] : +Type -> Type;
+gn_t4[gn_t3[Nat]] : -Type -> +Type -> Type
 types
 Nat < Nadd;
-gn_t2 < __->__;
-gn_t3 < gn_t1;
-gn_t4 < gn_t2
+gn_t2[gn_t1[Nadd]] < __->__;
+gn_t3[Nat] < gn_t1[Nadd];
+gn_t4[gn_t3[Nat]] < gn_t2[gn_t1[Nadd]]
 types
-Nadd := gn_t1 Nat;
-gn_t1 := gn_t2 Nat;
-gn_t3 := gn_t4 Nat
+Nadd := gn_t1[Nadd] Nat;
+gn_t1[Nadd] := gn_t2[gn_t1[Nadd]] Nat;
+gn_t3[Nat] := gn_t4[gn_t3[Nat]] Nat
 ### Hint 3.6, redeclared type 'Nat'
 *** Error 3.6, cyclic alias type 'Nat'

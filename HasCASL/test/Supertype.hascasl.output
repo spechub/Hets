@@ -8,13 +8,13 @@ types
 a : Type;
 b : Type;
 c : Type;
-gn_t1 : +Type -> Type;
-gn_t2 : -Type -> +Type -> Type
+gn_t1[a] : +Type -> Type;
+gn_t2[gn_t1[a]] : -Type -> +Type -> Type
 type
-gn_t2 < __->?__
+gn_t2[gn_t1[a]] < __->?__
 types
-a := gn_t1 c;
-gn_t1 := gn_t2 (b * b)
+a := gn_t1[a] c;
+gn_t1[a] := gn_t2[gn_t1[a]] (b * b)
 op a : a %(op)%
 op b : b %(op)%
 op c : c %(op)%
