@@ -718,7 +718,7 @@ mapSubObjProp cSig prop oP num1 =
               return $ Quantification Universal
                      [Var_decl [mk_Name num1] thing nullRange, Var_decl [mk_Name num2] thing nullRange]
                      (
-                      Quantification Existential
+                      Quantification Universal
                          (
                           map (\x -> Var_decl [mk_Name x] thing nullRange) vars
                          )
