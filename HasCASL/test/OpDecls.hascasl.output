@@ -51,8 +51,7 @@ op g : s * s %[op= ((op a : s), (op b : s)) as s * s]%
 op h : s
        %[op= (op __+__ : s * s -> s) ((op a : s), (op b : s)) as s]%
 op i : s
-       %[op=
-       (op __+__ : s * s -> s) ((op a : s) : s, (op b : s) : s) as s]%
+       %[op= (op __+__ : s * s -> s) ((op a : s), (op b : s)) as s]%
 op i1 : s %[op= (op incr : s -> s) (op a : s) as s]%
 op i2 : s %[op= (op incr : s -> s) (op a : s) as s]%
 op i3 : s %[op= (op incr : s -> s) (op a : s) as s]%
@@ -80,7 +79,7 @@ op x : s %(op)%
 op y : s
        %[op=
        (op __<=__<=__ : s * s * s -> s)
-       ((op a : s), (var x : s), (op a : s) : s)
+       ((op a : s), (var x : s), (op a : s))
        as s]%
 op z : s
        %[op=
@@ -92,7 +91,7 @@ op z : s
 . f = ((op __+__ : s * s -> s) as s * s -> s)
 . g = (((op a : s), (op b : s)) as s * s)
 . h = ((a + b) as s)
-. i = (((a : s) + (b : s)) as s)
+. i = ((a + b) as s)
 . i1 = (incr a as s)
 . i2 = (incr a as s)
 . i3 = (incr a as s)
@@ -101,7 +100,7 @@ op z : s
 . l3 = ((a <= b <= c) as s)
 . l4 = ((a <= b <= c) as s)
 . l5 = (((op a : s), (op b : s), c) as s * s * s)
-forall x : s . y = ((a <= (var x : s) <= (a : s)) as s)
+forall x : s . y = ((a <= (var x : s) <= a) as s)
 . z = (((x as s) + (x as t as s)) as s)
 . x in s %(bla_label)%
 . x in t
@@ -172,7 +171,7 @@ in type of '((op a : s), (op b : s))'
   is not unifiable with type 's * s' (3.12)
 ### Hint 23.23-23.26, untypeable term (with type: t) '(a, b)'
 ### Hint 25.23-25.35,
-in type of '((op a : s) : s, (op b : s) : s)'
+in type of '((op a : s), (op b : s))'
   typename 't' (9.14)
   is not unifiable with type 's * s' (25.35)
 ### Hint 25.23-25.35,

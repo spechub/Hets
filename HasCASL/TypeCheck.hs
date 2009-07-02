@@ -278,7 +278,8 @@ lesserOpInfo e o1 = lesserTypeScheme e (opType o1) . opType
 addSuperType :: Type -> [(Subst, Constraints, Type, Term)]
              -> [(Subst, Constraints, Type, Term)]
 addSuperType inTy =
-  map (\ (s, c, ty, t) -> let nTy = subst s inTy in
+  map (\ q@(s, c, ty, t) -> let nTy = subst s inTy in
+     if ty == nTy then q else
        ( s, insertC (Subtyping ty nTy) c, nTy, mkTypedTerm t nTy))
 
 -- | infer type of term (or a pattern if the Bool is True)
