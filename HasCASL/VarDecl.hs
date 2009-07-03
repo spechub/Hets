@@ -22,6 +22,7 @@ import Text.ParserCombinators.Parsec (runParser, eof)
 import qualified Data.Map as Map
 import qualified Data.Set as Set
 import Common.Id
+import Common.Lib.Rel (setToMap)
 import Common.Lib.State
 import Common.Result
 import Common.DocUtils
@@ -44,13 +45,23 @@ import HasCASL.Builtin
 -- | quantify
 mkEnvForall :: Env -> Term -> Range -> Term
 mkEnvForall e t ps =
-  let tys = Set.fromList $ map (fst . snd) $ concatMap (leaves (>= 0))
-            $ getAllTypes t
-      tyVs = map ( \ (i, TypeVarDefn v vk rk c) -> GenTypeVarDecl $
-                   TypeArg i v vk rk c Other ps) $ Map.toList
-             $ Map.filterWithKey ( \ i _ -> Set.member i tys) $ localTypeVars e
+  let tys = getAllTypes t
+      tyVs = map GenTypeVarDecl $ getTypeVars (localTypeVars e) tys ps
       vs = tyVs ++ map GenVarDecl (Set.toList $ freeVars t)
   in if null vs then t else QuantifiedTerm Universal vs t ps
+
+getTypeVars :: LocalTypeVars -> [Type] -> Range -> [TypeArg]
+getTypeVars e tys ps =
+  let is = Set.unions $ map (idsOf (>= 0)) tys
+      tyVs = Map.intersection e $ setToMap is
+      dTys = Map.fold (\ (TypeVarDefn _ vk _ _) l -> case vk of
+             Downset ty -> ty : l
+             _ -> l) [] tyVs
+      dis = Set.unions $ map (idsOf (>= 0)) dTys
+  in if Set.isSubsetOf dis is then
+          map ( \ (i, TypeVarDefn v vk rk c) -> TypeArg i v vk rk c Other ps)
+          $ Map.toList tyVs
+     else getTypeVars e (dTys ++ tys) ps
 
 anaStarType :: Type -> State Env (Maybe Type)
 anaStarType t = fmap (fmap snd) $ anaType (Just universe, t)
