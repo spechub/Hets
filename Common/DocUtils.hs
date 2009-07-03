@@ -151,7 +151,11 @@ instance (Pretty a, Pretty b, Pretty c) => Pretty (a, b, c) where
     pretty = printTriple pretty pretty pretty
 
 printTriple :: (a -> Doc) -> (b -> Doc) -> (c -> Doc) -> (a, b, c) -> Doc
-printTriple fA fB fC (a,b,c) = parens $ sepByCommas [fA a, fB b, fC c]
+printTriple fA fB fC (a, b, c) = parens $ sepByCommas [fA a, fB b, fC c]
+
+instance (Pretty a, Pretty b, Pretty c, Pretty d) => Pretty (a, b, c, d) where
+    pretty (a, b, c, d) =
+      parens $ sepByCommas [pretty a, pretty b, pretty c, pretty d]
 
 instance Pretty Int where
     pretty = sidDoc . mkSimpleId . show
