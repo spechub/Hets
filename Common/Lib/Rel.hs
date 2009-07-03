@@ -38,7 +38,7 @@ module Common.Lib.Rel
     , transClosure, fromList, toList, image, toPrecMap
     , intransKernel, mostRight, restrict, delSet
     , toSet, fromSet, topSort, nodes, collaps
-    , transpose, transReduce, setInsert
+    , transpose, transReduce, setInsert, setToMap
     , fromDistinctMap, locallyFiltered, flatSet, partSet
     ) where
 
@@ -140,9 +140,9 @@ sccOfClosure r@(Rel m) =
 collaps :: Ord a => [Set.Set a] -> Rel a -> Rel a
 collaps = delSet . Set.unions . List.map Set.deleteMin
 
-setToMap :: Ord a => Set.Set a -> Map.Map a ()
+setToMap :: Ord a => Set.Set a -> Map.Map a a
 setToMap s = Map.fromDistinctAscList $
-             List.map (\ a -> (a, ())) $ Set.toList s
+             List.map (\ a -> (a, a)) $ Set.toList s
 
 {- | transitive reduction (minimal relation with the same transitive closure)
      of a transitively closed DAG (i.e. without cycles)! -}
