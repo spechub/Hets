@@ -35,6 +35,7 @@ import Common.Id
 import Common.ExtSign
 import Common.Result
 import Common.Utils (composeMap)
+import Common.Lib.Rel (setToMap)
 import Common.Lib.State
 import qualified Data.Map as Map
 import qualified Data.Set as Set

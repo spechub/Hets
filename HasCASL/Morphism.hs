@@ -29,6 +29,7 @@ import Common.Doc
 import Common.Id
 import Common.Result
 import Common.Utils (composeMap)
+import Common.Lib.Rel (setToMap)
 import qualified Data.Set as Set
 import qualified Data.Map as Map
 
@@ -77,9 +78,6 @@ mapTypeScheme jm tm im (TypeScheme args ty ps) =
 
 mapSen :: IdMap -> TypeMap -> IdMap -> FunMap -> Term -> Term
 mapSen jm tm im fm = mapTerm (mapFunSym jm tm im fm, mapTypeE jm tm im)
-
-setToMap :: Ord a => Set.Set a -> Map.Map a a
-setToMap = Map.fromAscList . map ( \ a -> (a, a)) . Set.toList
 
 getDatatypeIds :: DataEntry -> Set.Set Id
 getDatatypeIds (DataEntry _ i _ _ _ alts) =
