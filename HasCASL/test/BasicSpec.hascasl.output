@@ -84,9 +84,9 @@ op tt : s ->? Unit %(pred)%
 var
 x : s
 program tt = \ x : s . () %(pe_tt)%
-program (x res (y : t)) : s = x %(pe___res__)%
-program (var fst : s * t ->? s) (x, y : t) : s = x %(pe_fst)%
-program (var snd : s * t ->? t) (x, y : t) : t = y %(pe_snd)%
+program (x res y) : s = x %(pe___res__)%
+program (var fst : s * t ->? s) (x, y) : s = x %(pe_fst)%
+program (var snd : s * t ->? t) (x, y) : t = y %(pe_snd)%
 forall t : Type; x : t; y : t . x = y
 type Data1 ::= a | b | c %(ga_Data1)%
 type Data2 ::=
@@ -161,7 +161,7 @@ no kind found for 's'
      found: {c}
 ### Hint 26.6, redeclared type 's'
 ### Hint 28.38-28.41,
-in type of '((var p : s), (pred tt : s))'
+in type of '((var p : ? s), (pred tt : s))'
   typename 's' (24.15)
   is not unifiable with type 's ->? Unit' (15.11)
 ### Hint 28.38-28.41, untypeable term (with type: s * s) '(p, tt)'

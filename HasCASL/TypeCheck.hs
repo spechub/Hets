@@ -302,9 +302,8 @@ infer isP trm = do
                              Inferred ty ps
                     in [(eps, cs, ty, qv)]
         ResolvedMixTerm i tys ts ps -> case (Map.lookup i bs, ts) of
-          (Just j, hd : rt@(_ : _)) -> case reverse rt of
+          (Just j, pat : rt@(_ : _)) -> case reverse rt of
             lt : ft -> do
-              pat <- anaPattern (Map.keysSet as) hd
               infer isP $ ResolvedMixTerm j tys
                 (reverse $ LambdaTerm [pat] Partial lt ps : ft) ps
             [] -> error "ResolvedMixTerm: binder"
@@ -319,9 +318,16 @@ infer isP trm = do
                        $ Map.findWithDefault Set.empty i as
                     let ls = map ( \ (ty, is, cs, oi) ->
                               (eps, ty, is, cs, oi)) $ catMaybes insts
-                    when (null ls) $
-                        addDiags [mkDiag Hint "no type found for" i]
-                    return $ map
+                    -- possibly fresh variable
+                    vl <- if isP && null tys && null ls
+                          && (isSimpleId i || i == simpleIdToId uTok) then do
+                        vty <- freshTypeVar trm
+                        return [(eps, noC, vty, QualVar $ VarDecl i vty Other ps)]
+                      else do
+                        when (null ls) $
+                          addDiags [mkDiag Hint "no type found for" i]
+                        return []
+                    return $ vl ++ map
                       ( \ (s, ty, is, cs, oi) ->
                         let od = opDefn oi
                             br = case od of

@@ -18,7 +18,7 @@ module HasCASL.MixAna
   , getPolyIds
   , iterateCharts
   , toMixTerm
-  , anaPattern
+  , uTok
   ) where
 
 import Common.GlobalAnnotations
@@ -38,7 +38,6 @@ import qualified Data.Set as Set
 import HasCASL.As
 import HasCASL.AsUtils
 import HasCASL.PrintAs
-import HasCASL.Unify
 import HasCASL.VarDecl
 import HasCASL.Le
 import HasCASL.ParseTerm
@@ -159,7 +158,7 @@ iterateCharts ga sIds compIds terms chart = do
           putTypeMap tm
           recurse $ QuantifiedTerm quant (catMaybes newDs) (maybe hd id mt) ps
         LambdaTerm decls part hd ps -> do
-          mDecls <- mapM resolvePattern decls
+          mDecls <- mapM resolve decls
           let anaDecls = catMaybes mDecls
               bs = concatMap extractVars anaDecls
           checkUniqueVars bs
@@ -184,7 +183,7 @@ iterateCharts ga sIds compIds terms chart = do
             TermToken _ -> (trm, tok)
             _ -> (trm, exprTok {tokPos = tokPos tok})
         AsPattern vd p ps -> do
-          mp <- resolvePattern p
+          mp <- resolve p
           recurse $ AsPattern vd (maybe p id mp) ps
         TypedTerm trm k ty ps -> do
           -- assume that type is analysed
@@ -195,7 +194,7 @@ iterateCharts ga sIds compIds terms chart = do
 -- * equation stuff
 resolveCaseEq :: ProgEq -> State Env (Maybe ProgEq)
 resolveCaseEq (ProgEq p t ps) = do
-    mp <- resolvePattern p
+    mp <- resolve p
     case mp of
       Nothing -> return Nothing
       Just newP -> do
@@ -223,7 +222,7 @@ resolveLetEqs :: [ProgEq] -> State Env [ProgEq]
 resolveLetEqs eqs = case eqs of
     [] -> return []
     ProgEq pat trm ps : rt -> do
-      mPat <- resolvePattern pat
+      mPat <- resolve pat
       case mPat of
         Nothing -> do
           resolve trm
@@ -271,14 +270,8 @@ getKnowns :: Id -> Set.Set Token
 getKnowns (Id ts cs _) =
     Set.union (Set.fromList ts) $ Set.unions $ map getKnowns cs
 
-resolvePattern :: Term -> State Env (Maybe Term)
-resolvePattern = resolver True
-
 resolve :: Term -> State Env (Maybe Term)
-resolve = resolver False
-
-resolver :: Bool -> Term -> State Env (Maybe Term)
-resolver isPat trm = do
+resolve trm = do
     e <- get
     let ass = assumps e
         ga = globAnnos e
@@ -291,10 +284,7 @@ resolver isPat trm = do
     let Result ds mr = getResolved (showDoc . parenTerm) (getRange trm)
           (toMixTerm e) chart
     addDiags ds
-    if isPat then case mr of
-      Nothing -> return mr
-      Just pat -> fmap Just $ anaPattern sIds pat
-      else return mr
+    return mr
 
 getPolyIds :: Assumps -> Set.Set Id
 getPolyIds = Set.unions . map ( \ (i, s) ->
@@ -334,42 +324,3 @@ initRules (p, ps) polyIds bs is =
                  , getPolyTokenList i)) polyIds ++
     map ( \ i -> ( protect $ polyId i, maxWeight p + 3
                  , getPlainPolyTokenList i)) (filter isMixfix polyIds)
-
--- create fresh type vars for unknown ids tagged with type MixfixType [].
-anaPattern :: Set.Set Id -> Term -> State Env Term
-anaPattern s pat = case pat of
-    QualVar vd -> do
-        newVd <- checkVarDecl vd
-        return $ QualVar newVd
-    ResolvedMixTerm i tys pats ps | null pats && null tys &&
-        (isSimpleId i || i == simpleIdToId uTok) &&
-        not (Set.member i s) -> do
-            (tvar, c) <- toEnvState $ freshVar i
-            return $ QualVar $ VarDecl i (TypeName tvar rStar c) Other ps
-        | otherwise -> do
-            l <- mapM (anaPattern s) pats
-            return $ ResolvedMixTerm i tys l ps
-    ApplTerm p1 p2 ps -> do
-         p3 <- anaPattern s p1
-         p4 <- anaPattern s p2
-         return $ ApplTerm p3 p4 ps
-    TupleTerm pats ps -> do
-         l <- mapM (anaPattern s) pats
-         return $ TupleTerm l ps
-    TypedTerm p q ty ps -> do
-         case p of
-           QualVar (VarDecl v (MixfixType []) ok qs) ->
-             return $ QualVar $ VarDecl v ty ok $ appRange qs ps
-           _ -> do
-             newP <- anaPattern s p
-             return $ TypedTerm newP q ty ps
-    AsPattern vd p2 ps -> do
-         newVd <- checkVarDecl vd
-         p4 <- anaPattern s p2
-         return $ AsPattern newVd p4 ps
-    _ -> return pat
-    where checkVarDecl vd@(VarDecl v t ok ps) = case t of
-            MixfixType [] -> do
-                (tvar, c) <- toEnvState $ freshVar v
-                return $ VarDecl v (TypeName tvar rStar c) ok ps
-            _ -> return vd

@@ -284,7 +284,7 @@ ST state a'
   typename 'a' (35.10)
   is not unifiable with type 'a * state' (36.20)
 ### Hint 36.3-36.42,
-untypeable term (with type: ? _v251_a * ? _v251_a)
+untypeable term (with type: ? _v250_a * ? _v250_a)
 '(ret x : ST state a, \ s : state . (x, s))'
 *** Error 36.3,
 no typing for '(ret x : ST state a) = \ s : state . (x, s)'
@@ -293,17 +293,17 @@ in type of '((var p : ST state a), (var q : a ->? ST state b))'
   typename 'a' (35.31)
   is not unifiable with type 'a * state' (35.25)
 ### Hint 37.3-37.9,
-untypeable term (with type: _v258_m _v259_a * (_v259_a -> _v258_m _v260_b))
+untypeable term (with type: _v254_m _v255_a * (_v255_a -> _v254_m _v256_b))
 '(p, q)'
 ### Hint 37.3-37.9,
 in type of '((var p : ST state a), (var q : a ->? ST state b))'
   typename 'a' (35.31)
   is not unifiable with type 'a * state' (35.25)
 ### Hint 37.3-37.9,
-untypeable term (with type: _v261_m _v262_a * (_v262_a ->? _v261_m _v263_b))
+untypeable term (with type: _v257_m _v258_a * (_v258_a ->? _v257_m _v259_b))
 '(p, q)'
 ### Hint 37.5-37.54,
-untypeable term (with type: ? _v257_a * ? _v257_a)
+untypeable term (with type: ? _v253_a * ? _v253_a)
 '(p >>= q, \ s1 : state . let (z, s2) = p s1 in q z s2)'
 *** Error 37.5,
 no typing for

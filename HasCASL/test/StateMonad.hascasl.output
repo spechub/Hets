@@ -11,7 +11,7 @@ type
 ST := \ state : Type . \ a : Type . state ->? a * state
 vars
 a : Type %(var_2)%;
-b : Type %(var_13)%;
+b : Type %(var_12)%;
 m : Type -> Type %(var_1)%;
 state : Type %(var_3)%
 op __>>=__ : forall m : Type -> Type; a : Type; b : Type
@@ -48,7 +48,7 @@ in type of '(op ret : forall m : Type -> Type; a : Type . a -> m a) (var x : a)
   typename 'a' (5.9)
   is not unifiable with type 'a * state' (8.20)
 ### Hint 8.3-8.42,
-untypeable term (with type: ? _v10_a * ? _v10_a)
+untypeable term (with type: ? _v9_a * ? _v9_a)
 '(ret x : ST state a, \ s : state . (x, s))'
 *** Error 8.3,
 no typing for '(ret x : ST state a) = \ s : state . (x, s)'
@@ -68,10 +68,10 @@ in type of '((var p : ST state a), (var q : a ->? ST state b))'
   typename 'a' (10.35)
   is not unifiable with type 'a * state' (10.18)
 ### Hint 13.3-13.9,
-untypeable term (with type: _v17_m _v18_a * (_v18_a -> _v17_m _v19_b))
+untypeable term (with type: _v14_m _v15_a * (_v15_a -> _v14_m _v16_b))
 '(p, q)'
 ### Hint 13.5-13.54,
-untypeable term (with type: ? _v16_a * ? _v16_a)
+untypeable term (with type: ? _v13_a * ? _v13_a)
 '(p >>= q, \ s2 : state . let (z, s2) = p s1 in q z s2)'
 *** Error 13.5,
 no typing for

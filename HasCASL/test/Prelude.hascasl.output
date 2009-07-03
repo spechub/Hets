@@ -131,10 +131,10 @@ bool : Flatcpo;
 nat : Flatcpo;
 s : Type
 vars
-c : Cpo %(var_250)%;
-d : Cpo %(var_251)%;
-f : Flatcpo %(var_248)%;
-p : Pcpo %(var_247)%;
+c : Cpo %(var_230)%;
+d : Cpo %(var_231)%;
+f : Flatcpo %(var_228)%;
+p : Pcpo %(var_227)%;
 t : Type %(var_2)%
 op Y : forall p : Pcpo . (p --> p) --> p %(fun)%
 op __<<=__ : forall c : Cpo . c * c ->? Unit %(pred)%
@@ -165,7 +165,7 @@ program def = \ x : s . () %(pe_def)%
 program tt = \ x : s . () %(pe_tt)%
 forall s : Type; t : Type; x : s; y : t . x res y = (x as s)
 forall s : Type; t : Type; x : s; y : t . fst (x, y) = (x as s)
-program (var snd : s * t ->? t) (x, y : t) : t = y %(pe_snd)%
+program (var snd : s * t ->? t) (x, y) : t = y %(pe_snd)%
 . fst = __res__
 forall s : Type . (\ x : s . eq (x, x)) = tt
 forall s : Type
@@ -262,7 +262,7 @@ ambiguous typings
 *** Error 66.7,
 in term '(op fst : forall s : Type; t : Type . s * t -> s) = __res__'
  are uninstantiated type variables
-'[_v45_v37_t, _v46_v36_s]'
+'[_v46_v38_t, _v47_v37_s]'
 ### Hint 72.11,
 no kind found for 's'
   expected: {Cpo}
@@ -283,7 +283,7 @@ no kind found for 's'
 *** Error 85.11, illegal type variable as supertype 's'
 ### Hint 87.40-87.46,
 in type of '(pred eq : forall s : Type . s * s)
-((var p : s ->? Unit), (op tt : forall s : Type . Pred s))'
+((var p : Pred s), (op tt : forall s : Type . Pred s))'
   typename 'Unit' (72.9)
   is not unifiable with type 'Unit ->? Unit' (87.33)
 *** Error 87.38,
