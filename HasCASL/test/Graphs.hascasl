@@ -1,7 +1,7 @@
  var S,T : Type
   type Bool;
-       Pred := \ (S: -Type) . S ->? Unit ;
-       Set := \ S:Type . S ->? Unit ;
+       Pred (S: -Type) := S ->? Unit ;
+       Set (S:Type) := S ->? Unit ;
   ops True, False : Bool;
 
   ops emptySet : Set S;
@@ -13,7 +13,7 @@
       __*__ : Set S * Set T -> Set (S*T);
       __disjointUnion__ :  Set S * Set S -> Set (S*Bool);
       inl,inr : S -> S*Bool;
-  forall x,x':S; y:T; s,s':Set(S); t:Set(T) 
+  forall x,x':S; y:T; s,s':Set(S); t:Set(T)
   . not (x isIn emptySet)
   . (x isIn {x'}) <=> x=x'
   . (x isIn s) <=> (s x)

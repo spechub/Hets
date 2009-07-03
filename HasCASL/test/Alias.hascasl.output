@@ -5,7 +5,6 @@ type  MyPred s := s ->? Unit
 type  MyAlias t := t ->? Unit
 type  a1 a b := a -> b -> Unit
 type  a1 a b := a -> b -> Unit
-type  a1 a b := a -> b -> Unit
 type  a2 a b := a -> Unit
 type  a3 a a := a -> Unit
 type  a4 a a := a -> Unit
@@ -48,27 +47,24 @@ no kind found for 'S'
 *** Error 5.14, unknown type variable 't'
 *** Error 7.9, unknown type variable 'a'
 *** Error 7.11, unknown type variable 'b'
-*** Error 8.15, unknown type variable 'a'
-*** Error 8.19, unknown type variable 'b'
+*** Error 8.10, unknown type variable 'a'
+*** Error 8.14, unknown type variable 'b'
 ### Hint 8.6, redeclared type 'a1'
-*** Error 9.9, unknown type variable 'a'
-*** Error 9.16, unknown type variable 'b'
-### Hint 9.6, redeclared type 'a1'
-*** Error 11.15, unknown type variable 'a'
-*** Error 11.19, unknown type variable 'b'
-*** Error 13.15, unknown type variable 'a'
-*** Error 13.15, duplicates at '(13,19)' for 'a'
-*** Error 15.9, unknown type variable 'a'
-*** Error 15.9, duplicates at '(15,11)' for 'a'
-*** Error 17.9, unknown type variable 'a'
-*** Error 19.9, unknown type variable 'a'
-*** Error 19.14-19.22,
+*** Error 10.9, unknown type variable 'a'
+*** Error 10.11, unknown type variable 'b'
+*** Error 12.10, unknown type variable 'a'
+*** Error 12.10, duplicates at '(12,14)' for 'a'
+*** Error 14.9, unknown type variable 'a'
+*** Error 14.9, duplicates at '(14,11)' for 'a'
+*** Error 16.9, unknown type variable 'a'
+*** Error 18.9, unknown type variable 'a'
+*** Error 18.14-18.22,
 illegal recursive type synonym 'a5 a -> Unit'
-*** Error 21.9, unknown type variable 'a'
-*** Error 23.9, unknown type variable 'a'
-*** Error 25.9, unknown type variable 'a'
-*** Error 23.9-25.22, illegal recursive type synonym 'a7 a -> Unit'
-*** Error 27.6,
+*** Error 20.9, unknown type variable 'a'
+*** Error 22.9, unknown type variable 'a'
+*** Error 24.9, unknown type variable 'a'
+*** Error 22.9-24.22, illegal recursive type synonym 'a7 a -> Unit'
+*** Error 26.6,
 incompatible kind of: a2
   expected: Type -> Type -> Type
      found: Type -> Type

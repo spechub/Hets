@@ -1,9 +1,9 @@
-%% predefined universe containing all types, 
+%% predefined universe containing all types,
 %% superclass of all other classes
 
 class Type
 
-var s,t  : Type 
+var s,t  : Type
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% invisible type "Unit" for formulae
@@ -11,8 +11,8 @@ var s,t  : Type
 type Unit: Type  %% flat cpo with bottom
 
 %% type aliases
-type Pred __ : Type -> Type := \ t: -Type . t ->? Unit 
-type ? __ := \ t:Type . Unit ->? t
+type Pred __ (t: -Type) := t ->? Unit
+type ? __ (t:Type) := Unit ->? t
 
 pred true, false : Unit
 
@@ -33,13 +33,13 @@ type __*__*__ : +Type -> +Type -> +Type -> Type
 %% ...
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%% "pred p args = e" abbreviates "op p args :? unit = e"  
+%% "pred p args = e" abbreviates "op p args :? unit = e"
 %% CASL requires "<=>" for pred-defn and disallows "()" as result
 
 op def, tt : Pred s
 var x : s
 
-program def = \x: s . () %% def is also total (identical to tt) 
+program def = \x: s . () %% def is also total (identical to tt)
 
 program tt = \x: s . ()  %% tt is total "op tt(x: s): unit = ()"
 
@@ -47,7 +47,7 @@ program __und__ (x, y: Unit) : Unit = ()
 
 
 %% total function type
-type __->__ : -Type -> +Type -> Type 
+type __->__ : -Type -> +Type -> Type
 
 type __->__ < __ ->? __
 
@@ -55,14 +55,14 @@ type __->__ < __ ->? __
 
 
 %% total functions
-op __res__ (x: s; y: t) : s = x 
-op fst (x: s; y: t) : s = x 
-program snd (x: s, y: t) : t = y 
+op __res__ (x: s; y: t) : s = x
+op fst (x: s; y: t) : s = x
+program snd (x: s, y: t) : t = y
 
 
 %% trivial because its the strict function property
 
-. (\ (x:s, y:t). def (x res y)) =  (\ (x:s, y:t). (def y) und (def x)) 
+. (\ (x:s, y:t). def (x res y)) =  (\ (x:s, y:t). (def y) und (def x))
 . fst = (__ res__)
 
 
@@ -76,10 +76,10 @@ pred eq : s * s
 
 %% then %def
 
-%% notation "\ ."  abbreviates "\bla:unit." 
+%% notation "\ ."  abbreviates "\bla:unit."
 %% where "bla" is never used, but only "()" instead
 
-%% for type inference 
+%% for type inference
 %% an implicit cast from s to ?s of a term "e" yields the term "\ . e"
 
 type s < ?s
@@ -92,7 +92,7 @@ program And (x, y: Pred Unit) : Pred Unit = t1() und t2()
 %% use "And" instead of "und" to avoid cast from "?unit" to "unit"
 program __impl__ (x, y: Pred Unit) : Pred Unit = eq(x, x And y)
 
-program __or__ (x, y: Pred Unit) : Pred Unit = all(\r: Pred Unit. 
+program __or__ (x, y: Pred Unit) : Pred Unit = all(\r: Pred Unit.
 		((x impl r) und (y impl r)) impl r)
 
 program ex (p: Pred(s)) : Pred Unit = all(\r:  Pred Unit.
@@ -102,13 +102,13 @@ program ff () : Pred Unit = all(\r:  Pred Unit. r())
 
 program neg (r: Pred Unit) : Pred Unit = r impl ff
 
-%% the type instance for the first "eq" should be "?t" 
+%% the type instance for the first "eq" should be "?t"
 %% this is explicitely enforced by "\ .f(x)"
 
 . all(\(f,g): s->?t. all(\x:s. eq(\ . f(x), g(x)) impl eq(f, g)))
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%% Recursion (requires "free type nat ::= 0 | Suc(nat)" and "+"  
+%% Recursion (requires "free type nat ::= 0 | Suc(nat)" and "+"
 
 type nat
 
@@ -123,7 +123,7 @@ pred __<<=__ : c * c
 . all(\(x,y,z: c). ((x <<= y) und (y <<= x)) impl eq(x,y))  %(antisymmetric)%
 
 pred isChain (s: nat -> c) <=> all(\n:nat. s(n) <<= s(Suc(n)))
-pred isBound (x: c; s: nat -> c) <=> all(\n:nat. s(n) <<= x)  
+pred isBound (x: c; s: nat -> c) <=> all(\n:nat. s(n) <<= x)
 
 op sup : (nat -> c) ->? c
 
@@ -138,14 +138,14 @@ class Pcpo < Cpo
 {
 var p : Pcpo
 
-op bottom : p 
+op bottom : p
 
-. all(\x : p. bottom <<= x)   
+. all(\x : p. bottom <<= x)
 }
 
 class instance Flatcpo < Cpo
 {
- var f : Flatcpo 
+ var f : Flatcpo
 
  program __<<=[f]__ = eq
 }
@@ -154,23 +154,23 @@ var c, d: Cpo
 
 type instance __*__ : +Cpo -> +Cpo -> Cpo
 
-var x1,x2 : c; y1, y2 : d 
+var x1,x2 : c; y1, y2 : d
 
-program (x1, y1) <<= (x2, y2) = (x1 <<= x2) und (y1 <<= y2) 
+program (x1, y1) <<= (x2, y2) = (x1 <<= x2) und (y1 <<= y2)
 
 
-type instance __*__ : +Pcpo -> +Pcpo -> Pcpo      
+type instance __*__ : +Pcpo -> +Pcpo -> Pcpo
 
 type Unit : Pcpo
 
 %% Pcont
-type instance __-->?__ : -Cpo -> +Cpo -> Pcpo 
+type instance __-->?__ : -Cpo -> +Cpo -> Pcpo
 
  type __-->?__ < __->?__
- . __ in c -->? d  = \f : c ->? d . 
+ . __ in c -->? d  = \f : c ->? d .
 	all(\(x,y: c). (def (f x) und x <<= y) impl def (f y)) und
-	all(\s: nat -> c. (isChain(s) und def f(sup(s))) impl 
-		ex(\m:nat. def f(s(m)) und 
+	all(\s: nat -> c. (isChain(s) und def f(sup(s))) impl
+		ex(\m:nat. def f(s(m)) und
 			eq(sup(\n:nat.!f(s(n+m))), f(sup(s)))))
 
   program f <<=[c -->? d] g = all(\x:c. def (f x) impl f(x) <<= g(x))
@@ -178,12 +178,12 @@ type instance __-->?__ : -Cpo -> +Cpo -> Pcpo
 %% Tcont
 type instance __-->__ : -Cpo -> +Cpo -> Cpo
 
- type __-->__ < __-->?__ 
+ type __-->__ < __-->?__
  . __ in c --> d = \f : c -->? d . all(\x:c. def f(x))
 
  var f, g : c --> d
 
- program f <<= g = f <<=[c -->? d] g 
+ program f <<= g = f <<=[c -->? d] g
 
 type instance __-->__ : -Cpo -> +Pcpo -> Pcpo
 
@@ -194,7 +194,7 @@ fun Y : (p --> p) --> p
 
 var f : p --> p; x : p
 . f(Y(f)) = Y(f)
-. f(x) = x => Y(f) <<= x  
+. f(x) = x => Y(f) <<= x
 
 op undefined : c --> p = Y((\x': c --> p . x') as (c --> p) --> c --> p)
 

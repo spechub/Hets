@@ -126,31 +126,11 @@ typeItems = do
         typeItemList [p, q] Instance
       <|> typeItemList [p] Plain
 
--- | several 'typeArg's
-typeArgs :: AParser st ([TypeArg], [Token])
-typeArgs = do
-    l <- many1 typeArg
-    return (map fst l, concatMap snd l)
-
-pseudoType :: AParser st TypeScheme
-pseudoType = do
-    l <- asKey lamS
-    (ts, pps) <- typeArgs
-    d <- dotT
-    t <- pseudoType
-    let qs = toRange l pps d
-    case t of
-      TypeScheme ts1 gt ps ->
-          return $ TypeScheme (ts ++ ts1) gt $ appRange qs ps
-  <|> do
-    st <- parseType
-    return $ simpleTypeScheme st
-
 pseudoTypeDef :: TypePattern -> Maybe Kind -> [Token] -> AParser st TypeItem
 pseudoTypeDef t k l = do
     c <- asKey assignS
-    p <- pseudoType
-    return $ AliasType t k p $ catRange $ l ++ [c]
+    p <- parseType
+    return $ AliasType t k (simpleTypeScheme p) $ catRange $ l ++ [c]
 
 -- * parsing datatypes
 

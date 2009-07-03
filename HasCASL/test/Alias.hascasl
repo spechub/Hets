@@ -5,12 +5,11 @@ type MyPred s := s ->? Unit
 type MyAlias t := t ->? Unit
 
 type a1 a b := a -> b -> Unit
-type a1 := \ (a) (b) .a -> b  -> Unit
-type a1 a := \ b .a -> b  -> Unit
+type a1 (a) (b) := a -> b  -> Unit
 
-type a2 := \ (a) (b) . a -> Unit
+type a2 a b := a -> Unit
 
-type a3 := \ (a) (a) . a -> Unit
+type a3 (a) (a) := a -> Unit
 
 type a4 a a := a -> Unit
 

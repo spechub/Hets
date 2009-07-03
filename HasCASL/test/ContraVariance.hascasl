@@ -1,4 +1,5 @@
-type p := \ (a : +Type) . Pred (Pred a)  %% should be correct
-type p := \ (a : +Type) . Pred a         %% should be wrong
-type m := \ (b : -Type) . b              %% 
-type m := \ (b : +Type) . b              %% both contradict
+var a : +Type
+type p a := Pred (Pred a)  %% should be correct
+type p a := Pred a         %% should be wrong
+type m (b : -Type) := b              %%
+type m (b : +Type) := b              %% both contradict

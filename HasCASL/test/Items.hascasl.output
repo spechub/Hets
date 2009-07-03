@@ -2,7 +2,7 @@ type  ** : Type -> Type -> Type
 var   a < c
 var   {a} : c -> d
 class Monad < Type -> Type
-type  a t := t -> t
+type  (a : Monad) t := t -> t
 free type Term ::= Var Variable | Lam Variable Term | App Term Term
 type  WNet = {(sys, i, o) : T * T * T . i = o}
 var   a : +Type

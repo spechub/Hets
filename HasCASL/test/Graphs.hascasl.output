@@ -69,9 +69,9 @@ forall S : Type; x : S . inl x = (x, False)
 forall S : Type; x : S . inr x = (x, True)
 ### Hint 1.6, is type variable 'S'
 ### Hint 1.8, is type variable 'T'
-### Hint 3.19, rebound type variable 'S'
+### Hint 3.14, rebound type variable 'S'
 ### Hint 3.8, redeclared type 'Pred'
-### Hint 4.17, rebound type variable 'S'
+### Hint 4.13, rebound type variable 'S'
 ### Hint 9.18,
 no kind found for 'S'
   expected: {Cpo}
