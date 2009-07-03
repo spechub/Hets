@@ -77,7 +77,7 @@ instance XmlListPrintable Empty where toLst _ = []
 instance XmlPrintable LIB_DEFN where
     toXml (Lib_defn n il rg an) =
         mkEl "Lib" ["name", toStr n]
-                 $ printAnnotations rg an [] : map (toXml . item) il
+                 $ maybeToList (printAnnotations rg an []) ++ map (toXml . item) il
 
 instance XmlPrintable LIB_ITEM where
     toXml (Spec_defn n g as rg)
@@ -169,18 +169,18 @@ instance XmlListPrintable G_basic_spec where
 
 instance XmlListPrintable GENERICITY where
     toLst (Genericity (Params pl) (Imported il) _)
-        = map (mkPEl "Param" . (: []) . toXml) pl ++
-          map (mkPEl "Given" . (: []) . toXml) il
+        = let f n l = map (mkPEl n . (: []) . toXml) l
+          in f "Param" pl ++ f "Given" il
 
 instance XmlListPrintable RESTRICTION where
     toLst (Hidden m _) = toLst m
     toLst (Revealed m _) = toLst m
 
 instance XmlListPrintable G_symb_items_list where
-    toLst _ = []
+    toLst (G_symb_items_list lid l) = map toText l
 
 instance XmlListPrintable G_symb_map_items_list where
-    toLst _ = []
+    toLst (G_symb_map_items_list lid l) = map toText l
 
 instance XmlAttrList [String] where
     mkAtts (x:y:l) = (Attr (unqual x) y) : mkAtts l
@@ -192,9 +192,9 @@ instance XmlAttrList [(String, String)] where
 
 instance XmlAttrList Logic_code where
     mkAtts (Logic_code enc src trg _)
-        = mkAtts $ catMaybes [liftM ((,) "encoding" . toStr) enc,
-                              liftM ((,) "source" . toStr) src,
-                              liftM ((,) "target" . toStr) trg]
+        = let f n o = liftM ((,) n . toStr) o
+          in mkAtts $ catMaybes
+                 [f "encoding" enc, f "source" src, f "target" trg]
 
 printBasicSpecItem :: Annoted String -> Content
 printBasicSpecItem as@(Annoted s rg la ra)
@@ -202,15 +202,18 @@ printBasicSpecItem as@(Annoted s rg la ra)
       $ mkPEl (if notImplied as then "Theoryitem" else "Assertion") [toText s]
 
 
-printAnnotated :: Annoted a -> Content
+printAnnotated :: Annoted a -> Maybe Content
 printAnnotated (Annoted _ rg la ra) = printAnnotations rg la ra
 
-printAnnotations :: Range -> [Annotation] -> [Annotation] -> Content
-printAnnotations rg lan ran =
-    withRg rg $ mkPEl "Annotations" 
-               [printPXmlList "Left" lan, printPXmlList "Right" ran]
+printAnnotations :: Range -> [Annotation] -> [Annotation] -> Maybe Content
+printAnnotations rg [] [] = Nothing
+printAnnotations rg lan ran
+    = Just $ withRg rg $ mkPEl "Annotations" 
+      $ let f n l = (case lan of [] -> []
+                                 _ -> [printPXmlList n l])
+        in f "Left" lan ++ f "Right" ran
 
-
+-- check if one can remove this by generalizing mkEl such as for attribs
 printXmlList :: XmlPrintable a => String -> [String] -> [a] -> Content
 printXmlList n attrs l = mkEl n attrs $ toLst l
 
@@ -219,11 +222,16 @@ printPXmlList n l = printXmlList n [] l
 
 
 withAnno :: Annoted a -> Content -> Content
-withAnno a (Elem e) = Elem $ e { elContent = printAnnotated a : elContent e }
+withAnno a c@(Elem e) = case printAnnotated a of
+                        Just ac -> Elem $ e { elContent = ac : elContent e }
+                        _ -> c
+
 withAnno a _ = error "withAnno only applies to elements"
 
 withRg :: Range -> Content -> Content
-withRg rg (Elem e) = Elem $ add_attr (Attr (unqual "range") $ toString rg) e
+withRg rg c@(Elem e) = case toString rg of [] -> c
+                                           str -> Elem $ add_attr
+                                                  (Attr (unqual "range") $ str) e
 withRg rg _ = error "withRg only applies to elements"
 
 
