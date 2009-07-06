@@ -278,9 +278,8 @@ no kind found for 'a'
 ### Hint 35.13, rebound variable 'p'
 ### Hint 35.29, not a kind 'a ->? ST state b'
 ### Hint 35.28, rebound variable 'q'
-### Hint 36.3-36.9,
-in type of '(op ret : forall m : Monad; a : Type . a -> m a) (var x : a) :
-ST state a'
+### Hint 36.3-36.7,
+in type of '(op ret : forall m : Monad; a : Type . a -> m a) (var x : a)'
   typename 'a' (35.10)
   is not unifiable with type 'a * state' (36.20)
 ### Hint 36.3-36.42,

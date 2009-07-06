@@ -131,8 +131,8 @@ in type of '((op a : s), (op a : s))'
   typename 't' (9.14)
   is not unifiable with type 's * s' (15.21)
 ### Hint 15.14-15.21, untypeable term (with type: t) '(a, a)'
-### Hint 15.6-15.24,
-rejected 't < s' of '(op __+__ : t * t -> t) ((op a : s), (op a : s)) as s'
+### Hint 15.14-15.21,
+rejected 't < s' of '(op __+__ : t * t -> t) ((op a : s), (op a : s))'
 ### Hint 17.8,
 no kind found for 's'
   expected: {Cpo}

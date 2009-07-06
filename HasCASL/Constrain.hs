@@ -147,37 +147,37 @@ partEqShapes = filter ( \ p -> case p of
     _ -> True)
 
 -- pre: shapeMatchPairList succeeds
-shapeMgu :: TypeMap -> [(Type, Type)] -> [(Type, Type)] -> State Int Subst
-shapeMgu te knownAtoms cs = let (atoms, sts) = span isAtomic cs in
+shapeMgu :: [(Type, Type)] -> [(Type, Type)] -> State Int Subst
+shapeMgu knownAtoms cs = let (atoms, sts) = span isAtomic cs in
   case sts of
   [] -> return eps
   p@(t1, t2) : tl -> let
    newKnowns = knownAtoms ++ partEqShapes atoms
    rest = newKnowns ++ tl
    in case p of
-    (ExpandedType _ t, _) | noAbs t -> shapeMgu te newKnowns $ (t, t2) : tl
-    (_, ExpandedType _ t) | noAbs t -> shapeMgu te newKnowns $ (t1, t) : tl
+    (ExpandedType _ t, _) | noAbs t -> shapeMgu newKnowns $ (t, t2) : tl
+    (_, ExpandedType _ t) | noAbs t -> shapeMgu newKnowns $ (t1, t) : tl
     (TypeAppl (TypeName l _ _) t, _) | l == lazyTypeId ->
-        shapeMgu te newKnowns $ (t, t2) : tl
+        shapeMgu newKnowns $ (t, t2) : tl
     (_, TypeAppl (TypeName l _ _) t) | l == lazyTypeId ->
-        shapeMgu te newKnowns $ (t1, t) : tl
-    (KindedType t _ _, _) -> shapeMgu te newKnowns $ (t, t2) : tl
-    (_, KindedType t _ _) -> shapeMgu te newKnowns $ (t1, t) : tl
+        shapeMgu newKnowns $ (t1, t) : tl
+    (KindedType t _ _, _) -> shapeMgu newKnowns $ (t, t2) : tl
+    (_, KindedType t _ _) -> shapeMgu newKnowns $ (t1, t) : tl
     (TypeName _ _ v1, _) -> case redStep t2 of
-      Just r2 -> shapeMgu te newKnowns $ (t1, r2) : tl
+      Just r2 -> shapeMgu newKnowns $ (t1, r2) : tl
       Nothing -> if v1 > 0 then do
              vt <- freshLeaves t2
              let s = Map.singleton v1 vt
-             r <- shapeMgu te [] $ (vt, t2) : substPairList s rest
+             r <- shapeMgu [] $ (vt, t2) : substPairList s rest
              return $ compSubst s r
        else error ("shapeMgu1a: " ++ showDoc t1 " < " ++ showDoc t2 "")
-    (_, TypeName _ _ _) -> shapeMgu te newKnowns $ (t2, t1) : tl
+    (_, TypeName _ _ _) -> shapeMgu newKnowns $ (t2, t1) : tl
     (TypeAppl f1 a1, TypeAppl f2 a2) -> case redStep t1 of
-      Just r1 -> shapeMgu te newKnowns $ (r1, t2) : tl
+      Just r1 -> shapeMgu newKnowns $ (r1, t2) : tl
       Nothing -> case redStep t2 of
-        Just r2 -> shapeMgu te newKnowns $ (t1, r2) : tl
-        Nothing -> shapeMgu te newKnowns $ (f1, f2) : (a1, a2) : tl
-    _ -> if t1 == t2 then shapeMgu te newKnowns tl else
+        Just r2 -> shapeMgu newKnowns $ (t1, r2) : tl
+        Nothing -> shapeMgu newKnowns $ (f1, f2) : (a1, a2) : tl
+    _ -> if t1 == t2 then shapeMgu newKnowns tl else
          error $ "shapeMgu2: " ++ showDoc t1 " < " ++ showDoc t2 ""
 
 inclusions :: [(Type, Type)] -> [(Type, Type)]
@@ -207,10 +207,9 @@ inclusions cs = let (atoms, sts) = partition isAtomic cs in
                Just r2 -> inclusions $ (t1, r2) : tl
              Just r1 -> inclusions $ (r1, t2) : tl
 
-shapeUnify :: TypeMap -> [(Type, Type)]
-           -> State Int (Subst, [(Type, Type)])
-shapeUnify te l = do
-    s <- shapeMgu te [] l
+shapeUnify :: [(Type, Type)] -> State Int (Subst, [(Type, Type)])
+shapeUnify l = do
+    s <- shapeMgu [] l
     return (s, inclusions $ substPairList s l)
 
 -- input an atomized constraint list
@@ -264,7 +263,7 @@ shapeRel te cs =
     in case shapeMatchPairList (typeMap te) subL of
        Result ds Nothing -> return $ Result ds Nothing
        _ -> do
-               (s1, atoms) <- shapeUnify (typeMap te) subL
+               (s1, atoms) <- shapeUnify subL
                let r = Rel.transClosure $ Rel.fromList atoms
                    es = Map.foldWithKey ( \ t1 st l1 ->
                              case t1 of

@@ -34,17 +34,15 @@ no kind found for 'a'
   expected: {Cppo}
      found: {Type}
 ### Hint 5.7, not a class 'a'
-### Hint 6.8-6.14,
-in type of '(op ret : forall m : Type -> Type; a : Type . a -> m a) (var x : a)
-: ST state a'
+### Hint 6.8-6.12,
+in type of '(op ret : forall m : Type -> Type; a : Type . a -> m a) (var x : a)'
   typename 'a' (5.9)
   is not unifiable with type 'a * state' (6.25)
 ### Hint 6.8-6.14,
 untypeable term (with type: ? _v6_a) 'ret x : ST state a'
 *** Error 6.3, no typing for 'def (ret x : ST state a)'
-### Hint 8.3-8.9,
-in type of '(op ret : forall m : Type -> Type; a : Type . a -> m a) (var x : a)
-: ST state a'
+### Hint 8.3-8.7,
+in type of '(op ret : forall m : Type -> Type; a : Type . a -> m a) (var x : a)'
   typename 'a' (5.9)
   is not unifiable with type 'a * state' (8.20)
 ### Hint 8.3-8.42,
