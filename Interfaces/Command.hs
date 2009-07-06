@@ -27,6 +27,7 @@ data GlobCmd =
   | LocalInference
   | CompositionProveEdges
   | CompositionCreateEdges
+  | Conservativity
   | ThmHideShift
   | HideThmShift
   | Colimit
@@ -56,6 +57,7 @@ menuTextGlobCmd cmd = case cmd of
   LocalInference -> "Local-Inference"
   CompositionProveEdges -> "Prove composed edges"
   CompositionCreateEdges -> "Create composed proven edges"
+  Conservativity -> "Conservativity"
   ThmHideShift -> "Theorem-Hide-Shift"
   HideThmShift -> "Hide-Theorem-Shift"
   Colimit -> "Compute colimit"
@@ -81,6 +83,7 @@ cmdlGlobCmd cmd = case cmd of
   LocalInference -> "local-infer"
   CompositionProveEdges -> "comp"
   CompositionCreateEdges -> "comp-new"
+  Conservativity -> "cons"
   ThmHideShift -> "thm-hide"
   HideThmShift -> "hide-thm"
   _ -> map toLower $ menuTextGlobCmd cmd

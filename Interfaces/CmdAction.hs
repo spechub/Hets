@@ -22,6 +22,7 @@ import Proofs.Local (localInference, locDecomp)
 import Proofs.Composition (composition, compositionCreatingEdges)
 import Proofs.HideTheoremShift (automaticHideTheoremShift)
 import Proofs.TheoremHideShift (theoremHideShift)
+import Proofs.Conservativity (conservativity)
 import Proofs.ComputeColimit (computeColimit)
 
 import Static.DevGraph
@@ -40,6 +41,7 @@ globLibAct =
   , (LocalInference, localInference)
   , (CompositionProveEdges, composition)
   , (CompositionCreateEdges, compositionCreatingEdges)
+  , (Conservativity, conservativity)
   , (HideThmShift, automaticHideTheoremShift) ]
 
 globLibResultAct :: [(GlobCmd, LIB_NAME -> LibEnv -> Result LibEnv)]
