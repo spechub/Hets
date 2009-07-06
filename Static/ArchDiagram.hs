@@ -350,29 +350,6 @@ homogeniseDiagram targetLid diag =
        cDiag' <- convertEdges cDiag dEdges
        return cDiag'
 
--- | Coerce GMorphisms in the list of (diagram node, GMorphism) pairs
--- to morphisms in given logic
-homogeniseSink :: Logic lid sublogics
-                         basic_spec sentence symb_items symb_map_items
-                         sign morphism symbol raw_symbol proof_tree
-                => lid -- ^ the target logic to which morphisms will be coerced
-                -> [(Node, GMorphism)] -- ^ the list of edges to be homogenised
-                -> Result [(Node, morphism)]
-homogeniseSink targetLid dEdges =
-    -- See homogeniseDiagram for comments on implementation.
-    do let convertMorphism (n, GMorphism cid _ _ mor _) =
-               if isIdComorphism (Comorphism cid) then
-                  do mor' <- coerceMorphism (targetLogic cid) targetLid "" mor
-                     return (n, mor')
-               else fail $
-               "Trying to coerce a morphism between different logics.\n" ++
-                "Heterogeneous specifications are not fully supported yet."
-           convEdges [] = do return []
-           convEdges (e : es) = do ce <- convertMorphism e
-                                   ces <- convEdges es
-                                   return (ce : ces)
-       convEdges dEdges
-
 -- | Create a graph containing descriptions of nodes and edges.
 diagDesc :: Diag
          -> Tree.Gr String String

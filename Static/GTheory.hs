@@ -33,6 +33,11 @@ import Data.Typeable
 import Control.Monad (foldM)
 import Control.Exception
 
+import Data.Graph.Inductive.Graph as Graph
+
+import Common.Lib.Graph as Tree
+import Common.Amalgamate --for now
+
 -- a theory index describing a set of sentences
 newtype ThId = ThId Int deriving (Typeable, Show, Eq, Ord, Enum)
 
@@ -194,3 +199,98 @@ instance Show BasicProof where
   show Guessed = "Guessed"
   show Conjectured = "Conjectured"
   show Handwritten = "Handwritten"
+
+
+-- | Grothendieck diagrams
+type GDiagram = Gr G_theory (Int, GMorphism)
+
+-- | checks whether a connected GDiagram is homogeneous
+
+isHomogeneousGDiagram :: GDiagram -> Bool
+isHomogeneousGDiagram diag = foldl (&&) True $ map isHomogeneous $
+                             map (\(_,_,(_,phi)) -> phi) $ labEdges diag
+
+-- | homogenise a GDiagram to a targeted logic
+
+homogeniseGDiagram :: Logic lid sublogics
+                           basic_spec sentence symb_items symb_map_items
+                           sign morphism symbol raw_symbol proof_tree
+                  => lid     -- ^ the target logic to be coerced to
+                  -> GDiagram    -- ^ the GDiagram to be homogenised
+                  -> Result (Gr sign (Int,morphism))
+
+homogeniseGDiagram targetLid diag =  do
+  let convertNode (n, gth) = do
+       G_sign srcLid extSig _ <- return $ signOf gth
+       extSig' <- coerceSign srcLid targetLid "" extSig
+       return (n, plainSign extSig')
+      convertEdge (n1, n2, (nr,GMorphism cid _ _ mor _ ))
+        = if isIdComorphism (Comorphism cid) then
+            do mor' <- coerceMorphism (targetLogic cid) targetLid "" mor
+               return (n1, n2, (nr,mor'))
+          else fail $
+               "Trying to coerce a morphism between different logics.\n" ++
+               "Heterogeneous specifications are not fully supported yet."
+      convertNodes cDiag [] = do return cDiag
+      convertNodes cDiag (lNode : lNodes) =
+               do convNode <- convertNode lNode
+                  let cDiag' = insNode convNode cDiag
+                  convertNodes cDiag' lNodes
+      convertEdges cDiag [] = do return cDiag
+      convertEdges cDiag (lEdge : lEdges) =
+               do convEdge <- convertEdge lEdge
+                  let cDiag' = insEdge convEdge cDiag
+                  convertEdges cDiag' lEdges
+      dNodes = labNodes diag
+      dEdges = labEdges  diag
+       -- insert converted nodes to an empty diagram
+  cDiag <- convertNodes Graph.empty dNodes
+       -- insert converted edges to the diagram containing only nodes
+  cDiag' <- convertEdges cDiag dEdges
+  return cDiag'
+
+-- | Coerce GMorphisms in the list of (diagram node, GMorphism) pairs
+-- to morphisms in given logic
+homogeniseSink :: Logic lid sublogics
+                         basic_spec sentence symb_items symb_map_items
+                         sign morphism symbol raw_symbol proof_tree
+                => lid -- ^ the target logic to which morphisms will be coerced
+                -> [(Node, GMorphism)] -- ^ the list of edges to be homogenised
+                -> Result [(Node, morphism)]
+homogeniseSink targetLid dEdges =
+     -- See homogeniseDiagram for comments on implementation.
+    do let convertMorphism (n, GMorphism cid _ _ mor _) =
+               if isIdComorphism (Comorphism cid) then
+                  do mor' <- coerceMorphism (targetLogic cid) targetLid "" mor
+                     return (n, mor')
+               else fail $
+               "Trying to coerce a morphism between different logics.\n" ++
+                "Heterogeneous specifications are not fully supported yet."
+           convEdges [] = do return []
+           convEdges (e : es) = do ce <- convertMorphism e
+                                   ces <- convEdges es
+                                   return (ce : ces)
+       convEdges dEdges
+
+
+-- amalgamabilty check for heterogeneous diagrams
+-- currently only checks whether the diagram is
+-- homogeneous and if so, calls amalgamability check
+-- for the specific logic
+
+gEnsuresAmalgamability :: [CASLAmalgOpt] -- the options
+                       ->  GDiagram -- the diagram
+                       -> [(Int, GMorphism)] -- the sink
+                       -> Result Amalgamates
+gEnsuresAmalgamability options gd sink = let
+  isHomogeneousD g s = foldl (&&) True $  map isHomogeneous $
+                             (map (\(_,_,(_,phi)) -> phi) $ labEdges g)
+                             ++ map snd s
+ in if isHomogeneousD gd sink then
+      case head $ labNodes gd of
+       (_, G_theory lid _ _ _ _) -> do
+          diag <- homogeniseGDiagram lid gd
+          sink' <- homogeniseSink lid sink
+          ensures_amalgamability lid (options, diag, sink', Graph.empty)
+    else error "heterogeneous amalgability check not yet implemented"
+

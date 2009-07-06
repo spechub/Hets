@@ -12,10 +12,7 @@ Needs some improvements (see TO DO).
 
 -}
 
-module Static.WACocone(GDiagram,
-                       isHomogeneousGDiagram,
-                       homogeniseGDiagram,
-                       isConnected,
+module Static.WACocone(isConnected,
                        isAcyclic,
                        isThin,
                        removeIdentities,
@@ -65,53 +62,8 @@ weakly_amalgamable_colimit l diag = do
 --             DontKnow s -> fail $ "amalgamability test returns DontKnow: "++ s
 --             _ -> trace "amalgamability test passed " $ return (sig, sink)
 
--- | Grothendieck diagrams
-type GDiagram = Gr G_theory (Int, GMorphism)
 
--- | checks whether a connected GDiagram is homogeneous
 
-isHomogeneousGDiagram :: GDiagram -> Bool
-isHomogeneousGDiagram diag = foldl (&&) True $ map isHomogeneous $
-                             map (\(_,_,(_,phi)) -> phi) $ labEdges diag
-
--- | homogenise a GDiagram to a targeted logic
-
-homogeniseGDiagram :: Logic lid sublogics
-                           basic_spec sentence symb_items symb_map_items
-                           sign morphism symbol raw_symbol proof_tree
-                  => lid     -- ^ the target logic to be coerced to
-                  -> GDiagram    -- ^ the GDiagram to be homogenised
-                  -> Result (Gr sign (Int,morphism))
-
-homogeniseGDiagram targetLid diag =  do
-  let convertNode (n, gth) = do
-       G_sign srcLid extSig _ <- return $ signOf gth
-       extSig' <- coerceSign srcLid targetLid "" extSig
-       return (n, plainSign extSig')
-      convertEdge (n1, n2, (nr,GMorphism cid _ _ mor _ ))
-        = if isIdComorphism (Comorphism cid) then
-            do mor' <- coerceMorphism (targetLogic cid) targetLid "" mor
-               return (n1, n2, (nr,mor'))
-          else fail $
-               "Trying to coerce a morphism between different logics.\n" ++
-               "Heterogeneous specifications are not fully supported yet."
-      convertNodes cDiag [] = do return cDiag
-      convertNodes cDiag (lNode : lNodes) =
-               do convNode <- convertNode lNode
-                  let cDiag' = insNode convNode cDiag
-                  convertNodes cDiag' lNodes
-      convertEdges cDiag [] = do return cDiag
-      convertEdges cDiag (lEdge : lEdges) =
-               do convEdge <- convertEdge lEdge
-                  let cDiag' = insEdge convEdge cDiag
-                  convertEdges cDiag' lEdges
-      dNodes = labNodes diag
-      dEdges = labEdges  diag
-       -- insert converted nodes to an empty diagram
-  cDiag <- convertNodes Graph.empty dNodes
-       -- insert converted edges to the diagram containing only nodes
-  cDiag' <- convertEdges cDiag dEdges
-  return cDiag'
 
 -- | checks whether a graph is connected
 
