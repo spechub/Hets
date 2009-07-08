@@ -11,6 +11,9 @@ Portability :  non-portable (imports Logic.Logic)
 Instance of class Logic for Maude. See <http://maude.cs.uiuc.edu/>
 -}
 
+=======
+
+>>>>>>> .r11881
 module Maude.Logic_Maude where
 
 import Logic.Logic

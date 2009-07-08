@@ -1,0 +1,151 @@
+ fmod HETS-SIGNATURE is
+  including FULL-MAUDE-SIGN .
+  
+  *** functional and system module and theory
+  op fmod+_is_endfm : @Interface@ @FDeclList@ -> @Module@ .
+  op mod+_is_endm : @Interface@ @SDeclList@ -> @Module@ .
+  op fth+_is_endfth : @Interface@ @FDeclList@ -> @Module@ .
+  op th+_is_endth : @Interface@ @SDeclList@ -> @Module@ .
+ endfm
+ 
+ fmod META-HETS-SIGN is
+  inc META-FULL-MAUDE-SIGN .
+  inc UNIT .
+
+  op HETS-GRAMMAR : -> FModule [memo] .
+  eq HETS-GRAMMAR = addImports((including 'HETS-SIGNATURE .), GRAMMAR) .
+ endfm
+ 
+ fmod HETS-COMMAND-PROCESSING is
+  pr COMMAND-PROCESSING .
+  pr META-HETS-SIGN .
+ endfm
+ 
+ mod HETS-DATABASE-HANDLING is
+  inc DATABASE-HANDLING .
+  pr HETS-COMMAND-PROCESSING .
+  pr MAUDE2HASKELL .
+
+  sort HetsDatabaseClass .
+  subsort HetsDatabaseClass < DatabaseClass .
+  
+  op HetsDatabase : -> HetsDatabaseClass [ctor] .
+  
+  *** Initial values of the attributes (except input and output)
+  op init-state : -> AttributeSet .
+  eq init-state = db : initialDatabase, default : 'CONVERSION .
+
+  vars DB DB' : Database .
+  vars F F' : Qid .
+  vars T T' : Term .
+  var  O : Oid .
+  var  X@DatabaseClass : DatabaseClass .
+  var  ME : ModuleExpression .
+  var  AttS : AttributeSet .
+  var  H : Header .
+  var  M : Module .
+  
+  crl [module] :
+      < O : X@DatabaseClass | db : DB, input : (F[T, T']), output : nil, 
+                              default : ME, AttS >
+   => < O : X@DatabaseClass |  db : DB', input : nilTermList, 
+                               output : (haskellify(M)), default : H, AttS > 
+     if (F == 'fmod+_is_endfm) or-else 
+        (F == 'mod+_is_endm)   or-else 
+        (F == 'omod+_is_endom) /\
+        DB' := procModule(coreMaudeOp(F)[T, T'], DB) /\
+        H := parseHeader(T) /\
+        M := getTopModule(H, DB') .
+
+   op coreMaudeOp : Qid ~> Qid .
+   eq coreMaudeOp('fmod+_is_endfm) = 'fmod_is_endfm .
+   eq coreMaudeOp('mod+_is_endm) = 'mod_is_endm .
+   eq coreMaudeOp('omod+_is_endom) = 'omod_is_endom .
+ endm
+ 
+ mod HETS is
+  inc HETS-DATABASE-HANDLING .
+  inc LOOP-MODE .
+  inc META-HETS-SIGN .
+
+  var  QI : Qid .
+  vars QIL QIL' QIL'' : QidList .
+  var  AttS : AttributeSet .
+  var  N : Nat .
+  var  DB : Database .
+  vars RP RP' : ResultPair .
+  var  O : Oid .
+  var  HDC : HetsDatabaseClass .
+  var  X@Database : DatabaseClass .
+
+  op o : -> Oid .
+
+  --- State for LOOP mode:
+  subsort Object < State .
+  op init-hets : -> System .
+
+  rl [init] :
+     init-hets
+  => [nil, < o : HetsDatabase | input : nilTermList, output : nil, init-state >, nil] .
+
+  -----------------------------------------------------------------------------------------
+  ---------------------------------------- IN ---------------------------------------------
+  -----------------------------------------------------------------------------------------
+
+  eq ['fmod QIL, S:State, QIL'] = ['fmod+ QIL, S:State, QIL'] .
+  eq ['mod QIL, S:State, QIL'] = ['mod+ QIL, S:State, QIL'] .
+
+  crl [in] :
+      [QIL, < O : X@Database | input : nilTermList, AttS >, QIL']
+   => [nil, < O : X@Database | input : getTerm(RP), AttS >, QIL'] 
+   if QIL =/= nil /\
+      RP := metaParse(HETS-GRAMMAR, QIL, '@Input@) .
+
+  crl [in] :
+      [QIL, < O : X@Database | output : nil, AttS >, QIL']
+   => [nil, 
+       < O : X@Database | output : ('\r 'Warning: 
+                 printSyntaxError(metaParse(HETS-GRAMMAR, QIL, '@Input@), QIL) 
+                 '\n
+                 '\r 'Error: '\o 'No 'parse 'for 'input. '\n), AttS >, 
+       QIL'] 
+   if QIL =/= nil /\
+      noParse(N) := metaParse(HETS-GRAMMAR, QIL, '@Input@)  .
+
+  crl [in] :
+      [QIL, < O : X@Database | output : nil, AttS >, QIL']
+   => [nil, 
+       < O : X@Database | output :  ('\r 'Error: '\o 'Ambiguous 'input. '\n), AttS >, 
+       QIL'] 
+    if QIL =/= nil /\
+       ambiguity(RP, RP') := metaParse(HETS-GRAMMAR, QIL, '@Input@)  .
+
+  rl [out] :
+     [QIL, < O : X@Database | output : (QI QIL'), AttS >, QIL'']
+  => [QIL, < O : X@Database | output : nil, AttS >, (QIL'' QI QIL')] .
+ endm
+ 
+ set print conceal on .
+ print conceal mod_is_sorts_._____endm .
+ print conceal fmod_is_sorts_.____endfm .
+ print conceal db .
+
+ 
+ loop init-hets .
+ 
+ eof
+ 
+ (mod A is 
+   pr NAT .
+   sorts Foo1 Foo2 Foo3 .
+   sort Foo4{X} . 
+   subsort Foo1 < Foo2 Foo3 < Foo4{X} .
+   op a : -> Foo1 .
+   op b : Foo1 -> Foo1 .
+   op c : Foo1 Foo1 -> Foo1 [assoc comm] .
+   op d : Foo1 ~> Foo1 .
+   mb a : Foo1 .
+   eq a = b(a) .
+   rl [kia] : d(a) => a .
+ endm)
+*** (fmod A{X :: TRIV} is pr NAT . endfm)
