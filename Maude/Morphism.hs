@@ -25,25 +25,24 @@ module Maude.Morphism (
 ) where
 
 import Maude.AS_Maude
+import Maude.Symbol
 
 import Maude.Sign (Sign)
 import qualified Maude.Sign as Sign
 
 import Data.Set (Set)
 import Data.Map (Map)
-import Data.Typeable (Typeable)
 import qualified Data.Set as Set
 import qualified Data.Map as Map
 import qualified Data.Foldable as Fold
 
-import Common.Id (Token)
 import Common.Result (Result)
 import qualified Common.Result as Result
 
 
-type SortMap = Map Token Token
-type OpMap = Map Token Token
-type LabelMap = Map Token Token
+type SortMap = SymbolMap
+type OpMap = SymbolMap
+type LabelMap = SymbolMap
 
 data Morphism = Morphism {
         source :: Sign,
@@ -51,7 +50,7 @@ data Morphism = Morphism {
         sortMap :: SortMap,
         opMap :: OpMap,
         labelMap :: LabelMap
-    } deriving Show--(Show, Eq, Ord, Typeable)
+    } deriving Show
 
 
 -- | extract a Morphism from a list of Renamings
@@ -59,7 +58,7 @@ fromRenamings :: [Renaming] -> Morphism
 fromRenamings = foldr insertRenaming empty
 
 -- | extract a Symbol Map from a Morphism
-symbolMap :: Morphism -> Map Token Token
+symbolMap :: Morphism -> SymbolMap
 symbolMap mor = Map.unions [(sortMap mor), (opMap mor), (labelMap mor)]
 
 -- | insert a Renaming into a Morphism
@@ -71,7 +70,7 @@ insertRenaming rename mor = let
         omap = opMap mor
         lmap = labelMap mor
     in case rename of
-        (SortRenaming from to) -> let
+        SortRenaming from to -> let
                 a = sortName from
                 b = sortName to
             in mor {
@@ -79,13 +78,13 @@ insertRenaming rename mor = let
                 target = Sign.insertSort to tgt,
                 sortMap = Map.insert a b smap
             }
-        (LabelRenaming from to) -> let
+        LabelRenaming from to -> let
                 a = labelName from
                 b = labelName to
             in mor {
                 labelMap = Map.insert a b lmap
             }
-        (OpRenaming1 from (To to _)) -> let
+        OpRenaming1 from (To to _) -> let
                 a = opName from
                 b = opName to
             in mor {
@@ -93,12 +92,12 @@ insertRenaming rename mor = let
                 target = Sign.insertOpName to tgt,
                 opMap = Map.insert a b omap
             }
-        (OpRenaming2 from _ _ (To to _)) -> let
+        OpRenaming2 from _ _ (To to _) -> let
                 a = opName from
                 b = opName to
             in mor {
-            source = Sign.insertOpName from src,
-            target = Sign.insertOpName to tgt,
+                source = Sign.insertOpName from src,
+                target = Sign.insertOpName to tgt,
                 opMap = Map.insert a b omap
             }
 
