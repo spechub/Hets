@@ -23,12 +23,12 @@ module Maude.Symbol (
     toId,
 ) where
 
-import Maude.Meta
+import Maude.AS_Maude
 
 import Data.Set (Set)
 import Data.Map (Map)
 
-import Common.Id (Id)
+import Common.Id (Id, mkId)
 
 
 type Symbol = Qid
@@ -36,4 +36,4 @@ type SymbolSet = Set Symbol
 type SymbolMap = Map Symbol Symbol
 
 toId :: Symbol -> Id
-toId = qid
+toId sym = mkId [sym]
