@@ -30,11 +30,7 @@ import Maude.Symbol
 import Maude.Sign (Sign)
 import qualified Maude.Sign as Sign
 
-import Data.Set (Set)
-import Data.Map (Map)
-import qualified Data.Set as Set
 import qualified Data.Map as Map
-import qualified Data.Foldable as Fold
 
 import Common.Result (Result)
 import qualified Common.Result as Result
