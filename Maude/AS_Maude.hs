@@ -26,6 +26,8 @@ import Common.DocUtils
 import Common.Id
 import Data.Typeable
 
+type Qid = Token
+
 data Spec = Spec ModId [Parameter] [Statement]
           deriving (Show, Read)
 
@@ -114,8 +116,8 @@ data Attr = Assoc
           | Strat [Int]
           | Memo
           | Prec Int
-          | Gather [Token]
-          | Format [Token]
+          | Gather [Qid]
+          | Format [Qid]
           | Ctor
           | Config
           | Object
@@ -124,36 +126,36 @@ data Attr = Assoc
           | Poly [Int]
           deriving (Show, Read)
 
-data StmntAttr = Label Token
+data StmntAttr = Label Qid
                | Metadata String
                | Owise
                | Nonexec
-               | Print [Token]
+               | Print [Qid]
                deriving (Show, Read)
 
-data Term = Const Token Type
-          | Var Token Type
-          | Apply Token [Term]
+data Term = Const Qid Type
+          | Var Qid Type
+          | Apply Qid [Term]
           deriving (Show, Read)
 
 data Type = TypeSort Sort
           | TypeKind Kind
           deriving (Show, Read)
 
-newtype Sort = SortId Token
+newtype Sort = SortId Qid
              deriving (Show, Read)
 
-newtype Kind = KindId Token
+newtype Kind = KindId Qid
              deriving (Show, Read)
 
-newtype ParamId = ParamId Token
+newtype ParamId = ParamId Qid
                 deriving (Show, Read)
 
-newtype ModId = ModId Token
+newtype ModId = ModId Qid
               deriving (Show, Read)
 
-newtype LabelId = LabelId Token
+newtype LabelId = LabelId Qid
                 deriving (Show, Read)
 
-newtype OpId = OpId Token
+newtype OpId = OpId Qid
              deriving (Show, Read)
