@@ -19,28 +19,28 @@ Definition of signatures for Maude.
 module Maude.Sign where
 
 import Maude.AS_Maude
+import Maude.Symbol
 
 import Data.Set (Set)
 import Data.Map (Map)
-import Data.Typeable (Typeable)
 import qualified Data.Set as Set
 import qualified Data.Map as Map
 import qualified Data.Foldable as Fold
 
-import Common.Id (Token)
 import Common.Lib.Rel (Rel)
 import qualified Common.Lib.Rel as Rel
 
 
-type SortSet = Set Token
-type SubsortRel = Rel Token
-type OpMap = Map Token (Set ([Token], Token))
+type SortSet = Set Symbol
+type SubsortRel = Rel Symbol
+type OpMap = Map Symbol (Set ([Symbol], Symbol))
+    -- TODO: Add Attributes to the OpMap
 
 data Sign = Sign {
         sorts :: SortSet,
         subsorts :: SubsortRel,
         ops :: OpMap
-    } deriving Show--(Show, Eq, Ord, Typeable)
+    } deriving Show
 
 
 -- | extract the Signature of a Module
@@ -48,13 +48,13 @@ fromSpec :: Spec -> Sign
 fromSpec (Spec _ _ stmts) = let
         insert stmt = case stmt of
             SortStmnt sort -> insertSort sort
-            SubsortStmnt subsort -> insertSubsort subsort
+            SubsortStmnt sub -> insertSubsort sub
             OpStmnt op -> insertOp op
             _ -> id
     in foldr insert empty stmts
 
 -- | extract the Set of all Symbols from a Signature
-symbols :: Sign -> Set Token
+symbols :: Sign -> SymbolSet
 symbols sign = Set.unions [(sorts sign), (Map.keysSet $ ops sign)]
 
 -- | the empty Signature
