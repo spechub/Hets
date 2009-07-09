@@ -61,7 +61,6 @@ import RelationalScheme.Logic_Rel
 import Temporal.Logic_Temporal
 import DFOL.Logic_DFOL
 import OMDoc.Logic_OMDoc ()
-import Maude.Logic_Maude
 #endif
 #ifndef NOOWLLOGIC
 import OWL.Logic_OWL
@@ -89,7 +88,6 @@ logicList =
   , Logic RelScheme
   , Logic Temporal
   , Logic DFOL
-  , Logic Maude
 #endif
 #ifndef NOOWLLOGIC
   , Logic OWL
