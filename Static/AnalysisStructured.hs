@@ -164,7 +164,7 @@ anaSpecAux conser addSyms lg dg nsig name opts sp = case sp of
   Translation asp ren ->
    do let sp1 = item asp
       (sp1', NodeSig n' gsigma, dg') <-
-          ana_SPEC addSyms lg dg nsig (inc name) opts sp1
+          anaSpecAux conser addSyms lg dg nsig (inc name) opts sp1
       mor <- ana_RENAMING lg nsig gsigma opts ren
       -- ??? check that mor is identity on local env
       let (ns@(NodeSig node _), dg'') =
@@ -175,7 +175,7 @@ anaSpecAux conser addSyms lg dg nsig name opts sp = case sp of
   Reduction asp restr ->
    do let sp1 = item asp
       (sp1', NodeSig n' gsigma', dg') <-
-          ana_SPEC addSyms lg dg nsig (inc name) opts sp1
+          anaSpecAux conser addSyms lg dg nsig (inc name) opts sp1
       let gsigma = getMaybeSig nsig
       (hmor, tmor) <- ana_RESTRICTION gsigma gsigma' opts restr
       -- we treat hiding and revealing differently
@@ -238,12 +238,12 @@ anaSpecAux conser addSyms lg dg nsig name opts sp = case sp of
                                          (iterate inc (extName "E" name)))))
                    asps
   Free_spec asp poss -> do
-      (nasp, nsig', dg') <- anaPlainSpec addSyms lg opts dg nsig name DGFree
-        (FreeOrCofreeDefLink Free nsig) asp poss
+      (nasp, nsig', dg') <- anaPlainSpec conser addSyms lg opts dg nsig name
+        DGFree (FreeOrCofreeDefLink Free nsig) asp poss
       return (Free_spec nasp poss, nsig', dg')
   Cofree_spec asp poss -> do
-      (nasp, nsig', dg') <- anaPlainSpec addSyms lg opts dg nsig name DGCofree
-        (FreeOrCofreeDefLink Cofree nsig) asp poss
+      (nasp, nsig', dg') <- anaPlainSpec conser addSyms lg opts dg nsig name
+        DGCofree (FreeOrCofreeDefLink Cofree nsig) asp poss
       return (Cofree_spec nasp poss, nsig', dg')
   Local_spec asp asp' poss ->
    do let sp1 = item asp
@@ -303,11 +303,12 @@ anaSpecAux conser addSyms lg dg nsig name opts sp = case sp of
             EmptyNode _ -> EmptyNode l
             _ -> nsig
       (nasp, nsig', dg') <-
-          anaPlainSpec addSyms lg opts dg newNSig name DGLogicQual globalDef
-          asp pos
+          anaPlainSpec conser addSyms lg opts dg newNSig name DGLogicQual
+            globalDef asp pos
       return (Qualified_spec lognm nasp pos, nsig', dg')
   Group asp pos -> do
-      (sp', nsig', dg') <- ana_SPEC addSyms lg dg nsig name opts (item asp)
+      (sp', nsig', dg') <-
+          anaSpecAux conser addSyms lg dg nsig name opts (item asp)
       return (Group (replaceAnnoted sp' asp) pos, nsig', dg')
   Spec_inst spname afitargs pos0 -> let
        pos = if null afitargs then tokPos spname else pos0
@@ -412,14 +413,14 @@ anaSpecAux conser addSyms lg dg nsig name opts sp = case sp of
                    (replaceAnnoted sp2' asp2)
                    pos, nsig3, dg3)
 
-anaPlainSpec :: Bool -> LogicGraph -> HetcatsOpts -> DGraph -> MaybeNode
-             -> NodeName -> DGOrigin -> DGLinkType -> Annoted SPEC -> Range
-             -> Result (Annoted SPEC, NodeSig, DGraph)
-anaPlainSpec addSyms lg opts dg nsig name orig dglType asp pos = do
+anaPlainSpec :: Conservativity -> Bool -> LogicGraph -> HetcatsOpts -> DGraph
+  -> MaybeNode -> NodeName -> DGOrigin -> DGLinkType -> Annoted SPEC -> Range
+  -> Result (Annoted SPEC, NodeSig, DGraph)
+anaPlainSpec conser addSyms lg opts dg nsig name orig dglType asp pos = do
       (sp', NodeSig n' gsigma, dg') <-
-          ana_SPEC addSyms lg dg nsig (inc name) opts $ item asp
+          anaSpecAux conser addSyms lg dg nsig (inc name) opts $ item asp
       let (ns@(NodeSig node gsigma'), dg2) = insGSig dg' name orig gsigma
-      incl <- adjustPos pos $ ginclusion lg (getMaybeSig nsig) gsigma'
+      incl <- adjustPos pos $ ginclusion lg gsigma gsigma'
       return (replaceAnnoted sp' asp, ns,
               insLink dg2 incl dglType SeeTarget n' node)
 
