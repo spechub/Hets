@@ -236,8 +236,8 @@ anaSpecAux conser addSyms lg dg nsig name opts sp = case sp of
                          (zip (reverse sps') asps))
                     pos, ns, dg3)
   Extension asps pos -> do
-   (sps', nsig1', dg1, _, _, _, _) <-
-       foldM ana_Extension ([], nsig, dg, lg, opts, pos, addSyms) namedSps
+   (sps', nsig1', dg1, _, _) <- foldM (ana_Extension lg opts pos)
+     ([], nsig, dg, conser, addSyms) namedSps
    case nsig1' of
        EmptyNode _ -> fail "empty extension"
        JustNode nsig1 -> return (Extension (map (uncurry replaceAnnoted)
@@ -876,14 +876,16 @@ getSpecAnnos pos a = do
 
 -- only consider addSyms for the first spec
 ana_Extension
-    :: ([SPEC], MaybeNode, DGraph, LogicGraph, HetcatsOpts, Range, Bool)
+    :: LogicGraph -> HetcatsOpts -> Range
+    -> ([SPEC], MaybeNode, DGraph, Conservativity, Bool)
     -> (NodeName, Annoted SPEC)
-    -> Result ([SPEC], MaybeNode, DGraph, LogicGraph, HetcatsOpts, Range, Bool)
-ana_Extension (sps', nsig', dg', lg, opts, pos, addSyms) (name', asp') = do
+    -> Result ([SPEC], MaybeNode, DGraph, Conservativity, Bool)
+ana_Extension lg opts pos (sps', nsig', dg', conser, addSyms) (name', asp')
+  = do
   (sanno1, impliesA) <- getSpecAnnos pos asp'
   -- attach conservativity to definition link
   (sp1', nsig1@(NodeSig n1 sig1), dg1) <-
-     anaSpecAux sanno1 addSyms lg dg' nsig' name' opts (item asp')
+     anaSpecAux (max conser sanno1) addSyms lg dg' nsig' name' opts (item asp')
   dg2 <- if impliesA then case nsig' of
     JustNode (NodeSig n' sig') -> do
       -- is the extension going between real nodes?
@@ -893,4 +895,4 @@ ana_Extension (sps', nsig', dg', lg, opts, pos, addSyms) (name', asp') = do
       return $ insLink dg1 (ide sig1) globalThm DGImpliesLink n1 n'
     _ -> return dg1
    else return dg1
-  return (sp1' : sps', JustNode nsig1, dg2, lg, opts, pos, True)
+  return (sp1' : sps', JustNode nsig1, dg2, None, True)
