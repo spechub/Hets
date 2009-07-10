@@ -115,6 +115,20 @@ insLink dg (GMorphism cid sign si mor mi) ty orig n t =
         (G_sign (sourceLogic cid) sign nsi) sgMap else id)
        $ insLEdgeNubDG (n, t, link) dg
 
+createConsLink :: Conservativity -> LogicGraph -> DGraph -> MaybeNode
+  -> NodeSig -> DGLinkOrigin -> Result DGraph
+createConsLink conser lg dg nsig (NodeSig node gsig) orig = case nsig of
+    EmptyNode _ | conser == None -> return dg
+    _ -> do
+      let (es@(NodeSig n _), dg') = case nsig of
+            JustNode ns -> (ns, dg)
+               -- create an empty signature node for the conservativity link
+            EmptyNode cl -> insGSig dg
+              (extName "empty" $ makeName $ mkSimpleId $ show cl)
+              DGEmpty (getMaybeSig nsig)
+      incl <- ginclusion lg (getSig es) gsig
+      return $ insLink dg' incl (globalConsDef conser) orig n node
+
 -- | analyze a SPEC
 -- Bool Parameter determines if incoming symbols shall be ignored
 -- options: here we need the info: shall only the structure be analysed?
@@ -142,26 +156,12 @@ anaSpecAux conser addSyms lg dg nsig name opts sp = case sp of
                ("no basic analysis for logic " ++ language_name lid)
                (basic_analysis lid)
              b (bspec, sig, globalAnnos dg0)
-       let (ns@(NodeSig node gsig), dg') = insGTheory dg0 name DGBasic
+       let (ns, dg') = insGTheory dg0 name DGBasic
              $ G_theory lid (ExtSign sigma_complete
                $ Set.intersection
                      (if addSyms then Set.union sys sysd else sysd)
                $ sym_of lid sigma_complete) startSigId (toThSens ax) startThId
-       dg'' <- case nsig' of
-         EmptyNode _ -> do
-           if conser /= None then do
-               -- create an empty signature node for the conservativity link
-               let (es@(NodeSig n _), dg0') = insGSig dg'
-                     (extName "empty" $ makeName $ mkSimpleId $ show curLogic)
-                     DGEmpty (getMaybeSig nsig)
-               incl <- adj $ ginclusion lg (getSig es) gsig
-               return $ insLink dg0' incl (globalConsDef conser)
-                 DGLinkExtension n node
-             else return dg'
-         JustNode jn@(NodeSig n _) -> do
-           incl <- adj $ ginclusion lg (getSig jn) gsig
-           return $ insLink dg' incl (globalConsDef conser)
-             DGLinkExtension n node
+       dg'' <- createConsLink conser lg dg' nsig' ns DGLinkExtension
        return (Basic_spec (G_basic_spec lid bspec') pos, ns, dg'')
   EmptySpec pos -> case nsig of
       EmptyNode _ -> do
@@ -300,13 +300,10 @@ anaSpecAux conser addSyms lg dg nsig name opts sp = case sp of
           adj = adjustPos pos
       gsigma'' <- adj $ gsigUnion lg gsigma gsigma'
       let (ns@(NodeSig node gsigma2), dg2) = insGSig dg' name DGClosed gsigma''
-      incl1 <- adj $ ginclusion lg gsigma gsigma2
       incl2 <- adj $ ginclusion lg gsigma' gsigma2
       let dg3 = insLink dg2 incl2 globalDef SeeTarget n' node
-      return (Closed_spec (replaceAnnoted sp' asp) pos, ns, case nsig of
-            EmptyNode _ -> dg3
-            JustNode (NodeSig n _) ->
-                insLink dg3 incl1 globalDef DGLinkClosedLenv n node)
+      dg4 <- createConsLink conser lg dg3 nsig ns DGLinkClosedLenv
+      return (Closed_spec (replaceAnnoted sp' asp) pos, ns, dg4)
   Qualified_spec lognm@(Logic_name ln _) asp pos -> do
       let newLG = lg { currentLogic = tokStr ln }
       l <- lookupCurrentLogic "Qualified_spec" newLG
@@ -329,28 +326,23 @@ anaSpecAux conser addSyms lg dg nsig name opts sp = case sp of
     Just (SpecEntry gs@(ExtGenSig imps params _ body@(NodeSig nB gsigmaB))) ->
      case (\ x y -> (x , x - y)) (length afitargs) (length params) of
       -- the case without parameters leads to a simpler dg
-      (0, 0) -> do
-       case nsig of
-         EmptyNode _ ->
+      (0, 0) -> case nsig of
           -- if the node shall not be named and the logic does not change,
-          if isInternal name
-            -- then just return the body
-           then return (sp, body, dg)
-            -- otherwise, we need to create a new one
-           else do
-           let (fsig@(NodeSig node gsigma'), dg2) =
-                 insGSig dg name (DGSpecInst spname) gsigmaB
-           incl <- adj $ ginclusion lg gsigmaB gsigma'
-           return (sp, fsig, insLink dg2 incl globalDef SeeTarget nB node)
-         JustNode (NodeSig n sigma) -> do
-           gsigma <- adj $ gsigUnion lg sigma gsigmaB
+        EmptyNode _ | isInternal name -> do
+          dg2 <- createConsLink conser lg dg nsig body SeeTarget
+             -- then just return the body
+          return (sp, body, dg2)
+             -- otherwise, we need to create a new one
+        _ -> do
+           gsigma <- case nsig of
+             EmptyNode _ -> return gsigmaB
+             JustNode (NodeSig _ sig) -> adj $ gsigUnion lg sig gsigmaB
            let (fsig@(NodeSig node gsigma'), dg2) =
                  insGSig dg name (DGSpecInst spname) gsigma
            incl <- adj $ ginclusion lg gsigmaB gsigma'
            let dg3 = insLink dg2 incl globalDef SeeTarget nB node
-           incl2 <- adj $ ginclusion lg sigma gsigma'
-           return (sp, fsig,
-                   insLink dg3 incl2 globalDef SeeTarget n node)
+           dg4 <- createConsLink conser lg dg3 nsig fsig SeeTarget
+           return (sp, fsig, dg4)
       -- now the case with parameters
       (_, 0) -> do
        let fitargs = map item afitargs
@@ -375,11 +367,7 @@ anaSpecAux conser addSyms lg dg nsig name opts sp = case sp of
        tmor <- gEmbedComorphism imor gsigmaB
        morDelta'' <- comp tmor morDelta'
        let dg4 = insLink dg3 morDelta'' globalDef SeeTarget nB node
-       dg5 <- case nsig of
-             EmptyNode _ -> return dg4
-             JustNode (NodeSig n sigma) -> do
-               incl1 <- adj $ ginclusion lg sigma gsigmaRes'
-               return $ insLink dg4 incl1 globalDef SeeTarget n node
+       dg5 <- createConsLink conser lg dg4 nsig ns SeeTarget
        return (Spec_inst spname
                          (map (uncurry replaceAnnoted)
                               (zip (reverse fitargs') afitargs))
