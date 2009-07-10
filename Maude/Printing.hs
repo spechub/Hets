@@ -20,46 +20,156 @@ module Maude.Printing where
 
 import Maude.AS_Maude
 import Maude.Sign
+import Maude.Symbol
 
 import qualified Data.Set as Set
+import qualified Data.Map  as Map
 import qualified Common.Lib.Rel as Rel
 
 import Common.Id (Token)
 
-getSpec :: [Char] -> [Char]
+getSpec :: String -> String
 getSpec =  quitNil . quitEnd . quitBegin
 
-quitBegin :: [Char] -> [Char]
+quitBegin :: String -> String
 quitBegin ('S' : ('p' : l))  = 'S' : ('p' : l)
 quitBegin (_ : l) = quitBegin l
 quitBegin [] = []
 
-quitEnd :: [Char] -> [Char]
+quitEnd :: String -> String
 quitEnd ('M' : ('a' : ('u' : _))) = []
 quitEnd (h : l) = h : (quitEnd l)
 quitEnd [] = []
 
-quitNil :: [Char] -> [Char]
+quitNil :: String -> String
 quitNil = Prelude.filter (/= '\NUL')
 
-sign2maude :: Sign -> [Char]
-sign2maude sign = "(fmod A is " ++ ss ++ sbs ++ opd ++ " endfm)"
+sign2maude :: Sign -> String
+sign2maude sign = ss ++ sbs ++ opd -- "(fmod A is " ++ ss ++ sbs ++ opd ++ " endfm)"
  where ss = sorts2maude (sorts sign)
        sbs = subsorts2maude (subsorts sign)
        opd = ops2maude (ops sign)
 
-sorts2maude :: SortSet -> [Char]
+sorts2maude :: SortSet -> String
 sorts2maude ss = if Set.null ss
                     then ""
                     else "sorts " ++ Set.fold (++) "" (Set.map ((++ " ") . show) ss) ++ ". "
 
-subsorts2maude :: SubsortRel -> [Char]
+subsorts2maude :: SubsortRel -> String
 subsorts2maude ssbs = if Rel.null ssbs
                          then ""
-                         else foldr (++) "" (map printPair (Rel.toList ssbs))
+                         else foldr (++) "" (map printPair $ Rel.toList ssbs)
 
-printPair :: (Token,Token) -> [Char]
+printPair :: (Token,Token) -> String
 printPair (a,b) = "subsort " ++ show a ++ " < " ++ show b ++ " . "
 
-ops2maude :: OpMap -> [Char]
-ops2maude ops = []
+ops2maude :: OpMap -> String
+ops2maude om = flatten (flatten (map printOp (Map.toList om)))
+
+flatten :: [[a]] -> [a]
+flatten [] = []
+flatten (a : l) = a ++ (flatten l)
+
+printOp :: (Symbol, Set.Set ([Symbol], Symbol, [Attr])) -> [String]
+printOp (opid, s) = map (printOpAux opid) (Set.toList s)
+
+printOpAux :: Symbol -> ([Symbol], Symbol, [Attr]) -> String
+printOpAux opid (ar, co, ats) = "op " ++ show opid ++ " : " ++ printArity ar ++
+                                " -> " ++ show co ++ printAttrSet ats ++ " . "
+
+printArity :: [Symbol] -> String
+printArity a = foldr (++) "" (map showSpace a)
+
+showSpace ::Show t => t -> String
+showSpace s = show s ++ " "
+
+printAttrSet :: [Attr] -> String
+printAttrSet [] = []
+printAttrSet ats = " [ " ++ printAttrSetAux ats ++ " ] " 
+
+printAttrSetAux :: [Attr] -> String
+printAttrSetAux [] = []
+printAttrSetAux [a] = printAttr a
+printAttrSetAux (a : ats) = printAttr a ++ " " ++ printAttrSetAux ats
+
+printAttr :: Attr -> String
+printAttr Comm = "comm"
+printAttr Assoc = "assoc"
+printAttr Idem = "idem"
+printAttr Iter = "iter"
+printAttr Memo = "memo"
+printAttr Ctor = "ctor"
+printAttr Msg = "msg"
+printAttr Object = "object"
+printAttr (Id t) = "id: " ++ printTerm t
+printAttr (LeftId t) = "id-left: " ++ printTerm t
+printAttr (RightId t) = "id-right: " ++ printTerm t
+printAttr (Prec p) = "prec " ++ show p
+printAttr (Strat ls) = "strat (" ++ printListSpaces ls ++ ")"
+printAttr (Poly ls) = "poly (" ++ printListSpaces ls ++ ")"
+printAttr (Frozen ls) = if null ls
+                           then "frozen"
+                           else "frozen (" ++ printListSpaces ls ++ ")"
+printAttr (Gather ls) = "gather (" ++ printListSpaces ls ++ ")"
+printAttr (Format ls) = "format (" ++ printListSpaces ls ++ ")"
+printAttr _ = []
+
+printStmntAttrSet :: [StmntAttr] -> String
+printStmntAttrSet [] = []
+printStmntAttrSet ats = " [ " ++ printStmntAttrSetAux ats ++ " ] " 
+
+printStmntAttrSetAux :: [StmntAttr] -> String
+printStmntAttrSetAux [] = []
+printStmntAttrSetAux [a] = printAttrStmnt a
+printStmntAttrSetAux (a : ats) = printAttrStmnt a ++ " " ++ printStmntAttrSetAux ats
+
+printAttrStmnt :: StmntAttr -> String
+printAttrStmnt Owise = "owise"
+printAttrStmnt Nonexec = "nonexec"
+printAttrStmnt (Metadata s) = "metadata \"" ++ s ++ "\""
+printAttrStmnt (Label q) = "label \"" ++ show q ++ "\""
+printAttrStmnt (Print _) = ""
+
+printTerm :: Term -> String
+printTerm (Const q _) = show q
+printTerm (Var q _) = show q
+printTerm (Apply q tl) = show q ++ "(" ++ printTermList tl ++ ")"
+
+printTermList :: [Term] -> String
+printTermList [] = []
+printTermList [t] = printTerm t
+printTermList (t : tl) = printTerm t ++ ", " ++ printTermList tl
+
+printListSpaces :: Show t => [t] -> String
+printListSpaces = foldr ((++) . showSpace) ""
+
+printMb :: Membership -> String
+printMb (Mb t s conds ats) = "mb " ++ printTerm t ++ " : " ++ printSort s ++
+                             printConds conds ++ printStmntAttrSet ats ++ " .\n"
+
+printEq :: Equation -> String
+printEq (Eq t1 t2 conds ats) = "eq " ++ printTerm t1 ++ " = " ++ printTerm t2 ++
+                               printConds conds ++ printStmntAttrSet ats ++ " .\n"
+
+printRl :: Rule -> String
+printRl (Rl t1 t2 conds ats) = "rl " ++ printTerm t1 ++ " => " ++ printTerm t2 ++
+                               printConds conds ++ printStmntAttrSet ats ++ " .\n"
+
+printSort :: Sort -> String
+printSort (SortId q) = show q
+
+printConds :: [Condition] -> String
+printConds [] = ""
+printConds cs = "if " ++ printCondsAux cs
+
+printCondsAux :: [Condition] -> String
+printCondsAux [] = ""
+printCondsAux [c] = printCond c
+printCondsAux (c : cs) = printCond c ++ " /\\ " ++ printCondsAux cs
+
+
+printCond :: Condition -> String
+printCond (EqCond t1 t2) = printTerm t1 ++ " = " ++ printTerm t2
+printCond (MatchCond t1 t2) = printTerm t1 ++ " := " ++ printTerm t2
+printCond (MbCond t s) = printTerm t ++ " : " ++ printSort s
+printCond (RwCond t1 t2) = printTerm t1 ++ " => " ++ printTerm t2

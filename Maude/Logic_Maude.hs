@@ -26,6 +26,8 @@ import qualified Maude.Morphism as Morphism
 import qualified Maude.Symbol   as Symbol
 import qualified Maude.Sentence as Sentence
 
+import Maude.ATC_Maude ()
+
 
 -- | Lid for Maude
 data Maude = Maude
@@ -48,18 +50,18 @@ instance Category Sign Morphism where
     ide = Morphism.identity
     dom = Morphism.source
     cod = Morphism.target
-    composeMorphisms = Morphism.compose
+    -- composeMorphisms = Morphism.compose
     inverse = Morphism.inverse
-    isInclusion = Morphism.isInclusion
-    legal_mor = Morphism.isLegal
+    -- isInclusion = Morphism.isInclusion
+    -- legal_mor = Morphism.isLegal
 
 
 -- | Instance of Sentences for Maude
 instance Sentences Maude Sentence Sign Morphism Symbol where
     -- sentences --
-    is_of_sign Maude = flip Sign.includesSentence
-    map_sen Maude = Morphism.mapSentence
-    simplify_sen Maude = Sign.simplifySentence
+    -- is_of_sign Maude = flip Sign.includesSentence
+    -- map_sen Maude = Morphism.mapSentence
+    -- simplify_sen Maude = Sign.simplifySentence
     -- parse_sentence Maude = Nothing
     -- print_sign Maude = pretty
     -- print_named Maude = printAnnoted (addBullet . pretty) . fromLabelledSen

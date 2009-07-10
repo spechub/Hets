@@ -1,4 +1,3 @@
-{-# OPTIONS -XDeriveDataTypeable #-}
 {- |
 Module      :  $Header$
 Description :  abstract maude syntax
@@ -20,50 +19,37 @@ parser.
 
 module Maude.AS_Maude where
 
-import Common.ATerm.Lib
 import Common.Doc
 import Common.DocUtils
-import Common.Id
-import Data.Typeable
+import Common.Id (Token)
 
 type Qid = Token
 
 data Spec = Spec ModId [Parameter] [Statement]
-          deriving (Show, Read)
+          deriving (Show, Read, Ord, Eq)
 
 data Theory = Theory ModId [Statement]
-            deriving (Show, Read)
+            deriving (Show, Read, Ord, Eq)
 
 data Parameter = Parameter Sort ModExp
-               deriving (Show, Read)
+               deriving (Show, Read, Ord, Eq)
 
 data ModExp = ModExp ModId
             | ParenthesesModExp ModExp
             | SummationModExp ModExp ModExp
             | RenamingModExp ModExp [Renaming]
-            deriving (Show, Read)
+            deriving (Show, Read, Ord, Eq)
 
 data Renaming = SortRenaming Sort Sort
               | LabelRenaming LabelId LabelId
               | OpRenaming1 OpId ToPartRenaming
               | OpRenaming2 OpId [Type] Type ToPartRenaming
-              deriving (Show, Read)
+              deriving (Show, Read, Ord, Eq)
 
-newtype MaudeText = MaudeText String deriving (Show, Typeable)
+newtype MaudeText = MaudeText String deriving (Show)
 
 instance Pretty MaudeText where
   pretty (MaudeText s) = specBraces $ text s
-
-instance ShATermConvertible MaudeText where
-  toShATermAux att0 (MaudeText a) = do
-        (att1, a') <- toShATerm' att0 a
-        return $ addATerm (ShAAppl "MaudeText" [a'] []) att1
-  fromShATermAux ix att0 =
-        case getShATerm ix att0 of
-            ShAAppl "MaudeText" [a] _ ->
-                    case fromShATerm' a att0 of { (att1, a') ->
-                    (att1, MaudeText a') }
-            u -> fromShATermError "MaudeText" u
 
 data Statement = ImportStmnt Import
                | SortStmnt Sort
@@ -72,39 +58,36 @@ data Statement = ImportStmnt Import
                | MbStmnt Membership
                | EqStmnt Equation
                | RlStmnt Rule
-               deriving (Show, Read)
+               deriving (Show, Read, Ord, Eq)
 
 data Import = Including ModExp
             | Extending ModExp
             | Protecting ModExp
-            deriving (Show, Read)
+            deriving (Show, Read, Ord, Eq)
 
 data SubsortDecl = Subsort Sort Sort
-                 deriving (Show, Read)
+                 deriving (Show, Read, Ord, Eq)
 
 data Operator = Op OpId [Type] Type [Attr]
-              deriving (Show, Read)
+              deriving (Show, Read, Ord, Eq)
 
-data Equation = Eq Term Term [EqCondition] [StmntAttr]
-              deriving (Show, Read)
+data Equation = Eq Term Term [Condition] [StmntAttr]
+              deriving (Show, Read, Ord, Eq)
 
-data Membership = Mb Term Sort [EqCondition] [StmntAttr]
-                deriving (Show, Read)
+data Membership = Mb Term Sort [Condition] [StmntAttr]
+                deriving (Show, Read, Ord, Eq)
 
 data Rule = Rl Term Term [Condition] [StmntAttr]
-          deriving (Show, Read)
+          deriving (Show, Read, Ord, Eq)
 
-data EqCondition = EqCond Term Term
-                 | MbCond Term Sort
-                 | MatchCond Term Term
-                 deriving (Show, Read)
-
-data Condition = EqCondition
+data Condition = EqCond Term Term
+               | MbCond Term Sort
+               | MatchCond Term Term
                | RwCond Term Term
-               deriving (Show, Read)
+               deriving (Show, Read, Ord, Eq)
 
 data ToPartRenaming = To OpId [Attr]
-                    deriving (Show, Read)
+                    deriving (Show, Read, Ord, Eq)
 
 data Attr = Assoc
           | Comm
@@ -124,38 +107,38 @@ data Attr = Assoc
           | Msg
           | Frozen [Int]
           | Poly [Int]
-          deriving (Show, Read)
+          deriving (Show, Read, Ord, Eq)
 
 data StmntAttr = Label Qid
                | Metadata String
                | Owise
                | Nonexec
                | Print [Qid]
-               deriving (Show, Read)
+               deriving (Show, Read, Ord, Eq)
 
 data Term = Const Qid Type
           | Var Qid Type
           | Apply Qid [Term]
-          deriving (Show, Read)
+          deriving (Show, Read, Ord, Eq)
 
 data Type = TypeSort Sort
           | TypeKind Kind
-          deriving (Show, Read)
+          deriving (Show, Read, Ord, Eq)
 
 newtype Sort = SortId Qid
-             deriving (Show, Read)
+             deriving (Show, Read, Ord, Eq)
 
 newtype Kind = KindId Qid
-             deriving (Show, Read)
+             deriving (Show, Read, Ord, Eq)
 
 newtype ParamId = ParamId Qid
-                deriving (Show, Read)
+                deriving (Show, Read, Ord, Eq)
 
 newtype ModId = ModId Qid
-              deriving (Show, Read)
+              deriving (Show, Read, Ord, Eq)
 
 newtype LabelId = LabelId Qid
-                deriving (Show, Read)
+                deriving (Show, Read, Ord, Eq)
 
 newtype OpId = OpId Qid
-             deriving (Show, Read)
+             deriving (Show, Read, Ord, Eq)

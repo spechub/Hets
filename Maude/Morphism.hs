@@ -35,6 +35,9 @@ import qualified Data.Map as Map
 import Common.Result (Result)
 import qualified Common.Result as Result
 
+import Common.Doc as Doc hiding (empty)
+import Common.DocUtils
+
 
 type SortMap = SymbolMap
 type OpMap = SymbolMap
@@ -46,7 +49,10 @@ data Morphism = Morphism {
         sortMap :: SortMap,
         opMap :: OpMap,
         labelMap :: LabelMap
-    } deriving Show
+    } deriving (Show, Ord, Eq)
+
+instance Pretty Morphism where
+  pretty = Doc.text . show
 
 
 -- | extract a Morphism from a list of Renamings
@@ -162,6 +168,11 @@ inverse mor = let
 
 
 -- extract the name from a Sort, Op or Label
+sortName :: Sort -> Qid
 sortName (SortId name) = name
+
+opName :: OpId -> Qid
 opName (OpId name) = name
+
+labelName :: LabelId -> Qid
 labelName (LabelId name) = name

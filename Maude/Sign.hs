@@ -30,17 +30,22 @@ import qualified Data.Foldable as Fold
 import Common.Lib.Rel (Rel)
 import qualified Common.Lib.Rel as Rel
 
+import qualified Common.Doc as Doc
+import Common.DocUtils
+
 
 type SortSet = Set Symbol
 type SubsortRel = Rel Symbol
-type OpMap = Map Symbol (Set ([Symbol], Symbol))
-    -- TODO: Add Attributes to the OpMap
+type OpMap = Map Symbol (Set ([Symbol], Symbol, [Attr]))
 
 data Sign = Sign {
         sorts :: SortSet,
         subsorts :: SubsortRel,
         ops :: OpMap
-    } deriving Show
+    } deriving (Show, Ord, Eq)
+
+instance Pretty Sign where
+  pretty _ = Doc.text ""
 
 
 -- | extract the Signature of a Module
@@ -81,7 +86,7 @@ insertOp op sign = sign {ops = ins'op op (ops sign)}
 isLegal :: Sign -> Bool
 isLegal sign = let
         isLegalSort sort = Set.member sort (sorts sign)
-        isLegalOp (dom, cod) = all isLegalSort dom && isLegalSort cod
+        isLegalOp (dom, cod, _) = all isLegalSort dom && isLegalSort cod
         legal'subsorts = Fold.all isLegalSort $ Rel.nodes (subsorts sign)
         legal'ops = Fold.all (Fold.all isLegalOp) (ops sign)
     in all id [legal'subsorts, legal'ops]
@@ -104,14 +109,19 @@ ins'opName (OpId name) = Map.insert name Set.empty
 -- insert an Operator declaration into an Operator Map
 ins'op :: Operator -> OpMap -> OpMap
 ins'op op opmap = let
-        Op opid dom cod _ = op
+        Op opid dom cod ats = op
         OpId name = opid
         old'ops = Map.findWithDefault Set.empty name opmap
-        new'ops = Set.insert (map typeName dom, typeName cod) old'ops
+        new'ops = Set.insert (map typeName dom, typeName cod, ats) old'ops
     in Map.insert name new'ops opmap
 
 -- extract the name from a Sort, Kind or Type
+sortName :: Sort -> Qid
 sortName (SortId name) = name
+
+kindName :: Kind -> Qid
 kindName (KindId name) = name
+
+typeName :: Type -> Qid
 typeName (TypeSort sort) = sortName sort
 typeName (TypeKind kind) = kindName kind

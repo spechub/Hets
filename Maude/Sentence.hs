@@ -16,14 +16,32 @@ Definition of sentences for Maude.
   ...
 -}
 
-module Maude.Sentence (
-    Sentence(..),
-) where
+module Maude.Sentence where
 
 import Maude.AS_Maude
 
+import Maude.Printing
+
+import Common.Doc
+import Common.DocUtils
 
 data Sentence = Membership Membership
               | Equation Equation
-              -- We are excluding Rules for now.
-    deriving (Show, Read)
+              | Rule Rule
+    deriving (Show, Read, Ord, Eq)
+    
+instance Pretty Sentence where
+  pretty (Membership mb) = text $ printMb mb
+  pretty (Equation eq) = text $ printEq eq
+  pretty (Rule rl) = text $ printRl rl
+  
+
+-- | extract the Sentences of a Module
+getSentences :: Spec -> [Sentence]
+getSentences (Spec _ _ stmts) = let
+            insert stmt = case stmt of
+                MbStmnt mb -> (++) [Membership mb]
+                EqStmnt eq -> (++) [Equation eq]
+                RlStmnt rl -> (++) [Rule rl]
+                _ -> (++) []
+        in foldr insert [] stmts
