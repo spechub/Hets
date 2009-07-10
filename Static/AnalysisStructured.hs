@@ -151,7 +151,8 @@ anaSpecAux conser addSyms lg dg nsig name opts sp = case sp of
          EmptyNode _ -> do
            if conser /= None then do
                -- create an empty signature node for the conservativity link
-               let (es@(NodeSig n _), dg0') = insGSig dg' (extName "Z" name)
+               let (es@(NodeSig n _), dg0') = insGSig dg'
+                     (extName "empty" $ makeName $ mkSimpleId $ show curLogic)
                      DGEmpty (getMaybeSig nsig)
                incl <- adj $ ginclusion lg (getSig es) gsig
                return $ insLink dg0' incl (globalConsDef conser)
