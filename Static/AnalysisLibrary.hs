@@ -279,8 +279,11 @@ ana_LIB_ITEM lgraph opts topLns libenv dg itm = case itm of
     analyzing opts $ "spec " ++ spstr
     (gen', GenericitySig imp params allparams, dg') <-
       liftR $ ana_GENERICITY lgraph dg opts (extName "P" (makeName spn)) gen
+    (sanno1, impliesA) <- liftR $ getSpecAnnos pos asp
+    when impliesA $ liftR $ plain_error ()
+       "unexpected initial %implies in spec-defn" pos
     (sp', body, dg'') <-
-      liftR (ana_SPEC True lgraph dg'
+      liftR (anaSpecAux sanno1 True lgraph dg'
              allparams (makeName spn) opts (item asp))
     let libItem' = Spec_defn spn gen' (replaceAnnoted sp' asp) pos
         genv = globalEnv dg

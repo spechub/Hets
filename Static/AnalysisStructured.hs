@@ -14,6 +14,8 @@ Static analysis of CASL (heterogeneous) structured specifications
 
 module Static.AnalysisStructured
     ( ana_SPEC
+    , anaSpecAux
+    , getSpecAnnos
     , isStructured
     , ana_RENAMING
     , ana_RESTRICTION
@@ -146,7 +148,15 @@ anaSpecAux conser addSyms lg dg nsig name opts sp = case sp of
                      (if addSyms then Set.union sys sysd else sysd)
                $ sym_of lid sigma_complete) startSigId (toThSens ax) startThId
        dg'' <- case nsig' of
-         EmptyNode _ -> return dg'
+         EmptyNode _ -> do
+           if conser /= None then do
+               -- create an empty signature node for the conservativity link
+               let (es@(NodeSig n _), dg0') = insGSig dg' (extName "Z" name)
+                     DGEmpty (getMaybeSig nsig)
+               incl <- adj $ ginclusion lg (getSig es) gsig
+               return $ insLink dg0' incl (globalConsDef conser)
+                 DGLinkExtension n node
+             else return dg'
          JustNode jn@(NodeSig n _) -> do
            incl <- adj $ ginclusion lg (getSig jn) gsig
            return $ insLink dg' incl (globalConsDef conser)
@@ -848,13 +858,9 @@ isStructured a = case analysis a of
     Structured -> True
     _ -> False
 
--- only consider addSyms for the first spec
-ana_Extension
-    :: ([SPEC], MaybeNode, DGraph, LogicGraph, HetcatsOpts, Range, Bool)
-    -> (NodeName, Annoted SPEC)
-    -> Result ([SPEC], MaybeNode, DGraph, LogicGraph, HetcatsOpts, Range, Bool)
-ana_Extension (sps', nsig', dg', lg, opts, pos, addSyms) (name', asp') = do
-  let sannos = filter isSemanticAnno $ l_annos asp'
+getSpecAnnos :: Range -> Annoted a -> Result (Conservativity, Bool)
+getSpecAnnos pos a = do
+  let sannos = filter isSemanticAnno $ l_annos a
       (sanno1, conflict, impliedA, impliesA) = case sannos of
         f@(Semantic_anno anno1 _) : r -> (case anno1 of
                 SA_cons -> Cons
@@ -866,6 +872,15 @@ ana_Extension (sps', nsig', dg', lg, opts, pos, addSyms) (name', asp') = do
   when conflict $ plain_error () "Conflicting semantic annotations" pos
   when impliedA $ plain_error ()
     "Annotation %implied should come after a BASIC-ITEM" pos
+  return (sanno1, impliesA)
+
+-- only consider addSyms for the first spec
+ana_Extension
+    :: ([SPEC], MaybeNode, DGraph, LogicGraph, HetcatsOpts, Range, Bool)
+    -> (NodeName, Annoted SPEC)
+    -> Result ([SPEC], MaybeNode, DGraph, LogicGraph, HetcatsOpts, Range, Bool)
+ana_Extension (sps', nsig', dg', lg, opts, pos, addSyms) (name', asp') = do
+  (sanno1, impliesA) <- getSpecAnnos pos asp'
   -- attach conservativity to definition link
   (sp1', nsig1@(NodeSig n1 sig1), dg1) <-
      anaSpecAux sanno1 addSyms lg dg' nsig' name' opts (item asp')
