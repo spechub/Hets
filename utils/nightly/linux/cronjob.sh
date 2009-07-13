@@ -38,7 +38,9 @@ checkCats
 makeSources
 
 checkMoreBins
+makeOWLTools
 runIsaHS
+
 makeCofiLib
 repackDocs
 
