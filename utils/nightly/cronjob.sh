@@ -8,11 +8,14 @@ case `uname -s` in
   *) TAR=tar; MAKE=make;;
 esac
 
+HETS_OWL_TOOLS=/home/linux-bkb/hets-owl-tools
+
 export GHCRTS
 export LANG
 export LC_ALL
 export TAR
 export MAKE
+export HETS_OWL_TOOLS
 
 
 hetsdir=\
@@ -228,6 +231,16 @@ checkMoreBins ()
 {
 Common/test_parser -p casl_id2 Common/test/MixIds.casl
 Haskell/hana ToHaskell/test/*.hascasl.hs
+}
+
+makeOWLTools ()
+{
+$MAKE initialize_java
+cp OWL/owl_parser $HETS_OWL_TOOLS/
+cp OWL/owl_locality $HETS_OWL_TOOLS/
+cp OWL/*.jar $HETS_OWL_TOOLS/
+cp OWL/lib/*.jar $HETS_OWL_TOOLS/lib/
+cp CASL/Termination/AProVE.jar $HETS_OWL_TOOLS/
 }
 
 runIsaHS ()
