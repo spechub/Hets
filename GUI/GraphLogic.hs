@@ -209,12 +209,17 @@ hideEdges gInfo@(GInfo { libName = ln
       Just ist -> return $ hideEdgesAux $ lookupDGraph ln $ i_libEnv ist
 
 hideEdgesAux :: DGraph -> [EdgeId]
-hideEdgesAux dg =
-  foldl (\ e c -> case c of
-                    InsertEdge (_, _, lbl) -> (dgl_id lbl):e
-                    DeleteEdge (_, _, lbl) -> delete (dgl_id lbl) e
-                    _ -> e
-        ) [] $ flattenHistory (SizedList.toList $ proofHistory dg) []
+hideEdgesAux dg = map dgl_id
+  $ filter (\ (DGLink { dgl_type = linktype }) ->
+                case thmLinkStatus linktype of
+                  Just status -> isProvenThmLinkStatus status
+                  _ -> False
+           )
+  $ foldl (\ e c -> case c of
+                      InsertEdge (_, _, lbl) -> lbl:e
+                      DeleteEdge (_, _, lbl) -> delete lbl e
+                      _ -> e
+          ) [] $ flattenHistory (SizedList.toList $ proofHistory dg) []
 
 toggleHideEdges :: GInfo -> IO ()
 toggleHideEdges gInfo@(GInfo { graphInfo = gi

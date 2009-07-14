@@ -212,7 +212,7 @@ makeGraph :: GraphInfo -- ^ The graph
           -> IO ()
           -> IO ()
 makeGraph gi title open save saveAs close exit menus nTypeParms eTypeParms
-          expand = do
+          expand' = do
   let graphParms  =
         foldr ($$) (GraphTitle title $$
                     OptimiseLayout False $$
@@ -225,11 +225,7 @@ makeGraph gi title open save saveAs close exit menus nTypeParms eTypeParms
                     menus
       (nTypeNames,nTypeParms') = unzip nTypeParms
       (eTypeNames,eTypeParms') = unzip eTypeParms
-      expand = (LocalMenu (Button "Expand" (\ _ -> do
-                                             g <- readIORef gi
-                                             g' <- applyChanges' g [] [] [] []
-                                             writeIORef gi g'
-                                             redisplay' g')) $$$)
+      expand = (LocalMenu (Button "Expand" (\ _ -> expand')) $$$)
       eTypeParmsCO = map expand eTypeParms'
       eTypeParmsCP = map expand $ map (Color "purple2" $$$) eTypeParms'
   graph <- newGraph graphtool graphParms
