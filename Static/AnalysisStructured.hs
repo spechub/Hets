@@ -115,14 +115,23 @@ insLink dg (GMorphism cid sign si mor mi) ty orig n t =
         (G_sign (sourceLogic cid) sign nsi) sgMap else id)
        $ insLEdgeNubDG (n, t, link) dg
 
-createConsLink :: Conservativity -> LogicGraph -> DGraph -> MaybeNode
-  -> NodeSig -> DGLinkOrigin -> Result DGraph
-createConsLink conser lg dg nsig (NodeSig node gsig) orig = case nsig of
+createConsLink :: LinkKind -> Conservativity -> LogicGraph -> DGraph
+   -> MaybeNode -> NodeSig -> DGLinkOrigin -> Result DGraph
+createConsLink lk conser lg dg nsig (NodeSig node gsig) orig = case nsig of
     EmptyNode _ | conser == None -> return dg
     _ -> case nsig of
       JustNode (NodeSig n sig)-> do
-        incl <- ginclusion lg sig gsig
-        return $ insLink dg incl (globalConsDef conser) orig n node
+        let Result _ mIncl = ginclusion lg sig gsig
+        case mIncl of
+          Just incl ->
+            return $ insLink dg incl
+              (ScopedLink Global lk $ mkConsStatus conser) orig n node
+          Nothing -> do
+            unless (conser == None) $ do
+              warning ()
+                "ingoring conservativity annotation between non-subsignatures"
+                nullRange
+            return dg
       EmptyNode _ -> -- add conservativity to the target node
         return $ let lbl = labDG dg node
         in if isDGRef lbl then dg else
@@ -165,7 +174,7 @@ anaSpecAux conser addSyms lg dg nsig name opts sp = case sp of
                $ Set.intersection
                      (if addSyms then Set.union sys sysd else sysd)
                $ sym_of lid sigma_complete) startSigId (toThSens ax) startThId
-       dg'' <- createConsLink conser lg dg' nsig' ns DGLinkExtension
+       dg'' <- createConsLink DefLink conser lg dg' nsig' ns DGLinkExtension
        return (Basic_spec (G_basic_spec lid bspec') pos, ns, dg'')
   EmptySpec pos -> case nsig of
       EmptyNode _ -> do
@@ -306,7 +315,7 @@ anaSpecAux conser addSyms lg dg nsig name opts sp = case sp of
       let (ns@(NodeSig node gsigma2), dg2) = insGSig dg' name DGClosed gsigma''
       incl2 <- adj $ ginclusion lg gsigma' gsigma2
       let dg3 = insLink dg2 incl2 globalDef SeeTarget n' node
-      dg4 <- createConsLink conser lg dg3 nsig ns DGLinkClosedLenv
+      dg4 <- createConsLink DefLink conser lg dg3 nsig ns DGLinkClosedLenv
       return (Closed_spec (replaceAnnoted sp' asp) pos, ns, dg4)
   Qualified_spec lognm@(Logic_name ln _) asp pos -> do
       let newLG = lg { currentLogic = tokStr ln }
@@ -333,7 +342,7 @@ anaSpecAux conser addSyms lg dg nsig name opts sp = case sp of
       (0, 0) -> case nsig of
           -- if the node shall not be named and the logic does not change,
         EmptyNode _ | isInternal name -> do
-          dg2 <- createConsLink conser lg dg nsig body SeeTarget
+          dg2 <- createConsLink DefLink conser lg dg nsig body SeeTarget
              -- then just return the body
           return (sp, body, dg2)
              -- otherwise, we need to create a new one
@@ -345,7 +354,7 @@ anaSpecAux conser addSyms lg dg nsig name opts sp = case sp of
                  insGSig dg name (DGSpecInst spname) gsigma
            incl <- adj $ ginclusion lg gsigmaB gsigma'
            let dg3 = insLink dg2 incl globalDef SeeTarget nB node
-           dg4 <- createConsLink conser lg dg3 nsig fsig SeeTarget
+           dg4 <- createConsLink DefLink conser lg dg3 nsig fsig SeeTarget
            return (sp, fsig, dg4)
       -- now the case with parameters
       (_, 0) -> do
@@ -371,7 +380,7 @@ anaSpecAux conser addSyms lg dg nsig name opts sp = case sp of
        tmor <- gEmbedComorphism imor gsigmaB
        morDelta'' <- comp tmor morDelta'
        let dg4 = insLink dg3 morDelta'' globalDef SeeTarget nB node
-       dg5 <- createConsLink conser lg dg4 nsig ns SeeTarget
+       dg5 <- createConsLink DefLink conser lg dg4 nsig ns SeeTarget
        return (Spec_inst spname
                          (map (uncurry replaceAnnoted)
                               (zip (reverse fitargs') afitargs))
@@ -419,13 +428,15 @@ anaSpecAux conser addSyms lg dg nsig name opts sp = case sp of
 anaPlainSpec :: Conservativity -> Bool -> LogicGraph -> HetcatsOpts -> DGraph
   -> MaybeNode -> NodeName -> DGOrigin -> DGLinkType -> Annoted SPEC -> Range
   -> Result (Annoted SPEC, NodeSig, DGraph)
-anaPlainSpec conser addSyms lg opts dg nsig name orig dglType asp pos = do
+anaPlainSpec conser addSyms lg opts dg nsig name orig dglType asp pos =
+  adjustPos pos $ do
       (sp', NodeSig n' gsigma, dg') <-
-          anaSpecAux conser addSyms lg dg nsig (inc name) opts $ item asp
+          ana_SPEC addSyms lg dg nsig (inc name) opts $ item asp
       let (ns@(NodeSig node gsigma'), dg2) = insGSig dg' name orig gsigma
-      incl <- adjustPos pos $ ginclusion lg gsigma gsigma'
-      return (replaceAnnoted sp' asp, ns,
-              insLink dg2 incl dglType SeeTarget n' node)
+      incl <- ginclusion lg gsigma gsigma'
+      let dg3 = insLink dg2 incl dglType SeeTarget n' node
+      dg4 <- createConsLink (ThmLink LeftOpen) conser lg dg3 nsig ns SeeTarget
+      return (replaceAnnoted sp' asp, ns, dg4)
 
 anaFitArg :: LogicGraph -> HetcatsOpts -> SPEC_NAME -> MaybeNode
           -> ([FIT_ARG], DGraph, [(G_morphism, NodeSig)], NodeName)
