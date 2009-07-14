@@ -2,26 +2,18 @@ module Maude.Meta.HasLabels (
     HasLabels(..)
 ) where
 
-import Maude.Meta.Qid
--- import Maude.Meta.Term
-import Maude.Meta.Module
+import Maude.AS_Maude
+import Maude.Symbol
+
+import Maude.Meta.HasName
 
 import Data.Set (Set)
 import qualified Data.Set as Set
 
 
 class HasLabels a where
-    getLabels :: a -> QidSet
-    mapLabels :: QidMap -> a -> a
-
-
-instance HasLabels Attr where
-    getLabels attr = case attr of
-        Label l -> Set.singleton l
-        _       -> Set.empty
-    mapLabels mp attr = case attr of
-        Label l -> Label (mapAsFunction mp l)
-        _       -> attr
+    getLabels :: a -> SymbolSet
+    mapLabels :: SymbolMap -> a -> a
 
 
 instance (HasLabels a) => HasLabels [a] where
@@ -41,35 +33,25 @@ instance (Ord a, HasLabels a) => HasLabels (Set a) where
     mapLabels = Set.map . mapLabels
 
 
-instance HasLabels OpDecl where
-    getLabels = getLabels . op'attrs
-    mapLabels mp op = op {
-        op'attrs = mapLabels mp (op'attrs op)
-    }
-
-
-instance HasLabels MembAx where
-    getLabels mb = case mb of
-        Mb _ _ as    -> getLabels as
-        Cmb _ _ _ as -> getLabels as
-    mapLabels mp mb = case mb of
-        Mb t s as    -> Mb t s (mapLabels mp as)
-        Cmb t s c as -> Cmb t s c (mapLabels mp as)
+instance HasLabels StmntAttr where
+    getLabels attr = case attr of
+        Label name -> getName name
+        _          -> Set.empty
+    mapLabels mp attr = case attr of
+        Label name -> Label $ mapName mp name
+        _          -> attr
 
 
 instance HasLabels Equation where
-    getLabels eq = case eq of
-        Eq _ _ as    -> getLabels as
-        Ceq _ _ _ as -> getLabels as
-    mapLabels mp eq = case eq of
-        Eq t1 t2 as    -> Eq t1 t2 (mapLabels mp as)
-        Ceq t1 t2 c as -> Ceq t1 t2 c (mapLabels mp as)
+    getLabels (Eq _ _ _ as) = getLabels as
+    mapLabels mp (Eq t1 t2 cs as) = Eq t1 t2 cs (mapLabels mp as)
+
+
+instance HasLabels Membership where
+    getLabels (Mb _ _ _ as) = getLabels as
+    mapLabels mp (Mb ts ss cs as) = Mb ts ss cs (mapLabels mp as)
 
 
 instance HasLabels Rule where
-    getLabels rl = case rl of
-        Rl _ _ as    -> getLabels as
-        Crl _ _ _ as -> getLabels as
-    mapLabels mp rl = case rl of
-        Rl t1 t2 as    -> Rl t1 t2 (mapLabels mp as)
-        Crl t1 t2 c as -> Crl t1 t2 c (mapLabels mp as)
+    getLabels (Rl _ _ _ as) = getLabels as
+    mapLabels mp (Rl t1 t2 cs as) = Rl t1 t2 cs (mapLabels mp as)
