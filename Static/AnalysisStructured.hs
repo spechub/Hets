@@ -119,15 +119,19 @@ createConsLink :: Conservativity -> LogicGraph -> DGraph -> MaybeNode
   -> NodeSig -> DGLinkOrigin -> Result DGraph
 createConsLink conser lg dg nsig (NodeSig node gsig) orig = case nsig of
     EmptyNode _ | conser == None -> return dg
-    _ -> do
-      let (es@(NodeSig n _), dg') = case nsig of
-            JustNode ns -> (ns, dg)
-               -- create an empty signature node for the conservativity link
-            EmptyNode cl -> insGSig dg
-              (extName "empty" $ makeName $ mkSimpleId $ show cl)
-              DGEmpty (getMaybeSig nsig)
-      incl <- ginclusion lg (getSig es) gsig
-      return $ insLink dg' incl (globalConsDef conser) orig n node
+    _ -> case nsig of
+      JustNode (NodeSig n sig)-> do
+        incl <- ginclusion lg sig gsig
+        return $ insLink dg incl (globalConsDef conser) orig n node
+      EmptyNode _ -> -- add conservativity to the target node
+        return $ let lbl = labDG dg node
+        in if isDGRef lbl then dg else
+         fst $ labelNodeDG
+           (node, lbl
+            { nodeInfo =
+               (nodeInfo lbl)
+                 { node_cons_status = case getNodeConsStatus lbl of
+                     ConsStatus c d th -> ConsStatus (max c conser) d th }}) dg
 
 -- | analyze a SPEC
 -- Bool Parameter determines if incoming symbols shall be ignored
