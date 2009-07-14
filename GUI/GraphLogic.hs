@@ -606,7 +606,8 @@ runProveAtNode checkCons gInfo (v, dgnode) (Result ds mres) =
                        { i_state = Just iist
                          { i_libEnv = Map.insert ln newDg le } }
                  writeIORef iSt nwst
-                 updateGraph gInfo ln (reverse $ flatHistory history) newDg
+                 runAndLock gInfo
+                   $ updateGraph gInfo ln (reverse $ flatHistory history) newDg
                  unlockGlobal gInfo
            Nothing -> return ()
        _ -> return ()
@@ -646,8 +647,9 @@ checkconservativityOfEdge descr gInfo me = case me of
                         ost [DgCommandChange ln]
                   nwst = nst { i_state = Just $ iist { i_libEnv = nwle}}
               writeIORef iSt nwst
-              updateGraph gInfo ln (reverse $ flatHistory ph)
-                          $ lookupDGraph ln nwle
+              runAndLock gInfo
+                $ updateGraph gInfo ln (reverse $ flatHistory ph)
+                              $ lookupDGraph ln nwle
               unlockGlobal gInfo
 
 -- | show library referened by a DGRef node (=node drawn as a box)

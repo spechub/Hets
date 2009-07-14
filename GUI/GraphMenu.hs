@@ -418,7 +418,7 @@ createLocalMenuButtonProveStructured gInfo =
 -- | call VSE structured
 proveVSEStructured :: GInfo -> Int -> IO ()
 proveVSEStructured gi n =
-  proofMenu gi (SelectCmd Prover $ "VSE structured: " ++ show n)
+  runAndLock gi $ proofMenu gi (SelectCmd Prover $ "VSE structured: " ++ show n)
     $ VSE.prove (libName gi, n)
 
 createLocalMenuButtonCCCAtNode :: GInfo -> ButtonMenu GA.NodeValue
