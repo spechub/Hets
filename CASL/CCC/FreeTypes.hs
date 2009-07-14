@@ -44,7 +44,7 @@ inhabited sorts constrs = iterateInhabited sorts
                     if l == newL then newL else iterateInhabited newL
                             where newL = foldr (\ (ags, rs) l' ->
                                                   if all (flip elem l') ags
-                                                      && not (elem rs l')
+                                                      && notElem rs l'
                                                   then rs : l'
                                                   else l') l argsRes
 
@@ -183,8 +183,8 @@ getNefsorts (osig, osens) m fsn = nefsorts
         fconstrs = concatMap constraintOfAxiom (ofs ++ fs)
         (srts, _, _) = recover_Sort_gen_ax fconstrs
         f_Inhabited = inhabited oSorts fconstrs
-        fsorts = filter (\ s -> not $ elem s esorts) $ intersect nSorts srts
-        nefsorts = filter (\ s -> not $ elem s f_Inhabited) fsorts
+        fsorts = filter (\ s -> notElem s esorts) $ intersect nSorts srts
+        nefsorts = filter (\ s -> notElem s f_Inhabited) fsorts
 
 getDataStatus :: (Sign () (),[Named (FORMULA ())]) -> Morphism () () ()
     -> [Named (FORMULA ())] -> ConsistencyStatus
@@ -200,8 +200,8 @@ getDataStatus (osig, osens) m fsn = dataStatus
         (srts, _, _) = recover_Sort_gen_ax fconstrs
         gens = intersect nSorts srts
         dataStatus = if null nSorts then Definitional
-                     else if any (\ s -> not (elem s subs) &&
-                             not (elem s gens)) nSorts
+                     else if any (\ s -> notElem s subs &&
+                             notElem s gens) nSorts
                           then Conservative
                           else Monomorphic
 
@@ -341,28 +341,28 @@ checkLeadingTerms :: [Named (FORMULA ())] -> Morphism () () ()
 checkLeadingTerms osens m fsn
     | not $ all (checkTerms tsig constructors) (map arguOfTerm leadingTerms) =
         let (Application os _ _) = tt
-            tt = head $ filter (\ t -> not $ checkTerms tsig constructors $
-                                    arguOfTerm t) leadingTerms
+            tt = head $ filter (not . checkTerms tsig constructors .
+                                    arguOfTerm) leadingTerms
             pos = axiomRangeforTerm axioms' tt
         in Just $ warning Nothing ("a leading term of " ++ opSymName os ++
            " consists of not only variables and constructors") pos
     | not $ all (checkTerms tsig constructors) (map arguOfPred leadingPreds) =
         let (Predication ps _ pos) = quanti pf
-            pf = head $ filter (\ p -> not $ checkTerms tsig constructors $
-                                    arguOfPred p) leadingPreds
+            pf = head $ filter (not . checkTerms tsig constructors .
+                                    arguOfPred) leadingPreds
         in Just $
            warning Nothing ("a leading predicate of " ++ predSymName ps ++
            " consists of not only variables and constructors") pos
     | not $ all checkVar_App leadingTerms =
         let (Application os _ _) = tt
-            tt = head $ filter (\ t -> not $ checkVar_App t) leadingTerms
+            tt = head $ filter (not . checkVar_App) leadingTerms
             pos = axiomRangeforTerm axioms' tt
         in Just $
            warning Nothing ("a variable occurs twice in a leading term of " ++
            opSymName os) pos
     | not $ all checkVar_Pred leadingPreds =
         let (Predication ps _ pos) = quanti pf
-            pf = head $ filter (\ p -> not $ checkVar_Pred p) leadingPreds
+            pf = head $ filter (not . checkVar_Pred) leadingPreds
         in Just $
            warning Nothing ("a variable occurs twice in a leading " ++
            "predicate of " ++ predSymName ps) pos
@@ -436,7 +436,7 @@ checkPositive fsn
             case quanti f of
                 Conjunction     cs      _ -> all checkPos cs
                 Disjunction     ds      _ -> any checkPos ds
-                Implication     i1 i2 _ _ -> (not $ checkPos i1) || checkPos i2
+                Implication     i1 i2 _ _ -> not (checkPos i1) || checkPos i2
                 Equivalence     e1 e2   _ -> checkPos e1 == checkPos e2
                 Negation        n       _ -> not $ checkPos n
                 True_atom               _ -> True
@@ -531,7 +531,7 @@ groupAxioms phis = do
             let fp = fst p
                 p'= if elem fp symb then []
                     else [(fp,snd $ unzip $ filter (\ x -> fst x == fp) (p:ps))]
-                symb'= if not $ elem fp symb then fp:symb else symb
+                symb'= if notElem fp symb then fp:symb else symb
             in p' ++ filterA ps symb'
 
 
@@ -646,11 +646,11 @@ overlapQuery :: Eq f => ((FORMULA f,[(TERM f,TERM f)]),
 overlapQuery ((a1, s1), (a2, s2)) =
         case leadingSym a1 of
           Just (Left _)
-            | containNeg a1 && (not $ containNeg a2) ->
+            | containNeg a1 && not (containNeg a2) ->
                 Implication (Conjunction [con1,con2] nullRange)
                             (Negation (Definedness resT2 nullRange) nullRange)
                             True nullRange
-            | containNeg a2 && (not $ containNeg a1) ->
+            | containNeg a2 && not (containNeg a1) ->
                 Implication (Conjunction [con1,con2] nullRange)
                             (Negation (Definedness resT1 nullRange) nullRange)
                             True nullRange
@@ -660,11 +660,11 @@ overlapQuery ((a1, s1), (a2, s2)) =
                             (Strong_equation resT1 resT2 nullRange)
                             True nullRange
           Just (Right _)
-            | containNeg a1 && (not $ containNeg a2) ->
+            | containNeg a1 && not (containNeg a2) ->
                 Implication (Conjunction [con1,con2] nullRange)
                             (Negation resA2 nullRange)
                             True nullRange
-            | containNeg a2 && (not $ containNeg a1) ->
+            | containNeg a2 && not (containNeg a1) ->
                 Implication (Conjunction [con1,con2] nullRange)
                             (Negation resA1 nullRange)
                             True nullRange
@@ -690,7 +690,7 @@ completePatterns cons pas
     | all null pas = True
     | all isVar $ map head pas = completePatterns cons (map tail pas)
     | otherwise = elem (con_ts $ map head pas) s_cons &&
-                  (all id $ map (completePatterns cons) $ pa_group pas)
+                  all id (map (completePatterns cons) $ pa_group pas)
     where s_op_os c = case c of
                         Op_name _ -> []
                         Qual_op_name on ot _ -> [(res_OP_TYPE ot,on)]
