@@ -21,6 +21,10 @@ module Maude.Sign where
 import Maude.AS_Maude
 import Maude.Symbol
 
+import Maude.Meta.HasName
+import Maude.Meta.HasSorts
+import Maude.Meta.HasOps
+
 import Data.Set (Set)
 import Data.Map (Map)
 import qualified Data.Set as Set
@@ -77,7 +81,7 @@ fromSpec (Spec _ _ stmts) = let
 
 -- | extract the Set of all Symbols from a Signature
 symbols :: Sign -> SymbolSet
-symbols sign = Set.unions [(sorts sign), (Map.keysSet $ ops sign)]
+symbols sign = Set.unions [(getSorts sign), (getOps sign)]
 
 -- | the empty Signature
 empty :: Sign
@@ -113,37 +117,24 @@ isLegal sign = let
 
 -- insert a Sort into a Set of Sorts
 ins'sort :: Sort -> SortSet -> SortSet
-ins'sort = Set.insert . sortName
+ins'sort = Set.insert . getName
 
 -- insert a Subsort declaration into a Subsort Relationship
 ins'subsort :: SubsortDecl -> SubsortRel -> SubsortRel
-ins'subsort (Subsort sub super) = Rel.insert (sortName sub) (sortName super)
+ins'subsort (Subsort sub super) = Rel.insert (getName sub) (getName super)
 
 -- insert an Operator name into an Operator Map
 ins'opName :: OpId -> OpMap -> OpMap
-ins'opName (OpId name) = Map.insert name Set.empty
+ins'opName op = Map.insert (getName op) Set.empty
 
 -- insert an Operator declaration into an Operator Map
 ins'op :: Operator -> OpMap -> OpMap
-ins'op op opmap = let
-        Op opid dom cod ats = op
-        OpId name = opid
+ins'op (Op op dom cod as) opmap = let
+        name = getName op
         old'ops = Map.findWithDefault Set.empty name opmap
-        new'ops = Set.insert (map typeName dom, typeName cod, ats) old'ops
+        new'ops = Set.insert (map getName dom, getName cod, as) old'ops
     in Map.insert name new'ops opmap
 
 -- map and insert an OperatorMap key-value pair
 map'op :: SymbolMap -> Symbol -> OpDeclSet -> OpMap -> OpMap
 map'op mp op decls = Map.insert (Map.findWithDefault op op mp) decls
-
-
--- extract the name from a Sort, Kind or Type
-sortName :: Sort -> Qid
-sortName (SortId name) = name
-
-kindName :: Kind -> Qid
-kindName (KindId name) = name
-
-typeName :: Type -> Qid
-typeName (TypeSort sort) = sortName sort
-typeName (TypeKind kind) = kindName kind
