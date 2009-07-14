@@ -36,7 +36,9 @@ import Common.DocUtils
 
 type SortSet = Set Symbol
 type SubsortRel = Rel Symbol
-type OpMap = Map Symbol (Set ([Symbol], Symbol, [Attr]))
+type OpDecl = ([Symbol], Symbol, [Attr])
+type OpDeclSet = Set OpDecl
+type OpMap = Map Symbol OpDeclSet
 
 data Sign = Sign {
         sorts :: SortSet,
