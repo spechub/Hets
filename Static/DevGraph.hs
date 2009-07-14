@@ -126,24 +126,11 @@ data DGOrigin =
 -- | node content or reference to another library's node
 data DGNodeInfo = DGNode
   { node_origin :: DGOrigin       -- origin in input language
-  , node_cons_status :: Maybe Bool } -- unused currently
+  , node_cons_status :: ConsStatus } -- like a link from the empty signature
   | DGRef                        -- reference to node in a different DG
   { ref_libname :: LIB_NAME      -- pointer to DG where ref'd node resides
   , ref_node :: Node             -- pointer to ref'd node
   } deriving (Show, Eq)
-
--- | test for 'LeftOpen', return input for refs or no conservativity
-getConsState :: Bool -> DGNodeInfo -> Bool
-getConsState b c = case c of
-  DGRef {} -> b
-  DGNode {} -> case node_cons_status c of
-    Nothing -> b
-    Just s -> not s
-
--- | show cons status as string
-showConsState :: DGNodeInfo -> String
-showConsState l =
-  (if getConsState False l then "open" else "proven") ++ "_cons"
 
 -- | node inscriptions in development graphs.
 -- Nothing entries indicate "not computed yet"
@@ -185,8 +172,17 @@ hasOpenGoals = hasSenKind (\ s -> not (isAxiom s) && not (isProvenSenStatus s))
 isInternalNode :: DGNodeLab -> Bool
 isInternalNode l@DGNodeLab {dgn_name = n} = not (isDGRef l) && isInternal n
 
+getNodeConsStatus :: DGNodeLab -> ConsStatus
+getNodeConsStatus lbl = case nodeInfo lbl of
+   DGRef {} -> mkConsStatus None
+   DGNode { node_cons_status = c } -> c
+
+-- | test if a node conservativity is open, return input for refs or None
 hasOpenConsStatus :: Bool -> DGNodeLab -> Bool
-hasOpenConsStatus b = getConsState b . nodeInfo
+hasOpenConsStatus b lbl = case getNodeConsStatus lbl of
+  ConsStatus cons _ thm -> case cons of
+      None -> b
+      _ -> not $ isProvenThmLinkStatus thm
 
 data DGNodeType = DGNodeType
   { nonRefType :: NonRefType
@@ -203,7 +199,7 @@ data NonRefType =
 getRealDGNodeType :: DGNodeLab -> DGNodeType
 getRealDGNodeType dgnlab = DGNodeType
   { nonRefType = if isDGRef dgnlab then RefType else
-      NonRefType { isProvenCons = getConsState True $ nodeInfo dgnlab
+      NonRefType { isProvenCons = not $ hasOpenConsStatus False dgnlab
                  , isInternalSpec = isInternalNode dgnlab }
   , isLocallyEmpty = not $ hasOpenGoals dgnlab
   }
@@ -294,6 +290,9 @@ data FreeOrCofree = Free | Cofree deriving (Show, Eq)
 
 data ConsStatus = ConsStatus Conservativity Conservativity ThmLinkStatus
   deriving (Show, Eq)
+
+mkConsStatus :: Conservativity -> ConsStatus
+mkConsStatus c = ConsStatus c None LeftOpen
 
 -- | Link types of development graphs
 --  Sect. IV:4.2 of the CASL Reference Manual explains them in depth
@@ -595,7 +594,7 @@ getDGNodeName = showName . dgn_name
 newNodeInfo :: DGOrigin -> DGNodeInfo
 newNodeInfo orig = DGNode
   { node_origin = orig
-  , node_cons_status = Nothing }
+  , node_cons_status = mkConsStatus None }
 
 -- | create a reference node part
 newRefInfo :: LIB_NAME -> Node -> DGNodeInfo
@@ -1049,10 +1048,10 @@ localConsThm = localOrGlobalThm Local
 
 localOrGlobalThm :: Scope -> Conservativity -> DGLinkType
 localOrGlobalThm sc c =
-  ScopedLink sc (ThmLink LeftOpen) $ ConsStatus c None LeftOpen
+  ScopedLink sc (ThmLink LeftOpen) $ mkConsStatus c
 
 localOrGlobalDef :: Scope -> Conservativity -> DGLinkType
-localOrGlobalDef sc c = ScopedLink sc DefLink $ ConsStatus c None LeftOpen
+localOrGlobalDef sc c = ScopedLink sc DefLink $ mkConsStatus c
 
 globalConsDef :: Conservativity -> DGLinkType
 globalConsDef c = localOrGlobalDef Global c
@@ -1065,19 +1064,18 @@ localDef = localOrGlobalDef Local None
 
 -- ** link conservativity
 
+getLinkConsStatus :: DGLinkType -> ConsStatus
+getLinkConsStatus lt = case lt of
+  ScopedLink _ _ c -> c
+  _ -> mkConsStatus None
+
+getCons :: DGLinkType -> Conservativity
+getCons lt = case getLinkConsStatus lt of
+  ConsStatus cons _ _ -> cons
+
 -- | returns the Conservativity if the given edge has one, otherwise none
 getConservativity :: LEdge DGLinkLab -> Conservativity
 getConservativity (_, _, edgeLab) = getCons $ dgl_type edgeLab
-
-getConsProof :: DGLinkType -> ThmLinkStatus
-getConsProof lt = case lt of
-    ScopedLink _ _ (ConsStatus _  _ st) -> st
-    _ -> LeftOpen
-
-getCons :: DGLinkType -> Conservativity
-getCons lt = case lt of
-    ScopedLink _ _ (ConsStatus cons _ _) -> cons
-    _ -> None
 
 -- * bottom up traversal
 

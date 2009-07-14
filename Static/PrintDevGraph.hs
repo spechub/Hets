@@ -119,6 +119,7 @@ prettyDGNodeLab l = sep [ text $ getDGNodeName l, pretty $ nodeInfo l]
 instance Pretty DGNodeLab where
   pretty l = vcat
     [ text "Origin:" <+> pretty (nodeInfo l)
+    , pretty $ getNodeConsStatus l
     , if hasOpenGoals l then text "has open goals" else
       if hasSenKind (const True) l then Doc.empty else text "locally empty"
     , if labelHasHiding l then text "has ingoing hiding link" else Doc.empty
@@ -222,12 +223,15 @@ instance Pretty ThmLinkStatus where
 prettyThmLinkStatus :: DGLinkType -> Doc
 prettyThmLinkStatus = maybe Doc.empty pretty . thmLinkStatus
 
+instance Pretty ConsStatus where
+   pretty (ConsStatus cons _ thm) = case cons of
+     None -> Doc.empty
+     _ -> text (show cons) <> pretty thm
+
 instance Pretty DGLinkType where
     pretty t = text (getDGEdgeTypeModIncName $ getHomEdgeType True t)
                <> prettyThmLinkStatus t
-               $+$ case getCons t of
-                     None -> Doc.empty
-                     c -> text (show c) <> pretty (getConsProof t)
+               $+$ pretty (getLinkConsStatus t)
 
 instance Pretty DGLinkLab where
   pretty l = vcat
