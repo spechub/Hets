@@ -46,8 +46,23 @@ data Sign = Sign {
         ops :: OpMap
     } deriving (Show, Ord, Eq)
 
+
 instance Pretty Sign where
-  pretty _ = Doc.text ""
+    pretty _ = Doc.text ""
+
+
+instance HasSorts Sign where
+    getSorts = sorts
+    mapSorts mp sign = sign {
+        sorts = mapSorts mp (sorts sign),
+        subsorts = mapSorts mp (subsorts sign)
+    }
+
+instance HasOps Sign where
+    getOps = Map.keysSet . ops
+    mapOps mp sign = sign {
+        ops = Map.foldWithKey (map'op mp) Map.empty (ops sign)
+    }
 
 
 -- | extract the Signature of a Module
@@ -116,6 +131,11 @@ ins'op op opmap = let
         old'ops = Map.findWithDefault Set.empty name opmap
         new'ops = Set.insert (map typeName dom, typeName cod, ats) old'ops
     in Map.insert name new'ops opmap
+
+-- map and insert an OperatorMap key-value pair
+map'op :: SymbolMap -> Symbol -> OpDeclSet -> OpMap -> OpMap
+map'op mp op decls = Map.insert (Map.findWithDefault op op mp) decls
+
 
 -- extract the name from a Sort, Kind or Type
 sortName :: Sort -> Qid
