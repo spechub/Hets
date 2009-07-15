@@ -20,6 +20,7 @@ module Maude.Sign where
 
 import Maude.AS_Maude
 import Maude.Symbol
+import Maude.Sentence
 
 import Maude.Meta.HasName
 import Maude.Meta.HasSorts
@@ -113,6 +114,18 @@ isLegal sign = let
         legal'subsorts = Fold.all isLegalSort $ Rel.nodes (subsorts sign)
         legal'ops = Fold.all (Fold.all isLegalOp) (ops sign)
     in all id [legal'subsorts, legal'ops]
+
+-- | check that a Signature can include a Sentence
+includesSentence :: Sign -> Sentence -> Bool
+includesSentence sign sen = let
+        ops'subset   = Set.isSubsetOf (getOps sen)   (getOps sign)
+        sorts'subset = Set.isSubsetOf (getSorts sen) (getSorts sign)
+    in all id [sorts'subset, ops'subset]
+
+-- | simplification of sentences (leave out qualifications)
+-- TODO: Add real implementation of simplification
+simplifySentence :: Sign -> Sentence -> Sentence
+simplifySentence _ = id
 
 
 --- Helper functions for inserting Signature members into their respective collections.
