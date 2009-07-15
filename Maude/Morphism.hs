@@ -26,6 +26,7 @@ module Maude.Morphism (
     inverse,
     compose,
     isLegal,
+    isInclusion,
     mapSentence
 ) where
 
@@ -186,6 +187,15 @@ isLegal mor = let
         legal'labelMap = True
         legal'target = Sign.isLegal tgt
     in all id [legal'source, legal'sortMap, legal'opMap, legal'labelMap, legal'target]
+
+-- | check that a Morphism is an Inclusion
+isInclusion :: Morphism -> Bool
+-- TODO: Implement Morphism.isInclusion.
+isInclusion mor = let
+        null'sortMap  = Map.null (sortMap mor)
+        null'opMap    = Map.null (opMap mor)
+        null'labelMap = Map.null (labelMap mor)
+    in all id [null'sortMap, null'opMap, null'labelMap]
 
 -- | translate a Sentence along a Morphism
 mapSentence :: Morphism -> Sentence -> Result.Result Sentence
