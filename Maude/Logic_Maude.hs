@@ -28,6 +28,12 @@ import qualified Maude.Sentence as Sentence
 
 import Maude.ATC_Maude ()
 
+import Maude.MaudeShellout
+
+import Common.AS_Annotation
+import Common.ExtSign
+import System.IO.Unsafe
+
 
 -- | Lid for Maude
 data Maude = Maude
@@ -83,7 +89,9 @@ instance Syntax Maude MaudeText () () where
 instance StaticAnalysis Maude MaudeText Sentence () () Sign Morphism Symbol
     Symbol where
     -- static analysis --
-    -- basic_analysis
+    basic_analysis Maude = Just $ \ (bs, sig, _) ->
+        let (rsig, sens) = unsafePerformIO $ basicAnalysis sig bs
+        in return (bs, mkExtSign rsig, map (makeNamed "") sens)
     -- stat_symb_map_items
     -- stat_symb_items
     -- amalgamation --
@@ -95,13 +103,13 @@ instance StaticAnalysis Maude MaudeText Sentence () () Sign Morphism Symbol
     -- id_to_raw
     -- matches
     -- operations on signatures and morphisms --
+    is_subsig Maude sign1 sign2 = Sign.subsig sign1 sign2
     empty_signature Maude = Sign.empty
-    -- signature_union
-    -- intersection
+    signature_union Maude sign1 sign2 = return $ Sign.sig_union sign1 sign2
+    intersection Maude sign1 sign2 = return $ Sign.sig_int sign1 sign2
     -- final_union
     -- morphism_union
-    -- is_subsig
-    -- subsig_inclusion
+    subsig_inclusion Maude src tgt = return $ Morphism.createInclMorph src tgt
     -- generated_sign
     -- cogenerated_sign
     -- induced_from_morphism

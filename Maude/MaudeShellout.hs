@@ -1,6 +1,5 @@
-#!/usr/bin/env runhaskell
 
-module Main where
+module Maude.MaudeShellout (basicAnalysis) where
 
 import System.IO
 import System.Process
@@ -32,17 +31,18 @@ main = do
     -- waitForProcess hProcess
 
 
-ba :: Sign -> MaudeText -> IO (Sign, [Sentence])
-ba s (MaudeText mt) = do
-   (hIn, hOut, _, _) <- runInteractiveCommand maude_cmd -- (hIn, hOut, hErr, hProcess)
-   hPutStrLn hIn "in /Users/adrian/Hets/Maude/hets.prj"
-   hPutStrLn hIn ("(fmod A is " ++ (sign2maude s) ++ mt ++ " endfm)")
-   hClose hIn
-   sOutput <- hGetContents hOut
-   let stringSpec = getSpec sOutput
-   let spec = read stringSpec :: Spec
-   let sign = fromSpec spec
-   let sen = getSentences spec
-   return (sign, sen)
+basicAnalysis :: Sign -> MaudeText -> IO (Sign, [Sentence])
+basicAnalysis sign (MaudeText mt) = do
+    (hIn, hOut, _, _) <- runInteractiveCommand maude_cmd -- (hIn, hOut, hErr, hProcess)
+    hPutStrLn hIn "in /Users/adrian/Hets/Maude/hets.prj"
+    hPutStrLn hIn ("(fmod A is " ++ (printSign (sorts sign) (subsorts sign) (ops sign))
+                   ++ mt ++ " endfm)")
+    hClose hIn
+    sOutput <- hGetContents hOut
+    let stringSpec = getSpec sOutput
+    let spec = read stringSpec :: Spec
+    let nsign = fromSpec spec
+    let sen = getSentences spec
+    return (nsign, sen)
    
 

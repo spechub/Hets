@@ -19,7 +19,6 @@ Translations between Maude and Haskell
 module Maude.Printing where
 
 import Maude.AS_Maude
-import Maude.Sign
 import Maude.Symbol
 
 import qualified Data.Set as Set
@@ -44,26 +43,27 @@ quitEnd [] = []
 quitNil :: String -> String
 quitNil = Prelude.filter (/= '\NUL')
 
-sign2maude :: Sign -> String
-sign2maude sign = ss ++ sbs ++ opd -- "(fmod A is " ++ ss ++ sbs ++ opd ++ " endfm)"
- where ss = sorts2maude (sorts sign)
-       sbs = subsorts2maude (subsorts sign)
-       opd = ops2maude (ops sign)
+printSign :: Set.Set Symbol -> Rel.Rel Symbol
+             -> Map.Map Symbol (Set.Set ([Symbol], Symbol, [Attr])) -> String
+printSign sts sbsts ops = ss ++ sbs ++ opd
+ where ss = sorts2maude sts
+       sbs = subsorts2maude sbsts
+       opd = ops2maude ops
 
-sorts2maude :: SortSet -> String
+sorts2maude :: Set.Set Symbol -> String
 sorts2maude ss = if Set.null ss
                     then ""
-                    else "sorts " ++ Set.fold (++) "" (Set.map ((++ " ") . show) ss) ++ ". "
+                    else "sorts " ++ Set.fold (++) "" (Set.map ((++ " ") . show) ss) ++ ".\n"
 
-subsorts2maude :: SubsortRel -> String
+subsorts2maude :: Rel.Rel Symbol -> String
 subsorts2maude ssbs = if Rel.null ssbs
                          then ""
                          else foldr (++) "" (map printPair $ Rel.toList ssbs)
 
 printPair :: (Token,Token) -> String
-printPair (a,b) = "subsort " ++ show a ++ " < " ++ show b ++ " . "
+printPair (a,b) = "subsort " ++ show a ++ " < " ++ show b ++ " .\n"
 
-ops2maude :: OpMap -> String
+ops2maude :: Map.Map Symbol (Set.Set ([Symbol], Symbol, [Attr])) -> String
 ops2maude om = flatten (flatten (map printOp (Map.toList om)))
 
 flatten :: [[a]] -> [a]
@@ -75,7 +75,7 @@ printOp (opid, s) = map (printOpAux opid) (Set.toList s)
 
 printOpAux :: Symbol -> ([Symbol], Symbol, [Attr]) -> String
 printOpAux opid (ar, co, ats) = "op " ++ show opid ++ " : " ++ printArity ar ++
-                                " -> " ++ show co ++ printAttrSet ats ++ " . "
+                                " -> " ++ show co ++ printAttrSet ats ++ " .\n"
 
 printArity :: [Symbol] -> String
 printArity a = foldr (++) "" (map showSpace a)

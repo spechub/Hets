@@ -37,6 +37,8 @@ import qualified Common.Lib.Rel as Rel
 import qualified Common.Doc as Doc
 import Common.DocUtils
 
+import Maude.Printing
+
 
 type SortSet = Set Symbol
 type SubsortRel = Rel Symbol
@@ -52,7 +54,7 @@ data Sign = Sign {
 
 
 instance Pretty Sign where
-    pretty _ = Doc.text ""
+  pretty sign = Doc.text $ printSign (sorts sign) (subsorts sign) (ops sign)
 
 
 instance HasSorts Sign where
@@ -134,6 +136,59 @@ ins'op (Op op dom cod as) opmap = let
         old'ops = Map.findWithDefault Set.empty name opmap
         new'ops = Set.insert (map getName dom, getName cod, as) old'ops
     in Map.insert name new'ops opmap
+
+
+-- extract the name from a Sort, Kind or Type
+sortName :: Sort -> Qid
+sortName (SortId name) = name
+
+kindName :: Kind -> Qid
+kindName (KindId name) = name
+
+typeName :: Type -> Qid
+typeName (TypeSort sort) = sortName sort
+typeName (TypeKind kind) = kindName kind
+
+sig_union :: Sign -> Sign -> Sign
+sig_union (Sign s1 ssr1 op1) (Sign s2 ssr2 op2) = Sign (sorts_union s1 s2)
+                                                       (subsorts_union ssr1 ssr2)
+                                                       (ops_union op1 op2)
+
+sorts_union :: SortSet -> SortSet -> SortSet
+sorts_union s1 s2 = Set.union s1 s2
+
+subsorts_union :: SubsortRel -> SubsortRel -> SubsortRel
+subsorts_union ssr1 ssr2 = Rel.union ssr1 ssr2
+
+ops_union :: OpMap -> OpMap -> OpMap
+ops_union op1 op2 = Map.union op1 op2
+
+sig_int :: Sign -> Sign -> Sign
+sig_int (Sign s1 ssr1 op1) (Sign s2 ssr2 op2) = Sign (sorts_int s1 s2)
+                                                     (subsorts_int ssr1 ssr2)
+                                                     (ops_int op1 op2)
+
+sorts_int :: SortSet -> SortSet -> SortSet
+sorts_int s1 s2 = Set.intersection s1 s2
+
+subsorts_int :: SubsortRel -> SubsortRel -> SubsortRel
+subsorts_int ssr1 ssr2 = Rel.fromDistinctMap $ Map.intersection (Rel.toMap ssr1) (Rel.toMap ssr2)
+
+ops_int :: OpMap -> OpMap -> OpMap
+ops_int op1 op2 = Map.intersection op1 op2
+
+subsig :: Sign -> Sign -> Bool
+subsig sign1 sign2 = sortsIncluded (sorts sign1) (sorts sign2) &&
+                     subsortsIncluded (subsorts sign1) (subsorts sign2)
+
+sortsIncluded :: SortSet -> SortSet -> Bool
+sortsIncluded s1 s2 = Set.isSubsetOf s1 s2
+
+subsortsIncluded :: SubsortRel -> SubsortRel -> Bool
+subsortsIncluded ssr1 ssr2 = Rel.isSubrelOf ssr1 ssr2
+
+opsIncluded :: OpMap -> OpMap -> Bool
+opsIncluded op1 op2 = Map.isSubmapOf op1 op2
 
 -- map and insert an OperatorMap key-value pair
 map'op :: SymbolMap -> Symbol -> OpDeclSet -> OpMap -> OpMap

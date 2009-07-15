@@ -22,6 +22,8 @@ module Maude.Morphism (
     symbolMap,
     identity,
     inverse,
+    empty,
+    createInclMorph
 ) where
 
 import Maude.AS_Maude
@@ -166,6 +168,14 @@ inverse mor = let
 --         legal'target = Sign.isLegal tgt
 --     in all id [legal'source, legal'sortMap, legal'opMap, legal'labelMap, legal'target]
 
+createInclMorph :: Sign -> Sign -> Morphism
+createInclMorph src tgt = Morphism {
+        source = src,
+        target = tgt,
+        sortMap = Map.empty,
+        opMap = Map.empty,
+        labelMap = Map.empty
+    }
 
 -- extract the name from a Sort, Op or Label
 sortName :: Sort -> Qid
