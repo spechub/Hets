@@ -117,12 +117,28 @@ empty = identity Sign.empty
 
 -- | the identity Morphism
 identity :: Sign -> Morphism
-identity sign = Morphism {
-        source = sign,
-        target = sign,
+identity sign = createInclMorph sign sign
+
+-- | the inclusion Morphism
+createInclMorph :: Sign -> Sign -> Morphism
+createInclMorph src tgt = Morphism {
+        source = src,
+        target = tgt,
         sortMap = Map.empty,
         opMap = Map.empty,
         labelMap = Map.empty
+    }
+
+-- | the inverse Morphism
+inverse :: Morphism -> Result Morphism
+inverse mor = let
+        inverseMap = Map.foldWithKey (flip Map.insert) Map.empty
+    in return Morphism {
+        source = (target mor),
+        target = (source mor),
+        sortMap  = inverseMap (sortMap mor),
+        opMap    = inverseMap (opMap mor),
+        labelMap = inverseMap (labelMap mor)
     }
 
 -- -- | the composition of two Morphisms
@@ -145,18 +161,6 @@ identity sign = Morphism {
 --                 labelMap = compose'map labelMap getLabels
 --             }
 
--- | the inverse of a Morphism
-inverse :: Morphism -> Result Morphism
-inverse mor = let
-        inverseMap = Map.foldWithKey (flip Map.insert) Map.empty
-    in return Morphism {
-        source = (target mor),
-        target = (source mor),
-        sortMap  = inverseMap (sortMap mor),
-        opMap    = inverseMap (opMap mor),
-        labelMap = inverseMap (labelMap mor)
-    }
-
 -- -- | check that a Morphism is legal
 -- isLegal :: Morphism -> Bool
 -- isLegal mor = let
@@ -173,15 +177,6 @@ inverse mor = let
 --         legal'labelMap = subset lmap getLabels
 --         legal'target = Sign.isLegal tgt
 --     in all id [legal'source, legal'sortMap, legal'opMap, legal'labelMap, legal'target]
-
-createInclMorph :: Sign -> Sign -> Morphism
-createInclMorph src tgt = Morphism {
-        source = src,
-        target = tgt,
-        sortMap = Map.empty,
-        opMap = Map.empty,
-        labelMap = Map.empty
-    }
 
 -- | translate a Sentence along a Morphism
 mapSentence :: Morphism -> Sentence -> Result.Result Sentence
