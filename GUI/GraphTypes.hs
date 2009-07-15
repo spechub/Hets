@@ -89,6 +89,7 @@ data Colors = Black
             | Green
             | Yellow
             | Khaki
+            | Purple
             deriving (Eq, Ord, Show)
 
 -- | Creates an empty GInfo
@@ -178,8 +179,9 @@ colors = Map.fromList
   , ((Green,  False, True ), ("PaleGreen3",      "gray63"))
   , ((Green,  True,  False), ("PaleGreen2",      "gray67"))
   , ((Green,  True,  True ), ("LightGreen",      "gray70"))
-  , ((Yellow, False, False), ("gold2",           "gray78"))
-  , ((Yellow, False, True ), ("gold",            "gray81"))
+  , ((Purple, False, False), ("purple2",         "gray74"))
+  , ((Yellow, False, False), ("gold",            "gray78"))
+  , ((Yellow, False, True ), ("yellow",          "gray81"))
   , ((Khaki,  False, False), ("LightGoldenrod3", "gray85"))
   , ((Khaki,  False, True ), ("LightGoldenrod",  "gray88"))
   ]

@@ -207,7 +207,7 @@ data NonRefType =
 getRealDGNodeType :: DGNodeLab -> DGNodeType
 getRealDGNodeType dgnlab = DGNodeType
   { nonRefType = if isDGRef dgnlab then RefType else
-      NonRefType { isProvenCons = True
+      NonRefType { isProvenCons = not $ hasOpenConsStatus False dgnlab
                  , isInternalSpec = isInternalNode dgnlab }
   , isLocallyEmpty = not $ hasOpenGoals dgnlab
   }

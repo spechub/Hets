@@ -209,10 +209,11 @@ makeGraph :: GraphInfo -- ^ The graph
           -> [GlobalMenu] -- ^ Edit menu
           -> [(DGNodeType,DaVinciNodeTypeParms NodeValue)] -- ^ Node types
           -> [(DGEdgeType,DaVinciArcTypeParms EdgeValue)] -- ^ Edge types
-          -> IO ()
+          -> String -- ^ Compressed edge color
+          -> IO () -- ^ Expand menu action
           -> IO ()
 makeGraph gi title open save saveAs close exit menus nTypeParms eTypeParms
-          expand' = do
+          color expand' = do
   let graphParms  =
         foldr ($$) (GraphTitle title $$
                     OptimiseLayout False $$
@@ -227,7 +228,7 @@ makeGraph gi title open save saveAs close exit menus nTypeParms eTypeParms
       (eTypeNames,eTypeParms') = unzip eTypeParms
       expand = (LocalMenu (Button "Expand" (\ _ -> expand')) $$$)
       eTypeParmsCO = map expand eTypeParms'
-      eTypeParmsCP = map expand $ map (Color "purple2" $$$) eTypeParms'
+      eTypeParmsCP = map expand $ map (Color color $$$) eTypeParms'
   graph <- newGraph graphtool graphParms
   nTypes <- mapM (newNodeType graph) nTypeParms'
   eTypes <- mapM (newArcType graph) eTypeParms'

@@ -58,8 +58,8 @@ nodeTypes opts = map
   ( (\ (n, s) -> case isLocallyEmpty n of -- Add color
       True -> case nonRefType n of
         NonRefType { isProvenCons = False }
-                -> (n, s, getColor opts Coral True  False)
-        _       -> (n, s, getColor opts Green True  False)
+                -> (n, s, getColor opts Yellow False True)
+        _       -> (n, s, getColor opts Green  True  False)
       False -> case nonRefType n of
         RefType -> (n, s, getColor opts Coral False False)
         t       -> (n, s, getColor opts Coral False $ isProvenCons t)
@@ -148,6 +148,7 @@ createGraph gInfo@(GInfo { graphInfo = gi
                    globMenu
                    (createNodeTypes gInfo convGraph showLib)
                    (createEdgeTypes gInfo)
+                   (getColor hetOpts Purple False False)
                    $ runAndLock gInfo $ do
                        flags <- readIORef opts
                        writeIORef opts $ flags { flagHideNodes = False
@@ -418,7 +419,7 @@ createLocalMenuButtonProveStructured gInfo =
 
 createLocalMenuButtonCheckCons :: GInfo -> ButtonMenu GA.NodeValue
 createLocalMenuButtonCheckCons gInfo =
-  createMenuButton "Check conservativity" 
+  createMenuButton "Check conservativity"
     (\ descr dg -> checkconservativityOfNode descr gInfo dg) gInfo
 
 -- | call VSE structured
