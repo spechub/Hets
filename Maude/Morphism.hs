@@ -20,14 +20,20 @@ module Maude.Morphism (
     Morphism(..),
     fromRenamings,
     symbolMap,
+    empty,
     identity,
     inverse,
-    empty,
-    createInclMorph
+    createInclMorph,
+    mapSentence
 ) where
 
 import Maude.AS_Maude
 import Maude.Symbol
+import Maude.Sentence
+
+import Maude.Meta.HasSorts
+import Maude.Meta.HasOps
+import Maude.Meta.HasLabels
 
 import Maude.Sign (Sign)
 import qualified Maude.Sign as Sign
@@ -176,6 +182,14 @@ createInclMorph src tgt = Morphism {
         opMap = Map.empty,
         labelMap = Map.empty
     }
+
+-- | translate a Sentence along a Morphism
+mapSentence :: Morphism -> Sentence -> Result.Result Sentence
+mapSentence mor = let
+        smap = mapSorts (sortMap mor)
+        omap = mapOps (opMap mor)
+        lmap = mapLabels (labelMap mor)
+    in return . lmap . omap . smap
 
 -- extract the name from a Sort, Op or Label
 sortName :: Sort -> Qid
