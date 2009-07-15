@@ -35,7 +35,7 @@ instance (Ord a, HasLabels a) => HasLabels (Set a) where
 
 instance HasLabels StmntAttr where
     getLabels attr = case attr of
-        Label name -> getName name
+        Label name -> Set.singleton (getName name)
         _          -> Set.empty
     mapLabels mp attr = case attr of
         Label name -> Label $ mapName mp name
