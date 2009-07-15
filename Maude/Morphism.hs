@@ -33,6 +33,7 @@ import Maude.AS_Maude
 import Maude.Symbol
 import Maude.Sentence
 
+import Maude.Meta.HasName
 import Maude.Meta.HasSorts
 import Maude.Meta.HasOps
 import Maude.Meta.HasLabels
@@ -84,30 +85,30 @@ insertRenaming rename mor = let
         lmap = labelMap mor
     in case rename of
         SortRenaming from to -> let
-                a = sortName from
-                b = sortName to
+                a = getName from
+                b = getName to
             in mor {
                 source = Sign.insertSort from src,
                 target = Sign.insertSort to tgt,
                 sortMap = Map.insert a b smap
             }
         LabelRenaming from to -> let
-                a = labelName from
-                b = labelName to
+                a = getName from
+                b = getName to
             in mor {
                 labelMap = Map.insert a b lmap
             }
         OpRenaming1 from (To to _) -> let
-                a = opName from
-                b = opName to
+                a = getName from
+                b = getName to
             in mor {
                 source = Sign.insertOpName from src,
                 target = Sign.insertOpName to tgt,
                 opMap = Map.insert a b omap
             }
         OpRenaming2 from _ _ (To to _) -> let
-                a = opName from
-                b = opName to
+                a = getName from
+                b = getName to
             in mor {
                 source = Sign.insertOpName from src,
                 target = Sign.insertOpName to tgt,
@@ -191,13 +192,3 @@ mapSentence mor = let
         omap = mapOps (opMap mor)
         lmap = mapLabels (labelMap mor)
     in return . lmap . omap . smap
-
--- extract the name from a Sort, Op or Label
-sortName :: Sort -> Qid
-sortName (SortId name) = name
-
-opName :: OpId -> Qid
-opName (OpId name) = name
-
-labelName :: LabelId -> Qid
-labelName (LabelId name) = name
