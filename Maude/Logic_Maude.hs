@@ -56,10 +56,10 @@ instance Category Sign Morphism where
     ide = Morphism.identity
     dom = Morphism.source
     cod = Morphism.target
-    -- composeMorphisms = Morphism.compose
+    composeMorphisms = Morphism.compose
     inverse = Morphism.inverse
-    -- isInclusion = Morphism.isInclusion
-    -- legal_mor = Morphism.isLegal
+    isInclusion = Morphism.isInclusion
+    legal_mor = Morphism.isLegal
 
 
 -- | Instance of Sentences for Maude
