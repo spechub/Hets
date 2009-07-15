@@ -99,6 +99,7 @@ insertRenaming rename mor = let
                 labelMap = Map.insert a b lmap
             }
         OpRenaming1 from (To to _) -> let
+        -- TODO: handle attrs
                 a = getName from
                 b = getName to
             in mor {
@@ -107,6 +108,7 @@ insertRenaming rename mor = let
                 opMap = Map.insert a b omap
             }
         OpRenaming2 from _ _ (To to _) -> let
+        -- TODO: handle attrs
                 a = getName from
                 b = getName to
             in mor {
