@@ -17,6 +17,7 @@ module Static.PrintDevGraph
     , prettyHistElem
     , prettyHistory
     , prettyGr
+    , prettyLEdge
     , showLEdge
     , dgOriginHeader
     , dgLinkOriginHeader

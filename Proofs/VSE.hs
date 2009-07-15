@@ -19,6 +19,7 @@ module Proofs.VSE where
 
 import Static.GTheory
 import Static.DevGraph
+import Static.PrintDevGraph
 import Static.DGTranslation
 
 import Proofs.QualifyNames
@@ -48,6 +49,7 @@ import CASL.ToSExpr
 import CASL.Logic_CASL
 
 import Data.Char
+import Data.List
 import Data.Maybe
 import qualified Data.Map as Map
 import qualified Data.Set as Set
@@ -108,7 +110,8 @@ prove (ln, node) libEnv =
        sendMyMsg inp $ "(" ++ unlines (map (thName ln) nls) ++ ")"
        mapM_ (\ nl -> do
            readMyMsg cp out linksP
-           sendMyMsg inp $ getLinksTo ln dGraph nl) nls
+           str <- getLinksTo ln dGraph nl
+           sendMyMsg inp str) nls
        mapM_ (\ (fsig, _) -> do
            readMyMsg cp out sigP
            sendMyMsg inp fsig) ts
@@ -146,9 +149,16 @@ prove (ln, node) libEnv =
                                  G_theory lid sig sigId nsens startThId })
                         in Map.insert ln ndg le) libEnv nls
 
-getLinksTo :: LIB_NAME -> DGraph -> LNode DGNodeLab -> String
-getLinksTo ln dg (n, lbl) = show $ prettySExpr $ SList
-  $ map (\ (s, _, el) -> let
+getLinksTo :: LIB_NAME -> DGraph -> LNode DGNodeLab -> IO String
+getLinksTo ln dg (n, lbl) = do
+  let (ls, rs) = partition (\ (s, _, el) -> s /= n
+           && isGlobalDef (dgl_type el)
+           && isInc (getRealDGLinkType el)) $ innDG dg n
+  mapM_ (\ e -> do
+      putStrLn "ignored unsupported link (non-inclusion or theorem link):"
+      putStrLn $ " " ++ show (prettyLEdge e)) rs
+  return $ show $ prettySExpr $ SList
+    $ map (\ (s, _, el) -> let
     ltype = dgl_type el
     defl = isGlobalDef ltype
     in SList $
@@ -159,8 +169,7 @@ getLinksTo ln dg (n, lbl) = show $ prettySExpr $ SList
     , SSymbol "global"
     , SList $ SSymbol "morphism" : hetMorToSSexpr (dgl_morphism el)]
     ++ if defl then [] else
-       [SSymbol $ if isProven ltype then "proven" else "open"])
-  $ filter (\ (s, _, _) -> s /= n) $ innDG dg n
+       [SSymbol $ if isProven ltype then "proven" else "open"]) ls
 
 hetMorToSSexpr :: GMorphism -> [SExpr]
 hetMorToSSexpr (GMorphism cid _ _ mor _) =
