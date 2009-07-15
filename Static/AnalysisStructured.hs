@@ -154,7 +154,7 @@ anaSpecTop conser addSyms lg dg nsig name opts sp =
     _ -> False
   then anaSpecAux conser addSyms lg dg nsig name opts sp else do
   let provenThmLink =
-        ThmLink $ Proven (DGRule "static analysis") $ ProofBasis Set.empty
+        ThmLink $ Proven (DGRule "static analysis") emptyProofBasis
   (rsp, ns, rdg) <- ana_SPEC addSyms lg dg nsig name opts sp
   ndg <- createConsLink provenThmLink conser lg rdg nsig ns SeeTarget
   return (rsp, ns, ndg)
