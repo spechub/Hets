@@ -22,8 +22,9 @@ module Maude.Morphism (
     symbolMap,
     empty,
     identity,
-    inverse,
     createInclMorph,
+    inverse,
+    compose,
     isLegal,
     mapSentence
 ) where
@@ -143,25 +144,26 @@ inverse mor = let
         labelMap = inverseMap (labelMap mor)
     }
 
--- -- | the composition of two Morphisms
--- compose :: Morphism -> Morphism -> Result Morphism
--- compose f g
---     | target f /= source g = fail "target of the first and source of the second morphism are different"
---     | otherwise = let
---             apply mp nam = Map.findWithDefault nam nam mp
---             map'map mp = apply (mp g) . apply (mp f)
---             insert mp x = let y = map'map mp x
---                 in if x == y then id else Map.insert x y
---             compose'map mp items = if Map.null (mp g)
---                 then mp f
---                 else Set.fold (insert mp) Map.empty $ items (source f)
---         in return Morphism {
---                 source = (source f),
---                 target = (target g),
---                 sortMap = compose'map sortMap getSorts,
---                 opMap = compose'map opMap getOps,
---                 labelMap = compose'map labelMap getLabels
---             }
+-- | the composition of two Morphisms
+-- TODO: Ops don't have labels, so Signs don't have labels. so we can ignore the labelMap. Is that correct?
+compose :: Morphism -> Morphism -> Result Morphism
+compose f g
+    | target f /= source g = fail "target of the first and source of the second morphism are different"
+    | otherwise = let
+            apply mp nam = Map.findWithDefault nam nam mp
+            map'map mp = apply (mp g) . apply (mp f)
+            insert mp x = let y = map'map mp x
+                in if x == y then id else Map.insert x y
+            compose'map mp items = if Map.null (mp g)
+                then mp f
+                else Set.fold (insert mp) Map.empty $ items (source f)
+        in return Morphism {
+                source = (source f),
+                target = (target g),
+                sortMap = compose'map sortMap getSorts,
+                opMap = compose'map opMap getOps -- ,
+                -- labelMap = compose'map labelMap getLabels
+            }
 
 -- | check that a Morphism is legal
 -- TODO: Ops don't have labels, so Signs don't have labels. so we can ignore the labelMap. Is that correct?
