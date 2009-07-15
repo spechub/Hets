@@ -165,10 +165,10 @@ simpleLibEnv :: FilePath -> DGraph -> LibEnv
 simpleLibEnv filename dg = let
   minNode = minimum $ nodesDG dg
   nodeSig = NodeSig minNode $ signOf $ dgn_theory $ labDG dg minNode
-  g_sign = G_sign OWL (mkExtSign emptySign) startSigId
+  esig = EmptyNode $ Logic OWL
   in Map.singleton (simpleLibName filename) dg
            { globalEnv = Map.singleton (mkSimpleId "")
-              (SpecEntry (ExtGenSig (EmptyNode $ Logic OWL) [] g_sign nodeSig))}
+              (SpecEntry (ExtGenSig (GenSig esig [] esig) nodeSig))}
 
 simpleLibName :: FilePath -> LIB_NAME
 simpleLibName s = Lib_id $ Direct_link ("library_" ++ s) nullRange

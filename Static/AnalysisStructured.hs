@@ -364,7 +364,8 @@ anaSpecAux conser addSyms lg dg nsig name opts sp = case sp of
        adj = adjustPos pos
        spstr = tokStr spname
     in case lookupGlobalEnvDG spname dg of
-    Just (SpecEntry gs@(ExtGenSig imps params _ body@(NodeSig nB gsigmaB))) ->
+    Just (SpecEntry gs@(ExtGenSig (GenSig imps params _)
+                        body@(NodeSig nB gsigmaB))) ->
      case (\ x y -> (x , x - y)) (length afitargs) (length params) of
       -- the case without parameters leads to a simpler dg
       (0, 0) -> case nsig of
@@ -651,8 +652,8 @@ ana_FIT_ARG lg dg spname nsigI (NodeSig nP gsigmaP) opts name fv = case fv of
        adj = adjustPos pos
        spstr = tokStr spname
     in case lookupGlobalEnvDG vn dg of
-    Just (ViewEntry (ExtViewSig src mor gs@(ExtGenSig imps params _ target)))
-        -> do
+    Just (ViewEntry (ExtViewSig src mor
+                     gs@(ExtGenSig (GenSig imps params _) target))) -> do
      let nSrc = getNode src
          nTar = getNode target
          gsigmaS = getSig src
@@ -839,7 +840,7 @@ extendMorphism (G_sign lid sigmaP _) (G_sign lidB sigmaB1 _)
 
 apply_GS :: LogicGraph -> ExtGenSig -> [(G_morphism, NodeSig)]
          -> Result(G_sign, GMorphism)
-apply_GS lg (ExtGenSig nsigI _ gsigmaP nsigB) args = do
+apply_GS lg (ExtGenSig (GenSig nsigI _ gsigmaP) nsigB) args = do
   let mor_i = map fst args
       gsigmaA_i = map (getSig . snd) args
       gsigmaB = getSig nsigB
@@ -852,7 +853,7 @@ apply_GS lg (ExtGenSig nsigI _ gsigmaP nsigB) args = do
       (G_sign lidI sigmaI _, _) <- gSigCoerce lg gsigmaI (Logic lidA)
       let idI = ext_ide sigmaI
       homogeneousMorManyUnion $ mkG_morphism lidI idI : mor_i
-  (gsigmaP', _) <- gSigCoerce lg gsigmaP cl
+  (gsigmaP', _) <- gSigCoerce lg (getMaybeSig gsigmaP) cl
   (gsigmaB', _) <- gSigCoerce lg gsigmaB cl
   (gsigmaA', Comorphism aid) <- gSigCoerce lg gsigmaA cl
   mor1 <- coerceMorphism lidG (sourceLogic aid) "apply_GS" mor0

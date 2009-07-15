@@ -432,10 +432,10 @@ listDGEdgeTypes =
 -- ** types for global environments
 
 -- | import, formal parameters and united signature of formal params
-data GenericitySig = GenericitySig MaybeNode [NodeSig] MaybeNode deriving Show
+data GenSig = GenSig MaybeNode [NodeSig] MaybeNode deriving Show
 
--- | import, formal parameters, united signature of formal params, body
-data ExtGenSig = ExtGenSig MaybeNode [NodeSig] G_sign NodeSig deriving Show
+-- | genericity and body
+data ExtGenSig = ExtGenSig GenSig NodeSig deriving Show
 
 -- | source, morphism, parameterized target
 data ExtViewSig = ExtViewSig NodeSig GMorphism ExtGenSig deriving Show

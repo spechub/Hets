@@ -20,7 +20,6 @@ import Common.Id
 import Common.GlobalAnnotations
 import Common.LibName
 import Common.Utils
-import Common.ExtSign
 
 import Haskell.HatAna
 import Haskell.HatParser
@@ -58,11 +57,9 @@ anaHaskellFile opts file = do
               moduleS = "Module"
               nodeSig = NodeSig node $ signOf $ dgn_theory node_contents
               ln = Lib_id $ Direct_link moduleS nullRange
+              esig = EmptyNode $ Logic Haskell
               gEnv = Map.singleton mName
-                      $ SpecEntry $ ExtGenSig
-                          (EmptyNode $ Logic Haskell) []
-                          (G_sign Haskell (mkExtSign emptySign) startSigId)
-                          nodeSig
+                      $ SpecEntry $ ExtGenSig (GenSig esig [] esig) nodeSig
               dg2 = dg1 { globalEnv = gEnv }
               libEnv = Map.singleton ln dg2
           return $ Just (ln, libEnv)

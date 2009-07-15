@@ -287,7 +287,7 @@ writeSpecFiles opts file lenv0 ln dg = do
     mapM_ (writeLibEnv opts filePrefix lenv ln) $
           if null $ dumpOpts opts then outTypes else EnvOut : outTypes
     mapM_ ( \ i -> case Map.lookup i gctx of
-        Just (SpecEntry (ExtGenSig _ _ _ (NodeSig n _))) ->
+        Just (SpecEntry (ExtGenSig _ (NodeSig n _))) ->
             writeTheoryFiles opts specOutTypes filePrefix lenv ga ln i n
         _ -> if allSpecs then return () else
                  putIfVerbose opts 0 $ "Unknown spec name: " ++ show i
@@ -299,7 +299,7 @@ writeSpecFiles opts file lenv0 ln dg = do
       $ if ignore || not allSpecs then [] else
       nodesDG dg
       \\ Map.fold ( \ e l -> case e of
-            SpecEntry (ExtGenSig _ _ _ (NodeSig n _)) -> n : l
+            SpecEntry (ExtGenSig _ (NodeSig n _)) -> n : l
             _ -> l) [] gctx
     doDump opts "GlobalAnnos" $ putStrLn $ showGlobalDoc ga ga ""
     doDump opts "PrintStat" $ putStrLn $ printStatistics dg

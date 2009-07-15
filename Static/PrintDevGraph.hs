@@ -277,12 +277,17 @@ prettyImport imp = case imp of
   EmptyNode _ -> Doc.empty
   JustNode n -> keyword givenS <+> pretty (getNode n)
 
+prettyAllParams :: MaybeNode -> Doc
+prettyAllParams ps = case ps of
+  EmptyNode _ -> Doc.empty
+  JustNode n -> pretty (getNode n)
+
 instance Pretty ExtGenSig where
-  pretty (ExtGenSig imp params allParamSig body) = fsep $
+  pretty (ExtGenSig (GenSig imp params allParamSig) body) = fsep $
     pretty (getNode body) :
     (if null params then [] else
          [ pretty $ map getNode params
-         , pretty allParamSig ]) ++
+         , prettyAllParams allParamSig ]) ++
     [ prettyImport imp ]
 
 instance Pretty ExtViewSig where
