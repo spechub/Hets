@@ -133,7 +133,7 @@ posQuad q@((e1@(_,t1,_), e2@(_,t2,_)), (e3@(s3,_,_), e4))
 isolated :: [LEdge DGLinkLab] -> Pair -> Bool
 isolated edgs (e1@(_,t1,_), e2) =
   not $ any (\ x@(_,t,_) -> x /= e1 && x /= e2 && t == t1 ) $
-  filter (liftE isGlobalDefEdge) edgs
+  filter (liftE isGlobalDef) edgs
 
 -- First get all free links in the graph. Then all cons links.
 -- When the free and cons link point to the same node, the cons link is upgraded
@@ -161,11 +161,5 @@ modifyEdgeCons (s,t,l) f =
    , dgl_origin = DGLinkProof
    , dgl_id = defaultEdgeId
   })
-
--- Checks if an edge is global but no theorem link.
-isGlobalDefEdge :: DGLinkType -> Bool
-isGlobalDefEdge edge = case edge of
-    ScopedLink Global DefLink _  -> True
-    _ -> False
 
 --monoIsFree
