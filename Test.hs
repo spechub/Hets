@@ -78,7 +78,7 @@ getCASLSigSens fname sp = do
   case res of
     Just (ln,lenv) ->
      let dg = lookupDGraph ln lenv
-         SpecEntry (ExtGenSig _ _ _ (NodeSig node _)) =
+         SpecEntry (ExtGenSig _ (NodeSig node _)) =
             case Map.lookup (Id.mkSimpleId sp) $ globalEnv dg of
               Just x -> x
               _ -> error ("Specification "++sp++" not found")

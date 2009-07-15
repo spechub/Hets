@@ -12,7 +12,7 @@ Just (ln,libenv)<-process "../Hets-lib/Basic/Numbers.casl" -- load CASL library
 let Just libNumbers = Map.lookup ln libenv -- get library Numbers
 let Just entryNat = Map.lookup (mkSimpleId "Nat") (globalEnv libNumbers) -- get entry for "Nat" in global environment
 let SpecEntry gensigNat = entryNat -- Nat is a specification...
-let ExtGenSig _ _ _ nodeSigNat = gensigNat -- extract the nodeSig for the body
+let ExtGenSig _ nodeSigNat = gensigNat -- extract the nodeSig for the body
 let gSignNat = getSig nodeSigNat -- get the Grothendieck signature
 let Just (ExtSign sigNat _) = case gSignNat of G_sign lid x _ -> coerceSign lid CASL "" x
 -- coerce the Grothendieck signature to be a CASL signature
