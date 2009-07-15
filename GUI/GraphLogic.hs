@@ -578,40 +578,53 @@ runProveAtNode checkCons gInfo (v, dgnode) (Result ds mres) =
      if checkCons then do
         let nodetext = nn ++ " node: " ++ show v
         case mres of
-          Just gth -> createTextSaveDisplay ("Model for " ++ nodetext)
+          Just gth -> do
+            createTextSaveDisplay ("Model for " ++ nodetext)
                                             "model.log" $ showDoc gth ""
+            updateNodeProof checkCons gInfo (v, dgnode) mres
           Nothing -> infoDialog nodetext $ unlines
             $ "could not (re-)construct a" : "model" : map diagString ds
     else let oldTh = dgn_theory dgnode in case mres of
        Just newTh | newTh /= oldTh -> do
          let Result es tres = joinG_sentences oldTh newTh
-             ln = libName gInfo
-             iSt = intState gInfo
          showDiagMessAux 2 $ ds ++ es
-         case tres of
-           Just theory -> do
-             lockGlobal gInfo
-             ost <- readIORef iSt
-             case i_state ost of
-               Nothing -> unlockGlobal gInfo
-               Just iist -> do
-                 let le = i_libEnv iist
-                     dgraph = lookupDGraph ln le
-                     new_dgn = dgnode { dgn_theory = theory }
-                     newDg = changeDGH dgraph $ SetNodeLab dgnode (v, new_dgn)
-                     history = snd $ splitHistory dgraph newDg
-                     nst = add2history
+         updateNodeProof checkCons gInfo (v, dgnode) tres
+       _ -> return ()
+
+updateNodeProof :: Bool -> GInfo -> LNode DGNodeLab -> Maybe G_theory -> IO ()
+updateNodeProof checkCons gInfo (v, dgnode) tres = case tres of
+  Just theory -> do
+    let ln = libName gInfo
+        iSt = intState gInfo
+        nn = getDGNodeName dgnode
+    lockGlobal gInfo
+    ost <- readIORef iSt
+    case i_state ost of
+      Nothing -> unlockGlobal gInfo
+      Just iist -> do
+        let le = i_libEnv iist
+            dgraph = lookupDGraph ln le
+            new_dgn = if checkCons then dgnode
+                { nodeInfo = case nodeInfo dgnode of
+                    ninfo@DGNode { node_cons_status = ConsStatus c _ _ } ->
+                        ninfo { node_cons_status = ConsStatus c Cons
+                                $ Proven (DGRule "ConsistencyChecker")
+                                emptyProofBasis }
+                    ninfo -> ninfo }
+                else dgnode { dgn_theory = theory }
+            newDg = changeDGH dgraph $ SetNodeLab dgnode (v, new_dgn)
+            history = snd $ splitHistory dgraph newDg
+            nst = add2history
                        (CommentCmd $ "basic inference done on " ++ nn ++ "\n")
                            ost [DgCommandChange ln]
-                     nwst = nst
+            nwst = nst
                        { i_state = Just iist
                          { i_libEnv = Map.insert ln newDg le } }
-                 writeIORef iSt nwst
-                 runAndLock gInfo
-                   $ updateGraph gInfo ln (reverse $ flatHistory history) newDg
-                 unlockGlobal gInfo
-           Nothing -> return ()
-       _ -> return ()
+        writeIORef iSt nwst
+        runAndLock gInfo
+          $ updateGraph gInfo ln (reverse $ flatHistory history) newDg
+        unlockGlobal gInfo
+  Nothing -> return ()
 
 checkconservativityOfNode :: Int -> GInfo -> DGraph -> IO ()
 checkconservativityOfNode descr gInfo dgraph = do
@@ -622,7 +635,7 @@ checkconservativityOfNode descr gInfo dgraph = do
     Nothing -> return ()
     Just iist -> do
       lockGlobal gInfo
-      (str, libEnv', ph) <- checkConservativityNode True 
+      (str, libEnv', ph) <- checkConservativityNode True
                             (descr, labDG dgraph descr) (i_libEnv iist) ln
       if isPrefixOf "No conservativity" str
         then do
