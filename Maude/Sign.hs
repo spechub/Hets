@@ -83,7 +83,7 @@ fromSpec (Spec _ _ stmts) = let
 
 -- | extract the Set of all Symbols from a Signature
 symbols :: Sign -> SymbolSet
-symbols sign = Set.unions [(getSorts sign), (getOps sign)]
+symbols sign = Set.union (getSorts sign) (getOps sign)
 
 -- | the empty Signature
 empty :: Sign
