@@ -236,8 +236,8 @@ checkConservativityNode :: Bool -> (LNode DGNodeLab) -> LibEnv -> LIB_NAME
 checkConservativityNode useGUI (nodeId, nodeLab) libEnv ln = do
   let dg = lookupDGraph ln libEnv
       emptyTheory = case dgn_sign nodeLab of
-                      G_sign lid (ExtSign sign symb) ind ->
-                        noSensGTheory lid (ExtSign sign symb) ind
+        G_sign lid _ _ ->
+            noSensGTheory lid (mkExtSign $ empty_signature lid) startSigId
       newN = getNewNodeDG dg
       newL = newNodeLab emptyNodeName DGProof emptyTheory
       morphism = case resultToMaybe $ ginclusion logicGraph (dgn_sign newL) $
