@@ -177,6 +177,14 @@ getNodeConsStatus lbl = case nodeInfo lbl of
    DGRef {} -> mkConsStatus None
    DGNode { node_cons_status = c } -> c
 
+getNodeCons :: DGNodeLab -> Conservativity
+getNodeCons nl = case getNodeConsStatus nl of
+  ConsStatus cons _ _ -> cons
+
+-- | returns the Conservativity if the given node has one, otherwise none
+getNodeConservativity :: LNode DGNodeLab -> Conservativity
+getNodeConservativity (_,nl) = getNodeCons nl
+
 -- | test if a node conservativity is open, return input for refs or None
 hasOpenConsStatus :: Bool -> DGNodeLab -> Bool
 hasOpenConsStatus b lbl = case getNodeConsStatus lbl of

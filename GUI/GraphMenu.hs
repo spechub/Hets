@@ -315,6 +315,7 @@ createLocalMenuNode gInfo = LocalMenu (Menu (Just "node menu") $ map ($ gInfo)
   , createLocalMenuButtonShowProofStatusOfNode
   , createLocalMenuButtonProveAtNode
   , createLocalMenuButtonProveStructured
+  , createLocalMenuButtonCheckCons
 #ifdef GTKGLADE
   --, createMenuButton "Consistency checker" (showConsistencyChecker gInfo)
 #endif
@@ -414,6 +415,11 @@ createLocalMenuButtonProveStructured gInfo =
   createMenuButton "Prove VSE Structured"
     (\ descr _ -> performProofAction gInfo (proveVSEStructured gInfo descr))
     gInfo
+
+createLocalMenuButtonCheckCons :: GInfo -> ButtonMenu GA.NodeValue
+createLocalMenuButtonCheckCons gInfo =
+  createMenuButton "Check conservativity" 
+    (\ descr dg -> checkconservativityOfNode descr gInfo dg) gInfo
 
 -- | call VSE structured
 proveVSEStructured :: GInfo -> Int -> IO ()

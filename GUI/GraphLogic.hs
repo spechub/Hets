@@ -28,6 +28,7 @@ module GUI.GraphLogic
     , showNodeInfo
     , showDiagMess
     , showEdgeInfo
+    , checkconservativityOfNode
     , checkconservativityOfEdge
     , hideNames
     , hideNodes
@@ -611,6 +612,32 @@ runProveAtNode checkCons gInfo (v, dgnode) (Result ds mres) =
                  unlockGlobal gInfo
            Nothing -> return ()
        _ -> return ()
+
+checkconservativityOfNode :: Int -> GInfo -> DGraph -> IO ()
+checkconservativityOfNode descr gInfo dgraph = do
+  let iSt = intState gInfo
+      ln = libName gInfo
+  ost <- readIORef iSt
+  case i_state ost of
+    Nothing -> return ()
+    Just iist -> do
+      lockGlobal gInfo
+      (str, libEnv', ph) <- checkConservativityNode True 
+                            (descr, labDG dgraph descr) (i_libEnv iist) ln
+      if isPrefixOf "No conservativity" str
+        then do
+          errorDialog "Result of conservativity check" str
+          unlockGlobal gInfo
+        else do
+          createTextDisplay "Result of conservativity check" str
+          let nst = add2history (SelectCmd Node $ showDoc descr "")
+                    ost [DgCommandChange ln]
+              nwst = nst { i_state = Just $ iist { i_libEnv = libEnv' }}
+          writeIORef iSt nwst
+          runAndLock gInfo
+            $ updateGraph gInfo ln (reverse $ flatHistory ph)
+            $ lookupDGraph ln libEnv'
+          unlockGlobal gInfo
 
 edgeErr :: Int -> IO ()
 edgeErr descr = errorDialog "Error" $ "edge with descriptor " ++ show descr

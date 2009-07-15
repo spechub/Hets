@@ -22,6 +22,7 @@ module Interfaces.Utils
          , wasProved
          , parseTimeLimit
          , addCommandHistoryToState
+         , checkConservativityNode
          , checkConservativityEdge
          ) where
 
@@ -52,6 +53,7 @@ import Logic.Prover
 import Logic.Logic
 import Logic.Grothendieck
 import Logic.Coerce
+import Comorphisms.LogicGraph(logicGraph)
 
 import qualified Common.OrderedMap as OMap
 import Common.Utils (splitOn)
@@ -228,6 +230,44 @@ consToCons Conservative = Cons
 consToCons Monomorphic  = Mono
 consToCons Definitional = Def
 consToCons _            = None
+
+checkConservativityNode :: Bool -> (LNode DGNodeLab) -> LibEnv -> LIB_NAME
+                        -> IO (String, LibEnv, ProofHistory)
+checkConservativityNode useGUI (nodeId, nodeLab) libEnv ln = do
+  let dg = lookupDGraph ln libEnv
+      emptyTheory = case dgn_sign nodeLab of
+                      G_sign lid (ExtSign sign symb) ind ->
+                        noSensGTheory lid (ExtSign sign symb) ind
+      newN = getNewNodeDG dg
+      newL = newNodeLab emptyNodeName DGProof emptyTheory
+      morphism = case resultToMaybe $ ginclusion logicGraph (dgn_sign newL) $
+                   dgn_sign nodeLab of
+             Just m  -> m
+             Nothing -> error "Utils.checkConservativityNode"
+      lnkId = getNewEdgeId dg
+      lnk = (newN, nodeId, DGLink {
+          dgl_morphism = morphism
+        , dgl_type     = ScopedLink Global DefLink $ getNodeConsStatus nodeLab
+        , dgl_origin   = SeeSource
+        , dgl_id       = lnkId
+      })
+      tempChanges = [ InsertNode (newN, newL), InsertEdge lnk ]
+      tempDG = changesDGH dg tempChanges
+      tempLibEnv = insert ln (groupHistory dg conservativityRule tempDG) libEnv
+  (str, tempLibEnv', _) <- checkConservativityEdge useGUI lnk tempLibEnv ln
+  if isPrefixOf "No conservativity" str
+    then return (str, libEnv, SizedList.empty)
+    else do
+         let tempDG' = lookupDGraph ln tempLibEnv'
+             (_,_,lnkLab) = head $ outDG tempDG' newN
+             nInfo = nodeInfo nodeLab
+             nodeLab' = nodeLab { nodeInfo = nInfo { node_cons_status =
+                          getLinkConsStatus $ dgl_type lnkLab } }
+             changes = [ SetNodeLab nodeLab (nodeId, nodeLab') ]
+             dg' = changesDGH dg changes
+             history = snd $ splitHistory dg dg'
+             libEnv' = insert ln (groupHistory dg conservativityRule dg') libEnv
+         return (str, libEnv', history)
 
 checkConservativityEdge :: Bool -> (LEdge DGLinkLab) -> LibEnv -> LIB_NAME
                         -> IO (String, LibEnv, ProofHistory)

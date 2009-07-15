@@ -207,9 +207,20 @@ conservativityList lsN lsE le libname
                               _ -> map (\(x,y,edgLab) -> ((x,y,edgLab),
                                                                 False)) l)
                                                   edgs
-   allEds <- applyEdgeConservativity le libname edgtm [] lsN
-   return allEds
+   (acc, libEnv') <- applyEdgeConservativity le libname edgtm [] lsN
+   allNodes <- applyNodeConservativity libEnv' libname 
+                 [ n | n<-lsN, getNodeConservativity n > None ] acc
+   return allNodes
 
+applyNodeConservativity :: LibEnv -> LIB_NAME -> [LNode DGNodeLab] 
+                        -> [(String, String)] -> IO ([(String, String)], LibEnv)
+applyNodeConservativity libEnv ln nds acc = do
+  case nds of
+    []            -> return (acc, libEnv)
+    n@(_,nlab):ns -> do
+                       (str,nwLe,_) <- checkConservativityNode False n libEnv ln
+                       applyNodeConservativity nwLe ln ns 
+                         ((showName $ dgn_name nlab, str):acc)
 
 applyEdgeConservativity:: LibEnv -> LIB_NAME -> [(LEdge DGLinkLab,Bool)] ->
                           [(String, String)] -> [LNode DGNodeLab] ->
