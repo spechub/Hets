@@ -138,17 +138,6 @@ ins'op (Op op dom cod as) opmap = let
     in Map.insert name new'ops opmap
 
 
--- extract the name from a Sort, Kind or Type
-sortName :: Sort -> Qid
-sortName (SortId name) = name
-
-kindName :: Kind -> Qid
-kindName (KindId name) = name
-
-typeName :: Type -> Qid
-typeName (TypeSort sort) = sortName sort
-typeName (TypeKind kind) = kindName kind
-
 sig_union :: Sign -> Sign -> Sign
 sig_union (Sign s1 ssr1 op1) (Sign s2 ssr2 op2) = Sign (sorts_union s1 s2)
                                                        (subsorts_union ssr1 ssr2)
