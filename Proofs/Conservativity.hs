@@ -80,7 +80,8 @@ conservativity = Map.adjust (shift . freeIsMono)
 -- amalgamable.
 -- Afterwards the quad is positioned correctly and the edges are updated.
 shift :: DGraph -> DGraph
-shift dg = groupHistory dg (DGRule "conservativity") $ changesDGH dg changes
+shift dg = groupHistory dg (DGRule "conservativityShift") $
+           changesDGH dg changes
   where
     edgs = filter (liftE isGlobalEdge) $ labEdgesDG dg
     globThmEdges = filter (liftE isGlobalThm) edgs
@@ -102,8 +103,8 @@ shift dg = groupHistory dg (DGRule "conservativity") $ changesDGH dg changes
     process :: Quad -> [DGChange]
     process ((e1, _), (_, e4)) =
       let cons = getConservativity e1
-       in [ DeleteEdge e4, InsertEdge $ modifyEdgeCons e4
-              (\ (ConsStatus co pc tl) -> ConsStatus (max cons co) pc tl)]
+       in genEdgeChange
+            (\ (ConsStatus co pc tl) -> ConsStatus (max cons co) pc tl) e4
 
 -- Checks if a quad is amalgamable.
 isAmalgamable :: DGraph -> Quad -> Bool
@@ -139,16 +140,18 @@ isolated edgs (e1@(_,t1,_), e2) =
 -- When the free and cons link point to the same node, the cons link is upgraded
 -- to mono.
 freeIsMono :: DGraph -> DGraph
-freeIsMono dg = changesDGH dg changes
+freeIsMono dg = groupHistory dg (DGRule "freeIsMono") $ changesDGH dg changes
   where
     edgs = labEdgesDG dg
     free = filter (liftE isFreeEdge) edgs
     cons = [ e | e<-edgs, liftE isGlobalThm e, getConservativity e == Cons ]
     mono = nub [ c | c@(_, ct, _)<-cons, (_, ft, _)<-free, ct == ft ]
-    changes = concatMap process mono
-    process :: LEdge DGLinkLab -> [DGChange]
-    process m = [ DeleteEdge m, InsertEdge $ modifyEdgeCons m
-                    (\ (ConsStatus _ pc tl) -> ConsStatus Mono pc tl) ]
+    changes = concatMap (genEdgeChange
+                        (\ (ConsStatus _ pc tl) -> ConsStatus Mono pc tl)) mono
+
+-- Generates a list of changes for the development graph.
+genEdgeChange :: (ConsStatus -> ConsStatus) -> LEdge DGLinkLab -> [DGChange]
+genEdgeChange f e = [ DeleteEdge e, InsertEdge $ modifyEdgeCons e f ]
 
 -- Modifies the ConsStatus of an edge.
 modifyEdgeCons :: LEdge DGLinkLab
@@ -162,4 +165,11 @@ modifyEdgeCons (s,t,l) f =
    , dgl_id = defaultEdgeId
   })
 
---monoIsFree
+{-monoIsFree :: DGraph -> DGraph
+monoIsFree dg = groupHistory dg (DGRule "monoIsFree") $ changesDGH dg changes
+  where
+    nds = labNodesDG dg
+    mono = filter (\ n -> getNodeConservativity n == Mono) nds
+    thmEdges = filter (liftE isGlobalThm) $ labEdgesDG dg
+    freeEdges = [ e | (n,_)<-mono, e@(s,_,_)<-thmEdges, n == s ]
+    changes = [] --concatMap process freeEdges-}
