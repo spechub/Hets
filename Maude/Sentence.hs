@@ -75,8 +75,8 @@ instance HasLabels Sentence where
 getSentences :: Spec -> [Sentence]
 getSentences (Spec _ _ stmts) = let
             insert stmt = case stmt of
-                MbStmnt mb -> (++) [Membership mb]
-                EqStmnt eq -> (++) [Equation eq]
-                RlStmnt rl -> (++) [Rule rl]
-                _ -> (++) []
+                MbStmnt mb -> (:) (Membership mb)
+                EqStmnt eq -> (:) (Equation eq)
+                RlStmnt rl -> (:) (Rule rl)
+                _          -> id
         in foldr insert [] stmts
