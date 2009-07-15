@@ -24,6 +24,7 @@ module Maude.Morphism (
     identity,
     inverse,
     createInclMorph,
+    isLegal,
     mapSentence
 ) where
 
@@ -38,6 +39,7 @@ import Maude.Meta.HasLabels
 import Maude.Sign (Sign)
 import qualified Maude.Sign as Sign
 
+import qualified Data.Set as Set
 import qualified Data.Map as Map
 
 import Common.Result (Result)
@@ -161,22 +163,24 @@ inverse mor = let
 --                 labelMap = compose'map labelMap getLabels
 --             }
 
--- -- | check that a Morphism is legal
--- isLegal :: Morphism -> Bool
--- isLegal mor = let
---         src = source mor
---         tgt = target mor
---         smap = sortMap mor
---         omap = opMap mor
---         lmap = labelMap mor
---         apply mp nam = Map.findWithDefault nam nam mp
---         subset mp items = Set.isSubsetOf (Set.map (apply mp) $ items src) (items tgt)
---         legal'source = Sign.isLegal src
---         legal'sortMap = subset smap getSorts
---         legal'opMap = subset omap getOps
---         legal'labelMap = subset lmap getLabels
---         legal'target = Sign.isLegal tgt
---     in all id [legal'source, legal'sortMap, legal'opMap, legal'labelMap, legal'target]
+-- | check that a Morphism is legal
+-- TODO: Ops don't have labels, so Signs don't have labels. so we can ignore the labelMap. Is that correct?
+isLegal :: Morphism -> Bool
+isLegal mor = let
+        src = source mor
+        tgt = target mor
+        smap = sortMap mor
+        omap = opMap mor
+        -- lmap = labelMap mor
+        apply mp nam = Map.findWithDefault nam nam mp
+        subset mp items = Set.isSubsetOf (Set.map (apply mp) $ items src) (items tgt)
+        legal'source = Sign.isLegal src
+        legal'sortMap = subset smap getSorts
+        legal'opMap = subset omap getOps
+        -- legal'labelMap = subset lmap getLabels
+        legal'labelMap = True
+        legal'target = Sign.isLegal tgt
+    in all id [legal'source, legal'sortMap, legal'opMap, legal'labelMap, legal'target]
 
 -- | translate a Sentence along a Morphism
 mapSentence :: Morphism -> Sentence -> Result.Result Sentence
