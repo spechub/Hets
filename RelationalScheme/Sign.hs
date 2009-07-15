@@ -112,8 +112,7 @@ data RSTMap = RSTMap
                 deriving (Eq, Ord, Show)
 
 data RSMorphism = RSMorphism
-                    {
-                        domain     :: RSTables
+                    {   domain     :: RSTables
                     ,   codomain   :: RSTables
                     ,   table_map  :: Map.Map Id Id
                     ,   column_map :: Map.Map Id RSTMap
@@ -121,33 +120,32 @@ data RSMorphism = RSMorphism
                     deriving (Eq, Ord, Show)
 
 -- I hope that this works right, I do not want to debug this
-apply_comp_c_map :: Id -> RSMorphism -> RSMorphism -> Result (Id, RSTMap)
-apply_comp_c_map i imap imor =
-    let
-        apply_comp_c_maph :: Id -> RSTMap -> RSMorphism -> Result (Id, RSTMap)
-        apply_comp_c_maph ih imaph imorh =
-          case Map.lookup ih $ column_map imorh of
-            Just iM -> do
-                let oM = composeMap (col_map imaph) (col_map iM)
-                return (ih, RSTMap oM)
-            Nothing -> fail "apply_comp_c_map"
+apply_comp_c_map :: RSTable -> Map.Map Id Id -> RSMorphism -> RSMorphism
+                 -> (Id, RSTMap)
+apply_comp_c_map rst t_map imap imor =
+    let i = t_name rst
+        c2 = column_map imor
     in case Map.lookup i $ column_map imap of
-      Just iM -> do
-        oM <- apply_comp_c_maph i iM imor
-        return $ oM
-      Nothing -> fail "apply_comp_c_map,imap"
+      Just iM -> case Map.lookup (Map.findWithDefault i i t_map) c2 of
+        Just iM2 ->
+          let c_set = Map.fromList . map (\ c -> (c_name c, ())) $ columns rst
+              oM = composeMap c_set (col_map iM) (col_map iM2)
+          in (i, RSTMap oM)
+        Nothing -> (i, iM)
+      Nothing -> (i, Map.findWithDefault (RSTMap Map.empty)
+                       (Map.findWithDefault i i t_map) c2)
 
 -- composition of Rel morphisms
-comp_rst_mor ::   RSMorphism -> RSMorphism -> Result RSMorphism
+comp_rst_mor :: RSMorphism -> RSMorphism -> Result RSMorphism
 comp_rst_mor mor1 mor2 =
-    do
-        let t_map = composeMap (table_map mor1) (table_map mor2)
-        c_map <- mapM (\x -> apply_comp_c_map x mor1 mor2) $ map t_name $
-            Set.toList $ tables $ domain $ mor1
-        let cm_map = Map.fromList c_map
-        return $ RSMorphism
-                {
-                    domain     = domain mor1
+        let d1 = domain mor1
+            t1 = Set.toList $ tables d1
+            t_set = Map.fromList $ map (\ t -> (t_name t, ())) t1
+            t_map = composeMap t_set (table_map mor1) (table_map mor2)
+            cm_map = Map.fromList
+              $ map (\x -> apply_comp_c_map x t_map mor1 mor2) t1
+        in return RSMorphism
+                {   domain     = d1
                 ,   codomain   = codomain mor2
                 ,   table_map  = t_map
                 ,   column_map = cm_map

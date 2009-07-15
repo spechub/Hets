@@ -103,11 +103,11 @@ mapAccumLM f s l = case l of
     return (s'', y : ys)
 
 -- | composition of arbitrary maps
-composeMap :: Ord a => Map.Map a a -> Map.Map a a -> Map.Map a a
-composeMap m1 m2 =
-    if Map.null m2 then m1 else Map.foldWithKey ( \ i j ->
+composeMap :: Ord a => Map.Map a b -> Map.Map a a -> Map.Map a a -> Map.Map a a
+composeMap s m1 m2 = if Map.null m2 then m1 else Map.intersection
+  (Map.foldWithKey ( \ i j ->
     let k = Map.findWithDefault j j m2 in
-    if i == k then Map.delete i else Map.insert i k) m2 m1
+    if i == k then Map.delete i else Map.insert i k) m2 m1) s
 
 -- | keep only minimal elements
 keepMins :: (a -> a -> Bool) -> [a] -> [a]

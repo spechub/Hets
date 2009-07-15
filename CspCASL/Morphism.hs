@@ -82,11 +82,11 @@ data CspAddMorphism = CspAddMorphism
     } deriving (Eq, Ord, Show)
 
 -- | Compose two CspAddMorphisms
-composeCspAddMorphism :: CspAddMorphism -> CspAddMorphism
+composeCspAddMorphism :: CspSign -> CspAddMorphism -> CspAddMorphism
                       -> Result CspAddMorphism
-composeCspAddMorphism m1 m2 = return emptyCspAddMorphism
-  { channelMap = composeMap (channelMap m1) $ channelMap m2
-  , processMap = composeMap (processMap m1) $ processMap m2 }
+composeCspAddMorphism sig m1 m2 = return emptyCspAddMorphism
+  { channelMap = composeMap (chans sig) (channelMap m1) $ channelMap m2
+  , processMap = composeMap (procSet sig) (processMap m1) $ processMap m2 }
 
 -- | Calculate the inverse of a CspAddMorphism
 inverseCspAddMorphism :: CspAddMorphism -> Result CspAddMorphism

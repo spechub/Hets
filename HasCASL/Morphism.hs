@@ -88,9 +88,11 @@ getDatatypeIds (DataEntry _ i _ _ _ alts) =
         getTypeIds = idsOf (== 0)
     in Set.insert i $ Set.unions $ map getAltIds $ Set.toList alts
 
-mapDataEntry :: IdMap -> TypeMap -> IdMap -> FunMap -> DataEntry -> DataEntry
+mapDataEntry :: IdMap -> TypeMap -> IdMap -> FunMap -> DataEntry
+             -> DataEntry
 mapDataEntry jm tm im fm de@(DataEntry dm i k args rk alts) =
-    let tim = Map.intersection (composeMap dm im) $ setToMap $ getDatatypeIds de
+    let tim = Map.intersection (composeMap tm dm im) $ setToMap
+              $ getDatatypeIds de
         newargs = map (mapTypeArg jm tm im) args
     in DataEntry tim i k newargs rk $ Set.map
            (mapAlt jm tm tim fm newargs
@@ -131,7 +133,7 @@ getPartiality args t = case getTypeAppl t of
 
 mapSentence :: Morphism -> Sentence -> Result Sentence
 mapSentence m s = let
-    tm = filterAliases $ typeMap $ mtarget m
+    tm = typeMap $ mtarget m
     im = typeIdMap m
     jm = classIdMap m
     fm = funMap m
@@ -156,17 +158,15 @@ compMor :: Morphism -> Morphism -> Result Morphism
 compMor m1 m2 =
      let  tm1 = typeIdMap m1
           tm2 = typeIdMap m2
-          im = composeMap tm1 tm2
+          ctm = composeMap (typeMap src) tm1 tm2
           cm1 = classIdMap m1
           cm2 = classIdMap m2
-          cm = composeMap cm1 cm2
+          ccm = composeMap (classMap src) cm1 cm2
           fm2 = funMap m2
           fm1 = funMap m1
           tar = mtarget m2
           src = msource m1
           tm = filterAliases $ typeMap tar
-          ctm = Map.intersection im $ typeMap src
-          ccm = Map.intersection cm $ classMap src
           emb = mkMorphism src tar
      in if isInclMor m1 && isInclMor m2 then return emb else do
      disjointKeys ctm ccm
@@ -175,11 +175,11 @@ compMor m1 m2 =
       , classIdMap = ccm
       , funMap = Map.intersection (if Map.null fm2 then fm1 else
                    Map.foldWithKey ( \ p1 p2 ->
-                       let p3 = mapFunSym cm tm tm2 fm2 p2 in
+                       let p3 = mapFunSym ccm tm tm2 fm2 p2 in
                        if p1 == p3 then Map.delete p1 else Map.insert p1 p3)
                  fm2 fm1) $ Map.fromList $
                     concatMap ( \ (k, os) ->
-                          map ( \ o -> ((k, mapTypeScheme cm tm im
+                          map ( \ o -> ((k, mapTypeScheme ccm tm ctm
                                         $ opType o), ())) $ Set.toList os)
                      $ Map.toList $ assumps src }
 

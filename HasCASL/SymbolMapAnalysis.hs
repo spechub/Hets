@@ -73,7 +73,7 @@ inducedFromMorphism rmap1 sigma = do
               (return Map.empty) $ Map.toList srcTypeMap
     tarTypeMap0 <- foldM (\ m (i, k) ->
        let ni = Map.findWithDefault i i myTypeIdMap
-           nk = mapTypeInfo myClassIdMap myTypeIdMap k
+           nk = mapTypeInfo srcTypeMap myClassIdMap myTypeIdMap k
        in case Map.lookup ni m of
          Nothing -> return $ Map.insert ni nk m
          Just ok -> do
@@ -118,18 +118,19 @@ mapClassInfo :: IdMap -> ClassInfo -> ClassInfo
 mapClassInfo im ti =
     ti { classKinds = Set.map (mapKindI im) $ classKinds ti }
 
-mapTypeInfo :: IdMap -> IdMap -> TypeInfo -> TypeInfo
-mapTypeInfo jm im ti =
+mapTypeInfo :: TypeMap -> IdMap -> IdMap -> TypeInfo -> TypeInfo
+mapTypeInfo tm jm im ti =
     ti { superTypes = Set.map ( \ i -> Map.findWithDefault i i im)
                       $ superTypes ti
        , otherTypeKinds = Set.map (mapKindI jm) $ otherTypeKinds ti
-       , typeDefn = mapTypeDefn im $ typeDefn ti }
+       , typeDefn = mapTypeDefn tm im $ typeDefn ti }
 
-mapTypeDefn :: IdMap -> TypeDefn -> TypeDefn
-mapTypeDefn im td = case td of
+mapTypeDefn :: TypeMap -> IdMap -> TypeDefn -> TypeDefn
+mapTypeDefn tmAll im td = case td of
     DatatypeDefn de@(DataEntry tm i k args rk alts) ->
-        DatatypeDefn (DataEntry (Map.intersection (composeMap tm im) $
-              setToMap $ getDatatypeIds de) i k args rk alts)
+        DatatypeDefn (DataEntry
+           (Map.intersection (composeMap tmAll tm im)
+            $ setToMap $ getDatatypeIds de) i k args rk alts)
     AliasTypeDefn sc -> AliasTypeDefn $ mapType im sc
     _ -> td
 

@@ -97,7 +97,8 @@ instance (Ord f, Ord e, Ord m, MorphismExtension e m) =>
     Category (Sign f e) (Morphism f e m) where
     ide sig = idMor (ideMorphismExtension $ extendedInfo sig) sig
     inverse = inverseMorphism inverseMorphismExtension
-    composeMorphisms = composeM composeMorphismExtension
+    composeMorphisms m1 =
+      composeM (composeMorphismExtension $ extendedInfo $ msource m1) m1
     dom = msource
     cod = mtarget
     isInclusion = isInclusionMorphism isInclusionMorphismExtension

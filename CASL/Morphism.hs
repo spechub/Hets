@@ -66,19 +66,19 @@ instance Pretty (DefMorExt e) where
 
 class MorphismExtension e m | m -> e where
    ideMorphismExtension :: e -> m
-   composeMorphismExtension :: m -> m -> Result m
+   composeMorphismExtension :: e -> m -> m -> Result m
    inverseMorphismExtension :: m -> Result m
    isInclusionMorphismExtension :: m -> Bool
 
 instance MorphismExtension () () where
    ideMorphismExtension _ = ()
-   composeMorphismExtension _ = return
+   composeMorphismExtension _ _ = return
    inverseMorphismExtension = return
    isInclusionMorphismExtension _ = True
 
 instance MorphismExtension e (DefMorExt e) where
    ideMorphismExtension _ = emptyMorExt
-   composeMorphismExtension _ = return
+   composeMorphismExtension _ _ = return
    inverseMorphismExtension = return
    isInclusionMorphismExtension _ = True
 
@@ -270,38 +270,6 @@ typedSymbKindToRaw k idt t = let
         P_type _ -> return aSymb
     _ -> err
 
-symbMapToMorphism :: m -> Sign f e -> Sign f e
-                  -> SymbolMap -> Result (Morphism f e m)
-symbMapToMorphism extEm sigma1 sigma2 smap = let
-  sort_map1 = Set.fold mapMSort Map.empty (sortSet sigma1)
-  mapMSort s m =
-    case Map.lookup Symbol {symName = s, symbType = SortAsItemType} smap
-    of Just sym -> let t = symName sym in if s == t then m else
-                           Map.insert s t m
-       Nothing -> m
-  op_map1 = Map.foldWithKey mapOp Map.empty (opMap sigma1)
-  pred_map1 = Map.foldWithKey mapPred Map.empty (predMap sigma1)
-  mapOp i ots m = Set.fold (insOp i) m ots
-  insOp i ot m =
-    case Map.lookup Symbol {symName = i, symbType = OpAsItemType ot} smap
-    of Just sym -> let j = symName sym in case symbType sym of
-         OpAsItemType oty -> let k = opKind oty in
-            if j == i && opKind ot == k then m
-            else Map.insert (i, mkPartial ot) (j, k) m
-         _ -> m
-       _ -> m
-  mapPred i pts m = Set.fold (insPred i) m pts
-  insPred i pt m =
-    case Map.lookup Symbol {symName = i, symbType = PredAsItemType pt} smap
-    of Just sym -> let j = symName sym in  case symbType sym of
-         PredAsItemType _ -> if i == j then m else Map.insert (i, pt) j m
-         _ -> m
-       _ -> m
-  in return (embedMorphism extEm sigma1 sigma2)
-     { sort_map = sort_map1
-     , op_map = op_map1
-     , pred_map = pred_map1 }
-
 morphismToSymbMap :: Morphism f e m -> SymbolMap
 morphismToSymbMap = morphismToSymbMapAux False
 
@@ -357,7 +325,7 @@ composeM comp mor1 mor2 = do
       sMap2 = sort_map mor2
       oMap2 = op_map mor2
       pMap2 = pred_map mor2
-      sMap = composeMap sMap1 sMap2
+      sMap = composeMap (Rel.setToMap $ sortSet src) sMap1 sMap2
       oMap = if Map.null oMap2 then oMap1 else
                  Map.foldWithKey ( \ i t m ->
                    Set.fold ( \ ot ->
@@ -378,7 +346,7 @@ composeM comp mor1 mor2 = do
                       Map.empty $ predMap src
   extComp <- comp (extended_map mor1) $ extended_map mor2
   let emb = embedMorphism extComp src tar
-  return $ emb
+  return $ cleanMorMaps emb
      { sort_map = sMap
      , op_map = oMap
      , pred_map = pMap }
@@ -539,15 +507,20 @@ morphismUnionM uniteM addSigExt mor1 mor2 =
   in if null pds then do
     s3 <- addSigM addSigExt s1 s2
     s4 <- addSigM addSigExt (mtarget mor1) $ mtarget mor2
-    let o3 = opMap s3
-    return
+    return $ cleanMorMaps
       (embedMorphism (uniteM (extended_map mor1) $ extended_map mor2) s3 s4)
-      { sort_map = Map.filterWithKey (/=) smap
-      , op_map = Map.filterWithKey
-        (\ (i, ot) (j, k) -> i /= j || k == Total && Set.member ot
-         (Map.findWithDefault Set.empty i o3)) omap
-      , pred_map = Map.filterWithKey (\ (i, _) j -> i /= j) pmap }
+      { sort_map = smap
+      , op_map = omap
+      , pred_map = pmap }
     else Result pds Nothing
+
+cleanMorMaps :: Morphism f e m -> Morphism f e m
+cleanMorMaps m = m
+  { sort_map = Map.filterWithKey (/=) $ sort_map m
+  , op_map = Map.filterWithKey
+        (\ (i, ot) (j, k) -> i /= j || k == Total && Set.member ot
+         (Map.findWithDefault Set.empty i $ opMap $ msource m)) $ op_map m
+  , pred_map = Map.filterWithKey (\ (i, _) j -> i /= j) $ pred_map m }
 
 isSortInjective :: Morphism f e m -> Bool
 isSortInjective m =
