@@ -14,7 +14,7 @@ Static analysis of CASL (heterogeneous) structured specifications
 
 module Static.AnalysisStructured
     ( ana_SPEC
-    , anaSpecAux
+    , anaSpecTop
     , getSpecAnnos
     , isStructured
     , ana_RENAMING
@@ -142,6 +142,34 @@ createConsLink lk conser lg dg nsig (NodeSig node gsig) orig = case nsig of
                  { node_cons_status = case getNodeConsStatus lbl of
                      ConsStatus c d th -> ConsStatus (max c conser) d th }}) dg
 
+anaSpecTop :: Conservativity -> Bool -> LogicGraph -> DGraph -> MaybeNode
+         -> NodeName -> HetcatsOpts -> SPEC -> Result (SPEC, NodeSig, DGraph)
+anaSpecTop conser addSyms lg dg nsig name opts sp =
+ if conser == None || case sp of
+      -- for these cases def-links are re-used
+    Basic_spec _ _ -> True
+    Closed_spec _ _ -> True
+    Spec_inst _ _ _ -> True
+    Group _ _ -> True -- in this case we recurse
+    _ -> False
+  then anaSpecAux conser addSyms lg dg nsig name opts sp else do
+  let provenThmLink =
+        ThmLink $ Proven (DGRule "static analysis") $ ProofBasis Set.empty
+  (rsp, ns, rdg) <- ana_SPEC addSyms lg dg nsig name opts sp
+  ndg <- createConsLink provenThmLink conser lg rdg nsig ns SeeTarget
+  return (rsp, ns, ndg)
+
+anaPlainSpec :: Bool -> LogicGraph -> HetcatsOpts -> DGraph
+  -> MaybeNode -> NodeName -> DGOrigin -> DGLinkType -> Annoted SPEC -> Range
+  -> Result (Annoted SPEC, NodeSig, DGraph)
+anaPlainSpec addSyms lg opts dg nsig name orig dglType asp pos = do
+      (sp', NodeSig n' gsigma, dg') <-
+          ana_SPEC addSyms lg dg nsig (inc name) opts $ item asp
+      let (ns@(NodeSig node gsigma'), dg2) = insGSig dg' name orig gsigma
+      incl <-  adjustPos pos $ ginclusion lg gsigma gsigma'
+      return (replaceAnnoted sp' asp, ns,
+              insLink dg2 incl dglType SeeTarget n' node)
+
 -- | analyze a SPEC
 -- Bool Parameter determines if incoming symbols shall be ignored
 -- options: here we need the info: shall only the structure be analysed?
@@ -188,7 +216,7 @@ anaSpecAux conser addSyms lg dg nsig name opts sp = case sp of
   Translation asp ren ->
    do let sp1 = item asp
       (sp1', NodeSig n' gsigma, dg') <-
-          anaSpecAux conser addSyms lg dg nsig (inc name) opts sp1
+          ana_SPEC addSyms lg dg nsig (inc name) opts sp1
       mor <- ana_RENAMING lg nsig gsigma opts ren
       -- ??? check that mor is identity on local env
       let (ns@(NodeSig node _), dg'') =
@@ -199,7 +227,7 @@ anaSpecAux conser addSyms lg dg nsig name opts sp = case sp of
   Reduction asp restr ->
    do let sp1 = item asp
       (sp1', NodeSig n' gsigma', dg') <-
-          anaSpecAux conser addSyms lg dg nsig (inc name) opts sp1
+          ana_SPEC addSyms lg dg nsig (inc name) opts sp1
       let gsigma = getMaybeSig nsig
       (hmor, tmor) <- ana_RESTRICTION gsigma gsigma' opts restr
       -- we treat hiding and revealing differently
@@ -262,11 +290,11 @@ anaSpecAux conser addSyms lg dg nsig name opts sp = case sp of
                                          (iterate inc (extName "E" name)))))
                    asps
   Free_spec asp poss -> do
-      (nasp, nsig', dg') <- anaPlainSpec conser addSyms lg opts dg nsig name
+      (nasp, nsig', dg') <- anaPlainSpec addSyms lg opts dg nsig name
         DGFree (FreeOrCofreeDefLink Free nsig) asp poss
       return (Free_spec nasp poss, nsig', dg')
   Cofree_spec asp poss -> do
-      (nasp, nsig', dg') <- anaPlainSpec conser addSyms lg opts dg nsig name
+      (nasp, nsig', dg') <- anaPlainSpec addSyms lg opts dg nsig name
         DGCofree (FreeOrCofreeDefLink Cofree nsig) asp poss
       return (Cofree_spec nasp poss, nsig', dg')
   Local_spec asp asp' poss ->
@@ -324,12 +352,12 @@ anaSpecAux conser addSyms lg dg nsig name opts sp = case sp of
             EmptyNode _ -> EmptyNode l
             _ -> nsig
       (nasp, nsig', dg') <-
-          anaPlainSpec conser addSyms lg opts dg newNSig name DGLogicQual
+          anaPlainSpec addSyms lg opts dg newNSig name DGLogicQual
             globalDef asp pos
       return (Qualified_spec lognm nasp pos, nsig', dg')
   Group asp pos -> do
       (sp', nsig', dg') <-
-          anaSpecAux conser addSyms lg dg nsig name opts (item asp)
+          anaSpecTop conser addSyms lg dg nsig name opts (item asp)
       return (Group (replaceAnnoted sp' asp) pos, nsig', dg')
   Spec_inst spname afitargs pos0 -> let
        pos = if null afitargs then tokPos spname else pos0
@@ -424,19 +452,6 @@ anaSpecAux conser addSyms lg dg nsig name opts sp = case sp of
                    (replaceAnnoted sp1' asp1)
                    (replaceAnnoted sp2' asp2)
                    pos, nsig3, dg3)
-
-anaPlainSpec :: Conservativity -> Bool -> LogicGraph -> HetcatsOpts -> DGraph
-  -> MaybeNode -> NodeName -> DGOrigin -> DGLinkType -> Annoted SPEC -> Range
-  -> Result (Annoted SPEC, NodeSig, DGraph)
-anaPlainSpec conser addSyms lg opts dg nsig name orig dglType asp pos =
-  adjustPos pos $ do
-      (sp', NodeSig n' gsigma, dg') <-
-          ana_SPEC addSyms lg dg nsig (inc name) opts $ item asp
-      let (ns@(NodeSig node gsigma'), dg2) = insGSig dg' name orig gsigma
-      incl <- ginclusion lg gsigma gsigma'
-      let dg3 = insLink dg2 incl dglType SeeTarget n' node
-      dg4 <- createConsLink (ThmLink LeftOpen) conser lg dg3 nsig ns SeeTarget
-      return (replaceAnnoted sp' asp, ns, dg4)
 
 anaFitArg :: LogicGraph -> HetcatsOpts -> SPEC_NAME -> MaybeNode
           -> ([FIT_ARG], DGraph, [(G_morphism, NodeSig)], NodeName)
@@ -889,7 +904,7 @@ ana_Extension lg opts pos (sps', nsig', dg', conser, addSyms) (name', asp')
   (sanno1, impliesA) <- getSpecAnnos pos asp'
   -- attach conservativity to definition link
   (sp1', nsig1@(NodeSig n1 sig1), dg1) <-
-     anaSpecAux (max conser sanno1) addSyms lg dg' nsig' name' opts (item asp')
+     anaSpecTop (max conser sanno1) addSyms lg dg' nsig' name' opts (item asp')
   dg2 <- if impliesA then case nsig' of
     JustNode (NodeSig n' sig') -> do
       -- is the extension going between real nodes?
