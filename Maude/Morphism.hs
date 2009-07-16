@@ -34,6 +34,7 @@ import Maude.AS_Maude
 import Maude.Symbol
 import Maude.Sentence
 import Maude.Meta
+import Maude.Util
 
 import Maude.Sign (Sign)
 import qualified Maude.Sign as Sign
@@ -150,8 +151,7 @@ compose :: Morphism -> Morphism -> Result Morphism
 compose f g
     | target f /= source g = fail "target of the first and source of the second morphism are different"
     | otherwise = let
-            apply mp nam = Map.findWithDefault nam nam mp
-            map'map mp = apply (mp g) . apply (mp f)
+            map'map mp = mapAsFunction (mp g) . mapAsFunction (mp f)
             insert mp x = let y = map'map mp x
                 in if x == y then id else Map.insert x y
             compose'map mp items = if Map.null (mp g)
@@ -174,8 +174,7 @@ isLegal mor = let
         smap = sortMap mor
         omap = opMap mor
         -- lmap = labelMap mor
-        apply mp nam = Map.findWithDefault nam nam mp
-        subset mp items = Set.isSubsetOf (Set.map (apply mp) $ items src) (items tgt)
+        subset mp items = Set.isSubsetOf (Set.map (mapAsFunction mp) $ items src) (items tgt)
         legal'source = Sign.isLegal src
         legal'sortMap = subset smap getSorts
         legal'opMap = subset omap getOps

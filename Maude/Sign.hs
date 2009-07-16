@@ -22,6 +22,7 @@ import Maude.AS_Maude
 import Maude.Symbol
 import Maude.Sentence
 import Maude.Meta
+import Maude.Util
 
 import Data.Set (Set)
 import Data.Map (Map)
@@ -178,4 +179,4 @@ ins'op (Op op dom cod as) opmap = let
 
 -- map and insert an OperatorMap key-value pair
 map'op :: SymbolMap -> Symbol -> OpDeclSet -> OpMap -> OpMap
-map'op mp op decls = Map.insert (Map.findWithDefault op op mp) decls
+map'op mp op decls = Map.insert (mapAsFunction mp op) decls
