@@ -88,7 +88,6 @@ data Colors = Black
             | Coral
             | Green
             | Yellow
-            | Khaki
             | Purple
             deriving (Eq, Ord, Show)
 
@@ -182,8 +181,8 @@ colors = Map.fromList
   , ((Purple, False, False), ("purple2",         "gray74"))
   , ((Yellow, False, False), ("gold",            "gray78"))
   , ((Yellow, False, True ), ("yellow",          "gray81"))
-  , ((Khaki,  False, False), ("LightGoldenrod3", "gray85"))
-  , ((Khaki,  False, True ), ("LightGoldenrod",  "gray88"))
+  , ((Yellow, True,  False), ("LightGoldenrod3", "gray85"))
+  , ((Yellow, True,  True ), ("LightGoldenrod",  "gray88"))
   ]
 
 -- | Converts colors to grayscale if needed

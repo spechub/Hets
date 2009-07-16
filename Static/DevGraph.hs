@@ -304,6 +304,9 @@ data FreeOrCofree = Free | Cofree deriving (Show, Eq)
 data ConsStatus = ConsStatus Conservativity Conservativity ThmLinkStatus
   deriving (Show, Eq)
 
+isProvenConsStatusLink :: ConsStatus -> Bool
+isProvenConsStatusLink (ConsStatus _ _ tls) = isProvenThmLinkStatus tls
+
 mkConsStatus :: Conservativity -> ConsStatus
 mkConsStatus c = ConsStatus c None LeftOpen
 
@@ -346,7 +349,7 @@ getDGEdgeTypeName e =
 
 getDGEdgeTypeModIncName :: DGEdgeTypeModInc -> String
 getDGEdgeTypeModIncName et = case et of
-  ThmType thm isPrvn ->
+  ThmType thm isPrvn _ ->
     let prvn = (if isPrvn then "P" else "Unp") ++ "roven" in
     case thm of
       HidingThm -> prvn ++ "HidingThm"
@@ -371,7 +374,8 @@ data DGEdgeTypeModInc =
   | LocalDef
   | FreeOrCofreeDef -- free or cofree
   | ThmType { thmEdgeType :: ThmTypes
-            , isProvenEdge :: Bool }
+            , isProvenEdge :: Bool
+            , isConservativ :: Bool }
   deriving (Eq, Ord, Show)
 
 data ThmTypes =
@@ -383,20 +387,22 @@ data ThmTypes =
 
 getHomEdgeType :: Bool -> DGLinkType -> DGEdgeTypeModInc
 getHomEdgeType isHom lt = case lt of
-      ScopedLink scope lk _ -> case lk of
+      ScopedLink scope lk cons -> case lk of
           DefLink -> case scope of
             Local -> LocalDef
             Global -> if isHom then GlobalDef else HetDef
           ThmLink st -> ThmType
             { thmEdgeType = GlobalOrLocalThm scope isHom
-            , isProvenEdge = isProvenThmLinkStatus st }
+            , isProvenEdge = isProvenThmLinkStatus st
+            , isConservativ = isProvenConsStatusLink cons }
       HidingDefLink -> HidingDef
       FreeOrCofreeDefLink _ _ -> FreeOrCofreeDef
       HidingFreeOrCofreeThm mh _ st -> ThmType
         { thmEdgeType = case mh of
             Nothing -> HidingThm
             _ -> FreeOrCofreeThm
-        , isProvenEdge = isProvenThmLinkStatus st }
+        , isProvenEdge = isProvenThmLinkStatus st
+        , isConservativ = True }
 
 -- | creates a DGEdgeType from a DGLinkLab
 getRealDGLinkType :: DGLinkLab -> DGEdgeType
@@ -420,16 +426,18 @@ listDGEdgeTypes =
     , LocalDef
     , FreeOrCofreeDef ] ++
       [ ThmType { thmEdgeType = thmType
-                , isProvenEdge = proven}
+                , isProvenEdge = proven
+                , isConservativ = cons }
       | thmType <-
         [ HidingThm
         , FreeOrCofreeThm] ++
           [ GlobalOrLocalThm { isLocalThmType = local
-                             , isHomThm = hom}
+                             , isHomThm = hom }
           | local <- [Local, Global]
           , hom <- [True, False]
           ]
       , proven <- [True, False]
+      , cons <- [True, False]
       ]
   , isInclusion' <- [True, False]
   ]

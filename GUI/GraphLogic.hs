@@ -190,9 +190,11 @@ toggleHideNodes gInfo@(GInfo { graphInfo = gi
 hideEdgesAux :: DGraph -> [EdgeId]
 hideEdgesAux dg = map dgl_id
   $ filter (\ (DGLink { dgl_type = linktype }) ->
-                case thmLinkStatus linktype of
-                  Just status -> isProvenThmLinkStatus status
-                  _ -> False
+             case linktype of
+               ScopedLink _ (ThmLink s) c ->
+                 isProvenThmLinkStatus s && isProvenConsStatusLink c
+               HidingFreeOrCofreeThm _ _ s -> isProvenThmLinkStatus s
+               _ -> False
            )
   $ foldl (\ e c -> case c of
                       InsertEdge (_, _, lbl) -> lbl:e

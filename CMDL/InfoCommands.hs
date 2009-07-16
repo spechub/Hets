@@ -421,7 +421,7 @@ showEdgeInfo state (x, y, dglab)
          HidingDef -> mkDefS "hiding"
          LocalDef -> mkDefS "local"
          FreeOrCofreeDef -> defS
-         ThmType thm isPrvn ->
+         ThmType thm isPrvn _ ->
            let prvn = (if isPrvn then "" else "un") ++ "proven"
                thmS = "theorem"
            in case thm of
