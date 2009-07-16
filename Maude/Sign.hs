@@ -171,18 +171,14 @@ intersection sig1 sig2 = let
         ops = apply Map.intersection ops
     }
 
-subsig :: Sign -> Sign -> Bool
-subsig sign1 sign2 = sortsIncluded (sorts sign1) (sorts sign2) &&
-                     subsortsIncluded (subsorts sign1) (subsorts sign2)
-
-sortsIncluded :: SortSet -> SortSet -> Bool
-sortsIncluded s1 s2 = Set.isSubsetOf s1 s2
-
-subsortsIncluded :: SubsortRel -> SubsortRel -> Bool
-subsortsIncluded ssr1 ssr2 = Rel.isSubrelOf ssr1 ssr2
-
-opsIncluded :: OpMap -> OpMap -> Bool
-opsIncluded op1 op2 = Map.isSubmapOf op1 op2
+-- | check that a Signature is a subsignature of another Signature
+isSubsign :: Sign -> Sign -> Bool
+isSubsign sig1 sig2 = let
+        apply func items = func (items sig1) (items sig2)
+        sorts'included = apply Set.isSubsetOf sorts
+        subsorts'included = apply Rel.isSubrelOf subsorts
+        ops'included = apply Map.isSubmapOf ops
+    in all id [sorts'included, subsorts'included, ops'included]
 
 -- map and insert an OperatorMap key-value pair
 map'op :: SymbolMap -> Symbol -> OpDeclSet -> OpMap -> OpMap
