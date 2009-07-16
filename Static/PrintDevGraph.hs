@@ -225,9 +225,9 @@ prettyThmLinkStatus :: DGLinkType -> Doc
 prettyThmLinkStatus = maybe Doc.empty pretty . thmLinkStatus
 
 instance Pretty ConsStatus where
-   pretty (ConsStatus cons _ thm) = case cons of
+   pretty (ConsStatus cons pc thm) = case max cons pc of
      None -> Doc.empty
-     _ -> text (show cons) <> pretty thm
+     c -> text (show c) <> pretty thm
 
 instance Pretty DGLinkType where
     pretty t = text (getDGEdgeTypeModIncName $ getHomEdgeType True t)
