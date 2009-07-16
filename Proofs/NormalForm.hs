@@ -126,16 +126,23 @@ normalFormDG libEnv dgraph = foldM (\ dg (node, nodelab) ->
                                           in
                             case paths of
                              [] -> fail "node should reach a tip"
-                             (xn, xf):_ -> comp xf $ mmap Map.! xn
+                             (xn, xf) : _ -> comp xf $ mmap Map.! xn
             let nfNode = getNewNodeDG dg -- new node for normal form
+                info = nodeInfo nodelab
+                ConsStatus c cp pr = node_cons_status info
                 NodeName tt ss _ = dgn_name nodelab
                           -- the label of the new node
                 nfName = mkSimpleId $ "NormalForm" ++ show tt ++ show node
-                nfLabel = (newNodeLab (NodeName nfName ss 0)
-                  (DGNormalForm node) sign)
+                nfLabel = newInfoNodeLab (NodeName nfName ss 0)
+                  info
+                  { node_origin = DGNormalForm node
+                  , node_cons_status = mkConsStatus c }
+                  sign
                 newLab = nodelab -- the new label for node
-                     { dgn_nf = Just nfNode,
-                       dgn_sigma = Just morNode
+                     { dgn_nf = Just nfNode
+                     , dgn_sigma = Just morNode
+                     , nodeInfo = info
+                         { node_cons_status = ConsStatus None cp pr }
                      }
             -- add the nf to the label of node
                 chLab = SetNodeLab nodelab (node, newLab)
@@ -148,7 +155,7 @@ normalFormDG libEnv dgraph = foldM (\ dg (node, nodelab) ->
                                               })
                 insStrMor = map (\ (x, f) -> InsertEdge $ makeEdge x nfNode f)
                   $ nub $ map (\ (x, y) -> (g Map.! x, y))
-                  $ (node, morNode):Map.toList mmap
+                  $ (node, morNode) : Map.toList mmap
                 allChanges = chLab : insNNF : insStrMor
             return $ changesDGH dg allChanges
   else return dg) dgraph $ topsortedNodes dgraph -- only change relevant nodes

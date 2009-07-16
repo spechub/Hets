@@ -190,7 +190,9 @@ hasOpenConsStatus :: Bool -> DGNodeLab -> Bool
 hasOpenConsStatus b lbl = case getNodeConsStatus lbl of
   ConsStatus cons _ thm -> case cons of
       None -> b
-      _ -> not $ isProvenThmLinkStatus thm
+      _ -> case dgn_nf lbl of
+         Nothing -> not $ isProvenThmLinkStatus thm
+         Just _ -> b -- only conservativity of normal form node matter
 
 data DGNodeType = DGNodeType
   { nonRefType :: NonRefType
