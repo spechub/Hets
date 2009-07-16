@@ -151,19 +151,15 @@ ins'op (Op op dom cod as) opmap = let
     in Map.insert name new'ops opmap
 
 
-sig_union :: Sign -> Sign -> Sign
-sig_union (Sign s1 ssr1 op1) (Sign s2 ssr2 op2) = Sign (sorts_union s1 s2)
-                                                       (subsorts_union ssr1 ssr2)
-                                                       (ops_union op1 op2)
-
-sorts_union :: SortSet -> SortSet -> SortSet
-sorts_union s1 s2 = Set.union s1 s2
-
-subsorts_union :: SubsortRel -> SubsortRel -> SubsortRel
-subsorts_union ssr1 ssr2 = Rel.union ssr1 ssr2
-
-ops_union :: OpMap -> OpMap -> OpMap
-ops_union op1 op2 = Map.union op1 op2
+-- | the union of two Signatures
+union :: Sign -> Sign -> Sign
+union sig1 sig2 = let
+        apply func items = func (items sig1) (items sig2)
+    in Sign {
+        sorts = apply Set.union sorts,
+        subsorts = apply Rel.union subsorts,
+        ops = apply Map.union ops
+    }
 
 sig_int :: Sign -> Sign -> Sign
 sig_int (Sign s1 ssr1 op1) (Sign s2 ssr2 op2) = Sign (sorts_int s1 s2)
