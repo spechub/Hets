@@ -33,11 +33,7 @@ module Maude.Morphism (
 import Maude.AS_Maude
 import Maude.Symbol
 import Maude.Sentence
-
-import Maude.Meta.HasName
-import Maude.Meta.HasSorts
-import Maude.Meta.HasOps
-import Maude.Meta.HasLabels
+import Maude.Meta
 
 import Maude.Sign (Sign)
 import qualified Maude.Sign as Sign

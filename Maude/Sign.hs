@@ -21,10 +21,7 @@ module Maude.Sign where
 import Maude.AS_Maude
 import Maude.Symbol
 import Maude.Sentence
-
-import Maude.Meta.HasName
-import Maude.Meta.HasSorts
-import Maude.Meta.HasOps
+import Maude.Meta
 
 import Data.Set (Set)
 import Data.Map (Map)

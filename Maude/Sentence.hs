@@ -19,12 +19,8 @@ Definition of sentences for Maude.
 module Maude.Sentence where
 
 import Maude.AS_Maude
-
 import Maude.Printing
-
-import Maude.Meta.HasSorts
-import Maude.Meta.HasOps
-import Maude.Meta.HasLabels
+import Maude.Meta
 
 import Common.Doc
 import Common.DocUtils
