@@ -90,6 +90,26 @@ symbols sign = Set.union (getSorts sign) (getOps sign)
 empty :: Sign
 empty = Sign { sorts = Set.empty, subsorts = Rel.empty, ops = Map.empty }
 
+-- | the union of two Signatures
+union :: Sign -> Sign -> Sign
+union sig1 sig2 = let
+        apply func items = func (items sig1) (items sig2)
+    in Sign {
+        sorts = apply Set.union sorts,
+        subsorts = apply Rel.union subsorts,
+        ops = apply Map.union ops
+    }
+
+-- | the intersection of two Signatures
+intersection :: Sign -> Sign -> Sign
+intersection sig1 sig2 = let
+        apply func items = func (items sig1) (items sig2)
+    in Sign {
+        sorts = apply Set.intersection sorts,
+        subsorts = apply Rel.intersection subsorts,
+        ops = apply Map.intersection ops
+    }
+
 -- | insert a Sort into a Signature
 insertSort :: Sort -> Sign -> Sign
 insertSort sort sign = sign {sorts = ins'sort sort (sorts sign)}
@@ -114,6 +134,15 @@ isLegal sign = let
         legal'subsorts = Fold.all isLegalSort $ Rel.nodes (subsorts sign)
         legal'ops = Fold.all (Fold.all isLegalOp) (ops sign)
     in all id [legal'subsorts, legal'ops]
+
+-- | check that a Signature is a subsignature of another Signature
+isSubsign :: Sign -> Sign -> Bool
+isSubsign sig1 sig2 = let
+        apply func items = func (items sig1) (items sig2)
+        sorts'included = apply Set.isSubsetOf sorts
+        subsorts'included = apply Rel.isSubrelOf subsorts
+        ops'included = apply Map.isSubmapOf ops
+    in all id [sorts'included, subsorts'included, ops'included]
 
 -- | check that a Signature can include a Sentence
 includesSentence :: Sign -> Sentence -> Bool
@@ -149,36 +178,6 @@ ins'op (Op op dom cod as) opmap = let
         old'ops = Map.findWithDefault Set.empty name opmap
         new'ops = Set.insert (map getName dom, getName cod, as) old'ops
     in Map.insert name new'ops opmap
-
-
--- | the union of two Signatures
-union :: Sign -> Sign -> Sign
-union sig1 sig2 = let
-        apply func items = func (items sig1) (items sig2)
-    in Sign {
-        sorts = apply Set.union sorts,
-        subsorts = apply Rel.union subsorts,
-        ops = apply Map.union ops
-    }
-
--- | the intersection of two Signatures
-intersection :: Sign -> Sign -> Sign
-intersection sig1 sig2 = let
-        apply func items = func (items sig1) (items sig2)
-    in Sign {
-        sorts = apply Set.intersection sorts,
-        subsorts = apply Rel.intersection subsorts,
-        ops = apply Map.intersection ops
-    }
-
--- | check that a Signature is a subsignature of another Signature
-isSubsign :: Sign -> Sign -> Bool
-isSubsign sig1 sig2 = let
-        apply func items = func (items sig1) (items sig2)
-        sorts'included = apply Set.isSubsetOf sorts
-        subsorts'included = apply Rel.isSubrelOf subsorts
-        ops'included = apply Map.isSubmapOf ops
-    in all id [sorts'included, subsorts'included, ops'included]
 
 -- map and insert an OperatorMap key-value pair
 map'op :: SymbolMap -> Symbol -> OpDeclSet -> OpMap -> OpMap
