@@ -21,7 +21,6 @@ module GUI.GraphAbstraction
   , initGraph
   , makeGraph
   , redisplay
-  , showAll
     -- * Node interface
   , isHiddenNode
   , focusNode
@@ -252,11 +251,6 @@ makeGraph gi title open save saveAs close exit menus nTypeParms eTypeParms
      successful otherwise an error is raised. -}
 get :: (Show k, Ord k) => k -> Map.Map k a -> a
 get key = Map.findWithDefault (error $ "get: id unknown: " ++ show key) key
-
--- | Shows all hidden nodes and edges
-showAll :: GraphInfo -- ^ The graph
-        -> IO ()
-showAll gInfo = applyChanges gInfo [] [] [] []
 
 {- Functions for adding, deleting, changing and hidding nodes.-}
 

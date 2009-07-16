@@ -151,9 +151,8 @@ createGraph gInfo@(GInfo { graphInfo = gi
                    (getColor hetOpts Purple False False)
                    $ runAndLock gInfo $ do
                        flags <- readIORef opts
-                       writeIORef opts $ flags { flagHideNodes = False
-                                               , flagHideEdges = False}
-                       GA.applyChanges gi [] [] [] []
+                       writeIORef opts $ flags { flagHideNodes = False}
+                       updateGraph gInfo []
 
 -- | Returns the open-function
 createOpen :: GInfo -> FilePath -> ConvFunc -> LibFunc -> Maybe (IO ())
@@ -231,7 +230,7 @@ createGlobalMenu gInfo@(GInfo { hetcatsOpts = opts
   Just _ -> do
    let ral = runAndLock gInfo
        performProofMenuAction cmd =
-           ral . performProofAction gInfo . proofMenu gInfo cmd
+           ral . proofMenu gInfo cmd
        mkGlobProofButton cmd =
          Button (menuTextGlobCmd cmd) . performProofMenuAction (GlobCmd cmd)
    return
@@ -249,10 +248,10 @@ createGlobalMenu gInfo@(GInfo { hetcatsOpts = opts
      , Button "Focus node" $ ral $ focusNode gInfo
 #ifdef GTKGLADE
      , Button "Select Linktypes" $ showLinkTypeChoice deselectEdgeTypes
-                                  (\ eList -> ral $ do
-                                    GA.showAll gi
-                                    GA.hideSetOfEdgeTypes gi eList
-                                  )
+                                   (\ eTypes -> ral $ do
+                                     GA.hideSetOfEdgeTypes gi eTypes
+                                     updateGraph gInfo []
+                                   )
 #endif
      , Menu (Just "Proofs") $ map (\ (cmd, act) ->
        -- History ? or just some partial history in ch ?
@@ -376,7 +375,7 @@ createMenuButton title menuFun gInfo@(GInfo { libName = ln }) = Button title
       Just ist -> do
         let le = i_libEnv ist
             dGraph = lookupDGraph ln le
-        runAndLock gInfo $ menuFun descr dGraph
+        menuFun descr dGraph
         return ()
 
 createLocalMenuButtonShowTheory :: GInfo -> ButtonMenu GA.NodeValue
@@ -408,14 +407,13 @@ createLocalMenuButtonShowProofStatusOfNode gInfo =
 
 createLocalMenuButtonProveAtNode :: GInfo -> ButtonMenu GA.NodeValue
 createLocalMenuButtonProveAtNode gInfo =
-  createMenuButton "Prove" (\descr dgraph -> performProofAction gInfo
-    (proveAtNode False gInfo descr dgraph)) gInfo
+  createMenuButton "Prove"
+    (\ descr dgraph -> proveAtNode False gInfo descr dgraph) gInfo
 
 createLocalMenuButtonProveStructured :: GInfo -> ButtonMenu GA.NodeValue
 createLocalMenuButtonProveStructured gInfo =
   createMenuButton "Prove VSE Structured"
-    (\ descr _ -> performProofAction gInfo (proveVSEStructured gInfo descr))
-    gInfo
+    (\ descr _ -> proveVSEStructured gInfo descr) gInfo
 
 createLocalMenuButtonCheckCons :: GInfo -> ButtonMenu GA.NodeValue
 createLocalMenuButtonCheckCons gInfo =

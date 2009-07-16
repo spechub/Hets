@@ -14,7 +14,7 @@ These are then assembled to the GUI in "GUI.GraphMenu".
 
 module GUI.GraphLogic
     ( undo
-    , performProofAction
+    , updateGraph
     , openProofStatus
     , saveProofStatus
     , proofMenu
@@ -30,9 +30,6 @@ module GUI.GraphLogic
     , showEdgeInfo
     , checkconservativityOfNode
     , checkconservativityOfEdge
-    , hideNames
-    , hideNodes
-    , hideEdges
     , toggleHideNames
     , toggleHideNodes
     , toggleHideEdges
@@ -99,18 +96,13 @@ import Interfaces.Utils
 
 -- | Locks the global lock and runs function
 runAndLock :: GInfo -> IO () -> IO ()
-runAndLock gInfo@(GInfo { functionLock = lock
-                        , graphInfo = gi
-                        }) function = do
+runAndLock (GInfo { functionLock = lock
+                  , graphInfo = gi
+                  }) function = do
   locked <- tryPutMVar lock ()
   case locked of
     True -> do
-      GA.deactivateGraphWindow gi
       function
-      GA.redisplay gi
-      hideNames gInfo
-      GA.layoutImproveAll gi
-      GA.activateGraphWindow gi
       takeMVar lock
     False ->
       GA.showTemporaryMessage gi
@@ -120,12 +112,19 @@ runAndLock gInfo@(GInfo { functionLock = lock
 undo :: GInfo -> Bool -> IO ()
 undo gInfo isUndo = do
   intSt <- readIORef $ intState gInfo
-  nwSt <- if isUndo then undoOneStepWithUpdate intSt $ updateGraph gInfo
-                    else redoOneStepWithUpdate intSt $ updateGraph gInfo
+  nwSt <- if isUndo then undoOneStepWithUpdate intSt $ updateGraphAux gInfo
+                    else redoOneStepWithUpdate intSt $ updateGraphAux gInfo
   writeIORef (intState gInfo) nwSt
 
-updateGraph :: GInfo -> LIB_NAME -> [DGChange] -> DGraph -> IO ()
-updateGraph gInfo'@(GInfo { libName = ln' }) ln changes dg = do
+updateGraph :: GInfo -> [DGChange] -> IO ()
+updateGraph gInfo@(GInfo { libName = ln }) changes = do
+  ost <- readIORef $ intState gInfo
+  case i_state ost of
+    Nothing -> return ()
+    Just ist -> updateGraphAux gInfo ln changes $ lookupDGraph ln $ i_libEnv ist
+
+updateGraphAux :: GInfo -> LIB_NAME -> [DGChange] -> DGraph -> IO ()
+updateGraphAux gInfo' ln changes dg = do
   og <- readIORef $ openGraphs gInfo'
   case Map.lookup ln og of
     Nothing -> return ()
@@ -135,14 +134,18 @@ updateGraph gInfo'@(GInfo { libName = ln' }) ln changes dg = do
       let (nodes, comp) = if flagHideNodes flags then hideNodesAux dg
                           else ([],[])
           edges = if flagHideEdges flags then hideEdgesAux dg else []
-      if ln' /= ln then GA.deactivateGraphWindow gi else return ()
+      GA.showTemporaryMessage gi
+        "Applying development graph calculus proof rule..."
+      GA.deactivateGraphWindow gi
       GA.applyChanges gi (removeContraryChanges changes) nodes edges comp
-      if ln' /= ln then do
-        GA.redisplay gi
-        hideNames gInfo
-        GA.layoutImproveAll gi
-        GA.activateGraphWindow gi
-        else return ()
+      GA.showTemporaryMessage gi
+        "Updating graph..."
+      GA.redisplay gi
+      hideNames gInfo
+      GA.layoutImproveAll gi
+      GA.activateGraphWindow gi
+      GA.showTemporaryMessage gi
+        "Development graph calculus proof rule finished."
 
 -- | Toggles to display internal node names
 hideNames :: GInfo -> IO ()
@@ -159,21 +162,9 @@ toggleHideNames gInfo@(GInfo { graphInfo = gi
   flags <- readIORef opts
   let hide = not $ flagHideNames flags
   writeIORef opts $ flags { flagHideNames = hide }
-  (nodes, comp) <- hideNodes gInfo
-  edges <- hideEdges gInfo
-  GA.applyChanges gi [] nodes edges comp
-
--- | hides all unnamed internal nodes that are proven
-hideNodes :: GInfo
-          -> IO ([GA.NodeId], [(GA.NodeId, GA.NodeId, DGEdgeType, Bool)])
-hideNodes gInfo@(GInfo { libName = ln
-                       , options = opts }) = do
-  flags <- readIORef opts
-  if not $ flagHideNodes flags then return ([],[]) else do
-    ost <- readIORef $ intState gInfo
-    case i_state ost of
-      Nothing -> return ([],[])
-      Just ist -> return $ hideNodesAux $ lookupDGraph ln $ i_libEnv ist
+  GA.showTemporaryMessage gi $ if hide then "Hiding internal names..."
+                               else "Revealing internal names..."
+  updateGraph gInfo []
 
 -- | hides all unnamed internal nodes that are proven
 hideNodesAux :: DGraph
@@ -193,21 +184,8 @@ toggleHideNodes gInfo@(GInfo { graphInfo = gi
   let hide = not $ flagHideNodes flags
   writeIORef opts $ flags { flagHideNodes = hide }
   GA.showTemporaryMessage gi $ if hide then "Hiding unnamed nodes..."
-                               else "Revealing hidden nodes ..."
-  (nodes, comp) <- hideNodes gInfo
-  edges <- hideEdges gInfo
-  GA.applyChanges gi [] nodes edges comp
-
--- | hides all proven edges created not initialy
-hideEdges :: GInfo -> IO [EdgeId]
-hideEdges gInfo@(GInfo { libName = ln
-                       , options = opts }) = do
-  flags <- readIORef opts
-  if not $ flagHideEdges flags then return [] else do
-    ost <- readIORef $ intState gInfo
-    case i_state ost of
-      Nothing -> return []
-      Just ist -> return $ hideEdgesAux $ lookupDGraph ln $ i_libEnv ist
+                               else "Revealing hidden nodes..."
+  updateGraph gInfo []
 
 hideEdgesAux :: DGraph -> [EdgeId]
 hideEdgesAux dg = map dgl_id
@@ -229,10 +207,8 @@ toggleHideEdges gInfo@(GInfo { graphInfo = gi
   let hide = not $ flagHideEdges flags
   writeIORef opts $ flags { flagHideEdges = hide }
   GA.showTemporaryMessage gi $ if hide then "Hiding new proven edges..."
-                               else "Revealing hidden proven edges ..."
-  (nodes, comp) <- hideNodes gInfo
-  edges <- hideEdges gInfo
-  GA.applyChanges gi [] nodes edges comp
+                               else "Revealing hidden proven edges..."
+  updateGraph gInfo []
 
 -- | generates from list of HistElem one list of DGChanges
 flattenHistory :: [HistElem] -> [DGChange] -> [DGChange]
@@ -320,18 +296,6 @@ showLibGraph :: GInfo -> LibFunc -> IO ()
 showLibGraph gInfo showLib = do
   showLib gInfo
   return ()
-
-{- | it tries to perform the given action to the given graph.
-     If part of the given graph is not hidden, then the action can
-     be performed directly; otherwise the graph will be shown completely
-     firstly, and then the action will be performed, and after that the graph
-     will be hidden again.
--}
-performProofAction :: GInfo -> IO () -> IO ()
-performProofAction (GInfo { graphInfo = gi }) proofAction = do
-  GA.showTemporaryMessage gi "Applying development graph calculus proof rule..."
-  proofAction
-  GA.showTemporaryMessage gi "Development graph calculus proof rule finished."
 
 saveProofStatus :: GInfo -> FilePath -> IO ()
 saveProofStatus gInfo@(GInfo { hetcatsOpts = opts
@@ -428,7 +392,7 @@ proofMenu gInfo@(GInfo { hetcatsOpts = hOpts
             putStrLn "History"
             print $ prettyHistory history
           writeIORef (intState gInfo) nwst
-          updateGraph gInfo ln (reverse $ flatHistory history) newGr
+          updateGraph gInfo (reverse $ flatHistory history)
           unlockGlobal gInfo
           mGUIMVar <- tryTakeMVar guiMVar
           maybe (fail "should be filled with Nothing after proof attempt")
@@ -621,8 +585,7 @@ updateNodeProof checkCons gInfo (v, dgnode) tres = case tres of
                        { i_state = Just iist
                          { i_libEnv = Map.insert ln newDg le } }
         writeIORef iSt nwst
-        runAndLock gInfo
-          $ updateGraph gInfo ln (reverse $ flatHistory history) newDg
+        runAndLock gInfo $ updateGraph gInfo $ reverse $ flatHistory history
         unlockGlobal gInfo
   Nothing -> return ()
 
@@ -647,9 +610,7 @@ checkconservativityOfNode descr gInfo dgraph = do
                     ost [DgCommandChange ln]
               nwst = nst { i_state = Just $ iist { i_libEnv = libEnv' }}
           writeIORef iSt nwst
-          runAndLock gInfo
-            $ updateGraph gInfo ln (reverse $ flatHistory ph)
-            $ lookupDGraph ln libEnv'
+          runAndLock gInfo $ updateGraph gInfo (reverse $ flatHistory ph)
           unlockGlobal gInfo
 
 edgeErr :: Int -> IO ()
@@ -687,9 +648,7 @@ checkconservativityOfEdge descr gInfo me = case me of
                         ost [DgCommandChange ln]
                   nwst = nst { i_state = Just $ iist { i_libEnv = nwle}}
               writeIORef iSt nwst
-              runAndLock gInfo
-                $ updateGraph gInfo ln (reverse $ flatHistory ph)
-                              $ lookupDGraph ln nwle
+              runAndLock gInfo $ updateGraph gInfo $ reverse $ flatHistory ph
               unlockGlobal gInfo
 
 -- | show library referened by a DGRef node (=node drawn as a box)
@@ -709,13 +668,7 @@ showReferencedLibrary descr gInfo@(GInfo{ libName = ln })
       gInfo' <- copyGInfo gInfo refLibname
       convGraph gInfo' "development graph" showLib
       let gi = graphInfo gInfo'
-      GA.deactivateGraphWindow gi
-      hideNodes gInfo'
-      GA.redisplay gi
-      GA.layoutImproveAll gi
       GA.showTemporaryMessage gi "Development Graph initialized."
-      GA.activateGraphWindow gi
-      return ()
     Nothing -> error $ "The referenced library (" ++ show refLibname
                        ++ ") is unknown"
 
