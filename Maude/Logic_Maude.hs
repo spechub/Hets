@@ -103,10 +103,10 @@ instance StaticAnalysis Maude MaudeText Sentence () () Sign Morphism Symbol
     -- id_to_raw
     -- matches
     -- operations on signatures and morphisms --
-    is_subsig Maude sign1 sign2 = Sign.subsig sign1 sign2
+    is_subsig Maude = Sign.isSubsign
     empty_signature Maude = Sign.empty
-    signature_union Maude sign1 sign2 = return $ Sign.sig_union sign1 sign2
-    intersection Maude sign1 sign2 = return $ Sign.sig_int sign1 sign2
+    signature_union Maude sign1 sign2 = return $ Sign.union sign1 sign2
+    intersection Maude sign1 sign2 = return $ Sign.intersection sign1 sign2
     -- final_union
     -- morphism_union
     subsig_inclusion Maude src tgt = return $ Morphism.createInclMorph src tgt
