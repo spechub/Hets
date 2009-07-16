@@ -161,19 +161,15 @@ union sig1 sig2 = let
         ops = apply Map.union ops
     }
 
-sig_int :: Sign -> Sign -> Sign
-sig_int (Sign s1 ssr1 op1) (Sign s2 ssr2 op2) = Sign (sorts_int s1 s2)
-                                                     (subsorts_int ssr1 ssr2)
-                                                     (ops_int op1 op2)
-
-sorts_int :: SortSet -> SortSet -> SortSet
-sorts_int s1 s2 = Set.intersection s1 s2
-
-subsorts_int :: SubsortRel -> SubsortRel -> SubsortRel
-subsorts_int ssr1 ssr2 = Rel.fromDistinctMap $ Map.intersection (Rel.toMap ssr1) (Rel.toMap ssr2)
-
-ops_int :: OpMap -> OpMap -> OpMap
-ops_int op1 op2 = Map.intersection op1 op2
+-- | the intersection of two Signatures
+intersection :: Sign -> Sign -> Sign
+intersection sig1 sig2 = let
+        apply func items = func (items sig1) (items sig2)
+    in Sign {
+        sorts = apply Set.intersection sorts,
+        subsorts = apply Rel.intersection subsorts,
+        ops = apply Map.intersection ops
+    }
 
 subsig :: Sign -> Sign -> Bool
 subsig sign1 sign2 = sortsIncluded (sorts sign1) (sorts sign2) &&
