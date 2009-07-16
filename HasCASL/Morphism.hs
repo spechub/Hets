@@ -91,8 +91,7 @@ getDatatypeIds (DataEntry _ i _ _ _ alts) =
 mapDataEntry :: IdMap -> TypeMap -> IdMap -> FunMap -> DataEntry
              -> DataEntry
 mapDataEntry jm tm im fm de@(DataEntry dm i k args rk alts) =
-    let tim = Map.intersection (composeMap tm dm im) $ setToMap
-              $ getDatatypeIds de
+    let tim = composeMap (setToMap $ getDatatypeIds de) dm im
         newargs = map (mapTypeArg jm tm im) args
     in DataEntry tim i k newargs rk $ Set.map
            (mapAlt jm tm tim fm newargs
@@ -133,7 +132,7 @@ getPartiality args t = case getTypeAppl t of
 
 mapSentence :: Morphism -> Sentence -> Result Sentence
 mapSentence m s = let
-    tm = typeMap $ mtarget m
+    tm = filterAliases . typeMap $ mtarget m
     im = typeIdMap m
     jm = classIdMap m
     fm = funMap m
