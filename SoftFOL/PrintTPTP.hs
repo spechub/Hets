@@ -62,13 +62,18 @@ instance PrintTPTP SPLogicalPart where
               SPSimpleTermDecl _ -> True
               _                  -> False)
                      $ (maybe [] id decls)
-      in vcat (map (\ (decl, i) ->
+          fs = formulaLists lp
+      in if null validDeclarations && null fs then
+            text "fof" <> parens
+              (text "empty" <> comma <> printTPTP SPOriginAxioms
+               <> comma <> printTPTP SPTrue) <> dot
+         else vcat (map (\ (decl, i) ->
                     text "fof" <>
                     parens (text ("declaration" ++ show i) <> comma <>
                     printTPTP SPOriginAxioms <> comma
                     $+$ printTPTP decl) <> dot)
                 $ zip validDeclarations [(0::Int)..])
-         $+$ vcat (map printTPTP $ formulaLists lp)
+         $+$ vcat (map printTPTP fs)
 
 {- |
  Creates a Doc from a SoftFOL Declaration.

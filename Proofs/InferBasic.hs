@@ -168,10 +168,7 @@ basicInferenceNode checkCons lg ln dGraph n@(node, lbl) guiMVar libEnv intSt =
         -- select a suitable translation and prover
 
             cms = filter hasModelExpansion $ findComorphismPaths lg sublogic
-        if checkCons then if null sens then fail $ unlines
-               [ "Theory has no sentences so is trivially consistent"
-               , "or incomplete due to incoming hiding links." ]
-                else do
+        if checkCons then do
             (G_cons_checker lid4 cc, Comorphism cid) <-
                  selectProver $ getConsCheckers cms
             let lidT = targetLogic cid
