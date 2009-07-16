@@ -500,6 +500,14 @@ showStatusAux dgnode =
              then consGoal
              else ""
 
+hidingWarnDiag :: DGNodeLab -> IO () -> IO ()
+hidingWarnDiag dgn action =
+      if labelHasHiding dgn then do
+          warningDialog "Warning"
+             (unwords $ hidingWarning ++ ["Try anyway?"]) $ Just action
+          return ()
+        else forkIO action >> return ()
+
 -- | start local theorem proving or consistency checking at a node
 proveAtNode :: Bool -> GInfo -> Int -> DGraph -> IO ()
 proveAtNode checkCons gInfo descr dgraph = do
@@ -526,13 +534,8 @@ proveAtNode checkCons gInfo descr dgraph = do
             res <- basicInferenceNode checkCons logicGraph ln dgraph'
               (descr, dgn') guiMVar le' iSt
             runProveAtNode checkCons gInfo (descr, dgn') res
-            unlockLocal dgn'
-      if checkCons && labelHasHiding dgn' then do
-          b <- warningDialog "Warning"
-             (unwords $ hidingWarning ++ ["Try anyway?"]) $ Just action
-          unless b $ unlockLocal dgn'
-          return ()
-        else forkIO action >> return ()
+      hidingWarnDiag dgn' action
+      unlockLocal dgn'
     else errorDialog "Error" "Proofwindow already open"
 
 runProveAtNode :: Bool -> GInfo -> LNode DGNodeLab
@@ -564,7 +567,7 @@ updateNodeProof checkCons gInfo (v, dgnode) tres = case tres of
     lockGlobal gInfo
     ost <- readIORef iSt
     case i_state ost of
-      Nothing -> unlockGlobal gInfo
+      Nothing -> return ()
       Just iist -> do
         let le = i_libEnv iist
             dgraph = lookupDGraph ln le
@@ -586,24 +589,24 @@ updateNodeProof checkCons gInfo (v, dgnode) tres = case tres of
                          { i_libEnv = Map.insert ln newDg le } }
         writeIORef iSt nwst
         runAndLock gInfo $ updateGraph gInfo $ reverse $ flatHistory history
-        unlockGlobal gInfo
+    unlockGlobal gInfo
   Nothing -> return ()
 
 checkconservativityOfNode :: Int -> GInfo -> DGraph -> IO ()
 checkconservativityOfNode descr gInfo dgraph = do
   let iSt = intState gInfo
       ln = libName gInfo
+      nlbl = labDG dgraph descr
   ost <- readIORef iSt
   case i_state ost of
     Nothing -> return ()
-    Just iist -> do
+    Just iist -> hidingWarnDiag nlbl $ do
       lockGlobal gInfo
       (str, libEnv', ph) <- checkConservativityNode True
-                            (descr, labDG dgraph descr) (i_libEnv iist) ln
+                            (descr, nlbl) (i_libEnv iist) ln
       if isPrefixOf "No conservativity" str
-        then do
+        then
           errorDialog "Result of conservativity check" str
-          unlockGlobal gInfo
         else do
           createTextDisplay "Result of conservativity check" str
           let nst = add2history (SelectCmd Node $ showDoc descr "")
@@ -611,7 +614,7 @@ checkconservativityOfNode descr gInfo dgraph = do
               nwst = nst { i_state = Just $ iist { i_libEnv = libEnv' }}
           writeIORef iSt nwst
           runAndLock gInfo $ updateGraph gInfo (reverse $ flatHistory ph)
-          unlockGlobal gInfo
+      unlockGlobal gInfo
 
 edgeErr :: Int -> IO ()
 edgeErr descr = errorDialog "Error" $ "edge with descriptor " ++ show descr
@@ -639,9 +642,8 @@ checkconservativityOfEdge descr gInfo me = case me of
           lockGlobal gInfo
           (str, nwle, ph) <- checkConservativityEdge True lnk (i_libEnv iist) ln
           if isPrefixOf "No conservativity" str
-            then do
+            then
               errorDialog "Result of conservativity check" str
-              unlockGlobal gInfo
             else do
               createTextDisplay "Result of conservativity check" str
               let nst = add2history (SelectCmd Link $ showDoc (dgl_id lbl) "")
@@ -649,7 +651,7 @@ checkconservativityOfEdge descr gInfo me = case me of
                   nwst = nst { i_state = Just $ iist { i_libEnv = nwle}}
               writeIORef iSt nwst
               runAndLock gInfo $ updateGraph gInfo $ reverse $ flatHistory ph
-              unlockGlobal gInfo
+          unlockGlobal gInfo
 
 -- | show library referened by a DGRef node (=node drawn as a box)
 showReferencedLibrary :: Int -> GInfo -> ConvFunc -> LibFunc -> IO ()
