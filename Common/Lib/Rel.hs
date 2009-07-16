@@ -33,8 +33,8 @@ for plain maps involving sets.
 
 module Common.Lib.Rel
     ( Rel(), empty, null, insert, member, toMap, map
-    , union , isSubrelOf, difference, path, delete
-    , succs, predecessors, irreflex, sccOfClosure
+    , union, intersection, isSubrelOf, difference, path
+    , delete, succs, predecessors, irreflex, sccOfClosure
     , transClosure, fromList, toList, image, toPrecMap
     , intransKernel, mostRight, restrict, delSet
     , toSet, fromSet, topSort, nodes, collaps
@@ -68,6 +68,10 @@ difference a b = fromSet (toSet a Set.\\ toSet b)
 -- | union of two relations
 union :: Ord a => Rel a -> Rel a -> Rel a
 union a b = fromSet $ Set.union (toSet a) $ toSet b
+
+-- | intersection of two relations
+intersection :: Ord a => Rel a -> Rel a -> Rel a
+intersection a b = fromSet $ Set.intersection (toSet a) $ toSet b
 
 -- | is the first relation a sub-relation of the second
 isSubrelOf :: Ord a => Rel a -> Rel a -> Bool
