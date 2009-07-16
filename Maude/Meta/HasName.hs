@@ -4,6 +4,7 @@ module Maude.Meta.HasName (
 
 import Maude.AS_Maude
 import Maude.Symbol
+import Maude.Util
 
 import Data.Map (Map)
 import qualified Data.Map as Map
@@ -61,7 +62,3 @@ instance HasName Spec where
 instance HasName Theory where
     getName (Theory name _) = getName name
     mapName mp (Theory name ss) = Theory (mapName mp name) ss
-
-
-mapAsFunction :: (Ord a) => Map a a -> (a -> a)
-mapAsFunction mp name = Map.findWithDefault name name mp
