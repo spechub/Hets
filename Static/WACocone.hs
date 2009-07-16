@@ -30,7 +30,6 @@ import qualified Data.Set as Set
 import Data.Graph.Inductive.Graph as Graph
 
 import Common.Lib.Graph as Tree
-import Common.Amalgamate --for now
 import Common.ExtSign
 import Common.Result
 import Common.LogicT
@@ -43,27 +42,16 @@ import Logic.Coerce
 import Static.GTheory
 import Comorphisms.LogicGraph
 
-import Debug.Trace
-
 weakly_amalgamable_colimit :: StaticAnalysis lid
         basic_spec sentence symb_items symb_map_items
         sign morphism symbol raw_symbol
     => lid -> Tree.Gr sign (Int, morphism)
            -> Result (sign, Map.Map Int morphism)
 weakly_amalgamable_colimit l diag = do
-          (sig, sink) <- trace (show l ++ (show $ length $ nodes diag)) $
-            signature_colimit l diag
+          (sig, sink) <- signature_colimit l diag
           return (sig, sink)
 -- until amalgamability check is fixed, just return a colimit
- --          amalgCheck <- ensures_amalgamability l
---             ([Cell, ColimitThinness], diag, Map.toList sink, Graph.empty)
---           case amalgCheck of
---             NoAmalgamation s -> fail $ "failed amalgamability test " ++ s
---             DontKnow s -> fail $ "amalgamability test returns DontKnow: "++ s
---             _ -> trace "amalgamability test passed " $ return (sig, sink)
-
-
-
+-- get (commented out) code from rev:11881
 
 -- | checks whether a graph is connected
 
@@ -286,10 +274,6 @@ addNodeToGraph oldGraph
  let gth = noSensGTheory lid (mkExtSign sig) startSigId
      gmor1 = GMorphism cid1 ss1 idx1 m11 startMorId
      gmor2 = GMorphism cid2 ss2 idx2 m22 startMorId
- --tth1 <- translateG_theory gmor1 gt1
- --tth2 <- translateG_theory gmor2 gt2
- --joinedTh <- joinG_sentences tth1 tth2
- -- let gtheorySens = gtheory{gTheorySens = gTheorySens joinedTh}
  case maxNodes of
    [] -> do
     let newGraph = insEdges [(n1, newNode,(1, gmor1)),(n2, newNode,(1,gmor2))] $
