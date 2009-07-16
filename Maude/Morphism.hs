@@ -198,7 +198,7 @@ isInclusion mor = let
     in all id [null'sortMap, null'opMap, null'labelMap]
 
 -- | translate a Sentence along a Morphism
-mapSentence :: Morphism -> Sentence -> Result.Result Sentence
+mapSentence :: Morphism -> Sentence -> Result Sentence
 mapSentence mor = let
         smap = mapSorts (sortMap mor)
         omap = mapOps (opMap mor)
