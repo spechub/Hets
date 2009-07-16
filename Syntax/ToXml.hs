@@ -93,9 +93,8 @@ instance XmlPrintable LIB_ITEM where
         = withRg rg $ mkFEl "Logic" ["name", toStr n]
     toXml x = mkComment $ take 15 (show x)  ++ "- not Supported"
 
-
 instance XmlPrintable (Annoted SPEC) where
-    toXml a@(Annoted s toprg la ra) =
+    toXml a@(Annoted s _ _ _) =
         let mkAEl x y z = withAnno a $ mkEl x y z
             mkAPEl x z = withAnno a $ mkPEl x z
         in case s of
@@ -118,10 +117,10 @@ instance XmlPrintable (Annoted SPEC) where
                  withRg rg $ mkAEl "Inst" ["name", toString n] $ toLst fa
              Qualified_spec ln as rg -> withRg rg $ mkAEl "Qualified"
                                         ["logic", toString ln] [toXml as]
-             Data _ _ s1 s2 _ -> mkComment "DATA not supported"
+             Data _ _ _ _ _ -> mkComment "DATA not supported"
 
 instance XmlPrintable (Annoted FIT_ARG) where
-    toXml a@(Annoted farg toprg la ra) =
+    toXml a@(Annoted farg _ _ _) =
         let mkAEl x y z = withAnno a $ mkEl x y z
             mkAPEl x z = withAnno a $ mkPEl x z
         in case farg of
@@ -177,10 +176,10 @@ instance XmlListPrintable RESTRICTION where
     toLst (Revealed m _) = toLst m
 
 instance XmlListPrintable G_symb_items_list where
-    toLst (G_symb_items_list lid l) = map toText l
+    toLst (G_symb_items_list _ l) = map toText l
 
 instance XmlListPrintable G_symb_map_items_list where
-    toLst (G_symb_map_items_list lid l) = map toText l
+    toLst (G_symb_map_items_list _ l) = map toText l
 
 instance XmlAttrList [String] where
     mkAtts (x:y:l) = (Attr (unqual x) y) : mkAtts l
@@ -197,8 +196,10 @@ instance XmlAttrList Logic_code where
                  [f "encoding" enc, f "source" src, f "target" trg]
 
 printBasicSpecItem :: Annoted String -> Content
-printBasicSpecItem as@(Annoted s rg la ra)
-    = withAnno as
+-- TOCHECK: As the range for these items stems from the Annotation
+--          they have empty range for the moment (see printAnnotations)
+printBasicSpecItem as@(Annoted s rg _ _)
+    = withRg rg $ withAnno as
       $ mkPEl (if notImplied as then "Theoryitem" else "Assertion") [toText s]
 
 
@@ -206,11 +207,12 @@ printAnnotated :: Annoted a -> Maybe Content
 printAnnotated (Annoted _ rg la ra) = printAnnotations rg la ra
 
 printAnnotations :: Range -> [Annotation] -> [Annotation] -> Maybe Content
-printAnnotations rg [] [] = Nothing
+printAnnotations _ [] [] = Nothing
+-- TOCHECK: Annoted-Items have empty range for the moment
 printAnnotations rg lan ran
     = Just $ withRg rg $ mkPEl "Annotations" 
-      $ let f n l = (case lan of [] -> []
-                                 _ -> [printPXmlList n l])
+      $ let f n l = (case l of [] -> []
+                               _ -> [printPXmlList n l])
         in f "Left" lan ++ f "Right" ran
 
 -- check if one can remove this by generalizing mkEl such as for attribs
@@ -226,14 +228,22 @@ withAnno a c@(Elem e) = case printAnnotated a of
                         Just ac -> Elem $ e { elContent = ac : elContent e }
                         _ -> c
 
-withAnno a _ = error "withAnno only applies to elements"
+withAnno _ _ = error "withAnno only applies to elements"
 
 withRg :: Range -> Content -> Content
-withRg rg c@(Elem e) = case toString rg of [] -> c
-                                           str -> Elem $ add_attr
-                                                  (Attr (unqual "range") $ str) e
-withRg rg _ = error "withRg only applies to elements"
+withRg rg c@(Elem e) = 
+    case rangeToAttribs rg of [] -> c
+                              as -> Elem $ add_attrs as e
+withRg _ _ = error "withRg only applies to elements"
 
+posString :: Pos -> String
+posString (SourcePos _ l c) = show l ++ ":" ++ show c
+
+rangeToAttribs :: Range -> [Attr]
+rangeToAttribs (Range []) = [Attr (unqual "range") "empty"]
+rangeToAttribs (Range l) =
+    zipWith (\x y -> Attr (unqual x) (posString y))
+             ["rangestart", "rangeend"] [head l, last l]
 
 toString :: Pretty a => a -> String
 toString = show . pretty
