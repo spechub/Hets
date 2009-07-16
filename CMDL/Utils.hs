@@ -228,7 +228,7 @@ nodeContainsGoals (_,l) th
        G_theory _ _ _ sens _ ->
          not $ OMap.null $ OMap.filter
            (\s-> (not (isAxiom s)) && (not (isProvenSenStatus s))) sens
-           ) || hasOpenConsStatus False l)
+           ) || hasOpenNodeConsStatus False l)
 
 -- | Given an edge decides if it contains goals or not
 edgeContainsGoals:: LEdge DGLinkLab -> Bool

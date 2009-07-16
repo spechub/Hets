@@ -491,12 +491,12 @@ showStatusAux dgnode =
          consGoal = "\nconservativity of this node"
       in "Proven proof goals:\n"
          ++ showDoc proven ""
-         ++ if not $ hasOpenConsStatus True dgnode
+         ++ if not $ hasOpenNodeConsStatus True dgnode
              then consGoal
              else ""
          ++ "\nOpen proof goals:\n"
          ++ showDoc open ""
-         ++ if hasOpenConsStatus False dgnode
+         ++ if hasOpenNodeConsStatus False dgnode
              then consGoal
              else ""
 

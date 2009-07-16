@@ -185,14 +185,17 @@ getNodeCons nl = case getNodeConsStatus nl of
 getNodeConservativity :: LNode DGNodeLab -> Conservativity
 getNodeConservativity (_,nl) = getNodeCons nl
 
--- | test if a node conservativity is open, return input for refs or None
-hasOpenConsStatus :: Bool -> DGNodeLab -> Bool
-hasOpenConsStatus b lbl = case getNodeConsStatus lbl of
-  ConsStatus cons _ thm -> case cons of
-      None -> b
-      _ -> case dgn_nf lbl of
-         Nothing -> not $ isProvenThmLinkStatus thm
-         Just _ -> b -- only conservativity of normal form node matter
+-- | test if a node conservativity is open,
+--  return input for refs or nodes with normal forms
+hasOpenNodeConsStatus :: Bool -> DGNodeLab -> Bool
+hasOpenNodeConsStatus b lbl = if isJust $ dgn_nf lbl then b else
+  hasOpenConsStatus b $ getNodeConsStatus lbl
+
+-- | test if a conservativity is open, return input for None
+hasOpenConsStatus :: Bool -> ConsStatus -> Bool
+hasOpenConsStatus b (ConsStatus cons _ thm) = case cons of
+    None -> b
+    _ -> not $ isProvenThmLinkStatus thm
 
 data DGNodeType = DGNodeType
   { nonRefType :: NonRefType
@@ -209,7 +212,7 @@ data NonRefType =
 getRealDGNodeType :: DGNodeLab -> DGNodeType
 getRealDGNodeType dgnlab = DGNodeType
   { nonRefType = if isDGRef dgnlab then RefType else
-      NonRefType { isProvenCons = not $ hasOpenConsStatus False dgnlab
+      NonRefType { isProvenCons = not $ hasOpenNodeConsStatus False dgnlab
                  , isInternalSpec = isInternalNode dgnlab }
   , isLocallyEmpty = not $ hasOpenGoals dgnlab
   }
