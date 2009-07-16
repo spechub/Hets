@@ -120,12 +120,7 @@ computeLabelTheory libEnv dg (n, nodelab) =
         dg' = lookupDGraph (dgn_libname nodelab) libEnv
         newLab = labDG dg' refNode
     refTh <- computeLabelTheory libEnv dg' (refNode, newLab)
-    -- local sentences have to be mapped along dgn_sigma if refNode has hiding
-    localTh' <- case dgn_sigma newLab of
-             Nothing -> return localTh
-                        -- normal form computation failed
-             Just phi -> translateG_theory phi localTh
-    joinG_sentences (theoremsToAxioms refTh) localTh'
+    joinG_sentences (theoremsToAxioms refTh) localTh
   else do
     ths <- mapM (computePathTheory libEnv dg) $ sortBy
             (\ (_, _, l1) (_, _, l2) -> compare (dgl_id l2) $ dgl_id l1)
