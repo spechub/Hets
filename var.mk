@@ -7,6 +7,9 @@ TIMEVERSION = $(shell $(HCPKG) field time version)
 ifneq ($(findstring 1.1.3, $(TIMEVERSION)),)
 TIME_PACKAGE = -DTIME_WITH_TYPEABLE
 endif
+ifneq ($(findstring 1.1.4, $(TIMEVERSION)),)
+TIME_PACKAGE = -DTIME_WITH_TYPEABLE
+endif
 
 TARVERSION = $(shell $(HCPKG) field tar version)
 ifneq ($(findstring 0.3, $(TARVERSION)),)
