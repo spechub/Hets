@@ -305,7 +305,7 @@ data ConsStatus = ConsStatus Conservativity Conservativity ThmLinkStatus
   deriving (Show, Eq)
 
 isProvenConsStatusLink :: ConsStatus -> Bool
-isProvenConsStatusLink (ConsStatus _ _ tls) = isProvenThmLinkStatus tls
+isProvenConsStatusLink c = not $ hasOpenConsStatus False c
 
 mkConsStatus :: Conservativity -> ConsStatus
 mkConsStatus c = ConsStatus c None LeftOpen
