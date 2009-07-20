@@ -34,27 +34,23 @@ import Interfaces.History
 import Interfaces.Command
 import CMDL.Utils
 import CMDL.DataTypes
-import Common.Result
-import Data.List
-import Data.Graph.Inductive.Graph
+
 import Static.GTheory
 import Static.DevGraph
-import Proofs.TheoremHideShift
+
 import System.IO
 
 import Proofs.AbstractState
-import Proofs.TheoremHideShift
+import Proofs.ComputeTheory
 
 import Static.GTheory
 import Static.DevGraph
 
-import Common.Result
-
 import Data.Graph.Inductive.Graph
 import Data.List
 
-
 import Common.Result
+
 import Logic.Comorphism
 import Logic.Grothendieck
 

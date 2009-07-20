@@ -30,6 +30,7 @@ import CMDL.DataTypes
 import CMDL.DataTypesUtils
 
 import Proofs.AbstractState
+import Proofs.ComputeTheory
 import Proofs.TheoremHideShift
 
 import Static.GTheory

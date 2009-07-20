@@ -33,10 +33,9 @@ module Comorphisms.LogicList
     ( logicList
     , addLogicName
     , defaultLogic
-    , lookupLogic_in_LG
+    , preLogicGraph
     ) where
 
-import Common.Result
 import qualified Data.Map as Map
 import Logic.Logic
 import Logic.Grothendieck
@@ -105,9 +104,3 @@ defaultLogic = Logic CASL
 preLogicGraph :: LogicGraph
 preLogicGraph =
   emptyLogicGraph { logics = Map.fromList $ map addLogicName logicList }
-
-lookupLogic_in_LG :: String -> String -> AnyLogic
-lookupLogic_in_LG errorPrefix logname =
-    propagateErrors $ lookupLogic errorPrefix logname preLogicGraph
--- currently only used in ATC/Grothendieck.hs
--- and indirectly in ATC/DevGraph.der.hs

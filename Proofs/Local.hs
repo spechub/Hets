@@ -27,9 +27,9 @@ module Proofs.Local
     , localInferenceFromList
     ) where
 
+import Proofs.ComputeTheory
 import Proofs.EdgeUtils
 import Proofs.StatusUtils
-import Proofs.TheoremHideShift
 
 import Logic.Grothendieck
 import Logic.Prover

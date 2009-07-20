@@ -46,19 +46,24 @@ import Common.ExtSign
 import Common.Id
 import Common.LibName
 import Common.Result
+
 import Comorphisms.LogicGraph
+
+import Logic.Coerce
+import Logic.Grothendieck
+import Logic.Logic
+
+import Proofs.ComputeTheory
+import Proofs.EdgeUtils
+import Proofs.NormalForm
+
+import Static.DevGraph
+import Static.GTheory
+
 import Control.Monad
 import Data.Graph.Inductive.Graph hiding (empty)
 import Data.List
 import Data.Maybe
-import Logic.Coerce
-import Logic.Grothendieck
-import Logic.Logic
-import Proofs.EdgeUtils
-import Proofs.NormalForm
-import Proofs.TheoremHideShift
-import Static.DevGraph
-import Static.GTheory
 import qualified Data.Map as Map
 import qualified Data.Set as Set
 

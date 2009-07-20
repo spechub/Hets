@@ -35,7 +35,7 @@ import System.Directory (getCurrentDirectory)
 import Static.DevGraph
 import Static.PrintDevGraph ()
 
-import Proofs.TheoremHideShift (computeTheory)
+import Proofs.ComputeTheory (computeTheory)
 import qualified Proofs.VSE as VSE
 
 import Common.Result

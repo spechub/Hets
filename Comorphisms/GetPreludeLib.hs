@@ -11,24 +11,30 @@ Portability :  portable
 read a prelude library for some comorphisms
 -}
 
-module Comorphism.GetPreludeLib where
+module Comorphisms.GetPreludeLib where
 
-import Driver.AnaLib
+import Static.AnalysisLibrary
 import Driver.Options
+import Driver.ReadFn
+import Comorphisms.LogicList
 
-import Proofs.TheoremHideShift
+import Proofs.ComputeTheory
 
 import Static.DevGraph
 import Static.GTheory
 
 import Common.Result
+import Common.ResultT
 
 import Data.Maybe
 import qualified Data.Map as Map
+import qualified Data.Set as Set
 
 readLib :: FilePath -> IO [G_theory]
 readLib fp = do
-  mLib <- anaLib defaultHetcatsOpts fp
+  Result _ mLib <- runResultT $ anaLibFileOrGetEnv preLogicGraph
+    defaultHetcatsOpts Set.empty Map.empty
+    (fileToLibName defaultHetcatsOpts fp) fp
   case mLib of
     Nothing -> fail $ "library could not be read from: " ++ fp
     Just (ln, le) -> do
