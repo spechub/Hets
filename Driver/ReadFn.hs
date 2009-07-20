@@ -18,8 +18,7 @@ import Logic.Grothendieck
 import Syntax.AS_Library
 import Syntax.Parse_AS_Library
 
-import ATC.AS_Library ()
-import ATC.GlobalAnnotations ()
+import ATC.LibName ()
 import ATC.Sml_cats
 
 import Driver.Options
