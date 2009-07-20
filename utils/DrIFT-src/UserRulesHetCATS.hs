@@ -22,13 +22,14 @@ hetcatsrules = [ ("ShATermConvertible", shatermfn, "", "", Nothing)
                , ("GetRange", getrangefn, "", "", Nothing)]
 
 -- useful helper things
+addPrime :: Doc -> Doc
 addPrime doc = doc <> char '\''
 
-dc = text "::"
-
+ppCons' :: Body -> [Doc] -> Doc
 ppCons' b vs = fsep $ text (constructor b) : vs
 
 -- begin of GetRange derivation
+getrangefn :: Data -> Doc
 getrangefn dat =
     if any ((elem posLC) . types) (body dat) then
        let vs = vars dat in
@@ -38,41 +39,42 @@ getrangefn dat =
        $$ block (map makeGetPosFn $ body dat)
     else empty
 
+posLC :: Type
 posLC = Con "Range"
 
+makeGetPosFn :: Body -> Doc
 makeGetPosFn b =
        let (r, vs) = mapAccumL accFun True (types b)
            p = text "p"
-           accFun b t = if b && t == posLC
+           accFun f t = if f && t == posLC
                  then (False, p)
-                 else (b, text "_")
+                 else (f, text "_")
        in ppCons' b vs <+> rArrow <+> if r then text "nullRange" else p
 -- end of GetRange derivation
 
 -- begin of ShATermConvertible derivation
+shatermfn :: Data -> Doc
 shatermfn dat =
   let dn = strippedName dat
-      tn = "_" ++ dn
-      tc = text ("_toATC" ++ tn)
-      fc = text ("_fromATC" ++ tn)
       u = text "u"
-  in tc <+> text "att0 xv = case xv of"
+  in instanceSkeleton "ShATermConvertible" [] dat
+     $$ text "  toShATermAux" <+> text "att0 xv = case xv of"
      $$ block (map makeToShATerm $ body dat)
-     $$ fc <+> text "ix att0 = case getShATerm ix att0 of"
+     $$ text "  fromShATermAux" <+> text "ix att0 = case getShATerm ix att0 of"
      $$ block (map makeFromShATerm (body dat) ++
                [u <+> rArrow <+> text "fromShATermError"
                 <+> doubleQuotes (text dn) <+> u])
-     $$ instanceSkeleton "ShATermConvertible" [] dat
-     $$ block
-        [ text "toShATermAux" <+> equals <+> tc
-        , text "fromShATermAux" <+> equals <+> fc]
 
+att :: Int -> Doc
 att i = text $ "att" ++ show (i :: Int)
 
+closeBraces :: [b] -> Doc
 closeBraces = hcat . map (const $ char '}')
 
+pair :: Doc -> Doc -> Doc
 pair f s = parens $ f <> comma <+> s
 
+makeToShATerm :: Body -> Doc
 makeToShATerm b =
     let ts = types b
         tooLong = length (constructor b) > 15
@@ -86,9 +88,11 @@ makeToShATerm b =
        $$ if null vs then if tooLong then block [rl] else empty
           else block $ zipWith childToShATerm vs [0 :: Int ..] ++ [rl]
 
+childToShATerm :: Doc -> Int -> Doc
 childToShATerm v i = pair (att $ i + 1) (addPrime v) <+> lArrow
     <+> text "toShATerm'" <+> att i <+> v
 
+makeFromShATerm :: Body -> Doc
 makeFromShATerm b =
     let ts = types b
         vs = varNames ts
