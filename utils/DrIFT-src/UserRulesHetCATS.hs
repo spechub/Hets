@@ -17,7 +17,8 @@ import Pretty
 import List
 
 hetcatsrules :: [RuleDef]
-hetcatsrules = [ ("ShATermConvertible", shatermfn, "", "", Nothing)
+hetcatsrules = [ ("ShATermConvertible", shatermfn False, "", "", Nothing)
+               , ("ShATermLG", shatermfn True, "", "", Nothing)
                , ("Typeable", typeablefn, "", "", Nothing)
                , ("GetRange", getrangefn, "", "", Nothing)]
 
@@ -53,15 +54,18 @@ makeGetPosFn b =
 -- end of GetRange derivation
 
 -- begin of ShATermConvertible derivation
-shatermfn :: Data -> Doc
-shatermfn dat =
+shatermfn :: Bool -> Data -> Doc
+shatermfn forLG dat =
   let dn = strippedName dat
       u = text "u"
-  in instanceSkeleton "ShATermConvertible" [] dat
-     $$ text "  toShATermAux" <+> text "att0 xv = case xv of"
-     $$ block (map makeToShATerm $ body dat)
-     $$ text "  fromShATermAux" <+> text "ix att0 = case getShATerm ix att0 of"
-     $$ block (map makeFromShATerm (body dat) ++
+  in instanceSkeleton (if forLG then "ShATermLG" else "ShATermConvertible")
+         [] dat
+     $$ text ("  toShATerm" ++ (if forLG then "LG" else "Aux")
+              ++ " att0 xv = case xv of")
+     $$ block (map (makeToShATerm forLG) $ body dat)
+     $$ text ("  fromShATerm" ++ (if forLG then "LG lg" else "Aux")
+                 ++ " ix att0 = case getShATerm ix att0 of")
+     $$ block (map (makeFromShATerm forLG) (body dat) ++
                [u <+> rArrow <+> text "fromShATermError"
                 <+> doubleQuotes (text dn) <+> u])
 
@@ -74,8 +78,8 @@ closeBraces = hcat . map (const $ char '}')
 pair :: Doc -> Doc -> Doc
 pair f s = parens $ f <> comma <+> s
 
-makeToShATerm :: Body -> Doc
-makeToShATerm b =
+makeToShATerm :: Bool -> Body -> Doc
+makeToShATerm forLG b =
     let ts = types b
         tooLong = length (constructor b) > 15
         vs = varNames ts
@@ -86,17 +90,18 @@ makeToShATerm b =
     in ppCons' b vs <+> rArrow <+>
        (if null vs then if tooLong then empty else rl else text "do")
        $$ if null vs then if tooLong then block [rl] else empty
-          else block $ zipWith childToShATerm vs [0 :: Int ..] ++ [rl]
+          else block $ zipWith (childToShATerm forLG) vs [0 :: Int ..] ++ [rl]
 
-childToShATerm :: Doc -> Int -> Doc
-childToShATerm v i = pair (att $ i + 1) (addPrime v) <+> lArrow
-    <+> text "toShATerm'" <+> att i <+> v
+childToShATerm :: Bool -> Doc -> Int -> Doc
+childToShATerm forLG v i = pair (att $ i + 1) (addPrime v) <+> lArrow
+    <+> text ("toShATerm" ++ if forLG then "LG'" else "'") <+> att i <+> v
 
-makeFromShATerm :: Body -> Doc
-makeFromShATerm b =
+makeFromShATerm :: Bool -> Body -> Doc
+makeFromShATerm forLG b =
     let ts = types b
         vs = varNames ts
-        childFromShATerm v i = text "case fromShATerm'"
+        childFromShATerm v i =
+          text ("case fromShATerm" ++ if forLG then "LG' lg" else "'")
           <+> v <+> att i <+> text "of {"
           <+> pair (att $ i + 1) (addPrime v) <+> rArrow
         rl = pair (att $ length ts) (ppCons' b $ varNames' ts)

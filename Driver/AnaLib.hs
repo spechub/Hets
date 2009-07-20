@@ -87,7 +87,8 @@ readPrfFile opts ps ln = do
         prfFile = rmSuffix fname ++ prfSuffix
     recent <- checkRecentEnv opts prfFile fname
     h <- if recent then
-          fmap (fromMaybe SizedList.empty) $ readVerbose opts ln prfFile
+          fmap (fromMaybe SizedList.empty)
+            $ readVerbose logicGraph opts ln prfFile
        else return SizedList.empty
     return $ Map.update (Just . applyProofHistory h) ln ps
 

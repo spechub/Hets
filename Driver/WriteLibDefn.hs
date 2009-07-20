@@ -36,6 +36,7 @@ import Common.ATerm.ReadWrite
 
 import ATC.AS_Library ()
 import ATC.DevGraph ()
+import ATC.Grothendieck
 
 import Syntax.AS_Library (LIB_DEFN())
 import Syntax.Print_AS_Library ()
@@ -93,25 +94,25 @@ write_casl_latex opts ga oup ld =
            writeFile (debug_latex_filename oup) $
                debugRenderLatex Nothing ldoc
 
-toShATermString :: (ShATermConvertible a) => a -> IO String
+toShATermString :: (ShATermLG a) => a -> IO String
 toShATermString atcon = fmap writeSharedATerm $ versionedATermTable atcon
 
-writeShATermFile :: (ShATermConvertible a) => FilePath -> a -> IO ()
+writeShATermFile :: (ShATermLG a) => FilePath -> a -> IO ()
 writeShATermFile fp atcon = toShATermString atcon >>= writeFile fp
 
-versionedATermTable :: (ShATermConvertible a) => a -> IO ATermTable
+versionedATermTable :: (ShATermLG a) => a -> IO ATermTable
 versionedATermTable atcon = do
     att0 <- newATermTable
-    (att1, versionnr) <- toShATermAux att0 hetsVersion
-    (att2, aterm) <- toShATermAux att1 atcon
+    (att1, versionnr) <- toShATermLG att0 hetsVersion
+    (att2, aterm) <- toShATermLG att1 atcon
     return $ fst $ addATerm (ShAAppl "hets" [versionnr,aterm] []) att2
 
-writeShATermFileSDoc :: (ShATermConvertible a) => FilePath -> a -> IO ()
+writeShATermFileSDoc :: (ShATermLG a) => FilePath -> a -> IO ()
 writeShATermFileSDoc fp atcon = do
    att <- versionedATermTable atcon
    writeFileSDoc fp $ writeSharedATermSDoc att
 
-writeFileInfo :: (ShATermConvertible a) => HetcatsOpts -> LIB_NAME
+writeFileInfo :: ShATermLG a => HetcatsOpts -> LIB_NAME
               -> FilePath -> LIB_DEFN -> a -> IO ()
 writeFileInfo opts ln file ld gctx =
   let envFile = snd (getFilePrefix opts file) ++ envSuffix in

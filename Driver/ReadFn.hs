@@ -18,8 +18,10 @@ import Logic.Grothendieck
 import Syntax.AS_Library
 import Syntax.Parse_AS_Library
 
-import ATC.LibName ()
+import ATC.Grothendieck
 import ATC.Sml_cats
+import ATC.LibName ()
+
 
 import Driver.Options
 
@@ -50,17 +52,17 @@ setFilePath :: FilePath -> ClockTime -> LIB_DEFN -> LIB_DEFN
 setFilePath fp mt (Lib_defn ln lis r as) =
   Lib_defn ln { getLIB_ID = updFilePathOfLibId fp mt $ getLIB_ID ln } lis r as
 
-readShATermFile :: ShATermConvertible a => FilePath -> IO (Result a)
-readShATermFile fp = do
+readShATermFile :: ShATermLG a => LogicGraph -> FilePath -> IO (Result a)
+readShATermFile lg fp = do
     str <- readFile fp
-    return $ fromShATermString str
+    return $ fromShATermString lg str
 
-fromVersionedATT :: ShATermConvertible a => ATermTable -> Result a
-fromVersionedATT att =
+fromVersionedATT :: ShATermLG a => LogicGraph -> ATermTable -> Result a
+fromVersionedATT lg att =
     case getATerm att of
     ShAAppl "hets" [versionnr,aterm] [] ->
-        if hetsVersion == snd (fromShATermAux versionnr att)
-        then Result [] (Just $ snd $ fromShATermAux aterm att)
+        if hetsVersion == snd (fromShATermLG lg versionnr att)
+        then Result [] (Just $ snd $ fromShATermLG lg aterm att)
         else Result [Diag Warning
                      "Wrong version number ... re-analyzing"
                      nullRange] Nothing
@@ -68,16 +70,16 @@ fromVersionedATT att =
                    "Couldn't convert ShATerm back from ATermTable"
                    nullRange] Nothing
 
-fromShATermString :: ShATermConvertible a => String -> Result a
-fromShATermString str = if null str then
+fromShATermString :: ShATermLG a => LogicGraph -> String -> Result a
+fromShATermString lg str = if null str then
     Result [Diag Warning "got empty string from file" nullRange] Nothing
-    else fromVersionedATT $ readATerm str
+    else fromVersionedATT lg $ readATerm str
 
-readVerbose :: ShATermConvertible a => HetcatsOpts -> LIB_NAME -> FilePath
+readVerbose :: ShATermLG a => LogicGraph -> HetcatsOpts -> LIB_NAME -> FilePath
             -> IO (Maybe a)
-readVerbose opts ln file = do
+readVerbose lg opts ln file = do
     putIfVerbose opts 1 $ "Reading " ++ file
-    Result ds mgc <- readShATermFile file
+    Result ds mgc <- readShATermFile lg file
     showDiags opts ds
     case mgc of
       Nothing -> return Nothing

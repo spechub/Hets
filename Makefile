@@ -47,6 +47,8 @@ HAPPY = happy -sga
 GENRULES = utils/genRules
 GENRULECALL = $(GENRULES) -r Typeable -r ShATermConvertible \
     -i Data.Typeable -i Common.ATerm.Lib
+GENRULECALL2 = $(GENRULES) -r Typeable -r ShATermLG \
+    -i Data.Typeable -i Common.ATerm.Lib -i ATC.Grothendieck
 DRIFT = utils/DrIFT
 INLINEAXIOMS = utils/outlineAxioms
 HADDOCK = haddock
@@ -212,7 +214,7 @@ drifted_files = Common/AS_Annotation.hs \
     CoCASL/AS_CoCASL.hs COL/AS_COL.hs \
     CASL_DL/AS_CASL_DL.hs OWL/ReadWrite.hs \
     CspCASL/AS_CspCASL_Process.hs CspCASL/AS_CspCASL.hs \
-    RelationalScheme/AS.hs \
+    RelationalScheme/AS.hs ATC/Grothendieck.hs \
     $(gendrifted_files)
 
 # files to extract data types from to generate ShATermConvertible instances
@@ -249,13 +251,13 @@ ATC/DefaultMorphism.der.hs: Common/DefaultMorphism.hs $(GENRULES)
 	$(GENRULECALL) -o $@ $<
 
 ATC/AS_Structured.der.hs: Syntax/AS_Structured.der.hs $(GENRULES)
-	$(GENRULECALL) -i ATC.AS_Annotation -i ATC.Grothendieck -o $@ $<
+	$(GENRULECALL2) -o $@ $<
 
 ATC/AS_Architecture.der.hs: Syntax/AS_Architecture.der.hs $(GENRULES)
-	$(GENRULECALL) -i ATC.AS_Structured -o $@ $<
+	$(GENRULECALL2) -i ATC.AS_Structured -o $@ $<
 
 ATC/AS_Library.der.hs: Syntax/AS_Library.der.hs $(GENRULES)
-	$(GENRULECALL) -i ATC.AS_Architecture -i ATC.LibName -o $@ $<
+	$(GENRULECALL2) -i ATC.AS_Architecture -i ATC.LibName -o $@ $<
 
 ATC/GlobalAnnotations.der.hs: Common/GlobalAnnotations.hs $(GENRULES)
 	$(GENRULECALL) -i ATC.AS_Annotation -o $@ $<
@@ -265,7 +267,7 @@ ATC/Prover.der.hs: Logic/Prover.hs $(GENRULES)
             -i ATC.AS_Annotation -o $@ $<
 
 ATC/DevGraph.der.hs: Static/DevGraph.hs $(GENRULES)
-	$(GENRULECALL) -i ATC.LibName -i ATC.Grothendieck -o $@ $<
+	$(GENRULECALL2) -i ATC.LibName -o $@ $<
 
 # ATC files for every logic
 CASL_files = CASL/Sublogic.hs CASL/Morphism.hs CASL/Sign.hs \

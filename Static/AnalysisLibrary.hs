@@ -140,7 +140,7 @@ anaLibFileOrGetEnv lgraph opts topLns libenv libname file = ResultT $ do
      recent_envFile <- checkRecentEnv opts envFile file
      if recent_envFile
         then do
-             mgc <- readVerbose opts libname envFile
+             mgc <- readVerbose lgraph opts libname envFile
              case mgc of
                  Nothing -> runResultT $ do
                      lift $ putIfVerbose opts 1 $ "Deleting " ++ envFile
