@@ -157,9 +157,7 @@ compose f g
             compose'map mp items = if Map.null (mp g)
                 then mp f
                 else Set.fold (insert mp) Map.empty $ items (source f)
-        in return Morphism {
-                source = (source f),
-                target = (target g),
+        in return (createInclMorph (source f) $ target g) {
                 sortMap = compose'map sortMap getSorts,
                 opMap = compose'map opMap getOps -- ,
                 -- labelMap = compose'map labelMap getLabels
