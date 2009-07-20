@@ -43,7 +43,6 @@ import Static.GTheory
 
 import Proofs.AbstractState
 import Proofs.ComputeTheory
-import Proofs.TheoremHideShift
 import Proofs.EdgeUtils
 
 import Driver.Options (rmSuffix)

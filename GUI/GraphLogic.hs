@@ -55,7 +55,6 @@ import Proofs.ComputeTheory
 import Proofs.EdgeUtils
 import Proofs.InferBasic(basicInferenceNode)
 import Proofs.StatusUtils(lookupHistory, removeContraryChanges)
-import Proofs.TheoremHideShift
 
 import GUI.Taxonomy (displayConceptGraph,displaySubsortGraph)
 import GUI.GraphTypes
