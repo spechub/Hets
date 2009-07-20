@@ -25,16 +25,21 @@ import Static.GTheory
 
 import Common.Result
 import Common.ResultT
+import Common.Utils
 
 import Data.Maybe
 import qualified Data.Map as Map
 import qualified Data.Set as Set
 
+import System.FilePath
+
 readLib :: FilePath -> IO [G_theory]
-readLib fp = do
+readLib fp0 = do
+  lib <- getEnvDef "HETS_LIB" ""
+  let opts = defaultHetcatsOpts { libdir = lib }
+      fp = lib </> fp0
   Result _ mLib <- runResultT $ anaLibFileOrGetEnv preLogicGraph
-    defaultHetcatsOpts Set.empty Map.empty
-    (fileToLibName defaultHetcatsOpts fp) fp
+    opts Set.empty Map.empty (fileToLibName opts fp) fp
   case mLib of
     Nothing -> fail $ "library could not be read from: " ++ fp
     Just (ln, le) -> do
