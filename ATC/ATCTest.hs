@@ -5,8 +5,10 @@ import Syntax.AS_Library
 import Common.ATerm.Lib
 import Common.Result
 import ATC.Sml_cats
+import ATC.Grothendieck
 import Driver.WriteLibDefn
 import Driver.ReadFn
+import Comorphisms.LogicList
 
 main :: IO ()
 main = getArgs >>= mapM_ testATC
@@ -22,11 +24,11 @@ testATC fp = do
 readWriteATerm1 :: LIB_DEFN -> IO LIB_DEFN
 readWriteATerm1 ld  = do
     att0 <- newATermTable
-    (att1, ix) <- toShATerm' att0 ld
-    return $ snd $ fromShATerm' ix att1
+    (att1, ix) <- toShATermLG' att0 ld
+    return $ snd $ fromShATermLG' preLogicGraph ix att1
 
 readWriteATerm2 :: LIB_DEFN -> IO LIB_DEFN
 readWriteATerm2 ld  = do
     str <- toShATermString ld
     return $ maybe (error "readWriteATerm2")
-                         id $ maybeResult $ fromShATermString str
+                         id $ maybeResult $ fromShATermString preLogicGraph str
