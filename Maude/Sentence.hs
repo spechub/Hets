@@ -68,8 +68,8 @@ instance HasLabels Sentence where
 
 
 -- | extract the Sentences of a Module
-getSentences :: Spec -> [Sentence]
-getSentences (Spec _ _ stmts) = let
+getSentences :: Module -> [Sentence]
+getSentences (Module _ _ stmts) = let
             insert stmt = case stmt of
                 MbStmnt mb -> (:) (Membership mb)
                 EqStmnt eq -> (:) (Equation eq)

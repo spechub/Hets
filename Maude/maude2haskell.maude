@@ -11,6 +11,7 @@
   var  EqS : EquationSet .
   var  RS : RuleSet .
   var  Q : Qid .
+  var  QIL : QidList .
   var  STR : String .
   vars ME ME' : ModuleExpression .
   var  TL : TermList .
@@ -32,25 +33,46 @@
   var  PDL : ParameterDeclList .
   var  I : Import .
   var  PD : ParameterDecl .
+  var  NHL : NeHookList .
+  
+  op haskellify : Qid -> QidList .
+  eq haskellify(Q) = haskellify(upModule(Q, false)) .
 
   op haskellify : Module -> QidList .
   eq haskellify(fmod H is IL sorts SS . SSDS ODS MAS EqS endfm) = 
-      'Spec haskellifyHeader(H) ' ' 
+      'SpecMod '`( 'Module haskellifyHeader(H) ' ' 
       '`[ haskellifyImports(IL) comma(IL, SS)
           haskellifySorts(SS) comma(IL, SS, SSDS)
           haskellifySubsorts(SSDS) comma(IL, SS, SSDS, ODS)
           haskellifyOpDeclSet(ODS) comma(IL, SS, SSDS, ODS, MAS)
           haskellifyMembAxSet(MAS) comma(IL, SS, SSDS, ODS, MAS, EqS)
-          haskellifyEqSet(EqS) '`] .
+          haskellifyEqSet(EqS) '`] '`) '\n '@#$endHetsSpec$#@ .
   eq haskellify(mod H is IL sorts SS . SSDS ODS MAS EqS RS endm) = 
-      'Spec haskellifyHeader(H) ' ' 
+      'SpecMod '`( 'Module haskellifyHeader(H) ' ' 
       '`[ haskellifyImports(IL) comma(IL, SS)
           haskellifySorts(SS) comma(IL, SS, SSDS)
           haskellifySubsorts(SSDS) comma(IL, SS, SSDS, ODS)
           haskellifyOpDeclSet(ODS) comma(IL, SS, SSDS, ODS, MAS)
           haskellifyMembAxSet(MAS) comma(IL, SS, SSDS, ODS, MAS, EqS)
           haskellifyEqSet(EqS) comma(IL, SS, SSDS, ODS, MAS, EqS, RS)
-          haskellifyRlSet(RS) '`] .
+          haskellifyRlSet(RS) '`] '`) '\n '@#$endHetsSpec$#@ .
+  eq haskellify(fth H is IL sorts SS . SSDS ODS MAS EqS endfth) = 
+      'SpecMod '`( 'Module haskellifyHeader(H) ' ' 
+      '`[ haskellifyImports(IL) comma(IL, SS)
+          haskellifySorts(SS) comma(IL, SS, SSDS)
+          haskellifySubsorts(SSDS) comma(IL, SS, SSDS, ODS)
+          haskellifyOpDeclSet(ODS) comma(IL, SS, SSDS, ODS, MAS)
+          haskellifyMembAxSet(MAS) comma(IL, SS, SSDS, ODS, MAS, EqS)
+          haskellifyEqSet(EqS) '`] '`) '\n '@#$endHetsSpec$#@ .
+  eq haskellify(th H is IL sorts SS . SSDS ODS MAS EqS RS endth) = 
+      'SpecMod '`( 'Module haskellifyHeader(H) ' ' 
+      '`[ haskellifyImports(IL) comma(IL, SS)
+          haskellifySorts(SS) comma(IL, SS, SSDS)
+          haskellifySubsorts(SSDS) comma(IL, SS, SSDS, ODS)
+          haskellifyOpDeclSet(ODS) comma(IL, SS, SSDS, ODS, MAS)
+          haskellifyMembAxSet(MAS) comma(IL, SS, SSDS, ODS, MAS, EqS)
+          haskellifyEqSet(EqS) comma(IL, SS, SSDS, ODS, MAS, EqS, RS)
+          haskellifyRlSet(RS) '`] '`) '\n '@#$endHetsSpec$#@ .
   
   op haskellifyHeader : Header -> QidList .
   eq haskellifyHeader(Q) = ' '`( 'ModId qid2token(Q) '`) ' ' '`[ '`] .
@@ -156,7 +178,19 @@
   eq haskellifyAttr(poly(NL)) = 'Poly ' '`[ haskellifyNatList(NL) '`] ' .
   eq haskellifyAttr(prec(N)) = 'Prec nat2qid(N) .
   eq haskellifyAttr(label(Q)) = 'Label qid2token(Q) .
+  eq haskellifyAttr(gather(QIL)) = 'Gather ' '`[ printQidList(QIL) '`] .
+  eq haskellifyAttr(format(QIL)) = 'Format ' '`[ printQidList(QIL) '`] .
+  *** TODO: Generate real attributes!!
+  eq haskellifyAttr(special(NHL)) = 'Special .
   
+  op printQidList : Qid -> QidList .
+  eq printQidList(nil) = nil .
+  eq printQidList(Q QIL) = qid2token(Q) comma(QIL) printQidList(QIL) .
+  
+  op comma : QidList -> QidList .
+  eq comma((nil).QidList) = nil .
+  eq comma(QIL) = '`, ' [owise] .
+
   op haskellifyTerm : Term -> QidList .
   ceq haskellifyTerm(Ct) = ' '`( 'Const qid2token(Q) haskellifyType(Ty) '`) '
    if Q := getName(Ct) /\

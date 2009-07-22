@@ -71,8 +71,8 @@ instance HasOps Sign where
 
 
 -- | extract the Signature of a Module
-fromSpec :: Spec -> Sign
-fromSpec (Spec _ _ stmts) = let
+fromSpec :: Module -> Sign
+fromSpec (Module _ _ stmts) = let
         insert stmt = case stmt of
             SortStmnt sort -> insertSort sort
             SubsortStmnt sub -> insertSubsort sub

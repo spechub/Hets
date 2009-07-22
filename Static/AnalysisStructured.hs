@@ -24,6 +24,7 @@ module Static.AnalysisStructured
     , insGSig
     , insLink
     , extendMorphism
+    , insGTheory
     ) where
 
 import Driver.Options

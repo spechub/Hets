@@ -6,6 +6,7 @@
   op mod+_is_endm : @Interface@ @SDeclList@ -> @Module@ .
   op fth+_is_endfth : @Interface@ @FDeclList@ -> @Module@ .
   op th+_is_endth : @Interface@ @SDeclList@ -> @Module@ .
+  op hets_. : @ModExp@ -> @Command@ .
  endfm
  
  fmod META-HETS-SIGN is
@@ -49,9 +50,11 @@
       < O : X@DatabaseClass | db : DB, input : (F[T, T']), output : nil, 
                               default : ME, AttS >
    => < O : X@DatabaseClass |  db : DB', input : nilTermList, 
-                               output : (haskellify(M)), default : H, AttS > 
+                               output : haskellify(M), default : H, AttS > 
      if (F == 'fmod+_is_endfm) or-else 
         (F == 'mod+_is_endm)   or-else 
+        (F == 'fth+_is_endfth) or-else 
+        (F == 'th+_is_endth)   or-else 
         (F == 'omod+_is_endom) /\
         DB' := procModule(coreMaudeOp(F)[T, T'], DB) /\
         H := parseHeader(T) /\
@@ -60,7 +63,16 @@
    op coreMaudeOp : Qid ~> Qid .
    eq coreMaudeOp('fmod+_is_endfm) = 'fmod_is_endfm .
    eq coreMaudeOp('mod+_is_endm) = 'mod_is_endm .
+   eq coreMaudeOp('fth+_is_endfth) = 'fth_is_endfth .
+   eq coreMaudeOp('th+_is_endth) = 'th_is_endth .
    eq coreMaudeOp('omod+_is_endom) = 'omod_is_endom .
+   
+   crl [maude2hets] :
+       < O : X@DatabaseClass | db : DB, input : ('hets_.[T]), output : nil, AttS >
+    => < O : X@DatabaseClass | db : DB', input : nilTermList, 
+                               output : haskellify(M), AttS > 
+    if < DB' ; ME > := evalModExp(parseModExp(T), DB) /\
+       M := getTopModule(ME, DB') .
  endm
  
  mod HETS is
@@ -94,6 +106,8 @@
 
   eq ['fmod QIL, S:State, QIL'] = ['fmod+ QIL, S:State, QIL'] .
   eq ['mod QIL, S:State, QIL'] = ['mod+ QIL, S:State, QIL'] .
+  eq ['fth QIL, S:State, QIL'] = ['fth+ QIL, S:State, QIL'] .
+  eq ['th QIL, S:State, QIL'] = ['th+ QIL, S:State, QIL'] .
 
   crl [in] :
       [QIL, < O : X@Database | input : nilTermList, AttS >, QIL']

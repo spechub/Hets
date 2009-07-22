@@ -36,7 +36,7 @@ quitBegin (_ : l) = quitBegin l
 quitBegin [] = []
 
 quitEnd :: String -> String
-quitEnd ('M' : ('a' : ('u' : _))) = []
+quitEnd ('@' : ('#' : ('$' : ('e' : ('n' : _))))) = []
 quitEnd (h : l) = h : (quitEnd l)
 quitEnd [] = []
 
@@ -112,7 +112,7 @@ printAttr (Frozen ls) = if null ls
                            else "frozen (" ++ printListSpaces ls ++ ")"
 printAttr (Gather ls) = "gather (" ++ printListSpaces ls ++ ")"
 printAttr (Format ls) = "format (" ++ printListSpaces ls ++ ")"
-printAttr _ = []
+printAttr _ = ""
 
 printStmntAttrSet :: [StmntAttr] -> String
 printStmntAttrSet [] = []

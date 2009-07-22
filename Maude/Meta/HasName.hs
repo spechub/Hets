@@ -55,10 +55,13 @@ instance HasName Operator where
     getName (Op name _ _ _) = getName name
     mapName mp (Op name dom cod as) = Op (mapName mp name) dom cod as
 
-instance HasName Spec where
-    getName (Spec name _ _) = getName name
-    mapName mp (Spec name ps ss) = Spec (mapName mp name) ps ss
+instance HasName Module where
+    getName (Module name _ _) = getName name
+    mapName mp (Module name ps ss) = Module (mapName mp name) ps ss
 
-instance HasName Theory where
-    getName (Theory name _) = getName name
-    mapName mp (Theory name ss) = Theory (mapName mp name) ss
+instance HasName Spec where
+    getName (SpecMod sp_module) = getName sp_module
+    mapName mp (SpecMod sp_module) = SpecMod $ mapName mp sp_module
+
+mapAsFunction :: (Ord a) => Map a a -> (a -> a)
+mapAsFunction mp name = Map.findWithDefault name name mp

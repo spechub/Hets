@@ -25,10 +25,11 @@ import Common.Id (Token)
 
 type Qid = Token
 
-data Spec = Spec ModId [Parameter] [Statement]
+data Spec = SpecMod Module
           deriving (Show, Read, Ord, Eq)
+--          | SpecView View
 
-data Theory = Theory ModId [Statement]
+data Module = Module ModId [Parameter] [Statement]
             deriving (Show, Read, Ord, Eq)
 
 data Parameter = Parameter Sort ModExp
@@ -107,6 +108,7 @@ data Attr = Assoc
           | Msg
           | Frozen [Int]
           | Poly [Int]
+          | Special
           deriving (Show, Read, Ord, Eq)
 
 data StmntAttr = Label Qid
