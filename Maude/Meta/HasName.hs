@@ -17,7 +17,7 @@ class HasName a where
 
 instance HasName Symbol where
     getName = id
-    mapName = mapAsFunction
+    mapName = map2Function
 
 instance HasName Type where
     getName typ = case typ of
@@ -29,27 +29,27 @@ instance HasName Type where
 
 instance HasName Sort where
     getName (SortId name) = name
-    mapName mp (SortId name) = SortId $ mapAsFunction mp name
+    mapName mp (SortId name) = SortId $ map2Function mp name
 
 instance HasName Kind where
     getName (KindId name) = name
-    mapName mp (KindId name) = KindId $ mapAsFunction mp name
+    mapName mp (KindId name) = KindId $ map2Function mp name
 
 instance HasName ParamId where
     getName (ParamId name) = name
-    mapName mp (ParamId name) = ParamId $ mapAsFunction mp name
+    mapName mp (ParamId name) = ParamId $ map2Function mp name
 
 instance HasName ModId where
     getName (ModId name) = name
-    mapName mp (ModId name) = ModId $ mapAsFunction mp name
+    mapName mp (ModId name) = ModId $ map2Function mp name
 
 instance HasName LabelId where
     getName (LabelId name) = name
-    mapName mp (LabelId name) = LabelId $ mapAsFunction mp name
+    mapName mp (LabelId name) = LabelId $ map2Function mp name
 
 instance HasName OpId where
     getName (OpId name) = name
-    mapName mp (OpId name) = OpId $ mapAsFunction mp name
+    mapName mp (OpId name) = OpId $ map2Function mp name
 
 instance HasName Operator where
     getName (Op name _ _ _) = getName name
@@ -63,5 +63,5 @@ instance HasName Spec where
     getName (SpecMod sp_module) = getName sp_module
     mapName mp (SpecMod sp_module) = SpecMod $ mapName mp sp_module
 
-mapAsFunction :: (Ord a) => Map a a -> (a -> a)
-mapAsFunction mp name = Map.findWithDefault name name mp
+map2Function :: (Ord a) => Map a a -> (a -> a)
+map2Function mp name = Map.findWithDefault name name mp
