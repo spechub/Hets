@@ -356,15 +356,16 @@ inducedFromToMorphismExt extInd extEm isSubExt diffExt rmap sig1@(ExtSign _ sy1)
         res = fst $ iftm rmap
         pos = concatMapRange getRange $ Map.keys rmap
     in if isOk res then res else
-       let filt = Set.filter $ (== SortAsItemType) . symbType
-           ss2 = filt sy2
-           ss1 = Set.filter (\ s -> not $ any (matches s) $ Map.keys rmap)
-                 $ Set.difference (filt sy1) ss2
-           prod = Set.size ss1 * Set.size ss2
+       let ss1 = Set.filter (\ s -> Set.null $ Set.filter (\ s2 ->
+                   compatibleSymbols True (s, s2)) sy2)
+             $ Set.filter (\ s -> not $ any (matches s) $ Map.keys rmap)
+                 $ sy1
+           prod = Set.size ss1 * Set.size sy2
        in if prod < 19 then
           case filter (isOk . fst) $ map (iftm . Map.union rmap . Map.fromList)
+            $ filter (all compatibleRawSymbs)
             $ combine (map ASymbol $ Set.toList ss1)
-            $ map ASymbol $ Set.toList ss2 of
+            $ map ASymbol $ Set.toList sy2 of
             [(r, m)] -> (if prod > 1 && Map.size m > 1 then warning else hint)
               () ("derived symbol map:\n" ++ showDoc m "") pos >> r
             (_, m1) : (_, m2) : _ -> fatal_error
@@ -372,6 +373,25 @@ inducedFromToMorphismExt extInd extEm isSubExt diffExt rmap sig1@(ExtSign _ sy1)
                ++ "ambiguous symbol map2:\n" ++ showDoc m2 "") pos
             [] -> res
           else warning () "too many possibilities for symbol maps" pos >> res
+
+compatibleSymbTypes :: (SymbType, SymbType) -> Bool
+compatibleSymbTypes p = case p of
+  (SortAsItemType, SortAsItemType) -> True
+  (OtherTypeKind s1, OtherTypeKind s2) -> s1 == s2
+  (OpAsItemType t1, OpAsItemType t2) ->
+     length (opArgs t1) == length (opArgs t2)
+  (PredAsItemType p1, PredAsItemType p2) ->
+      length (predArgs p1) == length (predArgs p2)
+  _ -> False
+
+compatibleSymbols :: Bool -> (Symbol, Symbol) -> Bool
+compatibleSymbols alsoId (Symbol i1 k1, Symbol i2 k2) =
+  compatibleSymbTypes (k1, k2) && (not alsoId || i1 == i2)
+
+compatibleRawSymbs :: (RawSymbol, RawSymbol) -> Bool
+compatibleRawSymbs p = case p of
+  (ASymbol s1, ASymbol s2) -> compatibleSymbols False (s1, s2)
+  _ -> False -- irrelevant
 
 combine :: [a] -> [a] -> [[(a, a)]]
 combine l1 = map (zip l1) . takeKFromN l1
