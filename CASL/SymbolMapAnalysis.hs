@@ -360,13 +360,13 @@ inducedFromToMorphismExt extInd extEm isSubExt diffExt rmap sig1@(ExtSign _ sy1)
                    compatibleSymbols True (s, s2)) sy2)
              $ Set.filter (\ s -> not $ any (matches s) $ Map.keys rmap)
                  $ sy1
-           prod = Set.size ss1 * Set.size sy2
-       in if prod < 19 then
+           combs = combine (map ASymbol $ Set.toList ss1)
+             $ map ASymbol $ Set.toList sy2
+           fcombs = filter (all compatibleRawSymbs) combs
+       in if null $ drop 20 combs then
           case filter (isOk . fst) $ map (iftm . Map.union rmap . Map.fromList)
-            $ filter (all compatibleRawSymbs)
-            $ combine (map ASymbol $ Set.toList ss1)
-            $ map ASymbol $ Set.toList sy2 of
-            [(r, m)] -> (if prod > 1 && Map.size m > 1 then warning else hint)
+               fcombs of
+            [(r, m)] -> (if length fcombs > 1 then warning else hint)
               () ("derived symbol map:\n" ++ showDoc m "") pos >> r
             (_, m1) : (_, m2) : _ -> fatal_error
               ("ambiguous symbol map1:\n" ++ showDoc m1 "\n"

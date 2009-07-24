@@ -11,5 +11,5 @@ spec Sym [sort s pred p1:s*s] =
 end
 
 spec X_inv =
-     Sym [X fit p1 |-> A]
+     Sym [X]
 end
