@@ -147,6 +147,10 @@ rawKindOfType = foldType FoldTypeRec
 -- | subtyping relation
 lesserType :: Env -> Type -> Type -> Bool
 lesserType te t1 t2 = case (t1, t2) of
+    (KindedType t _ _, _) -> lesserType te t t2
+    (ExpandedType _ t, _) -> lesserType te t t2
+    (_, KindedType t _ _) -> lesserType te t1 t
+    (_, ExpandedType _ t) -> lesserType te t1 t
     (TypeName _ _ _, TypeAppl (TypeName l _ _) t) | l == lazyTypeId ->
        lesserType te t1 t
     (TypeAppl c1 a1, TypeAppl c2 a2) ->
@@ -176,10 +180,6 @@ lesserType te t1 t2 = case (t1, t2) of
     (TypeAppl _ _, TypeName _ _ _) -> False
     (TypeAppl _ _, TypeAbs _ _ _) -> False
     (TypeAbs _ _ _, TypeName _ _ _) -> False
-    (KindedType t _ _, _) -> lesserType te t t2
-    (ExpandedType _ t, _) -> lesserType te t t2
-    (_, KindedType t _ _) -> lesserType te t1 t
-    (_, ExpandedType _ t) -> lesserType te t1 t
     (t3, t4) -> t3 == t4
 
 -- | type identifiers of a type
