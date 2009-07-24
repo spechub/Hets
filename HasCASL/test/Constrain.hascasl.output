@@ -24,6 +24,6 @@ op f : forall e : Ord . e -> e %(op)%
 constrain 't : Ord' is unprovable
   known kinds are: {Eq}
 *** Error 16.3,
-in term '(op f : forall e : Ord . e -> e) (op b : t) = (op b : t)' of type 'Unit'
+in term '(op f : forall e : Ord . e -> e) (op b : t) = (op b : t)' of type '? Unit'
  unresolved constraints
 '{t : Ord}'

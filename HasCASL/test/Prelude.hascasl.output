@@ -131,10 +131,10 @@ bool : Flatcpo;
 nat : Flatcpo;
 s : Type
 vars
-c : Cpo %(var_230)%;
-d : Cpo %(var_231)%;
-f : Flatcpo %(var_228)%;
-p : Pcpo %(var_227)%;
+c : Cpo %(var_245)%;
+d : Cpo %(var_246)%;
+f : Flatcpo %(var_243)%;
+p : Pcpo %(var_242)%;
 t : Type %(var_2)%
 op Y : forall p : Pcpo . (p --> p) --> p %(fun)%
 op __<<=__ : forall c : Cpo . c * c ->? Unit %(pred)%

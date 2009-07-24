@@ -348,7 +348,10 @@ addPartiality args t = case args of
     [] -> mkLazyType t
     _ : rs -> case getTypeAppl t of
         (TypeName a _ _, [t1, t2]) | a == arrowId FunArr ->
-            if null rs then mkFunArrType t1 PFunArr t2
+            if null rs then case getTypeAppl t2 of
+                (TypeName l _ _, [t3]) | l == lazyTypeId
+                   -> mkFunArrType t1 PFunArr t3
+                _ -> mkFunArrType t1 PFunArr t2
             else mkFunArrType t1 FunArr $ addPartiality rs t2
         _ -> error "addPartiality"
 

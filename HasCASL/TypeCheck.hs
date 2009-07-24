@@ -95,7 +95,8 @@ checkList :: Bool -> [Maybe Type] -> [Term]
           -> State Env [(Subst, Constraints, [Type], [Term])]
 checkList isP mtys trms = case (mtys, trms) of
     (ty : rty, trm : rt) -> do
-      fts <- inferWithMaybeType isP ty trm
+      fts0 <- inferWithMaybeType isP ty trm
+      fts <- reduce True fts0
       combs <- mapM ( \ (sf, cs, tyf, tf) -> do
                       vs <- gets localVars
                       putLocalVars $ substVarTypes sf vs
@@ -110,11 +111,11 @@ checkList isP mtys trms = case (mtys, trms) of
     _ -> return [(eps, noC, [], [])]
 
 -- | reduce a substitution
-reduceR :: Env -> (Subst, Constraints, Type, Term)
+reduceR :: Bool -> Env -> (Subst, Constraints, Type, Term)
         -> State Int (Result (Subst, Constraints, Type, Term))
-reduceR te (s, cr, ty, tr) = do
-    Result ds0 mc <- shapeRel te $ joinC cr
-                           $ fromTypeVars $ localTypeVars te
+reduceR doMono te (s, cr, ty, tr) = do
+    Result ds0 mc <- shapeRel te $ if doMono then joinC cr
+                           $ fromTypeVars $ localTypeVars te else cr
     let ds = map (improveDiag tr) ds0
     return $ case mc of
         Nothing -> Result ds Nothing
@@ -123,19 +124,20 @@ reduceR te (s, cr, ty, tr) = do
             ms = monoSubsts
                        (Rel.transClosure $ Rel.union (fromTypeMap $ typeMap te)
                           $ trel) (subst cs ty)
-            s2 = compSubst s1 ms
-            in Result ds $ Just (s2, substC ms $ foldr ( \ (a, t) -> insertC
-                                     (Subtyping a t))
-                        qs $ Rel.toList trel, subst s2 ty,
+            ss = if doMono then compSubst cs ms else cs
+            s2 = if doMono then compSubst s1 ms else s1
+            in Result ds $ Just (s2, (if doMono then substC ms else id)
+                   $ foldr ( \ (a, t) -> insertC (Subtyping a t))
+                        qs $ Rel.toList trel, subst ss ty,
                                      substTerm s2 tr)
 
 -- | reduce a substitution
-reduce :: [(Subst, Constraints, Type, Term)]
+reduce :: Bool -> [(Subst, Constraints, Type, Term)]
        -> State Env [(Subst, Constraints, Type, Term)]
-reduce alts = do
+reduce doMono alts = do
        te <- get
        combs <- mapM (\ alt -> do
-         Result ds mc <- toEnvState $ reduceR te alt
+         Result ds mc <- toEnvState $ reduceR doMono te alt
          case mc of
            Nothing -> do
              addDiags ds
@@ -157,7 +159,7 @@ checkForUninstantiatedVars ga t p = let
 typeCheck :: Type -> Term -> State Env (Maybe Term)
 typeCheck exTy trm =
     do alts0 <- inferWithMaybeType False (Just exTy) trm
-       alts <- reduce alts0
+       alts <- reduce True alts0
        te <- get
        let p = getRange trm
            ga = globAnnos te
@@ -250,7 +252,7 @@ inferAppl isP ps t1 t2 = do
                             TypedTerm (ApplTerm tf ta ps)
                             Inferred nTy ps)) args
             else return []) ops
-    reduce $ concat combs
+    reduce False $ concat combs
 
 getAllVarTypes :: Term -> [Type]
 getAllVarTypes = filter (not . null . leaves (> 0)) . getAllTypes
@@ -287,7 +289,7 @@ inferWithMaybeType isP mt trm = do
     Just inTy -> do
         combs <- mapM (\ q@(s, c, ty, t) -> let nTy = subst s inTy in
             if ty == nTy then return [q] else do
-            Result ds mc <- toEnvState $ reduceR te
+            Result ds mc <- toEnvState $ reduceR False te
               (s, insertC (Subtyping ty nTy) c, nTy, mkTypedTerm t nTy)
             case mc of
               Nothing -> do
@@ -409,7 +411,7 @@ infer isP trm = do
                                       else TypedTerm tr qual sTy ps)) rs
         QuantifiedTerm quant decls t ps -> do
             mapM_ addGenVarDecl decls
-            rs <- inferWithMaybeType False (Just unitType) t
+            rs <- inferWithMaybeType False (Just $ mkLazyType unitType) t
             putLocalVars vs
             putTypeMap tm
             return $ map ( \ (s, cs, typ, tr) ->

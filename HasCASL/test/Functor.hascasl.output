@@ -140,7 +140,7 @@ no kind found for 'a -> b'
 in type of '(var l : ParamDT G a)'
   type 'InitialCarrier' (30.21)
   is not unifiable with differently kinded type '_v82_F' (9.21)
-### Hint 34.9, untypeable term (with type: _v82_F a) 'l'
+### Hint 34.9, untypeable term (with type: _v82_F _v80_a) 'l'
 ### Hint 34.3-34.29,
 untypeable term (with type: ? _v79_a * ? _v79_a)
 '(map f l, fold initialAlg l)'
