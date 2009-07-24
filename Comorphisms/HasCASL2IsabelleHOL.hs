@@ -32,11 +32,12 @@ import Isabelle.Translate
 import Common.DocUtils
 import Common.Id
 import Common.Result
+import Common.Utils
 import qualified Data.Map as Map
 import qualified Data.Set as Set
 import Common.AS_Annotation
 
-import Data.List (elemIndex, nub)
+import Data.List (elemIndex)
 import Data.Maybe (catMaybes)
 
 -- | The identity of the comorphism
@@ -392,7 +393,7 @@ sortCaseAlts sign peqs =
   let consList
         | null peqs = error "No case alternatives."
         | otherwise = getCons sign (getName (head peqs))
-      groupedByCons = nub (map (groupCons peqs) consList)
+      groupedByCons = nubOrd (map (groupCons peqs) consList)
   in  map (flattenPattern sign) groupedByCons
 
 -- Returns a list of the constructors of the used datatype
@@ -456,20 +457,14 @@ flattenPattern sign peqs = case peqs of
               transCaseAlt sign (ProgEq (shrinkPat m) (term m) nullRange)
 
 data CaseMatrix = CaseMatrix
-    { patBrand :: PatBrand,
-      cons     :: Maybe As.Term,
-      args     :: [As.Term],
-      newArgs  :: [As.Term],
-      term     :: As.Term } deriving (Show)
+    { patBrand :: PatBrand
+    , cons     :: Maybe As.Term
+    , args     :: [As.Term]
+    , newArgs  :: [As.Term]
+    , term     :: As.Term
+    } deriving (Show, Eq, Ord)
 
-data PatBrand = Appl | Tuple | QuOp | QuVar deriving (Eq, Show)
-
-instance Eq CaseMatrix where
- (==) cmx cmx' = patBrand cmx == patBrand cmx'
-     && args cmx == args cmx'
-     && term cmx == term cmx'
-     && cons cmx == cons cmx'
-     && newArgs cmx  == newArgs cmx'
+data PatBrand = Appl | Tuple | QuOp | QuVar deriving (Show, Eq, Ord)
 
 {- First of all a matrix is allocated (matriArg) with the arguments of a
  constructor resp.  of a tuple. They're binded with the term, that would
@@ -540,8 +535,8 @@ matriArg pat cTerm =
 --                that only differ in their last argument
 --                then: reduces list of every CMslist to one CM
 concentrate :: [CaseMatrix] -> Env -> CaseMatrix
-concentrate cmxs sign = case map (redArgs sign) $
-                        nub $ map (groupByArgs cmxs) [0..(length cmxs-1)] of
+concentrate cmxs sign = case map (redArgs sign) $ nubOrd
+    $ map (groupByArgs cmxs) [0..(length cmxs-1)] of
   [h] -> h
   l -> concentrate l sign
 

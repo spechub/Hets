@@ -41,10 +41,11 @@ import qualified Data.Set as Set
 import qualified Data.Map as Map
 import qualified Common.Lib.Rel as Rel
 import Common.Lib.State
-import Common.Id
-import Common.Result
 import Common.Doc
 import Common.DocUtils
+import Common.Id
+import Common.Result
+import Common.Utils
 
 import Control.Exception (assert)
 

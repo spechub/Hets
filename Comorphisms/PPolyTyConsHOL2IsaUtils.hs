@@ -37,12 +37,13 @@ import Isabelle.Translate
 import Common.DocUtils
 import Common.Id
 import Common.Result
-import qualified Data.Map as Map
-import qualified Data.Set as Set
+import Common.Utils (isSingleton)
 import Common.Lib.State
 import Common.AS_Annotation
 import Common.GlobalAnnotations
 
+import qualified Data.Map as Map
+import qualified Data.Set as Set
 import Data.List
 import Data.Maybe (catMaybes, isNothing)
 import Control.Monad (foldM)

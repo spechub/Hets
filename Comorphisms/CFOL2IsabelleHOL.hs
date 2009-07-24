@@ -52,14 +52,11 @@ import Common.DocUtils
 import Common.Id
 import Common.ProofTree
 import Common.Result
-import Common.Utils (nubOrdOn)
+import Common.Utils (nubOrdOn, isSingleton)
 
 import qualified Data.Map as Map
 import qualified Data.Set as Set
 import qualified Data.List as List
-
-isSingleton :: Set.Set a -> Bool
-isSingleton s = Set.size s == 1
 
 -- | The identity of the comorphism
 data CFOL2IsabelleHOL = CFOL2IsabelleHOL deriving Show

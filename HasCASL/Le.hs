@@ -205,14 +205,6 @@ functions rely on 'Data.Set.size' being computable in constant time and
 would need to be rewritten for set implementations with a size
 function that is only linear. -}
 
--- | /O(1)/ test if the set's size is one
-isSingleton :: Set.Set a -> Bool
-isSingleton s = Set.size s == 1
-
--- | /O(1)/ test if the set's size is greater one
-hasMany :: Set.Set a -> Bool
-hasMany s = Set.size s > 1
-
 data Constrain = Kinding Type Kind
                | Subtyping Type Type
                  deriving (Eq, Ord, Show)

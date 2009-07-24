@@ -19,8 +19,11 @@ import HasCASL.AsUtils
 import HasCASL.VarDecl
 import HasCASL.Le
 import HasCASL.FoldTerm
-import qualified Data.Map as Map
+
+import Common.Utils (hasMany)
 import Common.Lib.State
+
+import qualified Data.Map as Map
 
 -- | simplify terms and patterns (if True)
 simplifyRec :: Bool -> Env -> MapRec

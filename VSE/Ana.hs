@@ -54,6 +54,7 @@ import Common.GlobalAnnotations
 import Common.ExtSign
 import Common.Id
 import Common.Result
+import Common.Utils (hasMany)
 import Common.Lib.State
 
 import CASL.AS_Basic_CASL
@@ -111,9 +112,6 @@ tokenToLower (Token s r) = Token (map toLower s) r
 
 idToLower :: Id -> Id
 idToLower (Id ts cs r) = Id (map tokenToLower ts) (map idToLower cs) r
-
-hasMany :: Set.Set a -> Bool
-hasMany s = Set.size s > 1
 
 getCases :: String -> Set.Set Id -> [Diagnosis]
 getCases msg =

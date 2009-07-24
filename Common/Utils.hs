@@ -13,7 +13,9 @@ Utility functions that can't be found in the libraries
 -}
 
 module Common.Utils
-  ( combine
+  ( isSingleton
+  , hasMany
+  , combine
   , trim
   , trimLeft
   , trimRight
@@ -41,6 +43,14 @@ import qualified Data.Set as Set
 
 import System.Environment
 import Control.Monad
+
+-- | /O(1)/ test if the set's size is one
+isSingleton :: Set.Set a -> Bool
+isSingleton s = Set.size s == 1
+
+-- | /O(1)/ test if the set's size is greater one
+hasMany :: Set.Set a -> Bool
+hasMany s = Set.size s > 1
 
 -- | Transform a list [l1,l2, ... ln] to (in sloppy notation)
 -- [[x1,x2, ... ,xn] | x1<-l1, x2<-l2, ... xn<-ln]
