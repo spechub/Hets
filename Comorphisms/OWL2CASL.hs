@@ -13,7 +13,7 @@ a not yet implemented comorphism
 
 module Comorphisms.OWL2CASL (OWL2CASL(..)) where
 
-import Logic.Logic
+import Logic.Logic as Logic
 import Logic.Comorphism
 import Common.AS_Annotation
 import Common.Result
@@ -22,6 +22,7 @@ import Control.Monad
 import Data.Char
 import qualified Data.Set as Set
 import qualified Data.Map as Map
+import Comorphisms.GetPreludeLib
 
 --OWL = domain
 import OWL.Logic_OWL
@@ -30,7 +31,6 @@ import OWL.Sublogic
 import OWL.Morphism
 import OWL.AS
 import qualified OWL.Sign as OS
-
 --CASL_DL = codomain
 import CASL.Logic_CASL
 import CASL.AS_Basic_CASL
@@ -71,9 +71,6 @@ instance Comorphism
     where
       sourceLogic OWL2CASL    = OWL
       sourceSublogic OWL2CASL = sl_top
-                                {
-                                  datatype = OWLNoDatatypes
-                                }
       targetLogic OWL2CASL    = CASL
       mapSublogic OWL2CASL _  = Just $ cFol
         { cons_features = emptyMapConsFeature }
@@ -117,12 +114,12 @@ noThing =
 
 -- | OWL Data topSort DATA
 dataS :: SORT
-dataS = stringToId "DATA"
+dataS = stringToId $ drop 3 $ show OWLDATA
 
 data VarOrIndi = OVar Int | OIndi URI
 
 predefSorts :: Set.Set SORT
-predefSorts = Set.fromList [dataS, thing]
+predefSorts = Set.fromList [thing]
 
 hetsPrefix :: String
 hetsPrefix = ""
@@ -154,6 +151,14 @@ mapSign sig =
                                     (Set.singleton (PredType [thing,thing])) x)
                             )
                    Map.empty $ Set.toList objProps
+      let dtProps = OS.dataValuedRoles sig
+      oDTProps <- foldM (\x y ->
+                               do
+                                 nId <- uriToId y
+                                 return $ (Map.insert nId
+                                    (Set.singleton (PredType [thing,dataS])) x)
+                            )
+                   Map.empty $ Set.toList dtProps
       let inDis = OS.individuals sig
       oInDis <- foldM (\x y ->
                                do
@@ -166,9 +171,22 @@ mapSign sig =
              {
                sortSet = predefSorts
              , emptySortSet = Set.empty
-             , predMap = oConcs `Map.union` oObjProps
+             , predMap = oConcs `Map.union` oObjProps `Map.union` oDTProps
              , opMap = oInDis
              }
+
+
+loadDataInformation :: OWLSub -> Result (Sign f (), [SenAttr (FORMULA ()) [Char]])
+loadDataInformation sl =
+    let
+        dts = Set.map (stringToId . printXSDName) $ datatype sl
+    in
+      return ((emptySign ())
+              {
+                sortSet = dts
+              }
+             , [])
+
 
 predefinedSentences :: [SenAttr (FORMULA ()) [Char]]
 predefinedSentences =
@@ -204,8 +222,14 @@ predefinedSentences =
 mapTheory :: (OS.Sign, [Named Axiom])
              -> Result (CASLSign, [Named CASLFORMULA])
 mapTheory (owlSig, owlSens) =
+	let
+	    sublogic =
+		sl_max (sl_sig owlSig) $
+		foldl sl_max sl_bottom $ map (sl_ax . sentence) owlSens
+	in
     do
       cSig          <- mapSign owlSig
+      (pSig, pSens) <- loadDataInformation sublogic
       (cSensI,nSig )<- foldM (\(x,y) z ->
                            do
                              (sen, sig) <- mapSentence y z
@@ -216,7 +240,7 @@ mapTheory (owlSig, owlSens) =
                                Nothing -> []
                                Just  a -> [a]
                         ) cSensI
-      return $ (nSig, predefinedSentences ++ cSens)
+      return $ (uniteCASLSign nSig pSig, predefinedSentences ++ cSens ++ pSens)
 
 -- | mapping of OWL to CASL_DL formulae
 mapSentence :: CASLSign                           -- ^ CASL Signature
@@ -583,10 +607,85 @@ mapAxiom cSig ax =
                                 nullRange
                                )
                                nullRange, cSig)
-              DataPropertyDomainOrRange _ _ ->
-                  fail "DataPropertyDomainOrRange nyi"
-              FunctionalDataProperty _ ->
-                  fail "FunctionalDataProperty nyi"
+              DataPropertyDomainOrRange domRn dpex ->
+                        do
+                          oEx <- mapDataProp cSig dpex a b
+                          case domRn of
+                            DataDomain mdom ->
+                                do
+                                  odes <- mapDescription cSig mdom a
+                                  let vars = (mk_Name a, mk_Name b)
+                                  return $ (Just $ Quantification Universal
+                                                [Var_decl [fst vars] thing nullRange]
+                                                (
+                                                 Quantification Existential
+                                                                    [Var_decl [snd vars] dataS nullRange]
+                                                                    (
+                                                                     Implication
+                                                                     (
+                                                                      oEx
+                                                                     )
+                                                                     (
+                                                                      odes
+                                                                     )
+                                                                     True
+                                                                     nullRange
+                                                                    )
+                                                 nullRange
+                                                )
+                                                nullRange, cSig)
+                            DataRange  rn  ->
+                                do
+                                  odes <- mapDataRange cSig rn b
+                                  let vars = (mk_Name a, mk_Name b)
+                                  return $ (Just $ Quantification Universal
+                                            [Var_decl [fst vars] thing nullRange]
+                                            (
+                                             Quantification Existential
+                                             [Var_decl [snd vars] dataS nullRange]
+                                             (
+                                              Implication
+                                              (
+                                               oEx
+                                              )
+                                              (
+                                               odes
+                                              )
+                                              True
+                                              nullRange
+                                             )
+                                             nullRange
+                                            )
+                                            nullRange, cSig)
+              FunctionalDataProperty o ->
+                        do
+                          so1 <- mapDataProp cSig o a b
+                          so2 <- mapDataProp cSig o a c
+                          return $ (Just $ Quantification Universal
+                                     [Var_decl [mk_Name a] thing nullRange
+                                     ,Var_decl [mk_Name b] dataS nullRange
+                                     ,Var_decl [mk_Name c] dataS nullRange
+                                     ]
+                                     (
+                                      Implication
+                                      (
+                                       Conjunction [so1, so2] nullRange
+                                      )
+                                      (
+                                       Strong_equation
+                                       (
+                                        Qual_var (mk_Name b) dataS nullRange
+                                       )
+                                       (
+                                        Qual_var (mk_Name c) dataS nullRange
+                                       )
+                                       nullRange
+                                      )
+                                      True
+                                      nullRange
+                                     )
+                                    nullRange, cSig
+                                   )
               SameOrDifferentIndividual sameOrDiff indis ->
                   do
                     inD <- mapM (mapIndivURI cSig) indis
@@ -658,8 +757,46 @@ mapAxiom cSig ax =
                                           nullRange
                                          )
                                          nullRange, cSig)
-              DataPropertyAssertion _ ->
-                  fail "DataPropertyAssertion nyi"
+              DataPropertyAssertion ass ->
+                  case ass of
+                    Assertion dPropExp posNeg sourceInd targetInd ->
+                        do
+                          inS <- mapIndivURI cSig sourceInd
+                          inT <- mapConstant cSig targetInd
+                          dPropH <- mapDataProp cSig dPropExp a b
+                          let dProp = case posNeg of
+                                        Positive -> dPropH
+                                        Negative -> Negation
+                                                    dPropH
+                                                    nullRange
+                          return $ (Just $ Quantification Universal
+                                             [Var_decl [mk_Name a]
+                                                       thing nullRange
+                                             ,Var_decl [mk_Name b]
+                                                       dataS nullRange]
+                                    (
+                                     Implication
+                                     (
+                                      Conjunction
+                                      [
+                                       Strong_equation
+                                       (Qual_var (mk_Name a) thing nullRange)
+                                       inS
+                                       nullRange
+                                      ,Strong_equation
+                                       (Qual_var (mk_Name b) dataS nullRange)
+                                       inT
+                                       nullRange
+                                      ]
+                                      nullRange
+                                     )
+                                     (
+                                      dProp
+                                     )
+                                     True
+                                     nullRange
+                                    )
+                                    nullRange, cSig)
               Declaration _ ->
                   return $ (Nothing, cSig)
         EntityAnno _  ->
@@ -681,6 +818,24 @@ mapComObjectPropsList cSig props num1 num2 =
                        ) $
                   comPairs props props
       return $ oProps
+
+-- | mapping of data constants
+mapConstant :: CASLSign
+            -> Constant
+            -> Result (TERM ())
+mapConstant _ c =
+    do
+      let cl = case c of
+                 Constant l _  -> l
+      return $ Application
+               (
+                Qual_op_name
+                (stringToId cl)
+                (Op_type Total [] dataS nullRange)
+                nullRange
+               )
+               []
+               nullRange
 
 -- | Mapping of subobj properties
 mapSubObjProp :: CASLSign
@@ -905,6 +1060,29 @@ comPairs [] []     = []
 comPairs _  []     = []
 comPairs [] _      = []
 comPairs (a:as) (_:bs) = zip (replicate (length bs) a) bs ++ comPairs as bs
+
+-- | mapping of Data Range
+mapDataRange :: CASLSign
+             -> DataRange                -- ^ OWL DataRange
+             -> Int                      -- ^ Current Variablename
+             -> Result CASLFORMULA       -- ^ CASL_DL Formula
+mapDataRange cSig rn inId =
+    do
+      let uid = mk_Name inId
+      case rn of
+        DRDatatype uril ->
+          do
+            ur <- uriToId uril
+            return $ (Membership
+                      (Qual_var uid thing nullRange)
+                      ur
+                      nullRange)
+        DataComplementOf dr ->
+            do
+              dc <- mapDataRange cSig dr inId
+              return $ (Negation dc nullRange)
+        DataOneOf _ -> error "nyi"
+        DatatypeRestriction _ _ -> error "nyi"
 
 -- | mapping of OWL Descriptions
 mapDescription :: CASLSign

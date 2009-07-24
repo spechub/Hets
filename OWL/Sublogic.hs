@@ -27,19 +27,29 @@ module OWL.Sublogic
     , pr_o_file
     , pr_sig
     , pr_mor
+    , printXSDName
     ) where
 
 import OWL.AS
 import OWL.Morphism
 import OWL.Sign
+import qualified Data.Set as Set
 
 import qualified Data.Set as Set
 
 data NumberRestrictions = None | Unqualified | Qualified
                         deriving (Show, Eq, Ord)
 
-data OWLDatatypes = OWLNoDatatypes | OWLDatatypes
+data OWLDatatypes = OWLDATA | OWLString |
+		    OWLnormalizedString |
+		    OWLBoolean | OWLDecimal | OWLFloat | OWLDouble |
+		    OWLInteger | OWLnonNegativeInteger | OWLpositiveInteger |
+		    OWLnonPositiveInteger | OWLnegativeInteger
                deriving (Show, Eq, Ord)
+
+printXSDName :: (Show a) => a -> [Char]
+printXSDName dt =
+    drop 3 $ show dt
 
 data OWLSub = OWLSub
             {
@@ -50,7 +60,7 @@ data OWLSub = OWLSub
             , roleHierarchy :: Bool
             , complexRoleInclusions :: Bool
             , addFeatures :: Bool
-            , datatype :: OWLDatatypes
+            , datatype :: Set.Set OWLDatatypes
             } deriving (Show, Eq, Ord)
 
 -- | sROIQ(D)
@@ -64,7 +74,18 @@ sl_top = OWLSub
       , roleHierarchy = True
       , complexRoleInclusions = True
       , addFeatures = True
-      , datatype = OWLDatatypes
+      , datatype = Set.fromList [OWLDATA
+                                , OWLString
+                                , OWLnormalizedString
+                                , OWLBoolean
+                                , OWLDecimal
+                                , OWLFloat
+                                , OWLDouble
+                                , OWLInteger
+                                , OWLnonNegativeInteger
+                                , OWLpositiveInteger
+				, OWLnonPositiveInteger
+                                , OWLnegativeInteger]
       }
 
 -- ALC
@@ -78,7 +99,7 @@ sl_bottom = OWLSub
             , roleHierarchy = False
             , complexRoleInclusions = False
             , addFeatures = False
-            , datatype = OWLNoDatatypes
+            , datatype = Set.empty
             }
 
 
@@ -100,8 +121,8 @@ sl_max sl1 sl2 =
                               (complexRoleInclusions sl2)
     , addFeatures = max (addFeatures sl1)
                     (addFeatures sl2)
-    , datatype = max (datatype sl1)
-                  (datatype sl2)
+    , datatype = Set.union (datatype sl1)
+                 (datatype sl2)
     }
 
 -- | Naming for Description Logics
@@ -117,7 +138,19 @@ sl_name sl =
         Qualified   -> "Q"
         Unqualified -> "N"
         None        -> "")
-    ++ if datatype sl == OWLDatatypes then "(D)" else ""
+    ++ if datatype sl /= Set.empty then
+           "(D"
+           ++
+             (if ((Set.filter (\x -> x /= OWLDATA) $ datatype sl) /= Set.empty)
+              then
+                 " {" ++ (init $ (Set.fold (\x y -> (drop 3 $ show x) ++
+                                                    " " ++ y) "" $
+                              Set.filter (\x -> x /= OWLDATA) $ datatype sl))
+                         ++ "}"
+              else
+                 "")
+           ++
+           ")" else ""
 
 requireQualNumberRestrictions :: OWLSub -> OWLSub
 requireQualNumberRestrictions sl = sl { numberRestrictions = Qualified }
@@ -174,7 +207,8 @@ requireInverseRoles sl = sl
 requireDatatype :: OWLSub -> OWLSub
 requireDatatype sl = sl
                       {
-                        datatype = OWLDatatypes
+                        datatype = Set.union (datatype sl)
+                                   $ Set.singleton OWLDATA
                       }
 
 sl_ax :: Axiom -> OWLSub
@@ -252,16 +286,67 @@ sl_ent (Entity et _) =
       Datatype -> requireDatatype sl_bottom
       _        -> sl_bottom
 
+sl_data_uri :: QName -> OWLSub
+sl_data_uri ur =
+    case (namePrefix ur, localPart ur) of
+      ("xsd", "string")           ->
+	  sl_bottom {datatype = Set.fromList [OWLString, OWLDATA]}
+      ("xsd", "#string")           ->
+	  sl_bottom {datatype = Set.fromList [OWLString, OWLDATA]}
+      ("xsd", "normalizedString") ->
+	  sl_bottom {datatype = Set.fromList [OWLnormalizedString, OWLDATA]}
+      ("xsd", "#normalizedString") ->
+	  sl_bottom {datatype = Set.fromList [OWLnormalizedString, OWLDATA]}
+      ("xsd", "boolean") ->
+          sl_bottom {datatype = Set.fromList [OWLBoolean, OWLDATA]}
+      ("xsd", "#boolean") ->
+          sl_bottom {datatype = Set.fromList [OWLBoolean, OWLDATA]}
+      ("xsd", "decimal") ->
+	  sl_bottom {datatype = Set.fromList [OWLDecimal, OWLDATA]}
+      ("xsd", "#decimal") ->
+	  sl_bottom {datatype = Set.fromList [OWLDecimal, OWLDATA]}
+      ("xsd", "float") ->
+	  sl_bottom {datatype = Set.fromList [OWLFloat, OWLDATA]}
+      ("xsd", "#float") ->
+	  sl_bottom {datatype = Set.fromList [OWLFloat, OWLDATA]}
+      ("xsd", "double") ->
+	  sl_bottom {datatype = Set.fromList [OWLDouble, OWLDATA]}
+      ("xsd", "#double") ->
+	  sl_bottom {datatype = Set.fromList [OWLDouble, OWLDATA]}
+      ("xsd", "integer") ->
+          sl_bottom {datatype = Set.fromList [OWLInteger, OWLDATA]}
+      ("xsd", "#integer") ->
+          sl_bottom {datatype = Set.fromList [OWLInteger, OWLDATA]}
+      ("xsd", "nonNegativeInteger") ->
+          sl_bottom {datatype = Set.fromList [OWLnonNegativeInteger, OWLDATA]}
+      ("xsd", "#nonNegativeInteger") ->
+          sl_bottom {datatype = Set.fromList [OWLnonNegativeInteger, OWLDATA]}
+      ("xsd", "positiveInteger") ->
+          sl_bottom {datatype = Set.fromList [OWLpositiveInteger, OWLDATA]}
+      ("xsd", "#positiveInteger") ->
+          sl_bottom {datatype = Set.fromList [OWLpositiveInteger, OWLDATA]}
+      ("xsd", "nonPositiveInteger") ->
+          sl_bottom {datatype = Set.fromList [OWLnonPositiveInteger, OWLDATA]}
+      ("xsd", "#nonPositiveInteger") ->
+          sl_bottom {datatype = Set.fromList [OWLnonPositiveInteger, OWLDATA]}
+      ("xsd", "negativeInteger") ->
+          sl_bottom {datatype = Set.fromList [OWLnegativeInteger, OWLDATA]}
+      ("xsd", "#negativeInteger") ->
+          sl_bottom {datatype = Set.fromList [OWLnegativeInteger, OWLDATA]}
+      _                          ->
+          sl_bottom {datatype = Set.singleton OWLDATA}
+
 sl_data_prop :: DataPropertyExpression
              -> OWLSub
-sl_data_prop _ = requireDatatype sl_bottom
+sl_data_prop dt = sl_data_uri dt
+
 
 sl_data_range :: DataRange
               -> OWLSub
 sl_data_range rn =
     requireDatatype $
     case rn of
-      DRDatatype _            -> sl_bottom
+      DRDatatype ur          -> sl_data_uri ur
       DataComplementOf c      -> sl_data_range c
       DataOneOf _             -> requireNominals sl_bottom
       DatatypeRestriction c _ -> sl_data_range c
@@ -344,7 +429,7 @@ pr_mor s a = a
 
 pr_sig :: OWLSub -> Sign -> Sign
 pr_sig s a =
-    if datatype s == OWLNoDatatypes
+    if datatype s == Set.empty
        then
            a
            {
