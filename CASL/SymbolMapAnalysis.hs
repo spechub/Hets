@@ -363,7 +363,7 @@ inducedFromToMorphismExt extInd extEm isSubExt diffExt rmap sig1@(ExtSign _ sy1)
            combs = combine (map ASymbol $ Set.toList ss1)
              $ map ASymbol $ Set.toList sy2
            fcombs = filter (all compatibleRawSymbs) combs
-       in if null $ drop 20 combs then
+       in if null $ drop 170 combs then
           case filter (isOk . fst) $ map (iftm . Map.union rmap . Map.fromList)
                fcombs of
             [(r, m)] -> (if length fcombs > 1 then warning else hint)
