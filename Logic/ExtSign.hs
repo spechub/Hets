@@ -47,9 +47,9 @@ ext_empty_signature l = mkExtSign (empty_signature l)
 checkExtSign :: Logic lid sublogics
         basic_spec sentence symb_items symb_map_items
         sign morphism symbol raw_symbol proof_tree
-        => lid -> String -> ExtSign sign symbol -> Result (ExtSign sign symbol)
+        => lid -> String -> ExtSign sign symbol -> Result ()
 checkExtSign l msg e@(ExtSign s sy) = let sys = sym_of l s in
-    if Set.isSubsetOf sy sys then return e else
+    if Set.isSubsetOf sy sys then return () else
         error $ "inconsistent symbol set in extended signature: " ++ msg ++ "\n"
              ++ showDoc e "\rwith unknown symbols\n"
              ++ showDoc (Set.difference sy sys) ""
@@ -59,9 +59,9 @@ ext_signature_union :: Logic lid sublogics
         sign morphism symbol raw_symbol proof_tree
         => lid -> ExtSign sign symbol -> ExtSign sign symbol
                -> Result (ExtSign sign symbol)
-ext_signature_union l e1 e2 = do
-    ExtSign s1 _ <- checkExtSign l "u1" e1
-    ExtSign s2 _ <- checkExtSign l "u2" e2
+ext_signature_union l e1@(ExtSign s1 _) e2@(ExtSign s2 _) = do
+    checkExtSign l "u1" e1
+    checkExtSign l "u2" e2
     s <- signature_union l s1 s2
     return $ makeExtSign l s
 
@@ -77,9 +77,9 @@ ext_final_union :: Logic lid sublogics
         sign morphism symbol raw_symbol proof_tree
         => lid -> ExtSign sign symbol -> ExtSign sign symbol
                -> Result (ExtSign sign symbol)
-ext_final_union l e1 e2 = do
-    ExtSign s1 _ <- checkExtSign l "f1" e1
-    ExtSign s2 _ <- checkExtSign l "f2" e2
+ext_final_union l e1@(ExtSign s1 _) e2@(ExtSign s2 _) = do
+    checkExtSign l "f1" e1
+    checkExtSign l "f2" e2
     s <- final_union l s1 s2
     return $ makeExtSign l s
 
@@ -111,33 +111,31 @@ ext_induced_from_morphism :: Logic lid sublogics
                -> Result morphism
 ext_induced_from_morphism l rmap (ExtSign sigma _) = do
   -- first check: do all source raw symbols match with source signature?
+  checkRawMap l rmap sigma
+  induced_from_morphism l rmap sigma
+
+checkRawMap :: Logic lid sublogics
+        basic_spec sentence symb_items symb_map_items
+        sign morphism symbol raw_symbol proof_tree
+        => lid -> EndoMap raw_symbol -> sign -> Result ()
+checkRawMap l rmap sigma = do
   let syms = sym_of l sigma
-      wrongRsyms = Set.filter
-          ( \ rsy -> Set.null $ Set.filter (matchesND rsy) syms)
+      unknownSyms = Set.filter
+          ( \ rsy -> Set.null $ Set.filter (flip (matches l) rsy) syms)
           $ Map.keysSet rmap
-      matchesND rsy sy = let rsy2 = symbol_to_raw l sy in
-        rsy == rsy2 || matches l sy rsy
-        && Map.lookup rsy2 rmap == Nothing
-      (unknownSyms, directlyMappedSyms) = Set.partition
-             ( \ rsy -> Set.null $ Set.filter (\ sy -> matches l sy rsy) syms)
-             wrongRsyms
-  -- ... if not, generate an error
   unless (Set.null unknownSyms)
     $ Result [mkDiag Error "unknown symbols" unknownSyms] $ Just ()
-  unless (Set.null directlyMappedSyms)
-    $ Result [mkDiag Error "symbols already mapped directly" directlyMappedSyms]
-      $ Just ()
-  induced_from_morphism l rmap sigma
 
 ext_induced_from_to_morphism :: Logic lid sublogics
         basic_spec sentence symb_items symb_map_items
         sign morphism symbol raw_symbol proof_tree
         => lid -> EndoMap raw_symbol -> ExtSign sign symbol
                -> ExtSign sign symbol -> Result morphism
-ext_induced_from_to_morphism l r s t = do
-    u@(ExtSign p sy) <- checkExtSign l "from" s
-    v <- checkExtSign l "to" t
-    mor <- induced_from_to_morphism l r u v
+ext_induced_from_to_morphism l r s@(ExtSign p sy) t = do
+    checkExtSign l "from" s
+    checkExtSign l "to" t
+    checkRawMap l r p
+    mor <- induced_from_to_morphism l r s t
     let sysI = Set.toList $ Set.difference (sym_of l p) sy
         morM = symmap_of l mor
         msysI = map (\ sym -> Map.findWithDefault sym sym morM) sysI
