@@ -186,13 +186,16 @@ directOpMap :: RawSymbolMap -> Sort_map -> Id -> Set.Set OpType
 directOpMap rmap sort_Map ide' ots m' =
   let ol = Set.toList ots
       rl = map (lookupOpSymbol rmap ide') ol
-  in case catMaybes rl of
-       [] -> m'
-       rsy : _ -> foldr (\ (ot, mrsy) m ->
+      (ms, os) = partition (isJust . fst) $ zip rl ol
+  in case ms of
+       l@((Just rsy, _) : rs) ->
+         foldr (\ (_, ot) ->
            insertmapOpSym sort_Map ide'
-             (case mrsy of
-                Nothing -> AKindedSymb Implicit $ rawSymName rsy
-                Just rsy2 -> rsy2) ot m) m' $ zip ol rl
+              (AKindedSymb Implicit $ rawSymName rsy) ot)
+         (foldr (\ (Just rsy2, ot) ->
+           insertmapOpSym sort_Map ide' rsy2 ot) m' l)
+         $ rs ++ os
+       _ -> m'
 
 lookupOpSymbol :: RawSymbolMap -> Id -> OpType -> Maybe RawSymbol
 lookupOpSymbol rmap ide' ot = let mkS = idToOpSymbol ide' in
