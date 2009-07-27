@@ -127,7 +127,7 @@ inducedFromMorphismExt extInd extEm rmap sigma = do
                 return $ if s' == s then m1 else Map.insert s s' m1)
               (return Map.empty) (sortSet sigma)
   -- compute the op map (as a Map)
-  op_Map <- Map.foldWithKey (opFun rmap sort_Map)
+  op_Map <- Map.foldWithKey (opFun sigma rmap sort_Map)
               (return Map.empty) (opMap sigma)
   -- compute the pred map (as a Map)
   pred_Map <- Map.foldWithKey (predFun rmap sort_Map)
@@ -160,37 +160,39 @@ sortFun rmap s =
 
   {- to a Op_map, add everything resulting from mapping (id, ots)
   according to rmap -}
-opFun :: RawSymbolMap -> Sort_map -> Id -> Set.Set OpType
+opFun :: Sign f e -> RawSymbolMap -> Sort_map -> Id -> Set.Set OpType
       -> Result Op_map -> Result Op_map
-opFun rmap sort_Map ide ots m =
+opFun src rmap sort_Map ide ots m =
     -- first consider all directly mapped profiles
-    let (ots1,m1) = Set.fold (directOpMap rmap sort_Map ide) (Set.empty,m) ots
+    let otls = Rel.partSet (leqF src) ots
+        m1 = foldr (directOpMap rmap sort_Map ide) m otls
     -- now try the remaining ones with (un)kinded raw symbol
     in case (Map.lookup (AKindedSymb Ops_kind ide) rmap,
                 Map.lookup (AKindedSymb Implicit ide) rmap) of
-       (Just rsy1, Just rsy2) ->
-          do m' <- m
-             plain_error m'
-               ("operation " ++ showId ide
-                " is mapped twice: "
-                ++ showDoc (rsy1, rsy2) "")
-               $ appRange (getRange rsy1) $ getRange rsy2
+       (Just rsy1, Just rsy2) -> let
+          m2 = Set.fold (insertmapOpSym sort_Map ide rsy1) m1 ots
+          in Set.fold (insertmapOpSym sort_Map ide rsy2) m2 ots
        (Just rsy, Nothing) ->
-          Set.fold (insertmapOpSym sort_Map ide rsy) m1 ots1
+          Set.fold (insertmapOpSym sort_Map ide rsy) m1 ots
        (Nothing, Just rsy) ->
-          Set.fold (insertmapOpSym sort_Map ide rsy) m1 ots1
+          Set.fold (insertmapOpSym sort_Map ide rsy) m1 ots
        -- Anything not mapped explicitly is left unchanged
-       (Nothing,Nothing) -> m1
+       (Nothing, Nothing) -> m1
 
     -- try to map an operation symbol directly
     -- collect all opTypes that cannot be mapped directly
-directOpMap :: RawSymbolMap -> Sort_map -> Id -> OpType
-            -> (Set.Set OpType, Result Op_map)
-            -> (Set.Set OpType, Result Op_map)
-directOpMap rmap sort_Map ide' ot (ots',m') =
-  case lookupOpSymbol rmap ide' ot of
-    Just rsy -> (ots', insertmapOpSym sort_Map ide' rsy ot m')
-    Nothing -> (Set.insert ot ots', m')
+directOpMap :: RawSymbolMap -> Sort_map -> Id -> Set.Set OpType
+            -> Result Op_map -> Result Op_map
+directOpMap rmap sort_Map ide' ots m' =
+  let ol = Set.toList ots
+      rl = map (lookupOpSymbol rmap ide') ol
+  in case catMaybes rl of
+       [] -> m'
+       rsy : _ -> foldr (\ (ot, mrsy) m ->
+           insertmapOpSym sort_Map ide'
+             (case mrsy of
+                Nothing -> AKindedSymb Implicit $ rawSymName rsy
+                Just rsy2 -> rsy2) ot m) m' $ zip ol rl
 
 lookupOpSymbol :: RawSymbolMap -> Id -> OpType -> Maybe RawSymbol
 lookupOpSymbol rmap ide' ot = let mkS = idToOpSymbol ide' in
@@ -199,7 +201,7 @@ lookupOpSymbol rmap ide' ot = let mkS = idToOpSymbol ide' in
       (ASymbol (mkS $ mkTotal ot)) rmap
     res -> res
 
-    -- map op symbol (ide,ot) to raw symbol rsy
+    -- map op symbol (ide, ot) to raw symbol rsy
 mappedOpSym :: Sort_map -> Id -> OpType -> RawSymbol -> Result (Id, OpKind)
 mappedOpSym sort_Map ide ot rsy =
     let opSym = "operation symbol " ++ showDoc (idToOpSymbol ide ot)
@@ -218,15 +220,29 @@ mappedOpSym sort_Map ide ot rsy =
                (opSym ++ "symbol of wrong kind: " ++ showDoc rsy "")
                $ getRange rsy
 
-    -- insert mapping of op symbol (ide,ot) to raw symbol rsy into m
+    -- insert mapping of op symbol (ide, ot) to raw symbol rsy into m
 insertmapOpSym :: Sort_map -> Id -> RawSymbol -> OpType
                -> Result Op_map -> Result Op_map
 insertmapOpSym sort_Map ide rsy ot m = do
       m1 <- m
       (ide', kind') <- mappedOpSym sort_Map ide ot rsy
-      return $ if ide == ide' && kind' == opKind ot then m1 else
-                   Map.insert (ide, mkPartial ot) (ide', kind') m1
-    -- insert mapping of op symbol (ide, ot) to itself into m
+      let otsy = Symbol ide $ OpAsItemType ot
+          pos = getRange rsy
+          m2 = Map.insert (ide, mkPartial ot) (ide', kind') m1
+      case Map.lookup (ide, mkPartial ot) m1 of
+        Nothing -> if ide == ide' && kind' == opKind ot then
+            case rsy of
+              ASymbol _ -> return m1
+              _ -> hint m1 ("identity mapping of "
+                               ++ showDoc otsy "") pos
+            else return m2
+        Just (ide'', kind'') -> if ide' == ide'' then
+             warning (if kind' < kind'' then m2 else m1)
+             ("ignoring duplicate mapping of " ++ showDoc otsy "")
+             pos
+            else plain_error m1
+             ("conflicting mapping of " ++ showDoc otsy " to " ++
+               show ide' ++ " and " ++ show ide'') pos
 
   {- to a Pred_map, add evering resulting from mapping (ide,pts)
   according to rmap -}
@@ -360,7 +376,7 @@ inducedFromToMorphismExt extInd extEm isSubExt diffExt rmap sig1@(ExtSign _ sy1)
                    compatibleSymbols True (s, s2)) sy2)
              $ Set.filter (\ s -> not $ any (matches s) $ Map.keys rmap)
                  $ sy1
-           combs = combine (map ASymbol $ Set.toList ss1)
+           combs = pairs (map ASymbol $ Set.toList ss1)
              $ map ASymbol $ Set.toList sy2
            fcombs = filter (all compatibleRawSymbs) combs
        in if null (drop 170 combs) && null (drop 20 fcombs) then
@@ -393,8 +409,8 @@ compatibleRawSymbs p = case p of
   (ASymbol s1, ASymbol s2) -> compatibleSymbols False (s1, s2)
   _ -> False -- irrelevant
 
-combine :: [a] -> [a] -> [[(a, a)]]
-combine l1 = map (zip l1) . takeKFromN l1
+pairs :: [a] -> [a] -> [[(a, a)]]
+pairs l1 = map (zip l1) . takeKFromN l1
 
 takeKFromN :: [b] -> [a] -> [[a]]
 takeKFromN s l = case s of
@@ -538,12 +554,17 @@ cogeneratedSign extEm symset sigma =
     PredAsItemType pt -> predArgs pt
     _ -> [] -- for other kinds the profiles need to be looked up
 
+leCl :: Ord a => (a -> a -> Bool) -> Map.Map Id (Set.Set a)
+     -> Map.Map Id [Set.Set a]
+leCl eq = Map.map (Rel.partSet eq)
+
+mkp :: Map.Map Id (Set.Set OpType) -> Map.Map Id (Set.Set OpType)
+mkp = Map.map makePartial
+
 finalUnion :: (e -> e -> e) -- ^ join signature extensions
            -> Sign f e -> Sign f e -> Result (Sign f e)
 finalUnion addSigExt s1 s2 =
- let leCl eq = Map.map (Rel.partSet eq)
-     mkp = Map.map makePartial
-     extP = Map.map (map $ \ s -> (s, [], False))
+ let extP = Map.map (map $ \ s -> (s, [], False))
      o1 = extP $ leCl (leqF s1) $ mkp $ opMap s1
      o2 = extP $ leCl (leqF s2) $ mkp $ opMap s2
      p1 = extP $ leCl (leqP s1) $ predMap s1
