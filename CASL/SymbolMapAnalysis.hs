@@ -130,7 +130,7 @@ inducedFromMorphismExt extInd extEm rmap sigma = do
   op_Map <- Map.foldWithKey (opFun sigma rmap sort_Map)
               (return Map.empty) (opMap sigma)
   -- compute the pred map (as a Map)
-  pred_Map <- Map.foldWithKey (predFun rmap sort_Map)
+  pred_Map <- Map.foldWithKey (predFun sigma rmap sort_Map)
               (return Map.empty) (predMap sigma)
   em <- extEm rmap $ extendedInfo sigma
   -- return assembled morphism
@@ -247,39 +247,39 @@ insertmapOpSym sort_Map ide rsy ot m = do
   {- to a Pred_map, add evering resulting from mapping (ide,pts)
   according to rmap -}
 
-predFun :: RawSymbolMap -> Sort_map -> Id -> Set.Set PredType
+predFun :: Sign f e -> RawSymbolMap -> Sort_map -> Id -> Set.Set PredType
                -> Result Pred_map -> Result Pred_map
-predFun rmap sort_Map ide pts m =
+predFun src rmap sort_Map ide pts m =
     -- first consider all directly mapped profiles
-    let (pts1,m1) = Set.fold (directPredMap rmap sort_Map ide)
-                    (Set.empty,m) pts
+    let ptls = Rel.partSet (leqP src) pts
+        m1 = foldr (directPredMap rmap sort_Map ide) m ptls
     -- now try the remaining ones with (un)kinded raw symbol
     in case (Map.lookup (AKindedSymb Preds_kind ide) rmap,
                 Map.lookup (AKindedSymb Implicit ide) rmap) of
-       (Just rsy1, Just rsy2) ->
-          do m' <- m
-             plain_error m'
-               ("predicate " ++ showId ide
-                " is mapped twice: " ++
-                showDoc (rsy1, rsy2) "")
-               $ appRange (getRange rsy1) $ getRange rsy2
+       (Just rsy1, Just rsy2) -> let
+          m2 = Set.fold (insertmapPredSym sort_Map ide rsy1) m1 pts
+          in Set.fold (insertmapPredSym sort_Map ide rsy2) m2 pts
        (Just rsy, Nothing) ->
-          Set.fold (insertmapPredSym sort_Map ide rsy) m1 pts1
+          Set.fold (insertmapPredSym sort_Map ide rsy) m1 pts
        (Nothing, Just rsy) ->
-          Set.fold (insertmapPredSym sort_Map ide rsy) m1 pts1
+          Set.fold (insertmapPredSym sort_Map ide rsy) m1 pts
        -- Anything not mapped explicitly is left unchanged
-       (Nothing,Nothing) -> m1
+       (Nothing, Nothing) -> m1
 
     -- try to map a predicate symbol directly
     -- collect all predTypes that cannot be mapped directly
-directPredMap :: RawSymbolMap -> Sort_map -> Id -> PredType
-              -> (Set.Set PredType, Result Pred_map)
-              -> (Set.Set PredType, Result Pred_map)
-directPredMap rmap sort_Map ide pt (pts,m) =
-      case Map.lookup (ASymbol (idToPredSymbol ide pt)) rmap of
-        Just rsy ->
-          (pts,insertmapPredSym sort_Map ide rsy pt m)
-        Nothing -> (Set.insert pt pts,m)
+directPredMap :: RawSymbolMap -> Sort_map -> Id -> Set.Set PredType
+              -> Result Pred_map -> Result Pred_map
+directPredMap rmap sort_Map ide pts m' =
+  let pl = Set.toList pts
+      rl = map (\ pt -> Map.lookup (ASymbol $ idToPredSymbol ide pt) rmap) pl
+  in case catMaybes rl of
+       [] -> m'
+       rsy : _ -> foldr (\ (pt, mrsy) m ->
+           insertmapPredSym sort_Map ide
+             (case mrsy of
+                Nothing -> AKindedSymb Implicit $ rawSymName rsy
+                Just rsy2 -> rsy2) pt m) m' $ zip pl rl
 
     -- map pred symbol (ide,pt) to raw symbol rsy
 mappedPredSym :: Sort_map -> Id -> PredType -> RawSymbol -> Result Id
@@ -305,8 +305,22 @@ insertmapPredSym :: Sort_map -> Id -> RawSymbol -> PredType
 insertmapPredSym sort_Map ide rsy pt m = do
       m1 <- m
       ide' <- mappedPredSym sort_Map ide pt rsy
-      return $ if ide' == ide then m1 else Map.insert (ide, pt) ide' m1
-    -- insert mapping of pred symbol (ide,pt) to itself into m
+      let ptsy = Symbol ide $ PredAsItemType pt
+          pos = getRange rsy
+          m2 = Map.insert (ide, pt) ide' m1
+      case Map.lookup (ide, pt) m1 of
+        Nothing -> if ide == ide' then
+            case rsy of
+              ASymbol _ -> return m1
+              _ -> hint m1 ("identity mapping of "
+                               ++ showDoc ptsy "") pos
+            else return m2
+        Just ide'' -> if ide' == ide'' then
+            warning m1
+             ("ignoring duplicate mapping of " ++ showDoc ptsy "") pos
+            else plain_error m1
+             ("conflicting mapping of " ++ showDoc ptsy " to " ++
+               show ide' ++ " and " ++ show ide'') pos
 
 {-
 inducedFromToMorphism :: RawSymbolMap -> sign -> sign -> Result morphism
