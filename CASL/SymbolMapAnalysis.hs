@@ -191,7 +191,8 @@ directOpMap rmap sort_Map ide ots m =
        l@((Just rsy, _) : rs) ->
          foldr (\ (_, ot) ->
            insertmapOpSym sort_Map ide
-              (AKindedSymb Implicit $ rawSymName rsy) ot)
+              (ASymbol $ idToOpSymbol (rawSymName rsy)
+                       $ mapOpType sort_Map ot) ot)
          (foldr (\ (Just rsy2, ot) ->
            insertmapOpSym sort_Map ide rsy2 ot) m l)
          $ rs ++ os
@@ -281,7 +282,8 @@ directPredMap rmap sort_Map ide pts m =
        l@((Just rsy, _) : rs) ->
          foldr (\ (_, pt) ->
            insertmapPredSym sort_Map ide
-              (AKindedSymb Implicit $ rawSymName rsy) pt)
+              (ASymbol $ idToPredSymbol (rawSymName rsy)
+                       $ mapPredType sort_Map pt) pt)
          (foldr (\ (Just rsy2, pt) ->
            insertmapPredSym sort_Map ide rsy2 pt) m l)
          $ rs ++ ps
