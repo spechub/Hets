@@ -195,7 +195,7 @@ statSymbMapItems sl = do
                 _ -> return m3
             _ -> return m3
           Just rsy3 -> if rsy2 == rsy3 then
-            warning m1 ("ignoring duplicate mapping of "
+            hint m1 ("ignoring duplicate mapping of "
                        ++ showDoc rsy1 "") $ getRange rsy1 else
               plain_error m1 ("Symbol " ++ showDoc rsy1 " mapped twice to "
                 ++ showDoc rsy2 " and " ++ showDoc rsy3 "") nullRange
