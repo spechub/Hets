@@ -183,19 +183,19 @@ opFun src rmap sort_Map ide ots m =
     -- collect all opTypes that cannot be mapped directly
 directOpMap :: RawSymbolMap -> Sort_map -> Id -> Set.Set OpType
             -> Result Op_map -> Result Op_map
-directOpMap rmap sort_Map ide' ots m' =
+directOpMap rmap sort_Map ide ots m =
   let ol = Set.toList ots
-      rl = map (lookupOpSymbol rmap ide') ol
+      rl = map (lookupOpSymbol rmap ide) ol
       (ms, os) = partition (isJust . fst) $ zip rl ol
   in case ms of
        l@((Just rsy, _) : rs) ->
          foldr (\ (_, ot) ->
-           insertmapOpSym sort_Map ide'
+           insertmapOpSym sort_Map ide
               (AKindedSymb Implicit $ rawSymName rsy) ot)
          (foldr (\ (Just rsy2, ot) ->
-           insertmapOpSym sort_Map ide' rsy2 ot) m' l)
+           insertmapOpSym sort_Map ide rsy2 ot) m l)
          $ rs ++ os
-       _ -> m'
+       _ -> m
 
 lookupOpSymbol :: RawSymbolMap -> Id -> OpType -> Maybe RawSymbol
 lookupOpSymbol rmap ide' ot = let mkS = idToOpSymbol ide' in
@@ -273,16 +273,19 @@ predFun src rmap sort_Map ide pts m =
     -- collect all predTypes that cannot be mapped directly
 directPredMap :: RawSymbolMap -> Sort_map -> Id -> Set.Set PredType
               -> Result Pred_map -> Result Pred_map
-directPredMap rmap sort_Map ide pts m' =
+directPredMap rmap sort_Map ide pts m =
   let pl = Set.toList pts
       rl = map (\ pt -> Map.lookup (ASymbol $ idToPredSymbol ide pt) rmap) pl
-  in case catMaybes rl of
-       [] -> m'
-       rsy : _ -> foldr (\ (pt, mrsy) m ->
+      (ms, ps) = partition (isJust . fst) $ zip rl pl
+  in case ms of
+       l@((Just rsy, _) : rs) ->
+         foldr (\ (_, pt) ->
            insertmapPredSym sort_Map ide
-             (case mrsy of
-                Nothing -> AKindedSymb Implicit $ rawSymName rsy
-                Just rsy2 -> rsy2) pt m) m' $ zip pl rl
+              (AKindedSymb Implicit $ rawSymName rsy) pt)
+         (foldr (\ (Just rsy2, pt) ->
+           insertmapPredSym sort_Map ide rsy2 pt) m l)
+         $ rs ++ ps
+       _ -> m
 
     -- map pred symbol (ide,pt) to raw symbol rsy
 mappedPredSym :: Sort_map -> Id -> PredType -> RawSymbol -> Result Id
