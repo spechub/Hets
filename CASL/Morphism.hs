@@ -175,19 +175,28 @@ statSymbMapItems sl = do
         fmap concat $ mapM (symbOrMapToRaw kind) l
       insertRsys m1 (rsy1, rsy2) = let m3 = Map.insert rsy1 rsy2 m1 in
         case Map.lookup rsy1 m1 of
-          Nothing -> return $ case rsy1 of
+          Nothing -> case rsy1 of
             ASymbol (Symbol i SortAsItemType) ->
               case Map.lookup (AKindedSymb Implicit i) m1 of
-                Just (AKindedSymb Implicit j) | rawSymName rsy2 == j -> m1
-                _ -> m3
+                Just (AKindedSymb Implicit j) | rawSymName rsy2 == j ->
+                  warning m1 ("ignoring separate mapping for sort " ++
+                    show i) $ getRange i
+                _ -> return m3
             AKindedSymb Implicit i ->
               let rsy3 = ASymbol (Symbol i SortAsItemType) in
               case Map.lookup rsy3 m1 of
                 Just (ASymbol (Symbol j SortAsItemType))
-                  | rawSymName rsy2 == j -> Map.delete rsy3 m3
-                _ -> m3
-            _ -> m3
-          Just rsy3 -> if rsy2 == rsy3 then return m1 else
+                  | rawSymName rsy2 == j -> warning (Map.delete rsy3 m3)
+                      ("ignoring extra mapping of sort " ++
+                       show i) $ getRange j
+                   {- this case cannot occur, because unkinded names cannot
+                      follow kinded ones:
+                      in "sort s |-> t, o |-> q" "o" will be a sort, too. -}
+                _ -> return m3
+            _ -> return m3
+          Just rsy3 -> if rsy2 == rsy3 then
+            warning m1 ("ignoring duplicate mapping of "
+                       ++ showDoc rsy1 "") $ getRange rsy1 else
               plain_error m1 ("Symbol " ++ showDoc rsy1 " mapped twice to "
                 ++ showDoc rsy2 " and " ++ showDoc rsy3 "") nullRange
   ls <- mapM st sl
