@@ -13,16 +13,18 @@ Termination proofs for equation systems, using AProVE
 
 module CASL.CCC.TerminationProof where
 
-import CASL.ToDoc ()
+
 import CASL.AS_Basic_CASL
--- import Common.DocUtils
-import CASL.CCC.TermFormula
-import Common.Id
-import Common.Utils (getEnvDef, nubOrd)
-import System.Cmd
-import System.IO.Unsafe
-import System.Directory
--- import Debug.Trace
+import CASL.CCC.TermFormula(term, quanti, isApp, arguOfTerm, varOfAxiom, idStr,
+                            substiF, sameOpsApp)
+import CASL.ToDoc()
+
+import Common.Id(Token(tokStr))
+import Common.Utils(getEnvDef, nubOrd)
+
+import System.Cmd(system)
+import System.Directory(getTemporaryDirectory)
+import System.IO.Unsafe(unsafePerformIO)
 
 {-
    Automatic termination proof
@@ -134,7 +136,7 @@ axiom2TRS f doms =
           _ ->
               case f1 of
                 Definedness t _ ->
-                    let dm = filter (sameOps_App t . fst) doms
+                    let dm = filter (sameOpsApp t . fst) doms
                         phi = snd $ head dm
                         te = fst $ head dm
                         p1 = arguOfTerm te

@@ -14,23 +14,27 @@ Consistency checking of free types
 module CASL.CCC.FreeTypes (checkFreeType) where
 
 import CASL.AS_Basic_CASL       -- FORMULA, OP_{NAME,SYMB}, TERM, SORT, VAR
-import CASL.MapSentence (mapSen)
-import CASL.Morphism
-import CASL.Sign                -- Sign, OpType
-import CASL.SimplifySen (simplifyCASLSen)
-import qualified Data.Map as Map
-import qualified Data.Set as Set
-import qualified Common.Lib.Rel as Rel
+import CASL.MapSentence(mapSen)
+import CASL.Morphism(Morphism(mtarget), imageOfMorphism)
+import CASL.Sign(OpType(..), PredType(..), Sign(..), sortOfTerm)
+import CASL.SimplifySen(simplifyCASLSen)
 import CASL.CCC.TermFormula
-import CASL.CCC.TerminationProof
-import Common.AS_Annotation (Named, SenAttr(..))
-import Common.Consistency
-import Common.DocUtils (showDoc)
-import Common.Id
-import Common.Result
-import Common.Utils
-import Data.List (delete, deleteFirstsBy, intersect)
-import Data.Maybe
+import CASL.CCC.TerminationProof(terminationProof, opSymName, predSymName)
+
+import Common.AS_Annotation(Named, SenAttr(sentence, isAxiom))
+import Common.Consistency(ConsistencyStatus(..))
+import Common.DocUtils(showDoc)
+import Common.Id(Token(tokStr), Id(Id), GetRange(..), genName, mkSimpleId,
+                 nullRange)
+import Common.Result(Result, warning)
+import Common.Utils(nubOrd)
+
+import Data.List(delete, deleteFirstsBy, intersect)
+import Data.Maybe(Maybe(..), fromJust, isJust, isNothing)
+
+import qualified Data.Map as Map(Map.lookup)
+import qualified Data.Set as Set(Set.member, Set.filter, Set.toList)
+import qualified Common.Lib.Rel as Rel(Rel.toList)
 
 inhabited :: [SORT] -> [Constraint] -> [SORT]
 inhabited sorts constrs = iterateInhabited sorts
@@ -49,21 +53,21 @@ inhabited sorts constrs = iterateInhabited sorts
                                                   else l') l argsRes
 
 getFs :: [Named (FORMULA ())] -> [FORMULA ()]
-getFs = map sentence . filter is_user_or_sort_gen
+getFs = map sentence . filter isUserOrSortGen
 
 getExAxioms :: [Named (FORMULA ())] -> [FORMULA ()]
-getExAxioms = filter is_ex_quanti . getFs
+getExAxioms = filter isExQuanti . getFs
 
 getAxioms :: [Named (FORMULA ())] -> [FORMULA ()]
 getAxioms = filter (\ f ->
-   not $ isSortGen f || is_Membership f || is_ex_quanti f) . getFs
+   not $ isSortGen f || isMembership f || isExQuanti f) . getFs
 
 getInfoSubsort :: Morphism () () ()
     -> [Named (FORMULA ())] -> [FORMULA ()]
 getInfoSubsort m fsn = info_subsort
     where
         fs = getFs fsn
-        memberships = filter is_Membership fs
+        memberships = filter isMembership fs
         tsig = mtarget m
         esorts = Set.toList $ emptySortSet tsig
         info_subsort = concatMap (infoSubsort esorts) memberships
@@ -164,9 +168,9 @@ getNotFreeSorts :: Sign () () -> Morphism () () ()
 getNotFreeSorts osig m fsn = notFreeSorts
     where
         fs = getFs fsn
-        axOfS = filter (\ f -> isSortGen f || is_Membership f) fs
+        axOfS = filter (\ f -> isSortGen f || isMembership f) fs
         nSorts = getNSorts osig m
-        notFreeSorts = filter (\ s -> is_free_gen_sort s axOfS == Just False)
+        notFreeSorts = filter (\ s -> isFreeGenSort s axOfS == Just False)
                        nSorts
 
 getNefsorts :: (Sign () (),[Named (FORMULA ())]) -> Morphism () () ()
@@ -262,12 +266,12 @@ checkDefinitional osig fsn
         in Just $ warning Nothing ("The following partial " ++ prettyType ax' ++
                " is not definitional:\n" ++ formatAxiom ax) pos
     | length dom_l /= length (nubOrd dom_l) =
-        let ax = head $ filter (\ f -> domain_os f dualOS) $
+        let ax = head $ filter (\ f -> domainOs f dualOS) $
                  filter partialAxiom axioms
             ax' = head dualDom
             pos = getRange $ take 1 dualDom
             dualOS = head $ filter (\ o -> elem o $ delete o dom_l) dom_l
-            dualDom = filter (\ f -> domain_os f dualOS) p_axioms
+            dualDom = filter (\ f -> domainOs f dualOS) p_axioms
         in Just $ warning Nothing ("The following partial " ++ prettyType ax' ++
                " is not definitional:\n" ++ formatAxiom ax) pos
     | not $ null pcheck =
@@ -353,16 +357,16 @@ checkLeadingTerms osens m fsn
         in Just $
            warning Nothing ("a leading predicate of " ++ predSymName ps ++
            " consists of not only variables and constructors") pos
-    | not $ all checkVar_App leadingTerms =
+    | not $ all checkVarApp leadingTerms =
         let (Application os _ _) = tt
-            tt = head $ filter (not . checkVar_App) leadingTerms
+            tt = head $ filter (not . checkVarApp) leadingTerms
             pos = axiomRangeforTerm axioms' tt
         in Just $
            warning Nothing ("a variable occurs twice in a leading term of " ++
            opSymName os) pos
-    | not $ all checkVar_Pred leadingPreds =
+    | not $ all checkVarPred leadingPreds =
         let (Predication ps _ pos) = quanti pf
-            pf = head $ filter (not . checkVar_Pred) leadingPreds
+            pf = head $ filter (not . checkVarPred) leadingPreds
         in Just $
            warning Nothing ("a variable occurs twice in a leading " ++
            "predicate of " ++ predSymName ps) pos
@@ -372,7 +376,7 @@ checkLeadingTerms osens m fsn
         constructors = getConstructors osens m fsn
         axioms = getAxioms fsn
         axioms' = map quanti axioms
-        ltp = map leading_Term_Predication axioms'       --  leading_term_pred
+        ltp = map leadingTermPredication axioms'       --  leadingTermPred
         leadingTerms = concatMap (\ tp -> case tp of
                                              Just (Left t)->[t]
                                              _ -> []) ltp      -- leading Term
@@ -417,7 +421,7 @@ checkTerminal (osig, osens) m fsn
     where
         fs = getFs fsn
         fs_terminalProof = filter (\ f ->
-          not $ isSortGen f || is_Membership f || is_ex_quanti f || isDomain f
+          not $ isSortGen f || isMembership f || isExQuanti f || isDomain f
           ) fs
         domains = domainList fs
         proof = terminationProof fs_terminalProof domains
@@ -456,9 +460,9 @@ checkPositive fsn
    - the leading terms consist of variables and constructors only,
            if not, return Nothing
      - split function leading_Symb into
-       leading_Term_Predication
+       leadingTermPredication
        and
-       extract_leading_symb
+       extractLeadingSymb
      - collect all operation symbols from recover_Sort_gen_ax fconstrs
                                                        (= constructors)
    - no variable occurs twice in a leading term, if not, return Nothing
@@ -561,14 +565,14 @@ checkTerms sig cons ts = all checkT ts
 
 
 -- |  no variable occurs twice in a leading term
-checkVar_App :: Ord f => TERM f -> Bool
-checkVar_App (Application _ ts _) = noDuplation $ concatMap varOfTerm ts
-checkVar_App _ = error "CASL.CCC.FreeTypes<checkVar_App>"
+checkVarApp :: Ord f => TERM f -> Bool
+checkVarApp (Application _ ts _) = noDuplation $ concatMap varOfTerm ts
+checkVarApp _ = error "CASL.CCC.FreeTypes<checkVarApp>"
 
 -- |  no variable occurs twice in a leading predication
-checkVar_Pred :: Ord f => FORMULA f -> Bool
-checkVar_Pred (Predication _ ts _) = noDuplation $ concatMap varOfTerm ts
-checkVar_Pred _ = error "CASL.CCC.FreeTypes<checkVar_Pred>"
+checkVarPred :: Ord f => FORMULA f -> Bool
+checkVarPred (Predication _ ts _) = noDuplation $ concatMap varOfTerm ts
+checkVarPred _ = error "CASL.CCC.FreeTypes<checkVarPred>"
 
 -- | there are no duplicate items in a list
 noDuplation :: Ord a => [a] -> Bool
@@ -607,8 +611,8 @@ checkPatterns :: (Eq f) => ([TERM f],[TERM f]) -> Bool
 checkPatterns (ps1, ps2) = case (ps1, ps2) of
   (hd1 : tl1, hd2 : tl2) ->
       if isVar hd1 || isVar hd2 then checkPatterns (tl1, tl2)
-      else sameOps_App hd1 hd2 && checkPatterns (patternsOfTerm hd1 ++ tl1,
-                                                 patternsOfTerm hd2 ++ tl2)
+      else sameOpsApp hd1 hd2 && checkPatterns (patternsOfTerm hd1 ++ tl1,
+                                                patternsOfTerm hd2 ++ tl2)
   _ -> True
 
 -- | get the axiom from left hand side of a implication,

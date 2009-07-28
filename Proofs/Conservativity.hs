@@ -16,18 +16,20 @@ module Proofs.Conservativity
     ( conservativity
     ) where
 
-import Static.GTheory
+
+import Common.Amalgamate(Amalgamates(Amalgamates), CASLAmalgOpt(..))
+import Common.LibName(LIB_NAME)
+import Common.Result(resultToMaybe)
+
+import Proofs.EdgeUtils(changesDGH, isFreeEdge, isGlobalEdge, isGlobalThm)
+import Proofs.ComputeColimit(makeDiagram)
+
 import Static.DevGraph
+import Static.GTheory(gEnsuresAmalgamability)
 
-import Proofs.EdgeUtils
-import Proofs.ComputeColimit (makeDiagram)
-import Common.Amalgamate
-import Common.Result
-import Common.LibName
-
-import Data.Graph.Inductive.Graph as Graph
-import qualified Data.Map as Map
-import Data.List (nub, nubBy)
+import Data.Graph.Inductive.Graph(LEdge)
+import Data.List(nubBy, nub)
+import qualified Data.Map as Map(Map.adjust)
 
 ------------------------------------------------
 -- Conservativity rules

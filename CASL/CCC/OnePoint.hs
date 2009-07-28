@@ -16,11 +16,13 @@ Check for truth in one-point model
 
 module CASL.CCC.OnePoint where
 
-import CASL.Sign                -- Sign, OpType
-import CASL.Morphism
-import CASL.AS_Basic_CASL       -- FORMULA, OP_{NAME,SYMB}, TERM, SORT, VAR
-import qualified Data.Map as Map
-import qualified Data.Set as Set
+import CASL.AS_Basic_CASL
+import CASL.Morphism(Morphism, imageOfMorphism)
+import CASL.Sign(Sign(sortSet, predMap), supersortsOf, toPredType)
+
+import qualified Data.Map as Map(Map.lookup)
+import qualified Data.Set as Set(Set.member, Set.isSubsetOf, Set.insert,
+                                 Set.toList)
 
 {-
 We use a three valued logic to evaluate a formula in a one-point expansion
@@ -63,7 +65,7 @@ not t f *
 
 evaluateOnePoint :: Morphism f e m -> [FORMULA f] -> Maybe Bool
 evaluateOnePoint m fs =
-     let p = map (\ f -> evaluateOnePointFORMULA (imageOfMorphism m) f) fs
+     let p = map (evaluateOnePointFORMULA (imageOfMorphism m)) fs
      in if elem (Just False) p then  Just False
         else if elem Nothing p then  Nothing
                                else  Just True
@@ -81,13 +83,13 @@ evaluateOnePointFORMULA sig (Quantification _ _ f _) =
                       evaluateOnePointFORMULA sig f
 
 evaluateOnePointFORMULA sig (Conjunction fs _) =
-     let p = map (\ f -> evaluateOnePointFORMULA sig f) fs
+     let p = map (evaluateOnePointFORMULA sig) fs
      in if elem (Just False) p then Just False
         else if elem Nothing p then Nothing
                                else Just True
 
 evaluateOnePointFORMULA sig (Disjunction fs _) =
-      let p = map (\ f -> evaluateOnePointFORMULA sig f) fs
+      let p = map (evaluateOnePointFORMULA sig) fs
       in if elem (Just True) p then Just True
          else if elem Nothing p then Nothing
                                 else Just False
@@ -127,9 +129,7 @@ evaluateOnePointFORMULA sig (Predication pred_symb _ _) =
                     else Just True
 
 evaluateOnePointFORMULA sig (Definedness (Sorted_term _ sort _) _) =
-      case Set.member sort (sortSet sig) of
-            True -> Nothing
-            False -> Just True
+      if Set.member sort (sortSet sig) then Nothing else Just True
 
 evaluateOnePointFORMULA sig (Existl_equation (Sorted_term _ sort1 _)
     (Sorted_term _ sort2 _) _) =
@@ -186,7 +186,7 @@ evaluateOnePointFORMULA sig (Sort_gen_ax constrs _) =
                     if l == newL then newL else iterateInhabited newL
                              where newL = foldr (\ (as,rs) l'->
                                                    if all (\s->elem s l') as
-                                                       && not (elem rs l')
+                                                       && notElem rs l'
                                                    then rs:l'
                                                    else l') l argsAndres
     --      inhabited = iterateInhabited []
