@@ -246,12 +246,13 @@ getCompressedEdges dg hidden = filterDuplicates $ getShortPaths
 filterDuplicates :: [(Node,Node,DGEdgeType, Bool)]
                  -> [(Node,Node,DGEdgeType, Bool)]
 filterDuplicates [] = []
-filterDuplicates ((s, t, et, b) : r) = edge : filterDuplicates others
+filterDuplicates r@((s, t, _, _) : _) = edges ++ filterDuplicates others
   where
     (same,others) = partition (\ (s',t', _, _) -> s == s' && t == t') r
-    b' = and $ b : map (\ (_,_,_,b'') -> b'') same
-    (et'', b''') = compressTypes b' $ et : map (\ (_,_,et',_) -> et') same
-    edge = (s,t,et'',b''')
+    (mtypes,stypes) = partition (\ (_,_,_,b) -> not b) same
+    stypes' = foldr (\e es -> if elem e es then es else e:es) [] stypes
+    (et',_) = compressTypes False $ map (\ (_,_,et,_) -> et) mtypes
+    edges = if length mtypes /= 0 then (s,t,et',False):stypes' else stypes'
 
 -- | returns the pahts of a given node through hidden nodes
 getPaths :: DGraph -> Node -> [Node] -> [Node] -> [[LEdge DGLinkLab]]
