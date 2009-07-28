@@ -832,8 +832,8 @@ extendMorphism (G_sign lid sigmaP _) (G_sign lidB sigmaB1 _)
           comb2 p qs $ if b == d then (a, c) : rs else rs
       newIdentifications = myKernel hmor Set.\\ myKernel h
   when (not (Set.null newIdentifications))
-   (plain_error () (
-     "Fitting morphism leads to forbidden identifications:\n"
+   (warning () (
+     "Fitting morphism may lead to forbidden identifications:\n"
      ++ showDoc newIdentifications "") nullRange)
   incl <- ext_inclusion lid sigmaAD sigma
   mor1 <- comp mor incl
