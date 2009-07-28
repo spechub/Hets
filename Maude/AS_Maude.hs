@@ -26,26 +26,33 @@ import Common.Id (Token)
 type Qid = Token
 
 data Spec = SpecMod Module
+          | SpecView View
           deriving (Show, Read, Ord, Eq)
---          | SpecView View
 
 data Module = Module ModId [Parameter] [Statement]
+            deriving (Show, Read, Ord, Eq)
+
+data View = View ModId ModId ModId [Renaming]
             deriving (Show, Read, Ord, Eq)
 
 data Parameter = Parameter Sort ModExp
                deriving (Show, Read, Ord, Eq)
 
 data ModExp = ModExp ModId
-            | ParenthesesModExp ModExp
             | SummationModExp ModExp ModExp
             | RenamingModExp ModExp [Renaming]
+            | InstantiationModExp ModExp [ViewId]
             deriving (Show, Read, Ord, Eq)
 
 data Renaming = SortRenaming Sort Sort
               | LabelRenaming LabelId LabelId
               | OpRenaming1 OpId ToPartRenaming
               | OpRenaming2 OpId [Type] Type ToPartRenaming
+              | TermMap Term Term
               deriving (Show, Read, Ord, Eq)
+
+data ToPartRenaming = To OpId [Attr]
+                    deriving (Show, Read, Ord, Eq)
 
 newtype MaudeText = MaudeText String deriving (Show)
 
@@ -86,9 +93,6 @@ data Condition = EqCond Term Term
                | MatchCond Term Term
                | RwCond Term Term
                deriving (Show, Read, Ord, Eq)
-
-data ToPartRenaming = To OpId [Attr]
-                    deriving (Show, Read, Ord, Eq)
 
 data Attr = Assoc
           | Comm
@@ -134,6 +138,9 @@ newtype Kind = KindId Qid
              deriving (Show, Read, Ord, Eq)
 
 newtype ParamId = ParamId Qid
+                deriving (Show, Read, Ord, Eq)
+
+newtype ViewId = ViewId Qid
                 deriving (Show, Read, Ord, Eq)
 
 newtype ModId = ModId Qid

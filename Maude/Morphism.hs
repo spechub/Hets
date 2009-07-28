@@ -19,6 +19,7 @@ Definition of morphisms for Maude.
 module Maude.Morphism (
     Morphism(..),
     fromRenamings,
+    fromSignRenamings,
     symbolMap,
     empty,
     identity,
@@ -27,7 +28,8 @@ module Maude.Morphism (
     compose,
     isLegal,
     isInclusion,
-    mapSentence
+    mapSentence,
+    setTarget
 ) where
 
 import Maude.AS_Maude
@@ -35,7 +37,7 @@ import Maude.Symbol
 import Maude.Sentence
 import Maude.Meta
 import Maude.Util
-
+import Maude.Printing
 import Maude.Sign (Sign)
 import qualified Maude.Sign as Sign
 
@@ -62,8 +64,53 @@ data Morphism = Morphism {
     } deriving (Show, Ord, Eq)
 
 instance Pretty Morphism where
-  pretty = Doc.text . show
+  pretty m = Doc.text $ "\n\nMorphism:\n\n" ++ printMorphism (sortMap m) (opMap m) (labelMap m)
+                        ++ "\n\nTarget:\n\n" ++ printSign (Sign.sorts sign) (Sign.subsorts sign) (Sign.ops sign)
+      where sign = target m
 
+-- | create a Morphism from an initial signature and a list of Renamings
+fromSignRenamings :: Sign -> [Renaming] -> Morphism
+fromSignRenamings sg rnms = applyRenamings (createInclMorph sg sg) rnms
+
+applyRenamings :: Morphism -> [Renaming] -> Morphism
+applyRenamings m = foldr applyRenaming m
+
+applyRenaming :: Renaming -> Morphism -> Morphism
+applyRenaming rnm mor = let
+        tgt = target mor
+        smap = sortMap mor
+        omap = opMap mor
+        lmap = labelMap mor
+    in case rnm of
+        SortRenaming from to -> let
+                a = getName from
+                b = getName to
+            in mor {
+                target = Sign.renameSort a b tgt,
+                sortMap = Map.insert a b smap
+            }
+        LabelRenaming from to -> let
+                a = getName from
+                b = getName to
+            in mor {
+                labelMap = Map.insert a b lmap
+            }
+        OpRenaming1 from (To to ats) -> let
+                a = getName from
+                b = getName to
+            in mor {
+                target = Sign.renameOp a b ats tgt,
+                opMap = Map.insert a b omap
+            }
+        OpRenaming2 from _ _ (To to ats) -> let
+        -- TODO: implement real code
+                a = getName from
+                b = getName to
+            in mor {
+                target = Sign.renameOp a b ats tgt,
+                opMap = Map.insert a b omap
+            }
+        TermMap _ _ -> mor
 
 -- | extract a Morphism from a list of Renamings
 fromRenamings :: [Renaming] -> Morphism
@@ -197,3 +244,6 @@ mapSentence mor = let
         omap = mapOps (opMap mor)
         lmap = mapLabels (labelMap mor)
     in return . lmap . omap . smap
+
+setTarget :: Sign -> Morphism -> Morphism
+setTarget sg morph = morph {target = sg}

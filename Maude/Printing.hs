@@ -173,3 +173,10 @@ printCond (EqCond t1 t2) = printTerm t1 ++ " = " ++ printTerm t2
 printCond (MatchCond t1 t2) = printTerm t1 ++ " := " ++ printTerm t2
 printCond (MbCond t s) = printTerm t ++ " : " ++ printSort s
 printCond (RwCond t1 t2) = printTerm t1 ++ " => " ++ printTerm t2
+
+printMorphism :: SymbolMap -> SymbolMap -> SymbolMap -> String 
+printMorphism sorts ops _ = (printSortRenaming sorts) ++ (show ops)
+
+printSortRenaming :: SymbolMap -> String
+printSortRenaming = Map.foldWithKey f ""
+       where f = \ x y z -> "sort " ++ show x ++ " to " ++ show y ++ "\n" ++ z

@@ -4,7 +4,6 @@ module Maude.Meta.HasName (
 
 import Maude.AS_Maude
 import Maude.Symbol
-import Maude.Util
 
 import Data.Map (Map)
 import qualified Data.Map as Map
@@ -59,9 +58,15 @@ instance HasName Module where
     getName (Module name _ _) = getName name
     mapName mp (Module name ps ss) = Module (mapName mp name) ps ss
 
+instance HasName View where
+    getName (View name _ _ _) = getName name
+    mapName mp (View name from to rnms) = View (mapName mp name) from to rnms
+
 instance HasName Spec where
     getName (SpecMod sp_module) = getName sp_module
+    getName (SpecView sp_view) = getName sp_view
     mapName mp (SpecMod sp_module) = SpecMod $ mapName mp sp_module
+    mapName mp (SpecView sp_view) = SpecView $ mapName mp sp_view
 
 map2Function :: (Ord a) => Map a a -> (a -> a)
 map2Function mp name = Map.findWithDefault name name mp

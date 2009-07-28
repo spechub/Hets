@@ -33,5 +33,5 @@ basicAnalysisAux (SpecMod sp_module) = do
     let nsign = fromSpec sp_module
     let sen = getSentences sp_module
     return (nsign, sen)
-   
+basicAnalysisAux (SpecView _) = return (empty, [])
 

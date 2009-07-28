@@ -1,6 +1,6 @@
  fmod MAUDE2HASKELL is
-  pr META-LEVEL .
   pr CONVERSION .
+  pr VIEW .
   
   var  H : Header .
   var  IL : ImportList .
@@ -10,10 +10,10 @@
   var  MAS : MembAxSet .
   var  EqS : EquationSet .
   var  RS : RuleSet .
-  var  Q : Qid .
+  vars Q Q' : Qid .
   var  QIL : QidList .
   var  STR : String .
-  vars ME ME' : ModuleExpression .
+  vars ME ME' ME'' : ModuleExpression .
   var  TL : TermList .
   vars T T' : Term .
   var  AtS : AttrSet .
@@ -34,6 +34,10 @@
   var  I : Import .
   var  PD : ParameterDecl .
   var  NHL : NeHookList .
+  var  RNMS : RenamingSet .
+  var  SVM : Set{ViewMap} .
+  var  VM : ViewMap .
+  var  PL : ParameterList .
   
   op haskellify : Qid -> QidList .
   eq haskellify(Q) = haskellify(upModule(Q, false)) .
@@ -74,6 +78,11 @@
           haskellifyEqSet(EqS) comma(IL, SS, SSDS, ODS, MAS, EqS, RS)
           haskellifyRlSet(RS) '`] '`) '\n '@#$endHetsSpec$#@ .
   
+  op haskellify : View -> QidList .
+  eq haskellify(view ME from ME' to ME'' is SVM endv) = 
+          'SpecView '`( 'View haskellifyME(ME) haskellifyME(ME') haskellifyME(ME'')
+          '`[ haskellifyMaps(SVM) '`] '`) '\n '@#$endHetsSpec$#@ .
+  
   op haskellifyHeader : Header -> QidList .
   eq haskellifyHeader(Q) = ' '`( 'ModId qid2token(Q) '`) ' ' '`[ '`] .
   eq haskellifyHeader(Q {PDL}) = ' '`( 'ModId qid2token(Q) '`) ' '
@@ -106,9 +115,42 @@
   eq comma((nil).ImportList) = nil .
   eq comma(IL) = '`, ' [owise] .
 
-  *** Otros ME !!!!
   op haskellifyME : ModuleExpression -> QidList .
   eq haskellifyME(Q) = ' '`( 'ModExp ' '`( 'ModId qid2token(Q) '`) '`) ' .
+  eq haskellifyME(ME + ME') = ' '`( 'SummationModExp haskellifyME(ME) 
+                              haskellifyME(ME')  '`) ' .
+  eq haskellifyME(ME * (RNMS)) = ' '`( 'RenamingModExp haskellifyME(ME) 
+                                 '`[ haskellifyMaps(RNMS) '`]  '`) ' .
+  eq haskellifyME(ME {PL}) = ' '`( 'InstantiationModExp haskellifyME(ME) 
+                             '`[ haskellifyPL(PL)  '`]  '`) ' .
+
+  op haskellifyMaps : Set{ViewMap} -> QidList .
+  eq haskellifyMaps(VM) = haskellifyMap(VM) .
+  eq haskellifyMaps((VM, SVM)) = haskellifyMap(VM) '`, ' haskellifyMaps(SVM) .
+  
+  op haskellifyMap : ViewMap -> QidList .
+  eq haskellifyMap(sort Q to Q') = 'SortRenaming haskellifySort(Q) haskellifySort(Q') .
+  eq haskellifyMap(label Q to Q') = 'LabelRenaming haskellifyLabel(Q) haskellifyLabel(Q') .
+  eq haskellifyMap(op Q to Q' [AtS]) = 'OpRenaming1 '`( 'OpId qid2token(Q) '`) '
+                                       '`( 'To ' '`( 'OpId qid2token(Q') '`) '
+                                       '`[ haskellifyAttr*(AtS) '`]  '`) ' .
+  eq haskellifyMap(op Q : TyL -> Ty to Q' [AtS]) =
+                   'OpRenaming2 '`( 'OpId qid2token(Q) '`) ' '`[ haskellifyType*(TyL) '`]
+                   haskellifyType(Ty)
+                   '`( 'To ' '`( 'OpId qid2token(Q') '`) ' 
+                   '`[ haskellifyAttr*(AtS) '`]  '`) ' .
+  eq haskellifyMap(termMap(T, T')) = 'TermMap haskellifyTerm(T) haskellifyTerm(T') .
+  
+  op haskellifyPL : ParameterList -> QidList .
+  eq haskellifyPL(empty) = nil .
+  eq haskellifyPL((Q, PL)) = 'ViewId qid2token(Q) comma(PL) haskellifyPL(PL) .
+  
+  op comma : ParameterList -> QidList .
+  eq comma((empty).ParameterList) = nil .
+  eq comma(PL) = '`, ' [owise] .
+
+  op haskellifyLabel : Qid -> QidList .
+  eq haskellifyLabel(Q) = ' '`( 'LabelId qid2token(Q) '`) ' .
   
   op haskellifySorts : SortSet -> QidList .
   eq haskellifySorts(none) = nil .

@@ -53,7 +53,7 @@ data Sign = Sign {
 
 
 instance Pretty Sign where
-  pretty sign = Doc.text $ printSign (sorts sign) (subsorts sign) (ops sign)
+  pretty sign = Doc.text $ "\n" ++ printSign (sorts sign) (subsorts sign) (ops sign)
 
 
 instance HasSorts Sign where
@@ -154,6 +154,17 @@ includesSentence sign sen = let
 simplifySentence :: Sign -> Sentence -> Sentence
 simplifySentence _ = id
 
+-- | rename the given sort
+renameSort :: Symbol -> Symbol -> Sign -> Sign
+renameSort from to sign = Sign sorts' subsorts' ops'
+              where sorts' = ren'sort'sortset from to $ sorts sign
+                    subsorts' = ren'sort'subsortrel from to $ subsorts sign
+                    ops' = ren'sort'op_map from to $ ops sign
+
+-- | rename the given sort
+renameOp :: Symbol -> Symbol -> [Attr] -> Sign -> Sign
+renameOp from to ats sign = sign {ops = ops'}
+              where ops' = ren'op'op_map from to ats $ ops sign
 
 --- Helper functions for inserting Signature members into their respective collections.
 
@@ -180,3 +191,70 @@ ins'op (Op op dom cod as) opmap = let
 -- map and insert an OperatorMap key-value pair
 map'op :: SymbolMap -> Symbol -> OpDeclSet -> OpMap -> OpMap
 map'op mp op decls = Map.insert (mapAsFunction mp op) decls
+
+-- | rename a sort in a sortset
+ren'sort'sortset :: Symbol -> Symbol -> SortSet -> SortSet 
+ren'sort'sortset from to = Set.insert to . Set.delete from
+
+-- | rename a sort in a subsort relation
+ren'sort'subsortrel :: Symbol -> Symbol -> SubsortRel -> SubsortRel 
+ren'sort'subsortrel from to ssr = Rel.fromList ssr''
+                where ssr' = Rel.toList ssr
+                      ssr'' = map (ren'pair from to) ssr'
+
+-- | aux function that renames pair
+ren'pair :: Symbol -> Symbol -> (Symbol, Symbol) -> (Symbol, Symbol)
+ren'pair from to (s1, s2) = if from == s1
+                            then (to, s2)
+                            else if from == s2
+                                 then (s1, to)
+                                 else (s1, s2)
+
+-- | rename a sort in an operator map
+ren'sort'op_map :: Symbol -> Symbol -> OpMap -> OpMap
+ren'sort'op_map from to = Map.map (ren'sort'ops from to)
+
+-- | rename a sort in a set of operator declarations
+ren'sort'ops :: Symbol -> Symbol -> OpDeclSet -> OpDeclSet
+ren'sort'ops from to = Set.map $ ren'op from to
+
+-- | aux function to rename operator declarations
+ren'op :: Symbol -> Symbol -> OpDecl -> OpDecl
+ren'op from to (ar, coar, ats) = (ar', coar', ats)
+             where ar' = map (\ x -> if x == from then to else x) ar
+                   coar' = if from == coar
+                           then to
+                           else coar
+
+-- | rename an operator in an operator map
+ren'op'op_map :: Symbol -> Symbol -> [Attr] -> OpMap -> OpMap
+ren'op'op_map from to ats = Map.fromList . map f . Map.toList
+               where f = \ (x,y) -> if x == from 
+                                    then (to,ren'op'set ats y)
+                                    else (x,y)
+
+-- | rename the attributes in the operator declaration set
+ren'op'set :: [Attr] -> OpDeclSet -> OpDeclSet
+ren'op'set ats ods = Set.map f ods
+               where f = \ (x, y, z) -> (x, y, ren'op'ats ats z)
+
+-- | rename the attributes in an attribute set
+ren'op'ats :: [Attr] -> [Attr] -> [Attr]
+ren'op'ats [] curr_ats = curr_ats
+ren'op'ats (at : ats) curr_ats = ren'op'ats ats $ ren'op'at at curr_ats
+
+-- | renama an attribute in an attribute set
+ren'op'at :: Attr -> [Attr] -> [Attr]
+ren'op'at rn@(Prec i) (a : ats) = a' : ren'op'at rn ats
+               where a' = case a of
+                             Prec _ -> Prec i
+                             at -> at
+ren'op'at rn@(Gather qs) (a : ats) = a' : ren'op'at rn ats
+               where a' = case a of
+                             Gather _ -> Gather qs
+                             at -> at
+ren'op'at rn@(Format qs) (a : ats) = a' : ren'op'at rn ats
+               where a' = case a of
+                             Format _ -> Format qs
+                             at -> at
+ren'op'at _ _ = []
