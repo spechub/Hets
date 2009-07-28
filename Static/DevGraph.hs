@@ -349,7 +349,7 @@ getDGEdgeTypeName e =
 
 getDGEdgeTypeModIncName :: DGEdgeTypeModInc -> String
 getDGEdgeTypeModIncName et = case et of
-  ThmType thm isPrvn _ ->
+  ThmType thm isPrvn _ _ ->
     let prvn = (if isPrvn then "P" else "Unp") ++ "roven" in
     case thm of
       HidingThm -> prvn ++ "HidingThm"
@@ -375,7 +375,8 @@ data DGEdgeTypeModInc =
   | FreeOrCofreeDef -- free or cofree
   | ThmType { thmEdgeType :: ThmTypes
             , isProvenEdge :: Bool
-            , isConservativ :: Bool }
+            , isConservativ :: Bool
+            , isPending :: Bool }
   deriving (Eq, Ord, Show)
 
 data ThmTypes =
@@ -394,7 +395,8 @@ getHomEdgeType isHom lt = case lt of
           ThmLink st -> ThmType
             { thmEdgeType = GlobalOrLocalThm scope isHom
             , isProvenEdge = isProvenThmLinkStatus st
-            , isConservativ = isProvenConsStatusLink cons }
+            , isConservativ = isProvenConsStatusLink cons
+            , isPending = False } -- needs to be checked
       HidingDefLink -> HidingDef
       FreeOrCofreeDefLink _ _ -> FreeOrCofreeDef
       HidingFreeOrCofreeThm mh _ st -> ThmType
@@ -402,7 +404,8 @@ getHomEdgeType isHom lt = case lt of
             Nothing -> HidingThm
             _ -> FreeOrCofreeThm
         , isProvenEdge = isProvenThmLinkStatus st
-        , isConservativ = True }
+        , isConservativ = True
+        , isPending = False }
 
 -- | creates a DGEdgeType from a DGLinkLab
 getRealDGLinkType :: DGLinkLab -> DGEdgeType
@@ -427,7 +430,8 @@ listDGEdgeTypes =
     , FreeOrCofreeDef ] ++
       [ ThmType { thmEdgeType = thmType
                 , isProvenEdge = proven
-                , isConservativ = cons }
+                , isConservativ = cons
+                , isPending = pending }
       | thmType <-
         [ HidingThm
         , FreeOrCofreeThm] ++
@@ -438,6 +442,7 @@ listDGEdgeTypes =
           ]
       , proven <- [True, False]
       , cons <- [True, False]
+      , pending <- [True, False]
       ]
   , isInclusion' <- [True, False]
   ]

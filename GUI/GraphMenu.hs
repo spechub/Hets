@@ -100,14 +100,16 @@ edgeTypes opts = map
         HidingThm     -> (e, l, getColor opts Yellow False $ not $ isInc e)
         _             -> (e, l, getColor opts Coral  False $ not $ isInc e)
       ThmType { thmEdgeType = thmType
-              , isProvenEdge = True
               , isConservativ = False } -> case thmType of
         GlobalOrLocalThm { isLocalThmType = Local, isHomThm = False }
                       -> (e, l, getColor opts Yellow True  $ not $ isInc e)
         _             -> (e, l, getColor opts Yellow False $ not $ isInc e)
       ThmType { thmEdgeType = thmType
-              , isProvenEdge = True
-              , isConservativ = True } -> case thmType of
+              , isPending = True } -> case thmType of
+        GlobalOrLocalThm { isLocalThmType = Local, isHomThm = False }
+                      -> (e, l, getColor opts Yellow True  $ not $ isInc e)
+        _             -> (e, l, getColor opts Yellow False $ not $ isInc e)
+      ThmType { thmEdgeType = thmType } -> case thmType of
         GlobalOrLocalThm { isLocalThmType = Local, isHomThm = False }
                       -> (e, l, getColor opts Green  True  $ not $ isInc e)
         HidingThm     -> (e, l, getColor opts Green  True  $ not $ isInc e)
