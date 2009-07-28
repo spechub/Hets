@@ -404,12 +404,12 @@ inducedFromToMorphismExt extInd extEm isSubExt diffExt rmap sig1@(ExtSign _ sy1)
        in if null (drop 170 combs) && null (drop 20 fcombs) then
           case filter (isOk . fst) $ map (iftm . Map.union rmap . Map.fromList)
                fcombs of
+            [] -> res
             [(r, m)] -> (if length fcombs > 1 then warning else hint)
               () ("derived symbol map:\n" ++ showDoc m "") pos >> r
-            (_, m1) : (_, m2) : _ -> fatal_error
-              ("ambiguous symbol map1:\n" ++ showDoc m1 "\n"
-               ++ "ambiguous symbol map2:\n" ++ showDoc m2 "") pos
-            [] -> res
+            l -> fatal_error
+              ("ambiguous symbol maps:\n" ++ show
+                  (vcat $ map (pretty . snd) l)) pos
           else warning () "too many possibilities for symbol maps" pos >> res
 
 compatibleSymbTypes :: (SymbType, SymbType) -> Bool
