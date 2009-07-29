@@ -19,6 +19,7 @@ module HasCASL.DataAna
     , anaAlts
     , makeDataSelEqs
     , inductionScheme
+    , mkVarDecl
     ) where
 
 import Data.Maybe (catMaybes)

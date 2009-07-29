@@ -55,9 +55,9 @@ instance Comorphism HasCASL2PCoClTyConsHOL
         , has_polymorphism = True
         , which_logic = max Horn $ which_logic sl
         , has_eq = True } else sl
-    map_theory HasCASL2PCoClTyConsHOL = mkTheoryMapping ( \ sig ->
-      let e = encodeSig sig in
-      return (e, [])) (map_sentence HasCASL2PCoClTyConsHOL)
+    map_theory HasCASL2PCoClTyConsHOL = mkTheoryMapping
+      (\ sig -> return (encodeSig sig, subtAxioms $ typeMap sig))
+      (map_sentence HasCASL2PCoClTyConsHOL)
     map_morphism HasCASL2PCoClTyConsHOL mor = return mor
         { msource = encodeSig $ msource mor
         , mtarget = encodeSig $ mtarget mor }
@@ -73,8 +73,9 @@ encodeSig sig = let
     tm1 = typeMap sig
     injMap = Map.insert injName (mkInjOrProj FunArr) $ assumps sig
     projMap = Map.insert projName (mkInjOrProj PFunArr) injMap
+    subtRelMap = Map.insert subtRelName subtRel projMap
     in if Rel.null $ typeRel tm1 then sig else sig
-           { assumps = projMap
+           { assumps = subtRelMap
            , typeMap = Map.map ( \ ti -> ti { superTypes = Set.empty } ) tm1 }
 
 f2Formula :: Sentence -> Sentence
