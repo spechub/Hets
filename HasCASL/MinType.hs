@@ -94,8 +94,8 @@ haveCommonSupertypeE eIn s1 s2 = do
              (Rel.transClosure $ Rel.union tmRel trel) (subst scs cst)
         nsubs = foldr (\ p@(a, t) ->
                   maybe (p :) (const id)
-                     $ entail e (Subtyping a t)) []
-                $ substPairList ms $ Rel.toList trel
+                     $ entail e (Subtyping (subst ms a) $ subst ms t)) []
+                $ Rel.toList trel
         (_, rcs) = simplify e $ substC ms qs
         in Set.null rcs && reduceCommonSubtypes (Rel.transClosure tmRel) nsubs
 

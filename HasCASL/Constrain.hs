@@ -23,7 +23,6 @@ module HasCASL.Constrain
     , fromTypeVars
     , fromTypeMap
     , entail
-    , substPairList
     , simplify
     ) where
 
