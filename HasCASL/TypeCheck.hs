@@ -185,7 +185,7 @@ typeCheck exTy trm =
            case falts of
              [] -> do
                addDiags [mkNiceDiag ga Error "no constraint resolution for" trm]
-               addDiags $ map (\ (_, cs, _, _) -> (mkDiag Hint
+               addDiags $ map (\ (_, cs, _, _) -> (mkDiag Error
                             "simplification failed for" cs){diagPos = p}) alts
                return Nothing
              [(_, _, _, t)] -> do

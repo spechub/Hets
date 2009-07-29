@@ -140,46 +140,66 @@ substPairList s = map ( \ (a, b) -> (subst s a, subst s b))
 isAtomic :: (Type, Type) -> Bool
 isAtomic p = case p of
     (TypeName _ _ _, TypeName _ _ _) -> True
+    (TypeName _ _ _, TypeAppl (TypeName l _ _) (TypeName _ _ _)) ->
+      l == lazyTypeId
     _ -> False
 
 partEqShapes :: [(Type, Type)] -> [(Type, Type)]
 partEqShapes = filter ( \ p -> case p of
     (TypeName _ _ n1, TypeName _ _ n2) -> n1 /= n2
+    (TypeName _ _ n1, TypeAppl (TypeName l _ _) (TypeName _ _ n2)) ->
+        l == lazyTypeId && n1 /= n2
     _ -> True)
 
 -- pre: shapeMatchPairList succeeds
-shapeMgu :: [(Type, Type)] -> [(Type, Type)] -> State Int Subst
+shapeMgu :: [(Type, Type)] -> [(Type, Type)] -> State Int (Result Subst)
 shapeMgu knownAtoms cs = let (atoms, sts) = span isAtomic cs in
   case sts of
-  [] -> return eps
+  [] -> return $ return eps
   p@(t1, t2) : tl -> let
    newKnowns = knownAtoms ++ partEqShapes atoms
    rest = newKnowns ++ tl
    in case p of
     (ExpandedType _ t, _) | noAbs t -> shapeMgu newKnowns $ (t, t2) : tl
     (_, ExpandedType _ t) | noAbs t -> shapeMgu newKnowns $ (t1, t) : tl
-    (TypeAppl (TypeName l _ _) t, _) | l == lazyTypeId ->
-        shapeMgu newKnowns $ (t, t2) : tl
-    (_, TypeAppl (TypeName l _ _) t) | l == lazyTypeId ->
-        shapeMgu newKnowns $ (t1, t) : tl
     (KindedType t _ _, _) -> shapeMgu newKnowns $ (t, t2) : tl
     (_, KindedType t _ _) -> shapeMgu newKnowns $ (t1, t) : tl
-    (TypeName _ _ v1, _) -> case redStep t2 of
-      Just r2 -> shapeMgu newKnowns $ (t1, r2) : tl
-      Nothing -> if v1 > 0 then do
+    (TypeName _ _ v1, _) | v1 > 0 -> do
              vt <- freshLeaves t2
              let s = Map.singleton v1 vt
-             r <- shapeMgu [] $ (vt, t2) : substPairList s rest
-             return $ compSubst s r
-       else error ("shapeMgu1a: " ++ showDoc t1 " < " ++ showDoc t2 "")
-    (_, TypeName _ _ _) -> shapeMgu newKnowns $ (t2, t1) : tl
-    (TypeAppl f1 a1, TypeAppl f2 a2) -> case redStep t1 of
-      Just r1 -> shapeMgu newKnowns $ (r1, t2) : tl
-      Nothing -> case redStep t2 of
-        Just r2 -> shapeMgu newKnowns $ (t1, r2) : tl
-        Nothing -> shapeMgu newKnowns $ (f1, f2) : (a1, a2) : tl
-    _ -> if t1 == t2 then shapeMgu newKnowns tl else
-         error $ "shapeMgu2: " ++ showDoc t1 " < " ++ showDoc t2 ""
+             Result ds mr <- shapeMgu [] $ (vt, t2) : substPairList s rest
+             case mr of
+               Just r -> return $ return $ compSubst s r
+               Nothing -> return $ Result ds Nothing
+    (TypeAppl (TypeName l _ _) t, TypeName _ _ _) | l == lazyTypeId ->
+        shapeMgu newKnowns $ (t, t2) : tl
+    (_, TypeName _ _ v2) | v2 > 0 -> do
+             vt <- freshLeaves t1
+             let s = Map.singleton v2 vt
+             Result ds mr <- shapeMgu [] $ (t1, vt) : substPairList s rest
+             case mr of
+               Just r -> return $ return $ compSubst s r
+               Nothing -> return $ Result ds Nothing
+    (TypeAppl f1 a1, TypeAppl f2 a2) -> case (f1, f2) of
+      (TypeName l1 _ _, TypeName l2 _ _)
+        | l1 == lazyTypeId && l2 == lazyTypeId ->
+            shapeMgu newKnowns $ (a1, a2) : tl
+      (_, TypeName l _ _) | l == lazyTypeId ->
+        shapeMgu newKnowns $ (t1, a2) : tl
+      (TypeName l _ _, _) | l == lazyTypeId ->
+        shapeMgu newKnowns $ (a1, t2) : tl
+      _ -> case redStep t1 of
+        Just r1 -> shapeMgu newKnowns $ (r1, t2) : tl
+        Nothing -> case redStep t2 of
+          Just r2 -> shapeMgu newKnowns $ (t1, r2) : tl
+          Nothing -> shapeMgu newKnowns $ (f1, f2) :
+            case (rawKindOfType f1, rawKindOfType f2) of
+                     (FunKind CoVar _ _ _,
+                       FunKind CoVar _ _ _) -> (a1, a2) : tl
+                     (FunKind ContraVar _ _ _,
+                       FunKind ContraVar _ _ _) -> (a2, a1) : tl
+                     _ -> (a1, a2) : (a2, a1) : tl
+    _ -> shapeMgu newKnowns tl -- ignore non-matching pairs
 
 inclusions :: [(Type, Type)] -> [(Type, Type)]
 inclusions cs = let (atoms, sts) = partition isAtomic cs in
@@ -190,36 +210,48 @@ inclusions cs = let (atoms, sts) = partition isAtomic cs in
         (_, ExpandedType _ t) | noAbs t -> inclusions $ (t1, t) : tl
         (KindedType t _ _, _) -> inclusions $ (t, t2) : tl
         (_, KindedType t _ _) -> inclusions $ (t1, t) : tl
+        (TypeAppl (TypeName l _ _) t, TypeName _ _ _) | l == lazyTypeId ->
+            inclusions $ (t, t2) : tl
         _ -> case redStep t1 of
              Nothing -> case redStep t2 of
                Nothing -> case p of
-                 (TypeAppl (TypeName l _ _) t, _) | l == lazyTypeId ->
-                   inclusions $ (t, t2) : tl
-                 (_, TypeAppl (TypeName l _ _) t) | l == lazyTypeId ->
-                   inclusions $ (t1, t) : tl
-                 (TypeAppl f1 a1, TypeAppl f2 a2) -> inclusions $
-                   (f1, f2) : case (rawKindOfType f1, rawKindOfType f2) of
+                 (TypeAppl f1 a1, TypeAppl f2 a2) -> case (f1, f2) of
+                   (TypeName l1 _ _, TypeName l2 _ _)
+                     | l1 == lazyTypeId && l2 == lazyTypeId ->
+                       inclusions $ (a1, a2) : tl
+                   (_, TypeName l _ _)
+                     | l == lazyTypeId ->
+                       inclusions $ (t1, a2) : tl
+                   (TypeName l _ _, _)
+                     | l == lazyTypeId ->
+                       inclusions $ (a1, t2) : tl
+                   _ -> inclusions $
+                    (f1, f2) : case (rawKindOfType f1, rawKindOfType f2) of
                      (FunKind CoVar _ _ _,
                        FunKind CoVar _ _ _) -> (a1, a2) : tl
                      (FunKind ContraVar _ _ _,
                        FunKind ContraVar _ _ _) -> (a2, a1) : tl
                      _ -> (a1, a2) : (a2, a1) : tl
-                 _ -> error $ "inclusions: " ++ shows p ""
+                 _ -> p : inclusions tl
                Just r2 -> inclusions $ (t1, r2) : tl
              Just r1 -> inclusions $ (r1, t2) : tl
 
-shapeUnify :: [(Type, Type)] -> State Int (Subst, [(Type, Type)])
+shapeUnify :: [(Type, Type)] -> State Int (Result (Subst, [(Type, Type)]))
 shapeUnify l = do
-    s <- shapeMgu [] l
-    return (s, inclusions $ substPairList s l)
+    Result ds ms <- shapeMgu [] l
+    case ms of
+      Just s -> return $ Result ds $ Just (s, inclusions $ substPairList s l)
+      Nothing -> return $ Result ds Nothing
 
 -- input an atomized constraint list
 collapser :: Rel.Rel Type -> Result Subst
 collapser r =
     let t = Rel.sccOfClosure r
         ks = map (Set.partition ( \ e -> case e of
-                                      TypeName _ _ n -> n==0
-                                      _ -> error "collapser")) t
+               TypeName _ _ n -> n == 0
+               TypeAppl (TypeName l _ _) (TypeName _ _ n) ->
+                   n == 0 && l == lazyTypeId
+               _ -> error "collapser")) t
         ws = filter (hasMany . fst) ks
     in if null ws then
        return $ foldr ( \ (cs, vs) s ->
@@ -264,8 +296,11 @@ shapeRel te cs =
     in case shapeMatchPairList (typeMap te) subL of
        Result ds Nothing -> return $ Result ds Nothing
        _ -> do
-               (s1, atoms) <- shapeUnify subL
-               let r = Rel.transClosure $ Rel.fromList atoms
+         Result rs msa <- shapeUnify subL
+         case msa of
+           Just (s1, atoms0) ->
+               let atoms = filter isAtomic atoms0
+                   r = Rel.transClosure $ Rel.fromList atoms
                    es = Map.foldWithKey ( \ t1 st l1 ->
                              case t1 of
                              TypeName _ _ 0 -> Set.fold ( \ t2 l2 ->
@@ -274,16 +309,17 @@ shapeRel te cs =
                                      then l2 else (t1, t2) : l2
                                  _ -> l2) l1 st
                              _ -> l1) [] $ Rel.toMap r
-               return $ if null es then
+               in return $ if null es then
                  case collapser r of
                    Result ds Nothing -> Result ds Nothing
                    Result _ (Just s2) ->
                        let s = compSubst s1 s2
                        in return (s, substC s qs,
-                                  Rel.fromList $ substPairList s2 atoms)
+                                  Rel.fromList $ substPairList s2 atoms0)
                  else Result (map ( \ (t1, t2) ->
                                  mkDiag Hint "rejected" $
                                              Subtyping t1 t2) es) Nothing
+           Nothing -> return $ Result rs Nothing
 
 -- | compute monotonicity of a type variable
 monotonic :: Int -> Type -> (Bool, Bool)
@@ -355,11 +391,21 @@ monoSubst r t =
                 (i, Set.findMin $ Rel.succs r $
                   TypeName n rk i)) antis
 
+monoSubstsAux :: Rel.Rel Type -> Type -> Subst
+monoSubstsAux r t =
+    let s = monoSubst (Rel.transReduce $ Rel.irreflex r) t in
+    if Map.null s then s else compSubst s
+      $ monoSubstsAux (Rel.transClosure $ Rel.map (subst s) r) $ subst s t
+
 monoSubsts :: Rel.Rel Type -> Type -> Subst
 monoSubsts r t =
-    let s = monoSubst (Rel.transReduce $ Rel.irreflex r) t in
-    if Map.null s then s else
-  compSubst s $ monoSubsts (Rel.transClosure $ Rel.map (subst s) r) $ subst s t
+  let s = monoSubstsAux r t
+      s2 = monoSubstsAux (Rel.fromList $ map (\ (t1, t2) -> case (t1, t2) of
+        (TypeName _ _ v, TypeAppl (TypeName l _ _) t3@(TypeName _ _ v2))
+          | v == 0 && l == lazyTypeId && v2 > 0 ->
+              (t1, t3)
+        _ -> (t1, t2)) $ Rel.toList $ Rel.map (subst s) r) t
+  in compSubst s s2
 
 -- | Downsets of type variables made monomorphic need to be considered
 fromTypeVars :: LocalTypeVars -> Constraints
