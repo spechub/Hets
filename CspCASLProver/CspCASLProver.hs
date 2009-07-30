@@ -114,9 +114,9 @@ produceDataEncoding :: CASLSign -> [Named CASLFORMULA] ->
                                   CASLSign)
 produceDataEncoding caslSign caslNamedSens =
     let -- Comorphisms
-        casl2pcfol = (wrapMapTheory CASL2PCFOL.CASL2PCFOL)
-        pcfol2cfol = (wrapMapTheory CASL2SubCFOL.defaultCASL2SubCFOL)
-        cfol2isabelleHol = (wrapMapTheory CFOL2IsabelleHOL.CFOL2IsabelleHOL)
+        casl2pcfol = wrapMapTheory CASL2PCFOL.CASL2PCFOL
+        pcfol2cfol = wrapMapTheory $ CASL2SubCFOL.CASL2SubCFOL True CASL2SubCFOL.AllSortBottoms
+        cfol2isabelleHol = wrapMapTheory CFOL2IsabelleHOL.CFOL2IsabelleHOL
     in do -- Remove Subsorting from the CASL part of the CspCASL
           -- specification
           th_pcfol <- casl2pcfol (caslSign, caslNamedSens)

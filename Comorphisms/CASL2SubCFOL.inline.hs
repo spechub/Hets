@@ -40,15 +40,16 @@ import Common.ProofTree
 import Data.List (zip)
 
 -- | determine the need for bottom constants
-data FormulaTreatment = NoMembershipOrCast | FormulaDependent | SubsortBottoms
+data FormulaTreatment = NoMembershipOrCast | FormulaDependent | SubsortBottoms | AllSortBottoms
     deriving Show
 
 -- | a case selector for formula treatment
-treatFormula :: FormulaTreatment -> a -> a -> a -> a
-treatFormula g a b c = case g of
+treatFormula :: FormulaTreatment -> a -> a -> a -> a -> a
+treatFormula g a b c d = case g of
     NoMembershipOrCast -> a
     FormulaDependent -> b
     SubsortBottoms -> c
+    AllSortBottoms -> d
 
 {- | The identity of the comorphism depending on parameters.
     'NoMembershipOrCast' reject membership test or cast to non-bottom sorts.
@@ -67,7 +68,7 @@ defaultCASL2SubCFOL = CASL2SubCFOL True FormulaDependent
 
 instance Language CASL2SubCFOL where
     language_name (CASL2SubCFOL _ m) = "CASL2SubCFOL"
-        ++ treatFormula m (show m) "" (show m)
+        ++ treatFormula m (show m) "" (show m) (show m)
 
 instance Comorphism CASL2SubCFOL
                CASL CASL_Sublogics
@@ -128,8 +129,8 @@ totalizeSymbType t = case t of
 
 sortsWithBottom :: FormulaTreatment -> Sign f e -> Set.Set SORT -> Set.Set SORT
 sortsWithBottom m sig formBotSrts =
-    let bsrts = treatFormula m Set.empty formBotSrts $  Map.keysSet $
-            Rel.toMap $ sortRel sig
+    let bsrts = treatFormula m Set.empty formBotSrts   (Map.keysSet $
+            Rel.toMap $ sortRel sig ) (sortSet sig)
         ops = Map.elems $ opMap sig
         -- all supersorts inherit the same bottom element
         allSortsWithBottom s =
