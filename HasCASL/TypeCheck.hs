@@ -39,7 +39,6 @@ import HasCASL.MinType
 
 import qualified Data.Map as Map
 import qualified Data.Set as Set
-import qualified Common.Lib.Rel as Rel
 import Common.Id
 import Common.GlobalAnnotations
 import Common.Result
@@ -111,39 +110,36 @@ checkList isP mtys trms = case (mtys, trms) of
     _ -> return [(eps, noC, [], [])]
 
 -- | reduce a substitution
-reduceR :: Bool -> Env -> (Subst, Constraints, Type, Term)
+reduceR :: Bool -> Bool -> Env -> (Subst, Constraints, Type, Term)
         -> State Int (Result (Subst, Constraints, Type, Term))
-reduceR doMono te (s, cr, ty, tr) = do
-    Result ds0 mc <- shapeRel te $ if doMono then joinC cr
-                           $ fromTypeVars $ localTypeVars te else cr
+reduceR doMono doSimp te (s, cr, ty, tr) = do
+    Result ds0 mc <- shapeRelAndSimplify doSimp True te cr
+      $ if doMono then Just ty else Nothing
     let ds = map (improveDiag tr) ds0
     return $ case mc of
         Nothing -> Result ds Nothing
-        Just (cs, qs, trel) -> let
-            s1 = compSubst s cs
-            ms = monoSubsts
-                       (Rel.transClosure $ Rel.union (fromTypeMap $ typeMap te)
-                          $ trel) (subst cs ty)
-            ss = if doMono then compSubst cs ms else cs
-            s2 = if doMono then compSubst s1 ms else s1
-            in Result ds $ Just (s2, (if doMono then substC ms else id)
-                   $ foldr ( \ (a, t) -> insertC (Subtyping a t))
-                        qs $ Rel.toList trel, subst ss ty,
-                                     substTerm s2 tr)
+        Just (s1, qs) -> let
+          s2 = compSubst s s1
+          in Result ds $ Just
+             (s2, qs, subst s1 ty, substTerm s2 tr)
 
 -- | reduce a substitution
-reduce :: Bool -> [(Subst, Constraints, Type, Term)]
-       -> State Env [(Subst, Constraints, Type, Term)]
-reduce doMono alts = do
+reduceAux :: Bool -> Bool -> [(Subst, Constraints, Type, Term)]
+          -> State Env [(Subst, Constraints, Type, Term)]
+reduceAux doMono doSimp alts = do
        te <- get
        combs <- mapM (\ alt -> do
-         Result ds mc <- toEnvState $ reduceR doMono te alt
+         Result ds mc <- toEnvState $ reduceR doMono doSimp te alt
+         addDiags ds
          case mc of
            Nothing -> do
-             addDiags ds
              return []
            Just q -> return [q]) alts
        return $ concat combs
+
+reduce :: Bool -> [(Subst, Constraints, Type, Term)]
+       -> State Env [(Subst, Constraints, Type, Term)]
+reduce doMono = reduceAux doMono False
 
 checkForUninstantiatedVars :: GlobalAnnos -> Term -> Range -> State Env ()
 checkForUninstantiatedVars ga t p = let
@@ -159,18 +155,15 @@ checkForUninstantiatedVars ga t p = let
 typeCheck :: Type -> Term -> State Env (Maybe Term)
 typeCheck exTy trm =
     do alts0 <- inferWithMaybeType False (Just exTy) trm
-       alts <- reduce True alts0
+       alts <- reduceAux True True alts0
        te <- get
        let p = getRange trm
            ga = globAnnos te
-       case alts of
+       case typeNub te q2p alts of
          [] -> do
            addDiags [mkNiceDiag ga Error "no typing for" trm]
            return Nothing
-         [(_, cs, ty, t)] -> do
-           let (ds, rcs) = simplify te cs
-               es = map ( \ d -> d {diagKind = Hint, diagPos = p}) ds
-           addDiags es
+         [(_, rcs, ty, t)] -> do
            unless (Set.null rcs)
                  $ addDiags [(mkDiag Error ("in term '"
                              ++ showGlobalDoc ga t "' of type '"
@@ -178,20 +171,7 @@ typeCheck exTy trm =
                                  rcs){diagPos = p}]
            checkForUninstantiatedVars ga t p
            return $ Just t
-         _ -> do
-           let alts3 = filter ( \ (_, cs, _, _) ->
-                             Set.null $ snd $ simplify te cs) alts
-               falts = typeNub te q2p alts3
-           case falts of
-             [] -> do
-               addDiags [mkNiceDiag ga Error "no constraint resolution for" trm]
-               addDiags $ map (\ (_, cs, _, _) -> (mkDiag Error
-                            "simplification failed for" cs){diagPos = p}) alts
-               return Nothing
-             [(_, _, _, t)] -> do
-               checkForUninstantiatedVars ga t p
-               return $ Just t
-             _ -> do
+         falts -> do
                addDiags [Diag Error
                          ("ambiguous typings\n " ++
                           showSepList ("\n " ++)
@@ -289,7 +269,7 @@ inferWithMaybeType isP mt trm = do
     Just inTy -> do
         combs <- mapM (\ q@(s, c, ty, t) -> let nTy = subst s inTy in
             if ty == nTy then return [q] else do
-            Result ds mc <- toEnvState $ reduceR False te
+            Result ds mc <- toEnvState $ reduceR False False te
               (s, insertC (Subtyping ty nTy) c, nTy, mkTypedTerm t nTy)
             case mc of
               Nothing -> do

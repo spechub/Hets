@@ -10,7 +10,6 @@ op    fmap : (a -> b) -> f a -> f b
 op    empty : List a
 type  Set : Functor
 op    emptySet : Set a
-. fail = emptySet
 . fail = "";
 op    map : (a -> b) -> List a -> List b
 op    __bind__ : m a * (a -> m b) -> m b
@@ -46,7 +45,6 @@ op return : forall a : Type; m : Monad . a -> m a %(op)%
 vars
 g : a -> b;
 x : m a
-. fail = emptySet
 . fail = ""
 forall a : Type; b : Type; g : a -> b . fmap g = map g
 forall a : Type; b : Type; m : Monad; g : a -> b; x : m a
@@ -55,19 +53,11 @@ forall a : Type; b : Type; m : Monad; g : a -> b; x : m a
 ### Hint 7.8, is type variable 'b'
 ### Hint 9.5, is type variable 'm'
 ### Hint 15.5, is type variable 'f'
-### Hint 25.8,
-constrain 'Set : Monad' is unprovable
-  known kinds are: {Functor}
-*** Error 25.8,
-in term '(op fail : forall a : Type; m : Monad . m a)
-= (op emptySet : forall a : Type . Set a)' of type '? Unit'
- unresolved constraints
-'{Set : Monad}'
-*** Error 25.8,
-in term '(op fail : forall a : Type; m : Monad . m a)
+### Hint 25.3-25.10,
+constrain 'Set : Monad' is unprovable of '(op fail : forall a : Type; m : Monad . m a)
 = (op emptySet : forall a : Type . Set a)'
- are uninstantiated type variables
-'[_v7_a]'
+  known kinds are: {Functor}
+*** Error 25.8, no typing for 'fail = emptySet'
 *** Error 27.8,
 in term '(op fail : forall a : Type; m : Monad . m a)
 = (op empty : forall a : Type . List a)'

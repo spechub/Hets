@@ -18,12 +18,10 @@ module HasCASL.Constrain
     , substC
     , joinC
     , insertC
-    , shapeRel
-    , monoSubsts
-    , fromTypeVars
+    , partitionC
+    , toListC
+    , shapeRelAndSimplify
     , fromTypeMap
-    , entail
-    , simplify
     ) where
 
 import HasCASL.Unify
@@ -287,12 +285,9 @@ shapeMatchPairList tm l = case l of
         s2 <- shapeMatchPairList tm $ substPairList s1 rt
         return $ compSubst s1 s2
 
-shapeRel :: Env -> Constraints
-         -> State Int (Result (Subst, Constraints, Rel.Rel Type))
-shapeRel te cs =
-    let (qs, subS) = partitionC cs
-        subL = toListC subS
-    in case shapeMatchPairList (typeMap te) subL of
+shapeRel :: Env -> [(Type, Type)] -> State Int (Result (Subst, Rel.Rel Type))
+shapeRel te subL =
+    case shapeMatchPairList (typeMap te) subL of
        Result ds Nothing -> return $ Result ds Nothing
        _ -> do
          Result rs msa <- shapeUnify subL
@@ -312,8 +307,7 @@ shapeRel te cs =
                  case collapser r of
                    Result ds Nothing -> Result ds Nothing
                    Result _ (Just s2) ->
-                       let s = compSubst s1 s2
-                       in return (s, substC s qs,
+                       return (compSubst s1 s2,
                                   Rel.fromList $ substPairList s2 atoms0)
                  else Result (map ( \ (t1, t2) ->
                                  mkDiag Hint "rejected" $
@@ -406,13 +400,45 @@ monoSubsts r t =
         _ -> (t1, t2)) $ Rel.toList $ Rel.map (subst s) r) t
   in compSubst s s2
 
+shapeRelAndMono :: Env -> [(Type, Type)] -> Maybe Type
+                -> State Int (Result (Subst, Rel.Rel Type))
+shapeRelAndMono te subL mTy = do
+    res@(Result ds mc) <- shapeRel te
+      $ if isJust mTy then fromTypeVars (localTypeVars te) ++ subL else subL
+    return $ case mc of
+        Nothing -> Result ds Nothing
+        Just (s, trel) -> case mTy of
+          Nothing -> res
+          Just ty -> let
+            ms = monoSubsts
+                       (Rel.transClosure $ Rel.union (fromTypeMap $ typeMap te)
+                          $ trel) (subst s ty)
+            in Result ds
+                 $ Just (compSubst s ms, Rel.map (subst ms) trel)
+
+shapeRelAndSimplify :: Bool -> Bool -> Env -> Constraints -> Maybe Type
+                    -> State Int (Result (Subst, Constraints))
+shapeRelAndSimplify doSimp doFail te cs mTy = do
+  let (qs, subS) = partitionC cs
+      subL = toListC subS
+  Result ds mc <- shapeRelAndMono te subL mTy
+  return $ case mc of
+     Nothing -> Result ds Nothing
+     Just (s, trel) -> if doSimp then
+         let (es, newCs) = simplify te
+               $ foldr (insertC . uncurry Subtyping)
+                        (substC s qs) $ Rel.toList trel
+             fs = map ( \ d -> d {diagKind = Hint}) es
+         in Result (ds ++ fs)
+                $ if null fs || not doFail then Just (s, newCs) else Nothing
+         else Result ds $ Just (s, substC s cs)
+
 -- | Downsets of type variables made monomorphic need to be considered
-fromTypeVars :: LocalTypeVars -> Constraints
+fromTypeVars :: LocalTypeVars -> [(Type, Type)]
 fromTypeVars = Map.foldWithKey
     (\ t (TypeVarDefn _ vk rk _) c -> case vk of
-              Downset ty ->
-                insertC (Subtyping (TypeName t rk 0) $ monoType ty) c
-              _ -> c) noC
+              Downset ty -> (TypeName t rk 0, monoType ty) : c
+              _ -> c) []
 
 -- | the type relation of declared types
 fromTypeMap :: TypeMap -> Rel.Rel Type

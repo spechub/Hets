@@ -85,19 +85,13 @@ haveCommonSupertypeE eIn s1 s2 = do
     cst <- mkSingleSubst (genName "commonSupertype", rStar)
     let cs = Set.fromList [Subtyping t1 cst, Subtyping t2 cst]
         e = foldr addToEnv eIn $ l1 ++ l2
-    Result _ mr <- shapeRel e cs
+    Result _ mr <- shapeRelAndSimplify True False e cs (Just cst)
     return $ case mr of
       Nothing -> False
-      Just (scs, qs, trel) -> let
-        tmRel = fromTypeMap $ typeMap e
-        ms = monoSubsts
-             (Rel.transClosure $ Rel.union tmRel trel) (subst scs cst)
-        nsubs = foldr (\ p@(a, t) ->
-                  maybe (p :) (const id)
-                     $ entail e (Subtyping (subst ms a) $ subst ms t)) []
-                $ Rel.toList trel
-        (_, rcs) = simplify e $ substC ms qs
-        in Set.null rcs && reduceCommonSubtypes (Rel.transClosure tmRel) nsubs
+      Just (_, rcs) -> let (qs, subC) = partitionC rcs
+        in Set.null qs
+          && reduceCommonSubtypes (Rel.transClosure $ fromTypeMap $ typeMap e)
+             (toListC subC)
 
 reduceCommonSubtypes :: Rel.Rel Type -> [(Type, Type)] -> Bool
 reduceCommonSubtypes e l = let

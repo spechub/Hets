@@ -205,3 +205,7 @@ no kind found for 'a'
 ### Hint 48.10,
 for type scheme 'Pred ((a ->? b) * (a ->? b))' wrong length of instantiation list
 '[? a]'
+### Hint 48.3-48.12,
+constrain '(? a) : Cpo' is unprovable of '(op __<=__ : forall a : Cpo . Pred (a * a))[? a]
+((var x : ? a), (var x : ? a))'
+  known kinds are: {Ord}

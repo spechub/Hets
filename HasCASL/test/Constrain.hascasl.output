@@ -6,7 +6,6 @@ op    c : a
 . f (f c) = c;
 type  t : Eq
 op    b : t
-. f b = b;
 classes
 Eq < Type;
 Ord < Type
@@ -19,11 +18,7 @@ op b : t %(op)%
 op c : a %(op)%
 op f : forall e : Ord . e -> e %(op)%
 . f (f c) = c
-. f b = b
-### Hint 16.3,
-constrain 't : Ord' is unprovable
+### Hint 16.3-16.9,
+constrain 't : Ord' is unprovable of '(op f : forall e : Ord . e -> e) (op b : t) = (op b : t)'
   known kinds are: {Eq}
-*** Error 16.3,
-in term '(op f : forall e : Ord . e -> e) (op b : t) = (op b : t)' of type '? Unit'
- unresolved constraints
-'{t : Ord}'
+*** Error 16.3, no typing for 'f b = b'
