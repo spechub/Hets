@@ -14,18 +14,18 @@ Nat : Type;
 S : Type;
 T : Type;
 gn_t1[Binary] : +Type -> Type;
-gn_t10[gn_t9[Inj]] : -Type -> +Type -> Type;
-gn_t2[gn_t1[Binary]] : -Type -> +Type -> Type;
-gn_t9[Inj] : +Type -> Type
+gn_t10[Inj] : +Type -> Type;
+gn_t11[gn_t10[Inj]] : -Type -> +Type -> Type;
+gn_t2[gn_t1[Binary]] : -Type -> +Type -> Type
 types
 Nat < Int;
-gn_t10[gn_t9[Inj]] < __->__;
+gn_t11[gn_t10[Inj]] < __->__;
 gn_t2[gn_t1[Binary]] < __->__
 types
 Binary := gn_t1[Binary] T;
-Inj := gn_t9[Inj] Int;
+Inj := gn_t10[Inj] Int;
 gn_t1[Binary] := gn_t2[gn_t1[Binary]] (S * S);
-gn_t9[Inj] := gn_t10[gn_t9[Inj]] Int
+gn_t10[Inj] := gn_t11[gn_t10[Inj]] Int
 vars
 a < b : Type %(var_5)%;
 b : Type %(var_4)%

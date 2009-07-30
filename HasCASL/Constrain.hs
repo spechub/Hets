@@ -137,15 +137,11 @@ substPairList s = map ( \ (a, b) -> (subst s a, subst s b))
 isAtomic :: (Type, Type) -> Bool
 isAtomic p = case p of
     (TypeName _ _ _, TypeName _ _ _) -> True
-    (TypeName _ _ _, TypeAppl (TypeName l _ _) (TypeName _ _ _)) ->
-      l == lazyTypeId
     _ -> False
 
 partEqShapes :: [(Type, Type)] -> [(Type, Type)]
 partEqShapes = filter ( \ p -> case p of
     (TypeName _ _ n1, TypeName _ _ n2) -> n1 /= n2
-    (TypeName _ _ n1, TypeAppl (TypeName l _ _) (TypeName _ _ n2)) ->
-        l == lazyTypeId && n1 /= n2
     _ -> True)
 
 -- pre: shapeMatchPairList succeeds
@@ -161,6 +157,8 @@ shapeMgu knownAtoms cs = let (atoms, sts) = span isAtomic cs in
     (_, ExpandedType _ t) | noAbs t -> shapeMgu newKnowns $ (t1, t) : tl
     (KindedType t _ _, _) -> shapeMgu newKnowns $ (t, t2) : tl
     (_, KindedType t _ _) -> shapeMgu newKnowns $ (t1, t) : tl
+    (TypeAppl (TypeName l _ _) t, TypeName _ _ _) | l == lazyTypeId ->
+        shapeMgu newKnowns $ (t, t2) : tl
     (TypeName _ _ v1, _) | v1 > 0 -> do
              vt <- freshLeaves t2
              let s = Map.singleton v1 vt
@@ -168,8 +166,8 @@ shapeMgu knownAtoms cs = let (atoms, sts) = span isAtomic cs in
              case mr of
                Just r -> return $ return $ compSubst s r
                Nothing -> return $ Result ds Nothing
-    (TypeAppl (TypeName l _ _) t, TypeName _ _ _) | l == lazyTypeId ->
-        shapeMgu newKnowns $ (t, t2) : tl
+    (TypeName _ _ _, TypeAppl (TypeName l _ _) t) | l == lazyTypeId ->
+        shapeMgu newKnowns $ (t1, t) : tl
     (_, TypeName _ _ v2) | v2 > 0 -> do
              vt <- freshLeaves t1
              let s = Map.singleton v2 vt
@@ -209,6 +207,8 @@ inclusions cs = let (atoms, sts) = partition isAtomic cs in
         (_, KindedType t _ _) -> inclusions $ (t1, t) : tl
         (TypeAppl (TypeName l _ _) t, TypeName _ _ _) | l == lazyTypeId ->
             inclusions $ (t, t2) : tl
+        (TypeName _ _ _, TypeAppl (TypeName l _ _) t) | l == lazyTypeId ->
+            inclusions $ (t1, t) : tl
         _ -> case redStep t1 of
              Nothing -> case redStep t2 of
                Nothing -> case p of
@@ -246,8 +246,6 @@ collapser r =
     let t = Rel.sccOfClosure r
         ks = map (Set.partition ( \ e -> case e of
                TypeName _ _ n -> n == 0
-               TypeAppl (TypeName l _ _) (TypeName _ _ n) ->
-                   n == 0 && l == lazyTypeId
                _ -> error "collapser")) t
         ws = filter (hasMany . fst) ks
     in if null ws then
@@ -384,21 +382,11 @@ monoSubst r t =
                 (i, Set.findMin $ Rel.succs r $
                   TypeName n rk i)) antis
 
-monoSubstsAux :: Rel.Rel Type -> Type -> Subst
-monoSubstsAux r t =
-    let s = monoSubst (Rel.transReduce $ Rel.irreflex r) t in
-    if Map.null s then s else compSubst s
-      $ monoSubstsAux (Rel.transClosure $ Rel.map (subst s) r) $ subst s t
-
 monoSubsts :: Rel.Rel Type -> Type -> Subst
 monoSubsts r t =
-  let s = monoSubstsAux r t
-      s2 = monoSubstsAux (Rel.fromList $ map (\ (t1, t2) -> case (t1, t2) of
-        (TypeName _ _ v, TypeAppl (TypeName l _ _) t3@(TypeName _ _ v2))
-          | v == 0 && l == lazyTypeId && v2 > 0 ->
-              (t1, t3)
-        _ -> (t1, t2)) $ Rel.toList $ Rel.map (subst s) r) t
-  in compSubst s s2
+    let s = monoSubst (Rel.transReduce $ Rel.irreflex r) t in
+    if Map.null s then s else compSubst s
+      $ monoSubsts (Rel.transClosure $ Rel.map (subst s) r) $ subst s t
 
 shapeRelAndMono :: Env -> [(Type, Type)] -> Maybe Type
                 -> State Int (Result (Subst, Rel.Rel Type))
