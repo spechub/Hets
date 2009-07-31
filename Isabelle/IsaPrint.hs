@@ -279,7 +279,7 @@ flatTuplex cs c = case cs of
 
 printMixfixAppl :: Bool -> Continuity -> Term -> [Term] -> (Doc, Int)
 printMixfixAppl b c f args = case f of
-        Const (VName n (Just (AltSyntax s is i))) _ ->
+        Const (VName n (Just (AltSyntax s is i))) (Hide _ _ _) ->
              if length is == length args &&
                 (b || n == cNot || isPrefixOf "op " n) then
                    (fsep $ replaceUnderlines s

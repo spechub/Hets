@@ -257,10 +257,13 @@ transVar toks v = let
     renVar t = if Set.member t toks then renVar $ "X_" ++ t else t
     in mkVName $ renVar s
 
+mkTypedConst :: VName -> FunType -> Isa.Term
+mkTypedConst v fTy = Isa.Const v $ Disp (transFunType fTy) NA Nothing
+
 transTypedVar :: Set.Set String -> VarDecl -> Result Isa.Term
 transTypedVar toks (VarDecl var ty _ _) = do
     fTy <- funType ty
-    return $ Isa.Const (transVar toks var) $ Disp (transFunType fTy) NA Nothing
+    return $ mkTypedConst (transVar toks var) fTy
 
 mkSimplifiedSen :: OldSimpKind -> Simplifier -> Isa.Term -> Isa.Sentence
 mkSimplifiedSen simK simpF t = mkSen $ evalState (simplify simK simpF t) 0
@@ -468,9 +471,12 @@ transTerm sign tyToks collectConds toks pVars trm = case trm of
               | opId == whenElse -> ITC instfTy (cf whenElseOp) None
               | opId == resId -> ITC instfTy (cf resOp) None
               | otherwise -> let
+                  isaId = transOpId sign tyToks opId ts
                   ef = cf $ (for (isPlainFunType fTy - 1)
                                   $ termAppl uncurryOp)
-                             $ con $ transOpId sign tyToks opId ts
+                             $ if opId == projName then
+                                   mkTypedConst isaId instfTy
+                               else con isaId
                   in ITC instfTy ef None
     QuantifiedTerm quan varDecls phi _ -> do
         let qname = case quan of
