@@ -343,7 +343,7 @@ mkTerm i sc tys ps t = ApplTerm (mkQualOp i sc tys ps) t ps
 mkBinTerm :: Id -> TypeScheme -> [Type] -> Range -> Term  -> Term -> Term
 mkBinTerm i sc tys ps t1 t2 = mkTerm i sc tys ps $ TupleTerm [t1, t2] ps
 
-mkLogTerm :: Id -> Range -> Term  -> Term -> Term
+mkLogTerm :: Id -> Range -> Term -> Term -> Term
 mkLogTerm i ps = mkBinTerm i logType [] ps
 
 mkEqTerm :: Id -> Type -> Range -> Term -> Term -> Term

@@ -20,10 +20,10 @@ import qualified Data.Map as Map
 import qualified Data.Set as Set
 import HasCASL.As
 import HasCASL.AsUtils
+import HasCASL.ClassAna
 import HasCASL.Le
 import HasCASL.Builtin
 import HasCASL.DataAna
-import Debug.Trace
 
 typeRel :: TypeMap -> Rel.Rel Id
 typeRel = Rel.transReduce . Rel.irreflex . Rel.transClosure
@@ -65,30 +65,64 @@ subtRel = Set.singleton OpInfo
     , opDefn = NoOpDefn Fun }
 
 subtAxioms :: TypeMap -> [Named Sentence]
-subtAxioms tm = subtReflex : subtTrans : subtInjProj : injTrans
-  : map (subtAx tm) (Rel.toList $ typeRel tm)
+subtAxioms tm =
+  let tr = typeRel tm in
+  if Rel.null tr then [] else subtReflex : subtTrans : subtInjProj : injTrans
+  : map (subtAx tm) (Rel.toList tr)
 
 nr :: Range
 nr = nullRange
+
+getKindAppl :: RawKind -> [Variance]
+getKindAppl rk = case rk of
+  ClassKind () -> []
+  FunKind v _ r _ -> v : getKindAppl r
+
+mkTypeArg :: Id -> Int -> TypeArg
+mkTypeArg i c = TypeArg i NonVar (VarKind universe) rStar c Other nr
 
 subtAx :: TypeMap -> (Id, Id) -> Named Sentence
 subtAx tm (i1, i2) = let
     e1 = Map.findWithDefault (error "TypeRel.subtAx1") i1 tm
     e2 = Map.findWithDefault (error "TypeRel.subtAx2") i2 tm
     txt = shows i1 "_<_" ++ show i2
-    in makeNamed ("ga_subt_" ++ txt)
-               $ Formula $ case (typeKind e1, typeKind e2) of
-         (ClassKind (), ClassKind ()) -> let
-             t1 = toType i1
-             t2 = toType i2
-             x1 = stringToId "x"
-             x2 = stringToId "y"
-             v1 = mkVarDecl x1 t1
-             v2 = mkVarDecl x2 t2
-            in mkForall (map GenVarDecl [v1, v2])
+    l1 = getKindAppl $ typeKind e1
+    l2 = getKindAppl $ typeKind e2
+    l3 = zipWith minVariance l1 l2
+    l4 = foldr (\ v (((tl, vl), pl), fl) ->
+            let c = length pl + 1
+                a = simpleIdToId $ genNumVar "a" c
+                ta = mkTypeArg a (- (length tl + 1))
+                b = simpleIdToId $ genNumVar "b" c
+                tb = mkTypeArg b (- (length tl + 2))
+                x = stringToId $ "x" ++ show c
+                y = stringToId $ "y" ++ show c
+                tx = typeArgToType ta
+                ty = typeArgToType tb
+                vx = mkVarDecl x tx
+                vy = mkVarDecl y ty
+            in (case v of
+                  NonVar -> ((ta : tl, vx : vl), (tx, tx) : pl)
+                  _ -> (([ta, tb] ++ tl, [vx, vy] ++ vl), (tx, ty) : pl)
+               , case v of
+                   CoVar -> mkSubtTerm tx ty vx vy : fl
+                   ContraVar -> mkSubtTerm ty tx vy vx : fl
+                   _ -> fl)) ((([], []), []), []) l3
+    (args, fs) = l4
+    (gens, acts) = args
+    (act1, act2) = unzip acts
+    (tyargs, vargs) = gens
+    t1 = mkTypeAppl (toType i1) act1
+    t2 = mkTypeAppl (toType i2) act2
+    x1 = stringToId "x"
+    x2 = stringToId "y"
+    v1 = mkVarDecl x1 t1
+    v2 = mkVarDecl x2 t2
+    in makeNamed ("ga_subt_" ++ txt) $ Formula
+         $ mkForall (map GenTypeVarDecl tyargs ++ map GenVarDecl vargs)
+           $ (if null fs then id else
+             mkLogTerm implId nr (foldr1 (mkLogTerm andId nr) fs))
                $ mkSubtTerm t1 t2 v1 v2
-         _ -> trace (show $ "higher kinds not yet supported " ++ txt)
-              $ unitTerm trueId nr
 
 mkSubtTerm :: Type -> Type -> VarDecl -> VarDecl -> Term
 mkSubtTerm t1 t2 v1 v2 = mkTerm subtRelName subtRelType [t1, t2] nr
