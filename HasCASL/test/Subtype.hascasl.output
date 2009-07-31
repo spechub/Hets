@@ -34,11 +34,11 @@ Inj < __->__;
 i < __->__
 vars
 a < b : Type %(var_24)%;
-b < c : Type %(var_44)%;
-c < e : Type %(var_59)%;
-d < f : Type %(var_60)%;
-e : Type %(var_57)%;
-f : Type %(var_58)%
+b < c : Type %(var_42)%;
+c < e : Type %(var_57)%;
+d < f : Type %(var_58)%;
+e : Type %(var_55)%;
+f : Type %(var_56)%
 op down : forall b : Type; a < b : Type . b ->? a %(op)%
 op twice : forall a : Type; b < a : Type . (a ->? b) -> a ->? b
            %(op)%

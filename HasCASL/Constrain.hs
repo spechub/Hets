@@ -157,8 +157,13 @@ shapeMgu knownAtoms cs = let (atoms, sts) = span isAtomic cs in
     (_, ExpandedType _ t) | noAbs t -> shapeMgu newKnowns $ (t1, t) : tl
     (KindedType t _ _, _) -> shapeMgu newKnowns $ (t, t2) : tl
     (_, KindedType t _ _) -> shapeMgu newKnowns $ (t1, t) : tl
+    (TypeAppl (TypeName l1 _ _) a1, TypeAppl (TypeName l2 _ _) a2)
+        | l1 == lazyTypeId && l2 == lazyTypeId ->
+            shapeMgu newKnowns $ (a1, a2) : tl
     (TypeAppl (TypeName l _ _) t, TypeName _ _ _) | l == lazyTypeId ->
         shapeMgu newKnowns $ (t, t2) : tl
+    (TypeName _ _ _, TypeAppl (TypeName l _ _) t) | l == lazyTypeId ->
+        shapeMgu newKnowns $ (t1, t) : tl
     (TypeName _ _ v1, _) | v1 > 0 -> do
              vt <- freshLeaves t2
              let s = Map.singleton v1 vt
@@ -166,8 +171,6 @@ shapeMgu knownAtoms cs = let (atoms, sts) = span isAtomic cs in
              case mr of
                Just r -> return $ return $ compSubst s r
                Nothing -> return $ Result ds Nothing
-    (TypeName _ _ _, TypeAppl (TypeName l _ _) t) | l == lazyTypeId ->
-        shapeMgu newKnowns $ (t1, t) : tl
     (_, TypeName _ _ v2) | v2 > 0 -> do
              vt <- freshLeaves t1
              let s = Map.singleton v2 vt
@@ -176,9 +179,6 @@ shapeMgu knownAtoms cs = let (atoms, sts) = span isAtomic cs in
                Just r -> return $ return $ compSubst s r
                Nothing -> return $ Result ds Nothing
     (TypeAppl f1 a1, TypeAppl f2 a2) -> case (f1, f2) of
-      (TypeName l1 _ _, TypeName l2 _ _)
-        | l1 == lazyTypeId && l2 == lazyTypeId ->
-            shapeMgu newKnowns $ (a1, a2) : tl
       (_, TypeName l _ _) | l == lazyTypeId ->
         shapeMgu newKnowns $ (t1, a2) : tl
       (TypeName l _ _, _) | l == lazyTypeId ->
@@ -205,6 +205,9 @@ inclusions cs = let (atoms, sts) = partition isAtomic cs in
         (_, ExpandedType _ t) | noAbs t -> inclusions $ (t1, t) : tl
         (KindedType t _ _, _) -> inclusions $ (t, t2) : tl
         (_, KindedType t _ _) -> inclusions $ (t1, t) : tl
+        (TypeAppl (TypeName l1 _ _) a1, TypeAppl (TypeName l2 _ _) a2)
+          | l1 == lazyTypeId && l2 == lazyTypeId ->
+            inclusions $ (a1, a2) : tl
         (TypeAppl (TypeName l _ _) t, TypeName _ _ _) | l == lazyTypeId ->
             inclusions $ (t, t2) : tl
         (TypeName _ _ _, TypeAppl (TypeName l _ _) t) | l == lazyTypeId ->
@@ -213,9 +216,6 @@ inclusions cs = let (atoms, sts) = partition isAtomic cs in
              Nothing -> case redStep t2 of
                Nothing -> case p of
                  (TypeAppl f1 a1, TypeAppl f2 a2) -> case (f1, f2) of
-                   (TypeName l1 _ _, TypeName l2 _ _)
-                     | l1 == lazyTypeId && l2 == lazyTypeId ->
-                       inclusions $ (a1, a2) : tl
                    (_, TypeName l _ _)
                      | l == lazyTypeId ->
                        inclusions $ (t1, a2) : tl
