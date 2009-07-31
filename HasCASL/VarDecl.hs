@@ -41,14 +41,22 @@ import HasCASL.TypeAna
 import HasCASL.Unify
 import HasCASL.Merge
 import HasCASL.Builtin
+import HasCASL.MapTerm
 
 -- | quantify
 mkEnvForall :: Env -> Term -> Range -> Term
 mkEnvForall e t ps =
   let tys = getAllTypes t
-      tyVs = map GenTypeVarDecl $ getTypeVars (localTypeVars e) tys ps
-      vs = tyVs ++ map GenVarDecl (Set.toList $ freeVars t)
-  in if null vs then t else QuantifiedTerm Universal vs t ps
+      tyVs = getTypeVars (localTypeVars e) tys ps
+      vs = map GenTypeVarDecl (genTypeArgs tyVs)
+           ++ map GenVarDecl (Set.toList $ freeVars t)
+  in if null vs then t else
+         mapTerm (id, replAlias (\ i rk v ->
+               TypeName i rk $
+               case elemIndex i $ map getTypeVar tyVs of
+                 Just j -> - (j + 1)
+                 _ -> v))
+         $ QuantifiedTerm Universal vs t ps
 
 getTypeVars :: LocalTypeVars -> [Type] -> Range -> [TypeArg]
 getTypeVars e tys ps =
