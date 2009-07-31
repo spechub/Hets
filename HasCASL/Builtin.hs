@@ -20,8 +20,10 @@ module HasCASL.Builtin
     , addBuiltins
     , aTypeArg
     , bTypeArg
+    , cTypeArg
     , aType
     , bType
+    , cType
     , botId
     , whenElse
     , ifThenElse
@@ -179,11 +181,17 @@ aVar = stringToId "a"
 bVar :: Id
 bVar = stringToId "b"
 
+cVar :: Id
+cVar = stringToId "c"
+
 aType :: Type
 aType = typeArgToType aTypeArg
 
 bType :: Type
 bType = typeArgToType bTypeArg
+
+cType :: Type
+cType = typeArgToType cTypeArg
 
 lazyAType :: Type
 lazyAType = mkLazyType aType
@@ -205,6 +213,9 @@ aTypeArgK k = varToTypeArgK aVar (-1) NonVar k
 
 bTypeArg :: TypeArg
 bTypeArg = varToTypeArg bVar (-2) NonVar
+
+cTypeArg :: TypeArg
+cTypeArg = varToTypeArg cVar (-3) NonVar
 
 bindVarA :: TypeArg -> Type -> TypeScheme
 bindVarA a t = TypeScheme [a] t nullRange
