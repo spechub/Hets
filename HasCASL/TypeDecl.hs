@@ -333,8 +333,8 @@ anaDatatype genKind tys d = case item d of
        dt@(DataPat _ _ rk _) <- dataPatToType itd
        let fullKind = typeArgsListToKind nAs k
        tvs <- gets localTypeVars
-       mapM_ (addTypeVarDecl False) $ map nonVarTypeArg nAs
-       mNewAlts <- fromResult $ anaAlts tys dt (map item alts)
+       mapM_ (addTypeVarDecl False . nonVarTypeArg) nAs
+       mNewAlts <- fromResult $ anaAlts genKind tys dt (map item alts)
        putLocalTypeVars tvs
        case mNewAlts of
          Nothing -> return Nothing

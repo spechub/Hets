@@ -22,7 +22,7 @@ module HasCASL.DataAna
     , mkVarDecl
     ) where
 
-import Data.Maybe (catMaybes)
+import Data.Maybe (mapMaybe)
 
 import qualified Data.Map as Map
 import qualified Data.Set as Set
@@ -77,7 +77,7 @@ makeSelTupleEqs dt ct = concatMap (\ (Select mi ty p, v) -> case mi of
      _ -> [])
 
 makeSelEqs :: DataPat -> Term -> [[(Selector, VarDecl)]] -> [Named Term]
-makeSelEqs dt ct = concatMap $ makeSelTupleEqs dt ct
+makeSelEqs dt = concatMap . makeSelTupleEqs dt
 
 makeAltSelEqs :: DataPat -> AltDefn -> [Named Term]
 makeAltSelEqs dt@(DataPat _ iargs _ _) (Construct mc ts p sels) =
@@ -112,30 +112,31 @@ makeDataSelEqs :: DataPat -> [AltDefn] -> [Named Sentence]
 makeDataSelEqs dp = map (mapNamed Formula) . concatMap (makeAltSelEqs dp)
 
 -- | analyse the alternatives of a data type
-anaAlts :: [DataPat] -> DataPat -> [Alternative] -> Env -> Result [AltDefn]
-anaAlts tys dt alts te =
-    do l <- mapM (anaAlt tys dt te) alts
-       Result (checkUniqueness $ catMaybes $
-               map ( \ (Construct i _ _ _) -> i) l) $ Just ()
+anaAlts :: GenKind -> [DataPat] -> DataPat -> [Alternative] -> Env
+        -> Result [AltDefn]
+anaAlts genKind tys dt alts te =
+    do l <- mapM (anaAlt genKind tys dt te) alts
+       Result (checkUniqueness $ mapMaybe ( \ (Construct i _ _ _) -> i) l)
+         $ Just ()
        return l
 
-anaAlt :: [DataPat] -> DataPat -> Env -> Alternative
+anaAlt :: GenKind -> [DataPat] -> DataPat -> Env -> Alternative
        -> Result AltDefn
-anaAlt _ _ te (Subtype ts _) =
+anaAlt _ _ _ te (Subtype ts _) =
     do l <- mapM ( \ t -> anaStarTypeM t te) ts
        return $ Construct Nothing (Set.toList $ Set.fromList $ map snd l)
            Partial []
-anaAlt tys dt te (Constructor i cs p _) =
-    do newCs <- mapM (anaComps tys dt te) cs
+anaAlt genKind tys dt te (Constructor i cs p _) =
+    do newCs <- mapM (anaComps genKind tys dt te) cs
        let sels = map snd newCs
-       Result (checkUniqueness $ catMaybes $
-                map ( \ (Select s _ _) -> s ) $ concat sels) $ Just ()
+       Result (checkUniqueness . mapMaybe ( \ (Select s _ _) -> s )
+              $ concat sels) $ Just ()
        return $ Construct (Just i) (map fst newCs) p sels
 
-anaComps :: [DataPat] -> DataPat -> Env -> [Component]
+anaComps :: GenKind -> [DataPat] -> DataPat -> Env -> [Component]
          -> Result (Type, [Selector])
-anaComps tys rt te cs =
-    do newCs <- mapM (anaComp tys rt te) cs
+anaComps genKind tys rt te cs =
+    do newCs <- mapM (anaComp genKind tys rt te) cs
        return (mkProductType $ map fst newCs, map snd newCs)
 
 isPartialSelector :: Type -> Bool
@@ -143,25 +144,26 @@ isPartialSelector ty = case ty of
   TypeAppl (TypeName i _ _) _ -> i == lazyTypeId
   _ -> False
 
-anaComp :: [DataPat] -> DataPat -> Env -> Component
+anaComp :: GenKind -> [DataPat] -> DataPat -> Env -> Component
         -> Result (Type, Selector)
-anaComp tys rt te (Selector s _ t _ _) =
-    do ct <- anaCompType tys rt t te
+anaComp genKind tys rt te (Selector s _ t _ _) =
+    do ct <- anaCompType genKind tys rt t te
        let (p, nct) = case getTypeAppl ct of
              (TypeName i _ _, [lt]) | i == lazyTypeId
                 && isPartialSelector t -> (Partial, lt)
              _ -> (Total, ct)
        return (nct, Select (Just s) nct p)
-anaComp tys rt te (NoSelector t) =
-    do ct <- anaCompType tys rt t te
+anaComp genKind tys rt te (NoSelector t) =
+    do ct <- anaCompType genKind tys rt t te
        return  (ct, Select Nothing ct Partial)
 
-anaCompType :: [DataPat] -> DataPat -> Type -> Env -> Result Type
-anaCompType tys (DataPat _ tArgs _ _) t te = do
+anaCompType :: GenKind -> [DataPat] -> DataPat -> Type -> Env -> Result Type
+anaCompType genKind tys (DataPat _ tArgs _ _) t te = do
     (_, ct) <- anaStarTypeM t te
     let ds = unboundTypevars True tArgs ct
     if null ds then return () else Result ds Nothing
     mapM_ (checkMonomorphRecursion ct te) tys
+    mapM_ (rejectNegativeOccurrence genKind ct te) tys
     return $ generalize tArgs ct
 
 checkMonomorphRecursion :: Type -> Env -> DataPat -> Result ()
@@ -177,6 +179,22 @@ findSubTypes tm i t = case getTypeAppl t of
     (TypeName j _ _, args) -> if relatedTypeIds tm i j then [t]
                               else concatMap (findSubTypes tm i) args
     (topTy, args) -> concatMap (findSubTypes tm i) $ topTy : args
+
+rejectNegativeOccurrence :: GenKind -> Type -> Env -> DataPat -> Result ()
+rejectNegativeOccurrence genKind t te (DataPat i _ _ _) =
+    case findNegativeOccurrence te i t of
+      [] -> return ()
+      ty : _ -> Result [mkDiag (case genKind of
+             Free -> Error
+             _ -> Hint) "negative datatype occurrence of" ty] $ Just ()
+
+findNegativeOccurrence :: Env -> Id -> Type -> [Type]
+findNegativeOccurrence te i t = let tm = typeMap te in case getTypeAppl t of
+    (TypeName j _ _, _) | relatedTypeIds tm i j ->
+      [] -- positive occurrence
+    (topTy, [larg, rarg]) | lesserType te topTy (toFunType PFunArr) ->
+       findSubTypes tm i larg ++ findNegativeOccurrence te i rarg
+    (_, args) -> concatMap (findNegativeOccurrence te i) args
 
 relatedTypeIds :: TypeMap -> Id -> Id -> Bool
 relatedTypeIds tm i1 i2 =
@@ -215,7 +233,7 @@ mkPremise m dp (Construct mc ts p sels) =
       findHypo vd@(VarDecl _ ty _ _) =
         fmap (flip mkPredToVarAppl vd) $ Map.lookup ty m
       flatVars = concat vars
-      indHypos = catMaybes $ map findHypo flatVars
+      indHypos = mapMaybe findHypo flatVars
       indConcl = mkPredAppl dp
         $ mkApplTerm (mkOpTerm c $ getConstrScheme dp p ts)
         $ mkSelArgs vars

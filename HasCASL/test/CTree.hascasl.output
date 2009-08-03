@@ -107,6 +107,7 @@ forall a : Type; R : Pred (CTree a)
 ### Hint 1.8, is type variable 'b'
 ### Hint 6.5, is type variable 'a'
 ### Hint 6.5, rebound type variable 'a'
+*** Error 9.22, negative datatype occurrence of 'L'
 ### Hint 15.5, is type variable 'b'
 ### Hint 15.5, rebound type variable 'b'
 ### Hint 18.11, redeclared type 'Tree'
