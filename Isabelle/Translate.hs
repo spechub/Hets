@@ -77,10 +77,12 @@ getAltTokenList newPlace over i@(Id ms cs qs) thy = let
     over2 = isSingle nonPlaces && Set.member (tokStr $ head nonPlaces)
             constSet || Set.member (show i) constSet
     o1 = if over2 && over == 0 then over + 1 else over
-    newFs = if null fs || not over2 && over == 0 then fs else
-                init fs ++ [mkSimpleId $
-                    tokStr (last fs) ++
-                    if o1 < 3 then replicate o1 '\'' else '_' : show o1]
+    newFs =
+      let (fps, rts) = span isPlace fs in case rts of
+        hd : tl | o1 > 0 -> fps ++ mkSimpleId (tokStr hd ++
+            if o1 < 3 then replicate o1 '\'' else '_' : show o1)
+                  : tl
+        _ -> fs
     in getTokenList newPlace $ Id (newFs ++ ps) cs qs
 
 toAltSyntax :: Bool -> Int -> GlobalAnnos -> Int -> Id -> BaseSig
