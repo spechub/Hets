@@ -124,10 +124,8 @@ Executable hets
 
   if flag(hxtfilter)
     build-depends:
-        HAIFA >= 0.11
-      , hxt >= 8.0.0
+        hxt >= 8.0.0
       , hxt-filter >= 8.0.0
-      , syb-generics == 2.9
     cpp-options: -DHXTFILTER
   else
     cpp-options: -DNOMATHSERVER
