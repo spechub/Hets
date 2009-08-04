@@ -126,6 +126,7 @@ Executable hets
     build-depends:
         hxt >= 8.0.0
       , hxt-filter >= 8.0.0
+      , HTTP >= 3001.1.5
     cpp-options: -DHXTFILTER
   else
     cpp-options: -DNOMATHSERVER
