@@ -1,28 +1,40 @@
 {- |
 Module      :  $Header$
 Description :  Functions for parsing MathServ output as a MathServResponse
-Copyright   :  (c) Rainer Grabbe
+Copyright   :  (c) Rainer Grabbe, DFKI GmbH
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
-Maintainer  :  rainer25@informatik.uni-bremen.de
+Maintainer  :  Christian.Maeder@dfki.de
 Stability   :  provisional
-Portability :  needs POSIX
+Portability :  unknown
 
 Functions for parsing MathServ output into a MathServResponse structure.
 
 -}
 
-module SoftFOL.MathServParsing where
+module SoftFOL.MathServParsing
+  ( callMathServ
+  , parseMathServOut
+  , MathServServices(..)
+  , MathServOperationTypes(..)
+  , MathServCall(..)
+  , MathServResponse(..)
+  , MWFoAtpResult(..)
+  , MWFormalProof(..)
+  , MWStatus(..)
+  , FoAtpStatus(..)
+  , SolvedStatus(..)
+  , UnsolvedStatus(..)
+  , MWCalculus(..)
+  , MWTimeResource(..)
+  ) where
 
-import SoftFOL.MathServCommunication
 import Common.Utils (getEnvSave, readMaybe)
 
-import Network.URI
-import Network.Service
-import Org.Xmlsoap.Schemas.Soap.Envelope
+import Text.XML.Light as XML
+import Network.HTTP
 
 import Text.Regex
-import Text.XML.HXT.Aliases
 import Text.XML.HXT.Parser hiding (when)
 import Text.XML.HXT.XPath
 
@@ -44,13 +56,10 @@ instance Show ServerAddr where
 
 instance Read ServerAddr where
     readsPrec _ s = let (n,portRest) = span (/= ':') s
-                        (port,rest) = if null portRest
+                        (portS,rest) = if null portRest
                                       then ("", "")
                                       else span isDigit $ tail portRest
-                        portN = if null port
-                                then 8080
-                                else maybe 8080 id
-                                         (readMaybe port)
+                        portN = fromMaybe 8080 $ readMaybe portS
                     in [(ServerAddr { serverName = n, portNumber = portN },
                         rest)]
 
@@ -85,7 +94,7 @@ data MathServServices =
     Broker
   -- | Vampire service
   | VampireService
-  deriving (Show)
+  deriving Show
 
 {- |
   MathServ operation to select. These are only common types and will be
@@ -100,6 +109,7 @@ data MathServOperationTypes =
   | TPTPProblem
   -- | stands for ProveProblem
   | Problem
+  deriving Show
 
 {- |
   A MathServ response structure to be filled by parsing all rdf-objects
@@ -190,67 +200,105 @@ data MWTimeResource =
                         } deriving (Eq, Ord, Show)
 
 
+
+
+toCData :: String -> CData
+toCData s = blank_cdata { cdData = s }
+
+mkProveProblemElem :: MathServCall -- ^ needed data to do a MathServ call
+                   -> Element -- ^ resulting XML element
+mkProveProblemElem call = let extOpt = extraOptions call in
+     unode ("Prove" ++ show (mathServOperation call)
+           ++ if isJust extOpt then "WithOptions" else "")
+       ([ unode "in0" $ toCData $ problem call
+        , unode "in1" $ toCData $ show $ proverTimeLimit call]
+        ++ case extOpt of
+             Nothing -> []
+             Just o2 -> [unode "in2" $ toCData o2])
+
+-- ** functions for handling with soap
+
+soapenvS :: String
+soapenvS = "soapenv"
+
+bodyS :: String
+bodyS = "Body"
+
+soapEnvQName :: String -> XML.QName
+soapEnvQName s = (unqual s) { qPrefix = Just soapenvS }
+
+xmlnsQName :: String -> XML.QName
+xmlnsQName s = (unqual s) { qPrefix = Just "xmlns" }
+
+mkBody :: Element -> Element
+mkBody = node $ soapEnvQName bodyS
+
+mkEnvelope :: Element -> Element
+mkEnvelope = add_attrs
+  [ Attr (unqual "encodingStyle") "http://schemas.xmlsoap.org/soap/encoding/"
+  , Attr (xmlnsQName "xsd") "http://www.w3.org/2001/XMLSchema"
+  , Attr (xmlnsQName soapenvS) "http://schemas.xmlsoap.org/soap/envelope/"
+  ] . node (soapEnvQName "Envelope")
+
+mkSoapRequest :: MathServCall -> ServerAddr -> Request_String
+mkSoapRequest call serverPort =
+  let b = showElement $ mkEnvelope $ mkBody $ mkProveProblemElem call
+      r0 = postRequest $ "http://" ++ show serverPort ++ "/axis/services/"
+           ++ show (mathServService call)
+      r1 = insertHeader (HdrCustom "SOAPAction") "" r0 { rqBody = b }
+      r2 = replaceHeader HdrUserAgent "hets" r1
+      r3 = replaceHeader HdrContentLength (show $ length b) r2
+  in insertHeader HdrContentType "text/xml" r3
+
+unpackSoapEnvelope :: Either String String -> Either String String
+unpackSoapEnvelope rsp = case rsp of
+  Left s -> Left s
+  Right r -> case XML.parseXMLDoc r of
+    Nothing -> Left "server returned illegal xml"
+    Just x -> case filterElementName ((== bodyS) . XML.qName) x of
+     Nothing -> Left "no soap Body found"
+     Just b -> case filterElementName (isSuffixOf "Response" . XML.qName) b of
+      Nothing -> Left "no Prove Response found"
+      Just t -> case filterElementName (isSuffixOf "Return" . XML.qName) t of
+       Nothing -> Left "no Prove Return value found"
+       Just v -> case map cdData . onlyText $ elContent v of
+        [] -> Left "no returned content found"
+        ts -> Right $ concat ts
+
 -- ** functions for handling with MathServ services
-
-{- |
-  To check whether the selected MathServ operation is known and can be executed
-  by the selected MathServ service. It returns the resulting SOAP operation.
--}
-mkProveProblem :: MathServCall -- ^ needed data to do a MathServ call
-               -> MathServOperations -- ^ resulting MathServOperations
-mkProveProblem call =
-    case (mathServService call) of
-     VampireService -> case (mathServOperation call) of
-          TPTPProblem -> maybe ProveTPTPProblem{in0=(problem call),
-                                                in1=(proverTimeLimit call)}
-                               (ProveTPTPProblemWithOptions (problem call)
-                                                    (proverTimeLimit call))
-                               (extraOptions call)
-          Problem     -> ProveProblem (problem call) (proverTimeLimit call)
-          _           -> error $ "unknown Operation for service Vampire\n"++
-                       "known operations: ProveProblem, ProveTPTPProblem"
-     Broker -> case (mathServOperation call) of
-         ProblemOpt    -> ProveProblemOpt (problem call)
-                                          (proverTimeLimit call)
-         ProblemChoice -> ProveProblemChoice (problem call)
-                                             (proverTimeLimit call)
-         _ -> error $ "unknown Operation for service Broker\n" ++
-                "known operations: ProveProblemOpt, ProveProblemChoice"
-
--- * MathServ Interfacing Code
-
-makeEndPoint :: String -> Maybe HTTPTransport
-makeEndPoint uriStr = maybe Nothing
-                            (\ uri -> Just $ HTTPTransport
-                                      { httpEndpoint = uri
-                                      , httpSOAPAction = Just nullURI})
-                            (parseURI uriStr)
 
 {- |
   Sends a problem in TPTP format to MathServ using a given time limit.
   Either MathServ output is returned or a simple error message (no XML).
 -}
 callMathServ :: MathServCall -- ^ needed data to do a MathServ call
-             -> IO (Either String String)
+             -> IO (Either String String )
              -- ^ Left (SOAP error) or Right (MathServ output or error message)
 callMathServ call =
     do
        serverPort <- getEnvSave defaultServer "HETS_MATHSERVE" readMaybe
-       maybe (return $ Left $ "MathServe not running!")
-             (\ endPoint -> do
-                 res <- soapCall endPoint $ mkProveProblem call
-                 case res :: Either SimpleFault MathServOutput of
-                  Left mErr -> do
-                    return $ Left $ faultstring mErr
-                  Right resp -> do
-                    return $ Right $ getResponse resp
-             )
-             $ makeEndPoint $
-                "http://" ++ show serverPort ++ "/axis/services/" ++
-                  show (mathServService call)
+       let r = mkSoapRequest call serverPort
+       res <- simpleHTTP r
+       return $ case res of
+                  Left mErr -> Left $ show mErr
+                  Right resp -> unpackSoapEnvelope $ Right $ rspBody resp
 
 xpathTag :: String -> String
 xpathTag vtag = "//mw:*[local-name()='" ++ vtag ++ "']"
+
+-- copied from old Text.XML.HXT.Aliases
+parseHXML :: String -> IO XmlTree
+parseHXML s = do
+    let x = (checkWellformedDoc
+            .>> liftF canonicalizeAllNodes
+            .>> liftF propagateNamespaces
+            .>> liftF removeDocWhiteSpace
+            .>> liftF getChildren
+            ) (head $ tag "/" []  [mkXText s] emptyRoot)
+    t <- run' x
+    return $ case t of
+      [] -> emptyRoot
+      h : _ -> h
 
 {- |
   Full parsing of RDF-objects returned by MathServ and putting the results
@@ -267,14 +315,12 @@ parseMathServOut eMathServOut =
                         "\nPlease contact " ++
                         "<hets-devel@informatik.uni-bremen.de>")
    Right mathServOut -> do
-    mtrees <- parseXML mathServOut
-    let rdfTree = maybe emptyRoot head mtrees
-        failStr = getMaybeXText failureXPath rdfTree
-
-    return $ Right (MathServResponse {
+    rdfTree <- parseHXML mathServOut
+    let failStr = getMaybeXText failureXPath rdfTree
+    return $ Right MathServResponse {
              foAtpResult = maybe (Right $ parseFoAtpResult rdfTree)
                                  Left failStr
-             ,timeResource = parseTimeResource rdfTree })
+             ,timeResource = parseTimeResource rdfTree }
     where
       failureXPath = xpathTag "Failure" ++ xpathTag "message"
 
@@ -353,11 +399,11 @@ parseProvingProblem rdfTree =
 parseCalculus :: XmlTree -- ^ XML tree to parse
               -> MWCalculus -- ^ parsed Calculus node
 parseCalculus rdfTree =
-    maybe UnknownCalc id
+    fromMaybe UnknownCalc
            (readMaybe (filterUnderline False calc) :: Maybe MWCalculus)
     where
       calculusXPath = xpathTagAttr "calculus"
-      calc = (getAnchor $ getXText calculusXPath rdfTree)
+      calc = getAnchor $ getXText calculusXPath rdfTree
 
 {- |
   Parses an XmlTree for a Status object on first level.
@@ -381,7 +427,7 @@ parseStatus rdfTree =
                  foAtpStatus = foAtp}
     where
       statusXPath = xpathTagAttr "status"
-      statusStr = (getAnchor $ getXText statusXPath rdfTree)
+      statusStr = getAnchor $ getXText statusXPath rdfTree
 
 {- |
   Parses an XmlTree for a TimeResource object on first level. If existing,
@@ -410,7 +456,7 @@ parseTimeResource rdfTree =
 -}
 getAnchor :: String -- ^ in-string
           -> String -- ^ part of string after first occurence of @#@
-getAnchor s = case dropWhile (\ch -> not $ ch == '#') s of
+getAnchor s = case dropWhile (/= '#') s of
     [] -> []
     _ : r -> r
 
@@ -446,7 +492,7 @@ getMaybeXText xp rdfTree =
           _ -> Just $ getXText xp rdfTree
 
 {- |
-  Filters @_@ out of a String and uppercases each letter after a @_@.
+  Filters @_@ out of a String and upcases each letter after a @_@.
 -}
 filterUnderline :: Bool  -- ^ upcase next letter
                 -> String -- ^ input String
