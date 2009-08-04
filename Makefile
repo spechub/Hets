@@ -12,14 +12,6 @@ all: hets
 
 include var.mk
 
-# variables that control the compilation
-
-# deprecated since we have haifa_pkg
-HAIFA_PATHS = Network Network/Server Org Org/W3 Org/W3/N2001 \
-    Org/Xmlsoap Org/Xmlsoap/Schemas Org/Xmlsoap/Schemas/Soap \
-    Text Text/XML Text/XML/HXT Text/XML/Schema Text/XML/Schema/TypeMapper \
-    Text/XML/Serializer
-
 # deprecated since haddock 2
 SOURCE_PATHS = . utils/itcor \
     utils utils/DrIFT-src utils/GenerateRules utils/InlineAxioms Common \
@@ -87,7 +79,7 @@ TESTTARGETFILES += CASL/fromKif.hs CASL/capa.hs HasCASL/hacapa.hs \
     ATC/ATCTest.hs ATC/ATCTest2.hs Common/ATerm/ATermLibTest.hs \
     Common/ATerm/ATermDiffMain.hs Common/annos.hs Common/test_parser.hs \
     SoftFOL/tests/PrintTPTPTests.hs Comorphisms/test/showKP.hs \
-    SoftFOL/tests/soapTest.hs Comorphisms/test/sublogicGraph.hs \
+    Comorphisms/test/sublogicGraph.hs \
     SoftFOL/dfg.hs
 
 ### list of directories to run checks in
@@ -426,9 +418,7 @@ doc_sources = $(filter-out $(nondoc_sources), $(sources) $(hspp_sources))
 
 .PHONY : all hets-opt hets-optimized clean o_clean clean_pretty \
     real_clean bin_clean package_clean distclean packages \
-    base64_pkg http_pkg syb_pkg shellac_pkg shread_pkg shcompat_pkg \
-    tagsoup_pkg hxt_pkg hxtfilter_pkg haifa_pkg programatica_pkg \
-    maintainer-clean annos \
+    programatica_pkg maintainer-clean annos \
     check capa hacapa h2h h2hf showKP clean_genRules genRules \
     count doc fromKif derivedSources release cgi ghci
 
@@ -437,21 +427,7 @@ doc_sources = $(filter-out $(nondoc_sources), $(sources) $(hspp_sources))
 $(SETUP): utils/Setup.hs
 	$(HC) --make -O -o $@ $<
 
-packages: syb_pkg haifa_pkg programatica_pkg
-
-syb_pkg: $(SETUP)
-	@if $(HCPKG) field syb-generics version; then \
-          echo "of syb-generics package found"; else \
-          (cd syb-generics; $(SETUPPACKAGE)) fi
-
-ifeq ($(strip $(NOMATHSERVER)),)
-haifa_pkg: $(SETUP) syb_pkg
-	@if $(HCPKG) field HAIFA version; then \
-          echo "of HAIFA package found"; else \
-          (cd haifa-lite; $(SETUPPACKAGE)) fi
-else
-haifa_pkg:
-endif
+packages: programatica_pkg
 
 programatica_pkg:
 
