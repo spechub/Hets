@@ -120,3 +120,87 @@ instance ShATermConvertible () where
     fromShATermAux ix att0 = case getShATerm ix att0 of
             ShAAppl "U" [] _ -> (att0, ())
             u -> fromShATermError "()" u
+
+instance (ShATermConvertible a) => ShATermConvertible (Maybe a) where
+    toShATermAux att mb = case mb of
+        Nothing -> return $ addATerm (ShAAppl "N" [] []) att
+        Just x -> do
+          (att1, x') <- toShATerm' att x
+          return $ addATerm (ShAAppl "J" [x'] []) att1
+    fromShATermAux ix att0 =
+        case getShATerm ix att0 of
+            ShAAppl "N" [] _ -> (att0, Nothing)
+            ShAAppl "J" [a] _ ->
+                    case fromShATerm' a att0 of { (att1, a') ->
+                    (att1, Just a') }
+            u -> fromShATermError "Prelude.Maybe" u
+
+instance (ShATermConvertible a, ShATermConvertible b)
+    => ShATermConvertible (Either a b) where
+    toShATermAux att0 (Left aa) = do
+        (att1,aa') <- toShATerm' att0 aa
+        return $ addATerm (ShAAppl "Left" [ aa' ] []) att1
+    toShATermAux att0 (Right aa) = do
+        (att1,aa') <- toShATerm' att0 aa
+        return $ addATerm (ShAAppl "Right" [ aa' ] []) att1
+    fromShATermAux ix att =
+        case getShATerm ix att of
+            ShAAppl "Left" [ aa ] _ ->
+                    case fromShATerm' aa att of { (att2, aa') ->
+                    (att2, Left aa') }
+            ShAAppl "Right" [ aa ] _ ->
+                    case fromShATerm' aa att of { (att2, aa') ->
+                    (att2, Right aa') }
+            u -> fromShATermError "Either" u
+
+instance ShATermConvertible a => ShATermConvertible [a] where
+    toShATermAux = toShATermList'
+    fromShATermAux = fromShATermList'
+
+instance (ShATermConvertible a, ShATermConvertible b)
+    => ShATermConvertible (a, b) where
+    toShATermAux att0 (x,y) = do
+      (att1, x') <- toShATerm' att0 x
+      (att2, y') <- toShATerm' att1 y
+      return $ addATerm (ShAAppl "" [x',y'] []) att2
+    fromShATermAux ix att0 =
+        case getShATerm ix att0 of
+            ShAAppl "" [a,b] _ ->
+                    case fromShATerm' a att0 of { (att1, a') ->
+                    case fromShATerm' b att1 of { (att2, b') ->
+                    (att2, (a', b'))}}
+            u -> fromShATermError "(,)" u
+
+instance (ShATermConvertible a, ShATermConvertible b, ShATermConvertible c)
+    => ShATermConvertible (a, b, c) where
+    toShATermAux att0 (x,y,z) = do
+      (att1, x') <- toShATerm' att0 x
+      (att2, y') <- toShATerm' att1 y
+      (att3, z') <- toShATerm' att2 z
+      return $ addATerm (ShAAppl "" [x',y',z'] []) att3
+    fromShATermAux ix att0 =
+        case getShATerm ix att0 of
+            ShAAppl "" [a,b,c] _ ->
+                    case fromShATerm' a att0 of { (att1, a') ->
+                    case fromShATerm' b att1 of { (att2, b') ->
+                    case fromShATerm' c att2 of { (att3, c') ->
+                    (att3, (a', b', c'))}}}
+            u -> fromShATermError "(,,)" u
+
+instance (ShATermConvertible a, ShATermConvertible b, ShATermConvertible c,
+          ShATermConvertible d) => ShATermConvertible (a, b, c, d) where
+  toShATermAux att0 (x,y,z,w) = do
+      (att1, x') <- toShATerm' att0 x
+      (att2, y') <- toShATerm' att1 y
+      (att3, z') <- toShATerm' att2 z
+      (att4, w') <- toShATerm' att3 w
+      return $ addATerm (ShAAppl "" [x',y',z',w'] []) att4
+  fromShATermAux ix att0 =
+        case getShATerm ix att0 of
+            ShAAppl "" [a,b,c,d] _ ->
+                    case fromShATerm' a att0 of { (att1, a') ->
+                    case fromShATerm' b att1 of { (att2, b') ->
+                    case fromShATerm' c att2 of { (att3, c') ->
+                    case fromShATerm' d att3 of { (att4, d') ->
+                    (att4, (a', b', c', d'))}}}}
+            u -> fromShATermError "(,,,)" u
