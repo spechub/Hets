@@ -14,10 +14,11 @@ XML output for composition tables
 module CASL.CompositionTable.ToXml (table_document) where
 
 {-
-DTD unter http://www.informatik.uni-bremen.de/cofi/hets/CompositionTable.dtd
+DTD see systemURI
 
--- hets --spec=RCC8 -o comptable.xml Calculi/Space/RCC8.het
--- writes Calculi/Space/RCC8.comptable.xml
+-- hets -v2 -n RCC8CompositionTable -o comptable.xml Calculi/Space/RCC8.het
+
+-- writes Calculi/Space/RCC8_RCC8CompositionTable.comptable.xml
 
 eliminate ops on rhs, resulting in list of base relations
 add equations for id
@@ -43,10 +44,8 @@ publicId = "-//CoFI//DTD CompositionTable 1.1//EN"
 systemURI::String
 systemURI =
   "http://www.informatik.uni-bremen.de/cofi/hets/CompositionTable.dtd"
--- for testing
---systemURI = "CompositionTable.dtd"
 
--- The root tag to use (derivated from Table-datatye)
+-- The root tag to use (derivated from Table-datatype)
 rootTag::String
 rootTag = "table"
 
