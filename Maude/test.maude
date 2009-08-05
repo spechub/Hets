@@ -1,0 +1,59 @@
+fmod TEST is
+ sorts A B .
+ 
+ op a : -> A .
+ op b : -> B .
+ 
+ op f : A -> B .
+ 
+ eq f(a) = b .
+endfm
+
+fmod TEST2 is
+ sorts C D .
+ subsort C < D .
+ 
+ op c : -> C .
+ op d : -> D .
+ 
+ op {_} : C -> C .
+ 
+ op g : C -> D .
+ 
+ eq g(c) = d .
+endfm
+
+fmod TEST3 is
+ pr TEST + (TEST2 * (sort C to CC, sort D to DD, op g to gg)) .
+ 
+ op x : -> CC .
+endfm
+
+fth TEST4 is
+ sort Foo .
+ 
+ ops a b : -> Foo .
+ op f : Foo -> Foo .
+endfth
+
+fmod TEST5{X :: TEST4 * (sort Foo to Faa)} is
+ sort Test5 .
+ 
+ op c : -> Test5 .
+endfm
+
+view Bool from TRIV * (sort Elt to Elt2) to BOOL * (sort Bool to Boool) is
+ sort Elt2 to Boool .
+endv
+
+view V1 from TRIV to BOOL is
+ sort Elt to Bool .
+endv
+
+fmod TEST6{X :: TRIV} is
+ sort Foo6 .
+endfm
+
+fmod TEST7 is
+ pr (TEST6 * (sort Foo6 to Fooooo6)){V1} .
+endfm
