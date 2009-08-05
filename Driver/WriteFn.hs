@@ -16,7 +16,6 @@ module Driver.WriteFn (writeSpecFiles) where
 
 import Control.Monad
 import Text.ParserCombinators.Parsec
-import Text.PrettyPrint.HughesPJ (render)
 import Data.List (partition, (\\))
 import Data.Maybe
 
@@ -37,9 +36,7 @@ import Comorphisms.LogicGraph
 
 import CASL.Logic_CASL
 
-#if HAXML_PACKAGE
 import CASL.CompositionTable.ToXml
-#endif
 import CASL.CompositionTable.ComputeTable
 import CASL.CompositionTable.ModelChecker
 import CASL.CompositionTable.ParseSparQ
@@ -193,16 +190,14 @@ writeTheory opts filePrefix ga
             putIfVerbose opts 0 $ "could not translate to Haskell file: " ++ f
         Just d -> writeVerbFile opts f $ shows d "\n"
 #endif
-#if HAXML_PACKAGE
     ComptableXml -> if language_name lid == language_name CASL then do
           th2 <- coerceBasicTheory lid CASL "" th
           let Result ds res = computeCompTable i th2
           showDiags opts ds
           case res of
-            Just td -> writeVerbFile opts f $ render $ table_document td
+            Just td -> writeVerbFile opts f $ table_document td
             Nothing -> return ()
         else putIfVerbose opts 0 $ "expected CASL theory for: " ++ f
-#endif
 #ifndef NOOWLLOGIC
     OWLOut -> if language_name lid == language_name OWL then do
             th2 <- coerceBasicTheory lid OWL "" th
