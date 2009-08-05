@@ -89,23 +89,30 @@ that provides an event system and encapsulations of TclTk
 
 Hets is also based on the following third-party libraries:
 
- * HXT for XML parsing and printing, see <http://www.haskell.org/haskellwiki/HXT>
-and "OMDoc.OMDocXml" for a sample use
+ * HXT for XML parsing and printing, see
+   <http://www.haskell.org/haskellwiki/HXT>,
+   <http://hackage.haskell.org/package/hxt-filter>
+   and "OMDoc.OMDocXml" for a sample use.
+   We would like to switch to the xml light package below.
 
- * The combinator parser library Parsec, see <http://www.haskell.org/haskellwiki/Parsec> and "Propositional.Parse_AS_Basic" for a sample use
+ * The combinator parser library Parsec, see
+   <http://www.haskell.org/haskellwiki/Parsec>,
+   <http://hackage.haskell.org/package/parsec>
+   and "Propositional.Parse_AS_Basic" for a sample use
 
- * finite maps from Data.Map, see <http://www.haskell.org/ghc/docs/latest/html/libraries/containers/Data-Map.html>
-
- * finite sets from Data.Set, see <http://www.haskell.org/ghc/docs/latest/html/libraries/containers/Data-Set.html>
+ * finite sets and maps, see
+   <http://hackage.haskell.org/package/containers>
 
  * finite graphs from the functional graph library (fgl), see
    <http://web.engr.oregonstate.edu/~erwig/fgl/haskell/>
+   and <http://hackage.haskell.org/package/fgl>
 
- * haifa-lite and syb-generics originally from
-   <http://www.dcs.shef.ac.uk/~simonf/HAIFA.html>
+ * the xml light package, see
+   <http://hackage.haskell.org/package/xml>
 
  * Shellac for the command line interface, see
    <http://www.eecs.tufts.edu/~rdocki01/shellac.html>
+   and <http://hackage.haskell.org/package/Shellac-haskeline>
 
  * programatica for Haskell as a logic, see
    <http://programatica.cs.pdx.edu/>
