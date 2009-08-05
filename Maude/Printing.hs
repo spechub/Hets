@@ -85,7 +85,7 @@ showSpace s = show s ++ " "
 
 printAttrSet :: [Attr] -> String
 printAttrSet [] = []
-printAttrSet ats = " [ " ++ printAttrSetAux ats ++ " ] " 
+printAttrSet ats = " [" ++ printAttrSetAux ats ++ "] " 
 
 printAttrSetAux :: [Attr] -> String
 printAttrSetAux [] = []
@@ -175,8 +175,12 @@ printCond (MbCond t s) = printTerm t ++ " : " ++ printSort s
 printCond (RwCond t1 t2) = printTerm t1 ++ " => " ++ printTerm t2
 
 printMorphism :: SymbolMap -> SymbolMap -> SymbolMap -> String 
-printMorphism sorts ops _ = (printSortRenaming sorts) ++ (show ops)
+printMorphism sorts ops labels = if str == ""
+                            then ""
+                            else "\n\nMorphism:\n\n" ++ str
+    where str = (printSymbolMap "sort" sorts) ++ (printSymbolMap "op" ops)
+                ++ (printSymbolMap "label" labels)
 
-printSortRenaming :: SymbolMap -> String
-printSortRenaming = Map.foldWithKey f ""
-       where f = \ x y z -> "sort " ++ show x ++ " to " ++ show y ++ "\n" ++ z
+printSymbolMap :: String -> SymbolMap -> String
+printSymbolMap str = Map.foldWithKey f ""
+       where f = \ x y z -> str ++ " " ++ show x ++ " to " ++ show y ++ "\n" ++ z

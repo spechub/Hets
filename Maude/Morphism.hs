@@ -18,18 +18,24 @@ Definition of morphisms for Maude.
 
 module Maude.Morphism (
     Morphism(..),
-    fromRenamings,
     fromSignRenamings,
+    fromSignsRenamings,
     symbolMap,
     empty,
     identity,
+    isIdentity,
     createInclMorph,
     inverse,
     compose,
     isLegal,
     isInclusion,
     mapSentence,
-    setTarget
+    renameSorts,
+    union,
+    setTarget,
+    extendMorphismSorts,
+    addQualification,
+    applyMorphSign
 ) where
 
 import Maude.AS_Maude
@@ -49,7 +55,9 @@ import qualified Common.Result as Result
 
 import Common.Doc as Doc hiding (empty)
 import Common.DocUtils
+import Common.Id (mkSimpleId)
 
+import Data.Maybe
 
 type SortMap = SymbolMap
 type OpMap = SymbolMap
@@ -64,8 +72,9 @@ data Morphism = Morphism {
     } deriving (Show, Ord, Eq)
 
 instance Pretty Morphism where
-  pretty m = Doc.text $ "\n\nMorphism:\n\n" ++ printMorphism (sortMap m) (opMap m) (labelMap m)
-                        ++ "\n\nTarget:\n\n" ++ printSign (Sign.sorts sign) (Sign.subsorts sign) (Sign.ops sign)
+  pretty m = Doc.text $ printMorphism (sortMap m) (opMap m) (labelMap m)
+                        ++ "\n\nTarget:\n\n" ++ printSign (Sign.sorts sign) 
+                        (Sign.subsorts sign) (Sign.ops sign)
       where sign = target m
 
 -- | create a Morphism from an initial signature and a list of Renamings
@@ -112,19 +121,17 @@ applyRenaming rnm mor = let
             }
         TermMap _ _ -> mor
 
--- | extract a Morphism from a list of Renamings
-fromRenamings :: [Renaming] -> Morphism
-fromRenamings = foldr insertRenaming empty
-
 -- | extract a Symbol Map from a Morphism
 symbolMap :: Morphism -> SymbolMap
 symbolMap mor = Map.unions [(sortMap mor), (opMap mor), (labelMap mor)]
 
+-- | create a Morphism from the initial signatures and a list of Renamings
+fromSignsRenamings :: Sign -> Sign -> [Renaming] -> Morphism
+fromSignsRenamings sg1 sg2 = foldr insertRenaming (createInclMorph sg1 sg2)
+
 -- | insert a Renaming into a Morphism
 insertRenaming :: Renaming -> Morphism -> Morphism
 insertRenaming rename mor = let
-        src = source mor
-        tgt = target mor
         smap = sortMap mor
         omap = opMap mor
         lmap = labelMap mor
@@ -133,8 +140,6 @@ insertRenaming rename mor = let
                 a = getName from
                 b = getName to
             in mor {
-                source = Sign.insertSort from src,
-                target = Sign.insertSort to tgt,
                 sortMap = Map.insert a b smap
             }
         LabelRenaming from to -> let
@@ -148,8 +153,6 @@ insertRenaming rename mor = let
                 a = getName from
                 b = getName to
             in mor {
-                source = Sign.insertOpName from src,
-                target = Sign.insertOpName to tgt,
                 opMap = Map.insert a b omap
             }
         OpRenaming2 from _ _ (To to _) -> let
@@ -157,10 +160,9 @@ insertRenaming rename mor = let
                 a = getName from
                 b = getName to
             in mor {
-                source = Sign.insertOpName from src,
-                target = Sign.insertOpName to tgt,
                 opMap = Map.insert a b omap
             }
+        TermMap _ _ -> mor
 
 -- | the empty Morphism
 empty :: Morphism
@@ -169,6 +171,9 @@ empty = identity Sign.empty
 -- | the identity Morphism
 identity :: Sign -> Morphism
 identity sign = createInclMorph sign sign
+
+isIdentity :: Morphism -> Bool
+isIdentity m = source m == target m
 
 -- | the inclusion Morphism
 createInclMorph :: Sign -> Sign -> Morphism
@@ -245,5 +250,79 @@ mapSentence mor = let
         lmap = mapLabels (labelMap mor)
     in return . lmap . omap . smap
 
+union :: Morphism -> Morphism -> Morphism
+union m1 m2 = Morphism {
+        source = Sign.union (source m1) $ source m2,
+        target = Sign.union (target m1) $ target m2,
+        sortMap = Map.union (sortMap m1) $ sortMap m2,
+        opMap = Map.union (opMap m1) $ opMap m2,
+        labelMap = Map.union (labelMap m1) $ labelMap m2
+    }
+
 setTarget :: Sign -> Morphism -> Morphism
 setTarget sg morph = morph {target = sg}
+
+renameSorts :: Morphism -> [Symbol] -> [Symbol]
+renameSorts m = map f
+    where sm = sortMap m
+          f = \ x -> if Map.member x sm
+                     then fromJust $ Map.lookup x sm
+                     else x
+
+extendMorphismSorts :: Morphism -> Symbol -> [Symbol] -> Morphism
+extendMorphismSorts mor sym syms = let
+       tgt = target mor
+       smap = sortMap mor
+     in mor {
+           target = Sign.renameListSort (createRenaming sym syms) tgt,
+           sortMap = extendSortMap sym syms smap
+        }
+
+createRenaming :: Symbol -> [Symbol] -> [(Symbol, Symbol)]
+createRenaming _ [] = []
+createRenaming sym (sym' : syms) = (sym', new_sym) : createRenaming sym syms
+       where new_sym = mkSimpleId $ show sym ++ "$" ++ show sym'
+
+extendSortMap :: Symbol -> [Symbol] -> SymbolMap -> SymbolMap
+extendSortMap _ [] sm = sm
+extendSortMap sym (sym' : syms) sort_map = extendSortMap sym syms sort_map'
+       where new_sym = mkSimpleId $ show sym ++ "$" ++ show sym'
+             sort_map' = Map.fromList $ extendSortList sym' new_sym $ Map.toList sort_map
+
+extendSortList :: Symbol -> Symbol -> [(Symbol, Symbol)] -> [(Symbol, Symbol)]
+extendSortList from to [] = [(from, to)]
+extendSortList from to (s@(sym1, sym2) : syms) = if from == sym2
+                                               then (sym1, to) : syms
+                                               else s : extendSortList from to syms
+
+addQualification :: Morphism -> Symbol -> [Symbol] -> Morphism
+addQualification mor sym syms = let
+       src = source mor
+       smap = sortMap mor
+     in mor {
+           source = Sign.renameListSort (createRenaming sym syms) src,
+           sortMap = qualifyMap sym syms smap
+        }
+
+qualifyMap :: Symbol -> [Symbol] -> SymbolMap -> SymbolMap
+qualifyMap _ [] sm = sm
+qualifyMap sym (sym' : syms) sort_map = extendSortMap sym syms sort_map'
+       where new_sym = mkSimpleId $ show sym ++ "$" ++ show sym'
+             sort_map' = Map.fromList $ qualifySortList sym' new_sym $ Map.toList sort_map
+
+qualifySortList :: Symbol -> Symbol -> [(Symbol, Symbol)] -> [(Symbol, Symbol)]
+qualifySortList from to [] = [(from, to)]
+qualifySortList from to (s@(sym1, sym2) : syms) = if from == sym1
+                                                  then (to, sym2) : syms
+                                                  else s : qualifySortList from to syms
+
+-- TODO: add renaming in operators
+applyMorphSign :: Morphism -> Sign -> Sign
+applyMorphSign morph = Sign.applySortMap (sortMap morph) . applyOpMap (opMap morph)
+
+applyOpMap :: SymbolMap -> Sign -> Sign
+applyOpMap sm sg = sg {Sign.ops = Sign.ops sg}
+
+
+
+

@@ -50,7 +50,7 @@
           haskellifySubsorts(SSDS) comma(IL, SS, SSDS, ODS)
           haskellifyOpDeclSet(ODS) comma(IL, SS, SSDS, ODS, MAS)
           haskellifyMembAxSet(MAS) comma(IL, SS, SSDS, ODS, MAS, EqS)
-          haskellifyEqSet(EqS) '`] '`) '\n '@#$endHetsSpec$#@ .
+          haskellifyEqSet(EqS) '`] '`) '\n '@#$endHetsSpec$#@ '\n .
   eq haskellify(mod H is IL sorts SS . SSDS ODS MAS EqS RS endm) = 
       'SpecMod '`( 'Module haskellifyHeader(H) ' ' 
       '`[ haskellifyImports(IL) comma(IL, SS)
@@ -59,29 +59,30 @@
           haskellifyOpDeclSet(ODS) comma(IL, SS, SSDS, ODS, MAS)
           haskellifyMembAxSet(MAS) comma(IL, SS, SSDS, ODS, MAS, EqS)
           haskellifyEqSet(EqS) comma(IL, SS, SSDS, ODS, MAS, EqS, RS)
-          haskellifyRlSet(RS) '`] '`) '\n '@#$endHetsSpec$#@ .
+          haskellifyRlSet(RS) '`] '`) '\n '@#$endHetsSpec$#@ '\n .
   eq haskellify(fth H is IL sorts SS . SSDS ODS MAS EqS endfth) = 
-      'SpecMod '`( 'Module haskellifyHeader(H) ' ' 
+      'SpecTh '`( 'Module haskellifyHeader(H) ' ' 
       '`[ haskellifyImports(IL) comma(IL, SS)
           haskellifySorts(SS) comma(IL, SS, SSDS)
           haskellifySubsorts(SSDS) comma(IL, SS, SSDS, ODS)
           haskellifyOpDeclSet(ODS) comma(IL, SS, SSDS, ODS, MAS)
           haskellifyMembAxSet(MAS) comma(IL, SS, SSDS, ODS, MAS, EqS)
-          haskellifyEqSet(EqS) '`] '`) '\n '@#$endHetsSpec$#@ .
+          haskellifyEqSet(EqS) '`] '`) '\n '@#$endHetsSpec$#@ '\n .
   eq haskellify(th H is IL sorts SS . SSDS ODS MAS EqS RS endth) = 
-      'SpecMod '`( 'Module haskellifyHeader(H) ' ' 
+      'SpecTh '`( 'Module haskellifyHeader(H) ' ' 
       '`[ haskellifyImports(IL) comma(IL, SS)
           haskellifySorts(SS) comma(IL, SS, SSDS)
           haskellifySubsorts(SSDS) comma(IL, SS, SSDS, ODS)
           haskellifyOpDeclSet(ODS) comma(IL, SS, SSDS, ODS, MAS)
           haskellifyMembAxSet(MAS) comma(IL, SS, SSDS, ODS, MAS, EqS)
           haskellifyEqSet(EqS) comma(IL, SS, SSDS, ODS, MAS, EqS, RS)
-          haskellifyRlSet(RS) '`] '`) '\n '@#$endHetsSpec$#@ .
+          haskellifyRlSet(RS) '`] '`) '\n '@#$endHetsSpec$#@ '\n .
   
   op haskellify : View -> QidList .
-  eq haskellify(view ME from ME' to ME'' is SVM endv) = 
-          'SpecView '`( 'View haskellifyME(ME) haskellifyME(ME') haskellifyME(ME'')
-          '`[ haskellifyMaps(SVM) '`] '`) '\n '@#$endHetsSpec$#@ .
+  eq haskellify(view Q from ME to ME' is SVM endv) = 
+      'SpecView '`( 'View '`( 'ModId qid2token(Q) '`)
+      haskellifyME(ME) haskellifyME(ME')
+      '`[ haskellifyMaps(SVM) '`] '`) '\n '@#$endHetsSpec$#@ '\n .
   
   op haskellifyHeader : Header -> QidList .
   eq haskellifyHeader(Q) = ' '`( 'ModId qid2token(Q) '`) ' ' '`[ '`] .

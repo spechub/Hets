@@ -26,13 +26,14 @@ import Common.Id (Token)
 type Qid = Token
 
 data Spec = SpecMod Module
+          | SpecTh Module
           | SpecView View
           deriving (Show, Read, Ord, Eq)
 
 data Module = Module ModId [Parameter] [Statement]
             deriving (Show, Read, Ord, Eq)
 
-data View = View ModId ModId ModId [Renaming]
+data View = View ModId ModExp ModExp [Renaming]
             deriving (Show, Read, Ord, Eq)
 
 data Parameter = Parameter Sort ModExp
@@ -132,7 +133,7 @@ data Type = TypeSort Sort
           deriving (Show, Read, Ord, Eq)
 
 newtype Sort = SortId Qid
-             deriving (Show, Read, Ord, Eq)
+          deriving (Show, Read, Ord, Eq)
 
 newtype Kind = KindId Qid
              deriving (Show, Read, Ord, Eq)

@@ -26,6 +26,7 @@ import Maude.Util
 
 import Data.Set (Set)
 import Data.Map (Map)
+import Data.Maybe
 import qualified Data.Set as Set
 import qualified Data.Map as Map
 import qualified Data.Foldable as Fold
@@ -155,6 +156,11 @@ simplifySentence :: Sign -> Sentence -> Sentence
 simplifySentence _ = id
 
 -- | rename the given sort
+renameListSort :: [(Symbol, Symbol)] -> Sign -> Sign
+renameListSort rnms sg = foldr f sg rnms
+              where f = \ (x, y) z -> renameSort x y z
+
+-- | rename the given sort
 renameSort :: Symbol -> Symbol -> Sign -> Sign
 renameSort from to sign = Sign sorts' subsorts' ops'
               where sorts' = ren'sort'sortset from to $ sorts sign
@@ -258,3 +264,20 @@ ren'op'at rn@(Format qs) (a : ats) = a' : ren'op'at rn ats
                              Format _ -> Format qs
                              at -> at
 ren'op'at _ _ = []
+
+applySortMap :: SymbolMap -> Sign -> Sign
+applySortMap sm sg = sg {
+                  sorts = Set.map f $ sorts sg,
+                  subsorts = Rel.fromList $ map g $ Rel.toList $ subsorts sg
+                  -- TODO: add renaming in operators
+                  }
+        where f = \ x -> if Map.member x sm
+                         then fromJust $ Map.lookup x sm
+                         else x
+              g = \ (x, y) -> if Map.member x sm
+                              then if Map.member y sm
+                                   then (fromJust $ Map.lookup x sm, fromJust $ Map.lookup y sm)
+                                   else (fromJust $ Map.lookup x sm, y)
+                              else if Map.member y sm
+                                   then (x, fromJust $ Map.lookup y sm)
+                                   else (x, y)

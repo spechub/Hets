@@ -42,6 +42,10 @@ instance HasName ModId where
     getName (ModId name) = name
     mapName mp (ModId name) = ModId $ map2Function mp name
 
+instance HasName ViewId where
+    getName (ViewId name) = name
+    mapName mp (ViewId name) = ViewId $ map2Function mp name
+
 instance HasName LabelId where
     getName (LabelId name) = name
     mapName mp (LabelId name) = LabelId $ map2Function mp name
@@ -64,8 +68,10 @@ instance HasName View where
 
 instance HasName Spec where
     getName (SpecMod sp_module) = getName sp_module
+    getName (SpecTh sp_th) = getName sp_th
     getName (SpecView sp_view) = getName sp_view
     mapName mp (SpecMod sp_module) = SpecMod $ mapName mp sp_module
+    mapName mp (SpecTh sp_th) = SpecTh $ mapName mp sp_th
     mapName mp (SpecView sp_view) = SpecView $ mapName mp sp_view
 
 map2Function :: (Ord a) => Map a a -> (a -> a)
