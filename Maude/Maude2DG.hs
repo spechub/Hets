@@ -1,8 +1,5 @@
-
-
-module Maude2DG where
-
 import System.IO
+import System.Environment
 import System.Process
 
 import Static.DevGraph
@@ -36,7 +33,7 @@ import Common.LibName
 import Common.Id
 
 maude_cmd :: String
-maude_cmd = "/Applications/maude-darwin/maude.intelDarwin -interactive -no-banner"
+maude_cmd = "maude -interactive -no-banner"
 
 data ImportType = Pr | Ex | Inc
 type ModExpProc = (Token, TokenInfoMap, Morphism, DGraph)
@@ -64,7 +61,7 @@ insertSpec (SpecMod sp_mod) tim vm dg = (tim4, vm, dg5)
                     sens = toThSens nm_sns
                     gt = G_theory Maude ext_sg startSigId sens startThId
                     tok = HasName.getName sp_mod
-                    name = makeName tok 
+                    name = makeName tok
                     (ns, dg3) = insGTheory dg2 name DGBasic gt
                     tim3 = Map.insert tok (getNode ns, sg, [], pl) tim2
                     (tim4, dg4) = createEdgesImports tok ips sg tim3 dg3
@@ -80,7 +77,7 @@ insertSpec (SpecTh sp_th) tim vm dg = (tim3, vm, dg3)
                     sens = toThSens nm_sns
                     gt = G_theory Maude ext_sg startSigId sens startThId
                     tok = HasName.getName sp_th
-                    name = makeName tok 
+                    name = makeName tok
                     (ns, dg2) = insGTheory dg1 name DGBasic gt
                     tim2 = Map.insert tok (getNode ns, sg, ss1 ++ ss2, []) tim1
                     (tim3, dg3) = createEdgesImports tok ips sg tim2 dg2
@@ -112,7 +109,7 @@ last_da _ p = p
 
 createEdgesParams :: Token -> [(Token, Token, [Token])] -> [Morphism] -> TokenInfoMap -> DGraph
                      -> DGraph
-createEdgesParams tok1 ((_, tok2, _) : toks) (morph : morphs) tim dg = 
+createEdgesParams tok1 ((_, tok2, _) : toks) (morph : morphs) tim dg =
                                        createEdgesParams tok1 toks morphs tim dg'
                where (n1, _, _, _) = fromJust $ Map.lookup tok1 tim
                      (n2, _, _, _) = fromJust $ Map.lookup tok2 tim
@@ -226,7 +223,7 @@ updateGraphViews tok1 tok2 sg morph views tim dg = (tim', dg''')
                            (n2, _, _, _) = fromJust $ Map.lookup tok2 tim'
                            dg'' = insertDefEdgeMorphism n2 n1 morph' dg'
                            dg''' = insertDefEdgesMorphism n2 views sg dg''
-                           
+
 insertDefEdgesMorphism :: Node -> [(Node, Sign)] -> Sign -> DGraph -> DGraph
 insertDefEdgesMorphism _ [] _ dg = dg
 insertDefEdgesMorphism n1 ((n2, sg1) : views) sg2 dg = insertDefEdgesMorphism n1 views sg2 dg'
@@ -247,7 +244,7 @@ processViews _ tok _ _ _ (morph, nds) = (tok', morph, nds)
 
 processView :: ViewId -> Token -> TokenInfoMap -> ViewMap -> (Token, Token, [Token])
                -> (Token, Morphism, Maybe Node)
-processView vi tok tim vm (p, _, ss) = 
+processView vi tok tim vm (p, _, ss) =
                        if Map.member name vm
                        then morphismView name p ss $ fromJust $ Map.lookup name vm
                        else morphismView name p ss $ fromJust $ Map.lookup name vm
@@ -264,13 +261,13 @@ insertNode tok sg tim ss dg = if Map.member tok tim
                          else let
                                 ext_sg = makeExtSign Maude sg
                                 gt = G_theory Maude ext_sg startSigId noSens startThId
-                                name = makeName tok 
+                                name = makeName tok
                                 (ns, dg') = insGTheory dg name DGBasic gt
                                 tim' = Map.insert tok (getNode ns, sg, ss, []) tim
                               in (tim', dg')
 
 insertInnerNode :: Node -> NodeName -> Morphism -> DGraph -> (Node, DGraph)
-insertInnerNode nod nm morph dg = 
+insertInnerNode nod nm morph dg =
                          if isIdentity morph
                          then (nod, dg)
                          else let
@@ -336,9 +333,9 @@ getImportsSorts (Module _ _ stmts) = getImportsSortsStmnts stmts ([],[])
 
 getImportsSortsStmnts :: [Statement] -> ([Import], [Token]) -> ([Import], [Token])
 getImportsSortsStmnts [] p = p
-getImportsSortsStmnts ((ImportStmnt imp) : stmts) (is, ss) = 
-                                  getImportsSortsStmnts stmts (imp : is, ss) 
-getImportsSortsStmnts ((SortStmnt s) : stmts) (is, ss) = 
+getImportsSortsStmnts ((ImportStmnt imp) : stmts) (is, ss) =
+                                  getImportsSortsStmnts stmts (imp : is, ss)
+getImportsSortsStmnts ((SortStmnt s) : stmts) (is, ss) =
             getImportsSortsStmnts stmts (is, (HasName.getName s) : ss)
 getImportsSortsStmnts (_ : stmts) p = getImportsSortsStmnts stmts p
 
@@ -354,6 +351,8 @@ directMaudeParsing fp = do
               hClose hIn
               hClose hOut
               return $ insertSpecs (psps ++ sps) Map.empty Map.empty emptyDG
+
+main = getArgs >>= mapM_ directMaudeParsing2
 
 directMaudeParsing2 :: FilePath -> IO ()
 directMaudeParsing2 fp = do
