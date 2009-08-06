@@ -16,6 +16,9 @@ couple of basic instances and utilities
 module Common.ATerm.Conversion where
 
 import Common.ATerm.AbstractSyntax
+import qualified Data.Map as Map
+import qualified Data.IntMap as IntMap
+import qualified Data.Set as Set
 import Data.Typeable
 import Data.List (mapAccumL)
 import Data.Ratio
@@ -59,13 +62,7 @@ fromShATerm' i att = case getATerm' i att of
 
 fromShATermError :: String -> ShATerm -> a
 fromShATermError t u = error $ "Cannot convert ShATerm to "
-                       ++ t ++ ": " ++ err u
-    where err te = case te of
-                  ShAAppl s l _ -> "!ShAAppl "++ s
-                                   ++ " (" ++ show (length l) ++ ")"
-                  ShAList l _   -> "!ShAList"
-                                   ++ " (" ++ show (length l) ++ ")"
-                  ShAInt i _    -> "!ShAInt " ++ show i
+                       ++ t ++ ": !" ++ show u
 
 -- some instances -----------------------------------------------
 instance ShATermConvertible Bool where
@@ -79,8 +76,7 @@ instance ShATermConvertible Bool where
 
 instance ShATermConvertible Integer where
     toShATermAux att x = return $ addATerm (ShAInt x []) att
-    fromShATermAux ix att0 =
-         case getShATerm ix att0 of
+    fromShATermAux ix att0 = case getShATerm ix att0 of
             ShAInt x _ -> (att0, x)
             u -> fromShATermError "Prelude.Integer" u
 
@@ -96,8 +92,7 @@ instance (ShATermConvertible a, Integral a)
        (att1,i1') <- toShATerm' att0 i1
        (att2,i2') <- toShATerm' att1 i2
        return $ addATerm (ShAAppl "Ratio" [i1',i2'] []) att2
-    fromShATermAux ix att0 =
-        case getShATerm ix att0 of
+    fromShATermAux ix att0 = case getShATerm ix att0 of
             ShAAppl "Ratio" [a,b] _ ->
                     case fromShATerm' a att0 of { (att1, a') ->
                     case fromShATerm' b att1 of { (att2, b') ->
@@ -110,8 +105,7 @@ instance ShATermConvertible Char where
             ShAAppl s [] _ -> (att0, str2Char s)
             u -> fromShATermError "Prelude.Char" u
     toShATermList' att s = return $ addATerm (ShAAppl (show s) [] []) att
-    fromShATermList' ix att0 =
-        case getShATerm ix att0 of
+    fromShATermList' ix att0 = case getShATerm ix att0 of
             ShAAppl s [] _ -> (att0, read s)
             u -> fromShATermError "Prelude.String" u
 
@@ -127,8 +121,7 @@ instance (ShATermConvertible a) => ShATermConvertible (Maybe a) where
         Just x -> do
           (att1, x') <- toShATerm' att x
           return $ addATerm (ShAAppl "J" [x'] []) att1
-    fromShATermAux ix att0 =
-        case getShATerm ix att0 of
+    fromShATermAux ix att0 = case getShATerm ix att0 of
             ShAAppl "N" [] _ -> (att0, Nothing)
             ShAAppl "J" [a] _ ->
                     case fromShATerm' a att0 of { (att1, a') ->
@@ -143,8 +136,7 @@ instance (ShATermConvertible a, ShATermConvertible b)
     toShATermAux att0 (Right aa) = do
         (att1,aa') <- toShATerm' att0 aa
         return $ addATerm (ShAAppl "Right" [ aa' ] []) att1
-    fromShATermAux ix att =
-        case getShATerm ix att of
+    fromShATermAux ix att = case getShATerm ix att of
             ShAAppl "Left" [ aa ] _ ->
                     case fromShATerm' aa att of { (att2, aa') ->
                     (att2, Left aa') }
@@ -163,8 +155,7 @@ instance (ShATermConvertible a, ShATermConvertible b)
       (att1, x') <- toShATerm' att0 x
       (att2, y') <- toShATerm' att1 y
       return $ addATerm (ShAAppl "" [x',y'] []) att2
-    fromShATermAux ix att0 =
-        case getShATerm ix att0 of
+    fromShATermAux ix att0 = case getShATerm ix att0 of
             ShAAppl "" [a,b] _ ->
                     case fromShATerm' a att0 of { (att1, a') ->
                     case fromShATerm' b att1 of { (att2, b') ->
@@ -178,8 +169,7 @@ instance (ShATermConvertible a, ShATermConvertible b, ShATermConvertible c)
       (att2, y') <- toShATerm' att1 y
       (att3, z') <- toShATerm' att2 z
       return $ addATerm (ShAAppl "" [x',y',z'] []) att3
-    fromShATermAux ix att0 =
-        case getShATerm ix att0 of
+    fromShATermAux ix att0 = case getShATerm ix att0 of
             ShAAppl "" [a,b,c] _ ->
                     case fromShATerm' a att0 of { (att1, a') ->
                     case fromShATerm' b att1 of { (att2, b') ->
@@ -195,8 +185,7 @@ instance (ShATermConvertible a, ShATermConvertible b, ShATermConvertible c,
       (att3, z') <- toShATerm' att2 z
       (att4, w') <- toShATerm' att3 w
       return $ addATerm (ShAAppl "" [x',y',z',w'] []) att4
-  fromShATermAux ix att0 =
-        case getShATerm ix att0 of
+  fromShATermAux ix att0 = case getShATerm ix att0 of
             ShAAppl "" [a,b,c,d] _ ->
                     case fromShATerm' a att0 of { (att1, a') ->
                     case fromShATerm' b att1 of { (att2, b') ->
@@ -204,3 +193,34 @@ instance (ShATermConvertible a, ShATermConvertible b, ShATermConvertible c,
                     case fromShATerm' d att3 of { (att4, d') ->
                     (att4, (a', b', c', d'))}}}}
             u -> fromShATermError "(,,,)" u
+
+instance (Ord a, ShATermConvertible a, ShATermConvertible b)
+    => ShATermConvertible (Map.Map a b) where
+    toShATermAux att fm = do
+      (att1, i) <- toShATerm' att $ Map.toList fm
+      return $ addATerm (ShAAppl "Map" [i] []) att1
+    fromShATermAux ix att0 = case getShATerm ix att0 of
+            ShAAppl "Map" [a] _ ->
+                    case fromShATerm' a att0 of { (att1, a') ->
+                    (att1, Map.fromDistinctAscList a') }
+            u -> fromShATermError "Map.Map" u
+
+instance ShATermConvertible a => ShATermConvertible (IntMap.IntMap a) where
+  toShATermAux att fm = do
+      (att1, i) <- toShATerm' att $ IntMap.toList fm
+      return $ addATerm (ShAAppl "IntMap" [i] []) att1
+  fromShATermAux ix att0 = case getShATerm ix att0 of
+            ShAAppl "IntMap" [a] _ ->
+                    case fromShATerm' a att0 of { (att1, a') ->
+                    (att1, IntMap.fromDistinctAscList a') }
+            u -> fromShATermError "IntMap.IntMap" u
+
+instance (Ord a, ShATermConvertible a) => ShATermConvertible (Set.Set a) where
+    toShATermAux att set = do
+      (att1, i) <-  toShATerm' att $ Set.toList set
+      return $ addATerm (ShAAppl "Set" [i] []) att1
+    fromShATermAux ix att0 = case getShATerm ix att0 of
+            ShAAppl "Set" [a] _ ->
+                    case fromShATerm' a att0 of { (att1, a') ->
+                    (att1, Set.fromDistinctAscList a') }
+            u -> fromShATermError "Set.Set" u

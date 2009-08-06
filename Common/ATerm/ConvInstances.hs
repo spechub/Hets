@@ -20,9 +20,6 @@ import Common.ATerm.Conversion
 import Common.ATerm.AbstractSyntax
 import Common.Lib.Graph as Graph
 import Common.Lib.SizedList as SizedList
-import qualified Data.Map as Map
-import qualified Data.IntMap as IntMap
-import qualified Data.Set as Set
 import qualified Common.Lib.Rel as Rel
 import qualified Common.OrderedMap as OMap
 import qualified Common.InjMap as InjMap
@@ -130,41 +127,6 @@ fromShATermAux_GrContext ix att0 =
                     (att4, GrContext a' b' c' d') }}}}
             u -> fromShATermError "GrContext" u
 
-instance (Ord a, ShATermConvertible a, ShATermConvertible b)
-    => ShATermConvertible (Map.Map a b) where
-    {-# SPECIALIZE instance ShATermConvertible (Map.Map Id (Set.Set Id)) #-}
-    {-# SPECIALIZE instance (ShATermConvertible a)
-           => ShATermConvertible (Map.Map String (OMap.ElemWOrd a)) #-}
-    {-# SPECIALIZE instance (ShATermConvertible b, Ord b)
-      => ShATermConvertible (Map.Map Id (Set.Set b)) #-}
-    toShATermAux = toShATermAux_Map
-    fromShATermAux = fromShATermAux_Map
-
-toShATermAux_Map att fm = do
-      (att1, i) <- toShATerm' att $ Map.toList fm
-      return $ addATerm (ShAAppl "Map" [i] []) att1
-fromShATermAux_Map ix att0 =
-        case getShATerm ix att0 of
-            ShAAppl "Map" [a] _ ->
-                    case fromShATerm' a att0 of { (att1, a') ->
-                    (att1, Map.fromDistinctAscList a') }
-            u -> fromShATermError "Map.Map" u
-
-instance (ShATermConvertible a)
-    => ShATermConvertible (IntMap.IntMap a) where
-  toShATermAux = toShATermAux_IntMap
-  fromShATermAux = fromShATermAux_IntMap
-
-toShATermAux_IntMap att fm = do
-      (att1, i) <- toShATerm' att $ IntMap.toList fm
-      return $ addATerm (ShAAppl "IntMap" [i] []) att1
-fromShATermAux_IntMap ix att0 =
-        case getShATerm ix att0 of
-            ShAAppl "IntMap" [a] _ ->
-                    case fromShATerm' a att0 of { (att1, a') ->
-                    (att1, IntMap.fromDistinctAscList a') }
-            u -> fromShATermError "IntMap.IntMap" u
-
 elemWOrdTc = mkTyCon "Common.OrderedMap.ElemWOrd"
 
 instance (Typeable a) => Typeable (OMap.ElemWOrd a) where
@@ -186,21 +148,6 @@ fromShATermAux_ElemWOrd ix att0 =
                     case fromShATerm' b att1 of { (att2, b') ->
                     (att2, OMap.EWOrd { OMap.order = a', OMap.ele = b'}) }}
             u -> fromShATermError "OMap.ElemWOrd" u
-
-instance (Ord a,ShATermConvertible a) => ShATermConvertible (Set.Set a) where
-    {-# SPECIALIZE instance ShATermConvertible (Set.Set Id) #-}
-    toShATermAux = toShATermAux_Set
-    fromShATermAux = fromShATermAux_Set
-
-toShATermAux_Set att set = do
-      (att1, i) <-  toShATerm' att $ Set.toList set
-      return $ addATerm (ShAAppl "Set" [i] []) att1
-fromShATermAux_Set ix att0 =
-        case getShATerm ix att0 of
-            ShAAppl "Set" [a] _ ->
-                    case fromShATerm' a att0 of { (att1, a') ->
-                    (att1, Set.fromDistinctAscList a') }
-            u -> fromShATermError "Set.Set" u
 
 relTc = mkTyCon "Common.Lib.Rel.Rel"
 
