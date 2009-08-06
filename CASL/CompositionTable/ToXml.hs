@@ -11,7 +11,7 @@ Portability :  non-portable (FlexibleInstances via xml package)
 XML output for composition tables
 -}
 
-module CASL.CompositionTable.ToXml (table_document) where
+module CASL.CompositionTable.ToXml (tableXmlStr) where
 
 {-
 DTD see systemURI
@@ -40,15 +40,15 @@ systemURI::String
 systemURI =
   "http://www.informatik.uni-bremen.de/cofi/hets/CompositionTable.dtd"
 
-table_prolog :: [String]
-table_prolog =
+tableProlog :: [String]
+tableProlog =
     [ "<?xml version='1.0absd' encoding='UTF-8' ?>"
     , "<!DOCTYPE table PUBLIC " ++ shows publicId " "
       ++ shows systemURI ">" ]
 
 -- this function renders a Table as xml string
-table_document :: Table -> String
-table_document t = unlines $ table_prolog ++ lines (ppElement $ table2Elem t)
+tableXmlStr :: Table -> String
+tableXmlStr t = unlines $ tableProlog ++ lines (ppElement $ table2Elem t)
 
 table2Elem :: Table -> Element
 table2Elem (Table as a b (Reflectiontable _) c) =
@@ -56,7 +56,7 @@ table2Elem (Table as a b (Reflectiontable _) c) =
   $ unode "table" $ compTable2Elem a : conTable2Elems b  ++ [models2Elem c]
 
 toAttrFrStr :: String -> String -> Attr
-toAttrFrStr key = Attr (unqual key)
+toAttrFrStr = Attr . unqual
 
 tabAttr2Attrs :: Table_Attrs -> [Attr]
 tabAttr2Attrs v =
@@ -78,7 +78,7 @@ cmpEntryAttrs2Attrs (Cmptabentry_Attrs b1 b2) =
   , toAttrFrStr "argBaserel2" $ baserelBaserel b2 ]
 
 baserel2Elem :: Baserel -> Element
-baserel2Elem b = unode "baserel" $ baserel2Attr b
+baserel2Elem = unode "baserel" . baserel2Attr
 
 baserel2Attr :: Baserel -> Attr
 baserel2Attr = toAttrFrStr "baserel" . baserelBaserel
@@ -90,7 +90,7 @@ conTable2Elems ct = case ct of
   _ -> []
 
 conEntry2Elem :: Contabentry -> Element
-conEntry2Elem as = unode "contabentry" $ conEntry2Attrs as
+conEntry2Elem = unode "contabentry" . conEntry2Attrs
 
 conEntry2Attrs :: Contabentry -> [Attr]
 conEntry2Attrs (Contabentry a c) =
@@ -101,7 +101,7 @@ models2Elem :: Models -> Element
 models2Elem (Models a) = unode "models" $ map model2Elem a
 
 model2Elem :: Model -> Element
-model2Elem as = unode "model" $ model2Attrs as
+model2Elem = unode "model" . model2Attrs
 
 model2Attrs :: Model -> [Attr]
 model2Attrs (Model s1 s2) =

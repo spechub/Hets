@@ -195,7 +195,7 @@ writeTheory opts filePrefix ga
           let Result ds res = computeCompTable i th2
           showDiags opts ds
           case res of
-            Just td -> writeVerbFile opts f $ table_document td
+            Just td -> writeVerbFile opts f $ tableXmlStr td
             Nothing -> return ()
         else putIfVerbose opts 0 $ "expected CASL theory for: " ++ f
 #ifndef NOOWLLOGIC
@@ -275,10 +275,11 @@ writeSpecFiles opts file lenv0 ln dg = do
         allSpecs = null ns
         ignore = null specOutTypes && modelSparQ opts == ""
         -- experimental out needs the qualification of names:
-        lenv = if True && (elem (show ExperimentalOut) $ map show outTypes)
-               then fromJust $ maybeResult $ qualifyLibEnv lenv0
-               else lenv0
-
+        lenv = if null $ filter (\ ot -> case ot of
+                  ExperimentalOut -> True
+                  _ -> False) specOutTypes
+               then lenv0
+               else fromJust $ maybeResult $ qualifyLibEnv lenv0
     mapM_ (writeLibEnv opts filePrefix lenv ln) $
           if null $ dumpOpts opts then outTypes else EnvOut : outTypes
     mapM_ ( \ i -> case Map.lookup i gctx of
