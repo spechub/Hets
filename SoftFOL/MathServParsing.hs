@@ -230,19 +230,22 @@ soapEnvQName s = (unqual s) { qPrefix = Just soapenvS }
 xmlnsQName :: String -> XML.QName
 xmlnsQName s = (unqual s) { qPrefix = Just "xmlns" }
 
-mkBody :: Element -> Element
-mkBody = node $ soapEnvQName bodyS
+envUri :: String
+envUri = "http://schemas.xmlsoap.org/soap/envelope/"
+
+bodyQ :: XML.QName
+bodyQ = (soapEnvQName bodyS) { qURI = Just envUri }
 
 mkEnvelope :: Element -> Element
 mkEnvelope = add_attrs
   [ Attr (unqual "encodingStyle") "http://schemas.xmlsoap.org/soap/encoding/"
   , Attr (xmlnsQName "xsd") "http://www.w3.org/2001/XMLSchema"
-  , Attr (xmlnsQName soapenvS) "http://schemas.xmlsoap.org/soap/envelope/"
+  , Attr (xmlnsQName soapenvS) envUri
   ] . node (soapEnvQName "Envelope")
 
 mkSoapRequest :: MathServCall -> ServerAddr -> Request_String
 mkSoapRequest call serverPort =
-  let b = showElement $ mkEnvelope $ mkBody $ mkProveProblemElem call
+  let b = showElement $ mkEnvelope $ node bodyQ $ mkProveProblemElem call
       r0 = postRequest $ "http://" ++ show serverPort ++ "/axis/services/"
            ++ show (mathServService call)
       r1 = insertHeader (HdrCustom "SOAPAction") "" r0 { rqBody = b }
@@ -250,16 +253,20 @@ mkSoapRequest call serverPort =
       r3 = replaceHeader HdrContentLength (show $ length b) r2
   in insertHeader HdrContentType "text/xml" r3
 
+testQnameSuffix :: String -> XML.QName -> Bool
+testQnameSuffix s q = let l = XML.qName q in
+  isNothing (qPrefix q) && isPrefixOf "Prove" l && isSuffixOf s l
+
 unpackSoapEnvelope :: Either String String -> Either String String
 unpackSoapEnvelope rsp = case rsp of
   Left s -> Left s
   Right r -> case XML.parseXMLDoc r of
     Nothing -> Left "server returned illegal xml"
-    Just x -> case filterElementName ((== bodyS) . XML.qName) x of
+    Just x -> case filterElementName (== bodyQ) x of
      Nothing -> Left "no soap Body found"
-     Just b -> case filterElementName (isSuffixOf "Response" . XML.qName) b of
+     Just b -> case filterElementName (testQnameSuffix "Response") b of
       Nothing -> Left "no Prove Response found"
-      Just t -> case filterElementName (isSuffixOf "Return" . XML.qName) t of
+      Just t -> case filterElementName (testQnameSuffix "Return") t of
        Nothing -> Left "no Prove Return value found"
        Just v -> case map cdData . onlyText $ elContent v of
         [] -> Left "no returned content found"
