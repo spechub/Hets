@@ -21,11 +21,6 @@ ifneq ($(findstring 0.1, $(TABULARVERSION)),)
 TABULAR_PACKAGE = -DTABULAR_PACKAGE
 endif
 
-HAXMLVERSION = $(shell $(HCPKG) field HaXml version)
-ifneq ($(findstring 1.13., $(HAXMLVERSION)),)
-HAXML_PACKAGE = -DHAXML_PACKAGE
-endif
-
 GLADEVERSION = $(shell $(HCPKG) field glade version)
 ifneq ($(findstring 0., $(GLADEVERSION)),)
 GLADE_PACKAGE = -DGTKGLADE

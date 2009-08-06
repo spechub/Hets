@@ -6,7 +6,7 @@ License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
 Maintainer  :  till@informatik.uni-bremen.de
 Stability   :  provisional
-Portability :  non-portable(HaXml package)
+Portability :  non-portable (FlexibleInstances via xml package)
 
 XML output for composition tables
 -}
@@ -28,9 +28,7 @@ import CASL.CompositionTable.CompositionTable
 import Text.XML.Light
 
 {-
-Using HaXml it is not very easy to just add a DOCTYPE to the derivated
-XmlContent-instances so the following code takes care to create it.
-Reading in the created files with standard HaXml-functions is not a problem.
+Using xml it is not very easy to just add a DOCTYPE node
 -}
 
 -- Public identifier (suggestion)

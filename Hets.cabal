@@ -35,9 +35,6 @@ flag uniform
     svn co https://svn-agbkb.informatik.uni-bremen.de/uni/trunk uni
     http://www.informatik.uni-bremen.de/uDrawGraph
 
-flag haxml
-  description: use old HaXml-1.13.3 binding for CASL.CompositionTable.ToXml
-
 flag programatica
   description: use programatica for the haskell logic
     http://programatica.cs.pdx.edu/
@@ -98,10 +95,6 @@ Executable hets
       , uni-uDrawGraph >= 2.0 && <= 3.0
       , uni-util >= 2.0 && <= 3.0
     cpp-options: -DUNI_PACKAGE
-
-  if flag(haxml)
-    build-depends: HaXml >= 1.13.2 && <= 1.13.3
-    cpp-options: -DHAXML_PACKAGE
 
   if flag(programatica)
     build-depends: programatica == 1.0
