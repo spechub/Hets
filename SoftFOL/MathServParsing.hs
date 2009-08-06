@@ -31,24 +31,19 @@ module SoftFOL.MathServParsing
 
 import Common.Utils (getEnvSave, readMaybe)
 
-import Text.XML.Light as XML
+import Text.XML.Light
 import Network.HTTP
 
-import Text.Regex
-import Text.XML.HXT.Parser hiding (when)
-import Text.XML.HXT.XPath
-
-import Data.Char (toUpper, isDigit)
+import Data.Char
 import Data.List
 import Data.Maybe
 import Data.Time (TimeOfDay, timeToTimeOfDay)
 
 -- * Datatypes for MathServ services
 
-data ServerAddr = ServerAddr {
-     serverName :: String,
-     portNumber :: Int
-                             }
+data ServerAddr = ServerAddr
+    { serverName :: String
+    , portNumber :: Int }
 
 instance Show ServerAddr where
     showsPrec _ sAdd =
@@ -64,10 +59,9 @@ instance Read ServerAddr where
                         rest)]
 
 defaultServer :: ServerAddr
-defaultServer = ServerAddr {
-        serverName = "mathserv.informatik.uni-bremen.de",
-        portNumber = 8080
-                           }
+defaultServer = ServerAddr
+  { serverName = "mathserv.informatik.uni-bremen.de"
+  , portNumber = 8080 }
 
 
 {- |
@@ -122,9 +116,7 @@ data MathServResponse =
 
 data MWFoAtpResult =
        MWFoAtpResult { proof        :: MWFormalProof,
-                       resultFor    :: MWProvingProblem,
                        outputStr    :: String,
-                       saturation   :: String,
                        systemStatus :: MWStatus,
                        systemStr    :: String,
                        time         :: MWTimeResource
@@ -138,6 +130,13 @@ data MWFormalProof =
                            calculus    :: MWCalculus,
                            axioms      :: String
                            } deriving (Eq, Ord, Show)
+
+emptyMWFormalProof :: MWFormalProof
+emptyMWFormalProof = TstpCnfRefutation
+  { formalProof = ""
+  , proofOf = UnknownProvingProblem
+  , calculus = UnknownCalc
+  , axioms = "" }
 
 
 data MWStatus =
@@ -179,6 +178,7 @@ data UnsolvedStatus =
 
 data MWProvingProblem =
        TstpFOFProblem
+     | TstpProblem
      | UnknownProvingProblem
      deriving (Eq, Ord, Show)
 
@@ -198,9 +198,6 @@ data MWTimeResource =
        MWTimeResource { cpuTime       :: TimeOfDay,
                         wallClockTime :: TimeOfDay
                         } deriving (Eq, Ord, Show)
-
-
-
 
 toCData :: String -> CData
 toCData s = blank_cdata { cdData = s }
@@ -224,16 +221,16 @@ soapenvS = "soapenv"
 bodyS :: String
 bodyS = "Body"
 
-soapEnvQName :: String -> XML.QName
+soapEnvQName :: String -> QName
 soapEnvQName s = (unqual s) { qPrefix = Just soapenvS }
 
-xmlnsQName :: String -> XML.QName
+xmlnsQName :: String -> QName
 xmlnsQName s = (unqual s) { qPrefix = Just "xmlns" }
 
 envUri :: String
 envUri = "http://schemas.xmlsoap.org/soap/envelope/"
 
-bodyQ :: XML.QName
+bodyQ :: QName
 bodyQ = (soapEnvQName bodyS) { qURI = Just envUri }
 
 mkEnvelope :: Element -> Element
@@ -253,14 +250,14 @@ mkSoapRequest call serverPort =
       r3 = replaceHeader HdrContentLength (show $ length b) r2
   in insertHeader HdrContentType "text/xml" r3
 
-testQnameSuffix :: String -> XML.QName -> Bool
-testQnameSuffix s q = let l = XML.qName q in
+testQnameSuffix :: String -> QName -> Bool
+testQnameSuffix s q = let l = qName q in
   isNothing (qPrefix q) && isPrefixOf "Prove" l && isSuffixOf s l
 
 unpackSoapEnvelope :: Either String String -> Either String String
 unpackSoapEnvelope rsp = case rsp of
   Left s -> Left s
-  Right r -> case XML.parseXMLDoc r of
+  Right r -> case parseXMLDoc r of
     Nothing -> Left "server returned illegal xml"
     Just x -> case filterElementName (== bodyQ) x of
      Nothing -> Left "no soap Body found"
@@ -290,22 +287,14 @@ callMathServ call =
                   Left mErr -> Left $ show mErr
                   Right resp -> unpackSoapEnvelope $ Right $ rspBody resp
 
-xpathTag :: String -> String
-xpathTag vtag = "//mw:*[local-name()='" ++ vtag ++ "']"
+isMWnode :: String -> QName -> Bool
+isMWnode s q = qName q == s && qPrefix q == Just "mw"
 
--- copied from old Text.XML.HXT.Aliases
-parseHXML :: String -> IO XmlTree
-parseHXML s = do
-    let x = (checkWellformedDoc
-            .>> liftF canonicalizeAllNodes
-            .>> liftF propagateNamespaces
-            .>> liftF removeDocWhiteSpace
-            .>> liftF getChildren
-            ) (head $ tag "/" []  [mkXText s] emptyRoot)
-    t <- run' x
-    return $ case t of
-      [] -> emptyRoot
-      h : _ -> h
+getElementText :: Element -> String
+getElementText = concatMap cdData . onlyText . elContent
+
+getElemText :: String -> Element -> String
+getElemText s = maybe "" getElementText . filterElementName (isMWnode s)
 
 {- |
   Full parsing of RDF-objects returned by MathServ and putting the results
@@ -315,148 +304,70 @@ parseMathServOut :: Either String String
        -- ^ Left (SOAP error) or Right (MathServ output or error message)
                  -> IO (Either String MathServResponse)
        -- ^ parsed rdf-objects in record
-parseMathServOut eMathServOut =
-   case eMathServOut of
-   Left errStr -> return $
-                  Left ("MathServe/SOAP Error:\n" ++ errStr ++
-                        "\nPlease contact " ++
-                        "<hets-devel@informatik.uni-bremen.de>")
-   Right mathServOut -> do
-    rdfTree <- parseHXML mathServOut
-    let failStr = getMaybeXText failureXPath rdfTree
-    return $ Right MathServResponse {
-             foAtpResult = maybe (Right $ parseFoAtpResult rdfTree)
-                                 Left failStr
-             ,timeResource = parseTimeResource rdfTree }
-    where
-      failureXPath = xpathTag "Failure" ++ xpathTag "message"
+parseMathServOut = return . parseResponse
 
-{- |
-  Parses an XmlTree for a FoAtpResult object on first level. If existing,
-  all values of such an object are recursively parsed from underlying XmlTree.
-  All found objects are put into a MWFoAtpResult data structure.
--}
-parseFoAtpResult :: XmlTree -- ^ XML tree to parse (should be MathServ output)
-                 -> MWFoAtpResult -- ^ parsed Result node
-parseFoAtpResult rdfTree =
-    MWFoAtpResult { proof        = parseProof nextTree,
-                    resultFor    = parseProvingProblem nextTree,
-                    outputStr    = getXText outputXPath nextTree,
-                    saturation   = getXText saturationXPath nextTree,
-                    systemStatus = parseStatus nextTree,
-                    systemStr    = getXText systemXPath nextTree,
-                    time         = parseTimeResource $ head $
-                                     getXPath timeXPath nextTree }
-    where
-      nextTree = case getXPath atpResultXPath rdfTree of
-        [] -> emptyRoot
-        h : _ -> h
-      atpResultXPath = xpathTag "FoAtpResult"
-      outputXPath = xpathTag "output"
-      saturationXPath = xpathTag "saturation"
-      systemXPath = xpathTag "system"
-      timeXPath = xpathTag "time"
+parseResponse :: Either String String -> Either String MathServResponse
+parseResponse eMathServOut = do
+   mathServOut <- eMathServOut
+   case parseXMLDoc mathServOut of
+     Nothing -> Left "illegal rdf xml tree"
+     Just rdf -> do
+        let mr = case parseFailure rdf of
+              Just str -> Left str
+              Nothing -> parseResult rdf
+        t <- parseTimeResource rdf
+        return MathServResponse
+          { foAtpResult = mr
+          , timeResource = t }
 
+parseFailure :: Element -> Maybe String
+parseFailure e = case filterElementName (isMWnode "Failure") e of
+  Nothing -> Nothing
+  Just f -> Just $ getElemText "message" f
 
-{- |
-  Parses an XmlTree for a FormalProof object on first level. If existing,
-  all values of such an object are recursively parsed from underlying XmlTree.
-  All found objects are put into a MWFormalProof data structure.
--}
-parseProof :: XmlTree -- ^ XML tree to parse
-           -> MWFormalProof -- ^ parsed Formal Proof node
-parseProof rdfTree =
--- !! to be completed (recognition of used MWFormalProof's name)
-    TstpCnfRefutation { formalProof = getXText formalProofXPath nextTree,
-                        proofOf     = parseProvingProblem nextTree,
-                        calculus    = parseCalculus nextTree,
-                        axioms      = getXText axiomsXPath nextTree }
-    where
-      nextTree = case getXPath proofXPath rdfTree of
-        [] -> emptyRoot
-        h : _ -> h
-      proofXPath = xpathTag "proof" ++ "/mw:*[1]"
-      axiomsXPath = xpathTag "axioms"
-      formalProofXPath = xpathTag "formalProof"
+parseResult :: Element -> Either String MWFoAtpResult
+parseResult rdf = case filterElementName (isMWnode "FoAtpResult") rdf of
+       Nothing -> Left "no FoAtpResult found"
+       Just e -> do
+         stat <- parseStatus e
+         tm <- case filterElementName (isMWnode "time") e of
+           Nothing -> Left "no time element found"
+           Just t -> parseTimeResource t
+         let pr = parseProof e
+             out = getElemText "output" e
+             sys = getElemText "system" e
+         return MWFoAtpResult
+           { proof = pr
+           , outputStr = out
+           , systemStatus = stat
+           , systemStr = sys
+           , time = tm }
 
-xpathTagAttr :: String -> String
-xpathTagAttr vtag = xpathTag vtag ++ "/attribute::rdf:*"
+parseProof :: Element -> MWFormalProof
+parseProof e = case filterElementName
+  (\ q -> isMWnode "proof" q || isMWnode "saturation" q) e of
+  Nothing -> emptyMWFormalProof
+  Just pr -> case filterElementName (\ q -> isMWnode "TstpCnfRefutation" q
+    || isMWnode "TstpCnfSaturation" q) pr of
+    Nothing -> emptyMWFormalProof
+    Just p -> let
+        fp0 = getElemText "formalProof" p
+        fp = if null fp0 then getElemText "formalSaturation" p else fp0
+        prob = case getProblem p "proofOf" of
+          UnknownProvingProblem -> getProblem p "saturationOf"
+          pa -> pa
+        cal = case filterElementName (isMWnode "calculus") p of
+                Nothing -> UnknownCalc
+                Just c -> getCalcAttr c
+        axs = getElemText "axioms" p
+       in TstpCnfRefutation
+       { formalProof = fp
+       , proofOf = prob
+       , calculus = cal
+       , axioms = axs }
 
-{- |
-  Parses an XmlTree for a ProvingProblem object on first level.
-  Currently only TstpFofProblem can be classified. An empty or non-existing
-  problem object will be classified a TstpFofProblem, too. Other occuring
-  ProvingProblems will cause an exception.
--}
-parseProvingProblem :: XmlTree -- ^ XML tree to parse
-                    -> MWProvingProblem -- ^ Parsed Proving Problem node
-parseProvingProblem rdfTree =
-    let prob = getAnchor $ getXText problemXPath rdfTree
-    in  case (matchRegex (mkRegex "generated_tstp_fof_problem") prob) of
-          Nothing -> UnknownProvingProblem
-          _       -> TstpFOFProblem
-    where
-      problemXPath = xpathTagAttr "proofOf"
-
-{- |
-  Parses an XmlTree for a Calculus object on first level.
-  Currently seven different Calculus objects can be classified.
-  Other objects (also empty or non-existing ones) will cause an exception.
--}
-parseCalculus :: XmlTree -- ^ XML tree to parse
-              -> MWCalculus -- ^ parsed Calculus node
-parseCalculus rdfTree =
-    fromMaybe UnknownCalc
-           (readMaybe (filterUnderline False calc) :: Maybe MWCalculus)
-    where
-      calculusXPath = xpathTagAttr "calculus"
-      calc = getAnchor $ getXText calculusXPath rdfTree
-
-{- |
-  Parses an XmlTree for a Status object on first level.
-  Currently 18 different Status objects can be classified.
-  Other objects (also empty or non-existing ones) will cause an exception.
-  The status is differentiated into solved unsolved by the object itself.
--}
-parseStatus :: XmlTree -- ^ XML tree to parse
-            -> MWStatus -- ^ parsed Status node
-parseStatus rdfTree =
-    let foAtp =
-          maybe (maybe (error $ "Could not classify status of proof: "
-                                         ++ statusStr)
-                         Unsolved
-                         (readMaybe statusStr :: Maybe UnsolvedStatus))
-                 Solved
-                 (readMaybe statusStr :: Maybe SolvedStatus)
-    in MWStatus {solved      = case foAtp of
-                                 Solved _   -> True
-                                 Unsolved _ -> False,
-                 foAtpStatus = foAtp}
-    where
-      statusXPath = xpathTagAttr "status"
-      statusStr = getAnchor $ getXText statusXPath rdfTree
-
-{- |
-  Parses an XmlTree for a TimeResource object on first level. If existing,
-  cpuTime and wallClockTime are parsed and returned in MWTimeResource record.
--}
-parseTimeResource :: XmlTree -- ^ XML tree to parse
-                  -> MWTimeResource -- ^ parsed time resource with
-                                    --   cpuTime and wallClockTime
-parseTimeResource rdfTree =
-    MWTimeResource {
-      cpuTime       =  prse cpuTimeString,
-      wallClockTime =  prse wallClockTimeString }
-    where
-      prse x = timeToTimeOfDay $ realToFrac
-               $ (read x :: Double) / 1000
-      cpuTimeString = getXText cpuTimeXPath rdfTree
-      wallClockTimeString = getXText wallClockTimeXPath rdfTree
-
-      timeResXPath = xpathTag "TimeResource"
-      cpuTimeXPath = timeResXPath ++ xpathTag "cpuTime"
-      wallClockTimeXPath =
-          timeResXPath ++ xpathTag "wallClockTime"
+isRdfResource :: QName -> Bool
+isRdfResource q = qName q == "resource" && qPrefix q == Just "rdf"
 
 {- |
   Removes first part of string until @#@ (including @#@).
@@ -467,36 +378,51 @@ getAnchor s = case dropWhile (/= '#') s of
     [] -> []
     _ : r -> r
 
-{- |
-  This helper function awaits an XPath to an element that contains another
-  XText element (or is empty). The content of this XText element will be
-  returned.
--}
-getXText :: String -- ^ XPath to element containing one XText element
-         -> XmlTree -- ^ XML tree to parse
-         -> String -- ^ value of XText element
-getXText xp rdfTree =
-    let xptext = xp ++ "/text()"
-        xmltrees = getXPath xptext rdfTree
-    in case xmltrees of
-         [] -> []
-         hd : _ -> let firstNode = getNode hd in
-                   if isXTextNode firstNode
-                     then (\(XText s) -> s) firstNode
-                     else []
+getRdfResource :: Element -> String
+getRdfResource e = case filter (not . null) . map (getAnchor . attrVal)
+  . filter (isRdfResource . attrKey) $ elAttribs e of
+  str : _ -> str
+  _ -> ""
 
-{- |
-  Same as getXText, but if the element does not exist Nothing will be returned.
-  Otherwise Just /Text/ will be returned.
--}
-getMaybeXText :: String -- ^ XPath to element containing one XText element
-              -> XmlTree -- ^ XML tree to parse
-              -> Maybe String -- ^ value of XText element
-getMaybeXText xp rdfTree =
-    let xmltrees = getXPath xp rdfTree
-    in  case xmltrees of
-          [] -> Nothing
-          _ -> Just $ getXText xp rdfTree
+getProblem :: Element -> String -> MWProvingProblem
+getProblem e s = case filterElementName (isMWnode s) e of
+  Nothing -> UnknownProvingProblem
+  Just po -> getProblemAttr po
+
+getProblemAttr :: Element -> MWProvingProblem
+getProblemAttr e = let str = getRdfResource e in
+  if isPrefixOf "generated_tstp_fof_problem" str then TstpFOFProblem
+  else if isPrefixOf "TstpProblem" str then TstpProblem
+  else UnknownProvingProblem
+
+parseStatus :: Element -> Either String MWStatus
+parseStatus e = case filterElementName (isMWnode "status") e of
+  Nothing -> Left "no status found"
+  Just s -> let str = getRdfResource s in case readMaybe str of
+       Just sol -> Right $ MWStatus True $ Solved sol
+       Nothing -> case readMaybe str of
+         Just usol -> Right $ MWStatus False $ Unsolved usol
+         Nothing -> Left $ "Could not classify status of proof: " ++ str
+
+elem2Time :: Element -> Either String TimeOfDay
+elem2Time e = let s = getElementText e in
+  case readMaybe s of
+    Just x -> Right $ timeToTimeOfDay $ realToFrac $ (x :: Double) / 1000
+    Nothing -> Left $ "cannot read time string: " ++ s
+
+parseTimeResource :: Element -> Either String MWTimeResource
+parseTimeResource e = case filterElementName (isMWnode "TimeResource") e of
+  Nothing -> Left "no time resource found"
+  Just tr -> do
+    ct <- case filterElementName (isMWnode "cpuTime") tr of
+            Nothing -> Left "no cpu time found"
+            Just t -> elem2Time t
+    wt <- case filterElementName (isMWnode "wallClockTime") tr of
+            Nothing -> Left "no wall clock time found"
+            Just t -> elem2Time t
+    return MWTimeResource
+      { cpuTime = ct
+      , wallClockTime = wt }
 
 {- |
   Filters @_@ out of a String and upcases each letter after a @_@.
@@ -509,3 +435,9 @@ filterUnderline b st = case st of
     h : r -> case h of
              '_' -> filterUnderline True r
              _ -> (if b then toUpper h else h) : filterUnderline False r
+
+getCalcAttr :: Element -> MWCalculus
+getCalcAttr e = let str = filterUnderline True $ getRdfResource e in
+  case readMaybe str of
+    Just c -> c
+    Nothing -> UnknownCalc
