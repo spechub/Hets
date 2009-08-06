@@ -25,8 +25,8 @@ import Data.Bits (shiftL, shiftR, (.&.), (.|.))
 import Data.Char
 import Data.Word
 
-chars_per_line :: Int
-chars_per_line = 64
+charsPerLine :: Int
+charsPerLine = 64
 -- PEM mandates 64. MIME allows anything up to 76.
 
 splits :: Int -> [a] -> [[a]]
@@ -36,7 +36,7 @@ splits n xs = case xs of
          (ys, zs) -> ys : splits n zs
 
 encode :: [Word8] -> String
-encode = unlines . splits chars_per_line . enc
+encode = unlines . splits charsPerLine . enc
 
 -- It is up to the caller to make sure the right sort of line breaks are
 -- in the input
@@ -98,8 +98,8 @@ toBase64 =
 toBase64Int :: Char -> Int
 toBase64Int c
     | isUpper c = ord c - ordA
-    | isLower c = ord c - orda_26
-    | isDigit c = ord c + mord0_52
+    | isLower c = ord c - i71
+    | isDigit c = ord c + i4
     | c == '+' = 62
     | c == '/' = 63
     | otherwise = error "toBase64Int"
@@ -107,8 +107,8 @@ toBase64Int c
 toBase64Char :: Int -> Char
 toBase64Char i
     | i < 26 = chr (ordA + i)
-    | i < 52 = chr (orda_26 + i)
-    | i < 62 = chr (i - mord0_52)
+    | i < 52 = chr (i71 + i)
+    | i < 62 = chr (i - i4)
     | i == 62 = '+'
     | i == 63 = '/'
     | otherwise = error "toBase64Char"
@@ -121,11 +121,11 @@ isBase64Char c = isAscii c && (isAlphaNum c || c == '+' || c == '/')
 ordA :: Int
 ordA = ord 'A'
 
-orda_26 :: Int
-orda_26 = ord 'a' - 26
+i71 :: Int
+i71 = ord 'a' - 26
 
 ord0 :: Int
 ord0 = ord '0'
 
-mord0_52 :: Int
-mord0_52 = 52 - ord0
+i4 :: Int
+i4 = 52 - ord0

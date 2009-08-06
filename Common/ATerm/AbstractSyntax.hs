@@ -43,7 +43,7 @@ data IntMap =
   | Readonly !(Array Int ShATerm)
 
 empty :: IntMap
-empty = Updateable $ IntMap.empty
+empty = Updateable IntMap.empty
 
 insert :: Int -> ShATerm -> IntMap -> IntMap
 insert i s t = case t of
@@ -79,7 +79,7 @@ emptyATermTable :: ATermTable
 emptyATermTable = ATT IntMap.empty Map.empty empty (-1) IntMap.empty
 
 newATermTable :: IO ATermTable
-newATermTable = return $ emptyATermTable
+newATermTable = return emptyATermTable
 
 addATermNoFullSharing :: ShATerm -> ATermTable -> (ATermTable, Int)
 addATermNoFullSharing t (ATT h a_iDFM i_aDFM i1 dM) = let j = i1 + 1 in

@@ -67,7 +67,7 @@ brackets p = text "[" <> p <> text "]"
 
 -- Horizontal composition @<>@
 (<>) :: SDoc -> SDoc -> SDoc -- ^Beside
-p <> q = Beside p q
+(<>) = Beside
 
 -- Displaying @SDoc@ values.
 

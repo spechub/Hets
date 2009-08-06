@@ -61,14 +61,13 @@ fromShATerm' i att = case getATerm' i att of
                (attN, t) -> (setATerm' i t attN, t)
 
 fromShATermError :: String -> ShATerm -> a
-fromShATermError t u = error $ "Cannot convert ShATerm to "
-                       ++ t ++ ": !" ++ show u
+fromShATermError t u =
+  error $ "Cannot convert ShATerm to " ++ t ++ ": !" ++ show u
 
 -- some instances -----------------------------------------------
 instance ShATermConvertible Bool where
-    toShATermAux att b = return $ case b of
-                       True  -> addATerm (ShAAppl "T" [] []) att
-                       False -> addATerm (ShAAppl "F" [] []) att
+    toShATermAux att b = return
+      $ addATerm (ShAAppl (if b then "T" else "F") [] []) att
     fromShATermAux ix att0 = case getShATerm ix att0 of
             ShAAppl "T" [] _ -> (att0, True)
             ShAAppl "F" [] _ -> (att0, False)
@@ -81,7 +80,7 @@ instance ShATermConvertible Integer where
             u -> fromShATermError "Prelude.Integer" u
 
 instance ShATermConvertible Int where
-    toShATermAux att x = toShATermAux att (toInteger x)
+    toShATermAux att = toShATermAux att . toInteger
     fromShATermAux ix att0 = case getShATerm ix att0 of
             ShAInt x _ -> (att0, integer2Int x)
             u -> fromShATermError "Prelude.Int" u

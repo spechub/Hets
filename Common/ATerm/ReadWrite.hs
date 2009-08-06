@@ -163,9 +163,9 @@ isIntHead c = isDigit c || c == '-'
 
 --- From (shared) ATerms to strings via simple documents with associated length
 
-data Doc_len = Doc_len SDoc Int
+data DocLen = DocLen SDoc Int
 
-data Write_struct = WS (AbbrevTable Doc_len) Doc_len
+data WriteStruct = WS (AbbrevTable DocLen) DocLen
 
 writeATerm :: ATermTable -> String
 writeATerm = render . writeATermSDoc
@@ -182,19 +182,19 @@ writeSharedATerm = render . writeSharedATermSDoc
 writeSharedATermSDoc' :: Bool -> ATermTable -> SDoc
 writeSharedATermSDoc' b at =
     case writeTAF b (toReadonlyATT at) emptyATab of
-    WS _ (Doc_len doc _) -> (if b then text "!" else empty) <> doc
+    WS _ (DocLen doc _) -> (if b then text "!" else empty) <> doc
 
 --shared (if input is True)
 
-writeTAF :: Bool -> ATermTable -> AbbrevTable Doc_len -> Write_struct
+writeTAF :: Bool -> ATermTable -> AbbrevTable DocLen -> WriteStruct
 writeTAF b at tbl = let i = getTopIndex at in
     case lookupATab i tbl of
     Just s -> if b then WS tbl s else writeTAF' b at tbl
     Nothing  -> case writeTAF' b at tbl of
-        WS tbl' d_len@(Doc_len _ len) ->
+        WS tbl' d_len@(DocLen _ len) ->
             WS (insertATab len i (abbrevD $ sizeATab tbl') tbl') d_len
 
-writeTAF' :: Bool -> ATermTable -> AbbrevTable Doc_len -> Write_struct
+writeTAF' :: Bool -> ATermTable -> AbbrevTable DocLen -> WriteStruct
 writeTAF' b at tbl = case getATerm at of
     ShAAppl c ts anns -> case writeTAFs b at ts tbl of
         WS tbl' kids -> case writeTAFs b at anns tbl' of
@@ -208,49 +208,49 @@ writeTAF' b at tbl = case getATerm at of
         WS tbl' kidsAnn -> WS tbl' $ dlConcat (integerDoc i)
                            $ parenthesiseAnnS kidsAnn
 
-dlConcat :: Doc_len -> Doc_len -> Doc_len
-dlConcat s1@(Doc_len sf1 sl1) s2@(Doc_len sf2 sl2)
+dlConcat :: DocLen -> DocLen -> DocLen
+dlConcat s1@(DocLen sf1 sl1) s2@(DocLen sf2 sl2)
     | sl1 == 0 = s2
     | sl2 == 0 = s1
-    | otherwise = Doc_len (sf1 <> sf2) $ sl1 + sl2
+    | otherwise = DocLen (sf1 <> sf2) $ sl1 + sl2
 
-dlConcat_comma :: Doc_len -> Doc_len -> Doc_len
-dlConcat_comma (Doc_len sf1 sl1) (Doc_len sf2 sl2) =
-    Doc_len (sf1 <> comma <> sf2) $ sl1 + sl2 + 1
+dlConcatComma :: DocLen -> DocLen -> DocLen
+dlConcatComma (DocLen sf1 sl1) (DocLen sf2 sl2) =
+    DocLen (sf1 <> comma <> sf2) $ sl1 + sl2 + 1
 
 -- produce comma seperated output from aterm indices
-writeTAFs :: Bool -> ATermTable -> [Int] -> AbbrevTable Doc_len -> Write_struct
+writeTAFs :: Bool -> ATermTable -> [Int] -> AbbrevTable DocLen -> WriteStruct
 writeTAFs b at inds tbl = case inds of
-    [] -> WS tbl $ Doc_len empty 0
+    [] -> WS tbl $ DocLen empty 0
     i : is -> case writeTAF b (getATermByIndex1 i at) tbl of
               ws@(WS t1 s1) -> if null is then ws
                 else case writeTAFs b at is t1 of
-                       WS t2 s2 -> WS t2 $ dlConcat_comma s1 s2
+                       WS t2 s2 -> WS t2 $ dlConcatComma s1 s2
 
-doc_len :: String -> Doc_len
-doc_len s = Doc_len (text s) $ length s
+docLen :: String -> DocLen
+docLen s = DocLen (text s) $ length s
 
-integerDoc :: Integer -> Doc_len
-integerDoc = doc_len . show
+integerDoc :: Integer -> DocLen
+integerDoc = docLen . show
 
-writeATermAuxS :: String -> Doc_len -> Doc_len
-writeATermAuxS s = dlConcat (doc_len s) . parenthesiseS
+writeATermAuxS :: String -> DocLen -> DocLen
+writeATermAuxS s = dlConcat (docLen s) . parenthesiseS
 
 -- list brackets must not be omitted
-bracketS :: Doc_len -> Doc_len
-bracketS         (Doc_len d dl)
-    | dl == 0 = doc_len "[]"
-    | otherwise = Doc_len (brackets d) $ dl + 2
+bracketS :: DocLen -> DocLen
+bracketS         (DocLen d dl)
+    | dl == 0 = docLen "[]"
+    | otherwise = DocLen (brackets d) $ dl + 2
 
-parenthesiseS :: Doc_len -> Doc_len
-parenthesiseS    s@(Doc_len d dl)
+parenthesiseS :: DocLen -> DocLen
+parenthesiseS    s@(DocLen d dl)
     | dl == 0 = s
-    | otherwise = Doc_len (parens d) $ dl + 2
+    | otherwise = DocLen (parens d) $ dl + 2
 
-parenthesiseAnnS :: Doc_len -> Doc_len
-parenthesiseAnnS s@(Doc_len d dl)
+parenthesiseAnnS :: DocLen -> DocLen
+parenthesiseAnnS s@(DocLen d dl)
     | dl == 0 = s
-    | otherwise = Doc_len (braces d) $ dl + 2
+    | otherwise = DocLen (braces d) $ dl + 2
 
 {- | This abbreviation table maps abbreviation ints to aterm indices for
      reading and aterm indices to abbreviation docs during writing. -}
@@ -295,8 +295,8 @@ readInteger s = case s of
 
 --- Base 64 encoding ----------------------------------------------------------
 
-abbrevD :: Int -> Doc_len
-abbrevD i = doc_len $ abbrev i
+abbrevD :: Int -> DocLen
+abbrevD = docLen . abbrev
 
 abbrev :: Int -> String
 abbrev i = '#' : mkAbbrev i
@@ -310,5 +310,5 @@ mkAbbrevAux x str =
          (d, m) -> mkAbbrevAux d $ toBase64Char m : str
   else str
 
-deAbbrev :: [Char] -> Int
+deAbbrev :: String -> Int
 deAbbrev = let f m c = 64 * m + toBase64Int c in foldl f 0
