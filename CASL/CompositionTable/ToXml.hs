@@ -48,9 +48,9 @@ table_prolog =
     , "<!DOCTYPE table PUBLIC " ++ shows publicId " "
       ++ shows systemURI ">" ]
 
--- This function renders a Table-instance into a Doc-instance (pretty printing)
+-- this function renders a Table as xml string
 table_document :: Table -> String
-table_document t = unlines table_prolog ++ ppElement (table2Elem t)
+table_document t = unlines $ table_prolog ++ lines (ppElement $ table2Elem t)
 
 table2Elem :: Table -> Element
 table2Elem (Table as a b (Reflectiontable _) c) =
@@ -80,9 +80,7 @@ cmpEntryAttrs2Attrs (Cmptabentry_Attrs b1 b2) =
   , toAttrFrStr "argBaserel2" $ baserelBaserel b2 ]
 
 baserel2Elem :: Baserel -> Element
-baserel2Elem b =
-  add_attr (baserel2Attr b)
-  $ unode "baserel" ()
+baserel2Elem b = unode "baserel" $ baserel2Attr b
 
 baserel2Attr :: Baserel -> Attr
 baserel2Attr = toAttrFrStr "baserel" . baserelBaserel
@@ -94,9 +92,7 @@ conTable2Elems ct = case ct of
   _ -> []
 
 conEntry2Elem :: Contabentry -> Element
-conEntry2Elem as =
-  add_attrs (conEntry2Attrs as)
-  $ unode "contabentry" ()
+conEntry2Elem as = unode "contabentry" $ conEntry2Attrs as
 
 conEntry2Attrs :: Contabentry -> [Attr]
 conEntry2Attrs (Contabentry a c) =
@@ -104,13 +100,10 @@ conEntry2Attrs (Contabentry a c) =
   , toAttrFrStr "converseBaseRel" $ baserelBaserel c ]
 
 models2Elem :: Models -> Element
-models2Elem (Models a) =
-  unode "models" $ map model2Elem a
+models2Elem (Models a) = unode "models" $ map model2Elem a
 
 model2Elem :: Model -> Element
-model2Elem as =
-  add_attrs (model2Attrs as)
-  $ unode "model" ()
+model2Elem as = unode "model" $ model2Attrs as
 
 model2Attrs :: Model -> [Attr]
 model2Attrs (Model s1 s2) =
