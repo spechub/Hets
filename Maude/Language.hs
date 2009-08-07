@@ -18,6 +18,9 @@ type MaudeTempParser = CharParser () MaudeTempResult
 type MaudeListParser = CharParser () [MaudeTempResult]
 
 
+ignore :: (Monad m) => m a -> m (Maybe b)
+ignore parser = parser >> return Nothing
+
 nonSpace :: GenParser Char st a -> GenParser Char st a
 nonSpace = (>>) $ notFollowedBy space
 
@@ -45,10 +48,16 @@ maudeDef = Language.emptyDef {
 maude :: Token.TokenParser ()
 maude = Token.makeTokenParser maudeDef
 
+-- Yes, this is how Parsec.Language is _supposed_ to be used...
+identifier :: CharParser () String
 identifier = Token.identifier maude
+reserved :: String -> CharParser () ()
 reserved = Token.reserved maude
+lexeme :: CharParser () a -> CharParser () a
 lexeme = Token.lexeme maude
+whiteSpace :: CharParser () ()
 whiteSpace = Token.whiteSpace maude
+dot :: CharParser () String
 dot = Token.dot maude
 
 {-
@@ -65,12 +74,15 @@ parseMaude = do
     return $ partitionEithers $ catMaybes results
 
 
+anyReserved :: [String] -> CharParser () ()
 anyReserved = choice . map reserved
+something :: CharParser () String
 something = identifier
+statement :: CharParser () [String]
 statement = manyTill something dot
 -- TODO: Figure out how the characters are interpreted by Maude.
+line :: CharParser () String
 line = manyTill anyChar $ lexeme newline
-ignore parser = parser >> return Nothing
 
 
 maudeTop :: MaudeListParser
