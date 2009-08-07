@@ -21,15 +21,14 @@ op getl : forall a : Type . Flag a -> Logical %(op)%
 op mkf : forall a : Type . Logical -> Flag a %(op)%
 op sg : forall a : Type . Flag a
         %[op=
-        ((op mkf : forall a : Type . Logical -> Flag a)
-         forall x, y : a . (var x : a) = (var y : a))
-        as Flag a]%
+        (op mkf : forall a : Type . Logical -> Flag a)
+        forall x, y : a . (var x : a) = (var y : a)]%
 vars
 b : Logical;
 x : Flag a
 forall a : Type; x : Flag a . mkf (getl x) = x
 forall a : Type; b : Logical . getl (mkf b : Flag a) = b
-forall a : Type . sg = ((mkf forall x, y : a . x = y) as Flag a)
+forall a : Type . sg = mkf forall x, y : a . x = y
 forall a : Type . c = (getl (sg : Flag a) as Unit)
 ### Hint 1.6, is type variable 'a'
 ### Hint 5.8, not a kind 'Flag a'

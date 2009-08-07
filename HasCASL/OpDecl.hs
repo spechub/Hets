@@ -42,6 +42,7 @@ import HasCASL.AsUtils
 import HasCASL.MixAna
 import HasCASL.TypeCheck
 import HasCASL.ProgEq
+import HasCASL.Unify
 
 anaAttr :: TypeScheme -> OpAttr -> State Env (Maybe OpAttr)
 anaAttr (TypeScheme tvs ty _) b = case b of
@@ -128,8 +129,14 @@ anaOpItem br oi = do
                putLocalVars vs
                putLocalTypeVars tvs
                case mt of
-                   Just lastTrm -> do
-                       let lamTrm = case (pats, partial) of
+                   Just lastTrm0 -> do
+                       let lastTrm = case lastTrm0 of
+                             TypedTerm lTrm AsType rTy _ ->
+                               case getTypeOf lTrm of
+                                 Just oTy | lesserType e oTy rTy -> lTrm
+                                 _ -> lastTrm0
+                             _ -> lastTrm0
+                           lamTrm = case (pats, partial) of
                              ([], Total) -> lastTrm
                              _ -> LambdaTerm pats partial lastTrm ps
                            ot = QualOp br p newSc [] Infer

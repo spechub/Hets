@@ -41,67 +41,57 @@ op a : s %(op)%
 op a : t %(op)%
 op b : s %(op)%
 op b : t %(op)%
-op c : s
-       %[op= (op __+__ : s * s -> s) ((op a : s), (op b : s)) as s]%
+op c : s %[op= (op __+__ : s * s -> s) ((op a : s), (op b : s))]%
 op d : s
-       %[op= (op __+__ : s * s -> s) ((op a : s), (op a : s)) as s]%
-op e : s * s -> s %[op= (op __+__ : s * s -> s) as s * s -> s]%
-op f : s * s -> s %[op= (op __+__ : s * s -> s) as s * s -> s]%
-op g : s * s %[op= ((op a : s), (op b : s)) as s * s]%
-op h : s
-       %[op= (op __+__ : s * s -> s) ((op a : s), (op b : s)) as s]%
-op i : s
-       %[op= (op __+__ : s * s -> s) ((op a : s), (op b : s)) as s]%
-op i1 : s %[op= (op incr : s -> s) (op a : s) as s]%
-op i2 : s %[op= (op incr : s -> s) (op a : s) as s]%
-op i3 : s %[op= (op incr : s -> s) (op a : s) as s]%
+       %[op= (op __+__ : s * s -> s) ((op a : s), (op a : s)) : s]%
+op e : s * s -> s %[op= (op __+__ : s * s -> s)]%
+op f : s * s -> s %[op= (op __+__ : s * s -> s)]%
+op g : s * s %[op= ((op a : s), (op b : s))]%
+op h : s %[op= (op __+__ : s * s -> s) ((op a : s), (op b : s))]%
+op i : s %[op= (op __+__ : s * s -> s) ((op a : s), (op b : s))]%
+op i1 : s %[op= (op incr : s -> s) (op a : s)]%
+op i2 : s %[op= (op incr : s -> s) (op a : s)]%
+op i3 : s %[op= (op incr : s -> s) (op a : s)]%
 op incr : s -> s %(op)%
 op l1 : s
         %[op=
         (op __<=__<=__ : s * s * s -> s)
-        ((op a : s), (op b : s), (op c : s))
-        as s]%
-op l2 : s * s * s -> s
-        %[op= (op __<=__<=__ : s * s * s -> s) as s * s * s -> s]%
+        ((op a : s), (op b : s), (op c : s))]%
+op l2 : s * s * s -> s %[op= (op __<=__<=__ : s * s * s -> s)]%
 op l3 : s
         %[op=
         (op __<=__<=__ : s * s * s -> s)
-        ((op a : s), (op b : s), (op c : s))
-        as s]%
+        ((op a : s), (op b : s), (op c : s))]%
 op l4 : s
         %[op=
         (op __<=__<=__ : s * s * s -> s)
-        ((op a : s), (op b : s), (op c : s))
-        as s]%
-op l5 : s * s * s
-        %[op= ((op a : s), (op b : s), (op c : s)) as s * s * s]%
+        ((op a : s), (op b : s), (op c : s))]%
+op l5 : s * s * s %[op= ((op a : s), (op b : s), (op c : s))]%
 op x : s %(op)%
 op y : s
        %[op=
        (op __<=__<=__ : s * s * s -> s)
-       ((op a : s), (var x : s), (op a : s))
-       as s]%
+       ((op a : s), (var x : s), (op a : s))]%
 op z : s
        %[op=
-       (op __+__ : s * s -> s) ((op x : s) as s, (op x : s) as t as s) as
-       s]%
-. c = ((op __+__ : s * s -> s) ((op a : s), (op b : s)) as s)
-. d = ((op __+__ : s * s -> s) ((op a : s), (op a : s)) as s)
-. e = ((op __+__ : s * s -> s) as s * s -> s)
-. f = ((op __+__ : s * s -> s) as s * s -> s)
-. g = (((op a : s), (op b : s)) as s * s)
-. h = ((op __+__ : s * s -> s) ((op a : s), (op b : s)) as s)
-. i = ((op __+__ : s * s -> s) ((op a : s), (op b : s)) as s)
-. i1 = (incr (op a : s) as s)
-. i2 = (incr (op a : s) as s)
-. i3 = (incr (op a : s) as s)
-. l1 = (((op a : s) <= (op b : s) <= c) as s)
-. l2 = (__<=__<=__ as s * s * s -> s)
-. l3 = (((op a : s) <= (op b : s) <= c) as s)
-. l4 = (((op a : s) <= (op b : s) <= c) as s)
-. l5 = (((op a : s), (op b : s), c) as s * s * s)
-forall x : s . y = ((a <= (var x : s) <= (op a : s)) as s)
-. z = ((op __+__ : s * s -> s) (x as s, x as t as s) as s)
+       (op __+__ : s * s -> s) ((op x : s) as s, (op x : s) as t as s)]%
+. c = (op __+__ : s * s -> s) ((op a : s), (op b : s))
+. d = ((op __+__ : s * s -> s) ((op a : s), (op a : s)) : s)
+. e = (op __+__ : s * s -> s)
+. f = (op __+__ : s * s -> s)
+. g = ((op a : s), (op b : s))
+. h = (op __+__ : s * s -> s) ((op a : s), (op b : s))
+. i = (op __+__ : s * s -> s) ((op a : s), (op b : s))
+. i1 = incr (op a : s)
+. i2 = incr (op a : s)
+. i3 = incr (op a : s)
+. l1 = (op a : s) <= (op b : s) <= c
+. l2 = __<=__<=__
+. l3 = (op a : s) <= (op b : s) <= c
+. l4 = (op a : s) <= (op b : s) <= c
+. l5 = ((op a : s), (op b : s), c)
+forall x : s . y = a <= (var x : s) <= (op a : s)
+. z = (op __+__ : s * s -> s) (x as s, x as t as s)
 . x in s %(bla_label)%
 . x in t
 ### Hint 7.14,

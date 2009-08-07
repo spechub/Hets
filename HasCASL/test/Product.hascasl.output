@@ -39,8 +39,7 @@ op arc1 : SWArc
            (op SWPoint : Real * Real * Real -> SWPoint)
            ((op 0 : Int), (op 0 : Int), (op 0 : Int)),
            (op SWPoint : Real * Real * Real -> SWPoint)
-           ((op 0 : Int), (op 0 : Int), (op 0 : Int)))
-          as SWArc]%
+           ((op 0 : Int), (op 0 : Int), (op 0 : Int)))]%
 op x : SWPoint -> Real
        %(selector of constructor(s)
        SWPoint : Real * Real * Real -> SWPoint)%
@@ -67,6 +66,5 @@ free type SWArc ::=
           SWArc (Center : SWPoint; Start : SWPoint; End : SWPoint)
                                               %(ga_SWPoint_SWArc)%
 . arc1
-  = (SWArc (SWPoint (0, 0, 0), SWPoint (0, 0, 0), SWPoint (0, 0, 0))
-     as SWArc)
+  = SWArc (SWPoint (0, 0, 0), SWPoint (0, 0, 0), SWPoint (0, 0, 0))
 ### Hint 1.17, redeclared type 'Rat'

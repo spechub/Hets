@@ -7,26 +7,22 @@ type
 bool : Type
 op False : bool %(constructor)%
 op True : bool %(constructor)%
-op a : bool %[op= (op True : bool) as bool]%
+op a : bool %[op= (op True : bool)]%
 op b : bool
        %[op=
-       (let (var x : bool) = (op True : bool);
-            (var y : bool) = (op False : bool);
-            (var z : bool) = (var x : bool)
-        in
-        (op True : bool))
-       as bool]%
-op b : bool -> bool
-       %[op= (\ x : bool .! (var x : bool)) as bool -> bool]%
+       let (var x : bool) = (op True : bool);
+           (var y : bool) = (op False : bool);
+           (var z : bool) = (var x : bool)
+       in
+       (op True : bool)]%
+op b : bool -> bool %[op= \ x : bool .! (var x : bool)]%
 op notA : bool
           %[op=
-          (case (op a : bool) of
-           (op True : bool) -> (op False : bool) |
-           (op False : bool) -> (op True : bool))
-          as bool]%
+          case (op a : bool) of
+          (op True : bool) -> (op False : bool) |
+          (op False : bool) -> (op True : bool)]%
 type bool ::= False | True %(ga_bool)%
-. a = (True as bool)
-. notA = ((case a of True -> False | False -> True) as bool)
-. (op b : bool)
-  = ((let x = True; y = False; z = x in True) as bool)
-. (op b : bool -> bool) = ((\ x : bool .! x) as bool -> bool)
+. a = True
+. notA = case a of True -> False | False -> True
+. (op b : bool) = let x = True; y = False; z = x in True
+. (op b : bool -> bool) = \ x : bool .! x

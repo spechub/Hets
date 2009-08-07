@@ -151,8 +151,8 @@ op tt : forall s : Type . Pred s %(op)%
 op undefined : forall p : Pcpo; c : Cpo . c --> p
                %[op=
                (fun Y : forall p : Pcpo . (p --> p) --> p)
-               ((\ x' : c --> p . (var x' : c --> p)) as (c --> p) --> c --> p)
-               as c --> p]%
+               ((\ x' : c --> p . (var x' : c --> p)) as
+                (c --> p) --> c --> p)]%
 vars
 f : p --> p;
 g : c --> d;
@@ -163,8 +163,8 @@ y1 : d;
 y2 : d
 program def = \ x : s . () %(pe_def)%
 program tt = \ x : s . () %(pe_tt)%
-forall s : Type; t : Type; x : s; y : t . x res y = (x as s)
-forall s : Type; t : Type; x : s; y : t . fst (x, y) = (x as s)
+forall s : Type; t : Type; x : s; y : t . x res y = x
+forall s : Type; t : Type; x : s; y : t . fst (x, y) = x
 program (var snd : s * t ->? t) (x, y) : t = y %(pe_snd)%
 . fst = __res__
 forall s : Type . (\ x : s . eq (x, x)) = tt
@@ -176,8 +176,7 @@ program f <<= g = f <<= g %(pe___<<=__)%
 forall p : Pcpo; f : p --> p . f (Y f) = Y f
 forall p : Pcpo; f : p --> p; x : p . f x = x => Y f <<= x
 forall c : Cpo; p : Pcpo
-. undefined
-  = (Y ((\ x' : c --> p . x') as (c --> p) --> c --> p) as c --> p)
+. undefined = Y ((\ x' : c --> p . x') as (c --> p) --> c --> p)
 free type bool ::= false | true %(ga_bool)%
 ### Warning 4.7, void universe class declaration 'Type'
 ### Hint 6.5, is type variable 's'
