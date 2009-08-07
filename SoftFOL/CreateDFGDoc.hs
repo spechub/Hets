@@ -53,7 +53,7 @@ printTheoryAsSoftFOL :: LIB_NAME -> SIMPLE_ID
          -> Int -- ^ 0 = DFG, 1 = TPTP
          -> Bool
             -- ^ if True a conjecture false is added otherwise
-            -- its a theory without a conjecture.
+            -- its a theory without its own conjectures.
          -> G_theory -> IO (Maybe Doc)
 printTheoryAsSoftFOL ln sn lang checkConsistency
   gth@(G_theory lid (ExtSign sign _) _ thSens _) =

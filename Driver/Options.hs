@@ -313,15 +313,15 @@ plainInTypes =
 aInTypes :: [InType]
 aInTypes = [ ATermIn x | x <- [BAF, NonBAF] ]
 
-data SPFType = ConsistencyCheck | OnlyAxioms
+data SPFType = ConsistencyCheck | ProveTheory
 
 instance Show SPFType where
   show x = case x of
     ConsistencyCheck -> cS
-    OnlyAxioms  -> ""
+    ProveTheory  -> ""
 
 spfTypes :: [SPFType]
-spfTypes = [ConsistencyCheck, OnlyAxioms]
+spfTypes = [ConsistencyCheck, ProveTheory]
 
 -- | 'OutType' describes the type of outputs that we want to generate
 data OutType =

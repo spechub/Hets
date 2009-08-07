@@ -117,7 +117,7 @@ writeSoftFOL :: HetcatsOpts -> FilePath -> G_theory -> LIB_NAME -> SIMPLE_ID
 writeSoftFOL opts f gTh ln i c n msg = do
       let cc = case c of
                  ConsistencyCheck -> True
-                 OnlyAxioms  -> False
+                 ProveTheory  -> False
       mDoc <- printTheoryAsSoftFOL ln i n cc
               $ (if cc then theoremsToAxioms else id) gTh
       maybe (putIfVerbose opts 0 $
