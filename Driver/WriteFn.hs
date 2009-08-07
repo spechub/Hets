@@ -97,17 +97,9 @@ writeLibEnv opts filePrefix lenv ln ot =
 #ifdef HXTFILTER
       OmdocOut -> hetsToOMDoc opts (ln, lenv) f
 #endif
-
       ExperimentalOut ->
           writeVerbFile opts (filePrefix ++ ".xml")
             $ xmlOut $ exportDGraph ln (lookupDGraph ln lenv)
-
-{-
-      ExperimentalOut ->
-          writeVerbFile opts (filePrefix ++ ".lisp")
-            $ printLibrary $ exportDGraph ln (lookupDGraph ln lenv)
--}
-
       GraphOut (Dot showInternalNodeLabels) -> writeVerbFile opts f
         $ dotGraph showInternalNodeLabels dg
       _ -> return ()
