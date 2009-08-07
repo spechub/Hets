@@ -18,25 +18,28 @@ type MaudeTempParser = CharParser () MaudeTempResult
 type MaudeListParser = CharParser () [MaudeTempResult]
 
 
--- specialChars :: String
--- specialChars = "()[]{},"
--- 
--- backquote :: CharParser st a
--- backquote = char "`"
+nonSpace :: GenParser Char st a -> GenParser Char st a
+nonSpace = (>>) $ notFollowedBy space
+
+
+specialChars :: String
+specialChars = "()[]{},"
+
+backquote :: CharParser st Char
+backquote = char '`'
 
 maudeDef :: Language.LanguageDef ()
 maudeDef = Language.emptyDef {
+    -- TODO: Get comments right.
     Language.commentStart    = "***(",
     Language.commentEnd      = ")",
     Language.commentLine     = "---", -- also: "***"
-    -- TODO: Get comments right.
     Language.nestedComments  = True,
-    Language.caseSensitive   = True
-    -- TODO: Get identifiers right.
-    -- Language.identStart      = opStart maudeDef,
-    -- Language.identLetter     = opLetter maudeDef,
-    -- Language.opStart         = anyChar,
-    -- Language.opLetter        = (backquote >> try oneOf specialChars) <|> noneOf specialChars,
+    Language.caseSensitive   = True,
+    Language.identStart      = Token.opStart maudeDef,
+    Language.identLetter     = Token.opLetter maudeDef,
+    Language.opStart         = anyChar,
+    Language.opLetter        = nonSpace $ (backquote >>= (flip option) (oneOf specialChars)) <|> noneOf specialChars
 }
 
 maude :: Token.TokenParser ()
@@ -44,8 +47,6 @@ maude = Token.makeTokenParser maudeDef
 
 identifier = Token.identifier maude
 reserved = Token.reserved maude
-operator = Token.operator maude
-symbol = Token.symbol maude
 lexeme = Token.lexeme maude
 whiteSpace = Token.whiteSpace maude
 dot = Token.dot maude
@@ -65,8 +66,7 @@ parseMaude = do
 
 
 anyReserved = choice . map reserved
--- TODO: This parser is likely to be insufficient.
-something = operator <|> identifier
+something = identifier
 statement = manyTill something dot
 -- TODO: Figure out how the characters are interpreted by Maude.
 line = manyTill anyChar $ lexeme newline
