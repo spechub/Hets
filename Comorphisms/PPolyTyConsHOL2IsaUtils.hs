@@ -435,9 +435,9 @@ let-term. -}
 transTerm :: Env -> Set.Set String -> Bool -> Set.Set String
           -> Set.Set VarDecl -> As.Term -> Result IsaTermCond
 transTerm sign tyToks collectConds toks pVars trm = case trm of
-    QualVar vd@(VarDecl _ t _ _) -> do
+    QualVar vd@(VarDecl v t _ _) -> do
         fTy <- funType t
-        vt <- transTypedVar toks vd
+        let vt = con $ transVar toks v
         return $ if Set.member vd pVars then ITC (makePartialVal fTy) vt None
           else ITC fTy vt None
     QualOp _ (PolyId opId _ _) ts@(TypeScheme targs ty _) is _ _ -> do
