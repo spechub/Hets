@@ -53,8 +53,6 @@ import System.Directory ( removeFile, getTemporaryDirectory, doesFileExist
 import System.FilePath (takeFileName, takeDirectory)
 import System.IO (hFlush, hClose, hPutStr, openTempFile)
 
-import Monad (mapM_)
-
 -- Gtk Utils
 
 -- | Returns a GladeXML Object of a xmlstring.

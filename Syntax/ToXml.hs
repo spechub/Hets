@@ -32,8 +32,6 @@ import Text.XML.Light
 
 import Data.Maybe
 
-import Monad
-
 -- one can add global annos if necessary
 -- | Prints the Library to an xml string
 printLibDefnXml :: LIB_DEFN -> String
@@ -191,7 +189,7 @@ instance XmlAttrList [(String, String)] where
 
 instance XmlAttrList Logic_code where
     mkAtts (Logic_code enc src trg _)
-        = let f n o = liftM ((,) n . toStr) o
+        = let f n o = fmap ((,) n . toStr) o
           in mkAtts $ catMaybes
                  [f "encoding" enc, f "source" src, f "target" trg]
 
@@ -210,7 +208,7 @@ printAnnotations :: Range -> [Annotation] -> [Annotation] -> Maybe Content
 printAnnotations _ [] [] = Nothing
 -- TOCHECK: Annoted-Items have empty range for the moment
 printAnnotations rg lan ran
-    = Just $ withRg rg $ mkPEl "Annotations" 
+    = Just $ withRg rg $ mkPEl "Annotations"
       $ let f n l = (case l of [] -> []
                                _ -> [printPXmlList n l])
         in f "Left" lan ++ f "Right" ran
@@ -231,7 +229,7 @@ withAnno a c@(Elem e) = case printAnnotated a of
 withAnno _ _ = error "withAnno only applies to elements"
 
 withRg :: Range -> Content -> Content
-withRg rg c@(Elem e) = 
+withRg rg c@(Elem e) =
     case rangeToAttribs rg of [] -> c
                               as -> Elem $ add_attrs as e
 withRg _ _ = error "withRg only applies to elements"

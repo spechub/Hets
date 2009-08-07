@@ -15,17 +15,16 @@ where
 
 import Network
 import System.IO
+import Data.List (isInfixOf)
 
 import PGIP.MarkPgip
 import PGIP.XMLstate
 import CMDL.Interface
 import CMDL.DataTypes
-import Data.List
+import CMDL.DataTypesUtils
 import Interfaces.DataTypes
 import Interfaces.Utils
-import CMDL.DataTypesUtils
-import qualified Text.XML.Light.Types as XmlT
-import Text.XML.Light.Output
+import Text.XML.Light as XML
 
 -- | Generates the XML packet that contains information about the interface
 genHandShake :: CMDL_PgipState -> CMDL_PgipState
@@ -106,17 +105,17 @@ genHandShake pgipData
             : el_changecwd
             : el_systemcmd
             : []
-       xmlrootElem = XmlT.Elem $ XmlT.blank_element {
-         XmlT.elName = genQName "usespgip",
-         XmlT.elAttribs = [XmlT.Attr { XmlT.attrKey = genQName "version",
-                                       XmlT.attrVal = "2.0" } ],
-         XmlT.elContent = [
-            XmlT.Elem $ XmlT.Element {
-                    XmlT.elName    = genQName "acceptedpgipelems",
-                    XmlT.elAttribs = [],
-                    XmlT.elContent = pgip_elems,
-                    XmlT.elLine    = Nothing } ],
-         XmlT.elLine = Nothing }
+       xmlrootElem = Elem $ blank_element {
+         elName = genQName "usespgip",
+         elAttribs = [Attr { attrKey = genQName "version",
+                                       attrVal = "2.0" } ],
+         elContent = [
+            Elem $ XML.Element {
+                    elName    = genQName "acceptedpgipelems",
+                    elAttribs = [],
+                    elContent = pgip_elems,
+                    elLine    = Nothing } ],
+         elLine = Nothing }
    in case useXML pgipData of
        True -> addToContent pgipData xmlrootElem
        False -> pgipData
@@ -149,19 +148,19 @@ communicationStep pgD st =
                                             pgD {
                                               refSeqNb = refseqNb }
                    appendFile "/tmp/razvan2.txt" ("OUT1:: ::"++
-                                          (outputMsg $ output nwSt)++"\n\n") 
+                                          (outputMsg $ output nwSt)++"\n\n")
                    appendFile "/tmp/razvan2.txt" ("OUT2:: ::"++
                                           (warningMsg $ output nwSt)++"\n\n")
                    appendFile "/tmp/razvan2.txt" ("OUT3:: ::"++
                                           (errorMsg $ output nwSt)++"\n\n")
-                   case useXML pgD of 
+                   case useXML pgD of
                     True -> do
-                             let nwPgipSt = addToMsg (showContent $ xmlContent nwPgD) 
+                             let nwPgipSt = addToMsg (showContent $ xmlContent nwPgD)
                                                []  nwPgD {
                                                     seqNb = (seqNb nwPgD)+1 }
                              hPutStrLn (hout pgD) $ theMsg nwPgipSt
                              hFlush $ hout pgD
-                             let refNb = case refseqNb of 
+                             let refNb = case refseqNb of
                                           Just rNb -> " refseq=\""++rNb++"\" "
                                           Nothing -> " "
                                  mSg = "<pgip tag=\"Hets\" class=\"pg\" id=\""++
@@ -329,6 +328,7 @@ processCmds cmds state pgipState
                                               quietOutput = True }
      XML_StopQuiet :l -> do
                   -- Quiet not yet implemented !!
+                  -- use proper tmp-files and avoid duplicate code!
                   processCmds l state $ genAnswer
                         "Quiet mode doesn't work properly" [] pgipSt {
                                               quietOutput = False }
@@ -424,7 +424,7 @@ processCmds cmds state pgipState
                   processCmds l emptyCMDL_State (genAnswer "File closed" []
                                                        pgipSt)
      (XML_ParseScript str) : _ -> do
-                 processCmds []  state $ addToContent pgipSt (addPgipMarkUp str) 
+                 processCmds [] state $ addToContent pgipSt (addPgipMarkUp str)
      (XML_LoadFile str) : l -> do
                   appendFile "/tmp/razvan.txt" ("Output : "++(theMsg pgipSt)
                                                           ++ "\n")
