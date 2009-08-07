@@ -40,8 +40,6 @@ endif
 HXTFILTERVERSION = $(shell $(HCPKG) field hxt-filter version)
 ifneq ($(findstring 8., $(HXTFILTERVERSION)),)
 HXTFILTER_PACKAGE = -DHXTFILTER
-else
-NOMATHSERVER = -DNOMATHSERVER
 endif
 
 UNIVERSION = $(shell $(HCPKG) field uni-uDrawGraph version)
