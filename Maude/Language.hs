@@ -1,5 +1,5 @@
 module Maude.Language (
-    parseMaudeFromFile
+    parseMaudeICantThinkOfAnyName
 ) where
 
 
@@ -7,8 +7,9 @@ import Text.ParserCombinators.Parsec
 import qualified Text.ParserCombinators.Parsec.Token as Token
 import qualified Text.ParserCombinators.Parsec.Language as Language
 
--- import Data.Set (Set)
--- import qualified Data.Set as Set
+import Data.Set (Set)
+import qualified Data.Set as Set
+import qualified Data.Foldable as Fold
 
 import Data.Maybe (catMaybes)
 import Data.Either (partitionEithers)
@@ -16,12 +17,19 @@ import Data.Either (partitionEithers)
 
 --- The types we use for our parsers
 
-type MaudeResult = ([String], [String])
-type MaudeParser = CharParser () MaudeResult
-type MaudeTempResult = Maybe (Either String String)
-type MaudeTempParser = CharParser () MaudeTempResult
-type MaudeListParser = CharParser () [MaudeTempResult]
-
+type Parsed = Either ParseError
+type Symbol = String
+-- Result of a single component
+type TempResult = Maybe (Either FilePath Symbol)
+type TempParser = CharParser () TempResult
+type TempListParser = CharParser () [TempResult]
+-- Result of a single module
+type ModResult = (Set FilePath, Set Symbol)
+type ModParser = CharParser () ModResult
+-- Result during module tree recursion
+type RecResult = (Set FilePath, Set FilePath, Set Symbol)
+-- Result for a module tree
+type MaudeResult = Set Symbol
 
 --- General parser combinators
 
@@ -58,7 +66,7 @@ maudeDef = Language.emptyDef {
     Language.identStart      = Token.opStart maudeDef,
     Language.identLetter     = Token.opLetter maudeDef,
     Language.opStart         = anyChar,
-    Language.opLetter        = nonSpace $ (backquote >>= (flip option) (oneOf specialChars)) <|> noneOf specialChars
+    Language.opLetter        = nonSpace $ (backquote >>= flip option (oneOf specialChars)) <|> noneOf specialChars
 }
 
 maude :: Token.TokenParser ()
@@ -103,13 +111,13 @@ line = manyTill anyChar $ lexeme newline
 --- Parsers for Maude source code and components
 
 -- | Parse Maude source code
-maudeTop :: MaudeListParser
+maudeTop :: TempListParser
 maudeTop = let components = [systemCmd, otherCmd, debuggerCmd, modul, theory, view]
     in whiteSpace >> many1 (choice components)
 
 
 -- | Parse a system command
-systemCmd :: MaudeTempParser
+systemCmd :: TempParser
 systemCmd = load <|> other where
     load = do
         loadSym
@@ -120,18 +128,18 @@ systemCmd = load <|> other where
     otherSym = anyReserved ["quit", "eof", "popd", "pwd", "cd", "push", "ls"]
 
 -- | Parse a command
-otherCmd :: MaudeTempParser
+otherCmd :: TempParser
 otherCmd = let symbol = anyReserved ["select", "parse", "debug", "reduce", "rewrite", "frewrite", "erewrite", "match", "xmatch", "search", "continue", "loop", "trace", "print", "break", "show", "do", "set"]
     in ignore $ symbol >> statement
 
 -- | Parse a debugger command.
-debuggerCmd :: MaudeTempParser
+debuggerCmd :: TempParser
 debuggerCmd = let symbol = anyReserved ["resume", "abort", "step", "where"]
     in ignore $ symbol >> statement
 
 
 -- | Parse a Maude module
-modul :: MaudeTempParser
+modul :: TempParser
 modul = let
         modul' start stop = do
             reserved start
@@ -143,7 +151,7 @@ modul = let
     <|> modul' "mod"  "endm"
 
 -- | Parse a Maude theory
-theory :: MaudeTempParser
+theory :: TempParser
 theory = let
         theory' start stop = do
             reserved start
@@ -155,7 +163,7 @@ theory = let
     <|> theory' "th"  "endth"
 
 -- | Parse a Maude view
-view :: MaudeTempParser
+view :: TempParser
 view = do
     reserved "view"
     name <- identifier
@@ -165,30 +173,45 @@ view = do
 
 --- Parsers for Maude source files
 
-{-
-    We construct a tuple of lists of String, the first list containing FilePaths and the second containing symbols.
-    TODO: Recursively parse the files for the extracted paths and add all their symbols to our list.
-    TODO: Make sure the result list doesn't contain duplicates
-    TODO: Make sure we don't parse files twice (mutual recursion)
-    TODO: Replace String with the right data types
--}
+-- TODO: Replace String with the right data types
 
 -- | Parse Maude source code and clean up the results
-parseMaude :: MaudeParser
+parseMaude :: ModParser
 parseMaude = do
     results <- maudeTop
-    return $ partitionEithers $ catMaybes results
+    let (files, symbols) = partitionEithers $ catMaybes results
+    return (Set.fromList files, Set.fromList symbols)
 
-parseMaudeFiles :: [FilePath] -> [String] -> IO (Either ParseError MaudeResult)
-parseMaudeFiles paths symbols = case paths of
-    [] -> return $ Right ([], symbols)
-    this:rest -> do
-        result <- parseFromFile parseMaude this
-        case result of
-            Left _ -> return result
-            Right (fs, ss) -> parseMaudeFiles (rest ++ fs) (symbols ++ ss)
+-- | Parse a single Maude source file
+parseMaudeFromFile :: FilePath -> IO (Parsed ModResult)
+parseMaudeFromFile = parseFromFile parseMaude
 
--- | Parse a Maude source file
-parseMaudeFromFile :: FilePath -> IO (Either ParseError MaudeResult)
-parseMaudeFromFile path = parseMaudeFiles [path] []
-    -- parseFromFile parseMaude
+-- | Parse a single Maude source file and insert the results into the given Sets
+parseMaudeFile :: FilePath -> Parsed RecResult -> IO (Parsed RecResult)
+parseMaudeFile path result = case result of
+    Left _ -> return result
+    Right (todo, done, syms) -> if Set.member path done
+        then return result
+        else do
+            parsed <- parseMaudeFromFile path
+            case parsed of
+                Left err -> return $ Left err
+                Right (files, symbols) -> let
+                        todo' = Set.union todo files
+                        done' = Set.insert path done
+                        syms' = Set.union syms symbols
+                    in return $ Right (todo', done', syms')
+
+-- | Parse a set of Maude source files recursively
+parseMaudeFold :: Set FilePath -> Set FilePath -> Set String -> IO (Parsed MaudeResult)
+parseMaudeFold todo done syms = do
+    let initial = Right (Set.empty, done, syms)
+    parsed <- Fold.foldrM parseMaudeFile initial todo
+    case parsed of
+        Left err -> return $ Left err
+        Right (todo', done', syms') -> if Set.null todo'
+            then return $ Right syms'
+            else parseMaudeFold todo' done' syms'
+
+parseMaudeICantThinkOfAnyName :: FilePath -> IO (Parsed MaudeResult)
+parseMaudeICantThinkOfAnyName path = parseMaudeFold (Set.singleton path) Set.empty Set.empty
