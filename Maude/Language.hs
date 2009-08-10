@@ -124,14 +124,15 @@ maudeTop = let components = [systemCmd, otherCmd, debuggerCmd, modul, theory, vi
 
 -- | Parse a system command
 systemCmd :: TempParser
-systemCmd = load <|> other where
-    load = do
-        loadSym
-        name <- line
-        return $ Just $ Left name
-    loadSym = anyReserved ["in", "load"]
-    other = ignore $ otherSym >> line
-    otherSym = anyReserved ["quit", "eof", "popd", "pwd", "cd", "push", "ls"]
+systemCmd = let
+        otherSym = anyReserved ["quit", "eof", "popd", "pwd", "cd", "push", "ls"]
+        other = ignore $ otherSym >> line
+        loadSym = anyReserved ["in", "load"]
+        load = do
+            loadSym
+            name <- line
+            return $ Just $ Left name
+    in load <|> other
 
 -- | Parse a command
 otherCmd :: TempParser
