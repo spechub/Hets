@@ -3,9 +3,13 @@ module Maude.Language (
 ) where
 
 
-import Text.ParserCombinators.Parsec
+import Text.ParserCombinators.Parsec (ParseError, CharParser)
+import Text.ParserCombinators.Parsec.Prim ((<|>))
+import Text.ParserCombinators.Parsec.Char
+import Text.ParserCombinators.Parsec.Combinator
 import qualified Text.ParserCombinators.Parsec.Token as Token
 import qualified Text.ParserCombinators.Parsec.Language as Language
+import qualified Text.ParserCombinators.Parsec as Parsec (parseFromFile)
 
 import Data.Set (Set)
 import qualified Data.Set as Set
@@ -189,7 +193,7 @@ parseMaude = do
 
 -- | Parse a single Maude source file
 parseMaudeFromFile :: FilePath -> IO (Parsed ModResult)
-parseMaudeFromFile = parseFromFile parseMaude
+parseMaudeFromFile = Parsec.parseFromFile parseMaude
 
 -- | Parse a single Maude source file and insert the results into the given Sets
 parseMaudeFile :: FilePath -> Parsed RecResult -> IO (Parsed RecResult)
