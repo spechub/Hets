@@ -17,6 +17,8 @@ import Data.Either (partitionEithers)
 
 --- The types we use for our parsers
 
+-- TODO: Replace String with the right data types
+
 type Parsed = Either ParseError
 type Symbol = String
 -- Result of a single component
@@ -177,8 +179,6 @@ view = do
 
 --- Parsers for Maude source files
 
--- TODO: Replace String with the right data types
-
 -- | Parse Maude source code and clean up the results
 parseMaude :: ModParser
 parseMaude = do
@@ -217,5 +217,6 @@ parseMaudeFold todo done syms = do
             then return $ Right syms'
             else parseMaudeFold todo' done' syms'
 
+-- TODO: Give this function a real name
 parseMaudeICantThinkOfAnyName :: FilePath -> IO (Parsed MaudeResult)
 parseMaudeICantThinkOfAnyName path = parseMaudeFold (Set.singleton path) Set.empty Set.empty
