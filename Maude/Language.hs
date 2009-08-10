@@ -134,10 +134,7 @@ systemCmd = let
         otherSym = anyReserved ["quit", "eof", "popd", "pwd", "cd", "push", "ls"]
         other = ignore $ otherSym >> line
         loadSym = anyReserved ["in", "load"]
-        load = do
-            loadSym
-            name <- line
-            return $ Just $ Left name
+        load = do loadSym; name <- line; return $ Just $ Left name
     in load <|> other
 
 -- | Parse a command
