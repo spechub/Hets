@@ -180,7 +180,7 @@ injTrans =  let
                  ++ map GenVarDecl [v1, v2, v3])
      $ mkLogTerm implId nr
         (mkLogTerm andId nr (mkSubtTerm aType bType v1 v2)
-          $ mkSubtTerm bType cType v2 v3)
+          $ mkLogTerm andId nr (mkSubtTerm bType cType v2 v3)
+            $ mkInjEq aType bType v1 v2)
        $ mkLogTerm eqvId nr (mkInjEq aType cType v1 v3)
-         $ mkLogTerm andId nr (mkInjEq aType bType v1 v2)
            $ mkInjEq bType cType v2 v3
