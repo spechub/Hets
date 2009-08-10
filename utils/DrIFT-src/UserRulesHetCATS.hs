@@ -17,10 +17,13 @@ import Pretty
 import List
 
 hetcatsrules :: [RuleDef]
-hetcatsrules = [ ("ShATermConvertible", shatermfn False, "", "", Nothing)
-               , ("ShATermLG", shatermfn True, "", "", Nothing)
-               , ("Typeable", typeablefn, "", "", Nothing)
-               , ("GetRange", getrangefn, "", "", Nothing)]
+hetcatsrules =
+  [ ("ShATermConvertible", shatermfn False, "", "", Nothing)
+  , ("ShATermLG", shatermfn True, "", "", Nothing)
+  , ("Binary", binaryfn False, "", "", Nothing)
+  , ("BinaryLG", binaryfn True, "", "", Nothing)
+  , ("Typeable", typeablefn, "", "", Nothing)
+  , ("GetRange", getrangefn, "", "", Nothing)]
 
 -- useful helper things
 addPrime :: Doc -> Doc
@@ -52,6 +55,38 @@ makeGetPosFn b =
                  else (f, text "_")
        in ppCons' b vs <+> rArrow <+> if r then text "nullRange" else p
 -- end of GetRange derivation
+
+binaryfn :: Bool -> Data -> Doc
+binaryfn forLG dat =
+  let dn = strippedName dat
+      u = text "u"
+  in instanceSkeleton (if forLG then "BinaryLG" else "Binary")
+         [] dat
+     $$ text ("  put" ++ (if forLG then "LG" else "")
+              ++ " xv = case xv of")
+     $$ block (zipWith (makePutBinary forLG) (body dat) [0 .. ])
+     $$ text ("  get" ++ (if forLG then "LG lg" else "")
+                 ++ " = getWord8 >>= \\ tag -> case tag of")
+     $$ block (zipWith (makeGetBinary forLG) (body dat) [0 .. ] ++
+               [u <+> rArrow <+> text "fromBinaryError"
+                <+> doubleQuotes (text dn) <+> u])
+
+makePutBinary :: Bool -> Body -> Int -> Doc
+makePutBinary forLG b i =
+    let vs = varNames $ types b
+        putComp v = text ("put" ++ if forLG then "LG" else "") <+> v
+        hl = text ("putWord8 " ++ show i)
+    in ppCons' b vs <+> rArrow <+> (if null vs then hl else text "do")
+          $$ if null vs then empty else block $ hl : map putComp vs
+
+makeGetBinary :: Bool -> Body -> Int -> Doc
+makeGetBinary forLG b i =
+    let vs = varNames $ types b
+        getComp v =
+          v <+> lArrow <+> text ("get" ++ if forLG then "LG lg" else "")
+        rl = text ("return" ++ if null vs then "" else " $") <+> ppCons' b vs
+    in text (show i) <+> rArrow <+> (if null vs then rl else text "do")
+       $$ if null vs then empty else block $ map getComp vs ++ [rl]
 
 -- begin of ShATermConvertible derivation
 shatermfn :: Bool -> Data -> Doc
@@ -119,7 +154,8 @@ typeablefn dat =
         dn = strippedName dat
         ntext str = str ++ if null vs then "" else show $ length vs
         tcname = text $ "_tc_" ++ dn  ++ "Tc"
-    in tcname <+> equals <+> text "mkTyCon"
+    in tcname <+> text ":: TyCon"
+       $$ tcname <+> equals <+> text "mkTyCon"
            <+> doubleQuotes (text $ name dat)
        $$ text ("instance " ++ ntext "Typeable" ++ " " ++ dn ++ " where")
        $$ block [ text (ntext "typeOf" ++ " _ = mkTyConApp")
