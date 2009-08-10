@@ -22,4 +22,3 @@ module Common.ATerm.Lib
 
 import Common.ATerm.AbstractSyntax
 import Common.ATerm.Conversion
-import Common.ATerm.ConvInstances ()

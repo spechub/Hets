@@ -14,9 +14,8 @@ instead of Data.Graph.Inductive.Internal.FiniteMap
 -}
 
 module Common.Lib.Graph
-  ( Gr
+  ( Gr(..)
   , GrContext(..)
-  , convertToMap
   , unsafeConstructGr
   , decomposeGr
   , getPaths

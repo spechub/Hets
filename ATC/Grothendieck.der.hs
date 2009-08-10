@@ -27,6 +27,7 @@ import qualified Common.Lib.SizedList as SizedList
 import Common.Result
 
 import ATC.GlobalAnnotations ()
+import ATC.Graph ()
 import Logic.Prover
 import Data.Typeable
 import Data.List
