@@ -221,6 +221,6 @@ parseAndFold (todo, done, syms) = do
             then return $ Right syms'
             else parseAndFold (todo', done', syms')
 
--- TODO: Give this function a real name
+-- | Parse a Maude source tree
 parse :: FilePath -> IO (Parsed MaudeResult)
 parse path = parseAndFold (Set.singleton path, Set.empty, Set.empty)
