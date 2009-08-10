@@ -212,16 +212,16 @@ parseFromFileAndInsert path result = case result of
                     in return $ Right (todo', done', syms')
 
 -- | Parse a set of Maude source files recursively
-parseAndFold :: Set FilePath -> Set FilePath -> Set String -> IO (Parsed MaudeResult)
-parseAndFold todo done syms = do
+parseAndFold :: RecResult -> IO (Parsed MaudeResult)
+parseAndFold (todo, done, syms) = do
     let initial = Right (Set.empty, done, syms)
     parsed <- Fold.foldrM parseFromFileAndInsert initial todo
     case parsed of
         Left err -> return $ Left err
         Right (todo', done', syms') -> if Set.null todo'
             then return $ Right syms'
-            else parseAndFold todo' done' syms'
+            else parseAndFold (todo', done', syms')
 
 -- TODO: Give this function a real name
 parse :: FilePath -> IO (Parsed MaudeResult)
-parse path = parseAndFold (Set.singleton path) Set.empty Set.empty
+parse path = parseAndFold (Set.singleton path, Set.empty, Set.empty)
