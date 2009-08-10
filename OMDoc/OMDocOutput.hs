@@ -536,10 +536,10 @@ createXmlThmLinkOM lnum lenv ln (edge@(from, to, ll)) uniqueNames {-names-} coll
         (OMDoc.TheoryInclusion fromuri touri mommorph (Just iid) cons, helpimports)
   where
   consConv::Static.DevGraph.Conservativity->OMDoc.Conservativity
-  consConv Static.DevGraph.None = OMDoc.CNone
   consConv Static.DevGraph.Mono = OMDoc.CMonomorphism
   consConv Static.DevGraph.Cons = OMDoc.CConservative
   consConv Static.DevGraph.Def = OMDoc.CDefinitional
+  consConv _ = OMDoc.CNone
 
 
 {- |
