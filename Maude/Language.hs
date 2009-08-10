@@ -33,7 +33,8 @@ type RecResult = (Set FilePath, Set FilePath, Set Symbol)
 -- Result for a module tree
 type MaudeResult = Set Symbol
 
---- General parser combinators
+
+--- Generic parser combinators
 
 -- | Run the given |parser| but return unit
 void :: (Monad m) => m a -> m ()
@@ -46,9 +47,9 @@ ignore parser = parser >> return Nothing
 
 --- A few helpers we need for Parsec.Language
 
--- | Run a parser after ensuring we aren't looking at whitespace
+-- | Run the given |parser| after ensuring we aren't looking at whitespace
 nonSpace :: CharParser () a -> CharParser () a
-nonSpace = (>>) $ notFollowedBy space
+nonSpace parser = notFollowedBy space >> parser
 
 -- | Match a literal backquote character
 backquote :: CharParser () Char
@@ -61,36 +62,35 @@ specialChars = "()[]{},"
 
 --- The Parsec.Language definition of Maude
 
-maudeDef :: Language.LanguageDef ()
-maudeDef = Language.emptyDef {
+maudeLanguageDef :: Language.LanguageDef ()
+maudeLanguageDef = Language.emptyDef {
     -- TODO: Get comments right.
     Language.commentStart    = "***(",
     Language.commentEnd      = ")",
     Language.commentLine     = "---", -- also: "***"
     Language.nestedComments  = True,
     Language.caseSensitive   = True,
-    Language.identStart      = Token.opStart maudeDef,
-    Language.identLetter     = Token.opLetter maudeDef,
+    Language.identStart      = Token.opStart maudeLanguageDef,
+    Language.identLetter     = Token.opLetter maudeLanguageDef,
     Language.opStart         = anyChar,
     Language.opLetter        = nonSpace $ (backquote >>= flip option (oneOf specialChars)) <|> noneOf specialChars
 }
 
-maude :: Token.TokenParser ()
-maude = Token.makeTokenParser maudeDef
+maudeTokenParser :: Token.TokenParser ()
+maudeTokenParser = Token.makeTokenParser maudeLanguageDef
 
-
---- Yes, this is how Parsec.Language is _supposed_ to be used...
+-- Yes, this is how Parsec.Language is _supposed_ to be used...
 
 identifier :: CharParser () String
-identifier = Token.identifier maude
+identifier = Token.identifier maudeTokenParser
 reserved :: String -> CharParser () ()
-reserved = Token.reserved maude
+reserved = Token.reserved maudeTokenParser
 lexeme :: CharParser () a -> CharParser () a
-lexeme = Token.lexeme maude
+lexeme = Token.lexeme maudeTokenParser
 whiteSpace :: CharParser () ()
-whiteSpace = Token.whiteSpace maude
+whiteSpace = Token.whiteSpace maudeTokenParser
 dot :: CharParser () String
-dot = Token.dot maude
+dot = Token.dot maudeTokenParser
 
 
 --- A few more helpers for parsing Maude
@@ -117,8 +117,8 @@ line = manyTill anyChar $ eof <|> void (lexeme newline)
 --- Parsers for Maude source code and components
 
 -- | Parse Maude source code
-maudeTop :: TempListParser
-maudeTop = let components = [systemCmd, otherCmd, debuggerCmd, modul, theory, view]
+toplevel :: TempListParser
+toplevel = let components = [systemCmd, otherCmd, debuggerCmd, modul, theory, view]
     in whiteSpace >> many1 (choice components)
 
 
@@ -183,7 +183,7 @@ view = do
 -- | Parse Maude source code and clean up the results
 parseMaude :: ModParser
 parseMaude = do
-    results <- maudeTop
+    results <- toplevel
     let (files, symbols) = partitionEithers $ catMaybes results
     return (Set.fromList files, Set.fromList symbols)
 
