@@ -1,4 +1,6 @@
 module Maude.Language (
+    maudeParser,
+    parseFromFile,
     parse
 ) where
 
