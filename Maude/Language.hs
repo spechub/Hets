@@ -1,5 +1,5 @@
 module Maude.Language (
-    parseMaudeICantThinkOfAnyName
+    parse
 ) where
 
 
@@ -185,24 +185,24 @@ view = do
 --- Parsers for Maude source files
 
 -- | Parse Maude source code and clean up the results
-parseMaude :: ModParser
-parseMaude = do
+maudeParser :: ModParser
+maudeParser = do
     results <- toplevel
     let (files, symbols) = partitionEithers $ catMaybes results
     return (Set.fromList files, Set.fromList symbols)
 
 -- | Parse a single Maude source file
-parseMaudeFromFile :: FilePath -> IO (Parsed ModResult)
-parseMaudeFromFile = Parsec.parseFromFile parseMaude
+parseFromFile :: FilePath -> IO (Parsed ModResult)
+parseFromFile = Parsec.parseFromFile maudeParser
 
 -- | Parse a single Maude source file and insert the results into the given Sets
-parseMaudeFile :: FilePath -> Parsed RecResult -> IO (Parsed RecResult)
-parseMaudeFile path result = case result of
+parseFromFileAndInsert :: FilePath -> Parsed RecResult -> IO (Parsed RecResult)
+parseFromFileAndInsert path result = case result of
     Left _ -> return result
     Right (todo, done, syms) -> if Set.member path done
         then return result
         else do
-            parsed <- parseMaudeFromFile path
+            parsed <- parseFromFile path
             case parsed of
                 Left err -> return $ Left err
                 Right (files, symbols) -> let
@@ -212,16 +212,16 @@ parseMaudeFile path result = case result of
                     in return $ Right (todo', done', syms')
 
 -- | Parse a set of Maude source files recursively
-parseMaudeFold :: Set FilePath -> Set FilePath -> Set String -> IO (Parsed MaudeResult)
-parseMaudeFold todo done syms = do
+parseAndFold :: Set FilePath -> Set FilePath -> Set String -> IO (Parsed MaudeResult)
+parseAndFold todo done syms = do
     let initial = Right (Set.empty, done, syms)
-    parsed <- Fold.foldrM parseMaudeFile initial todo
+    parsed <- Fold.foldrM parseFromFileAndInsert initial todo
     case parsed of
         Left err -> return $ Left err
         Right (todo', done', syms') -> if Set.null todo'
             then return $ Right syms'
-            else parseMaudeFold todo' done' syms'
+            else parseAndFold todo' done' syms'
 
 -- TODO: Give this function a real name
-parseMaudeICantThinkOfAnyName :: FilePath -> IO (Parsed MaudeResult)
-parseMaudeICantThinkOfAnyName path = parseMaudeFold (Set.singleton path) Set.empty Set.empty
+parse :: FilePath -> IO (Parsed MaudeResult)
+parse path = parseAndFold (Set.singleton path) Set.empty Set.empty
