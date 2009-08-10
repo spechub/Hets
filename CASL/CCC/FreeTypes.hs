@@ -32,9 +32,9 @@ import Common.Utils(nubOrd)
 import Data.List(delete, deleteFirstsBy, intersect)
 import Data.Maybe(Maybe(..), fromJust, isJust, isNothing)
 
-import qualified Data.Map as Map(Map.lookup)
-import qualified Data.Set as Set(Set.member, Set.filter, Set.toList)
-import qualified Common.Lib.Rel as Rel(Rel.toList)
+import qualified Data.Map as Map
+import qualified Data.Set as Set
+import qualified Common.Lib.Rel as Rel
 
 inhabited :: [SORT] -> [Constraint] -> [SORT]
 inhabited sorts constrs = iterateInhabited sorts

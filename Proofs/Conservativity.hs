@@ -29,7 +29,7 @@ import Static.GTheory(gEnsuresAmalgamability)
 
 import Data.Graph.Inductive.Graph(LEdge)
 import Data.List(nubBy, nub)
-import qualified Data.Map as Map(Map.adjust)
+import qualified Data.Map as Map
 
 ------------------------------------------------
 -- Conservativity rules

@@ -20,11 +20,12 @@ import CASL.Sign(OpMap, Sign(sortRel), toOP_TYPE, toOpType)
 import Common.AS_Annotation(Named, SenAttr(senAttr))
 import Common.Id(Token(tokStr), Id(Id), Range, GetRange(..), nullRange)
 import Common.Utils(nubOrd)
-import qualified Common.Lib.Rel as Rel(Rel.Rel(..))
+import qualified Common.Lib.Rel as Rel
 
+import Control.Monad(liftM)
 import Data.List(isPrefixOf)
-import qualified Data.Map as Map(Map.lookup)
-import qualified Data.Set as Set(Set.insert, Set.toList)
+import qualified Data.Map as Map
+import qualified Data.Set as Set
 
 -- | the sorted term is always ignored
 term :: TERM f -> TERM f
@@ -302,8 +303,7 @@ infoSubsort sts f =
 
 -- | extract the leading symbol from a formula
 leadingSym :: FORMULA f -> Maybe (Either OP_SYMB PRED_SYMB)
-leadingSym f =
-  leadingTermPredication f >>= (\ tp -> return $ extractLeadingSymb tp)
+leadingSym = liftM extractLeadingSymb . leadingTermPredication
 
 
 -- | extract the leading symbol with the range from a formula

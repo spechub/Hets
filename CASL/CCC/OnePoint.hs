@@ -20,9 +20,8 @@ import CASL.AS_Basic_CASL
 import CASL.Morphism(Morphism, imageOfMorphism)
 import CASL.Sign(Sign(sortSet, predMap), supersortsOf, toPredType)
 
-import qualified Data.Map as Map(Map.lookup)
-import qualified Data.Set as Set(Set.member, Set.isSubsetOf, Set.insert,
-                                 Set.toList)
+import qualified Data.Map as Map
+import qualified Data.Set as Set
 
 {-
 We use a three valued logic to evaluate a formula in a one-point expansion
