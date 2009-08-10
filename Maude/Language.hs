@@ -33,7 +33,11 @@ type MaudeResult = Set Symbol
 
 --- General parser combinators
 
--- | Run the given |parser| but return Nothing 
+-- | Run the given |parser| but return unit
+void :: (Monad m) => m a -> m ()
+void parser = parser >> return ()
+
+-- | Run the given |parser| but return Nothing
 ignore :: (Monad m) => m a -> m (Maybe b)
 ignore parser = parser >> return Nothing
 
@@ -105,7 +109,7 @@ statement = manyTill something dot
 -- | Match the rest of a line
 -- TODO: Figure out how the characters are interpreted by Maude.
 line :: CharParser () String
-line = manyTill anyChar $ lexeme newline
+line = manyTill anyChar $ eof <|> void (lexeme newline)
 
 
 --- Parsers for Maude source code and components
