@@ -59,48 +59,52 @@ makeGetPosFn b =
 binaryfn :: Bool -> Data -> Doc
 binaryfn forLG dat =
   let dn = strippedName dat
+      cs = body dat
+      moreCs = length cs > 1
       u = text "u"
   in instanceSkeleton (if forLG then "BinaryLG" else "Binary")
          [] dat
-     $$ text ("  put" ++ (if forLG then "LG" else "")
-              ++ " xv = case xv of")
-     $$ block (zipWith (makePutBinary forLG) (body dat) [0 .. ])
-     $$ text ("  get" ++ (if forLG then "LG lg" else "")
-                 ++ " = getWord8 >>= \\ tag -> case tag of")
-     $$ block (zipWith (makeGetBinary forLG) (body dat) [0 .. ] ++
-               [u <+> rArrow <+> text "fromBinaryError"
-                <+> doubleQuotes (text dn) <+> u])
+     $$ text ("  put" ++ (if forLG then "LG" else "") ++ " xv = case xv of")
+     $$ block (zipWith (makePutBinary forLG moreCs) cs [0 .. ])
+     $$ text ("  get" ++ (if forLG then "LG lg" else "") ++ " = "
+              ++ if moreCs then "getWord8 >>= \\ tag -> case tag of" else "do")
+     $$ block (zipWith (makeGetBinary forLG moreCs) cs [0 .. ] ++
+       if moreCs then [u <+> rArrow <+> text "fromBinaryError"
+         <+> doubleQuotes (text dn) <+> u] else [])
 
-makePutBinary :: Bool -> Body -> Int -> Doc
-makePutBinary forLG b i =
+makePutBinary :: Bool -> Bool -> Body -> Int -> Doc
+makePutBinary forLG moreCs b i =
     let vs = varNames $ types b
         putComp v = text ("put" ++ if forLG then "LG" else "") <+> v
-        hl = text ("putWord8 " ++ show i)
+        hl = if moreCs then text ("putWord8 " ++ show i) else
+                 if null vs then text "return ()" else empty
     in ppCons' b vs <+> rArrow <+> (if null vs then hl else text "do")
-          $$ if null vs then empty else block $ hl : map putComp vs
+          $$ if null vs then empty else nest 2 . vcat $ hl : map putComp vs
 
-makeGetBinary :: Bool -> Body -> Int -> Doc
-makeGetBinary forLG b i =
+makeGetBinary :: Bool -> Bool -> Body -> Int -> Doc
+makeGetBinary forLG moreCs b i =
     let vs = varNames $ types b
         getComp v =
           v <+> lArrow <+> text ("get" ++ if forLG then "LG lg" else "")
         rl = text ("return" ++ if null vs then "" else " $") <+> ppCons' b vs
-    in text (show i) <+> rArrow <+> (if null vs then rl else text "do")
-       $$ if null vs then empty else block $ map getComp vs ++ [rl]
+    in (if moreCs then text (show i) <+> rArrow else empty)
+       <+> (if null vs then rl else if moreCs then text "do" else empty)
+       $$ if null vs then empty else nest 2 . vcat $ map getComp vs ++ [rl]
 
 -- begin of ShATermConvertible derivation
 shatermfn :: Bool -> Data -> Doc
 shatermfn forLG dat =
   let dn = strippedName dat
+      cs = body dat
       u = text "u"
   in instanceSkeleton (if forLG then "ShATermLG" else "ShATermConvertible")
          [] dat
      $$ text ("  toShATerm" ++ (if forLG then "LG" else "Aux")
               ++ " att0 xv = case xv of")
-     $$ block (map (makeToShATerm forLG) $ body dat)
+     $$ block (map (makeToShATerm forLG) cs)
      $$ text ("  fromShATerm" ++ (if forLG then "LG lg" else "Aux")
                  ++ " ix att0 = case getShATerm ix att0 of")
-     $$ block (map (makeFromShATerm forLG) (body dat) ++
+     $$ block (map (makeFromShATerm forLG) cs ++
                [u <+> rArrow <+> text "fromShATermError"
                 <+> doubleQuotes (text dn) <+> u])
 
@@ -124,8 +128,9 @@ makeToShATerm forLG b =
             att (length ts)
     in ppCons' b vs <+> rArrow <+>
        (if null vs then if tooLong then empty else rl else text "do")
-       $$ if null vs then if tooLong then block [rl] else empty
-          else block $ zipWith (childToShATerm forLG) vs [0 :: Int ..] ++ [rl]
+       $$ if null vs then if tooLong then nest 2 rl else empty
+          else nest 2 . vcat $ zipWith (childToShATerm forLG) vs [0 :: Int ..]
+                   ++ [rl]
 
 childToShATerm :: Bool -> Doc -> Int -> Doc
 childToShATerm forLG v i = pair (att $ i + 1) (addPrime v) <+> lArrow
@@ -145,7 +150,7 @@ makeFromShATerm forLG b =
        bracketList vs <+> text "_" <+> rArrow
        <+> (if null vs then rl else empty)
        $$ if null vs then empty else
-          block $ zipWith childFromShATerm vs [0 :: Int ..] ++ [rl]
+          nest 2 . vcat $ zipWith childFromShATerm vs [0 :: Int ..] ++ [rl]
 -- end of ATermConvertible derivation
 
 typeablefn :: Data -> Doc
@@ -153,7 +158,7 @@ typeablefn dat =
     let vs = vars dat
         dn = strippedName dat
         ntext str = str ++ if null vs then "" else show $ length vs
-        tcname = text $ "_tc_" ++ dn  ++ "Tc"
+        tcname = text $ "_tc" ++ dn  ++ "Tc"
     in tcname <+> text ":: TyCon"
        $$ tcname <+> equals <+> text "mkTyCon"
            <+> doubleQuotes (text $ name dat)
