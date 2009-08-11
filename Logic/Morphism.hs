@@ -30,6 +30,7 @@ import qualified Data.Set as Set
 import Data.Maybe
 import Data.Typeable
 import Common.ATerm.Lib -- (ShATermConvertible)
+import Common.BinaryInstances
 import Common.DocUtils
 import Common.AS_Annotation
 
@@ -162,7 +163,7 @@ class Comorphism cid
 
 data SpanDomain cid = SpanDomain cid deriving (Eq, Show)
 
-data SublogicsPair a b = SublogicsPair a b deriving (Eq, Ord, Show)
+data SublogicsPair a b = SublogicsPair a b deriving (Eq, Ord, Show, Typeable)
 
 instance Language cid => Language (SpanDomain cid) where
   language_name (SpanDomain cid) = "SpanDomain" ++ language_name cid
@@ -178,20 +179,8 @@ instance Morphism cid
          => Syntax (SpanDomain cid) () () ()
 -- default is ok
 
-newtype S2 s = S2 { sentence2 :: s } deriving (Eq, Ord, Show, Typeable)
-
-instance Pretty s => Pretty (S2 s) where
-    pretty (S2 x) = pretty x
-
-instance ShATermConvertible s => ShATermConvertible (S2 s) where
-   toShATermAux att (S2 s) = do
-       (att1, i) <- toShATerm' att s
-       return $ addATerm (ShAAppl "S2" [i] []) att1
-   fromShATermAux ix att =
-      case getShATerm ix att of
-       ShAAppl "S2" [i] _ -> case fromShATerm' i att of
-                               (att1, i1) -> (att1, S2 i1)
-       u -> fromShATermError "S2" u
+newtype S2 s = S2 { sentence2 :: s }
+  deriving (Eq, Ord, Show, Typeable, Binary, ShATermConvertible, Pretty)
 
 instance Morphism cid
             lid1 sublogics1 basic_spec1 sentence1 symb_items1 symb_map_items1
@@ -277,26 +266,30 @@ instance (MinSublogic sublogics1 sign1, SemiLatticeWithTop sublogics2)
          => ProjectSublogicM (SublogicsPair sublogics1 sublogics2) sign1 where
       projectSublogicM _ x = Just x
 
-instance (Typeable sublogics1, Typeable sublogics2)
-        => Typeable (SublogicsPair sublogics1 sublogics2) where
-    typeOf _ = mkTyConApp (mkTyCon "Logic.Morphism.SpanDomain") []
+instance (Binary a,Binary b) => Binary (SublogicsPair a b) where
+  put (SublogicsPair a b) = do
+      put a
+      put b
+  get = do
+      a <- get
+      b <- get
+      return $ SublogicsPair a b
 
-instance (ShATermConvertible sublogics1, ShATermConvertible sublogics2)
-          => ShATermConvertible (SublogicsPair sublogics1 sublogics2) where
-  toShATermAux att0 (SublogicsPair sub1 sub2) = do
-         (att1,i1) <- toShATerm' att0 sub1
-         (att2,i2) <- toShATerm' att1 sub2
-         return $ addATerm (ShAAppl "SublogicsPair" [i1,i2] []) att2
-  fromShATermAux ix att =
-         case getShATerm ix att of
-           ShAAppl "SublogicsPair" [i1, i2] _ ->
-              case fromShATerm' i2 att of
-                (att2, i2') -> case fromShATerm' i1 att2 of
-                                 (att1, i1') -> (att1, SublogicsPair i1' i2')
-           u -> fromShATermError "SublogicsPair" u
+instance (ShATermConvertible a, ShATermConvertible b)
+    => ShATermConvertible (SublogicsPair a b) where
+  toShATermAux att0 (SublogicsPair a b) = do
+      (att1, a') <- toShATerm' att0 a
+      (att2, b') <- toShATerm' att1 b
+      return $ addATerm (ShAAppl "SublogicsPair" [a',b'] []) att2
+  fromShATermAux ix att0 = case getShATerm ix att0 of
+    ShAAppl "SublogicsPair" [a,b] _ ->
+      case fromShATerm' a att0 of { (att1, a') ->
+      case fromShATerm' b att1 of { (att2, b') ->
+      (att2, SublogicsPair a' b') }}
+    u -> fromShATermError "SublogicsPair" u
 
 instance (SublogicName sublogics1, SublogicName sublogics2)
-         => SublogicName (SublogicsPair sublogics1 sublogics2) where
+    => SublogicName (SublogicsPair sublogics1 sublogics2) where
        sublogicName (SublogicsPair sub1 sub2) =
            let s1 = sublogicName sub1
                s2 = sublogicName sub2

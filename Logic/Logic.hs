@@ -128,6 +128,7 @@ import Common.Lib.Graph
 import Common.LibName
 import Common.Result
 import Common.Taxonomy
+import Common.BinaryInstances
 
 import qualified Data.Set as Set
 import qualified Data.Map as Map
@@ -140,8 +141,8 @@ data Stability = Stable | Testing | Unstable | Experimental
      deriving (Eq, Show)
 
 -- | shortcut for class constraints
-class ShATermConvertible a => Convertible a
-instance ShATermConvertible a => Convertible a
+class (Binary a, ShATermConvertible a) => Convertible a
+instance (Binary a, ShATermConvertible a) => Convertible a
 
 -- | shortcut for class constraints
 class (Pretty a, Convertible a) => PrintTypeConv a

@@ -21,6 +21,7 @@ import Common.DocUtils
 import Common.ProofTree
 
 import ATC.ProofTree ()
+import ATC.AS ()
 
 import Logic.Logic
 
