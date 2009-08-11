@@ -20,6 +20,7 @@ import Syntax.AS_Library
 import Syntax.Print_AS_Structured()
 
 import Common.Id
+import Common.Item
 import Common.LibName
 import Common.Result ()
 import Common.AS_Annotation
@@ -66,11 +67,16 @@ class XmlAttrList a where
   -- | Everything what can be output to an attribute list
   mkAtts :: a -> [Attr]
 
+
 -- for empty lists use this datatype
 data Empty = Empty
 instance XmlAttrList Empty where mkAtts _ = []
 instance XmlListPrintable Empty where toLst _ = []
 
+
+-- the trivial instance!
+instance XmlPrintable Content where
+    toXml = id
 
 instance XmlPrintable LIB_DEFN where
     toXml (Lib_defn n il rg an) =
@@ -154,15 +160,12 @@ instance PrintableAsXmlAttr Token where toStr = tokStr
 
 instance PrintableAsXmlAttr Logic_name where toStr (Logic_name t _) = toStr t
 
---instance PrintableAsXmlAttr SIMPLE_ID where toStr = toString
-
-
 instance XmlPrintable a => XmlListPrintable [a] where
     toLst = map toXml
 
 instance XmlListPrintable G_basic_spec where
-    toLst (G_basic_spec lid bs) = map printBasicSpecItem
-                                  $ toAnnotedStrings lid bs
+    toLst (G_basic_spec lid bs) = 
+        let (Item _ _ l) = toItem lid bs in map (fromAnno . fmap itemToXml) l
 
 instance XmlListPrintable GENERICITY where
     toLst (Genericity (Params pl) (Imported il) _)
@@ -193,14 +196,6 @@ instance XmlAttrList Logic_code where
           in mkAtts $ catMaybes
                  [f "encoding" enc, f "source" src, f "target" trg]
 
-printBasicSpecItem :: Annoted String -> Content
--- TOCHECK: As the range for these items stems from the Annotation
---          they have empty range for the moment (see printAnnotations)
-printBasicSpecItem as@(Annoted s rg _ _)
-    = withRg rg $ withAnno as
-      $ mkPEl (if notImplied as then "Theoryitem" else "Assertion") [toText s]
-
-
 printAnnotated :: Annoted a -> Maybe Content
 printAnnotated (Annoted _ rg la ra) = printAnnotations rg la ra
 
@@ -220,6 +215,8 @@ printXmlList n attrs l = mkEl n attrs $ toLst l
 printPXmlList :: XmlPrintable a => String -> [a] -> Content
 printPXmlList n l = printXmlList n [] l
 
+fromAnno :: XmlPrintable a => Annoted a -> Content
+fromAnno a = withAnno a $ toXml $ item a
 
 withAnno :: Annoted a -> Content -> Content
 withAnno a c@(Elem e) = case printAnnotated a of
@@ -238,7 +235,8 @@ posString :: Pos -> String
 posString (SourcePos _ l c) = show l ++ ":" ++ show c
 
 rangeToAttribs :: Range -> [Attr]
-rangeToAttribs (Range []) = [Attr (unqual "range") "empty"]
+--rangeToAttribs (Range []) = [Attr (unqual "range") "empty"]
+rangeToAttribs (Range []) = []
 rangeToAttribs (Range l) =
     zipWith (\x y -> Attr (unqual x) (posString y))
              ["rangestart", "rangeend"] [head l, last l]
@@ -257,7 +255,7 @@ mkText s = Text $ CData CDataText s Nothing
 
 -- make element
 mkEl :: XmlAttrList a => String -> a -> [Content] -> Content
-mkEl n a c = Elem $ node (unqual n) (mkAtts a, c)
+mkEl n a c = Elem $ unode n (mkAtts a, c)
 
 -- make final element (no children)
 mkFEl :: XmlAttrList a => String -> a -> Content
@@ -266,4 +264,11 @@ mkFEl n a = mkEl n a []
 -- make pure element (no attributes)
 mkPEl :: String -> [Content] -> Content
 mkPEl n c = mkEl n Empty c
+
+------------------------------------------------------------------------------
+
+itemToXml :: Item -> Content
+itemToXml (Item it rg l) =
+    withRg rg $ mkEl (show it) Empty $ map (fromAnno . fmap itemToXml) l
+
 
