@@ -33,7 +33,7 @@ import OWL.StaticAnalysis
 import Common.DocUtils
 import Common.Doc
 import Common.Result
-import Common.Lib.State
+import Common.Lib.State (execState)
 
 import Control.Monad
 import Data.Maybe
