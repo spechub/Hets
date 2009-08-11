@@ -15,10 +15,9 @@ import qualified Text.ParserCombinators.Parsec as Parsec (parseFromFile)
 
 import Data.Set (Set)
 import qualified Data.Set as Set
-import qualified Data.Foldable as Fold
 
-import Data.Maybe (catMaybes)
-import Data.Either (partitionEithers)
+import Data.List (nub)
+import Data.Maybe (fromJust, isNothing)
 
 
 --- The types we use for our parsers
@@ -30,14 +29,12 @@ type Symbol = String
 -- Result of a single component
 type TempResult = Maybe (Either FilePath Symbol)
 type TempParser = CharParser () TempResult
-type TempListParser = CharParser () [TempResult]
--- Result of a single module
-type ModResult = (Set FilePath, Set Symbol)
-type ModParser = CharParser () ModResult
+type TempListResult = [TempResult]
+type TempListParser = CharParser () TempListResult
 -- Result during module tree recursion
-type RecResult = (Set FilePath, Set FilePath, Set Symbol)
+type RecResult = (Set FilePath, MaudeResult)
 -- Result for a module tree
-type MaudeResult = Set Symbol
+type MaudeResult = [Symbol]
 
 
 --- Generic parser combinators
@@ -187,43 +184,40 @@ view = do
 --- Parsers for Maude source files
 
 -- | Parse Maude source code and clean up the results
-maudeParser :: ModParser
-maudeParser = do
-    results <- toplevel
-    let (files, symbols) = partitionEithers $ catMaybes results
-    return (Set.fromList files, Set.fromList symbols)
+maudeParser :: TempListParser
+maudeParser = toplevel
 
 -- | Parse a single Maude source file
-parseFromFile :: FilePath -> IO (Parsed ModResult)
+parseFromFile :: FilePath -> IO (Parsed TempListResult)
 parseFromFile = Parsec.parseFromFile maudeParser
 
--- | Parse a single Maude source file and insert the results into the given Sets
-parseFromFileAndInsert :: FilePath -> Parsed RecResult -> IO (Parsed RecResult)
-parseFromFileAndInsert path result = case result of
-    Left _ -> return result
-    Right (todo, done, syms) -> if Set.member path done
-        then return result
-        else do
-            parsed <- parseFromFile path
-            case parsed of
-                Left err -> return $ Left err
-                Right (files, symbols) -> let
-                        todo' = Set.union todo files
-                        done' = Set.insert path done
-                        syms' = Set.union syms symbols
-                    in return $ Right (todo', done', syms')
+-- | Parse a Maude source file and the collect the results
+parseFileAndCollect :: FilePath -> RecResult -> IO (Parsed RecResult)
+parseFileAndCollect path results@(done, syms)
+    | Set.member path done = return $ Right results
+    | otherwise = do
+        parsed <- parseFromFile path
+        case parsed of
+            Left  err -> return $ Left err
+            Right res -> collectParseResults res ((Set.insert path done), syms)
 
--- | Parse a set of Maude source files recursively
-parseAndFold :: RecResult -> IO (Parsed MaudeResult)
-parseAndFold (todo, done, syms) = do
-    let initial = Right (Set.empty, done, syms)
-    parsed <- Fold.foldrM parseFromFileAndInsert initial todo
-    case parsed of
-        Left err -> return $ Left err
-        Right (todo', done', syms') -> if Set.null todo'
-            then return $ Right syms'
-            else parseAndFold (todo', done', syms')
+-- | Collect the results from parsing a Maude source file
+collectParseResults :: TempListResult -> RecResult -> IO (Parsed RecResult)
+collectParseResults todo results@(done, syms)
+    | null todo = return $ Right results
+    | isNothing $ head todo = collectParseResults (tail todo) results
+    | otherwise = case fromJust $ head todo of
+        Right symb -> collectParseResults (tail todo) (done, (symb:syms))
+        Left  path -> do
+            parsed <- parseFileAndCollect path results
+            case parsed of
+                Right res -> collectParseResults (tail todo) res
+                Left err  -> return $ Left err
 
 -- | Parse a Maude source tree
 parse :: FilePath -> IO (Parsed MaudeResult)
-parse path = parseAndFold (Set.singleton path, Set.empty, Set.empty)
+parse path = do
+    parsed <- parseFileAndCollect path (Set.empty, [])
+    case parsed of
+        Left  err -> return $ Left err
+        Right res -> return $ Right $ nub $ reverse $ snd res
