@@ -87,28 +87,33 @@ module Logic.Grothendieck
   , mirrorSquare
   ) where
 
-import Logic.Logic
-import Logic.ExtSign
-import Logic.Comorphism
-import Logic.Morphism
 import Logic.Coerce
-import Common.ExtSign
+import Logic.Comorphism
+import Logic.ExtSign
+import Logic.Logic
+import Logic.Modification
+import Logic.Morphism
+
+import Common.ATerm.Lib
+import Common.BinaryInstances
 import Common.Doc
 import Common.DocUtils
-import qualified Data.Map as Map
-import qualified Data.Set as Set
+import Common.ExtSign
+import Common.Id
+import Common.Lexer
 import Common.Result
+import Common.Token
 import Common.Utils
-import Data.Typeable
+
+import Control.Monad (foldM)
 import Data.List (nub)
 import Data.Maybe (catMaybes)
-import Control.Monad (foldM)
-import Logic.Modification
+import Data.Typeable
+import qualified Data.Map as Map
+import qualified Data.Set as Set
+
 import Text.ParserCombinators.Parsec (Parser, try, parse, eof, string, (<|>))
 -- for looking up modifications
-import Common.Token
-import Common.Lexer
-import Common.Id
 
 -- * \"Grothendieck\" versions of the various parts of type class Logic
 
@@ -129,7 +134,8 @@ instance Pretty G_basic_spec where
     pretty (G_basic_spec _ s) = pretty s
 
 -- | index for signatures
-newtype SigId = SigId Int deriving (Typeable, Show, Eq, Ord, Enum)
+newtype SigId = SigId Int
+  deriving (Typeable, Show, Eq, Ord, Enum, ShATermConvertible, Binary)
 
 startSigId :: SigId
 startSigId = SigId 0
@@ -281,7 +287,8 @@ isProperSublogic a@(G_sublogics lid1 l1) b@(G_sublogics lid2 l2) =
     isSubElem (forceCoerceSublogic lid1 lid2 l1) l2 && a /= b
 
 -- | index for morphisms
-newtype MorId = MorId Int deriving (Typeable, Show, Eq, Ord, Enum)
+newtype MorId = MorId Int
+  deriving (Typeable, Show, Eq, Ord, Enum, ShATermConvertible, Binary)
 
 startMorId :: MorId
 startMorId = MorId 0

@@ -1,4 +1,4 @@
-{-# OPTIONS -fno-warn-missing-signatures -XUndecidableInstances #-}
+{-# LANGUAGE UndecidableInstances #-}
 {- |
 Module      :  $Header$
 Description :  manually created ShATermConvertible instances
@@ -77,48 +77,6 @@ fromShATermLG' lg i att = case getATerm' i att of
 instance ShATermConvertible a => ShATermLG a where
   toShATermLG = toShATermAux
   fromShATermLG _ = fromShATermAux
-
-instance ShATermConvertible SigId where
-  toShATermAux = toShATermAux_SigId
-  fromShATermAux = fromShATermAux_SigId
-
-toShATermAux_SigId att0 (SigId a) = do
-        (att1, a') <- toShATerm' att0 a
-        return $ addATerm (ShAAppl "SigId" [a'] []) att1
-fromShATermAux_SigId ix att0 =
-        case getShATerm ix att0 of
-            ShAAppl "SigId" [a] _ ->
-                    case fromShATerm' a att0 of { (att1, a') ->
-                    (att1, SigId a') }
-            u -> fromShATermError "SigId" u
-
-instance ShATermConvertible MorId where
-  toShATermAux = toShATermAux_MorId
-  fromShATermAux = fromShATermAux_MorId
-
-toShATermAux_MorId att0 (MorId a) = do
-        (att1, a') <- toShATerm' att0 a
-        return $ addATerm (ShAAppl "MorId" [a'] []) att1
-fromShATermAux_MorId ix att0 =
-        case getShATerm ix att0 of
-            ShAAppl "MorId" [a] _ ->
-                    case fromShATerm' a att0 of { (att1, a') ->
-                    (att1, MorId a') }
-            u -> fromShATermError "MorId" u
-
-instance ShATermConvertible ThId where
-  toShATermAux = toShATermAux_ThId
-  fromShATermAux = fromShATermAux_ThId
-
-toShATermAux_ThId att0 (ThId a) = do
-        (att1, a') <- toShATerm' att0 a
-        return $ addATerm (ShAAppl "ThId" [a'] []) att1
-fromShATermAux_ThId ix att0 =
-        case getShATerm ix att0 of
-            ShAAppl "ThId" [a] _ ->
-                    case fromShATerm' a att0 of { (att1, a') ->
-                    (att1, ThId a') }
-            u -> fromShATermError "ThId" u
 
 instance ShATermLG G_basic_spec where
   toShATermLG att0 (G_basic_spec lid basic_spec) = do
