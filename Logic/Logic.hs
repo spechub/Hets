@@ -130,6 +130,8 @@ import Common.Result
 import Common.Taxonomy
 import Common.BinaryInstances
 
+import Common.Item
+
 import qualified Data.Set as Set
 import qualified Data.Map as Map
 import Data.Typeable
@@ -226,11 +228,15 @@ class (Language lid, PrintTypeConv basic_spec,
          -- | parser for symbol maps
          parse_symb_map_items :: lid -> Maybe(AParser st symb_map_items)
          toAnnotedStrings :: lid -> basic_spec -> [Annoted String]
+         toItem :: lid -> basic_spec -> Item
          -- default implementations
          parse_basic_spec _ = Nothing
          parse_symb_items _ = Nothing
          parse_symb_map_items _ = Nothing
          toAnnotedStrings _ _ = []
+         toItem l _ = error $ "toItem not yet implemented "
+                      ++ "for language " ++ (show l)
+
 
 {- | Sentences, provers and symbols.
      Provers capture the entailment relation between sets of sentences
