@@ -56,7 +56,7 @@ import qualified Common.AS_Annotation as AS_Anno
 import qualified Propositional.Sign as Sign
 import qualified Propositional.Symbol as Symbol
 import qualified Propositional.Morphism as Morphism
-import Common.Lib.State
+import qualified Common.Lib.State as State
 
 -------------------------------------------------------------------------------
 -- datatyper                                                                 --
@@ -161,23 +161,24 @@ sl_form ps f = sl_fl_form ps $ Tools.flatten f
 
 -- | determines sublogic for flattened formula
 sl_fl_form :: PropSL -> [AS_BASIC.FORMULA] -> PropSL
-sl_fl_form ps f = foldl (sublogics_max) ps $ map (\x -> evalState (ana_form ps x) 0) f
+sl_fl_form ps f = foldl (sublogics_max) ps
+  $ map (\x -> State.evalState (ana_form ps x) 0) f
 
 -- analysis of single "clauses"
-ana_form :: PropSL -> AS_BASIC.FORMULA -> State Int PropSL
+ana_form :: PropSL -> AS_BASIC.FORMULA -> State.State Int PropSL
 ana_form ps f =
     case f of
       AS_BASIC.Conjunction l _   ->
           do
-            st <- get
-            return $ sublogics_max need_PF
-                       (comp_list $ map (\x -> (evalState (ana_form ps x) (st + 1))) l)
+            st <- State.get
+            return $ sublogics_max need_PF $ comp_list $ map
+              (\x -> (State.evalState (ana_form ps x) (st + 1))) l
       AS_BASIC.Implication l m _ ->
           do
-             st <- get
-             let analyze =  sublogics_max need_PF $
-                            sublogics_max ((\x -> evalState (ana_form ps x) (st+1)) l)
-                                          ((\x -> evalState (ana_form ps x) (st+1)) m)
+             st <- State.get
+             let analyze = sublogics_max need_PF $ sublogics_max
+                   ((\x -> State.evalState (ana_form ps x) (st+1)) l)
+                   ((\x -> State.evalState (ana_form ps x) (st+1)) m)
              return $
                     if st < 1
                     then
@@ -194,10 +195,10 @@ ana_form ps f =
                         analyze
       AS_BASIC.Equivalence l m _ ->
            do
-             st <- get
-             return $ sublogics_max need_PF $
-                    sublogics_max ((\x -> evalState (ana_form ps x) (st+1)) l)
-                                      ((\x -> evalState (ana_form ps x) (st+1)) m)
+             st <- State.get
+             return $ sublogics_max need_PF $ sublogics_max
+               ((\x -> State.evalState (ana_form ps x) (st+1)) l)
+               ((\x -> State.evalState (ana_form ps x) (st+1)) m)
       AS_BASIC.Negation l _      ->
           if (isLiteral l)
           then
@@ -205,11 +206,11 @@ ana_form ps f =
                 return ps
           else
               do
-                st <- get
-                return $ (\x -> evalState (ana_form ps x) (st+1)) l
+                st <- State.get
+                return $ (\x -> State.evalState (ana_form ps x) (st+1)) l
       AS_BASIC.Disjunction l _   ->
                     let lprime = concat $ map Tools.flattenDis l in
-                    if (foldl (&&) True $ map isLiteral lprime)
+                    if all isLiteral lprime
                     then
                         do
                           if moreThanNLit lprime 1
@@ -219,17 +220,17 @@ ana_form ps f =
                                  return ps
                     else
                         do
-                          st <- get
-                          return $ sublogics_max need_PF
-                                     (comp_list $ map
-                                      (\x -> evalState (ana_form ps x) (st+1))
-                                      lprime)
+                          st <- State.get
+                          return $ sublogics_max need_PF $ comp_list $ map
+                            (\x -> State.evalState (ana_form ps x) (st+1))
+                                      lprime
       AS_BASIC.True_atom  _      -> do return ps
       AS_BASIC.False_atom _      -> do return ps
       AS_BASIC.Predication _     -> do return ps
 
 moreThanNLit :: [AS_BASIC.FORMULA] -> Int -> Bool
-moreThanNLit form n = (foldl (\y x -> if (x == True) then y + 1 else y) 0 $ map isPosLiteral form) > n
+moreThanNLit form n = foldl (\y x -> if (x == True) then y + 1 else y) 0
+  (map isPosLiteral form) > n
 
 -- determines wheter a Formula is a literal
 isLiteral :: AS_BASIC.FORMULA -> Bool
@@ -359,7 +360,7 @@ prBasicSpec pSL (AS_BASIC.Basic_spec bS) =
 checkHornPos :: AS_BASIC.FORMULA -> AS_BASIC.FORMULA -> Bool
 checkHornPos fc fl =
     case fc of
-      AS_BASIC.Conjunction _ _ -> foldl (&&) True $ map isPosLiteral $ Tools.flatten fc
+      AS_BASIC.Conjunction _ _ -> all isPosLiteral $ Tools.flatten fc
       _                        -> False
     &&
     isPosLiteral fl
