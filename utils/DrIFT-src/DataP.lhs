@@ -32,16 +32,28 @@ needs to be fixed.
 >type Constructor = String
 >----------------------------------------------------------------------------
 >
+>extContext :: Parser [()]
+>extContext = do
+>   symbol "forall"
+>   many1 variable
+>   char '.'
+>   junk
+>   constructorP
+>   many variable
+>   symbol "=>"
+>   return []
+
 >datadecl :: Parser Data
 >datadecl = do
->               symbol "data"
->               con <- opt constraint
->               x <- constructorP
->               xs <- many variable
->               symbol "="
->               b <- (infixdecl +++ conrecdecl) `sepby1` symbol "|"
->               d <- opt deriveP
->               return $D x con xs b d DataStmt
+>    symbol "data"
+>    con <- opt constraint
+>    x <- constructorP
+>    xs <- many variable
+>    symbol "="
+>    opt extContext
+>    b <- (infixdecl +++ conrecdecl) `sepby1` symbol "|"
+>    d <- opt deriveP
+>    return $ D x con xs b d DataStmt
 
 >newtypedecl :: Parser Data
 >newtypedecl = do
@@ -75,7 +87,7 @@ needs to be fixed.
 >       return (x:y)
 >
 
->variable = identifier [ "data","deriving","newtype", "type",
+>variable = identifier [ "data","deriving","newtype", "type", "forall",
 >                       "instance", "class", "module", "import",
 >                       "infixl", "infix","infixr", "default"]
 
