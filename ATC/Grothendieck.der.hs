@@ -79,7 +79,7 @@ instance ShATermConvertible a => ShATermLG a where
   toShATermLG = toShATermAux
   fromShATermLG _ = fromShATermAux
 
--- the same class as ShATermConvertible, but allowing a logic graph as input
+-- the same class as Binary, but allowing a logic graph as input
 class BinaryLG t where
     putLG :: t -> Put
     getLG :: LogicGraph -> Get t
@@ -101,6 +101,18 @@ instance ShATermLG G_basic_spec where
                 (att2, G_basic_spec lid i2') }}}
             u -> fromShATermError "G_basic_spec" u
 
+instance BinaryLG G_basic_spec where
+  putLG xv = case xv of
+    G_basic_spec a b -> do
+      putLG $ language_name a
+      putLG b
+  getLG lg = do
+      a <- getLG lg
+      case atcLogicLookup lg "G_basic_spec" a of
+        Logic lid -> do
+          b <- getLG lg
+          return $ G_basic_spec lid b
+
 instance ShATermLG G_sign where
   toShATermLG att0 (G_sign lid sign si) = do
          (att1,i1) <- toShATermLG' att0 (language_name lid)
@@ -116,6 +128,20 @@ instance ShATermLG G_sign where
                 (att3, G_sign lid i2' i3') }}}}
             u -> fromShATermError "G_sign" u
 
+instance BinaryLG G_sign where
+  putLG xv = case xv of
+    G_sign a b c -> do
+      putLG $ language_name a
+      putLG b
+      putLG c
+  getLG lg = do
+      a <- getLG lg
+      case atcLogicLookup lg "G_sign" a of
+        Logic lid -> do
+          b <- getLG lg
+          c <- getLG lg
+          return $ G_sign lid b c
+
 instance ShATermLG G_symbol where
   toShATermLG att0 (G_symbol lid symbol) = do
          (att1,i1) <- toShATermLG' att0 (language_name lid)
@@ -129,6 +155,18 @@ instance ShATermLG G_symbol where
                 (att2, G_symbol lid i2') }}}
             u -> fromShATermError "G_symbol" u
 
+instance BinaryLG G_symbol where
+  putLG xv = case xv of
+    G_symbol a b -> do
+      putLG $ language_name a
+      putLG b
+  getLG lg = do
+      a <- getLG lg
+      case atcLogicLookup lg "G_symbol" a of
+         Logic lid -> do
+           b <- getLG lg
+           return $ G_symbol lid b
+
 instance ShATermLG G_symb_items_list where
   toShATermLG att0 (G_symb_items_list lid symb_items) = do
          (att1,i1) <- toShATermLG' att0 (language_name lid)
@@ -141,6 +179,18 @@ instance ShATermLG G_symb_items_list where
                 case fromShATermLG' lg i2 att1 of { (att2, i2') ->
                 (att2, G_symb_items_list lid i2') }}}
             u -> fromShATermError "G_symb_items_list" u
+
+instance BinaryLG G_symb_items_list where
+  putLG xv = case xv of
+    G_symb_items_list a b -> do
+      putLG $ language_name a
+      putLG b
+  getLG lg = do
+      a <- getLG lg
+      case atcLogicLookup lg "G_symb_items_list" a of
+         Logic lid -> do
+           b <- getLG lg
+           return $ G_symb_items_list lid b
 
 instance ShATermLG G_symb_map_items_list where
   toShATermLG att0 (G_symb_map_items_list lid symb_map_items) = do
@@ -156,6 +206,18 @@ instance ShATermLG G_symb_map_items_list where
                 (att2, G_symb_map_items_list lid i2') }}}
             u -> fromShATermError "G_symb_map_items_list" u
 
+instance BinaryLG G_symb_map_items_list where
+  putLG xv = case xv of
+    G_symb_map_items_list a b -> do
+      putLG $ language_name a
+      putLG b
+  getLG lg = do
+      a <- getLG lg
+      case atcLogicLookup lg "G_symb_map_items_list" a of
+         Logic lid -> do
+           b <- getLG lg
+           return $ G_symb_map_items_list lid b
+
 instance ShATermLG G_sublogics where
   toShATermLG att0 (G_sublogics lid sublogics) = do
          (att1,i1) <- toShATermLG' att0 (language_name lid)
@@ -168,6 +230,18 @@ instance ShATermLG G_sublogics where
                 case fromShATermLG' lg i2 att1 of { (att2, i2') ->
                 (att2, G_sublogics lid i2') }}}
             u -> fromShATermError "G_sublogics" u
+
+instance BinaryLG G_sublogics where
+  putLG xv = case xv of
+    G_sublogics a b -> do
+      putLG $ language_name a
+      putLG b
+  getLG lg = do
+      a <- getLG lg
+      case atcLogicLookup lg "G_sublogics" a of
+         Logic lid -> do
+           b <- getLG lg
+           return $ G_sublogics lid b
 
 instance ShATermLG G_morphism where
   toShATermLG att0 (G_morphism lid morphism mi) = do
@@ -183,6 +257,20 @@ instance ShATermLG G_morphism where
                 case fromShATermLG' lg i3 att2 of { (att3, i3') ->
                 (att3, G_morphism lid i2' i3') }}}}
             u -> fromShATermError "G_morphism" u
+
+instance BinaryLG G_morphism where
+  putLG xv = case xv of
+    G_morphism a b c -> do
+      putLG $ language_name a
+      putLG b
+      putLG c
+  getLG lg = do
+      a <- getLG lg
+      case atcLogicLookup lg "G_morphism" a of
+        Logic lid -> do
+          b <- getLG lg
+          c <- getLG lg
+          return $ G_morphism lid b c
 
 instance ShATermLG AnyComorphism where
   toShATermLG att0 (Comorphism cid) = do
@@ -215,6 +303,24 @@ instance ShATermLG GMorphism where
                 case fromShATermLG' lg i5 att4 of { (att5, i5') ->
                 (att5, GMorphism cid i2' i3' i4' i5') }}}}}}
             u -> fromShATermError "GMorphism" u
+
+instance BinaryLG GMorphism where
+  putLG xv = case xv of
+    GMorphism a b c d e -> do
+      putLG $ language_name a
+      putLG b
+      putLG c
+      putLG d
+      putLG e
+  getLG lg = do
+      a <- getLG lg
+      case propagateErrors $ lookupComorphism a lg of
+        Comorphism cid -> do
+          b <- getLG lg
+          c <- getLG lg
+          d <- getLG lg
+          e <- getLG lg
+          return $ GMorphism cid b c d e
 
 instance ShATermLG AnyLogic where
   toShATermLG att0 (Logic lid) = do
