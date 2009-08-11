@@ -196,9 +196,14 @@ mapAnM f al =
     do il <- mapM (f . item) al
        return $ zipWith (flip replaceAnnoted) al il
 
+instance Functor Annoted where
+    fmap f (Annoted x o l r) = Annoted (f x) o l r
+
 -- | replace the 'item'
 replaceAnnoted :: b -> Annoted a -> Annoted b
 replaceAnnoted x (Annoted _ o l r) = Annoted x o l r
+-- one could use this fmap variant instead (less efficient)
+-- replaceAnnoted x = fmap (const x)
 
 -- | add further following annotations
 appendAnno :: Annoted a -> [Annotation] -> Annoted a
