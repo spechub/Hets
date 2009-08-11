@@ -161,7 +161,8 @@ Haskell_files = $(addsuffix .hs, \
 
 ## rule for ATC generation
 Haskell/ATC_Haskell.der.hs: $(Haskell_files) $(GENRULES)
-	$(GENRULECALL) -i Haskell.Binary -o $@ $(Haskell_files)
+	$(GENRULECALL) -i Haskell.Binary -i Haskell.BaseATC \
+            -o $@ $(Haskell_files)
 
 hs_der_files += $(hs_clean_files)
 
