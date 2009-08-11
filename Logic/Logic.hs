@@ -140,14 +140,15 @@ data Stability = Stable | Testing | Unstable | Experimental
      deriving (Eq, Show)
 
 -- | shortcut for class constraints
-class (Show a, Pretty a, Typeable a, ShATermConvertible a)
-    => PrintTypeConv a
+class ShATermConvertible a => Convertible a
+instance ShATermConvertible a => Convertible a
+
+-- | shortcut for class constraints
+class (Pretty a, Convertible a) => PrintTypeConv a
+instance (Pretty a, Convertible a) => PrintTypeConv a
 
 -- | shortcut for class constraints with equality
 class (Eq a, PrintTypeConv a) => EqPrintTypeConv a
-
-instance (Show a, Pretty a, Typeable a,
-          ShATermConvertible a) => PrintTypeConv a
 instance (Eq a, PrintTypeConv a) => EqPrintTypeConv a
 
 -- | maps from a to a
@@ -512,11 +513,10 @@ class (StaticAnalysis lid
        ProjectSublogic sublogics sign,
        ProjectSublogic sublogics morphism,
        ProjectSublogicM sublogics symbol,
-       Typeable sublogics,
-       ShATermConvertible sublogics,
+       Convertible sublogics,
        SublogicName sublogics,
-       Eq proof_tree, Show proof_tree, ShATermConvertible proof_tree,
-       Ord proof_tree, Typeable proof_tree)
+       Ord proof_tree, Show proof_tree,
+       Convertible proof_tree)
     => Logic lid sublogics
         basic_spec sentence symb_items symb_map_items
         sign morphism symbol raw_symbol proof_tree
