@@ -183,7 +183,17 @@ renameOp from to ats sign = sign {ops = ops'}
 renameOpProfile :: Qid -> [Qid] -> Qid -> Qid -> [Attr] -> Sign -> Sign
 renameOpProfile from ar co to ats sg = case Map.member from (ops sg) of
                             False -> sg
-                            True -> sg
+                            True -> 
+                               let ods = fromJust $ Map.lookup from (ops sg)
+                                   (ods1, ods2) = Set.partition (\ (x, y, _) -> x == ar && co == y) ods
+                                   ods1' = ren'op'set ats ods1
+                                   new_ops1 = if ods2 == Set.empty 
+                                              then Map.delete from (ops sg)
+                                              else Map.insert from ods2 (ops sg)
+                                   new_ops2 = if ods1 == Set.empty
+                                              then new_ops1
+                                              else Map.insertWith (Set.union) to ods1' new_ops1
+                               in sg {ops = new_ops2}
 
 --- Helper functions for inserting Signature members into their respective collections.
 

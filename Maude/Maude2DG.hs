@@ -34,7 +34,7 @@ import Common.LibName
 import Common.Id
 
 maude_cmd :: String
-maude_cmd = "/Applications/maude-darwin/maude.intelDarwin -interactive -no-banner"
+maude_cmd = "maude -interactive -no-banner"
 
 data ImportType = Pr | Ex | Inc
 type ModExpProc = (Token, TokenInfoMap, Morphism, DGraph)
@@ -436,7 +436,9 @@ directMaudeParsing2 fp = do
               Map.singleton (Lib_id (Direct_link "" nullRange)) dg ))
 
 traverse :: FilePath -> [NamedSpec]
-traverse _ = [Mod "TEST", Mod "TEST2", Mod "TEST3", Mod "TEST4", Mod "TEST5", Views "Bool", Views "V1", Mod "TEST6", Mod "TEST7", Mod "TEST8", Views "V2"]
+traverse _ = [Mod "TEST", Mod "TEST2", Mod "TEST3", Mod "TEST4", Mod "TEST5", Views "Bool",
+              Views "V1", Mod "TEST6", Mod "TEST7", Mod "TEST8", Views "V2", Mod "TEST9",
+              Mod "TEST10"]
 
 data NamedSpec = Mod String
                | Views String

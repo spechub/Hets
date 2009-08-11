@@ -189,4 +189,4 @@ printOpRenaming = Map.foldWithKey f ""
        where f = \ x y z -> (Map.foldWithKey (g x) "" y) ++ z
                     where g = \ from (ar, co) (to, _) z' -> 
                                   "op " ++ show from ++ " : " ++ printArity ar ++ " -> "
-                                  ++ show co ++ " to " ++ show to ++ z'
+                                  ++ show co ++ " to " ++ show to ++ " ." ++ z'

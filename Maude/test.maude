@@ -71,3 +71,14 @@ view V2 from TEST8 to BOOL is
  
  op update(X:Foo) to term _or_(true, X:Bool) .
 endv
+
+fmod TEST9 is
+ sort A .
+ 
+ op a_ : [A] -> [A] [prec 10] .
+ op _a_ : A A -> A [prec 11] .
+endfm
+
+fmod TEST10 is
+ pr TEST9 * (op a_ : A -> A to b_ [prec 12]) .
+endfm
