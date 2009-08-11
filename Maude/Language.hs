@@ -71,15 +71,18 @@ specialChars = "()[]{},"
 maudeLanguageDef :: Language.LanguageDef ()
 maudeLanguageDef = Language.emptyDef {
     -- TODO: Get comments right.
-    Language.commentStart    = "***(",
-    Language.commentEnd      = ")",
-    Language.commentLine     = "---", -- also: "***"
-    Language.nestedComments  = True,
-    Language.caseSensitive   = True,
-    Language.identStart      = Token.opStart maudeLanguageDef,
-    Language.identLetter     = Token.opLetter maudeLanguageDef,
-    Language.opStart         = anyChar,
-    Language.opLetter        = nonSpace $ (backquote >>= flip option (oneOf specialChars)) <|> noneOf specialChars
+    Language.commentStart   = "***(",
+    Language.commentEnd     = ")",
+    Language.commentLine    = "---", -- also: "***"
+    Language.nestedComments = True,
+    Language.caseSensitive  = True,
+    Language.identStart     = Token.opStart maudeLanguageDef,
+    Language.identLetter    = Token.opLetter maudeLanguageDef,
+    Language.opStart        = anyChar,
+    Language.opLetter       = let
+            special = backquote >>= flip option (oneOf specialChars)
+            other = noneOf specialChars
+        in nonSpace $ special <|> other
 }
 
 maudeTokenParser :: Token.TokenParser ()
