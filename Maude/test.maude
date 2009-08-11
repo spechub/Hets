@@ -55,5 +55,19 @@ fmod TEST6{X :: TRIV} is
 endfm
 
 fmod TEST7 is
+ ex TEST .
  pr (TEST6 * (sort Foo6 to Fooooo6)){V1} .
 endfm
+
+fth TEST8 is
+
+ sorts Foo Faa .
+ op update : Foo -> Faa .
+endfth
+
+view V2 from TEST8 to BOOL is
+ sort Foo to Bool .
+ sort Faa to Bool .
+ 
+ op update(X:Foo) to term _or_(true, X:Bool) .
+endv

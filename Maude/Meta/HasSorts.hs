@@ -3,11 +3,11 @@ module Maude.Meta.HasSorts (
 ) where
 
 import Maude.AS_Maude
-import Maude.Symbol
 
 import Maude.Meta.HasName
 
 import Data.Set (Set)
+import Data.Map (Map)
 import qualified Data.Set as Set
 
 import Common.Lib.Rel (Rel)
@@ -16,8 +16,8 @@ import qualified Common.Lib.Rel as Rel
 
 -- TODO: Maybe this class should be named `HasTypes` instead?
 class HasSorts a where
-    getSorts :: a -> SymbolSet
-    mapSorts :: SymbolMap -> a -> a
+    getSorts :: a -> Set Qid
+    mapSorts :: Map Qid Qid -> a -> a
 
 
 instance (HasSorts a) => HasSorts [a] where
@@ -41,7 +41,7 @@ instance (Ord a, HasSorts a) => HasSorts (Rel a) where
     mapSorts = Rel.map . mapSorts
 
 
-instance HasSorts Symbol where
+instance HasSorts Qid where
     getSorts = Set.singleton . getName
     mapSorts = mapName
 

@@ -3,17 +3,17 @@ module Maude.Meta.HasOps (
 ) where
 
 import Maude.AS_Maude
-import Maude.Symbol
 
 import Maude.Meta.HasName
 
 import Data.Set (Set)
+import Data.Map (Map)
 import qualified Data.Set as Set
 
 
 class HasOps a where
-    getOps :: a -> SymbolSet
-    mapOps :: SymbolMap -> a -> a
+    getOps :: a -> Set Qid
+    mapOps :: Map Qid Qid -> a -> a
 
 
 instance (HasOps a) => HasOps [a] where
@@ -50,7 +50,7 @@ instance HasOps Term where
 instance HasOps Condition where
     getOps cond = case cond of
         EqCond t1 t2    -> getOps (t1, t2)
-        MbCond t s      -> getOps t
+        MbCond t _      -> getOps t
         MatchCond t1 t2 -> getOps (t1, t2)
         RwCond t1 t2    -> getOps (t1, t2)
     mapOps mp cond = case cond of

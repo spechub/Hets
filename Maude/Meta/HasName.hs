@@ -3,18 +3,17 @@ module Maude.Meta.HasName (
 ) where
 
 import Maude.AS_Maude
-import Maude.Symbol
 
 import Data.Map (Map)
 import qualified Data.Map as Map
 
 
 class HasName a where
-    getName :: a -> Symbol
-    mapName :: SymbolMap -> a -> a
+    getName :: a -> Qid
+    mapName :: Map Qid Qid -> a -> a
 
 
-instance HasName Symbol where
+instance HasName Qid where
     getName = id
     mapName = map2Function
 

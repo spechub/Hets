@@ -3,17 +3,17 @@ module Maude.Meta.HasLabels (
 ) where
 
 import Maude.AS_Maude
-import Maude.Symbol
 
 import Maude.Meta.HasName
 
 import Data.Set (Set)
+import Data.Map (Map)
 import qualified Data.Set as Set
 
 
 class HasLabels a where
-    getLabels :: a -> SymbolSet
-    mapLabels :: SymbolMap -> a -> a
+    getLabels :: a -> Set Qid
+    mapLabels :: Map Qid Qid -> a -> a
 
 
 instance (HasLabels a) => HasLabels [a] where

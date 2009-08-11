@@ -19,10 +19,11 @@ Definition of signatures for Maude.
 module Maude.Sign where
 
 import Maude.AS_Maude
-import Maude.Symbol
 import Maude.Sentence
 import Maude.Meta
 import Maude.Util
+
+import Maude.Symbol
 
 import Data.Set (Set)
 import Data.Map (Map)
@@ -40,11 +41,11 @@ import Common.DocUtils
 import Maude.Printing
 
 
-type SortSet = Set Symbol
-type SubsortRel = Rel Symbol
-type OpDecl = ([Symbol], Symbol, [Attr])
+type SortSet = Set Qid
+type SubsortRel = Rel Qid
+type OpDecl = ([Qid], Qid, [Attr])
 type OpDeclSet = Set OpDecl
-type OpMap = Map Symbol OpDeclSet
+type OpMap = Map Qid OpDeclSet
 
 data Sign = Sign {
         sorts :: SortSet,
@@ -81,9 +82,15 @@ fromSpec (Module _ _ stmts) = let
             _ -> id
     in foldr insert empty stmts
 
--- | extract the Set of all Symbols from a Signature
+-- | extract the Set of all Qids from a Signature
 symbols :: Sign -> SymbolSet
-symbols sign = Set.union (getSorts sign) (getOps sign)
+symbols sign = Set.union (sorts2symbols $ sorts sign) (ops2symbols $ ops sign)
+
+sorts2symbols :: Set Qid -> SymbolSet
+sorts2symbols = Set.map (\ x -> Sort x)
+
+ops2symbols :: OpMap -> SymbolSet
+ops2symbols _ = Set.empty
 
 -- | the empty Signature
 empty :: Sign
@@ -156,21 +163,27 @@ simplifySentence :: Sign -> Sentence -> Sentence
 simplifySentence _ = id
 
 -- | rename the given sort
-renameListSort :: [(Symbol, Symbol)] -> Sign -> Sign
+renameListSort :: [(Qid, Qid)] -> Sign -> Sign
 renameListSort rnms sg = foldr f sg rnms
               where f = \ (x, y) z -> renameSort x y z
 
 -- | rename the given sort
-renameSort :: Symbol -> Symbol -> Sign -> Sign
+renameSort :: Qid -> Qid -> Sign -> Sign
 renameSort from to sign = Sign sorts' subsorts' ops'
               where sorts' = ren'sort'sortset from to $ sorts sign
                     subsorts' = ren'sort'subsortrel from to $ subsorts sign
                     ops' = ren'sort'op_map from to $ ops sign
 
 -- | rename the given sort
-renameOp :: Symbol -> Symbol -> [Attr] -> Sign -> Sign
+renameOp :: Qid -> Qid -> [Attr] -> Sign -> Sign
 renameOp from to ats sign = sign {ops = ops'}
               where ops' = ren'op'op_map from to ats $ ops sign
+
+-- | rename the sort with the given profile
+renameOpProfile :: Qid -> [Qid] -> Qid -> Qid -> [Attr] -> Sign -> Sign
+renameOpProfile from ar co to ats sg = case Map.member from (ops sg) of
+                            False -> sg
+                            True -> sg
 
 --- Helper functions for inserting Signature members into their respective collections.
 
@@ -195,21 +208,21 @@ ins'op (Op op dom cod as) opmap = let
     in Map.insert name new'ops opmap
 
 -- map and insert an OperatorMap key-value pair
-map'op :: SymbolMap -> Symbol -> OpDeclSet -> OpMap -> OpMap
+map'op :: Map Qid Qid -> Qid -> OpDeclSet -> OpMap -> OpMap
 map'op mp op decls = Map.insert (mapAsFunction mp op) decls
 
 -- | rename a sort in a sortset
-ren'sort'sortset :: Symbol -> Symbol -> SortSet -> SortSet 
+ren'sort'sortset :: Qid -> Qid -> SortSet -> SortSet 
 ren'sort'sortset from to = Set.insert to . Set.delete from
 
 -- | rename a sort in a subsort relation
-ren'sort'subsortrel :: Symbol -> Symbol -> SubsortRel -> SubsortRel 
+ren'sort'subsortrel :: Qid -> Qid -> SubsortRel -> SubsortRel 
 ren'sort'subsortrel from to ssr = Rel.fromList ssr''
                 where ssr' = Rel.toList ssr
                       ssr'' = map (ren'pair from to) ssr'
 
 -- | aux function that renames pair
-ren'pair :: Symbol -> Symbol -> (Symbol, Symbol) -> (Symbol, Symbol)
+ren'pair :: Qid -> Qid -> (Qid, Qid) -> (Qid, Qid)
 ren'pair from to (s1, s2) = if from == s1
                             then (to, s2)
                             else if from == s2
@@ -217,15 +230,15 @@ ren'pair from to (s1, s2) = if from == s1
                                  else (s1, s2)
 
 -- | rename a sort in an operator map
-ren'sort'op_map :: Symbol -> Symbol -> OpMap -> OpMap
+ren'sort'op_map :: Qid -> Qid -> OpMap -> OpMap
 ren'sort'op_map from to = Map.map (ren'sort'ops from to)
 
 -- | rename a sort in a set of operator declarations
-ren'sort'ops :: Symbol -> Symbol -> OpDeclSet -> OpDeclSet
+ren'sort'ops :: Qid -> Qid -> OpDeclSet -> OpDeclSet
 ren'sort'ops from to = Set.map $ ren'op from to
 
 -- | aux function to rename operator declarations
-ren'op :: Symbol -> Symbol -> OpDecl -> OpDecl
+ren'op :: Qid -> Qid -> OpDecl -> OpDecl
 ren'op from to (ar, coar, ats) = (ar', coar', ats)
              where ar' = map (\ x -> if x == from then to else x) ar
                    coar' = if from == coar
@@ -233,7 +246,7 @@ ren'op from to (ar, coar, ats) = (ar', coar', ats)
                            else coar
 
 -- | rename an operator in an operator map
-ren'op'op_map :: Symbol -> Symbol -> [Attr] -> OpMap -> OpMap
+ren'op'op_map :: Qid -> Qid -> [Attr] -> OpMap -> OpMap
 ren'op'op_map from to ats = Map.fromList . map f . Map.toList
                where f = \ (x,y) -> if x == from 
                                     then (to,ren'op'set ats y)
@@ -265,7 +278,7 @@ ren'op'at rn@(Format qs) (a : ats) = a' : ren'op'at rn ats
                              at -> at
 ren'op'at _ _ = []
 
-applySortMap :: SymbolMap -> Sign -> Sign
+applySortMap :: Map Qid Qid -> Sign -> Sign
 applySortMap sm sg = sg {
                   sorts = Set.map f $ sorts sg,
                   subsorts = Rel.fromList $ map g $ Rel.toList $ subsorts sg

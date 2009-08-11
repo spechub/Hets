@@ -19,7 +19,6 @@ Translations between Maude and Haskell
 module Maude.Printing where
 
 import Maude.AS_Maude
-import Maude.Symbol
 
 import qualified Data.Set as Set
 import qualified Data.Map  as Map
@@ -43,19 +42,19 @@ quitEnd [] = []
 quitNil :: String -> String
 quitNil = Prelude.filter (/= '\NUL')
 
-printSign :: Set.Set Symbol -> Rel.Rel Symbol
-             -> Map.Map Symbol (Set.Set ([Symbol], Symbol, [Attr])) -> String
+printSign :: Set.Set Qid -> Rel.Rel Qid
+             -> Map.Map Qid (Set.Set ([Qid], Qid, [Attr])) -> String
 printSign sts sbsts ops = ss ++ sbs ++ opd
  where ss = sorts2maude sts
        sbs = subsorts2maude sbsts
        opd = ops2maude ops
 
-sorts2maude :: Set.Set Symbol -> String
+sorts2maude :: Set.Set Qid -> String
 sorts2maude ss = if Set.null ss
                     then ""
                     else "sorts " ++ Set.fold (++) "" (Set.map ((++ " ") . show) ss) ++ ".\n"
 
-subsorts2maude :: Rel.Rel Symbol -> String
+subsorts2maude :: Rel.Rel Qid -> String
 subsorts2maude ssbs = if Rel.null ssbs
                          then ""
                          else foldr (++) "" (map printPair $ Rel.toList ssbs)
@@ -63,21 +62,21 @@ subsorts2maude ssbs = if Rel.null ssbs
 printPair :: (Token,Token) -> String
 printPair (a,b) = "subsort " ++ show a ++ " < " ++ show b ++ " .\n"
 
-ops2maude :: Map.Map Symbol (Set.Set ([Symbol], Symbol, [Attr])) -> String
+ops2maude :: Map.Map Qid (Set.Set ([Qid], Qid, [Attr])) -> String
 ops2maude om = flatten (flatten (map printOp (Map.toList om)))
 
 flatten :: [[a]] -> [a]
 flatten [] = []
 flatten (a : l) = a ++ (flatten l)
 
-printOp :: (Symbol, Set.Set ([Symbol], Symbol, [Attr])) -> [String]
+printOp :: (Qid, Set.Set ([Qid], Qid, [Attr])) -> [String]
 printOp (opid, s) = map (printOpAux opid) (Set.toList s)
 
-printOpAux :: Symbol -> ([Symbol], Symbol, [Attr]) -> String
+printOpAux :: Qid -> ([Qid], Qid, [Attr]) -> String
 printOpAux opid (ar, co, ats) = "op " ++ show opid ++ " : " ++ printArity ar ++
                                 " -> " ++ show co ++ printAttrSet ats ++ " .\n"
 
-printArity :: [Symbol] -> String
+printArity :: [Qid] -> String
 printArity a = foldr (++) "" (map showSpace a)
 
 showSpace ::Show t => t -> String
@@ -174,13 +173,20 @@ printCond (MatchCond t1 t2) = printTerm t1 ++ " := " ++ printTerm t2
 printCond (MbCond t s) = printTerm t ++ " : " ++ printSort s
 printCond (RwCond t1 t2) = printTerm t1 ++ " => " ++ printTerm t2
 
-printMorphism :: SymbolMap -> SymbolMap -> SymbolMap -> String 
+printMorphism :: Map.Map Qid Qid -> Map.Map Qid (Map.Map ([Qid], Qid) (Qid, ([Qid], Qid))) -> Map.Map Qid Qid -> String 
 printMorphism sorts ops labels = if str == ""
                             then ""
                             else "\n\nMorphism:\n\n" ++ str
-    where str = (printSymbolMap "sort" sorts) ++ (printSymbolMap "op" ops)
-                ++ (printSymbolMap "label" labels)
+    where str = (printQidMap "sort" sorts) ++ (printOpRenaming ops)
+                ++ (printQidMap "label" labels)
 
-printSymbolMap :: String -> SymbolMap -> String
-printSymbolMap str = Map.foldWithKey f ""
+printQidMap :: String -> Map.Map Qid Qid -> String
+printQidMap str = Map.foldWithKey f ""
        where f = \ x y z -> str ++ " " ++ show x ++ " to " ++ show y ++ "\n" ++ z
+
+printOpRenaming :: Map.Map Qid (Map.Map ([Qid], Qid) (Qid, ([Qid], Qid))) -> String
+printOpRenaming = Map.foldWithKey f ""
+       where f = \ x y z -> (Map.foldWithKey (g x) "" y) ++ z
+                    where g = \ from (ar, co) (to, _) z' -> 
+                                  "op " ++ show from ++ " : " ++ printArity ar ++ " -> "
+                                  ++ show co ++ " to " ++ show to ++ z'

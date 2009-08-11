@@ -17,23 +17,41 @@ Definition of symbols for Maude.
 -}
 
 module Maude.Symbol (
-    Symbol,
+    Symbol(..),
     SymbolSet,
     SymbolMap,
     toId,
 ) where
 
 import Maude.AS_Maude
+import Maude.Printing
 
 import Data.Set (Set)
 import Data.Map (Map)
 
-import Common.Id (Id, mkId)
+import Common.Id (Id, mkId, GetRange, getRange, nullRange)
+
+import qualified Common.Doc as Doc
+import Common.DocUtils
 
 
-type Symbol = Qid
+data Symbol = Sort Qid
+            | Lab Qid
+            | Operator Qid [Qid] Qid
+            deriving (Show, Ord, Eq)
 type SymbolSet = Set Symbol
 type SymbolMap = Map Symbol Symbol
 
+instance Pretty Symbol where
+  pretty (Sort q) = Doc.text $ "sort " ++ show q
+  pretty (Lab q) = Doc.text $ "label " ++ show q
+  pretty (Operator top ar co) = Doc.text $ "op " ++ show top ++ " : " ++
+                                printArity ar ++ " -> " ++ show co ++ " ."
+
+instance GetRange Symbol where
+  getRange _ = nullRange
+
 toId :: Symbol -> Id
-toId sym = mkId [sym]
+toId (Sort q) = mkId [q]
+toId (Lab q) = mkId [q]
+toId (Operator q _ _) = mkId [q]
