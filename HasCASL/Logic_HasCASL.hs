@@ -31,6 +31,7 @@ import HasCASL.Merge
 import Logic.Logic
 import Common.Doc
 import Common.DocUtils
+import Common.Item
 
 data HasCASL = HasCASL deriving Show
 
@@ -64,6 +65,8 @@ instance Syntax HasCASL BasicSpec
          parse_basic_spec HasCASL = Just basicSpec
          parse_symb_items HasCASL = Just symbItems
          parse_symb_map_items HasCASL = Just symbMapItems
+         toItem HasCASL _ = rootItem
+
 
 instance Category Env Morphism where
     ide = ideMor
