@@ -283,6 +283,12 @@ instance ShATermLG AnyComorphism where
                 (att1, propagateErrors $ lookupComorphism i1' lg)}
             u -> fromShATermError "AnyComorphism" u
 
+instance BinaryLG AnyComorphism where
+  putLG (Comorphism cid) = put $ language_name cid
+  getLG lg = do
+      l <- get
+      return . propagateErrors $ lookupComorphism l lg
+
 instance ShATermLG GMorphism where
   toShATermLG att0 (GMorphism cid sign1 si morphism2 mi) = do
          (att1,i1) <- toShATermLG' att0 (language_name cid)
@@ -332,6 +338,12 @@ instance ShATermLG AnyLogic where
                 (att1, atcLogicLookup lg "AnyLogic" i1') }
             u -> fromShATermError "AnyLogic" u
 
+instance BinaryLG AnyLogic where
+  putLG (Logic lid) = put $ language_name lid
+  getLG lg = do
+      l <- get
+      return $ atcLogicLookup lg "AnyLogic" l
+
 instance ShATermLG BasicProof where
   toShATermLG att0 (BasicProof lid p) = do
          (att1,i1) <- toShATermLG' att0 (language_name lid)
@@ -354,6 +366,27 @@ instance ShATermLG BasicProof where
                  "Handwritten" -> Handwritten
                  _ -> fromShATermError "BasicProof" v)}
             u -> fromShATermError "BasicProof" u
+
+instance BinaryLG BasicProof where
+  putLG xv = case xv of
+    BasicProof a b -> do
+      putWord8 0
+      putLG $ language_name a
+      putLG b
+    Guessed -> putWord8 1
+    Conjectured -> putWord8 2
+    Handwritten -> putWord8 3
+  getLG lg = getWord8 >>= \ tag -> case tag of
+    0 -> do
+      a <- getLG lg
+      case atcLogicLookup lg "BasicProof" a of
+        Logic lid -> do
+          b <- getLG lg
+          return $ BasicProof lid b
+    1 -> return Guessed
+    2 -> return Conjectured
+    3 -> return Handwritten
+    u -> fromBinaryError "BasicProof" u
 
 instance ShATermLG a => ShATermLG (OMap.ElemWOrd a) where
   toShATermLG att0 e = do
@@ -501,6 +534,24 @@ instance ShATermLG G_theory where
                 case fromShATermLG' lg i5 att4 of { (att5, i5') ->
                 (att5, G_theory lid i2' i3' i4' i5') }}}}}}
             u -> fromShATermError "G_theory" u
+
+instance BinaryLG G_theory where
+  putLG xv = case xv of
+    G_theory a b c d e -> do
+      putLG $ language_name a
+      putLG b
+      putLG c
+      putLG d
+      putLG e
+  getLG lg = do
+      a <- getLG lg
+      case atcLogicLookup lg "G_theory" a of
+        Logic lid -> do
+          b <- getLG lg
+          c <- getLG lg
+          d <- getLG lg
+          e <- getLG lg
+          return $ G_theory lid b c d e
 
 instance Typeable a => ShATermConvertible (MVar a) where
     toShATermAux att0 _ = return $ addATerm (ShAAppl "MVar" [] []) att0
