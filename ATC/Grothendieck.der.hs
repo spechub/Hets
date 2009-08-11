@@ -19,6 +19,7 @@ import Logic.Comorphism
 import Logic.Grothendieck
 
 import Common.ATerm.Lib
+import Common.BinaryInstances
 import Common.AS_Annotation
 import Common.GlobalAnnotations
 import Common.Lib.Graph as Graph
@@ -77,6 +78,15 @@ fromShATermLG' lg i att = case getATerm' i att of
 instance ShATermConvertible a => ShATermLG a where
   toShATermLG = toShATermAux
   fromShATermLG _ = fromShATermAux
+
+-- the same class as ShATermConvertible, but allowing a logic graph as input
+class BinaryLG t where
+    putLG :: t -> Put
+    getLG :: LogicGraph -> Get t
+
+instance Binary a => BinaryLG a where
+  putLG = put
+  getLG _ = get
 
 instance ShATermLG G_basic_spec where
   toShATermLG att0 (G_basic_spec lid basic_spec) = do

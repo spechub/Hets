@@ -12,7 +12,6 @@ Portability :  portable
 
 module Haskell.Binary () where
 
-import Haskell.BaseATC ()
 import Common.BinaryInstances
 import SrcLoc
 

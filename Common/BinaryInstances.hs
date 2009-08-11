@@ -12,12 +12,13 @@ Portability :  non-portable(overlapping Typeable instances)
 
 module Common.BinaryInstances
   ( Binary(..)
+  , Put
+  , Get
   , putWord8
   , getWord8
   , fromBinaryError
   ) where
 
-import Common.ATerm.ConvInstances () -- to get Typeable instances
 import Common.Lib.SizedList as SizedList
 import Common.Lib.Rel as Rel
 import Common.InjMap as InjMap
@@ -33,17 +34,20 @@ import Data.Binary
 import Data.Word
 
 class Binary a where
-  put :: a -> Maybe ()
+  put :: a -> Put
   put _ = Nothing
-  get :: Maybe a
+  get :: Get a
   get = Nothing
 
 instance Binary a
 
-putWord8 :: Word8 -> Maybe ()
+type Put = Maybe ()
+type Get a = Maybe a
+
+putWord8 :: Word8 -> Put
 putWord8 _ = Nothing
 
-getWord8 :: Maybe Word8
+getWord8 :: Get Word8
 getWord8 = Nothing
 #endif
 
