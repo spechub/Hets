@@ -510,6 +510,12 @@ instance ShATermLG a => ShATermLG (SizedList.SizedList a) where
   fromShATermLG lg ix att0 = case fromShATermLG lg ix att0 of
     (att, l) -> (att, SizedList.fromList l)
 
+instance BinaryLG a => BinaryLG (SizedList.SizedList a) where
+  putLG l = put (SizedList.size l) >> mapM_ putLG (SizedList.toList l)
+  getLG lg = do
+      l <- getLG lg
+      return $ SizedList.fromList l
+
 instance (Ord a, ShATermLG a, ShATermLG b) => ShATermLG (Map.Map a b) where
   toShATermLG att fm = do
       (att1, i) <- toShATermLG' att $ Map.toList fm

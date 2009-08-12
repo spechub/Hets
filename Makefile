@@ -39,8 +39,9 @@ HAPPY = happy -sga
 GENRULES = utils/genRules
 GENRULECALL = $(GENRULES) -r Typeable -r ShATermConvertible -r Binary \
     -i Data.Typeable -i Common.ATerm.Lib -i Common.BinaryInstances
-GENRULECALL2 = $(GENRULES) -r Typeable -r ShATermLG \
-    -i Data.Typeable -i Common.ATerm.Lib -i ATC.Grothendieck
+GENRULECALL2 = $(GENRULES) -r Typeable -r ShATermLG -r BinaryLG \
+    -i Data.Typeable -i Common.ATerm.Lib -i Common.BinaryInstances \
+    -i ATC.Grothendieck
 DRIFT = utils/DrIFT
 INLINEAXIOMS = utils/outlineAxioms
 HADDOCK = haddock
