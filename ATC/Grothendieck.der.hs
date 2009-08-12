@@ -22,8 +22,8 @@ import Common.ATerm.Lib
 import Common.BinaryInstances
 import Common.AS_Annotation
 import Common.GlobalAnnotations
-import Common.Lib.Graph as Graph
-import qualified Common.OrderedMap as OMap
+import Common.Lib.Graph
+import Common.OrderedMap
 import qualified Common.Lib.SizedList as SizedList
 import Common.Result
 
@@ -47,10 +47,21 @@ import Control.Concurrent.MVar
 {-! for Common.AS_Annotation.Annoted derive : ShATermLG !-}
 {-! for Logic.Prover.ThmStatus derive : ShATermLG !-}
 {-! for Common.GlobalAnnotations.GlobalAnnos derive : ShATermLG !-}
+{-! for Common.Lib.Graph.Gr derive : ShATermLG !-}
+{-! for Common.Lib.Graph.GrContext derive : ShATermLG !-}
+{-! for Common.OrderedMap.ElemWOrd derive : ShATermLG !-}
+
+{-! for Common.AS_Annotation.SenAttr derive : BinaryLG !-}
+{-! for Common.AS_Annotation.Annoted derive : BinaryLG !-}
+{-! for Logic.Prover.ThmStatus derive : BinaryLG !-}
+{-! for Common.GlobalAnnotations.GlobalAnnos derive : BinaryLG !-}
+{-! for Common.Lib.Graph.Gr derive : BinaryLG !-}
+{-! for Common.Lib.Graph.GrContext derive : BinaryLG !-}
+{-! for Common.OrderedMap.ElemWOrd derive : BinaryLG !-}
 
 atcLogicLookup :: LogicGraph -> String -> String -> AnyLogic
 atcLogicLookup lg s l =
-  propagateErrors $ lookupLogic ("ShATermLG " ++ s ++ ":") l lg
+  propagateErrors $ lookupLogic ("ConvertibleLG " ++ s ++ ":") l lg
 
 -- the same class as ShATermConvertible, but allowing a logic graph as input
 class Typeable t => ShATermLG t where
@@ -388,18 +399,6 @@ instance BinaryLG BasicProof where
     3 -> return Handwritten
     u -> fromBinaryError "BasicProof" u
 
-instance ShATermLG a => ShATermLG (OMap.ElemWOrd a) where
-  toShATermLG att0 e = do
-       (att1,aa') <- toShATermLG' att0 (OMap.order e)
-       (att2,bb') <- toShATermLG' att1 (OMap.ele e)
-       return $ addATerm (ShAAppl "EWOrd"  [ aa' , bb' ] []) att2
-  fromShATermLG lg ix att0 = case getShATerm ix att0 of
-            ShAAppl "EWOrd" [a,b] _ ->
-                    case fromShATermLG' lg a att0 of { (att1, a') ->
-                    case fromShATermLG' lg b att1 of { (att2, b') ->
-                    (att2, OMap.EWOrd { OMap.order = a', OMap.ele = b'}) }}
-            u -> fromShATermError "OMap.ElemWOrd" u
-
 instance (ShATermLG a) => ShATermLG (Maybe a) where
   toShATermLG att mb = case mb of
         Nothing -> return $ addATerm (ShAAppl "N" [] []) att
@@ -414,6 +413,15 @@ instance (ShATermLG a) => ShATermLG (Maybe a) where
                     (att1, Just a') }
             u -> fromShATermError "Prelude.Maybe" u
 
+instance BinaryLG a => BinaryLG (Maybe a) where
+    putLG Nothing  = putWord8 0
+    putLG (Just x) = putWord8 1 >> putLG x
+    getLG lg = do
+        w <- getWord8
+        case w of
+            0 -> return Nothing
+            _ -> fmap Just $ getLG lg
+
 instance ShATermLG a => ShATermLG [a] where
    toShATermLG att ts = do
            (att2, inds) <- foldM (\ (att0, l) t -> do
@@ -426,6 +434,21 @@ instance ShATermLG a => ShATermLG [a] where
                 mapAccumL (flip $ fromShATermLG' lg ) att0 ats
             u -> fromShATermError "[]" u
 
+instance BinaryLG a => BinaryLG [a] where
+    putLG l = put (length l) >> mapM_ putLG l
+    getLG lg = do
+      n <- get :: Get Int
+      getManyLG lg n
+
+getManyLG :: BinaryLG a => LogicGraph -> Int -> Get [a]
+getManyLG lg n = go [] n
+ where
+    go xs 0 = return $! reverse xs
+    go xs i = do x <- getLG lg
+                 -- we must seq x to avoid stack overflows due to laziness in
+                 -- (>>=)
+                 x `seq` go (x:xs) (i-1)
+
 instance (ShATermLG a, ShATermLG b) => ShATermLG (a, b) where
   toShATermLG att0 (x, y) = do
       (att1, x') <- toShATermLG' att0 x
@@ -437,6 +460,13 @@ instance (ShATermLG a, ShATermLG b) => ShATermLG (a, b) where
                     case fromShATermLG' lg b att1 of { (att2, b') ->
                     (att2, (a', b'))}}
             u -> fromShATermError "(,)" u
+
+instance (BinaryLG a, BinaryLG b) => BinaryLG (a, b) where
+    putLG (a, b) = putLG a >> putLG b
+    getLG lg = do
+      a <- getLG lg
+      b <- getLG lg
+      return (a, b)
 
 instance (ShATermLG a, ShATermLG b, ShATermLG c) => ShATermLG (a, b, c) where
   toShATermLG att0 (x,y,z) = do
@@ -452,6 +482,14 @@ instance (ShATermLG a, ShATermLG b, ShATermLG c) => ShATermLG (a, b, c) where
                     (att3, (a', b', c'))}}}
             u -> fromShATermError "(,,)" u
 
+instance (BinaryLG a, BinaryLG b, BinaryLG c) => BinaryLG (a, b, c) where
+    putLG (a, b, c) = putLG a >> putLG b >> putLG c
+    getLG lg = do
+      a <- getLG lg
+      b <- getLG lg
+      c <- getLG lg
+      return (a, b, c)
+
 instance (Ord a,ShATermLG a) => ShATermLG (Set.Set a) where
   toShATermLG att set = do
       (att1, i) <-  toShATermLG' att $ Set.toList set
@@ -462,6 +500,10 @@ instance (Ord a,ShATermLG a) => ShATermLG (Set.Set a) where
                     case fromShATermLG' lg a att0 of { (att1, a') ->
                     (att1, Set.fromDistinctAscList a') }
             u -> fromShATermError "Set.Set" u
+
+instance (Ord a, BinaryLG a) => BinaryLG (Set.Set a) where
+    putLG s = put (Set.size s) >> mapM_ putLG (Set.toAscList s)
+    getLG lg = fmap Set.fromDistinctAscList $ getLG lg
 
 instance ShATermLG a => ShATermLG (SizedList.SizedList a) where
   toShATermLG att0 = toShATermLG att0 . SizedList.toList
@@ -478,6 +520,10 @@ instance (Ord a, ShATermLG a, ShATermLG b) => ShATermLG (Map.Map a b) where
                     (att1, Map.fromDistinctAscList a') }
             u -> fromShATermError "Map.Map" u
 
+instance (Ord k, BinaryLG k, BinaryLG e) => BinaryLG (Map.Map k e) where
+    putLG m = put (Map.size m) >> mapM_ putLG (Map.toAscList m)
+    getLG lg = fmap Map.fromDistinctAscList $ getLG lg
+
 instance (ShATermLG a) => ShATermLG (IntMap.IntMap a) where
   toShATermLG att fm = do
       (att1, i) <- toShATermLG' att $ IntMap.toList fm
@@ -488,32 +534,9 @@ instance (ShATermLG a) => ShATermLG (IntMap.IntMap a) where
                     (att1, IntMap.fromDistinctAscList a') }
             u -> fromShATermError "IntMap.IntMap" u
 
-instance (ShATermLG a, ShATermLG b) => ShATermLG (GrContext a b) where
-  toShATermLG att0 (GrContext a b c d) = do
-        (att1, a') <- toShATermLG' att0 a
-        (att2, b') <- toShATermLG' att1 b
-        (att3, c') <- toShATermLG' att2 c
-        (att4, d') <- toShATermLG' att3 d
-        return $ addATerm (ShAAppl "GrContext" [a',b',c',d'] []) att4
-  fromShATermLG lg ix att0 = case getShATerm ix att0 of
-            ShAAppl "GrContext" [a,b,c,d] _ ->
-                    case fromShATermLG' lg a att0 of { (att1, a') ->
-                    case fromShATermLG' lg b att1 of { (att2, b') ->
-                    case fromShATermLG' lg c att2 of { (att3, c') ->
-                    case fromShATermLG' lg d att3 of { (att4, d') ->
-                    (att4, GrContext a' b' c' d') }}}}
-            u -> fromShATermError "GrContext" u
-
-instance (ShATermLG a, ShATermLG b) => ShATermLG (Graph.Gr a b) where
-  toShATermLG att0 graph = do
-       (att1, a') <- toShATermLG' att0 (Graph.convertToMap graph)
-       return $ addATerm (ShAAppl "Gr" [a'] []) att1
-  fromShATermLG lg ix att0 =
-        case getShATerm ix att0 of
-            ShAAppl "Gr" [a] _ ->
-                    case fromShATermLG' lg a att0 of { (att1, a') ->
-                    (att1, Graph.unsafeConstructGr a') }
-            u -> fromShATermError "Common.Lib.Graph.Gr" u
+instance (BinaryLG e) => BinaryLG (IntMap.IntMap e) where
+    putLG m = put (IntMap.size m) >> mapM_ putLG (IntMap.toAscList m)
+    getLG lg = fmap IntMap.fromDistinctAscList $ getLG lg
 
 instance ShATermLG G_theory where
   toShATermLG  att0 (G_theory lid sign si sens ti) = do
@@ -558,3 +581,7 @@ instance Typeable a => ShATermConvertible (MVar a) where
     fromShATermAux ix att = case getShATerm ix att of
         ShAAppl "MVar" [] _ -> (att, error "ShATermConvertible MVar")
         u -> fromShATermError "MVar" u
+
+instance Binary (MVar a) where
+    put _ = return ()
+    get = error "Binary MVar"
