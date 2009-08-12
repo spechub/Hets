@@ -16,8 +16,6 @@ import qualified Network.URI as URI
 
 import Common.ATerm.Lib
 
-import Data.Word
-
 instance ShATermConvertible URI.URI where
   toShATermAux att0 u = do
     (att1, us) <- toShATerm' att0 ((URI.uriToString id u) "")
@@ -33,29 +31,3 @@ instance ShATermConvertible URI.URI where
               Just uri ->
                 (att1, uri)
       u -> fromShATermError "URI.URI" u
-
-
-instance ShATermConvertible Float where
-  toShATermAux att0 f = do
-    (att1, fs) <- toShATerm' att0 (show f)
-    return $ addATerm (ShAAppl "Float" [fs] []) att1
-  fromShATermAux ix att0 =
-    case getShATerm ix att0 of
-      x@(ShAAppl "Float" [fs] _) ->
-        case fromShATerm' fs att0 of
-          (att1, fs') ->
-            case readsPrec 0 fs' of
-              [] ->
-                fromShATermError "Float" x
-              [(f, _)] ->
-                (att1, f)
-              _ ->
-                fromShATermError "Float" x
-      u -> fromShATermError "Float" u
-
-instance ShATermConvertible Data.Word.Word8 where
-  toShATermAux att0 w = toShATermAux att0 ((fromIntegral w)::Int)
-  fromShATermAux ix att0 =
-    case fromShATermAux ix att0 of
-      (att1, i) ->
-        (att1, fromIntegral (i :: Int))

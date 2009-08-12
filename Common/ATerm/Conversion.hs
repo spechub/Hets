@@ -22,6 +22,7 @@ import qualified Data.Set as Set
 import Data.Typeable
 import Data.List (mapAccumL)
 import Data.Ratio
+import Data.Word
 import Control.Monad
 
 class Typeable t => ShATermConvertible t where
@@ -85,11 +86,19 @@ instance ShATermConvertible Int where
             ShAInt x _ -> (att0, integer2Int x)
             u -> fromShATermError "Prelude.Int" u
 
+instance ShATermConvertible Word8 where
+    toShATermAux att = toShATermAux att . toInteger
+    fromShATermAux ix att0 = case getShATerm ix att0 of
+            ShAInt x _ | x <= toInteger (maxBound :: Word8)
+                         && x >= toInteger (minBound :: Word8)
+              -> (att0, fromIntegral x)
+            u -> fromShATermError "Data.Word8" u
+
 instance (ShATermConvertible a, Integral a)
     => ShATermConvertible (Ratio a) where
-    toShATermAux att0 i = let (i1, i2) = (numerator i, denominator i) in do
-       (att1,i1') <- toShATerm' att0 i1
-       (att2,i2') <- toShATerm' att1 i2
+    toShATermAux att0 i = do
+       (att1,i1') <- toShATerm' att0 $ numerator i
+       (att2,i2') <- toShATerm' att1 $ denominator i
        return $ addATerm (ShAAppl "Ratio" [i1',i2'] []) att2
     fromShATermAux ix att0 = case getShATerm ix att0 of
             ShAAppl "Ratio" [a,b] _ ->
@@ -97,6 +106,11 @@ instance (ShATermConvertible a, Integral a)
                     case fromShATerm' b att1 of { (att2, b') ->
                     (att2, a' %  b') }}
             u -> fromShATermError "Prelude.Integral" u
+
+instance ShATermConvertible Float where
+    toShATermAux att = toShATermAux att . toRational
+    fromShATermAux ix att0 = case fromShATermAux ix att0 of
+       (att, r) -> (att, fromRational r)
 
 instance ShATermConvertible Char where
     toShATermAux att c = return $ addATerm (ShAAppl (show [c]) [] []) att
