@@ -74,9 +74,12 @@ instance XmlAttrList Empty where mkAtts _ = []
 instance XmlListPrintable Empty where toLst _ = []
 
 
--- the trivial instance!
+-- the trivial instances!
 instance XmlPrintable Content where
     toXml = id
+instance XmlAttrList [Attr] where
+    mkAtts = id
+
 
 instance XmlPrintable LIB_DEFN where
     toXml (Lib_defn n il rg an) =
@@ -165,7 +168,7 @@ instance XmlPrintable a => XmlListPrintable [a] where
 
 instance XmlListPrintable G_basic_spec where
     toLst (G_basic_spec lid bs) = 
-        let (Item _ _ l) = toItem lid bs in map (fromAnno . fmap itemToXml) l
+        let i = toItem lid bs in map (fromAnno . fmap itemToXml) $ items i
 
 instance XmlListPrintable GENERICITY where
     toLst (Genericity (Params pl) (Imported il) _)
@@ -265,10 +268,32 @@ mkFEl n a = mkEl n a []
 mkPEl :: String -> [Content] -> Content
 mkPEl n c = mkEl n Empty c
 
+mkAttr :: String -> String -> Attr
+mkAttr n = Attr (unqual n)
+
 ------------------------------------------------------------------------------
 
 itemToXml :: Item -> Content
-itemToXml (Item it rg l) =
-    withRg rg $ mkEl (show it) Empty $ map (fromAnno . fmap itemToXml) l
+itemToXml i =
+    let it = itemType i
+        typeAttr = mkAttr "value" $ getValue it
+    in withRg (range i)
+           $ mkEl (getName it)
+                 (if hasValue it then [typeAttr] else [])
+                 $ map (fromAnno . fmap itemToXml) $ items i
 
+{-
+itemToXml (Item it rg as l) =
+    let atts = map itemToAttrib as
+        typeAttr = mkAttr "value" $ getValue it
+    in withRg rg
+           $ mkEl (getName it)
+                 (if hasValue it then typeAttr : atts else atts)
+                 $ map (fromAnno . fmap itemToXml) l
+-}
 
+itemToAttrib :: Item -> Attr
+itemToAttrib i = itemTypeToAttrib $ itemType i
+
+itemTypeToAttrib :: ItemType -> Attr
+itemTypeToAttrib it = mkAttr (getName it) $ getValue it
