@@ -204,6 +204,8 @@ replaceAnnoted :: b -> Annoted a -> Annoted b
 replaceAnnoted x (Annoted _ o l r) = Annoted x o l r
 -- one could use this fmap variant instead (less efficient)
 -- replaceAnnoted x = fmap (const x)
+-- or even:
+-- replaceAnnoted = (<$)
 
 -- | add further following annotations
 appendAnno :: Annoted a -> [Annotation] -> Annoted a
