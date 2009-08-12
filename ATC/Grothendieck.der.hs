@@ -448,6 +448,7 @@ getManyLG lg n = go [] n
                  -- we must seq x to avoid stack overflows due to laziness in
                  -- (>>=)
                  x `seq` go (x:xs) (i-1)
+{-# INLINE getManyLG #-}
 
 instance (ShATermLG a, ShATermLG b) => ShATermLG (a, b) where
   toShATermLG att0 (x, y) = do
