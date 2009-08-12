@@ -25,30 +25,136 @@ import Common.InjMap as InjMap
 
 import Data.Time (TimeOfDay(..))
 import Data.Fixed (Pico)
-import Data.Ratio (Ratio)
+import Data.Ratio
 import System.Time
 
 #ifdef BINARY_PACKAGE
 import Data.Binary
 #else
+import Control.Monad
+import Data.Char
 import Data.Word
+import Data.List as List
+import qualified Data.Map as Map
+import qualified Data.IntMap as IntMap
+import qualified Data.Set as Set
 
-class Binary a where
-  put :: a -> Put
-  put _ = Nothing
-  get :: Get a
-  get = Nothing
+import qualified Common.Lib.State as State
 
-instance Binary a
-
-type Put = Maybe ()
-type Get a = Maybe a
+type Put = State.State [Word8] ()
+type Get a = State.State [Word8] a
 
 putWord8 :: Word8 -> Put
-putWord8 _ = Nothing
+putWord8 w = State.modify (w :)
 
 getWord8 :: Get Word8
-getWord8 = Nothing
+getWord8 = do
+  l <- State.get
+  case l of
+    w : r -> do
+      State.put r
+      return w
+    [] -> error "getWord8"
+
+-- partly copied from the Data/Binary.hs
+class Binary a where
+  put :: a -> Put
+  get :: Get a
+
+instance Binary () where
+    put ()  = return ()
+    get     = return ()
+
+instance Binary Bool where
+    put     = putWord8 . fromIntegral . fromEnum
+    get     = liftM (toEnum . fromIntegral) getWord8
+
+instance Binary Char where
+    put = putWord8 . fromIntegral . ord
+    get = fmap (chr . fromIntegral) getWord8
+
+instance Binary Word8 where
+    put     = putWord8
+    get     = getWord8
+
+instance Binary Float where
+    put     = put . show
+    get     = fmap read get
+
+instance Binary Int where
+    put     = put . show
+    get     = fmap read get
+
+instance Binary Integer where
+    put     = put . show
+    get     = fmap read get
+
+instance (Binary a, Integral a) => Binary (Ratio a) where
+    put i = do
+      put $ numerator i
+      put $ denominator i
+    get = do
+      a <- get
+      b <- get
+      return $ a % b
+
+instance (Binary a, Binary b) => Binary (a,b) where
+    put (a,b)           = put a >> put b
+    get                 = liftM2 (,) get get
+
+instance (Binary a, Binary b, Binary c) => Binary (a,b,c) where
+    put (a,b,c)         = put a >> put b >> put c
+    get                 = liftM3 (,,) get get get
+
+instance (Binary a, Binary b, Binary c, Binary d) => Binary (a,b,c,d) where
+    put (a,b,c,d)       = put a >> put b >> put c >> put d
+    get                 = liftM4 (,,,) get get get get
+
+instance Binary a => Binary [a] where
+    put l  = put (length l) >> mapM_ put l
+    get    = do n <- get :: Get Int
+                getMany n
+
+-- | 'getMany n' get 'n' elements in order, without blowing the stack.
+getMany :: Binary a => Int -> Get [a]
+getMany n = go [] n
+ where
+    go xs 0 = return $! List.reverse xs
+    go xs i = do x <- get
+                 -- we must seq x to avoid stack overflows due to laziness in
+                 -- (>>=)
+                 x `seq` go (x:xs) (i-1)
+{-# INLINE getMany #-}
+
+instance (Binary a) => Binary (Maybe a) where
+    put Nothing  = putWord8 0
+    put (Just x) = putWord8 1 >> put x
+    get = do
+        w <- getWord8
+        case w of
+            0 -> return Nothing
+            _ -> liftM Just get
+
+instance (Binary a, Binary b) => Binary (Either a b) where
+    put (Left  a) = putWord8 0 >> put a
+    put (Right b) = putWord8 1 >> put b
+    get = do
+        w <- getWord8
+        case w of
+            0 -> liftM Left  get
+            _ -> liftM Right get
+
+instance (Ord a, Binary a) => Binary (Set.Set a) where
+    put s = put (Set.size s) >> mapM_ put (Set.toAscList s)
+    get   = liftM Set.fromDistinctAscList get
+
+instance (Ord k, Binary k, Binary e) => Binary (Map.Map k e) where
+    put m = put (Map.size m) >> mapM_ put (Map.toAscList m)
+    get   = liftM Map.fromDistinctAscList get
+
+instance (Binary e) => Binary (IntMap.IntMap e) where
+    put m = put (IntMap.size m) >> mapM_ put (IntMap.toAscList m)
+    get   = liftM IntMap.fromDistinctAscList get
 #endif
 
 fromBinaryError :: String -> Word8 -> a
