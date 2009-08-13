@@ -1,4 +1,3 @@
-{-# OPTIONS -cpp #-}
 {- |
 Module      :  $Header$
 Description :  Writing out a HetCASL library
@@ -44,11 +43,6 @@ import Syntax.Print_AS_Library ()
 import Syntax.ToXml
 
 import Driver.Options
-
-#ifdef BINARY_PACKAGE
-import Data.Binary.Put
-import qualified Data.ByteString.Lazy as L
-#endif
 
 -- | compute the prefix for files to be written out
 getFilePrefix :: HetcatsOpts -> FilePath -> (FilePath, FilePath)
@@ -125,13 +119,7 @@ writeFileInfo opts ln file ld gctx =
   case analysis opts of
   Basic -> do
       putIfVerbose opts 2 ("Writing file: " ++ envFile)
-      catch (
-#ifdef BINARY_PACKAGE
-             L.writeFile envFile . runPut $ putLG (ld, gctx)
-#else
-             writeShATermFileSDoc envFile (ln, (ld, gctx))
-#endif
-            ) $ \ err -> do
+      catch (writeShATermFileSDoc envFile (ln, (ld, gctx))) $ \ err -> do
               putIfVerbose opts 2 (envFile ++ " not written")
               putIfVerbose opts 3 ("see following error description:\n"
                                    ++ shows err "\n")
