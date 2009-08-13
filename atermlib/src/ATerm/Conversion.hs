@@ -2,7 +2,7 @@
 Module      :  $Header$
 Description :  the class ShATermConvertible and basic instances
 Copyright   :  (c) Klaus Luettich, C. Maeder, Uni Bremen 2002-2006
-License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
+License     :  similar to LGPL, see LICENSE.txt or LIZENZ.txt
 
 Maintainer  :  Christian.Maeder@dfki.de
 Stability   :  provisional
@@ -13,9 +13,9 @@ converting datatypes to and from 'ShATerm's in 'ATermTable's, plus a
 couple of basic instances and utilities
 -}
 
-module Common.ATerm.Conversion where
+module ATerm.Conversion where
 
-import Common.ATerm.AbstractSyntax
+import ATerm.AbstractSyntax
 import qualified Data.Map as Map
 import qualified Data.IntMap as IntMap
 import qualified Data.Set as Set

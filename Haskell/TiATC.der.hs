@@ -14,7 +14,7 @@ the generated instances in "Haskell.ATC_Haskell".
 
 module Haskell.TiATC() where
 
-import Common.ATerm.Lib
+import ATerm.Lib
 import TiTypes
 import TiKinds
 import TiInstanceDB

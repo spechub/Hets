@@ -30,9 +30,9 @@ import Common.PrintLaTeX
 import Common.GlobalAnnotations (GlobalAnnos)
 import Common.ConvertGlobalAnnos ()
 
-import Common.ATerm.Lib
-import Common.ATerm.ReadWrite
-import Common.SimpPretty (writeFileSDoc)
+import ATerm.Lib
+import ATerm.ReadWrite
+import ATerm.SimpPretty (writeFileSDoc)
 
 import ATC.AS_Library ()
 import ATC.DevGraph ()

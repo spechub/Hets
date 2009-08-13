@@ -38,9 +38,9 @@ PERL = perl
 HAPPY = happy -sga
 GENRULES = utils/genRules
 GENRULECALL = $(GENRULES) -r Typeable -r ShATermConvertible \
-    -i Data.Typeable -i Common.ATerm.Lib
+    -i Data.Typeable -i ATerm.Lib
 GENRULECALL2 = $(GENRULES) -r Typeable -r ShATermLG \
-    -i Data.Typeable -i Common.ATerm.Lib -i ATC.Grothendieck
+    -i Data.Typeable -i ATerm.Lib -i ATC.Grothendieck
 DRIFT = utils/DrIFT
 INLINEAXIOMS = utils/outlineAxioms
 HADDOCK = haddock
@@ -179,7 +179,7 @@ TESTTARGETS = Test.o $(subst .hs,,$(TESTTARGETFILES))
 # remove -fno-warn-orphans for older ghcs and add -ifgl
 HC_WARN = -Wall -fno-warn-orphans
 
-# INCLUDE_PATH =
+INCLUDE_PATH = atermlib/src
 HC_INCLUDE = $(addprefix -i, $(INCLUDE_PATH))
 
 # uncomment HC_PROF for profiling (and comment out packages in var.mk)

@@ -16,7 +16,7 @@ import OMDoc.OMDocInterface
 import qualified OMDoc.Util as Util
 import qualified OMDoc.XmlHandling as XML
 
-import qualified Common.Base64 as Base64
+import qualified ATerm.Base64 as Base64
 import Common.Utils (trim)
 
 import Text.XML.HXT.Parser ( (.>), (+=), (+++), getValue )

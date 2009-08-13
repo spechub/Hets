@@ -2,7 +2,7 @@
 Module      :  $Header$
 Description :  conversion between shared and (basically unused) unshared ATerms
 Copyright   :  (c) Klaus Luettich, Uni Bremen 2002-2004
-License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
+License     :  similar to LGPL, see LICENSE.txt or LIZENZ.txt
 
 Maintainer  :  Christian.Maeder@dfki.de
 Stability   :  provisional
@@ -11,7 +11,7 @@ Portability :  non-portable (imports ATerm.AbstractSyntax)
 conversion between shared and (basically unused) unshared 'ATerm's
 -}
 
-module Common.ATerm.Unshared
+module ATerm.Unshared
     (ATerm(..),
      fromATerm,
      fromShATerm,
@@ -19,8 +19,8 @@ module Common.ATerm.Unshared
      toATermTable)
     where
 
-import Common.ATerm.AbstractSyntax
-import Common.ATerm.Conversion
+import ATerm.AbstractSyntax
+import ATerm.Conversion
 
 data ATerm = AAppl String [ATerm] [ATerm]
            | AList [ATerm]        [ATerm]

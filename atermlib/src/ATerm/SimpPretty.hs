@@ -2,7 +2,7 @@
 Module      :  $Header$
 Description :  pretty printing combinators
 Copyright   :  (c) Klaus Luettich, C. Maeder Uni Bremen 2002-2005
-License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
+License     :  similar to LGPL, see LICENSE.txt or LIZENZ.txt
 
 Maintainer  :  Christian.Maeder@dfki.de
 Stability   :  provisional
@@ -15,7 +15,7 @@ A very simplified version of John Hughes's
    string sequences are left over
 -}
 
-module Common.SimpPretty (
+module ATerm.SimpPretty (
 
         -- * The document type
         SDoc,            -- Abstract
@@ -37,7 +37,6 @@ module Common.SimpPretty (
         render, fullRender, writeFileSDoc
   ) where
 
-import Prelude
 import System.IO
 
 infixl 6 <>

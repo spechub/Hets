@@ -2,7 +2,7 @@
 Module      :  $Header$
 Description :  compute the differences of two unshared ATerms
 Copyright   :  (c) Klaus Luettich, Uni Bremen 2005
-License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
+License     :  similar to LGPL, see LICENSE.txt or LIZENZ.txt
 
 Maintainer  :  Christian.Maeder@dfki.de
 Stability   :  provisional
@@ -11,10 +11,9 @@ Portability :  non-portable (imports ATerm.Unshared)
 Provides functions that calculate differences in unshared 'ATerm's.
 -}
 
-module Common.ATerm.Diff (atDiff) where
+module ATerm.Diff (atDiff) where
 
-import Common.ATerm.Unshared
-
+import ATerm.Unshared
 import Data.List
 
 -- | all diferences between both terms are replaced by appropiate

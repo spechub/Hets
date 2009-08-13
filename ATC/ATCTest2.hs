@@ -2,10 +2,10 @@ module Main where
 
 import System.Environment
 import System.Random
-import Common.SimpPretty
-import Common.ATerm.Lib
-import Common.ATerm.ReadWrite
-import Common.ATerm.Unshared
+import ATerm.SimpPretty
+import ATerm.Lib
+import ATerm.ReadWrite
+import ATerm.Unshared
 import Common.Utils (readMaybe)
 import qualified Data.Map as Map
 import Data.List (isPrefixOf)

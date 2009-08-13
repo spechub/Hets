@@ -30,8 +30,8 @@ import Common.LibName
 import Common.Result
 import Common.Utils
 import Common.AS_Annotation hiding (isAxiom, isDef)
-import Common.ATerm.ReadWrite
-import Common.ATerm.Unshared
+import ATerm.ReadWrite
+import ATerm.Unshared
 
 import Driver.Options
 

@@ -2,7 +2,7 @@ module Main where
 
 import System
 import Syntax.AS_Library
-import Common.ATerm.Lib
+import ATerm.Lib
 import Common.Result
 import ATC.Sml_cats
 import ATC.Grothendieck

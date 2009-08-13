@@ -13,7 +13,7 @@ Portability :  non-portable (imports programatica modules)
 
 module Haskell.TiDecorateATC() where
 
-import Common.ATerm.Lib
+import ATerm.Lib
 import TiDecorate
 import Haskell.ATC_Haskell()
 import Haskell.TiATC()

@@ -14,8 +14,7 @@ This module provides instances of `ShATermConvertible`.
 
 module Common.ATerm.ConvInstances () where
 
-import Common.ATerm.Conversion
-import Common.ATerm.AbstractSyntax
+import ATerm.Lib
 import Common.Lib.SizedList as SizedList
 import qualified Common.Lib.Rel as Rel
 import qualified Common.InjMap as InjMap

@@ -2,7 +2,7 @@
 Module      :  $Header$
 Description :  read and write ATerms to and from strings
 Copyright   :  (c) Klaus Luettich, C.Maeder, Uni Bremen 2002-2005
-License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
+License     :  similar to LGPL, see LICENSE.txt or LIZENZ.txt
 
 Maintainer  :  Christian.Maeder@dfki.de
 Stability   :  provisional
@@ -12,7 +12,7 @@ convert 'ShATerm's in 'ATermTable's to and from base64 encoded 'String's
   and 'SDoc's shared (TAF format) and unshared
 -}
 
-module Common.ATerm.ReadWrite
+module ATerm.ReadWrite
     ( readATerm
     , writeATerm
     , writeATermSDoc
@@ -39,9 +39,9 @@ module Common.ATerm.ReadWrite
         accidental support for the empty aterm: ShAAppl "" [] []
 -}
 
-import Common.ATerm.AbstractSyntax
-import Common.SimpPretty
-import Common.Base64
+import ATerm.AbstractSyntax
+import ATerm.SimpPretty
+import ATerm.Base64
 import Data.Char
 import qualified Data.IntMap as IntMap
 

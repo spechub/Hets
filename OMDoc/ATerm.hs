@@ -14,7 +14,7 @@ module OMDoc.ATerm where
 
 import qualified Network.URI as URI
 
-import Common.ATerm.Lib
+import ATerm.Lib
 
 instance ShATermConvertible URI.URI where
   toShATermAux att0 u = do

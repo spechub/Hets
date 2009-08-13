@@ -1,0 +1,39 @@
+name:            aterm
+version:         0.1.0.0
+license:         AllRightsReserved
+license-file:    LICENSE.txt
+author:          Klaus Luettich, Christian Maeder
+maintainer:      Christian Maeder <Christian Maeder@dfki.de>
+homepage:        https://svn-agbkb.informatik.uni-bremen.de/Hets/trunk/atermlib
+description:     Efficient serialisation via annotated terms
+                 Typeable Haskell values may be converted to and from aterms.
+synopsis:        serialisation for Haskell values with sharing support
+category:        Data, Parsing
+stability:       provisional
+build-type:      Simple
+cabal-version:   >= 1.2
+tested-with:     GHC ==6.10.4
+extra-source-files: LIZENZ.txt
+
+flag split-base
+
+library
+  if flag(split-base)
+    build-depends:   ghc-prim, base >= 3.0, containers, array
+  else
+    build-depends:   base < 3.0
+
+  hs-source-dirs:  src
+
+  exposed-modules:
+      ATerm.AbstractSyntax
+    , ATerm.Base64
+    , ATerm.Conversion
+    , ATerm.Diff
+    , ATerm.Lib
+    , ATerm.ReadWrite
+    , ATerm.SimpPretty
+    , ATerm.Unshared
+
+  extensions: MagicHash
+  ghc-options: -Wall

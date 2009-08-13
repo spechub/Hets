@@ -29,7 +29,7 @@ import Logic.Comorphism
 import qualified Data.Set as Set
 import Data.Maybe
 import Data.Typeable
-import Common.ATerm.Lib -- (ShATermConvertible)
+import ATerm.Lib -- (ShATermConvertible)
 import Common.DocUtils
 import Common.AS_Annotation
 

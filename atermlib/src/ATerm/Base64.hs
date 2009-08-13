@@ -2,7 +2,7 @@
 Module      :  $Header$
 Description :  Base64 de- and encoding
 Copyright   :  (c) Ian Lynagh, 2005, 2007, Christian Maeder, DFKI GmbH 2008
-License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
+License     :  similar to LGPL, see LICENSE.txt or LIZENZ.txt
 
 Maintainer  :  Christian.Maeder@dfki.de
 Stability   :  provisional
@@ -12,7 +12,7 @@ copied from module Codec.Binary.Base64.String
 of base64-string-0.1 and modified
 -}
 
-module Common.Base64
+module ATerm.Base64
   ( toBase64Int
   , toBase64Char
   , isBase64Char

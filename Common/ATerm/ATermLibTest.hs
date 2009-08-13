@@ -1,8 +1,6 @@
-module Main where
-
 import System
-import Common.ATerm.ReadWrite
-import Common.SimpPretty
+import ATerm.ReadWrite
+import ATerm.SimpPretty
 
 main :: IO ()
 main = do args <- getArgs

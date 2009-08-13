@@ -94,7 +94,7 @@ import Logic.Logic
 import Logic.Modification
 import Logic.Morphism
 
-import Common.ATerm.Lib
+import ATerm.Lib
 import Common.Doc
 import Common.DocUtils
 import Common.ExtSign

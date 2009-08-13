@@ -18,7 +18,7 @@ import Logic.Logic
 import Logic.Comorphism
 import Logic.Grothendieck
 
-import Common.ATerm.Lib
+import ATerm.Lib
 import Common.AS_Annotation
 import Common.GlobalAnnotations
 import Common.Lib.Graph

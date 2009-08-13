@@ -114,7 +114,7 @@ import Taxonomy.MMiSSOntology (MMiSSOntology)
 import ATC.DefaultMorphism ()
 
 import Common.AS_Annotation
-import Common.ATerm.Lib (ShATermConvertible)
+import ATerm.Lib (ShATermConvertible)
 import Common.Amalgamate
 import Common.AnnoState
 import Common.Consistency

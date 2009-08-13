@@ -21,7 +21,7 @@ import Logic.Coerce
 
 import qualified Common.OrderedMap as OMap
 
-import Common.ATerm.Lib
+import ATerm.Lib
 import Common.Keywords
 import Common.AS_Annotation
 import Common.Doc

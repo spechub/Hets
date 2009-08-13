@@ -2,7 +2,7 @@
 Module      :  $Header$
 Description :  the abstract syntax of shared ATerms and their lookup table
 Copyright   :  (c) Klaus Luettich, C. Maeder, Uni Bremen 2002-2006
-License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
+License     :  similar to LGPL, see LICENSE.txt or LIZENZ.txt
 
 Maintainer  :  Christian.Maeder@dfki.de
 Stability   :  provisional
@@ -11,7 +11,7 @@ Portability :  non-portable(imports System.Mem.StableName and GHC.Prim)
 the data types 'ShATerm' and 'ATermTable' plus some utilities
 -}
 
-module Common.ATerm.AbstractSyntax
+module ATerm.AbstractSyntax
     (ShATerm(..),
      ATermTable,
      emptyATermTable,

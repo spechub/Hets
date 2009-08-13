@@ -1,9 +1,7 @@
-module Main where
-
 import System.Environment
-import Common.ATerm.ReadWrite
-import Common.ATerm.Unshared
-import Common.ATerm.Diff
+import ATerm.ReadWrite
+import ATerm.Unshared
+import ATerm.Diff
 
 main :: IO ()
 main = do args <- getArgs
