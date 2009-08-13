@@ -1,4 +1,3 @@
-{-# OPTIONS -w #-}
 {- |
 Module      :  $Header$
 Description :  ShATermConvertible instances
@@ -16,7 +15,6 @@ the generated instances in "Haskell.ATC_Haskell".
 module Haskell.TiATC() where
 
 import Common.ATerm.Lib
-import Common.BinaryInstances
 import TiTypes
 import TiKinds
 import TiInstanceDB
@@ -58,18 +56,3 @@ import Data.Typeable
 {-! for HsDecls derive : ShATermConvertible !-}
 {-! for Sign derive : ShATermConvertible !-}
 
-{-! for Qual derive : Binary !-}
-{-! for Scheme derive : Binary !-}
-{-! for Typing derive : Binary !-}
-{-! for TypeInfo derive : Binary !-}
-{-! for Subst derive : Binary !-}
-{-! for Kind derive : Binary !-}
-{-! for KVar derive : Binary !-}
-{-! for KindConstraint derive : Binary !-}
-{-! for InstEntry derive : Binary !-}
-{-! for HsDeclI derive : Binary !-}
-{-! for AssertionI derive : Binary !-}
-{-! for PredicateI derive : Binary !-}
-{-! for HsExpI derive : Binary !-}
-{-! for HsDecls derive : Binary !-}
-{-! for Sign derive : Binary !-}

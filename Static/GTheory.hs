@@ -22,7 +22,6 @@ import Logic.Coerce
 import qualified Common.OrderedMap as OMap
 
 import Common.ATerm.Lib
-import Common.BinaryInstances
 import Common.Keywords
 import Common.AS_Annotation
 import Common.Doc
@@ -42,7 +41,7 @@ import Common.Amalgamate --for now
 
 -- a theory index describing a set of sentences
 newtype ThId = ThId Int
-  deriving (Typeable, Show, Eq, Ord, Enum, ShATermConvertible, Binary)
+  deriving (Typeable, Show, Eq, Ord, Enum, ShATermConvertible)
 
 startThId :: ThId
 startThId = ThId 0

@@ -42,11 +42,6 @@ ifneq ($(findstring 8., $(HXTFILTERVERSION)),)
 HXTFILTER_PACKAGE = -DHXTFILTER
 endif
 
-BINARYVERSION = $(shell $(HCPKG) field binary version)
-ifneq ($(findstring 0.5, $(BINARYVERSION)),)
-BINARY_PACKAGE = -DBINARY_PACKAGE
-endif
-
 UNIVERSION = $(shell $(HCPKG) field uni-uDrawGraph version)
 ifneq ($(findstring 2., $(UNIVERSION)),)
 UNI_PACKAGE = -DUNI_PACKAGE
@@ -63,7 +58,7 @@ TESTTARGETFILES += Taxonomy/taxonomyTool.hs OWL/OWLParser.hs \
 endif
 
 HC_OPTS_WITHOUTGLADE = -threaded -fglasgow-exts -XOverlappingInstances \
-  $(TIME_PACKAGE) $(TAR_PACKAGE) $(BINARY_PACKAGE) \
+  $(TIME_PACKAGE) $(TAR_PACKAGE) \
   $(UNI_PACKAGE) $(SHELLAC_PACKAGE) $(HXTFILTER_PACKAGE) \
   $(PFE_FLAGS) $(TABULAR_PACKAGE) $(EDITLINE_PACKAGE) -DCASLEXTENSIONS
 

@@ -30,7 +30,6 @@ import qualified Data.Set as Set
 import Data.Maybe
 import Data.Typeable
 import Common.ATerm.Lib -- (ShATermConvertible)
-import Common.BinaryInstances
 import Common.DocUtils
 import Common.AS_Annotation
 
@@ -180,7 +179,7 @@ instance Morphism cid
 -- default is ok
 
 newtype S2 s = S2 { sentence2 :: s }
-  deriving (Eq, Ord, Show, Typeable, Binary, ShATermConvertible, Pretty)
+  deriving (Eq, Ord, Show, Typeable, ShATermConvertible, Pretty)
 
 instance Morphism cid
             lid1 sublogics1 basic_spec1 sentence1 symb_items1 symb_map_items1
@@ -265,15 +264,6 @@ instance (MinSublogic sublogics1 alpha, SemiLatticeWithTop sublogics2)
 instance (MinSublogic sublogics1 sign1, SemiLatticeWithTop sublogics2)
          => ProjectSublogicM (SublogicsPair sublogics1 sublogics2) sign1 where
       projectSublogicM _ x = Just x
-
-instance (Binary a,Binary b) => Binary (SublogicsPair a b) where
-  put (SublogicsPair a b) = do
-      put a
-      put b
-  get = do
-      a <- get
-      b <- get
-      return $ SublogicsPair a b
 
 instance (ShATermConvertible a, ShATermConvertible b)
     => ShATermConvertible (SublogicsPair a b) where

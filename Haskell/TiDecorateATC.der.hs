@@ -1,4 +1,3 @@
-{-# OPTIONS -w #-}
 {- |
 Module      :  $Header$
 Description :  ShATermConvertible instances
@@ -15,7 +14,6 @@ Portability :  non-portable (imports programatica modules)
 module Haskell.TiDecorateATC() where
 
 import Common.ATerm.Lib
-import Common.BinaryInstances
 import TiDecorate
 import Haskell.ATC_Haskell()
 import Haskell.TiATC()
@@ -30,8 +28,3 @@ import Data.Typeable
 {-! for TiDecl derive : ShATermConvertible !-}
 {-! for TiExp derive : ShATermConvertible !-}
 {-! for TiPat derive : ShATermConvertible !-}
-
-{-! for TiDecls derive : Binary !-}
-{-! for TiDecl derive : Binary !-}
-{-! for TiExp derive : Binary !-}
-{-! for TiPat derive : Binary !-}

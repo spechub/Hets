@@ -95,7 +95,6 @@ import Logic.Modification
 import Logic.Morphism
 
 import Common.ATerm.Lib
-import Common.BinaryInstances
 import Common.Doc
 import Common.DocUtils
 import Common.ExtSign
@@ -135,7 +134,7 @@ instance Pretty G_basic_spec where
 
 -- | index for signatures
 newtype SigId = SigId Int
-  deriving (Typeable, Show, Eq, Ord, Enum, ShATermConvertible, Binary)
+  deriving (Typeable, Show, Eq, Ord, Enum, ShATermConvertible)
 
 startSigId :: SigId
 startSigId = SigId 0
@@ -288,7 +287,7 @@ isProperSublogic a@(G_sublogics lid1 l1) b@(G_sublogics lid2 l2) =
 
 -- | index for morphisms
 newtype MorId = MorId Int
-  deriving (Typeable, Show, Eq, Ord, Enum, ShATermConvertible, Binary)
+  deriving (Typeable, Show, Eq, Ord, Enum, ShATermConvertible)
 
 startMorId :: MorId
 startMorId = MorId 0
