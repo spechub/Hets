@@ -1,3 +1,4 @@
+{-# LANGUAGE MultiParamTypeClasses, FlexibleInstances #-}
 {- |
 Module      :  $Header$
 Description :  extracted annotated items as strings from BASIC_SPEC
@@ -11,7 +12,8 @@ Portability :  non-portable
 get item representation of 'BASIC_SPEC'
 -}
 
-module CASL.ToItem (bsToItem) where
+--module CASL.ToItem (bsToItem) where
+module CASL.ToItem where
 
 import Control.Monad.State
 
@@ -19,26 +21,43 @@ import Common.Doc
 import Common.DocUtils
 import Common.Id
 import Common.Item
---import Common.AS_Annotation
+import Common.AS_Annotation
 
 import CASL.AS_Basic_CASL
-import CASL.ToDoc()
+import CASL.ToDoc
 
 -- utils
 mapF :: Functor f => (a -> b) -> [f a] -> [f b]
 mapF f = map $ fmap f
 
-
-
-instance ItemTypeable SortsKind where
-    toIT NonEmptySorts = Nonempty
-    toIT PossiblyEmptySorts = Possiblyempty
-
+toString :: Pretty a => a -> String
+toString = show . pretty
 
 -- TS = TransState
 data TS b s f = TS { fB :: (b -> Doc)
                    , fS :: (s -> Doc)
                    , fF :: (f -> Doc) }
+
+-- LITC = LocalITContext
+-- This datastructure is used to pass an additional ItemType argument to
+-- the toitem method when one needs an instance for which this method
+-- should behave differently in different contexts depending on this argument.
+-- Typically the ItemType is used as ItemType of the Item to be created.
+
+data LITC a = LITC { lit :: ItemType
+                   , element :: a }
+
+withLIT :: ItemTypeable a => a -> b -> LITC b
+withLIT it = LITC $ toIT it
+
+annWithLIT :: ItemTypeable a => a -> Annoted b -> Annoted (LITC b)
+annWithLIT it = fmap (withLIT it)
+
+listWithLIT :: ItemTypeable a => a -> [b] -> [LITC b]
+listWithLIT it = map (withLIT it)
+
+annlistWithLIT :: ItemTypeable a => a -> [Annoted b] -> [Annoted (LITC b)]
+annlistWithLIT it = map (annWithLIT it)
 
 
 -- this function is only to unify the types of the state and the basic spec
@@ -52,149 +71,172 @@ bsToItem bs = fst $ runState (toitem bs) $ getTransState bs
 
 instance ItemConvertible (BASIC_SPEC b s f) (State (TS b s f)) where
     toitem (Basic_spec l) = 
-        do{ l' <-  listfromAList l
+        do{ l' <-  listFromAL l
           ; return rootItem{ items = l' } }
 
 instance ItemConvertible (BASIC_ITEMS b s f) (State (TS b s f)) where
     toitem bi =
         case bi of
           Sig_items s -> toitem s
+          Var_items l rg -> mkItemM "Var_items" rg $ listFromL l
+          Axiom_items al rg -> mkItemM "Axiom_items" rg $ listFromAL al
+          Local_var_axioms vl fl rg ->
+              mkItemMM "Local_var_axioms" rg
+                           [fromL "VAR_DECLS" vl, fromAL "FORMULAS" fl]
           _ -> return $ abstract "basicitem"
 
 instance ItemConvertible (SIG_ITEMS s f) (State (TS b s f)) where
-    toitem si = return $ liftIT2I $ Simple Sig
+    toitem si =
+        case si of
+          Sort_items sk sis rg ->
+              mkItemM ("Sort_items", "SortsKind", show sk) rg
+                $ listFromAL sis
+          Op_items aois rg -> mkItemM "Op_items" rg $ listFromAL aois
+          Pred_items apis rg -> mkItemM "Pred_items" rg $ listFromAL apis
+          Datatype_items sk adds rg ->
+              mkItemM ("Datatype_items", "SortsKind", show sk) rg
+                $ listFromAL adds
+          _ -> return $ liftIT2I "Ext_SIG_ITEMS"
+
+
+instance ItemConvertible (SORT_ITEM f) (State (TS b s f)) where
+    toitem si =
+        case si of
+          Sort_decl l rg -> mkItemM "Sort_decl" rg $ listFromL
+                            $ listWithLIT "SORT" l
+          Subsort_decl sl s rg -> mkItemMM "Subsort_decl" rg
+                                  [ fromL "SORTS" $ listWithLIT "SORT" sl
+                                  , fromC $ withLIT "SORT" s]
+          Subsort_defn s v s' f rg ->
+              mkItemMM "Subsort_defn" rg
+                [ fromC $ withLIT "SORT" s, fromC $ withLIT "VAR" v
+                , fromC $ withLIT "SORT" s', fromAC f]
+          Iso_decl l rg -> mkItemM "Iso_decl" rg $ listFromL
+                           $ listWithLIT "SORT" l
+
+
+instance ItemConvertible (OP_ITEM f) (State (TS b s f)) where
+    toitem oi =
+        case oi of
+          Op_decl onl ot oal rg ->
+              mkItemMM "Op_decl" rg
+                [ fromL "OP_NAMES" $ listWithLIT "OP_NAME" onl, fromC ot
+                , fromL "OP_ATTRIBS" oal]
+          Op_defn on oh at rg ->
+              mkItemMM "Op_defn" rg [ fromC $ withLIT "OP_NAME" on, fromC oh
+                                    , fromAC at]
+
+
+instance ItemConvertible (PRED_ITEM f) (State (TS b s f)) where
+    toitem p =
+        case p of
+          Pred_decl pnl pt rg ->
+              mkItemMM "Pred_decl" rg
+                [fromL "PRED_NAMES" $ listWithLIT "PRED_NAME" pnl, fromC pt]
+          Pred_defn pn ph af rg ->
+              mkItemMM "Pred_defn" rg [ fromC $ withLIT "PRED_NAME" pn, fromC ph
+                                      , fromAC af]
+
+
+-------------------- not further expanded --------------------
+
+fromPrinterWithRg :: (Monad m, GetRange a) =>
+                     (a -> String) -> String -> a -> m Item
+fromPrinterWithRg p n o = mkItemMM (n, p o) (getRange o) []
+
+fromPrinter :: (Monad m) => (a -> String) -> String -> a -> m Item
+fromPrinter p n o = mkItemMM (n, p o) nullRange []
+
+litFromPrinterWithRg :: (Monad m, GetRange a) =>
+                        (a -> String) -> LITC a -> m Item
+litFromPrinterWithRg p (LITC (NewIT l) o) =
+    mkItemMM (NewIT $ l ++ [p o]) (getRange o) []
+litFromPrinterWithRg _ _ = error "Malformed LITC"
+
+
+instance ItemConvertible OP_TYPE (State (TS b s f)) where
+    toitem = fromPrinterWithRg toString "OP_TYPE"
+
+instance ItemConvertible OP_HEAD (State (TS b s f)) where
+    toitem = fromPrinterWithRg toString "OP_HEAD"
+                     
+instance ItemConvertible (OP_ATTR f) (State (TS b s f)) where
+    toitem a =
+        do{ st <- get
+          ; fromPrinter (show . printAttr (fF st)) "OP_ATTR" a }
+                     
+instance ItemConvertible PRED_TYPE (State (TS b s f)) where
+    toitem = fromPrinterWithRg toString "PRED_TYPE"
+
+instance ItemConvertible PRED_HEAD (State (TS b s f)) where
+    toitem = fromPrinterWithRg (show . printPredHead) "PRED_HEAD"
+
+instance ItemConvertible DATATYPE_DECL (State (TS b s f)) where
+    toitem = fromPrinterWithRg toString "DATATYPE_DECL"
+
+instance ItemConvertible VAR_DECL (State (TS b s f)) where
+    toitem = fromPrinterWithRg toString "VAR_DECL"
+
+instance ItemConvertible (FORMULA f) (State (TS b s f)) where
+    toitem f =
+        do{ st <- get
+          ; fromPrinter (show . printFormula (fF st)) "FORMULA" f }
+
+instance ItemConvertible (TERM f) (State (TS b s f)) where
+    toitem f =
+        do{ st <- get
+          ; fromPrinter (show . printTerm (fF st)) "TERM" f }
+
+
+instance ItemConvertible (LITC Id) (State (TS b s f)) where
+    toitem = litFromPrinterWithRg toString
+
+instance ItemConvertible (LITC Token) (State (TS b s f)) where
+    toitem = litFromPrinterWithRg toString
 
 
 
+----------------- DUMMY INSTANCES -----------------
+dummy :: Monad m => String -> a -> m Item
+dummy s = const $ return $ liftIT2I ("dummy", s)
+
+
+
+----------------- OLD -----------------
 
 {-
+-- simple test instance:
+instance ItemConvertible (SIG_ITEMS s f) (State (TS b s f)) where
+    toitem si = return $ liftIT2I $ Simple Sig
 
-bsToItem2 :: (Pretty b, Pretty s, Pretty f) => BASIC_SPEC b s f -> Item
-bsToItem2 = basicSpecToItem $ TS pretty pretty pretty
+-- test for printing of abstract items:
+instance ItemConvertible (SORT_ITEM f) (State (TS b s f)) where
+    toitem (Subsort_defn s v s' f rg) =
+        do{ st <- get
+          ; let mf = fF st
+          ; return $ liftIT2I $ Abstract $ show $ printFormula mf $ item f }
+    toitem _ = return $ liftIT2I $ Simple SortK
 
-
-basicSpecToItem :: TS b s f ->
-                   BASIC_SPEC b s f -> Item
-basicSpecToItem st (Basic_spec l) =
-    rootItem { items = mapF (basicItem2I st) l }
-
-
-basicItem2I :: TS b s f ->
-               BASIC_ITEMS b s f -> Item
-
-basicItem2I st (Sig_items s) = sigItem2I st s
-basicItem2I st (Free_datatype sk l rg) =
-    Item (IT Datatype Free) rg [] $ (liftIT2AI sk) : [] -- mapF (dtdecl2I st) l
-basicItem2I st (Sort_gen _ rg) = Item (IT SortK Gen) rg [] []
-basicItem2I st (Var_items _ rg) = Item (IT Var Items) rg [] []
-basicItem2I st (Local_var_axioms _ _ rg) = Item Localvaraxioms rg [] []
-basicItem2I st (Axiom_items _ rg) = Item Axiomitems rg [] []
-basicItem2I st (Ext_BASIC_ITEMS _) = Item (IT Basic Ext) nullRange [] []
-
-
-sigItem2I :: TS b s f ->
-             SIG_ITEMS s f -> Item
-
-sigItem2I st (Sort_items sk sis rg) =
-    Item (IT SortK Items) rg [] $ mapF (sortItem2I st) sis
-sigItem2I _ _ = liftIT2I (Simple Sig)
-
-
-sortItem2I :: TS b s f ->
-              SORT_ITEM f -> Item
-
-sortItem2I st (Sort_decl l rg) = liftIT2I (Simple SortK)
-sortItem2I st (Subsort_decl l t rg) = liftIT2I (Simple SortK)
-sortItem2I st (Subsort_defn s v s' f rg) = liftIT2I (Simple SortK)
-sortItem2I st (Iso_decl l rg) = liftIT2I (Simple SortK)
 -}
 
 {-
+instance ItemConvertible (SIG_ITEMS s f) (State (TS b s f)) where
+    toitem si =
+        case si of
+          Sort_items sk sis rg ->
+              mkItemM (Complex (IT SortK Items) "SortsKind" $ show sk) rg
+                      $ listFromAL sis
+          _ -> return $ liftIT2I $ Simple Sig
 
-data SORT_ITEM f = Sort_decl [SORT] Range
-                 -- pos: commas
-               | Subsort_decl [SORT] SORT Range
-                 -- pos: commas, <
-               | Subsort_defn SORT VAR SORT (Annoted (FORMULA f)) Range
-                 -- pos: "=", "{", ":", ".", "}"
-                 -- the left anno list stored in Annoted Formula is
-                 -- parsed after the equal sign
-               | Iso_decl [SORT] Range
-                 -- pos: "="s
-                 deriving Show
+instance ItemConvertible (SORT_ITEM f) (State (TS b s f)) where
+    toitem si =
+        case si of
+          Sort_decl l rg -> mkItemM (IT SortK Decl) rg $ listFromL l
+          Subsort_decl sl s rg -> mkItemM (IT Subsort Decl) rg
+                                  [fromL (IT Subsort Items) sl, fromC s]
+          Subsort_defn s v s' f rg ->
+              mkItemM (IT Subsort Defn) rg [fromC s, fromC v, fromC s', fromAC f]
+          Iso_decl l rg -> mkItemM (IT Iso Decl) rg $ listFromL l
 
-Sort_items SortsKind [Annoted (SORT_ITEM f)] Range
-                 -- pos: sort, semi colons
-               | Op_items [Annoted (OP_ITEM f)] Range
-                 -- pos: op, semi colons
-               | Pred_items [Annoted (PRED_ITEM f)] Range
-                 -- pos: pred, semi colons
-               | Datatype_items SortsKind [Annoted DATATYPE_DECL] Range
-                 -- type, semi colons
-               | Ext_SIG_ITEMS s
-
-formToItem :: TS b s f -> Annoted (FORMULA f) -> Annoted String
-formToItem s f = f { item = show . addBullet . printFormula (fF s) $ item f }
-
-sigItemToItem :: (s -> Doc) -> (f -> Doc) -> Annoted (SIG_ITEMS s f)
-                   -> [Annoted String]
-sigItemToItem fS fF sis = let
-  ras = if null $ r_annos sis then [] else [sis { item = "", l_annos = [] }]
-  in case item sis of
-    Sort_items sk l _ -> sis
-      {item = show $ topSigKey $ (case sk of
-        NonEmptySorts -> sortS
-        PossiblyEmptySorts -> esortS) ++ pluralS l
-      , r_annos = [] }
-      : map (sortItemToItem fF) l
-      ++ ras
-    Op_items l _  ->
-      sis { item = show $ topSigKey $ opS ++ pluralS l
-          , r_annos = [] }
-      : addSemi (map (opItemToItem fF) l)
-      ++ ras
-    Pred_items l _ ->
-      sis { item = show $ topSigKey $ predS ++ pluralS l
-          , r_annos = [] }
-      : addSemi (map (predItemToItem fF) l)
-      ++ ras
-    Datatype_items sk l _ ->
-      sis { item = show $ topSigKey $ typeString sk l
-          , r_annos = [] }
-      : addSemi (map dtdeclToItem l)
-      ++ ras
-    Ext_SIG_ITEMS s -> [sis { item = show $ fS s }]
-
-addSemi :: [Annoted String] -> [Annoted String]
-addSemi l = case reverse l of
-  [] -> []
-  lt : rt -> reverse $ lt : map (\ a -> a { item = item a ++ ";" }) rt
-
-dtdeclToItem :: Annoted DATATYPE_DECL -> Annoted String
-dtdeclToItem dt = dt { item = showDoc (item dt) ""}
-
-sortItemToItem :: (f -> Doc) -> Annoted (SORT_ITEM f) -> Annoted String
-sortItemToItem mf si = case item si of
-    Subsort_defn s v sup af r -> let nf = emptyAnno $ item af in si
-      { item = show $ printSortItem mf (Subsort_defn s v sup nf r)
-      , l_annos = l_annos si ++ l_annos af
-      , r_annos = r_annos af ++ r_annos si }
-    s -> si { item = show $ printSortItem mf s }
-
-opItemToItem :: (f -> Doc) -> Annoted (OP_ITEM f) -> Annoted String
-opItemToItem mf p = case item p of
-    Op_defn i h t r -> let nt = emptyAnno $ item t in p
-      { item = show $ printOpItem mf (Op_defn i h nt r)
-      , l_annos = l_annos p ++ l_annos t
-      , r_annos = r_annos t ++ r_annos p }
-    o -> p { item = show $ printOpItem mf o }
-
-predItemToItem :: (f -> Doc) -> Annoted (PRED_ITEM f) -> Annoted String
-predItemToItem mf p = case item p of
-    Pred_defn i h f r -> let nf = emptyAnno $ item f in p
-      { item = show $ printPredItem mf (Pred_defn i h nf r)
-      , l_annos = l_annos p ++ l_annos f
-      , r_annos = r_annos f ++ r_annos p }
-    pd -> p { item = show $ printPredItem mf pd }
 
 -}

@@ -26,6 +26,9 @@ module CASL.ToDoc
     , printSortItem
     , printOpItem
     , printPredItem
+    , printPredHead
+    , printAttr
+
     ) where
 
 import Common.Id

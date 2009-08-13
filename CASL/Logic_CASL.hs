@@ -31,7 +31,7 @@ import CASL.AS_Basic_CASL
 import CASL.Parse_AS_Basic
 import CASL.ToDoc
 import CASL.ToAnnStrList
-import CASL.ToItem
+import CASL.ToItem (bsToItem)
 import CASL.SymbolParser
 import CASL.MapSentence
 import CASL.Amalgamability
