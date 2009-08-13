@@ -447,6 +447,7 @@ aterm_pkg: $(aterm_sources) $(SETUP)
           echo "of aterm package found"; else \
           cp -f LICENSE.txt atermlib; \
           cp -f LIZENZ.txt atermlib; \
+          cp -f utils/Setup.hs atermlib; \
           cp -f $(SETUP) atermlib; \
           (cd atermlib; \
            ./Setup configure -O -p $(SETUPPREFIX); \
