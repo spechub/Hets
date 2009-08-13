@@ -474,7 +474,7 @@ transTerm sign tyToks collectConds toks pVars trm = case trm of
                   isaId = transOpId sign tyToks opId ts
                   ef = cf $ (for (isPlainFunType fTy - 1)
                                   $ termAppl uncurryOp)
-                             $ if opId == projName then
+                             $ if elem opId [injName, projName] then
                                    mkTypedConst isaId instfTy
                                else con isaId
                   in ITC instfTy ef None
