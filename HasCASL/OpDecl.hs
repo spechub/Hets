@@ -131,9 +131,11 @@ anaOpItem br oi = do
                case mt of
                    Just lastTrm0 -> do
                        let lastTrm = case lastTrm0 of
-                             TypedTerm lTrm AsType rTy _ ->
+                             TypedTerm lTrm AsType rTy rs ->
                                case getTypeOf lTrm of
-                                 Just oTy | lesserType e oTy rTy -> lTrm
+                                 Just oTy | lesserType e oTy rTy ->
+                                   if oTy == rTy then lTrm else
+                                      TypedTerm lTrm Inferred rTy rs
                                  _ -> lastTrm0
                              _ -> lastTrm0
                            lamTrm = case (pats, partial) of
