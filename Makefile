@@ -179,7 +179,7 @@ TESTTARGETS = Test.o $(subst .hs,,$(TESTTARGETFILES))
 # remove -fno-warn-orphans for older ghcs and add -ifgl
 HC_WARN = -Wall -fno-warn-orphans
 
-INCLUDE_PATH = atermlib/src
+INCLUDE_PATH =
 HC_INCLUDE = $(addprefix -i, $(INCLUDE_PATH))
 
 # uncomment HC_PROF for profiling (and comment out packages in var.mk)
@@ -427,7 +427,7 @@ doc_sources = $(filter-out $(nondoc_sources), $(sources) $(hspp_sources))
 
 .PHONY : all hets-opt hets-optimized clean o_clean clean_pretty \
     real_clean bin_clean package_clean distclean packages \
-    programatica_pkg maintainer-clean annos \
+    programatica_pkg aterm_pkg maintainer-clean annos \
     check capa hacapa h2h h2hf showKP clean_genRules genRules \
     count doc fromKif derivedSources release cgi ghci
 
@@ -436,9 +436,21 @@ doc_sources = $(filter-out $(nondoc_sources), $(sources) $(hspp_sources))
 $(SETUP): utils/Setup.hs
 	$(HC) --make -O -o $@ $<
 
-packages: programatica_pkg
+packages: aterm_pkg programatica_pkg
 
 programatica_pkg:
+
+aterm_sources = $(wildcard atermlib/src/ATerm/*.hs)
+
+aterm_pkg: $(aterm_sources) $(SETUP)
+	@if $(HCPKG) field aterm version; then \
+          echo "of aterm package found"; else \
+          cp -f LICENSE.txt atermlib; \
+          cp -f LIZENZ.txt atermlib; \
+          cp -f $(SETUP) atermlib; \
+          (cd atermlib; \
+           ./Setup configure -O -p $(SETUPPREFIX); \
+           ./Setup build; ./Setup install --user) fi
 
 hets-opt:
 	$(MAKE) distclean
@@ -578,6 +590,7 @@ package_clean:
 	$(HCPKG) unregister HAIFA --user || exit 0
 	$(HCPKG) unregister programatica --user || exit 0
 	$(HCPKG) unregister syb-generics --user || exit 0
+	$(HCPKG) unregister aterm --user || exit 0
 
 ### additionally removes generated files not in the CVS tree
 distclean: clean clean_genRules
