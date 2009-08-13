@@ -119,7 +119,8 @@ subtAx tm (i1, i2) = let
     v1 = mkVarDecl x1 t1
     v2 = mkVarDecl x2 t2
     in makeNamed ("ga_subt_" ++ txt) $ Formula
-         $ mkForall (map GenTypeVarDecl tyargs ++ map GenVarDecl vargs)
+         $ mkForall (map GenTypeVarDecl tyargs
+                     ++ map GenVarDecl (vargs ++ [v1, v2]))
            $ (if null fs then id else
              mkLogTerm implId nr (foldr1 (mkLogTerm andId nr) fs))
                $ mkSubtTerm t1 t2 v1 v2
