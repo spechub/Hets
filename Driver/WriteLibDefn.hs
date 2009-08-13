@@ -1,3 +1,4 @@
+{-# OPTIONS -cpp #-}
 {- |
 Module      :  $Header$
 Description :  Writing out a HetCASL library
@@ -29,10 +30,10 @@ import Common.LibName
 import Common.PrintLaTeX
 import Common.GlobalAnnotations (GlobalAnnos)
 import Common.ConvertGlobalAnnos ()
-import Common.SimpPretty (writeFileSDoc)
 
 import Common.ATerm.Lib
 import Common.ATerm.ReadWrite
+import Common.SimpPretty (writeFileSDoc)
 
 import ATC.AS_Library ()
 import ATC.DevGraph ()
@@ -43,6 +44,11 @@ import Syntax.Print_AS_Library ()
 import Syntax.ToXml
 
 import Driver.Options
+
+#ifdef BINARY_PACKAGE
+import Data.Binary.Put
+import qualified Data.ByteString.Lazy as L
+#endif
 
 -- | compute the prefix for files to be written out
 getFilePrefix :: HetcatsOpts -> FilePath -> (FilePath, FilePath)
@@ -112,14 +118,20 @@ writeShATermFileSDoc fp atcon = do
    att <- versionedATermTable atcon
    writeFileSDoc fp $ writeSharedATermSDoc att
 
-writeFileInfo :: ShATermLG a => HetcatsOpts -> LIB_NAME
+writeFileInfo :: (BinaryLG a, ShATermLG a) => HetcatsOpts -> LIB_NAME
               -> FilePath -> LIB_DEFN -> a -> IO ()
 writeFileInfo opts ln file ld gctx =
   let envFile = snd (getFilePrefix opts file) ++ envSuffix in
   case analysis opts of
   Basic -> do
       putIfVerbose opts 2 ("Writing file: " ++ envFile)
-      catch (writeShATermFileSDoc envFile (ln, (ld, gctx))) $ \ err -> do
+      catch (
+#ifdef BINARY_PACKAGE
+             L.writeFile envFile . runPut $ putLG (ld, gctx)
+#else
+             writeShATermFileSDoc envFile (ln, (ld, gctx))
+#endif
+            ) $ \ err -> do
               putIfVerbose opts 2 (envFile ++ " not written")
               putIfVerbose opts 3 ("see following error description:\n"
                                    ++ shows err "\n")

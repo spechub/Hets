@@ -1,3 +1,4 @@
+{-# OPTIONS -cpp #-}
 {- |
 Module      :  $Header$
 Description :  static analysis of CASL specification libraries
@@ -53,6 +54,12 @@ import Control.Monad.Trans
 
 import System.Directory
 import System.Time
+
+#ifdef BINARY_PACKAGE
+import qualified Data.Binary.Get as B
+import qualified Data.ByteString.Lazy as L
+import ATC.Grothendieck (getLG)
+#endif
 
 -- a set of library names to check for cyclic imports
 type LNS = Set.Set LIB_NAME
@@ -140,7 +147,16 @@ anaLibFileOrGetEnv lgraph opts topLns libenv libname file = ResultT $ do
      recent_envFile <- checkRecentEnv opts envFile file
      if recent_envFile
         then do
+#ifdef BINARY_PACKAGE
+             mgc <- do
+               s <- L.readFile envFile
+               return $ B.runGet (do
+                 v <- getLG lgraph
+                 m <- B.isEmpty
+                 m `seq` return (Just v)) s
+#else
              mgc <- readVerbose lgraph opts libname envFile
+#endif
              case mgc of
                  Nothing -> runResultT $ do
                      lift $ putIfVerbose opts 1 $ "Deleting " ++ envFile
