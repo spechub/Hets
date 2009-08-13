@@ -60,8 +60,8 @@ SETUP = utils/Setup
 SETUPPREFIX = --prefix=$(HOME)/.ghc/$(ARCH)-$(OSBYUNAME)-hets-packages
 
 SETUPPACKAGE = ../$(SETUP) clean; \
-    ../$(SETUP) configure $(SETUPPREFIX) --user; \
-    ../$(SETUP) build; ../$(SETUP) install --user
+    ../$(SETUP) configure -O -p $(SETUPPREFIX) --user; \
+    ../$(SETUP) build; ../$(SETUP) haddock; ../$(SETUP) install --user
 
 # list glade files
 GTK_GLADE_FILES = $(wildcard GUI/Glade/*.glade)
@@ -449,9 +449,7 @@ aterm_pkg: $(aterm_sources) $(SETUP)
           cp -f LIZENZ.txt atermlib; \
           cp -f utils/Setup.hs atermlib; \
           cp -f $(SETUP) atermlib; \
-          (cd atermlib; \
-           ./Setup configure -O -p $(SETUPPREFIX); \
-           ./Setup build; ./Setup install --user) fi
+          (cd atermlib; $(SETUPPACKAGE)) fi
 
 hets-opt:
 	$(MAKE) distclean

@@ -5,7 +5,7 @@ license-file:    LICENSE.txt
 author:          Klaus Luettich, Christian Maeder
 maintainer:      Christian Maeder <Christian Maeder@dfki.de>
 homepage:        https://svn-agbkb.informatik.uni-bremen.de/Hets/trunk/atermlib
-description:     Efficient serialisation via annotated terms
+description:     Efficient serialisation via annotated terms.
                  Typeable Haskell values may be converted to and from aterms.
 synopsis:        serialisation for Haskell values with sharing support
 category:        Data, Parsing
