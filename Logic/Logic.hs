@@ -129,7 +129,7 @@ import Common.LibName
 import Common.Result
 import Common.Taxonomy
 
-import Common.Item
+import Common.Item (Item)
 
 import qualified Data.Set as Set
 import qualified Data.Map as Map
