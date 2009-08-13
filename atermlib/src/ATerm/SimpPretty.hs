@@ -1,6 +1,6 @@
 {- |
 Module      :  $Header$
-Description :  pretty printing combinators
+Description :  simple pretty printing combinators
 Copyright   :  (c) Klaus Luettich, C. Maeder Uni Bremen 2002-2005
 License     :  similar to LGPL, see LICENSE.txt or LIZENZ.txt
 
@@ -8,11 +8,12 @@ Maintainer  :  Christian.Maeder@dfki.de
 Stability   :  provisional
 Portability :  portable
 
-Pretty printing combinators
+Rather than using (slow, sequential) strings create (fast, tree-like)
+documents and render them later as text for IO.
 
 A very simplified version of John Hughes's
    and Simon Peyton Jones's Pretty Printer Combinators. Only catenable
-   string sequences are left over
+   string sequences are left over.
 -}
 
 module ATerm.SimpPretty (
@@ -20,7 +21,7 @@ module ATerm.SimpPretty (
         -- * The document type
         SDoc,            -- Abstract
 
-        -- * Primitive SDocuments
+        -- * Primitive documents
         empty, comma,
 
         -- * Converting values into documents
