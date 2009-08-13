@@ -50,7 +50,11 @@ showConsistencyChecker _ descr dgraph  = postGUIAsync $ do
   trvFinder           <- xmlGetWidget xml castToTreeView "trvFinder"
 
   set window [windowTitle := "Consistency Checker"]
-  setListData trvModel (\ a -> a) ["Test1", "Test2", "Test3", "Test4"]
+
+  initState <- (initialState lid thName th knownProvers comorphList
+                >>= recalculateSublogicF prGuiAcs)
+
+  setListData trvModel goalDescription $ getGoals initState
 
   setModelListSelector trvModel
   setFinderListSelector trvFinder
@@ -78,7 +82,7 @@ setFinderListSelector view = do
   selector <- MV.treeViewGetSelection view
   MV.treeSelectionSetMode selector MV.SelectionSingle
 
-setModelListSelector :: MV.TreeView -> IO ()
+  setModelListSelector :: MV.TreeView -> IO ()
 setModelListSelector view = do
   selector <- MV.treeViewGetSelection view
   MV.treeSelectionSetMode selector MV.SelectionMultiple
@@ -94,3 +98,13 @@ setModelListSelector view = do
     mapM_ (\ path -> MV.treeSelectionSelectPath selector path) newSelection
 
   MV.treeSelectionSelectAll selector
+
+getGoals :: ProofState lid sentence -> [LBGoalView]
+getGoals = map toStatus . OMap.toList . goalMap
+  where toStatus (l,st) = let
+      tStatus = thmStatus st
+      si = if null tStatus
+           then LBIndicatorOpen
+           else indicatorFromBasicProof (maximum $ map snd $ tStatus)
+    in LBGoalView { statIndicator = si
+                  , goalDescription = l}

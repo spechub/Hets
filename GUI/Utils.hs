@@ -31,7 +31,6 @@ module GUI.Utils
 #endif
   ) where
 
-
 #ifdef GTKGLADE
 import GUI.GtkUtils
   ( infoDialog

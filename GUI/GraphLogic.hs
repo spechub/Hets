@@ -533,9 +533,8 @@ proveAtNode checkCons gInfo descr dgraph = do
    acquired <- tryLockLocal dgn'
    if acquired then do
       let action = do
-            guiMVar <- newMVar Nothing
             res <- basicInferenceNode checkCons logicGraph ln dgraph'
-              (descr, dgn') guiMVar le' iSt
+              (descr, dgn') le' iSt
             runProveAtNode checkCons gInfo (descr, dgn') res
       hidingWarnDiag dgn' action
       unlockLocal dgn'

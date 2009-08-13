@@ -570,7 +570,8 @@ proofManagementGUI lid prGuiAcs
             done)
       +> (selectTheorems >>> do
             Conc.modifyMVar_ stateMVar updateStatusSublogic
-            done)      +> (selectOpenGoals >>> do
+            done)
+      +> (selectOpenGoals >>> do
              s <- Conc.takeMVar stateMVar
              clearSelection lb
              let isOpen (_, st) =

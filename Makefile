@@ -392,6 +392,7 @@ cpp_sources = hets.hs $(happy_files) \
     GUI/GraphMenu.hs \
     GUI/ShowGraph.hs \
     GUI/Utils.hs \
+    GUI/ProverGUI.hs \
     Isabelle/CreateTheories.hs \
     OWL/Logic_OWL.hs \
     CMDL/InfoCommands.hs \

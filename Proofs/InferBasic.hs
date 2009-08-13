@@ -46,7 +46,7 @@ import Logic.Coerce
 import Comorphisms.KnownProvers
 
 import GUI.Utils
-import GUI.ProofManagement
+import GUI.ProverGUI
 
 import Interfaces.DataTypes
 import Interfaces.Utils
@@ -154,9 +154,9 @@ proveTheory _ =
      label -}
 basicInferenceNode :: Bool -- ^ True = consistency; False = Prove
                    -> LogicGraph -> LIB_NAME -> DGraph -> LNode DGNodeLab
-                   -> GUIMVar -> LibEnv -> IORef IntState
+                   -> LibEnv -> IORef IntState
                    -> IO (Result G_theory)
-basicInferenceNode checkCons lg ln dGraph n@(node, lbl) guiMVar libEnv intSt =
+basicInferenceNode checkCons lg ln dGraph n@(node, lbl) libEnv intSt =
   runResultT $ do
         -- compute the theory of the node, and its name
         -- may contain proved theorems
@@ -200,14 +200,14 @@ basicInferenceNode checkCons lg ln dGraph n@(node, lbl) guiMVar libEnv intSt =
             let freedefs = getCFreeDefMorphs lid1 libEnv ln dGraph node
             kpMap <- liftR knownProversGUI
             newTh <- ResultT $
-                   proofManagementGUI lid1 ProofActions
+                   proverGUI lid1 ProofActions
                      { proveF = proveKnownPMap lg intSt freedefs
                      , fineGrainedSelectionF =
                            proveFineGrainedSelect lg intSt freedefs
                      , recalculateSublogicF  =
                                      recalculateSublogicAndSelectedTheory
                      } thName (hidingLabelWarning lbl) thForProof
-                       kpMap (getProvers ProveGUI sublogic cms) guiMVar
+                       kpMap (getProvers ProveGUI sublogic cms)
             return newTh
 
 proveKnownPMap :: (Logic lid sublogics1

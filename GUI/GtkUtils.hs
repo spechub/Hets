@@ -34,12 +34,17 @@ module GUI.GtkUtils
 
   -- Frequently used functions
   , setListData
+  , updateListData
+  , setListSelectorSingle
+  , setListSelectorMultiple
+  , selectAll
+  , selectNone
+  , selectInvert
   )
   where
 
 import Graphics.UI.Gtk
 import Graphics.UI.Gtk.Glade
-import Graphics.UI.Gtk.ModelView as MV
 
 import qualified GUI.Glade.Utils as Utils
 
@@ -52,6 +57,8 @@ import System.Directory ( removeFile, getTemporaryDirectory, doesFileExist
                         , canonicalizePath)
 import System.FilePath (takeFileName, takeDirectory)
 import System.IO (hFlush, hClose, hPutStr, openTempFile)
+
+import Data.IORef
 
 -- Gtk Utils
 
@@ -231,11 +238,11 @@ listChoice title items = postGUISync $ do
 
   set dlg [windowTitle := title]
   store <- setListData trvList (\ a -> a) items
-  selector <- MV.treeViewGetSelection trvList
-  MV.treeSelectionSetMode selector MV.SelectionSingle
-  mIter <- MV.treeModelGetIterFirst store
+  selector <- treeViewGetSelection trvList
+  setListSelectorSingle trvList (return ())
+  mIter <- treeModelGetIterFirst store
   case mIter of
-    Just iter -> MV.treeSelectionSelectIter selector iter
+    Just iter -> treeSelectionSelectIter selector iter
     Nothing -> return ()
 
   dialogAddButton dlg stockCancel ResponseCancel
@@ -245,23 +252,90 @@ listChoice title items = postGUISync $ do
   ret <- case response of
     ResponseCancel -> return Nothing
     ResponseOk -> do
-      (row:_):_ <- MV.treeSelectionGetSelectedRows selector
+      (row:_):_ <- treeSelectionGetSelectedRows selector
       return $ Just row
     _ -> return Nothing
   widgetDestroy dlg
   return ret
 
-setListData :: MV.TreeView -> (a -> String) -> [a] -> IO (MV.ListStore a)
+-- | Setup list with single selection
+setListSelectorSingle :: TreeView -> IO () -> IO ()
+setListSelectorSingle view action= do
+  selector <- treeViewGetSelection view
+  treeSelectionSetMode selector SelectionSingle
+  onCursorChanged view action
+  return ()
+
+-- | Setup list with multiple selection
+setListSelectorMultiple :: TreeView -> Button -> Button -> Button -> IO ()
+                        -> IO (IORef [TreePath])
+setListSelectorMultiple view btnAll btnNone btnInvert action = do
+  selector <- treeViewGetSelection view
+  treeSelectionSetMode selector SelectionMultiple
+  ioRefSelection <- newIORef ([] :: [TreePath])
+
+  -- setup selector
+  onCursorChanged view $ do
+    s' <- treeSelectionGetSelectedRows selector
+    s <- readIORef ioRefSelection
+    let newSelection = [ x | x <- s', notElem x s]
+                    ++ [ x | x <- s, notElem x s']
+    writeIORef ioRefSelection newSelection
+    treeSelectionUnselectAll selector
+    mapM_ (\ path -> treeSelectionSelectPath selector path) newSelection
+    action
+  treeSelectionSelectAll selector
+
+  -- setup buttons
+  onClicked btnAll $ selectAll view ioRefSelection
+  onClicked btnNone $ selectNone view ioRefSelection
+  onClicked btnInvert $ selectInvert view ioRefSelection
+
+  return ioRefSelection
+
+-- | Select all rows
+selectAll :: TreeView -> IORef [TreePath] -> IO ()
+selectAll view ioRefSelection = do
+  selector <- treeViewGetSelection view
+  treeSelectionSelectAll selector
+  s <- treeSelectionGetSelectedRows selector
+  writeIORef ioRefSelection s
+
+-- | Deselect all rows
+selectNone :: TreeView -> IORef [TreePath] -> IO ()
+selectNone view ioRefSelection = do
+  selector <- treeViewGetSelection view
+  treeSelectionUnselectAll selector
+  writeIORef ioRefSelection []
+
+-- | Invert selection of list
+selectInvert :: TreeView -> IORef [TreePath] -> IO ()
+selectInvert view ioRefSelection = do
+  selector <- treeViewGetSelection view
+  old <- treeSelectionGetSelectedRows selector
+  treeSelectionSelectAll selector
+  mapM_ (\ path -> treeSelectionUnselectPath selector path) old
+  new <- treeSelectionGetSelectedRows selector
+  writeIORef ioRefSelection new
+
+-- | Sets data of list
+setListData :: TreeView -> (a -> String) -> [a] -> IO (ListStore a)
 setListData view getT listData = do
-  store <- MV.listStoreNew listData
-  MV.treeViewSetModel view store
-  MV.treeViewSetHeadersVisible view False
-  ren <- MV.cellRendererTextNew
-  col <- MV.treeViewColumnNew
-  MV.treeViewColumnPackStart col ren True
-  MV.cellLayoutSetAttributes col ren store $ \row -> [ MV.cellText := getT row ]
-  MV.treeViewAppendColumn view col
+  store <- listStoreNew listData
+  treeViewSetModel view store
+  treeViewSetHeadersVisible view False
+  ren <- cellRendererTextNew
+  col <- treeViewColumnNew
+  treeViewColumnPackStart col ren True
+  cellLayoutSetAttributes col ren store $ \row -> [ cellText := getT row ]
+  treeViewAppendColumn view col
   return store
+
+-- | Updates data of list
+updateListData :: ListStore a -> [a] -> IO ()
+updateListData list listData = do
+  listStoreClear list
+  mapM_ (listStoreAppend list) listData
 
 -- | Display text in an uneditable, scrollable editor. Not blocking!
 textView :: String -- ^ Title

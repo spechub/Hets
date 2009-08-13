@@ -39,7 +39,6 @@ module GUI.GraphAbstraction
   ) where
 
 import GUI.UDGUtils
-import GUI.Utils
 import qualified UDrawGraph.Types as DVT
 import qualified UDrawGraph.Basic as DVB
 import Events.Destructible as Destructible
@@ -342,7 +341,7 @@ focusNode' :: AbstractionGraph -- ^ The graph
            -> IO ()
 focusNode' g nId = do
   case udgNode $ get nId $ nodes g of
-    Nothing -> errorDialog "Error" "focusNode: node is hidden!"
+    Nothing -> error "focusNode: node is hidden!"
     Just node -> setNodeFocus (theGraph g) node
 
 -- | Focus a node
