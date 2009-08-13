@@ -32,6 +32,7 @@ import Logic.Grothendieck
 import Text.XML.Light
 
 import Data.Maybe
+import Data.List
 
 -- one can add global annos if necessary
 -- | Prints the Library to an xml string
@@ -238,11 +239,18 @@ posString :: Pos -> String
 posString (SourcePos _ l c) = show l ++ ":" ++ show c
 
 rangeToAttribs :: Range -> [Attr]
+rangeToAttribs (Range []) = []
+rangeToAttribs (Range l) = [Attr (unqual "range") $ intercalate ","
+                                     $ map posString l]
+
+{-
+rangeToAttribs :: Range -> [Attr]
 --rangeToAttribs (Range []) = [Attr (unqual "range") "empty"]
 rangeToAttribs (Range []) = []
 rangeToAttribs (Range l) =
     zipWith (\x y -> Attr (unqual x) (posString y))
              ["rangestart", "rangeend"] [head l, last l]
+-}
 
 toString :: Pretty a => a -> String
 toString = show . pretty
@@ -276,7 +284,7 @@ mkAttr n = Attr (unqual n)
 itemToXml :: Item -> Content
 itemToXml i =
     let it = itemType i
-        typeAttr = mkAttr "value" $ getValue it
+        typeAttr = mkAttr (getValueName it) $ getValue it
     in withRg (range i)
            $ mkEl (getName it)
                  (if hasValue it then [typeAttr] else [])
