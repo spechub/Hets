@@ -24,24 +24,13 @@ import Control.Applicative
 import Common.Id
 import Common.AS_Annotation
 
-data ItemSubtype = ItemK | Decl | Defn | Free | Gen | Ext | Name | Attrib
-                 | Type
-                   deriving (Eq, Ord, Show)
-
-data ItemKind = Datatype | SortK | Subsort | Var | Basic | Sig | Op | Pred
-              | Iso | Term | Formula | IdK
-                deriving (Eq, Ord, Show)
-
-data NewItemType = I1 String | I2 String | I3 String
-
-data ItemType = Abstract String String | AbstractVal String | Basicspec
-              | Plur ItemType | Simple ItemKind | Localvaraxioms | Axiomitems
-              | ComplexVal ItemType String | Complex ItemType String String
-              | IT ItemKind ItemSubtype
-              | NewIT [String]
+data ItemType = IT [String]
               
                 deriving (Eq, Ord, Show)
 
+
+--- flat items (isFlat=True) are intended for output as xml-attributes
+--- but this is not yet used
 data Item = Item { itemType :: ItemType
                  , isFlat :: Bool
                  , range :: Range
@@ -49,62 +38,20 @@ data Item = Item { itemType :: ItemType
                  , items :: [Annoted Item]
                  } deriving (Eq, Ord, Show)
 
-
-showIS :: ItemSubtype -> String
-showIS ItemK = "Item"
-showIS is = show is
-
-showIK :: ItemKind -> String
-showIK SortK = "Sort"
-showIK IdK = "Id"
-showIK ik = show ik
-
 hasValue :: ItemType -> Bool
-hasValue (NewIT l) = length l > 1
-
-hasValue (AbstractVal _) = True
-hasValue (Abstract _ _) = True
-hasValue (ComplexVal _ _) = True
-hasValue (Complex _ _ _) = True
-hasValue (Plur it) = hasValue it
-hasValue _ = False
+hasValue (IT l) = length l > 1
 
 getName :: ItemType -> String
-getName (NewIT (h:_)) = h
-
-getName (Plur it) = getName it ++ "s"
-getName (AbstractVal s) = s
-getName (Abstract s _) = s
-getName (ComplexVal it _) = getName it
-getName (Complex it _ _) = getName it
-getName (IT k s) =
-    case s of Free -> "Free" ++ map toLower (showIK k)
-              Ext  -> "Ext" ++ map toLower (showIK k)
-              _ -> showIK k ++ map toLower (showIS s)
-getName (Simple k) = showIK k
-getName it = show it
+getName (IT (h:_)) = h
+getName _ = "GEN_ItemType"
 
 getValue :: ItemType -> String
-getValue (NewIT []) = ""
-getValue (NewIT l) = last l
-
-getValue (AbstractVal s) = s
-getValue (Abstract _ s) = s
-getValue (ComplexVal _ s) = s
-getValue (Complex _ _ s) = s
-getValue (Plur it) = getValue it
-getValue _ = ""
+getValue (IT []) = ""
+getValue (IT l) = last l
 
 getValueName :: ItemType -> String
-getValueName (NewIT [_,v,_]) = v
-getValueName (NewIT _) = "value"
-
-getValueName (AbstractVal _) = "value"
-getValueName (Abstract s _) = s
-getValueName (ComplexVal _ _) = "value"
-getValueName (Complex _ s _) = s
-getValueName (Plur it) = getValueName it
-getValueName _ = ""
+getValueName (IT [_,v,_]) = v
+getValueName (IT _) = "value"
 
 instance GetRange Item where
     getRange = range
@@ -126,11 +73,11 @@ instance ItemTypeable ItemType where
 
 -- intelligent ItemType generation
 instance ItemTypeable String where
-    toIT s = NewIT [s]
+    toIT s = IT [s]
 instance ItemTypeable (String, String) where
-    toIT (s,s') = NewIT [s,s']
+    toIT (s,s') = IT [s,s']
 instance ItemTypeable (String, String, String) where
-    toIT (s,s',s'') = NewIT [s,s',s'']
+    toIT (s,s',s'') = IT [s,s',s'']
 
 
 
@@ -195,9 +142,6 @@ fromAL it l =
 
 rootItem :: Item
 rootItem = liftIT2I "Basicspec"
-
-abstract :: String -> Item
-abstract s = liftIT2I $ NewIT [s]
 
 mkItem :: ItemTypeable a => a -> Range -> [Annoted Item] -> Item
 mkItem it = Item (toIT it) False
