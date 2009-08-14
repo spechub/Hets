@@ -12,8 +12,8 @@ Portability :  non-portable
 get item representation of 'BASIC_SPEC'
 -}
 
---module CASL.ToItem (bsToItem) where
-module CASL.ToItem where
+module CASL.ToItem (bsToItem) where
+--module CASL.ToItem where
 
 import Control.Monad.State
 
@@ -26,14 +26,12 @@ import Common.AS_Annotation
 import CASL.AS_Basic_CASL
 import CASL.ToDoc
 
--- utils
-mapF :: Functor f => (a -> b) -> [f a] -> [f b]
-mapF f = map $ fmap f
+--------------------- utils
 
 toString :: Pretty a => a -> String
 toString = show . pretty
 
--- TS = TransState
+--------------------- TS = TransState
 data TS b s f = TS { fB :: (b -> Doc)
                    , fS :: (s -> Doc)
                    , fF :: (f -> Doc) }
@@ -47,6 +45,7 @@ data TS b s f = TS { fB :: (b -> Doc)
 data LITC a = LITC { lit :: ItemType
                    , element :: a }
 
+--------------------- lifting to Local Contexts
 withLIT :: ItemTypeable a => a -> b -> LITC b
 withLIT it = LITC $ toIT it
 
@@ -66,8 +65,13 @@ getTransState :: (Pretty b, Pretty s, Pretty f) => BASIC_SPEC b s f ->
                  TS b s f
 getTransState _ = TS pretty pretty pretty
 
+--------------------- The Main function of this module
 bsToItem :: (Pretty b, Pretty s, Pretty f) => (BASIC_SPEC b s f) -> Item
 bsToItem bs = fst $ runState (toitem bs) $ getTransState bs
+
+
+
+
 
 instance ItemConvertible (BASIC_SPEC b s f) (State (TS b s f)) where
     toitem (Basic_spec l) = 
@@ -83,7 +87,13 @@ instance ItemConvertible (BASIC_ITEMS b s f) (State (TS b s f)) where
           Local_var_axioms vl fl rg ->
               mkItemMM "Local_var_axioms" rg
                            [fromL "VAR_DECLS" vl, fromAL "FORMULAS" fl]
-          _ -> return $ abstract "basicitem"
+          Sort_gen asis rg -> mkItemM "Sort_gen" rg $ listFromAL asis
+          Free_datatype sk adtds rg ->
+              mkItemM ("Free_datatype", "SortsKind", show sk) rg
+                          $ listFromAL adtds
+          Ext_BASIC_ITEMS b -> 
+              do{ st <- get
+                ; fromPrinter (show . (fB st)) "Ext_BASIC_ITEMS" b }
 
 instance ItemConvertible (SIG_ITEMS s f) (State (TS b s f)) where
     toitem si =
@@ -96,7 +106,9 @@ instance ItemConvertible (SIG_ITEMS s f) (State (TS b s f)) where
           Datatype_items sk adds rg ->
               mkItemM ("Datatype_items", "SortsKind", show sk) rg
                 $ listFromAL adds
-          _ -> return $ liftIT2I "Ext_SIG_ITEMS"
+          Ext_SIG_ITEMS s -> 
+              do{ st <- get
+                ; fromPrinter (show . (fS st)) "Ext_SIG_ITEMS" s }
 
 
 instance ItemConvertible (SORT_ITEM f) (State (TS b s f)) where
@@ -149,9 +161,8 @@ fromPrinter p n o = mkItemMM (n, p o) nullRange []
 
 litFromPrinterWithRg :: (Monad m, GetRange a) =>
                         (a -> String) -> LITC a -> m Item
-litFromPrinterWithRg p (LITC (NewIT l) o) =
-    mkItemMM (NewIT $ l ++ [p o]) (getRange o) []
-litFromPrinterWithRg _ _ = error "Malformed LITC"
+litFromPrinterWithRg p (LITC (IT l) o) =
+    mkItemMM (IT $ l ++ [p o]) (getRange o) []
 
 
 instance ItemConvertible OP_TYPE (State (TS b s f)) where
@@ -200,43 +211,3 @@ instance ItemConvertible (LITC Token) (State (TS b s f)) where
 dummy :: Monad m => String -> a -> m Item
 dummy s = const $ return $ liftIT2I ("dummy", s)
 
-
-
------------------ OLD -----------------
-
-{-
--- simple test instance:
-instance ItemConvertible (SIG_ITEMS s f) (State (TS b s f)) where
-    toitem si = return $ liftIT2I $ Simple Sig
-
--- test for printing of abstract items:
-instance ItemConvertible (SORT_ITEM f) (State (TS b s f)) where
-    toitem (Subsort_defn s v s' f rg) =
-        do{ st <- get
-          ; let mf = fF st
-          ; return $ liftIT2I $ Abstract $ show $ printFormula mf $ item f }
-    toitem _ = return $ liftIT2I $ Simple SortK
-
--}
-
-{-
-instance ItemConvertible (SIG_ITEMS s f) (State (TS b s f)) where
-    toitem si =
-        case si of
-          Sort_items sk sis rg ->
-              mkItemM (Complex (IT SortK Items) "SortsKind" $ show sk) rg
-                      $ listFromAL sis
-          _ -> return $ liftIT2I $ Simple Sig
-
-instance ItemConvertible (SORT_ITEM f) (State (TS b s f)) where
-    toitem si =
-        case si of
-          Sort_decl l rg -> mkItemM (IT SortK Decl) rg $ listFromL l
-          Subsort_decl sl s rg -> mkItemM (IT Subsort Decl) rg
-                                  [fromL (IT Subsort Items) sl, fromC s]
-          Subsort_defn s v s' f rg ->
-              mkItemM (IT Subsort Defn) rg [fromC s, fromC v, fromC s', fromAC f]
-          Iso_decl l rg -> mkItemM (IT Iso Decl) rg $ listFromL l
-
-
--}
