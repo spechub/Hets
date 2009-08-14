@@ -124,14 +124,16 @@ line = manyTill anyChar $ eof <|> void (lexeme newline)
 
 -- | Parse Maude source code
 toplevel :: TempListParser
-toplevel = let components = [systemCmd, otherCmd, debuggerCmd, modul, theory, view]
+toplevel = let
+        components = [systemCmd, otherCmd, debuggerCmd, modul, theory, view]
     in whiteSpace >> many1 (choice components)
 
 
 -- | Parse a system command
 systemCmd :: TempParser
 systemCmd = let
-        otherSym = anyReserved ["quit", "eof", "popd", "pwd", "cd", "push", "ls"]
+        otherSym = anyReserved
+            ["quit", "eof", "popd", "pwd", "cd", "push", "ls"]
         other = ignore $ otherSym >> line
         loadSym = anyReserved ["in", "load"]
         load = do loadSym; name <- line; return $ Just $ Left name
@@ -139,7 +141,12 @@ systemCmd = let
 
 -- | Parse a command
 otherCmd :: TempParser
-otherCmd = let symbol = anyReserved ["select", "parse", "debug", "reduce", "rewrite", "frewrite", "erewrite", "match", "xmatch", "search", "continue", "loop", "trace", "print", "break", "show", "do", "set"]
+otherCmd = let
+        symbol = anyReserved
+            ["select", "parse", "debug", "reduce", "rewrite",
+             "frewrite", "erewrite", "match", "xmatch", "search",
+             "continue", "loop", "trace", "print", "break", "show",
+             "do", "set"]
     in ignore $ symbol >> statement
 
 -- | Parse a debugger command.
