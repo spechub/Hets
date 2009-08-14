@@ -9,6 +9,7 @@
   op view+_from_to_is_endv : @Interface@ @ModExp@ @ModExp@ @ViewDeclList@ 
                               -> @View@ .
   op hets_. : @ModExp@ -> @Command@ .
+  op hetsView_. : @ModExp@ -> @Command@ .
  endfm
  
  fmod META-HETS-SIGN is
@@ -38,16 +39,19 @@
   op init-state : -> AttributeSet .
   eq init-state = db : initialDatabase, default : 'CONVERSION .
 
-  vars DB DB' : Database .
+  vars DB DB' DB'' : Database .
   vars F F' : Qid .
   vars T T' T1 T2 T3 T4 : Term .
   var  O : Oid .
   var  X@DatabaseClass : DatabaseClass .
-  var  ME : ModuleExpression .
+  var  ME ME' : ModuleExpression .
+  var  VE : ViewExp .
   var  AttS : AttributeSet .
   var  H : Header .
-  var  M : Module .
+  vars M M' : Module .
   var  V : View .
+  var  SVM : Set{ViewMap} .
+  var  Q : Qid .
   
   crl [module] :
       < O : X@DatabaseClass | db : DB, input : (F[T, T']), output : nil, 
@@ -67,10 +71,12 @@
       < O : X@DatabaseClass | db : DB, input : ('view+_from_to_is_endv[T1, T2, T3, T4]),
                               output : nil, AttS >
    => < O : X@DatabaseClass |  db : DB', input : nilTermList, 
-                               output : haskellify(V), AttS > 
+                               output : haskellify(M, M', V), AttS > 
      if DB' := procView('view_from_to_is_endv[T1, T2, T3, T4], DB) /\
         H := parseHeader(T1) /\
-        V := getView(H, DB') .
+        V := getView(H, DB') /\
+        M := getFirstModule(V, DB') /\
+        M' := getSecondModule(V, DB') .
 
    op coreMaudeOp : Qid ~> Qid .
    eq coreMaudeOp('fmod+_is_endfm) = 'fmod_is_endfm .
@@ -85,6 +91,24 @@
                                output : haskellify(M), AttS > 
     if < DB' ; ME > := evalModExp(parseModExp(T), DB) /\
        M := getTopModule(ME, DB') .
+   
+   crl [maudeView2hets] :
+       < O : X@DatabaseClass | db : DB, input : ('hetsView_.[T]), output : nil, AttS >
+    => < O : X@DatabaseClass | db : DB'', input : nilTermList, 
+                               output : (haskellify(M, M', V)), AttS > 
+    if < DB' ; VE > := evalModExp(parseModExp(T), DB) /\
+       DB'' := procView(VE, DB) /\
+       V := getView(VE, DB'') /\
+       M := getFirstModule(V, DB'') /\
+       M' := getSecondModule(V, DB'') .
+       
+    op getFirstModule : View Database -> Module .
+    ceq getFirstModule(view Q from ME to ME' is SVM endv, DB) = M
+     if M := getTopModule(ME, DB) .
+       
+    op getSecondModule : View Database -> Module .
+    ceq getSecondModule(view Q from ME to ME' is SVM endv, DB) = M
+     if M := getTopModule(ME', DB) .
  endm
  
  mod HETS is

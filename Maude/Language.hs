@@ -1,4 +1,5 @@
 module Maude.Language (
+    NamedSpec (..),
     maudeParser,
     parseFromFile,
     parse
@@ -22,8 +23,8 @@ import Data.Maybe (fromJust, isNothing)
 
 --- The types we use for our parsers
 
-data NamedSpec = Module String
-               | View String
+data NamedSpec = ModName String
+               | ViewName String
     deriving (Eq)
 
 type Parsed = Either ParseError
@@ -167,7 +168,7 @@ modul = let
             name <- identifier
             manyTill something $ reserved "is"
             manyTill statement $ reserved stop
-            succeed $ Module name
+            succeed $ ModName name
     in  modul' "fmod" "endfm"
     <|> modul' "mod"  "endm"
 
@@ -179,7 +180,7 @@ theory = let
             name <- identifier
             reserved "is"
             manyTill statement $ reserved stop
-            succeed $ Module name
+            succeed $ ModName name
     in  theory' "fth" "endfth"
     <|> theory' "th"  "endth"
 
@@ -189,7 +190,7 @@ view = do
     reserved "view"
     name <- identifier
     manyTill statement $ reserved "endv"
-    succeed $ View name
+    succeed $ ViewName name
 
 
 --- Parsers for Maude source files

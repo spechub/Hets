@@ -42,7 +42,7 @@ fmod TEST5{X :: TEST4 * (sort Foo to Faa)} is
  op c : -> Test5 .
 endfm
 
-view Bool from TRIV * (sort Elt to Elt2) to BOOL * (sort Bool to Boool) is
+view VBool from TRIV * (sort Elt to Elt2) to BOOL * (sort Bool to Boool) is
  sort Elt2 to Boool .
 endv
 
@@ -73,12 +73,14 @@ view V2 from TEST8 to BOOL is
 endv
 
 fmod TEST9 is
- sort A .
+ sorts A B .
+ subsort A < B .
  
- op a_ : [A] -> [A] [prec 10] .
+ op a_ : A -> A [prec 10] .
  op _a_ : A A -> A [prec 11] .
 endfm
 
 fmod TEST10 is
- pr TEST9 * (op a_ : A -> A to b_ [prec 12]) .
+ pr TEST9 * (op a_ : B -> B to b_ [prec 12],
+             sort A to C) .
 endfm

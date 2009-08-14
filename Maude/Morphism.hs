@@ -107,7 +107,7 @@ applyRenaming1 rnm mor = let
                 co' = getName co
                 p = (ar', co')
             in mor {
-                target = Sign.renameOpProfile a ar' co' b ats tgt,
+                target = Sign.renameOpProfile a ar' b ats tgt,
                 opMap = Map.insertWith (Map.union) a (Map.insert p (b, p) Map.empty) omap
             }
         _ -> mor
@@ -170,7 +170,7 @@ sortMap2symbolMap = Map.fromList . map f . Map.toList
            where f = \ (x, y) -> (Sort x, Sort y)
 
 opMap2symbolMap :: OpMap -> SymbolMap
-opMap2symbolMap = Map.fromList . map h . map f . Map.toList
+opMap2symbolMap = Map.fromList . map (h . f) . Map.toList
            where f = \ (x, y) -> map (g x) $ Map.toList y
                        where g = \ q1 ((ar1, co1), (q2, (ar2, co2))) -> 
                                       (Operator q1 ar1 co1, Operator q2 ar2 co2)
@@ -265,7 +265,24 @@ inverse mor = let
     }
 
 inverseOpMap :: OpMap -> OpMap
-inverseOpMap om = om
+inverseOpMap om = om'
+    where l = createList om
+          om' = createOpMapFromList l
+
+-- type Profile = ([Qid], Qid)
+-- type OpMap = Map.Map Qid (Map.Map Profile (Qid, Profile))
+
+createList :: OpMap -> [(Qid, Profile, Qid, Profile)]
+createList = map (h . f) . Map.toList
+           where f = \ (x, y) -> map (g x) $ Map.toList y
+                       where g = \ q1 ((ar1, co1), (q2, (ar2, co2))) -> 
+                                      (q1, (ar1, co1), q2, (ar2, co2))
+                 h = \ [a] -> a
+
+createOpMapFromList :: [(Qid, Profile, Qid, Profile)] -> OpMap
+createOpMapFromList = foldr f Map.empty
+           where f = \ (q1, p1, q2, p2) m -> 
+                           Map.insertWith (Map.union) q2 (Map.insert p2 (q1, p1) Map.empty) m
 
 -- | the composition of two Morphisms
 -- TODO: Ops don't have labels, so Signs don't have labels. so we can ignore the labelMap. Is that correct?
@@ -412,5 +429,4 @@ qualifySortList from to (s@(sym1, sym2) : syms) = if from == sym1
 -- - isLegal with the new OpMap
 -- - mapSentence with the new OpMap
 -- - inverseOpMap (Adrian)
--- - rename ops with profile (Adrian)
 

@@ -74,11 +74,11 @@ instance HasSorts Term where
     getSorts term = case term of
         Const _ t  -> getSorts t
         Var _ t    -> getSorts t
-        Apply _ ts -> getSorts ts
+        Apply _ ts _ -> getSorts ts
     mapSorts mp term = case term of
         Const c t  -> Const c (mapSorts mp t)
         Var v t    -> Var v (mapSorts mp t)
-        Apply t ts -> Apply t (mapSorts mp ts)
+        Apply t ts ty -> Apply t (mapSorts mp ts) ty
 
 
 instance HasSorts Condition where

@@ -73,6 +73,18 @@ getSentences (Module _ _ stmts) = let
             insert stmt = case stmt of
                 MbStmnt mb -> (:) (Membership mb)
                 EqStmnt eq -> (:) (Equation eq)
-                RlStmnt rl -> (:) (Rule rl)
+                RlStmnt rl -> case not_labeled rl of
+                                True -> (:) (Rule rl)
+                                False -> id
                 _          -> id
         in foldr insert [] stmts
+
+-- | check if a rule has label
+not_labeled :: Rule -> Bool
+not_labeled (Rl _ _ _ ats) = noLabel ats
+
+-- | check if an attribute set contains a label attribute.
+noLabel :: [StmntAttr] -> Bool
+noLabel ((Label _) : _) = False
+noLabel (_ : ats) = noLabel ats
+noLabel [] = True

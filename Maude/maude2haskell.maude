@@ -1,6 +1,7 @@
  fmod MAUDE2HASKELL is
   pr CONVERSION .
   pr VIEW .
+  ex META-MODULE .
   
   var  H : Header .
   var  IL : ImportList .
@@ -10,9 +11,9 @@
   var  MAS : MembAxSet .
   var  EqS : EquationSet .
   var  RS : RuleSet .
-  vars Q Q' : Qid .
+  vars Q Q' Q'' : Qid .
   var  QIL : QidList .
-  var  STR : String .
+  var  STR STR1 STR2 : String .
   vars ME ME' ME'' : ModuleExpression .
   var  TL : TermList .
   vars T T' : Term .
@@ -33,56 +34,65 @@
   var  PDL : ParameterDeclList .
   var  I : Import .
   var  PD : ParameterDecl .
-  var  NHL : NeHookList .
+  var  HL : HookList .
+  var  HK : Hook .
   var  RNMS : RenamingSet .
   var  SVM : Set{ViewMap} .
   var  VM : ViewMap .
   var  PL : ParameterList .
+  var  M M' : Module .
+  
+  --- Constant used when no module is really needed
+  op no-module : -> Module .
   
   op haskellify : Qid -> QidList .
   eq haskellify(Q) = haskellify(upModule(Q, false)) .
 
   op haskellify : Module -> QidList .
-  eq haskellify(fmod H is IL sorts SS . SSDS ODS MAS EqS endfm) = 
+  ceq haskellify(M) = 
       'SpecMod '`( 'Module haskellifyHeader(H) ' ' 
       '`[ haskellifyImports(IL) comma(IL, SS)
           haskellifySorts(SS) comma(IL, SS, SSDS)
           haskellifySubsorts(SSDS) comma(IL, SS, SSDS, ODS)
-          haskellifyOpDeclSet(ODS) comma(IL, SS, SSDS, ODS, MAS)
-          haskellifyMembAxSet(MAS) comma(IL, SS, SSDS, ODS, MAS, EqS)
-          haskellifyEqSet(EqS) '`] '`) '\n '@#$endHetsSpec$#@ '\n .
-  eq haskellify(mod H is IL sorts SS . SSDS ODS MAS EqS RS endm) = 
+          haskellifyOpDeclSet(M, ODS) comma(IL, SS, SSDS, ODS, MAS)
+          haskellifyMembAxSet(M, MAS) comma(IL, SS, SSDS, ODS, MAS, EqS)
+          haskellifyEqSet(M, EqS) '`] '`) '\n '@#$endHetsSpec$#@ '\n
+    if fmod H is IL sorts SS . SSDS ODS MAS EqS endfm := M .
+  ceq haskellify(M) = 
       'SpecMod '`( 'Module haskellifyHeader(H) ' ' 
       '`[ haskellifyImports(IL) comma(IL, SS)
           haskellifySorts(SS) comma(IL, SS, SSDS)
           haskellifySubsorts(SSDS) comma(IL, SS, SSDS, ODS)
-          haskellifyOpDeclSet(ODS) comma(IL, SS, SSDS, ODS, MAS)
-          haskellifyMembAxSet(MAS) comma(IL, SS, SSDS, ODS, MAS, EqS)
-          haskellifyEqSet(EqS) comma(IL, SS, SSDS, ODS, MAS, EqS, RS)
-          haskellifyRlSet(RS) '`] '`) '\n '@#$endHetsSpec$#@ '\n .
-  eq haskellify(fth H is IL sorts SS . SSDS ODS MAS EqS endfth) = 
+          haskellifyOpDeclSet(M, ODS) comma(IL, SS, SSDS, ODS, MAS)
+          haskellifyMembAxSet(M, MAS) comma(IL, SS, SSDS, ODS, MAS, EqS)
+          haskellifyEqSet(M, EqS) comma(IL, SS, SSDS, ODS, MAS, EqS, RS)
+          haskellifyRlSet(M, RS) '`] '`) '\n '@#$endHetsSpec$#@ '\n
+   if mod H is IL sorts SS . SSDS ODS MAS EqS RS endm := M .
+  ceq haskellify(M) = 
       'SpecTh '`( 'Module haskellifyHeader(H) ' ' 
       '`[ haskellifyImports(IL) comma(IL, SS)
           haskellifySorts(SS) comma(IL, SS, SSDS)
           haskellifySubsorts(SSDS) comma(IL, SS, SSDS, ODS)
-          haskellifyOpDeclSet(ODS) comma(IL, SS, SSDS, ODS, MAS)
-          haskellifyMembAxSet(MAS) comma(IL, SS, SSDS, ODS, MAS, EqS)
-          haskellifyEqSet(EqS) '`] '`) '\n '@#$endHetsSpec$#@ '\n .
-  eq haskellify(th H is IL sorts SS . SSDS ODS MAS EqS RS endth) = 
+          haskellifyOpDeclSet(M, ODS) comma(IL, SS, SSDS, ODS, MAS)
+          haskellifyMembAxSet(M, MAS) comma(IL, SS, SSDS, ODS, MAS, EqS)
+          haskellifyEqSet(M, EqS) '`] '`) '\n '@#$endHetsSpec$#@ '\n
+   if fth H is IL sorts SS . SSDS ODS MAS EqS endfth := M .
+  ceq haskellify(M) = 
       'SpecTh '`( 'Module haskellifyHeader(H) ' ' 
       '`[ haskellifyImports(IL) comma(IL, SS)
           haskellifySorts(SS) comma(IL, SS, SSDS)
           haskellifySubsorts(SSDS) comma(IL, SS, SSDS, ODS)
-          haskellifyOpDeclSet(ODS) comma(IL, SS, SSDS, ODS, MAS)
-          haskellifyMembAxSet(MAS) comma(IL, SS, SSDS, ODS, MAS, EqS)
-          haskellifyEqSet(EqS) comma(IL, SS, SSDS, ODS, MAS, EqS, RS)
-          haskellifyRlSet(RS) '`] '`) '\n '@#$endHetsSpec$#@ '\n .
+          haskellifyOpDeclSet(M, ODS) comma(IL, SS, SSDS, ODS, MAS)
+          haskellifyMembAxSet(M, MAS) comma(IL, SS, SSDS, ODS, MAS, EqS)
+          haskellifyEqSet(M, EqS) comma(IL, SS, SSDS, ODS, MAS, EqS, RS)
+          haskellifyRlSet(M, RS) '`] '`) '\n '@#$endHetsSpec$#@ '\n
+   if th H is IL sorts SS . SSDS ODS MAS EqS RS endth := M .
   
-  op haskellify : View -> QidList .
-  eq haskellify(view Q from ME to ME' is SVM endv) = 
+  op haskellify : Module Module View -> QidList .
+  eq haskellify(M, M', view Q from ME to ME' is SVM endv) = 
       'SpecView '`( 'View '`( 'ModId qid2token(Q) '`)
       haskellifyME(ME) haskellifyME(ME')
-      '`[ haskellifyMaps(SVM) '`] '`) '\n '@#$endHetsSpec$#@ '\n .
+      '`[ haskellifyMaps(M, M', SVM) '`] '`) '\n '@#$endHetsSpec$#@ '\n .
   
   op haskellifyHeader : Header -> QidList .
   eq haskellifyHeader(Q) = ' '`( 'ModId qid2token(Q) '`) ' ' '`[ '`] .
@@ -121,26 +131,28 @@
   eq haskellifyME(ME + ME') = ' '`( 'SummationModExp haskellifyME(ME) 
                               haskellifyME(ME')  '`) ' .
   eq haskellifyME(ME * (RNMS)) = ' '`( 'RenamingModExp haskellifyME(ME) 
-                                 '`[ haskellifyMaps(RNMS) '`]  '`) ' .
+                                 '`[ haskellifyMaps(no-module, no-module, RNMS) '`]  '`) ' .
   eq haskellifyME(ME {PL}) = ' '`( 'InstantiationModExp haskellifyME(ME) 
                              '`[ haskellifyPL(PL)  '`]  '`) ' .
 
-  op haskellifyMaps : Set{ViewMap} -> QidList .
-  eq haskellifyMaps(VM) = haskellifyMap(VM) .
-  eq haskellifyMaps((VM, SVM)) = haskellifyMap(VM) '`, ' haskellifyMaps(SVM) .
+  op haskellifyMaps : Module Module Set{ViewMap} -> QidList .
+  eq haskellifyMaps(M, M', none) = nil .
+  eq haskellifyMaps(M, M', VM) = haskellifyMap(M, M', VM) .
+  eq haskellifyMaps(M, M', (VM, SVM)) = haskellifyMap(M, M', VM) '`, '
+                                        haskellifyMaps(M, M', SVM) .
   
-  op haskellifyMap : ViewMap -> QidList .
-  eq haskellifyMap(sort Q to Q') = 'SortRenaming haskellifySort(Q) haskellifySort(Q') .
-  eq haskellifyMap(label Q to Q') = 'LabelRenaming haskellifyLabel(Q) haskellifyLabel(Q') .
-  eq haskellifyMap(op Q to Q' [AtS]) = 'OpRenaming1 '`( 'OpId qid2token(Q) '`) '
-                                       '`( 'To ' '`( 'OpId qid2token(Q') '`) '
-                                       '`[ haskellifyAttr*(AtS) '`]  '`) ' .
-  eq haskellifyMap(op Q : TyL -> Ty to Q' [AtS]) =
+  op haskellifyMap : Module Module ViewMap -> QidList .
+  eq haskellifyMap(M, M', sort Q to Q') = 'SortRenaming haskellifySort(Q) haskellifySort(Q') .
+  eq haskellifyMap(M, M', label Q to Q') = 'LabelRenaming haskellifyLabel(Q) haskellifyLabel(Q') .
+  eq haskellifyMap(M, M', op Q to Q' [AtS]) = 'OpRenaming1 '`( 'OpId qid2token(Q) '`) '
+                                              '`( 'To ' '`( 'OpId qid2token(Q') '`) '
+                                              '`[ haskellifyAttr*(no-module, AtS) '`]  '`) ' .
+  eq haskellifyMap(M, M', op Q : TyL -> Ty to Q' [AtS]) =
                    'OpRenaming2 '`( 'OpId qid2token(Q) '`) ' '`[ haskellifyType*(TyL) '`]
                    haskellifyType(Ty)
                    '`( 'To ' '`( 'OpId qid2token(Q') '`) ' 
-                   '`[ haskellifyAttr*(AtS) '`]  '`) ' .
-  eq haskellifyMap(termMap(T, T')) = 'TermMap haskellifyTerm(T) haskellifyTerm(T') .
+                   '`[ haskellifyAttr*(no-module, AtS) '`]  '`) ' .
+  eq haskellifyMap(M, M', termMap(T, T')) = 'TermMap haskellifyTerm(M, T) haskellifyTerm(M', T') .
   
   op haskellifyPL : ParameterList -> QidList .
   eq haskellifyPL(empty) = nil .
@@ -175,12 +187,12 @@
   eq comma((none).SubsortDeclSet) = nil .
   eq comma(SSDS) = '`, ' [owise] .
 
-  op haskellifyOpDeclSet : OpDeclSet -> QidList .
-  eq haskellifyOpDeclSet(none) = nil .
-  eq haskellifyOpDeclSet(op Q : TyL -> Ty [AtS] . ODS) = 
+  op haskellifyOpDeclSet : Module OpDeclSet -> QidList .
+  eq haskellifyOpDeclSet(M, none) = nil .
+  eq haskellifyOpDeclSet(M, op Q : TyL -> Ty [AtS] . ODS) = 
          'OpStmnt ' '`( 'Op ' '`( 'OpId qid2token(Q) '`) ' ' '`[ haskellifyType*(TyL) '`] '
-             haskellifyType(Ty) ' '`[ haskellifyAttr*(AtS) '`] '`) comma(ODS)
-         haskellifyOpDeclSet(ODS) .
+             haskellifyType(Ty) ' '`[ haskellifyAttr*(M, AtS) '`] '`) comma(ODS)
+         haskellifyOpDeclSet(M, ODS) .
 
   op comma : OpDeclSet -> QidList .
   eq comma((none).OpDeclSet) = nil .
@@ -203,29 +215,43 @@
   eq comma((nil).TypeList) = nil .
   eq comma(TyL) = '`, ' [owise] .
 
-  op haskellifyAttr : Attr -> QidList .
-  eq haskellifyAttr(assoc) = 'Assoc .
-  eq haskellifyAttr(comm) = 'Comm .
-  eq haskellifyAttr(idem) = 'Idem .
-  eq haskellifyAttr(ctor) = 'Ctor .
-  eq haskellifyAttr(iter) = 'Iter .
-  eq haskellifyAttr(memo) = 'Memo .
-  eq haskellifyAttr(object) = 'Object .
-  eq haskellifyAttr(msg) = 'Msg .
-  eq haskellifyAttr(config) = 'Config .
-  eq haskellifyAttr(id(T)) = 'Id haskellifyTerm(T) .
-  eq haskellifyAttr(left-id(T)) = 'LeftId haskellifyTerm(T) .
-  eq haskellifyAttr(right-id(T)) = 'RightId haskellifyTerm(T) .
-  eq haskellifyAttr(frozen(NL)) = 'Frozen ' '`[ haskellifyNatList(NL) '`] ' .
-  eq haskellifyAttr(strat(NL)) = 'Strat ' '`[ haskellifyNatList(NL) '`] ' .
-  eq haskellifyAttr(poly(NL)) = 'Poly ' '`[ haskellifyNatList(NL) '`] ' .
-  eq haskellifyAttr(prec(N)) = 'Prec nat2qid(N) .
-  eq haskellifyAttr(label(Q)) = 'Label qid2token(Q) .
-  eq haskellifyAttr(gather(QIL)) = 'Gather ' '`[ printQidList(QIL) '`] .
-  eq haskellifyAttr(format(QIL)) = 'Format ' '`[ printQidList(QIL) '`] .
-  *** TODO: Generate real attributes!!
-  eq haskellifyAttr(special(NHL)) = 'Special .
+  op haskellifyAttr : Module Attr -> QidList .
+  eq haskellifyAttr(M, assoc) = 'Assoc .
+  eq haskellifyAttr(M, comm) = 'Comm .
+  eq haskellifyAttr(M, idem) = 'Idem .
+  eq haskellifyAttr(M, ctor) = 'Ctor .
+  eq haskellifyAttr(M, iter) = 'Iter .
+  eq haskellifyAttr(M, memo) = 'Memo .
+  eq haskellifyAttr(M, object) = 'Object .
+  eq haskellifyAttr(M, msg) = 'Msg .
+  eq haskellifyAttr(M, config) = 'Config .
+  eq haskellifyAttr(M, id(T)) = 'Id haskellifyTerm(M, T) .
+  eq haskellifyAttr(M, left-id(T)) = 'LeftId haskellifyTerm(M, T) .
+  eq haskellifyAttr(M, right-id(T)) = 'RightId haskellifyTerm(M, T) .
+  eq haskellifyAttr(M, frozen(NL)) = 'Frozen ' '`[ haskellifyNatList(NL) '`] ' .
+  eq haskellifyAttr(M, strat(NL)) = 'Strat ' '`[ haskellifyNatList(NL) '`] ' .
+  eq haskellifyAttr(M, poly(NL)) = 'Poly ' '`[ haskellifyNatList(NL) '`] ' .
+  eq haskellifyAttr(M, prec(N)) = 'Prec nat2qid(N) .
+  eq haskellifyAttr(M, label(Q)) = 'Label qid2token(Q) .
+  eq haskellifyAttr(M, gather(QIL)) = 'Gather ' '`[ printQidList(QIL) '`] ' .
+  eq haskellifyAttr(M, format(QIL)) = 'Format ' '`[ printQidList(QIL) '`] ' .
+  eq haskellifyAttr(M, nonexec) = 'Nonexec .
+  eq haskellifyAttr(M, special(HL)) = 'Special ' '`[ haskellifyHookList(M, HL) '`] ' .
   
+  op haskellifyHookList : Module HookList -> QidList .
+  eq haskellifyHookList(M, nil) = nil .
+  eq haskellifyHookList(M, HK HL) = haskellifyHook(M, HK) comma(HL) haskellifyHookList(M, HL) .
+  
+  op haskellifyHook : Module Hook -> QidList .
+  eq haskellifyHook(M, id-hook(Q, QIL)) = 'IdHook qid2token(Q) ' '`[ printQidList(QIL) '`] ' .
+  eq haskellifyHook(M, op-hook(Q, Q', QIL, Q'')) = 'OpHook qid2token(Q) qid2token(Q')
+                                                ' '`[ printQidList(QIL) '`] ' qid2token(Q'') .
+  eq haskellifyHook(M, term-hook(Q, T)) = 'TermHook qid2token(Q) haskellifyTerm(M, T) .
+  
+  op comma : HookList -> QidList .
+  eq comma((nil).HookList) = nil .
+  eq comma(HL) = '`, ' [owise] .
+
   op printQidList : Qid -> QidList .
   eq printQidList(nil) = nil .
   eq printQidList(Q QIL) = qid2token(Q) comma(QIL) printQidList(QIL) .
@@ -234,99 +260,101 @@
   eq comma((nil).QidList) = nil .
   eq comma(QIL) = '`, ' [owise] .
 
-  op haskellifyTerm : Term -> QidList .
-  ceq haskellifyTerm(Ct) = ' '`( 'Const qid2token(Q) haskellifyType(Ty) '`) '
+  op haskellifyTerm : Module Term -> QidList .
+  ceq haskellifyTerm(M, Ct) = ' '`( 'Const qid2token(Q) haskellifyType(Ty) '`) '
    if Q := getName(Ct) /\
       Ty := getType(Ct) .
-  ceq haskellifyTerm(V) = ' '`( 'Var qid2token(Q) haskellifyType(Ty) '`) '
+  ceq haskellifyTerm(M, V) = ' '`( 'Var qid2token(Q) haskellifyType(Ty) '`) '
    if Q := getName(V) /\
       Ty := getType(V) .
-  eq haskellifyTerm(Q[TL]) = ' '`( 'Apply qid2token(Q) ' '`[ haskellifyTerm*(TL) '`] '`) ' .
+  ceq haskellifyTerm(M, Q[TL]) = ' '`( 'Apply qid2token(Q) ' '`[ haskellifyTerm*(M, TL) '`] '
+                                        haskellifyType(Ty) '`) '
+   if {T, Ty} := metaNormalize(M, Q[TL]) .
   
-  op haskellifyTerm* : TermList -> QidList .
-  eq haskellifyTerm*(empty) = nil .
-  eq haskellifyTerm*((T, TL)) = haskellifyTerm(T) comma(TL)
-                                haskellifyTerm*(TL) .
+  op haskellifyTerm* : Module TermList -> QidList .
+  eq haskellifyTerm*(M, empty) = nil .
+  eq haskellifyTerm*(M, (T, TL)) = haskellifyTerm(M, T) comma(TL)
+                                   haskellifyTerm*(M, TL) .
 
   op comma : TermList -> QidList .
   eq comma((empty).TermList) = nil .
   eq comma(TL) = '`, ' [owise] .
   
-  op haskellifyAttr* : AttrSet -> QidList .
-  eq haskellifyAttr*(none) = nil .
-  eq haskellifyAttr*(A AtS) = haskellifyAttr(A) comma(AtS)
-                              haskellifyAttr*(AtS) .
+  op haskellifyAttr* : Module AttrSet -> QidList .
+  eq haskellifyAttr*(M, none) = nil .
+  eq haskellifyAttr*(M, A AtS) = haskellifyAttr(M, A) comma(AtS)
+                                 haskellifyAttr*(M, AtS) .
 
   op comma : AttrSet -> QidList .
   eq comma((none).AttrSet) = nil .
   eq comma(AtS) = '`, ' [owise] .
 
-  op haskellifyMembAxSet : MembAxSet -> QidList .
-  eq haskellifyMembAxSet(none) = nil .
-  eq haskellifyMembAxSet(Mb MAS) = 'MbStmnt ' '`( haskellifyMembAx(Mb) '`) comma(MAS)
-                                   haskellifyMembAxSet(MAS) .
+  op haskellifyMembAxSet : Module MembAxSet -> QidList .
+  eq haskellifyMembAxSet(M, none) = nil .
+  eq haskellifyMembAxSet(M, Mb MAS) = 'MbStmnt ' '`( haskellifyMembAx(M, Mb) '`) comma(MAS)
+                                       haskellifyMembAxSet(M, MAS) .
 
-  op haskellifyMembAx : MembAxSet -> QidList .
-  eq haskellifyMembAx(mb T : S [AtS] .) = 'Mb haskellifyTerm(T)
+  op haskellifyMembAx : Module MembAxSet -> QidList .
+  eq haskellifyMembAx(M, mb T : S [AtS] .) = 'Mb haskellifyTerm(M, T)
                                               haskellifySort(S)
                                               ' '`[ '`] '
-                                              ' '`[ haskellifyAttr*(AtS) '`] ' .
-  eq haskellifyMembAx(cmb T : S if C [AtS] .) = 'Mb haskellifyTerm(T)
-                                                    haskellifySort(S)
-                                                    ' '`[ haskellifyCondition(C) '`] '
-                                                    ' '`[ haskellifyAttr*(AtS) '`] ' .
+                                              ' '`[ haskellifyAttr*(M, AtS) '`] ' .
+  eq haskellifyMembAx(M, cmb T : S if C [AtS] .) = 'Mb haskellifyTerm(M, T)
+                                                   haskellifySort(S)
+                                                   ' '`[ haskellifyCondition(M, C) '`] '
+                                                   ' '`[ haskellifyAttr*(M, AtS) '`] ' .
 
-  op haskellifyCondition : Condition -> QidList .
-  eq haskellifyCondition(nil) = nil .
-  ceq haskellifyCondition(C /\ C') = haskellifyCondition(C) '`, '
-                                     haskellifyCondition(C')
+  op haskellifyCondition : Module Condition -> QidList .
+  eq haskellifyCondition(M, nil) = nil .
+  ceq haskellifyCondition(M, C /\ C') = haskellifyCondition(M, C) '`, '
+                                        haskellifyCondition(M, C')
    if C =/= nil /\ C' =/= nil .
-  eq haskellifyCondition(T = T') = 'EqCond haskellifyTerm(T)
-                                           haskellifyTerm(T') .
-  eq haskellifyCondition(T := T') = 'MatchCond haskellifyTerm(T) 
-                                               haskellifyTerm(T') .
-  eq haskellifyCondition(T : S) = 'MbCond haskellifyTerm(T) 
-                                          haskellifySort(S) .
-  eq haskellifyCondition(T => T') = 'RwCond haskellifyTerm(T) 
-                                            haskellifyTerm(T') .
+  eq haskellifyCondition(M, T = T') = 'EqCond haskellifyTerm(M, T)
+                                              haskellifyTerm(M, T') .
+  eq haskellifyCondition(M, T := T') = 'MatchCond haskellifyTerm(M, T) 
+                                                  haskellifyTerm(M, T') .
+  eq haskellifyCondition(M, T : S) = 'MbCond haskellifyTerm(M, T) 
+                                             haskellifySort(S) .
+  eq haskellifyCondition(M, T => T') = 'RwCond haskellifyTerm(M, T) 
+                                               haskellifyTerm(M, T') .
 
   op comma : MembAxSet -> QidList .
   eq comma((none).MembAxSet) = nil .
   eq comma(MAS) = '`, ' [owise] .
   
-  op haskellifyEqSet : EquationSet -> QidList .
-  eq haskellifyEqSet(none) = nil .
-  eq haskellifyEqSet(Eq EqS) = 'EqStmnt ' '`( haskellifyEq(Eq) '`) comma(EqS)
-                               haskellifyEqSet(EqS) .
+  op haskellifyEqSet : Module EquationSet -> QidList .
+  eq haskellifyEqSet(M, none) = nil .
+  eq haskellifyEqSet(M, Eq EqS) = 'EqStmnt ' '`( haskellifyEq(M, Eq) '`) comma(EqS)
+                                   haskellifyEqSet(M, EqS) .
   
-  op haskellifyEq : Equation -> QidList .
-  eq haskellifyEq(eq T = T' [AtS] .) = 'Eq haskellifyTerm(T)
-                                           haskellifyTerm(T')
-                                           ' '`[ '`] '
-                                           ' '`[ haskellifyAttr*(AtS) '`] ' .
-  eq haskellifyEq(ceq T = T' if C [AtS] .) = 'Eq haskellifyTerm(T)
-                                                 haskellifyTerm(T')
-                                                 ' '`[ haskellifyCondition(C) '`] '
-                                                 ' '`[ haskellifyAttr*(AtS) '`] ' .
+  op haskellifyEq : Module Equation -> QidList .
+  eq haskellifyEq(M, eq T = T' [AtS] .) = 'Eq haskellifyTerm(M, T)
+                                              haskellifyTerm(M, T')
+                                              ' '`[ '`] '
+                                              ' '`[ haskellifyAttr*(M, AtS) '`] ' .
+  eq haskellifyEq(M, ceq T = T' if C [AtS] .) = 'Eq haskellifyTerm(M, T)
+                                                    haskellifyTerm(M, T')
+                                                    ' '`[ haskellifyCondition(M, C) '`] '
+                                                    ' '`[ haskellifyAttr*(M, AtS) '`] ' .
   
   op comma : EquationSet -> QidList .
   eq comma((none).EquationSet) = nil .
   eq comma(EqS) = '`, ' [owise] .
 
-  op haskellifyRlSet : RuleSet -> QidList .
-  eq haskellifyRlSet(none) = nil .
-  eq haskellifyRlSet(R RS) = 'RlStmnt ' '`( haskellifyRl(R) '`) comma(RS)
-                             haskellifyRlSet(RS) .
+  op haskellifyRlSet : Module RuleSet -> QidList .
+  eq haskellifyRlSet(M, none) = nil .
+  eq haskellifyRlSet(M, R RS) = 'RlStmnt ' '`( haskellifyRl(M, R) '`) comma(RS)
+                                 haskellifyRlSet(M, RS) .
   
-  op haskellifyRl : Rule -> QidList .
-  eq haskellifyRl(rl T => T' [AtS] .) = 'Rl haskellifyTerm(T)
-                                            haskellifyTerm(T')
-                                            ' '`[ '`] '
-                                            ' '`[ haskellifyAttr*(AtS) '`] ' .
-  eq haskellifyRl(crl T => T' if C [AtS] .) = 'Rl haskellifyTerm(T)
-                                                  haskellifyTerm(T')
-                                                  ' '`[ haskellifyCondition(C) '`] '
-                                                  ' '`[ haskellifyAttr*(AtS) '`] ' .
+  op haskellifyRl : Module Rule -> QidList .
+  eq haskellifyRl(M, rl T => T' [AtS] .) = 'Rl haskellifyTerm(M, T)
+                                               haskellifyTerm(M, T')
+                                               ' '`[ '`] '
+                                               ' '`[ haskellifyAttr*(M, AtS) '`] ' .
+  eq haskellifyRl(M, crl T => T' if C [AtS] .) = 'Rl haskellifyTerm(M, T)
+                                                     haskellifyTerm(M, T')
+                                                     ' '`[ haskellifyCondition(M, C) '`] '
+                                                     ' '`[ haskellifyAttr*(M, AtS) '`] ' .
   
   op comma : RuleSet -> QidList .
   eq comma((none).RuleSet) = nil .
@@ -381,8 +409,15 @@
           fi .
 
   op qid2token : Qid -> QidList .
-  eq qid2token(Q) = qid("\"" + string(Q) + "\"") .
+  eq qid2token(Q) = qid("\"" + stringScape(string(Q)) + "\"") .
   
+  op stringScape : String -> String .
+  ceq stringScape(STR) = STR1 + "\\\"" + stringScape(STR2)
+   if N := find(STR, "\"", 0) /\
+      STR1 := substr(STR, 0, N) /\
+      STR2 := substr(STR, N + 1, length(STR)) .
+  eq stringScape(STR) = STR [owise] .
+
   op nat2qid : Nat -> Qid .
   eq nat2qid(N) = qid(string(N, 10)) .
   

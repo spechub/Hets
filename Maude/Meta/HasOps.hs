@@ -40,10 +40,10 @@ instance HasOps Operator where
 
 instance HasOps Term where
     getOps term = case term of
-        Apply op ts -> Set.insert (getName op) (getOps ts)
+        Apply op ts _ -> Set.insert (getName op) (getOps ts)
         _           -> Set.empty
     mapOps mp term = case term of
-        Apply op ts -> Apply (mapName mp op) (mapOps mp ts)
+        Apply op ts ty -> Apply (mapName mp op) (mapOps mp ts) ty
         _           -> term
 
 

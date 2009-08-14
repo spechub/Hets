@@ -64,8 +64,8 @@ data Statement = ImportStmnt Import
                | SortStmnt Sort
                | SubsortStmnt SubsortDecl
                | OpStmnt Operator
-               | MbStmnt Membership
                | EqStmnt Equation
+               | MbStmnt Membership
                | RlStmnt Rule
                deriving (Show, Read, Ord, Eq)
 
@@ -113,7 +113,7 @@ data Attr = Assoc
           | Msg
           | Frozen [Int]
           | Poly [Int]
-          | Special
+          | Special [Hook]
           deriving (Show, Read, Ord, Eq)
 
 data StmntAttr = Label Qid
@@ -123,9 +123,14 @@ data StmntAttr = Label Qid
                | Print [Qid]
                deriving (Show, Read, Ord, Eq)
 
+data Hook = IdHook Qid [Qid]
+          | OpHook Qid Qid [Qid] Qid
+          | TermHook Qid Term
+          deriving (Show, Read, Ord, Eq)
+
 data Term = Const Qid Type
           | Var Qid Type
-          | Apply Qid [Term]
+          | Apply Qid [Term] Type
           deriving (Show, Read, Ord, Eq)
 
 data Type = TypeSort Sort

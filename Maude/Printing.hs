@@ -111,7 +111,23 @@ printAttr (Frozen ls) = if null ls
                            else "frozen (" ++ printListSpaces ls ++ ")"
 printAttr (Gather ls) = "gather (" ++ printListSpaces ls ++ ")"
 printAttr (Format ls) = "format (" ++ printListSpaces ls ++ ")"
+printAttr (Special hks) = "special (\n" ++ printHooks hks ++ ")"
 printAttr _ = ""
+
+printHooks :: [Hook] -> String
+printHooks [] = ""
+printHooks [h] = "\t" ++ printHook h
+printHooks (h : hks) = "\t" ++ printHook h ++ "\n" ++ printHooks hks
+
+printHook :: Hook -> String
+printHook (IdHook q qs) = "id-hook " ++ show q ++ printQidListHooks qs
+printHook (OpHook q op ar co) = "op-hook " ++ show q ++ " (" ++ show op ++
+                                " : " ++ printArity ar ++ " ~> " ++ show co ++ ")"
+printHook (TermHook q t) = "term-hook " ++ show q ++ " (" ++ printTerm t ++ ")"
+
+printQidListHooks :: [Qid] -> String
+printQidListHooks [q] = " (" ++ show q ++ ")"
+printQidListHooks _ = ""
 
 printStmntAttrSet :: [StmntAttr] -> String
 printStmntAttrSet [] = []
@@ -132,7 +148,7 @@ printAttrStmnt (Print _) = ""
 printTerm :: Term -> String
 printTerm (Const q _) = show q
 printTerm (Var q _) = show q
-printTerm (Apply q tl) = show q ++ "(" ++ printTermList tl ++ ")"
+printTerm (Apply q tl _) = show q ++ "(" ++ printTermList tl ++ ")"
 
 printTermList :: [Term] -> String
 printTermList [] = []
@@ -159,12 +175,12 @@ printSort (SortId q) = show q
 
 printConds :: [Condition] -> String
 printConds [] = ""
-printConds cs = "if " ++ printCondsAux cs
+printConds cs = " if " ++ printCondsAux cs
 
 printCondsAux :: [Condition] -> String
 printCondsAux [] = ""
 printCondsAux [c] = printCond c
-printCondsAux (c : cs) = printCond c ++ " /\\ " ++ printCondsAux cs
+printCondsAux (c : cs) = printCond c ++ " /\\\n  " ++ printCondsAux cs
 
 
 printCond :: Condition -> String

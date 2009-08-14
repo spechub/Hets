@@ -34,28 +34,36 @@ import qualified Data.Foldable as Fold
 
 import Common.Lib.Rel (Rel)
 import qualified Common.Lib.Rel as Rel
+import Common.Id (mkSimpleId)
 
 import qualified Common.Doc as Doc
 import Common.DocUtils
 
 import Maude.Printing
-
+import Maude.Sentence
 
 type SortSet = Set Qid
 type SubsortRel = Rel Qid
 type OpDecl = ([Qid], Qid, [Attr])
 type OpDeclSet = Set OpDecl
 type OpMap = Map Qid OpDeclSet
+type Sentences = Set Sentence
 
 data Sign = Sign {
         sorts :: SortSet,
         subsorts :: SubsortRel,
-        ops :: OpMap
+        ops :: OpMap,
+        sentences :: Sentences
     } deriving (Show, Ord, Eq)
 
 
 instance Pretty Sign where
-  pretty sign = Doc.text $ "\n" ++ printSign (sorts sign) (subsorts sign) (ops sign)
+  pretty sign = Doc.text $ "\n" ++ (printSign (sorts sign) (subsorts sign) (ops sign))
+                           ++ Set.fold f "" (sentences sign)
+           where f = \ x y -> case x of
+                  Equation eq -> printEq eq ++ y
+                  Membership mb -> printMb mb ++ y
+                  Rule rl -> printRl rl ++ y
 
 
 instance HasSorts Sign where
@@ -79,12 +87,16 @@ fromSpec (Module _ _ stmts) = let
             SortStmnt sort -> insertSort sort
             SubsortStmnt sub -> insertSubsort sub
             OpStmnt op -> insertOp op
+            EqStmnt eq -> insertEq eq
+            MbStmnt mb -> insertMb mb
+            RlStmnt rl -> insertRl rl
             _ -> id
     in foldr insert empty stmts
 
 -- | extract the Set of all Qids from a Signature
 symbols :: Sign -> SymbolSet
-symbols sign = Set.union (sorts2symbols $ sorts sign) (ops2symbols $ ops sign)
+symbols sign = Set.union (sorts2symbols $ sorts sign) 
+               $ Set.union (ops2symbols $ ops sign) (labels2symbols $ sentences sign)
 
 sorts2symbols :: Set Qid -> SymbolSet
 sorts2symbols = Set.map (\ x -> Sort x)
@@ -92,9 +104,19 @@ sorts2symbols = Set.map (\ x -> Sort x)
 ops2symbols :: OpMap -> SymbolSet
 ops2symbols _ = Set.empty
 
+labels2symbols :: Sentences -> SymbolSet
+labels2symbols = Set.fold f Set.empty
+          where f = \ x y -> case x of
+                                Equation _ -> y
+                                Membership _ -> y
+                                Rule rl -> case labeled rl of
+                                         False -> y
+                                         True -> Set.insert (symbolLabel rl) y
+
 -- | the empty Signature
 empty :: Sign
-empty = Sign { sorts = Set.empty, subsorts = Rel.empty, ops = Map.empty }
+empty = Sign { sorts = Set.empty, subsorts = Rel.empty, 
+               ops = Map.empty, sentences = Set.empty }
 
 -- | the union of two Signatures
 union :: Sign -> Sign -> Sign
@@ -103,7 +125,8 @@ union sig1 sig2 = let
     in Sign {
         sorts = apply Set.union sorts,
         subsorts = apply Rel.union subsorts,
-        ops = apply Map.union ops
+        ops = apply Map.union ops,
+        sentences = apply Set.union sentences
     }
 
 -- | the intersection of two Signatures
@@ -113,7 +136,8 @@ intersection sig1 sig2 = let
     in Sign {
         sorts = apply Set.intersection sorts,
         subsorts = apply Rel.intersection subsorts,
-        ops = apply Map.intersection ops
+        ops = apply Map.intersection ops,
+        sentences = apply Set.intersection sentences
     }
 
 -- | insert a Sort into a Signature
@@ -131,6 +155,20 @@ insertOpName name sign = sign {ops = ins'opName name (ops sign)}
 -- | insert an Operator declaration into a Signature
 insertOp :: Operator -> Sign -> Sign
 insertOp op sign = sign {ops = ins'op op (ops sign)}
+
+-- | insert an Equation declaration into a Signature
+insertEq :: Equation -> Sign -> Sign
+insertEq eq sign = sign {sentences = Set.insert (Equation eq) (sentences sign)}
+
+-- | insert a Membership declaration into a Signature
+insertMb :: Membership -> Sign -> Sign
+insertMb mb sign = sign {sentences = Set.insert (Membership mb) (sentences sign)}
+
+-- | insert a Rule declaration into a Signature if it is labeled
+insertRl :: Rule -> Sign -> Sign
+insertRl rl sign = case labeled rl of
+        False -> sign
+        True -> sign {sentences = Set.insert (Rule rl) (sentences sign)}
 
 -- | check that a Signature is legal
 isLegal :: Sign -> Bool
@@ -169,31 +207,52 @@ renameListSort rnms sg = foldr f sg rnms
 
 -- | rename the given sort
 renameSort :: Qid -> Qid -> Sign -> Sign
-renameSort from to sign = Sign sorts' subsorts' ops'
+renameSort from to sign = Sign sorts' subsorts' ops' sens'
               where sorts' = ren'sort'sortset from to $ sorts sign
                     subsorts' = ren'sort'subsortrel from to $ subsorts sign
                     ops' = ren'sort'op_map from to $ ops sign
+                    sens' = ren'sort'sentences from to $ sentences sign
 
--- | rename the given sort
+-- | rename the given op
 renameOp :: Qid -> Qid -> [Attr] -> Sign -> Sign
 renameOp from to ats sign = sign {ops = ops'}
               where ops' = ren'op'op_map from to ats $ ops sign
 
--- | rename the sort with the given profile
-renameOpProfile :: Qid -> [Qid] -> Qid -> Qid -> [Attr] -> Sign -> Sign
-renameOpProfile from ar co to ats sg = case Map.member from (ops sg) of
-                            False -> sg
-                            True -> 
-                               let ods = fromJust $ Map.lookup from (ops sg)
-                                   (ods1, ods2) = Set.partition (\ (x, y, _) -> x == ar && co == y) ods
-                                   ods1' = ren'op'set ats ods1
-                                   new_ops1 = if ods2 == Set.empty 
-                                              then Map.delete from (ops sg)
-                                              else Map.insert from ods2 (ops sg)
-                                   new_ops2 = if ods1 == Set.empty
-                                              then new_ops1
-                                              else Map.insertWith (Set.union) to ods1' new_ops1
-                               in sg {ops = new_ops2}
+-- | rename the op with the given profile
+renameOpProfile :: Qid -> [Qid] -> Qid -> [Attr] -> Sign -> Sign
+renameOpProfile from ar to ats sg = case Map.member from (ops sg) of
+                 False -> sg
+                 True -> 
+                    let ssr = Rel.transClosure $ subsorts sg
+                        ods = fromJust $ Map.lookup from (ops sg)
+                        (ods1, ods2) = Set.partition (\ (x, _, _) -> allSameKind ar x ssr) ods
+                        ods1' = ren'op'set from to ats ods1
+                        new_ops1 = if ods2 == Set.empty 
+                                   then Map.delete from (ops sg)
+                                   else Map.insert from ods2 (ops sg)
+                        new_ops2 = if ods1 == Set.empty
+                                   then new_ops1
+                                   else Map.insertWith (Set.union) to ods1' new_ops1
+                    in sg {ops = new_ops2}
+
+allSameKind :: [Qid] -> [Qid] -> Rel Qid -> Bool
+allSameKind (q1 : qs1) (q2 : qs2) r = sameKind q1 q2 r && allSameKind qs1 qs2 r
+allSameKind [] [] _ = True
+allSameKind _ _ _ = False
+
+sameKind :: Qid -> Qid -> Rel Qid -> Bool
+sameKind q1 q2 r = nk1 == nk2 || Rel.member nk1 nk2 r || Rel.member nk2 nk1 r
+           where nk1 = kind2sort (show q1)
+                 nk2 = kind2sort (show q2)
+
+kind2sort :: String -> Qid
+kind2sort ('`' : '[' : s) = mkSimpleId $ dropClosing s
+kind2sort s = mkSimpleId $ s
+
+dropClosing :: String -> String
+dropClosing ('`' : ']' : []) = []
+dropClosing (c : ss) = c : dropClosing ss
+dropClosing _ = ""
 
 --- Helper functions for inserting Signature members into their respective collections.
 
@@ -249,30 +308,135 @@ ren'sort'ops from to = Set.map $ ren'op from to
 
 -- | aux function to rename operator declarations
 ren'op :: Qid -> Qid -> OpDecl -> OpDecl
-ren'op from to (ar, coar, ats) = (ar', coar', ats)
+ren'op from to (ar, coar, ats) = (ar', coar', ats')
              where ar' = map (\ x -> if x == from then to else x) ar
                    coar' = if from == coar
                            then to
                            else coar
+                   ats' = renameSortAttrs from to ats
 
--- | rename an operator in an operator map
+-- | rename a sort in an attribute set. This renaming only affects to
+-- identity attributes.
+renameSortAttrs :: Qid -> Qid -> [Attr] -> [Attr]
+renameSortAttrs from to = map (renameSortAttr from to)
+
+-- | rename a sort in an attribute. This renaming only affects to
+-- identity attributes.
+renameSortAttr :: Qid -> Qid -> Attr -> Attr
+renameSortAttr from to attr = case attr of
+         Id t -> Id $ renameSortTerm from to t
+         LeftId t -> LeftId $ renameSortTerm from to t
+         RightId t -> RightId $ renameSortTerm from to t
+         _ -> attr
+
+-- | rename a sort in a term
+renameSortTerm :: Qid -> Qid -> Term -> Term
+renameSortTerm from to (Const q ty) = Const q $ renameSortType from to ty
+renameSortTerm from to (Var q ty) = Var q $ renameSortType from to ty
+renameSortTerm from to (Apply q ts ty) = Apply q (map (renameSortTerm from to) ts)
+                                                 (renameSortType from to ty)
+
+-- | rename a sort in a type. This renaming does not affect kinds
+renameSortType :: Qid -> Qid -> Type -> Type
+renameSortType from to (TypeSort s) = TypeSort $ SortId sid'
+       where SortId sid = s
+             sid' = if (sid == from)
+                   then to
+                   else sid
+renameSortType _ _ ty = ty
+
+-- | rename a sort in the sentences.
+ren'sort'sentences :: Qid -> Qid -> Sentences -> Sentences
+ren'sort'sentences from to = Set.map (ren'sort'sentence from to)
+
+-- | rename a sort in a sentence.
+ren'sort'sentence :: Qid -> Qid -> Sentence -> Sentence
+ren'sort'sentence from to (Equation eq) = Equation $ Eq lhs' rhs' cond' ats
+               where Eq lhs rhs cond ats = eq
+                     lhs' = renameSortTerm from to lhs
+                     rhs' = renameSortTerm from to rhs
+                     cond' = renameSortConditions from to cond
+ren'sort'sentence from to (Membership mb) = Membership $ Mb lhs' s' cond' ats
+               where Mb lhs s cond ats = mb
+                     lhs' = renameSortTerm from to lhs
+                     SortId sid = s
+                     s' = if (sid == from)
+                          then SortId to
+                          else s
+                     cond' = renameSortConditions from to cond
+ren'sort'sentence from to (Rule rl) = Rule $ Rl lhs' rhs' cond' ats
+               where Rl lhs rhs cond ats = rl
+                     lhs' = renameSortTerm from to lhs
+                     rhs' = renameSortTerm from to rhs
+                     cond' = renameSortConditions from to cond
+
+-- | rename a sort in a list of conditions
+renameSortConditions :: Qid -> Qid -> [Condition] -> [Condition]
+renameSortConditions from to = map (renameSortCondition from to)
+
+-- | rename a sort in a condition
+renameSortCondition :: Qid -> Qid -> Condition -> Condition
+renameSortCondition from to (EqCond t1 t2) = EqCond t1' t2'
+               where t1' = renameSortTerm from to t1
+                     t2' = renameSortTerm from to t2
+renameSortCondition from to (MatchCond t1 t2) = MatchCond t1' t2'
+               where t1' = renameSortTerm from to t1
+                     t2' = renameSortTerm from to t2
+renameSortCondition from to (MbCond t s) = MbCond t' s'
+               where t' = renameSortTerm from to t
+                     SortId sid = s
+                     s' = if (sid == from)
+                          then SortId to
+                          else s
+renameSortCondition from to (RwCond t1 t2) = RwCond t1' t2'
+               where t1' = renameSortTerm from to t1
+                     t2' = renameSortTerm from to t2
+
+-- | rename an operator without profile in an operator map
 ren'op'op_map :: Qid -> Qid -> [Attr] -> OpMap -> OpMap
 ren'op'op_map from to ats = Map.fromList . map f . Map.toList
                where f = \ (x,y) -> if x == from 
-                                    then (to,ren'op'set ats y)
+                                    then (to, ren'op'set from to ats y)
                                     else (x,y)
 
 -- | rename the attributes in the operator declaration set
-ren'op'set :: [Attr] -> OpDeclSet -> OpDeclSet
-ren'op'set ats ods = Set.map f ods
-               where f = \ (x, y, z) -> (x, y, ren'op'ats ats z)
+ren'op'set :: Qid -> Qid -> [Attr] -> OpDeclSet -> OpDeclSet
+ren'op'set from to ats ods = Set.map f ods
+               where f = \ (x, y, z) -> let
+                              z' = ren'op'ident'ats from to z
+                              in (x, y, ren'op'ats ats z')
+
+
+-- | rename an operator in an attribute set. This renaming only affects to
+-- identity attributes.
+ren'op'ident'ats :: Qid -> Qid -> [Attr] -> [Attr]
+ren'op'ident'ats from to = map (ren'op'ident'at from to)
+
+-- | rename a sort in an attribute. This renaming only affects to
+-- identity attributes.
+ren'op'ident'at :: Qid -> Qid -> Attr -> Attr
+ren'op'ident'at from to attr = case attr of
+         Id t -> Id $ ren'op'term from to t
+         LeftId t -> LeftId $ ren'op'term from to t
+         RightId t -> RightId $ ren'op'term from to t
+         _ -> attr
+
+-- | rename a sort in a term
+ren'op'term :: Qid -> Qid -> Term -> Term
+ren'op'term from to (Const q ty) = Const q' ty
+         where q' = if q == from then to else q
+ren'op'term from to (Var q ty) = Var q' ty
+         where q' = if q == from then to else q
+ren'op'term from to (Apply q ts ty) = Apply q' (map (ren'op'term from to) ts)
+                                           (renameSortType from to ty)
+         where q' = if q == from then to else q
 
 -- | rename the attributes in an attribute set
 ren'op'ats :: [Attr] -> [Attr] -> [Attr]
 ren'op'ats [] curr_ats = curr_ats
 ren'op'ats (at : ats) curr_ats = ren'op'ats ats $ ren'op'at at curr_ats
 
--- | renama an attribute in an attribute set
+-- | rename an attribute in an attribute set
 ren'op'at :: Attr -> [Attr] -> [Attr]
 ren'op'at rn@(Prec i) (a : ats) = a' : ren'op'at rn ats
                where a' = case a of
@@ -288,19 +452,22 @@ ren'op'at rn@(Format qs) (a : ats) = a' : ren'op'at rn ats
                              at -> at
 ren'op'at _ _ = []
 
-applySortMap :: Map Qid Qid -> Sign -> Sign
-applySortMap sm sg = sg {
-                  sorts = Set.map f $ sorts sg,
-                  subsorts = Rel.fromList $ map g $ Rel.toList $ subsorts sg
-                  -- TODO: add renaming in operators
-                  }
-        where f = \ x -> if Map.member x sm
-                         then fromJust $ Map.lookup x sm
-                         else x
-              g = \ (x, y) -> if Map.member x sm
-                              then if Map.member y sm
-                                   then (fromJust $ Map.lookup x sm, fromJust $ Map.lookup y sm)
-                                   else (fromJust $ Map.lookup x sm, y)
-                              else if Map.member y sm
-                                   then (x, fromJust $ Map.lookup y sm)
-                                   else (x, y)
+-- | check if a rule has label
+labeled :: Rule -> Bool
+labeled (Rl _ _ _ ats) = containsLabel ats
+
+-- | check if an attribute set contains a label attribute.
+containsLabel :: [StmntAttr] -> Bool
+containsLabel ((Label _) : _) = True
+containsLabel (_ : ats) = containsLabel ats
+containsLabel [] = False
+
+-- | return the label of the rule as a symbol.
+symbolLabel :: Rule -> Symbol
+symbolLabel (Rl _ _ _ ats) = symbolLabelAts ats
+
+-- | return the symbol associated to the label in an attribute set.
+symbolLabelAts :: [StmntAttr] -> Symbol
+symbolLabelAts ((Label q) : _) = Lab q
+symbolLabelAts (_ : ats) = symbolLabelAts ats
+symbolLabelAts _ = Lab $ mkSimpleId ""
