@@ -3,7 +3,8 @@ module Main where
 import System.Environment
 import System.Random
 import ATerm.SimpPretty
-import ATerm.Lib
+import ATerm.AbstractSyntax
+import ATerm.Conversion
 import ATerm.ReadWrite
 import ATerm.Unshared
 import Common.Utils (readMaybe)
@@ -58,7 +59,7 @@ testDDataMap :: String ->  FilePath -> IO ()
 testDDataMap upperstr fp = do
                   int_list <- generateRandomLists upperstr
                   let int_map = (Map.fromList int_list)
-                  att0 <- newATermTable
+                      att0 = emptyATermTable
                   (int_att,selectedATermIndex) <- toShATerm' att0 int_map
                   putStrLn $ show (getTopIndex int_att,selectedATermIndex)
                   writeFileSDoc fp $
@@ -86,7 +87,7 @@ checkDDataMap upperstr fp = do
 testListConv :: String ->  FilePath -> IO ()
 testListConv upperstr fp = do
                   int_list <- generateRandomLists upperstr
-                  att0 <- newATermTable
+                  let att0 = emptyATermTable
                   (int_att,selectedATermIndex) <-
                           toShATerm' att0 $ reverse int_list
                   putStrLn $ show (getTopIndex int_att,selectedATermIndex)

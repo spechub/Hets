@@ -2,7 +2,7 @@ module Main where
 
 import System
 import Syntax.AS_Library
-import ATerm.Lib
+import ATerm.AbstractSyntax
 import Common.Result
 import ATC.Sml_cats
 import ATC.Grothendieck
@@ -23,8 +23,7 @@ testATC fp = do
 
 readWriteATerm1 :: LIB_DEFN -> IO LIB_DEFN
 readWriteATerm1 ld  = do
-    att0 <- newATermTable
-    (att1, ix) <- toShATermLG' att0 ld
+    (att1, ix) <- toShATermLG' emptyATermTable ld
     return $ snd $ fromShATermLG' preLogicGraph ix att1
 
 readWriteATerm2 :: LIB_DEFN -> IO LIB_DEFN
