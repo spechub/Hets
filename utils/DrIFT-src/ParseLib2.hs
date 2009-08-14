@@ -31,8 +31,8 @@ module ParseLib2
     many1_offside,many_offside,off,
     opt, skipUntil, skipUntilOff,skipUntilParse,skipNest) where
 
-import Char
-import Monad
+import Data.Char
+import Control.Monad
 
 infixr 5 +++
 
@@ -49,16 +49,16 @@ instance Functor Parser where
 
 instance Monad Parser where
    -- return      :: a -> Parser a
-   return v        = P (\pos inp -> [(v,inp)])
+   return v        = P (\ _ inp -> [(v,inp)])
 
    -- >>=         :: Parser a -> (a -> Parser b) -> Parser b
    (P p) >>= f     = P (\pos inp -> concat [papply (f v) pos out
                                                 | (v,out) <- p pos inp])
-   fail s          = P (\pos inp -> [])
+   fail _          = P (\ _ _ -> [])
 
 instance MonadPlus Parser where
    -- mzero            :: Parser a
-   mzero                = P (\pos inp -> [])
+   mzero                = P (\ _ _ -> [])
    -- mplus            :: Parser a -> Parser a -> Parser a
    (P p) `mplus` (P q)    = P (\pos inp -> (p pos inp ++ q pos inp))
 
@@ -71,10 +71,7 @@ setenv :: Pos -> Parser a -> Parser a
 setenv s (P m) = P $  \_ -> m s
 
 update :: (Pstring -> Pstring) -> Parser Pstring
-update f = P( \pos s -> [(s,f s)])
-
-set :: Pstring -> Parser Pstring
-set s = update (\_ -> s)
+update f = P( \ _ s -> [(s,f s)])
 
 fetch :: Parser Pstring
 fetch = update id
@@ -86,14 +83,10 @@ item = do (pos,x:_) <- update newstate
           defpos <- env
           if onside pos defpos then return x else mzero
 
-force             :: Parser a -> Parser a
-force (P p)        = P (\pos inp -> let x = p pos inp in
-                                (fst (head x), snd (head x)) : tail x)
-
 first             :: Parser a -> Parser a
-first (P p)        = P (\pos inp -> case p pos inp of
+first (P p)       = P (\pos inp -> case p pos inp of
                                    []     -> []
-                                   (x:xs) -> [x])
+                                   x : _ -> [x])
 
 papply            :: Parser a -> Pos -> Pstring -> [(a,Pstring)]
 papply (P p) pos inp   = p pos inp
@@ -104,7 +97,9 @@ onside :: Pos -> Pos -> Bool
 onside (l,c) (dl,dc) = (c > dc) || (l == dl)
 
 newstate :: Pstring -> Pstring
-newstate ((l,c),x:xs) = ((l',c'),xs)
+newstate i@((l,c), xxs) = case xxs of
+  [] -> i
+  x : xs -> ((l',c'),xs)
         where
         (l',c') = case x of
                         '\n' -> (l+1,0)
@@ -120,7 +115,6 @@ sat               :: (Char -> Bool) -> Parser Char
 sat p              = do {x <- item; if p x then return x else mzero}
 
 many              :: Parser a -> Parser [a]
---many p           = force (many1 p +++ return [])
 many p             = (many1 p +++ return [])
 
 many1             :: Parser a -> Parser [a]
@@ -196,6 +190,7 @@ int                = do {char '-'; n <- nat; return (-n)} +++ nat
 spaces            :: Parser ()
 spaces             = do {many1 (sat isJunk); return ()}
 
+isJunk :: Char -> Bool
 isJunk x = isSpace x || (not . isPrint) x || isControl x
 
 comment :: Parser ()
@@ -246,7 +241,7 @@ many_offside p = many1_offside p +++ mzero
 
 
 off :: Parser a -> Parser a
-off p = do (dl,dc) <- env
+off p = do (_,dc) <- env
            ((l,c),_) <- fetch
            if c == dc then setenv (l,dc) p else mzero
 
@@ -281,7 +276,9 @@ skipUntilParse u p = fmap (concatMap justs) . many $
            token (char u)
            return Nothing
 
+justs :: Maybe t -> [t]
 justs (Just a)  = [a]
 justs Nothing   = []
 
+opt :: Parser [a] -> Parser [a]
 opt p = p +++ return []
