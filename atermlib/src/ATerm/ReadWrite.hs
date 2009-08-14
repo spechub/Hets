@@ -16,6 +16,7 @@ convert 'ATermTable's (created by 'ATerm.Conversion.toATermTable') from
 module ATerm.ReadWrite(
     -- * read shared or unshared ATerms
       readATerm
+    , readATermFile
     -- * writing out shared ATerms (use these functions for serialization)
     , writeSharedATerm
     , writeSharedATermFile
@@ -51,6 +52,12 @@ import ATerm.SimpPretty
 import ATerm.Base64
 import Data.Char
 import qualified Data.IntMap as IntMap
+
+readATermFile :: FilePath -> IO ATermTable
+readATermFile fp = do
+  str <- readFile fp
+  if null str then error $ "ATerm.readATermFile: empty input file: " ++ fp
+     else return $ readATerm str
 
 --- From String to ATerm ------------------------------------------------------
 
