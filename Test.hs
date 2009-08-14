@@ -186,5 +186,3 @@ executeGlobalDecompByNTimes n ln lenv =
     if n<0 then error "excecuteGlobalDecompByNTimes"
     else if n==0 then lenv
          else executeGlobalDecompByNTimes (n-1) ln $ globDecomp ln lenv
-
-

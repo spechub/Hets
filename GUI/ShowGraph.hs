@@ -71,7 +71,8 @@ showGraph file opts env = case env of
     writeIORef (intState gInfo) nwst
     let gInfo' = gInfo { hetcatsOpts = opts
                        , libName = ln }
-    showLibGraph gInfo'
+-- Ewaryst: for me no libgraph!
+--    showLibGraph gInfo'
     mShowGraph gInfo' ln
     takeMVar $ exitMVar gInfo'
 #ifdef GTKGLADE
