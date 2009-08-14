@@ -22,19 +22,21 @@ import Data.Maybe (fromJust, isNothing)
 
 --- The types we use for our parsers
 
--- TODO: Replace String with the right data types
+data NamedSpec = Module String
+               | Theory String
+               | View String
+    deriving (Eq)
 
 type Parsed = Either ParseError
-type Symbol = String
 -- Result of a single component
-type TempResult = Maybe (Either FilePath Symbol)
+type TempResult = Maybe (Either FilePath NamedSpec)
 type TempParser = CharParser () TempResult
 type TempListResult = [TempResult]
 type TempListParser = CharParser () TempListResult
 -- Result during module tree recursion
 type RecResult = (Set FilePath, MaudeResult)
 -- Result for a module tree
-type MaudeResult = [Symbol]
+type MaudeResult = [NamedSpec]
 
 
 --- Generic parser combinators
@@ -47,6 +49,9 @@ void parser = parser >> return ()
 ignore :: (Monad m) => m a -> m (Maybe b)
 ignore parser = parser >> return Nothing
 
+-- | Wrap the result of a successful parse
+succeed :: (Monad m) => a -> m (Maybe (Either b a))
+succeed = return . Just . Right
 
 --- A few helpers we need for Parsec.Language
 
@@ -163,7 +168,7 @@ modul = let
             name <- identifier
             manyTill something $ reserved "is"
             manyTill statement $ reserved stop
-            return $ Just $ Right name
+            succeed $ Module name
     in  modul' "fmod" "endfm"
     <|> modul' "mod"  "endm"
 
@@ -175,7 +180,7 @@ theory = let
             name <- identifier
             reserved "is"
             manyTill statement $ reserved stop
-            return $ Just $ Right name
+            succeed $ Theory name
     in  theory' "fth" "endfth"
     <|> theory' "th"  "endth"
 
@@ -185,7 +190,7 @@ view = do
     reserved "view"
     name <- identifier
     manyTill statement $ reserved "endv"
-    return $ Just $ Right name
+    succeed $ View name
 
 
 --- Parsers for Maude source files
