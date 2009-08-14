@@ -84,8 +84,9 @@ instance XmlAttrList [Attr] where
 
 instance XmlPrintable LIB_DEFN where
     toXml (Lib_defn n il rg an) =
-        mkEl "Lib" ["name", toStr n]
-                 $ maybeToList (printAnnotations rg an []) ++ map (toXml . item) il
+        withRg rg $ mkEl "Lib" ["name", toStr n]
+                   $ maybeToList (printAnnotations nullRange an [])
+                         ++ map (toXml . item) il
 
 instance XmlPrintable LIB_ITEM where
     toXml (Spec_defn n g as rg)
@@ -138,7 +139,7 @@ instance XmlPrintable (Annoted FIT_ARG) where
                             $ toLst fargs
 
 instance XmlPrintable Annotation where
-    toXml x = mkPEl "Annotation" [toText x]
+    toXml x = withRg (getRange x) $ mkPEl "Annotation" [toText x]
 
 instance XmlPrintable ITEM_NAME_OR_MAP where
     toXml (Item_name name) = mkFEl "Item" ["name", toString name]

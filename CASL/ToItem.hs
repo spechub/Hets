@@ -15,7 +15,7 @@ get item representation of 'BASIC_SPEC'
 module CASL.ToItem (bsToItem) where
 --module CASL.ToItem where
 
-import Control.Monad.State
+import Control.Monad.Reader
 
 import Common.Doc
 import Common.DocUtils
@@ -67,18 +67,18 @@ getTransState _ = TS pretty pretty pretty
 
 --------------------- The Main function of this module
 bsToItem :: (Pretty b, Pretty s, Pretty f) => (BASIC_SPEC b s f) -> Item
-bsToItem bs = fst $ runState (toitem bs) $ getTransState bs
+bsToItem bs = runReader (toitem bs) $ getTransState bs
 
 
 
 
 
-instance ItemConvertible (BASIC_SPEC b s f) (State (TS b s f)) where
+instance ItemConvertible (BASIC_SPEC b s f) (Reader (TS b s f)) where
     toitem (Basic_spec l) = 
         do{ l' <-  listFromAL l
           ; return rootItem{ items = l' } }
 
-instance ItemConvertible (BASIC_ITEMS b s f) (State (TS b s f)) where
+instance ItemConvertible (BASIC_ITEMS b s f) (Reader (TS b s f)) where
     toitem bi =
         case bi of
           Sig_items s -> toitem s
@@ -92,10 +92,10 @@ instance ItemConvertible (BASIC_ITEMS b s f) (State (TS b s f)) where
               mkItemM ("Free_datatype", "SortsKind", show sk) rg
                           $ listFromAL adtds
           Ext_BASIC_ITEMS b -> 
-              do{ st <- get
+              do{ st <- ask
                 ; fromPrinter (show . (fB st)) "Ext_BASIC_ITEMS" b }
 
-instance ItemConvertible (SIG_ITEMS s f) (State (TS b s f)) where
+instance ItemConvertible (SIG_ITEMS s f) (Reader (TS b s f)) where
     toitem si =
         case si of
           Sort_items sk sis rg ->
@@ -107,11 +107,11 @@ instance ItemConvertible (SIG_ITEMS s f) (State (TS b s f)) where
               mkItemM ("Datatype_items", "SortsKind", show sk) rg
                 $ listFromAL adds
           Ext_SIG_ITEMS s -> 
-              do{ st <- get
+              do{ st <- ask
                 ; fromPrinter (show . (fS st)) "Ext_SIG_ITEMS" s }
 
 
-instance ItemConvertible (SORT_ITEM f) (State (TS b s f)) where
+instance ItemConvertible (SORT_ITEM f) (Reader (TS b s f)) where
     toitem si =
         case si of
           Sort_decl l rg -> mkItemM "Sort_decl" rg $ listFromL
@@ -127,7 +127,7 @@ instance ItemConvertible (SORT_ITEM f) (State (TS b s f)) where
                            $ listWithLIT "SORT" l
 
 
-instance ItemConvertible (OP_ITEM f) (State (TS b s f)) where
+instance ItemConvertible (OP_ITEM f) (Reader (TS b s f)) where
     toitem oi =
         case oi of
           Op_decl onl ot oal rg ->
@@ -139,7 +139,7 @@ instance ItemConvertible (OP_ITEM f) (State (TS b s f)) where
                                     , fromAC at]
 
 
-instance ItemConvertible (PRED_ITEM f) (State (TS b s f)) where
+instance ItemConvertible (PRED_ITEM f) (Reader (TS b s f)) where
     toitem p =
         case p of
           Pred_decl pnl pt rg ->
@@ -165,44 +165,44 @@ litFromPrinterWithRg p (LITC (IT l) o) =
     mkItemMM (IT $ l ++ [p o]) (getRange o) []
 
 
-instance ItemConvertible OP_TYPE (State (TS b s f)) where
+instance ItemConvertible OP_TYPE (Reader (TS b s f)) where
     toitem = fromPrinterWithRg toString "OP_TYPE"
 
-instance ItemConvertible OP_HEAD (State (TS b s f)) where
+instance ItemConvertible OP_HEAD (Reader (TS b s f)) where
     toitem = fromPrinterWithRg toString "OP_HEAD"
                      
-instance ItemConvertible (OP_ATTR f) (State (TS b s f)) where
+instance ItemConvertible (OP_ATTR f) (Reader (TS b s f)) where
     toitem a =
-        do{ st <- get
+        do{ st <- ask
           ; fromPrinter (show . printAttr (fF st)) "OP_ATTR" a }
                      
-instance ItemConvertible PRED_TYPE (State (TS b s f)) where
+instance ItemConvertible PRED_TYPE (Reader (TS b s f)) where
     toitem = fromPrinterWithRg toString "PRED_TYPE"
 
-instance ItemConvertible PRED_HEAD (State (TS b s f)) where
+instance ItemConvertible PRED_HEAD (Reader (TS b s f)) where
     toitem = fromPrinterWithRg (show . printPredHead) "PRED_HEAD"
 
-instance ItemConvertible DATATYPE_DECL (State (TS b s f)) where
+instance ItemConvertible DATATYPE_DECL (Reader (TS b s f)) where
     toitem = fromPrinterWithRg toString "DATATYPE_DECL"
 
-instance ItemConvertible VAR_DECL (State (TS b s f)) where
+instance ItemConvertible VAR_DECL (Reader (TS b s f)) where
     toitem = fromPrinterWithRg toString "VAR_DECL"
 
-instance ItemConvertible (FORMULA f) (State (TS b s f)) where
+instance ItemConvertible (FORMULA f) (Reader (TS b s f)) where
     toitem f =
-        do{ st <- get
+        do{ st <- ask
           ; fromPrinterWithRg (show . printFormula (fF st)) "FORMULA" f }
 
-instance ItemConvertible (TERM f) (State (TS b s f)) where
+instance ItemConvertible (TERM f) (Reader (TS b s f)) where
     toitem f =
-        do{ st <- get
+        do{ st <- ask
           ; fromPrinterWithRg (show . printTerm (fF st)) "TERM" f }
 
 
-instance ItemConvertible (LITC Id) (State (TS b s f)) where
+instance ItemConvertible (LITC Id) (Reader (TS b s f)) where
     toitem = litFromPrinterWithRg toString
 
-instance ItemConvertible (LITC Token) (State (TS b s f)) where
+instance ItemConvertible (LITC Token) (Reader (TS b s f)) where
     toitem = litFromPrinterWithRg toString
 
 
