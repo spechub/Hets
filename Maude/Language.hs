@@ -23,7 +23,6 @@ import Data.Maybe (fromJust, isNothing)
 --- The types we use for our parsers
 
 data NamedSpec = Module String
-               | Theory String
                | View String
     deriving (Eq)
 
@@ -180,7 +179,7 @@ theory = let
             name <- identifier
             reserved "is"
             manyTill statement $ reserved stop
-            succeed $ Theory name
+            succeed $ Module name
     in  theory' "fth" "endfth"
     <|> theory' "th"  "endth"
 
