@@ -9,7 +9,7 @@ Stability   :  provisional
 Portability :  non-portable (existential types)
 
 This folder provides conversion methods, converting between Hets
-data structures and shared ATerms given by "Common.ATerm.Lib".
+data structures and shared ATerms.
 Most of the modules have been automatically created using /DriFT/
 from the /utils/ folder.
 An execption are the modules with existential types, such as

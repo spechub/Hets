@@ -77,8 +77,6 @@ identifiers and annotations as well as their parsing and printing.
 
  * "Common.SExor"                lisp s-expressions as exchange format
 
- * "Common.SimpPretty"           printing aterms
-
  * "Common.Taxonomy"             Taxonomy options
 
  * "Common.Token"                parsing identifiers
@@ -87,19 +85,13 @@ identifiers and annotations as well as their parsing and printing.
 
  * "Common.Utils"                some functions for lists
 
- * "Common.ATerm.AbstractSyntax" shared ATerms
-
- * "Common.ATerm.ConvInstances"  some aterm conversion instances
-
- * "Common.ATerm.Conversion"     other aterm conversion instances
-
- * "Common.ATerm.ReadWrite"      reading and writing aterms
-
  * "Common.Lib.Pretty"           adapted printer for latex
 
  * "Common.Lib.Rel"              relations as special graphs
 
  * "Common.Lib.State"            a portable state monad
+
+ * "Common.Lib.SizedList"        lists with a size field
 
 -}
 module Common where
