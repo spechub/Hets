@@ -191,12 +191,12 @@ instance ItemConvertible VAR_DECL (State (TS b s f)) where
 instance ItemConvertible (FORMULA f) (State (TS b s f)) where
     toitem f =
         do{ st <- get
-          ; fromPrinter (show . printFormula (fF st)) "FORMULA" f }
+          ; fromPrinterWithRg (show . printFormula (fF st)) "FORMULA" f }
 
 instance ItemConvertible (TERM f) (State (TS b s f)) where
     toitem f =
         do{ st <- get
-          ; fromPrinter (show . printTerm (fF st)) "TERM" f }
+          ; fromPrinterWithRg (show . printTerm (fF st)) "TERM" f }
 
 
 instance ItemConvertible (LITC Id) (State (TS b s f)) where
