@@ -9,7 +9,8 @@ module Maude.Meta.Qid (
     mapAsFunction
 ) where
 
-import Common.ATerm.Conversion
+import ATerm.Conversion
+import ATC.Id ()
 import Common.DocUtils (Pretty)
 import qualified Common.Id as Id
 
@@ -22,13 +23,7 @@ import qualified Data.Map as Map
 
 -- A Quoted Identifier
 newtype Qid = Qid { qid :: Id.Id }
-    deriving (Show, Eq, Ord, Typeable, Pretty, Id.GetRange)
-
--- TODO: Replace dummy implementation for ShATermConvertible Qid.
-instance ShATermConvertible Qid where
-    toShATermAux table _ = return (table, 0)
-    fromShATermAux _ table = (table, fromString "Qid")
-
+    deriving (Show, Eq, Ord, Typeable, Pretty, ShATermConvertible, Id.GetRange)
 
 type QidList = [Qid]
 type QidSet = Set Qid
