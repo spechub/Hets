@@ -19,7 +19,7 @@ module ATerm.AbstractSyntax
      getATerm, toReadonlyATT,
      getTopIndex,
      getATerm', setATerm', getShATerm,
-     Key, newATermTable, getKey, setKey, mkKey,
+     Key, getKey, setKey, mkKey,
      getATermByIndex1, str2Char, integer2Int
     ) where
 
@@ -77,9 +77,6 @@ toReadonlyATT (ATT h s t i dM) = ATT h s
 
 emptyATermTable :: ATermTable
 emptyATermTable = ATT IntMap.empty Map.empty empty (-1) IntMap.empty
-
-newATermTable :: IO ATermTable
-newATermTable = return emptyATermTable
 
 addATermNoFullSharing :: ShATerm -> ATermTable -> (ATermTable, Int)
 addATermNoFullSharing t (ATT h a_iDFM i_aDFM i1 dM) = let j = i1 + 1 in

@@ -8,17 +8,23 @@ Maintainer  :  Christian.Maeder@dfki.de
 Stability   :  provisional
 Portability :  non-portable (via imports)
 
-reexports the modules needed for many 'ShATermConvertible'
+reexports the names needed for many 'ShATermConvertible'
 instances. For converting 'ShATerm's to and from 'String's you'll need
-the module "ATerm.ReadWrite" (that depends on
-"ATerm.SimpPretty" and "ATerm.Base64").
+the module "ATerm.ReadWrite".
+
 For more information on ATerms look under
-<http://www.asfsdf.org>.
+<http://www.asfsdf.org>, <http://www.asfsdf.org/Meta-Environment/ATerms>.
 -}
 
 module ATerm.Lib
-    ( module ATerm.AbstractSyntax
-    , module ATerm.Conversion
+    ( ShATerm (..)
+    , ATermTable
+    , addATerm
+    , getShATerm
+    , ShATermConvertible(toShATermAux, fromShATermAux)
+    , toShATerm'
+    , fromShATerm'
+    , fromShATermError
     ) where
 
 import ATerm.AbstractSyntax

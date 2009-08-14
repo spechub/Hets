@@ -564,6 +564,7 @@ clean_genRules:
             $(hs_clean_files)
 
 clean: bin_clean o_clean clean_pretty
+	$(HCPKG) unregister aterm
 
 ### removes all *.o, *.hi and *.p_o files in all subdirectories
 o_clean:

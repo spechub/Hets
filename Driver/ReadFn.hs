@@ -25,7 +25,7 @@ import ATC.LibName ()
 
 import Driver.Options
 
-import ATerm.Lib
+import ATerm.AbstractSyntax
 import ATerm.ReadWrite
 import Common.AnnoState
 import Common.Id

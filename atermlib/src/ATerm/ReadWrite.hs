@@ -8,16 +8,23 @@ Maintainer  :  Christian.Maeder@dfki.de
 Stability   :  provisional
 Portability :  non-portable (imports ATerm.AbstractSyntax)
 
-convert 'ShATerm's in 'ATermTable's to and from base64 encoded 'String's
-  and 'SDoc's shared (TAF format) and unshared
+convert 'ATermTable's (created by 'ATerm.Conversion.toATermTable') from
+  'String's and to 'SDoc's as shared (TAF format) or unshared (AT format).
+  Indices (following hash marks) are base64 encoded.
 -}
 
-module ATerm.ReadWrite
-    ( readATerm
-    , writeATerm
-    , writeATermSDoc
+module ATerm.ReadWrite(
+    -- * read shared or unshared ATerms
+      readATerm
+    -- * writing out shared ATerms (use these functions for serialization)
     , writeSharedATerm
+    , writeSharedATermFile
+    -- * writing out unshared ATerms (just for compatibility purposes)
+    , writeATerm
+    , writeATermFile
+    -- * support different renderings via 'ATerm.SimpPretty.SDoc'
     , writeSharedATermSDoc
+    , writeATermSDoc
     ) where
 
 {-
@@ -53,6 +60,10 @@ data ReadTAFStruct = RTS
     (AbbrevTable Int)
     Int -- string length of last ATerm read
 
+{- | create an ATerm table from an input string. Shared or unshared ATerms can
+be read. A string for shared ATerms usually starts with an exclamation mark
+and contains many hash marks indicating references. Unshared ATerms are plain
+constructor terms.  -}
 readATerm :: String -> ATermTable
 readATerm = readATerm' . dropWhile ( \ c -> case c of
     '!' -> True
@@ -167,17 +178,23 @@ data DocLen = DocLen SDoc Int
 
 data WriteStruct = WS (AbbrevTable DocLen) DocLen
 
+writeATermSDoc :: ATermTable -> SDoc
+writeATermSDoc = writeSharedATermSDoc' False
+
 writeATerm :: ATermTable -> String
 writeATerm = render . writeATermSDoc
 
-writeATermSDoc :: ATermTable -> SDoc
-writeATermSDoc = writeSharedATermSDoc' False
+writeATermFile :: FilePath -> ATermTable -> IO ()
+writeATermFile fp = writeFileSDoc fp . writeATermSDoc
 
 writeSharedATermSDoc :: ATermTable -> SDoc
 writeSharedATermSDoc = writeSharedATermSDoc' True
 
 writeSharedATerm :: ATermTable -> String
 writeSharedATerm = render . writeSharedATermSDoc
+
+writeSharedATermFile :: FilePath -> ATermTable -> IO ()
+writeSharedATermFile fp = writeFileSDoc fp . writeSharedATermSDoc
 
 writeSharedATermSDoc' :: Bool -> ATermTable -> SDoc
 writeSharedATermSDoc' b at =
