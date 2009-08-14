@@ -1,9 +1,9 @@
 -- utilities for writing new rules.
 
-module RuleUtils (module Pretty,module RuleUtils, module DataP)where
+module RuleUtils where
 
-import Pretty
-import DataP (Statement(..), Data(..), Type(..), Name, Var, Class,
+import Text.PrettyPrint.HughesPJ
+import DataP (Statement(..), Data(..), Type(..), Class,
               Body(..), Constructor)
 
 -- Rule Declarations
@@ -12,7 +12,10 @@ type Tag = String
 type Rule = (Tag, Data -> Doc)
 type RuleDef = (Tag, Data -> Doc, String, String, Maybe String)
 
+rArrow :: Doc
 rArrow = text "->"
+
+lArrow :: Doc
 lArrow = text "<-"
 
 prettyType :: Type -> Doc
@@ -52,13 +55,17 @@ opt1 [x] _ g = g x
 opt1 a f _ = f a
 
 -- new simple docs
+commentLine :: Doc -> Doc
 commentLine x = text "--" <+> x -- useful for warnings / error messages
+
+commentBlock :: Doc -> Doc
 commentBlock x = text "{-" <+> x <+> text "-}"
 
 --- Utility Functions -------------------------------------------------------
 
 -- Instances
 
+strippedName :: Data -> [Char]
 strippedName = reverse . takeWhile (/= '.') . reverse . name
 
 -- instance header, handling class constraints etc.

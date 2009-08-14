@@ -13,8 +13,10 @@ generate ShATermConvertible instances
 module UserRulesHetCATS (hetcatsrules) where
 
 import RuleUtils -- gives some examples
-import Pretty
-import List
+import DataP
+import Text.PrettyPrint.HughesPJ
+import Data.List
+
 
 hetcatsrules :: [RuleDef]
 hetcatsrules =

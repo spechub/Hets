@@ -13,10 +13,9 @@ import RuleUtils (Tag)
 import DataP
 import CommandP
 import ParseLib2
-import System
-import List
-import Monad
-import GenUtil
+import System.Environment
+import Data.List
+import Control.Monad
 
 --GHC version
 try :: IO a -> IO (Either IOError a)
@@ -54,7 +53,8 @@ chaseImports' text indats =
     where
         action :: (ToDo, ToDo) -> FilePath -> IO (ToDo, ToDo)
         action (dats, done) m = if null dats then return ([], done) else do
-             mp <- ioM $ getEnv "DERIVEPATH"
+             mp <- catch (fmap return $ getEnv "DERIVEPATH")
+                   $ return . fail . show
              let paths = maybe [] breakPaths mp
              mc <- findModule paths m
              return $ case mc of
@@ -98,18 +98,18 @@ scanModule modname dats txt = let
 -- update what's still missing
 resolve :: String -> [Data] -> ToDo -> (ToDo,ToDo) -> (ToDo,ToDo)
 resolve _ _ [] acc = acc
-resolve modname parsed (tv:tt) p@(local, imports) =
+resolve modname parsed (tv:tt) p@(locals, imported) =
     case tv of
     (tags, TypeName t) ->
         case filter ( \ d -> name d == t ||
                              modname ++ "." ++ name d == t) parsed of
           [x] -> resolve modname parsed tt
-                 ( (tags, x { name = modname ++ "." ++ name x }) : local
-                 , imports)
-          _ -> resolve modname parsed tt (local, tv : imports)
+                 ( (tags, x { name = modname ++ "." ++ name x }) : locals
+                 , imported)
+          _ -> resolve modname parsed tt (locals, tv : imported)
     _ -> resolve modname parsed tt p
 
--- utils -- this should be the sort of thing automatically generated !!
+isData :: Data -> Bool
 isData D{} = True
 isData _ = False
 
