@@ -226,8 +226,16 @@ withAnno :: Annoted a -> Content -> Content
 withAnno a c@(Elem e) = case printAnnotated a of
                         Just ac -> Elem $ e { elContent = ac : elContent e }
                         _ -> c
-
 withAnno _ _ = error "withAnno only applies to elements"
+
+withText :: String -> Content -> Content
+withText s (Elem e) = Elem $ e { elContent = mkText s : elContent e }
+withText _ _ = error "withText only applies to elements"
+
+withAttrs :: [Attr] -> Content -> Content
+withAttrs as (Elem e) = Elem $ add_attrs as e
+withAttrs _ _ = error "withAttrs only applies to elements"
+
 
 withRg :: Range -> Content -> Content
 withRg rg c@(Elem e) =
@@ -284,11 +292,17 @@ mkAttr n = Attr (unqual n)
 itemToXml :: Item -> Content
 itemToXml i =
     let it = itemType i
-        typeAttr = mkAttr (getValueName it) $ getValue it
-    in withRg (range i)
-           $ mkEl (getName it)
-                 (if hasValue it then [typeAttr] else [])
-                 $ map (fromAnno . fmap itemToXml) $ items i
+        attrName = getValueName it
+        attrValue = getValue it
+        content = withRg (range i)
+                  $ mkPEl (getName it)
+                  $ map (fromAnno . fmap itemToXml) $ items i
+    in if hasValue it then
+           if attrName == "value" then
+               withText  attrValue content
+           else
+               withAttrs [mkAttr attrName attrValue] content
+       else content
 
 {-
 itemToXml (Item it rg as l) =
@@ -298,10 +312,10 @@ itemToXml (Item it rg as l) =
            $ mkEl (getName it)
                  (if hasValue it then typeAttr : atts else atts)
                  $ map (fromAnno . fmap itemToXml) l
--}
 
 itemToAttrib :: Item -> Attr
 itemToAttrib i = itemTypeToAttrib $ itemType i
 
 itemTypeToAttrib :: ItemType -> Attr
 itemTypeToAttrib it = mkAttr (getName it) $ getValue it
+-}

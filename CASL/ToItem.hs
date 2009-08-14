@@ -21,7 +21,7 @@ import Common.Doc
 import Common.DocUtils
 import Common.Id
 import Common.Item
-import Common.AS_Annotation
+--import Common.AS_Annotation
 
 import CASL.AS_Basic_CASL
 import CASL.ToDoc
@@ -42,21 +42,21 @@ data TS b s f = TS { fB :: (b -> Doc)
 -- should behave differently in different contexts depending on this argument.
 -- Typically the ItemType is used as ItemType of the Item to be created.
 
-data LITC a = LITC { lit :: ItemType
-                   , element :: a }
+data LITC a = LITC ItemType a
 
 --------------------- lifting to Local Contexts
 withLIT :: ItemTypeable a => a -> b -> LITC b
 withLIT it = LITC $ toIT it
 
-annWithLIT :: ItemTypeable a => a -> Annoted b -> Annoted (LITC b)
-annWithLIT it = fmap (withLIT it)
-
 listWithLIT :: ItemTypeable a => a -> [b] -> [LITC b]
 listWithLIT it = map (withLIT it)
 
-annlistWithLIT :: ItemTypeable a => a -> [Annoted b] -> [Annoted (LITC b)]
-annlistWithLIT it = map (annWithLIT it)
+-- analogous for annotated objects, don't needed yet
+--annWithLIT :: ItemTypeable a => a -> Annoted b -> Annoted (LITC b)
+--annWithLIT it = fmap (withLIT it)
+
+--annlistWithLIT :: ItemTypeable a => a -> [Annoted b] -> [Annoted (LITC b)]
+--annlistWithLIT it = map (annWithLIT it)
 
 
 -- this function is only to unify the types of the state and the basic spec
@@ -205,9 +205,4 @@ instance ItemConvertible (LITC Id) (State (TS b s f)) where
 instance ItemConvertible (LITC Token) (State (TS b s f)) where
     toitem = litFromPrinterWithRg toString
 
-
-
------------------ DUMMY INSTANCES -----------------
-dummy :: Monad m => String -> a -> m Item
-dummy s = const $ return $ liftIT2I ("dummy", s)
 
