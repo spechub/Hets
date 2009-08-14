@@ -401,8 +401,7 @@ cpp_sources = hets.hs $(happy_files) \
     SoftFOL/Logic_SoftFOL.hs \
     VSE/Logic_VSE.hs \
     VSE/Prove.hs \
-    Proofs/VSE.hs \
-    Common/BinaryInstances.hs
+    Proofs/VSE.hs
 
 # further sources that should be excluded from haddock-0.8
 nondoc_sources = $(wildcard utils/DrIFT-src/*.hs) \
