@@ -36,6 +36,7 @@ data Sentence = Membership Membership
     deriving (Show, Read, Ord, Eq)
 
 
+-- TODO: Clean up the Pretty Sentence instance.
 instance Pretty Sentence where
   pretty (Membership mb) = text $ printMb mb
   pretty (Equation eq) = text $ printEq eq

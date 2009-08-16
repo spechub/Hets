@@ -39,6 +39,7 @@ import qualified Common.Doc as Doc
 import Common.DocUtils (Pretty(..))
 
 
+-- TODO: Do we really want Qid here instead of Symbol?
 type SortSet = Set Qid
 type SubsortRel = Rel Qid
 type OpDecl = ([Qid], Qid, [Attr])
@@ -46,6 +47,7 @@ type OpDeclSet = Set OpDecl
 type OpMap = Map Qid OpDeclSet
 type Sentences = Set Sentence
 
+-- TODO: Should we also add the Module name to Sign?
 data Sign = Sign {
         sorts :: SortSet,
         subsorts :: SubsortRel,
@@ -54,10 +56,11 @@ data Sign = Sign {
     } deriving (Show, Ord, Eq)
 
 
+-- TODO: Clean up the Pretty Sign instance.
 instance Pretty Sign where
   pretty sign = Doc.text $ "\n" ++ (printSign (sorts sign) (subsorts sign) (ops sign))
                            ++ Set.fold f "" (sentences sign)
-           where f = \ x y -> case x of
+           where f x y = case x of
                   Equation eq -> printEq eq ++ y
                   Membership mb -> printMb mb ++ y
                   Rule rl -> printRl rl ++ y
@@ -77,6 +80,7 @@ instance HasOps Sign where
     }
 
 
+-- TODO: Maybe we should move *.fromSpec to a type class?
 -- | extract the Signature of a Module
 fromSpec :: Module -> Sign
 fromSpec (Module _ _ stmts) = let
@@ -238,16 +242,19 @@ renameOpProfile from ar to ats sg = case Map.member from (ops sg) of
                                    else Map.insertWith (Set.union) to ods1' new_ops1
                     in sg {ops = new_ops2}
 
+-- TODO: Translate to something like: all . zipWith (sameKind r)
 allSameKind :: [Qid] -> [Qid] -> Rel Qid -> Bool
 allSameKind (q1 : qs1) (q2 : qs2) r = sameKind q1 q2 r && allSameKind qs1 qs2 r
 allSameKind [] [] _ = True
 allSameKind _ _ _ = False
 
+-- TODO: We actually need to find a common sub- or supersort.
 sameKind :: Qid -> Qid -> Rel Qid -> Bool
 sameKind q1 q2 r = nk1 == nk2 || Rel.member nk1 nk2 r || Rel.member nk2 nk1 r
            where nk1 = kind2sort (show q1)
                  nk2 = kind2sort (show q2)
 
+-- TODO: kind2sort and dropClosing belong in AS_Maude if anywhere.
 kind2sort :: String -> Qid
 kind2sort ('`' : '[' : s) = mkSimpleId $ dropClosing s
 kind2sort s = mkSimpleId $ s

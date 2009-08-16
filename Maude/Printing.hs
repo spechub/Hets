@@ -16,6 +16,8 @@ Translations between Maude and Haskell
   ...
 -}
 
+-- TODO: Convert all of this to Pretty.
+
 module Maude.Printing where
 
 import Maude.AS_Maude

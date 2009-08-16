@@ -53,6 +53,7 @@ instance HasName Symbol where
         Lab qid            -> Lab $ mapName mp qid
         Operator qid ar co -> Operator (mapName mp qid) ar co
 
+-- TODO: Clean up the Pretty Symbol instance.
 instance Pretty Symbol where
   pretty (Sort q) = Doc.text $ "sort " ++ show q
   pretty (Lab q) = Doc.text $ "label " ++ show q
