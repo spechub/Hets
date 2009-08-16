@@ -5,33 +5,41 @@ import System.IO
 import System.Process
 
 import Maude.AS_Maude
-import Maude.Sign
-import Maude.Printing
-import Maude.Sentence
+import Maude.Printing (printSign)
+
+import Maude.Sign (Sign)
+import Maude.Sentence (Sentence)
+import qualified Maude.Sign as Sign
+import qualified Maude.Sentence as Sen
+
+import Data.List (isPrefixOf)
 
 
-maude_cmd :: String
-maude_cmd = "/Applications/maude-darwin/maude.intelDarwin -interactive -no-banner"
-
--- wait_threshold = 100
+maudePath :: String
+maudePath = "/Applications/maude-darwin/maude.intelDarwin"
+maudeCmd :: String
+maudeCmd = unwords [maudePath, "-interactive", "-no-banner"]
+maudeHetsPath :: String
+maudeHetsPath = "/Users/adrian/Hets/Maude/hets.prj"
 
 
 basicAnalysis :: Sign -> MaudeText -> IO (Sign, [Sentence])
-basicAnalysis sign (MaudeText mt) = do
-    (hIn, hOut, _, _) <- runInteractiveCommand maude_cmd -- (hIn, hOut, hErr, hProcess)
-    hPutStrLn hIn "in /Users/adrian/Hets/Maude/hets.prj"
-    hPutStrLn hIn ("(fmod A is " ++ (printSign (sorts sign) (subsorts sign) (ops sign))
-                   ++ mt ++ " endfm)")
+basicAnalysis sign (MaudeText text) = do
+    (hIn, hOut, _, _) <- runInteractiveCommand maudeCmd
+    hPutStrLn hIn $ unwords ["in", maudeHetsPath]
+    let printedSign = printSign (Sign.sorts sign) (Sign.subsorts sign) (Sign.ops sign)
+    hPutStrLn hIn $ unwords ["(fmod FROM-HETS is", printedSign, text, "endfm)"]
     hClose hIn
-    sOutput <- hGetContents hOut
-    let stringSpec = getSpec sOutput
-    let spec = read stringSpec :: Spec
-    basicAnalysisAux spec
+    specOut <- hGetContents hOut
+    return $ convertSpec $ read $ findSpec specOut
 
-basicAnalysisAux :: Spec -> IO (Sign, [Sentence])
-basicAnalysisAux (SpecMod sp_module) = do
-    let nsign = fromSpec sp_module
-    let sen = getSentences sp_module
-    return (nsign, sen)
-basicAnalysisAux _ = return (empty, [])
+convertSpec :: Spec -> (Sign, [Sentence])
+convertSpec (SpecMod spec) = (Sign.fromSpec spec, Sen.getSentences spec)
+convertSpec _ = (Sign.empty, [])
 
+findSpec :: String -> String
+findSpec = filterNil . unlines . findSpecEnd . findSpecBeg . lines
+    where
+        findSpecBeg = dropWhile $ not . isPrefixOf "Spec"
+        findSpecEnd = takeWhile $ not . isPrefixOf "@#$endHetsSpec$#@"
+        filterNil   = filter $ (/=) '\NUL'
