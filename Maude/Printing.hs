@@ -27,23 +27,27 @@ import qualified Data.Map as Map
 import Common.Lib.Rel (Rel)
 import qualified Common.Lib.Rel as Rel
 
+import Data.List (isPrefixOf)
+
 import Common.Id (Token)
 
 getSpec :: String -> String
 getSpec =  quitNil . quitEnd . quitBegin
 
 quitBegin :: String -> String
-quitBegin ('S' : ('p' : l))  = 'S' : ('p' : l)
-quitBegin (_ : l) = quitBegin l
-quitBegin [] = []
+quitBegin string
+    | "Sp" `isPrefixOf` string = string
+    | null string = ""
+    | otherwise = quitBegin (tail string)
 
 quitEnd :: String -> String
-quitEnd ('@' : ('#' : ('$' : ('e' : ('n' : _))))) = []
-quitEnd (h : l) = h : (quitEnd l)
-quitEnd [] = []
+quitEnd string
+    | "@#$en" `isPrefixOf` string = ""
+    | null string = ""
+    | otherwise = head string:quitEnd (tail string)
 
 quitNil :: String -> String
-quitNil = Prelude.filter (/= '\NUL')
+quitNil = filter (/= '\NUL')
 
 printSign :: Set Qid -> Rel Qid -> Map Qid (Set ([Qid], Qid, [Attr])) -> String
 printSign sts sbsts ops = ss ++ sbs ++ opd
