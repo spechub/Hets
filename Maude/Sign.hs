@@ -92,28 +92,34 @@ fromSpec (Module _ _ stmts) = let
 
 -- | extract the Set of all Qids from a Signature
 symbols :: Sign -> SymbolSet
-symbols sign = Set.union (sorts2symbols $ sorts sign) 
-               $ Set.union (ops2symbols $ ops sign) (labels2symbols $ sentences sign)
+symbols sign = Set.unions [ sorts2symbols $ sorts sign,
+                            ops2symbols $ ops sign,
+                            labels2symbols $ sentences sign ]
 
 sorts2symbols :: Set Qid -> SymbolSet
-sorts2symbols = Set.map (\ x -> Sort x)
+sorts2symbols = Set.map Sort
 
 ops2symbols :: OpMap -> SymbolSet
-ops2symbols _ = Set.empty
+ops2symbols = const Set.empty
 
 labels2symbols :: Sentences -> SymbolSet
-labels2symbols = Set.fold f Set.empty
-          where f = \ x y -> case x of
-                                Equation _ -> y
-                                Membership _ -> y
-                                Rule rl -> case labeled rl of
-                                         False -> y
-                                         True -> Set.insert (symbolLabel rl) y
+labels2symbols = let
+        insert sent = case sent of
+            Equation _ -> id
+            Membership _ -> id
+            Rule rl -> if not $ labeled rl
+                then id
+                else Set.insert $ symbolLabel rl
+    in Set.fold insert Set.empty
 
 -- | the empty Signature
 empty :: Sign
-empty = Sign { sorts = Set.empty, subsorts = Rel.empty, 
-               ops = Map.empty, sentences = Set.empty }
+empty = Sign {
+    sorts = Set.empty,
+    subsorts = Rel.empty,
+    ops = Map.empty,
+    sentences = Set.empty
+}
 
 -- | the union of two Signatures
 union :: Sign -> Sign -> Sign
@@ -163,9 +169,9 @@ insertMb mb sign = sign {sentences = Set.insert (Membership mb) (sentences sign)
 
 -- | insert a Rule declaration into a Signature if it is labeled
 insertRl :: Rule -> Sign -> Sign
-insertRl rl sign = case labeled rl of
-        False -> sign
-        True -> sign {sentences = Set.insert (Rule rl) (sentences sign)}
+insertRl rl sign = if not $ labeled rl
+    then sign
+    else sign {sentences = Set.insert (Rule rl) (sentences sign)}
 
 -- | check that a Signature is legal
 isLegal :: Sign -> Bool
@@ -200,7 +206,7 @@ simplifySentence _ = id
 -- | rename the given sort
 renameListSort :: [(Qid, Qid)] -> Sign -> Sign
 renameListSort rnms sg = foldr f sg rnms
-              where f = \ (x, y) z -> renameSort x y z
+              where f (x, y) = renameSort x y
 
 -- | rename the given sort
 renameSort :: Qid -> Qid -> Sign -> Sign
@@ -451,20 +457,8 @@ ren'op'at _ _ = []
 
 -- | check if a rule has label
 labeled :: Rule -> Bool
-labeled (Rl _ _ _ ats) = containsLabel ats
-
--- | check if an attribute set contains a label attribute.
-containsLabel :: [StmntAttr] -> Bool
-containsLabel ((Label _) : _) = True
-containsLabel (_ : ats) = containsLabel ats
-containsLabel [] = False
+labeled = not . Set.null . getLabels
 
 -- | return the label of the rule as a symbol.
 symbolLabel :: Rule -> Symbol
-symbolLabel (Rl _ _ _ ats) = symbolLabelAts ats
-
--- | return the symbol associated to the label in an attribute set.
-symbolLabelAts :: [StmntAttr] -> Symbol
-symbolLabelAts ((Label q) : _) = Lab q
-symbolLabelAts (_ : ats) = symbolLabelAts ats
-symbolLabelAts _ = Lab $ mkSimpleId ""
+symbolLabel = Lab . head . Set.elems . getLabels
