@@ -19,28 +19,25 @@ Definition of signatures for Maude.
 module Maude.Sign where
 
 import Maude.AS_Maude
-import Maude.Sentence
 import Maude.Meta
-import Maude.Util
-
 import Maude.Symbol
+import Maude.Sentence
+import Maude.Printing
+import Maude.Util
 
 import Data.Set (Set)
 import Data.Map (Map)
-import Data.Maybe
+import Data.Maybe (fromJust)
 import qualified Data.Set as Set
 import qualified Data.Map as Map
 import qualified Data.Foldable as Fold
 
+import Common.Id (mkSimpleId)
 import Common.Lib.Rel (Rel)
 import qualified Common.Lib.Rel as Rel
-import Common.Id (mkSimpleId)
-
 import qualified Common.Doc as Doc
-import Common.DocUtils
+import Common.DocUtils (Pretty(..))
 
-import Maude.Printing
-import Maude.Sentence
 
 type SortSet = Set Qid
 type SubsortRel = Rel Qid
