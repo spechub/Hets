@@ -34,7 +34,7 @@ basicAnalysis sign (MaudeText text) = do
     return $ convertSpec $ read $ findSpec specOut
 
 convertSpec :: Spec -> (Sign, [Sentence])
-convertSpec (SpecMod spec) = (Sign.fromSpec spec, Sen.getSentences spec)
+convertSpec (SpecMod spec) = (Sign.fromSpec spec, Sen.fromSpec spec)
 convertSpec _ = (Sign.empty, [])
 
 findSpec :: String -> String

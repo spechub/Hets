@@ -68,16 +68,16 @@ instance HasLabels Sentence where
 
 
 -- | extract the Sentences of a Module
-getSentences :: Module -> [Sentence]
-getSentences (Module _ _ stmts) = let
-            insert stmt = case stmt of
-                MbStmnt mb -> (:) (Membership mb)
-                EqStmnt eq -> (:) (Equation eq)
-                RlStmnt rl -> case not_labeled rl of
-                                True -> (:) (Rule rl)
-                                False -> id
-                _          -> id
-        in foldr insert [] stmts
+fromSpec :: Module -> [Sentence]
+fromSpec (Module _ _ stmts) = let
+        insert stmt = case stmt of
+            MbStmnt mb -> (:) (Membership mb)
+            EqStmnt eq -> (:) (Equation eq)
+            RlStmnt rl -> case not_labeled rl of
+                            True -> (:) (Rule rl)
+                            False -> id
+            _          -> id
+    in foldr insert [] stmts
 
 -- | check if a rule has label
 not_labeled :: Rule -> Bool
