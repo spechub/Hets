@@ -20,8 +20,11 @@ module Maude.Printing where
 
 import Maude.AS_Maude
 
+import Data.Set (Set)
+import Data.Map (Map)
 import qualified Data.Set as Set
-import qualified Data.Map  as Map
+import qualified Data.Map as Map
+import Common.Lib.Rel (Rel)
 import qualified Common.Lib.Rel as Rel
 
 import Common.Id (Token)
@@ -42,19 +45,18 @@ quitEnd [] = []
 quitNil :: String -> String
 quitNil = Prelude.filter (/= '\NUL')
 
-printSign :: Set.Set Qid -> Rel.Rel Qid
-             -> Map.Map Qid (Set.Set ([Qid], Qid, [Attr])) -> String
+printSign :: Set Qid -> Rel Qid -> Map Qid (Set ([Qid], Qid, [Attr])) -> String
 printSign sts sbsts ops = ss ++ sbs ++ opd
  where ss = sorts2maude sts
        sbs = subsorts2maude sbsts
        opd = ops2maude ops
 
-sorts2maude :: Set.Set Qid -> String
+sorts2maude :: Set Qid -> String
 sorts2maude ss = if Set.null ss
                     then ""
                     else "sorts " ++ Set.fold (++) "" (Set.map ((++ " ") . show) ss) ++ ".\n"
 
-subsorts2maude :: Rel.Rel Qid -> String
+subsorts2maude :: Rel Qid -> String
 subsorts2maude ssbs = if Rel.null ssbs
                          then ""
                          else foldr (++) "" (map printPair $ Rel.toList ssbs)
@@ -62,14 +64,14 @@ subsorts2maude ssbs = if Rel.null ssbs
 printPair :: (Token,Token) -> String
 printPair (a,b) = "subsort " ++ show a ++ " < " ++ show b ++ " .\n"
 
-ops2maude :: Map.Map Qid (Set.Set ([Qid], Qid, [Attr])) -> String
+ops2maude :: Map Qid (Set ([Qid], Qid, [Attr])) -> String
 ops2maude om = flatten (flatten (map printOp (Map.toList om)))
 
 flatten :: [[a]] -> [a]
 flatten [] = []
 flatten (a : l) = a ++ (flatten l)
 
-printOp :: (Qid, Set.Set ([Qid], Qid, [Attr])) -> [String]
+printOp :: (Qid, Set ([Qid], Qid, [Attr])) -> [String]
 printOp (opid, s) = map (printOpAux opid) (Set.toList s)
 
 printOpAux :: Qid -> ([Qid], Qid, [Attr]) -> String
@@ -189,18 +191,18 @@ printCond (MatchCond t1 t2) = printTerm t1 ++ " := " ++ printTerm t2
 printCond (MbCond t s) = printTerm t ++ " : " ++ printSort s
 printCond (RwCond t1 t2) = printTerm t1 ++ " => " ++ printTerm t2
 
-printMorphism :: Map.Map Qid Qid -> Map.Map Qid (Map.Map ([Qid], Qid) (Qid, ([Qid], Qid))) -> Map.Map Qid Qid -> String 
+printMorphism :: Map Qid Qid -> Map Qid (Map ([Qid], Qid) (Qid, ([Qid], Qid))) -> Map Qid Qid -> String 
 printMorphism sorts ops labels = if str == ""
                             then ""
                             else "\n\nMorphism:\n\n" ++ str
     where str = (printQidMap "sort" sorts) ++ (printOpRenaming ops)
                 ++ (printQidMap "label" labels)
 
-printQidMap :: String -> Map.Map Qid Qid -> String
+printQidMap :: String -> Map Qid Qid -> String
 printQidMap str = Map.foldWithKey f ""
        where f = \ x y z -> str ++ " " ++ show x ++ " to " ++ show y ++ "\n" ++ z
 
-printOpRenaming :: Map.Map Qid (Map.Map ([Qid], Qid) (Qid, ([Qid], Qid))) -> String
+printOpRenaming :: Map Qid (Map ([Qid], Qid) (Qid, ([Qid], Qid))) -> String
 printOpRenaming = Map.foldWithKey f ""
        where f = \ x y z -> (Map.foldWithKey (g x) "" y) ++ z
                     where g = \ from (ar, co) (to, _) z' -> 
