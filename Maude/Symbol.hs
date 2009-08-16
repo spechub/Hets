@@ -25,6 +25,7 @@ module Maude.Symbol (
 
 import Maude.AS_Maude
 import Maude.Printing
+import Maude.Meta
 
 import Data.Set (Set)
 import Data.Map (Map)
@@ -42,6 +43,16 @@ data Symbol = Sort Qid
 type SymbolSet = Set Symbol
 type SymbolMap = Map Symbol Symbol
 
+instance HasName Symbol where
+    getName symb = case symb of
+        Sort qid         -> qid
+        Lab qid          -> qid
+        Operator qid _ _ -> qid
+    mapName mp symb = case symb of
+        Sort qid           -> Sort $ mapName mp qid
+        Lab qid            -> Lab $ mapName mp qid
+        Operator qid ar co -> Operator (mapName mp qid) ar co
+
 instance Pretty Symbol where
   pretty (Sort q) = Doc.text $ "sort " ++ show q
   pretty (Lab q) = Doc.text $ "label " ++ show q
@@ -51,10 +62,5 @@ instance Pretty Symbol where
 instance GetRange Symbol where
   getRange _ = nullRange
 
-toQid :: Symbol -> Qid
-toQid (Sort qid) = qid
-toQid (Lab qid) = qid
-toQid (Operator qid _ _) = qid
-
 toId :: Symbol -> Id
-toId = mkId . return . toQid
+toId = mkId . return . getName
