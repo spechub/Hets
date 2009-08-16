@@ -38,8 +38,8 @@ convertSpec (SpecMod spec) = (Sign.fromSpec spec, Sen.fromSpec spec)
 convertSpec _ = (Sign.empty, [])
 
 findSpec :: String -> String
-findSpec = filterNil . unlines . findSpecEnd . findSpecBeg . lines
-    where
+findSpec = let
         findSpecBeg = dropWhile $ not . isPrefixOf "Spec"
         findSpecEnd = takeWhile $ not . isPrefixOf "@#$endHetsSpec$#@"
         filterNil   = filter $ (/=) '\NUL'
+    in filterNil . unlines . findSpecEnd . findSpecBeg . lines
