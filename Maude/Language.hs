@@ -25,7 +25,7 @@ import Data.Maybe (fromJust, isNothing)
 
 data NamedSpec = ModName String
                | ViewName String
-    deriving (Eq)
+    deriving (Show, Read, Eq)
 
 type Parsed = Either ParseError
 -- Result of a single component
@@ -215,16 +215,16 @@ parseFileAndCollect path results@(done, syms)
 
 -- | Collect the results from parsing a Maude source file
 collectParseResults :: TempListResult -> RecResult -> IO (Parsed RecResult)
-collectParseResults todo results@(done, syms)
-    | null todo = return $ Right results
-    | isNothing $ head todo = collectParseResults (tail todo) results
-    | otherwise = case fromJust $ head todo of
-        Right symb -> collectParseResults (tail todo) (done, (symb:syms))
+collectParseResults list results@(done, syms)
+    | null list = return $ Right results
+    | isNothing $ head list = collectParseResults (tail list) results
+    | otherwise = case fromJust $ head list of
+        Right symb -> collectParseResults (tail list) (done, (symb:syms))
         Left  path -> do
             parsed <- parseFileAndCollect path results
             case parsed of
-                Right res -> collectParseResults (tail todo) res
-                Left err  -> return $ Left err
+                Right res -> collectParseResults (tail list) res
+                Left  err -> return $ Left err
 
 -- | Parse a Maude source tree
 parse :: FilePath -> IO (Parsed MaudeResult)
