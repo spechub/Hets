@@ -32,7 +32,7 @@ import Data.Map (Map)
 import Common.Id (Id, mkId, GetRange, getRange, nullRange)
 
 import qualified Common.Doc as Doc
-import Common.DocUtils
+import Common.DocUtils (Pretty(..))
 
 
 data Symbol = Sort Qid
