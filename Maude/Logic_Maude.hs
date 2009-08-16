@@ -28,7 +28,7 @@ import qualified Maude.Sentence as Sentence
 
 import Maude.ATC_Maude ()
 
-import Maude.MaudeShellout
+import Maude.Shellout
 
 import Common.AS_Annotation
 import Common.ExtSign
