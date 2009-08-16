@@ -51,7 +51,10 @@ instance Pretty Symbol where
 instance GetRange Symbol where
   getRange _ = nullRange
 
+toQid :: Symbol -> Qid
+toQid (Sort qid) = qid
+toQid (Lab qid) = qid
+toQid (Operator qid _ _) = qid
+
 toId :: Symbol -> Id
-toId (Sort q) = mkId [q]
-toId (Lab q) = mkId [q]
-toId (Operator q _ _) = mkId [q]
+toId = mkId . return . toQid
