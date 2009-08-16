@@ -3,6 +3,7 @@ module Maude.Meta.HasName (
 ) where
 
 import Maude.AS_Maude
+import Maude.Util
 
 import Data.Map (Map)
 import qualified Data.Map as Map
@@ -15,7 +16,7 @@ class HasName a where
 
 instance HasName Qid where
     getName = id
-    mapName = map2Function
+    mapName = mapAsFunction
 
 instance HasName Type where
     getName typ = case typ of
@@ -27,31 +28,31 @@ instance HasName Type where
 
 instance HasName Sort where
     getName (SortId name) = name
-    mapName mp (SortId name) = SortId $ map2Function mp name
+    mapName mp (SortId name) = SortId $ mapAsFunction mp name
 
 instance HasName Kind where
     getName (KindId name) = name
-    mapName mp (KindId name) = KindId $ map2Function mp name
+    mapName mp (KindId name) = KindId $ mapAsFunction mp name
 
 instance HasName ParamId where
     getName (ParamId name) = name
-    mapName mp (ParamId name) = ParamId $ map2Function mp name
+    mapName mp (ParamId name) = ParamId $ mapAsFunction mp name
 
 instance HasName ModId where
     getName (ModId name) = name
-    mapName mp (ModId name) = ModId $ map2Function mp name
+    mapName mp (ModId name) = ModId $ mapAsFunction mp name
 
 instance HasName ViewId where
     getName (ViewId name) = name
-    mapName mp (ViewId name) = ViewId $ map2Function mp name
+    mapName mp (ViewId name) = ViewId $ mapAsFunction mp name
 
 instance HasName LabelId where
     getName (LabelId name) = name
-    mapName mp (LabelId name) = LabelId $ map2Function mp name
+    mapName mp (LabelId name) = LabelId $ mapAsFunction mp name
 
 instance HasName OpId where
     getName (OpId name) = name
-    mapName mp (OpId name) = OpId $ map2Function mp name
+    mapName mp (OpId name) = OpId $ mapAsFunction mp name
 
 instance HasName Operator where
     getName (Op name _ _ _) = getName name
@@ -72,6 +73,3 @@ instance HasName Spec where
     mapName mp (SpecMod sp_module) = SpecMod $ mapName mp sp_module
     mapName mp (SpecTh sp_th) = SpecTh $ mapName mp sp_th
     mapName mp (SpecView sp_view) = SpecView $ mapName mp sp_view
-
-map2Function :: (Ord a) => Map a a -> (a -> a)
-map2Function mp name = Map.findWithDefault name name mp
