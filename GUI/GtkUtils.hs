@@ -32,6 +32,9 @@ module GUI.GtkUtils
   , displayTheory
   , displayTheoryWithWarning
 
+  -- Windows for use in Gtk windows
+  , fileDialog
+
   -- Frequently used functions
   , setListData
   , updateListData

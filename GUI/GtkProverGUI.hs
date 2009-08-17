@@ -17,14 +17,13 @@ module GUI.GtkProverGUI
 
 import Graphics.UI.Gtk
 import Graphics.UI.Gtk.Glade
---import Graphics.UI.Gtk.ModelView as MV
 
 import GUI.GtkUtils
 import qualified GUI.Glade.ProverGUI as ProverGUI
 
 import Common.AS_Annotation as AS_Anno
 import qualified Common.Doc as Pretty
-import Common.Result as Result
+import qualified Common.Result as Result
 import qualified Common.OrderedMap as OMap
 import Common.ExtSign
 
@@ -46,10 +45,12 @@ import Data.IORef
 import qualified Data.Map as Map
 import Data.List
 
+{- ProverGUI -}
+
 -- | Displays the consistency checker window
 showProverGUI ::
-  (Logic lid sublogics1 basic_spec1 sentence symb_items1 symb_map_items1
-         sign1 morphism1 symbol1 raw_symbol1 proof_tree1)
+  (Logic lid sublogics basic_spec sentence symb_items symb_map_items
+         sign morphism symbol raw_symbol proof_tree)
   => lid
   -> ProofActions lid sentence -- ^ record of possible GUI actions
   -> String -- ^ theory name
@@ -59,14 +60,18 @@ showProverGUI ::
   -> [(G_prover,AnyComorphism)] -- ^ list of suitable comorphisms to provers
                                 -- for sublogic of G_theory
   -> IO (Result.Result G_theory)
-showProverGUI lid prGuiAcs thName warningTxt th knownProvers comorphList =
-  postGUISync $ do
+showProverGUI lid prGuiAcs thName warningTxt th knownProvers comorphList = do
+  initState <- (initialState lid thName th knownProvers comorphList
+                >>= recalculateSublogicF prGuiAcs)
+  state <- newMVar initState
+  wait <- newEmptyMVar
+  postGUIAsync $ do
     xml                   <- getGladeXML ProverGUI.get
     -- get objects
     window                <- xmlGetWidget xml castToWindow "ProverGUI"
     -- buttons at buttom
     btnShowTheory         <- xmlGetWidget xml castToButton "btnShowTheory"
-    btnShowSelectedTheory <- xmlGetWidget xml castToButton "btnShowSelectedTheory"
+    btnShowSelectedTheory <- xmlGetWidget xml castToButton "btnShowSelected"
     btnClose              <- xmlGetWidget xml castToButton "btnClose"
     -- goals view
     trvGoals              <- xmlGetWidget xml castToTreeView "trvGoals"
@@ -97,16 +102,8 @@ showProverGUI lid prGuiAcs thName warningTxt th knownProvers comorphList =
 
     set window [windowTitle := thName ++ " - Select Goal(s) and Prove"]
 
-    initState <- (initialState lid thName th knownProvers comorphList
-                  >>= recalculateSublogicF prGuiAcs)
-    state <- newMVar initState
     axioms <- axiomMap initState
 
-    putStrLn $ show $ Map.keys $ proversMap initState
-    putStrLn $ show $ OMap.keys $ goalMap initState
-    putStrLn $ show $ map (\ (k,s) -> if wasTheorem s then "(Th) " ++ k else k)
-                    $ OMap.toList axioms
-    putStrLn $ show $ OMap.keys $ goalMap initState
     -- set list data
     listProvers <- setListData trvProvers id $ Map.keys $ proversMap initState
     listGoals <- setListData trvGoals id $ OMap.keys $ goalMap initState
@@ -120,23 +117,71 @@ showProverGUI lid prGuiAcs thName warningTxt th knownProvers comorphList =
                                      $ selectProver trvProvers listProvers
     setSelectedProver trvProvers initState
 
-    let action = modifyMVar_ state $ updateStatusSublogic lblSublogic trvGoals
-                   listGoals trvAxioms listAxioms trvTheorems listTheorems
-                   trvProvers listProvers prGuiAcs knownProvers
+    let update = updateStatusSublogic lblSublogic trvGoals listGoals trvAxioms
+                   listAxioms trvTheorems listTheorems trvProvers listProvers
+                   prGuiAcs knownProvers
+        action = modifyMVar_ state $ update
+        forkIO_ a = do
+          forkIO a
+          return ()
 
     -- setup goal list
-    selectedGoals <- setListSelectorMultiple trvGoals btnGoalsAll btnGoalsNone
+    selectedGoals' <- setListSelectorMultiple trvGoals btnGoalsAll btnGoalsNone
                        btnGoalsInvert action
-    onClicked btnGoalsSelectOpen $ return ()
+    onClicked btnGoalsSelectOpen $ modifyMVar_ state $ (\ s -> do
+      (Just model) <- treeViewGetModel trvGoals
+      selector <- treeViewGetSelection trvGoals
+      let
+        isOpen st =
+          let thst = thmStatus st
+          in if null thst
+            then True
+            else case maximum $ map snd $ thst of
+              BasicProof _ pst -> isOpenGoal $ goalStatus pst
+              _ -> False
+        select iter = do
+          (row:[]) <- treeModelGetPath model iter
+          key <- listStoreGetValue listGoals row
+          if maybe (error "goal lookup") isOpen $ OMap.lookup key $ goalMap s
+            then do
+              modifyIORef selectedGoals' ((row:[]):)
+              treeSelectionSelectIter selector iter
+            else treeSelectionUnselectIter selector iter
+          return False
+      writeIORef selectedGoals' []
+      treeModelForeach model select
+      s' <- update s
+      return s')
 
     -- setup axioms list
     selectedAxioms <- setListSelectorMultiple trvAxioms btnAxiomsAll
                         btnAxiomsNone btnAxiomsInvert action
-    onClicked btnAxiomsFormer $ return ()
+    onClicked btnAxiomsFormer $ modifyMVar_ state $ (\ s -> do
+      aM <- axiomMap s
+      (Just model) <- treeViewGetModel trvAxioms
+      selector <- treeViewGetSelection trvAxioms
+      let
+        isNotFormerTheorem st = not $ wasTheorem st
+        select iter = do
+          (row:[]) <- treeModelGetPath model iter
+          key <- listStoreGetValue listAxioms row
+          k <- case stripPrefix "(Th) " key of
+            Just k -> return k
+            Nothing -> return key
+          if maybe (error "axiom lookup") isNotFormerTheorem $ OMap.lookup k aM
+            then do
+              modifyIORef selectedAxioms ((row:[]):)
+              treeSelectionSelectIter selector iter
+            else treeSelectionUnselectIter selector iter
+          return False
+      writeIORef selectedAxioms []
+      treeModelForeach model select
+      s' <- update s
+      return s')
 
     -- setup theorems list
-    selectedTheorems <- setListSelectorMultiple trvTheorems btnTheoremsAll
-                          btnTheoremsNone btnTheoremsInvert action
+    setListSelectorMultiple trvTheorems btnTheoremsAll btnTheoremsNone
+                            btnTheoremsInvert action
 
     -- button bindings
     onClicked btnClose $ widgetDestroy window
@@ -151,42 +196,43 @@ showProverGUI lid prGuiAcs thName warningTxt th knownProvers comorphList =
 
     onClicked btnDisplay $ do
       s <- readMVar state
-      s' <- updateStateGetSelectedGoals trvGoals listGoals s
-      displayGoals s'
-      return ()
+      displayGoals s
 
-    onClicked btnProofDetails $ return ()
+    onClicked btnProofDetails $ do
+      s <- readMVar state
+      proofDetails xml s
 
-    onClicked btnProve $ return ()
+    onClicked btnProve $ putStrLn "click"
 
-    onClicked btnFineSelection $ do
-      s <- takeMVar state
+    onClicked btnFineSelection $ forkIO_ $ modifyMVar_ state $ (\ s -> do
       let s' = s { proverRunning = True }
-      --updateDisplay s' True lb pathsLb statusLabel
-      --disableWids wids
-      --prState <- updateStatusSublogic s'
-      Result.Result ds ms'' <- fineGrainedSelectionF prGuiAcs s'
+      setStatus window lblStatus True
+      prState <- update s'
+      Result.Result ds ms'' <- fineGrainedSelectionF prGuiAcs prState
       s'' <- case ms'' of
         Nothing -> do
-          errorDialog "Error" (showRelDiags 2 ds)
+          -- Is error needed?
+          --errorDialog "Error" (showRelDiags 2 ds)
           return s'
         Just res -> return res
-      let s''' = s'' { proverRunning = False
-                     , accDiags = accDiags s'' ++ ds }
-      --enableWids wids
-      --updateDisplay s''' True lb pathsLb statusLabel
-      --putWinOnTop main
-      putMVar state s'''
+      setStatus window lblStatus False
+      return s'' { proverRunning = False
+                 , accDiags = accDiags s'' ++ ds })
+
+    onDestroy window $ putMVar wait ()
 
     widgetShow window
-    return $ Result.Result { diags = []
-                           , maybeResult = Nothing }
+
+  _ <- takeMVar wait
+  return $ Result.Result { Result.diags = []
+                         , Result.maybeResult = Nothing }
+
 
 -- | Called whenever the button "Display" is clicked.
 displayGoals ::
-  (Logic lid1 sublogics1 basic_spec1 sentence1 symb_items1 symb_map_items1
-         sign1 morphism1 symbol1 raw_symbol1 proof_tree1)
-  => ProofState lid1 sentence1
+  (Logic lid sublogics basic_spec sentence symb_items symb_map_items
+         sign morphism symbol raw_symbol proof_tree)
+  => ProofState lid sentence
   -> IO ()
 displayGoals s = case theory s of
   G_theory lid1 (ExtSign sig1 _) _ _ _ -> do
@@ -201,10 +247,8 @@ displayGoals s = case theory s of
              $ Just (thName ++ "-goals.txt")
 
 setSelectedProver ::
-  (Logic lid1 sublogics1 basic_spec1 sentence1 symb_items1 symb_map_items1
-         sign1 morphism1 symbol1 raw_symbol1 proof_tree1)
-  => TreeView
-  -> ProofState lid1 sentence1
+     TreeView
+  -> ProofState lid sentence
   -> IO ()
 setSelectedProver view s = do
   selector <- treeViewGetSelection view
@@ -214,9 +258,7 @@ setSelectedProver view s = do
   maybe (return ()) (\i -> treeSelectionSelectPath selector [i]) ind
 
 updateStatusSublogic ::
-  (Logic lid1 sublogics1 basic_spec1 sentence1 symb_items1 symb_map_items1
-         sign1 morphism1 symbol1 raw_symbol1 proof_tree1)
-  => Label -- ^ sublogic label
+     Label -- ^ sublogic label
   -> TreeView -- ^ goals list
   -> ListStore String -- ^ goals list
   -> TreeView -- ^ axioms list
@@ -225,16 +267,16 @@ updateStatusSublogic ::
   -> ListStore String -- ^ theorems list store
   -> TreeView -- ^ provers list
   -> ListStore String -- ^ provers list store
-  -> ProofActions lid1 sentence1 -- ^ record of possible GUI actions
+  -> ProofActions lid sentence -- ^ record of possible GUI actions
   -> KnownProvers.KnownProversMap -- ^ map of known provers
-  -> ProofState lid1 sentence1
-  -> IO (ProofState lid1 sentence1)
+  -> ProofState lid sentence
+  -> IO (ProofState lid sentence)
 updateStatusSublogic lbl gls listGls axs listAxs ths listThs prs listPrs
   prGuiAcs knownProvers s' = do
   s'' <- updateStateGetSelectedSens axs listAxs ths listThs s'
   s''' <- updateStateGetSelectedGoals gls listGls s''
   s <- recalculateSublogicF prGuiAcs $ (s''' {proversMap = knownProvers})
-  labelSetText lbl $ show $ sublogicOfTheory s
+  setSublogic lbl $ show $ sublogicOfTheory s
   when (Map.keys (proversMap s') /= Map.keys (proversMap s))
        (do updateListData listPrs $ Map.keys $ proversMap s'
            setSelectedProver prs s)
@@ -243,12 +285,10 @@ updateStatusSublogic lbl gls listGls axs listAxs ths listThs prs listPrs
                     (selectedProver s) }
 
 updateStateGetSelectedGoals ::
-  (Logic lid1 sublogics1 basic_spec1 sentence1 symb_items1 symb_map_items1
-         sign1 morphism1 symbol1 raw_symbol1 proof_tree1)
-  => TreeView
+     TreeView
   -> ListStore String
-  -> ProofState lid1 sentence1
-  -> IO (ProofState lid1 sentence1)
+  -> ProofState lid sentence
+  -> IO (ProofState lid sentence)
 updateStateGetSelectedGoals view listGoals s = do
   selector <- treeViewGetSelection view
   rows <- treeSelectionGetSelectedRows selector
@@ -256,14 +296,12 @@ updateStateGetSelectedGoals view listGoals s = do
   return s { selectedGoals = goals }
 
 updateStateGetSelectedSens ::
-  (Logic lid1 sublogics1 basic_spec1 sentence1 symb_items1 symb_map_items1
-         sign1 morphism1 symbol1 raw_symbol1 proof_tree1)
-  => TreeView -- ^ axioms listbox
+     TreeView -- ^ axioms listbox
   -> ListStore String
   -> TreeView -- ^ theorems listbox
   -> ListStore String
-  -> ProofState lid1 sentence1
-  -> IO (ProofState lid1 sentence1)
+  -> ProofState lid sentence
+  -> IO (ProofState lid sentence)
 updateStateGetSelectedSens axs listAxs ths listThs s = do
   selectorAxs <- treeViewGetSelection axs
   selectorThs <- treeViewGetSelection ths
@@ -276,15 +314,86 @@ updateStateGetSelectedSens axs listAxs ths listThs s = do
 
 -- | Called whenever a prover is selected from the "Pick Theorem Prover" list.
 selectProver ::
-  (Logic lid1 sublogics1 basic_spec1 sentence1 symb_items1 symb_map_items1
-         sign1 morphism1 symbol1 raw_symbol1 proof_tree1)
-  => TreeView
+     TreeView
   -> ListStore String
-  -> ProofState lid1 sentence1
-  -> IO (ProofState lid1 sentence1)
+  -> ProofState lid sentence
+  -> IO (ProofState lid sentence)
 selectProver view listPrs s = do
   selector <- treeViewGetSelection view
   ((row:[]):[]) <- treeSelectionGetSelectedRows selector
   prover <- listStoreGetValue listPrs row
   return s { selectedProver = Just prover }
 
+-- | Called to set satus text
+setStatus :: Window -> Label -> Bool -> IO ()
+setStatus window label running = case running of
+  True -> do
+    widgetSetSensitive window False
+    labelSetLabel label "<span color=\"blue\">Waiting for prover</span>"
+  False -> do
+    widgetSetSensitive window True
+    labelSetLabel label "<span color=\"black\">No prover running</span>"
+
+-- | Called to set sublogic label
+setSublogic :: Label -> String -> IO ()
+setSublogic label text = labelSetLabel label $ "<b>" ++ text ++ "</b>"
+
+{- Proof details GUI -}
+
+-- | Display text in an uneditable, scrollable editor. Not blocking!
+proofDetails ::
+     GladeXML
+  -> ProofState lid sentence
+  -> IO ()
+proofDetails xml state = postGUIAsync $ do
+  -- get objects
+  window           <- xmlGetWidget xml castToWindow "ProofDetails"
+  tvDetails        <- xmlGetWidget xml castToTextView "tvDetails"
+  btnExpandScripts <- xmlGetWidget xml castToButton "btnExpandScripts"
+  btnExpandTrees   <- xmlGetWidget xml castToButton "btnExpandTrees"
+  btnSave          <- xmlGetWidget xml castToButton "btnSave1"
+  btnClose         <- xmlGetWidget xml castToButton "btnClose1"
+
+  let
+    thName = theoryName state
+    title = "Proof Details of Selected Goals from Theory " ++ thName
+    message = "Test text message!"
+    file = thName ++ "-proof-details.txt"
+
+  windowSetTitle window title
+  buffer <- textViewGetBuffer tvDetails
+  textBufferInsertAtCursor buffer message
+
+  tagTable <- textBufferGetTagTable buffer
+  font <- textTagNew Nothing
+  set font [ textTagFont := "FreeMono" ]
+  textTagTableAdd tagTable font
+  start <- textBufferGetStartIter buffer
+  end <- textBufferGetEndIter buffer
+  textBufferApplyTag buffer font start end
+
+  onClicked btnSave $ do
+        fileDialog FileChooserActionSave file
+                   [("Nothing", ["*"]), ("Text", ["*.txt"])]
+                   $ Just (\ filepath -> writeFile filepath message)
+        return ()
+
+  onClicked btnClose $ widgetDestroy window
+
+  onClicked btnExpandScripts $ do
+    label <- buttonGetLabel btnExpandScripts
+    let expand = isPrefixOf "Expand" label
+    if expand then buttonSetLabel btnExpandScripts "Hide tactic scripts"
+              else buttonSetLabel btnExpandScripts "Expand tactic scripts"
+    return ()
+
+  onClicked btnExpandTrees $ do
+    label <- buttonGetLabel btnExpandTrees
+    let expand = isPrefixOf "Expand" label
+    if expand then buttonSetLabel btnExpandTrees "Hide proof trees"
+              else buttonSetLabel btnExpandTrees "Expand proof trees"
+    return ()
+
+  widgetShow window
+
+{- Prove GUI -}
