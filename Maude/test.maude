@@ -84,3 +84,31 @@ fmod TEST10 is
  pr TEST9 * (op a_ : B -> B to b_ [prec 12],
              sort A to C) .
 endfm
+
+fmod TEST11 is
+ pr LIST{Nat} .
+endfm
+
+fmod TEST12 is
+ pr LIST{TRIV}{TRIV}{Nat} .
+endfm
+
+fmod TEST13{X :: TRIV, Y :: TRIV} is
+ sort L{X,Y} .
+endfm
+
+fmod TEST14 is
+ pr TEST13{Nat, Nat} .
+endfm
+
+fth TEST15 is
+ sort Elta .
+endfth
+
+view V3 from TRIV to TEST15 is
+ sort Elt to Elta .
+endv
+
+fmod TEST16{Y :: TRIV} is
+ pr LIST{Y} .
+endfm

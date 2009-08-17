@@ -19,6 +19,7 @@ Definition of morphisms for Maude.
 module Maude.Morphism (
     Morphism(..),
     fromSignRenamings,
+    applyRenamings,
     fromSignsRenamings,
     symbolMap,
     empty,
@@ -34,7 +35,8 @@ module Maude.Morphism (
     union,
     setTarget,
     extendMorphismSorts,
-    addQualification
+    extendWithSortRenaming,
+    getNewSorts
 ) where
 
 import Maude.AS_Maude
@@ -133,6 +135,7 @@ applyRenaming2 rnm mor = let
                 a = getName from
                 b = getName to
             in mor {
+                target = Sign.renameLabel a b tgt,
                 labelMap = Map.insert a b lmap
             }
         _ -> mor
@@ -403,30 +406,29 @@ extendSortList from to (s@(sym1, sym2) : syms) = if from == sym2
                                                then (sym1, to) : syms
                                                else s : extendSortList from to syms
 
-addQualification :: Morphism -> Qid -> [Qid] -> Morphism
-addQualification mor sym syms = let
-       src = source mor
-       smap = sortMap mor
-     in mor {
-           source = Sign.renameListSort (createRenaming sym syms) src,
-           sortMap = qualifyMap sym syms smap
-        }
+extendWithSortRenaming :: Qid -> Qid -> Morphism -> Morphism
+extendWithSortRenaming from to mor = let
+        tgt = target mor
+        smap = sortMap mor
+        omap = opMap mor
+          in mor {
+                target = Sign.renameSort from to tgt,
+                sortMap = Map.insert from to smap,
+                opMap = renameSortOpMap from to omap
+             }
 
-qualifyMap :: Qid -> [Qid] -> QidMap -> QidMap
-qualifyMap _ [] sm = sm
-qualifyMap sym (sym' : syms) sort_map = extendSortMap sym syms sort_map'
-       where new_sym = mkSimpleId $ show sym ++ "$" ++ show sym'
-             sort_map' = Map.fromList $ qualifySortList sym' new_sym $ Map.toList sort_map
+getNewSorts :: [Qid] -> Morphism -> [Qid]
+getNewSorts ss morph = getNewSortsSortMap ss (sortMap morph)
 
-qualifySortList :: Qid -> Qid -> [(Qid, Qid)] -> [(Qid, Qid)]
-qualifySortList from to [] = [(from, to)]
-qualifySortList from to (s@(sym1, sym2) : syms) = if from == sym1
-                                                  then (to, sym2) : syms
-                                                  else s : qualifySortList from to syms
+getNewSortsSortMap :: [Qid] -> QidMap -> [Qid]
+getNewSortsSortMap [] _ = []
+getNewSortsSortMap (s : ss) qm = s' : getNewSortsSortMap ss qm
+              where s' = if Map.member s qm
+                         then fromJust $ Map.lookup s qm
+                         else s
 
 -- | TODO :
 -- - compose with the new OpMap
 -- - isLegal with the new OpMap
 -- - mapSentence with the new OpMap
--- - inverseOpMap (Adrian)
 

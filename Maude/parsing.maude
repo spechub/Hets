@@ -90,7 +90,7 @@
     => < O : X@DatabaseClass | db : DB', input : nilTermList, 
                                output : haskellify(M), AttS > 
     if < DB' ; ME > := evalModExp(parseModExp(T), DB) /\
-       M := getTopModule(ME, DB') .
+       M := upModule(ME, false) .
    
    crl [maudeView2hets] :
        < O : X@DatabaseClass | db : DB, input : ('hetsView_.[T]), output : nil, AttS >

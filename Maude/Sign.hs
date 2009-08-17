@@ -220,6 +220,10 @@ renameSort from to sign = Sign sorts' subsorts' ops' sens'
                     ops' = ren'sort'op_map from to $ ops sign
                     sens' = ren'sort'sentences from to $ sentences sign
 
+renameLabel :: Qid -> Qid -> Sign -> Sign
+renameLabel from to sign = sign {sentences = sens'}
+              where sens' = ren'lab'sens from to $ sentences sign
+
 -- | rename the given op
 renameOp :: Qid -> Qid -> [Attr] -> Sign -> Sign
 renameOp from to ats sign = sign {ops = ops'}
@@ -250,9 +254,16 @@ allSameKind _ _ _ = False
 
 -- TODO: We actually need to find a common sub- or supersort.
 sameKind :: Qid -> Qid -> Rel Qid -> Bool
-sameKind q1 q2 r = nk1 == nk2 || Rel.member nk1 nk2 r || Rel.member nk2 nk1 r
+sameKind q1 q2 r = nk1 == nk2 || int_succ /= Set.empty || int_preds /= Set.empty
            where nk1 = kind2sort (show q1)
                  nk2 = kind2sort (show q2)
+                 succ1 = Rel.succs r nk1
+                 succ2 = Rel.succs r nk2
+                 preds1 = Rel.predecessors r nk1
+                 preds2 = Rel.predecessors r nk2
+                 int_succ = Set.intersection succ1 succ2
+                 int_preds = Set.intersection preds1 preds2
+                 
 
 -- TODO: kind2sort and dropClosing belong in AS_Maude if anywhere.
 kind2sort :: String -> Qid
@@ -469,3 +480,35 @@ labeled = not . Set.null . getLabels
 -- | return the label of the rule as a symbol.
 symbolLabel :: Rule -> Symbol
 symbolLabel = Lab . head . Set.elems . getLabels
+-- symbolLabel (Rl _ _ _ ats) = symbolLabelAts ats
+
+-- | return the symbol associated to the label in an attribute set.
+symbolLabelAts :: [StmntAttr] -> Symbol
+symbolLabelAts ((Label q) : _) = Lab q
+symbolLabelAts (_ : ats) = symbolLabelAts ats
+symbolLabelAts _ = Lab $ mkSimpleId ""
+
+-- | rename a label in the sentences
+ren'lab'sens :: Qid -> Qid -> Sentences -> Sentences
+ren'lab'sens from to = Set.map (ren'lab'sen from to)
+
+-- | rename a label in a sentece
+ren'lab'sen :: Qid -> Qid -> Sentence -> Sentence
+ren'lab'sen from to (Equation eq) = Equation $ Eq t1 t2 cond $ ren'lab'ats from to attrs
+               where Eq t1 t2 cond attrs = eq
+ren'lab'sen from to (Membership mb) = Membership $ Mb t s cond $ ren'lab'ats from to attrs
+               where Mb t s cond attrs = mb
+ren'lab'sen from to (Rule rl) = Rule $ Rl t1 t2 cond $ ren'lab'ats from to attrs
+               where Rl t1 t2 cond attrs = rl
+
+-- | rename a label in an attribute set
+ren'lab'ats :: Qid -> Qid -> [StmntAttr] -> [StmntAttr]
+ren'lab'ats from to = map (ren'lab'at from to)
+
+-- | rename a label if the attribute is the label
+ren'lab'at :: Qid -> Qid -> StmntAttr -> StmntAttr
+ren'lab'at from to (Label l) = Label l'
+         where l' = if l == from
+                    then to
+                    else l
+ren'lab'at _ _ attr = attr

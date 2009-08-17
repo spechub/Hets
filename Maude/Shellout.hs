@@ -1,5 +1,5 @@
 
-module Maude.Shellout (basicAnalysis) where
+module Maude.Shellout (basicAnalysis, findSpec) where
 
 import System.IO
 import System.Process

@@ -236,6 +236,7 @@
   eq haskellifyAttr(M, gather(QIL)) = 'Gather ' '`[ printQidList(QIL) '`] ' .
   eq haskellifyAttr(M, format(QIL)) = 'Format ' '`[ printQidList(QIL) '`] ' .
   eq haskellifyAttr(M, nonexec) = 'Nonexec .
+  eq haskellifyAttr(M, owise) = 'Owise .
   eq haskellifyAttr(M, special(HL)) = 'Special ' '`[ haskellifyHookList(M, HL) '`] ' .
   
   op haskellifyHookList : Module HookList -> QidList .
@@ -409,7 +410,17 @@
           fi .
 
   op qid2token : Qid -> QidList .
-  eq qid2token(Q) = qid("\"" + stringScape(string(Q)) + "\"") .
+  eq qid2token(Q) = qid("\"" + specialCharacters(string(Q)) + "\"") .
+  
+  op specialCharacters : String -> String .
+  eq specialCharacters(STR) = stringScape(backslash(STR)) .
+  
+  op backslash : String -> String .
+  ceq backslash(STR) = STR1 + "\\\\" + backslash(STR2)
+   if N := find(STR, "\\", 0) /\
+      STR1 := substr(STR, 0, N) /\
+      STR2 := substr(STR, N + 1, length(STR)) .
+  eq backslash(STR) = STR [owise] .
   
   op stringScape : String -> String .
   ceq stringScape(STR) = STR1 + "\\\"" + stringScape(STR2)
