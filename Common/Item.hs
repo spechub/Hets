@@ -1,3 +1,4 @@
+{-# LANGUAGE MultiParamTypeClasses #-}
 {- |
 Module      :  $Header$
 Description :  positions, simple and mixfix identifiers
@@ -6,7 +7,7 @@ License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
 Maintainer  :  Ewaryst.Schulz@dfki.de
 Stability   :  experimental
-Portability :  portable
+Portability :  non-portable (multiple parameter class)
 
 This module provides the item datatype for an abstract logic independent
 representation of basic specs.
