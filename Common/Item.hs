@@ -1,4 +1,3 @@
-{-# LANGUAGE MultiParamTypeClasses #-}
 {- |
 Module      :  $Header$
 Description :  positions, simple and mixfix identifiers
@@ -7,7 +6,7 @@ License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
 Maintainer  :  Ewaryst.Schulz@dfki.de
 Stability   :  experimental
-Portability :  non-portable (multiple parameter class)
+Portability :  portable
 
 This module provides the item datatype for an abstract logic independent
 representation of basic specs.
@@ -16,16 +15,10 @@ representation of basic specs.
 
 module Common.Item where
 
-import Data.Char
-
-import Control.Monad.State
-import Control.Applicative
-
 import Common.Id
 import Common.AS_Annotation
 
 data ItemType = IT [String]
-              
                 deriving (Eq, Ord, Show)
 
 
@@ -34,7 +27,6 @@ data ItemType = IT [String]
 data Item = Item { itemType :: ItemType
                  , isFlat :: Bool
                  , range :: Range
---                 , attribs :: [Item]
                  , items :: [Annoted Item]
                  } deriving (Eq, Ord, Show)
 
@@ -79,11 +71,8 @@ instance ItemTypeable (String, String) where
 instance ItemTypeable (String, String, String) where
     toIT (s,s',s'') = IT [s,s',s'']
 
-
-
 class Monad m => ItemConvertible a m where
     toitem :: a -> m Item
-
 
 ---------------------------- Sublist creation ----------------------------
 
@@ -98,7 +87,7 @@ listFromL :: ItemConvertible a m => [a] -> m [Annoted Item]
 listFromL = mapM toAItem
 
 annToAItem :: ItemConvertible a m => Annoted a -> m (Annoted Item)
-annToAItem v = toitem (item v) >>= return . (<$ v)
+annToAItem v = toitem (item v) >>= return . flip replaceAnnoted v
 
 toAItemWithA :: ItemConvertible a m =>
            (Item -> Annoted Item) -> a -> m (Annoted Item)
@@ -106,7 +95,6 @@ toAItemWithA f x = toitem x >>= return . f
 
 toAItem :: ItemConvertible a m => a -> m (Annoted Item)
 toAItem = toAItemWithA emptyAnno
-
 
 ---------------------------- ItemType lifting ----------------------------
 

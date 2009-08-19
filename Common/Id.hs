@@ -408,7 +408,7 @@ isInfix (Id tops _ _) = not (null tops) &&  isPlace (head tops)
 
 -- * position stuff
 
--- | compute a meaningful single position from an 'Id' for diagnostics
+-- | compute a meaningful position from an 'Id' for diagnostics
 posOfId :: Id -> Range
 posOfId (Id ts _ (Range ps)) =
    Range $ let l = filter (not . isPlace) ts
@@ -416,6 +416,38 @@ posOfId (Id ts _ (Range ps)) =
                        -- for invisible "__ __" (only places)
                           catPosAux ts
                           else catPosAux l) ++ ps
+
+-- | compute start and end position of a Token (or leave it empty)
+tokenRange :: Token -> [Pos]
+tokenRange (Token str (Range ps)) = case ps of
+    [p] -> let l = length str in
+      if l > 1 then [p, incSourceColumn p $ length str - 1] else [p]
+    _ -> ps
+
+outerRange :: Range -> [Pos]
+outerRange (Range qs) = case qs of
+  [] -> []
+  q : _ -> let p = last qs in if p == q then [q] else [q, p]
+
+sortRange :: [Pos] -> [Pos] -> [Pos]
+sortRange ps qs = if null ps && null qs then [] else
+  let p = minimum $ ps ++ qs
+      q = maximum $ ps ++ qs
+  in if p == q then [p] else [p, q]
+
+joinRanges :: [[Pos]] -> [Pos]
+joinRanges pps = case pps of
+  [] -> []
+  [] : r -> joinRanges r
+  (p : _) : _ -> if null (last pps) then joinRanges $ init pps else
+     let q = last $ last pps in if p == q then [p] else [p, q]
+
+{- | compute start and end position of a declared Id (or leave it empty).
+     Do not use for applied identifiers where place holders are replaced. -}
+idRange :: Id -> [Pos]
+idRange (Id ts _ r) =
+    let (fs, rs) = splitMixToken ts
+    in joinRanges $ map tokenRange fs ++ [outerRange r] ++ map tokenRange rs
 
 ---- helper class -------------------------------------------------------
 

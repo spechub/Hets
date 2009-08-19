@@ -169,7 +169,7 @@ instance XmlPrintable a => XmlListPrintable [a] where
     toLst = map toXml
 
 instance XmlListPrintable G_basic_spec where
-    toLst (G_basic_spec lid bs) = 
+    toLst (G_basic_spec lid bs) =
         let i = toItem lid bs in map (fromAnno . fmap itemToXml) $ items i
 
 instance XmlListPrintable GENERICITY where
@@ -250,7 +250,7 @@ posString (SourcePos _ l c) = show l ++ ":" ++ show c
 rangeToAttribs :: Range -> [Attr]
 rangeToAttribs (Range []) = []
 rangeToAttribs (Range l) = [Attr (unqual "range") $ intercalate ","
-                                     $ map posString l]
+                                     $ map posString $ sortRange [] l]
 
 {-
 rangeToAttribs :: Range -> [Attr]

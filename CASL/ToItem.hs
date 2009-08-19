@@ -13,7 +13,6 @@ get item representation of 'BASIC_SPEC'
 -}
 
 module CASL.ToItem (bsToItem) where
---module CASL.ToItem where
 
 import Control.Monad.Reader
 
@@ -21,10 +20,10 @@ import Common.Doc
 import Common.DocUtils
 import Common.Id
 import Common.Item
---import Common.AS_Annotation
 
 import CASL.AS_Basic_CASL
 import CASL.ToDoc
+import CASL.Fold
 
 --------------------- utils
 
@@ -74,7 +73,7 @@ bsToItem bs = runReader (toitem bs) $ getTransState bs
 
 
 instance ItemConvertible (BASIC_SPEC b s f) (Reader (TS b s f)) where
-    toitem (Basic_spec l) = 
+    toitem (Basic_spec l) =
         do{ l' <-  listFromAL l
           ; return rootItem{ items = l' } }
 
@@ -91,7 +90,7 @@ instance ItemConvertible (BASIC_ITEMS b s f) (Reader (TS b s f)) where
           Free_datatype sk adtds rg ->
               mkItemM ("Free_datatype", "SortsKind", show sk) rg
                           $ listFromAL adtds
-          Ext_BASIC_ITEMS b -> 
+          Ext_BASIC_ITEMS b ->
               do{ st <- ask
                 ; fromPrinter (show . (fB st)) "Ext_BASIC_ITEMS" b }
 
@@ -106,7 +105,7 @@ instance ItemConvertible (SIG_ITEMS s f) (Reader (TS b s f)) where
           Datatype_items sk adds rg ->
               mkItemM ("Datatype_items", "SortsKind", show sk) rg
                 $ listFromAL adds
-          Ext_SIG_ITEMS s -> 
+          Ext_SIG_ITEMS s ->
               do{ st <- ask
                 ; fromPrinter (show . (fS st)) "Ext_SIG_ITEMS" s }
 
@@ -154,9 +153,13 @@ instance ItemConvertible (PRED_ITEM f) (Reader (TS b s f)) where
 
 fromPrinterWithRg :: (Monad m, GetRange a) =>
                      (a -> String) -> String -> a -> m Item
-fromPrinterWithRg p n o = mkItemMM (n, p o) (getRange o) []
+fromPrinterWithRg = fromPrinterWithRange getRange
 
-fromPrinter :: (Monad m) => (a -> String) -> String -> a -> m Item
+fromPrinterWithRange
+    :: Monad m => (a -> Range) -> (a -> String) -> String -> a -> m Item
+fromPrinterWithRange r p n o = mkItemMM (n, p o) (r o) []
+
+fromPrinter :: Monad m => (a -> String) -> String -> a -> m Item
 fromPrinter p n o = mkItemMM (n, p o) nullRange []
 
 litFromPrinterWithRg :: (Monad m, GetRange a) =>
@@ -170,12 +173,12 @@ instance ItemConvertible OP_TYPE (Reader (TS b s f)) where
 
 instance ItemConvertible OP_HEAD (Reader (TS b s f)) where
     toitem = fromPrinterWithRg toString "OP_HEAD"
-                     
+
 instance ItemConvertible (OP_ATTR f) (Reader (TS b s f)) where
     toitem a =
         do{ st <- ask
           ; fromPrinter (show . printAttr (fF st)) "OP_ATTR" a }
-                     
+
 instance ItemConvertible PRED_TYPE (Reader (TS b s f)) where
     toitem = fromPrinterWithRg toString "PRED_TYPE"
 
@@ -189,15 +192,15 @@ instance ItemConvertible VAR_DECL (Reader (TS b s f)) where
     toitem = fromPrinterWithRg toString "VAR_DECL"
 
 instance ItemConvertible (FORMULA f) (Reader (TS b s f)) where
-    toitem f =
-        do{ st <- ask
-          ; fromPrinterWithRg (show . printFormula (fF st)) "FORMULA" f }
+    toitem f = do
+      st <- ask
+      fromPrinterWithRange formulaRange
+               (show . printFormula (fF st)) "FORMULA" f
 
 instance ItemConvertible (TERM f) (Reader (TS b s f)) where
-    toitem f =
-        do{ st <- ask
-          ; fromPrinterWithRg (show . printTerm (fF st)) "TERM" f }
-
+    toitem f = do
+      st <- ask
+      fromPrinterWithRange termRange (show . printTerm (fF st)) "TERM" f
 
 instance ItemConvertible (LITC Id) (Reader (TS b s f)) where
     toitem = litFromPrinterWithRg toString
