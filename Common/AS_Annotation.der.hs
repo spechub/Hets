@@ -152,6 +152,11 @@ data Annoted a = Annoted
     , l_annos :: [Annotation]
     , r_annos :: [Annotation] } deriving (Show, Ord, Eq)
 
+annoRange :: (a -> [Pos]) -> Annoted a -> [Pos]
+annoRange f a =
+  joinRanges $ map (rangeToList . getRange) (l_annos a) ++ [f $ item a]
+  ++ [rangeToList (opt_pos a)] ++ map (rangeToList . getRange) (r_annos a)
+
 notImplied :: Annoted a -> Bool
 notImplied = not . any isImplied . r_annos
 

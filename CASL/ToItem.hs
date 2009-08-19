@@ -16,6 +16,7 @@ module CASL.ToItem (bsToItem) where
 
 import Control.Monad.Reader
 
+import Common.AS_Annotation
 import Common.Doc
 import Common.DocUtils
 import Common.Id
@@ -81,10 +82,15 @@ instance ItemConvertible (BASIC_ITEMS b s f) (Reader (TS b s f)) where
     toitem bi =
         case bi of
           Sig_items s -> toitem s
-          Var_items l rg -> mkItemM "Var_items" rg $ listFromL l
-          Axiom_items al rg -> mkItemM "Axiom_items" rg $ listFromAL al
-          Local_var_axioms vl fl rg ->
-              mkItemMM "Local_var_axioms" rg
+          Var_items l (Range qs) -> mkItemM "Var_items"
+             (Range . joinRanges $ qs : map varDeclRange l) $ listFromL l
+          Axiom_items al (Range qs) -> mkItemM "Axiom_items"
+             (Range . joinRanges $ qs : map (annoRange formulaRange) al)
+             $ listFromAL al
+          Local_var_axioms vl fl (Range qs) ->
+              mkItemMM "Local_var_axioms"
+                 (Range . joinRanges $ qs : map varDeclRange vl ++
+                       map (annoRange formulaRange) fl)
                            [fromL "VAR_DECLS" vl, fromAL "FORMULAS" fl]
           Sort_gen asis rg -> mkItemM "Sort_gen" rg $ listFromAL asis
           Free_datatype sk adtds rg ->
@@ -194,13 +200,14 @@ instance ItemConvertible VAR_DECL (Reader (TS b s f)) where
 instance ItemConvertible (FORMULA f) (Reader (TS b s f)) where
     toitem f = do
       st <- ask
-      fromPrinterWithRange formulaRange
+      fromPrinterWithRange (Range . formulaRange)
                (show . printFormula (fF st)) "FORMULA" f
 
 instance ItemConvertible (TERM f) (Reader (TS b s f)) where
     toitem f = do
       st <- ask
-      fromPrinterWithRange termRange (show . printTerm (fF st)) "TERM" f
+      fromPrinterWithRange (Range . termRange)
+               (show . printTerm (fF st)) "TERM" f
 
 instance ItemConvertible (LITC Id) (Reader (TS b s f)) where
     toitem = litFromPrinterWithRg toString

@@ -207,8 +207,8 @@ predTypeRange (Pred_type args r) = case args of
   [] -> outerRange r
   _ -> joinRanges $ map idRange args
 
-formulaRange :: FORMULA f -> Range
-formulaRange = Range . foldFormula rangeRecord
+formulaRange :: FORMULA f -> [Pos]
+formulaRange = foldFormula rangeRecord
 
-termRange :: TERM f -> Range
-termRange = Range . foldTerm rangeRecord
+termRange :: TERM f -> [Pos]
+termRange = foldTerm rangeRecord

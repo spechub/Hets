@@ -129,6 +129,11 @@ data VAR_DECL = Var_decl [VAR] SORT Range
                 -- pos: commas, colon
                 deriving (Show, Eq, Ord)
 
+varDeclRange :: VAR_DECL -> [Pos]
+varDeclRange (Var_decl vs s _) = case vs of
+  [] -> []
+  v : _ -> joinRanges [tokenRange v, idRange s]
+
 {- Position definition for FORMULA:
    Information on parens are also encoded in Range.  If there
    are more Pos than necessary there is a pair of Pos enclosing the
