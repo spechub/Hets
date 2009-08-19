@@ -564,7 +564,6 @@ clean_genRules:
             $(hs_clean_files)
 
 clean: bin_clean o_clean clean_pretty
-	$(HCPKG) unregister aterm || exit 0
 
 ### removes all *.o, *.hi and *.p_o files in all subdirectories
 o_clean:
@@ -587,9 +586,7 @@ real_clean: clean
 
 ### clean user packages
 package_clean:
-	$(HCPKG) unregister HAIFA --user || exit 0
 	$(HCPKG) unregister programatica --user || exit 0
-	$(HCPKG) unregister syb-generics --user || exit 0
 	$(HCPKG) unregister aterm --user || exit 0
 
 ### additionally removes generated files not in the CVS tree
