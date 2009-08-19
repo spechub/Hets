@@ -64,7 +64,8 @@ flag gtkglade
 Executable hets
   Main-is: hets.hs
   build-depends:
-      array >= 0.1.0.0
+      HTTP >= 4000.0.5
+    , array >= 0.1.0.0
     , base >= 4.0.0.0
     , containers >= 0.1.0.1
     , directory >= 1.0.0.0
@@ -118,10 +119,7 @@ Executable hets
     build-depends:
         hxt >= 8.0.0
       , hxt-filter >= 8.0.0
-      , HTTP >= 3001.1.5
     cpp-options: -DHXTFILTER
-  else
-    cpp-options: -DNOMATHSERVER
 
   if flag(gtkglade)
     build-depends:
