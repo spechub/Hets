@@ -7,7 +7,7 @@ License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
 Maintainer  :  Ewaryst.Schulz@dfki.de
 Stability   :  experimental
-Portability :  non-portable (multiple parameter class)
+Portability :  non-portable (MPTC)
 
 This module provides the item datatype for an abstract logic independent
 representation of basic specs.
