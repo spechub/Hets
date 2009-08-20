@@ -67,9 +67,9 @@ takeDiff l1 l2 = zipWith const l2 $ dropPrefix l1 l2
 -- | update token positions.
 -- return remaining positions
 setToksPos :: [Token] -> Range -> ([Token], Range)
-setToksPos (h:ts) (Range (p:ps)) =
+setToksPos (h : ts) (Range (p : ps)) =
     let (rt, rp) = setToksPos ts (Range ps)
-        in (h {tokPos = Range [p]} : rt, rp)
+        in (h {tokPos = Range $ if isPlace h then [p, p] else [p]} : rt, rp)
 setToksPos ts ps = (ts, ps)
 
 reverseRange :: Range -> Range
