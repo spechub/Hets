@@ -53,7 +53,8 @@ type SortSet = SymbolSet
 type SubsortRel = SymbolRel
 type OpDecl = (Symbol, [Attr])
 type OpDeclSet = Set OpDecl
-type OpMap = Map Qid OpDeclSet
+type OpDeclClass = Set OpDeclSet
+type OpMap = Map Qid OpDeclClass
 type Sentences = Set Sentence
 
 -- TODO: Should we also add the Module name to Sign?
@@ -67,20 +68,25 @@ data Sign = Sign {
 
 instance Pretty Sign where
     pretty sign = let
-            pretty'sorts ss = hsep
+            descend = flip . Set.fold
+            -- print sort declarations
+            pr'sorts ss = hsep
                 [keyword "sorts", hsep $ map pretty ss, dot]
-            pretty'sups = hsep . map pretty . Set.elems
-            pretty'pair sub sups = (:) . hsep $
-                [keyword "subsort", pretty sub, less, pretty'sups sups]
-            pretty'subs = vsep . Map.foldWithKey pretty'pair []
-            pretty'decl (sym, attrs) = hsep
+            -- print subsort declarations
+            pr'sups = hsep . map pretty . Set.elems
+            pr'pair sub sups = (:) . hsep $
+                [keyword "subsort", pretty sub, less, pr'sups sups]
+            pr'subs = vsep . Map.foldWithKey pr'pair []
+            -- print operator decparations
+            pr'decl (sym, attrs) = hsep
                 [keyword "op", pretty sym, pretty attrs, dot]
-            pretty'ods = flip $ Set.fold ((:) . pretty'decl)
-            pretty'ops = vsep . Map.fold pretty'ods []
+            pr'ods = descend ((:) . pr'decl)
+            pr'ocs = descend pr'ods
+            pr'ops = vsep . Map.fold pr'ocs []
         in vsep [
-            pretty'sorts $ Set.elems $ sorts sign,
-            pretty'subs $ Rel.toMap $ subsorts sign,
-            pretty'ops $ ops sign,
+            pr'sorts $ Set.elems $ sorts sign,
+            pr'subs $ Rel.toMap $ subsorts sign,
+            pr'ops $ ops sign,
             pretty $ sentences sign
         ]
 
@@ -93,11 +99,15 @@ instance HasSorts Sign where
     }
 
 instance HasOps Sign where
-    getOps = let insert = flip $ Set.fold $ Set.insert . fst
+    getOps = let
+            descend = flip . Set.fold
+            insert = descend $ descend $ Set.insert . fst
         in Map.fold insert Set.empty . ops
     mapOps mp sign = let
-            update (symb, attrs) = insertOpDecl (mapOps mp symb) attrs
-            insert = flip $ Set.fold update
+            subrel = subsorts sign
+            descend = flip . Set.fold
+            update (symb, attrs) = insertOpDecl subrel (mapOps mp symb) attrs
+            insert = descend $ descend $ update
         in sign {
             ops = Map.fold insert Map.empty $ ops sign
         }
