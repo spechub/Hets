@@ -134,13 +134,16 @@ partitionStmts = let
 -- | Extract the Signature of a Module.
 fromSpec :: Module -> Sign
 fromSpec spec@(Module _ _ stmts) = let
+        sents = filter (not . Sen.isRule) . Sen.fromSpec $ spec
         (sort'list, sub'list, op'list) = partitionStmts stmts
         sign0 = empty
         sign1 = foldr insertSort sign0 sort'list
         sign2 = foldr insertSubsort sign1 sub'list
-        sign3 = foldr insertOp sign2 op'list
-        sents = filter (not . Sen.isRule) . Sen.fromSpec $ spec
-    in sign3 { sentences = Set.fromList sents }
+        sign  = foldr insertOp sign2 op'list
+    in sign {
+        subsorts = Rel.transClosure $ subsorts sign,
+        sentences = Set.fromList sents
+    }
 
 -- | Extract the Set of all Symbols from a Signature.
 symbols :: Sign -> SymbolSet
