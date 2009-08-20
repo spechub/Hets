@@ -272,14 +272,14 @@ primFormula k = do
     return $ ExtFORMULA f
   <|> do
     c <- asKey trueS
-    return $ True_atom $ tokPos c
+    return . True_atom . Range $ tokenRange c
   <|> do
     c <- asKey falseS
-    return $ False_atom $ tokPos c
+    return . False_atom . Range $ tokenRange c
   <|> do
     c <- asKey defS
     t <- term k
-    return $ Definedness t $ tokPos c
+    return . Definedness t $ tokPos c
   <|> do
     c <- asKey notS <|> asKey negS <?> "\"not\""
     f <- primFormula k
