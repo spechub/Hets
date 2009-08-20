@@ -119,10 +119,7 @@ targetSublogic :: Comorphism cid
             lid2 sublogics2 basic_spec2 sentence2 symb_items2 symb_map_items2
                 sign2 morphism2 symbol2 raw_symbol2 proof_tree2
          => cid -> sublogics2
-targetSublogic cid = maybe (error ("Logic.Comorphism: " ++
-                                   language_name cid ++
-                                   " does not provide a mapping for it's " ++
-                                   "source sublogic"))
+targetSublogic cid = maybe (top_sublogic $ targetLogic cid)
                            id $ mapSublogic cid $ sourceSublogic cid
 
 -- | this function is base on 'map_theory' using no sentences as input
