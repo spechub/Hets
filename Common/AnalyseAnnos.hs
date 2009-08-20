@@ -160,11 +160,15 @@ store_literal_annos la ans = do
 showIdPair :: (Id, Id) -> ShowS
 showIdPair (i1, i2) = showId i1 . showString "," . showId i2
 
+stripIdRange :: Id -> Id
+stripIdRange (Id ts cs _) =
+  Id (map (\ t -> t { tokPos = nullRange }) ts) (map stripIdRange cs) nullRange
+
 -- | add (and check for uniqueness) string annotations
 setStringLit :: Maybe (Id,Id) -> [Annotation] -> Result (Maybe (Id,Id))
 setStringLit = foldM $ \ m a -> case a of
   String_anno id1 id2 _ -> let q = (id1, id2) in case m of
-    Nothing -> return $ Just q
+    Nothing -> return $ Just (stripIdRange id1, stripIdRange id2)
     Just p -> if q == p then return m
       else Result [mkDiag Error
         ("conflict %string " ++ showIdPair q " and " ++ showIdPair p "") id1]
@@ -175,7 +179,7 @@ setStringLit = foldM $ \ m a -> case a of
 setFloatLit :: Maybe (Id,Id) -> [Annotation] -> Result (Maybe (Id,Id))
 setFloatLit = foldM $ \ m a -> case a of
   Float_anno id1 id2 _ -> let q = (id1, id2) in case m of
-    Nothing -> return $ Just q
+    Nothing -> return $ Just (stripIdRange id1, stripIdRange id2)
     Just p -> if q == p then return m
       else Result [mkDiag Error
        ("conflict %floating  " ++ showIdPair q " and " ++ showIdPair p "") id1]
@@ -186,7 +190,7 @@ setFloatLit = foldM $ \ m a -> case a of
 setNumberLit :: Maybe Id -> [Annotation] -> Result (Maybe Id)
 setNumberLit = foldM $ \ m a -> case a of
   Number_anno id1 _ -> case m of
-    Nothing -> return $ Just id1
+    Nothing -> return . Just $ stripIdRange id1
     Just id2 -> if id1 == id2 then return m
       else Result [mkDiag Error
         ("conflict %number " ++ showId id1 " and " ++ showId id2 "") id1]
@@ -203,7 +207,8 @@ setListLit =
            -- equal keys with different values conflict
     let nv = (id2, id3)
     in case Map.lookup id1 m of
-         Nothing -> return $ Map.insert id1 nv m
+         Nothing -> return $ Map.insert (stripIdRange id1)
+                    (stripIdRange id2, stripIdRange id3) m
          Just v  -> if nv == v then return m
            else Result [mkDiag Error
              ("conflict" ++ showListAnno id1 nv ++ " and"
