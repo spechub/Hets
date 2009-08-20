@@ -456,3 +456,6 @@ instance GetRange VarDecl where
 
 instance GetRange TypeArg where
     getRange (TypeArg v _ _ _ _ _ p) = bestRange [v] p
+
+instance GetRange TypeScheme where
+    getRange (TypeScheme args t ps) = bestRange args $ bestRange [t] ps
