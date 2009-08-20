@@ -2,8 +2,8 @@
 ambiguous mixfix term
   [__](a)
   __::__(a, [ ])
-*** Error 2.1-2.6, expected further mixfix token: ["p","x"]
-*** Error 3.1-3.2, expected further mixfix token: ["p","x"]
+*** Error 2.3-2.6, expected further mixfix token: ["p","x"]
+*** Error 3.2-3.6, expected further mixfix token: ["p","x"]
 *** Error 4.3, expected further mixfix token: ["__"]
 *** Error 5.1, expected further mixfix token: ["__"]
 *** Error 6.1-6.4, expected further mixfix token: ["(","(var )"]
@@ -84,9 +84,9 @@ ambiguous mixfix term
   A__([__]__(a, +__(b)))
   __[__]__(A, a, +__(b))
   __+__(A__([__](a)), b)
-*** Error 28.2-28.4,
+*** Error 28.4,
 expected further mixfix token: ["*","+","-","-->","::"]
-*** Error 29.1-29.9, expected further mixfix token: ["p","x"]
+*** Error 29.9-29.12, expected further mixfix token: ["p","x"]
 *** Error 30.1-30.7,
 ambiguous mixfix term
   odd__(-__(a))

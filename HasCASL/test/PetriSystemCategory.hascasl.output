@@ -746,7 +746,7 @@ no kind found for 'System'
   expected: {Cppo}
      found: {Type}
 ### Hint 104.19, not a class 'P'
-### Hint 104.24-104.74,
+### Hint 104.24-104.69,
 in type of '((op freq : forall Elem : Type . Elem * MultiSet Elem -> Nat)
  ((var p : P),
   (op marking : System -> Marking) (var sys1 : System)),
@@ -755,7 +755,7 @@ in type of '((op freq : forall Elem : Type . Elem * MultiSet Elem -> Nat)
   (op marking : System -> Marking) (var sys2 : System)))'
   typename 'Nat' (28.38)
   is not unifiable with type '_v159_Elem ->? Nat' (23.33)
-### Hint 104.24-104.74,
+### Hint 104.24-104.69,
 untypeable term (with type: MultiSet _v159_Elem * MultiSet _v159_Elem)
 '(freq (p, marking sys1), freq (hp p, marking sys2))'
 ### Hint 110.16,

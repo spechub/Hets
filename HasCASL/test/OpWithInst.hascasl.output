@@ -140,7 +140,7 @@ for type scheme 'a * a -> Unit' wrong length of instantiation list
 ### Hint 35.4-35.16,
 untypeable term
 '(op __=[s]__ : forall a : Type . a * a -> Unit)[s, s]'
-*** Error 35.4-35.53,
+*** Error 35.4-35.52,
 no typing for
 '(op __=[s]__ : forall a : Type . a * a -> Unit)[s, s] (a, a)'
 ### Hint 36.7-36.9, is compound list '[s]'
@@ -156,10 +156,10 @@ no kind found for 's'
 ### Hint 36.11-36.16,
 for type scheme 'a * a -> Unit' wrong length of instantiation list
 '[s, s : Type]'
-### Hint 36.6-36.22, no type found for '__=[s]__'
+### Hint 36.6-36.10, no type found for '__=[s]__'
 ### Hint 36.6-36.26,
 untypeable term '__ =[s][s, s : Type] __ : s * s -> Unit'
-*** Error 36.3-36.47,
+*** Error 36.6-36.46,
 no typing for '(__ =[s][s, s : Type] __ : s * s -> Unit) (a, a)'
 ### Hint 37.7-37.9, is compound list '[s]'
 ### Hint 37.15,

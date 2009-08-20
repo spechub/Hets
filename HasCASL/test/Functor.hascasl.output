@@ -144,4 +144,4 @@ in type of '(var l : ParamDT G a)'
 ### Hint 34.3-34.29,
 untypeable term (with type: ? _v79_a * ? _v79_a)
 '(map f l, fold initialAlg l)'
-*** Error 34.3, no typing for 'map f l = fold initialAlg l'
+*** Error 34.11, no typing for 'map f l = fold initialAlg l'

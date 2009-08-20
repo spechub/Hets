@@ -48,7 +48,7 @@ in type of '(op ret : forall m : Type -> Type; a : Type . a -> m a) (var x : a)'
 ### Hint 8.3-8.42,
 untypeable term (with type: ? _v9_a * ? _v9_a)
 '(ret x : ST state a, \ s : state . (x, s))'
-*** Error 8.3,
+*** Error 8.22,
 no typing for '(ret x : ST state a) = \ s : state . (x, s)'
 ### Hint 10.7, not a kind 'ST state a'
 ### Hint 10.21, is type variable 'b'
@@ -71,6 +71,6 @@ untypeable term (with type: _v14_m _v15_a * (_v15_a -> _v14_m _v16_b))
 ### Hint 13.5-13.54,
 untypeable term (with type: ? _v13_a * ? _v13_a)
 '(p >>= q, \ s2 : state . let (z, s2) = p s1 in q z s2)'
-*** Error 13.5,
+*** Error 13.11,
 no typing for
 'p >>= q = \ s2 : state . let (z, s2) = p s1 in q z s2'

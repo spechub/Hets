@@ -167,11 +167,11 @@ no kind found for 'a ->? b'
 no kind found for 'a ->? b'
   expected: {Ord}
      found: {Type}
-### Hint 37.9-37.10,
+### Hint,
 in type of '((), ())'
   typename 'Unit'
   is not unifiable with type '_v36_a ->? _v37_b' (33.29)
-### Hint 37.9-37.10,
+### Hint,
 untypeable term (with type: (_v36_a ->? _v37_b) * (_v36_a ->? _v37_b))
 '((), ())'
 ### Hint 40.8, not a kind '? a'
@@ -185,11 +185,11 @@ in type of '((var x : ? a), (var y : ? a))'
 ### Hint 41.3-41.8,
 untypeable term (with type: (_v40_a ->? _v41_b) * (_v40_a ->? _v41_b))
 '(x, y)'
-### Hint 41.25-41.34,
+### Hint 41.25-41.32,
 in type of '((var x : ? a) (), (var y : ? a) ())'
   typename 'a' (40.14)
   is not unifiable with type '_v44_a ->? _v45_b' (33.29)
-### Hint 41.25-41.34,
+### Hint 41.25-41.32,
 untypeable term (with type: (_v44_a ->? _v45_b) * (_v44_a ->? _v45_b))
 '(x (), y ())'
 ### Warning 43.7, refined class 'Cpo'

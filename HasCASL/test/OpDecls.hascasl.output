@@ -116,12 +116,12 @@ in type of '((op a : s), (op b : s))'
   typename 't' (9.14)
   is not unifiable with type 's * s' (3.12)
 ### Hint 13.12-13.16, untypeable term (with type: t) '(a, b)'
-### Hint 15.14-15.21,
+### Hint 15.14-15.20,
 in type of '((op a : s), (op a : s))'
   typename 't' (9.14)
-  is not unifiable with type 's * s' (15.21)
-### Hint 15.14-15.21, untypeable term (with type: t) '(a, a)'
-### Hint 15.14-15.21,
+  is not unifiable with type 's * s' (3.12)
+### Hint 15.14-15.20, untypeable term (with type: t) '(a, a)'
+### Hint 15.14-15.20,
 rejected 't < s' of '(op __+__ : t * t -> t) ((op a : s), (op a : s))'
 ### Hint 17.8,
 no kind found for 's'
@@ -160,11 +160,11 @@ in type of '((op a : s), (op b : s))'
   typename 't' (9.14)
   is not unifiable with type 's * s' (3.12)
 ### Hint 23.23-23.26, untypeable term (with type: t) '(a, b)'
-### Hint 25.23-25.35,
+### Hint 25.23-25.30,
 in type of '((op a : s), (op b : s))'
   typename 't' (9.14)
-  is not unifiable with type 's * s' (25.35)
-### Hint 25.23-25.35,
+  is not unifiable with type 's * s' (25.34)
+### Hint 25.23-25.32,
 untypeable term (with type: t) '(a : s, b : s)'
 ### Hint 34.21,
 no kind found for 's'
@@ -190,9 +190,9 @@ no kind found for 's'
 no kind found for 's'
   expected: {Cppo}
      found: {Type}
-### Hint 46.12-46.38,
+### Hint 46.14-46.34,
 in type of '((op x : s) as s, (op x : s) as t as s)'
   typename 't' (9.14)
-  is not unifiable with type 's * s' (46.38)
-### Hint 46.12-46.38,
+  is not unifiable with type 's * s' (46.37)
+### Hint 46.14-46.34,
 untypeable term (with type: t) '(x as s, x as t as s)'

@@ -212,7 +212,7 @@ asListAppl toExpr i ra br =
           mkList [] ps = toExpr c [] ps
           mkList (hd:tl) ps = toExpr f [hd, mkList tl ps] ps
       in mkList ra br
-    else if i == typeId || i == exprId || i == parenId || i == varId
+    else if elem i [typeId, exprId, parenId, varId]
          then case ra of
          [arg] -> arg
          _ -> error "asListAppl"
@@ -240,11 +240,14 @@ lookUp ce k = Map.findWithDefault [] k ce
 -- | recognize next token (possible introduce new tuple variable)
 scanItem :: (a -> a -> a) -> (a, Token) -> Item a -> [Item a]
 scanItem addType (trm, t)
-    p@Item{ rest = ts, args = pArgs, posList = pRange } =
-    let q = p { posList = appRange (tokPos t) pRange }
-    in case ts of
+  p@Item{ rest = ts, args = pArgs, posList = pRange } = case ts of
        [] -> []
-       hd : tt -> let r = q { rest = tt } in
+       hd : tt -> let
+          q = p { posList = case rangeToList $ tokPos t of
+                [] -> pRange
+                ps@(po : _) -> Range $ (if null tt then last ps else po)
+                   : rangeToList pRange }
+          r = q { rest = tt } in
           if hd == t || t == exprTok && hd == varTok then
                if t == commaTok then
                   case tt of
@@ -272,14 +275,18 @@ mkAmbigs toExpr p@Item{ args = l, ambigArgs = aArgs } =
             } ) aArgs
 
 addArg :: GlobalAnnos -> ToExpr a -> Item a -> Item a -> Item a
-addArg ga toExpr argItem@Item { ambigs = ams } p@Item{ args = pArgs,
-    rule = op, posList = pRange, ambigs = pAmbs, rest = pRest} =
-    let (arg, ps) = mkExpr toExpr argItem
+addArg ga toExpr argItem@Item { ambigs = ams, posList = aRange }
+  p@Item{ args = pArgs, rule = op, posList = pRange, ambigs = pAmbs
+        , rest = pRest} =
+    let (arg, _) = mkExpr toExpr argItem
         newAms = mkAmbigs toExpr argItem
         q = case pRest of
             _ : tl ->
                p { rest = tl
-                 , posList = ps `appRange` pRange
+                 , posList = case rangeToList aRange of
+                     [] -> pRange
+                     qs@(h : _) -> Range $ (if null tl then
+                        last qs else h) : rangeToList pRange
                  , args = arg : pArgs
                  , ambigs = (if null newAms then ams else newAms : ams)
                             ++ pAmbs }
@@ -388,8 +395,7 @@ nextChart addType toExpr ga st term@(_, tok) = let
     scannedItems = scan addType term pItems
     nextTable = if null cItems && igz then table else
         Map.insert idx (map (mkItem idx) cRules ++ cItems) table
-    completedItems = complete toExpr ga nextTable $ sortBy ordItem
-        $ scannedItems
+    completedItems = complete toExpr ga nextTable $ sortBy ordItem scannedItems
     nextIdx = idx + 1
     in if null pItems && igz then st else st
     { prevTable = nextTable
@@ -442,9 +448,9 @@ getResolved pp p toExpr st = let
      [har] -> case ambigs har of
        [] -> case mkAmbigs toExpr har of
          [] -> Result ds $ Just $ fst $ mkExpr toExpr har
-         ambAs -> Result ((showAmbigs pp p $ take 5 ambAs) : ds) Nothing
-       ams -> Result ((map (showAmbigs pp p) $ take 5 ams) ++ ds) Nothing
-     _ -> Result ((showAmbigs pp p $ map (fst . mkExpr toExpr) result) : ds)
+         ambAs -> Result (showAmbigs pp p (take 5 ambAs) : ds) Nothing
+       ams -> Result (map (showAmbigs pp p) (take 5 ams) ++ ds) Nothing
+     _ -> Result (showAmbigs pp p (map (fst . mkExpr toExpr) result) : ds)
        Nothing
 
 showAmbigs :: (a -> ShowS) -> Range -> [a] -> Diagnosis

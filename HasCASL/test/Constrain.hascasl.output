@@ -21,4 +21,4 @@ op f : forall e : Ord . e -> e %(op)%
 ### Hint 16.3-16.9,
 constrain 't : Ord' is unprovable of '(op f : forall e : Ord . e -> e) (op b : t) = (op b : t)'
   known kinds are: {Eq}
-*** Error 16.3, no typing for 'f b = b'
+*** Error 16.7, no typing for 'f b = b'

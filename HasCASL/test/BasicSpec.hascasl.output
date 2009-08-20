@@ -139,7 +139,7 @@ repeated declaration of 'tt' with type 's ->? Unit'
 ### Hint 20.19, rebound variable 'x'
 ### Warning 20.12,
 ignoring declaration for builtin identifier '__res__'
-### Warning 20.10-20.31,
+### Warning 20.12-20.31,
 illegal lhs pattern '((var x : s) res (var y : t)) : s'
 ### Hint 21.6, rebound variable 'x'
 ### Hint 21.6, rebound variable 'x'
@@ -170,7 +170,7 @@ no typing for 'program all (p : ? s) : ? Unit = eq (p, tt)'
 ### Hint 30.14, rebound variable 'x'
 ### Hint 30.40, no type found for 't1'
 ### Hint 30.40, untypeable term 't1'
-### Hint 30.40-30.52,
+### Hint 30.40-30.49,
 untypeable term (with type: ? _v35_a * ? _v36_b) '(t1 (), t2 ())'
 *** Error 30.38,
 no typing for

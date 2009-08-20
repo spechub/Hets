@@ -160,7 +160,7 @@ rejected '__->?__ < __->__' of '((var p : m a),
    ((op ret : forall m : Monad; a : Type . a -> m a)
     ((var f : a ->? b) (var x : a)),
     (var r : b ->? m c)))'
-### Hint 15.3-15.26,
+### Hint 15.3-15.29,
 untypeable term (with type: _v46_m _v47_a * (_v47_a -> _v46_m _v48_b))
 '(p, \ x : a . ret (f x) >>= r)'
 ### Hint 15.12, rebound variable 'x'
@@ -184,12 +184,12 @@ rejected '__->?__ < __->__' of '((var p : m a), (var q : a ->? m b))'
 ### Hint 18.4-18.10,
 untypeable term (with type: _v102_m _v103_a * (_v103_a -> _v102_m _v104_b))
 '(p, q)'
-### Hint 18.3-18.17,
+### Hint 18.4-18.17,
 rejected '__->?__ < __->__' of '((op __>>=__ :
   forall m : Monad; a : Type; b : Type . m a * (a ->? m b) ->? m b)
  ((var p : m a), (var q : a ->? m b)),
  (var r : b ->? m c))'
-### Hint 18.3-18.17,
+### Hint 18.6-18.17,
 untypeable term (with type: _v96_m _v97_a * (_v97_a -> _v96_m _v98_b))
 '(p >>= q, r)'
 ### Hint 18.4-18.10,
@@ -209,7 +209,7 @@ rejected '__->?__ < __->__' of '((var p : m a),
  . (op __>>=__ :
     forall m : Monad; a : Type; b : Type . m a * (a ->? m b) ->? m b)
    ((var q : a ->? m b) (var x : a), (var r : b ->? m c)))'
-### Hint 18.21-18.36,
+### Hint 18.21-18.40,
 untypeable term (with type: _v114_m _v115_a * (_v115_a -> _v114_m _v116_b))
 '(p, \ x : a . q x >>= r)'
 ### Hint 18.29, rebound variable 'x'
@@ -285,7 +285,7 @@ in type of '(op ret : forall m : Monad; a : Type . a -> m a) (var x : a)'
 ### Hint 36.3-36.42,
 untypeable term (with type: ? _v250_a * ? _v250_a)
 '(ret x : ST state a, \ s : state . (x, s))'
-*** Error 36.3,
+*** Error 36.22,
 no typing for '(ret x : ST state a) = \ s : state . (x, s)'
 ### Hint 37.3-37.9,
 in type of '((var p : ST state a), (var q : a ->? ST state b))'
@@ -304,6 +304,6 @@ untypeable term (with type: _v257_m _v258_a * (_v258_a ->? _v257_m _v259_b))
 ### Hint 37.5-37.54,
 untypeable term (with type: ? _v253_a * ? _v253_a)
 '(p >>= q, \ s1 : state . let (z, s2) = p s1 in q z s2)'
-*** Error 37.5,
+*** Error 37.11,
 no typing for
 'p >>= q = \ s1 : state . let (z, s2) = p s1 in q z s2'

@@ -234,7 +234,8 @@ iterateCharts par extR g terms c =
                              tNew = case v of
                                       Nothing -> h
                                       Just x -> x
-                             c2 = self (tail terms) (oneStep (tNew, varTok))
+                             c2 = self (tail terms)
+                                  (oneStep (tNew, varTok {tokPos = ps}))
                          in mixDiags mds c2
                   _ -> self (expand ("(", ")") ts ps ++ tail terms) c
             h@(Conditional t1 f2 t3 ps) ->
@@ -249,13 +250,13 @@ iterateCharts par extR g terms c =
                     c2 = self (tail terms)
                          (oneStep (tNew, varTok {tokPos = ps}))
                 in mixDiags mds c2
-            Mixfix_token t -> let (ds1, trm) = convertMixfixToken
-                                     (literal_annos g) asAppl Mixfix_token t
-                                  c2 = self (tail terms) $ oneStep $
-                                       case trm of
-                                                Mixfix_token tok -> (trm, tok)
-                                                _ -> (trm, varTok)
-                                  in mixDiags ds1 c2
+            Mixfix_token t -> let
+              (ds1, trm) = convertMixfixToken (literal_annos g) asAppl
+                Mixfix_token t
+              c2 = self (tail terms) $ oneStep $ case trm of
+                Mixfix_token tok -> (trm, tok)
+                _ -> (trm, varTok {tokPos = tokPos t})
+              in mixDiags ds1 c2
             t@(Mixfix_sorted_term _ ps) -> self (tail terms)
                             (oneStep (t, typeTok {tokPos = ps}))
             t@(Mixfix_cast _ ps) -> self (tail terms)
@@ -271,7 +272,8 @@ iterateCharts par extR g terms c =
                        tNew = Sorted_term (case v of
                                              Nothing -> t
                                              Just x -> x) s ps
-                       c2 = self (tail terms) (oneStep (tNew, varTok))
+                       c2 = self (tail terms)
+                            (oneStep (tNew, varTok {tokPos = ps}))
                    in mixDiags mds c2
             _ -> error "iterateCharts"
 
