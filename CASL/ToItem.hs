@@ -23,7 +23,6 @@ import Common.Item
 
 import CASL.AS_Basic_CASL
 import CASL.ToDoc
-import CASL.Fold
 
 --------------------- utils
 
@@ -82,7 +81,7 @@ instance (GetRange b, GetRange s, GetRange f)
         case bi of
           Sig_items s -> toitem s
           Var_items l _ -> mkItemM "Var_items" rg $ listFromL l
-          Axiom_items al (Range qs) -> mkItemM "Axiom_items" rg $ listFromAL al
+          Axiom_items al _ -> mkItemM "Axiom_items" rg $ listFromAL al
           Local_var_axioms vl fl _ ->
               mkItemMM "Local_var_axioms" rg
                            [fromL "VAR_DECLS" vl, fromAL "FORMULAS" fl]
@@ -154,7 +153,7 @@ instance GetRange f => ItemConvertible (PRED_ITEM f) (Reader (TS b s f)) where
 
 fromPrinterWithRg :: (Monad m, GetRange a) =>
                      (a -> String) -> String -> a -> m Item
-fromPrinterWithRg = fromPrinterWithRange getRange
+fromPrinterWithRg = fromPrinterWithRange (Range . rangeSpan)
 
 fromPrinterWithRange
     :: Monad m => (a -> Range) -> (a -> String) -> String -> a -> m Item
@@ -166,7 +165,7 @@ fromPrinter p n o = mkItemMM (n, p o) nullRange []
 litFromPrinterWithRg :: (Monad m, GetRange a) =>
                         (a -> String) -> LITC a -> m Item
 litFromPrinterWithRg p (LITC (IT l) o) =
-    mkItemMM (IT $ l ++ [p o]) (getRange o) []
+    mkItemMM (IT $ l ++ [p o]) (Range $ rangeSpan o) []
 
 
 instance ItemConvertible OP_TYPE (Reader (TS b s f)) where
@@ -192,16 +191,16 @@ instance ItemConvertible DATATYPE_DECL (Reader (TS b s f)) where
 instance ItemConvertible VAR_DECL (Reader (TS b s f)) where
     toitem = fromPrinterWithRg toString "VAR_DECL"
 
-instance ItemConvertible (FORMULA f) (Reader (TS b s f)) where
+instance GetRange f => ItemConvertible (FORMULA f) (Reader (TS b s f)) where
     toitem f = do
       st <- ask
-      fromPrinterWithRange (Range . formulaRange)
+      fromPrinterWithRange (Range . rangeSpan)
                (show . printFormula (fF st)) "FORMULA" f
 
-instance ItemConvertible (TERM f) (Reader (TS b s f)) where
+instance GetRange f => ItemConvertible (TERM f) (Reader (TS b s f)) where
     toitem f = do
       st <- ask
-      fromPrinterWithRange (Range . termRange)
+      fromPrinterWithRange (Range . rangeSpan)
                (show . printTerm (fF st)) "TERM" f
 
 instance ItemConvertible (LITC Id) (Reader (TS b s f)) where
