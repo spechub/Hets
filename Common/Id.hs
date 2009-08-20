@@ -90,7 +90,7 @@ instance Show Token where
   show = tokStr
 
 instance Read Token where
-  readsPrec i s = map (\ (a, r) -> (mkSimpleId a, r)) $ readsPrec i s
+  readsPrec i = map (\ (a, r) -> (mkSimpleId a, r)) . readsPrec i
 
 -- | simple ids are just tokens
 type SIMPLE_ID = Token
@@ -430,17 +430,16 @@ outerRange (Range qs) = case qs of
   q : _ -> let p = last qs in if p == q then [q] else [q, p]
 
 sortRange :: [Pos] -> [Pos] -> [Pos]
-sortRange ps qs = if null ps && null qs then [] else
-  let p = minimum $ ps ++ qs
-      q = maximum $ ps ++ qs
-  in if p == q then [p] else [p, q]
+sortRange rs qs = case qs of
+  [] -> rs
+  r : _ -> let
+    ps = filter ((== sourceName r) . sourceName) rs
+    p = minimum $ ps ++ qs
+    q = maximum $ ps ++ qs
+    in if p == q then [p] else [p, q]
 
 joinRanges :: [[Pos]] -> [Pos]
-joinRanges pps = case pps of
-  [] -> []
-  [] : r -> joinRanges r
-  (p : _) : _ -> if null (last pps) then joinRanges $ init pps else
-     let q = last $ last pps in if p == q then [p] else [p, q]
+joinRanges = foldr sortRange []
 
 {- | compute start and end position of a declared Id (or leave it empty).
      Do not use for applied identifiers where place holders are replaced. -}
@@ -459,28 +458,43 @@ idRange (Id ts _ r) =
 
 class GetRange a where
     getRange :: a -> Range
-    getRange _ = nullRange  -- default implementation
+    getRange = const nullRange
+    rangeSpan :: a -> [Pos]
+    rangeSpan = const []
 
 getPosList :: GetRange a => a -> [Pos]
 getPosList = rangeToList . getRange
 
--- handcoded instance
 instance GetRange Token where
     getRange (Token _ p) = p
+    rangeSpan = tokenRange
 
--- handcoded instance
 instance GetRange Id where
     getRange = posOfId
+    rangeSpan = idRange
 
--- handcoded instance
+instance GetRange Range where
+    getRange = id
+    rangeSpan = outerRange
+
+-- defaults ok
 instance GetRange ()
-    -- default is ok
+instance GetRange Char
+instance GetRange Bool
+instance GetRange Int
+
+instance GetRange a => GetRange (Maybe a) where
+    getRange = maybe nullRange getRange
+    rangeSpan = maybe [] rangeSpan
 
 instance GetRange a => GetRange [a] where
     getRange = concatMapRange getRange
+    rangeSpan = joinRanges . map rangeSpan
 
-instance GetRange a => GetRange (a, b) where
-    getRange (a, _) = getRange a
+instance (GetRange a, GetRange b) => GetRange (a, b) where
+    getRange = getRange . fst
+    rangeSpan(a, b) = sortRange (rangeSpan a) $ rangeSpan b
 
 instance GetRange a => GetRange (Set.Set a) where
     getRange = getRange . Set.toList
+    rangeSpan = rangeSpan . Set.toList

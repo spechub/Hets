@@ -1,6 +1,6 @@
 {- |
 Module      :  $Id$
-Copyright   :  (c) K. Luettich, C. Maeder and Uni Bremen 2002-2006
+Copyright   :  (c) K. Luettich, C. Maeder and Uni Bremen 2002-2009
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
 Maintainer  :  Christian.Maeder@dfki.de
@@ -16,7 +16,6 @@ import RuleUtils -- gives some examples
 import DataP
 import Text.PrettyPrint.HughesPJ
 import Data.List
-
 
 hetcatsrules :: [RuleDef]
 hetcatsrules =
@@ -42,6 +41,8 @@ getrangefn dat =
               text "  getRange x = case x of"
               $$ block (map makeGetPosFn $ body dat)
           else text "  getRange = const nullRange"
+       $$ text "  rangeSpan x = case x of"
+       $$ block (map makeSpanFn $ body dat)
 
 posLC :: Type
 posLC = Con "Range"
@@ -54,6 +55,14 @@ makeGetPosFn b =
                  then (False, p)
                  else (f, text "_")
        in ppCons' b vs <+> rArrow <+> if r then text "nullRange" else p
+
+makeSpanFn :: Body -> Doc
+makeSpanFn b =
+  let vs = varNames $ types b
+  in ppCons' b vs <+> rArrow
+      <+> if null vs then text "[]" else
+       text "joinRanges" <+> bracketList (map (text "rangeSpan" <+>) vs)
+
 -- end of GetRange derivation
 
 binaryfn :: Bool -> Data -> Doc

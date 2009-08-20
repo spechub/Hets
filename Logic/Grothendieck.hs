@@ -132,6 +132,8 @@ instance Show G_basic_spec where
 instance Pretty G_basic_spec where
     pretty (G_basic_spec _ s) = pretty s
 
+instance GetRange G_basic_spec
+
 -- | index for signatures
 newtype SigId = SigId Int
   deriving (Typeable, Show, Eq, Ord, Enum, ShATermConvertible)
@@ -227,6 +229,8 @@ data G_symb_items_list = forall lid sublogics
         G_symb_items_list lid [symb_items]
   deriving Typeable
 
+instance GetRange G_symb_items_list
+
 instance Show G_symb_items_list where
     show (G_symb_items_list _ l) = show l
 
@@ -246,6 +250,8 @@ data G_symb_map_items_list = forall lid sublogics
           sign morphism symbol raw_symbol proof_tree  =>
         G_symb_map_items_list lid [symb_map_items]
   deriving Typeable
+
+instance GetRange G_symb_map_items_list
 
 instance Show G_symb_map_items_list where
     show (G_symb_map_items_list _ l) = show l
