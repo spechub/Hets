@@ -272,16 +272,6 @@ simplifySentence _ = id
 --                     in sg {ops = new_ops2}
 
 
--- -- TODO: kind2sort and dropClosing belong in AS_Maude if anywhere.
--- kind2sort :: String -> Qid
--- kind2sort ('`' : '[' : s) = mkSimpleId $ dropClosing s
--- kind2sort s = mkSimpleId $ s
--- 
--- dropClosing :: String -> String
--- dropClosing ('`' : ']' : []) = []
--- dropClosing (c : ss) = c : dropClosing ss
--- dropClosing _ = ""
-
 --- Helper functions for inserting Signature members into their respective collections.
 
 -- TODO: Reenable all of these!?
