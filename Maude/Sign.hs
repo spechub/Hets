@@ -246,6 +246,11 @@ includesSentence sign sen = let
 simplifySentence :: Sign -> Sentence -> Sentence
 simplifySentence _ = id
 
+
+
+renameLabel :: Symbol -> Symbol -> Sign -> Sign
+renameLabel from to = mapLabels $ Map.singleton from to
+
 -- TODO: Reenable all of these!
 -- -- | rename the given sort
 -- renameListSort :: [(Qid, Qid)] -> Sign -> Sign
@@ -259,10 +264,6 @@ simplifySentence _ = id
 --                     subsorts' = ren'sort'subsortrel from to $ subsorts sign
 --                     ops' = ren'sort'op_map from to $ ops sign
 --                     sens' = ren'sort'sentences from to $ sentences sign
--- 
--- renameLabel :: Qid -> Qid -> Sign -> Sign
--- renameLabel from to sign = sign {sentences = sens'}
---               where sens' = ren'lab'sens from to $ sentences sign
 -- 
 -- -- | rename the given op
 -- renameOp :: Qid -> Qid -> [Attr] -> Sign -> Sign
@@ -461,29 +462,3 @@ simplifySentence _ = id
 --                              Format _ -> Format qs
 --                              at -> at
 -- ren'op'at _ _ = []
-
-
--- -- | rename a label in the sentences
--- ren'lab'sens :: Qid -> Qid -> Sentences -> Sentences
--- ren'lab'sens from to = Set.map (ren'lab'sen from to)
--- 
--- -- | rename a label in a sentece
--- ren'lab'sen :: Qid -> Qid -> Sentence -> Sentence
--- ren'lab'sen from to (Equation eq) = Equation $ Eq t1 t2 cond $ ren'lab'ats from to attrs
---                where Eq t1 t2 cond attrs = eq
--- ren'lab'sen from to (Membership mb) = Membership $ Mb t s cond $ ren'lab'ats from to attrs
---                where Mb t s cond attrs = mb
--- ren'lab'sen from to (Rule rl) = Rule $ Rl t1 t2 cond $ ren'lab'ats from to attrs
---                where Rl t1 t2 cond attrs = rl
--- 
--- -- | rename a label in an attribute set
--- ren'lab'ats :: Qid -> Qid -> [StmntAttr] -> [StmntAttr]
--- ren'lab'ats from to = map (ren'lab'at from to)
--- 
--- -- | rename a label if the attribute is the label
--- ren'lab'at :: Qid -> Qid -> StmntAttr -> StmntAttr
--- ren'lab'at from to (Label l) = Label l'
---          where l' = if l == from
---                     then to
---                     else l
--- ren'lab'at _ _ attr = attr
