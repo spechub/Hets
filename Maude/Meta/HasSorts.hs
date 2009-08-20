@@ -73,6 +73,19 @@ instance HasSorts Operator where
         in Op op dom' cod' as
 
 
+instance HasSorts Attr where
+    getSorts attr = case attr of
+        Id term      -> getSorts term
+        LeftId term  -> getSorts term
+        RightId term -> getSorts term
+        _ -> Set.empty
+    mapSorts mp attr = case attr of
+        Id term      -> Id $ mapSorts mp term
+        LeftId term  -> LeftId $ mapSorts mp term
+        RightId term -> RightId $ mapSorts mp term
+        _ -> attr
+
+
 instance HasSorts Term where
     getSorts term = case term of
         Const _ tp    -> getSorts tp
