@@ -57,7 +57,7 @@ commentLine = do
     try $ string percents
     line <- manyTill anyChar newlineOrEof
     q <- getPos
-    return $ Unparsed_anno Comment_start (mkLineAnno line) (Range [p, q])
+    return $ Unparsed_anno Comment_start (mkLineAnno line) (Range [p, dec q])
 
 dec :: Pos -> Pos
 dec p = Id.incSourceColumn p (-1)
@@ -124,7 +124,7 @@ annote_line :: Pos -> Annote_word -> GenParser Char st Annotation
 annote_line p s = do
     line <- manyTill anyChar newlineOrEof
     q <- getPos
-    return $ Unparsed_anno s (mkLineAnno line) $ Range [p, q]
+    return $ Unparsed_anno s (mkLineAnno line) $ Range [p, dec q]
 
 annotationL :: GenParser Char st Annotation
 annotationL = comment <|> annote <?> "\"%\""
