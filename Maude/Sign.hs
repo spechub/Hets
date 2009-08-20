@@ -95,8 +95,11 @@ instance HasSorts Sign where
     getSorts = sorts
     mapSorts mp sign = sign {
         sorts = mapSorts mp $ sorts sign,
-        subsorts = mapSorts mp $ subsorts sign
+        subsorts = mapSorts mp $ subsorts sign,
+        ops = mapSorts mp $ ops sign
+        -- NOTE: Leaving out Sentence for now. :-)
     }
+
 
 instance HasOps Sign where
     getOps = let
@@ -248,23 +251,16 @@ simplifySentence _ = id
 
 
 
+-- | Rename the given Sort in the given Signature.
+renameSort :: Symbol -> Symbol -> Sign -> Sign
+renameSort from to = mapSorts $ Map.singleton from to
+
+-- | Rename the given Label in the given Signature.
 renameLabel :: Symbol -> Symbol -> Sign -> Sign
 renameLabel from to = mapLabels $ Map.singleton from to
 
+
 -- TODO: Reenable all of these!
--- -- | rename the given sort
--- renameListSort :: [(Qid, Qid)] -> Sign -> Sign
--- renameListSort rnms sg = foldr f sg rnms
---               where f (x, y) = renameSort x y
--- 
--- -- | rename the given sort
--- renameSort :: Qid -> Qid -> Sign -> Sign
--- renameSort from to sign = Sign sorts' subsorts' ops' sens'
---               where sorts' = ren'sort'sortset from to $ sorts sign
---                     subsorts' = ren'sort'subsortrel from to $ subsorts sign
---                     ops' = ren'sort'op_map from to $ ops sign
---                     sens' = ren'sort'sentences from to $ sentences sign
--- 
 -- -- | rename the given op
 -- renameOp :: Qid -> Qid -> [Attr] -> Sign -> Sign
 -- renameOp from to ats sign = sign {ops = ops'}
@@ -291,32 +287,7 @@ renameLabel from to = mapLabels $ Map.singleton from to
 --- Helper functions for inserting Signature members into their respective collections.
 
 -- TODO: Reenable all of these!?
--- -- | rename a sort in a sortset
--- ren'sort'sortset :: Qid -> Qid -> SortSet -> SortSet 
--- ren'sort'sortset from to = Set.insert to . Set.delete from
--- 
--- -- | rename a sort in a subsort relation
--- ren'sort'subsortrel :: Qid -> Qid -> SubsortRel -> SubsortRel 
--- ren'sort'subsortrel from to ssr = Rel.fromList ssr''
---                 where ssr' = Rel.toList ssr
---                       ssr'' = map (ren'pair from to) ssr'
--- 
--- -- | aux function that renames pair
--- ren'pair :: Qid -> Qid -> (Qid, Qid) -> (Qid, Qid)
--- ren'pair from to (s1, s2) = if from == s1
---                             then (to, s2)
---                             else if from == s2
---                                  then (s1, to)
---                                  else (s1, s2)
--- 
--- -- | rename a sort in an operator map
--- ren'sort'op_map :: Qid -> Qid -> OpMap -> OpMap
--- ren'sort'op_map from to = Map.map (ren'sort'ops from to)
--- 
--- -- | rename a sort in a set of operator declarations
--- ren'sort'ops :: Qid -> Qid -> OpDeclSet -> OpDeclSet
--- ren'sort'ops from to = Set.map $ ren'op from to
--- 
+
 -- -- | aux function to rename operator declarations
 -- ren'op :: Qid -> Qid -> OpDecl -> OpDecl
 -- ren'op from to (ar, coar, ats) = (ar', coar', ats')
@@ -325,83 +296,6 @@ renameLabel from to = mapLabels $ Map.singleton from to
 --                            then to
 --                            else coar
 --                    ats' = renameSortAttrs from to ats
--- 
--- -- | rename a sort in an attribute set. This renaming only affects to
--- -- identity attributes.
--- renameSortAttrs :: Qid -> Qid -> [Attr] -> [Attr]
--- renameSortAttrs from to = map (renameSortAttr from to)
--- 
--- -- | rename a sort in an attribute. This renaming only affects to
--- -- identity attributes.
--- renameSortAttr :: Qid -> Qid -> Attr -> Attr
--- renameSortAttr from to attr = case attr of
---          Id t -> Id $ renameSortTerm from to t
---          LeftId t -> LeftId $ renameSortTerm from to t
---          RightId t -> RightId $ renameSortTerm from to t
---          _ -> attr
--- 
--- -- | rename a sort in a term
--- renameSortTerm :: Qid -> Qid -> Term -> Term
--- renameSortTerm from to (Const q ty) = Const q $ renameSortType from to ty
--- renameSortTerm from to (Var q ty) = Var q $ renameSortType from to ty
--- renameSortTerm from to (Apply q ts ty) = Apply q (map (renameSortTerm from to) ts)
---                                                  (renameSortType from to ty)
--- 
--- -- | rename a sort in a type. This renaming does not affect kinds
--- renameSortType :: Qid -> Qid -> Type -> Type
--- renameSortType from to (TypeSort s) = TypeSort $ SortId sid'
---        where SortId sid = s
---              sid' = if (sid == from)
---                    then to
---                    else sid
--- renameSortType _ _ ty = ty
--- 
--- -- | rename a sort in the sentences.
--- ren'sort'sentences :: Qid -> Qid -> Sentences -> Sentences
--- ren'sort'sentences from to = Set.map (ren'sort'sentence from to)
--- 
--- -- | rename a sort in a sentence.
--- ren'sort'sentence :: Qid -> Qid -> Sentence -> Sentence
--- ren'sort'sentence from to (Equation eq) = Equation $ Eq lhs' rhs' cond' ats
---                where Eq lhs rhs cond ats = eq
---                      lhs' = renameSortTerm from to lhs
---                      rhs' = renameSortTerm from to rhs
---                      cond' = renameSortConditions from to cond
--- ren'sort'sentence from to (Membership mb) = Membership $ Mb lhs' s' cond' ats
---                where Mb lhs s cond ats = mb
---                      lhs' = renameSortTerm from to lhs
---                      SortId sid = s
---                      s' = if (sid == from)
---                           then SortId to
---                           else s
---                      cond' = renameSortConditions from to cond
--- ren'sort'sentence from to (Rule rl) = Rule $ Rl lhs' rhs' cond' ats
---                where Rl lhs rhs cond ats = rl
---                      lhs' = renameSortTerm from to lhs
---                      rhs' = renameSortTerm from to rhs
---                      cond' = renameSortConditions from to cond
--- 
--- -- | rename a sort in a list of conditions
--- renameSortConditions :: Qid -> Qid -> [Condition] -> [Condition]
--- renameSortConditions from to = map (renameSortCondition from to)
--- 
--- -- | rename a sort in a condition
--- renameSortCondition :: Qid -> Qid -> Condition -> Condition
--- renameSortCondition from to (EqCond t1 t2) = EqCond t1' t2'
---                where t1' = renameSortTerm from to t1
---                      t2' = renameSortTerm from to t2
--- renameSortCondition from to (MatchCond t1 t2) = MatchCond t1' t2'
---                where t1' = renameSortTerm from to t1
---                      t2' = renameSortTerm from to t2
--- renameSortCondition from to (MbCond t s) = MbCond t' s'
---                where t' = renameSortTerm from to t
---                      SortId sid = s
---                      s' = if (sid == from)
---                           then SortId to
---                           else s
--- renameSortCondition from to (RwCond t1 t2) = RwCond t1' t2'
---                where t1' = renameSortTerm from to t1
---                      t2' = renameSortTerm from to t2
 -- 
 -- -- | rename an operator without profile in an operator map
 -- ren'op'op_map :: Qid -> Qid -> [Attr] -> OpMap -> OpMap
