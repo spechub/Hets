@@ -19,8 +19,8 @@ parser.
 
 module Maude.AS_Maude where
 
-import Common.Doc
-import Common.DocUtils
+import Common.Doc (specBraces, text)
+import Common.DocUtils (Pretty(..))
 import Common.Id (Token)
 
 type Qid = Token
@@ -80,11 +80,11 @@ data SubsortDecl = Subsort Sort Sort
 data Operator = Op OpId [Type] Type [Attr]
               deriving (Show, Read, Ord, Eq)
 
-data Equation = Eq Term Term [Condition] [StmntAttr]
-              deriving (Show, Read, Ord, Eq)
-
 data Membership = Mb Term Sort [Condition] [StmntAttr]
                 deriving (Show, Read, Ord, Eq)
+
+data Equation = Eq Term Term [Condition] [StmntAttr]
+              deriving (Show, Read, Ord, Eq)
 
 data Rule = Rl Term Term [Condition] [StmntAttr]
           deriving (Show, Read, Ord, Eq)
