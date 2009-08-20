@@ -109,17 +109,25 @@ instance HasLabels Sign where
     }
 
 
+partitionStmts :: [Statement] -> ([Sort], [SubsortDecl], [Operator])
+partitionStmts = let
+        switch items@(sorts', subs', ops') stmt = case stmt of
+            SortStmnt sort -> (sort:sorts', subs', ops')
+            SubsortStmnt sub -> (sorts', sub:subs', ops')
+            OpStmnt op -> (sorts', subs', op:ops')
+            _ -> items
+    in foldl switch ([], [], [])
+
 -- | extract the Signature of a Module
 fromSpec :: Module -> Sign
 fromSpec spec@(Module _ _ stmts) = let
-        sens = filter (not . Sen.isRule) . Sen.fromSpec $ spec
-        sign = foldr insert empty stmts
-        insert stmt = case stmt of
-            SortStmnt sort -> insertSort sort
-            SubsortStmnt sub -> insertSubsort sub
-            OpStmnt op -> insertOp op
-            _ -> id
-    in sign { sentences = Set.fromList sens }
+        (sort'list, sub'list, op'list) = partitionStmts stmts
+        sign0 = empty
+        sign1 = foldr insertSort sign0 sort'list
+        sign2 = foldr insertSubsort sign1 sub'list
+        sign3 = foldr insertOp sign2 op'list
+        sents = filter (not . Sen.isRule) . Sen.fromSpec $ spec
+    in sign3 { sentences = Set.fromList sents }
 
 -- | extract the Set of all Symbols from a Signature
 symbols :: Sign -> SymbolSet
