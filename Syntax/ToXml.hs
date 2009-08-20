@@ -25,6 +25,7 @@ import Common.LibName
 import Common.Result ()
 import Common.AS_Annotation
 import Common.DocUtils
+import Common.GlobalAnnotations
 
 import Logic.Logic
 import Logic.Grothendieck
@@ -37,8 +38,9 @@ import Data.List
 -- one can add global annos if necessary
 -- | Prints the Library to an xml string
 printLibDefnXml :: LIB_DEFN -> String
-printLibDefnXml ld = case toXml ld of (Elem e) -> ppTopElement e
-                                      c -> ppContent c
+printLibDefnXml ld = case toXml ld of
+  Elem e -> ppTopElement e
+  c -> ppContent c
 
 
 -- if necessary replace Content by a custom data type
@@ -170,7 +172,8 @@ instance XmlPrintable a => XmlListPrintable [a] where
 
 instance XmlListPrintable G_basic_spec where
     toLst (G_basic_spec lid bs) =
-        let i = toItem lid bs in map (fromAnno . fmap itemToXml) $ items i
+        let i = toItem lid emptyGlobalAnnos bs
+        in map (fromAnno . fmap itemToXml) $ items i
 
 instance XmlListPrintable GENERICITY where
     toLst (Genericity (Params pl) (Imported il) _)
@@ -252,15 +255,6 @@ rangeToAttribs (Range []) = []
 rangeToAttribs (Range l) = [Attr (unqual "range") $ intercalate ","
                                      $ map posString $ sortRange [] l]
 
-{-
-rangeToAttribs :: Range -> [Attr]
---rangeToAttribs (Range []) = [Attr (unqual "range") "empty"]
-rangeToAttribs (Range []) = []
-rangeToAttribs (Range l) =
-    zipWith (\x y -> Attr (unqual x) (posString y))
-             ["rangestart", "rangeend"] [head l, last l]
--}
-
 toString :: Pretty a => a -> String
 toString = show . pretty
 
@@ -304,19 +298,3 @@ itemToXml i =
            else
                withAttrs [mkAttr attrName attrValue] content
        else content
-
-{-
-itemToXml (Item it rg as l) =
-    let atts = map itemToAttrib as
-        typeAttr = mkAttr "value" $ getValue it
-    in withRg rg
-           $ mkEl (getName it)
-                 (if hasValue it then typeAttr : atts else atts)
-                 $ map (fromAnno . fmap itemToXml) l
-
-itemToAttrib :: Item -> Attr
-itemToAttrib i = itemTypeToAttrib $ itemType i
-
-itemTypeToAttrib :: ItemType -> Attr
-itemTypeToAttrib it = mkAttr (getName it) $ getValue it
--}

@@ -20,6 +20,7 @@ import Common.Doc
 import Common.DocUtils
 import Common.Id
 import Common.Item
+import Common.GlobalAnnotations
 
 import CASL.AS_Basic_CASL
 import CASL.ToDoc
@@ -30,9 +31,10 @@ toString :: Pretty a => a -> String
 toString = show . pretty
 
 --------------------- TS = TransState
-data TS b s f = TS { fB :: (b -> Doc)
-                   , fS :: (s -> Doc)
-                   , fF :: (f -> Doc) }
+data TS b s f = TS { fB :: b -> Doc
+                   , fS :: s -> Doc
+                   , fF :: f -> Doc
+                   , gA :: GlobalAnnos }
 
 -- LITC = LocalITContext
 -- This datastructure is used to pass an additional ItemType argument to
@@ -59,15 +61,14 @@ listWithLIT it = map (withLIT it)
 
 -- this function is only to unify the types of the state and the basic spec
 -- in the call of toitem and runState in bsToItem
-getTransState :: (Pretty b, Pretty s, Pretty f) => BASIC_SPEC b s f ->
-                 TS b s f
-getTransState _ = TS pretty pretty pretty
+getTransState :: (Pretty b, Pretty s, Pretty f)
+    => GlobalAnnos -> BASIC_SPEC b s f -> TS b s f
+getTransState ga _ = TS pretty pretty pretty ga
 
 --------------------- The Main function of this module
 bsToItem :: (Pretty b, Pretty s, Pretty f, GetRange b, GetRange s, GetRange f)
-    => BASIC_SPEC b s f -> Item
-bsToItem bs = runReader (toitem bs) $ getTransState bs
-
+    => GlobalAnnos -> BASIC_SPEC b s f -> Item
+bsToItem ga bs = runReader (toitem bs) $ getTransState ga bs
 
 instance (GetRange b, GetRange s, GetRange f)
     => ItemConvertible (BASIC_SPEC b s f) (Reader (TS b s f)) where
