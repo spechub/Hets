@@ -1,0 +1,496 @@
+\documentclass{entcs} \usepackage{entcsmacro}
+\usepackage{graphicx}
+\usepackage{mathpartir}
+\sloppy
+% The following is enclosed to allow easy detection of differences in
+% ascii coding.
+% Upper-case    A B C D E F G H I J K L M N O P Q R S T U V W X Y Z
+% Lower-case    a b c d e f g h i j k l m n o p q r s t u v w x y z
+% Digits        0 1 2 3 4 5 6 7 8 9
+% Exclamation   !           Double quote "          Hash (number) #
+% Dollar        $           Percent      %          Ampersand     &
+% Acute accent  '           Left paren   (          Right paren   )
+% Asterisk      *           Plus         +          Comma         ,
+% Minus         -           Point        .          Solidus       /
+% Colon         :           Semicolon    ;          Less than     <
+% Equals        =3D           Greater than >          Question mark ?
+% At            @           Left bracket [          Backslash     \
+% Right bracket ]           Circumflex   ^          Underscore    _
+% Grave accent  `           Left brace   {          Vertical bar  |
+% Right brace   }           Tilde        ~
+
+% A couple of exemplary definitions:
+
+\newcommand{\Nat}{{\mathbb N}}
+\newcommand{\Real}{{\mathbb R}}
+\def\lastname{Hausmann and Schr\"oder}
+\begin{document}
+\begin{frontmatter}
+  \title{Optimizing Conditional Modal Logic (Draft)}
+  \author[Bremen]{Daniel Hausmann\thanksref{ALL}\thanksref{myemail}}
+  \author[Bremen]{Lutz Schr\"oder \thanksref{ALL}\thanksref{coemail}}
+  \address[Bremen]{Deutsches Zentrum f\"ur k\"unstliche Intelligenz (DFKI)\\ Universit\"at Bremen, Germany}
+  \thanks[ALL]{This work is supported by DFG-project no1234}
+  \thanks[myemail]{Email: \href{mailto:Daniel.Hausmann@dfki.de} {\texttt{\normalshape Daniel.Hausmann@dfki.de}}}
+  \thanks[coemail]{Email: \href{mailto:Lutz.Schroeder@dfki.de} {\texttt{\normalshape Lutz.Schroeder@dfki.de}}}
+\begin{abstract} 
+  We describe a specific optimization of the decision algorithm
+of conditional modal logic. The general framework
+  of this optimization is the setting of coalgebraic modal logic,
+the actual implementation is an extension to
+  the generic satisfiability solver for modal logics CoLoSS.
+\end{abstract}
+\begin{keyword}
+  Coalgebraic modal logic, conditional logic,
+satisfiability / provability, optimization by memoizing
+\end{keyword}
+\end{frontmatter}
+\section{Introduction}\label{intro}
+
+Introduce here :)
+
+Structure of the paper: First we give a short introduction to
+the theory of coalgebraic modal logics, the general abstract
+setting in which this paper takes place. Then we describe the
+satisfiability (and provability) solving algorithm and its
+optimization with regards to conditional modal logics. Finally, we 
+analyze the quality of this optimization by relating
+the structure of the input formula to the amount of work which may
+be saved by using the proposed optimization. Furthermore,
+we compare our tool with other model checkers for conditional logic
+and finally we discuss, to which extent the described
+optimization could be used for other modal logics than just
+conditional modal logic.
+ 
+\section{Coalgebraic conditional logic}
+
+Some theory here...
+
+\section{The algorithm}
+
+\subsection{The general sequent calculus}
+
+\begin{definition}
+A \emph{Sequent} $\Gamma$ is a set of formulae. A sequent that is
+yet to be proven is called \emph{open sequent}, a sequent that has
+already been shown to hold or that has already been refuted is
+called a \emph{treated sequent}. A set $\mathcal{S}$ of treated
+sequents together with a function $eval:\mathcal{S}\rightarrow
+\{\top,\bot\}$ is called \emph{knowledge}. A \emph{premise}
+$\Lambda$ is a set of open sequents.
+\end{definition}
+
+\begin{definition}
+\noindent A \emph{rule} $r=(\Lambda,\Gamma)$ consists of a premise
+and a sequent (usually called \emph{conclusion}).
+\end{definition}
+\noindent The generic sequent calculus is given by a set of rules
+$\mathcal{R}_{sc}$ which consists of the finishing and the branching
+rules $\mathcal{R}^b_{sc}$ (i.e. rules with no premise or more than
+one premise), the linear rules $\mathcal{R}^l_{sc}$ (i.e. rules with
+exactly one premise) and the modal rule $\mathcal R^m_{sc}$. The
+finishing and the branching rules are presented in Figure~\ref{fig:branching}, the
+linear rules are shown in Figure~\ref{fig:linear}. For now, we consider the modal
+rule $\mathcal R^m_{sc}$ of the standard modal logic \textbf{K}
+(as given by Figure~\ref{fig:modalK}). Note, that
+it is possible to treat different modal logics with the same generic
+calculus just by appropriately instantiating the modal rule.
+
+
+\begin{figure}[!h]
+  \begin{center}
+    \begin{tabular}{| c c c c |}
+    \hline
+      & & & \\[-5pt]
+      (\textsc {T})\inferrule{ }{\Gamma, \top} &
+      (\textsc {$\neg$F}) \inferrule{ }{\Gamma, \neg\bot} &
+      (\textsc {Ax}) \inferrule{ }{\Gamma, A, \neg A} &
+      (\textsc {$\wedge$}) \inferrule{\Gamma, A \\ \Gamma, B}{\Gamma, A\wedge B} \\[-5pt]
+      & & & \\
+    \hline
+    \end{tabular}
+  \end{center}
+  \caption{The finishing and the branching sequent rules $\mathcal{R}^b_{sc}$}
+  \label{fig:branching}
+\end{figure}
+
+\begin{figure}[!h]
+  \begin{center}
+    \begin{tabular}{| c c |}
+    \hline
+      & \\[-5pt]
+      (\textsc {$\neg\neg$})\inferrule{\Gamma, A}{\Gamma, \neg\neg A} &
+      (\textsc {$\neg\wedge$}) \inferrule{\Gamma, \neg A, \neg B}{\Gamma, \neg(A\wedge B)} \\[-5pt]
+      & \\
+    \hline
+    \end{tabular}
+  \end{center}
+  \caption{The linear sequent rules $\mathcal{R}^l_{sc}$}
+  \label{fig:linear}
+\end{figure}
+
+\begin{figure}[!h]
+  \begin{center}
+    \begin{tabular}{| c |}
+    \hline
+      \\[-5pt]
+      (\textsc {\textbf{K}})\inferrule{\neg A_1, \ldots , \neg A_n, A_0}
+                      {\Gamma, \neg \Box A_1,\ldots,\neg \Box A_n, \Box A_0 } \\[-5pt]
+      \\
+    \hline
+    \end{tabular}
+  \end{center}
+  \caption{The modal rule of \textbf{K}}
+  \label{fig:modalK}
+\end{figure}
+
+Algorithm~\ref{alg:seq} makes use of the sequent rules in the following manner:
+In order to show the \emph{provability} of a formula $\phi$, the 
+algorithm starts with the sequent $\{\phi\}$ and tries to apply all
+of the sequent rules $r\in R_{sc}$ to it.
+ % explain what 'applying' means
+The result of this one step of application of the rules will be a set
+of premises $P$. The proving function is then recursively started on
+each sequent of every premise in this set. If there is any premise
+whose sequents are all provable, the application of the according rule is
+justified and hence the algorithm has succeeded.
+
+\begin{note}
+Due to $\ldots$  %what?
+, the \emph{satisfiability} of a formula $\phi$ amounts to the provability
+of its negation $\neg \phi$.
+\end{note}
+
+\begin{algorithm}[h]
+\begin{alg}
+  Step 1: Take the input formula $\phi$, construct the initial open
+  sequent $\Gamma_0 = \{\phi\}$ from it. Set i=0.\\
+  Step 2: Try to apply all rules $r\in R_{sc}$ to any open sequent
+  $\Gamma_i$. Let $\Lambda_i$ denote the set of the resulting open
+  premises.\\
+  Step 3: If $\Lambda_i$ contains the empty premise, mark the open
+  sequent $\Gamma_i$ as proven. If $\Lambda_i$ contains no premise at
+  all, mark the open sequent $\Gamma_i$ as refuted.\\
+  Step 4: Else, add all premises from $\Lambda_i$ to the set of open
+  premises and choose any premise from this set. Add all $\Gamma^j_i$
+  from this premise to the set of open sequents and continue with
+  Step 2.
+\label{alg:seq}
+\end{alg}
+\end{algorithm}
+
+\begin{proposition}
+Algorithm~\ref{alg:seq} is sound and complete w.r.t. provability. Furthermore,
+Algorithm~\ref{alg:seq} has complexity X.
+\end{proposition}
+
+\begin{proof}
+...
+\end{proof}
+
+\subsection{The conditional logic instance}
+
+The genericity of the introduced sequent calculus allows us to easiliy
+create instantiations of Algorithm~\ref{alg:seq} for a large variety
+of modal logics:
+By setting $\mathcal R^m_{sc}$ to the rule shown in Figure~\ref{fig:modalCKCEM}
+(where $A_a = A_b$ is shorthand for $A_a\rightarrow A_b\wedge A_b\rightarrow A_a$), we
+obtain an algorithm for deciding provability (and satisfiability) of
+conditional modal logic. Note however, that we restrict ourselves to the
+examplary conditional modal logic \textbf{CKCEM} for the remainder of this section
+(slightly adapted versions of the optimization will work for other conditional modal logics).
+
+\begin{figure}[h!]
+  \begin{center}
+    \begin{tabular}{| c |}
+    \hline
+      \\[-5pt]
+      (\textsc {\textbf{CKCEM}})\inferrule{A_0 = \ldots = A_n \\ B_0,\ldots, B_j,\neg B_{j+1},\ldots,\neg B_n}
+                      {\Gamma, (A_0\Rightarrow B_0),\ldots,(A_j\Rightarrow B_j),
+                      \neg(A_{j+1}\Rightarrow B_{j+1}),\ldots,\neg(A_n\Rightarrow B_n) } \\[-5pt]
+      \\
+    \hline
+    \end{tabular}
+  \end{center}
+  \caption{The modal rule $\textbf{CKCEM}$ of conditional modal logic}
+  \label{fig:modalCKCEM}
+\end{figure}
+
+In the follwing, we use the notions of \emph{modal premise} and
+\emph{modal conclusion} to refer to the parameters of the modal operator of
+conditional modal logic. The modal premise of a modal operator is not be confused
+with the premise(s) of a sequent rule.
+
+In order to decide, whether there is an
+instance of the modal rule of conditional logic which can be applied to
+the actual current sequent, it is necessary to create a preliminary premise
+for each possible combination of equalities of all the premises of the
+modal operators in this sequent. This results in $2^n$ new premises for
+a sequent with $n$ top-level modal operators.
+
+
+
+\begin{example}
+Consider the sequent $\Gamma=\{(A_0\Rightarrow B_0),(A_1\Rightarrow B_1),
+(A_2\Rightarrow B_2)\}$. By instantiating the modal rule, several
+new open premises
+such as $\{\{A_0=A_1=A_2\},\{B_0,B_1,B_2\}\}$ or $\{\{A_0=A_2\},\{B_0,B_2\}\}$
+may be obtained. Only after the equalities in the first sequent of each
+of these premises have been shown (or refuted), it is clear, whether the
+current instantiation of the modal rule is actually leading to a possibly
+provable premise.
+\label{ex:cond}
+\end{example}
+
+At first glance, it seems to be a more intelligent approach to first
+partition the set of all premises of the top-level modal operators in the
+current sequent into equivalence classes with respect to logical equality.
+This partition does not only allow for a reduction of the number of newly
+created open premises in each modal step,
+but it also allows us to seperate the two parts of the conditional modal step
+(i.e. the first part, showing the necessary equalities, and the second
+part, showing that the resulting sequent - consisting of the appropriate
+conclusions - is actually provable itself).
+
+\begin{example}
+Consider again the sequent from Example~\ref{ex:cond}. By using the examplary
+knowledge, that $A_0=A_1$, $A_1\neq A_2$ and $A_0\neq A_2$, it is immediate,
+that there are just two reasonable instations of the modal rule, leading
+to the two open premises $\{\{B_0,B_1\}\}$ and $\{\{B_2\}\}$. For the
+first of these two premises, note that it is not necessary to show the
+equivalence of $A_0$ and $A_1$ again.
+\end{example}
+
+
+\begin{note}
+In the case of conditional modal logic, observe the following: Since the
+premises of the modal operators of a formula are not being changed by any
+rule of the sequent calculus, it is possible to extract all possibly
+relevant premises of a formula even \emph{before} the actual sequent
+calculus is even applied. This allows us to first compute the equivalence
+classes of all the relevant premises and then feed this knowledge into
+the actual sequent calculus:
+\end{note}
+
+\section{The optimization}
+
+\begin{definition}
+A conditional premise that \emph{holds} nestings of depth $i$ is a
+modal premise which contains at least one modal premise that holds
+nestings of depth $i-1$ and which contains no modal premises that
+hold nestings of depth greater than $i-1$. A
+conditional premise which holds nestings of depth 0 is a modal
+premise that does not contain any further modal operators.
+Let $p_i$ denote the set of all modal premises which hold nestings
+of depth $i$. Further, let $prems(n)$ denote the set of all modal
+premises which hold nestings of depth at most $n$ (i.e.
+$prems(n)=\bigcup_{j=1..n}^{} p_j$). Finally, let $depth(\phi)$ denote maximal
+modal nesting in the formula $\phi$.
+\end{definition}
+
+\begin{example}
+In the formula $\phi=((p_0\Rightarrow p_1) \wedge ((p_2\Rightarrow p_3)\Rightarrow p_4))
+\Rightarrow (p_5\Rightarrow p_6)$,
+the premise $((p_0\Rightarrow p_1) \wedge ((p_2\Rightarrow p_3)\Rightarrow p_4))$ holds
+nestings of depth 2 (and not 1), $(p_0\Rightarrow p_1)$ and $(p_2\Rightarrow p_3)$ both
+hold nestings of depth 1, and finally $p_0$, $p_2$ and $p_4$ all hold nestings of depth 0.
+Furthermore, $prems(1)=\{p_0,p_2,p_4,(p_0\Rightarrow p_1),(p_2\Rightarrow p_3)\}$
+and $depth(\phi)=3$.
+\end{example}
+
+We may now construct an optimized algorithm which may allows us
+to decide satisfiability / provability of formulae more efficiently
+in some cases. The optimized algorithm is constructed from two functions
+(namely from the so-called pre-proving function and the actual proving
+function):
+
+\begin{algorithm}[h]
+\begin{alg}
+  Step 1: Take a formula $\phi$ and a set of sets of formulae $K$ as
+  input. Set $\Gamma_0 = \{\phi\}$, $i=0$.\\
+  Step 2: Try to apply all rules $r\in \mathcal{RO}_{sc}$ (using
+  the knowledge $K$) to any open sequent $\Gamma_i$. Let
+  $\Lambda_i$ denote the set of the resulting open premises.\\
+  Step 3: If $\Lambda_i$ contains the empty premise, mark the open
+  sequent $\Gamma_i$ as proven. If $\Lambda_i$ contains no premise at
+  all, mark the open sequent $\Gamma_i$ as refuted.\\
+  Step 4: Else, add all premises from $\Lambda_i$ to the set of open
+  premises and choose any premise from this set. Add all $\Gamma^j_i$
+  from this premise to the set of open sequents and continue with
+  Step 2.
+\label{alg:optSeq}
+\end{alg}
+\end{algorithm}
+
+Algorithm~\ref{alg:optSeq} is very similar to Algorithm~\ref{alg:seq},
+however, it uses a modified
+set of rules $\mathcal{RO}_{sc}$ and it also allows for the
+input of some knowledge in the form of a set of sets of formulae $K$.
+This knowledge is then passed on to the modified modal rule of
+conditional modal logic, which makes appropriate use of it.
+
+$\mathcal{RO}_{sc}$ is obtained from $\mathcal{R}_{sc}$ by replacing
+the modal rule from Figure~\ref{fig:modalCKCEM} with the modified modal
+rule from Figure~\ref{fig:modalCKCEMm}.
+
+\begin{figure}[h!]
+  \begin{center}
+    \begin{tabular}{| c |}
+    \hline
+      \\[-5pt]
+      (\textsc {\textbf{CKCEM}$^m$})\inferrule{\exists ec\in K. A_0, \ldots, A_n\in ec
+                                     \\ B_0,\ldots, B_j,\neg B_{j+1},\ldots,\neg B_n}
+                      {\Gamma, (A_0\Rightarrow B_0),\ldots,(A_j\Rightarrow B_j),
+                      \neg(A_{j+1}\Rightarrow B_{j+1}),\ldots,\neg(A_n\Rightarrow B_n) } \\[-5pt]
+      \\
+    \hline
+    \end{tabular}
+  \end{center}
+  \caption{The modified modal rule \textbf{CKCEM}$^m$ of conditional modal logic}
+  \label{fig:modalCKCEMm}
+\end{figure}
+
+\begin{algorithm}[h]
+\begin{alg}
+  Step 1: Take a formula $\phi$ as input. Set $i=0$, $K_0=\emptyset$.\\
+  Step 2: Generate the set $prems_i$ of all modal premises of $\phi$
+  which hold nestings of depth at most $i$. If $i<depth(\phi)$ continue
+  with Step 3, else set $K=K_{i-1}$ and continue with Step 4.\\
+  Step 3: For all combinations of formulae $A_a,A_b\in prems_i$, compute
+  Algorithm~\ref{alg:optSeq} ($A_a = A_b$, $K_i$). From the results of these computations,
+  construct $Eq_i$, the set of equivalence classes of modal premises that hold
+  nestings of depth at most $i$. Set $K_{i+1} = Eq_i$, $i = i + 1$ and
+  continue with Step 2.\\
+  Step 4: Call Algorithm~\ref{alg:optSeq} ($\phi$, $K$).
+\label{alg:preprove}
+\end{alg}
+\end{algorithm}
+
+Algorithm~\ref{alg:preprove} first computes the needed equivalences $K$ of specific 
+subformulae of $\phi$ and then finally checks for provability of
+$\phi$ (using the knowledge $K$): In order to show the equivalence of
+two premises which hold nestings of depth at most $i$, we assume,
+that the equivalence classes $K_{i}$ between premises which hold
+nestings of depth less than $i$ have allready been computed; hence,
+two premises are equal, if their equivalence is provable by
+Algorithm~\ref{alg:optSeq} using only the knowledge $K_{i}$.
+
+\subsection{Treatment of needed equivalences only}
+
+Since Algorithm~\ref{alg:preprove} tries to show the logical equivalence of every combination
+of any two modal premises that appear in $\phi$, it will have worse completion
+time than Algorithm~\ref{alg:seq} on many formulae:
+
+\begin{example}
+Consider the formula 
+\begin{quote}
+$\phi=(((p_0\Rightarrow p_1)\Rightarrow p_2)\Rightarrow p_4)\vee
+(((p_5\Rightarrow p_6)\Rightarrow p_7)\Rightarrow p_8)$.
+\end{quote}
+Algorithm~\ref{alg:preprove} will not only
+try to show the necessary equivalences between the pairs
+$(((p_0\Rightarrow p_1)\Rightarrow p_2), ((p_5\Rightarrow p_6)\Rightarrow p_7))$,
+$((p_0\Rightarrow p_1), (p_5\Rightarrow p_6))$ and $(p_0,p_5)$, but it will
+also try to show equivalences between any two modal premises (e.g. $(p_0,
+(p_5\Rightarrow p_6))$), even though these equivalences may not be needed
+during the execution of Algorithm~\ref{alg:optSeq}.
+\end{example}
+
+Based on this observation, it is possible to assign a category to each pair of
+modal premises that appear in it:
+
+\begin{definition}
+Two modal premises $A$ and $B$ are called \emph{connected (in $\phi$)} if
+they both are the premise of a top-level modality.
+
+Furthermore, we define sub-premises $C$ and $D$ of connected premises $A$ and $B$
+to be connected to each other, if they appear at the same position in a chain
+of modal premises (formally: $A=(\ldots(C\Rightarrow a_n)\ldots \Rightarrow a_0)$,
+$B=(\ldots(D\Rightarrow b_n)\ldots \Rightarrow b_0)$).
+
+Two modal premises $A$ and $B$ are called \emph{independant (in $\phi$)} if
+they occur at a different modal depth (even though they may
+hold nestings of the same depth).
+
+The relevance of two premises with regard to each other is said to be
+\emph{pending} if they occur at the same depth in $\phi$ but each
+in the conclusion of a different modal operator.
+\end{definition}
+
+Since two independant modal premises will never appear in the scope of the
+same application of the modal rule, it is in no case necessary to show (or
+refute) the logical equivalence of independant
+modal premises. Hence it suffices to focus
+our attention to the connected and pending modal premises. By pre-proving only
+the equivalences of the connected premises, we can be assure that we are 
+always as efficient as Algorithm~\ref{alg:optSeq}. However, it would still
+be necessary to treat the equivalence of those initially pending premises which
+turn out to be connected during the execution of Algorithm~\ref{alg:optSeq}.
+This would not allow us to completely seperate to treatment of equivalences
+(achieved by Algorithm~\ref{alg:preprove}) and the actual sequent calculus (realized by
+Algorithm~\ref{alg:optSeq}).
+
+If the pending premises are also included in the pre-proving, it is obvious, that
+any possibly needed equivalence is allready included in $K$ when the main proving
+is induced. On the other hand, we have to be aware, that it may be the case, that
+we show equivalences of premises which later turn out to be independant.
+
+As result of these considerations, we devise Algorithm~\ref{alg:optPreprove},
+an improved version of Algorithm~\ref{alg:preprove}.The only difference is,
+that before proving any equivalence, Algorithm~\ref{alg:optPreprove} checks
+whether the current pair of modal premises is actually connected or if their
+relevance to each other is pending; only then it treats the equivalence. Hence
+independant pairs of premises remain untreated.
+
+\begin{algorithm}[h]
+\begin{alg}
+  Step 1: Take a formula $\phi$ as input. Set $i=0$, $K_0=\emptyset$.\\
+  Step 2: Generate the set $prems_i$ of all modal premises of $\phi$
+  which hold nestings of depth at most $i$. If $i<depth(\phi)$ continue
+  with Step 3, else set $K=K_{i-1}$ and continue with Step 4.\\
+  Step 3: For all combinations of formulae $A_a,A_b\in prems_i$, s.t.
+  $A_a$ and $A_b$ are not independant, compute
+  Algorithm~\ref{alg:optSeq} ($A_a = A_b$, $K_i$). From the results of these computations,
+  construct $Eq_i$, the set of equivalence classes of modal premises that hold
+  nestings of depth at most $i$. Set $K_{i+1} = Eq_i$, $i = i + 1$ and
+  continue with Step 2.\\
+  Step 4: Call Algorithm~\ref{alg:optSeq} ($\phi$, $K$).
+\label{alg:optPreprove}
+\end{alg}
+\end{algorithm}
+
+\begin{proposition}
+Algorithm~\ref{alg:optPreprove} is sound and complete w.r.t. provability.
+Algorithm~\ref{alg:optPreprove} has complexity X. Furthermore, Algorithm~\ref{alg:optPreprove}
+allows us, to completely seperate the pre-proving of equivalences and
+the actual sequent calculus.
+\end{proposition}
+\begin{proof}
+...
+\end{proof}
+
+\section{Generalized optimization}
+
+The demonstrated optimization is not restricted to the case of conditional
+modal logics: 
+
+\begin{example}
+Neighbourhood semantics...
+\end{example}
+
+Todo: write down general form of optimization here...
+
+\section{Summary}  
+\begin{problem}
+  Finish your paper and get it to your Program Chairman on time!
+\end{problem}
+
+\section{Bibliographical references}\label{references}
+
+\begin{thebibliography}{10}\label{bibliography}
+\bibitem{cy} Civin, P., and B. Yood, \emph{Involutions on Banach
+    algebras}, Pacific J. Math. \textbf{9} (1959), 415--436.
+  
+\end{thebibliography}
+
+\end{document}
