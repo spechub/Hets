@@ -1,3 +1,16 @@
+{- |
+Module      :  $Header$
+Description :  Parsing the Maude Language
+Copyright   :  (c) Martin Kuehl, Uni Bremen 2009
+License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
+
+Maintainer  :  mkhl@informatik.uni-bremen.de
+Stability   :  experimental
+Portability :  portable
+
+Parsing the Maude source language with Haskell/Parsec.
+-}
+
 module Maude.Language (
     NamedSpec (..),
     maudeParser,
@@ -21,7 +34,7 @@ import Data.List (nub)
 import Data.Maybe (fromJust, isNothing)
 
 
---- The types we use for our parsers
+-- * The types we use for our parsers
 
 data NamedSpec = ModName String
                | ViewName String
@@ -39,7 +52,7 @@ type RecResult = (Set FilePath, MaudeResult)
 type MaudeResult = [NamedSpec]
 
 
---- Generic parser combinators
+-- * Generic parser combinators
 
 -- | Run the given |parser| but return unit
 void :: (Monad m) => m a -> m ()
@@ -53,7 +66,7 @@ ignore parser = parser >> return Nothing
 succeed :: (Monad m) => a -> m (Maybe (Either b a))
 succeed = return . Just . Right
 
---- A few helpers we need for Parsec.Language
+-- * A few helpers we need for Parsec.Language
 
 -- | Run the given |parser| after ensuring we aren't looking at whitespace
 nonSpace :: CharParser () a -> CharParser () a
@@ -68,7 +81,7 @@ specialChars :: String
 specialChars = "()[]{},"
 
 
---- The Parsec.Language definition of Maude
+-- * The Parsec.Language definition of Maude
 
 maudeLanguageDef :: Language.LanguageDef ()
 maudeLanguageDef = Language.emptyDef {
@@ -104,7 +117,7 @@ dot :: CharParser () String
 dot = Token.dot maudeTokenParser
 
 
---- A few more helpers for parsing Maude
+-- * A few more helpers for parsing Maude
 
 -- | Match any of the given strings as a |reserved| word
 anyReserved :: [String] -> CharParser () ()
@@ -125,7 +138,7 @@ line :: CharParser () String
 line = manyTill anyChar $ eof <|> void (lexeme newline)
 
 
---- Parsers for Maude source code and components
+-- * Parsers for Maude source code and components
 
 -- | Parse Maude source code
 toplevel :: TempListParser
@@ -193,9 +206,9 @@ view = do
     succeed $ ViewName name
 
 
---- Parsers for Maude source files
+-- * Parsers for Maude source files
 
--- | Parse Maude source code and clean up the results
+-- | Parse Maude source code
 maudeParser :: TempListParser
 maudeParser = toplevel
 
