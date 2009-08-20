@@ -37,13 +37,11 @@ ppCons' b vs = fsep $ text (constructor b) : vs
 -- begin of GetRange derivation
 getrangefn :: Data -> Doc
 getrangefn dat =
-    if any ((elem posLC) . types) (body dat) then
-       let vs = vars dat in
-       text "instance GetRange" <+> (if null vs then id else parens)
-            (hsep . texts $ strippedName dat : vs) <+> text "where"
-       $$ text "  getRange x = case x of"
-       $$ block (map makeGetPosFn $ body dat)
-    else empty
+       instanceSkeleton "GetRange" [] dat
+       $$ if any ((elem posLC) . types) (body dat) then
+              text "  getRange x = case x of"
+              $$ block (map makeGetPosFn $ body dat)
+          else text "  getRange = const nullRange"
 
 posLC :: Type
 posLC = Con "Range"

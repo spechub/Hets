@@ -65,7 +65,7 @@ exportMorphismToOmdoc (Morphism _ _ sortmap opmap predmap _) =
               ++ Map.elems (mapWithKey (makePredMapEntry NOSPEC) predmap)
 
 
-exportSenToOmdoc :: Pretty f => SIMPLE_ID -> LIB_ID -> Sign f e
+exportSenToOmdoc :: (GetRange f, Pretty f) => SIMPLE_ID -> LIB_ID -> Sign f e
                  -> Named(FORMULA f) -> TCElement
 exportSenToOmdoc sid lid sign f =
     let spid  = (SPEC_ID (simpleIdToId sid) (libIdToId lid))
@@ -293,7 +293,7 @@ const_if = const_casl "if"
 const_cast = const_casl "cast"
 const_sort = const_casl "sort"
 
-omdocRec :: SPEC_ID -> Sign f e -> (f -> OMElement)
+omdocRec :: GetRange f => SPEC_ID -> Sign f e -> (f -> OMElement)
          -> Record f OMElement OMElement
 omdocRec spid _ mf = Record
     { foldQuantification = \ _ q vs f _ ->

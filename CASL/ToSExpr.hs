@@ -64,8 +64,7 @@ varDeclToSExpr (v, s) =
 sfail :: String -> Range -> a
 sfail s = error . show . Diag Error ("unexpected " ++ s)
 
-sRec :: Sign a e -> (f -> SExpr)
-     -> Record f SExpr SExpr
+sRec :: GetRange f => Sign a e -> (f -> SExpr) -> Record f SExpr SExpr
 sRec sign mf = Record
     { foldQuantification = \ _ q vs f _ ->
         let s = SSymbol $ case q of

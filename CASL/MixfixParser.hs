@@ -184,7 +184,7 @@ makeRules ga (opS, predS) = let
     in (addRule ga uRules (sOps, sPreds), initRules (cOps, cPreds))
 
 -- | meaningful position of a term
-posOfTerm :: TERM f -> Range
+posOfTerm :: GetRange f => TERM f -> Range
 posOfTerm trm =
     case trm of
     Qual_var v _ ps -> if isNullRange ps then tokPos v else ps
@@ -207,7 +207,7 @@ asAppl f args ps = Application (Op_name f) args
                  $ if isNullRange ps then posOfId f else ps
 
 -- | constructing the parse tree from (the final) parser state(s)
-toAppl :: Id -> [TERM f] -> Range -> TERM f
+toAppl :: GetRange f => Id -> [TERM f] -> Range -> TERM f
 toAppl ide ar qs =
        if ide == singleArgId || ide == multiArgsId
             then assert (length ar > 1) $
@@ -232,7 +232,7 @@ addType tt t =
 -- | the type for mixfix resolution
 type MixResolve f = GlobalAnnos -> (Token -> [Rule], Rules) -> f -> Result f
 
-iterateCharts :: Pretty f => (f -> f)
+iterateCharts :: (GetRange f, Pretty f) => (f -> f)
               -> MixResolve f -> GlobalAnnos -> [TERM f]
               -> Chart (TERM f) -> Chart (TERM f)
 iterateCharts par extR g terms c =
@@ -301,14 +301,14 @@ mkIdSets :: Set.Set Id -> Set.Set Id -> IdSets
 mkIdSets ops preds = (ops, preds)
 
 -- | top-level resolution like 'resolveMixTrm' that fails in case of diags
-resolveMixfix :: Pretty f => (f -> f)
+resolveMixfix :: (GetRange f, Pretty f) => (f -> f)
               -> MixResolve f -> MixResolve (TERM f)
 resolveMixfix par extR g ruleS t =
     let r@(Result ds _) = resolveMixTrm par extR g ruleS t
         in if null ds then r else Result ds Nothing
 
 -- | basic term resolution that supports recursion without failure
-resolveMixTrm :: Pretty f => (f -> f)
+resolveMixTrm :: (GetRange f, Pretty f) => (f -> f)
               -> MixResolve f -> MixResolve (TERM f)
 resolveMixTrm par extR ga (adder, ruleS) trm =
     getResolved (showTerm par ga) (posOfTerm trm) toAppl
@@ -318,14 +318,14 @@ showTerm :: Pretty f => (f -> f) -> GlobalAnnos -> TERM f -> ShowS
 showTerm par ga = showGlobalDoc ga . mapTerm par
 
 -- | top-level resolution like 'resolveMixFrm' that fails in case of diags
-resolveFormula :: Pretty f => (f -> f)
+resolveFormula :: (GetRange f, Pretty f) => (f -> f)
                -> MixResolve f -> MixResolve (FORMULA f)
 resolveFormula par extR g ruleS f =
     let r@(Result ds _) = resolveMixFrm par extR g ruleS f
         in if null ds then r else Result ds Nothing
 
 -- | basic formula resolution that supports recursion without failure
-resolveMixFrm :: Pretty f => (f -> f)
+resolveMixFrm :: (GetRange f, Pretty f) => (f -> f)
               -> MixResolve f -> MixResolve (FORMULA f)
 resolveMixFrm par extR g ids frm =
     let self = resolveMixFrm par extR g ids

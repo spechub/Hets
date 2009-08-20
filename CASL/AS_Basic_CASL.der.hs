@@ -294,7 +294,7 @@ data TERM f = Qual_var VAR SORT Range -- pos: "(", var, colon, ")"
 varOrConst :: Token -> TERM f
 varOrConst t = Application (Op_name $ simpleIdToId t) [] $ tokPos t
 
-rangeOfTerm :: TERM f -> Range
+rangeOfTerm :: GetRange f => TERM f -> Range
 rangeOfTerm t = case t of
   Mixfix_term ts -> concatMapRange rangeOfTerm ts
   Mixfix_token s -> tokPos s
