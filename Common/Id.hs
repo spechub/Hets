@@ -465,6 +465,9 @@ class GetRange a where
 getPosList :: GetRange a => a -> [Pos]
 getPosList = rangeToList . getRange
 
+getRangeSpan :: GetRange a => a -> Range
+getRangeSpan = Range . rangeSpan
+
 instance GetRange Token where
     getRange (Token _ p) = p
     rangeSpan = tokenRange

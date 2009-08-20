@@ -15,7 +15,7 @@ a if b
 def x
 *** Error 15.4, unexpected mixfix token: #
 *** Error 16.2, unexpected mixfix token: }
-*** Error 16.3-16.9, not a formula: {} when [] else {}
+*** Error 16.1-16.14, not a formula: {} when [] else {}
 a /\ b /\ c
 a \/ b \/ c
 a => b

@@ -31,7 +31,6 @@ import Common.DocUtils
 import Common.AS_Annotation
 import CASL.ShowMixfix
 import CASL.ToDoc()
-import Control.Exception (assert)
 
 data Mix b s f e = MixRecord
     { getBaseIds :: b -> IdSets -- ^ ids of extra basic items
@@ -183,24 +182,6 @@ makeRules ga (opS, predS) = let
     uRules = addR 0 (addR 1 [] cOps) cPreds
     in (addRule ga uRules (sOps, sPreds), initRules (cOps, cPreds))
 
--- | meaningful position of a term
-posOfTerm :: GetRange f => TERM f -> Range
-posOfTerm trm =
-    case trm of
-    Qual_var v _ ps -> if isNullRange ps then tokPos v else ps
-    Mixfix_term ts -> concatMapRange posOfTerm ts
-    Mixfix_qual_pred p -> posOfId $ predSymbName p
-    Application o _ ps -> if isNullRange ps then posOfId $ opSymbName o else ps
-    Conditional t1 _ t2 ps ->
-        if isNullRange ps then concatMapRange posOfTerm [t1, t2] else ps
-    Mixfix_parenthesized ts ps ->
-        if isNullRange ps then concatMapRange posOfTerm ts else ps
-    Mixfix_bracketed ts ps ->
-        if isNullRange ps then concatMapRange posOfTerm ts else ps
-    Mixfix_braced ts ps ->
-        if isNullRange ps then concatMapRange posOfTerm ts else ps
-    _ -> rangeOfTerm trm
-
 -- | construct application
 asAppl :: Id -> [TERM f] -> Range -> TERM f
 asAppl f args ps = Application (Op_name f) args
@@ -208,19 +189,17 @@ asAppl f args ps = Application (Op_name f) args
 
 -- | constructing the parse tree from (the final) parser state(s)
 toAppl :: GetRange f => Id -> [TERM f] -> Range -> TERM f
-toAppl ide ar qs =
+toAppl ide ar ps =
        if ide == singleArgId || ide == multiArgsId
-            then assert (length ar > 1) $
-                 let har : tar = ar
-                     hp = posOfTerm har
-                     ps = appRange hp qs
-                     in case har of
-                 Application q ts p -> assert (null ts) $
+            then case ar of
+              har : tar -> case har of
+                 Application q [] p ->
                      Application q tar $ appRange ps p
                  Mixfix_qual_pred _ ->
                      Mixfix_term [har, Mixfix_parenthesized tar ps]
                  _ -> error "stateToAppl"
-            else asAppl ide ar qs
+              _ -> error "stateToAppl2"
+            else asAppl ide ar ps
 
 addType :: TERM f -> TERM f -> TERM f
 addType tt t =
@@ -268,7 +247,7 @@ iterateCharts par extR g terms c =
                              Nothing -> h
                              Just x -> x
                     c2 = self (tail terms)
-                         (oneStep (tNew, varTok {tokPos = posOfTerm tNew}))
+                         (oneStep (tNew, varTok {tokPos = ps}))
                 in mixDiags mds c2
             Mixfix_token t -> let (ds1, trm) = convertMixfixToken
                                      (literal_annos g) asAppl Mixfix_token t
@@ -311,7 +290,7 @@ resolveMixfix par extR g ruleS t =
 resolveMixTrm :: (GetRange f, Pretty f) => (f -> f)
               -> MixResolve f -> MixResolve (TERM f)
 resolveMixTrm par extR ga (adder, ruleS) trm =
-    getResolved (showTerm par ga) (posOfTerm trm) toAppl
+    getResolved (showTerm par ga) (getRangeSpan trm) toAppl
            $ iterateCharts par extR ga [trm] $ initChart adder ruleS
 
 showTerm :: Pretty f => (f -> f) -> GlobalAnnos -> TERM f -> ShowS
@@ -380,7 +359,7 @@ resolveMixFrm par extR g ids frm =
                      return $ Predication qide ts ps
                  _ -> fatal_error
                         ("not a formula: " ++ showTerm par g tNew "")
-                        (posOfTerm tNew)
+                        (getRangeSpan tNew)
        ExtFORMULA f ->
            do newF <- extR g ids f
               return $ ExtFORMULA newF

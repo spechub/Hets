@@ -117,7 +117,7 @@ program = do
     return $ Ranged (Assign v t) $ tokPos a
   <|> do
     t <- term reservedWords
-    return $ Ranged (Call $ Mixfix_formula t) $ rangeOfTerm t
+    return . Ranged (Call $ Mixfix_formula t) . Range $ rangeSpan t
 
 programSeq :: AParser st Program
 programSeq = do

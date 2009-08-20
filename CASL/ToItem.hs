@@ -77,7 +77,7 @@ instance (GetRange b, GetRange s, GetRange f)
 
 instance (GetRange b, GetRange s, GetRange f)
     => ItemConvertible (BASIC_ITEMS b s f) (Reader (TS b s f)) where
-    toitem bi = let rg = Range $ rangeSpan bi in
+    toitem bi = let rg = getRangeSpan bi in
         case bi of
           Sig_items s -> toitem s
           Var_items l _ -> mkItemM "Var_items" rg $ listFromL l
@@ -95,7 +95,7 @@ instance (GetRange b, GetRange s, GetRange f)
 
 instance (GetRange s, GetRange f)
     => ItemConvertible (SIG_ITEMS s f) (Reader (TS b s f)) where
-    toitem si = let rg = Range $ rangeSpan si in
+    toitem si = let rg = getRangeSpan si in
         case si of
           Sort_items sk sis _ ->
               mkItemM ("Sort_items", "SortsKind", show sk) rg
@@ -111,7 +111,7 @@ instance (GetRange s, GetRange f)
 
 
 instance GetRange f => ItemConvertible (SORT_ITEM f) (Reader (TS b s f)) where
-    toitem si = let rg = Range $ rangeSpan si in
+    toitem si = let rg = getRangeSpan si in
         case si of
           Sort_decl l _ -> mkItemM "Sort_decl" rg $ listFromL
                             $ listWithLIT "SORT" l
@@ -127,7 +127,7 @@ instance GetRange f => ItemConvertible (SORT_ITEM f) (Reader (TS b s f)) where
 
 
 instance GetRange f => ItemConvertible (OP_ITEM f) (Reader (TS b s f)) where
-    toitem oi = let rg = Range $ rangeSpan oi in
+    toitem oi = let rg = getRangeSpan oi in
         case oi of
           Op_decl onl ot oal _ ->
               mkItemMM "Op_decl" rg
@@ -139,7 +139,7 @@ instance GetRange f => ItemConvertible (OP_ITEM f) (Reader (TS b s f)) where
 
 
 instance GetRange f => ItemConvertible (PRED_ITEM f) (Reader (TS b s f)) where
-    toitem p = let rg = Range $ rangeSpan p in
+    toitem p = let rg = getRangeSpan p in
         case p of
           Pred_decl pnl pt _ ->
               mkItemMM "Pred_decl" rg
@@ -153,7 +153,7 @@ instance GetRange f => ItemConvertible (PRED_ITEM f) (Reader (TS b s f)) where
 
 fromPrinterWithRg :: (Monad m, GetRange a) =>
                      (a -> String) -> String -> a -> m Item
-fromPrinterWithRg = fromPrinterWithRange (Range . rangeSpan)
+fromPrinterWithRg = fromPrinterWithRange getRangeSpan
 
 fromPrinterWithRange
     :: Monad m => (a -> Range) -> (a -> String) -> String -> a -> m Item
@@ -165,7 +165,7 @@ fromPrinter p n o = mkItemMM (n, p o) nullRange []
 litFromPrinterWithRg :: (Monad m, GetRange a) =>
                         (a -> String) -> LITC a -> m Item
 litFromPrinterWithRg p (LITC (IT l) o) =
-    mkItemMM (IT $ l ++ [p o]) (Range $ rangeSpan o) []
+    mkItemMM (IT $ l ++ [p o]) (getRangeSpan o) []
 
 
 instance ItemConvertible OP_TYPE (Reader (TS b s f)) where
@@ -194,13 +194,13 @@ instance ItemConvertible VAR_DECL (Reader (TS b s f)) where
 instance GetRange f => ItemConvertible (FORMULA f) (Reader (TS b s f)) where
     toitem f = do
       st <- ask
-      fromPrinterWithRange (Range . rangeSpan)
+      fromPrinterWithRange getRangeSpan
                (show . printFormula (fF st)) "FORMULA" f
 
 instance GetRange f => ItemConvertible (TERM f) (Reader (TS b s f)) where
     toitem f = do
       st <- ask
-      fromPrinterWithRange (Range . rangeSpan)
+      fromPrinterWithRange getRangeSpan
                (show . printTerm (fF st)) "TERM" f
 
 instance ItemConvertible (LITC Id) (Reader (TS b s f)) where
