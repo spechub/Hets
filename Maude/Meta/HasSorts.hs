@@ -3,11 +3,11 @@ module Maude.Meta.HasSorts (
 ) where
 
 import Maude.AS_Maude
-
+import Maude.Symbol
+import Maude.Meta.AsSymbol
 import Maude.Meta.HasName
 
 import Data.Set (Set)
-import Data.Map (Map)
 import qualified Data.Set as Set
 
 import Common.Lib.Rel (Rel)
@@ -16,8 +16,8 @@ import qualified Common.Lib.Rel as Rel
 
 -- TODO: Maybe this class should be named `HasTypes` instead?
 class HasSorts a where
-    getSorts :: a -> Set Qid
-    mapSorts :: Map Qid Qid -> a -> a
+    getSorts :: a -> SymbolSet
+    mapSorts :: SymbolMap -> a -> a
 
 
 instance (HasSorts a) => HasSorts [a] where
@@ -41,19 +41,13 @@ instance (Ord a, HasSorts a) => HasSorts (Rel a) where
     mapSorts = Rel.map . mapSorts
 
 
-instance HasSorts Qid where
-    getSorts = Set.singleton . getName
-    mapSorts = mapName
-
-
 instance HasSorts Sort where
-    getSorts = Set.singleton . getName
-    mapSorts = mapName
-
+    getSorts = asSymbolSet
+    mapSorts = mapAsSymbol $ SortId . getName
 
 instance HasSorts Kind where
-    getSorts = Set.singleton . getName
-    mapSorts = mapName
+    getSorts = asSymbolSet
+    mapSorts = mapAsSymbol $ KindId . getName
 
 
 instance HasSorts Type where
@@ -67,18 +61,21 @@ instance HasSorts Type where
 
 instance HasSorts Operator where
     getSorts (Op _ dom cod _) = getSorts (dom, cod)
-    mapSorts mp (Op op dom cod as) = Op op (mapSorts mp dom) (mapSorts mp cod) as
+    mapSorts mp (Op op dom cod as) = let
+            dom' = mapSorts mp dom
+            cod' = mapSorts mp cod
+        in Op op dom' cod' as
 
 
 instance HasSorts Term where
     getSorts term = case term of
-        Const _ t  -> getSorts t
-        Var _ t    -> getSorts t
-        Apply _ ts _ -> getSorts ts
+        Const _ tp    -> getSorts tp
+        Var _ tp      -> getSorts tp
+        Apply _ ts tp -> getSorts (ts, tp)
     mapSorts mp term = case term of
-        Const c t  -> Const c (mapSorts mp t)
-        Var v t    -> Var v (mapSorts mp t)
-        Apply t ts ty -> Apply t (mapSorts mp ts) ty
+        Const con tp   -> Const con (mapSorts mp tp)
+        Var var tp     -> Var var (mapSorts mp tp)
+        Apply op ts tp -> Apply op (mapSorts mp ts) (mapSorts mp tp)
 
 
 instance HasSorts Condition where
@@ -94,16 +91,39 @@ instance HasSorts Condition where
         RwCond t1 t2    -> RwCond (mapSorts mp t1) (mapSorts mp t2)
 
 
+instance HasSorts Membership where
+    getSorts (Mb t s cs _) = getSorts (t, s, cs)
+    mapSorts mp (Mb t s cs as) = let
+            t'  = mapSorts mp t
+            s'  = mapSorts mp s
+            cs' = mapSorts mp cs
+        in Mb t' s' cs' as
+
+
 instance HasSorts Equation where
     getSorts (Eq t1 t2 cs _) = getSorts (t1, t2, cs)
-    mapSorts mp (Eq t1 t2 cs as) = Eq (mapSorts mp t1) (mapSorts mp t2) (mapSorts mp cs) as
-
-
-instance HasSorts Membership where
-    getSorts (Mb ts ss cs _) = getSorts (ts, ss, cs)
-    mapSorts mp (Mb ts ss cs as) = Mb (mapSorts mp ts) (mapSorts mp ss) (mapSorts mp cs) as
+    mapSorts mp (Eq t1 t2 cs as) = let
+            t1' = mapSorts mp t1
+            t2' = mapSorts mp t2
+            cs' = mapSorts mp cs
+        in Eq t1' t2' cs' as
 
 
 instance HasSorts Rule where
     getSorts (Rl t1 t2 cs _) = getSorts (t1, t2, cs)
-    mapSorts mp (Rl t1 t2 cs as) = Rl (mapSorts mp t1) (mapSorts mp t2) (mapSorts mp cs) as
+    mapSorts mp (Rl t1 t2 cs as) = let
+            t1' = mapSorts mp t1
+            t2' = mapSorts mp t2
+            cs' = mapSorts mp cs
+        in Rl t1' t2' cs' as
+
+
+instance HasSorts Symbol where
+    getSorts sym = case sym of
+        Sort _ -> Set.singleton sym
+        Kind _ -> Set.singleton sym
+        _      -> Set.empty
+    mapSorts mp sym = case sym of
+        Sort _ -> mapAsSymbol id mp sym
+        Kind _ -> mapAsSymbol id mp sym
+        _      -> sym

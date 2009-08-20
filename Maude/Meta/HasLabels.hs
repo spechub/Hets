@@ -3,17 +3,17 @@ module Maude.Meta.HasLabels (
 ) where
 
 import Maude.AS_Maude
-
+import Maude.Symbol
+import Maude.Meta.AsSymbol
 import Maude.Meta.HasName
 
 import Data.Set (Set)
-import Data.Map (Map)
 import qualified Data.Set as Set
 
 
 class HasLabels a where
-    getLabels :: a -> Set Qid
-    mapLabels :: Map Qid Qid -> a -> a
+    getLabels :: a -> SymbolSet
+    mapLabels :: SymbolMap -> a -> a
 
 
 instance (HasLabels a) => HasLabels [a] where
@@ -34,23 +34,17 @@ instance (Ord a, HasLabels a) => HasLabels (Set a) where
 
 
 instance HasLabels StmntAttr where
-    getLabels attr = case attr of
-        Label name -> Set.singleton (getName name)
-        _          -> Set.empty
-    mapLabels mp attr = case attr of
-        Label name -> Label $ mapName mp name
-        _          -> attr
-
-
-instance HasLabels Equation where
-    getLabels (Eq _ _ _ as) = getLabels as
-    mapLabels mp (Eq t1 t2 cs as) = Eq t1 t2 cs (mapLabels mp as)
+    getLabels = asSymbolSet
+    mapLabels = mapAsSymbol $ Label . getName
 
 
 instance HasLabels Membership where
     getLabels (Mb _ _ _ as) = getLabels as
     mapLabels mp (Mb ts ss cs as) = Mb ts ss cs (mapLabels mp as)
 
+instance HasLabels Equation where
+    getLabels (Eq _ _ _ as) = getLabels as
+    mapLabels mp (Eq t1 t2 cs as) = Eq t1 t2 cs (mapLabels mp as)
 
 instance HasLabels Rule where
     getLabels (Rl _ _ _ as) = getLabels as
