@@ -259,83 +259,14 @@ renameSort from to = mapSorts $ Map.singleton from to
 renameLabel :: Symbol -> Symbol -> Sign -> Sign
 renameLabel from to = mapLabels $ Map.singleton from to
 
+-- renameOpProfile corresponds with this function not, as the profile is
+-- contained in the Symbol type.
+-- | Rename the given Operator in the given Signature.
+renameOp :: Symbol -> Symbol -> [Attr] -> Sign -> Sign
+renameOp from to _ = mapOps $ Map.singleton from to
 
--- TODO: Reenable all of these!
--- -- | rename the given op
--- renameOp :: Qid -> Qid -> [Attr] -> Sign -> Sign
--- renameOp from to ats sign = sign {ops = ops'}
---               where ops' = ren'op'op_map from to ats $ ops sign
--- 
--- -- | rename the op with the given profile
--- renameOpProfile :: Qid -> [Qid] -> Qid -> [Attr] -> Sign -> Sign
--- renameOpProfile from ar to ats sg = case Map.member from (ops sg) of
---                  False -> sg
---                  True -> 
---                     let ssr = Rel.transClosure $ subsorts sg
---                         ods = fromJust $ Map.lookup from (ops sg)
---                         (ods1, ods2) = Set.partition (\ (x, _, _) -> allSameKind ar x ssr) ods
---                         ods1' = ren'op'set from to ats ods1
---                         new_ops1 = if ods2 == Set.empty 
---                                    then Map.delete from (ops sg)
---                                    else Map.insert from ods2 (ops sg)
---                         new_ops2 = if ods1 == Set.empty
---                                    then new_ops1
---                                    else Map.insertWith (Set.union) to ods1' new_ops1
---                     in sg {ops = new_ops2}
-
-
---- Helper functions for inserting Signature members into their respective collections.
-
--- TODO: Reenable all of these!?
-
--- -- | aux function to rename operator declarations
--- ren'op :: Qid -> Qid -> OpDecl -> OpDecl
--- ren'op from to (ar, coar, ats) = (ar', coar', ats')
---              where ar' = map (\ x -> if x == from then to else x) ar
---                    coar' = if from == coar
---                            then to
---                            else coar
---                    ats' = renameSortAttrs from to ats
--- 
--- -- | rename an operator without profile in an operator map
--- ren'op'op_map :: Qid -> Qid -> [Attr] -> OpMap -> OpMap
--- ren'op'op_map from to ats = Map.fromList . map f . Map.toList
---                where f = \ (x,y) -> if x == from 
---                                     then (to, ren'op'set from to ats y)
---                                     else (x,y)
--- 
--- -- | rename the attributes in the operator declaration set
--- ren'op'set :: Qid -> Qid -> [Attr] -> OpDeclSet -> OpDeclSet
--- ren'op'set from to ats ods = Set.map f ods
---                where f = \ (x, y, z) -> let
---                               z' = ren'op'ident'ats from to z
---                               in (x, y, ren'op'ats ats z')
--- 
--- 
--- -- | rename an operator in an attribute set. This renaming only affects to
--- -- identity attributes.
--- ren'op'ident'ats :: Qid -> Qid -> [Attr] -> [Attr]
--- ren'op'ident'ats from to = map (ren'op'ident'at from to)
--- 
--- -- | rename a sort in an attribute. This renaming only affects to
--- -- identity attributes.
--- ren'op'ident'at :: Qid -> Qid -> Attr -> Attr
--- ren'op'ident'at from to attr = case attr of
---          Id t -> Id $ ren'op'term from to t
---          LeftId t -> LeftId $ ren'op'term from to t
---          RightId t -> RightId $ ren'op'term from to t
---          _ -> attr
--- 
--- -- | rename a sort in a term
--- ren'op'term :: Qid -> Qid -> Term -> Term
--- ren'op'term from to (Const q ty) = Const q' ty
---          where q' = if q == from then to else q
--- ren'op'term from to (Var q ty) = Var q' ty
---          where q' = if q == from then to else q
--- ren'op'term from to (Apply q ts ty) = Apply q' (map (ren'op'term from to) ts)
---                                            (renameSortType from to ty)
---          where q' = if q == from then to else q
--- 
+-- TODO: Our current Symbols don't include Attributes, so we can't use
+-- SymbolMaps to replicate this functionality...
 -- -- | rename the attributes in an attribute set
 -- ren'op'ats :: [Attr] -> [Attr] -> [Attr]
 -- ren'op'ats [] curr_ats = curr_ats
