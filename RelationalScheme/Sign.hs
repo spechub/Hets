@@ -84,6 +84,8 @@ data RSTables = RSTables
                     }
                 deriving (Eq, Ord)
 
+instance GetRange RSTables
+
 isRSSubsig  :: RSTables -> RSTables -> Bool
 isRSSubsig t1 t2 = t1 <= t2
 

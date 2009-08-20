@@ -620,6 +620,8 @@ data AnyLogic = forall lid sublogics
         Logic lid
   deriving Typeable
 
+instance GetRange AnyLogic
+
 instance Show AnyLogic where
   show (Logic lid) = language_name lid
 instance Eq AnyLogic where

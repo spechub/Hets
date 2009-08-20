@@ -37,10 +37,10 @@ ppCons' b vs = fsep $ text (constructor b) : vs
 getrangefn :: Data -> Doc
 getrangefn dat =
        instanceSkeleton "GetRange" [] dat
-       $$ if any ((elem posLC) . types) (body dat) then
+       $$ (if any ((elem posLC) . types) (body dat) then
               text "  getRange x = case x of"
               $$ block (map makeGetPosFn $ body dat)
-          else text "  getRange = const nullRange"
+          else text "  getRange = const nullRange")
        $$ text "  rangeSpan x = case x of"
        $$ block (map makeSpanFn $ body dat)
 

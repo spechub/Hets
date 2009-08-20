@@ -106,6 +106,9 @@ instance Show LIB_ID where
     Direct_link s _ -> s
     Indirect_link s1 _ _ _ -> s1
 
+instance GetRange LIB_NAME where
+  getRange = getRange . getLIB_ID
+
 instance Show LIB_NAME where
   show ln = case ln of
     Lib_version li (Version_number vs _) ->
