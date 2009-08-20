@@ -67,9 +67,11 @@ instance HasName View where
     mapName mp (View name from to rnms) = View (mapName mp name) from to rnms
 
 instance HasName Spec where
-    getName (SpecMod sp_module) = getName sp_module
-    getName (SpecTh sp_th) = getName sp_th
-    getName (SpecView sp_view) = getName sp_view
-    mapName mp (SpecMod sp_module) = SpecMod $ mapName mp sp_module
-    mapName mp (SpecTh sp_th) = SpecTh $ mapName mp sp_th
-    mapName mp (SpecView sp_view) = SpecView $ mapName mp sp_view
+    getName spec = case spec of
+        SpecMod modul -> getName modul
+        SpecTh theory -> getName theory
+        SpecView view -> getName view
+    mapName mp spec = case spec of
+        SpecMod modul -> SpecMod  $ mapName mp modul
+        SpecTh theory -> SpecTh   $ mapName mp theory
+        SpecView view -> SpecView $ mapName mp view
