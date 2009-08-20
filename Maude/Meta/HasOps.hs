@@ -41,6 +41,19 @@ instance HasOps Operator where
         in mapAsSymbol (swapAttrs . toOperator) mp op
 
 
+instance HasOps Attr where
+    getOps attr = case attr of
+        Id term      -> getOps term
+        LeftId term  -> getOps term
+        RightId term -> getOps term
+        _ -> Set.empty
+    mapOps mp attr = case attr of
+        Id term      -> Id $ mapOps mp term
+        LeftId term  -> LeftId $ mapOps mp term
+        RightId term -> RightId $ mapOps mp term
+        _ -> attr
+
+
 instance HasOps Term where
     getOps term = case term of
         Apply _ ts _ -> Set.insert (asSymbol term) (getOps ts)
