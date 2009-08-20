@@ -9,7 +9,7 @@
 %floating __frac__, __exp__
 ### Hint 1.1-1.47,
 no analysis of '%% many legal annotations for testing purposes'
-### Hint 2.1-6.1,
+### Hint 2.1-6.2,
 no analysis of
 '%{group comment
    %{
@@ -19,15 +19,15 @@ no analysis of
 ### Hint 7.1-7.76,
 no analysis of
 '%%line comment starting immidiately after %%containing %{ }% , ending in %%'
-### Hint 11.1-11.17, no analysis of '%(one_line_label)%'
-### Hint 13.1-16.1,
+### Hint 11.1-11.18, no analysis of '%(one_line_label)%'
+### Hint 13.1-16.2,
 no analysis of
 '%(multi
    line
    label
  )%'
 ### Hint 26.1-26.21, no analysis of '%% one word annotes'
-### Hint 27.1, no analysis of '%implies'
-### Hint 28.1, no analysis of '%def'
-### Hint 29.2, no analysis of '%cons'
-### Hint 30.1, no analysis of '%mono'
+### Hint 27.1-27.8, no analysis of '%implies'
+### Hint 28.1-28.4, no analysis of '%def'
+### Hint 29.2-29.6, no analysis of '%cons'
+### Hint 30.1-30.5, no analysis of '%mono'

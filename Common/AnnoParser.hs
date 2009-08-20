@@ -60,7 +60,7 @@ commentLine = do
     return $ Unparsed_anno Comment_start (mkLineAnno line) (Range [p, q])
 
 dec :: Pos -> Pos
-dec p = Id.incSourceColumn p (-2)
+dec p = Id.incSourceColumn p (-1)
 
 mylines :: String -> [String]
 mylines s = let strip = unwords . words in
@@ -251,7 +251,8 @@ semantic_anno :: Semantic_anno -> Annote_text -> Pos
               -> Either ParseError Annotation
 semantic_anno sa text sp =
   if all (`elem` whiteChars) $ annoArg text
-  then Right $ Semantic_anno sa (Range [sp])
+  then Right . Semantic_anno sa
+           $ Range [sp, Id.incSourceColumn sp $ length (show sa) - 3]
   else Left $ newErrorMessage
            (UnExpect ("garbage after %"
                       ++ lookupSemanticAnno sa)) $ fromPos sp
