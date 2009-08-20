@@ -23,6 +23,7 @@ module Maude.Symbol (
     mkOpTotal,
     mkOpPartial,
     sameKind,
+    zipSameKind,
 ) where
 
 
@@ -114,9 +115,8 @@ mkOpPartial :: Qid -> [Qid] -> Qid -> Symbol
 mkOpPartial qid dom cod = Operator qid (map Sort dom) (Kind cod)
 
 
--- TODO: Is `allSameKind` supposed to check pairwise or for _all_ symbols?
--- allSameKind :: SymbolRel -> Symbols -> Symbols -> Bool
--- allSameKind rel s1 s2 = all id . zipWith (sameKind rel) $ s1 s2
+zipSameKind :: SymbolRel -> Symbols -> Symbols -> Bool
+zipSameKind rel s1 s2 = all id . zipWith (sameKind rel) $ s1 s2
 
 sameKind :: SymbolRel -> Symbol -> Symbol -> Bool
 sameKind rel s1 s2 = let
