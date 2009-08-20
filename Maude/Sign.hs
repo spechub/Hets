@@ -202,9 +202,11 @@ insertOpDecl :: SymbolRel -> Symbol -> [Attr] -> OpMap -> OpMap
 insertOpDecl rel symb attrs opmap = let
         name = getName symb
         decl = Set.singleton (symb, attrs)
-        this'kind = Fold.any $ sameKind rel symb . fst
+        -- TODO: This function checks whether the _ops_ are the same
+        -- kind, not whether their _domains_ are!
+        same'kind = Fold.any $ sameKind rel symb . fst
         old'ops = Map.findWithDefault Set.empty name opmap
-        (same, rest) = Set.partition this'kind old'ops
+        (same, rest) = Set.partition same'kind old'ops
         new'decl = Set.fold Set.union decl same
         new'ops = Set.insert new'decl rest
     in Map.insert name new'ops opmap
