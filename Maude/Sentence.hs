@@ -1,7 +1,7 @@
 {- |
 Module      :  $Header$
 Description :  Sentences for Maude
-Copyright   :  (c) Martin Kuehl, Uni Bremen 2008
+Copyright   :  (c) Martin Kuehl, Uni Bremen 2008-2009
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
 Maintainer  :  mkhl@informatik.uni-bremen.de
@@ -10,24 +10,22 @@ Portability :  portable
 
 Definition of sentences for Maude.
 -}
-{-
-  Ref.
 
-  ...
--}
+module Maude.Sentence (
+    Sentence(..),
+    fromSpec,
+    isRule,
+) where
 
-module Maude.Sentence where
 
 import Maude.AS_Maude
-import Maude.Printing
 import Maude.Meta
-
-import qualified Data.Set as Set
+import Maude.Printing ()
 
 import Data.Maybe (mapMaybe)
 
-import Common.Doc
-import Common.DocUtils
+import Common.Doc (vsep)
+import Common.DocUtils (Pretty(..))
 
 
 data Sentence = Membership Membership
@@ -36,11 +34,13 @@ data Sentence = Membership Membership
     deriving (Show, Read, Ord, Eq)
 
 
--- TODO: Clean up the Pretty Sentence instance.
 instance Pretty Sentence where
-  pretty (Membership mb) = text $ printMb mb
-  pretty (Equation eq) = text $ printEq eq
-  pretty (Rule rl) = text $ printRl rl
+    pretty sent = case sent of
+        Membership mb -> pretty mb
+        Equation eq   -> pretty eq
+        Rule rl       -> pretty rl
+    pretties = vsep . map pretty
+
 
 instance HasSorts Sentence where
     getSorts sen = case sen of
@@ -57,10 +57,11 @@ instance HasOps Sentence where
         Membership mb -> getOps mb
         Equation eq   -> getOps eq
         Rule rl       -> getOps rl
-    mapOps mp sen = case sen of
-        Membership mb -> Membership $ mapOps mp mb
-        Equation eq   -> Equation $ mapOps mp eq
-        Rule rl       -> Rule $ mapOps mp rl
+    -- TODO: Enable when `mapOps` is done.
+    -- mapOps mp sen = case sen of
+    --     Membership mb -> Membership $ mapOps mp mb
+    --     Equation eq   -> Equation $ mapOps mp eq
+    --     Rule rl       -> Rule $ mapOps mp rl
 
 instance HasLabels Sentence where
     getLabels sen = case sen of
@@ -73,15 +74,18 @@ instance HasLabels Sentence where
         Rule rl       -> Rule $ mapLabels mp rl
 
 
--- | extract the Sentences of a Module
+-- | Extract the |Sentence|s of a |Module|
 fromSpec :: Module -> [Sentence]
 fromSpec (Module _ _ stmts) = let
-        insert stmt = case stmt of
+        convert stmt = case stmt of
             MbStmnt mb -> Just $ Membership mb
             EqStmnt eq -> Just $ Equation eq
-            -- TODO: Ask Adrian why we remove labelled rules.
-            RlStmnt rl -> if Set.null $ getLabels rl
-                then Just $ Rule rl
-                else Nothing
-            _         -> Nothing
-    in mapMaybe insert stmts
+            RlStmnt rl -> Just $ Rule rl
+            _ -> Nothing
+    in mapMaybe convert stmts
+
+-- | Check whether a |Sentence| is a |Rule|
+isRule :: Sentence -> Bool
+isRule sent = case sent of
+    Rule _ -> True
+    _      -> False
