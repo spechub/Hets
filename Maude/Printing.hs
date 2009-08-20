@@ -1,6 +1,6 @@
 {- |
 Module      :  $Header$
-Description :  Dealing with transformation from/to Haskell and Maude
+Description :  Transformation between Haskell and Maude
 Copyright   :  (c) Adrian Riesco, Facultad de Informatica UCM 2009
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
@@ -8,190 +8,136 @@ Maintainer  :  ariesco@fdi.ucm.es
 Stability   :  experimental
 Portability :  portable
 
-Translations between Maude and Haskell
--}
-{-
-  Ref.
-
-  ...
+Translations from Haskell to Maude.
 -}
 
--- TODO: Convert all of this to Pretty.
-
-module Maude.Printing where
+module Maude.Printing () where
 
 import Maude.AS_Maude
+import Maude.Symbol
 
-import Data.Set (Set)
-import Data.Map (Map)
-import qualified Data.Set as Set
-import qualified Data.Map as Map
-import Common.Lib.Rel (Rel)
-import qualified Common.Lib.Rel as Rel
-
-import Common.Id (Token)
+import Common.Doc
+import Common.DocUtils (Pretty(..))
 
 
-printSign :: Set Qid -> Rel Qid -> Map Qid (Set ([Qid], Qid, [Attr])) -> String
-printSign sts sbsts ops = ss ++ sbs ++ opd
- where ss = sorts2maude sts
-       sbs = subsorts2maude sbsts
-       opd = ops2maude ops
+combine :: (Pretty a) => (Doc -> Doc) -> ([Doc] -> Doc) -> [a] -> Doc
+combine wrap dsep = wrap . dsep . map pretty
 
-sorts2maude :: Set Qid -> String
-sorts2maude ss = if Set.null ss
-                    then ""
-                    else "sorts " ++ Set.fold (++) "" (Set.map ((++ " ") . show) ss) ++ ".\n"
+parenPretties :: (Pretty a) => [a] -> Doc
+parenPretties = combine parens hsep
 
-subsorts2maude :: Rel Qid -> String
-subsorts2maude ssbs = if Rel.null ssbs
-                         then ""
-                         else foldr (++) "" (map printPair $ Rel.toList ssbs)
-
-printPair :: (Token,Token) -> String
-printPair (a,b) = "subsort " ++ show a ++ " < " ++ show b ++ " .\n"
-
-ops2maude :: Map Qid (Set ([Qid], Qid, [Attr])) -> String
-ops2maude om = flatten (flatten (map printOp (Map.toList om)))
-
-flatten :: [[a]] -> [a]
-flatten [] = []
-flatten (a : l) = a ++ (flatten l)
-
-printOp :: (Qid, Set ([Qid], Qid, [Attr])) -> [String]
-printOp (opid, s) = map (printOpAux opid) (Set.toList s)
-
-printOpAux :: Qid -> ([Qid], Qid, [Attr]) -> String
-printOpAux opid (ar, co, ats) = "op " ++ show opid ++ " : " ++ printArity ar ++
-                                " -> " ++ show co ++ printAttrSet ats ++ " .\n"
-
-printArity :: [Qid] -> String
-printArity a = foldr (++) "" (map showSpace a)
-
-showSpace ::Show t => t -> String
-showSpace s = show s ++ " "
-
-printAttrSet :: [Attr] -> String
-printAttrSet [] = []
-printAttrSet ats = " [" ++ printAttrSetAux ats ++ "] " 
-
-printAttrSetAux :: [Attr] -> String
-printAttrSetAux [] = []
-printAttrSetAux [a] = printAttr a
-printAttrSetAux (a : ats) = printAttr a ++ " " ++ printAttrSetAux ats
-
-printAttr :: Attr -> String
-printAttr Comm = "comm"
-printAttr Assoc = "assoc"
-printAttr Idem = "idem"
-printAttr Iter = "iter"
-printAttr Memo = "memo"
-printAttr Ctor = "ctor"
-printAttr Msg = "msg"
-printAttr Object = "object"
-printAttr (Id t) = "id: " ++ printTerm t
-printAttr (LeftId t) = "id-left: " ++ printTerm t
-printAttr (RightId t) = "id-right: " ++ printTerm t
-printAttr (Prec p) = "prec " ++ show p
-printAttr (Strat ls) = "strat (" ++ printListSpaces ls ++ ")"
-printAttr (Poly ls) = "poly (" ++ printListSpaces ls ++ ")"
-printAttr (Frozen ls) = if null ls
-                           then "frozen"
-                           else "frozen (" ++ printListSpaces ls ++ ")"
-printAttr (Gather ls) = "gather (" ++ printListSpaces ls ++ ")"
-printAttr (Format ls) = "format (" ++ printListSpaces ls ++ ")"
-printAttr (Special hks) = "special (\n" ++ printHooks hks ++ ")"
-printAttr _ = ""
-
-printHooks :: [Hook] -> String
-printHooks [] = ""
-printHooks [h] = "\t" ++ printHook h
-printHooks (h : hks) = "\t" ++ printHook h ++ "\n" ++ printHooks hks
-
-printHook :: Hook -> String
-printHook (IdHook q qs) = "id-hook " ++ show q ++ printQidListHooks qs
-printHook (OpHook q op ar co) = "op-hook " ++ show q ++ " (" ++ show op ++
-                                " : " ++ printArity ar ++ " ~> " ++ show co ++ ")"
-printHook (TermHook q t) = "term-hook " ++ show q ++ " (" ++ printTerm t ++ ")"
-
-printQidListHooks :: [Qid] -> String
-printQidListHooks [q] = " (" ++ show q ++ ")"
-printQidListHooks _ = ""
-
-printStmntAttrSet :: [StmntAttr] -> String
-printStmntAttrSet [] = []
-printStmntAttrSet ats = " [ " ++ printStmntAttrSetAux ats ++ " ] " 
-
-printStmntAttrSetAux :: [StmntAttr] -> String
-printStmntAttrSetAux [] = []
-printStmntAttrSetAux [a] = printAttrStmnt a
-printStmntAttrSetAux (a : ats) = printAttrStmnt a ++ " " ++ printStmntAttrSetAux ats
-
-printAttrStmnt :: StmntAttr -> String
-printAttrStmnt Owise = "owise"
-printAttrStmnt Nonexec = "nonexec"
-printAttrStmnt (Metadata s) = "metadata \"" ++ s ++ "\""
-printAttrStmnt (Label q) = "label \"" ++ show q ++ "\""
-printAttrStmnt (Print _) = ""
-
-printTerm :: Term -> String
-printTerm (Const q _) = show q
-printTerm (Var q _) = show q
-printTerm (Apply q tl _) = show q ++ "(" ++ printTermList tl ++ ")"
-
-printTermList :: [Term] -> String
-printTermList [] = []
-printTermList [t] = printTerm t
-printTermList (t : tl) = printTerm t ++ ", " ++ printTermList tl
-
-printListSpaces :: Show t => [t] -> String
-printListSpaces = foldr ((++) . showSpace) ""
-
-printMb :: Membership -> String
-printMb (Mb t s conds ats) = "mb " ++ printTerm t ++ " : " ++ printSort s ++
-                             printConds conds ++ printStmntAttrSet ats ++ " .\n"
-
-printEq :: Equation -> String
-printEq (Eq t1 t2 conds ats) = "eq " ++ printTerm t1 ++ " = " ++ printTerm t2 ++
-                               printConds conds ++ printStmntAttrSet ats ++ " .\n"
-
-printRl :: Rule -> String
-printRl (Rl t1 t2 conds ats) = "rl " ++ printTerm t1 ++ " => " ++ printTerm t2 ++
-                               printConds conds ++ printStmntAttrSet ats ++ " .\n"
-
-printSort :: Sort -> String
-printSort (SortId q) = show q
-
-printConds :: [Condition] -> String
-printConds [] = ""
-printConds cs = " if " ++ printCondsAux cs
-
-printCondsAux :: [Condition] -> String
-printCondsAux [] = ""
-printCondsAux [c] = printCond c
-printCondsAux (c : cs) = printCond c ++ " /\\\n  " ++ printCondsAux cs
+bracketPretties :: (Pretty a) => [a] -> Doc
+bracketPretties = combine brackets hsep
 
 
-printCond :: Condition -> String
-printCond (EqCond t1 t2) = printTerm t1 ++ " = " ++ printTerm t2
-printCond (MatchCond t1 t2) = printTerm t1 ++ " := " ++ printTerm t2
-printCond (MbCond t s) = printTerm t ++ " : " ++ printSort s
-printCond (RwCond t1 t2) = printTerm t1 ++ " => " ++ printTerm t2
+instance Pretty Membership where
+    pretty (Mb t s cs as) = hsep
+        [keyword "mb", pretty t, colon, pretty s, pretty cs, pretty as, dot]
 
-printMorphism :: Map Qid Qid -> Map Qid (Map ([Qid], Qid) (Qid, ([Qid], Qid))) -> Map Qid Qid -> String 
-printMorphism sorts ops labels = if str == ""
-                            then ""
-                            else "\n\nMorphism:\n\n" ++ str
-    where str = (printQidMap "sort" sorts) ++ (printOpRenaming ops)
-                ++ (printQidMap "label" labels)
+instance Pretty Equation where
+    pretty (Eq t1 t2 cs as) = hsep
+        [keyword "eq", pretty t1, equals, pretty t2, pretty cs, pretty as, dot]
 
-printQidMap :: String -> Map Qid Qid -> String
-printQidMap str = Map.foldWithKey f ""
-       where f = \ x y z -> str ++ " " ++ show x ++ " to " ++ show y ++ "\n" ++ z
+instance Pretty Rule where
+    pretty (Rl t1 t2 cs as) = hsep
+        [keyword "rl", pretty t1, implies, pretty t2, pretty cs, pretty as, dot]
 
-printOpRenaming :: Map Qid (Map ([Qid], Qid) (Qid, ([Qid], Qid))) -> String
-printOpRenaming = Map.foldWithKey f ""
-       where f = \ x y z -> (Map.foldWithKey (g x) "" y) ++ z
-                    where g = \ from (ar, co) (to, _) z' -> 
-                                  "op " ++ show from ++ " : " ++ printArity ar ++ " -> "
-                                  ++ show co ++ " to " ++ show to ++ " ." ++ z'
+
+instance Pretty Condition where
+    pretty cond = let pretty' x y z = hsep [pretty x, y, pretty z]
+        in case cond of
+            MbCond t  s  -> pretty' t colon s
+            EqCond t1 t2 -> pretty' t1 equals t2
+            RwCond t1 t2 -> pretty' t1 implies t2
+            MatchCond t1 t2 -> pretty' t1 (text ":=") t2
+    pretties = combine (text "if" <+>) (hsep . punctuate andDoc)
+
+
+instance Pretty Attr where
+    pretty attr = case attr of
+        Assoc -> text "assoc"
+        Comm -> text "comm"
+        Idem -> text "idem"
+        Iter -> text "iter"
+        Id term -> text "id:" <+> pretty term
+        LeftId term -> text "id-left:" <+> pretty term
+        RightId term -> text "id-right:" <+> pretty term
+        Strat ints -> text "strat" <+> parenPretties ints
+        Memo -> text "memo"
+        Prec int -> text "prec" <+> pretty int
+        Gather qids -> text "gather" <+> parenPretties qids
+        Format qids -> text "format" <+> parenPretties qids
+        Ctor -> text "ctor"
+        -- TODO: The old version left out Config; on purpose?
+        -- Config -> text "config"
+        Config -> empty
+        Object -> text "object"
+        Msg -> text "msg"
+        -- TODO: Is Frozen the only attribute where the parens must be left out for empty lists?
+        -- Frozen ints -> text "frozen" <+> parenPretties ints
+        Frozen ints -> if null ints
+            then text "frozen"
+            else text "frozen" <+> parenPretties ints
+        Poly ints -> text "poly" <+> parenPretties ints
+        -- TODO: How much whitespace do we need inside Special?
+        -- Special hooks -> text $ "special (\n" ++ printHooks hks ++ ")"
+        Special hooks -> text "special" <+> pretty hooks
+    pretties attrs = if null attrs
+        then empty
+        else bracketPretties attrs
+
+
+instance Pretty StmntAttr where
+    pretty attr = case attr of
+        Owise        -> text "owise"
+        Nonexec      -> text "nonexec"
+        Metadata str -> text "metadata" <+> doubleQuotes (pretty str)
+        Label qid    -> text "label" <+> doubleQuotes (pretty qid)
+        Print _      -> empty
+    pretties = bracketPretties
+
+
+instance Pretty Hook where
+    pretty hook = case hook of
+        IdHook qid qs -> hsep
+            [text "id-hook", pretty qid, parenPretties qs]
+        OpHook qid op dom cod -> hsep
+            [text "op-hook", pretty qid, parens . pretty $ mkOpPartial op dom cod]
+        TermHook qid term -> hsep
+            [text "term-hook", pretty qid, parens . pretty $ term]
+    pretties = combine parens vsep
+
+
+instance Pretty Term where
+    pretty term = case term of
+        Const qid _    -> pretty qid
+        Var   qid _    -> pretty qid
+        Apply qid ts _ -> pretty qid <> (parens . pretty $ ts)
+    pretties = combine id sepByCommas
+
+
+instance Pretty Type where
+    pretty typ = case typ of
+        TypeSort sort -> pretty sort
+        TypeKind kind -> pretty kind
+
+instance Pretty Sort where
+    pretty (SortId qid) = pretty qid
+
+instance Pretty Kind where
+    pretty (KindId qid) = pretty qid
+
+instance Pretty ParamId where
+    pretty (ParamId qid) = pretty qid
+
+instance Pretty ViewId where
+    pretty (ViewId qid) = pretty qid
+
+instance Pretty ModId where
+    pretty (ModId qid) = pretty qid
+
+instance Pretty LabelId where
+    pretty (LabelId qid) = pretty qid
+
+instance Pretty OpId where
+    pretty (OpId qid) = pretty qid
