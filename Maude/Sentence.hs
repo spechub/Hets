@@ -57,11 +57,10 @@ instance HasOps Sentence where
         Membership mb -> getOps mb
         Equation eq   -> getOps eq
         Rule rl       -> getOps rl
-    -- TODO: Enable when `mapOps` is done.
-    -- mapOps mp sen = case sen of
-    --     Membership mb -> Membership $ mapOps mp mb
-    --     Equation eq   -> Equation $ mapOps mp eq
-    --     Rule rl       -> Rule $ mapOps mp rl
+    mapOps mp sen = case sen of
+        Membership mb -> Membership $ mapOps mp mb
+        Equation eq   -> Equation $ mapOps mp eq
+        Rule rl       -> Rule $ mapOps mp rl
 
 instance HasLabels Sentence where
     getLabels sen = case sen of
