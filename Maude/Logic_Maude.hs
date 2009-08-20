@@ -109,7 +109,7 @@ instance StaticAnalysis Maude MaudeText Sentence () () Sign Morphism Symbol
     intersection Maude sign1 sign2 = return $ Sign.intersection sign1 sign2
     -- final_union
     -- morphism_union
-    subsig_inclusion Maude src tgt = return $ Morphism.createInclMorph src tgt
+    subsig_inclusion Maude src tgt = return $ Morphism.inclusion src tgt
     -- generated_sign
     -- cogenerated_sign
     -- induced_from_morphism
