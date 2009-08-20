@@ -236,10 +236,9 @@ isSubsign sig1 sig2 = let
 -- | Check that a Signature can include a Sentence
 includesSentence :: Sign -> Sentence -> Bool
 includesSentence sign sen = let
-        -- NOTE: We could have used the `apply' pattern here, but the
-        -- type system won't comply.
-        has'ops   = Set.isSubsetOf (getOps sen)   (getOps sign)
-        has'sorts = Set.isSubsetOf (getSorts sen) (getSorts sign)
+        apply func a1 a2 = func (a1 sen) (a2 sign)
+        has'ops   = apply Set.isSubsetOf getOps getOps
+        has'sorts = apply Set.isSubsetOf getSorts getSorts
     in all id [has'sorts, has'ops]
 
 -- TODO: Add real implementation of simplification. Maybe.
