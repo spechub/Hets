@@ -8,7 +8,9 @@ import Maude.Meta.AsSymbol
 import Maude.Meta.HasName
 
 import Data.Set (Set)
+import Data.Map (Map)
 import qualified Data.Set as Set
+import qualified Data.Map as Map
 
 import Common.Lib.Rel (Rel)
 import qualified Common.Lib.Rel as Rel
@@ -35,6 +37,10 @@ instance (HasSorts a, HasSorts b, HasSorts c) => HasSorts (a, b, c) where
 instance (Ord a, HasSorts a) => HasSorts (Set a) where
     getSorts = Set.fold (Set.union . getSorts) Set.empty
     mapSorts = Set.map . mapSorts
+
+instance (Ord a, HasSorts a) => HasSorts (Map k a) where
+    getSorts = Map.fold (Set.union . getSorts) Set.empty
+    mapSorts = Map.map . mapSorts
 
 instance (Ord a, HasSorts a) => HasSorts (Rel a) where
     getSorts = getSorts . Rel.nodes
