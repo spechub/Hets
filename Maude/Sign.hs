@@ -128,7 +128,7 @@ partitionStmts = let
             _ -> items
     in foldl switch ([], [], [])
 
--- | extract the Signature of a Module
+-- | Extract the Signature of a Module.
 fromSpec :: Module -> Sign
 fromSpec spec@(Module _ _ stmts) = let
         (sort'list, sub'list, op'list) = partitionStmts stmts
@@ -139,7 +139,7 @@ fromSpec spec@(Module _ _ stmts) = let
         sents = filter (not . Sen.isRule) . Sen.fromSpec $ spec
     in sign3 { sentences = Set.fromList sents }
 
--- | extract the Set of all Symbols from a Signature
+-- | Extract the Set of all Symbols from a Signature.
 symbols :: Sign -> SymbolSet
 symbols sign = Set.unions [
         getSorts sign,
@@ -147,7 +147,7 @@ symbols sign = Set.unions [
         getLabels sign
     ]
 
--- | the empty Signature
+-- | The empty Signature.
 empty :: Sign
 empty = Sign {
     sorts = Set.empty,
@@ -156,7 +156,7 @@ empty = Sign {
     sentences = Set.empty
 }
 
--- | the union of two Signatures
+-- | The union of two Signatures.
 union :: Sign -> Sign -> Sign
 union sig1 sig2 = let
         apply func items = func (items sig1) (items sig2)
@@ -167,7 +167,7 @@ union sig1 sig2 = let
         sentences = apply Set.union sentences
     }
 
--- | the intersection of two Signatures
+-- | The intersection of two Signatures.
 intersection :: Sign -> Sign -> Sign
 intersection sig1 sig2 = let
         apply func items = func (items sig1) (items sig2)
@@ -179,34 +179,40 @@ intersection sig1 sig2 = let
     }
 
 
--- | insert a Sort into a Signature
+-- | Insert a Sort into a Signature.
 insertSort :: Sort -> Sign -> Sign
-insertSort sort sign = sign {sorts = insert sort (sorts sign)}
-    where insert = Set.insert . asSymbol
+insertSort sort sign = let
+        insert = Set.insert . asSymbol
+    in sign {sorts = insert sort (sorts sign)}
 
--- | insert a Subsort declaration into a Signature
+-- | Insert a Subsort declaration into a Signature.
 insertSubsort :: SubsortDecl -> Sign -> Sign
-insertSubsort decl sign = sign {subsorts = insert decl (subsorts sign)}
-    where insert (Subsort sub super) = Rel.insert (asSymbol sub) (asSymbol super)
+insertSubsort decl sign = let
+        insert (Subsort sub super) = Rel.insert (asSymbol sub) (asSymbol super)
+    in sign {subsorts = insert decl (subsorts sign)}
 
--- | insert an Operator declaration into an OperatorMap
-insertOpDecl :: Symbol -> [Attr] -> OpMap -> OpMap
-insertOpDecl symb attrs opmap = let
+-- | Insert an Operator declaration into an OperatorMap.
+insertOpDecl :: SymbolRel -> Symbol -> [Attr] -> OpMap -> OpMap
+insertOpDecl rel symb attrs opmap = let
         name = getName symb
-        decl = (symb, attrs)
+        decl = Set.singleton (symb, attrs)
+        this'kind = Fold.any $ sameKind rel symb . fst
         old'ops = Map.findWithDefault Set.empty name opmap
-        new'ops = Set.insert decl old'ops
+        (same, rest) = Set.partition this'kind old'ops
+        new'decl = Set.fold Set.union decl same
+        new'ops = Set.insert new'decl rest
     in Map.insert name new'ops opmap
 
--- | insert an Operator declaration into a Signature
+-- | Insert an Operator declaration into a Signature.
 insertOp :: Operator -> Sign -> Sign
 insertOp op sign = let
-        insert (Op _ _ _ as) = insertOpDecl (asSymbol op) as
-    in sign {ops = insert op (ops sign)}
+        subrel = subsorts sign
+        insert (Op _ _ _ as) = insertOpDecl subrel (asSymbol op) as
+    in sign {ops = insert op $ ops sign}
 
 
 -- TODO: Add more checks, e.g. whether all Symbols in SortSet are Sorts?
--- | check that a Signature is legal
+-- | Check that a Signature is legal.
 isLegal :: Sign -> Bool
 isLegal sign = let
         -- TODO: isLegalSort won't work for Kinds vs. Sorts
@@ -215,29 +221,29 @@ isLegal sign = let
             Operator _ dom cod -> all isLegalSort dom && isLegalSort cod
             _ -> False
         legal'subsorts = Fold.all isLegalSort $ Rel.nodes (subsorts sign)
-        legal'ops = Fold.all (Fold.all isLegalOp) (ops sign)
+        legal'ops = Fold.all (Fold.all $ Fold.all isLegalOp) $ ops sign
     in all id [legal'subsorts, legal'ops]
 
--- | check that a Signature is a subsignature of another Signature
+-- | Check that a Signature is a subsignature of another Signature.
 isSubsign :: Sign -> Sign -> Bool
 isSubsign sig1 sig2 = let
         apply func items = func (items sig1) (items sig2)
         has'sorts = apply Set.isSubsetOf sorts
         has'subsorts = apply Rel.isSubrelOf subsorts
         has'ops = apply Map.isSubmapOf ops
-        -- TODO: Check Sentences as well?
     in all id [has'sorts, has'subsorts, has'ops]
 
--- | check that a Signature can include a Sentence
+-- | Check that a Signature can include a Sentence
 includesSentence :: Sign -> Sentence -> Bool
 includesSentence sign sen = let
-        -- NOTE: We could have used the `apply' pattern here, but the type system won't comply.
+        -- NOTE: We could have used the `apply' pattern here, but the
+        -- type system won't comply.
         has'ops   = Set.isSubsetOf (getOps sen)   (getOps sign)
         has'sorts = Set.isSubsetOf (getSorts sen) (getSorts sign)
     in all id [has'sorts, has'ops]
 
--- | simplification of sentences (leave out qualifications)
 -- TODO: Add real implementation of simplification. Maybe.
+-- | Simplification of sentences (leave out qualifications)
 simplifySentence :: Sign -> Sentence -> Sentence
 simplifySentence _ = id
 
