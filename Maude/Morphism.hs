@@ -13,6 +13,8 @@ Definition of morphisms for Maude.
 
 module Maude.Morphism (
     Morphism(..),
+    SortMap,
+    OpMap,
     -- fromSignRenamings,
     -- applyRenamings,
     -- fromSignsRenamings,
