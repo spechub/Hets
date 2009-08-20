@@ -28,6 +28,9 @@ module Maude.Sign (
     isSubsign,
     includesSentence,
     simplifySentence,
+    renameSort,
+    renameLabel,
+    renameOp,
 ) where
 
 import Maude.AS_Maude
