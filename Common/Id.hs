@@ -460,7 +460,7 @@ class GetRange a where
     getRange :: a -> Range
     getRange = const nullRange
     rangeSpan :: a -> [Pos]
-    rangeSpan = const []
+    rangeSpan = sortRange [] . getPosList
 
 getPosList :: GetRange a => a -> [Pos]
 getPosList = rangeToList . getRange
