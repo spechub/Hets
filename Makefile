@@ -429,7 +429,7 @@ doc_sources = $(filter-out $(nondoc_sources), $(sources) $(hspp_sources))
     real_clean bin_clean package_clean distclean packages \
     programatica_pkg aterm_pkg maintainer-clean annos \
     check capa hacapa h2h h2hf showKP clean_genRules genRules \
-    count doc fromKif derivedSources release cgi ghci
+    count doc fromKif derivedSources release cgi ghci build
 
 .SECONDARY : %.hs %.d $(generated_rule_files) $(gen_inline_axiom_files)
 
@@ -602,6 +602,10 @@ maintainer-clean: distclean package_clean
 ### interactive
 ghci: $(derived_sources)
 	ghci $(HC_OPTS)
+
+### build only, don't link
+build: hets.hs packages
+	$(HC) --make -c $< $(HC_OPTS)
 
 ### Kif parser
 fromKif: CASL/fromKif
