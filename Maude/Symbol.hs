@@ -18,6 +18,7 @@ module Maude.Symbol (
     SymbolMap,
     SymbolRel,
     toId,
+    asSort,
     toType,
     toOperator,
     mkOpTotal,
@@ -83,6 +84,13 @@ instance Pretty Symbol where
 
 instance GetRange Symbol where
     getRange _ = nullRange
+
+
+-- | Convert Symbol to Symbol, changing Kinds to Sorts.
+asSort :: Symbol -> Symbol
+asSort symb = case symb of
+    Kind qid -> Sort qid
+    _ -> symb
 
 
 -- | Convert Symbol to Id.
