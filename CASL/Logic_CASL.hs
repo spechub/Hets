@@ -30,7 +30,6 @@ import Logic.Logic
 import CASL.AS_Basic_CASL
 import CASL.Parse_AS_Basic
 import CASL.ToDoc
-import CASL.ToAnnStrList
 import CASL.ToItem (bsToItem)
 import CASL.SymbolParser
 import CASL.MapSentence
@@ -113,7 +112,6 @@ instance Syntax CASL CASLBasicSpec
          parse_basic_spec CASL = Just $ basicSpec []
          parse_symb_items CASL = Just $ symbItems []
          parse_symb_map_items CASL = Just $ symbMapItems []
-         toAnnotedStrings CASL = basicSpec2annStrList pretty pretty pretty
          toItem CASL = bsToItem
 
 -- lattices (for sublogics)
