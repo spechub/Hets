@@ -23,7 +23,6 @@ module Maude.Symbol (
     mkOpTotal,
     mkOpPartial,
     sameKind,
-    zipSameKind,
 ) where
 
 
@@ -91,6 +90,12 @@ toId :: Symbol -> Id
 toId = mkId . return . getName
 
 
+isType :: Symbol -> Bool
+isType symb = case symb of
+    Sort _ -> True
+    Kind _ -> True
+    _ -> False
+
 toTypeMaybe :: Symbol -> Maybe Type
 toTypeMaybe symb = case symb of
     Sort qid -> Just . TypeSort . SortId $ qid
@@ -100,6 +105,11 @@ toTypeMaybe symb = case symb of
 -- | Convert Symbol to Type, if possible.
 toType :: Symbol -> Type
 toType = fromJust . toTypeMaybe
+
+isOperator :: Symbol -> Bool
+isOperator symb = case symb of
+    Operator _ _ _ -> True
+    _ -> False
 
 toOperatorMaybe :: Symbol -> Maybe Operator
 toOperatorMaybe symb = case symb of
@@ -125,8 +135,8 @@ mkOpPartial qid dom cod = Operator qid (map Sort dom) (Kind cod)
 
 -- | True iff, in the given Relation, both Symbols belong to the same
 -- | connected component, i.e. are of the same Kind.
-sameKind :: SymbolRel -> Symbol -> Symbol -> Bool
-sameKind rel s1 s2 = let
+typeSameKind :: SymbolRel -> Symbol -> Symbol -> Bool
+typeSameKind rel s1 s2 = let
         preds1 = Rel.predecessors rel s1
         preds2 = Rel.predecessors rel s2
         succs1 = Rel.succs rel s1
@@ -147,3 +157,12 @@ sameKind rel s1 s2 = let
 -- | pairwise to the same Kind.
 zipSameKind :: SymbolRel -> Symbols -> Symbols -> Bool
 zipSameKind rel s1 s2 = all id $ zipWith (sameKind rel) s1 s2
+
+sameKind :: SymbolRel -> Symbol -> Symbol -> Bool
+sameKind rel s1 s2
+    | all isType [s1, s2] = typeSameKind rel s1 s2
+    | all isOperator [s1, s2] = let
+            Operator _ dom1 _ = s1
+            Operator _ dom2 _ = s2
+        in zipSameKind rel dom1 dom2
+    | otherwise = False
