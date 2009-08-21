@@ -55,9 +55,8 @@ import Common.DocUtils (Pretty(..))
 type SortSet = SymbolSet
 type SubsortRel = SymbolRel
 type OpDecl = (Symbol, [Attr])
-type OpDeclSet = Set OpDecl
-type OpDeclClass = Set OpDeclSet
-type OpMap = Map Qid OpDeclClass
+type OpDeclSet = Set (Set OpDecl)
+type OpMap = Map Qid OpDeclSet
 type Sentences = Set Sentence
 
 -- TODO: Should we also add the Module name to Sign?
@@ -110,15 +109,13 @@ instance HasOps Sign where
             descend = flip . Set.fold
             insert = descend $ descend $ Set.insert . fst
         in Map.fold insert Set.empty . ops
+    -- TODO: I really dislike doing this pairwise...
     mapOps mp sign = let
             subrel = subsorts sign
-            descend = flip . Set.fold
-            -- TODO: This actually only updates the _exact_ operator,
-            -- but should update _all_ ops in the same kind.
-            update (symb, attrs) = insertOpDecl subrel (mapOps mp symb) attrs
-            insert = descend $ descend $ update
+            opmap = ops sign
+            update src tgt = mapOpDecl subrel src tgt []
         in sign {
-            ops = Map.fold insert Map.empty $ ops sign
+            ops = Map.foldWithKey update opmap mp
         }
 
 instance HasLabels Sign where
@@ -214,6 +211,25 @@ insertOpDecl rel symb attrs opmap = let
         new'decl = Set.fold Set.union decl same
         new'ops = Set.insert new'decl rest
     in Map.insert name new'ops opmap
+
+-- TODO: Handle renamings which change Attrs.
+-- TODO: I'm not sure whether this is the right way...
+mapOpDecl :: SymbolRel -> Symbol -> Symbol -> [Attr] -> OpMap -> OpMap
+mapOpDecl rel src tgt _ opmap = let
+        set'union = Set.fold Set.union Set.empty
+        src'name = getName src
+        tgt'name = getName tgt
+        same'kind = Fold.any $ sameKind rel src . fst
+        src'ops = Map.findWithDefault Set.empty src'name opmap
+        tgt'ops = Map.findWithDefault Set.empty tgt'name opmap
+        (same, rest) = Set.partition same'kind src'ops
+        new'decl = mapOps (Map.singleton src tgt) $ set'union same
+        up'rest = const $ if Set.null rest
+            then Nothing
+            else Just rest
+        set'rest = Map.update up'rest src'name
+        set'decl = Map.insert tgt'name $ Set.insert new'decl tgt'ops
+    in set'rest . set'decl $ opmap
 
 -- | Insert an Operator declaration into a Signature.
 insertOp :: Operator -> Sign -> Sign
