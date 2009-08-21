@@ -112,6 +112,8 @@ instance HasOps Sign where
     mapOps mp sign = let
             subrel = subsorts sign
             descend = flip . Set.fold
+            -- TODO: This actually only updates the _exact_ operator,
+            -- but should update _all_ ops in the same kind.
             update (symb, attrs) = insertOpDecl subrel (mapOps mp symb) attrs
             insert = descend $ descend $ update
         in sign {
