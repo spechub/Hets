@@ -228,14 +228,10 @@ insertOp op sign = let
 -- | Check that a Signature is legal.
 isLegal :: Sign -> Bool
 isLegal sign = let
-        -- TODO: isLegalSort won't work for Kinds vs. Sorts
-        isLegalSort sort = Set.member sort (sorts sign)
-        isLegalOp pair = case fst pair of
-            Operator _ dom cod -> all isLegalSort dom && isLegalSort cod
-            _ -> False
-        legal'subsorts = Fold.all isLegalSort $ Rel.nodes (subsorts sign)
-        legal'ops = Fold.all (Fold.all $ Fold.all isLegalOp) $ ops sign
-    in all id [legal'subsorts, legal'ops]
+        has'sort sort = Set.member (asSort sort) (sorts sign)
+        has'subsorts = Fold.all has'sort . getSorts $ subsorts sign
+        has'ops = Fold.all has'sort . getSorts $ ops sign
+    in all id [has'subsorts, has'ops]
 
 -- | Check that a Signature is a subsignature of another Signature.
 isSubsign :: Sign -> Sign -> Bool
