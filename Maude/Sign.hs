@@ -81,8 +81,8 @@ instance Pretty Sign where
                 [keyword "subsort", pretty sub, less, pr'sups sups]
             pr'subs = vsep . Map.foldWithKey pr'pair []
             -- print operator decparations
-            pr'decl (sym, attrs) = hsep
-                [keyword "op", pretty sym, pretty attrs, dot]
+            pr'decl (symb, attrs) = hsep
+                [keyword "op", pretty symb, pretty attrs, dot]
             pr'ods = descend ((:) . pr'decl)
             pr'ocs = descend pr'ods
             pr'ops = vsep . Map.fold pr'ocs []
@@ -129,11 +129,11 @@ instance HasLabels Sign where
 
 partitionStmts :: [Statement] -> ([Sort], [SubsortDecl], [Operator])
 partitionStmts = let
-        switch items@(sorts', subs', ops') stmt = case stmt of
+        switch (sorts', subs', ops') stmt = case stmt of
             SortStmnt sort -> (sort:sorts', subs', ops')
             SubsortStmnt sub -> (sorts', sub:subs', ops')
             OpStmnt op -> (sorts', subs', op:ops')
-            _ -> items
+            _ -> (sorts', subs', ops')
     in foldl switch ([], [], [])
 
 -- | Extract the Signature of a Module.
