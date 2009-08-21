@@ -58,8 +58,7 @@ signToSPLogicalPart s =
                                      (Map.toList (predMap s)),
                          sorts = map SPSimpleSignSym $ Map.keys $ sortMap s }
 
-    decList = if (singleSorted s &&
-                  (null . Map.elems . sortMap) s ) then []
+    decList = if singleSorted s && null (Map.elems $ sortMap s) then []
                 else subsortDecl ++ termDecl ++ predDecl ++ genDecl
 
     subsortDecl = map (\(a, b) -> SPSubsortDecl {sortSymA = a, sortSymB = b})
@@ -137,10 +136,14 @@ insertSentence lp nSen = lp {formulaLists = fLists'}
   where
     insertFormula oType x [] =
       [SPFormulaList {originType= oType, formulae= [x]}]
-    insertFormula oType x (l:ls) =
+    insertFormula oType x (l : ls) =
       if originType l == oType
-        then l{formulae= x:(formulae l)}:ls
-        else l:(insertFormula oType x ls)
+        then l{formulae = case formulae l of
+               [f] | oType == SPOriginConjectures ->
+                  [reName (const "ga_conjunction_of_theorem")
+                   $ mapNamed (const $ mkConj (sentence f) $ sentence x) f]
+               fs -> x : fs} : ls
+        else l : insertFormula oType x ls
     fLists' = if isAxiom nSen
                 then insertFormula SPOriginAxioms nSen fLists
                 else insertFormula SPOriginConjectures nSen fLists
@@ -158,10 +161,7 @@ genSoftFOLProblem thName lp m_nGoal =
     problem sd = SPProblem
         {identifier = "hets_exported",
          description = SPDescription
-                       {name = thName++
-                               (maybe ""
-                                      (\ nGoal -> '_':senAttr nGoal)
-                                      m_nGoal),
+                       {name = thName ++ maybe "" (('_' :) . senAttr) m_nGoal,
                         author = "hets",
                         SoftFOL.Sign.version = Nothing,
                         logic = Nothing,
@@ -178,8 +178,8 @@ genSoftFOLProblem thName lp m_nGoal =
 genVarList :: SPIdentifier -> [SPIdentifier] -> [SPIdentifier]
 genVarList chSym symList =
     let reservSym = chSym:symList
-        varSource = filter (\x -> not $ elem x reservSym) $
-                           map (mkSimpleId . showChar 'Y' . show) [(0::Int)..]
+        varSource = filter (flip notElem reservSym)
+          $ map (mkSimpleId . showChar 'Y' . show) [(0::Int) ..]
     in take (length symList) varSource
 
 predDecl2Term :: SPDeclaration -> Maybe SPTerm
@@ -191,7 +191,7 @@ predDecl2Term pd = case pd of
                            varListTerms = spTerms varList
                        in if null varList
                           then Nothing
-                          else Just (
+                          else Just
                                SPQuantTerm{
                                  quantSym=SPForall,
                                  variableList=varListTerms,
@@ -205,7 +205,7 @@ predDecl2Term pd = case pd of
                                                 zipWith typedVarTerm
                                                         varList $ sortSyms pd]
                                                        }
-                                            })
+                                            }
 
 {- |
 'checkArities'
