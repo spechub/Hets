@@ -133,8 +133,6 @@ mkOpPartial :: Qid -> [Qid] -> Qid -> Symbol
 mkOpPartial qid dom cod = Operator qid (map Sort dom) (Kind cod)
 
 
--- | True iff, in the given Relation, both Symbols belong to the same
--- | connected component, i.e. are of the same Kind.
 typeSameKind :: SymbolRel -> Symbol -> Symbol -> Bool
 typeSameKind rel s1 s2 = let
         preds1 = Rel.predecessors rel s1
@@ -153,11 +151,11 @@ typeSameKind rel s1 s2 = let
         not $ Set.null ssect
     ]
 
--- | True iff, in the given Relation, both Lists of Symbols belong
--- | pairwise to the same Kind.
 zipSameKind :: SymbolRel -> Symbols -> Symbols -> Bool
 zipSameKind rel s1 s2 = all id $ zipWith (sameKind rel) s1 s2
 
+-- | True iff, in the given Relation, both Symbols belong to the same
+-- | connected component, i.e. are of the same Kind. For Operators, this applies to their respective domains.
 sameKind :: SymbolRel -> Symbol -> Symbol -> Bool
 sameKind rel s1 s2
     | all isType [s1, s2] = typeSameKind rel s1 s2
