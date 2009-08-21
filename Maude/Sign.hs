@@ -88,6 +88,7 @@ instance Pretty Sign where
             pr'ops = vsep . Map.fold pr'ocs []
         in vsep [
             pr'sorts $ Set.elems $ sorts sign,
+            -- TODO: We might want print just the transitively minimal subsort relation.
             pr'subs $ Rel.toMap $ subsorts sign,
             pr'ops $ ops sign,
             pretty $ sentences sign
@@ -207,8 +208,6 @@ insertOpDecl :: SymbolRel -> Symbol -> [Attr] -> OpMap -> OpMap
 insertOpDecl rel symb attrs opmap = let
         name = getName symb
         decl = Set.singleton (symb, attrs)
-        -- TODO: This function checks whether the _ops_ are the same
-        -- kind, not whether their _domains_ are!
         same'kind = Fold.any $ sameKind rel symb . fst
         old'ops = Map.findWithDefault Set.empty name opmap
         (same, rest) = Set.partition same'kind old'ops
@@ -267,6 +266,7 @@ renameLabel from to = mapLabels $ Map.singleton from to
 
 -- renameOpProfile corresponds with this function not, as the profile is
 -- contained in the Symbol type.
+-- TODO: Handle renamings which change Attrs.
 -- | Rename the given Operator in the given Signature.
 renameOp :: Symbol -> Symbol -> [Attr] -> Sign -> Sign
 renameOp from to _ = mapOps $ Map.singleton from to
