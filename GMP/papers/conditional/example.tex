@@ -490,10 +490,111 @@ The demonstrated optimization is not restricted to the case of conditional
 modal logics: 
 
 \begin{example}
-Neighbourhood semantics...
+\begin{enumerate}
+Similar strategies may be employed for instance in the two following cases:
+\item (Classical modal Logics / Neighbourhood Semantics) Consider the case that the following rule is sound
+in the considered modal logic:
+\begin{quote}
+\begin{center}
+      (\textsc {\textbf{NH}}) \inferrule{ A=B }
+                      { \Box A = \Box B }
+  \end{center}
+\end{quote}
+Given a formula $\phi$, it is possible to gather all pairs $(A,B)$
+such that $\Box A = \Box B$ appears in $\phi$. These pairs can
+then be ordered by their maximal modal nesting depth. As intermediate
+step, the equivalence of any such pair (starting with pairs of
+depth 0 and then increasing the depth) may then be proved (or refuted)
+by calling the according sequent algorithm. It is again possible to
+accumulate the gained knowledge in $(\mathcal{K},eval)$ during this process.
+However, note that the following modified rule needs to be included
+in the ruleset for the sequent algorithm:
+\begin{quote}
+\begin{center}
+      (\textsc {\textbf{NH}$^m$}) \inferrule{ {eval(A=B)=\top} }
+                      { \Box A = \Box B }
+  \end{center}
+\end{quote}
+Finally, the accumulated knowledge may be supplied to the sequent
+algorithm when trying to show the provability of $\phi$. The algorithm 
+will then be able to quickly assign a truth value
+to any encoutered formulae of shape $\Box A = \Box B$.
+
+\item (Monotone modal logics) Let the following rule be sound in 
+the considered modal logic:
+\begin{quote}
+\begin{center}
+      (\textsc {\textbf{Mon}}) \inferrule{ A\rightarrow B }
+                      { \Box A \rightarrow \Box B }
+  \end{center}
+\end{quote}
+In this case, just gather (and order by depth) all the pairs $(A,B)$
+such that $\Box A \rightarrow \Box B$ appears in $\phi$.
+Iteratively prove or disprove the sequent $\{(A\rightarrow B)\}$ for
+any such pair $(A,B)$ (once again starting with pairs of depth 0 and
+then increasing the depth). Build $(\mathcal{K},eval)$ from the results and add
+the following modified rule to the ruleset:
+\begin{quote}
+\begin{center}
+      (\textsc {\textbf{Mon}$^m$}) \inferrule{ {eval(A\rightarrow B)=\top} }
+                      { \Box A \rightarrow \Box B }
+  \end{center}
+\end{quote}
+In the case, that \textbf{Mon} is the only modal rule in the considered
+logic, all the prove-work which is connected to the modal operator is
+shifted to the pre-proving process. This means, that the final call of
+the sequent algorithm (with parameters $\phi$ and $\mathcal{K},eval$)
+corresponds to ordinary sat-solving of propositional logic.
+\end{enumerate}
+\label{ex:neighMon}
 \end{example}
 
-Todo: write down general form of optimization here...
+The general method of the optimization takes the following form: Let $R$
+be a propositional formula over two input modal formulae. Assume there is a sound
+(w.r.t the considered modal logic) instance of the following generic rule
+(where $P$ is a set of premises and $\Lambda$ denotes the current modal operator):
+
+The case, that the modal operator is unary:
+\begin{quote}
+\begin{center}
+      (\textsc {\textbf{Un}}) \inferrule{ (A_1 R A_2) \\ \ldots \\ (A_{n-1} R A_n) \\ P }
+                      { \Lambda A_1, \ldots ,\Lambda A_j, \neg\Lambda A_{j+1}, \ldots ,\neg\Lambda A_n, \Gamma }
+  \end{center}
+\end{quote}
+Then it is valid to use Algorithm~\ref{alg:optPreprove} with the appropriate
+ruleset extended by:
+\begin{quote}
+\begin{center}
+      (\textsc {\textbf{Un}$^m$}) \inferrule{ \bigwedge{}_{0<i<n-1}eval(A_i R A_{i+1})=\top \\ P }
+                      { \Lambda A_1, \ldots ,\Lambda A_j, \neg\Lambda A_{j+1}, \ldots ,\neg\Lambda A_n, \Gamma }
+  \end{center}
+\end{quote}
+
+The case, that the modal operator is binary:
+\begin{quote}
+\begin{center}
+      (\textsc {\textbf{Bin}}) \inferrule{ (A_1 R A_2) \\ \ldots \\ (A_{n-1} R A_n) \\ P }
+                      { \Lambda (A_1, B_1), \ldots ,\Lambda (A_j, Bj), \neg\Lambda (A_{j+1},B_{j+1}), \ldots ,\neg\Lambda (A_n,B_n), \Gamma }
+  \end{center}
+\end{quote}
+Then it is valid to use Algorithm~\ref{alg:optPreprove} with the appropriate
+ruleset extended by:
+\begin{quote}
+\begin{center}
+      (\textsc {\textbf{Bin}$^m$}) \inferrule{ \bigwedge{}_{0<i<n-1}eval(A_i R A_{i+1})=\top \\ P }
+                      { \Lambda (A_1, B_1), \ldots ,\Lambda (A_j, Bj), \neg\Lambda (A_{j+1},B_{j+1}), \ldots ,\neg\Lambda (A_n,B_n), \Gamma }
+  \end{center}
+\end{quote}
+
+\begin{remark}
+In the case, that all used modal rules are instances of the above rules
+s.t. $P=\emptyset$ (such as in Example~\ref{ex:neighMon}), this method allows us,
+to completely separate modal and propositional work.
+Furthermore, the optimized algorithm will always be as efficient as the
+original one (since any pair of modal arguments will have to be
+treated anyway).
+\end{remark}
+
 
 \section{Summary}  
 \begin{problem}
