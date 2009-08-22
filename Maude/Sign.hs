@@ -59,7 +59,7 @@ type OpDeclSet = Set OpDecl
 type OpMap = Map Qid OpDeclSet
 type Sentences = Set Sentence
 
--- TODO: Should we also add the Module name to Sign?
+-- TODO: Add the Module name to Sign. Maybe.
 data Sign = Sign {
         sorts :: SortSet,
         subsorts :: SubsortRel,
@@ -289,7 +289,7 @@ renameSort from to = mapSorts $ Map.singleton from to
 renameLabel :: Symbol -> Symbol -> Sign -> Sign
 renameLabel from to = mapLabels $ Map.singleton from to
 
--- renameOpProfile corresponds with this function not, as the profile is
+-- renameOpProfile corresponds with this function now, as the profile is
 -- contained in the Symbol type.
 -- | Rename the given Operator in the given Signature.
 renameOp :: Symbol -> Symbol -> [Attr] -> Sign -> Sign
