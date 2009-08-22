@@ -29,6 +29,8 @@ parenPretties = combine parens hsep
 bracketPretties :: (Pretty a) => [a] -> Doc
 bracketPretties = combine brackets hsep
 
+combineHooks :: (Pretty a) => [a] -> Doc
+combineHooks = combine (parens . ((<>) $ text "\n")) (vsep . map ((<>) $ text "\t")) 
 
 instance Pretty Membership where
     pretty (Mb t s cs as) = hsep
@@ -68,9 +70,7 @@ instance Pretty Attr where
         Gather qids -> text "gather" <+> parenPretties qids
         Format qids -> text "format" <+> parenPretties qids
         Ctor -> text "ctor"
-        -- TODO: The old version left out Config; on purpose?
-        -- Config -> text "config"
-        Config -> empty
+        Config -> text "config"
         Object -> text "object"
         Msg -> text "msg"
         -- TODO: Is Frozen the only attribute where the parens must be left out for empty lists?
@@ -79,9 +79,7 @@ instance Pretty Attr where
             then text "frozen"
             else text "frozen" <+> parenPretties ints
         Poly ints -> text "poly" <+> parenPretties ints
-        -- TODO: How much whitespace do we need inside Special?
-        -- Special hooks -> text $ "special (\n" ++ printHooks hks ++ ")"
-        Special hooks -> text "special" <+> pretty hooks
+        Special hooks -> text "special" <+> combineHooks hooks
     pretties attrs = if null attrs
         then empty
         else bracketPretties attrs
