@@ -198,10 +198,6 @@ insertSubsort decl sign = let
         insert (Subsort sub super) = Rel.insert (asSymbol sub) (asSymbol super)
     in sign {subsorts = insert decl (subsorts sign)}
 
--- TODO: Implement mergeAttrs properly!
-mergeAttrs :: [Attr] -> [Attr] -> [Attr]
-mergeAttrs new old = new ++ old
-
 -- | Insert an Operator declaration into an OperatorMap.
 insertOpDecl :: SymbolRel -> Symbol -> [Attr] -> OpMap -> OpMap
 insertOpDecl rel symb attrs opmap = let
@@ -240,8 +236,19 @@ insertOp op sign = let
         insert (Op _ _ _ as) = insertOpDecl subrel (asSymbol op) as
     in sign {ops = insert op $ ops sign}
 
+-- | Merge new Attributes with the old ones.
+mergeAttrs :: [Attr] -> [Attr] -> [Attr]
+mergeAttrs = let
+        similar (Prec _)   (Prec _)   = True
+        similar (Gather _) (Gather _) = True
+        similar (Format _) (Format _) = True
+        -- Other Attributes don't change in Renamings.
+        similar _ _ = False
+        update new = (:) new . filter (not . similar new)
+    in flip $ foldl $ flip update
 
--- TODO: Add more checks, e.g. whether all Symbols in SortSet are Sorts?
+
+-- TODO: Add more checks, e.g. whether all Symbols in SortSet are Sorts. Maybe.
 -- | Check that a Signature is legal.
 isLegal :: Sign -> Bool
 isLegal sign = let
@@ -291,26 +298,3 @@ renameOp from to attrs sign = let
         opmap = ops sign
         mapped = mapOpDecl subrel from to attrs opmap
     in sign { ops = mapped }
-
--- TODO: Our current Symbols don't include Attributes, so we can't use
--- SymbolMaps to replicate this functionality...
--- -- | rename the attributes in an attribute set
--- ren'op'ats :: [Attr] -> [Attr] -> [Attr]
--- ren'op'ats [] curr_ats = curr_ats
--- ren'op'ats (at : ats) curr_ats = ren'op'ats ats $ ren'op'at at curr_ats
--- 
--- -- | rename an attribute in an attribute set
--- ren'op'at :: Attr -> [Attr] -> [Attr]
--- ren'op'at rn@(Prec i) (a : ats) = a' : ren'op'at rn ats
---                where a' = case a of
---                              Prec _ -> Prec i
---                              at -> at
--- ren'op'at rn@(Gather qs) (a : ats) = a' : ren'op'at rn ats
---                where a' = case a of
---                              Gather _ -> Gather qs
---                              at -> at
--- ren'op'at rn@(Format qs) (a : ats) = a' : ren'op'at rn ats
---                where a' = case a of
---                              Format _ -> Format qs
---                              at -> at
--- ren'op'at _ _ = []
