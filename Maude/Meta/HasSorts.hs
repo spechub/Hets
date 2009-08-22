@@ -22,6 +22,22 @@ class HasSorts a where
     mapSorts :: SymbolMap -> a -> a
 
 
+instance HasSorts Symbol where
+    getSorts sym = case sym of
+        Sort _ -> Set.singleton sym
+        Kind _ -> Set.singleton sym
+        Operator _ dom cod -> getSorts(dom, cod)
+        _      -> Set.empty
+    mapSorts mp sym = case sym of
+        Sort _ -> mapAsSymbol id mp sym
+        Kind _ -> mapAsSymbol id mp sym
+        Operator qid dom cod -> let
+                dom' = mapSorts mp dom
+                cod' = mapSorts mp cod
+            in Operator qid dom' cod'
+        _      -> sym
+
+
 instance (HasSorts a) => HasSorts [a] where
     getSorts = Set.unions . map getSorts
     mapSorts = map . mapSorts
@@ -135,14 +151,3 @@ instance HasSorts Rule where
             t2' = mapSorts mp t2
             cs' = mapSorts mp cs
         in Rl t1' t2' cs' as
-
-
-instance HasSorts Symbol where
-    getSorts sym = case sym of
-        Sort _ -> Set.singleton sym
-        Kind _ -> Set.singleton sym
-        _      -> Set.empty
-    mapSorts mp sym = case sym of
-        Sort _ -> mapAsSymbol id mp sym
-        Kind _ -> mapAsSymbol id mp sym
-        _      -> sym
