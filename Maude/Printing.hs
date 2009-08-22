@@ -21,7 +21,9 @@ import Common.DocUtils (Pretty(..))
 
 
 combine :: (Pretty a) => (Doc -> Doc) -> ([Doc] -> Doc) -> [a] -> Doc
-combine wrap dsep = wrap . dsep . map pretty
+-- TODO: Uncomment when we find out that empty lists don't need printing.
+-- combine _ _ [] = empty
+combine wrap dsep list = wrap . dsep . map pretty $ list
 
 parenPretties :: (Pretty a) => [a] -> Doc
 parenPretties = combine parens hsep
