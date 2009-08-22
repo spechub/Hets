@@ -54,8 +54,8 @@ import Common.DocUtils (Pretty(..))
 
 type SortSet = SymbolSet
 type SubsortRel = SymbolRel
-type OpDecl = (Symbol, [Attr])
-type OpDeclSet = Set (Set OpDecl)
+type OpDecl = (Set Symbol, [Attr])
+type OpDeclSet = Set OpDecl
 type OpMap = Map Qid OpDeclSet
 type Sentences = Set Sentence
 
@@ -80,9 +80,9 @@ instance Pretty Sign where
                 [keyword "subsort", pretty sub, less, pr'sups sups]
             pr'subs = vsep . Map.foldWithKey pr'pair []
             -- print operator decparations
-            pr'decl (symb, attrs) = hsep
+            pr'decl attrs symb = hsep
                 [keyword "op", pretty symb, pretty attrs, dot]
-            pr'ods = descend ((:) . pr'decl)
+            pr'ods (decls, attrs) = descend ((:) . pr'decl attrs) decls
             pr'ocs = descend pr'ods
             pr'ops = vsep . Map.fold pr'ocs []
         in vsep [
@@ -106,9 +106,8 @@ instance HasSorts Sign where
 instance HasOps Sign where
     getOps = let
             descend = flip . Set.fold
-            insert = descend $ descend $ Set.insert . fst
+            insert = descend $ descend Set.insert . fst
         in Map.fold insert Set.empty . ops
-    -- TODO: I really dislike doing this pairwise...
     mapOps mp sign = let
             subrel = subsorts sign
             opmap = ops sign
@@ -199,35 +198,39 @@ insertSubsort decl sign = let
         insert (Subsort sub super) = Rel.insert (asSymbol sub) (asSymbol super)
     in sign {subsorts = insert decl (subsorts sign)}
 
+-- TODO: Implement mergeAttrs properly!
+mergeAttrs :: [Attr] -> [Attr] -> [Attr]
+mergeAttrs new old = new ++ old
+
 -- | Insert an Operator declaration into an OperatorMap.
 insertOpDecl :: SymbolRel -> Symbol -> [Attr] -> OpMap -> OpMap
 insertOpDecl rel symb attrs opmap = let
         name = getName symb
-        decl = Set.singleton (symb, attrs)
-        same'kind = Fold.any $ sameKind rel symb . fst
+        same'kind = Fold.any (sameKind rel symb) . fst
         old'ops = Map.findWithDefault Set.empty name opmap
         (same, rest) = Set.partition same'kind old'ops
-        new'decl = Set.fold Set.union decl same
+        decl = head $ Set.toList same
+        syms = Set.insert symb $ fst decl
+        new'decl = (syms, mergeAttrs attrs $ snd decl)
         new'ops = Set.insert new'decl rest
     in Map.insert name new'ops opmap
 
--- TODO: Handle renamings which change Attrs.
--- TODO: I'm not sure whether this is the right way...
 mapOpDecl :: SymbolRel -> Symbol -> Symbol -> [Attr] -> OpMap -> OpMap
-mapOpDecl rel src tgt _ opmap = let
-        set'union = Set.fold Set.union Set.empty
+mapOpDecl rel src tgt attrs opmap = let
         src'name = getName src
         tgt'name = getName tgt
-        same'kind = Fold.any $ sameKind rel src . fst
+        same'kind = Fold.any (sameKind rel src) . fst
         src'ops = Map.findWithDefault Set.empty src'name opmap
         tgt'ops = Map.findWithDefault Set.empty tgt'name opmap
         (same, rest) = Set.partition same'kind src'ops
-        new'decl = mapOps (Map.singleton src tgt) $ set'union same
+        decl = head $ Set.toList same
+        syms = mapOps (Map.singleton src tgt) $ fst decl
+        new'decl = (syms, mergeAttrs attrs $ snd decl)
+        set'decl = Map.insert tgt'name $ Set.insert new'decl tgt'ops
         up'rest = const $ if Set.null rest
             then Nothing
             else Just rest
         set'rest = Map.update up'rest src'name
-        set'decl = Map.insert tgt'name $ Set.insert new'decl tgt'ops
     in set'rest . set'decl $ opmap
 
 -- | Insert an Operator declaration into a Signature.
