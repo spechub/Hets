@@ -87,8 +87,7 @@ instance Pretty Sign where
             pr'ops = vsep . Map.fold pr'ocs []
         in vsep [
             pr'sorts $ Set.elems $ sorts sign,
-            -- TODO: We might want print just the transitively minimal subsort relation.
-            pr'subs $ Rel.toMap $ subsorts sign,
+            pr'subs $ Rel.toMap $ Rel.transReduce $ subsorts sign,
             pr'ops $ ops sign,
             pretty $ sentences sign
         ]
