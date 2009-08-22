@@ -54,8 +54,10 @@ instance AsSymbol Term where
     asSymbolMaybe term = case term of
         Const _ _ -> Nothing
         Var _ _   -> Nothing
-        Apply op ts tp -> Just $
-            Operator op (map (asSymbol . termType) ts) (asSymbol tp)
+        Apply op ts tp -> let
+                dom = map (asSymbol . termType) ts
+                cod = asSymbol tp
+            in Just $ Operator op dom cod
 
 
 instance AsSymbol Symbol where

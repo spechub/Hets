@@ -11,10 +11,18 @@ import Data.Set (Set)
 import qualified Data.Set as Set
 
 
--- TODO: Figure out how to represent and use SymbolMaps for Operators.
 class HasOps a where
     getOps :: a -> SymbolSet
     mapOps :: SymbolMap -> a -> a
+
+
+instance HasOps Symbol where
+    getOps sym = case sym of
+        Operator _ _ _ -> Set.singleton sym
+        _ -> Set.empty
+    mapOps mp sym = case sym of
+        Operator _ _ _ -> mapAsSymbol id mp sym
+        _ -> sym
 
 
 instance (HasOps a) => HasOps [a] where
@@ -59,8 +67,9 @@ instance HasOps Term where
         Apply _ ts _ -> Set.insert (asSymbol term) (getOps ts)
         _ -> Set.empty
     mapOps mp term = case term of
-        -- TODO: This Term.mapOps only changes the op's Qid inside the Term.
-        Apply _ ts tp -> Apply (getName $ mapOps mp $ asSymbol term) (mapOps mp ts) tp
+        Apply _ ts tp -> let
+                op = getName $ mapOps mp $ asSymbol term
+            in Apply op (mapOps mp ts) tp
         _ -> term
 
 
@@ -78,24 +87,26 @@ instance HasOps Condition where
 
 
 instance HasOps Membership where
-    getOps (Mb ts _ cs _) = getOps (ts, cs)
-    mapOps mp (Mb ts ss cs as) = Mb (mapOps mp ts) ss (mapOps mp cs) as
+    getOps (Mb t _ cs _) = getOps (t, cs)
+    mapOps mp (Mb t s cs as) = let
+            t' = mapOps mp t
+            cs' = mapOps mp cs
+        in Mb t' s cs' as
 
 
 instance HasOps Equation where
     getOps (Eq t1 t2 cs _) = getOps (t1, t2, cs)
-    mapOps mp (Eq t1 t2 cs as) = Eq (mapOps mp t1) (mapOps mp t2) (mapOps mp cs) as
+    mapOps mp (Eq t1 t2 cs as) = let
+            t1' = mapOps mp t1
+            t2' = mapOps mp t2
+            cs' = mapOps mp cs
+        in Eq t1' t2' cs' as
 
 
 instance HasOps Rule where
     getOps (Rl t1 t2 cs _) = getOps (t1, t2, cs)
-    mapOps mp (Rl t1 t2 cs as) = Rl (mapOps mp t1) (mapOps mp t2) (mapOps mp cs) as
-
-
-instance HasOps Symbol where
-    getOps sym = case sym of
-        Operator _ _ _ -> Set.singleton sym
-        _ -> Set.empty
-    mapOps mp sym = case sym of
-        Operator _ _ _ -> mapAsSymbol id mp sym
-        _ -> sym
+    mapOps mp (Rl t1 t2 cs as) = let
+            t1' = mapOps mp t1
+            t2' = mapOps mp t2
+            cs' = mapOps mp cs
+        in Rl t1' t2' cs' as
