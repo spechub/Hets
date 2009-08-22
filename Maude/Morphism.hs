@@ -30,7 +30,7 @@ module Maude.Morphism (
     mapSentence,
     -- renameSorts,
     union,
-    -- setTarget,
+    setTarget,
     -- extendMorphismSorts,
     -- extendWithSortRenaming,
     -- getNewSorts,
@@ -334,9 +334,9 @@ union m1 m2 = let apply func items = func (items m1) (items m2)
         labelMap = apply Map.union labelMap
     }
 
--- setTarget :: Sign -> Morphism -> Morphism
--- setTarget sg morph = morph {target = sg}
--- 
+setTarget :: Sign -> Morphism -> Morphism
+setTarget sign morph = morph {target = sign}
+
 -- renameSorts :: Morphism -> [Qid] -> [Qid]
 -- renameSorts m = map f
 --     where sm = sortMap m
