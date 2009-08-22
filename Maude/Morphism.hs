@@ -69,7 +69,6 @@ data Morphism = Morphism {
         labelMap :: LabelMap
     } deriving (Show, Ord, Eq)
 
--- TODO: instance Pretty Morphism
 instance Pretty Morphism where
     pretty mor = let
             pr'pair txt left right = hsep
