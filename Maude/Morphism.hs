@@ -53,7 +53,7 @@ import qualified Data.Map as Map
 import Common.Result (Result)
 import qualified Common.Result as Result
 
-import qualified Common.Doc as Doc
+import Common.Doc hiding (empty)
 import Common.DocUtils (Pretty(..))
 
 
@@ -71,28 +71,16 @@ data Morphism = Morphism {
 
 -- TODO: instance Pretty Morphism
 instance Pretty Morphism where
-    pretty _ = Doc.text "morphism"
-  -- pretty m = Doc.text $ printMorphism (sortMap m) (opMap m) (labelMap m)
-  --                       ++ "\n\nTarget:\n" ++ printSign (Sign.sorts sign) 
-  --                       (Sign.subsorts sign) (Sign.ops sign)
-  --     where sign = target m
--- printMorphism :: Map Qid Qid -> Map Qid (Map ([Qid], Qid) (Qid, ([Qid], Qid))) -> Map Qid Qid -> String 
--- printMorphism sorts ops labels = if str == ""
---                             then ""
---                             else "\n\nMorphism:\n\n" ++ str
---     where str = (printQidMap "sort" sorts) ++ (printOpRenaming ops)
---                 ++ (printQidMap "label" labels)
--- 
--- printQidMap :: String -> Map Qid Qid -> String
--- printQidMap str = Map.foldWithKey f ""
---        where f = \ x y z -> str ++ " " ++ show x ++ " to " ++ show y ++ "\n" ++ z
--- 
--- printOpRenaming :: Map Qid (Map ([Qid], Qid) (Qid, ([Qid], Qid))) -> String
--- printOpRenaming = Map.foldWithKey f ""
---        where f = \ x y z -> (Map.foldWithKey (g x) "" y) ++ z
---                     where g = \ from (ar, co) (to, _) z' -> 
---                                   "op " ++ show from ++ " : " ++ printArity ar ++ " -> "
---                                   ++ show co ++ " to " ++ show to ++ " ." ++ z'
+    pretty mor = let
+            pr'pair txt left right = hsep
+                [txt, pretty left, text "to", pretty right]
+            pr'ops src tgt = pr'pair (text "op") src (getName tgt)
+            pr'map fun = vsep . map (uncurry fun) . Map.toList
+            smap = pr'map (pr'pair $ text "sort") $ sortMap mor
+            omap = pr'map pr'ops $ opMap mor
+            lmap = pr'map (pr'pair $ text "label") $ labelMap mor
+        in vsep [ smap, omap, lmap ]
+        -- text "\n\nTarget:" <$$> pretty $ target mor
 
 -- -- | create a Morphism from an initial signature and a list of Renamings
 -- fromSignRenamings :: Sign -> [Renaming] -> Morphism
