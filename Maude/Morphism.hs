@@ -69,6 +69,7 @@ data Morphism = Morphism {
         labelMap :: LabelMap
     } deriving (Show, Ord, Eq)
 
+
 instance Pretty Morphism where
     pretty mor = let
             pr'pair txt left right = hsep
@@ -315,13 +316,11 @@ isInclusion mor = let
 
 -- | translate a Sentence along a Morphism
 mapSentence :: Morphism -> Sentence -> Result Sentence
--- TODO: Restore mapSentence once we get mapOps working.
 mapSentence mor = let
         smap = mapSorts (sortMap mor)
-        -- omap = mapOps (opMap mor)
+        omap = mapOps (opMap mor)
         lmap = mapLabels (labelMap mor)
-    in return . lmap . smap
-    -- in return . lmap . omap . smap
+    in return . lmap . omap . smap
 
 union :: Morphism -> Morphism -> Morphism
 union m1 m2 = let apply func items = func (items m1) (items m2)
