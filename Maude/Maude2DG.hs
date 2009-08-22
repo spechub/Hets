@@ -353,7 +353,7 @@ morphismView name p _ (n, _, rnms, True) morph = (name, morph', Just n, [])
         where rnms' = qualifyRenamings p rnms
               morph' = applyRenamings morph rnms'
 morphismView name p ss (n, morph, rnms, False) morph1 = 
-                         (name, morph2, Just n, [(p, mkSimpleId "", getNewSorts ss morph)])
+                         (name, morph2, Just n, [(p, mkSimpleId "", renameSorts morph ss)])
         where rnms' = qualifyRenamings2 p rnms
               morph2 = applyRenamings morph1 rnms'
 

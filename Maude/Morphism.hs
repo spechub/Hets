@@ -351,13 +351,13 @@ renameSorts = mapSorts . sortMap
 -- createRenaming _ [] = []
 -- createRenaming sym (sym' : syms) = (sym', new_sym) : createRenaming sym syms
 --        where new_sym = mkSimpleId $ show sym ++ "$" ++ show sym'
--- 
+
 -- extendSortMap :: Qid -> [Qid] -> QidMap -> QidMap
 -- extendSortMap _ [] sm = sm
 -- extendSortMap sym (sym' : syms) sort_map = extendSortMap sym syms sort_map'
 --        where new_sym = mkSimpleId $ show sym ++ "$" ++ show sym'
 --              sort_map' = Map.fromList $ extendSortList sym' new_sym $ Map.toList sort_map
--- 
+
 -- extendSortList :: Qid -> Qid -> [(Qid, Qid)] -> [(Qid, Qid)]
 -- extendSortList from to [] = [(from, to)]
 -- extendSortList from to (s@(sym1, sym2) : syms) = if from == sym2
@@ -374,16 +374,6 @@ renameSorts = mapSorts . sortMap
 --                 sortMap = Map.insert from to smap,
 --                 opMap = renameSortOpMap from to omap
 --              }
-
--- getNewSorts :: [Qid] -> Morphism -> [Qid]
--- getNewSorts ss morph = getNewSortsSortMap ss (sortMap morph)
--- 
--- getNewSortsSortMap :: [Qid] -> QidMap -> [Qid]
--- getNewSortsSortMap [] _ = []
--- getNewSortsSortMap (s : ss) qm = s' : getNewSortsSortMap ss qm
---               where s' = if Map.member s qm
---                          then fromJust $ Map.lookup s qm
---                          else s
 
 -- | TODO :
 -- - compose with the new OpMap
