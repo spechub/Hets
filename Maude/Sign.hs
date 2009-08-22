@@ -284,10 +284,13 @@ renameLabel from to = mapLabels $ Map.singleton from to
 
 -- renameOpProfile corresponds with this function not, as the profile is
 -- contained in the Symbol type.
--- TODO: Handle renamings which change Attrs.
 -- | Rename the given Operator in the given Signature.
 renameOp :: Symbol -> Symbol -> [Attr] -> Sign -> Sign
-renameOp from to _ = mapOps $ Map.singleton from to
+renameOp from to attrs sign = let
+        subrel = subsorts sign
+        opmap = ops sign
+        mapped = mapOpDecl subrel from to attrs opmap
+    in sign { ops = mapped }
 
 -- TODO: Our current Symbols don't include Attributes, so we can't use
 -- SymbolMaps to replicate this functionality...
