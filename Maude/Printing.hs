@@ -111,7 +111,7 @@ instance Pretty Hook where
 instance Pretty Term where
     pretty term = case term of
         Const qid _    -> pretty qid
-        Var   qid _    -> pretty qid
+        Var   qid tp   -> hcat [pretty qid, colon, pretty tp]
         Apply qid ts _ -> pretty qid <> (parens . pretty $ ts)
     pretties = combine id sepByCommas
 
