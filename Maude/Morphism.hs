@@ -28,7 +28,7 @@ module Maude.Morphism (
     isLegal,
     isInclusion,
     mapSentence,
-    -- renameSorts,
+    renameSorts,
     union,
     setTarget,
     -- extendMorphismSorts,
@@ -337,12 +337,8 @@ union m1 m2 = let apply func items = func (items m1) (items m2)
 setTarget :: Sign -> Morphism -> Morphism
 setTarget sign morph = morph {target = sign}
 
--- renameSorts :: Morphism -> [Qid] -> [Qid]
--- renameSorts m = map f
---     where sm = sortMap m
---           f = \ x -> if Map.member x sm
---                      then fromJust $ Map.lookup x sm
---                      else x
+renameSorts :: Morphism -> Symbols -> Symbols
+renameSorts = mapSorts . sortMap
 
 -- extendMorphismSorts :: Morphism -> Qid -> [Qid] -> Morphism
 -- extendMorphismSorts mor sym syms = let
