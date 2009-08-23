@@ -123,7 +123,7 @@ instance HasLabels Sign where
     }
 
 
--- | Filter the Sort, Subsort and Operator declaration Statements.
+-- | Separate Sort, Subsort and Operator declaration Statements.
 partitionStmts :: [Statement] -> ([Sort], [SubsortDecl], [Operator])
 partitionStmts = let
         switch (sorts', subs', ops') stmt = case stmt of
@@ -138,10 +138,10 @@ fromSpec :: Module -> Sign
 fromSpec spec@(Module _ _ stmts) = let
         sents = filter (not . Sen.isRule) . Sen.fromSpec $ spec
         (sort'list, sub'list, op'list) = partitionStmts stmts
-        sign0 = empty
-        sign1 = foldr insertSort sign0 sort'list
-        sign2 = foldr insertSubsort sign1 sub'list
-        sign  = foldr insertOp sign2 op'list
+        ins'sorts = flip (foldr insertSort) sort'list
+        ins'subs  = flip (foldr insertSubsort) sub'list
+        ins'ops   = flip (foldr insertOp) op'list
+        sign = ins'ops . ins'subs . ins'sorts $ empty
     in sign {
         subsorts = Rel.transClosure $ subsorts sign,
         sentences = Set.fromList sents
