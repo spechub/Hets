@@ -17,7 +17,7 @@ module Maude.Morphism (
     OpMap,
     -- fromSignRenamings,
     -- applyRenamings,
-    -- fromSignsRenamings,
+    fromSignsRenamings,
     symbolMap,
     empty,
     identity,
@@ -35,7 +35,7 @@ module Maude.Morphism (
     -- extendWithSortRenaming,
 ) where
 
--- import Maude.AS_Maude
+import Maude.AS_Maude
 import Maude.Symbol
 import Maude.Meta
 import Maude.Util
@@ -46,6 +46,8 @@ import Maude.Sentence (Sentence)
 import qualified Maude.Sign as Sign
 import qualified Maude.Sentence as Sen
 
+import Data.List (partition)
+import Data.Maybe (fromJust)
 import qualified Data.Set as Set
 import qualified Data.Map as Map
 
@@ -141,10 +143,6 @@ instance Pretty Morphism where
 --             }
 --         _ -> mor
 
--- | Rename sorts in the profiles of an operator map.
-renameSortOpMap :: Symbol -> Symbol -> OpMap -> OpMap
-renameSortOpMap from to = Map.map $ mapSorts $ Map.singleton from to
-
 -- allProfilesRenaming :: Qid -> Qid -> Sign -> OpMap -> OpMap
 -- allProfilesRenaming from to sg om = om'
 --            where om_sg = Sign.ops sg
@@ -156,54 +154,64 @@ renameSortOpMap from to = Map.map $ mapSorts $ Map.singleton from to
 -- allProfilesRenamingAux q = Set.fold (f q) Map.empty
 --            where f = \ to (x, y, _) m -> Map.insert (x, y) (to, (x, y)) m
 
--- -- | create a Morphism from the initial signatures and a list of Renamings
--- fromSignsRenamings :: Sign -> Sign -> [Renaming] -> Morphism
--- fromSignsRenamings sg1 sg2 rnms = foldr insertRenaming2 (foldr insertRenaming1 m rnms) rnms
---            where m = createInclMorph sg1 sg2
--- 
--- -- | insert a Renaming into a Morphism
--- insertRenaming1 :: Renaming -> Morphism -> Morphism
--- insertRenaming1 rename mor = let
---         tgt = target mor
---         omap = opMap mor
---     in case rename of
---         OpRenaming1 from (To to _) -> let
---                 a = getName from
---                 b = getName to
---             in mor {
---                 opMap = allProfilesRenaming a b tgt omap
---             }
---         OpRenaming2 from ar co (To to _) -> let
---                 a = getName from
---                 b = getName to
---                 ar' = map getName ar
---                 co' = getName co
---                 p = (ar', co')
---             in mor {
---                 opMap = Map.insertWith (Map.union) a (Map.insert p (b, p) Map.empty) omap
---             }
---         _ -> mor
--- 
--- insertRenaming2 :: Renaming -> Morphism -> Morphism
--- insertRenaming2 rename mor = let
---         smap = sortMap mor
---         omap = opMap mor
---         lmap = labelMap mor
---     in case rename of
---         SortRenaming from to -> let
---                 a = getName from
---                 b = getName to
---             in mor {
---                 sortMap = Map.insert a b smap,
---                 opMap = renameSortOpMap a b omap
---             }
---         LabelRenaming from to -> let
---                 a = getName from
---                 b = getName to
---             in mor {
---                 labelMap = Map.insert a b lmap
---             }
---         _ -> mor
+-- | Separate Operator and other Renamings.
+partitionRenamings :: [Renaming] -> ([Renaming], [Renaming])
+partitionRenamings = let
+        is'op renaming = case renaming of
+            OpRenaming1 _ _ -> True
+            OpRenaming2 _ _ _ _ -> True
+            _ -> False
+    in partition is'op
+
+-- | create a Morphism from the initial signatures and a list of Renamings
+fromSignsRenamings :: Sign -> Sign -> [Renaming] -> Morphism
+fromSignsRenamings sign1 sign2 rens = let
+        (ops, rest) = partitionRenamings rens
+        add'ops  = flip (foldr insertOpRenaming) ops
+        add'rest = flip (foldr insertRenaming) rest
+        mor = inclusion sign1 sign2
+    in add'rest . add'ops $ mor
+
+renamingSymbolsMaybe :: Renaming -> Maybe (Symbol, Symbol)
+renamingSymbolsMaybe rename = case rename of
+    SortRenaming src tgt -> Just (asSymbol src, asSymbol tgt)
+    LabelRenaming src tgt -> Just (asSymbol src, asSymbol tgt)
+    OpRenaming1 src (To tgt _) -> Just (asSymbol src, asSymbol tgt)
+    OpRenaming2 src dom cod (To tgt _) -> let
+            src' = getName src
+            tgt' = getName tgt
+            dom' = map asSymbol dom
+            cod' = asSymbol cod
+        in Just (Operator src' dom' cod', Operator tgt' dom' cod')
+    TermMap _ _ -> Nothing
+
+renamingSymbols :: Renaming -> (Symbol, Symbol)
+renamingSymbols = fromJust . renamingSymbolsMaybe
+
+-- TODO: Handle Attrs in Op Renamings.
+insertOpRenaming :: Renaming -> Morphism -> Morphism
+insertOpRenaming rename = let
+        syms = renamingSymbols rename
+        add'op mor = mor { opMap = uncurry Map.insert syms $ opMap mor }
+    in case rename of
+        OpRenaming1 _ _ -> add'op
+        OpRenaming2 _ _ _ _ -> add'op
+        _ -> id
+
+insertRenaming :: Renaming -> Morphism -> Morphism
+insertRenaming rename = let
+        syms = renamingSymbols rename
+        ren'sort mor = mor { opMap = uncurry renameSortOpMap syms $ opMap mor }
+        add'sort mor = mor { sortMap  = uncurry Map.insert syms $ sortMap mor }
+        add'labl mor = mor { labelMap = uncurry Map.insert syms $ labelMap mor }
+    in case rename of
+        SortRenaming _ _ -> ren'sort . add'sort
+        LabelRenaming _ _ -> add'labl
+        _ -> id
+
+-- | Rename sorts in the profiles of an operator map.
+renameSortOpMap :: Symbol -> Symbol -> OpMap -> OpMap
+renameSortOpMap from to = Map.map $ mapSorts $ Map.singleton from to
 
 -- | extract the SymbolMap of a Morphism
 symbolMap :: Morphism -> SymbolMap
