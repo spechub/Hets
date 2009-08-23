@@ -15,8 +15,8 @@ module Maude.Morphism (
     Morphism(..),
     SortMap,
     OpMap,
-    -- fromSignRenamings,
-    -- applyRenamings,
+    applyRenamings,
+    fromSignRenamings,
     fromSignsRenamings,
     symbolMap,
     empty,
@@ -83,76 +83,6 @@ instance Pretty Morphism where
         in vsep [ smap, omap, lmap ]
         -- text "\n\nTarget:" <$$> pretty $ target mor
 
--- -- | create a Morphism from an initial signature and a list of Renamings
--- fromSignRenamings :: Sign -> [Renaming] -> Morphism
--- fromSignRenamings sg rnms = applyRenamings (createInclMorph sg sg) rnms
--- 
--- applyRenamings :: Morphism -> [Renaming] -> Morphism
--- applyRenamings m rnms = foldr applyRenaming2 (foldr applyRenaming1 m rnms) rnms
--- 
--- -- | Rename the signature with the operator renaming and creates a morphism
--- -- with only the operator map. Sort renamings have to be applied to this
--- -- morphism.
--- applyRenaming1 :: Renaming -> Morphism -> Morphism
--- applyRenaming1 rnm mor = let
---         tgt = target mor
---         omap = opMap mor
---     in case rnm of
---         OpRenaming1 from (To to ats) -> let
---                 a = getName from
---                 b = getName to
---             in mor {
---                 target = Sign.renameOp a b ats tgt,
---                 opMap = allProfilesRenaming a b tgt omap
---             }
---         OpRenaming2 from ar co (To to ats) -> let
---                 a = getName from
---                 b = getName to
---                 ar' = map getName ar
---                 co' = getName co
---                 p = (ar', co')
---             in mor {
---                 target = Sign.renameOpProfile a ar' b ats tgt,
---                 opMap = Map.insertWith (Map.union) a (Map.insert p (b, p) Map.empty) omap
---             }
---         _ -> mor
--- 
--- -- | Rename a signature with the sort and label renamings, and modify
--- -- the given morphism by renaming the sorts in the profiles.
--- applyRenaming2 :: Renaming -> Morphism -> Morphism
--- applyRenaming2 rnm mor = let
---         tgt = target mor
---         smap = sortMap mor
---         omap = opMap mor
---         lmap = labelMap mor
---     in case rnm of
---         SortRenaming from to -> let
---                 a = getName from
---                 b = getName to
---             in mor {
---                 target = Sign.renameSort a b tgt,
---                 sortMap = Map.insert a b smap,
---                 opMap = renameSortOpMap a b omap
---             }
---         LabelRenaming from to -> let
---                 a = getName from
---                 b = getName to
---             in mor {
---                 target = Sign.renameLabel a b tgt,
---                 labelMap = Map.insert a b lmap
---             }
---         _ -> mor
-
--- allProfilesRenaming :: Qid -> Qid -> Sign -> OpMap -> OpMap
--- allProfilesRenaming from to sg om = om'
---            where om_sg = Sign.ops sg
---                  om' = if Map.member from om_sg
---                        then Map.insert from (allProfilesRenamingAux to $ fromJust $ Map.lookup from om_sg) om
---                        else om
--- 
--- allProfilesRenamingAux :: Qid -> Sign.OpDeclSet -> Map.Map Profile (Qid, Profile)
--- allProfilesRenamingAux q = Set.fold (f q) Map.empty
---            where f = \ to (x, y, _) m -> Map.insert (x, y) (to, (x, y)) m
 
 -- | Separate Operator and other Renamings.
 partitionRenamings :: [Renaming] -> ([Renaming], [Renaming])
@@ -162,15 +92,6 @@ partitionRenamings = let
             OpRenaming2 _ _ _ _ -> True
             _ -> False
     in partition is'op
-
--- | create a Morphism from the initial signatures and a list of Renamings
-fromSignsRenamings :: Sign -> Sign -> [Renaming] -> Morphism
-fromSignsRenamings sign1 sign2 rens = let
-        (ops, rest) = partitionRenamings rens
-        add'ops  = flip (foldr insertOpRenaming) ops
-        add'rest = flip (foldr insertRenaming) rest
-        mor = inclusion sign1 sign2
-    in add'rest . add'ops $ mor
 
 renamingSymbolsMaybe :: Renaming -> Maybe (Symbol, Symbol)
 renamingSymbolsMaybe rename = case rename of
@@ -183,10 +104,57 @@ renamingSymbolsMaybe rename = case rename of
             dom' = map asSymbol dom
             cod' = asSymbol cod
         in Just (Operator src' dom' cod', Operator tgt' dom' cod')
+    -- TODO: We are not currently handling TermMaps, right?
     TermMap _ _ -> Nothing
 
 renamingSymbols :: Renaming -> (Symbol, Symbol)
 renamingSymbols = fromJust . renamingSymbolsMaybe
+
+applyRenamings :: Morphism -> [Renaming] -> Morphism
+applyRenamings mor rens = let
+        (ops, rest) = partitionRenamings rens
+        add'ops  = flip (foldr applyOpRenaming) ops
+        add'rest = flip (foldr applyRenaming) rest
+    in add'rest . add'ops $ mor
+
+-- | create a Morphism from an initial signature and a list of Renamings
+fromSignRenamings :: Sign -> [Renaming] -> Morphism
+fromSignRenamings = applyRenamings . identity
+
+
+-- TODO: Handle Attrs in Op Renamings.
+applyOpRenaming :: Renaming -> Morphism -> Morphism
+applyOpRenaming rename = let
+        syms = renamingSymbols rename
+        add'op mor = mor { opMap = uncurry Map.insert syms $ opMap mor }
+        use'op attrs mor = mor { target = uncurry Sign.renameOp syms attrs $ target mor }
+    in case rename of
+        OpRenaming1 _ (To _ attrs) -> use'op attrs . add'op
+        OpRenaming2 _ _ _ (To _ attrs) -> use'op attrs . add'op
+        _ -> id
+
+applyRenaming :: Renaming -> Morphism -> Morphism
+applyRenaming rename = let
+        syms = renamingSymbols rename
+        add'sort mor = mor { sortMap  = uncurry Map.insert syms $ sortMap mor }
+        use'sort mor = mor { target = uncurry Sign.renameSort syms $ target mor }
+        ren'sort mor = mor { opMap = uncurry renameSortOpMap syms $ opMap mor }
+        add'labl mor = mor { labelMap = uncurry Map.insert syms $ labelMap mor }
+        use'labl mor = mor { target = uncurry Sign.renameLabel syms $ target mor }
+    in case rename of
+        SortRenaming _ _ -> ren'sort . use'sort . add'sort
+        LabelRenaming _ _ -> use'labl . add'labl
+        _ -> id
+
+
+-- | create a Morphism from the initial signatures and a list of Renamings
+fromSignsRenamings :: Sign -> Sign -> [Renaming] -> Morphism
+fromSignsRenamings sign1 sign2 rens = let
+        (ops, rest) = partitionRenamings rens
+        add'ops  = flip (foldr insertOpRenaming) ops
+        add'rest = flip (foldr insertRenaming) rest
+        mor = inclusion sign1 sign2
+    in add'rest . add'ops $ mor
 
 -- TODO: Handle Attrs in Op Renamings.
 insertOpRenaming :: Renaming -> Morphism -> Morphism
@@ -201,8 +169,8 @@ insertOpRenaming rename = let
 insertRenaming :: Renaming -> Morphism -> Morphism
 insertRenaming rename = let
         syms = renamingSymbols rename
-        ren'sort mor = mor { opMap = uncurry renameSortOpMap syms $ opMap mor }
         add'sort mor = mor { sortMap  = uncurry Map.insert syms $ sortMap mor }
+        ren'sort mor = mor { opMap = uncurry renameSortOpMap syms $ opMap mor }
         add'labl mor = mor { labelMap = uncurry Map.insert syms $ labelMap mor }
     in case rename of
         SortRenaming _ _ -> ren'sort . add'sort
