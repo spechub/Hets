@@ -44,6 +44,9 @@ import Common.Doc
 import Common.DocUtils (Pretty(..))
 
 
+-- * Symbol type
+
+-- | Represents a Sort, Kind, Label, or Operator (with profile).
 data Symbol = Sort Qid
             | Kind Qid
             | Labl Qid
@@ -85,6 +88,8 @@ instance Pretty Symbol where
 instance GetRange Symbol where
     getRange _ = nullRange
 
+
+-- * Conversion
 
 -- | Convert Symbol to Symbol, changing Kinds to Sorts.
 asSort :: Symbol -> Symbol
@@ -131,16 +136,18 @@ toOperator :: Symbol -> Operator
 toOperator = fromJust . toOperatorMaybe
 
 
--- | Create a Symbol representing the total operator with the given
--- | identifiers for name, domain and codomain.
+-- * Construction
+
+-- | Create a total operator Symbol with the given profile.
 mkOpTotal :: Qid -> [Qid] -> Qid -> Symbol
 mkOpTotal qid dom cod = Operator qid (map Sort dom) (Sort cod)
 
--- | Create a Symbol representing the partial operator with the given
--- | identifiers for name, domain and codomain.
+-- | Create a partial operator Symbol with the given profile.
 mkOpPartial :: Qid -> [Qid] -> Qid -> Symbol
 mkOpPartial qid dom cod = Operator qid (map Sort dom) (Kind cod)
 
+
+-- * Testing
 
 typeSameKind :: SymbolRel -> Symbol -> Symbol -> Bool
 typeSameKind rel s1 s2 = let
@@ -163,8 +170,7 @@ typeSameKind rel s1 s2 = let
 zipSameKind :: SymbolRel -> Symbols -> Symbols -> Bool
 zipSameKind rel s1 s2 = all id $ zipWith (sameKind rel) s1 s2
 
--- | True iff, in the given Relation, both Symbols belong to the same
--- | connected component, i.e. are of the same Kind. For Operators, this applies to their respective domains.
+-- | Check whether both Symbols are of the same Kind for the given Relation.
 sameKind :: SymbolRel -> Symbol -> Symbol -> Bool
 sameKind rel s1 s2
     | all isType [s1, s2] = typeSameKind rel s1 s2
