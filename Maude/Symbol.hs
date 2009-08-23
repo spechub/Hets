@@ -68,18 +68,18 @@ instance HasName Symbol where
         Operator qid dom cod -> Operator (mapName mp qid) dom cod
 
 
-opDeclDoc :: Qid -> [Symbol] -> Symbol -> Doc -> Doc
-opDeclDoc qid dom cod arr = hsep
-    [pretty qid, colon, hsep $ map pretty dom, arr, pretty cod]
 instance Pretty Symbol where
     pretty symb = case symb of
         Sort qid -> pretty qid
         Kind qid -> pretty qid
         Labl qid -> pretty qid
-        Operator qid dom cod -> case cod of
-            Sort _ -> opDeclDoc qid dom cod funArrow
-            Kind _ -> opDeclDoc qid dom cod $ text "~>"
-            _ -> empty
+        Operator qid dom cod -> let
+                pr'op arr = hsep
+                    [pretty qid, colon, hsep $ map pretty dom, arr, pretty cod]
+            in case cod of
+                Sort _ -> pr'op funArrow
+                Kind _ -> pr'op $ text "~>"
+                _ -> empty
 
 
 instance GetRange Symbol where
@@ -113,6 +113,7 @@ toTypeMaybe symb = case symb of
 -- | Convert Symbol to Type, if possible.
 toType :: Symbol -> Type
 toType = fromJust . toTypeMaybe
+
 
 isOperator :: Symbol -> Bool
 isOperator symb = case symb of
