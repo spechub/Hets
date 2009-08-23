@@ -255,25 +255,18 @@ compose f g
     | target f /= source g = fail
         "target of the first and source of the second morphism are different"
     | otherwise = let
-            -- map'map takes:
-            --   mp :: Morphism -> SymbolMap
-            -- and returns a function |Symbol -> Symbol| by treating
-            -- each SymbolMap as a function and then combining them
+            -- Take SymbolMap |mp| of each Morphism.
+            -- Convert each SymbolMap to a function.
+            -- Compose those functions.
+            map'map :: (Morphism -> SymbolMap) -> Symbol -> Symbol
             map'map mp = mapAsFunction (mp g) . mapAsFunction (mp f)
-            -- insert takes:
-            --   mp :: Morphism -> SymbolMap
-            --   x :: Symbol
-            -- and returns a function |SymbolMap -> SymbolMap| by
-            -- applying both SymbolMaps (from |f| and |g|) to |x|, then
-            -- inserting the resulting renaming into the SymbolMap if
-            -- there is one and just leaving it (the SymbolMap) alone
-            -- otherwise.
+            -- Map |x| via the composed SymbolMaps |mp| of both Morphisms.
+            -- Insert the renaming mapping into a SymbolMap.
+            insert :: (Morphism -> SymbolMap) -> Symbol -> SymbolMap -> SymbolMap
             insert mp x = let y = map'map mp x
                 in if x == y then id else Map.insert x y
-            -- compose'map takes:
-            --   mp :: Morphism -> SymbolMap
-            --   items :: Sign -> SymbolSet
-            -- and constructs a combined SymbolMap from both our Morphisms
+            -- Map each symbol in |items| via the combined SymbolMaps |mp|.
+            compose'map :: (Morphism -> SymbolMap) -> (Sign -> SymbolSet) -> SymbolMap
             compose'map mp items = if Map.null (mp g)
                 -- if the SymbolMap of |g| is empty, we use the one from |f|
                 then mp f
@@ -281,11 +274,12 @@ compose f g
                 -- and construct a combined SymbolMap by applying both
                 -- SymbolMaps (from |f| and |g|) to each item in |insert|
                 else Set.fold (insert mp) Map.empty $ items (source f)
-        -- We want a morphism from |source f| to |target g|,
-        in return (inclusion (source f) $ target g) {
-                sortMap = compose'map sortMap getSorts -- ,
-                -- opMap = compose'map opMap getOps -- ,
-                -- labelMap = compose'map labelMap getLabels
+            -- We want a morphism from |source f| to |target g|.
+            mor = inclusion (source f) (target g)
+        in return mor {
+                sortMap = compose'map sortMap getSorts,
+                opMap = compose'map opMap getOps,
+                labelMap = compose'map labelMap getLabels
             }
 
 -- | check that a Morphism is legal
