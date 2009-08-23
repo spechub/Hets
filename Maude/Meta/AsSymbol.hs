@@ -45,6 +45,9 @@ instance AsSymbol Kind where
 instance AsSymbol LabelId where
     asSymbol = Labl . getName
 
+instance AsSymbol OpId where
+    asSymbol = OpWildcard . getName
+
 instance AsSymbol StmntAttr where
     asSymbolMaybe attr = case attr of
         Label name -> Just $ Labl name

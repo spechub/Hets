@@ -51,6 +51,7 @@ data Symbol = Sort Qid
             | Kind Qid
             | Labl Qid
             | Operator Qid Symbols Symbol
+            | OpWildcard Qid
     deriving (Show, Read, Ord, Eq)
 type Symbols   = [Symbol]
 type SymbolSet = Set Symbol
@@ -63,11 +64,13 @@ instance HasName Symbol where
         Sort qid -> qid
         Kind qid -> qid
         Labl qid -> qid
+        OpWildcard qid -> qid
         Operator qid _ _ -> qid
     mapName mp symb = case symb of
         Sort qid -> Sort $ mapName mp qid
         Kind qid -> Kind $ mapName mp qid
         Labl qid -> Labl $ mapName mp qid
+        OpWildcard qid -> OpWildcard $ mapName mp qid
         Operator qid dom cod -> Operator (mapName mp qid) dom cod
 
 
@@ -76,6 +79,7 @@ instance Pretty Symbol where
         Sort qid -> pretty qid
         Kind qid -> pretty qid
         Labl qid -> pretty qid
+        OpWildcard qid -> pretty qid
         Operator qid dom cod -> let
                 pr'op arr = hsep
                     [pretty qid, colon, hsep $ map pretty dom, arr, pretty cod]
@@ -119,6 +123,11 @@ toTypeMaybe symb = case symb of
 toType :: Symbol -> Type
 toType = fromJust . toTypeMaybe
 
+
+isOpWildcard :: Symbol -> Bool
+isOpWildcard symb = case symb of
+    OpWildcard _ -> True
+    _ -> False
 
 isOperator :: Symbol -> Bool
 isOperator symb = case symb of
@@ -173,6 +182,8 @@ zipSameKind rel s1 s2 = all id $ zipWith (sameKind rel) s1 s2
 -- | Check whether both Symbols are of the same Kind for the given Relation.
 sameKind :: SymbolRel -> Symbol -> Symbol -> Bool
 sameKind rel s1 s2
+    | all id [isOpWildcard s1, isOperator s2] = True
+    | all id [isOperator s1, isOpWildcard s2] = True
     | all isType [s1, s2] = typeSameKind rel s1 s2
     | all isOperator [s1, s2] = let
             Operator _ dom1 _ = s1
