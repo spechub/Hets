@@ -33,7 +33,6 @@ module Maude.Morphism (
     setTarget,
     -- extendMorphismSorts,
     -- extendWithSortRenaming,
-    -- getNewSorts,
 ) where
 
 -- import Maude.AS_Maude
@@ -142,17 +141,10 @@ instance Pretty Morphism where
 --             }
 --         _ -> mor
 
--- -- | Rename sorts in the profiles of an operator map.
--- renameSortOpMap :: Qid -> Qid -> OpMap -> OpMap
--- renameSortOpMap from to = Map.map f
---           where f = \ x -> Map.map g x
---                        where g = \ (q, (ar, co)) -> (q, (map h ar, if co == from
---                                                                    then to
---                                                                    else co))
---                                          where h = \ x -> if x == from
---                                                           then to
---                                                           else x
--- 
+-- | Rename sorts in the profiles of an operator map.
+renameSortOpMap :: Symbol -> Symbol -> OpMap -> OpMap
+renameSortOpMap from to = Map.map $ mapSorts $ Map.singleton from to
+
 -- allProfilesRenaming :: Qid -> Qid -> Sign -> OpMap -> OpMap
 -- allProfilesRenaming from to sg om = om'
 --            where om_sg = Sign.ops sg
