@@ -225,9 +225,7 @@ mapOpDecl rel src tgt attrs opmap = let
         syms = mapOps (Map.singleton src tgt) $ fst decl
         new'decl = (syms, mergeAttrs attrs $ snd decl)
         set'decl = Map.insert tgt'name $ Set.insert new'decl tgt'ops
-        up'rest = const $ if Set.null rest
-            then Nothing
-            else Just rest
+        up'rest = const $ if Set.null rest then Nothing else Just rest
         set'rest = Map.update up'rest src'name
     in set'rest . set'decl $ opmap
 
