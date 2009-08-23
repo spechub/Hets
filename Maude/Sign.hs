@@ -123,6 +123,7 @@ instance HasLabels Sign where
     }
 
 
+-- | Filter the Sort, Subsort and Operator declaration Statements.
 partitionStmts :: [Statement] -> ([Sort], [SubsortDecl], [Operator])
 partitionStmts = let
         switch (sorts', subs', ops') stmt = case stmt of
@@ -211,6 +212,7 @@ insertOpDecl rel symb attrs opmap = let
         new'ops = Set.insert new'decl rest
     in Map.insert name new'ops opmap
 
+-- | Map Operator declarations of the given Kind in an OperatorMap.
 mapOpDecl :: SymbolRel -> Symbol -> Symbol -> [Attr] -> OpMap -> OpMap
 mapOpDecl rel src tgt attrs opmap = let
         src'name = getName src
@@ -280,7 +282,6 @@ simplifySentence :: Sign -> Sentence -> Sentence
 simplifySentence _ = id
 
 
-
 -- | Rename the given Sort in the given Signature.
 renameSort :: Symbol -> Symbol -> Sign -> Sign
 renameSort from to = mapSorts $ Map.singleton from to
@@ -289,8 +290,6 @@ renameSort from to = mapSorts $ Map.singleton from to
 renameLabel :: Symbol -> Symbol -> Sign -> Sign
 renameLabel from to = mapLabels $ Map.singleton from to
 
--- renameOpProfile corresponds with this function now, as the profile is
--- contained in the Symbol type.
 -- | Rename the given Operator in the given Signature.
 renameOp :: Symbol -> Symbol -> [Attr] -> Sign -> Sign
 renameOp from to attrs sign = let
