@@ -1,5 +1,7 @@
 module Maude.Meta.AsSymbol (
     AsSymbol(..),
+    asSymbolSet,
+    mapAsSymbol,
 ) where
 
 import Maude.AS_Maude
@@ -16,11 +18,17 @@ class AsSymbol a where
     asSymbol = fromJust . asSymbolMaybe
     asSymbolMaybe :: a -> Maybe Symbol
     asSymbolMaybe = Just . asSymbol
-    asSymbolSet :: a -> SymbolSet
-    asSymbolSet = maybe Set.empty Set.singleton . asSymbolMaybe
-    mapAsSymbol :: (Symbol -> a) -> SymbolMap -> a -> a
-    mapAsSymbol ctor mp item = let extract = ctor . mapAsFunction mp
-        in maybe item extract $ asSymbolMaybe item
+
+asSymbolSet :: (AsSymbol a) => a -> SymbolSet
+asSymbolSet = maybe Set.empty Set.singleton . asSymbolMaybe
+
+mapAsSymbol :: (AsSymbol a) => (Symbol -> a) -> SymbolMap -> a -> a
+mapAsSymbol ctor mp item = let extract = ctor . mapAsFunction mp
+    in maybe item extract $ asSymbolMaybe item
+
+
+instance AsSymbol Symbol where
+    asSymbol = id
 
 
 instance AsSymbol Type where
@@ -58,8 +66,3 @@ instance AsSymbol Term where
                 dom = map (asSymbol . termType) ts
                 cod = asSymbol tp
             in Just $ Operator op dom cod
-
-
-instance AsSymbol Symbol where
-    asSymbol = id
-    mapAsSymbol ctor mp = ctor . mapAsFunction mp
