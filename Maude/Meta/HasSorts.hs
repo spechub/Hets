@@ -27,7 +27,8 @@ instance HasSorts Symbol where
         Sort _ -> Set.singleton sym
         Kind _ -> Set.singleton sym
         Operator _ dom cod -> getSorts(dom, cod)
-        _      -> Set.empty
+        OpWildcard _ -> Set.empty
+        Labl _ -> Set.empty
     mapSorts mp sym = case sym of
         Sort _ -> mapAsSymbol id mp sym
         Kind _ -> mapAsSymbol id mp sym
@@ -35,7 +36,8 @@ instance HasSorts Symbol where
                 dom' = mapSorts mp dom
                 cod' = mapSorts mp cod
             in Operator qid dom' cod'
-        _      -> sym
+        OpWildcard _ -> sym
+        Labl _ -> sym
 
 
 instance (HasSorts a) => HasSorts [a] where

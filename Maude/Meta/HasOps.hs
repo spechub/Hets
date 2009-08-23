@@ -19,9 +19,11 @@ class HasOps a where
 instance HasOps Symbol where
     getOps sym = case sym of
         Operator _ _ _ -> Set.singleton sym
+        OpWildcard _ -> Set.singleton sym
         _ -> Set.empty
     mapOps mp sym = case sym of
         Operator _ _ _ -> mapAsSymbol id mp sym
+        OpWildcard _ -> mapAsSymbol id mp sym
         _ -> sym
 
 
