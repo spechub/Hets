@@ -1,4 +1,19 @@
-mod TEST is
+fmod MY-LIST is
+ sorts List Elt .
+ subsort Elt < List .
+ 
+ op nil : -> List [ctor] .
+ op __ : List List -> List [ctor assoc id: nil] .
+ 
+ var L : List .
+ var E : Elt .
+ 
+ op reverse : List -> List .
+ eq reverse(nil) = nil .
+ eq reverse(E L) = reverse(L) E .
+endfm
+
+fmod TEST is
  sorts A B C .
  subsort A < B .
  sorts D E F .
@@ -11,7 +26,7 @@ mod TEST is
  
  op f : A -> B .
  op g : A A -> B .
- op h : A A -> A [assoc comm id: a]
+ op h : A A -> A [assoc comm id: a] .
  
  vars X Y : A .
  
@@ -23,9 +38,7 @@ mod TEST is
  
  ceq h(a, a) = a
   if true /\ not false .
- 
- rl a => b .
-endm
+endfm
 
 fmod TEST2 is
  sorts C D .
