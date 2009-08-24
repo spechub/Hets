@@ -32,7 +32,7 @@ module Maude.Morphism (
     union,
     setTarget,
     -- extendMorphismSorts,
-    -- extendWithSortRenaming,
+    extendWithSortRenaming,
 ) where
 
 import Maude.AS_Maude
@@ -329,16 +329,13 @@ renameSorts = mapSorts . sortMap
 --                                                then (sym1, to) : syms
 --                                                else s : extendSortList from to syms
 
--- extendWithSortRenaming :: Qid -> Qid -> Morphism -> Morphism
--- extendWithSortRenaming from to mor = let
---         tgt = target mor
---         smap = sortMap mor
---         omap = opMap mor
---           in mor {
---                 target = Sign.renameSort from to tgt,
---                 sortMap = Map.insert from to smap,
---                 opMap = renameSortOpMap from to omap
---              }
+-- FIXME: Code duplication!
+extendWithSortRenaming :: Symbol -> Symbol -> Morphism -> Morphism
+extendWithSortRenaming src tgt = let
+        add'sort mor = mor { sortMap  = Map.insert src tgt $ sortMap mor }
+        use'sort mor = mor { target = Sign.renameSort src tgt $ target mor }
+        ren'sort mor = mor { opMap = renameSortOpMap src tgt $ opMap mor }
+    in ren'sort . use'sort . add'sort
 
 -- | TODO :
 -- - compose with the new OpMap
