@@ -99,7 +99,7 @@ instance HasSorts Sign where
         sorts = mapSorts mp $ sorts sign,
         subsorts = mapSorts mp $ subsorts sign,
         ops = mapSorts mp $ ops sign
-        -- NOTE: Leaving out Sentence for now. :-)
+        -- NOTE: Leaving out Sentences for now.
     }
 
 
@@ -114,6 +114,7 @@ instance HasOps Sign where
             update src tgt = mapOpDecl subrel src tgt []
         in sign {
             ops = Map.foldWithKey update opmap mp
+            -- NOTE: Leaving out Sentences for now.
         }
 
 instance HasLabels Sign where
