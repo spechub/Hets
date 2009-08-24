@@ -318,8 +318,3 @@ extendWithSortRenaming src tgt = let
         use'sort mor = mor { target = Sign.renameSort src tgt $ target mor }
         ren'sort mor = mor { opMap = renameSortOpMap src tgt $ opMap mor }
     in ren'sort . use'sort . add'sort
-
--- | TODO :
--- - compose with the new OpMap
--- - isLegal with the new OpMap
--- - mapSentence with the new OpMap
