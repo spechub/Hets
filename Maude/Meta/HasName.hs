@@ -3,20 +3,16 @@ module Maude.Meta.HasName (
 ) where
 
 import Maude.AS_Maude
-import Maude.Util
-
-import Data.Map (Map)
-import qualified Data.Map as Map
 
 
 class HasName a where
     getName :: a -> Qid
-    mapName :: Map Qid Qid -> a -> a
+    mapName :: (Qid -> Qid) -> a -> a
 
 
 instance HasName Qid where
     getName = id
-    mapName = mapAsFunction
+    mapName = id
 
 instance HasName Type where
     getName typ = case typ of
@@ -28,31 +24,31 @@ instance HasName Type where
 
 instance HasName Sort where
     getName (SortId name) = name
-    mapName mp (SortId name) = SortId $ mapAsFunction mp name
+    mapName mp (SortId name) = SortId $ mp name
 
 instance HasName Kind where
     getName (KindId name) = name
-    mapName mp (KindId name) = KindId $ mapAsFunction mp name
+    mapName mp (KindId name) = KindId $ mp name
 
 instance HasName ParamId where
     getName (ParamId name) = name
-    mapName mp (ParamId name) = ParamId $ mapAsFunction mp name
+    mapName mp (ParamId name) = ParamId $ mp name
 
 instance HasName ModId where
     getName (ModId name) = name
-    mapName mp (ModId name) = ModId $ mapAsFunction mp name
+    mapName mp (ModId name) = ModId $ mp name
 
 instance HasName ViewId where
     getName (ViewId name) = name
-    mapName mp (ViewId name) = ViewId $ mapAsFunction mp name
+    mapName mp (ViewId name) = ViewId $ mp name
 
 instance HasName LabelId where
     getName (LabelId name) = name
-    mapName mp (LabelId name) = LabelId $ mapAsFunction mp name
+    mapName mp (LabelId name) = LabelId $ mp name
 
 instance HasName OpId where
     getName (OpId name) = name
-    mapName mp (OpId name) = OpId $ mapAsFunction mp name
+    mapName mp (OpId name) = OpId $ mp name
 
 instance HasName Operator where
     getName (Op name _ _ _) = getName name
