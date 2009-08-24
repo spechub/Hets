@@ -22,7 +22,7 @@ maudePath = "/Applications/maude-darwin/maude.intelDarwin"
 maudeCmd :: String
 maudeCmd = unwords [maudePath, "-interactive", "-no-banner"]
 maudeHetsPath :: String
-maudeHetsPath = "/Users/adrian/Hets/Maude/hets.prj"
+maudeHetsPath = "Hets/Maude/hets.prj"
 
 
 basicAnalysis :: Sign -> MaudeText -> IO (Sign, [Sentence])

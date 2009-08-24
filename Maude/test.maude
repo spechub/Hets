@@ -1,12 +1,21 @@
 fmod TEST is
- sorts A B .
+ sorts A B C .
+ subsort A < B .
  
  op a : -> A .
  op b : -> B .
+ op c : -> B .
  
  op f : A -> B .
+ op g : A A -> B .
+ 
+ vars X Y : A .
  
  eq f(a) = b .
+ eq f(X) = c [owise] .
+ 
+ eq g(a,X) = b .
+ eq g(X, Y) = c [owise] .
 endfm
 
 fmod TEST2 is

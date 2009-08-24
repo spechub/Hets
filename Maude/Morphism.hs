@@ -33,6 +33,7 @@ module Maude.Morphism (
     setTarget,
     qualifySorts,
     extendWithSortRenaming,
+    getNewSorts
 ) where
 
 import Maude.AS_Maude
@@ -331,3 +332,13 @@ extendWithSortRenaming src tgt = let
         use'sort = mapTarget $ Sign.renameSort src tgt
         ren'sort = mapOpMap $ renameSortOpMap src tgt
     in ren'sort . use'sort . add'sort
+
+getNewSorts :: [Symbol] -> Morphism -> [Symbol]
+getNewSorts ss morph = getNewSortsSortMap ss (sortMap morph)
+
+getNewSortsSortMap :: [Symbol] -> SymbolMap -> [Symbol]
+getNewSortsSortMap [] _ = []
+getNewSortsSortMap (s : ss) qm = s' : getNewSortsSortMap ss qm
+              where s' = if Map.member s qm
+                         then fromJust $ Map.lookup s qm
+                         else s
