@@ -208,7 +208,7 @@ insertOpDecl rel symb attrs opmap = let
                 syms = Set.insert symb $ fst decl
                 attr = mergeAttrs attrs $ snd decl
             in if Set.null decls
-                then Set.insert (asSymbolSet symb, [])
+                then Set.insert (asSymbolSet symb, attrs)
                 else Set.insert (syms, attr)
         name = getName symb
         same'kind = Fold.any (sameKind rel symb) . fst
