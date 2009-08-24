@@ -141,7 +141,7 @@ applyOpRenaming :: Renaming -> Morphism -> Morphism
 applyOpRenaming rename = let
         syms = renamingSymbols rename
         add'op = mapOpMap $ uncurry Map.insert syms
-        use'op attrs = mapTarget $ uncurry Sign.renameOp syms attrs
+        use'op = mapTarget . uncurry Sign.renameOp syms
     in case rename of
         OpRenaming1 _ (To _ attrs) -> use'op attrs . add'op
         OpRenaming2 _ _ _ (To _ attrs) -> use'op attrs . add'op
@@ -323,7 +323,8 @@ qualifySorts mor qid syms = let
         smap = foldr insert Map.empty syms
         q'tgt  = mapTarget $ mapSorts smap
         q'smap = mapSortMap $ mapSorts smap
-    in q'tgt . q'smap $ mor
+        x'smap = mapSortMap $ Map.union smap
+    in q'tgt . x'smap .  q'smap $ mor
 
 -- FIXME: Code duplication!
 extendWithSortRenaming :: Symbol -> Symbol -> Morphism -> Morphism
