@@ -32,25 +32,24 @@ import CASL.Fold
 -- given term, the variable must occur in the first argument position
 -- of the predication.
 
-replacePropPredication :: Maybe (PRED_NAME,VAR,TERM f)
+replacePropPredication :: Maybe (PRED_NAME,VAR,TERM ())
                         -- ^ Just (pSymb,x,t) replace x
                         -- with t in Predication of pSymb
                        -> PRED_NAME -- ^ propositional symbol to replace
-                       -> FORMULA f -- ^ Formula to insert
-                       -> FORMULA f -- ^ Formula with placeholder
-                       -> FORMULA f
+                       -> FORMULA () -- ^ Formula to insert
+                       -> FORMULA () -- ^ Formula with placeholder
+                       -> FORMULA ()
 replacePropPredication mTerm pSymb frmIns =
-    foldFormula (mapRecord $ const $ error
-             "replacePropPredication: unexpected extended formula")
-        { foldPredication = \ (Predication qpn ts ps) _ _ _ ->
+    foldFormula (mapRecord $ const ())
+        { foldPredication = \ (Predication qpn _ ps) _ ts _ ->
               let (pSymbT,var,term) = fromJust mTerm in case qpn of
               Qual_pred_name symb (Pred_type s _) _
                  | symb == pSymb && null ts && null s -> frmIns
                  | isJust mTerm && symb == pSymbT -> case ts of
                    Sorted_term (Qual_var v1 _ _) _ _ : args
                        |  v1 == var -> Predication qpn (term:args) ps
-                   _ -> error "replacePropPredication: unknown term to replace"
-              _ -> error "replacePropPredication: unknown formula to replace"
+                   _ -> Predication qpn ts ps
+              _ -> Predication qpn ts ps
          , foldConditional = \ t _ _ _ _ -> t }
 
 type FreshVARMap f = Map.Map VAR (TERM f)
