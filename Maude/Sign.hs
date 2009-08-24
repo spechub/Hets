@@ -203,31 +203,39 @@ insertSubsort decl sign = let
 -- | Insert an Operator declaration into an OperatorMap.
 insertOpDecl :: SymbolRel -> Symbol -> [Attr] -> OpMap -> OpMap
 insertOpDecl rel symb attrs opmap = let
+        merge decls = let
+                decl = head $ Set.toList decls
+                syms = Set.insert symb $ fst decl
+                attr = mergeAttrs attrs $ snd decl
+            in if Set.null decls
+                then Set.insert (asSymbolSet symb, [])
+                else Set.insert (syms, attr)
         name = getName symb
         same'kind = Fold.any (sameKind rel symb) . fst
         old'ops = Map.findWithDefault Set.empty name opmap
         (same, rest) = Set.partition same'kind old'ops
-        decl = head $ Set.toList same
-        syms = Set.insert symb $ fst decl
-        new'decl = (syms, mergeAttrs attrs $ snd decl)
-        new'ops = Set.insert new'decl rest
+        new'ops = merge same rest
     in Map.insert name new'ops opmap
 
 -- | Map Operator declarations of the given Kind in an OperatorMap.
 mapOpDecl :: SymbolRel -> Symbol -> Symbol -> [Attr] -> OpMap -> OpMap
 mapOpDecl rel src tgt attrs opmap = let
+        merge decls = let
+                decl = head $ Set.toList decls
+                syms = mapOps (Map.singleton src tgt) $ fst decl
+                attr = mergeAttrs attrs $ snd decl
+            in if Set.null decls
+                then id
+                else Set.insert (syms, attr)
         src'name = getName src
         tgt'name = getName tgt
         same'kind = Fold.any (sameKind rel src) . fst
         src'ops = Map.findWithDefault Set.empty src'name opmap
         tgt'ops = Map.findWithDefault Set.empty tgt'name opmap
         (same, rest) = Set.partition same'kind src'ops
-        decl = head $ Set.toList same
-        syms = mapOps (Map.singleton src tgt) $ fst decl
-        new'decl = (syms, mergeAttrs attrs $ snd decl)
-        set'decl = Map.insert tgt'name $ Set.insert new'decl tgt'ops
-        up'rest = const $ if Set.null rest then Nothing else Just rest
-        set'rest = Map.update up'rest src'name
+        has'rest = if Set.null rest then Nothing else Just rest
+        set'decl = Map.insert tgt'name $ merge same tgt'ops
+        set'rest = Map.update (const has'rest) src'name
     in set'rest . set'decl $ opmap
 
 -- | Insert an Operator declaration into a Signature.
