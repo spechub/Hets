@@ -35,16 +35,19 @@ combineHooks :: (Pretty a) => [a] -> Doc
 combineHooks = combine (parens . ((<>) $ text "\n")) (vsep . map ((<>) $ text "\t")) 
 
 instance Pretty Membership where
-    pretty (Mb t s cs as) = hsep
-        [keyword "mb", pretty t, colon, pretty s, pretty cs, pretty as, dot]
+    pretty (Mb t s cs as) = hsep $ if null cs
+        then [keyword "mb",  pretty t, colon, pretty s, pretty as, dot]
+        else [keyword "cmb", pretty t, colon, pretty s, pretty cs, pretty as, dot]
 
 instance Pretty Equation where
-    pretty (Eq t1 t2 cs as) = hsep
-        [keyword "eq", pretty t1, equals, pretty t2, pretty cs, pretty as, dot]
+    pretty (Eq t1 t2 cs as) = hsep $ if null cs
+        then [keyword "eq",  pretty t1, equals, pretty t2, pretty as, dot]
+        else [keyword "ceq", pretty t1, equals, pretty t2, pretty cs, pretty as, dot]
 
 instance Pretty Rule where
-    pretty (Rl t1 t2 cs as) = hsep
-        [keyword "rl", pretty t1, implies, pretty t2, pretty cs, pretty as, dot]
+    pretty (Rl t1 t2 cs as) = hsep $ if null cs
+        then [keyword "rl",  pretty t1, implies, pretty t2, pretty as, dot]
+        else [keyword "crl", pretty t1, implies, pretty t2, pretty cs, pretty as, dot]
 
 
 instance Pretty Condition where
