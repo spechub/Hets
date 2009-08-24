@@ -18,6 +18,7 @@ module Maude.Symbol (
     SymbolMap,
     SymbolRel,
     toId,
+    qualify,
     asSort,
     toType,
     toOperator,
@@ -38,7 +39,7 @@ import qualified Data.Map as Map
 import qualified Common.Lib.Rel as Rel
 
 import Data.Maybe (fromJust)
-import Common.Id (Id, mkId, GetRange, getRange, nullRange)
+import Common.Id (Id, mkId, mkSimpleId, GetRange, getRange, nullRange)
 
 import Common.Doc
 import Common.DocUtils (Pretty(..))
@@ -105,6 +106,12 @@ asSort symb = case symb of
 -- | Convert Symbol to Id.
 toId :: Symbol -> Id
 toId = mkId . return . getName
+
+
+-- | Qualify the Symbol name with a Qid.
+qualify :: Qid -> Symbol -> Symbol
+qualify qid = let prepend sym = mkSimpleId $ concat [show qid, "$", show sym]
+    in mapName $ prepend . getName
 
 
 isType :: Symbol -> Bool
