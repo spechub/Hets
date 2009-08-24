@@ -334,11 +334,4 @@ extendWithSortRenaming src tgt = let
     in ren'sort . use'sort . add'sort
 
 getNewSorts :: [Symbol] -> Morphism -> [Symbol]
-getNewSorts ss morph = getNewSortsSortMap ss (sortMap morph)
-
-getNewSortsSortMap :: [Symbol] -> SymbolMap -> [Symbol]
-getNewSortsSortMap [] _ = []
-getNewSortsSortMap (s : ss) qm = s' : getNewSortsSortMap ss qm
-              where s' = if Map.member s qm
-                         then fromJust $ Map.lookup s qm
-                         else s
+getNewSorts ss morph = mapSorts (sortMap morph) ss

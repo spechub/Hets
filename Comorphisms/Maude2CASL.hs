@@ -74,7 +74,7 @@ instance Comorphism Maude2CASL
       mapSublogic Maude2CASL _ = Just CSL.top
       map_theory Maude2CASL = mapTheory
       is_model_transportable Maude2CASL = True
-      map_symbol Maude2CASL _ = mapSymbol
+      map_symbol Maude2CASL = mapSymbol
       map_sentence Maude2CASL = mapSentence
       map_morphism Maude2CASL = mapMorphism
       has_model_expansion Maude2CASL = True

@@ -161,7 +161,8 @@ maude2casl msign nsens = (csign { CSign.sortSet = cs,
                             CSign.predMap = preds,
                             CSign.declaredSymbols = syms }, new_sens)
    where csign = CSign.emptySign ()
-         mk = arrangeKinds (MSign.sorts msign) (MSign.subsorts msign)
+         mk' = arrangeKinds (MSign.sorts msign) (MSign.subsorts msign)
+         mk = Map.insert (token2id $ mkSimpleId "Universal") (token2id $ mkSimpleId "[Universal]") mk'
          cs = kindsFromMap mk
          ks = kindPredicates mk
          rp = rewPredicates ks cs
@@ -208,32 +209,32 @@ translateOpDecl im (syms, ats) (ops, assoc_ops, forms) = (ops', assoc_ops', form
                          else assoc_ops
             op_name = CAS.Op_name cop_id
             forms1 = if assoc ats
-                     then forms'
-                     else let assoc_f = associativeSen op_name (head $ CSign.opArgs ot)
+                     then let assoc_f = associativeSen op_name (head $ CSign.opArgs ot)
                           in makeNamed "" assoc_f : forms'
+                     else forms'
             forms2 = if comm ats
-                     then forms1
-                     else let comm_f = commutativeSen op_name (head $ CSign.opArgs ot)
+                     then let comm_f = commutativeSen op_name (head $ CSign.opArgs ot)
                           in makeNamed "" comm_f : forms1
+                     else forms1
             forms3 = if idem ats
-                     then forms2
-                     else let idem_f = idempotentSen op_name (head $ CSign.opArgs ot)
+                     then let idem_f = idempotentSen op_name (head $ CSign.opArgs ot)
                           in makeNamed "" idem_f : forms2
+                     else forms2
             forms4 = if identity ats
-                     then forms3
-                     else let iden = maudeTerm2caslTerm im $ fromJust $ getIdentity ats
+                     then let iden = maudeTerm2caslTerm im $ fromJust $ getIdentity ats
                               identity_f = identitySens op_name (head $ CSign.opArgs ot) iden
                           in map (makeNamed "") identity_f ++ forms3
+                     else forms3
             forms5 = if leftId ats
-                     then forms4
-                     else let lid = maudeTerm2caslTerm im $ fromJust $ getIdentity ats
+                     then let lid = maudeTerm2caslTerm im $ fromJust $ getIdentity ats
                               lid_f = left_identitySen op_name (head $ CSign.opArgs ot) lid
                           in makeNamed "" lid_f : forms4
+                     else forms4
             forms6 = if rightId ats
-                     then forms5
-                     else let rid = maudeTerm2caslTerm im $ fromJust $ getIdentity ats
+                     then let rid = maudeTerm2caslTerm im $ fromJust $ getIdentity ats
                               rid_f = right_identitySen op_name (head $ CSign.opArgs ot) rid
                           in makeNamed "" rid_f : forms5
+                     else forms5
 
 -- | translates a Maude operator symbol into a pair with the id of the operator
 -- and its CASL type
@@ -428,7 +429,7 @@ noOwiseEq2Formula im (MAS.Eq t t' [] _) = quantifyUniversally form
       where ct = maudeTerm2caslTerm im t
             ct' = maudeTerm2caslTerm im t'
             form = CAS.Strong_equation ct ct' nullRange
-noOwiseEq2Formula im (MAS.Eq t t' conds@(_ : _) _) = quantifyUniversally form
+noOwiseEq2Formula im (MAS.Eq t t' conds@(_:_) _) = quantifyUniversally form
       where ct = maudeTerm2caslTerm im t
             ct' = maudeTerm2caslTerm im t'
             conds_form = conds2formula im conds
@@ -441,7 +442,7 @@ owiseEq2Formula :: IdMap -> [Named CAS.CASLFORMULA] -> MAS.Equation
                    -> CAS.CASLFORMULA
 owiseEq2Formula im no_owise_form eq = form
       where (eq_form, vars) = noQuantification $ noOwiseEq2Formula im eq
-            (op, ts) = fromJust $ getLeftApp eq_form
+            (op, ts, _) = fromJust $ getLeftApp eq_form
             ex_form = existencialNegationOtherEqs op ts no_owise_form
             imp_form = CAS.Implication ex_form eq_form True nullRange
             form = CAS.Quantification CAS.Universal vars imp_form nullRange
@@ -463,24 +464,41 @@ existencialNegationOtherEq :: CAS.OP_SYMB -> [CAS.CASLTERM] ->
 existencialNegationOtherEq req_op terms form = case ok of
                   False -> []
                   True -> let
-                            conj_form = CAS.Conjunction (createEqs ts' terms) nullRange
-                            ex_form = if vars' /= []
-                                      then CAS.Quantification CAS.Existential vars' conj_form nullRange
-                                      else conj_form
-                            neg_form = CAS.Negation ex_form nullRange
+                     conj_form = CAS.Conjunction prems nullRange
+                     ex_form = if vars' /= []
+                               then CAS.Quantification CAS.Existential vars' conj_form nullRange
+                               else conj_form
+                     neg_form = CAS.Negation ex_form nullRange
                           in [neg_form]
       where (inner_form, vars) = noQuantification $ sentence form
             vars' = qualifyExVars vars
-            (op, ts) = fromJust $ getLeftApp inner_form
+            (op, ts, conds) = fromJust $ getLeftApp inner_form
             ts' = qualifyExVarsTerms ts
+            conds' = qualifyExVarsForms conds
             ok = req_op == op && length terms == length ts
+            prems = (createEqs ts' terms) ++ conds'
+
+-- | qualifies the variables in a list of formulas with the suffix "_ex" to
+-- distinguish them from the variables already bound
+qualifyExVarsForms :: [CAS.CASLFORMULA] -> [CAS.CASLFORMULA]
+qualifyExVarsForms = map qualifyExVarsForm
+
+-- | qualifies the variables in a formula with the suffix "_ex" to distinguish them
+-- from the variables already bound
+qualifyExVarsForm :: CAS.CASLFORMULA -> CAS.CASLFORMULA
+qualifyExVarsForm (CAS.Strong_equation t t' r) = CAS.Strong_equation qt qt' r
+        where qt = qualifyExVarsTerm t
+              qt' = qualifyExVarsTerm t'
+qualifyExVarsForm (CAS.Predication op ts r) = CAS.Predication op ts' r
+        where ts' = qualifyExVarsTerms ts
+qualifyExVarsForm f = f
 
 -- | qualifies the variables in a list of terms with the suffix "_ex" to
 -- distinguish them from the variables already bound
 qualifyExVarsTerms :: [CAS.CASLTERM] -> [CAS.CASLTERM]
 qualifyExVarsTerms = map qualifyExVarsTerm
 
--- | qualifies the variable in a term with the suffix "_ex" to distinguish them
+-- | qualifies the variables in a term with the suffix "_ex" to distinguish them
 -- from the variables already bound
 qualifyExVarsTerm :: CAS.CASLTERM -> CAS.CASLTERM
 qualifyExVarsTerm (CAS.Qual_var var sort r) = CAS.Qual_var (qualifyExVarAux var) sort r
@@ -524,8 +542,12 @@ createEqs _ _ = []
 
 -- | extracts the operator at the top and the arguments of the lefthand side
 -- in a strong equation
-getLeftApp :: CAS.CASLFORMULA -> Maybe (CAS.OP_SYMB, [CAS.CASLTERM])
-getLeftApp (CAS.Strong_equation term _ _) = getLeftAppTerm term
+getLeftApp :: CAS.CASLFORMULA -> Maybe (CAS.OP_SYMB, [CAS.CASLTERM], [CAS.CASLFORMULA])
+getLeftApp (CAS.Strong_equation term _ _) = Just (op, ts, [])
+        where (op, ts) = fromJust $ getLeftAppTerm term
+getLeftApp (CAS.Implication prem concl _ _) = Just (op, ts, conds)
+        where (op, ts, _) = fromJust $ getLeftApp concl
+              conds = getPremisesImplication prem
 getLeftApp _ = Nothing
 
 -- | extracts the operator at the top and the arguments of the lefthand side
@@ -533,6 +555,12 @@ getLeftApp _ = Nothing
 getLeftAppTerm :: CAS.CASLTERM -> Maybe (CAS.OP_SYMB, [CAS.CASLTERM])
 getLeftAppTerm (CAS.Application op ts _) = Just (op, ts)
 getLeftAppTerm _ = Nothing
+
+-- | extracts the formulas of the given premise, distinguishing whether it is
+-- a conjunction or not
+getPremisesImplication :: CAS.CASLFORMULA -> [CAS.CASLFORMULA]
+getPremisesImplication (CAS.Conjunction forms _) = forms
+getPremisesImplication form = [form]
 
 -- | translate a Maude membership into a CASL formula
 mb2formula :: IdMap -> MAS.Membership -> CAS.CASLFORMULA

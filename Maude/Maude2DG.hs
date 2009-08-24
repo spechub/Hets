@@ -204,10 +204,10 @@ getOpDeclSet :: OpDeclSet -> Symbols -> SymbolMap -> OpDeclSet
 getOpDeclSet ods ss sm = Set.singleton (op_sym', ats)
          where f = \ (Operator _ x _) b -> x == ss || b
                g = \ (x, _) -> Set.fold f False x
-               (ods', ats) : _ = Set.toList $ Set.filter g ods
+               (ods', ats) = head $ Set.toList $ Set.filter g ods
                h = \ (Operator _ y _) -> y == ss
                ods'' = Set.filter h ods'
-               op_sym : _ = Set.toList ods''
+               op_sym = head $ Set.toList ods''
                op_sym' = applyRenamingOpSymbol op_sym sm
 
 -- | apply the renaming in the map to the operator declaration
