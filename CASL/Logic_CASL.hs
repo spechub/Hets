@@ -19,7 +19,6 @@ import Common.AS_Annotation
 import Common.Lexer((<<))
 import Common.ProofTree
 import Common.Consistency
-import Common.DocUtils
 
 import ATC.ProofTree ()
 

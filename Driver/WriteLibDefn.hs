@@ -62,7 +62,7 @@ write_LIB_DEFN ga file opts ld = do
         verbMesg ty = putIfVerbose opts 2 $ "Writing file: " ++ filename ty
         printXml ty = do
           verbMesg ty
-          writeFile (filename ty) $ printLibDefnXml ld
+          writeFile (filename ty) $ printLibDefnXml ga ld
         printAscii ty = do
           verbMesg ty
           write_casl_asc opts ga (filename ty) ld

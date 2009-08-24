@@ -226,12 +226,12 @@ class (Language lid, PrintTypeConv basic_spec,
          parse_symb_items :: lid -> Maybe(AParser st symb_items)
          -- | parser for symbol maps
          parse_symb_map_items :: lid -> Maybe(AParser st symb_map_items)
-         toItem :: lid -> GlobalAnnos -> basic_spec -> Item
+         toItem :: lid -> basic_spec -> Item
          -- default implementations
          parse_basic_spec _ = Nothing
          parse_symb_items _ = Nothing
          parse_symb_map_items _ = Nothing
-         toItem l _ _ = error $ statErrMsg l "toItem"
+         toItem l _ = error $ statErrMsg l "toItem"
 
 {- | Sentences, provers and symbols.
      Provers capture the entailment relation between sets of sentences

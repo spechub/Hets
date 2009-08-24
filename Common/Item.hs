@@ -18,10 +18,15 @@ module Common.Item where
 
 import Common.Id
 import Common.AS_Annotation
+import Common.Doc
 
-data ItemType = IT [String]
-                deriving (Eq, Ord, Show)
+import Data.Maybe
 
+-- element name, attributes and optional text
+data ItemType = IT
+  { getName :: String
+  , attrList :: [(String, String)]
+  , getText :: Maybe Doc }
 
 --- flat items (isFlat=True) are intended for output as xml-attributes
 --- but this is not yet used
@@ -29,22 +34,10 @@ data Item = Item { itemType :: ItemType
                  , isFlat :: Bool
                  , range :: Range
                  , items :: [Annoted Item]
-                 } deriving (Eq, Ord, Show)
+                 }
 
 hasValue :: ItemType -> Bool
-hasValue (IT l) = length l > 1
-
-getName :: ItemType -> String
-getName (IT (h:_)) = h
-getName _ = "GEN_ItemType"
-
-getValue :: ItemType -> String
-getValue (IT []) = ""
-getValue (IT l) = last l
-
-getValueName :: ItemType -> String
-getValueName (IT [_,v,_]) = v
-getValueName (IT _) = "value"
+hasValue (IT _ attrs md) = isJust md || not (null attrs)
 
 instance GetRange Item where
     getRange = range
@@ -66,11 +59,11 @@ instance ItemTypeable ItemType where
 
 -- intelligent ItemType generation
 instance ItemTypeable String where
-    toIT s = IT [s]
-instance ItemTypeable (String, String) where
-    toIT (s,s') = IT [s,s']
+    toIT s = IT s [] Nothing
+instance ItemTypeable (String, Doc) where
+    toIT (s,s') = IT s [] $ Just s'
 instance ItemTypeable (String, String, String) where
-    toIT (s,s',s'') = IT [s,s',s'']
+    toIT (s,s',s'') = IT s [(s',s'')] Nothing
 
 class Monad m => ItemConvertible a m where
     toitem :: a -> m Item

@@ -37,8 +37,8 @@ import Data.List
 
 -- one can add global annos if necessary
 -- | Prints the Library to an xml string
-printLibDefnXml :: LIB_DEFN -> String
-printLibDefnXml ld = case toXml ld of
+printLibDefnXml :: GlobalAnnos -> LIB_DEFN -> String
+printLibDefnXml ga ld = case toXml ga ld of
   Elem e -> ppTopElement e
   c -> ppContent c
 
@@ -50,14 +50,14 @@ printLibDefnXml ld = case toXml ld of
 -}
 class XmlPrintable a where
   -- | render instance to an XML Element
-  toXml :: a -> Content
+  toXml :: GlobalAnnos -> a -> Content
 
 {- |
   Use this class if you can render something as an xml element list
 -}
 class XmlListPrintable a where
   -- | render instance to an xml element list
-  toLst :: a -> [Content]
+  toLst :: GlobalAnnos -> a -> [Content]
 
 {- |
   Use this class if you can render something as an xml attribute value
@@ -74,89 +74,87 @@ class XmlAttrList a where
 -- for empty lists use this datatype
 data Empty = Empty
 instance XmlAttrList Empty where mkAtts _ = []
-instance XmlListPrintable Empty where toLst _ = []
+instance XmlListPrintable Empty where toLst _ _ = []
 
 
 -- the trivial instances!
 instance XmlPrintable Content where
-    toXml = id
+    toXml _ = id
 instance XmlAttrList [Attr] where
     mkAtts = id
 
 
 instance XmlPrintable LIB_DEFN where
-    toXml (Lib_defn n il rg an) =
+    toXml ga (Lib_defn n il rg an) =
         withRg rg $ mkEl "Lib" ["name", toStr n]
-                   $ maybeToList (printAnnotations nullRange an [])
-                         ++ map (toXml . item) il
+                   $ maybeToList (printAnnotations ga nullRange an [])
+                         ++ map (toXml ga . item) il
 
 instance XmlPrintable LIB_ITEM where
-    toXml (Spec_defn n g as rg)
+    toXml ga (Spec_defn n g as rg)
         = withRg rg $ mkEl "Spec" ["name", toString n]
-          $ toLst g ++ [toXml as]
-    toXml (View_defn n g (View_type from to _) mapping rg)
+          $ toLst ga g ++ [toXml ga as]
+    toXml ga (View_defn n g (View_type from to _) mapping rg)
         = withRg rg $ mkEl "View" ["name", toString n]
-          $ toLst g ++ [mkPEl "From" [toXml from], mkPEl "To" [toXml to]] ++
-            toLst mapping
-    toXml (Download_items n mapping rg)
-        = withRg rg $ mkEl "Import" ["name", toString n] $ toLst mapping
-    toXml (Logic_decl n rg)
+          $ toLst ga g ++ [mkPEl "From" [toXml ga from], mkPEl "To" [toXml ga to]]
+                ++ toLst ga mapping
+    toXml ga (Download_items n mapping rg)
+        = withRg rg $ mkEl "Import" ["name", toString n] $ toLst ga mapping
+    toXml _ (Logic_decl n rg)
         = withRg rg $ mkFEl "Logic" ["name", toStr n]
-    toXml x = mkComment $ take 15 (show x)  ++ "- not Supported"
+    toXml _ x = mkComment $ take 15 (show x)  ++ "- not Supported"
 
 instance XmlPrintable (Annoted SPEC) where
-    toXml a@(Annoted s _ _ _) =
-        let mkAEl x y z = withAnno a $ mkEl x y z
-            mkAPEl x z = withAnno a $ mkPEl x z
+    toXml ga a@(Annoted s _ _ _) =
+        let mkAEl x y z = withAnno ga a $ mkEl x y z
+            mkAPEl x z = withAnno ga a $ mkPEl x z
         in case s of
-             Basic_spec bs rg -> withRg rg $ mkAPEl "Basic" $ toLst bs
+             Basic_spec bs rg -> withRg rg $ mkAPEl "Basic" $ toLst ga bs
              EmptySpec _ -> mkAPEl "Emptyspec" []
              Translation as (Renaming m _) -> mkAPEl "Renaming"
-                                              $ toXml as : toLst m
+                                              $ toXml ga as : toLst ga m
              Reduction as m -> mkAPEl "Restriction"
-                               $ toXml as : toLst m
-             Union asl rg -> withRg rg $ mkAPEl "Union" $ toLst asl
+                               $ toXml ga as : toLst ga m
+             Union asl rg -> withRg rg $ mkAPEl "Union" $ toLst ga asl
              Extension asl rg -> withRg rg $ mkAPEl "Extension"
-                                 $ toLst asl
-             Free_spec as rg -> withRg rg $ mkAPEl "Free" [toXml as]
-             Cofree_spec as rg -> withRg rg $ mkAPEl "Cofree" [toXml as]
+                                 $ toLst ga asl
+             Free_spec as rg -> withRg rg $ mkAPEl "Free" [toXml ga as]
+             Cofree_spec as rg -> withRg rg $ mkAPEl "Cofree" [toXml ga as]
              Local_spec as ins rg -> withRg rg $ mkAPEl "Local"
-                                     [toXml as, toXml ins]
-             Closed_spec as rg -> withRg rg $ mkAPEl "Closed" [toXml as]
-             Group as rg -> withRg rg $ mkAPEl "Group" [toXml as]
+                                     [toXml ga as, toXml ga ins]
+             Closed_spec as rg -> withRg rg $ mkAPEl "Closed" [toXml ga as]
+             Group as rg -> withRg rg $ mkAPEl "Group" [toXml ga as]
              Spec_inst n fa rg ->
-                 withRg rg $ mkAEl "Inst" ["name", toString n] $ toLst fa
+                 withRg rg $ mkAEl "Inst" ["name", toString n] $ toLst ga fa
              Qualified_spec ln as rg -> withRg rg $ mkAEl "Qualified"
-                                        ["logic", toString ln] [toXml as]
+                                        ["logic", toString ln] [toXml ga as]
              Data _ _ _ _ _ -> mkComment "DATA not supported"
 
 instance XmlPrintable (Annoted FIT_ARG) where
-    toXml a@(Annoted farg _ _ _) =
-        let mkAEl x y z = withAnno a $ mkEl x y z
-            mkAPEl x z = withAnno a $ mkPEl x z
+    toXml ga a@(Annoted farg _ _ _) =
+        let mkAEl x y z = withAnno ga a $ mkEl x y z
+            mkAPEl x z = withAnno ga a $ mkPEl x z
         in case farg of
-             Fit_spec as _ rg ->  withRg rg $ mkAPEl "Fitspec" [toXml as]
+             Fit_spec as _ rg ->  withRg rg $ mkAPEl "Fitspec" [toXml ga as]
              Fit_view n fargs rg ->
                  withRg rg $ mkAEl "Fitview" ["name", toString n]
-                            $ toLst fargs
+                            $ toLst ga fargs
 
 instance XmlPrintable Annotation where
-    toXml x = withRg (getRange x) $ mkPEl "Annotation" [toText x]
+    toXml _ x = withRg (getRange x) $ mkPEl "Annotation" [toText x]
 
 instance XmlPrintable ITEM_NAME_OR_MAP where
-    toXml (Item_name name) = mkFEl "Item" ["name", toString name]
-    toXml (Item_name_map name as _)
+    toXml _ (Item_name name) = mkFEl "Item" ["name", toString name]
+    toXml _ (Item_name_map name as _)
         = mkFEl "Item" ["name", toString name, "as", toString as]
 
 instance XmlPrintable G_mapping where
-    toXml (G_symb_map l) = mkPEl "Mapping" $ toLst l
-    toXml (G_logic_translation lc) = mkFEl "Logictranslation" lc
+    toXml ga (G_symb_map l) = mkPEl "Mapping" $ toLst ga l
+    toXml _ (G_logic_translation lc) = mkFEl "Logictranslation" lc
 
 instance XmlPrintable G_hiding where
-    toXml (G_symb_list l) = mkPEl "Hiding" $ toLst l
-    toXml (G_logic_projection lc) = mkFEl "Logicprojection" lc
-
-
+    toXml ga (G_symb_list l) = mkPEl "Hiding" $ toLst ga l
+    toXml _ (G_logic_projection lc) = mkFEl "Logicprojection" lc
 
 instance PrintableAsXmlAttr LIB_NAME where
     toStr l = case l of
@@ -168,27 +166,27 @@ instance PrintableAsXmlAttr Token where toStr = tokStr
 instance PrintableAsXmlAttr Logic_name where toStr (Logic_name t _) = toStr t
 
 instance XmlPrintable a => XmlListPrintable [a] where
-    toLst = map toXml
+    toLst ga = map $ toXml ga
 
 instance XmlListPrintable G_basic_spec where
-    toLst (G_basic_spec lid bs) =
-        let i = toItem lid emptyGlobalAnnos bs
-        in map (fromAnno . fmap itemToXml) $ items i
+    toLst ga (G_basic_spec lid bs) =
+        let i = toItem lid bs
+        in map (fromAnno ga . fmap (itemToXml ga)) $ items i
 
 instance XmlListPrintable GENERICITY where
-    toLst (Genericity (Params pl) (Imported il) _)
-        = let f n l = map (mkPEl n . (: []) . toXml) l
+    toLst ga (Genericity (Params pl) (Imported il) _)
+        = let f n l = map (mkPEl n . (: []) . toXml ga) l
           in f "Param" pl ++ f "Given" il
 
 instance XmlListPrintable RESTRICTION where
-    toLst (Hidden m _) = toLst m
-    toLst (Revealed m _) = toLst m
+    toLst ga (Hidden m _) = toLst ga m
+    toLst ga (Revealed m _) = toLst ga m
 
 instance XmlListPrintable G_symb_items_list where
-    toLst (G_symb_items_list _ l) = map toText l
+    toLst _ (G_symb_items_list _ l) = map toText l
 
 instance XmlListPrintable G_symb_map_items_list where
-    toLst (G_symb_map_items_list _ l) = map toText l
+    toLst _ (G_symb_map_items_list _ l) = map toText l
 
 instance XmlAttrList [String] where
     mkAtts (x:y:l) = (Attr (unqual x) y) : mkAtts l
@@ -204,33 +202,35 @@ instance XmlAttrList Logic_code where
           in mkAtts $ catMaybes
                  [f "encoding" enc, f "source" src, f "target" trg]
 
-printAnnotated :: Annoted a -> Maybe Content
-printAnnotated (Annoted _ rg la ra) = printAnnotations rg la ra
+printAnnotated :: GlobalAnnos -> Annoted a -> Maybe Content
+printAnnotated ga (Annoted _ rg la ra) = printAnnotations ga rg la ra
 
-printAnnotations :: Range -> [Annotation] -> [Annotation] -> Maybe Content
-printAnnotations _ [] [] = Nothing
+printAnnotations
+    :: GlobalAnnos -> Range -> [Annotation] -> [Annotation] -> Maybe Content
+printAnnotations _ _ [] [] = Nothing
 -- TOCHECK: Annoted-Items have empty range for the moment
-printAnnotations rg lan ran
+printAnnotations ga rg lan ran
     = Just $ withRg rg $ mkPEl "Annotations"
       $ let f n l = (case l of [] -> []
-                               _ -> [printPXmlList n l])
+                               _ -> [printPXmlList ga n l])
         in f "Left" lan ++ f "Right" ran
 
 -- check if one can remove this by generalizing mkEl such as for attribs
-printXmlList :: XmlPrintable a => String -> [String] -> [a] -> Content
-printXmlList n attrs l = mkEl n attrs $ toLst l
+printXmlList :: XmlPrintable a
+    => GlobalAnnos -> String -> [String] -> [a] -> Content
+printXmlList ga n attrs l = mkEl n attrs $ toLst ga l
 
-printPXmlList :: XmlPrintable a => String -> [a] -> Content
-printPXmlList n l = printXmlList n [] l
+printPXmlList :: XmlPrintable a => GlobalAnnos -> String -> [a] -> Content
+printPXmlList ga n l = printXmlList ga n [] l
 
-fromAnno :: XmlPrintable a => Annoted a -> Content
-fromAnno a = withAnno a $ toXml $ item a
+fromAnno :: XmlPrintable a => GlobalAnnos -> Annoted a -> Content
+fromAnno ga a = withAnno ga a $ toXml ga $ item a
 
-withAnno :: Annoted a -> Content -> Content
-withAnno a c@(Elem e) = case printAnnotated a of
+withAnno :: GlobalAnnos -> Annoted a -> Content -> Content
+withAnno ga a c@(Elem e) = case printAnnotated ga a of
                         Just ac -> Elem $ e { elContent = ac : elContent e }
                         _ -> c
-withAnno _ _ = error "withAnno only applies to elements"
+withAnno _ _ _ = error "withAnno only applies to elements"
 
 withText :: String -> Content -> Content
 withText s (Elem e) = Elem $ e { elContent = mkText s : elContent e }
@@ -284,17 +284,12 @@ mkAttr n = Attr (unqual n)
 
 ------------------------------------------------------------------------------
 
-itemToXml :: Item -> Content
-itemToXml i =
-    let it = itemType i
-        attrName = getValueName it
-        attrValue = getValue it
+itemToXml :: GlobalAnnos -> Item -> Content
+itemToXml ga i =
+    let IT name attrs mdoc = itemType i
         content = withRg (range i)
-                  $ mkPEl (getName it)
-                  $ map (fromAnno . fmap itemToXml) $ items i
-    in if hasValue it then
-           if attrName == "value" then
-               withText  attrValue content
-           else
-               withAttrs [mkAttr attrName attrValue] content
-       else content
+                  $ mkPEl name
+                  $ map (fromAnno ga . fmap (itemToXml ga)) $ items i
+    in withAttrs (map (uncurry mkAttr) attrs) $ case mdoc of
+         Nothing -> content
+         Just d -> withText (show $ useGlobalAnnos ga d) content
