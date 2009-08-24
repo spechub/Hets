@@ -31,7 +31,7 @@ module Maude.Morphism (
     renameSorts,
     union,
     setTarget,
-    -- extendMorphismSorts,
+    qualifySorts,
     extendWithSortRenaming,
 ) where
 
@@ -303,31 +303,13 @@ setTarget sign morph = morph {target = sign}
 renameSorts :: Morphism -> Symbols -> Symbols
 renameSorts = mapSorts . sortMap
 
--- extendMorphismSorts :: Morphism -> Qid -> [Qid] -> Morphism
--- extendMorphismSorts mor sym syms = let
---        tgt = target mor
---        smap = sortMap mor
---      in mor {
---            target = Sign.renameListSort (createRenaming sym syms) tgt,
---            sortMap = extendSortMap sym syms smap
---         }
-
--- createRenaming :: Qid -> [Qid] -> [(Qid, Qid)]
--- createRenaming _ [] = []
--- createRenaming sym (sym' : syms) = (sym', new_sym) : createRenaming sym syms
---        where new_sym = mkSimpleId $ show sym ++ "$" ++ show sym'
-
--- extendSortMap :: Qid -> [Qid] -> QidMap -> QidMap
--- extendSortMap _ [] sm = sm
--- extendSortMap sym (sym' : syms) sort_map = extendSortMap sym syms sort_map'
---        where new_sym = mkSimpleId $ show sym ++ "$" ++ show sym'
---              sort_map' = Map.fromList $ extendSortList sym' new_sym $ Map.toList sort_map
-
--- extendSortList :: Qid -> Qid -> [(Qid, Qid)] -> [(Qid, Qid)]
--- extendSortList from to [] = [(from, to)]
--- extendSortList from to (s@(sym1, sym2) : syms) = if from == sym2
---                                                then (sym1, to) : syms
---                                                else s : extendSortList from to syms
+qualifySorts :: Morphism -> Qid -> Symbols -> Morphism
+qualifySorts mor qid syms = let
+        insert symb = Map.insert symb $ qualify qid symb
+        smap = foldr insert Map.empty syms
+        q'tgt  m = m { target  = mapSorts smap $ target m }
+        q'smap m = m { sortMap = mapSorts smap $ sortMap m }
+    in q'tgt . q'smap $ mor
 
 -- FIXME: Code duplication!
 extendWithSortRenaming :: Symbol -> Symbol -> Morphism -> Morphism
