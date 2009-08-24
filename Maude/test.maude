@@ -1,6 +1,9 @@
-fmod TEST is
+mod TEST is
  sorts A B C .
  subsort A < B .
+ sorts D E F .
+ subsort D < F .
+ subsort D < E .
  
  op a : -> A .
  op b : -> B .
@@ -8,6 +11,7 @@ fmod TEST is
  
  op f : A -> B .
  op g : A A -> B .
+ op h : A A -> A [assoc comm id: a]
  
  vars X Y : A .
  
@@ -16,7 +20,12 @@ fmod TEST is
  
  eq g(a,X) = b .
  eq g(X, Y) = c [owise] .
-endfm
+ 
+ ceq h(a, a) = a
+  if true /\ not false .
+ 
+ rl a => b .
+endm
 
 fmod TEST2 is
  sorts C D .
