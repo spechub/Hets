@@ -136,8 +136,8 @@ partitionStmts = let
 
 -- | Extract the Signature of a Module.
 fromSpec :: Module -> Sign
-fromSpec spec@(Module _ _ stmts) = let
-        sents = filter (not . Sen.isRule) . Sen.fromSpec $ spec
+fromSpec (Module _ _ stmts) = let
+        sents = filter (not . Sen.isRule) . Sen.fromStatements $ stmts
         (sort'list, sub'list, op'list) = partitionStmts stmts
         ins'sorts = flip (foldr insertSort) sort'list
         ins'subs  = flip (foldr insertSubsort) sub'list

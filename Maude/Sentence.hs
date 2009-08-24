@@ -14,6 +14,7 @@ Definition of sentences for Maude.
 module Maude.Sentence (
     Sentence(..),
     fromSpec,
+    fromStatements,
     isRule,
 ) where
 
@@ -75,7 +76,11 @@ instance HasLabels Sentence where
 
 -- | Extract the |Sentence|s of a |Module|
 fromSpec :: Module -> [Sentence]
-fromSpec (Module _ _ stmts) = let
+fromSpec (Module _ _ stmts) = filter isRule $ fromStatements stmts
+
+-- | Extract the |Sentence|s from the |Statement|s
+fromStatements :: [Statement] -> [Sentence]
+fromStatements stmts = let
         convert stmt = case stmt of
             MbStmnt mb -> Just $ Membership mb
             EqStmnt eq -> Just $ Equation eq
