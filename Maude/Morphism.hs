@@ -84,6 +84,19 @@ instance Pretty Morphism where
         -- text "\n\nTarget:" <$$> pretty $ target mor
 
 
+-- mapSource :: (Sign -> Sign) -> Morphism -> Morphism
+-- mapSource func mor = mor { source = func $ source mor }
+mapTarget :: (Sign -> Sign) -> Morphism -> Morphism
+mapTarget func mor = mor { target = func $ target mor }
+
+mapSortMap  :: (SymbolMap -> SymbolMap) -> Morphism -> Morphism
+mapSortMap  func mor = mor { sortMap  = func $ sortMap  mor }
+mapOpMap    :: (SymbolMap -> SymbolMap) -> Morphism -> Morphism
+mapOpMap    func mor = mor { opMap    = func $ opMap    mor }
+mapLabelMap :: (SymbolMap -> SymbolMap) -> Morphism -> Morphism
+mapLabelMap func mor = mor { labelMap = func $ labelMap mor }
+
+
 -- | Separate Operator and other Renamings.
 partitionRenamings :: [Renaming] -> ([Renaming], [Renaming])
 partitionRenamings = let
@@ -126,8 +139,8 @@ fromSignRenamings = applyRenamings . identity
 applyOpRenaming :: Renaming -> Morphism -> Morphism
 applyOpRenaming rename = let
         syms = renamingSymbols rename
-        add'op mor = mor { opMap = uncurry Map.insert syms $ opMap mor }
-        use'op attrs mor = mor { target = uncurry Sign.renameOp syms attrs $ target mor }
+        add'op = mapOpMap $ uncurry Map.insert syms
+        use'op attrs = mapTarget $ uncurry Sign.renameOp syms attrs
     in case rename of
         OpRenaming1 _ (To _ attrs) -> use'op attrs . add'op
         OpRenaming2 _ _ _ (To _ attrs) -> use'op attrs . add'op
@@ -136,11 +149,11 @@ applyOpRenaming rename = let
 applyRenaming :: Renaming -> Morphism -> Morphism
 applyRenaming rename = let
         syms = renamingSymbols rename
-        add'sort mor = mor { sortMap  = uncurry Map.insert syms $ sortMap mor }
-        use'sort mor = mor { target = uncurry Sign.renameSort syms $ target mor }
-        ren'sort mor = mor { opMap = uncurry renameSortOpMap syms $ opMap mor }
-        add'labl mor = mor { labelMap = uncurry Map.insert syms $ labelMap mor }
-        use'labl mor = mor { target = uncurry Sign.renameLabel syms $ target mor }
+        add'sort = mapSortMap $ uncurry Map.insert syms
+        use'sort = mapTarget $ uncurry Sign.renameSort syms
+        ren'sort = mapOpMap $ uncurry renameSortOpMap syms
+        add'labl = mapLabelMap $ uncurry Map.insert syms
+        use'labl = mapTarget $ uncurry Sign.renameLabel syms
     in case rename of
         SortRenaming _ _ -> ren'sort . use'sort . add'sort
         LabelRenaming _ _ -> use'labl . add'labl
@@ -160,7 +173,7 @@ fromSignsRenamings sign1 sign2 rens = let
 insertOpRenaming :: Renaming -> Morphism -> Morphism
 insertOpRenaming rename = let
         syms = renamingSymbols rename
-        add'op mor = mor { opMap = uncurry Map.insert syms $ opMap mor }
+        add'op = mapOpMap $ uncurry Map.insert syms
     in case rename of
         OpRenaming1 _ _ -> add'op
         OpRenaming2 _ _ _ _ -> add'op
@@ -169,9 +182,9 @@ insertOpRenaming rename = let
 insertRenaming :: Renaming -> Morphism -> Morphism
 insertRenaming rename = let
         syms = renamingSymbols rename
-        add'sort mor = mor { sortMap  = uncurry Map.insert syms $ sortMap mor }
-        ren'sort mor = mor { opMap = uncurry renameSortOpMap syms $ opMap mor }
-        add'labl mor = mor { labelMap = uncurry Map.insert syms $ labelMap mor }
+        add'sort = mapSortMap $ uncurry Map.insert syms
+        ren'sort = mapOpMap $ uncurry renameSortOpMap syms
+        add'labl = mapLabelMap $ uncurry Map.insert syms
     in case rename of
         SortRenaming _ _ -> ren'sort . add'sort
         LabelRenaming _ _ -> add'labl
@@ -307,14 +320,14 @@ qualifySorts :: Morphism -> Qid -> Symbols -> Morphism
 qualifySorts mor qid syms = let
         insert symb = Map.insert symb $ qualify qid symb
         smap = foldr insert Map.empty syms
-        q'tgt  m = m { target  = mapSorts smap $ target m }
-        q'smap m = m { sortMap = mapSorts smap $ sortMap m }
+        q'tgt  = mapTarget $ mapSorts smap
+        q'smap = mapSortMap $ mapSorts smap
     in q'tgt . q'smap $ mor
 
 -- FIXME: Code duplication!
 extendWithSortRenaming :: Symbol -> Symbol -> Morphism -> Morphism
 extendWithSortRenaming src tgt = let
-        add'sort mor = mor { sortMap  = Map.insert src tgt $ sortMap mor }
-        use'sort mor = mor { target = Sign.renameSort src tgt $ target mor }
-        ren'sort mor = mor { opMap = renameSortOpMap src tgt $ opMap mor }
+        add'sort = mapSortMap $ Map.insert src tgt
+        use'sort = mapTarget $ Sign.renameSort src tgt
+        ren'sort = mapOpMap $ renameSortOpMap src tgt
     in ren'sort . use'sort . add'sort
