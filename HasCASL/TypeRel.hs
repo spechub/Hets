@@ -13,17 +13,21 @@ compute subtype dependencies
 
 module HasCASL.TypeRel where
 
-import Common.Id
-import Common.AS_Annotation
-import qualified Common.Lib.Rel as Rel
-import qualified Data.Map as Map
-import qualified Data.Set as Set
 import HasCASL.As
 import HasCASL.AsUtils
 import HasCASL.ClassAna
 import HasCASL.Le
 import HasCASL.Builtin
 import HasCASL.DataAna
+import HasCASL.MinType
+
+import Common.Id
+import Common.AS_Annotation
+import qualified Common.Lib.Rel as Rel
+
+import qualified Data.Map as Map
+import qualified Data.Set as Set
+import Data.Maybe
 
 typeRel :: TypeMap -> Rel.Rel Id
 typeRel = Rel.transReduce . Rel.irreflex . Rel.transClosure
@@ -172,7 +176,7 @@ subtInjProj = let
             $ QualVar v2
 
 injTrans :: Named Sentence
-injTrans =  let
+injTrans = let
   v1 = mkVarDecl (stringToId "x") aType
   v2 = mkVarDecl (stringToId "y") bType
   v3 = mkVarDecl (stringToId "z") cType
@@ -185,3 +189,24 @@ injTrans =  let
             $ mkInjEq aType bType v1 v2)
        $ mkLogTerm eqvId nr (mkInjEq aType cType v1 v3)
            $ mkInjEq bType cType v2 v3
+
+monos :: Env -> [Named Sentence]
+monos e = concatMap (makeMonos e) . Map.toList $ assumps e
+
+makeMonos :: Env -> (Id, Set.Set OpInfo) -> [Named Sentence]
+makeMonos e (i, s) = makeEquivMonos e i . map opType $ Set.toList s
+
+makeEquivMonos :: Env -> Id -> [TypeScheme] -> [Named Sentence]
+makeEquivMonos e i l = case l of
+  [] -> []
+  t : r -> catMaybes (map (makeEquivMono e i t) r) ++ makeEquivMonos e i r
+
+makeEquivMono :: Env -> Id -> TypeScheme -> TypeScheme -> Maybe (Named Sentence)
+makeEquivMono e i s1 s2 = if
+  haveCommonSupertype e s1 s2 then
+    Just $ makeNamed "ga_monotonicity"
+         $ Formula $ mkEqTerm eqId unitType nr
+           (QualOp Op (PolyId i [] nr) s1 [] Infer nr)
+           $ (QualOp Op (PolyId i [] nr) s2 [] Infer nr)
+  else Nothing
+
