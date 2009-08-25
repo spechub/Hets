@@ -33,7 +33,8 @@ bracketPretties :: (Pretty a) => [a] -> Doc
 bracketPretties = combine brackets hsep
 
 combineHooks :: (Pretty a) => [a] -> Doc
-combineHooks = combine parens $ vcat -- . punctuate (text "\t")
+combineHooks = let bracketed doc = lbrack $+$ doc <> rbrack
+    in combine bracketed $ vcat
 
 instance Pretty Membership where
     pretty (Mb t s cs as) = hsep $ if null cs
