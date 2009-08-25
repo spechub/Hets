@@ -32,7 +32,7 @@ bracketPretties :: (Pretty a) => [a] -> Doc
 bracketPretties = combine brackets hsep
 
 combineHooks :: (Pretty a) => [a] -> Doc
-combineHooks = combine (parens . ((<>) $ text "\n")) (vsep . map ((<>) $ text "\t")) 
+combineHooks = combine parens $ vsep . punctuate (text "\t")
 
 instance Pretty Membership where
     pretty (Mb t s cs as) = hsep $ if null cs
