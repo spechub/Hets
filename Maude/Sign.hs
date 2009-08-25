@@ -89,7 +89,7 @@ instance Pretty Sign where
             pr'sorts $ Set.elems $ sorts sign,
             pr'subs $ Rel.toMap $ Rel.transReduce $ subsorts sign,
             pr'ops $ ops sign,
-            pretty $ sentences sign
+            pretty $ Set.toList $ sentences sign
         ]
 
 
