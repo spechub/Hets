@@ -174,8 +174,9 @@ maude2casl msign nsens = (csign { CSign.sortSet = cs,
          ops_syms = ops2symbols cops
          pred_sens = subsortSens mk (Rel.toList $ MSign.subsorts msign)
          named_sens = map (makeNamed "") pred_sens
-         sg_sens = map (makeNamed "") $ Set.toList $ MSign.sentences msign
-         (no_owise_sens, owise_sens, mbs_rls_sens) = splitOwiseEqs (nsens ++ sg_sens)
+         -- The sentences in the signature are also in the sentences
+--         sg_sens = map (makeNamed "") $ Set.toList $ MSign.sentences msign
+         (no_owise_sens, owise_sens, mbs_rls_sens) = splitOwiseEqs nsens
          no_owise_forms = map (noOwiseSen2Formula mk) no_owise_sens
          owise_forms = map (owiseSen2Formula mk no_owise_forms) owise_sens
          mb_rl_forms = map (mb_rl2formula mk) mbs_rls_sens
@@ -312,7 +313,7 @@ translateOpDeclSet im ods tpl = Set.fold (translateOpDecl im) tpl ods
 translateOpDecl :: IdMap -> MSign.OpDecl
                    -> (CSign.OpMap, CSign.OpMap, [Named CAS.CASLFORMULA])
                    -> (CSign.OpMap, CSign.OpMap, [Named CAS.CASLFORMULA])
-translateOpDecl im (syms, ats) (ops, assoc_ops, forms) = (ops', assoc_ops', forms6)
+translateOpDecl im (syms, ats) (ops, assoc_ops, forms) = (ops', assoc_ops', forms')
       where predOps = ops2pred im syms
             (sym : _) = Set.toList syms
             (cop_id, ot) = fromJust $ maudeSym2CASLOp im sym
@@ -323,6 +324,7 @@ translateOpDecl im (syms, ats) (ops, assoc_ops, forms) = (ops', assoc_ops', form
                          then Map.insertWith (Set.union) cop_id cop_type assoc_ops
                          else assoc_ops
             op_name = CAS.Op_name cop_id
+            {- Now this sentences are generated in the Maude part
             forms1 = if assoc ats
                      then let assoc_f = associativeSen op_name (head $ CSign.opArgs ot)
                           in makeNamed "" assoc_f : forms'
@@ -350,6 +352,7 @@ translateOpDecl im (syms, ats) (ops, assoc_ops, forms) = (ops', assoc_ops', form
                               rid_f = right_identitySen op_name (head $ CSign.opArgs ot) rid
                           in makeNamed "" rid_f : forms5
                      else forms5
+-}
 
 -- | translates a Maude operator symbol into a pair with the id of the operator
 -- and its CASL type
