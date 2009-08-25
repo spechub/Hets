@@ -47,6 +47,8 @@ import CMDL.Interface
 import PGIP.XMLparsing
 #endif
 
+import Maude.Maude2DG (anaMaudeFile)
+
 main :: IO ()
 main = do
     getArgs >>= hetcatsOpts >>= \ opts ->
@@ -96,6 +98,7 @@ processFile opts file = do
         cmdlProcessFile file
         return Nothing
 #endif
+      MaudeIn -> anaMaudeFile opts file
       _ -> anaLib opts file
     case res of
       Just (ln, nEnv) -> writeSpecFiles opts file nEnv ln $ lookupDGraph ln nEnv
