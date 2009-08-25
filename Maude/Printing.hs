@@ -104,10 +104,10 @@ instance Pretty Hook where
     pretty hook = case hook of
         IdHook qid qs -> hsep
             [text "id-hook", pretty qid, parenPretties qs]
-        OpHook qid op dom cod -> hsep
-            [text "op-hook", pretty qid, parens . pretty $ mkOpPartial op dom cod]
+        OpHook qid op dom cod -> let symb = mkOpPartial op dom cod
+            in hsep [text "op-hook", pretty qid, parens $ pretty symb]
         TermHook qid term -> hsep
-            [text "term-hook", pretty qid, parens . pretty $ term]
+            [text "term-hook", pretty qid, parens $ pretty term]
     pretties = combine parens vsep
 
 
