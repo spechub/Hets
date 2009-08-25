@@ -76,7 +76,7 @@ instance HasLabels Sentence where
 
 -- | Extract the |Sentence|s of a |Module|
 fromSpec :: Module -> [Sentence]
-fromSpec (Module _ _ stmts) = filter isRule $ fromStatements stmts
+fromSpec (Module _ _ stmts) = fromStatements stmts
 
 -- | Extract the |Sentence|s from the |Statement|s
 fromStatements :: [Statement] -> [Sentence]
