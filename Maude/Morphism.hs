@@ -77,11 +77,11 @@ instance Pretty Morphism where
             pr'pair txt left right = hsep
                 [txt, pretty left, text "to", pretty right]
             pr'ops src tgt = pr'pair (text "op") src (getName tgt)
-            pr'map fun = vsep . map (uncurry fun) . Map.toList
+            pr'map fun = vcat . map (uncurry fun) . Map.toList
             smap = pr'map (pr'pair $ text "sort") $ sortMap mor
             omap = pr'map pr'ops $ opMap mor
             lmap = pr'map (pr'pair $ text "label") $ labelMap mor
-        in vsep [ smap, omap, lmap ]
+        in vcat [ smap, omap, lmap ]
         -- text "\n\nTarget:" <$$> pretty $ target mor
 
 

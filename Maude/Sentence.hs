@@ -25,7 +25,7 @@ import Maude.Printing ()
 
 import Data.Maybe (mapMaybe)
 
-import Common.Doc (vsep)
+import Common.Doc (vcat)
 import Common.DocUtils (Pretty(..))
 
 
@@ -40,7 +40,7 @@ instance Pretty Sentence where
         Membership mb -> pretty mb
         Equation eq   -> pretty eq
         Rule rl       -> pretty rl
-    pretties = vsep . map pretty
+    pretties = vcat . map pretty
 
 
 instance HasSorts Sentence where

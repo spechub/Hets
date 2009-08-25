@@ -30,7 +30,7 @@ basicAnalysis :: Sign -> MaudeText -> IO (Sign, [Sentence])
 basicAnalysis sign (MaudeText mt) = do
     (hIn, hOut, _, _) <- runInteractiveCommand maudeCmd
     hPutStrLn hIn $ unwords ["in", maudeHetsPath]
-    let printedSign = parens $ vsep [text "fmod FROM-HETS is", pretty sign, text mt, text "endfm"]
+    let printedSign = parens $ vcat [text "fmod FROM-HETS is", pretty sign, text mt, text "endfm"]
     hPutStrLn hIn $ show printedSign
     hClose hIn
     specOut <- hGetContents hOut

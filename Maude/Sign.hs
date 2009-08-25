@@ -78,14 +78,14 @@ instance Pretty Sign where
             pr'sups = hsep . map pretty . Set.elems
             pr'pair sub sups = (:) . hsep $
                 [keyword "subsort", pretty sub, less, pr'sups sups]
-            pr'subs = vsep . Map.foldWithKey pr'pair []
+            pr'subs = vcat . Map.foldWithKey pr'pair []
             -- print operator decparations
             pr'decl attrs symb = hsep
                 [keyword "op", pretty symb, pretty attrs, dot]
             pr'ods (decls, attrs) = descend ((:) . pr'decl attrs) decls
             pr'ocs = descend pr'ods
-            pr'ops = vsep . Map.fold pr'ocs []
-        in vsep [
+            pr'ops = vcat . Map.fold pr'ocs []
+        in vcat [
             pr'sorts $ Set.elems $ sorts sign,
             pr'subs $ Rel.toMap $ Rel.transReduce $ subsorts sign,
             pr'ops $ ops sign,
