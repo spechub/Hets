@@ -33,12 +33,13 @@ import Common.Result
 import Common.Id
 
 -- Borrar despues de las pruebas
-import GUI.ShowGraph
 import Driver.Options
 import Common.LibName
 
-maude_cmd :: String
-maude_cmd = "/Applications/maude-darwin/maude.intelDarwin -interactive -no-banner"
+maudePath :: String
+maudePath = "maude"
+maudeCmd :: String
+maudeCmd = unwords [maudePath, "-interactive", "-no-banner"]
 
 data ImportType = Pr | Ex | Inc
 type ModExpProc = (Token, TokenInfoMap, Morphism, [ParamSort], DGraph)
@@ -471,7 +472,7 @@ getImportsSortsStmnts (_ : stmts) p = getImportsSortsStmnts stmts p
 
 directMaudeParsing :: FilePath -> IO DGraph
 directMaudeParsing fp = do
-              (hIn, hOut, _, _) <- runInteractiveCommand maude_cmd
+              (hIn, hOut, _, _) <- runInteractiveCommand maudeCmd
               hPutStrLn hIn $ "load " ++ fp
               ns <- parse fp
               let ns' = either (\ _ -> []) id ns

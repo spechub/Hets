@@ -18,7 +18,7 @@ import Common.DocUtils (Pretty(..))
 
 
 maudePath :: String
-maudePath = "/Applications/maude-darwin/maude.intelDarwin"
+maudePath = "maude"
 maudeCmd :: String
 maudeCmd = unwords [maudePath, "-interactive", "-no-banner"]
 maudeHetsPath :: String
