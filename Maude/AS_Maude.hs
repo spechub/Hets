@@ -157,3 +157,62 @@ newtype LabelId = LabelId Qid
 
 newtype OpId = OpId Qid
              deriving (Show, Read, Ord, Eq)
+
+-- | Auxiliary functions to traverse the attributes
+
+-- | check if a list of attributes contains the assoc attribute
+assoc :: Attr -> Bool
+assoc a = case a of
+       Assoc -> True
+       _ -> False
+
+-- | check if a list of attributes contains the comm attribute
+comm :: Attr -> Bool
+comm a = case a of
+       Comm -> True
+       _ -> False
+
+-- | check if a list of attributes contains the idem attribute
+idem :: Attr -> Bool
+idem a = case a of
+       Idem -> True
+       _ -> False
+
+-- | check if a list of attributes contains the identity attribute
+idtty :: Attr -> Bool
+idtty a = case a of
+       Id _ -> True
+       _ -> False
+
+-- | check if a list of attributes contains the left identity attribute
+leftId :: Attr -> Bool
+leftId a = case a of
+       LeftId _ -> True
+       _ -> False
+
+-- | check if a list of attributes contains the right identity attribute
+rightId :: Attr -> Bool
+rightId a = case a of
+       RightId _ -> True
+       _ -> False
+
+-- | check if a list of attributes contains the right identity attribute
+ctor :: Attr -> Bool
+ctor a = case a of
+       Ctor -> True
+       _ -> False
+
+-- | check if a list of attributes contains the owise attribute
+owise :: StmntAttr -> Bool
+owise a = case a of
+       Owise -> True
+       _ -> False
+
+-- | returns the identity term from the attribute set
+getIdentity ::  [Attr] -> Maybe Term
+getIdentity [] = Nothing
+getIdentity (a : as) = case a of
+       Id t -> Just t
+       RightId t -> Just t
+       LeftId t -> Just t
+       _ -> getIdentity as

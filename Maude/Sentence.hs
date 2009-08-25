@@ -109,35 +109,35 @@ fromOperator (Op op_id ar co ats) = concat [comm_sens, assoc_sens, idem_sens,
      where assoc_sens = if any assoc ats
                         then assocEq (getName op_id) (head ar) (head $ tail ar) co
                         else []
-           comm_sens = if comm ats
+           comm_sens = if any comm ats
                        then commEq (getName op_id) (head ar) (head $ tail ar) co
                        else []
-           idem_sens = if idem ats
+           idem_sens = if any idem ats
                        then idemEq (getName op_id) (head ar) co
                        else []
-           id_sens = if identity ats
+           id_sens = if any idtty ats
                      then identityEq (getName op_id) (head ar) (fromJust $ getIdentity ats) co
                      else []
-           leftId_sens = if leftId ats
+           leftId_sens = if any leftId ats
                          then leftIdEq (getName op_id) (head ar) (fromJust $ getIdentity ats) co
                          else []
-           rightId_sens = if rightId ats
+           rightId_sens = if any rightId ats
                          then rightIdEq (getName op_id) (head ar) (fromJust $ getIdentity ats) co
                          else []
            
 
 assocEq :: Qid -> Type -> Type -> Type -> [Sentence]
 assocEq op ar1 ar2 co = [Equation $ Eq t1 t2 [] []]
-     where v1 = Apply (mkSimpleId "v1") [] ar1
-           v2 = Apply (mkSimpleId "v2") [] ar2
+     where v1 = Var (mkSimpleId "v1") ar1
+           v2 = Var (mkSimpleId "v2") ar2
            t1 = Apply op [v1, v2] co
            t2 = Apply op [v2, v1] co
 
 commEq :: Qid -> Type -> Type -> Type -> [Sentence]
 commEq op ar1 ar2 co = [eq1, eq2]
-     where v1 = Apply (mkSimpleId "v1") [] ar1
-           v2 = Apply (mkSimpleId "v2") [] ar2
-           v3 = Apply (mkSimpleId "v3") [] ar2
+     where v1 = Var (mkSimpleId "v1") ar1
+           v2 = Var (mkSimpleId "v2") ar2
+           v3 = Var (mkSimpleId "v3") ar2
            t1 = Apply op [v1, v2] co
            t2 = Apply op [t1, v3] co
            t3 = Apply op [v2, v3] co
@@ -151,74 +151,25 @@ idemEq op ar co = [Equation $ Eq t v [] []]
            t = Apply op [v, v] co
 
 identityEq :: Qid -> Type -> Term -> Type -> [Sentence]
-identityEq op ar1 idtty co = [eq1, eq2, eq3, eq4]
-     where v = Apply (mkSimpleId "v") [] ar1
-           t1 = Apply op [v, idtty] co
-           t2 = Apply op [idtty, v] co
+identityEq op ar1 idt co = [eq1, eq2, eq3, eq4]
+     where v = Var (mkSimpleId "v") ar1
+           t1 = Apply op [v, idt] co
+           t2 = Apply op [idt, v] co
            eq1 = Equation $ Eq t1 v [] []
            eq2 = Equation $ Eq t2 v [] []
            eq3 = Equation $ Eq v t1 [] []
            eq4 = Equation $ Eq v t2 [] []
 
 leftIdEq :: Qid -> Type -> Term -> Type -> [Sentence]
-leftIdEq op ar1 idtty co = [eq1, eq2]
-     where v = Apply (mkSimpleId "v") [] ar1
-           t = Apply op [idtty, v] co
+leftIdEq op ar1 idt co = [eq1, eq2]
+     where v = Var (mkSimpleId "v") ar1
+           t = Apply op [idt, v] co
            eq1 = Equation $ Eq t v [] []
            eq2 = Equation $ Eq v t [] []
 
 rightIdEq :: Qid -> Type -> Term -> Type -> [Sentence]
-rightIdEq op ar1 idtty co = [eq1, eq2]
-     where v = Apply (mkSimpleId "v") [] ar1
-           t = Apply op [v, idtty] co
+rightIdEq op ar1 idt co = [eq1, eq2]
+     where v = Var (mkSimpleId "v") ar1
+           t = Apply op [v, idt] co
            eq1 = Equation $ Eq t v [] []
            eq2 = Equation $ Eq v t [] []
-
--- | check if a list of attributes contains the assoc attribute
-assoc :: Attr -> Bool
-assoc Assoc = True
-assoc _ = False
-
--- | check if a list of attributes contains the comm attribute
-comm :: [Attr] -> Bool
-comm [] = False
-comm (a : as) = case a of
-       Comm -> True
-       _ -> comm as
-
--- | check if a list of attributes contains the idem attribute
-idem :: [Attr] -> Bool
-idem [] = False
-idem (a : as) = case a of
-       Idem -> True
-       _ -> idem as
-
--- | check if a list of attributes contains the identity attribute
-identity :: [Attr] -> Bool
-identity [] = False
-identity (a : as) = case a of
-       Id _ -> True
-       _ -> identity as
-
--- | check if a list of attributes contains the left identity attribute
-leftId :: [Attr] -> Bool
-leftId [] = False
-leftId (a : as) = case a of
-       LeftId _ -> True
-       _ -> leftId as
-
--- | check if a list of attributes contains the right identity attribute
-rightId :: [Attr] -> Bool
-rightId [] = False
-rightId (a : as) = case a of
-       RightId _ -> True
-       _ -> rightId as
-
--- | returns the identity term from the attribute set
-getIdentity ::  [Attr] -> Maybe Term
-getIdentity [] = Nothing
-getIdentity (a : as) = case a of
-       Id t -> Just t
-       RightId t -> Just t
-       LeftId t -> Just t
-       _ -> getIdentity as
