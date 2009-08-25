@@ -16,6 +16,8 @@ module Maude.Printing () where
 import Maude.AS_Maude
 import Maude.Symbol
 
+import Data.List (intersperse)
+
 import Common.Doc
 import Common.DocUtils (Pretty(..))
 
@@ -57,7 +59,7 @@ instance Pretty Condition where
             EqCond t1 t2 -> pretty' t1 equals t2
             RwCond t1 t2 -> pretty' t1 implies t2
             MatchCond t1 t2 -> pretty' t1 (text ":=") t2
-    pretties = combine (text "if" <+>) (hsep . punctuate andDoc)
+    pretties = combine (text "if" <+>) (hsep . intersperse andDoc)
 
 
 instance Pretty Attr where
