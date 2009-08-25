@@ -288,7 +288,7 @@ processModExp tim vm dg (SummationModExp modExp1 modExp2) = (tok, tim3, morph, p
                      where (tok1, tim1, morph1, ps1, dg1) = processModExp tim vm dg modExp1
                            (tok2, tim2, morph2, ps2, dg2) = processModExp tim1 vm dg1 modExp2
                            ps' = deleteRepeated $ ps1 ++ ps2
-                           tok = mkSimpleId $ "{" ++ show tok1 ++ " + " ++ show tok2 ++ "}"
+                           tok = mkSimpleId $ concat ["{", show tok1, " + ", show tok2, "}"]
                            (n1, _, ss1, _, _) = fromJust $ Map.lookup tok1 tim2
                            (n2, _, ss2, _, _) = fromJust $ Map.lookup tok2 tim2
                            ss1' = renameSorts morph1 ss1
@@ -315,7 +315,7 @@ processModExp tim vm dg (InstantiationModExp modExp views) = (tok'', tim'', fina
                            view_names = map HasName.getName views
                            (new_param_sorts, ps_morph) = instantiateSorts param_names view_names vm morph paramSorts
                            (tok', morph1, ns, deps) = processViews views (mkSimpleId "") tim' vm ps (ps_morph, [], [])
-                           tok'' = mkSimpleId $ show tok ++ "{" ++ show tok' ++ "}"
+                           tok'' = mkSimpleId $ concat [show tok, "{", show tok', "}"]
                            sg2 = target morph1
                            final_morph = Maude.Morphism.inclusion sg2 sg2
                            (tim'', dg'') = if Map.member tok'' tim
@@ -456,6 +456,7 @@ insertFreeNode2 t tim (_, sg, _, _, _) dg = (tim', dg')
 mkFreeName :: Token -> Token
 mkFreeName = mkSimpleId . (\ x -> x ++ "'") . show
 
+-- | extracts the parameters of a Maude module
 getParams :: Module -> [Parameter]
 getParams (Module _ params _) = params
 
@@ -470,6 +471,7 @@ getImportsSortsStmnts ((SortStmnt s) : stmts) (is, ss) =
             getImportsSortsStmnts stmts (is, (Sort $ HasName.getName s) : ss)
 getImportsSortsStmnts (_ : stmts) p = getImportsSortsStmnts stmts p
 
+-- | builds the development graph of the specified Maude file
 directMaudeParsing :: FilePath -> IO DGraph
 directMaudeParsing fp = do
               (hIn, hOut, _, _) <- runInteractiveCommand maudeCmd
@@ -498,45 +500,19 @@ traverseSpecs hIn hOut (m : ms) = do
 traverseNames :: Handle -> Handle -> [NamedSpec] -> IO [String]
 traverseNames _ _ [] = return []
 traverseNames hIn hOut (ModName q : ns) = do
-                 hPutStrLn hIn $ "show module " ++ q ++ " ."
+                 hPutStrLn hIn $ concat ["show module ", q, " ."]
                  hFlush hIn
                  sOutput <- getAllOutput hOut "" False
                  rs <- traverseNames hIn hOut ns
                  return $ sOutput : rs
 traverseNames hIn hOut (ViewName q : ns) = do
-                 hPutStrLn hIn $ "show view " ++ q ++ " ."
+                 hPutStrLn hIn $ concat ["show view ", q, " ."]
                  hFlush hIn
                  sOutput <- getAllOutput hOut "" False
                  rs <- traverseNames hIn hOut ns
                  return $ sOutput : rs
 
-getAllOutput :: Handle -> String -> Bool -> IO String
-getAllOutput hOut s False = do
-                 ss <- hGetLine hOut
-                 getAllOutput hOut (s ++ "\n" ++ ss) (final ss)
-getAllOutput _ s True = return $ prepare s
-
-getAllSpec :: Handle -> String -> Bool -> IO String
-getAllSpec hOut s False = do
-                 ss <- hGetLine hOut
-                 getAllSpec hOut (s ++ "\n" ++ ss) (finalSpec ss)
-getAllSpec _ s True = return s
-
-final :: String -> Bool
-final "endfm" = True
-final "endm" = True
-final "endth" = True
-final "endfth" = True
-final "endv" = True
-final _ = False
-
-prepare :: String -> String
-prepare s = "(" ++ (drop 8 s) ++ ")"
-
-finalSpec :: String -> Bool
-finalSpec "@#$endHetsSpec$#@" = True
-finalSpec _ = False
-
+-- | list of names of the predefined modules
 predefined :: [NamedSpec]
 predefined = [ModName "TRUTH-VALUE", ModName "TRUTH", ModName "BOOL", ModName "EXT-BOOL",
               ModName "NAT",
@@ -559,13 +535,16 @@ predefined = [ModName "TRUTH-VALUE", ModName "TRUTH", ModName "BOOL", ModName "E
               ModName "META-MODULE", ModName "META-LEVEL", ModName "COUNTER", ModName "LOOP-MODE",
               ModName "CONFIGURATION"]
 
+-- | returns the specifications of the predefined modules by passing as
+-- parameter the list of names
 predefinedSpecs :: Handle -> Handle -> IO [Spec]
 predefinedSpecs hIn hOut = traversePredefined hIn hOut predefined
 
+-- | returns the specifications of the predefined modules
 traversePredefined :: Handle -> Handle -> [NamedSpec] -> IO [Spec]
 traversePredefined _ _ [] = return []
 traversePredefined hIn hOut (ModName n : ns) = do
-                 hPutStrLn hIn $ "(hets " ++ n ++ " .)"
+                 hPutStrLn hIn $ concat ["(hets ", n, " .)"]
                  hFlush hIn
                  sOutput <- getAllSpec hOut "" False
                  ss <- traversePredefined hIn hOut ns
@@ -573,7 +552,7 @@ traversePredefined hIn hOut (ModName n : ns) = do
                  let spec = read stringSpec :: Spec
                  return $ spec : ss
 traversePredefined hIn hOut (ViewName n : ns) = do
-                 hPutStrLn hIn $ "(hetsView " ++ n ++ " .)"
+                 hPutStrLn hIn $ concat ["(hetsView ", n, " .)"]
                  hFlush hIn
                  sOutput <- getAllSpec hOut "" False
                  ss <- traversePredefined hIn hOut ns
@@ -594,7 +573,7 @@ getSortsParameterizedBy ps = filter f . map (g ps)
                  g = \ pss x -> let 
                          params = getSortParams $ HasName.getName x
                          in (x, intersec params pss)
-
+-- | computes the intersection of the two list (considers them as sorts)
 intersec :: [Token] -> [Token] -> [Token]
 intersec [] _ = []
 intersec (e : es) l = case elem e l of
@@ -650,6 +629,7 @@ deleteRepeated (p : ps) = if elem p ps
                           then deleteRepeated ps
                           else p : deleteRepeated ps
 
+-- | returns the first from the tuple
 fstTern :: (a, b, c) -> a
 fstTern (a, _, _) = a
 
@@ -680,15 +660,15 @@ newParamers4sorts _ _ _ = []
 
 addNewParams2sort :: ParamSort -> [Token] -> ParamSort
 addNewParams2sort (Sort tok, _) lps@(_:_) = (Sort tok', lps)
-         where tok' = mkSimpleId $ show tok ++ "`{" ++ printNewParams4sort lps ++ "`}"
+         where tok' = mkSimpleId $ concat [show tok, "`{", printNewParams4sort lps, "`}"]
 addNewParams2sort (Kind tok, _) lps@(_:_) = (Kind tok', lps)
-         where tok' = mkSimpleId $ show tok ++ "`{" ++ printNewParams4sort lps ++ "`}"
+         where tok' = mkSimpleId $ concat [show tok, "`{", printNewParams4sort lps, "`}"]
 addNewParams2sort (ps, _) _ = (ps, [])
 
 printNewParams4sort :: [Token] -> String
 printNewParams4sort [] = ""
 printNewParams4sort [p] = show p
-printNewParams4sort (p : ps) = show p ++ "`," ++ printNewParams4sort ps
+printNewParams4sort (p : ps) = concat [show p, "`,", printNewParams4sort ps]
 
 -- | instantiate a sort
 -- Params: Parameterized sort -> Parameter to be replaced -> New name of the parameter
@@ -755,7 +735,7 @@ qualifyType p (TypeSort (SortId s)) = TypeSort (SortId $ mkSimpleId $ show p ++ 
 qualifyType _ ty = ty
 
 qualifySort :: Token -> Sort -> Sort
-qualifySort p (SortId s) = SortId $ mkSimpleId $ show p ++ "$" ++ show s
+qualifySort p (SortId s) = SortId $ mkSimpleId $ concat [show p, "$", show s]
 
 createQualifiedSortRenaming :: Token -> Token -> Symbols -> [Renaming]
 createQualifiedSortRenaming _ _ [] = []
@@ -769,7 +749,7 @@ createQualifiedSortRenaming old new (s : ss) = case old == new of
               s' = HasName.getName s
 
 qualifiedSort :: Token -> Token -> Sort
-qualifiedSort param sort = SortId $ mkSimpleId $ show param ++ "$" ++ show sort
+qualifiedSort param sort = SortId $ mkSimpleId $ concat [show param, "$", show sort]
 
 
 -- insertNode tiene que recibir tambien la lista de sorts parametrizados que se

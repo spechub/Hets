@@ -32,7 +32,6 @@ import Maude.Shellout
 
 import Common.AS_Annotation
 import Common.ExtSign
-import Common.Result
 import System.IO.Unsafe
 
 import Data.Maybe
@@ -111,7 +110,7 @@ instance StaticAnalysis Maude MaudeText Sentence () () Sign Morphism Symbol
     signature_union Maude sign1 sign2 = return $ Sign.union sign1 sign2
     intersection Maude sign1 sign2 = return $ Sign.intersection sign1 sign2
     -- final_union
-    morphism_union Maude m1 m2 = Result [] $ Just $ Morphism.union m1 m2
+    morphism_union Maude m1 m2 = return $ Morphism.union m1 m2
     subsig_inclusion Maude src tgt = return $ Morphism.inclusion src tgt
     -- generated_sign
     -- cogenerated_sign

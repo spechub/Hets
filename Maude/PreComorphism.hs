@@ -41,7 +41,7 @@ mapMorphism morph =
            pmap = createPredMap mk smap
            (src', _) = maude2casl src []
            (tgt', _) = maude2casl tgt []
-         in Result [] $ Just $ CMorphism.Morphism src' tgt' smap' omap' pmap ()
+         in return $ CMorphism.Morphism src' tgt' smap' omap' pmap ()
 
 -- | translates the Maude morphism between operators into a CASL morpshim between
 -- operators
@@ -123,22 +123,22 @@ rename sm tok = new_tok
 -- | translates a Maude sentence into a CASL formula
 mapSentence :: MSign.Sign -> MSentence.Sentence -> Result CAS.CASLFORMULA
 mapSentence sg sen@(MSentence.Equation eq) = case owise ats of
-             False -> Result [] $ Just $ sentence $ noOwiseSen2Formula mk named
+             False -> return $ sentence $ noOwiseSen2Formula mk named
              True -> let
                        sg_sens = map (makeNamed "") $ Set.toList $ MSign.sentences sg
                        (no_owise_sens, _, _) = splitOwiseEqs sg_sens
                        no_owise_forms = map (noOwiseSen2Formula mk) no_owise_sens
                        trans = sentence $ owiseSen2Formula mk no_owise_forms named
-                     in Result [] $ Just trans
+                     in return trans
           where mk = arrangeKinds (MSign.sorts sg) (MSign.subsorts sg)
                 MAS.Eq _ _ _ ats = eq
                 named = makeNamed "" sen
-mapSentence sg sen@(MSentence.Membership mb) = Result [] $ Just $ sentence form
+mapSentence sg sen@(MSentence.Membership mb) = return $ sentence form
           where mk = arrangeKinds (MSign.sorts sg) (MSign.subsorts sg)
                 MAS.Mb _ _ _ _ = mb
                 named = makeNamed "" sen
                 form = mb_rl2formula mk named
-mapSentence sg sen@(MSentence.Rule rl) = Result [] $ Just $ sentence form
+mapSentence sg sen@(MSentence.Rule rl) = return $ sentence form
           where mk = arrangeKinds (MSign.sorts sg) (MSign.subsorts sg)
                 MAS.Rl _ _ _ _ = rl
                 named = makeNamed "" sen
@@ -148,7 +148,7 @@ mapSentence sg sen@(MSentence.Rule rl) = Result [] $ Just $ sentence form
 -- the Maude ones, and wraps them into a Result datatype
 mapTheory :: (MSign.Sign, [Named MSentence.Sentence]) 
               -> Result (CSign.CASLSign, [Named CAS.CASLFORMULA])
-mapTheory (sg, nsens) = Result [] $ Just $ maude2casl sg nsens
+mapTheory (sg, nsens) = return $ maude2casl sg nsens
 
 -- | computes new signature and sentences of CASL associated to the
 -- given Maude signature and sentences
@@ -156,19 +156,21 @@ maude2casl :: MSign.Sign -> [Named MSentence.Sentence]
               -> (CSign.CASLSign, [Named CAS.CASLFORMULA])
 maude2casl msign nsens = (csign { CSign.sortSet = cs,
                             CSign.emptySortSet = cs,
-                            CSign.opMap = cops,
+                            CSign.opMap = cops',
                             CSign.assocOps = assoc_ops,
                             CSign.predMap = preds,
                             CSign.declaredSymbols = syms }, new_sens)
    where csign = CSign.emptySign ()
          mk' = arrangeKinds (MSign.sorts msign) (MSign.subsorts msign)
+         cs = kindsFromMap mk'
          mk = Map.insert (token2id $ mkSimpleId "Universal") (token2id $ mkSimpleId "[Universal]") mk'
-         cs = kindsFromMap mk
          ks = kindPredicates mk
          rp = rewPredicates ks cs
+         rs = rewPredicatesSens cs
          ops = MSign.ops msign
          ksyms = kinds2syms cs
          (cops, assoc_ops, ops_forms) = translateOps mk ops
+         cops' = predefinedOps cs cops
          ops_syms = ops2symbols cops
          pred_sens = subsortSens mk (Rel.toList $ MSign.subsorts msign)
          named_sens = map (makeNamed "") pred_sens
@@ -180,7 +182,120 @@ maude2casl msign nsens = (csign { CSign.sortSet = cs,
          preds = Map.unionWith (Set.union) ks rp
          preds_syms = preds2syms preds
          syms = Set.union ksyms $ Set.union ops_syms preds_syms
-         new_sens = ops_forms ++ named_sens ++ no_owise_forms ++ owise_forms ++ mb_rl_forms
+         new_sens = concat [rs, ops_forms, named_sens, no_owise_forms, owise_forms, mb_rl_forms]
+
+predefinedOps :: Set.Set Id -> CSign.OpMap -> CSign.OpMap
+predefinedOps kinds om = Set.fold predefinedOpKind om'' kinds
+         where if_id = token2id $ mkSimpleId "if_then_else_fi"
+               double_eq_id = token2id $ mkSimpleId "_==_"
+               neg_double_eq_id = token2id $ mkSimpleId "_=/=_"
+               om' = Map.delete double_eq_id $ Map.delete if_id om
+               om'' = Map.delete neg_double_eq_id om'
+
+predefinedOpKind :: Id -> CSign.OpMap -> CSign.OpMap
+predefinedOpKind kind om = om3
+        where if_id = token2id $ mkSimpleId "if_then_else_fi"
+              double_eq_id = token2id $ mkSimpleId "_==_"
+              neg_double_eq_id = token2id $ mkSimpleId "_=/=_"
+              bool_id = token2id $ mkSimpleId "[Bool]"
+              if_opt = Set.singleton $ CSign.OpType CAS.Total [bool_id, kind, kind] kind
+              eq_opt = Set.singleton $ CSign.OpType CAS.Total [kind, kind] bool_id
+              om1 = Map.insertWith Set.union if_id if_opt om
+              om2 = Map.insertWith Set.union double_eq_id eq_opt om1
+              om3 = Map.insertWith Set.union neg_double_eq_id eq_opt om2
+
+predefinedSens :: Set.Set Id -> [Named CAS.CASLFORMULA]
+predefinedSens = Set.fold predefinedSensKind []
+
+predefinedSensKind :: Id -> [Named CAS.CASLFORMULA] -> [Named CAS.CASLFORMULA]
+predefinedSensKind kind acc = concat [iss, eqs, neqs, psen, acc]
+         where iss = ifSens kind
+               eqs = equalitySens kind
+               neqs = nonEqualitySens kind
+               psen = plusSen
+
+ifSens :: Id -> [Named CAS.CASLFORMULA]
+ifSens kind = [form'', neg_form'']
+         where v1 = newVarIndex 1 kind
+               v2 = newVarIndex 2 kind
+               bv = newVarIndex 2 $ token2id $ mkSimpleId "[Bool]"
+               true_id = CAS.Op_name $ token2id $ mkSimpleId "true"
+               true_term = CAS.Application true_id [] nullRange
+               if_id = CAS.Op_name $ token2id $ mkSimpleId "if_then_else_fi"
+               if_term = CAS.Application if_id [bv, v1, v2] nullRange
+               prem = CAS.Strong_equation bv true_term nullRange
+               concl = CAS.Strong_equation if_term v1 nullRange
+               form = CAS.Implication prem concl True nullRange
+               form' = quantifyUniversally form
+               neg_prem = CAS.Negation prem nullRange
+               neg_concl = CAS.Strong_equation if_term v2 nullRange
+               neg_form = CAS.Implication neg_prem neg_concl True nullRange
+               neg_form' = quantifyUniversally neg_form
+               name1 = show kind ++ "_if_true"
+               name2 = show kind ++ "_if_false"
+               form'' = makeNamed name1 form'
+               neg_form'' = makeNamed name2 neg_form'
+
+equalitySens :: Id -> [Named CAS.CASLFORMULA]
+equalitySens kind = [form'', comp_form'']
+         where v1 = newVarIndex 1 kind
+               v2 = newVarIndex 2 kind
+               true_id = CAS.Op_name $ token2id $ mkSimpleId "true"
+               true_term = CAS.Application true_id [] nullRange
+               false_id = CAS.Op_name $ token2id $ mkSimpleId "false"
+               false_term = CAS.Application false_id [] nullRange
+               prem = CAS.Strong_equation v1 v2 nullRange
+               double_eq_id = CAS.Op_name $ token2id $ mkSimpleId "_==_"
+               double_eq_term = CAS.Application double_eq_id [v1, v2] nullRange
+               concl = CAS.Strong_equation double_eq_term true_term nullRange
+               form = CAS.Implication prem concl True nullRange
+               form' = quantifyUniversally form
+               neg_prem = CAS.Negation prem nullRange
+               new_concl = CAS.Strong_equation double_eq_term false_term nullRange
+               comp_form = CAS.Implication neg_prem new_concl True nullRange
+               comp_form' = quantifyUniversally comp_form
+               name1 = show kind ++ "_==_true"
+               name2 = show kind ++ "_==_false"
+               form'' = makeNamed name1 form'
+               comp_form'' = makeNamed name2 comp_form'
+
+nonEqualitySens :: Id -> [Named CAS.CASLFORMULA]
+nonEqualitySens kind = [form'', comp_form'']
+         where v1 = newVarIndex 1 kind
+               v2 = newVarIndex 2 kind
+               true_id = CAS.Op_name $ token2id $ mkSimpleId "true"
+               true_term = CAS.Application true_id [] nullRange
+               false_id = CAS.Op_name $ token2id $ mkSimpleId "false"
+               false_term = CAS.Application false_id [] nullRange
+               prem = CAS.Strong_equation v1 v2 nullRange
+               double_eq_id = CAS.Op_name $ token2id $ mkSimpleId "_=/=_"
+               double_eq_term = CAS.Application double_eq_id [v1, v2] nullRange
+               concl = CAS.Strong_equation double_eq_term false_term nullRange
+               form = CAS.Implication prem concl True nullRange
+               form' = quantifyUniversally form
+               neg_prem = CAS.Negation prem nullRange
+               new_concl = CAS.Strong_equation double_eq_term true_term nullRange
+               comp_form = CAS.Implication neg_prem new_concl True nullRange
+               comp_form' = quantifyUniversally comp_form
+               name1 = show kind ++ "_=/=_false"
+               name2 = show kind ++ "_=/=_true"
+               form'' = makeNamed name1 form'
+               comp_form'' = makeNamed name2 comp_form'
+
+plusSen :: [Named CAS.CASLFORMULA]
+plusSen = [form'']
+     where v1 = newVarIndex 1 $ token2id $ mkSimpleId "[Nat]"
+           v2 = newVarIndex 2 $ token2id $ mkSimpleId "[Nat]"
+           plus_id = CAS.Op_name $ token2id $ mkSimpleId "_+_"
+           succ_id = CAS.Op_name $ token2id $ mkSimpleId "s_"
+           succ_v1 = CAS.Application succ_id [v1] nullRange
+           lhs = CAS.Application plus_id [succ_v1, v2] nullRange
+           add_term = CAS.Application plus_id [v1, v2] nullRange
+           rhs = CAS.Application succ_id [add_term] nullRange
+           form = CAS.Strong_equation lhs rhs nullRange
+           form' = quantifyUniversally form
+           name = "add_+_"
+           form'' = makeNamed name form'
 
 -- | translates the Maude operator map into a tuple of CASL operators, CASL
 -- associative operators and the formulas generated by the operator attributes
@@ -305,62 +420,6 @@ splitOwiseEqs (s : ss) = res
                                             True -> (no_owise_sens, s : owise_sens, mbs_rls)
                                             False -> (s : no_owise_sens, owise_sens, mbs_rls)
                      _ -> (no_owise_sens, owise_sens, s : mbs_rls)
-
--- | check if a list of attribute statements contains the owise attribute
-owise :: [MAS.StmntAttr] -> Bool
-owise [] = False
-owise (a : as) = case a of
-       MAS.Owise -> True
-       _ -> owise as
-
--- | check if a list of attributes contains the assoc attribute
-assoc :: [MAS.Attr] -> Bool
-assoc [] = False
-assoc (a : as) = case a of
-       MAS.Assoc -> True
-       _ -> assoc as
-
--- | check if a list of attributes contains the comm attribute
-comm :: [MAS.Attr] -> Bool
-comm [] = False
-comm (a : as) = case a of
-       MAS.Comm -> True
-       _ -> comm as
-
--- | check if a list of attributes contains the idem attribute
-idem :: [MAS.Attr] -> Bool
-idem [] = False
-idem (a : as) = case a of
-       MAS.Idem -> True
-       _ -> idem as
-
--- | check if a list of attributes contains the identity attribute
-identity :: [MAS.Attr] -> Bool
-identity [] = False
-identity (a : as) = case a of
-       MAS.Id _ -> True
-       _ -> identity as
-
--- | check if a list of attributes contains the left identity attribute
-leftId :: [MAS.Attr] -> Bool
-leftId [] = False
-leftId (a : as) = case a of
-       MAS.LeftId _ -> True
-       _ -> leftId as
-
--- | check if a list of attributes contains the right identity attribute
-rightId :: [MAS.Attr] -> Bool
-rightId [] = False
-rightId (a : as) = case a of
-       MAS.RightId _ -> True
-       _ -> rightId as
-
--- | returns the identity term from the attribute set
-getIdentity ::  [MAS.Attr] -> Maybe MAS.Term
-getIdentity [] = Nothing
-getIdentity (a : as) = case a of
-       MAS.RightId t -> Just t
-       _ -> getIdentity as
 
 -- | translates a Maude equation defined without the "owise" attribute into
 -- a CASL formula
@@ -621,7 +680,37 @@ maudeTerm2caslTerm im (MAS.Apply q ts _) = CAS.Application (CAS.Op_name name) tt
         where name = token2id q
               tts = map (maudeTerm2caslTerm im) ts
 
--- | generate the predicates
+rewPredicatesSens :: Set.Set Id -> [Named CAS.CASLFORMULA]
+rewPredicatesSens = Set.fold rewPredicateSens []
+
+rewPredicateSens :: Id -> [Named CAS.CASLFORMULA] -> [Named CAS.CASLFORMULA]
+rewPredicateSens kind acc = [ref, trans] ++ acc
+        where ref = reflSen kind
+              trans = transSen kind
+
+-- | creates the reflexivity predicate for the given kind
+reflSen :: Id -> Named CAS.CASLFORMULA
+reflSen kind = makeNamed name $ quantifyUniversally form
+        where v = newVar kind
+              pn = CAS.Pred_name rewID
+              form = CAS.Predication pn [v, v] nullRange
+              name = "rew_refl_" ++ show kind
+
+-- | creates the transitivity predicate for the given kind
+transSen :: Id -> Named CAS.CASLFORMULA
+transSen kind = makeNamed name $ quantifyUniversally form
+        where v1 = newVarIndex 1 kind
+              v2 = newVarIndex 2 kind
+              v3 = newVarIndex 3 kind
+              pn = CAS.Pred_name rewID
+              prem1 = CAS.Predication pn [v1, v2] nullRange
+              prem2 = CAS.Predication pn [v2, v3] nullRange
+              concl = CAS.Predication pn [v1, v3] nullRange
+              conj_form = CAS.Conjunction [prem1, prem2] nullRange
+              form = CAS.Implication conj_form concl True nullRange
+              name = "rew_trans_" ++ show kind
+
+-- | generate the predicates for the rewrites
 rewPredicates :: Map.Map Id (Set.Set CSign.PredType) -> Set.Set Id
                  -> Map.Map Id (Set.Set CSign.PredType)
 rewPredicates m = Set.fold rewPredicate m
@@ -639,8 +728,10 @@ kindPredicates = Map.foldWithKey kindPredicate Map.empty
 -- corresponding terms
 kindPredicate :: Id -> Id -> Map.Map Id (Set.Set CSign.PredType)
                  -> Map.Map Id (Set.Set CSign.PredType)
-kindPredicate sort kind mis = Map.insertWith (Set.union) sort ar mis
-   where ar = Set.singleton $ CSign.PredType [kind]
+kindPredicate sort kind mis = case sort == (token2id $ mkSimpleId "Universal") of
+                  True -> mis
+                  False -> let ar = Set.singleton $ CSign.PredType [kind]
+                           in Map.insertWith (Set.union) sort ar mis
 
 -- | extract the kinds from the map of id's
 kindsFromMap :: IdMap -> Set.Set Id
@@ -873,3 +964,61 @@ getVarsTerm (CAS.Mixfix_bracketed ts _) =
 getVarsTerm (CAS.Mixfix_braced ts _) =
                    foldr (Map.unionWith (Set.union) . getVarsTerm) Map.empty ts
 getVarsTerm _ = Map.empty
+
+-- | check if a list of attribute statements contains the owise attribute
+owise :: [MAS.StmntAttr] -> Bool
+owise [] = False
+owise (a : as) = case a of
+       MAS.Owise -> True
+       _ -> owise as
+
+-- | check if a list of attributes contains the assoc attribute
+assoc :: [MAS.Attr] -> Bool
+assoc [] = False
+assoc (a : as) = case a of
+       MAS.Assoc -> True
+       _ -> assoc as
+
+-- | check if a list of attributes contains the comm attribute
+comm :: [MAS.Attr] -> Bool
+comm [] = False
+comm (a : as) = case a of
+       MAS.Comm -> True
+       _ -> comm as
+
+-- | check if a list of attributes contains the idem attribute
+idem :: [MAS.Attr] -> Bool
+idem [] = False
+idem (a : as) = case a of
+       MAS.Idem -> True
+       _ -> idem as
+
+-- | check if a list of attributes contains the identity attribute
+identity :: [MAS.Attr] -> Bool
+identity [] = False
+identity (a : as) = case a of
+       MAS.Id _ -> True
+       _ -> identity as
+
+-- | check if a list of attributes contains the left identity attribute
+leftId :: [MAS.Attr] -> Bool
+leftId [] = False
+leftId (a : as) = case a of
+       MAS.LeftId _ -> True
+       _ -> leftId as
+
+-- | check if a list of attributes contains the right identity attribute
+rightId :: [MAS.Attr] -> Bool
+rightId [] = False
+rightId (a : as) = case a of
+       MAS.RightId _ -> True
+       _ -> rightId as
+
+-- | returns the identity term from the attribute set
+getIdentity ::  [MAS.Attr] -> Maybe MAS.Term
+getIdentity [] = Nothing
+getIdentity (a : as) = case a of
+       MAS.Id t -> Just t
+       MAS.RightId t -> Just t
+       MAS.LeftId t -> Just t
+       _ -> getIdentity as

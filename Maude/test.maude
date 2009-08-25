@@ -13,6 +13,27 @@ fmod MY-LIST is
  eq reverse(E L) = reverse(L) E .
 endfm
 
+fth ASSOC-OP is
+ sort Elt .
+
+ op __ : Elt Elt -> Elt [assoc] .
+endfth
+
+fth ANOTHER-ASSOC-OP is
+ sort Foo .
+ 
+ op _._ : Foo Foo -> Foo .
+ 
+ vars F1 F2 F3 : Foo .
+ 
+ eq F1 . (F2 . F3) = (F1 . F2) . F3 .
+endfth
+
+view ASSOC from ASSOC-OP to ANOTHER-ASSOC-OP is
+ sort Elt to Foo .
+ op __ to _._ .
+endv
+
 fmod TEST is
  sorts A B C .
  subsort A < B .
@@ -73,8 +94,8 @@ fmod TEST5{X :: TEST4 * (sort Foo to Faa)} is
  op c : -> Test5 .
 endfm
 
-view VBool from TRIV * (sort Elt to Elt2) to BOOL * (sort Bool to Boool) is
- sort Elt2 to Boool .
+view VNat from TRIV * (sort Elt to Elt2) to NAT * (sort Nat to Naaaaat) is
+ sort Elt2 to Naaaaat .
 endv
 
 view V1 from TRIV to BOOL is
