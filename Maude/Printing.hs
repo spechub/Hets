@@ -23,8 +23,7 @@ import Common.DocUtils (Pretty(..))
 
 
 combine :: (Pretty a) => (Doc -> Doc) -> ([Doc] -> Doc) -> [a] -> Doc
--- TODO: Uncomment when we find out that empty lists don't need printing.
--- combine _ _ [] = empty
+combine _ _ [] = empty
 combine wrap dsep list = wrap . dsep . map pretty $ list
 
 parenPretties :: (Pretty a) => [a] -> Doc
@@ -80,16 +79,10 @@ instance Pretty Attr where
         Config -> text "config"
         Object -> text "object"
         Msg -> text "msg"
-        -- TODO: Is Frozen the only attribute where the parens must be left out for empty lists?
-        -- Frozen ints -> text "frozen" <+> parenPretties ints
-        Frozen ints -> if null ints
-            then text "frozen"
-            else text "frozen" <+> parenPretties ints
+        Frozen ints -> text "frozen" <+> parenPretties ints
         Poly ints -> text "poly" <+> parenPretties ints
         Special hooks -> text "special" <+> combineHooks hooks
-    pretties attrs = if null attrs
-        then empty
-        else bracketPretties attrs
+    pretties = bracketPretties
 
 
 instance Pretty StmntAttr where
