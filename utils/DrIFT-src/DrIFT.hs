@@ -13,7 +13,7 @@ import Text.PrettyPrint.HughesPJ
 import Data.List (partition)
 import System.Environment
 import qualified System.Exit as System
-import qualified IO
+import qualified System.IO as IO
 import RuleUtils(Rule,Tag)
 
 usage :: String

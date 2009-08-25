@@ -1,0 +1,24 @@
+name:            hets-drift
+version:         0.1.0.0
+license:         BSD3
+license-file:    LICENSE.txt
+author:          Klaus Luettich, Christian Maeder
+maintainer:      Christian Maeder <Christian Maeder@dfki.de>
+homepage:        https://svn-agbkb.informatik.uni-bremen.de/Hets/trunk/utils/DrIFT-src
+description:     DrIFT is a type sensitive preprocessor for Haskell.
+                 It extracts type declarations and directives from
+                 modules. The directives cause instances to be generated for
+                 parsed type declarations. This version can create Typeable,
+                 ShATermConvertible and GetRange instances
+
+synopsis:        DrIFT with hets-specific rules.
+category:        Generics, Parsing, Data
+stability:       provisional
+build-type:      Simple
+cabal-version:   >= 1.4
+tested-with:     GHC ==6.8.3, GHC ==6.10.4
+extra-source-files: LIZENZ.txt
+
+executable:      DrIFT
+main-is:         DrIFT.hs
+build-depends:   base, pretty
