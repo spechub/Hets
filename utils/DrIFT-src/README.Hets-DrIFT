@@ -1,0 +1,35 @@
+These source files are adapted for the special purposes of Hets!
+
+For the original or most recent sources, license, and authors see:
+http://repetae.net/computer/haskell/DrIFT/
+
+Source files containing DrIFT directives have extension .der.hs and are
+converted to .hs files via the (GNU) make-rule:
+
+%.hs: %.der.hs DrIFT
+	$(RM) $@
+	DrIFT $< > $@
+
+The environment variable DERIVEPATH can be set to find sources in other paths.
+Imported modules that are not found are simply ignored.
+
+For individual types example directives are:
+
+{-! for Common.Id.Pos derive : Typeable !-}
+{-! for Common.Id.Range derive : Typeable !-}
+
+{-! for Common.Id.Pos derive : ShATermConvertible !-}
+{-! for Common.Id.Range derive : ShATermConvertible !-}
+
+Instances (for the class getRange) of all types of a file are created by the
+directive:
+
+{-! global: GetRange !-}
+
+(Instances for the class Binary can also be created.)
+
+Furthermore the class ShATermLG (and BinaryLG) with an additional logic graph
+argument when reading in (for some existential types) is supported.  But the
+instances created for existential types need to be corrected manually!
+
+(We don't use DrIFT in any other way.)

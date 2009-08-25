@@ -17,7 +17,7 @@ stability:       provisional
 build-type:      Simple
 cabal-version:   >= 1.4
 tested-with:     GHC ==6.8.3, GHC ==6.10.4
-extra-source-files: LIZENZ.txt
+extra-source-files: LIZENZ.txt, README.Hets-DrIFT
 
 executable:      DrIFT
 main-is:         DrIFT.hs
