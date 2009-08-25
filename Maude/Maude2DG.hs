@@ -2,7 +2,6 @@
 module Maude.Maude2DG where
 
 import System.IO
-import System.Environment
 import System.Process
 
 import Static.DevGraph
@@ -484,16 +483,6 @@ directMaudeParsing fp = do
               hClose hOut
               return $ insertSpecs (psps ++ sps) Map.empty Map.empty [] emptyDG
 
-main :: IO ()
-main = getArgs >>= mapM_ directMaudeParsing2
-
-directMaudeParsing2 :: FilePath -> IO ()
-directMaudeParsing2 fp = do
-    dg <- directMaudeParsing fp
-    showGraph fp maudeHetcatsOpts
-              (Just (Lib_id (Direct_link "" nullRange),
-              Map.singleton (Lib_id (Direct_link "" nullRange)) dg ))
-
 traverseSpecs :: Handle -> Handle -> [String] -> IO [Spec]
 traverseSpecs _ _ [] = return []
 traverseSpecs hIn hOut (m : ms) = do
@@ -781,33 +770,13 @@ createQualifiedSortRenaming old new (s : ss) = case old == new of
 qualifiedSort :: Token -> Token -> Sort
 qualifiedSort param sort = SortId $ mkSimpleId $ show param ++ "$" ++ show sort
 
--- DELETE ONCE TESTS ARE FINISHED
-
-maudeHetcatsOpts :: HetcatsOpts
-maudeHetcatsOpts = HcOpt
-  { analysis = Basic
-  , guiType = UseGui
-  , infiles  = []
-  , specNames = []
-  , transNames = []
-  , intype   = GuessIn
-  , libdir   = ""
-  , modelSparQ = ""
-  , outdir   = ""
-  , outtypes = [] -- no default
-  , recurse  = False
-  , defLogic = "Maude"
-  , verbose  = 1
-  , outputToStdout = True
-  , caslAmalg = []
-  , interactive = False
-  , connectP = -1
-  , connectH = ""
-  , uncolored = False
-  , xmlFlag = False
-  , computeNormalForm = False
-  , dumpOpts = []
-  , listen   = -1 }
 
 -- insertNode tiene que recibir tambien la lista de sorts parametrizados que se
 -- calculen para la module expression
+
+
+anaMaudeFile :: HetcatsOpts -> FilePath -> IO (Maybe (LIB_NAME, LibEnv))
+anaMaudeFile _ file = do
+    dg <- directMaudeParsing file
+    let name = Lib_id $ Direct_link "Maude Module" nullRange
+    return $ Just (name, Map.singleton name dg)
