@@ -52,6 +52,7 @@ import Comorphisms.CoCASL2CoSubCFOL
 import Comorphisms.CoCFOL2IsabelleHOL
 import Comorphisms.Modal2CASL
 import Comorphisms.CASL_DL2CASL
+import Comorphisms.Maude2CASL
 import CspCASL.Comorphisms
 #endif
 #ifndef NOOWLLOGIC
@@ -171,6 +172,7 @@ spassComorphisms =
 #ifdef CASLEXTENSIONS
        prop2SPASS <- compComorphism (Comorphism Prop2CASL) partOut
        casl_dl2SPASS <- compComorphism (Comorphism CASL_DL2CASL) partOut
+       maude2SPASS <- compComorphism (Comorphism Maude2CASL) partOut
 #endif
 #ifndef NOOWLLOGIC
        owl2spass <- compComorphism (Comorphism OWL2CASL) partOut
@@ -184,6 +186,7 @@ spassComorphisms =
 #ifdef CASLEXTENSIONS
          , prop2SPASS
          , casl_dl2SPASS
+         , maude2SPASS
 #endif
 #ifndef NOOWLLOGIC
          , owl2spass

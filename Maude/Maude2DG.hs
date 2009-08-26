@@ -333,7 +333,7 @@ updateGraphViews tok1 tok2 sg morph views tim deps dg = (tim', dg''')
                            dg''' = insertDefEdgesMorphism n2 views sg dg''
 
 processViews :: [ViewId] -> Token -> TokenInfoMap -> ViewMap -> [(Token, Token, Symbols)]
-                -> (Morphism, [(Node, Morphism)], [(Token, Token, Symbols)]) 
+                -> (Morphism, [(Node, Morphism)], [(Token, Token, Symbols)])
                 -> (Token, Morphism, [(Node, Morphism)], [(Token, Token, Symbols)])
 processViews (vi : vis) tok tim vm (p : ps) (morph, lp, dep) =
                   processViews vis tok'' tim vm ps (morph', lp ++ [(n, morph')], dep ++ new_dep)
@@ -358,7 +358,7 @@ morphismView name p _ (n, _, vmorph, rnms, True) morph = (name, morph', vmorph',
               tgt = target vmorph
               vmorph' = Maude.Morphism.inclusion tgt tgt
 
-morphismView name p ss (n, th, morph, rnms, False) morph1 = 
+morphismView name p ss (n, th, morph, rnms, False) morph1 =
                          (name, morph2, vmorph, n, [(p, th, getNewSorts ss morph)])
         where rnms' = qualifyRenamings2 p rnms
               morph2 = applyRenamings morph1 rnms'
@@ -377,7 +377,7 @@ paramBinding th view p ss morph tim = (view, morph', vmorph', n, [])
               rnms' = createQualificationTh2Mod p ss
               vmorph' = applyRenamings vmorph rnms'
 
-insertNode :: Token -> Sign -> TokenInfoMap -> Symbols -> [(Token, Token, Symbols)] 
+insertNode :: Token -> Sign -> TokenInfoMap -> Symbols -> [(Token, Token, Symbols)]
               -> DGraph -> (TokenInfoMap, DGraph)
 insertNode tok sg tim ss deps dg = if Map.member tok tim
                          then (tim, dg)
@@ -527,7 +527,7 @@ predefined = [ModName "TRUTH-VALUE", ModName "TRUTH", ModName "BOOL", ModName "E
               ViewName "Qid", ModName "STRICT-WEAK-ORDER", ViewName "STRICT-WEAK-ORDER",
               ModName "STRICT-TOTAL-ORDER", ViewName "STRICT-TOTAL-ORDER", ViewName "Nat<",
               ViewName "Int<", ViewName "Rat<", ViewName "Float<", ViewName "String<",
-              ModName "TOTAL-PREORDER", ViewName "TOTAL-PREORDER", ModName "TOTAL-ORDER", 
+              ModName "TOTAL-PREORDER", ViewName "TOTAL-PREORDER", ModName "TOTAL-ORDER",
               ViewName "TOTAL-ORDER", ViewName "Nat<=", ViewName "Int<=", ViewName "Rat<=",
               ViewName "Float<=", ViewName "String<=", ModName "DEFAULT", ViewName "DEFAULT",
               ViewName "Nat0", ViewName "Int0", ViewName "Rat0", ViewName "Float0",
@@ -575,7 +575,7 @@ paramNames = map f
 getSortsParameterizedBy :: [Token] -> Symbols -> [ParamSort]
 getSortsParameterizedBy ps = filter f . map (g ps)
            where f = \ (_, l) -> l /= []
-                 g = \ pss x -> let 
+                 g = \ pss x -> let
                          params = getSortParams $ HasName.getName x
                          in (x, intersec params pss)
 -- | computes the intersection of the two list (considers them as sorts)
@@ -609,7 +609,7 @@ getSortParamsStringAux [] st = [mkSimpleId st]
 -- | check if the target of the view is completely instantiated (to modules)
 isInstantiated :: [Token] -> ModExp -> Bool
 isInstantiated ths (ModExp modExp) = notElem (HasName.getName modExp) ths
-isInstantiated ths (SummationModExp me1 me2) = isInstantiated ths me1 && 
+isInstantiated ths (SummationModExp me1 me2) = isInstantiated ths me1 &&
                                                isInstantiated ths me2
 isInstantiated ths (RenamingModExp modExp _) = isInstantiated ths modExp
 isInstantiated _ (InstantiationModExp _ _) = True
@@ -680,12 +680,12 @@ printNewParams4sort (p : ps) = concat [show p, "`,", printNewParams4sort ps]
 instantiateSort :: ParamSort -> [Token] -> [Token] -> ParamSort
 instantiateSort sp@(Sort tok, tok_params) (p : ps) (v : vs) = case elem p tok_params of
                         False -> instantiateSort sp ps vs
-                        True -> let 
+                        True -> let
                                  tok' = mkSimpleId $ instantiateSortString (show tok) (show p) (show v)
                                 in instantiateSort (Sort tok', tok_params) ps vs
 instantiateSort sp@(Kind tok, tok_params) (p : ps) (v : vs) = case elem p tok_params of
                         False -> instantiateSort sp ps vs
-                        True -> let 
+                        True -> let
                                  tok' = mkSimpleId $ instantiateSortString (show tok) (show p) (show v)
                                 in instantiateSort (Kind tok', tok_params) ps vs
 instantiateSort ps _ _ = ps
@@ -711,7 +711,7 @@ instantiateSortStringAux ('`' : '}' : _) param view acc = value ++ "`}"
              where value = if acc == param
                            then view
                            else acc
-instantiateSortStringAux (p : ps) param view acc = 
+instantiateSortStringAux (p : ps) param view acc =
                                  instantiateSortStringAux ps param view (acc ++ [p])
 instantiateSortStringAux _ _ _ acc = acc
 
@@ -720,7 +720,7 @@ qualifyRenamings t = map (qualifyRenaming t)
 
 qualifyRenaming :: Token -> Renaming -> Renaming
 qualifyRenaming p rnm = case rnm of
-           OpRenaming2 from ar co to -> OpRenaming2 from (map (qualifyType p) ar) 
+           OpRenaming2 from ar co to -> OpRenaming2 from (map (qualifyType p) ar)
                                                          ((qualifyType p) co) to
            SortRenaming from to -> SortRenaming ((qualifySort p) from) to
            _ -> rnm
@@ -730,7 +730,7 @@ qualifyRenamings2 t = map (qualifyRenaming2 t)
 
 qualifyRenaming2 :: Token -> Renaming -> Renaming
 qualifyRenaming2 p rnm = case rnm of
-           OpRenaming2 from ar co to -> OpRenaming2 from (map (qualifyType p) ar) 
+           OpRenaming2 from ar co to -> OpRenaming2 from (map (qualifyType p) ar)
                                                          ((qualifyType p) co) to
            SortRenaming from to -> SortRenaming ((qualifySort p) from) ((qualifySort p) to)
            _ -> rnm
@@ -747,7 +747,7 @@ createQualifiedSortRenaming _ _ [] = []
 createQualifiedSortRenaming old new (s : ss) = case old == new of
                 True -> []
                 False -> rnm : createQualifiedSortRenaming old new ss
-                             where rnm = SortRenaming (qualifiedSort old' s') 
+                             where rnm = SortRenaming (qualifiedSort old' s')
                                                       (qualifiedSort new' s')
         where old' = HasName.getName old
               new' = HasName.getName new
@@ -767,5 +767,5 @@ createQualificationTh2Mod par (s : ss) =
 anaMaudeFile :: HetcatsOpts -> FilePath -> IO (Maybe (LIB_NAME, LibEnv))
 anaMaudeFile _ file = do
     dg <- directMaudeParsing file
-    let name = Lib_id $ Direct_link "Maude Module" nullRange
+    let name = Lib_id $ Direct_link "Maude_Module" nullRange
     return $ Just (name, Map.singleton name dg)

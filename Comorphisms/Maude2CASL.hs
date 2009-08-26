@@ -71,7 +71,9 @@ instance Comorphism Maude2CASL
       sourceLogic Maude2CASL = MLogic.Maude
       sourceSublogic Maude2CASL = ()
       targetLogic Maude2CASL = CLogic.CASL
-      mapSublogic Maude2CASL _ = Just CSL.top
+      mapSublogic Maude2CASL _ = Just CSL.caslTop
+        { CSL.cons_features = CSL.emptyMapConsFeature
+        , CSL.sub_features = CSL.NoSub }
       map_theory Maude2CASL = mapTheory
       is_model_transportable Maude2CASL = True
       map_symbol Maude2CASL = mapSymbol
