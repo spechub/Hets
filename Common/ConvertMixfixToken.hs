@@ -30,6 +30,10 @@ inc :: Int -> Range -> Range
 inc n (Range p) =
   Range (map (flip incSourceColumn n) p)
 
+stripIdRange :: Id -> Id
+stripIdRange (Id ts cs _) =
+  Id (map (\ t -> t { tokPos = nullRange }) ts) (map stripIdRange cs) nullRange
+
 makeStringTerm :: Id -> Id -> AsAppl a -> Token -> a
 makeStringTerm c f asAppl tok =
   makeStrTerm (inc 1 sp) str
@@ -66,7 +70,7 @@ makeSignedNumber :: Id -> AsAppl a -> Token -> a
 makeSignedNumber f asAppl t@(Token n p) =
   case n of
   [] -> error "makeSignedNumber"
-  hd:tl ->
+  hd : tl ->
     if hd == '-' || hd == '+' then
        asAppl (Id [Token [hd] p, placeTok ] [] nullRange)
                   [makeNumberTerm f asAppl $ Token tl
@@ -75,7 +79,7 @@ makeSignedNumber f asAppl t@(Token n p) =
 
 makeFloatTerm :: Id -> Id -> Id -> AsAppl a -> Token -> a
 makeFloatTerm f d e asAppl t@(Token s p) =
-    let (m, r) = span (\c -> c /= 'E') s
+    let (m, r) = span (/= 'E') s
         offset = length m
     in if null r then makeFraction f d asAppl t
        else asAppl e [makeFraction f d asAppl (Token m p),
@@ -89,16 +93,16 @@ convertMixfixToken :: LiteralAnnos -> AsAppl a
 convertMixfixToken ga asAppl toTerm t = let
   te = toTerm t
   err s = ([Diag Error ("missing %" ++ s ++ " annotation") (tokPos t)], te)
-  in if isString t then
-        case string_lit ga of
+  in if isString t then case string_lit ga of
         Nothing -> err "string"
-        Just (c, f) -> ([], makeStringTerm c f asAppl t)
-     else if isNumber t then
-          case number_lit ga of
-          Nothing -> err "number"
-          Just f -> if isFloating t then
-                        case float_lit ga of
-                        Nothing -> err "floating"
-                        Just (d, e) -> ([], makeFloatTerm f d e asAppl t)
-                    else ([], makeNumberTerm f asAppl t)
+        Just (c, f) ->
+            ([], makeStringTerm (stripIdRange c) (stripIdRange f) asAppl t)
+     else if isNumber t then case number_lit ga of
+        Nothing -> err "number"
+        Just f0 -> let f = stripIdRange f0 in
+          if isFloating t then case float_lit ga of
+            Nothing -> err "floating"
+            Just (d, e) ->
+              ([], makeFloatTerm f (stripIdRange d) (stripIdRange e) asAppl t)
+          else ([], makeNumberTerm f asAppl t)
      else ([], te)
