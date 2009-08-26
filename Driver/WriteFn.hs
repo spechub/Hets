@@ -16,6 +16,7 @@ module Driver.WriteFn (writeSpecFiles) where
 
 import Control.Monad
 import Text.ParserCombinators.Parsec
+import Text.XML.Light
 import Data.List (partition, (\\))
 import Data.Maybe
 
@@ -33,6 +34,7 @@ import Logic.Coerce
 import Logic.Logic
 import Logic.Grothendieck
 import Comorphisms.LogicGraph
+import qualified Static.ToXml as ToXml
 
 import CASL.Logic_CASL
 
@@ -294,6 +296,8 @@ writeSpecFiles opts file lenv0 ln dg = do
     doDump opts "GlobalAnnos" $ putStrLn $ showGlobalDoc ga ga ""
     doDump opts "PrintStat" $ putStrLn $ printStatistics dg
     doDump opts "DGraph" $ putStrLn $ showDoc dg ""
+    doDump opts "DGraphXML" $ writeVerbFile opts
+           (filePrefix ++ ".xml") $ ppTopElement $ ToXml.dGraph dg
     doDump opts "LogicGraph" $ putStrLn $ showDoc logicGraph ""
     doDump opts "LibEnv" $
                writeVerbFile opts (filePrefix ++ ".lenv") $
