@@ -299,7 +299,7 @@ mapSentence mor = let
         smap = mapSorts (sortMap mor)
         omap = mapOps (opMap mor)
         lmap = mapLabels (labelMap mor)
-    in return . lmap . omap . smap
+    in return . lmap . smap . omap
 
 union :: Morphism -> Morphism -> Morphism
 union m1 m2 = let apply func items = func (items m1) (items m2)

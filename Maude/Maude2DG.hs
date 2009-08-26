@@ -322,7 +322,7 @@ processModExp tim vm dg (InstantiationModExp modExp views) = (tok'', tim'', fina
                                            then (tim', dg')
                                            else updateGraphViews tok tok'' sg2 morph1 ns tim' deps dg'
 
-updateGraphViews :: Token -> Token -> Sign -> Morphism -> [(Node, Sign)] -> TokenInfoMap
+updateGraphViews :: Token -> Token -> Sign -> Morphism -> [(Node, Morphism)] -> TokenInfoMap
                     -> [(Token, Token, Symbols)] -> DGraph -> (TokenInfoMap, DGraph)
 updateGraphViews tok1 tok2 sg morph views tim deps dg = (tim', dg''')
                      where (n1, _, _, _, _) = fromJust $ Map.lookup tok1 tim
@@ -333,19 +333,17 @@ updateGraphViews tok1 tok2 sg morph views tim deps dg = (tim', dg''')
                            dg''' = insertDefEdgesMorphism n2 views sg dg''
 
 processViews :: [ViewId] -> Token -> TokenInfoMap -> ViewMap -> [(Token, Token, Symbols)]
-                -> (Morphism, [(Node, Sign)], [(Token, Token, Symbols)]) 
-                -> (Token, Morphism, [(Node, Sign)], [(Token, Token, Symbols)])
+                -> (Morphism, [(Node, Morphism)], [(Token, Token, Symbols)]) 
+                -> (Token, Morphism, [(Node, Morphism)], [(Token, Token, Symbols)])
 processViews (vi : vis) tok tim vm (p : ps) (morph, lp, dep) =
-                             case mn of
-                                   Just n -> processViews vis tok'' tim vm ps (morph', lp ++ [(n, target morph')], dep ++ new_dep)
-                                   Nothing -> processViews vis tok'' tim vm ps (morph', lp, dep)
-                     where (tok', morph', mn, new_dep) = processView vi tim vm p morph
+                  processViews vis tok'' tim vm ps (morph', lp ++ [(n, morph')], dep ++ new_dep)
+                     where (tok', morph', _, n, new_dep) = processView vi tim vm p morph
                            tok'' = mkSimpleId $ show tok ++ "," ++ show tok'
 processViews _ tok _ _ _ (morph, nds, deps) = (tok', morph, nds, deps)
                      where tok' = mkSimpleId $ drop 1 $ show tok
 
 processView :: ViewId -> TokenInfoMap -> ViewMap -> (Token, Token, Symbols) ->
-               Morphism -> (Token, Morphism, Maybe Node, [(Token, Token, Symbols)])
+               Morphism -> (Token, Morphism, Morphism, Node, [(Token, Token, Symbols)])
 processView vi tim vm (p, theory, ss) morph =
                        if Map.member name vm
                        then morphismView name p ss (fromJust $ Map.lookup name vm) morph
@@ -353,24 +351,31 @@ processView vi tim vm (p, theory, ss) morph =
         where name = HasName.getName vi
 
 morphismView :: Token -> Token -> Symbols -> (Node, Token, Morphism, [Renaming], Bool)
-                -> Morphism -> (Token, Morphism, Maybe Node, [(Token, Token, Symbols)])
-morphismView name p _ (n, _, _, rnms, True) morph = (name, morph', Just n, [])
+                -> Morphism -> (Token, Morphism, Morphism, Node, [(Token, Token, Symbols)])
+morphismView name p _ (n, _, vmorph, rnms, True) morph = (name, morph', vmorph', n, [])
         where rnms' = qualifyRenamings p rnms
               morph' = applyRenamings morph rnms'
+              tgt = target vmorph
+              vmorph' = Maude.Morphism.inclusion tgt tgt
 
 morphismView name p ss (n, th, morph, rnms, False) morph1 = 
-                         (name, morph2, Just n, [(p, th, getNewSorts ss morph)])
+                         (name, morph2, vmorph, n, [(p, th, getNewSorts ss morph)])
         where rnms' = qualifyRenamings2 p rnms
               morph2 = applyRenamings morph1 rnms'
+              tgt = target vmorph
+              vmorph = Maude.Morphism.inclusion tgt tgt
 
 -- theory, parameter instantiated -> parameter binding -> sorts bound -> current morph
 -- map token info
 paramBinding :: Token -> Token -> Token -> Symbols -> Morphism -> TokenInfoMap
-                -> (Token, Morphism, Maybe Node, [(Token, Token, Symbols)])
-paramBinding th view p ss morph tim = (view, morph', Just n, [])
+                -> (Token, Morphism, Morphism, Node, [(Token, Token, Symbols)])
+paramBinding th view p ss morph tim = (view, morph', vmorph', n, [])
         where rnms = createQualifiedSortRenaming p view ss
               morph' = applyRenamings morph rnms
-              (n, _, _, _, _) = fromJust $ Map.lookup th tim 
+              (n, sg, _, _, _) = fromJust $ Map.lookup th tim
+              vmorph = Maude.Morphism.inclusion sg sg
+              rnms' = createQualificationTh2Mod p ss
+              vmorph' = applyRenamings vmorph rnms'
 
 insertNode :: Token -> Sign -> TokenInfoMap -> Symbols -> [(Token, Token, Symbols)] 
               -> DGraph -> (TokenInfoMap, DGraph)
@@ -402,11 +407,11 @@ insertInnerNode nod nm morph sg sens dg =
 
 -- | insert the list of definition edges, building for each node the inclusion morphism
 -- between the signatures
-insertDefEdgesMorphism :: Node -> [(Node, Sign)] -> Sign -> DGraph -> DGraph
+insertDefEdgesMorphism :: Node -> [(Node, Morphism)] -> Sign -> DGraph -> DGraph
 insertDefEdgesMorphism _ [] _ dg = dg
-insertDefEdgesMorphism n1 ((n2, sg1) : views) sg2 dg = insertDefEdgesMorphism n1 views sg2 dg'
-                  where morph = Maude.Morphism.inclusion sg1 sg2
-                        dg' = insertDefEdgeMorphism n1 n2 morph dg
+insertDefEdgesMorphism n1 ((n2, morph) : views) sg2 dg = insertDefEdgesMorphism n1 views sg2 dg'
+                  where morph' = setTarget sg2 morph
+                        dg' = insertDefEdgeMorphism n1 n2 morph' dg
 
 -- | insert a definition link between the nodes with the given morphism
 insertDefEdgeMorphism :: Node -> Node -> Morphism -> DGraph -> DGraph
@@ -751,10 +756,13 @@ createQualifiedSortRenaming old new (s : ss) = case old == new of
 qualifiedSort :: Token -> Token -> Sort
 qualifiedSort param sort = SortId $ mkSimpleId $ concat [show param, "$", show sort]
 
-
--- insertNode tiene que recibir tambien la lista de sorts parametrizados que se
--- calculen para la module expression
-
+createQualificationTh2Mod :: Token -> Symbols -> [Renaming]
+createQualificationTh2Mod _ [] = []
+createQualificationTh2Mod par (s : ss) =
+                rnm : createQualificationTh2Mod par ss
+        where par' = HasName.getName par
+              s' = HasName.getName s
+              rnm = SortRenaming (SortId s') (qualifiedSort par' s')
 
 anaMaudeFile :: HetcatsOpts -> FilePath -> IO (Maybe (LIB_NAME, LibEnv))
 anaMaudeFile _ file = do

@@ -158,6 +158,12 @@ newtype LabelId = LabelId Qid
 newtype OpId = OpId Qid
              deriving (Show, Read, Ord, Eq)
 
+-- | Auxiliary function to extract the type of a term
+getTermType :: Term -> Type
+getTermType (Const _ ty) = ty
+getTermType (Var _ ty) = ty
+getTermType (Apply _ _ ty) = ty
+
 -- | Auxiliary functions to traverse the attributes
 
 -- | check if a list of attributes contains the assoc attribute

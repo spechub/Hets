@@ -126,15 +126,15 @@ fromOperator (Op op_id ar co ats) = concat [comm_sens, assoc_sens, idem_sens,
                          else []
            
 
-assocEq :: Qid -> Type -> Type -> Type -> [Sentence]
-assocEq op ar1 ar2 co = [Equation $ Eq t1 t2 [] []]
+commEq :: Qid -> Type -> Type -> Type -> [Sentence]
+commEq op ar1 ar2 co = [Equation $ Eq t1 t2 [] []]
      where v1 = Var (mkSimpleId "v1") ar1
            v2 = Var (mkSimpleId "v2") ar2
            t1 = Apply op [v1, v2] co
            t2 = Apply op [v2, v1] co
 
-commEq :: Qid -> Type -> Type -> Type -> [Sentence]
-commEq op ar1 ar2 co = [eq1, eq2]
+assocEq :: Qid -> Type -> Type -> Type -> [Sentence]
+assocEq op ar1 ar2 co = [eq]
      where v1 = Var (mkSimpleId "v1") ar1
            v2 = Var (mkSimpleId "v2") ar2
            v3 = Var (mkSimpleId "v3") ar2
@@ -142,8 +142,7 @@ commEq op ar1 ar2 co = [eq1, eq2]
            t2 = Apply op [t1, v3] co
            t3 = Apply op [v2, v3] co
            t4 = Apply op [v1, t3] co
-           eq1 = Equation $ Eq t2 t4 [] []
-           eq2 = Equation $ Eq t4 t2 [] []
+           eq = Equation $ Eq t2 t4 [] []
 
 idemEq :: Qid -> Type -> Type -> [Sentence]
 idemEq op ar co = [Equation $ Eq t v [] []]
@@ -151,14 +150,12 @@ idemEq op ar co = [Equation $ Eq t v [] []]
            t = Apply op [v, v] co
 
 identityEq :: Qid -> Type -> Term -> Type -> [Sentence]
-identityEq op ar1 idt co = [eq1, eq2, eq3, eq4]
+identityEq op ar1 idt co = [eq1, eq2]
      where v = Var (mkSimpleId "v") ar1
            t1 = Apply op [v, idt] co
            t2 = Apply op [idt, v] co
            eq1 = Equation $ Eq t1 v [] []
            eq2 = Equation $ Eq t2 v [] []
-           eq3 = Equation $ Eq v t1 [] []
-           eq4 = Equation $ Eq v t2 [] []
 
 leftIdEq :: Qid -> Type -> Term -> Type -> [Sentence]
 leftIdEq op ar1 idt co = [eq1, eq2]
