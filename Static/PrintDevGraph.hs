@@ -59,7 +59,7 @@ removeProblematicListAnnos ga = let
           Set.null $ Set.filter ( \ (Id ts ics _) ->
               cs == ics && isPrefixOf op ts && isSuffixOf cl ts) is)
         $ list_lit la }
-    Result _ (Just lm) = store_literal_map Map.empty $ c_lit_an nla
+    Result _ (Just lm) = store_literal_map Map.empty $ convertLiteralAnnos nla
     in ga { literal_annos = nla
           , literal_map = lm }
 

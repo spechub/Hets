@@ -13,7 +13,8 @@ Convert global annotations to a list of annotations
 
 module Common.ConvertGlobalAnnos
   ( mergeGlobalAnnos
-  , c_lit_an
+  , convertGlobalAnnos
+  , convertLiteralAnnos
   ) where
 
 import Common.Id
@@ -35,17 +36,17 @@ instance Pretty GlobalAnnos where
 printGlobalAnnos :: GlobalAnnos -> Doc
 printGlobalAnnos = printAnnotationList . convertGlobalAnnos
 
-convertGlobalAnnos::GlobalAnnos->[Annotation]
-convertGlobalAnnos ga = c_prec (prec_annos ga)
-              ++ c_assoc (assoc_annos ga)
-              ++ c_displ (display_annos ga)
-              ++ c_lit_an (literal_annos ga)
+convertGlobalAnnos::GlobalAnnos -> [Annotation]
+convertGlobalAnnos ga = convertPrec (prec_annos ga)
+              ++ convertAssoc (assoc_annos ga)
+              ++ convertDispl (display_annos ga)
+              ++ convertLiteralAnnos (literal_annos ga)
 
 mergeGlobalAnnos :: GlobalAnnos -> GlobalAnnos -> Result GlobalAnnos
 mergeGlobalAnnos ga1 = addGlobalAnnos ga1 . convertGlobalAnnos
 
-c_prec :: PrecedenceGraph -> [Annotation]
-c_prec pg =
+convertPrec :: PrecedenceGraph -> [Annotation]
+convertPrec pg =
     let cs = Rel.sccOfClosure pg
     in map (\ l -> let (f, r) = splitAt (div (length l) 2) l in
                    Prec_anno BothDirections f r nullRange)
@@ -57,23 +58,23 @@ c_prec pg =
             $ Map.toList $ Rel.toMap $ Rel.transReduce $ Rel.irreflex
                $ Rel.collaps cs pg)
 
-c_assoc :: AssocMap -> [Annotation]
-c_assoc am =
+convertAssoc :: AssocMap -> [Annotation]
+convertAssoc am =
     let (i1s, i2s) = partition ((== ALeft) . snd) $ Map.toList am
         -- [(Id,assEith)]
     in [Assoc_anno ALeft (map fst i1s) nullRange | not $ null i1s]
        ++ [Assoc_anno ARight (map fst i2s) nullRange | not $ null i2s ]
 
-c_displ :: DisplayMap -> [Annotation]
-c_displ dm =
+convertDispl :: DisplayMap -> [Annotation]
+convertDispl dm =
     let m1 = Map.toList dm -- m1::[(Id,Map.Map Display_format [Token])]
         toStrTup (x, y) = (x, concatMap tokStr y)
         m2 = map (\ (x, m) -> (x, map toStrTup $ Map.toList m)) m1
         -- m2::[(ID,[(Display_format,String)])]
     in map (\ (i, x) -> Display_anno i x nullRange) m2
 
-c_lit_an :: LiteralAnnos -> [Annotation]
-c_lit_an la = let
+convertLiteralAnnos :: LiteralAnnos -> [Annotation]
+convertLiteralAnnos la = let
   str = case string_lit la of
           Just (x, y) -> [String_anno x y nullRange]
           _ -> []

@@ -39,6 +39,7 @@ module Common.Result
   , adjustPos
   , propagateErrors
   , showErr
+  , prettyRange
   , filterDiags
   , showRelDiags
   , printDiags
