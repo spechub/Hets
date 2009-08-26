@@ -365,11 +365,12 @@ ana_VIEW_DEFN :: LogicGraph -> LibEnv -> DGraph -> HetcatsOpts -> SIMPLE_ID
               -> GENERICITY -> VIEW_TYPE -> [G_mapping] -> Range
               -> Result (LIB_ITEM, DGraph, LibEnv)
 ana_VIEW_DEFN lgraph libenv dg opts vn gen vt gsis pos = do
+  let vName = makeName vn
   (gen', gsig@(GenSig _ _ allparams), dg') <-
-       ana_GENERICITY lgraph dg opts (extName "VG" (makeName vn)) gen
+       ana_GENERICITY lgraph dg opts (extName "VG" vName) gen
   (vt', (src@(NodeSig nodeS gsigmaS)
         , tar@(NodeSig nodeT gsigmaT@(G_sign lidT _ _))), dg'') <-
-       ana_VIEW_TYPE lgraph dg' allparams opts (makeName vn) vt
+       ana_VIEW_TYPE lgraph dg' allparams opts vName vt
   let genv = globalEnv dg''
   if Map.member vn genv
     then plain_error (View_defn vn gen' vt' gsis pos, dg'', libenv)
@@ -423,6 +424,7 @@ ana_ITEM_NAME_OR_MAP1 :: LibEnv -> LIB_NAME -> GlobalEnv
                       -> (GlobalEnv, DGraph) -> (SIMPLE_ID, SIMPLE_ID)
                       -> Result (GlobalEnv, DGraph)
 ana_ITEM_NAME_OR_MAP1 libenv ln genv' (genv, dg) (old, new) = do
+  let newName = makeName new
   entry <- maybeToResult (tokPos old)
             (tokStr old ++ " not found") (Map.lookup old genv')
   case Map.lookup new genv of
@@ -430,23 +432,23 @@ ana_ITEM_NAME_OR_MAP1 libenv ln genv' (genv, dg) (old, new) = do
     Just _ -> fail (tokStr new ++ " already used")
   case entry of
     SpecEntry extsig ->
-      let (dg1,extsig1) = refExtsig libenv ln dg (Just new) extsig
+      let (dg1, extsig1) = refExtsig libenv ln dg newName extsig
           genv1 = Map.insert new (SpecEntry extsig1) genv
        in return (genv1,dg1)
     ViewEntry vsig ->
-      let (dg1,vsig1) = refViewsig libenv ln dg vsig
+      let (dg1,vsig1) = refViewsig libenv ln dg newName vsig
           genv1 = Map.insert new (ViewEntry vsig1) genv
       in return (genv1,dg1)
     ArchEntry _asig -> ana_err "arch spec download"
     UnitEntry _usig -> ana_err "unit spec download"
     RefEntry -> ana_err "ref spec download"
 
-refNodesig :: LibEnv -> LIB_NAME -> DGraph -> (Maybe SIMPLE_ID, NodeSig)
+refNodesig :: LibEnv -> LIB_NAME -> DGraph -> (NodeName, NodeSig)
            -> (DGraph, NodeSig)
 refNodesig libenv refln dg (name, NodeSig refn sigma@(G_sign lid sig ind)) =
   let (ln, n) = getActualParent libenv refln refn
       refInfo = newRefInfo ln n
-      node_contents = newInfoNodeLab (makeMaybeName name) refInfo
+      node_contents = newInfoNodeLab name refInfo
         $ noSensGTheory lid sig ind
       node = getNewNodeDG dg
    in case lookupInAllRefNodesDG refInfo dg of
@@ -468,26 +470,33 @@ getActualParent libenv ln n =
         getActualParent libenv (dgn_libname refLab) (dgn_node refLab)
    else (ln, n)
 
-refNodesigs :: LibEnv -> LIB_NAME -> DGraph -> [(Maybe SIMPLE_ID, NodeSig)]
+refNodesigs :: LibEnv -> LIB_NAME -> DGraph -> [(NodeName, NodeSig)]
             -> (DGraph, [NodeSig])
 refNodesigs libenv = mapAccumR . refNodesig libenv
 
-refExtsig :: LibEnv -> LIB_NAME -> DGraph -> Maybe SIMPLE_ID -> ExtGenSig
+refExtsig :: LibEnv -> LIB_NAME -> DGraph -> NodeName -> ExtGenSig
           -> (DGraph, ExtGenSig)
 refExtsig libenv ln dg name (ExtGenSig (GenSig imps params gsigmaP) body) = let
-  params' = map (\x -> (Nothing,x)) params
-  (dg0, body1) = refNodesig libenv ln dg (name, body)
-  (dg1, params1) = refNodesigs libenv ln dg0 params'
-  (dg2, imps1) = case imps of
-                 EmptyNode _ -> (dg1, imps)
-                 JustNode ns -> let
-                     (dg3, nns) = refNodesig libenv ln dg1 (Nothing, ns)
-                     in (dg3, JustNode nns)
-  in (dg2, ExtGenSig (GenSig imps1 params1 gsigmaP) body1)
+  pName = extName "P" name
+  (dg1, imps1) = case imps of
+    EmptyNode _ -> (dg, imps)
+    JustNode ns -> let
+        (dg0, nns) = refNodesig libenv ln dg (extName "I" pName, ns)
+        in (dg0, JustNode nns)
+  (dg2, params1) = refNodesigs libenv ln dg1
+      $ snd $ foldr (\ p (n, l) -> let nn = inc n in
+              (nn, (nn, p) : l)) (pName, []) params
+  (dg3, gsigmaP1) = case gsigmaP of
+    EmptyNode _ -> (dg, gsigmaP)
+    JustNode ns -> let
+        (dg0, nns) = refNodesig libenv ln dg2 (pName, ns)
+        in (dg0, JustNode nns)
+  (dg4, body1) = refNodesig libenv ln dg3 (name, body)
+  in (dg4, ExtGenSig (GenSig imps1 params1 gsigmaP1) body1)
 
-refViewsig :: LibEnv -> LIB_NAME -> DGraph -> ExtViewSig
+refViewsig :: LibEnv -> LIB_NAME -> DGraph -> NodeName -> ExtViewSig
            -> (DGraph, ExtViewSig)
-refViewsig libenv ln dg (ExtViewSig src mor extsig) = let
-  (_,[src1]) = refNodesigs libenv ln dg [(Nothing, src)]
-  (dg2, extsig1) = refExtsig libenv ln dg Nothing extsig
+refViewsig libenv ln dg name (ExtViewSig src mor extsig) = let
+  (dg1, src1) = refNodesig libenv ln dg (extName "S" name, src)
+  (dg2, extsig1) = refExtsig libenv ln dg1 (extName "T" name) extsig
   in (dg2, ExtViewSig src1 mor extsig1)
