@@ -59,6 +59,28 @@ dGraph dg =
          subnodes "Global" (annotations ga $ convertGlobalAnnos ga)
          ++ map (lnode ga) lnodes
          ++ map (ledge ga nm) (labEdges body)
+         ++ Map.foldWithKey (globalEntry ga nm) [] (globalEnv dg)
+
+
+genSig :: Map.Map Int NodeName -> GenSig -> [Attr]
+genSig nm (GenSig _ _ allparams) = case allparams of
+   EmptyNode _ -> []
+   JustNode (NodeSig n _) -> [mkAttr "formal-param" $ lookupNodeName n nm]
+
+globalEntry :: GlobalAnnos -> Map.Map Int NodeName -> SIMPLE_ID -> GlobalEntry
+            -> [Element] -> [Element]
+globalEntry ga nm si ge l = case ge of
+  SpecEntry (ExtGenSig g (NodeSig n _)) ->
+    add_attrs (mkAttr "name" (lookupNodeName n nm) :
+      rangeAttrs (getRangeSpan si) ++ genSig nm g)
+    (unode "SPEC-DEFN" ()) : l
+  ViewEntry (ExtViewSig (NodeSig s _) gm (ExtGenSig g (NodeSig n _))) ->
+    add_attrs (mkAttr "name" (show si) : rangeAttrs (getRangeSpan si)
+      ++ genSig nm g ++
+      [ mkAttr "source" $ lookupNodeName s nm
+      , mkAttr "target" $ lookupNodeName n nm])
+    (unode "VIEW-DEFN" $ prettyElem "GMorphism" ga gm) : l
+  _ -> l
 
 lnode :: GlobalAnnos -> LNode DGNodeLab -> Element
 lnode ga (_, lbl) =
@@ -66,7 +88,8 @@ lnode ga (_, lbl) =
   $ prettyElem "Node" ga lbl
 
 lookupNodeName :: Int -> Map.Map Int NodeName -> String
-lookupNodeName i = showName . Map.findWithDefault (error "lookupNodeName") i
+lookupNodeName i = showName . Map.findWithDefault
+  (error $ "lookupNodeName " ++ show i) i
 
 ledge :: GlobalAnnos -> Map.Map Int NodeName -> LEdge DGLinkLab -> Element
 ledge ga nm (f, t, lbl) =
