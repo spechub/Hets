@@ -23,7 +23,7 @@ asSymbolSet :: (AsSymbol a) => a -> SymbolSet
 asSymbolSet = maybe Set.empty Set.singleton . asSymbolMaybe
 
 mapAsSymbol :: (AsSymbol a) => (Symbol -> a) -> SymbolMap -> a -> a
-mapAsSymbol ctor mp item = let extract = ctor . mapAsFunction mp
+mapAsSymbol ctr mp item = let extract = ctr . mapAsFunction mp
     in maybe item extract $ asSymbolMaybe item
 
 

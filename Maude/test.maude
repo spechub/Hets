@@ -1,3 +1,22 @@
+fth ALPHA-ASSOC is
+ sort Foo .
+ op f : Foo Foo -> Foo [ctor assoc] .
+endfth
+
+fmod OTHER-ALPHA-ASSOC is
+ sort Elt .
+ op g : Elt Elt -> Elt [ctor] .
+ 
+ var E : Elt .
+ 
+ eq g(E, g(E, E)) = g(g(E, E), E) [nonexec] .
+endfm
+
+view VALPHA from ALPHA-ASSOC to OTHER-ALPHA-ASSOC is
+ sort Foo to Elt .
+ op f to g .
+endv
+
 fmod MY-LIST is
  sorts List Elt .
  subsort Elt < List .

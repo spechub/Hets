@@ -156,19 +156,17 @@ mapTheory (sg, nsens) = return $ maude2casl sg nsens
 maude2casl :: MSign.Sign -> [Named MSentence.Sentence]
               -> (CSign.CASLSign, [Named CAS.CASLFORMULA])
 maude2casl msign nsens = (csign { CSign.sortSet = cs,
-                            CSign.emptySortSet = cs,
                             CSign.opMap = cops',
                             CSign.assocOps = assoc_ops,
                             CSign.predMap = preds,
                             CSign.declaredSymbols = syms }, new_sens)
    where csign = CSign.emptySign ()
-         mk' = arrangeKinds (MSign.sorts msign) (MSign.subsorts msign)
-         cs = kindsFromMap mk'
-         mk = Map.insert (str2id "Universal") (str2id "[Universal]") mk'
+         mk = arrangeKinds (MSign.sorts msign) (MSign.subsorts msign)
+         cs = kindsFromMap mk
          ks = kindPredicates mk
          rp = rewPredicates ks cs
          rs = rewPredicatesSens cs
-         ops = MSign.ops msign
+         ops = deletePredefined $ MSign.ops msign
          ksyms = kinds2syms cs
          (cops, assoc_ops, ops_forms, comps) = translateOps mk ops
          ctor_sen = [ctorSen False (cs, Rel.empty, comps)]
@@ -183,6 +181,12 @@ maude2casl msign nsens = (csign { CSign.sortSet = cs,
          syms = Set.union ksyms $ Set.union ops_syms preds_syms
          new_sens = concat [rs, ops_forms, no_owise_forms, owise_forms, mb_rl_forms, ctor_sen]
 
+deletePredefined :: MSign.OpMap -> MSign.OpMap
+deletePredefined om = om3
+         where om1 = Map.delete (mkSimpleId "if_then_else_fi") om
+               om2 = Map.delete (mkSimpleId "_==_") om1
+               om3 = Map.delete (mkSimpleId "_=/=_") om2
+
 predefinedOps :: Set.Set Id -> CSign.OpMap -> CSign.OpMap
 predefinedOps kinds om = Set.fold predefinedOpKind om'' kinds
          where if_id = str2id "if_then_else_fi"
@@ -196,7 +200,7 @@ predefinedOpKind kind om = om3
         where if_id = str2id "if_then_else_fi"
               double_eq_id = str2id "_==_"
               neg_double_eq_id = str2id "_=/=_"
-              bool_id = str2id "[Bool]"
+              bool_id = str2id "Bool"
               if_opt = Set.singleton $ CSign.OpType CAS.Total [bool_id, kind, kind] kind
               eq_opt = Set.singleton $ CSign.OpType CAS.Total [kind, kind] bool_id
               om1 = Map.insertWith Set.union if_id if_opt om
@@ -207,17 +211,17 @@ predefinedSens :: Set.Set Id -> [Named CAS.CASLFORMULA]
 predefinedSens = Set.fold predefinedSensKind []
 
 predefinedSensKind :: Id -> [Named CAS.CASLFORMULA] -> [Named CAS.CASLFORMULA]
-predefinedSensKind kind acc = concat [iss, eqs, neqs, psen, acc]
+predefinedSensKind kind acc = concat [iss, eqs, neqs, acc]
          where iss = ifSens kind
                eqs = equalitySens kind
                neqs = nonEqualitySens kind
-               psen = plusSen
+--               psen = plusSen
 
 ifSens :: Id -> [Named CAS.CASLFORMULA]
 ifSens kind = [form'', neg_form'']
          where v1 = newVarIndex 1 kind
                v2 = newVarIndex 2 kind
-               bk = str2id "[Bool]"
+               bk = str2id "Bool"
                bv = newVarIndex 2 bk
                true_type = CAS.Op_type CAS.Total [] bk nullRange
                true_id = CAS.Qual_op_name (str2id "true") true_type nullRange
@@ -243,7 +247,7 @@ equalitySens :: Id -> [Named CAS.CASLFORMULA]
 equalitySens kind = [form'', comp_form'']
          where v1 = newVarIndex 1 kind
                v2 = newVarIndex 2 kind
-               bk = str2id "[Bool]"
+               bk = str2id "Bool"
                b_type = CAS.Op_type CAS.Total [] bk nullRange
                true_id = CAS.Qual_op_name (str2id "true") b_type nullRange
                true_term = CAS.Application true_id [] nullRange
@@ -270,7 +274,7 @@ nonEqualitySens :: Id -> [Named CAS.CASLFORMULA]
 nonEqualitySens kind = [form'', comp_form'']
          where v1 = newVarIndex 1 kind
                v2 = newVarIndex 2 kind
-               bk = str2id "[Bool]"
+               bk = str2id "Bool"
                b_type = CAS.Op_type CAS.Total [] bk nullRange
                true_id = CAS.Qual_op_name (str2id "true") b_type nullRange
                true_term = CAS.Application true_id [] nullRange
@@ -295,7 +299,7 @@ nonEqualitySens kind = [form'', comp_form'']
 
 plusSen :: [Named CAS.CASLFORMULA]
 plusSen = [form'']
-     where nat_kind = str2id "[Nat]"
+     where nat_kind = str2id "Nat"
            v1 = newVarIndex 1 nat_kind
            v2 = newVarIndex 2 nat_kind
            plus_type = CAS.Op_type CAS.Total [nat_kind, nat_kind] nat_kind nullRange
@@ -340,8 +344,9 @@ translateOpDecl im (syms, ats) (ops, assoc_ops, forms, cs) = (ops', assoc_ops', 
 -- and its CASL type
 maudeSym2CASLOp :: IdMap -> MSym.Symbol -> Maybe (Id, CSign.OpType)
 maudeSym2CASLOp im (MSym.Operator op ar co) = Just (token2id op, ot)
-      where f = token2id . getName
-            g = \ x -> fromJust $ Map.lookup (f x) im
+      where def = token2id $ mkSimpleId "ERROR:KindNotFound"
+            f = token2id . getName
+            g = \ x -> Map.findWithDefault def (f x) im
             ot = CSign.OpType CAS.Total (map g ar) (g co)
 maudeSym2CASLOp _ _ = Nothing
 
@@ -799,7 +804,7 @@ sortsTranslationList (s : ss) r = Set.insert (sort2id tops) res
             ss' = deleteRelated ss top r
             res = sortsTranslation ss' r
 
--- | return a maximal element from the sort relation 
+-- | return the maximal elements from the sort relation 
 getTop :: MSign.SubsortRel -> MSym.Symbol -> [MSym.Symbol]
 getTop r tok = case succs of
            [] -> [tok]
@@ -825,11 +830,11 @@ sym2id = token2id . getName
 str2id :: String -> Id
 str2id = token2id . mkSimpleId
 
--- | build an Id from a list of sorts, including the "[" and "," if needed
+-- | build an Id from a list of sorts, taking the first from the ordered list
 sort2id :: [MSym.Symbol] -> Id
-sort2id syms = mkId tokens'
-     where tokens = map getName syms
-           tokens' = mkSimpleId "[" : (putCommas tokens) ++ [mkSimpleId "]"]
+sort2id syms = mkId [sym']
+     where sym = head $ List.sort syms
+           sym' = getName sym
 
 -- | inserts commas between tokens
 putCommas :: [Token] -> [Token]

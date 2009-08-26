@@ -41,6 +41,7 @@
   var  VM : ViewMap .
   var  PL : ParameterList .
   var  M M' : Module .
+  var  FR : FindResult .
   
   --- Constant used when no module is really needed
   op no-module : -> Module .
@@ -200,10 +201,18 @@
 
   op haskellifyType : Type -> QidList .
   eq haskellifyType(S) = ' '`( 'TypeSort haskellifySort(S) '`) ' .
-  eq haskellifyType(K) = ' '`( 'TypeKind haskellifyKind(K) '`) ' .
+  eq haskellifyType(K) = ' '`( 'TypeKind haskellifyKind(kind2sort(K)) '`) ' .
   
-  op haskellifyKind : Kind -> QidList .
-  eq haskellifyKind(K) = ' '`( 'KindId qid2token(K) '`) ' .
+  op kind2sort : Kind -> Qid .
+  ceq kind2sort(K) = if FR :: Nat
+                     then qid(substr(STR, 0, FR))
+                     else qid(substr(STR, 0, _-_(length(STR),2)))
+                     fi
+   if STR := substr(string(K), 2, length(string(K))) /\
+      FR := find(STR, "`,", 0) .
+  
+  op haskellifyKind : Qid -> QidList .
+  eq haskellifyKind(Q) = ' '`( 'KindId qid2token(Q) '`) ' .
   
   op haskellifyType* : TypeList -> QidList .
   

@@ -336,8 +336,8 @@ processViews :: [ViewId] -> Token -> TokenInfoMap -> ViewMap -> [(Token, Token, 
                 -> (Morphism, [(Node, Morphism)], [(Token, Token, Symbols)])
                 -> (Token, Morphism, [(Node, Morphism)], [(Token, Token, Symbols)])
 processViews (vi : vis) tok tim vm (p : ps) (morph, lp, dep) =
-                  processViews vis tok'' tim vm ps (morph', lp ++ [(n, morph')], dep ++ new_dep)
-                     where (tok', morph', _, n, new_dep) = processView vi tim vm p morph
+                  processViews vis tok'' tim vm ps (morph', lp ++ [(n, vmorph)], dep ++ new_dep)
+                     where (tok', morph', vmorph, n, new_dep) = processView vi tim vm p morph
                            tok'' = mkSimpleId $ show tok ++ "," ++ show tok'
 processViews _ tok _ _ _ (morph, nds, deps) = (tok', morph, nds, deps)
                      where tok' = mkSimpleId $ drop 1 $ show tok
