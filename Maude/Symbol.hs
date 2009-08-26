@@ -20,6 +20,7 @@ module Maude.Symbol (
     toId,
     qualify,
     asSort,
+    asKind,
     toType,
     toOperator,
     mkOpTotal,
@@ -100,6 +101,12 @@ instance GetRange Symbol where
 asSort :: Symbol -> Symbol
 asSort symb = case symb of
     Kind qid -> Sort qid
+    _ -> symb
+
+-- | Convert Symbol to Symbol, changing Sorts to Kinds.
+asKind :: Symbol -> Symbol
+asKind symb = case symb of
+    Sort qid -> Kind qid
     _ -> symb
 
 

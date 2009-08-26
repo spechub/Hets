@@ -16,7 +16,6 @@ import Common.Lib.Rel (Rel)
 import qualified Common.Lib.Rel as Rel
 
 
--- TODO: Maybe this class should be named `HasTypes` instead?
 class HasSorts a where
     getSorts :: a -> SymbolSet
     mapSorts :: SymbolMap -> a -> a
@@ -25,13 +24,13 @@ class HasSorts a where
 instance HasSorts Symbol where
     getSorts sym = case sym of
         Sort _ -> Set.singleton sym
-        Kind _ -> Set.singleton sym
+        Kind _ -> Set.singleton $ asSort sym
         Operator _ dom cod -> getSorts(dom, cod)
         OpWildcard _ -> Set.empty
         Labl _ -> Set.empty
     mapSorts mp sym = case sym of
         Sort _ -> mapAsSymbol id mp sym
-        Kind _ -> mapAsSymbol id mp sym
+        Kind _ -> asKind $ mapAsSymbol asSort mp sym
         Operator qid dom cod -> let
                 dom' = mapSorts mp dom
                 cod' = mapSorts mp cod
