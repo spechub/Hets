@@ -55,7 +55,7 @@ translateOpMapEntry :: IdMap -> MSym.Symbol -> MSym.Symbol -> CMorphism.Op_map
                        -> CMorphism.Op_map
 translateOpMapEntry im (MSym.Operator from ar co) (MSym.Operator to _ _) copm = copm'
        where f = token2id . getName
-             g = \ x -> fromJust $ Map.lookup (f x) im
+             g = \ x -> Map.findWithDefault (errorId "translate op map entry") (f x) im
              ot = CSign.OpType CAS.Total (map g ar) (g co)
              cop = (token2id from, ot)
              to' = (token2id to, CAS.Total)
@@ -67,7 +67,7 @@ mapSymbol :: MSign.Sign -> MSym.Symbol -> Set.Set CSign.Symbol
 mapSymbol sg (MSym.Sort q) = Set.singleton csym
            where mk = arrangeKinds (MSign.sorts sg) (MSign.subsorts sg)
                  sym_id = token2id q
-                 kind = fromJust $ Map.lookup sym_id mk
+                 kind = Map.findWithDefault (errorId "map symbol") sym_id mk
                  pred_data = CSign.PredType [kind]
                  csym = CSign.Symbol sym_id $ CSign.PredAsItemType pred_data
 mapSymbol sg (MSym.Operator q ar co) = Set.singleton csym
@@ -81,7 +81,7 @@ mapSymbol _ _ = Set.empty
 
 -- | returns the sort in CASL of the Maude sort symbol
 maudeSort2caslId :: IdMap -> MSym.Symbol -> Id
-maudeSort2caslId im sym = fromJust $ Map.lookup (token2id $ getName sym) im
+maudeSort2caslId im sym = Map.findWithDefault (errorId "sort to id") (token2id $ getName sym) im
 
 -- | creates the predicate map for the CASL morphism from the Maude sort map and
 -- the map between sorts and kinds
@@ -94,7 +94,7 @@ createPredMap4sort :: IdMap -> MSym.Symbol -> MSym.Symbol -> CMorphism.Pred_map
 createPredMap4sort im from to m = Map.insert key id_to m
            where id_from = token2id $ getName from
                  id_to = token2id $ getName to
-                 kind = fromJust $ Map.lookup id_from im
+                 kind = Map.findWithDefault (errorId "predicate for sort") id_from im
                  key = (id_from, CSign.PredType [kind])
 
 -- | computes the sort morphism of CASL from the sort morphism in Maude and the set
@@ -188,12 +188,7 @@ deletePredefined om = om3
                om3 = Map.delete (mkSimpleId "_=/=_") om2
 
 predefinedOps :: Set.Set Id -> CSign.OpMap -> CSign.OpMap
-predefinedOps kinds om = Set.fold predefinedOpKind om'' kinds
-         where if_id = str2id "if_then_else_fi"
-               double_eq_id = str2id "_==_"
-               neg_double_eq_id = str2id "_=/=_"
-               om' = Map.delete double_eq_id $ Map.delete if_id om
-               om'' = Map.delete neg_double_eq_id om'
+predefinedOps kinds om = Set.fold predefinedOpKind om kinds
 
 predefinedOpKind :: Id -> CSign.OpMap -> CSign.OpMap
 predefinedOpKind kind om = om3
@@ -344,9 +339,8 @@ translateOpDecl im (syms, ats) (ops, assoc_ops, forms, cs) = (ops', assoc_ops', 
 -- and its CASL type
 maudeSym2CASLOp :: IdMap -> MSym.Symbol -> Maybe (Id, CSign.OpType)
 maudeSym2CASLOp im (MSym.Operator op ar co) = Just (token2id op, ot)
-      where def = token2id $ mkSimpleId "ERROR:KindNotFound"
-            f = token2id . getName
-            g = \ x -> Map.findWithDefault def (f x) im
+      where f = token2id . getName
+            g = \ x -> Map.findWithDefault (errorId "Maude symbol 2 CASL symbol") (f x) im
             ot = CSign.OpType CAS.Total (map g ar) (g co)
 maudeSym2CASLOp _ _ = Nothing
 
@@ -360,7 +354,7 @@ op2pred :: IdMap -> MSym.Symbol -> [Named CAS.CASLFORMULA] -> [Named CAS.CASLFOR
 op2pred im (MSym.Operator op ar co) acc = case co of
                   MSym.Sort s -> let 
                              co' = token2id s
-                             kind = fromJust $ Map.lookup co' im
+                             kind = Map.findWithDefault (errorId "op-mb to predicate") co' im
                              f = \ m x -> Map.lookup (token2id $ getName x) m
                              ar' = mapMaybe (f im) ar
                              op_type = CAS.Op_type CAS.Total ar' kind nullRange
@@ -391,7 +385,7 @@ createConjForm fs = CAS.Conjunction fs nullRange
 ops2predPremises :: IdMap -> [MSym.Symbol] -> Int -> ([CAS.CASLTERM], [CAS.CASLFORMULA])
 ops2predPremises im (MSym.Sort s : ss) i = (var : terms, form : forms)
          where s' = token2id s
-               kind = fromJust $ Map.lookup s' im
+               kind = Map.findWithDefault (errorId "mb of op as predicate") s' im
                pred_type = CAS.Pred_type [kind] nullRange
                pred_name = CAS.Qual_pred_name s' pred_type nullRange
                var = newVarIndex i kind
@@ -399,7 +393,7 @@ ops2predPremises im (MSym.Sort s : ss) i = (var : terms, form : forms)
                (terms, forms) = ops2predPremises im ss (i + 1)
 ops2predPremises im (MSym.Kind k : ss) i = (var : terms, forms)
          where k' = token2id k
-               kind = fromJust $ Map.lookup k' im
+               kind = Map.findWithDefault (errorId "mb of op as predicate") k' im
                var = newVarIndex i kind
                (terms, forms) = ops2predPremises im ss (i + 1)
 ops2predPremises _ _ _ = ([], [])
@@ -614,14 +608,14 @@ mb2formula :: IdMap -> MAS.Membership -> CAS.CASLFORMULA
 mb2formula im (MAS.Mb t s [] _) = quantifyUniversally form
       where ct = maudeTerm2caslTerm im t
             s' = token2id $ getName s
-            kind = fromJust $ Map.lookup s' im
+            kind = Map.findWithDefault (errorId "mb to formula")  s' im
             pred_type = CAS.Pred_type [kind] nullRange
             pred_name = CAS.Qual_pred_name s' pred_type nullRange
             form = CAS.Predication pred_name [ct] nullRange
 mb2formula im (MAS.Mb t s conds@(_ : _) _) = quantifyUniversally form
       where ct = maudeTerm2caslTerm im t
             s' = token2id $ getName s
-            kind = fromJust $ Map.lookup s' im
+            kind = Map.findWithDefault (errorId "mb to formula") s' im
             pred_type = CAS.Pred_type [kind] nullRange
             pred_name = CAS.Qual_pred_name s' pred_type nullRange
             conds_form = conds2formula im conds
@@ -632,7 +626,7 @@ mb2formula im (MAS.Mb t s conds@(_ : _) _) = quantifyUniversally form
 rl2formula :: IdMap -> MAS.Rule -> CAS.CASLFORMULA
 rl2formula im (MAS.Rl t t' [] _) = quantifyUniversally form
        where ty = token2id $ getName $ MAS.getTermType t
-             kind = fromJust $ Map.lookup ty im
+             kind = Map.findWithDefault (errorId "rl to formula") ty im
              pred_type = CAS.Pred_type [kind, kind] nullRange
              pred_name = CAS.Qual_pred_name rewID pred_type nullRange
              ct = maudeTerm2caslTerm im t
@@ -640,7 +634,7 @@ rl2formula im (MAS.Rl t t' [] _) = quantifyUniversally form
              form = CAS.Predication pred_name [ct, ct'] nullRange
 rl2formula im (MAS.Rl t t' conds@(_:_) _) = quantifyUniversally form
        where ty = token2id $ getName $ MAS.getTermType t
-             kind = fromJust $ Map.lookup ty im
+             kind = Map.findWithDefault (errorId "rl to formula") ty im
              pred_type = CAS.Pred_type [kind, kind] nullRange
              pred_name = CAS.Qual_pred_name rewID pred_type nullRange
              ct = maudeTerm2caslTerm im t
@@ -665,32 +659,32 @@ cond2formula im (MAS.MatchCond t t') = CAS.Strong_equation ct ct' nullRange
 cond2formula im (MAS.MbCond t s) = CAS.Predication pred_name [ct] nullRange
       where ct = maudeTerm2caslTerm im t
             s' = token2id $ getName s
-            kind = fromJust $ Map.lookup s' im
+            kind = Map.findWithDefault (errorId "mb cond to formula") s' im
             pred_type = CAS.Pred_type [kind] nullRange
             pred_name = CAS.Qual_pred_name s' pred_type nullRange
 cond2formula im (MAS.RwCond t t') = CAS.Predication pred_name [ct, ct'] nullRange
        where ct = maudeTerm2caslTerm im t
              ct' = maudeTerm2caslTerm im t'
              ty = token2id $ getName $ MAS.getTermType t
-             kind = fromJust $ Map.lookup ty im
+             kind = Map.findWithDefault (errorId "rw cond to formula") ty im
              pred_type = CAS.Pred_type [kind, kind] nullRange
              pred_name = CAS.Qual_pred_name rewID pred_type nullRange
 
 -- | translate a Maude term into a CASL term
 maudeTerm2caslTerm :: IdMap -> MAS.Term -> CAS.CASLTERM
 maudeTerm2caslTerm im (MAS.Var q ty) = CAS.Qual_var q kind nullRange
-        where kind = fromJust $ Map.lookup (token2id $ getName ty) im
+        where kind = Map.findWithDefault (errorId "maude term to CASL term") (token2id $ getName ty) im
 maudeTerm2caslTerm im (MAS.Const q ty) = CAS.Application op [] nullRange
         where name = token2id q
               ty' = token2id $ getName ty
-              kind = fromJust $ Map.lookup ty' im
+              kind = Map.findWithDefault (errorId "maude term to CASL term") ty' im
               op_type = CAS.Op_type CAS.Total [] kind nullRange
               op = CAS.Qual_op_name name op_type nullRange
 maudeTerm2caslTerm im (MAS.Apply q ts ty) = CAS.Application op tts nullRange
         where name = token2id q
               tts = map (maudeTerm2caslTerm im) ts
               ty' = token2id $ getName ty
-              kind = fromJust $ Map.lookup ty' im
+              kind = Map.findWithDefault (errorId "maude term to CASL term") ty' im
               types_tts = getTypes tts
               op_type = CAS.Op_type CAS.Total types_tts kind nullRange
               op = CAS.Qual_op_name name op_type nullRange
@@ -962,3 +956,7 @@ ctorSen isFree (sorts, _, ops) = do
         constrs = map collectOps sortList
         f = CAS.Sort_gen_ax constrs isFree
     makeNamed ("ga_generated_" ++ showSepList (showString "_") showId sortList "") f
+
+-- | error Id
+errorId :: String -> Id
+errorId s = token2id $ mkSimpleId $ "ERROR: " ++ s

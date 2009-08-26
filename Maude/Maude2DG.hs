@@ -359,11 +359,14 @@ morphismView name p _ (n, _, vmorph, rnms, True) morph = (name, morph', vmorph',
               vmorph' = Maude.Morphism.inclusion tgt tgt
 
 morphismView name p ss (n, th, morph, rnms, False) morph1 =
-                         (name, morph2, vmorph, n, [(p, th, getNewSorts ss morph)])
+                         (name, morph3, vmorph', n, [(p, th, getNewSorts ss morph)])
         where rnms' = qualifyRenamings2 p rnms
               morph2 = applyRenamings morph1 rnms'
               tgt = target vmorph
+              rnms'' = createQualificationTh2Mod p ss
+              morph3 = applyRenamings morph2 rnms''
               vmorph = Maude.Morphism.inclusion tgt tgt
+              vmorph' = applyRenamings vmorph rnms''
 
 -- theory, parameter instantiated -> parameter binding -> sorts bound -> current morph
 -- map token info
