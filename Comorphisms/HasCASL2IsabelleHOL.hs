@@ -113,7 +113,7 @@ transSignature sign =
                                  (mkVName $ showIsaConstIT name i baseSign)
                                  ty m'
                              Nothing   -> m')
-                      m (zip transOps [1::Int ..])
+                      m $ number transOps
 
 -- * translation of a type in an operation declaration
 

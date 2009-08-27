@@ -21,10 +21,12 @@ import CoCASL.CoCASLSign
 import CoCASL.AS_CoCASL
 import CoCASL.StatAna
 import CoCASL.Sublogic
+
 import CASL.Sublogic as SL
 import CASL.AS_Basic_CASL
 import CASL.Sign
 import CASL.Morphism
+
 import Comorphisms.CFOL2IsabelleHOL
 
 -- Isabelle
@@ -32,9 +34,11 @@ import Isabelle.IsaSign as IsaSign
 import Isabelle.IsaConsts
 import Isabelle.Logic_Isabelle
 
+import Common.Utils (number)
+
 import Data.List (findIndex)
 import Data.Char (ord, chr)
-
+import Data.Maybe (fromMaybe)
 
 -- | The identity of the comorphism
 data CoCFOL2IsabelleHOL = CoCFOL2IsabelleHOL deriving Show
@@ -64,10 +68,10 @@ instance Comorphism CoCFOL2IsabelleHOL
     is_weakly_amalgamable CoCFOL2IsabelleHOL = True
 
 xvar :: Int -> String
-xvar i = if i<=26 then [chr (i+ord('a'))] else "x"++show i
+xvar i = if i <= 26 then [chr (i + ord 'a')] else 'x' : show i
 
 rvar :: Int -> String
-rvar i = if i<=9 then [chr (i+ord('R'))] else "R"++show i
+rvar i = if i <= 9 then [chr (i + ord 'R' )] else 'R' : show i
 
 -- | extended signature translation for CoCASL
 sigTrCoCASL :: SignTranslator C_FORMULA CoCASLSign
@@ -106,25 +110,26 @@ formTrCoCASL sign tyToks (CoSort_gen_ax sorts ops _) =
         premSel opsymb@(Qual_op_name _n t _) =
          let -- get extra parameters of the selectors
              args = tail $ args_OP_TYPE t
-             indicesArgs = [1..length args]
+             indicesArgs = number args
              res = res_OP_TYPE t
              -- variables for the extra parameters
-             varDecls = zipWith (\ j a -> (xvar j, transSort a))
-                        indicesArgs args
+             varDecls = map (\ (a, j) -> (xvar j, transSort a))
+                        indicesArgs
              -- the selector ...
-             topC = con (transOP_SYMB sign tyToks opsymb)
+             topC = con (transOpSymb sign tyToks opsymb)
              -- applied to x and extra parameter vars
              appFold = foldl termAppl
              rhs = appFold (termAppl topC $ mkFree "x")
-                       $ map (mkFree . xvar) indicesArgs
+                       $ map (mkFree . xvar . snd) indicesArgs
              -- applied to y and extra parameter vars
              lhs = appFold (termAppl topC $ mkFree "y")
-                             $ map (mkFree . xvar) indicesArgs
+                             $ map (mkFree . xvar . snd) indicesArgs
              chi = -- is the result of selector non-observable?
                    if res `elem` sorts
                      -- then apply corresponding relation
                      then termAppl (termAppl (mkFree $
-                          rvar $ maybe (error "CoCASL2Isabelle.premSel.chi") id
+                          rvar $ fromMaybe
+                                   (error "CoCASL2Isabelle.premSel.chi")
                                $ findIndex (==res) sorts)
                                rhs) lhs
                      -- else use equality

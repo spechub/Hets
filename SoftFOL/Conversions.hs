@@ -24,6 +24,8 @@ import qualified Common.Lib.Rel as Rel
 
 import Common.AS_Annotation
 import Common.Id
+import Common.Utils (number)
+
 import SoftFOL.Sign
 
 {- |
@@ -73,11 +75,11 @@ signToSPLogicalPart s =
         else let
             xTerm :: Int -> SPTerm
             xTerm i = simpTerm $ mkSPCustomSymbol $ 'X' : show i
-            in SPTermDecl {
-               termDeclTermList =
-                 zipWith (\ t i -> compTerm (spSym t) [xTerm i]) args [1..],
-               termDeclTerm = compTerm (spSym ret) [compTerm (spSym fsym)
-                   $ zipWith (const xTerm) args [1..]] }
+            in SPTermDecl
+               { termDeclTermList =
+                 map (\ (t, i) -> compTerm (spSym t) [xTerm i]) $ number args
+               , termDeclTerm = compTerm (spSym ret) [compTerm (spSym fsym)
+                   $ map (xTerm . snd) $ number args] }
     predArgRestrictions =
           SPFormulaList { originType = SPOriginAxioms
                         , formulae = Map.foldWithKey toArgRestriction []
@@ -96,11 +98,10 @@ signToSPLogicalPart s =
              in [makeNamed ("arg_restriction_o_" ++ tokStr psym) $
                  makeTerm psym $
                  foldl (zipWith (flip (:)))
-                      (replicate (length $ head argLists) []) argLists]
+                      (map (const []) $ head argLists) argLists]
 
     makeTerm psym tss =
-        let varList = take (length tss) $
-                      genVarList psym (nub $ concat tss)
+        let varList = zipWith const (genVarList psym $ nub $ concat tss) tss
             varListTerms = spTerms varList
         in if null varList
            then error

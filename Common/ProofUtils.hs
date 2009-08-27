@@ -19,6 +19,7 @@ module Common.ProofUtils where
 import qualified Data.Map as Map
 import qualified Data.Set as Set
 import Common.AS_Annotation
+import Common.Utils (number)
 
 {-
  * generic names are added
@@ -43,7 +44,7 @@ prepareSenNames = map . reName
 -- | disambiguate sentence names
 disambiguateSens :: Set.Set String -> [Named a] -> [Named a]
 disambiguateSens =
-    genericDisambigSens 0 senAttr ( \ n s -> reName (const n) s)
+    genericDisambigSens 0 senAttr $ reName . const
 
 -- | generically disambiguate lists with names
 genericDisambigSens :: Int -> (a -> String) -> (String -> a -> a)
@@ -65,11 +66,10 @@ nameAndDisambiguate = disambiguateSens Set.empty . nameSens
 
 -- | name unlabeled axioms with "Axnnn"
 nameSens :: [Named a] -> [Named a]
-nameSens sens =
-  map nameSen (zip sens [1..length sens])
-  where nameSen (sen,no) = if senAttr sen == ""
-                              then reName (const $ "Ax" ++ show no) sen
-                              else sen
+nameSens =
+  map (\ (sen, no) ->
+       if senAttr sen == "" then reName (const $ "Ax" ++ show no) sen else sen)
+    . number
 
 -- | collect the mapping of new to old names
 collectNameMapping :: [Named a] -> [Named a] -> Map.Map String String

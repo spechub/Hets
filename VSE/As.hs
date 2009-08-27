@@ -25,6 +25,7 @@ import Common.Doc
 import Common.DocUtils
 import Common.Result
 import Common.LibName
+import Common.Utils (number)
 
 import CASL.AS_Basic_CASL
 import CASL.ToDoc (recoverType, printALTERNATIVE)
@@ -212,7 +213,7 @@ instance Pretty VSEforms where
     RestrictedConstraint constrs restr _b ->
        let l = recoverType constrs
        in fsep [ text "true %[generated type"
-               , semiAnnos (printRESTRTYPE_DECL restr) l
+               , semiAnnos (printRestrTypedecl restr) l
                , text "]%"]
 
 genSortName :: String -> SORT -> Id
@@ -233,7 +234,7 @@ gnEqName :: SORT -> Id
 gnEqName = genSortName "eq_"
 
 genVars :: [SORT] -> [(Token, SORT)]
-genVars sl = map (\ (t, n) -> (genNumVar "x" n, t)) $ zip sl [1 :: Int ..]
+genVars = map (\ (t, n) -> (genNumVar "x" n, t)) . number
 
 xVar :: Token
 xVar = genToken "x"
@@ -241,10 +242,10 @@ xVar = genToken "x"
 yVar :: Token
 yVar = genToken "y"
 
-printRESTRTYPE_DECL :: Map.Map SORT Id -> DATATYPE_DECL -> Doc
-printRESTRTYPE_DECL restr (Datatype_decl s a r)=
+printRestrTypedecl :: Map.Map SORT Id -> DATATYPE_DECL -> Doc
+printRestrTypedecl restr (Datatype_decl s a r)=
     let pa = printAnnoted printALTERNATIVE in case a of
-    [] -> printRESTRTYPE_DECL restr
+    [] -> printRestrTypedecl restr
            (Datatype_decl s [emptyAnno $ Subsorts [s] r] r)
     h : t  -> sep [idLabelDoc s, colon <> colon <> sep
                       ((equals <+> pa h) :

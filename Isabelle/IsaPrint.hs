@@ -27,6 +27,7 @@ import Common.AS_Annotation
 import qualified Data.Map as Map
 import Common.Doc hiding (bar)
 import Common.DocUtils
+import Common.Utils (number)
 
 import Data.Char
 import Data.List
@@ -516,10 +517,9 @@ printTycon (t, arity') = case arity' of
                     ,"llist","list","lprod","lEither","lMaybe","option"]
          then empty else
             text typedeclS <+>
-            (let arity = length rs in if arity > 0
-             then parens $ hsep $ punctuate comma
-                      $ map (text . ("'a" ++) . show) [1..arity]
-             else empty) <+> text t
+            (if null rs then empty else
+             parens $ hsep $ punctuate comma
+             $ map (text . ("'a" ++) . show . snd) $ number rs) <+> text t
 
 -- | show alternative syntax (computed by comorphisms)
 printAlt :: VName -> Doc
@@ -593,8 +593,7 @@ printSign sig = let dt = sortBy cmpDomainEntries $ domainTab sig
        printTyp (if isDomain then Quoted else Null) t <+> equals <+>
        fsep (bar $ map printDOp ops)
     printDOp (vn, args) = let opname = new vn in
-       text opname <+> hsep (map (printDOpArg opname)
-                            $ zip args [1 :: Int .. ])
+       text opname <+> hsep (map (printDOpArg opname) $ number args)
        <+> printAlt vn
     printDOpArg o (a, i) = let
       d = case a of

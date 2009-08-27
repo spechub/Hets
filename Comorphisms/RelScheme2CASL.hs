@@ -25,6 +25,7 @@ import Common.AS_Annotation
 import Common.Id
 import Common.ProofTree
 import Common.Result
+import Common.Utils (number)
 
 import qualified Data.Set as Set
 import qualified Data.Map as Map
@@ -188,9 +189,9 @@ axiomsForKeys tab = do
  let
   types = map stringToId $ map show $ map SRel.c_data $ SRel.columns tab
   vars_x = map (\(t,n) -> (genToken ("x"++ (show n)), t)) $
-           zip types [1::Int ..]
+           number types
   vars_y = map (\(t,n) -> (genToken ("y"++ (show n)), t)) $
-           zip types [1::Int ..]
+           number types
   vardecls = map (\(v,t) -> Var_decl [v] t nullRange)
   qual_vars = map (\(v,t) -> Qual_var v t nullRange )
   conjuncts = map (\(x,y) -> Strong_equation x y nullRange) $
@@ -251,7 +252,7 @@ projections tab = do
  let
   types = map stringToId $ map show $ map SRel.c_data $ SRel.columns tab
   vars_x = map (\(t,n) -> (genToken ("x"++ (show n)), t)) $
-           zip types [1::Int ..]
+           number types
   vardecls = map (\(v,t) -> Var_decl [v] t nullRange)
   qual_vars = map (\(v,t) -> Qual_var v t nullRange )
   fields = map show $ map SRel.c_name $ SRel.columns tab
@@ -293,14 +294,13 @@ mapSen sign sen = do
            Set.toList $ SRel.tables sign
   rtable = head $ filter (\t -> SRel.t_name t == rtableName) $
            Set.toList $ SRel.tables sign
-  allRcols = zip (SRel.columns rtable)
-                 [1::Int ..]
+  allRcols = number $ SRel.columns rtable
   typesL = map stringToId $ map show $
            map SRel.c_data $ SRel.columns ltable
   typesR = map stringToId $ map show $
            map SRel.c_data $ SRel.columns rtable
   vars_x = map (\(t,n) -> (genToken ("x"++ (show n)), t)) $
-           zip typesL [1::Int ..]
+           number typesL
   vardecls = map (\(v,t) -> Var_decl [v] t nullRange)
   qual_vars = map (\(v,t) -> Qual_var v t nullRange )
   quantif = case r_type sen of

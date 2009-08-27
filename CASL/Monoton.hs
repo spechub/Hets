@@ -64,7 +64,7 @@ makeEquivMonoRs :: Id -> OpType -> OpType -> [SORT] -> [SORT]
 makeEquivMonoRs o o1 o2 rs args = map (makeEquivMonoR o o1 o2 args) rs
 
 injectVar :: VAR_DECL -> SORT -> TERM f
-injectVar v = injectTerm (toQualVar v)
+injectVar = injectTerm . toQualVar
 
 injectTerm :: TERM f -> SORT -> TERM f
 injectTerm t s = if sortOfTerm t == s then t else Sorted_term t s nullRange
@@ -72,10 +72,10 @@ injectTerm t s = if sortOfTerm t == s then t else Sorted_term t s nullRange
 makeEquivMonoR :: Id -> OpType -> OpType -> [SORT] -> SORT
                -> Named (FORMULA f)
 makeEquivMonoR o o1 o2 args res =
-    let vds = zipWith (\ s n -> Var_decl [mkNumVar "x" n] s nullRange)
-              args [1..]
-        a1 = zipWith (\ v s -> injectVar v s) vds $ opArgs o1
-        a2 = zipWith (\ v s -> injectVar v s) vds $ opArgs o2
+    let vds = map (\ (s, n) -> Var_decl [mkNumVar "x" n] s nullRange)
+              $ number args
+        a1 = zipWith injectVar vds $ opArgs o1
+        a2 = zipWith injectVar vds $ opArgs o2
         t1 = injectTerm (Application (Qual_op_name o (toOP_TYPE o1)
                                             nullRange) a1 nullRange) res
         t2 = injectTerm (Application (Qual_op_name o (toOP_TYPE o2)
@@ -95,10 +95,10 @@ makeEquivPredMono o sig o1 o2 =
 
 makeEquivPred :: Id -> PredType -> PredType -> [SORT] -> Named (FORMULA f)
 makeEquivPred o o1 o2 args =
-    let vds = zipWith (\ s n -> Var_decl [mkNumVar "x" n] s nullRange)
-              args [1..]
-        a1 = zipWith (\ v s -> injectVar v s) vds $ predArgs o1
-        a2 = zipWith (\ v s -> injectVar v s) vds $ predArgs o2
+    let vds = map (\ (s, n) -> Var_decl [mkNumVar "x" n] s nullRange)
+              $ number args
+        a1 = zipWith injectVar vds $ predArgs o1
+        a2 = zipWith injectVar vds $ predArgs o2
         t1 = Predication (Qual_pred_name o (toPRED_TYPE o1) nullRange) a1
              nullRange
         t2 = Predication (Qual_pred_name o (toPRED_TYPE o2) nullRange) a2

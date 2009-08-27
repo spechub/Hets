@@ -24,7 +24,7 @@ import CASL.Sign
 import CASL.AS_Basic_CASL as ABC
 import qualified Common.Id as Id
 import qualified Common.LibName as ASL
-import Common.Utils (splitOn)
+import Common.Utils (splitOn, number)
 
 import Driver.Options
 
@@ -980,7 +980,7 @@ libEnvLibNameIdNameMappingToOMDoc
       -- conservativity information
       (thmLinksToRefsOM, dummyImports) =
         foldl
-          (\(tL, dI) (lnum, edge) ->
+          (\(tL, dI) (edge, lnum) ->
             let
               (newTL, mDI) =
                 createXmlThmLinkOM
@@ -996,7 +996,7 @@ libEnvLibNameIdNameMappingToOMDoc
                 (Just newDI) -> (tL ++ [newTL], dI ++ [newDI])
           )
           ([], [])
-          (zip [1..] thmLinksToRefs) -- numbers for disambiguation
+          (number thmLinksToRefs) -- numbers for disambiguation
       -- dummy-theory to attach links with information to it
       dummyTheory =
         OMDoc.Theory
@@ -1329,7 +1329,7 @@ libEnvLibNameIdNameMappingToOMDoc
                   (theoryThmLinks, theoryDummyImports) =
                     foldl
                       -- ...for every (tagged) theorem link...
-                      (\(tTL, tDI) (lnum, edge) ->
+                      (\(tTL, tDI) (edge, lnum) ->
                         let
                           -- create OMDoc translation and maybe a Dummy-link
                           (newtTL, mtDI) =
@@ -1347,7 +1347,7 @@ libEnvLibNameIdNameMappingToOMDoc
                             (Just newtDI) -> (tTL ++ [newtTL], tDI ++ [newtDI])
                       )
                       ([],[])
-                      (zip [1..] (filterThmLinks $ innDG dg nn))
+                      (number $ filterThmLinks $ innDG dg nn)
                   -- recognizers are formally references to
                   -- predicates that decide whether their argument
                   -- belongs to the sort defined in
@@ -2085,5 +2085,5 @@ wrapFormulasCMPIOOM go lenv ln nn uN collectionMap fs =
                 (wax, wde++[def], wpr++[pr])
         )
         ([], [], [])
-        (zip fs [1..])
+        (number fs)
 

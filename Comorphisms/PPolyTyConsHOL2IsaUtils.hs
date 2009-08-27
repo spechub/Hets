@@ -37,7 +37,7 @@ import Isabelle.Translate
 import Common.DocUtils
 import Common.Id
 import Common.Result
-import Common.Utils (isSingleton)
+import Common.Utils (isSingleton, number)
 import Common.Lib.State
 import Common.AS_Annotation
 import Common.GlobalAnnotations
@@ -76,19 +76,19 @@ transAssumps ga toks = foldM insertOps Map.empty . Map.toList where
               return $ Map.insert
                          (mkIsaConstT (isPredType op) ga (chk ty)
                           name baseSign toks) (transPlainFunType ty) m
-          infos -> foldM ( \ m' (i, TypeScheme _ op _) -> do
+          infos -> foldM ( \ m' (TypeScheme _ op _, i) -> do
                         ty <- funType op
                         return $ Map.insert
                              (mkIsaConstIT (isPredType op) ga (chk ty)
                               name i baseSign toks) (transPlainFunType ty) m'
-                         ) m $ zip [1..] infos
+                         ) m $ number infos
 
 -- all possible tokens of mixfix identifiers that must not be used as variables
 getAssumpsToks :: Assumps -> Set.Set String
 getAssumpsToks = Map.foldWithKey (\ i ops s ->
     Set.union s $ Set.unions
-        $ zipWith (\ o _ -> getConstIsaToks i o baseSign) [1..]
-                     $ Set.toList ops) Set.empty
+        $ map (\ (_, o) -> getConstIsaToks i o baseSign)
+                     $ number $ Set.toList ops) Set.empty
 
 typeToks :: Env -> Set.Set String
 typeToks =
@@ -269,8 +269,10 @@ mkSimplifiedSen :: OldSimpKind -> Simplifier -> Isa.Term -> Isa.Sentence
 mkSimplifiedSen simK simpF t = mkSen $ evalState (simplify simK simpF t) 0
 
 mkBinConj :: Isa.Term -> Isa.Term -> Isa.Term
-mkBinConj t1 t2 = if t1 == true then t2 else if t2 == true then t1 else
-  binConj t1 t2
+mkBinConj t1 t2 = case () of
+  () | t1 == true -> t2
+  () | t2 == true -> t1
+  _ -> binConj t1 t2
 
 data OldSimpKind = NoSimpLift | Lift2Restrict | Lift2Case deriving Eq
 
@@ -472,8 +474,7 @@ transTerm sign tyToks collectConds toks pVars trm = case trm of
               | opId == resId -> ITC instfTy (cf resOp) None
               | otherwise -> let
                   isaId = transOpId sign tyToks opId ts
-                  ef = cf $ (for (isPlainFunType fTy - 1)
-                                  $ termAppl uncurryOp)
+                  ef = cf $ for (isPlainFunType fTy - 1) (termAppl uncurryOp)
                              $ if elem opId [injName, projName] then
                                    mkTypedConst isaId instfTy
                                else con isaId
@@ -699,7 +700,7 @@ integrateCondInTotal :: Cond -> Isa.Term
 integrateCondInTotal c = metaComp (integrateCondInPartial c) mkPartial
 
 addCond :: Isa.Term -> Cond -> Cond
-addCond trm c = joinCond (Cond trm) c
+addCond = joinCond . Cond
 
 cond2bool :: Cond -> Isa.Term
 cond2bool c = case nub $ condToList c of
@@ -741,7 +742,7 @@ adjustArgType aTy ty = case (aTy, ty) of
     (TypeVar _, _) -> return IdOp
     (_, TypeVar _) -> return IdOp
     (ApplType i1 l1, ApplType i2 l2) | i1 == i2 && length l1 == length l2
-        -> do l <- mapM (\ (a, b) -> adjustArgType a b) $ zip l1 l2
+        -> do l <- mapM (uncurry adjustArgType) $ zip l1 l2
               if any (isNotIdOp . invertConv) l
                 then fail "cannot adjust type application"
                 else return IdOp
@@ -856,7 +857,7 @@ applConv cnv (t, c) = let
           (nt1, nc1) = applConv cv (t1, c1)
           in (Tuplex [nt1, t2] NotCont, PairCond nc1 c2)
         MapSnd -> let
-          (nt2, nc2) = applConv cv $ (t2, c2)
+          (nt2, nc2) = applConv cv (t2, c2)
           in (Tuplex [t1, nt2] NotCont, PairCond c1 nc2)
         MapPartial -> r
       _ -> r

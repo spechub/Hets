@@ -39,7 +39,6 @@ module Comorphisms.Hs2HOLCFaux
     , HsType
     , HsScheme
     , HsId
-    , listEnum
     , getInstClass
     , getInstType
     , repVarClass
@@ -81,7 +80,9 @@ module Comorphisms.Hs2HOLCFaux
 
 import Data.List
 import qualified Data.Map as Map
+
 import Common.AS_Annotation
+import Common.Utils (number)
 
 -- Haskell (Programatica)
 import SourceNames
@@ -142,9 +143,6 @@ removeEL = filter (not . null)
 
 remove_duplicates :: Eq a => [a] -> [a]
 remove_duplicates = nub . reverse
-
-listEnum :: [a] -> [(a, Int)]
-listEnum l = zip l [1..]
 
 --------------------------- filters -----------------------------------
 
@@ -902,7 +900,7 @@ fixPoint c xs = case xs of
   _ : _ -> case c of
     IsCont _ -> let
          jn = joinNames (map extAxName xs) -- name is ininfluential here
-         ys = [[holEq (extLeftH x) $ extRightH x] | x <- xs]
+         ys = map (\ x -> [holEq (extLeftH x) $ extRightH x]) xs
          ps = [makeNamed jn $ RecDef fixrecS ys]
       in ps
     NotCont -> let
@@ -915,13 +913,12 @@ fixPoint c xs = case xs of
          n = length xs
          rs = map extRightH xs
          ls = map extFunTerm xs
-         yys = [destCase x (\ _ -> jn) | x <- rs]
+         yys = map (\ x -> destCase x (\ _ -> jn)) rs
          yyys = reassemble yys
-         zs = [(p, Tuplex
+         zs = map (\ (p,ts) -> (p, Tuplex
                       (map (renFuns (newFCons (Const jn noType) ls)) ts)
-                      NotCont)
-                           | (p,ts) <- Map.toList yyys]
-         os = [mkNewDef x jj n m jt | (x,m) <- listEnum xs]
+                      NotCont)) $ Map.toList yyys
+         os = map (\ (x,m) -> mkNewDef x jj n m jt) $ number xs
          ps = makeNamed jj (makeRecDef jl zs) : os
       in ps
   [] -> []
@@ -971,7 +968,7 @@ typTuple c ts = case ts of
 typeTupleSel :: Typ -> Int -> Typ
 typeTupleSel t n = let
     (p,c) = splitFunT t
-    q = (tupleDes c) !! (n-1)
+    q = tupleDes c !! (n-1)
   in mkFunType p q
 
 tupleDes :: Typ -> [Typ]

@@ -14,8 +14,11 @@ theory translation for the embedding comorphism from Haskell to Isabelle.
 module Comorphisms.Hs2HOLCF (transTheory) where
 
 import qualified Data.Map as Map
+
+import Common.Utils (number)
 import Common.Result
 import Common.AS_Annotation
+
 import Comorphisms.Hs2HOLCFaux
 
 -- Haskell
@@ -211,7 +214,7 @@ transMMatch c ds = TSt $ \sign -> case ds of
         in (nm, (ps', k))
    mkkSent c' df' y' qs' tx' sign' = return
        (makeSentence FunDef c' (IsaSign.orig df') y' df' qs' tx', sign')
-   wrapWild ls = map wrapW $ listEnum ls
+   wrapWild ls = map wrapW $ number ls
    wrapW (a,n) = case a of
         Free x -> case new x of
             "wildcX" -> Free $ mkVName ("wildcX" ++ show n)
@@ -221,9 +224,9 @@ transMMatch c ds = TSt $ \sign -> case ds of
 elimDic :: [PrPat] -> [PrPat]
 elimDic ls = case ls of
    [] -> []
-   x:xs -> case x of
-      TiDecorate.Pat (HsPId (HsVar _)) -> elimDic xs
-      _ -> x:(elimDic xs)
+   x : xs -> let r = elimDic xs in case x of
+      TiDecorate.Pat (HsPId (HsVar _)) -> r
+      _ -> x : r
 
 ------------------------- translates instances --------------------------
 {- translates method definitions -}

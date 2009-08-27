@@ -32,6 +32,7 @@ import Common.AS_Annotation
 import Common.Id
 import Common.ProofTree
 import Common.Result
+import Common.Utils (number)
 import Common.Lib.State
 
 import qualified Data.Set as Set
@@ -68,12 +69,12 @@ instance Comorphism CASL2VSERefine
 
 mapCASLTheory :: (CASLSign, [Named CASLFORMULA]) ->
                  Result (VSESign, [Named Sentence])
-mapCASLTheory (sig, n_sens) = do
+mapCASLTheory (sig, n_sens) =
   let (tsig, genAx) = mapSig sig
       tsens = map mapNamedSen n_sens
-  case not $ null $ checkCases tsig (tsens ++ genAx) of
-   True -> fail "case error in signature"
-   _ -> return (tsig, tsens ++ genAx)
+      allSens = tsens ++ genAx
+  in if null $ checkCases tsig allSens then return (tsig, allSens) else
+     fail "case error in signature"
 
 mapSig :: CASLSign -> (VSESign, [Named Sentence])
 mapSig sign =
@@ -321,21 +322,21 @@ mapSig sign =
                            (Just $ opRes profile))) opTypes
        opTypeSens (OpType _ w s) = let
           xtokens = map (\(_,ii) -> genNumVar "x" ii) $
-                    zip w [1::Int ..]
+                    number w
           xvars = map (
                   \(si, ii) ->
                   Qual_var (genNumVar "x" ii )
                   si nullRange ) $
-                   zip w [1::Int ..]
+                   number w
           yvars = map (
                   \(si, ii) ->
                   Qual_var (genNumVar "y" ii )
                   si nullRange ) $
-                   zip w [1::Int ..]
+                   number w
           ytokens = map (\(_,ii) -> genNumVar "y" ii) $
-                    zip w [1::Int ..]
+                    number w
           btokens = map (\(_,ii) -> genNumVar "b" ii) $
-                    zip w [1::Int ..]
+                    number w
           xtoken = genToken "x"
           ytoken = genToken "y"
           btoken = genToken "b"
@@ -350,11 +351,11 @@ mapSig sign =
                                             nullRange
                                            ,Var_decl (btoken:btokens)
                                               uBoolean nullRange
-                                            ] ++ (map
+                                            ] ++ map
                                             (\((t1,t2),si) ->
                                              Var_decl [t1, t2] si
-                                             nullRange) $
-                                             zip (zip xtokens ytokens) w)
+                                             nullRange)
+                                             (zip (zip xtokens ytokens) w)
                                             )
                (Implication
                   (Conjunction
@@ -400,7 +401,7 @@ mapSig sign =
                               (Strong_equation
                                   bi1 aTrue nullRange)
                      ] ) $
-                    zip w [1::Int ..] )
+                    number w )
                    nullRange )--hypothesis
                   (ExtFORMULA $ Ranged (
                      Dlformula Diamond
@@ -466,7 +467,7 @@ mapSig sign =
                                nullRange)
                           (True_atom nullRange) ) nullRange
                      ] ) $
-                    zip w [1::Int ..] )
+                    number w )
                          nullRange)
                         (ExtFORMULA $ Ranged
                        (
@@ -539,16 +540,16 @@ mapSig sign =
                            (Just uBoolean))) predTypes
        predTypeSens (PredType w) = let
           xtokens = map (\(_,ii) -> genNumVar "x" ii) $
-                    zip w [1::Int ..]
+                    number w
           xvars = map (
                   \(si, ii) ->
                   Qual_var (genNumVar "x" ii )
                   si nullRange ) $
-                   zip w [1::Int ..]
+                   number w
           ytokens = map (\(_,ii) -> genNumVar "y" ii) $
-                    zip w [1::Int ..]
+                    number w
           btokens = map (\(_,ii) -> genNumVar "b" ii) $
-                    zip w [1::Int ..]
+                    number w
           btoken = genToken "b"
           r1 = genToken "r1"
           r2 = genToken "r2"
@@ -603,7 +604,7 @@ mapSig sign =
                               (Strong_equation
                                   bi1 aTrue nullRange)
                      ] ) $
-                    zip w [1::Int ..] )
+                    number w )
                    nullRange )--hypothesis
                   (ExtFORMULA $ Ranged (
                      Dlformula Diamond
@@ -611,22 +612,22 @@ mapSig sign =
                                    (Qual_pred_name (mkGenName i)
                                     (Pred_type (w ++ [uBoolean]) nullRange)
                                     nullRange)
-                                   ((map (
+                                   (map (
                   \(si, ii) ->
                   Qual_var (genNumVar "x" ii )
-                  si nullRange ) $
-                   zip w [1::Int ..]) ++ [rvar1]) nullRange)) nullRange)
+                  si nullRange )
+                   (number w) ++ [rvar1]) nullRange)) nullRange)
                       (ExtFORMULA $ Ranged (
                          Dlformula Diamond
                       (Ranged (Call (Predication
                                    (Qual_pred_name (mkGenName i)
                                     (Pred_type (w ++ [uBoolean]) nullRange)
                                      nullRange)
-                                   ((map (
+                                   (map (
                   \(si, ii) ->
                   Qual_var (genNumVar "y" ii )
-                  si nullRange ) $
-                   zip w [1::Int ..]) ++ [rvar2]) nullRange)) nullRange)
+                  si nullRange )
+                   (number w) ++ [rvar2]) nullRange)) nullRange)
                        (Strong_equation
                                   rvar1
                                   rvar2
@@ -638,11 +639,12 @@ mapSig sign =
                nullRange
               ]
           termP = [ makeNamed "" $ Quantification Universal
-                                     ((map
+                                     (map
                                              (\(t1,si) ->
                                               Var_decl [t1] si
-                                              nullRange) $
-                                              zip xtokens w)++[Var_decl [r1]
+                                              nullRange)
+                                              (zip xtokens w)
+                                      ++ [Var_decl [r1]
                                               uBoolean nullRange])
                       (Implication
                          (Conjunction
@@ -661,7 +663,7 @@ mapSig sign =
                                 nullRange)
                            (True_atom nullRange) ) nullRange
                       ] ) $
-                     zip w [1::Int ..] )
+                     number w )
                           nullRange)
                          (ExtFORMULA $ Ranged
                         (
@@ -779,7 +781,7 @@ mapCASLSenAux f = case f of
      --         xn2 := prg2;
      --         xn := gn_eq_s(xn1,xn2) :> xn = True  "
   Predication pn as _qs -> do
-     indexes <- mapM (\ argi -> freshIndex $ sortOfTerm argi) as
+     indexes <- mapM (freshIndex . sortOfTerm) as
      prgs <- mapM (\(ti, i) -> mapCASLTerm i ti) $ zip as indexes
      let xvars = map (\(ti,i) ->
                      Qual_var (genNumVar "x" i)
@@ -892,7 +894,7 @@ mapCASLTerm n t = case t of
       Ranged (Assign (genNumVar "x" n)
                (Qual_var v s nullRange)) nullRange
   Application opsym as _qs  -> do
-   indexes <- mapM (\ argi -> freshIndex $ sortOfTerm argi) as
+   indexes <- mapM (freshIndex . sortOfTerm) as
    let xvars = map (\(ti,i) ->
                      Qual_var (genNumVar "x" i)
                               (sortOfTerm ti) nullRange ) $ zip as indexes

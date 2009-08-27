@@ -15,6 +15,7 @@ Utility functions that can't be found in the libraries
 module Common.Utils
   ( isSingleton
   , hasMany
+  , number
   , combine
   , trim
   , trimLeft
@@ -38,11 +39,16 @@ module Common.Utils
 
 import Data.Char
 import Data.List
+import Data.Maybe
 import qualified Data.Map as Map
 import qualified Data.Set as Set
 
 import System.Environment
 import Control.Monad
+
+-- | add indices to a list starting from one
+number :: [a] -> [(a, Int)]
+number = flip zip [1 ..]
 
 -- | /O(1)/ test if the set's size is one
 isSingleton :: Set.Set a -> Bool
@@ -123,7 +129,7 @@ composeMap s m1 m2 = if Map.null m2 then m1 else Map.intersection
 keepMins :: (a -> a -> Bool) -> [a] -> [a]
 keepMins lt l = case l of
     [] -> []
-    x : r -> let s = filter (\ y -> not (lt x y)) r
+    x : r -> let s = filter (not . lt x) r
                  m = keepMins lt s
               in if any (\ y -> lt y x) s then m
                  else x : m
@@ -161,38 +167,34 @@ dirname = fst . stripDir
 -}
 fileparse :: [String] -- ^ list of suffixes
           -> FilePath
-          -> (FilePath,FilePath,Maybe String)
+          -> (FilePath, FilePath, Maybe String)
           -- ^ (basename,directory,matched suffix)
-fileparse sufs fp = let (path,base) = stripDir fp
-                        (base',suf) = stripSuffix sufs base
-                    in (base',path,suf)
+fileparse sufs fp = let (path, base) = stripDir fp
+                        (base', suf) = stripSuffix sufs base
+                    in (base', path, suf)
 
-stripDir :: FilePath -> (FilePath,FilePath)
+stripDir :: FilePath -> (FilePath, FilePath)
 stripDir =
     (\ (x, y) -> (if null y then "./" else reverse y, reverse x))
     . break (== '/') . reverse
 
-stripSuffix :: [String] -> FilePath -> (FilePath,Maybe String)
-stripSuffix suf fp = case filter justs $ map (stripSuf fp) suf of
-                     ((Just (x,s)):_)  -> (x,Just s)
-                     _                 -> (fp, Nothing)
+stripSuffix :: [String] -> FilePath -> (FilePath, Maybe String)
+stripSuffix suf fp = case filter isJust $ map (stripSuf fp) suf of
+                       Just (x, s) : _  -> (x, Just s)
+                       _  -> (fp, Nothing)
     where stripSuf f s | s `isSuffixOf` f =
                            Just (take (length f - length s) f, s)
                        | otherwise = Nothing
-          justs (Nothing) = False
-          justs (Just _)  = True
 
 {- | filter a map according to a given list of keys (it dosen't hurt
    if a key is not present in the map) -}
 filterMapWithList :: Ord k => [k] -> Map.Map k e -> Map.Map k e
-filterMapWithList l = filterMapWithSet sl
-    where sl = Set.fromList l
+filterMapWithList = filterMapWithSet . Set.fromList
 
 {- | filter a map according to a given set of keys (it dosen't hurt if
    a key is not present in the map) -}
 filterMapWithSet :: Ord k => Set.Set k -> Map.Map k e -> Map.Map k e
-filterMapWithSet s = Map.filterWithKey selected
-    where selected k _ = Set.member k s
+filterMapWithSet s = Map.filterWithKey (\ k _ -> Set.member k s)
 
 {- | get, parse and check an environment variable; provide the default
   value, only if the envionment variable is not set or the
@@ -203,7 +205,7 @@ getEnvSave :: a -- ^ default value
                          -- for every b the default value is returned
            -> IO a
 getEnvSave defValue envVar readFun =
-    liftM (maybe defValue (maybe defValue id . readFun)
+    liftM (maybe defValue (fromMaybe defValue . readFun)
            . lookup envVar) getEnvironment
 
 -- | get environment variable

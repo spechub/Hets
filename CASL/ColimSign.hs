@@ -20,14 +20,18 @@ import CASL.Sign
 import CASL.Morphism
 import CASL.Overload
 import CASL.AS_Basic_CASL
+
 import Common.Id
 import Common.SetColimit
+import Common.Utils (number)
 import qualified Common.Lib.Rel as Rel
 import Common.Lib.Graph
+
 import Data.Graph.Inductive.Graph as Graph
 import qualified Data.Map as Map
 import qualified Data.Set as Set
 import Data.List
+
 import Logic.Logic
 
 extCASLColimit :: Gr () (Int, ()) ->
@@ -347,7 +351,7 @@ nameSymbols graph morMap phi names ovrl totalOps = let
                sortBy (\ s1 s2 -> compare (Set.size s1)(Set.size s2)) colimOvrl
   (opFuns, _, renMap) = foldl (\(oF,gN, mM) x -> nameClass oF gN x mM)
                                   (Map.empty,[], morMap)
-                                  $ zip colimOvrl' $ [1::Int ..]
+                                  $ number colimOvrl'
  in (opFuns , renMap)
 
 {--CASL signatures colimit on predicate symbols
@@ -502,7 +506,7 @@ namePSymbols graph morMap phi names ovrl = let
                sortBy (\ s1 s2 -> compare (Set.size s1)(Set.size s2)) colimOvrl
   (pFuns, _, renMap) = foldl (\(pF,gN, mM) x -> nameClass pF gN x mM)
                                   (Map.empty,[], morMap)
-                                  $ zip colimOvrl' $ [1::Int ..]
+                                  $ number colimOvrl'
  in (pFuns , renMap)
 
 opSymbolsOf :: OpMap -> [(Id, OpType)]

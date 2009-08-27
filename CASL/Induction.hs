@@ -22,7 +22,7 @@ import Common.AS_Annotation as AS_Anno
 import Common.Id
 import Common.Result
 import Common.DocUtils
-import Common.Utils (combine)
+import Common.Utils (combine, number)
 import Data.Maybe
 
 -- | derive a second-order induction scheme from a sort generation constraint
@@ -71,8 +71,8 @@ induction :: Pretty f => [(Constraint, TERM f -> FORMULA f)]
           -> Result (FORMULA f)
 induction constrSubsts = do
    let mkVar i = mkSimpleId ("x_" ++ show i)
-       sortInfo = zipWith (\ (cs, sub) i -> (cs, sub, (mkVar i, newSort cs)))
-         constrSubsts [1 :: Int ..]
+       sortInfo = map (\ ((cs, sub), i) -> (cs, sub, (mkVar i, newSort cs)))
+         $ number constrSubsts
        mkConclusion (_, subst, v) =
          Quantification Universal [mkVarDecl v] (subst (mkVarTerm v)) nullRange
        inductionConclusion = mkConj $ map mkConclusion sortInfo
@@ -97,7 +97,7 @@ mkPrem substs (_,subst,_)
   return $ if null qVars then phi
             else Quantification Universal (map mkVarDecl qVars) phi nullRange
   where
-  qVars = zipWith (\ a i -> (mkVar i, a)) argTypes [1 :: Int ..]
+  qVars = map (\ (a, i) -> (mkVar i, a)) $ number argTypes
   mkVar i = mkSimpleId ("y_" ++ show i)
   phi = if null indHyps then indConcl
            else Implication (mkConj indHyps) indConcl True nullRange
