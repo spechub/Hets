@@ -136,17 +136,18 @@ makeQm sig = QModel { sign = sig,
                       evaluatedOps = []
                     }
 
--- | insert sentences into a QModel
-insertSen :: QModel -> AS_Anno.Named CASLFORMULA -> QModel
 insertSens :: QModel -> [AS_Anno.Named CASLFORMULA] -> QModel
 insertSens = foldl insertSen
+
+-- | insert sentences into a QModel
+insertSen :: QModel -> AS_Anno.Named CASLFORMULA -> QModel
 insertSen qm sen =
  if not $ AS_Anno.isAxiom sen then qm else
   let f = AS_Anno.sentence sen
       qm1 = case f of
                -- sort generation constraint?
                Sort_gen_ax cs _ ->
-                 let s = zip (map newSort cs) (map (const [f]) [1..length cs])
+                 let s = map (\ c -> (newSort c, [f])) cs
                      ins = foldr $ uncurry $ Map.insertWith (++)
                   in qm { carrierSens = ins (carrierSens qm) s }
                -- axiom forcing empty carrier?
