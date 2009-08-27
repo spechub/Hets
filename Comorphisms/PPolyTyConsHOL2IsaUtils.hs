@@ -60,7 +60,7 @@ mapTheory simK simpF (env, sens) = do
              DatatypeSen ds -> ds
              _ -> []) sens
       return ( sign { domainTab = reverse dt }
-             , filter (\ ns -> sentence ns /= mkSen true) isens)
+             , filter ((/= mkSen true) . sentence) isens)
 
 -- * Signature
 baseSign :: BaseSig
@@ -268,8 +268,13 @@ transTypedVar toks (VarDecl var ty _ _) = do
 mkSimplifiedSen :: OldSimpKind -> Simplifier -> Isa.Term -> Isa.Sentence
 mkSimplifiedSen simK simpF t = mkSen $ evalState (simplify simK simpF t) 0
 
+isTrue :: Isa.Term -> Bool
+isTrue t = case t of
+  Const n _ -> new n == cTrue
+  _ -> False
+
 mkBinConj :: Isa.Term -> Isa.Term -> Isa.Term
-mkBinConj t1 t2 = case (== true) of
+mkBinConj t1 t2 = case isTrue of
   isT | isT t1 -> t2
       | isT t2 -> t1
   _ -> binConj t1 t2
@@ -287,7 +292,7 @@ transSentence sign tyToks simK simpF s = case s of
       let et = case ty of
                  PartialVal UnitType -> mkTermAppl defOp t
                  _ -> t
-          bt = if et == true then cond2bool cs else
+          bt = if isTrue et then cond2bool cs else
                    mkTermAppl (integrateCondInBool cs) et
           st = mkSimplifiedSen (case simK of
                 Old osim -> osim
@@ -500,7 +505,7 @@ transTerm sign tyToks collectConds toks pVars trm = case trm of
             Total -> [Diag Warning
               ("partial lambda body in total abstraction: "
                ++ showDoc body "") r
-                  | isPartialVal ty || cond2bool ncs /= true ]
+                  | isPartialVal ty || not (isTrue $ cond2bool ncs) ]
         foldM (abstraction sign tyToks toks) (integrateCond p)
           $ reverse pats
     LetTerm As.Let peqs body _ -> do
@@ -521,7 +526,7 @@ transTerm sign tyToks collectConds toks pVars trm = case trm of
          $ getRange trm
 
 integrateCond :: IsaTermCond -> IsaTermCond
-integrateCond (ITC ty trm cs) = if cond2bool cs == true then
+integrateCond (ITC ty trm cs) = if isTrue $ cond2bool cs then
   ITC ty trm None
   else case ty of
     PartialVal _ -> ITC ty (mkTermAppl (integrateCondInPartial cs) trm) None
@@ -685,11 +690,11 @@ existEqualOp =
 
 integrateCondInBool :: Cond -> Isa.Term
 integrateCondInBool c = let b = cond2bool c in
-  if b == true then idOp else mkTermAppl (con conjV) b
+  if isTrue b then idOp else mkTermAppl (con conjV) b
 
 integrateCondInPartial :: Cond -> Isa.Term
 integrateCondInPartial c = let b = cond2bool c in
-  if b == true then idOp else
+  if isTrue b then idOp else
   mkTermAppl (mkTermAppl flipOp restrict) b
 
 metaComp :: Isa.Term -> Isa.Term -> Isa.Term
@@ -936,13 +941,13 @@ mkTermAppl fun arg = case (fun, arg) of
       (App (Const mp _) f c, _)
           | new mp == "liftUnit2bool" -> let af = mkTermAppl f unitOp in
              case arg of
-               Const ma _ | new ma == "True" -> af
-                          | new ma == "False" -> false
+               Const ma _ | isTrue arg -> af
+                          | new ma == cFalse -> false
                _ -> If arg af false c
           | new mp == "liftUnit2partial" -> let af = mkTermAppl f unitOp in
              case arg of
-               Const ma _ | new ma == "True" -> af
-                          | new ma == "False" -> noneOp
+               Const ma _ | isTrue arg -> af
+                          | new ma == cFalse -> noneOp
                _ -> If arg af noneOp c
       (App (Const mp _) _ _, _)
           | new mp == "liftUnit2unit" -> arg
@@ -955,13 +960,13 @@ mkTermAppl fun arg = case (fun, arg) of
           | new d == defOpS && new sm == "makePartial" -> true
           | new d == defOpS && new sm == "bool2partial"
             || new d == "bool2partial" && new sm == defOpS -> a
-          | new d == "curryOp" && new sm == uncurryOpS -> a
+          | new d == curryOpS && new sm == uncurryOpS -> a
       (Const i _, _)
           | new i == "bool2partial" ->
               let tc = mkTermAppl mkPartial unitOp
               in case arg of
-                    Const j _ | new j == "True" -> tc
-                              | new j == "False" -> noneOp
+                    Const j _ | isTrue arg -> tc
+                              | new j == cFalse -> noneOp
                     _ -> termAppl fun arg -- If arg tc noneOp NotCont
           | new i == "id" -> arg
           | new i == "constTrue" -> true
