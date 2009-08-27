@@ -270,8 +270,8 @@ mkSimplifiedSen simK simpF t = mkSen $ evalState (simplify simK simpF t) 0
 
 mkBinConj :: Isa.Term -> Isa.Term -> Isa.Term
 mkBinConj t1 t2 = case () of
-  () | t1 == true -> t2
-  () | t2 == true -> t1
+  _ | t1 == true -> t2
+    | t2 == true -> t1
   _ -> binConj t1 t2
 
 data OldSimpKind = NoSimpLift | Lift2Restrict | Lift2Case deriving Eq
@@ -451,8 +451,7 @@ transTerm sign tyToks collectConds toks pVars trm = case trm of
             unCurry f = let rf = termAppl uncurryOp $ con f in
               ITC fTy rf None
         return $ case () of
-          ()
-              | opId == trueId -> ITC fTy true None
+          _   | opId == trueId -> ITC fTy true None
               | opId == falseId -> ITC fTy false None
               | opId == botId -> case instfTy of
                   PartialVal t -> ITC t (termAppl makeTotal noneOp) $ Cond false
@@ -472,7 +471,7 @@ transTerm sign tyToks collectConds toks pVars trm = case trm of
               | opId == defId -> ITC instfTy (cf defOp) None
               | opId == whenElse -> ITC instfTy (cf whenElseOp) None
               | opId == resId -> ITC instfTy (cf resOp) None
-              | otherwise -> let
+          _ -> let
                   isaId = transOpId sign tyToks opId ts
                   ef = cf $ for (isPlainFunType fTy - 1) (termAppl uncurryOp)
                              $ if elem opId [injName, projName] then
