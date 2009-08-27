@@ -30,7 +30,7 @@ instance HasSorts Symbol where
         Labl _ -> Set.empty
     mapSorts mp sym = case sym of
         Sort _ -> mapAsSymbol id mp sym
-        Kind _ -> asKind $ mapAsSymbol asSort mp sym
+        Kind _ -> mapAsSymbol asKind mp $ asSort sym
         Operator qid dom cod -> let
                 dom' = mapSorts mp dom
                 cod' = mapSorts mp cod
