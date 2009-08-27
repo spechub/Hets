@@ -36,7 +36,6 @@ import Isabelle.Logic_Isabelle
 
 import Common.Utils (number)
 
-import Data.List (findIndex)
 import Data.Char (ord, chr)
 import Data.Maybe (fromMaybe)
 
@@ -83,28 +82,28 @@ conjs l = if null l then true else foldr1 binConj l
 -- | extended formula translation for CoCASL
 formTrCoCASL :: FormulaTranslator C_FORMULA CoCASLSign
 formTrCoCASL sign tyToks (CoSort_gen_ax sorts ops _) =
-  foldr (quantifyIsa "All") phi (predDecls++[("u",ts),("v",ts)])
+  foldr (quantifyIsa "All") phi $ predDecls ++ [("u", ts), ("v", ts)]
   where
   ts = transSort $ head sorts
   -- phi expresses: all bisimulations are the equality
   phi = prems `binImpl` concls
   -- indices and predicates for all involved sorts
-  indices = [0..length sorts - 1]
-  predDecls = zip [rvar i | i<-indices] (map binPred sorts)
-  binPred s = let s' = transSort s in mkCurryFunType [s',s'] boolType
+  indexedSorts = number sorts
+  predDecls = map (\ (s, i) -> (rvar i, binPred s)) indexedSorts
+  binPred s = let s' = transSort s in mkCurryFunType [s', s'] boolType
   -- premises: all relations are bisimulations
-  prems = conjs (map prem (zip sorts indices))
+  prems = conjs (map prem indexedSorts)
   {- generate premise for s, where s is the i-th sort
      for all x,y of that sort,
       if all sel_j(x) R_j sel_j(y), where sel_j ranges over the selectors for s
       then x R y
      here, R_i is the relation for the result type of sel_j, or the equality
   -}
-  prem (s,i) =
+  prem (s, i) =
     let -- get all selectors with first argument sort s
         sels = filter isSelForS ops
         isSelForS (Qual_op_name _ t _) = case args_OP_TYPE t of
-           (s1:_) -> s1 == s
+           s1 : _ -> s1 == s
            _ -> False
         isSelForS _ = False
         premSel opsymb@(Qual_op_name _n t _) =
@@ -130,7 +129,7 @@ formTrCoCASL sign tyToks (CoSort_gen_ax sorts ops _) =
                      then termAppl (termAppl (mkFree $
                           rvar $ fromMaybe
                                    (error "CoCASL2Isabelle.premSel.chi")
-                               $ findIndex (==res) sorts)
+                               $ lookup res indexedSorts )
                                rhs) lhs
                      -- else use equality
                      else binEq rhs lhs
@@ -141,10 +140,10 @@ formTrCoCASL sign tyToks (CoSort_gen_ax sorts ops _) =
                  (mkFree "y")
         psi = concl1 `binImpl` prem1
         typS = transSort s
-     in foldr (quantifyIsa "All") psi [("x",typS),("y",typS)]
+     in foldr (quantifyIsa "All") psi [("x", typS), ("y", typS)]
   -- conclusion: all relations are the equality
-  concls = conjs (map concl (zip sorts indices))
-  concl (_,i) = binImpl (termAppl (termAppl (mkFree $ rvar i) $ mkFree "u")
+  concls = conjs (map concl indexedSorts)
+  concl (_, i) = binImpl (termAppl (termAppl (mkFree $ rvar i) $ mkFree "u")
                      $ mkFree "v")
                              $ binEq (mkFree "u") $ mkFree "v"
 formTrCoCASL _sign _ (BoxOrDiamond _ _mod _phi _) =
