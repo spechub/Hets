@@ -57,7 +57,7 @@
       < O : X@DatabaseClass | db : DB, input : (F[T, T']), output : nil, 
                               default : ME, AttS >
    => < O : X@DatabaseClass |  db : DB', input : nilTermList, 
-                               output : haskellify(M), default : H, AttS > 
+                               output : haskellify(M, M'), default : H, AttS > 
      if (F == 'fmod+_is_endfm) or-else 
         (F == 'mod+_is_endm)   or-else 
         (F == 'fth+_is_endfth) or-else 
@@ -65,7 +65,8 @@
         (F == 'omod+_is_endom) /\
         DB' := procModule(coreMaudeOp(F)[T, T'], DB) /\
         H := parseHeader(T) /\
-        M := getTopModule(H, DB') .
+        M := getTopModule(H, DB') /\
+        M' := getFlatModule(H, DB') .
 
   crl [view] :
       < O : X@DatabaseClass | db : DB, input : ('view+_from_to_is_endv[T1, T2, T3, T4]),
@@ -88,9 +89,10 @@
    crl [maude2hets] :
        < O : X@DatabaseClass | db : DB, input : ('hets_.[T]), output : nil, AttS >
     => < O : X@DatabaseClass | db : DB', input : nilTermList, 
-                               output : haskellify(M), AttS > 
+                               output : haskellify(M, M'), AttS > 
     if < DB' ; ME > := evalModExp(parseModExp(T), DB) /\
-       M := upModule(ME, false) .
+       M := upModule(ME, false) /\
+       M' := if ME == 'META-TERM then upModule(ME, true) else getFlatModule(ME, DB') fi .
    
    crl [maudeView2hets] :
        < O : X@DatabaseClass | db : DB, input : ('hetsView_.[T]), output : nil, AttS >
@@ -104,11 +106,11 @@
        
     op getFirstModule : View Database -> Module .
     ceq getFirstModule(view Q from ME to ME' is SVM endv, DB) = M
-     if M := getTopModule(ME, DB) .
+     if M := getFlatModule(ME, DB) .
        
     op getSecondModule : View Database -> Module .
     ceq getSecondModule(view Q from ME to ME' is SVM endv, DB) = M
-     if M := getTopModule(ME', DB) .
+     if M := getFlatModule(ME', DB) .
  endm
  
  mod HETS is

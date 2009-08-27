@@ -20,7 +20,7 @@ import Common.DocUtils (Pretty(..))
 maudePath :: String
 maudePath = "maude"
 maudeCmd :: String
-maudeCmd = unwords [maudePath, "-interactive", "-no-banner"]
+maudeCmd = unwords [maudePath, "-interactive", "-no-banner", "-no-advise"]
 maudeHetsPath :: String
 maudeHetsPath = "Hets/Maude/hets.prj"
 

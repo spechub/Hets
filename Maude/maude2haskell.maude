@@ -7,7 +7,7 @@
   var  IL : ImportList .
   var  SS : SortSet .
   var  SSDS : SubsortDeclSet .
-  var  ODS : OpDeclSet .
+  vars ODS ODS' : OpDeclSet .
   var  MAS : MembAxSet .
   var  EqS : EquationSet .
   var  RS : RuleSet .
@@ -15,17 +15,17 @@
   var  QIL : QidList .
   var  STR STR1 STR2 : String .
   vars ME ME' ME'' : ModuleExpression .
-  var  TL : TermList .
-  vars T T' : Term .
+  vars TL TL' : TermList .
+  vars T T' T'' T1 T2 T3 : Term .
   var  AtS : AttrSet .
   var  TyL : TypeList .
-  var  Ty : Type .
+  vars Ty Ty' Ty1 Ty2 : Type .
   vars S S' : Sort .
   var  K : Kind .
   var  A : Attr .
   var  Ct : Constant .
   var  V : Variable .
-  var  N : Nat .
+  vars N N' : Nat .
   var  NL : NatList .
   var  Mb : MembAx .
   vars C C' : Condition .
@@ -47,46 +47,46 @@
   op no-module : -> Module .
   
   op haskellify : Qid -> QidList .
-  eq haskellify(Q) = haskellify(upModule(Q, false)) .
+  eq haskellify(Q) = haskellify(upModule(Q, false), upModule(Q, true)) .
 
-  op haskellify : Module -> QidList .
-  ceq haskellify(M) = 
+  op haskellify : Module Module -> QidList .
+  ceq haskellify(M, M') = 
       'SpecMod '`( 'Module haskellifyHeader(H) ' ' 
       '`[ haskellifyImports(IL) comma(IL, SS)
           haskellifySorts(SS) comma(IL, SS, SSDS)
           haskellifySubsorts(SSDS) comma(IL, SS, SSDS, ODS)
-          haskellifyOpDeclSet(M, ODS) comma(IL, SS, SSDS, ODS, MAS)
-          haskellifyMembAxSet(M, MAS) comma(IL, SS, SSDS, ODS, MAS, EqS)
-          haskellifyEqSet(M, EqS) '`] '`) '\n '@#$endHetsSpec$#@ '\n
+          haskellifyOpDeclSet(M', ODS) comma(IL, SS, SSDS, ODS, MAS)
+          haskellifyMembAxSet(M', MAS) comma(IL, SS, SSDS, ODS, MAS, EqS)
+          haskellifyEqSet(M', EqS) '`] '`) '\n '@#$endHetsSpec$#@ '\n
     if fmod H is IL sorts SS . SSDS ODS MAS EqS endfm := M .
-  ceq haskellify(M) = 
+  ceq haskellify(M, M') = 
       'SpecMod '`( 'Module haskellifyHeader(H) ' ' 
       '`[ haskellifyImports(IL) comma(IL, SS)
           haskellifySorts(SS) comma(IL, SS, SSDS)
           haskellifySubsorts(SSDS) comma(IL, SS, SSDS, ODS)
-          haskellifyOpDeclSet(M, ODS) comma(IL, SS, SSDS, ODS, MAS)
-          haskellifyMembAxSet(M, MAS) comma(IL, SS, SSDS, ODS, MAS, EqS)
-          haskellifyEqSet(M, EqS) comma(IL, SS, SSDS, ODS, MAS, EqS, RS)
-          haskellifyRlSet(M, RS) '`] '`) '\n '@#$endHetsSpec$#@ '\n
+          haskellifyOpDeclSet(M', ODS) comma(IL, SS, SSDS, ODS, MAS)
+          haskellifyMembAxSet(M', MAS) comma(IL, SS, SSDS, ODS, MAS, EqS)
+          haskellifyEqSet(M', EqS) comma(IL, SS, SSDS, ODS, MAS, EqS, RS)
+          haskellifyRlSet(M', RS) '`] '`) '\n '@#$endHetsSpec$#@ '\n
    if mod H is IL sorts SS . SSDS ODS MAS EqS RS endm := M .
-  ceq haskellify(M) = 
+  ceq haskellify(M, M') = 
       'SpecTh '`( 'Module haskellifyHeader(H) ' ' 
       '`[ haskellifyImports(IL) comma(IL, SS)
           haskellifySorts(SS) comma(IL, SS, SSDS)
           haskellifySubsorts(SSDS) comma(IL, SS, SSDS, ODS)
-          haskellifyOpDeclSet(M, ODS) comma(IL, SS, SSDS, ODS, MAS)
-          haskellifyMembAxSet(M, MAS) comma(IL, SS, SSDS, ODS, MAS, EqS)
-          haskellifyEqSet(M, EqS) '`] '`) '\n '@#$endHetsSpec$#@ '\n
+          haskellifyOpDeclSet(M', ODS) comma(IL, SS, SSDS, ODS, MAS)
+          haskellifyMembAxSet(M', MAS) comma(IL, SS, SSDS, ODS, MAS, EqS)
+          haskellifyEqSet(M', EqS) '`] '`) '\n '@#$endHetsSpec$#@ '\n
    if fth H is IL sorts SS . SSDS ODS MAS EqS endfth := M .
-  ceq haskellify(M) = 
+  ceq haskellify(M, M') = 
       'SpecTh '`( 'Module haskellifyHeader(H) ' ' 
       '`[ haskellifyImports(IL) comma(IL, SS)
           haskellifySorts(SS) comma(IL, SS, SSDS)
           haskellifySubsorts(SSDS) comma(IL, SS, SSDS, ODS)
-          haskellifyOpDeclSet(M, ODS) comma(IL, SS, SSDS, ODS, MAS)
-          haskellifyMembAxSet(M, MAS) comma(IL, SS, SSDS, ODS, MAS, EqS)
-          haskellifyEqSet(M, EqS) comma(IL, SS, SSDS, ODS, MAS, EqS, RS)
-          haskellifyRlSet(M, RS) '`] '`) '\n '@#$endHetsSpec$#@ '\n
+          haskellifyOpDeclSet(M', ODS) comma(IL, SS, SSDS, ODS, MAS)
+          haskellifyMembAxSet(M', MAS) comma(IL, SS, SSDS, ODS, MAS, EqS)
+          haskellifyEqSet(M', EqS) comma(IL, SS, SSDS, ODS, MAS, EqS, RS)
+          haskellifyRlSet(M', RS) '`] '`) '\n '@#$endHetsSpec$#@ '\n
    if th H is IL sorts SS . SSDS ODS MAS EqS RS endth := M .
   
   op haskellify : Module Module View -> QidList .
@@ -277,9 +277,10 @@
   ceq haskellifyTerm(M, V) = ' '`( 'Var qid2token(Q) haskellifyType(Ty) '`) '
    if Q := getName(V) /\
       Ty := getType(V) .
-  ceq haskellifyTerm(M, Q[TL]) = ' '`( 'Apply qid2token(Q) ' '`[ haskellifyTerm*(M, TL) '`] '
+  ceq haskellifyTerm(M, Q[TL]) = ' '`( 'Apply qid2token(Q') ' '`[ haskellifyTerm*(M, TL') '`] '
                                         haskellifyType(Ty) '`) '
-   if {T, Ty} := metaNormalize(M, Q[TL]) .
+   if {T, Ty} := metaNormalize(M, Q[TL]) /\
+      Q'[TL'] := noFlattenNoIter(M, getOps(M), Q[TL]) .
   
   op haskellifyTerm* : Module TermList -> QidList .
   eq haskellifyTerm*(M, empty) = nil .
@@ -449,6 +450,48 @@
   op comma : NatList -> QidList .
   eq comma((nil).NatList) = nil .
   eq comma(NL) = '`, ' [owise] .
+  
+  op noFlattenNoIter : Module OpDeclSet Term -> Term .
+  ceq noFlattenNoIter(M, ODS, Q'[T]) = Q[T'']
+   if op Q : Ty -> Ty' [iter AtS] . ODS' := ODS /\
+      Q[T'] := noIter(Q'[T]) /\
+      sortLeq(M, type(M, T'), Ty) /\
+      T'' := noFlattenNoIter(M, ODS, T') .
+  ceq noFlattenNoIter(M, ODS, Q[T1, T2, T3, TL]) = 
+                         Q[T1, T']
+   if op Q : Ty1 Ty2 -> Ty [assoc AtS] . ODS' := ODS /\
+      sortLeq(M, type(M, T1), Ty1) /\
+      sortLeq(M, type(M, T2), Ty2) /\
+      T' := noFlattenNoIter(M, ODS, Q[T2, T3, TL]) .
+  eq noFlattenNoIter(M, ODS, V) = V .
+  eq noFlattenNoIter(M, ODS, Ct) = Ct .
+  eq noFlattenNoIter(M, ODS, Q[TL]) = Q[noFlattenNoIter*(M, ODS, TL)] [owise] .
+
+  op noFlattenNoIter* : Module OpDeclSet TermList -> TermList .
+  eq noFlattenNoIter*(M, ODS, empty) = empty .
+  eq noFlattenNoIter*(M, ODS, (T, TL)) = noFlattenNoIter(M, ODS, T),
+                                         noFlattenNoIter*(M, ODS, TL) .
+  
+  op noIter : Term -> Term .
+  ceq noIter(Q[T]) = T'
+   if STR := string(Q) /\
+      N := rfind(STR, "^", length(STR)) /\
+      STR1 := substr(STR, 0, N) /\
+      STR2 := substr(STR, N + 1, length(STR)) /\
+      Q' := qid(STR1) /\
+      N' := rat(STR2, 10) /\
+      T' := newTerm(Q', N', T) .
+  eq noIter(T) = T [owise] .
+  
+  op newTerm : Qid Nat Term -> Term .
+  eq newTerm(Q, 2, T) = Q[Q[T]] .
+  ceq newTerm(Q, N, T) = Q[Q'[T]]
+   if N > 2 /\
+      STR := string(sd(N, 1), 10) /\
+      Q' := qid(string(Q) + "^" + STR) .
+
+  op type : Module Term ~> Type .
+  eq type(M, T) = getType(metaReduce(M, T)) .
  endfm
  
  

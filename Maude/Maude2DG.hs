@@ -39,7 +39,7 @@ import Common.LibName
 maudePath :: String
 maudePath = "maude"
 maudeCmd :: String
-maudeCmd = unwords [maudePath, "-interactive", "-no-banner"]
+maudeCmd = unwords [maudePath, "-interactive", "-no-banner", "-no-advise"]
 
 data ImportType = Pr | Ex | Inc
 type ModExpProc = (Token, TokenInfoMap, Morphism, [ParamSort], DGraph)
@@ -352,21 +352,28 @@ processView vi tim vm (p, theory, ss) morph =
 
 morphismView :: Token -> Token -> Symbols -> (Node, Token, Morphism, [Renaming], Bool)
                 -> Morphism -> (Token, Morphism, Morphism, Node, [(Token, Token, Symbols)])
-morphismView name p _ (n, _, vmorph, rnms, True) morph = (name, morph', vmorph', n, [])
+morphismView name p _ (n, _, vmorph, rnms, True) morph = (name, morph'', vmorph', n, [])
         where rnms' = qualifyRenamings p rnms
               morph' = applyRenamings morph rnms'
               tgt = target vmorph
               vmorph' = Maude.Morphism.inclusion tgt tgt
+              ctgt = target morph'
+              usg = Maude.Sign.union ctgt tgt
+              morph'' = setTarget usg morph'
 
 morphismView name p ss (n, th, morph, rnms, False) morph1 =
-                         (name, morph3, vmorph', n, [(p, th, getNewSorts ss morph)])
+                         (name, morph4, vmorph', n, [(p, th, getNewSorts ss morph)])
         where rnms' = qualifyRenamings2 p rnms
               morph2 = applyRenamings morph1 rnms'
-              tgt = target vmorph
               rnms'' = createQualificationTh2Mod p ss
               morph3 = applyRenamings morph2 rnms''
+              tgt = target morph
               vmorph = Maude.Morphism.inclusion tgt tgt
               vmorph' = applyRenamings vmorph rnms''
+              vtgt = target vmorph'
+              ctgt = target morph3
+              usg = Maude.Sign.union vtgt ctgt
+              morph4 = setTarget usg morph3
 
 -- theory, parameter instantiated -> parameter binding -> sorts bound -> current morph
 -- map token info

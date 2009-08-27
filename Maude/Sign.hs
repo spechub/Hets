@@ -171,7 +171,7 @@ union sig1 sig2 = let
     in Sign {
         sorts = apply Set.union sorts,
         subsorts = apply Rel.union subsorts,
-        ops = apply Map.union ops,
+        ops = apply (Map.unionWith Set.union) ops,
         sentences = apply Set.union sentences
     }
 

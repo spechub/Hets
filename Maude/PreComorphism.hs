@@ -22,6 +22,7 @@ import CASL.StaticAna
 import Common.Id
 import Common.Result
 import Common.AS_Annotation
+import Common.ProofUtils (charMap)
 import qualified Common.Lib.Rel as Rel
 
 type IdMap = Map.Map Id Id
@@ -170,7 +171,7 @@ maude2casl msign nsens = (csign { CSign.sortSet = cs,
          ksyms = kinds2syms cs
          (cops, assoc_ops, ops_forms, comps) = translateOps mk ops
          ctor_sen = [ctorSen False (cs, Rel.empty, comps)]
-         cops' = predefinedOps cs cops
+         cops' = predefinedOps cs cops $ booleanImported ops
          ops_syms = ops2symbols cops'
          (no_owise_sens, owise_sens, mbs_rls_sens) = splitOwiseEqs nsens
          no_owise_forms = map (noOwiseSen2Formula mk) no_owise_sens
@@ -181,14 +182,20 @@ maude2casl msign nsens = (csign { CSign.sortSet = cs,
          syms = Set.union ksyms $ Set.union ops_syms preds_syms
          new_sens = concat [rs, ops_forms, no_owise_forms, owise_forms, mb_rl_forms, ctor_sen]
 
+booleanImported :: MSign.OpMap -> Bool
+booleanImported = Map.member (mkSimpleId "if_then_else_fi")
+
 deletePredefined :: MSign.OpMap -> MSign.OpMap
-deletePredefined om = om3
+deletePredefined om = om5
          where om1 = Map.delete (mkSimpleId "if_then_else_fi") om
                om2 = Map.delete (mkSimpleId "_==_") om1
                om3 = Map.delete (mkSimpleId "_=/=_") om2
+               om4 = Map.delete (mkSimpleId "upTerm") om3
+               om5 = Map.delete (mkSimpleId "downTerm") om4
 
-predefinedOps :: Set.Set Id -> CSign.OpMap -> CSign.OpMap
-predefinedOps kinds om = Set.fold predefinedOpKind om kinds
+predefinedOps :: Set.Set Id -> CSign.OpMap -> Bool -> CSign.OpMap
+predefinedOps kinds om True = Set.fold predefinedOpKind om kinds
+predefinedOps _ om False = om
 
 predefinedOpKind :: Id -> CSign.OpMap -> CSign.OpMap
 predefinedOpKind kind om = om3
@@ -815,7 +822,8 @@ deleteRelated ss sym r = foldr (f sym tc) Set.empty ss
 
 -- | build an Id from a token with the function mkId
 token2id :: Token -> Id
-token2id t = mkId [t]
+token2id t = mkId ts
+    where ts = maudeSymbol2validCASLSymbol t
 
 -- | build an Id from a Maude symbol
 sym2id :: MSym.Symbol -> Id
@@ -826,15 +834,10 @@ str2id = token2id . mkSimpleId
 
 -- | build an Id from a list of sorts, taking the first from the ordered list
 sort2id :: [MSym.Symbol] -> Id
-sort2id syms = mkId [sym']
+sort2id syms = mkId sym''
      where sym = head $ List.sort syms
            sym' = getName sym
-
--- | inserts commas between tokens
-putCommas :: [Token] -> [Token]
-putCommas [] = []
-putCommas [t] = [t]
-putCommas (t : ts) = t : (mkSimpleId ",") : putCommas ts
+           sym'' = maudeSymbol2validCASLSymbol sym'
 
 -- | add universal quantification of all variables in the formula
 quantifyUniversally :: CAS.CASLFORMULA -> CAS.CASLFORMULA
@@ -956,6 +959,41 @@ ctorSen isFree (sorts, _, ops) = do
         constrs = map collectOps sortList
         f = CAS.Sort_gen_ax constrs isFree
     makeNamed ("ga_generated_" ++ showSepList (showString "_") showId sortList "") f
+
+maudeSymbol2validCASLSymbol :: Token -> [Token]
+maudeSymbol2validCASLSymbol t = splitDoubleUnderscores str ""
+    where str = ms2vcs $ show t
+
+ms2vcs :: String -> String
+ms2vcs s = case Map.member s stringMap of
+    True -> Map.findWithDefault "" s stringMap
+    False -> let f = \ x y -> if Map.member x charMap
+                              then (charMap Map.! x) ++ ['\''] ++ y
+                              else if x == '_'
+                                   then "__" ++ y
+                                   else x : y
+             in foldr f [] s
+
+-- | map of reserved words
+stringMap :: Map.Map String String
+stringMap = Map.fromList 
+    [("true", "maudeTrue"),
+     ("false", "maudeFalse")]
+
+-- | splits the string into a list of tokens, separating the double
+-- underscores from the rest of characters
+splitDoubleUnderscores :: String -> String -> [Token]
+splitDoubleUnderscores [] acc = if null acc
+                                then []
+                                else [mkSimpleId acc]
+splitDoubleUnderscores ('_' : '_' : cs) acc = if null acc
+                                              then dut : rest
+                                              else acct : dut : rest
+     where acct = mkSimpleId acc
+           dut = mkSimpleId "__"
+           rest = splitDoubleUnderscores cs []
+splitDoubleUnderscores (c : cs) acc = splitDoubleUnderscores cs (acc ++ [c])
+           
 
 -- | error Id
 errorId :: String -> Id

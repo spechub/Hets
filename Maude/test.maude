@@ -7,9 +7,9 @@ fmod OTHER-ALPHA-ASSOC is
  sort Elt .
  op g : Elt Elt -> Elt [ctor] .
  
- var E : Elt .
+ vars E1 E2 E3 : Elt .
  
- eq g(E, g(E, E)) = g(g(E, E), E) [nonexec] .
+ eq g(E1, g(E2, E3)) = g(g(E1, E2), E3) [nonexec] .
 endfm
 
 view VALPHA from ALPHA-ASSOC to OTHER-ALPHA-ASSOC is
@@ -35,13 +35,13 @@ endfm
 fth ASSOC-OP is
  sort Elt .
 
- op __ : Elt Elt -> Elt [assoc] .
+ op __ : Elt Elt -> Elt [ctor assoc] .
 endfth
 
 fth ANOTHER-ASSOC-OP is
  sort Foo .
  
- op _._ : Foo Foo -> Foo .
+ op _._ : Foo Foo -> Foo [ctor] .
  
  vars F1 F2 F3 : Foo .
  

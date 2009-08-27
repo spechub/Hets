@@ -118,7 +118,6 @@ renamingSymbolsMaybe rename = case rename of
             dom' = map asSymbol dom
             cod' = asSymbol cod
         in Just (Operator src' dom' cod', Operator tgt' dom' cod')
-    -- TODO: We are not currently handling TermMaps, right?
     TermMap _ _ -> Nothing
 
 renamingSymbols :: Renaming -> (Symbol, Symbol)
