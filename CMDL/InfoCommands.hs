@@ -459,7 +459,7 @@ cInfoCurrent state
            -- obtain the selected nodes
            selN = concatMap (\x-> getNNb x ls) nodesNb
        return $ genMessage [] (unlines
-                                  $ map (\x->showNodeInfo state x) selN) state
+                                  $ map (showNodeInfo state) selN) state
 
 -- show all information of input
 cInfo::String -> CMDL_State -> IO CMDL_State
@@ -480,10 +480,8 @@ cInfo input state
             (errs'',listEdges) = obtainEdgeList edg nbEdg lsNodes
                              lsEdges
             (errs',listNodes) = obtainNodeList nds lsNodes
-            strsNode = map (\x -> showNodeInfo state x)
-                               listNodes
-            strsEdge = map (\x -> showEdgeInfo state x)
-                               listEdges
+            strsNode = map (showNodeInfo state) listNodes
+            strsEdge = map (showEdgeInfo state) listEdges
             tmpErrs' = tmpErrs ++ (prettyPrintErrList errs')
             tmpErrs''= tmpErrs'++ (prettyPrintErrList errs'')
         return $ genMessage tmpErrs'' (unlines (strsNode++strsEdge))

@@ -66,9 +66,7 @@ anyIO fn ls
     [] -> return False
     e:l -> do
             result <- fn e
-            case result of
-             True -> return True
-             False -> anyIO fn l
+            if result then return True else anyIO fn l
 
 
 -- checks if provers in the prover list are availabe on
@@ -85,13 +83,12 @@ checkPresenceProvers ls
                                         _ -> case last x of
                                               '/' -> (x++"SPASS")
                                               _ -> (x ++ "/SPASS")
-                  result <- anyIO ( \x -> doesFileExist $ completePath x)
+                  result <- anyIO (doesFileExist . completePath)
                                lsPaths
-                  case result of
-                   True -> do
-                            contd <- checkPresenceProvers l
-                            return ("SPASS":contd)
-                   False -> checkPresenceProvers l
+                  if result
+                   then do contd <- checkPresenceProvers l
+                           return ("SPASS":contd)
+                   else checkPresenceProvers l
     x:l -> do
             contd <- checkPresenceProvers l
             return (x:contd)
@@ -168,10 +165,10 @@ decomposeIntoGoals input
                    _  -> parse l (nbOfArrows+1) (word++arr) True
                            listNode listEdge listNbEdge listError
                 (False,_,_) ->
-                  case sw of
-                   True -> parse l nbOfArrows (word++x) False
-                            listNode listEdge listNbEdge listError
-                   False ->
+                  if sw
+                   then parse l nbOfArrows (word++x) False
+                          listNode listEdge listNbEdge listError
+                   else
                     case nbOfArrows of
                      0 -> parse l 0 x False
                            (word:listNode) listEdge listNbEdge listError
@@ -319,7 +316,7 @@ obtainEdgeList lsEdge lsNbEdge allNodes allEdges
                  in case ls of
                      [] -> Nothing
                      els:_ -> Just els ) lsNbEdge
-   in ((fst l1)++(fst l2),(snd l1)++(snd l2))
+   in (fst l1 ++ fst l2, snd l1 ++ snd l2)
 
 
 -- | Giben a listof edgenamesand numbered edge names and
@@ -344,9 +341,9 @@ stripComments input
                    case ll of
                     '%':_ ->[]
                     '{':_ ->[]
-                    _  -> '%':(fn ll)
+                    _  -> '%':fn ll
                 []    -> []
-                l:ll  -> l:(fn ll)
+                l:ll  -> l:fn ll
    in trim $ fn input
 
 -- | The function obtain the unfinished edge name from the
@@ -368,8 +365,8 @@ unfinishedEdgeName input
                           reverse s
   in
   -- is the last character an empty space?
-   case isSpace $ lastChar input of
-    True ->
+   if isSpace $ lastChar input
+    then
      -- if so, then either the last word is an arrow, and
      -- then we have the consider last two words, or it
      -- is not an arrow and then we need to consider just
@@ -377,10 +374,10 @@ unfinishedEdgeName input
         case checkArrowLink $ lastString $ words input of
           (True,arr1,_) ->
             case checkArrowLink $ prevPrevLast $ words input of
-             (True,arr2,_) ->(prev2PrevLast $ words input) ++
-                           arr2 ++ (prevLast $ words input)
+             (True,arr2,_) -> prev2PrevLast (words input) ++
+                           arr2 ++ prevLast (words input)
                            ++ arr1
-             _ ->(prevLast $ words input) ++ arr1
+             _ -> prevLast (words input) ++ arr1
           --anyhting else
           _ -> case checkArrowLink $ prevLast $ words input of
                 -- an entire edge name was just inserted
@@ -390,27 +387,26 @@ unfinishedEdgeName input
                 -- inserted then return that
                 _ -> case lastString $ words input of
                       []-> []
-                      _ -> (lastString $ words input)++" "
-    False ->
+                      _ -> lastString (words input) ++ " "
+    else
      -- then we could be in the middle of the first node
      -- name, arrow or the second node name
       case checkArrowLink $ prevLast $ words input of
            -- in the middle of the last word
           (True,arr1,_) ->
             case checkArrowLink $ prev2PrevLast $ words input of
-             (True,arr2,_)->(prev3PrevLast $ words input) ++
-                           arr2++(prevPrevLast $ words input) ++
-                           arr1++(lastString $ words input)
-             _->(prevPrevLast $ words input)++arr1++(lastString$ words input)
+             (True,arr2,_)-> prev3PrevLast (words input) ++
+                           arr2 ++ prevPrevLast (words input) ++
+                           arr1 ++ lastString (words input)
+             _-> prevPrevLast (words input) ++ arr1 ++ lastString (words input)
           _ -> case checkArrowLink $ prevPrevLast $ words input of
                  -- in the middle of the first word
                 (True,_,_) -> lastString $ words input
                 -- in the middle of the arrow
                 _ -> case prevLast $ words input of
                       [] -> lastString $ words input
-                      _  ->( (prevLast $ words input) ++
-                             " " ++ (lastString $
-                                          words input) )
+                      _  ->( prevLast (words input) ++
+                             " " ++ lastString (words input) )
 
 -- | Given a list of files and folders the function filters
 -- only directory names and files ending in extenstion
@@ -423,14 +419,14 @@ fileFilter lPath ls cons
         do
          -- check if current element is a directory
          b <- doesDirectoryExist (lPath++x)
-         case b of
-          -- if it is,then add "/" to indicate is a folder
-          True -> fileFilter lPath l ((x++"/"):cons)
-          -- if it is not a folder then it must be a file
-          -- so check the extension
-          False-> case isSuffixOf ".casl" x of
-                   True -> fileFilter lPath l (x:cons)
-                   False-> fileFilter lPath l cons
+         if b
+           -- if it is,then add "/" to indicate is a folder
+           then fileFilter lPath l ((x++"/"):cons)
+           -- if it is not a folder then it must be a file
+           -- so check the extension
+           else if isSuffixOf ".casl" x
+                   then fileFilter lPath l (x:cons)
+                   else fileFilter lPath l cons
 
 -- | Given a list of files and folders the function expands
 -- the list adding the content of all folders in the list
@@ -442,16 +438,15 @@ fileExtend lPath ls cons
          do
           -- check if current element is a directory
           b<- doesDirectoryExist (lPath++x)
-          case b of
-           -- if it is not then leave the file alone
-           False -> fileExtend lPath l (x:cons)
-           -- if it is a folder add its content
-           True ->
-              do
-               ll <- getDirectoryContents (lPath++x)
+          if b then
+            -- if it is a folder add its content
+            do ll <- getDirectoryContents (lPath++x)
                nll<- fileFilter (lPath++x) ll []
                let nll'=map (\y -> x++y) nll
                fileExtend lPath l (nll' ++ cons)
+            -- if it is not then leave the file alone
+            else fileExtend lPath l (x:cons)
+
 
 
 -- | The function behaves exactly as tail just that
@@ -466,7 +461,7 @@ safeTail ls
 -- | The function behaves exactly like last just that
 -- in case of an empty list returns the space
 -- character (it works only for lists of chars)
-lastChar::[Char]->Char
+lastChar :: String -> Char
 lastChar ls
  = case ls of
     [] -> ' '

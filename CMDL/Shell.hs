@@ -156,8 +156,7 @@ checkCom descr state
 -- | Prints details about the syntax of the interface
 cDetails :: CMDL_State -> IO CMDL_State
 cDetails state
- = do
-    return state {
+ = return state {
             output = CMDL_Message {
                errorMsg = [],
                outputMsg = printDetails,
@@ -167,8 +166,7 @@ cDetails state
 
 -- | Function handle a comment line
 cComment::String -> CMDL_State -> IO CMDL_State
-cComment _ state
- = return state
+cComment _ = return
 
 
 -- | Produces a string containing a detailed description
@@ -315,7 +313,7 @@ nodeNames = map (showName . dgn_name . snd)
 cmdlCompletionFn :: [CMDL_CmdDescription] -> CMDL_State
                     -> String -> IO [String]
 cmdlCompletionFn allcmds allState input
- =do
+ =
   case getTypeOf allcmds input of
    ReqNodes ->
     case i_state $ intState allState of
@@ -340,7 +338,7 @@ cmdlCompletionFn allcmds allState input
       -- that needs to be completed and add the word that
       -- was before the word that needs to be completed
        let res = map (\y -> bC++" "++y) $
-                  filter (\x -> isPrefixOf tC x) allNames
+                  filter (isPrefixOf tC) allNames
        return res
    ReqGNodes ->
     case i_state $ intState  allState of
@@ -363,7 +361,7 @@ cmdlCompletionFn allcmds allState input
       -- filter out words that do not start with the word
       -- that needs to be completed
        return $ map(\y -> bC++" "++y) $
-           filter(\x -> isPrefixOf tC x) allNames
+           filter(isPrefixOf tC) allNames
    ReqEdges ->
     case i_state $ intState allState of
      Nothing -> return []
@@ -385,7 +383,7 @@ cmdlCompletionFn allcmds allState input
       -- filter out words that do not start with the word
       -- that needs to be completed
        let res = map (\y -> bC++ " "++y) $
-                  filter(\x->isPrefixOf tC x) allNames
+                  filter(isPrefixOf tC) allNames
        return res
    ReqGEdges ->
     case i_state$ intState allState of
@@ -404,7 +402,7 @@ cmdlCompletionFn allcmds allState input
           -- filter out words that do not start with the word
           -- that needs to be completed
        return $ map (\y -> bC++" "++y) $
-           filter(\x-> isPrefixOf tC x) allNames
+           filter(isPrefixOf tC) allNames
    ReqNodesAndEdges ->
     case i_state $ intState allState of
      Nothing -> return []
@@ -435,7 +433,7 @@ cmdlCompletionFn allcmds allState input
                                  unwords $ init
                                  $ words input)
            filteredNodes=map (\y -> bCN++" "++y) $
-                          filter (\x->isPrefixOf tCN x)
+                          filter (isPrefixOf tCN)
                                   $ nodeNames allnodes
            tCE = unfinishedEdgeName $
                      subtractCommandName allcmds input
@@ -444,7 +442,7 @@ cmdlCompletionFn allcmds allState input
          -- same as in the ReqEdge case
            edgeNames = createEdgeNames allnodes alledges
            filteredEdges=map (\y -> bCE++" "++y) $
-                          filter (\x->isPrefixOf tCE x)
+                          filter (isPrefixOf tCE)
                                                edgeNames
       -- sum up the two cases
        return (filteredNodes ++ filteredEdges )
@@ -478,7 +476,7 @@ cmdlCompletionFn allcmds allState input
                                   unwords $ init $
                                   words input)
            filteredNodes=map (\y -> bCN++" "++y) $
-                          filter(\x->isPrefixOf tCN x)
+                          filter(isPrefixOf tCN)
                                 $ nodeNames (getAllGoalNodes allState)
            tCE = unfinishedEdgeName $
                      subtractCommandName allcmds input
@@ -487,7 +485,7 @@ cmdlCompletionFn allcmds allState input
           -- same as in the ReqEdge case
            edgeNames =createEdgeNames allnodes allGE
            filteredEdges=map (\y -> bCE++" "++y) $
-                          filter(\x->isPrefixOf tCE x)
+                          filter(isPrefixOf tCE)
                                              edgeNames
           --sum up the two cases
        return (filteredNodes ++ filteredEdges )
@@ -512,7 +510,7 @@ cmdlCompletionFn allcmds allState input
            getPName' x = case x of
                           (G_cons_checker _ p) -> prover_name p
            getConsCheckersAutomatic' cm = foldl addConsCheckers [] cm
-           createConsCheckersList cm = map (\x -> getPName' x)
+           createConsCheckersList cm = map getPName'
                                          (getConsCheckersAutomatic' cm)
        case  i_state $ intState allState of
         Nothing ->
@@ -523,16 +521,15 @@ cmdlCompletionFn allcmds allState input
          case cComorphism proofState of
           -- some comorphism was used
           Just c-> return $ map (\y->bC++" "++y) $
-                    filter (\x->isPrefixOf tC x) $ createConsCheckersList [c]
+                    filter (isPrefixOf tC) $ createConsCheckersList [c]
           Nothing ->
            case elements proofState of
             -- no elements selected
             [] -> return []
             c:_ ->
-             do
               case c of
                Element z _ -> return $ map(\y->bC++" "++y)
-                               $ filter (\x->isPrefixOf tC x)
+                               $ filter (isPrefixOf tC)
                                $ createConsCheckersList
                                $ findComorphismPaths
                                  logicGraph
@@ -562,8 +559,7 @@ cmdlCompletionFn allcmds allState input
       -- provers that can be applied to theories in that
       -- comorphism
            getProversCMDLautomatic cm=foldl addProvers [] cm
-           createProverList cm = map (\x -> getPName' x)
-                             (getProversCMDLautomatic cm)
+           createProverList cm = map getPName' (getProversCMDLautomatic cm)
       -- find the last comorphism used if none use the
       -- the comorphism of the first selected node
        case i_state $ intState allState of
@@ -577,7 +573,7 @@ cmdlCompletionFn allcmds allState input
           Just c-> do
                     lst <- checkPresenceProvers $ createProverList [c]
                     return $ map (\y -> bC++" "++y) $
-                                   filter (\x->isPrefixOf tC x) lst
+                                   filter (isPrefixOf tC) lst
           Nothing ->
            case elements proofState of
              -- no elements selected
@@ -591,9 +587,8 @@ cmdlCompletionFn allcmds allState input
                                          $ findComorphismPaths
                                         logicGraph (sublogicOfTh $ theory z)
                               return $ map (\y -> bC++" "++y)
-                                    $ filter (\x->isPrefixOf tC x) lst
+                                    $ filter (isPrefixOf tC) lst
    ReqComorphism ->
-       do
         case i_state $ intState allState of
          Nothing -> return []
          Just pS ->
@@ -607,13 +602,13 @@ cmdlCompletionFn allcmds allState input
                         True -> trimRight input
                         False-> unwords $ init $ words input
                   cL = concatMap ( \(Comorphism cid) ->
-                              case (language_name $ sourceLogic cid) ==
-                                     (language_name $ logicId st) of
+                              case language_name (sourceLogic cid) ==
+                                     language_name (logicId st) of
                                 False -> []
                                 True -> [ language_name cid ]
                              ) comorphismList
               in return $ map (\y -> bC++" "++y)
-                        $ filter (\x->isPrefixOf tC x) cL
+                        $ filter (isPrefixOf tC) cL
    ReqFile ->
       do
         -- the incomplete path introduced until now
@@ -639,8 +634,8 @@ cmdlCompletionFn allcmds allState input
                                        ) $ reverse initwd
             bC = case isSpace $ lastChar input of
                   True -> input
-                  False -> (unwords $ init $ words input)
-                                 ++" "++tmpPath
+                  False -> unwords (init $ words input)
+                                 ++ " " ++ tmpPath
         -- leave just folders and files with extenstion .casl
         b' <- doesDirectoryExist lastPath
         ls <- case b' of
@@ -649,7 +644,7 @@ cmdlCompletionFn allcmds allState input
         names<- fileFilter lastPath ls []
         -- case list contains only one name
         -- then if it is a folder extend it
-        let names' = filter (\x->isPrefixOf tC x) names
+        let names' = filter (isPrefixOf tC) names
         names''<- case safeTail names' of
                    -- check CMDL.Utils to see how it
                    -- works, function should be done with
@@ -660,7 +655,6 @@ cmdlCompletionFn allcmds allState input
                    _  -> return names'
         return $ map (\y -> bC++y) names''
    ReqAxm ->
-     do
       case i_state $ intState allState of
        Nothing-> return []
        Just pS->
@@ -672,13 +666,12 @@ cmdlCompletionFn allcmds allState input
                     True -> trimRight input
                     False -> unwords $ init $ words input
          return $ map(\y-> bC++" "++y) $
-          filter (\x -> isPrefixOf tC x) $ nub $
+          filter (isPrefixOf tC) $ nub $
           concatMap(\(Element st _)->
                  case theory st of
                   G_theory _ _ _ aMap _ ->
                    OMap.keys aMap ) $ elements pS
    ReqGoal ->
-     do
       case i_state $ intState allState of
        Nothing-> return []
        Just pS ->
@@ -690,7 +683,7 @@ cmdlCompletionFn allcmds allState input
                    True -> trimRight input
                    False-> unwords $ init $ words input
          return $ map (\y->bC++" "++y) $
-          filter(\x-> isPrefixOf tC x) $ nub $
+          filter (isPrefixOf tC) $ nub $
           concatMap(\(Element _ nb)->
                        case getTh Do_translate nb allState of
                         Nothing -> []
@@ -710,7 +703,5 @@ cmdlCompletionFn allcmds allState input
                           False ->return $ map(input ++)
                                     ["0","1","2","3","4","5","6","7","8","9"]
                    _ -> return []
-   ReqNothing -> do return []
-   ReqUnknown ->
-     do
-       return []
+   ReqNothing -> return []
+   ReqUnknown -> return []

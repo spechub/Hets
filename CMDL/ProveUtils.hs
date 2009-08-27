@@ -34,9 +34,8 @@ getTLimit str
 
 -- takes out information about time limit
 extractTLimit :: String -> [String]
-extractTLimit str
-  = filter (\x -> let w = head $ words x
-                  in (w /= "time_limit")) $ lines str
+extractTLimit
+  = filter (\x -> let w = head $ words x in (w /= "time_limit")) . lines
 
 -- | Parses the tactic script to extract time limit and other commands
 cParseScript :: Int -> [String] -> Tactic_script -> ATPTactic_script

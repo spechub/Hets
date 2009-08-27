@@ -237,8 +237,7 @@ checkNode ::
               -- returns an error message if anything happens
                IO String
 checkNode useTh save2File sTxt ndpf ndnm mp mcm mThr mSt mlbE libname
- =do
-   case ndpf of
+ = case ndpf of
     Element pf_st nd ->
      do
      -- recompute the theory (to make effective the selected axioms,
@@ -269,13 +268,10 @@ checkNode useTh save2File sTxt ndpf ndnm mp mcm mThr mSt mlbE libname
              Result _ (Just sm) -> return $ Just (sm,acm)
      case prep of
      -- theory could not be computed
-      Nothing -> do
-                  return "No suitable prover and comorphism found"
+      Nothing -> return "No suitable prover and comorphism found"
       Just (G_theory_with_cons_checker lid1 th p, cmp)->
-       do
         case P.proveCMDLautomaticBatch p of
-         Nothing -> do
-                     return "Error obtaining the prover"
+         Nothing -> return "Error obtaining the prover"
          Just fn ->
           do
           -- mVar to poll the prover for results
@@ -299,7 +295,7 @@ checkNode useTh save2File sTxt ndpf ndnm mp mcm mThr mSt mlbE libname
                       th []
              swapMVar mThr $ Just $ fst tmp
              pollForResults lid1 cmp (snd tmp) answ mSt []
-             swapMVar mThr $ Nothing
+             swapMVar mThr Nothing
              lbEnv  <- readMVar mlbE
              state <- readMVar mSt
              case state of
@@ -341,8 +337,7 @@ proveNode ::
               -- returns an error message if anything happens
                IO String
 proveNode useTh save2File sTxt ndpf ndnm mp mcm mThr mSt mlbE libname
- =do
-   case ndpf of
+ = case ndpf of
     Element pf_st nd ->
      do
      -- recompute the theory (to make effective the selected axioms,
@@ -373,13 +368,10 @@ proveNode useTh save2File sTxt ndpf ndnm mp mcm mThr mSt mlbE libname
              Result _ (Just sm) -> return $ Just (sm,acm)
      case prep of
      -- theory could not be computed
-      Nothing -> do
-                  return "No suitable prover and comorphism found"
+      Nothing -> return "No suitable prover and comorphism found"
       Just (G_theory_with_prover lid1 th p, cmp)->
-       do
         case P.proveCMDLautomaticBatch p of
-         Nothing -> do
-                     return "Error obtaining the prover"
+         Nothing -> return "Error obtaining the prover"
          Just fn ->
           do
           -- mVar to poll the prover for results
@@ -403,7 +395,7 @@ proveNode useTh save2File sTxt ndpf ndnm mp mcm mThr mSt mlbE libname
                       th []
              swapMVar mThr $ Just $ fst tmp
              pollForResults lid1 cmp (snd tmp) answ mSt []
-             swapMVar mThr $ Nothing
+             swapMVar mThr Nothing
              lbEnv  <- readMVar mlbE
              state <- readMVar mSt
              case state of

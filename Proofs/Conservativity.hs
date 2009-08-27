@@ -179,8 +179,8 @@ monoIsFree dg = groupHistory dg (DGRule "monoIsFree") $ changesDGH dg changes
     process :: LEdge DGLinkLab -> [DGChange]
     process e@(s, t, l) = [ DeleteEdge e, InsertEdge (s, t, l {
         dgl_type = case dgl_type l of
-                   ScopedLink _ _ (ConsStatus _ _ ls) -> HidingFreeOrCofreeThm 
-                                                         (Just Free) 
+                   ScopedLink _ _ (ConsStatus _ _ ls) -> HidingFreeOrCofreeThm
+                                                         (Just Free)
                                                          (dgl_morphism l) ls
                    tp -> tp
       })]
@@ -199,7 +199,7 @@ compConsAux dg n@(i, _) = changes
   where
     nodeCons = getNodeConservativity n
     nodePaths = getAllPathsOfTypeFrom dg i
-    consPaths = filter (\ p -> snd p == nodeCons) $ zip nodePaths 
+    consPaths = filter (\ p -> snd p == nodeCons) $ zip nodePaths
                 (map getConservativityOfPath nodePaths)
     changes = concatMap process consPaths
     process :: ([LEdge DGLinkLab], Conservativity) -> [DGChange]

@@ -117,7 +117,7 @@ parseElements action gls gls_axm elems (acc1,acc2)
                     ChangeGoals -> selectedGoals st
                     ChangeAxioms-> includedAxioms st
           fn' x y = x==y
-          fn ks x = case find (fn' x) $ ks of
+          fn ks x = case find (fn' x) ks of
                      Just _ ->
                       case action of
                        ActionDel -> False
@@ -174,7 +174,6 @@ cProve state
  = case i_state $ intState state of
     Nothing -> return $ genErrorMsg "Nothing selected" state
     Just pS ->
-       do
         case elements pS of
          [] -> return $ genErrorMsg "Nothing selected" state
          ls ->
@@ -198,9 +197,8 @@ cProve state
             let nwls=concatMap(\(Element _ x) ->
                                               selectANode x nwpS) ls
                 hst=concatMap(\(Element stt x)  ->
-                                 (AxiomsChange (includedAxioms stt) x):
-                                 (GoalsChange (selectedGoals stt) x):
-                                   []) ls
+                                 [(AxiomsChange (includedAxioms stt) x),
+                                  (GoalsChange (selectedGoals stt) x)]) ls
             return $ add2hist [(DgCommandChange $ i_ln nwpS),
                                (ListChange hst)] $
                          state {
@@ -216,7 +214,6 @@ cProveAll state
  = case i_state $ intState state of
     Nothing -> return$ genErrorMsg "Nothing selected" state
     Just pS ->
-       do
         case elements pS of
          [] -> return $ genErrorMsg "Nothing selected" state
          ls ->
@@ -245,7 +242,6 @@ cSetUseThms val state
  = case i_state $ intState state of
     Nothing -> return $ genErrorMsg "Norhing selected" state
     Just pS ->
-     do
       return $ add2hist [UseThmChange $ useTheorems pS] $
           state {
            intState = (intState state) {
@@ -258,7 +254,6 @@ cSetSave2File val state
  = case i_state $ intState state of
     Nothing -> return $ genErrorMsg "Nothing selected" state
     Just ps ->
-     do
       return $ add2hist [Save2FileChange $ save2file ps] $
           state {
             intState = (intState state) {
@@ -269,8 +264,7 @@ cSetSave2File val state
 -- not be parsed as a command
 cNotACommand :: String -> CMDL_State -> IO CMDL_State
 cNotACommand input state
- = do
-    case input of
+ = case input of
      -- if input line is empty do nothing
      [] -> return state
      -- anything else see if it is in a blocl of command
@@ -312,8 +306,7 @@ cEndScript state
 -- not try to parse the input
 cStartScript :: CMDL_State-> IO CMDL_State
 cStartScript state
- = do
-    case i_state $ intState state of
+ = case i_state $ intState state of
      Nothing -> return $ genErrorMsg "Nothing selected" state
      Just ps ->
       return $ add2hist [LoadScriptChange $ loadScript ps] $

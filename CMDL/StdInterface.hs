@@ -36,14 +36,14 @@ stdShellDescription =
        , commandStyle       = OnlyCommands
        , evaluateFunc       = shellacEvalFunc
        , wordBreakChars     = wbc
-       , prompt             = \x -> return $ generatePrompter x
-       , historyFile        = Just ("consoleHistory.tmp")
+       , prompt             = return . generatePrompter
+       , historyFile        = Just "consoleHistory.tmp"
        }
 
 
 basicOutput :: BackendOutput -> IO ()
-basicOutput (RegularOutput out) = hPutStr stdout out
-basicOutput (InfoOutput out)    = hPutStr stdout out
+basicOutput (RegularOutput out) = putStr out
+basicOutput (InfoOutput out)    = putStr out
 basicOutput (ErrorOutput out)   = hPutStr stderr out
 
 
