@@ -88,8 +88,8 @@ instance Pretty Sign where
         in vcat [
             pr'sorts $ Set.elems $ sorts sign,
             pr'subs $ Rel.toMap $ Rel.transReduce $ subsorts sign,
-            pr'ops $ ops sign,
-            pretty $ Set.toList $ sentences sign
+            pr'ops $ ops sign
+            -- pretty $ Set.toList $ sentences sign
         ]
 
 
@@ -101,7 +101,6 @@ instance HasSorts Sign where
         ops = mapSorts mp $ ops sign
         -- NOTE: Leaving out Sentences for now.
     }
-
 
 instance HasOps Sign where
     getOps = let
