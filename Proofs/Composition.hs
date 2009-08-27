@@ -172,7 +172,3 @@ handleConservativityMono newEdge path =
     Nothing -> Nothing
     Just morph -> if isTransportable morph then Just (newEdge,path)
                    else Nothing
-
-{- | returns the conservativity of the given path -}
-getConservativityOfPath :: [LEdge DGLinkLab] -> Conservativity
-getConservativityOfPath path = minimum [getConservativity e | e <- path]

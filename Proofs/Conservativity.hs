@@ -21,13 +21,14 @@ import Common.Amalgamate(Amalgamates(Amalgamates), CASLAmalgOpt(..))
 import Common.LibName(LIB_NAME)
 import Common.Result(resultToMaybe)
 
-import Proofs.EdgeUtils(changesDGH, isFreeEdge, isGlobalEdge, isGlobalThm)
+import Proofs.EdgeUtils(changesDGH, isFreeEdge, isGlobalEdge, isGlobalThm,
+                        getAllPathsOfTypeFrom)
 import Proofs.ComputeColimit(makeDiagram)
 
 import Static.DevGraph
 import Static.GTheory(gEnsuresAmalgamability)
 
-import Data.Graph.Inductive.Graph(LEdge)
+import Data.Graph.Inductive.Graph(LEdge, LNode)
 import Data.List(nubBy, nub)
 import qualified Data.Map as Map
 
@@ -69,7 +70,7 @@ type Quad = (Pair, Pair)
 
 -- Main function, calls all rules.
 conservativity :: LIB_NAME -> LibEnv -> LibEnv
-conservativity = Map.adjust (shift . freeIsMono)
+conservativity = Map.adjust (shift . freeIsMono . monoIsFree . compCons)
 
 -- Shift-Rule.
 -- First a list of edge pairs with the same source node is generated.
@@ -158,8 +159,8 @@ genEdgeChange f e = [ DeleteEdge e, InsertEdge $ modifyEdgeCons e f ]
 -- Modifies the ConsStatus of an edge.
 modifyEdgeCons :: LEdge DGLinkLab
   -> (ConsStatus -> ConsStatus) -> LEdge DGLinkLab
-modifyEdgeCons (s,t,l) f =
-  (s,t, l {
+modifyEdgeCons (s, t, l) f =
+  (s, t, l {
      dgl_type = case dgl_type l of
                 ScopedLink sc dl cs -> ScopedLink sc dl $ f cs
                 tp -> tp
@@ -167,11 +168,48 @@ modifyEdgeCons (s,t,l) f =
    , dgl_id = defaultEdgeId
   })
 
-{-monoIsFree :: DGraph -> DGraph
+monoIsFree :: DGraph -> DGraph
 monoIsFree dg = groupHistory dg (DGRule "monoIsFree") $ changesDGH dg changes
   where
-    nds = labNodesDG dg
-    mono = filter (\ n -> getNodeConservativity n == Mono) nds
-    thmEdges = filter (liftE isGlobalThm) $ labEdgesDG dg
+    mono = filter (\ n -> getNodeConservativity n == Mono) $ labNodesDG dg
+    thmEdges = filter (\ e -> getConservativity e == None) $
+               filter (liftE isGlobalThm) $ labEdgesDG dg
     freeEdges = [ e | (n,_)<-mono, e@(s,_,_)<-thmEdges, n == s ]
-    changes = [] --concatMap process freeEdges-}
+    changes = concatMap process freeEdges
+    process :: LEdge DGLinkLab -> [DGChange]
+    process e@(s, t, l) = [ DeleteEdge e, InsertEdge (s, t, l {
+        dgl_type = case dgl_type l of
+                   ScopedLink _ _ (ConsStatus _ _ ls) -> HidingFreeOrCofreeThm 
+                                                         (Just Free) 
+                                                         (dgl_morphism l) ls
+                   tp -> tp
+      })]
+
+-- If Node n is cons and the path to Node m is also cons then m is cons too.
+compCons :: DGraph -> DGraph
+compCons dg = groupHistory dg (DGRule "compCons") $ changesDGH dg changes
+  where
+    consNodes = filter (\ n -> getNodeConservativity n /= None)  $ labNodesDG dg
+    changes = concatMap (compConsAux dg) consNodes
+
+-- First get all paths. Check if the path cons matches with the node cons.
+-- If the target node cons is weaker than the path cons replace it.
+compConsAux :: DGraph -> LNode DGNodeLab -> [DGChange]
+compConsAux dg n@(i, _) = changes
+  where
+    nodeCons = getNodeConservativity n
+    nodePaths = getAllPathsOfTypeFrom dg i
+    consPaths = filter (\ p -> snd p == nodeCons) $ zip nodePaths 
+                (map getConservativityOfPath nodePaths)
+    changes = concatMap process consPaths
+    process :: ([LEdge DGLinkLab], Conservativity) -> [DGChange]
+    process (path, sourceCons) =
+      [ SetNodeLab lab (node, lab') | targetNodeCons < sourceCons ]
+      where
+        (_, node, _) = last path
+        lab = labDG dg node
+        targetNodeCons = getNodeCons lab
+        nInfo = nodeInfo lab
+        lab' = lab {
+            nodeInfo = nInfo { node_cons_status = mkConsStatus sourceCons }
+          }

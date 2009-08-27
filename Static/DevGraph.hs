@@ -1104,6 +1104,10 @@ getCons lt = case getLinkConsStatus lt of
 getConservativity :: LEdge DGLinkLab -> Conservativity
 getConservativity (_, _, edgeLab) = getCons $ dgl_type edgeLab
 
+{- | returns the conservativity of the given path -}
+getConservativityOfPath :: [LEdge DGLinkLab] -> Conservativity
+getConservativityOfPath path = minimum [getConservativity e | e <- path]
+
 -- * bottom up traversal
 
 -- | Creates a LIB_NAME relation wrt dependencies via reference nodes
