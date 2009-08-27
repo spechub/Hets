@@ -133,6 +133,8 @@ data DGNodeInfo = DGNode
   , ref_node :: Node             -- pointer to ref'd node
   } deriving (Show, Eq)
 
+data XPathPart = ElemName String | ChildIndex Int deriving (Show, Eq)
+
 -- | node inscriptions in development graphs.
 -- Nothing entries indicate "not computed yet"
 data DGNodeLab =
@@ -143,6 +145,7 @@ data DGNodeLab =
   , dgn_nf :: Maybe Node         -- normal form, for Theorem-Hide-Shift
   , dgn_sigma :: Maybe GMorphism -- inclusion of signature into nf signature
   , nodeInfo :: DGNodeInfo
+  , xpath :: [XPathPart]
   , dgn_lock :: Maybe (MVar ())
   } deriving (Show, Eq)
 
@@ -638,6 +641,7 @@ newInfoNodeLab name info gTh = DGNodeLab
   , dgn_nf = Nothing
   , dgn_sigma = Nothing
   , nodeInfo = info
+  , xpath = []
   , dgn_lock = Nothing }
 
 -- | create a new node label using 'newNodeInfo' and 'newInfoNodeLab'
