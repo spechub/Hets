@@ -24,9 +24,14 @@ import System.Console.Shell
 import System.Console.Shell.Backend
 import System.IO
 
+import Control.Monad(when)
+
 import CMDL.DataTypes
 import CMDL.Commands
 import CMDL.StdInterface
+import CMDL.Utils(stripComments)
+
+import Common.Utils(trim)
 
 import qualified Control.Exception as Ex
 
@@ -36,7 +41,7 @@ fileBackend :: String -> ShellBackend Handle
 fileBackend filename = ShBackend
   { initBackend = openFile filename ReadMode
   , shutdownBackend = hClose
-  , outputString = \_ -> basicOutput
+  , outputString = const basicOutput
   , flushOutput = \_ -> hFlush stdout
   , getSingleChar = fileGetSingleChar
   , getInput = fileGetInput
@@ -44,7 +49,7 @@ fileBackend filename = ShBackend
   , setWordBreakChars = \_ _ -> return ()
   , getWordBreakChars = \_ -> return
                       " \t\n\r\v`~!@#$%^&*()=[]{};\\\'\",<>"
-  , onCancel = \_ -> hPutStrLn stdout "canceled...\n"
+  , onCancel = \_ -> putStrLn "canceled...\n"
   , setAttemptedCompletionFunction = \_ _ -> return ()
   , setDefaultCompletionFunction = \_ _ -> return ()
   , completeFilename = \_ _ -> return []
@@ -59,18 +64,18 @@ fileBackend filename = ShBackend
 -- | Used to get one char from a file open for reading
 fileGetSingleChar :: Handle -> String -> IO (Maybe Char)
 fileGetSingleChar file _
- = do
-    Ex.bracket (hGetBuffering file) (hSetBuffering file) $
+ = Ex.bracket (hGetBuffering file) (hSetBuffering file) $
          \_ -> do
                 hSetBuffering file NoBuffering
                 c <- hGetChar file
-                hPutStrLn stdout []
+                putStrLn []
                 return (Just c)
 
 -- | Used to get a line from a file open for reading
 fileGetInput :: Handle -> String -> IO (Maybe String)
 fileGetInput file _ = do
    x <- hGetLine file
+   when (trim (stripComments x) /= "") (putStrLn $ "> " ++ x)
    return (Just x)
 
 
