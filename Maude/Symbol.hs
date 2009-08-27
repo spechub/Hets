@@ -79,16 +79,11 @@ instance HasName Symbol where
 instance Pretty Symbol where
     pretty symb = case symb of
         Sort qid -> pretty qid
-        Kind qid -> pretty qid
+        Kind qid -> brackets $ pretty qid
         Labl qid -> pretty qid
         OpWildcard qid -> pretty qid
-        Operator qid dom cod -> let
-                pr'op arr = hsep
-                    [pretty qid, colon, hsep $ map pretty dom, arr, pretty cod]
-            in case cod of
-                Sort _ -> pr'op funArrow
-                Kind _ -> pr'op $ text "~>"
-                _ -> empty
+        Operator qid dom cod -> hsep
+            [pretty qid, colon, hsep $ map pretty dom, funArrow, pretty cod]
 
 
 instance GetRange Symbol where
