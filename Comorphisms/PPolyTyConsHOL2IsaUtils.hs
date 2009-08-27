@@ -269,9 +269,9 @@ mkSimplifiedSen :: OldSimpKind -> Simplifier -> Isa.Term -> Isa.Sentence
 mkSimplifiedSen simK simpF t = mkSen $ evalState (simplify simK simpF t) 0
 
 mkBinConj :: Isa.Term -> Isa.Term -> Isa.Term
-mkBinConj t1 t2 = case () of
-  _ | t1 == true -> t2
-    | t2 == true -> t1
+mkBinConj t1 t2 = case (== true) of
+  isT | isT t1 -> t2
+      | isT t2 -> t1
   _ -> binConj t1 t2
 
 data OldSimpKind = NoSimpLift | Lift2Restrict | Lift2Case deriving Eq
@@ -442,35 +442,35 @@ transTerm sign tyToks collectConds toks pVars trm = case trm of
         let vt = con $ transVar toks v
         return $ if Set.member vd pVars then ITC (makePartialVal fTy) vt None
           else ITC fTy vt None
-    QualOp _ (PolyId opId _ _) ts@(TypeScheme targs ty _) is _ _ -> do
+    QualOp _ (PolyId opId _ _) ts@(TypeScheme targs ty _) insts _ _ -> do
         fTy <- funType ty
-        instfTy <- funType $ substGen (if null is then Map.empty else
+        instfTy <- funType $ substGen (if null insts then Map.empty else
                     Map.fromList $ zipWith (\ (TypeArg _ _ _ _ i _ _) t
-                                                -> (i, t)) targs is) ty
+                                                -> (i, t)) targs insts) ty
         let cf = mkTermAppl (convFun None $ instType fTy instfTy)
             unCurry f = let rf = termAppl uncurryOp $ con f in
               ITC fTy rf None
-        return $ case () of
-          _   | opId == trueId -> ITC fTy true None
-              | opId == falseId -> ITC fTy false None
-              | opId == botId -> case instfTy of
+        return $ case (opId ==) of
+          is  | is trueId -> ITC fTy true None
+              | is falseId -> ITC fTy false None
+              | is botId -> case instfTy of
                   PartialVal t -> ITC t (termAppl makeTotal noneOp) $ Cond false
                   _ -> ITC instfTy (cf noneOp) None
-              | opId == andId -> unCurry conjV
-              | opId == orId -> unCurry disjV
-              | opId == implId -> unCurry implV
-              | opId == infixIf -> ITC fTy ifImplOp None
-              | opId == eqvId -> unCurry eqV
-              | opId == exEq -> let
+              | is andId -> unCurry conjV
+              | is orId -> unCurry disjV
+              | is implId -> unCurry implV
+              | is infixIf -> ITC fTy ifImplOp None
+              | is eqvId -> unCurry eqV
+              | is exEq -> let
                   ef = cf $ termAppl uncurryOp existEqualOp
                   in ITC instfTy ef None
-              | opId == eqId -> let
+              | is eqId -> let
                   ef = cf $ termAppl uncurryOp $ con eqV
                   in ITC instfTy ef None
-              | opId == notId -> ITC fTy notOp None
-              | opId == defId -> ITC instfTy (cf defOp) None
-              | opId == whenElse -> ITC instfTy (cf whenElseOp) None
-              | opId == resId -> ITC instfTy (cf resOp) None
+              | is notId -> ITC fTy notOp None
+              | is defId -> ITC instfTy (cf defOp) None
+              | is whenElse -> ITC instfTy (cf whenElseOp) None
+              | is resId -> ITC instfTy (cf resOp) None
           _ -> let
                   isaId = transOpId sign tyToks opId ts
                   ef = cf $ for (isPlainFunType fTy - 1) (termAppl uncurryOp)
