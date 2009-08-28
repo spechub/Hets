@@ -353,6 +353,15 @@ class ( Syntax lid basic_spec symb_items symb_map_items
          ensures_amalgamability l _ = warning Amalgamates
            ("amalgamability test not implemented for logic " ++ show l)
            nullRange
+         -- | quotient term algebra for normalization of freeness
+         quotient_term_algebra :: lid -- the logic
+             -> morphism -- sigma : Sigma -> SigmaM
+             -> [Named sentence] -- Th(M)
+             -> Result
+                 (morphism, -- iota : SigmaM' -> SigmaK
+                  [Named sentence] -- Ax(K)
+                 )
+         quotient_term_algebra l _ _ = statErr l "quotient_term_algebra"
          -- | signature colimits
          signature_colimit :: lid -> Gr sign (Int, morphism)
                            -> Result (sign, Map.Map Int morphism)
