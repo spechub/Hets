@@ -28,21 +28,27 @@ module CMDL.Shell
 import CMDL.DataTypes
 import CMDL.Utils
 import CMDL.DataTypesUtils(getAllNodes, getAllGoalEdges, getAllGoalNodes, getTh)
+
 import Common.AS_Annotation(SenAttr(isAxiom))
 import Common.Utils(trimLeft, trimRight)
 import qualified Common.OrderedMap as OMap
+
 import Comorphisms.LogicGraph(comorphismList, logicGraph)
+
 import Interfaces.Command(Command(CommentCmd))
 import Interfaces.DataTypes
 import Interfaces.Utils(getAllEdges)
 import Interfaces.GenericATPState
+
 import Logic.Comorphism(AnyComorphism(..), Comorphism(sourceLogic, targetLogic))
 import Logic.Grothendieck(findComorphismPaths)
 import Logic.Prover(ProverKind(ProveCMDLautomatic),
                     ProverTemplate(prover_name), hasProverKind)
 import Logic.Logic(Language(language_name), Logic(cons_checkers, provers))
+
 import Proofs.AbstractState(ProofState(logicId, theory), G_prover(..),
                             G_cons_checker(..))
+
 import Static.DevGraph(DGNodeLab(dgn_name), isProvenSenStatus, showName)
 import Static.GTheory(G_theory(G_theory), sublogicOfTh)
 

@@ -25,34 +25,36 @@ module CMDL.ProveCommands
        , cNotACommand
        ) where
 
-import CMDL.DataTypes
-import CMDL.DataTypesUtils
-import CMDL.Utils
-import CMDL.DgCommands
-import CMDL.ProveConsistency
+import CMDL.DataTypes(CMDL_State(intState), CMDL_GoalAxiom(..),
+                      CMDL_ListAction(..))
+import CMDL.DataTypesUtils(add2hist, genErrorMsg, genMessage, getIdComorphism)
+import CMDL.DgCommands(selectANode)
+import CMDL.ProveConsistency(proveLoop, sigIntHandler)
+import CMDL.Utils(checkIntString)
 
-import Static.GTheory
+import Static.GTheory(G_theory(G_theory))
 
-import Common.Result
+import Common.Result(Result(Result))
 import qualified Common.OrderedMap as OMap
-import Common.Utils (trim)
+import Common.Utils(trim)
 
-import Data.List
+import Data.List((++), filter, map, find, nub, words, concatMap)
 
-import Comorphisms.LogicGraph
+import Comorphisms.LogicGraph(lookupComorphism_in_LG)
 
-import Proofs.AbstractState
+import Proofs.AbstractState(ProofState(..))
 
-import Logic.Comorphism
+import Logic.Comorphism(compComorphism)
 
-import Control.Concurrent
-import Control.Concurrent.MVar
+import Control.Concurrent(forkIO)
+import Control.Concurrent.MVar(newEmptyMVar, newMVar, takeMVar)
 
-import System.Posix.Signals
-import System.IO
+import System.Posix.Signals(Handler(Catch), installHandler, sigINT)
+import System.IO(IO)
 
-import Interfaces.GenericATPState
-import Interfaces.DataTypes
+import Interfaces.GenericATPState(ATPTactic_script(ts_timeLimit, ts_extraOpts))
+import Interfaces.DataTypes(ListChange(..), IntIState(..), Int_NodeInfo(..),
+                            UndoRedoElem(..), IntState(i_state))
 
 -- | Drops any seleceted comorphism
 cDropTranslations :: CMDL_State -> IO CMDL_State
@@ -131,8 +133,7 @@ parseElements action gls gls_axm elems (acc1,acc2)
                    ActionDel -> filter (fn  selgls) gls
                    ActionSetAll -> allgls
                    ActionSet -> filter (fn allgls) gls
-                   ActionAdd ->
-                        nub $ (selgls)++ filter (fn allgls) gls
+                   ActionAdd -> nub $ selgls ++ filter (fn allgls) gls
           nwelm = case gls_axm of
                    ChangeGoals  -> Element (st {selectedGoals = gls'}) nb
                    ChangeAxioms -> Element (st {includedAxioms= gls'}) nb
@@ -272,9 +273,8 @@ cNotACommand input state
       case i_state $ intState state of
         Nothing -> return $ genErrorMsg ("Error on input line :"++s) state
         Just pS ->
-          case loadScript pS of
-            False -> return$ genErrorMsg ("Error on input line :"++s) state
-            True ->
+          if loadScript pS
+            then
              do
               let olds = script pS
                   oldextOpts = ts_extraOpts olds
@@ -284,7 +284,7 @@ cNotACommand input state
                              script = olds { ts_extraOpts = s:oldextOpts }
                              } } }
               return $ add2hist [ScriptChange $ script pS] nwSt
-
+            else return $ genErrorMsg ("Error on input line :"++s) state
 
 -- | Function to signal the interface that the script has ended
 cEndScript :: CMDL_State -> IO CMDL_State
@@ -292,15 +292,15 @@ cEndScript state
  = case i_state $ intState state of
     Nothing -> return $ genErrorMsg "Nothing selected" state
     Just ps ->
-     case loadScript ps of
-      False -> return $ genErrorMsg "No previous call of begin-script" state
-      True ->
-       do
-        let nwSt= state {
-                    intState = (intState state) {
-                     i_state = Just ps {
-                       loadScript = False } } }
-        return $ add2hist [LoadScriptChange $ loadScript ps] nwSt
+     if loadScript ps
+       then
+         do
+          let nwSt= state {
+                      intState = (intState state) {
+                       i_state = Just ps {
+                         loadScript = False } } }
+          return $ add2hist [LoadScriptChange $ loadScript ps] nwSt
+       else return $ genErrorMsg "No previous call of begin-script" state
 
 -- | Function to signal the interface that a scrips starts so it should
 -- not try to parse the input
@@ -321,9 +321,8 @@ cTimeLimit input state
  = case i_state $ intState state of
     Nothing -> return $ genErrorMsg "Nothing selected" state
     Just ps ->
-     case checkIntString $ trim input of
-       False -> return $ genErrorMsg "Please insert a number of seconds" state
-       True ->
+     if checkIntString $ trim input
+       then
         do
          let inpVal = (read $ trim input)::Int
          let oldS = script ps
@@ -332,4 +331,4 @@ cTimeLimit input state
                  intState = (intState state) {
                   i_state = Just ps {
                               script = oldS {   ts_timeLimit = inpVal } } } }
-
+       else return $ genErrorMsg "Please insert a number of seconds" state

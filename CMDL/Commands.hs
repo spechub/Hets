@@ -16,20 +16,20 @@ module CMDL.Commands
        , shellacEvalFunc
        ) where
 
-import System.Console.Shell
-import System.Console.Shell.ShellMonad
+import System.Console.Shell(ShellCommand, cmd, exitCommand, helpCommand)
+import System.Console.Shell.ShellMonad(Sh)
 
 import Interfaces.Command
-import Interfaces.CmdAction
+import Interfaces.CmdAction(globLibAct, globLibResultAct, globResultAct)
 
 import CMDL.DataTypes
 import CMDL.ProveCommands
 import CMDL.InfoCommands
-import CMDL.DgCommands
-import CMDL.ProveConsistency
-import CMDL.ConsCommands
-import CMDL.Shell
-import CMDL.UndoRedo
+import CMDL.DgCommands(cDgSelect, cUse, commandDgAll, wrapResultDgAll)
+import CMDL.ProveConsistency(cConsChecker, cProver)
+import CMDL.UndoRedo(cRedo, cUndo)
+import CMDL.Shell(cDetails, shellacCmd)
+import CMDL.ConsCommands(cConservCheck)
 
 -- | Generates a shellac command that requires input
 shellacWithInput :: CMDL_CmdDescription -> String -> Sh CMDL_State ()
@@ -49,14 +49,14 @@ shellacCommands
                              ) [cmdName x]) getCommands
    in
     -- different names for exit commands
-      (exitCommand "exit")
-    : (exitCommand "quit")
+      exitCommand "exit"
+    : exitCommand "quit"
     -- also vi style
-    : (exitCommand ":q")
+    : exitCommand ":q"
     -- different name for help commands
-    : (helpCommand "help")
+    : helpCommand "help"
     -- also ? for help
-    : (helpCommand "?")
+    : helpCommand "?"
     : genCmds
 
 
@@ -71,8 +71,8 @@ genCmd c priority req fn = CMDL_CmdDescription
   , cmdFn = fn }
 
 genGlobCmd :: GlobCmd -> (CMDL_State -> IO CMDL_State) -> CMDL_CmdDescription
-genGlobCmd gc cf =
-  genCmd (GlobCmd gc) CmdNoPriority ReqNothing $ CmdNoInput cf
+genGlobCmd gc =
+  genCmd (GlobCmd gc) CmdNoPriority ReqNothing . CmdNoInput
 
 reqOfSelectCmd :: SelectCmd -> CMDL_CmdRequirements
 reqOfSelectCmd sc = case sc of
@@ -88,8 +88,8 @@ reqOfSelectCmd sc = case sc of
 
 genSelectCmd :: SelectCmd -> (String -> CMDL_State -> IO CMDL_State)
              -> CMDL_CmdDescription
-genSelectCmd sc cf =
-  genCmd (mkSelectCmd sc) CmdNoPriority (reqOfSelectCmd sc) $ CmdWithInput cf
+genSelectCmd sc =
+  genCmd (mkSelectCmd sc) CmdNoPriority (reqOfSelectCmd sc) . CmdWithInput
 
 reqOfInspectCmd :: InspectCmd -> CMDL_CmdRequirements
 reqOfInspectCmd ic = case ic of
@@ -98,13 +98,13 @@ reqOfInspectCmd ic = case ic of
 
 genGlobInspectCmd :: InspectCmd -> (CMDL_State -> IO CMDL_State)
                   -> CMDL_CmdDescription
-genGlobInspectCmd ic cf =
-  genCmd (InspectCmd ic) CmdNoPriority ReqNothing $ CmdNoInput cf
+genGlobInspectCmd ic =
+  genCmd (InspectCmd ic) CmdNoPriority ReqNothing . CmdNoInput
 
 genInspectCmd :: InspectCmd -> (String -> CMDL_State -> IO CMDL_State)
               -> CMDL_CmdDescription
-genInspectCmd ic cf =
-  genCmd (InspectCmd ic) CmdNoPriority (reqOfInspectCmd ic) $ CmdWithInput cf
+genInspectCmd ic =
+  genCmd (InspectCmd ic) CmdNoPriority (reqOfInspectCmd ic) . CmdWithInput
 
 -- | Evaluation function description (function called when input can not
 -- be parsed
@@ -114,7 +114,7 @@ cmdlEvalFunc =
 
 -- | Shellac description of the evaluation function
 shellacEvalFunc :: String -> Sh CMDL_State ()
-shellacEvalFunc input = shellacWithInput cmdlEvalFunc input
+shellacEvalFunc = shellacWithInput cmdlEvalFunc
 
 -- | Generates the list of all possible commands as command description
 getCommands :: [CMDL_CmdDescription]
@@ -131,7 +131,7 @@ getCommands =
   [ genSelectCmd LibFile cUse
   , genSelectCmd Node cDgSelect
   , genSelectCmd ComorphismTranslation cTranslate
-  , genSelectCmd Prover $ cProver
+  , genSelectCmd Prover cProver
   , genSelectCmd Goal $ cGoalsAxmGeneral ActionSet ChangeGoals
   , genGlobCmd ProveCurrent cProve
   , genGlobCmd DropTranslation cDropTranslations

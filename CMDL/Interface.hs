@@ -16,21 +16,21 @@ for standard input and file input
 module CMDL.Interface where
 
 
-import System.Console.Shell
+import System.Console.Shell(ShellDescription(defaultCompletions), runShell)
 #ifdef EDITLINE
 import System.Console.Shell.Backend.Editline
 #else
 import System.Console.Shell.Backend.Haskeline
 #endif
-import System.IO
+import System.IO(IO)
 
-import CMDL.Shell
-import CMDL.DataTypes
-import CMDL.Commands
+import CMDL.Commands(getCommands)
+import CMDL.DataTypes(CMDL_Message(..), CMDL_PrompterState(..), CMDL_State(..))
+import CMDL.Shell(cmdlCompletionFn)
 
-import CMDL.StringInterface
-import CMDL.StdInterface
-import CMDL.FileInterface
+import CMDL.FileInterface(fileBackend, fileShellDescription)
+import CMDL.StdInterface(recursiveApplyUse, stdShellDescription)
+import CMDL.StringInterface(stringBackend, stringShellDescription)
 
 import Interfaces.DataTypes
 
@@ -76,16 +76,12 @@ cmdlRunShell files
 -- | The function processes the file of instructions
 cmdlProcessFile :: String -> IO CMDL_State
 cmdlProcessFile flnm =
-        (runShell fileShellDescription
-                 (fileBackend flnm)
-                 emptyCMDL_State) `catch`
-                               (\_ -> return emptyCMDL_State )
+        runShell fileShellDescription (fileBackend flnm) emptyCMDL_State `catch`
+        (\_ -> return emptyCMDL_State )
 
 -- | The function processes a string of instructions starting from a given
 -- state
 cmdlProcessString :: String -> CMDL_State -> IO CMDL_State
 cmdlProcessString input st =
-       (runShell stringShellDescription
-                    (stringBackend input)
-                    st) `catch`
-                        (\_ -> return st )
+       runShell stringShellDescription (stringBackend input) st `catch`
+       (\_ -> return st )

@@ -19,22 +19,21 @@ module CMDL.FileInterface
         , fileGetInput
         ) where
 
-
-import System.Console.Shell
-import System.Console.Shell.Backend
+import System.Console.Shell(CommandStyle(OnlyCommands), ShellDescription(..),
+                            initialShellDescription)
+import System.Console.Shell.Backend(ShellBackend(..))
 import System.IO
 
 import Control.Monad(when)
 
-import CMDL.DataTypes
-import CMDL.Commands
-import CMDL.StdInterface
+import CMDL.Commands(shellacCommands, shellacEvalFunc)
+import CMDL.DataTypes(CMDL_State)
+import CMDL.StdInterface(basicOutput)
 import CMDL.Utils(stripComments)
 
 import Common.Utils(trim)
 
 import qualified Control.Exception as Ex
-
 
 -- | Creates the Backend for reading from files
 fileBackend :: String -> ShellBackend Handle

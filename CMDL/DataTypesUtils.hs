@@ -27,33 +27,28 @@ module CMDL.DataTypesUtils
          , getIdComorphism
          ) where
 
-
+import Interfaces.Command(Command(CommentCmd))
 import Interfaces.DataTypes
-import Interfaces.Utils
-import Interfaces.History
-import Interfaces.Command
+import Interfaces.History(add2history)
+import Interfaces.Utils(getAllEdges, getAllNodes)
 import CMDL.Utils
 import CMDL.DataTypes
 
-import Static.GTheory
-import Static.DevGraph
+import Static.GTheory(G_theory, mapG_theory)
+import Static.DevGraph(DGNodeLab, DGLinkLab)
 
-import System.IO
+import System.IO(stdout, stdin)
 
-import Proofs.AbstractState
-import Proofs.ComputeTheory
+import Proofs.AbstractState(ProofState(sublogicOfTheory, theoryName))
+import Proofs.ComputeTheory(computeTheory)
 
-import Static.GTheory
-import Static.DevGraph
+import Data.Graph.Inductive.Graph(LNode, LEdge)
+import Data.List((++), filter, find, null)
 
-import Data.Graph.Inductive.Graph
-import Data.List
+import Common.Result(Result(maybeResult, Result))
 
-import Common.Result
-
-import Logic.Comorphism
-import Logic.Grothendieck
-
+import Logic.Comorphism(AnyComorphism(..), mkIdComorphism)
+import Logic.Grothendieck(G_sublogics(..))
 
 add2hist :: [UndoRedoElem] -> CMDL_State -> CMDL_State
 add2hist descr st
@@ -87,9 +82,7 @@ generatePrompter st = case i_state $ intState st of
                      case getIdComorphism $ elements ist of
                       Nothing -> []
                       Just ocm ->
-                        case cm' == ocm of
-                          True -> []
-                          False -> "*"
+                        if cm' == ocm then [] else "*"
      in delExtension (fileLoaded pst) ++ els ++ cm ++ prompterHead pst
 
 
@@ -120,7 +113,7 @@ getAllGoalNodes st
              in case nwth of
                  Nothing -> False
                  Just th -> nodeContainsGoals (nb,nd) th) $
-                                 getAllNodes $ ist
+                                 getAllNodes ist
 
 -- | Returns the list of all goal edges taking care of the
 -- up to date status
@@ -129,7 +122,7 @@ getAllGoalEdges st
  = case i_state $ intState st of
     Nothing -> []
     Just ist ->
-      filter edgeContainsGoals $ getAllEdges $ ist
+      filter edgeContainsGoals $ getAllEdges ist
 
 
 --local function that computes the theory of a node
@@ -186,7 +179,7 @@ baseChannels
                   chSocket     = Nothing,
                   chProperties = ChWrite
                   }
-   in ch_in : ch_out : []
+   in [ch_in, ch_out]
 
 
 genErrorMsg :: String -> CMDL_State -> CMDL_State

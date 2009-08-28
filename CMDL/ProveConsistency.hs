@@ -23,37 +23,40 @@ module CMDL.ProveConsistency
 
 
 import Interfaces.DataTypes
+import Interfaces.GenericATPState(ATPTactic_script)
 
-import CMDL.DataTypes
-import CMDL.DataTypesUtils
-import CMDL.Utils
+import CMDL.DataTypes(CMDL_State(intState))
+import CMDL.DataTypesUtils(getAllNodes, add2hist, genErrorMsg, genMessage)
+import CMDL.Utils(checkPresenceProvers)
 
-import Comorphisms.LogicGraph
+import Comorphisms.LogicGraph(logicGraph)
 
-import Proofs.EdgeUtils
+import Proofs.EdgeUtils(changeDGH)
 import Proofs.AbstractState
 
-import Static.GTheory
-import Static.DevGraph
+import Static.DevGraph(LibEnv, DGNodeLab(dgn_theory), DGChange(SetNodeLab),
+                       getDGNodeName, labDG, lookupDGraph)
+import Static.GTheory(G_theory(G_theory), coerceThSens, startThId, sublogicOfTh)
 
-import Logic.Grothendieck
-import Logic.Comorphism
-import Logic.Logic
+import Logic.Comorphism(AnyComorphism(..), Comorphism(targetLogic))
+import Logic.Grothendieck(findComorphismPaths)
+import Logic.Logic(Language(language_name), Logic(provers))
 import qualified Logic.Prover as P
 
-import Common.LibName
-import Common.Result
-import Common.Utils (trim)
+import Common.LibName(LIB_NAME)
+import Common.Result(Result(Result))
+import Common.Utils(trim)
 
 import Data.List
 import qualified Data.Map as Map
 
-import Control.Concurrent
-import Control.Concurrent.MVar
+import Control.Concurrent(ThreadId, killThread)
+import Control.Concurrent.MVar(MVar, newMVar, putMVar, takeMVar, tryTakeMVar,
+                               readMVar, swapMVar)
 
-import System.IO
+import System.IO(IO, putStrLn)
 
-import Interfaces.GenericATPState
+
 
 getProversAutomatic :: [AnyComorphism] -> [(G_prover, AnyComorphism)]
 getProversAutomatic = foldl addProvers []
@@ -89,10 +92,9 @@ cProver input state =
        case cComorphism pS of
        -- if none use the theory  of the first selected node
        -- to find possible comorphisms
-       Nothing-> case find (\(y,_)->
-                                (getPName y)==inp) $
-                           getProversAutomatic $ findComorphismPaths
-                              logicGraph $ sublogicOfTh $ theory z of
+       Nothing-> case find (\(y,_)-> getPName y == inp) $
+                      getProversAutomatic $ findComorphismPaths logicGraph $
+                      sublogicOfTh $ theory z of
                    Nothing -> return $ genErrorMsg ("No applicable prover with"
                                                 ++" this name found") state
                    Just (p,_)-> return $ add2hist [ProverChange$ prover pS]$
@@ -106,24 +108,20 @@ cProver input state =
        -- if yes,  use the comorphism to find a list
        -- of provers
        Just x ->
-         case find (\(y,_)-> (getPName y)==inp)
-                   $ getProversAutomatic [x] of
+         case find (\(y,_)-> getPName y == inp) $ getProversAutomatic [x] of
             Nothing ->
-             case find (\(y,_) ->
-                             (getPName y)==inp) $
-                      getProversAutomatic $
-                      findComorphismPaths logicGraph $
-                      sublogicOfTh $ theory z of
+             case find (\(y,_) -> getPName y == inp) $ getProversAutomatic $
+                  findComorphismPaths logicGraph $ sublogicOfTh $ theory z of
                Nothing -> return $ genErrorMsg ("No applicable prover with"
-                                          ++" this name found") state
+                                          ++ " this name found") state
                Just (p,nCm@(Comorphism cid))->
                  return $ add2hist [(ProverChange $ prover pS),
                                     (CComorphismChange $ cComorphism pS)]
                      $ genMessage [] ("Warning: Prover can't be used with "
-                            ++"the selected comorphism (or the default if "
-                            ++"none was selected). Instead the `"
-                            ++ (language_name  cid)
-                            ++"` comorphism was selected. Current prover is "
+                            ++ "the selected comorphism (or the default if "
+                            ++ "none was selected). Instead the `"
+                            ++ language_name cid
+                            ++ "` comorphism was selected. Current prover is "
                             ++ input)
                             state {
                               intState = (intState state) {
@@ -177,11 +175,10 @@ cConsChecker input state =
                                           }
                                       }
         Just x ->
-          case find(\(y,_) -> (getPName y) == inp)
+          case find(\(y,_) -> getPName y == inp)
                      $ getConsCheckersAutomatic [x] of
            Nothing ->
-            case find (\(y,_) ->
-                        (getPName y) == inp)$ getConsCheckersAutomatic $
+            case find (\(y,_) -> getPName y == inp)$ getConsCheckersAutomatic $
                           findComorphismPaths logicGraph $ sublogicOfTh $
                           theory z of
              Nothing -> return $ genErrorMsg ("No applicable consistency "++
@@ -420,11 +417,11 @@ pollForResults :: (Logic lid sublogics basic_spec sentence
                   IO ()
 pollForResults lid acm mStop mData mState done
  =do
-  let toPrint ls=map(\x->let txt = "Goal "++(P.goalName x)++" is "
-                         in case P.goalStatus x of
-                             P.Open _   ->txt++"still open."
-                             P.Disproved->txt++"disproved."
-                             P.Proved _ ->txt++"proved.") ls
+  let toPrint = map(\ x -> let txt = "Goal " ++ P.goalName x ++ " is "
+                           in case P.goalStatus x of
+                                P.Open _    -> txt ++ "still open."
+                                P.Disproved -> txt ++ "disproved."
+                                P.Proved _  -> txt ++ "proved.")
   d <- takeMVar mData
   case d of
     Result _ Nothing ->

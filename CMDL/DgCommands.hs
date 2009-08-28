@@ -24,34 +24,36 @@ module CMDL.DgCommands
        )where
 
 import Interfaces.DataTypes
-import Interfaces.Utils
-import CMDL.Utils
-import CMDL.DataTypes
-import CMDL.DataTypesUtils
+import Interfaces.Utils(emptyIntIState, getAllEdges, initNodeInfo)
 
-import Proofs.AbstractState
-import Proofs.ComputeTheory
-import Proofs.TheoremHideShift
+import CMDL.DataTypes(CMDL_PrompterState(fileLoaded),
+                      CMDL_State(prompter, intState))
+import CMDL.DataTypesUtils(getAllNodes, add2hist, genErrorMsg,
+                           genMessage, getIdComorphism)
+import CMDL.Utils(decomposeIntoGoals, obtainEdgeList, obtainNodeList,
+                  prettyPrintErrList)
 
-import Static.GTheory
-import Static.DevGraph
-import Driver.AnaLib
+import Proofs.AbstractState(ProofState(selectedGoals), getProvers, initialState)
+import Proofs.ComputeTheory(computeTheory)
+import Proofs.TheoremHideShift(theoremHideShiftFromList)
 
-import Common.LibName
-import Common.Result
-import Common.Utils (trim)
+import Static.GTheory(G_theory(G_theory), sublogicOfTh)
+import Static.DevGraph(LibEnv, DGLinkLab, getDGNodeName)
+import Driver.AnaLib(anaLib, anaLibExt)
+import Driver.Options(defaultHetcatsOpts)
 
-import Data.Graph.Inductive.Graph
-import Data.List
+import Common.LibName(LIB_NAME(getLIB_ID))
+import Common.Utils(trim)
 
-import Driver.Options
+import Data.Graph.Inductive.Graph(LEdge)
+import Data.List((++), filter, find, take, concatMap)
 
-import Comorphisms.KnownProvers
-import Comorphisms.LogicGraph
-import Common.Result
-import Logic.Comorphism
-import Logic.Grothendieck
-import Logic.Prover
+import Comorphisms.KnownProvers(knownProversWithKind, shrinkKnownProvers)
+import Comorphisms.LogicGraph(logicGraph)
+import Common.Result(Diagnosis(diagString), Result(Result))
+import Logic.Comorphism(hasModelExpansion)
+import Logic.Grothendieck(findComorphismPaths)
+import Logic.Prover(ProverKind(ProveCMDLautomatic))
 
 
 -- | Wraps Result structure around the result of a dg all style command
@@ -81,7 +83,6 @@ commandDgAll fn state
                       -- the interface can recover
                return $ genErrorMsg "No library loaded" state
     Just ist ->
-       do
         case fn (i_ln ist) (i_libEnv ist) of
          Result _ (Just nwLibEnv) ->
          -- Name of function is not known here, so an empty text is
@@ -92,7 +93,7 @@ commandDgAll fn state
                            i_state=Just$ emptyIntIState nwLibEnv $ i_ln ist}
               }
          Result diag Nothing -> return $ genErrorMsg
-                                     (concat $ map diagString diag) state
+                                     (concatMap diagString diag) state
 
 
 -- | Generic function for a dg command, all other dg
@@ -121,12 +122,11 @@ commandDg fn input state
             -- compute the list of edges from the input
             (errs',listEdges) = obtainEdgeList edg nbEdg lsNodes
                               lsEdges
-            tmpErrs'  = tmpErrs ++ (prettyPrintErrList errs')
+            tmpErrs'  = tmpErrs ++ prettyPrintErrList errs'
         case listEdges of
          [] -> return $ genErrorMsg (tmpErrs' ++ "No edge in input string\n")
                               state
          _  ->
-           do
             case fn (i_ln ist) listEdges (i_libEnv ist) of
              Result _ (Just nwLibEnv) ->
                -- name added later !!
@@ -137,7 +137,7 @@ commandDg fn input state
                           i_state=Just$ emptyIntIState nwLibEnv $ i_ln ist}
                         }
              Result diag Nothing -> return $ genErrorMsg
-                        (concat $ map diagString diag) state
+                        (concatMap diagString diag) state
 
 
 -- | The function 'cUse' implements the Use commands, i.e.
@@ -189,7 +189,7 @@ cDgThmHideShift input state
          do
           let lsNodes = getAllNodes dgState
               (errs',listNodes) = obtainNodeList nds lsNodes
-              tmpErrs' = tmpErrs ++ (prettyPrintErrList errs')
+              tmpErrs' = tmpErrs ++ prettyPrintErrList errs'
           case listNodes of
            [] -> return $ genErrorMsg (tmpErrs'++"No nodes in input string\n")
                                  state
@@ -200,7 +200,7 @@ cDgThmHideShift input state
                                      listNodes (i_libEnv dgState)
               -- diag not used, how should it?
              case nwLibEnv of
-              Nothing -> return $ genErrorMsg (concat $ map diagString diag)
+              Nothing -> return $ genErrorMsg (concatMap diagString diag)
                                   state
                -- ADD TO HISTORY ??
               Just newEnv ->
@@ -221,9 +221,7 @@ selectANode x dgState
     -- computes the theory of a given node
     -- (i.e. solves DGRef cases and so on,
     -- see CASL Reference Manual, p.294, Def 4.9)
-    gth n = computeTheory (i_libEnv dgState)
-                          (i_ln dgState)
-                          n
+    gth = computeTheory (i_libEnv dgState) (i_ln dgState)
     nodeName t=case find(\(n,_)-> n==t) $ getAllNodes dgState of
                 Nothing -> "Unknown node"
                 Just (_,ll)-> getDGNodeName ll
@@ -241,9 +239,7 @@ selectANode x dgState
          let sl = sublogicOfTh th
          tmp<-initialState
                 lid
-                (shows
-                   (getLIB_ID $ i_ln dgState) "_" ++(nodeName x)
-                )
+                (shows (getLIB_ID $ i_ln dgState) "_" ++ nodeName x)
                 th
                 (shrinkKnownProvers sl kpMap)
                 (getProvers ProveCMDLautomatic sl $
@@ -280,7 +276,7 @@ cDgSelect input state
           let lsNodes = getAllNodes dgState
               -- list of input nodes
               (errs',listNodes) = obtainNodeList nds lsNodes
-              tmpErrs' = tmpErrs ++ (prettyPrintErrList errs')
+              tmpErrs' = tmpErrs ++ prettyPrintErrList errs'
           case listNodes of
             [] -> return $ genErrorMsg(tmpErrs'++"No nodes in input string\n")
                               state

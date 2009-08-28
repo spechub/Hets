@@ -22,19 +22,20 @@ module CMDL.ConsCommands
 
 
 import Interfaces.DataTypes
-import Interfaces.Utils
+import Interfaces.Utils(checkConservativityEdge, checkConservativityNode,
+                        getAllEdges)
 
-import CMDL.DataTypes
-import CMDL.Utils
-import CMDL.DataTypesUtils
-import CMDL.ProveConsistency
-import CMDL.DgCommands
+import CMDL.DataTypes(CMDL_State(intState))
+import CMDL.DataTypesUtils(getAllNodes, add2hist, genErrorMsg, genMessage)
+import CMDL.Utils(arrowLink, decomposeIntoGoals, prettyPrintErrList)
+import CMDL.ProveConsistency(consCheckLoop, sigIntHandler)
+import CMDL.DgCommands(selectANode)
 
-import Proofs.AbstractState
+import Proofs.AbstractState(ProofState(..))
 -- import Proofs.TheoremHideShift
 
 import Static.DevGraph
-import Static.GTheory
+import Static.GTheory(G_theory(G_theory))
 
 -- import Logic.Logic (conservativityCheck)
 -- import Logic.Coerce (coerceSign, coerceMorphism)
@@ -44,17 +45,17 @@ import Static.GTheory
 
 -- import Common.Consistency
 -- import Common.ExtSign
-import Common.LibName
+import Common.LibName(LIB_NAME)
 -- import Common.Result as Res
 import qualified Common.OrderedMap as OMap
 
-import Control.Concurrent
-import Control.Concurrent.MVar
-import System.Posix.Signals
-import System.IO
-import Data.Graph.Inductive.Graph
-import Data.List
-import Data.Char
+import Control.Concurrent(forkIO)
+import Control.Concurrent.MVar(newEmptyMVar, newMVar, takeMVar)
+import System.Posix.Signals(Handler(Catch), installHandler, sigINT)
+import System.IO(IO)
+import Data.Graph.Inductive.Graph(LNode, LEdge)
+import Data.Char(String)
+import Data.List((++), map, groupBy, find, sortBy, concatMap)
 
 -- Command that processes the input and applies a
 -- conservativity check
@@ -90,9 +91,7 @@ cConservCheck input state =
          case edgLs++nbEdgLs of
           [] -> return $ genErrorMsg (tmpErrs ++ "No edge in input string\n")
                                                              nwst
-          _ ->
-           do
-              return $ genMessage tmpErrs
+          _ -> return $ genMessage tmpErrs
                          (concatMap (\(s1,s2) -> s1++" : "++s2++"\n")
                                        (edgLs ++ nbEdgLs) ) nwst
 
@@ -121,7 +120,6 @@ cConsistCheck state
     = case i_state $ intState state of
        Nothing -> return $ genErrorMsg "Nothing selected" state
        Just pS ->
-          do
            case elements pS of
             [] -> return $ genErrorMsg "Nothing selected" state
             ls ->
@@ -145,9 +143,8 @@ cConsistCheck state
               let nwls = concatMap (\(Element _ x) ->
                                                    selectANode x nwpS) ls
                   hst = concatMap(\(Element stt x) ->
-                                     (AxiomsChange (includedAxioms stt) x):
-                                     (GoalsChange (selectedGoals stt) x):
-                                        []) ls
+                                     [AxiomsChange (includedAxioms stt) x,
+                                      GoalsChange (selectedGoals stt) x]) ls
               return $ add2hist [(DgCommandChange $ i_ln nwpS),
                                  (ListChange hst)] $
                           state {
@@ -162,7 +159,6 @@ cConsistCheckAll state
    = case i_state $ intState state of
       Nothing -> return $ genErrorMsg "Nothing selected" state
       Just pS ->
-        do
          case elements pS of
           [] -> return $ genErrorMsg "Nothing selected" state
           ls ->
@@ -208,13 +204,12 @@ conservativityList lsN lsE le libname
                                                                 False)) l)
                                                   edgs
    (acc, libEnv') <- applyEdgeConservativity le libname edgtm [] lsN
-   allNodes <- applyNodeConservativity libEnv' libname 
-                 [ n | n<-lsN, getNodeConservativity n > None ] acc
-   return allNodes
+   applyNodeConservativity libEnv' libname 
+       [ n | n<-lsN, getNodeConservativity n > None ] acc
 
 applyNodeConservativity :: LibEnv -> LIB_NAME -> [LNode DGNodeLab] 
                         -> [(String, String)] -> IO ([(String, String)], LibEnv)
-applyNodeConservativity libEnv ln nds acc = do
+applyNodeConservativity libEnv ln nds acc =
   case nds of
     []            -> return (acc, libEnv)
     n@(_,nlab):ns -> do
@@ -234,13 +229,13 @@ applyEdgeConservativity le ln ls acc lsN
    case ls of
     [] -> return (acc,le)
     ((x,y,edgLab),vl):l ->
-      case vl of
-       True ->
+      if vl
+       then
         do
          (str,nwLe,_) <- checkConservativityEdge False (x,y,edgLab) le ln
-         let nm = (nameOf x lsN) ++ arrowLink edgLab ++ (nameOf y lsN)
+         let nm = nameOf x lsN ++ arrowLink edgLab ++ nameOf y lsN
          applyEdgeConservativity nwLe ln l ((nm, str) : acc) lsN
-       False ->
+       else
         do
          (str,nwLe,_) <- checkConservativityEdge False (x,y,edgLab) le ln
          let nm = nameOf x lsN ++ arrowLink edgLab

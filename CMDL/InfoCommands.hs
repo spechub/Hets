@@ -48,33 +48,36 @@ import GUI.Taxonomy
 import GUI.ShowGraph
 #endif
 
-import CMDL.DataTypes
-import CMDL.Utils
-import CMDL.Shell
-import CMDL.DataTypesUtils
+import CMDL.DataTypesUtils(genErrorMsg, genMessage,
+                           getAllGoalEdges, getAllGoalNodes, getTh)
+import CMDL.DataTypes(CMDL_PrompterState(fileLoaded),
+                      CMDL_State(prompter, intState), CMDL_UseTranslation(..))
+import CMDL.Shell(cDetails, nodeNames)
+import CMDL.Utils(createEdgeNames, decomposeIntoGoals,
+                  obtainEdgeList, obtainNodeList, prettyPrintErrList)
 
-import Static.GTheory
+import Static.GTheory(G_theory(G_theory), sublogicOfTh)
 import Static.DevGraph
-import Static.PrintDevGraph
+import Static.PrintDevGraph(dgLinkOriginHeader, dgOriginHeader)
 
-import Common.DocUtils
-import Common.AS_Annotation
-import Common.ExtSign
-import Common.Taxonomy
+import Common.DocUtils(showDoc)
+import Common.AS_Annotation(SenAttr(isAxiom))
+import Common.ExtSign(ExtSign(ExtSign))
+import Common.Taxonomy(TaxoGraphKind(..))
 import qualified Common.OrderedMap as OMap
 
-import Data.Graph.Inductive.Graph
+import Data.Graph.Inductive.Graph(LNode, LEdge)
+import Data.List((++), map, unwords, find, sort, unlines, concatMap)
 import qualified Data.Set as Set
-import Data.List
 import qualified Data.Map as Map
 
-import Logic.Logic
+import Logic.Logic(Sentences(sym_of))
 
-import Driver.Options
+import Driver.Options(defaultHetcatsOpts)
 
-import Interfaces.Command
+import Interfaces.Command(showCmd)
 import Interfaces.DataTypes
-import Interfaces.Utils
+import Interfaces.Utils(getAllEdges, getAllNodes)
 
 -- show list of all goals(i.e. prints their name)
 cShowDgGoals :: CMDL_State -> IO CMDL_State
@@ -107,8 +110,8 @@ getGoalThS useTrans x state
       let nwth = case th of
                   G_theory x1 x2 x3 thSens x4 ->
                     G_theory x1 x2 x3
-                       (OMap.filter (\s-> (not(isAxiom s)) &&
-                                          (not(isProvenSenStatus s)))
+                       (OMap.filter (\s-> not (isAxiom s) &&
+                                          not (isProvenSenStatus s))
                        thSens) x4
       in [showDoc nwth "\n"]
 
@@ -145,8 +148,8 @@ cShowTheoryGoals input state
            -- list of all goal theories
            nodeTh = concatMap (\x->case x of
                                   (n,_) ->getGoalThS Do_translate n state
-                                  ) $ listNodes
-           tmpErrs' = tmpErrs ++ (prettyPrintErrList errs')
+                                  ) listNodes
+           tmpErrs' = tmpErrs ++ prettyPrintErrList errs'
        return $ genMessage tmpErrs' (unlines nodeTh) state
 
 cShowNodeUGoals :: String -> CMDL_State -> IO CMDL_State
@@ -178,10 +181,10 @@ cShowNodeUGoals input state
                                  G_theory _ _ _ sens _->
                                   OMap.keys $
                                   OMap.filter
-                                  (\s -> (not $ isAxiom s) &&
-                                  (not $ isProvenSenStatus s))
+                                  (\s -> not (isAxiom s) &&
+                                         not (isProvenSenStatus s))
                                    sens) listNodes
-           tmpErrs' = tmpErrs ++ (prettyPrintErrList errs')
+           tmpErrs' = tmpErrs ++ prettyPrintErrList errs'
        return $ genMessage tmpErrs' (unlines goalNames) state
 
 cShowNodeUGoalsCurrent :: CMDL_State -> IO CMDL_State
@@ -198,8 +201,8 @@ cShowNodeUGoalsCurrent state
                                  G_theory _ _ _ sens _ ->
                                    OMap.keys $
                                    OMap.filter
-                                   (\s -> (not $ isAxiom s) &&
-                                   (not $ isProvenSenStatus s))
+                                   (\s -> not (isAxiom s) &&
+                                          not (isProvenSenStatus s))
                                    sens) $ elements pState
       return $ genMessage [] (unlines glls) state
 
@@ -227,10 +230,10 @@ cShowNodePGoals input state
                                   G_theory _ _ _ sens _ ->
                                    OMap.keys $
                                    OMap.filter
-                                   (\s -> (not $ isAxiom s)&&
-                                   (isProvenSenStatus s))
+                                   (\s -> not (isAxiom s) &&
+                                          isProvenSenStatus s)
                                    sens) listNodes
-            tmpErrs' = tmpErrs ++ (prettyPrintErrList errs')
+            tmpErrs' = tmpErrs ++ prettyPrintErrList errs'
         return $ genMessage tmpErrs' (unlines goalNames) state
 
 cShowNodeAxioms :: String -> CMDL_State -> IO CMDL_State
@@ -257,7 +260,7 @@ cShowNodeAxioms input state
                                G_theory _ _ _ sens _->
                                 OMap.keys $ OMap.filter
                                 isAxiom sens) listNodes
-           tmpErrs' = tmpErrs ++ (prettyPrintErrList errs')
+           tmpErrs' = tmpErrs ++ prettyPrintErrList errs'
        return $ genMessage tmpErrs' (unlines goalNames) state
 
 cShowNodePGoalsCurrent :: CMDL_State -> IO CMDL_State
@@ -275,9 +278,8 @@ cShowNodePGoalsCurrent state
                         G_theory _ _ _ sens _ ->
                          OMap.keys $
                          OMap.filter
-                         (\s -> (not $ isAxiom s) &&
-                         (isProvenSenStatus s)) sens) $
-                                   elements pState
+                         (\s -> not (isAxiom s) && isProvenSenStatus s) sens) $
+                                elements pState
       return $ genMessage [] (unlines glls) state
 
 cShowNodeAxiomsCurrent :: CMDL_State -> IO CMDL_State
@@ -342,7 +344,7 @@ cShowTheory useTrans input state
             -- list of theories that need to be printed
             thls =concatMap(\(x,_)->getThS useTrans x state) listNodes
          -- sort before printing !?
-            tmpErrs' = tmpErrs ++ (prettyPrintErrList errs')
+            tmpErrs' = tmpErrs ++ prettyPrintErrList errs'
         return $ genMessage tmpErrs' (unlines thls) state
 
 
@@ -369,31 +371,27 @@ showNodeInfo state (nb,nd)
                               (sublogicOfTh t) ++ "\n"
       -- compute the number of axioms by counting the
       -- number of symbols of the signature !?
-      nbAxm = "   number of axioms :"++(show $ OMap.size $
+      nbAxm = "   number of axioms :"++ show (OMap.size $
                                    OMap.filter isAxiom thSens) ++"\n"
       -- compute the number of symbols as the number of
       -- sentences that are axioms in the senstatus of the
       -- theory
-      nbSym = "   number of symbols :"++(show $
-                    Set.size $ sym_of x y)++ "\n"
+      nbSym = "   number of symbols :"++ show (Set.size $ sym_of x y) ++ "\n"
       -- compute the number of proven theorems as the
       -- number of sentences that have no theorem status
       -- left
-      nbThm = let n'=OMap.size $ OMap.filter (\s -> (not (isAxiom s))
-                      && (isProvenSenStatus s)) thSens
-              in "   number of proven theorems :"++
-                     (show n') ++ "\n"
+      nbThm = let n'=OMap.size $ OMap.filter (\s -> not (isAxiom s)
+                      && isProvenSenStatus s) thSens
+              in "   number of proven theorems :" ++ show n' ++ "\n"
       -- compute the number of unproven theorems as the
       -- sentences that have something in their theorem
       -- status
-      nbUThm = let n'=OMap.size $ OMap.filter(\s -> (not (isAxiom s))
-                       && (not (isProvenSenStatus s))) thSens
-               in "   number of unproven theorems :"++
-                     (show n') ++ "\n"
+      nbUThm = let n'= OMap.size $ OMap.filter(\s -> not (isAxiom s)
+                       && not (isProvenSenStatus s)) thSens
+               in "   number of unproven theorems :" ++ show n' ++ "\n"
       -- compute the final theory (i.e.just add partial
       -- results obtained before (sublogic, nbAxm..)
-      th' = "dgl_theory :\n"++ sublog ++ nbAxm
-                         ++ nbSym ++ nbThm ++ nbUThm
+      th' = "dgl_theory :\n"++ sublog ++ nbAxm ++ nbSym ++ nbThm ++ nbUThm
      in name' ++ orig' ++ th'
 
 
@@ -413,7 +411,7 @@ showEdgeInfo state (x, y, dglab)
                nameOf y ls
      orig = "dgl_origin : " ++ dgLinkOriginHeader (dgl_origin dglab)
      defS = "definition"
-     mkDefS = (++ " " ++ defS)
+     mkDefS = (++ ' ':defS)
      ltype= "dgl_type : " ++
        case edgeTypeModInc $  getRealDGLinkType dglab of
          GlobalDef -> mkDefS "global"
@@ -458,8 +456,7 @@ cInfoCurrent state
                                     $ elements ps
            -- obtain the selected nodes
            selN = concatMap (\x-> getNNb x ls) nodesNb
-       return $ genMessage [] (unlines
-                                  $ map (showNodeInfo state) selN) state
+       return $ genMessage [] (unlines $ map (showNodeInfo state) selN) state
 
 -- show all information of input
 cInfo::String -> CMDL_State -> IO CMDL_State
@@ -482,10 +479,9 @@ cInfo input state
             (errs',listNodes) = obtainNodeList nds lsNodes
             strsNode = map (showNodeInfo state) listNodes
             strsEdge = map (showEdgeInfo state) listEdges
-            tmpErrs' = tmpErrs ++ (prettyPrintErrList errs')
-            tmpErrs''= tmpErrs'++ (prettyPrintErrList errs'')
-        return $ genMessage tmpErrs'' (unlines (strsNode++strsEdge))
-                        state
+            tmpErrs' = tmpErrs ++ prettyPrintErrList errs'
+            tmpErrs''= tmpErrs'++ prettyPrintErrList errs''
+        return $ genMessage tmpErrs'' (unlines (strsNode ++ strsEdge)) state
 
 taxoShowGeneric:: TaxoGraphKind -> CMDL_State
                       -> [LNode DGNodeLab] -> IO()
@@ -496,7 +492,6 @@ taxoShowGeneric kind state ls
      case i_state $ intState state of
       Nothing -> return ()
       Just _ ->
-       do
        case getTh Do_translate nb state of
        -- the theory was computed
         Just th ->
@@ -564,7 +559,7 @@ cShowTaxonomy input state
         let ls = getAllNodes dgS
         -- list of input nodes
             (errs',lsNodes) = obtainNodeList nds ls
-            tmpErrs' = tmpErrs ++ (prettyPrintErrList errs')
+            tmpErrs' = tmpErrs ++ prettyPrintErrList errs'
         taxoShowGeneric KSubsort state lsNodes
         return $ genMessage tmpErrs' [] state
 
@@ -611,7 +606,7 @@ cShowConcept input state
         let ls = getAllNodes dgS
         -- list of input nodes
             (errs',lsNodes) = obtainNodeList nds ls
-            tmpErrs' = tmpErrs ++ (prettyPrintErrList errs')
+            tmpErrs' = tmpErrs ++ prettyPrintErrList errs'
         taxoShowGeneric KSubsort state lsNodes
         return $ genMessage tmpErrs' [] state
 
@@ -635,7 +630,7 @@ cNodeNumber input state
         -- nodes numbers to print
             ls = map(\ x -> showName (dgn_name $ snd x) ++ " is node number "
                                   ++ show (fst x)) listNodes
-            tmpErrs' = tmpErrs ++ (prettyPrintErrList errs')
+            tmpErrs' = tmpErrs ++ prettyPrintErrList errs'
         return $ genMessage tmpErrs' (unlines ls) state
 
 -- print the name of all edges
