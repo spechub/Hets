@@ -17,15 +17,15 @@ module CMDL.StdInterface
        , recursiveApplyUse
        )where
 
+import System.Console.Shell(CommandStyle(OnlyCommands), ShellDescription(..),
+                            initialShellDescription)
+import System.Console.Shell.Backend(BackendOutput(..))
+import System.IO(IO, putStr, stderr, hPutStr)
 
-import System.Console.Shell
-import System.Console.Shell.Backend
-import System.IO
-
-import CMDL.DataTypes
-import CMDL.DataTypesUtils
-import CMDL.Commands
-import CMDL.DgCommands
+import CMDL.DataTypesUtils(generatePrompter)
+import CMDL.DataTypes(CMDL_State)
+import CMDL.DgCommands(cUse)
+import CMDL.Commands(shellacCommands, shellacEvalFunc)
 
 
 stdShellDescription :: ShellDescription CMDL_State
@@ -52,6 +52,4 @@ recursiveApplyUse::[String] -> CMDL_State -> IO CMDL_State
 recursiveApplyUse ls state
  = case ls of
     []   -> return state
-    l:ll -> do
-             nwState <- cUse l state
-             recursiveApplyUse ll nwState
+    l:ll -> cUse l state >>= recursiveApplyUse ll

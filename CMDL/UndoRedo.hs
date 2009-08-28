@@ -15,13 +15,18 @@ module CMDL.UndoRedo
        , cRedo
        ) where
 
-import Interfaces.DataTypes
-import Interfaces.History
-import Interfaces.Command
-import CMDL.DataTypes
-import CMDL.DataTypesUtils
-import System.IO
-import Data.List
+
+import Data.List((++))
+
+import System.IO(IO)
+
+import Interfaces.History(redoOneStep, undoOneStep)
+import Interfaces.Command(showCmd)
+import Interfaces.DataTypes(IntHistory(undoList, redoList),
+                            CmdHistory(command), IntState(i_hist))
+
+import CMDL.DataTypesUtils(genMessage)
+import CMDL.DataTypes(CMDL_State(intState))
 
 -- | Undoes the last command entered
 cUndo :: CMDL_State -> IO CMDL_State

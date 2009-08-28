@@ -38,15 +38,19 @@ module CMDL.Utils
   ) where
 
 import Data.List
-import Data.Char
-import Data.Graph.Inductive.Graph
-import Static.GTheory
+import Data.Char(Char, String, isDigit, isSpace)
+import Data.Graph.Inductive.Graph(LNode, LEdge)
+
+import System.Environment(getEnv)
+import System.Directory(doesDirectoryExist, doesFileExist,
+                        getDirectoryContents)
+
+import Static.GTheory(G_theory(G_theory))
 import Static.DevGraph
-import System.Environment
-import System.Directory
-import Common.AS_Annotation
+
+import Common.AS_Annotation(SenAttr(isAxiom))
+import Common.Utils(trim, trimLeft)
 import qualified Common.OrderedMap as OMap
-import Common.Utils (trim, trimLeft)
 
 
 -- splits the paths in the PATH variable (separeted by
@@ -221,11 +225,11 @@ obtainNodeList lN allNodes
 nodeContainsGoals:: LNode DGNodeLab -> G_theory -> Bool
 nodeContainsGoals (_,l) th
  = -- (not (isDGRef l)) &&
-   ((case th of
+   (case th of
        G_theory _ _ _ sens _ ->
          not $ OMap.null $ OMap.filter
-           (\s-> (not (isAxiom s)) && (not (isProvenSenStatus s))) sens
-           ) || hasOpenNodeConsStatus False l)
+           (\ s -> not (isAxiom s) && not (isProvenSenStatus s)) sens) ||
+           hasOpenNodeConsStatus False l
 
 -- | Given an edge decides if it contains goals or not
 edgeContainsGoals:: LEdge DGLinkLab -> Bool
@@ -254,9 +258,9 @@ createEdgeNames lsN lsE
    edgs = groupBy ( \(x1,x2,_) (y1,y2,_)-> (x1,x2)==(y1,y2)) $
            sortBy ordFn lsE
    allEds= concatMap (\l -> case l of
-                             [(x,y,edgLab)]->[((nameOf x lsN) ++
-                                          (arrowLink edgLab) ++
-                                          (nameOf y lsN))]
+                             [(x,y,edgLab)]->[(nameOf x lsN ++
+                                          arrowLink edgLab ++
+                                          nameOf y lsN)]
                              _ -> map (\(x,y,edgLab) ->
                                    nameOf x lsN ++
                                    arrowLink edgLab ++
@@ -286,7 +290,7 @@ obtainEdgeList lsEdge lsNbEdge allNodes allEdges
        l1=concatMapAndSplit
             (\nme ->
                let allx  = words nme
-                   node1 = getNodeNb (allx!!0) allNodes
+                   node1 = getNodeNb (head allx) allNodes
                    node2 = getNodeNb (allx!!2) allNodes
                in
                 case node1 of
@@ -301,7 +305,7 @@ obtainEdgeList lsEdge lsNbEdge allNodes allEdges
        l2=mapAndSplit
            (\nme ->
               let allx = words nme
-                  node1= getNodeNb (allx!!0) allNodes
+                  node1= getNodeNb (head allx) allNodes
                   node2= getNodeNb (allx!!5) allNodes
                   nb   = read (allx!!3)
               in
@@ -353,16 +357,13 @@ unfinishedEdgeName :: String -> String
 unfinishedEdgeName input
  =
   -- we need a penultimum (the one before the last) function
-  let prevLast s = lastString $ reverse $ safeTail
-                                  $ reverse s
+  let prevLast = lastString . reverse . safeTail . reverse
   -- and the one before the penultimum
-      prevPrevLast s = lastString $ reverse $ safeTail $
-                              safeTail $  reverse s
-      prev2PrevLast s = lastString $ reverse $ safeTail $
-                             safeTail $ safeTail $ reverse s
-      prev3PrevLast s = lastString $ reverse $ safeTail $
-                          safeTail$ safeTail$ safeTail $
-                          reverse s
+      prevPrevLast = lastString . reverse . safeTail . safeTail .  reverse
+      prev2PrevLast = lastString . reverse . safeTail . safeTail . safeTail .
+                      reverse
+      prev3PrevLast = lastString . reverse . safeTail . safeTail . safeTail .
+                      safeTail . reverse
   in
   -- is the last character an empty space?
    if isSpace $ lastChar input

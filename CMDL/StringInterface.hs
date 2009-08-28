@@ -19,16 +19,15 @@ module CMDL.StringInterface
         , stringGetInput
         ) where
 
+import System.Console.Shell(CommandStyle(OnlyCommands), ShellDescription(..),
+                            initialShellDescription)
+import System.Console.Shell.Backend(ShellBackend(..))
+import System.IO(IO, stdout, putStrLn, hFlush)
 
-import System.Console.Shell
-import System.Console.Shell.Backend
-import System.IO
+import Control.Concurrent.MVar(MVar, newMVar, readMVar, swapMVar)
 
-import CMDL.DataTypes
-import CMDL.Commands
-
-
-import Control.Concurrent.MVar
+import CMDL.DataTypes(CMDL_State)
+import CMDL.Commands(shellacCommands, shellacEvalFunc)
 
 -- | Creates the Backend for reading from files
 stringBackend :: String -> ShellBackend (MVar String)
