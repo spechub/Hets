@@ -228,7 +228,7 @@ anaGenericity lg dg opts name
    (imps', nsigI, dg') <- anaImports lg dg opts (extName "I" name) imps
    case psps of
      [asp] -> do -- one parameter ...
-       (sp', nsigP, dg'') <- ana_SPEC False lg dg' nsigI name opts (item asp)
+       (sp', nsigP, dg'') <- anaSpec False lg dg' nsigI name opts (item asp)
        return (Genericity (Params [replaceAnnoted sp' asp]) imps' pos,
           GenSig nsigI [nsigP] $ JustNode nsigP, dg'')
      _ -> do -- ... and more parameters
@@ -252,7 +252,7 @@ anaParams lg dg nsigI opts name (Params asps) = do
           reverse pars, dg')
   where
   ana (sps', pars, dg1, n) sp = do
-    (sp', par, dg') <- ana_SPEC False lg dg1 nsigI n opts sp
+    (sp', par, dg') <- anaSpec False lg dg1 nsigI n opts sp
     return (sp' : sps', par : pars, dg', inc n)
 
 anaImports :: LogicGraph -> DGraph -> HetcatsOpts -> NodeName -> IMPORTED
@@ -264,7 +264,7 @@ anaImports lg dg opts name imps@(Imported asps) = do
     _ -> do
       let sp = Union asps nullRange
       (Union asps' _, nsig', dg') <-
-          ana_SPEC False lg dg (EmptyNode l) name opts sp
+          anaSpec False lg dg (EmptyNode l) name opts sp
       return (Imported asps', JustNode nsig', dg')
     -- ??? emptyExplicit stuff needs to be added here
 
@@ -299,7 +299,7 @@ anaLibItem lgraph opts topLns libenv dg itm = case itm of
   Arch_spec_defn asn asp pos -> do
     let asstr = tokStr asn
     analyzing opts $ "arch spec " ++ asstr
-    (archSig, dg', asp') <- liftR $ ana_ARCH_SPEC lgraph dg opts $ item asp
+    (archSig, dg', asp') <- liftR $ anaArchSpec lgraph dg opts $ item asp
     let asd' = Arch_spec_defn asn (replaceAnnoted asp' asp) pos
         genv = globalEnv dg'
     if Map.member asn genv
@@ -312,7 +312,7 @@ anaLibItem lgraph opts topLns libenv dg itm = case itm of
     analyzing opts $ "unit spec " ++ usstr
     l <- lookupCurrentLogic "Unit_spec_defn" lgraph
     (unitSig, dg', usp') <-
-        liftR $ ana_UNIT_SPEC lgraph dg opts (EmptyNode l) usp
+        liftR $ anaUnitSpec lgraph dg opts (EmptyNode l) usp
     let usd' = Unit_spec_defn usn usp' pos
         genv = globalEnv dg'
     if Map.member usn genv
@@ -376,7 +376,7 @@ anaViewDefn lgraph libenv dg opts vn gen vt gsis pos = do
     else do
       (gsigmaS', imor) <- gSigCoerce lgraph gsigmaS (Logic lidT)
       tmor <- gEmbedComorphism imor gsigmaS
-      emor <- fmap gEmbed $ ana_Gmaps lgraph opts pos gsigmaS' gsigmaT gsis
+      emor <- fmap gEmbed $ anaGmaps lgraph opts pos gsigmaS' gsigmaT gsis
       gmor <- comp tmor emor
       let vsig = ExtViewSig src gmor $ ExtGenSig gsig tar
       return (View_defn vn gen' vt' gsis pos,
@@ -397,9 +397,9 @@ anaViewType lg dg parSig opts name
               (View_type aspSrc aspTar pos) = do
   l <- lookupCurrentLogic "VIEW_TYPE" lg
   (spSrc', srcNsig, dg') <- adjustPos pos $
-     ana_SPEC False lg dg (EmptyNode l) (extName "S" name) opts (item aspSrc)
+     anaSpec False lg dg (EmptyNode l) (extName "S" name) opts (item aspSrc)
   (spTar', tarNsig, dg'') <- adjustPos pos $
-     ana_SPEC True lg dg' parSig (extName "T" name) opts (item aspTar)
+     anaSpec True lg dg' parSig (extName "T" name) opts (item aspTar)
   return (View_type (replaceAnnoted spSrc' aspSrc)
                     (replaceAnnoted spTar' aspTar)
                     pos,
