@@ -39,7 +39,7 @@ comment :: GenParser Char st Annotation
 comment = commentLine <|> commentGroup
 
 parseAnnoId :: GenParser Char st Id
-parseAnnoId = mixId keys keys where keys = ([], [])
+parseAnnoId = let keys = ([], []) in mixId keys keys
 
 charOrEof :: Char -> GenParser Char st ()
 charOrEof c = (char c >> return ()) <|> eof
@@ -83,16 +83,16 @@ mylines s = let strip = unwords . words in
 commentGroup :: GenParser Char st Annotation
 commentGroup = do
     p <- getPos
-    text_lines <- plainBlock "%{" "}%"
+    textLines <- plainBlock "%{" "}%"
     q <- getPos
     return $ Unparsed_anno Comment_start
-               (Group_anno $ mylines text_lines) (Range [p, dec q])
+               (Group_anno $ mylines textLines) (Range [p, dec q])
 
 annote :: GenParser Char st Annotation
-annote = anno_label <|> do
+annote = annoLabel <|> do
     p <- getPos
-    i <- try anno_ident
-    anno <- annote_group p i <|> annote_line p i
+    i <- try annoIdent
+    anno <- annoteGroup p i <|> annoteLine p i
     case parseAnno anno p of
       Left  err -> do
         setPosition (errorPos err)
@@ -101,27 +101,27 @@ annote = anno_label <|> do
                     (errorMessages err)))
       Right pa -> return pa
 
-anno_label :: GenParser Char st Annotation
-anno_label = do
+annoLabel :: GenParser Char st Annotation
+annoLabel = do
     p <- getPos
-    label_lines <- plainBlock "%(" ")%"
+    labelLines <- plainBlock "%(" ")%"
     q <- getPos
-    return $ Label (mylines label_lines) $ Range [p, dec q]
+    return $ Label (mylines labelLines) $ Range [p, dec q]
 
-anno_ident :: GenParser Char st Annote_word
-anno_ident = fmap Annote_word $ string percentS >>
+annoIdent :: GenParser Char st Annote_word
+annoIdent = fmap Annote_word $ string percentS >>
     (scanAnyWords <|>
      fail "wrong comment or annotation starting with a single %")
 
-annote_group :: Pos -> Annote_word -> GenParser Char st Annotation
-annote_group p s = do
-    annote_lines <- plainBlock "(" ")%"
+annoteGroup :: Pos -> Annote_word -> GenParser Char st Annotation
+annoteGroup p s = do
+    annoteLines <- plainBlock "(" ")%"
     q <- getPos
-    return $ Unparsed_anno s (Group_anno $ mylines annote_lines)
+    return $ Unparsed_anno s (Group_anno $ mylines annoteLines)
                $ Range [p, dec q]
 
-annote_line :: Pos -> Annote_word -> GenParser Char st Annotation
-annote_line p s = do
+annoteLine :: Pos -> Annote_word -> GenParser Char st Annotation
+annoteLine p s = do
     line <- manyTill anyChar newlineOrEof
     q <- getPos
     return $ Unparsed_anno s (mkLineAnno line) $ Range [p, dec q]
@@ -149,30 +149,29 @@ parseAnno anno sp =
     case anno of
     Unparsed_anno (Annote_word kw) txt qs ->
         case lookup kw $ swapTable semantic_anno_table of
-        Just sa -> semantic_anno sa txt sp
+        Just sa -> semanticAnno sa txt sp
         _  -> let nsp = Id.incSourceColumn sp (length kw + 1)
                   inp = annoArg txt
                   mkAssoc dir p = do
                         res <- p
                         return (Assoc_anno dir res qs) in
              Map.findWithDefault (Right anno) kw $ Map.map ( \ p ->
-                              parse_internal p nsp inp) $ Map.fromList
+                              parseInternal p nsp inp) $ Map.fromList
              [ (left_assocS, mkAssoc ALeft commaIds)
              , (right_assocS, mkAssoc ARight commaIds)
-             , (precS    , prec_anno qs)
-             , (displayS , display_anno qs)
-             , (numberS  , number_anno qs)
-             , (stringS  , string_anno qs)
-             , (listS    , list_anno qs)
-             , (floatingS, floating_anno qs) ]
+             , (precS    , precAnno qs)
+             , (displayS , displayAnno qs)
+             , (numberS  , numberAnno qs)
+             , (stringS  , stringAnno qs)
+             , (listS    , listAnno qs)
+             , (floatingS, floatingAnno qs) ]
     _ -> Right anno
 
 fromPos :: Pos -> SourcePos
 fromPos p = Pos.newPos (Id.sourceName p) (Id.sourceLine p) (Id.sourceColumn p)
 
-parse_internal :: GenParser Char () a -> Pos -> [Char]
-               -> Either ParseError a
-parse_internal p sp = parse
+parseInternal :: GenParser Char () a -> Pos -> String -> Either ParseError a
+parseInternal p sp = parse
   (do
     setPosition $ fromPos sp
     skip
@@ -200,23 +199,23 @@ caslListBrackets =
        (c, p) <- option ([], nullRange) $ comps ([], [])
        return $ Id l c p
 
-prec_anno, number_anno, string_anno, list_anno, floating_anno
+precAnno, numberAnno, stringAnno, listAnno, floatingAnno
     :: Range -> GenParser Char st Annotation
-prec_anno ps = do
-    left_ids <- braces commaIds
+precAnno ps = do
+    leftIds <- braces commaIds
     sign <- (try (string "<>") <|> string "<") << skip
-    right_ids <- braces commaIds
+    rightIds <- braces commaIds
     return $ Prec_anno
                (if sign == "<" then Lower else BothDirections)
-               left_ids
-               right_ids
+               leftIds
+               rightIds
                ps
 
-number_anno ps = do
+numberAnno ps = do
     n <- parseAnnoId
     return $ Number_anno n ps
 
-list_anno ps = do
+listAnno ps = do
     bs <- caslListBrackets
     commaT
     ni <- parseAnnoId
@@ -224,35 +223,36 @@ list_anno ps = do
     ci <- parseAnnoId
     return $ List_anno bs ni ci ps
 
-string_anno ps  = literal_2ids_anno ps String_anno
+stringAnno ps  = literal2idsAnno ps String_anno
 
-floating_anno ps = literal_2ids_anno ps Float_anno
+floatingAnno ps = literal2idsAnno ps Float_anno
 
-literal_2ids_anno :: Range -> (Id -> Id -> Range -> Annotation)
+literal2idsAnno :: Range -> (Id -> Id -> Range -> Annotation)
                 -> GenParser Char st Annotation
-literal_2ids_anno ps con = do
+literal2idsAnno ps con = do
     i1 <- parseAnnoId
     commaT
     i2 <- parseAnnoId
     return $ con i1 i2 ps
 
-display_anno :: Range -> GenParser Char st Annotation
-display_anno ps = do
+displayAnno :: Range -> GenParser Char st Annotation
+displayAnno ps = do
     ident <- parseAnnoId
-    tls <- many $ foldl1 (<|>) $ map disp_symb display_format_table
+    tls <- many $ foldl1 (<|>) $ map dispSymb display_format_table
     return (Display_anno ident tls ps)
-    where  disp_symb (df_symb, symb) =
-               do (try $ string $ percentS ++ symb) << skip
-                  str <- manyTill anyChar $ lookAhead $ charOrEof '%'
-                  return (df_symb, reverse $ dropWhile (`elem` whiteChars)
-                         $ reverse str)
 
-semantic_anno :: Semantic_anno -> Annote_text -> Pos
+dispSymb :: (Display_format, String)
+          -> GenParser Char st (Display_format, String)
+dispSymb (dfSymb, symb) = do
+  try (string $ percentS ++ symb) << skip
+  str <- manyTill anyChar $ lookAhead $ charOrEof '%'
+  return (dfSymb, reverse $ dropWhile (`elem` whiteChars) $ reverse str)
+
+semanticAnno :: Semantic_anno -> Annote_text -> Pos
               -> Either ParseError Annotation
-semantic_anno sa text sp =
+semanticAnno sa text sp =
   if all (`elem` whiteChars) $ annoArg text
   then Right . Semantic_anno sa
            $ Range [sp, Id.incSourceColumn sp $ length (show sa) - 3]
   else Left $ newErrorMessage
-           (UnExpect ("garbage after %"
-                      ++ lookupSemanticAnno sa)) $ fromPos sp
+           (UnExpect $ "garbage after %" ++ lookupSemanticAnno sa) $ fromPos sp
