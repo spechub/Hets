@@ -66,6 +66,7 @@ Executable hets
   build-depends:
       HTTP >= 4000.0.5
     , array >= 0.1.0.0
+    , aterm >= 0.1.0.0
     , base >= 4.0.0.0
     , containers >= 0.1.0.1
     , directory >= 1.0.0.0
