@@ -15,6 +15,7 @@ Static analysis of CASL (heterogeneous) structured specifications
 module Static.AnalysisStructured
     ( anaSpec
     , anaSpecTop
+    , anaUnion
     , getSpecAnnos
     , isStructured
     , anaRenaming
@@ -259,23 +260,10 @@ anaSpecAux conser addSyms lg dg nsig name opts sp = case sp of
            return (Reduction (replaceAnnoted sp1' asp) restr, ns,
                    insLink dg4 tmor' globalDef SeeTarget node1 node2)
   Union [] pos -> adjustPos pos $ fail "empty union"
-  Union asps pos ->
-   do let sps = map item asps
-      (sps', nsigs, dg', _) <-
-          let ana (sps1, nsigs, dg', n) sp' = do
-                (sp1, nsig', dg1) <- anaSpec addSyms lg dg' nsig n opts sp'
-                return (sp1 : sps1, nsig' : nsigs, dg1, inc n)
-           in foldM ana ([], [], dg, extName "U" name) sps
-      let nsigs' = reverse nsigs
-          adj = adjustPos pos
-      gbigSigma <- adj $ gsigManyUnion lg (map getSig nsigs')
-      let (ns@(NodeSig node _), dg2) = insGSig dg' name DGUnion gbigSigma
-          insE dgl (NodeSig n gsigma) = do
-            incl <- adj $ ginclusion lg gsigma gbigSigma
-            return $ insLink dgl incl globalDef SeeTarget n node
-      dg3 <- foldM insE dg2 nsigs'
-      return (Union (zipWith replaceAnnoted (reverse sps') asps)
-                    pos, ns, dg3)
+  Union asps pos -> do
+    (newAsps, _, ns, dg') <-  adjustPos pos $ anaUnion addSyms lg dg nsig
+      name opts asps
+    return (Union newAsps pos, ns, dg')
   Extension asps pos -> do
    (sps', nsig1', dg1, _, _) <- foldM (anaExtension lg opts pos)
      ([], nsig, dg, conser, addSyms) namedSps
@@ -451,6 +439,31 @@ anaSpecAux conser addSyms lg dg nsig name opts sp = case sp of
                    (replaceAnnoted sp1' asp1)
                    (replaceAnnoted sp2' asp2)
                    pos, nsig3, dg3)
+
+anaUnion :: Bool -> LogicGraph -> DGraph -> MaybeNode -> NodeName
+  -> HetcatsOpts -> [Annoted SPEC]
+  -> Result ([Annoted SPEC], [NodeSig], NodeSig, DGraph)
+anaUnion addSyms lg dg nsig name opts asps = case asps of
+  [] -> fail "empty union"
+  _ -> do
+      let sps = map item asps
+      (sps', nsigs, dg', _) <-
+          let ana (sps1, nsigs, dg', n) sp' = do
+                (sp1, nsig', dg1) <- anaSpec addSyms lg dg' nsig n opts sp'
+                return (sp1 : sps1, nsig' : nsigs, dg1, inc n)
+           in foldM ana ([], [], dg, extName "U" name) sps
+      let newAsps = zipWith replaceAnnoted (reverse sps') asps
+      case nsigs of
+        [ns] -> return (newAsps, nsigs, ns, dg')
+        _ -> do
+          let nsigs' = reverse nsigs
+          gbigSigma <- gsigManyUnion lg (map getSig nsigs')
+          let (ns@(NodeSig node _), dg2) = insGSig dg' name DGUnion gbigSigma
+              insE dgl (NodeSig n gsigma) = do
+                incl <- ginclusion lg gsigma gbigSigma
+                return $ insLink dgl incl globalDef SeeTarget n node
+          dg3 <- foldM insE dg2 nsigs'
+          return (newAsps, nsigs', ns, dg3)
 
 anaFitArgs :: LogicGraph -> HetcatsOpts -> SPEC_NAME -> MaybeNode
   -> ([FIT_ARG], DGraph, [(G_morphism, NodeSig)], NodeName)

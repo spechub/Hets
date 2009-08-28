@@ -217,56 +217,25 @@ alreadyDefined str = "Name " ++ str ++ " already defined"
 anaGenericity :: LogicGraph -> DGraph -> HetcatsOpts -> NodeName -> GENERICITY
   -> Result (GENERICITY, GenSig, DGraph)
 anaGenericity lg dg opts name
-    gen@(Genericity params@(Params psps) imps@(Imported isps) pos) =
-  case psps of
+    gen@(Genericity (Params psps) (Imported isps) pos) =
+  adjustPos pos $ case psps of
   [] -> do -- no parameter ...
     unless (null isps) $ plain_error ()
       "Parameterless specifications must not have imports" pos
     l <- lookupCurrentLogic "GENERICITY" lg
     return (gen, GenSig (EmptyNode l) [] $ EmptyNode l, dg)
   _ -> do
-   (imps', nsigI, dg') <- anaImports lg dg opts (extName "I" name) imps
-   case psps of
-     [asp] -> do -- one parameter ...
-       (sp', nsigP, dg'') <- anaSpec False lg dg' nsigI name opts (item asp)
-       return (Genericity (Params [replaceAnnoted sp' asp]) imps' pos,
-          GenSig nsigI [nsigP] $ JustNode nsigP, dg'')
-     _ -> do -- ... and more parameters
-       (params',nsigPs,dg'') <-
-           anaParams lg dg' nsigI opts (inc name) params
-       let adj = adjustPos pos
-       gsigmaP <- adj $ gsigManyUnion lg (map getSig nsigPs)
-       let (NodeSig node _, dg3) = insGSig dg'' name DGFormalParams gsigmaP
-           inslink dgl (NodeSig n sigma) = do
-             incl <- adj $ ginclusion lg sigma gsigmaP
-             return $ insLink dgl incl globalDef SeeTarget n node
-       dg4 <- foldM inslink dg3 nsigPs
-       return (Genericity params' imps' pos,
-         GenSig nsigI nsigPs $ JustNode $ NodeSig node gsigmaP, dg4)
-
-anaParams :: LogicGraph -> DGraph -> MaybeNode -> HetcatsOpts -> NodeName
-  -> PARAMS -> Result (PARAMS, [NodeSig], DGraph)
-anaParams lg dg nsigI opts name (Params asps) = do
-  (sps', pars, dg', _) <- foldM ana ([], [], dg, name) $ map item asps
-  return (Params $ zipWith replaceAnnoted (reverse sps') asps,
-          reverse pars, dg')
-  where
-  ana (sps', pars, dg1, n) sp = do
-    (sp', par, dg') <- anaSpec False lg dg1 nsigI n opts sp
-    return (sp' : sps', par : pars, dg', inc n)
-
-anaImports :: LogicGraph -> DGraph -> HetcatsOpts -> NodeName -> IMPORTED
-  -> Result (IMPORTED, MaybeNode, DGraph)
-anaImports lg dg opts name imps@(Imported asps) = do
-  l <- lookupCurrentLogic "IMPORTS" lg
-  case asps of
-    [] -> return (imps, EmptyNode l, dg)
-    _ -> do
-      let sp = Union asps nullRange
-      (Union asps' _, nsig', dg') <-
-          anaSpec False lg dg (EmptyNode l) name opts sp
-      return (Imported asps', JustNode nsig', dg')
-    -- ??? emptyExplicit stuff needs to be added here
+   l <- lookupCurrentLogic "IMPORTS" lg
+   (imps', nsigI, dg') <- case isps of
+     [] -> return ([], EmptyNode l, dg)
+     _ -> do
+      (is', _, nsig', dgI) <-
+        anaUnion False lg dg (EmptyNode l) (extName "I" name) opts isps
+      return (is', JustNode nsig', dgI)
+   (ps', nsigPs, ns, dg'') <-
+     anaUnion False lg dg' nsigI (extName "P" name) opts psps
+   return (Genericity (Params ps') (Imported imps') pos,
+     GenSig nsigI nsigPs $ JustNode ns, dg'')
 
 -- | analyse a LIB_ITEM
 anaLibItem :: LogicGraph -> HetcatsOpts -> LNS -> LibEnv -> DGraph -> LIB_ITEM
@@ -274,15 +243,16 @@ anaLibItem :: LogicGraph -> HetcatsOpts -> LNS -> LibEnv -> DGraph -> LIB_ITEM
 anaLibItem lgraph opts topLns libenv dg itm = case itm of
   Spec_defn spn gen asp pos -> do
     let spstr = tokStr spn
+        nName = makeName spn
     analyzing opts $ "spec " ++ spstr
     (gen', gsig@(GenSig _ _ allparams), dg') <-
-      liftR $ anaGenericity lgraph dg opts (extName "P" (makeName spn)) gen
+      liftR $ anaGenericity lgraph dg opts nName gen
     (sanno1, impliesA) <- liftR $ getSpecAnnos pos asp
     when impliesA $ liftR $ plain_error ()
        "unexpected initial %implies in spec-defn" pos
     (sp', body, dg'') <-
       liftR (anaSpecTop sanno1 True lgraph dg'
-             allparams (makeName spn) opts (item asp))
+             allparams nName opts (item asp))
     let libItem' = Spec_defn spn gen' (replaceAnnoted sp' asp) pos
         genv = globalEnv dg
     if Map.member spn genv
@@ -365,7 +335,7 @@ anaViewDefn :: LogicGraph -> LibEnv -> DGraph -> HetcatsOpts -> SIMPLE_ID
 anaViewDefn lgraph libenv dg opts vn gen vt gsis pos = do
   let vName = makeName vn
   (gen', gsig@(GenSig _ _ allparams), dg') <-
-       anaGenericity lgraph dg opts (extName "VG" vName) gen
+       anaGenericity lgraph dg opts vName gen
   (vt', (src@(NodeSig nodeS gsigmaS)
         , tar@(NodeSig nodeT gsigmaT@(G_sign lidT _ _))), dg'') <-
        anaViewType lgraph dg' allparams opts vName vt
