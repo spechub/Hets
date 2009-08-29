@@ -15,7 +15,7 @@ module Maude.Language (
     NamedSpec (..),
     maudeParser,
     parseFromFile,
-    parse
+    parse,
 ) where
 
 
@@ -34,11 +34,11 @@ import Data.List (nub)
 import Data.Maybe (fromJust, isNothing)
 
 
--- * The types we use for our parsers
+-- * Types
 
-data NamedSpec = ModName String
-               | ViewName String
-    deriving (Show, Read, Eq)
+data NamedSpec = ModName String     -- ^ A Module or Theory
+               | ViewName String    -- ^ A View
+               deriving (Show, Read, Eq)
 
 type Parsed = Either ParseError
 -- Result of a single component
@@ -52,13 +52,13 @@ type RecResult = (Set FilePath, MaudeResult)
 type MaudeResult = [NamedSpec]
 
 
--- * Generic parser combinators
+-- * Generic Parser combinators
 
--- | Run the given |parser| but return unit
+-- | Run the argument but return unit
 void :: (Monad m) => m a -> m ()
 void parser = parser >> return ()
 
--- | Run the given |parser| but return Nothing
+-- | Run the argument but return Nothing
 ignore :: (Monad m) => m a -> m (Maybe b)
 ignore parser = parser >> return Nothing
 
@@ -66,9 +66,10 @@ ignore parser = parser >> return Nothing
 succeed :: (Monad m) => a -> m (Maybe (Either b a))
 succeed = return . Just . Right
 
--- * A few helpers we need for Parsec.Language
 
--- | Run the given |parser| after ensuring we aren't looking at whitespace
+-- * Helper functions for Parsec.Language
+
+-- | Run the argument after ensuring we aren't looking at whitespace
 nonSpace :: CharParser () a -> CharParser () a
 nonSpace parser = notFollowedBy space >> parser
 
@@ -81,8 +82,9 @@ specialChars :: String
 specialChars = "()[]{},"
 
 
--- * The Parsec.Language definition of Maude
+-- * Maude in Parsec.Language
 
+-- | The Maude Parsec.Language.LanguageDef
 maudeLanguageDef :: Language.LanguageDef ()
 maudeLanguageDef = Language.emptyDef {
     -- TODO: Get comments right.
@@ -95,11 +97,12 @@ maudeLanguageDef = Language.emptyDef {
     Language.identLetter    = Token.opLetter maudeLanguageDef,
     Language.opStart        = anyChar,
     Language.opLetter       = let
-            special = backquote >>= flip option (oneOf specialChars)
-            other = noneOf specialChars
+        special = backquote >>= flip option (oneOf specialChars)
+        other = noneOf specialChars
         in nonSpace $ special <|> other
 }
 
+-- | The Maude Parsec.Token.TokenParser
 maudeTokenParser :: Token.TokenParser ()
 maudeTokenParser = Token.makeTokenParser maudeLanguageDef
 
@@ -117,23 +120,22 @@ dot :: CharParser () String
 dot = Token.dot maudeTokenParser
 
 
--- * A few more helpers for parsing Maude
+-- * Helper functions for parsing Maude
 
--- | Match any of the given strings as a |reserved| word
+-- | Match any of the arguments as @reserved@ words
 anyReserved :: [String] -> CharParser () ()
 anyReserved = choice . map reserved
 
 -- | Match any identifier or operator
--- Identifiers and operators are identical currently.
 something :: CharParser () String
 something = identifier
+-- Identifiers and operators are identical currently.
 
--- | Match a |dot|-terminated statement
+-- | Match a @dot@-terminated statement
 statement :: CharParser () [String]
 statement = manyTill something dot
 
 -- | Match the rest of a line
--- TODO: Figure out how the characters are interpreted by Maude.
 line :: CharParser () String
 line = manyTill anyChar $ eof <|> void (lexeme newline)
 
@@ -143,57 +145,55 @@ line = manyTill anyChar $ eof <|> void (lexeme newline)
 -- | Parse Maude source code
 toplevel :: TempListParser
 toplevel = let
-        components = [systemCmd, otherCmd, debuggerCmd, modul, theory, view]
+    components = [systemCmd, otherCmd, debuggerCmd, modul, theory, view]
     in whiteSpace >> many1 (choice components)
-
 
 -- | Parse a system command
 systemCmd :: TempParser
 systemCmd = let
-        otherSym = anyReserved
-            ["quit", "eof", "popd", "pwd", "cd", "push", "ls"]
-        other = ignore $ otherSym >> line
-        loadSym = anyReserved ["in", "load"]
-        load = do loadSym; name <- line; return $ Just $ Left name
+    otherSym = anyReserved
+               ["quit", "eof", "popd", "pwd", "cd", "push", "ls"]
+    other = ignore $ otherSym >> line
+    loadSym = anyReserved ["in", "load"]
+    load = do loadSym; name <- line; return $ Just $ Left name
     in load <|> other
 
 -- | Parse a command
 otherCmd :: TempParser
 otherCmd = let
-        symbol = anyReserved
-            ["select", "parse", "debug", "reduce", "rewrite",
-             "frewrite", "erewrite", "match", "xmatch", "search",
-             "continue", "loop", "trace", "print", "break", "show",
-             "do", "set"]
+    symbol = anyReserved
+             ["select", "parse", "debug", "reduce", "rewrite",
+              "frewrite", "erewrite", "match", "xmatch", "search",
+              "continue", "loop", "trace", "print", "break", "show",
+              "do", "set"]
     in ignore $ symbol >> statement
 
 -- | Parse a debugger command.
 debuggerCmd :: TempParser
 debuggerCmd = let symbol = anyReserved ["resume", "abort", "step", "where"]
-    in ignore $ symbol >> statement
-
+              in ignore $ symbol >> statement
 
 -- | Parse a Maude module
 modul :: TempParser
 modul = let
-        modul' start stop = do
-            reserved start
-            name <- identifier
-            manyTill something $ reserved "is"
-            manyTill statement $ reserved stop
-            succeed $ ModName name
+    modul' start stop = do
+        reserved start
+        name <- identifier
+        manyTill something $ reserved "is"
+        manyTill statement $ reserved stop
+        succeed $ ModName name
     in  modul' "fmod" "endfm"
     <|> modul' "mod"  "endm"
 
 -- | Parse a Maude theory
 theory :: TempParser
 theory = let
-        theory' start stop = do
-            reserved start
-            name <- identifier
-            reserved "is"
-            manyTill statement $ reserved stop
-            succeed $ ModName name
+    theory' start stop = do
+        reserved start
+        name <- identifier
+        reserved "is"
+        manyTill statement $ reserved stop
+        succeed $ ModName name
     in  theory' "fth" "endfth"
     <|> theory' "th"  "endth"
 
