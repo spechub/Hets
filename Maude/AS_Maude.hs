@@ -163,6 +163,12 @@ newtype OpId = OpId Qid
              deriving (Show, Read, Ord, Eq)
 
 
+-- * Construction
+
+-- | Create a Var Term from the arguments
+mkVar :: String -> Type -> Term
+mkVar = Var . mkSimpleId
+
 -- * Information Extraction
 
 -- | Extract the Type of a Term.
@@ -186,10 +192,6 @@ getIdentityMaybe = listToMaybe . mapMaybe getAttrTerm
 -- | Extract the identity Term from a list of attributes.
 getIdentity ::  [Attr] -> Term
 getIdentity = fromJust . getIdentityMaybe
-
-
-mkVar :: String -> Type -> Term
-mkVar str typ = Var (mkSimpleId str) typ
 
 -- * Attribute Classification
 
