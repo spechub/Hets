@@ -1,10 +1,10 @@
 {- |
 Module      :  $Header$
-Description :  Transformation between Haskell and Maude
-Copyright   :  (c) Adrian Riesco, Facultad de Informatica UCM 2009
+Description :  Translation from Haskell to Maude
+Copyright   :  (c) Martin Kuehl, Uni Bremen 2009
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
-Maintainer  :  ariesco@fdi.ucm.es
+Maintainer  :  mkhl@informatik.uni-bremen.de
 Stability   :  experimental
 Portability :  portable
 
@@ -21,17 +21,22 @@ import Common.DocUtils (Pretty(..))
 
 import Data.List (intersperse)
 
+-- * Combinators
 
+-- | Convert every item in @list@, combine with @dsep@, wrap with @wrap@.
 combine :: (Pretty a) => (Doc -> Doc) -> ([Doc] -> Doc) -> [a] -> Doc
 combine _ _ [] = empty
 combine wrap dsep list = wrap . dsep . map pretty $ list
 
+-- | Separate with spaces, wrap with parentheses.
 parenPretties :: (Pretty a) => [a] -> Doc
 parenPretties = combine parens hsep
 
+-- | Separate with spaces, wrap with square brackets.
 bracketPretties :: (Pretty a) => [a] -> Doc
 bracketPretties = combine brackets hsep
 
+-- | Separate with newlines, wrap with square brackets and newlines.
 combineHooks :: (Pretty a) => [a] -> Doc
 combineHooks = let bracketed doc = lbrack $+$ doc <> rbrack
     in combine bracketed vcat
@@ -43,6 +48,8 @@ prettySentence s1 s2 op t1 t2 cs as = hsep $ if null cs
     then [keyword s1, pretty t1, op, pretty t2, pretty as, dot]
     else [keyword s2, pretty t1, op, pretty t2, pretty cs, pretty as, dot]
 
+
+-- * Pretty instances
 
 instance Pretty Membership where
     pretty (Mb t s cs as) = prettySentence "mb" "cmb" colon t s cs as
