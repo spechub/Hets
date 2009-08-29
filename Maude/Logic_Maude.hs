@@ -49,9 +49,12 @@ instance Language Maude where
         [ "Maude - A High-Performance Rewriting Logic Framework"
         , "This logic is rewriting logic, a logic of concurrent change that"
         , "can naturally deal with state and with concurrent computations."
-        , "For an overview of Maude see <http://maude.cs.uiuc.edu/overview.html>."
-        , "For information about rewriting logic see <http://maude.cs.uiuc.edu/rwl.html>."
-        , "For information about the Maude project see <http://maude.cs.uiuc.edu/>." ]
+        , "For an overview of Maude see" ++
+          " <http://maude.cs.uiuc.edu/overview.html>."
+        , "For information about rewriting logic see" ++
+          " <http://maude.cs.uiuc.edu/rwl.html>."
+        , "For information about the Maude project see" ++
+          " <http://maude.cs.uiuc.edu/>." ]
 
 
 -- | Instance of Category for Maude
