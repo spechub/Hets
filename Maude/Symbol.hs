@@ -39,11 +39,11 @@ import qualified Data.Set as Set
 import qualified Data.Map as Map
 import qualified Common.Lib.Rel as Rel
 
-import Data.Maybe (fromJust)
 import Common.Id (Id, mkId, mkSimpleId, GetRange, getRange, nullRange)
-
 import Common.Doc
 import Common.DocUtils (Pretty(..))
+
+import Data.Maybe (fromJust)
 
 
 -- * Symbol type
@@ -54,7 +54,7 @@ data Symbol = Sort Qid
             | Labl Qid
             | Operator Qid Symbols Symbol
             | OpWildcard Qid
-    deriving (Show, Read, Ord, Eq)
+            deriving (Show, Read, Ord, Eq)
 type Symbols   = [Symbol]
 type SymbolSet = Set Symbol
 type SymbolMap = Map Symbol Symbol
@@ -113,7 +113,7 @@ toId = mkId . return . getName
 -- | Qualify the Symbol name with a Qid.
 qualify :: Qid -> Symbol -> Symbol
 qualify qid = let prepend sym = mkSimpleId $ concat [show qid, "$", show sym]
-    in mapName $ prepend . getName
+              in mapName $ prepend . getName
 
 
 isType :: Symbol -> Bool
@@ -195,7 +195,7 @@ sameKind rel s1 s2
     | all id [isOperator s1, isOpWildcard s2] = True
     | all isType [s1, s2] = typeSameKind rel s1 s2
     | all isOperator [s1, s2] = let
-            Operator _ dom1 _ = s1
-            Operator _ dom2 _ = s2
+        Operator _ dom1 _ = s1
+        Operator _ dom2 _ = s2
         in zipSameKind rel dom1 dom2
     | otherwise = False
