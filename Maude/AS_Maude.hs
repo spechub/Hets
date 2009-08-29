@@ -19,9 +19,9 @@ parser.
 
 module Maude.AS_Maude where
 
+import Common.Id (Token)
 import Common.Doc (specBraces, text)
 import Common.DocUtils (Pretty(..))
-import Common.Id (Token)
 
 type Qid = Token
 
