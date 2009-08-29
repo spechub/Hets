@@ -19,7 +19,7 @@ parser.
 
 module Maude.AS_Maude where
 
-import Common.Id (Token)
+import Common.Id (Token, mkSimpleId)
 import Common.Doc (specBraces, text)
 import Common.DocUtils (Pretty(..))
 
@@ -184,6 +184,9 @@ getAttrTerm attr = case attr of
 getIdentity ::  [Attr] -> Maybe Term
 getIdentity = listToMaybe . mapMaybe getAttrTerm
 
+
+mkVar :: String -> Type -> Term
+mkVar str typ = Var (mkSimpleId str) typ
 
 -- * Attribute Classification
 

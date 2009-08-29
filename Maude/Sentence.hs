@@ -23,7 +23,7 @@ import Maude.AS_Maude
 import Maude.Meta
 import Maude.Printing ()
 
-import Data.Maybe (mapMaybe, fromJust)
+import Data.Maybe (fromJust)
 
 import Common.Id (mkSimpleId)
 import Common.Doc (vcat)
@@ -88,7 +88,7 @@ fromSpec (Module _ _ stmts) = fromStatements stmts
 fromStatements :: [Statement] -> [Sentence]
 fromStatements stmts = let
     convert stmt = case stmt of
-        SubsortStmnt sbsrt -> [fromSubsort sbsrt]
+        SubsortStmnt sub -> [fromSubsort sub]
         OpStmnt op -> fromOperator op
         MbStmnt mb -> [Membership mb]
         EqStmnt eq -> [Equation eq]
@@ -96,17 +96,11 @@ fromStatements stmts = let
         _ -> []
     in concatMap convert stmts
 
--- | Check whether a Sentence is a Rule.
-isRule :: Sentence -> Bool
-isRule sent = case sent of
-    Rule _ -> True
-    _      -> False
-
 fromSubsort :: SubsortDecl -> Sentence
 fromSubsort (Subsort s1 s2) = Membership mb
-   where v = Var (mkSimpleId "V") (TypeSort s1)
-         cond = MbCond v s1
-         mb = Mb v s2 [cond] []
+    where var = mkVar "V" (TypeSort s1)
+          cond = MbCond var s1
+          mb = Mb var s2 [cond] []
 
 fromOperator :: Operator -> [Sentence]
 fromOperator (Op op_id ar co ats) = concat [comm_sens, assoc_sens, idem_sens,
@@ -129,20 +123,19 @@ fromOperator (Op op_id ar co ats) = concat [comm_sens, assoc_sens, idem_sens,
            rightId_sens = if any rightId ats
                          then rightIdEq (getName op_id) (head ar) (fromJust $ getIdentity ats) co
                          else []
-           
 
 commEq :: Qid -> Type -> Type -> Type -> [Sentence]
 commEq op ar1 ar2 co = [Equation $ Eq t1 t2 [] []]
-     where v1 = Var (mkSimpleId "v1") ar1
-           v2 = Var (mkSimpleId "v2") ar2
-           t1 = Apply op [v1, v2] co
-           t2 = Apply op [v2, v1] co
+    where v1 = mkVar "v1" ar1
+          v2 = mkVar "v2" ar2
+          t1 = Apply op [v1, v2] co
+          t2 = Apply op [v2, v1] co
 
 assocEq :: Qid -> Type -> Type -> Type -> [Sentence]
 assocEq op ar1 ar2 co = [eq]
-     where v1 = Var (mkSimpleId "v1") ar1
-           v2 = Var (mkSimpleId "v2") ar2
-           v3 = Var (mkSimpleId "v3") ar2
+     where v1 = mkVar "v1" ar1
+           v2 = mkVar "v2" ar2
+           v3 = mkVar "v3" ar2
            t1 = Apply op [v1, v2] co
            t2 = Apply op [t1, v3] co
            t3 = Apply op [v2, v3] co
@@ -156,7 +149,7 @@ idemEq op ar co = [Equation $ Eq t v [] []]
 
 identityEq :: Qid -> Type -> Term -> Type -> [Sentence]
 identityEq op ar1 idt co = [eq1, eq2]
-     where v = Var (mkSimpleId "v") ar1
+     where v = mkVar "v" ar1
            t1 = Apply op [v, idt] co
            t2 = Apply op [idt, v] co
            eq1 = Equation $ Eq t1 v [] []
@@ -164,14 +157,23 @@ identityEq op ar1 idt co = [eq1, eq2]
 
 leftIdEq :: Qid -> Type -> Term -> Type -> [Sentence]
 leftIdEq op ar1 idt co = [eq1, eq2]
-     where v = Var (mkSimpleId "v") ar1
+     where v = mkVar "v" ar1
            t = Apply op [idt, v] co
            eq1 = Equation $ Eq t v [] []
            eq2 = Equation $ Eq v t [] []
 
 rightIdEq :: Qid -> Type -> Term -> Type -> [Sentence]
 rightIdEq op ar1 idt co = [eq1, eq2]
-     where v = Var (mkSimpleId "v") ar1
+     where v = mkVar "v" ar1
            t = Apply op [v, idt] co
            eq1 = Equation $ Eq t v [] []
            eq2 = Equation $ Eq v t [] []
+
+
+-- * Tests
+
+-- | Check whether a Sentence is a Rule.
+isRule :: Sentence -> Bool
+isRule sent = case sent of
+    Rule _ -> True
+    _      -> False
