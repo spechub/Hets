@@ -23,7 +23,7 @@ import Common.Id (Token, mkSimpleId)
 import Common.Doc (specBraces, text)
 import Common.DocUtils (Pretty(..))
 
-import Data.Maybe (listToMaybe, mapMaybe)
+import Data.Maybe (fromJust, listToMaybe, mapMaybe)
 
 -- * Types
 
@@ -180,9 +180,12 @@ getAttrTerm attr = case attr of
     RightId term -> Just term
     _ -> Nothing
 
+getIdentityMaybe ::  [Attr] -> Maybe Term
+getIdentityMaybe = listToMaybe . mapMaybe getAttrTerm
+
 -- | Extract the identity Term from a list of attributes.
-getIdentity ::  [Attr] -> Maybe Term
-getIdentity = listToMaybe . mapMaybe getAttrTerm
+getIdentity ::  [Attr] -> Term
+getIdentity = fromJust . getIdentityMaybe
 
 
 mkVar :: String -> Type -> Term

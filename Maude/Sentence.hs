@@ -23,8 +23,6 @@ import Maude.AS_Maude
 import Maude.Meta
 import Maude.Printing ()
 
-import Data.Maybe (fromJust)
-
 import Common.Id (mkSimpleId)
 import Common.Doc (vcat)
 import Common.DocUtils (Pretty(..))
@@ -105,24 +103,24 @@ fromSubsort (Subsort s1 s2) = Membership mb
 fromOperator :: Operator -> [Sentence]
 fromOperator (Op op_id ar co ats) = concat [comm_sens, assoc_sens, idem_sens,
                                             id_sens, leftId_sens, rightId_sens]
-     where assoc_sens = if any assoc ats
-                        then assocEq (getName op_id) (head ar) (head $ tail ar) co
-                        else []
-           comm_sens = if any comm ats
-                       then commEq (getName op_id) (head ar) (head $ tail ar) co
-                       else []
-           idem_sens = if any idem ats
-                       then idemEq (getName op_id) (head ar) co
-                       else []
-           id_sens = if any idtty ats
-                     then identityEq (getName op_id) (head ar) (fromJust $ getIdentity ats) co
-                     else []
-           leftId_sens = if any leftId ats
-                         then leftIdEq (getName op_id) (head ar) (fromJust $ getIdentity ats) co
-                         else []
-           rightId_sens = if any rightId ats
-                         then rightIdEq (getName op_id) (head ar) (fromJust $ getIdentity ats) co
-                         else []
+    where assoc_sens = if any assoc ats
+              then assocEq (getName op_id) (head ar) (head $ tail ar) co
+              else []
+          comm_sens = if any comm ats
+              then commEq (getName op_id) (head ar) (head $ tail ar) co
+              else []
+          idem_sens = if any idem ats
+              then idemEq (getName op_id) (head ar) co
+              else []
+          id_sens = if any idtty ats
+              then identityEq (getName op_id) (head ar) (getIdentity ats) co
+              else []
+          leftId_sens = if any leftId ats
+              then leftIdEq (getName op_id) (head ar) (getIdentity ats) co
+              else []
+          rightId_sens = if any rightId ats
+              then rightIdEq (getName op_id) (head ar) (getIdentity ats) co
+              else []
 
 commEq :: Qid -> Type -> Type -> Type -> [Sentence]
 commEq op ar1 ar2 co = [Equation $ Eq t1 t2 [] []]
@@ -133,41 +131,41 @@ commEq op ar1 ar2 co = [Equation $ Eq t1 t2 [] []]
 
 assocEq :: Qid -> Type -> Type -> Type -> [Sentence]
 assocEq op ar1 ar2 co = [eq]
-     where v1 = mkVar "v1" ar1
-           v2 = mkVar "v2" ar2
-           v3 = mkVar "v3" ar2
-           t1 = Apply op [v1, v2] co
-           t2 = Apply op [t1, v3] co
-           t3 = Apply op [v2, v3] co
-           t4 = Apply op [v1, t3] co
-           eq = Equation $ Eq t2 t4 [] []
+    where v1 = mkVar "v1" ar1
+          v2 = mkVar "v2" ar2
+          v3 = mkVar "v3" ar2
+          t1 = Apply op [v1, v2] co
+          t2 = Apply op [t1, v3] co
+          t3 = Apply op [v2, v3] co
+          t4 = Apply op [v1, t3] co
+          eq = Equation $ Eq t2 t4 [] []
 
 idemEq :: Qid -> Type -> Type -> [Sentence]
 idemEq op ar co = [Equation $ Eq t v [] []]
-     where v = Apply (mkSimpleId "v") [] ar
-           t = Apply op [v, v] co
+    where v = Apply (mkSimpleId "v") [] ar
+          t = Apply op [v, v] co
 
 identityEq :: Qid -> Type -> Term -> Type -> [Sentence]
 identityEq op ar1 idt co = [eq1, eq2]
-     where v = mkVar "v" ar1
-           t1 = Apply op [v, idt] co
-           t2 = Apply op [idt, v] co
-           eq1 = Equation $ Eq t1 v [] []
-           eq2 = Equation $ Eq t2 v [] []
+    where v = mkVar "v" ar1
+          t1 = Apply op [v, idt] co
+          t2 = Apply op [idt, v] co
+          eq1 = Equation $ Eq t1 v [] []
+          eq2 = Equation $ Eq t2 v [] []
 
 leftIdEq :: Qid -> Type -> Term -> Type -> [Sentence]
 leftIdEq op ar1 idt co = [eq1, eq2]
-     where v = mkVar "v" ar1
-           t = Apply op [idt, v] co
-           eq1 = Equation $ Eq t v [] []
-           eq2 = Equation $ Eq v t [] []
+    where v = mkVar "v" ar1
+          t = Apply op [idt, v] co
+          eq1 = Equation $ Eq t v [] []
+          eq2 = Equation $ Eq v t [] []
 
 rightIdEq :: Qid -> Type -> Term -> Type -> [Sentence]
 rightIdEq op ar1 idt co = [eq1, eq2]
-     where v = mkVar "v" ar1
-           t = Apply op [v, idt] co
-           eq1 = Equation $ Eq t v [] []
-           eq2 = Equation $ Eq v t [] []
+    where v = mkVar "v" ar1
+          t = Apply op [v, idt] co
+          eq1 = Equation $ Eq t v [] []
+          eq2 = Equation $ Eq v t [] []
 
 
 -- * Tests
