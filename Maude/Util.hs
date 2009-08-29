@@ -13,18 +13,9 @@ Utility functions used in the Maude language module.
 
 module Maude.Util where
 
-import Maude.AS_Maude
-
 import Data.Map (Map)
 import qualified Data.Map as Map
 
 
 mapAsFunction :: (Ord a) => Map a a -> (a -> a)
 mapAsFunction mp name = Map.findWithDefault name name mp
-
-
-termType :: Term -> Type
-termType term = case term of
-    Const _ typ   -> typ
-    Var _ typ     -> typ
-    Apply _ _ typ -> typ

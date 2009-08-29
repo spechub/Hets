@@ -66,6 +66,6 @@ instance AsSymbol Term where
         Const _ _ -> Nothing
         Var _ _   -> Nothing
         Apply op ts tp -> let
-                dom = map (asSymbol . termType) ts
+                dom = map (asSymbol . getTermType) ts
                 cod = asSymbol tp
             in Just $ Operator op dom cod
