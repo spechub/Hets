@@ -30,10 +30,13 @@ import Common.Doc (vcat)
 import Common.DocUtils (Pretty(..))
 
 
+-- * Types
+
+-- | A Membership, Equation or Rule.
 data Sentence = Membership Membership
               | Equation Equation
               | Rule Rule
-    deriving (Show, Read, Ord, Eq)
+              deriving (Show, Read, Ord, Eq)
 
 
 instance Pretty Sentence where
@@ -75,23 +78,25 @@ instance HasLabels Sentence where
         Rule rl       -> Rule $ mapLabels mp rl
 
 
--- | Extract the |Sentence|s of a |Module|
+-- * Contruction
+
+-- | Extract the Sentences of a Module.
 fromSpec :: Module -> [Sentence]
 fromSpec (Module _ _ stmts) = fromStatements stmts
 
--- | Extract the |Sentence|s from the |Statement|s
+-- | Extract the Sentences from the Statements.
 fromStatements :: [Statement] -> [Sentence]
 fromStatements stmts = let
-        convert stmt = case stmt of
-            SubsortStmnt sbsrt -> Just [fromSubsort sbsrt]
-            OpStmnt op -> Just $ fromOperator op
-            MbStmnt mb -> Just [Membership mb]
-            EqStmnt eq -> Just [Equation eq]
-            RlStmnt rl -> Just [Rule rl]
-            _ -> Nothing
-    in concat $ mapMaybe convert stmts
+    convert stmt = case stmt of
+        SubsortStmnt sbsrt -> [fromSubsort sbsrt]
+        OpStmnt op -> fromOperator op
+        MbStmnt mb -> [Membership mb]
+        EqStmnt eq -> [Equation eq]
+        RlStmnt rl -> [Rule rl]
+        _ -> []
+    in concatMap convert stmts
 
--- | Check whether a |Sentence| is a |Rule|
+-- | Check whether a Sentence is a Rule.
 isRule :: Sentence -> Bool
 isRule sent = case sent of
     Rule _ -> True
