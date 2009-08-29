@@ -16,10 +16,10 @@ module Maude.Printing () where
 import Maude.AS_Maude
 import Maude.Symbol
 
-import Data.List (intersperse)
-
 import Common.Doc
 import Common.DocUtils (Pretty(..))
+
+import Data.List (intersperse)
 
 
 combine :: (Pretty a) => (Doc -> Doc) -> ([Doc] -> Doc) -> [a] -> Doc

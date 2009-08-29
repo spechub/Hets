@@ -1,5 +1,4 @@
 
-
 module Maude.PreComorphism where
 
 import Data.Maybe
