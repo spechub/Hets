@@ -12,19 +12,25 @@ Definition of symbols for Maude.
 -}
 
 module Maude.Symbol (
+    -- * Types
+    -- ** The Symbol type
     Symbol(..),
+    -- ** Auxiliary types
     Symbols,
     SymbolSet,
     SymbolMap,
     SymbolRel,
+    -- * Conversion
     toId,
     qualify,
     asSort,
     asKind,
     toType,
     toOperator,
+    -- * Construction
     mkOpTotal,
     mkOpPartial,
+    -- * Testing
     sameKind,
 ) where
 
@@ -45,8 +51,6 @@ import Common.DocUtils (Pretty(..))
 
 import Data.Maybe (fromJust)
 
-
--- * Symbol type
 
 -- | Represents a Sort, Kind, Label, or Operator.
 data Symbol = Sort Qid                      -- ^ A Sort Symbol
@@ -90,7 +94,14 @@ instance GetRange Symbol where
     getRange _ = nullRange
 
 
--- * Conversion
+-- | Convert Symbol to Id.
+toId :: Symbol -> Id
+toId = mkId . return . getName
+
+-- | Qualify the Symbol name with a Qid.
+qualify :: Qid -> Symbol -> Symbol
+qualify qid = let prepend sym = mkSimpleId $ concat [show qid, "$", show sym]
+              in mapName $ prepend . getName
 
 -- | Convert Symbol to Symbol, changing Kinds to Sorts.
 asSort :: Symbol -> Symbol
@@ -103,17 +114,6 @@ asKind :: Symbol -> Symbol
 asKind symb = case symb of
     Sort qid -> Kind qid
     _ -> symb
-
-
--- | Convert Symbol to Id.
-toId :: Symbol -> Id
-toId = mkId . return . getName
-
-
--- | Qualify the Symbol name with a Qid.
-qualify :: Qid -> Symbol -> Symbol
-qualify qid = let prepend sym = mkSimpleId $ concat [show qid, "$", show sym]
-              in mapName $ prepend . getName
 
 
 isType :: Symbol -> Bool
@@ -154,8 +154,6 @@ toOperator :: Symbol -> Operator
 toOperator = fromJust . toOperatorMaybe
 
 
--- * Construction
-
 -- | Create a total operator Symbol with the given profile.
 mkOpTotal :: Qid -> [Qid] -> Qid -> Symbol
 mkOpTotal qid dom cod = Operator qid (map Sort dom) (Sort cod)
@@ -164,8 +162,6 @@ mkOpTotal qid dom cod = Operator qid (map Sort dom) (Sort cod)
 mkOpPartial :: Qid -> [Qid] -> Qid -> Symbol
 mkOpPartial qid dom cod = Operator qid (map Sort dom) (Kind cod)
 
-
--- * Testing
 
 typeSameKind :: SymbolRel -> Symbol -> Symbol -> Bool
 typeSameKind rel s1 s2 = let

@@ -12,9 +12,13 @@ Definition of sentences for Maude.
 -}
 
 module Maude.Sentence (
+    -- * Types
+    -- ** The Sentence type
     Sentence(..),
+    -- * Contruction
     fromSpec,
     fromStatements,
+    -- * Testing
     isRule,
 ) where
 
@@ -27,8 +31,6 @@ import Common.Id (mkSimpleId)
 import Common.Doc (vcat)
 import Common.DocUtils (Pretty(..))
 
-
--- * Types
 
 -- | A Membership, Equation or Rule.
 data Sentence = Membership Membership
@@ -76,13 +78,11 @@ instance HasLabels Sentence where
         Rule rl       -> Rule $ mapLabels mp rl
 
 
--- * Contruction
-
--- | Extract the Sentences of a Module.
+-- | Extract the Sentences from the given Module.
 fromSpec :: Module -> [Sentence]
 fromSpec (Module _ _ stmts) = fromStatements stmts
 
--- | Extract the Sentences from the Statements.
+-- | Extract the Sentences from the given Statements.
 fromStatements :: [Statement] -> [Sentence]
 fromStatements stmts = let
     convert stmt = case stmt of
@@ -168,9 +168,7 @@ rightIdEq op ar1 idt co = [eq1, eq2]
           eq2 = Equation $ Eq v t [] []
 
 
--- * Tests
-
--- | Check whether a Sentence is a Rule.
+-- | True iff the given Sentence is a Rule.
 isRule :: Sentence -> Bool
 isRule sent = case sent of
     Rule _ -> True
