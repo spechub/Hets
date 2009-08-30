@@ -1,6 +1,6 @@
 {- |
 Module      :  $Header$
-Description :  abstract maude syntax
+Description :  Abstract Maude Syntax
 Copyright   :  (c) DFKI GmbH 2009
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
@@ -162,23 +162,22 @@ newtype LabelId = LabelId Qid
 newtype OpId = OpId Qid
              deriving (Show, Read, Ord, Eq)
 
-
 -- * Construction
 
--- | Create a Var Term from the arguments
+-- | Create a 'Var' 'Term' from the given arguments.
 mkVar :: String -> Type -> Term
 mkVar = Var . mkSimpleId
 
 -- * Information Extraction
 
--- | Extract the Type of a Term.
+-- | Extract the 'Type' from the given 'Term'.
 getTermType :: Term -> Type
 getTermType term = case term of
     Const _ typ   -> typ
     Var _ typ     -> typ
     Apply _ _ typ -> typ
 
--- | Extract the identity Term from an attribute.
+-- | Extract the 'identity' Term from the given attribute.
 getAttrTerm :: Attr -> Maybe Term
 getAttrTerm attr = case attr of
     Id term      -> Just term
@@ -189,25 +188,25 @@ getAttrTerm attr = case attr of
 getIdentityMaybe ::  [Attr] -> Maybe Term
 getIdentityMaybe = listToMaybe . mapMaybe getAttrTerm
 
--- | Extract the identity Term from a list of attributes.
+-- | Extract the identity 'Term' from the given list of attributes.
 getIdentity ::  [Attr] -> Term
 getIdentity = fromJust . getIdentityMaybe
 
 -- * Attribute Classification
 
--- | True iff the argument is the assoc attribute.
+-- | True iff the argument is the @assoc@ attribute.
 assoc :: Attr -> Bool
 assoc attr = case attr of
     Assoc -> True
     _ -> False
 
--- | True iff the argument is the comm attribute.
+-- | True iff the argument is the @comm@ attribute.
 comm :: Attr -> Bool
 comm attr = case attr of
     Comm -> True
     _ -> False
 
--- | True iff the argument is the idem attribute.
+-- | True iff the argument is the @idem@ attribute.
 idem :: Attr -> Bool
 idem attr = case attr of
     Idem -> True
@@ -231,13 +230,13 @@ rightId attr = case attr of
     RightId _ -> True
     _ -> False
 
--- | True iff the argument is the ctor attribute.
+-- | True iff the argument is the @ctor@ attribute.
 ctor :: Attr -> Bool
 ctor attr = case attr of
     Ctor -> True
     _ -> False
 
--- | True iff the argument is the owise attribute.
+-- | True iff the argument is the @owise@ attribute.
 owise :: StmntAttr -> Bool
 owise attr = case attr of
     Owise -> True
