@@ -169,21 +169,19 @@ mkOpPartial qid dom cod = Operator qid (map Sort dom) (Kind cod)
 
 typeSameKind :: SymbolRel -> Symbol -> Symbol -> Bool
 typeSameKind rel s1 s2 = let
-        preds1 = Rel.predecessors rel s1
-        preds2 = Rel.predecessors rel s2
-        succs1 = Rel.succs rel s1
-        succs2 = Rel.succs rel s2
-        psect  = Set.intersection preds1 preds2
-        ssect  = Set.intersection succs1 succs2
-    in any id [
-        s1 == s2,
-        Set.member s2 preds1,
-        Set.member s1 preds2,
-        Set.member s2 succs1,
-        Set.member s1 succs2,
-        not $ Set.null psect,
-        not $ Set.null ssect
-    ]
+    preds1 = Rel.predecessors rel s1
+    preds2 = Rel.predecessors rel s2
+    succs1 = Rel.succs rel s1
+    succs2 = Rel.succs rel s2
+    psect  = Set.intersection preds1 preds2
+    ssect  = Set.intersection succs1 succs2
+    in any id [ s1 == s2
+              , Set.member s2 preds1
+              , Set.member s1 preds2
+              , Set.member s2 succs1
+              , Set.member s1 succs2
+              , not $ Set.null psect
+              , not $ Set.null ssect ]
 
 zipSameKind :: SymbolRel -> Symbols -> Symbols -> Bool
 zipSameKind rel s1 s2 = all id $ zipWith (sameKind rel) s1 s2
