@@ -9,6 +9,12 @@ Stability   :  experimental
 Portability :  portable
 
 Translations from Haskell to Maude.
+
+The translations from Haskell datatypes to Maude source code are
+implemented as instances of the typeclass 'Pretty' as defined in the
+modules "Common.Doc" and "Common.DocUtils", which see.
+
+Nothing else is exported by this module.
 -}
 
 module Maude.Printing () where
@@ -39,17 +45,19 @@ bracketPretties = combine brackets hsep
 -- | Separate with newlines, wrap with square brackets and newlines.
 combineHooks :: (Pretty a) => [a] -> Doc
 combineHooks = let bracketed doc = lbrack $+$ doc <> rbrack
-    in combine bracketed vcat
+               in combine bracketed vcat
 
-
+-- | Assemble a pretty-printing for all parts of a Sentence,
+-- distinguishing conditional Sentence from simple ones.
 prettySentence :: (Pretty a, Pretty b) =>
     String -> String -> Doc -> a -> b -> [Condition] -> [StmntAttr] -> Doc
 prettySentence s1 s2 op t1 t2 cs as = hsep $ if null cs
     then [keyword s1, pretty t1, op, pretty t2, pretty as, dot]
     else [keyword s2, pretty t1, op, pretty t2, pretty cs, pretty as, dot]
 
-
 -- * Pretty instances
+
+-- ** Pretty Sentences
 
 instance Pretty Membership where
     pretty (Mb t s cs as) = prettySentence "mb" "cmb" colon t s cs as
@@ -60,7 +68,7 @@ instance Pretty Equation where
 instance Pretty Rule where
     pretty (Rl t1 t2 cs as) = prettySentence "rl" "crl" implies t1 t2 cs as
 
-
+-- ** Pretty Conditions
 instance Pretty Condition where
     pretty cond = let pretty' x y z = hsep [pretty x, y, pretty z]
         in case cond of
@@ -70,6 +78,7 @@ instance Pretty Condition where
             MatchCond t1 t2 -> pretty' t1 (text ":=") t2
     pretties = combine (text "if" <+>) (hsep . intersperse andDoc)
 
+-- ** Pretty Attributes
 
 instance Pretty Attr where
     pretty attr = case attr of
@@ -94,7 +103,6 @@ instance Pretty Attr where
         Special hooks -> text "special" <+> combineHooks hooks
     pretties = bracketPretties
 
-
 instance Pretty StmntAttr where
     pretty attr = case attr of
         Owise        -> text "owise"
@@ -104,6 +112,7 @@ instance Pretty StmntAttr where
         Print _      -> empty
     pretties = bracketPretties
 
+-- ** Pretty Hooks
 
 instance Pretty Hook where
     pretty hook = case hook of
@@ -115,6 +124,7 @@ instance Pretty Hook where
             [text "term-hook", pretty qid, parens $ pretty term]
     pretties = combine parens vcat
 
+-- ** Pretty Terms
 
 instance Pretty Term where
     pretty term = case term of
@@ -123,6 +133,7 @@ instance Pretty Term where
         Apply qid ts _ -> pretty qid <> (parens . pretty $ ts)
     pretties = combine id sepByCommas
 
+-- ** Pretty Identifiers
 
 instance Pretty Type where
     pretty typ = case typ of
