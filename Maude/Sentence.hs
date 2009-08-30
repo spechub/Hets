@@ -22,7 +22,6 @@ module Maude.Sentence (
     isRule,
 ) where
 
-
 import Maude.AS_Maude
 import Maude.Meta
 import Maude.Printing ()
@@ -31,13 +30,16 @@ import Common.Id (mkSimpleId)
 import Common.Doc (vcat)
 import Common.DocUtils (Pretty(..))
 
+-- * Types
 
--- | A Membership, Equation or Rule.
+-- ** The Sentence type
+-- | A 'Membership', 'Equation' or 'Rule'.
 data Sentence = Membership Membership
               | Equation Equation
               | Rule Rule
               deriving (Show, Read, Ord, Eq)
 
+-- ** Sentence Instances
 
 instance Pretty Sentence where
     pretty sent = case sent of
@@ -45,7 +47,6 @@ instance Pretty Sentence where
         Equation eq   -> pretty eq
         Rule rl       -> pretty rl
     pretties = vcat . map pretty
-
 
 instance HasSorts Sentence where
     getSorts sen = case sen of
@@ -77,12 +78,13 @@ instance HasLabels Sentence where
         Equation eq   -> Equation $ mapLabels mp eq
         Rule rl       -> Rule $ mapLabels mp rl
 
+-- * Contruction
 
--- | Extract the Sentences from the given Module.
+-- | Extract the 'Sentence's from the given 'Module'.
 fromSpec :: Module -> [Sentence]
 fromSpec (Module _ _ stmts) = fromStatements stmts
 
--- | Extract the Sentences from the given Statements.
+-- | Extract the 'Sentence's from the given 'Statement's.
 fromStatements :: [Statement] -> [Sentence]
 fromStatements stmts = let
     convert stmt = case stmt of
@@ -167,8 +169,9 @@ rightIdEq op ar1 idt co = [eq1, eq2]
           eq1 = Equation $ Eq t v [] []
           eq2 = Equation $ Eq v t [] []
 
+-- * Testing
 
--- | True iff the given Sentence is a Rule.
+-- | True iff the given 'Sentence' is a 'Rule'.
 isRule :: Sentence -> Bool
 isRule sent = case sent of
     Rule _ -> True
