@@ -1,6 +1,6 @@
 {- |
 Module      :  $Header$
-Description :  Morphisms for Maude
+Description :  Maude Morphisms
 Copyright   :  (c) Martin Kuehl, Uni Bremen 2008-2009
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 

@@ -1,3 +1,15 @@
+{- |
+Module      :  $Header$
+Description :  Maude Comorphisms
+Copyright   :  (c) Adrian Riesco, Facultad de Informatica UCM 2009
+License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
+
+Maintainer  :  ariesco@fdi.ucm.es
+Stability   :  experimental
+Portability :  portable
+
+Comorphism from Maude to CASL.
+-}
 
 module Maude.PreComorphism where
 

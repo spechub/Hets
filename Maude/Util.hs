@@ -17,5 +17,7 @@ import Data.Map (Map)
 import qualified Data.Map as Map
 
 
+-- | Apply the given Map as a function. Functions as the identity
+-- function for items not contained in the Map.
 mapAsFunction :: (Ord a) => Map a a -> (a -> a)
 mapAsFunction mp name = Map.findWithDefault name name mp

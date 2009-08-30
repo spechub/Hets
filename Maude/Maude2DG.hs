@@ -1,3 +1,15 @@
+{- |
+Module      :  $Header$
+Description :  Maude Development Graphs
+Copyright   :  (c) Adrian Riesco, Facultad de Informatica UCM 2009
+License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
+
+Maintainer  :  ariesco@fdi.ucm.es
+Stability   :  experimental
+Portability :  portable
+
+Conversion of Maude to Development Graphs.
+-}
 
 module Maude.Maude2DG where
 

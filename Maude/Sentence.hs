@@ -1,6 +1,6 @@
 {- |
 Module      :  $Header$
-Description :  Sentences for Maude
+Description :  Maude Sentences
 Copyright   :  (c) Martin Kuehl, Uni Bremen 2008-2009
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
