@@ -48,12 +48,12 @@ import Data.Maybe (fromJust)
 
 -- * Symbol type
 
--- | Represents a Sort, Kind, Label, or Operator (with profile).
-data Symbol = Sort Qid
-            | Kind Qid
-            | Labl Qid
-            | Operator Qid Symbols Symbol
-            | OpWildcard Qid
+-- | Represents a Sort, Kind, Label, or Operator.
+data Symbol = Sort Qid                      -- ^ A Sort Symbol
+            | Kind Qid                      -- ^ A Kind Symbol
+            | Labl Qid                      -- ^ A Label Symbol
+            | Operator Qid Symbols Symbol   -- ^ A qualified Operator Symbol
+            | OpWildcard Qid                -- ^ A wildcard Operator Symbol
             deriving (Show, Read, Ord, Eq)
 type Symbols   = [Symbol]
 type SymbolSet = Set Symbol
