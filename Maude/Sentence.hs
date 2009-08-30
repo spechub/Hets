@@ -103,26 +103,19 @@ fromSubsort (Subsort s1 s2) = Membership mb
           mb = Mb var s2 [cond] []
 
 fromOperator :: Operator -> [Sentence]
-fromOperator (Op op_id ar co ats) = concat [comm_sens, assoc_sens, idem_sens,
-                                            id_sens, leftId_sens, rightId_sens]
-    where assoc_sens = if any assoc ats
-              then assocEq (getName op_id) (head ar) (head $ tail ar) co
-              else []
-          comm_sens = if any comm ats
-              then commEq (getName op_id) (head ar) (head $ tail ar) co
-              else []
-          idem_sens = if any idem ats
-              then idemEq (getName op_id) (head ar) co
-              else []
-          id_sens = if any idtty ats
-              then identityEq (getName op_id) (head ar) (getIdentity ats) co
-              else []
-          leftId_sens = if any leftId ats
-              then leftIdEq (getName op_id) (head ar) (getIdentity ats) co
-              else []
-          rightId_sens = if any rightId ats
-              then rightIdEq (getName op_id) (head ar) (getIdentity ats) co
-              else []
+fromOperator (Op op dom cod attrs) = let
+    name = getName op
+    first = head dom
+    second = head $ tail dom
+    convert attr = case attr of
+        Assoc -> assocEq name first second cod
+        Comm -> commEq name first second cod
+        Idem -> idemEq name first cod
+        Id term -> identityEq name first term cod
+        LeftId term -> leftIdEq name first term cod
+        RightId term -> rightIdEq name first term cod
+        _ -> []
+    in concatMap convert attrs
 
 commEq :: Qid -> Type -> Type -> Type -> [Sentence]
 commEq op ar1 ar2 co = [Equation $ Eq t1 t2 [] []]

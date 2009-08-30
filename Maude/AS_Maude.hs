@@ -23,8 +23,6 @@ import Common.Id (Token, mkSimpleId)
 import Common.Doc (specBraces, text)
 import Common.DocUtils (Pretty(..))
 
-import Data.Maybe (fromJust, listToMaybe, mapMaybe)
-
 -- * Types
 
 newtype MaudeText = MaudeText String deriving (Show)
@@ -176,21 +174,6 @@ getTermType term = case term of
     Const _ typ   -> typ
     Var _ typ     -> typ
     Apply _ _ typ -> typ
-
--- | Extract the 'identity' Term from the given attribute.
-getAttrTerm :: Attr -> Maybe Term
-getAttrTerm attr = case attr of
-    Id term      -> Just term
-    LeftId term  -> Just term
-    RightId term -> Just term
-    _ -> Nothing
-
-getIdentityMaybe ::  [Attr] -> Maybe Term
-getIdentityMaybe = listToMaybe . mapMaybe getAttrTerm
-
--- | Extract the identity 'Term' from the given list of attributes.
-getIdentity ::  [Attr] -> Term
-getIdentity = fromJust . getIdentityMaybe
 
 -- * Attribute Classification
 
