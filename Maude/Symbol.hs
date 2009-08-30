@@ -34,7 +34,6 @@ module Maude.Symbol (
     sameKind,
 ) where
 
-
 import Maude.AS_Maude
 import Maude.Meta.HasName
 
@@ -51,19 +50,23 @@ import Common.DocUtils (Pretty(..))
 
 import Data.Maybe (fromJust)
 
+-- * Types
 
+-- ** The Symbol type
 -- | Represents a Sort, Kind, Label, or Operator.
-data Symbol = Sort Qid                      -- ^ A Sort Symbol
-            | Kind Qid                      -- ^ A Kind Symbol
-            | Labl Qid                      -- ^ A Label Symbol
-            | Operator Qid Symbols Symbol   -- ^ A qualified Operator Symbol
-            | OpWildcard Qid                -- ^ A wildcard Operator Symbol
+data Symbol = Sort Qid                      -- ^ A 'Sort' Symbol
+            | Kind Qid                      -- ^ A 'Kind' Symbol
+            | Labl Qid                      -- ^ A 'Label' Symbol
+            | Operator Qid Symbols Symbol   -- ^ A qualified 'Operator' Symbol
+            | OpWildcard Qid                -- ^ A wildcard 'Operator' Symbol
             deriving (Show, Read, Ord, Eq)
+-- ** Auxiliary types
 type Symbols   = [Symbol]
 type SymbolSet = Set Symbol
 type SymbolMap = Map Symbol Symbol
 type SymbolRel = Rel Symbol
 
+-- ** Symbol Instances
 
 instance HasName Symbol where
     getName symb = case symb of
@@ -79,7 +82,6 @@ instance HasName Symbol where
         OpWildcard qid -> OpWildcard $ mapName mp qid
         Operator qid dom cod -> Operator (mapName mp qid) dom cod
 
-
 instance Pretty Symbol where
     pretty symb = case symb of
         Sort qid -> pretty qid
@@ -89,32 +91,31 @@ instance Pretty Symbol where
         Operator qid dom cod -> hsep
             [pretty qid, colon, hsep $ map pretty dom, funArrow, pretty cod]
 
-
 instance GetRange Symbol where
     getRange _ = nullRange
 
+-- * Conversion
 
--- | Convert Symbol to Id.
+-- | Convert 'Symbol' to 'Id'.
 toId :: Symbol -> Id
 toId = mkId . return . getName
 
--- | Qualify the Symbol name with a Qid.
+-- | Qualify the 'Symbol' name with a 'Qid'.
 qualify :: Qid -> Symbol -> Symbol
 qualify qid = let prepend sym = mkSimpleId $ concat [show qid, "$", show sym]
               in mapName $ prepend . getName
 
--- | Convert Symbol to Symbol, changing Kinds to Sorts.
+-- | Convert 'Symbol' to 'Symbol', changing 'Kind's to 'Sort's.
 asSort :: Symbol -> Symbol
 asSort symb = case symb of
     Kind qid -> Sort qid
     _ -> symb
 
--- | Convert Symbol to Symbol, changing Sorts to Kinds.
+-- | Convert 'Symbol' to 'Symbol', changing 'Sort's to 'Kind's.
 asKind :: Symbol -> Symbol
 asKind symb = case symb of
     Sort qid -> Kind qid
     _ -> symb
-
 
 isType :: Symbol -> Bool
 isType symb = case symb of
@@ -128,10 +129,9 @@ toTypeMaybe symb = case symb of
     Kind qid -> Just . TypeKind . KindId $ qid
     _ -> Nothing
 
--- | Convert Symbol to Type, if possible.
+-- | Convert 'Symbol' to 'Type', if possible.
 toType :: Symbol -> Type
 toType = fromJust . toTypeMaybe
-
 
 isOpWildcard :: Symbol -> Bool
 isOpWildcard symb = case symb of
@@ -149,19 +149,21 @@ toOperatorMaybe symb = case symb of
         Op (OpId qid) (map toType dom) (toType cod) []
     _ -> Nothing
 
--- | Convert Symbol to Operator, if possible.
+-- | Convert 'Symbol' to 'Operator', if possible.
 toOperator :: Symbol -> Operator
 toOperator = fromJust . toOperatorMaybe
 
+-- * Construction
 
--- | Create a total operator Symbol with the given profile.
+-- | Create a total 'Operator' 'Symbol' with the given profile.
 mkOpTotal :: Qid -> [Qid] -> Qid -> Symbol
 mkOpTotal qid dom cod = Operator qid (map Sort dom) (Sort cod)
 
--- | Create a partial operator Symbol with the given profile.
+-- | Create a partial 'Operator' 'Symbol' with the given profile.
 mkOpPartial :: Qid -> [Qid] -> Qid -> Symbol
 mkOpPartial qid dom cod = Operator qid (map Sort dom) (Kind cod)
 
+-- * Testing
 
 typeSameKind :: SymbolRel -> Symbol -> Symbol -> Bool
 typeSameKind rel s1 s2 = let
@@ -182,7 +184,7 @@ typeSameKind rel s1 s2 = let
 zipSameKind :: SymbolRel -> Symbols -> Symbols -> Bool
 zipSameKind rel s1 s2 = all id $ zipWith (sameKind rel) s1 s2
 
--- | True iff both Symbols are of the same Kind in the given Relation.
+-- | True iff both 'Symbol's are of the same 'Kind' in the given 'SymbolRel'.
 sameKind :: SymbolRel -> Symbol -> Symbol -> Bool
 sameKind rel s1 s2
     | all id [isOpWildcard s1, isOperator s2] = True
