@@ -8,16 +8,24 @@ Maintainer  :  mkhl@informatik.uni-bremen.de
 Stability   :  experimental
 Portability :  portable
 
-Parsing the Maude source language with Haskell/Parsec.
+Parsing the Maude language with Haskell and "Parsec".
 -}
 
 module Maude.Language (
+    -- * Types
+    -- ** The Named Spec type
     NamedSpec (..),
+    -- ** Parser Result types
+    ParseResult,
+    RawResult,
+    -- * Parsers for Maude
+    -- ** The Abstract Parser
     maudeParser,
+    -- ** The Raw Parser
     parseFromFile,
+    -- ** The Refined Parser
     parse,
 ) where
-
 
 import Text.ParserCombinators.Parsec (ParseError, CharParser)
 import Text.ParserCombinators.Parsec.Prim ((<|>))
@@ -33,24 +41,20 @@ import qualified Data.Set as Set
 import Data.List (nub)
 import Data.Maybe (fromJust, isNothing)
 
-
 -- * Types
 
+-- ** The Named Spec type
 data NamedSpec = ModName String     -- ^ A Module or Theory
                | ViewName String    -- ^ A View
                deriving (Show, Read, Eq)
 
-type Parsed = Either ParseError
--- Result of a single component
-type TempResult = Maybe (Either FilePath NamedSpec)
-type TempParser = CharParser () TempResult
-type TempListResult = [TempResult]
-type TempListParser = CharParser () TempListResult
--- Result during module tree recursion
-type RecResult = (Set FilePath, MaudeResult)
--- Result for a module tree
-type MaudeResult = [NamedSpec]
-
+-- ** Parser Result types
+-- | Parsed Result for a module tree
+type ParseResult = [NamedSpec]
+-- | Parsed Result for a single declaration
+type RawResult = Maybe (Either FilePath NamedSpec)
+-- | Intermediate Result during module tree recursion
+type RecResult = (Set FilePath, ParseResult)
 
 -- * Generic Parser combinators
 
@@ -58,14 +62,13 @@ type MaudeResult = [NamedSpec]
 void :: (Monad m) => m a -> m ()
 void parser = parser >> return ()
 
--- | Run the argument but return Nothing
+-- | Run the argument but return 'Nothing'
 ignore :: (Monad m) => m a -> m (Maybe b)
 ignore parser = parser >> return Nothing
 
 -- | Wrap the result of a successful parse
 succeed :: (Monad m) => a -> m (Maybe (Either b a))
 succeed = return . Just . Right
-
 
 -- * Helper functions for Parsec.Language
 
@@ -81,10 +84,9 @@ backquote = char '`'
 specialChars :: String
 specialChars = "()[]{},"
 
-
 -- * Maude in Parsec.Language
 
--- | The Maude Parsec.Language.LanguageDef
+-- | The Maude 'Parsec.Language.LanguageDef'
 maudeLanguageDef :: Language.LanguageDef ()
 maudeLanguageDef = Language.emptyDef {
     -- TODO: Get comments right.
@@ -102,7 +104,7 @@ maudeLanguageDef = Language.emptyDef {
         in nonSpace $ special <|> other
 }
 
--- | The Maude Parsec.Token.TokenParser
+-- | The Maude 'Parsec.Token.TokenParser'
 maudeTokenParser :: Token.TokenParser ()
 maudeTokenParser = Token.makeTokenParser maudeLanguageDef
 
@@ -119,19 +121,18 @@ whiteSpace = Token.whiteSpace maudeTokenParser
 dot :: CharParser () String
 dot = Token.dot maudeTokenParser
 
-
 -- * Helper functions for parsing Maude
 
--- | Match any of the arguments as @reserved@ words
+-- | Match any of the arguments as 'reserved' words
 anyReserved :: [String] -> CharParser () ()
 anyReserved = choice . map reserved
 
--- | Match any identifier or operator
+-- | Match any 'identifier' or 'operator'
 something :: CharParser () String
 something = identifier
 -- Identifiers and operators are identical currently.
 
--- | Match a @dot@-terminated statement
+-- | Match a 'dot'-terminated statement
 statement :: CharParser () [String]
 statement = manyTill something dot
 
@@ -139,17 +140,16 @@ statement = manyTill something dot
 line :: CharParser () String
 line = manyTill anyChar $ eof <|> void (lexeme newline)
 
-
 -- * Parsers for Maude source code and components
 
 -- | Parse Maude source code
-toplevel :: TempListParser
+toplevel :: CharParser () [RawResult]
 toplevel = let
     components = [systemCmd, otherCmd, debuggerCmd, modul, theory, view]
     in whiteSpace >> many1 (choice components)
 
 -- | Parse a system command
-systemCmd :: TempParser
+systemCmd :: CharParser () RawResult
 systemCmd = let
     otherSym = anyReserved
                ["quit", "eof", "popd", "pwd", "cd", "push", "ls"]
@@ -159,7 +159,7 @@ systemCmd = let
     in load <|> other
 
 -- | Parse a command
-otherCmd :: TempParser
+otherCmd :: CharParser () RawResult
 otherCmd = let
     symbol = anyReserved
              ["select", "parse", "debug", "reduce", "rewrite",
@@ -169,12 +169,12 @@ otherCmd = let
     in ignore $ symbol >> statement
 
 -- | Parse a debugger command.
-debuggerCmd :: TempParser
+debuggerCmd :: CharParser () RawResult
 debuggerCmd = let symbol = anyReserved ["resume", "abort", "step", "where"]
               in ignore $ symbol >> statement
 
 -- | Parse a Maude module
-modul :: TempParser
+modul :: CharParser () RawResult
 modul = let
     modul' start stop = do
         reserved start
@@ -186,7 +186,7 @@ modul = let
     <|> modul' "mod"  "endm"
 
 -- | Parse a Maude theory
-theory :: TempParser
+theory :: CharParser () RawResult
 theory = let
     theory' start stop = do
         reserved start
@@ -198,26 +198,27 @@ theory = let
     <|> theory' "th"  "endth"
 
 -- | Parse a Maude view
-view :: TempParser
+view :: CharParser () RawResult
 view = do
     reserved "view"
     name <- identifier
     manyTill statement $ reserved "endv"
     succeed $ ViewName name
 
-
 -- * Parsers for Maude source files
 
 -- | Parse Maude source code
-maudeParser :: TempListParser
+maudeParser :: CharParser () [RawResult]
 maudeParser = toplevel
 
 -- | Parse a single Maude source file
-parseFromFile :: FilePath -> IO (Parsed TempListResult)
+parseFromFile :: FilePath ->
+                 IO (Either ParseError [RawResult])
 parseFromFile = Parsec.parseFromFile maudeParser
 
 -- | Parse a Maude source file and the collect the results
-parseFileAndCollect :: FilePath -> RecResult -> IO (Parsed RecResult)
+parseFileAndCollect :: FilePath -> RecResult ->
+                       IO (Either ParseError RecResult)
 parseFileAndCollect path results@(done, syms)
     | Set.member path done = return $ Right results
     | otherwise = do
@@ -227,7 +228,8 @@ parseFileAndCollect path results@(done, syms)
             Right res -> collectParseResults res ((Set.insert path done), syms)
 
 -- | Collect the results from parsing a Maude source file
-collectParseResults :: TempListResult -> RecResult -> IO (Parsed RecResult)
+collectParseResults :: [RawResult] -> RecResult ->
+                       IO (Either ParseError RecResult)
 collectParseResults list results@(done, syms)
     | null list = return $ Right results
     | isNothing $ head list = collectParseResults (tail list) results
@@ -240,7 +242,8 @@ collectParseResults list results@(done, syms)
                 Left  err -> return $ Left err
 
 -- | Parse a Maude source tree
-parse :: FilePath -> IO (Parsed MaudeResult)
+parse :: FilePath ->
+         IO (Either ParseError ParseResult)
 parse path = do
     parsed <- parseFileAndCollect path (Set.empty, [])
     case parsed of
