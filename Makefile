@@ -485,7 +485,7 @@ doc: docs/index.html
 
 ifneq ($(findstring 2.,$(HADDOCKVERSION)),)
 HADDOCK_OPTS = $(addprefix --optghc=, $(HC_OPTS))
-docs/index.html:
+docs/index.html: $(doc_sources)
 	$(RM) -r docs
 	mkdir docs
 	$(HADDOCK) -o docs -h -v -s ../%F \
