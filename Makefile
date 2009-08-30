@@ -19,7 +19,7 @@ SOURCE_PATHS = . utils/itcor \
     Syntax Static GUI HasCASL Haskell Modal CoCASL COL ConstraintCASL \
     CspCASL ATC Proofs Comorphisms Isabelle Driver Modifications \
     Taxonomy CASL_DL SoftFOL OWL OMDoc PGIP Propositional RelationalScheme \
-    VSE Interfaces Temporal CspCASLProver DFOL CMDL
+    VSE Interfaces Temporal CspCASLProver DFOL CMDL Maude Maude/Meta
 
 # the 'replacing spaces' example was taken from the (GNU) Make info manual
 empty =
