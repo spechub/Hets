@@ -182,7 +182,7 @@ typeSameKind rel s1 s2 = let
 zipSameKind :: SymbolRel -> Symbols -> Symbols -> Bool
 zipSameKind rel s1 s2 = all id $ zipWith (sameKind rel) s1 s2
 
--- | Check whether both Symbols are of the same Kind for the given Relation.
+-- | True iff both Symbols are of the same Kind in the given Relation.
 sameKind :: SymbolRel -> Symbol -> Symbol -> Bool
 sameKind rel s1 s2
     | all id [isOpWildcard s1, isOperator s2] = True
