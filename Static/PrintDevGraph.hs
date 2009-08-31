@@ -43,6 +43,7 @@ import Data.Graph.Inductive.Graph as Graph
 import qualified Data.Map as Map
 import qualified Data.Set as Set
 import Data.List
+import Data.Char
 
 printTh :: GlobalAnnos -> SIMPLE_ID -> G_theory -> Doc
 printTh oga sn g =
@@ -88,8 +89,7 @@ dgOriginHeader o = case o of
     DGHiding -> "hiding"
     DGRevealing -> "revealing"
     DGRevealTranslation -> "translation part of a revealing"
-    DGFree -> "free-spec"
-    DGCofree -> "cofree-spec"
+    DGFreeOrCofree v -> map toLower (show v) ++ "-spec"
     DGLocal -> "local-spec"
     DGClosed -> "closed-spec"
     DGLogicQual -> "spec with logic qualifier"

@@ -160,16 +160,33 @@ anaSpecTop conser addSyms lg dg nsig name opts sp =
   ndg <- createConsLink provenThmLink conser lg rdg nsig ns SeeTarget
   return (rsp, ns, ndg)
 
-anaPlainSpec :: Bool -> LogicGraph -> HetcatsOpts -> DGraph
-  -> MaybeNode -> NodeName -> DGOrigin -> DGLinkType -> Annoted SPEC -> Range
+anaQualSpec :: Bool -> LogicGraph -> HetcatsOpts -> DGraph
+  -> MaybeNode -> NodeName -> Annoted SPEC -> Range
   -> Result (Annoted SPEC, NodeSig, DGraph)
-anaPlainSpec addSyms lg opts dg nsig name orig dglType asp pos = do
+anaQualSpec addSyms lg opts dg nsig name asp pos = do
       (sp', NodeSig n' gsigma, dg') <-
           anaSpec addSyms lg dg nsig (inc name) opts $ item asp
-      let (ns@(NodeSig node gsigma'), dg2) = insGSig dg' name orig gsigma
-      incl <-  adjustPos pos $ ginclusion lg gsigma gsigma'
+      let (ns@(NodeSig node gsigma'), dg2) =
+              insGSig dg' name DGLogicQual gsigma
+      incl <- adjustPos pos $ ginclusion lg gsigma gsigma'
       return (replaceAnnoted sp' asp, ns,
-              insLink dg2 incl dglType SeeTarget n' node)
+              insLink dg2 incl globalDef SeeTarget n' node)
+
+anaFreeOrCofreeSpec :: Bool -> LogicGraph -> HetcatsOpts -> DGraph
+  -> MaybeNode -> NodeName -> FreeOrCofree -> Annoted SPEC -> Range
+  -> Result (Annoted SPEC, NodeSig, DGraph)
+anaFreeOrCofreeSpec addSyms lg opts dg nsig name dglType asp pos = do
+      (sp', NodeSig n' gsigma, dg') <-
+          anaSpec addSyms lg dg nsig (inc name) opts $ item asp
+      let (ns@(NodeSig node gsigma'), dg2) =
+              insGSig dg' name (DGFreeOrCofree dglType) gsigma
+      nsigma <- return $ case nsig of
+           EmptyNode cl -> emptyG_sign cl
+           JustNode nds -> getSig nds
+      incl <- adjustPos pos $ ginclusion lg nsigma gsigma'
+      return (replaceAnnoted sp' asp, ns,
+              insLink dg2 incl (FreeOrCofreeDefLink dglType nsig)
+              SeeTarget n' node)
 
 -- | analyze a SPEC
 -- Bool Parameter determines if incoming symbols shall be ignored
@@ -277,12 +294,12 @@ anaSpecAux conser addSyms lg dg nsig name opts sp = case sp of
                                          (iterate inc (extName "E" name)))))
                    asps
   Free_spec asp poss -> do
-      (nasp, nsig', dg') <- anaPlainSpec addSyms lg opts dg nsig name
-        DGFree (FreeOrCofreeDefLink Free nsig) asp poss
+      (nasp, nsig', dg') <- anaFreeOrCofreeSpec addSyms lg opts dg nsig name
+        Free asp poss
       return (Free_spec nasp poss, nsig', dg')
   Cofree_spec asp poss -> do
-      (nasp, nsig', dg') <- anaPlainSpec addSyms lg opts dg nsig name
-        DGCofree (FreeOrCofreeDefLink Cofree nsig) asp poss
+      (nasp, nsig', dg') <- anaFreeOrCofreeSpec addSyms lg opts dg nsig name
+        Cofree asp poss
       return (Cofree_spec nasp poss, nsig', dg')
   Local_spec asp asp' poss ->
    do let sp1 = item asp
@@ -339,8 +356,7 @@ anaSpecAux conser addSyms lg dg nsig name opts sp = case sp of
             EmptyNode _ -> EmptyNode l
             _ -> nsig
       (nasp, nsig', dg') <-
-          anaPlainSpec addSyms lg opts dg newNSig name DGLogicQual
-            globalDef asp pos
+          anaQualSpec addSyms lg opts dg newNSig name asp pos
       return (Qualified_spec lognm nasp pos, nsig', dg')
   Group asp pos -> do
       (sp', nsig', dg') <-

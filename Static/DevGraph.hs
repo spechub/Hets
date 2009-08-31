@@ -106,8 +106,7 @@ data DGOrigin =
   | DGHiding
   | DGRevealing
   | DGRevealTranslation
-  | DGFree
-  | DGCofree
+  | DGFreeOrCofree FreeOrCofree
   | DGLocal
   | DGClosed
   | DGLogicQual
