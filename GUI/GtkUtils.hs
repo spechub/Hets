@@ -29,6 +29,9 @@ module GUI.GtkUtils
   , listChoice
   , textView
 
+  , progressBar
+  , pulseBar
+
   , displayTheory
   , displayTheoryWithWarning
 
@@ -110,7 +113,8 @@ dialog messageType title message mAction = do
       messageDialogNew Nothing [] messageType ButtonsYesNo message
     _ ->
       messageDialogNew Nothing [] messageType ButtonsOk message
-  set dlg [windowTitle := title]
+
+  windowSetTitle dlg title
 
   response <- dialogRun dlg
   choice <- case response of
@@ -239,7 +243,7 @@ listChoice title items = postGUISync $ do
   dlg     <- xmlGetWidget xml castToDialog "ListView"
   trvList <- xmlGetWidget xml castToTreeView "trvList"
 
-  set dlg [windowTitle := title]
+  windowSetTitle dlg title
   store <- setListData trvList (\ a -> a) items
   selector <- treeViewGetSelection trvList
   setListSelectorSingle trvList (return ())
@@ -351,7 +355,7 @@ textView title message mfile = postGUIAsync $ do
   dlg    <- xmlGetWidget xml castToDialog "TextView"
   tvText <- xmlGetWidget xml castToTextView "tvText"
 
-  set dlg [windowTitle := title]
+  windowSetTitle dlg title
   buffer <- textViewGetBuffer tvText
   textBufferInsertAtCursor buffer message
 
@@ -379,6 +383,53 @@ textView title message mfile = postGUIAsync $ do
 
   widgetShow dlg
   return ()
+
+progressBarAux :: Bool -- ^ Percent or pulse
+               -> String -- ^ Title
+               -> String -- ^ Description
+               -> IO (Double -> String -> IO (), IO ())
+progressBarAux isProgress title description = postGUISync $ do
+  xml         <- getGladeXML Utils.get
+  -- get window
+  window      <- xmlGetWidget xml castToWindow "ProgressBar"
+  -- get progress bar
+  bar <- xmlGetWidget xml castToProgressBar "pbProgress"
+
+  windowSetTitle window title
+  progressBarSetText bar description
+  progressBarSetPulseStep bar 0.05
+  windowSetPosition window WinPosCenter
+  windowSetTypeHint window WindowTypeHintUtility
+
+  if isProgress then return () else do
+    h <- timeoutAdd (do
+                      progressBarPulse bar
+                      return True
+                    ) 75
+    onDestroy window $ timeoutRemove h
+    return ()
+
+  widgetShow window
+
+  let update p d = do
+        progressBarSetText bar d
+        if isProgress then progressBarSetFraction bar p else return ()
+
+  return (update, widgetDestroy window)
+
+
+progressBar :: String -- ^ Title
+            -> String -- ^ Description
+            -> IO (Double -> String -> IO (), IO ())
+progressBar = progressBarAux True
+
+pulseBar :: String -- ^ Title
+         -> String -- ^ Description
+         -> IO (String -> IO (), IO ())
+pulseBar title description = do
+  (update, exit) <- progressBarAux False title description
+  let update' d = update 0 d
+  return (update', exit)
 
 -- | displays a theory in a window
 displayTheory :: String -- ^ Kind of theory

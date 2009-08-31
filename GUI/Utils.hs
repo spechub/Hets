@@ -28,6 +28,9 @@ module GUI.Utils
 
   , displayTheory
   , displayTheoryWithWarning
+
+  , progressBar
+  , pulseBar
 #endif
   ) where
 
@@ -43,6 +46,8 @@ import GUI.GtkUtils
   , textView
   , displayTheory
   , displayTheoryWithWarning
+  , progressBar
+  , pulseBar
   )
 
 -- | create a window with title and list of options, return selected option
@@ -161,6 +166,19 @@ createTextDisplay :: String -- ^ Title
                   -> String -- ^ Message
                   -> IO ()
 createTextDisplay t m = GUI.HTkUtils.createTextDisplay t m []
+
+-- Not implemented in HTk
+progressBar :: String -- ^ Title
+            -> String -- ^ Description
+            -> IO (Double -> String -> IO (), IO ())
+progressBar _ _ = return (\ _ _ -> return (), return ())
+
+-- Not implemented in HTk
+pulseBar :: String -- ^ Title
+         -> String -- ^ Description
+         -> IO (String -> IO (), IO ())
+pulseBar _ _ = return (\ _ -> return (), return ())
+
 
 #else
 import GUI.ConsoleUtils (listBox, createTextSaveDisplay, askFileNameAndSave)

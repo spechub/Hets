@@ -39,6 +39,7 @@ module GUI.GraphAbstraction
   ) where
 
 import GUI.UDGUtils
+import GUI.Utils (pulseBar)
 import qualified UDrawGraph.Types as DVT
 import qualified UDrawGraph.Basic as DVB
 import Events.Destructible as Destructible
@@ -463,7 +464,11 @@ hideSetOfEdgeTypes' g eTypes = do
 hideSetOfEdgeTypes :: GraphInfo -- ^ The graph
                    -> [DGEdgeType] -- ^ IDs of the edgetypes to hide
                    -> IO ()
-hideSetOfEdgeTypes gi eT = wrapperWrite (\g -> hideSetOfEdgeTypes' g eT) gi
+hideSetOfEdgeTypes gi eT = do
+  (update, exit) <- pulseBar "Updating graph" "hiding/showing edge types..."
+  wrapperWrite (\g -> hideSetOfEdgeTypes' g eT) gi
+  update "finished"
+  exit
 
 -- | Checks whether an edge is hidden or not
 isHiddenEdge' :: AbstractionGraph -- ^ The graph
@@ -560,8 +565,11 @@ applyChanges :: GraphInfo -- ^ The graph
              -> [EdgeId] -- ^ IDs of the edges to hide
              -> [(NodeId, NodeId, DGEdgeType, Bool)] -- ^ A list of new edges
              -> IO ()
-applyChanges gi changes nIds eIds compedges =
+applyChanges gi changes nIds eIds compedges = do
+  (update, exit) <- pulseBar "Updating graph" "applying changes..."
   wrapperWrite (\ g -> applyChanges' g changes nIds eIds compedges) gi
+  update "finished"
+  exit
 
 -- | Converts and splits DGChanges to GAChanges
 convertChanges :: [DGChange] -- ^ Development graph changes
