@@ -42,7 +42,7 @@ computeLabelTheory libEnv dg (n, nodelab) =
   else do
     ths <- mapM (computePathTheory libEnv dg) $ sortBy
             (\ (_, _, l1) (_, _, l2) -> compare (dgl_id l2) $ dgl_id l1)
-            $ filter (liftE (\ l -> isDefEdge l && not (isHidingEdge l)))
+            $ filter (liftE $ liftOr isGlobalDef isLocalDef)
             $ innDG dg n
     flatG_sentences localTh ths
 
