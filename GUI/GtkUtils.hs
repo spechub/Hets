@@ -401,21 +401,22 @@ progressBarAux isProgress title description = postGUISync $ do
   windowSetPosition window WinPosCenter
   windowSetTypeHint window WindowTypeHintUtility
 
-  if isProgress then return () else do
+  exit <- if isProgress then return (widgetDestroy window) else do
     h <- timeoutAdd (do
                       progressBarPulse bar
                       return True
                     ) 75
-    onDestroy window $ timeoutRemove h
-    return ()
+    return (postGUIAsync $ do
+      timeoutRemove h
+      widgetDestroy window)
 
   widgetShow window
 
-  let update p d = do
+  let update p d = postGUIAsync $ do
         progressBarSetText bar d
         if isProgress then progressBarSetFraction bar p else return ()
 
-  return (update, widgetDestroy window)
+  return (update, exit)
 
 
 progressBar :: String -- ^ Title
