@@ -84,15 +84,19 @@ data BasicConsProof = BasicConsProof deriving (Show, Eq) -- needs more details
 
 -- ** node label types
 
+data XPathPart = ElemName String | ChildIndex Int deriving (Show, Eq, Ord)
+
 -- | name of a node in a DG; auxiliary nodes may have extension string
 --   and non-zero number (for these, names are usually hidden)
-data NodeName = NodeName SIMPLE_ID String Int deriving (Show, Eq, Ord)
+data NodeName = NodeName
+  { getName :: SIMPLE_ID
+  , extString :: String
+  , extIndex :: Int
+  , xpath :: [XPathPart]
+  } deriving (Show, Eq, Ord)
 
 isInternal :: NodeName ->  Bool
-isInternal (NodeName _ s i) = i /= 0 || s /= ""
-
-getName :: NodeName -> SIMPLE_ID
-getName (NodeName n _ _) = n
+isInternal n = extIndex n /= 0 || not (null $ extString n)
 
 {- | Data type indicating the origin of nodes and edges in the input language
      This is not used in the DG calculus, only may be used in the future
@@ -132,8 +136,6 @@ data DGNodeInfo = DGNode
   , ref_node :: Node             -- pointer to ref'd node
   } deriving (Show, Eq)
 
-data XPathPart = ElemName String | ChildIndex Int deriving (Show, Eq)
-
 -- | node inscriptions in development graphs.
 -- Nothing entries indicate "not computed yet"
 data DGNodeLab =
@@ -144,7 +146,6 @@ data DGNodeLab =
   , dgn_nf :: Maybe Node         -- normal form, for Theorem-Hide-Shift
   , dgn_sigma :: Maybe GMorphism -- inclusion of signature into nf signature
   , nodeInfo :: DGNodeInfo
-  , xpath :: [XPathPart]
   , dgn_lock :: Maybe (MVar ())
   } deriving (Show, Eq)
 
@@ -572,27 +573,30 @@ getNodeLogic (NodeSig _ (G_sign lid _ _)) = Logic lid
 -- ** for node names
 
 emptyNodeName :: NodeName
-emptyNodeName = NodeName (mkSimpleId "") "" 0
+emptyNodeName = NodeName (mkSimpleId "") "" 0 []
 
 showExt :: NodeName -> String
-showExt (NodeName _ s i) = s ++ if i == 0 then "" else show i
+showExt n = let i = extIndex n in extString n ++ if i == 0 then "" else show i
 
 showName :: NodeName -> String
-showName a@(NodeName n _ _) = let ext = showExt a in
-    show n ++ if null ext then ext else '_' : ext
+showName n = let ext = showExt n in
+    tokStr (getName n) ++ if null ext then ext else '_' : ext
 
 makeName :: SIMPLE_ID -> NodeName
-makeName n = NodeName n "" 0
-
-makeMaybeName :: Maybe SIMPLE_ID -> NodeName
-makeMaybeName Nothing = emptyNodeName
-makeMaybeName (Just n) = makeName n
+makeName n = NodeName n "" 0 [ElemName $ tokStr n]
 
 inc :: NodeName -> NodeName
-inc (NodeName n s i) = NodeName n s $ succ i
+inc n = n
+  { extIndex = extIndex n + 1
+  , xpath = case xpath n of
+              ChildIndex j : r -> ChildIndex (succ j) : r
+              l -> ChildIndex 1 : l }
 
 extName :: String -> NodeName -> NodeName
-extName s a@(NodeName n _ _) = NodeName n (showExt a ++ s) 0
+extName s n = n
+  { extString = showExt n ++ take 1 s
+  , extIndex = 0
+  , xpath = ElemName s : xpath n }
 
 -- ** accessing node label
 
@@ -640,7 +644,6 @@ newInfoNodeLab name info gTh = DGNodeLab
   , dgn_nf = Nothing
   , dgn_sigma = Nothing
   , nodeInfo = info
-  , xpath = []
   , dgn_lock = Nothing }
 
 -- | create a new node label using 'newNodeInfo' and 'newInfoNodeLab'

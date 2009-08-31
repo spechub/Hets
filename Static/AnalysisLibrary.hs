@@ -229,11 +229,11 @@ anaGenericity lg dg opts name
    (imps', nsigI, dg') <- case isps of
      [] -> return ([], EmptyNode l, dg)
      _ -> do
-      (is', _, nsig', dgI) <-
-        anaUnion False lg dg (EmptyNode l) (extName "I" name) opts isps
+      (is', _, nsig', dgI) <- anaUnion False lg dg (EmptyNode l)
+          (extName "Imports" name) opts isps
       return (is', JustNode nsig', dgI)
-   (ps', nsigPs, ns, dg'') <-
-     anaUnion False lg dg' nsigI (extName "P" name) opts psps
+   (ps', nsigPs, ns, dg'') <- anaUnion False lg dg' nsigI
+          (extName "Parameters" name) opts psps
    return (Genericity (Params ps') (Imported imps') pos,
      GenSig nsigI nsigPs $ JustNode ns, dg'')
 
@@ -363,13 +363,12 @@ anaViewDefn lgraph libenv dg opts vn gen vt gsis pos = do
 -- flag, whether just the structure shall be analysed
 anaViewType :: LogicGraph -> DGraph -> MaybeNode -> HetcatsOpts -> NodeName
   -> VIEW_TYPE -> Result (VIEW_TYPE, (NodeSig, NodeSig), DGraph)
-anaViewType lg dg parSig opts name
-              (View_type aspSrc aspTar pos) = do
+anaViewType lg dg parSig opts name (View_type aspSrc aspTar pos) = do
   l <- lookupCurrentLogic "VIEW_TYPE" lg
-  (spSrc', srcNsig, dg') <- adjustPos pos $
-     anaSpec False lg dg (EmptyNode l) (extName "S" name) opts (item aspSrc)
-  (spTar', tarNsig, dg'') <- adjustPos pos $
-     anaSpec True lg dg' parSig (extName "T" name) opts (item aspTar)
+  (spSrc', srcNsig, dg') <- adjustPos pos $ anaSpec False lg dg (EmptyNode l)
+    (extName "Source" name) opts (item aspSrc)
+  (spTar', tarNsig, dg'') <- adjustPos pos $ anaSpec True lg dg' parSig
+    (extName "Target" name) opts (item aspTar)
   return (View_type (replaceAnnoted spSrc' aspSrc)
                     (replaceAnnoted spTar' aspTar)
                     pos,

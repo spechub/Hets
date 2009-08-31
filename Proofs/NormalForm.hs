@@ -78,15 +78,12 @@ normalFormDG libEnv dgraph = foldM (\ dg (node, nodelab) ->
                -- the label of the normal form ^
                nfNode = getNewNodeDG dg
                -- the new reference node in the old graph ^
-               tt = getName $ dgn_name nodelab
-               nfName = mkSimpleId $ "NormalForm" ++ show tt ++ show node
-               refLab = refNodelab {
-                   dgn_name = NodeName nfName (show nfName) 0,
-                   dgn_nf = Just nfNode,
-                   dgn_sigma = Just $ ide $ dgn_sign refNodelab,
-                   nodeInfo = newRefInfo refLib refNf,
-                   dgn_lock = Nothing
-                 }
+               refLab = refNodelab
+                 { dgn_name = extName "NormalForm" $ dgn_name nodelab
+                 , dgn_nf = Just nfNode
+                 , dgn_sigma = Just $ ide $ dgn_sign refNodelab
+                 , nodeInfo = newRefInfo refLib refNf
+                 , dgn_lock = Nothing }
                newLab = nodelab{
                    dgn_nf = Just nfNode,
                    dgn_sigma = dgn_sigma $ labDG refGraph' $ dgn_node nodelab
@@ -130,10 +127,8 @@ normalFormDG libEnv dgraph = foldM (\ dg (node, nodelab) ->
             let nfNode = getNewNodeDG dg -- new node for normal form
                 info = nodeInfo nodelab
                 ConsStatus c cp pr = node_cons_status info
-                NodeName tt ss _ = dgn_name nodelab
-                          -- the label of the new node
-                nfName = mkSimpleId $ "NormalForm" ++ show tt ++ show node
-                nfLabel = newInfoNodeLab (NodeName nfName ss 0)
+                nfLabel = newInfoNodeLab
+                  (extName "NormalForm" $ dgn_name nodelab)
                   info
                   { node_origin = DGNormalForm node
                   , node_cons_status = mkConsStatus c }

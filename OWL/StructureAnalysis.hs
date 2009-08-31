@@ -135,7 +135,7 @@ createLNodes (hs:rs) exLNodes om =
                            -> [LNode DGNodeLab]
                            -> (LNode DGNodeLab)
           disambiguateName (ind, dgn) exn =
-            let name@(NodeName sid u1 u2) = dgn_name dgn
+            let name@(NodeName sid u1 u2 _) = dgn_name dgn
                 nameSet = map (dgn_name . snd) exn
                 name' = if name `elem` nameSet then
                            let n = show sid
@@ -143,7 +143,7 @@ createLNodes (hs:rs) exLNodes om =
                                          take ((length n) - 1) n
                                          else n
                            in fromJust $ find (not . flip elem nameSet)
-                              [NodeName (mkSimpleId $ nsid ++ show i) u1 u2
+                              [NodeName (mkSimpleId $ nsid ++ show i) u1 u2 []
                                | i <- [1 :: Int ..]]
                          else name
             in  (ind, dgn {dgn_name = name'})

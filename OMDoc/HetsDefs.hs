@@ -356,13 +356,13 @@ idToString (Id toks ids _) =
 
 -- | encapsulates a node_name in an id
 nodeNameToId::NodeName->Id
-nodeNameToId (NodeName s e n) =
+nodeNameToId (NodeName s e n _) =
   mkId [s, mkSimpleId e, mkSimpleId (show n)]
 
 -- | reads back an encapsulated node_name
 idToNodeName::Id->NodeName
 idToNodeName (Id toks _ _) = case toks of
-  t0 : t1 : t2 : _ -> NodeName t0 (show t1) $ read $ show t2
+  t0 : t1 : t2 : _ -> NodeName t0 (show t1) (read $ show t2) []
   _ -> error "idToNodeName"
 
 -- | This type is used for constructing unique names for
