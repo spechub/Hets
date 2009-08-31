@@ -270,13 +270,12 @@ anaSpecAux conser addSyms lg dg nsig name opts sp = case sp of
                    insLink dg'' hmor HidingDefLink SeeTarget n' node1)
          else do
            let (NodeSig node1 _, dg'') =
-                   insGSig dg' (extName "T" name) DGRevealing gsigma1
+                   insGSig dg' (extName "Translation" name) DGRevealing gsigma1
                (ns@(NodeSig node2 _), dg3) =
                    insGSig dg'' name DGRevealTranslation gsigma''
                dg4 = insLink dg3 hmor HidingDefLink SeeTarget n' node1
            return (Reduction (replaceAnnoted sp1' asp) restr, ns,
                    insLink dg4 tmor' globalDef SeeTarget node1 node2)
-  Union [] pos -> adjustPos pos $ fail "empty union"
   Union asps pos -> do
     (newAsps, _, ns, dg') <-  adjustPos pos $ anaUnion addSyms lg dg nsig
       name opts asps
@@ -291,7 +290,7 @@ anaSpecAux conser addSyms lg dg nsig name opts sp = case sp of
                                  pos, nsig1,dg1)
    where
    namedSps = zip (reverse (name: tail (take (length asps)
-                                         (iterate inc (extName "E" name)))))
+                    (iterate inc (extName "Extension" name)))))
                    asps
   Free_spec asp poss -> do
       (nasp, nsig', dg') <- anaFreeOrCofreeSpec addSyms lg opts dg nsig name
@@ -306,7 +305,7 @@ anaSpecAux conser addSyms lg dg nsig name opts sp = case sp of
           sp1' = item asp'
           adj = adjustPos poss
       (sp2, nsig'@(NodeSig _ (G_sign lid' sigma' _)), dg') <-
-          anaSpec False lg dg nsig (extName "L" name) opts sp1
+          anaSpec False lg dg nsig (extName "Local" name) opts sp1
       (sp2', NodeSig n'' (G_sign lid'' sigma'' _), dg'') <-
           anaSpec False lg dg' (JustNode nsig') (inc name) opts sp1'
       let gsigma = getMaybeSig nsig
@@ -392,7 +391,7 @@ anaSpecAux conser addSyms lg dg nsig name opts sp = case sp of
       (_, 0) -> do
        let fitargs = map item afitargs
        (fitargs', dg', args, _) <- adj $ foldM (anaFitArgs lg opts spname imps)
-           ([], dg, [], extName "A" name) (zip params fitargs)
+           ([], dg, [], extName "Actuals" name) (zip params fitargs)
        let actualargs = reverse args
        (gsigma', morDelta@(GMorphism cid _ _ _ _)) <-
            adj $ applyGS lg gs actualargs
@@ -467,7 +466,7 @@ anaUnion addSyms lg dg nsig name opts asps = case asps of
           let ana (sps1, nsigs, dg', n) sp' = do
                 (sp1, nsig', dg1) <- anaSpec addSyms lg dg' nsig n opts sp'
                 return (sp1 : sps1, nsig' : nsigs, dg1, inc n)
-           in foldM ana ([], [], dg, extName "U" name) sps
+           in foldM ana ([], [], dg, extName "Union" name) sps
       let newAsps = zipWith replaceAnnoted (reverse sps') asps
       case nsigs of
         [ns] -> return (newAsps, nsigs, ns, dg')
@@ -732,7 +731,7 @@ anaFitArg lg dg spname nsigI (NodeSig nP gsigmaP) opts name fv = case fv of
       (_, 0) -> do
        let fitargs = map item afitargs
        (fitargs', dg', args,_) <- foldM (anaFitArgs lg opts spname imps)
-           ([], dg, [], extName "A" name) (zip params fitargs)
+           ([], dg, [], extName "Actuals" name) (zip params fitargs)
        let actualargs = reverse args
        (gsigmaA, gmor_f) <- adj $ applyGS lg gs actualargs
        gsigmaRes <- adj $ gsigUnion lg gsigmaI gsigmaA
@@ -754,7 +753,7 @@ anaFitArg lg dg spname nsigI (NodeSig nP gsigmaP) opts name fv = case fv of
        let (ns@(NodeSig nA _), dg1) =
                    insGSig dg' name (DGFitViewA spname) gsigmaRes
            (NodeSig n' _, dg2) =
-                   insGSig dg1 (extName "V" name) (DGFitView spname) gsigmaP
+                   insGSig dg1 (extName "View" name) (DGFitView spname) gsigmaP
        dg3 <- foldM (parLink lg (DGLinkFitView spname) gsigmaRes nA) dg2
               $ map snd args
        let dg4 = case nsigI of

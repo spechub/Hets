@@ -441,11 +441,11 @@ refNodesigs libenv = mapAccumR . refNodesig libenv
 refExtsig :: LibEnv -> LIB_NAME -> DGraph -> NodeName -> ExtGenSig
           -> (DGraph, ExtGenSig)
 refExtsig libenv ln dg name (ExtGenSig (GenSig imps params gsigmaP) body) = let
-  pName = extName "P" name
+  pName = extName "Parameters" name
   (dg1, imps1) = case imps of
     EmptyNode _ -> (dg, imps)
     JustNode ns -> let
-        (dg0, nns) = refNodesig libenv ln dg (extName "I" pName, ns)
+        (dg0, nns) = refNodesig libenv ln dg (extName "Imports" name, ns)
         in (dg0, JustNode nns)
   (dg2, params1) = refNodesigs libenv ln dg1
       $ snd $ foldr (\ p (n, l) -> let nn = inc n in
@@ -461,6 +461,6 @@ refExtsig libenv ln dg name (ExtGenSig (GenSig imps params gsigmaP) body) = let
 refViewsig :: LibEnv -> LIB_NAME -> DGraph -> NodeName -> ExtViewSig
            -> (DGraph, ExtViewSig)
 refViewsig libenv ln dg name (ExtViewSig src mor extsig) = let
-  (dg1, src1) = refNodesig libenv ln dg (extName "S" name, src)
-  (dg2, extsig1) = refExtsig libenv ln dg1 (extName "T" name) extsig
+  (dg1, src1) = refNodesig libenv ln dg (extName "Source" name, src)
+  (dg2, extsig1) = refExtsig libenv ln dg1 (extName "Target" name) extsig
   in (dg2, ExtViewSig src1 mor extsig1)
