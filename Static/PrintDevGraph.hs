@@ -20,7 +20,10 @@ module Static.PrintDevGraph
     , prettyLEdge
     , showLEdge
     , dgOriginHeader
+    , dgOriginSpec
+    , showXPath
     , dgLinkOriginHeader
+    , dgLinkOriginSpec
     ) where
 
 import Static.GTheory
@@ -65,6 +68,14 @@ removeProblematicListAnnos ga = let
           , literal_map = lm }
 
 -- * pretty instances
+
+showXPathComp :: XPathPart -> String
+showXPathComp c = case c of
+  ElemName s -> s
+  ChildIndex i -> show i
+
+showXPath :: [XPathPart] -> String
+showXPath = intercalate "/" . map showXPathComp . reverse
 
 showNodeId :: Node -> String
 showNodeId i = "node " ++ show i

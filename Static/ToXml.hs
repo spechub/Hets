@@ -13,19 +13,27 @@ Xml of Hets DGs
 module Static.ToXml where
 
 import Static.DevGraph
-import Static.PrintDevGraph ()
+import Static.GTheory
+import Static.PrintDevGraph
+
+import Logic.Prover
+import Logic.Logic
 
 import Common.AS_Annotation
 import Common.ConvertGlobalAnnos
 import Common.DocUtils
+import Common.ExtSign
 import Common.GlobalAnnotations
 import Common.Id
+import qualified Common.OrderedMap as OMap
 import Common.Result
 
 import Text.XML.Light
 
 import Data.Graph.Inductive.Graph as Graph
 import qualified Data.Map as Map
+import qualified Data.Set as Set
+import Data.List
 
 mkAttr :: String -> String -> Attr
 mkAttr = Attr . unqual
@@ -49,51 +57,83 @@ subnodes :: String -> [Element] -> [Element]
 subnodes name elems = if null elems then [] else
   [unode name elems]
 
-dGraph :: DGraph -> Element
-dGraph dg =
+dGraph :: LibEnv -> DGraph -> Element
+dGraph lenv dg =
   let body = dgBody dg
       ga = globalAnnos dg
       lnodes = labNodes body
-      nm = Map.fromList $ map (\ (v, lbl) -> (v, dgn_name lbl)) lnodes
   in unode "DGraph" $
          subnodes "Global" (annotations ga $ convertGlobalAnnos ga)
-         ++ map (lnode ga) lnodes
-         ++ map (ledge ga nm) (labEdges body)
-         ++ Map.foldWithKey (globalEntry ga nm) [] (globalEnv dg)
+         ++ map (lnode ga lenv) lnodes
+         ++ map (ledge ga dg) (labEdges body)
+         ++ Map.foldWithKey (globalEntry ga dg) [] (globalEnv dg)
 
-
-genSig :: Map.Map Int NodeName -> GenSig -> [Attr]
-genSig nm (GenSig _ _ allparams) = case allparams of
+genSig :: DGraph  -> GenSig -> [Attr]
+genSig dg (GenSig _ _ allparams) = case allparams of
    EmptyNode _ -> []
-   JustNode (NodeSig n _) -> [mkAttr "formal-param" $ lookupNodeName n nm]
+   JustNode (NodeSig n _) -> [mkAttr "formal-param" $ getNameOfNode n dg]
 
-globalEntry :: GlobalAnnos -> Map.Map Int NodeName -> SIMPLE_ID -> GlobalEntry
+globalEntry :: GlobalAnnos -> DGraph -> SIMPLE_ID -> GlobalEntry
             -> [Element] -> [Element]
-globalEntry ga nm si ge l = case ge of
+globalEntry ga dg si ge l = case ge of
   SpecEntry (ExtGenSig g (NodeSig n _)) ->
-    add_attrs (mkAttr "name" (lookupNodeName n nm) :
-      rangeAttrs (getRangeSpan si) ++ genSig nm g)
+    add_attrs (mkAttr "name" (getNameOfNode n dg) :
+      rangeAttrs (getRangeSpan si) ++ genSig dg g)
     (unode "SPEC-DEFN" ()) : l
   ViewEntry (ExtViewSig (NodeSig s _) gm (ExtGenSig g (NodeSig n _))) ->
     add_attrs (mkAttr "name" (show si) : rangeAttrs (getRangeSpan si)
-      ++ genSig nm g ++
-      [ mkAttr "source" $ lookupNodeName s nm
-      , mkAttr "target" $ lookupNodeName n nm])
+      ++ genSig dg g ++
+      [ mkAttr "source" $ getNameOfNode s dg
+      , mkAttr "target" $ getNameOfNode n dg])
     (unode "VIEW-DEFN" $ prettyElem "GMorphism" ga gm) : l
   _ -> l
 
-lnode :: GlobalAnnos -> LNode DGNodeLab -> Element
-lnode ga (_, lbl) =
-  add_attr (mkAttr "name" . showName $ dgn_name lbl)
-  $ prettyElem "Node" ga lbl
+lnode :: GlobalAnnos -> LibEnv -> LNode DGNodeLab -> Element
+lnode ga lenv (_, lbl) = let nm = dgn_name lbl in
+  add_attr (mkAttr "name" $ showName nm)
+  $ unode "Node"
+    $ unode "XPath" (showXPath $ xpath nm)
+      : case nodeInfo lbl of
+          DGRef li rf ->
+            [ add_attrs [ mkAttr "library" $ show li
+                        , mkAttr "node" $ getNameOfNode rf
+                          $ lookupDGraph li lenv ]
+            $ unode "Reference" () ]
+          DGNode orig cs ->
+              unode "Origin" (dgOriginHeader orig)
+              : case dgOriginSpec orig of
+                  Nothing -> []
+                  Just si -> [unode "OriginSpec" $ tokStr si]
+              ++ case show $ pretty cs of
+                   "" -> []
+                   cstr -> [unode "ConsStatus" cstr]
+      ++ case dgn_theory lbl of
+        G_theory lid (ExtSign sig syms) _ thsens _ ->
+           subnodes "Declarations"
+             (map (prettyElem "Symbol" ga) $ Set.toList syms) ++ let
+                 (axs, thms) = OMap.partition isAxiom $ OMap.map
+                               (mapValue $ simplify_sen lid sig) thsens
+                 (prvn, unprvn) = OMap.partition isProvenSenStatus thms
+                 in subnodes "Axioms"
+                    (map (mkSenNode ga "Axiom") $ toNamedList axs)
+                   ++ subnodes "ProvenTheorems"
+                    (map (mkSenNode ga "Theorem") $ toNamedList prvn)
+                   ++ subnodes "OpenGoals"
+                    (map (mkSenNode ga "Theorem") $ toNamedList unprvn)
 
-lookupNodeName :: Int -> Map.Map Int NodeName -> String
-lookupNodeName i = showName . Map.findWithDefault
-  (error $ "lookupNodeName " ++ show i) i
+mkSenNode :: Pretty s => GlobalAnnos -> String -> SenAttr s String -> Element
+mkSenNode ga str s = add_attr (mkAttr "name" $ senAttr s)
+  $ prettyElem str ga $ sentence s
 
-ledge :: GlobalAnnos -> Map.Map Int NodeName -> LEdge DGLinkLab -> Element
-ledge ga nm (f, t, lbl) =
-  add_attrs [ mkAttr "source" $ lookupNodeName f nm
-            , mkAttr "target" $ lookupNodeName t nm ]
-  $ prettyElem "Link" ga lbl
+ledge :: GlobalAnnos -> DGraph -> LEdge DGLinkLab -> Element
+ledge ga dg (f, t, lbl) = let orig = dgl_origin lbl in
+  add_attrs [ mkAttr "source" $ getNameOfNode f dg
+            , mkAttr "target" $ getNameOfNode t dg ]
+  $ unode "Link"
+    $ unode "Origin" (dgLinkOriginHeader orig)
+      : case dgLinkOriginSpec orig of
+          Nothing -> []
+          Just si -> [unode "OriginSpec" $ tokStr si]
+      ++ [ prettyElem "Type" ga $ dgl_type lbl
+         , prettyElem "GMorphism" ga $ dgl_morphism lbl ]
 

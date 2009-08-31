@@ -297,7 +297,7 @@ writeSpecFiles opts file lenv0 ln dg = do
     doDump opts "PrintStat" $ putStrLn $ printStatistics dg
     doDump opts "DGraph" $ putStrLn $ showDoc dg ""
     doDump opts "DGraphXML" $ writeVerbFile opts
-           (filePrefix ++ ".xml") $ ppTopElement $ ToXml.dGraph dg
+           (filePrefix ++ ".xml") $ ppTopElement $ ToXml.dGraph lenv dg
     doDump opts "LogicGraph" $ putStrLn $ showDoc logicGraph ""
     doDump opts "LibEnv" $
                writeVerbFile opts (filePrefix ++ ".lenv") $
