@@ -28,7 +28,7 @@
 \begin{frontmatter}
   \title{Optimizing Conditional Logic (Draft)}
   \author[Bremen]{Daniel Hausmann\thanksref{ALL}\thanksref{myemail}}
-  \author[Bremen]{Lutz Schr\"oder \thanksref{ALL}\thanksref{coemail}}
+  \author[Bremen]{Lutz Schr\"oder\thanksref{ALL}\thanksref{coemail}}
   \address[Bremen]{Deutsches Zentrum f\"ur k\"unstliche Intelligenz (DFKI)\\ Universit\"at Bremen, Germany}
   \thanks[ALL]{This work is supported by DFG-project no1234}
   \thanks[myemail]{Email: \href{mailto:Daniel.Hausmann@dfki.de} {\texttt{\normalshape Daniel.Hausmann@dfki.de}}}
@@ -65,6 +65,14 @@ conditional logic.
 \section{Coalgebraic conditional logic}
 
 Some theory here...
+
+Needed from this section: coalgebraic modal logic etc, notion of the set of
+formulae of a modal logic, provability / satisfiability (weak completeness?
+see ~\ref{rem:satProv}).
+Some (general) words about conditional logic?
+
+Daniel to-do-list (in other sections): Memoizing vs. dynamic programming (cite Vardi).
+Complexity of algorithm(s) (cite lutz+co. paper).
 
 \section{The algorithm}
 
@@ -167,6 +175,7 @@ justified and hence the algorithm has succeeded.
 Due to $\ldots$  %what?
 , the \emph{satisfiability} of a formula $\phi$ amounts to the provability
 of its negation $\neg \phi$.
+\label{rem:satProv}
 \end{remark}
 
 \begin{algorithm}[h]
@@ -640,6 +649,8 @@ have to be shown or refuted even during the course of the original algorithm).
 
 Write a few words about the Haskell-Implementation here. Nothing interresting apart
 from the Web-Interface, and that all of this is a part of CoLoSS.
+
+Put benchmarking-results here... (bloat, explode, etc..)
 
 \section{Summary}  
 \begin{problem}
