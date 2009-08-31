@@ -53,7 +53,7 @@ import Data.Maybe (fromJust)
 -- * Types
 
 -- ** The Symbol type
--- | Represents a Sort, Kind, Label, or Operator.
+-- | A 'Sort', 'Kind', 'Label', or 'Operator'.
 data Symbol = Sort Qid                      -- ^ A 'Sort' Symbol
             | Kind Qid                      -- ^ A 'Kind' Symbol
             | Labl Qid                      -- ^ A 'Label' Symbol
@@ -66,7 +66,7 @@ type SymbolSet = Set Symbol
 type SymbolMap = Map Symbol Symbol
 type SymbolRel = Rel Symbol
 
--- ** Symbol Instances
+-- ** Symbol instances
 
 instance HasName Symbol where
     getName symb = case symb of
@@ -117,6 +117,7 @@ asKind symb = case symb of
     Sort qid -> Kind qid
     _ -> symb
 
+-- | True iff the argument is a 'Sort' or 'Kind'.
 isType :: Symbol -> Bool
 isType symb = case symb of
     Sort _ -> True
@@ -133,11 +134,13 @@ toTypeMaybe symb = case symb of
 toType :: Symbol -> Type
 toType = fromJust . toTypeMaybe
 
+-- | True iff the argument is a wildcard 'Operator'.
 isOpWildcard :: Symbol -> Bool
 isOpWildcard symb = case symb of
     OpWildcard _ -> True
     _ -> False
 
+-- | True iff the argument is a qualified 'Operator'.
 isOperator :: Symbol -> Bool
 isOperator symb = case symb of
     Operator _ _ _ -> True
@@ -165,6 +168,9 @@ mkOpPartial qid dom cod = Operator qid (map Sort dom) (Kind cod)
 
 -- * Testing
 
+-- | True iff both 'Symbol's are of the same 'Kind' in the given
+-- 'SymbolRel'. The 'isType' predicate is assumed to hold for both
+-- 'Symbol's; this precondition is /not/ checked.
 typeSameKind :: SymbolRel -> Symbol -> Symbol -> Bool
 typeSameKind rel s1 s2 = let
     preds1 = Rel.predecessors rel s1
@@ -181,6 +187,8 @@ typeSameKind rel s1 s2 = let
               , not $ Set.null psect
               , not $ Set.null ssect ]
 
+-- | True iff the 'Symbol's of both lists are pairwise of the same
+-- 'Kind' in the given 'SymbolRel'.
 zipSameKind :: SymbolRel -> Symbols -> Symbols -> Bool
 zipSameKind rel s1 s2 = all id $ zipWith (sameKind rel) s1 s2
 
