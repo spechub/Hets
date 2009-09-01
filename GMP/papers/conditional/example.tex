@@ -649,12 +649,14 @@ have to be shown or refuted even during the course of the original algorithm).
 
 The proposed optimized algorithms have been implemented (using the programming
 language Haskell) as part of the generic coalgebraic modal logic satisfiability
-solver (CoLoSS\footnote{More information and a web-interface to the tool are
-available at \verb|http://www.informatik.uni-bremen.de/cofi/CoLoSS/|}). CoLoSS provides the general coalgebraic framework in which a generic
+solver (CoLoSS\footnote{More information about CoLoSS, a web-interface to the tool and 
+the used benchmarking formulae can be found at http://www.informatik.uni-bremen.de/cofi/CoLoSS/}).
+CoLoSS provides the general coalgebraic framework in which the generic
 sequent calculus is embedded. It is easily possible to instantiate this generic sequent
 calculus to specific modal logics, one particular example being conditional logic.
 The CoLoSS matching function for conditional logic was hence adapted in order to realize
-the different optimizations, so that CoLoSS now provides an efficient algorithm for
+the different optimizations (closely following Algorithms~\ref{alg:seq},~\ref{alg:preprove} and
+~\ref{alg:optPreprove}), so that CoLoSS now provides an efficient algorithm for
 deciding the provability (and satisfiability) of conditional logic formulae.
 
 \subsection{Comparing the proposed algorithms}
@@ -678,31 +680,6 @@ does not check whether pairs of modal antecedents are independent or connected, 
 than Algorithm~\ref{alg:optPreprove} which only attempts to prove the logical equivalence of formulae which are not
 independent. A comparison of the different algorithms w.r.t. formulae \verb|bloat(|$i$\verb|)| is depicted in
 Figure~\ref{fig:benchBloat}.
-
-\item The formula \verb|conjunct(|$i$\verb|)| is just an $i$-fold conjunction of a specific formula $A$:
-\begin{quote}
-\verb|conjunct(|$i$\verb|)| = $A_1\wedge\ldots\wedge A_i$\\
-$A=(((p_1\vee p_0)\Rightarrow p_2)\vee((p_0\vee p_1)\Rightarrow p_2))\vee\neg(((p_0\vee p_1)\Rightarrow p_2)\vee((p_1\vee p_0)\Rightarrow p_2))$)
-\end{quote}
-This class contains formulae which contain logically (but not sytactically!) equivalent antecedents.
-As $i$ increases, so does the amount of appearance of identical modal antecedents in different positions
-of the considered formula. Hence the optimized should perform considerably better than the unoptimized
-Algorithm~\ref{alg:seq}. A comparison of the different algorithms w.r.t. formulae \verb|conjunct(|$i$\verb|)| is depicted in
-Figure~\ref{fig:benchConjunct}.
-
-\item The formula \verb|explode(|$i$\verb|)| contains equivalent but not syntactically
-equal and interchangingly nested modal antecedents of depth at most $i$:
-\begin{quote}
-\verb|explode(|$i$\verb|)| = $X^i_1\vee\ldots\vee X^i_i$\\
-$X^i_1=(A^i_1\Rightarrow(\ldots(A^i_i\Rightarrow (c_1\wedge\ldots\wedge c_i))\ldots))$\\
-$X^i_j=(A^i_{j\bmod i}\Rightarrow(\ldots(A^i_{(j+(i-1))\bmod i}\Rightarrow \neg c_j)\ldots))$\\
-$A^i_j=p_{j \bmod i}\wedge p_{(j+(i-1)) \bmod i}$
-\end{quote}
-This class contains complex formulae for which the unoptimized algorithm should not be
-efficient any more: Only the combined knowledge about all appearing modal antecedent allows
-the proving algorithm to reach all conclusions $c_i$, and only the combined sequent
-$(c_1\wedge\ldots\wedge c_i),\neg c_1,\ldots,\neg c_i$ (containing every appearing
-conclusion) is provable. The algorithms perform as expected (see Figure~\ref{fig:benchExplode}).
 \end{itemize}
 
 \begin{figure}[!h]
@@ -725,6 +702,18 @@ $i$ & Algorithm~\ref{alg:seq} & Algorithm~\ref{alg:preprove} & Algorithm~\ref{al
   \label{fig:benchBloat}
 \end{figure}
 
+\begin{itemize}
+\item The formula \verb|conjunct(|$i$\verb|)| is just an $i$-fold conjunction of a specific formula $A$:
+\begin{quote}
+\verb|conjunct(|$i$\verb|)| = $A_1\wedge\ldots\wedge A_i$\\
+$A=(((p_1\vee p_0)\Rightarrow p_2)\vee((p_0\vee p_1)\Rightarrow p_2))\vee\neg(((p_0\vee p_1)\Rightarrow p_2)\vee((p_1\vee p_0)\Rightarrow p_2))$)
+\end{quote}
+This class contains formulae which contain logically (but not sytactically!) equivalent antecedents.
+As $i$ increases, so does the amount of appearance of identical modal antecedents in different positions
+of the considered formula. Hence the optimized should perform considerably better than the unoptimized
+Algorithm~\ref{alg:seq}. A comparison of the different algorithms w.r.t. formulae \verb|conjunct(|$i$\verb|)| is depicted in
+Figure~\ref{fig:benchConjunct}.
+\end{itemize}
 
 \begin{figure}[!h]
   \begin{center}
@@ -748,6 +737,22 @@ $i$ & Algorithm~\ref{alg:seq} & Algorithm~\ref{alg:preprove} & Algorithm~\ref{al
   \label{fig:benchConjunct}
 \end{figure}
 
+\begin{itemize}
+\item The formula \verb|explode(|$i$\verb|)| contains equivalent but not syntactically
+equal and interchangingly nested modal antecedents of depth at most $i$:
+\begin{quote}
+\verb|explode(|$i$\verb|)| = $X^i_1\vee\ldots\vee X^i_i$\\
+$X^i_1=(A^i_1\Rightarrow(\ldots(A^i_i\Rightarrow (c_1\wedge\ldots\wedge c_i))\ldots))$\\
+$X^i_j=(A^i_{j\bmod i}\Rightarrow(\ldots(A^i_{(j+(i-1))\bmod i}\Rightarrow \neg c_j)\ldots))$\\
+$A^i_j=p_{j \bmod i}\wedge p_{(j+(i-1)) \bmod i}$
+\end{quote}
+This class contains complex formulae for which the unoptimized algorithm should not be
+efficient any more: Only the combined knowledge about all appearing modal antecedent allows
+the proving algorithm to reach all conclusions $c_i$, and only the combined sequent
+$\{(c_1\wedge\ldots\wedge c_i),\neg c_1,\ldots,\neg c_i\}$ (containing every appearing
+conclusion) is provable. The algorithms perform as expected (see Figure~\ref{fig:benchExplode}).
+\end{itemize}
+
 \begin{figure}[!h]
   \begin{center}
 \begin{tabular}{| l | r | r | r |}
@@ -770,10 +775,10 @@ $i$ & Algorithm~\ref{alg:seq} & Algorithm~\ref{alg:preprove} & Algorithm~\ref{al
   \label{fig:benchExplode}
 \end{figure}
 
-The tests reveal that a significant increase of performance may be obtained through
-the proposed
-optimizations. In general, the implementation of the proposed algorithms (realized
-in CoLoSS) has a comparable performance to
+The tests we conducted on a Linux PC (Dual Core AMD Opteron 2220Server - 2800MHZ, 16GB RAM).
+It is obvious that a significant increase of performance may be obtained through
+the proposed optimizations. In general, the implementation of the proposed algorithms (realized
+as a part of CoLoSS) has a comparable performance to
 other conditional logic provers (such as CondLean). However, the authors of other
 provers did not publish their benchmarking sets of formulae, so that a direct
 comparison was not possible. Since other provers do not implement the optimization
