@@ -167,7 +167,7 @@ following form~\cite{PattinsonSchroder08b}.
   \mbox{ is $n$-ary, } s_1, \dots, s_n \in S \rbrace$ of formulas
   comprising exactly one application of a modality to elements of
   $S$. An \emph{$S$-sequent}, or just a \emph{sequent} in case
-  $S=\Form(\Lambda)$, is a finite set of elements of $S \cup \lbrace
+  $S=(\Lambda)$, is a finite set of elements of $S \cup \lbrace
   \neg A \mid A \in S \rbrace$. Then, a \emph{one-step rule}
   $\Gamma_1,\dots,\Gamma_n/\Gamma_0$ over a set $V$ of variables
   consists of $V$-sequents $\Gamma_1,\dots,\Gamma_n$ and a
@@ -452,15 +452,15 @@ Finally, let $depth(\phi)$ denote the maximal modal nesting in
 the formula $\phi$.
 \end{definition}
 
-\begin{example}
-In the formula $\phi=((p_0\Rightarrow p_1) \wedge ((p_2\Rightarrow p_3)\Rightarrow p_4))
-\Rightarrow (p_5\Rightarrow p_6)$,
-the premise $((p_0\Rightarrow p_1) \wedge ((p_2\Rightarrow p_3)\Rightarrow p_4))$ has a
-nesting depth of 2 (and not 1), $(p_0\Rightarrow p_1)$ and $(p_2\Rightarrow p_3)$ both
-have a nesting depth of 1, and finally $p_0$, $p_2$ and $p_4$ all have a nesting depth of 0.
-Furthermore, $prems(1)=\{p_0,p_2,p_4,(p_0\Rightarrow p_1),(p_2\Rightarrow p_3)\}$
-and $depth(\phi)=3$.
-\end{example}
+%\begin{example}
+%In the formula $\phi=((p_0\Rightarrow p_1) \wedge ((p_2\Rightarrow p_3)\Rightarrow p_4))
+%\Rightarrow (p_5\Rightarrow p_6)$,
+%the premise $((p_0\Rightarrow p_1) \wedge ((p_2\Rightarrow p_3)\Rightarrow p_4))$ has a
+%nesting depth of 2 (and not 1), $(p_0\Rightarrow p_1)$ and $(p_2\Rightarrow p_3)$ both
+%have a nesting depth of 1, and finally $p_0$, $p_2$ and $p_4$ all have a nesting depth of 0.
+%Furthermore, $prems(1)=\{p_0,p_2,p_4,(p_0\Rightarrow p_1),(p_2\Rightarrow p_3)\}$
+%and $depth(\phi)=3$.
+%\end{example}
 
 \begin{definition}
 A set $\mathcal{K}$ of treated sequents together with a function
@@ -555,7 +555,7 @@ than $i$ have allready been computed and the result is stored in $eval_i$; hence
 two antecedents are equal, if their equivalence is provable by
 Algorithm~\ref{alg:optSeq} using only the knowledge $(\mathcal{K}_{i},eval_i)$.
 
-\subsection{Treatment of needed equivalences only}
+\subsection{Treatment of Requisite Equivalences Only}
 
 Since Algorithm~\ref{alg:preprove} tries to show the logical equivalence of any combination
 of two conditional antecedents that appear in $\phi$, it will have worse completion
@@ -605,7 +605,7 @@ Since two independent conditional antecedents will never appear in the scope of 
 same application of the modal rule, it is in no case necessary to show (or
 refute) the logical equivalence of independent conditional antecedents. Hence it suffices to focus
 our attention to the connected conditional antecedents. It is then obvious that
-any possibly needed equivalence and its truth-value are allready included in $(K,eval)$
+any possibly requisite equivalence and its truth-value are allready included in $(K,eval)$
 when the main proving is induced. On the other hand, we have to be aware that it
 may be the case, that we show equivalences of antecedents which are in fact not needed
 (since antecedents may indeed be connected and still it is possible that they never appear together in an application
@@ -654,7 +654,8 @@ the different optimisations (closely following Algorithms~\ref{alg:seq},~\ref{al
 ~\ref{alg:optPreprove}), so that \COLOSS~now provides an efficient algorithm for
 deciding the provability (and satisfiability) of conditional logic formulae.
 
-\subsection{Comparing the proposed algorithms}
+\subsection{Comparing the Proposed Algorithms}
+\label{sec:bench}
 
 In order to show the relevance of the proposed optimisations, we devise several classes
 of conditional formulae. Each class has a characteristic general shape, defining its
@@ -790,7 +791,7 @@ strategies proposed in this paper, it is reasonable to assume, that the optimize
 implementation in \COLOSS~outperforms other systems at least for the 
 considered examplary formulae \verb|explode(|i\verb|)| and \verb|conjunct(|i\verb|)|.
 
-\section{Generalized optimisation}
+\section{Generalized Optimisation}
 
 As previously mentioned, the demonstrated optimisation is not restricted to the
 case of conditional
@@ -874,39 +875,32 @@ The following two cases are instances of the generic optimisation:
 \item (Classical modal Logics / Neighbourhood Semantics) Let $\Gamma = \{\Box A = \Box B\}$,
 $n=1$, $S_1=\{A=B\}$ and $\mathcal{S}=\emptyset$. Algorithm~\ref{alg:genOptPreprove}
 may be then applied whenever the following congruence rule is sound in the considered
-logic:\\
-
+logic:
 \begin{quote}
 \begin{center}
       (\textsc {\textbf{Opt}$_{Cong}$}) \inferrule{ A=B }
                       { \Box A = \Box B }
   \end{center}
 \end{quote}
-\vspace{10pt}
-The according modified version of this rule is as follows:\\
-
+The according modified version of this rule is as follows:
 \begin{quote}
 \begin{center}
       (\textsc {\textbf{Opt}$^m_{Cong}$}) \inferrule{ {eval(A=B)=\top} }
                       { \Box A = \Box B }
   \end{center}
 \end{quote}
-
 \item (Monotone modal logics) By setting $\Gamma = \{\Box A \rightarrow \Box B\}$,
 $n=1$, $S_1=\{A\rightarrow B\}$ and $\mathcal{S}=\emptyset$, we may instantiate
 the generic algorithm to the case of modal logics which are monotone w.r.t. their
 modal operator. So assume the following rule to be sound in  the considered modal
-logic:\\
-
+logic:
 \begin{quote}
 \begin{center}
       (\textsc {\textbf{Opt}$_{Mon}$}) \inferrule{ A\rightarrow B }
                       { \Box A \rightarrow \Box B }
   \end{center}
 \end{quote}
-\vspace{10pt}
-The according modified version of this rule is as follows:\\
-
+The according modified version of this rule is as follows:
 \begin{quote}
 \begin{center}
       (\textsc {\textbf{Opt}$^m_{Mon}$}) \inferrule{ {eval(A\rightarrow B)=\top} }
@@ -939,10 +933,31 @@ which accord to the current instantiation of the rule (\textbf{Opt}) will
 have to be shown or refuted even during the course of the original algorithm).
 \end{remark}
 
-\section{Summary}  
-\begin{problem}
-  Finish your paper and get it to your Program Chairman on time!
-\end{problem}
+\section{Conclusion}  
+
+We presented (from a practical point of view) two optimisations for reasoning
+in conditional logic:
+\begin{itemize}
+\item The first optimisation makes use of the concept of dynamic programming
+in order to seperate the two tasks that showing validity of formulas in conditional
+logic consists of: The first task of proving equivalences of antecedents and the second task
+of ordinary sequent proving. This substantially decreases the branching breadth
+of the resulting sequent calculus.
+\item The second proposed optimisation introduces a strategy to reduce the amount
+of pairs of antecedents whose equivalence has to be considered. This is achieved
+by distinguishing between connected and independent pairs of modal arguments.
+\end{itemize}
+When both optimisations are applied at the same time, a significant increase in
+performance of the sequent algorithm for conditional logic can be observed.
+This was shown in 
+Section~\ref{sec:bench} by considering the results of benchmarking a Haskell
+implementation (which forms part of the generic proving tool \COLOSS) of the
+optimised algorithms.
+
+It remains as an open question whether the gain in perfomance which is obtained
+by optimising the algorithm for conditional logic may be transferred to other
+logics by making use of the generic optimisation strategy as described in the
+last section.
 
 \bibliographystyle{myabbrv}
 \bibliography{coalgml}
