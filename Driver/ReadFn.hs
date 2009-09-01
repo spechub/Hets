@@ -36,10 +36,11 @@ import Common.LibName
 import Text.ParserCombinators.Parsec
 import System.Time
 import Data.List (isPrefixOf)
+import Data.Maybe
 
-read_LIB_DEFN_M :: Monad m => LogicGraph -> HetcatsOpts
+readLibDefnM :: Monad m => LogicGraph -> HetcatsOpts
                 -> FilePath -> String -> ClockTime -> m LIB_DEFN
-read_LIB_DEFN_M lgraph opts file input mt =
+readLibDefnM lgraph opts file input mt =
     if null input then fail ("empty input file: " ++ file) else
     case intype opts of
     ATermIn _  -> return $ from_sml_ATermString input
@@ -91,15 +92,26 @@ readVerbose lg opts ln file = do
 
 -- | create a file name without suffix from a library name
 libNameToFile :: HetcatsOpts -> LIB_NAME -> FilePath
-libNameToFile opts ln =
-           case getLIB_ID ln of
-                Indirect_link file _ ofile _ ->
-                  let path = case libdirs opts of
+libNameToFile opts ln = case getLIB_ID ln of
+  Indirect_link file _ ofile _ ->
+      let path = case libdirs opts of
                         [] -> ""
                         fp : _ -> fp
-                     -- add trailing "/" if necessary
-                  in if null ofile then pathAndBase path file else ofile
-                Direct_link _ _ -> error "libNameToFile"
+      -- add trailing "/" if necessary
+      in if null ofile then pathAndBase path file else ofile
+  Direct_link _ _ -> error "libNameToFile"
+
+findFileOfLibName :: HetcatsOpts -> LIB_NAME -> IO (Maybe FilePath)
+findFileOfLibName opts ln = case getLIB_ID ln of
+  Indirect_link file _ ofile _ ->
+      if null ofile then do
+          let fs = map (flip pathAndBase file) $ libdirs opts
+          ms <- mapM (existsAnSource opts { intype = GuessIn }) fs
+          case catMaybes ms of
+            [] -> return Nothing
+            f : _ -> return $ Just f
+      else return $ Just ofile
+  Direct_link _ _ -> return Nothing
 
 -- | convert a file name that may have a suffix to a library name
 fileToLibName :: HetcatsOpts -> FilePath -> LIB_NAME

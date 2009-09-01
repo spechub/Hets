@@ -86,7 +86,7 @@ anaSourceFile lgraph opts topLns libenv fname = ResultT $ do
 anaString :: LogicGraph -> HetcatsOpts -> LNS -> LibEnv -> String
           -> FilePath -> ClockTime -> ResultT IO (LIB_NAME, LibEnv)
 anaString lgraph opts topLns libenv input file mt = do
-  let Result ds mast = read_LIB_DEFN_M lgraph opts file input mt
+  let Result ds mast = readLibDefnM lgraph opts file input mt
   case mast of
     Just ast@(Lib_defn ln _ _ ans) -> case analysis opts of
       Skip  -> do
@@ -125,12 +125,18 @@ anaLibFile lgraph opts topLns libenv ln =
         analyzing opts $ "from " ++ lnstr
         return (ln, libenv)
     Nothing -> do
-        putMessageIORes opts 1 $ "Downloading " ++ lnstr ++ " ..."
-        res <- anaLibFileOrGetEnv lgraph
-            (if recurse opts then opts else opts { outtypes = [] })
-            (Set.insert ln topLns) libenv ln $ libNameToFile opts ln
-        putMessageIORes opts 1 $ "... loaded " ++ lnstr
-        return res
+        mf <- lift $ findFileOfLibName opts ln
+        case mf of
+          Nothing ->
+            liftR $ fail $ "no file for library '" ++ lnstr
+                ++ "' found"
+          Just file -> do
+            putMessageIORes opts 1 $ "Downloading " ++ lnstr ++ " ..."
+            res <- anaLibFileOrGetEnv lgraph
+              (if recurse opts then opts else opts { outtypes = [] })
+              (Set.insert ln topLns) libenv ln file
+            putMessageIORes opts 1 $ "... loaded " ++ lnstr
+            return res
 
 -- | lookup or read a library
 anaLibFileOrGetEnv :: LogicGraph -> HetcatsOpts -> LNS -> LibEnv
