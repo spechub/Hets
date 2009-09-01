@@ -25,6 +25,7 @@ import Common.DocUtils
 import Common.ExtSign
 import Common.GlobalAnnotations
 import Common.Id
+import Common.LibName
 import qualified Common.OrderedMap as OMap
 import Common.ToXml
 
@@ -73,7 +74,7 @@ lnode ga lenv (_, lbl) = let nm = dgn_name lbl in
     $ unode "XPath" (showXPath $ xpath nm)
       : case nodeInfo lbl of
           DGRef li rf ->
-            [ add_attrs [ mkAttr "library" $ show li
+            [ add_attrs [ mkAttr "library" $ show $ getLIB_ID li
                         , mkAttr "node" $ getNameOfNode rf
                           $ lookupDGraph li lenv ]
             $ unode "Reference" () ]
@@ -114,4 +115,3 @@ ledge ga dg (f, t, lbl) = let orig = dgl_origin lbl in
           Just si -> [unode "OriginSpec" $ tokStr si]
       ++ [ prettyElem "Type" ga $ dgl_type lbl
          , prettyElem "GMorphism" ga $ dgl_morphism lbl ]
-

@@ -26,20 +26,23 @@ mkAttr = Attr . unqual
 prettyElem :: Pretty a => String -> GlobalAnnos -> a -> Element
 prettyElem name ga a = unode name $ showGlobalDoc ga a ""
 
-rangeAttrs :: Range -> [Attr]
-rangeAttrs rg = case rangeToList rg of
+rangeAttrsF :: ([Pos] -> String) -> Range -> [Attr]
+rangeAttrsF f rg = case rangeToList rg of
   [] -> []
-  ps -> [mkAttr "range" $ show $ prettyRange ps]
+  ps -> [mkAttr "range" $ f ps]
+
+rangeAttrs :: Range -> [Attr]
+rangeAttrs = rangeAttrsF $ show . prettyRange
 
 mkNameAttr :: String -> Attr
 mkNameAttr = mkAttr "name"
 
-annotation :: GlobalAnnos -> Annotation -> Element
-annotation ga a = add_attrs (rangeAttrs $ getRangeSpan a)
+annotationF :: (Range -> [Attr]) -> GlobalAnnos -> Annotation -> Element
+annotationF f ga a = add_attrs (f $ getRangeSpan a)
   $ prettyElem "Annotation" ga a
 
 annotations :: GlobalAnnos -> [Annotation] -> [Element]
-annotations = map . annotation
+annotations = map . annotationF rangeAttrs
 
 subnodes :: String -> [Element] -> [Element]
 subnodes name elems = if null elems then [] else [unode name elems]
