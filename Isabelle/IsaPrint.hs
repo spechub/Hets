@@ -36,7 +36,7 @@ printIsaTheory :: String -> Sign -> [Named Sentence] -> Doc
 printIsaTheory tn sign sens = let
     b = baseSig sign
     bs = showBaseSig b
-    ld = "$HETS_LIB/Isabelle/"
+    ld = "$HETS_ISABELLE_LIB/"
     use = text usesS <+> doubleQuotes (text $ ld ++ "prelude")
     in text theoryS <+> text tn
     $+$ text importsS <+> fsep ((if case b of
