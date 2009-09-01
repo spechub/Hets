@@ -29,26 +29,33 @@ module Static.AnalysisStructured
     ) where
 
 import Driver.Options
+
 import Logic.Logic
 import Logic.ExtSign
 import Logic.Coerce
 import Logic.Comorphism
 import Logic.Grothendieck
 import Logic.Prover
+
 import Static.DevGraph
 import Static.GTheory
+
 import Syntax.AS_Structured
-import Common.Result
-import Common.Id
-import Common.ExtSign
+
 import Common.AS_Annotation hiding (isAxiom, isDef)
+import Common.DocUtils
+import Common.ExtSign
+import Common.Id
+import Common.Result
+import Common.Utils (number)
+import qualified Common.Lib.Rel as Rel (image, setInsert)
+
+import Data.Graph.Inductive.Graph as Graph (Node)
 import qualified Data.Set as Set
 import qualified Data.Map as Map
-import qualified Common.Lib.Rel as Rel(image, setInsert)
-import Data.Graph.Inductive.Graph as Graph (Node)
-import Common.DocUtils
 import Data.Maybe
 import Data.List (find)
+
 import Control.Monad
 
 coerceMaybeNode :: LogicGraph -> DGraph -> MaybeNode -> NodeName -> AnyLogic
@@ -71,7 +78,7 @@ coerceNode lg dg ns@(NodeSig n s@(G_sign lid1 _ _)) nn l2@(Logic lid2) =
           && dgl_morphism l == gmor) $ outDG dg n of
         Nothing -> do
           let (ms@(NodeSig m _), dg2) =
-                insGSig dg (inc nn) DGTranslation $ cod gmor
+                insGSig dg (extName "XCoerced" nn) DGTranslation $ cod gmor
               dg3 = insLink dg2 gmor globalDef SeeTarget n m
           return (ms, dg3)
         Just (_, t, _) ->
@@ -165,7 +172,7 @@ anaQualSpec :: Bool -> LogicGraph -> HetcatsOpts -> DGraph
   -> Result (Annoted SPEC, NodeSig, DGraph)
 anaQualSpec addSyms lg opts dg nsig name asp pos = do
       (sp', NodeSig n' gsigma, dg') <-
-          anaSpec addSyms lg dg nsig (inc name) opts $ item asp
+          anaSpec addSyms lg dg nsig (extName "Qualified" name) opts $ item asp
       let (ns@(NodeSig node gsigma'), dg2) =
               insGSig dg' name DGLogicQual gsigma
       incl <- adjustPos pos $ ginclusion lg gsigma gsigma'
@@ -177,7 +184,8 @@ anaFreeOrCofreeSpec :: Bool -> LogicGraph -> HetcatsOpts -> DGraph
   -> Result (Annoted SPEC, NodeSig, DGraph)
 anaFreeOrCofreeSpec addSyms lg opts dg nsig name dglType asp pos = do
       (sp', NodeSig n' gsigma, dg') <-
-          anaSpec addSyms lg dg nsig (inc name) opts $ item asp
+          anaSpec addSyms lg dg nsig (extName (show dglType) name) opts
+            $ item asp
       let (ns@(NodeSig node gsigma'), dg2) =
               insGSig dg' name (DGFreeOrCofree dglType) gsigma
       nsigma <- return $ case nsig of
@@ -234,7 +242,7 @@ anaSpecAux conser addSyms lg dg nsig name opts sp = case sp of
   Translation asp ren ->
    do let sp1 = item asp
       (sp1', NodeSig n' gsigma, dg') <-
-          anaSpec addSyms lg dg nsig (inc name) opts sp1
+          anaSpec addSyms lg dg nsig (extName "Translation" name) opts sp1
       mor <- anaRenaming lg nsig gsigma opts ren
       -- ??? check that mor is identity on local env
       let (ns@(NodeSig node _), dg'') =
@@ -245,7 +253,7 @@ anaSpecAux conser addSyms lg dg nsig name opts sp = case sp of
   Reduction asp restr ->
    do let sp1 = item asp
       (sp1', NodeSig n' gsigma', dg') <-
-          anaSpec addSyms lg dg nsig (inc name) opts sp1
+          anaSpec addSyms lg dg nsig (extName "Restriction" name) opts sp1
       let gsigma = getMaybeSig nsig
       (hmor, tmor) <- anaRestriction gsigma gsigma' opts restr
       -- we treat hiding and revealing differently
@@ -270,7 +278,7 @@ anaSpecAux conser addSyms lg dg nsig name opts sp = case sp of
                    insLink dg'' hmor HidingDefLink SeeTarget n' node1)
          else do
            let (NodeSig node1 _, dg'') =
-                   insGSig dg' (extName "Translation" name) DGRevealing gsigma1
+                   insGSig dg' (extName "Revealing" name) DGRevealing gsigma1
                (ns@(NodeSig node2 _), dg3) =
                    insGSig dg'' name DGRevealTranslation gsigma''
                dg4 = insLink dg3 hmor HidingDefLink SeeTarget n' node1
@@ -281,6 +289,11 @@ anaSpecAux conser addSyms lg dg nsig name opts sp = case sp of
       name opts asps
     return (Union newAsps pos, ns, dg')
   Extension asps pos -> do
+   let namedSps = map (\ (asp, n) ->
+         if n < length asps then
+             (incBy n (extName "Extension" name), asp)
+         else (name { xpath = ChildIndex n : ElemName "Extension"
+                      : xpath name }, asp)) $ number asps
    (sps', nsig1', dg1, _, _) <- foldM (anaExtension lg opts pos)
      ([], nsig, dg, conser, addSyms) namedSps
    case nsig1' of
@@ -288,10 +301,6 @@ anaSpecAux conser addSyms lg dg nsig name opts sp = case sp of
        JustNode nsig1 -> return (Extension (zipWith replaceAnnoted
                           (reverse sps') asps)
                                  pos, nsig1,dg1)
-   where
-   namedSps = zip (reverse (name: tail (take (length asps)
-                    (iterate inc (extName "Extension" name)))))
-                   asps
   Free_spec asp poss -> do
       (nasp, nsig', dg') <- anaFreeOrCofreeSpec addSyms lg opts dg nsig name
         Free asp poss
@@ -305,9 +314,9 @@ anaSpecAux conser addSyms lg dg nsig name opts sp = case sp of
           sp1' = item asp'
           adj = adjustPos poss
       (sp2, nsig'@(NodeSig _ (G_sign lid' sigma' _)), dg') <-
-          anaSpec False lg dg nsig (extName "Local" name) opts sp1
+        anaSpec False lg dg nsig (extName "Local" name) opts sp1
       (sp2', NodeSig n'' (G_sign lid'' sigma'' _), dg'') <-
-          anaSpec False lg dg' (JustNode nsig') (inc name) opts sp1'
+        anaSpec False lg dg' (JustNode nsig') (extName "Within" name) opts sp1'
       let gsigma = getMaybeSig nsig
       G_sign lid sigma _ <- return gsigma
       sigma1 <- adj $ coerceSign lid' lid "Analysis of local spec" sigma'
@@ -338,8 +347,8 @@ anaSpecAux conser addSyms lg dg nsig name opts sp = case sp of
    do let sp1 = item asp
           l = getLogic nsig
       -- analyse spec with empty local env
-      (sp', NodeSig n' gsigma', dg') <-
-          anaSpec False lg dg (EmptyNode l) (inc name) opts sp1
+      (sp', NodeSig n' gsigma', dg') <-   -- choose a unique starting letter
+          anaSpec False lg dg (EmptyNode l) (extName "closed" name) opts sp1
       let gsigma = getMaybeSig nsig
           adj = adjustPos pos
       gsigma'' <- adj $ gsigUnion lg gsigma gsigma'
@@ -433,7 +442,7 @@ anaSpecAux conser addSyms lg dg nsig name opts sp = case sp of
       Comorphism cid <- adj $ logicInclusion lg (Logic lidD) (Logic lidP)
       let lidD' = sourceLogic cid
           lidP' = targetLogic cid
-          dname = inc name
+          dname = extName "Data" name
       -- analyse SPEC1
       (sp1', NodeSig n' (G_sign lid' sigma' _), dg') <-
          anaSpec False lg dg (EmptyNode (Logic lidD)) dname opts sp1
@@ -464,8 +473,9 @@ anaUnion addSyms lg dg nsig name opts asps = case asps of
       let sps = map item asps
       (sps', nsigs, dg', _) <-
           let ana (sps1, nsigs, dg', n) sp' = do
-                (sp1, nsig', dg1) <- anaSpec addSyms lg dg' nsig n opts sp'
-                return (sp1 : sps1, nsig' : nsigs, dg1, inc n)
+                let n1 = inc n
+                (sp1, nsig', dg1) <- anaSpec addSyms lg dg' nsig n1 opts sp'
+                return (sp1 : sps1, nsig' : nsigs, dg1, n1)
            in foldM ana ([], [], dg, extName "Union" name) sps
       let newAsps = zipWith replaceAnnoted (reverse sps') asps
       case nsigs of
@@ -485,8 +495,9 @@ anaFitArgs :: LogicGraph -> HetcatsOpts -> SPEC_NAME -> MaybeNode
   -> (NodeSig, FIT_ARG)
   -> Result ([FIT_ARG], DGraph, [(G_morphism, NodeSig)], NodeName)
 anaFitArgs lg opts spname imps (fas', dg1, args, name') (nsig', fa) = do
-    (fa', dg', arg) <- anaFitArg lg dg1 spname imps nsig' opts name' fa
-    return (fa' : fas', dg', arg : args , inc name')
+    let n1 = inc name'
+    (fa', dg', arg) <- anaFitArg lg dg1 spname imps nsig' opts n1 fa
+    return (fa' : fas', dg', arg : args , n1)
 
 parLink :: LogicGraph -> DGLinkOrigin -> G_sign -> Node -> DGraph -> NodeSig
         -> Result DGraph

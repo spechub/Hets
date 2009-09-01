@@ -585,12 +585,15 @@ showName n = let ext = showExt n in
 makeName :: SIMPLE_ID -> NodeName
 makeName n = NodeName n "" 0 [ElemName $ tokStr n]
 
-inc :: NodeName -> NodeName
-inc n = n
-  { extIndex = extIndex n + 1
+incBy :: Int -> NodeName -> NodeName
+incBy i n = n
+  { extIndex = extIndex n + i
   , xpath = case xpath n of
-              ChildIndex j : r -> ChildIndex (succ j) : r
+              ChildIndex j : r -> ChildIndex (j + i) : r
               l -> ChildIndex 1 : l }
+
+inc :: NodeName -> NodeName
+inc = incBy 1
 
 extName :: String -> NodeName -> NodeName
 extName s n = n
