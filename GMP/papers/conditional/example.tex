@@ -372,11 +372,11 @@ A set $\mathcal{K}$ of treated sequents together with a function
 $eval:\mathcal{K}\rightarrow \{\top,\bot\}$ is called \emph{knowledge}.
 \end{definition}
 
-We may now construct an optimized algorithm which may allow us
+We may now construct an optimized algorithm which allows us
 to decide provability (and satisfiability) of formulae more efficiently
 in some cases. The optimized algorithm is constructed from two functions
-(namely from the so-called \emph{pre-proving} function and the actual proving
-function):
+(namely from the actual proving function and from the so-called
+\emph{pre-proving} function):
 
 \begin{algorithm}[h]
 \begin{alg}
@@ -462,8 +462,8 @@ Algorithm~\ref{alg:optSeq} using only the knowledge $(\mathcal{K}_{i},eval_i)$.
 
 \subsection{Treatment of needed equivalences only}
 
-Since Algorithm~\ref{alg:preprove} tries to show the logical equivalence of every combination
-of any two conditional antecedents that appear in $\phi$, it will have worse completion
+Since Algorithm~\ref{alg:preprove} tries to show the logical equivalence of any combination
+of two conditional antecedents that appear in $\phi$, it will have worse completion
 time than Algorithm~\ref{alg:seq} on many formulae:
 
 \begin{example}
@@ -477,7 +477,7 @@ try to show the necessary equivalences between the pairs
 $(((p_0\Rightarrow p_1)\Rightarrow p_2), ((p_5\Rightarrow p_6)\Rightarrow p_7))$,
 $((p_0\Rightarrow p_1), (p_5\Rightarrow p_6))$ and $(p_0,p_5)$, but it will
 also try to show equivalences between any two conditional antecedents (e.g. $(p_0,
-(p_5\Rightarrow p_6))$), even though these equivalences may not be needed
+(p_5\Rightarrow p_6))$), even though these equivalences will not be needed
 during the execution of Algorithm~\ref{alg:optSeq}.
 \end{example}
 
@@ -491,7 +491,7 @@ of $\phi$:
 The path to a top-level antecedent is just $\{1\}$. If $\psi$ does not appear as
 antecedent on the topmost level of $\phi$, the path to it is $\{1\}$ prepended to the set
 of paths to $\psi$ in any top-level conditional antecedent of $\phi$ together with $\{0\}$
-prepended to the set of paths to $\psi$ in any top-level modal consequent of $\phi$.
+prepended to the set of paths to $\psi$ in any top-level conditional consequent of $\phi$.
 \end{definition}
 
 \begin{example}
@@ -502,7 +502,7 @@ to $p_0$ are $\{11,011\}$.
 
 \begin{definition}
 Let $A$ and $B$ be two conditional antecedents. $A$ and $B$ are called \emph{connected (in $\phi$)} if
-at least on path to $A$ is also a path to $B$. If no path to $A$ is a path to $B$ (and hence vice-versa),
+at least one path to $A$ is also a path to $B$ (and hence vice-versa). If no path to $A$ is a path to $B$,
 the two antecedents are said to be \emph{independent}.
 \end{definition}
 
@@ -543,154 +543,6 @@ remain untreated.
 \end{upshape}
 \end{alg}
 \end{algorithm}
-
-\section{Generalized optimisation}
-
-As previously mentioned, the demonstrated optimisation is not restricted to the
-case of conditional
-modal logics. 
-
-\begin{definition}
-If $\Gamma$ is a sequent, we denote the set of all arguments of
-top-level modalities from $\Gamma$ by $arg(\Gamma)$.
-A \emph{short sequent} is a sequent which consists of just one formula which
-itself is a propositional formula over a fixed maximal number of modal arguments
-from $arg(\Gamma)$. In the following, we fix the maximal number of modal arguments
-in short sequents to be 2.
-\end{definition}
-
-The general method of the optimisation then takes the following form: 
-Let $S_1,\ldots S_n$ be short sequents and assume that there is
-a (w.r.t the considered modal logic) sound instance of the generic rule which
-is depicted in Figure~\ref{fig:modalOpt} (where $\mathcal{S}$ is a set of any
-sequents).
-
-\begin{figure}[!h]
-  \begin{center}
-    \begin{tabular}{| c |}
-    \hline
-      \\[-5pt]
-(\textsc {\textbf{Opt}}) \inferrule{ S_1 \\ \ldots \\ S_n \\ \mathcal{S} }
-                      { \Gamma } \\[-5pt]
-      \\
-    \hline
-    \end{tabular}
-  \end{center}
-  \caption{The general rule-scheme to which the optimisation may be applied}
-  \label{fig:modalOpt}
-\end{figure}
-
-Then we devise a final version (Algorithm~\ref{alg:genOptPreprove}) of the
-optimized algorithm: Instead of considering only equivalences of conditional antecedents
-for pre-proving, we now extend our attention to any short sequents over any modal arguments.
-
-\begin{algorithm}[h]
-\begin{alg}
-\begin{upshape}
-  Step 1: Take a formula $\phi$ as input. Set $i=0$, $\mathcal{K}_0=\emptyset$, $eval_0=\emptyset$.\\
-  Step 2: Generate the set $args_i$ of all modal arguments of $\phi$
-  which have nesting depth at most $i$. If $i<depth(\phi)$ continue
-  with Step 3, else set $\mathcal{K}=\mathcal{K}_{i-1}, eval=eval_{i-1}$ and continue with Step 4.\\
-  Step 3: Let $seq_i$ denote the set of all short sequents $S_1$ over at most two formulae
-  $A_a,A_b\in args_i$. Compute Algorithm~\ref{alg:optSeq} ($\psi$, $(\mathcal{K}_i,eval_i)$) for all
-  $\psi\in seq_i$. Set $\mathcal{K}_{i+1} = seq_i$, set $i = i + 1$. For each short sequent
-  $\psi\in seq_i$, set $eval_{i+1}(\psi)=\top$ if the result of Algorithm~\ref{alg:optSeq} was
-  \verb+True+ and $eval_{i+1}(\psi)=\bot$ otherwise. Continue with Step 2.\\
-  Step 4: Call Algorithm~\ref{alg:optSeq} ($\phi$, $(\mathcal{K},eval)$) and return its result
-  as result.
-\end{upshape}
-\label{alg:genOptPreprove}
-\end{alg}
-\end{algorithm}
-
-This new Algorithm~\ref{alg:genOptPreprove} may then be used to decide provability of formulae,
-where the employed ruleset has to be extended by the generic modified rule given by Figure~\ref{fig:modModalOpt}.
-
-\begin{figure}[!h]
-  \begin{center}
-    \begin{tabular}{| c |}
-    \hline
-      \\[-5pt]
-      (\textsc {\textbf{Opt}$^m$}) \inferrule{ eval(S_1)=\top \\ \ldots \\ eval(S_n)=\top \\ \mathcal{S} }
-                      { \Gamma } \\[-5pt]
-      \\
-    \hline
-    \end{tabular}
-  \end{center}
-  \caption{The general optimized rule}
-  \label{fig:modModalOpt}
-\end{figure}
-
-\begin{example}
-The following two cases are instances of the generic optimisation:
-\begin{enumerate}
-\item (Classical modal Logics / Neighbourhood Semantics) Let $\Gamma = \{\Box A = \Box B\}$,
-$n=1$, $S_1=\{A=B\}$ and $\mathcal{S}=\emptyset$. Algorithm~\ref{alg:genOptPreprove}
-may be then applied whenever the following congruence rule is sound in the considered
-logic:\\
-
-\begin{quote}
-\begin{center}
-      (\textsc {\textbf{Opt}$_{Cong}$}) \inferrule{ A=B }
-                      { \Box A = \Box B }
-  \end{center}
-\end{quote}
-\vspace{10pt}
-The according modified version of this rule is as follows:\\
-
-\begin{quote}
-\begin{center}
-      (\textsc {\textbf{Opt}$^m_{Cong}$}) \inferrule{ {eval(A=B)=\top} }
-                      { \Box A = \Box B }
-  \end{center}
-\end{quote}
-
-\item (Monotone modal logics) By setting $\Gamma = \{\Box A \rightarrow \Box B\}$,
-$n=1$, $S_1=\{A\rightarrow B\}$ and $\mathcal{S}=\emptyset$, we may instantiate
-the generic algorithm to the case of modal logics which are monotone w.r.t. their
-modal operator. So assume the following rule to be sound in  the considered modal
-logic:\\
-
-\begin{quote}
-\begin{center}
-      (\textsc {\textbf{Opt}$_{Mon}$}) \inferrule{ A\rightarrow B }
-                      { \Box A \rightarrow \Box B }
-  \end{center}
-\end{quote}
-\vspace{10pt}
-The according modified version of this rule is as follows:\\
-
-\begin{quote}
-\begin{center}
-      (\textsc {\textbf{Opt}$^m_{Mon}$}) \inferrule{ {eval(A\rightarrow B)=\top} }
-                      { \Box A \rightarrow \Box B }
-  \end{center}
-\end{quote}
-
-In the case that (\textbf{Opt}$_{Mon}$) is the only modal rule in the
-considered logic (i.e. the case of plain monotone modal logic), all the
-prove-work which is connected to the modal operator is shifted to the
-pre-proving process. Especially matching with the modal rules
-$\mathcal{RO}^m_{sc}$ becomes a mere lookup of the value of $eval$.
-This means, that all calls of the sequent algorithm Algorithm~\ref{alg:optSeq}
-correspond in complexity just to ordinary sat-solving of propositional logic.
-Furthermore, Algorithm~\ref{alg:optSeq} will be called $|\phi|$ times. This
-observation may be generalized:
-\end{enumerate}
-\label{ex:neighMon}
-\end{example}
-
-\begin{remark}
-In the case that all modal rules of the considered logic are instances of
-the generic rule (\textbf{Opt}) with $P=\emptyset$ (as seen in Example~\ref{ex:neighMon}),
-the optimisation does not only allow for a reduction of computing time, but
-it also allows us to effectively reduce the sequent calculus to a sat-solving
-algorithm.
-Furthermore, the optimized algorithm will always be as efficient as the
-original one in this case (since every occurence of short sequents over $arg(\Gamma)$ 
-which accord to the current instantiation of the rule (\textbf{Opt}) will
-have to be shown or refuted even during the course of the original algorithm).
-\end{remark}
 
 \section{Implementation}
 
@@ -842,6 +694,155 @@ comparison was not possible. Since other provers do not implement the optimisati
 strategies proposed in this paper, it is reasonable to assume, that the optimized
 implementation in \COLOSS~outperforms other systems at least for the 
 considered examplary formulae \verb|explode(|i\verb|)| and \verb|conjunct(|i\verb|)|.
+
+\section{Generalized optimisation}
+
+As previously mentioned, the demonstrated optimisation is not restricted to the
+case of conditional
+modal logics. 
+
+\begin{definition}
+If $\Gamma$ is a sequent, we denote the set of all arguments of
+top-level modalities from $\Gamma$ by $arg(\Gamma)$.
+A \emph{short sequent} is a sequent which consists of just one formula which
+itself is a propositional formula over a fixed maximal number of modal arguments
+from $arg(\Gamma)$. In the following, we fix the maximal number of modal arguments
+in short sequents to be 2.
+\end{definition}
+
+The general method of the optimisation then takes the following form: 
+Let $S_1,\ldots S_n$ be short sequents and assume that there is
+a (w.r.t the considered modal logic) sound instance of the generic rule which
+is depicted in Figure~\ref{fig:modalOpt} (where $\mathcal{S}$ is a set of any
+sequents).
+
+\begin{figure}[!h]
+  \begin{center}
+    \begin{tabular}{| c |}
+    \hline
+      \\[-5pt]
+(\textsc {\textbf{Opt}}) \inferrule{ S_1 \\ \ldots \\ S_n \\ \mathcal{S} }
+                      { \Gamma } \\[-5pt]
+      \\
+    \hline
+    \end{tabular}
+  \end{center}
+  \caption{The general rule-scheme to which the optimisation may be applied}
+  \label{fig:modalOpt}
+\end{figure}
+
+Then we devise a final version (Algorithm~\ref{alg:genOptPreprove}) of the
+optimized algorithm: Instead of considering only equivalences of conditional antecedents
+for pre-proving, we now extend our attention to any short sequents over any modal arguments.
+
+\begin{algorithm}[h]
+\begin{alg}
+\begin{upshape}
+  Step 1: Take a formula $\phi$ as input. Set $i=0$, $\mathcal{K}_0=\emptyset$, $eval_0=\emptyset$.\\
+  Step 2: Generate the set $args_i$ of all modal arguments of $\phi$
+  which have nesting depth at most $i$. If $i<depth(\phi)$ continue
+  with Step 3, else set $\mathcal{K}=\mathcal{K}_{i-1}, eval=eval_{i-1}$ and continue with Step 4.\\
+  Step 3: Let $seq_i$ denote the set of all short sequents of form $S_i$ (where $S_i$ is a sequent
+  from the premise of rule (\textbf{Opt})) over at most two formulae
+  $A_a,A_b\in args_i$. Compute Algorithm~\ref{alg:optSeq} ($\psi$, $(\mathcal{K}_i,eval_i)$) for all
+  $\psi\in seq_i$. Set $\mathcal{K}_{i+1} = seq_i$, set $i = i + 1$. For each short sequent
+  $\psi\in seq_i$, set $eval_{i+1}(\psi)=\top$ if the result of Algorithm~\ref{alg:optSeq} was
+  \verb+True+ and $eval_{i+1}(\psi)=\bot$ otherwise. Continue with Step 2.\\
+  Step 4: Call Algorithm~\ref{alg:optSeq} ($\phi$, $(\mathcal{K},eval)$) and return its result
+  as result.
+\end{upshape}
+\label{alg:genOptPreprove}
+\end{alg}
+\end{algorithm}
+
+This new Algorithm~\ref{alg:genOptPreprove} may then be used to decide provability of formulae,
+where the employed ruleset has to be extended by the generic modified rule given by Figure~\ref{fig:modModalOpt}.
+
+\begin{figure}[!h]
+  \begin{center}
+    \begin{tabular}{| c |}
+    \hline
+      \\[-5pt]
+      (\textsc {\textbf{Opt}$^m$}) \inferrule{ eval(S_1)=\top \\ \ldots \\ eval(S_n)=\top \\ \mathcal{S} }
+                      { \Gamma } \\[-5pt]
+      \\
+    \hline
+    \end{tabular}
+  \end{center}
+  \caption{The general optimized rule}
+  \label{fig:modModalOpt}
+\end{figure}
+
+\begin{example}
+The following two cases are instances of the generic optimisation:
+\begin{enumerate}
+\item (Classical modal Logics / Neighbourhood Semantics) Let $\Gamma = \{\Box A = \Box B\}$,
+$n=1$, $S_1=\{A=B\}$ and $\mathcal{S}=\emptyset$. Algorithm~\ref{alg:genOptPreprove}
+may be then applied whenever the following congruence rule is sound in the considered
+logic:\\
+
+\begin{quote}
+\begin{center}
+      (\textsc {\textbf{Opt}$_{Cong}$}) \inferrule{ A=B }
+                      { \Box A = \Box B }
+  \end{center}
+\end{quote}
+\vspace{10pt}
+The according modified version of this rule is as follows:\\
+
+\begin{quote}
+\begin{center}
+      (\textsc {\textbf{Opt}$^m_{Cong}$}) \inferrule{ {eval(A=B)=\top} }
+                      { \Box A = \Box B }
+  \end{center}
+\end{quote}
+
+\item (Monotone modal logics) By setting $\Gamma = \{\Box A \rightarrow \Box B\}$,
+$n=1$, $S_1=\{A\rightarrow B\}$ and $\mathcal{S}=\emptyset$, we may instantiate
+the generic algorithm to the case of modal logics which are monotone w.r.t. their
+modal operator. So assume the following rule to be sound in  the considered modal
+logic:\\
+
+\begin{quote}
+\begin{center}
+      (\textsc {\textbf{Opt}$_{Mon}$}) \inferrule{ A\rightarrow B }
+                      { \Box A \rightarrow \Box B }
+  \end{center}
+\end{quote}
+\vspace{10pt}
+The according modified version of this rule is as follows:\\
+
+\begin{quote}
+\begin{center}
+      (\textsc {\textbf{Opt}$^m_{Mon}$}) \inferrule{ {eval(A\rightarrow B)=\top} }
+                      { \Box A \rightarrow \Box B }
+  \end{center}
+\end{quote}
+
+In the case that (\textbf{Opt}$_{Mon}$) is the only modal rule in the
+considered logic (i.e. the case of plain monotone modal logic), all the
+prove-work which is connected to the modal operator is shifted to the
+pre-proving process. Especially matching with the modal rules
+$\mathcal{RO}^m_{sc}$ becomes a mere lookup of the value of $eval$.
+This means, that all calls of the sequent algorithm Algorithm~\ref{alg:optSeq}
+correspond in complexity just to ordinary sat-solving of propositional logic.
+Furthermore, Algorithm~\ref{alg:optSeq} will be called $|\phi|$ times. This
+observation may be generalized:
+\end{enumerate}
+\label{ex:neighMon}
+\end{example}
+
+\begin{remark}
+In the case that all modal rules of the considered logic are instances of
+the generic rule (\textbf{Opt}) with $P=\emptyset$ (as seen in Example~\ref{ex:neighMon}),
+the optimisation does not only allow for a reduction of computing time, but
+it also allows us to effectively reduce the sequent calculus to a sat-solving
+algorithm.
+Furthermore, the optimized algorithm will always be as efficient as the
+original one in this case (since every occurence of short sequents over $arg(\Gamma)$ 
+which accord to the current instantiation of the rule (\textbf{Opt}) will
+have to be shown or refuted even during the course of the original algorithm).
+\end{remark}
 
 \section{Summary}  
 \begin{problem}
