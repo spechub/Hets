@@ -1,6 +1,9 @@
 \documentclass{entcs} \usepackage{entcsmacro}
 \usepackage{graphicx}
 \usepackage{mathpartir}
+\usepackage{amsmath,amssymb}
+\newcommand{\hearts}{\heartsuit}
+\input{header}
 \sloppy
 % The following is enclosed to allow easy detection of differences in
 % ascii coding.
@@ -21,8 +24,8 @@
 
 % A couple of exemplary definitions:
 
-\newcommand{\Nat}{{\mathbb N}}
-\newcommand{\Real}{{\mathbb R}}
+%\newcommand{\Nat}{{\mathbb N}}
+%\newcommand{\Real}{{\mathbb R}}
 \newcommand{\COLOSS}{{\textrm CoLoSS}}
 \def\lastname{Hausmann and Schr\"oder}
 \begin{document}
@@ -85,80 +88,104 @@ Generic tableau algorithms for coalgebraic modal logics, in particular
 the algorithm described in~\cite{SchroderPattinson09}, have been
 implemented in the reasoning tool
 \COLOSS~\cite{CalinEA09}\footnote{available under
-  \url{http://www.informatik.uni-bremen.de/cofi/CoLoSS/} and \url{http://www.doc.ic.ac.uk/~dirk/COLOSS/}}. As indicated above, it
-is a necessary feature of the generic tableau systems that they
-potentially generate multiple successor nodes for a given modal
-demand, so that in addition to the typical depth problem, proof search
-faces a rather noticeable problem of breadth. The search for
-optimisation strategies to increase the efficiency of reasoning thus
-becomes all the more urgent. Here we present one such strategy, which
-is particularly efficient in reducing both depth and branching for the
-class of conditional logics. A notable feature of this class is that
-many of the rules rely rather heavily on premises stating equivalence
+  \url{http://www.informatik.uni-bremen.de/cofi/CoLoSS/}}. As
+indicated above, it is a necessary feature of the generic tableau
+systems that they potentially generate multiple successor nodes for a
+given modal demand, so that in addition to the typical depth problem,
+proof search faces a rather noticeable problem of breadth. The search
+for optimisation strategies to increase the efficiency of reasoning
+thus becomes all the more urgent. Here we present one such strategy,
+which is generally applicable, but particularly efficient in reducing
+both depth and branching for the class of conditional logics. We
+exploit a notable feature of this class, namely that many of the
+relevant rules rely rather heavily on premises stating equivalence
 between formulas; thus, conditional logics are a good candidate for
 memoising strategies, applied judiciously to short sequents. We
-discuss the implementation of memoising and dynamic programming
-strategies within \COLOSS, 
-
-We recall 
-
-Structure of the paper: First we give a short introduction to
-the theory of coalgebraic modal logics, the general abstract
-setting in which this paper takes place. Then we describe the
-satisfiability (and provability) solving algorithm and its
-optimisation with regards to conditional logics. Further, we 
-analyze the quality of this optimisation by relating
-the structure of the input formula to the amount of work which may
-be saved by using the proposed optimisation. Furthermore,
-we compare our tool with other model checkers for conditional logic
-and finally we discuss to which extent the described
-optimisation could be used for other modal logics than just
-conditional logic.
+describe the implementation of memoising and dynamic programming
+strategies within \COLOSS, and discuss the outcome of various
+comparative experiments.
  
-\section{Coalgebraic conditional logic}
+\section{Generic Sequent Calculi for Coalgebraic Modal Logic}
 
-Some theory here...
 
-Needed from this section: coalgebraic modal logic etc, notion of the set of
-formulae of a modal logic, provability / satisfiability. Provability is
-negated satisfiability of the negation.
-Some (general) words about conditional logic?
+Coalgebraic modal logic, originally introduced as a specification
+language for coalgebras, seen as generic reactive
+systems~\cite{Pattinson03}, has since evolved into a generic framework
+for modal logic beyond Kripke semantics~\cite{CirsteaEA09}. The basic
+idea is to encapsulate the branching type of the systems relevant for
+the semantics of a particular modal logic, say probabilistic or
+game-theoretic branching, in the choice of a set functor, the
+signature functor (e.g.\ the distribution functor and the games
+functor in the mentioned examples), and to capture the semantics of
+modal operators in terms of so-called predicate liftings. For the
+purposes of the present work, details of the semantics are less
+relevant than proof-theoretic aspects, which we shall recall
+presently. The range of logics covered by the coalgebraic approach is
+extremely broad, including, besides standard Kripke and neighbourhood
+semantics, e.g.\ graded modal logic~\cite{Fine72}, probabilistic modal
+logic~\cite{FaginHalpern94}, coalition logic~\cite{Pauly02}, various
+conditional logics equipped with selection function
+semantics~\cite{Chellas80}, and many more.
 
-\section{The algorithm}
+Syntactically, logics are parametrised by the choice of a \emph{modal
+  similarity type} $\Lambda$, i.e.\ a set of modal operators with
+associated finite arities. This choice determines the set of formulas
+$\phi,\psi$ via the grammar
+\begin{equation*}
+  \phi, \psi ::=  p \mid
+  \phi \land \psi \mid \lnot \phi \mid \hearts(\phi_1, \dots, \phi_n)
+\end{equation*}
+where $\hearts$ is an $n$-ary operator in $\Lambda$. Examples are
+$\Lambda=\{L_p\mid p\in[0,1]\cap\mathbb{Q}\}$, the unary operators
+$L_p$ of probabilistic modal logic read `with probability at least
+$p$'; $\Lambda=\{\gldiamond{k}\mid k\in\Nat\}$, the operators
+$\gldiamond{k}$ of graded modal logic read `in more than $k$
+successors'; $\Lambda=\{[C]\mid C\subseteq N\}$, the operators $[C]$
+of coalition logic read `coalition $C$ (a subset of the set $N$ of
+agents) can jointly enforce that'; and, for our main example here,
+$\Lambda=\{\Rightarrow\}$, the \emph{binary} modal operator
+$\Rightarrow$ of conditional logic read e.g.\ `if \dots then normally
+\dots'.
 
-\subsection{The generic sequent calculus}
-
-According to the introduced framework, we now devise a generic
-algorithm to decide the provability of formulae. By
-instantiating the generic algorithm to a specific modal logic
-(simply by using the defining modal rule of this logic), it is
-possible to obtain an algorithm to decide provability of
-formulae of this specific modal logic.
-
+Coalgebraic modal logic was originally limited to so-called
+\emph{rank-$1$ logics} axiomatised by formulas with nesting depth of
+modal operators uniformly equal to $1$~\cite{Schroder05}. It has since
+been extended to the more general non-iterative
+logics~\cite{SchroderPattinson08d} and to some degree to iterative
+logics, axiomatised by formulas with nested
+modalities~\cite{SchroderPattinson08PHQ}. The examples considered here
+all happen to be rank-$1$, so we focus on this case. In the rank-$1$
+setting, it has been shown~\cite{Schroder05} that all logics can be
+axiomatised by \emph{one-step rules} $\phi/psi$, where $\phi$ is
+purely propositional and $\psi$ is a clause over formulas of the form
+$\hearts(a_1,\dots,a_n)$, where the $a_i$ are propositional
+variables. In the context of a sequent calculus, this takes the
+following form~\cite{PattinsonSchroder08b}.
 \begin{definition}
-A \emph{Sequent} $\Gamma$ is a set of formulae. If the provability
-of a sequent is yet to be decided, it is called an \emph{open sequent}.
-If the provability of a sequent has allready been shown or refuted,
-the sequent is called a \emph{treated sequent}. A \emph{premise}
-$\Lambda$ is a set of open sequents.
+  If $S$ is a set (of formulas or variables) then $\Lambda(S)$ denotes
+  the set $\lbrace \hearts(s_1, \dots, s_n) \mid \hearts \in \Lambda
+  \mbox{ is $n$-ary, } s_1, \dots, s_n \in S \rbrace$ of formulas
+  comprising exactly one application of a modality to elements of
+  $S$. An \emph{$S$-sequent}, or just a \emph{sequent} in case
+  $S=\Form(\Lambda)$, is a finite set of elements of $S \cup \lbrace
+  \neg A \mid A \in S \rbrace$. Then, a \emph{one-step rule}
+  $\Gamma_1,\dots,\Gamma_n/\Gamma_0$ over a set $V$ of variables
+  consists of $V$-sequents $\Gamma_1,\dots,\Gamma_n$ and a
+  $\Lambda(S)$-sequent $\Gamma_0$.
 \end{definition}
-
-\begin{definition}
-\noindent A \emph{rule} $r=(\Lambda,\Gamma)$ consists of a premise
-and an open sequent (usually called \emph{conclusion}).
-\end{definition}
-\noindent The generic sequent calculus is given by a set of rules
-$\mathcal{R}_{sc}$ which consists of the finishing and the branching
-rules $\mathcal{R}^b_{sc}$ (i.e. rules with no premise or more than
-one premise), the linear rules $\mathcal{R}^l_{sc}$ (i.e. rules with
-exactly one premise) and the modal rule $\mathcal R^m_{sc}$. The
-finishing and the branching rules are presented in Figure~\ref{fig:branching}
-(where $\top=\neg\bot$ and $p$ is an atom), the
-linear rules are shown in Figure~\ref{fig:linear}. For now, we consider the modal
-rule $\mathcal R^m_{sc}$ of the standard modal logic \textbf{K}
-(as given by Figure~\ref{fig:modalK}). Note again that
-it is possible to treat different modal logics with the same generic
-calculus just by appropriately instantiating the modal rule.
+\noindent A given set of one-step rules then induces an instantiation
+of the \emph{generic sequent calculus}~\cite{PattinsonSchroder08b}
+which is given by a set of rules $\mathcal{R}_{sc}$ consisting of the
+finishing and the branching rules $\mathcal{R}^b_{sc}$ (i.e. rules
+with no premise or more than one premise), the linear rules
+$\mathcal{R}^l_{sc}$ (i.e. rules with exactly one premise) and the
+modal rules $\mathcal R^m_{sc}$, i.e.\ the given one-step rules. The
+finishing and the branching rules are presented in
+Figure~\ref{fig:branching} (where $\top=\neg\bot$ and $p$ is an atom),
+the linear rules are shown in Figure~\ref{fig:linear}. So far, all
+these rules are purely propositional. As an example for a set of modal
+one-step rules, consider the modal rules $\mathcal R^m_{sc}$ of the
+standard modal logic \textbf{K} as given by Figure~\ref{fig:modalK}.
 
 \begin{figure}[!h]
   \begin{center}
@@ -205,6 +232,64 @@ calculus just by appropriately instantiating the modal rule.
   \caption{The modal rule of \textbf{K}}
   \label{fig:modalK}
 \end{figure}
+This calculus has been shown to be complete under suitable coherence
+assumptions on the rule set and the coalgebraic
+semantics~\cite{PattinsonSchroder08b}, provided that the set of rules
+\emph{absorbs cut and contraction} in a precise sense. We say that a
+formula is \emph{provable} if it can be derived in the relevant
+instance of the sequent calculus; the algorithms presented below are
+concerned with the \emph{provability problem}, i.e.\ to decide whether
+a given sequent is provable. This is made possible by the fact that
+the calculus does not include a cut rule, and hence enables automatic
+proof search. For rank-1 logics, proof search can be performed in
+$\mathit{PSPACE}$ under suitable assumptions on the representation of
+the rule set~\cite{SchroderPattinson09,PattinsonSchroder08b}. The
+corresponding algorithm has been implemented in the system
+CoLoSS~\cite{CalinEA09} which remains under continuous
+development. Particular attention is being paid to finding heuristic
+optimisations to enable practically efficient proof search, as
+described here.
+
+Our running example used in the presentation of our optimisation
+strategies below is conditional logic as mentioned above. The most
+basic conditional logic is $\mathit{CK}$~\cite{Chellas80} (we shall
+consider a slightly extended logic below), which is characterised by
+assuming normality of the right-hand argument of the non-monotonic
+conditional $\Rightarrow$, but only replacement of equivalents in the
+left-hand arguments. Absorption of cut and contraction requires a
+unified rule set consisting of the rules
+\begin{equation*}
+  \infrule{A_0=A_1;\;\dots;\; A_n=A_0\quad \neg B_1,\dots,\neg B_1,B_0}
+  {\neg(A_1\Rightarrow B_1),\dots,\neg(A_n\Rightarrow B_n),(A_0\Rightarrow B_0)}
+\end{equation*}
+with $A=C$ abbreviating the pair of sequents $\neg A,C$ and $\neg
+C,A$.  This illustrates two important points that play a role in the
+optimisation strategies described below. First, the rule has a large
+branching degree both existentially and universally -- we have to
+check that there \emph{exists} a rule proving some sequent such that
+\emph{all} its premises are provable, and hence we have to guess one
+of exponentially many subsequents to match the rule and then attempt
+to prove linearly many premises; compare this to linearly many rules
+and a constant number of premises per rule (namely, $1$) in the case
+of $K$ shown above. Secondly, many of the premises are short
+sequents. This will be exploited in our memoisation strategy. We note
+that \emph{labelled} sequent calculi for conditional logics have been
+designed previously~\cite{OlivettiEA07} and have been implemented in
+the CondLean prover~\cite{OlivettiPozzato03}; contrastingly, our
+calculus is unlabelled, and turns out to be conceptually simpler. The
+comparison of the relative efficiency of labelled and unlabelled
+calculi remains an open issue for the time being.
+
+\section{The Algorithm}
+
+According to the framework introduced above, we now devise a generic
+algorithm to decide the provability of formulae. By instantiating the
+generic algorithm to a specific modal logic (simply by using the
+defining modal rule of this logic), it is possible to obtain an
+algorithm to decide provability of formulae of this specific modal
+logic.
+\noindent 
+
 
 Algorithm~\ref{alg:seq} makes use of the sequent rules in the following manner:
 In order to show the \emph{provability} of a formula $\phi$, the 
@@ -218,8 +303,10 @@ rules from $\mathcal{R}^b_{sc}$ and $\mathcal{R}^m_{sc}$.}.
 The result of this one step of application of the rules will be a set
 of premises $P$. The proving function is then recursively started on
 each sequent of every premise in this set. If there is any premise
-whose sequents are all provable, the application of the according rule is
-justified and hence the algorithm has succeeded.
+whose sequents are all provable, the application of the according rule
+is justified and hence the algorithm has succeeded. Below, we refer to
+a sequent as \emph{open} if it has not yet been checked for
+provability, and otherwise as \emph{treated}.
 
 \begin{algorithm}[h]
 \begin{alg}
@@ -262,14 +349,17 @@ in~\cite{SchroderPattinson09}. For more details, refer to ~\cite{SchroderPattins
 
 The genericity of the introduced sequent calculus allows us to easiliy
 create instantiations of Algorithm~\ref{alg:seq} for a large variety
-of modal logics:
-By setting $\mathcal R^m_{sc}$ for instance to the rule shown in
-Figure~\ref{fig:modalCKCEM}
-(where $A_a = A_b$ is shorthand for $A_a\rightarrow A_b\wedge A_b\rightarrow A_a$), we
+of modal logics: By setting $\mathcal R^m_{sc}$ for instance to the
+rule shown in Figure~\ref{fig:modalCKCEM} (where $A_a = A_b$ is
+shorthand for $A_a\rightarrow A_b\wedge A_b\rightarrow A_a$), we
 obtain an algorithm for deciding provability (and satisfiability) of
-conditional logic. Note however, that we restrict ourselves to the
-examplary conditional logic \textbf{CKCEM} for the remainder of this section
-(slightly adapted versions of the optimisation will work for other conditional logics).
+conditional logic. We restrict ourselves to the examplary conditional
+logic \textbf{CKCEM} for the remainder of this section; slightly
+adapted versions of the optimisation will work for other conditional
+logics. \textbf{CKCEM} is characterised by the additional axioms of
+\emph{conditional excluded middle} $(A\Rightarrow
+B)\lor(A\Rightarrow\neg B)$, which to absorb cut and contraction is
+integrated in the rule for \textbf{CK} as follows.
 
 \begin{figure}[h!]
   \begin{center}
@@ -286,6 +376,11 @@ examplary conditional logic \textbf{CKCEM} for the remainder of this section
   \caption{The modal rule $\textbf{CKCEM}$ of conditional logic}
   \label{fig:modalCKCEM}
 \end{figure}
+It has been shown in~\cite{PattinsonSchroder09a} that the complexity
+of \textbf{CKCEM} is $\mathit{coNP}$, using a dynamic programming
+approach in the spirit of~\cite{Vardi89}; in fact, this was the
+original motivation for exploring the optimisation strategies pursued
+here.
 
 In the following, we use the notions of \emph{conditional antecedent} and
 \emph{conditional consequent} to refer to the parameters of the modal operator of
@@ -340,7 +435,7 @@ classes of all the relevant antecedents and then feed this knowledge into
 the actual sequent calculus:
 \end{remark}
 
-\section{The optimisation}
+\section{The Optimisation}
 
 \begin{definition}
 A conditional antecedent of \emph{modal nesting depth} $i$ is a
