@@ -23,10 +23,11 @@
 
 \newcommand{\Nat}{{\mathbb N}}
 \newcommand{\Real}{{\mathbb R}}
+\newcommand{\COLOSS}{{\textrm CoLoSS}}
 \def\lastname{Hausmann and Schr\"oder}
 \begin{document}
 \begin{frontmatter}
-  \title{Optimizing Conditional Logic Reasoning within COLOSS}
+  \title{Optimizing Conditional Logic Reasoning within \COLOSS}
   \author[DFKI]{Daniel Hausmann\thanksref{myemail}}
   \author[DFKI,UBremen]{Lutz Schr\"oder\thanksref{coemail}}
   \address[DFKI]{DFKI Bremen, SKS}
@@ -36,19 +37,19 @@
   \thanks[myemail]{Email: \href{mailto:Daniel.Hausmann@dfki.de} {\texttt{\normalshape Daniel.Hausmann@dfki.de}}}
   \thanks[coemail]{Email: \href{mailto:Lutz.Schroeder@dfki.de} {\texttt{\normalshape Lutz.Schroeder@dfki.de}}}
 \begin{abstract} 
-  The generic modal reasoner COLOSS covers a wide variety of logics
+  The generic modal reasoner \COLOSS covers a wide variety of logics
   ranging from graded and probabilistic modal logic to coalition logic
   and conditional logics, being based on a broadly applicable
   coalgebraic semantics and an ensuing general treatment of modal
   sequent and tableau calculi. Here, we present research into
   optimisation of the reasoning strategies employed in
-  COLOSS. Specifically, we discuss strategies of memoisation and
+  \COLOSS. Specifically, we discuss strategies of memoisation and
   dynamic programming that are based on the observation that short
   sequents play a central role in many of the logics under
   study. These optimisations seem to be particularly useful for the
   case of conditional logics, for some of which dynamic programming
   even improves the theoretical complexity of the algorithm. These
-  strategies have been implemented in COLOSS; we give a detailed
+  strategies have been implemented in \COLOSS; we give a detailed
   comparison of the different heuristics, observing that in the
   targeted domain of conditional logics, a substantial speed-up can be
   achieved.
@@ -60,7 +61,49 @@
 \end{frontmatter}
 \section{Introduction}\label{intro}
 
-Introduce here :)
+In recent decades, modal logic has seen a development towards semantic
+heterogeneity, witnessed by an emergence of numerous logics that,
+while still of manifestly modal character, are not amenable to
+standard Kripke semantics. Examples include probabilistic modal
+logic~\cite{FaginHalpern94}, coalition logic~\cite{Pauly02}, and
+conditional logic~\cite{Chellas80}, to name just a few. The move away
+from Kripke semantics, mirrored on the syntactical side by the failure
+of normality, entails additional challenges for tableau and sequent
+systems, as the correspondence between tableaus and models becomes
+looser, and in particular demands created by modal formulas can no
+longer be discharged by the creation of single successor nodes. 
+
+This problem is tackled on the theoretical side by introducing the
+semantic framework of coalgebraic modal
+logic~\cite{Pattinson03,Schroder05}, which covers all logics mentioned
+above and many more. It turns out that coalgebraic modal logic does
+allow the design of generic reasoning algorithms, including a generic
+tableau method originating from~\cite{SchroderPattinson09}; this
+generic method may in fact be separated from the semantics and
+developed purely syntactically, as carried out
+in~\cite{PattinsonSchroder08b,PattinsonSchroder09a}. 
+
+Generic tableau algorithms for coalgebraic modal logics, in particular
+the algorithm described in~\cite{SchroderPattinson09}, have been
+implemented in the reasoning tool
+\COLOSS~\cite{CalinEA09}\footnote{available under
+  \url{http://www.informatik.uni-bremen.de/cofi/CoLoSS/} and under
+  \url{http://www.doc.ic.ac.uk/~dirk/COLOSS/}}. As indicated above, it
+is a necessary feature of the generic tableau systems that they
+potentially generate multiple successor nodes for a given modal
+demand, so that in addition to the typical depth problem, proof search
+faces a rather noticeable problem of breadth. The search for
+optimisation strategies to increase the efficiency of reasoning thus
+becomes all the more urgent. Here we present one such strategy, which
+is particularly efficient in reducing both depth and branching for the
+class of conditional logics. A notable feature of this class is that
+many of the rules rely rather heavily on premises stating equivalence
+between formulas; thus, conditional logics are a good candidate for
+memoising strategies, applied judiciously to short sequents. We
+discuss the implementation of memoising and dynamic programming
+strategies within \COLOSS, 
+
+We recall 
 
 Structure of the paper: First we give a short introduction to
 the theory of coalgebraic modal logics, the general abstract
@@ -804,12 +847,8 @@ considered examplary formulae \verb|explode(|i\verb|)| and \verb|conjunct(|i\ver
   Finish your paper and get it to your Program Chairman on time!
 \end{problem}
 
-\section{Bibliographical references}\label{references}
+\bibliographystyle{myabbrv}
+\bibliography{coalgml}
 
-\begin{thebibliography}{10}\label{bibliography}
-\bibitem{cy} Civin, P., and B. Yood, \emph{Involutions on Banach
-    algebras}, Pacific J. Math. \textbf{9} (1959), 415--436.
-  
-\end{thebibliography}
 
 \end{document}

@@ -497,23 +497,23 @@ school = "Univ.\ of California at San Diego"}
 @InProceedings{SchroderMossakowski03a,
  author    = "L. Schr{\"o}der and T. Mossakowski",
  title     = "Monad-independent {H}oare logic in {\HasCASL}",
- OPTeditor = "M. Pezz{\`e}",
+ editor = "M. Pezz{\`e}",
  booktitle = "Fundamental Approaches to Software Engineering",
  series    = "LNCS",
- year      = "2003",
+ year      = 2003,
  publisher = "Springer",
- volume    = "2621",
+ volume    = 2621,
  pages     = "261--277"
 }
 
 
 @article{Schroder05,
   author = {Lutz Schr{\"o}der},
-  title = {Expressivity of Coalgebraic Modal Logic: the Limits and Beyond},
+  title = {Expressivity of Coalgebraic Modal Logic: The Limits and Beyond},
+  year = {2008},
   journal = {Theoret.\ Comput.\ Sci.},
-  note = {To appear. Earlier version in {\emph{Foundations of 
-          Software Science And Computation Structures}},
-          vol.\ 3441 of {\emph{LNCS}}, pp.\ 440--454, Springer, 2005}
+  volume = {390},
+  pages = {230-247},
 }
 
 @article{SchroderMossakowski03b,
@@ -745,7 +745,7 @@ Model-theoretic Study},
 }
 
 
-@Article{Schroder06,
+@Article{Schroder07,
   author = {Lutz Schr{\"o}der},
   title = {A Finite Model Construction for Coalgebraic Modal Logic},
   journal = 	 {J.\ Log.\ Algebr.\ Prog.},
@@ -758,7 +758,7 @@ Model-theoretic Study},
 @InProceedings{Vardi89,
   author = 	 {Moshe Vardi},
   title = 	 {On the Complexity of Epistemic Reasoning},
-  booktitle =	 {Logic in Computer Science, LICS 89},
+  booktitle =	 {Logic in Computer Science},
   pages =	 {243--251},
   year =	 {1989},
   OPTeditor = 	 {},
@@ -926,13 +926,13 @@ complementation.
 , year = "1984"
 }
 
-@article{Ladner77
+@article{ladner:pspace
 , author = "R. E. Ladner"
 , title = "The computational complexity of provability in systems
   of modal propositional logic"
-, journal = "SIAM J.\ Comput."
+, journal = "SIAM Journal on Computing"
 , volume = "6"
-, nonumber = "3"
+, number = "3"
 , year = "1977"
 }
 
@@ -1019,15 +1019,15 @@ A preliminary version appeared in Proceedings of CMCS 99, ENTCS 19, 1999.
   pages =	 {78--128}
 }
 
-@inproceedings{SchroderPattinson06
-, author = "L. Schr{\"{o}}der and D. Pattinson"
-, title =  "{PSPACE} Reasoning for Rank-1 Modal Logics"
-, booktitle = "Logic in Computer Science, LICS 06"
-, noeditor = "R. Alur"
-, year = "2006"
-, organization = "IEEE"
-, pages = "231--240"
-, note = "Full version to appear in \emph{ACM TOCL}"
+
+@Article{SchroderPattinson09,
+  author = {Lutz Schr{\"o}der and Dirk Pattinson},
+  title = {PSPACE Bounds for Rank-1 Modal Logics},
+  year = {2009},
+  journal = {ACM Trans.\ Comput.\ Logic},
+  volume = {10},
+  pages = {1-33},
+  number = {2:13},
 }
 
 
@@ -1473,9 +1473,10 @@ with Different Kinds of Transitive Roles},
   title = 	 {A Sequent Calculus and a Theorem Prover for Standard 
                   Conditional Logics  },
   journal = 	 {ACM Trans.\ Comput.\ Logic},
-	volume    = {8},
-	number    = {4},
-	year      = {2007},
+  volume = {8},
+  number = {4:22},
+  pages = {1--51},
+  year = {2007}
 }
 
 
@@ -1791,16 +1792,18 @@ Application
   year =         "2006",
 }
 
-@InProceedings{CalinEA08,
+@InProceedings{CalinEA09,
   author = {Georgel Calin and Rob Myers and Dirk Pattinson and Lutz Schr{\"o}der},
-  title = {{CoLoSS}: The Coalgebraic Logic Satisfiability Solver  (System Description)},
-  year = {2008},
+  title = {CoLoSS: The Coalgebraic Logic Satisfiability Solver  (System Description)},
+  year = {2009},
   noeditor = {Carlos Areces and Stephane Demri},
   booktitle = {Methods for Modalities, M4M-5},
-  publisher = {Elsevier},
+  publisher = elsevier,
   series = entcs,
-  note = {To appear},
+  volume = {231},
+  pages = {41-54},
 }
+
 
 @techreport{pattinsonschroder:cut-elim,
  author      = "L. Schr{\"{o}}der and D. Pattinson",
@@ -1888,6 +1891,47 @@ Related Methods (TABLEAUX)},
   pages     = {737-763},
 }
 
+@InProceedings{Goble04,
+  title =	"A Proposal for Dealing with Deontic Dilemmas",
+  author =	"Lou Goble",
+  ALTbooktitle =	"Deontic Logic in Computer Science, 7th International
+		 Workshop on Deontic Logic in Computer Science, {DEON}
+		 2004, Madeira, Portugal, May 26-28, 2004. Proceedings",
+  booktitle =	"Deontic Logic in Computer Science, DEON 2004",
+  publisher =	"Springer",
+  year = 	"2004",
+  volume =	"3065",
+  noeditor =	"Alessio Lomuscio and Donald Nute",
+  pages =	"74--113",
+  series =	lnai,
+}
+
+@InProceedings{HorrocksEA07,
+  title =	"Hybrid Logics and Ontology Languages",
+  author =	"Ian Horrocks and Birte Glimm and Ulrike Sattler",
+  series =	entcs,
+  year = 	"2007",
+  number =	"6",
+  volume =	"174",
+  bibdate =	"2007-06-01",
+  bibsource =	"DBLP,
+		 http://dblp.uni-trier.de/db/journals/entcs/entcs174.html#HorrocksGS07",
+  pages =	"3--14",
+  URL =  	"http://dx.doi.org/10.1016/j.entcs.2006.11.022",
+  booktitle = "International Workshop on Hybrid Logic,  HyLo 2006",
+}
+
+
+
+@inproceedings{Schroder09
+, author = " L. Schr{\"{o}}der and D. Pattinson"
+, title = "Strong Completeness of Coalgebraic Modal Logics"
+, booktitle = "Proc. STACS 2009"
+, year = "2009"
+, editor = "S. Albers and J.-Y. Marion"
+, note = "to appear"
+}
+
 @InProceedings{MyersEA09,
   author = {Rob Myers and Dirk Pattinson and Lutz Schr{\"o}der},
   title = {Coalgebraic Hybrid Logic},
@@ -1898,210 +1942,274 @@ Related Methods (TABLEAUX)},
   note = {To appear},
 }
 
-@Article{SchroderPattinson09,
+@InProceedings{SchroderPattinson09b,
   author = {Lutz Schr{\"o}der and Dirk Pattinson},
-  title = {{PSPACE} Bounds for Rank-1 Modal Logics},
-  journal = {ACM Trans.\ Comput.\ Log.},
+  title = {Strong completeness of coalgebraic modal logics},
   year = {2009},
-  volume = {10},
-  pages = {1-33},
-  number = {2:13},
+  noeditor = {Susanne Albers and Jean-Yves Marion},
+  booktitle = {Theoretical Aspects of Computer Science, STACS 2009},
+  note = {To appear},
 }
 
-@Article{Tobies00,
-  title =	"The Complexity of Reasoning with Cardinality
-		 Restrictions and Nominals in Expressive Description
-		 Logics",
-  author =	"Stephan Tobies",
-  journal =	"J.\ Artif.\ Intell.\ Res.",
-  year = 	"2000",
-  volume =	"12",
-  bibdate =	"2004-07-20",
+
+@InProceedings{GlimmEA06,
+  title =	"Conjunctive Query Answering for Description Logics
+		 with Transitive Roles",
+  author =	"Birte Glimm and Ian Horrocks and Ulrike Sattler",
+  bibdate =	"2007-10-31",
   bibsource =	"DBLP,
-		 http://dblp.uni-trier.de/db/journals/jair/jair12.html#Tobies00",
-  pages =	"199--217",
-  URL =  	"http://www.cs.washington.edu/research/jair/abstracts/tobies00a.html",
+		 http://dblp.uni-trier.de/db/conf/dlog/dlog2006.html#GlimmHS06",
+  booktitle =	"Description Logics, DL 2006",
+  ALTbooktitle =	"Proceedings of the 2006 International Workshop on
+		 Description Logics ({DL2006}), Windermere, Lake
+		 District, {UK}, May 30 - June 1, 2006",
+  publisher =	"CEUR-WS.org",
+  year = 	"2006",
+  volume =	"189",
+  noeditor =	"Bijan Parsia and Ulrike Sattler and David Toman",
+  series =	"CEUR Workshop Proceedings",
+  URL =  	"http://www.ceur-ws.org/Vol-189/submission_5.pdf",
 }
 
-@Article{DoniniMassacci00,
-  title =	"{EXPTIME} tableaux for {ALC}",
-  author =	"Francesco M. Donini and Fabio Massacci",
-  journal =	"Artif.\ Intell.",
-  year = 	"2000",
-  nonumber =	"1",
-  volume =	"124",
-  bibdate =	"2003-11-19",
+@Article{BlackburnTenCate06,
+  title =	"Pure Extensions, Proof Rules, and Hybrid Axiomatics",
+  author =	"Patrick Blackburn and Balder ten Cate",
+  journal =	"Stud.\ Log.",
+  year = 	"2006",
+  nonumber =	"2",
+  volume =	"84",
+  bibdate =	"2007-12-19",
   bibsource =	"DBLP,
-		 http://dblp.uni-trier.de/db/journals/ai/ai124.html#DoniniM00",
-  pages =	"87--138",
-  URL =  	"http://dx.doi.org/10.1016/S0004-3702(00)00070-9",
+		 http://dblp.uni-trier.de/db/journals/sLogica/sLogica84.html#BlackburnC06",
+  pages =	"277--322",
+  URL =  	"http://dx.doi.org/10.1007/s11225-006-9009-6",
 }
 
 
 
 
-@InCollection{ArecesTenCate08,
-  author = 	 {Carlos Areces and Balder ten Cate},
-  title = 	 {Hybrid logics},
-  booktitle = 	 {Handbook of Modal Logic},
+
+@InProceedings{Marx02,
+  author = 	 {Maarten Marx},
+  title = 	 {Narcissists, Stepmothers and Spies},
   OPTcrossref =  {},
   OPTkey = 	 {},
+  booktitle =	 {International Workshop on Description Logics},
   OPTpages = 	 {},
-  publisher =	 {Elsevier},
-  year =	 {2007},
-  editor =	 {P. Blackburn and J. van Benthem and F. Wolter},
+  year =	 {2002},
+  OPTeditor = 	 {},
   OPTvolume = 	 {},
   OPTnumber = 	 {},
-  OPTseries = 	 {},
-  OPTtype = 	 {},
-  OPTchapter = 	 {},
+  series =	"CEUR Workshop Proceedings",
   OPTaddress = 	 {},
-  OPTedition = 	 {},
   OPTmonth = 	 {},
+  OPTorganization = {},
+  publisher =	"CEUR-WS.org",
   OPTnote = 	 {},
   OPTannote = 	 {}
 }
 
-
-@inproceedings{Mazala02,
-  author    = {Ren{\'e} Mazala},
-  title     = {Infinite Games},
-  booktitle = {Automata, Logics, and Infinite Games},
-  year      = 2001,
-  pages     = {23-42},
-  noeditor    = {Erich Gr{\"a}del and
-               Wolfgang Thomas and
-               Thomas Wilke},
-  publisher = {Springer},
-  series    = lncs,
-  volume    = 2500,
+@Article{CirsteaEA09,
+  author = {Corina Cirstea and Alexander Kurz and  Dirk Pattinson and Lutz Schr{\"o}der and Yde Venema},
+  title = {Modal logics are coalgebraic},
+  journal = {The Computer Journal},
+  year = {2009},
+    note = {In print},
 }
 
-@inproceedings{Klauck02,
-  author    = {Hartmut Klauck},
-  title     = {Algorithms for Parity Games},
-  booktitle = {Automata, Logics, and Infinite Games},
-  year      = 2001,
-  pages     = {107-129},
-  noeditor    = {Erich Gr{\"a}del and
-               Wolfgang Thomas and
-               Thomas Wilke},
-  publisher = {Springer},
-  series    = lncs,
-  volume    = 2500,
-}
+@inproceedings{JaninWalukiewicz95,
+	Author = {D. Janin and I. Walukiewicz},
+	Booktitle = {Mathematical Foundations of Computer Science, MFCS 1995},
+	volume = {969},
+        series = lncs,
+	pages = {552--562},
+	publisher = springer,
+	Title = {Automata for the modal {$\mu$}-calculus and related results},
+	Year = {1995}}
 
-@Article{Lukasiewicz08,
-  title =	"Expressive probabilistic description logics",
-  author =	"Thomas Lukasiewicz",
-  journal =	"Artif.\ Intell",
-  year = 	"2008",
-  nonumber =	"6-7",
-  volume =	"172",
-  bibdate =	"2008-02-03",
+@InProceedings{HansenEA07,
+  title =	"Bisimulation for Neighbourhood Structures",
+  author =	"Helle Hvid Hansen and Clemens Kupke and Eric Pacuit",
+  bibdate =	"2007-08-28",
   bibsource =	"DBLP,
-		 http://dblp.uni-trier.de/db/journals/ai/ai172.html#Lukasiewicz08",
-  pages =	"852--883",
-  URL =  	"http://dx.doi.org/10.1016/j.artint.2007.10.017",
-	}
-
-@Article{Gentzen34,
-  author =	"Gerhard Gentzen",
-  title =	"Untersuchungen {\"u}ber das Logische {S}chlie{\ss}en",
-  journal =	"Math.\ Z.",
-  volume =	"39",
-  year = 	"1934",
-  pages =	"176--210",
-  xref = 	"English translation (as ``Investigations into logical
-		 deduction'') in szabo_me:1969a, pages 68--131.",
-  topic =	"proof-theory;logic-classics;",
-}
-
-@Article{Rasga07,
-  title =	"Sufficient conditions for cut elimination with
-		 complexity analysis",
-  author =	"Jo{\~a}o Rasga",
-  journal =	"Ann.\ Pure Appl.\ Logic",
-  year = 	"2007",
-  nonumber =	"1-3",
-  volume =	"149",
-  bibdate =	"2007-11-05",
-  bibsource =	"DBLP,
-		 http://dblp.uni-trier.de/db/journals/apal/apal149.html#Rasga07",
-  pages =	"81--99",
-  URL =  	"http://dx.doi.org/10.1016/j.apal.2007.08.001",
-}
-
-@inproceedings{AvronLev01,
-  author    = {Arnon Avron and
-               Iddo Lev},
-  title     = {Canonical Propositional {G}entzen-Type Systems},
-  noeditor    = {Rajeev Gor{\'e} and
-               Alexander Leitsch and
-               Tobias Nipkow},
-  booktitle     = {International Joint Conferences on Automated
-                  Reasoning, IJCAR 01},
-  year      = {2001},
-  pages     = {529-544},
-  publisher = {Springer},
-  series    = lncs,
-  volume =	"2083",
-}
-
-@article{Avron93,
-  author    = {Arnon Avron},
-  title     = {Gentzen-Type Systems, Resolution and Tableaux},
-  journal   = {J.\ Autom.\ Reasoning},
-  volume    = {10},
-  nonumber    = {2},
-  year      = {1993},
-  pages     = {265-281},
-  bibsource = {DBLP, http://dblp.uni-trier.de}
-}
-
-
-@InProceedings{HeuerdingEA96,
-  title =	"Efficient Loop-Check for Backward Proof Search in Some
-		 Non-classical Propositional Logics",
-  author =	"Alain Heuerding and Michael Seyfried and Heinrich
-		 Zimmermann",
-  bibdate =	"2002-08-04",
-  bibsource =	"DBLP,
-		 http://dblp.uni-trier.de/db/conf/tableaux/tableaux96.html#HeuerdingSZ96",
-  booktitle =	"Theorem Proving with Analytic Tableaux and Related
-		 Methods, {TABLEAUX} 1996",
-  ALTbooktitle =	"Theorem Proving with Analytic Tableaux and Related
-		 Methods, 5th International Workshop, {TABLEAUX} '96,
-		 Terrasini, Palermo, Italy, May 15-17, 1996,
-		 Proceedings",
+		 http://dblp.uni-trier.de/db/conf/calco/calco2007.html#HansenKP07",
+  booktitle =	"Algebra and Coalgebra in Computer Science, CALCO 2007",
+  ALTbooktitle =	"Algebra and Coalgebra in Computer Science, Second
+		 International Conference, {CALCO} 2007, Bergen, Norway,
+		 August 20-24, 2007, Proceedings",
   publisher =	"Springer",
-  year = 	"1996",
-  volume =	"1071",
-  noeditor =	"Pierangelo Miglioli and Ugo Moscato and Daniele
-		 Mundici and Mario Ornaghi",
-  ISBN = 	"3-540-61208-4",
-  pages =	"210--225",
+  year = 	"2007",
+  volume =	"4624",
+  noeditor =	"Till Mossakowski and Ugo Montanari and Magne
+		 Haveraaen",
+  ISBN = 	"978-3-540-73857-2",
+  pages =	"279--293",
   series =	lncs,
+  URL =  	"http://dx.doi.org/10.1007/978-3-540-73859-6_19",
+}
+
+@InProceedings{Gaifman82,
+  author =	"H. Gaifman",
+  title =	"On Local and Non-Local Properties",
+  editor =	"J. Stern",
+  booktitle =	"Logic Colloquium 1981",
+  ALTbooktitle =	"Proc. of the Herbrand Symposium, Logic Colloquium
+		 '81",
+  pages =	"105--135",
+  year = 	"1982",
+  ALTpublisher =	"North Holland Pub. Co.",
+  publisher =	"North Holland",
+  hb-library = "h mat 010 i/50-82",
+
 }
 
 
-@article{CiabattoniTerui06,
-  author    = {A. Ciabattoni and K. Terui},
-  title     = {Towards a Semantic Characterization of
-Cut-Elimination},
-  journal   = {Stud.\ Log.},
-  volume    = {82},
-  nonumber    = {1},
-  year      = {2006},
-  pages     = {95-119},
+@incollection{Otto06,
+   author = {M. Otto},
+   title  = {Bisimulation Invariance and Finite Models},
+   booktitle = {Logic Colloquium 2002},   
+   series = {Lect.\ Notes Log.},
+   volume = {27},
+   editor = {Z. Chatzidakis, P. Koepke, W. Pohlers},
+   pages = {276-298},
+   publisher = {ASL},
+   year = 2006
 }
 
-@inproceedings{CiabattoniEA08,
-  author    = {A. Ciabattoni and N. Galatos and K. Terui},
-  title     = {From Axioms to Analytic Rules in Nonclassical Logics},
-  booktitle = {Logic in Computer Science, LICS 08},
-  year      = {2008},
-  pages     = {229-240},
-  publisher = {IEEE Press},
+@Article{Rosen97,
+  title =	"Modal Logic over Finite Structures",
+  author =	"Eric Rosen",
+  ALTjournal =	"Journal of Logic, Language and Information",
+  journal =	"J.\ Logic, Language and Information",
+  year = 	"1997",
+  number =	"4",
+  volume =	"6",
+  bibdate =	"2002-01-03",
+  bibsource =	"DBLP,
+		 http://dblp.uni-trier.de/db/journals/jolli/jolli6.html#Rosen97",
+  pages =	"427--439",
+}
+
+
+@PhdThesis{BenthemThesis,
+  author =	"J. van Benthem",
+  school =	"Department of Mathematics, University of Amsterdam",
+  title =	"Modal Correspondence Theory",
+  year = 	"1978",
+}
+
+@Article{Rijke00,
+  title =	"A Note on Graded Modal Logic",
+  author =	"Maarten de Rijke",
+  journal =	"Stud.\ Log.",
+  year = 	"2000",
+  nonumber =	"2",
+  volume =	"64",
+  bibdate =	"2002-11-28",
+  bibsource =	"DBLP,
+		 http://dblp.uni-trier.de/db/journals/sLogica/sLogica64.html#Rijke00",
+  pages =	"271--283",
+}
+
+@Article{Elgesem97,
+  author = 	 {Dag Elgesem},
+  title = 	 {The modal logic of agency},
+  journal = 	 {Nordic J.\ Philos.\ Logic},
+  year = 	 {1997},
+  volume =	 {2},
+  OPTnumber = 	 {2},
+  pages =	 {1--46}
+}
+
+@inproceedings{PacuitSalame04
+, author = "Eric Pacuit and Samer Salame"
+, title = "Majority Logic"
+, booktitle = " Principles of Knowledge Representation and Reasoning, KR 04"
+, noeditor  = "D. Dubois and C.A. Welty and M.-A. Williams"
+, publisher = "AAAI Press"
+, pages = "598--605"
+, year = "2004"
+}
+
+@Article{Ladner77,
+  author =	"Richard Ladner",
+  title =	"The computational complexity of provability in systems
+		 of modal propositional logic",
+  journal =	"SIAM J.\ Comput.",
+  volume =	"6",
+  year = 	"1977",
+  pages =	"467--480",
+}
+
+@Article{GovernatoriRotolo05,
+  author =	"Guido Governatori and Antonino Rotolo",
+  title =	"On the Axiomatisation of {E}lgesem's Logic of Agency
+		 and Ability",
+  journal =	"J.\ Philos.\ Logic",
+  year = 	"2005",
+  volume =	"34",
+  nonumber =	"4",
+  pages =	"403--431",
+}
+
+@Article{Halpern95,
+  author = 	 {Joseph Halpern},
+  title = 	 { The effect of bounding the number of primitive 
+                   propositions and the depth of nesting on the complexity 
+                   of modal logic},
+  journal = 	 {Artificial Intelligence},
+  year = 	 {1995},
+  volume =	 {75},
+  OPTnumber = 	 {2},
+  pages =	 {361--372}
+}
+
+@Article{FattorosiBarnabaDeCaro85,
+  author = 	 {M. Fattorosi-Barnaba and F. {De Caro}},
+  title = 	 {Graded Modalities {I}},
+  journal = 	 {Stud.\ Log.},
+  year = 	 {1985},
+  volume =	 {44},
+  OPTnumber = 	 {2},
+  pages =	 {197--221}}
+
+@InProceedings{CholvyEA05,
+  title =	"Ability in a Multi-agent Context: {A} Model in the
+		 Situation Calculus",
+  author =	"Laurence Cholvy and Christophe Garion and Claire
+		 Saurel",
+  publisher =	springer,
+  year = 	"2006",
+  volume =	"3900",
+  bibdate =	"2006-05-02",
+  bibsource =	"DBLP,
+		 http://dblp.uni-trier.de/db/conf/clima/climaVI2005.html#CholvyGS05",
+  booktitle =	"Computational Logic in Multi-Agent Systems, CLIMA 2005",
+  noeditor =	"Francesca Toni and Paolo Torroni",
+  ISBN = 	"3-540-33996-5",
+  pages =	"23--36",
+  series =	lncs,
+  noURL =  	"http://dx.doi.org/10.1007/11750734_2",
+}
+
+@Article{CirsteaPattinson07,
+  author = 	 {C. C{\^i}rstea and D. Pattinson},
+  title = 	 {Modular Construction of Modal Logics},
+  journal = 	 {Theoret.\ Comput.\ Sci.},
+  volume = {388},
+  number = {1-3},
+  pages = {83-108},
+  year = {2007},
+}
+
+@InProceedings{PattinsonSchroder09a,
+  author = {Dirk Pattinson and Lutz Schr{\"o}der},
+  title = {Generic Modal Cut Elimination Applied to Conditional Logics},
+  year = {2009},
+  noeditor = {Martin Giese and Arild Waaler},
+  booktitle = {Automated Reasoning with Analytic Tableaux and Related Methods, TABLEAUX 2009},
+  publisher = springer,
+  series = lncs,
+  volume = {5607},
 }
 
