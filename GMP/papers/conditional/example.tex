@@ -650,7 +650,62 @@ have to be shown or refuted even during the course of the original algorithm).
 Write a few words about the Haskell-Implementation here. Nothing interresting apart
 from the Web-Interface, and that all of this is a part of CoLoSS.
 
-Put benchmarking-results here... (bloat, explode, etc..)
+Let $p$ denote an atom in the following.
+
+The formula \verb|bloat(|$i$\verb|)| is a full binary tree of depth $i$ (containing $2^i$ pairwise logically
+inqevuilant atoms and $2^i-1$ modal antecedents):
+\begin{quote}
+\verb|bloat(|$i$\verb|)| = $($\verb|bloat(|$i-1$\verb|)|$)\Rightarrow($\verb|bloat(|$i-1$\verb|)|)\\
+\verb|bloat(|$0$\verb|)| = $p_{rand}$
+\end{quote}
+
+The formula \verb|conjunct(|$i$\verb|)| is just an $i$-fold conjunction of a specific formula $A$:
+\begin{quote}
+\verb|conjunct(|$i$\verb|)| = $A_1\wedge\ldots\wedge A_i$\\
+$A=(((p_1\vee p_0)\Rightarrow p_2)\vee((p_0\vee p_1)\Rightarrow p_2))\vee\neg(((p_0\vee p_1)\Rightarrow p_2)\vee((p_1\vee p_0)\Rightarrow p_2))$)
+\end{quote}
+
+The formula \verb|explode(|$i$\verb|)| contains equivalent but not syntactically equal and interchangingly nested modal antecedents of depth at most $i$:
+\begin{quote}
+\verb|explode(|$i$\verb|)| = $X^i_1\vee\ldots\vee X^i_i$\\
+$X^i_1=(A_1\Rightarrow(\ldots(A_i\Rightarrow (p_1\wedge\ldots\wedge p_i))\ldots))$\\
+$X^i_j=(A_{(j)mod i}\Rightarrow(\ldots(A_{(j+i)mod i}\Rightarrow \neg p_j)\ldots))$
+\end{quote}
+
+\begin{tabular}{| l | r | r | r |}
+\hline
+$\phi$ & Algorithm~\ref{alg:seq} & Algorithm~\ref{alg:preprove} & Algorithm~\ref{alg:optPreprove}  \\
+\hline
+ bloat(1) & 0,008s & 0,009s & 0,010s\\
+ bloat(2) & 0,008s & 0,011s & 0,010s\\
+ bloat(3) & 0,009s & 0,028s & 0,014s\\
+ bloat(4) & 0,010s & 0,233s & 0,022s\\
+ bloat(5) & 0,011s & 2,840s & 0,087s\\
+ bloat(6) & 0,013s & 33,476s & 0,590s\\
+ bloat(7) & 0,019s & 402,239s & 4,989s\\
+\hline
+ conjunct(1) & 0,012s & 0,013s & 0,012s\\
+ conjunct(2) & 0,021s & 0,015s & 0,014s\\
+ conjunct(3) & 0,681s & 0,021s & 0,021s\\
+ conjunct(4) & 131,496s & 0,048s & 0,048s\\
+ conjunct(5) & $>$600,000s & 0,199s & 0,201s\\
+ conjunct(6) & $>>$600,000s & 1,152s & 1,161s\\
+ conjunct(7) & $>>$600,000s & 8,746s & 8,667s\\
+ conjunct(8) & $>>$600,000s & 74,805s & 75,595s\\
+ conjunct(9) & $>>$600,000s & 730,589s & 742,357s\\
+\hline
+ explode(1) & 0,009s & 0,008s & 0,009s\\
+ explode(2) & 0,011s & 0,010s & 0,010s\\
+ explode(3) & 0,028s & 0,012s & 0,014s\\
+ explode(4) & 0,268s & 0,018s & 0,018s\\
+ explode(5) & 4,555s & 0,025s & 0,027s\\
+ explode(6) & 10,785s & 0,035s & 0,039s\\
+ explode(7) & $>>$600,000s & 0,054s & 0,060s\\
+ explode(8) & $>>$600,000s & 0,079s & 0,089s\\
+ explode(9) & $>>$600,000s & 0,122s & 0,140s\\
+\hline
+
+\end{tabular}
 
 \section{Summary}  
 \begin{problem}
