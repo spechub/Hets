@@ -56,7 +56,7 @@
 \end{abstract}
 \begin{keyword}
   Coalgebraic modal logic, conditional logic, automated reasoning,
-  optimization, heuristics, memoizing, dynamic programming
+  optimisation, heuristics, memoizing, dynamic programming
 \end{keyword}
 \end{frontmatter}
 \section{Introduction}\label{intro}
@@ -109,13 +109,13 @@ Structure of the paper: First we give a short introduction to
 the theory of coalgebraic modal logics, the general abstract
 setting in which this paper takes place. Then we describe the
 satisfiability (and provability) solving algorithm and its
-optimization with regards to conditional logics. Further, we 
-analyze the quality of this optimization by relating
+optimisation with regards to conditional logics. Further, we 
+analyze the quality of this optimisation by relating
 the structure of the input formula to the amount of work which may
-be saved by using the proposed optimization. Furthermore,
+be saved by using the proposed optimisation. Furthermore,
 we compare our tool with other model checkers for conditional logic
 and finally we discuss to which extent the described
-optimization could be used for other modal logics than just
+optimisation could be used for other modal logics than just
 conditional logic.
  
 \section{Coalgebraic conditional logic}
@@ -123,12 +123,9 @@ conditional logic.
 Some theory here...
 
 Needed from this section: coalgebraic modal logic etc, notion of the set of
-formulae of a modal logic, provability / satisfiability (weak completeness?
-see ~\ref{rem:satProv}).
+formulae of a modal logic, provability / satisfiability. Provability is
+negated satisfiability of the negation.
 Some (general) words about conditional logic?
-
-Daniel to-do-list (in other sections): Memoizing vs. dynamic programming (cite Vardi).
-Complexity of algorithm(s) (cite lutz+co. paper).
 
 \section{The algorithm}
 
@@ -227,28 +224,25 @@ each sequent of every premise in this set. If there is any premise
 whose sequents are all provable, the application of the according rule is
 justified and hence the algorithm has succeeded.
 
-\begin{remark}
-Due to $\ldots$  %what?
-, the \emph{satisfiability} of a formula $\phi$ amounts to the provability
-of its negation $\neg \phi$.
-\label{rem:satProv}
-\end{remark}
-
 \begin{algorithm}[h]
 \begin{alg}
 \begin{upshape}
-  Step 1: Take the input formula $\phi$, construct the initial open
-  sequent $\Gamma_0 = \{\phi\}$ from it. Set i=0.\\
+  Step 1: Take the input formula $\phi$, construct the initial set 
+  of premises (containing just one premise with just one sequent)
+  $S = \{\{\phi\}\}$ from it.\\
   Step 2: Try to apply all rules $r\in R_{sc}$ to any open sequent
-  $\Gamma_i$. Let $\Lambda_i$ denote the set of the resulting open
-  premises.\\
-  Step 3: If $\Lambda_i$ contains the empty premise, mark the open
-  sequent $\Gamma_i$ as proven. If $\Lambda_i$ contains no premise at
-  all, mark the open sequent $\Gamma_i$ as refuted.\\
-  Step 4: Else, add all premises from $\Lambda_i$ to the set of open
-  premises and choose any premise from this set. Add all $\Gamma^j_i$
-  from this premise to the set of open sequents and continue with
-  Step 2.
+  $\Gamma\in P$ from any premise $P\in S$. Let $\Lambda$ denote the set
+  of the resulting premises.\\
+  Step 3: If $\Lambda$ contains the empty premise, mark the open
+  sequent $\Gamma$ as proved (and if $P$ contains no more open
+  sequents, mark $P$ as proved). If $\Lambda$ contains no premise at
+  all, mark the open sequent $\Gamma$ and the premise $P$ as refuted.\\
+  Step 4: Else, add all premises from $\Lambda$ to the set of
+  premises (i.e. $S=S\cup\Lambda$). If there are any remaining open
+  sequents, continue with Step 2.\\
+  Step 5: If all premises resulting from the application of all rules
+  from $R_{sc}$ to $\phi$ are marked as proved, finish with result \verb|True|
+  else finish with result \verb|False|.
 \end{upshape}
 \label{alg:seq}
 \end{alg}
@@ -256,13 +250,15 @@ of its negation $\neg \phi$.
 
 \begin{proposition}
 \begin{upshape}
-Algorithm~\ref{alg:seq} is sound and complete w.r.t. provability. Furthermore,
-Algorithm~\ref{alg:seq} has complexity X.
+Let $\mathcal{R}_{sc}$ be strictly one-step complete, closed under contraction,
+and PSPACE-tractable. Then Algorithm~\ref{alg:seq} is sound and complete w.r.t. provability
+and it is in PSPACE.
 \end{upshape}
 \end{proposition}
 
 \begin{proof}
-...
+We just note, that Algorithm~\ref{alg:seq} is an equivalent implementation of the algorithm proposed
+in~\cite{SchroderPattinson09}. For more details, refer to ~\cite{SchroderPattinson09}, Theorem 6.13.
 \end{proof}
 
 \subsection{The conditional logic instance}
@@ -276,7 +272,7 @@ Figure~\ref{fig:modalCKCEM}
 obtain an algorithm for deciding provability (and satisfiability) of
 conditional logic. Note however, that we restrict ourselves to the
 examplary conditional logic \textbf{CKCEM} for the remainder of this section
-(slightly adapted versions of the optimization will work for other conditional logics).
+(slightly adapted versions of the optimisation will work for other conditional logics).
 
 \begin{figure}[h!]
   \begin{center}
@@ -347,7 +343,7 @@ classes of all the relevant antecedents and then feed this knowledge into
 the actual sequent calculus:
 \end{remark}
 
-\section{The optimization}
+\section{The optimisation}
 
 \begin{definition}
 A conditional antecedent of \emph{modal nesting depth} $i$ is a
@@ -388,21 +384,25 @@ function):
 \begin{algorithm}[h]
 \begin{alg}
 \begin{upshape}
-  Step 1: Take a formula $\phi$ and knowledge $(\mathcal{K},eval)$ as
-  input. Set $\Gamma_0 = \{\phi\}$, $i=0$.\\
-  Step 2: Try to apply all rules $r\in \mathcal{RO}_{sc}$
-  (supplying $\mathcal{RO}^m_{sc}$ with knowledge $(\mathcal{K},eval)$)
-  to any open sequent $\Gamma_i$. Let
-  $\Lambda_i$ denote the set of the resulting premises.\\
-  Step 3: If $\Lambda_i$ contains the empty premise, mark the open
-  sequent $\Gamma_i$ as proven. If $\Lambda_i$ contains no premise at
-  all, mark the open sequent $\Gamma_i$ as refuted.\\
-  Step 4: Else, add all premises from $\Lambda_i$ to the set of open
-  premises and choose any premise from this set. Add all $\Gamma^j_i$
-  from this premise to the set of open sequents and continue with
-  Step 2.
-\label{alg:optSeq}
+  Step 1: Take the input formula $\phi$ and the knowledge $(\mathcal{K},eval)$,
+  construct the initial set of premises (containing just one premise with just
+  one sequent) $S = \{\{\phi\}\}$ from it.\\
+  Step 2: Try to apply all rules $r\in R_{sc}$ (supplying $\mathcal{RO}^m_{sc}$
+  with knowledge $(\mathcal{K},eval)$) to any open sequent
+  $\Gamma\in P$ from any premise $P\in S$. Let $\Lambda$ denote the set
+  of the resulting premises.\\
+  Step 3: If $\Lambda$ contains the empty premise, mark the open
+  sequent $\Gamma$ as proved (and if $P$ contains no more open
+  sequents, mark $P$ as proved). If $\Lambda$ contains no premise at
+  all, mark the open sequent $\Gamma$ and the premise $P$ as refuted.\\
+  Step 4: Else, add all premises from $\Lambda$ to the set of
+  premises (i.e. $S=S\cup\Lambda$). If there are any remaining open
+  sequents, continue with Step 2.\\
+  Step 5: If all premises resulting from the application of all rules
+  from $R_{sc}$ to $\phi$ are marked as proved, finish with result \verb|True|
+  else finish with result \verb|False|.
 \end{upshape}
+\label{alg:optSeq}
 \end{alg}
 \end{algorithm}
 
@@ -447,7 +447,8 @@ rule from Figure~\ref{fig:modalCKCEMm}.
   Set $\mathcal{K}_{i+1} = eq_i$, set $i = i + 1$. For each equality $\psi\in eq_i$,
   set $eval_{i+1}(\psi)=\top$ if the result of Algorithm~\ref{alg:optSeq} was \verb+True+
   and $eval_{i+1}(\psi)=\bot$ otherwise. Continue with Step 2.\\
-  Step 4: Call Algorithm~\ref{alg:optSeq} ($\phi$, $(\mathcal{K},eval)$).
+  Step 4: Call Algorithm~\ref{alg:optSeq} ($\phi$, $(\mathcal{K},eval)$) and return its result
+  as result.
 \label{alg:preprove}
 \end{upshape}
 \end{alg}
@@ -483,51 +484,47 @@ also try to show equivalences between any two conditional antecedents (e.g. $(p_
 during the execution of Algorithm~\ref{alg:optSeq}.
 \end{example}
 
-Based on this observation, it is possible to assign a category to each pair of
+Based on this observation it is possible to assign a category to each pair of
 antecedents that appear in it:
 
 \begin{definition}
-Two conditional antecedents $A$ and $B$ are called \emph{connected (in $\phi$)} if
-they both are the antecedent of a top-level modality.
-
-Furthermore, we define sub-antecedents $C$ and $D$ of connected antecedents $A$ and $B$
-to be connected to each other, if they appear at the same position in a chain
-of conditional antecedents (formally: $A=(\ldots(C\Rightarrow a_n)\ldots \Rightarrow a_0)$,
-$B=(\ldots(D\Rightarrow b_n)\ldots \Rightarrow b_0)$).
-
-Two conditional antecedents $A$ and $B$ are called \emph{independent (in $\phi$)} if
-they occur at a different modal depth (even though they may have modal nestings the same depth).
-
-The relevance of two antecedents with regard to each other is said to be
-\emph{pending} if they occur at the same depth in $\phi$ but each
-in the consequent of a different modal operator.
+The \emph{paths (in $\phi$)} to a conditional antecedent $\psi$ describe the orders
+of modal arguments through which $\psi$ is reached, when starting from the root
+of $\phi$:
+The path to a top-level antecedent is just $\{1\}$. If $\psi$ does not appear as
+antecedent on the topmost level of $\phi$, the path to it is $\{1\}$ prepended to the set
+of paths to $\psi$ in any top-level conditional antecedent of $\phi$ together with $\{0\}$
+prepended to the set of paths to $\psi$ in any top-level modal consequent of $\phi$.
 \end{definition}
 
-Since two independent antecedents will never appear in the scope of the
-same application of the modal rule, it is in no case necessary to show (or
-refute) the logical equivalence of independent
-conditional antecedents. Hence it suffices to focus
-our attention to the connected and pending conditional antecedents. By pre-proving only
-the equivalences of the connected antecedents, we can be assured that we are 
-always as efficient as Algorithm~\ref{alg:optSeq}. However, it would still
-be necessary to treat the equivalence of those initially pending antecedents which
-turn out to be connected during the execution of Algorithm~\ref{alg:optSeq}.
-This would not allow us to completely seperate to treatment of equivalences
-(achieved by Algorithm~\ref{alg:preprove}) and the actual sequent calculus (realized by
-Algorithm~\ref{alg:optSeq}).
+\begin{example}
+Consider the formula $\phi=(p_0\Rightarrow p_2)\Rightarrow ((p_0\Rightarrow p_1)\Rightarrow p_3)$. Then the path to
+$(p_0\Rightarrow p_2)$ is $\{1\}$, whereas the path to $(p_0\Rightarrow p_1)$ is $\{01\}$. The paths
+to $p_0$ are $\{11,011\}$.
+\end{example}
 
-If the pending antecedents are also included in the pre-proving, it is obvious, that
+\begin{definition}
+Let $A$ and $B$ be two conditional antecedents. $A$ and $B$ are called \emph{connected (in $\phi$)} if
+at least on path to $A$ is also a path to $B$. If no path to $A$ is a path to $B$ (and hence vice-versa),
+the two antecedents are said to be \emph{independent}.
+\end{definition}
+
+Since two independent conditional antecedents will never appear in the scope of the
+same application of the modal rule, it is in no case necessary to show (or
+refute) the logical equivalence of independent conditional antecedents. Hence it suffices to focus
+our attention to the connected conditional antecedents. It is then obvious that
 any possibly needed equivalence and its truth-value are allready included in $(K,eval)$
 when the main proving is induced. On the other hand, we have to be aware that it
-may be the case, that we show equivalences of antecedents which later turn out to
-be independent.
+may be the case, that we show equivalences of antecedents which are in fact not needed
+(since antecedents may indeed be connected and still it is possible that they never appear together in an application
+of the modal rule - this is the case whenever two preceeding antecedents are not logically equivalent).
 
 As result of these considerations, we devise Algorithm~\ref{alg:optPreprove},
 an improved version of Algorithm~\ref{alg:preprove}. The only difference is
 that before proving any equivalence, Algorithm~\ref{alg:optPreprove} checks
-whether the current pair of conditional antecedents is actually connected or if their
-relevance to each other is pending; only then it treats the equivalence. Hence
-independent pairs of antecedents remain untreated.
+whether the current pair of conditional antecedents is actually connected;
+only then does it treat the equivalence. Hence independent pairs of antecedents
+remain untreated.
 
 
 \begin{algorithm}[h]
@@ -543,27 +540,16 @@ independent pairs of antecedents remain untreated.
   Set $\mathcal{K}_{i+1} = eq_i$, set $i = i + 1$. For each equality $\psi\in eq_i$,
   set $eval_{i+1}(\psi)=\top$ if the result of Algorithm~\ref{alg:optSeq} was \verb+True+
   and $eval_{i+1}(\psi)=\bot$ otherwise. Continue with Step 2.\\
-  Step 4: Call Algorithm~\ref{alg:optSeq} ($\phi$, $(\mathcal{K},eval)$).
+  Step 4: Call Algorithm~\ref{alg:optSeq} ($\phi$, $(\mathcal{K},eval)$) and return its result
+  as result.
 \label{alg:optPreprove}
 \end{upshape}
 \end{alg}
 \end{algorithm}
 
-\begin{proposition}
-\begin{upshape}
-Algorithm~\ref{alg:optPreprove} is sound and complete w.r.t. provability.
-Algorithm~\ref{alg:optPreprove} has complexity X. Furthermore, Algorithm~\ref{alg:optPreprove}
-allows us, to completely seperate the pre-proving of equivalences and
-the actual sequent calculus.
-\end{upshape}
-\end{proposition}
-\begin{proof}
-...
-\end{proof}
+\section{Generalized optimisation}
 
-\section{Generalized optimization}
-
-As previously mentioned, the demonstrated optimization is not restricted to the
+As previously mentioned, the demonstrated optimisation is not restricted to the
 case of conditional
 modal logics. 
 
@@ -576,7 +562,7 @@ from $arg(\Gamma)$. In the following, we fix the maximal number of modal argumen
 in short sequents to be 2.
 \end{definition}
 
-The general method of the optimization then takes the following form: 
+The general method of the optimisation then takes the following form: 
 Let $S_1,\ldots S_n$ be short sequents and assume that there is
 a (w.r.t the considered modal logic) sound instance of the generic rule which
 is depicted in Figure~\ref{fig:modalOpt} (where $\mathcal{S}$ is a set of any
@@ -593,7 +579,7 @@ sequents).
     \hline
     \end{tabular}
   \end{center}
-  \caption{The general rule-scheme to which the optimization may be applied}
+  \caption{The general rule-scheme to which the optimisation may be applied}
   \label{fig:modalOpt}
 \end{figure}
 
@@ -613,7 +599,8 @@ for pre-proving, we now extend our attention to any short sequents over any moda
   $\psi\in seq_i$. Set $\mathcal{K}_{i+1} = seq_i$, set $i = i + 1$. For each short sequent
   $\psi\in seq_i$, set $eval_{i+1}(\psi)=\top$ if the result of Algorithm~\ref{alg:optSeq} was
   \verb+True+ and $eval_{i+1}(\psi)=\bot$ otherwise. Continue with Step 2.\\
-  Step 4: Call Algorithm~\ref{alg:optSeq} ($\phi$, $(\mathcal{K},eval)$).
+  Step 4: Call Algorithm~\ref{alg:optSeq} ($\phi$, $(\mathcal{K},eval)$) and return its result
+  as result.
 \end{upshape}
 \label{alg:genOptPreprove}
 \end{alg}
@@ -638,19 +625,22 @@ extended by the generic modified rule given by Figure~\ref{fig:modModalOpt}.
 \end{figure}
 
 \begin{example}
-The following two cases are may be instances of the generic optimization:
+The following two cases are may be instances of the generic optimisation:
 \begin{enumerate}
 \item (Classical modal Logics / Neighbourhood Semantics) Let $\Gamma = \{\Box A = \Box B\}$,
 $n=1$, $S_1=\{A=B\}$ and $\mathcal{S}=\emptyset$. Algorithm~\ref{alg:genOptPreprove}
 may be then applied whenever the following congruence rule is sound in the considered
-logic:
+logic:\\
+
 \begin{quote}
 \begin{center}
       (\textsc {\textbf{Opt}$_{Cong}$}) \inferrule{ A=B }
                       { \Box A = \Box B }
   \end{center}
 \end{quote}
-The according modified version of this rule is as follows:
+\vspace{10pt}
+The according modified version of this rule is as follows:\\
+
 \begin{quote}
 \begin{center}
       (\textsc {\textbf{Opt}$^m_{Cong}$}) \inferrule{ {eval(A=B)=\top} }
@@ -662,21 +652,25 @@ The according modified version of this rule is as follows:
 $n=1$, $S_1=\{A\rightarrow B\}$ and $\mathcal{S}=\emptyset$, we may instantiate
 the generic algorithm to the case of modal logics which are monotone w.r.t. their
 modal operator. So assume the following rule to be sound in  the considered modal
-logic:
+logic:\\
+
 \begin{quote}
 \begin{center}
       (\textsc {\textbf{Opt}$_{Mon}$}) \inferrule{ A\rightarrow B }
                       { \Box A \rightarrow \Box B }
   \end{center}
 \end{quote}
-The according modified version of this rule is as follows:
+\vspace{10pt}
+The according modified version of this rule is as follows:\\
+
 \begin{quote}
 \begin{center}
       (\textsc {\textbf{Opt}$^m_{Mon}$}) \inferrule{ {eval(A\rightarrow B)=\top} }
                       { \Box A \rightarrow \Box B }
   \end{center}
 \end{quote}
-In the case, that \textbf{Opt}$_{Mon}$ is the only modal rule in the
+
+In the case that (\textbf{Opt}$_{Mon}$) is the only modal rule in the
 considered logic (i.e. the case of plain monotone modal logic), all the
 prove-work which is connected to the modal operator is shifted to the
 pre-proving process. Especially matching with the modal rules
@@ -692,7 +686,7 @@ observation may be generalized:
 \begin{remark}
 In the case that all modal rules of the considered logic are instances of
 the generic rule (\textbf{Opt}) with $P=\emptyset$ (as seen in Example~\ref{ex:neighMon}),
-the optimization does not only allow for a reduction of computing time, but
+the optimisation does not only allow for a reduction of computing time, but
 it also allows us to effectively reduce the sequent calculus to a sat-solving
 algorithm.
 Furthermore, the optimized algorithm will always be as efficient as the
@@ -705,37 +699,39 @@ have to be shown or refuted even during the course of the original algorithm).
 
 The proposed optimized algorithms have been implemented (using the programming
 language Haskell) as part of the generic coalgebraic modal logic satisfiability
-solver (CoLoSS\footnote{More information about CoLoSS, a web-interface to the tool and 
-the used benchmarking formulae can be found at http://www.informatik.uni-bremen.de/cofi/CoLoSS/}).
-CoLoSS provides the general coalgebraic framework in which the generic
+solver (\COLOSS\footnote{As already mentioned above, more information about \COLOSS,
+a web-interface to the tool and 
+the tested benchmarking formulae can be found at http://www.informatik.uni-bremen.de/cofi/CoLoSS/}).
+\COLOSS provides the general coalgebraic framework in which the generic
 sequent calculus is embedded. It is easily possible to instantiate this generic sequent
 calculus to specific modal logics, one particular example being conditional logic.
-The CoLoSS matching function for conditional logic was hence adapted in order to realize
-the different optimizations (closely following Algorithms~\ref{alg:seq},~\ref{alg:preprove} and
-~\ref{alg:optPreprove}), so that CoLoSS now provides an efficient algorithm for
+The \COLOSS matching function for conditional logic was hence adapted in order to realize
+the different optimisations (closely following Algorithms~\ref{alg:seq},~\ref{alg:preprove} and
+~\ref{alg:optPreprove}), so that \COLOSS now provides an efficient algorithm for
 deciding the provability (and satisfiability) of conditional logic formulae.
 
 \subsection{Comparing the proposed algorithms}
 
-In order to show the relevance of the proposed optimizations, we devise three classes
-of conditional formulae. Each class has a characteristic general shape, establishing its
-difficulty w.r.t. the different algorithms:
-
-Let $p_i$ denote atoms in the following.
+In order to show the relevance of the proposed optimisations, we devise several classes
+of conditional formulae. Each class has a characteristic general shape, defining its
+complexity w.r.t. different parts of the algorithms and thus exhibiting specific
+advantages or disadvantages of each algorithm:
 
 \begin{itemize}
 \item The formula \verb|bloat(|$i$\verb|)| is a full binary tree of depth $i$ (containing $2^i$ pairwise logically
-inqevuilant atoms and $2^i-1$ modal antecedents):
+inequivalent atoms and $2^i-1$ modal antecedents):
 \begin{quote}
 \verb|bloat(|$i$\verb|)| = $($\verb|bloat(|$i-1$\verb|)|$)\Rightarrow($\verb|bloat(|$i-1$\verb|)|)\\
 \verb|bloat(|$0$\verb|)| = $p_{rand}$
 \end{quote}
-Formulae from this class should show the problematic perfomance of Algorithm~\ref{alg:preprove} whenever
-a formula contains many modal antecedents which appear at different depths. Since Algorithm~\ref{alg:preprove}
-does not check whether pairs of modal antecedents are independent or connected, it should perform considerably worse
-than Algorithm~\ref{alg:optPreprove} which only attempts to prove the logical equivalence of formulae which are not
-independent. A comparison of the different algorithms w.r.t. formulae \verb|bloat(|$i$\verb|)| is depicted in
-Figure~\ref{fig:benchBloat}.
+Formulae from this class should show the problematic performance of Algorithm~\ref{alg:preprove} whenever
+a formula contains many modal antecedents which appear at different depths. A comparison of the different
+algorithms w.r.t. formulae \verb|bloat(|$i$\verb|)| is depicted in Figure~\ref{fig:benchBloat}.
+Since Algorithm~\ref{alg:preprove} does not check whether pairs of modal antecedents are independent or connected,
+it performs considerably worse than Algorithm~\ref{alg:optPreprove} which only attempts to prove the logical
+equivalence of formulae which are not independent. Algorithm~\ref{alg:seq} has the best performance in this
+extreme case, as it only has to consider pairs of modal antecedents which actually appear during the course
+of a proof. This is the price to pay for the optimisation by dynamic programming.
 \end{itemize}
 
 \begin{figure}[!h]
@@ -764,11 +760,17 @@ $i$ & Algorithm~\ref{alg:seq} & Algorithm~\ref{alg:preprove} & Algorithm~\ref{al
 \verb|conjunct(|$i$\verb|)| = $A_1\wedge\ldots\wedge A_i$\\
 $A=(((p_1\vee p_0)\Rightarrow p_2)\vee((p_0\vee p_1)\Rightarrow p_2))\vee\neg(((p_0\vee p_1)\Rightarrow p_2)\vee((p_1\vee p_0)\Rightarrow p_2))$)
 \end{quote}
-This class contains formulae which contain logically (but not sytactically!) equivalent antecedents.
-As $i$ increases, so does the amount of appearance of identical modal antecedents in different positions
-of the considered formula. Hence the optimized should perform considerably better than the unoptimized
-Algorithm~\ref{alg:seq}. A comparison of the different algorithms w.r.t. formulae \verb|conjunct(|$i$\verb|)| is depicted in
-Figure~\ref{fig:benchConjunct}.
+This class consists of formulae which contain logically (but not sytactically) equivalent antecedents.
+As $i$ increases, so does the amount of appearances of identical modal antecedents in different positions
+of the considered formula. A comparison of the different algorithms w.r.t. formulae \verb|conjunct(|$i$\verb|)| is depicted in
+Figure~\ref{fig:benchConjunct}. It is obvious that the optimized algorithms perform considerably better than the unoptimized
+Algorithm~\ref{alg:seq}. The reason for this is, that Algorithm~\ref{alg:seq} repeatedly proves equivalences between the same
+pairs of modal antecedents. The optimized algorithms on the other hand are equipped with knowledge about the modal antecedents,
+so that these equivalences have to be proved only once. However, even the runtime of the optimized algorithms is exponential in $i$,
+due to the exponentially increasing complexity of the underlying propositional formula. Note that the use of propositional taulogies (such as
+$A \leftrightarrow (A\wedge A) $ in this case) would help to greatly reduce the computing time for \verb|conjunct(|$i$\verb|)|.
+optimisation of propositional reasoning is not the scope of this paper though, thus we devise the following examplary class of formulae
+(for which propositional tautologies would not help).
 \end{itemize}
 
 \begin{figure}[!h]
@@ -804,9 +806,9 @@ $A^i_j=p_{j \bmod i}\wedge p_{(j+(i-1)) \bmod i}$
 \end{quote}
 This class contains complex formulae for which the unoptimized algorithm should not be
 efficient any more: Only the combined knowledge about all appearing modal antecedent allows
-the proving algorithm to reach all conclusions $c_i$, and only the combined sequent
+the proving algorithm to reach all modal consequents $c_n$, and only the combined sequent
 $\{(c_1\wedge\ldots\wedge c_i),\neg c_1,\ldots,\neg c_i\}$ (containing every appearing
-conclusion) is provable. The algorithms perform as expected (see Figure~\ref{fig:benchExplode}).
+consequent) is provable. The algorithms perform as expected (see Figure~\ref{fig:benchExplode}).
 \end{itemize}
 
 \begin{figure}[!h]
@@ -831,15 +833,15 @@ $i$ & Algorithm~\ref{alg:seq} & Algorithm~\ref{alg:preprove} & Algorithm~\ref{al
   \label{fig:benchExplode}
 \end{figure}
 
-The tests we conducted on a Linux PC (Dual Core AMD Opteron 2220Server - 2800MHZ, 16GB RAM).
+The tests were conducted on a Linux PC (Dual Core AMD Opteron 2220S (2800MHZ), 16GB RAM).
 It is obvious that a significant increase of performance may be obtained through
-the proposed optimizations. In general, the implementation of the proposed algorithms (realized
-as a part of CoLoSS) has a comparable performance to
-other conditional logic provers (such as CondLean). However, the authors of other
+the proposed optimisations. In general, the implementation of the proposed algorithms (realized
+as a part of \COLOSS) has a comparable performance to
+other conditional logic provers (such as CondLean~\cite{OlivettiEA07}). However, the authors of other
 provers did not publish their benchmarking sets of formulae, so that a direct
-comparison was not possible. Since other provers do not implement the optimization
+comparison was not possible. Since other provers do not implement the optimisation
 strategies proposed in this paper, it is reasonable to assume, that the optimized
-implementation in CoLoSS outperforms other systems at least for the 
+implementation in \COLOSS outperforms other systems at least for the 
 considered examplary formulae \verb|explode(|i\verb|)| and \verb|conjunct(|i\verb|)|.
 
 \section{Summary}  
