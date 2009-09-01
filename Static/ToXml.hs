@@ -26,7 +26,7 @@ import Common.ExtSign
 import Common.GlobalAnnotations
 import Common.Id
 import qualified Common.OrderedMap as OMap
-import Common.Result
+import Common.ToXml
 
 import Text.XML.Light
 
@@ -34,28 +34,6 @@ import Data.Graph.Inductive.Graph as Graph
 import qualified Data.Map as Map
 import qualified Data.Set as Set
 import Data.List
-
-mkAttr :: String -> String -> Attr
-mkAttr = Attr . unqual
-
-prettyElem :: Pretty a => String -> GlobalAnnos -> a -> Element
-prettyElem name ga a = unode name $ showGlobalDoc ga a ""
-
-rangeAttrs :: Range -> [Attr]
-rangeAttrs rg = case rangeToList rg of
-  [] -> []
-  ps -> [mkAttr "range" $ show $ prettyRange ps]
-
-annotation :: GlobalAnnos -> Annotation -> Element
-annotation ga a = add_attrs (rangeAttrs $ getRangeSpan a)
-  $ prettyElem "Annotation" ga a
-
-annotations :: GlobalAnnos -> [Annotation] -> [Element]
-annotations = map . annotation
-
-subnodes :: String -> [Element] -> [Element]
-subnodes name elems = if null elems then [] else
-  [unode name elems]
 
 dGraph :: LibEnv -> DGraph -> Element
 dGraph lenv dg =
@@ -77,11 +55,11 @@ globalEntry :: GlobalAnnos -> DGraph -> SIMPLE_ID -> GlobalEntry
             -> [Element] -> [Element]
 globalEntry ga dg si ge l = case ge of
   SpecEntry (ExtGenSig g (NodeSig n _)) ->
-    add_attrs (mkAttr "name" (getNameOfNode n dg) :
+    add_attrs (mkNameAttr (getNameOfNode n dg) :
       rangeAttrs (getRangeSpan si) ++ genSig dg g)
     (unode "SPEC-DEFN" ()) : l
   ViewEntry (ExtViewSig (NodeSig s _) gm (ExtGenSig g (NodeSig n _))) ->
-    add_attrs (mkAttr "name" (show si) : rangeAttrs (getRangeSpan si)
+    add_attrs (mkNameAttr (show si) : rangeAttrs (getRangeSpan si)
       ++ genSig dg g ++
       [ mkAttr "source" $ getNameOfNode s dg
       , mkAttr "target" $ getNameOfNode n dg])
@@ -90,7 +68,7 @@ globalEntry ga dg si ge l = case ge of
 
 lnode :: GlobalAnnos -> LibEnv -> LNode DGNodeLab -> Element
 lnode ga lenv (_, lbl) = let nm = dgn_name lbl in
-  add_attr (mkAttr "name" $ showName nm)
+  add_attr (mkNameAttr $ showName nm)
   $ unode "Node"
     $ unode "XPath" (showXPath $ xpath nm)
       : case nodeInfo lbl of
@@ -122,7 +100,7 @@ lnode ga lenv (_, lbl) = let nm = dgn_name lbl in
                     (map (mkSenNode ga "Theorem") $ toNamedList unprvn)
 
 mkSenNode :: Pretty s => GlobalAnnos -> String -> SenAttr s String -> Element
-mkSenNode ga str s = add_attr (mkAttr "name" $ senAttr s)
+mkSenNode ga str s = add_attr (mkNameAttr $ senAttr s)
   $ prettyElem str ga $ sentence s
 
 ledge :: GlobalAnnos -> DGraph -> LEdge DGLinkLab -> Element
