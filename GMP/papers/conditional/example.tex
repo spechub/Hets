@@ -647,6 +647,13 @@ have to be shown or refuted even during the course of the original algorithm).
 
 \section{Implementation}
 
+The proposed optimized algorithms have been implemented as part of the
+generic coalgebraic modal logic satisfiability solver (CoLoSS). CoLoSS provides
+the general coalgebraic framework in which a generic sequent calculus is
+embedded. It is easily possible to instantiate this generic sequent calculus to
+specific modal logics, one particular example being conditional logic. The CoLoSS matching
+function for conditional logic was hence adapted in order to realize the different
+optimizations, so that CoLoSS now provides an efficient
 Write a few words about the Haskell-Implementation here. Nothing interresting apart
 from the Web-Interface, and that all of this is a part of CoLoSS.
 
