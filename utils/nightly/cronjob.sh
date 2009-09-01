@@ -154,6 +154,8 @@ copyStyForCgi ()
 createLogFiles ()
 {
 cat */*.th > ../th.log
+\rm */*.th.pp.het
+\rm */*.pp.pp.het
 cat */*.pp.het > ../pp.log
 }
 
