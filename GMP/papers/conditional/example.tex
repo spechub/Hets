@@ -26,23 +26,36 @@
 \def\lastname{Hausmann and Schr\"oder}
 \begin{document}
 \begin{frontmatter}
-  \title{Optimizing Conditional Logic (Draft)}
-  \author[Bremen]{Daniel Hausmann\thanksref{ALL}\thanksref{myemail}}
-  \author[Bremen]{Lutz Schr\"oder\thanksref{ALL}\thanksref{coemail}}
-  \address[Bremen]{Deutsches Zentrum f\"ur k\"unstliche Intelligenz (DFKI)\\ Universit\"at Bremen, Germany}
-  \thanks[ALL]{This work is supported by DFG-project no1234}
+  \title{Optimizing Conditional Logic Reasoning within COLOSS}
+  \author[DFKI]{Daniel Hausmann\thanksref{myemail}}
+  \author[DFKI,UBremen]{Lutz Schr\"oder\thanksref{coemail}}
+  \address[DFKI]{DFKI Bremen, SKS}
+  \address[UBremen]{Department of Mathematics and Computer Science, Universit\"at Bremen, Germany}
+%  \thanks[ALL]{Work forms part of DFG-project \emph{Generic Algorithms and Complexity
+%      Bounds in Coalgebraic Modal Logic} (SCHR 1118/5-1)}
   \thanks[myemail]{Email: \href{mailto:Daniel.Hausmann@dfki.de} {\texttt{\normalshape Daniel.Hausmann@dfki.de}}}
   \thanks[coemail]{Email: \href{mailto:Lutz.Schroeder@dfki.de} {\texttt{\normalshape Lutz.Schroeder@dfki.de}}}
 \begin{abstract} 
-  We describe a specific optimization of the decision algorithm
-of conditional logic. The general framework
-  of this optimization is the setting of coalgebraic modal logic,
-the actual implementation is an extension to
-  the generic satisfiability solver for modal logics CoLoSS.
+  The generic modal reasoner COLOSS covers a wide variety of logics
+  ranging from graded and probabilistic modal logic to coalition logic
+  and conditional logics, being based on a broadly applicable
+  coalgebraic semantics and an ensuing general treatment of modal
+  sequent and tableau calculi. Here, we present research into
+  optimisation of the reasoning strategies employed in
+  COLOSS. Specifically, we discuss strategies of memoisation and
+  dynamic programming that are based on the observation that short
+  sequents play a central role in many of the logics under
+  study. These optimisations seem to be particularly useful for the
+  case of conditional logics, for some of which dynamic programming
+  even improves the theoretical complexity of the algorithm. These
+  strategies have been implemented in COLOSS; we give a detailed
+  comparison of the different heuristics, observing that in the
+  targeted domain of conditional logics, a substantial speed-up can be
+  achieved.
 \end{abstract}
 \begin{keyword}
-  Coalgebraic modal logic, conditional logic,
-satisfiability / provability, optimization by memoizing
+  Coalgebraic modal logic, conditional logic, automated reasoning,
+  optimization, heuristics, memoizing, dynamic programming
 \end{keyword}
 \end{frontmatter}
 \section{Introduction}\label{intro}
