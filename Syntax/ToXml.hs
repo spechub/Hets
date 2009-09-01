@@ -172,7 +172,7 @@ annoted f ga a = let
   in e { elContent = map Elem l ++ elContent e ++ map Elem r }
 
 withRg :: Range -> Element -> Element
-withRg rg = add_attrs (rgAttrs rg)
+withRg = add_attrs . rgAttrs
 
 mkText :: String -> Content
 mkText s = Text $ CData CDataText s Nothing
