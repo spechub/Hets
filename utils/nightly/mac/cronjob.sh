@@ -14,4 +14,4 @@ makeLibCheck
 strip hets
 installHetsBinary mac
 chgrp macbkb hets
-\cp -fp hets /home/mac-bkb/bin/
+\cp -fp hets /home/mac-bkb/hets/hets-latest/bin/
