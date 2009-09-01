@@ -68,7 +68,7 @@ bracket s = "[" ++ s ++ "]"
 
 -- use the same strings for parsing and printing!
 verboseS, intypeS, outtypesS, skipS, structS, transS,
-     guiS, libdirS, outdirS, amalgS, specS, recursiveS,
+     guiS, libdirsS, outdirS, amalgS, specS, recursiveS,
      interactiveS, modelSparQS, connectS, xmlS, listenS, normalFormS :: String
 
 modelSparQS = "modelSparQ"
@@ -78,7 +78,7 @@ outtypesS = "output-types"
 skipS = "just-parse"
 structS = "just-structured"
 guiS = "gui"
-libdirS = "hets-libdir"
+libdirsS = "hets-libdirs"
 outdirS = "output-dir"
 amalgS = "casl-amalg"
 specS = "named-specs"
@@ -127,7 +127,7 @@ data HetcatsOpts = HcOpt     -- for comments see usage info
   , specNames :: [SIMPLE_ID] -- ^ specs to be processed
   , transNames :: [SIMPLE_ID] -- ^ comorphism to be processed
   , intype :: InType
-  , libdir :: FilePath
+  , libdirs :: [FilePath]
   , modelSparQ :: FilePath
   , outdir :: FilePath
   , outtypes :: [OutType]
@@ -155,7 +155,7 @@ defaultHetcatsOpts = HcOpt
   , specNames = []
   , transNames = []
   , intype   = GuessIn
-  , libdir   = ""
+  , libdirs   = []
   , modelSparQ = ""
   , outdir   = ""
   , outtypes = [] -- no default
@@ -178,7 +178,7 @@ instance Show HetcatsOpts where
     ++ show (guiType opts)
     ++ (if interactive opts then showOpt interactiveS else "")
     ++ show (analysis opts)
-    ++ showEqOpt libdirS (libdir opts)
+    ++ showEqOpt libdirsS (intercalate ":" $ libdirs opts)
     ++ (if modelSparQ opts /= "" then showEqOpt modelSparQS (modelSparQ opts)
         else "")
     ++ (if xmlFlag opts then showOpt xmlS else "")
@@ -210,7 +210,7 @@ data Flag =
   | Analysis AnaType
   | DefaultLogic String
   | InType InType
-  | LibDir FilePath
+  | LibDirs String
   | OutDir FilePath
   | ModelSparQ FilePath
   | OutTypes [OutType]
@@ -233,7 +233,7 @@ makeOpts opts flg = case flg of
     Analysis x -> opts { analysis = x }
     Gui x      -> opts { guiType = x }
     InType x   -> opts { intype = x }
-    LibDir x   -> opts { libdir = x }
+    LibDirs x   -> opts { libdirs = splitOn ':' x }
     ModelSparQ x -> opts { modelSparQ = x }
     OutDir x   -> opts { outdir = x }
     OutTypes x -> opts { outtypes = x }
@@ -437,8 +437,8 @@ options = let
       "skip basic, just do structured analysis"
     , Option ['l'] ["logic"] (ReqArg DefaultLogic "LOGIC")
       "choose logic, default is CASL"
-    , Option ['L'] [libdirS] (ReqArg LibDir "DIR")
-      "source directory of libraries"
+    , Option ['L'] [libdirsS] (ReqArg LibDirs "DIR")
+      "colon separated paths of library source directories"
     , Option ['m'] [modelSparQS] (ReqArg ModelSparQ "FILE")
       "lisp file for SparQ definitions"
     , Option ['x'] [xmlS] (NoArg XML)
@@ -709,20 +709,19 @@ checkLibDirs fs = do
         [] -> do
             s <- getEnvDef "HETS_LIB" ""
             if null s then return [] else do
-                let d = LibDir s
-                checkLibDir d
+                let d = LibDirs s
+                checkLibDirs [d]
                 return [d]
-        [f] -> checkLibDir f >> return fs
+        [LibDirs f] -> mapM_ checkLibDir (splitOn ':' f) >> return fs
         _ -> hetsError
-            "Only one library directory may be specified on the command line"
+            "Only one library path may be specified on the command line"
 
 -- | 'checkLibDir' checks a single LibDir for sanity
-checkLibDir :: Flag -> IO ()
-checkLibDir (LibDir file) =
+checkLibDir :: FilePath -> IO ()
+checkLibDir file =
     do exists <- doesDirectoryExist file
        if exists then return ()
           else hetsError $ "Not a valid library directory: " ++ file
-checkLibDir _ = return ()
 
 -- | 'checkOutDir' checks a single OutDir for sanity
 checkOutDir :: Flag -> IO ()
@@ -740,7 +739,7 @@ collectDirs fs =
         (lds,fs'') = partition isLibDir fs'
         isOutDir (OutDir _) = True
         isOutDir _          = False
-        isLibDir (LibDir _) = True
+        isLibDir (LibDirs _) = True
         isLibDir _          = False
     in do ods' <- checkOutDirs ods
           lds' <- checkLibDirs lds

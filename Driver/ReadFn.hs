@@ -94,7 +94,9 @@ libNameToFile :: HetcatsOpts -> LIB_NAME -> FilePath
 libNameToFile opts ln =
            case getLIB_ID ln of
                 Indirect_link file _ ofile _ ->
-                  let path = libdir opts
+                  let path = case libdirs opts of
+                        [] -> ""
+                        fp : _ -> fp
                      -- add trailing "/" if necessary
                   in if null ofile then pathAndBase path file else ofile
                 Direct_link _ _ -> error "libNameToFile"
@@ -102,10 +104,12 @@ libNameToFile opts ln =
 -- | convert a file name that may have a suffix to a library name
 fileToLibName :: HetcatsOpts -> FilePath -> LIB_NAME
 fileToLibName opts efile =
-    let path = libdir opts
+    let paths = libdirs opts
         file = rmSuffix efile -- cut of extension
+        pps = filter snd $ map (\ p -> (p, isPrefixOf p file)) paths
         nfile = dropWhile (== '/') $         -- cut off leading slashes
-                if isPrefixOf path file
-                then drop (length path) file -- cut off libdir prefix
-                else file
+                case pps of
+                  [] -> file
+                  (path, _) : _ -> drop (length path) file
+                   -- cut off libdir prefix
     in Lib_id $ Indirect_link nfile nullRange "" noTime

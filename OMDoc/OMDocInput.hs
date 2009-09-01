@@ -2823,8 +2823,8 @@ makeImportGraphOMDoc go source =
     -- trick the uri parser into faking a document to make a relative path later
     mcduri <- return $ URI.parseURIReference ("file://"++curdirs++"/a")
     alibdir <- return $ case mcduri of
-      Nothing -> (fixLibDir (libdir (hetsOpts go)))
-      (Just cduri) -> relativeSource cduri (fixLibDir (libdir (hetsOpts go)))
+      Nothing -> (fixLibDir (libdirs (hetsOpts go)))
+      (Just cduri) -> relativeSource cduri (fixLibDir (libdirs (hetsOpts go)))
     putIfVerbose (hetsOpts go) 0 ("Loading " ++ source ++ "...")
     mdoc <- maybeFindXml source [alibdir]
     case mdoc of
@@ -2867,11 +2867,11 @@ makeImportGraphOMDoc go source =
         )
   where
 
-  fixLibDir::FilePath->FilePath
-  fixLibDir fp =
-    case fp of
-      [] -> fp
-      _ ->
+  fixLibDir :: [FilePath] -> FilePath
+  fixLibDir fps =
+    case fps of
+      [] -> ""
+      fp : _ ->
         if last fp == '/'
           then
             init fp
@@ -2892,7 +2892,7 @@ makeImportGraphOMDoc go source =
       possources =
         theouri:(
           map
-            (\s -> s ++ (if (last s)=='/' then "" else "/") ++ theouri)
+            (\s -> s ++ (if last s == '/' then "" else "/") ++ theouri)
             includes
           )
       mimportsource =
