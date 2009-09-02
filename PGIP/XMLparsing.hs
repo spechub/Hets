@@ -26,7 +26,8 @@ import Interfaces.DataTypes
 import Interfaces.Utils
 import Text.XML.Light as XML
 
--- | Generates the XML packet that contains information about the interface
+-- | Generates the XML packet that contains information about what
+-- commands can the interface respond to 
 genHandShake :: CMDL_PgipState -> CMDL_PgipState
 genHandShake pgipData
  = let el_askpgip        = genPgipElem "askpgip"
@@ -126,10 +127,14 @@ communicationStep:: CMDL_PgipState -> CMDL_State ->
                      IO (CMDL_PgipState, CMDL_State)
 communicationStep pgD st =
   do
+   -- tries to read a packet from the input 
    tmp <- timeoutReadPacket (maxWaitTime pgD) pgD
-   appendFile "/tmp/razvan.txt" ("Input : "++(show tmp)++"\n")
    case tmp of
     Nothing -> case resendMsgIfTimeout pgD of
+      -- if the interface receives nothing in the given timeframe 
+      -- described by maxWaitTime and the flag resendMsgIfTimeout is 
+      -- set, that the interface resends last packet assuming that last 
+      -- send was a fail
                 True -> do
                          let nwpgD = addToMsg (showContent $ xmlContent pgD)
                                           [] pgD {
@@ -140,19 +145,17 @@ communicationStep pgD st =
                          hPutStrLn (hout nwpgD) $ theMsg nwpgD
                          hFlush $ hout nwpgD
                          communicationStep nwpgD st
+       -- if the flag is not set, that the network waits some more for the 
+       -- broker to respond or give a new command
                 False -> communicationStep pgD st
+    -- if something is received, that the commands are parsed and executed
+    -- and a response is generated
     Just smtxt -> do
                    cmds <- parseMsg pgD smtxt
                    let refseqNb = getRefseqNb smtxt
                    (nwSt, nwPgD) <-processCmds cmds st $ resetMsg [] $
                                             pgD {
                                               refSeqNb = refseqNb }
-                   appendFile "/tmp/razvan2.txt" ("OUT1:: ::"++
-                                          (outputMsg $ output nwSt)++"\n\n")
-                   appendFile "/tmp/razvan2.txt" ("OUT2:: ::"++
-                                          (warningMsg $ output nwSt)++"\n\n")
-                   appendFile "/tmp/razvan2.txt" ("OUT3:: ::"++
-                                          (errorMsg $ output nwSt)++"\n\n")
                    case useXML pgD of
                     True -> do
                              let nwPgipSt = addToMsg (showContent $ xmlContent nwPgD)
@@ -160,6 +163,8 @@ communicationStep pgD st =
                                                     seqNb = (seqNb nwPgD)+1 }
                              hPutStrLn (hout pgD) $ theMsg nwPgipSt
                              hFlush $ hout pgD
+                             -- this lines take care for each response to have
+                             -- a corresponding id and sequence number
                              let refNb = case refseqNb of
                                           Just rNb -> " refseq=\""++rNb++"\" "
                                           Nothing -> " "
@@ -294,15 +299,15 @@ processCmds cmds state pgipState
 --    putStrLn $ show state
     case cmds of
      [] -> case useXML pgipSt of
+            -- ensures that the response is ended with a ready element
+            -- such that the broker does wait for more input
             True -> return (state, addReadyXml pgipSt )
             False -> return (state, pgipSt)
      (XML_Execute str):l -> do
-                           --  appendFile "/tmp/razvan.txt" ("Output : "++
-                           --                      (theMsg pgipSt)++"\n")
                            --  hPutStrLn (hout pgipSt) $ theMsg pgipSt
                            --  hFlush $ hout pgipSt
                              let nPGIP = resetMsg [] pgipSt
-                             appendFile "/tmp/razvan.txt" ("\n\n" ++ str)
+                             -- process string line 
                              nwSt <- cmdlProcessString str state
                              case errorMsg $ output nwSt of
                               [] -> processCmds l nwSt $
@@ -333,8 +338,6 @@ processCmds cmds state pgipState
                         "Quiet mode doesn't work properly" [] pgipSt {
                                               quietOutput = False }
      (XML_OpenGoal str) :l -> do
-                  appendFile "/tmp/razvan.txt" ("Output : "++(theMsg pgipSt)
-                                                         ++"\n")
                   nwSt <- cmdlProcessString ("add goals "++str++"\n") state
                   case errorMsg $ output nwSt of
                    [] -> processCmds l nwSt $
@@ -343,9 +346,7 @@ processCmds cmds state pgipState
                    _ -> return (nwSt, genErrAnswer (errorMsg $ output nwSt)
                                          pgipSt)
      (XML_CloseGoal str) :l -> do
-                  appendFile "/tmp/razvan.txt" ("Output : " ++(theMsg pgipSt)
-                                                         ++"\n")
-                  nwSt <- cmdlProcessString ("add goals "++str++"\n prove \n")
+                  nwSt <- cmdlProcessString ("del goals "++str++"\n prove \n")
                                                                      state
                   case errorMsg $ output nwSt of
                    [] -> processCmds l nwSt $
@@ -354,8 +355,6 @@ processCmds cmds state pgipState
                    _ -> return (nwSt, genErrAnswer (errorMsg $ output nwSt)
                                       pgipSt)
      (XML_GiveUpGoal str) :l -> do
-                  appendFile "/tmp/razvan.txt" ("Output : "++(theMsg pgipSt)
-                                                    ++"\n")
                   nwSt <- cmdlProcessString ("del goals "++str++"\n") state
                   case errorMsg $ output nwSt of
                    [] -> processCmds l nwSt $
@@ -367,8 +366,6 @@ processCmds cmds state pgipState
                   return (state, genAnswer []  ("Unknown command : "++str)
                                         pgipSt)
      XML_Undo : l -> do
-                  appendFile "/tmp/razvan.txt" ("Output : "++(theMsg pgipSt)
-                                                           ++ "\n")
                   nwSt <- cmdlProcessString ("undo \n") state
                   case errorMsg $ output nwSt of
                    [] -> processCmds l nwSt $
@@ -377,8 +374,6 @@ processCmds cmds state pgipState
                    _ -> return (nwSt, genErrAnswer (errorMsg $ output nwSt)
                                      pgipSt)
      XML_Redo : l -> do
-                  appendFile "/tmp/razvan.txt" ("Output : "++(theMsg pgipSt)
-                                                     ++ "\n")
                   nwSt <- cmdlProcessString ("redo \n") state
                   case errorMsg $ output nwSt of
                    [] -> processCmds l nwSt $
@@ -387,8 +382,6 @@ processCmds cmds state pgipState
                    _ -> return (nwSt, genErrAnswer (errorMsg $ output nwSt)
                                      pgipSt)
      (XML_Forget str) :l -> do
-                  appendFile "/tmp/razvan.txt" ("Output : "++(theMsg pgipSt)
-                                                         ++ "\n")
                   nwSt <- cmdlProcessString ("del axioms "++str++"\n") state
                   case errorMsg $ output nwSt of
                    [] -> processCmds l nwSt $
@@ -397,8 +390,6 @@ processCmds cmds state pgipState
                    _ -> return (nwSt, genErrAnswer (errorMsg $ output nwSt)
                                     pgipSt)
      (XML_OpenTheory str) :l -> do
-                  appendFile "/tmp/razvan.txt" ("Output : "++(theMsg pgipSt)
-                                                        ++"\n")
                   nwSt <- cmdlProcessString ("select "++str ++ "\n") state
                   case errorMsg $ output nwSt of
                    [] -> processCmds l nwSt $
@@ -426,8 +417,6 @@ processCmds cmds state pgipState
      (XML_ParseScript str) : _ -> do
                  processCmds [] state $ addToContent pgipSt (addPgipMarkUp str)
      (XML_LoadFile str) : l -> do
-                  appendFile "/tmp/razvan.txt" ("Output : "++(theMsg pgipSt)
-                                                          ++ "\n")
                   nwSt <- cmdlProcessString ("use "++str++"\n") state
                   case errorMsg $ output nwSt of
                    [] -> processCmds l nwSt $

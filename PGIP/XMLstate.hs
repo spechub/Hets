@@ -22,7 +22,7 @@ import Common.Utils (getEnvDef)
 import Text.XML.Light
 import PGIP.MarkPgip
 
-
+-- generates a pgipelem element that contains the input text
 genPgipElem :: String -> Content
 genPgipElem str =
    Elem $ Element {
@@ -31,18 +31,30 @@ genPgipElem str =
             elContent = [Text $ CData CDataRaw str Nothing],
             elLine    = Nothing }
 
+-- generates a normalresponse element that has a pgml element 
+-- containing the output text
 genNormalResponse :: String -> Content
 genNormalResponse str =
+ let pgmlText = Elem $ Element {
+                   elName = genQName "atom",
+                   elAttribs = [],
+                   elContent = [Text $ CData CDataRaw str Nothing],
+                   elLine = Nothing }
+ in
   Elem $ Element {
           elName = genQName "normalresponse",
           elAttribs = [],
           elContent = [ Elem $ Element {
-                         elName = genQName "pgmltext",
-                         elAttribs = [],
-                         elContent = [Text $ CData CDataRaw str Nothing],
+                         elName = genQName "pgml",
+                         elAttribs = [Attr { 
+                                       attrKey = genQName "area",
+                                       attrVal = "message"} ],
+                         elContent =  [Text $ CData CDataRaw str Nothing],
+                                      -- [pgmlText],
                          elLine = Nothing } ],
           elLine = Nothing }
 
+-- same as above, just for an error instead of normal output
 genErrorResponse :: Bool -> String -> Content
 genErrorResponse fatality str =
   case fatality of
@@ -69,7 +81,8 @@ genErrorResponse fatality str =
                             elLine = Nothing } ],
             elLine = Nothing }
 
-
+-- adds one element at the end of the content of the xml packet that represents
+-- the current output of the interface to the broker
 addToContent :: CMDL_PgipState -> Content -> CMDL_PgipState
 addToContent pgData cont
  = pgData {
@@ -79,6 +92,8 @@ addToContent pgData cont
                   _ -> xmlContent pgData
        }
 
+-- adds an ready element at the end of the xml packet that represents the 
+-- current output of the interface to the broker
 addReadyXml :: CMDL_PgipState -> CMDL_PgipState
 addReadyXml pgData
  = let el_ready = Elem $ Element {
@@ -164,6 +179,7 @@ resetMsg str pgD
       xmlContent = convertPgipStateToXML pgD
       }
 
+-- extracts the xml package in XML.Light format (namely the Content type)
 convertPgipStateToXML :: CMDL_PgipState -> Content
 convertPgipStateToXML pgipData
  = let baseElem = Element {
@@ -212,6 +228,7 @@ data CMDL_XMLcommands =
  | XML_CloseFile String
  | XML_LoadFile String deriving (Eq,Show)
 
+-- extracts the refrence number of a xml packet (given as a string)
 getRefseqNb :: String -> Maybe String
 getRefseqNb input
  = let xmlTree = parseXML input
@@ -231,6 +248,8 @@ getRefseqNb input
           _       -> Nothing
 
 
+-- parses the xml message creating a list of commands that it needs to 
+-- execute
 parseXMLTree :: [Content] -> [CMDL_XMLcommands] -> IO [CMDL_XMLcommands]
 parseXMLTree  xmltree acc
  = do

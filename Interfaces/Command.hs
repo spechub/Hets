@@ -48,6 +48,7 @@ data GlobCmd =
 globCmdList :: [GlobCmd]
 globCmdList = [minBound .. maxBound]
 
+-- list of command names in the gui interface
 menuTextGlobCmd :: GlobCmd -> String
 menuTextGlobCmd cmd = case cmd of
   Automatic -> "Automatic"
