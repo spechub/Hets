@@ -34,6 +34,8 @@ data Record f a b = Record
     , foldMembership :: FORMULA f -> b -> SORT -> Range -> a
     , foldMixfix_formula :: FORMULA f -> b -> a
     , foldSort_gen_ax :: FORMULA f -> [Constraint] -> Bool -> a
+    , foldQuantOp :: FORMULA f -> OP_NAME -> OP_TYPE -> a -> a
+    , foldQuantPred :: FORMULA f -> PRED_NAME -> PRED_TYPE -> a -> a
     , foldExtFORMULA :: FORMULA f -> f -> a
     , foldQual_var :: TERM f -> VAR -> SORT -> Range -> b
     , foldApplication :: TERM f -> OP_SYMB -> [b] -> Range -> b
@@ -52,35 +54,37 @@ data Record f a b = Record
 
 mapRecord :: (f -> g) -> Record f (FORMULA g) (TERM g)
 mapRecord mf = Record
-    { foldQuantification = \ _ -> Quantification
-    , foldConjunction = \ _ -> Conjunction
-    , foldDisjunction = \ _ -> Disjunction
-    , foldImplication = \ _ -> Implication
-    , foldEquivalence = \ _ -> Equivalence
-    , foldNegation = \ _ -> Negation
-    , foldTrue_atom = \ _ -> True_atom
-    , foldFalse_atom = \ _ -> False_atom
-    , foldPredication = \ _ -> Predication
-    , foldDefinedness = \ _ -> Definedness
-    , foldExistl_equation = \ _ -> Existl_equation
-    , foldStrong_equation = \ _ -> Strong_equation
-    , foldMembership = \ _ -> Membership
-    , foldMixfix_formula = \ _ -> Mixfix_formula
-    , foldSort_gen_ax = \ _ -> Sort_gen_ax
-    , foldExtFORMULA = \ _ f -> ExtFORMULA $ mf f
-    , foldQual_var = \ _ -> Qual_var
-    , foldApplication = \ _ -> Application
-    , foldSorted_term = \ _ -> Sorted_term
-    , foldCast = \ _ -> Cast
-    , foldConditional = \ _ -> Conditional
-    , foldMixfix_qual_pred = \ _ -> Mixfix_qual_pred
-    , foldMixfix_term = \ _ -> Mixfix_term
-    , foldMixfix_token = \ _ -> Mixfix_token
-    , foldMixfix_sorted_term = \ _ -> Mixfix_sorted_term
-    , foldMixfix_cast = \ _ -> Mixfix_cast
-    , foldMixfix_parenthesized = \ _ -> Mixfix_parenthesized
-    , foldMixfix_bracketed = \ _ -> Mixfix_bracketed
-    , foldMixfix_braced = \ _ -> Mixfix_braced
+    { foldQuantification = const Quantification
+    , foldConjunction = const Conjunction
+    , foldDisjunction = const Disjunction
+    , foldImplication = const Implication
+    , foldEquivalence = const Equivalence
+    , foldNegation = const Negation
+    , foldTrue_atom = const True_atom
+    , foldFalse_atom = const False_atom
+    , foldPredication = const Predication
+    , foldDefinedness = const Definedness
+    , foldExistl_equation = const Existl_equation
+    , foldStrong_equation = const Strong_equation
+    , foldMembership = const Membership
+    , foldMixfix_formula = const Mixfix_formula
+    , foldSort_gen_ax = const Sort_gen_ax
+    , foldQuantOp = const QuantOp
+    , foldQuantPred = const QuantPred
+    , foldExtFORMULA = \ _ -> ExtFORMULA . mf
+    , foldQual_var = const Qual_var
+    , foldApplication = const Application
+    , foldSorted_term = const Sorted_term
+    , foldCast = const Cast
+    , foldConditional = const Conditional
+    , foldMixfix_qual_pred = const Mixfix_qual_pred
+    , foldMixfix_term = const Mixfix_term
+    , foldMixfix_token = const Mixfix_token
+    , foldMixfix_sorted_term = const Mixfix_sorted_term
+    , foldMixfix_cast = const Mixfix_cast
+    , foldMixfix_parenthesized = const Mixfix_parenthesized
+    , foldMixfix_bracketed = const Mixfix_bracketed
+    , foldMixfix_braced = const Mixfix_braced
     }
 
 constRecord :: (f -> a) -> ([a] -> a) -> a -> Record f a a
@@ -100,14 +104,16 @@ constRecord mf join c = Record
     , foldMembership = \ _ r _ _ -> r
     , foldMixfix_formula = \ _ r -> r
     , foldSort_gen_ax = \ _ _ _ -> c
-    , foldExtFORMULA = \ _ f -> mf f
+    , foldQuantOp = \ _ _ _ a -> a
+    , foldQuantPred = \ _ _ _ a -> a
+    , foldExtFORMULA = const mf
     , foldQual_var = \ _ _ _ _ -> c
     , foldApplication = \ _ _ l _ -> join l
     , foldSorted_term = \ _ r _ _ -> r
     , foldCast = \ _ r _ _ -> r
     , foldConditional = \ _ l f r _ -> join [l, f, r]
     , foldMixfix_qual_pred = \ _ _ -> c
-    , foldMixfix_term = \ _ l -> join l
+    , foldMixfix_term = const join
     , foldMixfix_token = \ _ _ -> c
     , foldMixfix_sorted_term = \ _ _ _ -> c
     , foldMixfix_cast = \ _ _ _ -> c
@@ -138,6 +144,8 @@ foldFormula r f = case f of
    Mixfix_formula t -> foldMixfix_formula r f (foldTerm r t)
    Unparsed_formula s _ -> error $ "Fold.foldFormula.Unparsed" ++ s
    Sort_gen_ax cs b -> foldSort_gen_ax r f cs b
+   QuantOp o t q -> foldQuantOp r f o t $ foldFormula r q
+   QuantPred p t q -> foldQuantPred r f p t $ foldFormula r q
    ExtFORMULA e -> foldExtFORMULA r f e
 
 foldTerm :: Record f a b -> TERM f -> b

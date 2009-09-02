@@ -96,7 +96,9 @@ sRec sign mf = Record
             [s] -> sortToSSymbol s
             _ -> SList $ map sortToSSymbol srts)
         : map (opToSSymbol sign) ops
-    , foldExtFORMULA = \ _ f -> mf f
+    , foldQuantOp = \ _ o _ _ -> sfail ("QuantOp " ++ show o) $ getRange o
+    , foldQuantPred = \ _ p _ _ -> sfail ("QuantPred " ++ show p) $ getRange p
+    , foldExtFORMULA = const mf
     , foldQual_var = \ _ v _ _ ->
         SList [SSymbol "varterm", varToSSymbol v]
     , foldApplication = \ _ o ts _ ->
@@ -104,15 +106,15 @@ sRec sign mf = Record
     , foldSorted_term = \ _ r _ _ -> r
     , foldCast = \ _ t s _ -> SList [SSymbol "cast", t, sortToSSymbol s]
     , foldConditional = \ _ e f t _ -> SList [SSymbol "condition", e, f, t]
-    , foldMixfix_qual_pred = \ _ p -> sfail "Mixfix_qual_pred" $ getRange p
+    , foldMixfix_qual_pred = \ _ -> sfail "Mixfix_qual_pred" . getRange
     , foldMixfix_term = \ (Mixfix_term ts) _ ->
         sfail "Mixfix_term" $ getRange ts
-    , foldMixfix_token = \ _ t -> sfail "Mixfix_token" $ tokPos t
-    , foldMixfix_sorted_term = \ _ _ r -> sfail "Mixfix_sorted_term" r
-    , foldMixfix_cast = \ _ _ r -> sfail "Mixfix_cast" r
-    , foldMixfix_parenthesized = \ _ _ r -> sfail "Mixfix_parenthesized" r
-    , foldMixfix_bracketed = \ _ _ r -> sfail "Mixfix_bracketed" r
-    , foldMixfix_braced = \ _ _ r -> sfail "Mixfix_braced" r }
+    , foldMixfix_token = \ _ -> sfail "Mixfix_token" . tokPos
+    , foldMixfix_sorted_term = \ _ _ -> sfail "Mixfix_sorted_term"
+    , foldMixfix_cast = \ _ _ -> sfail "Mixfix_cast"
+    , foldMixfix_parenthesized = \ _ _ -> sfail "Mixfix_parenthesized"
+    , foldMixfix_bracketed = \ _ _ -> sfail "Mixfix_bracketed"
+    , foldMixfix_braced = \ _ _ -> sfail "Mixfix_braced" }
 
 signToSExprs :: Sign a e -> [SExpr]
 signToSExprs sign = sortSignToSExprs sign

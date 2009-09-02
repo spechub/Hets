@@ -171,6 +171,8 @@ data FORMULA f = Quantification QUANTIFIER [VAR_DECL] (FORMULA f) Range
              | Unparsed_formula String Range
                -- pos: first Char in String
              | Sort_gen_ax [Constraint] Bool -- flag: belongs to a free type?
+             | QuantOp OP_NAME OP_TYPE (FORMULA f) -- second order quantifiers
+             | QuantPred PRED_NAME PRED_TYPE (FORMULA f)
              | ExtFORMULA f
              -- needed for CASL extensions
                deriving (Show, Eq, Ord)
@@ -217,23 +219,23 @@ recover_Sort_gen_ax :: [Constraint] ->
 recover_Sort_gen_ax constrs =
   if isInjectiveList sorts
      -- no duplicate sorts, i.e. injective sort map? Then we can ignore indices
-     then (sorts,map fst (concat (map opSymbs constrs)),[])
+     then (sorts, map fst (concatMap opSymbs constrs),[])
      -- otherwise, we have to introduce new sorts for the indices
      -- and afterwards rename them into the sorts they denote
      else (map indSort1 indices,map indOp indOps1,map sortMap indSorts)
   where
   sorts = map newSort constrs
-  indices = [0..length sorts-1]
+  indices = [0 .. length sorts - 1]
   indSorts = zip indices sorts
-  indSort (i,s) = if i<0 then s else indSort1 i
-  indSort1 i = origSort $ head (drop i constrs)
-  sortMap (i,s) = (indSort1 i,s)
+  indSort (i, s) = if i < 0 then s else indSort1 i
+  indSort1 i = origSort $ constrs !! i
+  sortMap (i, s) = (indSort1 i, s)
   indOps = zip indices (map opSymbs constrs)
-  indOps1 = concat (map (\(i,ops) -> map ((,) i) ops) indOps)
+  indOps1 = concatMap (\ (i, ops) -> map ((,) i) ops) indOps
   indOp (res,(Qual_op_name on (Op_type k args1 res1 pos1) pos,args)) =
      Qual_op_name on
          (Op_type k (map indSort (zip args args1))
-                        (indSort (res,res1)) pos1) pos
+                        (indSort (res, res1)) pos1) pos
   indOp _ = error
       "CASL/AS_Basic_CASL: Internal error: Unqualified OP_SYMB in Sort_gen_ax"
 

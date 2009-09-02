@@ -79,7 +79,7 @@ instance Comorphism
       mapSublogic CASL_DL2CASL _  = Just $ Sublogic.caslTop
                       { sub_features = LocFilSub
                       , cons_features = emptyMapConsFeature }
-      map_symbol  CASL_DL2CASL _ s  = Set.singleton s
+      map_symbol  CASL_DL2CASL _  = Set.singleton
       map_sentence CASL_DL2CASL   = trSentence
       map_morphism CASL_DL2CASL   = mapMor
       map_theory   CASL_DL2CASL   = trTheory
@@ -115,7 +115,7 @@ projectToCASL dls = dls
 trSign :: DLSign -> CASLSign
 trSign inSig =
     let
-        inC = (projectToCASL inSig) `uniteCASLSign` predefSign
+        inC = projectToCASL inSig `uniteCASLSign` predefSign
         inSorts  = sortSet inSig
         inData   = sortSet dataSig_CASL
     in
@@ -131,17 +131,13 @@ trSign inSig =
 
 -- ^ translation of the signature
 -- ^ predefined axioms are added
-rtrSign :: DLSign -> Result CASLSign
-rtrSign inSig = return $ trSign inSig
 
 -- Translation of theories
 trTheory :: (DLSign, [Named (FORMULA DL_FORMULA)]) ->
             Result (CASLSign, [Named (FORMULA ())])
-trTheory (inSig, inForms) =
-    do
-      outForms <- mapR (\x -> trNamedSentence inSig x) inForms
-      outSig <- rtrSign inSig
-      return (outSig, predefinedAxioms ++ outForms)
+trTheory (inSig, inForms) = do
+      outForms <- mapR (trNamedSentence inSig) inForms
+      return (trSign inSig, predefinedAxioms ++ outForms)
 
 -- ^ translation of named sentences
 trNamedSentence :: DLSign -> Named (FORMULA DL_FORMULA) ->
@@ -175,14 +171,14 @@ trSentence inSig inF =
         Quantification qf vs frm rn ->
             do
               outF <- trSentence inSig frm
-              return (Quantification qf vs (outF) rn)
+              return (Quantification qf vs outF rn)
         Conjunction fns rn ->
             do
-              outF <- mapR (\x -> trSentence inSig x) fns
+              outF <- mapR (trSentence inSig) fns
               return (Conjunction outF rn)
         Disjunction fns rn ->
             do
-              outF <- mapR (\x -> trSentence inSig x) fns
+              outF <- mapR (trSentence inSig) fns
               return (Disjunction outF rn)
         Implication f1 f2 b rn ->
             do
@@ -198,11 +194,11 @@ trSentence inSig inF =
             do
               outF <- trSentence inSig frm
               return (Negation outF rn)
-        True_atom rn -> do return (True_atom rn)
-        False_atom rn -> do return (False_atom rn)
+        True_atom rn -> return (True_atom rn)
+        False_atom rn -> return (False_atom rn)
         Predication pr trm rn ->
             do
-              ot <- mapR (\x -> trTerm inSig x) trm
+              ot <- mapR (trTerm inSig) trm
               return (Predication pr ot rn)
         Definedness tm rn ->
             do
@@ -227,14 +223,15 @@ trSentence inSig inF =
               ot <- trTerm inSig trm
               return (Mixfix_formula ot)
         Unparsed_formula str rn ->
-            do return (Unparsed_formula str rn)
+            return (Unparsed_formula str rn)
         Sort_gen_ax cstr ft ->
-            do return (Sort_gen_ax cstr ft)
+            return (Sort_gen_ax cstr ft)
+        QuantOp _ _ _ -> fail "CASL_DL2CASL.QuantOp"
+        QuantPred _ _ _ -> fail "CASL_DL2CASL.QuantPred"
         ExtFORMULA form ->
             case form of
               Cardinality _ _ _ _ _ _ ->
-                  do
-                    fail "Mapping for cardinality expressions not yet implemented"
+                    fail "Mapping of cardinality not implemented"
 
 -- ^ translation of terms
 trTerm :: DLSign -> TERM DL_FORMULA -> Result (TERM ())
@@ -243,7 +240,7 @@ trTerm inSig inF =
       Qual_var v s rn -> return (Qual_var v s rn)
       Application os tms rn ->
           do
-            ot <- mapR (\x -> trTerm inSig x) tms
+            ot <- mapR (trTerm inSig) tms
             return (Application os ot rn)
       Sorted_term trm st rn ->
           do
@@ -259,24 +256,24 @@ trTerm inSig inF =
             ot2 <- trTerm inSig t2
             of1 <- trSentence inSig frm
             return (Conditional ot1 of1 ot2 rn)
-      Unparsed_term str rn -> do return (Unparsed_term str rn)
-      Mixfix_qual_pred ps  -> do return (Mixfix_qual_pred ps)
-      Mixfix_term trm      ->
+      Unparsed_term str rn -> return (Unparsed_term str rn)
+      Mixfix_qual_pred ps  -> return (Mixfix_qual_pred ps)
+      Mixfix_term trm ->
           do
-            ot <- mapR (\x -> trTerm inSig x) trm
+            ot <- mapR (trTerm inSig) trm
             return (Mixfix_term ot)
-      Mixfix_token tok     -> do return (Mixfix_token tok)
-      Mixfix_sorted_term st rn -> do return (Mixfix_sorted_term st rn)
-      Mixfix_cast st rn    -> do return (Mixfix_cast st rn)
+      Mixfix_token tok         -> return (Mixfix_token tok)
+      Mixfix_sorted_term st rn -> return (Mixfix_sorted_term st rn)
+      Mixfix_cast st rn        -> return (Mixfix_cast st rn)
       Mixfix_parenthesized trm rn ->
           do
-            ot <- mapR (\x -> trTerm inSig x) trm
+            ot <- mapR (trTerm inSig) trm
             return (Mixfix_parenthesized ot rn)
       Mixfix_bracketed trm rn ->
           do
-            ot <- mapR (\x -> trTerm inSig x) trm
+            ot <- mapR (trTerm inSig) trm
             return (Mixfix_bracketed ot rn)
       Mixfix_braced trm rn ->
           do
-            ot <-  mapR (\x -> trTerm inSig x) trm
+            ot <-  mapR (trTerm inSig) trm
             return (Mixfix_braced ot rn)

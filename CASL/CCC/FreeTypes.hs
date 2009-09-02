@@ -522,6 +522,8 @@ prettyType fm = case fm of
     Mixfix_formula _       -> "mixfix formula"
     Unparsed_formula _ _   -> "unparsed formula"
     Sort_gen_ax _ _        -> "sort_gen_ax"
+    QuantOp _ _ _          -> "forall op"
+    QuantPred _ _ _        -> "forall pred"
     ExtFORMULA _           -> "extended formula"
 
 -- | group the axioms according to their leading symbol,

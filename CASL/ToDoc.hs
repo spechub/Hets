@@ -154,8 +154,8 @@ instance Pretty ALTERNATIVE where
 printSortItem :: (f -> Doc) -> SORT_ITEM f -> Doc
 printSortItem mf si = case si of
     Sort_decl sl _ -> sepByCommas $ map idLabelDoc sl
-    Subsort_decl sl sup _ -> fsep $ (punctuate comma $ map idDoc sl)
-                                     ++ [less, idDoc sup]
+    Subsort_decl sl sup _ ->
+        fsep $ punctuate comma (map idDoc sl) ++ [less, idDoc sup]
     Subsort_defn s v sup af _ -> fsep [idLabelDoc s, equals,
               specBraces $ fsep [sidDoc v, colon <+> idDoc sup,
                              printAnnoted (addBullet . printFormula mf) af]]
@@ -172,7 +172,7 @@ printQuant q = case q of
 
 printSortedVars :: [VAR] -> SORT -> Doc
 printSortedVars l s =
-    fsep $ (punctuate comma $ map sidDoc l) ++ [colon <+> idDoc s]
+    fsep $ punctuate comma (map sidDoc l) ++ [colon <+> idDoc s]
 
 printVarDecl :: VAR_DECL -> Doc
 printVarDecl (Var_decl l s _) = printSortedVars l s
@@ -188,8 +188,8 @@ printPredHead (Pred_head l _) = printArgDecls l
 
 printPredItem :: (f -> Doc) -> PRED_ITEM f -> Doc
 printPredItem mf p = case p of
-    Pred_decl l t _ -> fsep $ (punctuate comma $ map idLabelDoc l)
-                       ++ [colon <+> printPredType t]
+    Pred_decl l t _ -> fsep $ punctuate comma (map idLabelDoc l)
+        ++ [colon <+> printPredType t]
     Pred_defn i h f _ ->
         sep[ cat [idLabelDoc i, printPredHead h]
            , equiv <+> printAnnoted (printFormula mf) f]
@@ -220,7 +220,7 @@ instance Pretty OP_HEAD where
 
 printOpItem :: (f -> Doc) -> OP_ITEM f -> Doc
 printOpItem mf p = case p of
-    Op_decl l t a _ -> fsep $ (punctuate comma $ map idLabelDoc l)
+    Op_decl l t a _ -> fsep $ punctuate comma (map idLabelDoc l)
         ++ [colon <> (if null a then id else (<> comma))(printOpType t)]
         ++ punctuate comma (map (printAttr mf) a)
     Op_defn i h@(Op_head _ l _ _) t _ ->
@@ -375,7 +375,15 @@ printRecord mf = Record
             genAx = sep [ keyword generatedS <+> keyword (typeS ++ pluralS l)
                         , semiAnnos printDATATYPE_DECL l]
         in if b then text "%% free" $+$ genAx else genAx
-    , foldExtFORMULA = \ _ f -> mf f
+    , foldQuantOp = \ _ o n r -> fsep
+        [ forallDoc
+        , printOpSymb $ Qual_op_name o n nullRange
+        , addBullet r ]
+    , foldQuantPred = \ _ p n r -> fsep
+        [ forallDoc
+        , printPredSymb $ Qual_pred_name p n nullRange
+        , addBullet r ]
+    , foldExtFORMULA = const mf
     , foldQual_var = \ _ v s _ ->
           parens $ fsep [text varS, sidDoc v, colon <+> idDoc s]
     , foldApplication = \ (Application _ ol _) o l _ -> case o of
@@ -388,11 +396,11 @@ printRecord mf = Record
     , foldConditional = \ (Conditional ol _ _ _) l f r _ ->
           fsep [if isCond ol then parens l else l,
                 text whenS <+> f, text elseS <+> r]
-    , foldMixfix_qual_pred = \ _ p -> printPredSymb p
+    , foldMixfix_qual_pred = const printPredSymb
     , foldMixfix_term = \ (Mixfix_term ol) l -> case ol of
           [_, Mixfix_parenthesized _ _] -> fcat l
           _ -> fsep l
-    , foldMixfix_token = \ _ -> sidDoc
+    , foldMixfix_token = const sidDoc
     , foldMixfix_sorted_term = \ _ s _ -> colon <+> idDoc s
     , foldMixfix_cast = \ _ s _ -> text asS <+> idDoc s
     , foldMixfix_parenthesized = \ _ l _ -> parens $ sepByCommas l
@@ -413,13 +421,13 @@ zipConds :: [TERM f] -> [Doc] -> [Doc]
 zipConds = zipWith (\ o d -> if isCond o then parens d else d)
 
 printFormula :: (f -> Doc) -> FORMULA f -> Doc
-printFormula mf = foldFormula $ printRecord mf
+printFormula = foldFormula . printRecord
 
 instance Pretty f => Pretty (FORMULA f) where
     pretty = printFormula pretty
 
 printTerm :: (f -> Doc) -> TERM f -> Doc
-printTerm mf = foldTerm $ printRecord mf
+printTerm = foldTerm . printRecord
 
 instance Pretty f => Pretty (TERM f) where
     pretty = printTerm pretty

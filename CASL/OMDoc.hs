@@ -320,6 +320,8 @@ omdocRec spid _ mf = Record
     , foldMembership = \ _ t s _ ->
                        (OMA [const_in , t, sortToOmdoc spid s])
     , foldMixfix_formula = \ t _ -> sfail "Mixfix_formula" $ getRange t
+    , foldQuantOp = \ _ o _ _ -> sfail ("QuantOp " ++ show o) $ getRange o
+    , foldQuantPred = \ _ p _ _ -> sfail ("QuantPred " ++ show p) $ getRange p
     , foldSort_gen_ax = \ t _ _ -> sfail
                         "Sort generating axioms should be filtered out before!"
                         $ getRange t

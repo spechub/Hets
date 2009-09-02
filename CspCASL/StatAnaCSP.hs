@@ -810,9 +810,6 @@ formulaComms f = case f of
     Implication f1 f2 _ _ -> (formulaComms f1) `S.union` (formulaComms f2)
     Equivalence f1 f2 _ -> (formulaComms f1) `S.union` (formulaComms f2)
     Negation f' _ -> formulaComms f'
-    True_atom _ -> S.empty
-    False_atom _ -> S.empty
-    Predication _ _ _ -> S.empty
     Definedness t _ -> S.singleton (CommTypeSort (sortOfTerm t))
     Existl_equation t1 t2 _ -> S.fromList [CommTypeSort (sortOfTerm t1),
                                            CommTypeSort (sortOfTerm t2)]
@@ -821,6 +818,4 @@ formulaComms f = case f of
     Membership t s _ -> S.fromList [CommTypeSort (sortOfTerm t),
                                     CommTypeSort s]
     Mixfix_formula t -> S.singleton (CommTypeSort (sortOfTerm t))
-    Unparsed_formula _ _ -> S.empty
-    Sort_gen_ax _ _ -> S.empty
-    ExtFORMULA _ -> S.empty
+    _ -> S.empty

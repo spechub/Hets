@@ -335,18 +335,8 @@ processFormulaOM go lenv ln nn uN cM vb
       ]
       )
 -- unsupported formulas
--- Mixfix_formula
-processFormulaOM _ _ _ _ _ _ _
-  (Mixfix_formula {}) =
-    OMDoc.mkOMComment "unsupported : Mixfix_formula"
--- Unparsed_formula
-processFormulaOM _ _ _ _ _ _ _
-  (Unparsed_formula {}) =
-    OMDoc.mkOMComment "unsupported : Unparsed_formula"
--- ExtFORMULA
-processFormulaOM _ _ _ _ _ _ _
-  (ExtFORMULA {}) =
-    OMDoc.mkOMComment "unsupported : ExtFORMULA"
+processFormulaOM _ _ _ _ _ _ _ f =
+    OMDoc.mkOMComment $ "unsupported : " ++ Pretty.showDoc f ""
 
 -- | creates a xml structure describing a Hets-presentation for a symbol
 makePresentationForOM::
