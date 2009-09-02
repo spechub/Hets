@@ -762,7 +762,7 @@ genericATPgui atpFun isExtraOptions prName thName th freedefs pt = do
                 -- proof attempt (... -> IO Bool)
                    (\ gPSF nSen nextSen cfg@(retval,_) -> do
                      cont <- goalProcessed stateMVar tLimit extOpts'
-                                           numGoals prName gPSF nSen cfg
+                                           numGoals prName gPSF nSen False cfg
                      mTId <- Conc.tryTakeMVar mVar_batchId
                      (flip (maybe (return False))) mTId
                         (\ tId -> do

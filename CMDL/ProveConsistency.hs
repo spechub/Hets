@@ -51,8 +51,8 @@ import Data.List
 import qualified Data.Map as Map
 
 import Control.Concurrent(ThreadId, killThread)
-import Control.Concurrent.MVar(MVar, newMVar, putMVar, takeMVar, tryTakeMVar,
-                               readMVar, swapMVar)
+import Control.Concurrent.MVar(MVar, newMVar, putMVar, takeMVar, readMVar,
+                               swapMVar, modifyMVar_)
 
 import System.IO(IO, putStrLn)
 
@@ -291,7 +291,7 @@ checkNode useTh save2File sTxt ndpf ndnm mp mcm mThr mSt mlbE libname
                       (P.Tactic_script $ show sTxt)
                       th []
              swapMVar mThr $ Just $ fst tmp
-             pollForResults lid1 cmp (snd tmp) answ mSt []
+             getResults lid1 cmp (snd tmp) answ mSt
              swapMVar mThr Nothing
              lbEnv  <- readMVar mlbE
              state <- readMVar mSt
@@ -391,7 +391,7 @@ proveNode useTh save2File sTxt ndpf ndnm mp mcm mThr mSt mlbE libname
                       (P.Tactic_script $ show  sTxt)
                       th []
              swapMVar mThr $ Just $ fst tmp
-             pollForResults lid1 cmp (snd tmp) answ mSt []
+             getResults lid1 cmp (snd tmp) answ mSt
              swapMVar mThr Nothing
              lbEnv  <- readMVar mlbE
              state <- readMVar mSt
@@ -404,64 +404,26 @@ proveNode useTh save2File sTxt ndpf ndnm mp mcm mThr mSt mlbE libname
                 swapMVar mlbE lbEnv'
                 return []
 
-
-pollForResults :: (Logic lid sublogics basic_spec sentence
-                       symb_items symb_map_items
-                       sign morphism symbol raw_symbol proof_tree) =>
-                  lid ->
-                  AnyComorphism ->
-                  MVar () ->
-                  MVar (Result [P.Proof_status proof_tree]) ->
-                  MVar  (Maybe Int_NodeInfo) ->
-                  [P.Proof_status proof_tree] ->
-                  IO ()
-pollForResults lid acm mStop mData mState done
- =do
-  let toPrint = map(\ x -> let txt = "Goal " ++ P.goalName x ++ " is "
-                           in case P.goalStatus x of
-                                P.Open _    -> txt ++ "still open."
-                                P.Disproved -> txt ++ "disproved."
-                                P.Proved _  -> txt ++ "proved.")
-  d <- takeMVar mData
-  case d of
-    Result _ Nothing ->
-     do
-      tmp <- tryTakeMVar mStop
-      case tmp of
-       Just () ->
-                  do
-                  t <- readMVar mData
-                  case t of
-                    Result _ (Just _) ->
-                       do
-                        putMVar mStop ()
-                        pollForResults lid acm mStop mData mState done
-                    Result _ Nothing ->
-                        return ()
-       Nothing -> pollForResults lid acm mStop mData mState done
-    Result _ (Just d') ->
-     do
-      let d'' = nub d'
-          l   = d'' \\ done
-          ls = toPrint l
-      smth <- readMVar mState
-      case smth of
-       Nothing ->
-        do
-         tmp <- tryTakeMVar mStop
-         case tmp of
-          Just () -> return ()
-          Nothing -> pollForResults lid acm mStop mData mState done
-       Just  (Element st node) ->
-        do
-         putStrLn $ unlines ls
-         swapMVar mState $ Just $ Element (markProved acm lid l st) node
-         tmp <- tryTakeMVar mStop
-         case tmp of
-          Just () -> return ()
-          Nothing -> pollForResults lid acm mStop mData mState
-                                                     (done++l)
-
+getResults :: (Logic lid sublogics basic_spec sentence
+                     symb_items symb_map_items
+                     sign morphism symbol raw_symbol proof_tree) =>
+              lid ->
+              AnyComorphism ->
+              MVar () ->
+              MVar (Result [P.Proof_status proof_tree]) ->
+              MVar (Maybe Int_NodeInfo) ->
+              IO ()
+getResults lid acm mStop mData mState =
+  do
+    takeMVar mStop
+    d <- takeMVar mData
+    case d of
+      Result _ Nothing   -> return ()
+      Result _ (Just d') -> modifyMVar_ mState
+        (\ s -> case s of
+                  Nothing -> return s
+                  Just (Element st node) -> return $ Just $ Element
+                                            (markProved acm lid d' st) node)
 
 -- | inserts the results of the proof in the development graph
 addResults ::    LibEnv

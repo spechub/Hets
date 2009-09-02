@@ -77,7 +77,7 @@ adjustOrSetConfig :: (Ord proof_tree) =>
                   -> GenericConfigsMap proof_tree -- ^ current GenericConfigsMap
                   -> GenericConfigsMap proof_tree
                   -- ^ resulting GenericConfigsMap with the changes applied
-adjustOrSetConfig f prName k pt m = if (Map.member k m)
+adjustOrSetConfig f prName k pt m = if Map.member k m
                                     then Map.adjust f k m
                                     else Map.insert k
                                                (f $ emptyConfig prName k pt) m
@@ -106,10 +106,11 @@ goalProcessed :: (Ord proof_tree) =>
               -> String -- ^ name of the prover
               -> Int -- ^ number of goals processed so far
               -> AS_Anno.Named sentence -- ^ goal that has just been processed
+              -> Bool -- ^ wether to be verbose: print goal status (CMDL mode)
               -> (ATPRetval, GenericConfig proof_tree)
               -> IO Bool
 goalProcessed stateMVar tLimit extOpts numGoals prName processedGoalsSoFar
-              nGoal (retval, res_cfg) = do
+              nGoal verbose (retval, res_cfg) = do
   Conc.modifyMVar_ stateMVar (\s -> return (s{
       configsMap = adjustOrSetConfig
                       (\ c -> c{timeLimitExceeded =
@@ -123,7 +124,12 @@ goalProcessed stateMVar tLimit extOpts numGoals prName processedGoalsSoFar
                       prName (AS_Anno.senAttr nGoal)
                       (proof_tree s)
                       (configsMap s)}))
-
+  when verbose (let toPrint n = let txt = "Goal " ++ goalName n ++ " is "
+                                 in case goalStatus n of
+                                      Open _    -> txt ++ "still open."
+                                      Disproved -> txt ++ "disproved."
+                                      Proved _  -> txt ++ "proved."
+                 in putStrLn $ toPrint $ proof_status res_cfg)
   return (case retval of
                  ATPError _ -> False
                  ATPBatchStopped -> False
@@ -180,7 +186,7 @@ genericProveBatch useStOpt tLimit extraOptions inclProvedThs saveProblem_batch
             curCfg = Map.findWithDefault initEmptyCfg gName openGoals
             runConfig = initEmptyCfg
                 { timeLimit = Just $
-                              if useStOpt then maybe tLimit id $
+                              if useStOpt then fromMaybe tLimit $
                                                      timeLimit curCfg
                                           else tLimit
                 , extraOpts = if useStOpt && (not . null $ extraOpts curCfg)
@@ -204,7 +210,7 @@ genericProveBatch useStOpt tLimit extraOptions inclProvedThs saveProblem_batch
                  let newRes = (do appendDiags $ atpRetvalToDiags gName err
                                   revertRenamingOfLabels st [res])
                      -- transform new result in Monad Result
-                     newVal = maybe id (joinResultWith (++)) mOldVal $ newRes
+                     newVal = maybe id (joinResultWith (++)) mOldVal newRes
                      -- concat the oldValue with the new Result
                  Conc.putMVar rr newVal)
               resultMVar
@@ -262,7 +268,7 @@ genericCMDLautomatic atpFun prName thName def_TS th freedefs pt = do
         openGoals = filterOpenGoals (configsMap iGS)
         emptyResult = Result { diags = [], maybeResult = Just [] }
         goals = goalsList iGS
-    if (null goals) then return emptyResult
+    if null goals then return emptyResult
       else do
         let g = head goals
             gName = AS_Anno.senAttr g
@@ -272,13 +278,13 @@ genericCMDLautomatic atpFun prName thName def_TS th freedefs pt = do
               curCfg = Map.findWithDefault initEmptyCfg gName openGoals
               runConfig = initEmptyCfg
                   { timeLimit = Just $
-                                maybe (ts_timeLimit def_TS) id $
+                                fromMaybe (ts_timeLimit def_TS) $
                                       timeLimit curCfg
-                  , extraOpts = if (not . null $ extraOpts curCfg)
+                  , extraOpts = if not . null $ extraOpts curCfg
                                  then extraOpts curCfg
                                  else ts_extraOpts def_TS }
           (err, res_cfg) <-
-                (runProver atpFun) (proverState iGS) runConfig False thName g
+                runProver atpFun (proverState iGS) runConfig False thName g
 --          putStrLn $ prName ++ " returned: " ++ (show err)
           let dias = atpRetvalToDiags (goalName $ proof_status res_cfg) err
               rawResult = appendDiags dias >>
@@ -324,9 +330,9 @@ genericCMDLautomaticBatch atpFun inclProvedThs saveProblem_batch resultMVar
                  (when (numGoals > 0)
                   (do genericProveBatch True tLimit extOpts inclProvedThs
                                       saveProblem_batch
-                        (\ gPSF nSen _ conf -> do
+                        (\ gPSF nSen _ conf ->
                              goalProcessed stateMVar tLimit extOpts numGoals
-                                           prName gPSF nSen conf)
+                                           prName gPSF nSen True conf)
                         (atpInsertSentence atpFun) (runProver atpFun)
                         prName thName iGS (Just resultMVar)
                       return ())
