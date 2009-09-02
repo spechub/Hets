@@ -575,6 +575,21 @@
 \newcommand{\IMod}{\mathit{Mod}}
 \newcommand{\IAx}{\mathit{Ax}}
 
+\newcounter{blubber}
+
+\newenvironment{algenumerate}
+{\begin{list}
+  {\arabic{blubber}.}
+  {\usecounter{blubber}
+   \setlength{\leftmargin}{3ex}
+    \setlength{\parsep}{0pt}
+    \setlength{\itemindent}{1ex}
+    \setlength{\itemsep}{2pt}   
+    \setlength{\listparindent}{0ex}
+  }
+}
+{\end{list}}
+
 \newenvironment{specsem}%
         {\smallskip\par\noindent\qquad$\begin{array}{@{}l@{{}={}}l}}%
         {\end{array}$\par\noindent}

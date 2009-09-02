@@ -3,6 +3,8 @@
 \usepackage{mathpartir}
 \usepackage{amsmath,amssymb}
 \newcommand{\hearts}{\heartsuit}
+\newcommand{\prems}{\mathit{prems}}
+\newcommand{\eval}{\mathit{eval}}
 \input{header}
 \sloppy
 % The following is enclosed to allow easy detection of differences in
@@ -40,17 +42,19 @@
   \thanks[myemail]{Email: \href{mailto:Daniel.Hausmann@dfki.de} {\texttt{\normalshape Daniel.Hausmann@dfki.de}}}
   \thanks[coemail]{Email: \href{mailto:Lutz.Schroeder@dfki.de} {\texttt{\normalshape Lutz.Schroeder@dfki.de}}}
 \begin{abstract} 
-  The generic modal reasoner \COLOSS~covers a wide variety of logics
+  The generic modal reasoner COLOSS covers a wide variety of logics
   ranging from graded and probabilistic modal logic to coalition logic
   and conditional logics, being based on a broadly applicable
+  coalgebraic semantics and an ensuing general treatment of modal
+  sequent and tableau calculi. Here, we present research into
   optimisation of the reasoning strategies employed in
-  \COLOSS. Specifically, we discuss strategies of memoisation and
+  COLOSS. Specifically, we discuss strategies of memoisation and
   dynamic programming that are based on the observation that short
   sequents play a central role in many of the logics under
   study. These optimisations seem to be particularly useful for the
   case of conditional logics, for some of which dynamic programming
   even improves the theoretical complexity of the algorithm. These
-  strategies have been implemented in \COLOSS; we give a detailed
+  strategies have been implemented in COLOSS; we give a detailed
   comparison of the different heuristics, observing that in the
   targeted domain of conditional logics, a substantial speed-up can be
   achieved.
@@ -67,12 +71,12 @@ heterogeneity, witnessed by an emergence of numerous logics that,
 while still of manifestly modal character, are not amenable to
 standard Kripke semantics. Examples include probabilistic modal
 logic~\cite{FaginHalpern94}, coalition logic~\cite{Pauly02}, and
-conditional logic~\cite{Chellas80}, to name just a few. The move away
-from Kripke semantics, mirrored on the syntactical side by the failure
-of normality, entails additional challenges for tableau and sequent
-systems, as the correspondence between tableaus and models becomes
-looser, and in particular demands created by modal formulas can no
-longer be discharged by the creation of single successor nodes. 
+conditional logic~\cite{Chellas80}, to name just a few. The move
+beyond Kripke semantics, mirrored on the syntactical side by the
+failure of normality, entails additional challenges for tableau and
+sequent systems, as the correspondence between tableaus and models
+becomes looser, and in particular demands created by modal formulas
+can no longer be discharged by the creation of single successor nodes.
 
 This problem is tackled on the theoretical side by introducing the
 semantic framework of coalgebraic modal
@@ -156,7 +160,7 @@ logics, axiomatised by formulas with nested
 modalities~\cite{SchroderPattinson08PHQ}. The examples considered here
 all happen to be rank-$1$, so we focus on this case. In the rank-$1$
 setting, it has been shown~\cite{Schroder05} that all logics can be
-axiomatised by \emph{one-step rules} $\phi/psi$, where $\phi$ is
+axiomatised by \emph{one-step rules} $\phi/\psi$, where $\phi$ is
 purely propositional and $\psi$ is a clause over formulas of the form
 $\hearts(a_1,\dots,a_n)$, where the $a_i$ are propositional
 variables. In the context of a sequent calculus, this takes the
@@ -167,18 +171,20 @@ following form~\cite{PattinsonSchroder08b}.
   \mbox{ is $n$-ary, } s_1, \dots, s_n \in S \rbrace$ of formulas
   comprising exactly one application of a modality to elements of
   $S$. An \emph{$S$-sequent}, or just a \emph{sequent} in case
-  $S=(\Lambda)$, is a finite set of elements of $S \cup \lbrace
-  \neg A \mid A \in S \rbrace$. Then, a \emph{one-step rule}
+  $S=(\Lambda)$, is a finite subset of $S \cup \lbrace \neg A \mid A
+  \in S \rbrace$. Then, a \emph{one-step rule}
   $\Gamma_1,\dots,\Gamma_n/\Gamma_0$ over a set $V$ of variables
-  consists of $V$-sequents $\Gamma_1,\dots,\Gamma_n$ and a
-  $\Lambda(S)$-sequent $\Gamma_0$.
+  consists of $V$-sequents $\Gamma_1,\dots,\Gamma_n$, the
+  \emph{premises}, and a $\Lambda(S)$-sequent $\Gamma_0$, the
+  \emph{conclusion}. A \emph{goal} is a set of sequents, typically
+  arising as the set of instantiated premises of a rule application.
 \end{definition}
 \noindent A given set of one-step rules then induces an instantiation
 of the \emph{generic sequent calculus}~\cite{PattinsonSchroder08b}
 which is given by a set of rules $\mathcal{R}_{sc}$ consisting of the
-finishing and the branching rules $\mathcal{R}^b_{sc}$ (i.e. rules
+finishing and the branching rules $\mathcal{R}^b_{sc}$ (i.e.\ rules
 with no premise or more than one premise), the linear rules
-$\mathcal{R}^l_{sc}$ (i.e. rules with exactly one premise) and the
+$\mathcal{R}^l_{sc}$ (i.e.\ rules with exactly one premise) and the
 modal rules $\mathcal R^m_{sc}$, i.e.\ the given one-step rules. The
 finishing and the branching rules are presented in
 Figure~\ref{fig:branching} (where $\top=\neg\bot$ and $p$ is an atom),
@@ -186,7 +192,6 @@ the linear rules are shown in Figure~\ref{fig:linear}. So far, all
 these rules are purely propositional. As an example for a set of modal
 one-step rules, consider the modal rules $\mathcal R^m_{sc}$ of the
 standard modal logic \textbf{K} as given by Figure~\ref{fig:modalK}.
-
 \begin{figure}[!h]
   \begin{center}
     \begin{tabular}{| c c c |}
@@ -202,7 +207,6 @@ standard modal logic \textbf{K} as given by Figure~\ref{fig:modalK}.
   \caption{The finishing and the branching sequent rules $\mathcal{R}^b_{sc}$}
   \label{fig:branching}
 \end{figure}
-
 \begin{figure}[!h]
   \begin{center}
     \begin{tabular}{| c c |}
@@ -232,15 +236,15 @@ standard modal logic \textbf{K} as given by Figure~\ref{fig:modalK}.
   \caption{The modal rule of \textbf{K}}
   \label{fig:modalK}
 \end{figure}
-This calculus has been shown to be complete under suitable coherence
-assumptions on the rule set and the coalgebraic
-semantics~\cite{PattinsonSchroder08b}, provided that the set of rules
-\emph{absorbs cut and contraction} in a precise sense. We say that a
-formula is \emph{provable} if it can be derived in the relevant
-instance of the sequent calculus; the algorithms presented below are
-concerned with the \emph{provability problem}, i.e.\ to decide whether
-a given sequent is provable. This is made possible by the fact that
-the calculus does not include a cut rule, and hence enables automatic
+\noindent This calculus has been shown to be complete under suitable
+coherence assumptions on the rule set and the coalgebraic semantics,
+provided that the set of rules \emph{absorbs cut and contraction} in a
+precise sense~\cite{PattinsonSchroder08b}. We say that a formula is
+\emph{provable} if it can be derived in the relevant instance of the
+sequent calculus; the algorithms presented below are concerned with
+the \emph{provability problem}, i.e.\ to decide whether a given
+sequent is provable. This is made possible by the fact that the
+calculus does not include a cut rule, and hence enables automatic
 proof search. For rank-1 logics, proof search can be performed in
 $\mathit{PSPACE}$ under suitable assumptions on the representation of
 the rule set~\cite{SchroderPattinson09,PattinsonSchroder08b}. The
@@ -252,7 +256,7 @@ described here.
 
 Our running example used in the presentation of our optimisation
 strategies below is conditional logic as mentioned above. The most
-basic conditional logic is $\mathit{CK}$~\cite{Chellas80} (we shall
+basic conditional logic is $\textbf{CK}$~\cite{Chellas80} (we shall
 consider a slightly extended logic below), which is characterised by
 assuming normality of the right-hand argument of the non-monotonic
 conditional $\Rightarrow$, but only replacement of equivalents in the
@@ -271,7 +275,7 @@ check that there \emph{exists} a rule proving some sequent such that
 of exponentially many subsequents to match the rule and then attempt
 to prove linearly many premises; compare this to linearly many rules
 and a constant number of premises per rule (namely, $1$) in the case
-of $K$ shown above. Secondly, many of the premises are short
+of $\textbf{K}$ shown above. Secondly, many of the premises are short
 sequents. This will be exploited in our memoisation strategy. We note
 that \emph{labelled} sequent calculi for conditional logics have been
 designed previously~\cite{OlivettiEA07} and have been implemented in
@@ -283,81 +287,71 @@ calculi remains an open issue for the time being.
 \section{The Algorithm}
 
 According to the framework introduced above, we now devise a generic
-algorithm to decide the provability of formulae. By instantiating the
-generic algorithm to a specific modal logic (simply by using the
-defining modal rule of this logic), it is possible to obtain an
-algorithm to decide provability of formulae of this specific modal
-logic.
-\noindent 
+algorithm to decide the provability of formulae, which is easily
+instantiated to specific logic by just implementing the relevant modal
+rules.
 
 
-Algorithm~\ref{alg:seq} makes use of the sequent rules in the following manner:
-In order to show the \emph{provability} of a formula $\phi$, the 
-algorithm starts with the sequent $\{\phi\}$ and tries to apply all
-of the sequent rules $r\in R_{sc}$ to it
-\footnote{The actual haskell
-implementation of the algorithm first tries to apply the linear rules
-from $\mathcal{R}^l_{sc}$ and afterwards it tries to apply the other
-rules from $\mathcal{R}^b_{sc}$ and $\mathcal{R}^m_{sc}$.}.
- % explain what 'applying' means
-The result of this one step of application of the rules will be a set
-of premises $P$. The proving function is then recursively started on
-each sequent of every premise in this set. If there is any premise
-whose sequents are all provable, the application of the according rule
-is justified and hence the algorithm has succeeded. Below, we refer to
-a sequent as \emph{open} if it has not yet been checked for
-provability, and otherwise as \emph{treated}.
+Algorithm~\ref{alg:seq} makes use of the sequent rules in the
+following manner: In order to show the \emph{provability} of a formula
+$\phi$, the algorithm starts with the sequent $\{\phi\}$ and just
+keeps trying to apply all of the sequent rules in $R_{sc}$ to it,
+giving precedence to the linear rules.  Below, we refer to a sequent
+as \emph{open} if it has not yet been checked for provability. Under
+suitable tractability assumptions on the rule set as
+in~\cite{SchroderPattinson09,PattinsonSchroder08b}, this algorithm
+realises the theoretical upper bound $\mathit{PSPACE}$. It is the
+starting point of the proof search algorithms employed in CoLoSS,
+being essentially a sequent reformulation of the algorithm described
+in~\cite{CalinEA09}; optimisations of this algorithm are the subject
+of the present work. 
 
-\begin{algorithm}[h]
-\begin{alg}
+%\begin{algorithm}[h]
+%\fbox{\parbox{\myboxwidth}{
+\begin{alg}(Decide provability of a sequent $\Gamma$)
 \begin{upshape}
-  Step 1: Take the input formula $\phi$, construct the initial set 
-  of premises (containing just one premise with just one sequent)
-  $S = \{\{\phi\}\}$ from it.\\
-  Step 2: Try to apply all rules $r\in R_{sc}$ to any open sequent
-  $\Gamma\in P$ from any premise $P\in S$. Let $\Lambda$ denote the set
-  of the resulting premises.\\
-  Step 3: If $\Lambda$ contains the empty premise, mark the open
-  sequent $\Gamma$ as proved (and if $P$ contains no more open
-  sequents, mark $P$ as proved). If $\Lambda$ contains no premise at
-  all, mark the open sequent $\Gamma$ and the premise $P$ as refuted.\\
-  Step 4: Else, add all premises from $\Lambda$ to the set of
-  premises (i.e. $S=S\cup\Lambda$). If there are any remaining open
-  sequents, continue with Step 2.\\
-  Step 5: If all premises resulting from the application of all rules
-  from $R_{sc}$ to $\phi$ are marked as proved, finish with result \verb|True|
-  else finish with result \verb|False|.
+ \begin{algenumerate}
+   \item Try all possible applications of rules from $R_{sc}$ to $\Gamma$, 
+     giving precedence to linear rules. For every such rule application,
+     perform the following steps, and answer `provable' in case these steps
+     succeed for one of the rule applications.
+   \item Let $\Lambda$ denote the  set of premises  arising from the rule 
+     application.
+   \item Check recursively that every sequent in $\Lambda$ is provable.
+  \end{algenumerate}
 \end{upshape}
 \label{alg:seq}
 \end{alg}
-\end{algorithm}
+%}}
+%\end{algorithm}
 
-\begin{proposition}
-\begin{upshape}
-Let $\mathcal{R}_{sc}$ be strictly one-step complete, closed under contraction,
-and PSPACE-tractable. Then Algorithm~\ref{alg:seq} is sound and complete w.r.t. provability
-and it is in PSPACE.
-\end{upshape}
-\end{proposition}
+%\begin{proposition}
+%\begin{upshape}
+%Let $\mathcal{R}_{sc}$ be strictly one-step complete, closed under contraction,
+%and PSPACE-tractable. Then Algorithm~\ref{alg:seq} is sound and complete w.r.t. provability
+%and it is in PSPACE.
+%\end{upshape}
+%\end{proposition}%
 
-\begin{proof}
-We just note, that Algorithm~\ref{alg:seq} is an equivalent implementation of the algorithm proposed
-in~\cite{SchroderPattinson09}. For more details, refer to ~\cite{SchroderPattinson09}, Theorem 6.13.
-\end{proof}
+%\begin{proof}
+%We just note, that Algorithm~\ref{alg:seq} is an equivalent implementation of the algorithm proposed
+%in~\cite{SchroderPattinson09}. For more details, refer to ~\cite{SchroderPattinson09}, Theorem 6.13.
+%\end{proof}
 
 \subsection{The conditional logic instance}
 
 The genericity of the introduced sequent calculus allows us to easiliy
 create instantiations of Algorithm~\ref{alg:seq} for a large variety
 of modal logics: By setting $\mathcal R^m_{sc}$ for instance to the
-rule shown in Figure~\ref{fig:modalCKCEM} (where $A_a = A_b$ is
-shorthand for $A_a\rightarrow A_b\wedge A_b\rightarrow A_a$), we
-obtain an algorithm for deciding provability (and satisfiability) of
-conditional logic. We restrict ourselves to the examplary conditional
-logic \textbf{CKCEM} for the remainder of this section; slightly
-adapted versions of the optimisation will work for other conditional
-logics. \textbf{CKCEM} is characterised by the additional axioms of
-\emph{conditional excluded middle} $(A\Rightarrow
+rule shown in Figure~\ref{fig:modalCKCEM},
+% (where $A_a = A_b$ is
+%shorthand for $A_a\rightarrow A_b\wedge A_b\rightarrow A_a$), 
+we obtain an algorithm for deciding provability (and satisfiability)
+of conditional logic. We restrict ourselves to the examplary
+conditional logic \textbf{CKCEM} for the remainder of this section;
+slightly adapted versions of the optimisation will work for other
+conditional logics. \textbf{CKCEM} is characterised by the additional
+axioms of \emph{conditional excluded middle} $(A\Rightarrow
 B)\lor(A\Rightarrow\neg B)$, which to absorb cut and contraction is
 integrated in the rule for \textbf{CK} as follows.
 
@@ -376,48 +370,41 @@ integrated in the rule for \textbf{CK} as follows.
   \caption{The modal rule $\textbf{CKCEM}$ of conditional logic}
   \label{fig:modalCKCEM}
 \end{figure}
-It has been shown in~\cite{PattinsonSchroder09a} that the complexity
-of \textbf{CKCEM} is $\mathit{coNP}$, using a dynamic programming
-approach in the spirit of~\cite{Vardi89}; in fact, this was the
-original motivation for exploring the optimisation strategies pursued
-here.
+\noindent It has been shown in~\cite{PattinsonSchroder09a} that the
+complexity of \textbf{CKCEM} is $\mathit{coNP}$, using a dynamic
+programming approach in the spirit of~\cite{Vardi89}; in fact, this
+was the original motivation for exploring the optimisation strategies
+pursued here.
 
 In the following, we use the notions of \emph{conditional antecedent} and
 \emph{conditional consequent} to refer to the parameters of the modal operator of
 conditional logic. 
 
-In order to decide whether there is an
-instance of the modal rule of conditional logic which can be applied to
-the actual current sequent, it is necessary to create a preliminary premise
-for each possible combination of equalities of all the premises of the
-modal operators in this sequent. This results in $2^n$ new premises for
-a sequent with $n$ top-level modal operators.
-
-\begin{example}
-Consider the sequent $\Gamma=\{(A_0\Rightarrow B_0),(A_1\Rightarrow B_1),
-(A_2\Rightarrow B_2)\}$. By instantiating the modal rule, several
-new premises
-such as $\{\{A_0=A_1=A_2\},\{B_0,B_1,B_2\}\}$ or $\{\{A_0=A_2\},\{B_0,B_2\}\}$
-may be obtained. Only after the equalities in the first sequent of each
-of these premises have been shown (or refuted), it is clear whether the
-current instantiation of the modal rule is actually leading to a possibly
-provable premise.
-\label{ex:cond}
+In order to decide using Algorithm~\ref{alg:seq} whether there is an
+instance of the modal rule of conditional logic which can be applied
+to the actual current sequent, it is necessary to create a preliminary
+premise for each possible combination of equalities of all the
+premises of the modal operators in this sequent. This results in
+$2^n-1$ new premises for a sequent with $n$ top-level modal
+operators. 
+\begin{example}\label{ex:cond}
+For the sequent $\Gamma=\{(A_0\Rightarrow B_0),
+(A_1\Rightarrow B_1), (A_2\Rightarrow B_2)\}$, there are $2^3=8$
+possible instances of the rule to be tried, corresponding to the
+non-empty subsequents of the goal; the premise to be checked for
+$I\subseteq\{1,2,3\}$ consists of $A_i=A_j$ for $i,j\in I$, and
+$\{B_i\mid i\in I\}$.
 \end{example}
-
-It seems to be a more intelligent approach to first
-partition the set of all antecedents of the top-level modal operators in the
-current sequent into equivalence classes with respect to logical equality.
-This partition does not only allow for a reduction of the number of newly
-created open premises in each modal step,
-but it also allows us to seperate the two parts of the conditional modal step
-(i.e. the first part, showing the necessary equalities, and the second
-part, showing that the resulting sequent - consisting only of the appropriate
-conditional consequences - is actually provable itself).
+\noindent It seems to be a more intelligent approach to first
+partition the set of all antecedents of the top-level modal operators
+in the current sequent into equivalence classes with respect to
+logical equality.  This partition allows for a significant reduction
+both of the number of rules to be tried and of the number of premises
+to be actually proved for each rule.
 
 \begin{example}
 Consider again the sequent from Example~\ref{ex:cond}. By using the examplary
-knowledge, that $A_0=A_1$, $A_1\neq A_2$ and $A_0\neq A_2$, it is immediate,
+knowledge that $A_0=A_1$, $A_1\neq A_2$ and $A_0\neq A_2$, it is immediate
 that there are just two reasonable instations of the modal rule, leading
 to the two premises $\{\{B_0,B_1\}\}$ and $\{\{B_2\}\}$. For the
 first of these two premises, note that it is not necessary to show the
@@ -425,15 +412,13 @@ equivalence of $A_0$ and $A_1$ again.
 \end{example}
 
 
-\begin{remark}
-In the case of conditional logic, observe the following: Since the
-modal antecedents that appear in a formula are not being changed by any
-rule of the sequent calculus, it is possible to extract all possibly
-relevant antecedents of a formula even \emph{before} the actual sequent
-calculus iswe applied. This allows us to first compute the equivalence
-classes of all the relevant antecedents and then feed this knowledge into
-the actual sequent calculus:
-\end{remark}
+\noindent In the case of conditional logic, observe the following:
+Since the modal antecedents that appear in a formula are not being
+changed by any rule of the sequent calculus, it is possible to extract
+all possibly relevant antecedents of a formula even \emph{before} the
+actual sequent calculus is applied. This allows us to first compute
+the equivalence classes of all the relevant antecedents and then feed
+this knowledge into the actual sequent calculus, as illustrated next.
 
 \section{The Optimisation}
 
@@ -445,9 +430,9 @@ of modal nesting depth greater than $i-1$. A
 conditional antecedent of nesting depth 0 is an antecedent
 that does not contain any further modal operators.
 Let $p_i$ denote the set of all conditional antecedents of modal
-nesting depth $i$. Further, let $prems(n)$ denote the set of all
+nesting depth $i$. Further, let $\prems(n)$ denote the set of all
 conditional antecedents of modal nesting depth at most $n$ (i.e.
-$prems(n)=\bigcup_{j=1..n}^{} p_j$).
+$\prems(n)=\bigcup_{j=1..n}^{} p_j$).
 Finally, let $depth(\phi)$ denote the maximal modal nesting in
 the formula $\phi$.
 \end{definition}
@@ -458,102 +443,101 @@ the formula $\phi$.
 %the premise $((p_0\Rightarrow p_1) \wedge ((p_2\Rightarrow p_3)\Rightarrow p_4))$ has a
 %nesting depth of 2 (and not 1), $(p_0\Rightarrow p_1)$ and $(p_2\Rightarrow p_3)$ both
 %have a nesting depth of 1, and finally $p_0$, $p_2$ and $p_4$ all have a nesting depth of 0.
-%Furthermore, $prems(1)=\{p_0,p_2,p_4,(p_0\Rightarrow p_1),(p_2\Rightarrow p_3)\}$
+%Furthermore, $\prems(1)=\{p_0,p_2,p_4,(p_0\Rightarrow p_1),(p_2\Rightarrow p_3)\}$
 %and $depth(\phi)=3$.
 %\end{example}
 
 \begin{definition}
-A set $\mathcal{K}$ of treated sequents together with a function
-$eval:\mathcal{K}\rightarrow \{\top,\bot\}$ is called \emph{knowledge}.
+  A set $\mathcal{K}$ of sequents together with a function
+  $\eval:\mathcal{K}\rightarrow \{\top,\bot\}$ is called
+  a \emph{knowledge base}.
 \end{definition}
 
-We may now construct an optimized algorithm which allows us
-to decide provability (and satisfiability) of formulae more efficiently
-in some cases. The optimized algorithm is constructed from two functions
-(namely from the actual proving function and from the so-called
-\emph{pre-proving} function):
+\noindent We may now construct an optimized algorithm which allows us
+to decide provability (and satisfiability) of formulae more
+efficiently in some cases. The optimized algorithm is constructed from
+two functions (namely from the actual proving function and from the
+so-called \emph{pre-proving} function):
 
-\begin{algorithm}[h]
-\begin{alg}
-\begin{upshape}
-  Step 1: Take the input formula $\phi$ and the knowledge $(\mathcal{K},eval)$,
-  construct the initial set of premises (containing just one premise with just
-  one sequent) $S = \{\{\phi\}\}$ from it.\\
-  Step 2: Try to apply all rules $r\in R_{sc}$ (supplying $\mathcal{RO}^m_{sc}$
-  with knowledge $(\mathcal{K},eval)$) to any open sequent
-  $\Gamma\in P$ from any premise $P\in S$. Let $\Lambda$ denote the set
-  of the resulting premises.\\
-  Step 3: If $\Lambda$ contains the empty premise, mark the open
-  sequent $\Gamma$ as proved (and if $P$ contains no more open
-  sequents, mark $P$ as proved). If $\Lambda$ contains no premise at
-  all, mark the open sequent $\Gamma$ and the premise $P$ as refuted.\\
-  Step 4: Else, add all premises from $\Lambda$ to the set of
-  premises (i.e. $S=S\cup\Lambda$). If there are any remaining open
-  sequents, continue with Step 2.\\
-  Step 5: If all premises resulting from the application of all rules
-  from $R_{sc}$ to $\phi$ are marked as proved, finish with result \verb|True|
-  else finish with result \verb|False|.
-\end{upshape}
+%\begin{algorithm}[h] 
+\begin{alg}\label{alg:opt}
+  (Decide provability of $\phi$ using the knowledge
+  base $(\mathcal{K},\eval)$)
+{\upshape
+ \begin{algenumerate}
+ \item If $\Gamma\in\mathcal{K}$, answer `provable' if
+   $\eval(\Gamma)=\top$, else `unprovable'. Otherwise:
+   \item Try all possible applications of rules from $R_{sc}$ to $\Gamma$, 
+     giving precedence to linear rules. For every such rule application,
+     perform the following steps, and answer `provable' in case these steps
+     succeed for one of the rule applications.
+   \item Let $\Lambda$ denote the  set of premises  arising from the rule 
+     application.
+   \item Check recursively that every sequent in $\Lambda$ is provable.
+  \end{algenumerate}
+}
 \label{alg:optSeq}
 \end{alg}
-\end{algorithm}
+%\end{algorithm}
 
-Algorithm~\ref{alg:optSeq} is very similar to Algorithm~\ref{alg:seq},
-however, it uses a modified
-set of rules $\mathcal{RO}_{sc}$ and it also allows for the
-input of some knowledge $(\mathcal{K},eval)$ in the form of a set of sequents
-together with an evaluation function. This knowledge is passed on to
-the modified modal rule of conditional logic, which makes appropriate use of it.
+% Algorithm~\ref{alg:optSeq} is very similar to Algorithm~\ref{alg:seq},
+% however, it uses a modified set of rules $\mathcal{RO}_{sc}$ and it
+% also allows for the input of some knowledge base
+% $(\mathcal{K},\eval)$. This knowledge base is passed on to the modified
+% modal rule of conditional logic, which makes appropriate use of it.
 
-$\mathcal{RO}_{sc}$ is obtained from $\mathcal{R}_{sc}$ by replacing
-the modal rule from Figure~\ref{fig:modalCKCEM} with the modified modal
-rule from Figure~\ref{fig:modalCKCEMm}.
+% $\mathcal{RO}_{sc}$ is obtained from $\mathcal{R}_{sc}$ by replacing
+% the modal rule from Figure~\ref{fig:modalCKCEM} with the modified modal
+% rule from Figure~\ref{fig:modalCKCEMm}.
 
-\begin{figure}[h!]
-  \begin{center}
-    \begin{tabular}{| c |}
-    \hline
-      \\[-5pt]
-      (\textsc {\textbf{CKCEM}$^m$})\inferrule{\bigwedge{}_{i,j=\{1..n\}}{eval(A_i=B_j)=\top}
-                                     \\ B_0,\ldots, B_j,\neg B_{j+1},\ldots,\neg B_n}
-                      {\Gamma, (A_0\Rightarrow B_0),\ldots,(A_j\Rightarrow B_j),
-                      \neg(A_{j+1}\Rightarrow B_{j+1}),\ldots,\neg(A_n\Rightarrow B_n) } \\[-5pt]
-      \\
-    \hline
-    \end{tabular}
-  \end{center}
-  \caption{The modified modal rule \textbf{CKCEM}$^m$ of conditional logic}
-  \label{fig:modalCKCEMm}
-\end{figure}
+% \begin{figure}[h!]
+%  \begin{center}
+%    \begin{tabular}{| c |}
+%    \hline
+%      \\[-5pt]
+%      (\textsc {\textbf{CKCEM}$^m$})\inferrule{\bigwedge{}_{i,j=\{1..n\}}{\eval(A_i=B_j)=\top}
+ %                                    \\ B_0,\ldots, B_j,\neg B_{j+1},\ldots,\neg B_n}
+ %                     {\Gamma, (A_0\Rightarrow B_0),\ldots,(A_j\Rightarrow B_j),
+ %                     \neg(A_{j+1}\Rightarrow B_{j+1}),\ldots,\neg(A_n\Rightarrow B_n) } \\[-5pt]
+ %     \\
+ %   \hline
+ %   \end{tabular}
+ % \end{center}
+ % \caption{The modified modal rule \textbf{CKCEM}$^m$ of conditional logic}
+ % \label{fig:modalCKCEMm}
+%\end{figure}
 
-\begin{algorithm}[h]
+%\begin{algorithm}[h]
+
+The knowledge based used in Algorithm~\ref{alg:opt} is computed in
+Algorithm~\ref{alg:preprove}. The algorithm proceeds by dynamic
+programming with stages corresponding to modal nesting depth, in the
+spirit of~\cite{Vardi89}.  Thus, in order to show the equivalence of
+two conditional antecedents of nesting depth at most $i$, we assume
+that the equivalences $\mathcal{K}_{i}$ between modal antecedents of
+nesting depth less than $i$ have already been computed and the result
+is stored in $\eval_i$; hence, two antecedents are equal, if their
+equivalence is provable by Algorithm~\ref{alg:optSeq} using only the
+knowledge base $(\mathcal{K}_{i},\eval_i)$.
 \begin{alg}
 \begin{upshape}
-  Step 1: Take a formula $\phi$ as input. Set $i=0$, $\mathcal{K}_0=\emptyset$, $eval_0=\emptyset$.\\
-  Step 2: Generate the set $prems_i$ of all conditional antecedents of $\phi$
+  Step 1: Take a formula $\phi$ as input. Set $i=0$, $\mathcal{K}_0=\emptyset$, $\eval_0=\emptyset$.\\
+  Step 2: Generate the set $\prems_i$ of all conditional antecedents of $\phi$
   of nesting depth at most $i$. If $i<depth(\phi)$ continue
-  with Step 3, else set $\mathcal{K}=\mathcal{K}_{i-1}, eval=eval_{i-1}$ and continue with Step 4.\\
+  with Step 3, else set $\mathcal{K}=\mathcal{K}_{i-1}, \eval=\eval_{i-1}$ and continue with Step 4.\\
   Step 3: Let $eq_i$ denote the set of all equalities $A_a = A_b$ for different
-  formulae $A_a,A_b\in prems_i$. Compute
-  Algorithm~\ref{alg:optSeq} ($\psi$, $(\mathcal{K}_i,eval_i)$) for all $\psi\in eq_i$.
+  formulae $A_a,A_b\in \prems_i$. Compute
+  Algorithm~\ref{alg:optSeq} ($\psi$, $(\mathcal{K}_i,\eval_i)$) for all $\psi\in eq_i$.
   Set $\mathcal{K}_{i+1} = eq_i$, set $i = i + 1$. For each equality $\psi\in eq_i$,
-  set $eval_{i+1}(\psi)=\top$ if the result of Algorithm~\ref{alg:optSeq} was \verb+True+
-  and $eval_{i+1}(\psi)=\bot$ otherwise. Continue with Step 2.\\
-  Step 4: Call Algorithm~\ref{alg:optSeq} ($\phi$, $(\mathcal{K},eval)$) and return its result
+  set $\eval_{i+1}(\psi)=\top$ if the result of Algorithm~\ref{alg:optSeq} was \verb+True+
+  and $\eval_{i+1}(\psi)=\bot$ otherwise. Continue with Step 2.\\
+  Step 4: Call Algorithm~\ref{alg:optSeq} ($\phi$, $(\mathcal{K},\eval)$) and return its result
   as result.
 \label{alg:preprove}
 \end{upshape}
 \end{alg}
-\end{algorithm}
+%\end{algorithm}
 
-Algorithm~\ref{alg:preprove} first computes the knowledge $(\mathcal{K},eval)$ about specific 
-subformulae of $\phi$ and then finally checks for provability of
-$\phi$ (using this knowledge): In order to show the equivalence of
-two conditional antecedents of nesting depth at most $i$, we assume,
-that the equalities $\mathcal{K}_{i}$ between modal antecedents of nesting depth less
-than $i$ have allready been computed and the result is stored in $eval_i$; hence,
-two antecedents are equal, if their equivalence is provable by
-Algorithm~\ref{alg:optSeq} using only the knowledge $(\mathcal{K}_{i},eval_i)$.
 
 \subsection{Treatment of Requisite Equivalences Only}
 
@@ -605,7 +589,7 @@ Since two independent conditional antecedents will never appear in the scope of 
 same application of the modal rule, it is in no case necessary to show (or
 refute) the logical equivalence of independent conditional antecedents. Hence it suffices to focus
 our attention to the connected conditional antecedents. It is then obvious that
-any possibly requisite equivalence and its truth-value are allready included in $(K,eval)$
+any possibly requisite equivalence and its truth-value are allready included in $(K,\eval)$
 when the main proving is induced. On the other hand, we have to be aware that it
 may be the case, that we show equivalences of antecedents which are in fact not needed
 (since antecedents may indeed be connected and still it is possible that they never appear together in an application
@@ -616,28 +600,26 @@ an improved version of Algorithm~\ref{alg:preprove}. The only difference is
 that before proving any equivalence, Algorithm~\ref{alg:optPreprove} checks
 whether the current pair of conditional antecedents is actually connected;
 only then does it treat the equivalence. Hence independent pairs of antecedents
-remain untreated.
-
-
-\begin{algorithm}[h]
+remain untreated
+%\begin{algorithm}[h]
 \begin{alg}
 \begin{upshape}
-  Step 1: Take a formula $\phi$ as input. Set $i=0$, $\mathcal{K}_0=\emptyset$, $eval_0=\emptyset$.\\
-  Step 2: Generate the set $prems_i$ of all conditional antecedents of $\phi$
+  Step 1: Take a formula $\phi$ as input. Set $i=0$, $\mathcal{K}_0=\emptyset$, $\eval_0=\emptyset$.\\
+  Step 2: Generate the set $\prems_i$ of all conditional antecedents of $\phi$
   of nesting depth at most $i$. If $i<depth(\phi)$ continue
-  with Step 3, else set $\mathcal{K}=\mathcal{K}_{i-1}, eval=eval_{i-1}$ and continue with Step 4.\\
+  with Step 3, else set $\mathcal{K}=\mathcal{K}_{i-1}, \eval=\eval_{i-1}$ and continue with Step 4.\\
   Step 3: Let $eq_i$ denote the set of all equalities $A_a = A_b$ for different and not independent
-  pairs of formulae $A_a,A_b\in prems_i$. Compute
-  Algorithm~\ref{alg:optSeq} ($\psi$, $(\mathcal{K}_i,eval_i)$) for all $\psi\in eq_i$.
+  pairs of formulae $A_a,A_b\in \prems_i$. Compute
+  Algorithm~\ref{alg:optSeq} ($\psi$, $(\mathcal{K}_i,\eval_i)$) for all $\psi\in eq_i$.
   Set $\mathcal{K}_{i+1} = eq_i$, set $i = i + 1$. For each equality $\psi\in eq_i$,
-  set $eval_{i+1}(\psi)=\top$ if the result of Algorithm~\ref{alg:optSeq} was \verb+True+
-  and $eval_{i+1}(\psi)=\bot$ otherwise. Continue with Step 2.\\
-  Step 4: Call Algorithm~\ref{alg:optSeq} ($\phi$, $(\mathcal{K},eval)$) and return its result
+  set $\eval_{i+1}(\psi)=\top$ if the result of Algorithm~\ref{alg:optSeq} was \verb+True+
+  and $\eval_{i+1}(\psi)=\bot$ otherwise. Continue with Step 2.\\
+  Step 4: Call Algorithm~\ref{alg:optSeq} ($\phi$, $(\mathcal{K},\eval)$) and return its result
   as result.
 \label{alg:optPreprove}
 \end{upshape}
 \end{alg}
-\end{algorithm}
+%\end{algorithm}
 
 \section{Implementation}
 
@@ -749,13 +731,16 @@ $X^i_1=(A^i_1\Rightarrow(\ldots(A^i_i\Rightarrow (c_1\wedge\ldots\wedge c_i))\ld
 $X^i_j=(A^i_{j\bmod i}\Rightarrow(\ldots(A^i_{(j+(i-1))\bmod i}\Rightarrow \neg c_j)\ldots))$\\
 $A^i_j=p_{j \bmod i}\wedge\ldots\wedge p_{(j+(i-1)) \bmod i}$
 \end{quote}
-This class contains complex formulae for which the unoptimized algorithm should not be
-efficient any more: Only the combined knowledge about all appearing modal antecedents $A^i_j$ allows
-the proving algorithm to reach all modal consequents $c_n$, and only the combined sequent
-$\{(c_1\wedge\ldots\wedge c_i),\neg c_1,\ldots,\neg c_i\}$ (containing every appearing
-consequent) is provable. For formulae from this class (specifically designed to show the
-advantages of optimization by dynamic programming),
-the optimized algorithms vastly outperform the unoptimized algorithm (see Figure~\ref{fig:benchExplode}).
+This class contains complex formulae for which the unoptimized
+algorithm should not be efficient any more: Only the combined
+knowledge about all appearing modal antecedents $A^i_j$ allows the
+proving algorithm to reach all modal consequents $c_n$, and only the
+combined sequent $\{(c_1\wedge\ldots\wedge c_i),\neg c_1,\ldots,\neg
+c_i\}$ (containing every appearing consequent) is provable. For
+formulae from this class (specifically designed to show the advantages
+of optimization by dynamic programming), the optimized algorithms
+vastly outperform the unoptimized algorithm (see
+Figure~\ref{fig:benchExplode}).
 \end{itemize}
 
 \begin{figure}[!h]
@@ -780,16 +765,15 @@ $i$ & Algorithm~\ref{alg:seq} & Algorithm~\ref{alg:preprove} & Algorithm~\ref{al
   \label{fig:benchExplode}
 \end{figure}
 
-The tests were conducted on a Linux PC (Dual Core AMD Opteron 2220S (2800MHZ), 16GB RAM).
-It is obvious that a significant increase of performance may be obtained through
-the proposed optimisations. In general, the implementation of the proposed algorithms (realized
-as a part of \COLOSS) has a comparable performance to
-other conditional logic provers (such as CondLean~\cite{OlivettiEA07}). However, the authors of other
-provers did not publish their benchmarking sets of formulae, so that a direct
-comparison was not possible. Since other provers do not implement the optimisation
-strategies proposed in this paper, it is reasonable to assume, that the optimized
-implementation in \COLOSS~outperforms other systems at least for the 
-considered examplary formulae \verb|explode(|i\verb|)| and \verb|conjunct(|i\verb|)|.
+The tests were conducted on a Linux PC (Dual Core AMD Opteron 2220S
+(2800MHZ), 16GB RAM).  It is obvious that a significant increase of
+performance may be obtained through the proposed optimisations. In
+general, the implementation of the proposed algorithms in the generic
+reasoner \COLOSS has at least comparable performance as dedicated
+conditional logic provers such as CondLean; a direct comparison is
+presently made difficult by the fact that the benchmarking formulas
+used to evaluate CondLean are not listed explicitly
+in~\cite{OlivettiPozzato03}.
 
 \section{Generalized Optimisation}
 
@@ -834,17 +818,17 @@ for pre-proving, we now extend our attention to any short sequents over any moda
 \begin{algorithm}[h]
 \begin{alg}
 \begin{upshape}
-  Step 1: Take a formula $\phi$ as input. Set $i=0$, $\mathcal{K}_0=\emptyset$, $eval_0=\emptyset$.\\
+  Step 1: Take a formula $\phi$ as input. Set $i=0$, $\mathcal{K}_0=\emptyset$, $\eval_0=\emptyset$.\\
   Step 2: Generate the set $args_i$ of all modal arguments of $\phi$
   which have nesting depth at most $i$. If $i<depth(\phi)$ continue
-  with Step 3, else set $\mathcal{K}=\mathcal{K}_{i-1}, eval=eval_{i-1}$ and continue with Step 4.\\
+  with Step 3, else set $\mathcal{K}=\mathcal{K}_{i-1}, \eval=\eval_{i-1}$ and continue with Step 4.\\
   Step 3: Let $seq_i$ denote the set of all short sequents of form $S_i$ (where $S_i$ is a sequent
   from the premise of rule (\textbf{Opt})) over at most two formulae
-  $A_a,A_b\in args_i$. Compute Algorithm~\ref{alg:optSeq} ($\psi$, $(\mathcal{K}_i,eval_i)$) for all
+  $A_a,A_b\in args_i$. Compute Algorithm~\ref{alg:optSeq} ($\psi$, $(\mathcal{K}_i,\eval_i)$) for all
   $\psi\in seq_i$. Set $\mathcal{K}_{i+1} = seq_i$, set $i = i + 1$. For each short sequent
-  $\psi\in seq_i$, set $eval_{i+1}(\psi)=\top$ if the result of Algorithm~\ref{alg:optSeq} was
-  \verb+True+ and $eval_{i+1}(\psi)=\bot$ otherwise. Continue with Step 2.\\
-  Step 4: Call Algorithm~\ref{alg:optSeq} ($\phi$, $(\mathcal{K},eval)$) and return its result
+  $\psi\in seq_i$, set $\eval_{i+1}(\psi)=\top$ if the result of Algorithm~\ref{alg:optSeq} was
+  \verb+True+ and $\eval_{i+1}(\psi)=\bot$ otherwise. Continue with Step 2.\\
+  Step 4: Call Algorithm~\ref{alg:optSeq} ($\phi$, $(\mathcal{K},\eval)$) and return its result
   as result.
 \end{upshape}
 \label{alg:genOptPreprove}
@@ -859,7 +843,7 @@ where the employed ruleset has to be extended by the generic modified rule given
     \begin{tabular}{| c |}
     \hline
       \\[-5pt]
-      (\textsc {\textbf{Opt}$^m$}) \inferrule{ eval(S_1)=\top \\ \ldots \\ eval(S_n)=\top \\ \mathcal{S} }
+      (\textsc {\textbf{Opt}$^m$}) \inferrule{ \eval(S_1)=\top \\ \ldots \\ \eval(S_n)=\top \\ \mathcal{S} }
                       { \Gamma } \\[-5pt]
       \\
     \hline
@@ -885,7 +869,7 @@ logic:
 The according modified version of this rule is as follows:
 \begin{quote}
 \begin{center}
-      (\textsc {\textbf{Opt}$^m_{Cong}$}) \inferrule{ {eval(A=B)=\top} }
+      (\textsc {\textbf{Opt}$^m_{Cong}$}) \inferrule{ {\eval(A=B)=\top} }
                       { \Box A = \Box B }
   \end{center}
 \end{quote}
@@ -903,7 +887,7 @@ logic:
 The according modified version of this rule is as follows:
 \begin{quote}
 \begin{center}
-      (\textsc {\textbf{Opt}$^m_{Mon}$}) \inferrule{ {eval(A\rightarrow B)=\top} }
+      (\textsc {\textbf{Opt}$^m_{Mon}$}) \inferrule{ {\eval(A\rightarrow B)=\top} }
                       { \Box A \rightarrow \Box B }
   \end{center}
 \end{quote}
@@ -912,7 +896,7 @@ In the case that (\textbf{Opt}$_{Mon}$) is the only modal rule in the
 considered logic (i.e. the case of plain monotone modal logic), all the
 prove-work which is connected to the modal operator is shifted to the
 pre-proving process. Especially matching with the modal rules
-$\mathcal{RO}^m_{sc}$ becomes a mere lookup of the value of $eval$.
+$\mathcal{RO}^m_{sc}$ becomes a mere lookup of the value of $\eval$.
 This means, that all calls of the sequent algorithm Algorithm~\ref{alg:optSeq}
 correspond in complexity just to ordinary sat-solving of propositional logic.
 Furthermore, Algorithm~\ref{alg:optSeq} will be called $|\phi|$ times. This
