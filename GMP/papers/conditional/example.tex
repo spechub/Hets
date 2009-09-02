@@ -171,7 +171,8 @@ following form~\cite{PattinsonSchroder08b}.
   \mbox{ is $n$-ary, } s_1, \dots, s_n \in S \rbrace$ of formulas
   comprising exactly one application of a modality to elements of
   $S$. An \emph{$S$-sequent}, or just a \emph{sequent} in case
-  $S=(\Lambda)$, is a finite subset of $S \cup \lbrace \neg A \mid A
+  that $S$ is the set of all formulas, is a finite subset of
+  $S \cup \lbrace \neg A \mid A
   \in S \rbrace$. Then, a \emph{one-step rule}
   $\Gamma_1,\dots,\Gamma_n/\Gamma_0$ over a set $V$ of variables
   consists of $V$-sequents $\Gamma_1,\dots,\Gamma_n$, the
@@ -287,7 +288,7 @@ calculi remains an open issue for the time being.
 \section{The Algorithm}
 
 According to the framework introduced above, we now devise a generic
-algorithm to decide the provability of formulae, which is easily
+algorithm to decide the provability of formulas, which is easily
 instantiated to specific logic by just implementing the relevant modal
 rules.
 
@@ -454,7 +455,7 @@ the formula $\phi$.
 \end{definition}
 
 \noindent We may now construct an optimized algorithm which allows us
-to decide provability (and satisfiability) of formulae more
+to decide provability (and satisfiability) of formulas more
 efficiently in some cases. The optimized algorithm is constructed from
 two functions (namely from the actual proving function and from the
 so-called \emph{pre-proving} function):
@@ -534,7 +535,7 @@ using only the knowledge base $(\mathcal{K}_{i},\eval_i)$.
   of nesting depth at most $i$. If $i<depth(\phi)$ continue
   with Step 3, else set $\mathcal{K}=\mathcal{K}_{i-1}, \eval=\eval_{i-1}$ and continue with Step 4.\\
   Step 3: Let $eq_i$ denote the set of all equalities $A_a = A_b$ for different
-  formulae $A_a,A_b\in \prems_i$. Compute
+  formulas $A_a,A_b\in \prems_i$. Compute
   Algorithm~\ref{alg:optSeq} ($\psi$, $(\mathcal{K}_i,\eval_i)$) for all $\psi\in eq_i$.
   Set $\mathcal{K}_{i+1} = eq_i$, set $i = i + 1$. For each equality $\psi\in eq_i$,
   set $\eval_{i+1}(\psi)=\top$ if the result of Algorithm~\ref{alg:optSeq} was `provable'
@@ -551,7 +552,7 @@ using only the knowledge base $(\mathcal{K}_{i},\eval_i)$.
 
 Since Algorithm~\ref{alg:preprove} tries to show the logical equivalence of any combination
 of two conditional antecedents that appear in $\phi$, it will have worse completion
-time than Algorithm~\ref{alg:seq} on many formulae:
+time than Algorithm~\ref{alg:seq} on many formulas:
 
 \begin{example}
 Consider the formula 
@@ -617,7 +618,7 @@ remain untreated
   of nesting depth at most $i$. If $i<depth(\phi)$ continue
   with Step 3, else set $\mathcal{K}=\mathcal{K}_{i-1}, \eval=\eval_{i-1}$ and continue with Step 4.\\
   Step 3: Let $eq_i$ denote the set of all equalities $A_a = A_b$ for different and not independent
-  pairs of formulae $A_a,A_b\in \prems_i$. Compute
+  pairs of formulas $A_a,A_b\in \prems_i$. Compute
   Algorithm~\ref{alg:optSeq} ($\psi$, $(\mathcal{K}_i,\eval_i)$) for all $\psi\in eq_i$.
   Set $\mathcal{K}_{i+1} = eq_i$, set $i = i + 1$. For each equality $\psi\in eq_i$,
   set $\eval_{i+1}(\psi)=\top$ if the result of Algorithm~\ref{alg:optSeq} was `provable'
@@ -635,20 +636,20 @@ The proposed optimized algorithms have been implemented (using the programming
 language Haskell) as part of the generic coalgebraic modal logic satisfiability
 solver (\COLOSS\footnote{As already mentioned above, more information about \COLOSS,
 a web-interface to the tool and 
-the tested benchmarking formulae can be found at \url{http://www.informatik.uni-bremen.de/cofi/CoLoSS/}}).
+the tested benchmarking formulas can be found at \url{http://www.informatik.uni-bremen.de/cofi/CoLoSS/}}).
 \COLOSS~provides the general coalgebraic framework in which the generic
 sequent calculus is embedded. It is easily possible to instantiate this generic sequent
 calculus to specific modal logics, one particular example being conditional logic.
 The matching function for conditional logic in \COLOSS~was hence adapted in order to realize
 the different optimisations (closely following Algorithms~\ref{alg:seq},~\ref{alg:preprove} and
 ~\ref{alg:optPreprove}), so that \COLOSS~now provides an efficient algorithm for
-deciding the provability (and satisfiability) of conditional logic formulae.
+deciding the provability (and satisfiability) of conditional logic formulas.
 
 \subsection{Comparing the Proposed Algorithms}
 \label{sec:bench}
 
 In order to show the relevance of the proposed optimisations, we devise several classes
-of conditional formulae. Each class has a characteristic general shape, defining its
+of conditional formulas. Each class has a characteristic general shape, defining its
 complexity w.r.t. different parts of the algorithms and thus exhibiting specific
 advantages or disadvantages of each algorithm:
 
@@ -659,12 +660,12 @@ inequivalent atoms and $2^i-1$ modal antecedents):
 \verb|bloat(|$i$\verb|)| = $($\verb|bloat(|$i-1$\verb|)|$)\Rightarrow($\verb|bloat(|$i-1$\verb|)|)\\
 \verb|bloat(|$0$\verb|)| = $p_{rand}$
 \end{quote}
-Formulae from this class should show the problematic performance of Algorithm~\ref{alg:preprove} whenever
+formulas from this class should show the problematic performance of Algorithm~\ref{alg:preprove} whenever
 a formula contains many modal antecedents which appear at different depths. A comparison of the different
-algorithms w.r.t. formulae \verb|bloat(|$i$\verb|)| is depicted in Figure~\ref{fig:benchBloat}.
+algorithms w.r.t. formulas \verb|bloat(|$i$\verb|)| is depicted in Figure~\ref{fig:benchBloat}.
 Since Algorithm~\ref{alg:preprove} does not check whether pairs of modal antecedents are independent or connected,
 it performs considerably worse than Algorithm~\ref{alg:optPreprove} which only attempts to prove the logical
-equivalence of formulae which are not independent. Algorithm~\ref{alg:seq} has the best performance in this
+equivalence of formulas which are not independent. Algorithm~\ref{alg:seq} has the best performance in this
 extreme case, as it only has to consider pairs of modal antecedents which actually appear during the course
 of a proof. This is the price to pay for the optimisation by dynamic programming.
 \end{itemize}
@@ -695,16 +696,16 @@ $i$ & Algorithm~\ref{alg:seq} & Algorithm~\ref{alg:preprove} & Algorithm~\ref{al
 \verb|conjunct(|$i$\verb|)| = $A_1\wedge\ldots\wedge A_i$\\
 $A=(((p_1\vee p_0)\Rightarrow p_2)\vee((p_0\vee p_1)\Rightarrow p_2))\vee\neg(((p_0\vee p_1)\Rightarrow p_2)\vee((p_1\vee p_0)\Rightarrow p_2))$)
 \end{quote}
-This class consists of formulae which contain logically (but not sytactically) equivalent antecedents.
+This class consists of formulas which contain logically (but not sytactically) equivalent antecedents.
 As $i$ increases, so does the amount of appearances of identical modal antecedents in different positions
-of the considered formula. A comparison of the different algorithms w.r.t. formulae \verb|conjunct(|$i$\verb|)| is depicted in
+of the considered formula. A comparison of the different algorithms w.r.t. formulas \verb|conjunct(|$i$\verb|)| is depicted in
 Figure~\ref{fig:benchConjunct}. It is obvious that the optimized algorithms perform considerably better than the unoptimized
 Algorithm~\ref{alg:seq}. The reason for this is, that Algorithm~\ref{alg:seq} repeatedly proves equivalences between the same
 pairs of modal antecedents. The optimized algorithms on the other hand are equipped with knowledge about the modal antecedents,
 so that these equivalences have to be proved only once. However, even the runtime of the optimized algorithms is exponential in $i$,
 due to the exponentially increasing complexity of the underlying propositional formula. Note that the use of propositional taulogies (such as
 $A \leftrightarrow (A\wedge A) $ in this case) would help to greatly reduce the computing time for \verb|conjunct(|$i$\verb|)|.
-Optimisation of propositional reasoning is not the scope of this paper though, thus we devise the following examplary class of formulae
+Optimisation of propositional reasoning is not the scope of this paper though, thus we devise the following examplary class of formulas
 (for which propositional tautologies would not help).
 \end{itemize}
 
@@ -739,13 +740,13 @@ $X^i_1=(A^i_1\Rightarrow(\ldots(A^i_i\Rightarrow (c_1\wedge\ldots\wedge c_i))\ld
 $X^i_j=(A^i_{j\bmod i}\Rightarrow(\ldots(A^i_{(j+(i-1))\bmod i}\Rightarrow \neg c_j)\ldots))$\\
 $A^i_j=p_{j \bmod i}\wedge\ldots\wedge p_{(j+(i-1)) \bmod i}$
 \end{quote}
-This class contains complex formulae for which the unoptimized
+This class contains complex formulas for which the unoptimized
 algorithm should not be efficient any more: Only the combined
 knowledge about all appearing modal antecedents $A^i_j$ allows the
 proving algorithm to reach all modal consequents $c_n$, and only the
 combined sequent $\{(c_1\wedge\ldots\wedge c_i),\neg c_1,\ldots,\neg
 c_i\}$ (containing every appearing consequent) is provable. For
-formulae from this class (specifically designed to show the advantages
+formulas from this class (specifically designed to show the advantages
 of optimization by dynamic programming), the optimized algorithms
 vastly outperform the unoptimized algorithm (see
 Figure~\ref{fig:benchExplode}).
@@ -831,7 +832,7 @@ for pre-proving, we now extend our attention to any short sequents over any moda
   which have nesting depth at most $i$. If $i<depth(\phi)$ continue
   with Step 3, else set $\mathcal{K}=\mathcal{K}_{i-1}, \eval=\eval_{i-1}$ and continue with Step 4.\\
   Step 3: Let $seq_i$ denote the set of all short sequents of form $S_i$ (where $S_i$ is a sequent
-  from the premise of rule (\textbf{Opt})) over at most two formulae
+  from the premise of rule (\textbf{Opt})) over at most two formulas
   $A_a,A_b\in args_i$. Compute Algorithm~\ref{alg:optSeq} ($\psi$, $(\mathcal{K}_i,\eval_i)$) for all
   $\psi\in seq_i$. Set $\mathcal{K}_{i+1} = seq_i$, set $i = i + 1$. For each short sequent
   $\psi\in seq_i$, set $\eval_{i+1}(\psi)=\top$ if the result of Algorithm~\ref{alg:optSeq} was
@@ -843,7 +844,7 @@ for pre-proving, we now extend our attention to any short sequents over any moda
 \end{alg}
 \end{algorithm}
 
-This new Algorithm~\ref{alg:genOptPreprove} may then be used to decide provability of formulae,
+This new Algorithm~\ref{alg:genOptPreprove} may then be used to decide provability of formulas,
 where the employed ruleset has to be extended by the generic modified rule given by Figure~\ref{fig:modModalOpt}.
 
 \begin{figure}[!h]
@@ -851,9 +852,9 @@ where the employed ruleset has to be extended by the generic modified rule given
     \begin{tabular}{| c |}
     \hline
       \\[-5pt]
-      (\textsc {\textbf{Opt}$^m$}) \inferrule{ \eval(S_1)=\top \\ \ldots \\ \eval(S_n)=\top \\ \mathcal{S} }
-                      { \Gamma } \\[-5pt]
-      \\
+      \hspace{75pt}(\textsc {\textbf{Opt}$^m$}) \inferrule{ \mathcal{S} }
+                      { \Gamma }\hspace{75pt}\vspace{3pt}\\[-5pt]
+     \hfill ($\bigwedge{}_{i\in\{1..n\}}{\eval(S_i)=\top}$) \\
     \hline
     \end{tabular}
   \end{center}
@@ -877,10 +878,11 @@ logic:
 The according modified version of this rule is as follows:
 \begin{quote}
 \begin{center}
-      (\textsc {\textbf{Opt}$^m_{Cong}$}) \inferrule{ {\eval(A=B)=\top} }
+      (\textsc {\textbf{Opt}$^m_{Cong}$}) \inferrule{ {} }
                       { \Box A = \Box B }
   \end{center}
 \end{quote}
+with the side-condition $\eval(A=B)=\top$.
 \item (Monotone modal logics) By setting $\Gamma = \{\Box A \rightarrow \Box B\}$,
 $n=1$, $S_1=\{A\rightarrow B\}$ and $\mathcal{S}=\emptyset$, we may instantiate
 the generic algorithm to the case of modal logics which are monotone w.r.t. their
@@ -895,10 +897,11 @@ logic:
 The according modified version of this rule is as follows:
 \begin{quote}
 \begin{center}
-      (\textsc {\textbf{Opt}$^m_{Mon}$}) \inferrule{ {\eval(A\rightarrow B)=\top} }
+      (\textsc {\textbf{Opt}$^m_{Mon}$}) \inferrule{ {} }
                       { \Box A \rightarrow \Box B }
   \end{center}
 \end{quote}
+with the side-condition $\eval(A\rightarrow B)=\top$.
 
 In the case that (\textbf{Opt}$_{Mon}$) is the only modal rule in the
 considered logic (i.e. the case of plain monotone modal logic), all the
