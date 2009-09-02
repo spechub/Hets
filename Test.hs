@@ -39,7 +39,7 @@ import Proofs.EdgeUtils
 import Proofs.StatusUtils
 
 myHetcatsOpts :: HetcatsOpts
-myHetcatsOpts = defaultHetcatsOpts { libdir = "../Hets-lib" }
+myHetcatsOpts = defaultHetcatsOpts { libdirs = ["../Hets-lib"] }
 
 process :: FilePath -> IO (Maybe (LIB_NAME, LibEnv))
 process = anaLib myHetcatsOpts
