@@ -42,19 +42,19 @@
   \thanks[myemail]{Email: \href{mailto:Daniel.Hausmann@dfki.de} {\texttt{\normalshape Daniel.Hausmann@dfki.de}}}
   \thanks[coemail]{Email: \href{mailto:Lutz.Schroeder@dfki.de} {\texttt{\normalshape Lutz.Schroeder@dfki.de}}}
 \begin{abstract} 
-  The generic modal reasoner COLOSS covers a wide variety of logics
+  The generic modal reasoner CoLoSS covers a wide variety of logics
   ranging from graded and probabilistic modal logic to coalition logic
   and conditional logics, being based on a broadly applicable
   coalgebraic semantics and an ensuing general treatment of modal
   sequent and tableau calculi. Here, we present research into
   optimisation of the reasoning strategies employed in
-  COLOSS. Specifically, we discuss strategies of memoisation and
+  CoLoSS. Specifically, we discuss strategies of memoisation and
   dynamic programming that are based on the observation that short
   sequents play a central role in many of the logics under
   study. These optimisations seem to be particularly useful for the
   case of conditional logics, for some of which dynamic programming
   even improves the theoretical complexity of the algorithm. These
-  strategies have been implemented in COLOSS; we give a detailed
+  strategies have been implemented in CoLoSS; we give a detailed
   comparison of the different heuristics, observing that in the
   targeted domain of conditional logics, a substantial speed-up can be
   achieved.
@@ -529,10 +529,10 @@ knowledge base $(\mathcal{K}_{i},\eval_i)$.
   formulae $A_a,A_b\in \prems_i$. Compute
   Algorithm~\ref{alg:optSeq} ($\psi$, $(\mathcal{K}_i,\eval_i)$) for all $\psi\in eq_i$.
   Set $\mathcal{K}_{i+1} = eq_i$, set $i = i + 1$. For each equality $\psi\in eq_i$,
-  set $\eval_{i+1}(\psi)=\top$ if the result of Algorithm~\ref{alg:optSeq} was \verb+True+
+  set $\eval_{i+1}(\psi)=\top$ if the result of Algorithm~\ref{alg:optSeq} was `provable'
   and $\eval_{i+1}(\psi)=\bot$ otherwise. Continue with Step 2.\\
-  Step 4: Call Algorithm~\ref{alg:optSeq} ($\phi$, $(\mathcal{K},\eval)$) and return its result
-  as result.
+  Step 4: Call Algorithm~\ref{alg:optSeq} ($\phi$, $(\mathcal{K},\eval)$) and return its return
+  value as result.
 \label{alg:preprove}
 \end{upshape}
 \end{alg}
@@ -612,10 +612,10 @@ remain untreated
   pairs of formulae $A_a,A_b\in \prems_i$. Compute
   Algorithm~\ref{alg:optSeq} ($\psi$, $(\mathcal{K}_i,\eval_i)$) for all $\psi\in eq_i$.
   Set $\mathcal{K}_{i+1} = eq_i$, set $i = i + 1$. For each equality $\psi\in eq_i$,
-  set $\eval_{i+1}(\psi)=\top$ if the result of Algorithm~\ref{alg:optSeq} was \verb+True+
+  set $\eval_{i+1}(\psi)=\top$ if the result of Algorithm~\ref{alg:optSeq} was `provable'
   and $\eval_{i+1}(\psi)=\bot$ otherwise. Continue with Step 2.\\
-  Step 4: Call Algorithm~\ref{alg:optSeq} ($\phi$, $(\mathcal{K},\eval)$) and return its result
-  as result.
+  Step 4: Call Algorithm~\ref{alg:optSeq} ($\phi$, $(\mathcal{K},\eval)$) and return its 
+  return value as result.
 \label{alg:optPreprove}
 \end{upshape}
 \end{alg}
@@ -827,8 +827,8 @@ for pre-proving, we now extend our attention to any short sequents over any moda
   $A_a,A_b\in args_i$. Compute Algorithm~\ref{alg:optSeq} ($\psi$, $(\mathcal{K}_i,\eval_i)$) for all
   $\psi\in seq_i$. Set $\mathcal{K}_{i+1} = seq_i$, set $i = i + 1$. For each short sequent
   $\psi\in seq_i$, set $\eval_{i+1}(\psi)=\top$ if the result of Algorithm~\ref{alg:optSeq} was
-  \verb+True+ and $\eval_{i+1}(\psi)=\bot$ otherwise. Continue with Step 2.\\
-  Step 4: Call Algorithm~\ref{alg:optSeq} ($\phi$, $(\mathcal{K},\eval)$) and return its result
+  `provable' and $\eval_{i+1}(\psi)=\bot$ otherwise. Continue with Step 2.\\
+  Step 4: Call Algorithm~\ref{alg:optSeq} ($\phi$, $(\mathcal{K},\eval)$) and return its return value
   as result.
 \end{upshape}
 \label{alg:genOptPreprove}
