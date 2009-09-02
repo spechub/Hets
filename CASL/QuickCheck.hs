@@ -12,9 +12,7 @@ QuickCheck model checker for CASL.CFOL.
 Initially, only finite enumeration domains are supported
 -}
 
-module CASL.QuickCheck(quickCheckProver,
-                       QModel (..),
-                       VARIABLE_ASSIGNMENT (..)) where
+module CASL.QuickCheck(quickCheckProver) where
 
 import qualified Common.AS_Annotation as AS_Anno
 import qualified Common.Result as Result
@@ -57,14 +55,13 @@ data QModel = QModel
           -- sentences determining the set of terms for a sort
           carrierSens :: Map.Map SORT [CASLFORMULA],
           -- definitions of predicates and operations
-          predDefs :: Map.Map PRED_SYMB [([CASLTERM],CASLFORMULA)],
-          opDefs :: Map.Map OP_SYMB [([CASLTERM],CASLTERM)],
+          predDefs :: Map.Map PRED_SYMB [([CASLTERM], CASLFORMULA)],
+          opDefs :: Map.Map OP_SYMB [([CASLTERM], CASLTERM)],
           -- currently evaluated items,
           -- for avoiding infinite recursion
-          evaluatedPreds :: [(PRED_SYMB,[CASLTERM])],
-          evaluatedOps :: [(OP_SYMB,[CASLTERM])]
-        }
-        deriving (Eq, Show)
+          evaluatedPreds :: [(PRED_SYMB, [CASLTERM])],
+          evaluatedOps :: [(OP_SYMB, [CASLTERM])]
+        } deriving (Eq, Show)
 
 {- |
   Run the QuickCheck service.
@@ -187,11 +184,11 @@ eqSymb = Qual_pred_name eqId (Pred_type [] nullRange) nullRange
 ----------------------------------------------------------------------------
 -- * Variable assignments
 
-data VARIABLE_ASSIGNMENT =
-     Variable_Assignment QModel [(VAR, CASLTERM)] deriving Eq
+data VariableAssignment =
+     VariableAssignment QModel [(VAR, CASLTERM)] deriving Eq
 
-instance Show VARIABLE_ASSIGNMENT where
-    show (Variable_Assignment qm assignList) = showAssignments qm assignList
+instance Show VariableAssignment where
+    show (VariableAssignment qm assignList) = showAssignments qm assignList
 
 showAssignments :: QModel -> [(VAR, CASLTERM)] -> String
 showAssignments qm xs =
@@ -202,18 +199,18 @@ showSingleAssignment qm (v, t) =
   let st = rmTypesT dummyMin dummy (sign qm) t
    in show v ++ "->" ++ showDoc st ""
 
-emptyAssignment :: QModel -> VARIABLE_ASSIGNMENT
-emptyAssignment qm = Variable_Assignment qm []
+emptyAssignment :: QModel -> VariableAssignment
+emptyAssignment qm = VariableAssignment qm []
 
-insertAssignment :: VARIABLE_ASSIGNMENT -> (VAR, CASLTERM)
-                 -> VARIABLE_ASSIGNMENT
-insertAssignment (Variable_Assignment qm ass) (v, t) =
-  Variable_Assignment qm ((v, t) : ass)
+insertAssignment :: VariableAssignment -> (VAR, CASLTERM)
+                 -> VariableAssignment
+insertAssignment (VariableAssignment qm ass) (v, t) =
+  VariableAssignment qm ((v, t) : ass)
 
-concatAssignment :: VARIABLE_ASSIGNMENT -> VARIABLE_ASSIGNMENT
-                 -> VARIABLE_ASSIGNMENT
-concatAssignment (Variable_Assignment qm l1) (Variable_Assignment _ l2) =
-  Variable_Assignment qm $ l1 ++ l2
+concatAssignment :: VariableAssignment -> VariableAssignment
+                 -> VariableAssignment
+concatAssignment (VariableAssignment qm l1) (VariableAssignment _ l2) =
+  VariableAssignment qm $ l1 ++ l2
 
 
 --------------------------------------------------------------------------
@@ -229,7 +226,7 @@ instance Error ([Diagnosis], Maybe a) where
   noMsg = ([], Nothing)
   strMsg x = ([Diag Error x nullRange], Nothing)
 
-calculateTerm :: QModel -> VARIABLE_ASSIGNMENT -> CASLTERM -> Result CASLTERM
+calculateTerm :: QModel -> VariableAssignment -> CASLTERM -> Result CASLTERM
 calculateTerm qm ass trm = case trm of
     Qual_var var _ _ -> lookupVar var ass
     Application opSymb terms _ ->
@@ -242,18 +239,18 @@ calculateTerm qm ass trm = case trm of
                      else calculateTerm qm ass t2
     _ -> fail "unsopprted term"
 
-lookupVar :: VAR -> VARIABLE_ASSIGNMENT -> Result CASLTERM
-lookupVar v (Variable_Assignment _ ass) = case lookup v ass of
-  Nothing -> fail ("no value for variable "++show v++" found")
+lookupVar :: VAR -> VariableAssignment -> Result CASLTERM
+lookupVar v (VariableAssignment _ ass) = case lookup v ass of
+  Nothing -> fail ("no value for variable " ++ show v ++ " found")
   Just val -> return val
 
-applyOperation :: QModel -> VARIABLE_ASSIGNMENT -> OP_SYMB -> [CASLTERM]
+applyOperation :: QModel -> VariableAssignment -> OP_SYMB -> [CASLTERM]
                -> Result CASLTERM
 applyOperation qm ass opsymb terms = do
   -- block infinite recursion
   when ((opsymb,terms) `elem` evaluatedOps qm)
-       (fail ("infinite recursion when calculating"++
-              show (Application opsymb terms nullRange)))
+       (fail ("infinite recursion when calculating"
+              ++ show (Application opsymb terms nullRange)))
   let qm' = qm { evaluatedOps = (opsymb,terms):evaluatedOps qm }
   -- evaluate argument terms
   args <- mapM (calculateTerm qm' ass) terms
@@ -274,15 +271,15 @@ applyOperation qm ass opsymb terms = do
 --   a a list of bodies (first argument), each coming with a
 --   list of formal parameters and a body term or formula
 match :: [([CASLTERM],a)] -> [CASLTERM] -> String
-      -> Result (a,[(VAR,CASLTERM)])
+      -> Result (a, [(VAR, CASLTERM)])
 match bodies args msg =
   case mapMaybe (match1 args) bodies of
-    [] -> fail ("no matching found for "++msg)
+    [] -> fail ("no matching found for " ++ msg)
     (subst:_) -> return subst
 
 -- match against a single body
-match1 :: [CASLTERM] -> ([CASLTERM],a) -> Maybe (a,[(VAR,CASLTERM)])
-match1 args (vars,body) = do
+match1 :: [CASLTERM] -> ([CASLTERM], a) -> Maybe (a, [(VAR, CASLTERM)])
+match1 args (vars, body) = do
   substs <- mapM (uncurry match2) (zip vars args)
   let subst = concat substs
   if consistent subst then return (body,subst) else Nothing
@@ -306,48 +303,47 @@ match2 t1 (Sorted_term t2 _ _) = match2 t1 t2
 match2 _ _ = Nothing
 
 -- | strip off the injections of an application
-stripInj :: OP_SYMB -> [CASLTERM] -> (OP_SYMB,[CASLTERM],[SORT])
+stripInj :: OP_SYMB -> [CASLTERM] -> (OP_SYMB, [CASLTERM], [SORT])
 stripInj opsymb terms =
-  let (opsymb',terms') =
+  let (opsymb', terms') =
         case (isInjName $ opSymbName opsymb, terms) of
-          (True,[Application o ts _]) -> (o,ts)
+          (True, [Application o ts _]) -> (o,ts)
           _ -> (opsymb,terms)
       strip1 t1@(Application o [t2] _) =
         if isInjName $ opSymbName o then t2 else t1
       strip1 t1 = t1
       terms'' = map strip1 terms'
-  in (opsymb',terms'',map sortOfTerm terms'')
+  in (opsymb', terms'', map sortOfTerm terms'')
 
 -- | is a substitution consistent with itself?
-consistent :: [(VAR,CASLTERM)] -> Bool
+consistent :: [(VAR, CASLTERM)] -> Bool
 consistent ass =
   isJust $ foldM insertAss Map.empty ass
   where
   insertAss m (v,t) =
     case Map.lookup v m of
-      Just t1 -> if t==t1 then return m else Nothing
+      Just t1 -> if t == t1 then return m else Nothing
       Nothing -> Just $ Map.insert v t m
 
-ternaryAnd :: (Result Bool,a) -> (Result Bool,a) -> (Result Bool,a)
-ternaryAnd b1@(Result _ (Just False),_) _ = b1
-ternaryAnd (Result d1 (Just True),_) (b2,x2) =
-  (do Result d1 (Just ()); b2, x2)
-ternaryAnd (Result d1 Nothing,_) (b2@(Result _ (Just False)),x2) =
-  (do Result d1 (Just ()); b2, x2)
-ternaryAnd (Result d1 Nothing,_) (b2,x2) =
-  (do Result d1 (Just ()); b2; Result [] Nothing, x2)
+ternaryAnd :: (Result Bool, a) -> (Result Bool, a) -> (Result Bool, a)
+ternaryAnd b1@(Result _ (Just False), _) _ = b1
+ternaryAnd (Result d1 (Just True), _) (b2, x2) =
+  (Result d1 (Just ()) >> b2, x2)
+ternaryAnd (Result d1 Nothing, _) (b2@(Result _ (Just False)), x2) =
+  (Result d1 (Just ()) >> b2, x2)
+ternaryAnd (Result d1 Nothing, _) (b2, x2) =
+  (Result d1 (Just ()) >> b2 >> Result [] Nothing, x2)
 
 ternaryOr :: Result Bool -> Result Bool -> Result Bool
 ternaryOr b1@(Result _ (Just True)) _ = b1
 ternaryOr (Result d1 (Just False)) b2 = do Result d1 (Just ()); b2
 ternaryOr (Result d1 Nothing) b2@(Result _ (Just True)) =
-  do Result d1 (Just ()); b2
+  Result d1 (Just ()) >> b2
 ternaryOr (Result d1 Nothing) b2 =
-  do Result d1 (Just ()); b2; Result [] Nothing
+  Result d1 (Just ()) >> b2 >> Result [] Nothing
 
-
-calculateFormula :: Bool -> QModel -> VARIABLE_ASSIGNMENT
-                     -> CASLFORMULA -> Result Bool
+calculateFormula :: Bool -> QModel -> VariableAssignment -> CASLFORMULA
+    -> Result Bool
 calculateFormula isOuter qm varass f = case f of
     Quantification _ _ _ _ ->
        calculateQuantification isOuter qm varass f
@@ -388,7 +384,7 @@ calculateFormula isOuter qm varass f = case f of
         applyPredicate qm varass predsymb terms
     _ -> fail $ "formula evaluation not implemented for: " ++ showDoc f ""
 
-calculateQuantification :: Bool -> QModel -> VARIABLE_ASSIGNMENT -> CASLFORMULA
+calculateQuantification :: Bool -> QModel -> VariableAssignment -> CASLFORMULA
                         -> Result Bool
 calculateQuantification isOuter qm varass qf = case qf of
   Quantification quant vardecls f _ -> do
@@ -402,7 +398,7 @@ calculateQuantification isOuter qm varass qf = case qf of
         when isOuter
           (case res of Result _ (Just False) ->
                         (warning () ("Universal quantification not fulfilled\n"
-                           ++"Conuterexample: "++show fass) nullRange)
+                           ++ "Counterexample: " ++ show fass) nullRange)
                        _ -> return ()
           )
         res
@@ -414,48 +410,48 @@ calculateQuantification isOuter qm varass qf = case qf of
         -- using the Left constructor of the Either monad
         let combineEx1 (msgsSoFar,ass1) ass2 = do
               let Result msgs res = calculateFormula False qm ass2 f
-              case (res,ass1) of
+              case (res, ass1) of
                 -- the first fulfilment
-                (Just True,Nothing) -> return (msgsSoFar++msgs, Just ass2)
+                (Just True, Nothing) -> return (msgsSoFar ++ msgs, Just ass2)
                 -- the second fulfilment
-                (Just True,Just ass1') ->
-                    Left (msgsSoFar++msgs,Just(ass1',ass2))
+                (Just True, Just ass1') ->
+                    Left (msgsSoFar ++ msgs, Just (ass1', ass2))
                 -- not fulfilled? Then nothing changes
-                (Just False,_) -> return (msgsSoFar++msgs,ass1)
+                (Just False, _) -> return (msgsSoFar ++ msgs, ass1)
                 -- don't know? Then we don't know either
-                (Nothing,_) -> Left(msgsSoFar++msgs,Nothing)
-        case foldM combineEx1 ([],Nothing) assments' of
-          Right (msgs,Just _) -> Result msgs (Just True)
-          Right (msgs,Nothing) -> do
+                (Nothing, _) -> Left (msgsSoFar ++ msgs, Nothing)
+        case foldM combineEx1 ([], Nothing) assments' of
+          Right (msgs, Just _) -> Result msgs (Just True)
+          Right (msgs, Nothing) -> do
             Result msgs (Just ())
             when isOuter
               (warning () ("Unique Existential quantification"
-                           ++" not fulfilled: no assignment found") nullRange)
+                           ++ " not fulfilled: no assignment found") nullRange)
             return False
-          Left (msgs,Just(ass1,ass2)) -> do
+          Left (msgs, Just (ass1, ass2)) -> do
             Result msgs (Just ())
             when isOuter
               (warning () ("Unique Existential quantification"
-                           ++" not fulfilled: at least two assignments found:\n"
-                           ++show ass1++"\n"++show ass2++"\n") nullRange)
+                ++ " not fulfilled: at least two assignments found:\n"
+                ++ show ass1 ++ "\n" ++ show ass2 ++"\n") nullRange)
             return False
           Left (msgs, Nothing) ->
             Result msgs Nothing
   _ -> fail "calculateQuantification wrongly applied"
 
-applyPredicate :: QModel -> VARIABLE_ASSIGNMENT -> PRED_SYMB -> [CASLTERM]
+applyPredicate :: QModel -> VariableAssignment -> PRED_SYMB -> [CASLTERM]
                -> Result Bool
 applyPredicate qm ass predsymb terms = do
   -- block infinite recursion
-  when ((predsymb,terms) `elem` evaluatedPreds qm)
-       (fail ("infinite recursion when calculating"++
-              show (Predication predsymb terms nullRange)))
+  when (elem (predsymb, terms) $ evaluatedPreds qm)
+       (fail ("infinite recursion when calculating"
+              ++ show (Predication predsymb terms nullRange)))
   let qm' = qm { evaluatedPreds = (predsymb,terms):evaluatedPreds qm }
   -- evaluate argument terms
   args <- mapM (calculateTerm qm' ass) terms
   -- find appropriate predicate definition
   case Map.lookup predsymb (predDefs qm) of
-    Nothing -> fail ("no predicate definition for "++showDoc predsymb "")
+    Nothing -> fail ("no predicate definition for " ++ showDoc predsymb "")
     Just bodies -> do
       -- bind formal to actual arguments
       (body,m) <- match bodies args $
@@ -466,27 +462,27 @@ applyPredicate qm ass predsymb terms = do
 
 equalElements :: QModel -> CASLTERM -> CASLTERM -> Result Bool
 equalElements qm t1 t2 =
-  if t1==t2 then return True
-   else applyPredicate qm (emptyAssignment qm) eqSymb [t1,t2]
+  if t1 == t2 then return True
+   else applyPredicate qm (emptyAssignment qm) eqSymb [t1, t2]
 
 generateVariableAssignments :: QModel -> [VAR_DECL]
-                            -> Result [VARIABLE_ASSIGNMENT]
+                            -> Result [VariableAssignment]
 generateVariableAssignments qm vardecls = do
    let vars = flatVAR_DECLs vardecls
-   carriers <- mapM (getCarrier qm) (map snd vars)
+   carriers <- mapM (getCarrier qm . snd) vars
    let varsCarriers = zip (map fst vars) carriers
-   return $ map (Variable_Assignment qm) (gVAs varsCarriers)
+   return $ map (VariableAssignment qm) (gVAs varsCarriers)
 
-gVAs :: [(VAR,[CASLTERM])] -> [[(VAR, CASLTERM)]]
+gVAs :: [(VAR, [CASLTERM])] -> [[(VAR, CASLTERM)]]
 gVAs [] = [[]]
-gVAs ((v,carrier) : vs) = let
+gVAs ((v, carrier) : vs) = let
     rs = gVAs vs
     fs = map (\ b -> (v, b)) carrier
     in [f : r | f <- fs, r <- rs]
 
 
 -- | check whether some formula leads to term generation of a sort
-termSort :: CASLFORMULA -> Maybe (SORT,[CASLTERM])
+termSort :: CASLFORMULA -> Maybe (SORT, [CASLTERM])
 -- sort generation constraint
 termSort (Sort_gen_ax constr _) =
   case sorts of
@@ -495,13 +491,13 @@ termSort (Sort_gen_ax constr _) =
              then Just (s,map mkTerm ops)
              else Nothing
      _ -> Nothing
-    where (sorts,ops,_) = recover_Sort_gen_ax constr
+    where (sorts, ops, _) = recover_Sort_gen_ax constr
           constant (Qual_op_name _ (Op_type _ [] _ _) _) = True
           constant _ = False
           mkTerm op = Application op [] nullRange
 -- axiom forcing empty carrier
 termSort (Quantification Universal [Var_decl [_] s _] (False_atom _) _) =
-  Just (s,[])
+  Just (s, [])
 termSort _ = Nothing
 
 -- | get the carrier set for a specific sort
@@ -511,7 +507,7 @@ getCarrier qm s =
     Nothing -> fail ("sort "++show s++" is not generated")
     Just sens -> case mapMaybe termSort sens of
       [] -> fail ("sort "++show s++" is not generated by constants")
-      (_,terms):_ -> return terms
+      (_, terms) : _ -> return terms
   -- todo: generalise this
 
 
@@ -523,7 +519,7 @@ getCarrier qm s =
 quickCheckProver :: Prover CASLSign CASLFORMULA CASLMor CASL_Sublogics ProofTree
 quickCheckProver =
   (mkProverTemplate "QuickCheck"
-                    (SL.top {has_part = False})
+                    (SL.top {has_part = False, which_logic = SL.FOL})
                     quickCheckGUI)
     { proveCMDLautomatic = Just quickCheckCMDLautomatic
     , proveCMDLautomaticBatch = Just quickCheckCMDLautomaticBatch }
@@ -539,7 +535,7 @@ atpFun _thName = ATPFunctions
     { initialProverState = \ sig sens _ -> insertSens (makeQm sig) sens,
       atpTransSenName = id,
       atpInsertSentence = insertSen,
-      goalOutput = \_ _ _ -> do
+      goalOutput = \ _ _ _ -> do
             putStrLn "No display of output yet"
             return "",
       proverHelpText =

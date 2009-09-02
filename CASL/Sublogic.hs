@@ -37,16 +37,8 @@ module CASL.Sublogic
     , bottom
     , emptyMapConsFeature
     , need_sub
-    , need_sul
-    , need_part
-    , need_cons
-    , need_e_cons
-    , need_s_cons
-    , need_se_cons
-    , need_eq
     , need_pred
     , need_horn
-    , need_ghorn
     , need_fol
     -- * functions for Logic instance
     -- ** sublogic to string conversion
@@ -245,9 +237,6 @@ need_pred = bottom { has_pred = True }
 need_horn :: Lattice a => CASL_SL a
 need_horn = bottom { which_logic = Horn }
 
-need_ghorn :: Lattice a => CASL_SL a
-need_ghorn = bottom { which_logic = GHorn }
-
 need_fol :: Lattice a => CASL_SL a
 need_fol = bottom { which_logic = FOL }
 
@@ -372,10 +361,9 @@ mapMaybePos (p1 : pl) f (h : t) = let res = f h in
 --
 mapPos :: Int -> Range -> (a -> Maybe b) -> [a] -> ([b], Range)
 mapPos c (Range p) f l = let
-                   (res, pos) = (\ (x, y) -> (catMaybes x, y))
-                               $ unzip $ mapMaybePos (drop c p) f l
+                   (res, pos) = unzip $ mapMaybePos (drop c p) f l
                  in
-                   (res, Range (take c p ++ pos))
+                   (catMaybes res, Range (take c p ++ pos))
 
 ------------------------------------------------------------------------------
 -- Functions to analyse formulae
