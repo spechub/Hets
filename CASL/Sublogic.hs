@@ -108,6 +108,7 @@ data CASL_Formulas = Atomic  -- ^ atomic logic
                    | Horn    -- ^ positive conditional logic
                    | GHorn   -- ^ generalized positive conditional logic
                    | FOL     -- ^ first-order logic
+                   | SOL     -- ^ second-order logic
                    deriving (Show, Eq, Ord)
 
 data SubsortingFeatures = NoSub
@@ -165,10 +166,13 @@ has_cons sl = case cons_features sl of
 -- top element
 --
 top :: Lattice a => CASL_SL a
-top = CASL_SL Sub True (SortGen False False) True True FOL True ctop
+top = CASL_SL Sub True (SortGen False False) True True SOL True ctop
 
 caslTop :: Lattice a => CASL_SL a
-caslTop = top { has_empty_sorts = False }
+caslTop = top
+  { has_empty_sorts = False
+  , which_logic = FOL
+  }
 
 cFol :: Lattice a => CASL_SL a
 cFol = caslTop
@@ -271,7 +275,7 @@ sublogics_all l = let bools = [True, False] in
     , pa_b <- bools
     , pr_b <- bools
     , e_b <- bools
-    , fo <- [FOL, GHorn, Horn, Atomic]
+    , fo <- [SOL, FOL, GHorn, Horn, Atomic]
     , es_b <- bools
     , a <- l
     , c_f <- NoSortGen : [ SortGen m s | m <- bools, s <- bools]
@@ -281,14 +285,17 @@ sublogics_all l = let bools = [True, False] in
 ------------------------------------------------------------------------------
 
 formulas_name :: Bool -> CASL_Formulas -> String
-formulas_name True  FOL    = "FOL"
-formulas_name False FOL    = "FOAlg"
-formulas_name True  GHorn  = "GHorn"
-formulas_name False GHorn  = "GCond"
-formulas_name True  Horn   = "Horn"
-formulas_name False Horn   = "Cond"
-formulas_name True  Atomic = "Atom"
-formulas_name False Atomic = "Eq"
+formulas_name b f = case (b, f) of
+  (True, SOL) -> "SOL"
+  (False, SOL) -> "SOAlg"
+  (True, FOL) -> "FOL"
+  (False, FOL) -> "FOAlg"
+  (True, GHorn) -> "GHorn"
+  (False, GHorn) -> "GCond"
+  (True, Horn) -> "Horn"
+  (False, Horn) -> "Cond"
+  (True, Atomic) -> "Atom"
+  (False, Atomic) -> "Eq"
 
 sublogics_name :: (a -> String) -> CASL_SL a -> String
 sublogics_name f x = f (ext_features x)
@@ -303,9 +310,9 @@ sublogics_name f x = f (ext_features x)
                              (if emptyMapping (cons_features x)
                               then "e" else "") ++ "C"
                          else "")
-                    ++ (formulas_name (has_pred x) (which_logic x) )
+                    ++ formulas_name (has_pred x) (which_logic x)
                     ++ (if has_eq x then "=" else "")
-                    ++ (if has_empty_sorts x then "E" else "")
+                    ++ if has_empty_sorts x then "E" else ""
 
 ------------------------------------------------------------------------------
 -- join or max functions
@@ -341,7 +348,7 @@ sublogics_max = sublogics_join max max (joinSortGenFeature min) max cjoin
 -- compute sublogics from a list of sublogics
 --
 comp_list :: Lattice a => [CASL_SL a] -> CASL_SL a
-comp_list l = foldl sublogics_max bottom l
+comp_list = foldl sublogics_max bottom
 
 -- map a function returning Maybe over a list of arguments
 -- . a list of Pos is maintained by removing an element if the
@@ -351,16 +358,11 @@ comp_list l = foldl sublogics_max bottom l
 --   list is exhausted are appended at the end with Nothing
 --   as a substitute for f's result
 --
-mapMaybePos :: [Pos] -> (a -> Maybe b) -> [a] -> [(Maybe b,Pos)]
-mapMaybePos [] _ _          = []
-mapMaybePos (p1:pl) f []    = (Nothing,p1):(mapMaybePos pl f [])
-mapMaybePos (p1:pl) f (h:t) = let
-                                res = f h
-                              in
-                                if (isJust res) then
-                                  (res,p1):(mapMaybePos pl f t)
-                                else
-                                  mapMaybePos pl f t
+mapMaybePos :: [Pos] -> (a -> Maybe b) -> [a] -> [(Maybe b, Pos)]
+mapMaybePos [] _ _ = []
+mapMaybePos (p1 : pl) f [] = (Nothing, p1) : mapMaybePos pl f []
+mapMaybePos (p1 : pl) f (h : t) = let res = f h in
+  (if isJust res then ((res, p1) :) else id) $ mapMaybePos pl f t
 
 -- map with partial function f on Maybe type
 --  will remove elements from given Pos list for elements of [a]
@@ -368,12 +370,12 @@ mapMaybePos (p1:pl) f (h:t) = let
 --  given number of elements from the beginning of Range are always
 --  kept
 --
-mapPos :: Int -> Range -> (a -> Maybe b) -> [a] -> ([b],Range)
+mapPos :: Int -> Range -> (a -> Maybe b) -> [a] -> ([b], Range)
 mapPos c (Range p) f l = let
-                   (res,pos) = (\(x,y) -> (catMaybes x,y))
+                   (res, pos) = (\ (x, y) -> (catMaybes x, y))
                                $ unzip $ mapMaybePos (drop c p) f l
                  in
-                   (res,Range ((take c p)++pos))
+                   (res, Range (take c p ++ pos))
 
 ------------------------------------------------------------------------------
 -- Functions to analyse formulae
@@ -387,61 +389,59 @@ mapPos c (Range p) f l = let
    grammar.
 --------------------------------------------------------------------------- -}
 
-sl_form_level :: Lattice a => (f -> CASL_SL a)
-              -> (Bool, Bool) -> FORMULA f -> CASL_SL a
+sl_form_level :: (f -> CASL_Formulas)
+              -> (Bool, Bool) -> FORMULA f -> CASL_Formulas
 sl_form_level ff (isCompound, leftImp) phi =
  case phi of
    Quantification q _ f _ ->
-    if is_atomic_q q
-    then sl_form_level ff (isCompound, leftImp) f
-    else need_fol
-   Conjunction l _ -> comp_list $ map (sl_form_level ff (True, leftImp)) l
-   Disjunction _ _ -> need_fol
-   Implication l1 l2 _ _ -> if leftImp then need_fol else
-               comp_list [sl_form_level ff (True, True) l1,
-                   sl_form_level ff (True, False) l2,
-                   if isCompound
-                   then need_ghorn
-                   else need_horn]
-   Equivalence l1 l2 _ ->
-    if leftImp
-    then need_fol
-    else comp_list [sl_form_level ff (True, True) l1,
-                    sl_form_level ff (True, True) l2,
-                    need_ghorn]
-   Negation _ _ -> need_fol -- it won't get worse
-   True_atom _ -> bottom
-   False_atom _ -> need_fol
-   Predication _ _ _ -> bottom
-   Definedness _ _ -> bottom
-   Existl_equation _ _ _ -> bottom
-   Strong_equation _ _ _ -> if leftImp then need_fol else need_horn
-   Membership _ _ _ -> bottom
-   Sort_gen_ax _ _ -> bottom
+       let ql = sl_form_level ff (isCompound, leftImp) f
+       in if is_atomic_q q then ql else max FOL ql
+   Conjunction l _ -> maximum $ map (sl_form_level ff (True, leftImp)) l
+   Disjunction l _ -> maximum $ FOL :
+       map (sl_form_level ff (False, False)) l
+   Implication l1 l2 _ _ -> maximum
+       [ sl_form_level ff (True, True) l1
+       , sl_form_level ff (True, False) l2
+       , if leftImp then FOL else
+             if isCompound then GHorn else Horn ]
+   Equivalence l1 l2 _ -> maximum
+       [ sl_form_level ff (True, True) l1
+       , sl_form_level ff (True, True) l2
+       , if leftImp then FOL else GHorn ]
+   Negation f _ -> max FOL $ sl_form_level ff (False, False) f
+   True_atom _ -> Atomic
+   False_atom _ -> FOL
+   Predication _ _ _ -> Atomic
+   Definedness _ _ -> Atomic
+   Existl_equation _ _ _ -> Atomic
+   Strong_equation _ _ _ -> if leftImp then FOL else Horn
+   Membership _ _ _ -> Atomic
+   Sort_gen_ax _ _ -> Atomic
+   QuantOp _ _ _ -> SOL  -- it can't get worse
+   QuantPred _ _ _ -> SOL
    ExtFORMULA f -> ff f
    _ -> error "CASL.Sublogic.sl_form_level: illegal FORMULA type"
 
 -- QUANTIFIER
 --
 is_atomic_q :: QUANTIFIER -> Bool
-is_atomic_q (Universal) = True
+is_atomic_q Universal = True
 is_atomic_q _ = False
 
 -- compute logic of a formula by checking all logics in turn
 --
 get_logic :: Lattice a => (f -> CASL_SL a)
           -> FORMULA f -> CASL_SL a
-get_logic ff = sl_form_level ff (False, False)
+get_logic ff f = bottom
+  { which_logic = sl_form_level (which_logic . ff) (False, False) f }
 
 -- for the formula inside a subsort-defn
 --
 get_logic_sd :: Lattice a => (f -> CASL_SL a)
              -> FORMULA f -> CASL_SL a
-get_logic_sd ff f =
-    sublogics_max need_horn $ sl_form_level ff (False, False) f
-{- get_logic_sd f = if (is_horn_p_a f) then need_horn else
-                 if (is_ghorn_prem f) then need_ghorn else
-                 need_fol -}
+get_logic_sd ff f = bottom
+  { which_logic =
+    max Horn $ sl_form_level (which_logic . ff) (False, False) f }
 
 ------------------------------------------------------------------------------
 -- Functions to compute minimal sublogic for a given element, these work
@@ -453,7 +453,7 @@ sl_basic_spec :: Lattice a => (b -> CASL_SL a)
               -> (f -> CASL_SL a)
               -> BASIC_SPEC b s f -> CASL_SL a
 sl_basic_spec bf sf ff (Basic_spec l) =
-    comp_list $ map (sl_basic_items bf sf ff) $ map item l
+    comp_list $ map (sl_basic_items bf sf ff . item) l
 sl_basic_items :: Lattice a => (b -> CASL_SL a)
               -> (s -> CASL_SL a)
               -> (f -> CASL_SL a)
@@ -461,16 +461,13 @@ sl_basic_items :: Lattice a => (b -> CASL_SL a)
 sl_basic_items bf sf ff bi = case bi of
     Sig_items i -> sl_sig_items sf ff i
     Free_datatype sk l _ -> needsEmptySorts sk
-        $ comp_list $ map sl_datatype_decl $ map item l
+        $ comp_list $ map (sl_datatype_decl . item) l
     Sort_gen l _ -> sublogics_max need_cons
-                                (comp_list $ map (sl_sig_items sf ff)
-                                           $ map item l)
+        $ comp_list $ map (sl_sig_items sf ff . item) l
     Var_items l _ -> comp_list $ map sl_var_decl l
-    Local_var_axioms d l _ -> sublogics_max
-                                          (comp_list $ map sl_var_decl d)
-                                          (comp_list $ map (sl_formula ff)
-                                                     $ map item l)
-    Axiom_items l _ -> comp_list $ map (sl_formula ff) $ map item l
+    Local_var_axioms d l _ -> comp_list
+        $ map sl_var_decl d ++ map (sl_formula ff . item) l
+    Axiom_items l _ -> comp_list $ map (sl_formula ff . item) l
     Ext_BASIC_ITEMS b -> bf b
 
 needsEmptySorts :: Lattice a => SortsKind -> CASL_SL a -> CASL_SL a
@@ -483,11 +480,11 @@ sl_sig_items :: Lattice a => (s -> CASL_SL a)
               -> SIG_ITEMS s f -> CASL_SL a
 sl_sig_items sf ff si = case si of
     Sort_items sk l _ -> needsEmptySorts sk
-          $ comp_list $ map (sl_sort_item ff) $ map item l
-    Op_items l _ -> comp_list $ map (sl_op_item ff) $ map item l
-    Pred_items l _ -> comp_list $ map (sl_pred_item ff) $ map item l
+          $ comp_list $ map (sl_sort_item ff . item) l
+    Op_items l _ -> comp_list $ map (sl_op_item ff . item) l
+    Pred_items l _ -> comp_list $ map (sl_pred_item ff . item) l
     Datatype_items sk l _ -> needsEmptySorts sk
-          $ comp_list $ map sl_datatype_decl $ map item l
+          $ comp_list $ map (sl_datatype_decl . item) l
     Ext_SIG_ITEMS s -> sf s
 
 -- Subsort_defn needs to compute the expression logic needed seperately
@@ -536,8 +533,8 @@ sl_pred_item ff i = case i of
     Pred_defn _ _ f _ -> sublogics_max need_pred (sl_formula ff $ item f)
 
 sl_datatype_decl :: Lattice a => DATATYPE_DECL -> CASL_SL a
-sl_datatype_decl (Datatype_decl _ l _) = comp_list $ map sl_alternative
-                                                   $ map item l
+sl_datatype_decl (Datatype_decl _ l _) =
+    comp_list $ map (sl_alternative . item) l
 
 sl_alternative :: Lattice a => ALTERNATIVE -> CASL_SL a
 sl_alternative a = case a of
@@ -583,8 +580,7 @@ sl_form ff frm = case frm of
     Negation f _ -> sl_form ff f
     True_atom _ -> bottom
     False_atom _ -> bottom
-    Predication _ l _ -> sublogics_max need_pred
-                              (comp_list $ map (sl_term ff) l)
+    Predication _ l _ -> comp_list $ need_pred : map (sl_term ff) l
 -- need_part is tested elsewhere (need_pred not required)
     Definedness t _ -> sl_term ff t
     Existl_equation t u _ -> comp_list [need_eq, sl_term ff t, sl_term ff u]
@@ -600,6 +596,8 @@ sl_form ff frm = case frm of
         ([], _) -> need_e_cons
         (_, []) -> need_s_cons
         _ -> need_cons
+    QuantOp _ _ f -> sl_form ff f
+    QuantPred _ _ f -> sublogics_max need_pred $ sl_form ff f
     ExtFORMULA f -> ff f
     _ -> error "CASL.Sublogic.sl_form"
 
@@ -668,7 +666,7 @@ sl_symbtype st = case st of
     _ -> bottom
 
 sl_optype :: Lattice a => OpType -> CASL_SL a
-sl_optype k = sl_opkind $ opKind k
+sl_optype = sl_opkind . opKind
 
 sl_opkind :: Lattice a => OpKind -> CASL_SL a
 sl_opkind fk = case fk of
@@ -733,15 +731,15 @@ toCheck l ff = maybe top (const l) . ff l
 
 pr_formula :: Lattice a => (CASL_SL a -> f -> Maybe (FORMULA f))
            -> CASL_SL a -> FORMULA f -> Maybe (FORMULA f)
-pr_formula ff l f =
+pr_formula ff l =
     fmap (foldFormula $ checkRecord l ff)
-    $ pr_check l (sl_formula $ toCheck l ff) f
+    . pr_check l (sl_formula $ toCheck l ff)
 
 pr_term :: Lattice a => (CASL_SL a -> f -> Maybe (FORMULA f))
-           -> CASL_SL a -> TERM f -> Maybe (TERM f)
-pr_term ff l f =
+        -> CASL_SL a -> TERM f -> Maybe (TERM f)
+pr_term ff l =
     fmap (foldTerm $ checkRecord l ff)
-    $ pr_check l (sl_term $ toCheck l ff) f
+    . pr_check l (sl_term $ toCheck l ff)
 
 -- make full Annoted Sig_items out of a SORT list
 --
@@ -765,9 +763,9 @@ pr_basic_spec :: Lattice a =>
 pr_basic_spec fb fs ff l (Basic_spec s) =
   let
     res   = map (pr_annoted_dt l $ pr_basic_items fb fs ff) s
-    items = catMaybes $ map fst res
-    toAdd = concat $ map snd res
-    ret   = if (toAdd==[]) then
+    items = mapMaybe fst res
+    toAdd = concatMap snd res
+    ret   = if null toAdd then
               items
             else
               pr_make_sorts toAdd : items
@@ -788,7 +786,7 @@ pr_basic_items fb fs ff l bi = case bi of
                let
                  (res, lst) = pr_sig_items fs ff l s
                in
-                 if (isNothing res) then
+                 if isNothing res then
                    (Nothing, lst)
                  else
                    (Just (Sig_items (fromJust res)), lst)
@@ -802,11 +800,11 @@ pr_basic_items fb fs ff l bi = case bi of
                  else
                    (Just (Free_datatype sk res pos), lst)
     Sort_gen s p ->
-               if (has_cons l) then
+               if has_cons l then
                  let
                    tmp = map (pr_annoted_dt l $ pr_sig_items fs ff) s
-                   res = catMaybes $ map fst tmp
-                   lst = concat $ map snd tmp
+                   res = mapMaybe fst tmp
+                   lst = concatMap snd tmp
                  in
                    if null res then
                      (Nothing, lst)
@@ -886,7 +884,7 @@ pr_lost_dt sl = concatMap (\ dt@(Datatype_decl s _ _) ->
                        _ -> [])
 
 pr_symbol :: Lattice a => CASL_SL a -> Symbol -> Maybe Symbol
-pr_symbol l s = pr_check l sl_symbol s
+pr_symbol l = pr_check l sl_symbol
 
 -- returns a non-empty list of [SORT] if datatypes had to be removed
 -- completely
@@ -940,16 +938,15 @@ pr_op_item ff l oi = case oi of
 -- sort declarations if the sublogic disallows subsorting to
 -- avoid loosing sorts in the projection
 --
-pr_sort_item ::
-                CASL_SL a -> SORT_ITEM f -> Maybe (SORT_ITEM f)
+pr_sort_item :: CASL_SL a -> SORT_ITEM f -> Maybe (SORT_ITEM f)
 pr_sort_item _ (Sort_decl s p) = Just (Sort_decl s p)
 pr_sort_item l (Subsort_decl sl s p) =
-             if (has_sub l) then
+             if has_sub l then
                Just (Subsort_decl sl s p)
              else
-               Just (Sort_decl (s:sl) nullRange)
+               Just (Sort_decl (s : sl) nullRange)
 pr_sort_item l (Subsort_defn s1 v s2 f p) =
-             if (has_sub l) then
+             if has_sub l then
                Just (Subsort_defn s1 v s2 f p)
              else
                Just (Sort_decl [s1] nullRange)
@@ -958,7 +955,7 @@ pr_sort_item _ (Iso_decl s p) = Just (Iso_decl s p)
 pr_symb_items :: Lattice a => CASL_SL a -> SYMB_ITEMS
               -> Maybe SYMB_ITEMS
 pr_symb_items l (Symb_items k s p) =
-              if (in_x l k sl_symb_kind) then
+              if in_x l k sl_symb_kind then
                 let
                   (res, pos) = mapPos 1 p (pr_symb l) s
                 in
@@ -972,7 +969,7 @@ pr_symb_items l (Symb_items k s p) =
 pr_symb_map_items :: Lattice a => CASL_SL a -> SYMB_MAP_ITEMS
                   -> Maybe SYMB_MAP_ITEMS
 pr_symb_map_items l (Symb_map_items k s p) =
-                  if (in_x l k sl_symb_kind) then
+                  if in_x l k sl_symb_kind then
                     let
                       (res, pos) = mapPos 1 p (pr_symb_or_map l) s
                     in
@@ -989,7 +986,7 @@ pr_symb_or_map l (Symb s) =
                let
                  res = pr_symb l s
                in
-                 if (isNothing res) then
+                 if isNothing res then
                    Nothing
                  else
                    Just (Symb (fromJust res))
@@ -998,7 +995,7 @@ pr_symb_or_map l (Symb_map s t p) =
                  a = pr_symb l s
                  b = pr_symb l t
                in
-                 if ((isJust a) && (isJust b)) then
+                 if isJust a && isJust b then
                    Just (Symb_map s t p)
                  else
                    Nothing
@@ -1006,7 +1003,7 @@ pr_symb_or_map l (Symb_map s t p) =
 pr_symb :: Lattice a => CASL_SL a -> SYMB -> Maybe SYMB
 pr_symb _ (Symb_id i) = Just (Symb_id i)
 pr_symb l (Qual_id i t p) =
-        if (in_x l t sl_type) then
+        if in_x l t sl_type then
           Just (Qual_id i t p)
         else
           Nothing
@@ -1026,16 +1023,15 @@ pr_morphism l m =
 -- can be kept or removed as a whole
 --
 pr_pred_map :: CASL_SL a -> Pred_map -> Pred_map
-pr_pred_map l x = if (has_pred l) then x else Map.empty
+pr_pred_map l x = if has_pred l then x else Map.empty
 
 pr_op_map :: Lattice a => CASL_SL a -> Op_map -> Op_map
-pr_op_map l m = Map.filterWithKey (pr_op_map_entry l) m
+pr_op_map = Map.filterWithKey . pr_op_map_entry
 
-pr_op_map_entry :: Lattice a => CASL_SL a -> (Id, OpType)
-                 -> (Id, OpKind) -> Bool
+pr_op_map_entry :: Lattice a => CASL_SL a -> (Id, OpType) -> (Id, OpKind)
+    -> Bool
 pr_op_map_entry l (_, t) (_, b) =
-                 if (has_part l) then True
-                 else ((in_x l t sl_optype) && b == Partial)
+    has_part l || in_x l t sl_optype && b == Partial
 
 -- compute a morphism that consists of the original signature
 -- and the projected signature
