@@ -465,12 +465,14 @@ so-called \emph{pre-proving} function):
   base $(\mathcal{K},\eval)$)
 {\upshape
  \begin{algenumerate}
- \item If $\Gamma\in\mathcal{K}$, answer `provable' if
+ \item\label{step:look-up} If $\Gamma\in\mathcal{K}$, answer `provable' if
    $\eval(\Gamma)=\top$, else `unprovable'. Otherwise:
-   \item Try all possible applications of rules from $R_{sc}$ to $\Gamma$, 
-     giving precedence to linear rules. For every such rule application,
-     perform the following steps, and answer `provable' in case these steps
-     succeed for one of the rule applications.
+ \item\label{step:rule} Try all possible applications of rules from
+   $\mathcal{RO}_{sc}$ to $\Gamma$, giving precedence to linear rules,
+   where $\mathcal{RO}_{sc}$ is an optimised set of rules taking into
+   account the knowledge base, as explained below. For every such rule
+   application, perform the following steps, and answer `provable' in
+   case these steps succeed for one of the rule applications.
    \item Let $\Lambda$ denote the  set of premises  arising from the rule 
      application.
    \item Check recursively that every sequent in $\Lambda$ is provable.
@@ -480,45 +482,51 @@ so-called \emph{pre-proving} function):
 \end{alg}
 %\end{algorithm}
 
-% Algorithm~\ref{alg:optSeq} is very similar to Algorithm~\ref{alg:seq},
-% however, it uses a modified set of rules $\mathcal{RO}_{sc}$ and it
-% also allows for the input of some knowledge base
-% $(\mathcal{K},\eval)$. This knowledge base is passed on to the modified
-% modal rule of conditional logic, which makes appropriate use of it.
+\noindent Algorithm~\ref{alg:optSeq} is very similar to
+Algorithm~\ref{alg:seq} but relies on the knowledge base passed to it
+and moreover uses a modified set of rules $\mathcal{RO}_{sc}$. The set
+of rules $\mathcal{RO}_{sc}$ makes appropriate use of the knowledge
+base. It is obtained from $\mathcal{R}_{sc}$ by replacing the modal
+rule from Figure~\ref{fig:modalCKCEM} with the modified modal rule
+from Figure~\ref{fig:modalCKCEMm}. The point is that the premises
+$A_0=\dots=A_n$ are replaced by side conditions representing lookup in
+the knowledge base. This improves on standard memoising as embodied by
+the lookup operation in step~\ref{step:look-up} of the above algorithm
+in that existential branching over potentially applicable rules is
+reduced: the rule does not even match the target sequent unless the
+equivalence premises are already in the knowledge base. This is still
+a complete system due to the way memoising is organised, as explained
+below.
 
-% $\mathcal{RO}_{sc}$ is obtained from $\mathcal{R}_{sc}$ by replacing
-% the modal rule from Figure~\ref{fig:modalCKCEM} with the modified modal
-% rule from Figure~\ref{fig:modalCKCEMm}.
-
-% \begin{figure}[h!]
-%  \begin{center}
-%    \begin{tabular}{| c |}
-%    \hline
-%      \\[-5pt]
-%      (\textsc {\textbf{CKCEM}$^m$})\inferrule{\bigwedge{}_{i,j=\{1..n\}}{\eval(A_i=B_j)=\top}
- %                                    \\ B_0,\ldots, B_j,\neg B_{j+1},\ldots,\neg B_n}
- %                     {\Gamma, (A_0\Rightarrow B_0),\ldots,(A_j\Rightarrow B_j),
- %                     \neg(A_{j+1}\Rightarrow B_{j+1}),\ldots,\neg(A_n\Rightarrow B_n) } \\[-5pt]
- %     \\
- %   \hline
- %   \end{tabular}
- % \end{center}
- % \caption{The modified modal rule \textbf{CKCEM}$^m$ of conditional logic}
- % \label{fig:modalCKCEMm}
-%\end{figure}
+ \begin{figure}[h!]
+  \begin{center}
+    \begin{tabular}{| c |}
+    \hline
+      \\[-5pt]
+     (\textsc {\textbf{CKCEM}$^m$})\inferrule{B_0,\ldots, B_j,\neg B_{j+1},\ldots,\neg B_n}
+                     {\Gamma, (A_0\Rightarrow B_0),\ldots,(A_j\Rightarrow B_j),
+                     \neg(A_{j+1}\Rightarrow B_{j+1}),\ldots,\neg(A_n\Rightarrow B_n) } \\[-5pt]
+     \\
+     \hfill ($\bigwedge{}_{i,j\in\{1..n\}}{\eval(A_i=A_j)=\top}$)\\
+   \hline
+   \end{tabular}
+ \end{center}
+ \caption{The modified modal rule \textbf{CKCEM}$^m$ of conditional logic}
+ \label{fig:modalCKCEMm}
+\end{figure}
 
 %\begin{algorithm}[h]
 
-The knowledge based used in Algorithm~\ref{alg:opt} is computed in
-Algorithm~\ref{alg:preprove}. The algorithm proceeds by dynamic
-programming with stages corresponding to modal nesting depth, in the
-spirit of~\cite{Vardi89}.  Thus, in order to show the equivalence of
-two conditional antecedents of nesting depth at most $i$, we assume
-that the equivalences $\mathcal{K}_{i}$ between modal antecedents of
-nesting depth less than $i$ have already been computed and the result
-is stored in $\eval_i$; hence, two antecedents are equal, if their
-equivalence is provable by Algorithm~\ref{alg:optSeq} using only the
-knowledge base $(\mathcal{K}_{i},\eval_i)$.
+\noindent The knowledge base used in Algorithm~\ref{alg:opt} is
+computed in Algorithm~\ref{alg:preprove}. The algorithm proceeds by
+dynamic programming with stages corresponding to modal nesting depth,
+in the spirit of~\cite{Vardi89}.  Thus, in order to show the
+equivalence of two conditional antecedents of nesting depth at most
+$i$, we assume that the equivalences $\mathcal{K}_{i}$ between modal
+antecedents of nesting depth less than $i$ have already been computed
+and the result is stored in $\eval_i$; hence, two antecedents are
+equal, if their equivalence is provable by Algorithm~\ref{alg:optSeq}
+using only the knowledge base $(\mathcal{K}_{i},\eval_i)$.
 \begin{alg}
 \begin{upshape}
   Step 1: Take a formula $\phi$ as input. Set $i=0$, $\mathcal{K}_0=\emptyset$, $\eval_0=\emptyset$.\\
