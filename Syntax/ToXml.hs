@@ -161,7 +161,7 @@ rgAttrs :: Range -> [Attr]
 rgAttrs = rangeAttrsF $ show . prettyRange . map (\ p -> p { sourceName = "" })
 
 annos :: String -> GlobalAnnos -> [Annotation] -> [Element]
-annos str ga = subnodes "Annotations" . subnodes str
+annos str ga = subnodes str
   . map (annotationF rgAttrs ga)
 
 annoted :: (GlobalAnnos -> a -> Element) -> GlobalAnnos -> Annoted a -> Element
@@ -169,7 +169,8 @@ annoted f ga a = let
   e = f ga $ item a
   l = annos "Left" ga $ l_annos a
   r = annos "Right" ga $ r_annos a
-  in e { elContent = map Elem l ++ elContent e ++ map Elem r }
+  in e { elContent = elContent e
+         ++ map Elem (subnodes "Annotations" $ l ++ r) }
 
 withRg :: Range -> Element -> Element
 withRg = add_attrs . rgAttrs
