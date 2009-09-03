@@ -67,6 +67,7 @@ instance Comorphism CASL2HasCASL
              CasSub.Horn -> HasSub.Horn
              CasSub.GHorn -> HasSub.GHorn
              CasSub.FOL -> HasSub.FOL
+             CasSub.SOL -> HasSub.HOL
         }
     map_morphism CASL2HasCASL = return . mapMor
     map_sentence CASL2HasCASL sig = return . toSentence sig
