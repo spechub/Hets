@@ -286,6 +286,7 @@ data DGLinkOrigin =
 data DGRule =
     DGRule String
   | DGRuleWithEdge String (LEdge DGLinkLab)
+  | DGRuleLocalInference [(String, String)] -- renamed theorems
   | Composition [LEdge DGLinkLab]
   | BasicInference AnyComorphism BasicProof -- coding and proof tree. obsolete?
   | BasicConsInference Edge BasicConsProof
@@ -309,7 +310,7 @@ data ConsStatus = ConsStatus Conservativity Conservativity ThmLinkStatus
   deriving (Show, Eq)
 
 isProvenConsStatusLink :: ConsStatus -> Bool
-isProvenConsStatusLink c = not $ hasOpenConsStatus False c
+isProvenConsStatusLink = not . hasOpenConsStatus False
 
 mkConsStatus :: Conservativity -> ConsStatus
 mkConsStatus c = ConsStatus c None LeftOpen
@@ -1083,14 +1084,13 @@ localConsThm :: Conservativity -> DGLinkType
 localConsThm = localOrGlobalThm Local
 
 localOrGlobalThm :: Scope -> Conservativity -> DGLinkType
-localOrGlobalThm sc c =
-  ScopedLink sc (ThmLink LeftOpen) $ mkConsStatus c
+localOrGlobalThm sc = ScopedLink sc (ThmLink LeftOpen) . mkConsStatus
 
 localOrGlobalDef :: Scope -> Conservativity -> DGLinkType
-localOrGlobalDef sc c = ScopedLink sc DefLink $ mkConsStatus c
+localOrGlobalDef sc = ScopedLink sc DefLink . mkConsStatus
 
 globalConsDef :: Conservativity -> DGLinkType
-globalConsDef c = localOrGlobalDef Global c
+globalConsDef = localOrGlobalDef Global
 
 globalDef :: DGLinkType
 globalDef = localOrGlobalDef Global None

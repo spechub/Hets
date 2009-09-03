@@ -72,22 +72,24 @@ mapThSensValueM f = foldM (\ m (k, v) -> do
   return $ Map.insert k v { OMap.ele = ne } m) Map.empty . Map.toList
 
 mapThSensStatus :: (b -> c) -> ThSens a b -> ThSens a c
-mapThSensStatus f = OMap.map (mapStatus f)
+mapThSensStatus = OMap.map . mapStatus
 
 -- | join and disambiguate
 --
 -- * separate Axioms from Theorems
 --
 -- * don't merge sentences with same key but different contents?
-joinSens :: (Ord a,Eq b) => ThSens a b -> ThSens a b -> ThSens a b
-joinSens s1 s2 = let
+joinSensAux :: (Ord a, Eq b) => ThSens a b -> ThSens a b
+            -> (ThSens a b, [(String, String)])
+joinSensAux s1 s2 = let
     l1 = sortBy cmpSnd $ Map.toList s1
     updN n (_, e) = (n, e)
     m = OMap.size s1
-    l2 = map (\ (x,e) -> (x,e {OMap.order = m + OMap.order e })) $
+    l2 = map (\ (x, e) -> (x, e {OMap.order = m + OMap.order e })) $
          sortBy cmpSnd $ Map.toList s2
-    in Map.fromList $ mergeSens l1 $
-                         genericDisambigSens m fst updN (OMap.keysSet s1) l2
+    sl2 = genericDisambigSens m fst updN (OMap.keysSet s1) l2
+    in (Map.fromList $ mergeSens l1 sl2,
+         zipWith (\ (n1, _) (n2, _) -> (n1, n2)) l2 sl2)
     where mergeSens [] l2 = l2
           mergeSens l1 [] = l1
           mergeSens l1@((k1, e1) : r1) l2@((k2, e2) : r2) =
@@ -100,13 +102,16 @@ joinSens s1 s2 = let
                          : mergeSens r1 r2
               GT -> (k2, e2) : mergeSens l1 r2
 
+joinSens :: (Ord a, Eq b) => ThSens a b -> ThSens a b -> ThSens a b
+joinSens s1 = fst . joinSensAux s1
+
 cmpSnd :: (Ord a1) => (String, OMap.ElemWOrd (SenStatus a1 b))
        -> (String, OMap.ElemWOrd (SenStatus a1 b)) -> Ordering
 cmpSnd (_, a) (_, b) = cmpSenEle a b
 
 cmpSenEle :: (Ord a1) => OMap.ElemWOrd (SenStatus a1 b)
           -> OMap.ElemWOrd (SenStatus a1 b) -> Ordering
-cmpSenEle x y = case (OMap.ele x,OMap.ele y) of
+cmpSenEle x y = case (OMap.ele x, OMap.ele y) of
     (d1, d2) -> compare
       (sentence d1, isAxiom d1, isDef d1) (sentence d2, isAxiom d2, isDef d2)
 
@@ -156,7 +161,7 @@ toThSens = OMap.fromList . map
 data Theory sign sen proof_tree =
     Theory sign (ThSens sen (Proof_status proof_tree))
 
-mapTheoryStatus :: (a->b) -> Theory sign sentence a
+mapTheoryStatus :: (a -> b) -> Theory sign sentence a
                    -> Theory sign sentence b
 mapTheoryStatus f (Theory sig thSens) =
   Theory sig (mapThSensStatus (mapProofStatus f) thSens)
@@ -303,10 +308,12 @@ data ProverTemplate theory sentence morphism sublogics proof_tree = Prover
     } deriving Typeable
 
 type Prover sign sentence morphism sublogics proof_tree =
-  ProverTemplate (Theory sign sentence proof_tree) sentence morphism sublogics proof_tree
+  ProverTemplate (Theory sign sentence proof_tree)
+    sentence morphism sublogics proof_tree
 
 mkProverTemplate :: String -> sublogics
-                 -> (String -> theory -> [FreeDefMorphism sentence morphism] -> IO ([Proof_status proof_tree]))
+                 -> (String -> theory -> [FreeDefMorphism sentence morphism]
+                     -> IO [Proof_status proof_tree])
                  -> ProverTemplate theory sentence morphism sublogics proof_tree
 mkProverTemplate str sl fct = Prover
     { prover_name = str

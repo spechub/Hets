@@ -136,18 +136,17 @@ localInferenceAux ln (libEnv, dgraph) ledge@(src, tgt, edgeLab) = let
             Nothing -> noChange
             Just sentencesTgt ->
               -- check if all source axioms are also axioms in the target
-              let goals = OMap.filter isAxiom sensSrc
-                           `diffSens` sentencesTgt
+              let goals = diffSens (OMap.filter isAxiom sensSrc) sentencesTgt
                   goals' = markAsGoal goals
-                  newTh = case dgn_theory oldContents of
-                          G_theory lid sig ind sens ind' ->
-                           case coerceThSens lidSrc lid "" goals' of
-                             Nothing -> G_theory lid sig ind sens ind'
-                             Just goals'' ->
-                                 G_theory lid sig ind
-                                   (sens `joinSens` goals'') startThId
+                  (newTh, renms) = case dgn_theory oldContents of
+                    G_theory lid sig ind sens ind' ->
+                      case coerceThSens lidSrc lid "" goals' of
+                        Nothing -> (G_theory lid sig ind sens ind', [])
+                        Just goals'' ->
+                          let (newSens, rnms) = joinSensAux sens goals''
+                          in (G_theory lid sig ind newSens startThId, rnms)
                   newContents = oldContents { dgn_theory = newTh }
-                  locInferRule = DGRuleWithEdge "Local-Inference" ledge
+                  locInferRule = DGRuleLocalInference renms
                   newLab = edgeLab
                     { dgl_type = setProof (Proven locInferRule emptyProofBasis)
                         $ dgl_type edgeLab

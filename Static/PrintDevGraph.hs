@@ -208,6 +208,10 @@ dgRuleHeader :: DGRule -> String
 dgRuleHeader r = case r of
     DGRule str -> str
     DGRuleWithEdge str _ -> str
+    DGRuleLocalInference m -> "Local-Inference"
+      ++ "{" ++ intercalate ", "
+       (map (\ (s, t) -> if s == t then s else s ++ " -> " ++ t) m)
+      ++ "}"
     Composition _ -> "Composition"
     BasicInference _ _ -> "Basic-Inference"
     BasicConsInference _ _ -> "Basic-Cons-Inference"
