@@ -18,6 +18,7 @@ import Static.PrintDevGraph
 
 import Logic.Prover
 import Logic.Logic
+import Logic.Comorphism
 
 import Common.AS_Annotation
 import Common.ConvertGlobalAnnos
@@ -77,32 +78,39 @@ lnode ga lenv (_, lbl) = let nm = dgn_name lbl in
             [ add_attrs [ mkAttr "library" $ show $ getLIB_ID li
                         , mkAttr "node" $ getNameOfNode rf
                           $ lookupDGraph li lenv ]
-            $ unode "Reference" () ]
+            $ unode "Reference"
+            $ prettyElem "Signature" ga $ dgn_sign lbl ]
           DGNode orig cs ->
               unode "Origin" (dgOriginHeader orig)
-              : case dgOriginSpec orig of
+              : (case dgOriginSpec orig of
                   Nothing -> []
-                  Just si -> [unode "OriginSpec" $ tokStr si]
-              ++ case show $ pretty cs of
+                  Just si -> [unode "OriginSpec" $ tokStr si])
+              ++ (case show $ pretty cs of
                    "" -> []
-                   cstr -> [unode "ConsStatus" cstr]
+                   cstr -> [unode "ConsStatus" cstr])
+              ++ case orig of
+                   DGBasicSpec syms -> subnodes "Declarations"
+                     (map (prettyElem "Symbol" ga) $ Set.toList syms)
+                   _ -> []
       ++ case dgn_theory lbl of
-        G_theory lid (ExtSign sig syms) _ thsens _ ->
-           subnodes "Declarations"
-             (map (prettyElem "Symbol" ga) $ Set.toList syms) ++ let
+        G_theory lid (ExtSign sig _) _ thsens _ -> let
                  (axs, thms) = OMap.partition isAxiom $ OMap.map
                                (mapValue $ simplify_sen lid sig) thsens
-                 (prvn, unprvn) = OMap.partition isProvenSenStatus thms
                  in subnodes "Axioms"
-                    (map (mkSenNode ga "Axiom") $ toNamedList axs)
-                   ++ subnodes "ProvenTheorems"
-                    (map (mkSenNode ga "Theorem") $ toNamedList prvn)
-                   ++ subnodes "OpenGoals"
-                    (map (mkSenNode ga "Theorem") $ toNamedList unprvn)
+                    (map (mkAxNode ga) $ toNamedList axs)
+                    ++ subnodes "Theorems"
+                    (map (mkThmNode ga) $ OMap.toList thms)
 
-mkSenNode :: Pretty s => GlobalAnnos -> String -> SenAttr s String -> Element
-mkSenNode ga str s = add_attr (mkNameAttr $ senAttr s)
-  $ prettyElem str ga $ sentence s
+mkThmNode :: Pretty s => GlobalAnnos
+          -> (String, SenStatus s (AnyComorphism, BasicProof)) -> Element
+mkThmNode ga (n, s) = add_attrs
+  [ mkNameAttr n
+  , mkAttr "status" $ if isProvenSenStatus s then "proven" else "open" ]
+  $ prettyElem "Theorem" ga $ sentence s
+
+mkAxNode :: Pretty s => GlobalAnnos -> SenAttr s String -> Element
+mkAxNode ga s = add_attr (mkNameAttr $ senAttr s)
+  $ prettyElem "Axiom" ga $ sentence s
 
 ledge :: GlobalAnnos -> DGraph -> LEdge DGLinkLab -> Element
 ledge ga dg (f, t, lbl) = let orig = dgl_origin lbl in

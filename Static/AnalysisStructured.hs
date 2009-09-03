@@ -223,7 +223,8 @@ anaSpecAux conser addSyms lg dg nsig name opts sp = case sp of
                ("no basic analysis for logic " ++ language_name lid)
                (basic_analysis lid)
              b (bspec, sig, globalAnnos dg0)
-       let (ns, dg') = insGTheory dg0 name DGBasic
+       let gsysd = Set.map (G_symbol lid) sysd
+           (ns, dg') = insGTheory dg0 name (DGBasicSpec gsysd)
              $ G_theory lid (ExtSign sigma_complete
                $ Set.intersection
                      (if addSyms then Set.union sys sysd else sysd)

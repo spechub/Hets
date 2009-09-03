@@ -93,7 +93,8 @@ dgOriginSpec o = case o of
 dgOriginHeader :: DGOrigin -> String
 dgOriginHeader o = case o of
     DGEmpty -> "empty-spec"
-    DGBasic -> "basic-spec"
+    DGBasic -> "foreign-basic-spec"
+    DGBasicSpec _ -> "basic-spec"
     DGExtension -> "extension"
     DGTranslation -> "translation"
     DGUnion -> "union"
@@ -118,6 +119,9 @@ dgOriginHeader o = case o of
 
 instance Pretty DGOrigin where
   pretty o = text (dgOriginHeader o) <+> pretty (dgOriginSpec o)
+    <+> case o of
+          DGBasicSpec syms -> if Set.null syms then Doc.empty else pretty syms
+          _ -> Doc.empty
 
 instance Pretty DGNodeInfo where
   pretty c = case c of

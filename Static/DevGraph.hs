@@ -104,6 +104,7 @@ isInternal n = extIndex n /= 0 || not (null $ extString n)
 data DGOrigin =
     DGEmpty
   | DGBasic
+  | DGBasicSpec (Set.Set G_symbol)
   | DGExtension
   | DGTranslation
   | DGUnion
