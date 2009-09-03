@@ -290,10 +290,9 @@ anaSpecAux conser addSyms lg dg nsig name opts sp = case sp of
     return (Union newAsps pos, ns, dg')
   Extension asps pos -> do
    let namedSps = map (\ (asp, n) ->
-         if n < length asps then
-             (incBy n (extName "Extension" name), asp)
-         else (name { xpath = ChildIndex n : ElemName "Extension"
-                      : xpath name }, asp)) $ number asps
+         let nn = incBy n (extName "Extension" name) in
+         if n < length asps then (nn, asp)
+         else (name { xpath = xpath nn }, asp)) $ number asps
    (sps', nsig1', dg1, _, _) <- foldM (anaExtension lg opts pos)
      ([], nsig, dg, conser, addSyms) namedSps
    case nsig1' of
