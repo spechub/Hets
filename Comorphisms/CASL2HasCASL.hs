@@ -19,6 +19,7 @@ import Logic.Comorphism
 import Common.AS_Annotation
 import Common.Id
 import Common.ProofTree
+import Common.DocUtils
 
 import qualified Data.Map as Map
 import qualified Data.Set as Set
@@ -26,6 +27,7 @@ import qualified Data.Set as Set
 -- CASL
 import CASL.Logic_CASL
 import CASL.Sublogic as CasSub
+import CASL.Fold
 import qualified CASL.AS_Basic_CASL as Cas
 import qualified CASL.Sign as CasS
 import qualified CASL.Morphism as CasM
@@ -70,12 +72,27 @@ instance Comorphism CASL2HasCASL
              CasSub.SOL -> HasSub.HOL
         }
     map_morphism CASL2HasCASL = return . mapMor
-    map_sentence CASL2HasCASL sig = return . toSentence sig
+    map_sentence CASL2HasCASL _ = return . toSentence
     map_symbol CASL2HasCASL _ = Set.singleton . mapSym
     map_theory CASL2HasCASL = return . mapTheory
     has_model_expansion CASL2HasCASL = True
     is_weakly_amalgamable CASL2HasCASL = True
     isInclusionComorphism CASL2HasCASL = True
+
+fromOPTYPEAux :: Cas.OP_TYPE -> Type
+fromOPTYPEAux ot =
+    let (args, res, total, arr) = case ot of
+                   Cas.Op_type Cas.Total ars rs _ ->
+                       (ars, rs, True, FunArr)
+                   Cas.Op_type Cas.Partial ars rs _ ->
+                       (ars, rs, False, PFunArr)
+        resTy = toType res
+        in if null args then
+           if total then resTy else mkLazyType resTy
+           else mkFunArrType (mkProductType $ map toType args) arr resTy
+
+fromOPTYPE :: Cas.OP_TYPE -> TypeScheme
+fromOPTYPE = simpleTypeScheme . fromOPTYPEAux
 
 fromOpType :: CasS.OpType -> Cas.OpKind -> TypeScheme
 fromOpType ot ok =
@@ -90,20 +107,22 @@ fromOpType ot ok =
                 Cas.Total -> FunArr
                 Cas.Partial -> PFunArr) res
 
+fromPREDTYPE :: Cas.PRED_TYPE -> Type
+fromPREDTYPE (Cas.Pred_type args ps) =
+   if null args then mkLazyType $ unitTypeWithRange ps
+   else predType ps $ mkProductTypeWithRange (map toType args) ps
+
 fromPredType :: CasS.PredType -> TypeScheme
 fromPredType pt =
-    let args = map toType $ CasS.predArgs pt
-        p = getRange args
-        arg = mkProductTypeWithRange args p
-    in simpleTypeScheme $ if null args then mkLazyType $ unitTypeWithRange p
-                          else predType p arg
+    let args = CasS.predArgs pt
+    in simpleTypeScheme $ fromPREDTYPE $ Cas.Pred_type args $ getRange args
 
-mapTheory :: (CasS.Sign f e, [Named (Cas.FORMULA f)])
+mapTheory :: Pretty f => (CasS.Sign f e, [Named (Cas.FORMULA f)])
           -> (Env, [Named Sentence])
 mapTheory (sig, sents) =
     let constr = foldr getConstructors Set.empty sents
         env = mapSig constr sig
-        newSents = map (mapNamed (toSentence sig)) sents
+        newSents = map (mapNamed toSentence) sents
         in (env, newSents)
 
 getConstructors :: Named (Cas.FORMULA f) -> Set.Set (Id, CasS.OpType)
@@ -173,8 +192,8 @@ toVarDecl (Cas.Var_decl vs s ps) =
            map ( \ i -> GenVarDecl $
                  VarDecl (simpleIdToId i) (toType s) Other ps) vs
 
-toSentence :: CasS.Sign f e -> Cas.FORMULA f -> Sentence
-toSentence sig f = case f of
+toSentence :: Pretty f => Cas.FORMULA f -> Sentence
+toSentence f = case f of
    Cas.Sort_gen_ax cs b -> let
        (sorts, ops, smap) = Cas.recover_Sort_gen_ax cs
        genKind = if b then Free else Generated
@@ -194,80 +213,64 @@ toSentence sig f = case f of
           $ filter ( \ (_, t) -> CasS.opRes t == s)
                 $ map ( \ (Cas.Qual_op_name i t _) ->
                         (i, CasS.toOpType t)) ops) sorts
-   _ -> Formula $ toTerm sig f
+   _ -> Formula $ toTerm f
 
-toTerm :: CasS.Sign f e -> Cas.FORMULA f -> Term
-toTerm s f = case f of
-    Cas.Quantification q vs frm ps ->
-        QuantifiedTerm  (toQuant q)
-                        (concatMap toVarDecl vs) (toTerm s frm) ps
-    Cas.Conjunction fs ps ->
-        case map (toTerm s) fs of
-                [] -> unitTerm trueId ps
-                ts -> toBinJunctor andId ts ps
-    Cas.Disjunction fs ps ->
-        case map (toTerm s) fs of
-                [] -> unitTerm falseId ps
-                ts -> toBinJunctor orId ts ps
-    Cas.Implication f1 f2 b ps ->
-        let t1 = toTerm s f1
-            t2 = toTerm s f2
-            in if b then mkLogTerm implId ps t1 t2
-               else mkLogTerm infixIf ps t2 t1
-    Cas.Equivalence f1 f2 ps ->
-        mkLogTerm eqvId ps (toTerm s f1) $ toTerm s f2
-    Cas.Negation frm ps -> mkTerm notId notType [] ps $ toTerm s frm
-    Cas.True_atom ps -> unitTerm trueId ps
-    Cas.False_atom ps -> unitTerm falseId ps
-    Cas.Existl_equation t1 t2 ps ->
-        mkEqTerm exEq (typeOfTerm t1) ps (fromTERM s t1) $ fromTERM s t2
-    Cas.Strong_equation t1 t2 ps ->
-        mkEqTerm eqId (typeOfTerm t1) ps (fromTERM s t1) $ fromTERM s t2
-    Cas.Predication (Cas.Qual_pred_name i (Cas.Pred_type ts _) ps) args qs ->
-        let sc = simpleTypeScheme $ if null ts
-                 then mkLazyType $ unitTypeWithRange ps
-                 else predType ps $ mkProductTypeWithRange (map toType ts) ps
+toTerm :: Pretty f => Cas.FORMULA f -> Term
+toTerm f = foldFormula (transRecord $ showDoc f "") f
+
+transRecord :: String -> Record f Term Term
+transRecord str = let err = error $ "CASL2HasCASL.unexpected formula: " ++ str
+  in (constRecord err err err)
+  { foldQuantification = \ _ q -> QuantifiedTerm (toQuant q)
+        . concatMap toVarDecl
+  , foldConjunction = \ _ fs ps -> case fs of
+        [] -> unitTerm trueId ps
+        _ -> toBinJunctor andId fs ps
+  , foldDisjunction = \ _ fs ps -> case fs of
+        [] -> unitTerm falseId ps
+        _ -> toBinJunctor orId fs ps
+  , foldImplication = \ _ f1 f2 b ps -> if b then mkLogTerm implId ps f1 f2
+               else mkLogTerm infixIf ps f2 f1
+  , foldEquivalence = \ _ f1 f2 ps -> mkLogTerm eqvId ps f1 f2
+  , foldNegation = \ _ frm ps -> mkTerm notId notType [] ps frm
+  , foldTrue_atom = \ _ -> unitTerm trueId
+  , foldFalse_atom = \ _ -> unitTerm falseId
+  , foldExistl_equation = \ (Cas.Existl_equation c1 _ _) t1 t2 ps ->
+        mkEqTerm exEq (typeOfTerm c1) ps t1 t2
+  , foldStrong_equation = \ (Cas.Strong_equation c1 _ _) t1 t2 ps ->
+        mkEqTerm eqId (typeOfTerm c1) ps t1 t2
+  , foldPredication = \ _ (Cas.Qual_pred_name i pty@(Cas.Pred_type ts _) ps)
+        args qs ->
+        let sc = simpleTypeScheme $ fromPREDTYPE pty
             p = QualOp Pred (PolyId i [] ps) sc [] Infer ps
             in if null args then p else TypedTerm
               (ApplTerm p (mkTupleTerm (zipWith
-               (\ tr ty -> TypedTerm (fromTERM s tr) Inferred (toType ty) ps)
+               (\ tr ty -> TypedTerm tr Inferred (toType ty) ps)
                 args ts) qs) qs)
               Inferred unitType ps
-    Cas.Definedness t ps ->
-        mkTerm defId defType [typeOfTerm t] ps $ fromTERM s t
-    Cas.Membership t ty ps -> TypedTerm (fromTERM s t) InType (toType ty) ps
-    _ -> error "fromTERM"
-
-fromOP_TYPE :: Cas.OP_TYPE -> TypeScheme
-fromOP_TYPE ot =
-    let (args, res, total, arr) = case ot of
-                   Cas.Op_type Cas.Total ars rs _ ->
-                       (ars, rs, True, FunArr)
-                   Cas.Op_type Cas.Partial ars rs _ ->
-                       (ars, rs, False, PFunArr)
-        resTy = toType res
-        in simpleTypeScheme $ if null args then
-           if total then resTy else mkLazyType resTy
-           else mkFunArrType (mkProductType $ map toType args) arr resTy
-
-fromTERM :: CasS.Sign f e -> Cas.TERM f -> Term
-fromTERM s t = case t of
-    Cas.Qual_var v ty ps ->
-        QualVar $ VarDecl (simpleIdToId v) (toType ty) Other ps
-    Cas.Application (Cas.Qual_op_name i ot ps) args qs  ->
-        let o = QualOp Op (PolyId i [] ps) (fromOP_TYPE ot) [] Infer ps
+  , foldDefinedness = \ (Cas.Definedness c _) t ps ->
+        mkTerm defId defType [typeOfTerm c] ps t
+  , foldMembership = \ _ t -> TypedTerm t InType . toType
+  , foldQuantOp = \ _ o ty frm -> QuantifiedTerm Universal
+         [GenVarDecl $ VarDecl o (fromOPTYPEAux ty) Other nullRange]
+         frm nullRange
+  , foldQuantPred = \ _ p ty frm -> QuantifiedTerm Universal
+         [GenVarDecl $ VarDecl p (fromPREDTYPE ty) Other nullRange]
+         frm nullRange
+  , foldQual_var = \ _ v ty ->
+        QualVar . VarDecl (simpleIdToId v) (toType ty) Other
+  , foldApplication = \ _ (Cas.Qual_op_name i ot ps) args qs  ->
+        let o = QualOp Op (PolyId i [] ps) (fromOPTYPE ot) [] Infer ps
             at = CasS.toOpType ot
         in if null args then o else TypedTerm
            (ApplTerm o (mkTupleTerm (zipWith
-               (\ tr ty -> TypedTerm (fromTERM s tr) Inferred (toType ty) ps)
+               (\ tr ty -> TypedTerm tr Inferred (toType ty) ps)
                 args $ CasS.opArgs at) qs) qs)
            Inferred (toType $ CasS.opRes at) ps
-    Cas.Sorted_term trm ty ps ->
-        TypedTerm (fromTERM s trm) OfType (toType ty) ps
-    Cas.Cast trm ty ps -> TypedTerm (fromTERM s trm) AsType (toType ty) ps
-    Cas.Conditional t1 f t2 ps -> mkTerm whenElse whenType [typeOfTerm t1] ps $
-        TupleTerm [fromTERM s t1, toTerm s f, fromTERM s t2] ps
-    _ -> error "fromTERM"
+  , foldSorted_term = \ _ trm -> TypedTerm trm OfType . toType
+  , foldCast = \ _ trm -> TypedTerm trm AsType . toType
+  , foldConditional = \ (Cas.Conditional c1 _ _ _) t1 f t2 ps ->
+        mkTerm whenElse whenType [typeOfTerm c1] ps $ TupleTerm [t1, f, t2] ps }
 
 typeOfTerm :: Cas.TERM f -> Type
 typeOfTerm = toType . CasS.sortOfTerm
