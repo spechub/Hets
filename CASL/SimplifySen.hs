@@ -12,8 +12,15 @@ Simplification of formulas and terms for output after analysis
 
 -}
 
-module CASL.SimplifySen(simplifyCASLSen, simplifyCASLTerm, simplifySen, simplifyTerm, rmTypesT) where
+module CASL.SimplifySen
+  ( simplifyCASLSen
+  , simplifyCASLTerm
+  , simplifySen
+  , simplifyTerm
+  , rmTypesT
+  ) where
 
+import Common.AS_Annotation
 import Common.Id
 import Common.Result
 import Common.DocUtils
@@ -21,6 +28,7 @@ import Common.Lib.State
 import CASL.Sign
 import CASL.AS_Basic_CASL
 import CASL.Overload
+import CASL.StaticAna
 
 {- | simplifies formula\/term informations for 'show theory' of
    HETS-graph representation.  -}
@@ -38,7 +46,7 @@ simplifySen minF simpF sign formula =
     case formula of
     Quantification q vars f pos ->
             -- add 'vars' to signature
-           let (_, sign') = runState (mapM_ addVars vars) sign
+           let sign' = execState (mapM_ addVars vars) sign
            in Quantification q vars (simplifySen minF simpF sign' f) pos
     Conjunction fs pos -> Conjunction (map simplifySenCall fs) pos
     Disjunction fs pos -> Disjunction (map simplifySenCall fs) pos
@@ -55,6 +63,12 @@ simplifySen minF simpF sign formula =
     f@(Strong_equation _ _ _) -> anaFormulaCall f
     Membership t sort pos -> Membership (simplifyTermC t) sort pos
     ExtFORMULA f -> ExtFORMULA $ simpF sign f
+    QuantOp o ty f ->
+        let sign' = execState (addOp (emptyAnno ()) (toOpType ty) o) sign
+        in QuantOp o ty $ simplifySen minF simpF sign' f
+    QuantPred p ty f ->
+        let sign' = execState (addPred (emptyAnno ()) (toPredType ty) p) sign
+        in QuantPred p ty $ simplifySen minF simpF sign' f
     f@(Sort_gen_ax _ _) -> f
     _ -> error "simplifySen"
     where

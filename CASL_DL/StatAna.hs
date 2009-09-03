@@ -357,7 +357,7 @@ minDLForm sign form =
               foldl (\ (Result ds mv) pt ->
                          case predArgs pt of
                          (s:_)
-                             | leq_SORT sign v_sort s ->
+                             | leqSort sign v_sort s ->
                                  maybe (Result ds $ Just [toPRED_TYPE pt])
                                        (\ l -> Result ds $
                                                    Just $ l++[toPRED_TYPE pt])

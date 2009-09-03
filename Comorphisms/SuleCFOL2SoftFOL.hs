@@ -77,18 +77,18 @@ toCKType ct = case ct of
   COp _ -> CKOp
 
 -- | CASL Ids with Types mapped to SPIdentifier
-type IdType_SPId_Map = Map.Map Id (Map.Map CType SPIdentifier)
+type IdTypeSPIdMap = Map.Map Id (Map.Map CType SPIdentifier)
 
--- | specialized lookup for IdType_SPId_Map
-lookupSPId :: Id -> CType -> IdType_SPId_Map ->
+-- | specialized lookup for IdTypeSPIdMap
+lookupSPId :: Id -> CType -> IdTypeSPIdMap ->
           Maybe SPIdentifier
 lookupSPId i t = maybe Nothing (Map.lookup t) . Map.lookup i
 
--- | specialized insert (with error) for IdType_SPId_Map
+-- | specialized insert (with error) for IdTypeSPIdMap
 insertSPId :: Id -> CType ->
               SPIdentifier ->
-              IdType_SPId_Map ->
-              IdType_SPId_Map
+              IdTypeSPIdMap ->
+              IdTypeSPIdMap
 insertSPId i t spid m =
     assert (checkIdentifier (toCKType t) $ show spid) $
     Map.insertWith (Map.unionWith err) i (Map.insert t spid Map.empty) m
@@ -97,8 +97,8 @@ insertSPId i t spid m =
                        "\" can't be mapped to different SoftFOL identifiers")
 
 deleteSPId :: Id -> CType ->
-              IdType_SPId_Map ->
-              IdType_SPId_Map
+              IdTypeSPIdMap ->
+              IdTypeSPIdMap
 deleteSPId i t m =
     maybe m (\ m2 -> let m2' = Map.delete t m2
                      in if Map.null m2'
@@ -106,9 +106,9 @@ deleteSPId i t m =
                            else Map.insert i m2' m) $
           Map.lookup i m
 
--- | specialized elems into a set for IdType_SPId_Map
-elemsSPId_Set :: IdType_SPId_Map -> Set.Set SPIdentifier
-elemsSPId_Set = Map.fold (\ m res -> Set.union res
+-- | specialized elems into a set for IdTypeSPIdMap
+elemsSPIdSet :: IdTypeSPIdMap -> Set.Set SPIdentifier
+elemsSPIdSet = Map.fold (\ m res -> Set.union res
                                       (Set.fromList (Map.elems m)))
                          Set.empty
 
@@ -121,7 +121,7 @@ sigTrCASL _ _ = id
 
 -- extended formula translation
 type FormulaTranslator f e =
-    CSign.Sign f e -> IdType_SPId_Map -> f -> SPTerm
+    CSign.Sign f e -> IdTypeSPIdMap -> f -> SPTerm
 
 -- extended formula translation for CASL
 formTrCASL :: FormulaTranslator () ()
@@ -186,9 +186,9 @@ instance Comorphism SuleCFOL2SoftFOLInduction
 
 ---------------------------- Signature -----------------------------
 
-transFuncMap :: IdType_SPId_Map ->
+transFuncMap :: IdTypeSPIdMap ->
                 CSign.Sign e f ->
-                (FuncMap, IdType_SPId_Map)
+                (FuncMap, IdTypeSPIdMap)
 transFuncMap idMap sign =
     Map.foldWithKey toSPOpType (Map.empty,idMap) (CSign.opMap sign)
     where toSPOpType iden typeSet (fm,im) =
@@ -206,13 +206,12 @@ transFuncMap idMap sign =
               where insOIdSet tset (fm',im') =
                         let sid' = sid fm' (Set.findMax tset)
                         in (Map.insert sid' (Set.map transOpType tset) fm',
-                            Set.fold (\ x y ->
-                                          insertSPId iden (COp x) sid' y)
+                            Set.fold (\ x -> insertSPId iden (COp x) sid')
                                      im' tset)
                     sid fma t = disSPOId CKOp (transId CKOp iden)
                                        (uType (transOpType t))
                                        (Set.union (Map.keysSet fma)
-                                           (elemsSPId_Set idMap))
+                                           (elemsSPIdSet idMap))
                     uType t = fst t ++ [snd t]
 
 -- 1. devide into sets with different arities
@@ -232,9 +231,9 @@ partOverload :: Ord a => (a -> a -> Bool) -> Set.Set (Set.Set a)
 partOverload leq =
   Set.fold (Set.union . Set.fromList . Rel.partSet leq) Set.empty
 
-transPredMap :: IdType_SPId_Map ->
+transPredMap :: IdTypeSPIdMap ->
                 CSign.Sign e f ->
-                (PredMap, IdType_SPId_Map,[Named SPTerm])
+                (PredMap, IdTypeSPIdMap,[Named SPTerm])
 transPredMap idMap sign =
     Map.foldWithKey toSPPredType (Map.empty,idMap,[]) (CSign.predMap sign)
     where toSPPredType iden typeSet (fm,im,sen) =
@@ -257,13 +256,12 @@ transPredMap idMap sign =
               where insOIdSet tset (fm',im') =
                         let sid' = sid fm' (Set.findMax tset)
                         in (Map.insert sid' (Set.map transPredType tset) fm',
-                            Set.fold (\ x y ->
-                                          insertSPId iden (CPred x) sid' y)
+                            Set.fold (\ x -> insertSPId iden (CPred x) sid')
                                      im' tset)
                     sid fma t = disSPOId CKPred (transId CKPred iden)
                                        (transPredType t)
                                        (Set.union (Map.keysSet fma)
-                                           (elemsSPId_Set idMap))
+                                           (elemsSPIdSet idMap))
 
 -- left typing implies right typing; explicit overloading sentences
 -- are generated from these pairs, type TypePair = (CType,CType)
@@ -322,9 +320,9 @@ transPredType = map transIdSort . CSign.predArgs
 transIdSort :: Id -> SPIdentifier
 transIdSort = transId CKSort
 
-integrateGenerated :: IdType_SPId_Map -> [Named (FORMULA f)] ->
+integrateGenerated :: IdTypeSPIdMap -> [Named (FORMULA f)] ->
                       SPSign.Sign ->
-                      Result (IdType_SPId_Map, SPSign.Sign, [Named SPTerm])
+                      Result (IdTypeSPIdMap, SPSign.Sign, [Named SPTerm])
 integrateGenerated idMap genSens sign
     | null genSens = return (idMap,sign,[])
     | otherwise =
@@ -356,8 +354,8 @@ integrateGenerated idMap genSens sign
                                             exhaustSens))))
                   mv
 
-makeGenGoals :: IdType_SPId_Map -> [Named (FORMULA f)]
-             -> (PredMap, IdType_SPId_Map, [Named SPTerm])
+makeGenGoals :: IdTypeSPIdMap -> [Named (FORMULA f)]
+             -> (PredMap, IdTypeSPIdMap, [Named SPTerm])
 makeGenGoals idMap fs =
   let Result _ res = makeGens idMap fs
   in case res of
@@ -377,8 +375,8 @@ makeGenGoals idMap fs =
 only one goal, but additional symbols, axioms and a goal
  -}
 
-makeGens :: IdType_SPId_Map -> [Named (FORMULA f)]
-         -> Result (SortMap, FuncMap, IdType_SPId_Map,[Named SPTerm])
+makeGens :: IdTypeSPIdMap -> [Named (FORMULA f)]
+         -> Result (SortMap, FuncMap, IdTypeSPIdMap,[Named SPTerm])
             -- ^ The list of SoftFOL sentences gives exhaustiveness for
             -- generated sorts with only constant constructors
             -- and\/or subsort injections, by simply translating
@@ -394,10 +392,10 @@ makeGens idMap fs =
                              opM,idMap',exhaustSens)))
               mv
 
-makeGen :: Result (FuncMap, IdType_SPId_Map,
+makeGen :: Result (FuncMap, IdTypeSPIdMap,
                    [(SPIdentifier,Maybe Generated)],[Named SPTerm])
         -> Named (FORMULA f)
-        -> Result (FuncMap, IdType_SPId_Map,
+        -> Result (FuncMap, IdTypeSPIdMap,
                    [(SPIdentifier,Maybe Generated)],[Named SPTerm])
 makeGen r@(Result ods omv) nf =
     maybe (Result ods Nothing) process omv where
@@ -442,7 +440,7 @@ makeGen r@(Result ods omv) nf =
             disjunct v o@(Qual_op_name _ (Op_type _ args _ _) _) =
               -- a constant? then just compare with it
               if nullArgs o then mkEq (varTerm v)
-                                        (varTerm $ transOP_SYMB iMap o)
+                                        (varTerm $ transOPSYMB iMap o)
                 -- an injection? then quantify existentially
                 -- (for the injection's argument)
                 -- since injections are identities, we can leave them out
@@ -465,15 +463,15 @@ makeGen r@(Result ods omv) nf =
             var2 = mkSimpleId $ var ++ "a"
             varTerm = simpTerm . spSym
             newName s = "ga_exhaustive_generated_sort_" ++ show (pretty s)
-            usedIds = elemsSPId_Set iMap
+            usedIds = elemsSPIdSet iMap
             nullArgs o = case o of
                          Qual_op_name _ (Op_type _ args _ _) _ -> null args
                          _ -> error "SuleCFOL2SoftFOL: wrong constructor"
   _ -> r
 
-mkInjOp :: (FuncMap, IdType_SPId_Map)
+mkInjOp :: (FuncMap, IdTypeSPIdMap)
         -> OP_SYMB
-        -> ((FuncMap,IdType_SPId_Map),
+        -> ((FuncMap,IdTypeSPIdMap),
             (SPIdentifier,([SPIdentifier],SPIdentifier)))
 mkInjOp (opM,idMap) qo@(Qual_op_name i ot _) =
     if isInjName i && isNothing lsid
@@ -493,7 +491,7 @@ mkInjOp (opM,idMap) qo@(Qual_op_name i ot _) =
           utype t = fst t ++ [snd t]
 mkInjOp _ _ = error "SuleCFOL2SoftFOL.mkInjOp: Wrong constructor!!"
 
-mkInjSentences :: IdType_SPId_Map
+mkInjSentences :: IdTypeSPIdMap
                -> FuncMap
                -> [Named SPTerm]
 mkInjSentences idMap = Map.foldWithKey genInjs []
@@ -512,14 +510,14 @@ mkInjSentences idMap = Map.foldWithKey genInjs []
             fromJust (find (\ x -> not (Set.member (mkSimpleId x) usedIds))
                           ("Y" : [ 'Y' : show i | i <- [(1::Int)..]]))
           newName o a r = "ga_" ++ o ++ '_' : a ++ '_' : r ++ "_id"
-          usedIds = elemsSPId_Set idMap
+          usedIds = elemsSPIdSet idMap
 
 {- |
   Translate a CASL signature into SoftFOL signature 'SoftFOL.Sign.Sign'.
   Before translating, eqPredicate symbols where removed from signature.
 -}
 transSign :: CSign.Sign f e ->
-             (SPSign.Sign, IdType_SPId_Map, [Named SPTerm])
+             (SPSign.Sign, IdTypeSPIdMap, [Named SPTerm])
 transSign sign = (SPSign.emptySign { SPSign.sortRel =
                                  Rel.map transIdSort (CSign.sortRel sign)
                            , sortMap = spSortMap
@@ -553,10 +551,10 @@ nonEmptySortSens emptySorts sm =
           newVar s = fromJust $ find (/= show s)
                           $ "Y" : ['Y' : show i | i <- [(1::Int)..]]
 
-disjointTopSorts :: CSign.Sign f e -> IdType_SPId_Map -> [Named SPTerm]
+disjointTopSorts :: CSign.Sign f e -> IdTypeSPIdMap -> [Named SPTerm]
 disjointTopSorts sign idMap = let
     s = CSign.sortSet sign
-    sl = Rel.partSet (have_common_supersorts True sign) s
+    sl = Rel.partSet (haveCommonSupersorts True sign) s
     l = map (\ p -> case keepMinimals1 False sign id $ Set.toList p of
                        [e] -> e
                        _ -> error "disjointTopSorts") sl
@@ -696,17 +694,17 @@ hasSortedVarTerm t = case t of
 
 ------------------------------ Formulas ------------------------------
 
-transOP_SYMB :: IdType_SPId_Map -> OP_SYMB -> SPIdentifier
-transOP_SYMB idMap qo@(Qual_op_name op ot _) =
-    fromMaybe (error $ "SuleCFOL2SoftFOL.transOP_SYMB: unknown op: " ++ show qo)
+transOPSYMB :: IdTypeSPIdMap -> OP_SYMB -> SPIdentifier
+transOPSYMB idMap qo@(Qual_op_name op ot _) =
+    fromMaybe (error $ "SuleCFOL2SoftFOL.transOPSYMB: unknown op: " ++ show qo)
         (lookupSPId op (COp (CSign.toOpType ot)) idMap)
-transOP_SYMB _ (Op_name _) = error "SuleCFOL2SoftFOL: unqualified operation"
+transOPSYMB _ (Op_name _) = error "SuleCFOL2SoftFOL: unqualified operation"
 
-transPRED_SYMB :: IdType_SPId_Map -> PRED_SYMB -> SPIdentifier
-transPRED_SYMB idMap qp@(Qual_pred_name p pt _) = fromMaybe
-    (error $ "SuleCFOL2SoftFOL.transPRED_SYMB: unknown pred: " ++ show qp)
+transPREDSYMB :: IdTypeSPIdMap -> PRED_SYMB -> SPIdentifier
+transPREDSYMB idMap qp@(Qual_pred_name p pt _) = fromMaybe
+    (error $ "SuleCFOL2SoftFOL.transPREDSYMB: unknown pred: " ++ show qp)
           (lookupSPId p (CPred (CSign.toPredType pt)) idMap)
-transPRED_SYMB _ (Pred_name _) =
+transPREDSYMB _ (Pred_name _) =
     error "SuleCFOL2SoftFOL: unqualified predicate"
 
 -- |
@@ -718,9 +716,9 @@ quantify q = case q of
     Unique_existential ->
       error "SuleCFOL2SoftFOL: no translation for existential quantification."
 
-transVarTup :: (Set.Set SPIdentifier,IdType_SPId_Map) ->
+transVarTup :: (Set.Set SPIdentifier,IdTypeSPIdMap) ->
                (VAR,SORT) ->
-               ((Set.Set SPIdentifier,IdType_SPId_Map),
+               ((Set.Set SPIdentifier,IdTypeSPIdMap),
                 (SPIdentifier,SPIdentifier))
                 -- ^ ((new set of used Ids,new map of Ids to original Ids),
                 --   (var as sp_Id,sort as sp_Id))
@@ -747,7 +745,7 @@ mapSen siSo trForm sign = transFORM siSo Set.empty sign
 transFORM :: (Eq f, Pretty f) => Bool -- ^ single sorted flag
           -> Set.Set PRED_SYMB -- ^ list of predicates to substitute
           -> CSign.Sign f e
-          -> IdType_SPId_Map -> FormulaTranslator f e
+          -> IdTypeSPIdMap -> FormulaTranslator f e
           -> FORMULA f -> SPTerm
 transFORM siSo eqPreds sign i tr phi = transFORMULA siSo sign i tr phi'
     where phi' = codeOutConditionalF id
@@ -755,7 +753,7 @@ transFORM siSo eqPreds sign i tr phi = transFORMULA siSo sign i tr phi'
                           (substEqPreds eqPreds id phi))
 
 
-transFORMULA :: Pretty f => Bool -> CSign.Sign f e -> IdType_SPId_Map
+transFORMULA :: Pretty f => Bool -> CSign.Sign f e -> IdTypeSPIdMap
              -> FormulaTranslator f e -> FORMULA f -> SPTerm
 transFORMULA siSo sign idMap tr (Quantification qu vdecl phi _) =
     SPQuantTerm (quantify qu)
@@ -768,7 +766,7 @@ transFORMULA siSo sign idMap tr (Quantification qu vdecl phi _) =
                                      else uncurry typedVarTerm)
                             e'))
                         (sidSet,idMap) (flatVAR_DECLs vdecl)
-          sidSet = elemsSPId_Set idMap
+          sidSet = elemsSPIdSet idMap
 transFORMULA siSo sign idMap tr (Conjunction phis _) =
   if null phis then simpTerm SPTrue
   else foldl1 mkConj (map (transFORMULA siSo sign idMap tr) phis)
@@ -786,7 +784,7 @@ transFORMULA siSo sign idMap tr (Negation phi _) =
 transFORMULA _siSo _sign _idMap _tr (True_atom _)  = simpTerm SPTrue
 transFORMULA _siSo _sign _idMap _tr (False_atom _) = simpTerm SPFalse
 transFORMULA siSo sign idMap tr (Predication psymb args _) =
-  compTerm (spSym (transPRED_SYMB idMap psymb))
+  compTerm (spSym (transPREDSYMB idMap psymb))
            (map (transTERM siSo sign idMap tr) args)
 transFORMULA siSo sign idMap tr (Existl_equation t1 t2 _)
     | sortOfTerm t1 == sortOfTerm t2 =
@@ -809,14 +807,14 @@ transFORMULA _ _ _ _ f =
     error ("SuleCFOL2SoftFOL.transFORMULA: unknown FORMULA '" ++ showDoc f "'")
 
 
-transTERM :: Pretty f => Bool -> CSign.Sign f e -> IdType_SPId_Map
+transTERM :: Pretty f => Bool -> CSign.Sign f e -> IdTypeSPIdMap
           -> FormulaTranslator f e -> TERM f -> SPTerm
 transTERM _siSo _sign idMap _tr (Qual_var v s _) =
   maybe (error
          ("SuleCFOL2SoftFOL.tT: no SoftFOL Id found for \"" ++ showDoc v "\""))
         (simpTerm . spSym) (lookupSPId (simpleIdToId v) (CVar s) idMap)
 transTERM siSo sign idMap tr (Application opsymb args _) =
-    compTerm (spSym (transOP_SYMB idMap opsymb))
+    compTerm (spSym (transOPSYMB idMap opsymb))
              (map (transTERM siSo sign idMap tr) args)
 
 transTERM _siSo _sign _idMap _tr (Conditional _t1 _phi _t2 _) =
@@ -858,8 +856,7 @@ extractCASLModel sign (ProofTree output) =
             (COp ot, Nothing) | null (opArgs ot) -> True
             _ -> False) nm
           os = opMap sign
-          nos = foldr (\ (i, (COp ot, _)) m ->
-              addOpTo (simpleIdToId i) ot m) os
+          nos = foldr (\ (i, (COp ot, _)) -> addOpTo (simpleIdToId i) ot) os
             $ Map.toList nops
           nsign = sign { opMap = nos }
       sens <- mapM (\ (n, f) -> do
@@ -870,7 +867,7 @@ extractCASLModel sign (ProofTree output) =
 
 type RMap = Map.Map SPIdentifier (CType, Maybe Id)
 
-getSignMap :: IdType_SPId_Map -> RMap
+getSignMap :: IdTypeSPIdMap -> RMap
 getSignMap =
   foldr (\ (i, m) g -> foldr (\ (t, s) -> case t of
        CSort -> Map.insert s (CPred $ PredType [i], Nothing)
@@ -916,7 +913,7 @@ toForm sign m t = case t of
             rm = foldr Map.delete m vs
         (nm, nf) <- toForm sign rm frm
         let m2 = foldr Map.delete nm vs
-            nvs = catMaybes $ map (toVar nm) vars
+            nvs = mapMaybe (toVar nm) vars
         return (Map.union m m2, Quantification (toQuant q) nvs nf nullRange)
     SPComplexTerm SPEqual [a1, a2] -> do
         let nm = case (getType m a1, getType m a2) of
@@ -934,7 +931,7 @@ toForm sign m t = case t of
                 findTypes sign t2 (findTypes sign t1 m a1) a2
         let check = case (getType nm a1, getType nm a2) of
               (Just t1, Just t2) -> t1 == t2
-                || have_common_supersorts True sign t1 t2
+                || haveCommonSupersorts True sign t1 t2
               _ -> True
         return $ case (toTERM nm a1, toTERM nm a2) of
             (Just t3, Just t4) | check ->
