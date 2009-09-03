@@ -208,10 +208,7 @@ dgRuleHeader :: DGRule -> String
 dgRuleHeader r = case r of
     DGRule str -> str
     DGRuleWithEdge str _ -> str
-    DGRuleLocalInference m -> "Local-Inference"
-      ++ "{" ++ intercalate ", "
-       (map (\ (s, t) -> if s == t then s else s ++ " -> " ++ t) m)
-      ++ "}"
+    DGRuleLocalInference _ -> "Local-Inference"
     Composition _ -> "Composition"
     BasicInference _ _ -> "Basic-Inference"
     BasicConsInference _ _ -> "Basic-Cons-Inference"
@@ -219,6 +216,9 @@ dgRuleHeader r = case r of
 instance Pretty DGRule where
   pretty r = let es = dgRuleEdges r in fsep
     [ text (dgRuleHeader r) <> if null es then Doc.empty else colon, case r of
+    DGRuleLocalInference m ->
+        braces $ sepByCommas $ map (\ (s, t) ->
+          let d = text s in if s == t then d else pairElems d $ text t) m
     BasicInference c bp -> fsep
       [ text $ "using comorphism '" ++ show c ++ "' with proof tree:"
       , text $ show bp]
