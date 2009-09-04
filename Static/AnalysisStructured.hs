@@ -315,7 +315,7 @@ anaSpecAux conser addSyms lg dg nsig name opts sp = case sp of
           adj = adjustPos poss
           lname = extName "Local" name
       (sp2, nsig'@(NodeSig _ (G_sign lid' sigma' _)), dg') <-
-        anaSpec False lg dg nsig lname opts sp1
+        anaSpec False lg dg nsig (extName "Spec" lname) opts sp1
       (sp2', NodeSig n'' (G_sign lid'' sigma'' _), dg'') <-
         anaSpec False lg dg' (JustNode nsig') (extName "Within" lname) opts sp1'
       let gsigma = getMaybeSig nsig
@@ -349,7 +349,7 @@ anaSpecAux conser addSyms lg dg nsig name opts sp = case sp of
           l = getLogic nsig
       -- analyse spec with empty local env
       (sp', NodeSig n' gsigma', dg') <-   -- choose a unique starting letter
-          anaSpec False lg dg (EmptyNode l) (extName "closed" name) opts sp1
+          anaSpec False lg dg (EmptyNode l) (extName "Closed" name) opts sp1
       let gsigma = getMaybeSig nsig
           adj = adjustPos pos
       gsigma'' <- adj $ gsigUnion lg gsigma gsigma'

@@ -78,7 +78,7 @@ spec ga s = case s of
   Free_spec as rg -> withRg rg $ unode "Free" $ annoted spec ga as
   Cofree_spec as rg -> withRg rg $ unode "Cofree" $ annoted spec ga as
   Local_spec as ins rg -> withRg rg $ unode "Local"
-    [annoted spec ga as , unode "Within" $ annoted spec ga ins]
+    [unode "Spec" $ annoted spec ga as, unode "Within" $ annoted spec ga ins]
   Closed_spec as rg -> withRg rg $ unode "Closed" $ annoted spec ga as
   Group as rg -> withRg rg $ unode "Group" $ annoted spec ga as
   Spec_inst n fa rg ->
