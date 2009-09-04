@@ -189,7 +189,7 @@ need_hol = need_pred { which_logic = HOL }
 -- | make sublogic consistent w.r.t. illegal combinations
 sublogicUp :: Sublogic -> Sublogic
 sublogicUp s =
-    if which_logic s /= HOL && has_sub s then s { has_pred = True } else s
+    if which_logic s == HOL || has_sub s then s { has_pred = True } else s
 
 -- | generate a list of all sublogics for HasCASL
 sublogics_all :: [Sublogic]
