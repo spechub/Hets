@@ -14,6 +14,7 @@ compute normal forms
 module Proofs.NormalForm
     ( normalFormLibEnv
     , normalForm
+    , freeness
     ) where
 
 import Logic.Logic
@@ -36,6 +37,12 @@ import Control.Monad
 
 import Logic.Grothendieck
 import Static.GTheory
+
+import Logic.Coerce
+import Logic.Comorphism
+import Logic.Prover(toNamedList, toThSens)
+import Logic.ExtSign
+import Common.ExtSign
 
 normalFormRule :: DGRule
 normalFormRule = DGRule "NormalForm"
@@ -229,4 +236,77 @@ buildGraph oGraph leaves nList eList nodeList =
                      map (\x -> (x, dijkstra oGraph n x)) accesLeaves
            in buildGraph oGraph leaves nList' (eList ++ eList') nodeList'
        -- branch, must add n to the nList and edges in eList
+
+freeness :: LIB_NAME -> LibEnv -> Result LibEnv
+freeness ln le = do
+  let dg = lookupDGraph ln le
+  newDg <- freenessDG le dg
+  return $ Map.insert ln
+    (groupHistory dg normalFormRule newDg) le
+
+freenessDG :: LibEnv -> DGraph -> Result DGraph
+freenessDG le dgraph = foldM (
+ \ dg edge@(m, n, x) ->
+    case dgl_type x of
+     FreeOrCofreeDefLink _ _ -> do
+      let phi = dgl_morphism x
+          gth= dgn_theory $ labDG dg m
+      case gth of
+       G_theory lid sig _ sen _ -> do
+        case phi of
+         GMorphism cid _ _ mor1 _ -> do
+          mor <- coerceMorphism (targetLogic cid) lid "free" mor1
+          (sigK, iota, axK) <- quotient_term_algebra lid mor $ toNamedList sen
+          let thK = G_theory lid (makeExtSign lid sigK)
+                             startSigId (toThSens axK) startThId
+          let thM' = noSensGTheory lid sig startSigId
+              iotaM' = gEmbed $ mkG_morphism lid iota
+          incl <- subsig_inclusion lid (plainSign sig) sigK
+          let inclM = gEmbed $ mkG_morphism lid incl
+      -- m' with signature = sig, no sentences
+      -- remove x
+      -- add nodes
+      -- k  with signature = sigK, sentences axK
+      -- global def links from m and m' to k, mapped with incl, resp iota
+      -- hiding def link from k to n, labeled with inclusion
+              m' = getNewNodeDG dg -- new node
+              nodelab = labDG dg m
+              info = nodeInfo nodelab
+              ConsStatus c cp pr = node_cons_status info
+              labelM' = newInfoNodeLab
+                  (extName "NormalForm" $ dgn_name nodelab)
+                  info
+                  { node_origin = DGNormalForm m
+                  , node_cons_status = mkConsStatus c }
+                  thM'
+            -- insert the new node and add edges from the predecessors
+              insM' = InsertNode (m', labelM')
+              k = (getNewNodeDG dg) + 1
+              labelK = newInfoNodeLab
+                  (extName "NormalForm" $ dgn_name nodelab)
+                  info
+                  { node_origin = DGNormalForm m
+                  , node_cons_status = mkConsStatus c }
+                  thK
+              insK = InsertNode (k, labelK)
+              insE = [InsertEdge (m,k,DGLink { dgl_morphism = inclM
+                                              , dgl_type = globalDef
+                                              , dgl_origin = DGLinkProof
+                                              , dgl_id = defaultEdgeId
+                                              }),
+                     InsertEdge (m',k,DGLink { dgl_morphism = iotaM'
+                                              , dgl_type = globalDef
+                                              , dgl_origin = DGLinkProof
+                                              , dgl_id = defaultEdgeId
+                                              }),
+                     InsertEdge (k, n,DGLink { dgl_morphism = inclM
+                                              , dgl_type = hidingThm inclM
+                                              , dgl_origin = DGLinkProof
+                                              , dgl_id = defaultEdgeId
+                                              })]
+              del = DeleteEdge edge
+              allChanges = del:insM' : insK : insE
+          return $ changesDGH dg allChanges
+     _ -> return dg
+ ) dgraph $ labEdgesDG dgraph
 

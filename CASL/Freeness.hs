@@ -17,7 +17,7 @@ import CASL.Sign
 import CASL.Morphism
 import CASL.Sublogic
 import CASL.StaticAna
-import CASL.Logic_CASL ()
+--import CASL.Logic_CASL ()
 import CASL.AS_Basic_CASL
 
 import Common.Id
@@ -35,27 +35,30 @@ import qualified Data.Set as Set
 
 quotientTermAlgebra :: CASLMor -- sigma : Sigma -> SigmaM
                     -> [Named CASLFORMULA] -- Th(M)
-                    -> Result (CASLMor, -- iota : SigmaM' -> SigmaK
+                    -> Result (CASLSign, -- SigmaK
+                               CASLMor, -- iota : SigmaM' -> SigmaK
                                [Named CASLFORMULA] -- Ax(K)
                               )
 quotientTermAlgebra sigma sens = case horn_clauses sens of
           False -> mkError "Not Horn clauses" sens
-          True -> let 
+          True -> let
                     sigma_m = mtarget sigma
                     iota_mor = create_iota_mor sigma_m
                     sigma_k = mtarget iota_mor
                     axs = create_axs (sortSet $ msource sigma) sigma_m sigma_k sens
-                  in return (iota_mor, axs)
+                  in return (sigma_k, iota_mor, axs)
 
--- | checks if the formulas are horn clauses
-horn_clauses :: [Named CASLFORMULA] -> Bool
-horn_clauses = foldr ((&&) . horn_clause) True
+horn_clauses _ = True
 
--- | check if the formula is a horn clause
-horn_clause :: Named CASLFORMULA -> Bool
-horn_clause sen = sl' == Atomic || sl' == Horn
-      where sl = minSublogic $ sentence sen :: CASL_SL ()
-            sl' = which_logic sl
+-- -- | checks if the formulas are horn clauses
+-- horn_clauses :: [Named CASLFORMULA] -> Bool
+-- horn_clauses = foldr ((&&) . horn_clause) True
+
+-- -- | check if the formula is a horn clause
+-- horn_clause :: Named CASLFORMULA -> Bool
+-- horn_clause sen = sl' == Atomic || sl' == Horn
+--       where sl = minSublogic $ sentence sen :: CASL_SL ()
+--             sl' = which_logic sl
 
 -- | generates the axioms of the module K
 create_axs :: Set.Set SORT -> CASLSign -> CASLSign -> [Named CASLFORMULA]
@@ -81,7 +84,7 @@ create_axs sg_ss sg_m sg_k sens = concat [ctor_sen, h_axs_ops, h_axs_preds, h_ax
 larger_then_ker_h :: Set.Set SORT -> Map.Map Id (Set.Set PredType) -> CASLFORMULA
 larger_then_ker_h ss mis = conj
      where ltkhs = ltkh_sorts ss
-           ltkhp = ltkh_preds mis 
+           ltkhp = ltkh_preds mis
            conj = mk_conj (ltkhs ++ ltkhp)
 
 -- | computes the second part of the conjunction of the formula "largerThanKerH"
@@ -476,7 +479,7 @@ homomorphism_ops ss om = Set.fold f om ss
     where op_id = mkId [mkSimpleId "hom"]
           ot = \ sort -> OpType Partial [mkFreeName sort] sort
           f = \ x y -> Map.insertWith (Set.union) op_id (Set.singleton $ ot x) y
-    
+
 -- data OpType = OpType {opKind :: OpKind, opArgs :: [SORT], opRes :: SORT}
 -- type OpMap = Map.Map Id (Set.Set OpType)
 
@@ -617,9 +620,9 @@ getVarsTerm (Conditional t1 f t2 _) = Map.unionWith (Set.union) v3 m
            v3 = getVars f
            m = Map.unionWith (Set.union) v1 v2
 getVarsTerm (Mixfix_term ts) = foldr (Map.unionWith (Set.union) . getVarsTerm) Map.empty ts
-getVarsTerm (Mixfix_parenthesized ts _) = 
+getVarsTerm (Mixfix_parenthesized ts _) =
                    foldr (Map.unionWith (Set.union) . getVarsTerm) Map.empty ts
-getVarsTerm (Mixfix_bracketed ts _) = 
+getVarsTerm (Mixfix_bracketed ts _) =
                    foldr (Map.unionWith (Set.union) . getVarsTerm) Map.empty ts
 getVarsTerm (Mixfix_braced ts _) =
                    foldr (Map.unionWith (Set.union) . getVarsTerm) Map.empty ts

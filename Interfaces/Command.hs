@@ -32,6 +32,7 @@ data GlobCmd =
   | HideThmShift
   | Colimit
   | NormalForm
+  | Freeness
   | QualifyNames
   | UndoCmd
   | RedoCmd
@@ -70,6 +71,7 @@ menuTextGlobCmd cmd = case cmd of
   DisjointUnion -> "Disjoint union"
   Renaming -> "Renaming"
   Hiding -> "Hiding"
+  Freeness -> "Freeness"
   Heterogeneity -> "Heterogeneity"
   ProveCurrent -> "Prove"
   DropTranslation -> "Drop-Translations"

@@ -15,7 +15,7 @@ module Interfaces.CmdAction where
 
 import Proofs.QualifyNames (qualifyLibEnv)
 import Proofs.DGFlattening
-import Proofs.NormalForm (normalForm)
+import Proofs.NormalForm (normalForm, freeness)
 import Proofs.Automatic(automatic)
 import Proofs.Global (globSubsume, globDecomp)
 import Proofs.Local (localInference, locDecomp)
@@ -48,7 +48,8 @@ globLibResultAct :: [(GlobCmd, LIB_NAME -> LibEnv -> Result LibEnv)]
 globLibResultAct =
   [ (ThmHideShift, theoremHideShift)
   , (Colimit, computeColimit)
-  , (NormalForm, normalForm) ]
+  , (NormalForm, normalForm)
+  , (Freeness, freeness) ]
 
 globResultAct :: [(GlobCmd, LibEnv -> Result LibEnv)]
 globResultAct =
@@ -57,4 +58,4 @@ globResultAct =
   , (Renaming, libEnv_flattening_renamings)
   , (Hiding, libEnv_flattening_hiding)
   , (Heterogeneity, libEnv_flattening_heterogen)
-  , (QualifyNames, qualifyLibEnv) ]
+ ]

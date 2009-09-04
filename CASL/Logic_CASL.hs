@@ -50,6 +50,8 @@ import CASL.OMDoc
 import CASL.QuickCheck
 #endif
 
+import CASL.Freeness
+
 data CASL = CASL deriving Show
 
 instance Language CASL where
@@ -215,6 +217,7 @@ instance StaticAnalysis CASL CASLBasicSpec CASLFORMULA
          stat_symb_map_items CASL = statSymbMapItems
          stat_symb_items CASL = statSymbItems
          signature_colimit CASL diag = return $ signColimit diag extCASLColimit
+         quotient_term_algebra CASL = quotientTermAlgebra
          ensures_amalgamability CASL (opts, diag, sink, desc) =
              ensuresAmalgamability opts diag sink desc
 

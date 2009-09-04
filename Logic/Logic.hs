@@ -358,7 +358,8 @@ class ( Syntax lid basic_spec symb_items symb_map_items
              -> morphism -- sigma : Sigma -> SigmaM
              -> [Named sentence] -- Th(M)
              -> Result
-                 (morphism, -- iota : SigmaM' -> SigmaK
+                 (sign, -- SigmaK
+                  morphism, -- iota : SigmaM' -> SigmaK
                   [Named sentence] -- Ax(K)
                  )
          quotient_term_algebra l _ _ = statErr l "quotient_term_algebra"
