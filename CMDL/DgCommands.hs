@@ -24,37 +24,41 @@ module CMDL.DgCommands
        )where
 
 import Interfaces.DataTypes
-import Interfaces.Utils(emptyIntIState, getAllEdges, initNodeInfo)
+import Interfaces.Utils (emptyIntIState, getAllEdges, initNodeInfo)
 
-import CMDL.DataTypes(CMDL_PrompterState(fileLoaded),
-                      CMDL_State(prompter, intState))
-import CMDL.DataTypesUtils(getAllNodes, add2hist, genErrorMsg,
-                           genMessage, getIdComorphism)
-import CMDL.Utils(decomposeIntoGoals, obtainEdgeList, obtainNodeList,
-                  prettyPrintErrList)
+import CMDL.DataTypes
+    (CMDL_PrompterState(fileLoaded), CMDL_State(prompter, intState))
+import CMDL.DataTypesUtils
+    (getAllNodes, add2hist, genErrorMsg, genMessage, getIdComorphism)
+import CMDL.Utils
+    (decomposeIntoGoals, obtainEdgeList, obtainNodeList, prettyPrintErrList)
 
-import Proofs.AbstractState(ProofState(selectedGoals), getProvers, initialState)
-import Proofs.ComputeTheory(computeTheory)
-import Proofs.TheoremHideShift(theoremHideShiftFromList)
+import Proofs.AbstractState
+    (ProofState(selectedGoals), getProvers, initialState)
+import Proofs.ComputeTheory (computeTheory)
+import Proofs.TheoremHideShift (theoremHideShiftFromList)
 
-import Static.GTheory(G_theory(G_theory), sublogicOfTh)
-import Static.DevGraph(LibEnv, DGLinkLab, getDGNodeName)
-import Driver.AnaLib(anaLib, anaLibExt)
-import Driver.Options(defaultHetcatsOpts)
+import Static.GTheory (G_theory(G_theory), sublogicOfTh)
+import Static.DevGraph (LibEnv, DGLinkLab, getDGNodeName)
 
-import Common.LibName(LIB_NAME(getLIB_ID))
-import Common.Utils(trim)
+import Driver.AnaLib (anaLib, anaLibExt)
+import Driver.Options (hetcatsOpts)
 
-import Data.Graph.Inductive.Graph(LEdge)
-import Data.List((++), filter, find, take, concatMap)
+import Common.LibName (LIB_NAME(getLIB_ID))
+import Common.Utils (trim)
+import Common.Result (Diagnosis(diagString), Result(Result))
 
-import Comorphisms.KnownProvers(knownProversWithKind, shrinkKnownProvers)
-import Comorphisms.LogicGraph(logicGraph)
-import Common.Result(Diagnosis(diagString), Result(Result))
-import Logic.Comorphism(hasModelExpansion)
-import Logic.Grothendieck(findComorphismPaths)
-import Logic.Prover(ProverKind(ProveCMDLautomatic))
+import Comorphisms.KnownProvers (knownProversWithKind, shrinkKnownProvers)
+import Comorphisms.LogicGraph (logicGraph)
 
+import Logic.Comorphism (hasModelExpansion)
+import Logic.Grothendieck (findComorphismPaths)
+import Logic.Prover (ProverKind(ProveCMDLautomatic))
+
+import Data.Graph.Inductive.Graph (LEdge)
+import Data.List ((++), filter, find, take, concatMap)
+
+import System.Environment
 
 -- | Wraps Result structure around the result of a dg all style command
 wrapResultDgAll :: (LIB_NAME->LibEnv -> LibEnv) ->
@@ -145,8 +149,9 @@ commandDg fn input state
 cUse::String ->CMDL_State -> IO CMDL_State
 cUse input state
  = do
-   let opts = defaultHetcatsOpts
-       file = trim input
+   -- options should be passed through from the top-level
+   opts <- getArgs >>= hetcatsOpts
+   let file = trim input
    tmp <- case i_state $ intState state of
            Nothing -> anaLib opts file
            Just dgState ->
