@@ -75,7 +75,7 @@ lnode ga lenv (_, lbl) =
           ElemName s : t -> (s, showXPath t)
           l -> ("?", showXPath l)
   in add_attrs (mkNameAttr (showName nm) : if
-               dgn_origin lbl < DGProof then
+               not (isDGRef lbl) && dgn_origin lbl < DGProof then
                [mkAttr "specname" spn, mkAttr "relxpath" xp ]
                else [])
   $ unode "Node"
