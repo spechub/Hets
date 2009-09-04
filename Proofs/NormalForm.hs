@@ -300,7 +300,7 @@ freenessDG le dgraph = foldM (
                                               , dgl_id = defaultEdgeId
                                               }),
                      InsertEdge (k, n,DGLink { dgl_morphism = inclM
-                                              , dgl_type = hidingThm inclM
+                                              , dgl_type = HidingDefLink
                                               , dgl_origin = DGLinkProof
                                               , dgl_id = defaultEdgeId
                                               })]
