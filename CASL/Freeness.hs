@@ -276,9 +276,10 @@ psiName s = mkId [mkSimpleId $ "Psi_" ++ show s]
 -- in M, the premises and the conclusion
 mkKernelAx :: Set.Set SORT -> Map.Map Id (Set.Set PredType) -> CASLFORMULA 
               -> CASLFORMULA -> Named CASLFORMULA
-mkKernelAx ss _ prem conc = makeNamed "" q1
+mkKernelAx ss preds prem conc = makeNamed "freeness_kernel" q2
      where imp = Implication prem conc True nullRange
            q1 = quantifyPredsSorts ss imp
+           q2 = quantifyPredsPreds preds q1
 
 -- | applies the second order quantification to the formula for the given
 -- set of sorts
@@ -307,7 +308,11 @@ quantifyPredsPredTypes name spt f = Set.fold (quantifyPredsPred name) f spt
 -- | applies the second order quantification to the formula for the given
 -- predicate
 quantifyPredsPred :: Id -> PredType -> CASLFORMULA -> CASLFORMULA
-quantifyPredsPred _ _ f = f
+quantifyPredsPred name (PredType args) f = q_form
+     where psi = psiName name
+           free_args = map mkFreeName args
+           pt = Pred_type free_args nullRange
+           q_form = QuantPred psi pt f
 
 -- | creates a conjunction distinguishing cases on the size of the list
 mk_conj :: [CASLFORMULA] -> CASLFORMULA

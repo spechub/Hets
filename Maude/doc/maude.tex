@@ -1,0 +1,218 @@
+%!TEX root = main.tex
+
+As mentioned in the introduction, Maude modules are executable rewriting logic especifications.
+Rewriting logic \cite{Meseguer92-tcs} is a logic of change very suitable
+for the specification of concurrent systems that is parameterized
+by an underlying equational logic, for which Maude uses membership
+equational logic \cite{BouhoulaJouannaudMeseguer00,Meseguer97},
+which, in addition to equations, allows the statement of membership
+axioms characterizing the elements of a sort. In the following sections we
+present both logics and how their specifications are represented as Maude modules.
+
+\subsection{Membership equational logic} \label{mel-section}
+
+A \emph{signature} in membership equational logic is a triple $(K,\Sigma, S)$
+(just $\Sigma$ in the following),\
+with $K$ a set of {\em kinds},
+$\Sigma = \{\Sigma_{k_1\ldots k_n,k}\}_{(k_1\ldots k_n,k)\in K^{*}\times K}$ a
+many-kinded signature, and $S =
+\{S_{k}\}_{k\in K}$ a pairwise disjoint $K$-kinded family of sets of
+\emph{sorts}.
+The kind of a sort $s$ is denoted by $[s]$.
+We write $T_{\Sigma,k}$ and $T_{\Sigma,k}(X)$ to denote respectively the set
+of ground
+$\Sigma$-terms with kind $k$ and of $\Sigma$-terms with kind $k$ over variables
+in $X$, where $X = \{ x_1:k_1, \dots, x_n:k_n\}$ is a set of $K$-kinded
+variables.
+Intuitively, terms with a kind but without a sort represent undefined or error
+elements.
+
+The atomic formulas of membership equational logic are either \emph{equations}
+$t = t'$, where $t$ and $t'$ are $\Sigma$-terms of the same kind, or
+\emph{membership axioms} of the form $t : s$, where the term $t$
+has kind $k$ and $s \in S_k$.
+\emph{Sentences} are universally-quantified Horn clauses of the
+form $(\forall X)\, A_0 \Leftarrow A_1 \wedge \ldots \wedge A_n$,
+where each $A_i$ is  either an equation or a membership axiom, and $X$ is a
+set of $K$-kinded variables containing all the variables in the $A_i$.
+A \emph{specification} is a pair $(\Sigma,E)$, where $E$ is a set
+of sentences in membership equational logic over the signature $\Sigma$.
+
+Models of membership equational logic specifications are
+\emph{$\Sigma$-algebras} $\model$ consisting of a set $A_k$ for each kind $k \in K$,
+a function $A_f : A_{k_1}\times \dots \times A_{k_n} \longrightarrow A_k$ for each 
+operator $f \in \Sigma_{k_1 \dots k_n, k}$, and
+a subset $A_s \subseteq A_k$ for each sort $s\in S_k$. The meaning
+$\den{t}$ of a term $t$ in an algebra $\model$ is inductively defined as usual.
+Then, an algebra $\model$ satisfies an equation $t = t'$  (or the equation holds
+in the algebra), denoted $\model \models t = t'$, when both terms have the same meaning:
+$\den{t} = \den{t'}$. In the same way, satisfaction of a membership is defined as:
+$\model \models t : s$ when $\den{t} \in A_s$.
+
+A membership equational logic specification $(\Sigma,E)$ has an initial model 
+$\mathcal{T}_{\Sigma/E}$ whose elements
+are $E$-equivalence classes of terms $[t]$.
+We refer to \cite{BouhoulaJouannaudMeseguer00,Meseguer97} for a detailed presentation of
+$(\Sigma,E)$-algebras,
+sound and complete deduction rules, as well as the construction of
+initial and free algebras.
+
+Since the membership equational logic specifications that we consider are assumed
+to satisfy the executability requirements of confluence, termination, and 
+sort-decreasingness, their equations $t=t'$ can be oriented from left to right,
+$t \rightarrow t'$. Such a statement holds in an algebra, denoted 
+$\model \models t \rightarrow t'$, exactly when $\model \models t = t'$, i.e., when
+$\den{t} = \den{t'}$. Moreover, under those assumptions an equational condition $u = v$
+in a conditional equation can be checked by finding a common term $t$ such
+that $u \rightarrow t$ and $v \rightarrow t$. The notation we will use in 
+the inference rules and debugging trees studied in Section~\ref{sec:decldebug} for this
+situation is $u \downarrow v$.
+
+\subsection{Maude functional modules} \label{maudefmod}
+
+Maude functional modules \cite[Chapter 4]{maude-book}, introduced 
+with syntax \texttt{fmod ...\ endfm}, are executable membership
+equational specifications and their semantics is given by the corresponding
+initial membership algebra in the class of algebras satisfying the specification.
+
+In a functional module we can declare sorts (by means of keyword
+\texttt{sort}(\texttt{s})); subsort relations between sorts
+(\texttt{subsort}); operators (\texttt{op}) for building values of these
+sorts, giving the sorts of their arguments and result, and which may have
+attributes such as being associative (\texttt{assoc}) or commutative
+(\texttt{comm}), for example; memberships (\texttt{mb}) asserting that a term
+has a sort; and equations (\texttt{eq}) identifying terms.  
+Both memberships and equations can be conditional (\texttt{cmb} and \texttt{ceq}).
+
+Maude does automatic kind inference from the sorts declared by the user and
+their subsort relations.  Kinds are \emph{not} declared explicitly, and
+correspond to the connected components of the subsort relation.
+The kind corresponding to a sort \texttt{s} is denoted \texttt{[s]}.
+For example, if we have sorts \texttt{Nat} for natural numbers and \texttt{NzNat} 
+for nonzero natural numbers with a subsort \texttt{NzNat < Nat}, then 
+\texttt{[NzNat]} = \texttt{[Nat]}.
+
+An operator declaration like
+
+{\codesize
+\begin{verbatim}
+ op _div_ : Nat NzNat -> Nat .
+\end{verbatim}
+}
+
+\noindent
+is logically understood as a declaration at the kind level
+
+{\codesize
+\begin{verbatim}
+ op _div_ : [Nat] [Nat] -> [Nat] .
+\end{verbatim}
+}
+
+\noindent
+together with the conditional membership axiom
+
+{\codesize
+\begin{verbatim}
+ cmb N div M : Nat if N : Nat and M : NzNat .
+\end{verbatim}
+}
+
+A subsort declaration \texttt{NzNat < Nat} is logically understood as
+the conditional membership axiom
+
+{\codesize
+\begin{verbatim}
+ cmb N : Nat if N : NzNat .
+\end{verbatim}
+}
+
+\subsection{Rewriting logic}
+
+Rewriting logic extends equational logic by introducing the notion of \emph{rewrites} 
+corresponding to
+transitions between states; that is, while equations are interpreted as equalities and therefore
+they are symmetric, rewrites denote changes which can be irreversible. 
+
+A rewriting logic specification, or \emph{rewrite theory}, has the form
+$\mathcal{R} = (\Sigma,E,R)$, where $(\Sigma,E)$ is an equational specification
+and $R$ is a set of \emph{rules} as described below. From this definition, one can see that
+rewriting logic is built on top of equational logic, so that rewriting logic is parameterized
+with respect to the version of the underlying equational logic; in our case, Maude uses 
+membership equational logic, as described in the previous sections.
+A rule in $R$ has the general conditional form\footnote{There is no need for the condition listing first equations, then 
+memberships, and then rewrites: this is just a notational abbreviation,
+they can be listed in any order.} 
+\[
+(\forall X) \; e \Rightarrow e' \Leftarrow \bigwedge_{i=1}^{n} u_i = u'_i \wedge
+                      \bigwedge_{j=1}^{m}  v_j : s_j \wedge
+                      \bigwedge_{k=1}^{l} w_k \Rightarrow w'_k
+\]
+where the head is a rewrite and the conditions can be equations, memberships, and
+rewrites; both sides of a rewrite must have the same kind. 
+From these rewrite rules, one can deduce rewrites of the form $t \Rightarrow t'$ by
+means of general deduction rules introduced in \cite{Meseguer92-tcs} (see also \cite{BruniMeseguer06}).
+
+Models of rewrite theories are called \emph{$\mathcal{R}$-systems} in \cite{Meseguer92-tcs}.
+Such systems are defined as categories that possess a $(\Sigma,E)$-algebra structure,
+together with a natural transformation for each rule in the set $R$. More intuitively, the idea
+is that we have a $(\Sigma,E)$-algebra, as described in Section~\ref{mel-section}, with
+transitions between the elements in each set $A_k$; moreover, these transitions must 
+satisfy several additional requirements, including that there are identity transitions for
+each element, that transitions can be sequentially composed, that the operations in the
+signature $\Sigma$ are also appropriately defined for the transitions, and that we have enough
+transitions corresponding to the rules in $R$.   Then, if we keep in this context the notation 
+$\model$ to denote an $\mathcal{R}$-system, a rewrite $t \Rightarrow t'$ is satisfied by $\model$, 
+denoted $\model \models t \Rightarrow t'$, when there is a transition $\den{t} \rightarrow_\model \den{t'}$
+in the system between the corresponding meanings of both sides of the rewrite, where 
+$\rightarrow_\model$ will be our notation for such transitions. 
+
+The rewriting logic deduction rules introduced in \cite{Meseguer92-tcs} are sound and 
+complete with respect to this notion of model. Moreover, they can be used to build
+initial and free models; see \cite{Meseguer92-tcs} for details.
+
+\subsection{Maude system modules}
+
+Maude system modules \cite[Chapter 6]{maude-book}, introduced with syntax \texttt{mod ...\ endm}, 
+are executable rewrite 
+theories and their semantics is given by the initial system in the class of 
+systems corresponding to the rewrite theory.  A system module can contain all the
+declarations of a functional module and, in addition, declarations for rules (\texttt{rl})
+and conditional rules (\texttt{crl}).
+
+The executability requirements for equations and memberships in a system module are the
+same as those of functional modules, namely, confluence, termination, and sort-decreasingness. 
+With respect to rules, the satisfaction of all the conditions in a conditional rewrite rule is 
+attempted sequentially from left to right, solving rewrite conditions by means of search; 
+for this reason, we can have new variables in such conditions but they must become instantiated
+along this process of solving from left to right (see \cite{maude-book} for details). 
+Furthermore, the strategy followed by Maude in rewriting with rules is to compute the
+normal form of a term with respect to the equations before applying a rule. This strategy 
+is guaranteed not to miss any rewrites when the rules are \emph{coherent} with respect to the
+equations \cite{eq-rl-rwl,maude-book}.  In a way quite analogous to confluence, this coherence 
+requirement means that, given a term $t$, for each rewrite of it using a rule in $R$ to some 
+term $t'$, if $u$ is the normal form of $t$ with respect to the equations and memberships in $E$, 
+then there is a rewrite of $u$ with some rule in $R$ to a term $u'$ such that $u' =_E t'$
+(that is, the equation $t' = u'$ can be deduced from $E$).
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

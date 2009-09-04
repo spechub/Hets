@@ -1,0 +1,132 @@
+\documentclass[10pt,a4paper]{article}
+\usepackage{geometry}
+\geometry{a4paper}
+\geometry{margin=2.5cm,nohead}
+\usepackage{amsfonts}
+\usepackage[leqno]{amsmath}
+\usepackage{rotating}
+\usepackage[english]{babel}
+\usepackage{url}
+\usepackage{proof}
+\usepackage{alltt}
+\usepackage{hyperref}
+\usepackage{verbatim}
+\usepackage{amssymb}
+
+\usepackage{graphicx}
+\usepackage{proof}
+
+% Texttt curly brackets
+\newcommand{\ttlcb}{\texttt{\char'173}}
+\newcommand{\ttrcb}{\texttt{\char'175}}
+
+\newtheorem{definition}{Definition} %[chapter]
+\newtheorem{proposition}{Proposition} %[chapter]
+\newtheorem{property}{Property} %[chapter]
+\newtheorem{lemma}{Lemma} %[chapter]
+\newtheorem{theorem}{Theorem} %[chapter]
+\newenvironment{proof}{\par\addvspace{\bigskipamount}%
+\noindent\textit{Proof.}\ }{\qed\par\addvspace{\bigskipamount}}
+
+\def\squareforqed{\hbox{\rlap{$\sqcap$}$\sqcup$}}
+\def\qed{\ifmmode\squareforqed\else{\unskip\nobreak\hfil
+\penalty50\hskip1em\null\nobreak\hfil\squareforqed
+\parfillskip=0pt\finalhyphendemerits=0\endgraf}\fi}
+
+
+\newcommand{\codesize}{\small}
+\newcommand{\field}[1]{\mathbb{#1}}
+\newcommand{\vertex}[1]{\|\,#1\,\|}
+\newcommand{\mt}{{\small$\blacktriangle$}}
+\newcommand{\leaf}[1]{{\small$\blacktriangle\;$}#1{\small$\;\blacktriangle$}}
+
+\newcommand{\nodo}[1]{\rule[-.5ex]{0pt}{2.4ex}\,#1\,}
+%\newcommand{\lab}[1]{\!\raisebox{0.5ex}{\scriptsize\textsf{#1}}}
+\newcommand{\lab}[1]{\!{\scriptsize\textsf{#1}}}
+\newcommand{\labb}[2]{\!{\scriptsize\textsf{#1}_\textsf{#2}}}
+\newcommand{\labapt}[2]{{\scriptstyle\;\textsf{#1}_\textsf{#2}}}
+
+\newcommand{\model}{\mathcal{A}} % use: $\model$
+\newcommand{\stepRule}[1]{\scriptstyle{ #1}}
+\newcommand{\den}[1]{[\![#1]\!]_\model}  % use: $\den{e}$
+
+\newcommand{\bigunion}{\mathop{ \mathgroup\symoperators \bigcup}}
+\newcommand{\fracc}[2]{\begin{array}{c}{#1}\\ \hline {#2} \end{array}}
+
+\graphicspath{{images/}}
+
+\title{Integrating Maude into Hets%
+%\thanks{Research supported by MEC Spanish project
+%\emph{DESAFIOS} (TIN2006-15660-C02-01) and Comunidad de
+%Madrid program \emph{PROMESAS} (SÐ0505/TIC/0407).}
+}
+
+\author{Martin K\"uhl and Adri\'an Riesco\\[.7cm]
+%\normalsize Technical Report ??\\[1ex]
+%  \normalsize\textit{Departamento de Sistemas Inform\'aticos y Computaci\'on}\\
+%  \normalsize\textit{Universidad Complutense de Madrid}\\[.4cm]
+%  July 2009
+  }
+
+\date{}
+%\institute{}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{document}
+%
+\maketitle
+
+\thispagestyle{empty}
+\newpage
+\thispagestyle{empty}
+\mbox{}\vfill
+
+\begin{abstract}
+
+
+
+\smallskip
+
+\noindent\textbf{Keywords:} rewriting logic, heterogeneous specifications,
+Maude, CASL
+\end{abstract}
+
+\vfill
+
+\begin{small}
+\tableofcontents
+\end{small}
+
+\vfill
+\mbox{}
+\newpage
+%\setcounter{page}{1}
+
+\section{Introduction}\label{sec:intro}
+%\input{intro}
+
+\section{Rewriting logic and Maude}\label{sec:maude}
+\input{maude}
+
+\section{Comorphism}
+
+\section{Implementation}\label{sec:implemen}
+\subsection{Parsing}\label{subsec:parsing}
+\subsubsection{Martin's parser}
+\subsubsection{Abstract syntax}
+\input{abs-syntax}
+\subsubsection{Maude parsing}
+\subsection{Data structures}\label{sec:da}
+\subsection{Development Graph}\label{sec:dg}
+\subsection{Comorphism}\label{sec:comorphism}
+\subsection{Freeness constraints??}
+
+\section{Conclusions and future work}\label{sec:conclusions}
+\input{conclusions}
+
+{\small
+\bibliographystyle{abbrv}
+\bibliography{../alberto}
+}
+
+\end{document}

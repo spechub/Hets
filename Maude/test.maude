@@ -32,6 +32,10 @@ fmod MY-LIST is
  eq reverse(E L) = reverse(L) E .
 endfm
 
+fmod MY-LIST-OPS is
+ pr MY-LIST .
+endfm
+
 fth ASSOC-OP is
  sort Elt .
 
