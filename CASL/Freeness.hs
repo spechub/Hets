@@ -42,12 +42,15 @@ quotientTermAlgebra :: CASLMor -- sigma : Sigma -> SigmaM
 quotientTermAlgebra sigma sens = case horn_clauses sens of
           False -> mkError "Not Horn clauses" sens
           True -> let
+                    sigma_0 = msource sigma
+                    ss_0 = sortSet sigma_0
                     sigma_m = mtarget sigma
-                    iota_mor = create_iota_mor sigma_m
+                    iota_mor = create_iota_mor ss_0 sigma_m
                     sigma_k = mtarget iota_mor
-                    axs = create_axs (sortSet $ msource sigma) sigma_m sigma_k sens
+                    axs = create_axs ss_0 sigma_m sigma_k sens
                   in return (sigma_k, iota_mor, axs)
 
+horn_clauses :: [Named CASLFORMULA] -> Bool
 horn_clauses _ = True
 
 -- -- | checks if the formulas are horn clauses
@@ -63,22 +66,45 @@ horn_clauses _ = True
 -- | generates the axioms of the module K
 create_axs :: Set.Set SORT -> CASLSign -> CASLSign -> [Named CASLFORMULA]
               -> [Named CASLFORMULA]
-create_axs sg_ss sg_m sg_k sens = concat [ctor_sen, h_axs_ops, h_axs_preds, h_axs_surj, q_axs, krnl_axs]
-      where ss = Set.map mkFreeName $ Set.difference (sortSet sg_m) sg_ss
+create_axs sg_ss sg_m sg_k sens = forms 
+      where ss_m = sortSet sg_m
+            ss = Set.map mkFreeName $ Set.difference ss_m sg_ss
             sr = sortRel sg_k
             comps = ops2comp $ opMap sg_k
             ctor_sen = [freeCons (ss, sr, comps)]
+            make_axs = make_forms sg_ss
             h_axs_ops = homomorphism_axs_ops $ opMap sg_m
             h_axs_preds = homomorphism_axs_preds $ predMap sg_m
             h_axs_surj = hom_surjectivity $ sortSet sg_m
             q_axs = quotient_axs sens
-            symm_ax = symmetry_axs (sortSet sg_m)
-            tran_ax = transitivity_axs (sortSet sg_m)
+            symm_ax = symmetry_axs ss_m
+            tran_ax = transitivity_axs ss_m
             cong_ax = congruence_axs (opMap sg_m)
             satThM = sat_thm_ax sens
             prems = mk_conj [symm_ax, tran_ax, cong_ax, satThM]
-            ltkh = larger_then_ker_h (sortSet sg_m) (predMap sg_m)
-            krnl_axs = [mkKernelAx prems ltkh]
+            ltkh = larger_then_ker_h ss_m (predMap sg_m)
+            krnl_axs = [mkKernelAx ss_m (predMap sg_m) prems ltkh]
+            forms = concat [ctor_sen, make_axs, h_axs_ops, h_axs_preds,
+                            h_axs_surj, q_axs, krnl_axs]
+
+-- | generates the formulas relating the make functions with the homomorphism
+make_forms :: Set.Set SORT -> [Named CASLFORMULA]
+make_forms = Set.fold ((:) . make_form) []
+
+-- | generates the formulas relating the make function for this sort
+-- with the homomorphism
+make_form :: SORT -> Named CASLFORMULA
+make_form s = makeNamed "" q_eq
+      where free_s = mkFreeName s
+            v = newVar s
+            ot_mk = Op_type Total [s] free_s nullRange
+            os_mk = Qual_op_name makeId ot_mk nullRange
+            term_mk = Application os_mk [v] nullRange
+            ot_hom = Op_type Partial [free_s] s nullRange
+            os_hom = Qual_op_name homId ot_hom nullRange
+            term_hom = Application os_hom [term_mk] nullRange
+            eq = Strong_equation term_hom v nullRange
+            q_eq = quantifyUniversally eq
 
 -- | computes the last part of the axioms to assert the kernel of h
 larger_then_ker_h :: Set.Set SORT -> Map.Map Id (Set.Set PredType) -> CASLFORMULA
@@ -129,9 +155,8 @@ ltkh_sort s = imp'
            phi = phiName s
            pt = Pred_type [free_s, free_s] nullRange
            ps = Qual_pred_name phi pt nullRange
-           hom_id = mkId [mkSimpleId "hom"]
            ot_hom = Op_type Partial [free_s] s nullRange
-           name_hom = Qual_op_name hom_id ot_hom nullRange
+           name_hom = Qual_op_name homId ot_hom nullRange
            t1 = Application name_hom [v1] nullRange
            t2 = Application name_hom [v2] nullRange
            prem = Existl_equation t1 t2 nullRange
@@ -159,7 +184,7 @@ congruence_ax name sot acc = set_forms
 -- | computes the axiom for the congruence of the kernel of h
 -- for a single type of an operator id
 congruence_ax_aux :: Id -> OpType -> CASLFORMULA
-congruence_ax_aux name ot = q_form
+congruence_ax_aux name ot = cong_form'
      where OpType _ args res = ot
            free_name = mkFreeName name
            free_args = map mkFreeName args
@@ -176,22 +201,11 @@ congruence_ax_aux name ot = q_form
            ps = Qual_pred_name phi pt nullRange
            fst_form = Predication ps [fst_term, fst_term] nullRange
            snd_form = Predication ps [snd_term, snd_term] nullRange
-           vars_forms = congruence_ax_vars free_args xs ys
+           vars_forms = congruence_ax_vars args xs ys
            conj = mk_conj $ fst_form : snd_form : vars_forms
            concl = Predication ps [fst_term, snd_term] nullRange
            cong_form = Implication conj concl True nullRange
            cong_form' = quantifyUniversally cong_form
-           q_form = quantifyPreds (delete_reps $ res : args) cong_form'
-
--- | applies the second order quantification to the formula
-quantifyPreds :: [SORT] -> CASLFORMULA -> CASLFORMULA
-quantifyPreds (s : ss) f = q_form
-     where f' = quantifyPreds ss f
-           phi = phiName s
-           free_s = mkFreeName s
-           pt = Pred_type [free_s, free_s] nullRange
-           q_form = QuantPred phi pt f'
-quantifyPreds [] f = f
 
 -- | computes the formulas for the relations between variables
 congruence_ax_vars :: [SORT] -> [CASLTERM] -> [CASLTERM] -> [CASLFORMULA]
@@ -213,7 +227,7 @@ transitivity_axs ss = conj
 -- | computes the transitivity axiom of a concrete sort for
 -- the kernel of h
 transitivity_ax :: SORT -> CASLFORMULA
-transitivity_ax s = snd_quant
+transitivity_ax s = quant
      where free_sort = mkFreeName s
            v1@(Qual_var n1 _ _) = newVarIndex 1 free_sort
            v2@(Qual_var n2 _ _) = newVarIndex 2 free_sort
@@ -227,8 +241,7 @@ transitivity_ax s = snd_quant
            conj = mk_conj [fst_form, snd_form]
            imp = Implication conj thr_form True nullRange
            vd = [Var_decl [n1, n2, n3] free_sort nullRange]
-           fst_quant = Quantification Universal vd imp nullRange
-           snd_quant = QuantPred name pt fst_quant
+           quant = Quantification Universal vd imp nullRange
 
 -- | computes the symmetry axioms for the kernel of h
 symmetry_axs :: Set.Set SORT -> CASLFORMULA
@@ -238,17 +251,18 @@ symmetry_axs ss = conj
 
 -- | computes the symmetry axiom of a concrete sort for the kernel of h
 symmetry_ax :: SORT -> CASLFORMULA
-symmetry_ax s = snd_quant
+symmetry_ax s = quant
      where free_sort = mkFreeName s
            v1@(Qual_var n1 _ _) = newVarIndex 1 free_sort
            v2@(Qual_var n2 _ _) = newVarIndex 2 free_sort
            pt = Pred_type [free_sort, free_sort] nullRange
            name = phiName s
            ps = Qual_pred_name name pt nullRange
-           inner_form = Predication ps [v1, v2] nullRange
+           lhs = Predication ps [v1, v2] nullRange
+           rhs = Predication ps [v2, v1] nullRange
+           inner_form = Implication lhs rhs True nullRange
            vd = [Var_decl [n1, n2] free_sort nullRange]
-           fst_quant = Quantification Universal vd inner_form nullRange
-           snd_quant = QuantPred name pt fst_quant
+           quant = Quantification Universal vd inner_form nullRange
 
 -- | generates the name of the phi variable of a concrete sort
 phiName :: SORT -> Id
@@ -258,9 +272,42 @@ phiName s = mkId [mkSimpleId $ "Phi_" ++ show s]
 psiName :: Id -> Id
 psiName s = mkId [mkSimpleId $ "Psi_" ++ show s]
 
--- | creates the axiom for the kernel of h given the premises and the conclusion
-mkKernelAx :: CASLFORMULA -> CASLFORMULA -> Named CASLFORMULA
-mkKernelAx prem conc = makeNamed "" $ Implication prem conc True nullRange
+-- | creates the axiom for the kernel of h given the sorts and the predicates
+-- in M, the premises and the conclusion
+mkKernelAx :: Set.Set SORT -> Map.Map Id (Set.Set PredType) -> CASLFORMULA 
+              -> CASLFORMULA -> Named CASLFORMULA
+mkKernelAx ss _ prem conc = makeNamed "" q1
+     where imp = Implication prem conc True nullRange
+           q1 = quantifyPredsSorts ss imp
+
+-- | applies the second order quantification to the formula for the given
+-- set of sorts
+quantifyPredsSorts :: Set.Set SORT -> CASLFORMULA -> CASLFORMULA
+quantifyPredsSorts ss f = Set.fold quantifyPredsSort f ss
+
+-- | applies the second order quantification to the formula for the given
+-- sort
+quantifyPredsSort :: SORT -> CASLFORMULA -> CASLFORMULA
+quantifyPredsSort s f = q_form
+     where phi = phiName s
+           free_s = mkFreeName s
+           pt = Pred_type [free_s, free_s] nullRange
+           q_form = QuantPred phi pt f
+
+-- | applies the second order quantification to the formula for the given
+-- predicates
+quantifyPredsPreds :: Map.Map Id (Set.Set PredType) -> CASLFORMULA -> CASLFORMULA
+quantifyPredsPreds preds f = Map.foldWithKey quantifyPredsPredTypes f preds
+
+-- | applies the second order quantification to the formula for the given
+-- profiles
+quantifyPredsPredTypes :: Id -> Set.Set PredType -> CASLFORMULA -> CASLFORMULA
+quantifyPredsPredTypes name spt f = Set.fold (quantifyPredsPred name) f spt
+
+-- | applies the second order quantification to the formula for the given
+-- predicate
+quantifyPredsPred :: Id -> PredType -> CASLFORMULA -> CASLFORMULA
+quantifyPredsPred _ _ f = f
 
 -- | creates a conjunction distinguishing cases on the size of the list
 mk_conj :: [CASLFORMULA] -> CASLFORMULA
@@ -316,16 +363,14 @@ homomorphy_form f = f
 -- | applies the homomorphism operator to the term when possible
 homomorphy_term :: CASLTERM -> CASLTERM
 homomorphy_term t@(Qual_var _ s _) = t'
-      where hom_id = mkId [mkSimpleId "hom"]
-            ot_hom = Op_type Partial [mkFreeName s] s nullRange
-            name_hom = Qual_op_name hom_id ot_hom nullRange
+      where ot_hom = Op_type Partial [mkFreeName s] s nullRange
+            name_hom = Qual_op_name homId ot_hom nullRange
             t' = Application name_hom [t] nullRange
 homomorphy_term t@(Application os _ _) = t'
       where Qual_op_name _ ot _ = os
             Op_type _ _ s _ = ot
-            hom_id = mkId [mkSimpleId "hom"]
             ot_hom = Op_type Partial [mkFreeName s] s nullRange
-            name_hom = Qual_op_name hom_id ot_hom nullRange
+            name_hom = Qual_op_name homId ot_hom nullRange
             t' = Application name_hom [t] nullRange
 homomorphy_term t = t
 
@@ -341,9 +386,8 @@ sort_surj s = form'
             v2 = newVarIndex 1 s
             id_v2 = mkSimpleId "V1"
             vd2 = Var_decl [id_v2] s nullRange
-            hom_id = mkId [mkSimpleId "hom"]
             ot_hom = Op_type Partial [mkFreeName s] s nullRange
-            name_hom = Qual_op_name hom_id ot_hom nullRange
+            name_hom = Qual_op_name homId ot_hom nullRange
             lhs = Application name_hom [v1] nullRange
             inner_form = Existl_equation lhs v2 nullRange
             inner_form' = Quantification Existential [vd1] inner_form nullRange
@@ -381,11 +425,10 @@ homomorphism_axs_ops = Map.foldWithKey g []
 homomorphism_form_op :: Id -> OpType -> Named CASLFORMULA
 homomorphism_form_op name (OpType _ args res) = named_form
       where free_args = map mkFreeName args
-            hom_id = mkId [mkSimpleId "hom"]
             vars_lhs = createVars 0 free_args
             ot_lhs = Op_type Total free_args (mkFreeName res) nullRange
             ot_hom = Op_type Partial [mkFreeName res] res nullRange
-            name_hom = Qual_op_name hom_id ot_hom nullRange
+            name_hom = Qual_op_name homId ot_hom nullRange
             name_lhs = Qual_op_name (mkFreeName name) ot_lhs nullRange
             inner_lhs = Application name_lhs vars_lhs nullRange
             lhs = Application name_hom [inner_lhs] nullRange
@@ -400,9 +443,8 @@ homomorphism_form_op name (OpType _ args res) = named_form
 -- | generates the variables for the homomorphisms
 apply_hom_vars :: [SORT] -> [CASLTERM] -> [CASLTERM]
 apply_hom_vars (s : ss) (t : ts) = t' : ts'
-      where hom_id = mkId [mkSimpleId "hom"]
-            ot_hom = Op_type Partial [mkFreeName s] s nullRange
-            name_hom = Qual_op_name hom_id ot_hom nullRange
+      where ot_hom = Op_type Partial [mkFreeName s] s nullRange
+            name_hom = Qual_op_name homId ot_hom nullRange
             t' = Application name_hom [t] nullRange
             ts' = apply_hom_vars ss ts
 apply_hom_vars _ _ = []
@@ -445,16 +487,35 @@ freeCons (sorts, rel, ops) = do
     makeNamed ("ga_generated_" ++
                        showSepList (showString "_") showId sortList "") f
 
-
 -- | given the signature in M the function computes the morphism from M' to K
-create_iota_mor :: CASLSign -> CASLMor
-create_iota_mor sg_m = Morphism sg_m usg' sm om pm ()
+create_iota_mor :: Set.Set SORT -> CASLSign -> CASLMor
+create_iota_mor ss sg_m = Morphism sg_m usg' sm om pm ()
       where iota_sg = totalSignCopy sg_m
             usg = addSig const sg_m iota_sg
             sm = iota_sort_map_mor $ sortSet sg_m
             om = iota_op_map_mor $ opMap sg_m
             pm = iota_pred_map_mor $ predMap sg_m
-            usg' = usg { opMap = homomorphism_ops (sortSet sg_m) (opMap usg) }
+            om' = homomorphism_ops (sortSet sg_m) (opMap usg)
+            om'' = make_ops ss om'
+            usg' = usg { opMap = om'' }
+
+-- | adds the make functions for the sorts in the initial module to the
+-- operator map
+make_ops :: Set.Set SORT -> OpMap -> OpMap
+make_ops ss om = Set.fold make_op om ss
+
+-- | adds the make functions for the sort to the operator map
+make_op :: SORT -> OpMap -> OpMap
+make_op s om = Map.insertWith (Set.union) makeId (Set.singleton $ ot) om
+      where ot = OpType Total [s] $ mkFreeName s
+
+-- | identifier of the make function
+makeId :: Id
+makeId = mkId [mkSimpleId "make"]
+
+-- | identifier of the homomorphism function
+homId :: Id
+homId = mkId [mkSimpleId "hom"]
 
 -- | creates the map between sorts in the morphism iota
 iota_sort_map_mor :: Set.Set SORT -> Sort_map
@@ -476,12 +537,8 @@ iota_pred_map_mor = Map.foldWithKey g Map.empty
 -- | creates the homomorphism operators and adds it to the given operator map
 homomorphism_ops :: Set.Set SORT -> OpMap -> OpMap
 homomorphism_ops ss om = Set.fold f om ss
-    where op_id = mkId [mkSimpleId "hom"]
-          ot = \ sort -> OpType Partial [mkFreeName sort] sort
-          f = \ x y -> Map.insertWith (Set.union) op_id (Set.singleton $ ot x) y
-
--- data OpType = OpType {opKind :: OpKind, opArgs :: [SORT], opRes :: SORT}
--- type OpMap = Map.Map Id (Set.Set OpType)
+    where ot = \ sort -> OpType Partial [mkFreeName sort] sort
+          f = \ x y -> Map.insertWith (Set.union) homId (Set.singleton $ ot x) y
 
 -- | applies the iota renaming to a signature
 totalSignCopy :: CASLSign -> CASLSign
@@ -557,11 +614,19 @@ iota_anno_map = Map.mapKeys iota_symbol
 mkFreeName :: Id -> Id
 mkFreeName i@(Id ts cs r) = case ts of
   t : s -> let st = tokStr t in case st of
-    c : _ | isAlpha c || isDigit c -> Id (genToken st : s) cs r
+    c : _ | isAlpha c || isDigit c -> Id (freeToken st : s) cs r
           | isPlace t -> Id (mkSimpleId "free" : ts) cs r
           | c == '\'' -> i
     _ -> Id (mkSimpleId "free_f" : ts) cs r
   _ -> i
+
+-- | a prefix for free names
+freeNamePrefix :: String
+freeNamePrefix = "free_"
+
+-- | create a generated simple identifier
+freeToken :: String -> Token
+freeToken str = mkSimpleId $ freeNamePrefix ++ str
 
 -- | obtains the sorts of the given list of term
 getSorts :: [CASLTERM] -> [SORT]
@@ -648,9 +713,14 @@ noQuantification (Quantification _ vars form _) = (form, vars)
 noQuantification form = (form, [])
 
 -- | generates a new variable qualified with the given number
-newVarIndex :: Int -> Id -> CASLTERM
+newVarIndex :: Int -> SORT -> CASLTERM
 newVarIndex i sort = Qual_var var sort nullRange
     where var = mkSimpleId $ "V" ++ show i
+
+-- | generates a new variable
+newVar :: SORT -> CASLTERM
+newVar sort = Qual_var var sort nullRange
+    where var = mkSimpleId "V"
 
 -- | deletes the repetitions from a list of sorts
 delete_reps :: [SORT] -> [SORT]
@@ -740,7 +810,7 @@ free_formula (Equivalence f1 f2 r) = Equivalence f1' f2' r
            f2' = free_formula f2
 free_formula (Negation f r) = Negation f' r
      where f' = free_formula f
-free_formula (Predication ps ts r) = q_pr
+free_formula (Predication ps ts r) = pr
      where ss = getSorts ts
            free_ss = map mkFreeName ss
            ts' = map free_term ts
@@ -748,7 +818,6 @@ free_formula (Predication ps ts r) = q_pr
            pt = Pred_type free_ss nullRange
            ps' = Qual_pred_name psi pt nullRange
            pr = Predication ps' ts' r
-           q_pr = QuantPred psi pt pr
 free_formula (Definedness t r) = case sort of
         Nothing -> Definedness t' r
         Just s -> let free_s = mkFreeName s
