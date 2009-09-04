@@ -29,12 +29,22 @@ import qualified CASL.Sign as CSign
 import qualified CASL.Morphism as CMorphism
 import qualified CASL.AS_Basic_CASL as CAS
 import CASL.StaticAna
+import CASL.Logic_CASL
 
 import Common.Id
 import Common.Result
 import Common.AS_Annotation
 import Common.ProofUtils (charMap)
 import qualified Common.Lib.Rel as Rel
+
+import Comorphisms.GetPreludeLib (readLib)
+
+import System.IO.Unsafe
+
+import Static.GTheory
+
+import Logic.Prover
+import Logic.Coerce
 
 type IdMap = Map.Map Id Id
 type OpTransTuple = (CSign.OpMap, CSign.OpMap, [Named CAS.CASLFORMULA], Set.Set Component)
@@ -178,11 +188,12 @@ maude2casl msign nsens = (csign { CSign.sortSet = cs,
          ks = kindPredicates mk
          rp = rewPredicates ks cs
          rs = rewPredicatesSens cs
-         ops = deletePredefined $ MSign.ops msign
+         ops = deleteUniversal $ MSign.ops msign
          ksyms = kinds2syms cs
          (cops, assoc_ops, ops_forms, comps) = translateOps mk ops
          ctor_sen = [ctorSen False (cs, Rel.empty, comps)]
-         cops' = predefinedOps cs cops $ booleanImported ops
+         cops' = universalOps cs cops $ booleanImported ops
+         pred_forms = loadLibraries (MSign.sorts msign) ops
          ops_syms = ops2symbols cops'
          (no_owise_sens, owise_sens, mbs_rls_sens) = splitOwiseEqs nsens
          no_owise_forms = map (noOwiseSen2Formula mk) no_owise_sens
@@ -191,25 +202,43 @@ maude2casl msign nsens = (csign { CSign.sortSet = cs,
          preds = Map.unionWith (Set.union) ks rp
          preds_syms = preds2syms preds
          syms = Set.union ksyms $ Set.union ops_syms preds_syms
-         new_sens = concat [rs, ops_forms, no_owise_forms, owise_forms, mb_rl_forms, ctor_sen]
+         new_sens = concat [rs, ops_forms, no_owise_forms, owise_forms, mb_rl_forms, ctor_sen, pred_forms]
+
+loadLibraries :: MSign.SortSet -> MSign.OpMap -> [Named CAS.CASLFORMULA]
+loadLibraries ss om = case natImported ss om of
+        False -> []
+        True -> let lib = head $ unsafePerformIO $ readLib "Maude/MaudeNumbers.casl"
+                in case lib of
+                     G_theory lid _ _ thSens _ -> let sens = toNamedList thSens
+                                                in do
+                                                    sens' <- coerceSens lid CASL "" sens
+                                                    filter (not . ctorCons) sens'
+
+ctorCons :: Named CAS.CASLFORMULA -> Bool
+ctorCons f = case sentence f of
+      CAS.Sort_gen_ax _ _ -> True
+      _ -> False
 
 booleanImported :: MSign.OpMap -> Bool
 booleanImported = Map.member (mkSimpleId "if_then_else_fi")
 
-deletePredefined :: MSign.OpMap -> MSign.OpMap
-deletePredefined om = om5
+natImported :: MSign.SortSet -> MSign.OpMap -> Bool
+natImported ss _ = Set.member (MSym.Sort $ mkSimpleId "Nat") ss
+
+deleteUniversal :: MSign.OpMap -> MSign.OpMap
+deleteUniversal om = om5
          where om1 = Map.delete (mkSimpleId "if_then_else_fi") om
                om2 = Map.delete (mkSimpleId "_==_") om1
                om3 = Map.delete (mkSimpleId "_=/=_") om2
                om4 = Map.delete (mkSimpleId "upTerm") om3
                om5 = Map.delete (mkSimpleId "downTerm") om4
 
-predefinedOps :: Set.Set Id -> CSign.OpMap -> Bool -> CSign.OpMap
-predefinedOps kinds om True = Set.fold predefinedOpKind om kinds
-predefinedOps _ om False = om
+universalOps :: Set.Set Id -> CSign.OpMap -> Bool -> CSign.OpMap
+universalOps kinds om True = Set.fold universalOpKind om kinds
+universalOps _ om False = om
 
-predefinedOpKind :: Id -> CSign.OpMap -> CSign.OpMap
-predefinedOpKind kind om = om3
+universalOpKind :: Id -> CSign.OpMap -> CSign.OpMap
+universalOpKind kind om = om3
         where if_id = str2id "if_then_else_fi"
               double_eq_id = str2id "_==_"
               neg_double_eq_id = str2id "_=/=_"
@@ -220,15 +249,14 @@ predefinedOpKind kind om = om3
               om2 = Map.insertWith Set.union double_eq_id eq_opt om1
               om3 = Map.insertWith Set.union neg_double_eq_id eq_opt om2
 
-predefinedSens :: Set.Set Id -> [Named CAS.CASLFORMULA]
-predefinedSens = Set.fold predefinedSensKind []
+universalSens :: Set.Set Id -> [Named CAS.CASLFORMULA]
+universalSens = Set.fold universalSensKind []
 
-predefinedSensKind :: Id -> [Named CAS.CASLFORMULA] -> [Named CAS.CASLFORMULA]
-predefinedSensKind kind acc = concat [iss, eqs, neqs, acc]
+universalSensKind :: Id -> [Named CAS.CASLFORMULA] -> [Named CAS.CASLFORMULA]
+universalSensKind kind acc = concat [iss, eqs, neqs, acc]
          where iss = ifSens kind
                eqs = equalitySens kind
                neqs = nonEqualitySens kind
---               psen = plusSen
 
 ifSens :: Id -> [Named CAS.CASLFORMULA]
 ifSens kind = [form'', neg_form'']
@@ -309,24 +337,6 @@ nonEqualitySens kind = [form'', comp_form'']
                name2 = show kind ++ "_=/=_true"
                form'' = makeNamed name1 form'
                comp_form'' = makeNamed name2 comp_form'
-
-plusSen :: [Named CAS.CASLFORMULA]
-plusSen = [form'']
-     where nat_kind = str2id "Nat"
-           v1 = newVarIndex 1 nat_kind
-           v2 = newVarIndex 2 nat_kind
-           plus_type = CAS.Op_type CAS.Total [nat_kind, nat_kind] nat_kind nullRange
-           plus_id = CAS.Qual_op_name (str2id "_+_") plus_type nullRange
-           succ_type = CAS.Op_type CAS.Total [nat_kind] nat_kind nullRange
-           succ_id = CAS.Qual_op_name (str2id "s_") succ_type nullRange
-           succ_v1 = CAS.Application succ_id [v1] nullRange
-           lhs = CAS.Application plus_id [succ_v1, v2] nullRange
-           add_term = CAS.Application plus_id [v1, v2] nullRange
-           rhs = CAS.Application succ_id [add_term] nullRange
-           form = CAS.Strong_equation lhs rhs nullRange
-           form' = quantifyUniversally form
-           name = "add_+_"
-           form'' = makeNamed name form'
 
 -- | translates the Maude operator map into a tuple of CASL operators, CASL
 -- associative operators and the formulas generated by the operator attributes
@@ -989,7 +999,19 @@ ms2vcs s = case Map.member s stringMap of
 stringMap :: Map.Map String String
 stringMap = Map.fromList 
     [("true", "maudeTrue"),
-     ("false", "maudeFalse")]
+     ("false", "maudeFalse"),
+     ("not_", "neg__"),
+     ("s_", "suc"),
+     ("_+_", "__+__"),
+     ("_*_", "__*__"),
+     ("_<_", "__<__"),
+     ("_<=_", "__<=__"),
+     ("_>_", "__>__"),
+     ("_>=_", "__>=__")]
+--       ops   __^__,
+  --      min, max, __-!__:         Nat * Nat ->  Nat;
+    --    __ -?__, __/?__,
+      --  __ div __, __mod__:      Nat * Nat ->? Nat;
 
 -- | splits the string into a list of tokens, separating the double
 -- underscores from the rest of characters
