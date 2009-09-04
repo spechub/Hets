@@ -126,7 +126,7 @@ data DGOrigin =
   | DGNormalForm Node
   | DGintegratedSCC
   | DGFlattening
-    deriving (Show, Eq)
+    deriving (Show, Eq, Ord)
 
 -- | node content or reference to another library's node
 data DGNodeInfo = DGNode
@@ -305,7 +305,7 @@ data Scope = Local | Global deriving (Show, Eq, Ord)
 
 data LinkKind = DefLink | ThmLink ThmLinkStatus deriving (Show, Eq)
 
-data FreeOrCofree = Free | Cofree deriving (Show, Eq)
+data FreeOrCofree = Free | Cofree deriving (Show, Eq, Ord)
 
 data ConsStatus = ConsStatus Conservativity Conservativity ThmLinkStatus
   deriving (Show, Eq)

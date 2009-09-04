@@ -74,9 +74,10 @@ lnode ga lenv (_, lbl) =
       (spn, xp) = case reverse $ xpath nm of
           ElemName s : t -> (s, showXPath t)
           l -> ("?", showXPath l)
-  in add_attrs [ mkNameAttr $ showName nm
-               , mkAttr "specname" spn
-               , mkAttr "relxpath" xp ]
+  in add_attrs (mkNameAttr (showName nm) : if
+               dgn_origin lbl < DGProof then
+               [mkAttr "specname" spn, mkAttr "relxpath" xp ]
+               else [])
   $ unode "Node"
     $ case nodeInfo lbl of
           DGRef li rf ->
