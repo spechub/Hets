@@ -85,7 +85,7 @@ coerceProver ::
    Monad m) => lid1 -> lid2 -> String
       -> Prover sign1 sentence1 morphism1 sublogics1 proof_tree1
       -> m (Prover sign2 sentence2 morphism2 sublogics2 proof_tree2)
-coerceProver l1 l2 msg m1 = primCoerce l1 l2 msg m1
+coerceProver = primCoerce
 
 data G_cons_checker = forall lid sublogics
         basic_spec sentence symb_items symb_map_items
@@ -105,7 +105,7 @@ coerceConsChecker ::
    Monad m) => lid1 -> lid2 -> String
       -> ConsChecker sign1 sentence1 sublogics1 morphism1 proof_tree1
       -> m (ConsChecker sign2 sentence2 sublogics2 morphism2 proof_tree2)
-coerceConsChecker l1 l2 msg m1 = primCoerce l1 l2 msg m1
+coerceConsChecker = primCoerce
 
 -- | Possible actions for GUI which are manipulating ProofState
 data ProofActions lid sentence = ProofActions {
@@ -179,8 +179,7 @@ initialState lid1 thN th@(G_theory lid2 sig ind thSens _) pm cms =
            g_th = G_theory lid2 sig ind aMap startThId
            sublTh = sublogicOfTh th
        gMap' <- coerceThSens lid2 lid1 "creating initial state" gMap
-       return $
-           ProofState { theoryName = thN,
+       return ProofState { theoryName = thN,
                            theory = g_th,
                            sublogicOfTheory = sublTh,
                            lastSublogic = sublTh,
@@ -290,7 +289,7 @@ prepareForProving st (G_prover lid4 p, Comorphism cid) =
         let lidT = targetLogic cid
         bTh' <- coerceBasicTheory lid1 (sourceLogic cid)
                    "Proofs.InferBasic.callProver: basic theory"
-                   (sign, toNamedList $ sens)
+                   (sign, toNamedList sens)
         (sign'',sens'') <- wrapMapTheory cid bTh'
         p' <- coerceProver lid4 lidT "" p
         return $
@@ -336,21 +335,20 @@ recalculateSublogicAndSelectedTheory st =
            "Proofs.InferBasic.recalculateSublogic: selected goals"
            (goalMap st)
           -- partition goalMap
-        let (sel_goals,other_goals) =
+        let (sel_goals, other_goals) =
                 let selected k _ = Set.member k s
                     s = Set.fromList (selectedGoals st)
                 in Map.partitionWithKey selected ths
-            provenThs =
-                   Map.filter (\x -> (isProvenSenStatus $ OMap.ele x))
-                   other_goals
-          -- select goals from goalMap
-            -- sel_goals = filterMapWithList (selectedGoals st) goals
-          -- select proven theorems from goalMap
-            sel_provenThs = OMap.map (\ x -> x{isAxiom = True}) $
+            -- to properly rerun proofs only proven theorems
+            -- before the first open one should be included!
+            provenThs = OMap.filter isProvenSenStatus other_goals
+            sel_provenThs = markAsAxiom True $
                             filterMapWithList (includedTheorems st) provenThs
             sel_sens = filterMapWithList (includedAxioms st) sens
-            currentThSens = Map.union sel_sens $
-                              Map.union sel_provenThs sel_goals
+            (axs, thms) = OMap.partition isAxiom sens
+            selAxs = Map.union sel_sens sel_provenThs
+            currentThSens = Map.union (if Map.null selAxs then axs else selAxs)
+              $ if Map.null sel_goals then thms else sel_goals
             sTh = G_theory lid1 sign startSigId currentThSens startThId
             sLo = sublogicOfTh sTh
         return $ st { sublogicOfTheory = sLo,
