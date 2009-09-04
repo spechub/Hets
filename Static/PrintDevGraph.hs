@@ -72,10 +72,10 @@ removeProblematicListAnnos ga = let
 showXPathComp :: XPathPart -> String
 showXPathComp c = case c of
   ElemName s -> s
-  ChildIndex i -> show i
+  ChildIndex i -> "Spec[" ++ show i ++ "]"
 
 showXPath :: [XPathPart] -> String
-showXPath = intercalate "/" . map showXPathComp . reverse
+showXPath = intercalate "/" . map showXPathComp
 
 showNodeId :: Node -> String
 showNodeId i = "node " ++ show i

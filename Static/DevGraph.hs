@@ -592,7 +592,7 @@ incBy i n = n
   { extIndex = extIndex n + i
   , xpath = case xpath n of
               ChildIndex j : r -> ChildIndex (j + i) : r
-              l -> ChildIndex 1 : l }
+              l -> ChildIndex i : l }
 
 inc :: NodeName -> NodeName
 inc = incBy 1

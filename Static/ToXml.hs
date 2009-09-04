@@ -69,11 +69,16 @@ globalEntry ga dg si ge l = case ge of
   _ -> l
 
 lnode :: GlobalAnnos -> LibEnv -> LNode DGNodeLab -> Element
-lnode ga lenv (_, lbl) = let nm = dgn_name lbl in
-  add_attr (mkNameAttr $ showName nm)
+lnode ga lenv (_, lbl) =
+  let nm = dgn_name lbl
+      (spn, xp) = case reverse $ xpath nm of
+          ElemName s : t -> (s, showXPath t)
+          l -> ("?", showXPath l)
+  in add_attrs [ mkNameAttr $ showName nm
+               , mkAttr "specname" spn
+               , mkAttr "relxpath" xp ]
   $ unode "Node"
-    $ unode "XPath" (showXPath $ xpath nm)
-      : case nodeInfo lbl of
+    $ case nodeInfo lbl of
           DGRef li rf ->
             [ add_attrs [ mkAttr "library" $ show $ getLIB_ID li
                         , mkAttr "node" $ getNameOfNode rf
@@ -81,8 +86,7 @@ lnode ga lenv (_, lbl) = let nm = dgn_name lbl in
             $ unode "Reference"
             $ prettyElem "Signature" ga $ dgn_sign lbl ]
           DGNode orig cs ->
-              unode "Origin" (dgOriginHeader orig)
-              : (case dgOriginSpec orig of
+              (case dgOriginSpec orig of
                   Nothing -> []
                   Just si -> [unode "OriginSpec" $ tokStr si])
               ++ (case show $ pretty cs of

@@ -48,10 +48,10 @@ libItem :: GlobalAnnos -> LIB_ITEM -> Element
 libItem ga li = case li of
   Spec_defn n g as rg ->
     add_attrs (mkNameAttr (tokStr n) : rgAttrs rg)
-      $ unode "Spec" $ genericity ga g ++ [annoted spec ga as]
+      $ unode "SpecDefn" $ genericity ga g ++ [annoted spec ga as]
   View_defn n g (View_type from to _) mapping rg ->
     add_attrs (mkNameAttr (tokStr n) : rgAttrs rg)
-      $ unode "View" $ genericity ga g
+      $ unode "ViewDefn" $ genericity ga g
         ++ [ unode "From" $ annoted spec ga from
            , unode "To" $ annoted spec ga to ]
         ++ concatMap (gmapping ga) mapping
@@ -71,8 +71,10 @@ spec ga s = case s of
     unode "Translation" $ annoted spec ga as : concatMap (gmapping ga) m
   Reduction as m ->
     unode "Restriction" $ annoted spec ga as : restriction ga m
-  Union asl rg -> withRg rg $ unode "Union" $ map (annoted spec ga) asl
-  Extension asl rg -> withRg rg $ unode "Extension" $ map (annoted spec ga) asl
+  Union asl rg -> withRg rg $ unode "Union"
+    $ map (unode "Spec" . annoted spec ga) asl
+  Extension asl rg -> withRg rg $ unode "Extension"
+   $ map (unode "Spec" . annoted spec ga) asl
   Free_spec as rg -> withRg rg $ unode "Free" $ annoted spec ga as
   Cofree_spec as rg -> withRg rg $ unode "Cofree" $ annoted spec ga as
   Local_spec as ins rg -> withRg rg $ unode "Local"
@@ -169,8 +171,7 @@ annoted f ga a = let
   e = f ga $ item a
   l = annos "Left" ga $ l_annos a
   r = annos "Right" ga $ r_annos a
-  in e { elContent = elContent e
-         ++ map Elem (subnodes "Annotations" $ l ++ r) }
+  in e { elContent = map Elem l ++ elContent e ++ map Elem r }
 
 withRg :: Range -> Element -> Element
 withRg = add_attrs . rgAttrs

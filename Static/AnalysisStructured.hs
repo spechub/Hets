@@ -313,10 +313,11 @@ anaSpecAux conser addSyms lg dg nsig name opts sp = case sp of
    do let sp1 = item asp
           sp1' = item asp'
           adj = adjustPos poss
+          lname = extName "Local" name
       (sp2, nsig'@(NodeSig _ (G_sign lid' sigma' _)), dg') <-
-        anaSpec False lg dg nsig (extName "Local" name) opts sp1
+        anaSpec False lg dg nsig lname opts sp1
       (sp2', NodeSig n'' (G_sign lid'' sigma'' _), dg'') <-
-        anaSpec False lg dg' (JustNode nsig') (extName "Within" name) opts sp1'
+        anaSpec False lg dg' (JustNode nsig') (extName "Within" lname) opts sp1'
       let gsigma = getMaybeSig nsig
       G_sign lid sigma _ <- return gsigma
       sigma1 <- adj $ coerceSign lid' lid "Analysis of local spec" sigma'
