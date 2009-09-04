@@ -39,25 +39,23 @@ shellacWithInput descr inp =
 -- | Generates the list of all the shell commands together
 -- with a short description
 shellacCommands :: [ShellCommand CMDL_State]
-shellacCommands
- = let genCmds = concatMap (\x ->
-              map (\y-> case cmdFn x of
-                         CmdNoInput _ -> cmd y (shellacCmd x)
-                            $ describeCmd $ cmdDescription x
-                         CmdWithInput _ -> cmd y (shellacWithInput x)
-                            $ describeCmd $ cmdDescription x
-                             ) [cmdName x]) getCommands
-   in
+shellacCommands = let
+    genCmds = concatMap (\ x ->
+         let desc = cmdDescription x
+             cn = cmdName x
+         in map (\ y -> (case cmdFn x of
+                          CmdNoInput _ -> cmd y $ shellacCmd x
+                          CmdWithInput _ -> cmd y $ shellacWithInput x)
+                            $ describeCmd desc)
+                $ case desc of
+                    GlobCmd ProveCurrent -> [cn, "prove-all"]
+                    _ -> [cn]) getCommands
+    in
     -- different names for exit commands
-      exitCommand "exit"
-    : exitCommand "quit"
-    -- also vi style
-    : exitCommand ":q"
+       map exitCommand ["exit", "quit", ":q"]
     -- different name for help commands
-    : helpCommand "help"
-    -- also ? for help
-    : helpCommand "?"
-    : genCmds
+    ++ map helpCommand ["help", "?"]
+    ++ genCmds
 
 
 -- | Generates a command description given all parameters
