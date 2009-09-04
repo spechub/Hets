@@ -58,4 +58,5 @@ globResultAct =
   , (Renaming, libEnv_flattening_renamings)
   , (Hiding, libEnv_flattening_hiding)
   , (Heterogeneity, libEnv_flattening_heterogen)
+  , (QualifyNames, qualifyLibEnv)
  ]
