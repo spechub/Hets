@@ -83,7 +83,7 @@ spec ga s = case s of
   Group as rg -> withRg rg $ unode "Group" $ annoted spec ga as
   Spec_inst n fa rg ->
     add_attrs (mkNameAttr (tokStr n) : rgAttrs rg)
-    $ unode "Inst" $ map (annoted fitArg ga) fa
+    $ unode "Actuals" $ map (annoted fitArg ga) fa
   Qualified_spec ln as rg -> withRg rg $ unode "Qualified"
     [prettyElem "Logic" ga ln, annoted spec ga as]
   Data l1 _ s1 s2 rg ->
@@ -92,7 +92,7 @@ spec ga s = case s of
 
 fitArg :: GlobalAnnos -> FIT_ARG -> Element
 fitArg ga fa = case fa of
-  Fit_spec as m rg -> withRg rg $ unode "Fitspec"
+  Fit_spec as m rg -> withRg rg $ unode "Spec"
     $ annoted spec ga as : concatMap (gmapping ga) m
   Fit_view n fargs rg ->
     add_attrs (mkNameAttr (tokStr n) : rgAttrs rg)
@@ -121,9 +121,9 @@ gBasicSpec :: GlobalAnnos -> G_basic_spec -> Element
 gBasicSpec ga (G_basic_spec lid bs) = itemToXml ga $ toItem lid bs
 
 genericity :: GlobalAnnos -> GENERICITY -> [Element]
-genericity ga (Genericity (Params pl) (Imported il) _) =
-  map (unode "Parameter" . annoted spec ga) pl
-  ++ map (unode "Given" . annoted spec ga) il
+genericity ga (Genericity (Params pl) (Imported il) rg) =
+  unode "Parameters" (spec ga $ Union pl rg)
+  : map (unode "Given" . annoted spec ga) il
 
 restriction :: GlobalAnnos -> RESTRICTION -> [Element]
 restriction ga restr = case restr of
