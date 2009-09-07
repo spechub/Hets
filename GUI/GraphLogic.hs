@@ -535,7 +535,7 @@ proveAtNode checkCons gInfo descr dgraph = do
       let action = do
             res@(Result d _) <- basicInferenceNode checkCons logicGraph ln
                                    dgraph' (descr, dgn') le' iSt
-            if hasErrors d && (diagString $ d !! 0) == "Proofs.Proofs: selection"
+            if d /= [] && (diagString $ d !! 0) == "Proofs.Proofs: selection"
               then return ()
               else runProveAtNode checkCons gInfo (descr, dgn') res
       hidingWarnDiag dgn' action
