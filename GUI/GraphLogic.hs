@@ -533,9 +533,11 @@ proveAtNode checkCons gInfo descr dgraph = do
    acquired <- tryLockLocal dgn'
    if acquired then do
       let action = do
-            res <- basicInferenceNode checkCons logicGraph ln dgraph'
-              (descr, dgn') le' iSt
-            runProveAtNode checkCons gInfo (descr, dgn') res
+            res@(Result d _) <- basicInferenceNode checkCons logicGraph ln
+                                   dgraph' (descr, dgn') le' iSt
+            if hasErrors d && (diagString $ d !! 0) == "Proofs.Proofs: selection"
+              then return ()
+              else runProveAtNode checkCons gInfo (descr, dgn') res
       hidingWarnDiag dgn' action
       unlockLocal dgn'
     else errorDialog "Error" "Proofwindow already open"

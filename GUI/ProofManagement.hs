@@ -643,10 +643,12 @@ proofManagementGUI lid prGuiAcs
             prState <- updateStatusSublogic s'
             Result.Result ds ms'' <- fineGrainedSelectionF prGuiAcs prState
             s'' <- case ms'' of
-                   Nothing -> do
-                       errorDialog "Error" (showRelDiags 2 ds)
-                       return s'
-                   Just res -> return res
+              Nothing -> do
+                if ds/=[] && (diagString $ ds!!0) == "Proofs.Proofs: selection"
+                  then return ()
+                  else errorDialog "Error" (showRelDiags 2 ds)
+                return s'
+              Just res -> return res
             let s''' = s'' { proverRunning = False
                            , accDiags = accDiags s'' ++ ds }
             enableWids wids
