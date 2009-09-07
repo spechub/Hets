@@ -135,6 +135,7 @@ prettyDGNodeLab l = sep [ text $ getDGNodeName l, pretty $ nodeInfo l]
 instance Pretty DGNodeLab where
   pretty l = vcat
     [ text "Origin:" <+> pretty (nodeInfo l)
+    , text $ "XPath: " ++ showXPath (reverse $ xpath $ dgn_name l)
     , pretty $ getNodeConsStatus l
     , if hasOpenGoals l then text "has open goals" else
       if hasSenKind (const True) l then Doc.empty else text "locally empty"
