@@ -206,16 +206,15 @@ anaSpec = anaSpecAux None
 anaSpecAux :: Conservativity -> Bool -> LogicGraph -> DGraph -> MaybeNode
   -> NodeName -> HetcatsOpts -> SPEC -> Result (SPEC, NodeSig, DGraph)
 anaSpecAux conser addSyms lg dg nsig name opts sp = case sp of
-  Basic_spec (G_basic_spec lid bspec) pos ->
-    do let adj = adjustPos pos
-           curLogic = Logic lid
+  Basic_spec (G_basic_spec lid bspec) pos -> adjustPos pos $ do
+       let curLogic = Logic lid
        (nsig', dg0) <- coerceMaybeNode lg dg nsig name curLogic
        G_sign lid' sigma' _ <- return $ case nsig' of
            EmptyNode cl -> emptyG_sign cl
            JustNode ns -> getSig ns
        ExtSign sig sys <-
-           adj $ coerceSign lid' lid "Analysis of basic spec" sigma'
-       (bspec', ExtSign sigma_complete sysd, ax) <- adj $
+           coerceSign lid' lid "Analysis of basic spec" sigma'
+       (bspec', ExtSign sigma_complete sysd, ax) <-
           if isStructured opts
            then return (bspec, mkExtSign $ empty_signature lid, [])
            else do
@@ -309,10 +308,9 @@ anaSpecAux conser addSyms lg dg nsig name opts sp = case sp of
       (nasp, nsig', dg') <- anaFreeOrCofreeSpec addSyms lg opts dg nsig name
         Cofree asp poss
       return (Cofree_spec nasp poss, nsig', dg')
-  Local_spec asp asp' poss ->
-   do let sp1 = item asp
+  Local_spec asp asp' poss -> adjustPos poss $ do
+      let sp1 = item asp
           sp1' = item asp'
-          adj = adjustPos poss
           lname = extName "Local" name
       (sp2, nsig'@(NodeSig _ (G_sign lid' sigma' _)), dg') <-
         anaSpec False lg dg nsig (extName "Spec" lname) opts sp1
@@ -320,13 +318,13 @@ anaSpecAux conser addSyms lg dg nsig name opts sp = case sp of
         anaSpec False lg dg' (JustNode nsig') (extName "Within" lname) opts sp1'
       let gsigma = getMaybeSig nsig
       G_sign lid sigma _ <- return gsigma
-      sigma1 <- adj $ coerceSign lid' lid "Analysis of local spec" sigma'
-      sigma2 <- adj $ coerceSign lid'' lid "Analysis of local spec" sigma''
+      sigma1 <- coerceSign lid' lid "Analysis of local spec" sigma'
+      sigma2 <- coerceSign lid'' lid "Analysis of local spec" sigma''
       let sys = ext_sym_of lid sigma
           sys1 = ext_sym_of lid sigma1
           sys2 = ext_sym_of lid sigma2
       mor3 <- if isStructured opts then return (ext_ide sigma2)
-               else adj $ ext_cogenerated_sign lid
+               else ext_cogenerated_sign lid
                       (sys1 `Set.difference` sys) sigma2
       let sigma3 = dom mor3
           -- gsigma2 = G_sign lid sigma2
@@ -344,17 +342,16 @@ anaSpecAux conser addSyms lg dg nsig name opts sp = case sp of
                          poss, ns,
               insLink dg2 (gEmbed2 gsigma3 $ mkG_morphism lid mor3)
                   HidingDefLink SeeTarget n'' node)
-  Closed_spec asp pos ->
-   do let sp1 = item asp
+  Closed_spec asp pos -> adjustPos pos $ do
+      let sp1 = item asp
           l = getLogic nsig
       -- analyse spec with empty local env
       (sp', NodeSig n' gsigma', dg') <-   -- choose a unique starting letter
           anaSpec False lg dg (EmptyNode l) (extName "Closed" name) opts sp1
       let gsigma = getMaybeSig nsig
-          adj = adjustPos pos
-      gsigma'' <- adj $ gsigUnion lg gsigma gsigma'
+      gsigma'' <- gsigUnion lg gsigma gsigma'
       let (ns@(NodeSig node gsigma2), dg2) = insGSig dg' name DGClosed gsigma''
-      incl2 <- adj $ ginclusion lg gsigma' gsigma2
+      incl2 <- ginclusion lg gsigma' gsigma2
       let dg3 = insLink dg2 incl2 globalDef SeeTarget n' node
       dg4 <- createConsLink DefLink conser lg dg3 nsig ns DGLinkClosedLenv
       return (Closed_spec (replaceAnnoted sp' asp) pos, ns, dg4)
@@ -373,10 +370,9 @@ anaSpecAux conser addSyms lg dg nsig name opts sp = case sp of
       return (Group (replaceAnnoted sp' asp) pos, nsig', dg')
   Spec_inst spname afitargs pos0 -> let
        pos = if null afitargs then tokPos spname else pos0
-       adj = adjustPos pos
        spstr = tokStr spname
-    in case lookupGlobalEnvDG spname dg of
-    Just (SpecEntry gs@(ExtGenSig (GenSig imps params _)
+    in  adjustPos pos $ case lookupGlobalEnvDG spname dg of
+    Just (SpecEntry gs@(ExtGenSig (GenSig _ params _)
                         body@(NodeSig nB gsigmaB))) ->
      case (\ x y -> (x , x - y)) (length afitargs) (length params) of
       -- the case without parameters leads to a simpler dg
@@ -390,41 +386,29 @@ anaSpecAux conser addSyms lg dg nsig name opts sp = case sp of
         _ -> do
            gsigma <- case nsig of
              EmptyNode _ -> return gsigmaB
-             JustNode (NodeSig _ sig) -> adj $ gsigUnion lg sig gsigmaB
+             JustNode (NodeSig _ sig) -> gsigUnion lg sig gsigmaB
            let (fsig@(NodeSig node gsigma'), dg2) =
                  insGSig dg name (DGSpecInst spname) gsigma
-           incl <- adj $ ginclusion lg gsigmaB gsigma'
+           incl <- ginclusion lg gsigmaB gsigma'
            let dg3 = insLink dg2 incl globalDef SeeTarget nB node
            dg4 <- createConsLink DefLink conser lg dg3 nsig fsig SeeTarget
            return (sp, fsig, dg4)
       -- now the case with parameters
       (_, 0) -> do
-       let fitargs = map item afitargs
-       (fitargs', dg', args, _) <- adj $ foldM (anaFitArgs lg opts spname imps)
-           ([], dg, [], extName "Actuals" name) (zip params fitargs)
-       let actualargs = reverse args
-       (gsigma', morDelta@(GMorphism cid _ _ _ _)) <-
-           adj $ applyGS lg gs actualargs
-       gsigmaRes <- case nsig of
-         EmptyNode _ -> return gsigma'
-         JustNode (NodeSig _ sigma) -> adj $ gsigUnion lg sigma gsigma'
-       let (ns@(NodeSig node gsigmaRes'), dg2) =
-               insGSig dg' name (DGSpecInst spname) gsigmaRes
-       dg3 <- foldM (parLink lg DGLinkFitSpec gsigmaRes' node) dg2
-              $ map snd args
+       (ffitargs, dg', (morDelta, gsigmaA, ns@(NodeSig nA gsigmaRes))) <-
+               anaAllFitArgs lg opts dg nsig name spname gs afitargs
+       GMorphism cid _ _ _ _ <- return morDelta
        morDelta' <- case nsig of
          EmptyNode _ -> return morDelta
          _ -> do
-           incl2 <- adj $ ginclusion lg gsigma' gsigmaRes'
+           incl2 <- ginclusion lg gsigmaA gsigmaRes
            comp morDelta incl2
        (_, imor) <- gSigCoerce lg gsigmaB $ Logic $ sourceLogic cid
        tmor <- gEmbedComorphism imor gsigmaB
        morDelta'' <- comp tmor morDelta'
-       let dg4 = insLink dg3 morDelta'' globalDef SeeTarget nB node
+       let dg4 = insLink dg' morDelta'' globalDef SeeTarget nB nA
        dg5 <- createConsLink DefLink conser lg dg4 nsig ns SeeTarget
-       return (Spec_inst spname
-                         (zipWith replaceAnnoted (reverse fitargs') afitargs)
-                         pos, ns, dg5)
+       return (Spec_inst spname ffitargs pos, ns, dg5)
  -- finally the case with conflicting numbers of formal and actual parameters
       _ ->
         fatal_error
@@ -434,13 +418,12 @@ anaSpecAux conser addSyms lg dg nsig name opts sp = case sp of
                  ("Structured specification " ++ spstr ++ " not found") pos
 
   -- analyse "data SPEC1 SPEC2"
-  Data (Logic lidD) (Logic lidP) asp1 asp2 pos -> do
+  Data (Logic lidD) (Logic lidP) asp1 asp2 pos -> adjustPos pos $ do
       let sp1 = item asp1
           sp2 = item asp2
-          adj = adjustPos pos
       -- look for the inclusion comorphism from the current logic's data logic
       -- into the current logic itself
-      Comorphism cid <- adj $ logicInclusion lg (Logic lidD) (Logic lidP)
+      Comorphism cid <- logicInclusion lg (Logic lidD) (Logic lidP)
       let lidD' = sourceLogic cid
           lidP' = targetLogic cid
           dname = extName "Data" name
@@ -448,9 +431,9 @@ anaSpecAux conser addSyms lg dg nsig name opts sp = case sp of
       (sp1', NodeSig n' (G_sign lid' sigma' _), dg') <-
          anaSpec False lg dg (EmptyNode (Logic lidD)) dname opts sp1
       -- force the result to be in the data logic
-      sigmaD <- adj $ coerceSign lid' lidD' "Analysis of data spec" sigma'
+      sigmaD <- coerceSign lid' lidD' "Analysis of data spec" sigma'
       -- translate SPEC1's signature along the comorphism
-      (sigmaD', sensD') <- adj $ ext_map_sign cid sigmaD
+      (sigmaD', sensD') <- ext_map_sign cid sigmaD
       -- create a development graph link for this translation
       let (nsig2@(NodeSig node _), dg1) = insGTheory dg' dname DGData
             $ G_theory lidP' sigmaD' startSigId (toThSens sensD') startThId
@@ -510,10 +493,10 @@ parLink lg orig gsigma' node dg (NodeSig nA_i sigA_i)= do
 anaRen :: LogicGraph -> HetcatsOpts -> MaybeNode -> Range -> GMorphism
   -> G_mapping -> Result GMorphism
 anaRen lg opts lenv pos gmor@(GMorphism r sigma ind1 mor _) gmap =
-  let adj = adjustPos pos in case gmap of
+  adjustPos pos $ case gmap of
   G_symb_map (G_symb_map_items_list lid sis) ->
     let lid2 = targetLogic r in
-    adj $ if language_name lid2 == language_name lid then
+    if language_name lid2 == language_name lid then
      if isStructured opts then return gmor else do
       sis1 <- coerceSymbMapItemsList lid lid2 "Analysis of renaming" sis
       rmap <- stat_symb_map_items lid2 sis1
@@ -643,9 +626,7 @@ anaRestriction gSigma@(G_sign lid sigma _)
 anaGmaps :: LogicGraph -> HetcatsOpts -> Range -> G_sign -> G_sign
   -> [G_mapping] -> Result G_morphism
 anaGmaps lg opts pos psig@(G_sign lidP sigmaP _) (G_sign lidA sigmaA _) gsis
-    = do
-  let adj = adjustPos pos
-  adj $ if isStructured opts
+    = adjustPos pos $ if isStructured opts
     then return $ mkG_morphism lidP $ ext_ide sigmaP
     else if null gsis then do
         sigmaA' <- coerceSign lidA lidP "anaGmaps" sigmaA
@@ -677,7 +658,7 @@ anaGmaps lg opts pos psig@(G_sign lidP sigmaP _) (G_sign lidA sigmaA _) gsis
 
 anaFitArg :: LogicGraph -> DGraph -> SPEC_NAME -> MaybeNode -> NodeSig
   -> HetcatsOpts -> NodeName -> FIT_ARG
-  -> Result (FIT_ARG, DGraph, (G_morphism,NodeSig))
+  -> Result (FIT_ARG, DGraph, (G_morphism, NodeSig))
 anaFitArg lg dg spname nsigI (NodeSig nP gsigmaP) opts name fv = case fv of
   Fit_spec asp gsis pos -> do
    (sp', nsigA@(NodeSig nA gsigA), dg') <-
@@ -686,107 +667,105 @@ anaFitArg lg dg spname nsigI (NodeSig nP gsigmaP) opts name fv = case fv of
    return (Fit_spec (replaceAnnoted sp' asp) gsis pos,
           insLink dg' (gEmbed gmor) globalThm
              (DGLinkSpecInst spname) nP nA, (gmor, nsigA))
-  Fit_view vn afitargs pos -> let
-       adj = adjustPos pos
-       spstr = tokStr spname
-    in case lookupGlobalEnvDG vn dg of
-    Just (ViewEntry (ExtViewSig src mor
-                     gs@(ExtGenSig (GenSig imps params _) target))) -> do
-     let nSrc = getNode src
-         nTar = getNode target
-         gsigmaS = getSig src
-         gsigmaT = getSig target
-         gsigmaI = getMaybeSig nsigI
-     GMorphism cid _ _ morHom ind <- return mor
-     let lid = targetLogic cid
-     case (\ x y -> (x, x - y)) (length afitargs) (length params) of
-      -- the case without parameters leads to a simpler dg
-      (0, 0) -> case nsigI of
-         -- the subcase with empty import leads to a simpler dg
-         EmptyNode _ -> do
-           gmor <- ginclusion lg gsigmaP gsigmaS
-           return (fv, insLink dg gmor globalThm (DGLinkFitView spname)
-                   nP nSrc, (G_morphism lid morHom ind, target))
-         -- the subcase with nonempty import
-         JustNode (NodeSig nI _) -> do
-           gsigmaIS <- adj $ gsigUnion lg gsigmaI gsigmaS
-           unless (isSubGsign lg gsigmaP gsigmaIS)
+  Fit_view vn afitargs pos -> case lookupGlobalEnvDG vn dg of
+    Just (ViewEntry (ExtViewSig (NodeSig nSrc gsigmaS) mor
+      gs@(ExtGenSig (GenSig _ params _) target@(NodeSig nTar gsigmaT))))
+        -> adjustPos pos $ do
+      GMorphism cid _ _ morHom ind <- return mor
+      let lid = targetLogic cid
+          spstr = tokStr spname
+          pname = dgn_name $ labDG dg nP
+          gsigmaI = getMaybeSig nsigI
+      dg5 <- case nsigI of
+        EmptyNode _ -> return dg
+        JustNode (NodeSig nI _) -> do
+          gsigmaIS <- gsigUnion lg gsigmaI gsigmaS
+          unless (isSubGsign lg gsigmaP gsigmaIS)
              (plain_error ()
               ("Parameter does not match source of fittig view. "
                ++ "Parameter signature:\n"
                ++ showDoc gsigmaP
                "\nSource signature of fitting view (united with import):\n"
                ++ showDoc gsigmaIS "") pos)
-           (G_sign lidI sigI1 _, _) <- adj $ gSigCoerce lg gsigmaI (Logic lid)
-           sigI <- adj $ coerceSign lidI lid
+          inclIP <- ginclusion lg gsigmaI gsigmaP
+          inclSP <- ginclusion lg gsigmaS gsigmaP
+          let (NodeSig n' _, dg1) = insGSig dg (extName "View" name)
+                {xpath = xpath pname} (DGFitView spname) gsigmaP
+              dg2 = insLink dg1 inclIP globalDef
+                    (DGLinkFitViewImp spname) nI n'
+              dg3 = insLink dg2 inclSP globalDef SeeTarget nSrc n'
+              dg4 = insLink dg3 (ide gsigmaP) globalThm SeeTarget nP n'
+          return dg4
+      case (\ x y -> (x, x - y)) (length afitargs) (length params) of
+      -- the case without parameters leads to a simpler dg
+        (0, 0) -> case nsigI of
+         -- the subcase with empty import leads to a simpler dg
+          EmptyNode _ -> do
+            gmor <- ginclusion lg gsigmaP gsigmaS
+            return (fv, insLink dg5 gmor globalThm (DGLinkFitView spname)
+                    nP nSrc, (G_morphism lid morHom ind, target))
+         -- the subcase with nonempty import
+          JustNode (NodeSig nI _) -> do
+            (G_sign lidI sigI1 _, _) <- gSigCoerce lg gsigmaI (Logic lid)
+            sigI <- coerceSign lidI lid
                     "Analysis of instantiation with import" sigI1
-           mor_I <- adj $ morphism_union lid morHom $ ext_ide sigI
-           gsigmaA <- adj $ gsigUnion lg gsigmaI gsigmaT
-           incl1 <- adj $ ginclusion lg gsigmaI gsigmaA
-           incl2 <- adj $ ginclusion lg gsigmaT gsigmaA
-           incl3 <- adj $ ginclusion lg gsigmaI gsigmaP
-           incl4 <- adj $ ginclusion lg gsigmaS gsigmaP
-           let (ns@(NodeSig nA _), dg1) =
-                   insGSig dg name (DGFitViewA spname) gsigmaA
-               (NodeSig n' _, dg2) =
-                   insGSig dg1 (inc name) (DGFitView spname) gsigmaP
-               dg3 = insLink dg2 incl1 globalDef
-                     (DGLinkFitViewAImp spname) nI nA
-               dg4 = insLink dg3 incl3 globalDef
-                     (DGLinkFitViewImp spname) nI n'
-               dg5 = insLink dg4 incl2 globalDef SeeTarget nTar nA
-               dg6 = insLink dg5 incl4 globalDef SeeTarget nSrc n'
-               dg7 = insLink dg6 (ide gsigmaP)
-                     globalThm SeeTarget nP n'
-           return (fv, dg7, (mkG_morphism lid mor_I, ns))
-      -- now the case with parameters
-      (_, 0) -> do
-       let fitargs = map item afitargs
-       (fitargs', dg', args,_) <- foldM (anaFitArgs lg opts spname imps)
-           ([], dg, [], extName "Actuals" name) (zip params fitargs)
-       let actualargs = reverse args
-       (gsigmaA, gmor_f) <- adj $ applyGS lg gs actualargs
-       gsigmaRes <- adj $ gsigUnion lg gsigmaI gsigmaA
-       mor1 <- adj $ comp mor gmor_f
-       incl1 <- adj $ ginclusion lg gsigmaA gsigmaRes
-       mor' <- adj $ comp gmor_f incl1
-       GMorphism cid1 _ _ mor1Hom _<- return mor1
-       let lid1 = targetLogic cid1
-       when (language_name (sourceLogic cid1) /= language_name lid1)
+            mor_I <- morphism_union lid morHom $ ext_ide sigI
+            gsigmaA <- gsigUnion lg gsigmaI gsigmaT
+            inclIA <- ginclusion lg gsigmaI gsigmaA
+            inclTA <- ginclusion lg gsigmaT gsigmaA
+            let (ns@(NodeSig nA _), dg6) =
+                  insGSig dg5 name (DGFitViewA spname) gsigmaA
+                dg7 = insLink dg6 inclIA globalDef
+                  (DGLinkFitViewAImp spname) nI nA
+                dg8 = insLink dg7 inclTA globalDef SeeTarget nTar nA
+            return (fv, dg8, (mkG_morphism lid mor_I, ns))
+        -- now the case with parameters
+        (_, 0) -> do
+          (ffitargs, dg', (gmor_f, gsigmaA, ns@(NodeSig nA gsigmaRes))) <-
+               anaAllFitArgs lg opts dg5 nsigI name spname gs afitargs
+          mor1 <- comp mor gmor_f
+          incl1 <- ginclusion lg gsigmaA gsigmaRes
+          mor' <- comp gmor_f incl1
+          GMorphism cid1 _ _ mor1Hom _ <- return mor1
+          let lid1 = targetLogic cid1
+          when (language_name (sourceLogic cid1) /= language_name lid1)
             $ fatal_error "heterogeneous fitting views not yet implemented"
               pos
-       G_sign lidI sigI1 _<- return gsigmaI
-       sigI <- adj $ coerceSign lidI lid1
+          G_sign lidI sigI1 _ <- return gsigmaI
+          sigI <- coerceSign lidI lid1
                "Analysis of instantiation with parameters" sigI1
-       theta <- adj $ morphism_union lid1 mor1Hom (ext_ide sigI)
-       incl2 <- adj $ ginclusion lg gsigmaI gsigmaRes
-       incl3 <- adj $ ginclusion lg gsigmaI gsigmaP
-       incl4 <- adj $ ginclusion lg gsigmaS gsigmaP
-       let (ns@(NodeSig nA _), dg1) =
-                   insGSig dg' name (DGFitViewA spname) gsigmaRes
-           (NodeSig n' _, dg2) =
-                   insGSig dg1 (extName "View" name) (DGFitView spname) gsigmaP
-       dg3 <- foldM (parLink lg (DGLinkFitView spname) gsigmaRes nA) dg2
-              $ map snd args
-       let dg4 = case nsigI of
-              EmptyNode _ -> dg3
-              JustNode (NodeSig nI _) -> let
-                dg3a = insLink dg3 incl2 globalDef
-                       (DGLinkFitViewAImp spname) nI nA
-                in insLink dg3a incl3 globalDef (DGLinkFitViewImp spname) nI n'
-           dg5 = insLink dg4 mor' globalDef SeeTarget nTar nA
-           dg6 = insLink dg5 incl4 globalDef SeeTarget nSrc n'
-           dg7 = insLink dg6 (ide gsigmaP) globalThm SeeTarget nP n'
-       return (Fit_view vn
-                        (zipWith replaceAnnoted (reverse fitargs') afitargs)
-                        pos, dg7, (mkG_morphism lid1 theta, ns))
+          theta <- morphism_union lid1 mor1Hom (ext_ide sigI)
+          inclIA <- ginclusion lg gsigmaI gsigmaRes
+          let dg8 = case nsigI of
+                EmptyNode _ -> dg'
+                JustNode (NodeSig nI _) -> insLink dg' inclIA globalDef
+                  (DGLinkFitViewAImp spname) nI nA
+              dg9 = insLink dg8 mor' globalDef SeeTarget nTar nA
+          return (Fit_view vn ffitargs pos, dg9, (mkG_morphism lid1 theta, ns))
 -- finally the case with conflicting numbers of formal and actual parameters
-      _ ->
-        fatal_error
+        _ -> fatal_error
           (spstr ++ " expects " ++ show (length params) ++ " arguments"
            ++ " but was given " ++ show (length afitargs)) pos
-    _ -> fatal_error
-                 ("View " ++ tokStr vn ++ " not found") pos
+    _ -> fatal_error ("View " ++ tokStr vn ++ " not found") pos
+
+anaAllFitArgs :: LogicGraph -> HetcatsOpts -> DGraph -> MaybeNode -> NodeName
+  -> SPEC_NAME -> ExtGenSig -> [Annoted FIT_ARG]
+  -> Result ([Annoted FIT_ARG], DGraph, (GMorphism, G_sign, NodeSig))
+anaAllFitArgs lg opts dg nsig name spname
+  gs@(ExtGenSig (GenSig imps params _) _)
+  afitargs = do
+  let fitargs = map item afitargs
+  (fitargs', dg', args, _) <- foldM (anaFitArgs lg opts spname imps)
+           ([], dg, [], extName "Actuals" name) (zip params fitargs)
+  let actualargs = reverse args
+  (gsigma', morDelta) <- applyGS lg gs actualargs
+  gsigmaRes <- gsigUnion lg (getMaybeSig nsig) gsigma'
+  let (ns@(NodeSig node gsigmaRes'), dg2) =
+        insGSig dg' name (DGSpecInst spname) gsigmaRes
+  dg3 <- foldM (parLink lg DGLinkFitSpec gsigmaRes' node) dg2 $ map snd args
+  return ( zipWith replaceAnnoted (reverse fitargs') afitargs, dg3
+         , (morDelta, gsigma', ns))
+
 
 -- Extension of signature morphisms (for instantitations)
 -- first some auxiliary functions
