@@ -246,11 +246,12 @@ callProver :: (Logic lid sublogics1
     -> (G_prover,AnyComorphism) -> IO (Result (ProofState lid sentence))
 callProver st intSt trans_chosen freedefs p_cm@(_,acm) =
        runResultT $ do
+        (_, exit) <- lift $ pulseBar "prepare for proving" "please wait..."
         G_theory_with_prover lid th p <- liftR $ prepareForProving st p_cm
-        let freedefs1 = fromMaybe [] $
-                  mapM (coerceFreeDefMorphism (logicId st) lid
-                           "Logic.InferBasic: callProver")
-                          freedefs
+        let freedefs1 = fromMaybe [] $ mapM (coerceFreeDefMorphism (logicId st)
+                                            lid "Logic.InferBasic: callProver")
+                                            freedefs
+        lift $ exit
         ps <- lift $ proveTheory lid p (theoryName st) th freedefs1
         let st' = markProved acm lid ps st
         lift $ addCommandHistoryToState intSt st'
