@@ -122,8 +122,8 @@ gBasicSpec ga (G_basic_spec lid bs) = itemToXml ga $ toItem lid bs
 
 genericity :: GlobalAnnos -> GENERICITY -> [Element]
 genericity ga (Genericity (Params pl) (Imported il) rg) =
-  unode "Parameters" (spec ga $ Union pl rg)
-  : map (unode "Given" . annoted spec ga) il
+  [ unode "Parameters" $ spec ga $ Union pl rg
+  , unode "Imports" $ spec ga $ Union il rg ]
 
 restriction :: GlobalAnnos -> RESTRICTION -> [Element]
 restriction ga restr = case restr of
