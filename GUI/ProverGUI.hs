@@ -21,13 +21,13 @@ import Static.GTheory
 import Common.Result as Result
 import Proofs.AbstractState
 import qualified Comorphisms.KnownProvers as KnownProvers
-import Control.Concurrent
 
-#ifdef GTKGLADE
+-- #ifdef GTKGLADE
 -- import GUI.GtkProverGUI
-#endif
-
+-- #elif defined UNI_PACKAGE
+import Control.Concurrent
 import GUI.ProofManagement
+-- #endif
 
 proverGUI ::
   (Logic lid sublogics1
@@ -49,8 +49,13 @@ proverGUI ::
   -> [(G_prover,AnyComorphism)] -- ^ list of suitable comorphisms to provers
                                 -- for sublogic of G_theory
   -> IO (Result.Result G_theory)
+-- #ifdef GTKGLADE
+-- proverGUI = showProverGUI
+-- #elif defined UNI_PACKAGE
 proverGUI lid prGuiAcs thName warningTxt th knownProvers comorphList = do
   guiMVar <- newMVar Nothing
   proofManagementGUI lid prGuiAcs thName warningTxt th knownProvers comorphList
                      guiMVar
-
+-- #else
+-- proverGUI = error "not implemented"
+-- #endif

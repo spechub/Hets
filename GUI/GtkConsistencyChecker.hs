@@ -23,88 +23,97 @@ import GUI.GtkUtils
 import qualified GUI.Glade.ConsistencyChecker as ConsistencyChecker
 import GUI.GraphTypes
 
-import Proofs.AbstractState (getConsCheckers, getPName)
-import Logic.Grothendieck (findComorphismPaths)
-import Comorphisms.LogicGraph(logicGraph)
-import Static.DevGraph(DGraph, dgn_theory, labDG)
-import Static.GTheory(sublogicOfTh)
+import Static.DevGraph
+import Static.GTheory
 
-import Monad (mapM_)
+import Interfaces.DataTypes
+
+import Logic.Grothendieck
+
+import Comorphisms.LogicGraph(logicGraph)
+
+import Proofs.AbstractState (getConsCheckers, getPName)
+
 import Data.IORef
+import Data.Graph.Inductive.Graph (LNode)
 
 -- | Displays the consistency checker window
-showConsistencyChecker :: GInfo -> Int -> DGraph  -> IO ()
-showConsistencyChecker _ descr dgraph  = postGUIAsync $ do
-  xml                 <- getGladeXML ConsistencyChecker.get
+showConsistencyChecker :: GInfo -> IO ()
+showConsistencyChecker gInfo@(GInfo { libName = ln }) = postGUIAsync $ do
+  xml            <- getGladeXML ConsistencyChecker.get
   -- get objects
-  window              <- xmlGetWidget xml castToWindow "ConsistencyChecker"
-  btnShowTheory       <- xmlGetWidget xml castToButton "btnShowTheory"
-  btnClose            <- xmlGetWidget xml castToButton "btnClose"
-  btnSelection        <- xmlGetWidget xml castToButton "btnSelection"
-  btnShowCASL         <- xmlGetWidget xml castToButton "btnShowCASL"
-  btnShowTPTP         <- xmlGetWidget xml castToButton "btnShowTPTP"
-  btnDisplay          <- xmlGetWidget xml castToButton "btnDisplay"
-  btnDetails          <- xmlGetWidget xml castToButton "btnDetails"
-  btnCheckConsistency <- xmlGetWidget xml castToButton "btnCheckConsistency"
-  trvModel            <- xmlGetWidget xml castToTreeView "trvModel"
-  trvFinder           <- xmlGetWidget xml castToTreeView "trvFinder"
+  window         <- xmlGetWidget xml castToWindow "ConsistencyChecker"
+  btnClose       <- xmlGetWidget xml castToButton "btnClose"
+  -- get nodes view and buttons
+  trvNodes       <- xmlGetWidget xml castToTreeView "trvNodes"
+  btnNodesAll    <- xmlGetWidget xml castToButton "btnNodesAll"
+  btnNodesNone   <- xmlGetWidget xml castToButton "btnNodesNone"
+  btnNodesInvert <- xmlGetWidget xml castToButton "btnNodesInvert"
+  -- get checker view and buttons
+  --lblStatus      <- xmlGetWidget xml castToLabel "lblStatus"
+  --lblSublogic    <- xmlGetWidget xml castToLabel "lblSublogic"
+  btnCheck       <- xmlGetWidget xml castToButton "btnCheck"
+  btnStop        <- xmlGetWidget xml castToButton "btnStop"
+  btnFineGrained <- xmlGetWidget xml castToButton "btnFineGrained"
+  trvFinder      <- xmlGetWidget xml castToTreeView "trvFinder"
 
-  set window [windowTitle := "Consistency Checker"]
+  windowSetTitle window "Consistency Checker"
 
-  initState <- (initialState lid thName th knownProvers comorphList
-                >>= recalculateSublogicF prGuiAcs)
+  -- get nodes
+  nodes <- do
+    ost <- readIORef $ intState gInfo
+    case i_state ost of
+      Nothing -> error "No state given."
+      Just ist -> return $ labNodesDG $ lookupDGraph ln $ i_libEnv ist
 
-  setListData trvModel goalDescription $ getGoals initState
+  -- setup data
+  listNodes <- setListData trvNodes (\ (_,l) -> getDGNodeName l) nodes
+  listFinder <- setListData trvFinder id []
 
-  setModelListSelector trvModel
-  setFinderListSelector trvFinder
-
-  setListData trvFinder (\ n -> n)
-                        $ foldr (\ n l -> if elem n l then l else n:l) []
-                        $ map (\ (a,_) -> getPName a)
-                        $ getConsCheckers $ findComorphismPaths logicGraph
-                        $ sublogicOfTh $ dgn_theory $ labDG dgraph descr
+  -- setup view selection actions
+  setListSelectorSingle trvFinder $ return ()
+  setListSelectorMultiple trvNodes btnNodesAll btnNodesNone btnNodesInvert
+                          $ updateNodes trvNodes listNodes listFinder
 
   -- bindings
   onClicked btnClose $ widgetDestroy window
-  onClicked btnShowTheory $ return ()
-  onClicked btnSelection $ return ()
-  onClicked btnShowCASL $ return ()
-  onClicked btnShowTPTP $ return ()
-  onClicked btnDisplay $ return ()
-  onClicked btnDetails $ return ()
-  onClicked btnCheckConsistency $ return ()
+  onClicked btnFineGrained $ return ()
+  onClicked btnStop $ return ()
+  onClicked btnCheck $ return ()
 
   widgetShow window
 
-setFinderListSelector :: MV.TreeView -> IO ()
-setFinderListSelector view = do
-  selector <- MV.treeViewGetSelection view
-  MV.treeSelectionSetMode selector MV.SelectionSingle
+-- | Get selected Nodes
+getNodes :: TreeView -> ListStore (LNode DGNodeLab) -> IO [LNode DGNodeLab]
+getNodes view list = do
+  selector <- treeViewGetSelection view
+  rows <- treeSelectionGetSelectedRows selector
+  mapM (\ (row:[]) -> listStoreGetValue list row) rows
 
-  setModelListSelector :: MV.TreeView -> IO ()
-setModelListSelector view = do
-  selector <- MV.treeViewGetSelection view
-  MV.treeSelectionSetMode selector MV.SelectionMultiple
+-- | Called when node selection is changed. Updates finder list
+updateNodes :: TreeView -> ListStore (LNode DGNodeLab) -> ListStore String
+            -> IO()
+updateNodes view listNodes listFinder = do
+  nodes' <- getNodes view listNodes
+  -- get list of theories
+  let ths = map (dgn_theory . snd) nodes'
+  if ths == [] then return ()
+    else do
+      -- get sublogic of joined theories
+      sublogic <- case ths of
+        []    -> error "this is not possible!"
+        th:[] -> return $ sublogicOfTh th
+        th:r  -> do
+          -- join theories
+          th' <- flatG_sentences th r
+          return $ sublogicOfTh th'
+      -- update finder list
+      updateFinder listFinder sublogic
 
-  ioRefSelection <- newIORef ([] :: [MV.TreePath])
-  MV.onCursorChanged view $ do
-    s' <- MV.treeSelectionGetSelectedRows selector
-    s <- readIORef ioRefSelection
-    let newSelection = [ x | x <- s', notElem x s]
-                    ++ [ x | x <- s, notElem x s']
-    writeIORef ioRefSelection newSelection
-    MV.treeSelectionUnselectAll selector
-    mapM_ (\ path -> MV.treeSelectionSelectPath selector path) newSelection
-
-  MV.treeSelectionSelectAll selector
-
-getGoals :: ProofState lid sentence -> [LBGoalView]
-getGoals = map toStatus . OMap.toList . goalMap
-  where toStatus (l,st) = let
-      tStatus = thmStatus st
-      si = if null tStatus
-           then LBIndicatorOpen
-           else indicatorFromBasicProof (maximum $ map snd $ tStatus)
-    in LBGoalView { statIndicator = si
-                  , goalDescription = l}
+-- | Update the list of finder
+updateFinder :: ListStore String -> G_sublogics -> IO ()
+updateFinder list sublogic = do
+  listStoreClear list
+  mapM_ (listStoreAppend list) $ foldr (\ n l -> if elem n l then l else n:l) []
+        $ map (\ (a,_) -> getPName a) $ getConsCheckers
+        $ findComorphismPaths logicGraph sublogic

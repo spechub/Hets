@@ -23,7 +23,7 @@ import GUI.UDGUtils
 import qualified GUI.HTkUtils as HTk
 #ifdef GTKGLADE
 import GUI.GtkLinkTypeChoice
---import GUI.GtkConsistencyChecker
+import GUI.GtkConsistencyChecker
 #endif
 
 import Control.Concurrent.MVar
@@ -261,6 +261,7 @@ createGlobalMenu gInfo@(GInfo { hetcatsOpts = opts
                                      GA.hideSetOfEdgeTypes gi eTypes
                                      updateGraph gInfo []
                                    )
+     , Button "Consistency checker" (showConsistencyChecker gInfo)
 #endif
      , Menu (Just "Proofs") $ map (\ (cmd, act) ->
        -- History ? or just some partial history in ch ?
@@ -325,9 +326,6 @@ createLocalMenuNode gInfo = LocalMenu (Menu (Just "node menu") $ map ($ gInfo)
   , createLocalMenuButtonProveAtNode
   , createLocalMenuButtonProveStructured
   , createLocalMenuButtonCheckCons
-#ifdef GTKGLADE
-  --, createMenuButton "Consistency checker" (showConsistencyChecker gInfo)
-#endif
   , createLocalMenuButtonCCCAtNode ]) $$$ emptyNodeTypeParms
 
 -- | local menu for the nodetypes spec and locallyEmpty_spec

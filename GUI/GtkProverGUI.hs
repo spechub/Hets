@@ -100,7 +100,7 @@ showProverGUI lid prGuiAcs thName warningTxt th knownProvers comorphList = do
     trvProvers            <- xmlGetWidget xml castToTreeView "trvProvers"
     btnFineSelection      <- xmlGetWidget xml castToButton "btnFineSelection"
 
-    set window [windowTitle := thName ++ " - Select Goal(s) and Prove"]
+    windowSetTitle window $ thName ++ " - Select Goal(s) and Prove"
 
     axioms <- axiomMap initState
 
@@ -127,7 +127,7 @@ showProverGUI lid prGuiAcs thName warningTxt th knownProvers comorphList = do
 
     -- setup goal list
     selectedGoals' <- setListSelectorMultiple trvGoals btnGoalsAll btnGoalsNone
-                       btnGoalsInvert action
+                        btnGoalsInvert action
     onClicked btnGoalsSelectOpen $ modifyMVar_ state $ (\ s -> do
       (Just model) <- treeViewGetModel trvGoals
       selector <- treeViewGetSelection trvGoals
