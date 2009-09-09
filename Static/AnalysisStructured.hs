@@ -678,7 +678,8 @@ anaFitArg lg dg spname nsigI (NodeSig nP gsigmaP) opts name fv = case fv of
           gsigmaI = getMaybeSig nsigI
       dg5 <- do
         gsigmaIS <- gsigUnion lg gsigmaI gsigmaS
-        unless (isSubGsign lg gsigmaP gsigmaIS)
+        unless (isSubGsign lg gsigmaP gsigmaIS
+                && isSubGsign lg gsigmaIS gsigmaP)
              (plain_error ()
               ("Parameter does not match source of fittig view. "
                ++ "Parameter signature:\n"
