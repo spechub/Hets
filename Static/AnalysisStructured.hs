@@ -471,21 +471,6 @@ anaUnion addSyms lg dg nsig name opts asps = case asps of
           dg3 <- foldM insE dg2 nsigs'
           return (newAsps, nsigs', ns, dg3)
 
-anaFitArgs :: LogicGraph -> HetcatsOpts -> SIMPLE_ID -> MaybeNode
-  -> ([FIT_ARG], DGraph, [(G_morphism, NodeSig)], NodeName)
-  -> (NodeSig, FIT_ARG)
-  -> Result ([FIT_ARG], DGraph, [(G_morphism, NodeSig)], NodeName)
-anaFitArgs lg opts spname imps (fas', dg1, args, name') (nsig', fa) = do
-    let n1 = inc name'
-    (fa', dg', arg) <- anaFitArg lg dg1 spname imps nsig' opts n1 fa
-    return (fa' : fas', dg', arg : args, n1)
-
-parLink :: LogicGraph -> DGLinkOrigin -> NodeSig -> DGraph -> NodeSig
-        -> Result DGraph
-parLink lg orig (NodeSig node gsigma') dg (NodeSig nA_i sigA_i)= do
-    incl <- ginclusion lg sigA_i gsigma'
-    return $ insLink dg incl globalDef orig nA_i node
-
 -- analysis of renamings
 anaRen :: LogicGraph -> HetcatsOpts -> MaybeNode -> Range -> GMorphism
   -> G_mapping -> Result GMorphism
@@ -712,6 +697,15 @@ anaFitArg lg dg spname nsigI (NodeSig nP gsigmaP) opts name fv = case fv of
            ++ " but was given " ++ show (length afitargs)) pos
     _ -> fatal_error ("View " ++ tokStr vn ++ " not found") pos
 
+anaFitArgs :: LogicGraph -> HetcatsOpts -> SIMPLE_ID -> MaybeNode
+  -> ([FIT_ARG], DGraph, [(G_morphism, NodeSig)], NodeName)
+  -> (NodeSig, FIT_ARG)
+  -> Result ([FIT_ARG], DGraph, [(G_morphism, NodeSig)], NodeName)
+anaFitArgs lg opts spname imps (fas', dg1, args, name') (nsig', fa) = do
+    let n1 = inc name'
+    (fa', dg', arg) <- anaFitArg lg dg1 spname imps nsig' opts n1 fa
+    return (fa' : fas', dg', arg : args, n1)
+
 anaAllFitArgs :: LogicGraph -> HetcatsOpts -> DGraph -> MaybeNode -> NodeName
   -> SIMPLE_ID -> ExtGenSig -> [Annoted FIT_ARG]
   -> Result ([Annoted FIT_ARG], DGraph, (GMorphism, G_sign, NodeSig))
@@ -728,6 +722,12 @@ anaAllFitArgs lg opts dg nsig name spname
   dg3 <- foldM (parLink lg (DGLinkInst spname) ns) dg2 $ map snd actualargs
   return ( zipWith replaceAnnoted (reverse fitargs') afitargs, dg3
          , (morDelta, gsigma', ns))
+
+parLink :: LogicGraph -> DGLinkOrigin -> NodeSig -> DGraph -> NodeSig
+        -> Result DGraph
+parLink lg orig (NodeSig node gsigma') dg (NodeSig nA_i sigA_i)= do
+    incl <- ginclusion lg sigA_i gsigma'
+    return $ insLink dg incl globalDef orig nA_i node
 
 -- Extension of signature morphisms (for instantitations)
 -- first some auxiliary functions
