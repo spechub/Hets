@@ -1,0 +1,35 @@
+%!TEX root = main.tex
+
+We describe in this section the main functions used to draw the
+development graph for Maude specifications. The main function is
+\verb"anaMaudeFile", that receives a record of all the options received
+from the command line (of type \verb"HetcatsOpts") and the path of
+the Maude file to be parsed and return a pair with the library
+name and its environment.
+
+{\codesize
+\begin{verbatim}
+anaMaudeFile :: HetcatsOpts -> FilePath -> IO (Maybe (LIB_NAME, LibEnv))anaMaudeFile _ file = do    dg <- directMaudeParsing file    let name = Lib_id $ Direct_link "Maude_Module" nullRange    return $ Just (name, Map.singleton name dg)
+\end{verbatim}
+}
+
+This environment is computed with the function
+\verb"directMaudeParsing", that receives the file path and returns
+a development graph. This analysis is performed in different stages:
+First, the parser described in Section \ref{subsec:lex-parser}
+Then, Maude is executed with \verb"runInteractiveCommand" to use
+the parser described in Section \ref{subsec:maude-parser}
+
+{\codesize
+\begin{verbatim}
+directMaudeParsing :: FilePath -> IO DGraphdirectMaudeParsing fp = do              ns <- parse fp              let ns' = either (\ _ -> []) id ns              (hIn, hOut, _, _) <- runInteractiveCommand maudeCmd              hPutStrLn hIn $ "load " ++ fp              ms <- traverseNames hIn hOut ns'              hPutStrLn hIn "in Maude/hets.prj"              psps <- predefinedSpecs hIn hOut              sps <- traverseSpecs hIn hOut ms              hClose hIn              hClose hOut              return $ insertSpecs (psps ++ sps) Map.empty Map.empty [] emptyDG
+\end{verbatim}
+}
+
+
+
+
+
+
+
+

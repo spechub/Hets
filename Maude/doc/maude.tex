@@ -136,65 +136,121 @@ they are symmetric, rewrites denote changes which can be irreversible.
 
 A rewriting logic specification, or \emph{rewrite theory}, has the form
 $\mathcal{R} = (\Sigma,E,R)$, where $(\Sigma,E)$ is an equational specification
-and $R$ is a set of \emph{rules} as described below. From this definition, one can see that
-rewriting logic is built on top of equational logic, so that rewriting logic is parameterized
-with respect to the version of the underlying equational logic; in our case, Maude uses 
-membership equational logic, as described in the previous sections.
-A rule in $R$ has the general conditional form\footnote{There is no need for the condition listing first equations, then 
-memberships, and then rewrites: this is just a notational abbreviation,
-they can be listed in any order.} 
+and $R$ is a set of \emph{rules} as described below. From this definition,
+one can see that rewriting logic is built on top of equational logic, so
+that rewriting logic is parameterized
+with respect to the version of the underlying equational logic; in our
+case, Maude uses membership equational logic, as described in the
+previous sections. A rule in $R$ has the general conditional
+form\footnote{There is no need for the condition listing first equations,
+then  memberships, and then rewrites: this is just a notational
+abbreviation, they can be listed in any order.} 
 \[
 (\forall X) \; e \Rightarrow e' \Leftarrow \bigwedge_{i=1}^{n} u_i = u'_i \wedge
                       \bigwedge_{j=1}^{m}  v_j : s_j \wedge
                       \bigwedge_{k=1}^{l} w_k \Rightarrow w'_k
 \]
-where the head is a rewrite and the conditions can be equations, memberships, and
-rewrites; both sides of a rewrite must have the same kind. 
-From these rewrite rules, one can deduce rewrites of the form $t \Rightarrow t'$ by
-means of general deduction rules introduced in \cite{Meseguer92-tcs} (see also \cite{BruniMeseguer06}).
+where the head is a rewrite and the conditions can be equations,
+memberships, and rewrites; both sides of a rewrite must have the same kind. 
+From these rewrite rules, one can deduce rewrites of the form
+$t \Rightarrow t'$ by means of general deduction rules introduced
+in \cite{Meseguer92-tcs} (see also \cite{BruniMeseguer06}).
 
-Models of rewrite theories are called \emph{$\mathcal{R}$-systems} in \cite{Meseguer92-tcs}.
-Such systems are defined as categories that possess a $(\Sigma,E)$-algebra structure,
-together with a natural transformation for each rule in the set $R$. More intuitively, the idea
-is that we have a $(\Sigma,E)$-algebra, as described in Section~\ref{mel-section}, with
-transitions between the elements in each set $A_k$; moreover, these transitions must 
-satisfy several additional requirements, including that there are identity transitions for
-each element, that transitions can be sequentially composed, that the operations in the
-signature $\Sigma$ are also appropriately defined for the transitions, and that we have enough
-transitions corresponding to the rules in $R$.   Then, if we keep in this context the notation 
-$\model$ to denote an $\mathcal{R}$-system, a rewrite $t \Rightarrow t'$ is satisfied by $\model$, 
-denoted $\model \models t \Rightarrow t'$, when there is a transition $\den{t} \rightarrow_\model \den{t'}$
-in the system between the corresponding meanings of both sides of the rewrite, where 
-$\rightarrow_\model$ will be our notation for such transitions. 
+Models of rewrite theories are called \emph{$\mathcal{R}$-systems}
+in \cite{Meseguer92-tcs}.
+Such systems are defined as categories that possess a
+$(\Sigma,E)$-algebra structure, together with a natural transformation
+for each rule in the set $R$. More intuitively, the idea is that we have a
+$(\Sigma,E)$-algebra, as described in Section~\ref{mel-section}, with
+transitions between the elements in each set $A_k$; moreover, these
+transitions must satisfy several additional requirements, including that
+there are identity transitions for each element, that transitions can
+be sequentially composed, that the operations in the signature $\Sigma$
+are also appropriately defined for the transitions, and that we have
+enough transitions corresponding to the rules in $R$. Then, if we keep in
+this context the notation $\model$ to denote an $\mathcal{R}$-system, a
+rewrite $t \Rightarrow t'$ is satisfied by $\model$, 
+denoted $\model \models t \Rightarrow t'$, when there is a transition
+$\den{t} \rightarrow_\model \den{t'}$ in the system between the
+corresponding meanings of both sides of the rewrite, where $\rightarrow_\model$
+will be our notation for such transitions. 
 
-The rewriting logic deduction rules introduced in \cite{Meseguer92-tcs} are sound and 
-complete with respect to this notion of model. Moreover, they can be used to build
-initial and free models; see \cite{Meseguer92-tcs} for details.
+The rewriting logic deduction rules introduced in \cite{Meseguer92-tcs}
+are sound and complete with respect to this notion of model. Moreover,
+they can be used to build initial and free models; see \cite{Meseguer92-tcs}
+for details.
 
 \subsection{Maude system modules}
 
-Maude system modules \cite[Chapter 6]{maude-book}, introduced with syntax \texttt{mod ...\ endm}, 
-are executable rewrite 
+Maude system modules \cite[Chapter 6]{maude-book}, introduced with
+syntax \texttt{mod ...\ endm}, are executable rewrite 
 theories and their semantics is given by the initial system in the class of 
 systems corresponding to the rewrite theory.  A system module can contain all the
-declarations of a functional module and, in addition, declarations for rules (\texttt{rl})
-and conditional rules (\texttt{crl}).
+declarations of a functional module and, in addition, declarations for
+rules (\texttt{rl}) and conditional rules (\texttt{crl}).
 
-The executability requirements for equations and memberships in a system module are the
-same as those of functional modules, namely, confluence, termination, and sort-decreasingness. 
-With respect to rules, the satisfaction of all the conditions in a conditional rewrite rule is 
-attempted sequentially from left to right, solving rewrite conditions by means of search; 
-for this reason, we can have new variables in such conditions but they must become instantiated
-along this process of solving from left to right (see \cite{maude-book} for details). 
-Furthermore, the strategy followed by Maude in rewriting with rules is to compute the
-normal form of a term with respect to the equations before applying a rule. This strategy 
-is guaranteed not to miss any rewrites when the rules are \emph{coherent} with respect to the
-equations \cite{eq-rl-rwl,maude-book}.  In a way quite analogous to confluence, this coherence 
-requirement means that, given a term $t$, for each rewrite of it using a rule in $R$ to some 
-term $t'$, if $u$ is the normal form of $t$ with respect to the equations and memberships in $E$, 
-then there is a rewrite of $u$ with some rule in $R$ to a term $u'$ such that $u' =_E t'$
-(that is, the equation $t' = u'$ can be deduced from $E$).
+The executability requirements for equations and memberships in a system
+module are the same as those of functional modules, namely, confluence,
+termination, and sort-decreasingness. With respect to rules, the satisfaction
+of all the conditions in a conditional rewrite rule is attempted sequentially 
+from left to right, solving rewrite conditions by means of search; 
+for this reason, we can have new variables in such conditions but they
+must become instantiated along this process of solving from left to right
+(see \cite{maude-book} for details). Furthermore, the strategy followed
+by Maude in rewriting with rules is to compute the normal form of a term
+with respect to the equations before applying a rule. This strategy is
+guaranteed not to miss any rewrites when the rules are \emph{coherent}
+with respect to the equations \cite{eq-rl-rwl,maude-book}. In a way
+quite analogous to confluence, this coherence requirement means that, given
+a term $t$, for each rewrite of it using a rule in $R$ to some term $t'$,
+if $u$ is the normal form of $t$ with respect to the equations and
+memberships in $E$, then there is a rewrite of $u$ with some rule in
+$R$ to a term $u'$ such that $u' =_E t'$ (that is, the equation $t' = u'$
+can be deduced from $E$).
 
+\subsection{Theories}\label{subsec:theories}
+
+Theories are used to declare module interfaces, namely the syntactic
+and  semantic properties to be satisfied by the actual parameter modules
+used in an instantiation. As for modules, Maude supports two different types
+of theories: functional theories and system theories, with the same structure
+of their module counterparts, but with a different semantics. Functional
+theories  are declared with the keywords \verb"fth ... endfth", and
+system theories with the keywords \verb"th ... endth". Both of them can
+have sorts, subsort relationships, operators, variables, membership axioms,
+and equations, and can import other theories or modules. System theories can
+also have rules. Although there is no restriction on the operator attributes
+that can be used in a theory, there are some subtle restrictions and
+issues regarding the mapping of such operators (see Section
+\ref{subsec:views}).
+
+Like functional modules, functional theories are membership equational
+logic theories, but they do not need to be Church-Rosser and terminating,
+and  therefore some or all of their statements may be declared with the
+\verb"nonexec" attribute and can only be executed in a controlled way at 
+the metalevel.
+
+\subsection{Views}\label{subsec:views}
+
+We use views to specify how a particular target module or theory is claimed
+to satisfy a source theory. In general, there may be several ways in which 
+such requirements might be satisﬁed, if at all, by the target module or
+theory; that is, there can be many di?erent views, each specifying a
+particular interpretation of the source theory in the target. Each
+view declaration has an associated set of proof obligations, namely, for
+each axiom in the source theory it should be the case that the axiom's
+translation by the view holds true in the target. Since the target can
+be a module interpreted initially, verifying such proof obligations may
+in general require inductive proof techniques. Such proof obligations
+are not discharged or checked by the system. 
+In the definition of a view we have to indicate its name, the source
+theory, the target module or theory, and the mapping of each sort and
+operator in the source theory. The source and target of a
+view can be any module expression, with the source module expression
+evaluating to a theory and the target module expression evaluating to a
+module or a theory.
+
+\subsection{Parameterized modules}\label{subsec:pmod}
 
 
 

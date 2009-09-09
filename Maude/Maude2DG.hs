@@ -16,23 +16,23 @@ module Maude.Maude2DG where
 import System.IO
 import System.Process
 
-import Static.DevGraph
 import Static.GTheory
+import Static.DevGraph
 import Static.AnalysisStructured
 
-import Logic.Prover
-import Logic.Grothendieck
-import Logic.ExtSign
 import Logic.Logic
+import Logic.Prover
+import Logic.ExtSign
+import Logic.Grothendieck
 
-import Maude.AS_Maude
 import Maude.Sign
+import Maude.Symbol
+import Maude.AS_Maude
 import Maude.Sentence
 import Maude.Morphism
-import Maude.Logic_Maude
 import Maude.Language
 import Maude.Shellout
-import Maude.Symbol
+import Maude.Logic_Maude
 import qualified Maude.Meta.HasName as HasName
 
 import Data.Maybe
@@ -40,24 +40,53 @@ import qualified Data.Map as Map
 import qualified Data.Set as Set
 import Data.Graph.Inductive.Graph
 
-import Common.AS_Annotation
-import Common.Result
 import Common.Id
-
--- Borrar despues de las pruebas
-import Driver.Options
+import Common.Result
 import Common.LibName
+import Common.AS_Annotation
+
+import Driver.Options
 
 maudePath :: String
 maudePath = "maude"
 maudeCmd :: String
 maudeCmd = unwords [maudePath, "-interactive", "-no-banner", "-no-advise"]
 
+-- | Maude importation types: Protecting, Extending and Including
 data ImportType = Pr | Ex | Inc
-type ModExpProc = (Token, TokenInfoMap, Morphism, [ParamSort], DGraph)
-type ImportProc = (ImportType, Token, TokenInfoMap, Morphism, [ParamSort], DGraph)
-type TokenInfoMap = Map.Map Token ProcInfo
+
+-- | Pair of tokens and parameters contained by the token.
+-- For example, (List{X,Y}, [X,Y])
+type ParamSort = (Symbol, [Token])
+
+-- | Tuple with information about a module expression:
+-- The corresponding node in the development graph.
+-- The signature in this node.
+-- The sorts not bound yet, defined in theories.
+-- The data from parameters: the parameter id, its module expression and
+-- the list of sorts imported.
+-- The list of sorts "parameterized" (of the form List{X}).
 type ProcInfo = (Node, Sign, Symbols, [(Token, Token, Symbols)], [ParamSort])
+
+-- | map from module expression identifiers to ProcInfo
+type TokenInfoMap = Map.Map Token ProcInfo
+
+-- | Data structure used to parse module expressions, it keeps:
+-- The identifier of the module expression.
+-- The map with the information associated with each module expression.
+-- The morphism associated to the module expression.
+-- The list of sorts parameterized in this module expression.
+-- The development graph thus far.
+type ModExpProc = (Token, TokenInfoMap, Morphism, [ParamSort], DGraph)
+
+-- | Information related to an importation:
+-- The type of importation.
+-- The module expression imported.
+-- The map with the information associated with each module expression.
+-- The morphism associated to the module expression.
+-- The list of sorts parameterized in this module expression.
+-- The development graph thus far.
+type ImportProc = (ImportType, Token, TokenInfoMap, Morphism, [ParamSort], DGraph)
 type ParamInfo = ([(Token, Token, Symbols)], TokenInfoMap, [Morphism], DGraph)
 
 -- | Map from view identifiers to tuples containing the target node of the
@@ -65,16 +94,19 @@ type ParamInfo = ([(Token, Token, Symbols)], TokenInfoMap, [Morphism], DGraph)
 -- all the values
 type ViewMap = Map.Map Token (Node, Token, Morphism, [Renaming], Bool)
 
+-- | Tuple of data structures updated when a specification is introduced into
+-- a development graph
 type InsSpecRes = (TokenInfoMap, ViewMap, [Token], DGraph)
 
--- | Pair of tokens and parameters contained by the token
-type ParamSort = (Symbol, [Token])
-
+-- | inserts the list of specifications in the development graph, updating
+-- the data structures
 insertSpecs :: [Spec] -> TokenInfoMap -> ViewMap -> [Token] -> DGraph -> DGraph
 insertSpecs [] _ _ _ dg = dg
 insertSpecs (s : ss) tim vm ths dg = insertSpecs ss tim' vm' ths' dg'
               where (tim', vm', ths', dg') = insertSpec s tim vm ths dg
 
+-- | inserts the given specification in the development graph, updating
+-- the data structures
 insertSpec :: Spec -> TokenInfoMap -> ViewMap -> [Token] -> DGraph -> InsSpecRes
 insertSpec (SpecMod sp_mod) tim vm ths dg = (tim4, vm, ths, dg5)
               where ps = getParams sp_mod
@@ -125,15 +157,15 @@ insertSpec (SpecView sp_v) tim vm ths dg = (tim2, vm', ths, dg4)
                     vm' = Map.insert (HasName.getName name) (n3, tok2, morph', rnms, inst) vm
                     dg4 = insertThmEdgeMorphism tok_name n3 n1 morph' dg3
 
--- | compute the union of the signatures obtained from the importation list
+-- | computes the union of the signatures obtained from the importation list
 sign_union :: Sign -> [ImportProc] -> Sign
 sign_union sign = foldr (Maude.Sign.union . get_sign) sign
 
--- | extract the target signature from the morphism in an importation tuple
+-- | extracts the target signature from the morphism in an importation tuple
 get_sign :: ImportProc -> Sign
 get_sign (_, _, _, morph, _, _) = target morph
 
--- | compute the union of the target signatures of a list of morphisms
+-- | computes the union of the target signatures of a list of morphisms
 sign_union_morphs :: [Morphism] -> Sign -> Sign
 sign_union_morphs morphs sg =  foldr (Maude.Sign.union . target) sg morphs
 
@@ -144,7 +176,7 @@ last_da [(_, _, tim, _, _, dg)] _ = (tim, dg)
 last_da (_ : ips) p = last_da ips p
 last_da _ p = p
 
--- | generate the edges required by a parameter list in a module instantiation
+-- | generates the edges required by a parameter list in a module instantiation
 createEdgesParams :: Token -> [(Token, Token, Symbols)] -> [Morphism] -> Sign
                      -> TokenInfoMap -> DGraph -> DGraph
 createEdgesParams tok1 ((_, tok2, _) : toks) (morph : morphs) sg tim dg =
@@ -155,14 +187,14 @@ createEdgesParams tok1 ((_, tok2, _) : toks) (morph : morphs) sg tim dg =
                      dg' = insertDefEdgeMorphism n1 n2 morph' dg
 createEdgesParams _ _ _ _ _ dg = dg
 
--- | generate the edges required by the importations
+-- | generates the edges required by the importations
 createEdgesImports :: Token -> [ImportProc] -> Sign -> TokenInfoMap -> DGraph
                       -> (TokenInfoMap, DGraph)
 createEdgesImports _ [] _ tim dg = (tim, dg)
 createEdgesImports tok (ip : ips) sg tim dg = createEdgesImports tok ips sg tim' dg'
                where (tim', dg') = createEdgeImport tok ip sg tim dg
 
--- | generate the edge for a concrete importation
+-- | generates the edge for a concrete importation
 createEdgeImport :: Token -> ImportProc -> Sign -> TokenInfoMap -> DGraph
                     -> (TokenInfoMap, DGraph)
 createEdgeImport tok1 (Pr, tok2, _, morph, _, _) sg tim dg = (tim', dg'')
@@ -182,16 +214,17 @@ createEdgeImport tok1 (Inc, tok2, _, morph, _, _) sg tim dg = (tim, dg')
                      (n2, _, _, _, _) = fromJust $ Map.lookup tok2 tim
                      dg' = insertDefEdgeMorphism n1 n2 morph' dg
 
--- | extract the sorts provided by the theories
+-- | extracts the sorts provided by the theories
 getThSorts :: [ImportProc] -> Symbols
 getThSorts [] = []
 getThSorts (ip : ips) = getThSortsAux ip ++ getThSorts ips
 
+-- | extracts the not-bounded-yet sorts related to the given identifier
 getThSortsAux :: ImportProc -> Symbols
 getThSortsAux (_, tok, tim, _, _, _) = srts
          where (_, _, srts, _, _) = fromJust $ Map.lookup tok tim
 
--- | generate the extra signature needed when using term to term renaming in views
+-- | generates the extra signature needed when using term to term renaming in views
 sign4renamings :: Sign -> SymbolMap -> [Renaming] -> (Sign, [Sentence])
 sign4renamings sg sm ((TermMap t1 t2) : rnms) = (new_sg, (Equation eq) : sens)
          where (op_top, ss) = getOpSorts t1
@@ -211,7 +244,7 @@ newOp sg op ss sm = Maude.Sign.empty {ops = Map.singleton op ods'}
                ods = fromJust $ Map.lookup op om
                ods' = getOpDeclSet ods ss sm
 
--- | rename the profile with the given map
+-- | renames the profile with the given map
 getOpDeclSet :: OpDeclSet -> Symbols -> SymbolMap -> OpDeclSet
 getOpDeclSet ods ss sm = Set.singleton (op_sym', ats)
          where f = \ (Operator _ x _) b -> x == ss || b
@@ -222,7 +255,7 @@ getOpDeclSet ods ss sm = Set.singleton (op_sym', ats)
                op_sym = head $ Set.toList ods''
                op_sym' = applyRenamingOpSymbol op_sym sm
 
--- | apply the renaming in the map to the operator declaration
+-- | applies the renaming in the map to the operator declaration
 applyRenamingOpSymbol :: Symbol -> SymbolMap -> SymbolSet
 applyRenamingOpSymbol (Operator q ar co) sm = Set.singleton $ Operator q ar' co'
          where f = \ x -> if Map.member x sm
@@ -232,7 +265,7 @@ applyRenamingOpSymbol (Operator q ar co) sm = Set.singleton $ Operator q ar' co'
                co' = f co
 applyRenamingOpSymbol _ _ = Set.empty
 
--- | rename the sorts in a term
+-- | renames the sorts in a term
 applyRenamingTerm :: SymbolMap -> Term -> Term
 applyRenamingTerm sm (Apply q ts ty) = Apply q (map (applyRenamingTerm sm) ts)
                                                (applyRenamingType sm ty)
@@ -241,7 +274,7 @@ applyRenamingTerm sm (Const q s) = Const q s'
 applyRenamingTerm sm (Var q s) = Var q s'
          where s' = applyRenamingType sm s
 
--- | rename a type
+-- | renames a type
 applyRenamingType :: SymbolMap -> Type -> Type
 applyRenamingType sm (TypeSort s) = TypeSort $ SortId $ HasName.getName q'
          where SortId q = s
@@ -254,23 +287,27 @@ applyRenamingType sm (TypeKind k) = TypeKind $ KindId $ HasName.getName q'
                     then fromJust $ Map.lookup (Kind q) sm
                     else (Kind q)
 
--- | extract the top operator of a term and the names of its sorts
+-- | extracts the top operator of a term and the names of its sorts
 -- if it is applicated to some arguments
 getOpSorts :: Term -> (Token, Symbols)
 getOpSorts (Const q _) = (q, [])
 getOpSorts (Var q _) = (q, [])
 getOpSorts (Apply q ls _) = (q, getTypes ls)
 
+-- | extracts the types of the terms while they are variables
 getTypes :: [Term] -> Symbols
 getTypes ((Var _ (TypeSort s)) : ts) = Sort (HasName.getName s) : getTypes ts
 getTypes ((Var _ (TypeKind s)) : ts) = Kind (HasName.getName s) : getTypes ts
 getTypes _ = []
 
+-- | process the information of the given list of imports
 processImports :: TokenInfoMap -> ViewMap -> DGraph -> [Import] -> [ImportProc]
 processImports _ _ _ [] = []
 processImports tim vm dg (i : il) = ip : processImports tim' vm dg' il
          where ip@(_, _, tim', _, _, dg') = processImport tim vm dg i
 
+-- | process the module expression and then adds the information about
+-- the type of import
 processImport :: TokenInfoMap -> ViewMap -> DGraph -> Import -> ImportProc
 processImport tim vm dg (Protecting modExp) = (Pr, tok, tim', morph, ps, dg')
          where (tok, tim', morph, ps, dg') = processModExp tim vm dg modExp
@@ -279,11 +316,15 @@ processImport tim vm dg (Extending modExp) = (Ex, tok, tim', morph, ps, dg')
 processImport tim vm dg (Including modExp) = (Inc, tok, tim', morph, ps, dg')
          where (tok, tim', morph, ps, dg') = processModExp tim vm dg modExp
 
+-- | traverses the list of parameters and generates the required data structures 
 processParameters :: [Parameter] -> TokenInfoMap -> DGraph -> ParamInfo
 processParameters ps tim dg = foldr processParameter ([], tim, [], dg) ps
 
+-- | given a parameter, the function processes the module expression associated
+-- to it, qualifies the not-bound-yet sorts and creates the morphism
 processParameter :: Parameter -> ParamInfo -> ParamInfo
-processParameter (Parameter sort modExp) (toks, tim, morphs, dg) = (toks', tim', morphs', dg')
+processParameter (Parameter sort modExp) (toks, tim, morphs, dg) =
+                                               (toks', tim', morphs', dg')
          where (tok, tim', morph, _, dg') = processModExp tim Map.empty dg modExp
                (_, _, fs, _, _) = fromJust $ Map.lookup tok tim'
                fs' = renameSorts morph fs
@@ -291,6 +332,8 @@ processParameter (Parameter sort modExp) (toks, tim, morphs, dg) = (toks', tim',
                toks' = (HasName.getName sort, tok, fs') : toks
                morphs' =  morph' : morphs
 
+-- | distinguishes between the different module expressions to compute
+-- the morphisms and update the development graph
 processModExp :: TokenInfoMap -> ViewMap -> DGraph -> ModExp -> ModExpProc
 processModExp tim _ dg (ModExp modId) = (tok, tim, morph, ps, dg)
                      where tok = HasName.getName modId
@@ -334,6 +377,9 @@ processModExp tim vm dg (InstantiationModExp modExp views) = (tok'', tim'', fina
                                            then (tim', dg')
                                            else updateGraphViews tok tok'' sg2 morph1 ns tim' deps dg'
 
+-- | generates a edge between the source and the target of a view, inserting
+-- a new node if the view contained a term to term renaming, and thus updating
+-- the map from module expression to its info and the development graph
 updateGraphViews :: Token -> Token -> Sign -> Morphism -> [(Node, Morphism)] -> TokenInfoMap
                     -> [(Token, Token, Symbols)] -> DGraph -> (TokenInfoMap, DGraph)
 updateGraphViews tok1 tok2 sg morph views tim deps dg = (tim', dg''')
@@ -344,6 +390,13 @@ updateGraphViews tok1 tok2 sg morph views tim deps dg = (tim', dg''')
                            dg'' = insertDefEdgeMorphism n2 n1 morph' dg'
                            dg''' = insertDefEdgesMorphism n2 views sg dg''
 
+-- | traverses a list of views obtained in an instantiation module expression
+-- and return a tuple with:
+-- The accumulated identifier of the module expression.
+-- The accumulated morphism thus far.
+-- A list of nodes and morphisms to create the appropriate edges in the
+-- development graph.
+-- The not-bound-yet sorts.
 processViews :: [ViewId] -> Token -> TokenInfoMap -> ViewMap -> [(Token, Token, Symbols)]
                 -> (Morphism, [(Node, Morphism)], [(Token, Token, Symbols)])
                 -> (Token, Morphism, [(Node, Morphism)], [(Token, Token, Symbols)])
@@ -354,6 +407,9 @@ processViews (vi : vis) tok tim vm (p : ps) (morph, lp, dep) =
 processViews _ tok _ _ _ (morph, nds, deps) = (tok', morph, nds, deps)
                      where tok' = mkSimpleId $ drop 1 $ show tok
 
+-- | this function distinguishes whether the view is an instantiation (and thus)
+-- the view is in the map of views and the function morphismView is used
+-- or it is just a parameter binding and paramBinding is used
 processView :: ViewId -> TokenInfoMap -> ViewMap -> (Token, Token, Symbols) ->
                Morphism -> (Token, Morphism, Morphism, Node, [(Token, Token, Symbols)])
 processView vi tim vm (p, theory, ss) morph =
@@ -362,6 +418,9 @@ processView vi tim vm (p, theory, ss) morph =
                        else paramBinding theory name p ss morph tim
         where name = HasName.getName vi
 
+-- | the function distinguishes if the instantiation is from a module, and thus
+-- all the symbols are instantiated, or it is a theory and the symbols are not
+-- completely instantiated.
 morphismView :: Token -> Token -> Symbols -> (Node, Token, Morphism, [Renaming], Bool)
                 -> Morphism -> (Token, Morphism, Morphism, Node, [(Token, Token, Symbols)])
 morphismView name p _ (n, _, vmorph, rnms, True) morph = (name, morph'', vmorph', n, [])
@@ -372,7 +431,6 @@ morphismView name p _ (n, _, vmorph, rnms, True) morph = (name, morph'', vmorph'
               ctgt = target morph'
               usg = Maude.Sign.union ctgt tgt
               morph'' = setTarget usg morph'
-
 morphismView name p ss (n, th, morph, rnms, False) morph1 =
                          (name, morph4, vmorph', n, [(p, th, getNewSorts ss morph)])
         where rnms' = qualifyRenamings2 p rnms
@@ -387,7 +445,10 @@ morphismView name p ss (n, th, morph, rnms, False) morph1 =
               usg = Maude.Sign.union vtgt ctgt
               morph4 = setTarget usg morph3
 
--- theory, parameter instantiated -> parameter binding -> sorts bound -> current morph
+
+-- this function is applied when two parameters are linked, it updates the qualifications
+-- of the sorts. The parameters are:
+-- theory -> parameter instantiated -> parameter binding -> sorts bound -> current morph
 -- map token info
 paramBinding :: Token -> Token -> Token -> Symbols -> Morphism -> TokenInfoMap
                 -> (Token, Morphism, Morphism, Node, [(Token, Token, Symbols)])
@@ -399,6 +460,7 @@ paramBinding th view p ss morph tim = (view, morph', vmorph', n, [])
               rnms' = createQualificationTh2Mod p ss
               vmorph' = applyRenamings vmorph rnms'
 
+-- | inserts the node into the development graph if it does not already exist
 insertNode :: Token -> Sign -> TokenInfoMap -> Symbols -> [(Token, Token, Symbols)]
               -> DGraph -> (TokenInfoMap, DGraph)
 insertNode tok sg tim ss deps dg = if Map.member tok tim
@@ -411,6 +473,9 @@ insertNode tok sg tim ss deps dg = if Map.member tok tim
                                 tim' = Map.insert tok (getNode ns, sg, ss, deps, []) tim
                               in (tim', dg')
 
+-- | inserts an inner node. This function is used when a view defines a map
+-- between terms, so it is neccesary to extend the signature of the target
+-- module in order to have the appropriate map.
 insertInnerNode :: Node -> NodeName -> Morphism -> Sign -> [Sentence] -> DGraph
                    -> (Node, DGraph)
 insertInnerNode nod nm morph sg sens dg =
@@ -427,7 +492,7 @@ insertInnerNode nod nm morph sg sens dg =
                                 dg'' = insertDefEdgeMorphism nod2 nod morph' dg'
                               in (nod2, dg'')
 
--- | insert the list of definition edges, building for each node the inclusion morphism
+-- | inserts the list of definition edges, building for each node the inclusion morphism
 -- between the signatures
 insertDefEdgesMorphism :: Node -> [(Node, Morphism)] -> Sign -> DGraph -> DGraph
 insertDefEdgesMorphism _ [] _ dg = dg
@@ -435,22 +500,26 @@ insertDefEdgesMorphism n1 ((n2, morph) : views) sg2 dg = insertDefEdgesMorphism 
                   where morph' = setTarget sg2 morph
                         dg' = insertDefEdgeMorphism n1 n2 morph' dg
 
--- | insert a definition link between the nodes with the given morphism
+-- | inserts a definition link between the nodes with the given morphism
 insertDefEdgeMorphism :: Node -> Node -> Morphism -> DGraph -> DGraph
 insertDefEdgeMorphism n1 n2 morph dg = insEdgeDG (n2, n1, edg) dg
                      where mor = G_morphism Maude morph startMorId
                            edg = DGLink (gEmbed mor) globalDef SeeTarget $ getNewEdgeId dg
 
+-- | inserts a theorem link, labeled with the name of the view, between the nodes
+-- with the given morphism in the development graph
 insertThmEdgeMorphism :: Token -> Node -> Node -> Morphism -> DGraph -> DGraph
 insertThmEdgeMorphism name n1 n2 morph dg = insEdgeDG (n2, n1, edg) dg
                      where mor = G_morphism Maude morph startMorId
                            edg = DGLink (gEmbed mor) globalThm (DGLinkView name) $ getNewEdgeId dg
 
+-- | inserts a PCons link between the nodes with the given morphism
 insertConsEdgeMorphism :: Node -> Node -> Morphism -> DGraph -> DGraph
 insertConsEdgeMorphism n1 n2 morph dg = insEdgeDG (n2, n1, edg) dg
                      where mor = G_morphism Maude morph startMorId
                            edg = DGLink (gEmbed mor) (globalConsThm PCons) SeeTarget $ getNewEdgeId dg
 
+-- | inserts a free definition link between the nodes with the given name
 insertFreeEdge :: Token -> Token -> TokenInfoMap -> DGraph -> DGraph
 insertFreeEdge tok1 tok2 tim dg = insEdgeDG (n2, n1, edg) dg
                      where (n1, sg1, _, _, _) = fromJust $ Map.lookup tok1 tim
@@ -459,6 +528,9 @@ insertFreeEdge tok1 tok2 tim dg = insEdgeDG (n2, n1, edg) dg
                            dgt = FreeOrCofreeDefLink Free $ EmptyNode (Logic Maude)
                            edg = DGLink (gEmbed mor) dgt SeeTarget $ getNewEdgeId dg
 
+-- | the importation mode "protecting M" generates a new node M' and a free link
+-- between M and M'. This function is in charge of creating such M' if it does not
+-- exist
 insertFreeNode :: Token -> TokenInfoMap -> DGraph -> (Token, TokenInfoMap, DGraph)
 insertFreeNode t tim dg = (t', tim', dg'')
                where t' = mkFreeName t
@@ -470,6 +542,7 @@ insertFreeNode t tim dg = (t', tim', dg'')
                             then dg'
                             else insertFreeEdge t' t tim' dg'
 
+-- | auxiliary function in charge of creating M' when it does not exist
 insertFreeNode2 :: Token -> TokenInfoMap -> ProcInfo -> DGraph -> (TokenInfoMap, DGraph)
 insertFreeNode2 t tim (_, sg, _, _, _) dg = (tim', dg')
               where ext_sg = makeExtSign Maude sg
@@ -487,9 +560,11 @@ mkFreeName = mkSimpleId . (\ x -> x ++ "'") . show
 getParams :: Module -> [Parameter]
 getParams (Module _ params _) = params
 
+-- | extracts the importation statements and the sorts from a module definition
 getImportsSorts :: Module -> ([Import], Symbols)
 getImportsSorts (Module _ _ stmts) = getImportsSortsStmnts stmts ([],[])
 
+-- | traverses the statements accumulating the importations and the sorts
 getImportsSortsStmnts :: [Statement] -> ([Import], Symbols) -> ([Import], Symbols)
 getImportsSortsStmnts [] p = p
 getImportsSortsStmnts ((ImportStmnt imp) : stmts) (is, ss) =
@@ -501,10 +576,10 @@ getImportsSortsStmnts (_ : stmts) p = getImportsSortsStmnts stmts p
 -- | builds the development graph of the specified Maude file
 directMaudeParsing :: FilePath -> IO DGraph
 directMaudeParsing fp = do
-              (hIn, hOut, _, _) <- runInteractiveCommand maudeCmd
-              hPutStrLn hIn $ "load " ++ fp
               ns <- parse fp
               let ns' = either (\ _ -> []) id ns
+              (hIn, hOut, _, _) <- runInteractiveCommand maudeCmd
+              hPutStrLn hIn $ "load " ++ fp
               ms <- traverseNames hIn hOut ns'
               hPutStrLn hIn "in Maude/hets.prj"
               psps <- predefinedSpecs hIn hOut
@@ -513,6 +588,8 @@ directMaudeParsing fp = do
               hClose hOut
               return $ insertSpecs (psps ++ sps) Map.empty Map.empty [] emptyDG
 
+-- | given input and output handlers and a list of strings, this method
+-- traverses the list transforming each string into a Maude specification
 traverseSpecs :: Handle -> Handle -> [String] -> IO [Spec]
 traverseSpecs _ _ [] = return []
 traverseSpecs hIn hOut (m : ms) = do
@@ -524,6 +601,8 @@ traverseSpecs hIn hOut (m : ms) = do
                  let spec = read stringSpec :: Spec
                  return $ spec : ss
 
+-- | given a list of names of views and specifications, a list of
+-- string with the real specifications is extracted.
 traverseNames :: Handle -> Handle -> [NamedSpec] -> IO [String]
 traverseNames _ _ [] = return []
 traverseNames hIn hOut (ModName q : ns) = do
@@ -587,12 +666,12 @@ traversePredefined hIn hOut (ViewName n : ns) = do
                  let spec = read stringSpec :: Spec
                  return $ spec : ss
 
--- | return the parameter names
+-- | returns the parameter names
 paramNames :: [Parameter] -> [Token]
 paramNames = map f
          where f = \ (Parameter s _) -> HasName.getName s
 
--- | return the sorts (second argument of the pair) that contain any of the parameters
+-- | returns the sorts (second argument of the pair) that contain any of the parameters
 -- given as first argument
 getSortsParameterizedBy :: [Token] -> Symbols -> [ParamSort]
 getSortsParameterizedBy ps = filter f . map (g ps)
@@ -613,6 +692,7 @@ intersec (e : es) l = case elem e l of
 getSortParams :: Token -> [Token]
 getSortParams t = getSortParamsString $ show t
 
+-- | traverses a String looking for the last curly braces
 getSortParamsString :: String -> [Token]
 getSortParamsString [] = []
 getSortParamsString ('{' : cs) = if null sps
@@ -621,6 +701,7 @@ getSortParamsString ('{' : cs) = if null sps
             where sps = getSortParamsString cs
 getSortParamsString (_ : cs) = getSortParamsString cs
 
+-- | traverses a String keeping the token separated by commas
 getSortParamsStringAux :: String -> String -> [Token]
 getSortParamsStringAux ('`' : ',' : cs) st = mkSimpleId st : getSortParamsStringAux cs ""
 getSortParamsStringAux ('`' : '}' : []) st = [mkSimpleId st]
@@ -628,7 +709,7 @@ getSortParamsStringAux (' ' : cs) st = getSortParamsStringAux cs st
 getSortParamsStringAux (c : cs) st = getSortParamsStringAux cs (st ++ [c])
 getSortParamsStringAux [] st = [mkSimpleId st]
 
--- | check if the target of the view is completely instantiated (to modules)
+-- | checks if the target of the view is completely instantiated (to modules)
 isInstantiated :: [Token] -> ModExp -> Bool
 isInstantiated ths (ModExp modExp) = notElem (HasName.getName modExp) ths
 isInstantiated ths (SummationModExp me1 me2) = isInstantiated ths me1 &&
@@ -673,7 +754,7 @@ instantiateSorts params views vm morph (ps : pss) = (nps'' ++ res_ps, res_morph)
               morph' = extendWithSortRenaming (fst ps) (fst nps') morph
               (res_ps, res_morph) = instantiateSorts params views vm morph' pss
 
--- | compute the theories that have to be further instantiated
+-- | computes the theories that have to be further instantiated
 newParamers4sorts :: [Token] -> [Token] -> ViewMap -> [Token]
 newParamers4sorts (param : ps) (view : vs) vm = case Map.member view vm of
         False -> newParamers4sorts ps vs vm
@@ -685,6 +766,7 @@ newParamers4sorts (param : ps) (view : vs) vm = case Map.member view vm of
                 in param' ++ newParamers4sorts ps vs vm
 newParamers4sorts _ _ _ = []
 
+-- | creates a new parameterized sort 
 addNewParams2sort :: ParamSort -> [Token] -> ParamSort
 addNewParams2sort (Sort tok, _) lps@(_:_) = (Sort tok', lps)
          where tok' = mkSimpleId $ concat [show tok, "`{", printNewParams4sort lps, "`}"]
@@ -692,6 +774,7 @@ addNewParams2sort (Kind tok, _) lps@(_:_) = (Kind tok', lps)
          where tok' = mkSimpleId $ concat [show tok, "`{", printNewParams4sort lps, "`}"]
 addNewParams2sort (ps, _) _ = (ps, [])
 
+-- | introduces commas between the tokens
 printNewParams4sort :: [Token] -> String
 printNewParams4sort [] = ""
 printNewParams4sort [p] = show p
@@ -712,7 +795,7 @@ instantiateSort sp@(Kind tok, tok_params) (p : ps) (v : vs) = case elem p tok_pa
                                 in instantiateSort (Kind tok', tok_params) ps vs
 instantiateSort ps _ _ = ps
 
--- | replace one param by one view in a sort identifier
+-- | replaces one param by one view in a sort identifier
 -- sort id -> param id -> view id
 instantiateSortString :: String -> String -> String -> String
 instantiateSortString ('{' : cs) param view = case elem '{' cs of
@@ -721,7 +804,7 @@ instantiateSortString ('{' : cs) param view = case elem '{' cs of
 instantiateSortString (c : cs) param view = c : instantiateSortString cs param view
 instantiateSortString [] _ _ = ""
 
--- | replace one param by one view in the list of parameters
+-- | replaces one param by one view in the list of parameters
 -- parameters list -> param id -> view id
 instantiateSortStringAux :: String -> String -> String -> String -> String
 instantiateSortStringAux ('`' : ',' : ps) param view acc = value ++ "`," ++
@@ -737,9 +820,12 @@ instantiateSortStringAux (p : ps) param view acc =
                                  instantiateSortStringAux ps param view (acc ++ [p])
 instantiateSortStringAux _ _ _ acc = acc
 
+-- | qualifies the source sorts in the renamigs
 qualifyRenamings :: Token -> [Renaming] -> [Renaming]
 qualifyRenamings t = map (qualifyRenaming t)
 
+-- | qualifies the source sort in the renaming. Sorts only appear in operator mappings
+-- with profile and sort mappings
 qualifyRenaming :: Token -> Renaming -> Renaming
 qualifyRenaming p rnm = case rnm of
            OpRenaming2 from ar co to -> OpRenaming2 from (map (qualifyType p) ar)
@@ -747,9 +833,12 @@ qualifyRenaming p rnm = case rnm of
            SortRenaming from to -> SortRenaming ((qualifySort p) from) to
            _ -> rnm
 
+-- | qualifies both the source and target sorts in the renamings
 qualifyRenamings2 :: Token -> [Renaming] -> [Renaming]
 qualifyRenamings2 t = map (qualifyRenaming2 t)
 
+-- | qualifies both the source and target sorts in the renaming.
+-- Sorts only appear in operator mappings with profile and sort mappings
 qualifyRenaming2 :: Token -> Renaming -> Renaming
 qualifyRenaming2 p rnm = case rnm of
            OpRenaming2 from ar co to -> OpRenaming2 from (map (qualifyType p) ar)
@@ -757,13 +846,8 @@ qualifyRenaming2 p rnm = case rnm of
            SortRenaming from to -> SortRenaming ((qualifySort p) from) ((qualifySort p) to)
            _ -> rnm
 
-qualifyType :: Token -> Type -> Type
-qualifyType p (TypeSort (SortId s)) = TypeSort (SortId $ mkSimpleId $ show p ++ "$" ++ show s)
-qualifyType _ ty = ty
-
-qualifySort :: Token -> Sort -> Sort
-qualifySort p (SortId s) = SortId $ mkSimpleId $ concat [show p, "$", show s]
-
+-- | creates a renaming to substitute the sorts qualified by a parameter name
+-- with a new parameter name due to a parameter binding
 createQualifiedSortRenaming :: Token -> Token -> Symbols -> [Renaming]
 createQualifiedSortRenaming _ _ [] = []
 createQualifiedSortRenaming old new (s : ss) = case old == new of
@@ -775,9 +859,21 @@ createQualifiedSortRenaming old new (s : ss) = case old == new of
               new' = HasName.getName new
               s' = HasName.getName s
 
+-- | qualifies with the given parameter the token
 qualifiedSort :: Token -> Token -> Sort
 qualifiedSort param sort = SortId $ mkSimpleId $ concat [show param, "$", show sort]
 
+-- | qualifies with the given parameter the sort
+qualifySort :: Token -> Sort -> Sort
+qualifySort p (SortId s) = qualifiedSort p s
+
+-- | qualifies with the given parameter the type
+qualifyType :: Token -> Type -> Type
+qualifyType p (TypeSort (SortId s)) = TypeSort $ qualifiedSort p s
+qualifyType _ ty = ty
+
+-- | qualifies the symbols in the theory imported with the parameter name
+-- given as first parameter
 createQualificationTh2Mod :: Token -> Symbols -> [Renaming]
 createQualificationTh2Mod _ [] = []
 createQualificationTh2Mod par (s : ss) =
@@ -786,6 +882,8 @@ createQualificationTh2Mod par (s : ss) =
               s' = HasName.getName s
               rnm = SortRenaming (SortId s') (qualifiedSort par' s')
 
+-- | generates the library and the development graph from the path of the
+-- maude file
 anaMaudeFile :: HetcatsOpts -> FilePath -> IO (Maybe (LIB_NAME, LibEnv))
 anaMaudeFile _ file = do
     dg <- directMaudeParsing file

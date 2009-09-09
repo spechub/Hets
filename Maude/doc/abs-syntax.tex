@@ -1,1 +1,272 @@
 %!TEX root = main.tex
+
+In this section we show how the abstract syntax of Maude specifications
+is defined. This abstract syntax is based in the Maude grammar presented
+in \cite[Chapter 24]{maude-book}
+
+First, we define the type \verb"Qid", a synonym of \verb"Token" that
+will be used for identifiers:
+
+{\codesize
+\begin{verbatim}
+type Qid = Token
+\end{verbatim}
+}
+
+The main datatype is \verb"Spec", that distinguishes between the
+different specifications available in Maude: modules, theories and
+views. Although both modules and theories contain the same information,
+their semantics are different and need different constructors.
+
+{\codesize
+\begin{verbatim}
+data Spec = SpecMod Module
+          | SpecTh Module
+          | SpecView View
+          deriving (Show, Read, Ord, Eq)
+\end{verbatim}
+}
+
+A \verb"Module" is composed of the identifier of the module, a list
+of parameters and a list of statements
+
+{\codesize
+\begin{verbatim}
+data Module = Module ModId [Parameter] [Statement]
+            deriving (Show, Read, Ord, Eq)
+\end{verbatim}
+}
+
+\noindent while a \verb"View" is composed of a module identifier, the
+source and target module expressions, and a list of renamings:
+
+{\codesize
+\begin{verbatim}
+data View = View ModId ModExp ModExp [Renaming]
+            deriving (Show, Read, Ord, Eq)
+\end{verbatim}
+}
+
+The \verb"Parameter" type contains the identifier of the parameter,
+a \verb"Sort", and its type, a module expression \verb"ModExp":
+
+{\codesize
+\begin{verbatim}
+data Parameter = Parameter Sort ModExp
+               deriving (Show, Read, Ord, Eq)
+\end{verbatim}
+}
+
+A \verb"Statement" can be any of the Maude statements:
+importation, sort, subsort, and operator declarations, and
+equation, membership, and rule statements:
+
+{\codesize
+\begin{verbatim}
+data Statement = ImportStmnt Import
+               | SortStmnt Sort
+               | SubsortStmnt SubsortDecl
+               | OpStmnt Operator
+               | EqStmnt Equation
+               | MbStmnt Membership
+               | RlStmnt Rule
+               deriving (Show, Read, Ord, Eq)
+\end{verbatim}
+}
+
+Importations consist of a module expression qualified by the type
+of import:
+
+{\codesize
+\begin{verbatim}
+data Import = Including ModExp
+            | Extending ModExp
+            | Protecting ModExp
+            deriving (Show, Read, Ord, Eq)
+\end{verbatim}
+}
+
+A subsort declaration keeps single relations between sorts, being
+the first one the subsort and the second one the supersort:
+
+{\codesize
+\begin{verbatim}
+data SubsortDecl = Subsort Sort Sort
+                 deriving (Show, Read, Ord, Eq)
+\end{verbatim}
+}
+
+Operator declarations are composed of the identifier of the
+operator, a list of types giving the arity of the operator,
+a type for its coarity, and a list of attributes:
+
+{\codesize
+\begin{verbatim}
+data Operator = Op OpId [Type] Type [Attr]
+              deriving (Show, Read, Ord, Eq)
+\end{verbatim}
+}
+
+Membership statements consist of a term, its sort, a list
+of conditions, and a list of statement attributes:
+
+{\codesize
+\begin{verbatim}
+data Membership = Mb Term Sort [Condition] [StmntAttr]
+                deriving (Show, Read, Ord, Eq)
+\end{verbatim}
+}
+
+Equations and rules share the same elements: the lefthand
+and righthand terms of the statement, a list of condition,
+and a list of statement attributes:
+
+{\codesize
+\begin{verbatim}
+data Equation = Eq Term Term [Condition] [StmntAttr]
+              deriving (Show, Read, Ord, Eq)
+
+data Rule = Rl Term Term [Condition] [StmntAttr]
+          deriving (Show, Read, Ord, Eq)
+\end{verbatim}
+}
+
+Module expressions distinguish between
+
+\begin{itemize}
+\item A single identifier:
+
+{\codesize
+\begin{verbatim}
+data ModExp = ModExp ModId
+\end{verbatim}
+}
+
+\item A summation, that keeps the two module
+expressions involved:
+
+{\codesize
+\begin{verbatim}
+            | SummationModExp ModExp ModExp
+\end{verbatim}
+}
+
+\item A renaming, that contains the module expression renamed
+and the list of renamings:
+
+{\codesize
+\begin{verbatim}
+            | RenamingModExp ModExp [Renaming]
+\end{verbatim}
+}
+
+\item An instantiation, composed of the module instantiated
+and the list of view identifiers applied:
+
+{\codesize
+\begin{verbatim}
+            | InstantiationModExp ModExp [ViewId]
+            deriving (Show, Read, Ord, Eq)
+\end{verbatim}
+}
+
+The \verb"Renaming" type distinguishes the different renamings
+available in Maude:
+
+\end{itemize}
+
+\begin{itemize}
+
+\item Renaming of sorts, that indicates that the first sort is renamed
+with the second one:
+
+{\codesize
+\begin{verbatim}
+data Renaming = SortRenaming Sort Sort
+\end{verbatim}
+}
+
+\item Renaming of labels, where the first label is renamed to the
+second one:
+
+{\codesize
+\begin{verbatim}
+              | LabelRenaming LabelId LabelId
+\end{verbatim}
+}
+
+\item Renaming of operators, that can be of three kinds: renaming
+of operators without profile, with profile, or a map between terms,
+as explained in ... FILL IT!!!
+
+{\codesize
+\begin{verbatim}
+              | OpRenaming1 OpId ToPartRenaming
+              | OpRenaming2 OpId [Type] Type ToPartRenaming
+              | TermMap Term Term
+              deriving (Show, Read, Ord, Eq)
+\end{verbatim}
+}
+
+\noindent where \verb"ToPartRenaming" specifies the new operator identifier
+and the new attributes:
+
+{\codesize
+\begin{verbatim}
+data ToPartRenaming = To OpId [Attr]                    deriving (Show, Read, Ord, Eq)
+\end{verbatim}
+}
+
+The \verb"Condition" type distinguishes between the different conditions
+available in Maude:
+
+{\codesize
+\begin{verbatim}
+data Condition = EqCond Term Term               | MbCond Term Sort               | MatchCond Term Term               | RwCond Term Term               deriving (Show, Read, Ord, Eq)
+\end{verbatim}
+}
+
+\verb"Term"s are always represented in prefix notation. Notice that
+the case of an operator applied to a list of terms is slightly different
+to the Maude grammar because it also includes the type of the term.
+It will be used later in the implementation to rename operators whose
+profile has been specified (see Section \ref{sec:da} for details):
+
+{\codesize
+\begin{verbatim}
+data Term = Const Qid Type          | Var Qid Type          | Apply Qid [Term] Type          deriving (Show, Read, Ord, Eq)
+\end{verbatim}
+}
+
+Finally, the \verb"Type" distinguishes between Maude sorts and kinds:
+{\codesize
+\begin{verbatim}
+data Type = TypeSort Sort          | TypeKind Kind          deriving (Show, Read, Ord, Eq)
+\end{verbatim}
+}
+
+\end{itemize}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

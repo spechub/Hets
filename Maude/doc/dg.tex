@@ -1,0 +1,129 @@
+%!TEX root = main.tex
+
+Images???
+
+We show in this section the details of the generation of development
+graphs for Maude specifications.
+
+\subsection{Parameterized modules}
+
+As we have seen in Section \ref{subsec:pmod}, parameterized modules 
+receive a list of parameters $P_i$ each one associated to a module
+expression $M_i$. Since these module expressions are theories, they
+can have sorts that are not instantiated yet, so to avoid clash of
+names these sorts are qualified with the parameter name. These
+qualifications induce an implicit morphism in the definition links
+of the development graph between the theory and the parameterized
+module.
+
+\subsection{Module expressions}
+
+Maude module expressions allow to combine and modify the information
+contained in Maude modules.
+
+\begin{itemize}
+\item The summation expression of the module expressions $\mathit{ME}_1$ and
+$\mathit{ME}_2$ generates a new node in the development graph
+$(\mathit{ME}_1 + \mathit{ME}_2)$ with
+the union of the information in both expressions. A definition link
+is also created between the original expressions and the resulting one.
+\item The renaming expression $\mathit{ME} * (R)$ creates a morphism with
+the information given in $R$ that will be used in the link 
+\item The instantiation module expression\footnote{This module expression
+cannot be used in Core Maude in all places where the rest of expressions
+can be used, for more information see \cite{maude-book}} assigns a view
+or a parameter to each of the
+
+Note that an instantiation generates some implicit morphisms and modifies
+the ones stated in the views:
+\begin{itemize}
+\item When the parameter is instantiated with a view
+\item As explained in the previous section, parameterized modules can
+define sorts of the form \verb"name{X1, ..., Xn}", where \verb"X1, ..., Xn"
+are parameter names that can be instantiated or bound by new parameters.
+Thus, in addition to the morphism
+\end{itemize}
+
+\item When the module expression is a simple identifier the development
+graph remains unchanged.
+\end{itemize}
+
+\subsection{Importations}
+
+Maude allow three different kinds of module importation:
+
+\begin{itemize}
+\item Protecting, that means that \emph{no junk} and \emph{no confusion}
+are added to the imported module expression.
+\item Extending, that means that allows ``junk'' to be added to imported
+module expression, while ``confusion'' is forbidden.
+\item Including, that allows both ``junk'' and ``confusion'' to be
+added to the imported module expression.
+\end{itemize}
+
+Each of these importation modes generates links with different proofs
+obligations in the development graph:
+
+\begin{itemize}
+\item When a module expression $M_1$ is imported in protecting mode
+by a module $M_2$ a new node $M_1'$ with the same signature that $M_1$
+is generated and a free link between $M_1$ and $M_1'$
+placed, while a definition link between $M_1'$ and $M_2$.
+\item Extending mode generates a theorem link with the annotation
+\verb"PCons", standing for proof-theoretic conservativity. This
+constraint cannot be discharged in the current version of the system.
+\item Including mode generates a definition link from the imported module
+expression to the module that imports it.
+\end{itemize}
+
+The morphism in all these links depends of the type of module expression.
+It will be an inclusion if the module expression does not contains a
+renaming, while it be a morphism in other case.
+
+\subsection{Views}
+
+Maude views have a theory as source and either a module or a theory
+as target. All the sorts and operators declared in the source theory
+have to be mapped to sorts and operators in the target
+
+A particular case of mapping between operators is the mapping between
+terms, that has the general form \emph{op $e$ to term $t$}
+where $e$ is a term consisting of a 
+single operator applied to variables—declared either on-the-ﬂy or with
+variable declarations in the same view and the target term is any term
+with variables, those in the source $e$ in the corresponding sorts
+resulting from the mapping.
+Since this shortcut allows to map operators with different profiles,
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

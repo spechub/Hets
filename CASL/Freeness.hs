@@ -33,6 +33,7 @@ import Data.List (findIndex)
 import qualified Data.Map as Map
 import qualified Data.Set as Set
 
+-- | main function, in charge of computing the quotient term algebra
 quotientTermAlgebra :: CASLMor -- sigma : Sigma -> SigmaM
                     -> [Named CASLFORMULA] -- Th(M)
                     -> Result (CASLSign, -- SigmaK
@@ -163,6 +164,7 @@ ltkh_sort s = imp'
            concl = Predication ps [v1, v2] nullRange
            imp = Implication prem concl True nullRange
            imp' = quantifyUniversally imp
+
 
 sat_thm_ax :: [Named CASLFORMULA] -> CASLFORMULA
 sat_thm_ax forms = final_form
@@ -383,6 +385,7 @@ hom_surjectivity :: Set.Set SORT -> [Named CASLFORMULA]
 hom_surjectivity = Set.fold f []
       where f = \ x y -> (sort_surj x) : y
 
+-- | generates the formula to state the homomorphism is surjective
 sort_surj :: SORT -> Named CASLFORMULA
 sort_surj s = form'
       where v1 = newVarIndex 0 $ mkFreeName s
@@ -405,6 +408,7 @@ homomorphism_axs_preds = Map.foldWithKey g []
       where f = \ p_name pt sens -> (homomorphism_form_pred p_name pt) : sens
             g = \ p_name set_pt sens -> Set.fold (f p_name) sens set_pt
 
+-- | generates the axioms for the homomorphisms applied to a predicate
 homomorphism_form_pred :: Id -> PredType -> Named CASLFORMULA
 homomorphism_form_pred name (PredType args) = named_form
       where free_args = map mkFreeName args
