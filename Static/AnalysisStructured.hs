@@ -387,7 +387,7 @@ anaSpecAux conser addSyms lg dg nsig name opts sp = case sp of
              EmptyNode _ -> return gsigmaB
              JustNode (NodeSig _ sigI) -> gsigUnion lg sigI gsigmaB
            let (fsig@(NodeSig node _), dg2) =
-                 insGSig dg name (DGSpecInst spname) gsigma
+                 insGSig dg name (DGInst spname) gsigma
            incl <- ginclusion lg gsigmaB gsigma
            let dg3 = insLink dg2 incl globalDef SeeTarget nB node
            dg4 <- createConsLink DefLink conser lg dg3 nsig fsig SeeTarget
@@ -471,7 +471,7 @@ anaUnion addSyms lg dg nsig name opts asps = case asps of
           dg3 <- foldM insE dg2 nsigs'
           return (newAsps, nsigs', ns, dg3)
 
-anaFitArgs :: LogicGraph -> HetcatsOpts -> SPEC_NAME -> MaybeNode
+anaFitArgs :: LogicGraph -> HetcatsOpts -> SIMPLE_ID -> MaybeNode
   -> ([FIT_ARG], DGraph, [(G_morphism, NodeSig)], NodeName)
   -> (NodeSig, FIT_ARG)
   -> Result ([FIT_ARG], DGraph, [(G_morphism, NodeSig)], NodeName)
@@ -649,7 +649,7 @@ anaGmaps lg opts pos psig@(G_sign lidP sigmaP _) (G_sign lidA sigmaA _) gsis
    -} -- ??? does not work
       -- ??? also output some symbol that is affected
 
-anaFitArg :: LogicGraph -> DGraph -> SPEC_NAME -> MaybeNode -> NodeSig
+anaFitArg :: LogicGraph -> DGraph -> SIMPLE_ID -> MaybeNode -> NodeSig
   -> HetcatsOpts -> NodeName -> FIT_ARG
   -> Result (FIT_ARG, DGraph, (G_morphism, NodeSig))
 anaFitArg lg dg spname nsigI (NodeSig nP gsigmaP) opts name fv = case fv of
@@ -659,14 +659,13 @@ anaFitArg lg dg spname nsigI (NodeSig nP gsigmaP) opts name fv = case fv of
    gmor <- anaGmaps lg opts pos gsigmaP gsigA gsis
    return (Fit_spec (replaceAnnoted sp' asp) gsis pos,
           insLink dg' (gEmbed gmor) globalThm
-             (DGLinkSpecInst spname) nP nA, (gmor, nsigA))
+             (DGLinkInst spname) nP nA, (gmor, nsigA))
   Fit_view vn afitargs pos -> case lookupGlobalEnvDG vn dg of
     Just (ViewEntry (ExtViewSig (NodeSig nSrc gsigmaS) mor
       gs@(ExtGenSig (GenSig _ params _) target@(NodeSig nTar _))))
         -> adjustPos pos $ do
       GMorphism cid _ _ morHom ind <- return mor
       let lid = targetLogic cid
-          spstr = tokStr spname
           pname = dgn_name $ labDG dg nP
           gsigmaI = getMaybeSig nsigI
       dg5 <- do
@@ -685,12 +684,12 @@ anaFitArg lg dg spname nsigI (NodeSig nP gsigmaP) opts name fv = case fv of
             inclI <- ginclusion lg gsigmaI gsigmaIS
             inclS <- ginclusion lg gsigmaS gsigmaIS
             let (NodeSig n' _, dg1) = insGSig dg (extName "View" name)
-                  {xpath = xpath pname} (DGFitView spname) gsigmaIS
+                  {xpath = xpath pname} (DGFitView vn) gsigmaIS
                 dg2 = insLink dg1 inclI globalDef
-                      (DGLinkFitViewImp spname) nI n'
+                      (DGLinkFitViewImp vn) nI n'
             return (insLink dg2 inclS globalDef SeeTarget nSrc n', n')
         gmor <- ginclusion lg gsigmaP gsigmaIS
-        return $ insLink dg4 gmor globalThm (DGLinkFitView spname) nP iSrc
+        return $ insLink dg4 gmor globalThm (DGLinkFitView vn) nP iSrc
       case (\ x y -> (x, x - y)) (length afitargs) (length params) of
       -- the case without parameters leads to a simpler dg
         (0, 0) -> return (fv, dg5, (G_morphism lid morHom ind, target))
@@ -698,7 +697,7 @@ anaFitArg lg dg spname nsigI (NodeSig nP gsigmaP) opts name fv = case fv of
         (_, 0) -> do
           (ffitargs, dg', (gmor_f, _, ns@(NodeSig nA _))) <-
             anaAllFitArgs lg opts dg5 (EmptyNode $ Logic lid)
-              name spname gs afitargs
+              name vn gs afitargs
           mor1 <- comp mor gmor_f
           GMorphism cid1 _ _ theta _ <- return mor1
           let lid1 = targetLogic cid1
@@ -709,12 +708,12 @@ anaFitArg lg dg spname nsigI (NodeSig nP gsigmaP) opts name fv = case fv of
           return (Fit_view vn ffitargs pos, dg9, (mkG_morphism lid1 theta, ns))
 -- finally the case with conflicting numbers of formal and actual parameters
         _ -> fatal_error
-          (spstr ++ " expects " ++ show (length params) ++ " arguments"
+          (tokStr spname ++ " expects " ++ show (length params) ++ " arguments"
            ++ " but was given " ++ show (length afitargs)) pos
     _ -> fatal_error ("View " ++ tokStr vn ++ " not found") pos
 
 anaAllFitArgs :: LogicGraph -> HetcatsOpts -> DGraph -> MaybeNode -> NodeName
-  -> SPEC_NAME -> ExtGenSig -> [Annoted FIT_ARG]
+  -> SIMPLE_ID -> ExtGenSig -> [Annoted FIT_ARG]
   -> Result ([Annoted FIT_ARG], DGraph, (GMorphism, G_sign, NodeSig))
 anaAllFitArgs lg opts dg nsig name spname
   gs@(ExtGenSig (GenSig imps params _) _)
@@ -725,8 +724,8 @@ anaAllFitArgs lg opts dg nsig name spname
   let actualargs = reverse args
   (gsigma', morDelta) <- applyGS lg gs actualargs
   gsigmaRes <- gsigUnion lg (getMaybeSig nsig) gsigma'
-  let (ns, dg2) = insGSig dg' name (DGSpecInst spname) gsigmaRes
-  dg3 <- foldM (parLink lg DGLinkFitSpec ns) dg2 $ map snd args
+  let (ns, dg2) = insGSig dg' name (DGInst spname) gsigmaRes
+  dg3 <- foldM (parLink lg (DGLinkInst spname) ns) dg2 $ map snd actualargs
   return ( zipWith replaceAnnoted (reverse fitargs') afitargs, dg3
          , (morDelta, gsigma', ns))
 

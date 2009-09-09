@@ -118,10 +118,9 @@ data DGOrigin =
   | DGData
   | DGFormalParams
   | DGImports
-  | DGSpecInst SIMPLE_ID
+  | DGInst SIMPLE_ID
   | DGFitSpec
   | DGFitView SIMPLE_ID
-  | DGFitViewA SIMPLE_ID
   | DGProof
   | DGNormalForm Node
   | DGintegratedSCC
@@ -269,12 +268,10 @@ data DGLinkOrigin =
   | DGLinkTranslation
   | DGLinkClosedLenv
   | DGLinkImports
-  | DGLinkSpecInst SIMPLE_ID
-  | DGLinkFitSpec
+  | DGLinkInst SIMPLE_ID
   | DGLinkView SIMPLE_ID
   | DGLinkFitView SIMPLE_ID
   | DGLinkFitViewImp SIMPLE_ID
-  | DGLinkFitViewAImp SIMPLE_ID
   | DGLinkProof
   | DGLinkFlatteningUnion
   | DGLinkFlatteningRename

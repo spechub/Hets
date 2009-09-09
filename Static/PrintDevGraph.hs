@@ -85,9 +85,8 @@ instance Pretty NodeSig where
 
 dgOriginSpec :: DGOrigin -> Maybe SIMPLE_ID
 dgOriginSpec o = case o of
-    DGSpecInst n -> Just n
+    DGInst n -> Just n
     DGFitView n -> Just n
-    DGFitViewA n -> Just n
     _ -> Nothing
 
 dgOriginHeader :: DGOrigin -> String
@@ -108,10 +107,9 @@ dgOriginHeader o = case o of
     DGData -> "data-spec"
     DGFormalParams -> "formal parameters"
     DGImports -> "arch import"
-    DGSpecInst _ -> "instantiation"
+    DGInst _ -> "instantiation"
     DGFitSpec -> "fitting-spec"
     DGFitView _ -> "fitting-view"
-    DGFitViewA _ -> "fitting view (actual parameters)"
     DGProof -> "proof-construct"
     DGNormalForm n -> "normal-form(" ++ shows n ")"
     DGintegratedSCC -> "OWL spec with integrated strongly connected components"
@@ -154,11 +152,10 @@ instance Pretty EdgeId where
 
 dgLinkOriginSpec :: DGLinkOrigin -> Maybe SIMPLE_ID
 dgLinkOriginSpec o = case o of
-    DGLinkSpecInst n -> Just n
+    DGLinkInst n -> Just n
     DGLinkView n -> Just n
     DGLinkFitView n -> Just n
     DGLinkFitViewImp n -> Just n
-    DGLinkFitViewAImp n -> Just n
     _ -> Nothing
 
 dgLinkOriginHeader :: DGLinkOrigin -> String
@@ -170,12 +167,10 @@ dgLinkOriginHeader o = case o of
     DGLinkTranslation -> "OMDoc translation"
     DGLinkClosedLenv -> "closed spec and local environment"
     DGLinkImports -> "OWL import"
-    DGLinkSpecInst _ -> "instantiation-link"
-    DGLinkFitSpec -> "fitting-spec-link"
+    DGLinkInst _ -> "instantiation-link"
     DGLinkView _ -> "view"
     DGLinkFitView _ -> "fitting view to"
     DGLinkFitViewImp _ -> "fitting view (import)"
-    DGLinkFitViewAImp _ -> "fitting view (actual parameter)"
     DGLinkProof -> "proof-link"
     DGLinkFlatteningUnion -> "flattening non-disjoint union"
     DGLinkFlatteningRename -> "flattening renaming"
