@@ -481,11 +481,11 @@ anaFitArgs :: LogicGraph -> HetcatsOpts -> SPEC_NAME -> MaybeNode
 anaFitArgs lg opts spname imps (fas', dg1, args, name') (nsig', fa) = do
     let n1 = inc name'
     (fa', dg', arg) <- anaFitArg lg dg1 spname imps nsig' opts n1 fa
-    return (fa' : fas', dg', arg : args , n1)
+    return (fa' : fas', dg', arg : args, n1)
 
-parLink :: LogicGraph -> DGLinkOrigin -> G_sign -> Node -> DGraph -> NodeSig
+parLink :: LogicGraph -> DGLinkOrigin -> NodeSig -> DGraph -> NodeSig
         -> Result DGraph
-parLink lg orig gsigma' node dg (NodeSig nA_i sigA_i)= do
+parLink lg orig (NodeSig node gsigma') dg (NodeSig nA_i sigA_i)= do
     incl <- ginclusion lg sigA_i gsigma'
     return $ insLink dg incl globalDef orig nA_i node
 
@@ -669,7 +669,7 @@ anaFitArg lg dg spname nsigI (NodeSig nP gsigmaP) opts name fv = case fv of
              (DGLinkSpecInst spname) nP nA, (gmor, nsigA))
   Fit_view vn afitargs pos -> case lookupGlobalEnvDG vn dg of
     Just (ViewEntry (ExtViewSig (NodeSig nSrc gsigmaS) mor
-      gs@(ExtGenSig (GenSig _ params _) target@(NodeSig nTar gsigmaT))))
+      gs@(ExtGenSig (GenSig _ params _) target@(NodeSig nTar _))))
         -> adjustPos pos $ do
       GMorphism cid _ _ morHom ind <- return mor
       let lid = targetLogic cid
@@ -677,7 +677,9 @@ anaFitArg lg dg spname nsigI (NodeSig nP gsigmaP) opts name fv = case fv of
           pname = dgn_name $ labDG dg nP
           gsigmaI = getMaybeSig nsigI
       dg5 <- case nsigI of
-        EmptyNode _ -> return dg
+        EmptyNode _ -> do
+          gmor <- ginclusion lg gsigmaP gsigmaS
+          return $ insLink dg gmor globalThm (DGLinkFitView spname) nP nSrc
         JustNode (NodeSig nI _) -> do
           gsigmaIS <- gsigUnion lg gsigmaI gsigmaS
           unless (isSubGsign lg gsigmaP gsigmaIS)
@@ -698,49 +700,20 @@ anaFitArg lg dg spname nsigI (NodeSig nP gsigmaP) opts name fv = case fv of
           return dg4
       case (\ x y -> (x, x - y)) (length afitargs) (length params) of
       -- the case without parameters leads to a simpler dg
-        (0, 0) -> case nsigI of
-         -- the subcase with empty import leads to a simpler dg
-          EmptyNode _ -> do
-            gmor <- ginclusion lg gsigmaP gsigmaS
-            return (fv, insLink dg5 gmor globalThm (DGLinkFitView spname)
-                    nP nSrc, (G_morphism lid morHom ind, target))
-         -- the subcase with nonempty import
-          JustNode (NodeSig nI _) -> do
-            (G_sign lidI sigI1 _, _) <- gSigCoerce lg gsigmaI (Logic lid)
-            sigI <- coerceSign lidI lid
-                    "Analysis of instantiation with import" sigI1
-            mor_I <- morphism_union lid morHom $ ext_ide sigI
-            gsigmaA <- gsigUnion lg gsigmaI gsigmaT
-            inclIA <- ginclusion lg gsigmaI gsigmaA
-            inclTA <- ginclusion lg gsigmaT gsigmaA
-            let (ns@(NodeSig nA _), dg6) =
-                  insGSig dg5 name (DGFitViewA spname) gsigmaA
-                dg7 = insLink dg6 inclIA globalDef
-                  (DGLinkFitViewAImp spname) nI nA
-                dg8 = insLink dg7 inclTA globalDef SeeTarget nTar nA
-            return (fv, dg8, (mkG_morphism lid mor_I, ns))
+        (0, 0) -> do
+            return (fv, dg5, (G_morphism lid morHom ind, target))
         -- now the case with parameters
         (_, 0) -> do
-          (ffitargs, dg', (gmor_f, gsigmaA, ns@(NodeSig nA gsigmaRes))) <-
-               anaAllFitArgs lg opts dg5 nsigI name spname gs afitargs
+          (ffitargs, dg', (gmor_f, _, ns@(NodeSig nA _))) <-
+            anaAllFitArgs lg opts dg5 (EmptyNode $ Logic lid)
+              name spname gs afitargs
           mor1 <- comp mor gmor_f
-          incl1 <- ginclusion lg gsigmaA gsigmaRes
-          mor' <- comp gmor_f incl1
-          GMorphism cid1 _ _ mor1Hom _ <- return mor1
+          GMorphism cid1 _ _ theta _ <- return mor1
           let lid1 = targetLogic cid1
           when (language_name (sourceLogic cid1) /= language_name lid1)
             $ fatal_error "heterogeneous fitting views not yet implemented"
               pos
-          G_sign lidI sigI1 _ <- return gsigmaI
-          sigI <- coerceSign lidI lid1
-               "Analysis of instantiation with parameters" sigI1
-          theta <- morphism_union lid1 mor1Hom (ext_ide sigI)
-          inclIA <- ginclusion lg gsigmaI gsigmaRes
-          let dg8 = case nsigI of
-                EmptyNode _ -> dg'
-                JustNode (NodeSig nI _) -> insLink dg' inclIA globalDef
-                  (DGLinkFitViewAImp spname) nI nA
-              dg9 = insLink dg8 mor' globalDef SeeTarget nTar nA
+          let dg9 = insLink dg' gmor_f globalDef SeeTarget nTar nA
           return (Fit_view vn ffitargs pos, dg9, (mkG_morphism lid1 theta, ns))
 -- finally the case with conflicting numbers of formal and actual parameters
         _ -> fatal_error
@@ -760,12 +733,10 @@ anaAllFitArgs lg opts dg nsig name spname
   let actualargs = reverse args
   (gsigma', morDelta) <- applyGS lg gs actualargs
   gsigmaRes <- gsigUnion lg (getMaybeSig nsig) gsigma'
-  let (ns@(NodeSig node gsigmaRes'), dg2) =
-        insGSig dg' name (DGSpecInst spname) gsigmaRes
-  dg3 <- foldM (parLink lg DGLinkFitSpec gsigmaRes' node) dg2 $ map snd args
+  let (ns, dg2) = insGSig dg' name (DGSpecInst spname) gsigmaRes
+  dg3 <- foldM (parLink lg DGLinkFitSpec ns) dg2 $ map snd args
   return ( zipWith replaceAnnoted (reverse fitargs') afitargs, dg3
          , (morDelta, gsigma', ns))
-
 
 -- Extension of signature morphisms (for instantitations)
 -- first some auxiliary functions
