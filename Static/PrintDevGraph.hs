@@ -183,7 +183,7 @@ showLEdge :: LEdge DGLinkLab -> String
 showLEdge (s, t, l) = "edge " ++ showEdgeId (dgl_id l)
   ++ " (" ++ showNodeId s ++ " --> " ++ show t ++ ")"
 
--- | only print the origin and some notion of the tye of the label
+-- | only print the origin and parts of the type
 prettyDGLinkLab :: (DGLinkLab -> Doc) -> DGLinkLab -> Doc
 prettyDGLinkLab f l = fsep
   [ case dgl_origin l of
