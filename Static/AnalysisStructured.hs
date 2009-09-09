@@ -170,28 +170,27 @@ anaSpecTop conser addSyms lg dg nsig name opts sp =
 anaQualSpec :: Bool -> LogicGraph -> HetcatsOpts -> DGraph
   -> MaybeNode -> NodeName -> Annoted SPEC -> Range
   -> Result (Annoted SPEC, NodeSig, DGraph)
-anaQualSpec addSyms lg opts dg nsig name asp pos = do
+anaQualSpec addSyms lg opts dg nsig name asp pos = adjustPos pos $ do
       (sp', NodeSig n' gsigma, dg') <-
           anaSpec addSyms lg dg nsig (extName "Qualified" name) opts $ item asp
-      let (ns@(NodeSig node gsigma'), dg2) =
-              insGSig dg' name DGLogicQual gsigma
-      incl <- adjustPos pos $ ginclusion lg gsigma gsigma'
+      let (ns@(NodeSig node _), dg2) = insGSig dg' name DGLogicQual gsigma
       return (replaceAnnoted sp' asp, ns,
-              insLink dg2 incl globalDef SeeTarget n' node)
+              insLink dg2 (ide gsigma) globalDef SeeTarget n' node)
 
 anaFreeOrCofreeSpec :: Bool -> LogicGraph -> HetcatsOpts -> DGraph
   -> MaybeNode -> NodeName -> FreeOrCofree -> Annoted SPEC -> Range
   -> Result (Annoted SPEC, NodeSig, DGraph)
-anaFreeOrCofreeSpec addSyms lg opts dg nsig name dglType asp pos = do
+anaFreeOrCofreeSpec addSyms lg opts dg nsig name dglType asp pos =
+  adjustPos pos $ do
       (sp', NodeSig n' gsigma, dg') <-
           anaSpec addSyms lg dg nsig (extName (show dglType) name) opts
             $ item asp
-      let (ns@(NodeSig node gsigma'), dg2) =
+      let (ns@(NodeSig node _), dg2) =
               insGSig dg' name (DGFreeOrCofree dglType) gsigma
       nsigma <- return $ case nsig of
            EmptyNode cl -> emptyG_sign cl
            JustNode nds -> getSig nds
-      incl <- adjustPos pos $ ginclusion lg nsigma gsigma'
+      incl <- ginclusion lg nsigma gsigma
       return (replaceAnnoted sp' asp, ns,
               insLink dg2 incl (FreeOrCofreeDefLink dglType nsig)
               SeeTarget n' node)
@@ -349,8 +348,8 @@ anaSpecAux conser addSyms lg dg nsig name opts sp = case sp of
       (sp', NodeSig n' gsigma', dg') <-   -- choose a unique starting letter
           anaSpec False lg dg (EmptyNode l) (extName "Closed" name) opts sp1
       let gsigma = getMaybeSig nsig
-      gsigma'' <- gsigUnion lg gsigma gsigma'
-      let (ns@(NodeSig node gsigma2), dg2) = insGSig dg' name DGClosed gsigma''
+      gsigma2 <- gsigUnion lg gsigma gsigma'
+      let (ns@(NodeSig node _), dg2) = insGSig dg' name DGClosed gsigma2
       incl2 <- ginclusion lg gsigma' gsigma2
       let dg3 = insLink dg2 incl2 globalDef SeeTarget n' node
       dg4 <- createConsLink DefLink conser lg dg3 nsig ns DGLinkClosedLenv
@@ -386,10 +385,10 @@ anaSpecAux conser addSyms lg dg nsig name opts sp = case sp of
         _ -> do
            gsigma <- case nsig of
              EmptyNode _ -> return gsigmaB
-             JustNode (NodeSig _ sig) -> gsigUnion lg sig gsigmaB
-           let (fsig@(NodeSig node gsigma'), dg2) =
+             JustNode (NodeSig _ sigI) -> gsigUnion lg sigI gsigmaB
+           let (fsig@(NodeSig node _), dg2) =
                  insGSig dg name (DGSpecInst spname) gsigma
-           incl <- ginclusion lg gsigmaB gsigma'
+           incl <- ginclusion lg gsigmaB gsigma
            let dg3 = insLink dg2 incl globalDef SeeTarget nB node
            dg4 <- createConsLink DefLink conser lg dg3 nsig fsig SeeTarget
            return (sp, fsig, dg4)
