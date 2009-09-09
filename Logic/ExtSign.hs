@@ -42,7 +42,7 @@ ext_empty_signature :: Logic lid sublogics
         basic_spec sentence symb_items symb_map_items
         sign morphism symbol raw_symbol proof_tree
         => lid -> ExtSign sign symbol
-ext_empty_signature l = mkExtSign (empty_signature l)
+ext_empty_signature = mkExtSign . empty_signature
 
 checkExtSign :: Logic lid sublogics
         basic_spec sentence symb_items symb_map_items
@@ -118,12 +118,17 @@ checkRawMap :: Logic lid sublogics
         basic_spec sentence symb_items symb_map_items
         sign morphism symbol raw_symbol proof_tree
         => lid -> EndoMap raw_symbol -> sign -> Result ()
-checkRawMap l rmap sigma = do
-  let syms = sym_of l sigma
-      unknownSyms = Set.filter
+checkRawMap l rmap = checkRawSyms l (Map.keys rmap) . sym_of l
+
+checkRawSyms :: Logic lid sublogics
+        basic_spec sentence symb_items symb_map_items
+        sign morphism symbol raw_symbol proof_tree
+        => lid -> [raw_symbol] -> Set.Set symbol  -> Result ()
+checkRawSyms l rsyms syms = do
+  let unknownSyms = filter
           ( \ rsy -> Set.null $ Set.filter (flip (matches l) rsy) syms)
-          $ Map.keysSet rmap
-  unless (Set.null unknownSyms)
+          rsyms
+  unless (null unknownSyms)
     $ Result [mkDiag Error "unknown symbols" unknownSyms] $ Just ()
 
 ext_induced_from_to_morphism :: Logic lid sublogics
@@ -135,6 +140,7 @@ ext_induced_from_to_morphism l r s@(ExtSign p sy) t = do
     checkExtSign l "from" s
     checkExtSign l "to" t
     checkRawMap l r p
+    checkRawSyms l (Map.elems r) $ nonImportedSymbols t
     mor <- induced_from_to_morphism l r s t
     let sysI = Set.toList $ Set.difference (sym_of l p) sy
         morM = symmap_of l mor

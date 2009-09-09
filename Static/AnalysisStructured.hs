@@ -400,9 +400,7 @@ anaSpecAux conser addSyms lg dg nsig name opts sp = case sp of
        GMorphism cid _ _ _ _ <- return morDelta
        morDelta' <- case nsig of
          EmptyNode _ -> return morDelta
-         _ -> do
-           incl2 <- ginclusion lg gsigmaA gsigmaRes
-           comp morDelta incl2
+         _ -> ginclusion lg gsigmaA gsigmaRes >>= comp morDelta
        (_, imor) <- gSigCoerce lg gsigmaB $ Logic $ sourceLogic cid
        tmor <- gEmbedComorphism imor gsigmaB
        morDelta'' <- comp tmor morDelta'
@@ -636,16 +634,12 @@ anaGmaps lg opts pos psig@(G_sign lidP sigmaP _) (G_sign lidA sigmaA _) gsis
       cl <- lookupCurrentLogic "anaGmaps" lg
       G_symb_map_items_list lid sis <- homogenizeGM cl gsis
       rmap <- stat_symb_map_items lid sis
-      let noMatch sig r = Set.null $ Set.filter
-            (\ s -> matches lid s r) $ ext_sym_of lid sig
       (G_sign lidP' sigmaP'' _, _) <- gSigCoerce lg psig (Logic lid)
       sigmaP' <- coerceSign lidP' lid "anaGmaps1" sigmaP''
       sigmaA' <- coerceSign lidA lid "anaGmaps2" sigmaA
-      let unknowns = filter (noMatch sigmaP') (Map.keys rmap)
-            ++ filter (noMatch sigmaA') (Map.elems rmap)
-      if null unknowns then fmap (mkG_morphism lid)
-         $ ext_induced_from_to_morphism lid rmap sigmaP' sigmaA'
-        else fatal_error ("unknown symbols " ++ showDoc unknowns "") pos
+      fmap (mkG_morphism lid)
+        $ ext_induced_from_to_morphism lid rmap sigmaP' sigmaA'
+
    {-
    let symI = sym_of lidP sigmaI'
        symmap_mor = symmap_of lidP mor
@@ -700,8 +694,7 @@ anaFitArg lg dg spname nsigI (NodeSig nP gsigmaP) opts name fv = case fv of
         return $ insLink dg4 gmor globalThm (DGLinkFitView spname) nP iSrc
       case (\ x y -> (x, x - y)) (length afitargs) (length params) of
       -- the case without parameters leads to a simpler dg
-        (0, 0) -> do
-            return (fv, dg5, (G_morphism lid morHom ind, target))
+        (0, 0) -> return (fv, dg5, (G_morphism lid morHom ind, target))
         -- now the case with parameters
         (_, 0) -> do
           (ffitargs, dg', (gmor_f, _, ns@(NodeSig nA _))) <-
