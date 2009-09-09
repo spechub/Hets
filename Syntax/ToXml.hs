@@ -96,7 +96,7 @@ fitArg ga fa = case fa of
     $ annoted spec ga as : concatMap (gmapping ga) m
   Fit_view n fargs rg ->
     add_attrs (mkNameAttr (tokStr n) : rgAttrs rg)
-    $ unode "Fitview" $ map (annoted fitArg ga) fargs
+    $ unode "Spec" $ unode "Actuals" $ map (annoted fitArg ga) fargs
 
 itemNameOrMap :: ITEM_NAME_OR_MAP -> Element
 itemNameOrMap itm = (case itm of
