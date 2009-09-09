@@ -76,7 +76,7 @@ lnode ga lenv (_, lbl) =
           l -> ("?", showXPath l)
   in add_attrs (mkNameAttr (showName nm) : if
                not (isDGRef lbl) && dgn_origin lbl < DGProof then
-               [mkAttr "specname" spn, mkAttr "relxpath" xp ]
+               [mkAttr "refname" spn, mkAttr "relxpath" xp ]
                else [])
   $ unode "Node"
     $ case nodeInfo lbl of
@@ -86,17 +86,11 @@ lnode ga lenv (_, lbl) =
                           $ lookupDGraph li lenv ]
             $ unode "Reference"
             $ prettyElem "Signature" ga $ dgn_sign lbl ]
-          DGNode orig cs ->
-              (case dgOriginSpec orig of
-                  Nothing -> []
-                  Just si -> [unode "OriginSpec" $ tokStr si])
-              ++ (case show $ pretty cs of
-                   "" -> []
-                   cstr -> [unode "ConsStatus" cstr])
+          DGNode orig cs -> constStatus cs
               ++ case orig of
                    DGBasicSpec syms -> subnodes "Declarations"
                      (map (prettyElem "Symbol" ga) $ Set.toList syms)
-                   _ -> []
+                   _ -> [prettyElem "Signature" ga $ dgn_sign lbl]
       ++ case dgn_theory lbl of
         G_theory lid (ExtSign sig _) _ thsens _ -> let
                  (axs, thms) = OMap.partition isAxiom $ OMap.map
@@ -117,14 +111,39 @@ mkAxNode :: Pretty s => GlobalAnnos -> SenAttr s String -> Element
 mkAxNode ga s = add_attr (mkNameAttr $ senAttr s)
   $ prettyElem "Axiom" ga $ sentence s
 
+constStatus :: ConsStatus -> [Element]
+constStatus cs = case show $ pretty cs of
+  "" -> []
+  cstr -> [unode "ConsStatus" cstr]
+
 ledge :: GlobalAnnos -> DGraph -> LEdge DGLinkLab -> Element
-ledge ga dg (f, t, lbl) = let orig = dgl_origin lbl in
-  add_attrs [ mkAttr "source" $ getNameOfNode f dg
-            , mkAttr "target" $ getNameOfNode t dg ]
+ledge ga dg (f, t, lbl) = let typ = dgl_type lbl in add_attrs
+  [ mkAttr "source" $ getNameOfNode f dg
+  , mkAttr "target" $ getNameOfNode t dg
+  , mkAttr "linkid" $ showEdgeId $ dgl_id lbl ]
   $ unode "Link"
-    $ unode "Origin" (dgLinkOriginHeader orig)
-      : case dgLinkOriginSpec orig of
-          Nothing -> []
-          Just si -> [unode "OriginSpec" $ tokStr si]
-      ++ [ prettyElem "Type" ga $ dgl_type lbl
-         , prettyElem "GMorphism" ga $ dgl_morphism lbl ]
+    $ unode "Type" (getDGLinkType lbl)
+    : (case thmLinkStatus typ of
+        Nothing -> []
+        Just tls -> case tls of
+          LeftOpen -> []
+          Proven r ls -> dgrule r ++
+            map (\ e -> add_attr (mkAttr "linkref" $ showEdgeId e)
+                   $ unode "ProofBasis" ()) (Set.toList $ proofBasis ls))
+    ++ constStatus (getLinkConsStatus typ)
+    ++ [prettyElem "GMorphism" ga $ dgl_morphism lbl]
+
+dgrule :: DGRule -> [Element]
+dgrule r =
+  unode "Rule" (dgRuleHeader r)
+  : case r of
+      DGRuleLocalInference m ->
+        map (\ (s, t) -> add_attrs [mkNameAttr s, mkAttr "renamedTo" t]
+             $ unode "MovedTheorems" ()) m
+      BasicInference c _ ->
+        [add_attr (mkNameAttr $ show c) $ unode "UsedComorphism" ()]
+      BasicConsInference c _ ->
+        [add_attr (mkNameAttr $ show c) $ unode "UsedComorphism" ()]
+      _ -> map (\ (_, _, l) ->
+        add_attr (mkAttr "linkref" $ showEdgeId $ dgl_id l)
+        $ unode "RuleTarget" ()) $ dgRuleEdges r

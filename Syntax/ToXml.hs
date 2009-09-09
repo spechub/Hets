@@ -52,8 +52,8 @@ libItem ga li = case li of
   View_defn n g (View_type from to _) mapping rg ->
     add_attrs (mkNameAttr (tokStr n) : rgAttrs rg)
       $ unode "ViewDefn" $ genericity ga g
-        ++ [ unode "From" $ annoted spec ga from
-           , unode "To" $ annoted spec ga to ]
+        ++ [ unode "Source" $ annoted spec ga from
+           , unode "Target" $ annoted spec ga to ]
         ++ concatMap (gmapping ga) mapping
   Download_items n mapping rg ->
     add_attrs (mkNameAttr (show $ getLIB_ID n) : rgAttrs rg)
@@ -149,6 +149,14 @@ logicCode (Logic_code enc src trg _) =
         Nothing -> []
         Just l -> [mkAttr "target" $ show $ pretty l]
 
+isEmptyItem :: Annoted Item -> Bool
+isEmptyItem ai =
+  let i = item ai
+      IT _ attrs mdoc = itemType i
+  in null (rgAttrs $ range i) && null attrs && isNothing mdoc
+     && null (l_annos ai) && null (r_annos ai)
+     && all isEmptyItem (items i)
+
 itemToXml :: GlobalAnnos -> Item -> Element
 itemToXml ga i =
     let IT name attrs mdoc = itemType i
@@ -156,7 +164,8 @@ itemToXml ga i =
        $ unode name $ (case mdoc of
           Nothing -> []
           Just d -> [mkText $ show $ useGlobalAnnos ga d])
-        ++ map (Elem . annoted itemToXml ga) (items i)
+        ++ map (Elem . annoted itemToXml ga)
+           (filter (not . isEmptyItem) $ items i)
 
 -- range attribute without file name
 rgAttrs :: Range -> [Attr]

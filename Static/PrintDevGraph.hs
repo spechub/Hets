@@ -24,6 +24,8 @@ module Static.PrintDevGraph
     , showXPath
     , dgLinkOriginHeader
     , dgLinkOriginSpec
+    , dgRuleHeader
+    , dgRuleEdges
     ) where
 
 import Static.GTheory
