@@ -676,28 +676,27 @@ anaFitArg lg dg spname nsigI (NodeSig nP gsigmaP) opts name fv = case fv of
           spstr = tokStr spname
           pname = dgn_name $ labDG dg nP
           gsigmaI = getMaybeSig nsigI
-      dg5 <- case nsigI of
-        EmptyNode _ -> do
-          gmor <- ginclusion lg gsigmaP gsigmaS
-          return $ insLink dg gmor globalThm (DGLinkFitView spname) nP nSrc
-        JustNode (NodeSig nI _) -> do
-          gsigmaIS <- gsigUnion lg gsigmaI gsigmaS
-          unless (isSubGsign lg gsigmaP gsigmaIS)
+      dg5 <- do
+        gsigmaIS <- gsigUnion lg gsigmaI gsigmaS
+        unless (isSubGsign lg gsigmaP gsigmaIS)
              (plain_error ()
               ("Parameter does not match source of fittig view. "
                ++ "Parameter signature:\n"
                ++ showDoc gsigmaP
                "\nSource signature of fitting view (united with import):\n"
                ++ showDoc gsigmaIS "") pos)
-          inclIP <- ginclusion lg gsigmaI gsigmaP
-          inclSP <- ginclusion lg gsigmaS gsigmaP
-          let (NodeSig n' _, dg1) = insGSig dg (extName "View" name)
-                {xpath = xpath pname} (DGFitView spname) gsigmaP
-              dg2 = insLink dg1 inclIP globalDef
-                    (DGLinkFitViewImp spname) nI n'
-              dg3 = insLink dg2 inclSP globalDef SeeTarget nSrc n'
-              dg4 = insLink dg3 (ide gsigmaP) globalThm SeeTarget nP n'
-          return dg4
+        (dg4, iSrc) <- case nsigI of
+          EmptyNode _ -> return (dg, nSrc)
+          JustNode (NodeSig nI _) -> do
+            inclI <- ginclusion lg gsigmaI gsigmaIS
+            inclS <- ginclusion lg gsigmaS gsigmaIS
+            let (NodeSig n' _, dg1) = insGSig dg (extName "View" name)
+                  {xpath = xpath pname} (DGFitView spname) gsigmaIS
+                dg2 = insLink dg1 inclI globalDef
+                      (DGLinkFitViewImp spname) nI n'
+            return (insLink dg2 inclS globalDef SeeTarget nSrc n', n')
+        gmor <- ginclusion lg gsigmaP gsigmaIS
+        return $ insLink dg4 gmor globalThm (DGLinkFitView spname) nP iSrc
       case (\ x y -> (x, x - y)) (length afitargs) (length params) of
       -- the case without parameters leads to a simpler dg
         (0, 0) -> do
