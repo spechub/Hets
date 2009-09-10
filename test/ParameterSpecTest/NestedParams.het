@@ -1,0 +1,5 @@
+library NestedParams
+
+spec s [sort p] = sort s[p]
+
+spec s2 = s[s[s[sort p] fit p |-> s[p]] fit p |-> s[s[p]]]
