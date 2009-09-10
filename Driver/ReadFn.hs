@@ -105,7 +105,7 @@ findFileOfLibName :: HetcatsOpts -> LIB_NAME -> IO (Maybe FilePath)
 findFileOfLibName opts ln = case getLIB_ID ln of
   Indirect_link file _ ofile _ ->
       if null ofile then do
-          let fs = map (flip pathAndBase file) $ libdirs opts
+          let fs = map (flip pathAndBase file) $ "" : libdirs opts
           ms <- mapM (existsAnSource opts { intype = GuessIn }) fs
           case catMaybes ms of
             [] -> return Nothing
