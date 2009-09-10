@@ -15,6 +15,7 @@ module Static.DGTranslation
     ( libEnv_translation
     , dg_translation
     , getDGLogic
+    , comSublogics
     ) where
 
 import Static.GTheory

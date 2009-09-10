@@ -294,9 +294,9 @@ setListSelectorMultiple view btnAll btnNone btnInvert action = do
   treeSelectionSelectAll selector
 
   -- setup buttons
-  onClicked btnAll $ selectAll view ioRefSelection
-  onClicked btnNone $ selectNone view ioRefSelection
-  onClicked btnInvert $ selectInvert view ioRefSelection
+  onClicked btnAll $ do selectAll view ioRefSelection; action
+  onClicked btnNone $ do selectNone view ioRefSelection; action
+  onClicked btnInvert $ do selectInvert view ioRefSelection; action
 
   return ioRefSelection
 

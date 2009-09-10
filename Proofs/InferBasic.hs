@@ -22,7 +22,7 @@ Proof rule "basic inference" in the development graphs calculus.
 
 -}
 
-module Proofs.InferBasic (basicInferenceNode) where
+module Proofs.InferBasic (basicInferenceNode, consistencyCheck) where
 
 import Static.GTheory
 import Static.DevGraph
@@ -209,6 +209,36 @@ basicInferenceNode checkCons lg ln dGraph n@(node, lbl) libEnv intSt =
                      } thName (hidingLabelWarning lbl) thForProof
                        kpMap (getProvers ProveGUI sublogic cms)
             return newTh
+
+consistencyCheck :: G_cons_checker -> AnyComorphism -> LIB_NAME -> LibEnv
+                 -> DGraph -> LNode DGNodeLab -> IO (Result G_theory)
+consistencyCheck (G_cons_checker lid4 cc) (Comorphism cid) ln le dg n@(n',lbl) =
+  runResultT $ do
+    (G_theory lid1 (ExtSign sign _) _ axs _) <-
+      liftR $ computeLabelTheory le dg n
+    let thName = shows (getLIB_ID ln) "_" ++ getDGNodeName lbl
+        sens = toNamedList axs
+        lidT = targetLogic cid
+        lidS = sourceLogic cid
+    bTh'@(sig1, _) <- coerceBasicTheory lid1 lidS "" (sign, sens)
+    (sig2, sens2) <- liftR $ wrapMapTheory cid bTh'
+    incl <- liftR $ subsig_inclusion lidT (empty_signature lidT) sig2
+    let mor = TheoryMorphism { t_source = empty_theory lidT
+                             , t_target = Theory sig2 $ toThSens sens2
+                             , t_morphism = incl }
+    cc' <- coerceConsChecker lid4 lidT "" cc
+    pts <- lift $ cons_check lidT cc' thName mor
+                $ getCFreeDefMorphs lidT le ln dg n'
+    liftR $ case pts of
+      [pt] -> case goalStatus pt of
+        Proved (Just True) -> let
+          Result ds ms = extractModel cid sig1 $ proofTree pt
+          in case ms of
+          Nothing -> Result ds Nothing
+          Just (sig3, sens3) -> Result ds $ Just $
+            G_theory lidS (mkExtSign sig3) startSigId (toThSens sens3) startThId
+        st -> fail $ "prover status is: " ++ show st
+      _ -> fail "no unique cons checkers found"
 
 proveKnownPMap :: (Logic lid sublogics1
                basic_spec1

@@ -145,7 +145,7 @@
                                     <property name="visible">True</property>
                                     <property name="left_padding">10</property>
                                     <child>
-                                      <widget class="GtkSpinButton" id="spTimeout">
+                                      <widget class="GtkSpinButton" id="sbTimeout">
                                         <property name="visible">True</property>
                                         <property name="can_focus">True</property>
                                         <property name="invisible_char">&#x25CF;</property>

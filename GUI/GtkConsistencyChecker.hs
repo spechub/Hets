@@ -25,14 +25,19 @@ import GUI.GraphTypes
 
 import Static.DevGraph
 import Static.GTheory
+import Static.DGTranslation (comSublogics)
 
 import Interfaces.DataTypes
 
 import Logic.Grothendieck
+import Logic.Comorphism (AnyComorphism)
 
-import Comorphisms.LogicGraph(logicGraph)
+import Comorphisms.LogicGraph (logicGraph)
 
-import Proofs.AbstractState (getConsCheckers, getPName)
+import Common.LibName (LIB_NAME)
+
+import Proofs.AbstractState
+import Proofs.InferBasic (consistencyCheck)
 
 import Data.IORef
 import Data.Graph.Inductive.Graph (LNode)
@@ -52,6 +57,7 @@ showConsistencyChecker gInfo@(GInfo { libName = ln }) = postGUIAsync $ do
   -- get checker view and buttons
   --lblStatus      <- xmlGetWidget xml castToLabel "lblStatus"
   --lblSublogic    <- xmlGetWidget xml castToLabel "lblSublogic"
+  sbTimeout      <- xmlGetWidget xml castToSpinButton "sbTimeout"
   btnCheck       <- xmlGetWidget xml castToButton "btnCheck"
   btnStop        <- xmlGetWidget xml castToButton "btnStop"
   btnFineGrained <- xmlGetWidget xml castToButton "btnFineGrained"
@@ -59,61 +65,89 @@ showConsistencyChecker gInfo@(GInfo { libName = ln }) = postGUIAsync $ do
 
   windowSetTitle window "Consistency Checker"
 
+  let widgets = [ toWidget trvFinder, toWidget btnCheck, toWidget btnFineGrained
+                , toWidget btnStop, toWidget sbTimeout]
+
   -- get nodes
-  nodes <- do
+  (le, dg, nodes) <- do
     ost <- readIORef $ intState gInfo
     case i_state ost of
       Nothing -> error "No state given."
-      Just ist -> return $ labNodesDG $ lookupDGraph ln $ i_libEnv ist
+      Just ist -> do
+        let le = i_libEnv ist
+            dg = lookupDGraph ln le
+        return (le, dg, labNodesDG $ dg)
 
   -- setup data
   listNodes <- setListData trvNodes (\ (_,l) -> getDGNodeName l) nodes
-  listFinder <- setListData trvFinder id []
+  listFinder <- setListData trvFinder (\ (a,_) -> getPName a) []
 
   -- setup view selection actions
   setListSelectorSingle trvFinder $ return ()
   setListSelectorMultiple trvNodes btnNodesAll btnNodesNone btnNodesInvert
                           $ updateNodes trvNodes listNodes listFinder
+                          (do listStoreClear listFinder; activate widgets False)
+                          (activate widgets True)
 
   -- bindings
   onClicked btnClose $ widgetDestroy window
   onClicked btnFineGrained $ return ()
   onClicked btnStop $ return ()
-  onClicked btnCheck $ return ()
+  onClicked btnCheck $ do
+    nodes' <- getNodes trvNodes listNodes
+    finder <- getFinder trvFinder listFinder
+    check ln le dg finder nodes'
 
   widgetShow window
 
--- | Get selected Nodes
+-- | Get selected finder
 getNodes :: TreeView -> ListStore (LNode DGNodeLab) -> IO [LNode DGNodeLab]
 getNodes view list = do
   selector <- treeViewGetSelection view
   rows <- treeSelectionGetSelectedRows selector
   mapM (\ (row:[]) -> listStoreGetValue list row) rows
 
+-- | Get selected nodes
+getFinder :: TreeView -> ListStore (G_cons_checker, AnyComorphism)
+          -> IO (G_cons_checker, AnyComorphism)
+getFinder view list = do
+  selector <- treeViewGetSelection view
+  (Just model) <- treeViewGetModel view
+  (Just iter) <- treeSelectionGetSelected selector
+  (row:[]) <- treeModelGetPath model iter
+  listStoreGetValue list row
+
 -- | Called when node selection is changed. Updates finder list
-updateNodes :: TreeView -> ListStore (LNode DGNodeLab) -> ListStore String
-            -> IO()
-updateNodes view listNodes listFinder = do
+updateNodes :: TreeView -> ListStore (LNode DGNodeLab)
+            -> ListStore (G_cons_checker, AnyComorphism) -> IO () -> IO ()
+            -> IO ()
+updateNodes view listNodes listFinder lock unlock = do
   nodes' <- getNodes view listNodes
   -- get list of theories
-  let ths = map (dgn_theory . snd) nodes'
-  if ths == [] then return ()
+  let sublogics = map (sublogicOfTh . dgn_theory . snd) nodes'
+  if sublogics == [] then lock
     else do
-      -- get sublogic of joined theories
-      sublogic <- case ths of
-        []    -> error "this is not possible!"
-        th:[] -> return $ sublogicOfTh th
-        th:r  -> do
-          -- join theories
-          th' <- flatG_sentences th r
-          return $ sublogicOfTh th'
-      -- update finder list
-      updateFinder listFinder sublogic
+      maybe lock
+        (\ sl -> do unlock; updateFinder listFinder sl)
+        $ foldl (\ ma b -> case ma of
+                  Just a -> comSublogics b a
+                  Nothing -> Nothing) (Just $ head sublogics) $ tail sublogics
 
 -- | Update the list of finder
-updateFinder :: ListStore String -> G_sublogics -> IO ()
+updateFinder :: ListStore (G_cons_checker, AnyComorphism) -> G_sublogics
+             -> IO ()
 updateFinder list sublogic = do
   listStoreClear list
-  mapM_ (listStoreAppend list) $ foldr (\ n l -> if elem n l then l else n:l) []
-        $ map (\ (a,_) -> getPName a) $ getConsCheckers
-        $ findComorphismPaths logicGraph sublogic
+  mapM_ (listStoreAppend list) $ snd
+    $ foldr (\ b@(a,_) c@(ns,bs) -> let n = getPName a in if elem n ns
+                                    then c else (n:ns, b:bs)) ([],[])
+    $ getConsCheckers $ findComorphismPaths logicGraph sublogic
+
+activate :: [Widget] -> Bool -> IO ()
+activate widgets active = do
+  mapM_ (\ w -> widgetSetSensitive w active) widgets
+
+check :: LIB_NAME -> LibEnv -> DGraph -> (G_cons_checker, AnyComorphism)
+      -> [LNode DGNodeLab] -> IO ()
+check ln le dg (cc, c) nodes = do
+  mapM_ (consistencyCheck cc c ln le dg) nodes
