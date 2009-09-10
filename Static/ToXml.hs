@@ -104,8 +104,15 @@ mkThmNode :: Pretty s => GlobalAnnos
           -> (String, SenStatus s (AnyComorphism, BasicProof)) -> Element
 mkThmNode ga (n, s) = add_attrs
   [ mkNameAttr n
-  , mkAttr "status" $ if isProvenSenStatus s then "proven" else "open" ]
+  , mkProvenAttr $ isProvenSenStatus s ]
   $ prettyElem "Theorem" ga $ sentence s
+
+-- | a status may be open, proven or outdated
+mkStatusAttr :: String -> Attr
+mkStatusAttr = mkAttr "status"
+
+mkProvenAttr :: Bool -> Attr
+mkProvenAttr b = mkStatusAttr $ if b then "proven" else "open"
 
 mkAxNode :: Pretty s => GlobalAnnos -> SenAttr s String -> Element
 mkAxNode ga s = add_attr (mkNameAttr $ senAttr s)
@@ -117,20 +124,24 @@ constStatus cs = case show $ pretty cs of
   cstr -> [unode "ConsStatus" cstr]
 
 ledge :: GlobalAnnos -> DGraph -> LEdge DGLinkLab -> Element
-ledge ga dg (f, t, lbl) = let typ = dgl_type lbl in add_attrs
-  [ mkAttr "source" $ getNameOfNode f dg
+ledge ga dg (f, t, lbl) = let
+  typ = dgl_type lbl
+  (lnkSt, stAttr) = case thmLinkStatus typ of
+        Nothing -> ([], [])
+        Just tls -> case tls of
+          LeftOpen -> ([], [mkProvenAttr False])
+          Proven r ls -> (dgrule r ++
+            map (\ e -> add_attr (mkAttr "linkref" $ showEdgeId e)
+                   $ unode "ProofBasis" ()) (Set.toList $ proofBasis ls)
+            , [mkProvenAttr True])
+  in add_attrs
+  ([ mkAttr "source" $ getNameOfNode f dg
   , mkAttr "target" $ getNameOfNode t dg
   , mkAttr "linkid" $ showEdgeId $ dgl_id lbl ]
+  ++ stAttr)
   $ unode "Link"
     $ unode "Type" (getDGLinkType lbl)
-    : (case thmLinkStatus typ of
-        Nothing -> []
-        Just tls -> case tls of
-          LeftOpen -> []
-          Proven r ls -> dgrule r ++
-            map (\ e -> add_attr (mkAttr "linkref" $ showEdgeId e)
-                   $ unode "ProofBasis" ()) (Set.toList $ proofBasis ls))
-    ++ constStatus (getLinkConsStatus typ)
+    : lnkSt ++ constStatus (getLinkConsStatus typ)
     ++ [prettyElem "GMorphism" ga $ dgl_morphism lbl]
 
 dgrule :: DGRule -> [Element]
