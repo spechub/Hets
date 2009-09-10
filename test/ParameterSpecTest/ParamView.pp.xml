@@ -1,0 +1,125 @@
+<?xml version='1.0' ?>
+<Lib name="ParamView" range="1.1">
+  <SpecDefn name="s" range="3.1-3.32">
+    <Parameters>
+      <Union range="3.8-3.17">
+        <Spec>
+          <Basicspec range="3.9-3.15">
+            <Sort_items SortsKind="NonEmptySorts" range="3.9-3.14">
+              <Sort_decl range="3.14">
+                <SORT range="3.14">p</SORT>
+              </Sort_decl>
+            </Sort_items>
+          </Basicspec>
+        </Spec>
+      </Union>
+    </Parameters>
+    <Imports>
+      <Union range="3.8-3.17">
+        <Spec>
+          <Group range="3.23-3.30">
+            <Basicspec range="3.24-3.30">
+              <Sort_items SortsKind="NonEmptySorts" range="3.24-3.29">
+                <Sort_decl range="3.29">
+                  <SORT range="3.29">i</SORT>
+                </Sort_decl>
+              </Sort_items>
+            </Basicspec>
+          </Group>
+        </Spec>
+      </Union>
+    </Imports>
+    <Basicspec range="3.34-5.1">
+      <Sort_items SortsKind="NonEmptySorts" range="3.34-3.39">
+        <Sort_decl range="3.39">
+          <SORT range="3.39">s</SORT>
+        </Sort_decl>
+      </Sort_items>
+    </Basicspec>
+  </SpecDefn>
+  <ViewDefn name="v" range="5.1-5.54">
+    <Parameters>
+      <Union range="5.7-5.16">
+        <Spec>
+          <Basicspec range="5.8-5.14">
+            <Sort_items SortsKind="NonEmptySorts" range="5.8-5.13">
+              <Sort_decl range="5.13">
+                <SORT range="5.13">r</SORT>
+              </Sort_decl>
+            </Sort_items>
+          </Basicspec>
+        </Spec>
+      </Union>
+    </Parameters>
+    <Imports>
+      <Union range="5.7-5.16">
+        <Spec>
+          <Group range="5.22-5.29">
+            <Basicspec range="5.23-5.29">
+              <Sort_items SortsKind="NonEmptySorts" range="5.23-5.28">
+                <Sort_decl range="5.28">
+                  <SORT range="5.28">j</SORT>
+                </Sort_decl>
+              </Sort_items>
+            </Basicspec>
+          </Group>
+        </Spec>
+      </Union>
+    </Imports>
+    <Source>
+      <Group range="5.33-5.40">
+        <Basicspec range="5.34-5.40">
+          <Sort_items SortsKind="NonEmptySorts" range="5.34-5.39">
+            <Sort_decl range="5.39">
+              <SORT range="5.39">p</SORT>
+            </Sort_decl>
+          </Sort_items>
+        </Basicspec>
+      </Group>
+    </Source>
+    <Target>
+      <Group range="5.45-5.52">
+        <Basicspec range="5.46-5.52">
+          <Sort_items SortsKind="NonEmptySorts" range="5.46-5.51">
+            <Sort_decl range="5.51">
+              <SORT range="5.51">q</SORT>
+            </Sort_decl>
+          </Sort_items>
+        </Basicspec>
+      </Group>
+    </Target>
+    <Mapping>
+      <SymbMapItems>p |-&gt; q</SymbMapItems>
+    </Mapping>
+  </ViewDefn>
+  <SpecDefn name="s2" range="8.1-8.19">
+    <Parameters>
+      <Union range="8.9-8.17">
+        <Spec>
+          <Basicspec range="8.10-8.17">
+            <Sort_items SortsKind="NonEmptySorts" range="8.10-8.16">
+              <Sort_decl range="8.15-8.16">
+                <SORT range="8.15-8.16">p2</SORT>
+              </Sort_decl>
+            </Sort_items>
+          </Basicspec>
+        </Spec>
+      </Union>
+    </Parameters>
+    <Actuals name="s" range="8.22-8.37">
+      <Spec name="v" range="8.23-8.36">
+        <Actuals>
+          <Spec>
+            <Basicspec range="8.30-8.36">
+              <Sort_items SortsKind="NonEmptySorts" range="8.30-8.35">
+                <Sort_decl range="8.35">
+                  <SORT range="8.35">t</SORT>
+                </Sort_decl>
+              </Sort_items>
+            </Basicspec>
+          </Spec>
+        </Actuals>
+      </Spec>
+    </Actuals>
+  </SpecDefn>
+</Lib>
