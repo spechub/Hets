@@ -1,8 +1,8 @@
 library ParamView
 
-spec s [sort p] = sort s
+spec s [sort p] given {sort i} = sort s
 
-view v[sort r] : {sort p} to {sort q} =
+view v[sort r] given {sort j} : {sort p} to {sort q} =
       p |-> q
 
 spec s2 [sort p2] = s[view v[sort t]]
