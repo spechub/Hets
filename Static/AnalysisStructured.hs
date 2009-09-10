@@ -389,7 +389,7 @@ anaSpecAux conser addSyms lg dg nsig name opts sp = case sp of
            let (fsig@(NodeSig node _), dg2) =
                  insGSig dg name (DGInst spname) gsigma
            incl <- ginclusion lg gsigmaB gsigma
-           let dg3 = insLink dg2 incl globalDef SeeTarget nB node
+           let dg3 = insLink dg2 incl globalDef (DGLinkMorph spname) nB node
            dg4 <- createConsLink DefLink conser lg dg3 nsig fsig SeeTarget
            return (sp, fsig, dg4)
       -- now the case with parameters
@@ -403,7 +403,7 @@ anaSpecAux conser addSyms lg dg nsig name opts sp = case sp of
        (_, imor) <- gSigCoerce lg gsigmaB $ Logic $ sourceLogic cid
        tmor <- gEmbedComorphism imor gsigmaB
        morDelta'' <- comp tmor morDelta'
-       let dg4 = insLink dg' morDelta'' globalDef SeeTarget nB nA
+       let dg4 = insLink dg' morDelta'' globalDef (DGLinkMorph spname) nB nA
        dg5 <- createConsLink DefLink conser lg dg4 nsig ns SeeTarget
        return (Spec_inst spname ffitargs pos, ns, dg5)
  -- finally the case with conflicting numbers of formal and actual parameters
@@ -672,7 +672,8 @@ anaFitArg lg dg spname nsigI (NodeSig nP gsigmaP) opts name fv = case fv of
                   {xpath = xpath pname} (DGFitView vn) gsigmaIS
                 dg2 = insLink dg1 inclI globalDef
                       (DGLinkFitViewImp vn) nI n'
-            return (insLink dg2 inclS globalDef SeeTarget nSrc n', n')
+            return (insLink dg2 inclS globalDef
+                    (DGLinkFitViewImp vn) nSrc n', n')
         gmor <- ginclusion lg gsigmaP gsigmaIS
         return $ insLink dg4 gmor globalThm (DGLinkFitView vn) nP iSrc
       case (\ x y -> (x, x - y)) (length afitargs) (length params) of
@@ -689,7 +690,7 @@ anaFitArg lg dg spname nsigI (NodeSig nP gsigmaP) opts name fv = case fv of
           when (language_name (sourceLogic cid1) /= language_name lid1)
             $ fatal_error "heterogeneous fitting views not yet implemented"
               pos
-          let dg9 = insLink dg' gmor_f globalDef SeeTarget nTar nA
+          let dg9 = insLink dg' gmor_f globalDef (DGLinkMorph vn) nTar nA
           return (Fit_view vn ffitargs pos, dg9, (mkG_morphism lid1 theta, ns))
 -- finally the case with conflicting numbers of formal and actual parameters
         _ -> fatal_error
@@ -719,7 +720,7 @@ anaAllFitArgs lg opts dg nsig name spname
   (gsigma', morDelta) <- applyGS lg gs actualargs
   gsigmaRes <- gsigUnion lg (getMaybeSig nsig) gsigma'
   let (ns, dg2) = insGSig dg' name (DGInst spname) gsigmaRes
-  dg3 <- foldM (parLink lg (DGLinkInst spname) ns) dg2 $ map snd actualargs
+  dg3 <- foldM (parLink lg (DGLinkInstArg spname) ns) dg2 $ map snd actualargs
   return ( zipWith replaceAnnoted (reverse fitargs') afitargs, dg3
          , (morDelta, gsigma', ns))
 

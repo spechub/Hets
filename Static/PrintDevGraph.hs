@@ -154,7 +154,9 @@ instance Pretty EdgeId where
 
 dgLinkOriginSpec :: DGLinkOrigin -> Maybe SIMPLE_ID
 dgLinkOriginSpec o = case o of
+    DGLinkMorph n -> Just n
     DGLinkInst n -> Just n
+    DGLinkInstArg n -> Just n
     DGLinkView n -> Just n
     DGLinkFitView n -> Just n
     DGLinkFitViewImp n -> Just n
@@ -169,10 +171,12 @@ dgLinkOriginHeader o = case o of
     DGLinkTranslation -> "OMDoc translation"
     DGLinkClosedLenv -> "closed spec and local environment"
     DGLinkImports -> "OWL import"
-    DGLinkInst _ -> "instantiation-link"
+    DGLinkMorph _ -> "instantiation morphism of"
+    DGLinkInst _ -> "instantiation of"
+    DGLinkInstArg _ -> "actual parameter of"
     DGLinkView _ -> "view"
-    DGLinkFitView _ -> "fitting view to"
-    DGLinkFitViewImp _ -> "fitting view (import)"
+    DGLinkFitView _ -> "fit source of"
+    DGLinkFitViewImp _ -> "add import to source of"
     DGLinkProof -> "proof-link"
     DGLinkFlatteningUnion -> "flattening non-disjoint union"
     DGLinkFlatteningRename -> "flattening renaming"

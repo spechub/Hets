@@ -268,7 +268,9 @@ data DGLinkOrigin =
   | DGLinkTranslation
   | DGLinkClosedLenv
   | DGLinkImports
+  | DGLinkMorph SIMPLE_ID
   | DGLinkInst SIMPLE_ID
+  | DGLinkInstArg SIMPLE_ID
   | DGLinkView SIMPLE_ID
   | DGLinkFitView SIMPLE_ID
   | DGLinkFitViewImp SIMPLE_ID
