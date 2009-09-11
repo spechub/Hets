@@ -259,8 +259,7 @@ data ProverKind = ProveGUI | ProveCMDLautomatic
 hasProverKind :: ProverKind -> ProverTemplate x s m y z -> Bool
 hasProverKind pk pt = case pk of
     ProveGUI -> isJust $ proveGUI pt
-    ProveCMDLautomatic ->
-        isJust (proveCMDLautomatic pt) && isJust (proveCMDLautomaticBatch pt)
+    ProveCMDLautomatic -> isJust $ proveCMDLautomatic pt
 
 data FreeDefMorphism sentence morphism = FreeDefMorphism
   { freeDefMorphism :: morphism

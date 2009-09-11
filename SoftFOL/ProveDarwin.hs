@@ -60,7 +60,8 @@ darwinProver = (mkProverTemplate "Darwin" () darwinGUI)
 
 darwinConsChecker
     :: ConsChecker Sign Sentence () SoftFOLMorphism ProofTree
-darwinConsChecker = mkProverTemplate "darwin" () consCheck
+darwinConsChecker = (mkProverTemplate "darwin" () consCheck)
+    { proveCMDLautomatic = Just (\ s _ t -> fmap return . consCheck s t) }
 
 {- |
   Record for prover specific functions. This is used by both GUI and command

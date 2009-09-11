@@ -141,7 +141,7 @@ updateFinder list sublogic = do
   mapM_ (listStoreAppend list) $ snd
     $ foldr (\ b@(a,_) c@(ns,bs) -> let n = getPName a in if elem n ns
                                     then c else (n:ns, b:bs)) ([],[])
-    $ getConsCheckers $ findComorphismPaths logicGraph sublogic
+    $ getConsCheckersAutomatic $ findComorphismPaths logicGraph sublogic
 
 activate :: [Widget] -> Bool -> IO ()
 activate widgets active = do
