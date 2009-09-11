@@ -252,10 +252,8 @@ selectANode x dgState
                  findComorphismPaths logicGraph $
                  sublogicOfTh th
                 )
-         -- make so that nothing (no goals, no axioms) are
-         -- selected initialy in the goal proof status
-         return (initNodeInfo tmp
-                 { selectedGoals = take 1 $ selectedGoals tmp } x)
+         -- all goals and axioms are selected initialy in the proof status
+         return (initNodeInfo tmp x)
        _ -> []
 
 -- | function swithces interface in proving mode and also
