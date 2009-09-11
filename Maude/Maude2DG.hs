@@ -87,6 +87,12 @@ type ModExpProc = (Token, TokenInfoMap, Morphism, [ParamSort], DGraph)
 -- The list of sorts parameterized in this module expression.
 -- The development graph thus far.
 type ImportProc = (ImportType, Token, TokenInfoMap, Morphism, [ParamSort], DGraph)
+
+-- | Information related to the parameters:
+-- The list of parameters information: (parameter name, theory name, not instantiated sorts)
+-- The updated TokenInfoMap map.
+-- The list of morphisms associated with each parameter.
+-- The updated development graph.
 type ParamInfo = ([(Token, Token, Symbols)], TokenInfoMap, [Morphism], DGraph)
 
 -- | Map from view identifiers to tuples containing the target node of the

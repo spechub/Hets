@@ -724,18 +724,18 @@ cond2formula im (MAS.RwCond t t') = CAS.Predication pred_name [ct, ct'] nullRang
 -- | translates a Maude term into a CASL term
 maudeTerm2caslTerm :: IdMap -> MAS.Term -> CAS.CASLTERM
 maudeTerm2caslTerm im (MAS.Var q ty) = CAS.Qual_var q kind nullRange
-        where kind = Map.findWithDefault (errorId "maude term to CASL term") (token2id $ getName ty) im
+        where kind = Map.findWithDefault (errorId "maude_term2CASL_term") (token2id $ getName ty) im
 maudeTerm2caslTerm im (MAS.Const q ty) = CAS.Application op [] nullRange
         where name = token2id q
               ty' = token2id $ getName ty
-              kind = Map.findWithDefault (errorId "maude term to CASL term") ty' im
+              kind = Map.findWithDefault (errorId "maude_term2CASL_term") ty' im
               op_type = CAS.Op_type CAS.Total [] kind nullRange
               op = CAS.Qual_op_name name op_type nullRange
 maudeTerm2caslTerm im (MAS.Apply q ts ty) = CAS.Application op tts nullRange
         where name = token2id q
               tts = map (maudeTerm2caslTerm im) ts
               ty' = token2id $ getName ty
-              kind = Map.findWithDefault (errorId "maude term to CASL term") ty' im
+              kind = Map.findWithDefault (errorId "maude_term2CASL_term") ty' im
               types_tts = getTypes tts
               op_type = CAS.Op_type CAS.Total types_tts kind nullRange
               op = CAS.Qual_op_name name op_type nullRange

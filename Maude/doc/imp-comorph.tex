@@ -1,9 +1,10 @@
 %!TEX root = main.tex
 
 We show in this section the main functions used to implement the comorphism
-from Maude to CASL. The main function in this transformation is
-\verb"maude2casl", that computes the signature and sentences of CASL
-given the Maude signature and sentences
+from Maude to CASL described in Section \ref{sec:comoprh}.
+The main function in this transformation is
+\verb"maude2casl", that computes the CASL signature and sentences
+given the Maude signature and sentences:
 
 {\codesize
 \begin{verbatim}
@@ -20,11 +21,10 @@ with the function \verb"arrangeKinds" were each sort is related to its
 kind. These kinds are used to:
 
 \begin{itemize}
-\item Generate the predicates described in Section \ref{sec:comoprh}
+\item Generate the predicates 
 that assign a concrete sort to each term with \verb"kindPredicates" .
-\item Generate the \verb"rew" predicates described in Section
-\ref{sec:comoprh} to define the rewrite rules between term of each
-kind with \verb"rewPredicates".
+\item Generate the \verb"rew" predicates to define the rewrite rules
+between terms of each kind with \verb"rewPredicates".
 \item Create the formulas associated to the \verb"rew" predicates
 shown above, stating that they are reflexive and transitive, with
 \verb"rewPredicatesSens".
@@ -60,15 +60,15 @@ translated as universally quantified equations, as shown in Section
 a negative existential quantification, as we will show later, with
 the function \verb"owiseSen2Formula". This function requires as additional
 parameter the definition of the formulas defined without the \verb"owise"
-attribute, in order to state that they are applied when the rest of
-possible formulas cannot be applied.
-\item The rest of statements, namely memberships and rules, as translated
+attribute, in order to state that the equations defined with \verb"owise"
+are applied when the rest of possible equations cannot.
+\item The rest of statements, namely memberships and rules, are translated
 as predicates as described in Section \ref{sec:comoprh} with the function
 \verb"mb_rl2formula".
 \item There are some built-in operators in Maude that are not defined by
-means of equations. To allow the user to reason about them, we provide
-some libraries with the definitions of these operators with CASL formulas,
-that are loaded with \verb"loadLibraries".
+means of equations. To allow the user to reason about them we provide
+some libraries with the definitions of these operators as CASL formulas,
+obtained with \verb"loadLibraries".
 \end{itemize}
 
 \item Finally, the CASL symbols are created:
@@ -113,8 +113,8 @@ maude2casl msign nsens = (csign { CSign.sortSet = cs,
 \end{verbatim}
 }
 
-Given a map of \verb"Id" with keys the sorts in the specification and
-value its associated kind, the function \verb"kindPredicates" computes
+Given a map of \verb"Id" with keys the sorts in the Maude specification and
+value their associated kind, the function \verb"kindPredicates" computes
 the predicates that assign the proper sort to each term.
 \verb"kindPredicates" traverses the map applying the function
 \verb"kindPredicate":
@@ -126,9 +126,9 @@ kindPredicates = Map.foldWithKey kindPredicate Map.empty
 \end{verbatim}
 }
 
-\noindent Where \verb"kindPredicate" receives the identifier of a sort,
+Where \verb"kindPredicate" receives the identifier of a sort,
 the identifier of its kind and the accumulated map of CASL predicates
-and then distinguishes if the sort is \verb"Universal", and thus have to be
+and then distinguishes if the sort is \verb"Universal", and thus has to be
 skipped, or it is any other sort and the map has to be extended with a
 new unary predicate named as the sort and with arity the kind:
 
@@ -143,7 +143,31 @@ kindPredicate sort kind mis = case sort == (str2id "Universal") of
 \end{verbatim}
 }
 
-Once the \verb"rew" predicates has been declared, we have to introduce
+The \verb"rew" predicates are declared with the function
+\verb"rewPredicates", that traverses the set of kinds applying
+the function \verb"rewPredicate":
+
+{\codesize
+\begin{verbatim}
+rewPredicates :: Map.Map Id (Set.Set CSign.PredType) -> Set.Set Id
+                 -> Map.Map Id (Set.Set CSign.PredType)
+rewPredicates m = Set.fold rewPredicate m
+\end{verbatim}
+}
+
+This function defines a binary predicate using as name the constant
+\verb"rewID" and the kind as type of the arguments:
+
+{\codesize
+\begin{verbatim}
+rewPredicate :: Id -> Map.Map Id (Set.Set CSign.PredType)
+                -> Map.Map Id (Set.Set CSign.PredType)
+rewPredicate kind m = Map.insertWith (Set.union) rewID ar m
+   where ar = Set.singleton $ CSign.PredType [kind, kind]
+\end{verbatim}
+}
+
+Once these predicates has been declared, we have to introduce
 formulas to state their properties. The function \verb"rewPredicatesSens"
 accomplishes this task by traversing the set of kinds and applying
 \verb"rewPredicateSens":
@@ -169,8 +193,7 @@ rewPredicateSens kind acc = ref : trans : acc
 We describe the formula for the reflexivity, being the transitivity
 analogous. A new variable of the required kind is created with
 the auxiliary function \verb"newVar", then the qualified predicate
-name is created, where \verb"rewID" is a constant specifying the
-name of the \verb"rew" predicate, and applied twice to the same
+name is created with the \verb"rewID" constant and applied to the
 variable. Finally, the formula is named with the prefix \verb"rew_refl_"
 followed by the name of the kind:
 
@@ -196,9 +219,9 @@ translateOps im = Map.fold (translateOpDeclSet im) (Map.empty, Map.empty, [], Se
 \end{verbatim}
 }
 
-Since the values in the Maude operator map are set of operator declarations
-(see Section \ref{sec:da} for details),
-the function \verb"translateOpDeclSet" traverses this set, applying
+Since the values in the Maude operator map are sets of operator declarations
+(see Section \ref{sec:da} for details)
+the function \verb"translateOpDeclSet" has to traverse these sets, applying
 \verb"translateOpDecl" to each operator declaration:
 
 {\codesize
@@ -240,7 +263,7 @@ translateOpDecl im (syms, ats) (ops, assoc_ops, forms, cs) = (ops', assoc_ops', 
 \end{verbatim}
 }
 
-We describe in detail how the predicates obtained from the membership
+We describe now how the predicates obtained from the membership
 axioms associated to each operator declaration are obtained. The function
 \verb"ops2pred" traverses the set of operator symbols, applying
 the function \verb"op2pred":
@@ -321,7 +344,7 @@ is conditional or not. In both cases, the Maude terms in the equation
 are translated into CASL terms with \verb"maudeTerm2caslTerm", and a
 strong equation is used to create a formula. If the equation has no
 conditions this formula is universally quantified and returned as result,
-while if it has conditions each of them generates a formula, and their
+while if it has conditions each of them generates a formula and their
 conjunction, computed with \verb"conds2formula", will be used as premise
 of the equality formula:
 
@@ -366,7 +389,7 @@ given sort:
 maudeTerm2caslTerm im (MAS.Const q ty) = CAS.Application op [] nullRange
       where name = token2id q
             ty' = token2id $ getName ty
-            kind = Map.findWithDefault (errorId "maude term to CASL term") ty' im
+            kind = Map.findWithDefault (errorId "maude_term2CASL_term") ty' im
             op_type = CAS.Op_type CAS.Total [] kind nullRange
             op = CAS.Qual_op_name name op_type nullRange
 \end{verbatim}
@@ -405,7 +428,7 @@ conds2formula im conds = CAS.Conjunction forms nullRange
 
 \begin{itemize}
 
-\item Both equality and matching conditions are translated as
+\item Both equality and matching conditions are translated into
 strong equations:
 
 {\codesize
@@ -421,7 +444,7 @@ cond2formula im (MAS.MatchCond t t') = CAS.Strong_equation ct ct' nullRange
 }
 
 \item Membership conditions are translated into formulas by using the sort
-as the predicate name and its kind as the argument type:
+as predicate name and its kind as the argument type:
 
 {\codesize
 \begin{verbatim}
@@ -435,7 +458,7 @@ cond2formula im (MAS.MbCond t s) = CAS.Predication pred_name [ct] nullRange
 }
 
 \item Rewrite conditions are translated into formulas by using both terms
-as arguments of the \verb"rew" predicate: 
+as arguments of the corresponding \verb"rew" predicate: 
 
 {\codesize
 \begin{verbatim}
@@ -453,7 +476,7 @@ cond2formula im (MAS.RwCond t t') = CAS.Predication pred_name [ct, ct'] nullRang
 
 The equations defined with the \verb"owise" attribute are translated
 with \verb"owiseSen2Formula", that traverses them and applies
-\verb"owiseEq2Formula" to the inner formula:
+\verb"owiseEq2Formula" to the inner equation:
 
 {\codesize
 \begin{verbatim}
@@ -510,7 +533,8 @@ loadNaturalNatSens =
 \end{verbatim}
 }
 
-The translation from sorts, operators and predicates works in a similar
+The translation from sorts, operators and predicates to symbols
+works in a similar
 way to the transformations shown above, so we only describe the 
 how the symbols corresponding with predicates are obtained. The function
 \verb"preds2syms" traverses the map of predicates and inserts each

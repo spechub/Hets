@@ -9,7 +9,11 @@ name and its environment.
 
 {\codesize
 \begin{verbatim}
-anaMaudeFile :: HetcatsOpts -> FilePath -> IO (Maybe (LIB_NAME, LibEnv))anaMaudeFile _ file = do    dg <- directMaudeParsing file    let name = Lib_id $ Direct_link "Maude_Module" nullRange    return $ Just (name, Map.singleton name dg)
+anaMaudeFile :: HetcatsOpts -> FilePath -> IO (Maybe (LIB_NAME, LibEnv))
+anaMaudeFile _ file = do
+    dg <- directMaudeParsing file
+    let name = Lib_id $ Direct_link "Maude_Module" nullRange
+    return $ Just (name, Map.singleton name dg)
 \end{verbatim}
 }
 
@@ -22,9 +26,276 @@ the parser described in Section \ref{subsec:maude-parser}
 
 {\codesize
 \begin{verbatim}
-directMaudeParsing :: FilePath -> IO DGraphdirectMaudeParsing fp = do              ns <- parse fp              let ns' = either (\ _ -> []) id ns              (hIn, hOut, _, _) <- runInteractiveCommand maudeCmd              hPutStrLn hIn $ "load " ++ fp              ms <- traverseNames hIn hOut ns'              hPutStrLn hIn "in Maude/hets.prj"              psps <- predefinedSpecs hIn hOut              sps <- traverseSpecs hIn hOut ms              hClose hIn              hClose hOut              return $ insertSpecs (psps ++ sps) Map.empty Map.empty [] emptyDG
+directMaudeParsing :: FilePath -> IO DGraph
+directMaudeParsing fp = do
+              ns <- parse fp
+              let ns' = either (\ _ -> []) id ns
+              (hIn, hOut, _, _) <- runInteractiveCommand maudeCmd
+              hPutStrLn hIn $ "load " ++ fp
+              ms <- traverseNames hIn hOut ns'
+              hPutStrLn hIn "in Maude/hets.prj"
+              psps <- predefinedSpecs hIn hOut
+              sps <- traverseSpecs hIn hOut ms
+              hClose hIn
+              hClose hOut
+              return $ insertSpecs (psps ++ sps) Map.empty Map.empty [] emptyDG
 \end{verbatim}
 }
+
+We explain briefly the main data structures used during the generation of
+the development graph:
+
+\begin{itemize}
+
+\item The type \verb"ParamSort" defines a pair with a symbol representing
+a sort and a list of tokens indicating the parameters present in the sort,
+so for example the sort \verb"List{X, Y}" generates the pair
+\verb"(List{X, Y}, [X,Y])":
+
+{\codesize
+\begin{verbatim}
+type ParamSort = (Symbol, [Token])
+\end{verbatim}
+}
+
+\item The information of each node introduced
+in the development graph is stored in the tuple \verb"ProcInfo", that
+contains the following information:
+
+\begin{itemize}
+\item The identifier of the node.
+\item The signature of the node.
+\item A list of symbols standing for the sorts that are not instantiated.
+\item A list of triples with information about the parameters of the
+specification, namely the name of the parameter, the name of the theory
+and the list of not instantiated sorts from this theory.
+\item A list with information about the parameterized sorts.
+\end{itemize}
+
+{\codesize
+\begin{verbatim}
+type ProcInfo = (Node, Sign, Symbols, [(Token, Token, Symbols)], [ParamSort])
+\end{verbatim}
+}
+
+\item Each \verb"ProcInfo" tuple is associated to its corresponding module
+expression in the \verb"TokenInfoMap" map:
+
+{\codesize
+\begin{verbatim}
+type TokenInfoMap = Map.Map Token ProcInfo
+\end{verbatim}
+}
+
+\item When a module expression is parsed a \verb"ModExpProc" tuple is
+returned, containing the following information:
+
+\begin{itemize}
+\item The identifier of the module expression.
+\item The \verb"TokenInfoMap" updated with the data in the module
+expression.
+\item The morphism associated to the module expression.
+\item The list of sorts parameterized in this module expression.
+\item The development graph thus far.
+\end{itemize}
+
+{\codesize
+\begin{verbatim}
+type ModExpProc = (Token, TokenInfoMap, Morphism, [ParamSort], DGraph)
+\end{verbatim}
+}
+
+\item We distinguish the type of importation statement with the type
+\verb"ImportType":
+
+{\codesize
+\begin{verbatim}
+data ImportType = Pr | Ex | Inc
+\end{verbatim}
+}
+
+\item When parsing an importation statement we return a tuple containing:
+
+\begin{itemize}
+
+\item The type of importation.
+\item The identifier of the module expression imported.
+\item The updated map with the information associated with each
+module expression.
+\item The morphism associated to the module expression.
+\item The list of sorts parameterized in this module expression.
+\item The updated development graph.
+\end{itemize}
+
+{\codesize
+\begin{verbatim}
+type ImportProc = (ImportType, Token, TokenInfoMap, Morphism, [ParamSort], DGraph)
+\end{verbatim}
+}
+
+\item When parsing a list of importation statements we return:
+
+\begin{itemize}
+\item The list of parameter information: the name of the parameter,
+the name of the theory and the sorts not instantiated.
+\item The updated \verb"TokenInfoMap" map.
+\item The list of morphisms associated with each parameter.
+\item The updated development graph.
+\end{itemize}
+
+{\codesize
+\begin{verbatim}
+type ParamInfo = ([(Token, Token, Symbols)], TokenInfoMap, [Morphism], DGraph)
+\end{verbatim}
+}
+
+\item Data about views is kept in a separated way from data about theories
+and modules. The \verb"ViewMap" map associates to each view identifier a
+tuple with:
+
+\begin{itemize}
+\item The identifier of the target node of the view.
+\item The morphism generated by the view.
+\item A Boolean value indicating whether the target is a theory
+(\verb"True") or a module (\verb"False").
+\end{itemize}
+
+{\codesize
+\begin{verbatim}
+type ViewMap = Map.Map Token (Node, Token, Morphism, [Renaming], Bool)
+\end{verbatim}
+}
+
+\item Finally, we describe the tuple used to return the data structures
+updated when a specification or a view is introduced in the development
+graph. It contains:
+
+\begin{itemize}
+\item The updated \verb"TokenInfoMap".
+\item The updated \verb"ViewMap".
+\item A list of tokens indicating
+\item The new development graph.
+\end{itemize}
+
+{\codesize
+\begin{verbatim}
+type InsSpecRes = (TokenInfoMap, ViewMap, [Token], DGraph)
+\end{verbatim}
+}
+
+\end{itemize}
+
+The function \verb"insertSpecs" traverses the specifications updating the
+data structures and the development graph with \verb"insertSpec":
+
+{\codesize
+\begin{verbatim}
+insertSpecs :: [Spec] -> TokenInfoMap -> ViewMap -> [Token] -> DGraph -> DGraph
+insertSpecs [] _ _ _ dg = dg
+insertSpecs (s : ss) tim vm ths dg = insertSpecs ss tim' vm' ths' dg'
+              where (tim', vm', ths', dg') = insertSpec s tim vm ths dg
+\end{verbatim}
+}
+
+The behavior of \verb"insertSpec" is different for each type of Maude
+specifications. When the introduced specification is a module, the
+following actions are performed:
+
+\begin{itemize}
+\item The parameters are parsed as follows:
+
+\begin{itemize}
+\item The list of parameters declarations is obtained with the auxiliary
+function \verb"getParams".
+\item These declarations are processed with \verb"processParameters",
+that returns a tuple of type \verb"ParamInfo" shown above.
+\item Given the parameters names, we traverse the list of sorts to check
+if the module defines parameterized sorts with \verb"getSortsParameterizedBy".
+\item The links between the theories in the parameters and the current modules
+are created with \verb"createEdgesParams".
+\end{itemize}
+
+\item The importations are handled as follows:
+
+\begin{itemize}
+\item The importation statements are obtained with \verb"getImportsSorts".
+Although this function also returns the sorts declared in the module, in
+this case they are not needed and its value is ignored.
+\item These importations are handled by \verb"processImports", that
+returns a list of \verb"ImportProc" containing the information of each
+parameter.
+\item The definition link generated by the imports are created with
+\verb"createEdgesImports".
+\end{itemize}
+
+\item The final signature is obtained with \verb"sign_union_morphs"
+by merging the signature in the current module with the one obtained
+from the morphisms from the parameters and the imports.
+
+\end{itemize}
+
+{\codesize
+\begin{verbatim}
+insertSpec :: Spec -> TokenInfoMap -> ViewMap -> [Token] -> DGraph -> InsSpecRes
+insertSpec (SpecMod sp_mod) tim vm ths dg = (tim4, vm, ths, dg5)
+           where ps = getParams sp_mod
+                 (pl, tim1, morphs, dg1) = processParameters ps tim dg
+                 top_sg = Maude.Sign.fromSpec sp_mod
+                 paramSorts = getSortsParameterizedBy (paramNames ps) 
+                                                      (Set.toList $ sorts top_sg)
+                 (il, _) = getImportsSorts sp_mod
+                 ips = processImports tim1 vm dg1 il
+                 (tim2, dg2) = last_da ips (tim1, dg1)
+                 sg = sign_union_morphs morphs $ sign_union top_sg ips
+                 ext_sg = makeExtSign Maude sg
+                 nm_sns = map (makeNamed "") $ Maude.Sentence.fromSpec sp_mod
+                 sens = toThSens nm_sns
+                 gt = G_theory Maude ext_sg startSigId sens startThId
+                 tok = HasName.getName sp_mod
+                 name = makeName tok
+                 (ns, dg3) = insGTheory dg2 name DGBasic gt
+                 tim3 = Map.insert tok (getNode ns, sg, [], pl, paramSorts) tim2
+                 (tim4, dg4) = createEdgesImports tok ips sg tim3 dg3
+                 dg5 = createEdgesParams tok pl morphs sg tim4 dg4
+\end{verbatim}
+}
+
+When the specification inserted is a theory the process varies slightly:
+
+\begin{itemize}
+\item Theories cannot be parameterized in Core Maude, so the parameter
+handling is not required.
+\item
+\end{itemize}
+
+{\codesize
+\begin{verbatim}
+insertSpec (SpecTh sp_th) tim vm ths dg = (tim3, vm, tok : ths, dg3)
+            where (il, ss1) = getImportsSorts sp_th
+                  ips = processImports tim vm dg il
+                  ss2 = getThSorts ips
+                  (tim1, dg1) = last_da ips (tim, dg)
+                  sg = sign_union (Maude.Sign.fromSpec sp_th) ips
+                  ext_sg = makeExtSign Maude sg
+                  nm_sns = map (makeNamed "") $ Maude.Sentence.fromSpec sp_th
+                  sens = toThSens nm_sns
+                  gt = G_theory Maude ext_sg startSigId sens startThId
+                  tok = HasName.getName sp_th
+                  name = makeName tok
+                  (ns, dg2) = insGTheory dg1 name DGBasic gt
+                  tim2 = Map.insert tok (getNode ns, sg, ss1 ++ ss2, [], []) tim1
+                  (tim3, dg3) = createEdgesImports tok ips sg tim2 dg2
+\end{verbatim}
+}
+
+
+
+
+
+
+
+
+
 
 
 
