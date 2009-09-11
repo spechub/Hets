@@ -29,10 +29,9 @@ import Data.IORef
 import qualified Data.Map as Map
 
 mapEdgeTypesToNames :: Map.Map String (DGEdgeType, DGEdgeType)
-mapEdgeTypesToNames = Map.fromList
-  $ map (\ (e, eI) -> ("cb" ++ getDGEdgeTypeName e, (e, eI)))
-  $ map (\ e -> (e, e { isInc = True } ))
-  $ filter (\ e -> not $ isInc e) listDGEdgeTypes
+mapEdgeTypesToNames = Map.fromList $ map
+  (\ e -> ("cb" ++ getDGEdgeTypeName e, (e, e { isInc = True })))
+  (filter (not . isInc) listDGEdgeTypes)
 
 -- | Displays the linktype selection window
 showLinkTypeChoice :: IORef [String] -> ([DGEdgeType] -> IO ()) -> IO ()

@@ -36,6 +36,10 @@ import Comorphisms.LogicGraph (logicGraph)
 
 import Common.LibName (LIB_NAME)
 
+import Control.Concurrent (forkIO, killThread, ThreadId)
+import Control.Concurrent.MVar
+import Control.Monad (foldM_)
+
 import Proofs.AbstractState
 import Proofs.InferBasic (consistencyCheck)
 
@@ -55,8 +59,8 @@ showConsistencyChecker gInfo@(GInfo { libName = ln }) = postGUIAsync $ do
   btnNodesNone   <- xmlGetWidget xml castToButton "btnNodesNone"
   btnNodesInvert <- xmlGetWidget xml castToButton "btnNodesInvert"
   -- get checker view and buttons
-  --lblStatus      <- xmlGetWidget xml castToLabel "lblStatus"
-  --lblSublogic    <- xmlGetWidget xml castToLabel "lblSublogic"
+  lblStatus      <- xmlGetWidget xml castToLabel "lblStatus"
+  lblSublogic    <- xmlGetWidget xml castToLabel "lblSublogic"
   sbTimeout      <- xmlGetWidget xml castToSpinButton "sbTimeout"
   btnCheck       <- xmlGetWidget xml castToButton "btnCheck"
   btnStop        <- xmlGetWidget xml castToButton "btnStop"
@@ -66,7 +70,11 @@ showConsistencyChecker gInfo@(GInfo { libName = ln }) = postGUIAsync $ do
   windowSetTitle window "Consistency Checker"
 
   let widgets = [ toWidget trvFinder, toWidget btnCheck, toWidget btnFineGrained
-                , toWidget btnStop, toWidget sbTimeout]
+                , toWidget sbTimeout, toWidget lblStatus, toWidget lblSublogic]
+      checkWidgets = widgets ++ [ toWidget btnClose, toWidget trvNodes
+                                , toWidget btnNodesAll, toWidget btnNodesNone
+                                , toWidget btnNodesInvert]
+  widgetSetSensitive btnStop False
 
   -- get nodes
   (le, dg, nodes) <- do
@@ -76,10 +84,13 @@ showConsistencyChecker gInfo@(GInfo { libName = ln }) = postGUIAsync $ do
       Just ist -> do
         let le = i_libEnv ist
             dg = lookupDGraph ln le
-        return (le, dg, labNodesDG $ dg)
+        return (le, dg, labNodesDG dg)
+  ths <- mapM (\ (_,l) -> computeLocalLabelTheory le l) nodes
+  let sls = map sublogicOfTh ths
 
   -- setup data
-  listNodes <- setListData trvNodes (\ (_,l) -> getDGNodeName l) nodes
+  listNodes <- setListData trvNodes (\ ((_,l),_,_) -> getDGNodeName l)
+                           $ zip3 nodes ths sls
   listFinder <- setListData trvFinder (\ (a,_) -> getPName a) []
 
   -- setup view selection actions
@@ -89,23 +100,38 @@ showConsistencyChecker gInfo@(GInfo { libName = ln }) = postGUIAsync $ do
                           (do listStoreClear listFinder; activate widgets False)
                           (activate widgets True)
 
+  run <- newMVar Nothing
+
   -- bindings
   onClicked btnClose $ widgetDestroy window
   onClicked btnFineGrained $ return ()
-  onClicked btnStop $ return ()
-  onClicked btnCheck $ do
-    nodes' <- getNodes trvNodes listNodes
-    finder <- getFinder trvFinder listFinder
-    check ln le dg finder nodes'
+  onClicked btnStop $ do
+    mtid <- readMVar run
+    maybe (return ()) killThread mtid
+    takeMVar run
+    return ()
+  onClicked btnCheck $ forkIO_ $ do
+    takeMVar run
+    postGUISync $ activate checkWidgets False
+    (update, exit) <- progressBar "Checking consistency" "please wait..."
+    nodes' <- postGUISync $ getNodes trvNodes listNodes
+    finder <- postGUISync $ getFinder trvFinder listFinder
+    check ln le dg finder update run $ map (\ (n,_,_) -> n) nodes'
+    postGUISync $ widgetSetSensitive btnStop True
+    putMVar run Nothing
+    postGUISync $ widgetSetSensitive btnStop False
+    postGUISync $ activate checkWidgets True
+    exit
 
   widgetShow window
 
 -- | Get selected finder
-getNodes :: TreeView -> ListStore (LNode DGNodeLab) -> IO [LNode DGNodeLab]
+getNodes :: TreeView -> ListStore (LNode DGNodeLab, G_theory, G_sublogics)
+         -> IO [(LNode DGNodeLab, G_theory, G_sublogics)]
 getNodes view list = do
   selector <- treeViewGetSelection view
   rows <- treeSelectionGetSelectedRows selector
-  mapM (\ (row:[]) -> listStoreGetValue list row) rows
+  mapM (listStoreGetValue list . head) rows
 
 -- | Get selected nodes
 getFinder :: TreeView -> ListStore (G_cons_checker, AnyComorphism)
@@ -118,36 +144,44 @@ getFinder view list = do
   listStoreGetValue list row
 
 -- | Called when node selection is changed. Updates finder list
-updateNodes :: TreeView -> ListStore (LNode DGNodeLab)
+updateNodes :: TreeView -> ListStore (LNode DGNodeLab, G_theory, G_sublogics)
             -> ListStore (G_cons_checker, AnyComorphism) -> IO () -> IO ()
             -> IO ()
 updateNodes view listNodes listFinder lock unlock = do
-  nodes' <- getNodes view listNodes
-  -- get list of theories
-  let sublogics = map (sublogicOfTh . dgn_theory . snd) nodes'
-  if sublogics == [] then lock
-    else do
-      maybe lock
-        (\ sl -> do unlock; updateFinder listFinder sl)
+  nodes <- getNodes view listNodes
+  if null nodes then lock
+    else let (_, _, sls) = unzip3 nodes in
+      maybe lock (\ sl -> do unlock; updateFinder listFinder sl)
         $ foldl (\ ma b -> case ma of
                   Just a -> comSublogics b a
-                  Nothing -> Nothing) (Just $ head sublogics) $ tail sublogics
+                  Nothing -> Nothing) (Just $ head sls) $ tail sls
 
 -- | Update the list of finder
 updateFinder :: ListStore (G_cons_checker, AnyComorphism) -> G_sublogics
              -> IO ()
-updateFinder list sublogic = do
-  listStoreClear list
-  mapM_ (listStoreAppend list) $ snd
+updateFinder list sublogic = forkIO_ $ do
+  (update, exit) <- pulseBar "Calculating paths" "please wait..."
+  postGUISync $ listStoreClear list
+  mapM_ (postGUISync . listStoreAppend list) $ snd
     $ foldr (\ b@(a,_) c@(ns,bs) -> let n = getPName a in if elem n ns
                                     then c else (n:ns, b:bs)) ([],[])
     $ getConsCheckersAutomatic $ findComorphismPaths logicGraph sublogic
+  update "finished"
+  exit
 
 activate :: [Widget] -> Bool -> IO ()
-activate widgets active = do
-  mapM_ (\ w -> widgetSetSensitive w active) widgets
+activate widgets active = mapM_ (\ w -> widgetSetSensitive w active) widgets
 
 check :: LIB_NAME -> LibEnv -> DGraph -> (G_cons_checker, AnyComorphism)
+      -> (Double -> String -> IO ()) -> MVar (Maybe ThreadId)
       -> [LNode DGNodeLab] -> IO ()
-check ln le dg (cc, c) nodes = do
-  mapM_ (consistencyCheck cc c ln le dg) nodes
+check ln le dg (cc, c) update run nodes = do
+  tid <- forkIO $ do
+    let count' = fromIntegral $ length nodes
+    foldM_ (\ count n@(_,l) -> do
+             update (count / count') $ getDGNodeName l
+             consistencyCheck cc c ln le dg n
+             return $ count+1) 0 nodes
+    takeMVar run
+    return ()
+  putMVar run $ Just tid

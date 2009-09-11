@@ -1,4 +1,4 @@
-{-# OPTIONS -cpp #-}
+{-# LANGUAGE CPP #-}
 {- |
 Module      :  $Header$
 Description :  Menu creation functions for the Graphdisplay
@@ -55,12 +55,12 @@ nodeTypes :: HetcatsOpts
               , String -- Color
               )]
 nodeTypes opts = map
-  ( (\ (n, s) -> case isLocallyEmpty n of -- Add color
-      True -> case nonRefType n of
+  ( (\ (n, s) -> if isLocallyEmpty n then -- Add color
+      case nonRefType n of
         NonRefType { isProvenCons = False }
                 -> (n, s, getColor opts Yellow False True)
         _       -> (n, s, getColor opts Green  True  False)
-      False -> case nonRefType n of
+      else case nonRefType n of
         RefType -> (n, s, getColor opts Coral False False)
         t       -> (n, s, getColor opts Coral False $ isProvenCons t)
     )
@@ -206,9 +206,9 @@ createClose gInfo@(GInfo { windowCount = wc
     Just dgraph -> case openlock dgraph of
         Just lock -> do
           notopen <- isEmptyMVar lock
-          case notopen of
-            True -> error "development graph seems to be closed already"
-            False ->  takeMVar lock
+          if notopen then
+            error "development graph seems to be closed already"
+            else takeMVar lock
         Nothing -> error $ "MVar of " ++ show ln ++ " not initialized"
     Nothing -> error $ "development graph with libname " ++ show ln
                        ++" does not exist"
@@ -415,7 +415,7 @@ createLocalMenuButtonShowProofStatusOfNode gInfo =
 createLocalMenuButtonProveAtNode :: GInfo -> ButtonMenu GA.NodeValue
 createLocalMenuButtonProveAtNode gInfo =
   createMenuButton "Prove"
-    (\ descr dgraph -> proveAtNode False gInfo descr dgraph) gInfo
+    (proveAtNode False gInfo) gInfo
 
 createLocalMenuButtonProveStructured :: GInfo -> ButtonMenu GA.NodeValue
 createLocalMenuButtonProveStructured gInfo =
@@ -425,7 +425,7 @@ createLocalMenuButtonProveStructured gInfo =
 createLocalMenuButtonCheckCons :: GInfo -> ButtonMenu GA.NodeValue
 createLocalMenuButtonCheckCons gInfo =
   createMenuButton "Check conservativity"
-    (\ descr dg -> checkconservativityOfNode descr gInfo dg) gInfo
+    (\ descr -> checkconservativityOfNode descr gInfo) gInfo
 
 -- | call VSE structured
 proveVSEStructured :: GInfo -> Int -> IO ()

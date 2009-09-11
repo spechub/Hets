@@ -98,9 +98,9 @@ emptyGInfo = do
   gi <- initGraph
   oGraphs <- newIORef Map.empty
   iorIN <- newIORef []
-  flags <- newIORef $ Flags { flagHideNodes = True
-                            , flagHideEdges = True
-                            , flagHideNames = True }
+  flags <- newIORef Flags { flagHideNodes = True
+                          , flagHideEdges = True
+                          , flagHideNames = True }
   guiMVar <- newEmptyMVar
   gl <- newEmptyMVar
   fl <- newEmptyMVar
@@ -130,9 +130,9 @@ copyGInfo gInfo ln = do
   gi <- initGraph
   iorIN <- newIORef []
   guiMVar <- newEmptyMVar
-  flags <- newIORef $ Flags { flagHideNodes = True
-                            , flagHideEdges = True
-                            , flagHideNames = True }
+  flags <- newIORef Flags { flagHideNodes = True
+                          , flagHideEdges = True
+                          , flagHideNames = True }
   -- Change local parts
   let gInfo' = gInfo { libName = ln
                      , graphInfo = gi

@@ -33,6 +33,7 @@ import Data.IORef
 import qualified Data.Map as Map
 
 import Control.Concurrent.MVar
+import Control.Monad (when)
 
 import Interfaces.DataTypes
 import Interfaces.Utils
@@ -45,30 +46,28 @@ showLibGraph :: LibFunc
 showLibGraph gInfo@(GInfo { windowCount = wc
                           , libGraphLock = lock}) = do
   isEmpty <- isEmptyMVar lock
-  case isEmpty of
-    False -> return ()
-    True -> do
-      putMVar lock ()
-      count <- takeMVar wc
-      putMVar wc $ count + 1
-      graph <- newIORef daVinciSort
-      nodesEdges <- newIORef (([],[])::NodeEdgeList)
-      let
-        globalMenu =
-          GlobalMenu (UDG.Menu Nothing
-            [ Button "Reload Library" $ reloadLibGraph gInfo graph nodesEdges
-            , Button "Translate Library" $ translate gInfo
-            ])
-        graphParms = globalMenu $$
-                     GraphTitle "Library Graph" $$
-                     OptimiseLayout True $$
-                     AllowClose (close gInfo) $$
-                     FileMenuAct ExitMenuOption (Just (exit gInfo)) $$
-                     emptyGraphParms
-      graph' <- newGraph daVinciSort graphParms
-      addNodesAndEdges gInfo graph' nodesEdges
-      writeIORef graph graph'
-      redraw graph'
+  when isEmpty $ do
+    putMVar lock ()
+    count <- takeMVar wc
+    putMVar wc $ count + 1
+    graph <- newIORef daVinciSort
+    nodesEdges <- newIORef (([],[])::NodeEdgeList)
+    let
+      globalMenu =
+        GlobalMenu (UDG.Menu Nothing
+          [ Button "Reload Library" $ reloadLibGraph gInfo graph nodesEdges
+          , Button "Translate Library" $ translate gInfo
+          ])
+      graphParms = globalMenu $$
+                   GraphTitle "Library Graph" $$
+                   OptimiseLayout True $$
+                   AllowClose (close gInfo) $$
+                   FileMenuAct ExitMenuOption (Just (exit gInfo)) $$
+                   emptyGraphParms
+    graph' <- newGraph daVinciSort graphParms
+    addNodesAndEdges gInfo graph' nodesEdges
+    writeIORef graph graph'
+    redraw graph'
 
 -- | Reloads all Libraries and the Library Dependency Graph
 reloadLibGraph :: GInfo -> IORef DaVinciGraphTypeSyn -> IORef NodeEdgeList
@@ -162,7 +161,7 @@ addNodesAndEdges gInfo@(GInfo { hetcatsOpts = opts}) graph nodesEdges = do
       Button "Show spec/View Names" $ showSpec le])
     subNodeTypeParms = subNodeMenu $$$
                        Box $$$
-                       ValueTitle (\ x -> return (show x)) $$$
+                       ValueTitle (return . show) $$$
                        Color (getColor opts Green True True) $$$
                        emptyNodeTypeParms
    subNodeType <- newNodeType graph subNodeTypeParms

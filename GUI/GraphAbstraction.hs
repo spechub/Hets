@@ -148,9 +148,7 @@ instance Eq (DaVinciArc EdgeValue) where
 wrapperRead :: (AbstractionGraph -> IO ()) -- ^ Function to call
             -> GraphInfo -- ^ The graph
             -> IO ()
-wrapperRead func gi = do
-  g <- readIORef gi
-  func g
+wrapperRead func gi = readIORef gi >>= func
 
 -- | Wrapper for functions with read and write access
 wrapperWrite :: (AbstractionGraph -> IO AbstractionGraph) -- ^ Function to call
@@ -225,15 +223,15 @@ makeGraph gi title open save saveAs close exit menus nTypeParms eTypeParms
                     menus
       (nTypeNames,nTypeParms') = unzip nTypeParms
       (eTypeNames,eTypeParms') = unzip eTypeParms
-      expand = (LocalMenu (Button "Expand" (\ _ -> expand')) $$$)
+      expand = (LocalMenu (Button "Expand" (const expand')) $$$)
       eTypeParmsCO = map expand eTypeParms'
-      eTypeParmsCP = map expand $ map (Color color $$$) eTypeParms'
+      eTypeParmsCP = map (expand . (Color color $$$)) eTypeParms'
   graph <- newGraph graphtool graphParms
   nTypes <- mapM (newNodeType graph) nTypeParms'
   eTypes <- mapM (newArcType graph) eTypeParms'
   cTypesO <- mapM (newArcType graph) eTypeParmsCO
   cTypesP <- mapM (newArcType graph) eTypeParmsCP
-  writeIORef gi $ AbstractionGraph
+  writeIORef gi AbstractionGraph
     { theGraph = graph
     , nodes = Map.empty
     , edges = Map.empty
@@ -330,7 +328,7 @@ changeNodeType :: AbstractionGraph -- ^ The graph
                -> IO AbstractionGraph
 changeNodeType g nId nType = do
   let node = get nId $ nodes g
-  case udgNode $ node of
+  case udgNode node of
     Just node' -> setNodeType (theGraph g) node' $ udgNodeType $ get nType
                                                                $ nodeTypes g
     Nothing -> return ()
@@ -340,10 +338,8 @@ changeNodeType g nId nType = do
 focusNode' :: AbstractionGraph -- ^ The graph
            -> NodeId -- ^ ID of the node
            -> IO ()
-focusNode' g nId = do
-  case udgNode $ get nId $ nodes g of
-    Nothing -> error "focusNode: node is hidden!"
-    Just node -> setNodeFocus (theGraph g) node
+focusNode' g nId = maybe (error "focusNode: node is hidden!")
+                     (setNodeFocus (theGraph g)) $ udgNode $ get nId $ nodes g
 
 -- | Focus a node
 focusNode :: GraphInfo -- ^ The graph
@@ -393,8 +389,8 @@ getEdgeAux g nIdFrom nIdTo eType =
   in case (udgNode $ get nIdFrom ns, udgNode $ get nIdTo ns) of
     (Just nFrom, Just nTo) | f gaeT nIdFrom nIdTo -> Just (nFrom, nTo, gaeT)
     _ -> Nothing
-  where f = (\et nf nt -> not (gaeHidden et || isHiddenNode' g nf
-                                            || isHiddenNode' g nt))
+  where
+    f et nf nt = not (gaeHidden et || isHiddenNode' g nf || isHiddenNode' g nt)
 
 -- | Deletes an edge
 delEdge :: AbstractionGraph -- ^ The graph
@@ -516,7 +512,7 @@ applyChanges' g dgchanges hnIds heIds' ce = do
     dnIds = map (\(DelNode nId) -> nId) dn
     aeIds = map (\(AddEdge eId _ _ _ _ _ _) -> eId) ae'
     deIds = map (\(DelEdge eId) -> eId) de
-    heIds = heIds' ++ (map fst $ filter (\ (eId,e) -> notElem eId deIds &&
+    heIds = heIds' ++ map fst (filter (\ (eId,e) -> notElem eId deIds &&
       notElem eId heIds' && (elem (ganTo e) hnIds || elem (ganFrom e) hnIds))
       $ Map.toList $ edges g)
     -- filter multiple changes and changes for deleted and new nodes
@@ -525,7 +521,7 @@ applyChanges' g dgchanges hnIds heIds' ce = do
       $ foldl (\(cs, nIds) c@(ChangeNodeType nId _) -> if elem nId nIds
                 then (cs, nIds) else (c:cs, nId:nIds)) ([],[]) $ reverse cnt'
     -- fuction for geting new nt if node type change is submitted for node
-    nnT = \ nId nT -> foldl (\nT' (ChangeNodeType nId' nT'') ->
+    nnT nId nT =  foldl (\nT' (ChangeNodeType nId' nT'') ->
                               if nId == nId' then nT'' else nT') nT new
     -- update node type and mark as hidden if they would be hidden afterwards
     an = map (\(AddNode nId nT nN _) -> AddNode nId (nnT nId nT) nN
@@ -535,21 +531,21 @@ applyChanges' g dgchanges hnIds heIds' ce = do
     -- delete compressed edges not needed anymore
     dce = foldl (\es e -> if elem e ce then es else DelCompEdge e:es) [] oce
     -- get hidden nodes that are not hidden after update
-    sn = map (\n -> ShowNode n) $ filter
-             (\n -> isHiddenNode' g n && notElem n hnIds && notElem n dnIds)
+    sn = map ShowNode $ filter
+             (\n -> isHiddenNode' g n && not (elem n hnIds || elem n dnIds))
              $ Map.keys $ nodes g
     -- edges to hide
-    he = map (\e -> HideEdge e) $ filter
-             (\eId -> notElem eId aeIds && (not $ isHiddenEdge' g eId)) heIds
+    he = map HideEdge $ filter
+             (\eId -> notElem eId aeIds && not (isHiddenEdge' g eId)) heIds
     -- mark as hidden if they would be hidden afterwards
     ae = map (\(AddEdge eId eT nIdF nIdT eN eL _) ->
       AddEdge eId eT nIdF nIdT eN eL $ elem nIdF hnIds || elem nIdT hnIds ||
                                        elem eId heIds) ae'
     -- nodes to hide
-    hn = map (\n -> HideNode n) $ filter
-             (\nId -> notElem nId anIds && (not $ isHiddenNode' g nId)) hnIds
+    hn = map HideNode $ filter
+             (\nId -> notElem nId anIds && not (isHiddenNode' g nId)) hnIds
     -- edges to show
-    se = map (\e -> ShowEdge e)
+    se = map ShowEdge
       $ filter (\ e -> isHiddenEdge' g e && notElem e heIds && notElem e deIds)
       $ Map.keys $ edges g
     -- get compressed edges to add
@@ -623,8 +619,8 @@ applyChange g change = case change of
 -- | Converts a DGraph to a list of changes
 convert :: DGraph -- ^ The development graph
         -> [DGChange]  -- ^ List of changes
-convert dg = (map (\n -> InsertNode n) $ labNodesDG dg)
-          ++ (map (\n -> InsertEdge n) $ labEdgesDG dg)
+convert dg = map InsertNode (labNodesDG dg)
+          ++ map InsertEdge (labEdgesDG dg)
 
 -- * direct manipulation of uDrawGraph
 
@@ -641,7 +637,7 @@ doInGraphContext cmd gi = do
 -- | Improve the layout of a graph like calling \"Layout->Improve All\"
 layoutImproveAll :: GraphInfo -- ^ The graph
                  -> IO ()
-layoutImproveAll = doInGraphContext (DVT.Menu $ DVT.Layout $ DVT.ImproveAll)
+layoutImproveAll = doInGraphContext (DVT.Menu $ DVT.Layout DVT.ImproveAll)
 
 -- | Display a message in a uDrawGraph window controlled by AbstractGraphView
 showTemporaryMessage :: GraphInfo -- ^ The graph

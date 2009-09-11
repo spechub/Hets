@@ -1,4 +1,4 @@
-{-# OPTIONS -cpp #-}
+{-# LANGUAGE CPP #-}
 {- |
 Module      :  $Header$
 Description :  cpp choice between "GUI.HTkUtils" and "GUI.ConsoleUtils"
@@ -16,7 +16,7 @@ module GUI.Utils
   ( listBox
   , createTextSaveDisplay
   , askFileNameAndSave
-#if (defined GTKGLADE || defined UNI_PACKAGE)
+#if defined GTKGLADE || defined UNI_PACKAGE
   , createTextDisplay
   , infoDialog
   , errorDialog

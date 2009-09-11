@@ -41,7 +41,9 @@ import qualified GUI.HTkUtils as HTk
 
 import Data.IORef
 import qualified Data.Map as Map(lookup, insert)
+
 import Control.Concurrent.MVar
+import Control.Monad (unless)
 
 import Interfaces.DataTypes
 
@@ -64,26 +66,23 @@ convertGraph gInfo@(GInfo { windowCount = wc
   Just ist -> do
    let libEnv = i_libEnv ist
    case Map.lookup ln libEnv of
-    Just dgraph -> do
-      case openlock dgraph of
-        Just lock -> do
-          notopen <- tryPutMVar lock ()
-          case notopen of
-            True -> do
-              count <- takeMVar wc
-              putMVar wc $ count + 1
-              initializeGraph gInfo title showLib
-              if (isEmptyDG dgraph) then return ()
-                else do
-                  updateGraph gInfo (convert dgraph)
-            False -> error $ "development graph with libname " ++ show ln
-                             ++" is already open"
-        Nothing -> do
-          lock <- newEmptyMVar
-          let nwle = Map.insert ln dgraph{openlock = Just lock} libEnv
-              nwst = ost { i_state = Just $ ist { i_libEnv = nwle}}
-          writeIORef (intState gInfo) nwst
-          convertGraph gInfo title showLib
+    Just dgraph -> case openlock dgraph of
+      Just lock -> do
+        notopen <- tryPutMVar lock ()
+        if notopen then
+          do
+            count <- takeMVar wc
+            putMVar wc $ count + 1
+            initializeGraph gInfo title showLib
+            unless (isEmptyDG dgraph) $ updateGraph gInfo (convert dgraph)
+          else error $ "development graph with libname " ++ show ln
+                       ++ " is already open"
+      Nothing -> do
+        lock <- newEmptyMVar
+        let nwle = Map.insert ln dgraph{openlock = Just lock} libEnv
+            nwst = ost { i_state = Just $ ist { i_libEnv = nwle}}
+        writeIORef (intState gInfo) nwst
+        convertGraph gInfo title showLib
     Nothing -> error $ "development graph with libname " ++ show ln
                        ++" does not exist"
 
@@ -95,5 +94,5 @@ initializeGraph gInfo title showLib = do
  case i_state ost of
   Nothing -> return ()
   Just _ -> do
-   let title' = title ++ " for " ++ (show $ libName gInfo)
-   createGraph gInfo title' (convertGraph) (showLib)
+   let title' = title ++ " for " ++ show (libName gInfo)
+   createGraph gInfo title' convertGraph showLib

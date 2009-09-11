@@ -17,6 +17,7 @@ module GUI.GtkUtils
   ( getGladeXML
   , startMainLoop
   , stopMainLoop
+  , forkIO_
   -- Usefull windows
   , infoDialog
   , errorDialog
@@ -58,6 +59,7 @@ import Static.GTheory (G_theory)
 import Common.DocUtils (showDoc)
 
 import Control.Concurrent (forkIO)
+import Control.Monad (when)
 
 import System.Directory ( removeFile, getTemporaryDirectory, doesFileExist
                         , canonicalizePath)
@@ -91,8 +93,12 @@ startMainLoop = do
   return ()
 
 stopMainLoop :: IO ()
-stopMainLoop = postGUISync $ do
-  mainQuit
+stopMainLoop = postGUISync mainQuit
+
+forkIO_ :: IO () -> IO ()
+forkIO_ f = do
+  forkIO f
+  return ()
 
 -- Usefull windows
 
@@ -123,13 +129,13 @@ dialog messageType title message mAction = do
     _ -> return False
 
   widgetDestroy dlg
-  case choice of
-    True -> case mAction of
+  if choice then
+    case mAction of
       Just action -> do
-        forkIO $ action
+        forkIO action
         return choice
       Nothing -> return choice
-    False -> return choice
+    else return choice
 
 -- | create a window which displays a given text
 infoDialog :: String -- ^ Title
@@ -152,16 +158,15 @@ warningDialog :: String -- ^ Title
               -> String -- ^ Message
               -> Maybe (IO ()) -- ^ Action on Ok
               -> IO Bool
-warningDialog title message mAction =
-  postGUISync $ dialog MessageWarning title message mAction
+warningDialog title message = postGUISync . dialog MessageWarning title message
 
 -- | create a window which displays a given question
 questionDialog :: String  -- ^ Title
                -> String  -- ^ Message
                -> Maybe (IO ()) -- ^ Action on Yes
                -> IO Bool
-questionDialog title message mAction =
-  postGUISync $ dialog MessageQuestion title message mAction
+questionDialog title message =
+  postGUISync . dialog MessageQuestion title message
 
 -- Filedialogs for opening and saving
 
@@ -204,17 +209,17 @@ fileDialog fAction fname' filters mAction = do
       case mpath of
         Just path -> do
           exist <- doesFileExist path
-          answer <- case exist of
-            True -> dialog MessageQuestion "File already exist"
-                           "Are you sure to overwrite existing file?" Nothing
-            False -> return True
-          case answer of
-            True -> case mAction of
+          answer <- if exist then
+            dialog MessageQuestion "File already exist"
+                   "Are you sure to overwrite existing file?" Nothing
+            else return True
+          if answer then
+            case mAction of
               Just action -> do
                 action path
                 return mpath
               Nothing -> return mpath
-            False -> return Nothing
+            else return Nothing
         Nothing -> return Nothing
     _ -> return Nothing
   widgetDestroy dlg
@@ -224,13 +229,13 @@ fileOpenDialog :: FilePath -- ^ Defaultname for file
                -> [(String, [String])] -- ^ Filter (name, pattern list)
                -> Maybe (FilePath -> IO ()) -- ^ Action on open
                -> IO (Maybe FilePath)
-fileOpenDialog p f a = postGUISync $ fileDialog FileChooserActionOpen p f a
+fileOpenDialog p f = postGUISync . fileDialog FileChooserActionOpen p f
 
 fileSaveDialog :: FilePath -- ^ Defaultname for file
                -> [(String, [String])] -- ^ Filter (name, pattern list)
                -> Maybe (FilePath -> IO ()) -- ^ Action on save
                -> IO (Maybe FilePath)
-fileSaveDialog p f a = postGUISync $ fileDialog FileChooserActionSave p f a
+fileSaveDialog p f = postGUISync . fileDialog FileChooserActionSave p f
 
 
 -- | create a window with title and list of options, return selected option
@@ -244,7 +249,7 @@ listChoice title items = postGUISync $ do
   trvList <- xmlGetWidget xml castToTreeView "trvList"
 
   windowSetTitle dlg title
-  store <- setListData trvList (\ a -> a) items
+  store <- setListData trvList id items
   selector <- treeViewGetSelection trvList
   setListSelectorSingle trvList (return ())
   mIter <- treeModelGetIterFirst store
@@ -289,7 +294,7 @@ setListSelectorMultiple view btnAll btnNone btnInvert action = do
                     ++ [ x | x <- s, notElem x s']
     writeIORef ioRefSelection newSelection
     treeSelectionUnselectAll selector
-    mapM_ (\ path -> treeSelectionSelectPath selector path) newSelection
+    mapM_ (treeSelectionSelectPath selector) newSelection
     action
   treeSelectionSelectAll selector
 
@@ -321,7 +326,7 @@ selectInvert view ioRefSelection = do
   selector <- treeViewGetSelection view
   old <- treeSelectionGetSelectedRows selector
   treeSelectionSelectAll selector
-  mapM_ (\ path -> treeSelectionUnselectPath selector path) old
+  mapM_ (treeSelectionUnselectPath selector) old
   new <- treeSelectionGetSelectedRows selector
   writeIORef ioRefSelection new
 
@@ -414,7 +419,7 @@ progressBarAux isProgress title description = postGUISync $ do
 
   let update p d = postGUIAsync $ do
         progressBarSetText bar d
-        if isProgress then progressBarSetFraction bar p else return ()
+        when isProgress $ progressBarSetFraction bar p
 
   return (update, exit)
 
@@ -429,7 +434,7 @@ pulseBar :: String -- ^ Title
          -> IO (String -> IO (), IO ())
 pulseBar title description = do
   (update, exit) <- progressBarAux False title description
-  let update' d = update 0 d
+  let update' = update 0
   return (update', exit)
 
 -- | displays a theory in a window
@@ -447,5 +452,5 @@ displayTheoryWithWarning :: String -- ^ Kind of theory
                          -> G_theory -- ^ Theory
                          -> IO ()
 displayTheoryWithWarning kind name warning gth =
-  textView (kind ++ " of " ++ name) (warning ++ (showDoc gth "\n"))
+  textView (kind ++ " of " ++ name) (warning ++ showDoc gth "\n")
            $ Just $ name ++ ".het"

@@ -100,13 +100,11 @@ runAndLock (GInfo { functionLock = lock
                   , graphInfo = gi
                   }) function = do
   locked <- tryPutMVar lock ()
-  case locked of
-    True -> do
+  if locked then do
       function
       takeMVar lock
-    False ->
-      GA.showTemporaryMessage gi
-        "an other function is still working ... please wait ..."
+    else GA.showTemporaryMessage gi
+           "an other function is still working ... please wait ..."
 
 -- | Undo one step of the History
 undo :: GInfo -> Bool -> IO ()
@@ -222,21 +220,23 @@ flattenHistory ((HistGroup _ ph):r) cs =
 -- | selects all nodes of a type with outgoing edges
 selectNodesByType :: DGraph -> [DGNodeType] -> [Node]
 selectNodesByType dg types =
-  filter (\ n -> outDG dg n /= [] && filterInUnproven dg n) $ map fst
+  filter (\ n -> (not . null $ outDG dg n) && filterInUnproven dg n) $ map fst
   $ filter (\ (_, n) -> elem (getRealDGNodeType n) types) $ labNodesDG dg
 
 filterInUnproven :: DGraph -> Node -> Bool
-filterInUnproven dg n =
+filterInUnproven dg =
   foldl (\ b (_,_,l) -> case edgeTypeModInc $ getRealDGLinkType l of
                           ThmType { isProvenEdge = False } -> False
-                          _ -> b) True $ innDG dg n
+                          _ -> b) True . innDG dg
 
 -- | compresses a list of types to the highest one
 compressTypes :: Bool -> [DGEdgeType] -> (DGEdgeType, Bool)
 compressTypes _ [] = error "compressTypes: wrong usage"
 compressTypes b (t:[]) = (t,b)
-compressTypes b (t1:t2:r) = if t1 == t2 then compressTypes b (t1:r) else
-  if t1 > t2 then compressTypes False (t1:r) else compressTypes False (t2:r)
+compressTypes b (t1:t2:r)
+  | t1 == t2 = compressTypes b (t1:r)
+  | t1 > t2 = compressTypes False (t1:r)
+  | otherwise = compressTypes False (t2:r)
 
 -- | returns a list of compressed edges
 getCompressedEdges :: DGraph -> [Node] -> [(Node,Node,DGEdgeType, Bool)]
@@ -259,16 +259,14 @@ filterDuplicates r@((s, t, _, _) : _) = edges ++ filterDuplicates others
     (mtypes,stypes) = partition (\ (_,_,_,b) -> not b) same
     stypes' = foldr (\e es -> if elem e es then es else e:es) [] stypes
     (et',_) = compressTypes False $ map (\ (_,_,et,_) -> et) mtypes
-    edges = if length mtypes /= 0 then (s,t,et',False):stypes' else stypes'
+    edges = if null mtypes then stypes' else (s,t,et',False):stypes'
 
 -- | returns the pahts of a given node through hidden nodes
 getPaths :: DGraph -> Node -> [Node] -> [Node] -> [[LEdge DGLinkLab]]
-getPaths dg node hidden seen' = case elem node hidden of
-  True -> case edges /= [] of
-    True -> concatMap (\ e@(_,t,_) -> map (e:) $ getPaths dg t hidden seen)
-                         edges
-    False -> []
-  False -> [[]]
+getPaths dg node hidden seen' = if elem node hidden then
+  if null edges then []
+    else concatMap (\ e@(_,t,_) -> map (e:) $ getPaths dg t hidden seen) edges
+  else [[]]
   where
     seen = node:seen'
     edges = filter (\ (_,t,_) -> notElem t seen) $ outDG dg node
@@ -425,9 +423,8 @@ showNodeInfo descr dgraph = do
 
 showDiagMessAux :: Int -> [Diagnosis] -> IO ()
 showDiagMessAux v ds = let es = filterDiags v ds in
-  if null es then return () else
-  (if hasErrors es then errorDialog "Error" else infoDialog "Info") $ unlines
-     $ map show es
+  unless (null es) $ (if hasErrors es then errorDialog "Error"
+                        else infoDialog "Info") $ unlines $ map show es
 
 showDiagMess :: HetcatsOpts -> [Diagnosis] -> IO ()
 showDiagMess = showDiagMessAux . verbose
@@ -540,11 +537,10 @@ proveAtNode checkCons gInfo descr dgraph = do
    acquired <- tryLockLocal dgn'
    if acquired then do
       let action = do
-            res@(Result d _) <- basicInferenceNode checkCons logicGraph ln
-                                   dgraph' (descr, dgn') le' iSt
-            if d /= [] && (diagString $ d !! 0) == "Proofs.Proofs: selection"
-              then return ()
-              else runProveAtNode checkCons gInfo (descr, dgn') res
+          res@(Result d _) <- basicInferenceNode checkCons logicGraph ln
+                                dgraph' (descr, dgn') le' iSt
+          when (null d || diagString (head d) /= "Proofs.Proofs: selection")
+               $ runProveAtNode checkCons gInfo (descr, dgn') res
       hidingWarnDiag dgn' action
       unlockLocal dgn'
     else errorDialog "Error" "Proofwindow already open"
@@ -738,10 +734,9 @@ saveUDGraph gInfo@(GInfo { graphInfo = gi
   case i_state ost of
    Nothing -> return ()
    Just _ -> do
-    maybeFilePath <- fileSaveDialog ((rmSuffix $ libNameToFile opts ln)
-                                     ++ ".udg")
-                                  [ ("uDrawGraph",["*.udg"])
-                                  , ("All Files", ["*"])] Nothing
+    maybeFilePath <- fileSaveDialog (rmSuffix (libNameToFile opts ln) ++ ".udg")
+                                    [ ("uDrawGraph",["*.udg"])
+                                    , ("All Files", ["*"])] Nothing
     case maybeFilePath of
      Just filepath -> do
       GA.showTemporaryMessage gi "Converting graph..."
@@ -765,9 +760,9 @@ nodes2String gInfo@(GInfo { graphInfo = gi
                                   return $ not b)
                     $ labNodesDG $ lookupDGraph ln le
    nstring <- foldM (\s node -> do
-                     s' <- (node2String gInfo nodemap linkmap node)
-                     return $ s ++ (if s /= "" then ",\n " else "") ++ s')
-                   "" nodes
+                      s' <- (node2String gInfo nodemap linkmap node)
+                      return $ (if null s then "" else s ++ ",\n") ++ s')
+                    "" nodes
    return $ "[" ++ nstring ++ "]"
 
 -- | Converts a node to String representation
@@ -805,8 +800,8 @@ links2String gInfo@(GInfo { graphInfo = gi
      return $ not b && src == nodeid)
        $ labEdgesDG $ lookupDGraph ln le
    foldM (\ s edge -> do
-          s' <- link2String linkmap edge
-          return $ s ++ (if s /= "" then ",\n   " else "") ++ s') "" edges
+           s' <- link2String linkmap edge
+           return $ (if null s then "" else s ++ ",\n") ++ s') "" edges
 
 -- | Converts a link to String representation
 link2String :: Map.Map DGEdgeType (EdgePattern GA.EdgeValue, String)
