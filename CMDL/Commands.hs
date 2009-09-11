@@ -145,7 +145,7 @@ getCommands =
   , genGlobInspectCmd Nodes cNodes
   , genGlobInspectCmd Edges cEdges
   , genGlobInspectCmd UndoHist cUndoHistory
-  , genGlobInspectCmd RedoHist cUndoHistory
+  , genGlobInspectCmd RedoHist cRedoHistory
   , genInspectCmd NodeInfo cInfo
   , genInspectCmd Theory $ cShowTheory Dont_translate
   , genInspectCmd AllGoals cShowTheoryGoals
