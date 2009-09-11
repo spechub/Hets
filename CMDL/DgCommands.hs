@@ -33,8 +33,7 @@ import CMDL.DataTypesUtils
 import CMDL.Utils
     (decomposeIntoGoals, obtainEdgeList, obtainNodeList, prettyPrintErrList)
 
-import Proofs.AbstractState
-    (ProofState(selectedGoals), getProvers, initialState)
+import Proofs.AbstractState (getProvers, initialState)
 import Proofs.ComputeTheory (computeTheory)
 import Proofs.TheoremHideShift (theoremHideShiftFromList)
 
@@ -56,7 +55,6 @@ import Logic.Grothendieck (findComorphismPaths)
 import Logic.Prover (ProverKind(ProveCMDLautomatic))
 
 import Data.Graph.Inductive.Graph (LEdge)
-import Data.List ((++), filter, find, take, concatMap)
 
 import System.Environment
 
@@ -227,9 +225,9 @@ selectANode x dgState
     -- (i.e. solves DGRef cases and so on,
     -- see CASL Reference Manual, p.294, Def 4.9)
     gth = computeTheory (i_libEnv dgState) (i_ln dgState)
-    nodeName t=case find(\(n,_)-> n==t) $ getAllNodes dgState of
+    nodeName t = case lookup t $ getAllNodes dgState of
                 Nothing -> "Unknown node"
-                Just (_,ll)-> getDGNodeName ll
+                Just ll -> getDGNodeName ll
    in
     case knownProversWithKind ProveCMDLautomatic of
      Result _ Nothing -> []
