@@ -97,12 +97,12 @@ reqOfInspectCmd ic = case ic of
 genGlobInspectCmd :: InspectCmd -> (CMDL_State -> IO CMDL_State)
                   -> CMDL_CmdDescription
 genGlobInspectCmd ic =
-  genCmd (InspectCmd ic) CmdNoPriority ReqNothing . CmdNoInput
+  genCmd (InspectCmd ic "") CmdNoPriority ReqNothing . CmdNoInput
 
 genInspectCmd :: InspectCmd -> (String -> CMDL_State -> IO CMDL_State)
               -> CMDL_CmdDescription
 genInspectCmd ic =
-  genCmd (InspectCmd ic) CmdNoPriority (reqOfInspectCmd ic) . CmdWithInput
+  genCmd (InspectCmd ic "") CmdNoPriority (reqOfInspectCmd ic) . CmdWithInput
 
 -- | Evaluation function description (function called when input can not
 -- be parsed

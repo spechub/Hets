@@ -214,7 +214,7 @@ data Command =
   | TimeLimit Int -- set a time limit for an automatic  prover
   | SetAxioms [String] -- set the axiom list for an automatic  prover
   | IncludeProvenTheorems Bool -- should proven theorems be added as axioms
-  | InspectCmd InspectCmd
+  | InspectCmd InspectCmd String
   | CommentCmd String
   | GroupCmd [Command] -- just to group commands in addCommandHistoryToState
 
@@ -226,6 +226,7 @@ cmdInputStr cmd = case cmd of
   SelectCmd _ t -> t
   TimeLimit l -> show l
   SetAxioms as -> unwords as
+  InspectCmd _ t -> t
   _ -> ""
 
 setInputStr :: String -> Command -> Command
@@ -235,6 +236,7 @@ setInputStr str cmd = case cmd of
     Just n -> n
     _ -> l
   SetAxioms _ -> SetAxioms $ words str
+  InspectCmd i _ -> InspectCmd i str
   _ -> cmd
 
 cmdNameStr :: Command -> String
@@ -244,20 +246,21 @@ cmdNameStr cmd = case cmd of
   TimeLimit _ -> "set time-limit"
   SetAxioms _ -> "set axioms"
   IncludeProvenTheorems b -> "set include-theorems " ++ map toLower (show b)
-  InspectCmd i -> (if i > Edges then "show-" else "")
+  InspectCmd i _ -> (if i > Edges then "show-" else "")
     ++ map (\ c -> if c == ' ' then '-' else toLower c) (showInspectCmd i)
   CommentCmd _ -> "#"
   GroupCmd _ -> ""
 
 -- | show command with arguments
 showCmd :: Command -> String
-showCmd c = case c of
-  SelectCmd _ t -> cmdNameStr c  ++ " " ++ t
-  TimeLimit l -> cmdNameStr c ++ " " ++ show l
-  SetAxioms as -> unwords $ cmdNameStr c : as
-  CommentCmd s -> cmdNameStr c ++ s
+showCmd c = let cn = cmdNameStr c in case c of
+  SelectCmd _ t -> cn ++ " " ++ t
+  TimeLimit l -> cn ++ " " ++ show l
+  SetAxioms as -> unwords $ cn : as
+  CommentCmd s -> cn ++ s
   GroupCmd l -> intercalate "\n" $ map showCmd l
-  _ -> cmdNameStr c
+  InspectCmd _ t -> cn  ++ " " ++ t
+  _ -> cn
 
 describeCmd :: Command -> String
 describeCmd cmd = case cmd of
@@ -267,17 +270,17 @@ describeCmd cmd = case cmd of
   SetAxioms _ -> "Set the axioms used for the next proof"
   IncludeProvenTheorems b -> (if b then "I" else "Do not i")
     ++ "nclude proven theorems"
-  InspectCmd i -> "Show " ++ showInspectCmd i
+  InspectCmd i _ -> "Show " ++ showInspectCmd i
   CommentCmd _ -> "Line comment"
   GroupCmd _ -> "Grouping several commands"
 
 commandList :: [Command]
 commandList =
   map GlobCmd globCmdList
-  ++ map (\ s -> SelectCmd s "") selectCmdList
+  ++ map mkSelectCmd selectCmdList
   ++ [TimeLimit 0, SetAxioms []]
   ++ map IncludeProvenTheorems [False, True]
-  ++ map InspectCmd inspectCmdList
+  ++ map (\ s -> InspectCmd s "") inspectCmdList
 
 {- unsafe commands are needed to
 delete or add
