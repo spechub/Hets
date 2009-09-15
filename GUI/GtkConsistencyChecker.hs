@@ -35,6 +35,7 @@ import Logic.Comorphism (AnyComorphism)
 import Comorphisms.LogicGraph (logicGraph)
 
 import Common.LibName (LIB_NAME)
+import Common.Result
 
 import Control.Concurrent (forkIO, killThread, ThreadId)
 import Control.Concurrent.MVar
@@ -69,12 +70,13 @@ showConsistencyChecker gInfo@(GInfo { libName = ln }) = postGUIAsync $ do
 
   windowSetTitle window "Consistency Checker"
 
-  let widgets = [ toWidget trvFinder, toWidget btnCheck, toWidget btnFineGrained
+  let widgets = [ toWidget trvFinder, toWidget btnFineGrained
                 , toWidget sbTimeout, toWidget lblStatus, toWidget lblSublogic]
       checkWidgets = widgets ++ [ toWidget btnClose, toWidget trvNodes
                                 , toWidget btnNodesAll, toWidget btnNodesNone
                                 , toWidget btnNodesInvert]
   widgetSetSensitive btnStop False
+  widgetSetSensitive btnCheck False
 
   -- get nodes
   (le, dg, nodes) <- do
@@ -87,6 +89,9 @@ showConsistencyChecker gInfo@(GInfo { libName = ln }) = postGUIAsync $ do
         return (le, dg, labNodesDG dg)
   ths <- mapM (\ (_,l) -> computeLocalLabelTheory le l) nodes
   let sls = map sublogicOfTh ths
+      switch b = do
+        widgetSetSensitive btnStop $ not b
+        widgetSetSensitive btnCheck b
 
   -- setup data
   listNodes <- setListData trvNodes (\ ((_,l),_,_) -> getDGNodeName l)
@@ -94,13 +99,22 @@ showConsistencyChecker gInfo@(GInfo { libName = ln }) = postGUIAsync $ do
   listFinder <- setListData trvFinder (\ (a,_) -> getPName a) []
 
   -- setup view selection actions
-  setListSelectorSingle trvFinder $ return ()
+  setListSelectorSingle trvFinder $ do
+                        selector <- treeViewGetSelection trvFinder
+                        miter <- treeSelectionGetSelected selector
+                        case miter of
+                          Just _ -> widgetSetSensitive btnCheck True
+                          Nothing -> widgetSetSensitive btnCheck False
   setListSelectorMultiple trvNodes btnNodesAll btnNodesNone btnNodesInvert
                           $ updateNodes trvNodes listNodes listFinder
-                          (do listStoreClear listFinder; activate widgets False)
-                          (activate widgets True)
+                          (do listStoreClear listFinder
+                              activate widgets False
+                              widgetSetSensitive btnCheck False)
+                          (do activate widgets True
+                              widgetSetSensitive btnCheck False)
 
   run <- newMVar Nothing
+  res <- newEmptyMVar
 
   -- bindings
   onClicked btnClose $ widgetDestroy window
@@ -116,10 +130,13 @@ showConsistencyChecker gInfo@(GInfo { libName = ln }) = postGUIAsync $ do
     (update, exit) <- progressBar "Checking consistency" "please wait..."
     nodes' <- postGUISync $ getNodes trvNodes listNodes
     finder <- postGUISync $ getFinder trvFinder listFinder
-    check ln le dg finder update run $ map (\ (n,_,_) -> n) nodes'
-    postGUISync $ widgetSetSensitive btnStop True
+    check ln le dg finder update run res $ map (\ (n,_,_) -> n) nodes'
+    postGUISync $ switch False
     putMVar run Nothing
-    postGUISync $ widgetSetSensitive btnStop False
+    res' <- takeMVar res
+    let mes = unlines . concat $ map (map diagString . diags) res'
+    textView "Result of consistency check" mes Nothing
+    postGUISync $ switch True
     postGUISync $ activate checkWidgets True
     exit
 
@@ -174,13 +191,15 @@ activate widgets active = mapM_ (\ w -> widgetSetSensitive w active) widgets
 
 check :: LIB_NAME -> LibEnv -> DGraph -> (G_cons_checker, AnyComorphism)
       -> (Double -> String -> IO ()) -> MVar (Maybe ThreadId)
-      -> [LNode DGNodeLab] -> IO ()
-check ln le dg (cc, c) update run nodes = do
+      -> MVar [Result G_theory] -> [LNode DGNodeLab] -> IO ()
+check ln le dg (cc, c) update run res nodes = do
+  putMVar res []
   tid <- forkIO $ do
     let count' = fromIntegral $ length nodes
     foldM_ (\ count n@(_,l) -> do
              update (count / count') $ getDGNodeName l
-             consistencyCheck cc c ln le dg n
+             res' <- consistencyCheck cc c ln le dg n
+             modifyMVar_ res (return . (res':))
              return $ count+1) 0 nodes
     takeMVar run
     return ()
