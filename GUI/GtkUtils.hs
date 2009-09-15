@@ -27,6 +27,7 @@ module GUI.GtkUtils
   , fileOpenDialog
   , fileSaveDialog
 
+  , listChoiceAux
   , listChoice
   , textView
 
@@ -237,19 +238,19 @@ fileSaveDialog :: FilePath -- ^ Defaultname for file
                -> IO (Maybe FilePath)
 fileSaveDialog p f = postGUISync . fileDialog FileChooserActionSave p f
 
-
 -- | create a window with title and list of options, return selected option
-listChoice :: String -- ^ Title
-           -> [String] -- ^ Rows to display
-           -> IO (Maybe Int) -- ^ Selected row
-listChoice title items = postGUISync $ do
+listChoiceAux :: String -- ^ Title
+              -> (a -> String) -- ^ Name of element
+              -> [a] -- ^ Rows to display
+              -> IO (Maybe a) -- ^ Selected row
+listChoiceAux title showF items  = postGUISync $ do
   xml     <- getGladeXML Utils.get
   -- get objects
   dlg     <- xmlGetWidget xml castToDialog "ListView"
   trvList <- xmlGetWidget xml castToTreeView "trvList"
 
   windowSetTitle dlg title
-  store <- setListData trvList id items
+  store <- setListData trvList showF items
   selector <- treeViewGetSelection trvList
   setListSelectorSingle trvList (return ())
   mIter <- treeModelGetIterFirst store
@@ -264,11 +265,24 @@ listChoice title items = postGUISync $ do
   ret <- case response of
     ResponseCancel -> return Nothing
     ResponseOk -> do
-      (row:_):_ <- treeSelectionGetSelectedRows selector
-      return $ Just row
+      (Just model) <- treeViewGetModel trvList
+      (Just iter) <- treeSelectionGetSelected selector
+      (row:[]) <- treeModelGetPath model iter
+      ret' <- listStoreGetValue store row
+      return $ Just ret'
     _ -> return Nothing
   widgetDestroy dlg
   return ret
+
+-- | create a window with title and list of options, return selected option
+listChoice :: String -- ^ Title
+           -> [String] -- ^ Rows to display
+           -> IO (Maybe Int) -- ^ Selected row
+listChoice title items = do
+  ret <- listChoiceAux title fst $ zip items [0..]
+  case ret of
+    Just (_,i) -> return $ Just i
+    Nothing -> return Nothing
 
 -- | Setup list with single selection
 setListSelectorSingle :: TreeView -> IO () -> IO ()
