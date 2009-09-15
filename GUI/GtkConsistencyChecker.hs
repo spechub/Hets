@@ -46,6 +46,18 @@ import Proofs.InferBasic (consistencyCheck)
 
 import Data.IORef
 import Data.Graph.Inductive.Graph (LNode)
+import qualified Data.Map as Map
+import Data.List (findIndex)
+
+data Finder = Finder { fname :: String
+                     , finder :: G_cons_checker
+                     , comorphs :: [AnyComorphism]
+                     , selected :: Int }
+
+data FNode = FNode { name :: String
+                   , node :: LNode DGNodeLab
+                   --, theory :: G_theory
+                   , sublogic :: G_sublogics }
 
 -- | Displays the consistency checker window
 showConsistencyChecker :: GInfo -> IO ()
@@ -78,6 +90,9 @@ showConsistencyChecker gInfo@(GInfo { libName = ln }) = postGUIAsync $ do
   widgetSetSensitive btnStop False
   widgetSetSensitive btnCheck False
 
+  run <- newMVar Nothing
+  res <- newEmptyMVar
+
   -- get nodes
   (le, dg, nodes) <- do
     ost <- readIORef $ intState gInfo
@@ -94,9 +109,10 @@ showConsistencyChecker gInfo@(GInfo { libName = ln }) = postGUIAsync $ do
         widgetSetSensitive btnCheck b
 
   -- setup data
-  listNodes <- setListData trvNodes (\ ((_,l),_,_) -> getDGNodeName l)
-                           $ zip3 nodes ths sls
-  listFinder <- setListData trvFinder (\ (a,_) -> getPName a) []
+  listNodes <- setListData trvNodes name
+                 $ map (\ (n@(_,l),s) -> FNode (getDGNodeName l) n s)
+                 $ zip nodes sls
+  listFinder <- setListData trvFinder fname []
 
   -- setup view selection actions
   setListSelectorSingle trvFinder $ do
@@ -113,13 +129,11 @@ showConsistencyChecker gInfo@(GInfo { libName = ln }) = postGUIAsync $ do
                           (do activate widgets True
                               widgetSetSensitive btnCheck False)
 
-  run <- newMVar Nothing
-  res <- newEmptyMVar
-
   -- bindings
   onClicked btnClose $ widgetDestroy window
-  onClicked btnFineGrained $ return ()
-  onClicked btnStop $ do
+  onClicked btnFineGrained $ fineGrainedSelection trvFinder listFinder
+                           $ widgetSetSensitive btnCheck True
+  onClicked btnStop $ forkIO_ $ do
     mtid <- readMVar run
     maybe (return ()) killThread mtid
     takeMVar run
@@ -129,12 +143,13 @@ showConsistencyChecker gInfo@(GInfo { libName = ln }) = postGUIAsync $ do
     postGUISync $ activate checkWidgets False
     (update, exit) <- progressBar "Checking consistency" "please wait..."
     nodes' <- postGUISync $ getNodes trvNodes listNodes
-    finder <- postGUISync $ getFinder trvFinder listFinder
-    check ln le dg finder update run res $ map (\ (n,_,_) -> n) nodes'
+    f <- postGUISync $ getFinder trvFinder listFinder
+    check ln le dg f update run (map node nodes') res
     postGUISync $ switch False
     putMVar run Nothing
     res' <- takeMVar res
-    let mes = unlines . concat $ map (map diagString . diags) res'
+    let mes = unlines $ concatMap (\ (n,r) -> ("\nModel for: " ++ n ++ "\n") :
+                                              map diagString (diags r)) res'
     textView "Result of consistency check" mes Nothing
     postGUISync $ switch True
     postGUISync $ activate checkWidgets True
@@ -143,16 +158,14 @@ showConsistencyChecker gInfo@(GInfo { libName = ln }) = postGUIAsync $ do
   widgetShow window
 
 -- | Get selected finder
-getNodes :: TreeView -> ListStore (LNode DGNodeLab, G_theory, G_sublogics)
-         -> IO [(LNode DGNodeLab, G_theory, G_sublogics)]
+getNodes :: TreeView -> ListStore FNode -> IO [FNode]
 getNodes view list = do
   selector <- treeViewGetSelection view
   rows <- treeSelectionGetSelectedRows selector
   mapM (listStoreGetValue list . head) rows
 
 -- | Get selected nodes
-getFinder :: TreeView -> ListStore (G_cons_checker, AnyComorphism)
-          -> IO (G_cons_checker, AnyComorphism)
+getFinder :: TreeView -> ListStore Finder -> IO Finder
 getFinder view list = do
   selector <- treeViewGetSelection view
   (Just model) <- treeViewGetModel view
@@ -161,46 +174,73 @@ getFinder view list = do
   listStoreGetValue list row
 
 -- | Called when node selection is changed. Updates finder list
-updateNodes :: TreeView -> ListStore (LNode DGNodeLab, G_theory, G_sublogics)
-            -> ListStore (G_cons_checker, AnyComorphism) -> IO () -> IO ()
-            -> IO ()
+updateNodes :: TreeView -> ListStore FNode -> ListStore Finder
+            -> IO () -> IO () -> IO ()
 updateNodes view listNodes listFinder lock unlock = do
   nodes <- getNodes view listNodes
   if null nodes then lock
-    else let (_, _, sls) = unzip3 nodes in
+    else let sls = map sublogic nodes in
       maybe lock (\ sl -> do unlock; updateFinder listFinder sl)
-        $ foldl (\ ma b -> case ma of
-                  Just a -> comSublogics b a
-                  Nothing -> Nothing) (Just $ head sls) $ tail sls
+            $ foldl (\ ma b -> case ma of
+                      Just a -> comSublogics b a
+                      Nothing -> Nothing) (Just $ head sls) $ tail sls
 
 -- | Update the list of finder
-updateFinder :: ListStore (G_cons_checker, AnyComorphism) -> G_sublogics
-             -> IO ()
-updateFinder list sublogic = forkIO_ $ do
+updateFinder :: ListStore Finder -> G_sublogics -> IO ()
+updateFinder list sl = forkIO_ $ do
   (update, exit) <- pulseBar "Calculating paths" "please wait..."
   postGUISync $ listStoreClear list
-  mapM_ (postGUISync . listStoreAppend list) $ snd
-    $ foldr (\ b@(a,_) c@(ns,bs) -> let n = getPName a in if elem n ns
-                                    then c else (n:ns, b:bs)) ([],[])
-    $ getConsCheckersAutomatic $ findComorphismPaths logicGraph sublogic
+  mapM_ ( (postGUISync . listStoreAppend list)
+        . (\ f -> f { selected = length (comorphs f) - 1}))
+    $ Map.elems
+    $ foldr (\ (cc,c) m -> let n = getPName cc
+                               f = Map.findWithDefault (Finder n cc [] 0) n m in
+              Map.insert n (f { comorphs = c : comorphs f}) m) Map.empty
+    $ getConsCheckersAutomatic $ findComorphismPaths logicGraph sl
   update "finished"
   exit
 
 activate :: [Widget] -> Bool -> IO ()
 activate widgets active = mapM_ (\ w -> widgetSetSensitive w active) widgets
 
-check :: LIB_NAME -> LibEnv -> DGraph -> (G_cons_checker, AnyComorphism)
-      -> (Double -> String -> IO ()) -> MVar (Maybe ThreadId)
-      -> MVar [Result G_theory] -> [LNode DGNodeLab] -> IO ()
-check ln le dg (cc, c) update run res nodes = do
+check :: LIB_NAME -> LibEnv -> DGraph -> Finder -> (Double -> String -> IO ())
+      -> MVar (Maybe ThreadId) -> [LNode DGNodeLab]
+      -> MVar [(String, Result G_theory)] -> IO ()
+check ln le dg (Finder { finder = cc, comorphs = cs, selected = i})
+      update run nodes res = do
   putMVar res []
   tid <- forkIO $ do
     let count' = fromIntegral $ length nodes
+        c = cs !! i
     foldM_ (\ count n@(_,l) -> do
-             update (count / count') $ getDGNodeName l
+             let name' = getDGNodeName l
+             update (count / count') name'
              res' <- consistencyCheck cc c ln le dg n
-             modifyMVar_ res (return . (res':))
+             modifyMVar_ res (return . ((name',res'):))
              return $ count+1) 0 nodes
     takeMVar run
     return ()
   putMVar run $ Just tid
+
+fineGrainedSelection :: TreeView -> ListStore Finder -> IO () -> IO ()
+fineGrainedSelection view list unlock = forkIO_ $ do
+  paths <- postGUISync $ listStoreToList list
+  selector <- treeViewGetSelection view
+  if null paths then error "Cant make selection without sublogic!"
+    else do
+      ret <- listChoiceAux "Choose a translation"
+               (\ (n,_,c) -> n ++ ": " ++ show c) $ concatMap expand paths
+      case ret of
+        Just (n,_,c) -> case findIndex ((n ==) . fname) paths of
+          Just i -> let f = paths !! i in case findIndex (c ==) $ comorphs f of
+            Just i' -> postGUISync $ do
+              listStoreSetValue list i $ f { selected = i' }
+              treeSelectionSelectPath selector [i]
+              unlock
+            Nothing -> return ()
+          Nothing -> return ()
+        Nothing -> return ()
+
+expand :: Finder -> [(String, G_cons_checker, AnyComorphism)]
+expand (Finder { fname = n, finder = cc, comorphs = cs }) =
+  map (\ c -> (n,cc,c)) cs
