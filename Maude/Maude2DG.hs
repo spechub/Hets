@@ -372,7 +372,7 @@ processModExp tim vm dg (RenamingModExp modExp rnms) = (tok, tim', comp_morph, p
 processModExp tim vm dg (InstantiationModExp modExp views) = (tok'', tim'', final_morph, new_param_sorts, dg'')
                      where (tok, tim', morph, paramSorts, dg') = processModExp tim vm dg modExp
                            (_, _, _, ps, _) = fromJust $ Map.lookup tok tim'
-                           param_names = map (fstTern) ps
+                           param_names = map fstTpl ps
                            view_names = map HasName.getName views
                            (new_param_sorts, ps_morph) = instantiateSorts param_names view_names vm morph paramSorts
                            (tok', morph1, ns, deps) = processViews views (mkSimpleId "") tim' vm ps (ps_morph, [], [])
@@ -743,9 +743,9 @@ deleteRepeated (p : ps) = if elem p ps
                           then deleteRepeated ps
                           else p : deleteRepeated ps
 
--- | returns the first from the tuple
-fstTern :: (a, b, c) -> a
-fstTern (a, _, _) = a
+-- | returns the first element from the triple
+fstTpl :: (a, b, c) -> a
+fstTpl (a, _, _) = a
 
 -- | instantiate the parametric sorts
 -- ParamNames -> ViewName -> Map of views -> Parametricsorts
