@@ -36,12 +36,6 @@ genPgipElem str =
 -- containing the output text
 genNormalResponse :: String -> Content
 genNormalResponse str =
- {-let pgmlText = Elem Element {
-                   elName = genQName "atom",
-                   elAttribs = [],
-                   elContent = [Text $ CData CDataRaw str Nothing],
-                   elLine = Nothing }
- in-}
   Elem Element {
           elName = genQName "normalresponse",
           elAttribs = [],
@@ -51,7 +45,6 @@ genNormalResponse str =
                                        attrKey = genQName "area",
                                        attrVal = "message"} ],
                          elContent =  [Text $ CData CDataRaw str Nothing],
-                                      -- [pgmlText],
                          elLine = Nothing } ],
           elLine = Nothing }
 
@@ -208,7 +201,7 @@ getRefseqNb input =
    in case elRef of
         Nothing -> Nothing
         Just el -> case el of
-                     Elem dt -> case find (\x -> qName (attrKey x) == "seq") $
+                     Elem dt -> case find (\ x -> qName (attrKey x) == "seq") $
                                      elAttribs dt of
                                   Nothing -> Nothing
                                   Just elatr -> Just $ attrVal elatr
@@ -229,10 +222,10 @@ parseXMLTree  xmltree acc =
 parseXMLElement :: Element -> Maybe CMDL_XMLcommands
 parseXMLElement info =
   case qName $ elName info of
-    "proverinit"   -> Just $ XML_ProverInit
-    "proverexit"   -> Just $ XML_Exit
-    "startquiet"   -> Just $ XML_StartQuiet
-    "stopquiet"    -> Just $ XML_StopQuiet
+    "proverinit"   -> Just XML_ProverInit
+    "proverexit"   -> Just XML_Exit
+    "startquiet"   -> Just XML_StartQuiet
+    "stopquiet"    -> Just XML_StopQuiet
     "opengoal"     -> Just $ XML_OpenGoal cnt
     "proofstep"    -> Just $ XML_Execute cnt
     "closegoal"    -> Just $ XML_CloseGoal cnt
@@ -240,15 +233,15 @@ parseXMLElement info =
     "spurioscmd"   -> Just $ XML_Execute cnt
     "dostep"       -> Just $ XML_Execute cnt
     "editobj"      -> Just $ XML_Execute cnt
-    "undostep"     -> Just $ XML_Undo
-    "redostep"     -> Just $ XML_Redo
+    "undostep"     -> Just XML_Undo
+    "redostep"     -> Just XML_Redo
     "forget"       -> Just $ XML_Forget cnt
     "opentheory"   -> Just $ XML_Execute cnt
     "theoryitem"   -> Just $ XML_Execute cnt
     "closetheory"  -> Just $ XML_CloseTheory cnt
     "closefile"    -> Just $ XML_CloseFile cnt
     "loadfile"     -> Just $ XML_LoadFile cnt
-    "askpgip"      -> Just $ XML_Askpgip
+    "askpgip"      -> Just XML_Askpgip
     "parsescript"  -> Just $ XML_ParseScript cnt
     _              -> Nothing
   where

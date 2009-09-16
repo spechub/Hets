@@ -26,25 +26,17 @@ genQName str = let qnameVal = blank_name in qnameVal { qName = str }
 -- comment into a theoryitem element
 genProofStep :: String -> Content
 genProofStep str =
-  case trim str of
-   -- if empty line generate a whitespace element
-   [] -> Elem Element {
-                 elName = genQName "whitespace",
-                 elAttribs = [],
-                 elContent = [Text $ CData CDataRaw (str++"\n") Nothing],
-                 elLine = Nothing }
-   -- if line starts with a # convert it to a comment element
-   '#':_ -> Elem Element {
-                  elName = genQName "comment",
-                  elAttribs = [],
-                  elContent = [Text $ CData CDataRaw (str++"\n") Nothing],
-                  elLine = Nothing }
-   -- convert line into a theoryitem element
-   _ ->  Elem Element {
-           elName = genQName "theoryitem",
-           elAttribs = [],
-           elContent = [Text $ CData CDataRaw (str++"\n") Nothing],
-           elLine = Nothing }
+  Elem Element {
+    elName = genQName name,
+    elAttribs = [],
+    elContent = [Text $ CData CDataRaw (str++"\n") Nothing],
+    elLine = Nothing
+  }
+  where
+    name = case trim str of
+             []    -> "whitespace"  -- empty line generates a whitespace element
+             '#':_ -> "comment"     -- comments start with #
+             _     -> "theoryitem"  -- convert line into a theoryitem element
 
 -- | adds xml structure to unstructured code
 addPgipMarkUp :: String -> Content
