@@ -18,7 +18,7 @@ import Data.List(find, intercalate)
 import Data.Time.Clock.POSIX(getPOSIXTime)
 import System.IO(Handle)
 
-import Common.Utils(getEnvDef)
+import Common.Utils(getEnvDef, trim)
 import Text.XML.Light
 import PGIP.MarkPgip(genQName)
 
@@ -26,10 +26,11 @@ import PGIP.MarkPgip(genQName)
 genPgipElem :: String -> Content
 genPgipElem str =
    Elem Element {
-            elName = genQName "pgipelem",
-            elAttribs = [],
-            elContent = [Text $ CData CDataRaw str Nothing],
-            elLine    = Nothing }
+     elName    = genQName "pgipelem",
+     elAttribs = [],
+     elContent = [Text $ CData CDataRaw str Nothing],
+     elLine    = Nothing
+   }
 
 -- generates a normalresponse element that has a pgml element
 -- containing the output text
@@ -72,7 +73,8 @@ genErrorResponse fatality str =
 -- adds one element at the end of the content of the xml packet that represents
 -- the current output of the interface to the broker
 addToContent :: CMDL_PgipState -> Content -> CMDL_PgipState
-addToContent pgData cont = pgData {
+addToContent pgData cont =
+  pgData {
     xmlContent = case xmlContent pgData of
                   Elem e -> Elem e { elContent = elContent e ++ [cont] }
                   _      -> xmlContent pgData
@@ -81,12 +83,12 @@ addToContent pgData cont = pgData {
 -- adds an ready element at the end of the xml packet that represents the
 -- current output of the interface to the broker
 addReadyXml :: CMDL_PgipState -> CMDL_PgipState
-addReadyXml pgData
- = let el_ready = Elem Element {
-                           elName = genQName "ready",
-                           elAttribs = [],
-                           elContent = [],
-                           elLine = Nothing }
+addReadyXml pgData =
+  let el_ready = Elem Element {
+                   elName = genQName "ready",
+                   elAttribs = [],
+                   elContent = [],
+                   elLine = Nothing }
    in addToContent pgData el_ready
 
 -- | State that keeps track of the comunication between Hets and the Broker
@@ -108,7 +110,7 @@ data CMDL_PgipState = CMDL_PgipState {
 
 -- | Generates an empty CMDL_PgipState
 genCMDLPgipState :: Bool -> Handle -> Handle -> Int -> IO CMDL_PgipState
-genCMDLPgipState swXML h_in h_out timeOut=
+genCMDLPgipState swXML h_in h_out timeOut =
   do
    pgId <- genPgipID
    return CMDL_PgipState {
@@ -151,8 +153,8 @@ resetMsg str pgD = pgD {
 
 -- extracts the xml package in XML.Light format (namely the Content type)
 convertPgipStateToXML :: CMDL_PgipState -> Content
-convertPgipStateToXML pgipData
- = let baseElem = Element {
+convertPgipStateToXML pgipData =
+  let baseElem = Element {
                    elName     = genQName "pgip",
                    elAttribs  = [ Attr {
                                   attrKey = genQName "tag",
@@ -165,15 +167,15 @@ convertPgipStateToXML pgipData
                                   attrVal = pgip_id pgipData }
                                 , Attr {
                                   attrKey = genQName "seq",
-                                  attrVal = show $ seqNb pgipData}],
+                                  attrVal = show $ seqNb pgipData} ],
                    elContent  = [],
                    elLine     = Nothing}
    in case refSeqNb pgipData of
     Nothing -> Elem baseElem
     Just v  -> Elem $ baseElem {
-                 elAttribs = Attr {
-                                 attrKey = genQName "refseq",
-                                 attrVal = v} : elAttribs baseElem }
+                 elAttribs = Attr { attrKey = genQName "refseq",
+                                    attrVal = v } : elAttribs baseElem
+               }
 
 -- | List of all possible commands inside an XML packet
 data CMDL_XMLcommands =
@@ -198,111 +200,66 @@ data CMDL_XMLcommands =
 
 -- extracts the refrence number of a xml packet (given as a string)
 getRefseqNb :: String -> Maybe String
-getRefseqNb input
- = let xmlTree = parseXML input
-       elRef =  find (\x -> case x of
-                          Elem dt -> qName (elName dt) == "pgip"
-                          _       -> False ) xmlTree
+getRefseqNb input =
+  let xmlTree = parseXML input
+      elRef = find (\ x -> case x of
+                              Elem dt -> qName (elName dt) == "pgip"
+                              _       -> False) xmlTree
    in case elRef of
         Nothing -> Nothing
-        Just el ->
-         case el of
-          Elem dt ->
-           case find (\x -> qName (attrKey x) == "seq") $ elAttribs dt of
-            Nothing -> Nothing
-            Just elatr ->
-                  Just  $ attrVal elatr
-          _       -> Nothing
+        Just el -> case el of
+                     Elem dt -> case find (\x -> qName (attrKey x) == "seq") $
+                                     elAttribs dt of
+                                  Nothing -> Nothing
+                                  Just elatr -> Just $ attrVal elatr
+                     _       -> Nothing
 
 
 -- parses the xml message creating a list of commands that it needs to
 -- execute
-parseXMLTree :: [Content] -> [CMDL_XMLcommands] -> IO [CMDL_XMLcommands]
-parseXMLTree  xmltree acc
- = do
-    let getTextData someinf = case head $ elContent someinf of
-                           Text smtxt -> cdData smtxt
-                           _ -> []
-    case xmltree of
-     []        -> return acc
-     (Elem info):ls ->
-      case qName $ elName info of
-       "proverinit"   -> parseXMLTree ls (XML_ProverInit:acc)
-       "proverexit"   -> parseXMLTree ls (XML_Exit:acc)
-       "startquiet"   -> parseXMLTree ls (XML_StartQuiet:acc)
-       "stopquiet"    -> parseXMLTree ls (XML_StopQuiet:acc)
-       "opengoal"     ->
-           do
-            let cnt = getTextData info
-            parseXMLTree ls (XML_OpenGoal cnt:acc)
-       "proofstep"    ->
-           do
-            let cnt = getTextData info
-            parseXMLTree ls (XML_Execute cnt:acc)
-       "closegoal"    ->
-           do
-            let cnt = getTextData info
-            parseXMLTree ls (XML_CloseGoal cnt:acc)
-       "giveupgoal"   ->
-           do
-            let cnt = getTextData info
-            parseXMLTree ls (XML_GiveUpGoal cnt:acc)
-       "spurioscmd"   ->
-           do
-            let cnt = getTextData info
-            parseXMLTree ls (XML_Execute cnt:acc)
-       "dostep"       ->
-           do
-            let cnt = getTextData info
-            parseXMLTree ls (XML_Execute cnt:acc)
-       "editobj"      ->
-           do
-            let cnt = getTextData info
-            parseXMLTree ls (XML_Execute cnt:acc)
-       "undostep"     ->
-            parseXMLTree ls (XML_Undo:acc)
-       "redostep"     ->
-            parseXMLTree ls (XML_Redo:acc)
-       "forget"       ->
-           do
-            let cnt = getTextData info
-            parseXMLTree ls (XML_Forget cnt:acc)
-       "opentheory"   ->
-           do
-            let cnt = getTextData info
-            parseXMLTree ls (XML_Execute cnt:acc)
-       "theoryitem" ->
-           do
-            let cnt = getTextData info
-            parseXMLTree ls (XML_Execute cnt:acc)
-       "closetheory"  ->
-           do
-            let cnt = getTextData info
-            parseXMLTree ls (XML_CloseTheory cnt:acc)
-       "closefile"    ->
-           do
-            let cnt = getTextData info
-            parseXMLTree ls (XML_CloseFile cnt:acc)
-       "loadfile"     ->
-           do
-            let cnt = getTextData info
-            parseXMLTree ls (XML_LoadFile cnt:acc)
-       "askpgip"      -> parseXMLTree ls (XML_Askpgip:acc)
-       "parsescript"  ->
-           do
-            let cnt = getTextData info
-            parseXMLTree ls (XML_ParseScript cnt:acc)
-       _              -> parseXMLTree (elContent info ++ ls) acc
-     _: ls -> parseXMLTree ls acc
+parseXMLTree :: [Content] -> [CMDL_XMLcommands] -> [CMDL_XMLcommands]
+parseXMLTree  xmltree acc =
+  case xmltree of
+    []             -> acc
+    (Elem info):ls -> case parseXMLElement info of
+                        Just c  -> parseXMLTree ls (c:acc)
+                        Nothing -> parseXMLTree (elContent info ++ ls) acc
+    _:ls           -> parseXMLTree ls acc
 
-
+parseXMLElement :: Element -> Maybe CMDL_XMLcommands
+parseXMLElement info =
+  case qName $ elName info of
+    "proverinit"   -> Just $ XML_ProverInit
+    "proverexit"   -> Just $ XML_Exit
+    "startquiet"   -> Just $ XML_StartQuiet
+    "stopquiet"    -> Just $ XML_StopQuiet
+    "opengoal"     -> Just $ XML_OpenGoal cnt
+    "proofstep"    -> Just $ XML_Execute cnt
+    "closegoal"    -> Just $ XML_CloseGoal cnt
+    "giveupgoal"   -> Just $ XML_GiveUpGoal cnt
+    "spurioscmd"   -> Just $ XML_Execute cnt
+    "dostep"       -> Just $ XML_Execute cnt
+    "editobj"      -> Just $ XML_Execute cnt
+    "undostep"     -> Just $ XML_Undo
+    "redostep"     -> Just $ XML_Redo
+    "forget"       -> Just $ XML_Forget cnt
+    "opentheory"   -> Just $ XML_Execute cnt
+    "theoryitem"   -> Just $ XML_Execute cnt
+    "closetheory"  -> Just $ XML_CloseTheory cnt
+    "closefile"    -> Just $ XML_CloseFile cnt
+    "loadfile"     -> Just $ XML_LoadFile cnt
+    "askpgip"      -> Just $ XML_Askpgip
+    "parsescript"  -> Just $ XML_ParseScript cnt
+    _              -> Nothing
+  where
+    cnt = case head $ elContent info of
+            Text smtxt -> cdData smtxt
+            _          -> []
 
 -- | Given a packet (a normal string or a xml formated string), the function
 -- converts it into a list of commands
-parseMsg :: CMDL_PgipState -> String -> IO [CMDL_XMLcommands]
-parseMsg st input
- = if useXML st
-      then parseXMLTree (parseXML input) []
-      else return $ concatMap(\x -> case words x of
-                                         [] -> []
-                                         _ -> [XML_Execute x]) $ lines input
+parseMsg :: CMDL_PgipState -> String -> [CMDL_XMLcommands]
+parseMsg st input =
+  if useXML st
+   then parseXMLTree (parseXML input) []
+   else concatMap (\ x -> [ XML_Execute x | not $ null $ trim x ]) $ lines input

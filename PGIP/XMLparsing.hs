@@ -150,8 +150,8 @@ communicationStep pgD st =
     -- and a response is generated
     Just smtxt ->
       do
-        cmds <- parseMsg pgD smtxt
-        let refseqNb = getRefseqNb smtxt
+        let cmds = parseMsg pgD smtxt
+            refseqNb = getRefseqNb smtxt
         (nwSt, nwPgD) <-processCmds cmds st $ resetMsg [] $ pgD {
                                               refSeqNb = refseqNb }
         if useXML pgD
