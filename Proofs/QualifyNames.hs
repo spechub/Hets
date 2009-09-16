@@ -66,7 +66,10 @@ properEdge :: LEdge a -> Bool
 properEdge (x, y, _) = x /= y
 
 properInEdges :: DGraph -> Node -> [LEdge DGLinkLab]
-properInEdges dg = filter properEdge . innDG dg
+properInEdges dg n =
+  let pes = filter properEdge $ innDG dg n
+      (gs, rs) = partition (liftE isGlobalDef) pes
+  in gs ++ rs
 
 constructUnion :: Logic lid sublogics
          basic_spec sentence symb_items symb_map_items
