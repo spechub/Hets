@@ -309,7 +309,7 @@ makeExists vars f =
 makeTypeHyp :: TYPE -> CASL_AS.CASLTERM -> Sign -> CASL_AS.CASLFORMULA
 makeTypeHyp t term sig = makePredication s (args ++ [term]) sig
                          where Univ sortterm = t
-                               (s,as) = termCanForm sortterm
+                               (s,as) = termFlatForm sortterm
                                args = map (termTransl sig) as
 
 -- make type hypotheses
@@ -324,7 +324,7 @@ termTransl sig (Identifier x) = if not(isConstant x sig)
                                    then CASL_AS.Qual_var x sort nr
                                 else makeApplication x [] sig
 termTransl sig t = makeApplication f (map (termTransl sig) as) sig
-                   where (f,as) = termCanForm t
+                   where (f,as) = termFlatForm t
 
 -- signature translation
 sigTransl :: Sign -> (CASL_Sign.CASLSign, [Named CASL_AS.CASLFORMULA])
@@ -339,14 +339,38 @@ theoryTransl (sig,fs) = (sigCASL, axCASL ++ fsCASL)
 
 -- morphism translation
 morphTransl :: Morphism -> CASL_Morphism.CASLMor
-morphTransl (Morphism sig) = CASL_Morphism.idMor () $ sigMap sig
+morphTransl (Morphism sig1 sig2 sym_map) = 
+  foldl (addSymbolTransl sig1) init_morph $ Map.toList sym_map
+  where init_morph = CASL_Morphism.Morphism 
+                       { CASL_Morphism.msource  = fst $ sigTransl sig1
+                       , CASL_Morphism.mtarget  = fst $ sigTransl sig2
+                       , CASL_Morphism.sort_map = Map.empty 
+                       , CASL_Morphism.op_map = Map.empty
+                       , CASL_Morphism.pred_map = Map.empty
+                       , CASL_Morphism.extended_map = ()
+                       }    
+
+addSymbolTransl :: Sign -> CASL_Morphism.CASLMor -> (NAME,NAME) -> CASL_Morphism.CASLMor 
+addSymbolTransl sig m (f,g) = 
+   case kind of
+        FuncKind -> let f1 = (mkId [f], CASL_Sign.OpType CASL_AS.Total (folType arity) sort)
+                        g1 = (mkId [g], CASL_AS.Total) 
+                        in m {CASL_Morphism.op_map = Map.insert f1 g1 $ CASL_Morphism.op_map m}
+        PredKind -> let f1 = (mkId [f], CASL_Sign.PredType (folType arity))
+                        g1 = mkId [g]   
+                        in m {CASL_Morphism.pred_map = Map.insert f1 g1 $ CASL_Morphism.pred_map m}
+        SortKind -> let f1 = (mkId [f], CASL_Sign.PredType (folType (arity+1)))
+                        g1 = mkId [g]   
+                        in m {CASL_Morphism.pred_map = Map.insert f1 g1 $ CASL_Morphism.pred_map m}
+   where Just kind = getSymbolKind f sig
+         Just arity = getSymbolArity f sig
 
 -- sentence translation
 senTransl :: Sign -> FORMULA -> CASL_AS.CASLFORMULA
 senTransl _ T = CASL_AS.True_atom nr
 senTransl _ F = CASL_AS.False_atom nr
 senTransl sig (Pred t) = makePredication p (map (termTransl sig) as) sig
-                         where (p,as) = termCanForm t
+                         where (p,as) = termFlatForm t
 senTransl sig (Equality t1 t2) =
   makeStrongEquation (termTransl sig t1) (termTransl sig t2)
 senTransl sig (Negation f) = makeNegation (senTransl sig f)

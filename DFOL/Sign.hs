@@ -9,8 +9,6 @@ module DFOL.Sign
    , ARITY
    , CONTEXT (..)
    , Sign (..)
-   , getVarsFromDecls
-   , getVarTypeFromDecls
    , emptyContext
    , addVarDecl
    , getVars
@@ -26,8 +24,6 @@ module DFOL.Sign
    , getArgumentTypes
    , getReturnType
    , getArgumentNames
-   , substitute
-   , alphaRename
    ) where
 
 import DFOL.AS_DFOL
@@ -37,16 +33,6 @@ import Common.DocUtils
 import Data.List
 import Data.Maybe
 import qualified Data.Set as Set
-
--- operations on a list of declarations
-getVarsFromDecls :: [DECL] -> [NAME]
-getVarsFromDecls ds = concatMap fst ds
-
-getVarTypeFromDecls :: NAME -> [DECL] -> Maybe TYPE
-getVarTypeFromDecls n ds = case result of
-                                Just (_,t) -> Just t
-                                Nothing -> Nothing
-                           where result = find (\ (ns,_) -> elem n ns) ds
 
 -- symbol kinds
 data KIND = SortKind
@@ -171,84 +157,6 @@ fillArgumentNamesH (nameM:namesM) i =
        Just name -> name:(fillArgumentNamesH namesM i)
        Nothing -> (Token ("gen_x_" ++ show i) nullRange):
                   (fillArgumentNamesH namesM (i+1))
-
--- substitutions
-substitute :: NAME -> TERM -> TYPE -> TYPE
-substitute _ _ Sort = Sort
-substitute _ _ Form = Form
-substitute n val (Univ t) = Univ $ substituteInTerm n val t
-substitute n val (Func ts t) =
-  Func (map (substitute n val) ts) (substitute n val t)
-substitute n val (Pi ds t) =
-  Pi (map (substituteInDecl n val) ds) (substitute n val t)
-
-substituteInTerm :: NAME -> TERM -> TERM -> TERM
-substituteInTerm n val (Identifier x) = if (x == n) then val else Identifier x
-substituteInTerm n val (Appl f as) =
-  Appl (substituteInTerm n val f) $ map (substituteInTerm n val) as
-
-substituteInDecl :: NAME -> TERM -> DECL -> DECL
-substituteInDecl n val (ns,t) = (ns, substitute n val t)
-
--- renamings
-alphaRename :: TYPE -> Sign -> CONTEXT -> TYPE
-alphaRename t sig cont =
-  alphaRenameH t 0 declaredSyms
-  where declaredSyms = Set.union (getSymbols sig) (getVars cont)
-
-alphaRenameH :: TYPE -> Int -> Set.Set NAME -> TYPE
-alphaRenameH t i names =
-  if (i >= length vars)
-     then t
-     else let var = vars !! i
-              in if (Set.notMember var names)
-                    then alphaRenameH t (i+1) $ Set.insert var names
-                    else let newVar = renameVar var
-                                         $ Set.union names
-                                         $ Set.fromList
-                                         $ (take i vars) ++ (drop (i+1) vars)
-                             newType = substituteVar var newVar t
-                             in alphaRenameH newType (i+1)
-                                     $ Set.insert newVar names
-  where vars = getVarsDeclaredInType t
-
-renameVar :: NAME -> Set.Set NAME -> NAME
-renameVar var names = if (Set.notMember newVar names)
-                         then newVar
-                         else renameVar newVar names
-                      where newVar = Token ((tokStr var) ++ "1") nullRange
-
-substituteVar :: NAME -> NAME -> TYPE -> TYPE
-substituteVar _ _ Sort = Sort
-substituteVar _ _ Form = Form
-substituteVar n1 n2 (Univ t) = Univ $ substituteVarInTerm n1 n2 t
-substituteVar n1 n2 (Func ts t) =
-  Func (map (substituteVar n1 n2) ts) (substituteVar n1 n2 t)
-substituteVar n1 n2 (Pi ds t) =
-  Pi (substituteVarInDecls n1 n2 ds) (substituteVar n1 n2 t)
-
-substituteVarInTerm :: NAME -> NAME -> TERM -> TERM
-substituteVarInTerm n1 n2 (Identifier x) = if (x == n1)
-                                              then Identifier n2
-                                              else Identifier x
-substituteVarInTerm n1 n2 (Appl f as) =
-  Appl (substituteVarInTerm n1 n2 f) $ map (substituteVarInTerm n1 n2) as
-
-substituteVarInDecls :: NAME -> NAME -> [DECL] -> [DECL]
-substituteVarInDecls n1 n2 ds = map (substituteVarInDecl n1 n2) ds
-
-substituteVarInDecl :: NAME -> NAME -> DECL -> DECL
-substituteVarInDecl n1 n2 (ns,t) =
-  (substituteVarInNames n1 n2 ns, substituteVar n1 n2 t)
-
-substituteVarInNames :: NAME -> NAME -> [NAME] -> [NAME]
-substituteVarInNames n1 n2 ns = map (\n -> if n == n1 then n2 else n) ns
-
--- returns a list of declared variables from within a type
-getVarsDeclaredInType :: TYPE -> [NAME]
-getVarsDeclaredInType (Pi ds t) =
-  (getVarsFromDecls ds) ++ (getVarsDeclaredInType t)
-getVarsDeclaredInType _ = []
 
 -- pretty printing
 instance Pretty Sign where

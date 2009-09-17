@@ -8,6 +8,7 @@ module DFOL.Analysis_DFOL
     basicAnalysis         -- static analysis of basic specifications
   , symbAnalysis          -- static analysis for symbols lists
   , symbMapAnalysis       -- static analysis for symbol map lists
+  , getType 
   ) where
 
 import DFOL.AS_DFOL
@@ -131,49 +132,46 @@ hasType term expectedType sig cont =
    where Result.Result diag inferredTypeM = getType term sig cont
 
 -- determines the type of a term w.r.t. a signature and a context
-getType ::TERM -> Sign -> CONTEXT -> Result.Result TYPE
-getType (Identifier n) sig cont =
-   case fromSig of
-        Just type1 -> Result.Result [] $ Just $ alphaRename type1 sig cont
-        Nothing -> case fromContext of
-                        Just type1 -> Result.Result []
-                                        $ Just $ alphaRename type1 sig cont
-                        Nothing -> Result.Result [unknownIdentifierError n cont]
-                                                 Nothing
+getType :: TERM -> Sign -> CONTEXT -> Result.Result TYPE
+getType term sig cont = getTypeH (termRecForm term) sig cont
+
+getTypeH ::TERM -> Sign -> CONTEXT -> Result.Result TYPE
+getTypeH (Identifier n) sig cont =
+   case fromContext of 
+        Just _  -> Result.Result [] fromContext
+        Nothing -> case fromSig of
+                        Just type1 -> let type2 = piRecForm $ renameBoundVars type1 sig cont
+                                          in Result.Result [] $ Just type2
+                        Nothing    -> Result.Result [unknownIdentifierError n cont] Nothing
    where fromSig = getSymbolType n sig
          fromContext = getVarType n cont
-getType (Appl f [a]) sig cont =
+getTypeH (Appl f [a]) sig cont =
    case typeAM of
         Nothing -> Result.Result diagA Nothing
         Just typeA ->
           case typeFM of
                Nothing -> Result.Result diagF Nothing
-               Just (Func [dom] cod) ->
-                 if (dom == typeA)
-                    then Result.Result [] $ Just cod
-                    else Result.Result [wrongTypeError dom typeA a cont] Nothing
                Just (Func (dom:doms) cod) ->
                  if (dom == typeA)
-                    then Result.Result [] $ Just $ Func doms cod
+                    then Result.Result [] $ Just $ typeProperForm $ Func doms cod
                     else Result.Result [wrongTypeError dom typeA a cont] Nothing
                Just (Pi [([x],t)] typ) ->
                  if (t == typeA)
-                    then Result.Result [] $ Just $ substitute x a typ
-                    else Result.Result [wrongTypeError t typeA a cont] Nothing
-               Just (Pi (([x],t):ds) typ) ->
-                 if (t == typeA)
-                    then Result.Result [] $ Just $ substitute x a $ Pi ds typ
-                    else Result.Result [wrongTypeError t typeA a cont] Nothing
-               Just (Pi (((x:xs),t):ds) typ) ->
-                 if (t == typeA)
-                    then Result.Result []
-                           $ Just $ substitute x a $ Pi ((xs,t):ds) typ
+                    then Result.Result [] $ Just $ substitute1 x a typ
                     else Result.Result [wrongTypeError t typeA a cont] Nothing
                Just typeF ->
                  Result.Result [noFunctionTermError f typeF cont] Nothing
     where Result.Result diagF typeFM = getType f sig cont
           Result.Result diagA typeAM = getType a sig cont
-getType term sig cont = getType (termApplForm term) sig cont
+getTypeH _ _ _ = Result.Result [] Nothing
+
+-- renames bound variables in a type to make it valid w.r.t. a signature and a context
+renameBoundVars :: TYPE -> Sign -> CONTEXT -> TYPE
+renameBoundVars t sig cont = 
+  let syms = Set.union (getSymbols sig) (getVars cont)
+      vars = getVarsDeclaredInType t
+      map1 = getRenameMap vars syms 
+      in substitute map1 Map.empty t
 
 -- FORMULAS
 -- make a list of formulas for the given signature out of a basic spec

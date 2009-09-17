@@ -8,6 +8,7 @@ import DFOL.ATC_DFOL ()
 import DFOL.Analysis_DFOL
 import DFOL.Symbol
 import Logic.Logic
+import qualified Data.Map as Map 
 
 -- lid for first-order logic with dependent types
 data DFOL = DFOL deriving Show
@@ -19,8 +20,9 @@ instance Language DFOL where
 -- instance of Category for DFOL
 instance Category Sign Morphism where
    ide = idMorph
-   dom = object
-   cod = object
+   dom = source
+   cod = target
+   isInclusion = Map.null . symMap
    composeMorphisms = compMorph
    legal_mor = isValidMorph
 
