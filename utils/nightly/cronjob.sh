@@ -9,6 +9,7 @@ case `uname -s` in
 esac
 
 HETS_OWL_TOOLS=/home/linux-bkb/hets-owl-tools
+HETS_ISABELLE_LIB=/home/maeder/haskell/Hets-lib/Isabelle
 
 export GHCRTS
 export LANG
@@ -16,7 +17,7 @@ export LC_ALL
 export TAR
 export MAKE
 export HETS_OWL_TOOLS
-
+export HETS_ISABELLE_LIB
 
 hetsdir=\
 /home/www.informatik.uni-bremen.de/agbkb/forschung/formal_methods/CoFI/hets
@@ -309,7 +310,7 @@ for i in */*.prf; do ./hets -v2 -o th $i; done
 checkHpfs ()
 {
 date
-for i in *.hpf Basic/*.hpf Calculi/*/*.hpf; do ./hets -v2 $i; done
+for i in *.hpf Basic/*.hpf; do ./hets -v2 $i; done
 }
 
 updateOMDoc ()

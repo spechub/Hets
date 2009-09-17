@@ -44,3 +44,4 @@ updateLibForCgi
 moreChecks
 checkCalculi
 checkEnvs
+checkHpfs
