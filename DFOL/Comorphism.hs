@@ -411,7 +411,3 @@ symbolTransl sig sym =
   where n = name sym
         Just kind = getSymbolKind n sig
         Just arity = getSymbolArity n sig
-
--- creates a Result
-wrapInResult :: a -> Result a
-wrapInResult x = Result [] $ Just x

@@ -38,11 +38,10 @@ sig = Sign [([natTok], Sort),
 cont :: CONTEXT
 cont = Context [([mTok, nTok], Univ nat)]
 
-term :: TERM
-term = plus
-
-res :: Result.Result TYPE
-res = getType term sig cont
-
-Result.Result _ (Just t) = res
+t0, t1, t2, t3, t4 :: TYPE
+t0 = Pi [([mTok, nTok], Univ nat)] $ Func [Univ $ Appl mat [m, n], Univ $ Appl mat [m, n]] $ Univ $ Appl mat [m, n]
+t1 = Pi [([mTok, m1Tok], Univ nat)] $ Func [Univ $ Appl mat [m, m1], Univ $ Appl mat [m, m1]] $ Univ $ Appl mat [m, m1]
+t2 = Func [] $ piRecForm t0
+t3 = Func [Univ nat, Univ nat] Sort
+t4 = Func [Univ nat] $ Func [Univ nat] $ Func [] Sort
 

@@ -33,11 +33,5 @@ spec :: BASIC_SPEC
 spec = Basic_spec [Annoted (Decl_item ([natTok], Sort)) nullRange [] []]
                    
 
-{-
-Annoted (Decl_item ([matTok], Func [Univ nat, Univ nat, Sort])) (Range []) [] [],
-                   Annoted (Decl_item ([plusTok], Pi [([mTok, nTok], Univ nat)] $ Func [Univ $ Appl mat [m, n], Univ $ Appl mat [m, n],
-                                                                                 Univ $ Appl mat [m, n]])) (Range []) [] [],
-                   Annoted (Axiom_item commut) (Range []) [] []]
--}
 
 

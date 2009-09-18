@@ -8,6 +8,7 @@ import DFOL.ATC_DFOL ()
 import DFOL.Analysis_DFOL
 import DFOL.Symbol
 import Logic.Logic
+import Common.Result
 import qualified Data.Map as Map 
 
 -- lid for first-order logic with dependent types
@@ -33,7 +34,8 @@ instance Syntax DFOL BASIC_SPEC SYMB_ITEMS SYMB_MAP_ITEMS where
    parse_symb_map_items DFOL = Just symbMapItems
 
 -- sentences for DFOL
-instance Sentences DFOL FORMULA Sign Morphism Symbol
+instance Sentences DFOL FORMULA Sign Morphism Symbol where
+   map_sen DFOL m = wrapInResult . (applyMorphism m)
 
 -- static analysis for DFOL
 instance StaticAnalysis DFOL
@@ -63,3 +65,7 @@ instance Logic DFOL
    Symbol
    Symbol
    ()
+
+-- creates a Result
+wrapInResult :: a -> Result a
+wrapInResult x = Result [] $ Just x

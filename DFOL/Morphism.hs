@@ -25,10 +25,6 @@ data Morphism = Morphism
 idMorph :: Sign -> Morphism
 idMorph sig = Morphism sig sig Map.empty
 
--- applies a morphism to a symbol
-applyMorph :: Morphism -> NAME -> NAME
-applyMorph m sym = Map.findWithDefault sym sym $ symMap m 
-
 -- composes two morphisms
 compMorph :: Morphism -> Morphism -> Result Morphism
 compMorph m1 m2 = 
@@ -36,7 +32,7 @@ compMorph m1 m2 =
      then fail $ "Cosourceain of the first morphism "
                  ++ "must equal the sourceain of the second."
      else return $ Morphism (source m1) (target m2) $ 
-                 Set.fold (\ sym1 -> let sym2 = applyMorph m2 $ applyMorph m1 sym1 
+                 Set.fold (\ sym1 -> let sym2 = mapSymbol m2 $ mapSymbol m1 sym1 
                                          in if (sym1 == sym2)
                                                then id
                                                else Map.insert sym1 sym2)
@@ -54,24 +50,26 @@ isValidMorphH (sym:syms) m =
   let sig1 = source m
       sig2 = target m
       type1M = getSymbolType sym sig1
-      type2M = getSymbolType (applyMorph m sym) sig2
+      type2M = getSymbolType (mapSymbol m sym) sig2
       in case type1M of
               Nothing -> False
               Just type1 -> case type2M of
                                  Nothing -> False
-                                 Just type2 -> if (translateType type1 m) == type2
+                                 Just type2 -> if (applyMorphism m type1) == type2
                                                   then isValidMorphH syms m 
                                                   else False  
 
--- translates a type along the given morphism
-translateType :: TYPE -> Morphism -> TYPE
-translateType t m = 
+-- applies a morphism to a symbol
+mapSymbol :: Morphism -> NAME -> NAME
+mapSymbol m sym = Map.findWithDefault sym sym $ symMap m 
+
+-- translates a term, type or formula along the given morphism
+applyMorphism :: Translatable a => Morphism -> a -> a
+applyMorphism m t = 
   let syms = getSymbols (target m)
-      vars = getVarsDeclaredInType t
-      map1 = getRenameMap vars syms
-      map2 = Map.fromList $ map (\ (k,a) -> (k, Identifier a)) 
+      map1 = Map.fromList $ map (\ (k,a) -> (k, Identifier a)) 
                $ Map.toList $ symMap m               
-      in substitute map1 map2 t
+      in translate map1 syms t 
 
 -- pretty printing
 instance Pretty Morphism where
@@ -81,7 +79,7 @@ printMorph :: Morphism -> Doc
 printMorph m = 
   if m == (idMorph $ source m)
      then vcat [text "Identity morphism on:", pretty $ source m]
-     else vcat [text "sourceain signature:", pretty $ source m, text "Cosourceain signature:", 
+     else vcat [text "Source signature:", pretty $ source m, text "Target signature:", 
                 pretty $ target m, text "Mapping:", printSymMap $ symMap m]
 
 printSymMap :: Map.Map NAME NAME -> Doc

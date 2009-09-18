@@ -135,12 +135,13 @@ hasType term expectedType sig cont =
 getType :: TERM -> Sign -> CONTEXT -> Result.Result TYPE
 getType term sig cont = getTypeH (termRecForm term) sig cont
 
+-- returns type in proper and pi-recursive form
 getTypeH ::TERM -> Sign -> CONTEXT -> Result.Result TYPE
 getTypeH (Identifier n) sig cont =
    case fromContext of 
         Just _  -> Result.Result [] fromContext
         Nothing -> case fromSig of
-                        Just type1 -> let type2 = piRecForm $ renameBoundVars type1 sig cont
+                        Just type1 -> let type2 = renameBoundVars (piRecForm type1) sig cont
                                           in Result.Result [] $ Just type2
                         Nothing    -> Result.Result [unknownIdentifierError n cont] Nothing
    where fromSig = getSymbolType n sig
@@ -157,7 +158,7 @@ getTypeH (Appl f [a]) sig cont =
                     else Result.Result [wrongTypeError dom typeA a cont] Nothing
                Just (Pi [([x],t)] typ) ->
                  if (t == typeA)
-                    then Result.Result [] $ Just $ substitute1 x a typ
+                    then Result.Result [] $ Just $ substitute x a typ
                     else Result.Result [wrongTypeError t typeA a cont] Nothing
                Just typeF ->
                  Result.Result [noFunctionTermError f typeF cont] Nothing
@@ -166,12 +167,14 @@ getTypeH (Appl f [a]) sig cont =
 getTypeH _ _ _ = Result.Result [] Nothing
 
 -- renames bound variables in a type to make it valid w.r.t. a signature and a context
+-- expects type in proper and pi-recursive form
 renameBoundVars :: TYPE -> Sign -> CONTEXT -> TYPE
 renameBoundVars t sig cont = 
   let syms = Set.union (getSymbols sig) (getVars cont)
-      vars = getVarsDeclaredInType t
-      map1 = getRenameMap vars syms 
-      in substitute map1 Map.empty t
+      in translate Map.empty syms t
+
+substitute :: NAME -> TERM -> TYPE -> TYPE
+substitute n val t = translate (Map.singleton n val) Set.empty t
 
 -- FORMULAS
 -- make a list of formulas for the given signature out of a basic spec
