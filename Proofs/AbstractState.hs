@@ -345,10 +345,8 @@ recalculateSublogicAndSelectedTheory st =
             sel_provenThs = markAsAxiom True $
                             filterMapWithList (includedTheorems st) provenThs
             sel_sens = filterMapWithList (includedAxioms st) sens
-            (axs, thms) = OMap.partition isAxiom sens
             selAxs = Map.union sel_sens sel_provenThs
-            currentThSens = Map.union (if Map.null selAxs then axs else selAxs)
-              $ if Map.null sel_goals then thms else sel_goals
+            currentThSens = Map.union selAxs sel_goals
             sTh = G_theory lid1 sign startSigId currentThSens startThId
             sLo = sublogicOfTh sTh
         return $ st { sublogicOfTheory = sLo,
