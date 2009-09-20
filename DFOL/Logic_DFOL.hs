@@ -36,6 +36,9 @@ instance Syntax DFOL BASIC_SPEC SYMB_ITEMS SYMB_MAP_ITEMS where
 -- sentences for DFOL
 instance Sentences DFOL FORMULA Sign Morphism Symbol where
    map_sen DFOL m = wrapInResult . (applyMorphism m)
+   sym_of DFOL = symOf
+   symmap_of DFOL = symmapOf
+   sym_name DFOL = symName   
 
 -- static analysis for DFOL
 instance StaticAnalysis DFOL
@@ -51,6 +54,9 @@ instance StaticAnalysis DFOL
    basic_analysis DFOL = Just basicAnalysis
    stat_symb_map_items DFOL = symbMapAnalysis
    stat_symb_items DFOL = symbAnalysis
+   symbol_to_raw DFOL = id
+   id_to_raw DFOL = idToRaw
+   matches DFOL s1 s2 = s1 == s2
    empty_signature DFOL = emptySig
 
 -- instance of logic for DFOL

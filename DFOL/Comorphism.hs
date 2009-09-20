@@ -7,7 +7,6 @@ module DFOL.Comorphism where
 
 import Common.Id
 import Common.AS_Annotation
-import Common.Result
 import Data.Maybe
 import qualified Data.Set as Set
 import qualified Data.Map as Map
