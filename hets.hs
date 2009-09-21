@@ -1,4 +1,4 @@
-{-# OPTIONS -cpp #-}
+{-# LANGUAGE CPP #-}
 {- |
 Module      :  $Id$
 Copyright   :  (c) Uni Bremen 2003-2005
@@ -50,31 +50,33 @@ import PGIP.XMLparsing
 import Maude.Maude2DG (anaMaudeFile)
 
 main :: IO ()
-main = do
+main =
     getArgs >>= hetcatsOpts >>= \ opts ->
+     let xFlag = xmlFlag opts
+         iFiles = infiles opts in
 #ifdef SHELLAC
      if connectP opts /= -1
      then
-      cmdlConnect2Port (xmlFlag opts) (connectH opts) (connectP opts)
+      cmdlConnect2Port xFlag (connectH opts) (connectP opts)
       >> return ()
      else
       if listen opts /= -1
        then
-        cmdlListen2Port (xmlFlag opts) (listen opts) >> return ()
+        cmdlListen2Port xFlag (listen opts) >> return ()
        else
         if interactive opts
          then do
-          if xmlFlag opts
+          if xFlag
            then
             cmdlRunXMLShell
            else
-            cmdlRunShell (infiles opts)
+            cmdlRunShell iFiles
           return ()
          else
 #endif
           do
           putIfVerbose opts 3 ("Options: " ++ show opts)
-          mapM_ (processFile opts) (infiles opts)
+          mapM_ (processFile opts) iFiles
 
 processFile :: HetcatsOpts -> FilePath -> IO ()
 processFile opts file = do
@@ -84,9 +86,7 @@ processFile opts file = do
       HaskellIn -> anaHaskellFile opts file
 #endif
 #ifndef NOOWLLOGIC
-      OWLIn -> do
-        ontoMap <- parseOWL file
-        structureAna file opts ontoMap
+      OWLIn -> parseOWL file >>= structureAna file opts
 #endif
 #ifdef HXTFILTER
       OmdocIn -> mLibEnvFromOMDocFile opts file
@@ -105,10 +105,9 @@ processFile opts file = do
       _ -> return ()
     case guiType opts of
       NoGui -> return ()
-      UseGui -> do
+      UseGui ->
 #ifdef UNI_PACKAGE
-        showGraph file opts res
-        exitWith ExitSuccess
+        showGraph file opts res >> exitWith ExitSuccess
 #else
         fail $ "No graph display interface; \n"
           ++ "UNI_PACKAGE option has been "
