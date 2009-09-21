@@ -53,10 +53,9 @@ globLibResultAct =
 
 globResultAct :: [(GlobCmd, LibEnv -> Result LibEnv)]
 globResultAct =
-  [ (Importing, libEnv_flattening_imports)
-  , (DisjointUnion, libEnv_flattening_dunions)
-  , (Renaming, libEnv_flattening_renamings)
-  , (Hiding, libEnv_flattening_hiding)
-  , (Heterogeneity, libEnv_flattening_heterogen)
-  , (QualifyNames, qualifyLibEnv)
- ]
+  [ (Importing, libFlatImports)
+  , (DisjointUnion, libFlatDUnions)
+  , (Renaming, libFlatRenamings)
+  , (Hiding, libFlatHiding)
+  , (Heterogeneity, libFlatHeterogen)
+  , (QualifyNames, qualifyLibEnv) ]
