@@ -1,4 +1,4 @@
-{-# OPTIONS -cpp #-}
+{-# LANGUAGE CPP #-}
 {- |
 Module      :  $Header$
 Description :  Writing various formats, according to Hets options

@@ -1,4 +1,4 @@
-{-# OPTIONS -cpp #-}
+{-# LANGUAGE CPP #-}
 {- |
 Module      :  $Header$
 Description :  wrapper module for changed exception handling in ghc-6.10.1

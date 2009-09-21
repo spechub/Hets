@@ -1,4 +1,4 @@
-{-# OPTIONS -cpp #-}
+{-# LANGUAGE CPP #-}
 {- |
 Module      :  $Header$
 Description :  instance of the class Logic for OWL

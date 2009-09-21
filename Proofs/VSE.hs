@@ -1,4 +1,4 @@
-{-# OPTIONS -cpp #-}
+{-# LANGUAGE CPP #-}
 {- |
 Module      :  $Header$
 Description :  Interface to send structured theories to the VSE prover

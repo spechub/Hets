@@ -1,4 +1,4 @@
-{-# OPTIONS -cpp #-}
+{-# LANGUAGE CPP #-}
 {- |
 Module      :  $Header$
 Description :  the incomplete Logic instance for VSE

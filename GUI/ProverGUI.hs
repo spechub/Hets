@@ -1,4 +1,4 @@
-{-# OPTIONS -cpp #-}
+{-# LANGUAGE CPP #-}
 {- |
 Module      :  $Header$
 Description :  cpp choice between "GUI.ProofManagement" and "GUI.GtkProverGUI"
