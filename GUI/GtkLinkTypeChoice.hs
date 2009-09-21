@@ -81,7 +81,7 @@ showLinkTypeChoice ioRefDeselect updateFunction = postGUIAsync $ do
                                    (error "GtkLinkTypeChoice: lookup error!")
                                    name edgeMap
                                  ) edgeTypeNames
-    updateFunction edgeTypes
+    forkIO_ $ updateFunction edgeTypes
     widgetDestroy window
 
   widgetShow window

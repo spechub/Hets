@@ -39,7 +39,7 @@ import Common.Result
 
 import Control.Concurrent (forkIO, killThread, ThreadId)
 import Control.Concurrent.MVar
-import Control.Monad (foldM_)
+import Control.Monad (foldM_, join)
 
 import Proofs.AbstractState
 import Proofs.InferBasic (consistencyCheck)
@@ -48,6 +48,7 @@ import Data.IORef
 import Data.Graph.Inductive.Graph (LNode)
 import qualified Data.Map as Map
 import Data.List (findIndex)
+import Data.Maybe
 
 data Finder = Finder { fname :: String
                      , finder :: G_cons_checker
@@ -56,8 +57,8 @@ data Finder = Finder { fname :: String
 
 data FNode = FNode { name :: String
                    , node :: LNode DGNodeLab
-                   --, theory :: G_theory
-                   , sublogic :: G_sublogics }
+                   , sublogic :: G_sublogics
+                   , model :: Result G_theory}
 
 -- | Displays the consistency checker window
 showConsistencyChecker :: GInfo -> IO ()
@@ -91,7 +92,7 @@ showConsistencyChecker gInfo@(GInfo { libName = ln }) = postGUIAsync $ do
   widgetSetSensitive btnCheck False
 
   run <- newMVar Nothing
-  res <- newEmptyMVar
+  mView <- newEmptyMVar
 
   -- get nodes
   (le, dg, nodes) <- do
@@ -110,7 +111,8 @@ showConsistencyChecker gInfo@(GInfo { libName = ln }) = postGUIAsync $ do
 
   -- setup data
   listNodes <- setListData trvNodes name
-                 $ map (\ (n@(_,l),s) -> FNode (getDGNodeName l) n s)
+                 $ map (\ (n@(_,l),s) -> FNode (getDGNodeName l) n s
+                                               $ Result [] Nothing)
                  $ zip nodes sls
   listFinder <- setListData trvFinder fname []
 
@@ -122,7 +124,8 @@ showConsistencyChecker gInfo@(GInfo { libName = ln }) = postGUIAsync $ do
                           Just _ -> widgetSetSensitive btnCheck True
                           Nothing -> widgetSetSensitive btnCheck False
   setListSelectorMultiple trvNodes btnNodesAll btnNodesNone btnNodesInvert
-                          $ updateNodes trvNodes listNodes listFinder
+                          $ updateNodes trvNodes listNodes
+                          (updateFinder trvFinder listFinder)
                           (do listStoreClear listFinder
                               activate widgets False
                               widgetSetSensitive btnCheck False)
@@ -142,52 +145,36 @@ showConsistencyChecker gInfo@(GInfo { libName = ln }) = postGUIAsync $ do
     takeMVar run
     postGUISync $ activate checkWidgets False
     (update, exit) <- progressBar "Checking consistency" "please wait..."
-    nodes' <- postGUISync $ getNodes trvNodes listNodes
-    f <- postGUISync $ getFinder trvFinder listFinder
-    check ln le dg f update run (map node nodes') res
+    nodes' <- postGUISync $ getSelectedMultiple trvNodes listNodes
+    mf <- postGUISync $ getSelectedSingle trvFinder listFinder
+    f <- case mf of
+      Nothing -> error "Consistency checker: internal error"
+      Just (_,f) -> return f
+    check ln le dg f update run listNodes nodes'
     postGUISync $ switch False
     putMVar run Nothing
-    res' <- takeMVar res
-    let mes = unlines $ concatMap (\ (n,r) -> ("\nModel for: " ++ n ++ "\n") :
-                                              map diagString (diags r)) res'
-    textView "Result of consistency check" mes Nothing
+    forkIO_ $ showModelView mView xml "Models" listNodes
     postGUISync $ switch True
     postGUISync $ activate checkWidgets True
     exit
 
   widgetShow window
 
--- | Get selected finder
-getNodes :: TreeView -> ListStore FNode -> IO [FNode]
-getNodes view list = do
-  selector <- treeViewGetSelection view
-  rows <- treeSelectionGetSelectedRows selector
-  mapM (listStoreGetValue list . head) rows
-
--- | Get selected nodes
-getFinder :: TreeView -> ListStore Finder -> IO Finder
-getFinder view list = do
-  selector <- treeViewGetSelection view
-  (Just model) <- treeViewGetModel view
-  (Just iter) <- treeSelectionGetSelected selector
-  (row:[]) <- treeModelGetPath model iter
-  listStoreGetValue list row
-
 -- | Called when node selection is changed. Updates finder list
-updateNodes :: TreeView -> ListStore FNode -> ListStore Finder
+updateNodes :: TreeView -> ListStore FNode -> (G_sublogics -> IO ())
             -> IO () -> IO () -> IO ()
-updateNodes view listNodes listFinder lock unlock = do
-  nodes <- getNodes view listNodes
+updateNodes view listNodes update lock unlock = do
+  nodes <- getSelectedMultiple view listNodes
   if null nodes then lock
-    else let sls = map sublogic nodes in
-      maybe lock (\ sl -> do unlock; updateFinder listFinder sl)
+    else let sls = map (sublogic . snd) nodes in
+      maybe lock (\ sl -> do unlock; update sl)
             $ foldl (\ ma b -> case ma of
                       Just a -> comSublogics b a
                       Nothing -> Nothing) (Just $ head sls) $ tail sls
 
 -- | Update the list of finder
-updateFinder :: ListStore Finder -> G_sublogics -> IO ()
-updateFinder list sl = forkIO_ $ do
+updateFinder :: TreeView -> ListStore Finder -> G_sublogics -> IO ()
+updateFinder view list sl = forkIO_ $ do
   (update, exit) <- pulseBar "Calculating paths" "please wait..."
   postGUISync $ listStoreClear list
   mapM_ ( (postGUISync . listStoreAppend list)
@@ -199,24 +186,24 @@ updateFinder list sl = forkIO_ $ do
     $ getConsCheckersAutomatic $ findComorphismPaths logicGraph sl
   update "finished"
   exit
+  postGUIAsync $ selectFirst view
 
 activate :: [Widget] -> Bool -> IO ()
 activate widgets active = mapM_ (\ w -> widgetSetSensitive w active) widgets
 
 check :: LIB_NAME -> LibEnv -> DGraph -> Finder -> (Double -> String -> IO ())
-      -> MVar (Maybe ThreadId) -> [LNode DGNodeLab]
-      -> MVar [(String, Result G_theory)] -> IO ()
+      -> MVar (Maybe ThreadId) -> ListStore FNode -> [(Int,FNode)] -> IO ()
 check ln le dg (Finder { finder = cc, comorphs = cs, selected = i})
-      update run nodes res = do
-  putMVar res []
+      update run list nodes = do
   tid <- forkIO $ do
     let count' = fromIntegral $ length nodes
         c = cs !! i
-    foldM_ (\ count n@(_,l) -> do
+    foldM_ (\ count (row, fn@(FNode { node = n@(_,l), model = m })) -> do
              let name' = getDGNodeName l
              update (count / count') name'
-             res' <- consistencyCheck cc c ln le dg n
-             modifyMVar_ res (return . ((name',res'):))
+             res <- consistencyCheck cc c ln le dg n
+             postGUIAsync $ listStoreSetValue list row
+                          $ fn { model = joinResult m res }
              return $ count+1) 0 nodes
     takeMVar run
     return ()
@@ -231,7 +218,7 @@ fineGrainedSelection view list unlock = forkIO_ $ do
       ret <- listChoiceAux "Choose a translation"
                (\ (n,_,c) -> n ++ ": " ++ show c) $ concatMap expand paths
       case ret of
-        Just (n,_,c) -> case findIndex ((n ==) . fname) paths of
+        Just (_,(n,_,c)) -> case findIndex ((n ==) . fname) paths of
           Just i -> let f = paths !! i in case findIndex (c ==) $ comorphs f of
             Just i' -> postGUISync $ do
               listStoreSetValue list i $ f { selected = i' }
@@ -244,3 +231,60 @@ fineGrainedSelection view list unlock = forkIO_ $ do
 expand :: Finder -> [(String, G_cons_checker, AnyComorphism)]
 expand (Finder { fname = n, finder = cc, comorphs = cs }) =
   map (\ c -> (n,cc,c)) cs
+
+-- | Displays the model view window
+showModelViewAux :: MVar (IO ()) -> GladeXML -> String -> ListStore FNode
+                 -> IO ()
+showModelViewAux lock xml title list = postGUISync $ do
+  -- get objects
+  window   <- xmlGetWidget xml castToWindow "ModelView"
+  btnClose <- xmlGetWidget xml castToButton "btnResClose"
+  frNodes  <- xmlGetWidget xml castToFrame "frResNodes"
+  trvNodes <- xmlGetWidget xml castToTreeView "trvResNodes"
+  tvModel  <- xmlGetWidget xml castToTextView "tvResModel"
+
+  windowSetTitle window title
+
+  -- setup text view
+  buffer <- textViewGetBuffer tvModel
+  textBufferInsertAtCursor buffer ""
+
+  tagTable <- textBufferGetTagTable buffer
+  font <- textTagNew Nothing
+  set font [ textTagFont := "FreeMono" ]
+  textTagTableAdd tagTable font
+  start <- textBufferGetStartIter buffer
+  end <- textBufferGetEndIter buffer
+  textBufferApplyTag buffer font start end
+
+  -- setup list view
+  nodes <- listStoreToList list
+  listNodes <- setListData trvNodes name
+    -- TODO: filter hasErrors d
+    $ filter ((\ (Result d m) -> not (null d && isNothing m)) . model) nodes
+
+  setListSelectorSingle trvNodes $ do
+    mn <- getSelectedSingle trvNodes listNodes
+    case mn of
+      Nothing -> textBufferSetText buffer ""
+      Just (_,n) -> textBufferSetText buffer $ unlines $ map diagString $ diags
+                                             $ model n
+
+  -- setup actions
+  onClicked btnClose $ widgetDestroy window
+  onDestroy window $ do takeMVar lock; return ()
+
+  putMVar lock $ return ()
+
+  widgetSetSizeRequest window 800 600
+  widgetSetSizeRequest frNodes 250 (-1)
+
+  widgetShow window
+
+-- | Displays the model view window
+showModelView :: MVar (IO ()) -> GladeXML -> String -> ListStore FNode -> IO ()
+showModelView lock xml title list  = do
+  isNotOpen <- isEmptyMVar lock
+  if isNotOpen then showModelViewAux lock xml title list
+    else join (readMVar lock)
+

@@ -45,6 +45,10 @@ module GUI.GtkUtils
   , updateListData
   , setListSelectorSingle
   , setListSelectorMultiple
+  , selectFirst
+  , getSelectedSingle
+  , getSelectedMultiple
+
   , selectAll
   , selectNone
   , selectInvert
@@ -242,7 +246,7 @@ fileSaveDialog p f = postGUISync . fileDialog FileChooserActionSave p f
 listChoiceAux :: String -- ^ Title
               -> (a -> String) -- ^ Name of element
               -> [a] -- ^ Rows to display
-              -> IO (Maybe a) -- ^ Selected row
+              -> IO (Maybe (Int,a)) -- ^ Selected row
 listChoiceAux title showF items  = postGUISync $ do
   xml     <- getGladeXML Utils.get
   -- get objects
@@ -264,12 +268,7 @@ listChoiceAux title showF items  = postGUISync $ do
   response <- dialogRun dlg
   ret <- case response of
     ResponseCancel -> return Nothing
-    ResponseOk -> do
-      (Just model) <- treeViewGetModel trvList
-      (Just iter) <- treeSelectionGetSelected selector
-      (row:[]) <- treeModelGetPath model iter
-      ret' <- listStoreGetValue store row
-      return $ Just ret'
+    ResponseOk -> getSelectedSingle trvList store
     _ -> return Nothing
   widgetDestroy dlg
   return ret
@@ -279,10 +278,8 @@ listChoice :: String -- ^ Title
            -> [String] -- ^ Rows to display
            -> IO (Maybe Int) -- ^ Selected row
 listChoice title items = do
-  ret <- listChoiceAux title fst $ zip items [0..]
-  case ret of
-    Just (_,i) -> return $ Just i
-    Nothing -> return Nothing
+  ret <- listChoiceAux title id items
+  return $ maybe Nothing (\ (i,_) -> Just i) ret
 
 -- | Setup list with single selection
 setListSelectorSingle :: TreeView -> IO () -> IO ()
@@ -290,6 +287,7 @@ setListSelectorSingle view action= do
   selector <- treeViewGetSelection view
   treeSelectionSetMode selector SelectionSingle
   onCursorChanged view action
+  selectFirst view
   return ()
 
 -- | Setup list with multiple selection
@@ -310,6 +308,7 @@ setListSelectorMultiple view btnAll btnNone btnInvert action = do
     treeSelectionUnselectAll selector
     mapM_ (treeSelectionSelectPath selector) newSelection
     action
+
   treeSelectionSelectAll selector
 
   -- setup buttons
@@ -318,6 +317,50 @@ setListSelectorMultiple view btnAll btnNone btnInvert action = do
   onClicked btnInvert $ do selectInvert view ioRefSelection; action
 
   return ioRefSelection
+
+-- | Selects the first item if possible
+selectFirst :: TreeView -> IO ()
+selectFirst view = do
+  mModel <- treeViewGetModel view
+  case mModel of
+    Nothing -> return ()
+    Just model -> do
+      mIter <- treeModelGetIterFirst model
+      case mIter of
+        Nothing -> return ()
+        Just iter -> do
+          selector <- treeViewGetSelection view
+          treeSelectionSelectIter selector iter
+          path <- treeModelGetPath model iter
+          treeViewSetCursor view path Nothing
+
+-- | Get selected item
+getSelectedSingle :: TreeView -> ListStore a -> IO (Maybe (Int,a))
+getSelectedSingle view list = do
+  mModel <- treeViewGetModel view
+  case mModel of
+    Nothing -> return Nothing
+    Just model -> do
+      selector <- treeViewGetSelection view
+      mIter <- treeSelectionGetSelected selector
+      case mIter of
+        Nothing -> return Nothing
+        Just iter -> do
+          path <- treeModelGetPath model iter
+          case path of
+            row:[] -> do
+              item <- listStoreGetValue list row
+              return $ Just (row, item)
+            _ -> error "List type not supported"
+
+-- | Get selected items and row number
+getSelectedMultiple :: TreeView -> ListStore a -> IO [(Int,a)]
+getSelectedMultiple view list = do
+  selector <- treeViewGetSelection view
+  rows' <- treeSelectionGetSelectedRows selector
+  let rows = map head rows'
+  items <- mapM (listStoreGetValue list) rows
+  return $ zip rows items
 
 -- | Select all rows
 selectAll :: TreeView -> IORef [TreePath] -> IO ()
