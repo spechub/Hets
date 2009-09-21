@@ -36,10 +36,8 @@ import Common.Exception
 
 import Interfaces.DataTypes
 
-showGraph :: FilePath -> HetcatsOpts ->
-             Maybe (LIB_NAME, -- filename
-                    LibEnv    -- DGraphs for imported modules
-                   )  -> IO ()
+-- | show development graph of a given library name in a window
+showGraph :: FilePath -> HetcatsOpts -> Maybe (LIB_NAME, LibEnv) -> IO ()
 showGraph file opts env = case env of
   Just (ln, le) -> do
     putIfVerbose opts 2 $ "Trying to display " ++ file
@@ -64,13 +62,16 @@ showGraph file opts env = case env of
     -- from this point on
     ost <- readIORef $ intState gInfo
     let nwst = case i_state ost of
-                Nothing -> ost
-                Just ist -> ost{ i_state = Just $ ist { i_libEnv = le
-                                                      , i_ln = ln},
-                                 filename = file}
+          Nothing -> ost
+          Just ist -> ost
+            { i_state = Just ist
+                { i_libEnv = le
+                , i_ln = ln }
+            , filename = file }
     writeIORef (intState gInfo) nwst
-    let gInfo' = gInfo { hetcatsOpts = opts
-                       , libName = ln }
+    let gInfo' = gInfo
+          { hetcatsOpts = opts
+          , libName = ln }
     showLibGraph gInfo'
     mShowGraph gInfo' ln
     takeMVar $ exitMVar gInfo'
@@ -79,5 +80,5 @@ showGraph file opts env = case env of
 #endif
     destroy wishInst
     shutdown
-  Nothing -> putIfVerbose opts 1 $ "Error: Basic Analysis is neccessary "
-    ++ "to display graphs in a graphical window"
+  Nothing -> putIfVerbose opts 0
+    "missing development graph to display in a window"
