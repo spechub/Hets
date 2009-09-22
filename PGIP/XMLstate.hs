@@ -1,5 +1,5 @@
 {- |
-Module      :$Header$
+Module      : $Header$
 Description : after parsing XML message a list of XMLcommands is produced,
               containing commands that need to be executed
 Copyright   : uni-bremen and DFKI
@@ -26,10 +26,10 @@ import PGIP.MarkPgip(genQName)
 genPgipElem :: String -> Content
 genPgipElem str =
    Elem Element {
-     elName    = genQName "pgipelem",
+     elName = genQName "pgipelem",
      elAttribs = [],
      elContent = [Text $ CData CDataRaw str Nothing],
-     elLine    = Nothing
+     elLine = Nothing
    }
 
 -- generates a normalresponse element that has a pgml element
@@ -73,54 +73,45 @@ addToContent pgData cont =
                   _      -> xmlContent pgData
   }
 
--- adds an ready element at the end of the xml packet that represents the
+-- adds a ready element at the end of the xml packet that represents the
 -- current output of the interface to the broker
 addReadyXml :: CmdlPgipState -> CmdlPgipState
-addReadyXml pgData =
-  let el_ready = Elem Element {
-                   elName = genQName "ready",
-                   elAttribs = [],
-                   elContent = [],
-                   elLine = Nothing }
-   in addToContent pgData el_ready
+addReadyXml pgData = addToContent pgData $ Elem $ unode "ready" ()
 
 -- | State that keeps track of the comunication between Hets and the Broker
-data CmdlPgipState = CmdlPgipState {
-                    pgip_id            :: String,
-                    name               :: String,
-                    seqNb              :: Int,
-                    refSeqNb           :: Maybe String,
-                    theMsg             :: String,
-                    xmlContent         :: Content,
-                    hout               :: Handle,
-                    hin                :: Handle,
-                    stop               :: Bool,
-                    resendMsgIfTimeout :: Bool,
-                    useXML             :: Bool,
-                    maxWaitTime        :: Int,
-                    quietOutput        :: Bool
-                    }
+data CmdlPgipState = CmdlPgipState
+  { pgipId :: String
+  , name :: String
+  , seqNb :: Int
+  , refSeqNb :: Maybe String
+  , theMsg :: String
+  , xmlContent :: Content
+  , hout :: Handle
+  , hin :: Handle
+  , stop :: Bool
+  , resendMsgIfTimeout :: Bool
+  , useXML :: Bool
+  , maxWaitTime :: Int
+  , quietOutput :: Bool }
 
 -- | Generates an empty CmdlPgipState
 genCMDLPgipState :: Bool -> Handle -> Handle -> Int -> IO CmdlPgipState
-genCMDLPgipState swXML h_in h_out timeOut =
-  do
+genCMDLPgipState swXML h_in h_out timeOut = do
    pgId <- genPgipID
-   return CmdlPgipState {
-     pgip_id            = pgId,
-     name               = "Hets",
-     quietOutput        = False,
-     seqNb              = 1,
-     refSeqNb           = Nothing,
-     theMsg             = [],
-     xmlContent         = Elem blank_element { elName = genQName "pgip" },
-     hin                = h_in,
-     hout               = h_out,
-     stop               = False,
-     resendMsgIfTimeout = True,
-     useXML             = swXML,
-     maxWaitTime        = timeOut
-     }
+   return CmdlPgipState
+     { pgipId = pgId
+     , name = "Hets"
+     , quietOutput = False
+     , seqNb = 1
+     , refSeqNb = Nothing
+     , theMsg = []
+     , xmlContent = Elem blank_element { elName = genQName "pgip" }
+     , hin = h_in
+     , hout = h_out
+     , stop = False
+     , resendMsgIfTimeout = True
+     , useXML = swXML
+     , maxWaitTime = timeOut }
 
 -- | Generates the id of the session between Hets and the Broker
 genPgipID :: IO String
@@ -148,8 +139,8 @@ resetMsg str pgD = pgD {
 convertPgipStateToXML :: CmdlPgipState -> Content
 convertPgipStateToXML pgipData =
   let baseElem = Element {
-                   elName     = genQName "pgip",
-                   elAttribs  = [ Attr {
+                   elName = genQName "pgip",
+                   elAttribs = [ Attr {
                                   attrKey = genQName "tag",
                                   attrVal = name pgipData }
                                 , Attr {
@@ -157,15 +148,15 @@ convertPgipStateToXML pgipData =
                                   attrVal = "pg"}
                                 , Attr {
                                   attrKey = genQName "id",
-                                  attrVal = pgip_id pgipData }
+                                  attrVal = pgipId pgipData }
                                 , Attr {
                                   attrKey = genQName "seq",
                                   attrVal = show $ seqNb pgipData} ],
-                   elContent  = [],
-                   elLine     = Nothing}
+                   elContent = [],
+                   elLine = Nothing}
    in case refSeqNb pgipData of
     Nothing -> Elem baseElem
-    Just v  -> Elem $ baseElem {
+    Just v  -> Elem baseElem {
                  elAttribs = Attr { attrKey = genQName "refseq",
                                     attrVal = v } : elAttribs baseElem
                }
@@ -211,13 +202,12 @@ getRefseqNb input =
 -- parses the xml message creating a list of commands that it needs to
 -- execute
 parseXMLTree :: [Content] -> [CmdlXMLcommands] -> [CmdlXMLcommands]
-parseXMLTree  xmltree acc =
-  case xmltree of
-    []             -> acc
-    (Elem info):ls -> case parseXMLElement info of
-                        Just c  -> parseXMLTree ls (c:acc)
+parseXMLTree  xmltree acc = case xmltree of
+    [] -> acc
+    Elem info : ls -> case parseXMLElement info of
+                        Just c  -> parseXMLTree ls (c : acc)
                         Nothing -> parseXMLTree (elContent info ++ ls) acc
-    _:ls           -> parseXMLTree ls acc
+    _ : ls -> parseXMLTree ls acc
 
 parseXMLElement :: Element -> Maybe CmdlXMLcommands
 parseXMLElement info =

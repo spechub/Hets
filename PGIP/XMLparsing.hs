@@ -167,11 +167,11 @@ communicationStep pgD st = do
                  -- this lines take care for each response to have
                  -- a corresponding id and sequence number
                  let refNb = case refseqNb of
-                               Just rNb -> " refseq=\""++rNb++"\" "
+                               Just rNb -> " refseq=\""++ rNb ++"\" "
                                Nothing -> " "
                      mSg = "<pgip tag=\"Hets\" class=\"pg\" id=\"" ++
-                           pgip_id pgD ++ "\"" ++ refNb ++ " seq=\"" ++
-                           show (seqNb pgD + 1)++"\"><ready /></pgip>"
+                           pgipId pgD ++ "\"" ++ refNb ++ " seq=\"" ++
+                           show (seqNb pgD + 1) ++ "\"><ready /></pgip>"
                  hPutStrLn (hout pgD) mSg
                  hFlush $ hout pgD
                  return (nwPgipSt { seqNb = seqNb nwPgipSt + 1}, nwSt)
