@@ -25,7 +25,7 @@ module CMDL.ProveConsistency
 import Interfaces.DataTypes
 import Interfaces.GenericATPState(ATPTactic_script)
 
-import CMDL.DataTypes(CMDL_State(intState))
+import CMDL.DataTypes(CmdlState(intState))
 import CMDL.DataTypesUtils(getAllNodes, add2hist, genErrorMsg, genMessage)
 import CMDL.Utils(checkPresenceProvers)
 
@@ -72,8 +72,8 @@ getProversAutomatic = foldl addProvers []
 
 
 -- | Select a prover
-cProver::String -> CMDL_State ->
-                    IO CMDL_State
+cProver::String -> CmdlState ->
+                    IO CmdlState
 cProver input state =
   do
    -- trimed input
@@ -143,7 +143,7 @@ cProver input state =
 
 
 -- | Selects a consistency checker
-cConsChecker::String -> CMDL_State -> IO CMDL_State
+cConsChecker::String -> CmdlState -> IO CmdlState
 cConsChecker input state =
   do
    --trimed input

@@ -24,7 +24,7 @@ import System.Console.Shell.Backend.Haskeline
 import System.IO(IO)
 
 import CMDL.Commands(getCommands)
-import CMDL.DataTypes(CMDL_Message(..), CMDL_PrompterState(..), CMDL_State(..))
+import CMDL.DataTypes(CmdlMessage(..), CmdlPrompterState(..), CmdlState(..))
 import CMDL.Shell(cmdlCompletionFn)
 
 import CMDL.FileInterface(fileBackend, fileShellDescription)
@@ -35,19 +35,19 @@ import Interfaces.DataTypes
 
 import Driver.Options (HetcatsOpts)
 
--- | Creates an empty CMDL_State
-emptyCMDL_State :: HetcatsOpts -> CMDL_State
-emptyCMDL_State opts = CMDL_State
+-- | Creates an empty CmdlState
+emptyCmdlState :: HetcatsOpts -> CmdlState
+emptyCmdlState opts = CmdlState
   { intState = IntState
       { i_state = Nothing
       , i_hist = IntHistory
           { undoList = []
           , redoList = [] }
       , filename = [] }
-  , prompter = CMDL_PrompterState
+  , prompter = CmdlPrompterState
       { fileLoaded = ""
       , prompterHead = "> " }
-  , output = CMDL_Message
+  , output = CmdlMessage
       { errorMsg = []
       , outputMsg = []
       , warningMsg = [] }
@@ -56,9 +56,9 @@ emptyCMDL_State opts = CMDL_State
   , hetsOpts = opts }
 
 -- | The function runs hets in a shell
-cmdlRunShell :: HetcatsOpts -> [FilePath] ->IO CMDL_State
+cmdlRunShell :: HetcatsOpts -> [FilePath] ->IO CmdlState
 cmdlRunShell opts files =
-      recursiveApplyUse files (emptyCMDL_State opts)
+      recursiveApplyUse files (emptyCmdlState opts)
       >>= runShell stdShellDescription
                 { defaultCompletions = Just (cmdlCompletionFn getCommands) }
 #ifdef EDITLINE
@@ -68,14 +68,14 @@ cmdlRunShell opts files =
 #endif
 
 -- | The function processes the file of instructions
-cmdlProcessFile :: HetcatsOpts -> FilePath -> IO CMDL_State
-cmdlProcessFile opts flnm = let st = emptyCMDL_State opts in
+cmdlProcessFile :: HetcatsOpts -> FilePath -> IO CmdlState
+cmdlProcessFile opts flnm = let st = emptyCmdlState opts in
     runShell fileShellDescription (fileBackend flnm) st
     `catch` const (return st)
 
 -- | The function processes a string of instructions starting from a given
 -- state
-cmdlProcessString :: String -> CMDL_State -> IO CMDL_State
+cmdlProcessString :: String -> CmdlState -> IO CmdlState
 cmdlProcessString input st =
     runShell stringShellDescription (stringBackend input) st
     `catch` const (return st)

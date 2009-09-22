@@ -61,7 +61,7 @@ import System.IO(IO)
 import System.Console.Shell.ShellMonad
 
 -- | Creates a shellac command
-shellacCmd :: CMDL_CmdDescription -> Sh CMDL_State ()
+shellacCmd :: CmdlCmdDescription -> Sh CmdlState ()
 shellacCmd cmd = do
     newState <- getShellSt >>= \ state -> liftIO (checkCom cmd state {
                                                      output = (output state){
@@ -78,7 +78,7 @@ shellacCmd cmd = do
     when (outputMsg result /= []) $ shellPutStrLn $ outputMsg result
     putShellSt newState
 
-register2history :: CMDL_CmdDescription -> IO CMDL_State -> IO CMDL_State
+register2history :: CmdlCmdDescription -> IO CmdlState -> IO CmdlState
 register2history dscr state_io = do
     state <- state_io
     let oldHistory = i_hist $ intState  state
@@ -97,18 +97,18 @@ register2history dscr state_io = do
                _ -> return state
 
 -- process a comment line
-processComment :: CMDL_State -> String -> CMDL_State
+processComment :: CmdlState -> String -> CmdlState
 processComment st inp
  = if isInfixOf "}%" inp then st { openComment = False } else st
 
 -- gets the function
-getFn :: CMDL_CmdDescription -> (CMDL_State -> IO CMDL_State)
+getFn :: CmdlCmdDescription -> (CmdlState -> IO CmdlState)
 getFn desc = case cmdFn desc of
     CmdNoInput fn -> fn
     CmdWithInput fn -> fn (cmdInput desc)
 
 -- adds a line to the script
-addToScript :: CMDL_State -> IntIState -> String -> CMDL_State
+addToScript :: CmdlState -> IntIState -> String -> CmdlState
 addToScript st ist str
  = let olds = script ist
        oldextOpts = ts_extraOpts olds
@@ -118,7 +118,7 @@ addToScript st ist str
                        script = olds { ts_extraOpts = str:oldextOpts } }
           } }
 
-checkCom :: CMDL_CmdDescription -> CMDL_State -> IO CMDL_State
+checkCom :: CmdlCmdDescription -> CmdlState -> IO CmdlState
 checkCom descr state =
     --check the priority of the current command
     case cmdPriority descr of
@@ -146,10 +146,10 @@ checkCom descr state =
      CmdGreaterThanScriptAndComments -> getFn descr state
 
 -- | Prints details about the syntax of the interface
-cDetails :: CMDL_State -> IO CMDL_State
+cDetails :: CmdlState -> IO CmdlState
 cDetails state
  = return state {
-            output = CMDL_Message {
+            output = CmdlMessage {
                errorMsg = [],
                outputMsg = printDetails,
                warningMsg = []
@@ -157,7 +157,7 @@ cDetails state
             }
 
 -- | Function handle a comment line
-cComment::String -> CMDL_State -> IO CMDL_State
+cComment::String -> CmdlState -> IO CmdlState
 cComment _ = return
 
 -- | Produces a string containing a detailed description
@@ -237,15 +237,15 @@ printDetails =
 
 -- For normal keyboard input
 
-cOpenComment :: String -> CMDL_State -> IO CMDL_State
+cOpenComment :: String -> CmdlState -> IO CmdlState
 cOpenComment _ state = return state { openComment = True }
 
-cCloseComment :: CMDL_State -> IO CMDL_State
+cCloseComment :: CmdlState -> IO CmdlState
 cCloseComment state = return state { openComment = False }
 
 -- | given an input it assumes that it starts with a
 -- command name and tries to remove this command name
-subtractCommandName::[CMDL_CmdDescription] -> String -> String
+subtractCommandName::[CmdlCmdDescription] -> String -> String
 subtractCommandName allcmds input =
   let inp = trimLeft input
       lst = concatMap(\ x -> case find (flip isPrefixOf inp) [cmdName x] of
@@ -274,7 +274,7 @@ getCmdName inp = case words inp of
 
 -- | The function determines the requirements of the command
 -- name found at the begining of the string
-getTypeOf::[CMDL_CmdDescription] -> String -> CMDL_CmdRequirements
+getTypeOf::[CmdlCmdDescription] -> String -> CmdlCmdRequirements
 getTypeOf allcmds input
  = let nwInput = getCmdName input
        tmp = concatMap(\ x -> case find (== nwInput) [cmdName x] of
@@ -289,7 +289,7 @@ nodeNames = map (showName . dgn_name . snd)
 
 -- | The function provides a list of possible completion
 -- to a given input if any
-cmdlCompletionFn :: [CMDL_CmdDescription] -> CMDL_State -> String -> IO [String]
+cmdlCompletionFn :: [CmdlCmdDescription] -> CmdlState -> String -> IO [String]
 cmdlCompletionFn allcmds allState input =
    let s0_9 = map show [0 .. (9 :: Int)]
        app h = (h ++) . (' ' :)

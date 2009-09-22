@@ -25,7 +25,7 @@ import Interfaces.DataTypes
 import Interfaces.Utils(checkConservativityEdge, checkConservativityNode,
                         getAllEdges)
 
-import CMDL.DataTypes(CMDL_State(intState))
+import CMDL.DataTypes(CmdlState(intState))
 import CMDL.DataTypesUtils(getAllNodes, add2hist, genErrorMsg, genMessage)
 import CMDL.Utils(arrowLink, decomposeIntoGoals, prettyPrintErrList)
 import CMDL.ProveConsistency(consCheckLoop, sigIntHandler)
@@ -59,7 +59,7 @@ import Data.List((++), map, groupBy, find, sortBy, concatMap)
 
 -- Command that processes the input and applies a
 -- conservativity check
-cConservCheck:: String -> CMDL_State -> IO CMDL_State
+cConservCheck:: String -> CmdlState -> IO CmdlState
 cConservCheck input state =
   case i_state $ intState state of
    Nothing ->
@@ -97,7 +97,7 @@ cConservCheck input state =
 
 
 -- checks conservativity for every possible node
-cConservCheckAll :: CMDL_State -> IO CMDL_State
+cConservCheckAll :: CmdlState -> IO CmdlState
 cConservCheckAll state =
    case i_state $ intState state of
     Nothing ->
@@ -115,7 +115,7 @@ cConservCheckAll state =
 
 
 -- applies consistency check to the input
-cConsistCheck :: CMDL_State -> IO CMDL_State
+cConsistCheck :: CmdlState -> IO CmdlState
 cConsistCheck state
     = case i_state $ intState state of
        Nothing -> return $ genErrorMsg "Nothing selected" state
@@ -154,7 +154,7 @@ cConsistCheck state
                              }
 
 -- applies consistency check to all possible input
-cConsistCheckAll :: CMDL_State -> IO CMDL_State
+cConsistCheckAll :: CmdlState -> IO CmdlState
 cConsistCheckAll state
    = case i_state $ intState state of
       Nothing -> return $ genErrorMsg "Nothing selected" state

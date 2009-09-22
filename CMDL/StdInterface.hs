@@ -23,12 +23,12 @@ import System.Console.Shell.Backend(BackendOutput(..))
 import System.IO(IO, putStr, stderr, hPutStr)
 
 import CMDL.DataTypesUtils(generatePrompter)
-import CMDL.DataTypes(CMDL_State)
+import CMDL.DataTypes(CmdlState)
 import CMDL.DgCommands(cUse)
 import CMDL.Commands(shellacCommands, shellacEvalFunc)
 
 
-stdShellDescription :: ShellDescription CMDL_State
+stdShellDescription :: ShellDescription CmdlState
 stdShellDescription =
  let wbc = "\n\r\v\\" in
       initialShellDescription
@@ -48,7 +48,7 @@ basicOutput (ErrorOutput out)   = hPutStr stderr out
 
 
 -- | Applies cUse to a list of input files
-recursiveApplyUse::[String] -> CMDL_State -> IO CMDL_State
+recursiveApplyUse::[String] -> CmdlState -> IO CmdlState
 recursiveApplyUse ls state
  = case ls of
     []   -> return state

@@ -50,8 +50,8 @@ import GUI.ShowGraph
 
 import CMDL.DataTypesUtils(genErrorMsg, genMessage,
                            getAllGoalEdges, getAllGoalNodes, getTh)
-import CMDL.DataTypes(CMDL_PrompterState(fileLoaded),
-                      CMDL_State(prompter, intState), CMDL_UseTranslation(..))
+import CMDL.DataTypes(CmdlPrompterState(fileLoaded),
+                      CmdlState(prompter, intState), CmdlUseTranslation(..))
 import CMDL.Shell(cDetails, nodeNames)
 import CMDL.Utils(createEdgeNames, decomposeIntoGoals,
                   obtainEdgeList, obtainNodeList, prettyPrintErrList)
@@ -80,7 +80,7 @@ import Interfaces.DataTypes
 import Interfaces.Utils(getAllEdges, getAllNodes)
 
 -- show list of all goals(i.e. prints their name)
-cShowDgGoals :: CMDL_State -> IO CMDL_State
+cShowDgGoals :: CmdlState -> IO CmdlState
 cShowDgGoals state
  = case i_state $ intState state of
     -- nothing to print
@@ -102,7 +102,7 @@ cShowDgGoals state
 
 -- local function that computes the theory of a node but it
 -- keeps only the goal theory
-getGoalThS :: CMDL_UseTranslation -> Int -> CMDL_State -> [String]
+getGoalThS :: CmdlUseTranslation -> Int -> CmdlState -> [String]
 getGoalThS useTrans x state
  = case getTh useTrans x state of
     Nothing -> []
@@ -118,7 +118,7 @@ getGoalThS useTrans x state
 --local function that computes the theory of a node
 --that takes into consideration translated theories in
 --the selection too and returns the theory as a string
-getThS :: CMDL_UseTranslation -> Int -> CMDL_State -> [String]
+getThS :: CmdlUseTranslation -> Int -> CmdlState -> [String]
 getThS useTrans x state
  = case getTh useTrans x state of
     Nothing -> ["Could not find a theory"]
@@ -126,8 +126,8 @@ getThS useTrans x state
 
 
 -- show theory of all goals
-cShowTheoryGoals :: String -> CMDL_State
-                    -> IO CMDL_State
+cShowTheoryGoals :: String -> CmdlState
+                    -> IO CmdlState
 cShowTheoryGoals input state
  = case i_state $ intState state of
     --nothing to print
@@ -152,7 +152,7 @@ cShowTheoryGoals input state
            tmpErrs' = tmpErrs ++ prettyPrintErrList errs'
        return $ genMessage tmpErrs' (unlines nodeTh) state
 
-cShowNodeUGoals :: String -> CMDL_State -> IO CMDL_State
+cShowNodeUGoals :: String -> CmdlState -> IO CmdlState
 cShowNodeUGoals input state
  = case i_state $ intState state of
     --nothing to print
@@ -187,7 +187,7 @@ cShowNodeUGoals input state
            tmpErrs' = tmpErrs ++ prettyPrintErrList errs'
        return $ genMessage tmpErrs' (unlines goalNames) state
 
-cShowNodeUGoalsCurrent :: CMDL_State -> IO CMDL_State
+cShowNodeUGoalsCurrent :: CmdlState -> IO CmdlState
 cShowNodeUGoalsCurrent state
  = case i_state $ intState state of
     Nothing -> return state
@@ -206,7 +206,7 @@ cShowNodeUGoalsCurrent state
                                    sens) $ elements pState
       return $ genMessage [] (unlines glls) state
 
-cShowNodePGoals :: String -> CMDL_State -> IO CMDL_State
+cShowNodePGoals :: String -> CmdlState -> IO CmdlState
 cShowNodePGoals input state
  = case i_state $ intState state of
     Nothing -> return state
@@ -236,7 +236,7 @@ cShowNodePGoals input state
             tmpErrs' = tmpErrs ++ prettyPrintErrList errs'
         return $ genMessage tmpErrs' (unlines goalNames) state
 
-cShowNodeAxioms :: String -> CMDL_State -> IO CMDL_State
+cShowNodeAxioms :: String -> CmdlState -> IO CmdlState
 cShowNodeAxioms input state
  = case i_state $ intState state of
     Nothing -> return state
@@ -263,7 +263,7 @@ cShowNodeAxioms input state
            tmpErrs' = tmpErrs ++ prettyPrintErrList errs'
        return $ genMessage tmpErrs' (unlines goalNames) state
 
-cShowNodePGoalsCurrent :: CMDL_State -> IO CMDL_State
+cShowNodePGoalsCurrent :: CmdlState -> IO CmdlState
 cShowNodePGoalsCurrent state
  = case i_state $ intState state of
     Nothing -> return state
@@ -282,7 +282,7 @@ cShowNodePGoalsCurrent state
                                 elements pState
       return $ genMessage [] (unlines glls) state
 
-cShowNodeAxiomsCurrent :: CMDL_State -> IO CMDL_State
+cShowNodeAxiomsCurrent :: CmdlState -> IO CmdlState
 cShowNodeAxiomsCurrent state
  = case i_state $ intState state of
     Nothing -> return state
@@ -299,7 +299,7 @@ cShowNodeAxiomsCurrent state
                                    elements pState
       return $ genMessage [] (unlines glls) state
 
-cShowTheoryGoalsCurrent :: CMDL_State -> IO CMDL_State
+cShowTheoryGoalsCurrent :: CmdlState -> IO CmdlState
 cShowTheoryGoalsCurrent state
  = case i_state $ intState state of
      Nothing -> return state
@@ -312,7 +312,7 @@ cShowTheoryGoalsCurrent state
        return $ genMessage [] (unlines thls) state
 
 -- show theory of selection
-cShowTheoryCurrent :: CMDL_UseTranslation -> CMDL_State -> IO CMDL_State
+cShowTheoryCurrent :: CmdlUseTranslation -> CmdlState -> IO CmdlState
 cShowTheoryCurrent useTrans state
  = case i_state $ intState state of
     Nothing -> return state
@@ -325,7 +325,7 @@ cShowTheoryCurrent useTrans state
       return $ genMessage [] (unlines thls) state
 
 -- show theory of input nodes
-cShowTheory :: CMDL_UseTranslation -> String -> CMDL_State -> IO CMDL_State
+cShowTheory :: CmdlUseTranslation -> String -> CmdlState -> IO CmdlState
 cShowTheory useTrans input state
  = case i_state $ intState state of
     Nothing -> return state
@@ -350,7 +350,7 @@ cShowTheory useTrans input state
 
 -- | Given a node it returns the information that needs to
 -- be printed as a string
-showNodeInfo::CMDL_State -> LNode DGNodeLab -> String
+showNodeInfo::CmdlState -> LNode DGNodeLab -> String
 showNodeInfo state (nb,nd)
  =let
     -- node name
@@ -397,7 +397,7 @@ showNodeInfo state (nb,nd)
 
 -- | Given an edge it returns the information that needs to
 --   be printed as a string
-showEdgeInfo::CMDL_State -> LEdge DGLinkLab -> String
+showEdgeInfo::CmdlState -> LEdge DGLinkLab -> String
 showEdgeInfo state (x, y, dglab)
  = case i_state $ intState state of
    Nothing -> ""
@@ -435,7 +435,7 @@ showEdgeInfo state (x, y, dglab)
 
 
  -- show all information of selection
-cInfoCurrent::CMDL_State -> IO CMDL_State
+cInfoCurrent::CmdlState -> IO CmdlState
 cInfoCurrent state
  = case i_state $ intState state of
     -- nothing selected
@@ -459,7 +459,7 @@ cInfoCurrent state
        return $ genMessage [] (unlines $ map (showNodeInfo state) selN) state
 
 -- show all information of input
-cInfo::String -> CMDL_State -> IO CMDL_State
+cInfo::String -> CmdlState -> IO CmdlState
 cInfo input state
  = case i_state $ intState state of
     -- error message
@@ -483,7 +483,7 @@ cInfo input state
             tmpErrs''= tmpErrs'++ prettyPrintErrList errs''
         return $ genMessage tmpErrs'' (unlines (strsNode ++ strsEdge)) state
 
-taxoShowGeneric:: TaxoGraphKind -> CMDL_State
+taxoShowGeneric:: TaxoGraphKind -> CmdlState
                       -> [LNode DGNodeLab] -> IO()
 taxoShowGeneric kind state ls
  = case ls of
@@ -517,7 +517,7 @@ taxoShowGeneric kind state ls
     _ -> return ()
 
 -- show taxonomy of selection
-cShowTaxonomyCurrent::CMDL_State -> IO CMDL_State
+cShowTaxonomyCurrent::CmdlState -> IO CmdlState
 cShowTaxonomyCurrent state
  = case i_state $ intState state of
     -- nothing selected
@@ -543,7 +543,7 @@ cShowTaxonomyCurrent state
        return state
 
 -- show taxonomy of input
-cShowTaxonomy::String -> CMDL_State -> IO CMDL_State
+cShowTaxonomy::String -> CmdlState -> IO CmdlState
 cShowTaxonomy input state
  = case i_state $ intState state of
     -- nothing to print
@@ -564,7 +564,7 @@ cShowTaxonomy input state
         return $ genMessage tmpErrs' [] state
 
 -- show concept of selection
-cShowConceptCurrent::CMDL_State -> IO CMDL_State
+cShowConceptCurrent::CmdlState -> IO CmdlState
 cShowConceptCurrent state
  = case i_state $ intState state of
     -- nothing selected
@@ -590,7 +590,7 @@ cShowConceptCurrent state
        return $ genMessage [] [] state
 
 -- show concept of input
-cShowConcept::String -> CMDL_State -> IO CMDL_State
+cShowConcept::String -> CmdlState -> IO CmdlState
 cShowConcept input state
  = case i_state $ intState state of
     -- nothing to print
@@ -611,7 +611,7 @@ cShowConcept input state
         return $ genMessage tmpErrs' [] state
 
 -- show node number of input
-cNodeNumber::String -> CMDL_State -> IO CMDL_State
+cNodeNumber::String -> CmdlState -> IO CmdlState
 cNodeNumber input state
  = case i_state $ intState state of
     Nothing -> return state
@@ -634,7 +634,7 @@ cNodeNumber input state
         return $ genMessage tmpErrs' (unlines ls) state
 
 -- print the name of all edges
-cEdges::CMDL_State -> IO CMDL_State
+cEdges::CmdlState -> IO CmdlState
 cEdges state
  = case i_state $ intState state of
     Nothing -> return state
@@ -648,13 +648,13 @@ cEdges state
       -- print edge list in a sorted fashion
       return $ genMessage [] (unlines $ sort lsEdges) state
 
-cUndoHistory :: CMDL_State -> IO CMDL_State
+cUndoHistory :: CmdlState -> IO CmdlState
 cUndoHistory = return . cHistory True
 
-cRedoHistory :: CMDL_State -> IO CMDL_State
+cRedoHistory :: CmdlState -> IO CmdlState
 cRedoHistory = return . cHistory False
 
-cHistory :: Bool -> CMDL_State -> CMDL_State
+cHistory :: Bool -> CmdlState -> CmdlState
 cHistory isUndo state = genMessage []
   (unlines $ ((if isUndo then "Un" else "Re") ++ "do history :")
     : map (showCmd . command)
@@ -662,7 +662,7 @@ cHistory isUndo state = genMessage []
   ) state
 
 -- print the name of all nodes
-cNodes::CMDL_State -> IO CMDL_State
+cNodes::CmdlState -> IO CmdlState
 cNodes state
  = case i_state $ intState state of
     -- no library loaded, so nothing to print
@@ -675,7 +675,7 @@ cNodes state
      return $ genMessage [] (unlines $ sort ls) state
 
 -- draw graph
-cDisplayGraph::CMDL_State -> IO CMDL_State
+cDisplayGraph::CmdlState -> IO CmdlState
 cDisplayGraph state
  = case i_state $ intState state of
 #ifdef UNI_PACKAGE

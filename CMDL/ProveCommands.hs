@@ -25,8 +25,8 @@ module CMDL.ProveCommands
        , cNotACommand
        ) where
 
-import CMDL.DataTypes(CMDL_State(intState), CMDL_GoalAxiom(..),
-                      CMDL_ListAction(..))
+import CMDL.DataTypes(CmdlState(intState), CmdlGoalAxiom(..),
+                      CmdlListAction(..))
 import CMDL.DataTypesUtils(add2hist, genErrorMsg, genMessage, getIdComorphism)
 import CMDL.DgCommands(selectANode)
 import CMDL.ProveConsistency(proveLoop, sigIntHandler)
@@ -57,7 +57,7 @@ import Interfaces.DataTypes(ListChange(..), IntIState(..), Int_NodeInfo(..),
                             UndoRedoElem(..), IntState(i_state))
 
 -- | Drops any seleceted comorphism
-cDropTranslations :: CMDL_State -> IO CMDL_State
+cDropTranslations :: CmdlState -> IO CmdlState
 cDropTranslations state =
  case i_state $ intState state of
    Nothing -> return $ genErrorMsg "Nothing selected" state
@@ -74,7 +74,7 @@ cDropTranslations state =
 
 
 -- | select comorphisms
-cTranslate::String -> CMDL_State -> IO CMDL_State
+cTranslate::String -> CmdlState -> IO CmdlState
 cTranslate input state =
  case i_state $ intState state of
   -- nothing selected !
@@ -102,7 +102,7 @@ cTranslate input state =
                           }
 
 
-parseElements :: CMDL_ListAction -> [String] -> CMDL_GoalAxiom
+parseElements :: CmdlListAction -> [String] -> CmdlGoalAxiom
                  -> [Int_NodeInfo]
                  -> ([Int_NodeInfo],[ListChange])
                  -> ([Int_NodeInfo],[ListChange])
@@ -144,9 +144,9 @@ parseElements action gls gls_axm elems (acc1,acc2)
 
 -- | A general function that implements the actions of setting,
 -- adding or deleting goals or axioms from the selection list
-cGoalsAxmGeneral :: CMDL_ListAction -> CMDL_GoalAxiom ->
-                    String ->CMDL_State
-                 -> IO CMDL_State
+cGoalsAxmGeneral :: CmdlListAction -> CmdlGoalAxiom ->
+                    String ->CmdlState
+                 -> IO CmdlState
 cGoalsAxmGeneral action gls_axm input state
  = case i_state $ intState state of
     Nothing -> return $ genErrorMsg "Nothing selected" state
@@ -170,7 +170,7 @@ cGoalsAxmGeneral action gls_axm input state
 
 -- | Proves only selected goals from all nodes using selected
 -- axioms
-cProve:: CMDL_State-> IO CMDL_State
+cProve:: CmdlState-> IO CmdlState
 cProve state
  = case i_state $ intState state of
     Nothing -> return $ genErrorMsg "Nothing selected" state
@@ -210,7 +210,7 @@ cProve state
 
 -- | Proves all goals in the nodes selected using all axioms and
 -- theorems
-cProveAll::CMDL_State ->IO CMDL_State
+cProveAll::CmdlState ->IO CmdlState
 cProveAll state
  = case i_state $ intState state of
     Nothing -> return$ genErrorMsg "Nothing selected" state
@@ -238,7 +238,7 @@ cProveAll state
             cProve nwSt
 
 -- | Sets the use theorems flag of the interface
-cSetUseThms :: Bool -> CMDL_State -> IO CMDL_State
+cSetUseThms :: Bool -> CmdlState -> IO CmdlState
 cSetUseThms val state
  = case i_state $ intState state of
     Nothing -> return $ genErrorMsg "Norhing selected" state
@@ -250,7 +250,7 @@ cSetUseThms val state
                              useTheorems = val } } }
 
 -- | Sets the save2File value to either true or false
-cSetSave2File :: Bool -> CMDL_State -> IO CMDL_State
+cSetSave2File :: Bool -> CmdlState -> IO CmdlState
 cSetSave2File val state
  = case i_state $ intState state of
     Nothing -> return $ genErrorMsg "Nothing selected" state
@@ -263,7 +263,7 @@ cSetSave2File val state
 
 -- | The function is called everytime when the input could
 -- not be parsed as a command
-cNotACommand :: String -> CMDL_State -> IO CMDL_State
+cNotACommand :: String -> CmdlState -> IO CmdlState
 cNotACommand input state
  = case input of
      -- if input line is empty do nothing
@@ -287,7 +287,7 @@ cNotACommand input state
             else return $ genErrorMsg ("Error on input line :"++s) state
 
 -- | Function to signal the interface that the script has ended
-cEndScript :: CMDL_State -> IO CMDL_State
+cEndScript :: CmdlState -> IO CmdlState
 cEndScript state
  = case i_state $ intState state of
     Nothing -> return $ genErrorMsg "Nothing selected" state
@@ -304,7 +304,7 @@ cEndScript state
 
 -- | Function to signal the interface that a scrips starts so it should
 -- not try to parse the input
-cStartScript :: CMDL_State-> IO CMDL_State
+cStartScript :: CmdlState-> IO CmdlState
 cStartScript state
  = case i_state $ intState state of
      Nothing -> return $ genErrorMsg "Nothing selected" state
@@ -316,7 +316,7 @@ cStartScript state
                                  loadScript = True } } }
 
 -- sets a time limit
-cTimeLimit :: String -> CMDL_State-> IO CMDL_State
+cTimeLimit :: String -> CmdlState-> IO CmdlState
 cTimeLimit input state
  = case i_state $ intState state of
     Nothing -> return $ genErrorMsg "Nothing selected" state

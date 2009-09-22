@@ -27,7 +27,7 @@ import System.IO
 import Control.Monad(when)
 
 import CMDL.Commands(shellacCommands, shellacEvalFunc)
-import CMDL.DataTypes(CMDL_State)
+import CMDL.DataTypes(CmdlState)
 import CMDL.StdInterface(basicOutput)
 import CMDL.Utils(stripComments)
 
@@ -78,7 +78,7 @@ fileGetInput file _ = do
    return (Just x)
 
 
-fileShellDescription :: ShellDescription CMDL_State
+fileShellDescription :: ShellDescription CmdlState
 fileShellDescription =
  let wbc = "\t\n\r\v\\" in
       initialShellDescription

@@ -13,23 +13,23 @@ interface.
 
 
 module CMDL.DataTypes
-  ( CMDL_State (..)
-  , CMDL_CmdDescription (..)
+  ( CmdlState (..)
+  , CmdlCmdDescription (..)
   , cmdInput
   , cmdName
-  , CMDL_CmdPriority (..)
-  , CMDL_CmdFnClasses (..)
-  , CMDL_CmdRequirements (..)
-  , CMDL_Channel (..)
-  , CMDL_ChannelType (..)
-  , CMDL_ChannelProperties (..)
-  , CMDL_Socket (..)
-  , CMDL_UseTranslation (..)
-  , CMDL_ProverConsChecker (..)
-  , CMDL_PrompterState (..)
-  , CMDL_Message (..)
-  , CMDL_ListAction (..)
-  , CMDL_GoalAxiom (..)
+  , CmdlCmdPriority (..)
+  , CmdlCmdFnClasses (..)
+  , CmdlCmdRequirements (..)
+  , CmdlChannel (..)
+  , CmdlChannelType (..)
+  , CmdlChannelProperties (..)
+  , CmdlSocket (..)
+  , CmdlUseTranslation (..)
+  , CmdlProverConsChecker (..)
+  , CmdlPrompterState (..)
+  , CmdlMessage (..)
+  , CmdlListAction (..)
+  , CmdlGoalAxiom (..)
   ) where
 
 import Interfaces.DataTypes
@@ -41,15 +41,15 @@ import Network
 
 import System.IO (Handle)
 
-data CMDL_GoalAxiom =
+data CmdlGoalAxiom =
     ChangeGoals
   | ChangeAxioms
 
-data CMDL_ProverConsChecker =
+data CmdlProverConsChecker =
     Use_prover
   | Use_consChecker
 
-data CMDL_UseTranslation =
+data CmdlUseTranslation =
     Do_translate
   | Dont_translate
 
@@ -57,31 +57,31 @@ data CMDL_UseTranslation =
 
 -- | CMDLState contains all information the CMDL interface
 -- might use at any time.
-data CMDL_State = CMDL_State
+data CmdlState = CmdlState
   { intState :: IntState -- ^ common interface state
-  , prompter :: CMDL_PrompterState -- ^ promter of the interface
+  , prompter :: CmdlPrompterState -- ^ promter of the interface
   , openComment :: Bool -- ^ open comment
-  , connections :: [CMDL_Channel] -- ^ opened connections
-  , output :: CMDL_Message -- ^ output of interface
+  , connections :: [CmdlChannel] -- ^ opened connections
+  , output :: CmdlMessage -- ^ output of interface
   , hetsOpts :: HetcatsOpts  -- ^ hets command options
   }
 
-data CMDL_PrompterState = CMDL_PrompterState
+data CmdlPrompterState = CmdlPrompterState
   { fileLoaded :: String
   , prompterHead :: String }
 
 -- | Description of a command ( in  order to have a uniform access to any of
 -- the commands
-data CMDL_CmdDescription = CMDL_CmdDescription
+data CmdlCmdDescription = CmdlCmdDescription
   { cmdDescription :: Command
-  , cmdPriority :: CMDL_CmdPriority
-  , cmdFn :: CMDL_CmdFnClasses
-  , cmdReq :: CMDL_CmdRequirements }
+  , cmdPriority :: CmdlCmdPriority
+  , cmdFn :: CmdlCmdFnClasses
+  , cmdReq :: CmdlCmdRequirements }
 
-cmdInput :: CMDL_CmdDescription -> String
+cmdInput :: CmdlCmdDescription -> String
 cmdInput = cmdInputStr . cmdDescription
 
-cmdName :: CMDL_CmdDescription -> String
+cmdName :: CmdlCmdDescription -> String
 cmdName = cmdNameStr . cmdDescription
 
 -- | Some commands have different status, for example 'end-script'
@@ -90,7 +90,7 @@ cmdName = cmdNameStr . cmdDescription
 -- multi line comment state. In order not to treat this few commands
 -- separately from the other it is easy just to give to all commands
 -- different priorities
-data CMDL_CmdPriority =
+data CmdlCmdPriority =
     CmdNoPriority
   | CmdGreaterThanComments
   | CmdGreaterThanScriptAndComments
@@ -98,13 +98,13 @@ data CMDL_CmdPriority =
 -- | Any command belongs to one of the following classes of functions,
 -- a) f :: s -> IO s
 -- b) f :: String -> s -> IO s
-data CMDL_CmdFnClasses =
-    CmdNoInput (CMDL_State -> IO CMDL_State)
-  | CmdWithInput (String -> CMDL_State -> IO CMDL_State)
+data CmdlCmdFnClasses =
+    CmdNoInput (CmdlState -> IO CmdlState)
+  | CmdWithInput (String -> CmdlState -> IO CmdlState)
 
 -- | Datatype describing the types of commands according
 -- to what they expect as input
-data CMDL_CmdRequirements =
+data CmdlCmdRequirements =
     ReqNodes
   | ReqEdges
   | ReqNodesAndEdges
@@ -126,35 +126,35 @@ data CMDL_CmdRequirements =
 
 -- | CMDLSocket takes care of opened sockets for comunication with other
 -- application like the Broker in the case of PGIP
-data CMDL_Channel = CMDL_Channel
+data CmdlChannel = CmdlChannel
   { chName :: String
-  , chType :: CMDL_ChannelType
+  , chType :: CmdlChannelType
   , chHandler :: Handle
-  , chSocket :: Maybe CMDL_Socket
-  , chProperties  :: CMDL_ChannelProperties }
+  , chSocket :: Maybe CmdlSocket
+  , chProperties  :: CmdlChannelProperties }
 
 -- | Channel type describes different type of channel
-data CMDL_ChannelType =
+data CmdlChannelType =
     ChSocket
   | ChFile
   | ChStdin
   | ChStdout
 
 -- | Channel properties describes what a channel can do
-data CMDL_ChannelProperties =
+data CmdlChannelProperties =
     ChRead
   | ChWrite
   | ChReadWrite
 
 -- | Describes a socket
-data CMDL_Socket = CMDL_Socket
+data CmdlSocket = CmdlSocket
   { socketHandler :: Socket
   , socketHostName :: HostName
   , socketPortNumber :: PortNumber }
 
 -- | Datatype describing the list of possible action on a list
 -- of selected items
-data CMDL_ListAction =
+data CmdlListAction =
     ActionSet
   | ActionSetAll
   | ActionDel
@@ -162,7 +162,7 @@ data CMDL_ListAction =
   | ActionAdd
 
 -- | output message given by the interface
-data CMDL_Message = CMDL_Message
+data CmdlMessage = CmdlMessage
   { outputMsg :: String
   , warningMsg :: String
   , errorMsg :: String }

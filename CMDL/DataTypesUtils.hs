@@ -50,7 +50,7 @@ import Common.Result(Result(maybeResult, Result))
 import Logic.Comorphism(AnyComorphism(..), mkIdComorphism)
 import Logic.Grothendieck(G_sublogics(..))
 
-add2hist :: [UndoRedoElem] -> CMDL_State -> CMDL_State
+add2hist :: [UndoRedoElem] -> CmdlState -> CmdlState
 add2hist descr st
  = let intst = add2history (CommentCmd "") (intState st)  descr
    in st { intState = intst }
@@ -65,7 +65,7 @@ getIdComorphism ls = case ls of
          G_sublogics lid sub -> Just $ Comorphism (mkIdComorphism lid sub)
 
 -- | Generates the string containing the prompter
-generatePrompter :: CMDL_State -> String
+generatePrompter :: CmdlState -> String
 generatePrompter st = case i_state $ intState st of
     Nothing -> prompterHead $ prompter st
     Just ist ->
@@ -89,7 +89,7 @@ generatePrompter st = case i_state $ intState st of
 -- | Given a list of node names and the list of all nodes
 -- the function returns all the nodes that have their name
 -- in the name list but are also goals
-obtainGoalNodeList :: CMDL_State -> [String] -> [LNode DGNodeLab]
+obtainGoalNodeList :: CmdlState -> [String] -> [LNode DGNodeLab]
                                  -> ([String],[LNode DGNodeLab])
 obtainGoalNodeList state input ls
  = let (l1,l2) = obtainNodeList input ls
@@ -103,7 +103,7 @@ obtainGoalNodeList state input ls
 
 -- | Returns the list of all nodes that are goals,
 -- taking care of the up to date status
-getAllGoalNodes :: CMDL_State ->  [LNode DGNodeLab]
+getAllGoalNodes :: CmdlState ->  [LNode DGNodeLab]
 getAllGoalNodes st
  = case i_state $ intState st of
     Nothing -> []
@@ -117,7 +117,7 @@ getAllGoalNodes st
 
 -- | Returns the list of all goal edges taking care of the
 -- up to date status
-getAllGoalEdges :: CMDL_State -> [LEdge DGLinkLab]
+getAllGoalEdges :: CmdlState -> [LEdge DGLinkLab]
 getAllGoalEdges st
  = case i_state $ intState st of
     Nothing -> []
@@ -128,7 +128,7 @@ getAllGoalEdges st
 --local function that computes the theory of a node
 --that takes into consideration translated theories in
 --the selection too and returns the theory as a string
-getTh :: CMDL_UseTranslation -> Int -> CMDL_State -> Maybe G_theory
+getTh :: CmdlUseTranslation -> Int -> CmdlState -> Maybe G_theory
 getTh useTrans x st
  = let
     -- compute the theory for a given node
@@ -163,16 +163,16 @@ getTh useTrans x st
 
 
 -- | Generates the base channels to be used (stdin and stdout)
-baseChannels :: [CMDL_Channel]
+baseChannels :: [CmdlChannel]
 baseChannels
- = let ch_in  = CMDL_Channel {
+ = let ch_in  = CmdlChannel {
                   chName       = "stdin",
                   chType       = ChStdin,
                   chHandler    = stdin,
                   chSocket     = Nothing,
                   chProperties = ChRead
                   }
-       ch_out = CMDL_Channel {
+       ch_out = CmdlChannel {
                   chName       = "stdout",
                   chType       = ChStdout,
                   chHandler    = stdout,
@@ -182,20 +182,20 @@ baseChannels
    in [ch_in, ch_out]
 
 
-genErrorMsg :: String -> CMDL_State -> CMDL_State
+genErrorMsg :: String -> CmdlState -> CmdlState
 genErrorMsg msg st
  = st {
-      output = CMDL_Message {
+      output = CmdlMessage {
          outputMsg = [],
          warningMsg = [],
          errorMsg = msg
          }
      }
 
-genMessage :: String -> String -> CMDL_State -> CMDL_State
+genMessage :: String -> String -> CmdlState -> CmdlState
 genMessage warnings msg st
  = st{
-      output = CMDL_Message {
+      output = CmdlMessage {
         outputMsg = msg,
         warningMsg = warnings,
         errorMsg = []

@@ -65,7 +65,7 @@ genErrorResponse fatality str =
 
 -- adds one element at the end of the content of the xml packet that represents
 -- the current output of the interface to the broker
-addToContent :: CMDL_PgipState -> Content -> CMDL_PgipState
+addToContent :: CmdlPgipState -> Content -> CmdlPgipState
 addToContent pgData cont =
   pgData {
     xmlContent = case xmlContent pgData of
@@ -75,7 +75,7 @@ addToContent pgData cont =
 
 -- adds an ready element at the end of the xml packet that represents the
 -- current output of the interface to the broker
-addReadyXml :: CMDL_PgipState -> CMDL_PgipState
+addReadyXml :: CmdlPgipState -> CmdlPgipState
 addReadyXml pgData =
   let el_ready = Elem Element {
                    elName = genQName "ready",
@@ -85,7 +85,7 @@ addReadyXml pgData =
    in addToContent pgData el_ready
 
 -- | State that keeps track of the comunication between Hets and the Broker
-data CMDL_PgipState = CMDL_PgipState {
+data CmdlPgipState = CmdlPgipState {
                     pgip_id            :: String,
                     name               :: String,
                     seqNb              :: Int,
@@ -101,12 +101,12 @@ data CMDL_PgipState = CMDL_PgipState {
                     quietOutput        :: Bool
                     }
 
--- | Generates an empty CMDL_PgipState
-genCMDLPgipState :: Bool -> Handle -> Handle -> Int -> IO CMDL_PgipState
+-- | Generates an empty CmdlPgipState
+genCMDLPgipState :: Bool -> Handle -> Handle -> Int -> IO CmdlPgipState
 genCMDLPgipState swXML h_in h_out timeOut =
   do
    pgId <- genPgipID
-   return CMDL_PgipState {
+   return CmdlPgipState {
      pgip_id            = pgId,
      name               = "Hets",
      quietOutput        = False,
@@ -132,20 +132,20 @@ genPgipID =
    return $ t1 ++ "/" ++ t2 ++ "/" ++ show t3
 
 -- | Concatenates the input string to the message stored in the state
-addToMsg :: String -> String -> CMDL_PgipState -> CMDL_PgipState
+addToMsg :: String -> String -> CmdlPgipState -> CmdlPgipState
 addToMsg str errStr pgD =
   let strings = [theMsg pgD, str, errStr]
    in pgD { theMsg = intercalate "\n" $ filter (not . null) strings }
 
 -- | Resets the content of the message stored in the state
-resetMsg :: String -> CMDL_PgipState -> CMDL_PgipState
+resetMsg :: String -> CmdlPgipState -> CmdlPgipState
 resetMsg str pgD = pgD {
     theMsg = str,
     xmlContent = convertPgipStateToXML pgD
   }
 
 -- extracts the xml package in XML.Light format (namely the Content type)
-convertPgipStateToXML :: CMDL_PgipState -> Content
+convertPgipStateToXML :: CmdlPgipState -> Content
 convertPgipStateToXML pgipData =
   let baseElem = Element {
                    elName     = genQName "pgip",
@@ -171,25 +171,25 @@ convertPgipStateToXML pgipData =
                }
 
 -- | List of all possible commands inside an XML packet
-data CMDL_XMLcommands =
-   XML_Execute String
- | XML_Exit
- | XML_ProverInit
- | XML_Askpgip
- | XML_StartQuiet
- | XML_StopQuiet
- | XML_OpenGoal String
- | XML_CloseGoal String
- | XML_GiveUpGoal String
- | XML_Unknown String
- | XML_ParseScript String
- | XML_Undo
- | XML_Redo
- | XML_Forget String
- | XML_OpenTheory String
- | XML_CloseTheory String
- | XML_CloseFile String
- | XML_LoadFile String deriving (Eq,Show)
+data CmdlXMLcommands =
+   XmlExecute String
+ | XmlExit
+ | XmlProverInit
+ | XmlAskpgip
+ | XmlStartQuiet
+ | XmlStopQuiet
+ | XmlOpenGoal String
+ | XmlCloseGoal String
+ | XmlGiveUpGoal String
+ | XmlUnknown String
+ | XmlParseScript String
+ | XmlUndo
+ | XmlRedo
+ | XmlForget String
+ | XmlOpenTheory String
+ | XmlCloseTheory String
+ | XmlCloseFile String
+ | XmlLoadFile String deriving (Eq,Show)
 
 -- extracts the refrence number of a xml packet (given as a string)
 getRefseqNb :: String -> Maybe String
@@ -210,7 +210,7 @@ getRefseqNb input =
 
 -- parses the xml message creating a list of commands that it needs to
 -- execute
-parseXMLTree :: [Content] -> [CMDL_XMLcommands] -> [CMDL_XMLcommands]
+parseXMLTree :: [Content] -> [CmdlXMLcommands] -> [CmdlXMLcommands]
 parseXMLTree  xmltree acc =
   case xmltree of
     []             -> acc
@@ -219,30 +219,30 @@ parseXMLTree  xmltree acc =
                         Nothing -> parseXMLTree (elContent info ++ ls) acc
     _:ls           -> parseXMLTree ls acc
 
-parseXMLElement :: Element -> Maybe CMDL_XMLcommands
+parseXMLElement :: Element -> Maybe CmdlXMLcommands
 parseXMLElement info =
   case qName $ elName info of
-    "proverinit"   -> Just XML_ProverInit
-    "proverexit"   -> Just XML_Exit
-    "startquiet"   -> Just XML_StartQuiet
-    "stopquiet"    -> Just XML_StopQuiet
-    "opengoal"     -> Just $ XML_OpenGoal cnt
-    "proofstep"    -> Just $ XML_Execute cnt
-    "closegoal"    -> Just $ XML_CloseGoal cnt
-    "giveupgoal"   -> Just $ XML_GiveUpGoal cnt
-    "spurioscmd"   -> Just $ XML_Execute cnt
-    "dostep"       -> Just $ XML_Execute cnt
-    "editobj"      -> Just $ XML_Execute cnt
-    "undostep"     -> Just XML_Undo
-    "redostep"     -> Just XML_Redo
-    "forget"       -> Just $ XML_Forget cnt
-    "opentheory"   -> Just $ XML_Execute cnt
-    "theoryitem"   -> Just $ XML_Execute cnt
-    "closetheory"  -> Just $ XML_CloseTheory cnt
-    "closefile"    -> Just $ XML_CloseFile cnt
-    "loadfile"     -> Just $ XML_LoadFile cnt
-    "askpgip"      -> Just XML_Askpgip
-    "parsescript"  -> Just $ XML_ParseScript cnt
+    "proverinit"   -> Just XmlProverInit
+    "proverexit"   -> Just XmlExit
+    "startquiet"   -> Just XmlStartQuiet
+    "stopquiet"    -> Just XmlStopQuiet
+    "opengoal"     -> Just $ XmlOpenGoal cnt
+    "proofstep"    -> Just $ XmlExecute cnt
+    "closegoal"    -> Just $ XmlCloseGoal cnt
+    "giveupgoal"   -> Just $ XmlGiveUpGoal cnt
+    "spurioscmd"   -> Just $ XmlExecute cnt
+    "dostep"       -> Just $ XmlExecute cnt
+    "editobj"      -> Just $ XmlExecute cnt
+    "undostep"     -> Just XmlUndo
+    "redostep"     -> Just XmlRedo
+    "forget"       -> Just $ XmlForget cnt
+    "opentheory"   -> Just $ XmlExecute cnt
+    "theoryitem"   -> Just $ XmlExecute cnt
+    "closetheory"  -> Just $ XmlCloseTheory cnt
+    "closefile"    -> Just $ XmlCloseFile cnt
+    "loadfile"     -> Just $ XmlLoadFile cnt
+    "askpgip"      -> Just XmlAskpgip
+    "parsescript"  -> Just $ XmlParseScript cnt
     _              -> Nothing
   where
     cnt = case head $ elContent info of
@@ -251,8 +251,8 @@ parseXMLElement info =
 
 -- | Given a packet (a normal string or a xml formated string), the function
 -- converts it into a list of commands
-parseMsg :: CMDL_PgipState -> String -> [CMDL_XMLcommands]
+parseMsg :: CmdlPgipState -> String -> [CmdlXMLcommands]
 parseMsg st input =
   if useXML st
    then parseXMLTree (parseXML input) []
-   else concatMap (\ x -> [ XML_Execute x | not $ null $ trim x ]) $ lines input
+   else concatMap (\ x -> [ XmlExecute x | not $ null $ trim x ]) $ lines input

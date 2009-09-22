@@ -26,7 +26,7 @@ import System.IO(IO, stdout, putStrLn, hFlush)
 
 import Control.Concurrent.MVar(MVar, newMVar, readMVar, swapMVar)
 
-import CMDL.DataTypes(CMDL_State)
+import CMDL.DataTypes(CmdlState)
 import CMDL.Commands(shellacCommands, shellacEvalFunc)
 
 -- | Creates the Backend for reading from files
@@ -78,7 +78,7 @@ stringGetInput st _
              return $ Just x
 
 
-stringShellDescription :: ShellDescription CMDL_State
+stringShellDescription :: ShellDescription CmdlState
 stringShellDescription =
  let wbc = "\t\n\r\v\\" in
       initialShellDescription

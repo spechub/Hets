@@ -67,7 +67,7 @@ wrapResultDg fn lib_name ls = return . fn lib_name ls
 
 -- | General function for implementing dg all style commands
 commandDgAll :: (LIB_NAME -> LibEnv -> Result LibEnv)
-             -> CMDL_State -> IO CMDL_State
+             -> CmdlState -> IO CmdlState
 commandDgAll fn state = case i_state $ intState state of
   Nothing -> return $ genErrorMsg "No library loaded" state
   Just ist -> case fn (i_ln ist) (i_libEnv ist) of
@@ -85,7 +85,7 @@ commandDgAll fn state = case i_state $ intState state of
 -- commands are derived from this command by simply
 -- specifing the function
 commandDg :: (LIB_NAME -> [LEdge DGLinkLab] -> LibEnv -> Result LibEnv)
-          -> String -> CMDL_State -> IO CMDL_State
+          -> String -> CmdlState -> IO CmdlState
 commandDg fn input state = case i_state $ intState state of
     Nothing -> return $ genErrorMsg "No library loaded" state
     Just ist -> do
@@ -116,7 +116,7 @@ commandDg fn input state = case i_state $ intState state of
 
 -- | The function 'cUse' implements the Use commands, i.e.
 -- given a path it tries to load the library  at that path
-cUse :: String -> CMDL_State -> IO CMDL_State
+cUse :: String -> CmdlState -> IO CmdlState
 cUse input state = do
    let file = trim input
        opts = hetsOpts state
@@ -140,7 +140,7 @@ cUse input state = do
 
 -- The only command that requires a list of nodes instead
 -- of edges.
-cDgThmHideShift :: String -> CMDL_State -> IO CMDL_State
+cDgThmHideShift :: String -> CmdlState -> IO CmdlState
 cDgThmHideShift input state = case i_state $ intState state of
     Nothing -> return $ genErrorMsg "No library loaded" state
     Just dgState -> do
@@ -207,7 +207,7 @@ selectANode x dgState = let
 
 -- | function swithces interface in proving mode and also
 -- selects a list of nodes to be used inside this mode
-cDgSelect :: String -> CMDL_State -> IO CMDL_State
+cDgSelect :: String -> CmdlState -> IO CmdlState
 cDgSelect input state = case i_state $ intState state of
    Nothing -> return $ genErrorMsg "No library loaded" state
    Just dgState -> do
@@ -246,7 +246,7 @@ cDgSelect input state = case i_state $ intState state of
 
 -- | Function switches the interface in proving mode by
 -- selecting all nodes
-cDgSelectAll :: CMDL_State -> IO CMDL_State
+cDgSelectAll :: CmdlState -> IO CmdlState
 cDgSelectAll state = case i_state $ intState state of
    Nothing -> return $ genErrorMsg "No library loaded" state
    Just dgState ->

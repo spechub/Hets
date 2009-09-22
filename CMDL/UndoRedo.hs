@@ -26,17 +26,17 @@ import Interfaces.DataTypes(IntHistory(undoList, redoList),
                             CmdHistory(command), IntState(i_hist))
 
 import CMDL.DataTypesUtils(genMessage)
-import CMDL.DataTypes(CMDL_State(intState))
+import CMDL.DataTypes(CmdlState(intState))
 
 -- | Undoes the last command entered
-cUndo :: CMDL_State -> IO CMDL_State
+cUndo :: CmdlState -> IO CmdlState
 cUndo = cdo True
 
 -- | Redoes the last undo command
-cRedo :: CMDL_State -> IO CMDL_State
+cRedo :: CmdlState -> IO CmdlState
 cRedo = cdo False
 
-cdo :: Bool -> CMDL_State -> IO CMDL_State
+cdo :: Bool -> CmdlState -> IO CmdlState
 cdo isUndo state =
    let msg = (if isUndo then "un" else "re") ++ "do"
    in case (if isUndo then undoList else redoList) . i_hist $ intState state of

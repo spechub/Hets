@@ -32,13 +32,13 @@ import CMDL.Shell(cDetails, shellacCmd)
 import CMDL.ConsCommands(cConservCheck)
 
 -- | Generates a shellac command that requires input
-shellacWithInput :: CMDL_CmdDescription -> String -> Sh CMDL_State ()
+shellacWithInput :: CmdlCmdDescription -> String -> Sh CmdlState ()
 shellacWithInput descr inp =
   shellacCmd descr { cmdDescription = setInputStr inp $ cmdDescription descr }
 
 -- | Generates the list of all the shell commands together
 -- with a short description
-shellacCommands :: [ShellCommand CMDL_State]
+shellacCommands :: [ShellCommand CmdlState]
 shellacCommands = let
     genCmds = concatMap (\ x ->
          let desc = cmdDescription x
@@ -59,20 +59,20 @@ shellacCommands = let
 
 
 -- | Generates a command description given all parameters
-genCmd :: Command -> CMDL_CmdPriority ->
-          CMDL_CmdRequirements -> CMDL_CmdFnClasses ->
-          CMDL_CmdDescription
-genCmd c priority req fn = CMDL_CmdDescription
+genCmd :: Command -> CmdlCmdPriority ->
+          CmdlCmdRequirements -> CmdlCmdFnClasses ->
+          CmdlCmdDescription
+genCmd c priority req fn = CmdlCmdDescription
   { cmdDescription = c
   , cmdPriority = priority
   , cmdReq = req
   , cmdFn = fn }
 
-genGlobCmd :: GlobCmd -> (CMDL_State -> IO CMDL_State) -> CMDL_CmdDescription
+genGlobCmd :: GlobCmd -> (CmdlState -> IO CmdlState) -> CmdlCmdDescription
 genGlobCmd gc =
   genCmd (GlobCmd gc) CmdNoPriority ReqNothing . CmdNoInput
 
-reqOfSelectCmd :: SelectCmd -> CMDL_CmdRequirements
+reqOfSelectCmd :: SelectCmd -> CmdlCmdRequirements
 reqOfSelectCmd sc = case sc of
   LibFile -> ReqFile
   Lib -> ReqFile
@@ -84,38 +84,38 @@ reqOfSelectCmd sc = case sc of
   Link -> ReqEdges
   ConservativityChecker -> ReqEdges
 
-genSelectCmd :: SelectCmd -> (String -> CMDL_State -> IO CMDL_State)
-             -> CMDL_CmdDescription
+genSelectCmd :: SelectCmd -> (String -> CmdlState -> IO CmdlState)
+             -> CmdlCmdDescription
 genSelectCmd sc =
   genCmd (mkSelectCmd sc) CmdNoPriority (reqOfSelectCmd sc) . CmdWithInput
 
-reqOfInspectCmd :: InspectCmd -> CMDL_CmdRequirements
+reqOfInspectCmd :: InspectCmd -> CmdlCmdRequirements
 reqOfInspectCmd ic = case ic of
   EdgeInfo -> ReqEdges
   _ -> if requiresNode ic then ReqNodes else ReqNothing
 
-genGlobInspectCmd :: InspectCmd -> (CMDL_State -> IO CMDL_State)
-                  -> CMDL_CmdDescription
+genGlobInspectCmd :: InspectCmd -> (CmdlState -> IO CmdlState)
+                  -> CmdlCmdDescription
 genGlobInspectCmd ic =
   genCmd (InspectCmd ic "") CmdNoPriority ReqNothing . CmdNoInput
 
-genInspectCmd :: InspectCmd -> (String -> CMDL_State -> IO CMDL_State)
-              -> CMDL_CmdDescription
+genInspectCmd :: InspectCmd -> (String -> CmdlState -> IO CmdlState)
+              -> CmdlCmdDescription
 genInspectCmd ic =
   genCmd (InspectCmd ic "") CmdNoPriority (reqOfInspectCmd ic) . CmdWithInput
 
 -- | Evaluation function description (function called when input can not
 -- be parsed
-cmdlEvalFunc :: CMDL_CmdDescription
+cmdlEvalFunc :: CmdlCmdDescription
 cmdlEvalFunc =
   genCmd (CommentCmd "") CmdNoPriority ReqNothing $ CmdWithInput cNotACommand
 
 -- | Shellac description of the evaluation function
-shellacEvalFunc :: String -> Sh CMDL_State ()
+shellacEvalFunc :: String -> Sh CmdlState ()
 shellacEvalFunc = shellacWithInput cmdlEvalFunc
 
 -- | Generates the list of all possible commands as command description
-getCommands :: [CMDL_CmdDescription]
+getCommands :: [CmdlCmdDescription]
 getCommands =
   map (\ (cm, act) -> genGlobCmd cm $ commandDgAll $ wrapResultDgAll act)
       globLibAct
