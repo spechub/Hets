@@ -433,8 +433,8 @@
             <property name="visible">True</property>
             <property name="layout_style">end</property>
             <child>
-              <widget class="GtkButton" id="btnModels">
-                <property name="label" translatable="yes">Show models</property>
+              <widget class="GtkButton" id="btnResults">
+                <property name="label" translatable="yes">View results</property>
                 <property name="visible">True</property>
                 <property name="can_focus">True</property>
                 <property name="receives_default">True</property>

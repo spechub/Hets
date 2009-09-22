@@ -58,7 +58,28 @@ data Finder = Finder { fname :: String
 data FNode = FNode { name :: String
                    , node :: LNode DGNodeLab
                    , sublogic :: G_sublogics
-                   , model :: Result G_theory}
+                   , status :: Status}
+
+data Status = Unchecked
+            | Consistent String
+            | Inconsistent String
+            | Timeout String
+            | CheckError String
+
+instance Show Status where
+  show Unchecked = "Unchecked"
+  show (Consistent s) = s
+  show (Inconsistent s) = s
+  show (Timeout s) = s
+  show (CheckError s) = s
+
+instance Eq Status where
+  (==) Unchecked Unchecked = True
+  (==) (Consistent _) (Consistent _) = True
+  (==) (Inconsistent _) (Inconsistent _) = True
+  (==) (Timeout _) (Timeout _) = True
+  (==) (CheckError _) (CheckError _) = True
+  (==) _ _ = False
 
 -- | Displays the consistency checker window
 showConsistencyChecker :: GInfo -> IO ()
@@ -67,7 +88,7 @@ showConsistencyChecker gInfo@(GInfo { libName = ln }) = postGUIAsync $ do
   -- get objects
   window            <- xmlGetWidget xml castToWindow "ConsistencyChecker"
   btnClose          <- xmlGetWidget xml castToButton "btnClose"
-  btnModels         <- xmlGetWidget xml castToButton "btnModels"
+  btnResults         <- xmlGetWidget xml castToButton "btnResults"
   -- get nodes view and buttons
   trvNodes          <- xmlGetWidget xml castToTreeView "trvNodes"
   btnNodesAll       <- xmlGetWidget xml castToButton "btnNodesAll"
@@ -99,11 +120,12 @@ showConsistencyChecker gInfo@(GInfo { libName = ln }) = postGUIAsync $ do
                                 , toWidget btnNodesInvert
                                 , toWidget btnNodesUnchecked
                                 , toWidget btnNodesTimeout
-                                , toWidget btnModels
+                                , toWidget btnResults
                                 ]
 
   widgetSetSensitive btnStop False
   widgetSetSensitive btnCheck False
+  widgetSetSensitive btnResults False
 
   run <- newMVar Nothing
   mView <- newEmptyMVar
@@ -125,8 +147,7 @@ showConsistencyChecker gInfo@(GInfo { libName = ln }) = postGUIAsync $ do
 
   -- setup data
   listNodes <- setListData trvNodes getFNodeName
-                 $ map (\ (n@(_,l),s) -> FNode (getDGNodeName l) n s
-                                               $ Result [] Nothing)
+                 $ map (\ (n@(_,l),s) -> FNode (getDGNodeName l) n s Unchecked)
                  $ zip nodes sls
   listFinder <- setListData trvFinder fname []
 
@@ -148,24 +169,26 @@ showConsistencyChecker gInfo@(GInfo { libName = ln }) = postGUIAsync $ do
 
 
   -- bindings
-  onClicked btnNodesUnchecked $ do
-    mModel <- treeViewGetModel trvNodes
-    case mModel of
-      Nothing -> return ()
-      Just m -> do
-        writeIORef selection []
-        selector <- treeViewGetSelection trvNodes
-        treeModelForeach m $ \ iter -> do
-          path@(row:[]) <- treeModelGetPath m iter
-          (FNode { model = Result d ms}) <- listStoreGetValue listNodes row
-          if null d && isNothing ms then do
-              treeSelectionSelectIter selector iter
-              modifyIORef selection (path:)
-            else treeSelectionUnselectIter selector iter
-          return False
-  onClicked btnNodesTimeout $ return ()
+  let selectWith f = do
+        mModel <- treeViewGetModel trvNodes
+        case mModel of
+          Nothing -> return ()
+          Just m -> do
+            writeIORef selection []
+            selector <- treeViewGetSelection trvNodes
+            treeModelForeach m $ \ iter -> do
+              path@(row:[]) <- treeModelGetPath m iter
+              (FNode { status = s }) <- listStoreGetValue listNodes row
+              if f s then do
+                  treeSelectionSelectIter selector iter
+                  modifyIORef selection (path:)
+                else treeSelectionUnselectIter selector iter
+              return False
 
-  onClicked btnModels $ forkIO_ $ showModelView mView "Models" listNodes
+  onClicked btnNodesUnchecked $ selectWith (== Unchecked)
+  onClicked btnNodesTimeout  $ selectWith (== Timeout "")
+
+  onClicked btnResults $ forkIO_ $ showModelView mView "Models" listNodes
   onClicked btnClose $ widgetDestroy window
   onClicked btnFineGrained $ fineGrainedSelection trvFinder listFinder
                            $ widgetSetSensitive btnCheck True
@@ -193,12 +216,18 @@ showConsistencyChecker gInfo@(GInfo { libName = ln }) = postGUIAsync $ do
 
   widgetShow window
 
+statusToColor :: Status -> String
+statusToColor s = case s of
+  Unchecked -> "black"
+  Consistent _ -> "green"
+  Inconsistent _ -> "red"
+  Timeout _ -> "blue"
+  CheckError _ -> "darkred"
+
 -- | Get a markup string containing name and color
 getFNodeName :: FNode -> String
-getFNodeName (FNode { name = n, model = Result d m }) =
-  let c = if null d && isNothing m then "black"
-            else if hasErrors d then "red"  else "green"
-  in "<span color=\"" ++ c ++ "\">" ++ n ++ "</span>"
+getFNodeName (FNode { name = n, status = s }) =
+  "<span color=\"" ++ statusToColor s ++ "\">" ++ n ++ "</span>"
 
 -- | Called when node selection is changed. Updates finder list
 updateNodes :: TreeView -> ListStore FNode -> (G_sublogics -> IO ())
@@ -238,12 +267,15 @@ check ln le dg (Finder { finder = cc, comorphs = cs, selected = i})
   tid <- forkIO $ do
     let count' = fromIntegral $ length nodes
         c = cs !! i
-    foldM_ (\ count (row, fn@(FNode { node = n@(_,l), model = m })) -> do
-             let name' = getDGNodeName l
+    foldM_ (\ count (row, fn@(FNode { name = name', node = n })) -> do
+             let mes = unlines . map diagString . diags
              update (count / count') name'
              res <- consistencyCheck cc c ln le dg n
              postGUIAsync $ listStoreSetValue list row
-                          $ fn { model = joinResult m res }
+                          $ fn { status = if hasErrors $ diags res
+                                            then CheckError $ mes res
+                                            else Consistent $ mes res
+                               }
              return $ count+1) 0 nodes
     takeMVar run
     return ()
@@ -299,16 +331,16 @@ showModelViewAux lock title list = postGUISync $ do
 
   -- setup list view
   nodes <- listStoreToList list
-  listNodes <- setListData trvNodes name
+  listNodes <- setListData trvNodes getFNodeName
     -- TODO: filter hasErrors d
-    $ filter ((\ (Result d m) -> not (null d && isNothing m)) . model) nodes
+    $ filter ((/= Unchecked) . status) nodes
 
   setListSelectorSingle trvNodes $ do
     mn <- getSelectedSingle trvNodes listNodes
     case mn of
       Nothing -> textBufferSetText buffer ""
-      Just (_,n) -> textBufferSetText buffer $ unlines $ map diagString $ diags
-                                             $ model n
+      Just (_,n) -> textBufferSetText buffer $ show $ status n
+
 
   -- setup actions
   onClicked btnClose $ widgetDestroy window
