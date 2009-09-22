@@ -55,22 +55,17 @@ main =
      let xFlag = xmlFlag opts
          iFiles = infiles opts in
 #ifdef SHELLAC
-     if connectP opts /= -1
-     then
-      cmdlConnect2Port xFlag (connectH opts) (connectP opts)
-      >> return ()
-     else
-      if listen opts /= -1
+     if connectP opts /= -1 || listen opts /= -1
        then
-        cmdlListen2Port xFlag (listen opts) >> return ()
+        cmdlListenOrConnect2Port opts >> return ()
        else
         if interactive opts
          then do
           if xFlag
            then
-            cmdlRunXMLShell
+            cmdlRunXMLShell opts
            else
-            cmdlRunShell iFiles
+            cmdlRunShell opts iFiles
           return ()
          else
 #endif
@@ -95,7 +90,7 @@ processFile opts file = do
 #ifdef SHELLAC
       ProofCommand -> do
         putStrLn "Start processing a proof command file"
-        cmdlProcessFile file
+        cmdlProcessFile opts file
         return Nothing
 #endif
       MaudeIn -> anaMaudeFile opts file

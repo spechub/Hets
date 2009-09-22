@@ -13,74 +13,70 @@ interface.
 
 
 module CMDL.DataTypes
-       ( CMDL_State(..)
-       , CMDL_CmdDescription(..)
-       , cmdInput
-       , cmdName
-       , CMDL_CmdPriority(..)
-       , CMDL_CmdFnClasses(..)
-       , CMDL_CmdRequirements(..)
-       , CMDL_Channel(..)
-       , CMDL_ChannelType(..)
-       , CMDL_ChannelProperties(..)
-       , CMDL_Socket(..)
-       , CMDL_UseTranslation(..)
-       , CMDL_ProverConsChecker(..)
-       , CMDL_PrompterState(..)
-       , CMDL_Message(..)
-       , CMDL_ListAction(..)
-       , CMDL_GoalAxiom(..)
-       ) where
-
+  ( CMDL_State (..)
+  , CMDL_CmdDescription (..)
+  , cmdInput
+  , cmdName
+  , CMDL_CmdPriority (..)
+  , CMDL_CmdFnClasses (..)
+  , CMDL_CmdRequirements (..)
+  , CMDL_Channel (..)
+  , CMDL_ChannelType (..)
+  , CMDL_ChannelProperties (..)
+  , CMDL_Socket (..)
+  , CMDL_UseTranslation (..)
+  , CMDL_ProverConsChecker (..)
+  , CMDL_PrompterState (..)
+  , CMDL_Message (..)
+  , CMDL_ListAction (..)
+  , CMDL_GoalAxiom (..)
+  ) where
 
 import Interfaces.DataTypes
 import Interfaces.Command
 
-import System.IO
+import Driver.Options
+
 import Network
 
+import System.IO (Handle)
+
 data CMDL_GoalAxiom =
-   ChangeGoals
- | ChangeAxioms
+    ChangeGoals
+  | ChangeAxioms
 
 data CMDL_ProverConsChecker =
-   Use_prover
- | Use_consChecker
+    Use_prover
+  | Use_consChecker
 
 data CMDL_UseTranslation =
-   Do_translate
- | Dont_translate
+    Do_translate
+  | Dont_translate
 
 -- * CMDL datatypes
 
 -- | CMDLState contains all information the CMDL interface
 -- might use at any time.
-data CMDL_State = CMDL_State {
-  -- | Interface state (should be common for any interface)
-  intState :: IntState,
-  -- | promter of the interface
-  prompter        :: CMDL_PrompterState,
-  -- | open comment
-  openComment     :: Bool,
-  -- | opened connections
-  connections     :: [CMDL_Channel],
-  -- | output of interface
-  output          :: CMDL_Message
- }
-
-data CMDL_PrompterState = CMDL_PrompterState {
-  fileLoaded :: String,
-  prompterHead :: String
+data CMDL_State = CMDL_State
+  { intState :: IntState -- ^ common interface state
+  , prompter :: CMDL_PrompterState -- ^ promter of the interface
+  , openComment :: Bool -- ^ open comment
+  , connections :: [CMDL_Channel] -- ^ opened connections
+  , output :: CMDL_Message -- ^ output of interface
+  , hetsOpts :: HetcatsOpts  -- ^ hets command options
   }
+
+data CMDL_PrompterState = CMDL_PrompterState
+  { fileLoaded :: String
+  , prompterHead :: String }
 
 -- | Description of a command ( in  order to have a uniform access to any of
 -- the commands
-data CMDL_CmdDescription = CMDL_CmdDescription {
-  cmdDescription :: Command,
-  cmdPriority    :: CMDL_CmdPriority,
-  cmdFn          :: CMDL_CmdFnClasses,
-  cmdReq         :: CMDL_CmdRequirements
-  }
+data CMDL_CmdDescription = CMDL_CmdDescription
+  { cmdDescription :: Command
+  , cmdPriority :: CMDL_CmdPriority
+  , cmdFn :: CMDL_CmdFnClasses
+  , cmdReq :: CMDL_CmdRequirements }
 
 cmdInput :: CMDL_CmdDescription -> String
 cmdInput = cmdInputStr . cmdDescription
@@ -95,91 +91,78 @@ cmdName = cmdNameStr . cmdDescription
 -- separately from the other it is easy just to give to all commands
 -- different priorities
 data CMDL_CmdPriority =
-   CmdNoPriority
- | CmdGreaterThanComments
- | CmdGreaterThanScriptAndComments
+    CmdNoPriority
+  | CmdGreaterThanComments
+  | CmdGreaterThanScriptAndComments
 
 -- | Any command belongs to one of the following classes of functions,
 -- a) f :: s -> IO s
 -- b) f :: String -> s -> IO s
 data CMDL_CmdFnClasses =
-   CmdNoInput (CMDL_State -> IO CMDL_State)
- | CmdWithInput (String -> CMDL_State -> IO CMDL_State)
+    CmdNoInput (CMDL_State -> IO CMDL_State)
+  | CmdWithInput (String -> CMDL_State -> IO CMDL_State)
 
 -- | Datatype describing the types of commands according
 -- to what they expect as input
 data CMDL_CmdRequirements =
-   ReqNodes
- | ReqEdges
- | ReqNodesAndEdges
- | ReqProvers
- | ReqConsCheck
- | ReqComorphism
- | ReqFile
- | ReqGNodes
- | ReqGEdges
- | ReqGNodesAndGEdges
- | ReqAxm
- | ReqGoal
- | ReqNumber
- | ReqNothing
- | ReqUnknown
+    ReqNodes
+  | ReqEdges
+  | ReqNodesAndEdges
+  | ReqProvers
+  | ReqConsCheck
+  | ReqComorphism
+  | ReqFile
+  | ReqGNodes
+  | ReqGEdges
+  | ReqGNodesAndGEdges
+  | ReqAxm
+  | ReqGoal
+  | ReqNumber
+  | ReqNothing
+  | ReqUnknown
 
 
 -- Communication channel datatypes -----------------------------------------
 
 -- | CMDLSocket takes care of opened sockets for comunication with other
 -- application like the Broker in the case of PGIP
-data CMDL_Channel = CMDL_Channel {
-   chName        :: String,
-   chType        :: CMDL_ChannelType,
-   chHandler     :: Handle,
-   chSocket      :: Maybe CMDL_Socket,
-   chProperties  :: CMDL_ChannelProperties
-   }
-
+data CMDL_Channel = CMDL_Channel
+  { chName :: String
+  , chType :: CMDL_ChannelType
+  , chHandler :: Handle
+  , chSocket :: Maybe CMDL_Socket
+  , chProperties  :: CMDL_ChannelProperties }
 
 -- | Channel type describes different type of channel
 data CMDL_ChannelType =
- -- socket type
-   ChSocket
- -- file type
- | ChFile
- -- std in
- | ChStdin
- -- std out
- | ChStdout
+    ChSocket
+  | ChFile
+  | ChStdin
+  | ChStdout
 
 -- | Channel properties describes what a channel can do
 data CMDL_ChannelProperties =
-   ChRead
- | ChWrite
- | ChReadWrite
+    ChRead
+  | ChWrite
+  | ChReadWrite
 
 -- | Describes a socket
-data CMDL_Socket = CMDL_Socket {
-   socketHandler     :: Socket,
-   socketHostName    :: HostName,
-   socketPortNumber  :: PortNumber
-   }
+data CMDL_Socket = CMDL_Socket
+  { socketHandler :: Socket
+  , socketHostName :: HostName
+  , socketPortNumber :: PortNumber }
 
 -- | Datatype describing the list of possible action on a list
 -- of selected items
 data CMDL_ListAction =
-   ActionSet
- | ActionSetAll
- | ActionDel
- | ActionDelAll
- | ActionAdd
-
+    ActionSet
+  | ActionSetAll
+  | ActionDel
+  | ActionDelAll
+  | ActionAdd
 
 -- | output message given by the interface
-data CMDL_Message = CMDL_Message {
-         outputMsg  :: String,
-         warningMsg :: String,
-         errorMsg   :: String
-         }
-
-
-
-
+data CMDL_Message = CMDL_Message
+  { outputMsg :: String
+  , warningMsg :: String
+  , errorMsg :: String }

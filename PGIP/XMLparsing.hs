@@ -10,21 +10,27 @@ Portability : portable
 PGIP.XMLparsing contains commands for parsing or creating XML messages
 -}
 
-module PGIP.XMLparsing
-where
-
-import Network(connectTo, PortID(PortNumber), accept, listenOn)
-import System.IO
-import Data.List(isInfixOf)
+module PGIP.XMLparsing where
 
 import PGIP.MarkPgip(genQName, addPgipMarkUp)
 import PGIP.XMLstate
+
 import CMDL.Interface(cmdlProcessString, emptyCMDL_State)
-import CMDL.DataTypes(CMDL_Message(..), CMDL_State(output, intState))
+import CMDL.DataTypes
 import CMDL.DataTypesUtils(add2hist)
+
 import Interfaces.DataTypes
 import Interfaces.Utils(emptyIntIState)
+
+import Driver.Options
+
 import Text.XML.Light as XML
+
+import Network(connectTo, PortID(PortNumber), accept, listenOn)
+
+import System.IO
+
+import Data.List(isInfixOf)
 
 -- | Generates the XML packet that contains information about what
 -- commands can the interface respond to
@@ -125,8 +131,7 @@ genHandShake pgipData
 -- processes the message and outputs the answer
 communicationStep:: CMDL_PgipState -> CMDL_State ->
                      IO (CMDL_PgipState, CMDL_State)
-communicationStep pgD st =
-  do
+communicationStep pgD st = do
    -- tries to read a packet from the input
    tmp <- timeoutReadPacket (maxWaitTime pgD) pgD
    case tmp of
@@ -152,10 +157,9 @@ communicationStep pgD st =
       do
         let cmds = parseMsg pgD smtxt
             refseqNb = getRefseqNb smtxt
-        (nwSt, nwPgD) <-processCmds cmds st $ resetMsg [] $ pgD {
-                                              refSeqNb = refseqNb }
-        if useXML pgD
-          then do
+        (nwSt, nwPgD) <- processCmds cmds st $ resetMsg []
+          $ pgD { refSeqNb = refseqNb }
+        if useXML pgD then do
                  let nwPgipSt = addToMsg (showContent $ xmlContent nwPgD)
                                 []  nwPgD { seqNb = seqNb nwPgD + 1 }
                  hPutStrLn (hout pgD) $ theMsg nwPgipSt
@@ -176,216 +180,142 @@ communicationStep pgD st =
                  hFlush $ hout pgD
                  return (nwPgD, nwSt)
 
-
--- | Comunicates over a port at which the prover should listen
-cmdlListen2Port :: Bool -> Int -> IO CMDL_State
-cmdlListen2Port swXML portNb
- = do
-    putStrLn $ "Starting hets. Listen to port " ++ show portNb
-    servSock <- listenOn $ PortNumber (fromIntegral portNb)
-    (servH,_,_) <- accept servSock
-    pgData <- genCMDLPgipState swXML servH servH 1000
-    let pgD = if swXML
-               then addReadyXml $ genHandShake $ resetMsg [] pgData
-               else resetMsg [] pgData
-    waitLoop pgD emptyCMDL_State
-   where
-    waitLoop pgipD st =
-      do
-       (nwpgD,nwSt) <- communicationStep pgipD st
-       if stop nwpgD
-         then return nwSt
-         else waitLoop nwpgD nwSt
-
--- | Comunicates over a port to which the prover has to connect
-cmdlConnect2Port :: Bool -> String -> Int -> IO CMDL_State
-cmdlConnect2Port swXML hostName portNb
- = do
-    putStrLn $ "Starting hets. Connecting to port " ++ show portNb
-    sockH <- connectTo hostName $ PortNumber (fromIntegral portNb)
-    pgData <- genCMDLPgipState swXML sockH sockH 1000
-    let pgD = if swXML
-               then addReadyXml $ genHandShake $ resetMsg [] pgData
-               else resetMsg [] pgData
-    waitLoop pgD emptyCMDL_State
-   where
-    waitLoop pgipD st =
-      do
-       (nwpgD,nwSt) <- communicationStep pgipD st
-       if stop nwpgD
-         then return nwSt
-         else waitLoop nwpgD nwSt
+-- | Comunicate over a port
+cmdlListenOrConnect2Port :: HetcatsOpts -> IO CMDL_State
+cmdlListenOrConnect2Port opts = do
+    let portNb = listen opts
+        conPN = connectP opts
+        hostName = connectH opts
+        swXML = xmlFlag opts
+    servH <- if portNb /= -1 then do
+        putIfVerbose opts 1 $ "Starting hets. Listen to port " ++ show portNb
+        servSock <- listenOn $ PortNumber $ fromIntegral portNb
+        (servH, _, _) <- accept servSock
+        return servH
+      else if conPN /= -1 then do
+        putIfVerbose opts 1 $ "Starting hets. Connecting to port "
+          ++ show conPN ++ " on host " ++ hostName
+        connectTo hostName $ PortNumber $ fromIntegral conPN
+      else error "cmdlListenOrConnect2Port: missing port number"
+    cmdlLoop opts swXML servH servH 1000
 
 -- | Reads from a handle, it waits only for a certain amount of time,
 -- if no input comes it will return Nothing
 timeoutReadPacket :: Int -> CMDL_PgipState -> IO (Maybe String)
-timeoutReadPacket untilTimeout st
- = do
+timeoutReadPacket untilTimeout st = do
     smtmp <- hWaitForInput (hin st) untilTimeout
-    if smtmp
-     then do
+    if smtmp then do
             ms <- if useXML st
                     then readPacket [] $ hin st
                     else hGetLine $ hin st
             return $ Just ms
-     else return Nothing
+      else return Nothing
 
 -- | Waits until it reads an entire XML packet
 readPacket :: String -> Handle -> IO String
-readPacket acc hf
- = do
+readPacket acc hf = do
     tmp <- hGetLine hf
+    let str = acc ++ tmp ++ "\n"
     if isInfixOf "</pgip>" tmp
-      then return (acc++tmp++"\n")
-      else readPacket (acc++tmp++"\n") hf
+      then return str
+      else readPacket str hf
+
+cmdlLoop :: HetcatsOpts -> Bool -> Handle -> Handle -> Int -> IO CMDL_State
+cmdlLoop opts swXML h_in h_out timeOut = do
+    pgData <- genCMDLPgipState  swXML h_in h_out timeOut
+    let pgD = addReadyXml $ genHandShake $ resetMsg [] pgData
+        waitLoop pgipD st = do
+          (nwpgD, nwSt) <- communicationStep pgipD st
+          if stop nwpgD then return nwSt else waitLoop nwpgD nwSt
+    waitLoop pgD $ emptyCMDL_State opts
 
 -- | Runs a shell in which the communication is expected to be
 -- through XML packets
-cmdlRunXMLShell :: IO CMDL_State
-cmdlRunXMLShell
- = do
-    pgData <- genCMDLPgipState True stdin stdout (-1)
-    let pgD = addReadyXml $ genHandShake $ resetMsg [] pgData
-    waitLoop pgD emptyCMDL_State
-   where
-    waitLoop pgipD st =
-       do
-        (nwpgD,nwSt) <- communicationStep pgipD st
-        if stop nwpgD
-          then return nwSt
-          else waitLoop nwpgD nwSt
+cmdlRunXMLShell :: HetcatsOpts -> IO CMDL_State
+cmdlRunXMLShell opts = cmdlLoop opts True stdin stdout (-1)
 
 -- | It inserts a given string into the XML packet as
 -- normal output
 genAnswer :: String -> String -> CMDL_PgipState -> CMDL_PgipState
-genAnswer msgtxt errmsg st
- = if useXML st
-     then
-      case errmsg of
-       [] -> addToContent st $ genNormalResponse msgtxt
-       _  -> addToContent (addToContent st $ genNormalResponse msgtxt) $
-                      genErrorResponse False errmsg
-     else addToMsg msgtxt errmsg st
+genAnswer msgtxt errmsg st =
+    if useXML st
+    then let resp = addToContent st $ genNormalResponse msgtxt in
+         if null errmsg then resp
+         else addToContent resp $ genErrorResponse False errmsg
+    else addToMsg msgtxt errmsg st
 
 -- | It inserts a given string into the XML packet as
 -- error output
 genErrAnswer :: String -> CMDL_PgipState -> CMDL_PgipState
-genErrAnswer  str st
- = case str of
-    [] -> st
-    _ -> if useXML st
-          then addToContent st $ genErrorResponse True str
-          else addToMsg [] str st
+genErrAnswer str st = case str of
+  "" -> st
+  _ | useXML st -> addToContent st $ genErrorResponse True str
+  _ -> addToMsg [] str st
 
 -- | Executes given commands and returns output message and the new state
-processCmds :: [CMDL_XMLcommands] -> CMDL_State -> CMDL_PgipState ->
-              IO (CMDL_State, CMDL_PgipState)
-processCmds cmds state pgipState
- = do
-    let pgipSt = pgipState --{resendMsgIfTimeout = False,
-                           -- maxWaitTime = 2000}
---    putStrLn $ show state
+processCmds :: [CMDL_XMLcommands] -> CMDL_State -> CMDL_PgipState
+            -> IO (CMDL_State, CMDL_PgipState)
+processCmds cmds state pgipSt = do
+    let opts = hetsOpts state
+        processRest tl newState newPgipSt =
+            let outSt = output newState in
+            case errorMsg outSt of
+              [] -> processCmds tl newState
+                 $ genAnswer (outputMsg outSt) (warningMsg outSt) newPgipSt
+              eMsg -> return (newState, genErrAnswer eMsg newPgipSt)
     case cmds of
      [] -> if useXML pgipSt
             -- ensures that the response is ended with a ready element
             -- such that the broker does wait for more input
-            then return (state, addReadyXml pgipSt )
-            else return (state, pgipSt)
-     (XML_Execute str):l -> do
-                           --  hPutStrLn (hout pgipSt) $ theMsg pgipSt
-                           --  hFlush $ hout pgipSt
-                             let nPGIP = resetMsg [] pgipSt
-                             -- process string line
-                             nwSt <- cmdlProcessString str state
-                             case errorMsg $ output nwSt of
-                              [] -> processCmds l nwSt $
-                                     genAnswer (outputMsg $ output nwSt)
-                                               (warningMsg $ output nwSt)
-                                               nPGIP
-                              _ -> return (nwSt, genErrAnswer
-                                              (errorMsg $ output nwSt) nPGIP)
-     XML_Exit :l ->
-                  processCmds l state $ genAnswer "Exiting prover" []
-                                           pgipSt { stop = True }
-     XML_Askpgip:_ ->
-                  if useXML pgipSt
-                   then return (state,  genHandShake pgipSt)
-                   else return (state, resetMsg []  pgipSt)
-     XML_ProverInit :l ->
-                  processCmds l emptyCMDL_State $ genAnswer
-                          "Prover state was reseted" [] pgipSt
-     XML_StartQuiet :l ->
+         then return (state, addReadyXml pgipSt )
+         else return (state, pgipSt)
+     XML_Execute str : l -> do
+       nwSt <- cmdlProcessString str state
+       processRest l nwSt $ resetMsg [] pgipSt
+     XML_Exit : l -> processCmds l state
+         $ genAnswer "Exiting prover" [] pgipSt { stop = True }
+     XML_Askpgip : _ -> if useXML pgipSt
+         then return (state, genHandShake pgipSt)
+         else return (state, resetMsg [] pgipSt)
+     XML_ProverInit : l -> processCmds l (emptyCMDL_State opts)
+         $ genAnswer "Prover state was reset" [] pgipSt
+     XML_StartQuiet : l ->
                   -- Quiet not yet implemented !!
                   processCmds l state $ genAnswer
                         "Quiet mode doesn't work properly" [] pgipSt {
                                               quietOutput = True }
-     XML_StopQuiet :l ->
+     XML_StopQuiet : l ->
                   -- Quiet not yet implemented !!
                   -- use proper tmp-files and avoid duplicate code!
                   processCmds l state $ genAnswer
                         "Quiet mode doesn't work properly" [] pgipSt {
                                               quietOutput = False }
-     (XML_OpenGoal str) :l -> do
-                  nwSt <- cmdlProcessString ("add goals "++str++"\n") state
-                  case errorMsg $ output nwSt of
-                   [] -> processCmds l nwSt $
-                           genAnswer (outputMsg $ output nwSt)
-                                    (warningMsg $ output nwSt) pgipSt
-                   _ -> return (nwSt, genErrAnswer (errorMsg $ output nwSt)
-                                         pgipSt)
-     (XML_CloseGoal str) :l -> do
-                  nwSt <- cmdlProcessString ("del goals "++str++"\n prove \n")
-                                                                     state
-                  case errorMsg $ output nwSt of
-                   [] -> processCmds l nwSt $
-                          genAnswer (outputMsg $ output nwSt)
-                                   (warningMsg $ output nwSt) pgipSt
-                   _ -> return (nwSt, genErrAnswer (errorMsg $ output nwSt)
-                                      pgipSt)
-     (XML_GiveUpGoal str) :l -> do
-                  nwSt <- cmdlProcessString ("del goals "++str++"\n") state
-                  case errorMsg $ output nwSt of
-                   [] -> processCmds l nwSt $
-                          genAnswer (outputMsg $ output nwSt)
-                                   (warningMsg $ output nwSt) pgipSt
-                   _ -> return (nwSt, genErrAnswer (errorMsg $ output nwSt)
-                                      pgipSt)
-     (XML_Unknown str) :_ ->
-                  return (state, genAnswer []  ("Unknown command : "++str)
-                                        pgipSt)
+     XML_OpenGoal str : l -> do
+         nwSt <- cmdlProcessString ("add goals " ++ str ++ "\n") state
+         processRest l nwSt pgipSt
+     XML_CloseGoal str : l -> do
+         nwSt <- cmdlProcessString ("del goals " ++ str ++ "\n prove \n") state
+         processRest l nwSt pgipSt
+     XML_GiveUpGoal str : l -> do
+         nwSt <- cmdlProcessString ("del goals " ++ str ++ "\n") state
+         processRest l nwSt pgipSt
+     XML_Unknown str : _ ->
+         return (state, genAnswer []  ("Unknown command : " ++ str) pgipSt)
      XML_Undo : l -> do
-                  nwSt <- cmdlProcessString "undo \n" state
-                  case errorMsg $ output nwSt of
-                   [] -> processCmds l nwSt $
-                          genAnswer (outputMsg $ output nwSt)
-                                   (warningMsg $ output nwSt) pgipSt
-                   _ -> return (nwSt, genErrAnswer (errorMsg $ output nwSt)
-                                     pgipSt)
+         nwSt <- cmdlProcessString "undo \n" state
+         processRest l nwSt pgipSt
      XML_Redo : l -> do
-                  nwSt <- cmdlProcessString "redo \n" state
-                  case errorMsg $ output nwSt of
-                   [] -> processCmds l nwSt $
-                          genAnswer (outputMsg $ output nwSt)
-                                   (warningMsg $ output nwSt) pgipSt
-                   _ -> return (nwSt, genErrAnswer (errorMsg $ output nwSt)
-                                     pgipSt)
-     (XML_Forget str) :l -> do
-                  nwSt <- cmdlProcessString ("del axioms "++str++"\n") state
-                  case errorMsg $ output nwSt of
-                   [] -> processCmds l nwSt $
-                          genAnswer (outputMsg $ output nwSt)
-                                   (warningMsg $ output nwSt) pgipSt
-                   _ -> return (nwSt, genErrAnswer (errorMsg $ output nwSt)
-                                    pgipSt)
-     (XML_OpenTheory str) :l -> do
-                  nwSt <- cmdlProcessString ("select "++str ++ "\n") state
-                  case errorMsg $ output nwSt of
-                   [] -> processCmds l nwSt $
-                          genAnswer (outputMsg $ output nwSt)
-                                   (warningMsg $ output nwSt) pgipSt
-                   _ -> processCmds [] nwSt $ genErrAnswer
-                                    (errorMsg $ output nwSt) pgipSt
-     (XML_CloseTheory _) :l ->
+         nwSt <- cmdlProcessString "redo \n" state
+         processRest l nwSt pgipSt
+     XML_Forget str : l -> do
+         nwSt <- cmdlProcessString ("del axioms "++str++"\n") state
+         processRest l nwSt pgipSt
+     XML_OpenTheory str : l -> do
+         nwSt <- cmdlProcessString ("select "++str ++ "\n") state
+         case errorMsg $ output nwSt of
+           [] -> processRest l nwSt pgipSt
+           eMsg -> processCmds [] nwSt $ genErrAnswer eMsg pgipSt
+     XML_CloseTheory _ : l ->
                   case i_state $ intState state of
                    Nothing ->
                      processCmds l state (genAnswer "Theory closed" [] pgipSt)
@@ -399,16 +329,10 @@ processCmds cmds state pgipState
                                              }
                                 }
                      processCmds l nwSt (genAnswer "Theory closed" [] pgipSt)
-     (XML_CloseFile _) :l ->
-                  processCmds l emptyCMDL_State (genAnswer "File closed" []
-                                                       pgipSt)
-     (XML_ParseScript str) : _ ->
-                 processCmds [] state $ addToContent pgipSt (addPgipMarkUp str)
-     (XML_LoadFile str) : l -> do
-                  nwSt <- cmdlProcessString ("use "++str++"\n") state
-                  case errorMsg $ output nwSt of
-                   [] -> processCmds l nwSt $
-                          genAnswer (outputMsg $ output nwSt)
-                                   (warningMsg $ output nwSt) pgipSt
-                   _ -> return (nwSt, genErrAnswer (errorMsg $ output nwSt)
-                                       pgipSt)
+     XML_CloseFile _ : l -> processCmds l (emptyCMDL_State opts)
+                   (genAnswer "File closed" [] pgipSt)
+     XML_ParseScript str : _ ->
+         processCmds [] state $ addToContent pgipSt (addPgipMarkUp str)
+     XML_LoadFile str : l -> do
+         nwSt <- cmdlProcessString ("use " ++ str ++ "\n") state
+         processRest l nwSt pgipSt
