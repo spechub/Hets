@@ -39,7 +39,7 @@ import Common.Result
 
 import Control.Concurrent (forkIO, killThread, ThreadId)
 import Control.Concurrent.MVar
-import Control.Monad (foldM_, join)
+import Control.Monad (foldM_, join, mapM_)
 
 import Proofs.AbstractState
 import Proofs.InferBasic (consistencyCheck)
@@ -63,31 +63,45 @@ data FNode = FNode { name :: String
 -- | Displays the consistency checker window
 showConsistencyChecker :: GInfo -> IO ()
 showConsistencyChecker gInfo@(GInfo { libName = ln }) = postGUIAsync $ do
-  xml            <- getGladeXML ConsistencyChecker.get
+  xml               <- getGladeXML ConsistencyChecker.get
   -- get objects
-  window         <- xmlGetWidget xml castToWindow "ConsistencyChecker"
-  btnClose       <- xmlGetWidget xml castToButton "btnClose"
+  window            <- xmlGetWidget xml castToWindow "ConsistencyChecker"
+  btnClose          <- xmlGetWidget xml castToButton "btnClose"
+  btnModels         <- xmlGetWidget xml castToButton "btnModels"
   -- get nodes view and buttons
-  trvNodes       <- xmlGetWidget xml castToTreeView "trvNodes"
-  btnNodesAll    <- xmlGetWidget xml castToButton "btnNodesAll"
-  btnNodesNone   <- xmlGetWidget xml castToButton "btnNodesNone"
-  btnNodesInvert <- xmlGetWidget xml castToButton "btnNodesInvert"
+  trvNodes          <- xmlGetWidget xml castToTreeView "trvNodes"
+  btnNodesAll       <- xmlGetWidget xml castToButton "btnNodesAll"
+  btnNodesNone      <- xmlGetWidget xml castToButton "btnNodesNone"
+  btnNodesInvert    <- xmlGetWidget xml castToButton "btnNodesInvert"
+  btnNodesUnchecked <- xmlGetWidget xml castToButton "btnNodesUnchecked"
+  btnNodesTimeout   <- xmlGetWidget xml castToButton "btnNodesTimeout"
   -- get checker view and buttons
-  lblStatus      <- xmlGetWidget xml castToLabel "lblStatus"
-  lblSublogic    <- xmlGetWidget xml castToLabel "lblSublogic"
-  sbTimeout      <- xmlGetWidget xml castToSpinButton "sbTimeout"
-  btnCheck       <- xmlGetWidget xml castToButton "btnCheck"
-  btnStop        <- xmlGetWidget xml castToButton "btnStop"
-  btnFineGrained <- xmlGetWidget xml castToButton "btnFineGrained"
-  trvFinder      <- xmlGetWidget xml castToTreeView "trvFinder"
+  lblStatus         <- xmlGetWidget xml castToLabel "lblStatus"
+  lblSublogic       <- xmlGetWidget xml castToLabel "lblSublogic"
+  sbTimeout         <- xmlGetWidget xml castToSpinButton "sbTimeout"
+  btnCheck          <- xmlGetWidget xml castToButton "btnCheck"
+  btnStop           <- xmlGetWidget xml castToButton "btnStop"
+  btnFineGrained    <- xmlGetWidget xml castToButton "btnFineGrained"
+  trvFinder         <- xmlGetWidget xml castToTreeView "trvFinder"
 
   windowSetTitle window "Consistency Checker"
 
-  let widgets = [ toWidget trvFinder, toWidget btnFineGrained
-                , toWidget sbTimeout, toWidget lblStatus, toWidget lblSublogic]
-      checkWidgets = widgets ++ [ toWidget btnClose, toWidget trvNodes
-                                , toWidget btnNodesAll, toWidget btnNodesNone
-                                , toWidget btnNodesInvert]
+  let widgets = [ toWidget trvFinder
+                , toWidget btnFineGrained
+                , toWidget sbTimeout
+                , toWidget lblStatus
+                , toWidget lblSublogic
+                ]
+      checkWidgets = widgets ++ [ toWidget btnClose
+                                , toWidget trvNodes
+                                , toWidget btnNodesAll
+                                , toWidget btnNodesNone
+                                , toWidget btnNodesInvert
+                                , toWidget btnNodesUnchecked
+                                , toWidget btnNodesTimeout
+                                , toWidget btnModels
+                                ]
+
   widgetSetSensitive btnStop False
   widgetSetSensitive btnCheck False
 
@@ -110,7 +124,7 @@ showConsistencyChecker gInfo@(GInfo { libName = ln }) = postGUIAsync $ do
         widgetSetSensitive btnCheck b
 
   -- setup data
-  listNodes <- setListData trvNodes name
+  listNodes <- setListData trvNodes getFNodeName
                  $ map (\ (n@(_,l),s) -> FNode (getDGNodeName l) n s
                                                $ Result [] Nothing)
                  $ zip nodes sls
@@ -123,16 +137,35 @@ showConsistencyChecker gInfo@(GInfo { libName = ln }) = postGUIAsync $ do
                         case miter of
                           Just _ -> widgetSetSensitive btnCheck True
                           Nothing -> widgetSetSensitive btnCheck False
-  setListSelectorMultiple trvNodes btnNodesAll btnNodesNone btnNodesInvert
-                          $ updateNodes trvNodes listNodes
-                          (updateFinder trvFinder listFinder)
-                          (do listStoreClear listFinder
-                              activate widgets False
-                              widgetSetSensitive btnCheck False)
-                          (do activate widgets True
-                              widgetSetSensitive btnCheck False)
+  selection <- setListSelectorMultiple trvNodes btnNodesAll btnNodesNone
+                 btnNodesInvert $ updateNodes trvNodes listNodes
+                                    (updateFinder trvFinder listFinder)
+                                    (do listStoreClear listFinder
+                                        activate widgets False
+                                        widgetSetSensitive btnCheck False)
+                                    (do activate widgets True
+                                        widgetSetSensitive btnCheck False)
+
 
   -- bindings
+  onClicked btnNodesUnchecked $ do
+    mModel <- treeViewGetModel trvNodes
+    case mModel of
+      Nothing -> return ()
+      Just m -> do
+        writeIORef selection []
+        selector <- treeViewGetSelection trvNodes
+        treeModelForeach m $ \ iter -> do
+          path@(row:[]) <- treeModelGetPath m iter
+          (FNode { model = Result d ms}) <- listStoreGetValue listNodes row
+          if null d && isNothing ms then do
+              treeSelectionSelectIter selector iter
+              modifyIORef selection (path:)
+            else treeSelectionUnselectIter selector iter
+          return False
+  onClicked btnNodesTimeout $ return ()
+
+  onClicked btnModels $ forkIO_ $ showModelView mView "Models" listNodes
   onClicked btnClose $ widgetDestroy window
   onClicked btnFineGrained $ fineGrainedSelection trvFinder listFinder
                            $ widgetSetSensitive btnCheck True
@@ -153,12 +186,19 @@ showConsistencyChecker gInfo@(GInfo { libName = ln }) = postGUIAsync $ do
     check ln le dg f update run listNodes nodes'
     postGUISync $ switch False
     putMVar run Nothing
-    forkIO_ $ showModelView mView xml "Models" listNodes
+    forkIO_ $ showModelView mView "Models" listNodes
     postGUISync $ switch True
     postGUISync $ activate checkWidgets True
     exit
 
   widgetShow window
+
+-- | Get a markup string containing name and color
+getFNodeName :: FNode -> String
+getFNodeName (FNode { name = n, model = Result d m }) =
+  let c = if null d && isNothing m then "black"
+            else if hasErrors d then "red"  else "green"
+  in "<span color=\"" ++ c ++ "\">" ++ n ++ "</span>"
 
 -- | Called when node selection is changed. Updates finder list
 updateNodes :: TreeView -> ListStore FNode -> (G_sublogics -> IO ())
@@ -233,9 +273,9 @@ expand (Finder { fname = n, finder = cc, comorphs = cs }) =
   map (\ c -> (n,cc,c)) cs
 
 -- | Displays the model view window
-showModelViewAux :: MVar (IO ()) -> GladeXML -> String -> ListStore FNode
-                 -> IO ()
-showModelViewAux lock xml title list = postGUISync $ do
+showModelViewAux :: MVar (IO ()) -> String -> ListStore FNode -> IO ()
+showModelViewAux lock title list = postGUISync $ do
+  xml      <- getGladeXML ConsistencyChecker.get
   -- get objects
   window   <- xmlGetWidget xml castToWindow "ModelView"
   btnClose <- xmlGetWidget xml castToButton "btnResClose"
@@ -282,9 +322,9 @@ showModelViewAux lock xml title list = postGUISync $ do
   widgetShow window
 
 -- | Displays the model view window
-showModelView :: MVar (IO ()) -> GladeXML -> String -> ListStore FNode -> IO ()
-showModelView lock xml title list  = do
+showModelView :: MVar (IO ()) -> String -> ListStore FNode -> IO ()
+showModelView lock title list  = do
   isNotOpen <- isEmptyMVar lock
-  if isNotOpen then showModelViewAux lock xml title list
+  if isNotOpen then showModelViewAux lock title list
     else join (readMVar lock)
 

@@ -396,7 +396,8 @@ setListData view getT listData = do
   ren <- cellRendererTextNew
   col <- treeViewColumnNew
   treeViewColumnPackStart col ren True
-  cellLayoutSetAttributes col ren store $ \row -> [ cellText := getT row ]
+  cellLayoutSetAttributes col ren store
+                          $ \i -> [ cellTextMarkup := Just $ getT i ]
   treeViewAppendColumn view col
   return store
 
