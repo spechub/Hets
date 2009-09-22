@@ -12,6 +12,7 @@ module DFOL.Parse_AS_DFOL
        where
 
 import qualified Common.Lexer as Lexer
+import Common.Token (casl_structured_reserved_words)
 import qualified Common.Keywords as Keywords
 import qualified Common.AnnoState as AnnoState
 import DFOL.AS_DFOL
@@ -27,7 +28,7 @@ reserved = [Keywords.trueS,
             "Univ",
             "Sort",
             "Form",
-            "Pi"]
+            "Pi"] ++ casl_structured_reserved_words
 
 -- parser for basic spec
 basicSpec :: AnnoState.AParser st BASIC_SPEC
@@ -55,7 +56,7 @@ typeP = do AnnoState.asKey "Pi"
         <|>
         do t <- type1P
            (do AnnoState.asKey Keywords.funS
-               (ts, _) <- type1P `Lexer.separatedBy` 
+               (ts, _) <- type1P `Lexer.separatedBy`
                             (AnnoState.asKey Keywords.funS)
                let xs = t:ts
                return $ Func (init xs) (last xs)
@@ -121,7 +122,7 @@ formulaP = forallP
            <|>
            formula1P
 
-{- parser for equivalences, implications, conjunctions, disjunctions, 
+{- parser for equivalences, implications, conjunctions, disjunctions,
    negations, equalities, atomic formulas, and formulas in parentheses -}
 formula1P :: AnnoState.AParser st FORMULA
 formula1P = do f <- formula2P
@@ -138,26 +139,26 @@ formula1P = do f <- formula2P
                 -- all other cases
                 return f)
 
-{- parser for conjunctions, disjunctions, negations, equalities, 
+{- parser for conjunctions, disjunctions, negations, equalities,
    atomic formulas, and formulas in parentheses -}
 formula2P :: AnnoState.AParser st FORMULA
 formula2P = do f <- formula3P
                (-- conjunctions
                 do AnnoState.asKey Keywords.lAnd
-                   (fs, _) <- formula3P `Lexer.separatedBy` 
+                   (fs, _) <- formula3P `Lexer.separatedBy`
                                 (AnnoState.asKey Keywords.lAnd)
                    return $ Conjunction (f:fs)
                 <|>
                 -- disjunctions
                 do AnnoState.asKey Keywords.lOr
-                   (fs, _) <- formula3P `Lexer.separatedBy` 
+                   (fs, _) <- formula3P `Lexer.separatedBy`
                                 (AnnoState.asKey Keywords.lOr)
                    return $ Disjunction (f:fs)
                 <|>
                 -- all other cases
                 return f)
 
-{- parser for negations, equalities, atomic formulas, 
+{- parser for negations, equalities, atomic formulas,
    and formulas in parentheses -}
 formula3P :: AnnoState.AParser st FORMULA
 formula3P = parenFormulaP
