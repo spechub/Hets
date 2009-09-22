@@ -209,7 +209,7 @@ showConsistencyChecker gInfo@(GInfo { libName = ln }) = postGUIAsync $ do
     check ln le dg f update run listNodes nodes'
     postGUISync $ switch False
     putMVar run Nothing
-    forkIO_ $ showModelView mView "Models" listNodes
+    forkIO_ $ showModelView mView "Results of consistency check" listNodes
     postGUISync $ switch True
     postGUISync $ activate checkWidgets True
     exit
@@ -330,10 +330,10 @@ showModelViewAux lock title list = postGUISync $ do
   textBufferApplyTag buffer font start end
 
   -- setup list view
+  let filterNodes = filter ((/= Unchecked) . status)
+
   nodes <- listStoreToList list
-  listNodes <- setListData trvNodes getFNodeName
-    -- TODO: filter hasErrors d
-    $ filter ((/= Unchecked) . status) nodes
+  listNodes <- setListData trvNodes getFNodeName $ filterNodes nodes
 
   setListSelectorSingle trvNodes $ do
     mn <- getSelectedSingle trvNodes listNodes
@@ -346,7 +346,9 @@ showModelViewAux lock title list = postGUISync $ do
   onClicked btnClose $ widgetDestroy window
   onDestroy window $ do takeMVar lock; return ()
 
-  putMVar lock $ return ()
+  putMVar lock $ postGUISync $ do
+    nodes' <- listStoreToList list
+    updateListData listNodes $ filterNodes nodes'
 
   widgetSetSizeRequest window 800 600
   widgetSetSizeRequest frNodes 250 (-1)
