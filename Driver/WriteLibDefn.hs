@@ -43,13 +43,15 @@ import Syntax.ToXml
 
 import Driver.Options
 
+import System.FilePath
+
 -- | compute the prefix for files to be written out
 getFilePrefix :: HetcatsOpts -> FilePath -> (FilePath, FilePath)
 getFilePrefix opts file =
     let odir' = outdir opts
         (base, path, _) = fileparse (envSuffix : downloadExtensions) file
         odir = if null odir' then path else odir'
-    in (odir, pathAndBase odir base)
+    in (odir, odir </> base)
 
 {- |
   Write the given LIB_DEFN in every format that HetcatsOpts includes.
@@ -94,7 +96,7 @@ write_casl_latex opts ga oup ld =
                debugRenderLatex Nothing ldoc
 
 toShATermString :: ShATermLG a => a -> IO String
-toShATermString atcon = fmap AT.writeSharedATerm $ versionedATermTable atcon
+toShATermString = fmap AT.writeSharedATerm . versionedATermTable
 
 writeShATermFile :: ShATermLG a => FilePath -> a -> IO ()
 writeShATermFile fp atcon = toShATermString atcon >>= writeFile fp

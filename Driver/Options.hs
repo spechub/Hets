@@ -34,7 +34,6 @@ module Driver.Options
   , existsAnSource
   , checkRecentEnv
   , downloadExtensions
-  , pathAndBase
   , defaultHetcatsOpts
   , hetsVersion
   , showDiags
@@ -45,6 +44,7 @@ module Driver.Options
   ) where
 
 import Driver.Version
+
 import Common.Utils
 import Common.Id
 import Common.Result
@@ -56,6 +56,7 @@ import System.Console.GetOpt
 import System.IO.Error
 import System.Exit
 
+import Control.Monad
 import Control.Monad.Trans
 import Data.List
 
@@ -417,45 +418,45 @@ options = let
     crS = "\n  "
     bS = "| "
     joinBar l = "(" ++ intercalate "|" l ++ ")" in
-    [ Option ['v'] [verboseS] (OptArg parseVerbosity "0-5")
+    [ Option "v" [verboseS] (OptArg parseVerbosity "0-5")
       "verbosity, default is -v1"
-    , Option ['q'] ["quiet"] (NoArg Quiet)
+    , Option "q" ["quiet"] (NoArg Quiet)
       "same as -v0, no output to stdout"
-    , Option ['V'] ["version"] (NoArg Version)
+    , Option "V" ["version"] (NoArg Version)
       "print version number and exit"
-    , Option ['h'] ["help", "usage"] (NoArg Help)
+    , Option "h" ["help", "usage"] (NoArg Help)
       "print usage information and exit"
-    , Option ['g'] [guiS] (NoArg (Gui UseGui))
+    , Option "g" [guiS] (NoArg (Gui UseGui))
       "show graphs in windows"
-    , Option ['u'] ["uncolored"] (NoArg Uncolored)
+    , Option "u" ["uncolored"] (NoArg Uncolored)
       "no colors in shown graphs"
-    , Option ['I'] [interactiveS] (NoArg Interactive)
+    , Option "I" [interactiveS] (NoArg Interactive)
       "run in interactive mode"
-    , Option ['p'] [skipS] (NoArg $ Analysis Skip)
+    , Option "p" [skipS] (NoArg $ Analysis Skip)
       "skip static analysis, only parse"
-    , Option ['s'] [structS] (NoArg $ Analysis Structured)
+    , Option "s" [structS] (NoArg $ Analysis Structured)
       "skip basic, just do structured analysis"
-    , Option ['l'] ["logic"] (ReqArg DefaultLogic "LOGIC")
+    , Option "l" ["logic"] (ReqArg DefaultLogic "LOGIC")
       "choose logic, default is CASL"
-    , Option ['L'] [libdirsS] (ReqArg LibDirs "DIR")
+    , Option "L" [libdirsS] (ReqArg LibDirs "DIR")
       "colon separated paths of library source directories"
-    , Option ['m'] [modelSparQS] (ReqArg ModelSparQ "FILE")
+    , Option "m" [modelSparQS] (ReqArg ModelSparQ "FILE")
       "lisp file for SparQ definitions"
-    , Option ['x'] [xmlS] (NoArg XML)
+    , Option "x" [xmlS] (NoArg XML)
        "use xml packets to communicate"
-    , Option ['c'] [connectS] (ReqArg parseConnect "HOSTNAME:PORT")
+    , Option "c" [connectS] (ReqArg parseConnect "HOSTNAME:PORT")
       "run interface comunicating via connecting to the port"
-    , Option ['S'] [listenS] (ReqArg parseListen "PORT")
+    , Option "S" [listenS] (ReqArg parseListen "PORT")
       "run interface by listening to the port"
-    , Option ['i'] [intypeS] (ReqArg parseInType "ITYPE")
+    , Option "i" [intypeS] (ReqArg parseInType "ITYPE")
       ("input file type can be one of:" ++ crS ++ joinBar
        (map show plainInTypes ++
         map (++ bracket bafS) [bracket treeS ++ genTermS]))
-    , Option ['d'] ["dump"] (ReqArg Dump "STRING")
+    , Option "d" ["dump"] (ReqArg Dump "STRING")
       "dump various strings"
-    , Option ['O'] [outdirS] (ReqArg OutDir "DIR")
+    , Option "O" [outdirS] (ReqArg OutDir "DIR")
       "destination directory for output files"
-    , Option ['o'] [outtypesS] (ReqArg parseOutTypes "OTYPES")
+    , Option "o" [outtypesS] (ReqArg parseOutTypes "OTYPES")
       ("output file types, default nothing," ++ crS ++
        listS ++ crS ++ concatMap ( \ t -> bS ++ show t ++ crS)
              plainOutTypeList
@@ -466,17 +467,17 @@ options = let
        ++ bS ++ graphS ++ joinBar (map show graphList) ++ crS
        ++ bS ++ dfgS ++ bracket cS ++ crS
        ++ bS ++ tptpS ++ bracket cS)
-    , Option ['R'] [recursiveS] (NoArg Recurse)
+    , Option "R" [recursiveS] (NoArg Recurse)
       "output also imported libraries"
-    , Option ['N'] [normalFormS] (NoArg NormalForm)
+    , Option "N" [normalFormS] (NoArg NormalForm)
       "compute normal forms (takes long)"
-    , Option ['n'] [specS] (ReqArg parseSpecOpts "NSPECS")
+    , Option "n" [specS] (ReqArg parseSpecOpts "NSPECS")
       ("process specs option " ++ crS ++ listS ++ " SIMPLE-ID")
-    , Option ['t'] [transS] (ReqArg parseTransOpt "TRANS")
+    , Option "t" [transS] (ReqArg parseTransOpt "TRANS")
       ("translation option " ++ crS ++
           "is a colon-separated list without blank" ++
           crS ++ "of one or more from: SIMPLE-ID")
-    , Option ['a'] [amalgS] (ReqArg parseCASLAmalg "ANALYSIS")
+    , Option "a" [amalgS] (ReqArg parseCASLAmalg "ANALYSIS")
       ("CASL amalgamability analysis options" ++ crS ++ listS ++
        crS ++ joinBar (map show caslAmalgOpts)) ]
 
@@ -491,13 +492,11 @@ parseVerbosity ms = case ms of
       _  -> hetsError (s ++ " is not a valid INT")
 
 divideIntoPortHost :: String -> Bool -> (String, String) -> (String, String)
-divideIntoPortHost s sw (accP,accH)
- = case s of
-    ':':ll -> divideIntoPortHost ll True (accP,accH)
-    c:ll -> case sw of
-             False -> divideIntoPortHost ll False (c:accP,accH)
-             True -> divideIntoPortHost ll True (accP,c:accH)
-    [] -> (accP,accH)
+divideIntoPortHost s sw (accP, accH) = case s of
+    ':' : ll -> divideIntoPortHost ll True (accP,accH)
+    c : ll -> if sw then divideIntoPortHost ll True (accP, c : accH)
+              else divideIntoPortHost ll False (c : accP, accH)
+    [] -> (accP, accH)
 
 -- | 'parseConnect' parses a port Flag from user input
 parseConnect :: String -> Flag
@@ -544,7 +543,7 @@ existsAnSource opts file = do
            names = file : map (base ++) (exts ++ [envSuffix])
        -- look for the first existing file
        validFlags <- mapM doesFileExist names
-       return (find fst (zip validFlags names) >>= (return . snd))
+       return . fmap snd . find fst $ zip validFlags names
 
 -- | should env be written
 hasEnvOut :: HetcatsOpts -> Bool
@@ -600,11 +599,11 @@ parseOutTypes str = case reads $ bracket str of
 
 -- | 'parseSpecOpts' parses a 'Specs' Flag from user input
 parseSpecOpts :: String -> Flag
-parseSpecOpts s = Specs $ map mkSimpleId $ splitOn ',' s
+parseSpecOpts = Specs . map mkSimpleId . splitOn ','
 
 -- | 'parseTransOpt' parses a 'Trans' Flag from user input
 parseTransOpt :: String -> Flag
-parseTransOpt s = Trans $ map mkSimpleId $ splitOn ':' s
+parseTransOpt = Trans . map mkSimpleId . splitOn ':'
 
 -- | guesses the InType
 guess :: String -> InType -> InType
@@ -614,10 +613,9 @@ guess file itype = case itype of
 
 -- | 'guessInType' parses an 'InType' from the FilePath
 guessInType :: FilePath -> InType
-guessInType file =
-    case fileparse downloadExtensions file of
-      (_,_,Just ('.' : suf)) -> parseInType1 suf
-      (_,_,_)  -> GuessIn
+guessInType file = case fileparse downloadExtensions file of
+      (_, _, Just ('.' : suf)) -> parseInType1 suf
+      (_, _, _) -> GuessIn
 
 -- | 'parseCASLAmalg' parses CASL amalgamability options
 parseCASLAmalg :: String -> Flag
@@ -635,7 +633,7 @@ parseCASLAmalg str =
 hetcatsOpts :: [String] -> IO HetcatsOpts
 hetcatsOpts argv =
   let argv' = filter (not . isUni) argv
-      isUni s = take 5 s == "--uni"
+      isUni = isPrefixOf "--uni"
    in case (getOpt Permute options argv') of
         (opts, non_opts, []) ->
             do flags <- checkFlags opts
@@ -665,21 +663,19 @@ checkFlags fs =
              then do putStrLn ("version of hets: " ++ hetcats_version)
                      exitWith ExitSuccess
              else return [] -- fall through
-          fs' <- collectFlags fs
-          return fs'
+          collectFlags fs
 
 -- | 'checkInFiles' checks all given input files for sanity
 checkInFiles :: [String] -> IO [FilePath]
 checkInFiles fs = do
     let ifs = filter (not . checkUri) fs
         efs = filter hasExtension ifs
-        hasExtension f = any ( \ e -> isSuffixOf e f)
-                                        downloadExtensions
+        hasExtension f = any (flip isSuffixOf f) downloadExtensions
     bs <- mapM doesFileExist efs
     if and bs
       then return fs
       else hetsError $ "invalid input files: " ++
-             (unwords $ map snd $ filter (not . fst) $ zip bs efs)
+             unwords (map snd . filter (not . fst) $ zip bs efs)
 
 -- auxiliary functions: FileSystem interaction --
 
@@ -687,10 +683,8 @@ checkInFiles fs = do
 checkUri :: FilePath -> Bool
 checkUri file = let (_, t) = span (/= ':') file in
                    if length t < 4 then False
-                      else let (_ : c2 : c3 : _) = t in
-                              if c2 == '/' && c3 == '/' then True
+                      else let (_ : c2 : c3 : _) = t in c2 == '/' && c3 == '/'
                               -- (http://, https://, ftp://, file://, etc.)
-                                 else False
 
 -- | 'checkOutDirs' checks a list of OutDir for sanity
 checkOutDirs :: [Flag] -> IO [Flag]
@@ -704,7 +698,7 @@ checkOutDirs fs = do
 
 -- | 'checkLibDirs' checks a list of LibDir for sanity
 checkLibDirs :: [Flag] -> IO [Flag]
-checkLibDirs fs = do
+checkLibDirs fs =
     case fs of
         [] -> do
             s <- getEnvDef "HETS_LIB" ""
@@ -718,32 +712,30 @@ checkLibDirs fs = do
 
 -- | 'checkLibDir' checks a single LibDir for sanity
 checkLibDir :: FilePath -> IO ()
-checkLibDir file =
-    do exists <- doesDirectoryExist file
-       if exists then return ()
-          else hetsError $ "Not a valid library directory: " ++ file
+checkLibDir file = do
+    exists <- doesDirectoryExist file
+    unless exists . hetsError $ "Not a valid library directory: " ++ file
 
 -- | 'checkOutDir' checks a single OutDir for sanity
 checkOutDir :: Flag -> IO ()
-checkOutDir (OutDir file) =
-    do exists <- doesDirectoryExist file
-       if exists then return ()
-          else hetsError $ "Not a valid output directory: " ++ file
+checkOutDir (OutDir file) = do
+    exists <- doesDirectoryExist file
+    unless exists . hetsError $ "Not a valid output directory: " ++ file
 checkOutDir _ = return ()
 
 -- auxiliary functions: collect flags --
 
 collectDirs :: [Flag] -> IO [Flag]
 collectDirs fs =
-    let (ods,fs') = partition isOutDir fs
-        (lds,fs'') = partition isLibDir fs'
+    let (ods, fs1) = partition isOutDir fs
+        (lds, fs2) = partition isLibDir fs1
         isOutDir (OutDir _) = True
         isOutDir _          = False
         isLibDir (LibDirs _) = True
         isLibDir _          = False
     in do ods' <- checkOutDirs ods
           lds' <- checkLibDirs lds
-          return $ ods' ++ lds' ++ fs''
+          return $ ods' ++ lds' ++ fs2
 
 collectVerbosity :: [Flag] -> [Flag]
 collectVerbosity fs =
@@ -778,7 +770,7 @@ collectSpecOpts fs =
 -- | 'hetsError' is a generic Error messaging function that prints the Error
 -- and usage information, if the user caused the Error
 hetsError :: String -> a
-hetsError errorString = error (errorString ++ "\n" ++ hetsUsage)
+hetsError = error . (++ '\n' : hetsUsage)
 
 -- | 'hetsUsage' generates usage information for the commandline
 hetsUsage :: String
@@ -788,20 +780,11 @@ hetsUsage = let header = "Usage: hets [OPTION...] file ... file [+RTS -?]"
 -- | 'putIfVerbose' prints a given String to StdOut when the given HetcatsOpts'
 -- Verbosity exceeds the given level
 putIfVerbose :: HetcatsOpts -> Int -> String -> IO ()
-putIfVerbose opts level str =
-    if outputToStdout opts then
-        if verbose opts >= level then putStrLn str else return ()
-    else return ()
+putIfVerbose opts level =
+    when (outputToStdout opts) . when (verbose opts >= level) . putStrLn
 
 doDump :: HetcatsOpts -> String -> IO () -> IO ()
-doDump opts str act = if elem str $ dumpOpts opts then act else return ()
-
--- | add base file name (second argument) to path
-pathAndBase :: FilePath -> FilePath -> FilePath
-pathAndBase path base =
-    if null path then base
-       else if last path == '/' then path ++ base
-            else path ++ "/" ++ base
+doDump opts str = when (elem str $ dumpOpts opts)
 
 -- | show diagnostic messages (see Result.hs), according to verbosity level
 showDiags :: HetcatsOpts -> [Diagnosis] -> IO()

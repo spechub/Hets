@@ -15,6 +15,7 @@ static analysis
 module Driver.ReadFn where
 
 import Logic.Grothendieck
+
 import Syntax.AS_Library
 import Syntax.Parse_AS_Library
 
@@ -27,6 +28,7 @@ import Driver.Options
 
 import ATerm.AbstractSyntax
 import ATerm.ReadWrite
+
 import Common.AnnoState
 import Common.Id
 import Common.Result
@@ -34,7 +36,10 @@ import Common.DocUtils
 import Common.LibName
 
 import Text.ParserCombinators.Parsec
+
+import System.FilePath
 import System.Time
+
 import Data.List (isPrefixOf)
 import Data.Maybe
 
@@ -97,15 +102,14 @@ libNameToFile opts ln = case getLIB_ID ln of
       let path = case libdirs opts of
                         [] -> ""
                         fp : _ -> fp
-      -- add trailing "/" if necessary
-      in if null ofile then pathAndBase path file else ofile
+      in if null ofile then path </> file else ofile
   Direct_link _ _ -> error "libNameToFile"
 
 findFileOfLibName :: HetcatsOpts -> LIB_NAME -> IO (Maybe FilePath)
 findFileOfLibName opts ln = case getLIB_ID ln of
   Indirect_link file _ ofile _ ->
       if null ofile then do
-          let fs = map (flip pathAndBase file) $ "" : libdirs opts
+          let fs = map (</> file) $ "" : libdirs opts
           ms <- mapM (existsAnSource opts { intype = GuessIn }) fs
           case catMaybes ms of
             [] -> return Nothing

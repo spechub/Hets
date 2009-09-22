@@ -52,6 +52,7 @@ import Control.Monad
 import Control.Monad.Trans
 
 import System.Directory
+import System.FilePath
 import System.Time
 
 -- a set of library names to check for cyclic imports
@@ -73,11 +74,7 @@ anaSourceFile lgraph opts topLns libenv fname = ResultT $ do
         curDir <- getCurrentDirectory
         input <- readFile file
         mt <- getModificationTime file
-        -- when switching to ghc 6.6.1 with System.FilePath use:
-        -- combine curDir file
-        let absolutePath = if "/" `isPrefixOf` file
-                           then file
-                           else curDir ++ '/':file
+        let absolutePath = curDir </> file
         putIfVerbose opts 2 $ "Reading file " ++ absolutePath
         runResultT $ anaString lgraph opts topLns libenv input absolutePath mt
 
@@ -97,15 +94,14 @@ anaString lgraph opts topLns libenv input file mt = do
           liftR $ Result ds Nothing
       _ -> do
           let libstring = show $ getLIB_ID ln
-          if libstring == libraryS then return ()
-             else do
-               if isSuffixOf libstring (rmSuffix file) then return () else
-                   lift $ putIfVerbose opts 1 $
+          unless (libstring == libraryS) $ do
+               unless (isSuffixOf libstring $ rmSuffix file)
+                 $ lift $ putIfVerbose opts 1 $
                        "### file name '" ++ file
                        ++ "' does not match library name '" ++
                           libstring ++ "'"
                lift $ putIfVerbose opts 1 $ "Analyzing library " ++ show ln
-          (_,ld, _, lenv0) <- anaLibDefn lgraph opts topLns libenv ast
+          (_, ld, _, lenv0) <- anaLibDefn lgraph opts topLns libenv ast
           let lenv = markAllHiding lenv0
           case Map.lookup ln lenv of
               Nothing -> error $ "anaString: missing library: " ++ show ln
@@ -214,7 +210,7 @@ putMessageIORes opts i msg =
    else liftR $ message () msg
 
 analyzing :: HetcatsOpts -> String -> ResultT IO ()
-analyzing opts msg = putMessageIORes opts 1 $ "Analyzing " ++ msg
+analyzing opts = putMessageIORes opts 1 . ("Analyzing " ++)
 
 alreadyDefined :: String -> String
 alreadyDefined str = "Name " ++ str ++ " already defined"
