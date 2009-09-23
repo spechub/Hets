@@ -27,6 +27,8 @@ module DFOL.AS_DFOL
       printDecls,
       getVarsFromDecls,
       getVarTypeFromDecls,
+      compactDecls,
+      expandDecls,
       Translatable,
       translate      
    )  where      
@@ -121,16 +123,6 @@ piFlatForm (Pi ds1 type1) =
        Pi ds2 type2 -> piFlatForm $ Pi (ds1 ++ ds2) type2
        _ -> Pi (compactDecls ds1) type1
 piFlatForm t = t
-
-compactDecls :: [DECL] -> [DECL]
-compactDecls [] = []
-compactDecls [d] = [d]
-compactDecls (d1:(d2:ds)) = 
-  let (ns1,t1) = d1
-      (ns2,t2) = d2
-      in if (t1 == t2) 
-            then compactDecls $ (ns1 ++ ns2,t1):ds
-            else d1:(compactDecls (d2:ds))
 
 -- removes empty argument lists
 typeProperForm :: TYPE -> TYPE
@@ -407,3 +399,18 @@ getVarTypeFromDecls n ds = case result of
                                 Just (_,t) -> Just t
                                 Nothing -> Nothing
                            where result = find (\ (ns,_) -> elem n ns) ds
+
+compactDecls :: [DECL] -> [DECL]
+compactDecls [] = []
+compactDecls [d] = [d]
+compactDecls (d1:(d2:ds)) = 
+  let (ns1,t1) = d1
+      (ns2,t2) = d2
+      in if (t1 == t2) 
+            then compactDecls $ (ns1 ++ ns2,t1):ds
+            else d1:(compactDecls (d2:ds))
+
+expandDecls :: [DECL] -> [DECL]
+expandDecls [] = []
+expandDecls (([],t):ds) = expandDecls ds 
+expandDecls (((n:ns),t):ds) = ([n],t):(expandDecls ((ns,t):ds))

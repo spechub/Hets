@@ -34,7 +34,7 @@ reserved = [Keywords.trueS,
 basicSpec :: AnnoState.AParser st BASIC_SPEC
 basicSpec = fmap Basic_spec (AnnoState.trailingAnnosParser basicItemP)
             <|>
-            (Lexer.oBraceT >> Lexer.cBraceT >> (return $ Basic_spec []))
+            (Lexer.oBraceT >> Lexer.cBraceT >> return (Basic_spec []))
 
 -- parser for basic items
 basicItemP :: AnnoState.AParser st BASIC_ITEM
@@ -57,7 +57,7 @@ typeP = do AnnoState.asKey "Pi"
         do t <- type1P
            (do AnnoState.asKey Keywords.funS
                (ts, _) <- type1P `Lexer.separatedBy`
-                            (AnnoState.asKey Keywords.funS)
+                            AnnoState.asKey Keywords.funS
                let xs = t:ts
                return $ Func (init xs) (last xs)
             <|>
@@ -110,7 +110,7 @@ varP = do ns <- namesP
           return (ns, t)
 
 varsP :: AnnoState.AParser st [([NAME], TYPE)]
-varsP = do (vs, _) <- varP `Lexer.separatedBy` (AnnoState.asKey ";")
+varsP = do (vs, _) <- varP `Lexer.separatedBy` AnnoState.asKey ";"
            AnnoState.dotT
            return vs
 
@@ -146,13 +146,13 @@ formula2P = do f <- formula3P
                (-- conjunctions
                 do AnnoState.asKey Keywords.lAnd
                    (fs, _) <- formula3P `Lexer.separatedBy`
-                                (AnnoState.asKey Keywords.lAnd)
+                                AnnoState.asKey Keywords.lAnd
                    return $ Conjunction (f:fs)
                 <|>
                 -- disjunctions
                 do AnnoState.asKey Keywords.lOr
                    (fs, _) <- formula3P `Lexer.separatedBy`
-                                (AnnoState.asKey Keywords.lOr)
+                                AnnoState.asKey Keywords.lOr
                    return $ Disjunction (f:fs)
                 <|>
                 -- all other cases
@@ -212,16 +212,16 @@ negP = do AnnoState.asKey Keywords.negS <|> AnnoState.asKey Keywords.notS
 -- parser for true
 trueP :: AnnoState.AParser st FORMULA
 trueP = do AnnoState.asKey Keywords.trueS
-           return $ T
+           return T
 
 -- parser for false
 falseP :: AnnoState.AParser st FORMULA
 falseP = do AnnoState.asKey Keywords.falseS
-            return $ F
+            return F
 
 -- parser for symbol items
 symbItems :: AnnoState.AParser st SYMB_ITEMS
-symbItems = fmap Symb_items $ namesP
+symbItems = fmap Symb_items namesP
 
 -- parser for symbol map items
 symbMapItems :: AnnoState.AParser st SYMB_MAP_ITEMS

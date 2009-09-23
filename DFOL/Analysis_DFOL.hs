@@ -8,11 +8,13 @@ module DFOL.Analysis_DFOL
     basicAnalysis         -- static analysis of basic specifications
   , symbAnalysis          -- static analysis for symbols lists
   , symbMapAnalysis       -- static analysis for symbol map lists
-  , getType 
+  , inducedFromMorphism
+  , inducedFromToMorphism
   ) where
 
 import DFOL.AS_DFOL
 import DFOL.Sign
+import DFOL.Morphism
 import DFOL.Symbol
 import Common.DocUtils
 import Common.ExtSign
@@ -271,6 +273,46 @@ symbAnalysis xs = Result.Result [] $ Just $ concat $ map makeSymbols xs
 makeSymbols :: SYMB_ITEMS -> [Symbol]
 makeSymbols (Symb_items symbs) = map Symbol symbs
 
+-- induces a signature morphism from the source signature and a symbol map
+inducedFromMorphism :: Map.Map Symbol Symbol -> Sign -> Result.Result Morphism
+inducedFromMorphism map1 sig1 = 
+  let map2 = toNameMap map1
+      Result.Result dgs sig2M = buildSig sig1 map2  
+      in case sig2M of
+              Nothing -> Result.Result dgs Nothing
+              Just sig2 -> Result.Result [] $ Just $ Morphism sig1 sig2 map2   
+
+buildSig :: Sign -> Map.Map NAME NAME -> Result.Result Sign
+buildSig (Sign ds) map1 = buildSigH (expandDecls ds) emptySig map1
+
+buildSigH :: [DECL] -> Sign -> Map.Map NAME NAME -> Result.Result Sign
+buildSigH [] sig _ = Result.Result [] $ Just sig  
+buildSigH (([n1],t1):ds) sig map1 =
+  let n2 = Map.findWithDefault n1 n1 map1
+      map2 = Map.fromList $ map (\ (k,a) -> (k, Identifier a)) 
+               $ Map.toList map1
+      syms = Set.map (\ n -> Map.findWithDefault n n map1)
+                 $ getSymbols sig
+      t2 = translate map2 syms t1
+      in if (isConstant n2 sig)
+            then let Just t3 = getSymbolType n2 sig
+                 in if t2 == t3
+                       then buildSigH ds sig map1
+                       else Result.Result [incompatibleViewError n2 t2 t3] Nothing
+            else buildSigH ds (addSymbolDecl ([n2],t2) sig) map1
+buildSigH _ _ _ = Result.Result [] Nothing
+          
+-- induces a signature morphism from the source and target signatures and a symbol map
+inducedFromToMorphism :: Map.Map Symbol Symbol -> ExtSign Sign Symbol -> 
+                         ExtSign Sign Symbol -> Result.Result Morphism
+inducedFromToMorphism map1 (ExtSign sig1 _) (ExtSign sig2 _) =
+  let map2 = toNameMap map1
+      m = Morphism sig1 sig2 map2
+      in if (isValidMorph m)
+            then Result.Result [] $ Just m
+            else Result.Result [Result.Diag Result.Error "Invalid morphism" nullRange]
+                               Nothing 
+
 -- ERROR MESSAGES
 redeclaredNamesError :: Set.Set NAME -> CONTEXT -> Result.Diagnosis
 redeclaredNamesError ns cont =
@@ -332,5 +374,16 @@ noDiscourseTypeError t =
          "Type " ++ (show $ pretty t)
          ++ " is a non-discourse type (does not start with Univ) "
          ++ "and hence cannot be used as a type of an argument."
+    , Result.diagPos = nullRange
+    }
+
+incompatibleViewError :: NAME -> TYPE -> TYPE -> Result.Diagnosis
+incompatibleViewError n t1 t2 =
+  Result.Diag
+    { Result.diagKind = Result.Error
+    , Result.diagString = "Symbol " ++ (show $ pretty n)
+                          ++ " must have both type " ++ (show $ pretty t1)
+                          ++ " and type " ++ (show $ pretty t2)
+                          ++ " in the target signature and hence the view is ill-formed."
     , Result.diagPos = nullRange
     }

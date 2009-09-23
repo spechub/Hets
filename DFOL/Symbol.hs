@@ -7,12 +7,9 @@ Description :  Symbol definition for first-order logic
 module DFOL.Symbol where
 
 import DFOL.AS_DFOL
-import DFOL.Sign
-import DFOL.Morphism
 import Common.Id
 import Common.Doc
 import Common.DocUtils
-import qualified Data.Set as Set
 import qualified Data.Map as Map
 
 --a symbol is just a name
@@ -28,18 +25,20 @@ instance GetRange Symbol where
 printSymbol :: Symbol -> Doc
 printSymbol (Symbol s) = pretty s
 
--- extraction of symbols from a signature
-symOf :: Sign -> Set.Set Symbol
-symOf sig = Set.map Symbol $ getSymbols sig
+-- interface to name maps
+toSymMap :: Map.Map NAME NAME -> Map.Map Symbol Symbol
+toSymMap map1 = Map.fromList $ map (\ (k,a) -> (Symbol k, Symbol a)) 
+                 $ Map.toList map1
 
--- constructs a symbol map from a morphism
-symmapOf :: Morphism -> Map.Map Symbol Symbol
-symmapOf m = Map.fromList $ map (\ (k,a) -> (Symbol k, Symbol a)) 
-               $ Map.toList $ symMap m
+toNameMap :: Map.Map Symbol Symbol -> Map.Map NAME NAME
+toNameMap map1 = Map.fromList $ map (\ (Symbol k, Symbol a) -> (k,a)) 
+                    $ Map.toList map1 
 
--- returns the id of a symbol
-symName :: Symbol -> Id
-symName sym = mkId [name sym]
+-- interface to Id
+toId :: Symbol -> Id
+toId sym = mkId [name sym]
 
-idToRaw :: Id -> Symbol
-idToRaw (Id toks _ _) = Symbol $ Token (concat $ map tokStr toks) nullRange
+fromId :: Id -> Symbol
+fromId (Id toks _ _) = Symbol $ Token (concat $ map tokStr toks) nullRange
+
+
