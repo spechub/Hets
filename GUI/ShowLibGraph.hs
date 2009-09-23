@@ -38,7 +38,7 @@ import Control.Monad (when)
 import Interfaces.DataTypes
 import Interfaces.Utils
 
-type NodeEdgeList = ([DaVinciNode LIB_NAME],[DaVinciArc (IO String)])
+type NodeEdgeList = ([DaVinciNode LibName],[DaVinciArc (IO String)])
 
 {- | Creates a  new uDrawGraph Window and shows the Library Dependency Graph of
      the given LibEnv.-}
@@ -180,11 +180,11 @@ addNodesAndEdges gInfo@(GInfo { hetcatsOpts = opts}) graph nodesEdges = do
    subArcList <- mapM insertSubArc $ getLibDeps le
    writeIORef nodesEdges (subNodeList, subArcList)
 
--- | Creates a list of all LIB_NAME pairs, which have a dependency
-getLibDeps :: LibEnv -> [(LIB_NAME, LIB_NAME)]
+-- | Creates a list of all LibName pairs, which have a dependency
+getLibDeps :: LibEnv -> [(LibName, LibName)]
 getLibDeps = Rel.toList . Rel.intransKernel . getLibDepRel
 
-mShowGraph :: GInfo -> LIB_NAME -> IO ()
+mShowGraph :: GInfo -> LibName -> IO ()
 mShowGraph gInfo@(GInfo {hetcatsOpts = opts}) ln = do
   putIfVerbose opts 3 "Converting Graph"
   gInfo' <- copyGInfo gInfo ln
@@ -194,7 +194,7 @@ mShowGraph gInfo@(GInfo {hetcatsOpts = opts}) ln = do
   return ()
 
 -- | Displays the Specs of a Library in a Textwindow
-showSpec :: LibEnv -> LIB_NAME -> IO()
+showSpec :: LibEnv -> LibName -> IO()
 showSpec le ln =
   createTextDisplay ("Contents of " ++ show ln)
                     $ unlines . map show . Map.keys . globalEnv

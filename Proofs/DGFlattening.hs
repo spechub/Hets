@@ -89,7 +89,7 @@ flatHet = mkFlatStr "heterogeneity"
 
 -- given a node in a library, gives the node at the end of the reference chain
 -- in the library
-lookUpReferenceChain :: LibEnv -> LIB_NAME -> Node -> (LIB_NAME, Node)
+lookUpReferenceChain :: LibEnv -> LibName -> Node -> (LibName, Node)
 lookUpReferenceChain lib_Env libName nd = let
   dg = lookupDGraph libName lib_Env
   in case lookupInRefNodesDG nd dg of
@@ -97,7 +97,7 @@ lookUpReferenceChain lib_Env libName nd = let
    Nothing -> (libName, nd)
 
 -- this function performs flattening of import links
-dgFlatImports :: LibEnv -> LIB_NAME -> DGraph -> DGraph
+dgFlatImports :: LibEnv -> LibName -> DGraph -> DGraph
 dgFlatImports libEnv ln dg = let
   nds = nodesDG dg
   -- part for dealing with the graph itself
@@ -107,7 +107,7 @@ dgFlatImports libEnv ln dg = let
   n_dg = changesDGH dg $ map DeleteEdge $ labEdgesDG updDG
   in groupHistory dg flatImports n_dg
   where
-   updateNode :: LibEnv -> LIB_NAME -> Node -> Result DGChange
+   updateNode :: LibEnv -> LibName -> Node -> Result DGChange
    updateNode lib_Env l_n n =
     let
      labRf = labDG (lookupDGraph l_n lib_Env) n
@@ -118,7 +118,7 @@ dgFlatImports libEnv ln dg = let
       ndgn_theory <- computeTheory lib_Env l_n n
       return $ SetNodeLab labRf (n, labRf {dgn_theory = ndgn_theory})
 
-   updateLib :: LibEnv -> LIB_NAME -> [Node] -> LibEnv
+   updateLib :: LibEnv -> LibName -> [Node] -> LibEnv
    updateLib lib_Env l_n nds =
     case nds of
      [] ->  lib_Env
@@ -136,7 +136,7 @@ libFlatImports lib = return $ Map.mapWithKey (dgFlatImports lib) lib
 
 -- this function performs flattening of imports with renamings
 -- links for a given developement graph
-dgFlatRenamings :: LibEnv -> LIB_NAME -> DGraph -> DGraph
+dgFlatRenamings :: LibEnv -> LibName -> DGraph -> DGraph
 dgFlatRenamings lib_Env l_n dg =
   let
    l_edges = labEdgesDG dg
@@ -216,7 +216,7 @@ libFlatHiding = fmap (Map.map dgFlatHiding) . normalFormLibEnv
 
 -- this function performs flattening of heterogeniety
 -- for a given developement graph
-dgFlatHeterogen :: LibEnv -> LIB_NAME -> DGraph -> DGraph
+dgFlatHeterogen :: LibEnv -> LibName -> DGraph -> DGraph
 dgFlatHeterogen libEnv ln dg = let
   het_comorph = filter
     (\ (_, _, x) -> not $ isHomogeneous $ dgl_morphism x) $ labEdgesDG dg
@@ -227,7 +227,7 @@ dgFlatHeterogen libEnv ln dg = let
   ndg = changesDGH udg het_del_changes
   in groupHistory udg flatHet ndg
   where
-   updateNodes :: LibEnv -> LIB_NAME -> [(Node, Bool)] -> LibEnv
+   updateNodes :: LibEnv -> LibName -> [(Node, Bool)] -> LibEnv
    updateNodes lib_Env l_n nds = case nds of
     [] -> lib_Env
     (hd, isHetDef) : tl -> let
@@ -461,7 +461,7 @@ filterIngoing dg nds = case nds of
 
 -- this function takes a node and performs flattening
 -- of non-disjoint unions for the ingoing tree of nodes to the given node
-singleTreeFlatDUnions :: LibEnv -> LIB_NAME -> Node -> Result LibEnv
+singleTreeFlatDUnions :: LibEnv -> LibName -> Node -> Result LibEnv
 singleTreeFlatDUnions libEnv libName nd = let
   dg = lookupDGraph libName libEnv
   in_nds = filterIngoing dg [nd]

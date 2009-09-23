@@ -372,7 +372,7 @@ idToNodeName (Id toks _ _) = case toks of
 -- these are constructed for a full library environment.
 type IdNameMapping =
   (
-      LIB_NAME
+      LibName
     , NodeName
     , String
     , Graph.Node
@@ -393,7 +393,7 @@ instance Show IdNameMapping where
 -}
 
 -- | projection function for library name
-inmGetLibName::IdNameMapping->LIB_NAME
+inmGetLibName::IdNameMapping->LibName
 inmGetLibName (ln, _, _, _, _, _, _, _, _) = ln
 
 -- | projection function for node name
@@ -473,11 +473,11 @@ inmGetIdNameAllSet inm =
     )
 
 -- | projection function to get library name and node number
-inmGetLNNN::IdNameMapping->(LIB_NAME, Graph.Node)
+inmGetLNNN::IdNameMapping->(LibName, Graph.Node)
 inmGetLNNN inm = (inmGetLibName inm, inmGetNodeNum inm)
 
 -- | searches for mapping where library name and node number match
-inmFindLNNN::(LIB_NAME, Graph.Node)->[IdNameMapping]->Maybe IdNameMapping
+inmFindLNNN::(LibName, Graph.Node)->[IdNameMapping]->Maybe IdNameMapping
 inmFindLNNN lnnn = find (\inm -> inmGetLNNN inm == lnnn)
 
 -- | filter a list of mappings to keep only mappings that contain a
@@ -523,7 +523,7 @@ getNameOrigins (o:r) name =
 --
 --Returns the empty list, if there is no such mapping. Otherwise a list with
 --one element is returned.
-getNameOrigin::[IdNameMapping]->LIB_NAME->Graph.Node->String->[IdNameMapping]
+getNameOrigin::[IdNameMapping]->LibName->Graph.Node->String->[IdNameMapping]
 getNameOrigin names ln node name =
   case getLNGN names ln node of
     Nothing -> []
@@ -543,7 +543,7 @@ getNameOrigin names ln node name =
 
 -- | search for a mapping where the library name and the node match the given
 -- values
-getLNGN::[IdNameMapping]->LIB_NAME->Graph.Node->Maybe IdNameMapping
+getLNGN::[IdNameMapping]->LibName->Graph.Node->Maybe IdNameMapping
 getLNGN [] _ _ = Nothing
 getLNGN (h:r) ln nn
   | (inmGetLibName h) == ln && (inmGetNodeNum h) == nn = Just h
@@ -821,7 +821,7 @@ hasOperator
 -- axioms.
 --
 -- Uses 'createNODENAMEWOMap' and 'extractConstructorOps'.
-getFlatNames::LibEnv->Map.Map LIB_NAME (Set.Set IdentifierWON)
+getFlatNames::LibEnv->Map.Map LibName (Set.Set IdentifierWON)
 getFlatNames lenv =
   foldl
     (\fm ln ->
@@ -1105,8 +1105,8 @@ getFlatNames lenv =
 -- somewhere else (imported)
 identifyFlatNames::
   LibEnv
-  ->Map.Map LIB_NAME (Set.Set IdentifierWON)
-  ->Map.Map (LIB_NAME, IdentifierWON) (LIB_NAME, IdentifierWON)
+  ->Map.Map LibName (Set.Set IdentifierWON)
+  ->Map.Map (LibName, IdentifierWON) (LibName, IdentifierWON)
 identifyFlatNames
   lenv
   flatmap =
@@ -1181,8 +1181,8 @@ sameConAsOp i1 i2 = i1 == i2
 -- Background: import from identifiers that where already imported from
 -- somewhere else are not found at first.
 fixIdentMap::
-    Map.Map (LIB_NAME, IdentifierWON) (LIB_NAME, IdentifierWON)
-  ->Map.Map (LIB_NAME, IdentifierWON) (LIB_NAME, IdentifierWON)
+    Map.Map (LibName, IdentifierWON) (LibName, IdentifierWON)
+  ->Map.Map (LibName, IdentifierWON) (LibName, IdentifierWON)
 fixIdentMap identMap =
   Map.foldWithKey
     (\key value m ->
@@ -1209,8 +1209,8 @@ fixIdentMap identMap =
 
 findMultiOriginUnifications::
   LibEnv
-  ->Map.Map LIB_NAME (Set.Set (Set.Set IdentifierWON))
-  ->Map.Map (LIB_NAME, Set.Set IdentifierWON) (LIB_NAME, IdentifierWON)
+  ->Map.Map LibName (Set.Set (Set.Set IdentifierWON))
+  ->Map.Map (LibName, Set.Set IdentifierWON) (LibName, IdentifierWON)
 findMultiOriginUnifications
   lenv
   multimap
@@ -1278,9 +1278,9 @@ findMultiOriginUnifications
 -- identifiers from a mapping (leaving only identifiers where they are
 -- introduced)
 removeReferencedIdentifiers::
-  Map.Map LIB_NAME (Set.Set IdentifierWON)
-  ->Map.Map (LIB_NAME, IdentifierWON) (LIB_NAME, IdentifierWON)
-  ->Map.Map LIB_NAME (Set.Set IdentifierWON)
+  Map.Map LibName (Set.Set IdentifierWON)
+  ->Map.Map (LibName, IdentifierWON) (LibName, IdentifierWON)
+  ->Map.Map LibName (Set.Set IdentifierWON)
 removeReferencedIdentifiers
   flatMap
   identMap =
@@ -1309,8 +1309,8 @@ removeReferencedIdentifiers
 -- OMDoc allows same names only in different theories (and the names of all
 -- theories inside a document must be unique).
 getIdUseNumber::
-  Map.Map LIB_NAME (Set.Set IdentifierWON)
-  ->Map.Map LIB_NAME (Set.Set (IdentifierWON, Int))
+  Map.Map LibName (Set.Set IdentifierWON)
+  ->Map.Map LibName (Set.Set (IdentifierWON, Int))
 getIdUseNumber
   remMap
   =
@@ -1371,8 +1371,8 @@ getIdUseNumber
 -- to be unique in the whole document
 -- | fix global namespace issues
 makeUniqueGlobalCounts::
-  Map.Map LIB_NAME (Set.Set (IdentifierWON, Int))
-  ->Map.Map LIB_NAME (Set.Set (IdentifierWON, Int))
+  Map.Map LibName (Set.Set (IdentifierWON, Int))
+  ->Map.Map LibName (Set.Set (IdentifierWON, Int))
 makeUniqueGlobalCounts
   unnMap
   =
@@ -1440,8 +1440,8 @@ makeUniqueGlobalCounts
   as a start and checks uniqueness per theory (and for node-names).
 -}
 makeUniqueNames::
-  Map.Map LIB_NAME (Set.Set (IdentifierWON, Int))
-  ->Map.Map LIB_NAME (Set.Set (IdentifierWON, String))
+  Map.Map LibName (Set.Set (IdentifierWON, Int))
+  ->Map.Map LibName (Set.Set (IdentifierWON, String))
 makeUniqueNames
   countMap
   =
@@ -1507,7 +1507,7 @@ makeUniqueNames
 -- The mappings contain only the theory unique symbols. See 'makeFullNames'.
 makeUniqueIdNameMapping::
   LibEnv
-  ->Map.Map LIB_NAME (Set.Set (IdentifierWON, String))
+  ->Map.Map LibName (Set.Set (IdentifierWON, String))
   ->[IdNameMapping]
 makeUniqueIdNameMapping
   lenv
@@ -1728,13 +1728,13 @@ compatibleOperator sortrel ot1 ot2 =
 
 type CollectionMap =
   Map.Map
-    (LIB_NAME, Graph.Node)
-    (Map.Map LIB_NAME (Set.Set (IdentifierWON, String)))
+    (LibName, Graph.Node)
+    (Map.Map LibName (Set.Set (IdentifierWON, String)))
 
 -- convenience
 getIdentifierAt
   ::CollectionMap
-  ->(LIB_NAME, Graph.Node)
+  ->(LibName, Graph.Node)
   ->[(IdentifierWON, String)]
 getIdentifierAt
   collectionMap
@@ -1752,7 +1752,7 @@ getIdentifierAt
 
 getSortsAt
   ::CollectionMap
-  ->(LIB_NAME, Graph.Node)
+  ->(LibName, Graph.Node)
   ->[(IdentifierWON, String)]
 getSortsAt
   collectionMap
@@ -1769,7 +1769,7 @@ getSortsAt
 
 getPredsAt
   ::CollectionMap
-  ->(LIB_NAME, Graph.Node)
+  ->(LibName, Graph.Node)
   ->[((IdentifierWON, PredType), String)]
 getPredsAt
   collectionMap
@@ -1788,7 +1788,7 @@ getPredsAt
 
 getOpsAt
   ::CollectionMap
-  ->(LIB_NAME, Graph.Node)
+  ->(LibName, Graph.Node)
   ->[((IdentifierWON, OpType), String)]
 getOpsAt
   collectionMap
@@ -1806,7 +1806,7 @@ getOpsAt
 
 getSensAt
   ::CollectionMap
-  ->(LIB_NAME, Graph.Node)
+  ->(LibName, Graph.Node)
   ->[((IdentifierWON, Int), String)]
 getSensAt
   collectionMap
@@ -1826,7 +1826,7 @@ getSensAt
 -- convenience
 getDefinedIdentifierAt
   ::CollectionMap
-  ->(LIB_NAME, Graph.Node)
+  ->(LibName, Graph.Node)
   ->[(IdentifierWON, String)]
 getDefinedIdentifierAt
   collectionMap
@@ -1845,7 +1845,7 @@ getDefinedIdentifierAt
 
 getDefinedSortsAt
   ::CollectionMap
-  ->(LIB_NAME, Graph.Node)
+  ->(LibName, Graph.Node)
   ->[(IdentifierWON, String)]
 getDefinedSortsAt
   collectionMap
@@ -1862,7 +1862,7 @@ getDefinedSortsAt
 
 getDefinedPredsAt
   ::CollectionMap
-  ->(LIB_NAME, Graph.Node)
+  ->(LibName, Graph.Node)
   ->[((IdentifierWON, PredType), String)]
 getDefinedPredsAt
   collectionMap
@@ -1881,7 +1881,7 @@ getDefinedPredsAt
 
 getDefinedOpsAt
   ::CollectionMap
-  ->(LIB_NAME, Graph.Node)
+  ->(LibName, Graph.Node)
   ->[((IdentifierWON, OpType), String)]
 getDefinedOpsAt
   collectionMap
@@ -1899,7 +1899,7 @@ getDefinedOpsAt
 
 getDefinedSensAt
   ::CollectionMap
-  ->(LIB_NAME, Graph.Node)
+  ->(LibName, Graph.Node)
   ->[((IdentifierWON, Int), String)]
 getDefinedSensAt
   collectionMap
@@ -1918,10 +1918,10 @@ getDefinedSensAt
 
 findIdentifiersForName
   ::CollectionMap
-  ->(LIB_NAME, Graph.Node)
+  ->(LibName, Graph.Node)
   ->String
   ->(String->String)
-  ->[(LIB_NAME, IdentifierWON)]
+  ->[(LibName, IdentifierWON)]
 findIdentifiersForName
   collectionMap
   location
@@ -1956,10 +1956,10 @@ findIdentifiersForName
 
 findIdIdsForName
   ::CollectionMap
-  ->(LIB_NAME, Graph.Node)
+  ->(LibName, Graph.Node)
   ->String
   ->(String->String)
-  ->[(LIB_NAME, IdentifierWON)]
+  ->[(LibName, IdentifierWON)]
 findIdIdsForName
   collectionMap
   location
@@ -1983,10 +1983,10 @@ findIdPredsForName
   ::Rel.Rel SORT
   ->PredType
   ->CollectionMap
-  ->(LIB_NAME, Graph.Node)
+  ->(LibName, Graph.Node)
   ->String
   ->(String->String)
-  ->[(LIB_NAME, IdentifierWON)]
+  ->[(LibName, IdentifierWON)]
 findIdPredsForName
   srel
   ptype
@@ -2028,10 +2028,10 @@ findIdOpsForName
   ::Rel.Rel SORT
   ->OpType
   ->CollectionMap
-  ->(LIB_NAME, Graph.Node)
+  ->(LibName, Graph.Node)
   ->String
   ->(String->String)
-  ->[(LIB_NAME, IdentifierWON)]
+  ->[(LibName, IdentifierWON)]
 findIdOpsForName
   srel
   otype
@@ -2066,9 +2066,9 @@ findIdOpsForName
 
 findIdentifiersForId
   ::CollectionMap
-  ->(LIB_NAME, Graph.Node)
+  ->(LibName, Graph.Node)
   ->Id
-  ->[(LIB_NAME, (IdentifierWON, String))]
+  ->[(LibName, (IdentifierWON, String))]
 findIdentifiersForId
   collectionMap
   location
@@ -2103,9 +2103,9 @@ findIdentifiersForId
 
 findIdIdsForId
   ::CollectionMap
-  ->(LIB_NAME, Graph.Node)
+  ->(LibName, Graph.Node)
   ->Id
-  ->[(LIB_NAME, (IdentifierWON, String))]
+  ->[(LibName, (IdentifierWON, String))]
 findIdIdsForId
   collectionMap
   location
@@ -2128,9 +2128,9 @@ findIdPredsForId
   ::Rel.Rel SORT
   ->PredType
   ->CollectionMap
-  ->(LIB_NAME, Graph.Node)
+  ->(LibName, Graph.Node)
   ->Id
-  ->[(LIB_NAME, (IdentifierWON, String))]
+  ->[(LibName, (IdentifierWON, String))]
 findIdPredsForId
   srel
   ptype
@@ -2171,9 +2171,9 @@ findIdOpsForId
   ::Rel.Rel SORT
   ->OpType
   ->CollectionMap
-  ->(LIB_NAME, Graph.Node)
+  ->(LibName, Graph.Node)
   ->Id
-  ->[(LIB_NAME, (IdentifierWON, String))]
+  ->[(LibName, (IdentifierWON, String))]
 findIdOpsForId
   srel
   otype
@@ -2215,8 +2215,8 @@ findIdOpsForId
 -- See 'makeUniqueIdNameMapping'.
 makeCollectionMap::
   LibEnv
-  ->Map.Map LIB_NAME (Set.Set (IdentifierWON, String))
-  ->Map.Map (LIB_NAME, IdentifierWON) (LIB_NAME, IdentifierWON)
+  ->Map.Map LibName (Set.Set (IdentifierWON, String))
+  ->Map.Map (LibName, IdentifierWON) (LibName, IdentifierWON)
   ->CollectionMap
 makeCollectionMap
   lenv
@@ -2874,7 +2874,7 @@ separateIdentifiers
 -- completely without result.
 findOriginInCurrentLib::
   forall a .
-  LIB_NAME -- ^ only mappings with that library name are searched
+  LibName -- ^ only mappings with that library name are searched
   ->[IdNameMapping] -- ^ mapping of unique names
   ->[IdNameMapping] -- ^ mapping of full names (used if nothing found in unique names)
   ->(IdNameMapping->Maybe a) -- ^ search for element
@@ -2916,7 +2916,7 @@ findOriginInCurrentLib
 
 traceRealIdentifierOrigins::
   LibEnv
-  ->LIB_NAME
+  ->LibName
   ->Graph.Node -- ^ start node
   ->Identifier -- ^ Identifier to search origin for
   ->[IdentifierWON]
@@ -3006,7 +3006,7 @@ traceRealIdentifierOrigins
               []
       _ -> error "not implemented!"
   where
-  nextTraces::[Graph.LEdge DGLinkLab]->[(LIB_NAME, Graph.Node, Identifier)]->[IdentifierWON]
+  nextTraces::[Graph.LEdge DGLinkLab]->[(LibName, Graph.Node, Identifier)]->[IdentifierWON]
   nextTraces nbl mse =
     let
       otherNodes =
@@ -3041,7 +3041,7 @@ traceRealIdentifierOrigins
     ->(d->Identifier)
     ->DGraph
     ->[(Graph.LEdge DGLinkLab)]
-    ->[(LIB_NAME, Graph.Node, Identifier)]
+    ->[(LibName, Graph.Node, Identifier)]
   findMorphismSearches
     getMorphParts
     checkPart
@@ -3294,7 +3294,7 @@ traceAllIdentifierOriginsMulti
       Set.empty
       allIdents
 
-getMultiOrigins::LibEnv->Map.Map LIB_NAME (Set.Set (Set.Set IdentifierWON))
+getMultiOrigins::LibEnv->Map.Map LibName (Set.Set (Set.Set IdentifierWON))
 getMultiOrigins lenv =
   foldl
     (\mm ln ->

@@ -47,7 +47,7 @@ import Control.Monad
 -- Theorem hide shift and  auxiliaries
 -----------------------------------------------
 
-theoremHideShift :: LIB_NAME -> LibEnv -> Result LibEnv
+theoremHideShift :: LibName -> LibEnv -> Result LibEnv
 theoremHideShift ln = return .
   Map.adjust (\ dg -> theoremHideShiftAux (labNodesDG dg) dg) ln
 
@@ -100,7 +100,7 @@ theoremHideShiftForEdgeAux dg (sn, tn, llab) = do
               (newGraph, addEdgeId emptyProofBasis $ getEdgeId finalEdge)
         Just e -> return (dg, addEdgeId emptyProofBasis $ getEdgeId e)
 
-theoremHideShiftFromList :: LIB_NAME -> [LNode DGNodeLab] -> LibEnv
+theoremHideShiftFromList :: LibName -> [LNode DGNodeLab] -> LibEnv
                          -> Result LibEnv
 theoremHideShiftFromList ln ls =
   return . Map.adjust (theoremHideShiftAux ls) ln

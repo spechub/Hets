@@ -37,7 +37,7 @@ import Common.Exception
 import Interfaces.DataTypes
 
 -- | show development graph of a given library name in a window
-showGraph :: FilePath -> HetcatsOpts -> Maybe (LIB_NAME, LibEnv) -> IO ()
+showGraph :: FilePath -> HetcatsOpts -> Maybe (LibName, LibEnv) -> IO ()
 showGraph file opts env = case env of
   Just (ln, le) -> do
     putIfVerbose opts 2 $ "Trying to display " ++ file

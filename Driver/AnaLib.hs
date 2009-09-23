@@ -39,7 +39,7 @@ import Data.List (isSuffixOf)
 import Control.Monad
 import Data.Maybe
 
-anaLibReadPrfs :: HetcatsOpts -> FilePath -> IO (Maybe (LIB_NAME, LibEnv))
+anaLibReadPrfs :: HetcatsOpts -> FilePath -> IO (Maybe (LibName, LibEnv))
 anaLibReadPrfs opts file = do
     m <- anaLib opts
       { outtypes = []
@@ -53,7 +53,7 @@ anaLibReadPrfs opts file = do
         return $ Just (ln, nEnv)
 
 -- | lookup an env or read and analyze a file
-anaLib :: HetcatsOpts -> FilePath -> IO (Maybe (LIB_NAME, LibEnv))
+anaLib :: HetcatsOpts -> FilePath -> IO (Maybe (LibName, LibEnv))
 anaLib opts fname = do
   fname' <- existsAnSource opts {intype = GuessIn} $ rmSuffix fname
   case fname' of
@@ -66,7 +66,7 @@ anaLib opts fname = do
         else anaLibExt opts file emptyLibEnv
 
 -- | read a file and extended the current library environment
-anaLibExt :: HetcatsOpts -> FilePath -> LibEnv -> IO (Maybe (LIB_NAME, LibEnv))
+anaLibExt :: HetcatsOpts -> FilePath -> LibEnv -> IO (Maybe (LibName, LibEnv))
 anaLibExt opts file libEnv = do
     Result ds res <- runResultT $ anaLibFileOrGetEnv logicGraph opts
       Set.empty libEnv (fileToLibName opts file) file
@@ -81,7 +81,7 @@ anaLibExt opts file libEnv = do
             showDiags opts $ diags envRes
             return $ Just (ln, nEnv)
 
-readPrfFile :: HetcatsOpts -> LibEnv -> LIB_NAME -> IO LibEnv
+readPrfFile :: HetcatsOpts -> LibEnv -> LibName -> IO LibEnv
 readPrfFile opts ps ln = do
     let fname = libNameToFile opts ln
         prfFile = rmSuffix fname ++ prfSuffix

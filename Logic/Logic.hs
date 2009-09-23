@@ -370,7 +370,7 @@ class ( Syntax lid basic_spec symb_items symb_map_items
          {- | rename and qualify the symbols considering a united incoming
             morphisms, code out overloading and
             create sentences for the overloading relation -}
-         qualify :: lid -> SIMPLE_ID -> LIB_ID -> morphism -> sign
+         qualify :: lid -> SIMPLE_ID -> LibId -> morphism -> sign
                  -> Result (morphism, [Named sentence])
          qualify l _ _ _ _ = statErr l "qualify"
          -------------------- symbols and raw symbols ---------------------
@@ -577,7 +577,7 @@ class (StaticAnalysis lid
          empty_proof_tree l = error $ statErrMsg l "empty_proof_tree"
 
          ----------------------- OMDoc ---------------------------
-         export_signToOmdoc :: lid -> SIMPLE_ID -> LIB_ID -> sign
+         export_signToOmdoc :: lid -> SIMPLE_ID -> LibId -> sign
                            -> [OMDoc.TCElement]
          -- default implementation
          export_signToOmdoc lid _ _ _ =
@@ -590,7 +590,7 @@ class (StaticAnalysis lid
              error $ "export_morphismToOmdoc not yet implemented "
                        ++ "for logic " ++ (show lid)
 
-         export_senToOmdoc :: lid -> SIMPLE_ID -> LIB_ID -> sign
+         export_senToOmdoc :: lid -> SIMPLE_ID -> LibId -> sign
                           -> Named sentence -> OMDoc.TCElement
          -- default implementation
          export_senToOmdoc lid _ _ _ _  =

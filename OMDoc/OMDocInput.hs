@@ -87,7 +87,7 @@ import qualified Data.Char as Char
 mLibEnvFromOMDocFile::
   HetcatsOpts -- ^ setup libdir to search for files
   ->FilePath -- ^ the file to load
-  ->IO (Maybe (ASL.LIB_NAME, LibEnv))
+  ->IO (Maybe (ASL.LibName, LibEnv))
 mLibEnvFromOMDocFile hco file =
   catch
     (
@@ -106,7 +106,7 @@ mLibEnvFromOMDocFile hco file =
 libEnvFromOMDocFile::
   GlobalOptions -- ^ library path setup with hetsOpts + debugging options
   ->String -- ^ URI \/ File to load
-  ->IO (ASL.LIB_NAME, DGraph, LibEnv)
+  ->IO (ASL.LibName, DGraph, LibEnv)
 libEnvFromOMDocFile go f =
   makeImportGraphOMDoc go f >>=
     return . importGraphToLibEnvOM go
@@ -1464,8 +1464,7 @@ createNodeFromSpecOM
     reftheory = noSensGTheory CASL (mkExtSign caslsign) startSigId
     node = newInfoNodeLab (ts_nodename ts)
            (if isRefSpec ts then newRefInfo
-              (ASL.Lib_id $ ASL.Indirect_link (ts_source ts)
-                            Id.nullRange "" ASL.noTime) $ ts_realnodenum ts
+              (ASL.emptyLibName $ ts_source ts) $ ts_realnodenum ts
             else newNodeInfo DGBasic)
            (if isRefSpec ts then reftheory else theory)
   in
@@ -2447,7 +2446,7 @@ createGraphPartsOM
 importGraphToLibEnvOM::
     GlobalOptions
   ->ImportGraph OMDoc.OMDoc
-  ->(ASL.LIB_NAME, DGraph, LibEnv)
+  ->(ASL.LibName, DGraph, LibEnv)
 importGraphToLibEnvOM
   go
   ig
@@ -2474,22 +2473,15 @@ importGraphToLibEnvOM
         partMap
     libenv =
       Map.fromList
-        $
-        map
-          (\(sn, dg) ->
-            ( ASL.Lib_id (ASL.Indirect_link sn Id.nullRange "" ASL.noTime)
-            , dg
-            )
-          )
-          (Map.toList graphMap)
+        $ map (\ (sn, dg) -> (ASL.emptyLibName sn, dg))
+          $ Map.toList graphMap
     firstSourceNode =
       Data.Maybe.fromMaybe
         (error "OMDoc.OMDocInput.importGraphToLibEnvOM: No first node!")
         $
         Graph.lab ig 1
     firstSource = (\(S (sn, _, _) _) -> sn) firstSourceNode
-    asKey = ASL.Lib_id $ ASL.Indirect_link firstSource Id.nullRange
-            "" ASL.noTime
+    asKey = ASL.emptyLibName firstSource
     firstDG = lookupDGraph asKey libenv
   in
     (asKey, firstDG, libenv)

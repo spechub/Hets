@@ -47,7 +47,7 @@ import Data.Graph.Inductive.Graph
 import Data.List
 
 -- | local decomposition
-locDecompFromList :: LIB_NAME ->  [LEdge DGLinkLab] -> LibEnv -> LibEnv
+locDecompFromList :: LibName ->  [LEdge DGLinkLab] -> LibEnv -> LibEnv
 locDecompFromList ln localThmEdges libEnv=
    let dgraph = lookupDGraph ln libEnv
        finalLocalThmEdges = filter (liftE isUnprovenLocalThm) localThmEdges
@@ -55,7 +55,7 @@ locDecompFromList ln localThmEdges libEnv=
    in Map.insert ln nextDGraph libEnv
 
 -- | local decomposition for all edges
-locDecomp :: LIB_NAME -> LibEnv -> LibEnv
+locDecomp :: LibName -> LibEnv -> LibEnv
 locDecomp ln libEnv =
     let dgraph = lookupDGraph ln libEnv
         localThmEdges = labEdgesDG dgraph
@@ -63,7 +63,7 @@ locDecomp ln libEnv =
 
 {- auxiliary function for locDecomp (above)
    actual implementation -}
-locDecompAux :: LibEnv -> LIB_NAME -> DGraph -> LEdge DGLinkLab -> DGraph
+locDecompAux :: LibEnv -> LibName -> DGraph -> LEdge DGLinkLab -> DGraph
 locDecompAux libEnv ln dgraph ledge@(src, tgt, edgeLab) = let
     morphism = dgl_morphism edgeLab
     allPaths = getAllLocGlobPathsBetween dgraph src tgt
@@ -104,7 +104,7 @@ isSameTranslation th morphism path =
       Nothing -> False
 
 -- | local inference
-localInferenceFromList :: LIB_NAME -> [LEdge DGLinkLab] -> LibEnv -> LibEnv
+localInferenceFromList :: LibName -> [LEdge DGLinkLab] -> LibEnv -> LibEnv
 localInferenceFromList ln localThmEdges libEnv =
    let dgraph = lookupDGraph ln libEnv
        finalLocalThmEdges = filter (liftE isUnprovenLocalThm) localThmEdges
@@ -113,14 +113,14 @@ localInferenceFromList ln localThmEdges libEnv =
    in Map.insert ln nextDGraph newLibEnv
 
 -- | local inference for all edges
-localInference :: LIB_NAME -> LibEnv -> LibEnv
+localInference :: LibName -> LibEnv -> LibEnv
 localInference ln libEnv =
     let dgraph = lookupDGraph ln libEnv
         localThmEdges = labEdgesDG dgraph
     in localInferenceFromList ln localThmEdges libEnv
 
 -- auxiliary method for localInference
-localInferenceAux :: LIB_NAME -> (LibEnv, DGraph) -> LEdge DGLinkLab
+localInferenceAux :: LibName -> (LibEnv, DGraph) -> LEdge DGLinkLab
                   -> (LibEnv, DGraph)
 localInferenceAux ln (libEnv, dgraph) ledge@(src, tgt, edgeLab) = let
     noChange = (libEnv, dgraph)

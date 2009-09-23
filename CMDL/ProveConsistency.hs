@@ -43,7 +43,7 @@ import Logic.Grothendieck(findComorphismPaths)
 import Logic.Logic(Language(language_name), Logic(provers))
 import qualified Logic.Prover as P
 
-import Common.LibName(LIB_NAME)
+import Common.LibName(LibName)
 import Common.Result(Result(Result))
 import Common.Utils(trim)
 
@@ -230,7 +230,7 @@ checkNode ::
               MVar (Maybe ThreadId) ->
               MVar (Maybe Int_NodeInfo)  ->
               MVar LibEnv ->
-              LIB_NAME ->
+              LibName ->
               -- returns an error message if anything happens
                IO String
 checkNode useTh save2File sTxt ndpf ndnm mp mcm mThr mSt mlbE libname
@@ -330,7 +330,7 @@ proveNode ::
               MVar (Maybe ThreadId) ->
               MVar (Maybe Int_NodeInfo)  ->
               MVar LibEnv ->
-              LIB_NAME ->
+              LibName ->
               -- returns an error message if anything happens
                IO String
 proveNode useTh save2File sTxt ndpf ndnm mp mcm mThr mSt mlbE libname
@@ -427,7 +427,7 @@ getResults lid acm mStop mData mState =
 
 -- | inserts the results of the proof in the development graph
 addResults ::    LibEnv
-              -> LIB_NAME
+              -> LibName
               -> Int_NodeInfo
               -> IO LibEnv
 addResults lbEnv libname ndps
@@ -460,7 +460,7 @@ sigIntHandler :: MVar (Maybe ThreadId) ->
                  MVar (Maybe Int_NodeInfo) ->
                  ThreadId ->
                  MVar LibEnv ->
-                 LIB_NAME ->
+                 LibName ->
                  IO ()
 sigIntHandler mthr mlbE mSt thr mOut libname
  = do

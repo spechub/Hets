@@ -49,7 +49,7 @@ import SoftFOL.PrintTPTP
 spassConsTimeLimit :: Int
 spassConsTimeLimit = 500
 
-printTheoryAsSoftFOL :: LIB_NAME -> SIMPLE_ID
+printTheoryAsSoftFOL :: LibName -> SIMPLE_ID
          -> Int -- ^ 0 = DFG, 1 = TPTP
          -> Bool
             -- ^ if True a conjecture false is added otherwise
@@ -99,7 +99,7 @@ printTheoryAsSoftFOL ln sn lang checkConsistency
                      1 -> printTPTP
                      _ -> pretty
         sens = toNamedList thSens
-        thName = shows (getLIB_ID ln) "_" ++ show sn
+        thName = shows (getLibId ln) "_" ++ show sn
 
         spLogicalPart sig sen =
                             foldl insertSentence

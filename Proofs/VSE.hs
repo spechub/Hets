@@ -58,9 +58,9 @@ import Data.Graph.Inductive.Graph hiding (out)
 
 import Control.Monad.Trans
 
-thName :: LIB_NAME -> LNode DGNodeLab -> String
+thName :: LibName -> LNode DGNodeLab -> String
 thName ln (n, lbl) = map (\ c -> if elem c "/,[]: " then '-' else c)
-           $ shows (getLIB_ID ln) "_" ++ getDGNodeName lbl ++ "_" ++ show n
+           $ shows (getLibId ln) "_" ++ getDGNodeName lbl ++ "_" ++ show n
 
 getSubGraph :: Node -> DGraph -> DGraph
 getSubGraph n dg =
@@ -71,7 +71,7 @@ getSubGraph n dg =
     in foldr delNodeDG dg $ Set.toList $ Set.difference (Set.fromList ns) sns
 
 -- | applies basic inference to a given node and whole import tree above
-prove :: (LIB_NAME, Node) -> LibEnv -> IO (Result LibEnv)
+prove :: (LibName, Node) -> LibEnv -> IO (Result LibEnv)
 prove (ln, node) libEnv =
   runResultT $ do
     qLibEnv <- liftR $ qualifyLibEnv libEnv
@@ -91,7 +91,7 @@ prove (ln, node) libEnv =
          let lbln = getDGNodeName lbl
          G_theory lid (ExtSign sign0 _) _ sens0 _ <- return $ dgn_theory lbl
          (sign1, sens1) <-
-           addErrorDiag "failure when proving VSE nodes of" (getLIB_ID ln)
+           addErrorDiag "failure when proving VSE nodes of" (getLibId ln)
            $ coerceBasicTheory lid VSE
              ("cannot cast untranslated node '" ++ lbln ++ "'")
              (sign0, toNamedList sens0)
@@ -99,7 +99,7 @@ prove (ln, node) libEnv =
          return
            ( show $ prettySExpr
              $ qualVseSignToSExpr (mkSimpleId lbln)
-               (getLIB_ID ln) sign2
+               (getLibId ln) sign2
            , show $ prettySExpr
              $ SList $ map (namedSenToSExpr sign2) sens2)) ns
     lift $ do
@@ -149,7 +149,7 @@ prove (ln, node) libEnv =
                                  G_theory lid sig sigId nsens startThId })
                         in Map.insert ln ndg le) libEnv nls
 
-getLinksTo :: LIB_NAME -> DGraph -> LNode DGNodeLab -> IO String
+getLinksTo :: LibName -> DGraph -> LNode DGNodeLab -> IO String
 getLinksTo ln dg (n, lbl) = do
   let (ls, rs) = partition (\ (s, _, el) -> s /= n
            && isGlobalDef (dgl_type el)

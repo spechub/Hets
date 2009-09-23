@@ -37,7 +37,7 @@ import Data.Graph.Inductive.Graph
 import Data.List(nub)
 import Control.Monad
 
-computeColimit :: LIB_NAME -> LibEnv -> Result LibEnv
+computeColimit :: LibName -> LibEnv -> Result LibEnv
 computeColimit ln le = do
   let dgraph = lookupDGraph ln le
   nextDGraph <- insertColimitInGraph dgraph

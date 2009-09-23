@@ -46,7 +46,7 @@ omdocMetaTheory :: Maybe OMCD
 omdocMetaTheory = Just $ CD "casl" $ Just "http://cds.omdoc.org/logics/casl.omdoc"
 
 
-exportSignToOmdoc ::  (Show f, Pretty e) => SIMPLE_ID -> LIB_ID -> Sign f e ->
+exportSignToOmdoc ::  (Show f, Pretty e) => SIMPLE_ID -> LibId -> Sign f e ->
                       [TCElement]
 exportSignToOmdoc sid lid sign =
     [TCComment $ "Signature of Spec: " ++ (show spid)]
@@ -65,7 +65,7 @@ exportMorphismToOmdoc (Morphism _ _ sortmap opmap predmap _) =
               ++ Map.elems (mapWithKey (makePredMapEntry NOSPEC) predmap)
 
 
-exportSenToOmdoc :: (GetRange f, Pretty f) => SIMPLE_ID -> LIB_ID -> Sign f e
+exportSenToOmdoc :: (GetRange f, Pretty f) => SIMPLE_ID -> LibId -> Sign f e
                  -> Named(FORMULA f) -> TCElement
 exportSenToOmdoc sid lid sign f =
     let spid  = (SPEC_ID (simpleIdToId sid) (libIdToId lid))
@@ -206,7 +206,7 @@ idToNameTriple :: SPEC_ID -> Id -> NameTriple
 -- spid-structure
 idToNameTriple spid s
     | isQualName s = NameTriple (show $ unQualName s)
-                     (show $ getNodeId s) (show $ getLibId s)
+                     (show $ getNodeId s) (show $ libIdOfQualName s)
     | otherwise = case spid of
                     (SPEC_ID sid lid) ->
                         NameTriple (show s) (show sid) (show lid)

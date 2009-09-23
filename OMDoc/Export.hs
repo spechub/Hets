@@ -35,9 +35,9 @@ import Data.List
 import Data.Maybe
 
 -- | DGraph to OMDoc translation
-exportDGraph :: LIB_NAME -> DGraph -> OMDoc
+exportDGraph :: LibName -> DGraph -> OMDoc
 exportDGraph ln dg = let
-      libid = (getLIB_ID ln)
+      libid = (getLibId ln)
     in OMDoc (show ln) $
            -- the theories
            (catMaybes $ map (exportNodeLab libid dg) $ topsortedNodes dg)
@@ -46,7 +46,7 @@ exportDGraph ln dg = let
            (catMaybes $ map (exportLinkLab libid dg) $ labEdgesDG dg)
 
 -- | DGNodeLab to TLTheory translation
-exportNodeLab :: LIB_ID -> DGraph -> LNode DGNodeLab -> Maybe TLElement
+exportNodeLab :: LibId -> DGraph -> LNode DGNodeLab -> Maybe TLElement
 exportNodeLab libid dg (n, lb) =
   if isDGRef lb then Nothing else
     let specid = mkSimpleId $ getDGNodeName lb
@@ -57,7 +57,7 @@ exportNodeLab libid dg (n, lb) =
         ++ export_signToOmdoc lid specid libid sig
         ++ map (export_senToOmdoc lid specid libid sig) (toNamedList sens)
 
-makeImport :: LIB_ID -> DGraph -> LEdge DGLinkLab -> Maybe TCElement
+makeImport :: LibId -> DGraph -> LEdge DGLinkLab -> Maybe TCElement
 makeImport libid dg (from, _, lbl) =
   if isGlobalDef $ dgl_type lbl then
   Just . TCImport (cdFromNode libid $ labDG dg from) . makeMorphism libid
@@ -65,7 +65,7 @@ makeImport libid dg (from, _, lbl) =
   else Nothing
 
 -- | Given a TheoremLink we compute the view
-exportLinkLab :: LIB_ID -> DGraph -> LEdge DGLinkLab -> Maybe TLElement
+exportLinkLab :: LibId -> DGraph -> LEdge DGLinkLab -> Maybe TLElement
 exportLinkLab libid dg (from, to, lbl) = case dgl_type lbl of
     ScopedLink Global (ThmLink _) _ ->
        Just . TLView (cdFromNode libid $ labDG dg from)
@@ -73,16 +73,16 @@ exportLinkLab libid dg (from, to, lbl) = case dgl_type lbl of
            . makeMorphism libid $ dgl_morphism lbl
     _ -> Nothing
 
-makeMorphism :: LIB_ID -> GMorphism -> TCElement
+makeMorphism :: LibId -> GMorphism -> TCElement
 makeMorphism _ (GMorphism cid _ _ mor _) =
     export_morphismToOmdoc (targetLogic cid) mor
 
-cdFromNode :: LIB_ID -> DGNodeLab -> OMCD
+cdFromNode :: LibId -> DGNodeLab -> OMCD
 cdFromNode libid lb =
 -- special handling for library entries !??
     CD (getDGNodeName lb) $
     let omcdbase = show $ if isDGRef lb
-                          then getLIB_ID $ ref_libname $ nodeInfo lb
+                          then getLibId $ ref_libname $ nodeInfo lb
                           else libid
     in if omcdbase == "library" || omcdbase == ""
        then Nothing else Just omcdbase

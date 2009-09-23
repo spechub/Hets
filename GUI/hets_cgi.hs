@@ -226,7 +226,7 @@ anaInput contents selectedBoxes outputfiles =
                      _     -> True
 
       process_result :: [CRes.Diagnosis]
-                      -> (LIB_NAME, LIB_DEFN, DGraph, LibEnv)
+                      -> (LibName, LIB_DEFN, DGraph, LibEnv)
                       -> FilePath
                       -> SelectedBoxes
                       -> IO (CRes.Result Output)

@@ -78,7 +78,7 @@ mkFreeDefMor sens m1 m2 = FreeDefMorphism
 getFreeDefMorphism :: Logic lid sublogics
          basic_spec sentence symb_items symb_map_items
           sign morphism symbol raw_symbol proof_tree =>
-   lid -> LibEnv -> LIB_NAME -> DGraph -> [LEdge DGLinkLab]
+   lid -> LibEnv -> LibName -> DGraph -> [LEdge DGLinkLab]
    -> Maybe (FreeDefMorphism sentence morphism)
 getFreeDefMorphism lid libEnv ln dg path = case path of
   [] -> error "getFreeDefMorphism"
@@ -107,7 +107,7 @@ getFreeDefMorphism lid libEnv ln dg path = case path of
 getCFreeDefMorphs :: Logic lid sublogics
          basic_spec sentence symb_items symb_map_items
           sign morphism symbol raw_symbol proof_tree =>
-   lid -> LibEnv -> LIB_NAME -> DGraph -> Node
+   lid -> LibEnv -> LibName -> DGraph -> Node
    -> [FreeDefMorphism sentence morphism]
 getCFreeDefMorphs lid libEnv ln dg node = let
   (frees, cofrees) = getCFreeDefLinks dg node
@@ -153,7 +153,7 @@ proveTheory _ =
      either a model after a consistency check or a new theory for the node
      label -}
 basicInferenceNode :: Bool -- ^ True = consistency; False = Prove
-                   -> LogicGraph -> LIB_NAME -> DGraph -> LNode DGNodeLab
+                   -> LogicGraph -> LibName -> DGraph -> LNode DGNodeLab
                    -> LibEnv -> IORef IntState
                    -> IO (Result G_theory)
 basicInferenceNode checkCons lg ln dGraph n@(node, lbl) libEnv intSt =
@@ -162,7 +162,7 @@ basicInferenceNode checkCons lg ln dGraph n@(node, lbl) libEnv intSt =
         -- may contain proved theorems
         thForProof@(G_theory lid1 (ExtSign sign _) _ axs _) <-
              liftR $ computeLabelTheory libEnv dGraph n
-        let thName = shows (getLIB_ID ln) "_" ++ getDGNodeName lbl
+        let thName = shows (getLibId ln) "_" ++ getDGNodeName lbl
             sens = toNamedList axs
             sublogic = sublogicOfTh thForProof
         -- select a suitable translation and prover
@@ -210,13 +210,13 @@ basicInferenceNode checkCons lg ln dGraph n@(node, lbl) libEnv intSt =
                        kpMap (getProvers ProveGUI sublogic cms)
             return newTh
 
-consistencyCheck :: G_cons_checker -> AnyComorphism -> LIB_NAME -> LibEnv
+consistencyCheck :: G_cons_checker -> AnyComorphism -> LibName -> LibEnv
                  -> DGraph -> LNode DGNodeLab -> IO (Result G_theory)
 consistencyCheck (G_cons_checker lid4 cc) (Comorphism cid) ln le dg n@(n',lbl) =
   runResultT $ do
     (G_theory lid1 (ExtSign sign _) _ axs _) <-
       liftR $ computeLabelTheory le dg n
-    let thName = shows (getLIB_ID ln) "_" ++ getDGNodeName lbl
+    let thName = shows (getLibId ln) "_" ++ getDGNodeName lbl
         sens = toNamedList axs
         lidT = targetLogic cid
         lidS = sourceLogic cid

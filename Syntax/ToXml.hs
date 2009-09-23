@@ -35,7 +35,7 @@ import Data.List
 
 xmlLibDefn :: GlobalAnnos -> LIB_DEFN -> Element
 xmlLibDefn ga (Lib_defn n il rg an) =
-  add_attrs (mkNameAttr (show $ getLIB_ID n) : rgAttrs rg)
+  add_attrs (mkNameAttr (show $ getLibId n) : rgAttrs rg)
      $ unode "Lib" $ annos "Global" ga an ++ map (annoted libItem ga) il
 
 libItem :: GlobalAnnos -> LIB_ITEM -> Element
@@ -50,7 +50,7 @@ libItem ga li = case li of
            , unode "Target" $ annoted spec ga to ]
         ++ concatMap (gmapping ga) mapping
   Download_items n mapping rg ->
-    add_attrs (mkNameAttr (show $ getLIB_ID n) : rgAttrs rg)
+    add_attrs (mkNameAttr (show $ getLibId n) : rgAttrs rg)
       $ unode "Import" $ map itemNameOrMap mapping
   Logic_decl n rg ->
     add_attrs (mkNameAttr (show n) : rgAttrs rg)

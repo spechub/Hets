@@ -42,7 +42,7 @@ import Static.DevGraph (LibEnv, DGLinkLab, getDGNodeName)
 
 import Driver.AnaLib (anaLib, anaLibExt)
 
-import Common.LibName (LIB_NAME(getLIB_ID))
+import Common.LibName (LibName(getLibId))
 import Common.Utils (trim)
 import Common.Result (Diagnosis(diagString), Result(Result))
 
@@ -56,17 +56,17 @@ import Logic.Prover (ProverKind(ProveCMDLautomatic))
 import Data.Graph.Inductive.Graph (LEdge)
 
 -- | Wraps Result structure around the result of a dg all style command
-wrapResultDgAll :: (LIB_NAME -> LibEnv -> LibEnv)
-                -> LIB_NAME -> LibEnv -> Result LibEnv
+wrapResultDgAll :: (LibName -> LibEnv -> LibEnv)
+                -> LibName -> LibEnv -> Result LibEnv
 wrapResultDgAll fn lib_name = return . fn lib_name
 
 -- | Wraps Result structure around the result of a dg style command
-wrapResultDg :: (LIB_NAME -> [LEdge DGLinkLab] -> LibEnv -> LibEnv)
-             -> LIB_NAME -> [LEdge DGLinkLab] -> LibEnv -> Result LibEnv
+wrapResultDg :: (LibName -> [LEdge DGLinkLab] -> LibEnv -> LibEnv)
+             -> LibName -> [LEdge DGLinkLab] -> LibEnv -> Result LibEnv
 wrapResultDg fn lib_name ls = return . fn lib_name ls
 
 -- | General function for implementing dg all style commands
-commandDgAll :: (LIB_NAME -> LibEnv -> Result LibEnv)
+commandDgAll :: (LibName -> LibEnv -> Result LibEnv)
              -> CmdlState -> IO CmdlState
 commandDgAll fn state = case i_state $ intState state of
   Nothing -> return $ genErrorMsg "No library loaded" state
@@ -84,7 +84,7 @@ commandDgAll fn state = case i_state $ intState state of
 -- | Generic function for a dg command, all other dg
 -- commands are derived from this command by simply
 -- specifing the function
-commandDg :: (LIB_NAME -> [LEdge DGLinkLab] -> LibEnv -> Result LibEnv)
+commandDg :: (LibName -> [LEdge DGLinkLab] -> LibEnv -> Result LibEnv)
           -> String -> CmdlState -> IO CmdlState
 commandDg fn input state = case i_state $ intState state of
     Nothing -> return $ genErrorMsg "No library loaded" state
@@ -193,7 +193,7 @@ selectANode x dgState = let
          let sl = sublogicOfTh th
          tmp <- initialState
                 lid
-                (shows (getLIB_ID $ i_ln dgState) "_" ++ nodeName x)
+                (shows (getLibId $ i_ln dgState) "_" ++ nodeName x)
                 th
                 (shrinkKnownProvers sl kpMap)
                 (getProvers ProveCMDLautomatic sl $

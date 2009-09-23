@@ -25,14 +25,14 @@ import System.Time
 omTs :: [Token]
 omTs = [genToken "OM"]
 
-mkQualName :: SIMPLE_ID -> LIB_ID -> Id -> Id
+mkQualName :: SIMPLE_ID -> LibId -> Id -> Id
 mkQualName nodeId libId i =
   Id omTs [i, simpleIdToId nodeId, libIdToId libId] $ posOfId i
 
-isQualNameFrom :: SIMPLE_ID -> LIB_ID -> Id -> Bool
+isQualNameFrom :: SIMPLE_ID -> LibId -> Id -> Bool
 isQualNameFrom nodeId libId i@(Id _ cs _) = case cs of
   _ : n : l : _ | isQualName i ->
-      n == simpleIdToId nodeId && libIdToId libId == l
+    n == simpleIdToId nodeId && libIdToId libId == l
   _ -> True
 
 isQualName :: Id -> Bool
@@ -40,18 +40,14 @@ isQualName (Id ts cs _) = case cs of
   _ : _ : _ -> ts == omTs
   _ -> False
 
-getLibId :: Id -> Id
-getLibId j@(Id _ cs _) = case cs of
+libIdOfQualName :: Id -> Id
+libIdOfQualName j@(Id _ cs _) = case cs of
   [_, _, i] | isQualName j -> i
-            | otherwise ->
-                error "Check by isQualName before calling getLibId!"
-  _ -> error "Check by isQualName before calling getLibId!"
+  _ -> error "libIdOfQualName: Check by isQualName before calling getLibId!"
 
 getNodeId :: Id -> Id
 getNodeId j@(Id _ cs _) = case cs of
   [_, i, _] | isQualName j -> i
-            | otherwise ->
-                error "Check by isQualName before calling getNodeId!"
   _ -> error "Check by isQualName before calling getNodeId!"
 
 
@@ -60,89 +56,89 @@ unQualName j@(Id _ cs _) = case cs of
   i : _ | isQualName j -> i
   _ -> j
 
-libIdToId :: LIB_ID -> Id
+libIdToId :: LibId -> Id
 libIdToId li = let
   path = splitOn '/' $ show li
   toTok s = Token s $ getRange li
   in mkId $ map toTok $ intersperse "/" path
 
-data LIB_NAME = Lib_version
-    { getLIB_ID :: LIB_ID
-    , libVersion :: VERSION_NUMBER }
-    | Lib_id { getLIB_ID :: LIB_ID }
+data LibName = LibName
+    { getLibId :: LibId
+    , libVersion :: Maybe VersionNumber }
 
-data LIB_ID = Direct_link URL Range
+emptyLibName :: String -> LibName
+emptyLibName s = LibName (IndirectLink s nullRange "" noTime) Nothing
+
+data LibId = DirectLink URL Range
               -- pos: start of URL
-            | Indirect_link PATH Range FilePath ClockTime
+            | IndirectLink PATH Range FilePath ClockTime
               -- pos: start of PATH
 
 noTime :: ClockTime
 noTime = TOD 0 0
 
--- | Returns the LIB_ID of a LIB_NAME
-getModTime :: LIB_ID -> ClockTime
+-- | Returns the LibId of a LibName
+getModTime :: LibId -> ClockTime
 getModTime li = case li of
-    Direct_link _ _ -> noTime
-    Indirect_link _ _ _ m -> m
+    DirectLink _ _ -> noTime
+    IndirectLink _ _ _ m -> m
 
-updFilePathOfLibId :: FilePath -> ClockTime -> LIB_ID -> LIB_ID
+updFilePathOfLibId :: FilePath -> ClockTime -> LibId -> LibId
 updFilePathOfLibId fp mt li = case li of
-  Direct_link _ _ -> li
-  Indirect_link p r _ _ -> Indirect_link p r fp mt
+  DirectLink _ _ -> li
+  IndirectLink p r _ _ -> IndirectLink p r fp mt
 
-data VERSION_NUMBER = Version_number [String] Range deriving (Show, Eq)
+data VersionNumber = VersionNumber [String] Range deriving (Show, Eq)
                       -- pos: "version", start of first string
 
 type URL = String
 type PATH = String
 
-instance GetRange LIB_ID where
+instance GetRange LibId where
   getRange li = case li of
-    Direct_link _ r -> r
-    Indirect_link _ r _ _ -> r
+    DirectLink _ r -> r
+    IndirectLink _ r _ _ -> r
 
-instance Show LIB_ID where
+instance Show LibId where
   show li = case li of
-    Direct_link s _ -> s
-    Indirect_link s1 _ _ _ -> s1
+    DirectLink s _ -> s
+    IndirectLink s1 _ _ _ -> s1
 
-instance GetRange LIB_NAME where
-  getRange = getRange . getLIB_ID
+instance GetRange LibName where
+  getRange = getRange . getLibId
 
-instance Show LIB_NAME where
-  show ln = case ln of
-    Lib_version li (Version_number vs _) ->
-      shows li $ " version " ++ intercalate "." vs
-    Lib_id li -> show li
+instance Show LibName where
+  show (LibName li mvs) = shows li $ case mvs of
+        Nothing -> ""
+        Just (VersionNumber vs _) -> " version " ++ intercalate "." vs
 
-instance Eq LIB_ID where
-  Direct_link s1 _ == Direct_link s2 _ = s1 == s2
-  Indirect_link s1 _ _ _ == Indirect_link s2 _ _ _ = s1 == s2
+instance Eq LibId where
+  DirectLink s1 _ == DirectLink s2 _ = s1 == s2
+  IndirectLink s1 _ _ _ == IndirectLink s2 _ _ _ = s1 == s2
   _ == _ = False
 
-instance Ord LIB_ID where
-  Direct_link s1 _ <= Direct_link s2 _ = s1 <= s2
-  Indirect_link s1 _ _ _ <= Indirect_link s2 _ _ _ = s1 <= s2
-  Direct_link _ _ <= _ = True
-  Indirect_link _ _ _ _ <= _ = False
+instance Ord LibId where
+  DirectLink s1 _ <= DirectLink s2 _ = s1 <= s2
+  IndirectLink s1 _ _ _ <= IndirectLink s2 _ _ _ = s1 <= s2
+  DirectLink _ _ <= _ = True
+  IndirectLink _ _ _ _ <= _ = False
 
-instance Eq LIB_NAME where
+instance Eq LibName where
   ln1 == ln2 = compare ln1 ln2 == EQ
 
-instance Ord LIB_NAME where
-  compare ln1 ln2 = compare (getLIB_ID ln1) $ getLIB_ID ln2
+instance Ord LibName where
+  compare ln1 ln2 = compare (getLibId ln1) $ getLibId ln2
 
-instance Pretty LIB_NAME where
-    pretty l = case l of
-        Lib_version i v ->
-            fsep [pretty i, keyword versionS, pretty v]
-        Lib_id i -> pretty i
+instance Pretty LibName where
+    pretty (LibName i mv) = fsep $ pretty i : case mv of
+          Nothing -> []
+          Just (VersionNumber v _) -> [keyword versionS, pretty v]
 
-instance Pretty LIB_ID where
+instance Pretty LibId where
     pretty l = structId $ case l of
-        Direct_link u _ -> u
-        Indirect_link p _ _ _ -> p
+        DirectLink u _ -> u
+        IndirectLink p _ _ _ -> p
 
-instance Pretty VERSION_NUMBER where
-    pretty (Version_number aa _) =
+instance Pretty VersionNumber where
+    pretty (VersionNumber aa _) =
         hcat $ punctuate dot $ map codeToken aa

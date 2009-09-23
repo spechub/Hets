@@ -48,7 +48,7 @@ thmHideShift = DGRule "TheoremHideShift"
      firstly it gets all the hiding definition links out of DGraph and
      passes them to theoremHideShiftFromList which does the actual processing
 -}
-theoremHideShift :: LIB_NAME -> LibEnv -> LibEnv
+theoremHideShift :: LibName -> LibEnv -> LibEnv
 theoremHideShift ln proofStatus =
     let dgraph = lookupDGraph ln proofStatus
         hidingDefEdges = filter (liftE isHidingDef) $ labEdgesDG dgraph

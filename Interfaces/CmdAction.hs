@@ -32,7 +32,7 @@ import Interfaces.Command
 import Common.LibName
 import Common.Result
 
-globLibAct :: [(GlobCmd, LIB_NAME -> LibEnv -> LibEnv)]
+globLibAct :: [(GlobCmd, LibName -> LibEnv -> LibEnv)]
 globLibAct =
   [ (Automatic, automatic)
   , (GlobDecomp, globDecomp)
@@ -44,7 +44,7 @@ globLibAct =
   , (Conservativity, conservativity)
   , (HideThmShift, automaticHideTheoremShift) ]
 
-globLibResultAct :: [(GlobCmd, LIB_NAME -> LibEnv -> Result LibEnv)]
+globLibResultAct :: [(GlobCmd, LibName -> LibEnv -> Result LibEnv)]
 globLibResultAct =
   [ (ThmHideShift, theoremHideShift)
   , (Colimit, computeColimit)

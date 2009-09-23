@@ -43,7 +43,7 @@ libEnv_translation :: LibEnv -> AnyComorphism -> Result LibEnv
 libEnv_translation libEnv comorphism =
      updateGc (Map.keys libEnv) libEnv []
 
-   where updateGc :: [LIB_NAME] -> LibEnv -> [Diagnosis] -> Result LibEnv
+   where updateGc :: [LibName] -> LibEnv -> [Diagnosis] -> Result LibEnv
          updateGc [] le diag =  Result diag (Just le)
          updateGc (k1:kr) le diagnosis =
              let gc = lookupDGraph k1 le
@@ -158,7 +158,7 @@ getDGLogic libEnv =
                            (Map.keys libEnv)
     in  foldr comResSublogics (Result [] Nothing) sublogicsMap
 
-getSublogicFromDGraph :: LibEnv -> LIB_NAME -> Result G_sublogics
+getSublogicFromDGraph :: LibEnv -> LibName -> Result G_sublogics
 getSublogicFromDGraph le ln =
     let edgesList = labEdgesDG gc
         nodesList = labNodesDG gc

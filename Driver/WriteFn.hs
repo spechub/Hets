@@ -89,7 +89,7 @@ writeVerbFile opts f str = do
     putIfVerbose opts 2 $ "Writing file: " ++ f
     writeFile f str
 
-writeLibEnv :: HetcatsOpts -> FilePath -> LibEnv -> LIB_NAME -> OutType
+writeLibEnv :: HetcatsOpts -> FilePath -> LibEnv -> LibName -> OutType
             -> IO ()
 writeLibEnv opts filePrefix lenv ln ot =
     let f = filePrefix ++ "." ++ show ot
@@ -106,7 +106,7 @@ writeLibEnv opts filePrefix lenv ln ot =
         $ dotGraph showInternalNodeLabels dg
       _ -> return ()
 
-writeSoftFOL :: HetcatsOpts -> FilePath -> G_theory -> LIB_NAME -> SIMPLE_ID
+writeSoftFOL :: HetcatsOpts -> FilePath -> G_theory -> LibName -> SIMPLE_ID
              -> SPFType -> Int -> String -> IO ()
 writeSoftFOL opts f gTh ln i c n msg = do
       let cc = case c of
@@ -125,7 +125,7 @@ writeSoftFOL opts f gTh ln i c n msg = do
                 _ -> putIfVerbose opts 3 $ "reparsed: " ++ f
               writeVerbFile opts f str) mDoc
 
-writeIsaFile :: HetcatsOpts -> FilePath -> G_theory -> LIB_NAME -> SIMPLE_ID
+writeIsaFile :: HetcatsOpts -> FilePath -> G_theory -> LibName -> SIMPLE_ID
              -> IO ()
 writeIsaFile opts fp raw_gTh ln i = do
   let Result ds mTh = createIsaTheory raw_gTh
@@ -134,7 +134,7 @@ writeIsaFile opts fp raw_gTh ln i = do
     Nothing ->
       putIfVerbose opts 0 $ "could not translate to Isabelle theory: " ++ fp
     Just (sign, sens) -> do
-      let tn = reverse (takeWhile (/= '/') $ reverse $ show $ getLIB_ID ln)
+      let tn = reverse (takeWhile (/= '/') $ reverse $ show $ getLibId ln)
                    ++ "_" ++ show i
           sf = shows (printIsaTheory tn sign sens) "\n"
           f = fp ++ ".thy"
@@ -150,7 +150,7 @@ writeIsaFile opts fp raw_gTh ln i = do
            in writeVerbFile opts tf $ shows
                    (printIsaTheory tnf sign $ s : axs) "\n") rest
 
-writeTheory :: HetcatsOpts -> FilePath -> GlobalAnnos -> G_theory -> LIB_NAME
+writeTheory :: HetcatsOpts -> FilePath -> GlobalAnnos -> G_theory -> LibName
             -> SIMPLE_ID -> OutType -> IO ()
 writeTheory opts filePrefix ga
   raw_gTh@(G_theory lid (ExtSign sign0 _) _ sens0 _) ln i ot =
@@ -222,7 +222,7 @@ modelSparQCheck opts gTh@(G_theory lid (ExtSign sign0 _) _ sens0 _) i =
          ++ showDoc gTh ""
 
 writeTheoryFiles :: HetcatsOpts -> [OutType] -> FilePath -> LibEnv
-                 -> GlobalAnnos -> LIB_NAME -> SIMPLE_ID -> Int -> IO ()
+                 -> GlobalAnnos -> LibName -> SIMPLE_ID -> Int -> IO ()
 writeTheoryFiles opts specOutTypes filePrefix lenv ga ln i n =
     unless (isDGRef $ labDG (lookupDGraph ln lenv) n) $ do
     let Result ds mcTh = computeTheory lenv ln n
@@ -249,7 +249,7 @@ writeTheoryFiles opts specOutTypes filePrefix lenv ga ln i n =
                    modelSparQCheck opts (theoremsToAxioms raw_gTh) i
                mapM_ (writeTheory opts filePrefix ga raw_gTh ln i) specOutTypes
 
-writeSpecFiles :: HetcatsOpts -> FilePath -> LibEnv -> LIB_NAME -> DGraph
+writeSpecFiles :: HetcatsOpts -> FilePath -> LibEnv -> LibName -> DGraph
                -> IO ()
 writeSpecFiles opts file lenv0 ln dg = do
     let gctx = globalEnv dg

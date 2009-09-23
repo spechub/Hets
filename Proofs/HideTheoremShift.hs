@@ -50,24 +50,24 @@ type ProofBaseSelector m = DGraph -> ListSelector m PathTuple
 hideThmShiftRule :: LEdge DGLinkLab -> DGRule
 hideThmShiftRule = DGRuleWithEdge "HideTheoremShift"
 
-interactiveHideTheoremShift :: LIB_NAME -> LibEnv -> IO LibEnv
+interactiveHideTheoremShift :: LibName -> LibEnv -> IO LibEnv
 interactiveHideTheoremShift =
     hideTheoremShift hideTheoremShift_selectProofBase
 
-automaticHideTheoremShift :: LIB_NAME -> LibEnv -> LibEnv
+automaticHideTheoremShift :: LibName -> LibEnv -> LibEnv
 automaticHideTheoremShift ln libEnv =
     let dgraph = lookupDGraph ln libEnv
         ls = filter (liftE isUnprovenHidingThm) $ labEdgesDG dgraph
     in automaticHideTheoremShiftFromList ln ls libEnv
 
-automaticHideTheoremShiftFromList :: LIB_NAME -> [LEdge DGLinkLab]-> LibEnv
+automaticHideTheoremShiftFromList :: LibName -> [LEdge DGLinkLab]-> LibEnv
                                   -> LibEnv
 automaticHideTheoremShiftFromList ln ls = runIdentity. hideTheoremShiftFromList
       (const $ \ l -> return $ case l of
                       [a] -> Just a -- maybe take the first one always ?
                       _   -> Nothing) ln ls
 
-hideTheoremShiftFromList :: Monad m => ProofBaseSelector m -> LIB_NAME
+hideTheoremShiftFromList :: Monad m => ProofBaseSelector m -> LibName
                      -> [LEdge DGLinkLab] -> LibEnv  -> m LibEnv
 hideTheoremShiftFromList proofBaseSel ln hidingThmEdges proofStatus = do
     let dgraph = lookupDGraph ln proofStatus
@@ -76,7 +76,7 @@ hideTheoremShiftFromList proofBaseSel ln hidingThmEdges proofStatus = do
        (hideTheoremShiftAux proofBaseSel) dgraph finalHidingThmEdges
     return $ Map.insert ln nextDGraph proofStatus
 
-hideTheoremShift :: Monad m => ProofBaseSelector m -> LIB_NAME
+hideTheoremShift :: Monad m => ProofBaseSelector m -> LibName
                  -> LibEnv -> m LibEnv
 hideTheoremShift proofBaseSel ln proofStatus =
     let dgraph = lookupDGraph ln proofStatus

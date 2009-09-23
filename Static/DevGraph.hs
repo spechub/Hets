@@ -132,7 +132,7 @@ data DGNodeInfo = DGNode
   { node_origin :: DGOrigin       -- origin in input language
   , node_cons_status :: ConsStatus } -- like a link from the empty signature
   | DGRef                        -- reference to node in a different DG
-  { ref_libname :: LIB_NAME      -- pointer to DG where ref'd node resides
+  { ref_libname :: LibName      -- pointer to DG where ref'd node resides
   , ref_node :: Node             -- pointer to ref'd node
   } deriving (Show, Eq)
 
@@ -516,8 +516,8 @@ data DGraph = DGraph
   , globalEnv :: GlobalEnv -- ^ name entities (specs, views) of a library
   , dgBody :: Tree.Gr DGNodeLab DGLinkLab  -- ^ actual 'DGraph` tree
   , getNewEdgeId :: EdgeId  -- ^ edge counter
-  , refNodes :: Map.Map Node (LIB_NAME, Node) -- ^ unexpanded 'DGRef's
-  , allRefNodes :: Map.Map (LIB_NAME, Node) Node -- ^ all DGRef's
+  , refNodes :: Map.Map Node (LibName, Node) -- ^ unexpanded 'DGRef's
+  , allRefNodes :: Map.Map (LibName, Node) Node -- ^ all DGRef's
   , sigMap :: Map.Map SigId G_sign -- ^ signature map
   , thMap :: Map.Map ThId G_theory -- ^ morphism map
   , morMap :: Map.Map MorId G_morphism -- ^ theory map
@@ -542,7 +542,7 @@ emptyDG = DGraph
   , redoHistory = SizedList.empty
   , openlock = Nothing }
 
-type LibEnv = Map.Map LIB_NAME DGraph
+type LibEnv = Map.Map LibName DGraph
 
 -- | an empty environment
 emptyLibEnv :: LibEnv
@@ -609,7 +609,7 @@ dgn_origin :: DGNodeLab -> DGOrigin
 dgn_origin = node_origin . nodeInfo
 
 -- | get the referenced library (partial)
-dgn_libname :: DGNodeLab -> LIB_NAME
+dgn_libname :: DGNodeLab -> LibName
 dgn_libname = ref_libname . nodeInfo
 
 -- | get the referenced node (partial)
@@ -634,7 +634,7 @@ newNodeInfo orig = DGNode
   , node_cons_status = mkConsStatus None }
 
 -- | create a reference node part
-newRefInfo :: LIB_NAME -> Node -> DGNodeInfo
+newRefInfo :: LibName -> Node -> DGNodeInfo
 newRefInfo ln n = DGRef
   { ref_libname = ln
   , ref_node = n }
@@ -763,7 +763,7 @@ lookupGlobalEnvDG :: SIMPLE_ID -> DGraph -> Maybe GlobalEntry
 lookupGlobalEnvDG sid = Map.lookup sid . globalEnv
 
 -- | lookup a referenced node with a node id
-lookupInRefNodesDG :: Node -> DGraph -> Maybe (LIB_NAME, Node)
+lookupInRefNodesDG :: Node -> DGraph -> Maybe (LibName, Node)
 lookupInRefNodesDG n = Map.lookup n . refNodes
 
 -- | look up a refernced node with its parent infor.
@@ -1005,12 +1005,12 @@ initLocking dg (node, dgn) = do
   return (fst $ labelNodeDG (node, dgn') dg, dgn')
 
 -- | returns the DGraph that belongs to the given library name
-lookupDGraph :: LIB_NAME -> LibEnv -> DGraph
+lookupDGraph :: LibName -> LibEnv -> DGraph
 lookupDGraph ln = Map.findWithDefault (error $ "lookupDGraph " ++ show ln) ln
 
 {- | compute the theory of a given node.
    If this node is a DGRef, the referenced node is looked up first. -}
-computeLocalTheory :: Monad m => LibEnv -> LIB_NAME -> Node -> m G_theory
+computeLocalTheory :: Monad m => LibEnv -> LibName -> Node -> m G_theory
 computeLocalTheory libEnv ln =
   computeLocalNodeTheory libEnv $ lookupDGraph ln libEnv
 
@@ -1119,17 +1119,17 @@ getConservativityOfPath path = minimum [getConservativity e | e <- path]
 
 -- * bottom up traversal
 
--- | Creates a LIB_NAME relation wrt dependencies via reference nodes
-getLibDepRel :: LibEnv -> Rel.Rel LIB_NAME
+-- | Creates a LibName relation wrt dependencies via reference nodes
+getLibDepRel :: LibEnv -> Rel.Rel LibName
 getLibDepRel = Rel.transClosure
   . Rel.fromSet . Map.foldWithKey (\ ln dg s ->
     foldr (\ x -> if isDGRef x then Set.insert (ln, dgn_libname x) else id) s
       $ map snd $ labNodesDG dg) Set.empty
 
-topsortedLibsWithImports :: Rel.Rel LIB_NAME -> [LIB_NAME]
+topsortedLibsWithImports :: Rel.Rel LibName -> [LibName]
 topsortedLibsWithImports = concatMap Set.toList . Rel.topSort
 
-getTopsortedLibs :: LibEnv -> [LIB_NAME]
+getTopsortedLibs :: LibEnv -> [LibName]
 getTopsortedLibs le = let
   rel = getLibDepRel le
   ls = reverse $ topsortedLibsWithImports rel
@@ -1138,7 +1138,7 @@ getTopsortedLibs le = let
 
 {- | Get imported libs in topological order, i.e.  lib(s) without imports first.
      The input lib-name will be last -}
-dependentLibs :: LIB_NAME -> LibEnv -> [LIB_NAME]
+dependentLibs :: LibName -> LibEnv -> [LibName]
 dependentLibs ln le =
   let rel = getLibDepRel le
       ts = topsortedLibsWithImports rel

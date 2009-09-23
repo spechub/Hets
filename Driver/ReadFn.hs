@@ -56,7 +56,7 @@ readLibDefnM lgraph opts file input mt =
 
 setFilePath :: FilePath -> ClockTime -> LIB_DEFN -> LIB_DEFN
 setFilePath fp mt (Lib_defn ln lis r as) =
-  Lib_defn ln { getLIB_ID = updFilePathOfLibId fp mt $ getLIB_ID ln } lis r as
+  Lib_defn ln { getLibId = updFilePathOfLibId fp mt $ getLibId ln } lis r as
 
 readShATermFile :: ShATermLG a => LogicGraph -> FilePath -> IO (Result a)
 readShATermFile lg fp = do
@@ -81,7 +81,7 @@ fromShATermString lg str = if null str then
     Result [Diag Warning "got empty string from file" nullRange] Nothing
     else fromVersionedATT lg $ readATerm str
 
-readVerbose :: ShATermLG a => LogicGraph -> HetcatsOpts -> LIB_NAME -> FilePath
+readVerbose :: ShATermLG a => LogicGraph -> HetcatsOpts -> LibName -> FilePath
             -> IO (Maybe a)
 readVerbose lg opts ln file = do
     putIfVerbose opts 1 $ "Reading " ++ file
@@ -96,18 +96,18 @@ readVerbose lg opts ln file = do
         return Nothing
 
 -- | create a file name without suffix from a library name
-libNameToFile :: HetcatsOpts -> LIB_NAME -> FilePath
-libNameToFile opts ln = case getLIB_ID ln of
-  Indirect_link file _ ofile _ ->
+libNameToFile :: HetcatsOpts -> LibName -> FilePath
+libNameToFile opts ln = case getLibId ln of
+  IndirectLink file _ ofile _ ->
       let path = case libdirs opts of
                         [] -> ""
                         fp : _ -> fp
       in if null ofile then path </> file else ofile
-  Direct_link _ _ -> error "libNameToFile"
+  DirectLink _ _ -> error "libNameToFile"
 
-findFileOfLibName :: HetcatsOpts -> LIB_NAME -> IO (Maybe FilePath)
-findFileOfLibName opts ln = case getLIB_ID ln of
-  Indirect_link file _ ofile _ ->
+findFileOfLibName :: HetcatsOpts -> LibName -> IO (Maybe FilePath)
+findFileOfLibName opts ln = case getLibId ln of
+  IndirectLink file _ ofile _ ->
       if null ofile then do
           let fs = map (</> file) $ "" : libdirs opts
           ms <- mapM (existsAnSource opts { intype = GuessIn }) fs
@@ -115,10 +115,10 @@ findFileOfLibName opts ln = case getLIB_ID ln of
             [] -> return Nothing
             f : _ -> return $ Just f
       else return $ Just ofile
-  Direct_link _ _ -> return Nothing
+  DirectLink _ _ -> return Nothing
 
 -- | convert a file name that may have a suffix to a library name
-fileToLibName :: HetcatsOpts -> FilePath -> LIB_NAME
+fileToLibName :: HetcatsOpts -> FilePath -> LibName
 fileToLibName opts efile =
     let paths = libdirs opts
         file = rmSuffix efile -- cut of extension
@@ -128,4 +128,4 @@ fileToLibName opts efile =
                   [] -> file
                   (path, _) : _ -> drop (length path) file
                    -- cut off libdir prefix
-    in Lib_id $ Indirect_link nfile nullRange "" noTime
+    in emptyLibName nfile

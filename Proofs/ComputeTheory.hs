@@ -49,7 +49,7 @@ computeLabelTheory libEnv dg (n, nodelab) =
 computeNodeTheory :: LibEnv -> DGraph -> Node -> Result G_theory
 computeNodeTheory libEnv dg n = computeLabelTheory libEnv dg (n, labDG dg n)
 
-computeTheory :: LibEnv -> LIB_NAME -> Node -> Result G_theory
+computeTheory :: LibEnv -> LibName -> Node -> Result G_theory
 computeTheory libEnv ln = computeNodeTheory libEnv $ lookupDGraph ln libEnv
 
 computePathTheory :: LibEnv -> DGraph -> LEdge DGLinkLab -> Result G_theory

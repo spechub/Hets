@@ -56,7 +56,7 @@ import Logic.Grothendieck
 import Common.ExtSign
 import Logic.Coerce
 
-import Common.LibName (LIB_NAME)
+import Common.LibName (LibName)
 import Data.List (partition)
 
 -- | This datatype represents /something/ that has an origin.
@@ -92,8 +92,8 @@ cv_Pred_typeToPredType (Pred_type args _) = PredType args
 
 type CollectionMap =
   Map.Map
-    (LIB_NAME, Graph.Node)
-    (Map.Map LIB_NAME (Set.Set (IdentifierWON, String)))
+    (LibName, Graph.Node)
+    (Map.Map LibName (Set.Set (IdentifierWON, String)))
 
 -- | 'Identifier'S with origins
 type IdentifierWON = WithOriginNode Identifier
@@ -220,7 +220,7 @@ isTypeOrSubType sortrel givensort neededsort =
 -- these are constructed for a full library environment.
 type IdNameMapping =
   (
-      LIB_NAME
+      LibName
     , NodeName
     , String
     , Graph.Node
@@ -233,7 +233,7 @@ type IdNameMapping =
 
 getSensAt
   ::CollectionMap
-  ->(LIB_NAME, Graph.Node)
+  ->(LibName, Graph.Node)
   ->[((IdentifierWON, Int), String)]
 getSensAt
   collectionMap
@@ -251,7 +251,7 @@ getSensAt
     getIdentifierAt collectionMap location
 
 -- | projection function for library name
-inmGetLibName::IdNameMapping->LIB_NAME
+inmGetLibName::IdNameMapping->LibName
 inmGetLibName (ln, _, _, _, _, _, _, _, _) = ln
 
 -- | check type compatibility for two operators
@@ -274,7 +274,7 @@ getJustCASLSign = maybe (error "getJustCASLSign") id
 
 -- | search for a mapping where the library name and the node match the given
 -- values
-getLNGN::[IdNameMapping]->LIB_NAME->Graph.Node->Maybe IdNameMapping
+getLNGN::[IdNameMapping]->LibName->Graph.Node->Maybe IdNameMapping
 getLNGN [] _ _ = Nothing
 getLNGN (h:r) ln nn
   | (inmGetLibName h) == ln && (inmGetNodeNum h) == nn = Just h
@@ -285,7 +285,7 @@ getLNGN (h:r) ln nn
 -- convenience
 getIdentifierAt
   ::CollectionMap
-  ->(LIB_NAME, Graph.Node)
+  ->(LibName, Graph.Node)
   ->[(IdentifierWON, String)]
 getIdentifierAt
   collectionMap
@@ -303,9 +303,9 @@ getIdentifierAt
 
 findIdIdsForId
   ::CollectionMap
-  ->(LIB_NAME, Graph.Node)
+  ->(LibName, Graph.Node)
   ->Id
-  ->[(LIB_NAME, (IdentifierWON, String))]
+  ->[(LibName, (IdentifierWON, String))]
 findIdIdsForId
   collectionMap
   location
@@ -326,9 +326,9 @@ findIdIdsForId
 
 findIdentifiersForId
   ::CollectionMap
-  ->(LIB_NAME, Graph.Node)
+  ->(LibName, Graph.Node)
   ->Id
-  ->[(LIB_NAME, (IdentifierWON, String))]
+  ->[(LibName, (IdentifierWON, String))]
 findIdentifiersForId
   collectionMap
   location
@@ -364,9 +364,9 @@ findIdPredsForId
   ::Rel.Rel SORT
   ->PredType
   ->CollectionMap
-  ->(LIB_NAME, Graph.Node)
+  ->(LibName, Graph.Node)
   ->Id
-  ->[(LIB_NAME, (IdentifierWON, String))]
+  ->[(LibName, (IdentifierWON, String))]
 findIdPredsForId
   srel
   ptype
@@ -407,9 +407,9 @@ findIdOpsForId
   ::Rel.Rel SORT
   ->OpType
   ->CollectionMap
-  ->(LIB_NAME, Graph.Node)
+  ->(LibName, Graph.Node)
   ->Id
-  ->[(LIB_NAME, (IdentifierWON, String))]
+  ->[(LibName, (IdentifierWON, String))]
 findIdOpsForId
   srel
   otype

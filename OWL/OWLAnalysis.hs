@@ -137,7 +137,7 @@ aTerm2Ontology _ = error "false ontology file."
 structureAna :: FilePath
              -> HetcatsOpts
              -> OntologyMap
-             -> IO (Maybe (LIB_NAME, -- filename
+             -> IO (Maybe (LibName, -- filename
                     LibEnv           -- DGraphs for imported modules
                    ))
 structureAna file opt ontoMap =
@@ -170,8 +170,8 @@ simpleLibEnv filename dg = let
            { globalEnv = Map.singleton (mkSimpleId "")
               (SpecEntry (ExtGenSig (GenSig esig [] esig) nodeSig))}
 
-simpleLibName :: FilePath -> LIB_NAME
-simpleLibName s = Lib_id $ Direct_link ("library_" ++ s) nullRange
+simpleLibName :: FilePath -> LibName
+simpleLibName s = emptyLibName $ "library_" ++ s
 
 -- | static analysis if the HetcatesOpts is not only Structured.
 -- | sequence call for nodesStaticAna on the basis of topologically
@@ -179,7 +179,7 @@ simpleLibName s = Lib_id $ Direct_link ("library_" ++ s) nullRange
 staticAna :: FilePath
           -> HetcatsOpts
           -> (OntologyMap, DGraph)
-          -> IO (Maybe (LIB_NAME,     -- filename
+          -> IO (Maybe (LibName,     -- filename
                         LibEnv        -- DGraphs for imported modules
                        ))
 staticAna file opt (ontoMap, dg) =

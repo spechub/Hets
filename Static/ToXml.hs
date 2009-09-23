@@ -81,7 +81,7 @@ lnode ga lenv (_, lbl) =
   $ unode "Node"
     $ case nodeInfo lbl of
           DGRef li rf ->
-            [ add_attrs [ mkAttr "library" $ show $ getLIB_ID li
+            [ add_attrs [ mkAttr "library" $ show $ getLibId li
                         , mkAttr "node" $ getNameOfNode rf
                           $ lookupDGraph li lenv ]
             $ unode "Reference"

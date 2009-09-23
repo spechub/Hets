@@ -48,14 +48,14 @@ normalFormRule :: DGRule
 normalFormRule = DGRule "NormalForm"
 
 -- | compute normal form for a library and imported libs
-normalForm :: LIB_NAME -> LibEnv -> Result LibEnv
+normalForm :: LibName -> LibEnv -> Result LibEnv
 normalForm ln le = normalFormLNS (dependentLibs ln le) le
 
 -- | compute norm form for all libraries
 normalFormLibEnv :: LibEnv -> Result LibEnv
 normalFormLibEnv le = normalFormLNS (getTopsortedLibs le) le
 
-normalFormLNS :: [LIB_NAME] -> LibEnv -> Result LibEnv
+normalFormLNS :: [LibName] -> LibEnv -> Result LibEnv
 normalFormLNS lns libEnv = foldM (\ le ln -> do
   let dg = lookupDGraph ln le
   newDg <- normalFormDG le dg
@@ -78,7 +78,7 @@ normalFormDG libEnv dgraph = foldM (\ dg (node, nodelab) ->
        case dgn_nf refLabel of
          Nothing -> warning dg
            (getDGNodeName refLabel ++ " (node " ++ show refNode
-            ++ ") from '" ++ show (getLIB_ID refLib)
+            ++ ") from '" ++ show (getLibId refLib)
             ++ "' without normal form") nullRange
          Just refNf -> do
            let refNodelab = labDG refGraph' refNf
@@ -237,7 +237,7 @@ buildGraph oGraph leaves nList eList nodeList =
            in buildGraph oGraph leaves nList' (eList ++ eList') nodeList'
        -- branch, must add n to the nList and edges in eList
 
-freeness :: LIB_NAME -> LibEnv -> Result LibEnv
+freeness :: LibName -> LibEnv -> Result LibEnv
 freeness ln le = do
   let dg = lookupDGraph ln le
   newDg <- freenessDG le dg

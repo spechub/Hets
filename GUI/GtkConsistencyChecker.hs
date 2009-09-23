@@ -34,7 +34,7 @@ import Logic.Comorphism (AnyComorphism)
 
 import Comorphisms.LogicGraph (logicGraph)
 
-import Common.LibName (LIB_NAME)
+import Common.LibName (LibName)
 import Common.Result
 
 import Control.Concurrent (forkIO, killThread, ThreadId)
@@ -260,7 +260,7 @@ updateFinder view list sl = forkIO_ $ do
 activate :: [Widget] -> Bool -> IO ()
 activate widgets active = mapM_ (\ w -> widgetSetSensitive w active) widgets
 
-check :: LIB_NAME -> LibEnv -> DGraph -> Finder -> (Double -> String -> IO ())
+check :: LibName -> LibEnv -> DGraph -> Finder -> (Double -> String -> IO ())
       -> MVar (Maybe ThreadId) -> ListStore FNode -> [(Int,FNode)] -> IO ()
 check ln le dg (Finder { finder = cc, comorphs = cs, selected = i})
       update run list nodes = do

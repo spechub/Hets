@@ -18,7 +18,7 @@ module Proofs.Conservativity
 
 
 import Common.Amalgamate(Amalgamates(Amalgamates), CASLAmalgOpt(..))
-import Common.LibName(LIB_NAME)
+import Common.LibName(LibName)
 import Common.Result(resultToMaybe)
 
 import Proofs.EdgeUtils(changesDGH, isFreeEdge, isGlobalEdge, isGlobalThm,
@@ -69,7 +69,7 @@ n ---- e3 ----> n
 type Quad = (Pair, Pair)
 
 -- Main function, calls all rules.
-conservativity :: LIB_NAME -> LibEnv -> LibEnv
+conservativity :: LibName -> LibEnv -> LibEnv
 conservativity = Map.adjust (shift . freeIsMono . monoIsFree . compCons)
 
 -- Shift-Rule.

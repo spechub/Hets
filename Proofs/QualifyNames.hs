@@ -50,9 +50,9 @@ qualifyLibEnv libEnv = fmap fst
 
 type RenameMap = Map.Map Int (GMorphism, GMorphism)
 
-qualifyDGraph :: LIB_NAME -> DGraph -> Result (DGraph, RenameMap)
+qualifyDGraph :: LibName -> DGraph -> Result (DGraph, RenameMap)
 qualifyDGraph ln dg =
-  addErrorDiag "qualification failed for" (getLIB_ID ln)
+  addErrorDiag "qualification failed for" (getLibId ln)
   $ do
   let es = map (\ (_, _, lb) -> dgl_id lb) $ labEdgesDG dg
   unless (Set.size (Set.fromList es) == length es) $
@@ -83,7 +83,7 @@ constructUnion lid hd l = case l of
       Nothing -> constructUnion lid sd tl
     Nothing -> constructUnion lid sd tl
 
-updateRefNodes :: (LibEnv, Map.Map LIB_NAME RenameMap) -> DGraph
+updateRefNodes :: (LibEnv, Map.Map LibName RenameMap) -> DGraph
                -> Result DGraph
 updateRefNodes (le, trm) dgraph =
   foldM (\ dg (n, lb) ->
@@ -108,7 +108,7 @@ createChanges dg n inss (gm1, grm) = do
   nAllinss <- mapM (composeWithMorphism True gm1 grm) $ nloops ++ inss
   return (map DeleteEdge $ allOuts ++ inss, map InsertEdge $ nAllinss ++ nouts)
 
-qualifyLabNode :: LIB_NAME -> (DGraph, RenameMap) -> LNode DGNodeLab
+qualifyLabNode :: LibName -> (DGraph, RenameMap) -> LNode DGNodeLab
                -> Result (DGraph, RenameMap)
 qualifyLabNode ln (dg, mormap) (n, lb) =
    if isDGRef lb then return (dg, mormap) else case dgn_theory lb of
@@ -126,7 +126,7 @@ qualifyLabNode ln (dg, mormap) (n, lb) =
                   [] -> ide sig
                   hd : tl -> constructUnion lid hd tl
         (m1, osens) <- qualify lid (mkSimpleId $ getDGNodeName lb)
-                       (getLIB_ID ln) m sig
+                       (getLibId ln) m sig
         rm <- inverse m1
         nThSens <- mapThSensValueM (map_sen lid m1) $ joinSens sens
           $ toThSens osens

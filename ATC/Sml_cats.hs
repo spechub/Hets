@@ -1821,19 +1821,19 @@ instance ATermConvertibleSML ITEM_NAME_OR_MAP where
                     (posFromRegion reg_i att,getATermByIndex1 item_i att)
                 _  -> (nullRange,att)
 
-instance ATermConvertibleSML LIB_NAME where
+instance ATermConvertibleSML LibName where
     from_sml_ShATerm att =
         case aterm of
             (ShAAppl "versioned-lib" [ aa,ab ] _)  ->
                 let
                 aa' = from_sml_ShATerm (getATermByIndex1 aa att)
                 ab' = from_sml_ShATerm (getATermByIndex1 ab att)
-                in (Lib_version aa' ab')
+                in (LibName aa' $ Just ab')
             (ShAAppl "lib" [ aa ] _)  ->
                 let
                 aa' = from_sml_ShATerm (getATermByIndex1 aa att)
-                in (Lib_id aa')
-            _ -> from_sml_ShATermError "LIB_NAME" aterm
+                in (LibName aa' Nothing)
+            _ -> from_sml_ShATermError "LibName" aterm
         where
             aterm = getATerm att'
             att' =
@@ -1842,20 +1842,20 @@ instance ATermConvertibleSML LIB_NAME where
                     getATermByIndex1 item_i att
                 _  -> att
 
-instance ATermConvertibleSML LIB_ID where
+instance ATermConvertibleSML LibId where
     from_sml_ShATerm att =
         case aterm of
             (ShAAppl "url" [ aa ] _)  ->
                 let
                 aa' = from_sml_ShATerm (getATermByIndex1 aa att)
                 ab' = pos_l
-                in (Direct_link aa' ab')
+                in (DirectLink aa' ab')
             (ShAAppl "path-name" [ aa ] _)  ->
                 let
                 aa' = from_sml_ShATerm (getATermByIndex1 aa att)
                 ab' = pos_l
-                in (Indirect_link aa' ab' "" noTime)
-            _ -> from_sml_ShATermError "LIB_NAME" aterm
+                in (IndirectLink aa' ab' "" noTime)
+            _ -> from_sml_ShATermError "LibName" aterm
         where
             aterm = getATerm att'
             (pos_l,att') =
@@ -1864,15 +1864,15 @@ instance ATermConvertibleSML LIB_ID where
                     (posFromRegion reg_i att,getATermByIndex1 item_i att)
                 _  -> (nullRange,att)
 
-instance ATermConvertibleSML VERSION_NUMBER where
+instance ATermConvertibleSML VersionNumber where
     from_sml_ShATerm att =
         case aterm of
             (ShAAppl "version" [ aa ] _)  ->
                 let
                 aa' = from_sml_ShATerm (getATermByIndex1 aa att)
                 ab' = pos_l
-                in (Version_number aa' ab')
-            _ -> from_sml_ShATermError "VERSION_NUMBER" aterm
+                in (VersionNumber aa' ab')
+            _ -> from_sml_ShATermError "VersionNumber" aterm
         where
             aterm = getATerm att'
             (pos_l,att') =

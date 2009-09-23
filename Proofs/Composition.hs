@@ -31,7 +31,7 @@ import qualified Common.Lib.Graph as Tree
 import Data.Graph.Inductive.Graph
 import Data.List
 
-compositionCreatingEdgesFromList :: LIB_NAME -> [LEdge DGLinkLab] -> LibEnv
+compositionCreatingEdgesFromList :: LibName -> [LEdge DGLinkLab] -> LibEnv
                                  -> LibEnv
 compositionCreatingEdgesFromList libname ls proofStatus =
       let dgraph = lookupDGraph libname proofStatus
@@ -45,7 +45,7 @@ compositionCreatingEdgesFromList libname ls proofStatus =
    theorems with the morphism and the conservativity of the corresponding
    path. If a new edge is the proven version of a previsously existing
    edge, that edge is deleted. -}
-compositionCreatingEdges :: LIB_NAME -> LibEnv -> LibEnv
+compositionCreatingEdges :: LibName -> LibEnv -> LibEnv
 compositionCreatingEdges libname proofStatus =
     let dgraph = lookupDGraph libname proofStatus
         allEdges = labEdgesDG dgraph
@@ -102,7 +102,7 @@ deleteRedundantEdgesAux :: DGraph -> LEdge DGLinkLab -> DGraph
 deleteRedundantEdgesAux dgraph = changeDGH dgraph . DeleteEdge
 
 -- | composition without creating new new edges
-compositionFromList :: LIB_NAME -> [LEdge DGLinkLab] -> LibEnv -> LibEnv
+compositionFromList :: LibName -> [LEdge DGLinkLab] -> LibEnv -> LibEnv
 compositionFromList libname glbThmEdge proofStatus = let
     dgraph = lookupDGraph libname proofStatus
     newDGraph = foldl compositionAux dgraph
@@ -113,7 +113,7 @@ compositionFromList libname glbThmEdge proofStatus = let
    and checks, if they are a composition of a global theorem path. If so,
    the edge is proven, with the corresponding path as its proof basis.
    If there is more than one path, the first of them is arbitrarily taken. -}
-composition :: LIB_NAME -> LibEnv -> LibEnv
+composition :: LibName -> LibEnv -> LibEnv
 composition libname proofStatus =
   let dgraph = lookupDGraph libname proofStatus
       globalThmEdges = labEdgesDG dgraph

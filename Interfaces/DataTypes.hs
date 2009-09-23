@@ -65,7 +65,7 @@ data CmdHistory = CmdHistory {
   cmdHistory :: [UndoRedoElem]
   }
 
--- | History elements for the proof state, only LIB_NAME would be used
+-- | History elements for the proof state, only LibName would be used
 -- by GUI because it keeps track only to changes to the development graph,
 -- the other are for PGIP but in order to integrate both they should use
 -- same structure
@@ -79,7 +79,7 @@ data UndoRedoElem =
  | CComorphismChange (Maybe AnyComorphism)
  | ListChange [ListChange]
  | IStateChange (Maybe IntIState)
- | DgCommandChange LIB_NAME
+ | DgCommandChange LibName
 
 data ListChange =
    AxiomsChange [String] Int
@@ -89,7 +89,7 @@ data ListChange =
 -- | full description of the internal state required by all interfaces
 data IntIState = IntIState {
     i_libEnv              :: LibEnv,
-    i_ln                  :: LIB_NAME,
+    i_ln                  :: LibName,
     -- these are PGIP specific, but they need to be treated by the common
     -- history mechanism , therefore they need to be here
     elements              :: [Int_NodeInfo],

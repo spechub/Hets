@@ -47,16 +47,16 @@ import Data.Maybe
 import qualified Data.Map as Map
 
 -- | DGraph to Omega Library translation
-exportDGraph :: LIB_NAME -> DGraph -> Library
+exportDGraph :: LibName -> DGraph -> Library
 exportDGraph ln dg =
-    let libid = (getLIB_ID ln)
+    let libid = (getLibId ln)
     in
       Library (show libid)
                   $ catMaybes $ map (exportNodeLab libid dg)
                   $ topsortedNodes dg
 
 -- | DGNodeLab to Theory translation
-exportNodeLab :: LIB_ID -> DGraph -> LNode DGNodeLab -> Maybe Theory
+exportNodeLab :: LibId -> DGraph -> LNode DGNodeLab -> Maybe Theory
 exportNodeLab _ dg (n, lb) =
     justWhen (not $ isDGRef lb) $
     case dgn_theory lb of

@@ -50,7 +50,7 @@ globDecompRule = DGRuleWithEdge "Global-Decomposition"
      2. The changes of the update action should be added as the head of the
      history.
 -}
-globDecompFromList :: LIB_NAME -> [LEdge DGLinkLab] -> LibEnv -> LibEnv
+globDecompFromList :: LibName -> [LEdge DGLinkLab] -> LibEnv -> LibEnv
 globDecompFromList ln globalThmEdges proofStatus =
     let dgraph = lookupDGraph ln proofStatus
         finalGlobalThmEdges = filter (liftE isUnprovenGlobalThm) globalThmEdges
@@ -91,7 +91,7 @@ updateDGraph le dg x =
 {- | get all the parents, namely the related referenced nodes and the links
      between them and the present to be expanded node.
 -}
-getRefParents :: LibEnv -> LIB_NAME
+getRefParents :: LibEnv -> LibName
               -> Node -- the present to be expanded node
               -> [(LNode DGNodeLab, [DGLinkLab])]
 getRefParents le refl refn =
@@ -132,7 +132,7 @@ modifyPs dg ls =
      list.
 -}
 updateDGraphAux :: LibEnv -> Node -- the present to be expanded node
-                -> LIB_NAME -> DGraph -> (LNode DGNodeLab, [DGLinkLab])
+                -> LibName -> DGraph -> (LNode DGNodeLab, [DGLinkLab])
                 -> DGraph
 updateDGraphAux libenv n refl dg (pnl, pls) =
    let
@@ -141,7 +141,7 @@ updateDGraphAux libenv n refl dg (pnl, pls) =
 
 {- | add the given parent node into the current dgraph
 -}
-addParentNode :: LibEnv -> DGraph ->  LIB_NAME
+addParentNode :: LibEnv -> DGraph ->  LibName
               -> LNode DGNodeLab -- the referenced parent node
               -> (DGraph, Node)
 addParentNode libenv dg refl (refn, oldNodelab) =
@@ -194,7 +194,7 @@ addParentLinks dg src tgt ls = changesDGH dg
 
 {- applies global decomposition to all unproven global theorem edges
    if possible -}
-globDecomp ::LIB_NAME -> LibEnv -> LibEnv
+globDecomp ::LibName -> LibEnv -> LibEnv
 globDecomp ln proofStatus =
     let dgraph = lookupDGraph ln proofStatus
         globalThmEdges = labEdgesDG dgraph
@@ -254,7 +254,7 @@ globDecompForOneEdgeAux target (dgraph, proof_basis) path =
           in (newGraph, addEdgeId proof_basis $ getEdgeId finalEdge)
         Just e -> (dgraph, addEdgeId proof_basis $ getEdgeId e)
 
-globSubsumeFromList :: LIB_NAME -> [LEdge DGLinkLab] -> LibEnv -> LibEnv
+globSubsumeFromList :: LibName -> [LEdge DGLinkLab] -> LibEnv -> LibEnv
 globSubsumeFromList ln globalThmEdges libEnv =
     let dgraph = lookupDGraph ln libEnv
         finalGlobalThmEdges = filter (liftE isUnprovenGlobalThm) globalThmEdges
@@ -263,7 +263,7 @@ globSubsumeFromList ln globalThmEdges libEnv =
     in Map.insert ln nextDGraph libEnv
 
 -- | tries to apply global subsumption to all unproven global theorem edges
-globSubsume :: LIB_NAME -> LibEnv -> LibEnv
+globSubsume :: LibName -> LibEnv -> LibEnv
 globSubsume ln libEnv =
     let dgraph = lookupDGraph ln libEnv
         globalThmEdges = labEdgesDG dgraph

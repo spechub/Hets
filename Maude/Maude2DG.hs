@@ -322,7 +322,7 @@ processImport tim vm dg (Extending modExp) = (Ex, tok, tim', morph, ps, dg')
 processImport tim vm dg (Including modExp) = (Inc, tok, tim', morph, ps, dg')
          where (tok, tim', morph, ps, dg') = processModExp tim vm dg modExp
 
--- | traverses the list of parameters and generates the required data structures 
+-- | traverses the list of parameters and generates the required data structures
 processParameters :: [Parameter] -> TokenInfoMap -> DGraph -> ParamInfo
 processParameters ps tim dg = foldr processParameter ([], tim, [], dg) ps
 
@@ -772,7 +772,7 @@ newParamers4sorts (param : ps) (view : vs) vm = case Map.member view vm of
                 in param' ++ newParamers4sorts ps vs vm
 newParamers4sorts _ _ _ = []
 
--- | creates a new parameterized sort 
+-- | creates a new parameterized sort
 addNewParams2sort :: ParamSort -> [Token] -> ParamSort
 addNewParams2sort (Sort tok, _) lps@(_:_) = (Sort tok', lps)
          where tok' = mkSimpleId $ concat [show tok, "`{", printNewParams4sort lps, "`}"]
@@ -890,8 +890,8 @@ createQualificationTh2Mod par (s : ss) =
 
 -- | generates the library and the development graph from the path of the
 -- maude file
-anaMaudeFile :: HetcatsOpts -> FilePath -> IO (Maybe (LIB_NAME, LibEnv))
+anaMaudeFile :: HetcatsOpts -> FilePath -> IO (Maybe (LibName, LibEnv))
 anaMaudeFile _ file = do
     dg <- directMaudeParsing file
-    let name = Lib_id $ Direct_link "Maude_Module" nullRange
+    let name = emptyLibName "Maude_Module"
     return $ Just (name, Map.singleton name dg)

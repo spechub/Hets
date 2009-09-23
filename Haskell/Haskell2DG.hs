@@ -33,7 +33,7 @@ import Static.GTheory
 import Static.DevGraph
 import Driver.Options
 
-anaHaskellFile :: HetcatsOpts -> FilePath -> IO (Maybe (LIB_NAME, LibEnv))
+anaHaskellFile :: HetcatsOpts -> FilePath -> IO (Maybe (LibName, LibEnv))
 anaHaskellFile opts file = do
     str <- readFile file
     putIfVerbose opts 2 $ "Reading file " ++ file
@@ -56,7 +56,7 @@ anaHaskellFile opts file = do
               dg1 = insNodeDG (node, node_contents) dg
               moduleS = "Module"
               nodeSig = NodeSig node $ signOf $ dgn_theory node_contents
-              ln = Lib_id $ Direct_link moduleS nullRange
+              ln = emptyLibName moduleS
               esig = EmptyNode $ Logic Haskell
               gEnv = Map.singleton mName
                       $ SpecEntry $ ExtGenSig (GenSig esig [] esig) nodeSig

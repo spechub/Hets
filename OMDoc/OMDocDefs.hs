@@ -324,5 +324,5 @@ type XmlTaggedDevGraph =
 
 type XmlTaggedLibEnv =
   Map.Map
-      LIB_NAME
+      LibName
       XmlTaggedDevGraph

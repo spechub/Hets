@@ -48,7 +48,7 @@ add2history nm st descr = let
   in st { i_hist = hst { undoList = nwEl : ul } }
 
 -- | Undo or redo a command that modified the development graph
-undoRedoDgCmd :: UndoOrRedo -> IntState -> LIB_NAME
+undoRedoDgCmd :: UndoOrRedo -> IntState -> LibName
               -> ([DGChange] -> DGraph -> IO ()) -> IO IntState
 undoRedoDgCmd actionType state ln update =
   case i_state state of
@@ -110,7 +110,7 @@ processList ls elems acc
 
 -- | Process one step of undo or redo
 processAny :: UndoOrRedo -> IntState
-           -> (LIB_NAME -> [DGChange] -> DGraph -> IO ()) -> IO IntState
+           -> (LibName -> [DGChange] -> DGraph -> IO ()) -> IO IntState
 processAny actype state update = do
   let hst = case actype of
               -- find out the list of actions according to the action
@@ -142,7 +142,7 @@ processAny actype state update = do
 -- | Process a list of undo or redo changes
 processUndoRedoElems :: UndoOrRedo -> [UndoRedoElem] -> IntState
                      -> [UndoRedoElem]
-                     -> (LIB_NAME -> [DGChange] -> DGraph -> IO ())
+                     -> (LibName -> [DGChange] -> DGraph -> IO ())
                      -> IO (IntState,[UndoRedoElem])
 processUndoRedoElems actype ls state acc update
  = case i_state state of
@@ -198,10 +198,10 @@ undoOneStep ist = processAny DoUndo ist (\ _ _ _ -> return ())
 redoOneStep :: IntState -> IO IntState
 redoOneStep ist = processAny DoRedo ist (\ _ _ _ -> return ())
 
-undoOneStepWithUpdate :: IntState -> (LIB_NAME -> [DGChange] -> DGraph -> IO ())
+undoOneStepWithUpdate :: IntState -> (LibName -> [DGChange] -> DGraph -> IO ())
                       -> IO IntState
 undoOneStepWithUpdate = processAny DoUndo
 
-redoOneStepWithUpdate :: IntState -> (LIB_NAME -> [DGChange] -> DGraph -> IO ())
+redoOneStepWithUpdate :: IntState -> (LibName -> [DGChange] -> DGraph -> IO ())
                       -> IO IntState
 redoOneStepWithUpdate = processAny DoRedo

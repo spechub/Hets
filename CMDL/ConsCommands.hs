@@ -45,7 +45,7 @@ import Static.GTheory(G_theory(G_theory))
 
 -- import Common.Consistency
 -- import Common.ExtSign
-import Common.LibName(LIB_NAME)
+import Common.LibName(LibName)
 -- import Common.Result as Res
 import qualified Common.OrderedMap as OMap
 
@@ -185,7 +185,7 @@ cConsistCheckAll state
 -- applies conservativity check to a given list
 conservativityList:: [LNode DGNodeLab] ->
                      [LEdge DGLinkLab] ->
-                     LibEnv -> LIB_NAME -> IO ([(String,String)], LibEnv)
+                     LibEnv -> LibName -> IO ([(String,String)], LibEnv)
 conservativityList lsN lsE le libname
  =
   do
@@ -207,7 +207,7 @@ conservativityList lsN lsE le libname
    applyNodeConservativity libEnv' libname 
        [ n | n<-lsN, getNodeConservativity n > None ] acc
 
-applyNodeConservativity :: LibEnv -> LIB_NAME -> [LNode DGNodeLab] 
+applyNodeConservativity :: LibEnv -> LibName -> [LNode DGNodeLab] 
                         -> [(String, String)] -> IO ([(String, String)], LibEnv)
 applyNodeConservativity libEnv ln nds acc =
   case nds of
@@ -217,7 +217,7 @@ applyNodeConservativity libEnv ln nds acc =
                        applyNodeConservativity nwLe ln ns 
                          ((showName $ dgn_name nlab, str):acc)
 
-applyEdgeConservativity:: LibEnv -> LIB_NAME -> [(LEdge DGLinkLab,Bool)] ->
+applyEdgeConservativity:: LibEnv -> LibName -> [(LEdge DGLinkLab,Bool)] ->
                           [(String, String)] -> [LNode DGNodeLab] ->
                           IO ([(String, String)], LibEnv)
 applyEdgeConservativity le ln ls acc lsN

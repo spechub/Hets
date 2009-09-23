@@ -23,7 +23,7 @@ import Common.LibName
 import Syntax.AS_Architecture
 import Syntax.AS_Structured
 
-data LIB_DEFN = Lib_defn LIB_NAME [Annoted LIB_ITEM] Range [Annotation]
+data LIB_DEFN = Lib_defn LibName [Annoted LIB_ITEM] Range [Annotation]
                 -- pos: "library"
                 -- list of annotations is parsed preceding the first LIB_ITEM
                 -- the last LIB_ITEM may be annotated with a following comment
@@ -43,7 +43,7 @@ data LIB_ITEM = Spec_defn SPEC_NAME GENERICITY (Annoted SPEC) Range
               -- pos: "unit","spec","=", opt "end"
               | Ref_spec_defn SPEC_NAME REF_SPEC Range
               -- pos: "ref","spec","=", opt "end"
-              | Download_items  LIB_NAME [ITEM_NAME_OR_MAP] Range
+              | Download_items  LibName [ITEM_NAME_OR_MAP] Range
               -- pos: "from","get",commas, opt "end"
               | Logic_decl Logic_name Range
               -- pos:  "logic", Logic_name

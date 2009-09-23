@@ -59,7 +59,6 @@ import qualified Common.OrderedMap as OMap
 import Common.Utils (splitOn)
 import Common.Result
 import Common.LibName
-import Common.Id (nullRange)
 import qualified Common.Lib.SizedList as SizedList
 import Common.Consistency
 import Common.ExtSign
@@ -91,7 +90,7 @@ initNodeInfo:: (Logic lid1 sublogics1
          -> Int_NodeInfo
 initNodeInfo = Element
 
-emptyIntIState :: LibEnv -> LIB_NAME -> IntIState
+emptyIntIState :: LibEnv -> LibName -> IntIState
 emptyIntIState le ln =
   IntIState {
     i_libEnv = le,
@@ -110,9 +109,7 @@ emptyIntIState le ln =
 
 emptyIntState :: IntState
 emptyIntState =
-    IntState { i_state = Just $ emptyIntIState emptyLibEnv $ Lib_id $
-                                               Indirect_link "" nullRange
-                                                             "" noTime
+    IntState { i_state = Just $ emptyIntIState emptyLibEnv $ emptyLibName ""
              , i_hist  = IntHistory { undoList = []
                                     , redoList = [] }
              , filename = []
@@ -231,7 +228,7 @@ consToCons Monomorphic  = Mono
 consToCons Definitional = Def
 consToCons _            = None
 
-checkConservativityNode :: Bool -> (LNode DGNodeLab) -> LibEnv -> LIB_NAME
+checkConservativityNode :: Bool -> (LNode DGNodeLab) -> LibEnv -> LibName
                         -> IO (String, LibEnv, ProofHistory)
 checkConservativityNode useGUI (nodeId, nodeLab) libEnv ln = do
   let dg = lookupDGraph ln libEnv
@@ -269,7 +266,7 @@ checkConservativityNode useGUI (nodeId, nodeLab) libEnv ln = do
              libEnv' = insert ln (groupHistory dg conservativityRule dg') libEnv
          return (str, libEnv', history)
 
-checkConservativityEdge :: Bool -> (LEdge DGLinkLab) -> LibEnv -> LIB_NAME
+checkConservativityEdge :: Bool -> (LEdge DGLinkLab) -> LibEnv -> LibName
                         -> IO (String, LibEnv, ProofHistory)
 checkConservativityEdge useGUI (source,target,linklab) libEnv ln
  = do

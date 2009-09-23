@@ -103,7 +103,7 @@ writeShATermFileSDoc :: ShATermLG a => FilePath -> a -> IO ()
 writeShATermFileSDoc fp atcon =
    versionedATermTable atcon >>= AT.writeSharedATermFile fp
 
-writeFileInfo :: ShATermLG a => HetcatsOpts -> LIB_NAME
+writeFileInfo :: ShATermLG a => HetcatsOpts -> LibName
               -> FilePath -> LIB_DEFN -> a -> IO ()
 writeFileInfo opts ln file ld gctx =
   let envFile = snd (getFilePrefix opts file) ++ envSuffix in

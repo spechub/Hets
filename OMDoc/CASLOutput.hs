@@ -37,7 +37,7 @@ import Debug.Trace (trace)
 mappedsorts :: [(Hets.WithOrigin Hets.Identifier Graph.Node, String)]
             -> [Char]
             -> [(Hets.WithOrigin Hets.Identifier Graph.Node, String)]
-            -> ASL.LIB_NAME
+            -> ASL.LibName
             -> Hets.CollectionMap
             -> [Hets.IdNameMapping]
             -> Graph.Node
@@ -111,7 +111,7 @@ mappedpreds::(Show b1) =>
                          -> Morphism.Morphism f e m
              -> [((Hets.WithOrigin Hets.Identifier b, PredType),
                                         String)]
-                         -> ASL.LIB_NAME
+                         -> ASL.LibName
              -> Hets.CollectionMap
                          -> [Hets.IdNameMapping]
                          -> Rel.Rel SORT
@@ -205,7 +205,7 @@ mappedops::[((Hets.WithOrigin Hets.Identifier b1, OpType), String)]
                         -> [Char]
                         -> Morphism.Morphism f e m
                         -> [((Hets.WithOrigin Hets.Identifier b, OpType), String)]
-                        -> ASL.LIB_NAME
+                        -> ASL.LibName
                         -> Hets.CollectionMap
                         -> [Hets.IdNameMapping]
                         -> Rel.Rel SORT
@@ -297,12 +297,12 @@ findOrigin
   ->[Hets.IdNameMapping]
   ->(
       Hets.CollectionMap
-      ->(ASL.LIB_NAME, Graph.Node)
+      ->(ASL.LibName, Graph.Node)
       ->String
       ->(String->String)
-      ->[(ASL.LIB_NAME, Hets.IdentifierWON)]
+      ->[(ASL.LibName, Hets.IdentifierWON)]
     )
-  ->(ASL.LIB_NAME, Graph.Node)
+  ->(ASL.LibName, Graph.Node)
   ->String
   ->(String->String)
   ->String
@@ -349,7 +349,7 @@ findOrigin
           (Just o) -> o
 
 getNodeNameBaseForXml
-  ::ASL.LIB_NAME
+  ::ASL.LibName
   ->Hets.IdNameMapping
   ->(Maybe URI.URI, String)
 getNodeNameBaseForXml
@@ -393,13 +393,10 @@ asOMDocFile file =
   joinFile = intercalate "/"
 
 -- | extract the source-component from a library name
-unwrapLinkSource::ASL.LIB_NAME->String
-unwrapLinkSource
-  (ASL.Lib_id lid) = unwrapLID lid
-unwrapLinkSource
-  (ASL.Lib_version lid _) = unwrapLID lid
+unwrapLinkSource :: ASL.LibName -> String
+unwrapLinkSource (ASL.LibName lid _) = unwrapLID lid
 
 -- | extract the source from a library ID
-unwrapLID::ASL.LIB_ID->String
-unwrapLID (ASL.Indirect_link path _ _ _) = path
-unwrapLID (ASL.Direct_link url _) = url
+unwrapLID :: ASL.LibId -> String
+unwrapLID (ASL.IndirectLink path _ _ _) = path
+unwrapLID (ASL.DirectLink url _) = url

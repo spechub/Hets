@@ -35,17 +35,17 @@ mkOverloadedId :: Int -> Id -> Id
 mkOverloadedId n i = if n <= 1 then i else
   Id [genToken "Over"] (i : map (stringToId  . (: [])) (show n)) $ posOfId i
 
-mkOrReuseQualSortName :: Sort_map -> SIMPLE_ID -> LIB_ID -> Id -> Id
+mkOrReuseQualSortName :: Sort_map -> SIMPLE_ID -> LibId -> Id -> Id
 mkOrReuseQualSortName sm nodeId libId i =
   case Map.lookup i sm of
     Just j | isQualName j -> j
     _ -> mkQualName nodeId libId i
 
-qualifySig :: SIMPLE_ID -> LIB_ID -> Morphism f e () -> Sign f e
+qualifySig :: SIMPLE_ID -> LibId -> Morphism f e () -> Sign f e
            -> Result (Morphism f e (), [Named (FORMULA f)])
 qualifySig = qualifySigExt (\ _ _ _ _ -> extendedInfo) ()
 
-qualifySigExt :: InducedSign f e m e -> m -> SIMPLE_ID -> LIB_ID
+qualifySigExt :: InducedSign f e m e -> m -> SIMPLE_ID -> LibId
               -> Morphism f e m -> Sign f e
               -> Result (Morphism f e m, [Named (FORMULA f)])
 qualifySigExt extInd extEm nodeId libId m sig = do
@@ -68,7 +68,7 @@ qualifySigExt extInd extEm nodeId libId m sig = do
     , pred_map = pm }, monotonicities sig)
 
 qualOverloaded :: Ord a => Map.Map Id Int -> Map.Map (Id, a) Id -> SIMPLE_ID
-               -> LIB_ID -> (a -> a) -> (a -> a) -> Map.Map Id (Set.Set a)
+               -> LibId -> (a -> a) -> (a -> a) -> Map.Map Id (Set.Set a)
                -> Map.Map (Id, a) (Id, a)
 qualOverloaded oMap rn nodeId libId f g =
   Map.foldWithKey (\ i s m -> foldr (\ (e, n) ->let ge = g e in

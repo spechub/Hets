@@ -35,7 +35,7 @@ import Logic.Logic
 -- -------------------------------
 
 {- returns the history that belongs to the given library name-}
-lookupHistory :: LIB_NAME -> LibEnv -> ProofHistory
+lookupHistory :: LibName -> LibEnv -> ProofHistory
 lookupHistory ln = proofHistory . lookupDGraph ln
 
 -- ----------------------------------------------

@@ -35,8 +35,7 @@ import Data.Maybe (maybeToList)
 -- | Parse a library of specifications
 library :: LogicGraph -> AParser st LIB_DEFN
 library lG = do
-    (ps, ln) <- option
-      (nullRange, Lib_id $ Indirect_link libraryS nullRange "" noTime) $ do
+    (ps, ln) <- option (nullRange, emptyLibName "") $ do
       s1 <- asKey libraryS
       n <- libName
       return (tokPos s1, n)
@@ -45,30 +44,28 @@ library lG = do
     return (Lib_defn ln ls ps an)
 
 -- | Parse library name
-libName :: AParser st LIB_NAME
+libName :: AParser st LibName
 libName = do
     libid <- libId
     v <- option Nothing (fmap Just version)
-    return $ case v of
-      Nothing -> Lib_id libid
-      Just v1 -> Lib_version libid v1
+    return $ LibName libid v
 
 -- | Parse the library version
-version :: AParser st VERSION_NUMBER
+version :: AParser st VersionNumber
 version = do
     s <- asKey versionS
     pos <- getPos
     n <- many1 digit `sepBy1` (string ".")
     skip
-    return (Version_number n (tokPos s `appRange` Range [pos]))
+    return (VersionNumber n (tokPos s `appRange` Range [pos]))
 
 -- | Parse library ID
-libId :: AParser st LIB_ID
+libId :: AParser st LibId
 libId = do
     pos <- getPos
     path <- scanAnyWords `sepBy1` (string "/")
     skip
-    return $ Indirect_link (intercalate "/" path) (Range [pos])
+    return $ IndirectLink (intercalate "/" path) (Range [pos])
         "" noTime
     -- ??? URL need to be added
 

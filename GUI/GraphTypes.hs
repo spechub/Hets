@@ -29,7 +29,6 @@ import GUI.ProofManagement (GUIMVar)
 import GUI.UDGUtils
 
 import Common.LibName
-import Common.Id(nullRange)
 
 import Driver.Options(HetcatsOpts(uncolored), defaultHetcatsOpts)
 
@@ -57,9 +56,9 @@ data GInfo = GInfo
              , globalLock :: MVar ()
              , functionLock :: MVar ()
              , libGraphLock :: MVar ()
-             , openGraphs :: IORef (Map.Map LIB_NAME GInfo)
+             , openGraphs :: IORef (Map.Map LibName GInfo)
                -- Local
-             , libName :: LIB_NAME
+             , libName :: LibName
              , graphInfo :: GraphInfo
              , internalNames :: IORef [(String,(String -> String) -> IO ())]
              , proofGUIMVar :: GUIMVar
@@ -117,7 +116,7 @@ emptyGInfo = do
                , libGraphLock = lgl
                , openGraphs = oGraphs
                  -- Local
-               , libName = Lib_id $ Indirect_link "" nullRange "" noTime
+               , libName = emptyLibName ""
                , graphInfo = gi
                , internalNames = iorIN
                , proofGUIMVar = guiMVar
@@ -125,7 +124,7 @@ emptyGInfo = do
                }
 
 -- | Creates an empty GInfo
-copyGInfo :: GInfo -> LIB_NAME -> IO GInfo
+copyGInfo :: GInfo -> LibName -> IO GInfo
 copyGInfo gInfo ln = do
   gi <- initGraph
   iorIN <- newIORef []

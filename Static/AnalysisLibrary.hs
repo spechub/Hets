@@ -56,12 +56,12 @@ import System.FilePath
 import System.Time
 
 -- a set of library names to check for cyclic imports
-type LNS = Set.Set LIB_NAME
+type LNS = Set.Set LibName
 
 -- | parsing and static analysis for files
 -- Parameters: logic graph, default logic, file name
 anaSourceFile :: LogicGraph -> HetcatsOpts -> LNS -> LibEnv -> FilePath
-              -> ResultT IO (LIB_NAME, LibEnv)
+              -> ResultT IO (LibName, LibEnv)
 anaSourceFile lgraph opts topLns libenv fname = ResultT $ do
   fname' <- existsAnSource opts {intype = GuessIn} fname
   case fname' of
@@ -81,7 +81,7 @@ anaSourceFile lgraph opts topLns libenv fname = ResultT $ do
 -- | parsing and static analysis for string (=contents of file)
 -- Parameters: logic graph, default logic, contents of file, filename
 anaString :: LogicGraph -> HetcatsOpts -> LNS -> LibEnv -> String
-          -> FilePath -> ClockTime -> ResultT IO (LIB_NAME, LibEnv)
+          -> FilePath -> ClockTime -> ResultT IO (LibName, LibEnv)
 anaString lgraph opts topLns libenv input file mt = do
   let Result ds mast = readLibDefnM lgraph opts file input mt
   case mast of
@@ -93,7 +93,7 @@ anaString lgraph opts topLns libenv input file mt = do
           lift $ writeLibDefn ga file opts ast
           liftR $ Result ds Nothing
       _ -> do
-          let libstring = show $ getLIB_ID ln
+          let libstring = show $ getLibId ln
           unless (libstring == libraryS) $ do
                unless (isSuffixOf libstring $ rmSuffix file)
                  $ lift $ putIfVerbose opts 1 $
@@ -113,8 +113,8 @@ anaString lgraph opts topLns libenv input file mt = do
     Nothing -> liftR $ Result ds Nothing
 
 -- lookup or read a library
-anaLibFile :: LogicGraph -> HetcatsOpts -> LNS -> LibEnv -> LIB_NAME
-           -> ResultT IO (LIB_NAME, LibEnv)
+anaLibFile :: LogicGraph -> HetcatsOpts -> LNS -> LibEnv -> LibName
+           -> ResultT IO (LibName, LibEnv)
 anaLibFile lgraph opts topLns libenv ln =
     let lnstr = show ln in case Map.lookup ln libenv of
     Just _ -> do
@@ -136,7 +136,7 @@ anaLibFile lgraph opts topLns libenv ln =
 
 -- | lookup or read a library
 anaLibFileOrGetEnv :: LogicGraph -> HetcatsOpts -> LNS -> LibEnv
-                   -> LIB_NAME -> FilePath -> ResultT IO (LIB_NAME, LibEnv)
+                   -> LibName -> FilePath -> ResultT IO (LibName, LibEnv)
 anaLibFileOrGetEnv lgraph opts topLns libenv libname file = ResultT $ do
      let envFile = rmSuffix file ++ envSuffix
      recent_envFile <- checkRecentEnv opts envFile file
@@ -173,7 +173,7 @@ anaLibFileOrGetEnv lgraph opts topLns libenv libname file = ResultT $ do
 -- do Result diags res <- runResultT (anaLibDefn ...)
 --    mapM_ (putStrLn . show) diags
 anaLibDefn :: LogicGraph -> HetcatsOpts -> LNS -> LibEnv -> LIB_DEFN
-  -> ResultT IO (LIB_NAME, LIB_DEFN, DGraph, LibEnv)
+  -> ResultT IO (LibName, LIB_DEFN, DGraph, LibEnv)
 anaLibDefn lgraph opts topLns libenv (Lib_defn ln alibItems pos ans) = do
   gannos <- showDiags1 opts $ liftR $ addGlobalAnnos emptyGlobalAnnos ans
   let dg = emptyDG
@@ -307,7 +307,7 @@ anaLibItem lgraph opts topLns libenv dg itm = case itm of
     return (itm, dg, libenv)
   Download_items ln items _ -> if Set.member ln topLns then
     liftR $ mkError "illegal cyclic library import"
-      $ Set.map getLIB_ID topLns
+      $ Set.map getLibId topLns
     else do
         (ln', libenv') <- anaLibFile lgraph opts topLns libenv ln
         if ln == ln' then case Map.lookup ln libenv' of
@@ -317,10 +317,10 @@ anaLibItem lgraph opts topLns libenv dg itm = case itm of
             dg1 <- liftR $ anaItemNamesOrMaps libenv' ln dg' dg items
             return (itm, dg1, libenv')
           else liftR $ mkError ("downloaded library '" ++ show ln'
-            ++ "' does not match library name") $ getLIB_ID ln
+            ++ "' does not match library name") $ getLibId ln
 
 -- the first DGraph dg' is that of the imported library
-anaItemNamesOrMaps :: LibEnv -> LIB_NAME -> DGraph -> DGraph
+anaItemNamesOrMaps :: LibEnv -> LibName -> DGraph -> DGraph
   -> [ITEM_NAME_OR_MAP] -> Result DGraph
 anaItemNamesOrMaps libenv' ln dg' dg items = do
   (genv1, dg1) <- foldM
@@ -376,7 +376,7 @@ anaViewType lg dg parSig opts name (View_type aspSrc aspTar pos) = do
                     pos,
           (srcNsig, tarNsig), dg'')
 
-anaItemNameOrMap :: LibEnv -> LIB_NAME -> GlobalEnv -> (GlobalEnv, DGraph)
+anaItemNameOrMap :: LibEnv -> LibName -> GlobalEnv -> (GlobalEnv, DGraph)
   -> ITEM_NAME_OR_MAP -> Result (GlobalEnv, DGraph)
 anaItemNameOrMap libenv ln genv' res itm =
    anaItemNameOrMap1 libenv ln genv' res $ case itm of
@@ -387,7 +387,7 @@ anaItemNameOrMap libenv ln genv' res itm =
 anaErr :: String -> a
 anaErr f = error $ "*** Analysis of " ++ f ++ " is not yet implemented!"
 
-anaItemNameOrMap1 :: LibEnv -> LIB_NAME -> GlobalEnv -> (GlobalEnv, DGraph)
+anaItemNameOrMap1 :: LibEnv -> LibName -> GlobalEnv -> (GlobalEnv, DGraph)
   -> (SIMPLE_ID, SIMPLE_ID) -> Result (GlobalEnv, DGraph)
 anaItemNameOrMap1 libenv ln genv' (genv, dg) (old, new) = do
   let newName = makeName new
@@ -409,7 +409,7 @@ anaItemNameOrMap1 libenv ln genv' (genv, dg) (old, new) = do
     UnitEntry _usig -> anaErr "unit spec download"
     RefEntry -> anaErr "ref spec download"
 
-refNodesig :: LibEnv -> LIB_NAME -> DGraph -> (NodeName, NodeSig)
+refNodesig :: LibEnv -> LibName -> DGraph -> (NodeName, NodeSig)
            -> (DGraph, NodeSig)
 refNodesig libenv refln dg (name, NodeSig refn sigma@(G_sign lid sig ind)) =
   let (ln, n) = getActualParent libenv refln refn
@@ -427,7 +427,7 @@ refNodesig libenv refln dg (name, NodeSig refn sigma@(G_sign lid sig ind)) =
      the small chains between nodes in different library can be advoided.
      (details see ticket 5)
 -}
-getActualParent :: LibEnv -> LIB_NAME -> Node -> (LIB_NAME, Node)
+getActualParent :: LibEnv -> LibName -> Node -> (LibName, Node)
 getActualParent libenv ln n =
    let refLab = labDG (lookupDGraph ln libenv) n in
    if isDGRef refLab then
@@ -436,11 +436,11 @@ getActualParent libenv ln n =
         getActualParent libenv (dgn_libname refLab) (dgn_node refLab)
    else (ln, n)
 
-refNodesigs :: LibEnv -> LIB_NAME -> DGraph -> [(NodeName, NodeSig)]
+refNodesigs :: LibEnv -> LibName -> DGraph -> [(NodeName, NodeSig)]
             -> (DGraph, [NodeSig])
 refNodesigs libenv = mapAccumR . refNodesig libenv
 
-refExtsig :: LibEnv -> LIB_NAME -> DGraph -> NodeName -> ExtGenSig
+refExtsig :: LibEnv -> LibName -> DGraph -> NodeName -> ExtGenSig
           -> (DGraph, ExtGenSig)
 refExtsig libenv ln dg name (ExtGenSig (GenSig imps params gsigmaP) body) = let
   pName = extName "Parameters" name
@@ -460,7 +460,7 @@ refExtsig libenv ln dg name (ExtGenSig (GenSig imps params gsigmaP) body) = let
   (dg4, body1) = refNodesig libenv ln dg3 (name, body)
   in (dg4, ExtGenSig (GenSig imps1 params1 gsigmaP1) body1)
 
-refViewsig :: LibEnv -> LIB_NAME -> DGraph -> NodeName -> ExtViewSig
+refViewsig :: LibEnv -> LibName -> DGraph -> NodeName -> ExtViewSig
            -> (DGraph, ExtViewSig)
 refViewsig libenv ln dg name (ExtViewSig src mor extsig) = let
   (dg1, src1) = refNodesig libenv ln dg (extName "Source" name, src)

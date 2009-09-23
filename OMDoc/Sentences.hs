@@ -45,7 +45,7 @@ import Debug.Trace (trace)
 wrapFormulaCMPOM::
   GlobalOptions -- ^ HetscatsOpts + debuggin-information
   ->LibEnv -- ^ library environment
-  ->LIB_NAME -- ^ library of formula
+  ->LibName -- ^ library of formula
   ->Graph.Node -- ^ node of formula
   ->[Hets.IdNameMapping] -- ^ mapping of unique names
   ->Hets.CollectionMap
@@ -118,7 +118,7 @@ processFormulaOM::
   (Pretty.Pretty f)
   =>GlobalOptions -- ^ HetcatsOpts + debugging information
   ->LibEnv  -- ^ library environment
-  ->LIB_NAME -- ^ library name of formula
+  ->LibName -- ^ library name of formula
   ->Graph.Node -- ^ node of formula
   ->[Hets.IdNameMapping] -- ^ unique name mapping
   ->Hets.CollectionMap
@@ -349,7 +349,7 @@ makePresentationForOM xname presstring =
 -- | transform a list of variable declarations
 -- into a list of (Name, Type) (bindings).
 makeVarDeclList::
-  LIB_NAME
+  LibName
   ->Graph.Node
   ->[Hets.IdNameMapping]
   ->Hets.CollectionMap
@@ -412,7 +412,7 @@ quantName Unique_existential = caslSymbolQuantUnique_existentialS
 --   \<\/OMBVAR>
 -- @
 processVarDeclOM::
-  LIB_NAME -- ^ libary of variable declaration
+  LibName -- ^ libary of variable declaration
   ->Graph.Node -- ^ node
   ->[Hets.IdNameMapping] -- ^ unique name mapping
   ->Hets.CollectionMap
@@ -445,7 +445,7 @@ processVarDeclOM ln nn uN cM vdl =
 createSymbolForPredicationOM::
   GlobalOptions -- ^ HetcatsOpts + debuggin information
   ->LibEnv -- ^ library environment
-  ->LIB_NAME -- ^ library name of predication
+  ->LibName -- ^ library name of predication
   ->Graph.Node -- ^ node of predication
   ->[Hets.IdNameMapping] -- ^ unique name mapping
   ->Hets.CollectionMap
@@ -487,7 +487,7 @@ processTermOM::
   (Pretty.Pretty f)
   =>GlobalOptions -- ^ HetcatsOpts + debugging information
   ->LibEnv -- ^ library environment
-  ->LIB_NAME -- ^ library name of term
+  ->LibName -- ^ library name of term
   ->Graph.Node -- ^ node of term
   ->[Hets.IdNameMapping] -- ^ unique name mapping
   ->Hets.CollectionMap
@@ -618,7 +618,7 @@ processTermOM _ _ _ _ _ _ _ _ =
 
 -- | create an XML-representation of a 'SORT'.
 createSymbolForSortOM::
-  LIB_NAME -- ^ library of sort
+  LibName -- ^ library of sort
   ->Graph.Node -- ^ node of sort
   ->[Hets.IdNameMapping] -- ^ unique name mapping
   ->Hets.CollectionMap
@@ -656,7 +656,7 @@ createSymbolForSortOM
 processConstraintsOM::
   GlobalOptions -- ^ HetcatsOpts + debugging information
   ->LibEnv -- ^ library environment
-  ->LIB_NAME -- ^ library of constraints
+  ->LibName -- ^ library of constraints
   ->Graph.Node -- ^ node of constrains
   ->[Hets.IdNameMapping] -- ^ unique name mapping
   ->Hets.CollectionMap
@@ -761,11 +761,11 @@ findOriginId
   ->[Hets.IdNameMapping]
   ->(
       Hets.CollectionMap
-      ->(LIB_NAME, Graph.Node)
+      ->(LibName, Graph.Node)
       ->Id.Id
-      ->[(LIB_NAME, (Hets.IdentifierWON, String))]
+      ->[(LibName, (Hets.IdentifierWON, String))]
     )
-  ->(LIB_NAME, Graph.Node)
+  ->(LibName, Graph.Node)
   ->Id.Id
   ->String
   ->(Hets.IdNameMapping, String)
@@ -826,7 +826,7 @@ findOriginId
 --
 -- See 'createATPOM'
 createTypedVarOM::
-  LIB_NAME -- ^ library of variable
+  LibName -- ^ library of variable
   ->Graph.Node -- ^ node of variable
   ->[Hets.IdNameMapping] -- ^ unique name mapping
   ->Hets.CollectionMap
@@ -841,7 +841,7 @@ createTypedVarOM ln nn uniqueNames collectionMap sort varname =
 processOperatorOM::
   GlobalOptions -- ^ HetscatsOpts + debug information
   ->LibEnv -- ^ library environment
-  ->LIB_NAME -- ^ library name of operator
+  ->LibName -- ^ library name of operator
   ->Graph.Node -- ^ node of operator
   ->[Hets.IdNameMapping] -- ^ unique name mapping
   ->Hets.CollectionMap
@@ -890,7 +890,7 @@ processOperatorOM _ lenv ln nn uniqueNames collectionMap
 --
 -- See 'createTypedVarOM'
 createATPOM::
-  LIB_NAME -- ^ library of sort\/type
+  LibName -- ^ library of sort\/type
   ->Graph.Node -- ^ node
   ->[Hets.IdNameMapping] -- ^ unique name mapping
   ->Hets.CollectionMap

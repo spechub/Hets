@@ -121,7 +121,7 @@ updateGraph gInfo@(GInfo { libName = ln }) changes = do
     Nothing -> return ()
     Just ist -> updateGraphAux gInfo ln changes $ lookupDGraph ln $ i_libEnv ist
 
-updateGraphAux :: GInfo -> LIB_NAME -> [DGChange] -> DGraph -> IO ()
+updateGraphAux :: GInfo -> LibName -> [DGChange] -> DGraph -> IO ()
 updateGraphAux gInfo' ln changes dg = do
   og <- readIORef $ openGraphs gInfo'
   case Map.lookup ln og of
@@ -407,7 +407,7 @@ proofMenu gInfo@(GInfo { hetcatsOpts = hOpts
                 (const $ return ())
                 mGUIMVar
 
-calcGlobalHistory :: LibEnv -> LibEnv -> [LIB_NAME]
+calcGlobalHistory :: LibEnv -> LibEnv -> [LibName]
 calcGlobalHistory old new = let
     length' ln = SizedList.size . proofHistory . lookupDGraph ln
     changes = filter (\ ln -> length' ln old < length' ln new) $ Map.keys old

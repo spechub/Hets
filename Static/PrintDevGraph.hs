@@ -127,7 +127,7 @@ instance Pretty DGNodeInfo where
   pretty c = case c of
     DGNode {} -> pretty $ node_origin c
     DGRef {} ->
-      pretty (getLIB_ID $ ref_libname c) <+> text (showNodeId $ ref_node c)
+      pretty (getLibId $ ref_libname c) <+> text (showNodeId $ ref_node c)
 
 prettyDGNodeLab :: DGNodeLab -> Doc
 prettyDGNodeLab l = sep [ text $ getDGNodeName l, pretty $ nodeInfo l]

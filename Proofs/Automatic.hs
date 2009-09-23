@@ -39,7 +39,7 @@ import qualified Data.Map as Map
 import Data.Graph.Inductive.Graph
 import Common.Result
 
-automaticFromList :: LIB_NAME ->  [LEdge DGLinkLab] -> LibEnv -> LibEnv
+automaticFromList :: LibName ->  [LEdge DGLinkLab] -> LibEnv -> LibEnv
 automaticFromList ln ls libEnv =
   let x = automaticRecursiveFromList ln libEnv ls
       y = localInferenceFromList ln ls x
@@ -49,7 +49,7 @@ noChange :: LibEnv -> LibEnv -> Bool
 noChange oldLib newLib = and $ Map.elems $ Map.intersectionWith
   (\ a b -> SizedList.null . snd $ splitHistory a b) oldLib newLib
 
-automaticRecursiveFromList :: LIB_NAME -> LibEnv -> [LEdge DGLinkLab]
+automaticRecursiveFromList :: LibName -> LibEnv -> [LEdge DGLinkLab]
                            -> LibEnv
 automaticRecursiveFromList ln proofstatus ls =
   let auxProofstatus = automaticApplyRulesToGoals ln ls proofstatus
@@ -59,26 +59,26 @@ automaticRecursiveFromList ln proofstatus ls =
 
 {- | automatically applies all rules to the library
    denoted by the library name of the given proofstatus-}
-automatic :: LIB_NAME -> LibEnv -> LibEnv
+automatic :: LibName -> LibEnv -> LibEnv
 automatic ln le = let nLib = localInference ln $ automaticRecursive 9 ln le in
   Map.intersectionWith (\ odg ndg ->
       groupHistory odg (DGRule "automatic") ndg) le nLib
 
 {- | applies the rules recursively until no further changes can be made -}
-automaticRecursive :: Int -> LIB_NAME -> LibEnv -> LibEnv
+automaticRecursive :: Int -> LibName -> LibEnv -> LibEnv
 automaticRecursive count ln proofstatus =
   let auxProofstatus = automaticApplyRules ln proofstatus
   in if noChange proofstatus auxProofstatus || count < 1 then auxProofstatus
      else automaticRecursive (count - 1) ln auxProofstatus
 
-wrapTheoremHideShift :: LIB_NAME -> LibEnv -> LibEnv
+wrapTheoremHideShift :: LibName -> LibEnv -> LibEnv
 wrapTheoremHideShift ln libEnv =
  case maybeResult $ theoremHideShift ln libEnv of
    Nothing -> libEnv
    Just libEnv' -> libEnv'
 
 -- | list of rules to use
-rules :: [LIB_NAME -> LibEnv -> LibEnv]
+rules :: [LibName -> LibEnv -> LibEnv]
 rules =
     [ automaticHideTheoremShift
     , locDecomp
@@ -87,7 +87,7 @@ rules =
     , wrapTheoremHideShift
     ]
 
-rulesWithGoals :: [LIB_NAME -> [LEdge DGLinkLab] -> LibEnv -> LibEnv]
+rulesWithGoals :: [LibName -> [LEdge DGLinkLab] -> LibEnv -> LibEnv]
 rulesWithGoals =
             [automaticHideTheoremShiftFromList
             , locDecompFromList
@@ -95,8 +95,8 @@ rulesWithGoals =
             , globSubsumeFromList
             ]
 
-automaticApplyRulesToGoals :: LIB_NAME -> [LEdge DGLinkLab] -> LibEnv ->
-                 ([LIB_NAME -> [LEdge DGLinkLab] -> LibEnv -> LibEnv])
+automaticApplyRulesToGoals :: LibName -> [LEdge DGLinkLab] -> LibEnv ->
+                 ([LibName -> [LEdge DGLinkLab] -> LibEnv -> LibEnv])
                  ->LibEnv
 automaticApplyRulesToGoals ln ls libEnv ll=
  case ll of
@@ -114,5 +114,5 @@ automaticApplyRulesToGoals ln ls libEnv ll=
 
 {- | sequentially applies all rules to the given proofstatus,
    ie to the library denoted by the library name of the proofstatus -}
-automaticApplyRules :: LIB_NAME -> LibEnv -> LibEnv
+automaticApplyRules :: LibName -> LibEnv -> LibEnv
 automaticApplyRules ln = foldl (.) id $ map (\ f -> f ln) rules
