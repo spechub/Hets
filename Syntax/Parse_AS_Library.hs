@@ -55,7 +55,7 @@ version :: AParser st VersionNumber
 version = do
     s <- asKey versionS
     pos <- getPos
-    n <- many1 digit `sepBy1` (string ".")
+    n <- sepBy1 (many1 digit) (string dotS)
     skip
     return (VersionNumber n (tokPos s `appRange` Range [pos]))
 
@@ -63,7 +63,7 @@ version = do
 libId :: AParser st LibId
 libId = do
     pos <- getPos
-    path <- scanAnyWords `sepBy1` (string "/")
+    path <- sepBy1 scanAnyWords (string "/")
     skip
     return $ IndirectLink (intercalate "/" path) (Range [pos])
         "" noTime
@@ -141,7 +141,7 @@ libItem l =
     do s1 <- asKey fromS
        iln <- libName
        s2 <- asKey getS
-       (il,ps) <- itemNameOrMap `separatedBy` anComma
+       (il,ps) <- separatedBy itemNameOrMap anComma
        q <- optEnd
        return (Download_items iln il
                 (catRange ([s1, s2] ++ ps ++ maybeToList q)))
@@ -154,7 +154,7 @@ libItem l =
         a <- aSpec l
         p2 <- getPos
         if p1 == p2 then fail "cannot parse spec" else
-          return (Syntax.AS_Library.Spec_defn (mkSimpleId specS)
+          return (Syntax.AS_Library.Spec_defn (mkSimpleId "")
                (Genericity (Params []) (Imported []) nullRange) a nullRange)
 
 -- | Parse view type
@@ -170,7 +170,7 @@ itemNameOrMap :: AParser st ITEM_NAME_OR_MAP
 itemNameOrMap = do
     i1 <- simpleId
     i' <- option Nothing $ do
-        s <- asKey "|->"
+        s <- asKey mapsTo
         i <- simpleId
         return $ Just (i,s)
     return $ case i' of
@@ -204,5 +204,5 @@ param l = do
 imports :: LogicGraph -> AParser st ([Annoted SPEC], Range)
 imports l = do
     s <- asKey givenS
-    (sps, ps) <- annoParser (groupSpec l) `separatedBy` anComma
-    return (sps, catRange (s:ps))
+    (sps, ps) <- separatedBy (annoParser $ groupSpec l) anComma
+    return (sps, catRange (s : ps))

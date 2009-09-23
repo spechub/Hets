@@ -16,6 +16,7 @@ import Common.Id
 import Common.Doc
 import Common.DocUtils
 import Common.Keywords
+import Common.LibName
 
 import Syntax.AS_Structured
 import Syntax.AS_Library
@@ -29,7 +30,8 @@ instance Pretty LIB_DEFN where
         let aa' = pretty aa              -- lib name
             ab' = vsep $ map pretty ab -- LIB_ITEMs
             ad' = vcat $ map pretty ad -- global ANNOTATIONs
-        in keyword libraryS <+> aa' $++$ ad' $++$ ab'
+        in (if aa == emptyLibName "" then empty else
+               keyword libraryS <+> aa') $++$ ad' $++$ ab'
 
 instance Pretty LIB_ITEM where
     pretty li = case li of
@@ -51,7 +53,8 @@ instance Pretty LIB_ITEM where
                              else cat [spid, printPARAMS aa <+> sa]
                          else sep [ cat [spid, printPARAMS aa]
                                   , printIMPORTED ab <+> sa]
-             in vcat $ (topKey specS <+> vcat [sphead, x]) : r
+             in if null (tokStr si) && null pl then pretty ac' else
+                    vcat $ (topKey specS <+> vcat [sphead, x]) : r
                     ++ [keyword endS]
         View_defn si (Genericity aa@(Params pl) ab@(Imported il) _)
                       (View_type frm to _) ad _ ->
@@ -80,8 +83,8 @@ instance Pretty LIB_ITEM where
                     fsep[structSimpleId si <+> equals, pretty ab]
                             $+$ keyword endS
         Download_items l ab _ ->
-            topKey fromS <+> fsep ([pretty l <+> keyword getS] ++
-                                   punctuate comma (map pretty ab))
+            topKey fromS <+> fsep ((pretty l <+> keyword getS)
+                                   : punctuate comma (map pretty ab))
         Syntax.AS_Library.Logic_decl aa _ ->
             keyword logicS <+> pretty aa
 
