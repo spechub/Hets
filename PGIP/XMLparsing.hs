@@ -133,6 +133,8 @@ communicationStep:: CmdlPgipState -> CmdlState ->
                      IO (CmdlPgipState, CmdlState)
 communicationStep pgD st = do
    -- tries to read a packet from the input
+  b <- hIsEOF (hin pgD)
+  if b then return (pgD { stop = True }, st) else do
    tmp <- timeoutReadPacket (maxWaitTime pgD) pgD
    case tmp of
     Nothing -> if resendMsgIfTimeout pgD
@@ -203,11 +205,12 @@ cmdlListenOrConnect2Port opts = do
 -- if no input comes it will return Nothing
 timeoutReadPacket :: Int -> CmdlPgipState -> IO (Maybe String)
 timeoutReadPacket untilTimeout st = do
-    smtmp <- hWaitForInput (hin st) untilTimeout
+    let h = hin st
+    smtmp <- hWaitForInput h untilTimeout
     if smtmp then do
             ms <- if useXML st
-                    then readPacket [] $ hin st
-                    else hGetLine $ hin st
+                    then readPacket [] h
+                    else hGetLine h
             return $ Just ms
       else return Nothing
 
