@@ -61,21 +61,16 @@ getFilePrefix opts file =
 writeLibDefn :: GlobalAnnos -> FilePath -> HetcatsOpts -> LIB_DEFN -> IO ()
 writeLibDefn ga file opts ld = do
     let (odir, filePrefix) = getFilePrefix opts file
-        filename ty = filePrefix ++ "." ++ show ty
-        verbMesg ty = putIfVerbose opts 2 $ "Writing file: " ++ filename ty
-        printXml ty = do
-          verbMesg ty
-          writeFile (filename ty) $ ppTopElement (xmlLibDefn ga ld) ++ "\n"
-        printAscii ty = do
-          verbMesg ty
-          writeFile (filename ty) $ showGlobalDoc ga ld "\n"
+        printXml fn = writeFile fn $ ppTopElement (xmlLibDefn ga ld) ++ "\n"
+        printAscii fn = writeFile fn $ showGlobalDoc ga ld "\n"
         write_type :: OutType -> IO ()
-        write_type t = case t of
-            PrettyOut PrettyXml -> printXml t
-            PrettyOut PrettyAscii -> printAscii t
-            PrettyOut PrettyLatex -> do
-                verbMesg t
-                writeLibDefnLatex opts ga (filename t) ld
+        write_type ty = do
+          let fn = filePrefix ++ "." ++ show ty
+          putIfVerbose opts 2 $ "Writing file: " ++ fn
+          case ty of
+            PrettyOut PrettyXml -> printXml fn
+            PrettyOut PrettyAscii -> printAscii fn
+            PrettyOut PrettyLatex -> writeLibDefnLatex opts ga fn ld
             _ -> return () -- implemented elsewhere
     putIfVerbose opts 3 ("Current OutDir: " ++ odir)
     mapM_ write_type $ outtypes opts
@@ -102,7 +97,7 @@ versionedATermTable :: ShATermLG a => a -> IO ATermTable
 versionedATermTable atcon = do
     (att1, versionnr) <- toShATermLG emptyATermTable hetsVersion
     (att2, aterm) <- toShATermLG att1 atcon
-    return $ fst $ addATerm (ShAAppl "hets" [versionnr,aterm] []) att2
+    return $ fst $ addATerm (ShAAppl "hets" [versionnr, aterm] []) att2
 
 writeShATermFileSDoc :: ShATermLG a => FilePath -> a -> IO ()
 writeShATermFileSDoc fp atcon =
