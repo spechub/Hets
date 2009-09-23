@@ -17,7 +17,6 @@ import Common.Id as Id
 import Common.ExtSign
 import Common.Doc
 import Common.DocUtils
-import Common.AS_Annotation
 
 import System.Environment
 import Data.Graph.Inductive.Graph
@@ -41,7 +40,7 @@ import Proofs.StatusUtils
 myHetcatsOpts :: HetcatsOpts
 myHetcatsOpts = defaultHetcatsOpts { libdirs = ["../Hets-lib"] }
 
-process :: FilePath -> IO (Maybe (LIB_NAME, LibEnv))
+process :: FilePath -> IO (Maybe (LibName, LibEnv))
 process = anaLib myHetcatsOpts
 
 {- ln -s sample-ghci-script .ghci and call "make ghci" -}
@@ -65,9 +64,8 @@ main = do
 
 {- Test functions for CASL signature -}
 
-proceed :: FilePath -> ResultT IO (LIB_NAME, LibEnv)
-proceed fname = do
-  anaSourceFile logicGraph myHetcatsOpts Set.empty emptyLibEnv fname
+proceed :: FilePath -> ResultT IO (LibName, LibEnv)
+proceed = anaSourceFile logicGraph myHetcatsOpts Set.empty emptyLibEnv
 
 -- read in a CASL file and return the basic theory
 getCASLSigSens ::    String -- filename
@@ -76,7 +74,7 @@ getCASLSigSens ::    String -- filename
 getCASLSigSens fname sp = do
   Result _ res <- runResultT $ proceed fname
   case res of
-    Just (ln,lenv) ->
+    Just (ln, lenv) ->
      let dg = lookupDGraph ln lenv
          SpecEntry (ExtGenSig _ (NodeSig node _)) =
             case Map.lookup (Id.mkSimpleId sp) $ globalEnv dg of
@@ -84,16 +82,16 @@ getCASLSigSens fname sp = do
               _ -> error ("Specification "++sp++" not found")
      in
       case match node (dgBody dg) of
-        (Just ctx,_) ->
+        (Just ctx, _) ->
           case dgn_theory $ lab' ctx of
            G_theory { gTheoryLogic = lid
                     , gTheorySign = gSig
                     , gTheorySens = gSens } ->
-            case (coerceSign lid CASL "" $ gSig,
-                 coerceThSens lid CASL "" $ gSens) of
-             (Just sig,Just sens) ->
+            case (coerceSign lid CASL "" gSig,
+                  coerceThSens lid CASL "" gSens) of
+             (Just sig, Just sens) ->
                 return (plainSign sig,
-                        map (\(x,y) -> (x,Anno.sentence y)) $ OMap.toList sens)
+                        map (\ (x, y) -> (x, sentence y)) $ OMap.toList sens)
              _ -> error "Not a CASL sig"
         _ -> error "Node 1 no in development graph"
     Nothing -> error "Error occured"
@@ -113,34 +111,34 @@ myTest = do
        Nothing -> error "myTest"
        Just (ln, lenv) -> do
 {-       (edges2, dgchanges2) <- myGlobal ln 2 lenv
-         putStrLn $ show dgchanges
+         print dgchanges
 -- print the DGChanges before execusion
          putStrLn $ "!!!!!The DGChanges before excecuting of " ++
                       "removeContraryChanges by the third excecuting of " ++
                       "GlobalDecomposition!!!!!"
-         putStrLn $ show $ myPrintShow dgchanges2
+         print $ myPrintShow dgchanges2
          putStrLn $ "!!!!!the DGChanges afterwards by the third excecuting"
                     ++ " of GlobalDecomposition!!!!!"
-         putStrLn $ show $ myPrintShow $
+         print $ myPrintShow $
 -- removeContraryChanges dgchanges2
-         putStrLn $ show $ myPrintEdges edges2
+         print $ myPrintEdges edges2
 -}
          (edges3, dgchanges3) <- myGlobal ln 3 lenv
          putStrLn $ "The global thm Edges before executing globDecomp for " ++
                     "the fourth time"
-         putStrLn $ show $ myPrintEdges edges3
+         print $ myPrintEdges edges3
 {-       putStrLn $ "!!!!!The DGChanges before excecuting of " ++
                     "removeContraryChanges by the fouth excecuting of " ++
                     "GlobalDecomposition!!!!!"
-         putStrLn $ show $ myPrintShow dgchanges3
+         print $ myPrintShow dgchanges3
 -}
          putStrLn $ "!!!!!the DGChanges by the fouth excecuting of " ++
                     "GlobalDecomposition: !!!!!"
-         putStrLn $ show $ myPrintDGChanges dgchanges3
-         putStrLn $ show $ myPrintDGChanges $ removeContraryChanges dgchanges3
-{-       putStrLn $ show (removeContraryChanges dgchanges)
+         print $ myPrintDGChanges dgchanges3
+         print $ myPrintDGChanges $ removeContraryChanges dgchanges3
+{-       print (removeContraryChanges dgchanges)
 -- print after...
-         putStrLn $ show $ countD $ removeContraryChanges dgchanges
+         print $ countD $ removeContraryChanges dgchanges
          dgchanges4<- myGlobal ln 4 lenv
          putStrLn "aaa"
 -}
@@ -158,7 +156,7 @@ countD :: [DGChange] -> Int
 countD = length . filter (isPrefixOf "delete edge" . showDGChange)
 
 -- my simulated execusion of globDecomp
-myGlobal :: LIB_NAME -> Int -> LibEnv -> IO ([LEdge DGLinkLab], [DGChange])
+myGlobal :: LibName -> Int -> LibEnv -> IO ([LEdge DGLinkLab], [DGChange])
 myGlobal ln n lenv =
     let newLenv = executeGlobalDecompByNTimes n ln lenv
         -- try to do n times globDecomp
@@ -167,7 +165,7 @@ myGlobal ln n lenv =
         ngraph = foldl globDecompAux dgraph globalThmEdges
         defEdgesToSource = myGoingIntoGTE dgraph globalThmEdges []
     in do putStrLn "all the edges going into global Thm Edges"
-          putStrLn $ show defEdgesToSource
+          print defEdgesToSource
           return (globalThmEdges,
              flatHistory $ snd $ splitHistory dgraph ngraph)
             -- get the DGChanges by executing globDecomp
@@ -178,11 +176,11 @@ myGoingIntoGTE dgraph ((source, _ , _) : ys) res =
     let defEdgesToSource = [e | e@(_, t, l) <- labEdgesDG dgraph,
                             isDefEdge (dgl_type l), t == source]
 
-    in  myGoingIntoGTE dgraph ys (res++(myPrintEdges defEdgesToSource))
+    in myGoingIntoGTE dgraph ys $ res ++ myPrintEdges defEdgesToSource
 
 -- execute globDecomp by n times :)
-executeGlobalDecompByNTimes :: Int -> LIB_NAME -> LibEnv -> LibEnv
-executeGlobalDecompByNTimes n ln lenv =
-    if n<0 then error "excecuteGlobalDecompByNTimes"
-    else if n==0 then lenv
-         else executeGlobalDecompByNTimes (n-1) ln $ globDecomp ln lenv
+executeGlobalDecompByNTimes :: Int -> LibName -> LibEnv -> LibEnv
+executeGlobalDecompByNTimes n ln lenv = case compare n 0 of
+  LT -> error "excecuteGlobalDecompByNTimes"
+  EQ -> lenv
+  GT -> executeGlobalDecompByNTimes (n-1) ln $ globDecomp ln lenv
