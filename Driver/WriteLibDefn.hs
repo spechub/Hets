@@ -14,9 +14,8 @@ the static analysis
 
 module Driver.WriteLibDefn
   ( getFilePrefix
-  , write_LIB_DEFN
-  , write_casl_asc
-  , write_casl_latex
+  , writeLibDefn
+  , writeLibDefnLatex
   , toShATermString
   , writeShATermFile
   , writeFileInfo
@@ -41,6 +40,8 @@ import Syntax.AS_Library (LIB_DEFN())
 import Syntax.Print_AS_Library ()
 import Syntax.ToXml
 
+import Text.XML.Light (ppTopElement)
+
 import Driver.Options
 
 import System.FilePath
@@ -57,42 +58,38 @@ getFilePrefix opts file =
   Write the given LIB_DEFN in every format that HetcatsOpts includes.
   Filenames are determined by the output formats.
 -}
-write_LIB_DEFN :: GlobalAnnos -> FilePath -> HetcatsOpts -> LIB_DEFN -> IO ()
-write_LIB_DEFN ga file opts ld = do
+writeLibDefn :: GlobalAnnos -> FilePath -> HetcatsOpts -> LIB_DEFN -> IO ()
+writeLibDefn ga file opts ld = do
     let (odir, filePrefix) = getFilePrefix opts file
         filename ty = filePrefix ++ "." ++ show ty
         verbMesg ty = putIfVerbose opts 2 $ "Writing file: " ++ filename ty
         printXml ty = do
           verbMesg ty
-          writeFile (filename ty) $ printLibDefnXml ga ld
+          writeFile (filename ty) $ ppTopElement (xmlLibDefn ga ld) ++ "\n"
         printAscii ty = do
           verbMesg ty
-          write_casl_asc opts ga (filename ty) ld
+          writeFile (filename ty) $ showGlobalDoc ga ld "\n"
         write_type :: OutType -> IO ()
         write_type t = case t of
             PrettyOut PrettyXml -> printXml t
             PrettyOut PrettyAscii -> printAscii t
             PrettyOut PrettyLatex -> do
                 verbMesg t
-                write_casl_latex opts ga (filename t) ld
+                writeLibDefnLatex opts ga (filename t) ld
             _ -> return () -- implemented elsewhere
     putIfVerbose opts 3 ("Current OutDir: " ++ odir)
     mapM_ write_type $ outtypes opts
 
-write_casl_asc :: HetcatsOpts -> GlobalAnnos -> FilePath -> LIB_DEFN -> IO ()
-write_casl_asc _ ga oup ld = writeFile oup $
-          shows (useGlobalAnnos ga $ pretty ld) "\n"
-
-debug_latex_filename :: FilePath -> FilePath
-debug_latex_filename =
+debugLatexFilename :: FilePath -> FilePath
+debugLatexFilename =
     ( \ (b, p, _) -> p ++ b ++ ".debug.tex") . fileparse [".pp.tex"]
 
-write_casl_latex :: HetcatsOpts -> GlobalAnnos -> FilePath -> LIB_DEFN -> IO ()
-write_casl_latex opts ga oup ld =
+writeLibDefnLatex :: HetcatsOpts -> GlobalAnnos -> FilePath -> LIB_DEFN -> IO ()
+writeLibDefnLatex opts ga oup ld =
     do let ldoc = toLatex ga $ pretty ld
        writeFile oup $ renderLatex Nothing ldoc
        doDump opts "DebugLatex" $
-           writeFile (debug_latex_filename oup) $
+           writeFile (debugLatexFilename oup) $
                debugRenderLatex Nothing ldoc
 
 toShATermString :: ShATermLG a => a -> IO String

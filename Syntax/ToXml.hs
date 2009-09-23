@@ -10,9 +10,7 @@ Portability :  non-portable(Grothendieck)
 Xml printing of Hets specification libaries
 -}
 
-module Syntax.ToXml
-    ( printLibDefnXml
-    ) where
+module Syntax.ToXml (xmlLibDefn) where
 
 import Syntax.AS_Structured
 import Syntax.AS_Library
@@ -35,12 +33,8 @@ import Text.XML.Light
 import Data.Maybe
 import Data.List
 
--- | Prints the Library to an xml string
-printLibDefnXml :: GlobalAnnos -> LIB_DEFN -> String
-printLibDefnXml ga = ppTopElement . libDefn ga
-
-libDefn :: GlobalAnnos -> LIB_DEFN -> Element
-libDefn ga (Lib_defn n il rg an) =
+xmlLibDefn :: GlobalAnnos -> LIB_DEFN -> Element
+xmlLibDefn ga (Lib_defn n il rg an) =
   add_attrs (mkNameAttr (show $ getLIB_ID n) : rgAttrs rg)
      $ unode "Lib" $ annos "Global" ga an ++ map (annoted libItem ga) il
 

@@ -13,21 +13,30 @@ Interface for web page with WASH/CGI
 module Main where
 
 import WASH.CGI.CGI as CGI
+
 import Driver.Options
 import Driver.WriteLibDefn
 import Driver.ReadFn
 import Driver.Version
+
 import qualified Data.Map as Map
 import qualified Data.Set as Set
+
 import qualified Common.Result as CRes
-import Common.Doc (toText)
-import Common.DocUtils (pretty)
+import Common.DocUtils (showGlobalDoc)
+import Common.GlobalAnnotations
 import Common.LibName
 import Common.ResultT
-import Static.AnalysisLibrary
+
 import Comorphisms.LogicGraph
+
+import Static.AnalysisLibrary
 import Static.DevGraph
+
 import Syntax.AS_Library
+import Syntax.ToXml
+
+import Text.XML.Light
 
 import System.Random
 import System.IO
@@ -37,6 +46,7 @@ import System.Posix.IO
 import System.Posix.Types
 import System.Posix.Files
 import System.Posix.Process
+
 import Control.Monad
 
 ------ Configuration section -------------------------
@@ -158,7 +168,7 @@ page1 title1 = do
       selectTex <- checkboxInputField (attr "valus" "yes")
       text "output pretty print LaTeX"
       selectTree <- checkboxInputField (attr "valus" "yes")
-      text "output parse tree"
+      text "output xml tree"
       selectAchiv <- p $ b $ checkboxInputField(attr "checked" "checked") ##
         text "If this checkbox is selected, your input will be logged!"
       -- submit/reset botton
@@ -227,13 +237,12 @@ anaInput contents selectedBoxes outputfiles =
                                 [ownerReadMode, ownerWriteMode,
                                  groupReadMode, groupWriteMode,
                                  otherReadMode]
-                 resAsc = shows (toText gannos $ pretty libDefn) "\n"
              when (outputTex conf) $ do
                     let pptexFile = outputfile ++ ".pp.tex"
                         latexFile = outputfile ++ ".tex"
                         pdfFile   = outputfile ++ ".pdf"
                         tmpFile   = outputfile ++ ".tmp"
-                    write_casl_latex webOpts
+                    writeLibDefnLatex webOpts
                          gannos pptexFile libDefn
                     writeFile latexFile (latexHeader ++
                                          "\\input{"++ pptexFile ++
@@ -247,13 +256,18 @@ anaInput contents selectedBoxes outputfiles =
                     setFileMode pdfFile fMode
              when (outputTxt conf) $ do
                     let txtFile = outputfile ++ ".txt"
-                    write_casl_asc webOpts gannos txtFile libDefn
+                    writeFile txtFile $ showGlobalDoc gannos libDefn "\n"
                     setFileMode txtFile fMode
-             return (CRes.Result ds $ Just $ selectOut conf libDefn resAsc)
-      selectOut :: SelectedBoxes -> LIB_DEFN -> String -> Output
-      selectOut conf libDefn ra = defaultOutput
-        { asciiTxt  = if outputTxt conf then ra else ""
-        , parseTree = if outputTree conf then show libDefn else "" }
+             when (outputTree conf) $ do
+                    let txtFile = outputfile ++ ".pp.xml"
+                    writeFile txtFile $ ppTopElement $ xmlLibDefn gannos libDefn
+                    setFileMode txtFile fMode
+             return (CRes.Result ds $ Just $ selectOut conf libDefn gannos)
+      selectOut :: SelectedBoxes -> LIB_DEFN -> GlobalAnnos -> Output
+      selectOut conf ld ga = defaultOutput
+        { asciiTxt  = if outputTxt conf then showGlobalDoc ga ld "" else ""
+        , parseTree = if outputTree conf then ppElement $ xmlLibDefn ga ld
+            else "" }
       -- log file
       saveLog :: Bool -> IO()
       saveLog willSave = when willSave $ do
@@ -325,5 +339,9 @@ printR str (CRes.Result ds mres) conf outputFile =
             when (outputTree conf) $ do
                heading3 "Parse tree:"
                formatTxt (parseTree res)
+               p $ i $ do
+                 text "You can download the "
+                 hlink (read $ adjustOutfile ".pp.xml") $ text "XML file"
+                 text " here. The file will be deleted after 30 minutes.\n"
        formatTxt = p . mapM_ (\l -> text l >> br CGI.empty) . lines
        heading3 = h3 . text

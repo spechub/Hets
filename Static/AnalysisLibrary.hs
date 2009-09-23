@@ -90,7 +90,7 @@ anaString lgraph opts topLns libenv input file mt = do
           lift $ putIfVerbose opts 1 $
                   "Skipping static analysis of library " ++ show ln
           ga <- liftR $ addGlobalAnnos emptyGlobalAnnos ans
-          lift $ write_LIB_DEFN ga file opts ast
+          lift $ writeLibDefn ga file opts ast
           liftR $ Result ds Nothing
       _ -> do
           let libstring = show $ getLIB_ID ln
@@ -106,7 +106,7 @@ anaString lgraph opts topLns libenv input file mt = do
           case Map.lookup ln lenv of
               Nothing -> error $ "anaString: missing library: " ++ show ln
               Just dg -> lift $ do
-                  write_LIB_DEFN (globalAnnos dg) file opts ld
+                  writeLibDefn (globalAnnos dg) file opts ld
                   when (hasEnvOut opts)
                         (writeFileInfo opts ln file ld dg)
                   return (ln, lenv)
@@ -149,7 +149,7 @@ anaLibFileOrGetEnv lgraph opts topLns libenv libname file = ResultT $ do
                      lift $ removeFile envFile
                      anaSourceFile lgraph opts topLns libenv file
                  Just (ld, gc) -> do
-                     write_LIB_DEFN (globalAnnos gc) file opts ld
+                     writeLibDefn (globalAnnos gc) file opts ld
                           -- get all DGRefs from DGraph
                      Result ds mEnv <- runResultT $ foldl
                          ( \ ioLibEnv labOfDG -> let node = snd labOfDG in
