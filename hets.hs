@@ -43,7 +43,9 @@ import Haskell.Haskell2DG
 import System.Exit (ExitCode(ExitSuccess), exitWith)
 
 #ifdef SHELLAC
+import Interfaces.DataTypes
 import CMDL.Interface
+import CMDL.DataTypes
 import PGIP.XMLparsing
 #endif
 
@@ -90,8 +92,8 @@ processFile opts file = do
 #ifdef SHELLAC
       ProofCommand -> do
         putStrLn "Start processing a proof command file"
-        cmdlProcessFile opts file
-        return Nothing
+        st <- cmdlProcessFile opts file
+        return . getMaybeLib $ intState st
 #endif
       MaudeIn -> anaMaudeFile opts file
       _ -> anaLib opts file

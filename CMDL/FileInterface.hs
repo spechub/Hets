@@ -73,10 +73,11 @@ fileGetSingleChar file _
 -- | Used to get a line from a file open for reading
 fileGetInput :: Handle -> String -> IO (Maybe String)
 fileGetInput file _ = do
-   x <- hGetLine file
-   when (trim (stripComments x) /= "") (putStrLn $ "> " ++ x)
-   return (Just x)
-
+   b <- hIsEOF file
+   if b then return Nothing else do
+     x <- hGetLine file
+     when (trim (stripComments x) /= "") (putStrLn $ "> " ++ x)
+     return (Just x)
 
 fileShellDescription :: ShellDescription CmdlState
 fileShellDescription =

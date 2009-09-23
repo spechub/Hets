@@ -71,7 +71,6 @@ cmdlRunShell opts files =
 cmdlProcessFile :: HetcatsOpts -> FilePath -> IO CmdlState
 cmdlProcessFile opts flnm = let st = emptyCmdlState opts in
     runShell fileShellDescription (fileBackend flnm) st
-    `catch` const (return st)
 
 -- | The function processes a string of instructions starting from a given
 -- state
