@@ -8,6 +8,6 @@ do
        " use_thy \"$j\"; \
          print_depth 300; \
          theory \"$j\"; \
-         axioms_of it; \
+         Theory.axioms_of it; \
          quit(); " )
 done
