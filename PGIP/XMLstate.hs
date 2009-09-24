@@ -193,17 +193,14 @@ getRefseqNb input =
 parseXMLTree :: [Content] -> [CmdlXMLcommands] -> [CmdlXMLcommands]
 parseXMLTree xmltree acc = case xmltree of
     Elem info : ls -> case parseXMLElement info of
-                        Just c  -> parseXMLTree ls (c : acc)
+                        Just c -> parseXMLTree ls (c : acc)
                         Nothing -> parseXMLTree (elContent info ++ ls) acc
     _ : ls -> parseXMLTree ls acc
     [] -> acc
 
 parseXMLElement :: Element -> Maybe CmdlXMLcommands
-parseXMLElement info = let
-  cnt = case elContent info of
-          Text smtxt : _ -> cdData smtxt
-          _ -> ""
-  in case qName $ elName info of
+parseXMLElement info = let cnt = strContent info in
+  case qName $ elName info of
     "proverinit"   -> Just XmlProverInit
     "proverexit"   -> Just XmlExit
     "startquiet"   -> Just XmlStartQuiet
@@ -226,7 +223,7 @@ parseXMLElement info = let
     "askpgip"      -> Just XmlAskpgip
     "parsescript"  -> Just $ XmlParseScript cnt
     "pgip"         -> Nothing
-    s              -> Just $ XmlUnknown s
+    s -> Just $ XmlUnknown s
 
 -- | Given a packet (a normal string or a xml formated string), the function
 -- converts it into a list of commands

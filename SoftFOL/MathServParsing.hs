@@ -265,9 +265,9 @@ unpackSoapEnvelope rsp = case rsp of
       Nothing -> Left $ "no Prove Response found\n" ++ ppElement b
       Just t -> case filterElementName (testQnameSuffix "Return") t of
        Nothing -> Left $ "no Prove Return value found\n" ++ ppElement t
-       Just v -> case map cdData . onlyText $ elContent v of
-        [] -> Left $ "no returned content found\n" ++ ppElement v
-        ts -> Right $ concat ts
+       Just v -> case strContent v of
+        "" -> Left $ "no returned content found\n" ++ ppElement v
+        ts -> Right ts
 
 -- ** functions for handling with MathServ services
 
@@ -290,11 +290,8 @@ callMathServ call =
 isMWnode :: String -> QName -> Bool
 isMWnode s q = qName q == s && qPrefix q == Just "mw"
 
-getElementText :: Element -> String
-getElementText = concatMap cdData . onlyText . elContent
-
 getElemText :: String -> Element -> String
-getElemText s = maybe "" getElementText . filterElementName (isMWnode s)
+getElemText s = maybe "" strContent . filterElementName (isMWnode s)
 
 {- |
   Full parsing of RDF-objects returned by MathServ and putting the results
@@ -405,7 +402,7 @@ parseStatus e = case filterElementName (isMWnode "status") e of
          Nothing -> Left $ "Could not classify status of proof: " ++ str
 
 elem2Time :: Element -> Either String TimeOfDay
-elem2Time e = let s = getElementText e in
+elem2Time e = let s = strContent e in
   case readMaybe s of
     Just x -> Right $ timeToTimeOfDay $ realToFrac $ (x :: Double) / 1000
     Nothing -> Left $ "cannot read time string: " ++ s
