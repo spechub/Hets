@@ -14,68 +14,74 @@ that produces such a state
 
 module PGIP.XMLstate where
 
-import Data.List(find, intercalate)
-import Data.Time.Clock.POSIX(getPOSIXTime)
-import System.IO(Handle)
+import Common.Utils (getEnvDef, trim)
+import Common.ToXml
 
-import Common.Utils(getEnvDef, trim)
 import Text.XML.Light
 
+import Data.List (find, intercalate)
+import Data.Time.Clock.POSIX (getPOSIXTime)
+
+import System.IO(Handle)
+
+-- Converts any line text that does not stand for a
+-- comment into a theoryitem element
+genProofStep :: String -> Element
+genProofStep str = let
+    iname = case trim str of
+             "" -> "whitespace"   -- empty line generates a whitespace element
+             '#' : _ -> "comment" -- comments start with #
+             _ -> "theoryitem"    -- convert line into a theoryitem element
+
+    in unode iname $ mkText $ str ++ "\n"
+
+-- | adds xml structure to unstructured code
+addPgipMarkUp :: String -> Element
+addPgipMarkUp str = case lines str of
+  [] -> error "addPgipMarkUp.empty"
+  hd : tl ->
+    unode "parseresult"
+        $ add_attr (mkAttr "thyname" "whatever")
+             (unode "opentheory" $ mkText hd)
+        : map genProofStep tl
+        ++ [unode "closetheory" ()]
+
+{-
+ - other types of mark ups :
+ -   opengoal / closegoal
+ -   openblock / closeblock
+ -
+ -}
+
 -- generates a pgipelem element that contains the input text
-genPgipElem :: String -> Content
-genPgipElem str =
-   Elem Element {
-     elName = unqual "pgipelem",
-     elAttribs = [],
-     elContent = [Text $ CData CDataRaw str Nothing],
-     elLine = Nothing
-   }
+genPgipElem :: String -> Element
+genPgipElem = unode "pgipelem" . mkText
 
 -- generates a normalresponse element that has a pgml element
 -- containing the output text
-genNormalResponse :: String -> Content
-genNormalResponse str =
-  Elem Element {
-          elName = unqual "normalresponse",
-          elAttribs = [],
-          elContent = [ Elem Element {
-                         elName = unqual "pgml",
-                         elAttribs = [Attr {
-                                       attrKey = unqual "area",
-                                       attrVal = "message"} ],
-                         elContent =  [Text $ CData CDataRaw str Nothing],
-                         elLine = Nothing } ],
-          elLine = Nothing }
+genNormalResponse :: String -> Element
+genNormalResponse = unode "normalresponse"
+    . add_attr (mkAttr "area" "message")
+    . unode "pgml" . mkText
 
 -- same as above, just for an error instead of normal output
-genErrorResponse :: Bool -> String -> Content
-genErrorResponse fatality str =
-  Elem Element {
-    elName = unqual "errorresponse",
-    elAttribs = [ Attr { attrKey = unqual "fatality",
-                         attrVal = "fatal" } | fatality ],
-    elContent = [ Elem Element {
-                    elName = unqual "pgmltext",
-                    elAttribs = [],
-                    elContent = [Text $ CData CDataRaw str Nothing],
-                    elLine = Nothing } ],
-    elLine = Nothing
-  }
+genErrorResponse :: Bool -> String -> Element
+genErrorResponse fatality =
+  add_attrs [ mkAttr "fatality" "fatal" | fatality]
+  . unode "errorresponse"
+  . unode "pgmltext" . mkText
 
--- adds one element at the end of the content of the xml packet that represents
+-- adds one element to the end of the content of the xml packet that represents
 -- the current output of the interface to the broker
-addToContent :: CmdlPgipState -> Content -> CmdlPgipState
-addToContent pgData cont =
-  pgData {
-    xmlContent = case xmlContent pgData of
-                  Elem e -> Elem e { elContent = elContent e ++ [cont] }
-                  _      -> xmlContent pgData
-  }
+addToContent :: CmdlPgipState -> Element -> CmdlPgipState
+addToContent pgData el =
+  pgData { xmlElement = case xmlElement pgData of
+                  e -> e { elContent = elContent e ++ [Elem el] } }
 
 -- adds a ready element at the end of the xml packet that represents the
 -- current output of the interface to the broker
 addReadyXml :: CmdlPgipState -> CmdlPgipState
-addReadyXml pgData = addToContent pgData $ Elem $ unode "ready" ()
+addReadyXml pgData = addToContent pgData $ unode "ready" ()
 
 -- | State that keeps track of the comunication between Hets and the Broker
 data CmdlPgipState = CmdlPgipState
@@ -84,7 +90,7 @@ data CmdlPgipState = CmdlPgipState
   , seqNb :: Int
   , refSeqNb :: Maybe String
   , theMsg :: String
-  , xmlContent :: Content
+  , xmlElement :: Element
   , hout :: Handle
   , hin :: Handle
   , stop :: Bool
@@ -104,7 +110,7 @@ genCMDLPgipState swXML h_in h_out timeOut = do
      , seqNb = 1
      , refSeqNb = Nothing
      , theMsg = []
-     , xmlContent = Elem blank_element { elName = unqual "pgip" }
+     , xmlElement = unode "pgip" ()
      , hin = h_in
      , hout = h_out
      , stop = False
@@ -131,34 +137,20 @@ addToMsg str errStr pgD =
 resetMsg :: String -> CmdlPgipState -> CmdlPgipState
 resetMsg str pgD = pgD {
     theMsg = str,
-    xmlContent = convertPgipStateToXML pgD
+    xmlElement = convertPgipStateToXML pgD
   }
 
 -- extracts the xml package in XML.Light format (namely the Content type)
-convertPgipStateToXML :: CmdlPgipState -> Content
-convertPgipStateToXML pgipData =
-  let baseElem = Element {
-                   elName = unqual "pgip",
-                   elAttribs = [ Attr {
-                                  attrKey = unqual "tag",
-                                  attrVal = name pgipData }
-                                , Attr {
-                                  attrKey = unqual "class",
-                                  attrVal = "pg"}
-                                , Attr {
-                                  attrKey = unqual "id",
-                                  attrVal = pgipId pgipData }
-                                , Attr {
-                                  attrKey = unqual "seq",
-                                  attrVal = show $ seqNb pgipData} ],
-                   elContent = [],
-                   elLine = Nothing}
-   in case refSeqNb pgipData of
-    Nothing -> Elem baseElem
-    Just v  -> Elem baseElem {
-                 elAttribs = Attr { attrKey = unqual "refseq",
-                                    attrVal = v } : elAttribs baseElem
-               }
+convertPgipStateToXML :: CmdlPgipState -> Element
+convertPgipStateToXML pgipData = add_attrs
+  ((case refSeqNb pgipData of
+      Nothing -> []
+      Just v -> [mkAttr "refseq" v])
+   ++ [ mkAttr "tag" $ name pgipData
+      , mkAttr "class" "pg"
+      , mkAttr "id" $ pgipId pgipData
+      , mkAttr "seq" $ show $ seqNb pgipData ])
+  $ unode "pgip" ()
 
 -- | List of all possible commands inside an XML packet
 data CmdlXMLcommands =

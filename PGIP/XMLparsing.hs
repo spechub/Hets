@@ -12,7 +12,6 @@ PGIP.XMLparsing contains commands for parsing or creating XML messages
 
 module PGIP.XMLparsing where
 
-import PGIP.MarkPgip (addPgipMarkUp)
 import PGIP.XMLstate
 
 import CMDL.Interface(cmdlProcessString, emptyCmdlState)
@@ -23,6 +22,8 @@ import Interfaces.DataTypes
 import Interfaces.Utils(emptyIntIState)
 
 import Driver.Options
+
+import Common.ToXml
 
 import Text.XML.Light as XML
 
@@ -35,8 +36,8 @@ import Data.List(isInfixOf)
 -- | Generates the XML packet that contains information about what
 -- commands can the interface respond to
 genHandShake :: CmdlPgipState -> CmdlPgipState
-genHandShake pgipData
- = let el_askpgip        = genPgipElem "askpgip"
+genHandShake pgipData = let
+       el_askpgip        = genPgipElem "askpgip"
        el_askpgml        = genPgipElem "askpgml"
        el_askprefs       = genPgipElem "askprefs"
        el_getprefs       = genPgipElem "getprefs"
@@ -112,19 +113,10 @@ genHandShake pgipData
              , el_changecwd
              , el_systemcmd
              ]
-       xmlrootElem = Elem $ blank_element {
-         elName = unqual "usespgip",
-         elAttribs = [Attr { attrKey = unqual "version",
-                                       attrVal = "2.0" } ],
-         elContent = [
-            Elem XML.Element {
-                    elName    = unqual "acceptedpgipelems",
-                    elAttribs = [],
-                    elContent = pgip_elems,
-                    elLine    = Nothing } ],
-         elLine = Nothing }
    in if useXML pgipData
-       then addToContent pgipData xmlrootElem
+       then addToContent pgipData
+            $ add_attr (mkAttr "version" "2.0")
+            $ unode "acceptedpgipelems" pgip_elems
        else pgipData
 
 -- | The function executes a communication step, i.e. waits for input,
@@ -143,7 +135,7 @@ communicationStep pgD st = do
       -- set, that the interface resends last packet assuming that last
       -- send was a fail
                 then do
-                       let nwpgD = addToMsg (showContent $ xmlContent pgD)
+                       let nwpgD = addToMsg (showElement $ xmlElement pgD)
                                      [] pgD { seqNb = seqNb pgD + 1 }
                        appendFile "/tmp/razvan.txt" ("Output : "++
                                     theMsg nwpgD ++ "\n")
@@ -162,7 +154,7 @@ communicationStep pgD st = do
         (nwSt, nwPgD) <- processCmds cmds st $ resetMsg []
           $ pgD { refSeqNb = refseqNb }
         if useXML pgD then do
-                 let nwPgipSt = addToMsg (showContent $ xmlContent nwPgD)
+                 let nwPgipSt = addToMsg (showElement $ xmlElement nwPgD)
                                 []  nwPgD { seqNb = seqNb nwPgD + 1 }
                  hPutStrLn (hout pgD) $ theMsg nwPgipSt
                  hFlush $ hout pgD
@@ -335,7 +327,7 @@ processCmds cmds state pgipSt = do
      XmlCloseFile _ : l -> processCmds l (emptyCmdlState opts)
                    (genAnswer "File closed" [] pgipSt)
      XmlParseScript str : _ ->
-         processCmds [] state $ addToContent pgipSt (addPgipMarkUp str)
+         processCmds [] state . addToContent pgipSt $ addPgipMarkUp str
      XmlLoadFile str : l -> do
          nwSt <- cmdlProcessString ("use " ++ str ++ "\n") state
          processRest l nwSt pgipSt
