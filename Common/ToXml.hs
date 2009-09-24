@@ -23,6 +23,9 @@ import Text.XML.Light
 mkAttr :: String -> String -> Attr
 mkAttr = Attr . unqual
 
+mkText :: String -> Content
+mkText s = Text $ CData CDataText s Nothing
+
 prettyElem :: Pretty a => String -> GlobalAnnos -> a -> Element
 prettyElem name ga a = unode name $ showGlobalDoc ga a ""
 

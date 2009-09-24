@@ -180,6 +180,3 @@ annoted f ga a = let
 
 withRg :: Range -> Element -> Element
 withRg = add_attrs . rgAttrs
-
-mkText :: String -> Content
-mkText s = Text $ CData CDataText s Nothing
