@@ -258,15 +258,15 @@ unpackSoapEnvelope :: Either String String -> Either String String
 unpackSoapEnvelope rsp = case rsp of
   Left s -> Left s
   Right r -> case parseXMLDoc r of
-    Nothing -> Left "server returned illegal xml"
+    Nothing -> Left $ "server returned illegal xml\n" ++ r
     Just x -> case filterElementName (== bodyQ) x of
-     Nothing -> Left "no soap Body found"
+     Nothing -> Left $ "no soap Body found\n" ++ ppElement x
      Just b -> case filterElementName (testQnameSuffix "Response") b of
-      Nothing -> Left "no Prove Response found"
+      Nothing -> Left $ "no Prove Response found\n" ++ ppElement b
       Just t -> case filterElementName (testQnameSuffix "Return") t of
-       Nothing -> Left "no Prove Return value found"
+       Nothing -> Left $ "no Prove Return value found\n" ++ ppElement t
        Just v -> case map cdData . onlyText $ elContent v of
-        [] -> Left "no returned content found"
+        [] -> Left $ "no returned content found\n" ++ ppElement v
         ts -> Right $ concat ts
 
 -- ** functions for handling with MathServ services
