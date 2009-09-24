@@ -12,7 +12,7 @@ PGIP.XMLparsing contains commands for parsing or creating XML messages
 
 module PGIP.XMLparsing where
 
-import PGIP.MarkPgip(genQName, addPgipMarkUp)
+import PGIP.MarkPgip (addPgipMarkUp)
 import PGIP.XMLstate
 
 import CMDL.Interface(cmdlProcessString, emptyCmdlState)
@@ -113,12 +113,12 @@ genHandShake pgipData
              , el_systemcmd
              ]
        xmlrootElem = Elem $ blank_element {
-         elName = genQName "usespgip",
-         elAttribs = [Attr { attrKey = genQName "version",
+         elName = unqual "usespgip",
+         elAttribs = [Attr { attrKey = unqual "version",
                                        attrVal = "2.0" } ],
          elContent = [
             Elem XML.Element {
-                    elName    = genQName "acceptedpgipelems",
+                    elName    = unqual "acceptedpgipelems",
                     elAttribs = [],
                     elContent = pgip_elems,
                     elLine    = Nothing } ],

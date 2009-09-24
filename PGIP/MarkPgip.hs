@@ -11,23 +11,17 @@ PGIP.MarkPgip contains commands for adding pgip markup into unstructured
 Hets file
 -}
 
-module PGIP.MarkPgip
-where
+module PGIP.MarkPgip (addPgipMarkUp) where
 
 import Text.XML.Light
 import Common.Utils(trim)
-
--- Generates a QName tag named as the input string
-genQName :: String -> QName
-genQName str = let qnameVal = blank_name in qnameVal { qName = str }
-
 
 -- Converts any line text that does not stand for a
 -- comment into a theoryitem element
 genProofStep :: String -> Content
 genProofStep str =
   Elem Element {
-    elName = genQName name,
+    elName = unqual name,
     elAttribs = [],
     elContent = [Text $ CData CDataRaw (str++"\n") Nothing],
     elLine = Nothing
@@ -50,9 +44,9 @@ addPgipMarkUp str
         -- the first line of code (as the trigger that causes
         -- the opentheory, it can even be a comment)
         opTheory = Elem Element {
-                    elName = genQName "opentheory",
+                    elName = unqual "opentheory",
                     elAttribs = [Attr {
-                                  attrKey = genQName "thyname",
+                                  attrKey = unqual "thyname",
                                   attrVal = "whatever"
                                       }],
                     elContent = [Text $ CData CDataRaw
@@ -62,7 +56,7 @@ addPgipMarkUp str
                     elLine = Nothing }
         -- generate a close theory element
         clTheory = Elem Element {
-                    elName = genQName "closetheory",
+                    elName = unqual "closetheory",
                     elAttribs = [],
                     elContent = [],
                     elLine = Nothing }
@@ -70,7 +64,7 @@ addPgipMarkUp str
         -- element, followed by the theoryitem elements and in the end
         -- the close theory element
         parseResult = Elem Element {
-                              elName = genQName "parseresult",
+                              elName = unqual "parseresult",
                               elAttribs = [],
                               elContent = [opTheory] ++
                                           contents++[clTheory] ,

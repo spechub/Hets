@@ -20,13 +20,12 @@ import System.IO(Handle)
 
 import Common.Utils(getEnvDef, trim)
 import Text.XML.Light
-import PGIP.MarkPgip(genQName)
 
 -- generates a pgipelem element that contains the input text
 genPgipElem :: String -> Content
 genPgipElem str =
    Elem Element {
-     elName = genQName "pgipelem",
+     elName = unqual "pgipelem",
      elAttribs = [],
      elContent = [Text $ CData CDataRaw str Nothing],
      elLine = Nothing
@@ -37,12 +36,12 @@ genPgipElem str =
 genNormalResponse :: String -> Content
 genNormalResponse str =
   Elem Element {
-          elName = genQName "normalresponse",
+          elName = unqual "normalresponse",
           elAttribs = [],
           elContent = [ Elem Element {
-                         elName = genQName "pgml",
+                         elName = unqual "pgml",
                          elAttribs = [Attr {
-                                       attrKey = genQName "area",
+                                       attrKey = unqual "area",
                                        attrVal = "message"} ],
                          elContent =  [Text $ CData CDataRaw str Nothing],
                          elLine = Nothing } ],
@@ -52,11 +51,11 @@ genNormalResponse str =
 genErrorResponse :: Bool -> String -> Content
 genErrorResponse fatality str =
   Elem Element {
-    elName = genQName "errorresponse",
-    elAttribs = [ Attr { attrKey = genQName "fatality",
+    elName = unqual "errorresponse",
+    elAttribs = [ Attr { attrKey = unqual "fatality",
                          attrVal = "fatal" } | fatality ],
     elContent = [ Elem Element {
-                    elName = genQName "pgmltext",
+                    elName = unqual "pgmltext",
                     elAttribs = [],
                     elContent = [Text $ CData CDataRaw str Nothing],
                     elLine = Nothing } ],
@@ -105,7 +104,7 @@ genCMDLPgipState swXML h_in h_out timeOut = do
      , seqNb = 1
      , refSeqNb = Nothing
      , theMsg = []
-     , xmlContent = Elem blank_element { elName = genQName "pgip" }
+     , xmlContent = Elem blank_element { elName = unqual "pgip" }
      , hin = h_in
      , hout = h_out
      , stop = False
@@ -139,25 +138,25 @@ resetMsg str pgD = pgD {
 convertPgipStateToXML :: CmdlPgipState -> Content
 convertPgipStateToXML pgipData =
   let baseElem = Element {
-                   elName = genQName "pgip",
+                   elName = unqual "pgip",
                    elAttribs = [ Attr {
-                                  attrKey = genQName "tag",
+                                  attrKey = unqual "tag",
                                   attrVal = name pgipData }
                                 , Attr {
-                                  attrKey = genQName "class",
+                                  attrKey = unqual "class",
                                   attrVal = "pg"}
                                 , Attr {
-                                  attrKey = genQName "id",
+                                  attrKey = unqual "id",
                                   attrVal = pgipId pgipData }
                                 , Attr {
-                                  attrKey = genQName "seq",
+                                  attrKey = unqual "seq",
                                   attrVal = show $ seqNb pgipData} ],
                    elContent = [],
                    elLine = Nothing}
    in case refSeqNb pgipData of
     Nothing -> Elem baseElem
     Just v  -> Elem baseElem {
-                 elAttribs = Attr { attrKey = genQName "refseq",
+                 elAttribs = Attr { attrKey = unqual "refseq",
                                     attrVal = v } : elAttribs baseElem
                }
 
