@@ -352,7 +352,7 @@ morphTransl (Morphism sig1 sig2 sym_map) =
 addSymbolTransl :: Sign -> CASL_Morphism.CASLMor -> (NAME,NAME) -> CASL_Morphism.CASLMor 
 addSymbolTransl sig m (f,g) = 
    case kind of
-        FuncKind -> let f1 = (mkId [f], CASL_Sign.OpType CASL_AS.Total (folType arity) sort)
+        FuncKind -> let f1 = (mkId [f], CASL_Sign.OpType CASL_AS.Partial (folType arity) sort)
                         g1 = (mkId [g], CASL_AS.Total) 
                         in m {CASL_Morphism.op_map = Map.insert f1 g1 $ CASL_Morphism.op_map m}
         PredKind -> let f1 = (mkId [f], CASL_Sign.PredType (folType arity))
