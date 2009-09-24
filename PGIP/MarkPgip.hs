@@ -56,7 +56,9 @@ addPgipMarkUp str
                                   attrVal = "whatever"
                                       }],
                     elContent = [Text $ CData CDataRaw
-                                     (head allLines ++ "\n") Nothing],
+                                     (if null allLines
+                                      then error "empty head in addPgipMarkUp"
+                                      else head allLines ++ "\n") Nothing],
                     elLine = Nothing }
         -- generate a close theory element
         clTheory = Elem Element {

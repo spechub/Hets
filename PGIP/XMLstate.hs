@@ -236,9 +236,10 @@ parseXMLElement info =
     "pgip"         -> Nothing
     s              -> Just $ XmlUnknown s
   where
-    cnt = case head $ elContent info of
-            Text smtxt -> cdData smtxt
-            _          -> []
+    cnt = if null $ elContent info then error "empty head in parseXMLElement"
+          else case head $ elContent info of
+                 Text smtxt -> cdData smtxt
+                 _          -> []
 
 -- | Given a packet (a normal string or a xml formated string), the function
 -- converts it into a list of commands
