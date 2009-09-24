@@ -202,12 +202,12 @@ getRefseqNb input =
 -- parses the xml message creating a list of commands that it needs to
 -- execute
 parseXMLTree :: [Content] -> [CmdlXMLcommands] -> [CmdlXMLcommands]
-parseXMLTree  xmltree acc = case xmltree of
-    [] -> acc
+parseXMLTree xmltree acc = case xmltree of
+    []             -> acc
     Elem info : ls -> case parseXMLElement info of
                         Just c  -> parseXMLTree ls (c : acc)
                         Nothing -> parseXMLTree (elContent info ++ ls) acc
-    _ : ls -> parseXMLTree ls acc
+    _ : ls         -> parseXMLTree ls acc
 
 parseXMLElement :: Element -> Maybe CmdlXMLcommands
 parseXMLElement info =
@@ -233,7 +233,8 @@ parseXMLElement info =
     "loadfile"     -> Just $ XmlLoadFile cnt
     "askpgip"      -> Just XmlAskpgip
     "parsescript"  -> Just $ XmlParseScript cnt
-    _              -> Nothing
+    "pgip"         -> Nothing
+    s              -> Just $ XmlUnknown s
   where
     cnt = case head $ elContent info of
             Text smtxt -> cdData smtxt
