@@ -76,7 +76,7 @@ genErrorResponse fatality =
 addToContent :: CmdlPgipState -> Element -> CmdlPgipState
 addToContent pgData el =
   pgData { xmlElement = case xmlElement pgData of
-                  e -> e { elContent = elContent e ++ [Elem el] } }
+             e -> e { elContent = elContent e ++ [Elem el] } }
 
 -- adds a ready element at the end of the xml packet that represents the
 -- current output of the interface to the broker
@@ -131,14 +131,13 @@ genPgipID =
 addToMsg :: String -> String -> CmdlPgipState -> CmdlPgipState
 addToMsg str errStr pgD =
   let strings = [theMsg pgD, str, errStr]
-   in pgD { theMsg = intercalate "\n" $ filter (not . null) strings }
+  in pgD { theMsg = intercalate "\n" $ filter (not . null) strings }
 
 -- | Resets the content of the message stored in the state
 resetMsg :: String -> CmdlPgipState -> CmdlPgipState
-resetMsg str pgD = pgD {
-    theMsg = str,
-    xmlElement = convertPgipStateToXML pgD
-  }
+resetMsg str pgD = pgD
+  { theMsg = str
+  , xmlElement = convertPgipStateToXML pgD }
 
 -- extracts the xml package in XML.Light format (namely the Content type)
 convertPgipStateToXML :: CmdlPgipState -> Element
@@ -171,7 +170,7 @@ data CmdlXMLcommands =
  | XmlOpenTheory String
  | XmlCloseTheory String
  | XmlCloseFile String
- | XmlLoadFile String deriving (Eq,Show)
+ | XmlLoadFile String deriving (Eq, Show)
 
 -- extracts the refrence number of a xml packet (given as a string)
 getRefseqNb :: String -> Maybe String
@@ -179,7 +178,7 @@ getRefseqNb input =
   let xmlTree = parseXML input
       elRef = find (\ x -> case x of
                               Elem dt -> qName (elName dt) == "pgip"
-                              _       -> False) xmlTree
+                              _ -> False) xmlTree
    in case elRef of
         Nothing -> Nothing
         Just el -> case el of
@@ -187,22 +186,24 @@ getRefseqNb input =
                                      elAttribs dt of
                                   Nothing -> Nothing
                                   Just elatr -> Just $ attrVal elatr
-                     _       -> Nothing
+                     _ -> Nothing
 
-
--- parses the xml message creating a list of commands that it needs to
+-- | parses the xml message creating a list of commands that it needs to
 -- execute
 parseXMLTree :: [Content] -> [CmdlXMLcommands] -> [CmdlXMLcommands]
 parseXMLTree xmltree acc = case xmltree of
-    []             -> acc
     Elem info : ls -> case parseXMLElement info of
                         Just c  -> parseXMLTree ls (c : acc)
                         Nothing -> parseXMLTree (elContent info ++ ls) acc
-    _ : ls         -> parseXMLTree ls acc
+    _ : ls -> parseXMLTree ls acc
+    [] -> acc
 
 parseXMLElement :: Element -> Maybe CmdlXMLcommands
-parseXMLElement info =
-  case qName $ elName info of
+parseXMLElement info = let
+  cnt = case elContent info of
+          Text smtxt : _ -> cdData smtxt
+          _ -> ""
+  in case qName $ elName info of
     "proverinit"   -> Just XmlProverInit
     "proverexit"   -> Just XmlExit
     "startquiet"   -> Just XmlStartQuiet
@@ -226,16 +227,10 @@ parseXMLElement info =
     "parsescript"  -> Just $ XmlParseScript cnt
     "pgip"         -> Nothing
     s              -> Just $ XmlUnknown s
-  where
-    cnt = if null $ elContent info then error "empty head in parseXMLElement"
-          else case head $ elContent info of
-                 Text smtxt -> cdData smtxt
-                 _          -> []
 
 -- | Given a packet (a normal string or a xml formated string), the function
 -- converts it into a list of commands
 parseMsg :: CmdlPgipState -> String -> [CmdlXMLcommands]
-parseMsg st input =
-  if useXML st
+parseMsg st input = if useXML st
    then parseXMLTree (parseXML input) []
    else concatMap (\ x -> [ XmlExecute x | not $ null $ trim x ]) $ lines input
