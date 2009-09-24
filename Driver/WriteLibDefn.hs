@@ -61,7 +61,7 @@ getFilePrefix opts file =
 writeLibDefn :: GlobalAnnos -> FilePath -> HetcatsOpts -> LIB_DEFN -> IO ()
 writeLibDefn ga file opts ld = do
     let (odir, filePrefix) = getFilePrefix opts file
-        printXml fn = writeFile fn $ ppTopElement (xmlLibDefn ga ld) ++ "\n"
+        printXml fn = writeFile fn $ ppTopElement (xmlLibDefn ga ld)
         printAscii fn = writeFile fn $ showGlobalDoc ga ld "\n"
         write_type :: OutType -> IO ()
         write_type ty = do
