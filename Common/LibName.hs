@@ -69,9 +69,10 @@ data LibName = LibName
 emptyLibName :: String -> LibName
 emptyLibName s = LibName (IndirectLink s nullRange "" noTime) Nothing
 
-data LibId = DirectLink URL Range
+data LibId =
+    DirectLink URL Range
               -- pos: start of URL
-            | IndirectLink PATH Range FilePath ClockTime
+  | IndirectLink PATH Range FilePath ClockTime
               -- pos: start of PATH
 
 noTime :: ClockTime
@@ -88,7 +89,7 @@ updFilePathOfLibId fp mt li = case li of
   DirectLink _ _ -> li
   IndirectLink p r _ _ -> IndirectLink p r fp mt
 
-data VersionNumber = VersionNumber [String] Range deriving (Show, Eq)
+data VersionNumber = VersionNumber [String] Range
                       -- pos: "version", start of first string
 
 type URL = String
@@ -109,8 +110,12 @@ instance GetRange LibName where
 
 instance Show LibName where
   show (LibName li mvs) = shows li $ case mvs of
-        Nothing -> ""
-        Just (VersionNumber vs _) -> " version " ++ intercalate "." vs
+    Nothing -> ""
+    Just v -> show . hsep $ prettyVersionNumber v
+
+prettyVersionNumber :: VersionNumber -> [Doc]
+prettyVersionNumber (VersionNumber v _) =
+  [keyword versionS, hcat $ punctuate dot $ map codeToken v]
 
 instance Eq LibId where
   DirectLink s1 _ == DirectLink s2 _ = s1 == s2
@@ -131,14 +136,10 @@ instance Ord LibName where
 
 instance Pretty LibName where
     pretty (LibName i mv) = fsep $ pretty i : case mv of
-          Nothing -> []
-          Just (VersionNumber v _) -> [keyword versionS, pretty v]
+        Nothing -> []
+        Just v -> prettyVersionNumber v
 
 instance Pretty LibId where
     pretty l = structId $ case l of
         DirectLink u _ -> u
         IndirectLink p _ _ _ -> p
-
-instance Pretty VersionNumber where
-    pretty (VersionNumber aa _) =
-        hcat $ punctuate dot $ map codeToken aa
