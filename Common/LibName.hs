@@ -109,13 +109,16 @@ instance GetRange LibName where
   getRange = getRange . getLibId
 
 instance Show LibName where
-  show (LibName li mvs) = shows li $ case mvs of
-    Nothing -> ""
-    Just v -> show . hsep $ prettyVersionNumber v
+  show = show . hsep . prettyLibName
 
 prettyVersionNumber :: VersionNumber -> [Doc]
 prettyVersionNumber (VersionNumber v _) =
   [keyword versionS, hcat $ punctuate dot $ map codeToken v]
+
+prettyLibName :: LibName -> [Doc]
+prettyLibName (LibName i mv) = pretty i : case mv of
+        Nothing -> []
+        Just v -> prettyVersionNumber v
 
 instance Eq LibId where
   DirectLink s1 _ == DirectLink s2 _ = s1 == s2
@@ -135,11 +138,8 @@ instance Ord LibName where
   compare ln1 ln2 = compare (getLibId ln1) $ getLibId ln2
 
 instance Pretty LibName where
-    pretty (LibName i mv) = fsep $ pretty i : case mv of
-        Nothing -> []
-        Just v -> prettyVersionNumber v
+    pretty = fsep . prettyLibName
 
 instance Pretty LibId where
-    pretty l = structId $ case l of
-        DirectLink u _ -> u
-        IndirectLink p _ _ _ -> p
+    pretty = structId . show
+
