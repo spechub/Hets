@@ -127,15 +127,19 @@ writeSoftFOL opts f gTh ln i c n msg = do
 
 writeIsaFile :: HetcatsOpts -> FilePath -> G_theory -> LibName -> SIMPLE_ID
              -> IO ()
-writeIsaFile opts fp raw_gTh ln i = do
+writeIsaFile opts filePrefix raw_gTh ln i = do
   let Result ds mTh = createIsaTheory raw_gTh
+      addThn = (++ "_" ++ show i)
+      fp = addThn filePrefix
   showDiags opts ds
   case mTh of
     Nothing ->
       putIfVerbose opts 0 $ "could not translate to Isabelle theory: " ++ fp
     Just (sign, sens) -> do
-      let tn = reverse (takeWhile (/= '/') $ reverse $ show $ getLibId ln)
-                   ++ "_" ++ show i
+      let tn = addThn . reverse . takeWhile (/= '/') . reverse $ case
+               show $ getLibId ln of
+                   [] -> filePrefix
+                   lstr -> lstr
           sf = shows (printIsaTheory tn sign sens) "\n"
           f = fp ++ ".thy"
       case parse parseTheory f sf of
@@ -158,7 +162,7 @@ writeTheory opts filePrefix ga
         f = fp ++ "." ++ show ot
         th = (sign0, toNamedList sens0)
     in case ot of
-    ThyFile -> writeIsaFile opts fp raw_gTh ln i
+    ThyFile -> writeIsaFile opts filePrefix raw_gTh ln i
     DfgFile c -> writeSoftFOL opts f raw_gTh ln i c 0 "DFG"
     TPTPFile c -> writeSoftFOL opts f raw_gTh ln i c 1 "TPTP"
     TheoryFile d -> do
