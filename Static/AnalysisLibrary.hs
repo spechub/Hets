@@ -36,7 +36,6 @@ import Common.AnalyseAnnos
 import Common.Result
 import Common.ResultT
 import Common.LibName
-import Common.Keywords
 import Common.Id
 
 import Driver.Options
@@ -94,13 +93,13 @@ anaString lgraph opts topLns libenv input file mt = do
           liftR $ Result ds Nothing
       _ -> do
           let libstring = show $ getLibId ln
-          unless (libstring == libraryS) $ do
-               unless (isSuffixOf libstring $ rmSuffix file)
-                 $ lift $ putIfVerbose opts 1 $
-                       "### file name '" ++ file
-                       ++ "' does not match library name '" ++
-                          libstring ++ "'"
-               lift $ putIfVerbose opts 1 $ "Analyzing library " ++ show ln
+          unless (isSuffixOf libstring $ rmSuffix file) $ lift
+            $ putIfVerbose opts 1
+            $ "### file name '" ++ file ++ "' does not match library name '"
+            ++ libstring ++ "'"
+          lift $ putIfVerbose opts 1 $ "Analyzing "
+               ++ if null libstring then "file " ++ file else
+                 "library " ++ show ln
           (_, ld, _, lenv0) <- anaLibDefn lgraph opts topLns libenv ast
           let lenv = markAllHiding lenv0
           case Map.lookup ln lenv of
