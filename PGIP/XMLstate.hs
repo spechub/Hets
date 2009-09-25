@@ -139,6 +139,32 @@ resetMsg str pgD = pgD
   { theMsg = str
   , xmlElement = convertPgipStateToXML pgD }
 
+-- the PGIP protocol defines the pgip element as containing a single
+-- subelement, but in the state the toplevel pgip element can contain
+-- many subelements. This function transforms the single toplevel element
+-- with potentially many subelements into many pgip elements with only
+-- one subelement and outputs this list as a XML string.
+-- This makes it neccessary to distribute new seq-values, and thus it is
+-- crucial to update the pgip-state with the new (returned) seq value!
+pgipStateToXmlString :: CmdlPgipState -> (String, Int)
+pgipStateToXmlString pgipData =
+    let e = xmlElement pgipData
+        attrs = init $ elAttribs e
+        seqAttr = last $ elAttribs e
+        seqNum = seqNb pgipData
+        outpElem c (i::Integer) =
+            showElement
+            e{ elContent = [c]
+             , elAttribs = attrs ++
+                           [seqAttr{ attrVal =
+                                         show $ seqNum + fromIntegral i}]}
+        subelems = elContent e
+    in (unlines $ zipWith outpElem subelems [0..]
+       , seqNb pgipData + length subelems - 1)
+-- to restore the original behaviour, just use this version:
+-- pgipStateToXmlString x = (showElement $ xmlElement x, seqNb x)
+
+
 -- extracts the xml package in XML.Light format (namely the Content type)
 convertPgipStateToXML :: CmdlPgipState -> Element
 convertPgipStateToXML pgipData = add_attrs

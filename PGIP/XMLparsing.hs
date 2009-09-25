@@ -135,8 +135,9 @@ communicationStep pgD st = do
       -- set, that the interface resends last packet assuming that last
       -- send was a fail
                 then do
-                       let nwpgD = addToMsg (showElement $ xmlElement pgD)
-                                     [] pgD { seqNb = seqNb pgD + 1 }
+                       let (xmlMsg, newSeqNb) = pgipStateToXmlString pgD
+                           nwpgD = addToMsg xmlMsg
+                                     [] pgD { seqNb = newSeqNb + 1 }
                        appendFile "/tmp/razvan.txt" ("Output : "++
                                     theMsg nwpgD ++ "\n")
                        hPutStrLn (hout nwpgD) $ theMsg nwpgD
@@ -154,24 +155,24 @@ communicationStep pgD st = do
         (nwSt, nwPgD) <- processCmds cmds st $ resetMsg []
           $ pgD { refSeqNb = refseqNb }
         if useXML pgD then do
-                 let nwPgipSt = addToMsg (showElement $ xmlElement nwPgD)
-                                []  nwPgD { seqNb = seqNb nwPgD + 1 }
-                 hPutStrLn (hout pgD) $ theMsg nwPgipSt
-                 hFlush $ hout pgD
+                 let (xmlMsg, newSeqNb) = pgipStateToXmlString nwPgD
+                     nwPgipSt = addToMsg xmlMsg [] nwPgD{ seqNb = newSeqNb + 1 }
+                 hPutStrLn (hout nwPgipSt) $ theMsg nwPgipSt
+                 hFlush $ hout nwPgipSt
                  -- this lines take care for each response to have
                  -- a corresponding id and sequence number
                  let refNb = case refseqNb of
                                Just rNb -> " refseq=\""++ rNb ++"\" "
                                Nothing -> " "
                      mSg = "<pgip tag=\"Hets\" class=\"pg\" id=\"" ++
-                           pgipId pgD ++ "\"" ++ refNb ++ " seq=\"" ++
-                           show (seqNb pgD + 1) ++ "\"><ready /></pgip>"
-                 hPutStrLn (hout pgD) mSg
-                 hFlush $ hout pgD
+                           pgipId nwPgipSt ++ "\"" ++ refNb ++ " seq=\"" ++
+                           show (seqNb nwPgipSt) ++ "\"><ready /></pgip>"
+                 hPutStrLn (hout nwPgipSt) mSg
+                 hFlush $ hout nwPgipSt
                  return (nwPgipSt { seqNb = seqNb nwPgipSt + 1}, nwSt)
           else do
-                 hPutStrLn (hout pgD) $ theMsg nwPgD
-                 hFlush $ hout pgD
+                 hPutStrLn (hout nwPgD) $ theMsg nwPgD
+                 hFlush $ hout nwPgD
                  return (nwPgD, nwSt)
 
 -- | Comunicate over a port
