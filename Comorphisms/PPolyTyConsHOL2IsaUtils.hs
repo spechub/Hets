@@ -750,7 +750,7 @@ adjustArgType aTy ty = case (aTy, ty) of
               if any (isNotIdOp . invertConv) l
                 then fail "cannot adjust type application"
                 else return IdOp
-    _ -> fail "cannot adjust argument type"
+    _ -> fail $ "cannot adjust argument type\n" ++ show (aTy, ty)
 
 unpackOp :: Isa.Term -> Bool -> Bool -> FunType -> ConvFun -> Isa.Term
 unpackOp fTrm isPf pfTy ft fConv = let isaF = convFun None fConv in
@@ -823,7 +823,7 @@ adjustTypes aTy rTy ty = case (aTy, ty) of
                 then fail "cannot adjust type application"
                 else return ((False, IdOp),
                              (ApplType i1 $ map (fst . snd) l, IdOp))
-    _ -> fail "cannot adjust types"
+    _ -> fail $ "cannot adjust types\n" ++ show (aTy, ty)
 
 adjustMkAppl :: Isa.Term -> Cond -> Bool -> FunType -> FunType
              -> IsaTermCond -> Result IsaTermCond

@@ -94,9 +94,8 @@ t2term = foldTerm mapRec
             prTrm = mkTerm projName (mkInjOrProjType PFunArr) [sty, ty] ps ntrm
           in case q of
             InType -> mkTerm defId defType [ty] ps prTrm
-            AsType -> prTrm
+            AsType -> TypedTerm prTrm Inferred ty ps
             _ -> let
               rty = strippedType ty
               rtrm = mkTerm injName (mkInjOrProjType FunArr) [sty, rty] ps ntrm
-              in if rty == ty then rtrm else
-                 TypedTerm rtrm q ty ps }
+              in TypedTerm rtrm q ty ps }
