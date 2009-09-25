@@ -161,12 +161,8 @@ communicationStep pgD st = do
                  hFlush $ hout nwPgipSt
                  -- this lines take care for each response to have
                  -- a corresponding id and sequence number
-                 let refNb = case refseqNb of
-                               Just rNb -> " refseq=\""++ rNb ++"\" "
-                               Nothing -> " "
-                     mSg = "<pgip tag=\"Hets\" class=\"pg\" id=\"" ++
-                           pgipId nwPgipSt ++ "\"" ++ refNb ++ " seq=\"" ++
-                           show (seqNb nwPgipSt) ++ "\"><ready /></pgip>"
+                 let mSg = showElement $ xmlElement $ addReadyXml
+                       $ resetMsg "" nwPgipSt { refSeqNb = refseqNb }
                  hPutStrLn (hout nwPgipSt) mSg
                  hFlush $ hout nwPgipSt
                  return (nwPgipSt { seqNb = seqNb nwPgipSt + 1}, nwSt)
