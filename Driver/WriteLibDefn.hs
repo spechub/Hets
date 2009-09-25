@@ -64,13 +64,14 @@ writeLibDefn ga file opts ld = do
         printXml fn = writeFile fn $ ppTopElement (xmlLibDefn ga ld)
         printAscii fn = writeFile fn $ showGlobalDoc ga ld "\n"
         write_type :: OutType -> IO ()
-        write_type ty = do
-          let fn = filePrefix ++ "." ++ show ty
-          putIfVerbose opts 2 $ "Writing file: " ++ fn
-          case ty of
-            PrettyOut PrettyXml -> printXml fn
-            PrettyOut PrettyAscii -> printAscii fn
-            PrettyOut PrettyLatex -> writeLibDefnLatex opts ga fn ld
+        write_type ty = case ty of
+            PrettyOut pty -> do
+              let fn = filePrefix ++ "." ++ show ty
+              putIfVerbose opts 2 $ "Writing file: " ++ fn
+              case pty of
+                PrettyXml -> printXml fn
+                PrettyAscii -> printAscii fn
+                PrettyLatex -> writeLibDefnLatex opts ga fn ld
             _ -> return () -- implemented elsewhere
     putIfVerbose opts 3 ("Current OutDir: " ++ odir)
     mapM_ write_type $ outtypes opts
