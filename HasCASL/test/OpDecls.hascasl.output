@@ -73,12 +73,11 @@ op y : s
        (op __<=__<=__ : s * s * s -> s)
        ((op a : s), (var x : s), (op a : s))]%
 op z : s
-       %[op=
-       (op __+__ : s * s -> s) ((op x : s) as s, (op x : s) as t as s)]%
+       %[op= (op __+__ : s * s -> s) ((op x : s), (op x : s) as s)]%
 . c = (op __+__ : s * s -> s) ((op a : s), (op b : s))
 . d = ((op __+__ : s * s -> s) ((op a : s), (op a : s)) : s)
-. e = (op __+__ : s * s -> s)
-. f = (op __+__ : s * s -> s)
+. e = __+__
+. f = __+__
 . g = ((op a : s), (op b : s))
 . h = (op __+__ : s * s -> s) ((op a : s), (op b : s))
 . i = (op __+__ : s * s -> s) ((op a : s), (op b : s))
@@ -91,9 +90,9 @@ op z : s
 . l4 = (op a : s) <= (op b : s) <= c
 . l5 = ((op a : s), (op b : s), c)
 forall x : s . y = a <= (var x : s) <= (op a : s)
-. z = (op __+__ : s * s -> s) (x as s, x as t as s)
-. x in s %(bla_label)%
-. x in t
+. z = (op __+__ : s * s -> s) (x, x as s)
+. true %(bla_label)%
+. true
 ### Hint 7.14,
 no kind found for 's'
   expected: {Cpo}

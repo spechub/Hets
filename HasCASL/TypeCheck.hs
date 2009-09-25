@@ -25,6 +25,7 @@ module HasCASL.TypeCheck
 import HasCASL.Unify
 import HasCASL.VarDecl
 import HasCASL.As
+import HasCASL.Builtin
 import HasCASL.FoldType
 import HasCASL.Le
 import HasCASL.PrintLe
@@ -151,6 +152,24 @@ checkForUninstantiatedVars ga t p = let
       $ map (Set.fromList . map (fst . snd) . leaves (> 0)) tys)
      {diagPos = p}]
 
+simplifyTypedTerms :: Env -> Term -> Term
+simplifyTypedTerms e = foldTerm mapRec
+  { foldTypedTerm = \ _ nt q ty ps ->
+      let ntyped = TypedTerm nt q ty ps
+          ityped = TypedTerm nt Inferred ty ps
+      in case getTypeOf nt of
+        Nothing -> ntyped
+        Just ty2 -> let isSubT = lesserType e ty2 ty in
+          case q of
+            InType | isSubT -> unitTerm trueId ps
+            _ -> case nt of
+              TypedTerm nt2 q2 _ _ ->
+                if q2 == AsType && q /= InType && lesserType e ty ty2
+                   then TypedTerm nt2 q2 ty ps
+                   else if q == AsType && elem q2 [OfType, Inferred] && isSubT
+                   then ityped else ntyped
+              _ -> if q == AsType && isSubT then ityped else ntyped }
+
 -- | type checking a term
 typeCheck :: Type -> Term -> State Env (Maybe Term)
 typeCheck exTy trm =
@@ -170,7 +189,7 @@ typeCheck exTy trm =
                              ++ showDoc ty "'\n unresolved constraints")
                                  rcs){diagPos = p}]
            checkForUninstantiatedVars ga t p
-           return $ Just t
+           return $ Just $ simplifyTypedTerms te t
          falts -> do
                addDiags [Diag Error
                          ("ambiguous typings\n " ++
