@@ -109,7 +109,7 @@ genCMDLPgipState swXML h_in h_out timeOut = do
      , quietOutput = False
      , seqNb = 1
      , refSeqNb = Nothing
-     , theMsg = []
+     , theMsg = ""
      , xmlElement = unode "pgip" ()
      , hin = h_in
      , hout = h_out
@@ -198,7 +198,7 @@ data CmdlXMLcommands =
  | XmlCloseFile String
  | XmlLoadFile String deriving (Eq, Show)
 
--- extracts the refrence number of a xml packet (given as a string)
+-- extracts the seq attribute value to be used as reference number elsewhere
 getRefseqNb :: String -> Maybe String
 getRefseqNb input =
   let xmlTree = parseXML input
