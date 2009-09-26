@@ -423,5 +423,5 @@ lastString = safeLast ""
 
 -- | The function nicely outputs a list of errors
 prettyPrintErrList :: [String] -> String
-prettyPrintErrList = unlines
+prettyPrintErrList = (intercalate "\n")
   . map (\ x -> "Input " ++ x ++ " could not be processed")

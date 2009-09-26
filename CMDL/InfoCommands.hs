@@ -18,27 +18,20 @@ module CMDL.InfoCommands
        ( cNodes
        , cShowDgGoals
        , cDisplayGraph
-       , cShowNodePGoals
-       , cShowNodePGoalsCurrent
+       , cShowNodeProvenGoals
+       , cShowNodeUnprovenGoals
        , cRedoHistory
        , cShowTaxonomy
-       , cShowTaxonomyCurrent
        , cShowTheory
-       , cShowTheoryCurrent
        , cShowTheoryGoals
-       , cShowTheoryGoalsCurrent
        , cUndoHistory
        , cDetails
-       , cShowNodeUGoals
        , cEdges
-       , cShowNodeUGoalsCurrent
        , cShowNodeAxioms
        , cInfo
-       , cShowNodeAxiomsCurrent
        , cInfoCurrent
        , cShowConcept
        , cNodeNumber
-       , cShowConceptCurrent
        ) where
 
 
@@ -56,22 +49,25 @@ import CMDL.Shell(cDetails, nodeNames)
 import CMDL.Utils(createEdgeNames, decomposeIntoGoals,
                   obtainEdgeList, obtainNodeList, prettyPrintErrList)
 
-import Static.GTheory(G_theory(G_theory), sublogicOfTh)
+import Static.GTheory(G_theory(G_theory), BasicProof, sublogicOfTh)
 import Static.DevGraph
 import Static.PrintDevGraph(dgLinkOriginHeader, dgOriginHeader)
 
-import Common.DocUtils(showDoc)
 import Common.AS_Annotation(SenAttr(isAxiom))
+import Common.DocUtils(showDoc)
 import Common.ExtSign(ExtSign(ExtSign))
 import Common.Taxonomy(TaxoGraphKind(..))
 import qualified Common.OrderedMap as OMap
 
-import Data.Graph.Inductive.Graph(LNode, LEdge)
-import Data.List((++), map, unwords, find, sort, unlines, concatMap)
+import Data.Graph.Inductive.Graph(LNode, LEdge, Node)
+import Data.List((++), map, unwords, find, sort, unlines, concatMap,
+                 intercalate)
 import qualified Data.Set as Set
 import qualified Data.Map as Map
 
 import Logic.Logic(Sentences(sym_of))
+import Logic.Prover(SenStatus)
+import Logic.Comorphism(AnyComorphism)
 
 import Driver.Options(defaultHetcatsOpts)
 
@@ -86,7 +82,6 @@ cShowDgGoals state
     -- nothing to print
     Nothing -> return state
     Just dgState ->
-     do
      -- compute list of node goals
      let nodeGoals = nodeNames $ getAllGoalNodes state
 
@@ -96,8 +91,7 @@ cShowDgGoals state
          -- list of all goal edge names
          edgeGoals = createEdgeNames ls lsGE
      -- print sorted version of the list
-     return $ genMessage [] (unlines $ sort (nodeGoals++edgeGoals))
-                  state
+      in return $ genMessage [] (unlines $ sort (nodeGoals ++ edgeGoals)) state
 
 
 -- local function that computes the theory of a node but it
@@ -119,240 +113,85 @@ getGoalThS useTrans x state
 --that takes into consideration translated theories in
 --the selection too and returns the theory as a string
 getThS :: CmdlUseTranslation -> Int -> CmdlState -> [String]
-getThS useTrans x state
- = case getTh useTrans x state of
+getThS useTrans x state =
+  case getTh useTrans x state of
     Nothing -> ["Could not find a theory"]
     Just th -> [showDoc th "\n"]
 
+getSelectedDGNodes :: IntIState -> (String, [LNode DGNodeLab])
+getSelectedDGNodes dgState =
+  let nds = map (\ (Element _ n) -> n) $ elements dgState
+      dg = lookupDGraph (i_ln dgState) (i_libEnv dgState)
+      nds' = zip nds $ map (labDG dg) nds
+   in (if null nds' then "No node(s) selected!" else "", nds')
 
--- show theory of all goals
-cShowTheoryGoals :: String -> CmdlState
-                    -> IO CmdlState
-cShowTheoryGoals input state
- = case i_state $ intState state of
-    --nothing to print
-    Nothing -> return state
-    Just dgState ->
-     do
-     -- compute the input nodes
-     let (nds,_,_,errs) = decomposeIntoGoals input
-         tmpErrs = prettyPrintErrList errs
-     case nds of
-      [] -> return $ genErrorMsg tmpErrs state
-      _  ->
-       do
-       --list of all nodes
-       let lsNodes = getAllNodes dgState
-           -- list of input nodes
-           (errs',listNodes) = obtainNodeList nds lsNodes
-           -- list of all goal theories
-           nodeTh = concatMap (\x->case x of
-                                  (n,_) ->getGoalThS Do_translate n state
-                                  ) listNodes
-           tmpErrs' = tmpErrs ++ prettyPrintErrList errs'
-       return $ genMessage tmpErrs' (unlines nodeTh) state
+getDGNodes :: String -> IntIState -> (String, [LNode DGNodeLab])
+getDGNodes input dgState =
+  if null input
+    then getSelectedDGNodes dgState
+    else let (nds,_,_,errs) = decomposeIntoGoals input
+             tmpErrs = prettyPrintErrList errs
+          in case nds of
+               [] -> (tmpErrs, [])
+               _  -> let lsNodes = getAllNodes dgState
+                         (errs',listNodes) = obtainNodeList nds lsNodes
+                         tmpErrs' = tmpErrs ++ prettyPrintErrList errs'
+                      in (tmpErrs', listNodes)
 
-cShowNodeUGoals :: String -> CmdlState -> IO CmdlState
-cShowNodeUGoals input state
- = case i_state $ intState state of
-    --nothing to print
-    Nothing -> return state
-    Just dgState ->
-     do
-     -- compute input nodes
-     let (nds,_,_,errs) = decomposeIntoGoals input
-         tmpErrs = prettyPrintErrList errs
-     case nds of
-      [] -> return state
-      _  ->
-       do
-       -- list of all nodes
-       let lsNodes = getAllNodes dgState
-           -- list of input nodes
-           (errs',listNodes) = obtainNodeList nds lsNodes
-           -- list of all goal names
-           goalNames =
-             concatMap
-              (\x ->case x of
-                     (n,_) -> case getTh Dont_translate n state of
-                               Nothing -> []
-                               Just th->
-                                case th of
-                                 G_theory _ _ _ sens _->
-                                  OMap.keys $
-                                  OMap.filter
-                                  (\s -> not (isAxiom s) &&
-                                         not (isProvenSenStatus s))
-                                   sens) listNodes
-           tmpErrs' = tmpErrs ++ prettyPrintErrList errs'
-       return $ genMessage tmpErrs' (unlines goalNames) state
+getNodes :: String -> IntIState -> (String, [Node])
+getNodes input dgState =
+  let (errors, nodes) = getDGNodes input dgState
+   in (errors, map (\ x -> case x of (n, _) -> n) nodes)
 
-cShowNodeUGoalsCurrent :: CmdlState -> IO CmdlState
-cShowNodeUGoalsCurrent state
- = case i_state $ intState state of
-    Nothing -> return state
-    Just pState ->
-     do
-      let glls = concatMap (\(Element _ nb) ->
-                              case getTh Dont_translate nb state of
-                               Nothing -> []
-                               Just th ->
-                                case th of
-                                 G_theory _ _ _ sens _ ->
-                                   OMap.keys $
-                                   OMap.filter
-                                   (\s -> not (isAxiom s) &&
-                                          not (isProvenSenStatus s))
-                                   sens) $ elements pState
-      return $ genMessage [] (unlines glls) state
+getInfoFromNodes :: String -> ([Node] -> [String]) -> CmdlState -> IO CmdlState
+getInfoFromNodes input f state =
+  case i_state $ intState state of
+    Nothing      -> return state
+    Just dgState -> let (errors, nodes) = getNodes input dgState
+                     in return (if null nodes
+                                  then genErrorMsg errors state
+                                  else genMessage errors
+                                         (intercalate "\n" $ f nodes) state)
 
-cShowNodePGoals :: String -> CmdlState -> IO CmdlState
-cShowNodePGoals input state
- = case i_state $ intState state of
-    Nothing -> return state
-    Just dgState ->
-     do
-     let (nds,_,_,errs) = decomposeIntoGoals input
-         tmpErrs = prettyPrintErrList errs
-     case nds of
-      [] -> return state
-      _  ->
-       do
-        let lsNodes = getAllNodes dgState
-            (errs',listNodes) = obtainNodeList nds lsNodes
-            goalNames =
-             concatMap
-              (\x -> case x of
-                      (n,_) -> case getTh Do_translate n state of
-                                Nothing -> []
-                                Just th ->
-                                 case th of
-                                  G_theory _ _ _ sens _ ->
-                                   OMap.keys $
-                                   OMap.filter
-                                   (\s -> not (isAxiom s) &&
-                                          isProvenSenStatus s)
-                                   sens) listNodes
-            tmpErrs' = tmpErrs ++ prettyPrintErrList errs'
-        return $ genMessage tmpErrs' (unlines goalNames) state
+cShowFromNode :: (forall a . SenStatus a (AnyComorphism, BasicProof) -> Bool)
+                                     -- ^ what sentences to show
+               -> String             -- input string containing node-names
+               -> CmdlState          -- the state
+               -> IO CmdlState
+cShowFromNode f input state =
+  getInfoFromNodes input (concatMap (\ n ->
+                case getTh Do_translate n state of
+                  Nothing -> []
+                  Just th -> case th of
+                                 G_theory _ _ _ sens _ -> OMap.keys $
+                                   OMap.filter f sens)) state
+
+cShowNodeProvenGoals :: String -> CmdlState -> IO CmdlState
+cShowNodeProvenGoals =
+  cShowFromNode (\ s -> not (isAxiom s) && isProvenSenStatus s)
+
+cShowNodeUnprovenGoals :: String -> CmdlState -> IO CmdlState
+cShowNodeUnprovenGoals =
+  cShowFromNode (\ s -> not (isAxiom s) && not (isProvenSenStatus s))
 
 cShowNodeAxioms :: String -> CmdlState -> IO CmdlState
-cShowNodeAxioms input state
- = case i_state $ intState state of
-    Nothing -> return state
-    Just dgState ->
-     do
-     let (nds,_,_,errs) = decomposeIntoGoals input
-         tmpErrs = prettyPrintErrList errs
-     case nds of
-      [] -> return state
-      _ ->
-       do
-       let lsNodes = getAllNodes dgState
-           (errs',listNodes) = obtainNodeList nds lsNodes
-           goalNames =
-            concatMap
-             (\x ->case x of
-                    (n,_)-> case getTh Do_translate n state of
-                             Nothing -> []
-                             Just th ->
-                              case th of
-                               G_theory _ _ _ sens _->
-                                OMap.keys $ OMap.filter
-                                isAxiom sens) listNodes
-           tmpErrs' = tmpErrs ++ prettyPrintErrList errs'
-       return $ genMessage tmpErrs' (unlines goalNames) state
-
-cShowNodePGoalsCurrent :: CmdlState -> IO CmdlState
-cShowNodePGoalsCurrent state
- = case i_state $ intState state of
-    Nothing -> return state
-    Just pState ->
-     do
-      let glls = concatMap
-                  (\(Element _ nb) ->
-                     case getTh Do_translate nb state of
-                      Nothing -> []
-                      Just th ->
-                       case th of
-                        G_theory _ _ _ sens _ ->
-                         OMap.keys $
-                         OMap.filter
-                         (\s -> not (isAxiom s) && isProvenSenStatus s) sens) $
-                                elements pState
-      return $ genMessage [] (unlines glls) state
-
-cShowNodeAxiomsCurrent :: CmdlState -> IO CmdlState
-cShowNodeAxiomsCurrent state
- = case i_state $ intState state of
-    Nothing -> return state
-    Just pState ->
-     do
-      let glls = concatMap (\(Element _ nb) ->
-                              case getTh Do_translate nb state of
-                               Nothing -> []
-                               Just th ->
-                                case th of
-                                 G_theory _ _ _ sens _ ->
-                                   OMap.keys $
-                                   OMap.filter isAxiom sens) $
-                                   elements pState
-      return $ genMessage [] (unlines glls) state
-
-cShowTheoryGoalsCurrent :: CmdlState -> IO CmdlState
-cShowTheoryGoalsCurrent state
- = case i_state $ intState state of
-     Nothing -> return state
-     Just pState ->
-      do
-       -- list of selected theories
-       let thls = concatMap (\(Element _ nb) ->
-                              getGoalThS Do_translate nb state)
-                    $ elements pState
-       return $ genMessage [] (unlines thls) state
-
--- show theory of selection
-cShowTheoryCurrent :: CmdlUseTranslation -> CmdlState -> IO CmdlState
-cShowTheoryCurrent useTrans state
- = case i_state $ intState state of
-    Nothing -> return state
-    Just pState ->
-     do
-      -- list of selected theories
-      let thls = concatMap (\(Element _ nb) ->
-                              getThS useTrans nb state)
-                     $ elements pState
-      return $ genMessage [] (unlines thls) state
+cShowNodeAxioms = cShowFromNode isAxiom
 
 -- show theory of input nodes
 cShowTheory :: CmdlUseTranslation -> String -> CmdlState -> IO CmdlState
-cShowTheory useTrans input state
- = case i_state $ intState state of
-    Nothing -> return state
-    Just dgState -> do
-     -- compute the input nodes
-     let (nds,_,_,errs) = decomposeIntoGoals input
-         tmpErrs  = prettyPrintErrList errs
-     case nds of
-       [] -> return state
-       _  ->
-        do
-        --list of all nodes
-        let lsNodes = getAllNodes dgState
-            -- list of input nodes
-            (errs',listNodes) = obtainNodeList nds lsNodes
-            -- list of theories that need to be printed
-            thls =concatMap(\(x,_)->getThS useTrans x state) listNodes
-         -- sort before printing !?
-            tmpErrs' = tmpErrs ++ prettyPrintErrList errs'
-        return $ genMessage tmpErrs' (unlines thls) state
+cShowTheory useTrans input state =
+  getInfoFromNodes input (concatMap (\ n -> getThS useTrans n state)) state
 
+-- show theory of all goals
+cShowTheoryGoals :: String -> CmdlState -> IO CmdlState
+cShowTheoryGoals input st =
+  getInfoFromNodes input (concatMap (\ n -> getGoalThS Do_translate n st)) st
 
 -- | Given a node it returns the information that needs to
 -- be printed as a string
 showNodeInfo::CmdlState -> LNode DGNodeLab -> String
-showNodeInfo state (nb,nd)
- =let
+showNodeInfo state (nb,nd) =
+  let
     -- node name
       name'= "dgn_name : " ++ showName (dgn_name nd) ++ "\n"
       -- origin of the node
@@ -367,31 +206,31 @@ showNodeInfo state (nb,nd)
      let
       -- find out the sublogic of the theory if we found
       -- a theory
-      sublog = "   sublogic :"++ show
+      sublog = "   sublogic: "++ show
                               (sublogicOfTh t) ++ "\n"
       -- compute the number of axioms by counting the
       -- number of symbols of the signature !?
-      nbAxm = "   number of axioms :"++ show (OMap.size $
+      nbAxm = "   number of axioms: "++ show (OMap.size $
                                    OMap.filter isAxiom thSens) ++"\n"
       -- compute the number of symbols as the number of
       -- sentences that are axioms in the senstatus of the
       -- theory
-      nbSym = "   number of symbols :"++ show (Set.size $ sym_of x y) ++ "\n"
+      nbSym = "   number of symbols: "++ show (Set.size $ sym_of x y) ++ "\n"
       -- compute the number of proven theorems as the
       -- number of sentences that have no theorem status
       -- left
       nbThm = let n'=OMap.size $ OMap.filter (\s -> not (isAxiom s)
                       && isProvenSenStatus s) thSens
-              in "   number of proven theorems :" ++ show n' ++ "\n"
+              in "   number of proven theorems: " ++ show n' ++ "\n"
       -- compute the number of unproven theorems as the
       -- sentences that have something in their theorem
       -- status
       nbUThm = let n'= OMap.size $ OMap.filter(\s -> not (isAxiom s)
                        && not (isProvenSenStatus s)) thSens
-               in "   number of unproven theorems :" ++ show n' ++ "\n"
+               in "   number of unproven theorems: " ++ show n' ++ "\n"
       -- compute the final theory (i.e.just add partial
       -- results obtained before (sublogic, nbAxm..)
-      th' = "dgl_theory :\n"++ sublog ++ nbAxm ++ nbSym ++ nbThm ++ nbUThm
+      th' = "dgl_theory:\n"++ sublog ++ nbAxm ++ nbSym ++ nbThm ++ nbUThm
      in name' ++ orig' ++ th'
 
 
@@ -407,12 +246,12 @@ showEdgeInfo state (x, y, dglab)
      nameOf x' l = case find ((== x') . fst) l of
                    Nothing -> "Unknown node"
                    Just (_, n) -> showName $ dgn_name n
-     nm = "dgl_name : "++ nameOf x ls ++ " -> " ++
+     nm = "dgl_name: "++ nameOf x ls ++ " -> " ++
                nameOf y ls
-     orig = "dgl_origin : " ++ dgLinkOriginHeader (dgl_origin dglab)
+     orig = "dgl_origin: " ++ dgLinkOriginHeader (dgl_origin dglab)
      defS = "definition"
      mkDefS = (++ ' ':defS)
-     ltype= "dgl_type : " ++
+     ltype= "dgl_type: " ++
        case edgeTypeModInc $  getRealDGLinkType dglab of
          GlobalDef -> mkDefS "global"
          HetDef -> mkDefS "het"
@@ -433,60 +272,45 @@ showEdgeInfo state (x, y, dglab)
                    in unwords $ het ++ [sc, prvn, thmS]
     in unlines [nm, orig, ltype]
 
-
- -- show all information of selection
+-- show all information of selection
 cInfoCurrent::CmdlState -> IO CmdlState
-cInfoCurrent state
- = case i_state $ intState state of
+cInfoCurrent state =
+  case i_state $ intState state of
     -- nothing selected
     Nothing -> return state
-    Just ps ->
-       do
-       -- get node by number
-       let getNNb x l' = case find (\y->case y of
-                                      (nb,_) -> nb==x
-                                      ) l' of
-                               Nothing -> []
-                               Just sm -> [sm]
-           -- get all nodes
-           ls = getAllNodes ps
-           -- get node numbers of selected nodes
-           nodesNb = map (\x -> case x of
-                                 Element _ z -> z)
-                                    $ elements ps
-           -- obtain the selected nodes
-           selN = concatMap (\x-> getNNb x ls) nodesNb
-       return $ genMessage [] (unlines $ map (showNodeInfo state) selN) state
+    Just ps -> let (errors, nodes) = getSelectedDGNodes ps
+                in if null nodes
+                     then return $ genErrorMsg errors state
+                     else cInfo (intercalate " " $ nodeNames nodes) state
 
 -- show all information of input
-cInfo::String -> CmdlState -> IO CmdlState
-cInfo input state
- = case i_state $ intState state of
+cInfo :: String -> CmdlState -> IO CmdlState
+cInfo input state =
+  case i_state $ intState state of
     -- error message
     Nothing -> return $ genErrorMsg "No library loaded" state
-    Just dgS -> do
+    Just dgS ->
      let (nds,edg,nbEdg,errs) = decomposeIntoGoals input
          tmpErrs = prettyPrintErrList errs
-     case (nds,edg,nbEdg) of
-      ([],[],[]) -> return $ genErrorMsg ("Nothing from the input "
+     in case (nds,edg,nbEdg) of
+          ([],[],[]) -> return $ genErrorMsg ("Nothing from the input "
                                        ++"could be processed") state
-      (_,_,_) ->
-       do
-        let lsNodes = getAllNodes dgS
-            lsEdges = getAllEdges dgS
-            (errs'',listEdges) = obtainEdgeList edg nbEdg lsNodes
-                             lsEdges
-            (errs',listNodes) = obtainNodeList nds lsNodes
-            strsNode = map (showNodeInfo state) listNodes
-            strsEdge = map (showEdgeInfo state) listEdges
-            tmpErrs' = tmpErrs ++ prettyPrintErrList errs'
-            tmpErrs''= tmpErrs'++ prettyPrintErrList errs''
-        return $ genMessage tmpErrs'' (unlines (strsNode ++ strsEdge)) state
+          (_,_,_) ->
+            let lsNodes = getAllNodes dgS
+                lsEdges = getAllEdges dgS
+                (errs'',listEdges) = obtainEdgeList edg nbEdg lsNodes lsEdges
+                (errs',listNodes) = obtainNodeList nds lsNodes
+                strsNode = map (showNodeInfo state) listNodes
+                strsEdge = map (showEdgeInfo state) listEdges
+                tmpErrs' = tmpErrs ++ prettyPrintErrList errs'
+                tmpErrs''= tmpErrs'++ prettyPrintErrList errs''
+             in return $ genMessage tmpErrs'' (unlines (strsNode ++ strsEdge))
+                           state
 
 taxoShowGeneric:: TaxoGraphKind -> CmdlState
                       -> [LNode DGNodeLab] -> IO()
-taxoShowGeneric kind state ls
- = case ls of
+taxoShowGeneric kind state ls =
+  case ls of
 #ifdef UNI_PACKAGE
     (nb,nlab):ll ->
      case i_state $ intState state of
@@ -516,122 +340,32 @@ taxoShowGeneric kind state ls
 #endif
     _ -> return ()
 
--- show taxonomy of selection
-cShowTaxonomyCurrent::CmdlState -> IO CmdlState
-cShowTaxonomyCurrent state
- = case i_state $ intState state of
-    -- nothing selected
-    Nothing -> return state
-    -- else
-    Just ps ->
-       do
-     -- get node by number
-       let getNNb x ks = case find (\y -> case y of
-                                       (nb,_) -> nb==x
-                                       ) ks of
-                           Nothing -> []
-                           Just sm -> [sm]
-           -- get all nodes
-           ls = getAllNodes ps
-           -- get node numbers of selected nodes
-           nodesNb = map (\x -> case x of
-                                 Element _ z ->z)
-                                     $ elements ps
-           -- obtain the selected nodes
-           selN = concatMap (\x-> getNNb x ls) nodesNb
-       taxoShowGeneric KSubsort state selN
-       return state
+cShowTaxoGraph :: TaxoGraphKind -> String -> CmdlState -> IO CmdlState
+cShowTaxoGraph kind input state =
+  case i_state $ intState state of
+    Nothing  -> return state
+    Just dgState ->
+      do
+        let (errors, nodes) = getDGNodes input dgState
+        taxoShowGeneric kind state nodes
+        return $ genMessage errors [] state
 
--- show taxonomy of input
-cShowTaxonomy::String -> CmdlState -> IO CmdlState
-cShowTaxonomy input state
- = case i_state $ intState state of
-    -- nothing to print
-    Nothing -> return state
-    Just dgS -> do
-     let (nds,_,_,errs) = decomposeIntoGoals input
-         tmpErrs = prettyPrintErrList errs
-     case nds of
-      [] -> return state
-      _  ->
-       do
-        -- list of all nodes
-        let ls = getAllNodes dgS
-        -- list of input nodes
-            (errs',lsNodes) = obtainNodeList nds ls
-            tmpErrs' = tmpErrs ++ prettyPrintErrList errs'
-        taxoShowGeneric KSubsort state lsNodes
-        return $ genMessage tmpErrs' [] state
+cShowTaxonomy :: String -> CmdlState -> IO CmdlState
+cShowTaxonomy = cShowTaxoGraph KSubsort
 
--- show concept of selection
-cShowConceptCurrent::CmdlState -> IO CmdlState
-cShowConceptCurrent state
- = case i_state $ intState state of
-    -- nothing selected
-    Nothing -> return state
-    -- else
-    Just ps ->
-       do
-     -- get node by number
-       let getNNb x ks = case find (\y -> case y of
-                                       (nb,_) -> nb==x
-                                       ) ks of
-                           Nothing -> []
-                           Just sm -> [sm]
-           -- get all nodes
-           ls = getAllNodes ps
-           -- get node numbers of selected nodes
-           nodesNb = map (\x -> case x of
-                                 Element _ z -> z)
-                                    $ elements ps
-           -- obtain the selected nodes
-           selN = concatMap (\x-> getNNb x ls) nodesNb
-       taxoShowGeneric KConcept state selN
-       return $ genMessage [] [] state
-
--- show concept of input
-cShowConcept::String -> CmdlState -> IO CmdlState
-cShowConcept input state
- = case i_state $ intState state of
-    -- nothing to print
-    Nothing -> return state
-    Just dgS -> do
-     let (nds,_,_,errs) = decomposeIntoGoals input
-         tmpErrs = prettyPrintErrList errs
-     case nds of
-      [] -> return state
-      _  ->
-       do
-        -- list of all nodes
-        let ls = getAllNodes dgS
-        -- list of input nodes
-            (errs',lsNodes) = obtainNodeList nds ls
-            tmpErrs' = tmpErrs ++ prettyPrintErrList errs'
-        taxoShowGeneric KSubsort state lsNodes
-        return $ genMessage tmpErrs' [] state
+cShowConcept :: String -> CmdlState -> IO CmdlState
+cShowConcept = cShowTaxoGraph KConcept
 
 -- show node number of input
-cNodeNumber::String -> CmdlState -> IO CmdlState
-cNodeNumber input state
- = case i_state $ intState state of
+cNodeNumber :: String -> CmdlState -> IO CmdlState
+cNodeNumber input state =
+  case i_state $ intState state of
     Nothing -> return state
-    Just dgState -> do
-     -- compute the input nodes
-     let (nds,_,_,errs) = decomposeIntoGoals input
-         tmpErrs = prettyPrintErrList errs
-     case nds of
-      [] -> return state
-      _  ->
-       do
-        -- list og all nodes
-        let lsNodes = getAllNodes dgState
-        -- list of input nodes
-            (errs',listNodes)=obtainNodeList nds lsNodes
-        -- nodes numbers to print
-            ls = map(\ x -> showName (dgn_name $ snd x) ++ " is node number "
-                                  ++ show (fst x)) listNodes
-            tmpErrs' = tmpErrs ++ prettyPrintErrList errs'
-        return $ genMessage tmpErrs' (unlines ls) state
+    Just dgState ->
+      let (errors, nodes) = getDGNodes input dgState
+          ls = map (\ (i, n) -> showName (dgn_name n) ++ " is node number " ++
+                    show i) nodes
+       in return $ genMessage errors (intercalate "\n" ls) state
 
 -- print the name of all edges
 cEdges::CmdlState -> IO CmdlState
@@ -646,7 +380,7 @@ cEdges state
           lsEdg = getAllEdges dgState
           lsEdges = createEdgeNames lsNodes lsEdg
       -- print edge list in a sorted fashion
-      return $ genMessage [] (unlines $ sort lsEdges) state
+      return $ genMessage [] (intercalate "\n" $ sort lsEdges) state
 
 cUndoHistory :: CmdlState -> IO CmdlState
 cUndoHistory = return . cHistory True
@@ -672,7 +406,7 @@ cNodes state
      -- compute the list of node names
      let ls = nodeNames $ getAllNodes dgState
      -- print a sorted version of it
-     return $ genMessage [] (unlines $ sort ls) state
+     return $ genMessage [] (intercalate "\n" $ sort ls) state
 
 -- draw graph
 cDisplayGraph::CmdlState -> IO CmdlState

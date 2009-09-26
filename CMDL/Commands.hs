@@ -146,11 +146,19 @@ getCommands =
   , genGlobInspectCmd Edges cEdges
   , genGlobInspectCmd UndoHist cUndoHistory
   , genGlobInspectCmd RedoHist cRedoHistory
+  , genGlobInspectCmd ProvenGoalsCurrent (cShowNodeProvenGoals "")
+  , genGlobInspectCmd UnprovenGoalsCurrent (cShowNodeUnprovenGoals "")
+  , genGlobInspectCmd AxiomsCurrent (cShowNodeAxioms "")
+  , genGlobInspectCmd AllGoalsCurrent (cShowTheoryGoals "")
+  , genGlobInspectCmd TheoryCurrent (cShowTheory Dont_translate "")
+  , genGlobInspectCmd TaxonomyCurrent (cShowTaxonomy "")
+  , genGlobInspectCmd ConceptCurrent (cShowConcept "")
+  , genGlobInspectCmd NodeInfoCurrent cInfoCurrent
   , genInspectCmd NodeInfo cInfo
   , genInspectCmd Theory $ cShowTheory Dont_translate
   , genInspectCmd AllGoals cShowTheoryGoals
-  , genInspectCmd ProvenGoals cShowNodePGoals
-  , genInspectCmd UnprovenGoals cShowNodeUGoals
+  , genInspectCmd ProvenGoals cShowNodeProvenGoals
+  , genInspectCmd UnprovenGoals cShowNodeUnprovenGoals
   , genInspectCmd Axioms cShowNodeAxioms
   , genInspectCmd Taxonomy cShowTaxonomy
   , genInspectCmd Concept cShowConcept

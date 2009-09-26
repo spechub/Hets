@@ -171,15 +171,23 @@ data InspectCmd =
   | Edges
   | UndoHist
   | RedoHist
-  | NodeInfo -- of a selected node
+  | NodeInfo
+  | NodeInfoCurrent -- of a selected node
   | Theory
+  | TheoryCurrent
   | AllGoals
+  | AllGoalsCurrent
   | ProvenGoals
+  | ProvenGoalsCurrent
   | UnprovenGoals
+  | UnprovenGoalsCurrent
   | Axioms
+  | AxiomsCurrent
   | LocalAxioms
   | Taxonomy
+  | TaxonomyCurrent
   | Concept
+  | ConceptCurrent
   | EdgeInfo -- of a selected link
     deriving (Eq, Ord, Enum, Bounded)
 
@@ -195,14 +203,22 @@ showInspectCmd cmd = case cmd of
   UndoHist -> "Undo-History"
   RedoHist -> "Redo-History"
   NodeInfo -> "Node-Info"
+  NodeInfoCurrent -> "Node-Info of selected node"
   Theory -> "Computed Theory"
+  TheoryCurrent -> "Computed Theory of selected node"
   AllGoals -> "All Goals"
+  AllGoalsCurrent -> "All Goals of selected node"
   ProvenGoals -> "Proven Goals"
+  ProvenGoalsCurrent -> "Proven Goals of selected node"
   UnprovenGoals -> "Unproven Goals"
+  UnprovenGoalsCurrent -> "Unproven Goals of selected node"
   Axioms -> "All Axioms"
+  AxiomsCurrent -> "All Axioms of selected node"
   LocalAxioms -> "Local Axioms"
   Taxonomy -> "Taxonomy"
+  TaxonomyCurrent -> "Taxonomy of selected node"
   Concept -> "Concept"
+  ConceptCurrent -> "Concept of selected node"
   EdgeInfo -> "Edge-Info"
 
 requiresNode :: InspectCmd -> Bool
@@ -246,8 +262,13 @@ cmdNameStr cmd = case cmd of
   TimeLimit _ -> "set time-limit"
   SetAxioms _ -> "set axioms"
   IncludeProvenTheorems b -> "set include-theorems " ++ map toLower (show b)
-  InspectCmd i _ -> (if i > Edges then "show-" else "")
-    ++ map (\ c -> if c == ' ' then '-' else toLower c) (showInspectCmd i)
+  InspectCmd i _ ->
+    let cm = map (\ c -> if c == ' ' then '-' else toLower c) $ showInspectCmd i
+        suffix = "-of-selected-node"
+        cm' = if suffix `isSuffixOf` cm
+                then take (length cm - length suffix) cm ++ "-current"
+                else cm
+     in (if i > Edges then "show-" else "") ++ cm'
   CommentCmd _ -> "#"
   GroupCmd _ -> ""
 
