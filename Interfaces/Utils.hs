@@ -26,7 +26,6 @@ module Interfaces.Utils
          , checkConservativityEdge
          ) where
 
-
 import Interfaces.DataTypes
 import Interfaces.GenericATPState
 import qualified Interfaces.Command as IC
@@ -232,11 +231,11 @@ checkConservativityNode :: Bool -> (LNode DGNodeLab) -> LibEnv -> LibName
                         -> IO (String, LibEnv, ProofHistory)
 checkConservativityNode useGUI (nodeId, nodeLab) libEnv ln = do
   let dg = lookupDGraph ln libEnv
-      emptyTheory = case dgn_sign nodeLab of
+      emptyTh = case dgn_sign nodeLab of
         G_sign lid _ _ ->
             noSensGTheory lid (mkExtSign $ empty_signature lid) startSigId
       newN = getNewNodeDG dg
-      newL = newNodeLab emptyNodeName DGProof emptyTheory
+      newL = newNodeLab emptyNodeName DGProof emptyTh
       morphism = case resultToMaybe $ ginclusion logicGraph (dgn_sign newL) $
                    dgn_sign nodeLab of
              Just m  -> m
@@ -367,17 +366,15 @@ checkConservativityEdge useGUI (source,target,linklab) libEnv ln
                  showObls [] = ""
                  showObls lst = ", provided that the following proof "
                                ++ "obligations can be discharged:\n"
-                               ++ (show $ Pretty.vsep $ map (print_named glid .
+                               ++ show (Pretty.vsep $ map (print_named glid .
                                    mapNamed (simplify_sen glid sig1)) lst)
                  showRes = case res of
                            Just (Just (cst,_)) -> "The link is "
                             ++ showConsistencyStatus cst
-                            ++ (showObls $ toNamedList namedNewSens')
+                            ++ showObls (toNamedList namedNewSens')
                            _ -> "Could not determine whether link is "
                                  ++ "conservative"
                  myDiags = showRelDiags 2 ds
              return ( showRes ++ "\n" ++ myDiags
                     , newLibEnv
                     , history)
-
-

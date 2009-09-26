@@ -111,7 +111,7 @@ getCFreeDefMorphs :: Logic lid sublogics
    -> [FreeDefMorphism sentence morphism]
 getCFreeDefMorphs lid libEnv ln dg node = let
   (frees, cofrees) = getCFreeDefLinks dg node
-  myget = catMaybes . map (getFreeDefMorphism lid libEnv ln dg)
+  myget = mapMaybe (getFreeDefMorphism lid libEnv ln dg)
   mkCoFree m = m { isCofree = True }
   in myget frees ++ map mkCoFree (myget cofrees)
 
@@ -128,14 +128,14 @@ selectProver ps = case ps of
            _ -> fail "Proofs.Proofs: selection"
    return $ ps !! i
 
-cons_check :: Logic lid sublogics
+consCheck :: Logic lid sublogics
               basic_spec sentence symb_items symb_map_items
               sign morphism symbol raw_symbol proof_tree
            => lid -> ConsChecker sign sentence sublogics morphism proof_tree
            -> String -> TheoryMorphism sign sentence morphism proof_tree
            -> [FreeDefMorphism sentence morphism]
            -> IO([Proof_status proof_tree])
-cons_check _ =
+consCheck _ =
     fromMaybe (\ _ _ -> fail "proveGUI not implemented") . proveGUI
 
 proveTheory :: Logic lid sublogics
@@ -179,11 +179,11 @@ basicInferenceNode checkCons lg ln dGraph n@(node, lbl) libEnv intSt =
             (sig2, sens2) <- liftR $ wrapMapTheory cid bTh'
             incl <- liftR $ subsig_inclusion lidT (empty_signature lidT) sig2
             let mor = TheoryMorphism
-                      { t_source = empty_theory lidT,
+                      { t_source = emptyTheory lidT,
                         t_target = Theory sig2 $ toThSens sens2,
                         t_morphism = incl }
             cc' <- coerceConsChecker lid4 lidT "" cc
-            pts <- lift $ cons_check lidT cc' thName mor
+            pts <- lift $ consCheck lidT cc' thName mor
                 $ getCFreeDefMorphs lidT libEnv ln dGraph node
             liftR $ case pts of
                   [pt] -> case goalStatus pt of
@@ -199,7 +199,7 @@ basicInferenceNode checkCons lg ln dGraph n@(node, lbl) libEnv intSt =
           else do
             let freedefs = getCFreeDefMorphs lid1 libEnv ln dGraph node
             kpMap <- liftR knownProversGUI
-            newTh <- ResultT $
+            ResultT $
                    proverGUI lid1 ProofActions
                      { proveF = proveKnownPMap lg intSt freedefs
                      , fineGrainedSelectionF =
@@ -208,7 +208,6 @@ basicInferenceNode checkCons lg ln dGraph n@(node, lbl) libEnv intSt =
                                      recalculateSublogicAndSelectedTheory
                      } thName (hidingLabelWarning lbl) thForProof
                        kpMap (getProvers ProveGUI sublogic cms)
-            return newTh
 
 consistencyCheck :: G_cons_checker -> AnyComorphism -> LibName -> LibEnv
                  -> DGraph -> LNode DGNodeLab -> IO (Result G_theory)
@@ -223,11 +222,11 @@ consistencyCheck (G_cons_checker lid4 cc) (Comorphism cid) ln le dg n@(n',lbl) =
     bTh'@(sig1, _) <- coerceBasicTheory lid1 lidS "" (sign, sens)
     (sig2, sens2) <- liftR $ wrapMapTheory cid bTh'
     incl <- liftR $ subsig_inclusion lidT (empty_signature lidT) sig2
-    let mor = TheoryMorphism { t_source = empty_theory lidT
+    let mor = TheoryMorphism { t_source = emptyTheory lidT
                              , t_target = Theory sig2 $ toThSens sens2
                              , t_morphism = incl }
     cc' <- coerceConsChecker lid4 lidT "" cc
-    pts <- lift $ cons_check lidT cc' thName mor
+    pts <- lift $ consCheck lidT cc' thName mor
                 $ getCFreeDefMorphs lidT le ln dg n'
     liftR $ case pts of
       [pt] -> case goalStatus pt of
@@ -281,7 +280,7 @@ callProver st intSt trans_chosen freedefs p_cm@(_,acm) =
         let freedefs1 = fromMaybe [] $ mapM (coerceFreeDefMorphism (logicId st)
                                             lid "Logic.InferBasic: callProver")
                                             freedefs
-        lift $ exit
+        lift exit
         ps <- lift $ proveTheory lid p (theoryName st) th freedefs1
         let st' = markProved acm lid ps st
         lift $ addCommandHistoryToState intSt st'

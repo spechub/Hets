@@ -253,7 +253,7 @@ prepareForConsChecking st (G_cons_checker lid4 p, Comorphism cid) =
         (sign'',sens'') <- wrapMapTheory cid bTh'
         incl <- subsig_inclusion lidT (empty_signature lidT) sign''
         let mor = TheoryMorphism
-                    { t_source = empty_theory lidT,
+                    { t_source = emptyTheory lidT,
                       t_target = Theory sign'' (toThSens sens''),
                       t_morphism = incl}
         p' <- coerceConsChecker lid4 lidT "" p

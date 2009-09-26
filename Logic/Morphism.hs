@@ -89,7 +89,7 @@ instance Logic lid sublogics
            language_name (IdMorphism lid sub) = "id_" ++ language_name lid
                ++ case sublogicName sub of
                     [] -> ""
-                    h -> "." ++ h
+                    h -> '.' : h
 
 instance Logic lid sublogics
         basic_spec sentence symb_items symb_map_items
@@ -111,7 +111,7 @@ instance Logic lid sublogics
            morMapSublogicSen _ x = x
            morMap_sign _ = Just
            morMap_morphism _ = Just
-           morMap_sentence _ = \_ -> Just
+           morMap_sentence _ _ = Just
            morMap_sign_symbol _ = Set.singleton
 
 -- composition not needed, use lax triangles instead
@@ -197,7 +197,7 @@ instance Morphism cid
                         case morMap_morphism cid mor1 of
                            Just mor2 -> fmap S2 $
                                map_sen (morTargetLogic cid) mor2 sen
-                           Nothing -> statErr (SpanDomain cid) "map_sen"
+                           Nothing -> statFail (SpanDomain cid) "map_sen"
  simplify_sen (SpanDomain cid) sigma (S2 sen) =
                        case morMap_sign cid sigma of
                           Just sigma2 -> S2 $
@@ -218,7 +218,7 @@ instance (Morphism cid
                 sign2 morphism2 sign_symbol2 symbol2 proof_tree2)
         => StaticAnalysis (SpanDomain cid) () (S2 sentence2) () ()
            sign1 morphism1 sign_symbol1 symbol1 where
- ensures_amalgamability l _ = statErr l "ensures_amalgamability"
+ ensures_amalgamability l _ = statFail l "ensures_amalgamability"
  symbol_to_raw (SpanDomain cid) = symbol_to_raw (morSourceLogic cid)
  id_to_raw (SpanDomain cid) = id_to_raw (morSourceLogic cid)
  matches (SpanDomain cid) = matches (morSourceLogic cid)
@@ -263,7 +263,7 @@ instance (MinSublogic sublogics1 alpha, SemiLatticeWithTop sublogics2)
 
 instance (MinSublogic sublogics1 sign1, SemiLatticeWithTop sublogics2)
          => ProjectSublogicM (SublogicsPair sublogics1 sublogics2) sign1 where
-      projectSublogicM _ x = Just x
+      projectSublogicM _ = Just
 
 instance (ShATermConvertible a, ShATermConvertible b)
     => ShATermConvertible (SublogicsPair a b) where

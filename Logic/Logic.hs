@@ -161,7 +161,7 @@ type EndoMap a = Map.Map a a
 -}
 class Show lid => Language lid where
     language_name :: lid -> String
-    language_name i = show i
+    language_name = show
     description :: lid -> String
     -- default implementation
     description _ = "No description available"
@@ -251,10 +251,10 @@ class (Language lid, Category sign morphism, Ord sentence,
       ----------------------- sentences ---------------------------
       -- | check whether a sentence belongs to a signature
       is_of_sign :: lid -> sentence -> sign -> Bool
-      is_of_sign l _ _ = error $ statErrMsg l "is_of_sign"
+      is_of_sign l _ _ = statError l "is_of_sign"
       -- | sentence translation along a signature morphism
       map_sen :: lid -> morphism -> sentence -> Result sentence
-      map_sen l _ _ = statErr l "map_sen"
+      map_sen l _ _ = statFail l "map_sen"
       -- | simplification of sentences (leave out qualifications)
       simplify_sen :: lid -> sign -> sentence -> sentence
       simplify_sen _ _ = id  -- default implementation
@@ -270,13 +270,13 @@ class (Language lid, Category sign morphism, Ord sentence,
       ----------------------- symbols ---------------------------
       -- | set of symbols for a signature
       sym_of :: lid -> sign -> Set.Set symbol
-      sym_of l _ =  error $ statErrMsg l "sym_of"
+      sym_of l _ = statError l "sym_of"
       -- | symbol map for a signature morphism
       symmap_of :: lid -> morphism -> EndoMap symbol
-      symmap_of l _ = error $ statErrMsg l "symmap_of"
+      symmap_of l _ = statError l "symmap_of"
       -- | symbols have a name, see CASL RefMan p. 192
       sym_name :: lid -> symbol -> Id
-      sym_name l _ = error $ statErrMsg l "sym_name"
+      sym_name l _ = statError l "sym_name"
 
 -- | a dummy static analysis function to allow type checking *.inline.hs files
 inlineAxioms :: StaticAnalysis lid
@@ -285,12 +285,16 @@ inlineAxioms :: StaticAnalysis lid
 inlineAxioms _ _ = error "inlineAxioms"
 
 -- | fail function for static analysis
-statErr :: (Language lid, Monad m) => lid -> String -> m a
-statErr lid = fail . statErrMsg lid
+statFail :: (Language lid, Monad m) => lid -> String -> m a
+statFail lid = fail . statErrMsg lid
+
+statError :: Language lid => lid -> String -> a
+statError lid = error . statErrMsg lid
 
 -- | error message for static analysis
-statErrMsg :: (Language lid) => lid -> String -> String
-statErrMsg lid str = "Logic." ++ str ++ " nyi for: " ++ language_name lid
+statErrMsg :: Language lid => lid -> String -> String
+statErrMsg lid str =
+  "Logic." ++ str ++ " not implemented for: " ++ language_name lid
 
 {- static analysis
    This type class provides the data needed for an institution with symbols,
@@ -332,10 +336,10 @@ class ( Syntax lid basic_spec symb_items symb_map_items
          -- | static analysis of symbol maps, see CASL RefMan p. 222f.
          stat_symb_map_items ::
              lid -> [symb_map_items] -> Result (EndoMap raw_symbol)
-         stat_symb_map_items l _ = statErr l "stat_symb_map_items"
+         stat_symb_map_items l _ = statFail l "stat_symb_map_items"
          -- | static analysis of symbol lists, see CASL RefMan p. 221f.
          stat_symb_items :: lid -> [symb_items] -> Result [raw_symbol]
-         stat_symb_items l _ = statErr l "stat_symb_items"
+         stat_symb_items l _ = statFail l "stat_symb_items"
 
          ------------------------- amalgamation ---------------------------
          {- | Computation of colimits of signature diagram.
@@ -362,67 +366,67 @@ class ( Syntax lid basic_spec symb_items symb_map_items
                   morphism, -- iota : SigmaM' -> SigmaK
                   [Named sentence] -- Ax(K)
                  )
-         quotient_term_algebra l _ _ = statErr l "quotient_term_algebra"
+         quotient_term_algebra l _ _ = statFail l "quotient_term_algebra"
          -- | signature colimits
          signature_colimit :: lid -> Gr sign (Int, morphism)
                            -> Result (sign, Map.Map Int morphism)
-         signature_colimit l _ = statErr l "signature_colimit"
+         signature_colimit l _ = statFail l "signature_colimit"
          {- | rename and qualify the symbols considering a united incoming
             morphisms, code out overloading and
             create sentences for the overloading relation -}
          qualify :: lid -> SIMPLE_ID -> LibId -> morphism -> sign
                  -> Result (morphism, [Named sentence])
-         qualify l _ _ _ _ = statErr l "qualify"
+         qualify l _ _ _ _ = statFail l "qualify"
          -------------------- symbols and raw symbols ---------------------
          {- | Construe a symbol, like f:->t, as a raw symbol.
             This is a one-sided inverse to the function SymSySigSym
             in the CASL RefMan p. 192. -}
          symbol_to_raw :: lid -> symbol -> raw_symbol
-         symbol_to_raw l _ = error $ statErrMsg l "symbol_to_raw"
+         symbol_to_raw l _ = statError l "symbol_to_raw"
          {- | Construe an identifier, like f, as a raw symbol.
             See CASL RefMan p. 192, function IDAsSym -}
          id_to_raw :: lid -> Id -> raw_symbol
-         id_to_raw l _ = error $ statErrMsg l "id_to_raw"
+         id_to_raw l _ = statError l "id_to_raw"
          {- | Check wether a symbol matches a raw symbol, for
             example, f:s->t matches f. See CASL RefMan p. 192 -}
          matches :: lid -> symbol -> raw_symbol -> Bool
-         matches l _ _ = error $ statErrMsg l "matches"
+         matches l _ _ = statError l "matches"
          --------------- operations on signatures and morphisms -----------
          -- | the empty (initial) signature, see CASL RefMan p. 193
          empty_signature :: lid -> sign
          -- | union of signatures, see CASL RefMan p. 193
          signature_union :: lid -> sign -> sign -> Result sign
-         signature_union l _ _ = statErr l "signature_union"
+         signature_union l _ _ = statFail l "signature_union"
          -- | intersection of signatures
          intersection :: lid -> sign -> sign -> Result sign
-         intersection l _ _ = statErr l "intersection"
+         intersection l _ _ = statFail l "intersection"
          -- | final union of signatures, see CASL RefMan p. 194
          final_union :: lid -> sign -> sign -> Result sign
-         final_union l _ _ = statErr l "final_union"
+         final_union l _ _ = statFail l "final_union"
          -- | union of signature morphims, see CASL RefMan p. 196
          morphism_union :: lid -> morphism -> morphism -> Result morphism
-         morphism_union l _ _ = statErr l "morphism_union"
+         morphism_union l _ _ = statFail l "morphism_union"
          -- | subsignatures, see CASL RefMan p. 194
          is_subsig :: lid -> sign -> sign -> Bool
          is_subsig _ _ _ = False
          {- | construct the inclusion morphisms between subsignatures,
               see CASL RefMan p. 194 -}
          subsig_inclusion :: lid -> sign -> sign -> Result morphism
-         subsig_inclusion l _ _ = statErr l "subsig_inclusion"
+         subsig_inclusion l _ _ = statFail l "subsig_inclusion"
          {- | the signature (co)generated by a set of symbols in another
             signature is the smallest (largest) signature containing
             (excluding) the set of symbols. Needed for revealing and
             hiding, see CASL RefMan p. 197ff. -}
          generated_sign, cogenerated_sign ::
              lid -> Set.Set symbol -> sign -> Result morphism
-         generated_sign l _ _ = statErr l "generated_sign"
-         cogenerated_sign l _ _ = statErr l "cogenerated_sign"
+         generated_sign l _ _ = statFail l "generated_sign"
+         cogenerated_sign l _ _ = statFail l "cogenerated_sign"
          {- | Induce a signature morphism from a source signature and
             a raw symbol map. Needed for translation (SP with SM).
             See CASL RefMan p. 198 -}
          induced_from_morphism ::
              lid -> EndoMap raw_symbol -> sign -> Result morphism
-         induced_from_morphism l _ _ = statErr l "induced_from_morphism"
+         induced_from_morphism l _ _ = statFail l "induced_from_morphism"
          {- | Induce a signature morphism between two signatures by a
             raw symbol map. Needed for instantiation and views.
             See CASL RefMan p. 198f. -}
@@ -430,7 +434,7 @@ class ( Syntax lid basic_spec symb_items symb_map_items
              lid -> EndoMap raw_symbol -> ExtSign sign symbol
                  -> ExtSign sign symbol -> Result morphism
          induced_from_to_morphism l _ _ _ =
-             statErr l "induced_from_to_morphism"
+             statFail l "induced_from_to_morphism"
          {- | Check whether a signature morphism is transportable.
             See CASL RefMan p. 304f. -}
          is_transportable :: lid -> morphism -> Bool
@@ -445,7 +449,7 @@ class ( Syntax lid basic_spec symb_items symb_map_items
                             -> MMiSSOntology
                             -> sign -> [Named sentence]
                             -> Result MMiSSOntology
-         theory_to_taxonomy l _ _ _ _ = statErr l "theory_to_taxonomy"
+         theory_to_taxonomy l _ _ _ _ = statFail l "theory_to_taxonomy"
 
 -- | guarded inclusion
 inclusion :: StaticAnalysis lid basic_spec sentence symb_items symb_map_items
@@ -557,7 +561,7 @@ class (StaticAnalysis lid
          {- | provide the embedding of a projected signature into the
               original signature -}
          proj_sublogic_epsilon :: lid -> sublogics -> sign -> morphism
-         proj_sublogic_epsilon _ _ s = ide s
+         proj_sublogic_epsilon _ _ = ide
 
          ----------------------- provers ---------------------------
          -- | several provers can be provided. See module "Logic.Prover"
@@ -574,28 +578,22 @@ class (StaticAnalysis lid
          conservativityCheck _ = []
          -- | the empty proof tree
          empty_proof_tree :: lid -> proof_tree
-         empty_proof_tree l = error $ statErrMsg l "empty_proof_tree"
+         empty_proof_tree l = statError l "empty_proof_tree"
 
          ----------------------- OMDoc ---------------------------
          export_signToOmdoc :: lid -> SIMPLE_ID -> LibId -> sign
                            -> [OMDoc.TCElement]
          -- default implementation
-         export_signToOmdoc lid _ _ _ =
-             error $ "export_signToOmdoc not yet implemented "
-                       ++ "for logic " ++ (show lid)
+         export_signToOmdoc l _ _ _ = statError l "export_signToOmdoc"
 
          export_morphismToOmdoc :: lid -> morphism -> OMDoc.TCElement
          -- default implementation
-         export_morphismToOmdoc lid _ =
-             error $ "export_morphismToOmdoc not yet implemented "
-                       ++ "for logic " ++ (show lid)
+         export_morphismToOmdoc l _ = statError l "export_morphismToOmdoc"
 
          export_senToOmdoc :: lid -> SIMPLE_ID -> LibId -> sign
                           -> Named sentence -> OMDoc.TCElement
          -- default implementation
-         export_senToOmdoc lid _ _ _ _  =
-             error $ "export_senToOmdoc not yet implemented "
-                       ++ "for logic " ++ (show lid)
+         export_senToOmdoc l _ _ _ _  = statError l "export_senToOmdoc"
 
          omdoc_metatheory :: lid -> Maybe OMDoc.OMCD
          -- default implementation
@@ -606,11 +604,11 @@ class (StaticAnalysis lid
 ----------------------------------------------------------------
 
 -- | the empty theory
-empty_theory :: StaticAnalysis lid
+emptyTheory :: StaticAnalysis lid
         basic_spec sentence symb_items symb_map_items
         sign morphism symbol raw_symbol =>
         lid -> Theory sign sentence proof_tree
-empty_theory lid = Theory (empty_signature lid) Map.empty
+emptyTheory lid = Theory (empty_signature lid) Map.empty
 
 ----------------------------------------------------------------
 -- Existential type covering any logic
