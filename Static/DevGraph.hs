@@ -50,6 +50,7 @@ import Common.AS_Annotation
 import Common.GlobalAnnotations
 import Common.Id
 import Common.LibName
+import Common.Consistency
 
 import Control.Concurrent.MVar
 import Control.Exception (assert)
@@ -74,11 +75,6 @@ data NodeSig = NodeSig { getNode :: Node, getSig :: G_sign }
      (but since we want to avoid lots of vacuous nodes with empty sig,
      we do not assign a real node in the DG here) -}
 data MaybeNode = JustNode NodeSig | EmptyNode AnyLogic deriving (Show, Eq)
-
-{- | Conservativity annotations. For compactness, only the greatest applicable
-     value is used in a DG. PCons stands for prooftheoretic conservativity as
-     required for extending imports (no confusion) in Maude -}
-data Conservativity = None | PCons | Cons | Mono | Def deriving (Show, Eq, Ord)
 
 data BasicConsProof = BasicConsProof deriving (Show, Eq) -- needs more details
 

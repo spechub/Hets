@@ -435,7 +435,7 @@ ttConservativityChecker ::
               (Sign, [AS_Anno.Named FORMULA]) -- ^ Initial sign and formulas
            -> PMorphism.Morphism              -- ^ morhpism between specs
            -> [AS_Anno.Named FORMULA]         -- ^ Formulas of extended spec
-           -> Result.Result (Maybe (ConsistencyStatus, [FORMULA]))
+           -> Result.Result (Maybe (Conservativity, [FORMULA]))
 ttConservativityChecker (_, srcSens) mor tarSens=
   let srcAxs        = filter AS_Anno.isAxiom srcSens
       tarAxs        = filter AS_Anno.isAxiom tarSens
@@ -495,6 +495,6 @@ ttConservativityChecker (_, srcSens) mor tarSens=
                        "hence no expansion needed\n"
           body = legend++"\n"++render id (renderTT table)
           disp = createTextSaveDisplay title "unnamed" body
-          res = if isOK then Conservative else Inconsistent
+          res = if isOK then Cons else Inconsistent
       return (seq (unsafePerformIO $ disp) (Just (res,[])))
 

@@ -43,6 +43,7 @@ import Static.GTheory
 import Syntax.AS_Structured
 
 import Common.AS_Annotation hiding (isAxiom, isDef)
+import Common.Consistency
 import Common.DocUtils
 import Common.ExtSign
 import Common.Id

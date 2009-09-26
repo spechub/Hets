@@ -40,6 +40,7 @@ import qualified Proofs.VSE as VSE
 
 import Common.Result
 import Common.DocUtils
+import Common.Consistency
 
 import Driver.Options (HetcatsOpts, rmSuffix, prfSuffix)
 import Driver.ReadFn (libNameToFile)

@@ -34,6 +34,7 @@ import Static.DevGraph
 import Common.GlobalAnnotations
 import Common.LibName
 import Common.Id
+import Common.Consistency
 import Common.Doc as Doc
 import Common.DocUtils
 import Common.Result

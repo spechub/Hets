@@ -18,31 +18,30 @@ module Proofs.NormalForm
     ) where
 
 import Logic.Logic
+import Logic.Grothendieck
+import Logic.Coerce
+import Logic.Comorphism
+import Logic.Prover(toNamedList, toThSens)
+import Logic.ExtSign
 
+import Static.GTheory
 import Static.DevGraph
 import Static.WACocone
 
 import Proofs.EdgeUtils
 import Proofs.ComputeColimit
 
+import Common.Consistency
+import Common.ExtSign
 import Common.Id
 import Common.LibName
 import Common.Result
+import Common.Lib.Graph
 
 import Data.Graph.Inductive.Graph as Graph
-import Common.Lib.Graph
 import qualified Data.Map as Map
 import Data.List (nub)
 import Control.Monad
-
-import Logic.Grothendieck
-import Static.GTheory
-
-import Logic.Coerce
-import Logic.Comorphism
-import Logic.Prover(toNamedList, toThSens)
-import Logic.ExtSign
-import Common.ExtSign
 
 normalFormRule :: DGRule
 normalFormRule = DGRule "NormalForm"
@@ -245,7 +244,7 @@ freeness ln le = do
     (groupHistory dg normalFormRule newDg) le
 
 freenessDG :: LibEnv -> DGraph -> Result DGraph
-freenessDG le dgraph = foldM (
+freenessDG _le dgraph = foldM (
  \ dg edge@(m, n, x) ->
     case dgl_type x of
      FreeOrCofreeDefLink _ _ -> do
@@ -272,7 +271,7 @@ freenessDG le dgraph = foldM (
               m' = getNewNodeDG dg -- new node
               nodelab = labDG dg m
               info = nodeInfo nodelab
-              ConsStatus c cp pr = node_cons_status info
+              ConsStatus c _ _ = node_cons_status info
               labelM' = newInfoNodeLab
                   (extName "NormalForm" $ dgn_name nodelab)
                   info

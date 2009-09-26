@@ -43,7 +43,7 @@ conserCheck :: String                        -- ^ Conser type
            -> (Sign, [Named Axiom])       -- ^ Initial sign and formulas
            -> OWLMorphism                    -- ^ morphism between specs
            -> [Named Axiom]               -- ^ Formulas of extended spec
-           -> Result (Maybe (ConsistencyStatus, [Axiom]))
+           -> Result (Maybe (Conservativity, [Axiom]))
 conserCheck ct (sig, forms) mor =
   unsafePerformIO . doConservCheck "OWLLocality.jar" ct sig forms mor
 
@@ -54,7 +54,7 @@ doConservCheck :: String            -- ^ Jar name
                -> [Named Axiom]  -- ^ Formulas of Onto 1
                -> OWLMorphism       -- ^ Morphism
                -> [Named Axiom]  -- ^ Formulas of Onto 2
-               -> IO (Result (Maybe (ConsistencyStatus, [Axiom])))
+               -> IO (Result (Maybe (Conservativity, [Axiom])))
 doConservCheck jar ct sig1 sen1 mor sen2 = do
   let ontoFile = printOWLBasicTheory
         (otarget mor, filter isAxiom sen2)
@@ -83,7 +83,7 @@ runLocalityChecker :: String            -- ^ Jar name
                    -> String            -- ^ Conser Type
                    -> String            -- ^ Ontology
                    -> String            -- ^ String
-                   -> IO (Result (Maybe (ConsistencyStatus, [Axiom])))
+                   -> IO (Result (Maybe (Conservativity, [Axiom])))
 runLocalityChecker jar ct onto sig =
   do
     let timeLimit = 800
@@ -116,7 +116,7 @@ runLocalityChecker jar ct onto sig =
 parseOutput :: Handle        -- ^ handel of stdout
             -> Handle        -- ^ handel of stderr
             -> ProcessHandle -- ^ handel of process
-            -> IO ((Result (Maybe (ConsistencyStatus, [Axiom]))), [String])
+            -> IO ((Result (Maybe (Conservativity, [Axiom]))), [String])
 parseOutput outh _ procHndl =
     collectLines
     where
@@ -126,14 +126,14 @@ parseOutput outh _ procHndl =
             ls1 <- hGetContents outh
             let ls = lines ls1
             case procState of
-              ExitFailure 10 -> return (return $ Just (Conservative, []), ls)
+              ExitFailure 10 -> return (return $ Just (Cons, []), ls)
               ExitFailure 20 -> return (fail $ unlines ls, ls)
               x -> return (fail ("Internal program error: " ++
                                     show x ++ "\n" ++ unlines ls), ls)
 
 timeWatch :: Int
-          -> IO (Result (Maybe (ConsistencyStatus, [Axiom])), [String])
-          -> IO (Result (Maybe (ConsistencyStatus, [Axiom])), [String])
+          -> IO (Result (Maybe (Conservativity, [Axiom])), [String])
+          -> IO (Result (Maybe (Conservativity, [Axiom])), [String])
 timeWatch time process =
         do
           mvar <- newEmptyMVar

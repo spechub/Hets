@@ -67,6 +67,7 @@ import qualified GUI.HTkUtils as HTk
 
 import Common.DocUtils (showDoc)
 import Common.AS_Annotation (isAxiom)
+import Common.Consistency
 import Common.ExtSign
 import Common.LibName
 import Common.Result

@@ -1,6 +1,6 @@
 {- |
 Module      :  $Header$
-Description :  data types for consistency
+Description :  data types for consistency aka conservativity
 Copyright   :  (c) Christian Maeder, DFKI GmbH 2008
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
@@ -8,7 +8,7 @@ Maintainer  :  Christian.Maeder@dfki.de
 Stability   :  provisional
 Portability :  portable
 
-Data types for consistency
+Data types for conservativity
 -}
 
 module Common.Consistency where
@@ -19,35 +19,35 @@ import Common.DocUtils
 import Common.AS_Annotation
 import Common.Result
 
-data ConsistencyStatus =
-  Inconsistent | Conservative | Monomorphic | Definitional | Unknown String
-  deriving (Show, Eq, Ord)
+{- | Conservativity annotations. For compactness, only the greatest applicable
+     value is used in a DG. PCons stands for prooftheoretic conservativity as
+     required for extending imports (no confusion) in Maude -}
+data Conservativity =
+    Inconsistent
+  | Unknown String
+  | None
+  | PCons
+  | Cons
+  | Mono
+  | Def
+    deriving (Show, Eq, Ord)
 
-showToComply :: ConsistencyStatus -> String
-showToComply cons =
-    case cons of
-      Conservative -> "Cons"
-      Monomorphic  -> "Mono"
-      Definitional -> "Def"
-      _            -> "dunno"
+showToComply :: Conservativity -> String
+showToComply = show
 
-showConsistencyStatus :: ConsistencyStatus -> String
+showConsistencyStatus :: Conservativity -> String
 showConsistencyStatus cs = case cs of
   Inconsistent -> "not conservative"
   Unknown str  -> "unkown if being conservative. Cause is : " ++ str
   _ -> map toLower $ show cs
 
-instance Pretty ConsistencyStatus where
+instance Pretty Conservativity where
   pretty = text . showConsistencyStatus
 
 data ConservativityChecker sign sentence morphism = ConservativityChecker
-                           {
-                             checker_id          :: String
-                           , checkConservativity :: (sign, [Named sentence])
-                                                 -> morphism
-                                                 -> [Named sentence]
-                                                 -> Result
-                                                    (Maybe
-                                                     (ConsistencyStatus
-                                                     ,[sentence]))
-                           }
+    { checker_id :: String
+    , checkConservativity
+        :: (sign, [Named sentence])
+        -> morphism
+        -> [Named sentence]
+        -> Result (Maybe (Conservativity, [sentence])) }

@@ -40,6 +40,7 @@ import qualified Data.Map as Map
 import qualified Data.Set as Set
 import Data.Graph.Inductive.Graph
 
+import Common.Consistency
 import Common.Id
 import Common.Result
 import Common.LibName

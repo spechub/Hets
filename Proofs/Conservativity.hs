@@ -12,12 +12,10 @@ conservativity proof rule for development graphs
    Follows Sect. IV:4.4.2 of the CASL Reference Manual.
 -}
 
-module Proofs.Conservativity
-    ( conservativity
-    ) where
-
+module Proofs.Conservativity (conservativity) where
 
 import Common.Amalgamate(Amalgamates(Amalgamates), CASLAmalgOpt(..))
+import Common.Consistency
 import Common.LibName(LibName)
 import Common.Result(resultToMaybe)
 

@@ -221,12 +221,6 @@ conservativityChoser useGUI checkers = case checkers of
 #endif
    return $ return hd
 
-consToCons :: ConsistencyStatus -> Conservativity
-consToCons Conservative = Cons
-consToCons Monomorphic  = Mono
-consToCons Definitional = Def
-consToCons _            = None
-
 checkConservativityNode :: Bool -> (LNode DGNodeLab) -> LibEnv -> LibName
                         -> IO (String, LibEnv, ProofHistory)
 checkConservativityNode useGUI (nodeId, nodeLab) libEnv ln = do
@@ -320,7 +314,7 @@ checkConservativityEdge useGUI (source,target,linklab) libEnv ln
                  consShow = case res of
                             Just (Just (cst, _)) -> cst
                             _                    -> Unknown "Unknown"
-                 cs' = consToCons consShow
+                 cs' = consShow
                  consNew csv = if cs' >= csv
                             then Proven conservativityRule emptyProofBasis
                             else LeftOpen

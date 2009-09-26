@@ -51,7 +51,7 @@ defOptions = "-timeout 60"
 conserCheck :: (Sign, [Named FORMULA])      -- ^ Initial sign and formulas
            -> Morphism                      -- ^ morhpism between specs
            -> [Named FORMULA]               -- ^ Formulas of extended spec
-           -> Result (Maybe (ConsistencyStatus, [FORMULA]))
+           -> Result (Maybe (Conservativity, [FORMULA]))
 conserCheck (_, inSens) mor cSens=
     do
       let cForms  = getFormulas cSens
@@ -83,7 +83,7 @@ getFormulas sens = foldl (\out sen->
 doConservCheck :: Sign       -- ^ Initial  Sign
                -> Sign       -- ^ Extended Sign
                -> FORMULA    -- ^ QBF Formula to Prove
-               -> IO (Result (Maybe (ConsistencyStatus, [FORMULA])))
+               -> IO (Result (Maybe (Conservativity, [FORMULA])))
 doConservCheck inSig exSig form =
     do
       (oSig , cnf) <- translateToCNF (exSig, [makeNamed "QBF Formula" form])
@@ -136,7 +136,7 @@ getSimpleId (Id toks _ _) = toks
 
 -- | Runs sKizzo that has to reside in your path
 runSKizzo :: String                  -- ^ File in qdimacs syntax
-          -> IO ConsistencyStatus
+          -> IO Conservativity
 runSKizzo qd =
     do
       hasProgramm <- system ("which " ++  proverName
@@ -157,7 +157,7 @@ runSKizzo qd =
               exCode <- waitForProcess pid
               removeFile path
               case exCode of
-                ExitFailure 10   -> return Conservative
+                ExitFailure 10   -> return Cons
                 ExitFailure 20   -> return Inconsistent
                 ExitFailure 30   -> return $ Unknown "Timeout"
                 ExitFailure 40   -> return $ Unknown "Cannot solve"

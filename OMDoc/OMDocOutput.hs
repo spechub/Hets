@@ -22,6 +22,8 @@ import qualified OMDoc.HetsDefs as Hets
 import OMDoc.CASLOutput
 import CASL.Sign
 import CASL.AS_Basic_CASL as ABC
+
+import Common.Consistency as Cons
 import qualified Common.Id as Id
 import qualified Common.LibName as ASL
 import Common.Utils (splitOn, number)
@@ -535,10 +537,10 @@ createXmlThmLinkOM lnum lenv ln (edge@(from, to, ll)) uniqueNames {-names-} coll
       else
         (OMDoc.TheoryInclusion fromuri touri mommorph (Just iid) cons, helpimports)
   where
-  consConv::Static.DevGraph.Conservativity->OMDoc.Conservativity
-  consConv Static.DevGraph.Mono = OMDoc.CMonomorphism
-  consConv Static.DevGraph.Cons = OMDoc.CConservative
-  consConv Static.DevGraph.Def = OMDoc.CDefinitional
+  consConv :: Cons.Conservativity -> OMDoc.Conservativity
+  consConv Cons.Mono = OMDoc.CMonomorphism
+  consConv Cons.Cons = OMDoc.CConservative
+  consConv Cons.Def = OMDoc.CDefinitional
   consConv _ = OMDoc.CNone
 
 

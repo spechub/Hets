@@ -23,6 +23,8 @@ import CASL.Sign
 import CASL.Morphism
 import CASL.Logic_CASL
 import CASL.AS_Basic_CASL
+
+import Common.Consistency
 import qualified Common.Id as Id
 import qualified Common.LibName as ASL
 import qualified CASL.AS_Basic_CASL as ABC

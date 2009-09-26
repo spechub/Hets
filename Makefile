@@ -214,7 +214,7 @@ atc_files = Common/AS_Annotation.der.hs Common/DefaultMorphism.hs \
     Syntax/AS_Structured.der.hs Syntax/AS_Architecture.der.hs \
     Common/GlobalAnnotations.hs Syntax/AS_Library.der.hs \
     Logic/Prover.hs Common/LibName.hs Common/ExtSign.hs \
-    Common/ProofTree.hs Static/DevGraph.hs \
+    Common/Consistency.hs Common/ProofTree.hs Static/DevGraph.hs \
     Common/Id.hs Common/Result.hs Common/OrderedMap.hs \
     Common/Lib/Graph.hs
 
@@ -240,6 +240,9 @@ ATC/ProofTree.der.hs: Common/ProofTree.hs $(GENRULES)
 
 ATC/AS_Annotation.der.hs: Common/AS_Annotation.der.hs $(GENRULES)
 	$(GENRULECALL) -i ATC.Id -i Common.ATerm.ConvInstances -o $@ $<
+
+ATC/Consistency.der.hs: Common/Consistency.hs $(GENRULES)
+	$(GENRULECALL) -x Common.Consistency.ConservativityChecker -o $@ $<
 
 ATC/LibName.der.hs: Common/LibName.hs $(GENRULES)
 	$(GENRULECALL) -i ATC.Id -i Common.ATerm.ConvInstances -o $@ $<
@@ -267,7 +270,7 @@ ATC/Prover.der.hs: Logic/Prover.hs $(GENRULES)
             -i ATC.AS_Annotation -i ATC.OrderedMap -o $@ $<
 
 ATC/DevGraph.der.hs: Static/DevGraph.hs $(GENRULES)
-	$(GENRULECALL2) -i ATC.LibName -o $@ $<
+	$(GENRULECALL2) -i ATC.LibName -i ATC.Consistency -o $@ $<
 
 # ATC files for every logic
 CASL_files = CASL/Sublogic.hs CASL/Morphism.hs CASL/Sign.hs \

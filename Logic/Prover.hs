@@ -12,19 +12,18 @@ General datastructures for theorem prover interfaces
 
 module Logic.Prover where
 
-import qualified Common.OrderedMap as OMap
-import qualified Data.Map as Map
-
 import Common.AS_Annotation as AS_Anno
-import Common.ProofUtils
-import Data.Typeable
-import Common.Result
 import Common.Doc
 import Common.DocUtils
+import Common.Result
+import Common.ProofUtils
+import qualified Common.OrderedMap as OMap
 
+import qualified Data.Map as Map
 import Data.List
 import Data.Maybe (isJust)
 import Data.Time (TimeOfDay,midnight)
+import Data.Typeable
 
 import Control.Monad
 import qualified Control.Concurrent as Concurrent

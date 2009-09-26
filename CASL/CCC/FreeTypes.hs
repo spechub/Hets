@@ -22,7 +22,7 @@ import CASL.CCC.TermFormula
 import CASL.CCC.TerminationProof(terminationProof, opSymName, predSymName)
 
 import Common.AS_Annotation(Named, SenAttr(sentence, isAxiom))
-import Common.Consistency(ConsistencyStatus(..))
+import Common.Consistency(Conservativity(..))
 import Common.DocUtils(showDoc)
 import Common.Id(Token(tokStr), Id(Id), GetRange(..), genName, mkSimpleId,
                  nullRange)
@@ -191,7 +191,7 @@ getNefsorts (osig, osens) m fsn = nefsorts
         nefsorts = filter (\ s -> notElem s f_Inhabited) fsorts
 
 getDataStatus :: (Sign () (),[Named (FORMULA ())]) -> Morphism () () ()
-    -> [Named (FORMULA ())] -> ConsistencyStatus
+    -> [Named (FORMULA ())] -> Conservativity
 getDataStatus (osig, osens) m fsn = dataStatus
     where
         fs = getFs fsn
@@ -203,11 +203,11 @@ getDataStatus (osig, osens) m fsn = dataStatus
         fconstrs = concatMap constraintOfAxiom (ofs ++ fs)
         (srts, _, _) = recover_Sort_gen_ax fconstrs
         gens = intersect nSorts srts
-        dataStatus = if null nSorts then Definitional
+        dataStatus = if null nSorts then Def
                      else if any (\ s -> notElem s subs &&
                              notElem s gens) nSorts
-                          then Conservative
-                          else Monomorphic
+                          then Cons
+                          else Mono
 
 getNotComplete :: [Named (FORMULA ())] -> Morphism () () ()
     -> [Named (FORMULA ())] -> [[FORMULA ()]]
@@ -222,7 +222,7 @@ getNotComplete osens m fsn = not_complete
                                . map patternsOfAxiom) axGroups
 
 getConStatus :: (Sign () (),[Named (FORMULA ())]) -> Morphism () () ()
-    -> [Named (FORMULA ())] -> ConsistencyStatus
+    -> [Named (FORMULA ())] -> Conservativity
 getConStatus (osig,osens) m fsn = conStatus
     where
         dataStatus = getDataStatus (osig, osens) m fsn
@@ -231,8 +231,8 @@ getConStatus (osig,osens) m fsn = conStatus
         oPreds = getOPreds m fsn
         overlap_query = getOverlapQuery fsn
         defStatus = if null $ oOps ++ oPreds ++ ex_axioms ++ overlap_query
-                    then Definitional
-                    else Conservative
+                    then Def
+                    else Cons
         conStatus = min dataStatus defStatus
 
 getObligations :: Morphism () () () -> [Named (FORMULA ())] -> [FORMULA ()]
@@ -250,7 +250,7 @@ getObligations m fsn = obligations
    check the definitional form of the partial axioms
 -}
 checkDefinitional :: Sign () () -> [Named (FORMULA ())]
-    -> Maybe (Result (Maybe (ConsistencyStatus,[FORMULA ()])))
+    -> Maybe (Result (Maybe (Conservativity, [FORMULA ()])))
 checkDefinitional osig fsn
     | elem Nothing l_Syms =
         let ax = head [ a | a<-axioms, isNothing $ leadingSym a ]
@@ -321,9 +321,9 @@ checkDefinitional osig fsn
 -}
 checkSort :: (Sign () (),[Named (FORMULA ())]) -> Morphism () () ()
     -> [Named (FORMULA ())]
-    -> Maybe (Result (Maybe (ConsistencyStatus,[FORMULA ()])))
+    -> Maybe (Result (Maybe (Conservativity, [FORMULA ()])))
 checkSort (osig, osens) m fsn
-    | null fsn && null nSorts = Just $ return (Just (Conservative,[]))
+    | null fsn && null nSorts = Just $ return (Just (Cons, []))
     | not $ null notFreeSorts =
         let Id ts _ pos = head notFreeSorts
             sname = concatMap tokStr ts
@@ -341,7 +341,7 @@ checkSort (osig, osens) m fsn
 
 checkLeadingTerms :: [Named (FORMULA ())] -> Morphism () () ()
    -> [Named (FORMULA ())]
-   -> Maybe (Result (Maybe (ConsistencyStatus,[FORMULA ()])))
+   -> Maybe (Result (Maybe (Conservativity, [FORMULA ()])))
 checkLeadingTerms osens m fsn
     | not $ all (checkTerms tsig constructors) (map arguOfTerm leadingTerms) =
         let (Application os _ _) = tt
@@ -389,7 +389,7 @@ checkLeadingTerms osens m fsn
 -}
 checkIncomplete :: [Named (FORMULA ())] -> Morphism () () ()
     -> [Named (FORMULA ())]
-    -> Maybe (Result (Maybe (ConsistencyStatus,[FORMULA ()])))
+    -> Maybe (Result (Maybe (Conservativity, [FORMULA ()])))
 checkIncomplete osens m fsn
     | not $ null notcomplete =
         let symb_p = leadingSymPos $ head $ head notcomplete
@@ -399,7 +399,7 @@ checkIncomplete osens m fsn
                       Just (Right pS) -> predSymName pS
                       _ -> error "CASL.CCC.FreeTypes.<Symb_Name>"
         in Just $
-           warning (Just (Conservative,obligations)) ("the definition of " ++
+           warning (Just (Cons, obligations)) ("the definition of " ++
            sname ++ " is not complete") pos
    | otherwise = Nothing
    where
@@ -408,13 +408,13 @@ checkIncomplete osens m fsn
 
 checkTerminal  :: (Sign () (),[Named (FORMULA ())]) -> Morphism () () ()
     -> [Named (FORMULA ())]
-    -> Maybe (Result (Maybe (ConsistencyStatus,[FORMULA ()])))
+    -> Maybe (Result (Maybe (Conservativity, [FORMULA ()])))
 checkTerminal (osig, osens) m fsn
     | not (null fs_terminalProof) && proof /= Just True =
         if proof == Just False
-            then Just $ warning (Just (Conservative,obligations))
+            then Just $ warning (Just (Cons, obligations))
                  "not terminating" nullRange
-            else Just $ warning (Just (Conservative,obligations))
+            else Just $ warning (Just (Cons, obligations))
                  "cannot prove termination" nullRange
     | not $ null obligations = Just $ return (Just (conStatus,obligations))
     | otherwise = Nothing
@@ -429,9 +429,9 @@ checkTerminal (osig, osens) m fsn
         conStatus = getConStatus (osig,osens) m fsn
 
 checkPositive :: [Named (FORMULA ())]
-    -> Maybe (Result (Maybe (ConsistencyStatus,[FORMULA ()])))
+    -> Maybe (Result (Maybe (Conservativity, [FORMULA ()])))
 checkPositive fsn
-    | allPos     = Just $ return (Just (Conservative, []))
+    | allPos     = Just $ return (Just (Cons, []))
     | otherwise  = Nothing
     where
         allPos = all checkPos $ getFs fsn
@@ -482,7 +482,7 @@ checkPositive fsn
 -- | free datatypes and recursive equations are consistent
 checkFreeType :: (Sign () (),[Named (FORMULA ())]) -> Morphism () () ()
                  -> [Named (FORMULA ())]
-                 -> Result (Maybe (ConsistencyStatus,[FORMULA ()]))
+                 -> Result (Maybe (Conservativity, [FORMULA ()]))
 checkFreeType (osig, osens) m fsn
     | isJust definitional = fromJust definitional
     | isJust sort         = fromJust sort

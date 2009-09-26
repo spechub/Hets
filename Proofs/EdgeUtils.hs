@@ -14,12 +14,17 @@ utility functions for edges of development graphs
 module Proofs.EdgeUtils where
 
 import Comorphisms.LogicGraph
+
 import Logic.Grothendieck
+
 import Static.DevGraph
+
+import Common.Consistency
 import Common.Result
 import qualified Common.Lib.SizedList as SizedList
 import qualified Common.Lib.Rel as Rel
 import qualified Common.Lib.Graph as Tree
+
 import Data.Graph.Inductive.Graph
 import Data.Graph.Inductive.Basic (elfilter)
 import Data.List

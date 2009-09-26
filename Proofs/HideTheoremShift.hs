@@ -28,13 +28,13 @@ module Proofs.HideTheoremShift
     , automaticHideTheoremShiftFromList
     ) where
 
-import Proofs.EdgeUtils
 import Comorphisms.LogicGraph
 import GUI.Utils
-
 import Logic.Grothendieck
+import Proofs.EdgeUtils
 import Static.DevGraph
 
+import Common.Consistency
 import Common.LibName
 import Common.Result
 

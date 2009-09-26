@@ -23,11 +23,14 @@ module Proofs.Composition
 import Proofs.EdgeUtils
 
 import Static.DevGraph
+
 import Logic.Grothendieck
+
+import Common.Consistency
 import Common.LibName
+import qualified Common.Lib.Graph as Tree
 
 import qualified Data.Map as Map
-import qualified Common.Lib.Graph as Tree
 import Data.Graph.Inductive.Graph
 import Data.List
 

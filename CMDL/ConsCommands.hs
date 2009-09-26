@@ -32,21 +32,12 @@ import CMDL.ProveConsistency(consCheckLoop, sigIntHandler)
 import CMDL.DgCommands(selectANode)
 
 import Proofs.AbstractState(ProofState(..))
--- import Proofs.TheoremHideShift
 
 import Static.DevGraph
 import Static.GTheory(G_theory(G_theory))
 
--- import Logic.Logic (conservativityCheck)
--- import Logic.Coerce (coerceSign, coerceMorphism)
--- import Logic.Grothendieck
--- import Logic.Comorphism
--- import Logic.Prover
-
--- import Common.Consistency
--- import Common.ExtSign
+import Common.Consistency
 import Common.LibName(LibName)
--- import Common.Result as Res
 import qualified Common.OrderedMap as OMap
 
 import Control.Concurrent(forkIO)
@@ -204,17 +195,17 @@ conservativityList lsN lsE le libname
                                                                 False)) l)
                                                   edgs
    (acc, libEnv') <- applyEdgeConservativity le libname edgtm [] lsN
-   applyNodeConservativity libEnv' libname 
+   applyNodeConservativity libEnv' libname
        [ n | n<-lsN, getNodeConservativity n > None ] acc
 
-applyNodeConservativity :: LibEnv -> LibName -> [LNode DGNodeLab] 
+applyNodeConservativity :: LibEnv -> LibName -> [LNode DGNodeLab]
                         -> [(String, String)] -> IO ([(String, String)], LibEnv)
 applyNodeConservativity libEnv ln nds acc =
   case nds of
     []            -> return (acc, libEnv)
     n@(_,nlab):ns -> do
                        (str,nwLe,_) <- checkConservativityNode False n libEnv ln
-                       applyNodeConservativity nwLe ln ns 
+                       applyNodeConservativity nwLe ln ns
                          ((showName $ dgn_name nlab, str):acc)
 
 applyEdgeConservativity:: LibEnv -> LibName -> [(LEdge DGLinkLab,Bool)] ->
