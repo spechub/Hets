@@ -53,7 +53,7 @@ libItem ga li = case li of
     add_attrs (mkNameAttr (show $ getLibId n) : rgAttrs rg)
       $ unode "Import" $ map itemNameOrMap mapping
   Logic_decl n rg ->
-    add_attrs (mkNameAttr (show n) : rgAttrs rg)
+    add_attrs (mkNameAttr (showDoc n "") : rgAttrs rg)
       $ unode "Logic" ()
   _ -> prettyElem "Unsupported" ga li
 
