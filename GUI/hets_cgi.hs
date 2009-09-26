@@ -299,14 +299,14 @@ printR :: String -> CRes.Result Output -> SelectedBoxes
        -> FilePath
        -> WithHTML x CGI ()
 printR str (CRes.Result ds mres) conf outputFile =
-  do h1 $ text "You have submitted the HetCASL library:"
+  do h3 $ text "You have submitted the HetCASL library:"
      mapM_ (\l -> text l >> br CGI.empty) $ lines str
-     h1 $ text "Result of parsing and static checking:"
-     mapM_ (\l -> h3 $ text l >> br CGI.empty) (Prelude.map show ds)
+     h3 $ text "Diagnostic messages of parsing and static analysis:"
+     mapM_ (\l -> text l >> br CGI.empty) (Prelude.map show ds)
      maybe CGI.empty printRes mres
      hr_S CGI.empty
      p $ do
-       text "Not the result you expected ? Please check the "
+       text "Not the result you expected? Please check the "
        hlink (read hetsManualUrl) $ text "Hets Manual"
        text "."
      hr_S CGI.empty
@@ -318,11 +318,11 @@ printR str (CRes.Result ds mres) conf outputFile =
          drop (length baseDirGenerated) (outputFile ++ ext)
        printRes res = do
             when (outputTxt conf) $ do
-               heading3 "ASCII code:"
+               heading3 "Pretty printed text:"
                formatTxt (asciiTxt res)
                p $ i $ do
                  text "You can download the "
-                 hlink (read $ adjustOutfile ".txt") $ text "ASCII file"
+                 hlink (read $ adjustOutfile ".txt") $ text "text file"
                  text " here. The file will be deleted after 30 minutes.\n"
             when (outputTex conf) $ do
                heading3 "LaTeX code:"
@@ -337,7 +337,7 @@ printR str (CRes.Result ds mres) conf outputFile =
                  hlink (read $ adjustOutfile ".pdf") $ text "PDF file"
                  text ". All files will be deleted after 30 minutes.\n"
             when (outputTree conf) $ do
-               heading3 "Parse tree:"
+               heading3 "XML parse tree:"
                formatTxt (parseTree res)
                p $ i $ do
                  text "You can download the "
