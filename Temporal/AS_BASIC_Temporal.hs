@@ -22,9 +22,12 @@ module Temporal.AS_BASIC_Temporal
 
 import Common.DocUtils
 import Common.Doc
+import Common.Id
 
 data BASIC_SPEC = Basic_spec
                   deriving Show
+
+instance GetRange BASIC_SPEC
 
 instance Pretty BASIC_SPEC where
    pretty = text . show

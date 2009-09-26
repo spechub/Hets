@@ -44,6 +44,9 @@ data Sigentry = Procedure Id Profile Range deriving (Show, Eq)
 
 data Procdecls = Procdecls [Annoted Sigentry] Range deriving (Show, Eq)
 
+instance GetRange Procdecls where
+  getRange (Procdecls _ r) = r
+
 -- | wrapper for positions
 data Ranged a = Ranged { unRanged :: a, range :: Range }
   deriving (Show, Eq, Ord)

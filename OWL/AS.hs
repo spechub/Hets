@@ -15,6 +15,8 @@ It is modeled after the W3C document: <http://www.w3.org/Submission/2006/SUBM-ow
 module OWL.AS where
 
 import Common.Keywords
+import Common.Id (GetRange)
+
 import OWL.Keywords
 import OWL.ColonKeywords
 import qualified Data.Map as Map
@@ -90,6 +92,8 @@ data OntologyFile = OntologyFile
   { namespaces :: Namespace
   , ontology :: Ontology
   } deriving (Typeable, Show, Eq, Ord)
+
+instance GetRange OntologyFile
 
 data Ontology = Ontology
   { uri :: OntologyURI

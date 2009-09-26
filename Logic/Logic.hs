@@ -129,7 +129,7 @@ import Common.LibName
 import Common.Result
 import Common.Taxonomy
 
-import Common.Item (Item)
+import Common.Item
 
 import qualified Data.Set as Set
 import qualified Data.Map as Map
@@ -214,7 +214,7 @@ instance Ord sign => Category sign (DefaultMorphism sign) where
      symb_items is for symbol lists (see CASL RefMan p. 35ff.),
      symb_map_items is for symbol maps (see CASL RefMan p. 35ff.).
 -}
-class (Language lid, PrintTypeConv basic_spec,
+class (Language lid, PrintTypeConv basic_spec, GetRange basic_spec,
        EqPrintTypeConv symb_items,
        EqPrintTypeConv symb_map_items)
     => Syntax lid basic_spec symb_items symb_map_items
@@ -231,7 +231,7 @@ class (Language lid, PrintTypeConv basic_spec,
          parse_basic_spec _ = Nothing
          parse_symb_items _ = Nothing
          parse_symb_map_items _ = Nothing
-         toItem l _ = error $ statErrMsg l "toItem"
+         toItem _ bs = mkFlatItem ("Basicspec", pretty bs) $ getRangeSpan bs
 
 {- | Sentences, provers and symbols.
      Provers capture the entailment relation between sets of sentences

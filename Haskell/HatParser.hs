@@ -55,12 +55,15 @@ import Haskell.Wrapper
 import Common.Result
 import Common.Doc
 import Common.DocUtils
+import Common.Id (GetRange)
 
 import Text.ParserCombinators.Parsec
 import Data.Char
 
 instance Pretty HsDecls where
     pretty = vsep . map (text . pp) . hsDecls
+
+instance GetRange HsDecls
 
 data HsDecls = HsDecls { hsDecls :: [HsDeclI (SN HsName)] } deriving (Show, Eq)
 

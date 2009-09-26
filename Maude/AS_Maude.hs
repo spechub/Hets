@@ -19,7 +19,7 @@ parser.
 
 module Maude.AS_Maude where
 
-import Common.Id (Token, mkSimpleId)
+import Common.Id hiding (Id)
 import Common.Doc (specBraces, text)
 import Common.DocUtils (Pretty(..))
 
@@ -29,6 +29,8 @@ newtype MaudeText = MaudeText String deriving (Show)
 
 instance Pretty MaudeText where
     pretty (MaudeText s) = specBraces $ text s
+
+instance GetRange MaudeText
 
 type Qid = Token
 

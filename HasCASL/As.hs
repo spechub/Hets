@@ -459,3 +459,5 @@ instance GetRange TypeArg where
 
 instance GetRange TypeScheme where
     getRange (TypeScheme args t ps) = bestRange args $ bestRange [t] ps
+
+instance GetRange BasicSpec

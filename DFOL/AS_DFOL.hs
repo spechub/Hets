@@ -30,8 +30,8 @@ module DFOL.AS_DFOL
       compactDecls,
       expandDecls,
       Translatable,
-      translate      
-   )  where      
+      translate
+   )  where
 
 import Common.AS_Annotation
 import Common.Id
@@ -48,6 +48,8 @@ type DECL = ([NAME],TYPE)
 -- grammar for basic specification
 data BASIC_SPEC = Basic_spec [Annoted BASIC_ITEM]
                   deriving Show
+
+instance GetRange BASIC_SPEC
 
 data BASIC_ITEM = Decl_item DECL
                 | Axiom_item FORMULA
@@ -92,7 +94,7 @@ data SYMB_OR_MAP = Symb SYMB
 
 -- canonical forms
 
-{- converts a term into a form where a function is applied to 
+{- converts a term into a form where a function is applied to
    exactly one argument -}
 termRecForm :: TERM -> TERM
 termRecForm (Identifier t) = Identifier t
@@ -111,14 +113,14 @@ termFlatForm (Appl f as) = (x, bs ++ as)
    one argument -}
 piRecForm :: TYPE -> TYPE
 piRecForm (Pi [] type1) = piRecForm type1
-piRecForm (Pi (([n],t):ds) type1) = Pi [([n],t)] $ piRecForm $ Pi ds type1  
+piRecForm (Pi (([n],t):ds) type1) = Pi [([n],t)] $ piRecForm $ Pi ds type1
 piRecForm (Pi (((n:ns),t):ds) type1) = Pi [([n],t)] $ piRecForm $ Pi ((ns,t):ds) type1
 piRecForm t = t
 
 {- converts a type into a flattened form where the Pi operator binds multiple
-   arguments and the return type itself does not start with Pi -}  
+   arguments and the return type itself does not start with Pi -}
 piFlatForm :: TYPE -> TYPE
-piFlatForm (Pi ds1 type1) = 
+piFlatForm (Pi ds1 type1) =
   case type1 of
        Pi ds2 type2 -> piFlatForm $ Pi (ds1 ++ ds2) type2
        _ -> Pi (compactDecls ds1) type1
@@ -142,13 +144,13 @@ quantRecForm (Exists (((n:ns),t):ds) f) = Exists [([n],t)] $ quantRecForm $ Exis
 quantRecForm t = t
 
 {- converts a formula into a flattened form where quantifies bind multiple
-   arguments and the return type itself does not start with the same quantifier -}  
+   arguments and the return type itself does not start with the same quantifier -}
 quantFlatForm :: FORMULA -> FORMULA
-quantFlatForm (Forall ds1 f1) = 
+quantFlatForm (Forall ds1 f1) =
   case f1 of
        Forall ds2 f2 -> quantFlatForm $ Forall (ds1 ++ ds2) f2
        _ -> Forall (compactDecls ds1) f1
-quantFlatForm (Exists ds1 f1) = 
+quantFlatForm (Exists ds1 f1) =
   case f1 of
        Exists ds2 f2 -> quantFlatForm $ Exists (ds1 ++ ds2) f2
        _ -> Exists (compactDecls ds1) f1
@@ -164,14 +166,14 @@ formulaProperForm t = t
 
 -- substitutions
 
-{- class of types containing identifiers which may be 
-   substituted by terms -} 
+{- class of types containing identifiers which may be
+   substituted by terms -}
 class Translatable a where
    {- substitutions and renamings: the first argument specifies the desired
       term/identifier substitutions and the second the set of identifiers which
-      cannot be used as new variable names -}  
+      cannot be used as new variable names -}
    translate :: Map.Map NAME TERM -> Set.Set NAME -> a -> a
-   
+
 instance Translatable TERM where
    translate m _ = (translateTerm m) . termRecForm
 instance Translatable TYPE where
@@ -184,9 +186,9 @@ translateType :: Map.Map NAME TERM -> Set.Set NAME -> TYPE -> TYPE
 translateType _ _ Sort = Sort
 translateType _ _ Form = Form
 translateType m s (Univ t) = Univ $ translate m s t
-translateType m s (Func ts t) = 
+translateType m s (Func ts t) =
   Func (map (translate m s) ts) (translate m s t)
-translateType m s (Pi [([x],t)] a) = 
+translateType m s (Pi [([x],t)] a) =
   let t1 = translate m s t
       x1 = getNewName x s
       a1 = translate (Map.insert x (Identifier x1) m) (Set.insert x1 s) a
@@ -204,7 +206,7 @@ translateFormula :: Map.Map NAME TERM -> Set.Set NAME -> FORMULA -> FORMULA
 translateFormula _ _ T = T
 translateFormula _ _ F = F
 translateFormula m s (Pred t) = Pred $ translate m s t
-translateFormula m s (Equality t1 t2) = 
+translateFormula m s (Equality t1 t2) =
   Equality (translate m s t1) (translate m s t2)
 translateFormula m s (Negation f) = Negation $ translate m s f
 translateFormula m s (Conjunction fs) =
@@ -229,7 +231,7 @@ translateFormula _ _ f = f
 
 -- modifies the given name until it is different from each of the names in the input set
 getNewName :: NAME -> Set.Set NAME -> NAME
-getNewName var names = 
+getNewName var names =
   let newVar = Token ((tokStr var) ++ "1") nullRange
       in if (Set.notMember newVar names)
             then newVar
@@ -244,7 +246,7 @@ instance Eq TYPE where
 -- expects term in recursive form
 eqTerm :: TERM -> TERM -> Bool
 eqTerm (Identifier x1) (Identifier x2) = x1 == x2
-eqTerm (Appl f1 [a1]) (Appl f2 [a2]) = and [f1 == f2, a1 == a2] 
+eqTerm (Appl f1 [a1]) (Appl f2 [a2]) = and [f1 == f2, a1 == a2]
 eqTerm _ _ = False
 
 -- expects type in proper and pi-recursive form
@@ -253,17 +255,17 @@ eqType Sort Sort = True
 eqType Form Form = True
 eqType (Univ t1) (Univ t2) = t1 == t2
 eqType (Func (t1:ts1) s1) (Func (t2:ts2) s2) =
-  and [t1 == t2, (Func ts1 s1) == (Func ts2 s2)] 
-eqType (Pi [([n1],t1)] s1) (Pi [([n2],t2)] s2) = 
+  and [t1 == t2, (Func ts1 s1) == (Func ts2 s2)]
+eqType (Pi [([n1],t1)] s1) (Pi [([n2],t2)] s2) =
   if (n1 == n2)
      then and [t1 == t2, s1 == s2]
      else let syms1 = getFreeVars $ piRecForm $ typeProperForm s1
-              syms2 = getFreeVars $ piRecForm $ typeProperForm s2 
+              syms2 = getFreeVars $ piRecForm $ typeProperForm s2
               v = getNewName n1 $ Set.union (Set.delete n1 syms1) (Set.delete n2 syms2)
               type1 = translate (Map.singleton n1 (Identifier v)) syms1 s1
               type2 = translate (Map.singleton n2 (Identifier v)) syms2 s2
               in and [t1 == t2, type1 == type2]
-eqType _ _ = False  
+eqType _ _ = False
 
 -- returns a set of unbound identifiers used within a type
 -- expects type in proper and pi-recursive form
@@ -271,15 +273,15 @@ getFreeVars :: TYPE -> Set.Set NAME
 getFreeVars Sort = Set.empty
 getFreeVars Form = Set.empty
 getFreeVars (Univ t) = getFreeVarsInTerm t
-getFreeVars (Func ts t) = 
+getFreeVars (Func ts t) =
   Set.unions $ [getFreeVars t] ++ (map getFreeVars ts)
-getFreeVars (Pi [([n],t)] a) = 
+getFreeVars (Pi [([n],t)] a) =
   Set.delete n $ Set.union (getFreeVars t) (getFreeVars a)
 getFreeVars _ = Set.empty
 
 getFreeVarsInTerm :: TERM -> Set.Set NAME
 getFreeVarsInTerm (Identifier x) = Set.singleton x
-getFreeVarsInTerm (Appl f as) = 
+getFreeVarsInTerm (Appl f as) =
   Set.unions $ [getFreeVarsInTerm f] ++ (map getFreeVarsInTerm as)
 
 -- precedences - needed for pretty printing
@@ -333,10 +335,10 @@ printType :: TYPE -> Doc
 printType (Sort) = text "Sort"
 printType (Form) = text "Form"
 printType (Univ t) = pretty t
-printType (Func ts t) = 
+printType (Func ts t) =
   fsep $ prepPunctuate (text "-> ") $ map (printSubType funcPrec) (ts ++ [t])
 printType (Pi xs x) = text "Pi" <+> printDecls xs <+> printType x
-              
+
 printSubType :: Int -> TYPE -> Doc
 printSubType prec t = if typePrec t >= prec
                          then parens $ printType t
@@ -403,14 +405,14 @@ getVarTypeFromDecls n ds = case result of
 compactDecls :: [DECL] -> [DECL]
 compactDecls [] = []
 compactDecls [d] = [d]
-compactDecls (d1:(d2:ds)) = 
+compactDecls (d1:(d2:ds)) =
   let (ns1,t1) = d1
       (ns2,t2) = d2
-      in if (t1 == t2) 
+      in if (t1 == t2)
             then compactDecls $ (ns1 ++ ns2,t1):ds
             else d1:(compactDecls (d2:ds))
 
 expandDecls :: [DECL] -> [DECL]
 expandDecls [] = []
-expandDecls (([],t):ds) = expandDecls ds 
+expandDecls (([],_):ds) = expandDecls ds
 expandDecls (((n:ns),t):ds) = ([n],t):(expandDecls ((ns,t):ds))
