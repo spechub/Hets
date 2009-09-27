@@ -41,13 +41,14 @@ import GUI.Taxonomy
 import GUI.ShowGraph
 #endif
 
-import CMDL.DataTypesUtils(genErrorMsg, genMessage,
-                           getAllGoalEdges, getAllGoalNodes, getTh)
+import CMDL.DataTypesUtils(genErrorMsg, genMessage, getInputDGNodes,
+                           getInputNodes, getSelectedDGNodes, getAllGoalEdges,
+                           getAllGoalNodes, getTh)
 import CMDL.DataTypes(CmdlPrompterState(fileLoaded),
                       CmdlState(prompter, intState), CmdlUseTranslation(..))
 import CMDL.Shell(cDetails, nodeNames)
-import CMDL.Utils(createEdgeNames, decomposeIntoGoals,
-                  obtainEdgeList, obtainNodeList, prettyPrintErrList)
+import CMDL.Utils(createEdgeNames, decomposeIntoGoals, obtainEdgeList,
+                  obtainNodeList, prettyPrintErrList)
 
 import Static.GTheory(G_theory(G_theory), BasicProof, sublogicOfTh)
 import Static.DevGraph
@@ -118,36 +119,11 @@ getThS useTrans x state =
     Nothing -> ["Could not find a theory"]
     Just th -> [showDoc th "\n"]
 
-getSelectedDGNodes :: IntIState -> (String, [LNode DGNodeLab])
-getSelectedDGNodes dgState =
-  let nds = map (\ (Element _ n) -> n) $ elements dgState
-      dg = lookupDGraph (i_ln dgState) (i_libEnv dgState)
-      nds' = zip nds $ map (labDG dg) nds
-   in (if null nds' then "No node(s) selected!" else "", nds')
-
-getDGNodes :: String -> IntIState -> (String, [LNode DGNodeLab])
-getDGNodes input dgState =
-  if null input
-    then getSelectedDGNodes dgState
-    else let (nds,_,_,errs) = decomposeIntoGoals input
-             tmpErrs = prettyPrintErrList errs
-          in case nds of
-               [] -> (tmpErrs, [])
-               _  -> let lsNodes = getAllNodes dgState
-                         (errs',listNodes) = obtainNodeList nds lsNodes
-                         tmpErrs' = tmpErrs ++ prettyPrintErrList errs'
-                      in (tmpErrs', listNodes)
-
-getNodes :: String -> IntIState -> (String, [Node])
-getNodes input dgState =
-  let (errors, nodes) = getDGNodes input dgState
-   in (errors, map (\ x -> case x of (n, _) -> n) nodes)
-
 getInfoFromNodes :: String -> ([Node] -> [String]) -> CmdlState -> IO CmdlState
 getInfoFromNodes input f state =
   case i_state $ intState state of
     Nothing      -> return state
-    Just dgState -> let (errors, nodes) = getNodes input dgState
+    Just dgState -> let (errors, nodes) = getInputNodes input dgState
                      in return (if null nodes
                                   then genErrorMsg errors state
                                   else genMessage errors
@@ -346,7 +322,7 @@ cShowTaxoGraph kind input state =
     Nothing  -> return state
     Just dgState ->
       do
-        let (errors, nodes) = getDGNodes input dgState
+        let (errors, nodes) = getInputDGNodes input dgState
         taxoShowGeneric kind state nodes
         return $ genMessage errors [] state
 
@@ -362,7 +338,7 @@ cNodeNumber input state =
   case i_state $ intState state of
     Nothing -> return state
     Just dgState ->
-      let (errors, nodes) = getDGNodes input dgState
+      let (errors, nodes) = getInputDGNodes input dgState
           ls = map (\ (i, n) -> showName (dgn_name n) ++ " is node number " ++
                     show i) nodes
        in return $ genMessage errors (intercalate "\n" ls) state

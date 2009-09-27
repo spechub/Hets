@@ -29,9 +29,9 @@ import Interfaces.Utils (emptyIntIState, getAllEdges, initNodeInfo)
 import CMDL.DataTypes
 
 import CMDL.DataTypesUtils
-    (getAllNodes, add2hist, genErrorMsg, genMessage, getIdComorphism)
-import CMDL.Utils
-    (decomposeIntoGoals, obtainEdgeList, obtainNodeList, prettyPrintErrList)
+    (getAllNodes, add2hist, genErrorMsg, genMessage, getIdComorphism,
+     getInputDGNodes)
+import CMDL.Utils(decomposeIntoGoals, obtainEdgeList, prettyPrintErrList)
 
 import Proofs.AbstractState (getProvers, initialState)
 import Proofs.ComputeTheory (computeTheory)
@@ -142,34 +142,25 @@ cUse input state = do
 -- of edges.
 cDgThmHideShift :: String -> CmdlState -> IO CmdlState
 cDgThmHideShift input state = case i_state $ intState state of
-    Nothing -> return $ genErrorMsg "No library loaded" state
-    Just dgState -> do
-      let (nds, _, _, errs) = decomposeIntoGoals input
-          tmpErrs = prettyPrintErrList errs
-      case nds of
-       [] ->
-         return $ genErrorMsg (tmpErrs ++ "No nodes in input string\n") state
-       _ -> do
-          let lsNodes = getAllNodes dgState
-              (errs', listNodes) = obtainNodeList nds lsNodes
-              tmpErrs' = tmpErrs ++ prettyPrintErrList errs'
-          case listNodes of
-           [] -> return $ genErrorMsg
-             (tmpErrs' ++ "No nodes in input string\n") state
-           _ -> do
-             let
-               Result diag nwLibEnv = theoremHideShiftFromList (i_ln dgState)
-                 listNodes (i_libEnv dgState)
-              -- diag not used, how should it?
-             case nwLibEnv of
-              Nothing ->
-                return $ genErrorMsg (concatMap diagString diag) state
-               -- ADD TO HISTORY ??
-              Just newEnv -> return $ add2hist [IStateChange $ Just dgState]
-                $ genMessage tmpErrs' [] state
-                    { intState = (intState state)
-                         { i_state = Just $ emptyIntIState newEnv
-                             $ i_ln dgState } }
+    Nothing      -> return $ genErrorMsg "No library loaded" state
+    Just dgState ->
+      let (errors, nodes) = getInputDGNodes input dgState
+       in if null nodes
+            then return $ genErrorMsg errors state
+            else let Result diag nwLibEnv = theoremHideShiftFromList
+                        (i_ln dgState) nodes (i_libEnv dgState)
+                     -- diag not used, how should it?
+                  in return (case nwLibEnv of
+                       Nothing -> genErrorMsg (concatMap diagString diag) state
+                       -- ADD TO HISTORY ??
+                       Just newEnv -> add2hist [IStateChange $ Just dgState] $
+                                        genMessage errors [] state
+                                          { intState = (intState state)
+                                              { i_state = Just $ emptyIntIState
+                                                                   newEnv $ i_ln
+                                                                     dgState
+                                               }
+                                          })
 
 -- selection commands
 selectANode :: Int -> IntIState -> [Int_NodeInfo]
@@ -209,40 +200,30 @@ selectANode x dgState = let
 -- selects a list of nodes to be used inside this mode
 cDgSelect :: String -> CmdlState -> IO CmdlState
 cDgSelect input state = case i_state $ intState state of
-   Nothing -> return $ genErrorMsg "No library loaded" state
-   Just dgState -> do
-    let (nds, _, _, errs) = decomposeIntoGoals input
-        tmpErrs = prettyPrintErrList errs
-    case nds of
-     [] -> return $ genErrorMsg (tmpErrs ++ "No nodes in input string\n") state
-     _ ->
-      case knownProversWithKind ProveCMDLautomatic of
-       Result _ Nothing ->
-           return $ genErrorMsg (tmpErrs ++ "No prover found\n") state
-       Result _ (Just _) -> do
-              -- list of all nodes
-          let lsNodes = getAllNodes dgState
-              -- list of input nodes
-              (errs', listNodes) = obtainNodeList nds lsNodes
-              tmpErrs' = tmpErrs ++ prettyPrintErrList errs'
-          case listNodes of
-            [] -> return $ genErrorMsg(tmpErrs' ++ "No nodes in input string\n")
-                  state
-            _ -> do
-             let
-                -- elems is the list of all results (i.e.
-                -- concat of all one element lists)
-                elems = concatMap (flip selectANode dgState . fst) listNodes
-                nwist = emptyIntIState (i_libEnv dgState) (i_ln dgState)
-             return $ add2hist [IStateChange $ Just dgState]
-               $ genMessage tmpErrs' [] state
-                   -- add the prove state to the status
-                   -- containing all information selected
-                   -- in the input
-                   { intState = (intState state)
-                       { i_state = Just nwist
-                           { elements = elems
-                           , cComorphism = getIdComorphism elems } } }
+   Nothing      -> return $ genErrorMsg "No library loaded" state
+   Just dgState ->
+     let (errors, nodes) = getInputDGNodes input dgState
+      in if null nodes
+           then return $ genErrorMsg errors state
+           else case knownProversWithKind ProveCMDLautomatic of
+                  Result _ Nothing ->
+                    return $ genErrorMsg (errors ++ "\nNo prover found") state
+                  Result _ (Just _) ->
+                    let -- elems is the list of all results (i.e.
+                        -- concat of all one element lists)
+                        elems = concatMap (flip selectANode dgState . fst) nodes
+                        nwist = emptyIntIState (i_libEnv dgState) (i_ln dgState)
+                     in return $ add2hist [IStateChange $ Just dgState]
+                           $ genMessage errors [] state
+                               -- add the prove state to the status
+                               -- containing all information selected
+                               -- in the input
+                               { intState = (intState state)
+                                   { i_state = Just nwist
+                                       { elements = elems
+                                       , cComorphism = getIdComorphism elems }
+                                    }
+                               }
 
 -- | Function switches the interface in proving mode by
 -- selecting all nodes

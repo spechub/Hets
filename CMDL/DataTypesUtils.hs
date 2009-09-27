@@ -18,6 +18,9 @@ module CMDL.DataTypesUtils
          , obtainGoalNodeList
          , getAllGoalNodes
          , getAllGoalEdges
+         , getSelectedDGNodes
+         , getInputDGNodes
+         , getInputNodes
          , getTh
          , baseChannels
          , genErrorMsg
@@ -35,14 +38,14 @@ import CMDL.Utils
 import CMDL.DataTypes
 
 import Static.GTheory(G_theory, mapG_theory)
-import Static.DevGraph(DGNodeLab, DGLinkLab)
+import Static.DevGraph(DGNodeLab, DGLinkLab, lookupDGraph, labDG)
 
 import System.IO(stdout, stdin)
 
 import Proofs.AbstractState(ProofState(sublogicOfTheory, theoryName))
 import Proofs.ComputeTheory(computeTheory)
 
-import Data.Graph.Inductive.Graph(LNode, LEdge)
+import Data.Graph.Inductive.Graph(LNode, LEdge, Node)
 import Data.List((++), filter, find, null)
 
 import Common.Result(Result(maybeResult, Result))
@@ -124,6 +127,35 @@ getAllGoalEdges st
     Just ist ->
       filter edgeContainsGoals $ getAllEdges ist
 
+-- Returns the selected DGNodes along with a possible error message
+getSelectedDGNodes :: IntIState -> (String, [LNode DGNodeLab])
+getSelectedDGNodes dgState =
+  let nds = map (\ (Element _ n) -> n) $ elements dgState
+      dg = lookupDGraph (i_ln dgState) (i_libEnv dgState)
+      nds' = zip nds $ map (labDG dg) nds
+   in (if null nds' then "No node(s) selected!" else "", nds')
+
+-- Returns the selected DGNodes
+-- or if the selection is empty the DGNodes specified by the input string
+getInputDGNodes :: String -> IntIState -> (String, [LNode DGNodeLab])
+getInputDGNodes input dgState =
+  if null input
+    then getSelectedDGNodes dgState
+    else let (nds,_,_,errs) = decomposeIntoGoals input
+             tmpErrs = prettyPrintErrList errs
+          in case nds of
+               [] -> (tmpErrs, [])
+               _  -> let lsNodes = getAllNodes dgState
+                         (errs',listNodes) = obtainNodeList nds lsNodes
+                         tmpErrs' = tmpErrs ++ prettyPrintErrList errs'
+                      in (tmpErrs', listNodes)
+
+-- Returns the selected Nodes
+-- or if the selection is empty the Nodes specified by the input string
+getInputNodes :: String -> IntIState -> (String, [Node])
+getInputNodes input dgState =
+  let (errors, nodes) = getInputDGNodes input dgState
+   in (errors, map (\ x -> case x of (n, _) -> n) nodes)
 
 --local function that computes the theory of a node
 --that takes into consideration translated theories in
