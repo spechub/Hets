@@ -28,8 +28,7 @@ import Interfaces.Utils(checkConservativityEdge, checkConservativityNode,
 import CMDL.DataTypes(CmdlState(intState))
 import CMDL.DataTypesUtils(getAllNodes, add2hist, genErrorMsg, genMessage)
 import CMDL.Utils(arrowLink, decomposeIntoGoals, prettyPrintErrList)
-import CMDL.ProveConsistency(consCheckLoop, sigIntHandler)
-import CMDL.DgCommands(selectANode)
+import CMDL.ProveCommands(cDoLoop)
 
 import Proofs.AbstractState(ProofState(..))
 
@@ -40,9 +39,6 @@ import Common.Consistency
 import Common.LibName(LibName)
 import qualified Common.OrderedMap as OMap
 
-import Control.Concurrent(forkIO)
-import Control.Concurrent.MVar(newEmptyMVar, newMVar, takeMVar)
-import System.Posix.Signals(Handler(Catch), installHandler, sigINT)
 import System.IO(IO)
 import Data.Graph.Inductive.Graph(LNode, LEdge)
 import Data.Char(String)
@@ -107,42 +103,7 @@ cConservCheckAll state =
 
 -- applies consistency check to the input
 cConsistCheck :: CmdlState -> IO CmdlState
-cConsistCheck state
-    = case i_state $ intState state of
-       Nothing -> return $ genErrorMsg "Nothing selected" state
-       Just pS ->
-           case elements pS of
-            [] -> return $ genErrorMsg "Nothing selected" state
-            ls ->
-             do
-              --create initial mVars to comunicate
-              mlbEnv <- newMVar $ i_libEnv pS
-              mSt    <- newMVar Nothing
-              mThr   <- newMVar Nothing
-              mW     <- newEmptyMVar
-              -- fork
-              thrID <- forkIO(consCheckLoop mlbEnv mThr mSt mW pS ls)
-              -- install the handler that waits for SIG_INT
-              installHandler sigINT (Catch $
-                       sigIntHandler mThr mlbEnv mSt thrID mW (i_ln pS)
-                                    ) Nothing
-              -- block and wait for answers
-              answ <- takeMVar mW
-              let nwpS = pS {
-                               i_libEnv = answ
-                              }
-              let nwls = concatMap (\(Element _ x) ->
-                                                   selectANode x nwpS) ls
-                  hst = concatMap(\(Element stt x) ->
-                                     [AxiomsChange (includedAxioms stt) x,
-                                      GoalsChange (selectedGoals stt) x]) ls
-              return $ add2hist [(DgCommandChange $ i_ln nwpS),
-                                 (ListChange hst)] $
-                          state {
-                            intState = (intState state) {
-                               i_state = Just $ pS {
-                                            elements = nwls } }
-                             }
+cConsistCheck = cDoLoop False
 
 -- applies consistency check to all possible input
 cConsistCheckAll :: CmdlState -> IO CmdlState

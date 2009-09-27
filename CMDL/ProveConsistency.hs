@@ -16,8 +16,7 @@ module CMDL.ProveConsistency
        , cConsChecker
        , checkNode
        , proveNode
-       , proveLoop
-       , consCheckLoop
+       , doLoop
        , sigIntHandler
        ) where
 
@@ -55,7 +54,7 @@ import Control.Concurrent.MVar(MVar, newMVar, putMVar, takeMVar, readMVar,
                                swapMVar, modifyMVar_)
 
 import System.IO(IO, putStrLn)
-
+import Control.Monad(when)
 
 
 getProversAutomatic :: [AnyComorphism] -> [(G_prover, AnyComorphism)]
@@ -430,8 +429,8 @@ addResults ::    LibEnv
               -> LibName
               -> Int_NodeInfo
               -> IO LibEnv
-addResults lbEnv libname ndps
- =case ndps of
+addResults lbEnv libname ndps =
+  case ndps of
    Element ps' node ->
     do
     -- inspired from Proofs/InferBasic.hs
@@ -462,8 +461,8 @@ sigIntHandler :: MVar (Maybe ThreadId) ->
                  MVar LibEnv ->
                  LibName ->
                  IO ()
-sigIntHandler mthr mlbE mSt thr mOut libname
- = do
+sigIntHandler mthr mlbE mSt thr mOut libname =
+  do
    -- print a message
    -- ? shellputStr ! should be used !
    putStrLn "Prover stopped."
@@ -489,15 +488,16 @@ sigIntHandler mthr mlbE mSt thr mOut libname
        putMVar mOut lbEnv'
        return ()
 
-proveLoop :: MVar LibEnv ->
-             MVar (Maybe ThreadId) ->
-             MVar (Maybe Int_NodeInfo)  ->
-             MVar LibEnv ->
-             IntIState ->
-             [Int_NodeInfo] ->
-             IO ()
-proveLoop mlbE mThr mSt mOut pS ls
- = case ls of
+doLoop :: MVar LibEnv
+       -> MVar (Maybe ThreadId)
+       -> MVar (Maybe Int_NodeInfo)
+       -> MVar LibEnv
+       -> IntIState
+       -> [Int_NodeInfo]
+       -> Bool -- True = prover, False = consChecker
+       -> IO ()
+doLoop mlbE mThr mSt mOut pS ls prvr =
+  case ls of
    -- we are done
     [] -> do
            nwLbEnv <- readMVar mlbE
@@ -512,59 +512,28 @@ proveLoop mlbE mThr mSt mOut pS ls
                                                Just (_,ll) ->
                                                  getDGNodeName ll
            putStrLn ("Analyzing node " ++ nodeName x)
-           err <- proveNode (useTheorems pS)
-                            (save2file pS)
-                            (script pS)
-                            x
-                            (nodeName x)
-                            (prover pS)
-                            (cComorphism pS)
-                            mThr
-                            mSt
-                            mlbE
-                            (i_ln pS)
-           case err of
-            [] -> proveLoop mlbE mThr mSt mOut pS l
-            _  -> do
-                  putStrLn err
-                  proveLoop mlbE mThr mSt mOut pS l
-
-consCheckLoop :: MVar LibEnv ->
-                 MVar (Maybe ThreadId) ->
-                 MVar (Maybe Int_NodeInfo) ->
-                 MVar LibEnv ->
-                 IntIState ->
-                 [Int_NodeInfo] ->
-                 IO ()
-consCheckLoop mlbE mThr mSt mOut pS  ls
- = case ls of
-    -- we are done
-    [] -> do
-           nwLbEnv <- readMVar mlbE
-           putMVar mOut nwLbEnv
-           return ()
-    x:l ->
-         do
-          let nodeName x' = case x' of
-                             Element _ t -> case find(\(n,_) -> n==t) $
-                                                  getAllNodes pS of
-                                              Nothing -> "Unknown node"
-                                              Just (_,ll) ->
-                                                 getDGNodeName ll
-          putStrLn ("Analyzing node " ++ nodeName x)
-          err <- checkNode (useTheorems pS)
-                           (save2file pS)
-                           (script pS)
-                           x
-                           (nodeName x)
-                           (consChecker pS)
-                           (cComorphism pS)
-                           mThr
-                           mSt
-                           mlbE
-                           (i_ln pS)
-          case err of
-           [] -> consCheckLoop mlbE mThr mSt mOut pS l
-           _ -> do
-                 putStrLn err
-                 consCheckLoop mlbE mThr mSt mOut pS l
+           err <- (if prvr
+                     then proveNode (useTheorems pS)
+                                    (save2file pS)
+                                    (script pS)
+                                    x
+                                    (nodeName x)
+                                    (prover pS)
+                                    (cComorphism pS)
+                                    mThr
+                                    mSt
+                                    mlbE
+                                    (i_ln pS)
+                     else checkNode (useTheorems pS)
+                                    (save2file pS)
+                                    (script pS)
+                                    x
+                                    (nodeName x)
+                                    (consChecker pS)
+                                    (cComorphism pS)
+                                    mThr
+                                    mSt
+                                    mlbE
+                                    (i_ln pS))
+           when (not $ null err) (putStrLn err)
+           doLoop mlbE mThr mSt mOut pS l prvr

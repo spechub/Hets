@@ -15,6 +15,7 @@ module CMDL.ProveCommands
        ( cTranslate
        , cDropTranslations
        , cGoalsAxmGeneral
+       , cDoLoop
        , cProve
        , cProveAll
        , cSetUseThms
@@ -29,7 +30,7 @@ import CMDL.DataTypes(CmdlState(intState), CmdlGoalAxiom(..),
                       CmdlListAction(..))
 import CMDL.DataTypesUtils(add2hist, genErrorMsg, genMessage, getIdComorphism)
 import CMDL.DgCommands(selectANode)
-import CMDL.ProveConsistency(proveLoop, sigIntHandler)
+import CMDL.ProveConsistency(doLoop, sigIntHandler)
 import CMDL.Utils(checkIntString)
 
 import Static.GTheory(G_theory(G_theory))
@@ -168,10 +169,10 @@ cGoalsAxmGeneral action gls_axm input state
                              }
                      }
 
--- | Proves only selected goals from all nodes using selected
--- axioms
-cProve:: CmdlState-> IO CmdlState
-cProve state
+cDoLoop :: Bool -- True = prove, False = consChecker
+        -> CmdlState
+        -> IO CmdlState
+cDoLoop prvr state
  = case i_state $ intState state of
     Nothing -> return $ genErrorMsg "Nothing selected" state
     Just pS ->
@@ -185,28 +186,29 @@ cProve state
             mThr   <- newMVar Nothing
             mW     <- newEmptyMVar
             -- fork
-            thrID <- forkIO(proveLoop mlbEnv mThr mSt mW pS ls)
+            thrID <- forkIO(doLoop mlbEnv mThr mSt mW pS ls prvr)
             -- install the handler that waits for SIG_INT
             installHandler sigINT (Catch $
                      sigIntHandler mThr mlbEnv mSt thrID mW (i_ln pS)
                                   ) Nothing
             -- block and wait for answers
             answ <- takeMVar mW
-            let nwpS = pS {
-                             i_libEnv = answ
-                             }
-            let nwls=concatMap(\(Element _ x) ->
-                                              selectANode x nwpS) ls
-                hst=concatMap(\(Element stt x)  ->
+            let nwpS = pS { i_libEnv = answ }
+            let nwls = concatMap(\(Element _ x) -> selectANode x nwpS) ls
+                hst = concatMap(\(Element stt x)  ->
                                  [(AxiomsChange (includedAxioms stt) x),
                                   (GoalsChange (selectedGoals stt) x)]) ls
             return $ add2hist [(DgCommandChange $ i_ln nwpS),
                                (ListChange hst)] $
                          state {
                            intState = (intState state) {
-                            i_state = Just $ pS {
-                                              elements = nwls } }
-                            }
+                             i_state = Just $ pS { elements = nwls } }
+                         }
+
+-- | Proves only selected goals from all nodes using selected
+-- axioms
+cProve :: CmdlState -> IO CmdlState
+cProve = cDoLoop True
 
 -- | Proves all goals in the nodes selected using all axioms and
 -- theorems
