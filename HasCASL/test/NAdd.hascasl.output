@@ -18,5 +18,5 @@ types
 Nadd := gn_t1[Nadd] Nat;
 gn_t1[Nadd] := gn_t2[gn_t1[Nadd]] Nat;
 gn_t3[Nat] := gn_t4[gn_t3[Nat]] Nat
-### Hint 3.6, redeclared type 'Nat'
-*** Error 3.6, cyclic alias type 'Nat'
+### Hint 3.6-3.8, redeclared type 'Nat'
+*** Error 3.6-3.8, cyclic alias type 'Nat'

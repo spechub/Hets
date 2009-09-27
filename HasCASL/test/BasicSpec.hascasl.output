@@ -123,7 +123,7 @@ type Data4 ::=
      Cons41 (sel1 :? Data1; sel2 :? Data2)? |
      Cons42 (sel2 :? Data2; sel1 :? Data1)?           %(ga_Data4)%
 . true
-### Warning 1.7, void universe class declaration 'Type'
+### Warning 1.7-1.10, void universe class declaration 'Type'
 ### Hint 3.5, is type variable 't'
 *** Error 7.11, illegal type pattern argument '__'
 *** Error 11.16, not a class 'd'
@@ -137,7 +137,7 @@ type Data4 ::=
 repeated declaration of 'tt' with type 's ->? Unit'
 ### Hint 20.19, rebound variable 'x'
 ### Hint 20.19, rebound variable 'x'
-### Warning 20.12,
+### Warning 20.10-20.15,
 ignoring declaration for builtin identifier '__res__'
 ### Warning 20.12-20.31,
 illegal lhs pattern '((var x : s) res (var y : t)) : s'
@@ -168,7 +168,7 @@ in type of '((var p : ? s), (pred tt : s))'
 *** Error 28.33,
 no typing for 'program all (p : ? s) : ? Unit = eq (p, tt)'
 ### Hint 30.14, rebound variable 'x'
-### Hint 30.40, no type found for 't1'
+### Hint 30.40-30.41, no type found for 't1'
 ### Hint 30.40, untypeable term 't1'
 ### Hint 30.40-30.49,
 untypeable term (with type: ? _v35_a * ? _v36_b) '(t1 (), t2 ())'
@@ -177,13 +177,13 @@ no typing for
 'program And (x, y : ? Unit) : ? Unit = t1 () res t2 ()'
 *** Error 32.12, unexpected mixfix token: impl
 *** Error 34.12, unexpected mixfix token: or
-### Hint 37.27, no type found for 'all'
+### Hint 37.27-37.29, no type found for 'all'
 ### Hint 37.27, untypeable term 'all'
 *** Error 37.25,
 no typing for
 'program ex (p : ? s) : ? Unit
          = all \ r : ? Unit . (all \ x : s . p x impl r) impl r'
-### Hint 40.20, no type found for 'all'
+### Hint 40.20-40.22, no type found for 'all'
 ### Hint 40.20, untypeable term 'all'
 *** Error 40.18,
 no typing for 'program ff () : ? Unit = all \ r : ? Unit . r ()'

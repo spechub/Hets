@@ -474,7 +474,7 @@ no kind found for 'S'
 no kind found for 'S'
   expected: {Cppo}
      found: {Type}
-### Hint 19.7, is type variable 'Elem'
+### Hint 19.7-19.10, is type variable 'Elem'
 ### Hint 22.25,
 no kind found for 'Elem'
   expected: {Cpo}
@@ -523,8 +523,8 @@ no kind found for 'Elem'
 no kind found for 'Elem'
   expected: {Cppo}
      found: {Type}
-### Hint 31.6, is type variable 'Elem'
-### Hint 31.6, rebound type variable 'Elem'
+### Hint 31.6-31.9, is type variable 'Elem'
+### Hint 31.6-31.9, rebound type variable 'Elem'
 ### Hint 33.10, not a kind 'MultiSet Elem'
 ### Hint 33.27, not a kind 'Set Elem'
 ### Warning 33.26, variable also known as type variable 'S'

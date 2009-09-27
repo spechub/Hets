@@ -40,9 +40,9 @@ x < t : a %(var_4)%;
 y : Type %(var_2)%
 var
 x : y
-### Warning 3.7, void universe class declaration 'Type'
-### Warning 4.7, void universe class declaration 'Type'
-### Warning 6.7, void universe class declaration 'Type'
+### Warning 3.7-3.10, void universe class declaration 'Type'
+### Warning 4.7-4.10, void universe class declaration 'Type'
+### Warning 6.7-6.10, void universe class declaration 'Type'
 *** Error 8.11, not a class 'a'
 ### Warning 8.7, unchanged class 'd'
 *** Error 13.7, cyclic class 'a'

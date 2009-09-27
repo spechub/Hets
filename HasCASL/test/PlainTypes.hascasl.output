@@ -95,7 +95,7 @@ no kind found for 'tuple3'
   expected: {a -> b}
      found: {a -> b -> c -> d}
 *** Error 28.10-28.12, no kind found for 'm tuple3'
-### Hint 30.5, is type variable 'nt'
+### Hint 30.5-30.6, is type variable 'nt'
 ### Hint 32.8, not a kind 'nt r List s'
 ### Hint 32.15,
 no kind found for 'List'

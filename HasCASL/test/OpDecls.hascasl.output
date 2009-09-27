@@ -109,7 +109,7 @@ no kind found for 't'
 no kind found for 't'
   expected: {Cppo}
      found: {Type}
-### Warning 9.7, expected tuple argument for '__+__'
+### Warning 9.4-9.10, expected tuple argument for '__+__'
 ### Hint 13.12-13.16,
 in type of '((op a : s), (op b : s))'
   typename 't' (9.14)

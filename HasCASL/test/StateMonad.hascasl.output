@@ -24,7 +24,7 @@ q : a ->? ST state b;
 x : a
 ### Hint 1.7, is type variable 'm'
 ### Hint 1.24, is type variable 'a'
-### Hint 3.7, is type variable 'state'
+### Hint 3.7-3.11, is type variable 'state'
 ### Hint 4.30,
 no kind found for 'a'
   expected: {Cpo}

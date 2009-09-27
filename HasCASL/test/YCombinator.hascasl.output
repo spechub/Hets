@@ -7,8 +7,8 @@ fun   Y : (c --> c) --> c
 var
 c : Cppo %(var_1)%
 op Y : forall c : Cppo . (c --> c) --> c %(fun)%
-### Warning 1.7, unchanged class 'Cpo'
-### Warning 3.7, unchanged class 'Cppo'
-### Hint 5.17, redeclared type '__-->__'
-### Hint 6.17, redeclared type '__-->__'
+### Warning 1.7-1.9, unchanged class 'Cpo'
+### Warning 3.7-3.10, unchanged class 'Cppo'
+### Hint 5.15-5.21, redeclared type '__-->__'
+### Hint 6.15-6.21, redeclared type '__-->__'
 ### Hint 8.5, is type variable 'c'

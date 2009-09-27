@@ -70,13 +70,14 @@ data Diagnosis = Diag { diagKind :: DiagKind
 -- | construct a message for a printable item that carries a position
 mkDiag :: (GetRange a, Pretty a) => DiagKind -> String -> a -> Diagnosis
 mkDiag k s a = let q = text "'" in
-    Diag k (show $ sep [text s, q <> pretty a <> q]) $ getRange a
+    Diag k (show $ sep [text s, q <> pretty a <> q]) $ getRangeSpan a
 
 -- | construct a message for a printable item that carries a position
 mkNiceDiag :: (GetRange a, Pretty a) => GlobalAnnos
        -> DiagKind -> String -> a -> Diagnosis
 mkNiceDiag ga k s a = let q = text "'" in
-    Diag k (show (toText ga $ sep [text s, q <> pretty a <> q])) $ getRange a
+    Diag k (show (toText ga $ sep [text s, q <> pretty a <> q]))
+      $ getRangeSpan a
 
 -- | check whether a diagnosis is an error
 isErrorDiag :: Diagnosis -> Bool

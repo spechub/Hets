@@ -70,7 +70,7 @@ no kind found for 'a'
 no kind found for 'a'
   expected: {Cppo}
      found: {Type}
-### Hint 6.6-6.9, is polymorphic compound identifier '__=[s]__'
+### Hint 6.4-6.11, is polymorphic compound identifier '__=[s]__'
 ### Hint 8.29,
 no kind found for 'a'
   expected: {Cpo}
@@ -79,7 +79,7 @@ no kind found for 'a'
 no kind found for 'a'
   expected: {Cppo}
      found: {Type}
-### Hint 8.9-8.12, is polymorphic compound identifier '__=[s]__'
+### Hint 8.7-8.14, is polymorphic compound identifier '__=[s]__'
 ### Hint 10.6-10.8, is compound list '[s]'
 ### Hint 11.8-11.15, is type list '[s : Type]'
 ### Hint 13.4-13.7, is polymorphic compound identifier 'f[a]'
@@ -123,7 +123,7 @@ no kind found for 'a'
 no kind found for 'a'
   expected: {Cppo}
      found: {Type}
-### Hint 34.9-34.12, is polymorphic compound identifier '__=[s]__'
+### Hint 34.7-34.14, is polymorphic compound identifier '__=[s]__'
 ### Hint 35.44-35.46, is type list '[s, s]'
 ### Hint 35.29,
 no kind found for 'a'
@@ -133,7 +133,7 @@ no kind found for 'a'
 no kind found for 'a'
   expected: {Cppo}
      found: {Type}
-### Hint 35.9-35.12, is polymorphic compound identifier '__=[s]__'
+### Hint 35.7-35.14, is polymorphic compound identifier '__=[s]__'
 ### Hint 35.44-35.46,
 for type scheme 'a * a -> Unit' wrong length of instantiation list
 '[s, s]'
@@ -156,7 +156,7 @@ no kind found for 's'
 ### Hint 36.11-36.16,
 for type scheme 'a * a -> Unit' wrong length of instantiation list
 '[s, s : Type]'
-### Hint 36.6-36.10, no type found for '__=[s]__'
+### Hint 36.4-36.23, no type found for '__=[s]__'
 ### Hint 36.6-36.26,
 untypeable term '__ =[s][s, s : Type] __ : s * s -> Unit'
 *** Error 36.6-36.46,
@@ -213,7 +213,7 @@ no kind found for 'a'
 no kind found for 'a'
   expected: {Cppo}
      found: {Type}
-### Hint 41.9-41.12, is polymorphic compound identifier '__=[s]__'
+### Hint 41.7-41.24, is polymorphic compound identifier '__=[s]__'
 ### Hint 43.22, rebound type variable 'a'
 ### Hint 43.35,
 no kind found for 'a'
@@ -223,7 +223,7 @@ no kind found for 'a'
 no kind found for 'a'
   expected: {Cppo}
      found: {Type}
-### Hint 43.4-43.20,
+### Hint 43.4-43.31,
 is polymorphic compound identifier 'if__then__else[a]__'
 ### Hint 44.22, rebound type variable 'a'
 ### Hint 44.35,
@@ -234,7 +234,7 @@ no kind found for 'a'
 no kind found for 'a'
   expected: {Cppo}
      found: {Type}
-### Hint 44.4-44.20,
+### Hint 44.4-44.31,
 is polymorphic compound identifier 'if__then__else[s]__'
 ### Hint 45.19, rebound type variable 'a'
 ### Hint 45.32,

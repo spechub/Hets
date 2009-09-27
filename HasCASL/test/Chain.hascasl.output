@@ -32,7 +32,7 @@ forall a : -Cpo
   . (s in Chain a) <=> forall n : Nat . def s n => s n <= s (n + 1)
 forall a : Cpo; c : Chain a; x : ? a
 . sup c <= x <=> forall n : Nat . c n <= x
-### Warning 1.7, unchanged class 'Cpo'
+### Warning 1.7-1.9, unchanged class 'Cpo'
 ### Hint 2.8, is type variable 'a'
 ### Hint 3.25,
 no kind found for 'a'

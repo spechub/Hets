@@ -218,7 +218,7 @@ rejected '__->?__ < __->__' of '((var q : a ->? m b) (var x : a), (var r : b ->?
 ### Hint 18.36-18.44,
 untypeable term (with type: _v126_m _v127_a * (_v127_a -> _v126_m _v128_b))
 '(q x, r)'
-### Warning 20.16, refined class 'Monad'
+### Warning 20.16-20.20, refined class 'Monad'
 ### Hint 21.7, is type variable 'm'
 ### Hint 21.7, rebound type variable 'm'
 ### Hint 21.17, is type variable 'a'
@@ -258,7 +258,7 @@ untypeable term (with type: _v149_m _v150_a * (_v150_a -> _v149_m _v151_b))
 ### Hint 29.33, rebound variable 'y'
 ### Hint 29.33, rebound variable 'y'
 ### Hint 29.33, rebound variable 'y'
-### Hint 31.7, is type variable 'state'
+### Hint 31.7-31.11, is type variable 'state'
 ### Hint 33.7, is type variable 'a'
 ### Hint 33.7, rebound type variable 'a'
 ### Hint 33.10, is type variable 'b'
@@ -271,7 +271,7 @@ no kind found for 'a'
 no kind found for 'a'
   expected: {Cppo}
      found: {Type}
-### Hint 34.6, redeclared type 'ST'
+### Hint 34.6-34.7, redeclared type 'ST'
 ### Hint 35.8, not a class 'a'
 ### Hint 35.7, rebound variable 'x'
 ### Hint 35.14, not a kind 'ST state a'

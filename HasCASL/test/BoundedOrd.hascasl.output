@@ -192,7 +192,7 @@ in type of '((var x : ? a) (), (var y : ? a) ())'
 ### Hint 41.25-41.32,
 untypeable term (with type: (_v44_a ->? _v45_b) * (_v44_a ->? _v45_b))
 '(x (), y ())'
-### Warning 43.7, refined class 'Cpo'
+### Warning 43.7-43.9, refined class 'Cpo'
 ### Hint 44.5, is type variable 'a'
 ### Hint 44.5, rebound type variable 'a'
 ### Hint 45.22,

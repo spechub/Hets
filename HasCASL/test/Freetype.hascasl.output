@@ -38,4 +38,4 @@ type t3 ::= c (s : Logical -> Unit) %(ga_t3)%
 repeated declaration of 'c' with type '(? Unit -> Unit) -> t2'
 ### Hint 3.6-3.25,
 repeated declaration of 's' with type 't2 -> ? Unit -> Unit'
-### Hint 3.6, redeclared type 't2'
+### Hint 3.6-3.7, redeclared type 't2'

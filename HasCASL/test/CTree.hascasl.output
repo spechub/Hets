@@ -110,7 +110,7 @@ forall a : Type; R : Pred (CTree a)
 *** Error 9.22, negative datatype occurrence of 'L'
 ### Hint 15.5, is type variable 'b'
 ### Hint 15.5, rebound type variable 'b'
-### Hint 18.11, redeclared type 'Tree'
+### Hint 18.11-18.14, redeclared type 'Tree'
 ### Hint 20.5, is type variable 'c'
 ### Hint 23.15-23.20,
 no kind found for 'b -> c'

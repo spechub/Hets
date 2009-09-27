@@ -131,7 +131,7 @@ free type odd(a : +Type) ::= rek (even a)          %(ga_even_odd)%
 free type odd2(a : +Type) ::= rek (even2 a) %(ga_even2_odd2)%
 ### Hint 1.5, is type variable 'b'
 ### Hint 2.5, is type variable 'a'
-### Hint 4.11, redeclared type 'List'
+### Hint 4.11-4.14, redeclared type 'List'
 *** Error 5.50-5.55,
 unbound type variable(s)
   b in

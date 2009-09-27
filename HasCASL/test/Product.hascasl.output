@@ -67,4 +67,4 @@ free type SWArc ::=
                                               %(ga_SWPoint_SWArc)%
 . arc1
   = SWArc (SWPoint (0, 0, 0), SWPoint (0, 0, 0), SWPoint (0, 0, 0))
-### Hint 1.17, redeclared type 'Rat'
+### Hint 1.17-1.19, redeclared type 'Rat'

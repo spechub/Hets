@@ -20,4 +20,4 @@ incompatible kind of: Ref
 unbound type variable(s)
   a in
 'Ref a'
-### Hint 3.6, redeclared type 'Loc'
+### Hint 3.6-3.8, redeclared type 'Loc'
