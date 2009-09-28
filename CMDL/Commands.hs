@@ -97,12 +97,12 @@ reqOfInspectCmd ic = case ic of
 genGlobInspectCmd :: InspectCmd -> (CmdlState -> IO CmdlState)
                   -> CmdlCmdDescription
 genGlobInspectCmd ic =
-  genCmd (InspectCmd ic "") CmdNoPriority ReqNothing . CmdNoInput
+  genCmd (InspectCmd ic Nothing) CmdNoPriority ReqNothing . CmdNoInput
 
 genInspectCmd :: InspectCmd -> (String -> CmdlState -> IO CmdlState)
               -> CmdlCmdDescription
 genInspectCmd ic =
-  genCmd (InspectCmd ic "") CmdNoPriority (reqOfInspectCmd ic) . CmdWithInput
+  genCmd (InspectCmd ic (Just "")) CmdNoPriority (reqOfInspectCmd ic) . CmdWithInput
 
 -- | Evaluation function description (function called when input can not
 -- be parsed
@@ -146,14 +146,14 @@ getCommands =
   , genGlobInspectCmd Edges cEdges
   , genGlobInspectCmd UndoHist cUndoHistory
   , genGlobInspectCmd RedoHist cRedoHistory
-  , genGlobInspectCmd ProvenGoalsCurrent (cShowNodeProvenGoals "")
-  , genGlobInspectCmd UnprovenGoalsCurrent (cShowNodeUnprovenGoals "")
-  , genGlobInspectCmd AxiomsCurrent (cShowNodeAxioms "")
-  , genGlobInspectCmd AllGoalsCurrent (cShowTheoryGoals "")
-  , genGlobInspectCmd TheoryCurrent (cShowTheory Dont_translate "")
-  , genGlobInspectCmd TaxonomyCurrent (cShowTaxonomy "")
-  , genGlobInspectCmd ConceptCurrent (cShowConcept "")
-  , genGlobInspectCmd NodeInfoCurrent cInfoCurrent
+  , genGlobInspectCmd ProvenGoals $ cShowNodeProvenGoals ""
+  , genGlobInspectCmd UnprovenGoals $ cShowNodeUnprovenGoals ""
+  , genGlobInspectCmd Axioms $ cShowNodeAxioms ""
+  , genGlobInspectCmd AllGoals $ cShowTheoryGoals ""
+  , genGlobInspectCmd Theory $ cShowTheory Dont_translate ""
+  , genGlobInspectCmd Taxonomy $ cShowTaxonomy ""
+  , genGlobInspectCmd Concept $ cShowConcept ""
+  , genGlobInspectCmd NodeInfo cInfoCurrent
   , genInspectCmd NodeInfo cInfo
   , genInspectCmd Theory $ cShowTheory Dont_translate
   , genInspectCmd AllGoals cShowTheoryGoals

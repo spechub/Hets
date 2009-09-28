@@ -16,6 +16,7 @@ module Interfaces.Command where
 
 import Common.Utils
 
+import Data.Maybe(fromMaybe, isNothing)
 import Data.Char
 import Data.List
 
@@ -171,24 +172,16 @@ data InspectCmd =
   | Edges
   | UndoHist
   | RedoHist
-  | NodeInfo
-  | NodeInfoCurrent -- of a selected node
-  | Theory
-  | TheoryCurrent
-  | AllGoals
-  | AllGoalsCurrent
-  | ProvenGoals
-  | ProvenGoalsCurrent
-  | UnprovenGoals
-  | UnprovenGoalsCurrent
-  | Axioms
-  | AxiomsCurrent
-  | LocalAxioms
-  | Taxonomy
-  | TaxonomyCurrent
-  | Concept
-  | ConceptCurrent
   | EdgeInfo -- of a selected link
+  | LocalAxioms
+  | NodeInfo
+  | Theory
+  | AllGoals
+  | ProvenGoals
+  | UnprovenGoals
+  | Axioms
+  | Taxonomy
+  | Concept
     deriving (Eq, Ord, Enum, Bounded)
 
 inspectCmdList :: [InspectCmd]
@@ -202,27 +195,19 @@ showInspectCmd cmd = case cmd of
   Edges -> "Edges"
   UndoHist -> "Undo-History"
   RedoHist -> "Redo-History"
-  NodeInfo -> "Node-Info"
-  NodeInfoCurrent -> "Node-Info of selected node"
-  Theory -> "Computed Theory"
-  TheoryCurrent -> "Computed Theory of selected node"
-  AllGoals -> "All Goals"
-  AllGoalsCurrent -> "All Goals of selected node"
-  ProvenGoals -> "Proven Goals"
-  ProvenGoalsCurrent -> "Proven Goals of selected node"
-  UnprovenGoals -> "Unproven Goals"
-  UnprovenGoalsCurrent -> "Unproven Goals of selected node"
-  Axioms -> "All Axioms"
-  AxiomsCurrent -> "All Axioms of selected node"
-  LocalAxioms -> "Local Axioms"
-  Taxonomy -> "Taxonomy"
-  TaxonomyCurrent -> "Taxonomy of selected node"
-  Concept -> "Concept"
-  ConceptCurrent -> "Concept of selected node"
   EdgeInfo -> "Edge-Info"
+  LocalAxioms -> "Local Axioms"
+  NodeInfo -> "Node-Info"
+  Theory -> "Computed Theory"
+  AllGoals -> "All Goals"
+  ProvenGoals -> "Proven Goals"
+  UnprovenGoals -> "Unproven Goals"
+  Axioms -> "All Axioms"
+  Taxonomy -> "Taxonomy"
+  Concept -> "Concept"
 
 requiresNode :: InspectCmd -> Bool
-requiresNode ic = ic >= NodeInfo && ic < EdgeInfo
+requiresNode ic = ic >= LocalAxioms
 
 data Command =
     GlobCmd GlobCmd
@@ -230,7 +215,7 @@ data Command =
   | TimeLimit Int -- set a time limit for an automatic  prover
   | SetAxioms [String] -- set the axiom list for an automatic  prover
   | IncludeProvenTheorems Bool -- should proven theorems be added as axioms
-  | InspectCmd InspectCmd String
+  | InspectCmd InspectCmd (Maybe String)
   | CommentCmd String
   | GroupCmd [Command] -- just to group commands in addCommandHistoryToState
 
@@ -242,7 +227,7 @@ cmdInputStr cmd = case cmd of
   SelectCmd _ t -> t
   TimeLimit l -> show l
   SetAxioms as -> unwords as
-  InspectCmd _ t -> t
+  InspectCmd _ t -> fromMaybe "" t
   _ -> ""
 
 setInputStr :: String -> Command -> Command
@@ -252,7 +237,7 @@ setInputStr str cmd = case cmd of
     Just n -> n
     _ -> l
   SetAxioms _ -> SetAxioms $ words str
-  InspectCmd i _ -> InspectCmd i str
+  InspectCmd i _ -> InspectCmd i $ Just str
   _ -> cmd
 
 cmdNameStr :: Command -> String
@@ -262,13 +247,10 @@ cmdNameStr cmd = case cmd of
   TimeLimit _ -> "set time-limit"
   SetAxioms _ -> "set axioms"
   IncludeProvenTheorems b -> "set include-theorems " ++ map toLower (show b)
-  InspectCmd i _ ->
-    let cm = map (\ c -> if c == ' ' then '-' else toLower c) $ showInspectCmd i
-        suffix = "-of-selected-node"
-        cm' = if suffix `isSuffixOf` cm
-                then take (length cm - length suffix) cm ++ "-current"
-                else cm
-     in (if i > Edges then "show-" else "") ++ cm'
+  InspectCmd i s ->
+    (if i > Edges then "show-" else "")
+    ++ map (\ c -> if c == ' ' then '-' else toLower c) (showInspectCmd i)
+    ++ (if i > LocalAxioms && isNothing s then "-current" else "")
   CommentCmd _ -> "#"
   GroupCmd _ -> ""
 
@@ -280,7 +262,7 @@ showCmd c = let cn = cmdNameStr c in case c of
   SetAxioms as -> unwords $ cn : as
   CommentCmd s -> cn ++ s
   GroupCmd l -> intercalate "\n" $ map showCmd l
-  InspectCmd _ t -> cn  ++ " " ++ t
+  InspectCmd _ t -> cn  ++ " " ++ fromMaybe "" t
   _ -> cn
 
 describeCmd :: Command -> String
@@ -291,7 +273,8 @@ describeCmd cmd = case cmd of
   SetAxioms _ -> "Set the axioms used for the next proof"
   IncludeProvenTheorems b -> (if b then "I" else "Do not i")
     ++ "nclude proven theorems"
-  InspectCmd i _ -> "Show " ++ showInspectCmd i
+  InspectCmd i t -> "Show " ++ showInspectCmd i
+    ++ (if i > LocalAxioms && isNothing t then " of selected node" else "")
   CommentCmd _ -> "Line comment"
   GroupCmd _ -> "Grouping several commands"
 
@@ -301,7 +284,7 @@ commandList =
   ++ map mkSelectCmd selectCmdList
   ++ [TimeLimit 0, SetAxioms []]
   ++ map IncludeProvenTheorems [False, True]
-  ++ map (\ s -> InspectCmd s "") inspectCmdList
+  ++ map (\ s -> InspectCmd s (Just "")) inspectCmdList
 
 {- unsafe commands are needed to
 delete or add
