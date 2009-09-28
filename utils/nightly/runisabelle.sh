@@ -6,8 +6,6 @@ do
    ( cd `dirname $i`; \
      isabelle-process -q -e  \
        " use_thy \"$j\"; \
-         print_depth 300; \
          theory \"$j\"; \
-         Theory.axioms_of it; \
          quit(); " )
 done
