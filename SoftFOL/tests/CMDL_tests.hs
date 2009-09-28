@@ -253,7 +253,8 @@ runAllTests = do
                  (zip ["ga_comm_sup"] (repeat LProver.openGoalStatus)))
     ,runTestBatch (Just 25) vampireCMDLautomaticBatch "Vampire"
                  "[Test]ExtPartialOrder" theoryExt
-                  (zip ["gone","ga_comm_sup"] (repeat LProver.openGoalStatus))
+                  (zip ["gone", "ga_comm_sup", "ga_comm_inf"]
+                           (repeat LProver.openGoalStatus))
     ,runTestBatch (Just 30) mathServBrokerCMDLautomaticBatch "MathServ"
                  "[Test]ExtPartialOrder" theoryExt
                  (("gone",LProver.Proved Nothing) :
