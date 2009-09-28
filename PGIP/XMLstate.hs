@@ -22,7 +22,7 @@ import Text.XML.Light
 import Data.List (find, intercalate)
 import Data.Time.Clock.POSIX (getPOSIXTime)
 
-import System.IO(Handle)
+import System.IO(Handle, hPutStrLn, hFlush)
 
 -- Converts any line text that does not stand for a
 -- comment into a theoryitem element
@@ -36,8 +36,8 @@ genProofStep str = let
     in unode iname $ mkText $ str ++ "\n"
 
 -- | adds xml structure to unstructured code
-addPgipMarkUp :: String -> Element
-addPgipMarkUp str = case lines str of
+addPGIPMarkup :: String -> Element
+addPGIPMarkup str = case lines str of
   [] -> error "addPgipMarkUp.empty"
   hd : tl ->
     unode "parseresult"
@@ -71,17 +71,47 @@ genErrorResponse fatality =
   . unode "errorresponse"
   . unode "pgmltext" . mkText
 
+-- | It inserts a given string into the XML packet as
+-- normal output
+addPGIPAnswer :: String -> String -> CmdlPgipState -> CmdlPgipState
+addPGIPAnswer msgtxt errmsg st =
+    if useXML st
+    then let resp = addPGIPElement st $ genNormalResponse msgtxt in
+         if null errmsg then resp
+         else addPGIPElement resp $ genErrorResponse False errmsg
+    else addToMsg msgtxt errmsg st
+
+-- | It inserts a given string into the XML packet as
+-- error output
+addPGIPError :: String -> CmdlPgipState -> CmdlPgipState
+addPGIPError str st = case str of
+  "" -> st
+  _ | useXML st -> addPGIPElement st $ genErrorResponse True str
+  _ -> addToMsg [] str st
+
+-- extracts the xml package in XML.Light format (namely the Content type)
+addPGIPAttributes :: CmdlPgipState -> Element -> Element
+addPGIPAttributes pgipData e = (add_attrs
+  ((case refSeqNb pgipData of
+      Nothing -> []
+      Just v -> [mkAttr "refseq" v])
+   ++ [ mkAttr "tag" $ name pgipData
+      , mkAttr "class" "pg"
+      , mkAttr "id" $ pgipId pgipData
+      , mkAttr "seq" $ show $ seqNb pgipData ])
+  $ unode "pgip" ()) { elContent = [Elem e]}
+
 -- adds one element to the end of the content of the xml packet that represents
 -- the current output of the interface to the broker
-addToContent :: CmdlPgipState -> Element -> CmdlPgipState
-addToContent pgData el =
-  pgData { xmlElement = case xmlElement pgData of
-             e -> e { elContent = elContent e ++ [Elem el] } }
+addPGIPElement :: CmdlPgipState -> Element -> CmdlPgipState
+addPGIPElement pgData el =
+  pgData { xmlElements = addPGIPAttributes pgData el : xmlElements pgData
+         , seqNb = seqNb pgData + 1 }
 
 -- adds a ready element at the end of the xml packet that represents the
 -- current output of the interface to the broker
-addReadyXml :: CmdlPgipState -> CmdlPgipState
-addReadyXml pgData = addToContent pgData $ unode "ready" ()
+addPGIPReady :: CmdlPgipState -> CmdlPgipState
+addPGIPReady pgData = addPGIPElement pgData $ unode "ready" ()
 
 -- | State that keeps track of the comunication between Hets and the Broker
 data CmdlPgipState = CmdlPgipState
@@ -89,8 +119,8 @@ data CmdlPgipState = CmdlPgipState
   , name :: String
   , seqNb :: Int
   , refSeqNb :: Maybe String
-  , theMsg :: String
-  , xmlElement :: Element
+  , msgs :: [String]
+  , xmlElements :: [Element]
   , hout :: Handle
   , hin :: Handle
   , stop :: Bool
@@ -109,8 +139,8 @@ genCMDLPgipState swXML h_in h_out timeOut = do
      , quietOutput = False
      , seqNb = 1
      , refSeqNb = Nothing
-     , theMsg = ""
-     , xmlElement = unode "pgip" ()
+     , msgs = []
+     , xmlElements = []
      , hin = h_in
      , hout = h_out
      , stop = False
@@ -130,52 +160,33 @@ genPgipID =
 -- | Concatenates the input string to the message stored in the state
 addToMsg :: String -> String -> CmdlPgipState -> CmdlPgipState
 addToMsg str errStr pgD =
-  let strings = [theMsg pgD, str, errStr]
-  in pgD { theMsg = intercalate "\n" $ filter (not . null) strings }
+  let strings = [errStr, str]
+  in pgD { msgs = filter (not . null) strings ++ msgs pgD }
 
 -- | Resets the content of the message stored in the state
-resetMsg :: String -> CmdlPgipState -> CmdlPgipState
-resetMsg str pgD = pgD
-  { theMsg = str
-  , xmlElement = convertPgipStateToXML pgD }
+resetPGIPData :: CmdlPgipState -> CmdlPgipState
+resetPGIPData pgD = pgD
+  { msgs = []
+  , xmlElements = [] }
 
 -- the PGIP protocol defines the pgip element as containing a single
--- subelement, but in the state the toplevel pgip element can contain
--- many subelements. This function transforms the single toplevel element
--- with potentially many subelements into many pgip elements with only
--- one subelement and outputs this list as a XML string.
--- This makes it neccessary to distribute new seq-values, and thus it is
--- crucial to update the pgip-state with the new (returned) seq value!
-pgipStateToXmlString :: CmdlPgipState -> (String, Int)
-pgipStateToXmlString pgipData =
-    let e = xmlElement pgipData
-        attrs = init $ elAttribs e
-        seqAttr = last $ elAttribs e
-        seqNum = seqNb pgipData
-        outpElem c (i::Integer) =
-            showElement
-            e{ elContent = [c]
-             , elAttribs = attrs ++
-                           [seqAttr{ attrVal =
-                                         show $ seqNum + fromIntegral i}]}
-        subelems = elContent e
-    in (unlines $ zipWith outpElem subelems [0..]
-       , seqNb pgipData + length subelems - 1)
--- to restore the original behaviour, just use this version:
--- pgipStateToXmlString x = (showElement $ xmlElement x, seqNb x)
+-- subelement.
+convertPGIPDataToString :: CmdlPgipState -> String
+convertPGIPDataToString =
+  intercalate "\n" . reverse . map showElement . xmlElements
 
+sendPGIPData :: CmdlPgipState -> IO CmdlPgipState
+sendPGIPData pgData =
+  do
+    let xmlMsg = convertPGIPDataToString pgData
+        pgData' = addToMsg xmlMsg [] pgData
+    sendMSGData pgData'
 
--- extracts the xml package in XML.Light format (namely the Content type)
-convertPgipStateToXML :: CmdlPgipState -> Element
-convertPgipStateToXML pgipData = add_attrs
-  ((case refSeqNb pgipData of
-      Nothing -> []
-      Just v -> [mkAttr "refseq" v])
-   ++ [ mkAttr "tag" $ name pgipData
-      , mkAttr "class" "pg"
-      , mkAttr "id" $ pgipId pgipData
-      , mkAttr "seq" $ show $ seqNb pgipData ])
-  $ unode "pgip" ()
+sendMSGData :: CmdlPgipState -> IO CmdlPgipState
+sendMSGData pgData = do
+  hPutStrLn (hout pgData) $ intercalate "\n" $ reverse $ msgs pgData
+  hFlush $ hout pgData
+  return pgData
 
 -- | List of all possible commands inside an XML packet
 data CmdlXMLcommands =
