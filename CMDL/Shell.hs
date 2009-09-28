@@ -19,9 +19,6 @@ module CMDL.Shell
        , cOpenComment
        , cCloseComment
        , nodeNames
-       , checkCom
-       , subtractCommandName
-       , getTypeOf
        , cmdlCompletionFn
        ) where
 
