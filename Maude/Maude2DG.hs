@@ -13,6 +13,7 @@ Conversion of Maude to Development Graphs.
 
 module Maude.Maude2DG where
 
+import System.Exit
 import System.IO
 import System.Process
 
@@ -48,10 +49,11 @@ import Common.AS_Annotation
 
 import Driver.Options
 
-maudePath :: String
-maudePath = "maude"
-maudeCmd :: String
-maudeCmd = unwords [maudePath, "-interactive", "-no-banner", "-no-advise"]
+maudeProg :: String
+maudeProg = "maude"
+
+maudeArgs :: [String]
+maudeArgs = ["-interactive", "-no-banner", "-no-advise"]
 
 -- | Maude importation types: Protecting, Extending and Including
 data ImportType = Pr | Ex | Inc
@@ -583,9 +585,13 @@ getImportsSortsStmnts (_ : stmts) p = getImportsSortsStmnts stmts p
 -- | builds the development graph of the specified Maude file
 directMaudeParsing :: FilePath -> IO DGraph
 directMaudeParsing fp = do
-              ns <- parse fp
-              let ns' = either (\ _ -> []) id ns
-              (hIn, hOut, _, _) <- runInteractiveCommand maudeCmd
+    ns <- parse fp
+    let ns' = either (\ _ -> []) id ns
+    (hIn, hOut, _, procH) <-
+        runInteractiveProcess maudeProg maudeArgs Nothing Nothing
+    exitCode <- getProcessExitCode procH
+    case exitCode of
+      Nothing -> do
               hPutStrLn hIn $ "load " ++ fp
               ms <- traverseNames hIn hOut ns'
               hPutStrLn hIn "in Maude/hets.prj"
@@ -594,6 +600,9 @@ directMaudeParsing fp = do
               hClose hIn
               hClose hOut
               return $ insertSpecs (psps ++ sps) Map.empty Map.empty [] emptyDG
+      Just ExitSuccess -> error "maude terminated immediately"
+      Just (ExitFailure i) ->
+          error $ "calling maude failed with exitCode: " ++ show i
 
 -- | given input and output handlers and a list of strings, this method
 -- traverses the list transforming each string into a Maude specification
