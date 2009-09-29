@@ -60,15 +60,16 @@ darwinProver = (mkProverTemplate "Darwin" () darwinGUI)
 
 darwinConsChecker
     :: ConsChecker Sign Sentence () SoftFOLMorphism ProofTree
-darwinConsChecker = (mkProverTemplate "darwin" () consCheck)
-    { proveCMDLautomatic = Just (\ s _ t -> fmap return . consCheck s t) }
+darwinConsChecker = (mkProverTemplate "darwin" ()
+    (\ s -> consCheck s $ Tactic_script "20"))
+    { proveCMDLautomatic = Just (\ s ts t -> fmap return . consCheck s ts t) }
 
 {- |
   Record for prover specific functions. This is used by both GUI and command
   line interface.
 -}
 atpFun :: String -- ^ theory name
-       -> ATPFunctions Sign Sentence SoftFOLMorphism ProofTree SoftFOLProverState
+  -> ATPFunctions Sign Sentence SoftFOLMorphism ProofTree SoftFOLProverState
 atpFun thName = ATPFunctions
   { initialProverState = spassProverState
   , atpTransSenName = transSenName
@@ -144,26 +145,23 @@ darwinCMDLautomaticBatch inclProvedThs saveProblem_batch resultMVar
 
 -- * Main prover functions
 {- |
-  Runs the Darwin service.
+  Runs the Darwin service. The tactic script only contains a string for the
+  time limit.
 -}
 
 consCheck :: String
+          -> Tactic_script
           -> TheoryMorphism Sign Sentence SoftFOLMorphism ProofTree
           -> [FreeDefMorphism SPTerm SoftFOLMorphism] -- ^ freeness constraints
           -> IO([Proof_status ProofTree])
-consCheck thName tm freedefs = case t_target tm of
+consCheck thName tac@(Tactic_script tl) tm freedefs = case t_target tm of
     Theory sig nSens -> let
         saveTPTP = False
-        timeLimitI = 20 :: Int
-        tac      = Tactic_script $ show $ ATPTactic_script
-                                           {ts_timeLimit = timeLimitI,
-                                            ts_extraOpts = [extraOptions]
-                                           }
         proverStateI = spassProverState sig (toNamedList nSens) freedefs
         problem     = showTPTPProblemM thName proverStateI []
         simpleOptions = ""
         extraOptions  = "-pc true -pmtptp true -fd true -to "
-                        ++ show timeLimitI
+                        ++ tl
         saveFileName  = reverse $ fst $ span (/= '/') $ reverse thName
         runDarwinRealM :: IO([Proof_status ProofTree])
         runDarwinRealM = do
