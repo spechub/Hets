@@ -15,8 +15,6 @@ module Comorphisms.SuleCFOL2SoftFOL
     (SuleCFOL2SoftFOL(..), SuleCFOL2SoftFOLInduction(..))
     where
 
-import Debug.Trace
-
 import Control.Exception
 
 import Logic.Logic as Logic
@@ -844,7 +842,6 @@ isSingleSorted sign =
 extractCASLModel :: CASLSign -> ProofTree
                  -> Result (CASLSign, [Named (FORMULA ())])
 extractCASLModel sign (ProofTree output) =
- trace output $
   case parse tptpModel "" output of
     Right ts -> do
       let (_, idMap, _) = transSign sign
