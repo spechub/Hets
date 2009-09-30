@@ -160,8 +160,8 @@ no kind found for 's'
   expected: {Cppo}
      found: {c}
 ### Hint 26.6, redeclared type 's'
-### Hint 28.38-28.41,
-in type of '((var p : ? s), (pred tt : s))'
+### Hint 28.41,
+in type of '(pred tt : s)'
   typename 's' (24.15)
   is not unifiable with type 's ->? Unit' (15.11)
 ### Hint 28.38-28.41, untypeable term (with type: s * s) '(p, tt)'

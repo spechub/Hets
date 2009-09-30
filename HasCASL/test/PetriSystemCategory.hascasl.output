@@ -768,8 +768,8 @@ no kind found for 'HomSys'
      found: {Type}
 ### Hint 112.12, not a class 'HomSys'
 ### Hint 112.16, not a class 'HomSys'
-### Hint 113.10-113.15,
-in type of '((var h2 : HomSys), (var h1 : HomSys))'
+### Hint 113.10,
+in type of '(var h2 : HomSys)'
   typename 'gn_t122[gn_t121[System]]' (93.8)
   is not unifiable with type 'gn_t76[gn_t75[gn_t74[Net]]] (Set P)' (71.34)
 ### Hint 113.10-113.15,
@@ -781,8 +781,8 @@ in type of '((var h2 : HomSys), (var h1 : HomSys))'
 ### Hint 113.10-113.15,
 untypeable term (with type: (_v169_V ->? _v170_U) * (_v171_S ->? _v169_V))
 '(h2, h1)'
-### Hint 113.22-113.27,
-in type of '((var h2 : HomSys), (var h1 : HomSys))'
+### Hint 113.22,
+in type of '(var h2 : HomSys)'
   typename 'gn_t122[gn_t121[System]]' (93.8)
   is not unifiable with type 'gn_t76[gn_t75[gn_t74[Net]]] (Set P)' (71.34)
 ### Hint 113.22-113.27,
@@ -810,14 +810,8 @@ in type of '(var h2 : HomSys)'
   typename 'gn_t122[gn_t121[System]]' (93.8)
   is not unifiable with type 'gn_t76[gn_t75[gn_t74[Net]]] (Set P)' (71.34)
 ### Hint 114.25, untypeable term (with type: HomNet) 'h2'
-### Hint 114.40,
-in type of '(var h1 : HomSys)'
-  typename 'gn_t122[gn_t121[System]]' (93.8)
-  is not unifiable with type 'gn_t76[gn_t75[gn_t74[Net]]] (Set P)' (71.34)
-### Hint 114.40, untypeable term (with type: HomNet) 'h1'
-### Hint 114.15-114.40,
-in type of '((op placesMap : HomSys -> P ->? P) (var h2 : HomSys),
- (op placesMap : HomSys -> P ->? P) (var h1 : HomSys))'
+### Hint 114.15-114.25,
+in type of '(op placesMap : HomSys -> P ->? P) (var h2 : HomSys)'
   typename '__->?__' (107.33)
   is not unifiable with type 'gn_t99[gn_t98[gn_t97[HomNet]]] (P ->? P)' (79.35)
 ### Hint 114.15-114.40,
@@ -828,14 +822,8 @@ in type of '(var h2 : HomSys)'
   typename 'gn_t122[gn_t121[System]]' (93.8)
   is not unifiable with type 'gn_t76[gn_t75[gn_t74[Net]]] (Set P)' (71.34)
 ### Hint 114.25, untypeable term (with type: HomNet) 'h2'
-### Hint 114.40,
-in type of '(var h1 : HomSys)'
-  typename 'gn_t122[gn_t121[System]]' (93.8)
-  is not unifiable with type 'gn_t76[gn_t75[gn_t74[Net]]] (Set P)' (71.34)
-### Hint 114.40, untypeable term (with type: HomNet) 'h1'
-### Hint 114.15-114.40,
-in type of '((op placesMap : HomSys -> P ->? P) (var h2 : HomSys),
- (op placesMap : HomSys -> P ->? P) (var h1 : HomSys))'
+### Hint 114.15-114.25,
+in type of '(op placesMap : HomSys -> P ->? P) (var h2 : HomSys)'
   typename '__->?__' (107.33)
   is not unifiable with type 'gn_t166[gn_t165[gn_t164[HomSys]]] (P ->? P)' (102.54)
 ### Hint 114.15-114.40,
@@ -856,14 +844,8 @@ in type of '(var h2 : HomSys)'
   typename 'gn_t122[gn_t121[System]]' (93.8)
   is not unifiable with type 'gn_t76[gn_t75[gn_t74[Net]]] (Set P)' (71.34)
 ### Hint 114.59, untypeable term (with type: HomNet) 'h2'
-### Hint 114.79,
-in type of '(var h1 : HomSys)'
-  typename 'gn_t122[gn_t121[System]]' (93.8)
-  is not unifiable with type 'gn_t76[gn_t75[gn_t74[Net]]] (Set P)' (71.34)
-### Hint 114.79, untypeable term (with type: HomNet) 'h1'
-### Hint 114.44-114.79,
-in type of '((op transitionsMap : HomSys -> T ->? T) (var h2 : HomSys),
- (op transitionsMap : HomSys -> T ->? T) (var h1 : HomSys))'
+### Hint 114.44-114.59,
+in type of '(op transitionsMap : HomSys -> T ->? T) (var h2 : HomSys)'
   typename '__->?__' (108.38)
   is not unifiable with type 'gn_t99[gn_t98[gn_t97[HomNet]]] (P ->? P)' (79.35)
 ### Hint 114.44-114.79,
@@ -874,14 +856,8 @@ in type of '(var h2 : HomSys)'
   typename 'gn_t122[gn_t121[System]]' (93.8)
   is not unifiable with type 'gn_t76[gn_t75[gn_t74[Net]]] (Set P)' (71.34)
 ### Hint 114.59, untypeable term (with type: HomNet) 'h2'
-### Hint 114.79,
-in type of '(var h1 : HomSys)'
-  typename 'gn_t122[gn_t121[System]]' (93.8)
-  is not unifiable with type 'gn_t76[gn_t75[gn_t74[Net]]] (Set P)' (71.34)
-### Hint 114.79, untypeable term (with type: HomNet) 'h1'
-### Hint 114.44-114.79,
-in type of '((op transitionsMap : HomSys -> T ->? T) (var h2 : HomSys),
- (op transitionsMap : HomSys -> T ->? T) (var h1 : HomSys))'
+### Hint 114.44-114.59,
+in type of '(op transitionsMap : HomSys -> T ->? T) (var h2 : HomSys)'
   typename '__->?__' (108.38)
   is not unifiable with type 'gn_t166[gn_t165[gn_t164[HomSys]]] (P ->? P)' (102.54)
 ### Hint 114.44-114.79,

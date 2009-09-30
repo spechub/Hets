@@ -91,6 +91,8 @@ instOpInfo tys oi = do
            Just (ty, map fst cl, Set.fromList $ map mkConstraint cl, oi)
        Nothing -> Nothing
 
+{- This function has the problem that the type of an earlier component may
+   restrict the types of following components too much. -}
 checkList :: Bool -> [Maybe Type] -> [Term]
           -> State Env [(Subst, Constraints, [Type], [Term])]
 checkList isP mtys trms = case (mtys, trms) of
@@ -133,8 +135,7 @@ reduce doMono alts = do
          Result ds mc <- toEnvState $ reduceR doMono te alt
          addDiags ds
          case mc of
-           Nothing -> do
-             return []
+           Nothing -> return []
            Just q -> return [q]) alts
        return $ concat combs
 
@@ -207,11 +208,10 @@ substVarTypes s = Map.map ( \ (VarDefn t) -> VarDefn $ subst s t)
 warnEmpty :: Maybe Type -> Term -> [a] -> State Env ()
 warnEmpty mt trm res = do
     ga <- gets globAnnos
-    if null res then addDiags [mkNiceDiag ga Hint ("untypeable term" ++
+    when (null res) $ addDiags [mkNiceDiag ga Hint ("untypeable term" ++
       case mt of
         Nothing -> ""
         Just ty -> " (with type: "  ++ showGlobalDoc ga ty ")") trm]
-      else return ()
 
 -- | infer type of application, consider lifting for lazy types
 inferAppl :: Bool -> Range -> Term  -> Term
@@ -268,15 +268,29 @@ mkTypedTerm trm ty = case trm of
 
 lesserTypeScheme :: Env -> TypeScheme -> TypeScheme -> Bool
 lesserTypeScheme e (TypeScheme args1 t1 _) (TypeScheme args2 t2 _) =
-   if null args1 && null args2 then lesserType e t1 t2 else False
+   null args1 && null args2 && lesserType e t1 t2
 
 lesserOpInfo :: Env -> OpInfo -> OpInfo -> Bool
 lesserOpInfo e o1 = lesserTypeScheme e (opType o1) . opType
 
--- | infer type of term (or a pattern if the Bool is True)
+-- | efficiently infer type of a monomorphic tuple term
 inferWithMaybeType :: Bool -> Maybe Type -> Term
                    -> State Env [(Subst, Constraints, Type, Term)]
-inferWithMaybeType isP mt trm = do
+inferWithMaybeType isP mt trm =
+  case (trm, mt) of
+    (TupleTerm ts@(_ : _ : _) ps, Just ty) -> case getTypeAppl ty of
+        (TypeName i _ _, argTys@(_ : _ : _)) | isProductId i
+            && all (null . freeTVars) argTys -> do
+          ls <- checkList isP (map Just argTys) ts
+          return $ map ( \ (su, cs, tys, trms) ->
+              (su, cs, mkProductTypeWithRange tys ps, mkTupleTerm trms ps)) ls
+        _ -> inferWithMaybeTypeAux isP mt trm
+    _ -> inferWithMaybeTypeAux isP mt trm
+
+-- | infer type of term (or a pattern if the Bool is True)
+inferWithMaybeTypeAux :: Bool -> Maybe Type -> Term
+                   -> State Env [(Subst, Constraints, Type, Term)]
+inferWithMaybeTypeAux isP mt trm = do
   rs <- infer isP trm
   te <- get
   case mt of
@@ -316,8 +330,7 @@ infer isP trm = do
                     in [(eps, cs, ty, qv)]
         ResolvedMixTerm i tys ts ps -> case (Map.lookup i bs, ts) of
           (Just j, pat : rt@(_ : _)) -> case reverse rt of
-            lt : ft -> do
-              infer isP $ ResolvedMixTerm j tys
+            lt : ft -> infer isP $ ResolvedMixTerm j tys
                 (reverse $ LambdaTerm [pat] Partial lt ps : ft) ps
             [] -> error "ResolvedMixTerm: binder"
           _ ->
@@ -363,7 +376,7 @@ infer isP trm = do
             ls <- checkList isP (map (const Nothing) ts) ts
             return $ map ( \ (su, cs, tys, trms) ->
               (su, cs, mkProductTypeWithRange tys ps, mkTupleTerm trms ps)) ls
-        TypedTerm t qual ty ps -> do
+        TypedTerm t qual ty ps ->
             case qual of
                 InType -> do
                     vTy <- freshTypeVar t
@@ -474,7 +487,7 @@ inferLetEqs es = do
              return $ map ( \ (sr, tcs, tys2, tts ) ->
                           (compSubst sf sr,
                            joinC tcs $ substC sr pcs, tys2,
-                           zipWith3 ( \ p t q -> ProgEq (substTerm sr p) t q)
+                           zipWith3 (ProgEq . substTerm sr)
                                pps tts qs)) newTrms) newPats
        putLocalVars vs
        return $ concat combs
@@ -486,9 +499,8 @@ inferCaseEq pty tty (ProgEq pat trm ps) = do
    e <- get
    let pats = filter ( \ (_, _, _, p) -> isPat e p) pats1
        ga = globAnnos e
-   if null pats then addDiags [mkNiceDiag ga Hint
-                               "unresolved case pattern" pat]
-      else return ()
+   when (null pats)
+     $ addDiags [mkNiceDiag ga Hint "unresolved case pattern" pat]
    vs <- gets localVars
    es <- mapM ( \ (s, cs, ty, p) -> do
                 mapM_ (addLocalVar True) $ extractVars p
