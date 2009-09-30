@@ -59,10 +59,10 @@ genPgipElem = unode "pgipelem" . mkText
 
 -- generates a normalresponse element that has a pgml element
 -- containing the output text
-genNormalResponse :: String -> Element
-genNormalResponse = unode "normalresponse"
-    . add_attr (mkAttr "area" "message")
-    . unode "pgml" . mkText
+genNormalResponse :: Node t => String -> t -> Element
+genNormalResponse areaValue = unode "normalresponse"
+    . add_attr (mkAttr "area" areaValue)
+    . unode "pgml"
 
 -- same as above, just for an error instead of normal output
 genErrorResponse :: Bool -> String -> Element
@@ -76,8 +76,9 @@ genErrorResponse fatality =
 addPGIPAnswer :: String -> String -> CmdlPgipState -> CmdlPgipState
 addPGIPAnswer msgtxt errmsg st =
     if useXML st
-    then let resp = addPGIPElement st $ genNormalResponse msgtxt in
-         if null errmsg then resp
+    then let resp = addPGIPElement st $ genNormalResponse "message"
+               $ mkText msgtxt
+         in if null errmsg then resp
          else addPGIPElement resp $ genErrorResponse False errmsg
     else addToMsg msgtxt errmsg st
 

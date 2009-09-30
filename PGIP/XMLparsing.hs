@@ -272,24 +272,18 @@ processCmds cmds state pgipSt = do
          nwSt <- cmdlProcessString ("del axioms "++str++"\n") state
          processRest l nwSt pgipSt
      XmlOpenTheory str : l -> do
-         nwSt <- cmdlProcessString ("select "++str ++ "\n") state
+         nwSt <- cmdlProcessString (str ++ "\n") state
          case errorMsg $ output nwSt of
            [] -> processRest l nwSt pgipSt
            eMsg -> processCmds [] nwSt $ addPGIPError eMsg pgipSt
-     XmlCloseTheory _ : l ->
-                  case i_state $ intState state of
-                   Nothing ->
-                     processCmds l state (addPGIPAnswer "Theory closed" [] pgipSt)
-                   Just ist -> do
-                     let nwSt =
-                          add2hist [IStateChange $ Just ist] $
-                               state {
-                                intState = (intState state) {
-                                  i_state = Just $ emptyIntIState
-                                             (i_libEnv ist) (i_ln ist)
-                                             }
-                                }
-                     processCmds l nwSt (addPGIPAnswer "Theory closed" [] pgipSt)
+     XmlCloseTheory _ : l -> let
+         nwSt = case i_state $ intState state of
+           Nothing -> state
+           Just ist -> add2hist [IStateChange $ Just ist] $ state
+             { intState = (intState state)
+                 { i_state = Just $ emptyIntIState (i_libEnv ist)
+                     $ i_ln ist }}
+         in processCmds l nwSt $ addPGIPAnswer "Theory closed" [] pgipSt
      XmlCloseFile _ : l -> processCmds l (emptyCmdlState opts)
                    (addPGIPAnswer "File closed" [] pgipSt)
      XmlParseScript str : _ ->

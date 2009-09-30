@@ -12,6 +12,8 @@ module Main where
 
 import Interfaces.Command
 
+import PGIP.XMLstate
+
 import CMDL.DataTypes
 import CMDL.Commands
 
@@ -123,12 +125,9 @@ xmlLitCmds trailer isOpen ls = case ls of
 parseHPF :: FilePath -> IO ()
 parseHPF fp = do
   str <- readFile fp
-  case parseContent fp str of
-    Left err -> putStrLn err
-    Right rs -> putStrLn $ unlines $ map showElement
-                $ xmlLitCmds "" False rs
+  putStrLn $ showElement $ case parseContent fp str of
+    Left err -> genErrorResponse True err
+    Right rs -> genNormalResponse "" $ xmlLitCmds "" False rs
 
 main :: IO ()
 main = getArgs >>= mapM_ parseHPF
-
-
