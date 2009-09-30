@@ -1,6 +1,9 @@
 Search
 GMP
 CspCASL/test
+CspCASL/testwrap.hs
+CspCASL/Todo
+CspCASL/ideas
 mini
 Lottery
 
@@ -18,11 +21,15 @@ Common/LaTeX_maps.svmono.hs
 Syntax/hetpa.hs
 Static/test
 Comorphisms/test
-GUI/cgi-files
 SoftFOL/tests
 OWL/tests
 
 OMDoc/Basic
+
+PGIP/doc
+PGIP/tests
+VSE/doc
+VSE/test
 
 ToHaskell
 docs
