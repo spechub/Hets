@@ -20,7 +20,7 @@ module CMDL.StdInterface
 import System.Console.Shell(CommandStyle(OnlyCommands), ShellDescription(..),
                             initialShellDescription)
 import System.Console.Shell.Backend(BackendOutput(..))
-import System.IO(IO, putStr, stderr, hPutStr)
+import System.IO(IO, putStr, stderr, stdin, hPutStr, hIsTerminalDevice)
 
 import CMDL.DataTypesUtils(generatePrompter)
 import CMDL.DataTypes(CmdlState)
@@ -28,17 +28,20 @@ import CMDL.DgCommands(cUse)
 import CMDL.Commands(shellacCommands, shellacEvalFunc)
 
 
-stdShellDescription :: ShellDescription CmdlState
-stdShellDescription =
- let wbc = "\n\r\v\\" in
-      initialShellDescription
-       { shellCommands      = shellacCommands
-       , commandStyle       = OnlyCommands
-       , evaluateFunc       = shellacEvalFunc
-       , wordBreakChars     = wbc
-       , prompt             = return . generatePrompter
-       , historyFile        = Just "consoleHistory.tmp"
-       }
+stdShellDescription :: IO (ShellDescription CmdlState)
+stdShellDescription = do
+ isTerm <- hIsTerminalDevice stdin
+ let wbc = "\n\r\v\\"
+ return initialShellDescription
+          { shellCommands      = shellacCommands
+          , commandStyle       = OnlyCommands
+          , evaluateFunc       = shellacEvalFunc
+          , wordBreakChars     = wbc
+          , prompt             = if isTerm
+                                   then return . generatePrompter
+                                   else \_ -> return []
+          , historyFile        = Just "consoleHistory.tmp"
+          }
 
 
 basicOutput :: BackendOutput -> IO ()
