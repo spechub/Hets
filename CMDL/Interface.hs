@@ -56,21 +56,22 @@ emptyCmdlState opts = CmdlState
   , hetsOpts = opts }
 
 -- | The function runs hets in a shell
-cmdlRunShell :: HetcatsOpts -> [FilePath] ->IO CmdlState
-cmdlRunShell opts files =
+cmdlRunShell :: HetcatsOpts -> [FilePath] -> IO CmdlState
+cmdlRunShell opts files = do
   let isHPF fls = length fls == 1 && case guess (head fls) GuessIn of
                                        ProofCommand -> True
                                        _            -> False
-   in (if isHPF files
-        then cmdlProcessFile opts $ head files
-        else recursiveApplyUse files (emptyCmdlState opts)) >>=
-      runShell stdShellDescription
-                { defaultCompletions = Just (cmdlCompletionFn getCommands) }
+  state <- if isHPF files
+             then cmdlProcessFile opts $ head files
+             else recursiveApplyUse files (emptyCmdlState opts)
+  shellDsc <- stdShellDescription
+  runShell shellDsc { defaultCompletions = Just (cmdlCompletionFn getCommands) }
 #ifdef EDITLINE
                   editlineBackend
 #else
                   haskelineBackend
 #endif
+                  state
 
 -- | The function processes the file of instructions
 cmdlProcessFile :: HetcatsOpts -> FilePath -> IO CmdlState
