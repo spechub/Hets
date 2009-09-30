@@ -129,15 +129,13 @@ no kind found for 'b -> c'
 in type of '(op leaf : forall a : Type . a -> CTree a) (var x : a)'
   typename 'CTree' (7.16)
   is not unifiable with type 'Tree _v15_a' (21.47)
-### Hint 26.3-26.25,
-rejected 'b < a' of '((((op fold :
-    forall a : Type; b : Type; c : Type
-    . (a -> c) -> ((b -> List c) -> c) -> Tree a b -> c)
-   (var f : a -> c))
-  (var g : (b -> List c) -> c))
- ((op leaf : forall a : Type; b : Type . b -> Tree a b)
-  (var x : a)),
- (var f : a -> c) (var x : a))'
+### Hint 26.3-26.18,
+unable to prove: b < a of '(((op fold :
+   forall a : Type; b : Type; c : Type
+   . (a -> c) -> ((b -> List c) -> c) -> Tree a b -> c)
+  (var f : a -> c))
+ (var g : (b -> List c) -> c))
+((op leaf : forall a : Type; b : Type . b -> Tree a b) (var x : a))'
 ### Hint 27.25,
 rejected 'List < CTree' of '(var s : b -> List (Tree a b))'
 ### Hint 27.25,

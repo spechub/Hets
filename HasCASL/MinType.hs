@@ -85,7 +85,7 @@ haveCommonSupertypeE eIn s1 s2 = do
     cst <- mkSingleSubst (genName "commonSupertype", rStar)
     let cs = Set.fromList [Subtyping t1 cst, Subtyping t2 cst]
         e = foldr addToEnv eIn $ l1 ++ l2
-    Result _ mr <- shapeRelAndSimplify True False e cs (Just cst)
+    Result _ mr <- shapeRelAndSimplify False e cs (Just cst)
     return $ case mr of
       Nothing -> False
       Just (_, rcs) -> let (qs, subC) = partitionC rcs

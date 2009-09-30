@@ -95,7 +95,7 @@ anaTypeScheme (TypeScheme tArgs ty p) =
 
 generalizeS :: TypeScheme -> State Env TypeScheme
 generalizeS sc@(TypeScheme tArgs ty p) = do
-    let fvs = leaves (> 0) ty
+    let fvs = freeTVars ty
         svs = sortBy comp fvs
         comp a b = compare (fst a) $ fst b
     tvs <- gets localTypeVars

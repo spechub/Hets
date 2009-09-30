@@ -18,7 +18,9 @@ op b : t %(op)%
 op c : a %(op)%
 op f : forall e : Ord . e -> e %(op)%
 . f (f c) = c
-### Hint 16.3-16.9,
-constrain 't : Ord' is unprovable of '(op f : forall e : Ord . e -> e) (op b : t) = (op b : t)'
+### Hint 16.3-16.5,
+constrain 't : Ord' is unprovable of '(op f : forall e : Ord . e -> e) (op b : t)'
   known kinds are: {Eq}
+### Hint 16.3-16.9,
+untypeable term (with type: ? _v5_a * ? _v5_a) '(f b, b)'
 *** Error 16.7, no typing for 'f b = b'

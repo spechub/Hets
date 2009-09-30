@@ -67,6 +67,14 @@ noC = Set.empty
 joinC :: Constraints -> Constraints -> Constraints
 joinC = Set.union
 
+noVars :: Constrain -> Bool
+noVars c = case c of
+  Kinding ty _ -> null $ freeTVars ty
+  Subtyping t1 t2 -> null (freeTVars t1) &&  null (freeTVars t2)
+
+partitionVarC :: Constraints -> (Constraints, Constraints)
+partitionVarC = Set.partition noVars
+
 insertC :: Constrain -> Constraints -> Constraints
 insertC c = case c of
             Subtyping t1 t2 -> if t1 == t2 then id else Set.insert c
@@ -334,7 +342,7 @@ monotonic v = foldType FoldTypeRec
 -- | find monotonicity based instantiation
 monoSubst :: Rel.Rel Type -> Type -> Subst
 monoSubst r t =
-    let varSet = Set.fromList . leaves (> 0)
+    let varSet = Set.fromList . freeTVars
         vs = Set.toList $ Set.union (varSet t) $ Set.unions $ map varSet
               $ Set.toList $ Rel.nodes r
         monos = filter ( \ (i, (n, rk)) -> case monotonic i t of
@@ -404,22 +412,23 @@ shapeRelAndMono te subL mTy = do
             in Result ds
                  $ Just (compSubst s ms, Rel.map (subst ms) trel)
 
-shapeRelAndSimplify :: Bool -> Bool -> Env -> Constraints -> Maybe Type
+shapeRelAndSimplify :: Bool -> Env -> Constraints -> Maybe Type
                     -> State Int (Result (Subst, Constraints))
-shapeRelAndSimplify doSimp doFail te cs mTy = do
+shapeRelAndSimplify doFail te cs mTy = do
   let (qs, subS) = partitionC cs
       subL = toListC subS
   Result ds mc <- shapeRelAndMono te subL mTy
   return $ case mc of
      Nothing -> Result ds Nothing
-     Just (s, trel) -> if doSimp then
-         let (es, newCs) = simplify te
+     Just (s, trel) ->
+         let (noVarCs, varCs) = partitionVarC
                $ foldr (insertC . uncurry Subtyping)
                         (substC s qs) $ Rel.toList trel
+             (es, newCs) = simplify te noVarCs
              fs = map ( \ d -> d {diagKind = Hint}) es
          in Result (ds ++ fs)
-                $ if null fs || not doFail then Just (s, newCs) else Nothing
-         else Result ds $ Just (s, substC s cs)
+                $ if null fs || not doFail then
+                      Just (s, joinC varCs newCs) else Nothing
 
 -- | Downsets of type variables made monomorphic need to be considered
 fromTypeVars :: LocalTypeVars -> [(Type, Type)]

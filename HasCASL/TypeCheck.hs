@@ -111,10 +111,10 @@ checkList isP mtys trms = case (mtys, trms) of
     _ -> return [(eps, noC, [], [])]
 
 -- | reduce a substitution
-reduceR :: Bool -> Bool -> Env -> (Subst, Constraints, Type, Term)
+reduceR :: Bool -> Env -> (Subst, Constraints, Type, Term)
         -> State Int (Result (Subst, Constraints, Type, Term))
-reduceR doMono doSimp te (s, cr, ty, tr) = do
-    Result ds0 mc <- shapeRelAndSimplify doSimp True te cr
+reduceR doMono te (s, cr, ty, tr) = do
+    Result ds0 mc <- shapeRelAndSimplify True te cr
       $ if doMono then Just ty else Nothing
     let ds = map (improveDiag tr) ds0
     return $ case mc of
@@ -125,22 +125,18 @@ reduceR doMono doSimp te (s, cr, ty, tr) = do
              (s2, qs, subst s1 ty, substTerm s2 tr)
 
 -- | reduce a substitution
-reduceAux :: Bool -> Bool -> [(Subst, Constraints, Type, Term)]
-          -> State Env [(Subst, Constraints, Type, Term)]
-reduceAux doMono doSimp alts = do
+reduce :: Bool -> [(Subst, Constraints, Type, Term)]
+       -> State Env [(Subst, Constraints, Type, Term)]
+reduce doMono alts = do
        te <- get
        combs <- mapM (\ alt -> do
-         Result ds mc <- toEnvState $ reduceR doMono doSimp te alt
+         Result ds mc <- toEnvState $ reduceR doMono te alt
          addDiags ds
          case mc of
            Nothing -> do
              return []
            Just q -> return [q]) alts
        return $ concat combs
-
-reduce :: Bool -> [(Subst, Constraints, Type, Term)]
-       -> State Env [(Subst, Constraints, Type, Term)]
-reduce doMono = reduceAux doMono False
 
 checkForUninstantiatedVars :: GlobalAnnos -> Term -> Range -> State Env ()
 checkForUninstantiatedVars ga t p = let
@@ -149,7 +145,7 @@ checkForUninstantiatedVars ga t p = let
     [(mkDiag Error ("in term '" ++ showGlobalDoc ga t
                     "'\n are uninstantiated type variables")
       $ Set.toList $ Set.unions
-      $ map (Set.fromList . map (fst . snd) . leaves (> 0)) tys)
+      $ map (Set.fromList . freeTVarIds) tys)
      {diagPos = p}]
 
 simplifyTypedTerms :: Env -> Term -> Term
@@ -174,7 +170,7 @@ simplifyTypedTerms e = foldTerm mapRec
 typeCheck :: Type -> Term -> State Env (Maybe Term)
 typeCheck exTy trm =
     do alts0 <- inferWithMaybeType False (Just exTy) trm
-       alts <- reduceAux True True alts0
+       alts <- reduce True alts0
        te <- get
        let p = getRange trm
            ga = globAnnos te
@@ -254,7 +250,7 @@ inferAppl isP ps t1 t2 = do
     reduce False $ concat combs
 
 getAllVarTypes :: Term -> [Type]
-getAllVarTypes = filter (not . null . leaves (> 0)) . getAllTypes
+getAllVarTypes = filter (not . null . freeTVars) . getAllTypes
 
 mkTypedTerm :: Term -> Type -> Term
 mkTypedTerm trm ty = case trm of
@@ -288,7 +284,7 @@ inferWithMaybeType isP mt trm = do
     Just inTy -> do
         combs <- mapM (\ q@(s, c, ty, t) -> let nTy = subst s inTy in
             if ty == nTy then return [q] else do
-            Result ds mc <- toEnvState $ reduceR False False te
+            Result ds mc <- toEnvState $ reduceR False te
               (s, insertC (Subtyping ty nTy) c, nTy, mkTypedTerm t nTy)
             case mc of
               Nothing -> do

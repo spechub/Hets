@@ -268,7 +268,7 @@ cyclicType i ty = Set.member i $ idsOf (==0) ty
 -- | check for unbound (or if False for too many) type variables
 unboundTypevars :: Bool -> [TypeArg] -> Type -> [Diagnosis]
 unboundTypevars b args ty =
-    let fvs = map (fst . snd) (leaves (> 0) ty)
+    let fvs = freeTVarIds ty
         argIds = map getTypeVar args
         restVars1 = fvs List.\\ argIds
         restVars2 = argIds List.\\ fvs

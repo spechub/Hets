@@ -64,7 +64,7 @@ addSuperType t ak p@(i, nAs) = case t of
             j <- newTypeIdentifier i
             let rk = rawKindOfType t1
                 k = rawToKind rk
-                vs = map (fst . snd) $ leaves (> 0) t1
+                vs = freeTVarIds t1
                 newArgs = filter ( \ a -> getTypeVar a `elem` vs) nAs
                 jTy = TypeName j (typeArgsListToRawKind newArgs rk) 0
                 aTy = mkTypeAppl jTy $ map typeArgToType newArgs

@@ -71,3 +71,10 @@ leaves b = foldType FoldTypeRec
   , foldTypeToken = \ _ _ -> error "leaves.foldTypeToken"
   , foldBracketType = \ _ _ _ _ -> error "leaves.foldBracketType"
   , foldMixfixType = \ _ -> error "leaves.foldMixfixType" }
+
+-- | uninstantiate, non-generalized, unknown type variables
+freeTVars :: Type -> [(Int, (Id, RawKind))]
+freeTVars = leaves (> 0)
+
+freeTVarIds :: Type -> [Id]
+freeTVarIds = map (fst . snd) . freeTVars
