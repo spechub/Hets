@@ -33,7 +33,7 @@ import CMDL.StringInterface(stringBackend, stringShellDescription)
 
 import Interfaces.DataTypes
 
-import Driver.Options (HetcatsOpts)
+import Driver.Options (HetcatsOpts, InType(..), guess)
 
 -- | Creates an empty CmdlState
 emptyCmdlState :: HetcatsOpts -> CmdlState
@@ -58,13 +58,18 @@ emptyCmdlState opts = CmdlState
 -- | The function runs hets in a shell
 cmdlRunShell :: HetcatsOpts -> [FilePath] ->IO CmdlState
 cmdlRunShell opts files =
-      recursiveApplyUse files (emptyCmdlState opts)
-      >>= runShell stdShellDescription
+  let isHPF fls = length fls == 1 && case guess (head fls) GuessIn of
+                                       ProofCommand -> True
+                                       _            -> False
+   in (if isHPF files
+        then cmdlProcessFile opts $ head files
+        else recursiveApplyUse files (emptyCmdlState opts)) >>=
+      runShell stdShellDescription
                 { defaultCompletions = Just (cmdlCompletionFn getCommands) }
 #ifdef EDITLINE
-              editlineBackend
+                  editlineBackend
 #else
-              haskelineBackend
+                  haskelineBackend
 #endif
 
 -- | The function processes the file of instructions
