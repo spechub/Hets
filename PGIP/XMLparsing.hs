@@ -220,6 +220,12 @@ processCmds :: [CmdlXMLcommands] -> CmdlState -> CmdlPgipState
             -> IO (CmdlState, CmdlPgipState)
 processCmds cmds state pgipSt = do
     let opts = hetsOpts state
+        process :: [CmdlXMLcommands] -> String -> CmdlState -> CmdlPgipState
+                -> IO (CmdlState, CmdlPgipState)
+        process pl ps st pgipState = do
+          cmdlProcessString ps st >>= (\ nwSt -> processRest pl nwSt pgipState)
+        processRest :: [CmdlXMLcommands] -> CmdlState -> CmdlPgipState
+                    -> IO (CmdlState, CmdlPgipState)
         processRest tl newState newPgipSt =
             let outSt = output newState in
             if null $ errorMsg outSt
@@ -232,9 +238,7 @@ processCmds cmds state pgipSt = do
             -- such that the broker does wait for more input
                              then addPGIPReady pgipSt
                              else pgipSt))
-     XmlExecute str : l -> do
-       nwSt <- cmdlProcessString str state
-       processRest l nwSt $ resetPGIPData pgipSt
+     XmlExecute str : l -> process l str state (resetPGIPData pgipSt)
      XmlExit : l -> processCmds l state $
          addPGIPAnswer "Exiting prover" [] pgipSt { stop = True }
      XmlAskpgip : l -> processCmds l state $ addPGIPHandshake pgipSt
@@ -251,26 +255,16 @@ processCmds cmds state pgipSt = do
                   processCmds l state $ addPGIPAnswer
                         "Quiet mode doesn't work properly" [] pgipSt {
                                               quietOutput = False }
-     XmlOpenGoal str : l -> do
-         nwSt <- cmdlProcessString ("add goals " ++ str ++ "\n") state
-         processRest l nwSt pgipSt
-     XmlCloseGoal str : l -> do
-         nwSt <- cmdlProcessString ("del goals " ++ str ++ "\n prove \n") state
-         processRest l nwSt pgipSt
-     XmlGiveUpGoal str : l -> do
-         nwSt <- cmdlProcessString ("del goals " ++ str ++ "\n") state
-         processRest l nwSt pgipSt
+     XmlOpenGoal str : l -> process l ("add goals " ++ str ++ "\n") state pgipSt
+     XmlCloseGoal str : l ->
+       process l ("del goals " ++ str ++ "\n prove \n") state pgipSt
+     XmlGiveUpGoal str : l ->
+       process l ("del goals " ++ str ++ "\n") state pgipSt
      XmlUnknown str : l -> processCmds l state $
            addPGIPAnswer [] ("Unknown command: " ++ str) pgipSt
-     XmlUndo : l -> do
-         nwSt <- cmdlProcessString "undo \n" state
-         processRest l nwSt pgipSt
-     XmlRedo : l -> do
-         nwSt <- cmdlProcessString "redo \n" state
-         processRest l nwSt pgipSt
-     XmlForget str : l -> do
-         nwSt <- cmdlProcessString ("del axioms "++str++"\n") state
-         processRest l nwSt pgipSt
+     XmlUndo : l -> process l "undo \n" state pgipSt
+     XmlRedo : l -> process l "redo \n" state pgipSt
+     XmlForget str : l -> process l ("del axioms " ++ str ++ "\n") state pgipSt
      XmlOpenTheory str : l -> do
          nwSt <- cmdlProcessString (str ++ "\n") state
          case errorMsg $ output nwSt of
@@ -288,6 +282,4 @@ processCmds cmds state pgipSt = do
                    (addPGIPAnswer "File closed" [] pgipSt)
      XmlParseScript str : _ ->
          processCmds [] state . addPGIPElement pgipSt $ addPGIPMarkup str
-     XmlLoadFile str : l -> do
-         nwSt <- cmdlProcessString ("use " ++ str ++ "\n") state
-         processRest l nwSt pgipSt
+     XmlLoadFile str : l -> process l ("use " ++ str ++ "\n") state pgipSt

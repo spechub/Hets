@@ -41,10 +41,9 @@ addPGIPMarkup str = case lines str of
   [] -> error "addPgipMarkUp.empty"
   hd : tl ->
     unode "parseresult"
-        $ add_attr (mkAttr "thyname" "whatever")
-             (unode "opentheory" $ mkText hd)
-        : map genProofStep tl
-        ++ [unode "closetheory" ()]
+      $ add_attr (mkAttr "thyname" "whatever") (unode "opentheory" $ mkText hd)
+      : map genProofStep tl
+      ++ [unode "closetheory" ()]
 
 {-
  - other types of mark ups :
