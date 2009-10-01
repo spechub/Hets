@@ -37,9 +37,8 @@ stdShellDescription = do
           , commandStyle       = OnlyCommands
           , evaluateFunc       = shellacEvalFunc
           , wordBreakChars     = wbc
-          , prompt             = if isTerm
-                                   then return . generatePrompter
-                                   else \_ -> return []
+          , prompt             = \ st -> return $ (generatePrompter st)
+                                           ++ (if isTerm then "" else "\n")
           , historyFile        = Just "consoleHistory.tmp"
           }
 
