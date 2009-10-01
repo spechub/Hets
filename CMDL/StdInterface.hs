@@ -14,7 +14,6 @@ for standard input and file input
 module CMDL.StdInterface
        ( stdShellDescription
        , basicOutput
-       , recursiveApplyUse
        )where
 
 import System.Console.Shell(CommandStyle(OnlyCommands), ShellDescription(..),
@@ -24,9 +23,7 @@ import System.IO(IO, putStr, stderr, stdin, hPutStr, hIsTerminalDevice)
 
 import CMDL.DataTypesUtils(generatePrompter)
 import CMDL.DataTypes(CmdlState)
-import CMDL.DgCommands(cUse)
 import CMDL.Commands(shellacCommands, shellacEvalFunc)
-
 
 stdShellDescription :: IO (ShellDescription CmdlState)
 stdShellDescription = do
@@ -37,7 +34,7 @@ stdShellDescription = do
           , commandStyle       = OnlyCommands
           , evaluateFunc       = shellacEvalFunc
           , wordBreakChars     = wbc
-          , prompt             = \ st -> return $ (generatePrompter st)
+          , prompt             = \ st -> return $ generatePrompter st
                                            ++ (if isTerm then "" else "\n")
           , historyFile        = Just "consoleHistory.tmp"
           }
@@ -47,11 +44,3 @@ basicOutput :: BackendOutput -> IO ()
 basicOutput (RegularOutput out) = putStr out
 basicOutput (InfoOutput out)    = putStr out
 basicOutput (ErrorOutput out)   = hPutStr stderr out
-
-
--- | Applies cUse to a list of input files
-recursiveApplyUse::[String] -> CmdlState -> IO CmdlState
-recursiveApplyUse ls state
- = case ls of
-    []   -> return state
-    l:ll -> cUse l state >>= recursiveApplyUse ll

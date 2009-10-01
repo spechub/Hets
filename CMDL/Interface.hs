@@ -25,10 +25,11 @@ import System.IO(IO)
 
 import CMDL.Commands(getCommands)
 import CMDL.DataTypes(CmdlMessage(..), CmdlPrompterState(..), CmdlState(..))
+import CMDL.DgCommands(cUse)
 import CMDL.Shell(cmdlCompletionFn)
 
 import CMDL.FileInterface(fileBackend, fileShellDescription)
-import CMDL.StdInterface(recursiveApplyUse, stdShellDescription)
+import CMDL.StdInterface(stdShellDescription)
 import CMDL.StringInterface(stringBackend, stringShellDescription)
 
 import Interfaces.DataTypes
@@ -55,15 +56,19 @@ emptyCmdlState opts = CmdlState
   , connections = []
   , hetsOpts = opts }
 
+-- | Processes a list of input files
+processInput :: HetcatsOpts -> [FilePath] -> CmdlState -> IO CmdlState
+processInput opts ls state
+ = case ls of
+    []   -> return state
+    l:ll -> (case guess l GuessIn of
+               ProofCommand -> cmdlProcessFileInState
+               _            -> cUse) l state >>= processInput opts ll
+
 -- | The function runs hets in a shell
 cmdlRunShell :: HetcatsOpts -> [FilePath] -> IO CmdlState
 cmdlRunShell opts files = do
-  let isHPF fls = length fls == 1 && case guess (head fls) GuessIn of
-                                       ProofCommand -> True
-                                       _            -> False
-  state <- if isHPF files
-             then cmdlProcessFile opts $ head files
-             else recursiveApplyUse files (emptyCmdlState opts)
+  state <- processInput opts files (emptyCmdlState opts)
   shellDsc <- stdShellDescription
   runShell shellDsc { defaultCompletions = Just (cmdlCompletionFn getCommands) }
 #ifdef EDITLINE
@@ -75,8 +80,10 @@ cmdlRunShell opts files = do
 
 -- | The function processes the file of instructions
 cmdlProcessFile :: HetcatsOpts -> FilePath -> IO CmdlState
-cmdlProcessFile opts flnm = let st = emptyCmdlState opts in
-    runShell fileShellDescription (fileBackend flnm) st
+cmdlProcessFile opts file = cmdlProcessFileInState file $ emptyCmdlState opts
+
+cmdlProcessFileInState :: FilePath -> CmdlState -> IO CmdlState
+cmdlProcessFileInState = runShell fileShellDescription . fileBackend
 
 -- | The function processes a string of instructions starting from a given
 -- state
