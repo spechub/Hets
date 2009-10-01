@@ -276,14 +276,18 @@ lesserOpInfo e o1 = lesserTypeScheme e (opType o1) . opType
 -- | efficiently infer type of a monomorphic tuple term
 inferWithMaybeType :: Bool -> Maybe Type -> Term
                    -> State Env [(Subst, Constraints, Type, Term)]
-inferWithMaybeType isP mt trm =
-  case (trm, mt) of
+inferWithMaybeType isP mt trm = case (trm, mt) of
     (TupleTerm ts@(_ : _ : _) ps, Just ty) -> case getTypeAppl ty of
-        (TypeName i _ _, argTys@(_ : _ : _)) | isProductId i
-            && all (null . freeTVars) argTys -> do
-          ls <- checkList isP (map Just argTys) ts
-          return $ map ( \ (su, cs, tys, trms) ->
-              (su, cs, mkProductTypeWithRange tys ps, mkTupleTerm trms ps)) ls
+        (TypeName i _ _, argTys@(_ : _ : _)) | isProductId i ->
+          if length ts == length argTys then
+              if all (null . freeTVars) argTys then do
+                 -- remaining type variables would not become instantiated
+                ls <- checkList isP (map Just argTys) ts
+                return $ map ( \ (su, cs, tys, trms) ->
+                  ( su, cs, mkProductTypeWithRange tys ps
+                  , mkTupleTerm trms ps)) ls
+              else inferWithMaybeTypeAux isP mt trm
+           else return [] -- fail for tuples of different lengths
         _ -> inferWithMaybeTypeAux isP mt trm
     _ -> inferWithMaybeTypeAux isP mt trm
 
