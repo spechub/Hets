@@ -16,17 +16,19 @@ for standard input and file input
 module CMDL.Interface where
 
 import System.Console.Shell(ShellDescription(defaultCompletions), runShell)
+import System.Console.Shell.Backend(ShellBackend(..))
 #ifdef EDITLINE
 import System.Console.Shell.Backend.Editline
 #else
 import System.Console.Shell.Backend.Haskeline
 #endif
-import System.IO(IO)
+import System.IO(IO, hIsTerminalDevice, stdin)
 
 import CMDL.Commands(getCommands)
 import CMDL.DataTypes(CmdlMessage(..), CmdlPrompterState(..), CmdlState(..))
 import CMDL.DgCommands(cUse)
 import CMDL.Shell(cmdlCompletionFn)
+import CMDL.Utils(stripComments)
 
 import CMDL.FileInterface(fileBackend, fileShellDescription)
 import CMDL.StdInterface(stdShellDescription)
@@ -34,6 +36,7 @@ import CMDL.StringInterface(stringBackend, stringShellDescription)
 
 import Interfaces.DataTypes
 
+import Common.Utils(trim)
 import Driver.Options (HetcatsOpts, InType(..), guess)
 
 -- | Creates an empty CmdlState
@@ -68,15 +71,25 @@ processInput opts ls state
 -- | The function runs hets in a shell
 cmdlRunShell :: HetcatsOpts -> [FilePath] -> IO CmdlState
 cmdlRunShell opts files = do
+  isTerm <- hIsTerminalDevice stdin
   state <- processInput opts files (emptyCmdlState opts)
-  shellDsc <- stdShellDescription
-  runShell shellDsc { defaultCompletions = Just (cmdlCompletionFn getCommands) }
+  let backend =
 #ifdef EDITLINE
-                  editlineBackend
+                editlineBackend
 #else
-                  haskelineBackend
+                haskelineBackend
 #endif
-                  state
+      backendEcho = backend { getInput = \ h s ->
+                             do
+                               res <- (getInput backend h s)
+                               case res of
+                                 Just str -> putStrLn $ trim (stripComments str)
+                                 Nothing -> return ()
+                               return res
+                         }
+  runShell stdShellDescription
+             { defaultCompletions = Just (cmdlCompletionFn getCommands) }
+             (if isTerm then backend else backendEcho) state
 
 -- | The function processes the file of instructions
 cmdlProcessFile :: HetcatsOpts -> FilePath -> IO CmdlState

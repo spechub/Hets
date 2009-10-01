@@ -19,23 +19,21 @@ module CMDL.StdInterface
 import System.Console.Shell(CommandStyle(OnlyCommands), ShellDescription(..),
                             initialShellDescription)
 import System.Console.Shell.Backend(BackendOutput(..))
-import System.IO(IO, putStr, stderr, stdin, hPutStr, hIsTerminalDevice)
+import System.IO(IO, putStr, stderr, hPutStr)
 
 import CMDL.DataTypesUtils(generatePrompter)
 import CMDL.DataTypes(CmdlState)
 import CMDL.Commands(shellacCommands, shellacEvalFunc)
 
-stdShellDescription :: IO (ShellDescription CmdlState)
-stdShellDescription = do
- isTerm <- hIsTerminalDevice stdin
+stdShellDescription :: ShellDescription CmdlState
+stdShellDescription =
  let wbc = "\n\r\v\\"
- return initialShellDescription
+  in initialShellDescription
           { shellCommands      = shellacCommands
           , commandStyle       = OnlyCommands
           , evaluateFunc       = shellacEvalFunc
           , wordBreakChars     = wbc
-          , prompt             = \ st -> return $ generatePrompter st
-                                           ++ (if isTerm then "" else "\n")
+          , prompt             = return . generatePrompter
           , historyFile        = Just "consoleHistory.tmp"
           }
 
