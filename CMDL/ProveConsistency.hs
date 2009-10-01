@@ -181,7 +181,7 @@ cConsChecker input state =
              Just (p,nCm@(Comorphism cid)) ->
                return $ add2hist [(ConsCheckerChange $ consChecker pS),
                                   (CComorphismChange $ cComorphism pS)]
-                  $ genMessage ("Hint: Using default comorphism: `"
+                  $ genMessage ("Hint: Using default comorphism `"
                       ++ language_name cid ++ "`") []
                       state {
                        intState = (intState state) {
