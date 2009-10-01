@@ -14,6 +14,7 @@ interface.
 
 module CMDL.DataTypes
   ( CmdlState (..)
+  , emptyCmdlState
   , CmdlCmdDescription (..)
   , cmdInput
   , cmdName
@@ -28,6 +29,7 @@ module CMDL.DataTypes
   , CmdlProverConsChecker (..)
   , CmdlPrompterState (..)
   , CmdlMessage (..)
+  , emptyCmdlMessage
   , CmdlListAction (..)
   , CmdlGoalAxiom (..)
   ) where
@@ -65,6 +67,23 @@ data CmdlState = CmdlState
   , output :: CmdlMessage -- ^ output of interface
   , hetsOpts :: HetcatsOpts  -- ^ hets command options
   }
+
+-- | Creates an empty CmdlState
+emptyCmdlState :: HetcatsOpts -> CmdlState
+emptyCmdlState opts = CmdlState
+  { intState = IntState
+      { i_state = Nothing
+      , i_hist = IntHistory
+          { undoList = []
+          , redoList = [] }
+      , filename = [] }
+  , prompter = CmdlPrompterState
+      { fileLoaded = ""
+      , prompterHead = "> " }
+  , output = emptyCmdlMessage
+  , openComment = False
+  , connections = []
+  , hetsOpts = opts }
 
 data CmdlPrompterState = CmdlPrompterState
   { fileLoaded :: String
@@ -166,3 +185,9 @@ data CmdlMessage = CmdlMessage
   { outputMsg :: String
   , warningMsg :: String
   , errorMsg :: String }
+
+emptyCmdlMessage :: CmdlMessage
+emptyCmdlMessage = CmdlMessage
+  { errorMsg = []
+  , outputMsg = []
+  , warningMsg = [] }

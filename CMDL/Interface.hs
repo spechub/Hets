@@ -25,48 +25,25 @@ import System.Console.Shell.Backend.Haskeline
 import System.IO(IO, hIsTerminalDevice, stdin)
 
 import CMDL.Commands(getCommands)
-import CMDL.DataTypes(CmdlMessage(..), CmdlPrompterState(..), CmdlState(..))
+import CMDL.DataTypes
 import CMDL.DgCommands(cUse)
 import CMDL.Shell(cmdlCompletionFn)
 import CMDL.Utils(stripComments)
 
-import CMDL.FileInterface(fileBackend, fileShellDescription)
 import CMDL.StdInterface(stdShellDescription)
-import CMDL.StringInterface(stringBackend, stringShellDescription)
 
-import Interfaces.DataTypes
+import PGIP.XMLparsing
 
 import Common.Utils(trim)
 import Driver.Options (HetcatsOpts, InType(..), guess)
 
--- | Creates an empty CmdlState
-emptyCmdlState :: HetcatsOpts -> CmdlState
-emptyCmdlState opts = CmdlState
-  { intState = IntState
-      { i_state = Nothing
-      , i_hist = IntHistory
-          { undoList = []
-          , redoList = [] }
-      , filename = [] }
-  , prompter = CmdlPrompterState
-      { fileLoaded = ""
-      , prompterHead = "> " }
-  , output = CmdlMessage
-      { errorMsg = []
-      , outputMsg = []
-      , warningMsg = [] }
-  , openComment = False
-  , connections = []
-  , hetsOpts = opts }
-
 -- | Processes a list of input files
 processInput :: HetcatsOpts -> [FilePath] -> CmdlState -> IO CmdlState
-processInput opts ls state
- = case ls of
+processInput opts ls state = case ls of
     []   -> return state
-    l:ll -> (case guess l GuessIn of
-               ProofCommand -> cmdlProcessFileInState
-               _            -> cUse) l state >>= processInput opts ll
+    l : ll -> (case guess l GuessIn of
+               ProofCommand -> cmdlProcessScriptFile
+               _ -> cUse) l state >>= processInput opts ll
 
 -- | The function runs hets in a shell
 cmdlRunShell :: HetcatsOpts -> [FilePath] -> IO CmdlState
@@ -93,14 +70,4 @@ cmdlRunShell opts files = do
 
 -- | The function processes the file of instructions
 cmdlProcessFile :: HetcatsOpts -> FilePath -> IO CmdlState
-cmdlProcessFile opts file = cmdlProcessFileInState file $ emptyCmdlState opts
-
-cmdlProcessFileInState :: FilePath -> CmdlState -> IO CmdlState
-cmdlProcessFileInState = runShell fileShellDescription . fileBackend
-
--- | The function processes a string of instructions starting from a given
--- state
-cmdlProcessString :: String -> CmdlState -> IO CmdlState
-cmdlProcessString input st =
-    runShell stringShellDescription (stringBackend input) st
-    `catch` const (return st)
+cmdlProcessFile opts file = cmdlProcessScriptFile file $ emptyCmdlState opts

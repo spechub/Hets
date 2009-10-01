@@ -12,7 +12,7 @@ module PGIP.ParseProofScript where
 
 import Interfaces.Command
 
-import PGIP.XMLstate
+import PGIP.XMLstate (genErrorResponse)
 
 import CMDL.DataTypes
 import CMDL.Commands
