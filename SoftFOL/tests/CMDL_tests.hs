@@ -243,15 +243,15 @@ runAllTests = do
                  "[Test]Foo2" theory2
                  (zip ["go","go2","go3"] $ repeat (LProver.Proved Nothing))
 
-    ,runTestBatch (Just 12) spassProveCMDLautomaticBatch "SPASS"
+    ,runTestBatch (Just 30) spassProveCMDLautomaticBatch "SPASS"
                  "[Test]ExtPartialOrder" theoryExt
                  (("gone",LProver.Proved Nothing) :
                   zip ["ga_comm_inf","ga_comm_sup"] (repeat LProver.openGoalStatus))
-    ,runTestBatch (Just 20) darwinCMDLautomaticBatch "Darwin"
+    ,runTestBatch (Just 30) darwinCMDLautomaticBatch "Darwin"
                  "[Test]ExtPartialOrder" theoryExt
                  (("gone", LProver.Proved (Just True)):
-                 (zip ["ga_comm_sup"] (repeat LProver.openGoalStatus)))
-    ,runTestBatch (Just 25) vampireCMDLautomaticBatch "Vampire"
+                 (zip ["ga_comm_inf","ga_comm_sup"] (repeat LProver.openGoalStatus)))
+    ,runTestBatch (Just 35) vampireCMDLautomaticBatch "Vampire"
                  "[Test]ExtPartialOrder" theoryExt
                   (zip ["gone", "ga_comm_sup", "ga_comm_inf"]
                            (repeat LProver.openGoalStatus))
