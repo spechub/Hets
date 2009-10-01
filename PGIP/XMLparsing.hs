@@ -275,11 +275,11 @@ processCmds cmds state pgipSt = do
          case errorMsg $ output nwSt of
            [] -> case getMaybeLib $ intState nwSt of
              Just (lN, lEnv) -> let
-                pgSt1 = addPGIPElement pgipSt $ genNormalResponse ""
+                pgSt1 = addPGIPElement pgipSt
                   $ unode "informfileloaded" $ mkText $ libNameToFile opts lN
                 dg = lookupDGraph lN lEnv
-                pgSt2 = addPGIPElement pgSt1 $ genNormalResponse ""
-                  $ ToXml.dGraph lEnv dg
+                pgSt2 = addPGIPElement pgSt1
+                  $ unode "informdevelopmentgraph" $ ToXml.dGraph lEnv dg
                 in processRest l nwSt pgSt2
              _ -> error "processRest l nwSt pgipSt"
            eMsg -> processCmds [] nwSt $ addPGIPError eMsg pgipSt
