@@ -36,9 +36,9 @@ data LitCommand = LitCommand
   { commandWW :: WhiteWord
   , argumentWW :: Maybe WhiteWord
   , trailing :: String -- ^ trailing white space
-  , command :: Command }
+  , command :: CmdlCmdDescription }
 
-parseLine :: [Command] -> FilePath -> Int -> Parser LitCommand
+parseLine :: [CmdlCmdDescription] -> FilePath -> Int -> Parser LitCommand
 parseLine cl fp i = do
   setPosition $ setSourceLine (initialPos fp) i
   s1 <- many space
@@ -46,15 +46,15 @@ parseLine cl fp i = do
       { commandWW = WhiteWord "" ""
       , argumentWW = Nothing
       , trailing = s1
-      , command = GroupCmd [] }) <|> do
+      , command = cmdlIgnoreFunc "" }) <|> do
     (cs, cm) <- choice (map (\ (c, sl) -> do
       s <- try $ parseCommand sl
-      return (s, c)) $ (GlobCmd ProveCurrent, ["prove-all"])
-        : map (\ c -> (c, words $ cmdNameStr c)) cl)
+      return (s, c)) $ (proveAll, ["prove-all"])
+        : map (\ c -> (c, words $ cmdNameStr $ cmdDescription c)) cl)
       <|> do
         h <- char '#'
         r <- many anyChar
-        return (h : r, CommentCmd r)
+        return (h : r, cmdlIgnoreFunc r)
     s2 <- many space
     (eof >> return LitCommand
         { commandWW = WhiteWord s1 cs
@@ -66,7 +66,8 @@ parseLine cl fp i = do
         { commandWW = WhiteWord s1 cs
         , argumentWW = Just $ WhiteWord s2 arg
         , trailing = s3
-        , command = setInputStr arg cm }
+        , command = cm
+            { cmdDescription = setInputStr arg $ cmdDescription cm } }
 
 parseArgument :: Parser (String, String)
 parseArgument = do
@@ -86,13 +87,19 @@ parseCommand cmd = case cmd of
      t <- parseCommand r
      return $ c ++ s ++ t
 
+parseSingleLine :: FilePath -> Int -> String -> Either String LitCommand
+parseSingleLine fp i str =
+  case parse (parseLine getCommands fp i) fp str of
+    Left e -> Left $ show e
+    Right r -> Right r
+
 parseContent :: FilePath -> String -> Either String [LitCommand]
 parseContent fp str = let
   l = number $ lines str
-  (es, rs) = partitionEithers $ map (\ (s, i) ->
-     parse (parseLine (map cmdDescription getCommands) fp i) fp s) l
+  (es, rs) = partitionEithers $ map
+    (\ (s, i) -> parseSingleLine fp i s) l
   in if null es then Right rs else
-     Left $ unlines $ map show es
+     Left $ unlines es
 
 whiteSpaceElems :: String -> [Element]
 whiteSpaceElems str = if null str then [] else [unode "whitespace" str]
@@ -102,7 +109,7 @@ litString c = word (commandWW c)
   ++ maybe "" (\ a -> leading a ++ word a) (argumentWW c)
 
 closeTheory :: Bool -> [Element]
-closeTheory isOpen = if isOpen then [unode "closetheory" ()] else []
+closeTheory isOpen = [unode "closetheory" () | isOpen]
 
 xmlLitCmds :: String -> Bool -> [LitCommand] -> [Element]
 xmlLitCmds trailer isOpen ls = case ls of
@@ -110,7 +117,7 @@ xmlLitCmds trailer isOpen ls = case ls of
   h : r ->
     let wsp = trailer ++ leading (commandWW h)
         wspes = whiteSpaceElems wsp
-    in case command h of
+    in case cmdDescription $ command h of
     SelectCmd LibFile _ ->
       wspes ++ closeTheory isOpen ++
       [unode "opentheory" $ litString h]

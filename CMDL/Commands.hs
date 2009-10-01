@@ -14,6 +14,8 @@ module CMDL.Commands
        ( getCommands
        , shellacCommands
        , shellacEvalFunc
+       , proveAll
+       , cmdlIgnoreFunc
        ) where
 
 import System.Console.Shell(ShellCommand, cmd, exitCommand, helpCommand)
@@ -56,7 +58,6 @@ shellacCommands = let
     -- different name for help commands
     ++ map helpCommand ["help", "?"]
     ++ genCmds
-
 
 -- | Generates a command description given all parameters
 genCmd :: Command -> CmdlCmdPriority ->
@@ -102,7 +103,8 @@ genGlobInspectCmd ic =
 genInspectCmd :: InspectCmd -> (String -> CmdlState -> IO CmdlState)
               -> CmdlCmdDescription
 genInspectCmd ic =
-  genCmd (InspectCmd ic (Just "")) CmdNoPriority (reqOfInspectCmd ic) . CmdWithInput
+  genCmd (InspectCmd ic (Just "")) CmdNoPriority (reqOfInspectCmd ic)
+  . CmdWithInput
 
 -- | Evaluation function description (function called when input can not
 -- be parsed
@@ -110,9 +112,17 @@ cmdlEvalFunc :: CmdlCmdDescription
 cmdlEvalFunc =
   genCmd (CommentCmd "") CmdNoPriority ReqNothing $ CmdWithInput cNotACommand
 
+cmdlIgnoreFunc :: String -> CmdlCmdDescription
+cmdlIgnoreFunc r =
+  genCmd (CommentCmd r) CmdNoPriority ReqNothing $ CmdNoInput return
+
 -- | Shellac description of the evaluation function
 shellacEvalFunc :: String -> Sh CmdlState ()
 shellacEvalFunc = shellacWithInput cmdlEvalFunc
+
+-- for the synonym "prove-all"
+proveAll :: CmdlCmdDescription
+proveAll = genGlobCmd ProveCurrent cProve
 
 -- | Generates the list of all possible commands as command description
 getCommands :: [CmdlCmdDescription]
@@ -131,7 +141,7 @@ getCommands =
   , genSelectCmd ComorphismTranslation cTranslate
   , genSelectCmd Prover cProver
   , genSelectCmd Goal $ cGoalsAxmGeneral ActionSet ChangeGoals
-  , genGlobCmd ProveCurrent cProve
+  , proveAll
   , genGlobCmd DropTranslation cDropTranslations
   , genSelectCmd ConsistencyChecker cConsChecker
   , genSelectCmd ConservativityChecker cConservCheck
