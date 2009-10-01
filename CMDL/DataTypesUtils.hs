@@ -69,25 +69,19 @@ getIdComorphism ls = case ls of
 
 -- | Generates the string containing the prompter
 generatePrompter :: CmdlState -> String
-generatePrompter st = case i_state $ intState st of
-    Nothing -> prompterHead $ prompter st
+generatePrompter st = (case i_state $ intState st of
+    Nothing -> ""
     Just ist ->
      let pst = prompter st
          els = case elements ist of
-                []  -> []
-                Element sm _ : r -> '.' : theoryName sm
-                  ++ if null r then "" else ".."
-         cm = case elements ist of
-               [] -> []
-               _-> case cComorphism ist of
-                    Nothing -> []
-                    Just cm' ->
-                     case getIdComorphism $ elements ist of
-                      Nothing -> []
-                      Just ocm ->
-                        if cm' == ocm then [] else "*"
-     in delExtension (fileLoaded pst) ++ els ++ cm ++ prompterHead pst
-
+                [] -> delExtension (fileLoaded pst)
+                Element sm _ : r -> theoryName sm ++ if null r then "" else ".."
+         cm = if null (elements ist)
+                then ""
+                else if cComorphism ist /= getIdComorphism (elements ist)
+                       then "*"
+                       else ""
+     in els ++ cm) ++ prompterHead (prompter st)
 
 -- | Given a list of node names and the list of all nodes
 -- the function returns all the nodes that have their name
