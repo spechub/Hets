@@ -252,7 +252,7 @@ parseXMLElement info = let cnt = strContent info in
     "undostep"     -> Just XmlUndo
     "redostep"     -> Just XmlRedo
     "forget"       -> Just $ XmlForget cnt
-    "opentheory"   -> Just $ XmlExecute cnt
+    "opentheory"   -> Just $ XmlOpenTheory cnt
     "theoryitem"   -> Just $ XmlExecute cnt
     "closetheory"  -> Just $ XmlCloseTheory cnt
     "closefile"    -> Just $ XmlCloseFile cnt

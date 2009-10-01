@@ -22,6 +22,10 @@ import Interfaces.DataTypes
 import Interfaces.Utils(emptyIntIState)
 
 import Driver.Options
+import Driver.ReadFn
+
+import qualified Static.ToXml as ToXml
+import Static.DevGraph
 
 import Common.ToXml
 
@@ -215,23 +219,24 @@ waitLoop pgData state = do
 cmdlRunXMLShell :: HetcatsOpts -> IO CmdlState
 cmdlRunXMLShell opts = cmdlStartLoop opts True stdin stdout (-1)
 
+process :: [CmdlXMLcommands] -> String -> CmdlState -> CmdlPgipState
+        -> IO (CmdlState, CmdlPgipState)
+process pl ps st pgipState =
+  cmdlProcessString ps st >>= \ nwSt -> processRest pl nwSt pgipState
+
+processRest :: [CmdlXMLcommands] -> CmdlState -> CmdlPgipState
+            -> IO (CmdlState, CmdlPgipState)
+processRest tl newState newPgipSt = let outSt = output newState in
+  if null $ errorMsg outSt
+  then processCmds tl newState $ addPGIPAnswer (outputMsg outSt)
+    (warningMsg outSt) newPgipSt
+  else return (newState, addPGIPError (errorMsg outSt) newPgipSt)
+
 -- | Executes given commands and returns output message and the new state
 processCmds :: [CmdlXMLcommands] -> CmdlState -> CmdlPgipState
             -> IO (CmdlState, CmdlPgipState)
 processCmds cmds state pgipSt = do
     let opts = hetsOpts state
-        process :: [CmdlXMLcommands] -> String -> CmdlState -> CmdlPgipState
-                -> IO (CmdlState, CmdlPgipState)
-        process pl ps st pgipState = do
-          cmdlProcessString ps st >>= (\ nwSt -> processRest pl nwSt pgipState)
-        processRest :: [CmdlXMLcommands] -> CmdlState -> CmdlPgipState
-                    -> IO (CmdlState, CmdlPgipState)
-        processRest tl newState newPgipSt =
-            let outSt = output newState in
-            if null $ errorMsg outSt
-              then processCmds tl newState
-                 $ addPGIPAnswer (outputMsg outSt) (warningMsg outSt) newPgipSt
-              else return (newState, addPGIPError (errorMsg outSt) newPgipSt)
     case cmds of
      [] -> return (state, (if useXML pgipSt
             -- ensures that the response is ended with a ready element
@@ -268,7 +273,15 @@ processCmds cmds state pgipSt = do
      XmlOpenTheory str : l -> do
          nwSt <- cmdlProcessString (str ++ "\n") state
          case errorMsg $ output nwSt of
-           [] -> processRest l nwSt pgipSt
+           [] -> case getMaybeLib $ intState nwSt of
+             Just (lN, lEnv) -> let
+                pgSt1 = addPGIPElement pgipSt $ genNormalResponse ""
+                  $ unode "informfileloaded" $ mkText $ libNameToFile opts lN
+                dg = lookupDGraph lN lEnv
+                pgSt2 = addPGIPElement pgSt1 $ genNormalResponse ""
+                  $ ToXml.dGraph lEnv dg
+                in processRest l nwSt pgSt2
+             _ -> error "processRest l nwSt pgipSt"
            eMsg -> processCmds [] nwSt $ addPGIPError eMsg pgipSt
      XmlCloseTheory _ : l -> let
          nwSt = case i_state $ intState state of
