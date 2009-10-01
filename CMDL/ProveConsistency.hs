@@ -116,12 +116,8 @@ cProver input state =
                Just (p,nCm@(Comorphism cid))->
                  return $ add2hist [(ProverChange $ prover pS),
                                     (CComorphismChange $ cComorphism pS)]
-                     $ genMessage [] ("Warning: Prover can't be used with "
-                            ++ "the selected comorphism (or the default if "
-                            ++ "none was selected). Instead the `"
-                            ++ language_name cid
-                            ++ "` comorphism was selected. Current prover is "
-                            ++ input)
+                     $ genMessage [] ("Hint: Using default comorphism `"
+                            ++ language_name cid ++ "`")
                             state {
                               intState = (intState state) {
                                 i_state = Just pS {
@@ -185,10 +181,8 @@ cConsChecker input state =
              Just (p,nCm@(Comorphism cid)) ->
                return $ add2hist [(ConsCheckerChange $ consChecker pS),
                                   (CComorphismChange $ cComorphism pS)]
-                  $ genMessage ("Consistency checker can't be used with the "
-                      ++"comorphism selected using translate "
-                      ++"command. Using comorphism :"
-                      ++ language_name cid) []
+                  $ genMessage ("Hint: Using default comorphism: `"
+                      ++ language_name cid ++ "`") []
                       state {
                        intState = (intState state) {
                          i_state = Just pS {
