@@ -103,13 +103,18 @@ updateDGAndChanges = mapAccumL updateDGOnly
 updateDGOnly :: DGraph -> DGChange -> (DGraph, DGChange)
 updateDGOnly g c =
   case c of
-    InsertNode n -> (insLNodeDG n g, InsertNode n)
-    DeleteNode n -> (delLNodeDG n g, DeleteNode n)
+    InsertNode n0 -> let n = clearLock n0 in (insLNodeDG n g, InsertNode n)
+    DeleteNode n0 -> let n = clearLock n0 in (delLNodeDG n g, DeleteNode n)
     InsertEdge e -> let (newEdge, ng) = insLEdgeDG e g in
       (ng, InsertEdge newEdge)
     DeleteEdge e -> (delLEdgeDG e g, DeleteEdge e)
-    SetNodeLab _ n -> let (newG, o) = labelNodeDG n g in
-      (newG, SetNodeLab o n)
+    SetNodeLab _ n0 ->let
+      n = clearLock n0
+      (newG, o) = labelNodeDG n g
+      in (newG, SetNodeLab o { dgn_lock = Nothing } n)
+
+clearLock :: LNode DGNodeLab -> LNode DGNodeLab
+clearLock (n, l) = (n, l { dgn_lock = Nothing })
 
 -- -------------------------------------
 -- methods to check the type of an edge
