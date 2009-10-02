@@ -304,7 +304,8 @@ processCmds cmds state pgipSt = do
            [] -> case getMaybeLib $ intState nwSt of
              Just (lN, lEnv) -> let
                 pgSt1 = addPGIPElement pgipSt
-                  $ unode "informfileloaded" $ mkText $ libNameToFile opts lN
+                  $ add_attr (mkAttr "url" $ libNameToFile opts lN)
+                  $ unode "informfileloaded" ()
                 dg = lookupDGraph lN lEnv
                 pgSt2 = addPGIPElement pgSt1
                   $ unode "informdevelopmentgraph" $ ToXml.dGraph lEnv dg
