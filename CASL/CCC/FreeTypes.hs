@@ -21,16 +21,15 @@ import CASL.SimplifySen(simplifyCASLSen)
 import CASL.CCC.TermFormula
 import CASL.CCC.TerminationProof(terminationProof, opSymName, predSymName)
 
-import Common.AS_Annotation(Named, SenAttr(sentence, isAxiom))
+import Common.AS_Annotation
 import Common.Consistency(Conservativity(..))
 import Common.DocUtils(showDoc)
-import Common.Id(Token(tokStr), Id(Id), GetRange(..), genName, mkSimpleId,
-                 nullRange)
+import Common.Id
 import Common.Result(Result, warning)
 import Common.Utils(nubOrd)
 
-import Data.List(delete, deleteFirstsBy, intersect)
-import Data.Maybe(Maybe(..), fromJust, isJust, isNothing)
+import Data.List
+import Data.Maybe
 
 import qualified Data.Map as Map
 import qualified Data.Set as Set
@@ -51,6 +50,11 @@ inhabited sorts constrs = iterateInhabited sorts
                                                       && notElem rs l'
                                                   then rs : l'
                                                   else l') l argsRes
+
+isUserOrSortGen :: Named (FORMULA f) -> Bool
+isUserOrSortGen ax = "ga_generated" `isPrefixOf` name ||
+                     not ("ga_" `isPrefixOf` name)
+    where name = senAttr ax
 
 getFs :: [Named (FORMULA ())] -> [FORMULA ()]
 getFs = map sentence . filter isUserOrSortGen
@@ -483,26 +487,17 @@ checkPositive fsn
 checkFreeType :: (Sign () (),[Named (FORMULA ())]) -> Morphism () () ()
                  -> [Named (FORMULA ())]
                  -> Result (Maybe (Conservativity, [FORMULA ()]))
-checkFreeType (osig, osens) m fsn
-    | isJust definitional = fromJust definitional
-    | isJust sort         = fromJust sort
-    | isJust leadingTerms = fromJust leadingTerms
-    | isJust incomplete   = fromJust incomplete
-    | isJust terminal     = fromJust terminal
-    | isJust positive     = fromJust positive
-    | otherwise           = return (Just (conStatus, []))
-    where
-        fsn' = filter isAxiom $
+checkFreeType (osig, osens) m fsn = head $ mapMaybe
+  ($ filter isAxiom $
                deleteFirstsBy (\ a b -> sentence a == sentence b) fsn $
-               mapNamed (mapSen (const id) m) osens
-        definitional = checkDefinitional osig fsn'
-        sort         = checkSort (osig, osens) m fsn'
-        leadingTerms = checkLeadingTerms osens m fsn'
-        incomplete   = checkIncomplete osens m fsn'
-        terminal     = checkTerminal (osig, osens) m fsn'
-        positive     = checkPositive fsn'
-        conStatus    = getConStatus (osig, osens) m fsn'
-        mapNamed f xs = [ x { sentence = f $ sentence x } | x<-xs ]
+               map (mapNamed $ mapSen (const id) m) osens)
+  [ checkDefinitional osig
+  , checkSort (osig, osens) m
+  , checkLeadingTerms osens m
+  , checkIncomplete osens m
+  , checkTerminal (osig, osens) m
+  , checkPositive
+  , \ fsn' -> Just $ return $ Just (getConStatus (osig, osens) m fsn', []) ]
 
 prettyType :: FORMULA () -> String
 prettyType fm = case fm of

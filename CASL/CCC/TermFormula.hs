@@ -17,13 +17,11 @@ import CASL.AS_Basic_CASL
 import CASL.Overload(leqF)
 import CASL.Sign(OpMap, Sign(sortRel), toOP_TYPE, toOpType)
 
-import Common.AS_Annotation(Named, SenAttr(senAttr))
 import Common.Id(Token(tokStr), Id(Id), Range, GetRange(..), nullRange)
 import Common.Utils(nubOrd)
 import qualified Common.Lib.Rel as Rel
 
 import Control.Monad(liftM)
-import Data.List(isPrefixOf)
 import qualified Data.Map as Map
 import qualified Data.Set as Set
 
@@ -60,12 +58,6 @@ constraintOfAxiom f =
     case f of
       Sort_gen_ax constrs _ -> constrs
       _                     -> []
-
-
-isUserOrSortGen :: Named (FORMULA f) -> Bool
-isUserOrSortGen ax = "ga_generated" `isPrefixOf` name ||
-                     not ("ga_" `isPrefixOf` name)
-    where name = senAttr ax
 
 
 -- | determine whether a formula is a sort generation constraint
