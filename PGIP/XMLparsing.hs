@@ -28,6 +28,7 @@ import Driver.ReadFn
 import qualified Static.ToXml as ToXml
 import Static.DevGraph
 
+import Common.LibName
 import Common.ToXml
 import Common.Utils
 
@@ -224,32 +225,51 @@ cmdlRunXMLShell opts = cmdlStartLoop opts True stdin stdout (-1)
 
 process :: [CmdlXMLcommands] -> String -> CmdlState -> CmdlPgipState
         -> IO (CmdlState, CmdlPgipState)
-process pl ps st pgipState =
-  cmdlProcessString ps st >>= \ nwSt -> processRest pl nwSt pgipState
+process pl str st pgSt = do
+  (nwSt, mCmd) <- cmdlProcessString "" 0 str st
+  let o = output nwSt
+      ms = outputMsg o
+      ws = warningMsg o
+      es = errorMsg o
+      -- there should be at most one
+      pgSt1 = if null es then addPGIPAnswer ms ws pgSt
+              else addPGIPError es pgSt
+  if null es then
+    let pgSt2 = case (getMaybeLib $ intState nwSt, mCmd) of
+          (Just (lN, lEnv), Just cmd) -> case cmd of
+            SelectCmd LibFile _ ->
+              informDGraph lN lEnv $ addPGIPElement pgSt1
+                $ add_attr (mkAttr "url" $ libNameToFile (hetsOpts nwSt) lN)
+                $ unode "informfileloaded" ()
+            GlobCmd g | g < ProveCurrent ->
+              informDGraph lN lEnv pgSt1
+            _ -> pgSt1
+          _ -> pgSt1
+    in processCmds pl nwSt pgSt2
+    else return (nwSt, addPGIPReady pgSt1)
 
-processRest :: [CmdlXMLcommands] -> CmdlState -> CmdlPgipState
-            -> IO (CmdlState, CmdlPgipState)
-processRest tl newState newPgipSt = let outSt = output newState in
-  if null $ errorMsg outSt
-  then processCmds tl newState $ addPGIPAnswer (outputMsg outSt)
-    (warningMsg outSt) newPgipSt
-  else return (newState, addPGIPError (errorMsg outSt) newPgipSt)
+informDGraph :: LibName -> LibEnv -> CmdlPgipState -> CmdlPgipState
+informDGraph lN lEnv pgSt =
+  addPGIPElement pgSt $ unode "informdevelopmentgraph" $ ToXml.dGraph lEnv
+    $ lookupDGraph lN lEnv
 
-cmdlProcessStringAux :: FilePath -> Int -> String -> CmdlState -> IO CmdlState
-cmdlProcessStringAux fp l ps st = case parseSingleLine fp l ps of
-  Left err -> return $ genErrorMsg err st
-  Right c -> let cm = Parser.command c in case cmdFn cm of
-    CmdNoInput f -> f st
-    CmdWithInput f -> f (cmdInputStr $ cmdDescription cm) st
-
-cmdlProcessString :: String -> CmdlState -> IO CmdlState
-cmdlProcessString = cmdlProcessStringAux "" 0
+cmdlProcessString :: FilePath -> Int -> String -> CmdlState
+  -> IO (CmdlState, Maybe Command)
+cmdlProcessString fp l ps st = case parseSingleLine fp l ps of
+  Left err -> return (genErrorMsg err st, Nothing)
+  Right c -> let
+      cm = Parser.command c
+      cmd = cmdDescription cm
+      addCmd = fmap $ \ nst -> (nst, Just cmd)
+    in case cmdFn cm of
+    CmdNoInput f -> addCmd $ f st
+    CmdWithInput f -> addCmd $ f (cmdInputStr cmd) st
 
 cmdlProcessScriptFile :: FilePath -> CmdlState -> IO CmdlState
 cmdlProcessScriptFile fp st = do
   str <- readFile fp
   foldM (\ nst (s, n) -> do
-      cst <- cmdlProcessStringAux fp n s nst
+      (cst, _) <- cmdlProcessString fp n s nst
       let o = output cst
           ms = outputMsg o
           ws = warningMsg o
@@ -266,11 +286,9 @@ processCmds :: [CmdlXMLcommands] -> CmdlState -> CmdlPgipState
 processCmds cmds state pgipSt = do
     let opts = hetsOpts state
     case cmds of
-     [] -> return (state, (if useXML pgipSt
+     [] -> return (state, addPGIPReady pgipSt)
             -- ensures that the response is ended with a ready element
             -- such that the broker does wait for more input
-                             then addPGIPReady pgipSt
-                             else pgipSt))
      XmlExecute str : l -> process l str state (resetPGIPData pgipSt)
      XmlExit : l -> processCmds l state $
          addPGIPAnswer "Exiting prover" [] pgipSt { stop = True }
@@ -288,30 +306,17 @@ processCmds cmds state pgipSt = do
                   processCmds l state $ addPGIPAnswer
                         "Quiet mode doesn't work properly" [] pgipSt {
                                               quietOutput = False }
-     XmlOpenGoal str : l -> process l ("add goals " ++ str ++ "\n") state pgipSt
+     XmlOpenGoal str : l -> process l ("set goals " ++ str) state pgipSt
      XmlCloseGoal str : l ->
-       process l ("del goals " ++ str ++ "\n prove \n") state pgipSt
+         processCmds (XmlGiveUpGoal str : XmlExecute "prove" : l) state pgipSt
      XmlGiveUpGoal str : l ->
-       process l ("del goals " ++ str ++ "\n") state pgipSt
+       process l ("del goals " ++ str) state pgipSt
      XmlUnknown str : l -> processCmds l state $
            addPGIPAnswer [] ("Unknown command: " ++ str) pgipSt
-     XmlUndo : l -> process l "undo \n" state pgipSt
-     XmlRedo : l -> process l "redo \n" state pgipSt
-     XmlForget str : l -> process l ("del axioms " ++ str ++ "\n") state pgipSt
-     XmlOpenTheory str : l -> do
-         nwSt <- cmdlProcessString (str ++ "\n") state
-         case errorMsg $ output nwSt of
-           [] -> case getMaybeLib $ intState nwSt of
-             Just (lN, lEnv) -> let
-                pgSt1 = addPGIPElement pgipSt
-                  $ add_attr (mkAttr "url" $ libNameToFile opts lN)
-                  $ unode "informfileloaded" ()
-                dg = lookupDGraph lN lEnv
-                pgSt2 = addPGIPElement pgSt1
-                  $ unode "informdevelopmentgraph" $ ToXml.dGraph lEnv dg
-                in processRest l nwSt pgSt2
-             _ -> error "processRest l nwSt pgipSt"
-           eMsg -> processCmds [] nwSt $ addPGIPError eMsg pgipSt
+     XmlUndo : l -> process l "undo" state pgipSt
+     XmlRedo : l -> process l "redo" state pgipSt
+     XmlForget str : l -> process l ("del axioms " ++ str) state pgipSt
+     XmlOpenTheory str : l -> process l str state pgipSt
      XmlCloseTheory _ : l -> let
          nwSt = case i_state $ intState state of
            Nothing -> state
@@ -324,4 +329,4 @@ processCmds cmds state pgipSt = do
                    (addPGIPAnswer "File closed" [] pgipSt)
      XmlParseScript str : _ ->
          processCmds [] state . addPGIPElement pgipSt $ addPGIPMarkup str
-     XmlLoadFile str : l -> process l ("use " ++ str ++ "\n") state pgipSt
+     XmlLoadFile str : l -> process l ("use " ++ str) state pgipSt
