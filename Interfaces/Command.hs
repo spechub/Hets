@@ -16,7 +16,7 @@ module Interfaces.Command where
 
 import Common.Utils
 
-import Data.Maybe(fromMaybe, isNothing)
+import Data.Maybe
 import Data.Char
 import Data.List
 
@@ -136,7 +136,7 @@ data SelectCmd =
   | ConsistencyChecker
   | Link
   | ConservativityChecker
-    deriving (Enum, Bounded)
+    deriving (Eq, Ord, Enum, Bounded)
 
 selectCmdList :: [SelectCmd]
 selectCmdList = [minBound .. maxBound]
@@ -218,6 +218,20 @@ data Command =
   | InspectCmd InspectCmd (Maybe String)
   | CommentCmd String
   | GroupCmd [Command] -- just to group commands in addCommandHistoryToState
+
+-- the same command modulo input argument
+eqCmd :: Command -> Command -> Bool
+eqCmd c1 c2 = case (c1, c2) of
+  (GlobCmd g1, GlobCmd g2) -> g1 == g2
+  (SelectCmd s1 _, SelectCmd s2 _) -> s1 == s2
+  (TimeLimit _, TimeLimit _) -> True
+  (SetAxioms _, SetAxioms _) -> True
+  (IncludeProvenTheorems b1, IncludeProvenTheorems b2) -> b1 == b2
+  (InspectCmd i1 m1, InspectCmd i2 m2) -> i1 == i2 && isJust m1 == isJust m2
+  (CommentCmd _, CommentCmd _) -> True
+  (GroupCmd l1, GroupCmd l2) -> and (zipWith eqCmd l1 l2)
+    && length l1 == length l2
+  _ -> False
 
 mkSelectCmd :: SelectCmd -> Command
 mkSelectCmd s = SelectCmd s ""
