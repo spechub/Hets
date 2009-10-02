@@ -17,6 +17,7 @@ import PGIP.ParseProofScript as Parser
 
 import CMDL.DataTypes
 import CMDL.DataTypesUtils
+import CMDL.Commands
 
 import Interfaces.DataTypes
 import Interfaces.Command
@@ -38,7 +39,7 @@ import Network (connectTo, PortID(PortNumber), accept, listenOn)
 
 import System.IO
 
-import Data.List (isInfixOf)
+import Data.List (isInfixOf, find)
 import Control.Monad
 
 -- | Generates the XML packet that contains information about what
@@ -223,19 +224,39 @@ waitLoop pgData state = do
 cmdlRunXMLShell :: HetcatsOpts -> IO CmdlState
 cmdlRunXMLShell opts = cmdlStartLoop opts True stdin stdout (-1)
 
-process :: [CmdlXMLcommands] -> String -> CmdlState -> CmdlPgipState
-        -> IO (CmdlState, CmdlPgipState)
-process pl str st pgSt = do
+processString :: [CmdlXMLcommands] -> String -> CmdlState -> CmdlPgipState
+  -> IO (CmdlState, CmdlPgipState)
+processString pl str st pgSt = do
   (nwSt, mCmd) <- cmdlProcessString "" 0 str st
+  postProcessCmd pl nwSt pgSt mCmd
+
+-- copy messages to pgip state
+processMsgs :: CmdlState -> CmdlPgipState -> (CmdlPgipState, String)
+processMsgs nwSt pgSt =
   let o = output nwSt
       ms = outputMsg o
       ws = warningMsg o
       es = errorMsg o
       -- there should be at most one
-      pgSt1 = if null es then addPGIPAnswer ms ws pgSt
-              else addPGIPError es pgSt
-  if null es then
-    let pgSt2 = case (getMaybeLib $ intState nwSt, mCmd) of
+  in (if null es then addPGIPAnswer ms ws pgSt else addPGIPError es pgSt, es)
+
+processCommand :: [CmdlXMLcommands] -> Command -> CmdlState -> CmdlPgipState
+  -> IO (CmdlState, CmdlPgipState)
+processCommand pl cmd st pgSt = do
+  nwSt <- cmdlProcessCmd cmd st
+  postProcessCmd pl nwSt pgSt (Just cmd)
+
+-- postprocess a previously run command and recurse
+postProcessCmd :: [CmdlXMLcommands] -> CmdlState -> CmdlPgipState
+  -> Maybe Command -> IO (CmdlState, CmdlPgipState)
+postProcessCmd pl nwSt0 pgSt mCmd = let
+  (pgSt1, es) = processMsgs nwSt0 pgSt
+  nwSt = nwSt0 { output = emptyCmdlMessage } -- remove messages form cmdl state
+  in if null es then processCmds pl nwSt $ informCmd nwSt mCmd pgSt1 else
+  return (nwSt, addPGIPReady pgSt1)
+
+informCmd :: CmdlState -> Maybe Command -> CmdlPgipState -> CmdlPgipState
+informCmd nwSt mCmd pgSt1 = case (getMaybeLib $ intState nwSt, mCmd) of
           (Just (lN, lEnv), Just cmd) -> case cmd of
             SelectCmd LibFile _ ->
               informDGraph lN lEnv $ addPGIPElement pgSt1
@@ -245,8 +266,6 @@ process pl str st pgSt = do
               informDGraph lN lEnv pgSt1
             _ -> pgSt1
           _ -> pgSt1
-    in processCmds pl nwSt pgSt2
-    else return (nwSt, addPGIPReady pgSt1)
 
 informDGraph :: LibName -> LibEnv -> CmdlPgipState -> CmdlPgipState
 informDGraph lN lEnv pgSt =
@@ -257,13 +276,19 @@ cmdlProcessString :: FilePath -> Int -> String -> CmdlState
   -> IO (CmdlState, Maybe Command)
 cmdlProcessString fp l ps st = case parseSingleLine fp l ps of
   Left err -> return (genErrorMsg err st, Nothing)
-  Right c -> let
-      cm = Parser.command c
-      cmd = cmdDescription cm
-      addCmd = fmap $ \ nst -> (nst, Just cmd)
-    in case cmdFn cm of
-    CmdNoInput f -> addCmd $ f st
-    CmdWithInput f -> addCmd $ f (cmdInputStr cmd) st
+  Right c -> let cm = Parser.command c in
+       fmap (\ nst -> (nst, Just $ cmdDescription cm)) $ execCmdlCmd cm st
+
+execCmdlCmd :: CmdlCmdDescription -> CmdlState -> IO CmdlState
+execCmdlCmd cm =
+  case cmdFn cm of
+    CmdNoInput f -> f
+    CmdWithInput f -> f . cmdInputStr $ cmdDescription cm
+
+cmdlProcessCmd :: Command -> CmdlState -> IO CmdlState
+cmdlProcessCmd c = case find (eqCmd c . cmdDescription) getCommands of
+  Nothing -> return . genErrorMsg ("unknown command: " ++ cmdNameStr c)
+  Just cm -> execCmdlCmd cm { cmdDescription = c }
 
 cmdlProcessScriptFile :: FilePath -> CmdlState -> IO CmdlState
 cmdlProcessScriptFile fp st = do
@@ -275,21 +300,21 @@ cmdlProcessScriptFile fp st = do
           ws = warningMsg o
           es = errorMsg o
       unless (null ms) $ putStrLn ms
-      unless (null ws) $ putStrLn $ "Warning:\n" ++ ws
-      unless (null es) $ putStrLn $ "Error:\n" ++ es
+      unless (null ws) . putStrLn $ "Warning:\n" ++ ws
+      unless (null es) . putStrLn $ "Error:\n" ++ es
       return cst { output = emptyCmdlMessage }) st
-    $ number $ lines str
+    . number $ lines str
 
 -- | Executes given commands and returns output message and the new state
 processCmds :: [CmdlXMLcommands] -> CmdlState -> CmdlPgipState
-            -> IO (CmdlState, CmdlPgipState)
+  -> IO (CmdlState, CmdlPgipState)
 processCmds cmds state pgipSt = do
     let opts = hetsOpts state
     case cmds of
      [] -> return (state, addPGIPReady pgipSt)
             -- ensures that the response is ended with a ready element
             -- such that the broker does wait for more input
-     XmlExecute str : l -> process l str state (resetPGIPData pgipSt)
+     XmlExecute str : l -> processString l str state (resetPGIPData pgipSt)
      XmlExit : l -> processCmds l state $
          addPGIPAnswer "Exiting prover" [] pgipSt { stop = True }
      XmlAskpgip : l -> processCmds l state $ addPGIPHandshake pgipSt
@@ -306,17 +331,16 @@ processCmds cmds state pgipSt = do
                   processCmds l state $ addPGIPAnswer
                         "Quiet mode doesn't work properly" [] pgipSt {
                                               quietOutput = False }
-     XmlOpenGoal str : l -> process l ("set goals " ++ str) state pgipSt
-     XmlCloseGoal str : l ->
-         processCmds (XmlGiveUpGoal str : XmlExecute "prove" : l) state pgipSt
-     XmlGiveUpGoal str : l ->
-       process l ("del goals " ++ str) state pgipSt
+     XmlOpenGoal str : l -> processCommand l (SelectCmd Goal str) state pgipSt
+     XmlCloseGoal str : l -> processCommand (XmlGiveUpGoal str : l)
+         (GlobCmd ProveCurrent) state pgipSt
+     XmlGiveUpGoal str : l -> processString l ("del goals " ++ str) state pgipSt
      XmlUnknown str : l -> processCmds l state $
            addPGIPAnswer [] ("Unknown command: " ++ str) pgipSt
-     XmlUndo : l -> process l "undo" state pgipSt
-     XmlRedo : l -> process l "redo" state pgipSt
-     XmlForget str : l -> process l ("del axioms " ++ str) state pgipSt
-     XmlOpenTheory str : l -> process l str state pgipSt
+     XmlUndo : l -> processCommand l (GlobCmd UndoCmd) state pgipSt
+     XmlRedo : l -> processCommand l (GlobCmd RedoCmd) state pgipSt
+     XmlForget str : l -> processString l ("del axioms " ++ str) state pgipSt
+     XmlOpenTheory str : l -> processString l str state pgipSt
      XmlCloseTheory _ : l -> let
          nwSt = case i_state $ intState state of
            Nothing -> state
@@ -329,4 +353,8 @@ processCmds cmds state pgipSt = do
                    (addPGIPAnswer "File closed" [] pgipSt)
      XmlParseScript str : _ ->
          processCmds [] state . addPGIPElement pgipSt $ addPGIPMarkup str
-     XmlLoadFile str : l -> process l ("use " ++ str) state pgipSt
+     XmlLoadFile str : l ->
+         processCommand l (SelectCmd LibFile str) state pgipSt
+
+{- deleting axioms or goals should be implemented via a select command after
+inspecting the current axioms or goals. The current strings do not work. -}
