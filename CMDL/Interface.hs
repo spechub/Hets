@@ -17,11 +17,8 @@ module CMDL.Interface where
 
 import System.Console.Shell(ShellDescription(defaultCompletions), runShell)
 import System.Console.Shell.Backend(ShellBackend(..))
-#ifdef EDITLINE
-import System.Console.Shell.Backend.Editline
-#else
 import System.Console.Shell.Backend.Haskeline
-#endif
+
 import System.IO(IO, hIsTerminalDevice, stdin)
 
 import CMDL.Commands(getCommands)
@@ -50,20 +47,15 @@ cmdlRunShell :: HetcatsOpts -> [FilePath] -> IO CmdlState
 cmdlRunShell opts files = do
   isTerm <- hIsTerminalDevice stdin
   state <- processInput opts files (emptyCmdlState opts)
-  let backend =
-#ifdef EDITLINE
-                editlineBackend
-#else
-                haskelineBackend
-#endif
-      backendEcho = backend { getInput = \ h s ->
-                             do
-                               res <- (getInput backend h s)
-                               case res of
-                                 Just str -> putStrLn $ trim (stripComments str)
-                                 Nothing -> return ()
-                               return res
-                         }
+  let backend = haskelineBackend
+      backendEcho = backend
+        { getInput = \ h s -> do
+            res <- getInput backend h s
+            case res of
+              Just str -> putStrLn $ trim (stripComments str)
+              Nothing -> return ()
+            return res
+        }
   runShell stdShellDescription
              { defaultCompletions = Just (cmdlCompletionFn getCommands) }
              (if isTerm then backend else backendEcho) state

@@ -31,12 +31,6 @@ ifneq ($(findstring 0.2, $(SHELLACVERSION)),)
 SHELLAC_PACKAGE = -DSHELLAC
 endif
 
-EDITLINEVERSION = $(shell $(HCPKG) field Shellac-editline version)
-ifneq ($(findstring 0.9, $(EDITLINEVERSION)),)
-EDITLINE_PACKAGE = -DEDITLINE
-SHELLAC_PACKAGE = -DSHELLAC
-endif
-
 HXTFILTERVERSION = $(shell $(HCPKG) field hxt-filter version)
 ifneq ($(findstring 8., $(HXTFILTERVERSION)),)
 HXTFILTER_PACKAGE = -DHXTFILTER
@@ -66,7 +60,7 @@ endif
 HC_OPTS_WITHOUTGLADE = -threaded -fglasgow-exts -XOverlappingInstances \
   $(TIME_PACKAGE) $(TAR_PACKAGE) $(HTTP_PACKAGE) \
   $(UNI_PACKAGE) $(SHELLAC_PACKAGE) $(HXTFILTER_PACKAGE) \
-  $(PFE_FLAGS) $(TABULAR_PACKAGE) $(EDITLINE_PACKAGE) -DCASLEXTENSIONS
+  $(PFE_FLAGS) $(TABULAR_PACKAGE) -DCASLEXTENSIONS
 
 # for profiling (or a minimal hets) comment out the previous two package lines
 # and the $(GLADE_PACKAGE) below
