@@ -105,7 +105,6 @@ import Common.Token
 import Common.Utils
 
 import Control.Monad (foldM)
-import Data.List (nub)
 import Data.Maybe (catMaybes)
 import Data.Typeable
 import qualified Data.Map as Map
@@ -728,7 +727,7 @@ compInclusion = genCompInclusion . inclusionAux False
 -- | Find all (composites of) comorphisms starting from a given logic
 findComorphismPaths :: LogicGraph ->  G_sublogics -> [AnyComorphism]
 findComorphismPaths lg (G_sublogics lid sub) =
-  nub $ map fst $ iterateComp (0::Int) [(idc,[idc])]
+  nubOrd $ map fst $ iterateComp (0::Int) [(idc,[idc])]
   where
   idc = Comorphism (mkIdComorphism lid sub)
   coMors = Map.elems $ comorphisms lg
@@ -736,7 +735,7 @@ findComorphismPaths lg (G_sublogics lid sub) =
   iterateComp n l = -- (l::[(AnyComorphism,[AnyComorphism])]) =
     if n>1 || l==newL then newL else iterateComp (n+1) newL
     where
-    newL = nub $ l ++ concatMap extend l
+    newL = nubOrd $ l ++ concatMap extend l
     -- extend comorphism list in all directions, but no cylces
     extend (coMor, cmps) =
        let addCoMor c =
