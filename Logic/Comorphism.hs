@@ -178,14 +178,14 @@ wrapMapTheory :: Comorphism cid
                 sign2 morphism2 symbol2 raw_symbol2 proof_tree2
             => cid -> (sign1, [Named sentence1])
                    -> Result (sign2, [Named sentence2])
-wrapMapTheory cid (sign, sens) =
-      case sourceSublogic cid of
+wrapMapTheory cid (sign, sens) = let res = map_theory cid (sign, sens) in
+  if isIdComorphism $ Comorphism cid then res else case sourceSublogic cid of
         sub -> case minSublogic sign of
           sigLog -> case foldl join sigLog
                     $ map (minSublogic . sentence) sens of
             senLog ->
               if isSubElem senLog sub
-                 then map_theory cid (sign, sens)
+                 then res
                  else fail $ "for '" ++ language_name cid ++
                            "' expected sublogic '" ++
                            sublogicName sub ++
