@@ -22,7 +22,11 @@ Proof rule "basic inference" in the development graphs calculus.
 
 -}
 
-module Proofs.InferBasic (basicInferenceNode, consistencyCheck) where
+module Proofs.InferBasic
+  ( basicInferenceNode
+  , consistencyCheck
+  , ConsistencyStatus(..)
+  ) where
 
 import Static.GTheory
 import Static.DevGraph
@@ -31,6 +35,7 @@ import Proofs.ComputeTheory
 import Proofs.EdgeUtils
 import Proofs.AbstractState
 
+import Common.DocUtils (showDoc)
 import Common.ExtSign
 import Common.LibName
 import Common.Result
@@ -56,6 +61,8 @@ import qualified Common.Lib.Graph as Tree
 import Data.Graph.Inductive.Basic (elfilter)
 import Data.Graph.Inductive.Graph
 import Data.Maybe
+import Data.Time.LocalTime (timeToTimeOfDay)
+import Data.Time.Clock (secondsToDiffTime)
 import Control.Monad.Trans
 
 getCFreeDefLinks :: DGraph -> Node
@@ -209,16 +216,25 @@ basicInferenceNode checkCons lg ln dGraph n@(node, lbl) libEnv intSt =
                      } thName (hidingLabelWarning lbl) thForProof
                        kpMap (getProvers ProveGUI sublogic cms)
 
+data ConsistencyStatus = CSUnchecked
+                       | CSConsistent String
+                       | CSInconsistent String
+                       | CSTimeout String
+                       | CSError String
+
 consistencyCheck :: G_cons_checker -> AnyComorphism -> LibName -> LibEnv
-                 -> DGraph -> LNode DGNodeLab -> IO (Result G_theory)
-consistencyCheck (G_cons_checker lid4 cc) (Comorphism cid) ln le dg n@(n',lbl) =
-  runResultT $ do
+                 -> DGraph -> LNode DGNodeLab -> Int
+                 -> IO ConsistencyStatus
+consistencyCheck (G_cons_checker lid4 cc) (Comorphism cid) ln le dg n@(n',lbl)
+                 timeout = do
+  let lidS = sourceLogic cid
+      t' = timeToTimeOfDay $ secondsToDiffTime $ toInteger timeout
+  res <- runResultT $ do
     (G_theory lid1 (ExtSign sign _) _ axs _) <-
       liftR $ computeLabelTheory le dg n
     let thName = shows (getLibId ln) "_" ++ getDGNodeName lbl
         sens = toNamedList axs
         lidT = targetLogic cid
-        lidS = sourceLogic cid
     bTh'@(sig1, _) <- coerceBasicTheory lid1 lidS "" (sign, sens)
     (sig2, sens2) <- liftR $ wrapMapTheory cid bTh'
     incl <- liftR $ subsig_inclusion lidT (empty_signature lidT) sig2
@@ -228,16 +244,22 @@ consistencyCheck (G_cons_checker lid4 cc) (Comorphism cid) ln le dg n@(n',lbl) =
     cc' <- coerceConsChecker lid4 lidT "" cc
     pts <- lift $ consCheck lidT cc' thName mor
                 $ getCFreeDefMorphs lidT le ln dg n'
-    liftR $ case pts of
-      [pt] -> case goalStatus pt of
+    return (pts, sig1)
+  case res of
+    Result ds Nothing -> return $ CSError $ unlines $ map diagString ds
+    Result _ (Just ([pt], sig1)) -> if usedTime pt >= t' then
+        return $ CSTimeout $ "No results within: " ++ show (usedTime pt)
+      else case goalStatus pt of
         Proved (Just True) -> let
           Result ds ms = extractModel cid sig1 $ proofTree pt
           in case ms of
-          Nothing -> Result ds Nothing
-          Just (sig3, sens3) -> Result ds $ Just $
-            G_theory lidS (mkExtSign sig3) startSigId (toThSens sens3) startThId
-        st -> fail $ "prover status is: " ++ show st
-      _ -> fail "no unique cons checkers found"
+          Nothing ->  return $ CSError $ unlines $
+            "could not (re-)construct a model\n" : map diagString ds
+          Just (sig3, sens3) ->  return $ CSConsistent $ showDoc
+            (G_theory lidS (mkExtSign sig3) startSigId (toThSens sens3)
+                       startThId) ""
+        st -> return $ CSInconsistent $ "prover status is:\n\n" ++ show st
+    _ -> return $ CSError "no unique cons checkers found!"
 
 proveKnownPMap :: (Logic lid sublogics1
                basic_spec1

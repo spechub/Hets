@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 <glade-interface>
-  <!-- interface-requires gtk+ 2.16 -->
+  <!-- interface-requires gtk+ 2.14 -->
   <!-- interface-naming-policy toplevel-contextual -->
   <widget class="GtkWindow" id="ConsistencyChecker">
     <child>
@@ -124,7 +124,7 @@
                     </child>
                     <child>
                       <widget class="GtkButton" id="btnNodesTimeout">
-                        <property name="label" translatable="yes">Time run-outed</property>
+                        <property name="label" translatable="yes">Timedout</property>
                         <property name="visible">True</property>
                         <property name="can_focus">True</property>
                         <property name="receives_default">True</property>
@@ -545,7 +545,7 @@
                 <child>
                   <widget class="GtkLabel" id="label2">
                     <property name="visible">True</property>
-                    <property name="label" translatable="yes">Model:</property>
+                    <property name="label" translatable="yes">Result:</property>
                     <property name="use_markup">True</property>
                   </widget>
                   <packing>

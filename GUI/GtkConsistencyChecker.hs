@@ -35,14 +35,13 @@ import Logic.Comorphism (AnyComorphism)
 import Comorphisms.LogicGraph (logicGraph)
 
 import Common.LibName (LibName)
-import Common.Result
 
 import Control.Concurrent (forkIO, killThread, ThreadId)
 import Control.Concurrent.MVar
 import Control.Monad (foldM_, join, mapM_)
 
 import Proofs.AbstractState
-import Proofs.InferBasic (consistencyCheck)
+import Proofs.InferBasic (consistencyCheck, ConsistencyStatus (..))
 
 import Data.IORef
 import Data.Graph.Inductive.Graph (LNode)
@@ -58,27 +57,21 @@ data Finder = Finder { fname :: String
 data FNode = FNode { name :: String
                    , node :: LNode DGNodeLab
                    , sublogic :: G_sublogics
-                   , status :: Status}
+                   , status :: ConsistencyStatus }
 
-data Status = Unchecked
-            | Consistent String
-            | Inconsistent String
-            | Timeout String
-            | CheckError String
+instance Show ConsistencyStatus where
+  show CSUnchecked = "Unchecked"
+  show (CSConsistent s) = s
+  show (CSInconsistent s) = s
+  show (CSTimeout s) = s
+  show (CSError s) = s
 
-instance Show Status where
-  show Unchecked = "Unchecked"
-  show (Consistent s) = s
-  show (Inconsistent s) = s
-  show (Timeout s) = s
-  show (CheckError s) = s
-
-instance Eq Status where
-  (==) Unchecked Unchecked = True
-  (==) (Consistent _) (Consistent _) = True
-  (==) (Inconsistent _) (Inconsistent _) = True
-  (==) (Timeout _) (Timeout _) = True
-  (==) (CheckError _) (CheckError _) = True
+instance Eq ConsistencyStatus where
+  (==) CSUnchecked CSUnchecked = True
+  (==) (CSConsistent _) (CSConsistent _) = True
+  (==) (CSInconsistent _) (CSInconsistent _) = True
+  (==) (CSTimeout _) (CSTimeout _) = True
+  (==) (CSError _) (CSError _) = True
   (==) _ _ = False
 
 -- | Displays the consistency checker window
@@ -147,8 +140,8 @@ showConsistencyChecker gInfo@(GInfo { libName = ln }) = postGUIAsync $ do
 
   -- setup data
   listNodes <- setListData trvNodes getFNodeName
-                 $ map (\ (n@(_,l),s) -> FNode (getDGNodeName l) n s Unchecked)
-                 $ zip nodes sls
+    $ map (\ (n@(_,l),s) -> FNode (getDGNodeName l) n s CSUnchecked)
+    $ zip nodes sls
   listFinder <- setListData trvFinder fname []
 
   -- setup view selection actions
@@ -185,8 +178,8 @@ showConsistencyChecker gInfo@(GInfo { libName = ln }) = postGUIAsync $ do
                 else treeSelectionUnselectIter selector iter
               return False
 
-  onClicked btnNodesUnchecked $ selectWith (== Unchecked)
-  onClicked btnNodesTimeout  $ selectWith (== Timeout "")
+  onClicked btnNodesUnchecked $ selectWith (== CSUnchecked)
+  onClicked btnNodesTimeout  $ selectWith (== CSTimeout "")
 
   onClicked btnResults $ forkIO_ $ showModelView mView "Models" listNodes
   onClicked btnClose $ widgetDestroy window
@@ -200,13 +193,14 @@ showConsistencyChecker gInfo@(GInfo { libName = ln }) = postGUIAsync $ do
   onClicked btnCheck $ forkIO_ $ do
     takeMVar run
     postGUISync $ activate checkWidgets False
+    timeout <- postGUISync $ spinButtonGetValueAsInt sbTimeout
     (update, exit) <- progressBar "Checking consistency" "please wait..."
     nodes' <- postGUISync $ getSelectedMultiple trvNodes listNodes
     mf <- postGUISync $ getSelectedSingle trvFinder listFinder
     f <- case mf of
       Nothing -> error "Consistency checker: internal error"
       Just (_,f) -> return f
-    check ln le dg f update run listNodes nodes'
+    check ln le dg f timeout update run listNodes nodes'
     postGUISync $ switch False
     putMVar run Nothing
     forkIO_ $ showModelView mView "Results of consistency check" listNodes
@@ -216,18 +210,27 @@ showConsistencyChecker gInfo@(GInfo { libName = ln }) = postGUIAsync $ do
 
   widgetShow window
 
-statusToColor :: Status -> String
+statusToColor :: ConsistencyStatus -> String
 statusToColor s = case s of
-  Unchecked -> "black"
-  Consistent _ -> "green"
-  Inconsistent _ -> "red"
-  Timeout _ -> "blue"
-  CheckError _ -> "darkred"
+  CSUnchecked -> "black"
+  CSConsistent _ -> "green"
+  CSInconsistent _ -> "red"
+  CSTimeout _ -> "blue"
+  CSError _ -> "darkred"
+
+statusToPrefix :: ConsistencyStatus -> String
+statusToPrefix s = case s of
+  CSUnchecked -> "[?] "
+  CSConsistent _ -> "[+] "
+  CSInconsistent _ -> "[-] "
+  CSTimeout _ -> "[t] "
+  CSError _ -> "[f] "
 
 -- | Get a markup string containing name and color
 getFNodeName :: FNode -> String
 getFNodeName (FNode { name = n, status = s }) =
-  "<span color=\"" ++ statusToColor s ++ "\">" ++ n ++ "</span>"
+  "<span color=\"" ++ statusToColor s ++ "\">" ++ statusToPrefix s ++ n ++
+  "</span>"
 
 -- | Called when node selection is changed. Updates finder list
 updateNodes :: TreeView -> ListStore FNode -> (G_sublogics -> IO ())
@@ -246,12 +249,12 @@ updateFinder :: TreeView -> ListStore Finder -> G_sublogics -> IO ()
 updateFinder view list sl = forkIO_ $ do
   (update, exit) <- pulseBar "Calculating paths" "please wait..."
   postGUISync $ listStoreClear list
-  mapM_ ( (postGUISync . listStoreAppend list)
-        . (\ f -> f { selected = length (comorphs f) - 1}))
+  mapM_ (postGUISync . listStoreAppend list)
     $ Map.elems
     $ foldr (\ (cc,c) m -> let n = getPName cc
                                f = Map.findWithDefault (Finder n cc [] 0) n m in
-              Map.insert n (f { comorphs = c : comorphs f}) m) Map.empty
+              Map.insert n (f { comorphs = c : comorphs f}) m
+            ) Map.empty
     $ getConsCheckersAutomatic $ findComorphismPaths logicGraph sl
   update "finished"
   exit
@@ -260,22 +263,18 @@ updateFinder view list sl = forkIO_ $ do
 activate :: [Widget] -> Bool -> IO ()
 activate widgets active = mapM_ (\ w -> widgetSetSensitive w active) widgets
 
-check :: LibName -> LibEnv -> DGraph -> Finder -> (Double -> String -> IO ())
+check :: LibName -> LibEnv -> DGraph -> Finder -> Int
+      -> (Double -> String -> IO ())
       -> MVar (Maybe ThreadId) -> ListStore FNode -> [(Int,FNode)] -> IO ()
-check ln le dg (Finder { finder = cc, comorphs = cs, selected = i})
+check ln le dg (Finder { finder = cc, comorphs = cs, selected = i}) timeout
       update run list nodes = do
   tid <- forkIO $ do
     let count' = fromIntegral $ length nodes
         c = cs !! i
     foldM_ (\ count (row, fn@(FNode { name = name', node = n })) -> do
-             let mes = unlines . map diagString . diags
              update (count / count') name'
-             res <- consistencyCheck cc c ln le dg n
-             postGUIAsync $ listStoreSetValue list row
-                          $ fn { status = if hasErrors $ diags res
-                                            then CheckError $ mes res
-                                            else Consistent $ mes res
-                               }
+             res <- consistencyCheck cc c ln le dg n timeout
+             postGUIAsync $ listStoreSetValue list row $ fn { status = res }
              return $ count+1) 0 nodes
     takeMVar run
     return ()
@@ -330,7 +329,7 @@ showModelViewAux lock title list = postGUISync $ do
   textBufferApplyTag buffer font start end
 
   -- setup list view
-  let filterNodes = filter ((/= Unchecked) . status)
+  let filterNodes = filter ((/= CSUnchecked) . status)
 
   nodes <- listStoreToList list
   listNodes <- setListData trvNodes getFNodeName $ filterNodes nodes
