@@ -16,6 +16,8 @@ module Static.AnalysisLibrary
     ( anaLibFileOrGetEnv
     , anaLibDefn
     , anaSourceFile
+    , anaLibItem
+    , anaViewDefn
     ) where
 
 import Logic.Logic

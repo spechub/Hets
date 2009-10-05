@@ -209,6 +209,25 @@ showInspectCmd cmd = case cmd of
 requiresNode :: InspectCmd -> Bool
 requiresNode ic = ic >= LocalAxioms
 
+data ChangeCmd =
+    Expand
+  | AddView
+    deriving (Eq, Ord, Enum, Bounded)
+
+describeChangeCmd :: ChangeCmd -> String
+describeChangeCmd cmd = case cmd of
+   Expand -> "Extend current node"
+   AddView -> "Add a view"
+
+changeCmdList :: [ChangeCmd]
+changeCmdList = [minBound .. maxBound]
+
+changeCmdNameStr :: ChangeCmd -> String
+changeCmdNameStr cmd = case cmd of
+  Expand -> "expand"
+  AddView -> "addview"
+
+
 data Command =
     GlobCmd GlobCmd
   | SelectCmd SelectCmd String
@@ -218,6 +237,7 @@ data Command =
   | InspectCmd InspectCmd (Maybe String)
   | CommentCmd String
   | GroupCmd [Command] -- just to group commands in addCommandHistoryToState
+  | ChangeCmd ChangeCmd String
 
 -- the same command modulo input argument
 eqCmd :: Command -> Command -> Bool
@@ -236,12 +256,16 @@ eqCmd c1 c2 = case (c1, c2) of
 mkSelectCmd :: SelectCmd -> Command
 mkSelectCmd s = SelectCmd s ""
 
+mkChangeCmd :: ChangeCmd -> Command
+mkChangeCmd c = ChangeCmd c ""
+
 cmdInputStr :: Command -> String
 cmdInputStr cmd = case cmd of
   SelectCmd _ t -> t
   TimeLimit l -> show l
   SetAxioms as -> unwords as
   InspectCmd _ t -> fromMaybe "" t
+  ChangeCmd _ t -> t
   _ -> ""
 
 setInputStr :: String -> Command -> Command
@@ -252,6 +276,7 @@ setInputStr str cmd = case cmd of
     _ -> l
   SetAxioms _ -> SetAxioms $ words str
   InspectCmd i _ -> InspectCmd i $ Just str
+  ChangeCmd c _ -> ChangeCmd c str
   _ -> cmd
 
 cmdNameStr :: Command -> String
@@ -267,6 +292,7 @@ cmdNameStr cmd = case cmd of
     ++ (if i > LocalAxioms && isNothing s then "-current" else "")
   CommentCmd _ -> "#"
   GroupCmd _ -> ""
+  ChangeCmd c _ -> changeCmdNameStr c
 
 -- | show command with arguments
 showCmd :: Command -> String
@@ -277,6 +303,7 @@ showCmd c = let cn = cmdNameStr c in case c of
   CommentCmd s -> cn ++ s
   GroupCmd l -> intercalate "\n" $ map showCmd l
   InspectCmd _ t -> cn  ++ " " ++ fromMaybe "" t
+  ChangeCmd _ t -> cmdNameStr c ++ " " ++ t
   _ -> cn
 
 describeCmd :: Command -> String
@@ -291,6 +318,7 @@ describeCmd cmd = case cmd of
     ++ (if i > LocalAxioms && isNothing t then " of selected node" else "")
   CommentCmd _ -> "Line comment"
   GroupCmd _ -> "Grouping several commands"
+  ChangeCmd c _ -> describeChangeCmd c
 
 commandList :: [Command]
 commandList =
@@ -299,6 +327,7 @@ commandList =
   ++ [TimeLimit 0, SetAxioms []]
   ++ map IncludeProvenTheorems [False, True]
   ++ map (\ s -> InspectCmd s (Just "")) inspectCmdList
+  ++ map (\c -> ChangeCmd c "") changeCmdList
 
 {- unsafe commands are needed to
 delete or add

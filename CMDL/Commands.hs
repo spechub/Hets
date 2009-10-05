@@ -27,7 +27,8 @@ import Interfaces.CmdAction(globLibAct, globLibResultAct, globResultAct)
 import CMDL.DataTypes
 import CMDL.ProveCommands
 import CMDL.InfoCommands
-import CMDL.DgCommands(cDgSelect, cUse, commandDgAll, wrapResultDgAll)
+import CMDL.DgCommands(cDgSelect, cUse, cExpand, cAddView, commandDgAll, 
+                       wrapResultDgAll)
 import CMDL.ProveConsistency(cConsChecker, cProver)
 import CMDL.UndoRedo(cRedo, cUndo)
 import CMDL.Shell(cDetails, shellacCmd)
@@ -106,6 +107,11 @@ genInspectCmd ic =
   genCmd (InspectCmd ic (Just "")) CmdNoPriority (reqOfInspectCmd ic)
   . CmdWithInput
 
+genChangeCmd :: ChangeCmd -> (String -> CmdlState -> IO CmdlState)
+              -> CmdlCmdDescription
+genChangeCmd cc cf =
+  genCmd (mkChangeCmd cc) CmdNoPriority ReqNothing $ CmdWithInput cf
+
 -- | Evaluation function description (function called when input can not
 -- be parsed
 cmdlEvalFunc :: CmdlCmdDescription
@@ -173,3 +179,6 @@ getCommands =
   , genInspectCmd Taxonomy cShowTaxonomy
   , genInspectCmd Concept cShowConcept
   , genInspectCmd EdgeInfo cInfo ]
+  ++
+  [ genChangeCmd Expand cExpand,
+    genChangeCmd AddView cAddView]
