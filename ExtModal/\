@@ -1,0 +1,87 @@
+{-
+Module      :  ./ExtModal/AS_ExtModal.der.hs
+Description :  Parser for extended modal logic
+Copyright   :  
+License     :  
+
+Maintainer  :  
+Stability   :  
+Portability :  
+
+-}
+
+module ExtModal.Parser_AS where 
+
+
+import Common.AnnoState
+import ExtModal.AS_ExtModal
+
+
+
+modalFormulaParser :: AParser st EM_FORMULA
+modalFormulaParser = 
+	{-box, <=-}
+	do open <- oBracketT
+	   modal <- {-parse (term) modality-}
+	   close <- cBracketT
+	   grading <- asKey lessEq
+	   number <- {- parse number-}
+	   formula <- primFormula {- list of reserved words -}
+	   return (BoxOrDiamond True modal LeqOrGeq True number formula $ toRange open [] close)
+	<|>
+	{-box, >=-}
+	do open <- oBracketT
+	   modal <- {-parse (term) modality-}
+	   close <- cBracketT
+	   grading <- asKey greaterEq
+	   number <- {- parse number-}
+	   formula <- primFormula {- list of reserved words -}
+	   return (BoxOrDiamond True modal LeqOrGeq True number formula $ toRange open [] close)
+	<|>
+	{-diamond, <=-}
+	do open <- asKey lessS
+	   modal <- {-parse (term) modality-}
+	   close <- asKey greaterS
+	   grading <- asKey lessEq
+	   number <- {-parse number-}
+	   formula <- primFormula {-list of reserved words-}
+	   return (BoxOrDiamond False modal LeqOrGeq)
+	<|>
+	{-diamond, >=-}
+	do open <- lessS
+	   modal <- {-parse (term) modality-}
+	   close <- greaterS
+	   grading <- asKey greaterEq
+	   number <- {-parse number-}
+	   formula <- primFormula {-list of reserved words-}
+	   return (BoxOrDiamond False modal LeqOrGeq)
+	<|>
+	{-empty diamond-}
+	do diam <- diamondS
+	<|>
+		{-parse Until, Since, etc, temporal operators-}
+	<|>
+		{-parse Mu, Nu-}
+	<|>
+		{-parse Hybrid operators-}
+
+	
+
+instance AParsable EM_FORMULA where
+	aparser = modalFormulaParser
+
+
+
+sigItemParser :: AParser st EM_SIG_ITEM
+sigItemParser = {-parse sigItem-}
+
+instance AParsable EM_SIG_ITEM where 
+	aparser = sigItemParser
+	
+
+
+basicItemParser :: AParser st EM_BASIC_ITEM
+basicItemParser = {-parse basicItem-}
+
+instance AParsable EM_BASIC_ITEM where 
+	aparser = basicItemParser 
