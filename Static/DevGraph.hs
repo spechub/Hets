@@ -138,6 +138,7 @@ data DGNodeLab =
   DGNodeLab
   { dgn_name :: NodeName        -- name in the input language
   , dgn_theory :: G_theory       -- local theory
+  , globalTheory :: Maybe G_theory -- global theory
   , labelHasHiding :: Bool      -- has this node an ingoing hiding link
   , dgn_nf :: Maybe Node         -- normal form, for Theorem-Hide-Shift
   , dgn_sigma :: Maybe GMorphism -- inclusion of signature into nf signature
@@ -640,6 +641,7 @@ newInfoNodeLab :: NodeName -> DGNodeInfo -> G_theory -> DGNodeLab
 newInfoNodeLab name info gTh = DGNodeLab
   { dgn_name = name
   , dgn_theory = gTh
+  , globalTheory = Nothing
   , labelHasHiding = False
   , dgn_nf = Nothing
   , dgn_sigma = Nothing

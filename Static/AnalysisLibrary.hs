@@ -31,6 +31,8 @@ import Static.DevGraph
 import Static.AnalysisStructured
 import Static.AnalysisArchitecture
 
+import Proofs.ComputeTheory
+
 import Common.AS_Annotation hiding (isAxiom, isDef)
 import Common.GlobalAnnotations
 import Common.ConvertGlobalAnnos
@@ -102,8 +104,7 @@ anaString lgraph opts topLns libenv input file mt = do
           lift $ putIfVerbose opts 1 $ "Analyzing "
                ++ if null libstring then "file " ++ file else
                  "library " ++ show ln
-          (_, ld, _, lenv0) <- anaLibDefn lgraph opts topLns libenv ast
-          let lenv = markAllHiding lenv0
+          (_, ld, _, lenv) <- anaLibDefn lgraph opts topLns libenv ast
           case Map.lookup ln lenv of
               Nothing -> error $ "anaString: missing library: " ++ show ln
               Just dg -> lift $ do
@@ -178,13 +179,16 @@ anaLibDefn :: LogicGraph -> HetcatsOpts -> LNS -> LibEnv -> LIB_DEFN
 anaLibDefn lgraph opts topLns libenv (Lib_defn ln alibItems pos ans) = do
   gannos <- showDiags1 opts $ liftR $ addGlobalAnnos emptyGlobalAnnos ans
   let dg = emptyDG
-  (libItems', dg1, libenv', _) <- foldM ana
+  (libItems', dg', libenv', _) <- foldM (anaLibItemAux opts topLns)
       ([], dg { globalAnnos = gannos }, libenv, lgraph) (map item alibItems)
+  let dg1 = computeDGraphTheories libenv' $ markHiding libenv' dg'
   return (ln, Lib_defn ln
       (zipWith replaceAnnoted (reverse libItems') alibItems)
       pos ans, dg1, Map.insert ln dg1 libenv')
-  where
-  ana (libItems', dg1, libenv1, lG) libItem =
+
+anaLibItemAux :: HetcatsOpts -> LNS -> ([LIB_ITEM], DGraph, LibEnv, LogicGraph)
+  -> LIB_ITEM -> ResultT IO ([LIB_ITEM], DGraph, LibEnv, LogicGraph)
+anaLibItemAux opts topLns (libItems', dg1, libenv1, lG) libItem =
     let newLG = case libItems' of
           [] -> lG { currentLogic = defLogic opts }
           Logic_decl (Logic_name logTok _) _ : _ ->

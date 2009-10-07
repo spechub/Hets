@@ -170,8 +170,8 @@ addParentNode libenv dg refl (refn, oldNodelab) =
    -- because there can be some problem or errors at this place.
    newGTh = createGThWith (dgn_theory nodelab) (succ s) (succ t)
    refInfo = newRefInfo newRefl newRefn
-   newRefNode = newInfoNodeLab (dgn_name nodelab) refInfo newGTh
-
+   newRefNode = (newInfoNodeLab (dgn_name nodelab) refInfo newGTh)
+     { globalTheory = globalTheory nodelab }
    in
    -- checks if this node exists in the current dg, if so, nothing needs to be
    -- done.
@@ -194,7 +194,7 @@ addParentLinks dg src tgt ls = changesDGH dg
 
 {- applies global decomposition to all unproven global theorem edges
    if possible -}
-globDecomp ::LibName -> LibEnv -> LibEnv
+globDecomp :: LibName -> LibEnv -> LibEnv
 globDecomp ln proofStatus =
     let dgraph = lookupDGraph ln proofStatus
         globalThmEdges = labEdgesDG dgraph

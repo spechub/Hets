@@ -147,7 +147,11 @@ localInferenceAux libEnv dgraph ledge@(src, tgt, edgeLab) = let
                         Just goals'' ->
                           let (newSens, rnms) = joinSensAux sens goals''
                           in (G_theory lid sig ind newSens startThId, rnms)
-                  newContents = oldContents { dgn_theory = newTh }
+                  newContents = oldContents
+                    { dgn_theory = newTh
+                    , globalTheory = do
+                        oldTh <- globalTheory oldContents
+                        joinG_sentences oldTh newTh }
                   locInferRule = DGRuleLocalInference renms
                   newLab = edgeLab
                     { dgl_type = setProof (Proven locInferRule emptyProofBasis)
