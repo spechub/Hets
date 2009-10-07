@@ -45,6 +45,7 @@ import System.Exit (ExitCode(ExitSuccess), exitWith)
 #ifdef SHELLAC
 import Interfaces.DataTypes
 import CMDL.Interface
+import CMDL.ProcessScript
 import CMDL.DataTypes
 import PGIP.XMLparsing
 #endif

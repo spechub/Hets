@@ -26,10 +26,8 @@ import CMDL.DataTypes
 import CMDL.DgCommands(cUse)
 import CMDL.Shell(cmdlCompletionFn)
 import CMDL.Utils(stripComments)
-
+import CMDL.ProcessScript
 import CMDL.StdInterface(stdShellDescription)
-
-import PGIP.XMLparsing
 
 import Common.Utils(trim)
 import Driver.Options (HetcatsOpts, InType(..), guess)
@@ -59,7 +57,3 @@ cmdlRunShell opts files = do
   runShell stdShellDescription
              { defaultCompletions = Just (cmdlCompletionFn getCommands) }
              (if isTerm then backend else backendEcho) state
-
--- | The function processes the file of instructions
-cmdlProcessFile :: HetcatsOpts -> FilePath -> IO CmdlState
-cmdlProcessFile opts file = cmdlProcessScriptFile file $ emptyCmdlState opts

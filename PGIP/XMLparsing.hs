@@ -13,11 +13,10 @@ PGIP.XMLparsing contains commands for parsing or creating XML messages
 module PGIP.XMLparsing where
 
 import PGIP.XMLstate
-import PGIP.ParseProofScript as Parser
 
 import CMDL.DataTypes
 import CMDL.DataTypesUtils
-import CMDL.Commands
+import CMDL.ProcessScript
 
 import Interfaces.DataTypes
 import Interfaces.Command
@@ -31,7 +30,6 @@ import Static.DevGraph
 
 import Common.LibName
 import Common.ToXml
-import Common.Utils
 
 import Text.XML.Light as XML
 
@@ -39,7 +37,7 @@ import Network (connectTo, PortID(PortNumber), accept, listenOn)
 
 import System.IO
 
-import Data.List (isInfixOf, find)
+import Data.List (isInfixOf)
 import Control.Monad
 
 -- | Generates the XML packet that contains information about what
@@ -271,39 +269,6 @@ informDGraph :: LibName -> LibEnv -> CmdlPgipState -> CmdlPgipState
 informDGraph lN lEnv pgSt =
   addPGIPElement pgSt $ unode "informdevelopmentgraph" $ ToXml.dGraph lEnv
     $ lookupDGraph lN lEnv
-
-cmdlProcessString :: FilePath -> Int -> String -> CmdlState
-  -> IO (CmdlState, Maybe Command)
-cmdlProcessString fp l ps st = case parseSingleLine fp l ps of
-  Left err -> return (genErrorMsg err st, Nothing)
-  Right c -> let cm = Parser.command c in
-       fmap (\ nst -> (nst, Just $ cmdDescription cm)) $ execCmdlCmd cm st
-
-execCmdlCmd :: CmdlCmdDescription -> CmdlState -> IO CmdlState
-execCmdlCmd cm =
-  case cmdFn cm of
-    CmdNoInput f -> f
-    CmdWithInput f -> f . cmdInputStr $ cmdDescription cm
-
-cmdlProcessCmd :: Command -> CmdlState -> IO CmdlState
-cmdlProcessCmd c = case find (eqCmd c . cmdDescription) getCommands of
-  Nothing -> return . genErrorMsg ("unknown command: " ++ cmdNameStr c)
-  Just cm -> execCmdlCmd cm { cmdDescription = c }
-
-cmdlProcessScriptFile :: FilePath -> CmdlState -> IO CmdlState
-cmdlProcessScriptFile fp st = do
-  str <- readFile fp
-  foldM (\ nst (s, n) -> do
-      (cst, _) <- cmdlProcessString fp n s nst
-      let o = output cst
-          ms = outputMsg o
-          ws = warningMsg o
-          es = errorMsg o
-      unless (null ms) $ putStrLn ms
-      unless (null ws) . putStrLn $ "Warning:\n" ++ ws
-      unless (null es) . putStrLn $ "Error:\n" ++ es
-      return cst { output = emptyCmdlMessage }) st
-    . number $ lines str
 
 -- | Executes given commands and returns output message and the new state
 processCmds :: [CmdlXMLcommands] -> CmdlState -> CmdlPgipState
