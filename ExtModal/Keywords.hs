@@ -12,16 +12,22 @@
  module Keywords where 
 
  untilS :: String
- untilS = "Until"
+ untilS = "U"
 
  sinceS :: String
- sinceS = "Since"
+ sinceS = "S"
 
  allPathsS :: String
  allPathsS = "A"
 
  somePathsS :: String
  somePathsS = "E"
+
+ nextS :: String
+ nextS = "X"
+
+ yesterdayS :: String
+ yesterdayS = "Y"
 
  generallyS :: String
  generallyS = "G"
@@ -40,3 +46,19 @@
 
  nuS :: String 
  nuS = "nu"
+
+ atS :: String
+ atS = "@"
+
+ hereS :: String
+ hereS = "Here"
+
+ nominalS :: String
+ nominalS = "nominal"
+
+ nominalsS :: String
+ nominalsS = "nominals"
+
+ timeS :: String
+ timeS = "time"
+

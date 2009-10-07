@@ -25,7 +25,9 @@ type EM_BASIC_SPEC = BASIC_SPEC EM_BASIC_ITEM EM_SIG_ITEM EM_FORMULA
 type AnEModForm = Annoted (FORMULA EM_FORMULA)
 
 data EM_BASIC_ITEM = 
-	Simple_mod_decl [Annoted SIMPLE_ID] [AnEModForm] Range
+	Simple_mod_decl Bool [Annoted SIMPLE_ID] [AnEModForm] Range
+	-- True if time modality, False if not
+	| Nominal_decl [Annoted SIMPLE_ID]
 --	| Term_mod_decl [Annoted SIMPLE_ID] [AnEModForm] EM_TERM_MODALITY Range
 	deriving Show
 
