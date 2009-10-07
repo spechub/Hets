@@ -1111,7 +1111,7 @@ getCons lt = case getLinkConsStatus lt of
 getConservativity :: LEdge DGLinkLab -> Conservativity
 getConservativity (_, _, edgeLab) = getCons $ dgl_type edgeLab
 
-{- | returns the conservativity of the given path -}
+-- | returns the conservativity of the given path
 getConservativityOfPath :: [LEdge DGLinkLab] -> Conservativity
 getConservativityOfPath path = minimum [getConservativity e | e <- path]
 
@@ -1147,30 +1147,3 @@ topsortedNodes :: DGraph -> [LNode DGNodeLab]
 topsortedNodes dgraph = let dg = dgBody dgraph in
   reverse $ postorderF $ dffWith (\ (_, n, nl, _) -> (n, nl)) (nodes dg)
     $ efilter (\ (s, t, el) -> s /= t && isDefEdge (dgl_type el)) dg
-
--- * nodes with incoming hiding definition links
-
-nodeHasHiding :: DGraph -> Node -> Bool
-nodeHasHiding dg = labelHasHiding . labDG dg
-
-{- | mark all nodes if they have incoming hiding edges.
-   Assume reference nodes to other libraries being properly marked already.
--}
-markHiding :: LibEnv -> DGraph -> DGraph
-markHiding le dgraph =
-  foldl (\ dg (n, lbl) -> let
-     ingoingEdges = innDG dg n
-     defEdges = filter (liftE isDefEdge) ingoingEdges
-     hidingDefEdges = filter (liftE isHidingDef ) defEdges
-     next = map (\ (s, _, _) ->  s) defEdges
-     in fst $ labelNodeDG (n, lbl { labelHasHiding =
-            if isDGRef lbl
-            then nodeHasHiding (lookupDGraph (dgn_libname lbl) le)
-                 $ dgn_node lbl
-            else not (null hidingDefEdges) || any (nodeHasHiding dg) next }) dg)
-     dgraph $ topsortedNodes dgraph
-
-markAllHiding :: LibEnv -> LibEnv
-markAllHiding libEnv =
-  foldl (\ le ln -> Map.adjust (markHiding le) ln le) libEnv
-    $ getTopsortedLibs libEnv

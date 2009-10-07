@@ -43,7 +43,7 @@ import Static.DevGraph(DGNodeLab, DGLinkLab, lookupDGraph, labDG)
 import System.IO(stdout, stdin)
 
 import Proofs.AbstractState(ProofState(sublogicOfTheory, theoryName))
-import Proofs.ComputeTheory(computeTheory)
+import Static.ComputeTheory(computeTheory)
 
 import Data.Graph.Inductive.Graph(LNode, LEdge, Node)
 import Data.List((++), filter, find, null)

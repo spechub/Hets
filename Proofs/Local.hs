@@ -27,7 +27,6 @@ module Proofs.Local
     , localInferenceFromList
     ) where
 
-import Proofs.ComputeTheory
 import Proofs.EdgeUtils
 import Proofs.StatusUtils
 
@@ -130,7 +129,7 @@ localInferenceAux libEnv dgraph ledge@(src, tgt, edgeLab) = let
     oldContents = labDG dgraph tgt
     in case maybeThSrc of
     Just thSrc ->
-      case (maybeResult $ computeLabelTheory libEnv dgraph (tgt, oldContents),
+      case (globalTheory oldContents,
                         maybeResult $ translateG_theory morphism thSrc) of
         (Just (G_theory lidTgt _ _ sensTgt _),
               Just (G_theory lidSrc _ _ sensSrc _)) ->

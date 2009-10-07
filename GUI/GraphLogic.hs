@@ -51,7 +51,7 @@ import Static.DevGraph
 import Static.PrintDevGraph
 import Static.DGTranslation(libEnv_translation, getDGLogic)
 
-import Proofs.ComputeTheory
+import Static.ComputeTheory
 import Proofs.EdgeUtils
 import Proofs.InferBasic(basicInferenceNode)
 import Proofs.StatusUtils(lookupHistory, removeContraryChanges)

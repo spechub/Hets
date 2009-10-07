@@ -41,7 +41,7 @@ import Static.DevGraph
 import Static.GTheory
 
 import Proofs.AbstractState
-import Proofs.ComputeTheory
+import Static.ComputeTheory
 import Proofs.EdgeUtils
 
 import Driver.Options (rmSuffix)

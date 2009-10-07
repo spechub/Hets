@@ -55,7 +55,7 @@ import Logic.Coerce
 import Logic.Grothendieck
 import Logic.Logic
 
-import Proofs.ComputeTheory
+import Static.ComputeTheory
 import Proofs.EdgeUtils
 import Proofs.NormalForm
 

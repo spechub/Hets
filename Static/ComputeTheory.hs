@@ -11,13 +11,12 @@ Portability :  non-portable(Logic)
 compute the theory of a node
 -}
 
-module Proofs.ComputeTheory
+module Static.ComputeTheory
     ( computeTheory
-    , computeLabelTheory
+    , getGlobalTheory
     , theoremsToAxioms
-    , computeAllTheories
     , computeDGraphTheories
-    , globalNodeTheory
+    , markHiding
     ) where
 
 import Logic.Prover
@@ -30,19 +29,32 @@ import Common.Result
 
 import Data.Graph.Inductive.Graph as Graph
 import Data.List (sortBy)
-import qualified Data.Map as Map
-
 import Control.Monad
 
--- | compute the theory of a node, using normal forms when available
-computeLabelTheory :: LibEnv -> DGraph -> LNode DGNodeLab -> Result G_theory
-computeLabelTheory _libEnv _dg (_n, nodelab) = getGlobalTheory nodelab
+-- * nodes with incoming hiding definition links
 
-computeNodeTheory :: LibEnv -> DGraph -> Node -> Result G_theory
-computeNodeTheory libEnv dg n = computeLabelTheory libEnv dg (n, labDG dg n)
+nodeHasHiding :: DGraph -> Node -> Bool
+nodeHasHiding dg = labelHasHiding . labDG dg
+
+{- | mark all nodes if they have incoming hiding edges.
+   Assume reference nodes to other libraries being properly marked already.
+-}
+markHiding :: LibEnv -> DGraph -> DGraph
+markHiding le dgraph =
+  foldl (\ dg (n, lbl) -> let
+     ingoingEdges = innDG dg n
+     defEdges = filter (liftE isDefEdge) ingoingEdges
+     hidingDefEdges = filter (liftE isHidingDef ) defEdges
+     next = map (\ (s, _, _) ->  s) defEdges
+     in fst $ labelNodeDG (n, lbl { labelHasHiding =
+            if isDGRef lbl
+            then nodeHasHiding (lookupDGraph (dgn_libname lbl) le)
+                 $ dgn_node lbl
+            else not (null hidingDefEdges) || any (nodeHasHiding dg) next }) dg)
+     dgraph $ topsortedNodes dgraph
 
 computeTheory :: LibEnv -> LibName -> Node -> Result G_theory
-computeTheory libEnv ln = computeNodeTheory libEnv $ lookupDGraph ln libEnv
+computeTheory libEnv ln = globalNodeTheory $ lookupDGraph ln libEnv
 
 theoremsToAxioms :: G_theory -> G_theory
 theoremsToAxioms (G_theory lid sign ind1 sens ind2) =
@@ -53,11 +65,6 @@ getGlobalTheory = maybe (fail "no global theory") return . globalTheory
 
 globalNodeTheory :: DGraph -> Node -> Result G_theory
 globalNodeTheory dg = getGlobalTheory . labDG dg
-
-computeAllTheories :: LibEnv -> LibEnv
-computeAllTheories libEnv =
-  foldl (\ le ln -> Map.adjust (computeDGraphTheories le) ln le) libEnv
-    $ getTopsortedLibs libEnv
 
 computeDGraphTheories :: LibEnv -> DGraph -> DGraph
 computeDGraphTheories le dgraph =

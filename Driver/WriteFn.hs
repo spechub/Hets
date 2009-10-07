@@ -69,7 +69,7 @@ import Static.CheckGlobalContext
 import Static.DotGraph
 import qualified Static.PrintDevGraph as DG
 import Proofs.StatusUtils
-import Proofs.ComputeTheory (theoremsToAxioms, computeTheory)
+import Static.ComputeTheory (theoremsToAxioms, computeTheory)
 import Proofs.QualifyNames
 
 import Driver.Options

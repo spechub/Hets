@@ -36,7 +36,7 @@ import CMDL.DataTypesUtils
 import CMDL.Utils(decomposeIntoGoals, obtainEdgeList, prettyPrintErrList)
 
 import Proofs.AbstractState (getProvers, initialState)
-import Proofs.ComputeTheory (computeTheory)
+import Static.ComputeTheory (computeTheory)
 import Proofs.TheoremHideShift (theoremHideShiftFromList)
 
 import Static.GTheory (G_theory(G_theory), sublogicOfTh)

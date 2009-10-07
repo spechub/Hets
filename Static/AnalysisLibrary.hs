@@ -28,10 +28,9 @@ import Syntax.AS_Library
 
 import Static.GTheory
 import Static.DevGraph
+import Static.ComputeTheory
 import Static.AnalysisStructured
 import Static.AnalysisArchitecture
-
-import Proofs.ComputeTheory
 
 import Common.AS_Annotation hiding (isAxiom, isDef)
 import Common.GlobalAnnotations

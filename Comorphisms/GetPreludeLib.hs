@@ -18,7 +18,7 @@ import Driver.Options
 import Driver.ReadFn
 import Comorphisms.LogicList
 
-import Proofs.ComputeTheory
+import Static.ComputeTheory
 
 import Static.DevGraph
 import Static.GTheory

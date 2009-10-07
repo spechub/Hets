@@ -31,7 +31,7 @@ module Proofs.InferBasic
 import Static.GTheory
 import Static.DevGraph
 
-import Proofs.ComputeTheory
+import Static.ComputeTheory
 import Proofs.EdgeUtils
 import Proofs.AbstractState
 
@@ -163,12 +163,12 @@ basicInferenceNode :: Bool -- ^ True = consistency; False = Prove
                    -> LogicGraph -> LibName -> DGraph -> LNode DGNodeLab
                    -> LibEnv -> IORef IntState
                    -> IO (Result G_theory)
-basicInferenceNode checkCons lg ln dGraph n@(node, lbl) libEnv intSt =
+basicInferenceNode checkCons lg ln dGraph (node, lbl) libEnv intSt =
   runResultT $ do
         -- compute the theory of the node, and its name
         -- may contain proved theorems
         thForProof@(G_theory lid1 (ExtSign sign _) _ axs _) <-
-             liftR $ computeLabelTheory libEnv dGraph n
+             liftR $ getGlobalTheory lbl
         let thName = shows (getLibId ln) "_" ++ getDGNodeName lbl
             sens = toNamedList axs
             sublogic = sublogicOfTh thForProof
@@ -225,13 +225,13 @@ data ConsistencyStatus = CSUnchecked
 consistencyCheck :: G_cons_checker -> AnyComorphism -> LibName -> LibEnv
                  -> DGraph -> LNode DGNodeLab -> Int
                  -> IO ConsistencyStatus
-consistencyCheck (G_cons_checker lid4 cc) (Comorphism cid) ln le dg n@(n',lbl)
+consistencyCheck (G_cons_checker lid4 cc) (Comorphism cid) ln le dg (n',lbl)
                  timeout = do
   let lidS = sourceLogic cid
       t' = timeToTimeOfDay $ secondsToDiffTime $ toInteger timeout
   res <- runResultT $ do
     (G_theory lid1 (ExtSign sign _) _ axs _) <-
-      liftR $ computeLabelTheory le dg n
+      liftR $ getGlobalTheory lbl
     let thName = shows (getLibId ln) "_" ++ getDGNodeName lbl
         sens = toNamedList axs
         lidT = targetLogic cid
