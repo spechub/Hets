@@ -298,7 +298,7 @@ buildSigH (([n1],t1):ds) sig map1 =
             then let Just t3 = getSymbolType n2 sig
                  in if t2 == t3
                        then buildSigH ds sig map1
-                       else Result.Result [incompatibleViewError n2 t2 t3] Nothing
+                       else Result.Result [incompatibleViewError1 n2 t2 t3] Nothing
             else buildSigH ds (addSymbolDecl ([n2],t2) sig) map1
 buildSigH _ _ _ = Result.Result [] Nothing
           
@@ -308,10 +308,38 @@ inducedFromToMorphism :: Map.Map Symbol Symbol -> ExtSign Sign Symbol ->
 inducedFromToMorphism map1 (ExtSign sig1 _) (ExtSign sig2 _) =
   let map2 = toNameMap map1
       m = Morphism sig1 sig2 map2
+      Sign ds = sig1   
       in if (isValidMorph m)
             then Result.Result [] $ Just m
-            else Result.Result [Result.Diag Result.Error "Invalid morphism" nullRange]
-                               Nothing 
+            else buildMorph (expandDecls ds) m
+
+buildMorph :: [DECL] -> Morphism -> Result.Result Morphism 
+buildMorph [] m = Result.Result [] $ Just m
+buildMorph (([n1],t1):ds) m@(Morphism _ sig2 map1) = 
+  if (Map.member n1 map1)
+     then let n2 = mapSymbol m n1
+              t2 = applyMorphism m t1
+              Just t3 = getSymbolType n2 sig2
+              in if t2 == t3
+                    then buildMorph ds m
+                    else Result.Result [incompatibleViewError2 n2 t2 t3] Nothing
+     else let t2 = applyMorphism m t1
+              ss = getSymsOfType sig2 t2
+              in case ss of
+                      [s] -> buildMorph ds $ m {symMap = Map.insert n1 s $ symMap m}  
+                      []  -> Result.Result [noSymToMapError n1 t2] Nothing
+                      _   -> Result.Result [manySymToMapError n1 t2 ss] Nothing
+buildMorph _ _ = Result.Result [] Nothing
+
+getSymsOfType :: Sign -> TYPE -> [NAME]
+getSymsOfType (Sign ds) t = getSymsOfTypeH ds t
+
+getSymsOfTypeH :: [DECL] -> TYPE -> [NAME]
+getSymsOfTypeH [] _ = []
+getSymsOfTypeH ((ns,t1):ds) t = 
+  if (t1 == t)
+     then ns ++ (getSymsOfTypeH ds t)
+     else getSymsOfTypeH ds t
 
 -- ERROR MESSAGES
 redeclaredNamesError :: Set.Set NAME -> CONTEXT -> Result.Diagnosis
@@ -377,13 +405,45 @@ noDiscourseTypeError t =
     , Result.diagPos = nullRange
     }
 
-incompatibleViewError :: NAME -> TYPE -> TYPE -> Result.Diagnosis
-incompatibleViewError n t1 t2 =
+incompatibleViewError1 :: NAME -> TYPE -> TYPE -> Result.Diagnosis
+incompatibleViewError1 n t1 t2 =
   Result.Diag
     { Result.diagKind = Result.Error
     , Result.diagString = "Symbol " ++ (show $ pretty n)
                           ++ " must have both type " ++ (show $ pretty t1)
                           ++ " and type " ++ (show $ pretty t2)
                           ++ " in the target signature and hence the view is ill-formed."
+    , Result.diagPos = nullRange
+    }
+
+incompatibleViewError2 :: NAME -> TYPE -> TYPE -> Result.Diagnosis
+incompatibleViewError2 n t1 t2 =
+  Result.Diag
+    { Result.diagKind = Result.Error
+    , Result.diagString = "Symbol " ++ (show $ pretty n)
+                          ++ " must have type " ++ (show $ pretty t1)
+                          ++ " but instead has type " ++ (show $ pretty t2)
+                          ++ " in the target signature and hence the view is ill-formed."
+    , Result.diagPos = nullRange
+    }
+
+noSymToMapError :: NAME -> TYPE -> Result.Diagnosis
+noSymToMapError n t =
+  Result.Diag
+    { Result.diagKind = Result.Error
+    , Result.diagString = "Symbol " ++ (show $ pretty n)
+                          ++ " cannot be mapped to anything as the target signature "
+                          ++ "contains no symbols of type " ++ (show $ pretty t)        
+    , Result.diagPos = nullRange
+    }
+
+manySymToMapError :: NAME -> TYPE -> [NAME] -> Result.Diagnosis
+manySymToMapError n t ss =
+  Result.Diag
+    { Result.diagKind = Result.Error
+    , Result.diagString = "Symbol " ++ (show $ pretty n)
+                          ++ " cannot be uniquely mapped as the target signature "
+                          ++ "contains multiple symbols of type " ++ (show $ pretty t)
+                          ++ ", namely " ++ (show $ printNames ss)        
     , Result.diagPos = nullRange
     }

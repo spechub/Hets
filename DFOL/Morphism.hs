@@ -29,8 +29,8 @@ idMorph sig = Morphism sig sig Map.empty
 compMorph :: Morphism -> Morphism -> Result Morphism
 compMorph m1 m2 = 
   if target m1 /= source m2
-     then fail $ "Cosourceain of the first morphism "
-                 ++ "must equal the sourceain of the second."
+     then fail $ "Codomain of the first morphism "
+                 ++ "must equal the domain of the second."
      else return $ Morphism (source m1) (target m2) $ 
                  Set.fold (\ sym1 -> let sym2 = mapSymbol m2 $ mapSymbol m1 sym1 
                                          in if (sym1 == sym2)
@@ -41,23 +41,20 @@ compMorph m1 m2 =
 
 -- determines whether a morphism is valid     
 isValidMorph :: Morphism -> Bool
-isValidMorph m = isValidMorphH syms m
-                 where syms = Set.toList $ getSymbols $ source m
+isValidMorph m@(Morphism sig1 sig2 map1) =      
+  let sym1 = getSymbols sig1
+      sym2 = getSymbols sig2
+      checkDom = Set.isSubsetOf (Map.keysSet map1) sym1 
+      checkCod = Set.isSubsetOf (Set.map (mapSymbol m) sym1) sym2
+      checkTypes = map (checkTypePres m) $ Set.toList sym1
+      in and $ [checkDom,checkCod] ++ checkTypes
 
-isValidMorphH :: [NAME] -> Morphism -> Bool
-isValidMorphH [] _ = True
-isValidMorphH (sym:syms) m = 
-  let sig1 = source m
-      sig2 = target m
-      type1M = getSymbolType sym sig1
-      type2M = getSymbolType (mapSymbol m sym) sig2
-      in case type1M of
-              Nothing -> False
-              Just type1 -> case type2M of
-                                 Nothing -> False
-                                 Just type2 -> if (applyMorphism m type1) == type2
-                                                  then isValidMorphH syms m 
-                                                  else False  
+-- checks if the morphism preserves the type of the given symbol
+checkTypePres:: Morphism -> NAME -> Bool
+checkTypePres m n = 
+  let Just type1 = getSymbolType n $ source m
+      Just type2 = getSymbolType (mapSymbol m n) $ target m
+      in (applyMorphism m type1) == type2
 
 -- applies a morphism to a symbol
 mapSymbol :: Morphism -> NAME -> NAME
