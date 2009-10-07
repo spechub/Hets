@@ -75,7 +75,8 @@ genErrorResponse fatality =
 addPGIPAnswer :: String -> String -> CmdlPgipState -> CmdlPgipState
 addPGIPAnswer msgtxt errmsg st =
     if useXML st
-    then let resp = addPGIPElement st $ genNormalResponse "message"
+    then let resp = if null msgtxt then st else
+               addPGIPElement st $ genNormalResponse "message"
                $ mkText msgtxt
          in if null errmsg then resp
          else addPGIPElement resp $ genErrorResponse False errmsg
