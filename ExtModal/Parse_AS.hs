@@ -10,7 +10,7 @@ Portability :
 
 -}
 
-module ExtModal.Parser_AS where 
+module ExtModal.Parse_AS where 
 
 
 import Common.AnnoState
@@ -30,7 +30,7 @@ modalFormulaParser =
 	   modal <- {-parse (term) modality-}
 	   close <- cBracketT
 	   grading <- asKey lessEq
-	   number <- {- parse number-}
+	   number <- getNumber
 	   formula <- primFormula ext_modal_reserved_words
 	   return (BoxOrDiamond True modal LeqOrGeq True number formula $ toRange open [] close)
 	<|>
@@ -39,7 +39,7 @@ modalFormulaParser =
 	   modal <- {-parse (term) modality-}
 	   close <- cBracketT
 	   grading <- asKey greaterEq
-	   number <- {- parse number-}
+	   number <- getNumber
 	   formula <- primFormula ext_modal_reserved_words
 	   return (BoxOrDiamond True modal LeqOrGeq False number formula $ toRange open [] close)
 	<|>
@@ -48,7 +48,7 @@ modalFormulaParser =
 	   modal <- {-parse (term) modality-}
 	   close <- asKey greaterS
 	   grading <- asKey lessEq
-	   number <- {-parse number-}
+	   number <- getNumber
 	   formula <- primFormula ext_modal_reserved_words
 	   return (BoxOrDiamond False modal LeqOrGeq True number formula $ toRange open [] close)
 	<|>
@@ -57,14 +57,14 @@ modalFormulaParser =
 	   modal <- {-parse (term) modality-}
 	   close <- asKey greaterS
 	   grading <- asKey greaterEq
-	   number <- {-parse number-}
+	   number <- getNumber
 	   formula <- primFormula ext_modal_reserved_words
 	   return (BoxOrDiamond False modal LeqOrGeq False number formula $ toRange open [] close)
 	<|>
 	{-empty diamond, <=-}
 	do diam <- diamondS
 	   grading <- asKey lessEq
-	   number <- {-parse number-}
+	   number <- getNumber
 	   formula <- primFormula ext_modal_reserved_words
 	   let pos <- tokPos diam
 	   return (BoxOrDiamond False (Simple_mod $ Token emptyS pos) LeqOrGeq True formula pos)
@@ -72,7 +72,7 @@ modalFormulaParser =
 	{-empty diamond, >=-}
 	do diam <- diamondS
 	   grading <- asKey greaterEq
-	   number <- {-parse number-}
+	   number <- getNumber
 	   formula <- primFormula ext_modal_reserved_words
 	   let pos <- tokPos diam
 	   return (BoxOrDiamond False (Simple_mod $ Token emptyS pos) LeqOrGeq False formula pos)
