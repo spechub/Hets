@@ -20,6 +20,7 @@ import Common.Utils
 import Text.XML.Light as XML
 
 import Data.Either
+import Data.List
 
 import System.Environment
 
@@ -57,12 +58,18 @@ xmlLitCmds trailer isOpen ls = case ls of
     _ -> wspes ++ [unode "proofstep" $ litString h]
          ++ xmlLitCmds (trailing h ++ "\n") isOpen r
 
-parseHPF :: FilePath -> IO ()
-parseHPF fp = do
+parseHPF :: Bool -> FilePath -> IO ()
+parseHPF normal fp = do
   str <- readFile fp
-  putStrLn $ showElement $ case parseContent fp str of
-    Left err -> genErrorResponse True err
-    Right rs -> genNormalResponse "" $ xmlLitCmds "" False rs
+  putStrLn $ case parseContent fp str of
+    Left err -> showElement $ genErrorResponse True err
+    Right rs -> (if normal then showElement . genNormalResponse "" else
+                     intercalate "\n" . map (showElement . unode "pgip"))
+      $ xmlLitCmds "" False rs
 
+-- with an argument "-" the output can be standard input for hets -I -x
 main :: IO ()
-main = getArgs >>= mapM_ parseHPF
+main = do
+  args <- getArgs
+  let (opts, files) = partition (isPrefixOf "-") args
+  mapM_ (parseHPF $ null opts) files
