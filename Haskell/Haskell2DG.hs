@@ -31,6 +31,8 @@ import Logic.Grothendieck
 
 import Static.GTheory
 import Static.DevGraph
+import Static.ComputeTheory
+
 import Driver.Options
 
 anaHaskellFile :: HetcatsOpts -> FilePath -> IO (Maybe (LibName, LibEnv))
@@ -61,5 +63,5 @@ anaHaskellFile opts file = do
               gEnv = Map.singleton mName
                       $ SpecEntry $ ExtGenSig (GenSig esig [] esig) nodeSig
               dg2 = dg1 { globalEnv = gEnv }
-              libEnv = Map.singleton ln dg2
+              libEnv = Map.singleton ln $ computeDGraphTheories Map.empty dg2
           return $ Just (ln, libEnv)

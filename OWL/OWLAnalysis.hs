@@ -22,6 +22,7 @@ import OWL.StructureAnalysis
 
 import Static.GTheory
 import Static.DevGraph
+import Static.ComputeTheory
 
 import Common.Id
 import Common.GlobalAnnotations
@@ -166,7 +167,7 @@ simpleLibEnv filename dg = let
   minNode = minimum $ nodesDG dg
   nodeSig = NodeSig minNode $ signOf $ dgn_theory $ labDG dg minNode
   esig = EmptyNode $ Logic OWL
-  in Map.singleton (simpleLibName filename) dg
+  in Map.singleton (simpleLibName filename) (computeDGraphTheories Map.empty dg)
            { globalEnv = Map.singleton (mkSimpleId "")
               (SpecEntry (ExtGenSig (GenSig esig [] esig) nodeSig))}
 
