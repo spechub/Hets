@@ -16,6 +16,7 @@ module Static.ComputeTheory
     , getGlobalTheory
     , theoremsToAxioms
     , computeDGraphTheories
+    , computeLabelTheory
     , markHiding
     ) where
 
@@ -69,12 +70,12 @@ globalNodeTheory dg = getGlobalTheory . labDG dg
 computeDGraphTheories :: LibEnv -> DGraph -> DGraph
 computeDGraphTheories le dgraph =
   foldl (\ dg l@(n, lbl) -> fst $ labelNodeDG (n, lbl
-     { globalTheory = maybeResult $ computeLabelTh le dg l }) dg)
+     { globalTheory = computeLabelTheory le dg l }) dg)
      dgraph $ topsortedNodes dgraph
 
-computeLabelTh :: LibEnv -> DGraph -> LNode DGNodeLab -> Result G_theory
-computeLabelTh le dg (n, lbl) = let localTh = dgn_theory lbl in
-    if isDGRef lbl then do
+computeLabelTheory :: LibEnv -> DGraph -> LNode DGNodeLab -> Maybe G_theory
+computeLabelTheory le dg (n, lbl) = let localTh = dgn_theory lbl in
+    maybeResult $ if isDGRef lbl then do
         let refNode = dgn_node lbl
             dg' = lookupDGraph (dgn_libname lbl) le
             newLab = labDG dg' refNode

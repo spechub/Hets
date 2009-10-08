@@ -35,6 +35,7 @@ import Logic.Prover
 
 import Static.GTheory
 import Static.DevGraph
+import Static.ComputeTheory
 
 import Common.AS_Annotation
 import Common.LibName
@@ -146,11 +147,9 @@ localInferenceAux libEnv dgraph ledge@(src, tgt, edgeLab) = let
                         Just goals'' ->
                           let (newSens, rnms) = joinSensAux sens goals''
                           in (G_theory lid sig ind newSens startThId, rnms)
-                  newContents = oldContents
-                    { dgn_theory = newTh
-                    , globalTheory = do
-                        oldTh <- globalTheory oldContents
-                        joinG_sentences oldTh newTh }
+                  new1 = oldContents { dgn_theory = newTh }
+                  newContents = new1 { globalTheory
+                    = computeLabelTheory libEnv dgraph (tgt, new1) }
                   locInferRule = DGRuleLocalInference renms
                   newLab = edgeLab
                     { dgl_type = setProof (Proven locInferRule emptyProofBasis)
