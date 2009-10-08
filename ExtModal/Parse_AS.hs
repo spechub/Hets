@@ -27,7 +27,7 @@ modalFormulaParse :: AParser st EM_FORMULA
 modalFormulaParser = 
 	{-box, <=-}
 	do open <- oBracketT
-	   modal <- {-parse (term) modality-}
+	   modal <- parseModality []
 	   close <- cBracketT
 	   grading <- asKey lessEq
 	   number <- getNumber
@@ -36,7 +36,7 @@ modalFormulaParser =
 	<|>
 	{-box, >=-}
 	do open <- oBracketT
-	   modal <- {-parse (term) modality-}
+	   modal <- parseModality []
 	   close <- cBracketT
 	   grading <- asKey greaterEq
 	   number <- getNumber
@@ -45,7 +45,7 @@ modalFormulaParser =
 	<|>
 	{-diamond, <=-}
 	do open <- asKey lessS
-	   modal <- {-parse (term) modality-}
+	   modal <- parseModality [greaterS]
 	   close <- asKey greaterS
 	   grading <- asKey lessEq
 	   number <- getNumber
@@ -54,7 +54,7 @@ modalFormulaParser =
 	<|>
 	{-diamond, >=-}
 	do open <- asKey lessS
-	   modal <- {-parse (term) modality-}
+	   modal <- parseModality [greaterS]
 	   close <- asKey greaterS
 	   grading <- asKey greaterEq
 	   number <- getNumber
@@ -139,33 +139,37 @@ modalFormulaParser =
 	<|>
 	{-parse Mu-}
 	do mu <- asKey muS
-	   Z <- {-parse variable-}
+	   Z <- varId ext_ modal_reserved_words
 	   formula <- primFormula ext_modal_reserved_words
 	   let pos <- tokPos mu
-	   return (FixedPoint True formula pos)
+	   return (FixedPoint True Z formula pos)
 	<|>	
 	{-parse Nu-}
 	do nu <- asKey nuS
-	   Z <- {-parse variable-}
+	   Z <- varId ext_modal_reserved_words
 	   formula <- primFormula ext_modal_reserved_words
 	   let pos <- tokPos nu
-	   return (FixedPoint False formula pos)
+	   return (FixedPoint False Z formula pos)
 	<|>
 	{-@-}
 	do at <- asKey atS
-	   nom <- {-parse nominal-}
+	   nom <- simpleId
 	   formula <- primFormula ext_modal_reserved_words
 	   let pos <- tokPos at
 	   return (Hybrif True nom formula pos)
 	<|>
 	{-Here-}
 	do her <- asKey hereS
-	   nom <- {-parse nominal-}
+	   nom <- simpleId
 	   formula <- primFormula ext_modal_reserved_words
 	   let pos <- tokPos her
 	   return (Hybrif False nom formula pos)
 	
-	
+
+parseModality :: [String] -> AParser st MODALITY
+parseModality = 
+
+
 
 instance AParsable EM_FORMULA where
 	aparser = modalFormulaParser
