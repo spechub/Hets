@@ -147,7 +147,7 @@ dgFlatRenamings lib_Env l_n dg =
    fin_dg = applyUpdDG renamings dg
   -- no need to care about references as each node
   -- is preserved during flattening.
-  in fin_dg
+  in computeDGraphTheories lib_Env fin_dg
     where
      updateDGWithChanges :: LEdge DGLinkLab -> DGraph -> DGraph
      updateDGWithChanges l_edg@( v1, v2, label) d_graph =
@@ -251,15 +251,15 @@ libFlatHeterogen lib =
 
 -- this function performs flattening of non-disjoint unions for the given
 -- DGraph
-dgFlatDUnions :: DGraph -> DGraph
-dgFlatDUnions dg =
+dgFlatDUnions :: LibEnv -> DGraph -> DGraph
+dgFlatDUnions le dg =
  let
   all_nodes = nodesDG dg
   imp_nds = filter (\ x -> length (innDG dg x) > 1) all_nodes
  --lower_nodes = filter (\ x -> (outDG dg x == [])) (nodesDG dg)
  -- as previously, no need to care about reference nodes,
  -- as previous one remain same.
- in applyToAllNodes dg imp_nds
+ in computeDGraphTheories le $ applyToAllNodes dg imp_nds
 
 -- this funciton given a list og G_sign returns intersection of them
 getIntersectionOfAll :: [G_sign] -> Result G_sign
@@ -471,4 +471,4 @@ singleTreeFlatDUnions libEnv libName nd = let
 -- this functions performs flattening of
 -- non-disjoint unions for the whole library
 libFlatDUnions :: LibEnv -> Result LibEnv
-libFlatDUnions = return . Map.map dgFlatDUnions
+libFlatDUnions le = return $ Map.map (dgFlatDUnions le) le
