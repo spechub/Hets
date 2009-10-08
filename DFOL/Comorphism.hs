@@ -349,18 +349,23 @@ morphTransl (Morphism sig1 sig2 sym_map) =
                        , CASL_Morphism.extended_map = ()
                        }    
 
-addSymbolTransl :: Sign -> CASL_Morphism.CASLMor -> (NAME,NAME) -> CASL_Morphism.CASLMor 
+addSymbolTransl :: Sign -> CASL_Morphism.CASLMor -> (NAME,NAME) ->
+                   CASL_Morphism.CASLMor 
 addSymbolTransl sig m (f,g) = 
    case kind of
-        FuncKind -> let f1 = (mkId [f], CASL_Sign.OpType CASL_AS.Partial (folType arity) sort)
+        FuncKind -> let f1 = (mkId [f], CASL_Sign.OpType CASL_AS.Partial
+                               (folType arity) sort)
                         g1 = (mkId [g], CASL_AS.Total) 
-                        in m {CASL_Morphism.op_map = Map.insert f1 g1 $ CASL_Morphism.op_map m}
+                        in m {CASL_Morphism.op_map = Map.insert f1 g1 
+                               $ CASL_Morphism.op_map m}
         PredKind -> let f1 = (mkId [f], CASL_Sign.PredType (folType arity))
                         g1 = mkId [g]   
-                        in m {CASL_Morphism.pred_map = Map.insert f1 g1 $ CASL_Morphism.pred_map m}
+                        in m {CASL_Morphism.pred_map = Map.insert f1 g1 
+                               $ CASL_Morphism.pred_map m}
         SortKind -> let f1 = (mkId [f], CASL_Sign.PredType (folType (arity+1)))
                         g1 = mkId [g]   
-                        in m {CASL_Morphism.pred_map = Map.insert f1 g1 $ CASL_Morphism.pred_map m}
+                        in m {CASL_Morphism.pred_map = Map.insert f1 g1 
+                               $ CASL_Morphism.pred_map m}
    where Just kind = getSymbolKind f sig
          Just arity = getSymbolArity f sig
 

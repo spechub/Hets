@@ -143,9 +143,11 @@ getTypeH (Identifier n) sig cont =
    case fromContext of 
         Just _  -> Result.Result [] fromContext
         Nothing -> case fromSig of
-                        Just type1 -> let type2 = renameBoundVars (piRecForm type1) sig cont
-                                          in Result.Result [] $ Just type2
-                        Nothing    -> Result.Result [unknownIdentifierError n cont] Nothing
+                        Just type1 -> 
+                          let type2 = renameBoundVars (piRecForm type1) sig cont
+                              in Result.Result [] $ Just type2
+                        Nothing -> 
+                          Result.Result [unknownIdentifierError n cont] Nothing
    where fromSig = getSymbolType n sig
          fromContext = getVarType n cont
 getTypeH (Appl f [a]) sig cont =
@@ -156,7 +158,8 @@ getTypeH (Appl f [a]) sig cont =
                Nothing -> Result.Result diagF Nothing
                Just (Func (dom:doms) cod) ->
                  if (dom == typeA)
-                    then Result.Result [] $ Just $ typeProperForm $ Func doms cod
+                    then Result.Result [] $ Just $ typeProperForm 
+                            $ Func doms cod
                     else Result.Result [wrongTypeError dom typeA a cont] Nothing
                Just (Pi [([x],t)] typ) ->
                  if (t == typeA)
@@ -168,7 +171,7 @@ getTypeH (Appl f [a]) sig cont =
           Result.Result diagA typeAM = getType a sig cont
 getTypeH _ _ _ = Result.Result [] Nothing
 
--- renames bound variables in a type to make it valid w.r.t. a signature and a context
+-- renames bound variables in a type to make it valid w.r.t. a sig and a context
 -- expects type in proper and pi-recursive form
 renameBoundVars :: TYPE -> Sign -> CONTEXT -> TYPE
 renameBoundVars t sig cont = 
@@ -298,11 +301,12 @@ buildSigH (([n1],t1):ds) sig map1 =
             then let Just t3 = getSymbolType n2 sig
                  in if t2 == t3
                        then buildSigH ds sig map1
-                       else Result.Result [incompatibleViewError1 n2 t2 t3] Nothing
+                       else Result.Result [incompatibleViewError1 n2 t2 t3] 
+                                          Nothing
             else buildSigH ds (addSymbolDecl ([n2],t2) sig) map1
 buildSigH _ _ _ = Result.Result [] Nothing
           
--- induces a signature morphism from the source and target signatures and a symbol map
+-- induces a signature morphism from the source and target sigs and a symbol map
 inducedFromToMorphism :: Map.Map Symbol Symbol -> ExtSign Sign Symbol -> 
                          ExtSign Sign Symbol -> Result.Result Morphism
 inducedFromToMorphism map1 (ExtSign sig1 _) (ExtSign sig2 _) =
@@ -326,7 +330,8 @@ buildMorph (([n1],t1):ds) m@(Morphism _ sig2 map1) =
      else let t2 = applyMorphism m t1
               ss = getSymsOfType sig2 t2
               in case ss of
-                      [s] -> buildMorph ds $ m {symMap = Map.insert n1 s $ symMap m}  
+                      [s] -> buildMorph ds $ 
+                                 m {symMap = Map.insert n1 s $ symMap m}  
                       []  -> Result.Result [noSymToMapError n1 t2] Nothing
                       _   -> Result.Result [manySymToMapError n1 t2 ss] Nothing
 buildMorph _ _ = Result.Result [] Nothing
@@ -412,7 +417,8 @@ incompatibleViewError1 n t1 t2 =
     , Result.diagString = "Symbol " ++ (show $ pretty n)
                           ++ " must have both type " ++ (show $ pretty t1)
                           ++ " and type " ++ (show $ pretty t2)
-                          ++ " in the target signature and hence the view is ill-formed."
+                          ++ " in the target signature and hence "
+                          ++ "the view is ill-formed."
     , Result.diagPos = nullRange
     }
 
@@ -423,7 +429,8 @@ incompatibleViewError2 n t1 t2 =
     , Result.diagString = "Symbol " ++ (show $ pretty n)
                           ++ " must have type " ++ (show $ pretty t1)
                           ++ " but instead has type " ++ (show $ pretty t2)
-                          ++ " in the target signature and hence the view is ill-formed."
+                          ++ " in the target signature and hence "
+                          ++ "the view is ill-formed."
     , Result.diagPos = nullRange
     }
 
@@ -432,8 +439,9 @@ noSymToMapError n t =
   Result.Diag
     { Result.diagKind = Result.Error
     , Result.diagString = "Symbol " ++ (show $ pretty n)
-                          ++ " cannot be mapped to anything as the target signature "
-                          ++ "contains no symbols of type " ++ (show $ pretty t)        
+                          ++ " cannot be mapped to anything as the target "
+                          ++ "signature contains no symbols of type "
+                          ++ (show $ pretty t)        
     , Result.diagPos = nullRange
     }
 
@@ -442,8 +450,9 @@ manySymToMapError n t ss =
   Result.Diag
     { Result.diagKind = Result.Error
     , Result.diagString = "Symbol " ++ (show $ pretty n)
-                          ++ " cannot be uniquely mapped as the target signature "
-                          ++ "contains multiple symbols of type " ++ (show $ pretty t)
-                          ++ ", namely " ++ (show $ printNames ss)        
+                          ++ " cannot be uniquely mapped as the target "
+                          ++ "signature contains multiple symbols of type " 
+                          ++ (show $ pretty t) ++ ", namely " 
+                          ++ (show $ printNames ss)        
     , Result.diagPos = nullRange
     }

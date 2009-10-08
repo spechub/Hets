@@ -114,7 +114,8 @@ termFlatForm (Appl f as) = (x, bs ++ as)
 piRecForm :: TYPE -> TYPE
 piRecForm (Pi [] type1) = piRecForm type1
 piRecForm (Pi (([n],t):ds) type1) = Pi [([n],t)] $ piRecForm $ Pi ds type1
-piRecForm (Pi (((n:ns),t):ds) type1) = Pi [([n],t)] $ piRecForm $ Pi ((ns,t):ds) type1
+piRecForm (Pi (((n:ns),t):ds) type1) = 
+  Pi [([n],t)] $ piRecForm $ Pi ((ns,t):ds) type1
 piRecForm t = t
 
 {- converts a type into a flattened form where the Pi operator binds multiple
@@ -137,14 +138,19 @@ typeProperForm t = t
 quantRecForm :: FORMULA -> FORMULA
 quantRecForm (Forall [] f) = quantRecForm f
 quantRecForm (Exists [] f) = quantRecForm f
-quantRecForm (Forall (([n],t):ds) f) = Forall [([n],t)] $ quantRecForm $ Forall ds f
-quantRecForm (Exists (([n],t):ds) f) = Exists [([n],t)] $ quantRecForm $ Exists ds f
-quantRecForm (Forall (((n:ns),t):ds) f) = Forall [([n],t)] $ quantRecForm $ Forall ((ns,t):ds) f
-quantRecForm (Exists (((n:ns),t):ds) f) = Exists [([n],t)] $ quantRecForm $ Exists ((ns,t):ds) f
+quantRecForm (Forall (([n],t):ds) f) = 
+  Forall [([n],t)] $ quantRecForm $ Forall ds f
+quantRecForm (Exists (([n],t):ds) f) = 
+  Exists [([n],t)] $ quantRecForm $ Exists ds f
+quantRecForm (Forall (((n:ns),t):ds) f) = 
+  Forall [([n],t)] $ quantRecForm $ Forall ((ns,t):ds) f
+quantRecForm (Exists (((n:ns),t):ds) f) = 
+  Exists [([n],t)] $ quantRecForm $ Exists ((ns,t):ds) f
 quantRecForm t = t
 
 {- converts a formula into a flattened form where quantifies bind multiple
-   arguments and the return type itself does not start with the same quantifier -}
+   arguments and the return type itself does not start with the same 
+   quantifier -} 
 quantFlatForm :: FORMULA -> FORMULA
 quantFlatForm (Forall ds1 f1) =
   case f1 of
@@ -229,7 +235,8 @@ translateFormula m s (Exists [([x],t)] f) =
       in Exists [([x1],t1)] f1
 translateFormula _ _ f = f
 
--- modifies the given name until it is different from each of the names in the input set
+{- modifies the given name until it is different from each of the names 
+   in the input set -}
 getNewName :: NAME -> Set.Set NAME -> NAME
 getNewName var names =
   let newVar = Token ((tokStr var) ++ "1") nullRange
@@ -241,7 +248,8 @@ getNewName var names =
 instance Eq TERM where
     u == v = eqTerm (termRecForm u) (termRecForm v)
 instance Eq TYPE where
-    u == v = eqType (piRecForm $ typeProperForm u) (piRecForm $ typeProperForm v)
+    u == v = eqType (piRecForm $ typeProperForm u) 
+                    (piRecForm $ typeProperForm v)
 
 -- expects term in recursive form
 eqTerm :: TERM -> TERM -> Bool
@@ -261,7 +269,8 @@ eqType (Pi [([n1],t1)] s1) (Pi [([n2],t2)] s2) =
      then and [t1 == t2, s1 == s2]
      else let syms1 = getFreeVars $ piRecForm $ typeProperForm s1
               syms2 = getFreeVars $ piRecForm $ typeProperForm s2
-              v = getNewName n1 $ Set.union (Set.delete n1 syms1) (Set.delete n2 syms2)
+              v = getNewName n1 $ Set.union (Set.delete n1 syms1) 
+                                            (Set.delete n2 syms2)
               type1 = translate (Map.singleton n1 (Identifier v)) syms1 s1
               type2 = translate (Map.singleton n2 (Identifier v)) syms2 s2
               in and [t1 == t2, type1 == type2]
@@ -414,5 +423,5 @@ compactDecls (d1:(d2:ds)) =
 
 expandDecls :: [DECL] -> [DECL]
 expandDecls [] = []
-expandDecls (([],_):ds) = expandDecls ds
+expandDecls (([],_):ds) = expandDecls ds 
 expandDecls (((n:ns),t):ds) = ([n],t):(expandDecls ((ns,t):ds))

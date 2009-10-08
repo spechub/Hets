@@ -24,7 +24,7 @@ instance Category Sign Morphism where
    ide = idMorph
    dom = source
    cod = target
-   isInclusion = Map.null . symMap
+   isInclusion = Map.null . symMap . morphCanForm
    composeMorphisms = compMorph
    legal_mor = isValidMorph
 
@@ -59,6 +59,7 @@ instance StaticAnalysis DFOL
    id_to_raw DFOL = fromId
    matches DFOL s1 s2 = s1 == s2
    empty_signature DFOL = emptySig
+   is_subsig DFOL sig1 sig2 = isValidMorph $ Morphism sig1 sig2 $ Map.empty
    induced_from_morphism DFOL = inducedFromMorphism
    induced_from_to_morphism DFOL = inducedFromToMorphism
  
