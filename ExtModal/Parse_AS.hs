@@ -15,6 +15,7 @@ module ExtModal.Parse_AS where
 
 import Common.AnnoState
 import ExtModal.AS_ExtModal
+import ExtModal.Keywords
 
 ext_modal_reserved_words :: [String]
 ext_modal_reserved_words = 
@@ -22,6 +23,7 @@ ext_modal_reserved_words =
 	hithertoS:previouslyS:muS:nuS:diamondS:termS:rigidS:flexibleS:modalityS:[modalitiesS]
 {-list of reserved words-}
 
+{-Modal formula parser-}
 
 modalFormulaParse :: AParser st EM_FORMULA
 modalFormulaParser = 
@@ -167,25 +169,66 @@ modalFormulaParser =
 	
 
 parseModality :: [String] -> AParser st MODALITY
-parseModality = 
-
+parseModality additional = 
+	do t <- term (additional ++ ext_modal_reserved_words)
+	{-parse actual term modality; TODO - needs work: this is a special case of term, see dynamic logic-}
+	   return $ Term_modality t
+	<|> return (Simple_mod $ mkSimpleId emptyS)
 
 
 instance AParsable EM_FORMULA where
 	aparser = modalFormulaParser
 
+{-Signature parser-}
 
+rigor :: AParser st RIGOR
+rigor = (asKey rigidS >> return Rigid)
+	<|> (asKey flexibleS >> return Flexible)
 
 sigItemParser :: AParser st EM_SIG_ITEM
-sigItemParser = {-parse sigItem-}
+sigItemParser =
+	do rig <- rigor
+	   do itemList ext_modal_reserved_words opS opItem (Rigid_op_items rig)
+	      <|> itemList ext_modal_reserved_words predS predItem (Rigid_pred_items rig)
 
 instance AParsable EM_SIG_ITEM where 
 	aparser = sigItemParser
 	
+{-Basic item parser-}
 
+mKey :: AParser st Token
+mKey = asKey modalityS <|> asKey modalitiesS
+
+nKey :: AParser st Token
+nKey = asKey nominalS <|> asKey nominalsS
 
 basicItemParser :: AParser st EM_BASIC_ITEM
-basicItemParser = {-parse basicItem-}
+basicItemParser = 
+	do k <- mKey 
+	   (annoId, ks) <- separatedBy (annoParser simpleId) anComma
+	   let pos = catRange $ k : ks
+	   do o <- oBraceT
+	      (someAxioms, qs) <- annoParser (formula ext_modal_reserved_words)
+	      		  `separatedBy` anSemi
+	      c <- cBraceT
+	      return (Simple_mod_decl False annoId someAxioms pos `appRange` toRange o qs c)
+	   <|> return (Simple_mod_decl False annoId [] pos)
+	<|>
+	do tmp <- asKey timeS
+	   k <- mKey 
+	   (annoId, ks) <- separatedBy (annoParser simpleId) anComma
+	   let pos = catRange $ k : ks
+	   do o <- oBraceT
+	      (someAxioms, qs) <- annoParser (formula ext_modal_reserved_words)
+	      		  `separatedBy` anSemi
+	      c <- cBraceT
+	      return (Simple_mod_decl True annoId someAxioms pos `appRange` toRange o qs c)
+	   <|> return (Simple_mod_decl True annoId [] pos)
+	<|>
+	do k <- nKey
+	   (annoId, ks) <- separatedBy (annoParser simpleId) anComma
+	   let pos = catRange $ k : ks
+	   return (Nominal_decl annoId pos)
 
 instance AParsable EM_BASIC_ITEM where 
-	aparser = basicItemParser 
+aparser = basicItemParser 

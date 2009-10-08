@@ -27,7 +27,7 @@ type AnEModForm = Annoted (FORMULA EM_FORMULA)
 data EM_BASIC_ITEM = 
 	Simple_mod_decl Bool [Annoted SIMPLE_ID] [AnEModForm] Range
 	-- True if time modality, False if not
-	| Nominal_decl [Annoted SIMPLE_ID]
+	| Nominal_decl [Annoted SIMPLE_ID] Range
 --	| Term_mod_decl [Annoted SIMPLE_ID] [AnEModForm] EM_TERM_MODALITY Range
 	deriving Show
 
@@ -48,8 +48,8 @@ data EM_SIG_ITEM =
              deriving Show
 
 
-data MODALITY = Simple_mod SIMPLE_ID | Term_mod EM_TERM_MODALITY
---				|Term_mod_prev SIMPLE_ID
+data MODALITY = Simple_mod SIMPLE_ID | Term_modality EM_TERM_MODALITY
+--				|Term_mod SIMPLE_ID
 	deriving (Eq, Ord, Show)
 
 data NOMINAL = Annoted SIMPLE_ID deriving (Show, Eq, Ord)
@@ -71,7 +71,7 @@ data EM_FORMULA = BoxOrDiamond Bool MODALITY LeqOrGeq Bool Int (FORMULA EM_FORMU
 		-- True if @, False if Here
 		-- pos: "@", "Here" 
 		UntilSince Bool (FORMULA EM_FORMULA) (FORMULA EM_FORMULA) Range |
-		-- ??? pos: "Until", "Since", True if  Until, False if Since
+		-- pos: "Until", "Since", True if  Until, False if Since
 		PathQuantification  Bool (FORMULA EM_FORMULA) Range |
 		-- pos: "A", "E", True if Universal (A), False if Existential (E)
 		NextY Bool (FORMULA EM_FORMULA) Range |

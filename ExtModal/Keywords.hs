@@ -62,3 +62,15 @@
  timeS :: String
  timeS = "time"
 
+ tmCompositonS :: String
+ tmCompositionS = ";"
+
+ tmUnionS :: String
+ tmUnion = "|"
+
+ tmTransClosS :: String
+ tmTransClosS = "*"
+
+ tmGuardS :: String
+ tmGuradS = "?"
+
