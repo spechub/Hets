@@ -80,7 +80,7 @@ addPGIPAnswer msgtxt errmsg st =
                $ mkText msgtxt
          in if null errmsg then resp
          else addPGIPElement resp $ genErrorResponse False errmsg
-    else addToMsg msgtxt errmsg st
+    else addToMsg errmsg $ addToMsg msgtxt st
 
 -- | It inserts a given string into the XML packet as
 -- error output
@@ -88,7 +88,7 @@ addPGIPError :: String -> CmdlPgipState -> CmdlPgipState
 addPGIPError str st = case str of
   "" -> st
   _ | useXML st -> addPGIPElement st $ genErrorResponse True str
-  _ -> addToMsg [] str st
+  _ -> addToMsg str st
 
 -- extracts the xml package in XML.Light format (namely the Content type)
 addPGIPAttributes :: CmdlPgipState -> Element -> Element
@@ -159,10 +159,8 @@ genPgipID =
    return $ t1 ++ "/" ++ t2 ++ "/" ++ show t3
 
 -- | Concatenates the input string to the message stored in the state
-addToMsg :: String -> String -> CmdlPgipState -> CmdlPgipState
-addToMsg str errStr pgD =
-  let strings = [errStr, str]
-  in pgD { msgs = filter (not . null) strings ++ msgs pgD }
+addToMsg :: String -> CmdlPgipState -> CmdlPgipState
+addToMsg str pgD = if null str then pgD else pgD { msgs = str : msgs pgD }
 
 -- | Resets the content of the message stored in the state
 resetPGIPData :: CmdlPgipState -> CmdlPgipState
@@ -180,7 +178,7 @@ sendPGIPData :: CmdlPgipState -> IO CmdlPgipState
 sendPGIPData pgData =
   do
     let xmlMsg = convertPGIPDataToString pgData
-        pgData' = addToMsg xmlMsg [] pgData
+        pgData' = addToMsg xmlMsg pgData
     sendMSGData pgData'
 
 sendMSGData :: CmdlPgipState -> IO CmdlPgipState
