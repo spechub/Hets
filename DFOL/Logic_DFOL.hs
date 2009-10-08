@@ -16,7 +16,7 @@ import qualified Data.Set as Set
 data DFOL = DFOL deriving Show
 
 instance Language DFOL where
-   description _ = "First-Order Logic with Dependent Types\n" 
+   description _ = "First-Order Logic with Dependent Types\n"
                    ++ "developed by F. Rabe"
 
 -- instance of Category for DFOL
@@ -39,7 +39,7 @@ instance Sentences DFOL FORMULA Sign Morphism Symbol where
    map_sen DFOL m = wrapInResult . (applyMorphism m)
    sym_of DFOL = (Set.map Symbol) . getSymbols
    symmap_of DFOL = toSymMap . symMap
-   sym_name DFOL = toId 
+   sym_name DFOL = toId
 
 -- static analysis for DFOL
 instance StaticAnalysis DFOL
@@ -62,7 +62,7 @@ instance StaticAnalysis DFOL
    is_subsig DFOL sig1 sig2 = isValidMorph $ Morphism sig1 sig2 $ Map.empty
    induced_from_morphism DFOL = inducedFromMorphism
    induced_from_to_morphism DFOL = inducedFromToMorphism
- 
+
 -- instance of logic for DFOL
 instance Logic DFOL
    ()

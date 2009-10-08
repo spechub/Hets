@@ -140,13 +140,13 @@ getType term sig cont = getTypeH (termRecForm term) sig cont
 -- returns type in proper and pi-recursive form
 getTypeH ::TERM -> Sign -> CONTEXT -> Result.Result TYPE
 getTypeH (Identifier n) sig cont =
-   case fromContext of 
+   case fromContext of
         Just _  -> Result.Result [] fromContext
         Nothing -> case fromSig of
-                        Just type1 -> 
+                        Just type1 ->
                           let type2 = renameBoundVars (piRecForm type1) sig cont
                               in Result.Result [] $ Just type2
-                        Nothing -> 
+                        Nothing ->
                           Result.Result [unknownIdentifierError n cont] Nothing
    where fromSig = getSymbolType n sig
          fromContext = getVarType n cont
@@ -158,7 +158,7 @@ getTypeH (Appl f [a]) sig cont =
                Nothing -> Result.Result diagF Nothing
                Just (Func (dom:doms) cod) ->
                  if (dom == typeA)
-                    then Result.Result [] $ Just $ typeProperForm 
+                    then Result.Result [] $ Just $ typeProperForm
                             $ Func doms cod
                     else Result.Result [wrongTypeError dom typeA a cont] Nothing
                Just (Pi [([x],t)] typ) ->
@@ -174,7 +174,7 @@ getTypeH _ _ _ = Result.Result [] Nothing
 -- renames bound variables in a type to make it valid w.r.t. a sig and a context
 -- expects type in proper and pi-recursive form
 renameBoundVars :: TYPE -> Sign -> CONTEXT -> TYPE
-renameBoundVars t sig cont = 
+renameBoundVars t sig cont =
   let syms = Set.union (getSymbols sig) (getVars cont)
       in translate Map.empty syms t
 
@@ -278,21 +278,21 @@ makeSymbols (Symb_items symbs) = map Symbol symbs
 
 -- induces a signature morphism from the source signature and a symbol map
 inducedFromMorphism :: Map.Map Symbol Symbol -> Sign -> Result.Result Morphism
-inducedFromMorphism map1 sig1 = 
+inducedFromMorphism map1 sig1 =
   let map2 = toNameMap map1
-      Result.Result dgs sig2M = buildSig sig1 map2  
+      Result.Result dgs sig2M = buildSig sig1 map2
       in case sig2M of
               Nothing -> Result.Result dgs Nothing
-              Just sig2 -> Result.Result [] $ Just $ Morphism sig1 sig2 map2   
+              Just sig2 -> Result.Result [] $ Just $ Morphism sig1 sig2 map2
 
 buildSig :: Sign -> Map.Map NAME NAME -> Result.Result Sign
 buildSig (Sign ds) map1 = buildSigH (expandDecls ds) emptySig map1
 
 buildSigH :: [DECL] -> Sign -> Map.Map NAME NAME -> Result.Result Sign
-buildSigH [] sig _ = Result.Result [] $ Just sig  
+buildSigH [] sig _ = Result.Result [] $ Just sig
 buildSigH (([n1],t1):ds) sig map1 =
   let n2 = Map.findWithDefault n1 n1 map1
-      map2 = Map.fromList $ map (\ (k,a) -> (k, Identifier a)) 
+      map2 = Map.fromList $ map (\ (k,a) -> (k, Identifier a))
                $ Map.toList map1
       syms = Set.map (\ n -> Map.findWithDefault n n map1)
                  $ getSymbols sig
@@ -301,25 +301,25 @@ buildSigH (([n1],t1):ds) sig map1 =
             then let Just t3 = getSymbolType n2 sig
                  in if t2 == t3
                        then buildSigH ds sig map1
-                       else Result.Result [incompatibleViewError1 n2 t2 t3] 
+                       else Result.Result [incompatibleViewError1 n2 t2 t3]
                                           Nothing
             else buildSigH ds (addSymbolDecl ([n2],t2) sig) map1
 buildSigH _ _ _ = Result.Result [] Nothing
-          
+
 -- induces a signature morphism from the source and target sigs and a symbol map
-inducedFromToMorphism :: Map.Map Symbol Symbol -> ExtSign Sign Symbol -> 
+inducedFromToMorphism :: Map.Map Symbol Symbol -> ExtSign Sign Symbol ->
                          ExtSign Sign Symbol -> Result.Result Morphism
 inducedFromToMorphism map1 (ExtSign sig1 _) (ExtSign sig2 _) =
   let map2 = toNameMap map1
       m = Morphism sig1 sig2 map2
-      Sign ds = sig1   
+      Sign ds = sig1
       in if (isValidMorph m)
             then Result.Result [] $ Just m
             else buildMorph (expandDecls ds) m
 
-buildMorph :: [DECL] -> Morphism -> Result.Result Morphism 
+buildMorph :: [DECL] -> Morphism -> Result.Result Morphism
 buildMorph [] m = Result.Result [] $ Just m
-buildMorph (([n1],t1):ds) m@(Morphism _ sig2 map1) = 
+buildMorph (([n1],t1):ds) m@(Morphism _ sig2 map1) =
   if (Map.member n1 map1)
      then let n2 = mapSymbol m n1
               t2 = applyMorphism m t1
@@ -330,8 +330,8 @@ buildMorph (([n1],t1):ds) m@(Morphism _ sig2 map1) =
      else let t2 = applyMorphism m t1
               ss = getSymsOfType sig2 t2
               in case ss of
-                      [s] -> buildMorph ds $ 
-                                 m {symMap = Map.insert n1 s $ symMap m}  
+                      [s] -> buildMorph ds $
+                                 m {symMap = Map.insert n1 s $ symMap m}
                       []  -> Result.Result [noSymToMapError n1 t2] Nothing
                       _   -> Result.Result [manySymToMapError n1 t2 ss] Nothing
 buildMorph _ _ = Result.Result [] Nothing
@@ -341,7 +341,7 @@ getSymsOfType (Sign ds) t = getSymsOfTypeH ds t
 
 getSymsOfTypeH :: [DECL] -> TYPE -> [NAME]
 getSymsOfTypeH [] _ = []
-getSymsOfTypeH ((ns,t1):ds) t = 
+getSymsOfTypeH ((ns,t1):ds) t =
   if (t1 == t)
      then ns ++ (getSymsOfTypeH ds t)
      else getSymsOfTypeH ds t
@@ -441,7 +441,7 @@ noSymToMapError n t =
     , Result.diagString = "Symbol " ++ (show $ pretty n)
                           ++ " cannot be mapped to anything as the target "
                           ++ "signature contains no symbols of type "
-                          ++ (show $ pretty t)        
+                          ++ (show $ pretty t)
     , Result.diagPos = nullRange
     }
 
@@ -451,8 +451,8 @@ manySymToMapError n t ss =
     { Result.diagKind = Result.Error
     , Result.diagString = "Symbol " ++ (show $ pretty n)
                           ++ " cannot be uniquely mapped as the target "
-                          ++ "signature contains multiple symbols of type " 
-                          ++ (show $ pretty t) ++ ", namely " 
-                          ++ (show $ printNames ss)        
+                          ++ "signature contains multiple symbols of type "
+                          ++ (show $ pretty t) ++ ", namely "
+                          ++ (show $ printNames ss)
     , Result.diagPos = nullRange
     }

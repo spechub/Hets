@@ -27,12 +27,12 @@ printSymbol (Symbol s) = pretty s
 
 -- interface to name maps
 toSymMap :: Map.Map NAME NAME -> Map.Map Symbol Symbol
-toSymMap map1 = Map.fromList $ map (\ (k,a) -> (Symbol k, Symbol a)) 
+toSymMap map1 = Map.fromList $ map (\ (k,a) -> (Symbol k, Symbol a))
                  $ Map.toList map1
 
 toNameMap :: Map.Map Symbol Symbol -> Map.Map NAME NAME
-toNameMap map1 = Map.fromList $ map (\ (Symbol k, Symbol a) -> (k,a)) 
-                    $ Map.toList map1 
+toNameMap map1 = Map.fromList $ map (\ (Symbol k, Symbol a) -> (k,a))
+                    $ Map.toList map1
 
 -- interface to Id
 toId :: Symbol -> Id
