@@ -45,6 +45,7 @@ makeCofiLib
 repackDocs
 
 moreChecks
+checkEnvs
 checkPrfs
 date
 updateOMDoc
