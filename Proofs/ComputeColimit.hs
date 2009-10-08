@@ -18,6 +18,7 @@ module Proofs.ComputeColimit where
 
 import Proofs.EdgeUtils
 
+import Static.ComputeTheory
 import Static.DevGraph
 import Static.GTheory
 import Static.WACocone
@@ -40,11 +41,11 @@ import Control.Monad
 computeColimit :: LibName -> LibEnv -> Result LibEnv
 computeColimit ln le = do
   let dgraph = lookupDGraph ln le
-  nextDGraph <- insertColimitInGraph dgraph
+  nextDGraph <- insertColimitInGraph le dgraph
   return $ Map.insert ln nextDGraph le
 
-insertColimitInGraph :: DGraph -> Result DGraph
-insertColimitInGraph dgraph = do
+insertColimitInGraph :: LibEnv -> DGraph -> Result DGraph
+insertColimitInGraph le dgraph = do
   let diag = makeDiagram dgraph (nodesDG dgraph) $ labEdgesDG dgraph
   (gth, morFun) <- gWeaklyAmalgamableCocone diag
   let -- a better node name, gn_Signature_Colimit?
@@ -57,7 +58,10 @@ insertColimitInGraph dgraph = do
                     dgl_id = defaultEdgeId})) $
                    nodes $ dgBody dgraph
       changes  = InsertNode (newNodeNr, newNode) : map InsertEdge edgeList
-      newGraph = changesDGH dgraph changes
+      newDg = changesDGH dgraph changes
+      newGraph = changeDGH newDg $ SetNodeLab newNode
+        (newNodeNr, newNode
+        { globalTheory = computeLabelTheory le newDg (newNodeNr, newNode) })
   return $ groupHistory dgraph (DGRule "Compute-Colimit") newGraph
 
 {- | creates an GDiagram with the signatures of the given nodes as nodes
