@@ -15,22 +15,35 @@ for standard input and file input
 
 module CMDL.Interface where
 
-import System.Console.Shell(ShellDescription(defaultCompletions), runShell)
+import System.Console.Shell(CommandStyle(OnlyCommands), ShellDescription(..),
+                            runShell, initialShellDescription)
 import System.Console.Shell.Backend(ShellBackend(..))
 import System.Console.Shell.Backend.Haskeline
 
 import System.IO(IO, hIsTerminalDevice, stdin)
 
-import CMDL.Commands(getCommands)
+import CMDL.Commands(getCommands, shellacCommands, shellacEvalFunc)
 import CMDL.DataTypes
+import CMDL.DataTypesUtils(generatePrompter)
 import CMDL.DgCommands(cUse)
 import CMDL.Shell(cmdlCompletionFn)
 import CMDL.Utils(stripComments)
 import CMDL.ProcessScript
-import CMDL.StdInterface(stdShellDescription)
 
 import Common.Utils(trim)
 import Driver.Options (HetcatsOpts, InType(..), guess)
+
+stdShellDescription :: ShellDescription CmdlState
+stdShellDescription =
+ let wbc = "\n\r\v\\"
+  in initialShellDescription
+          { shellCommands      = shellacCommands
+          , commandStyle       = OnlyCommands
+          , evaluateFunc       = shellacEvalFunc
+          , wordBreakChars     = wbc
+          , prompt             = return . generatePrompter
+          , historyFile        = Just "consoleHistory.tmp"
+          }
 
 -- | Processes a list of input files
 processInput :: HetcatsOpts -> [FilePath] -> CmdlState -> IO CmdlState
