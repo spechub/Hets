@@ -24,6 +24,7 @@ import Logic.Comorphism
 import Logic.Prover(toNamedList, toThSens)
 import Logic.ExtSign
 
+import Static.ComputeTheory
 import Static.GTheory
 import Static.DevGraph
 import Static.WACocone
@@ -90,10 +91,9 @@ normalFormDG libEnv dgraph = foldM (\ dg (node, nodelab) ->
                  , dgn_sigma = Just $ ide $ dgn_sign refNodelab
                  , nodeInfo = newRefInfo refLib refNf
                  , dgn_lock = Nothing }
-               newLab = nodelab{
-                   dgn_nf = Just nfNode,
-                   dgn_sigma = dgn_sigma $ labDG refGraph' $ dgn_node nodelab
-                 }
+               newLab = nodelab
+                 { dgn_nf = Just nfNode,
+                   dgn_sigma = dgn_sigma refLabel }
                chLab = SetNodeLab nodelab (node, newLab)
                changes = [InsertNode (nfNode, refLab), chLab]
                newGraph = changesDGH dgraph changes
@@ -157,8 +157,11 @@ normalFormDG libEnv dgraph = foldM (\ dg (node, nodelab) ->
                 insStrMor = map (\ (x, f) -> InsertEdge $ makeEdge x nfNode f)
                   $ nub $ map (\ (x, y) -> (g Map.! x, y))
                   $ (node, morNode) : Map.toList mmap
-                allChanges = chLab : insNNF : insStrMor
-            return $ changesDGH dg allChanges
+                allChanges = insNNF : chLab : insStrMor
+                newDG = changesDGH dg allChanges
+            return $ changeDGH newDG $ SetNodeLab nfLabel (nfNode, nfLabel
+              { globalTheory = computeLabelTheory libEnv newDG
+                (nfNode, nfLabel) })
   else return dg) dgraph $ topsortedNodes dgraph -- only change relevant nodes
 
 {- | computes the diagram associated to a node N in a development graph,
