@@ -19,6 +19,7 @@ import System.Process
 
 import Static.GTheory
 import Static.DevGraph
+import Static.ComputeTheory
 import Static.AnalysisStructured
 
 import Logic.Logic
@@ -904,4 +905,4 @@ anaMaudeFile :: HetcatsOpts -> FilePath -> IO (Maybe (LibName, LibEnv))
 anaMaudeFile _ file = do
     dg <- directMaudeParsing file
     let name = emptyLibName "Maude_Module"
-    return $ Just (name, Map.singleton name dg)
+    return $ Just (name, Map.singleton name $ computeDGraphTheories Map.empty dg)
