@@ -26,6 +26,7 @@ import Data.Either
 import Data.List
 
 import Control.Monad
+import System.IO
 
 cmdlProcessString :: FilePath -> Int -> String -> CmdlState
   -> IO (CmdlState, Maybe Command)
@@ -57,6 +58,7 @@ cmdlProcessScriptFile fp st = do
       unless (null ms) $ putStrLn ms
       unless (null ws) . putStrLn $ "Warning:\n" ++ ws
       unless (null es) . putStrLn $ "Error:\n" ++ es
+      hFlush stdout
       return cst { output = emptyCmdlMessage }) st
     . number $ lines str
 
