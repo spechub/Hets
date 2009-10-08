@@ -760,16 +760,16 @@ morMapI = getMapAndMaxIndex startMorId morMap
 lookupGlobalEnvDG :: SIMPLE_ID -> DGraph -> Maybe GlobalEntry
 lookupGlobalEnvDG sid = Map.lookup sid . globalEnv
 
--- | lookup a referenced node with a node id
+-- | lookup a referenced library and node of a given reference node
 lookupInRefNodesDG :: Node -> DGraph -> Maybe (LibName, Node)
 lookupInRefNodesDG n = Map.lookup n . refNodes
 
--- | look up a refernced node with its parent infor.
+-- | lookup a reference node for a given libname and node
 lookupInAllRefNodesDG :: DGNodeInfo -> DGraph -> Maybe Node
-lookupInAllRefNodesDG ref = case ref of
+lookupInAllRefNodesDG ref dg = case ref of
     DGRef { ref_libname = libn, ref_node = refn } ->
-        Map.lookup (libn, refn) . allRefNodes
-    _ -> error "lookupInAllRefNodesDG"
+        Map.lookup (libn, refn) $ allRefNodes dg
+    _ -> Nothing
 
 -- ** treat reference nodes
 
@@ -779,7 +779,7 @@ addToRefNodesDG n ref dg = case ref of
     DGRef { ref_libname = libn, ref_node = refn } ->
       dg { refNodes = Map.insert n (libn, refn) $ refNodes dg
          , allRefNodes = Map.insert (libn, refn) n $ allRefNodes dg }
-    _ -> error "addToRefNodesDG"
+    _ -> dg
 
 -- | delete the given referenced node out of the refnodes map
 deleteFromRefNodesDG :: Node -> DGraph -> DGraph
