@@ -21,6 +21,7 @@ import Static.DevGraph
 import Data.Graph.Inductive.Graph
 import Common.LibName
 import Logic.Logic
+import qualified Common.Lib.SizedList as SizedList
 
 {-
    proof status = (DG0,[(R1,DG1),...,(Rn,DGn)])
@@ -34,9 +35,28 @@ import Logic.Logic
 -- methods used in several proofs
 -- -------------------------------
 
-{- returns the history that belongs to the given library name-}
+{- returns the history that belongs to the given library name -}
 lookupHistory :: LibName -> LibEnv -> ProofHistory
-lookupHistory ln = proofHistory . lookupDGraph ln
+lookupHistory ln = clearHist . proofHistory . lookupDGraph ln
+
+-- clear label lock
+clr :: DGNodeLab -> DGNodeLab
+clr l = l { dgn_lock = Nothing }
+
+clearLock :: DGChange -> DGChange
+clearLock c = case c of
+  InsertNode (n, l) -> InsertNode (n, clr l)
+  DeleteNode (n, l) -> InsertNode (n, clr l)
+  SetNodeLab o (n, l) -> SetNodeLab (clr o) (n, clr l)
+  _ -> c
+
+clearHist :: ProofHistory -> ProofHistory
+clearHist = SizedList.map clearElem
+
+clearElem :: HistElem -> HistElem
+clearElem e = case e of
+  HistElem c -> HistElem $ clearLock c
+  HistGroup r h -> HistGroup r $ clearHist h
 
 -- ----------------------------------------------
 -- methods that keep the change list clean
