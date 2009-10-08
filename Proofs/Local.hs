@@ -113,7 +113,7 @@ localInferenceFromAux :: LibName -> LibEnv -> DGraph -> [LEdge DGLinkLab]
 localInferenceFromAux ln libEnv dgraph localThmEdges =
    let finalLocalThmEdges = filter (liftE isUnprovenLocalThm) localThmEdges
        nextDGraph = foldl (localInferenceAux libEnv) dgraph finalLocalThmEdges
-   in Map.insert ln nextDGraph libEnv
+   in Map.insert ln (computeDGraphTheories libEnv nextDGraph) libEnv
 
 -- | local inference for all edges
 localInference :: LibName -> LibEnv -> LibEnv
@@ -147,9 +147,7 @@ localInferenceAux libEnv dgraph ledge@(src, tgt, edgeLab) = let
                         Just goals'' ->
                           let (newSens, rnms) = joinSensAux sens goals''
                           in (G_theory lid sig ind newSens startThId, rnms)
-                  new1 = oldContents { dgn_theory = newTh }
-                  newContents = new1 { globalTheory
-                    = computeLabelTheory libEnv dgraph (tgt, new1) }
+                  newContents = oldContents { dgn_theory = newTh }
                   locInferRule = DGRuleLocalInference renms
                   newLab = edgeLab
                     { dgl_type = setProof (Proven locInferRule emptyProofBasis)
