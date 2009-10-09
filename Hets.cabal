@@ -47,8 +47,8 @@ flag tabular
 flag tar
   description: save VSE proofs in tar archives
 
-flag shellac
-  description: use Shellac for the command line interface
+flag haskeline
+  description: command line interface
 
 flag hxtfilter
   description: use old hxt-filter package for
@@ -109,12 +109,11 @@ Executable hets
     build-depends: tar >= 0.3 && <= 0.4
     cpp-options: -DTAR_PACKAGE
 
-  if flag(shellac)
+  if flag(haskeline)
     build-depends:
-        Shellac >= 0.9.5 && <= 0.10
-      , Shellac-haskeline >= 0.2 && <= 0.10
+        haskeline >= 0.6 && < 0.7
       , unix >= 2.3.0.0
-    cpp-options: -DSHELLAC
+    cpp-options: -DHASKELINE
 
   if flag(hxtfilter)
     build-depends:

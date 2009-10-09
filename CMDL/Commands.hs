@@ -12,53 +12,22 @@ CMDL.Commands contains the description of all commands available
 
 module CMDL.Commands
        ( getCommands
-       , shellacCommands
-       , shellacEvalFunc
        , proveAll
        , cmdlIgnoreFunc
        ) where
 
-import System.Console.Shell(ShellCommand, cmd, exitCommand, helpCommand)
-import System.Console.Shell.ShellMonad(Sh)
-
 import Interfaces.Command
-import Interfaces.CmdAction(globLibAct, globLibResultAct, globResultAct)
+import Interfaces.CmdAction (globLibAct, globLibResultAct, globResultAct)
 
 import CMDL.DataTypes
 import CMDL.ProveCommands
 import CMDL.InfoCommands
-import CMDL.DgCommands(cDgSelect, cUse, cExpand, cAddView, commandDgAll, 
-                       wrapResultDgAll)
-import CMDL.ProveConsistency(cConsChecker, cProver)
-import CMDL.UndoRedo(cRedo, cUndo)
-import CMDL.Shell(cDetails, shellacCmd)
-import CMDL.ConsCommands(cConservCheck)
-
--- | Generates a shellac command that requires input
-shellacWithInput :: CmdlCmdDescription -> String -> Sh CmdlState ()
-shellacWithInput descr inp =
-  shellacCmd descr { cmdDescription = setInputStr inp $ cmdDescription descr }
-
--- | Generates the list of all the shell commands together
--- with a short description
-shellacCommands :: [ShellCommand CmdlState]
-shellacCommands = let
-    genCmds = concatMap (\ x ->
-         let desc = cmdDescription x
-             cn = cmdName x
-         in map (\ y -> (case cmdFn x of
-                          CmdNoInput _ -> cmd y $ shellacCmd x
-                          CmdWithInput _ -> cmd y $ shellacWithInput x)
-                            $ describeCmd desc)
-                $ case desc of
-                    GlobCmd ProveCurrent -> [cn, "prove-all"]
-                    _ -> [cn]) getCommands
-    in
-    -- different names for exit commands
-       map exitCommand ["exit", "quit", ":q"]
-    -- different name for help commands
-    ++ map helpCommand ["help", "?"]
-    ++ genCmds
+import CMDL.DgCommands (cDgSelect, cUse, cExpand, cAddView, commandDgAll,
+                        wrapResultDgAll)
+import CMDL.ProveConsistency (cConsChecker, cProver)
+import CMDL.UndoRedo (cRedo, cUndo)
+import CMDL.Shell (cDetails)
+import CMDL.ConsCommands (cConservCheck)
 
 -- | Generates a command description given all parameters
 genCmd :: Command -> CmdlCmdPriority ->
@@ -109,22 +78,12 @@ genInspectCmd ic =
 
 genChangeCmd :: ChangeCmd -> (String -> CmdlState -> IO CmdlState)
               -> CmdlCmdDescription
-genChangeCmd cc cf =
-  genCmd (mkChangeCmd cc) CmdNoPriority ReqNothing $ CmdWithInput cf
-
--- | Evaluation function description (function called when input can not
--- be parsed
-cmdlEvalFunc :: CmdlCmdDescription
-cmdlEvalFunc =
-  genCmd (CommentCmd "") CmdNoPriority ReqNothing $ CmdWithInput cNotACommand
+genChangeCmd cc =
+  genCmd (mkChangeCmd cc) CmdNoPriority ReqNothing . CmdWithInput
 
 cmdlIgnoreFunc :: String -> CmdlCmdDescription
 cmdlIgnoreFunc r =
   genCmd (CommentCmd r) CmdNoPriority ReqNothing $ CmdNoInput return
-
--- | Shellac description of the evaluation function
-shellacEvalFunc :: String -> Sh CmdlState ()
-shellacEvalFunc = shellacWithInput cmdlEvalFunc
 
 -- for the synonym "prove-all"
 proveAll :: CmdlCmdDescription
@@ -180,5 +139,8 @@ getCommands =
   , genInspectCmd Concept cShowConcept
   , genInspectCmd EdgeInfo cInfo ]
   ++
-  [ genChangeCmd Expand cExpand,
-    genChangeCmd AddView cAddView]
+  [ genChangeCmd Expand cExpand
+  , genChangeCmd AddView cAddView]
+  ++
+  [ genCmd HelpCmd CmdNoPriority ReqNothing $ CmdNoInput $ cHelp getCommands
+  , genCmd ExitCmd CmdNoPriority ReqNothing $ CmdNoInput return ]

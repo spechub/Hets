@@ -46,20 +46,24 @@ cmdlProcessCmd c = case find (eqCmd c . cmdDescription) getCommands of
   Nothing -> return . genErrorMsg ("unknown command: " ++ cmdNameStr c)
   Just cm -> execCmdlCmd cm { cmdDescription = c }
 
+printCmdResult :: CmdlState -> IO CmdlState
+printCmdResult state = do
+  let o = output state
+      ms = outputMsg o
+      ws = warningMsg o
+      es = errorMsg o
+  unless (null ms) $ putStrLn ms
+  unless (null ws) . putStrLn $ "Warning:\n" ++ ws
+  unless (null es) . putStrLn $ "Error:\n" ++ es
+  hFlush stdout
+  return state { output = emptyCmdlMessage }
+
 cmdlProcessScriptFile :: FilePath -> CmdlState -> IO CmdlState
 cmdlProcessScriptFile fp st = do
   str <- readFile fp
   foldM (\ nst (s, n) -> do
       (cst, _) <- cmdlProcessString fp n s nst
-      let o = output cst
-          ms = outputMsg o
-          ws = warningMsg o
-          es = errorMsg o
-      unless (null ms) $ putStrLn ms
-      unless (null ws) . putStrLn $ "Warning:\n" ++ ws
-      unless (null es) . putStrLn $ "Error:\n" ++ es
-      hFlush stdout
-      return cst { output = emptyCmdlMessage }) st
+      printCmdResult cst) st
     . number $ lines str
 
 -- | The function processes the file of instructions

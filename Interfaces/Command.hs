@@ -238,6 +238,8 @@ data Command =
   | CommentCmd String
   | GroupCmd [Command] -- just to group commands in addCommandHistoryToState
   | ChangeCmd ChangeCmd String
+  | HelpCmd
+  | ExitCmd
 
 -- the same command modulo input argument
 eqCmd :: Command -> Command -> Bool
@@ -249,6 +251,8 @@ eqCmd c1 c2 = case (c1, c2) of
   (IncludeProvenTheorems b1, IncludeProvenTheorems b2) -> b1 == b2
   (InspectCmd i1 m1, InspectCmd i2 m2) -> i1 == i2 && isJust m1 == isJust m2
   (CommentCmd _, CommentCmd _) -> True
+  (HelpCmd, HelpCmd) -> True
+  (ExitCmd, ExitCmd) -> True
   (GroupCmd l1, GroupCmd l2) -> and (zipWith eqCmd l1 l2)
     && length l1 == length l2
   _ -> False
@@ -291,6 +295,8 @@ cmdNameStr cmd = case cmd of
     ++ map (\ c -> if c == ' ' then '-' else toLower c) (showInspectCmd i)
     ++ (if i > LocalAxioms && isNothing s then "-current" else "")
   CommentCmd _ -> "#"
+  HelpCmd -> "help"
+  ExitCmd -> "quit"
   GroupCmd _ -> ""
   ChangeCmd c _ -> changeCmdNameStr c
 
@@ -317,6 +323,8 @@ describeCmd cmd = case cmd of
   InspectCmd i t -> "Show " ++ showInspectCmd i
     ++ (if i > LocalAxioms && isNothing t then " of selected node" else "")
   CommentCmd _ -> "Line comment"
+  HelpCmd -> "Show all available commands"
+  ExitCmd -> "Quit"
   GroupCmd _ -> "Grouping several commands"
   ChangeCmd c _ -> describeChangeCmd c
 

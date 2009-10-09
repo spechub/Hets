@@ -42,7 +42,7 @@ import Haskell.Haskell2DG
 #endif
 import System.Exit (ExitCode(ExitSuccess), exitWith)
 
-#ifdef SHELLAC
+#ifdef HASKELINE
 import Interfaces.DataTypes
 import CMDL.Interface
 import CMDL.ProcessScript
@@ -57,7 +57,7 @@ main =
     getArgs >>= hetcatsOpts >>= \ opts ->
      let xFlag = xmlFlag opts
          iFiles = infiles opts in
-#ifdef SHELLAC
+#ifdef HASKELINE
      if connectP opts /= -1 || listen opts /= -1
        then
         cmdlListenOrConnect2Port opts >> return ()
@@ -90,7 +90,7 @@ processFile opts file = do
       OmdocIn -> mLibEnvFromOMDocFile opts file
 #endif
       PrfIn -> anaLibReadPrfs opts file
-#ifdef SHELLAC
+#ifdef HASKELINE
       ProofCommand -> do
         putStrLn "Start processing a proof command file"
         st <- cmdlProcessFile opts file

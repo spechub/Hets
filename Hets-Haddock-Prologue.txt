@@ -110,9 +110,9 @@ Hets is also based on the following third-party libraries:
  * the xml light package, see
    <http://hackage.haskell.org/package/xml>
 
- * Shellac for the command line interface, see
-   <http://www.eecs.tufts.edu/~rdocki01/shellac.html>
-   and <http://hackage.haskell.org/package/Shellac-haskeline>
+ * Haskeline for the command line interface, see
+   <http://trac.haskell.org/haskeline>
+   and <http://hackage.haskell.org/package/haskeline>
 
  * programatica for Haskell as a logic, see
    <http://programatica.cs.pdx.edu/>

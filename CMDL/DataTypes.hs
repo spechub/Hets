@@ -140,6 +140,23 @@ data CmdlCmdRequirements =
   | ReqNothing
   | ReqUnknown
 
+instance Show CmdlCmdRequirements where
+  show cr = case cr of
+              ReqNodes           -> "Nodes"
+              ReqEdges           -> "Edges"
+              ReqNodesAndEdges   -> "Nodes|Edges"
+              ReqProvers         -> "Prover"
+              ReqConsCheck       -> "ConsChecker"
+              ReqComorphism      -> "Comorphism"
+              ReqFile            -> "File"
+              ReqGNodes          -> "GoalNodes"
+              ReqGEdges          -> "GoalEdges"
+              ReqGNodesAndGEdges -> "Nodes|Edges"
+              ReqAxm             -> "Axiom"
+              ReqGoal            -> "Goal"
+              ReqNumber          -> "Number"
+              _                  -> ""
+
 
 -- Communication channel datatypes -----------------------------------------
 

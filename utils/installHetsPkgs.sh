@@ -15,10 +15,8 @@ for p in \
  hxt-8.3.1 \
  hxt-filter-8.3.0 \
  tar-0.3.0.0 \
- Shellac-0.9.5 \
  utf8-string-0.3.4 \
- haskeline-0.6.1.6 \
- Shellac-haskeline-0.2
+ haskeline-0.6.2.1
 do ./installPkg.sh $p $1
 done
 else

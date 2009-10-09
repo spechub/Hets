@@ -15,35 +15,47 @@ for standard input and file input
 
 module CMDL.Interface where
 
-import System.Console.Shell(CommandStyle(OnlyCommands), ShellDescription(..),
-                            runShell, initialShellDescription)
-import System.Console.Shell.Backend(ShellBackend(..))
-import System.Console.Shell.Backend.Haskeline
+import System.Console.Haskeline
 
-import System.IO(IO, hIsTerminalDevice, stdin)
+import System.IO (IO, hIsTerminalDevice, stdin)
 
-import CMDL.Commands(getCommands, shellacCommands, shellacEvalFunc)
+import CMDL.Commands (getCommands)
 import CMDL.DataTypes
-import CMDL.DataTypesUtils(generatePrompter)
-import CMDL.DgCommands(cUse)
-import CMDL.Shell(cmdlCompletionFn)
-import CMDL.Utils(stripComments)
+import CMDL.DataTypesUtils (generatePrompter)
+import CMDL.DgCommands (cUse)
+import CMDL.Shell (checkCom, cmdlCompletionFn)
 import CMDL.ProcessScript
+import CMDL.Utils (stripComments)
 
-import Common.Utils(trim)
+import Interfaces.Command (Command(..), eqCmd, cmdNameStr)
+
+import Common.Utils (trim)
+
+import Data.List (find, isPrefixOf)
+
+import Control.Concurrent.MVar
+import Control.Monad (when)
+import Control.Monad.Trans (MonadIO(..))
+
 import Driver.Options (HetcatsOpts, InType(..), guess)
 
-stdShellDescription :: ShellDescription CmdlState
-stdShellDescription =
- let wbc = "\n\r\v\\"
-  in initialShellDescription
-          { shellCommands      = shellacCommands
-          , commandStyle       = OnlyCommands
-          , evaluateFunc       = shellacEvalFunc
-          , wordBreakChars     = wbc
-          , prompt             = return . generatePrompter
-          , historyFile        = Just "consoleHistory.tmp"
-          }
+shellSettings :: MVar CmdlState -> Settings IO
+shellSettings st =
+  Settings {
+      complete = cmdlComplete st
+    , historyFile = Just "consoleHistory.tmp"
+    , autoAddHistory = True
+  }
+
+-- We need an MVar here
+-- because our CmdlState is not a Monad (and we use IO as Monad).
+cmdlComplete :: MVar CmdlState -> CompletionFunc IO
+cmdlComplete st (left, _) = do
+  state <- liftIO $ readMVar st
+  comps <- liftIO $ cmdlCompletionFn getCommands state $ reverse left
+  let cmds = "prove-all" : map (cmdNameStr . cmdDescription) getCommands
+      cmdcomps = filter (isPrefixOf (reverse left)) cmds
+  return ("", map simpleCompletion $ comps ++ cmdcomps)
 
 -- | Processes a list of input files
 processInput :: HetcatsOpts -> [FilePath] -> CmdlState -> IO CmdlState
@@ -53,20 +65,40 @@ processInput opts ls state = case ls of
                ProofCommand -> cmdlProcessScriptFile
                _ -> cUse) l state >>= processInput opts ll
 
+shellLoop :: MVar CmdlState -> Bool -> InputT IO CmdlState
+shellLoop st isTerminal =
+  do
+    state <- liftIO $ readMVar st
+    minput <- getInputLine (if isTerminal then generatePrompter state else "")
+    case minput of
+      Nothing    -> return state
+      Just input ->
+        do
+          let echo = trim $ stripComments input
+          when (not isTerminal && not (null echo))
+               (outputStrLn $ generatePrompter state ++ echo)
+          (state', mc) <- liftIO $ cmdlProcessString "" 0 input state
+          case mc of
+            Nothing -> if any (input ==) ["exit", ":q"] -- additional exit cmds
+                         then return state'
+                         else do
+                                outputStrLn $ "Unknown command: " ++ input
+                                shellLoop st isTerminal
+            Just ExitCmd -> return state'
+            Just c -> do
+                        newState <- liftIO $ printCmdResult state'
+                        newState' <- liftIO $ case find
+                                       (eqCmd c . cmdDescription) getCommands of
+                                         Nothing -> return newState
+                                         Just cm -> checkCom
+                                              cm { cmdDescription = c } newState
+                        liftIO $ swapMVar st newState'
+                        shellLoop st isTerminal
+
 -- | The function runs hets in a shell
 cmdlRunShell :: HetcatsOpts -> [FilePath] -> IO CmdlState
 cmdlRunShell opts files = do
-  isTerm <- hIsTerminalDevice stdin
+  isTerminal <- hIsTerminalDevice stdin
   state <- processInput opts files (emptyCmdlState opts)
-  let backend = haskelineBackend
-      backendEcho = backend
-        { getInput = \ h s -> do
-            res <- getInput backend h s
-            case res of
-              Just str -> putStrLn $ trim (stripComments str)
-              Nothing -> return ()
-            return res
-        }
-  runShell stdShellDescription
-             { defaultCompletions = Just (cmdlCompletionFn getCommands) }
-             (if isTerm then backend else backendEcho) state
+  st <- newMVar state
+  runInputT (shellSettings st) $ shellLoop st isTerminal

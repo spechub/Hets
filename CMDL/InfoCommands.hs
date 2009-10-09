@@ -32,6 +32,7 @@ module CMDL.InfoCommands
        , cInfoCurrent
        , cShowConcept
        , cNodeNumber
+       , cHelp
        ) where
 
 
@@ -41,40 +42,37 @@ import GUI.Taxonomy
 import GUI.ShowGraph
 #endif
 
-import CMDL.DataTypesUtils(genErrorMsg, genMessage, getInputDGNodes,
-                           getInputNodes, getSelectedDGNodes, getAllGoalEdges,
-                           getAllGoalNodes, getTh)
-import CMDL.DataTypes(CmdlPrompterState(fileLoaded),
-                      CmdlState(prompter, intState), CmdlUseTranslation(..))
-import CMDL.Shell(cDetails, nodeNames)
-import CMDL.Utils(createEdgeNames, decomposeIntoGoals, obtainEdgeList,
-                  obtainNodeList, prettyPrintErrList)
+import CMDL.DataTypesUtils
+import CMDL.DataTypes
+import CMDL.Shell (cDetails, nodeNames)
+import CMDL.Utils (createEdgeNames, decomposeIntoGoals, obtainEdgeList,
+                   obtainNodeList, prettyPrintErrList)
 
-import Static.GTheory(G_theory(G_theory), BasicProof, sublogicOfTh)
+import Static.GTheory (G_theory(G_theory), BasicProof, sublogicOfTh)
 import Static.DevGraph
-import Static.PrintDevGraph(dgLinkOriginHeader, dgOriginHeader)
+import Static.PrintDevGraph (dgLinkOriginHeader, dgOriginHeader)
 
-import Common.AS_Annotation(SenAttr(isAxiom))
-import Common.DocUtils(showDoc)
-import Common.ExtSign(ExtSign(ExtSign))
-import Common.Taxonomy(TaxoGraphKind(..))
+import Common.AS_Annotation (SenAttr(isAxiom))
+import Common.DocUtils (showDoc)
+import Common.ExtSign (ExtSign(ExtSign))
+import Common.Taxonomy (TaxoGraphKind(..))
+import Common.Utils (trim)
 import qualified Common.OrderedMap as OMap
 
-import Data.Graph.Inductive.Graph(LNode, LEdge, Node)
-import Data.List((++), map, unwords, find, sort, unlines, concatMap,
-                 intercalate)
+import Data.Graph.Inductive.Graph (LNode, LEdge, Node)
+import Data.List
 import qualified Data.Set as Set
 import qualified Data.Map as Map
 
-import Logic.Logic(Sentences(sym_of))
-import Logic.Prover(SenStatus)
-import Logic.Comorphism(AnyComorphism)
+import Logic.Logic (Sentences(sym_of))
+import Logic.Prover (SenStatus)
+import Logic.Comorphism (AnyComorphism)
 
-import Driver.Options(defaultHetcatsOpts)
+import Driver.Options (defaultHetcatsOpts)
 
-import Interfaces.Command(showCmd)
+import Interfaces.Command (cmdNameStr, describeCmd, showCmd)
 import Interfaces.DataTypes
-import Interfaces.Utils(getAllEdges, getAllNodes)
+import Interfaces.Utils (getAllEdges, getAllNodes)
 
 -- show list of all goals(i.e. prints their name)
 cShowDgGoals :: CmdlState -> IO CmdlState
@@ -400,3 +398,36 @@ cDisplayGraph state
 #endif
    -- no development graph present
     _ -> return state
+
+cHelp :: [CmdlCmdDescription] -> CmdlState -> IO CmdlState
+cHelp allcmds state = do
+  putStrLn $ formatLine ("Command", "Parameter", "Description")
+  putStrLn $ replicate maxLineWidth '-'
+  mapM_ (\ cm -> do
+                   let cmd = cmdDescription cm
+                       name = cmdNameStr cmd
+                       req = formatReq $ show $ cmdReq cm
+                       descL = formatDesc $ describeCmd cmd
+                       desc = head descL ++
+                              concatMap ((++) ('\n' : replicate descStart ' '))
+                              (tail descL)
+                   putStrLn $ formatLine (name, req, desc)) allcmds
+  return state
+  where
+    maxLineWidth = 80
+    maxNameLen  = maximum $ map (length . cmdNameStr  . cmdDescription) allcmds
+    maxParamLen = maximum $ map (length . formatReq   . show . cmdReq ) allcmds
+    descStart = maxNameLen + 1 + maxParamLen + 1
+    descWidth = maxLineWidth - descStart
+    formatReq :: String -> String
+    formatReq r = if null r then "" else '<' : r ++ ">"
+    formatDesc :: String -> [String]
+    formatDesc = reverse . filter (not . null) . map trim .
+                 foldl (\ l w -> if length (head l) + length w > descWidth
+                                   then (w ++ " ") : l
+                                   else (head l ++ w ++ " ") : tail l)
+                       [""] . words
+    formatLine :: (String, String, String) -> String
+    formatLine (c1, c2, c3) =
+      c1 ++ replicate (maxNameLen  - length c1 + 1) ' ' ++
+      c2 ++ replicate (maxParamLen - length c2 + 1) ' ' ++ c3

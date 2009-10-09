@@ -7,19 +7,18 @@ Maintainer  : r.pascanu@jacobs-university.de
 Stability   : provisional
 Portability : portable
 
-CMDL.Shell contains almost all functions related the
-the CMDL shell or shellac
-
+CMDL.Shell contains almost all functions related
+the CMDL shell or haskeline
 -}
 
 module CMDL.Shell
-       ( shellacCmd
-       , cDetails
+       ( cDetails
        , cComment
        , cOpenComment
        , cCloseComment
        , nodeNames
        , cmdlCompletionFn
+       , checkCom
        ) where
 
 import CMDL.DataTypes
@@ -49,35 +48,13 @@ import Proofs.AbstractState(ProofState(logicId, theory), G_prover(..),
 import Static.DevGraph(DGNodeLab(dgn_name), isProvenSenStatus, showName)
 import Static.GTheory(G_theory(G_theory), sublogicOfTh)
 
-import Control.Monad(when)
-import Control.Monad.Trans(MonadIO(..))
 import Data.Char(isSpace)
 import Data.List
 import System.Directory(doesDirectoryExist, getDirectoryContents)
 import System.IO(IO)
-import System.Console.Shell.ShellMonad
 
--- | Creates a shellac command
-shellacCmd :: CmdlCmdDescription -> Sh CmdlState ()
-shellacCmd cmd = do
-    newState <- getShellSt >>= \ state -> liftIO (checkCom cmd state {
-                                                     output = (output state){
-                                                           errorMsg = [],
-                                                           outputMsg = [],
-                                                           warningMsg = []
-                                                           }
-                                                      })
-    let result = output newState
-    when (errorMsg result /= []) $
-      shellPutErrLn ("The following error(s) occured :\n" ++ errorMsg result)
-    when (warningMsg result /= []) $
-      shellPutErrLn ("The following warning(s) occured :\n" ++warningMsg result)
-    when (outputMsg result /= []) $ shellPutStrLn $ outputMsg result
-    putShellSt newState
-
-register2history :: CmdlCmdDescription -> IO CmdlState -> IO CmdlState
-register2history dscr state_io = do
-    state <- state_io
+register2history :: CmdlCmdDescription -> CmdlState -> IO CmdlState
+register2history dscr state = do
     let oldHistory = i_hist $ intState  state
     case undoList oldHistory of
        [] -> return state
@@ -95,14 +72,8 @@ register2history dscr state_io = do
 
 -- process a comment line
 processComment :: CmdlState -> String -> CmdlState
-processComment st inp
- = if isInfixOf "}%" inp then st { openComment = False } else st
-
--- gets the function
-getFn :: CmdlCmdDescription -> (CmdlState -> IO CmdlState)
-getFn desc = case cmdFn desc of
-    CmdNoInput fn -> fn
-    CmdWithInput fn -> fn (cmdInput desc)
+processComment st inp =
+  if isInfixOf "}%" inp then st { openComment = False } else st
 
 -- adds a line to the script
 addToScript :: CmdlState -> IntIState -> String -> CmdlState
@@ -125,22 +96,22 @@ checkCom descr state =
        then return $ processComment state $ cmdInput descr
        else
         case i_state $ intState state of
-         Nothing -> register2history descr $ getFn descr state
+         Nothing -> register2history descr state
          Just ist ->
           -- check if there is inside a script
           if loadScript ist
             then return $ addToScript state ist
                         $ cmdName descr ++ " " ++ cmdInput descr
-            else register2history descr $ getFn descr state
+            else register2history descr state
      CmdGreaterThanComments ->
       case i_state $ intState state of
-       Nothing -> register2history descr $ getFn descr state
+       Nothing -> register2history descr state
        Just ist ->
         if loadScript ist
           then return $ addToScript state ist
                       $ cmdName descr ++ " " ++ cmdInput descr
-          else register2history descr $ getFn descr state
-     CmdGreaterThanScriptAndComments -> getFn descr state
+          else register2history descr state
+     CmdGreaterThanScriptAndComments -> return state
 
 -- | Prints details about the syntax of the interface
 cDetails :: CmdlState -> IO CmdlState
