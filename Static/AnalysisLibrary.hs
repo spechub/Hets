@@ -416,10 +416,10 @@ anaItemNameOrMap1 libenv ln genv' (genv, dg) (old, new) = do
 refNodesig :: LibEnv -> LibName -> DGraph -> (NodeName, NodeSig)
            -> (DGraph, NodeSig)
 refNodesig libenv refln dg (name, NodeSig refn sigma@(G_sign lid sig ind)) =
-  let (ln, n) = getActualParent libenv refln refn
+  let (ln, (n, lbl)) = getActualParent libenv refln refn
       refInfo = newRefInfo ln n
       node_contents = newInfoNodeLab name refInfo
-        $ noSensGTheory lid sig ind
+        $ dgn_theory lbl
       node = getNewNodeDG dg
    in case lookupInAllRefNodesDG refInfo dg of
         Just existNode -> (dg, NodeSig existNode sigma)
@@ -431,14 +431,14 @@ refNodesig libenv refln dg (name, NodeSig refn sigma@(G_sign lid sig ind)) =
      the small chains between nodes in different library can be advoided.
      (details see ticket 5)
 -}
-getActualParent :: LibEnv -> LibName -> Node -> (LibName, Node)
+getActualParent :: LibEnv -> LibName -> Node -> (LibName, LNode DGNodeLab)
 getActualParent libenv ln n =
    let refLab = labDG (lookupDGraph ln libenv) n in
    if isDGRef refLab then
         -- recursively goes to parent of the current node, but
         -- it actually would only be done once
         getActualParent libenv (dgn_libname refLab) (dgn_node refLab)
-   else (ln, n)
+   else (ln, (n, refLab))
 
 refNodesigs :: LibEnv -> LibName -> DGraph -> [(NodeName, NodeSig)]
             -> (DGraph, [NodeSig])

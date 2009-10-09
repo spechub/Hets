@@ -40,7 +40,6 @@ import GUI.ShowGraph
 #ifdef PROGRAMATICA
 import Haskell.Haskell2DG
 #endif
-import System.Exit (ExitCode(ExitSuccess), exitWith)
 
 import Interfaces.DataTypes
 #ifdef HASKELINE
@@ -49,7 +48,6 @@ import CMDL.Interface
 import CMDL.ProcessScript
 import CMDL.DataTypes
 import PGIP.XMLparsing
-
 
 import Maude.Maude2DG (anaMaudeFile)
 
@@ -105,7 +103,7 @@ processFile opts file = do
       NoGui -> return ()
       UseGui ->
 #ifdef UNI_PACKAGE
-        showGraph file opts res >> exitWith ExitSuccess
+        showGraph file opts res
 #else
         fail $ "No graph display interface; \n"
           ++ "UNI_PACKAGE option has been "

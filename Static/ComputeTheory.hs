@@ -83,9 +83,9 @@ computeLabelTheory le dg (n, lbl) = let localTh = dgn_theory lbl in
         joinG_sentences (theoremsToAxioms refTh) localTh
     else do
       ths <- mapM (\ (s, _, l) -> do
-         th <- if isLocalDef $ dgl_type l then
-                   computeLocalNodeTheory le dg s
-               else globalNodeTheory dg s
+         th <- let sl = labDG dg s in if isLocalDef $ dgl_type l then
+                   return $ dgn_theory sl
+               else getGlobalTheory sl
          -- translate theory and turn all imported theorems into axioms
          translateG_theory (dgl_morphism l) $ theoremsToAxioms th)
          $ sortBy
