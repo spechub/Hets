@@ -21,7 +21,7 @@ ext_modal_reserved_words :: [String]
 ext_modal_reserved_words = 
 	untilS:sinceS:allPathS:somePathsS:generallyS:finallyS:generallyS:atS:hereS:timeS:nominalS:nominalsS:
 	hithertoS:previouslyS:muS:nuS:diamondS:termS:rigidS:flexibleS:modalityS:[modalitiesS]
-{-list of reserved words-}
+{-List of reserved words-}
 
 {-Modal formula parser-}
 
@@ -29,7 +29,7 @@ modalFormulaParse :: AParser st EM_FORMULA
 modalFormulaParser = 
 	{-box, <=-}
 	do open <- oBracketT
-	   modal <- parseModality []
+	   modal <- parseModality
 	   close <- cBracketT
 	   grading <- asKey lessEq
 	   number <- getNumber
@@ -38,7 +38,7 @@ modalFormulaParser =
 	<|>
 	{-box, >=-}
 	do open <- oBracketT
-	   modal <- parseModality []
+	   modal <- parseModality
 	   close <- cBracketT
 	   grading <- asKey greaterEq
 	   number <- getNumber
@@ -47,7 +47,7 @@ modalFormulaParser =
 	<|>
 	{-diamond, <=-}
 	do open <- asKey lessS
-	   modal <- parseModality [greaterS]
+	   modal <- parseModality 
 	   close <- asKey greaterS
 	   grading <- asKey lessEq
 	   number <- getNumber
@@ -56,7 +56,7 @@ modalFormulaParser =
 	<|>
 	{-diamond, >=-}
 	do open <- asKey lessS
-	   modal <- parseModality [greaterS]
+	   modal <- parseModality 
 	   close <- asKey greaterS
 	   grading <- asKey greaterEq
 	   number <- getNumber
@@ -168,13 +168,35 @@ modalFormulaParser =
 	   return (Hybrif False nom formula pos)
 	
 
+{-Term modality parser-}
 parseModality :: [String] -> AParser st MODALITY
-parseModality additional = 
-	do t <- term (additional ++ ext_modal_reserved_words)
-	{-parse actual term modality; TODO - needs work: this is a special case of term, see dynamic logic-}
-	   return $ Term_modality t
-	<|> return (Simple_mod $ mkSimpleId emptyS)
-
+parseModality =
+	do t <- simpleId
+	   return (Simple_modality t)
+	<|>
+	do opn <- asKey tmOParanthS
+	   t <- parseModality 
+	   cls <- asKey tmCParanthS
+	   return t
+	<|>
+	do f <- modalFormulaParser
+	   grd <- asKey tmGuardS
+	   return (Guard f)
+	<|>
+	do t <- parseModality 
+	   tc <- asKey tmTransClosS
+	   return (TransitiveClosure t)
+	<|>
+	do t1 <- parseModality
+	   cmp <- asKey tmCompositionS
+	   t2 <- parseModality
+	   return (Composition t1 t2)
+	<|>
+	do t1 <- parseModality
+	   un <- asKey tmUnionS
+	   t2 <- parseModality
+	   return (Union t1 t2)
+	<|> return (Simple_modality $ mkSimpleId emptyS)
 
 instance AParsable EM_FORMULA where
 	aparser = modalFormulaParser

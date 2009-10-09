@@ -66,7 +66,7 @@
  tmCompositionS = ";"
 
  tmUnionS :: String
- tmUnion = "|"
+ tmUnionS = "|"
 
  tmTransClosS :: String
  tmTransClosS = "*"
@@ -74,3 +74,8 @@
  tmGuardS :: String
  tmGuradS = "?"
 
+ tmOParanthS :: String
+ tmOParanthS = "("
+
+ tmCParanthS :: String
+ tmCParanthS = ")"

@@ -28,14 +28,13 @@ data EM_BASIC_ITEM =
 	Simple_mod_decl Bool [Annoted SIMPLE_ID] [AnEModForm] Range
 	-- True if time modality, False if not
 	| Nominal_decl [Annoted SIMPLE_ID] Range
---	| Term_mod_decl [Annoted SIMPLE_ID] [AnEModForm] EM_TERM_MODALITY Range
 	deriving Show
 
-data EM_TERM_MODALITY = Simple_modality [Annoted SIMPLE_ID] |
-			Composition EM_TERM_MODALITY EM_TERM_MODALITY |
-			Union EM_TERM_MODALITY EM_TERM_MODALITY |
-			TransitiveClosure EM_TERM_MODALITY |
-			Guard (FORMULA EM_FORMULA)
+data MODALITY = Simple_modality SIMPLE_ID |
+		Composition MODALITY MODALITY |
+		Union MODALITY MODALITY |
+		TransitiveClosure MODALITY |
+		Guard (FORMULA EM_FORMULA)
 	deriving (Eq, Ord, Show)
 
 data RIGOR = Rigid | Flexible deriving Show
@@ -47,10 +46,6 @@ data EM_SIG_ITEM =
                  -- pos: pred, semi colons
              deriving Show
 
-
-data MODALITY = Simple_mod SIMPLE_ID | Term_modality EM_TERM_MODALITY
---				|Term_mod SIMPLE_ID
-	deriving (Eq, Ord, Show)
 
 data NOMINAL = Annoted SIMPLE_ID deriving (Show, Eq, Ord)
 
