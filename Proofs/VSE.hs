@@ -21,6 +21,7 @@ import Static.GTheory
 import Static.DevGraph
 import Static.PrintDevGraph
 import Static.DGTranslation
+import Static.ComputeTheory
 
 import Proofs.QualifyNames
 import Proofs.EdgeUtils
@@ -144,9 +145,11 @@ prove (ln, node) libEnv =
                                        mkVseProofStatus name axs)
                                        : thmStatus sen }
                              else sen) sens
-                         ndg = changeDGH dg $ SetNodeLab olbl
-                               (n, olbl { dgn_theory =
-                                 G_theory lid sig sigId nsens startThId })
+                         nlbl = olbl { dgn_theory
+                           = G_theory lid sig sigId nsens startThId }
+                         flbl = nlbl { globalTheory
+                           = computeLabelTheory le dg (n, nlbl) }
+                         ndg = changeDGH dg $ SetNodeLab olbl (n, flbl)
                         in Map.insert ln ndg le) libEnv nls
 
 getLinksTo :: LibName -> DGraph -> LNode DGNodeLab -> IO String

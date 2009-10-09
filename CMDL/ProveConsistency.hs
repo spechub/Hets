@@ -33,9 +33,9 @@ import Comorphisms.LogicGraph(logicGraph)
 import Proofs.EdgeUtils(changeDGH)
 import Proofs.AbstractState
 
-import Static.DevGraph(LibEnv, DGNodeLab(dgn_theory), DGChange(SetNodeLab),
-                       getDGNodeName, labDG, lookupDGraph)
+import Static.DevGraph
 import Static.GTheory(G_theory(G_theory), coerceThSens, startThId, sublogicOfTh)
+import Static.ComputeTheory
 
 import Logic.Comorphism(AnyComorphism(..), Comorphism(targetLogic))
 import Logic.Grothendieck(findComorphismPaths)
@@ -440,7 +440,9 @@ addResults lbEnv libname ndps =
        let nwTh = G_theory lidT sigT indT (Map.union sensT gMap) startThId
            dGraph = lookupDGraph libname lbEnv
            oldContents = labDG dGraph node
-           newContents = oldContents {dgn_theory = nwTh}
+           new1 = oldContents {dgn_theory = nwTh}
+           newContents = new1
+             { globalTheory = computeLabelTheory lbEnv dGraph (node, new1) }
            nextDGraph = changeDGH dGraph
                $ SetNodeLab oldContents (node, newContents)
        return $ Map.insert libname nextDGraph lbEnv
