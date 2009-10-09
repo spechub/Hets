@@ -42,13 +42,14 @@ import Haskell.Haskell2DG
 #endif
 import System.Exit (ExitCode(ExitSuccess), exitWith)
 
-#ifdef HASKELINE
 import Interfaces.DataTypes
+#ifdef HASKELINE
 import CMDL.Interface
+#endif
 import CMDL.ProcessScript
 import CMDL.DataTypes
 import PGIP.XMLparsing
-#endif
+
 
 import Maude.Maude2DG (anaMaudeFile)
 
@@ -57,7 +58,6 @@ main =
     getArgs >>= hetcatsOpts >>= \ opts ->
      let xFlag = xmlFlag opts
          iFiles = infiles opts in
-#ifdef HASKELINE
      if connectP opts /= -1 || listen opts /= -1
        then
         cmdlListenOrConnect2Port opts >> return ()
@@ -68,12 +68,14 @@ main =
            then
             cmdlRunXMLShell opts
            else
+#ifdef HASKELINE
             cmdlRunShell opts iFiles
-          return ()
-         else
+#else
+            fail "hets was not compiled with command line editing support"
 #endif
-          do
-          putIfVerbose opts 3 ("Options: " ++ show opts)
+          return ()
+         else do
+          putIfVerbose opts 3 $ "Options: " ++ show opts
           mapM_ (processFile opts) iFiles
 
 processFile :: HetcatsOpts -> FilePath -> IO ()
@@ -90,12 +92,10 @@ processFile opts file = do
       OmdocIn -> mLibEnvFromOMDocFile opts file
 #endif
       PrfIn -> anaLibReadPrfs opts file
-#ifdef HASKELINE
       ProofCommand -> do
         putStrLn "Start processing a proof command file"
         st <- cmdlProcessFile opts file
         return . getMaybeLib $ intState st
-#endif
       MaudeIn -> anaMaudeFile opts file
       _ -> anaLib opts file
     case res of
