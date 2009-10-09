@@ -20,17 +20,18 @@ import System.IO (IO, hIsTerminalDevice, stdin)
 
 import CMDL.Commands (getCommands)
 import CMDL.DataTypes
-import CMDL.DataTypesUtils (generatePrompter)
+import CMDL.DataTypesUtils (generatePrompter, getSelectedDGNodes)
 import CMDL.DgCommands (cUse)
 import CMDL.Shell (checkCom, cmdlCompletionFn)
 import CMDL.ProcessScript
 import CMDL.Utils (stripComments)
 
 import Interfaces.Command (Command(..), eqCmd, cmdNameStr)
+import Interfaces.DataTypes
 
 import Common.Utils (trim)
 
-import Data.List (find, isPrefixOf)
+import Data.List (find, isPrefixOf, isSuffixOf)
 
 import Control.Concurrent.MVar
 import Control.Monad (when)
@@ -52,9 +53,15 @@ cmdlComplete :: MVar CmdlState -> CompletionFunc IO
 cmdlComplete st (left, _) = do
   state <- liftIO $ readMVar st
   comps <- liftIO $ cmdlCompletionFn getCommands state $ reverse left
-  let cmds = "prove-all" : map (cmdNameStr . cmdDescription) getCommands
+  let (_, nodes) = case i_state $ intState state of
+                     Nothing      -> ("", [])
+                     Just dgState -> getSelectedDGNodes dgState
+      cmds = "prove-all" : map (cmdNameStr . cmdDescription) getCommands
       cmdcomps = filter (isPrefixOf (reverse left)) cmds
-  return ("", map simpleCompletion $ comps ++ cmdcomps)
+      cmdcomps' = if null nodes
+                    then filter (not . isSuffixOf "-current") cmdcomps
+                    else cmdcomps
+  return ("", map simpleCompletion $ comps ++ cmdcomps')
 
 -- | Processes a list of input files
 processInput :: HetcatsOpts -> [FilePath] -> CmdlState -> IO CmdlState
