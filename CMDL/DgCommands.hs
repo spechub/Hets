@@ -40,7 +40,7 @@ import Static.ComputeTheory (computeTheory)
 import Proofs.TheoremHideShift (theoremHideShiftFromList)
 
 import Static.GTheory (G_theory(G_theory), sublogicOfTh)
-import Static.DevGraph (LibEnv, DGLinkLab, getDGNodeName)
+import Static.DevGraph
 
 import Driver.AnaLib (anaLib, anaLibExt)
 
@@ -140,8 +140,12 @@ cUse input state = do
        opts = hetsOpts state
    tmp <- case i_state $ intState state of
            Nothing -> anaLib opts file
-           Just dgState ->
-                   anaLibExt opts file $ i_libEnv dgState
+           Just dgState -> let
+             le = i_libEnv dgState
+             ln = i_ln dgState
+             dg = lookupDGraph ln le
+             initDG = cpIndexMaps dg emptyDG
+             in anaLibExt opts file le initDG
    case tmp of
     Nothing ->
       -- leave the internal state intact so that the interface can recover
@@ -298,7 +302,7 @@ cExpand input state = do
                         runResultT $ liftR $ Result diags2 mRes)
             Nothing -> return $ genErrorMsg "Source can't be parsed" state
 
-                                                   
+
 
 cAddView :: String -> CmdlState -> IO CmdlState
 cAddView input state = do

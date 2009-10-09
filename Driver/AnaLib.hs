@@ -57,19 +57,20 @@ anaLib :: HetcatsOpts -> FilePath -> IO (Maybe (LibName, LibEnv))
 anaLib opts fname = do
   fname' <- existsAnSource opts {intype = GuessIn} $ rmSuffix fname
   case fname' of
-    Nothing -> anaLibExt opts fname emptyLibEnv
+    Nothing -> anaLibExt opts fname emptyLibEnv emptyDG
     Just file ->
         if isSuffixOf prfSuffix file then do
             putIfVerbose opts 0 $ "a matching source file for proof history '"
                              ++ file ++ "' not found."
             return Nothing
-        else anaLibExt opts file emptyLibEnv
+        else anaLibExt opts file emptyLibEnv emptyDG
 
 -- | read a file and extended the current library environment
-anaLibExt :: HetcatsOpts -> FilePath -> LibEnv -> IO (Maybe (LibName, LibEnv))
-anaLibExt opts file libEnv = do
+anaLibExt :: HetcatsOpts -> FilePath -> LibEnv -> DGraph
+  -> IO (Maybe (LibName, LibEnv))
+anaLibExt opts file libEnv initDG = do
     Result ds res <- runResultT $ anaLibFileOrGetEnv logicGraph opts
-      Set.empty libEnv (fileToLibName opts file) file
+      Set.empty libEnv initDG (fileToLibName opts file) file
     showDiags opts ds
     case res of
         Nothing -> return Nothing

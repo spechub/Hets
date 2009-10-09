@@ -720,6 +720,14 @@ eqDGLinkLabById l1 l2 = let
 
 -- ** setting index maps
 
+{- these index maps should be global for all libraries,
+   therefore their contents need to be copied -}
+cpIndexMaps :: DGraph -> DGraph -> DGraph
+cpIndexMaps from to =
+  to { sigMap = sigMap from
+     , thMap = thMap from
+     , morMap = morMap from }
+
 setSigMapDG :: Map.Map SigId G_sign -> DGraph -> DGraph
 setSigMapDG m dg = dg { sigMap = m }
 

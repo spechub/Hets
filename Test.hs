@@ -65,7 +65,7 @@ main = do
 {- Test functions for CASL signature -}
 
 proceed :: FilePath -> ResultT IO (LibName, LibEnv)
-proceed = anaSourceFile logicGraph myHetcatsOpts Set.empty emptyLibEnv
+proceed = anaSourceFile logicGraph myHetcatsOpts Set.empty emptyLibEnv emptyDG
 
 -- read in a CASL file and return the basic theory
 getCASLSigSens ::    String -- filename

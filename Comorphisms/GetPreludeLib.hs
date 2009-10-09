@@ -39,7 +39,7 @@ readLib fp0 = do
   let opts = defaultHetcatsOpts { libdirs = splitOn ':' lib }
       fp = lib </> fp0
   Result _ mLib <- runResultT $ anaLibFileOrGetEnv preLogicGraph
-    opts Set.empty Map.empty (fileToLibName opts fp) fp
+    opts Set.empty Map.empty emptyDG (fileToLibName opts fp) fp
   case mLib of
     Nothing -> fail $ "library could not be read from: " ++ fp
     Just (ln, le) -> do
