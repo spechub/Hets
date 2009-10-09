@@ -42,6 +42,7 @@ module Comorphisms.LogicGraph
     , comorphismList
     , inclusionList
     , lookupSquare_in_LG
+    , lookupQTA_in_LG
     ) where
 
 import Data.Maybe
@@ -212,7 +213,10 @@ logicGraph = emptyLogicGraph
     , unions = Map.fromList $ map addUnionNames unionList
     , morphisms = Map.fromList $ map addMorphismName morphismList
     , modifications = Map.fromList $ map addModificationName modificationList
-    , squares = squareMap }
+    , squares = squareMap
+    , qTATranslations =
+       Map.fromList $ map (\x@(Comorphism c)-> (show (sourceLogic c), x))
+                       qtaList}
 
 lookupSquare :: AnyComorphism -> AnyComorphism -> LogicGraph -> Result [Square]
 lookupSquare com1 com2 lg = maybe (fail "lookupSquare") return $ do
@@ -225,6 +229,18 @@ lookupSquare com1 com2 lg = maybe (fail "lookupSquare") return $ do
 lookupSquare_in_LG :: AnyComorphism -> AnyComorphism -> Result [Square]
 lookupSquare_in_LG com1 com2 = lookupSquare com1 com2 logicGraph
 
-
 lookupComorphism_in_LG :: String -> Result AnyComorphism
 lookupComorphism_in_LG coname = lookupComorphism coname logicGraph
+
+-- translations to logics with quotient term algebra implemented
+qtaList :: [AnyComorphism]
+qtaList = [Comorphism Maude2CASL]
+
+lookupQTA_in_LG :: String -> Result AnyComorphism
+lookupQTA_in_LG coname =
+ let
+   qta = qTATranslations logicGraph
+ in  if coname `elem` Map.keys qta then
+        return $ Map.findWithDefault (error "") coname qta
+      else fail "no translation found"
+

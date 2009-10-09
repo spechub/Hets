@@ -113,6 +113,7 @@ import qualified Data.Set as Set
 import Text.ParserCombinators.Parsec (Parser, try, parse, eof, string, (<|>))
 -- for looking up modifications
 
+
 -- * \"Grothendieck\" versions of the various parts of type class Logic
 
 -- | Grothendieck basic specifications
@@ -342,6 +343,7 @@ data LogicGraph = LogicGraph
     , morphisms :: Map.Map String AnyMorphism
     , modifications :: Map.Map String AnyModification
     , squares :: Map.Map (AnyComorphism, AnyComorphism) [Square]
+    , qTATranslations:: Map.Map String AnyComorphism
     } deriving Show
 
 emptyLogicGraph :: LogicGraph
@@ -353,7 +355,8 @@ emptyLogicGraph = LogicGraph
     , unions = Map.empty
     , morphisms = Map.empty
     , modifications = Map.empty
-    , squares = Map.empty }
+    , squares = Map.empty
+    , qTATranslations = Map.empty }
 
 instance Pretty LogicGraph where
     pretty lg = text ("current logic is: " ++ currentLogic lg)
@@ -822,3 +825,4 @@ mirrorSquare :: Square -> Square
 mirrorSquare s = Square{
                  leftTriangle = rightTriangle s,
                  rightTriangle = leftTriangle s}
+
