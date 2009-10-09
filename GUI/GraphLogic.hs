@@ -579,7 +579,7 @@ updateNodeProof checkCons gInfo (v, dgnode) tres = case tres of
       Just iist -> do
         let le = i_libEnv iist
             dgraph = lookupDGraph ln le
-            new_dgn = if checkCons then dgnode
+            new = if checkCons then dgnode
                 { nodeInfo = case nodeInfo dgnode of
                     ninfo@DGNode { node_cons_status = ConsStatus c _ _ } ->
                         ninfo { node_cons_status = ConsStatus c Cons
@@ -587,7 +587,9 @@ updateNodeProof checkCons gInfo (v, dgnode) tres = case tres of
                                 emptyProofBasis }
                     ninfo -> ninfo }
                 else dgnode { dgn_theory = theory }
-            newDg = changeDGH dgraph $ SetNodeLab dgnode (v, new_dgn)
+            newLbl = if checkCons then new else new { globalTheory
+              = computeLabelTheory le dgraph (v, new) }
+            newDg = changeDGH dgraph $ SetNodeLab dgnode (v, newLbl)
             history = snd $ splitHistory dgraph newDg
             nst = add2history
                        (CommentCmd $ "basic inference done on " ++ nn ++ "\n")
