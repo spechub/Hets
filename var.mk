@@ -16,6 +16,11 @@ ifneq ($(findstring 0.3, $(TARVERSION)),)
 TAR_PACKAGE = -DTAR_PACKAGE
 endif
 
+UNIXVERSION = $(shell $(HCPKG) field unix version)
+ifneq ($(findstring 2.3, $(UNIXVERSION)),)
+UNIX_PACKAGE = -DUNIX
+endif
+
 TABULARVERSION = $(shell $(HCPKG) field tabular version)
 ifneq ($(findstring 0.1, $(TABULARVERSION)),)
 TABULAR_PACKAGE = -DTABULAR_PACKAGE
@@ -58,7 +63,7 @@ TESTTARGETFILES += Taxonomy/taxonomyTool.hs OWL/OWLParser.hs \
 endif
 
 HC_OPTS_WITHOUTGLADE = -threaded -fglasgow-exts -XOverlappingInstances \
-  $(TIME_PACKAGE) $(TAR_PACKAGE) $(HTTP_PACKAGE) \
+  $(TIME_PACKAGE) $(TAR_PACKAGE) $(HTTP_PACKAGE) $(UNIX_PACKAGE) \
   $(UNI_PACKAGE) $(HASKELINE_PACKAGE) $(HXTFILTER_PACKAGE) \
   $(PFE_FLAGS) $(TABULAR_PACKAGE) -DCASLEXTENSIONS
 

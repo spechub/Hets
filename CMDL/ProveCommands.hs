@@ -1,3 +1,4 @@
+{-# LANGUAGE CPP #-}
 {- |
 Module      : $Header$
 Description : CMDL interface commands
@@ -50,7 +51,9 @@ import Logic.Comorphism(compComorphism)
 import Control.Concurrent(forkIO)
 import Control.Concurrent.MVar(newEmptyMVar, newMVar, takeMVar)
 
+#ifdef UNIX
 import System.Posix.Signals(Handler(Catch), installHandler, sigINT)
+#endif
 import System.IO(IO)
 
 import Interfaces.GenericATPState(ATPTactic_script(ts_timeLimit, ts_extraOpts))
@@ -188,9 +191,11 @@ cDoLoop prvr state
             -- fork
             thrID <- forkIO(doLoop mlbEnv mThr mSt mW pS ls prvr)
             -- install the handler that waits for SIG_INT
+#ifdef UNIX
             installHandler sigINT (Catch $
                      sigIntHandler mThr mlbEnv mSt thrID mW (i_ln pS)
                                   ) Nothing
+#endif
             -- block and wait for answers
             answ <- takeMVar mW
             let nwpS = pS { i_libEnv = answ }

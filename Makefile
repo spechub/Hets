@@ -399,7 +399,7 @@ cpp_sources = hets.hs $(happy_files) \
     Isabelle/CreateTheories.hs \
     OWL/Logic_OWL.hs \
     CMDL/InfoCommands.hs \
-    CMDL/Interface.hs \
+    CMDL/ProveCommands.hs \
     Propositional/Logic_Propositional.hs \
     SoftFOL/Logic_SoftFOL.hs \
     VSE/Logic_VSE.hs \

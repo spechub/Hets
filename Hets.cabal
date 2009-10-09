@@ -47,6 +47,9 @@ flag tabular
 flag tar
   description: save VSE proofs in tar archives
 
+flag unix
+  description: install signal handler for interrupting using Ctrl-C
+
 flag haskeline
   description: command line interface
 
@@ -81,7 +84,6 @@ Executable hets
     , process >= 1.0.0.0
     , regex-compat >= 0.71.0.1
     , time >= 1.1.3 && <= 1.2
-    , unix >= 2.3.0.0
     , xml >= 1.3 && <= 1.4
   cpp-options: -DCASLEXTENSIONS -DTIME_WITH_TYPEABLE
   extensions: OverlappingInstances
@@ -109,6 +111,10 @@ Executable hets
   if flag(tar)
     build-depends: tar >= 0.3 && <= 0.4
     cpp-options: -DTAR_PACKAGE
+
+  if flag(unix)
+    build-depends: unix >= 2.3.0.0
+    cpp-options: -DUNIX
 
   if flag(haskeline)
     build-depends:
