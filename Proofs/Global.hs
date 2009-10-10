@@ -164,11 +164,10 @@ addParentNode libenv dg refl (refn, oldNodelab) =
      Notice for those who are doing undo/redo, because the DGraph is actually
      changed if the maps are changed ;)
    -}
-   (sgMap, s) = sigMapI dg
-   (tMap, t) = thMapI dg
    -- creates an empty GTh, please check the definition of this function
    -- because there can be some problem or errors at this place.
-   newGTh = createGThWith (dgn_theory nodelab) (succ s) (succ t)
+   newGTh = case dgn_theory nodelab of
+     G_theory lid sig ind _ _ -> noSensGTheory lid sig ind
    refInfo = newRefInfo newRefl newRefn
    newRefNode = (newInfoNodeLab (dgn_name nodelab) refInfo newGTh)
      { globalTheory = globalTheory nodelab }
@@ -177,9 +176,7 @@ addParentNode libenv dg refl (refn, oldNodelab) =
    -- done.
    case lookupInAllRefNodesDG refInfo dg of
         Nothing -> let newN = getNewNodeDG dg in
-           ( changeDGH (setThMapDG (Map.insert (succ t) newGTh tMap)
-                $ setSigMapDG (Map.insert (succ s) (signOf newGTh) sgMap)
-                $ addToRefNodesDG newN refInfo dg)
+           ( changeDGH (addToRefNodesDG newN refInfo dg)
              $ InsertNode (newN, newRefNode)
            , newN)
         Just extN -> (dg, extN)
