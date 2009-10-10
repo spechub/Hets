@@ -192,12 +192,15 @@ cDoLoop prvr state
             thrID <- forkIO(doLoop mlbEnv mThr mSt mW pS ls prvr)
             -- install the handler that waits for SIG_INT
 #ifdef UNIX
-            installHandler sigINT (Catch $
+            oldHandler <- installHandler sigINT (Catch $
                      sigIntHandler mThr mlbEnv mSt thrID mW (i_ln pS)
                                   ) Nothing
 #endif
             -- block and wait for answers
             answ <- takeMVar mW
+#ifdef UNIX
+            installHandler sigINT oldHandler Nothing
+#endif
             let nwpS = pS { i_libEnv = answ }
             let nwls = concatMap(\(Element _ x) -> selectANode x nwpS) ls
                 hst = concatMap(\(Element stt x)  ->
