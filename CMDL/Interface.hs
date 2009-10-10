@@ -25,7 +25,6 @@ import System.IO
 import CMDL.Commands (getCommands)
 import CMDL.DataTypes
 import CMDL.DataTypesUtils
-import CMDL.DgCommands (cUse)
 import CMDL.Shell
 import CMDL.ProcessScript
 import CMDL.Utils (stripComments)
@@ -39,8 +38,6 @@ import Data.List
 import Control.Concurrent.MVar
 import Control.Monad
 import Control.Monad.Trans (MonadIO(..))
-
-import Driver.Options (HetcatsOpts, InType(..), guess)
 
 #ifdef HASKELINE
 shellSettings :: MVar CmdlState -> Settings IO
@@ -112,19 +109,10 @@ shellLoop st isTerminal =
                         liftIO $ swapMVar st newState'
                         shellLoop st isTerminal
 
--- | Processes a list of input files
-processInput :: HetcatsOpts -> [FilePath] -> CmdlState -> IO CmdlState
-processInput opts ls state = case ls of
-    []   -> return state
-    l : ll -> (case guess l GuessIn of
-               ProofCommand -> cmdlProcessScriptFile
-               _ -> cUse) l state >>= processInput opts ll
-
 -- | The function runs hets in a shell
-cmdlRunShell :: HetcatsOpts -> [FilePath] -> IO CmdlState
-cmdlRunShell opts files = do
+cmdlRunShell :: CmdlState -> IO CmdlState
+cmdlRunShell state = do
   isTerminal <- hIsTerminalDevice stdin
-  state <- processInput opts files (emptyCmdlState opts)
   st <- newMVar state
 #ifdef HASKELINE
   runInputT (shellSettings st) $ shellLoop st isTerminal

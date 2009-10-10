@@ -41,8 +41,8 @@ import GUI.ShowGraph
 import Haskell.Haskell2DG
 #endif
 
+import Common.LibName
 import Interfaces.DataTypes
-import CMDL.Interface
 import CMDL.ProcessScript
 import CMDL.DataTypes
 import PGIP.XMLparsing
@@ -52,23 +52,11 @@ import Maude.Maude2DG (anaMaudeFile)
 main :: IO ()
 main =
     getArgs >>= hetcatsOpts >>= \ opts ->
-     let xFlag = xmlFlag opts
-         iFiles = infiles opts in
-     if connectP opts /= -1 || listen opts /= -1
-       then
-        cmdlListenOrConnect2Port opts >> return ()
-       else
-        if interactive opts
-         then do
-          if xFlag
-           then
-            cmdlRunXMLShell opts
-           else
-            cmdlRunShell opts iFiles
-          return ()
-         else do
-          putIfVerbose opts 3 $ "Options: " ++ show opts
-          mapM_ (processFile opts) iFiles
+     if connectP opts /= -1 || listen opts /= -1 || interactive opts
+       then cmdlRun opts >>= displayGraph "" opts . getMaybeLib . intState
+       else do
+              putIfVerbose opts 3 $ "Options: " ++ show opts
+              mapM_ (processFile opts) (infiles opts)
 
 processFile :: HetcatsOpts -> FilePath -> IO ()
 processFile opts file = do
@@ -93,9 +81,13 @@ processFile opts file = do
     case res of
       Just (ln, nEnv) -> writeSpecFiles opts file nEnv ln $ lookupDGraph ln nEnv
       _ -> return ()
-    case guiType opts of
-      NoGui -> return ()
-      UseGui ->
+    displayGraph file opts res
+
+displayGraph :: FilePath -> HetcatsOpts -> Maybe (LibName, LibEnv) -> IO ()
+displayGraph file opts res =
+  case guiType opts of
+    NoGui -> return ()
+    UseGui ->
 #ifdef UNI_PACKAGE
         showGraph file opts res
 #else

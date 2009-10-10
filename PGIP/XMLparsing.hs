@@ -16,11 +16,13 @@ import PGIP.XMLstate
 
 import CMDL.DataTypes
 import CMDL.DataTypesUtils
+import CMDL.DgCommands (cUse)
 import CMDL.ProcessScript
+import CMDL.Interface (cmdlRunShell)
 
 import Interfaces.DataTypes
 import Interfaces.Command
-import Interfaces.Utils(emptyIntIState)
+import Interfaces.Utils (emptyIntIState)
 
 import Driver.Options
 import Driver.ReadFn
@@ -163,8 +165,8 @@ communicationStep pgD st = do
                  return (nwPgD', nwSt)
 
 -- | Comunicate over a port
-cmdlListenOrConnect2Port :: HetcatsOpts -> IO CmdlState
-cmdlListenOrConnect2Port opts = do
+cmdlListenOrConnect2Port :: HetcatsOpts -> CmdlState -> IO CmdlState
+cmdlListenOrConnect2Port opts state = do
     let portNb = listen opts
         conPN = connectP opts
         hostName = connectH opts
@@ -179,7 +181,7 @@ cmdlListenOrConnect2Port opts = do
           ++ show conPN ++ " on host " ++ hostName
         connectTo hostName $ PortNumber $ fromIntegral conPN
       else error "cmdlListenOrConnect2Port: missing port number"
-    cmdlStartLoop opts swXML servH servH 1000
+    cmdlStartLoop swXML servH servH 1000 state
 
 -- | Reads from a handle, it waits only for a certain amount of time,
 -- if no input comes it will return Nothing
@@ -203,12 +205,13 @@ readPacket acc hf = do
       then return str
       else readPacket str hf
 
-cmdlStartLoop :: HetcatsOpts -> Bool -> Handle -> Handle -> Int -> IO CmdlState
-cmdlStartLoop opts swXML h_in h_out timeOut = do
+cmdlStartLoop :: Bool -> Handle -> Handle -> Int -> CmdlState
+              -> IO CmdlState
+cmdlStartLoop swXML h_in h_out timeOut state = do
     pgData <- genCMDLPgipState  swXML h_in h_out timeOut
     let pgD = addPGIPReady $ addPGIPHandshake $ resetPGIPData pgData
     pgD' <- sendPGIPData pgD
-    waitLoop pgD' $ emptyCmdlState opts
+    waitLoop pgD' state
 
 waitLoop :: CmdlPgipState -> CmdlState -> IO CmdlState
 waitLoop pgData state = do
@@ -219,8 +222,27 @@ waitLoop pgData state = do
 
 -- | Runs a shell in which the communication is expected to be
 -- through XML packets
-cmdlRunXMLShell :: HetcatsOpts -> IO CmdlState
-cmdlRunXMLShell opts = cmdlStartLoop opts True stdin stdout (-1)
+cmdlRunXMLShell :: CmdlState -> IO CmdlState
+cmdlRunXMLShell = cmdlStartLoop True stdin stdout (-1)
+
+-- | Processes a list of input files
+processInput :: HetcatsOpts -> [FilePath] -> CmdlState -> IO CmdlState
+processInput opts ls state = case ls of
+    []   -> return state
+    l : ll -> (case guess l GuessIn of
+               ProofCommand -> cmdlProcessScriptFile
+               _ -> cUse) l state >>= processInput opts ll
+
+cmdlRun :: HetcatsOpts -> IO CmdlState
+cmdlRun opts =
+  processInput opts (infiles opts) (emptyCmdlState opts) >>=
+  if connectP opts /= -1 || listen opts /= -1
+    then cmdlListenOrConnect2Port opts
+    else if interactive opts
+           then if xmlFlag opts
+                  then cmdlRunXMLShell
+                  else cmdlRunShell
+           else return
 
 processString :: [CmdlXMLcommands] -> String -> CmdlState -> CmdlPgipState
   -> IO (CmdlState, CmdlPgipState)
