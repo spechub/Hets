@@ -42,9 +42,7 @@ import Haskell.Haskell2DG
 #endif
 
 import Interfaces.DataTypes
-#ifdef HASKELINE
 import CMDL.Interface
-#endif
 import CMDL.ProcessScript
 import CMDL.DataTypes
 import PGIP.XMLparsing
@@ -66,11 +64,7 @@ main =
            then
             cmdlRunXMLShell opts
            else
-#ifdef HASKELINE
             cmdlRunShell opts iFiles
-#else
-            fail "hets was not compiled with command line editing support"
-#endif
           return ()
          else do
           putIfVerbose opts 3 $ "Options: " ++ show opts

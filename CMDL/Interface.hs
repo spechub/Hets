@@ -1,3 +1,4 @@
+{-# LANGUAGE CPP #-}
 {- |
 Module      : $Header$
 Description : The definition of CMDL interface for
@@ -14,31 +15,34 @@ for standard input and file input
 
 module CMDL.Interface where
 
+#ifdef HASKELINE
 import System.Console.Haskeline
+import Interfaces.DataTypes
+#endif
 
-import System.IO (IO, hIsTerminalDevice, stdin)
+import System.IO
 
 import CMDL.Commands (getCommands)
 import CMDL.DataTypes
-import CMDL.DataTypesUtils (generatePrompter, getSelectedDGNodes)
+import CMDL.DataTypesUtils
 import CMDL.DgCommands (cUse)
-import CMDL.Shell (checkCom, cmdlCompletionFn)
+import CMDL.Shell
 import CMDL.ProcessScript
 import CMDL.Utils (stripComments)
 
-import Interfaces.Command (Command(..), eqCmd, cmdNameStr)
-import Interfaces.DataTypes
+import Interfaces.Command
 
 import Common.Utils (trim)
 
-import Data.List (find, isPrefixOf, isSuffixOf)
+import Data.List
 
 import Control.Concurrent.MVar
-import Control.Monad (when)
+import Control.Monad
 import Control.Monad.Trans (MonadIO(..))
 
 import Driver.Options (HetcatsOpts, InType(..), guess)
 
+#ifdef HASKELINE
 shellSettings :: MVar CmdlState -> Settings IO
 shellSettings st =
   Settings {
@@ -62,33 +66,40 @@ cmdlComplete st (left, _) = do
                     then filter (not . isSuffixOf "-current") cmdcomps
                     else cmdcomps
   return ("", map simpleCompletion $ comps ++ cmdcomps')
+#endif
 
--- | Processes a list of input files
-processInput :: HetcatsOpts -> [FilePath] -> CmdlState -> IO CmdlState
-processInput opts ls state = case ls of
-    []   -> return state
-    l : ll -> (case guess l GuessIn of
-               ProofCommand -> cmdlProcessScriptFile
-               _ -> cUse) l state >>= processInput opts ll
-
-shellLoop :: MVar CmdlState -> Bool -> InputT IO CmdlState
+shellLoop :: MVar CmdlState
+          -> Bool
+#ifdef HASKELINE
+          -> InputT IO CmdlState
+#else
+          -> IO CmdlState
+#endif
 shellLoop st isTerminal =
   do
     state <- liftIO $ readMVar st
-    minput <- getInputLine (if isTerminal then generatePrompter state else "")
+    let prompt = if isTerminal then generatePrompter state else ""
+#ifdef HASKELINE
+    minput <- getInputLine prompt
+#else
+    putStr prompt
+    hFlush stdout
+    eof <- isEOF
+    minput <- if eof then return Nothing else liftM Just getLine
+#endif
     case minput of
       Nothing    -> return state
       Just input ->
         do
           let echo = trim $ stripComments input
           when (not isTerminal && not (null echo))
-               (outputStrLn $ generatePrompter state ++ echo)
+               (liftIO $ putStrLn $ generatePrompter state ++ echo)
           (state', mc) <- liftIO $ cmdlProcessString "" 0 input state
           case mc of
             Nothing -> if any (input ==) ["exit", ":q"] -- additional exit cmds
                          then return state'
                          else do
-                                outputStrLn $ "Unknown command: " ++ input
+                                liftIO $ putStrLn $ "Unknown command: " ++ input
                                 shellLoop st isTerminal
             Just ExitCmd -> return state'
             Just c -> do
@@ -101,10 +112,23 @@ shellLoop st isTerminal =
                         liftIO $ swapMVar st newState'
                         shellLoop st isTerminal
 
+-- | Processes a list of input files
+processInput :: HetcatsOpts -> [FilePath] -> CmdlState -> IO CmdlState
+processInput opts ls state = case ls of
+    []   -> return state
+    l : ll -> (case guess l GuessIn of
+               ProofCommand -> cmdlProcessScriptFile
+               _ -> cUse) l state >>= processInput opts ll
+
 -- | The function runs hets in a shell
 cmdlRunShell :: HetcatsOpts -> [FilePath] -> IO CmdlState
 cmdlRunShell opts files = do
   isTerminal <- hIsTerminalDevice stdin
   state <- processInput opts files (emptyCmdlState opts)
   st <- newMVar state
+#ifdef HASKELINE
   runInputT (shellSettings st) $ shellLoop st isTerminal
+#else
+  hSetBuffering stdin LineBuffering
+  shellLoop st isTerminal
+#endif
