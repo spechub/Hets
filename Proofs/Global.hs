@@ -26,7 +26,9 @@ import Data.List
 
 import Static.GTheory
 import Static.DevGraph
+
 import Common.LibName
+import Common.Utils
 
 import Proofs.EdgeUtils
 import Proofs.StatusUtils
@@ -55,7 +57,7 @@ globDecompFromList ln globalThmEdges proofStatus =
     let dgraph = lookupDGraph ln proofStatus
         finalGlobalThmEdges = filter (liftE isUnprovenGlobalThm) globalThmEdges
         auxGraph = foldl (updateDGraph proofStatus) dgraph
-           $ map (\ (src, _, _) -> src) finalGlobalThmEdges
+           $ nubOrd $ map (\ (src, _, _) -> src) finalGlobalThmEdges
         newDGraph = foldl globDecompAux auxGraph finalGlobalThmEdges
     in Map.insert ln newDGraph proofStatus
 
@@ -84,7 +86,7 @@ updateDGraph le dg x =
                deleted out of the unexpanded map using
                deleteFromRefNodesDG -}
             auxDG = foldl (updateDGraphAux le x refl)
-                (deleteFromRefNodesDG x dg) parents
+                dg parents
             in auxDG
          _ -> dg
 
@@ -96,11 +98,9 @@ getRefParents :: LibEnv -> LibName
               -> [(LNode DGNodeLab, [DGLinkLab])]
 getRefParents le refl refn =
    let
-   {- get the previous objects to the current one, which can be done using
-      lpre too, but to make it more tracable, safeContextDG is used.
-   -}
+   {- get the previous objects to the current one -}
    dg = lookupDGraph refl le
-   (pres, _, _ , _) = safeContextDG "Proofs.Global.getRefParents" dg refn
+   pres = filter (liftE isDefEdge) $ innDG dg refn
    in modifyPs dg pres
 
 {- | modify the parents to a better form.
@@ -113,15 +113,15 @@ getRefParents le refl refn =
      [(1, [a, b]), (2, [c, d, e])]
      which simplifies the inserting afterwards ;)
 -}
-modifyPs :: DGraph -> [(DGLinkLab, Node)] -> [(LNode DGNodeLab, [DGLinkLab])]
+modifyPs :: DGraph -> [LEdge DGLinkLab] -> [(LNode DGNodeLab, [DGLinkLab])]
 modifyPs dg ls =
    map
    (\ (n, x) -> ((n, labDG dg n), x))
    $ modifyPsAux ls
    where
-   modifyPsAux :: Ord a => [(b, a)] -> [(a, [b])]
+   modifyPsAux :: Ord a => [(a, t, b)] -> [(a, [b])]
    modifyPsAux l =
-        Map.toList $ Map.fromListWith (++) [(k, [v])|(v, k)<-l]
+        Map.toList $ Map.fromListWith (++) [(k, [v]) | (k, _, v) <- l ]
 
 {- | the actual update function to insert a list of related parents to the
      present to be expanded node.
@@ -184,10 +184,16 @@ addParentNode libenv dg refl (refn, oldNodelab) =
 {- | add a list of links between the given two node ids.
 -}
 addParentLinks :: DGraph -> Node -> Node -> [DGLinkLab] -> DGraph
-addParentLinks dg src tgt ls = changesDGH dg
- [ InsertEdge (src, tgt, x { dgl_id = defaultEdgeId
-                           , dgl_type = invalidateProof $ dgl_type x })
-   | x <- ls]
+addParentLinks dg src tgt ls =
+  let oldLinks = map (\ (_, _, l) -> l)
+        $ filter (\ (s, _, _) -> s == src) $ innDG dg tgt
+      newLinks = map (\ l -> l
+                         { dgl_id = defaultEdgeId
+                         , dgl_type = invalidateProof $ dgl_type l })
+                 $ filter (isDefEdge . dgl_type) ls
+  in if null oldLinks then
+         changesDGH dg $ map (\ l -> InsertEdge (src, tgt, l)) newLinks
+     else dg -- assume ingoing links are already properly set
 
 {- applies global decomposition to all unproven global theorem edges
    if possible -}
