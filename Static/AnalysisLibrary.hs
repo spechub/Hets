@@ -26,6 +26,7 @@ import Logic.Grothendieck
 import Syntax.AS_Structured
 import Syntax.AS_Library
 
+import Static.GTheory
 import Static.DevGraph
 import Static.ComputeTheory
 import Static.AnalysisStructured
@@ -415,16 +416,17 @@ anaItemNameOrMap1 libenv ln genv' (genv, dg) (old, new) = do
 
 refNodesig :: LibEnv -> LibName -> DGraph -> (NodeName, NodeSig)
            -> (DGraph, NodeSig)
-refNodesig libenv refln dg (name, NodeSig refn sigma) =
+refNodesig libenv refln dg (name, NodeSig refn sigma@(G_sign lid sig ind)) =
   let (ln, (n, lbl)) = getActualParent libenv refln refn
       refInfo = newRefInfo ln n
-      node_contents = newInfoNodeLab name refInfo
-        $ dgn_theory lbl
+      new = newInfoNodeLab name refInfo
+        $ noSensGTheory lid sig ind
+      nodeCont = new { globalTheory = globalTheory lbl }
       node = getNewNodeDG dg
    in case lookupInAllRefNodesDG refInfo dg of
         Just existNode -> (dg, NodeSig existNode sigma)
         Nothing ->
-          ( addToRefNodesDG node refInfo $ insNodeDG (node, node_contents) dg
+          ( addToRefNodesDG node refInfo $ insNodeDG (node, nodeCont) dg
           , NodeSig node sigma)
 
 {- | get to the actual parent which is not a referenced node, so that
