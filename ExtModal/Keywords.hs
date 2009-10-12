@@ -79,3 +79,12 @@
 
  tmCParanthS :: String
  tmCParanthS = ")"
+
+ -- to be deleted as soon as I understand what is wrong with Common.Keywords
+ 
+ greaterEq :: String
+ greaterEq = ">="
+
+ lessEq :: String
+ lessEq = "<="
+

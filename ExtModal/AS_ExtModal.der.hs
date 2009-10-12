@@ -47,17 +47,9 @@ data EM_SIG_ITEM =
              deriving Show
 
 
-data NOMINAL = Nominal (Annoted SIMPLE_ID) deriving (Show, Eq, Ord)
+data NOMINAL = Nominal SIMPLE_ID deriving (Show, Eq, Ord)
 
-data LeqOrGeq = Leq | Geq deriving (Show, Eq, Ord)
-data Hybrid = At | Here deriving (Show, Eq, Ord)
-data UntilSince = Until | Since deriving (Show, Eq, Ord)
-data PathQuantification = AllPaths | SomePath deriving (Show, Eq, Ord)
-data NextY = Next | Yesterday deriving (Show, Eq, Ord)
-data StateQuantification = Generally | Eventually | Hitherto | Previously deriving (Show, Eq, Ord)
-data FixedPoint = Mu | Nu deriving (Show, Eq, Ord)
-
-data EM_FORMULA = BoxOrDiamond Bool MODALITY LeqOrGeq Bool Int (FORMULA EM_FORMULA) Range |
+data EM_FORMULA = BoxOrDiamond Bool MODALITY Bool Int (FORMULA EM_FORMULA) Range |
                -- The first identifier and the term specify the kind of the modality
                -- pos: "[]" or  "<>", True if Box, False if Diamond;
 		-- The second identifier is used for grading: 
