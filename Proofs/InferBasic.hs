@@ -139,11 +139,13 @@ consCheck :: Logic lid sublogics
               basic_spec sentence symb_items symb_map_items
               sign morphism symbol raw_symbol proof_tree
            => lid -> ConsChecker sign sentence sublogics morphism proof_tree
-           -> String -> TheoryMorphism sign sentence morphism proof_tree
+           -> String -> Tactic_script
+           -> TheoryMorphism sign sentence morphism proof_tree
            -> [FreeDefMorphism sentence morphism]
-           -> IO([Proof_status proof_tree])
+           -> IO (Result [Proof_status proof_tree])
 consCheck _ =
-    fromMaybe (\ _ _ -> fail "proveGUI not implemented") . proveGUI
+  fromMaybe (\ _ _ -> fail "proveCMDLautomatic not implemented")
+            . proveCMDLautomatic
 
 proveTheory :: Logic lid sublogics
               basic_spec sentence symb_items symb_map_items
@@ -190,10 +192,10 @@ basicInferenceNode checkCons lg ln dGraph (node, lbl) libEnv intSt =
                         t_target = Theory sig2 $ toThSens sens2,
                         t_morphism = incl }
             cc' <- coerceConsChecker lid4 lidT "" cc
-            pts <- lift $ consCheck lidT cc' thName mor
+            pts <- lift $ consCheck lidT cc' thName (Tactic_script "20") mor
                 $ getCFreeDefMorphs lidT libEnv ln dGraph node
             liftR $ case pts of
-                  [pt] -> case goalStatus pt of
+                  Result _ (Just [pt]) -> case goalStatus pt of
                     Proved (Just True) -> let
                       Result ds ms = extractModel cid sig1 $ proofTree pt
                       in case ms of
@@ -202,7 +204,7 @@ basicInferenceNode checkCons lg ln dGraph (node, lbl) libEnv intSt =
                          G_theory lidS (mkExtSign sig3) startSigId
                               (toThSens sens3) startThId
                     st -> fail $ "prover status is: " ++ show st
-                  _ -> fail "no unique cons checkers found"
+                  Result ds _ -> Result ds Nothing
           else do
             let freedefs = getCFreeDefMorphs lid1 libEnv ln dGraph node
             kpMap <- liftR knownProversGUI
@@ -229,6 +231,7 @@ consistencyCheck (G_cons_checker lid4 cc) (Comorphism cid) ln le dg (n',lbl)
                  timeout = do
   let lidS = sourceLogic cid
       t' = timeToTimeOfDay $ secondsToDiffTime $ toInteger timeout
+      ts = Tactic_script $ show timeout
   res <- runResultT $ do
     (G_theory lid1 (ExtSign sign _) _ axs _) <-
       liftR $ getGlobalTheory lbl
@@ -242,9 +245,11 @@ consistencyCheck (G_cons_checker lid4 cc) (Comorphism cid) ln le dg (n',lbl)
                              , t_target = Theory sig2 $ toThSens sens2
                              , t_morphism = incl }
     cc' <- coerceConsChecker lid4 lidT "" cc
-    pts <- lift $ consCheck lidT cc' thName mor
+    Result ds pts <- lift $ consCheck lidT cc' thName ts mor
                 $ getCFreeDefMorphs lidT le ln dg n'
-    return (pts, sig1)
+    case pts of
+      Just pts' -> return (pts', sig1)
+      _ -> liftR $ Result ds Nothing
   case res of
     Result ds Nothing -> return $ CSError $ unlines $ map diagString ds
     Result _ (Just ([pt], sig1)) -> if usedTime pt >= t' then

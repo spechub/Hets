@@ -48,6 +48,7 @@ module Logic.Grothendieck
   , G_symb_map_items_list (..)
   , G_sublogics (..)
   , isProperSublogic
+  , joinSublogics
   , G_morphism (..)
   , MorId(..)
   , startMorId
@@ -290,6 +291,12 @@ instance Ord G_sublogics where
 isProperSublogic :: G_sublogics -> G_sublogics -> Bool
 isProperSublogic a@(G_sublogics lid1 l1) b@(G_sublogics lid2 l2) =
     isSubElem (forceCoerceSublogic lid1 lid2 l1) l2 && a /= b
+
+joinSublogics :: G_sublogics -> G_sublogics -> Maybe G_sublogics
+joinSublogics (G_sublogics lid1 l1) (G_sublogics lid2 l2) =
+    case coerceSublogic lid1 lid2 "coerce Sublogic" l1 of
+      Just sl -> Just (G_sublogics lid2 (join sl l2))
+      Nothing -> Nothing
 
 -- | index for morphisms
 newtype MorId = MorId Int

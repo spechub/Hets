@@ -25,7 +25,6 @@ import GUI.GraphTypes
 
 import Static.DevGraph
 import Static.GTheory
-import Static.DGTranslation (comSublogics)
 
 import Interfaces.DataTypes
 
@@ -241,7 +240,7 @@ updateNodes view listNodes update lock unlock = do
     else let sls = map (sublogic . snd) nodes in
       maybe lock (\ sl -> do unlock; update sl)
             $ foldl (\ ma b -> case ma of
-                      Just a -> comSublogics b a
+                      Just a -> joinSublogics b a
                       Nothing -> Nothing) (Just $ head sls) $ tail sls
 
 -- | Update the list of finder

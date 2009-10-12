@@ -15,7 +15,6 @@ module Static.DGTranslation
     ( libEnv_translation
     , dg_translation
     , getDGLogic
-    , comSublogics
     ) where
 
 import Static.GTheory
@@ -175,7 +174,7 @@ getSublogicFromDGraph le ln =
              DGLink gm@(GMorphism cid' (ExtSign lsign _) _ lmorphism _) _ _ _)
         =
           if isHomogeneous gm then
-              Result [] (comSublogics g_mor g_sign)
+              Result [] (joinSublogics g_mor g_sign)
               else Result [mkDiag Error
                            ("the " ++ showLEdge l ++
                             " is not homogeneous.") () ] Nothing
@@ -212,12 +211,7 @@ comResSublogics (Result diags1 msubl1@(Just subl1))
                case msubl2 of
                  Nothing -> Result (diags1 ++ diags2) msubl1
                  Just subl2 ->
-                     Result (diags1 ++ diags2) $ comSublogics subl1 subl2
+                     Result (diags1 ++ diags2) $ joinSublogics subl1 subl2
 comResSublogics (Result diags1 Nothing) (Result diags2 _) =
     Result (diags1 ++ diags2) Nothing
 
-comSublogics :: G_sublogics -> G_sublogics -> Maybe G_sublogics
-comSublogics (G_sublogics lid1 l1) (G_sublogics lid2 l2) =
-    case coerceSublogic lid1 lid2 "coerce Sublogic" l1 of
-      Just sl -> Just (G_sublogics lid2 (join sl l2))
-      Nothing -> Nothing
