@@ -72,7 +72,7 @@ derived_sources += $(GTK_GLADE_HSFILES)
 # the list of logics that need ShATermConvertible instances
 logics = CASL HasCASL Isabelle Modal Temporal CoCASL COL CspCASL CASL_DL \
     SoftFOL ConstraintCASL Propositional OWL RelationalScheme VSE OMDoc DFOL \
-    Maude
+    Maude ExtModal
 
 TESTTARGETFILES += CASL/fromKif.hs CASL/capa.hs HasCASL/hacapa.hs \
     Haskell/wrap.hs Isabelle/isa.hs Syntax/hetpa.hs \
@@ -306,6 +306,8 @@ DFOL_files = DFOL/AS_DFOL.hs DFOL/Sign.hs DFOL/Morphism.hs DFOL/Symbol.hs
 Maude_files = Maude/Sign.hs Maude/Morphism.hs Maude/Sentence.hs \
     Maude/Symbol.hs Maude/AS_Maude.hs
 
+ExtModal_files = ExtModal/AS_ExtModal.hs ExtModal/ExtModalSign.hs
+
 # ATC DrIFT-rule generation for logics
 CASL/ATC_CASL.der.hs: $(CASL_files) $(GENRULES)
 	$(GENRULECALL) -i ATC.GlobalAnnotations -o $@ $(CASL_files)
@@ -360,6 +362,9 @@ DFOL/ATC_DFOL.der.hs: $(DFOL_files) $(GENRULES)
 
 Maude/ATC_Maude.der.hs: $(Maude_files) $(GENRULES)
 	$(GENRULECALL)  -i ATC.AS_Annotation -o $@ $(Maude_files)
+
+ExtModal/ATC_ExtModal.der.hs: $(ExtModal_files) $(GENRULES)
+	$(GENRULECALL)  -i CASL.ATC_CASL -o $@ $(ExtModal_files)
 
 # all ATC .der.hs files for all logics
 atc_logic_files = $(foreach logic, $(logics), $(logic)/ATC_$(logic).der.hs)
