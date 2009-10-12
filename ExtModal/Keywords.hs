@@ -9,7 +9,7 @@
  Portability	:
  -}
 
- module Keywords where 
+ module ExtModal.Keywords where 
 
  untilS :: String
  untilS = "U"
@@ -62,7 +62,7 @@
  timeS :: String
  timeS = "time"
 
- tmCompositonS :: String
+ tmCompositionS :: String
  tmCompositionS = ";"
 
  tmUnionS :: String
@@ -72,7 +72,7 @@
  tmTransClosS = "*"
 
  tmGuardS :: String
- tmGuradS = "?"
+ tmGuardS = "?"
 
  tmOParanthS :: String
  tmOParanthS = "("
