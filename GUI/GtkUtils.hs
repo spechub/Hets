@@ -18,7 +18,9 @@ module GUI.GtkUtils
   , startMainLoop
   , stopMainLoop
   , forkIO_
-  -- Usefull windows
+  , forkIOWithPostProcessing
+
+  -- * Windows for use inside Gtk thread
   , infoDialog
   , errorDialog
   , warningDialog
@@ -29,18 +31,33 @@ module GUI.GtkUtils
 
   , listChoiceAux
   , listChoice
-  , textView
 
   , progressBar
   , pulseBar
 
+  , textView
   , displayTheory
   , displayTheoryWithWarning
 
-  -- Windows for use in Gtk windows
-  , fileDialog
+  -- * Windows for use in Gtk windows
+  , infoDialogExt
+  , errorDialogExt
+  , warningDialogExt
+  , questionDialogExt
 
-  -- Frequently used functions
+  , fileOpenDialogExt
+  , fileSaveDialogExt
+
+  , listChoiceExt
+
+  , progressBarExt
+  , pulseBarExt
+
+  , textViewExt
+  , displayTheoryExt
+  , displayTheoryWithWarningExt
+
+  -- * Frequently used functions inside Gtk thread
   , setListData
   , updateListData
   , setListSelectorSingle
@@ -73,8 +90,6 @@ import System.IO (hFlush, hClose, hPutStr, openTempFile)
 
 import Data.IORef
 
--- Gtk Utils
-
 -- | Returns a GladeXML Object of a xmlstring.
 getGladeXML :: (String, String) -> IO GladeXML
 getGladeXML (name, xmlstr) = do
@@ -91,11 +106,9 @@ getGladeXML (name, xmlstr) = do
 
 -- | Starts the gtk main event loop in a thread
 startMainLoop :: IO ()
-startMainLoop = do
-  forkIO $ do
-    unsafeInitGUIForThreadedRTS
-    mainGUI
-  return ()
+startMainLoop = forkIO_ $ do
+  unsafeInitGUIForThreadedRTS
+  mainGUI
 
 stopMainLoop :: IO ()
 stopMainLoop = postGUISync mainQuit
@@ -105,10 +118,17 @@ forkIO_ f = do
   forkIO f
   return ()
 
--- Usefull windows
+forkIOWithPostProcessing :: IO a -> (a -> IO ()) -> IO ()
+forkIOWithPostProcessing action post = forkIO_ $ do
+  result <- action
+  postGUIAsync $ post result
 
--- Dialogs for messages
+{- * Usefull windows and function.
+     !!! IMPORTANT for all following functions !!!
+     Functions for use outside of the Gtk thread have a "Ext" postfix.
+     All other functions must be called from inside the Gtk thread. -}
 
+-- | Dialog for different typed messages
 dialog :: MessageType -- ^ Dialogtype
        -> String -- ^ Title
        -> String -- ^ Message
@@ -146,35 +166,60 @@ dialog messageType title message mAction = do
 infoDialog :: String -- ^ Title
            -> String -- ^ Message
            -> IO ()
-infoDialog title message = postGUISync $ do
+infoDialog title message = do
   dialog MessageInfo title message Nothing
   return ()
+
+-- | create a window which displays a given text
+infoDialogExt :: String -- ^ Title
+              -> String -- ^ Message
+              -> IO ()
+infoDialogExt title = postGUISync . infoDialog title
 
 -- | create a window which displays a given error
 errorDialog :: String -- ^ Title
             -> String -- ^ Message
             -> IO ()
-errorDialog title message = postGUISync $ do
+errorDialog title message = do
   dialog MessageError title message Nothing
   return ()
+
+-- | create a window which displays a given error
+errorDialogExt :: String -- ^ Title
+               -> String -- ^ Message
+               -> IO ()
+errorDialogExt title = postGUISync . errorDialog title
 
 -- | create a window which displays a given warning and ask for continue
 warningDialog :: String -- ^ Title
               -> String -- ^ Message
               -> Maybe (IO ()) -- ^ Action on Ok
               -> IO Bool
-warningDialog title message = postGUISync . dialog MessageWarning title message
+warningDialog = dialog MessageWarning
+
+-- | create a window which displays a given warning and ask for continue
+warningDialogExt :: String -- ^ Title
+                 -> String -- ^ Message
+                 -> Maybe (IO ()) -- ^ Action on Ok
+                 -> IO Bool
+warningDialogExt title message  = postGUISync . warningDialog title message
 
 -- | create a window which displays a given question
 questionDialog :: String  -- ^ Title
                -> String  -- ^ Message
                -> Maybe (IO ()) -- ^ Action on Yes
                -> IO Bool
-questionDialog title message =
-  postGUISync . dialog MessageQuestion title message
+questionDialog = dialog MessageQuestion
 
--- Filedialogs for opening and saving
+-- | create a window which displays a given question
+questionDialogExt :: String  -- ^ Title
+                  -> String  -- ^ Message
+                  -> Maybe (IO ()) -- ^ Action on Yes
+                  -> IO Bool
+questionDialogExt title message = postGUISync . questionDialog title message
 
+
+-- | Filedialog for opening and saving
 fileDialog :: FileChooserAction -- ^ Action
            -> FilePath -- ^ Defaultname for file
            -> [(String, [String])] -- ^ Filter (name, pattern list)
@@ -234,20 +279,32 @@ fileOpenDialog :: FilePath -- ^ Defaultname for file
                -> [(String, [String])] -- ^ Filter (name, pattern list)
                -> Maybe (FilePath -> IO ()) -- ^ Action on open
                -> IO (Maybe FilePath)
-fileOpenDialog p f = postGUISync . fileDialog FileChooserActionOpen p f
+fileOpenDialog = fileDialog FileChooserActionOpen
+
+fileOpenDialogExt :: FilePath -- ^ Defaultname for file
+                  -> [(String, [String])] -- ^ Filter (name, pattern list)
+                  -> Maybe (FilePath -> IO ()) -- ^ Action on open
+                  -> IO (Maybe FilePath)
+fileOpenDialogExt p f = postGUISync . fileOpenDialog p f
 
 fileSaveDialog :: FilePath -- ^ Defaultname for file
                -> [(String, [String])] -- ^ Filter (name, pattern list)
                -> Maybe (FilePath -> IO ()) -- ^ Action on save
                -> IO (Maybe FilePath)
-fileSaveDialog p f = postGUISync . fileDialog FileChooserActionSave p f
+fileSaveDialog = fileDialog FileChooserActionSave
+
+fileSaveDialogExt :: FilePath -- ^ Defaultname for file
+                  -> [(String, [String])] -- ^ Filter (name, pattern list)
+                  -> Maybe (FilePath -> IO ()) -- ^ Action on save
+                  -> IO (Maybe FilePath)
+fileSaveDialogExt p f = postGUISync . fileSaveDialog p f
 
 -- | create a window with title and list of options, return selected option
 listChoiceAux :: String -- ^ Title
               -> (a -> String) -- ^ Name of element
               -> [a] -- ^ Rows to display
               -> IO (Maybe (Int,a)) -- ^ Selected row
-listChoiceAux title showF items  = postGUISync $ do
+listChoiceAux title showF items  = do
   xml     <- getGladeXML Utils.get
   -- get objects
   dlg     <- xmlGetWidget xml castToDialog "ListView"
@@ -280,6 +337,155 @@ listChoice :: String -- ^ Title
 listChoice title items = do
   ret <- listChoiceAux title id items
   return $ maybe Nothing (\ (i,_) -> Just i) ret
+
+-- | create a window with title and list of options, return selected option
+listChoiceExt :: String -- ^ Title
+              -> [String] -- ^ Rows to display
+              -> IO (Maybe Int) -- ^ Selected row
+listChoiceExt title = postGUISync . listChoice title
+
+-- | Progress/Pulse bar window
+progressBarAux :: Bool -- ^ Percent or pulse
+               -> String -- ^ Title
+               -> String -- ^ Description
+               -> IO (Double -> String -> IO (), IO ())
+progressBarAux isProgress title description = do
+  xml         <- getGladeXML Utils.get
+  -- get window
+  window      <- xmlGetWidget xml castToWindow "ProgressBar"
+  -- get progress bar
+  bar <- xmlGetWidget xml castToProgressBar "pbProgress"
+
+  windowSetTitle window title
+  progressBarSetText bar description
+  progressBarSetPulseStep bar 0.05
+  windowSetPosition window WinPosCenter
+  windowSetTypeHint window WindowTypeHintUtility
+
+  exit <- if isProgress then return (widgetDestroy window) else do
+    h <- timeoutAdd (do
+                      progressBarPulse bar
+                      return True
+                    ) 75
+    return (do timeoutRemove h; widgetDestroy window)
+
+  widgetShow window
+
+  let update p d = do
+        progressBarSetText bar d
+        when isProgress $ progressBarSetFraction bar p
+
+  return (update, exit)
+
+
+progressBar :: String -- ^ Title
+            -> String -- ^ Description
+            -> IO (Double -> String -> IO (), IO ())
+progressBar = progressBarAux True
+
+progressBarExt :: String -- ^ Title
+               -> String -- ^ Description
+               -> IO (Double -> String -> IO (), IO ())
+progressBarExt title description = do
+  (update, exit) <- postGUISync $ progressBar title description
+  return (\ a -> postGUISync . update a, postGUISync exit)
+
+pulseBar :: String -- ^ Title
+         -> String -- ^ Description
+         -> IO (String -> IO (), IO ())
+pulseBar title description = do
+  (update, exit) <- progressBarAux False title description
+  let update' = update 0
+  return (update', exit)
+
+pulseBarExt :: String -- ^ Title
+            -> String -- ^ Description
+            -> IO (String -> IO (), IO ())
+pulseBarExt title description = do
+  (update, exit) <- postGUISync $ pulseBar title description
+  return (postGUISync . update, postGUISync exit)
+
+-- | Display text in an uneditable, scrollable editor. Not blocking!
+textView :: String -- ^ Title
+         -> String -- ^ Message
+         -> Maybe (FilePath) -- ^ Filename
+         -> IO ()
+textView title message mfile = do
+  xml     <- getGladeXML Utils.get
+  -- get objects
+  dlg    <- xmlGetWidget xml castToDialog "TextView"
+  tvText <- xmlGetWidget xml castToTextView "tvText"
+
+  windowSetTitle dlg title
+  buffer <- textViewGetBuffer tvText
+  textBufferInsertAtCursor buffer message
+
+  tagTable <- textBufferGetTagTable buffer
+  font <- textTagNew Nothing
+  set font [ textTagFont := "FreeMono" ]
+  textTagTableAdd tagTable font
+  start <- textBufferGetStartIter buffer
+  end <- textBufferGetEndIter buffer
+  textBufferApplyTag buffer font start end
+
+  case mfile of
+    Just file -> do
+      btnSave <- dialogAddButton dlg stockSave ResponseNone
+      onClicked btnSave $ do
+        fileDialog FileChooserActionSave file
+                   [("Nothing", ["*"]), ("Text", ["*.txt"])]
+                   $ Just (\ filepath -> writeFile filepath message)
+        return ()
+      return ()
+    Nothing -> return ()
+
+  btnClose <- dialogAddButton dlg stockClose ResponseNone
+  onClicked btnClose $ widgetDestroy dlg
+
+  widgetShow dlg
+  return ()
+
+-- | Display text in an uneditable, scrollable editor. Not blocking!
+textViewExt :: String -- ^ Title
+         -> String -- ^ Message
+         -> Maybe (FilePath) -- ^ Filename
+         -> IO ()
+textViewExt title message = postGUIAsync . textView title message
+
+-- | displays a theory in a window
+displayTheory :: String -- ^ Kind of theory
+              -> String -- ^ Name of theory
+              -> G_theory -- ^ Theory
+              -> IO ()
+displayTheory kind name gth =
+  textView ( kind ++ " of " ++ name) (showDoc gth "\n") $ Just $ name ++ ".het"
+
+-- | displays a theory in a window
+displayTheoryExt :: String -- ^ Kind of theory
+                 -> String -- ^ Name of theory
+                 -> G_theory -- ^ Theory
+                 -> IO ()
+displayTheoryExt kind name = postGUIAsync . displayTheory kind name
+
+-- | displays a theory with warning in a window
+displayTheoryWithWarning :: String -- ^ Kind of theory
+                         -> String -- ^ Name of theory
+                         -> String -- ^ Warning
+                         -> G_theory -- ^ Theory
+                         -> IO ()
+displayTheoryWithWarning k n w t =
+  textView (k ++ " of " ++ n) (w ++ showDoc t "\n") $ Just $ n ++ ".het"
+
+-- | displays a theory with warning in a window
+displayTheoryWithWarningExt :: String -- ^ Kind of theory
+                            -> String -- ^ Name of theory
+                            -> String -- ^ Warning
+                            -> G_theory -- ^ Theory
+                            -> IO ()
+displayTheoryWithWarningExt k n w =
+  postGUIAsync . displayTheoryWithWarning k n w
+
+-- * Frequently used functions
 
 -- | Setup list with single selection
 setListSelectorSingle :: TreeView -> IO () -> IO ()
@@ -406,109 +612,3 @@ updateListData :: ListStore a -> [a] -> IO ()
 updateListData list listData = do
   listStoreClear list
   mapM_ (listStoreAppend list) listData
-
--- | Display text in an uneditable, scrollable editor. Not blocking!
-textView :: String -- ^ Title
-         -> String -- ^ Message
-         -> Maybe (FilePath) -- ^ Filename
-         -> IO ()
-textView title message mfile = postGUIAsync $ do
-  xml     <- getGladeXML Utils.get
-  -- get objects
-  dlg    <- xmlGetWidget xml castToDialog "TextView"
-  tvText <- xmlGetWidget xml castToTextView "tvText"
-
-  windowSetTitle dlg title
-  buffer <- textViewGetBuffer tvText
-  textBufferInsertAtCursor buffer message
-
-  tagTable <- textBufferGetTagTable buffer
-  font <- textTagNew Nothing
-  set font [ textTagFont := "FreeMono" ]
-  textTagTableAdd tagTable font
-  start <- textBufferGetStartIter buffer
-  end <- textBufferGetEndIter buffer
-  textBufferApplyTag buffer font start end
-
-  case mfile of
-    Just file -> do
-      btnSave <- dialogAddButton dlg stockSave ResponseNone
-      onClicked btnSave $ do
-        fileDialog FileChooserActionSave file
-                   [("Nothing", ["*"]), ("Text", ["*.txt"])]
-                   $ Just (\ filepath -> writeFile filepath message)
-        return ()
-      return ()
-    Nothing -> return ()
-
-  btnClose <- dialogAddButton dlg stockClose ResponseNone
-  onClicked btnClose $ widgetDestroy dlg
-
-  widgetShow dlg
-  return ()
-
-progressBarAux :: Bool -- ^ Percent or pulse
-               -> String -- ^ Title
-               -> String -- ^ Description
-               -> IO (Double -> String -> IO (), IO ())
-progressBarAux isProgress title description = postGUISync $ do
-  xml         <- getGladeXML Utils.get
-  -- get window
-  window      <- xmlGetWidget xml castToWindow "ProgressBar"
-  -- get progress bar
-  bar <- xmlGetWidget xml castToProgressBar "pbProgress"
-
-  windowSetTitle window title
-  progressBarSetText bar description
-  progressBarSetPulseStep bar 0.05
-  windowSetPosition window WinPosCenter
-  windowSetTypeHint window WindowTypeHintUtility
-
-  exit <- if isProgress then return (widgetDestroy window) else do
-    h <- timeoutAdd (do
-                      progressBarPulse bar
-                      return True
-                    ) 75
-    return (postGUIAsync $ do
-      timeoutRemove h
-      widgetDestroy window)
-
-  widgetShow window
-
-  let update p d = postGUIAsync $ do
-        progressBarSetText bar d
-        when isProgress $ progressBarSetFraction bar p
-
-  return (update, exit)
-
-
-progressBar :: String -- ^ Title
-            -> String -- ^ Description
-            -> IO (Double -> String -> IO (), IO ())
-progressBar = progressBarAux True
-
-pulseBar :: String -- ^ Title
-         -> String -- ^ Description
-         -> IO (String -> IO (), IO ())
-pulseBar title description = do
-  (update, exit) <- progressBarAux False title description
-  let update' = update 0
-  return (update', exit)
-
--- | displays a theory in a window
-displayTheory :: String -- ^ Kind of theory
-              -> String -- ^ Name of theory
-              -> G_theory -- ^ Theory
-              -> IO ()
-displayTheory kind name gth =
-  textView ( kind ++ " of " ++ name) (showDoc gth "\n") $ Just $ name ++ ".het"
-
--- | displays a theory with warning in a window
-displayTheoryWithWarning :: String -- ^ Kind of theory
-                         -> String -- ^ Name of theory
-                         -> String -- ^ Warning
-                         -> G_theory -- ^ Theory
-                         -> IO ()
-displayTheoryWithWarning kind name warning gth =
-  textView (kind ++ " of " ++ name) (warning ++ showDoc gth "\n")
-           $ Just $ name ++ ".het"

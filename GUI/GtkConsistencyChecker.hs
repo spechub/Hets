@@ -35,9 +35,8 @@ import Comorphisms.LogicGraph (logicGraph)
 
 import Common.LibName (LibName)
 
-import Control.Concurrent (forkIO, killThread, ThreadId)
 import Control.Concurrent.MVar
-import Control.Monad (foldM_, join, mapM_)
+import Control.Monad (foldM, join, mapM_)
 
 import Proofs.AbstractState
 import Proofs.InferBasic (consistencyCheck, ConsistencyStatus (..))
@@ -114,12 +113,15 @@ showConsistencyChecker gInfo@(GInfo { libName = ln }) = postGUIAsync $ do
                                 , toWidget btnNodesTimeout
                                 , toWidget btnResults
                                 ]
+      switch b = do
+        widgetSetSensitive btnStop $ not b
+        widgetSetSensitive btnCheck b
 
   widgetSetSensitive btnStop False
   widgetSetSensitive btnCheck False
   widgetSetSensitive btnResults False
 
-  run <- newMVar Nothing
+  stop <- newEmptyMVar
   mView <- newEmptyMVar
 
   -- get nodes
@@ -133,9 +135,6 @@ showConsistencyChecker gInfo@(GInfo { libName = ln }) = postGUIAsync $ do
         return (le, dg, labNodesDG dg)
   ths <- mapM (\ (_,l) -> computeLocalLabelTheory le l) nodes
   let sls = map sublogicOfTh ths
-      switch b = do
-        widgetSetSensitive btnStop $ not b
-        widgetSetSensitive btnCheck b
 
   -- setup data
   listNodes <- setListData trvNodes getFNodeName
@@ -180,32 +179,36 @@ showConsistencyChecker gInfo@(GInfo { libName = ln }) = postGUIAsync $ do
   onClicked btnNodesUnchecked $ selectWith (== CSUnchecked)
   onClicked btnNodesTimeout  $ selectWith (== CSTimeout "")
 
-  onClicked btnResults $ forkIO_ $ showModelView mView "Models" listNodes
+  onClicked btnResults $ showModelView mView "Models" listNodes
   onClicked btnClose $ widgetDestroy window
   onClicked btnFineGrained $ fineGrainedSelection trvFinder listFinder
                            $ widgetSetSensitive btnCheck True
-  onClicked btnStop $ forkIO_ $ do
-    mtid <- readMVar run
-    maybe (return ()) killThread mtid
-    takeMVar run
-    return ()
-  onClicked btnCheck $ forkIO_ $ do
-    takeMVar run
-    postGUISync $ activate checkWidgets False
-    timeout <- postGUISync $ spinButtonGetValueAsInt sbTimeout
+  onClicked btnStop $ do
+    mStopF <- tryTakeMVar stop
+    case mStopF of
+      Nothing -> return ()
+      Just stopF -> stopF
+
+  onClicked btnCheck $ do
+    activate checkWidgets False
+    timeout <- spinButtonGetValueAsInt sbTimeout
     (update, exit) <- progressBar "Checking consistency" "please wait..."
-    nodes' <- postGUISync $ getSelectedMultiple trvNodes listNodes
-    mf <- postGUISync $ getSelectedSingle trvFinder listFinder
+    nodes' <- getSelectedMultiple trvNodes listNodes
+    mf <- getSelectedSingle trvFinder listFinder
     f <- case mf of
       Nothing -> error "Consistency checker: internal error"
       Just (_,f) -> return f
-    check ln le dg f timeout update run listNodes nodes'
-    postGUISync $ switch False
-    putMVar run Nothing
-    forkIO_ $ showModelView mView "Results of consistency check" listNodes
-    postGUISync $ switch True
-    postGUISync $ activate checkWidgets True
-    exit
+    switch False
+    forkIOWithPostProcessing
+      (check ln le dg f timeout update nodes' stop)
+      $ \ res -> do
+        widgetSetSensitive btnStop False
+        mapM_ (uncurry (listStoreSetValue listNodes)) res
+        tryTakeMVar stop
+        switch True
+        showModelView mView "Results of consistency check" listNodes
+        activate checkWidgets True
+        exit
 
   widgetShow window
 
@@ -245,43 +248,48 @@ updateNodes view listNodes update lock unlock = do
 
 -- | Update the list of finder
 updateFinder :: TreeView -> ListStore Finder -> G_sublogics -> IO ()
-updateFinder view list sl = forkIO_ $ do
+updateFinder view list sl = do
   (update, exit) <- pulseBar "Calculating paths" "please wait..."
-  postGUISync $ listStoreClear list
-  mapM_ (postGUISync . listStoreAppend list)
-    $ Map.elems
-    $ foldr (\ (cc,c) m -> let n = getPName cc
-                               f = Map.findWithDefault (Finder n cc [] 0) n m in
-              Map.insert n (f { comorphs = c : comorphs f}) m
-            ) Map.empty
-    $ getConsCheckersAutomatic $ findComorphismPaths logicGraph sl
-  update "finished"
-  exit
-  postGUIAsync $ selectFirst view
+  listStoreClear list
+  forkIOWithPostProcessing
+    (return $ Map.elems $ foldr
+                (\ (cc,c) m ->
+                  let n = getPName cc
+                      f = Map.findWithDefault (Finder n cc [] 0) n m in
+                  Map.insert n (f { comorphs = c : comorphs f}) m
+                ) Map.empty
+                $ getConsCheckersAutomatic $ findComorphismPaths logicGraph sl)
+    $ \ res -> do
+      mapM_ (listStoreAppend list) res
+      update "finished"
+      exit
+      selectFirst view
 
 activate :: [Widget] -> Bool -> IO ()
 activate widgets active = mapM_ (\ w -> widgetSetSensitive w active) widgets
 
 check :: LibName -> LibEnv -> DGraph -> Finder -> Int
-      -> (Double -> String -> IO ())
-      -> MVar (Maybe ThreadId) -> ListStore FNode -> [(Int,FNode)] -> IO ()
+      -> (Double -> String -> IO ()) -> [(Int,FNode)] -> MVar (IO ())
+      -> IO [(Int, FNode)]
 check ln le dg (Finder { finder = cc, comorphs = cs, selected = i}) timeout
-      update run list nodes = do
-  tid <- forkIO $ do
-    let count' = fromIntegral $ length nodes
-        c = cs !! i
-    foldM_ (\ count (row, fn@(FNode { name = name', node = n })) -> do
-             update (count / count') name'
-             res <- consistencyCheck cc c ln le dg n timeout
-             postGUIAsync $ listStoreSetValue list row $ fn { status = res }
-             return $ count+1) 0 nodes
-    takeMVar run
-    return ()
-  putMVar run $ Just tid
+      update nodes stop = do
+  stop' <- newEmptyMVar
+  putMVar stop $ putMVar stop' ()
+  let count' = fromIntegral $ length nodes
+      c = cs !! i
+  (_,r) <- foldM (\ (count, r) (row, fn@(FNode { name = n', node = n })) -> do
+                   run <- isEmptyMVar stop'
+                   r' <- if run then do
+                       postGUISync $ update (count / count') n'
+                       res <- consistencyCheck cc c ln le dg n timeout
+                       return $ (row, fn { status = res }):r
+                     else return r
+                   return (count+1, r')) (0,[]) nodes
+  return r
 
 fineGrainedSelection :: TreeView -> ListStore Finder -> IO () -> IO ()
-fineGrainedSelection view list unlock = forkIO_ $ do
-  paths <- postGUISync $ listStoreToList list
+fineGrainedSelection view list unlock = do
+  paths <- listStoreToList list
   selector <- treeViewGetSelection view
   if null paths then error "Cant make selection without sublogic!"
     else do
@@ -290,7 +298,7 @@ fineGrainedSelection view list unlock = forkIO_ $ do
       case ret of
         Just (_,(n,_,c)) -> case findIndex ((n ==) . fname) paths of
           Just i -> let f = paths !! i in case findIndex (c ==) $ comorphs f of
-            Just i' -> postGUISync $ do
+            Just i' -> do
               listStoreSetValue list i $ f { selected = i' }
               treeSelectionSelectPath selector [i]
               unlock
@@ -304,7 +312,7 @@ expand (Finder { fname = n, finder = cc, comorphs = cs }) =
 
 -- | Displays the model view window
 showModelViewAux :: MVar (IO ()) -> String -> ListStore FNode -> IO ()
-showModelViewAux lock title list = postGUISync $ do
+showModelViewAux lock title list = do
   xml      <- getGladeXML ConsistencyChecker.get
   -- get objects
   window   <- xmlGetWidget xml castToWindow "ModelView"
@@ -344,7 +352,7 @@ showModelViewAux lock title list = postGUISync $ do
   onClicked btnClose $ widgetDestroy window
   onDestroy window $ do takeMVar lock; return ()
 
-  putMVar lock $ postGUISync $ do
+  putMVar lock $ do
     nodes' <- listStoreToList list
     updateListData listNodes $ filterNodes nodes'
 
