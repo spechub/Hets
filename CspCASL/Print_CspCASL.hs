@@ -24,9 +24,6 @@ import CspCASL.AS_CspCASL
 import CspCASL.AS_CspCASL_Process
 import CspCASL.CspCASL_Keywords
 
-import qualified Data.Set as S
-
-
 instance Pretty CspBasicSpec where
     pretty = printCspBasicSpec
 
@@ -135,13 +132,14 @@ printProcess pr = case pr of
          (pretty les) <+> alpar_sep <+> (pretty res) <+>
          alpar_close <+> (glue pr q)
         )
-    FQProcess p commAlpha _ ->
-        let commAlphaList = S.toList commAlpha
-            prettyComms cs = sepByCommas (map pretty cs)
-        in text "[" <+> (pretty p) <> text "]" <+> text "_" <>
-             braces (prettyComms commAlphaList)
-           -- pretty p
-
+    FQProcess p _ _ -> pretty p
+    -- Alternative pretty printer for FQProcess - Used for debugging
+--     FQProcess p commAlpha _ ->
+--         let commAlphaList = S.toList commAlpha
+--             prettyComms cs = sepByCommas (map pretty cs)
+--         in text "[" <+> (pretty p) <> text "]" <+> text "_" <>
+--            braces (prettyComms commAlphaList)
+           
 instance Pretty CommType where
     pretty (CommTypeSort s) = pretty s
     pretty (CommTypeChan (TypedChanName c _)) =

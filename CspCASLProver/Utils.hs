@@ -203,8 +203,8 @@ addReflexivityTheorem isaTh =
 --   to know the number of sorts, but instead we are given a list of
 --   all sorts
 addSymmetryTheorem :: [SORT] -> IsaTheory -> IsaTheory
-addSymmetryTheorem sorts isaTh =
-    let numSorts = length(sorts)
+addSymmetryTheorem _ isaTh =
+    let -- numSorts = length(sorts)
         name = symmetryTheoremS
         x = mkFree "x"
         y = mkFree "y"
@@ -213,8 +213,8 @@ addSymmetryTheorem sorts isaTh =
         -- We want to induct Y then apply simp numSorts times and reapeat this
         -- apply as many times as possibe, thus the true at the end
         -- inductY = [Apply ((Induct y):(replicate numSorts Simp)) True]
-        -- Bug in above in isabelle - does not work for all specs
-        -- Now we do induction on Y then auto
+        -- Bug in above in isabelle?? not sure - does not work for all specs?
+        -- Now we do induction on Y then auto - I think this works for all specs
         inductY = [Apply [Induct y, Auto] True]
         proof' = IsaProof {
                    -- Add in front of inductY a apply induct on x
