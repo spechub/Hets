@@ -15,7 +15,7 @@ module ExtModal.Logic_ExtModal where
 import ExtModal.AS_ExtModal
 import ExtModal.ExtModalSign
 import ExtModal.ATC_ExtModal()
-import ExtModal.Parse_ExtModal
+import ExtModal.Parse_AS
 import ExtModal.StatAna
 
 import CASL.Sign

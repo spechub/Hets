@@ -47,7 +47,7 @@ data EM_SIG_ITEM =
              deriving Show
 
 
-data NOMINAL = Annoted SIMPLE_ID deriving (Show, Eq, Ord)
+data NOMINAL = Nominal (Annoted SIMPLE_ID) deriving (Show, Eq, Ord)
 
 data LeqOrGeq = Leq | Geq deriving (Show, Eq, Ord)
 data Hybrid = At | Here deriving (Show, Eq, Ord)
