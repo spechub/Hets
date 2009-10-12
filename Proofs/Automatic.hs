@@ -60,7 +60,7 @@ automaticRecursiveFromList ln proofstatus ls =
 {- | automatically applies all rules to the library
    denoted by the library name of the given proofstatus-}
 automatic :: LibName -> LibEnv -> LibEnv
-automatic ln le = let nLib = localInference ln $ automaticRecursive 9 ln le in
+automatic ln le = let nLib = localInference ln $ automaticRecursive 49 ln le in
   Map.intersectionWith (\ odg ndg ->
       groupHistory odg (DGRule "automatic") ndg) le nLib
 
@@ -81,7 +81,6 @@ wrapTheoremHideShift ln libEnv =
 rules :: [LibName -> LibEnv -> LibEnv]
 rules =
     [ automaticHideTheoremShift
-    , locDecomp
     , globDecomp
     , globSubsume
     , wrapTheoremHideShift
