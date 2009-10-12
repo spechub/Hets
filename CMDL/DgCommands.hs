@@ -36,42 +36,39 @@ import CMDL.DataTypesUtils
 import CMDL.Utils(decomposeIntoGoals, obtainEdgeList, prettyPrintErrList)
 
 import Proofs.AbstractState (getProvers, initialState)
-import Static.ComputeTheory (computeTheory)
 import Proofs.TheoremHideShift (theoremHideShiftFromList)
 
+import Static.AnalysisLibrary
 import Static.GTheory (G_theory(G_theory), sublogicOfTh)
 import Static.DevGraph
+import Static.ComputeTheory (computeTheory)
 
 import Driver.AnaLib (anaLib, anaLibExt)
-
-import Common.LibName (LibName(getLibId))
-import Common.Utils (trim)
-import Common.Result (hasErrors, Diagnosis(diagString), Result(Result))
+import Driver.Options
 
 import Comorphisms.KnownProvers (knownProversWithKind, shrinkKnownProvers)
 import Comorphisms.LogicGraph (logicGraph)
 
 import Logic.Comorphism (hasModelExpansion)
-import Logic.Grothendieck (currentLogic, findComorphismPaths)
+import Logic.Grothendieck (findComorphismPaths)
 import Logic.Prover (ProverKind(ProveCMDLautomatic))
 
-import Data.Graph.Inductive.Graph (LEdge)
-
-import Driver.Options
-import Data.Maybe
-import Data.List(isPrefixOf)
-import Static.AnalysisLibrary
 import Syntax.AS_Structured
 import Syntax.AS_Library
-import Driver.ReadFn
+
+import Common.LibName (LibName(getLibId))
+import Common.Utils (trim)
+import Common.Result
 import Common.ResultT
 import Common.Id
 import Common.AS_Annotation
-import Control.Monad
-import System.Directory
 
+import Control.Monad
+
+import Data.Graph.Inductive.Graph (LEdge)
 import qualified Data.Map as Map
 import qualified Data.Set as Set
+import Data.Maybe
 
 -- | Wraps Result structure around the result of a dg all style command
 wrapResultDgAll :: (LibName -> LibEnv -> LibEnv)
@@ -221,138 +218,94 @@ selectANode x dgState = let
 -- | function swithces interface in proving mode and also
 -- selects a list of nodes to be used inside this mode
 cDgSelect :: String -> CmdlState -> IO CmdlState
-cDgSelect input state = case i_state $ intState state of
-   Nothing      -> return $ genErrorMsg "No library loaded" state
-   Just dgState ->
-     let (errors, nodes) = getInputDGNodes input dgState
-      in if null nodes
-           then return $ genErrorMsg errors state
-           else case knownProversWithKind ProveCMDLautomatic of
-                  Result _ Nothing ->
-                    return $ genErrorMsg (errors ++ "\nNo prover found") state
-                  Result _ (Just _) ->
-                    let -- elems is the list of all results (i.e.
-                        -- concat of all one element lists)
-                        elems = concatMap (flip selectANode dgState . fst) nodes
-                        nwist = emptyIntIState (i_libEnv dgState) (i_ln dgState)
-                     in return $ add2hist [IStateChange $ Just dgState]
-                           $ genMessage errors [] state
-                               -- add the prove state to the status
-                               -- containing all information selected
-                               -- in the input
-                               { intState = (intState state)
-                                   { i_state = Just nwist
-                                       { elements = elems
-                                       , cComorphism = getIdComorphism elems }
-                                    }
-                               }
+cDgSelect input state = let iState = intState state in
+  return $ case i_state iState of
+    Nothing -> genErrorMsg "No library loaded" state
+    Just dgState -> let (errors, nodes) = getInputDGNodes input dgState
+      in if null nodes then genErrorMsg errors state else
+      case maybeResult $ knownProversWithKind ProveCMDLautomatic of
+        Nothing -> genErrorMsg (errors ++ "\nNo prover found") state
+        Just _ -> let -- elems is the list of all results (i.e.
+                      -- concat of all one element lists)
+            elems = concatMap (flip selectANode dgState . fst) nodes
+            nwist = emptyIntIState (i_libEnv dgState) (i_ln dgState)
+         in add2hist [IStateChange $ Just dgState] $ genMessage errors [] state
+           -- add the prove state to the status
+           -- containing all information selected
+           -- in the input
+           { intState = iState
+               { i_state = Just nwist
+                   { elements = elems
+                   , cComorphism = getIdComorphism elems } } }
 
 cExpand :: String -> CmdlState -> IO CmdlState
-cExpand input state = do
-   let opts = hetsOpts state
-       fname = trim input
-   fname' <- existsAnSource opts {intype = GuessIn} fname
-   case fname' of
-     Nothing -> return $ genErrorMsg "No source found" state
-     Just file -> do
-          curDir <- getCurrentDirectory
-          input' <- readFile file
-          mt <- getModificationTime file
-          let absolutePath = if "/" `isPrefixOf` file
-                             then file
-                             else curDir ++ '/':file
-              lg = logicGraph
-              ln = i_ln istate
-              istate = fromJust $ i_state $ intState state
-              libenv = i_libEnv istate
-              Result _ mast = readLibDefnM lg opts absolutePath input' mt
-          case mast of
-            Just (Lib_defn _ alibItems _ _) -> do
-              let dg = fromJust $ Map.lookup ln libenv
-              Result _ res <- runResultT $ foldM ana
-                 ([], dg, libenv, lg) (map item alibItems)
-              case res of
-                Just (_, dg', libenv', _) ->
-                    return state {
-                       intState = (intState state) {
-                          i_state = Just $ emptyIntIState (Map.insert ln dg' libenv') ln
-                          }
-                       }
-                Nothing -> return $ genErrorMsg "Analysis failed" state
-              where
-              ana (libItems', dg1, libenv1, lG) libItem =
-                let newLG = case libItems' of
-                     [] -> lG { currentLogic = defLogic opts }
-                     Logic_decl (Logic_name logTok _) _ : _ ->
-                        lG { currentLogic = tokStr logTok }
-                     _ -> lG
-                in ResultT (do
-                  Result diags2 res <-
-                    runResultT $ anaLibItem newLG opts Set.empty libenv1 dg1 libItem
-                  runResultT $ showDiags1 opts (liftR (Result diags2 res))
-                  let mRes = case res of
-                       Just (libItem', dg1', libenv1') ->
-                            Just (libItem' : libItems', dg1', libenv1', newLG)
-                       Nothing -> Nothing
-                  if outputToStdout opts then
-                     if hasErrors diags2 then
-                        fail "Stopped due to errors"
-                        else runResultT $ liftR $ Result [] mRes
-                    else
-                        runResultT $ liftR $ Result diags2 mRes)
-            Nothing -> return $ genErrorMsg "Source can't be parsed" state
-
-
+cExpand input state = let iState = intState state in case i_state iState of
+  Nothing -> return $ genErrorMsg "No library loaded to expand" state
+  Just ist -> do
+    let opts = hetsOpts state
+        fname = trim input
+        lg = logicGraph
+        ln = i_ln ist
+        libenv = i_libEnv ist
+        dg = lookupDGraph ln libenv
+    Result ds mres <- runResultT
+      $ anaSourceFile lg opts Set.empty libenv dg fname
+    return $ case mres of
+      Nothing -> genErrorMsg
+        ("Analysis failed:\n" ++ showRelDiags (verbose opts) ds) state
+      Just (lN', libEnv') ->
+       -- assume lN' is empty, ignored or identical to ln
+        let dg' = lookupDGraph lN' libEnv'
+            newLibEnv = Map.insert ln dg' $ Map.delete lN' libEnv'
+        in state
+          { intState = iState
+              { i_state = Just $ emptyIntIState newLibEnv ln } }
 
 cAddView :: String -> CmdlState -> IO CmdlState
-cAddView input state = do
-   let istate = fromJust $ i_state $ intState state
-       libenv = i_libEnv istate
-       ln = i_ln istate
-       lg = logicGraph
-       opts = hetsOpts state
-       dg = fromJust $ Map.lookup ln libenv
-       [vn,spec1,spec2] = words input
-   Result _ tmp <- runResultT $ liftR $ anaViewDefn lg libenv dg opts Token{tokStr=vn,tokPos=nullRange}
-                   (Genericity (Params []) (Imported[]) nullRange)
-                   (View_type (Annoted {item=Spec_inst Token{tokStr=spec1,tokPos=nullRange}
-                                        [] nullRange,opt_pos=nullRange,l_annos=[],r_annos=[]})
-                    (Annoted {item=Spec_inst Token{tokStr=spec2,tokPos=nullRange} [] nullRange,opt_pos=nullRange,l_annos=[],r_annos=[]})
-                    nullRange) [] nullRange
-   case tmp of
-    Nothing ->             -- leave internal state intact so that
-                           -- the interface can recover
-               return $ genErrorMsg ("Unable to add view "++vn) state
-    Just (_, nwDg, nwLibEnv) ->
-                 let nwLibEnv' = Map.insert ln nwDg nwLibEnv
-                 in
-                 return
-                 state {
-                     intState = (intState state) {
-                          i_state = Just $ emptyIntIState nwLibEnv' ln
-                          }
-                     }
+cAddView input state = let iState = intState state in case i_state iState of
+  Nothing -> return $ genErrorMsg "No library loaded to add view to" state
+  Just ist -> do
+    let libenv = i_libEnv ist
+        ln = i_ln ist
+        lg = logicGraph
+        opts = hetsOpts state
+        dg = lookupDGraph ln libenv
+        [vn, spec1, spec2] = words input
+        mkSpecInst s = Spec_inst (mkSimpleId s) [] nullRange
+    Result ds tmp <- runResultT $ liftR $ anaViewDefn lg libenv dg opts
+      (mkSimpleId vn) (Genericity (Params []) (Imported []) nullRange)
+      (View_type (emptyAnno $ mkSpecInst spec1)
+       (emptyAnno $ mkSpecInst spec2) nullRange) [] nullRange
+    return $ case tmp of
+      Nothing -> genErrorMsg
+          ("View analysis failed:\n" ++ showRelDiags (verbose opts) ds) state
+      Just (_, nwDg, nwLibEnv) ->
+        let newLibEnv' = Map.insert ln nwDg nwLibEnv
+        in state
+          { intState = iState
+              { i_state = Just $ emptyIntIState newLibEnv' ln } }
 
 -- | Function switches the interface in proving mode by
 -- selecting all nodes
 cDgSelectAll :: CmdlState -> IO CmdlState
-cDgSelectAll state = case i_state $ intState state of
-   Nothing -> return $ genErrorMsg "No library loaded" state
-   Just dgState ->
-    case knownProversWithKind ProveCMDLautomatic of
-     Result _ Nothing -> return $ genErrorMsg "No prover found" state
-     Result _ (Just _) -> do
+cDgSelectAll state = let iState = intState state in
+  return $ case i_state iState of
+  Nothing -> genErrorMsg "No library loaded" state
+  Just dgState ->
+    case maybeResult $ knownProversWithKind ProveCMDLautomatic of
+      Nothing -> genErrorMsg "No prover found" state
+      Just _ -> let
           -- list of all nodes
-      let lsNodes = getAllNodes dgState
+          lsNodes = getAllNodes dgState
           -- elems is the list of all results (i.e. concat
           -- of all one element lists)
           elems = concatMap (flip selectANode dgState . fst) lsNodes
           nwist = emptyIntIState (i_libEnv dgState) (i_ln dgState)
                -- ADD TO HISTORY
-      return $ add2hist [IStateChange $ Just dgState] $ state
+        in add2hist [IStateChange $ Just dgState] $ state
               -- add the prove state to the status containing
               -- all information selected in the input
-              { intState = (intState state)
+              { intState = iState
                   { i_state = Just nwist
                       { elements = elems
                       , cComorphism = getIdComorphism elems } } }
