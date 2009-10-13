@@ -1,0 +1,7 @@
+spec Ot = Energy_Dissipation
+then %implies
+  forall h:H2O; f:Process 
+  . Heat(h, Start(f)) > Heat(h, End(f)) %(prediction)%
+end
+
+%view v : Os to Ot

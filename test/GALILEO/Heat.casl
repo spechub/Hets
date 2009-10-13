@@ -1,0 +1,58 @@
+library GALILEO/Heat
+
+from Basic/Numbers get Int
+from Calculi/Time/AllenHayes get RichAllenHayes
+
+spec BasicPhys = 
+Int and RichAllenHayes
+then
+  sorts Time < Int
+  sorts H2O < Obj
+  sorts Process
+  ops Start : Process -> Time;
+      End : Process -> Time;
+      Duration : Process -> Time
+  forall p:Process
+  . Start(p) S Duration(p) %(start_s_dur)%
+  . End(p) F Duration(p) %(end_f_dur)%
+  . Start(p) B End(p) %(start_b_end)%
+
+end
+
+spec ClassicalForce = BasicPhys
+end
+
+spec ClassicalEnergyFlow = BasicPhys
+then
+  sorts Energy < Int
+  sorts Energy_Extract, Energy_Apply < Process
+  sorts Freeze < Energy_Extract
+  sorts Warm < Energy_Apply
+  ops Heat : Obj * Time -> Energy
+end
+
+
+spec Energy_Dissipation = ClassicalEnergyFlow
+then
+
+  forall o:Obj; t1,t2:Time
+  . t1 B t2 <=> Heat(o,t1) > Heat(o,t2) %(decreasing)%
+  . t1 = t2 <=> Heat(o,t1) = Heat(o,t2) %(unchanged)%
+  . t1 Bi t2 <=> Heat(o,t1) < Heat(o,t2) %(increasing)%
+end
+
+spec Energy_Absorption = ClassicalEnergyFlow
+then
+
+  forall o:Obj; t1,t2:Time
+  . t1 B t2 <=> Heat(o,t1) < Heat(o,t2)
+  . t1 = t2 <=> Heat(o,t1) = Heat(o,t2)
+  . t1 Bi t2 <=> Heat(o,t1) > Heat(o,t2)
+end
+
+spec Os = ClassicalEnergyFlow
+then
+  . exists f:Freeze; h:H2O . Heat(h, Start(f)) = Heat(h, End(f)) %(observation)%
+end
+
+%view v : Os to Ot

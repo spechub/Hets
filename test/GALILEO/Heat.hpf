@@ -1,0 +1,9 @@
+use GALILEO/Heat
+expand GALILEO/newnode.casl
+dg-all auto
+dg basic Energy_Dissipation
+prove
+addview v Os Ot
+dg-all auto
+dg basic Ot
+prove
