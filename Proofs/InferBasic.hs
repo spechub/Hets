@@ -258,8 +258,9 @@ consistencyCheck (G_cons_checker lid4 cc) (Comorphism cid) ln le dg (n',lbl)
         Proved (Just True) -> let
           Result ds ms = extractModel cid sig1 $ proofTree pt
           in case ms of
-          Nothing ->  return $ CSError $ unlines $
-            "could not (re-)construct a model\n" : map diagString ds
+          Nothing ->  return $ CSConsistent $ unlines $
+            "consistent, but could not (re-)construct a model"
+            : map diagString ds
           Just (sig3, sens3) ->  return $ CSConsistent $ showDoc
             (G_theory lidS (mkExtSign sig3) startSigId (toThSens sens3)
                        startThId) ""
