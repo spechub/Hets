@@ -16,6 +16,7 @@ module PGIP.XMLstate where
 
 import Common.Utils (getEnvDef, trim)
 import Common.ToXml
+import Driver.Options
 
 import Text.XML.Light
 
@@ -127,8 +128,7 @@ data CmdlPgipState = CmdlPgipState
   , stop :: Bool
   , resendMsgIfTimeout :: Bool
   , useXML :: Bool
-  , maxWaitTime :: Int
-  , quietOutput :: Bool }
+  , maxWaitTime :: Int }
 
 -- | Generates an empty CmdlPgipState
 genCMDLPgipState :: Bool -> Handle -> Handle -> Int -> IO CmdlPgipState
@@ -137,7 +137,6 @@ genCMDLPgipState swXML h_in h_out timeOut = do
    return CmdlPgipState
      { pgipId = pgId
      , name = "Hets"
-     , quietOutput = False
      , seqNb = 1
      , refSeqNb = Nothing
      , msgs = []
@@ -174,16 +173,22 @@ convertPGIPDataToString :: CmdlPgipState -> String
 convertPGIPDataToString =
   intercalate "\n" . reverse . map showElement . xmlElements
 
-sendPGIPData :: CmdlPgipState -> IO CmdlPgipState
-sendPGIPData pgData =
+isRemote :: HetcatsOpts -> Bool
+isRemote opts = connectP opts /= -1 || listen opts /= -1
+
+sendPGIPData :: HetcatsOpts -> CmdlPgipState -> IO CmdlPgipState
+sendPGIPData opts pgData =
   do
     let xmlMsg = convertPGIPDataToString pgData
         pgData' = addToMsg xmlMsg pgData
-    sendMSGData pgData'
+    sendMSGData opts pgData'
 
-sendMSGData :: CmdlPgipState -> IO CmdlPgipState
-sendMSGData pgData = do
-  hPutStrLn (hout pgData) $ intercalate "\n" $ reverse $ msgs pgData
+sendMSGData :: HetcatsOpts -> CmdlPgipState -> IO CmdlPgipState
+sendMSGData opts pgData = do
+  let msg = intercalate "\n" $ reverse $ msgs pgData
+  if isRemote opts
+    then hPutStrLn (hout pgData) msg
+    else putIfVerbose opts 1 msg
   hFlush $ hout pgData
   return pgData
 

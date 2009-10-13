@@ -46,13 +46,14 @@ import Interfaces.DataTypes
 import CMDL.ProcessScript
 import CMDL.DataTypes
 import PGIP.XMLparsing
+import PGIP.XMLstate (isRemote)
 
 import Maude.Maude2DG (anaMaudeFile)
 
 main :: IO ()
 main =
     getArgs >>= hetcatsOpts >>= \ opts ->
-     if connectP opts /= -1 || listen opts /= -1 || interactive opts
+     if isRemote opts || interactive opts
        then cmdlRun opts >>= displayGraph "" opts . getMaybeLib . intState
        else do
               putIfVerbose opts 3 $ "Options: " ++ show opts

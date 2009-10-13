@@ -130,8 +130,7 @@ addPGIPHandshake pgipData = let
 
 -- | The function executes a communication step, i.e. waits for input,
 -- processes the message and outputs the answer
-communicationStep:: CmdlPgipState -> CmdlState ->
-                     IO (CmdlPgipState, CmdlState)
+communicationStep :: CmdlPgipState -> CmdlState -> IO (CmdlPgipState, CmdlState)
 communicationStep pgD st = do
    -- tries to read a packet from the input
   b <- hIsEOF (hin pgD)
@@ -144,7 +143,7 @@ communicationStep pgD st = do
       -- set, that the interface resends last packet assuming that last
       -- send was a fail
                 then do
-                       nwpgD <- sendPGIPData pgD
+                       nwpgD <- sendPGIPData (hetsOpts st) pgD
                        communicationStep nwpgD st
        -- if the flag is not set, that the network waits some more for the
        -- broker to respond or give a new command
@@ -158,10 +157,10 @@ communicationStep pgD st = do
         (nwSt, nwPgD) <- processCmds cmds st $ resetPGIPData $
                            pgD { refSeqNb = refseqNb }
         if useXML pgD then do
-                 nwPgipSt <- sendPGIPData nwPgD
+                 nwPgipSt <- sendPGIPData (hetsOpts nwSt) nwPgD
                  return (nwPgipSt, nwSt)
           else do
-                 nwPgD' <- sendMSGData nwPgD
+                 nwPgD' <- sendMSGData (hetsOpts nwSt) nwPgD
                  return (nwPgD', nwSt)
 
 -- | Comunicate over a port
@@ -210,7 +209,7 @@ cmdlStartLoop :: Bool -> Handle -> Handle -> Int -> CmdlState
 cmdlStartLoop swXML h_in h_out timeOut state = do
     pgData <- genCMDLPgipState  swXML h_in h_out timeOut
     let pgD = addPGIPReady $ addPGIPHandshake $ resetPGIPData pgData
-    pgD' <- sendPGIPData pgD
+    pgD' <- sendPGIPData (hetsOpts state) pgD
     waitLoop pgD' state
 
 waitLoop :: CmdlPgipState -> CmdlState -> IO CmdlState
@@ -236,7 +235,7 @@ processInput opts ls state = case ls of
 cmdlRun :: HetcatsOpts -> IO CmdlState
 cmdlRun opts =
   processInput opts (infiles opts) (emptyCmdlState opts) >>=
-  if connectP opts /= -1 || listen opts /= -1
+  if isRemote opts
     then cmdlListenOrConnect2Port opts
     else if interactive opts
            then if xmlFlag opts
@@ -307,17 +306,17 @@ processCmds cmds state pgipSt = do
      XmlAskpgip : l -> processCmds l state $ addPGIPHandshake pgipSt
      XmlProverInit : l -> processCmds l (emptyCmdlState opts) $
          addPGIPAnswer "Prover state was reset" [] pgipSt
-     XmlStartQuiet : l ->
-                  -- Quiet not yet implemented !!
-                  processCmds l state $ addPGIPAnswer
-                        "Quiet mode doesn't work properly" [] pgipSt {
-                                              quietOutput = True }
+     XmlStartQuiet : l -> do
+         -- To inform that quiet mode is enabled we need to send this with the
+         -- old options.
+         let pgD = addPGIPReady $ addPGIPAnswer "Quiet mode enabled" [] pgipSt
+         pgipSt' <- if useXML pgD
+                      then sendPGIPData opts pgD
+                      else sendMSGData opts pgD
+         processCmds l (state { hetsOpts = opts { verbose = 0 } }) pgipSt'
      XmlStopQuiet : l ->
-                  -- Quiet not yet implemented !!
-                  -- use proper tmp-files and avoid duplicate code!
-                  processCmds l state $ addPGIPAnswer
-                        "Quiet mode doesn't work properly" [] pgipSt {
-                                              quietOutput = False }
+                  processCmds l (state { hetsOpts = opts { verbose = 1 } }) $
+                    addPGIPAnswer "Quiet mode disabled" [] pgipSt
      XmlOpenGoal str : l -> processCommand l (SelectCmd Goal str) state pgipSt
      XmlCloseGoal str : l -> processCommand (XmlGiveUpGoal str : l)
          (GlobCmd ProveCurrent) state pgipSt
