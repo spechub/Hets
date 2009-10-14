@@ -362,12 +362,13 @@ instance (Comorphism cid1
 
    extractModel (CompComorphism cid1 cid2) sign pt3 =
      let lid1 = sourceLogic cid1
-         lid4 = sourceLogic cid2
-     in if language_name lid1 == language_name lid4 then do
-         (sign', _) <- coerceBasicTheory lid1 lid4 "extractModel1" (sign, [])
-         (sign'', sens') <- extractModel cid2 sign' pt3
-         bTh <- coerceBasicTheory lid4 lid1 "extractModel2" (sign'', sens')
-         return bTh
+         lid3 = sourceLogic cid2
+     in if language_name lid1 == language_name lid3 then do
+         bTh1 <- map_sign cid1 sign
+         (sign1, _) <-
+           coerceBasicTheory (targetLogic cid1) lid3 "extractModel1" bTh1
+         bTh2 <- extractModel cid2 sign1 pt3
+         coerceBasicTheory lid3 lid1 "extractModel2" bTh2
      else fail $ "extractModel not implemented for comorphism composition with "
           ++ language_name cid1
    constituents (CompComorphism cid1 cid2) =
