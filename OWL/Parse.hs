@@ -375,7 +375,7 @@ card = do
   return (c, value 10 n)
 
 individualOrConstant :: CharParser st (Either QName Constant)
-individualOrConstant = fmap Left individualUri <|> fmap Right constant
+individualOrConstant = fmap Right constant <|> fmap Left individualUri
 
 individualOrConstantList :: CharParser st (Either [QName] [Constant])
 individualOrConstantList = do
