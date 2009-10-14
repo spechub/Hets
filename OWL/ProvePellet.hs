@@ -36,6 +36,7 @@ import Common.Result as Result
 import Common.Utils
 
 import Data.List (isPrefixOf)
+import Data.Maybe
 import Data.Time (timeToTimeOfDay)
 import Data.Time.Clock (UTCTime(..), secondsToDiffTime, getCurrentTime)
 
@@ -88,9 +89,10 @@ pelletProver = (mkProverTemplate "Pellet" sl_top pelletGUI)
 
 pelletConsChecker :: ConsChecker Sign Axiom OWLSub
                      OWLMorphism ProofTree
-pelletConsChecker = mkProverTemplate "Pellet Consistency Checker" sl_top
-                    consCheck
-
+pelletConsChecker = (mkProverTemplate "Pellet Consistency Checker" sl_top
+  (\ s -> consCheck True s $ Tactic_script "800"))
+  { proveCMDLautomatic = Just
+      $ \ s ts t -> fmap return . consCheck False s ts t }
 
 {- |
   Record for prover specific functions. This is used by both GUI and command
@@ -222,20 +224,17 @@ spamOutput ps =
 getEnvSec :: String -> IO String
 getEnvSec s = getEnvDef s ""
 
-consCheck :: String
+consCheck :: Bool -> String
+          -> Tactic_script
           -> TheoryMorphism Sign Axiom OWLMorphism ProofTree
           -> [FreeDefMorphism Axiom OWLMorphism] -- ^ freeness constraints
           -> IO([Proof_status ProofTree])
-consCheck thName tm freedefs =
+consCheck doSpamOutput thName tac@(Tactic_script tl) tm freedefs =
     case t_target tm of
       Theory sig nSens ->
         let
           saveOWL = False
-          timeLimitI = 800
-          tac      = Tactic_script $ show ATPTactic_script
-                      {ts_timeLimit = timeLimitI,
-                       ts_extraOpts = [extraOptions]
-                      }
+          timeLimitI = fromMaybe 800 $ readMaybe tl
           proverStateI = pelletProverState sig
                                        (toNamedList nSens) freedefs
           -- problem     = showOWLProblemA thName proverStateI []
@@ -372,7 +371,6 @@ consCheck thName tm freedefs =
                                      "-" ++ (show $ utctDayTime t) ++ ".owl"
                        tmpURI = "file://" ++ timeTmpFile
                    writeFile timeTmpFile $ problemS
-                   putStrLn tmpURI
                    let command = "sh pellet.sh "
                                  ++ simpleOptions ++ extraOptions
                                  ++ tmpURI
@@ -389,7 +387,7 @@ consCheck thName tm freedefs =
                                               output tUsed
                        return outState
                      )
-                   spamOutput outState
+                   when doSpamOutput $ spamOutput outState
                    removeFile timeTmpFile
                    return [outState]
                 (b, _) -> do
