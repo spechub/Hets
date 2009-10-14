@@ -133,8 +133,7 @@ showConsistencyChecker gInfo@(GInfo { libName = ln }) = postGUIAsync $ do
         let le = i_libEnv ist
             dg = lookupDGraph ln le
         return (le, dg, labNodesDG dg)
-  ths <- mapM (\ (_,l) -> computeLocalLabelTheory le l) nodes
-  let sls = map sublogicOfTh ths
+  let sls = map sublogicOfTh $ mapMaybe (globalTheory . snd) nodes
 
   -- setup data
   listNodes <- setListData trvNodes getFNodeName
