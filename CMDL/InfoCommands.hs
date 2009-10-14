@@ -25,7 +25,6 @@ module CMDL.InfoCommands
        , cShowTheory
        , cShowTheoryGoals
        , cUndoHistory
-       , cDetails
        , cEdges
        , cShowNodeAxioms
        , cInfo
@@ -44,7 +43,7 @@ import GUI.ShowGraph
 
 import CMDL.DataTypesUtils
 import CMDL.DataTypes
-import CMDL.Shell (cDetails, nodeNames)
+import CMDL.Shell (nodeNames)
 import CMDL.Utils (createEdgeNames, decomposeIntoGoals, obtainEdgeList,
                    obtainNodeList, prettyPrintErrList)
 

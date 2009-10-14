@@ -26,7 +26,6 @@ import CMDL.DgCommands (cDgSelect, cUse, cExpand, cAddView, commandDgAll,
                         wrapResultDgAll)
 import CMDL.ProveConsistency (cConsChecker, cProver)
 import CMDL.UndoRedo (cRedo, cUndo)
-import CMDL.Shell (cDetails)
 import CMDL.ConsCommands (cConservCheck)
 
 -- | Generates a command description given all parameters
@@ -116,8 +115,7 @@ getCommands =
   ++ map (\ b -> genCmd (IncludeProvenTheorems b) CmdNoPriority ReqNothing
          $ CmdNoInput $ cSetUseThms b) [True, False]
   ++
-  [ genGlobInspectCmd CmdList cDetails -- needs to be adjusted
-  , genGlobInspectCmd Nodes cNodes
+  [ genGlobInspectCmd Nodes cNodes
   , genGlobInspectCmd Edges cEdges
   , genGlobInspectCmd UndoHist cUndoHistory
   , genGlobInspectCmd RedoHist cRedoHistory

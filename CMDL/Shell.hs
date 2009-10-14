@@ -12,8 +12,7 @@ the CMDL shell or haskeline
 -}
 
 module CMDL.Shell
-       ( cDetails
-       , cComment
+       ( cComment
        , cOpenComment
        , cCloseComment
        , nodeNames
@@ -113,95 +112,9 @@ checkCom descr state =
           else register2history descr state
      CmdGreaterThanScriptAndComments -> return state
 
--- | Prints details about the syntax of the interface
-cDetails :: CmdlState -> IO CmdlState
-cDetails state
- = return state {
-            output = CmdlMessage {
-               errorMsg = [],
-               outputMsg = printDetails,
-               warningMsg = []
-                        }
-            }
-
 -- | Function handle a comment line
 cComment::String -> CmdlState -> IO CmdlState
 cComment _ = return
-
--- | Produces a string containing a detailed description
--- of the interface grammar
-printDetails :: String
-printDetails =
- "\n\n Hets Interactive mode.The available grammar is\n\n" ++
- "   use [PATH]              -- open a file with a HetCASL"++
- " library\n" ++
- "                           -- this will compute a "++
- "development graph\n" ++
- "                           -- and a list of open proof"++
- " obligations\n" ++
- "   dg [DG-COMMAND] [GOAL*] -- apply a proof step of the"++
- " dg calculus\n" ++
- "   dg-all [DG-COMMAND]     -- same as dg, but for all"++
- " open goals\n" ++
- "   show-dg-goals           -- display list of open dg"++
- " goals\n" ++
- "   show-theory-goals       -- display list of theory"++
- " goals\n" ++
- "   show-theory             -- show current theory and"++
- " proof goals\n" ++
- "   node-info               -- show info about current\n" ++
- "                           -- dg node (name, origin,"++
- " sublogic)\n"++
- "   show-taxonomy           -- show taxonomy graph\n" ++
- "   show-concepts           -- show conecpt graph\n" ++
- "   translate [COMORPHISM]  -- translate theory goals \n" ++
- "                           -- along comorphism\n" ++
- "   prover [PROVER]         -- select a prover\n" ++
- "   proof-script [FORMULA] [PROOF-SCRIPT] end-script\n" ++
- "                           -- process proof script for"++
- " one goal\n" ++
- "   cons-check PROVER       -- check consistency\n" ++
- "   prove [FORMULA*] [AXIOM-SELECTION?]\n" ++
- "   prove-all [AXIOM-SELECTION?]\n" ++
- "   q/quit/exit             -- exit hets\n\n" ++
- " AXIOM-SELECTION ::=\n" ++
- "   with FORMULA+           -- include only specified"++
- " axioms\n" ++
- "   exlcuding FORMULA+      -- exlcude specified"++
- " axioms\n\n" ++
- " PROOF-SCRIPT        -- can be anything (prover"++
- " specific)\n" ++
- "                     -- the end is recognized with"++
- " \"end-script\"\n\n" ++
- " DG-COMMAND ::= \n" ++
- "     auto          -- automatic tactic\n" ++
- "     glob-subsume -- global subsumption\n" ++
- "     glob-decomp  -- global decomposition\n"++
- "     loc-infer    -- local inference\n"++
- "     loc-decomp   -- local decomposition\n"++
- "     comp         -- composition\n"++
- "     comp-new     -- composition with speculation of"++
- " new egdes\n"++
- "     hide-thm     -- Hide-Theorem-Shift\n"++
- "     thm-hide     -- Theorem-Hide-Shift\n"++
- "     basic        -- start proving at a particular"++
- " node,\n"++
- "                  -- i.e. start local proving in a"++
- " theory\n\n"++
- " GOAL ::=  \n"++
- "   NODE                   -- select local goals at a"++
- " node\n"++
- "   NODE -> NODE           -- select all edges between"++
- " two given nodes\n"++
- "   NODE - DIGIT* -> NODE  -- select specific edge"++
- " between two nodes\n"++
- "\n NODE ::= \n"++
- "     ID         -- specify nodes with their names\n\n"++
- " COMORPHISM ::= ID ; ... ; ID    -- composite of basic"++
- " comorphisms\n\n"++
- " PROVER ::= ID                   -- name of prover\n\n"++
- " FORMULA ::= ID                  -- label of formula\n\n"++
- " ID ::=                          -- identifier (String)\n\n"
 
 -- For normal keyboard input
 

@@ -166,8 +166,7 @@ describeSelectCmd cmd = case cmd of
   ConservativityChecker -> "Choose conservativity checker"
 
 data InspectCmd =
-    CmdList -- all possible commands
-  | Libs  -- all imported libraries
+    Libs  -- all imported libraries
   | Nodes -- of library
   | Edges
   | UndoHist
@@ -189,7 +188,6 @@ inspectCmdList = [minBound .. maxBound]
 
 showInspectCmd :: InspectCmd -> String
 showInspectCmd cmd = case cmd of
-  CmdList -> "Details" -- all possible commands
   Libs -> "Library Names"
   Nodes -> "Nodes"
   Edges -> "Edges"
