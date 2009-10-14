@@ -234,7 +234,11 @@ lookupComorphism_in_LG coname = lookupComorphism coname logicGraph
 
 -- translations to logics with quotient term algebra implemented
 qtaList :: [AnyComorphism]
-qtaList = [Comorphism Maude2CASL]
+qtaList = [
+#ifdef CASLEXTENSIONS
+  Comorphism Maude2CASL
+#endif
+  ]
 
 lookupQTA_in_LG :: String -> Result AnyComorphism
 lookupQTA_in_LG coname =
