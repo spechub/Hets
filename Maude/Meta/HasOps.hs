@@ -1,4 +1,23 @@
+{- |
+Module      :  $Header$
+Description :  Accessing the Operators of Maude data types
+Copyright   :  (c) Martin Kuehl, Uni Bremen 2008-2009
+License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
+
+Maintainer  :  mkhl@informatik.uni-bremen.de
+Stability   :  experimental
+Portability :  portable
+
+Accessing the Operators of Maude data types.
+
+Defines a type class 'HasOps' that lets us access the 'Operator's of
+Maude data types as 'SymbolSet's.
+
+Consider importing "Maude.Meta" instead of this module.
+-}
+
 module Maude.Meta.HasOps (
+    -- * The HasOps type class
     HasOps(..)
 ) where
 
@@ -10,11 +29,16 @@ import Maude.Meta.HasName
 import Data.Set (Set)
 import qualified Data.Set as Set
 
+-- * The HasOps type class
 
+-- | Represents something that contains a 'Set' of 'Operator's (as 'Symbol's).
 class HasOps a where
+    -- | Extract the 'Operator's contained in the input.
     getOps :: a -> SymbolSet
+    -- | Map the 'Operator's contained in the input.
     mapOps :: SymbolMap -> a -> a
 
+-- * Predefined instances
 
 instance HasOps Symbol where
     getOps sym = case sym of
@@ -25,7 +49,6 @@ instance HasOps Symbol where
         Operator _ _ _ -> mapAsSymbol id mp sym
         OpWildcard _ -> mapAsSymbol id mp sym
         _ -> sym
-
 
 instance (HasOps a) => HasOps [a] where
     getOps = Set.unions . map getOps
@@ -43,13 +66,11 @@ instance (Ord a, HasOps a) => HasOps (Set a) where
     getOps = Set.fold (Set.union . getOps) Set.empty
     mapOps = Set.map . mapOps
 
-
 instance HasOps Operator where
     getOps = asSymbolSet
     mapOps mp op@(Op _ _ _ as) = let
             swapAttrs (Op qid dom cod _) = Op qid dom cod as
         in mapAsSymbol (swapAttrs . toOperator) mp op
-
 
 instance HasOps Attr where
     getOps attr = case attr of
@@ -63,7 +84,6 @@ instance HasOps Attr where
         RightId term -> RightId $ mapOps mp term
         _ -> attr
 
-
 instance HasOps Term where
     getOps term = case term of
         Apply _ ts _ -> Set.insert (asSymbol term) (getOps ts)
@@ -73,7 +93,6 @@ instance HasOps Term where
                 op = getName $ mapOps mp $ asSymbol term
             in Apply op (mapOps mp ts) tp
         _ -> term
-
 
 instance HasOps Condition where
     getOps cond = case cond of
@@ -87,14 +106,12 @@ instance HasOps Condition where
         MatchCond t1 t2 -> MatchCond (mapOps mp t1) (mapOps mp t2)
         RwCond t1 t2    -> RwCond (mapOps mp t1) (mapOps mp t2)
 
-
 instance HasOps Membership where
     getOps (Mb t _ cs _) = getOps (t, cs)
     mapOps mp (Mb t s cs as) = let
             t' = mapOps mp t
             cs' = mapOps mp cs
         in Mb t' s cs' as
-
 
 instance HasOps Equation where
     getOps (Eq t1 t2 cs _) = getOps (t1, t2, cs)
@@ -103,7 +120,6 @@ instance HasOps Equation where
             t2' = mapOps mp t2
             cs' = mapOps mp cs
         in Eq t1' t2' cs' as
-
 
 instance HasOps Rule where
     getOps (Rl t1 t2 cs _) = getOps (t1, t2, cs)

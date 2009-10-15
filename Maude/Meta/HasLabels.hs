@@ -1,4 +1,23 @@
+{- |
+Module      :  $Header$
+Description :  Accessing the Labels of Maude data types
+Copyright   :  (c) Martin Kuehl, Uni Bremen 2008-2009
+License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
+
+Maintainer  :  mkhl@informatik.uni-bremen.de
+Stability   :  experimental
+Portability :  portable
+
+Accessing the Labels of Maude data types.
+
+Defines a type class 'HasLabels' that lets us access the 'Label's of
+Maude data types as 'SymbolSet's.
+
+Consider importing "Maude.Meta" instead of this module.
+-}
+
 module Maude.Meta.HasLabels (
+    -- * The HasLabels type class
     HasLabels(..)
 ) where
 
@@ -10,11 +29,16 @@ import Maude.Meta.HasName
 import Data.Set (Set)
 import qualified Data.Set as Set
 
+-- * The HasLabels  type class
 
+-- | Represents something that contains a 'Set' of 'Label's (as 'Symbol's).
 class HasLabels a where
+    -- | Extract the 'Label's contained in the input.
     getLabels :: a -> SymbolSet
+    -- | Map the 'Label's contained in the input.
     mapLabels :: SymbolMap -> a -> a
 
+-- * Predefined instances
 
 instance (HasLabels a) => HasLabels [a] where
     getLabels = Set.unions . map getLabels
@@ -32,11 +56,9 @@ instance (Ord a, HasLabels a) => HasLabels (Set a) where
     getLabels = Set.fold (Set.union . getLabels) Set.empty
     mapLabels = Set.map . mapLabels
 
-
 instance HasLabels StmntAttr where
     getLabels = asSymbolSet
     mapLabels = mapAsSymbol $ Label . getName
-
 
 instance HasLabels Membership where
     getLabels (Mb _ _ _ as) = getLabels as

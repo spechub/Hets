@@ -1,14 +1,38 @@
+{- |
+Module      :  $Header$
+Description :  Accessing the names of Maude data types
+Copyright   :  (c) Martin Kuehl, Uni Bremen 2008-2009
+License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
+
+Maintainer  :  mkhl@informatik.uni-bremen.de
+Stability   :  experimental
+Portability :  portable
+
+Accessing the names of Maude data types.
+
+Defines a type class 'HasName' that lets us access the names of Maude
+data types as 'Qid's.
+
+Consider importing "Maude.Meta" instead of this module.
+-}
+
 module Maude.Meta.HasName (
+    -- * The HasName type class
     HasName(..)
 ) where
 
 import Maude.AS_Maude
 
+-- * The HasName type class
 
+-- | Represents something that has a name (as a 'Qid').
 class HasName a where
+    -- | Extract the name of the input.
     getName :: a -> Qid
+    -- | Map the name of the input.
     mapName :: (Qid -> Qid) -> a -> a
 
+-- * Predefined instances
 
 instance HasName Qid where
     getName = id

@@ -1,4 +1,23 @@
+{- |
+Module      :  $Header$
+Description :  Accessing the Sorts of Maude data types
+Copyright   :  (c) Martin Kuehl, Uni Bremen 2008-2009
+License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
+
+Maintainer  :  mkhl@informatik.uni-bremen.de
+Stability   :  experimental
+Portability :  portable
+
+Accessing the Sorts of Maude data types.
+
+Defines a type class 'HasSorts' that lets us access the 'Sort's of Maude
+data types as 'SymbolSet's.
+
+Consider importing "Maude.Meta" instead of this module.
+-}
+
 module Maude.Meta.HasSorts (
+    -- * The HasSorts type class
     HasSorts(..)
 ) where
 
@@ -15,11 +34,16 @@ import qualified Data.Map as Map
 import Common.Lib.Rel (Rel)
 import qualified Common.Lib.Rel as Rel
 
+-- * The HasSorts type class
 
+-- | Represents something that contains a 'Set' of 'Sort's (as 'Symbol's).
 class HasSorts a where
+    -- | Extract the 'Sort's contained in the input.
     getSorts :: a -> SymbolSet
+    -- | Map the 'Sort's contained in the input.
     mapSorts :: SymbolMap -> a -> a
 
+-- * Predefined instances
 
 instance HasSorts Symbol where
     getSorts sym = case sym of
@@ -37,7 +61,6 @@ instance HasSorts Symbol where
             in Operator qid dom' cod'
         OpWildcard _ -> sym
         Labl _ -> sym
-
 
 instance (HasSorts a) => HasSorts [a] where
     getSorts = Set.unions . map getSorts
@@ -63,7 +86,6 @@ instance (Ord a, HasSorts a) => HasSorts (Rel a) where
     getSorts = getSorts . Rel.nodes
     mapSorts = Rel.map . mapSorts
 
-
 instance HasSorts Sort where
     getSorts = asSymbolSet
     mapSorts = mapAsSymbol $ SortId . getName
@@ -71,7 +93,6 @@ instance HasSorts Sort where
 instance HasSorts Kind where
     getSorts = asSymbolSet
     mapSorts = mapAsSymbol $ KindId . getName
-
 
 instance HasSorts Type where
     getSorts typ = case typ of
@@ -81,14 +102,12 @@ instance HasSorts Type where
         TypeSort sort -> TypeSort $ mapSorts mp sort
         TypeKind kind -> TypeKind $ mapSorts mp kind
 
-
 instance HasSorts Operator where
     getSorts (Op _ dom cod _) = getSorts (dom, cod)
     mapSorts mp (Op op dom cod as) = let
             dom' = mapSorts mp dom
             cod' = mapSorts mp cod
         in Op op dom' cod' as
-
 
 instance HasSorts Attr where
     getSorts attr = case attr of
@@ -102,7 +121,6 @@ instance HasSorts Attr where
         RightId term -> RightId $ mapSorts mp term
         _ -> attr
 
-
 instance HasSorts Term where
     getSorts term = case term of
         Const _ tp    -> getSorts tp
@@ -112,7 +130,6 @@ instance HasSorts Term where
         Const con tp   -> Const con (mapSorts mp tp)
         Var var tp     -> Var var (mapSorts mp tp)
         Apply op ts tp -> Apply op (mapSorts mp ts) (mapSorts mp tp)
-
 
 instance HasSorts Condition where
     getSorts cond = case cond of
@@ -126,7 +143,6 @@ instance HasSorts Condition where
         MatchCond t1 t2 -> MatchCond (mapSorts mp t1) (mapSorts mp t2)
         RwCond t1 t2    -> RwCond (mapSorts mp t1) (mapSorts mp t2)
 
-
 instance HasSorts Membership where
     getSorts (Mb t s cs _) = getSorts (t, s, cs)
     mapSorts mp (Mb t s cs as) = let
@@ -135,7 +151,6 @@ instance HasSorts Membership where
             cs' = mapSorts mp cs
         in Mb t' s' cs' as
 
-
 instance HasSorts Equation where
     getSorts (Eq t1 t2 cs _) = getSorts (t1, t2, cs)
     mapSorts mp (Eq t1 t2 cs as) = let
@@ -143,7 +158,6 @@ instance HasSorts Equation where
             t2' = mapSorts mp t2
             cs' = mapSorts mp cs
         in Eq t1' t2' cs' as
-
 
 instance HasSorts Rule where
     getSorts (Rl t1 t2 cs _) = getSorts (t1, t2, cs)
