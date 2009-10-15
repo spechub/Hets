@@ -227,8 +227,7 @@ modelSparQCheck opts gTh@(G_theory lid (ExtSign sign0 _) _ sens0 _) i =
 
 writeTheoryFiles :: HetcatsOpts -> [OutType] -> FilePath -> LibEnv
                  -> GlobalAnnos -> LibName -> SIMPLE_ID -> Int -> IO ()
-writeTheoryFiles opts specOutTypes filePrefix lenv ga ln i n =
-    unless (isDGRef $ labDG (lookupDGraph ln lenv) n) $ do
+writeTheoryFiles opts specOutTypes filePrefix lenv ga ln i n = do
     let Result ds mcTh = computeTheory lenv ln n
     showDiags opts ds
     case mcTh of
