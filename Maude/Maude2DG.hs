@@ -337,7 +337,7 @@ processParameter (Parameter sort modExp) (toks, tim, morphs, dg) =
                                                (toks', tim', morphs', dg')
          where (tok, tim', morph, _, dg') = processModExp tim Map.empty dg modExp
                (_, _, fs, _, _) = fromJust $ Map.lookup tok tim'
-               fs' = renameSorts morph fs
+               fs' = translateSorts morph fs
                morph' = qualifySorts morph (HasName.getName sort) fs'
                toks' = (HasName.getName sort, tok, fs') : toks
                morphs' =  morph' : morphs
@@ -356,8 +356,8 @@ processModExp tim vm dg (SummationModExp modExp1 modExp2) = (tok, tim3, morph, p
                            tok = mkSimpleId $ concat ["{", show tok1, " + ", show tok2, "}"]
                            (n1, _, ss1, _, _) = fromJust $ Map.lookup tok1 tim2
                            (n2, _, ss2, _, _) = fromJust $ Map.lookup tok2 tim2
-                           ss1' = renameSorts morph1 ss1
-                           ss2' = renameSorts morph1 ss2
+                           ss1' = translateSorts morph1 ss1
+                           ss2' = translateSorts morph1 ss2
                            sg1 = target morph1
                            sg2 = target morph2
                            sg = Maude.Sign.union sg1 sg2
@@ -442,7 +442,7 @@ morphismView name p _ (n, _, vmorph, rnms, True) morph = (name, morph'', vmorph'
               usg = Maude.Sign.union ctgt tgt
               morph'' = setTarget usg morph'
 morphismView name p ss (n, th, morph, rnms, False) morph1 =
-                         (name, morph4, vmorph', n, [(p, th, getNewSorts ss morph)])
+                         (name, morph4, vmorph', n, [(p, th, translateSorts morph ss)])
         where rnms' = qualifyRenamings2 p rnms
               morph2 = applyRenamings morph1 rnms'
               rnms'' = createQualificationTh2Mod p ss

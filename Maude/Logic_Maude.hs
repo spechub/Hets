@@ -71,7 +71,7 @@ instance Category Sign Morphism where
 instance Sentences Maude Sentence Sign Morphism Symbol where
     -- sentences --
     is_of_sign Maude = flip Sign.includesSentence
-    map_sen Maude = Morphism.mapSentence
+    map_sen Maude = Morphism.translateSentence
     simplify_sen Maude = Sign.simplifySentence
     -- parse_sentence Maude = Nothing
     print_sign Maude = pretty
