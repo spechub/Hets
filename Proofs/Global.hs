@@ -100,7 +100,7 @@ getRefParents le refl refn =
    let
    {- get the previous objects to the current one -}
    dg = lookupDGraph refl le
-   pres = filter (liftE isDefEdge) $ innDG dg refn
+   pres = innDG dg refn
    in modifyPs dg pres
 
 {- | modify the parents to a better form.
@@ -189,8 +189,7 @@ addParentLinks dg src tgt ls =
         $ filter (\ (s, _, _) -> s == src) $ innDG dg tgt
       newLinks = map (\ l -> l
                          { dgl_id = defaultEdgeId
-                         , dgl_type = invalidateProof $ dgl_type l })
-                 $ filter (isDefEdge . dgl_type) ls
+                         , dgl_type = invalidateProof $ dgl_type l }) ls
   in if null oldLinks then
          changesDGH dg $ map (\ l -> InsertEdge (src, tgt, l)) newLinks
      else dg -- assume ingoing links are already properly set
