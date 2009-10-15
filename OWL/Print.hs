@@ -193,8 +193,10 @@ printAxiom :: Axiom -> Doc
 printAxiom axiom = case axiom of
   EntityAnno _ -> empty -- EntityAnnotation
   PlainAxiom _ paxiom -> case paxiom of
-   SubClassOf sub super ->
-       classStart <+> pretty sub $+$ text subClassOfC <+> pretty super
+   SubClassOf sub super -> case super of
+     OWLClassDescription curi
+       | localPart curi == "Thing" && namePrefix curi == "owl" -> empty
+     _ -> classStart <+> pretty sub $+$ text subClassOfC <+> pretty super
    EquivOrDisjointClasses ty (clazz : equiList) ->
        classStart <+> pretty clazz $+$ printEquivOrDisjoint ty <+>
                       setToDocV (Set.fromList equiList)

@@ -245,7 +245,7 @@ decimalLit = optSign <++> fullDecimal
 floatingPointLit :: CharParser st String
 floatingPointLit = optSign <++> (fullDecimal <|> postDecimal)
   <++> option "" (oneOf "eE" <:> optSign <++> getNumber)
-  <++> single (oneOf "fF")
+  << oneOf "fF"
 
 languageTag :: CharParser st String
 languageTag = atMost1 4 letter
