@@ -199,7 +199,8 @@ basicInferenceNode checkCons lg ln dGraph (node, lbl) libEnv intSt =
                     Proved (Just True) -> let
                       Result ds ms = extractModel cid sig1 $ proofTree pt
                       in case ms of
-                      Nothing -> Result ds Nothing
+                      Nothing -> fail $ "consistent but could not reconstruct model\n"
+                        ++ show (proofTree pt)
                       Just (sig3, sens3) -> Result ds $ Just $
                          G_theory lidS (mkExtSign sig3) startSigId
                               (toThSens sens3) startThId
