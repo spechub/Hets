@@ -42,13 +42,14 @@ import Proofs.BatchProcessing
 import qualified Common.AS_Annotation as AS_Anno
 import qualified Common.Result as Result
 import Common.ProofTree
-import Common.Utils (splitOn)
+import Common.Utils (splitOn, trimLeft)
 
 import Control.Monad (when)
 import qualified Control.Concurrent as Concurrent
 import qualified Control.Exception as Exception
 import System.Exit
-import Text.Regex
+
+import Data.Char
 import Data.List
 import Data.Maybe
 import Data.Time (TimeOfDay(..),midnight -- only in ghc-6.6.1: ,parseTime
@@ -199,8 +200,8 @@ parseSpassOutput spass = parseProtected (parseStart True)
                             (res, usedAxs, output ++ [""], tUsed)
         -- check for a potential error
         else do
-          let startMatch = matchRegex re_start line
-          if isJust startMatch
+          let startMatch = isInfixOf re_start line
+          if startMatch
             -- got SPASS-START. continue parsing
             then parseProtected parseIt (res, usedAxs, output ++ [line], tUsed)
             -- error. abort parsing
@@ -223,12 +224,18 @@ parseSpassOutput spass = parseProtected (parseStart True)
       let line' = foldr (\ch li -> if ch == '\x9'
                                    then "        "++li
                                    else ch:li) "" line
-          resMatch = matchRegex re_sb line'
-          res' = maybe res (Just . head) resMatch
-          usedAxsMatch = matchRegex re_ua line'
-          usedAxs' = maybe usedAxs (\ uas -> words (uas !! 1)) usedAxsMatch
-          tUsed' = maybe tUsed calculateTime $ matchRegex re_tu line
-      if seq (length line) $ isJust (matchRegex re_stop line')
+          res' = if isPrefixOf re_sb line'
+                 then Just $ drop (length re_sb) line'
+                 else res
+          usedAxs' = if isPrefixOf re_ua line'
+                     then words $ drop (length re_ua) line'
+                     else usedAxs
+          tUsed' = if isPrefixOf re_tu line && isInfixOf "on the problem." line
+                   then fromMaybe midnight $ parseTimeOfDay
+                        $ takeWhile (\ c -> isDigit c || elem c ".:")
+                        $ trimLeft $ drop (length re_tu) line
+                   else tUsed
+      if seq (length line) $ isInfixOf re_stop line'
         then do
           _ <- waitForChildProcess spass
           return (res', usedAxs', output ++ [line'], tUsed')
@@ -236,27 +243,20 @@ parseSpassOutput spass = parseProtected (parseStart True)
           parseProtected parseIt (res', usedAxs', output ++ [line'], tUsed')
 
     -- regular expressions used for parsing
-    re_start = mkRegex "(.*)SPASS-START(.*)"
-    re_stop = mkRegex "(.*)SPASS-STOP(.*)"
-    re_sb = mkRegex "SPASS beiseite: (.*)$"
-    re_ua = mkRegex "Formulae used in the proof(.*):(.*)$"
-    re_tu = mkRegex $ "SPASS spent\t([0-9:.]+) "
-                      ++ "on the problem.$"
-    calculateTime str =
-        if null str then midnight
-        else
-    -- the following line is only nice with ghc-6.6.1
-    --    (maybe midnight id . parseTime defaultTimeLocale "%k:%M:%S%Q")
-            parseTimeOfDay $ head str
+    re_start = "SPASS-START"
+    re_stop = "SPASS-STOP"
+    re_sb = "SPASS beiseite: "
+    re_ua = "Formulae used in the proof :"
+    re_tu = "SPASS spent"
 
-parseTimeOfDay :: String -> TimeOfDay
+parseTimeOfDay :: String -> Maybe TimeOfDay
 parseTimeOfDay str =
     case splitOn ':' str of
-      [h,m,s] -> TimeOfDay { todHour = read h
+      [h,m,s] -> Just $ TimeOfDay { todHour = read h
                            , todMin  = read m
                            , todSec  = realToFrac ((read s)::Double)
                            }
-      _ -> error "SoftFOL.Prove: wrong time format"
+      _ -> Nothing
 
 {- |
   Runs SPASS. SPASS is assumed to reside in PATH.
