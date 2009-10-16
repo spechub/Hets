@@ -84,7 +84,7 @@ prove (ln, node) libEnv =
     G_theory olid _ _ _ _ <- return $ dgn_theory oLbl
     let mcm = if Logic CASL == Logic olid then Just (Comorphism CASL2VSE) else
              Nothing
-    dGraph <- liftR $ maybe return (flip dg_translation) mcm dg3
+    dGraph <- liftR $ maybe return (flip $ dg_translation qLibEnv) mcm dg3
     let nls = topsortedNodes dGraph
         ns = map snd nls
     ts <- liftR $ mapM

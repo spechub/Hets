@@ -20,6 +20,7 @@ module Static.DGTranslation
 import Static.GTheory
 import Static.DevGraph
 import Static.PrintDevGraph
+import Static.ComputeTheory
 
 import Logic.Logic
 import Logic.Coerce
@@ -36,29 +37,25 @@ import qualified Data.List as List (nub)
 import Data.Maybe
 import Data.Graph.Inductive.Graph
 import Control.Exception
+import Control.Monad
 
 -- | translation of a LibEnv (a map of globalcontext)
 libEnv_translation :: LibEnv -> AnyComorphism -> Result LibEnv
-libEnv_translation libEnv comorphism =
-     updateGc (Map.keys libEnv) libEnv []
+libEnv_translation libEnv com =
+  foldM (\ le ln -> do
+    dgTr <- dg_translation le (lookupDGraph ln libEnv) com
+    return $ Map.insert ln dgTr le) Map.empty $ getTopsortedLibs libEnv
 
-   where updateGc :: [LibName] -> LibEnv -> [Diagnosis] -> Result LibEnv
-         updateGc [] le diag =  Result diag (Just le)
-         updateGc (k1:kr) le diagnosis =
-             let gc = lookupDGraph k1 le
-                 Result diagTran gc' = dg_translation gc comorphism
-             in  updateGc kr (Map.update (const gc') k1 le)
-                     (diagnosis ++ diagTran)
-
-dg_translation :: DGraph -> AnyComorphism -> Result DGraph
-dg_translation  gc acm@(Comorphism cidMor) =
+dg_translation :: LibEnv -> DGraph -> AnyComorphism -> Result DGraph
+dg_translation le gc acm@(Comorphism cidMor) =
     let labNodesList = labNodesDG gc
         labEdgesList = labEdgesDG gc
     in addErrorDiag ("translation failed via: " ++ language_name cidMor) ()
        $ do
         resOfEdges <- mapR updateEdges labEdgesList
         resOfNodes <- mapR updateNodes labNodesList
-        return $ mkGraphDG resOfNodes resOfEdges emptyDG
+        return $ computeDGraphTheories le
+          $ mkGraphDG resOfNodes resOfEdges emptyDG
 
  where
  slid = sourceLogic cidMor
