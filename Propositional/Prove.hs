@@ -55,9 +55,6 @@ import System.Directory
 import System.Cmd
 import System.Exit
 import System.IO
-import Text.Regex
-
-
 
 -- * Prover implementation
 
@@ -347,32 +344,11 @@ analyzeZchaff str pState =
                                 then "        "++li
                                 else ch:li) "" str
         output = [str2]
-        unsat  = (\xv ->
-                      case xv of
-                        Just _  -> True
-                        Nothing -> False
-            ) $ matchRegex re_UNSAT str'
-        sat    = (\xv ->
-                      case xv of
-                        Just _  -> True
-                        Nothing -> False
-                    ) $ matchRegex re_SAT   str'
-        timeLine = (\xv ->
-                      case xv of
-                        Just yv  -> head yv
-                        Nothing  -> "0"
-                    ) $ matchRegex re_TIME str'
-        timeout =  ((\xv ->
-                    case xv of
-                      Just _  -> True
-                      Nothing -> False
-                   ) $ matchRegex re_end_to str')
-                  ||
-                  ((\xv ->
-                   case xv of
-                     Just _  -> True
-                     Nothing -> False
-                  ) $ matchRegex re_end_mo str')
+        unsat  = isInfixOf re_UNSAT str'
+        sat    = isInfixOf re_SAT   str'
+        timeLine = if isPrefixOf re_TIME str' then
+                    drop (length re_TIME) str' else "0"
+        timeout = isInfixOf re_end_to str' || isInfixOf re_end_mo str'
         time   = calculateTime timeLine
         usedAx = map (AS_Anno.senAttr) $ PState.initialAxioms pState
     in
@@ -397,39 +373,23 @@ calculateTime timeLine =
          (error $ "calculateTime " ++ timeLine) id $ readMaybe timeLine
              :: Double)
 
-re_UNSAT :: Regex
-re_UNSAT = mkRegex "(.*)RESULT:UNSAT(.*)"
-re_SAT :: Regex
-re_SAT   = mkRegex "(.*)RESULT:SAT(.*)"
-re_TIME :: Regex
-re_TIME  = mkRegex "Total Run Time(.*)"
+re_UNSAT :: String
+re_UNSAT = "RESULT:UNSAT"
+re_SAT :: String
+re_SAT   = "RESULT:SAT"
+re_TIME :: String
+re_TIME  = "Total Run Time"
 
 -- | We are searching for Flotter needed to determine the end of input
 isEnd :: String -> Bool
-isEnd inS = ((\xv ->
-                 case xv of
-                   Just _  -> True
-                   Nothing -> False
-            ) $ matchRegex re_end inS)
-            ||
-            ((\xv ->
-                 case xv of
-                   Just _  -> True
-                   Nothing -> False
-            ) $ matchRegex re_end_to inS)
-            ||
-            ((\xv ->
-                 case xv of
-                   Just _  -> True
-                   Nothing -> False
-            ) $ matchRegex re_end_mo inS)
+isEnd inS = any (`isInfixOf` inS) [re_end, re_end_to, re_end_mo]
 
-re_end :: Regex
-re_end = mkRegex "(.*)RESULT:(.*)"
-re_end_to :: Regex
-re_end_to = mkRegex "(.*)TIME OUT(.*)"
-re_end_mo :: Regex
-re_end_mo = mkRegex "(.*)MEM OUT(.*)"
+re_end :: String
+re_end = "RESULT:"
+re_end_to :: String
+re_end_to = "TIME OUT"
+re_end_mo :: String
+re_end_mo = "MEM OUT"
 
 -- | Converts a thrown exception into an ATP result (ATPRetval and proof tree).
 excepToATPResult :: String
