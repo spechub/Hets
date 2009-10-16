@@ -33,8 +33,6 @@ import Data.Time (TimeOfDay, midnight)
 
 import Control.Monad
 
-import Text.Regex
-
 -- * Data Structures
 
 type ATPIdentifier = String
@@ -268,23 +266,7 @@ data FileExtensions = FileExtensions {
 data ATPTactic_script = ATPTactic_script
     { ts_timeLimit :: Int, -- ^ used time limit
       ts_extraOpts :: [String] -- ^ used extra options (if any)
-    } deriving (Eq, Ord)
-
-
-instance Show ATPTactic_script where
-  show ts = "Time limit: " ++ (show $ ts_timeLimit ts)
-            ++ "\nExtra options: " ++ (show $ ts_extraOpts ts)
-
-instance Read ATPTactic_script where
-  readsPrec _ ts =
-      let re_atp = mkRegex "Time limit: +([0-9]+).*\nExtra options: +(.*) *"
-          readMatch = matchRegex re_atp ts
-      in  maybe []
-                (\sl -> [(ATPTactic_script {
-                              ts_timeLimit = (read $ head sl) :: Int,
-                              ts_extraOpts = (read $ sl !! 1) :: [String]}
-                  , "")])
-                readMatch
+    } deriving (Eq, Ord, Show, Read)
 
 {- |
   Pretty printing of prover configuration.
