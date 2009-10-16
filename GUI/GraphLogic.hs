@@ -332,7 +332,7 @@ openProofStatus gInfo@(GInfo { hetcatsOpts = opts
       Nothing -> errorDialog "Error" $ "Could not read proof status from file '"
                                ++ file ++ "'"
       Just h -> do
-          let libfile = libNameToFile opts ln
+          let libfile = libNameToFile ln
           m <- anaLib opts { outtypes = [] } libfile
           case m of
             Nothing -> errorDialog "Error"
@@ -731,13 +731,12 @@ translateGraph gInfo@(GInfo { hetcatsOpts = opts }) = do
 saveUDGraph :: GInfo -> Map.Map DGNodeType (Shape value, String)
             -> Map.Map DGEdgeType (EdgePattern GA.EdgeValue, String) -> IO ()
 saveUDGraph gInfo@(GInfo { graphInfo = gi
-                         , hetcatsOpts = opts
                          , libName = ln }) nodemap linkmap = do
   ost <- readIORef $ intState gInfo
   case i_state ost of
    Nothing -> return ()
    Just _ -> do
-    maybeFilePath <- fileSaveDialog (rmSuffix (libNameToFile opts ln) ++ ".udg")
+    maybeFilePath <- fileSaveDialog (rmSuffix (libNameToFile ln) ++ ".udg")
                                     [ ("uDrawGraph",["*.udg"])
                                     , ("All Files", ["*"])] Nothing
     case maybeFilePath of

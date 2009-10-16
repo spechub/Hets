@@ -145,7 +145,7 @@ createGraph gInfo@(GInfo { graphInfo = gi
   case i_state ost of
     Nothing -> return ()
     Just _ -> do
-      let file = rmSuffix (libNameToFile hetOpts ln) ++ prfSuffix
+      let file = rmSuffix (libNameToFile ln) ++ prfSuffix
       deselectEdgeTypes <- newIORef []
       globMenu <- createGlobalMenu gInfo showLib deselectEdgeTypes
       GA.makeGraph gi

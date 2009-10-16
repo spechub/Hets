@@ -90,7 +90,7 @@ reloadLibGraph' gInfo@(GInfo { hetcatsOpts = opts
                              , libName = ln }) graph nodesEdges = do
   graph' <- readIORef graph
   (nodes, edges) <- readIORef nodesEdges
-  let libfile = libNameToFile opts ln
+  let libfile = libNameToFile ln
   m <- anaLib opts { outtypes = [] } libfile
   case m of
     Nothing -> errorDialog "Error" $ "Error when reloading file '"
@@ -119,8 +119,7 @@ translate gInfo = do
 
 -- | Translate Graph
 translate' :: GInfo -> IO ()
-translate' gInfo@(GInfo { hetcatsOpts = opts
-                        , libName = ln }) = do
+translate' gInfo@(GInfo { libName = ln }) = do
   mle <- translateGraph gInfo
   case mle of
     Just le -> do
@@ -130,7 +129,7 @@ translate' gInfo@(GInfo { hetcatsOpts = opts
             Nothing -> ost
             Just ist -> ost{ i_state = Just $ ist { i_libEnv = le
                                                   , i_ln = ln}
-                           , filename = libNameToFile opts ln}
+                           , filename = libNameToFile ln}
       writeIORef (intState gInfo) nwst
       mShowGraph gInfo ln
     Nothing -> return ()

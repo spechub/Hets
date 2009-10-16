@@ -84,7 +84,7 @@ anaLibExt opts file libEnv initDG = do
 
 readPrfFile :: HetcatsOpts -> LibEnv -> LibName -> IO LibEnv
 readPrfFile opts ps ln = do
-    let fname = libNameToFile opts ln
+    let fname = libNameToFile ln
         prfFile = rmSuffix fname ++ prfSuffix
     recent <- checkRecentEnv opts prfFile fname
     h <- if recent then

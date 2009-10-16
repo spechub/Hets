@@ -279,7 +279,7 @@ informCmd nwSt mCmd pgSt1 = case (getMaybeLib $ intState nwSt, mCmd) of
           (Just (lN, lEnv), Just cmd) -> case cmd of
             SelectCmd LibFile _ ->
               informDGraph lN lEnv $ addPGIPElement pgSt1
-                $ add_attr (mkAttr "url" $ libNameToFile (hetsOpts nwSt) lN)
+                $ add_attr (mkAttr "url" $ libNameToFile lN)
                 $ unode "informfileloaded" ()
             GlobCmd g | g < ProveCurrent ->
               informDGraph lN lEnv pgSt1

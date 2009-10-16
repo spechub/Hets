@@ -96,26 +96,19 @@ readVerbose lg opts ln file = do
         return Nothing
 
 -- | create a file name without suffix from a library name
-libNameToFile :: HetcatsOpts -> LibName -> FilePath
-libNameToFile opts ln = case getLibId ln of
+libNameToFile :: LibName -> FilePath
+libNameToFile ln = case getLibId ln of
   IndirectLink file _ ofile _ ->
-      let path = case libdirs opts of
-                        [] -> ""
-                        fp : _ -> fp
-      in if null ofile then path </> file else ofile
+      if null ofile then file else ofile
   DirectLink _ _ -> error "libNameToFile"
 
-findFileOfLibName :: HetcatsOpts -> LibName -> IO (Maybe FilePath)
-findFileOfLibName opts ln = case getLibId ln of
-  IndirectLink file _ ofile _ ->
-      if null ofile then do
+findFileOfLibName :: HetcatsOpts -> FilePath -> IO (Maybe FilePath)
+findFileOfLibName opts file = do
           let fs = map (</> file) $ "" : libdirs opts
           ms <- mapM (existsAnSource opts { intype = GuessIn }) fs
-          case catMaybes ms of
-            [] -> return Nothing
-            f : _ -> return $ Just f
-      else return $ Just ofile
-  DirectLink _ _ -> return Nothing
+          return $ case catMaybes ms of
+            [] -> Nothing
+            f : _ -> Just f
 
 -- | convert a file name that may have a suffix to a library name
 fileToLibName :: HetcatsOpts -> FilePath -> LibName

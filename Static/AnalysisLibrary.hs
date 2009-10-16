@@ -65,13 +65,13 @@ type LNS = Set.Set LibName
 anaSourceFile :: LogicGraph -> HetcatsOpts -> LNS -> LibEnv -> DGraph
   -> FilePath -> ResultT IO (LibName, LibEnv)
 anaSourceFile lgraph opts topLns libenv initDG fname = ResultT $ do
-  fname' <- existsAnSource opts {intype = GuessIn} fname
+  fname' <- findFileOfLibName opts fname
   case fname' of
     Nothing ->
-        return $ fail $ "a file for input '" ++ fname ++ "' not found."
+        return $ fail $ "no file for library '" ++ fname ++ "' found."
     Just file ->
         if any (flip isSuffixOf file) [envSuffix, prfSuffix] then
-            fail $ "a matching source file for '" ++ fname ++ "' not found."
+            fail $ "no matching source file for '" ++ fname ++ "' found."
         else do
         curDir <- getCurrentDirectory
         input <- readFile file
@@ -122,16 +122,10 @@ anaLibFile lgraph opts topLns libenv initDG ln =
         analyzing opts $ "from " ++ lnstr
         return (ln, libenv)
     Nothing -> do
-        mf <- lift $ findFileOfLibName opts ln
-        case mf of
-          Nothing ->
-            liftR $ fail $ "no file for library '" ++ lnstr
-                ++ "' found"
-          Just file -> do
             putMessageIORes opts 1 $ "Downloading " ++ lnstr ++ " ..."
             res <- anaLibFileOrGetEnv lgraph
               (if recurse opts then opts else opts { outtypes = [] })
-              (Set.insert ln topLns) libenv initDG ln file
+              (Set.insert ln topLns) libenv initDG ln $ libNameToFile ln
             putMessageIORes opts 1 $ "... loaded " ++ lnstr
             return res
 
