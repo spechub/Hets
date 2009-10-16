@@ -121,9 +121,6 @@ showProverGUI lid prGuiAcs thName warningTxt th knownProvers comorphList = do
                    listAxioms trvTheorems listTheorems trvProvers listProvers
                    prGuiAcs knownProvers
         action = modifyMVar_ state $ update
-        forkIO_ a = do
-          forkIO a
-          return ()
 
     -- setup goal list
     selectedGoals' <- setListSelectorMultiple trvGoals btnGoalsAll btnGoalsNone
@@ -373,7 +370,7 @@ proofDetails xml state = postGUIAsync $ do
   textBufferApplyTag buffer font start end
 
   onClicked btnSave $ do
-        fileDialog FileChooserActionSave file
+        fileSaveDialog file
                    [("Nothing", ["*"]), ("Text", ["*.txt"])]
                    $ Just (\ filepath -> writeFile filepath message)
         return ()
