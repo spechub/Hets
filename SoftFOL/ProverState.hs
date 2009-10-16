@@ -25,14 +25,13 @@ import SoftFOL.Print ()
 import qualified Common.AS_Annotation as AS_Anno
 import Common.ProofTree
 import Common.ProofUtils
-import Common.Utils (splitOn, readMaybe)
+import Common.Utils (splitOn)
 import Common.DocUtils
 
 import qualified Common.Exception as Exception
 
 import Data.Maybe
 
-import GUI.GenericATP (guiDefaultTimeLimit)
 import Interfaces.GenericATPState
 
 -- * Data structures
@@ -132,30 +131,6 @@ parseSPASSCommands comLine =
                    -- if multiple '=', texts are concatenated
                  h : r -> SPFlag "set_flag" [h, concat r]
                 ) $ map (dropWhile (== '-')) comLine ]
-
-{- |
-  Returns the time limit from GenericConfig if available. Otherwise
-  guiDefaultTimeLimit is returned.
--}
-configTimeLimit :: GenericConfig ProofTree
-                -> Int
-configTimeLimit cfg =
-    maybe (guiDefaultTimeLimit) id $ timeLimit cfg
-
-{- |
-  Parses a given default tactic script into a
-  'Interfaces.GenericATPState.ATPTactic_script' if possible. Otherwise a default
-  prover's tactic script is returned.
--}
-parseTactic_script :: Int -- ^ default time limit (standard:
-                          -- 'Proofs.BatchProcessing.batchTimeLimit')
-                   -> [String] -- ^ default extra options (prover specific)
-                   -> Tactic_script
-                   -> ATPTactic_script
-parseTactic_script tLimit extOpts (Tactic_script ts) =
-    maybe (ATPTactic_script { ts_timeLimit = tLimit,
-                              ts_extraOpts = extOpts })
-           id $ readMaybe ts
 
 -- | Converts a thrown exception into an ATP result (ATPRetval and proof tree).
 excepToATPResult :: String -- ^ name of running prover

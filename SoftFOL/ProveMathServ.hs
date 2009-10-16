@@ -94,10 +94,10 @@ mathServBrokerGUI :: String -- ^ theory name
                   -- ^ theory consisting of a SoftFOL.Sign.Sign
                   --   and a list of Named SoftFOL.Sign.Sentence
                   -> [FreeDefMorphism SPTerm SoftFOLMorphism] -- ^ freeness constraints
-                  -> IO([Proof_status ProofTree])
+                  -> IO([ProofStatus ProofTree])
                      -- ^ proof status for each goal
 mathServBrokerGUI thName th freedefs =
-    genericATPgui (atpFun thName) False (prover_name mathServBroker) thName th
+    genericATPgui (atpFun thName) False (proverName mathServBroker) thName th
                   freedefs emptyProofTree
 
 -- ** command line functions
@@ -109,15 +109,15 @@ mathServBrokerGUI thName th freedefs =
 -}
 mathServBrokerCMDLautomatic ::
            String -- ^ theory name
-        -> Tactic_script -- ^ default tactic script
+        -> TacticScript -- ^ default tactic script
         -> Theory Sign Sentence ProofTree
            -- ^ theory consisting of a signature and a list of Named sentence
         -> [FreeDefMorphism SPTerm SoftFOLMorphism] -- ^ freeness constraints
-        -> IO (Result.Result ([Proof_status ProofTree]))
+        -> IO (Result.Result ([ProofStatus ProofTree]))
            -- ^ Proof status for goals and lemmas
 mathServBrokerCMDLautomatic thName defTS th freedefs =
-    genericCMDLautomatic (atpFun thName) (prover_name mathServBroker) thName
-        (parseTactic_script batchTimeLimit [] defTS) th freedefs emptyProofTree
+    genericCMDLautomatic (atpFun thName) (proverName mathServBroker) thName
+        (parseTacticScript batchTimeLimit [] defTS) th freedefs emptyProofTree
 
 {- |
   Implementation of 'Logic.Prover.proveCMDLautomaticBatch' which provides an
@@ -127,10 +127,10 @@ mathServBrokerCMDLautomatic thName defTS th freedefs =
 mathServBrokerCMDLautomaticBatch ::
            Bool -- ^ True means include proved theorems
         -> Bool -- ^ True means save problem file
-        -> Concurrent.MVar (Result.Result [Proof_status ProofTree])
+        -> Concurrent.MVar (Result.Result [ProofStatus ProofTree])
            -- ^ used to store the result of the batch run
         -> String -- ^ theory name
-        -> Tactic_script -- ^ default tactic script
+        -> TacticScript -- ^ default tactic script
         -> Theory Sign Sentence ProofTree -- ^ theory consisting of a
            --   'SoftFOL.Sign.Sign' and a list of Named 'SoftFOL.Sign.Sentence'
         -> [FreeDefMorphism SPTerm SoftFOLMorphism] -- ^ freeness constraints
@@ -140,8 +140,8 @@ mathServBrokerCMDLautomaticBatch ::
 mathServBrokerCMDLautomaticBatch inclProvedThs saveProblem_batch resultMVar
                         thName defTS th freedefs =
     genericCMDLautomaticBatch (atpFun thName) inclProvedThs saveProblem_batch
-        resultMVar (prover_name mathServBroker) thName
-        (parseTactic_script batchTimeLimit [] defTS) th freedefs emptyProofTree
+        resultMVar (proverName mathServBroker) thName
+        (parseTacticScript batchTimeLimit [] defTS) th freedefs emptyProofTree
 
 
 {- |
@@ -168,11 +168,9 @@ runMSBroker sps cfg saveTPTP thName nGoal = do
         MathServCall{mathServService = Broker,
                      mathServOperation = ProblemOpt,
                      problem = prob,
-                     proverTimeLimit = tLimit,
+                     proverTimeLimit = configTimeLimit cfg,
                      extraOptions = Nothing}
     msResponse <- parseMathServOut mathServOut
     return (mapMathServResponse msResponse cfg nGoal $
-            prover_name mathServBroker))
-    (excepToATPResult (prover_name mathServBroker) nGoal)
-  where
-    tLimit = maybe (guiDefaultTimeLimit) id $ timeLimit cfg
+            proverName mathServBroker))
+    (excepToATPResult (proverName mathServBroker) nGoal)

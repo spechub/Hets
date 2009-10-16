@@ -77,9 +77,7 @@ getAllNodes st
 -- | Returns the list of all edges, if it is not up to date
 -- the funcrion recomputes the list
 getAllEdges :: IntIState -> [LEdge DGLinkLab]
-getAllEdges st
- = labEdgesDG $ lookupDGraph (i_ln st) (i_libEnv st)
-
+getAllEdges st = labEdgesDG $ lookupDGraph (i_ln st) (i_libEnv st)
 
 -- | Constructor for CMDLProofGUIState datatype
 initNodeInfo:: (Logic lid1 sublogics1
@@ -100,9 +98,9 @@ emptyIntIState le ln =
     consChecker = Nothing,
     save2file = False,
     useTheorems = False,
-    script = ATPTactic_script {
-                 ts_timeLimit = 20,
-                 ts_extraOpts = [] },
+    script = ATPTacticScript {
+                 tsTimeLimit = 20,
+                 tsExtraOpts = [] },
     loadScript = False
     }
 
@@ -127,7 +125,7 @@ tryRemoveAbsolutePathComponent f
 proofTreeToProve :: FilePath
      -> ProofState lid sentence -- current proofstate
      -> Maybe (G_prover, AnyComorphism)     -- possible used translation
-     -> [Proof_status proof_tree]           -- goals included in prove
+     -> [ProofStatus proof_tree]           -- goals included in prove
      -> [IC.Command]
 proofTreeToProve fn st pcm pt =
     [ IC.SelectCmd IC.Node nodeName, IC.GlobCmd IC.DropTranslation ]
@@ -170,24 +168,24 @@ dropName :: String -> String -> String
 dropName fch s = maybe s Prelude.tail (stripPrefix fch s)
 
 -- This checks wether a goal was proved or not
-wasProved :: Proof_status proof_Tree -> Bool
+wasProved :: ProofStatus proof_Tree -> Bool
 wasProved g = case goalStatus g of
     Proved _  -> True
     _         -> False
 
 -- Converts a proof-tree into a goal.
-parseTimeLimit :: Proof_status proof_tree -> Int
+parseTimeLimit :: ProofStatus proof_tree -> Int
 parseTimeLimit pt =
   if Prelude.null lns then 20 else read $ Prelude.drop (length tlStr) $ last lns
   where
-    (Tactic_script scrpt) = tacticScript pt
+    (TacticScript scrpt) = tacticScript pt
     lns = Prelude.filter (isPrefixOf tlStr) $ splitOn '\n' scrpt
     tlStr = "Time limit: "
 
 addCommandHistoryToState :: IORef IntState
     -> ProofState lid sentence         -- current proofstate
     -> Maybe (G_prover, AnyComorphism) -- possible used translation
-    -> [Proof_status proof_tree]       -- goals included in prove
+    -> [ProofStatus proof_tree]       -- goals included in prove
     -> IO (Result ())
 addCommandHistoryToState intSt st pcm pt
     | null $ filter wasProved pt = return $ Result [] $ Just ()

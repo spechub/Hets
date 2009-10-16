@@ -61,7 +61,7 @@ darwinProver = (mkProverTemplate "Darwin" () darwinGUI)
 darwinConsChecker
     :: ConsChecker Sign Sentence () SoftFOLMorphism ProofTree
 darwinConsChecker = (mkProverTemplate "darwin" ()
-    (\ s -> consCheck s $ Tactic_script "20"))
+    (\ s -> consCheck s $ TacticScript "20"))
     { proveCMDLautomatic = Just (\ s ts t -> fmap return . consCheck s ts t) }
 
 {- |
@@ -95,9 +95,9 @@ darwinGUI :: String -- ^ theory name
            -- ^ theory consisting of a SoftFOL.Sign.Sign
            --   and a list of Named SoftFOL.Sign.Sentence
            -> [FreeDefMorphism SPTerm SoftFOLMorphism] -- ^ freeness constraints
-           -> IO([Proof_status ProofTree]) -- ^ proof status for each goal
+           -> IO([ProofStatus ProofTree]) -- ^ proof status for each goal
 darwinGUI thName th freedefs =
-    genericATPgui (atpFun thName) True (prover_name darwinProver) thName th
+    genericATPgui (atpFun thName) True (proverName darwinProver) thName th
                   freedefs emptyProofTree
 
 -- ** command line functions
@@ -109,15 +109,15 @@ darwinGUI thName th freedefs =
 -}
 darwinCMDLautomatic ::
            String -- ^ theory name
-        -> Tactic_script -- ^ default tactic script
+        -> TacticScript -- ^ default tactic script
         -> Theory Sign Sentence ProofTree
            -- ^ theory consisting of a signature and a list of Named sentence
         -> [FreeDefMorphism SPTerm SoftFOLMorphism] -- ^ freeness constraints
-        -> IO (Result.Result ([Proof_status ProofTree]))
+        -> IO (Result.Result ([ProofStatus ProofTree]))
            -- ^ Proof status for goals and lemmas
 darwinCMDLautomatic thName defTS th freedefs =
-    genericCMDLautomatic (atpFun thName) (prover_name darwinProver) thName
-        (parseTactic_script batchTimeLimit [] defTS) th freedefs emptyProofTree
+    genericCMDLautomatic (atpFun thName) (proverName darwinProver) thName
+        (parseTacticScript batchTimeLimit [] defTS) th freedefs emptyProofTree
 
 {- |
   Implementation of 'Logic.Prover.proveCMDLautomaticBatch' which provides an
@@ -127,10 +127,10 @@ darwinCMDLautomatic thName defTS th freedefs =
 darwinCMDLautomaticBatch ::
            Bool -- ^ True means include proved theorems
         -> Bool -- ^ True means save problem file
-        -> Concurrent.MVar (Result.Result [Proof_status ProofTree])
+        -> Concurrent.MVar (Result.Result [ProofStatus ProofTree])
            -- ^ used to store the result of the batch run
         -> String -- ^ theory name
-        -> Tactic_script -- ^ default tactic script
+        -> TacticScript -- ^ default tactic script
         -> Theory Sign Sentence ProofTree -- ^ theory consisting of a
            --   'SoftFOL.Sign.Sign' and a list of Named 'SoftFOL.Sign.Sentence'
         -> [FreeDefMorphism SPTerm SoftFOLMorphism] -- ^ freeness constraints
@@ -140,8 +140,8 @@ darwinCMDLautomaticBatch ::
 darwinCMDLautomaticBatch inclProvedThs saveProblem_batch resultMVar
                         thName defTS th freedefs =
     genericCMDLautomaticBatch (atpFun thName) inclProvedThs saveProblem_batch
-        resultMVar (prover_name darwinProver) thName
-        (parseTactic_script batchTimeLimit [] defTS) th freedefs emptyProofTree
+        resultMVar (proverName darwinProver) thName
+        (parseTacticScript batchTimeLimit [] defTS) th freedefs emptyProofTree
 
 -- * Main prover functions
 {- |
@@ -150,11 +150,11 @@ darwinCMDLautomaticBatch inclProvedThs saveProblem_batch resultMVar
 -}
 
 consCheck :: String
-          -> Tactic_script
+          -> TacticScript
           -> TheoryMorphism Sign Sentence SoftFOLMorphism ProofTree
           -> [FreeDefMorphism SPTerm SoftFOLMorphism] -- ^ freeness constraints
-          -> IO([Proof_status ProofTree])
-consCheck thName tac@(Tactic_script tl) tm freedefs = case t_target tm of
+          -> IO([ProofStatus ProofTree])
+consCheck thName tac@(TacticScript tl) tm freedefs = case tTarget tm of
     Theory sig nSens -> let
         saveTPTP = False
         proverStateI = spassProverState sig (toNamedList nSens) freedefs
@@ -163,18 +163,18 @@ consCheck thName tac@(Tactic_script tl) tm freedefs = case t_target tm of
         extraOptions  = "-pc true -pmtptp true -fd true -to "
                         ++ tl
         saveFileName  = reverse $ fst $ span (/= '/') $ reverse thName
-        runDarwinRealM :: IO([Proof_status ProofTree])
+        runDarwinRealM :: IO([ProofStatus ProofTree])
         runDarwinRealM = do
             probl <- problem
             hasProgramm <- system ("which darwin > /dev/null 2> /dev/null")
             case hasProgramm of
               ExitFailure _ -> do
                   infoDialog "Darwin prover" "Darwin not found"
-                  return [Proof_status
+                  return [ProofStatus
                     { goalName = thName
                     , goalStatus = openGoalStatus
                     , usedAxioms = getAxioms
-                    , proverName = prover_name darwinProver
+                    , usedProver = proverName darwinProver
                     , proofTree  = ProofTree "Darwin not found"
                     , usedTime = timeToTimeOfDay $ secondsToDiffTime 0
                     , tacticScript  = tac }]
@@ -187,16 +187,16 @@ consCheck thName tac@(Tactic_script tl) tm freedefs = case t_target tm of
                   let command = "darwin " ++ extraOptions ++ " " ++ timeTmpFile
                   (_, outh, errh, proch) <- runInteractiveCommand command
                   (exCode, output, tUsed) <- parseDarwinOut outh errh proch
-                  let outState = proof_statM exCode simpleOptions output tUsed
+                  let outState = proofStatM exCode simpleOptions output tUsed
                   return [outState]
-        proof_statM :: ExitCode -> String ->  [String] -> Int
-                    -> Proof_status ProofTree
-        proof_statM exitCode _ out tUsed = let
-             outState = Proof_status
+        proofStatM :: ExitCode -> String ->  [String] -> Int
+                    -> ProofStatus ProofTree
+        proofStatM exitCode _ out tUsed = let
+             outState = ProofStatus
                { goalName = thName
                , goalStatus = Proved (Just True)
                , usedAxioms = getAxioms
-               , proverName = prover_name darwinProver
+               , usedProver = proverName darwinProver
                , proofTree = ProofTree (unlines out)
                , usedTime = timeToTimeOfDay $ secondsToDiffTime
                             $ toInteger tUsed
@@ -240,7 +240,7 @@ runDarwin sps cfg saveTPTP thName nGoal = do
       case hasProgramm of
         ExitFailure _ -> return
             (ATPError "Could not start Darwin. Is Darwin in your $PATH?",
-                  emptyConfig (prover_name darwinProver)
+                  emptyConfig (proverName darwinProver)
                               (AS_Anno.senAttr nGoal) emptyProofTree)
         ExitSuccess -> do
           prob <- showTPTPProblem thName sps nGoal $
@@ -255,45 +255,45 @@ runDarwin sps cfg saveTPTP thName nGoal = do
           -- putStrLn command
           (_, outh, errh, proch) <- runInteractiveCommand command
           (exCode, output, tUsed) <- parseDarwinOut outh errh proch
-          let (err, retval) = proof_stat exCode simpleOptions output tUsed
+          let (err, retval) = proofStat exCode simpleOptions output tUsed
           return (err,
-                  cfg{proof_status = retval,
+                  cfg{proofStatus = retval,
                       resultOutput = output,
                       timeUsed     = timeToTimeOfDay $
                                  secondsToDiffTime $ toInteger tUsed})
 
-    proof_stat exitCode options out tUsed =
+    proofStat exitCode options out tUsed =
             case exitCode of
-              ExitSuccess -> (ATPSuccess, proved_status options tUsed)
+              ExitSuccess -> (ATPSuccess, provedStatus options tUsed)
               ExitFailure 2 -> (ATPError (unlines ("Internal error.":out)),
-                                defaultProof_status options)
+                                defaultProofStatus options)
               ExitFailure 112 ->
-                       (ATPTLimitExceeded, defaultProof_status options)
+                       (ATPTLimitExceeded, defaultProofStatus options)
               ExitFailure 105 ->
-                       (ATPBatchStopped, defaultProof_status options)
+                       (ATPBatchStopped, defaultProofStatus options)
               ExitFailure _ ->
-                  (ATPSuccess, disProved_status options)
+                  (ATPSuccess, disProvedStatus options)
 
-    defaultProof_status opts =
-            (openProof_status
-            (AS_Anno.senAttr nGoal) (prover_name darwinProver) $
+    defaultProofStatus opts =
+            (openProofStatus
+            (AS_Anno.senAttr nGoal) (proverName darwinProver) $
                                     emptyProofTree)
-                       {tacticScript = Tactic_script $ show $ ATPTactic_script
-                        {ts_timeLimit = configTimeLimit cfg,
-                         ts_extraOpts = opts} }
+                       {tacticScript = TacticScript $ show $ ATPTacticScript
+                        {tsTimeLimit = configTimeLimit cfg,
+                         tsExtraOpts = opts} }
 
-    disProved_status opts = (defaultProof_status opts)
+    disProvedStatus opts = (defaultProofStatus opts)
                                {goalStatus = Disproved}
 
-    proved_status opts ut = Proof_status
+    provedStatus opts ut = ProofStatus
       { goalName = AS_Anno.senAttr nGoal
       , goalStatus = Proved (Just True)
       , usedAxioms = getAxioms -- []
-      , proverName = prover_name darwinProver
+      , usedProver = proverName darwinProver
       , proofTree = emptyProofTree
       , usedTime = timeToTimeOfDay $ secondsToDiffTime $ toInteger ut
-      , tacticScript = Tactic_script $ show $ ATPTactic_script
-          { ts_timeLimit = configTimeLimit cfg, ts_extraOpts = opts }}
+      , tacticScript = TacticScript $ show $ ATPTacticScript
+          { tsTimeLimit = configTimeLimit cfg, tsExtraOpts = opts }}
 
     getAxioms = let
         fl = formulaLists $ initialLogicalPart sps

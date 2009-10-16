@@ -49,8 +49,8 @@ import System.Cmd
 isabelleS :: String
 isabelleS = "Isabelle"
 
-openIsaProof_status :: String -> Proof_status ()
-openIsaProof_status n = openProof_status n isabelleS ()
+openIsaProofStatus :: String -> ProofStatus ()
+openIsaProofStatus n = openProofStatus n isabelleS ()
 
 isabelleProver :: Prover Sign Sentence (DefaultMorphism Sign) () ()
 isabelleProver = mkProverTemplate isabelleS () isaProve
@@ -70,8 +70,8 @@ metaToTerm mt = case mt of
     _ -> binImpl (foldr1 binConj ts) t
 
 consCheck :: String -> TheoryMorphism Sign Sentence (DefaultMorphism Sign) ()
-          -> a -> IO([Proof_status ()])
-consCheck thName tm freedefs = case t_target tm of
+          -> a -> IO([ProofStatus ()])
+consCheck thName tm freedefs = case tTarget tm of
     Theory sig nSens -> let (axs, _) = getAxioms $ toNamedList nSens in
        isaProve (thName ++ "_c")
            (Theory sig
@@ -101,7 +101,7 @@ getDepsFileName :: String -> String -> String
 getDepsFileName thName thm = thName ++ "_" ++ thm ++ ".deps"
 
 getProofDeps :: Map.Map String String -> String -> String
-             -> IO (Proof_status ())
+             -> IO (ProofStatus ())
 getProofDeps m thName thm = do
     let file = getDepsFileName thName thm
         mapN n = Map.findWithDefault n n m
@@ -112,10 +112,10 @@ getProofDeps m thName thm = do
         return $ mkProved (mapN thm) $ map mapN $
                Set.toList $ Set.filter (not . null) $
                Set.fromList $ map strip $ lines s
-      else return $ openIsaProof_status $ mapN thm
+      else return $ openIsaProofStatus $ mapN thm
 
 getAllProofDeps :: Map.Map String String -> String -> [String]
-                -> IO([Proof_status ()])
+                -> IO([ProofStatus ()])
 getAllProofDeps m thName = mapM $ getProofDeps m thName
 
 checkFinalThyFile :: (TheoryHead, Body) -> String -> IO Bool
@@ -131,11 +131,11 @@ checkFinalThyFile (ho, bo) thyFile = do
               else return $ null ds
     Left err -> putStrLn (show err) >> return False
 
-mkProved :: String -> [String] -> Proof_status ()
-mkProved thm used = (openIsaProof_status thm)
+mkProved :: String -> [String] -> ProofStatus ()
+mkProved thm used = (openIsaProofStatus thm)
     { goalStatus = Proved Nothing
     , usedAxioms = used
-    , tacticScript = Tactic_script "unknown isabelle user input"
+    , tacticScript = TacticScript "unknown isabelle user input"
     }
 
 prepareThyFiles :: (TheoryHead, Body) -> String -> String -> IO ()
@@ -185,7 +185,7 @@ revertThyFile thyFile thy = do
 callSystem :: String -> IO ExitCode
 callSystem s = putStrLn s >> system s
 
-isaProve :: String -> Theory Sign Sentence () -> a -> IO([Proof_status ()])
+isaProve :: String -> Theory Sign Sentence () -> a -> IO([ProofStatus ()])
 isaProve thName th _freedefs = do
   let (sig, axs, ths, m) = prepareTheory th
       thms = map senAttr ths

@@ -61,7 +61,7 @@ cspCASLProver = mkProverTemplate cspCASLProverS () cspCASLProverProve
 
 -- | The main cspCASLProver function
 cspCASLProverProve :: String -> Theory CspCASLSign CspCASLSen () -> a ->
-                      IO([Proof_status ()])
+                      IO([ProofStatus ()])
 cspCASLProverProve thName (Theory ccSign ccSensThSens) _freedefs =
   let -- get the CASL signature of the data part of the CspcASL theory
       caslSign = ccSig2CASLSign ccSign

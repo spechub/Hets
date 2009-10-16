@@ -54,11 +54,6 @@ setExtraOpts opts c = c{extraOpts = opts}
 
 -- ** Constants
 
-{- |
-  Default time limit for the GUI mode prover in seconds.
--}
-guiDefaultTimeLimit :: Int
-guiDefaultTimeLimit = 10
 
 
 -- ** Defining the view
@@ -122,11 +117,11 @@ statusRunning :: (ProofStatusColour, String)
 statusRunning = (Blue, "Running")
 
 {- |
-  Converts a 'Proof_status' into a ('ProofStatusColour', 'String') tuple to be
+  Converts a 'ProofStatus' into a ('ProofStatusColour', 'String') tuple to be
   displayed by the GUI.
 -}
 toGuiStatus :: GenericConfig proof_tree -- ^ current prover configuration
-            -> (Proof_status a) -- ^ status to convert
+            -> (ProofStatus a) -- ^ status to convert
             -> (ProofStatusColour, String)
 toGuiStatus cf st = case goalStatus st of
   Proved mc -> maybe (statusProved)
@@ -156,7 +151,7 @@ goalsView :: GenericState sign sentence proof_tree pst -- ^ current global
 goalsView s = map (\ g ->
                       let cfg = Map.lookup g (configsMap s)
                           statind = maybe LBIndicatorOpen
-                                     (indicatorFromProof_status . proof_status)
+                                     (indicatorFromProofStatus . proofStatus)
                                      cfg
                        in
                          LBGoalView {statIndicator = statind,
@@ -248,9 +243,9 @@ updateDisplay st updateLb goalsLb statusLabel timeEntry optionsEntry axiomsLb =
                    t' = maybe guiDefaultTimeLimit id (timeLimit cf)
                    opts' = unwords (extraOpts cf)
                    (color, label) = maybe statusOpen
-                                    ((toGuiStatus cf) . proof_status)
+                                    ((toGuiStatus cf) . proofStatus)
                                     mprfst
-                   usedAxs = maybe [] (usedAxioms . proof_status) mprfst
+                   usedAxs = maybe [] (usedAxioms . proofStatus) mprfst
 
                in do
                 statusLabel # text label
@@ -327,7 +322,7 @@ genericATPgui :: (Ord proof_tree, Ord sentence)
                  -- signature and a list of Named sentence
               -> [FreeDefMorphism sentence mor] -- ^ freeness constraints
               -> proof_tree -- ^ initial empty proof_tree
-              -> IO([Proof_status proof_tree]) -- ^ proof status for each goal
+              -> IO([ProofStatus proof_tree]) -- ^ proof status for each goal
 genericATPgui atpFun isExtraOptions prName thName th freedefs pt = do
   -- create initial backing data structure
   let initState = initialGenericState prName
@@ -708,8 +703,8 @@ genericATPgui atpFun isExtraOptions prName thName th freedefs pt = do
                         adjustOrSetConfig
                            (\ c -> c {timeLimitExceeded = isTimeLimitExceeded
                                                             retval,
-                                      proof_status =
-                                          ((proof_status cfg)
+                                      proofStatus =
+                                          ((proofStatus cfg)
                                            {usedTime = timeUsed cfg}),
                                       resultOutput = resultOutput cfg,
                                       timeUsed     = timeUsed cfg})
@@ -868,8 +863,8 @@ genericATPgui atpFun isExtraOptions prName thName th freedefs pt = do
                                                 ++"should not happen \""
                                                 ++g++"\""))
                                         g (namesMap s)
-                     in maybe (openProof_status g' prName $ proof_tree s)
-                              proof_status
+                     in maybe (openProofStatus g' prName $ currentProofTree s)
+                              proofStatus
                               res)
                     (map AS_Anno.senAttr $ goalsList s)
   -- diags should not be plainly shown by putStrLn here

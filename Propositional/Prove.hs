@@ -31,7 +31,7 @@ import Proofs.BatchProcessing
 
 import qualified Logic.Prover as LP
 
-import qualified Interfaces.GenericATPState as ATPState
+import Interfaces.GenericATPState
 import GUI.GenericATP
 import GUI.Utils (infoDialog)
 
@@ -90,10 +90,11 @@ propConsChecker = LP.mkProverTemplate zchaffS top consCheck
 
 consCheck :: String -> LP.TheoryMorphism Sig.Sign AS_BASIC.FORMULA
              PMorphism.Morphism ProofTree
-          -> [LP.FreeDefMorphism AS_BASIC.FORMULA PMorphism.Morphism] -- ^ free definitions
-          -> IO([LP.Proof_status ProofTree])
+          -> [LP.FreeDefMorphism AS_BASIC.FORMULA PMorphism.Morphism]
+          -- ^ free definitions
+          -> IO([LP.ProofStatus ProofTree])
 consCheck thName tm _ =
-    case LP.t_target tm of
+    case LP.tTarget tm of
       LP.Theory sig nSens -> do
             let axioms = getAxioms $ snd $ unzip $ OMap.toList nSens
                 thName_clean = map (\c -> if c == '/' then '_' else c) thName
@@ -139,9 +140,10 @@ consCheck thName tm _ =
             return []
 
     where
-        getAxioms :: [LP.SenStatus AS_BASIC.FORMULA (LP.Proof_status ProofTree)]
+        getAxioms :: [LP.SenStatus AS_BASIC.FORMULA (LP.ProofStatus ProofTree)]
                   -> [AS_Anno.Named AS_BASIC.FORMULA]
-        getAxioms f = map (AS_Anno.makeNamed "consistency" . AS_Anno.sentence) $ filter AS_Anno.isAxiom f
+        getAxioms f = map (AS_Anno.makeNamed "consistency" . AS_Anno.sentence)
+          $ filter AS_Anno.isAxiom f
 
         searchResult :: Handle -> IO Bool
         searchResult hf = do
@@ -165,33 +167,18 @@ consCheck thName tm _ =
 -}
 zchaffProveGUI :: String -- ^ theory name
           -> LP.Theory Sig.Sign AS_BASIC.FORMULA ProofTree
-          -> [LP.FreeDefMorphism AS_BASIC.FORMULA PMorphism.Morphism] -- ^ free definitions
-          -> IO([LP.Proof_status ProofTree]) -- ^ proof status for each goal
+          -> [LP.FreeDefMorphism AS_BASIC.FORMULA PMorphism.Morphism]
+          -- ^ free definitions
+          -> IO([LP.ProofStatus ProofTree]) -- ^ proof status for each goal
 zchaffProveGUI thName th freedefs =
-    genericATPgui (atpFun thName) True (LP.prover_name zchaffProver) thName th
+    genericATPgui (atpFun thName) True (LP.proverName zchaffProver) thName th
                   freedefs emptyProofTree
 {- |
   Parses a given default tactic script into a
-  'Interfaces.GenericATPState.ATPTactic_script' if possible.
+  'Interfaces.GenericATPState.ATPTacticScript' if possible.
 -}
-parseZchaffTactic_script :: LP.Tactic_script
-                        -> ATPState.ATPTactic_script
-parseZchaffTactic_script =
-    parseTactic_script batchTimeLimit
-
-{- |
-  Parses a given default tactic script into a
-  'Interfaces.GenericATPState.ATPTactic_script' if possible. Otherwise a default
-  prover's tactic script is returned.
--}
-parseTactic_script :: Int -- ^ default time limit (standard:
-                          -- 'Proofs.BatchProcessing.batchTimeLimit')
-                   -> LP.Tactic_script
-                   -> ATPState.ATPTactic_script
-parseTactic_script tLimit (LP.Tactic_script ts) =
-    maybe (ATPState.ATPTactic_script { ATPState.ts_timeLimit = tLimit,
-                                       ATPState.ts_extraOpts = [] })
-           id $ readMaybe ts
+parseZchaffTacticScript :: LP.TacticScript -> ATPTacticScript
+parseZchaffTacticScript = parseTacticScript batchTimeLimit []
 
 -- ** command line functions
 
@@ -202,15 +189,16 @@ parseTactic_script tLimit (LP.Tactic_script ts) =
 -}
 zchaffProveCMDLautomatic ::
            String -- ^ theory name
-        -> LP.Tactic_script -- ^ default tactic script
-        -> LP.Theory Sig.Sign AS_BASIC.FORMULA ProofTree  -- ^ theory consisting of a
-                                -- signature and a list of Named sentence
-        -> [LP.FreeDefMorphism AS_BASIC.FORMULA PMorphism.Morphism] -- ^ free definitions
-        -> IO (Result.Result ([LP.Proof_status ProofTree]))
+        -> LP.TacticScript -- ^ default tactic script
+        -> LP.Theory Sig.Sign AS_BASIC.FORMULA ProofTree
+        -- ^ theory consisting of a signature and a list of Named sentence
+        -> [LP.FreeDefMorphism AS_BASIC.FORMULA PMorphism.Morphism]
+        -- ^ free definitions
+        -> IO (Result.Result ([LP.ProofStatus ProofTree]))
            -- ^ Proof status for goals and lemmas
 zchaffProveCMDLautomatic thName defTS th freedefs =
-    genericCMDLautomatic (atpFun thName) (LP.prover_name zchaffProver) thName
-        (parseZchaffTactic_script defTS) th freedefs emptyProofTree
+    genericCMDLautomatic (atpFun thName) (LP.proverName zchaffProver) thName
+        (parseZchaffTacticScript defTS) th freedefs emptyProofTree
 
 {- |
   Implementation of 'Logic.Prover.proveCMDLautomaticBatch' which provides an
@@ -220,42 +208,43 @@ zchaffProveCMDLautomatic thName defTS th freedefs =
 zchaffProveCMDLautomaticBatch ::
            Bool -- ^ True means include proved theorems
         -> Bool -- ^ True means save problem file
-        -> Concurrent.MVar (Result.Result [LP.Proof_status ProofTree])
+        -> Concurrent.MVar (Result.Result [LP.ProofStatus ProofTree])
            -- ^ used to store the result of the batch run
         -> String -- ^ theory name
-        -> LP.Tactic_script -- ^ default tactic script
-        -> LP.Theory Sig.Sign AS_BASIC.FORMULA ProofTree -- ^ theory consisting of a
-           --   signature and a list of Named sentences
-        -> [LP.FreeDefMorphism AS_BASIC.FORMULA PMorphism.Morphism] -- ^ free definitions
+        -> LP.TacticScript -- ^ default tactic script
+        -> LP.Theory Sig.Sign AS_BASIC.FORMULA ProofTree
+        -- ^ theory consisting of a signature and a list of Named sentences
+        -> [LP.FreeDefMorphism AS_BASIC.FORMULA PMorphism.Morphism]
+        -- ^ free definitions
         -> IO (Concurrent.ThreadId,Concurrent.MVar ())
            -- ^ fst: identifier of the batch thread for killing it
            --   snd: MVar to wait for the end of the thread
 zchaffProveCMDLautomaticBatch inclProvedThs saveProblem_batch resultMVar
                         thName defTS th freedefs =
     genericCMDLautomaticBatch (atpFun thName) inclProvedThs saveProblem_batch
-        resultMVar (LP.prover_name zchaffProver) thName
-        (parseZchaffTactic_script defTS) th freedefs emptyProofTree
+        resultMVar (LP.proverName zchaffProver) thName
+        (parseZchaffTacticScript defTS) th freedefs emptyProofTree
 
 {- |
   Record for prover specific functions. This is used by both GUI and command
   line interface.
 -}
 atpFun :: String            -- Theory name
-       -> ATPState.ATPFunctions Sig.Sign AS_BASIC.FORMULA PMorphism.Morphism ProofTree PState.PropProverState
-atpFun thName = ATPState.ATPFunctions
-                {
-                  ATPState.initialProverState = PState.propProverState
-                , ATPState.goalOutput         = Cons.goalDIMACSProblem thName
-                , ATPState.atpTransSenName    = PState.transSenName
-                , ATPState.atpInsertSentence  = PState.insertSentence
-                , ATPState.proverHelpText     = zchaffHelpText
-                , ATPState.runProver          = runZchaff
-                , ATPState.batchTimeEnv       = "HETS_ZCHAFF_BATCH_TIME_LIMIT"
-                , ATPState.fileExtensions     = ATPState.FileExtensions{ATPState.problemOutput = ".dimacs",
-                                                                        ATPState.proverOutput = ".zchaff",
-                                                                        ATPState.theoryConfiguration = ".czchaff"}
-                , ATPState.createProverOptions = createZchaffOptions
-                }
+  -> ATPFunctions Sig.Sign AS_BASIC.FORMULA PMorphism.Morphism ProofTree
+     PState.PropProverState
+atpFun thName = ATPFunctions
+                { initialProverState = PState.propProverState
+                , goalOutput         = Cons.goalDIMACSProblem thName
+                , atpTransSenName    = PState.transSenName
+                , atpInsertSentence  = PState.insertSentence
+                , proverHelpText     = zchaffHelpText
+                , runProver          = runZchaff
+                , batchTimeEnv       = "HETS_ZCHAFF_BATCH_TIME_LIMIT"
+                , fileExtensions     = FileExtensions
+                    { problemOutput = ".dimacs"
+                    , proverOutput = ".zchaff"
+                    , theoryConfiguration = ".czchaff"}
+                , createProverOptions = createZchaffOptions }
 
 {- |
   Runs zchaff. zchaff is assumed to reside in PATH.
@@ -265,7 +254,7 @@ runZchaff :: PState.PropProverState
            -- logical part containing the input Sign and
            -- axioms and possibly goals that have been proved
            -- earlier as additional axioms
-           -> ATPState.GenericConfig ProofTree
+           -> GenericConfig ProofTree
            -- configuration to use
            -> Bool
            -- True means save DIMACS file
@@ -273,8 +262,8 @@ runZchaff :: PState.PropProverState
            -- Name of the theory
            -> AS_Anno.Named AS_BASIC.FORMULA
            -- Goal to prove
-           -> IO (ATPState.ATPRetval
-                 , ATPState.GenericConfig ProofTree
+           -> IO (ATPRetval
+                 , GenericConfig ProofTree
                  )
            -- (retval, configuration with proof status and complete output)
 runZchaff pState cfg saveDIMACS thName nGoal =
@@ -292,7 +281,7 @@ runZchaff pState cfg saveDIMACS thName nGoal =
                       destroy zchaff
                       _ <- waitForChildProcess zchaff
                       deleteJunk
-                      excepToATPResult (LP.prover_name zchaffProver) nGoal excep)
+                      excepToATPResult (LP.proverName zchaffProver) nGoal excep)
     where
       deleteJunk = do
         catch (removeFile zFileName) (const $ return ())
@@ -303,34 +292,40 @@ runZchaff pState cfg saveDIMACS thName nGoal =
           do
                 zchaffOut <- parseIt zchaff isEnd
                 (res, usedAxs, output, tUsed) <- analyzeZchaff zchaffOut pState
-                let (err, retval) = proof_stat res usedAxs [] (head output)
+                let (err, retval) = proofStat res usedAxs [] (head output)
                 deleteJunk
                 return (err,
-                        cfg{ATPState.proof_status = retval,
-                            ATPState.resultOutput = output,
-                            ATPState.timeUsed     = tUsed})
+                        cfg{proofStatus = retval,
+                            resultOutput = output,
+                            timeUsed     = tUsed})
                 where
-                  proof_stat res usedAxs options out
+                  proofStat res usedAxs options out
                            | isJust res && elem (fromJust res) proved =
-                               (ATPState.ATPSuccess,
-                                (defaultProof_status options)
+                               (ATPSuccess,
+                                (defaultProofStatus options)
                                 {LP.goalStatus = LP.Proved $ Nothing
-                                , LP.usedAxioms = filter (/=(AS_Anno.senAttr nGoal)) usedAxs
+                                , LP.usedAxioms = filter
+                                    (/= AS_Anno.senAttr nGoal) usedAxs
                                 , LP.proofTree = ProofTree $ out })
                            | isJust res && elem (fromJust res) disproved =
-                               (ATPState.ATPSuccess,
-                                (defaultProof_status options) {LP.goalStatus = LP.Disproved} )
+                               (ATPSuccess,
+                                (defaultProofStatus options)
+                                {LP.goalStatus = LP.Disproved} )
                            | isJust res && elem (fromJust res) timelimit =
-                               (ATPState.ATPTLimitExceeded, defaultProof_status options)
+                               (ATPTLimitExceeded, defaultProofStatus options)
                            | isNothing res =
-                               (ATPState.ATPError "Internal error.", defaultProof_status options)
-                           | otherwise = (ATPState.ATPSuccess, defaultProof_status options)
-                  defaultProof_status opts =
-                      (LP.openProof_status (AS_Anno.senAttr nGoal) (LP.prover_name zchaffProver)
+                               (ATPError "Internal error.",
+                                defaultProofStatus options)
+                           | otherwise = (ATPSuccess,
+                                          defaultProofStatus options)
+                  defaultProofStatus opts =
+                      (LP.openProofStatus (AS_Anno.senAttr nGoal)
+                             (LP.proverName zchaffProver)
                                         emptyProofTree)
-                      {LP.tacticScript = LP.Tactic_script $ show $ ATPState.ATPTactic_script
-                                         {ATPState.ts_timeLimit = configTimeLimit cfg,
-                                          ATPState.ts_extraOpts = opts} }
+                      {LP.tacticScript = LP.TacticScript $ show
+                          $ ATPTacticScript
+                             { tsTimeLimit = configTimeLimit cfg
+                             , tsExtraOpts = opts} }
 
 proved :: [String]
 proved = ["Proof found."]
@@ -443,39 +438,30 @@ excepToATPResult :: String
                  -- ^ goal to prove
                  -> Exception.Exception
                  -- ^ occured exception
-                 -> IO (ATPState.ATPRetval,
-                        ATPState.GenericConfig ProofTree)
+                 -> IO (ATPRetval,
+                        GenericConfig ProofTree)
                     -- ^ (retval,
                     -- configuration with proof status and complete output)
 excepToATPResult prName nGoal excep = return $ case excep of
     -- this is supposed to distinguish "fd ... vanished"
     -- errors from other exceptions
     Exception.IOException e ->
-        (ATPState.ATPError ("Internal error communicating with " ++
+        (ATPError ("Internal error communicating with " ++
                             prName ++ ".\n"
                             ++ show e), emptyCfg)
     Exception.AsyncException Exception.ThreadKilled ->
-        (ATPState.ATPBatchStopped, emptyCfg)
-    _ -> (ATPState.ATPError ("Error running " ++ prName ++ ".\n"
+        (ATPBatchStopped, emptyCfg)
+    _ -> (ATPError ("Error running " ++ prName ++ ".\n"
                              ++ show excep),
           emptyCfg)
   where
-    emptyCfg = ATPState.emptyConfig prName (AS_Anno.senAttr nGoal)
+    emptyCfg = emptyConfig prName (AS_Anno.senAttr nGoal)
                emptyProofTree
-
-{- |
-  Returns the time limit from GenericConfig if available. Otherwise
-  guiDefaultTimeLimit is returned.
--}
-configTimeLimit :: ATPState.GenericConfig ProofTree
-                -> Int
-configTimeLimit cfg =
-    maybe (guiDefaultTimeLimit) id $ ATPState.timeLimit cfg
 
 {- |
   Creates a list of all options the zChaff prover runs with.
   Only Option is the timelimit
 -}
-createZchaffOptions :: ATPState.GenericConfig ProofTree -> [String]
+createZchaffOptions :: GenericConfig ProofTree -> [String]
 createZchaffOptions cfg =
-    [(show $ configTimeLimit cfg)]
+    [show $ configTimeLimit cfg]

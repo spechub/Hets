@@ -38,7 +38,7 @@ import Interfaces.GenericATPState
 import Logic.Comorphism(AnyComorphism(..), Comorphism(sourceLogic, targetLogic))
 import Logic.Grothendieck(findComorphismPaths)
 import Logic.Prover(ProverKind(ProveCMDLautomatic),
-                    ProverTemplate(prover_name), hasProverKind)
+                    ProverTemplate(proverName), hasProverKind)
 import Logic.Logic(Language(language_name), Logic(cons_checkers, provers))
 
 import Proofs.AbstractState(ProofState(logicId, theory), G_prover(..),
@@ -78,11 +78,11 @@ processComment st inp =
 addToScript :: CmdlState -> IntIState -> String -> CmdlState
 addToScript st ist str
  = let olds = script ist
-       oldextOpts = ts_extraOpts olds
+       oldextOpts = tsExtraOpts olds
    in st {
         intState = (intState st) {
                      i_state = Just ist {
-                       script = olds { ts_extraOpts = str:oldextOpts } }
+                       script = olds { tsExtraOpts = str : oldextOpts } }
           } }
 
 checkCom :: CmdlCmdDescription -> CmdlState -> IO CmdlState
@@ -343,7 +343,7 @@ cmdlCompletionFn allcmds allState input =
                  []
                  (cons_checkers $ targetLogic cid)
            getPName' x = case x of
-                          (G_cons_checker _ p) -> prover_name p
+                          (G_cons_checker _ p) -> proverName p
            getConsCheckersAutomatic' = foldl addConsCheckers []
            createConsCheckersList = map getPName' . getConsCheckersAutomatic'
        case  i_state $ intState allState of
@@ -382,7 +382,7 @@ cmdlCompletionFn allcmds allState input =
            -- in Proofs.InferBasic, but it is redone here
            -- because InferBasic does not compile without
            -- UNI_PACKAGE (so it should be moved)
-           getPName' (G_prover _ p) = prover_name p
+           getPName' (G_prover _ p) = proverName p
       -- from the given comorphism generate a list of
       -- provers that can be applied to theories in that
       -- comorphism

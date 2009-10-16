@@ -133,7 +133,7 @@ coerceProofStatus ::
    Logic  lid2 sublogics2 basic_spec2 sentence2 symb_items2 symb_map_items2
                 sign2 morphism2 symbol2 raw_symbol2 proof_tree2,
    Monad m) => lid1 -> lid2 -> String
-      -> Proof_status proof_tree1 -> m (Proof_status proof_tree2)
+      -> ProofStatus proof_tree1 -> m (ProofStatus proof_tree2)
 coerceProofStatus l1 l2 msg m1 = primCoerce l1 l2 msg m1
 
 coerceSymbolSet ::

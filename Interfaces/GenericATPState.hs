@@ -26,6 +26,7 @@ import Common.ProofUtils
 import Common.Result
 import Common.Id
 import Common.Doc
+import Common.Utils
 
 import Data.List
 import Data.Maybe (fromMaybe)
@@ -47,7 +48,7 @@ data GenericConfig proof_tree = GenericConfig {
     -- -DocProof, -Stdin, and -TimeLimit will be overridden.
     extraOpts :: [String],
     -- | Represents the result of a prover run.
-    proof_status :: Proof_status proof_tree,
+    proofStatus :: ProofStatus proof_tree,
     resultOutput :: [String],
     -- | global time used in milliseconds
     timeUsed :: TimeOfDay
@@ -66,7 +67,7 @@ emptyConfig prName n pt =
     GenericConfig {timeLimit = Nothing,
                    timeLimitExceeded = False,
                    extraOpts = [],
-                   proof_status = openProof_status n prName pt,
+                   proofStatus = openProofStatus n prName pt,
                    resultOutput = [],
                    timeUsed = midnight
                   }
@@ -103,7 +104,7 @@ data GenericState sign sentence proof_tree pst = GenericState {
     -- | currently selected goal or Nothing
     currentGoal :: Maybe ATPIdentifier,
     -- | initial empty proof_tree
-    proof_tree :: proof_tree,
+    currentProofTree :: proof_tree,
     -- | stores the prover configurations for each goal
     -- and the results retrieved by running prover for each goal
     configsMap :: GenericConfigsMap proof_tree,
@@ -136,27 +137,27 @@ initialGenericState :: (Ord sentence, Ord proof_tree) =>
                     -> GenericState sign sentence proof_tree pst
 initialGenericState prName ips trSenName th freedefs pt =
     GenericState {currentGoal = Nothing,
-                  proof_tree = pt,
+                  currentProofTree = pt,
                   configsMap = Map.fromList $
                                map (\ g ->
                                         let gName = AS_Anno.senAttr g
                                             ec = emptyConfig prName gName pt
-                                        in (gName, ec {proof_status =
-                       updateTactic_script (proof_status ec) gName}))
+                                        in (gName, ec {proofStatus =
+                       updateTacticScript (proofStatus ec) gName}))
                                    goals,
                   namesMap = collectNameMapping nSens oSens',
                   goalsList = goals,
                   proverState = ips sign oSens' freedefs
                  }
     where Theory sign oSens = th
-          -- Search in list of Proof_status for first occurence of an Open goal
-          -- with non-empty Tactic_script and update Tactic_script if found.
-          updateTactic_script prStat gn =
+          -- Search in list of ProofStatus for first occurence of an Open goal
+          -- with non-empty TacticScript and update TacticScript if found.
+          updateTacticScript prStat gn =
             maybe prStat
                   (\senSt ->
                     let validThmStatus = filter (\ tStatus ->
                             isOpenGoal (goalStatus tStatus) &&
-                            tacticScript tStatus /= Tactic_script "")
+                            tacticScript tStatus /= TacticScript "")
                                                 $ thmStatus senSt
                     in  if null validThmStatus
                           then prStat
@@ -168,15 +169,15 @@ initialGenericState prName ips trSenName th freedefs pt =
           goals = filter (not . AS_Anno.isAxiom) nSens
 
 {- | applies the recorded name mapping (in the state) of prover
-  specific names to the original names to the list of Proof_status
+  specific names to the original names to the list of ProofStatus
   (the name of the goal and the names of used axioms are translated);
   additionally the axioms generated from typing information are
   removed and warnings are generated.  -}
 
 revertRenamingOfLabels :: (Ord sentence, Ord proof_tree) =>
                            GenericState sign sentence proof_tree pst
-                        -> [Proof_status proof_tree]
-                        -> Result [Proof_status proof_tree]
+                        -> [ProofStatus proof_tree]
+                        -> Result [ProofStatus proof_tree]
 revertRenamingOfLabels st = foldM transNames []
     where trN x' = Map.findWithDefault
                       (error ("GenericATPState: Lookup of name failed: (2) "++
@@ -189,14 +190,14 @@ revertRenamingOfLabels st = foldM transNames []
            where fil axs ax =
                   maybe (appendDiags [Diag Warning
                                           ("by interface to "++
-                                           proverName pStat++
+                                           usedProver pStat++
                                            ": unknown axiom \""++ax++
                                            "\" omitted from list of used "++
                                            "axioms of goal \""++
                                            trN (goalName pStat)++"\"")
                                           nullRange]
                          >> return axs)
-                        (\ tAx -> return (tAx:axs)  )
+                        (return . (: axs))
                        (Map.lookup ax (namesMap st))
 
 {- |
@@ -220,7 +221,7 @@ type RunProver sentence proof_tree pst =
   -> String -- name of the theory in the DevGraph
   -> AS_Anno.Named sentence -- goal to prove
   -> IO (ATPRetval, GenericConfig proof_tree) {- (retval, configuration with
-                                                   proof_status and complete
+                                                   proofStatus and complete
                                                    output)-}
 
 {- |
@@ -261,12 +262,43 @@ data FileExtensions = FileExtensions {
   }
 
 {- |
-  Tactic script implementation for ATPs. Read and show functions are provided.
+  Tactic script implementation for ATPs. Read and show functions are derived.
 -}
-data ATPTactic_script = ATPTactic_script
-    { ts_timeLimit :: Int, -- ^ used time limit
-      ts_extraOpts :: [String] -- ^ used extra options (if any)
+data ATPTacticScript = ATPTacticScript
+    { tsTimeLimit :: Int, -- ^ used time limit
+      tsExtraOpts :: [String] -- ^ used extra options (if any)
     } deriving (Eq, Ord, Show, Read)
+
+{- |
+  Default time limit for the GUI mode prover in seconds.
+-}
+guiDefaultTimeLimit :: Int
+guiDefaultTimeLimit = 10
+
+{- |
+  Returns the time limit from GenericConfig if available. Otherwise
+  guiDefaultTimeLimit is returned.
+-}
+configTimeLimit :: GenericConfig proof_tree -> Int
+configTimeLimit = fromMaybe guiDefaultTimeLimit . timeLimit
+
+{- |
+  Parses a given default tactic script into a
+  'Interfaces.GenericATPState.ATPTacticScript' if possible. Otherwise a default
+  prover's tactic script is returned.
+-}
+parseTacticScript :: Int -- ^ default time limit (standard:
+                          -- 'Proofs.BatchProcessing.batchTimeLimit')
+                   -> [String] -- ^ default extra options (prover specific)
+                   -> TacticScript
+                   -> ATPTacticScript
+parseTacticScript tLimit extOpts (TacticScript ts) =
+    let defl = ATPTacticScript
+          { tsTimeLimit = tLimit
+          , tsExtraOpts = extOpts }
+    in case readMaybe ts of
+         Nothing -> fromMaybe defl $ readMaybe ts
+         Just tl -> defl { tsTimeLimit = tl }
 
 {- |
   Pretty printing of prover configuration.
@@ -277,7 +309,7 @@ printCfgText mp = text "* Configuration *" $+$ dc
              $++$ text "* Results *" $+$ dr
   where
   (dc, dr) = Map.foldWithKey (\ k cfg (dCfg, dRes) ->
-      let r = proof_status cfg
+      let r = proofStatus cfg
       in
       ((quotes (text k) <+> equals <+> specBraces (
           text "goalStatus" <+> equals <+>

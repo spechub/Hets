@@ -27,8 +27,6 @@ import CASL.SimplifySen
 
 import Logic.Prover
 
-import SoftFOL.ProverState (parseTactic_script)
-
 import Common.DocUtils
 import Common.Id
 import Common.ProofTree
@@ -97,9 +95,9 @@ runQuickCheck qm cfg _saveFile _thName nGoal = do
           Just False -> Disproved
           Nothing -> openGoalStatus
        setStatus pstat = pstat { goalStatus = gstat,
-                                 proverName = "QuickCheck",
+                                 usedProver = "QuickCheck",
                                  proofTree = ProofTree diagstr }
-       cfg' = cfg { proof_status = setStatus (proof_status cfg),
+       cfg' = cfg { proofStatus = setStatus (proofStatus cfg),
                     resultOutput = [diagstr] }
    return (stat, cfg')
      -- return ATPError if time is up???
@@ -560,9 +558,9 @@ quickCheckGUI :: String -- ^ theory name
            -- ^ theory consisting of a signature
            --   and a list of named sentences
            -> [FreeDefMorphism CASLFORMULA CASLMor] -- ^ freeness constraints
-           -> IO([Proof_status ProofTree]) -- ^ proof status for each goal
+           -> IO([ProofStatus ProofTree]) -- ^ proof status for each goal
 quickCheckGUI thName th freedefs = genericATPgui (atpFun thName) True
-    (prover_name quickCheckProver) thName th freedefs emptyProofTree
+    (proverName quickCheckProver) thName th freedefs emptyProofTree
 
 -- ** command line functions
 
@@ -573,15 +571,15 @@ quickCheckGUI thName th freedefs = genericATPgui (atpFun thName) True
 -}
 quickCheckCMDLautomatic ::
            String -- ^ theory name
-        -> Tactic_script -- ^ default tactic script
+        -> TacticScript -- ^ default tactic script
         -> Theory CASLSign CASLFORMULA ProofTree
            -- ^ theory consisting of a signature and a list of Named sentence
         -> [FreeDefMorphism CASLFORMULA CASLMor] -- ^ freeness constraints
-        -> IO (Result.Result ([Proof_status ProofTree]))
+        -> IO (Result.Result ([ProofStatus ProofTree]))
            -- ^ Proof status for goals and lemmas
 quickCheckCMDLautomatic thName defTS th freedefs =
-    genericCMDLautomatic (atpFun thName) (prover_name quickCheckProver) thName
-        (parseTactic_script batchTimeLimit [] defTS) th freedefs emptyProofTree
+    genericCMDLautomatic (atpFun thName) (proverName quickCheckProver) thName
+        (parseTacticScript batchTimeLimit [] defTS) th freedefs emptyProofTree
 
 {- |
   Implementation of 'Logic.Prover.proveCMDLautomaticBatch' which provides an
@@ -591,10 +589,10 @@ quickCheckCMDLautomatic thName defTS th freedefs =
 quickCheckCMDLautomaticBatch ::
            Bool -- ^ True means include proved theorems
         -> Bool -- ^ True means save problem file
-        -> MVar (Result.Result [Proof_status ProofTree])
+        -> MVar (Result.Result [ProofStatus ProofTree])
            -- ^ used to store the result of the batch run
         -> String -- ^ theory name
-        -> Tactic_script -- ^ default tactic script
+        -> TacticScript -- ^ default tactic script
         -> Theory CASLSign CASLFORMULA ProofTree -- ^ theory consisting of a
            --   signature and a list of named sentences
         -> [FreeDefMorphism CASLFORMULA CASLMor] -- ^ freeness constraints
@@ -604,5 +602,5 @@ quickCheckCMDLautomaticBatch ::
 quickCheckCMDLautomaticBatch inclProvedThs saveProblem_batch resultMVar
                         thName defTS th freedefs =
     genericCMDLautomaticBatch (atpFun thName) inclProvedThs saveProblem_batch
-        resultMVar (prover_name quickCheckProver) thName
-        (parseTactic_script batchTimeLimit [] defTS) th freedefs emptyProofTree
+        resultMVar (proverName quickCheckProver) thName
+        (parseTacticScript batchTimeLimit [] defTS) th freedefs emptyProofTree

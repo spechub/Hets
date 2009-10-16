@@ -36,7 +36,7 @@ import Logic.Logic (provers, AnyLogic(Logic), top_sublogic) -- hiding (top)
 import Logic.Coerce()
 import Logic.Grothendieck
 import Logic.Comorphism
-import Logic.Prover (prover_name,hasProverKind,ProverKind(..))
+import Logic.Prover (proverName,hasProverKind,ProverKind(..))
 
 import CASL.Logic_CASL
 import CASL.Sublogic
@@ -99,7 +99,7 @@ knownProversWithKind pk =
                  let prs = provers (targetLogic cid)
                  in foldl (\ m p -> if hasProverKind pk p
                                     then Map.insertWith (flip (++))
-                                          (prover_name p) [cm] m
+                                          (proverName p) [cm] m
                                     else m) kpm prs
 
 shrinkKnownProvers :: G_sublogics -> KnownProversMap -> KnownProversMap

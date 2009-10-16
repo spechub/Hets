@@ -33,7 +33,7 @@ import qualified Control.Concurrent as Concurrent
 {- | instead of the sentence name (that will be the key into the order map)
 the theorem status will be stored as attribute. The theorem status will be a
 (wrapped) list of pairs (AnyComorphism, BasicProof) in G_theory, but a wrapped
-list of (Proof_status proof_tree) in a logic specific 'Theory'. -}
+list of (ProofStatus proof_tree) in a logic specific 'Theory'. -}
 type SenStatus a tStatus = SenAttr a (ThmStatus tStatus)
 
 thmStatus :: SenStatus a tStatus -> [tStatus]
@@ -46,7 +46,7 @@ instance (Show b, Pretty a) => Pretty (SenAttr a b) where
     pretty = printSenStatus pretty
 
 printSenStatus :: (a -> Doc) -> SenAttr a b  -> Doc
-printSenStatus fA = fA . sentence
+printSenStatus = (. sentence)
 
 emptySenStatus :: SenStatus a b
 emptySenStatus = makeNamed (ThmStatus []) $ error "emptySenStatus"
@@ -55,7 +55,7 @@ instance Pretty a => Pretty (OMap.ElemWOrd a) where
     pretty = printOMapElemWOrd pretty
 
 printOMapElemWOrd :: (a -> Doc) -> OMap.ElemWOrd a -> Doc
-printOMapElemWOrd fA = fA . OMap.ele
+printOMapElemWOrd = (. OMap.ele)
 
 -- | the map from lables to the theorem plus status (and position)
 type ThSens a b = OMap.OMap String (SenStatus a b)
@@ -158,7 +158,7 @@ toThSens = OMap.fromList . map
 
 -- | theories with a signature and sentences with proof states
 data Theory sign sen proof_tree =
-    Theory sign (ThSens sen (Proof_status proof_tree))
+    Theory sign (ThSens sen (ProofStatus proof_tree))
 
 mapTheoryStatus :: (a -> b) -> Theory sign sentence a
                    -> Theory sign sentence b
@@ -167,12 +167,12 @@ mapTheoryStatus f (Theory sig thSens) =
 
 -- | theory morphisms between two theories
 data TheoryMorphism sign sen mor proof_tree = TheoryMorphism
-    { t_source :: Theory sign sen proof_tree
-    , t_target :: Theory sign sen proof_tree
-    , t_morphism :: mor }
+    { tSource :: Theory sign sen proof_tree
+    , tTarget :: Theory sign sen proof_tree
+    , tMorphism :: mor }
 
 -- e.g. the file name, or the script itself, or a configuration string
-data Tactic_script = Tactic_script String deriving (Eq, Ord, Show)
+data TacticScript = TacticScript String deriving (Eq, Ord, Show)
 
 -- | failure reason
 data Reason = Reason [String]
@@ -208,35 +208,35 @@ openGoalStatus :: GoalStatus
 openGoalStatus = Open $ Reason []
 
 -- | data type representing the proof status for a goal or
-data Proof_status proof_tree = Proof_status
+data ProofStatus proof_tree = ProofStatus
     { goalName :: String
     , goalStatus :: GoalStatus
     , usedAxioms :: [String] -- ^ used axioms
-    , proverName :: String -- ^ name of prover
+    , usedProver :: String -- ^ name of prover
     , proofTree :: proof_tree
     , usedTime :: TimeOfDay
-    , tacticScript :: Tactic_script }
-    | Consistent Tactic_script
+    , tacticScript :: TacticScript }
+    | Consistent TacticScript
     deriving (Show, Eq, Ord)
 
 {- | constructs an open proof status with basic information filled in;
      make sure to set proofTree to a useful value before you access it. -}
-openProof_status :: Ord pt => String -- ^ name of the goal
+openProofStatus :: Ord pt => String -- ^ name of the goal
                  -> String -- ^ name of the prover
-                 -> pt -> Proof_status pt
-openProof_status goalname provername proof_tree = Proof_status
+                 -> pt -> ProofStatus pt
+openProofStatus goalname provername proof_tree = ProofStatus
    { goalName = goalname
    , goalStatus = openGoalStatus
    , usedAxioms = []
-   , proverName = provername
+   , usedProver = provername
    , proofTree = proof_tree
    , usedTime = midnight
-   , tacticScript = Tactic_script "" }
+   , tacticScript = TacticScript "" }
 
-mapProofStatus :: (a->b) -> Proof_status a -> Proof_status b
+mapProofStatus :: (a -> b) -> ProofStatus a -> ProofStatus b
 mapProofStatus f st = st {proofTree = f $ proofTree st}
 
-isProvedStat :: Proof_status proof_tree -> Bool
+isProvedStat :: ProofStatus proof_tree -> Bool
 isProvedStat pst = case pst of
     Consistent _ -> False
     _ -> isProvedGStat . goalStatus $ pst
@@ -246,7 +246,7 @@ isProvedGStat gs = case gs of
     Proved _ -> True
     _ -> False
 
-goalUsedInProof :: Monad m => Proof_status proof_tree -> m Bool
+goalUsedInProof :: Monad m => ProofStatus proof_tree -> m Bool
 goalUsedInProof pst = case goalStatus pst of
     Proved m -> maybe (fail "don't know if goal was used") return m
     _ -> fail "not a proof"
@@ -269,24 +269,24 @@ data FreeDefMorphism sentence morphism = FreeDefMorphism
 
 -- | prover or consistency checker
 data ProverTemplate theory sentence morphism sublogics proof_tree = Prover
-    { prover_name :: String,
-      prover_sublogic :: sublogics,
+    { proverName :: String,
+      proverSublogic :: sublogics,
       proveGUI :: Maybe (String -> theory -> [FreeDefMorphism sentence morphism]
-                         -> IO ([Proof_status proof_tree])),
+                         -> IO ([ProofStatus proof_tree])),
       -- input: imported theories, theory name, theory (incl. goals)
       -- output: proof status for goals and lemmas
-      proveCMDLautomatic :: Maybe (String -> Tactic_script
+      proveCMDLautomatic :: Maybe (String -> TacticScript
                          -> theory -> [FreeDefMorphism sentence morphism]
-                         ->IO (Result ([Proof_status proof_tree]))),
-      -- input: theory name, Tactic_script,
+                         ->IO (Result ([ProofStatus proof_tree]))),
+      -- input: theory name, TacticScript,
       --        theory (incl. goals, but only the first one is tried)
       -- output: proof status for goals and lemmas
       proveCMDLautomaticBatch ::
           Maybe (Bool -- 1.
                  -> Bool -- 2.
-                 -> Concurrent.MVar (Result [Proof_status proof_tree]) -- 3.
+                 -> Concurrent.MVar (Result [ProofStatus proof_tree]) -- 3.
                  -> String -- 4.
-                 -> Tactic_script  -- 5.
+                 -> TacticScript  -- 5.
                  -> theory  -- 6.
                  -> [FreeDefMorphism sentence morphism]
                  -> IO (Concurrent.ThreadId,Concurrent.MVar ())) -- output
@@ -296,7 +296,7 @@ data ProverTemplate theory sentence morphism sublogics proof_tree = Prover
       --        3. MVar reference to a Result [] or empty MVar,
       --           used to store the result of each attempt in the batch run;
       --        4. theory name;
-      --        5. default Tactic_script;
+      --        5. default TacticScript;
       --        6. theory (incl. goals and
       --                   Open SenStatus for individual tactic_scripts)
       -- output: fst --> identifier of the batch thread for killing it,
@@ -311,11 +311,11 @@ type Prover sign sentence morphism sublogics proof_tree =
 
 mkProverTemplate :: String -> sublogics
                  -> (String -> theory -> [FreeDefMorphism sentence morphism]
-                     -> IO [Proof_status proof_tree])
+                     -> IO [ProofStatus proof_tree])
                  -> ProverTemplate theory sentence morphism sublogics proof_tree
 mkProverTemplate str sl fct = Prover
-    { prover_name = str
-    , prover_sublogic = sl
+    { proverName = str
+    , proverSublogic = sl
     , proveGUI = Just fct
     , proveCMDLautomatic = Nothing
     , proveCMDLautomaticBatch = Nothing }

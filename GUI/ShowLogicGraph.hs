@@ -219,10 +219,10 @@ showLogicGraph
                      ++ "\nConsistency checkers: " ++ showConsChecker lid
            where
              showProver lid = if null (provers lid) then "None"
-                               else unlines $ map prover_name (provers lid)
+                               else unlines $ map proverName (provers lid)
 
              showConsChecker lid = if null (cons_checkers lid) then "None"
-                        else unlines $ map prover_name (cons_checkers lid)
+                        else unlines $ map proverName (cons_checkers lid)
              showParse lid =
                    let s1 =  case parse_basic_spec lid of
                                Just _  -> "Parser for basic specifications.\n"
@@ -411,10 +411,10 @@ showHetSublogicGraph
            where
              showProver li = case provers li of
                  [] -> "None"
-                 ls -> unlines $ map prover_name ls
+                 ls -> unlines $ map proverName ls
              showConsChecker li = case cons_checkers li of
                  [] -> "None"
-                 ls -> unlines $ map prover_name ls
+                 ls -> unlines $ map proverName ls
              showParse li =
                    let s1 =  case parse_basic_spec li of
                                Just _  -> "Parser for basic specifications.\n"

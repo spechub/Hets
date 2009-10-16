@@ -266,10 +266,10 @@ runAllTests = do
   The result will be output as status message.
 -}
 runTest :: (String
-            -> LProver.Tactic_script
+            -> LProver.TacticScript
             -> LProver.Theory Sign Sentence ProofTree
             -> [LProver.FreeDefMorphism Sentence SoftFOLMorphism]
-            -> IO (Result ([LProver.Proof_status ProofTree]))
+            -> IO (Result ([LProver.ProofStatus ProofTree]))
            )
         -> String -- ^ prover name for proof status in case of error
         -> String -- ^ theory name
@@ -278,13 +278,13 @@ runTest :: (String
         -> IO Bool
 runTest runCMDLProver prName thName th expStatus = do
     putStrLn $ "Trying " ++ thName ++ "(automatic) with prover " ++ prName ++ " ... "
-    putStrLn $ show $ ATPTactic_script { ts_timeLimit = 20, ts_extraOpts = [] }
+    putStrLn $ show $ ATPTacticScript { tsTimeLimit = 20, tsExtraOpts = [] }
     m_result <- runCMDLProver
                            thName
-                           (LProver.Tactic_script (show $ ATPTactic_script {
-                              ts_timeLimit = 20, ts_extraOpts = [] }))
+                           (LProver.TacticScript (show $ ATPTacticScript {
+                              tsTimeLimit = 20, tsExtraOpts = [] }))
                            th []
-    stResult <- maybe (return [LProver.openProof_status ""
+    stResult <- maybe (return [LProver.openProofStatus ""
                                          prName (ProofTree "")])
                       return (maybeResult m_result)
     putStrLn $ if (succeeded stResult expStatus)
@@ -300,9 +300,9 @@ runTestBatch :: Maybe Int -- ^ seconds to pass before thread will be killed
               -> (Bool
                   -> Bool
                   -> Concurrent.MVar
-                       (Result [LProver.Proof_status ProofTree])
+                       (Result [LProver.ProofStatus ProofTree])
                   -> String
-                  -> LProver.Tactic_script
+                  -> LProver.TacticScript
                   -> LProver.Theory Sign Sentence ProofTree
                   -> [LProver.FreeDefMorphism Sentence SoftFOLMorphism]
                   -> IO (Concurrent.ThreadId,Concurrent.MVar ())
@@ -323,9 +323,9 @@ runTestBatch2 :: Bool -- ^ True means try to read intermediate results
               -> (Bool
                   -> Bool
                   -> Concurrent.MVar
-                       (Result [LProver.Proof_status ProofTree])
+                       (Result [LProver.ProofStatus ProofTree])
                   -> String
-                  -> LProver.Tactic_script
+                  -> LProver.TacticScript
                   -> LProver.Theory Sign Sentence ProofTree
                   -> [LProver.FreeDefMorphism Sentence SoftFOLMorphism]
                   -> IO (Concurrent.ThreadId,Concurrent.MVar ())
@@ -344,13 +344,13 @@ runTestBatch2 intermRes waitsec runCMDLProver prName thName th expStatus = do
                   else Concurrent.newMVar (return [])
     (threadID, mvar) <- runCMDLProver
                             False False resultMVar thName
-                            (LProver.Tactic_script (show $ ATPTactic_script {
-                               ts_timeLimit = 10, ts_extraOpts = [] }))
+                            (LProver.TacticScript (show $ ATPTacticScript {
+                               tsTimeLimit = 10, tsExtraOpts = [] }))
                             th []
     maybe (return ()) (\ ws -> do
              Concurrent.threadDelay (ws*1000000)
              Concurrent.killThread threadID) waitsec
-    (stResult,diaStr):: ([LProver.Proof_status ProofTree],String)
+    (stResult,diaStr):: ([LProver.ProofStatus ProofTree],String)
        <- if intermRes
         then do -- reading intermediate results
           iResMV <- Concurrent.newMVar []
@@ -403,7 +403,7 @@ runTestBatch2 intermRes waitsec runCMDLProver prName thName th expStatus = do
 {- |
   Checks if a prover run's result matches expected result.
 -}
-succeeded :: [LProver.Proof_status ProofTree]
+succeeded :: [LProver.ProofStatus ProofTree]
           -> [(String,LProver.GoalStatus)]
           -> Bool
 succeeded stResult expStatus =

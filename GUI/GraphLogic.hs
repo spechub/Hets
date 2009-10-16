@@ -43,7 +43,7 @@ module GUI.GraphLogic
 import Logic.Coerce(coerceSign)
 import Logic.Grothendieck
 import Logic.Comorphism
-import Logic.Prover
+import Logic.Prover hiding (openProofStatus)
 import Comorphisms.LogicGraph(logicGraph)
 
 import Static.GTheory

@@ -38,8 +38,8 @@ import qualified Codec.Archive.Tar as Tar
 vseProverName :: String
 vseProverName = "VSE"
 
-mkVseProofStatus :: String -> [String] -> Proof_status ()
-mkVseProofStatus n axs = (openProof_status n vseProverName ())
+mkVseProofStatus :: String -> [String] -> ProofStatus ()
+mkVseProofStatus n axs = (openProofStatus n vseProverName ())
    { goalStatus = Proved Nothing
    , usedAxioms = axs }
 
@@ -224,7 +224,7 @@ readLemmas =
   foldr (\ (node, sen) -> Map.insertWith (++) node [sen]) Map.empty
   . catMaybes . map findState
 
-prove :: String -> Theory VSESign Sentence () -> a -> IO [Proof_status ()]
+prove :: String -> Theory VSESign Sentence () -> a -> IO [ProofStatus ()]
 prove ostr (Theory sig thsens) _freedefs = do
   let str = map (\ c -> if c == '/' then '-' else c) ostr
       oSens = toNamedList thsens

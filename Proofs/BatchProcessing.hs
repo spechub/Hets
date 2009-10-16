@@ -83,14 +83,14 @@ adjustOrSetConfig f prName k pt m = if Map.member k m
                                                (f $ emptyConfig prName k pt) m
 
 filterOpenGoals :: GenericConfigsMap proof_tree -> GenericConfigsMap proof_tree
-filterOpenGoals = Map.filter $ isOpenGoal . goalStatus . proof_status
+filterOpenGoals = Map.filter $ isOpenGoal . goalStatus . proofStatus
 
 {- |
   Checks whether a goal in the results map is marked as proved.
 -}
 checkGoal :: GenericConfigsMap proof_tree -> ATPIdentifier -> Bool
 checkGoal cfgMap goal =
-  maybe False (isProvedStat . proof_status) $ Map.lookup goal cfgMap
+  maybe False (isProvedStat . proofStatus) $ Map.lookup goal cfgMap
 
 -- ** Callbacks
 
@@ -117,19 +117,19 @@ goalProcessed stateMVar tLimit extOpts numGoals prName processedGoalsSoFar
                                 isTimeLimitExceeded retval,
                                 timeLimit = Just tLimit,
                                 extraOpts = extOpts,
-                                proof_status = ((proof_status res_cfg)
+                                proofStatus = ((proofStatus res_cfg)
                                                 {usedTime = timeUsed res_cfg}),
                                 resultOutput = resultOutput res_cfg,
                                 timeUsed     = timeUsed res_cfg})
                       prName (AS_Anno.senAttr nGoal)
-                      (proof_tree s)
+                      (currentProofTree s)
                       (configsMap s)}))
   when verbose (let toPrint n = let txt = "Goal " ++ goalName n ++ " is "
                                  in case goalStatus n of
                                       Open _    -> txt ++ "still open."
                                       Disproved -> txt ++ "disproved."
                                       Proved _  -> txt ++ "proved."
-                 in putStrLn $ toPrint $ proof_status res_cfg)
+                 in putStrLn $ toPrint $ proofStatus res_cfg)
   return (case retval of
                  ATPError _ -> False
                  ATPBatchStopped -> False
@@ -160,9 +160,9 @@ genericProveBatch :: (Ord sentence, Ord proof_tree) =>
                   -> String -- ^ prover name
                   -> String -- ^ theory name
                   -> GenericState sign sentence proof_tree pst
-                  -> Maybe (Conc.MVar (Result [Proof_status proof_tree]))
+                  -> Maybe (Conc.MVar (Result [ProofStatus proof_tree]))
                      -- ^ empty MVar to be filled after each proof attempt
-                  -> IO ([Proof_status proof_tree])
+                  -> IO ([ProofStatus proof_tree])
                   -- ^ proof status for each goal
 genericProveBatch useStOpt tLimit extraOptions inclProvedThs saveProblem_batch
                   afterEachProofAttempt
@@ -177,7 +177,7 @@ genericProveBatch useStOpt tLimit extraOptions inclProvedThs saveProblem_batch
     batchProve _ _ resDone [] = return (reverse resDone)
     batchProve pst goalsProcessedSoFar resDone (g:gs) =
      let gName = AS_Anno.senAttr g
-         pt    = proof_tree st
+         pt    = currentProofTree st
      in
       if Map.member gName openGoals
       then do
@@ -200,7 +200,7 @@ genericProveBatch useStOpt tLimit extraOptions inclProvedThs saveProblem_batch
         -- runGivenProver will return ATPBatchStopped. We have to stop the
         -- recursion in that case
         -- add proved goals as axioms
-        let res = proof_status res_cfg
+        let res = proofStatus res_cfg
             pst' = addToLP g res pst
             goalsProcessedSoFar' = goalsProcessedSoFar+1
             ioProofStatus = reverse (res:resDone)
@@ -221,7 +221,7 @@ genericProveBatch useStOpt tLimit extraOptions inclProvedThs saveProblem_batch
         if cont
            then batchProve pst' goalsProcessedSoFar' (res:resDone) gs
            else return ioProofStatus
-      else batchProve (addToLP g (proof_status $
+      else batchProve (addToLP g (proofStatus $
                                   Map.findWithDefault
                                          (emptyConfig prName gName pt)
                                          gName $ configsMap st)
@@ -254,12 +254,12 @@ genericCMDLautomatic ::
            -- ^ prover specific functions
         -> String -- ^ prover name
         -> String -- ^ theory name
-        -> ATPTactic_script -- ^ default prover specific tactic script
+        -> ATPTacticScript -- ^ default prover specific tactic script
         -> Theory sign sentence proof_tree
            -- ^ theory consisting of a signature and a list of Named sentence
         -> [FreeDefMorphism sentence morphism] -- ^ freeness constraints
         -> proof_tree -- ^ initial empty proof_tree
-        -> IO (Result ([Proof_status proof_tree]))
+        -> IO (Result ([ProofStatus proof_tree]))
            -- ^ proof status for goals and lemmas
 genericCMDLautomatic atpFun prName thName def_TS th freedefs pt = do
     let iGS = initialGenericState prName
@@ -278,17 +278,17 @@ genericCMDLautomatic atpFun prName thName def_TS th freedefs pt = do
               curCfg = Map.findWithDefault initEmptyCfg gName openGoals
               runConfig = initEmptyCfg
                   { timeLimit = Just $
-                                fromMaybe (ts_timeLimit def_TS) $
+                                fromMaybe (tsTimeLimit def_TS) $
                                       timeLimit curCfg
                   , extraOpts = if not . null $ extraOpts curCfg
                                  then extraOpts curCfg
-                                 else ts_extraOpts def_TS }
+                                 else tsExtraOpts def_TS }
           (err, res_cfg) <-
                 runProver atpFun (proverState iGS) runConfig False thName g
 --          putStrLn $ prName ++ " returned: " ++ (show err)
-          let dias = atpRetvalToDiags (goalName $ proof_status res_cfg) err
+          let dias = atpRetvalToDiags (goalName $ proofStatus res_cfg) err
               rawResult = appendDiags dias >>
-                          revertRenamingOfLabels iGS [proof_status res_cfg]
+                          revertRenamingOfLabels iGS [proofStatus res_cfg]
           return $ if hasErrors dias
                    then rawResult { maybeResult = Nothing }
                    else rawResult
@@ -303,11 +303,11 @@ genericCMDLautomaticBatch ::
                                                      --   functions
         -> Bool -- ^ True means include proved theorems
         -> Bool -- ^ True means save problem file
-        -> Conc.MVar (Result [Proof_status proof_tree])
+        -> Conc.MVar (Result [ProofStatus proof_tree])
            -- ^ used to store the result of each attempt in the batch run
         -> String -- ^ prover name
         -> String -- ^ theory name
-        -> ATPTactic_script -- ^ default prover specific tactic script
+        -> ATPTacticScript -- ^ default prover specific tactic script
         -> Theory sign sentence proof_tree
            -- ^ theory consisting of a signature and a list of Named sentence
         -> [FreeDefMorphism sentence mor] -- ^ freeness constraints
@@ -316,14 +316,14 @@ genericCMDLautomaticBatch ::
            -- ^ fst: identifier of the batch thread for killing it
            --   snd: MVar to wait for the end of the thread
 genericCMDLautomaticBatch atpFun inclProvedThs saveProblem_batch resultMVar
-                          prName thName defaultTactic_script th freedefs pt = do
-    -- putStrLn $ show defaultTactic_script
+                          prName thName defaultTacticScript th freedefs pt = do
+    -- putStrLn $ show defaultTacticScript
     let iGS = initialGenericState prName
                                   (initialProverState atpFun)
                                   (atpTransSenName atpFun) th freedefs pt
     stateMVar <- Conc.newMVar iGS
-    let tLimit  = ts_timeLimit defaultTactic_script
-        extOpts = ts_extraOpts defaultTactic_script
+    let tLimit  = tsTimeLimit defaultTacticScript
+        extOpts = tsExtraOpts defaultTacticScript
         numGoals = Map.size $ filterOpenGoals $ configsMap iGS
     mvar <- Conc.newEmptyMVar
     threadID <- Conc.forkIO

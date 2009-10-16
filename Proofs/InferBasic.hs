@@ -139,10 +139,10 @@ consCheck :: Logic lid sublogics
               basic_spec sentence symb_items symb_map_items
               sign morphism symbol raw_symbol proof_tree
            => lid -> ConsChecker sign sentence sublogics morphism proof_tree
-           -> String -> Tactic_script
+           -> String -> TacticScript
            -> TheoryMorphism sign sentence morphism proof_tree
            -> [FreeDefMorphism sentence morphism]
-           -> IO (Result [Proof_status proof_tree])
+           -> IO (Result [ProofStatus proof_tree])
 consCheck _ =
   fromMaybe (\ _ _ -> fail "proveCMDLautomatic not implemented")
             . proveCMDLautomatic
@@ -153,7 +153,7 @@ proveTheory :: Logic lid sublogics
            => lid -> Prover sign sentence morphism sublogics proof_tree
            -> String -> Theory sign sentence proof_tree
            -> [FreeDefMorphism sentence morphism]
-           -> IO([Proof_status proof_tree])
+           -> IO([ProofStatus proof_tree])
 proveTheory _ =
     fromMaybe (\ _ _ -> fail "proveGUI not implemented") . proveGUI
 
@@ -188,11 +188,11 @@ basicInferenceNode checkCons lg ln dGraph (node, lbl) libEnv intSt =
             (sig2, sens2) <- liftR $ wrapMapTheory cid bTh'
             incl <- liftR $ subsig_inclusion lidT (empty_signature lidT) sig2
             let mor = TheoryMorphism
-                      { t_source = emptyTheory lidT,
-                        t_target = Theory sig2 $ toThSens sens2,
-                        t_morphism = incl }
+                      { tSource = emptyTheory lidT,
+                        tTarget = Theory sig2 $ toThSens sens2,
+                        tMorphism = incl }
             cc' <- coerceConsChecker lid4 lidT "" cc
-            pts <- lift $ consCheck lidT cc' thName (Tactic_script "20") mor
+            pts <- lift $ consCheck lidT cc' thName (TacticScript "20") mor
                 $ getCFreeDefMorphs lidT libEnv ln dGraph node
             liftR $ case pts of
                   Result _ (Just [pt]) -> case goalStatus pt of
@@ -232,7 +232,7 @@ consistencyCheck (G_cons_checker lid4 cc) (Comorphism cid) ln le dg (n',lbl)
                  timeout = do
   let lidS = sourceLogic cid
       t' = timeToTimeOfDay $ secondsToDiffTime $ toInteger timeout
-      ts = Tactic_script $ show timeout
+      ts = TacticScript $ show timeout
   res <- runResultT $ do
     (G_theory lid1 (ExtSign sign _) _ axs _) <-
       liftR $ getGlobalTheory lbl
@@ -242,9 +242,9 @@ consistencyCheck (G_cons_checker lid4 cc) (Comorphism cid) ln le dg (n',lbl)
     bTh'@(sig1, _) <- coerceBasicTheory lid1 lidS "" (sign, sens)
     (sig2, sens2) <- liftR $ wrapMapTheory cid bTh'
     incl <- liftR $ subsig_inclusion lidT (empty_signature lidT) sig2
-    let mor = TheoryMorphism { t_source = emptyTheory lidT
-                             , t_target = Theory sig2 $ toThSens sens2
-                             , t_morphism = incl }
+    let mor = TheoryMorphism { tSource = emptyTheory lidT
+                             , tTarget = Theory sig2 $ toThSens sens2
+                             , tMorphism = incl }
     cc' <- coerceConsChecker lid4 lidT "" cc
     Result ds pts <- lift $ consCheck lidT cc' thName ts mor
                 $ getCFreeDefMorphs lidT le ln dg n'

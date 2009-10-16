@@ -163,7 +163,7 @@ data BasicProof =
         Logic lid sublogics
          basic_spec sentence symb_items symb_map_items
          sign morphism symbol raw_symbol proof_tree =>
-        BasicProof lid (Proof_status proof_tree)
+        BasicProof lid (ProofStatus proof_tree)
      |  Guessed
      |  Conjectured
      |  Handwritten

@@ -249,10 +249,11 @@ ttConsistencyChecker = LP.mkProverTemplate ttS top consCheck
 
 consCheck :: String -> LP.TheoryMorphism Sig.Sign FORMULA
              PMorphism.Morphism ProofTree
-          -> [LP.FreeDefMorphism FORMULA PMorphism.Morphism] -- ^ free definitions
-          -> IO([LP.Proof_status ProofTree])
+          -> [LP.FreeDefMorphism FORMULA PMorphism.Morphism]
+          -- ^ free definitions
+          -> IO([LP.ProofStatus ProofTree])
 consCheck thName tm _freedefs =
-  case LP.t_target tm of
+  case LP.tTarget tm of
     LP.Theory sig nSens ->
       let sigSize = Set.size (items sig) in
       if sigSize >= maxSigSize then do
@@ -299,11 +300,12 @@ consCheck thName tm _freedefs =
 -}
 ttProveGUI :: String -- ^ theory name
           -> LP.Theory Sig.Sign FORMULA ProofTree
-          -> [LP.FreeDefMorphism FORMULA PMorphism.Morphism] -- ^ free definitions
-          -> IO([LP.Proof_status ProofTree]) -- ^ proof status for each goal
+          -> [LP.FreeDefMorphism FORMULA PMorphism.Morphism]
+          -- ^ free definitions
+          -> IO([LP.ProofStatus ProofTree]) -- ^ proof status for each goal
 ttProveGUI thName th freedefs =
 --  trace (show freedefs) $
-    genericATPgui (atpFun thName) True (LP.prover_name ttProver) thName th
+    genericATPgui (atpFun thName) True (LP.proverName ttProver) thName th
                   freedefs emptyProofTree
 
 {- |
@@ -311,7 +313,8 @@ ttProveGUI thName th freedefs =
   line interface.
 -}
 atpFun :: String            -- Theory name
-       -> ATPState.ATPFunctions Sig.Sign FORMULA PMorphism.Morphism ProofTree PState.PropProverState
+  -> ATPState.ATPFunctions Sig.Sign FORMULA PMorphism.Morphism ProofTree
+     PState.PropProverState
 atpFun thName = ATPState.ATPFunctions
                 {
                   ATPState.initialProverState = PState.propProverState
@@ -321,16 +324,17 @@ atpFun thName = ATPState.ATPFunctions
                 , ATPState.proverHelpText     = ttHelpText
                 , ATPState.runProver          = runTt
                 , ATPState.batchTimeEnv       = ""
-                , ATPState.fileExtensions     = ATPState.FileExtensions{ATPState.problemOutput = ".tt",
-                                                                        ATPState.proverOutput = ".tt",
-                                                                        ATPState.theoryConfiguration = ".tt"}
+                , ATPState.fileExtensions     = ATPState.FileExtensions
+                    { ATPState.problemOutput = ".tt"
+                    , ATPState.proverOutput = ".tt"
+                    , ATPState.theoryConfiguration = ".tt"}
                 , ATPState.createProverOptions = createTtOptions
                 }
 
-defaultProof_status :: AS_Anno.Named FORMULA -> LP.Proof_status ProofTree
-defaultProof_status nGoal =
-  (LP.openProof_status (AS_Anno.senAttr nGoal)
-                       (LP.prover_name ttProver)
+defaultProofStatus :: AS_Anno.Named FORMULA -> LP.ProofStatus ProofTree
+defaultProofStatus nGoal =
+  (LP.openProofStatus (AS_Anno.senAttr nGoal)
+                       (LP.proverName ttProver)
                        emptyProofTree)
 
 
@@ -360,7 +364,7 @@ runTt pState cfg _ _thName nGoal =
    in if sigSize >= maxSigSize then do
         sigTooLarge sigSize
         return (ATPState.ATPTLimitExceeded,
-                cfg{ATPState.proof_status = defaultProof_status nGoal})
+                cfg{ATPState.proofStatus = defaultProofStatus nGoal})
       else do
        let axs = PState.initialAxioms pState
            freedefs = PState.freeDefs pState
@@ -394,17 +398,18 @@ runTt pState cfg _ _thName nGoal =
                                 trows = rows
                               }
            legend = "Legend:\nM = model of the premises\n"++
-                    "+ = OK, model fulfills conclusion\n"++
-                    "- = not OK, counterexample for logical consequence\n"++
-                    "o = OK, premises are not fulfilled, hence conclusion is irrelevant\n"
+             "+ = OK, model fulfills conclusion\n"++
+             "- = not OK, counterexample for logical consequence\n"++
+             "o = OK, premises are not fulfilled, hence conclusion is "
+             ++ "irrelevant\n"
            body = legend++"\n"++render id (renderTT table)
-       let status = (defaultProof_status nGoal)
+       let status = (defaultProofStatus nGoal)
                      { LP.goalStatus = if isOK then LP.Proved $ Just consistent
                                                else LP.Disproved,
                        LP.usedAxioms = map AS_Anno.senAttr sens
                      }
        return (ATPState.ATPSuccess,
-               cfg{ATPState.proof_status = status,
+               cfg{ATPState.proofStatus = status,
                    ATPState.resultOutput = [body]})
 
 {- |

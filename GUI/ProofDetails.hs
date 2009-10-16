@@ -139,11 +139,11 @@ fillGoalDescription (cmo, basicProof) =
                                  Pretty.text (show $ usedTime ps)
                        _ -> Pretty.empty)
                       Pretty.$+$ Pretty.text "Prover:" Pretty.<+>
-                            Pretty.text (proverName ps)
+                            Pretty.text (usedProver ps)
                      otherProof -> stat (show otherProof)
         printTS bp = case bp of
                      BasicProof _ ps ->
-                       indent (2 * stdIndent) $ (\(Tactic_script xs) -> xs) $
+                       indent (2 * stdIndent) $ (\(TacticScript xs) -> xs) $
                                                 tacticScript ps
                      _ -> Pretty.empty
         printPT bp = case bp of

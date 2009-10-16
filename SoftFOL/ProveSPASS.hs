@@ -90,13 +90,13 @@ atpFun thName = ATPFunctions
 
 {- |
   Parses a given default tactic script into a
-  'Interfaces.GenericATPState.ATPTactic_script' if possible. Otherwise a default
+  'Interfaces.GenericATPState.ATPTacticScript' if possible. Otherwise a default
   SPASS tactic script is returned.
 -}
-parseSpassTactic_script :: Tactic_script
-                        -> ATPTactic_script
-parseSpassTactic_script =
-    parseTactic_script batchTimeLimit ["-Stdin", "-DocProof"]
+parseSpassTacticScript :: TacticScript
+                        -> ATPTacticScript
+parseSpassTacticScript =
+    parseTacticScript batchTimeLimit ["-Stdin", "-DocProof"]
 
 -- ** GUI
 
@@ -108,9 +108,9 @@ spassProveGUI :: String -- ^ theory name
           -> Theory Sign Sentence ProofTree -- ^ theory consisting of a
              --   'SPASS.Sign.Sign' and a list of Named 'SPASS.Sign.Sentence'
           -> [FreeDefMorphism SPTerm SoftFOLMorphism] -- ^ freeness constraints
-          -> IO([Proof_status ProofTree]) -- ^ proof status for each goal
+          -> IO([ProofStatus ProofTree]) -- ^ proof status for each goal
 spassProveGUI thName th freedefs =
-    genericATPgui (atpFun thName) True (prover_name spassProver) thName th
+    genericATPgui (atpFun thName) True (proverName spassProver) thName th
                   freedefs emptyProofTree
 
 -- ** command line functions
@@ -122,15 +122,15 @@ spassProveGUI thName th freedefs =
 -}
 spassProveCMDLautomatic ::
            String -- ^ theory name
-        -> Tactic_script -- ^ default tactic script
+        -> TacticScript -- ^ default tactic script
         -> Theory Sign Sentence ProofTree -- ^ theory consisting of a
                                 -- signature and a list of Named sentence
         -> [FreeDefMorphism SPTerm SoftFOLMorphism] -- ^ freeness constraints
-        -> IO (Result.Result ([Proof_status ProofTree]))
+        -> IO (Result.Result ([ProofStatus ProofTree]))
            -- ^ Proof status for goals and lemmas
 spassProveCMDLautomatic thName defTS th freedefs =
-    genericCMDLautomatic (atpFun thName) (prover_name spassProver) thName
-        (parseSpassTactic_script defTS) th freedefs emptyProofTree
+    genericCMDLautomatic (atpFun thName) (proverName spassProver) thName
+        (parseSpassTacticScript defTS) th freedefs emptyProofTree
 
 {- |
   Implementation of 'Logic.Prover.proveCMDLautomaticBatch' which provides an
@@ -140,10 +140,10 @@ spassProveCMDLautomatic thName defTS th freedefs =
 spassProveCMDLautomaticBatch ::
            Bool -- ^ True means include proved theorems
         -> Bool -- ^ True means save problem file
-        -> Concurrent.MVar (Result.Result [Proof_status ProofTree])
+        -> Concurrent.MVar (Result.Result [ProofStatus ProofTree])
            -- ^ used to store the result of the batch run
         -> String -- ^ theory name
-        -> Tactic_script -- ^ default tactic script
+        -> TacticScript -- ^ default tactic script
         -> Theory Sign Sentence ProofTree -- ^ theory consisting of a
            --   'SoftFOL.Sign.Sign' and a list of Named 'SoftFOL.Sign.Sentence'
         -> [FreeDefMorphism SPTerm SoftFOLMorphism] -- ^ freeness constraints
@@ -153,8 +153,8 @@ spassProveCMDLautomaticBatch ::
 spassProveCMDLautomaticBatch inclProvedThs saveProblem_batch resultMVar
                         thName defTS th freedefs =
     genericCMDLautomaticBatch (atpFun thName) inclProvedThs saveProblem_batch
-        resultMVar (prover_name spassProver) thName
-        (parseSpassTactic_script defTS) th freedefs emptyProofTree
+        resultMVar (proverName spassProver) thName
+        (parseSpassTacticScript defTS) th freedefs emptyProofTree
 
 
 -- * SPASS Interfacing Code
@@ -278,7 +278,7 @@ runSpass sps cfg saveDFG thName nGoal = do
       -- kill spass process
       destroy spass
       _ <- waitForChildProcess spass
-      excepToATPResult (prover_name spassProver) nGoal excep)
+      excepToATPResult (proverName spassProver) nGoal excep)
 
   where
     runSpassReal spass = do
@@ -287,7 +287,7 @@ runSpass sps cfg saveDFG thName nGoal = do
       if isJust e
         then return
                  (ATPError "Could not start SPASS. Is SPASS in your $PATH?",
-                  emptyConfig (prover_name spassProver)
+                  emptyConfig (proverName spassProver)
                               (AS_Anno.senAttr nGoal) emptyProofTree)
         else do
           prob <- showDFGProblem thName sps nGoal (createSpassOptions cfg)
@@ -295,39 +295,39 @@ runSpass sps cfg saveDFG thName nGoal = do
                (writeFile (thName++'_':AS_Anno.senAttr nGoal++".dfg") prob)
           sendMsg spass prob
           (res, usedAxs, output, tUsed) <- parseSpassOutput spass
-          let (err, retval) = proof_stat res usedAxs extraOptions output
+          let (err, retval) = proofStat res usedAxs extraOptions output
           return (err,
-                  cfg{proof_status = retval,
+                  cfg{proofStatus = retval,
                       resultOutput = output,
                       timeUsed     = tUsed})
 
     allOptions = ("-Stdin"):(createSpassOptions cfg)
     extraOptions = ("-DocProof"):(cleanOptions cfg)
-    defaultProof_status opts =
-        (openProof_status (AS_Anno.senAttr nGoal) (prover_name spassProver) $
+    defaultProofStatus opts =
+        (openProofStatus (AS_Anno.senAttr nGoal) (proverName spassProver) $
                            emptyProofTree)
-        {tacticScript = Tactic_script $ show $ ATPTactic_script
-          {ts_timeLimit = configTimeLimit cfg,
-           ts_extraOpts = opts} }
+        {tacticScript = TacticScript $ show $ ATPTacticScript
+          {tsTimeLimit = configTimeLimit cfg,
+           tsExtraOpts = opts} }
 
-    proof_stat res usedAxs options out
+    proofStat res usedAxs options out
       | isJust res && elem (fromJust res) proved =
           (ATPSuccess,
-           (defaultProof_status options)
+           (defaultProofStatus options)
            { goalStatus = Proved $ if elem (AS_Anno.senAttr nGoal) usedAxs
                                    then Nothing
                                    else Just False
-           , usedAxioms = filter (/=(AS_Anno.senAttr nGoal)) usedAxs
+           , usedAxioms = filter (/= AS_Anno.senAttr nGoal) usedAxs
            , proofTree = ProofTree $ spassProof out })
       | isJust res && elem (fromJust res) disproved =
           (ATPSuccess,
-           (defaultProof_status options) { goalStatus = Disproved } )
+           (defaultProofStatus options) { goalStatus = Disproved } )
       | isJust res && elem (fromJust res) timelimit =
-          (ATPTLimitExceeded, defaultProof_status options)
+          (ATPTLimitExceeded, defaultProofStatus options)
       | isNothing res =
           (ATPError (unlines ("Internal error.":out)),
-                    defaultProof_status options)
-      | otherwise = (ATPSuccess, defaultProof_status options)
+                    defaultProofStatus options)
+      | otherwise = (ATPSuccess, defaultProofStatus options)
     proved = ["Proof found."]
     disproved = ["Completion found."]
     timelimit = ["Ran out of time."]
@@ -339,8 +339,8 @@ runSpass sps cfg saveDFG thName nGoal = do
 -}
 createSpassOptions :: GenericConfig ProofTree -> [String]
 createSpassOptions cfg =
-    (cleanOptions cfg) ++ ["-DocProof", "-TimeLimit="
-                             ++ (show $ configTimeLimit cfg)]
+    cleanOptions cfg ++ ["-DocProof", "-TimeLimit="
+                             ++ show (configTimeLimit cfg)]
 
 {- |
   Filters extra options and just returns the non standard options.

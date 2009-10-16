@@ -75,7 +75,7 @@ data G_prover = forall lid sublogics
   deriving Typeable
 
 getProverName :: G_prover -> String
-getProverName (G_prover _ p) = prover_name p
+getProverName (G_prover _ p) = proverName p
 
 coerceProver ::
   (Logic  lid1 sublogics1 basic_spec1 sentence1 symb_items1 symb_map_items1
@@ -253,9 +253,9 @@ prepareForConsChecking st (G_cons_checker lid4 p, Comorphism cid) =
         (sign'',sens'') <- wrapMapTheory cid bTh'
         incl <- subsig_inclusion lidT (empty_signature lidT) sign''
         let mor = TheoryMorphism
-                    { t_source = emptyTheory lidT,
-                      t_target = Theory sign'' (toThSens sens''),
-                      t_morphism = incl}
+                    { tSource = emptyTheory lidT,
+                      tTarget = Theory sign'' (toThSens sens''),
+                      tMorphism = incl}
         p' <- coerceConsChecker lid4 lidT "" p
         return  $
           G_theory_with_cons_checker lidT mor p'
@@ -357,10 +357,10 @@ class GetPName a where
     getPName :: a -> String
 
 instance GetPName G_prover where
-    getPName (G_prover _ p) = prover_name p
+    getPName (G_prover _ p) = proverName p
 
 instance GetPName G_cons_checker where
-    getPName (G_cons_checker _ p) = prover_name p
+    getPName (G_cons_checker _ p) = proverName p
 
 
 getConsCheckersAutomatic :: [AnyComorphism] ->
@@ -396,7 +396,7 @@ lookupKnownConsChecker st _ =
                  ps <- Map.lookup pr_s (proversMap st)
                  return (pr_s, ps)
            matchingCC s (gp,_) = case gp of
-                                  G_cons_checker _ p -> prover_name p == s
+                                  G_cons_checker _ p -> proverName p == s
            findCC (pr_n,cms) =
                case filter (matchingCC pr_n) $ getConsCheckers
                     $ filter (lessSublogicComor sl) cms of
@@ -427,7 +427,7 @@ lookupKnownProver st pk =
            ps <- Map.lookup pr_s (proversMap st)
            return (pr_s, ps)
         matchingPr s (gp,_) = case gp of
-                               G_prover _ p -> prover_name p == s
+                               G_prover _ p -> proverName p == s
         findProver (pr_n, cms) =
             case filter (matchingPr pr_n) $ getProvers pk sl
                  $ filter (lessSublogicComor sl) cms of
@@ -446,7 +446,7 @@ getProvers pk (G_sublogics lid sl) = foldl addProvers []
                   foldl (\ l p -> if hasProverKind pk p
                                     && language_name lid == language_name slid
                                     && maybe False
-                                     (flip isSubElem $ prover_sublogic p)
+                                     (flip isSubElem $ proverSublogic p)
                                      (mapSublogic cid
                                      $ forceCoerceSublogic lid slid sl)
                                      then (G_prover (targetLogic cid) p,cm):l
@@ -470,19 +470,19 @@ markProved :: (Logic lid1 sublogics1
                Logic lid sublogics
                      basic_spec sentence symb_items symb_map_items
                      sign morphism symbol raw_symbol proof_tree) =>
-       AnyComorphism -> lid -> [Proof_status proof_tree]
+       AnyComorphism -> lid -> [ProofStatus proof_tree]
     -> ProofState lid1 sentence1
     -> ProofState lid1 sentence1
 markProved c lid status st =
       st { goalMap = markProvedGoalMap c lid
-                                       (filterValidProof_status st status)
+                                       (filterValidProofStatus st status)
                                        (goalMap st)}
 
 -- | mark all newly proven goals with their proof tree
 markProvedGoalMap :: (Ord a, Logic lid sublogics
          basic_spec sentence symb_items symb_map_items
          sign morphism symbol raw_symbol proof_tree) =>
-       AnyComorphism -> lid -> [Proof_status proof_tree]
+       AnyComorphism -> lid -> [ProofStatus proof_tree]
     -> ThSens a (AnyComorphism,BasicProof)
     -> ThSens a (AnyComorphism,BasicProof)
 markProvedGoalMap c lid status thSens = foldl upd thSens status
@@ -490,7 +490,7 @@ markProvedGoalMap c lid status thSens = foldl upd thSens status
           updStat ps s = Just $
                 s { senAttr = ThmStatus $ (c, BasicProof lid ps) : thmStatus s}
 
-filterValidProof_status :: (Logic lid sublogics1
+filterValidProofStatus :: (Logic lid sublogics1
                                   basic_spec1
                                   sentence
                                   symb_items1
@@ -501,9 +501,9 @@ filterValidProof_status :: (Logic lid sublogics1
                                   raw_symbol1
                                   proof_tree1) =>
                            ProofState lid sentence
-                        -> [Proof_status proof_tree]
-                        -> [Proof_status proof_tree]
-filterValidProof_status st =
+                        -> [ProofStatus proof_tree]
+                        -> [ProofStatus proof_tree]
+filterValidProofStatus st =
     case selectedTheory st of
       G_theory _ _ _ sens _ ->
           filter (provedOrDisproved (includedAxioms st == OMap.keys sens))

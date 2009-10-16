@@ -56,7 +56,7 @@ import System.Posix.Signals(Handler(Catch), installHandler, sigINT)
 #endif
 import System.IO(IO)
 
-import Interfaces.GenericATPState(ATPTactic_script(ts_timeLimit, ts_extraOpts))
+import Interfaces.GenericATPState(ATPTacticScript(tsTimeLimit, tsExtraOpts))
 import Interfaces.DataTypes(ListChange(..), IntIState(..), Int_NodeInfo(..),
                             UndoRedoElem(..), IntState(i_state))
 
@@ -287,11 +287,11 @@ cNotACommand input state
             then
              do
               let olds = script pS
-                  oldextOpts = ts_extraOpts olds
+                  oldextOpts = tsExtraOpts olds
               let nwSt = state {
                           intState = (intState state) {
                            i_state = Just pS {
-                             script = olds { ts_extraOpts = s:oldextOpts }
+                             script = olds { tsExtraOpts = s : oldextOpts }
                              } } }
               return $ add2hist [ScriptChange $ script pS] nwSt
             else return $ genErrorMsg ("Error on input line :"++s) state
@@ -334,11 +334,11 @@ cTimeLimit input state
      if checkIntString $ trim input
        then
         do
-         let inpVal = (read $ trim input)::Int
+         let inpVal = read $ trim input
          let oldS = script ps
          return $ add2hist [ScriptChange $ script ps] $
                state {
                  intState = (intState state) {
                   i_state = Just ps {
-                              script = oldS {   ts_timeLimit = inpVal } } } }
+                              script = oldS { tsTimeLimit = inpVal } } } }
        else return $ genErrorMsg "Please insert a number of seconds" state

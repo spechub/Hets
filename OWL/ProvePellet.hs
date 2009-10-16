@@ -90,7 +90,7 @@ pelletProver = (mkProverTemplate "Pellet" sl_top pelletGUI)
 pelletConsChecker :: ConsChecker Sign Axiom OWLSub
                      OWLMorphism ProofTree
 pelletConsChecker = (mkProverTemplate "Pellet Consistency Checker" sl_top
-  (\ s -> consCheck True s $ Tactic_script "800"))
+  (\ s -> consCheck True s $ TacticScript "800"))
   { proveCMDLautomatic = Just
       $ \ s ts t -> fmap return . consCheck False s ts t }
 
@@ -131,9 +131,9 @@ insertOWLAxiom pps s =
 pelletGUI :: String -- ^ theory name
            -> Theory Sign Axiom ProofTree
            -> [FreeDefMorphism Axiom OWLMorphism] -- ^ freeness constraints
-           -> IO([Proof_status ProofTree]) -- ^ proof status for each goal
+           -> IO([ProofStatus ProofTree]) -- ^ proof status for each goal
 pelletGUI thName th freedefs =
-    genericATPgui (atpFun thName) True (prover_name pelletProver) thName th
+    genericATPgui (atpFun thName) True (proverName pelletProver) thName th
                   freedefs emptyProofTree
 
 -- ** command line functions
@@ -145,15 +145,15 @@ pelletGUI thName th freedefs =
 -}
 pelletCMDLautomatic ::
            String -- ^ theory name
-        -> Tactic_script -- ^ default tactic script
+        -> TacticScript -- ^ default tactic script
         -> Theory Sign Axiom ProofTree
            -- ^ theory consisting of a signature and a list of Named sentence
         -> [FreeDefMorphism Axiom OWLMorphism] -- ^ freeness constraints
-        -> IO (Result.Result ([Proof_status ProofTree]))
+        -> IO (Result.Result ([ProofStatus ProofTree]))
            -- ^ Proof status for goals and lemmas
 pelletCMDLautomatic thName defTS th freedefs =
-    genericCMDLautomatic (atpFun thName) (prover_name pelletProver) thName
-        (parseTactic_script batchTimeLimit [] defTS) th freedefs emptyProofTree
+    genericCMDLautomatic (atpFun thName) (proverName pelletProver) thName
+        (parseTacticScript batchTimeLimit [] defTS) th freedefs emptyProofTree
 
 {- |
   Implementation of 'Logic.Prover.proveCMDLautomaticBatch' which provides an
@@ -163,10 +163,10 @@ pelletCMDLautomatic thName defTS th freedefs =
 pelletCMDLautomaticBatch ::
            Bool -- ^ True means include proved theorems
         -> Bool -- ^ True means save problem file
-        -> Concurrent.MVar (Result.Result [Proof_status ProofTree])
+        -> Concurrent.MVar (Result.Result [ProofStatus ProofTree])
            -- ^ used to store the result of the batch run
         -> String -- ^ theory name
-        -> Tactic_script -- ^ default tactic script
+        -> TacticScript -- ^ default tactic script
         -> Theory Sign Axiom ProofTree -- ^ theory
         -> [FreeDefMorphism Axiom OWLMorphism] -- ^ freeness constraints
         -> IO (Concurrent.ThreadId,Concurrent.MVar ())
@@ -175,15 +175,15 @@ pelletCMDLautomaticBatch ::
 pelletCMDLautomaticBatch inclProvedThs saveProblem_batch resultMVar
                         thName defTS th freedefs =
     genericCMDLautomaticBatch (atpFun thName) inclProvedThs saveProblem_batch
-        resultMVar (prover_name pelletProver) thName
-        (parseTactic_script batchTimeLimit [] defTS) th freedefs emptyProofTree
+        resultMVar (proverName pelletProver) thName
+        (parseTacticScript batchTimeLimit [] defTS) th freedefs emptyProofTree
 
 -- * Main prover functions
 {- |
   Runs the Pellet service.
 -}
 
-spamOutput :: Proof_status ProofTree -> IO ()
+spamOutput :: ProofStatus ProofTree -> IO ()
 spamOutput ps =
     let
         dName = goalName ps
@@ -225,12 +225,12 @@ getEnvSec :: String -> IO String
 getEnvSec s = getEnvDef s ""
 
 consCheck :: Bool -> String
-          -> Tactic_script
+          -> TacticScript
           -> TheoryMorphism Sign Axiom OWLMorphism ProofTree
           -> [FreeDefMorphism Axiom OWLMorphism] -- ^ freeness constraints
-          -> IO([Proof_status ProofTree])
-consCheck doSpamOutput thName tac@(Tactic_script tl) tm freedefs =
-    case t_target tm of
+          -> IO([ProofStatus ProofTree])
+consCheck doSpamOutput thName tac@(TacticScript tl) tm freedefs =
+    case tTarget tm of
       Theory sig nSens ->
         let
           saveOWL = False
@@ -241,98 +241,48 @@ consCheck doSpamOutput thName tac@(Tactic_script tl) tm freedefs =
           problemS     = showOWLProblemS thName proverStateI []
           simpleOptions = "consistency "
           extraOptions  = ""
-          saveFileName  = (reverse $ fst $ span (/='/') $ reverse thName)
+          saveFileName  = reverse $ fst $ span (/='/') $ reverse thName
           tmpFileName   = saveFileName
-
-          proof_statM :: ExitCode -> String ->  [String]
-                      -> Int -> Proof_status ProofTree
-          proof_statM exitCode _ out tUsed =
+          pStatus out tUsed = ProofStatus
+            { goalName = thName
+            , goalStatus = Disproved
+            , usedAxioms = getAxioms
+            , usedProver = proverName pelletProver
+            , proofTree = ProofTree $ unlines out ++ "\n\n" ++ problemS
+            , usedTime = timeToTimeOfDay
+                $ secondsToDiffTime $ toInteger tUsed
+            , tacticScript  = tac }
+          proofStatM :: ExitCode -> String ->  [String]
+                      -> Int -> ProofStatus ProofTree
+          proofStatM exitCode _ out tUsed =
               case exitCode of
                 ExitSuccess ->   -- consistent
-                    Proof_status
-                    {
-                     goalName = thName
-                    , goalStatus = Proved (Just True)
-                    , usedAxioms = getAxioms
-                    , proverName = (prover_name pelletProver)
-                    , proofTree = ProofTree (unlines out
-                                      ++ "\n\n" ++ problemS)
-                    ,usedTime = timeToTimeOfDay $
-                                secondsToDiffTime $ toInteger tUsed
-                    ,tacticScript  = tac
-                    }
+                    (pStatus out tUsed)
+                    { goalStatus = Proved (Just True) }
                 ExitFailure 1 ->   -- not consistent
-                    Proof_status
-                    {
-                     goalName = thName
-                    , goalStatus = Proved (Just False)
-                    , usedAxioms = getAxioms
-                    , proverName = (prover_name pelletProver)
-                    , proofTree = ProofTree (unlines out
-                                      ++ "\n\n" ++ (problemS))
-                    ,usedTime = timeToTimeOfDay $
-                                secondsToDiffTime $ toInteger tUsed
-                    ,tacticScript  = tac
-                    }
+                    (pStatus out tUsed)
+                    { goalStatus = Proved (Just False) }
                 ExitFailure 2 ->   -- error by runing pellet
-                    Proof_status
-                    {
-                     goalName = thName
-                    , goalStatus = Disproved
-                    , usedAxioms = getAxioms
-                    , proverName = (prover_name pelletProver)
-                    , proofTree = ProofTree "Cannot run pellet."
-                    ,usedTime = timeToTimeOfDay $
-                                secondsToDiffTime $ toInteger tUsed
-                    ,tacticScript  = tac
-                    }
+                    (pStatus out tUsed)
+                    { proofTree = ProofTree "Cannot run pellet." }
                 ExitFailure 3 ->  -- timeout
-                    Proof_status
-                    {
-                     goalName = thName
-                    , goalStatus = openGoalStatus
-                    , usedAxioms = getAxioms
-                    , proverName = (prover_name pelletProver)
-                    , proofTree  = ProofTree (unlines out
-                                      ++ "\n\n" ++ "timeout" ++
-                                                    unlines out)
-                    ,usedTime = timeToTimeOfDay $
-                                secondsToDiffTime 0
-                    ,tacticScript  = tac
-                    }
+                    (pStatus out tUsed)
+                    { goalStatus = openGoalStatus
+                    , proofTree = ProofTree $ unlines out ++ "\n\n" ++ "timeout"
+                        ++ unlines out
+                    , usedTime = timeToTimeOfDay $ secondsToDiffTime 0 }
                 ExitFailure 4 ->   -- error by runing pellet
-                    Proof_status
-                    {
-                     goalName = thName
-                    , goalStatus = Disproved
-                    , usedAxioms = getAxioms
-                    , proverName = (prover_name pelletProver)
-                    , proofTree = ProofTree ("Pellet returned an error.\n"
-                                             ++ unlines out)
-                    ,usedTime = timeToTimeOfDay $
-                                secondsToDiffTime $ toInteger tUsed
-                    ,tacticScript  = tac
-                    }
+                    (pStatus out tUsed)
+                    { proofTree = ProofTree $ "Pellet returned an error.\n"
+                        ++ unlines out }
                 ExitFailure _ ->    -- another errors
-                    Proof_status
-                    {
-                     goalName = thName
-                    , goalStatus = Disproved
-                    , usedAxioms = getAxioms
-                    , proverName = (prover_name pelletProver)
-                    , proofTree =   ProofTree (unlines out
-                                        ++ "\n\n" ++  (problemS))
-                    ,usedTime = timeToTimeOfDay $
-                                secondsToDiffTime $ toInteger tUsed
-                    ,tacticScript  = tac
-                    }
-
+                    pStatus out tUsed
           getAxioms =
                map senAttr $ initialState proverStateI
 
           timeWatch :: Int
-                    -> IO (Proof_status ProofTree)
-                    -> IO (Proof_status ProofTree)
+                    -> IO (ProofStatus ProofTree)
+                    -> IO (ProofStatus ProofTree)
           timeWatch time process =
               do
                 mvar <- newEmptyMVar
@@ -343,19 +293,18 @@ consCheck doSpamOutput thName tac@(Tactic_script tl) tm freedefs =
                 res <- takeMVar mvar
                 case res of
                   Just z -> do
-                           killThread tid2 `catch` (\e -> putStrLn (show e))
+                           killThread tid2 `catch` print
                            return z
                   Nothing -> do
-                           killThread tid1 `catch` (\e -> putStrLn (show e))
-                           return (Proof_status{
+                           killThread tid1 `catch` print
+                           return (ProofStatus{
                                goalName = thName
                              , goalStatus = openGoalStatus
                              , usedAxioms = getAxioms
-                             , proverName = (prover_name pelletProver)
+                             , usedProver = proverName pelletProver
                              , proofTree  = ProofTree ("\n\n" ++ "timeout")
-                             ,usedTime = timeToTimeOfDay $
-                               secondsToDiffTime 0
-                             ,tacticScript  = tac
+                             , usedTime = timeToTimeOfDay $ secondsToDiffTime 0
+                             , tacticScript = tac
                              })
         in
           do
@@ -383,7 +332,7 @@ consCheck doSpamOutput thName tac@(Tactic_script tl) tm freedefs =
                        outp  <- hGetContents outh
                        eOut    <- hGetContents errh
                        let (exCode, output, tUsed) = analyseOutput outp eOut
-                       let outState = proof_statM exCode simpleOptions
+                       let outState = proofStatM exCode simpleOptions
                                               output tUsed
                        return outState
                      )
@@ -394,7 +343,7 @@ consCheck doSpamOutput thName tac@(Tactic_script tl) tm freedefs =
                    let mess = "Pellet not " ++
                          if b then "executable" else "found"
                    infoDialog "Pellet prover" mess
-                   return [(openProof_status thName (prover_name pelletProver)
+                   return [(openProofStatus thName (proverName pelletProver)
                            $ ProofTree mess)
                            { usedAxioms = getAxioms
                            , tacticScript = tac
@@ -456,7 +405,7 @@ runPellet sps cfg savePellet thName nGoal =
                   output  <- hGetContents outh
                   eOut    <- hGetContents errh
                   let (exCode, outp, tUsed) = analyseOutput output eOut
-                  return $ (proof_stat exCode simpleOptions outp tUsed,
+                  return $ (proofStat exCode simpleOptions outp tUsed,
                             outp, tUsed)
             Just tm  ->
                 timeWatchP tm
@@ -466,23 +415,23 @@ runPellet sps cfg savePellet thName nGoal =
                     output  <- hGetContents outh
                     eOut    <- hGetContents errh
                     let (exCode, outp, tUsed) = analyseOutput output eOut
-                    return $ (proof_stat exCode simpleOptions outp tUsed,
+                    return $ (proofStat exCode simpleOptions outp tUsed,
                             outp, tUsed)
                     )
           removeFile timeTmpFile
           removeFile entailsFile
           return (err,
-                  cfg{proof_status = retval,
+                  cfg{proofStatus = retval,
                       resultOutput = output,
                       timeUsed     = timeToTimeOfDay $
                                  secondsToDiffTime $ toInteger tUsed})
         (True,False) -> return
             (ATPError "Pellet prover found, but file is not executable.",
-                  emptyConfig (prover_name pelletProver)
+                  emptyConfig (proverName pelletProver)
                               (senAttr nGoal) emptyProofTree)
         (False,_) -> return
             (ATPError "Could not find pellet prover. Is $PELLET_PATH set?",
-                  emptyConfig (prover_name pelletProver)
+                  emptyConfig (proverName pelletProver)
                               (senAttr nGoal) emptyProofTree)
 
   where
@@ -493,8 +442,8 @@ runPellet sps cfg savePellet thName nGoal =
     saveFileName  = thName ++ goalSuffix
     tmpFileName   = reverse (takeWhile (/= '/') $ reverse thName) ++ goalSuffix
 
-    timeWatchP :: Int -> IO ((ATPRetval, Proof_status ProofTree), [String], Int)
-                     -> IO ((ATPRetval, Proof_status ProofTree), [String] , Int)
+    timeWatchP :: Int -> IO ((ATPRetval, ProofStatus ProofTree), [String], Int)
+                     -> IO ((ATPRetval, ProofStatus ProofTree), [String] , Int)
     timeWatchP time process =
         do
           mvar <- newEmptyMVar
@@ -510,50 +459,47 @@ runPellet sps cfg savePellet thName nGoal =
             Nothing -> do
                      killThread tid1 `catch` (\e -> putStrLn (show e))
                      return ((ATPTLimitExceeded
-                            , defaultProof_status simpleOptions)
+                            , defaultProofStatus simpleOptions)
                             , [],time)
 
-    proof_stat exitCode options out tUsed =
+    proofStat exitCode options out tUsed =
             case exitCode of
-              ExitSuccess -> (ATPSuccess, (proved_status options tUsed)
+              ExitSuccess -> (ATPSuccess, (provedStatus options tUsed)
                                         {
                                           usedAxioms = map senAttr $
                                                        initialState sps
                                         }
                              )
               ExitFailure 2 -> (ATPError (unlines ("Internal error.":out)),
-                                defaultProof_status options)
+                                defaultProofStatus options)
               ExitFailure 112 ->
-                       (ATPTLimitExceeded, defaultProof_status options)
+                       (ATPTLimitExceeded, defaultProofStatus options)
               ExitFailure 105 ->
-                       (ATPBatchStopped, defaultProof_status options)
+                       (ATPBatchStopped, defaultProofStatus options)
               ExitFailure _ ->
-                  (ATPSuccess, disProved_status options)
-
-    defaultProof_status opts =
-            (openProof_status
-            (senAttr nGoal) (prover_name pelletProver) $
+                  (ATPSuccess, disProvedStatus options)
+    tScript opts = TacticScript $ show $ ATPTacticScript
+                        { tsTimeLimit = configTimeLimit cfg
+                        , tsExtraOpts = opts }
+    defaultProofStatus opts =
+            (openProofStatus
+            (senAttr nGoal) (proverName pelletProver) $
                                     emptyProofTree)
-                       {tacticScript = Tactic_script $ show $ ATPTactic_script
-                        {ts_timeLimit = configTimeLimit cfg,
-                         ts_extraOpts = opts} }
+                       { tacticScript = tScript opts }
 
-    disProved_status opts = (defaultProof_status opts)
+    disProvedStatus opts = (defaultProofStatus opts)
                                {goalStatus = Disproved}
 
-    proved_status opts ut =
-        Proof_status{
+    provedStatus opts ut =
+        ProofStatus {
                goalName = senAttr nGoal
               ,goalStatus = Proved (Just True)
               ,usedAxioms = getAxioms -- []
-              ,proverName = (prover_name pelletProver)
-              ,proofTree =   emptyProofTree
+              ,usedProver = proverName pelletProver
+              ,proofTree =  emptyProofTree
               ,usedTime = timeToTimeOfDay $
                                  secondsToDiffTime $ toInteger ut
-              ,tacticScript  = Tactic_script $ show $ ATPTactic_script
-                               {ts_timeLimit = configTimeLimit cfg,
-                                ts_extraOpts = opts}
-                    }
+              ,tacticScript = tScript opts }
 
     getAxioms = []
 
@@ -634,29 +580,4 @@ genPelletProblemS thName pps m_nGoal =
         , problemProverState = pps
                         { initialState = initialState pps ++
                                          (maybe [] (\g -> g:[]) m_nGoal)}
---        , settings = []
          }
-
-{- |
-  Returns the time limit from GenericConfig if available. Otherwise
-  guiDefaultTimeLimit is returned.
--}
-configTimeLimit :: GenericConfig ProofTree
-                -> Int
-configTimeLimit cfg =
-    maybe (guiDefaultTimeLimit) id $ timeLimit cfg
-
-{- |
-  Parses a given default tactic script into a
-  'Interfaces.GenericATPState.ATPTactic_script' if possible. Otherwise a default
-  prover's tactic script is returned.
--}
-parseTactic_script :: Int -- ^ default time limit (standard:
-                          -- 'Proofs.BatchProcessing.batchTimeLimit')
-                   -> [String] -- ^ default extra options (prover specific)
-                   -> Tactic_script
-                   -> ATPTactic_script
-parseTactic_script tLimit extOpts (Tactic_script ts) =
-    maybe (ATPTactic_script { ts_timeLimit = tLimit,
-                              ts_extraOpts = extOpts })
-           id $ readMaybe ts

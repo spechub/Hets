@@ -67,7 +67,7 @@ data UndoRedoElem =
   | Save2FileChange Bool
   | ProverChange (Maybe G_prover)
   | ConsCheckerChange (Maybe G_cons_checker)
-  | ScriptChange ATPTactic_script
+  | ScriptChange ATPTacticScript
   | LoadScriptChange Bool
   | CComorphismChange (Maybe AnyComorphism)
   | ListChange [ListChange]
@@ -91,7 +91,7 @@ data IntIState = IntIState
   , consChecker :: Maybe G_cons_checker
   , save2file :: Bool
   , useTheorems :: Bool
-  , script :: ATPTactic_script
+  , script :: ATPTacticScript
   , loadScript :: Bool }
 
 data Int_NodeInfo = forall lid1 sublogics1

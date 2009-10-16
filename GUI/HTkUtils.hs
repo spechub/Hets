@@ -25,7 +25,7 @@ module GUI.HTkUtils
   , displayTheory
   , displayTheoryWithWarning
   , populateGoalsListBox
-  , indicatorFromProof_status
+  , indicatorFromProofStatus
   , indicatorFromBasicProof
   , indicatorString
   , enableWids
@@ -215,10 +215,10 @@ populateGoalsListBox lb v = do
     toString = map (\ LBGoalView {statIndicator = i, goalDescription = d} ->
                         (indicatorString i) ++ (' ' : d))
 
--- | Converts a 'Logic.Prover.Proof_status' into a 'LBStatusIndicator'
-indicatorFromProof_status :: Proof_status a
+-- | Converts a 'Logic.Prover.ProofStatus' into a 'LBStatusIndicator'
+indicatorFromProofStatus :: ProofStatus a
                           -> LBStatusIndicator
-indicatorFromProof_status st = case goalStatus st of
+indicatorFromProofStatus st = case goalStatus st of
   Proved mc -> maybe LBIndicatorProved
                      (\ c -> if c then LBIndicatorProved
                                   else LBIndicatorProvedInconsistent)
@@ -230,7 +230,7 @@ indicatorFromProof_status st = case goalStatus st of
 indicatorFromBasicProof :: BasicProof
                         -> LBStatusIndicator
 indicatorFromBasicProof p = case p of
-  BasicProof _ st -> indicatorFromProof_status st
+  BasicProof _ st -> indicatorFromProofStatus st
   Guessed         -> LBIndicatorGuessed
   Conjectured     -> LBIndicatorConjectured
   Handwritten     -> LBIndicatorHandwritten

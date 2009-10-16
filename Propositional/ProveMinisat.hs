@@ -30,12 +30,11 @@ import Proofs.BatchProcessing
 
 import qualified Logic.Prover as LP
 
-import qualified Interfaces.GenericATPState as ATPState
+import Interfaces.GenericATPState
 import GUI.GenericATP
 import GUI.Utils (infoDialog)
 
 import Common.ProofTree
-import Common.Utils (readMaybe)
 import qualified Common.AS_Annotation as AS_Anno
 import qualified Common.Id as Id
 import qualified Common.OrderedMap as OMap
@@ -88,14 +87,15 @@ minisatConsChecker = LP.mkProverTemplate minisatS top consCheck
 
 consCheck :: String -> LP.TheoryMorphism Sig.Sign AS_BASIC.FORMULA
              PMorphism.Morphism ProofTree
-          -> [LP.FreeDefMorphism AS_BASIC.FORMULA PMorphism.Morphism] -- ^ free definitions
-          -> IO([LP.Proof_status ProofTree])
+          -> [LP.FreeDefMorphism AS_BASIC.FORMULA PMorphism.Morphism]
+          -- ^ free definitions
+          -> IO([LP.ProofStatus ProofTree])
 consCheck thName tm _ =
-    case LP.t_target tm of
+    case LP.tTarget tm of
       LP.Theory sig nSens -> do
             let axioms = getAxioms $ snd $ unzip $ OMap.toList nSens
                 thName_clean = map (\c -> if c == '/' then '_' else c) thName
-                tmpFile = "/tmp/" ++ (thName_clean ++ "_cc.dimacs")
+                tmpFile = "/tmp/" ++ thName_clean ++ "_cc.dimacs"
             dimacsOutput <-  PC.ioDIMACSProblem (thName ++ "_cc")
                              sig ( [(AS_Anno.makeNamed "myAxioms" $
                                      AS_BASIC.Implication
@@ -117,22 +117,21 @@ consCheck thName tm _ =
             outputHf <- openFile tmpFile ReadWriteMode
             hPutStr outputHf dimacsOutput
             hClose outputHf
-            (_,_,_,pid) <- runInteractiveCommand ("minisat \"" ++ tmpFile ++ "\"")
+            (_, _, _, pid) <- runInteractiveCommand
+              $ "minisat \"" ++ tmpFile ++ "\""
             exitCode <- waitForProcess pid
             removeFile tmpFile
-            case exitCode of
-              ExitFailure 20 -> infoDialog "consistency checker"
-                          ("consistent.")
-              ExitFailure 10 -> infoDialog "consistency checker"
-                          ("inconsistent.")
-              _              -> infoDialog "consistency checker"
-                          ("error by calling minisat " ++ thName)
+            infoDialog "consistency checker" $ case exitCode of
+              ExitFailure 20 -> "consistent."
+              ExitFailure 10 -> "inconsistent."
+              _ -> "error by calling minisat " ++ thName
             return []
 
     where
-        getAxioms :: [LP.SenStatus AS_BASIC.FORMULA (LP.Proof_status ProofTree)]
+        getAxioms :: [LP.SenStatus AS_BASIC.FORMULA (LP.ProofStatus ProofTree)]
                   -> [AS_Anno.Named AS_BASIC.FORMULA]
-        getAxioms f = map (AS_Anno.makeNamed "consistency" . AS_Anno.sentence) $ filter AS_Anno.isAxiom f
+        getAxioms f = map (AS_Anno.makeNamed "consistency" . AS_Anno.sentence)
+          $ filter AS_Anno.isAxiom f
 
 -- ** GUI
 
@@ -142,33 +141,19 @@ consCheck thName tm _ =
 
 minisatProveGUI :: String -- ^ theory name
           -> LP.Theory Sig.Sign AS_BASIC.FORMULA ProofTree
-          -> [LP.FreeDefMorphism AS_BASIC.FORMULA PMorphism.Morphism] -- ^ free definitions
-          -> IO([LP.Proof_status ProofTree]) -- ^ proof status for each goal
+          -> [LP.FreeDefMorphism AS_BASIC.FORMULA PMorphism.Morphism]
+          -- ^ free definitions
+          -> IO([LP.ProofStatus ProofTree]) -- ^ proof status for each goal
 minisatProveGUI thName th freedefs =
-    genericATPgui (atpFun thName) True (LP.prover_name minisatProver) thName th
+    genericATPgui (atpFun thName) True (LP.proverName minisatProver) thName th
                   freedefs emptyProofTree
 {- |
   Parses a given default tactic script into a
-  'Interfaces.GenericATPState.ATPTactic_script' if possible.
+  'Interfaces.GenericATPState.ATPTacticScript' if possible.
 -}
-parseminisatTactic_script :: LP.Tactic_script
-                        -> ATPState.ATPTactic_script
-parseminisatTactic_script =
-    parseTactic_script batchTimeLimit
-
-{- |
-  Parses a given default tactic script into a
-  'Interfaces.GenericATPState.ATPTactic_script' if possible. Otherwise a default
-  prover's tactic script is returned.
--}
-parseTactic_script :: Int -- ^ default time limit (standard:
-                          -- 'Proofs.BatchProcessing.batchTimeLimit')
-                   -> LP.Tactic_script
-                   -> ATPState.ATPTactic_script
-parseTactic_script tLimit (LP.Tactic_script ts) =
-    maybe (ATPState.ATPTactic_script { ATPState.ts_timeLimit = tLimit,
-                                       ATPState.ts_extraOpts = [] })
-           id $ readMaybe ts
+parseminisatTacticScript :: LP.TacticScript
+                        -> ATPTacticScript
+parseminisatTacticScript = parseTacticScript batchTimeLimit []
 
 -- ** command line functions
 
@@ -179,15 +164,16 @@ parseTactic_script tLimit (LP.Tactic_script ts) =
 -}
 minisatProveCMDLautomatic ::
            String -- ^ theory name
-        -> LP.Tactic_script -- ^ default tactic script
-        -> LP.Theory Sig.Sign AS_BASIC.FORMULA ProofTree  -- ^ theory consisting of a
-                                -- signature and a list of Named sentence
-        -> [LP.FreeDefMorphism AS_BASIC.FORMULA PMorphism.Morphism] -- ^ free definitions
-        -> IO (Result.Result ([LP.Proof_status ProofTree]))
+        -> LP.TacticScript -- ^ default tactic script
+        -> LP.Theory Sig.Sign AS_BASIC.FORMULA ProofTree
+        -- ^ theory consisting of a signature and a list of Named sentence
+        -> [LP.FreeDefMorphism AS_BASIC.FORMULA PMorphism.Morphism]
+        -- ^ free definitions
+        -> IO (Result.Result ([LP.ProofStatus ProofTree]))
            -- ^ Proof status for goals and lemmas
 minisatProveCMDLautomatic thName defTS th freedefs =
-    genericCMDLautomatic (atpFun thName) (LP.prover_name minisatProver) thName
-        (parseminisatTactic_script defTS) th freedefs emptyProofTree
+    genericCMDLautomatic (atpFun thName) (LP.proverName minisatProver) thName
+        (parseminisatTacticScript defTS) th freedefs emptyProofTree
 
 {- |
   Implementation of 'Logic.Prover.proveCMDLautomaticBatch' which provides an
@@ -197,42 +183,43 @@ minisatProveCMDLautomatic thName defTS th freedefs =
 minisatProveCMDLautomaticBatch ::
            Bool -- ^ True means include proved theorems
         -> Bool -- ^ True means save problem file
-        -> Concurrent.MVar (Result.Result [LP.Proof_status ProofTree])
+        -> Concurrent.MVar (Result.Result [LP.ProofStatus ProofTree])
            -- ^ used to store the result of the batch run
         -> String -- ^ theory name
-        -> LP.Tactic_script -- ^ default tactic script
-        -> LP.Theory Sig.Sign AS_BASIC.FORMULA ProofTree -- ^ theory consisting of a
-           --   signature and a list of Named sentences
-        -> [LP.FreeDefMorphism AS_BASIC.FORMULA PMorphism.Morphism] -- ^ free definitions
+        -> LP.TacticScript -- ^ default tactic script
+        -> LP.Theory Sig.Sign AS_BASIC.FORMULA ProofTree
+        -- ^ theory consisting of a signature and a list of Named sentences
+        -> [LP.FreeDefMorphism AS_BASIC.FORMULA PMorphism.Morphism]
+        -- ^ free definitions
         -> IO (Concurrent.ThreadId,Concurrent.MVar ())
            -- ^ fst: identifier of the batch thread for killing it
            --   snd: MVar to wait for the end of the thread
 minisatProveCMDLautomaticBatch inclProvedThs saveProblem_batch resultMVar
                         thName defTS th freedefs =
     genericCMDLautomaticBatch (atpFun thName) inclProvedThs saveProblem_batch
-        resultMVar (LP.prover_name minisatProver) thName
-        (parseminisatTactic_script defTS) th freedefs emptyProofTree
+        resultMVar (LP.proverName minisatProver) thName
+        (parseminisatTacticScript defTS) th freedefs emptyProofTree
 
 {- |
   Record for prover specific functions. This is used by both GUI and command
   line interface.
 -}
 atpFun :: String            -- Theory name
-       -> ATPState.ATPFunctions Sig.Sign AS_BASIC.FORMULA PMorphism.Morphism ProofTree PState.PropProverState
-atpFun thName = ATPState.ATPFunctions
-                {
-                  ATPState.initialProverState = PState.propProverState
-                , ATPState.goalOutput         = Cons.goalDIMACSProblem thName
-                , ATPState.atpTransSenName    = PState.transSenName
-                , ATPState.atpInsertSentence  = PState.insertSentence
-                , ATPState.proverHelpText     = minisatHelpText
-                , ATPState.runProver          = runminisat
-                , ATPState.batchTimeEnv       = "HETS_MINISAT_BATCH_TIME_LIMIT"
-                , ATPState.fileExtensions     = ATPState.FileExtensions{ATPState.problemOutput = ".dimacs",
-                                                                        ATPState.proverOutput = ".minisat",
-                                                                        ATPState.theoryConfiguration = ".cminisat"}
-                , ATPState.createProverOptions = createminisatOptions
-                }
+  -> ATPFunctions Sig.Sign AS_BASIC.FORMULA PMorphism.Morphism ProofTree
+     PState.PropProverState
+atpFun thName = ATPFunctions
+                { initialProverState = PState.propProverState
+                , goalOutput         = Cons.goalDIMACSProblem thName
+                , atpTransSenName    = PState.transSenName
+                , atpInsertSentence  = PState.insertSentence
+                , proverHelpText     = minisatHelpText
+                , runProver          = runminisat
+                , batchTimeEnv       = "HETS_MINISAT_BATCH_TIME_LIMIT"
+                , fileExtensions     = FileExtensions
+                    { problemOutput = ".dimacs"
+                    , proverOutput = ".minisat"
+                    , theoryConfiguration = ".cminisat"}
+                , createProverOptions = createminisatOptions }
 
 {- |
   Runs minisat. minisat is assumed to reside in PATH.
@@ -242,7 +229,7 @@ runminisat :: PState.PropProverState
            -- logical part containing the input Sign and
            -- axioms and possibly goals that have been proved
            -- earlier as additional axioms
-           -> ATPState.GenericConfig ProofTree
+           -> GenericConfig ProofTree
            -- configuration to use
            -> Bool
            -- True means save DIMACS file
@@ -250,31 +237,31 @@ runminisat :: PState.PropProverState
            -- Name of the theory
            -> AS_Anno.Named AS_BASIC.FORMULA
            -- Goal to prove
-           -> IO (ATPState.ATPRetval
-                 , ATPState.GenericConfig ProofTree
+           -> IO (ATPRetval
+                 , GenericConfig ProofTree
                  )
            -- (retval, configuration with proof status and complete output)
 runminisat pState cfg saveDIMACS thName nGoal =
     do
       prob <- Cons.goalDIMACSProblem thName pState nGoal []
-      let zFileName = "/tmp/problem_"++ thName++'_':AS_Anno.senAttr nGoal++".dimacs"
-      let timeLimit = ATPState.timeLimit cfg
+      let zFileName = "/tmp/problem_" ++ thName ++ '_' : AS_Anno.senAttr nGoal
+            ++ ".dimacs"
       when saveDIMACS
-               (writeFile (thName++'_':AS_Anno.senAttr nGoal++".dimacs")
+               (writeFile (thName ++ '_' : AS_Anno.senAttr nGoal ++ ".dimacs")
                           prob)
       writeFile zFileName prob
-      retVal <- case timeLimit of
+      retVal <- case timeLimit cfg of
                   Nothing -> runStuff zFileName
                   Just t  -> timeWatch t $ runStuff zFileName
       --removeFile zFileName
       return retVal
     where
-      defaultProof_status opts =
-          (LP.openProof_status (AS_Anno.senAttr nGoal) (LP.prover_name minisatProver)
-             emptyProofTree)
-          {LP.tacticScript = LP.Tactic_script $ show $ ATPState.ATPTactic_script
-                             {ATPState.ts_timeLimit = configTimeLimit cfg,
-                              ATPState.ts_extraOpts = opts} }
+      defaultProofStatus opts =
+          (LP.openProofStatus (AS_Anno.senAttr nGoal)
+             (LP.proverName minisatProver) emptyProofTree)
+          {LP.tacticScript = LP.TacticScript $ show $ ATPTacticScript
+                             {tsTimeLimit = configTimeLimit cfg,
+                              tsExtraOpts = opts} }
 
       timeWatch time process =
         do
@@ -290,28 +277,30 @@ runminisat pState cfg saveDIMACS thName nGoal =
                      return z
             Nothing -> do
                      killThread tid1 `catch` (\e -> putStrLn (show e))
-                     return (ATPState.ATPTLimitExceeded,
+                     return (ATPTLimitExceeded,
                              cfg
                              {
-                               ATPState.proof_status =
-                                   (defaultProof_status [])
+                               proofStatus =
+                                   (defaultProofStatus [])
                                    {
                                      LP.goalName = thName
                                    , LP.goalStatus = LP.openGoalStatus
                                    , LP.usedAxioms = []
-                                   , LP.proverName = (LP.prover_name minisatProver)
-                                   , LP.proofTree  = ProofTree ("Timeout")
+                                   , LP.usedProver = LP.proverName minisatProver
+                                   , LP.proofTree  = ProofTree "Timeout"
                                    , LP.usedTime = timeToTimeOfDay $
                                                    secondsToDiffTime 0
-                                   , LP.tacticScript  = LP.Tactic_script $ show $ ATPState.ATPTactic_script
-                                                        {ATPState.ts_timeLimit = configTimeLimit cfg,
-                                                         ATPState.ts_extraOpts = []}
+                                   , LP.tacticScript  = LP.TacticScript $ show
+                                       $ ATPTacticScript
+                                       { tsTimeLimit = configTimeLimit cfg
+                                       , tsExtraOpts = []}
                                    }
-                             ,ATPState.timeLimitExceeded = True
+                             , timeLimitExceeded = True
                              })
       runStuff zFileName =
           do
-            (_,outHandle,_,pid) <- runInteractiveCommand ("minisat \"" ++ zFileName ++"\"")
+            (_, outHandle, _, pid) <- runInteractiveCommand
+              $ "minisat \"" ++ zFileName ++ "\""
             startTime <- getCurrentTime
             let stTime = utctDayTime startTime
             exCode <- waitForProcess pid
@@ -320,60 +309,32 @@ runminisat pState cfg saveDIMACS thName nGoal =
             let usedTime = timeToTimeOfDay $ edTime - stTime
             out <- hGetContents outHandle
             case exCode of
-              ExitFailure 20 ->
-                  do
-                    let usedAxs = map (AS_Anno.senAttr) $ PState.initialAxioms pState
-                    return $
-                        (ATPState.ATPSuccess,
-                                 cfg
-                                 {
-                                   ATPState.proof_status =
-                                       (defaultProof_status [])
-                                       {LP.goalStatus = LP.Proved $ Nothing
-                                       , LP.usedAxioms = filter (/=(AS_Anno.senAttr nGoal)) usedAxs
-                                       , LP.proofTree = ProofTree out }
-                                 , ATPState.timeUsed = usedTime
-                                 })
-              ExitFailure 10 -> return $
-                                (ATPState.ATPSuccess,
-                                         cfg
-                                         {
-                                           ATPState.proof_status =
-                                               (defaultProof_status []) {LP.goalStatus = LP.Disproved
-                                                                        ,LP.proofTree  = ProofTree out
-                                                                        }} )
-              ExitSuccess    -> return $ (ATPState.ATPSuccess,
-                             cfg
-                             {
-                               ATPState.proof_status =
-                                   (defaultProof_status [])
-                                   {
-                                     LP.goalStatus = LP.openGoalStatus
-                                   , LP.proofTree  = ProofTree "Unkown"
-                                   , LP.usedTime = timeToTimeOfDay $
-                                                   secondsToDiffTime 0
-                                   }
-                             })
-              _ -> return $
-                               (ATPState.ATPError "Internal error.",
-                                        cfg
-                                        {
-                                          ATPState.proof_status = defaultProof_status []
-                                        })
-
-{- |
-  Returns the time limit from GenericConfig if available. Otherwise
-  guiDefaultTimeLimit is returned.
--}
-configTimeLimit :: ATPState.GenericConfig ProofTree
-                -> Int
-configTimeLimit cfg =
-    maybe (guiDefaultTimeLimit) id $ ATPState.timeLimit cfg
+              ExitFailure 20 -> do
+                    let usedAxs = map (AS_Anno.senAttr)
+                          $ PState.initialAxioms pState
+                    return (ATPSuccess, cfg
+                      { proofStatus = (defaultProofStatus [])
+                          { LP.goalStatus = LP.Proved $ Nothing
+                          , LP.usedAxioms = filter (/= AS_Anno.senAttr nGoal)
+                                            usedAxs
+                          , LP.proofTree = ProofTree out }
+                      , timeUsed = usedTime })
+              ExitFailure 10 -> return (ATPSuccess, cfg
+                { proofStatus = (defaultProofStatus [])
+                  { LP.goalStatus = LP.Disproved
+                  , LP.proofTree  = ProofTree out }})
+              ExitSuccess -> return (ATPSuccess, cfg
+                { proofStatus = (defaultProofStatus [])
+                   { LP.goalStatus = LP.openGoalStatus
+                   , LP.proofTree  = ProofTree "Unkown"
+                   , LP.usedTime = timeToTimeOfDay $ secondsToDiffTime 0 }})
+              _ -> return (ATPError "Internal error.", cfg
+                     { proofStatus = defaultProofStatus [] })
 
 {- |
   Creates a list of all options the minisat prover runs with.
   Only Option is the timelimit
 -}
-createminisatOptions :: ATPState.GenericConfig ProofTree -> [String]
+createminisatOptions :: GenericConfig ProofTree -> [String]
 createminisatOptions cfg =
-    [(show $ configTimeLimit cfg)]
+    [show $ configTimeLimit cfg]

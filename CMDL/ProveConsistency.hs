@@ -22,7 +22,7 @@ module CMDL.ProveConsistency
 
 
 import Interfaces.DataTypes
-import Interfaces.GenericATPState(ATPTactic_script)
+import Interfaces.GenericATPState(ATPTacticScript)
 
 import CMDL.DataTypes(CmdlState(intState))
 import CMDL.DataTypesUtils(getAllNodes, add2hist, genErrorMsg, genMessage)
@@ -206,7 +206,7 @@ checkNode ::
               -- save problem file for each goal
               Bool ->
               -- Tactic script
-              ATPTactic_script ->
+              ATPTacticScript ->
               -- proofState of the node that needs proving
               -- all theorems, goals and axioms should have
               -- been selected before,but the theory should have
@@ -281,7 +281,7 @@ checkNode useTh save2File sTxt ndpf ndnm mp mcm mThr mSt mlbE libname
                       save2File
                       answ
                       (theoryName st)
-                      (P.Tactic_script $ show sTxt)
+                      (P.TacticScript $ show sTxt)
                       th []
              swapMVar mThr $ Just $ fst tmp
              getResults lid1 cmp (snd tmp) answ mSt
@@ -306,7 +306,7 @@ proveNode ::
               -- save problem file for each goal
               Bool ->
               -- Tactic script
-              ATPTactic_script ->
+              ATPTacticScript ->
               -- proofState of the node that needs proving
               -- all theorems, goals and axioms should have
               -- been selected before,but the theory should have
@@ -381,7 +381,7 @@ proveNode useTh save2File sTxt ndpf ndnm mp mcm mThr mSt mlbE libname
                       save2File
                       answ
                       (theoryName st)
-                      (P.Tactic_script $ show  sTxt)
+                      (P.TacticScript $ show  sTxt)
                       th []
              swapMVar mThr $ Just $ fst tmp
              getResults lid1 cmp (snd tmp) answ mSt
@@ -403,7 +403,7 @@ getResults :: (Logic lid sublogics basic_spec sentence
               lid ->
               AnyComorphism ->
               MVar () ->
-              MVar (Result [P.Proof_status proof_tree]) ->
+              MVar (Result [P.ProofStatus proof_tree]) ->
               MVar (Maybe Int_NodeInfo) ->
               IO ()
 getResults lid acm mStop mData mState =

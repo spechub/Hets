@@ -21,7 +21,6 @@ import Common.ProofTree
 import Logic.Prover
 
 import SoftFOL.MathServParsing
-import SoftFOL.ProverState (configTimeLimit)
 import SoftFOL.Sign
 
 import Data.Maybe
@@ -35,7 +34,7 @@ brokerName :: String
 brokerName = "MathServe Broker"
 
 {- |
-  Maps a MathServResponse record into a GenericConfig with Proof_status.
+  Maps a MathServResponse record into a GenericConfig with ProofStatus.
   If an error occured, an ATPError with error message instead of result output
   will be returned.
 -}
@@ -54,7 +53,7 @@ mapMathServResponse eMsr cfg nGoal prName =
               (\failure ->
                 (ATPError ("MathServe Error: " ++
                    if (null failure) then [] else head $ lines failure),
-                 cfg { proof_status = defaultProof_status nGoal
+                 cfg { proofStatus = defaultProofStatus nGoal
                          (prName ++ " [via MathServe]") (configTimeLimit cfg)
                          (extraOpts cfg) "",
                        resultOutput = lines failure,
@@ -64,7 +63,7 @@ mapMathServResponse eMsr cfg nGoal prName =
            eMsr
 
 {- |
-  Maps a FoAtpResult record into a GenericConfig with Proof_status.
+  Maps a FoAtpResult record into a GenericConfig with ProofStatus.
   Result output contains all important informations in a list of Strings.
   The function should only be called if there is a FoAtpResult available.
 -}
@@ -103,12 +102,12 @@ mapProverResult atpResult timeRes cfg nGoal prName =
                     then [AS_Anno.senAttr nGoal]
                     else words $ axioms $ proof atpResult
         (atpErr, retval) = proof_stat nGoal res usedAxs timeout $
-            defaultProof_status nGoal prName'
+            defaultProofStatus nGoal prName'
                            (configTimeLimit cfg)
                            (extraOpts cfg)
                            (formalProof $ proof atpResult)
     in  (atpErr,
-         cfg { proof_status = retval,
+         cfg { proofStatus = retval,
                resultOutput = output,
                timeUsed     = cpuTime timeRes })
     where
@@ -141,30 +140,30 @@ usedProverName pn =
   Default proof status. Contains the goal name, prover name
   and the time limit option used by MathServ.
 -}
-defaultProof_status :: AS_Anno.Named SPTerm -- ^ goal to prove
+defaultProofStatus :: AS_Anno.Named SPTerm -- ^ goal to prove
                     -> String -- ^ prover name
                     -> Int -- ^ time limit
                     -> [String] -- ^ list of used options
                     -> String -- ^ proof tree (simple text)
-                    -> Proof_status ProofTree
-defaultProof_status nGoal prName tl opts pt =
-  (openProof_status (AS_Anno.senAttr nGoal)
+                    -> ProofStatus ProofTree
+defaultProofStatus nGoal prName tl opts pt =
+  (openProofStatus (AS_Anno.senAttr nGoal)
                     prName (ProofTree pt))
-  {tacticScript = Tactic_script $ show $ ATPTactic_script
-    {ts_timeLimit = tl,
-     ts_extraOpts = opts} }
+  {tacticScript = TacticScript $ show $ ATPTacticScript
+    {tsTimeLimit = tl,
+     tsExtraOpts = opts} }
 
 {- |
   Returns the value of a prover run used in GUI (Success or
-  TLimitExceeded), and the proof_status containing all prove
+  TLimitExceeded), and the proofStatus containing all prove
   information available.
 -}
 proof_stat :: AS_Anno.Named SPTerm -- ^ goal to prove
            -> GoalStatus -- ^ Nothing stands for prove error
            -> [String] -- ^ Used axioms in the proof
            -> Bool -- ^ Timeout status
-           -> Proof_status ProofTree -- ^ default proof status
-           -> (ATPRetval, Proof_status ProofTree)
+           -> ProofStatus ProofTree -- ^ default proof status
+           -> (ATPRetval, ProofStatus ProofTree)
            -- ^ General return value of a prover run, used in GUI.
            --   Detailed proof status if information is available.
 proof_stat nGoal res usedAxs timeOut defaultPrStat
