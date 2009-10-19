@@ -28,8 +28,9 @@ import Static.GTheory
 
 import Interfaces.DataTypes
 
+import Logic.Logic (Language(language_name))
 import Logic.Grothendieck
-import Logic.Comorphism (AnyComorphism)
+import Logic.Comorphism (AnyComorphism(..))
 
 import Comorphisms.LogicGraph (logicGraph)
 
@@ -88,7 +89,7 @@ showConsistencyChecker gInfo@(GInfo { libName = ln }) = postGUIAsync $ do
   btnNodesUnchecked <- xmlGetWidget xml castToButton "btnNodesUnchecked"
   btnNodesTimeout   <- xmlGetWidget xml castToButton "btnNodesTimeout"
   -- get checker view and buttons
-  lblStatus         <- xmlGetWidget xml castToLabel "lblStatus"
+  lblComorphism     <- xmlGetWidget xml castToLabel "lblComorphism"
   lblSublogic       <- xmlGetWidget xml castToLabel "lblSublogic"
   sbTimeout         <- xmlGetWidget xml castToSpinButton "sbTimeout"
   btnCheck          <- xmlGetWidget xml castToButton "btnCheck"
@@ -101,7 +102,7 @@ showConsistencyChecker gInfo@(GInfo { libName = ln }) = postGUIAsync $ do
   let widgets = [ toWidget trvFinder
                 , toWidget btnFineGrained
                 , toWidget sbTimeout
-                , toWidget lblStatus
+                , toWidget lblComorphism
                 , toWidget lblSublogic
                 ]
       checkWidgets = widgets ++ [ toWidget btnClose
@@ -142,21 +143,30 @@ showConsistencyChecker gInfo@(GInfo { libName = ln }) = postGUIAsync $ do
   listFinder <- setListData trvFinder fname []
 
   -- setup view selection actions
-  setListSelectorSingle trvFinder $ do
-                        selector <- treeViewGetSelection trvFinder
-                        miter <- treeSelectionGetSelected selector
-                        case miter of
-                          Just _ -> widgetSetSensitive btnCheck True
-                          Nothing -> widgetSetSensitive btnCheck False
+  let update = do mf <- getSelectedSingle trvFinder listFinder
+                  case mf of
+                    Just (_,f) -> do
+                      case comorphs f !! selected f of
+                        (Comorphism cid) ->
+                          labelSetLabel lblComorphism $ language_name cid
+                      widgetSetSensitive btnCheck True
+                    Nothing -> do
+                      labelSetLabel lblComorphism "No path selected"
+                      widgetSetSensitive btnCheck False
+  setListSelectorSingle trvFinder update
+
   selection <- setListSelectorMultiple trvNodes btnNodesAll btnNodesNone
                  btnNodesInvert $ updateNodes trvNodes listNodes
-                                    (updateFinder trvFinder listFinder)
-                                    (do listStoreClear listFinder
+                                    (\ s -> do
+                                       labelSetLabel lblSublogic $ show s
+                                       updateFinder trvFinder listFinder s)
+                                    (do labelSetLabel lblSublogic
+                                                      "No sublogic given"
+                                        listStoreClear listFinder
                                         activate widgets False
                                         widgetSetSensitive btnCheck False)
                                     (do activate widgets True
                                         widgetSetSensitive btnCheck False)
-
 
   -- bindings
   let selectWith f = do
@@ -180,8 +190,7 @@ showConsistencyChecker gInfo@(GInfo { libName = ln }) = postGUIAsync $ do
 
   onClicked btnResults $ showModelView mView "Models" listNodes
   onClicked btnClose $ widgetDestroy window
-  onClicked btnFineGrained $ fineGrainedSelection trvFinder listFinder
-                           $ widgetSetSensitive btnCheck True
+  onClicked btnFineGrained $ fineGrainedSelection trvFinder listFinder update
   onClicked btnStop $ do
     mStopF <- tryTakeMVar stop
     case mStopF of
