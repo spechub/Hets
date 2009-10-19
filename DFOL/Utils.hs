@@ -4,6 +4,8 @@ Description :  Utilities for first-order logic with dependent types (DFOL)
 -}
 module DFOL.Utils where
 
+import qualified Common.Result as Result
+
 -- logical operators precedences
 truePrec :: Int
 truePrec = 1
@@ -52,3 +54,15 @@ funcPrec = 2
 
 piPrec :: Int
 piPrec = 3
+
+-- datatype for items annotated with diagnostic messages
+data DIAGN a = Diagn
+    { diags :: [Result.Diagnosis]
+    , item  :: a
+    } deriving (Show, Eq)
+
+-- conjunction for a list of truth values with diagnostic messages
+andD :: [DIAGN Bool] -> DIAGN Bool
+andD xs = Diagn diag result
+          where result = and $ map item xs
+                diag = concat $ map diags xs

@@ -28,4 +28,6 @@ t :: Sort
 g :: t -> t
 end
 
-view v3 : SP4 to SP5 = s |-> t 
+view v3 : SP4 to SP5 = s |-> t
+
+spec S6 = SP1 and SP3

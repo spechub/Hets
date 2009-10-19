@@ -14,5 +14,5 @@ isom :: Ob -> Ob -> Form
 . forall A : Ob. term(A) <=> (forall B : Ob. exists f : Mor(B,A). forall g : Mor(B,A). f == g) %(term_def)%
 . forall A,B : Ob. (isom(A,B) <=> (exists f : Mor(A,B). exists g : Mor(B,A). comp(A,B,A,f,g) == id(A) /\ comp(B,A,B,g,f) == id(B))) %(isom_def)%
 
-. forall A,B : Ob. term(A) /\ term(B) => isom(A,B) %(terminal_objects_are_isomorphic)%  %implied
+. forall A,B : Ob. term(A) /\ term(B) => isom(A,B) %(terminals_are_iso)%  %implied
 
