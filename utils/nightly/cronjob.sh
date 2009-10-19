@@ -310,7 +310,7 @@ for i in */*.prf; do ./hets -v2 -o th $i; done
 checkHpfs ()
 {
 date
-for i in *.hpf Basic/*.hpf; do ./hets -v2 $i; done
+for i in *.hpf Basic/*.hpf Calculi/*/*.hpf; do ./hets -v2 $i; done
 }
 
 updateOMDoc ()
