@@ -74,7 +74,6 @@ processFile opts file = do
 #endif
       PrfIn -> anaLibReadPrfs opts file
       ProofCommand -> do
-        putStrLn "Start processing a proof command file"
         st <- cmdlProcessFile opts file
         return . getMaybeLib $ intState st
       MaudeIn -> anaMaudeFile opts file

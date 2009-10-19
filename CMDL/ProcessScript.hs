@@ -68,4 +68,6 @@ cmdlProcessScriptFile fp st = do
 
 -- | The function processes the file of instructions
 cmdlProcessFile :: HetcatsOpts -> FilePath -> IO CmdlState
-cmdlProcessFile opts file = cmdlProcessScriptFile file $ emptyCmdlState opts
+cmdlProcessFile opts file = do
+  putIfVerbose opts 2 $ "Processing hets proof file: " ++ file
+  cmdlProcessScriptFile file $ emptyCmdlState opts
