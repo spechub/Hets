@@ -25,7 +25,6 @@ import Common.Id
 import Common.Result
 import Common.Utils (composeMap)
 
-import Control.Exception (assert)
 import Control.Monad
 
 type SymbolSet = Set.Set Symbol
@@ -338,20 +337,18 @@ composeM comp mor1 mor2 = do
       oMap = if Map.null oMap2 then oMap1 else
                  Map.foldWithKey ( \ i t m ->
                    Set.fold ( \ ot ->
-                       let (ni, nt) = mapOpSym sMap2 oMap2 $
-                                      mapOpSym sMap1 oMap1 (i, ot)
+                       let (ni, nt) = mapOpSym sMap2 oMap2
+                             $ mapOpSym sMap1 oMap1 (i, ot)
                            k = opKind nt
-                       in assert (mapOpTypeK sMap k ot == nt) $
-                          if i == ni && opKind ot == k then id else
+                       in if i == ni && opKind ot == k then id else
                           Map.insert (i, mkPartial ot) (ni, k)) m t)
                      Map.empty $ opMap src
       pMap = if Map.null pMap2 then pMap1 else
                  Map.foldWithKey ( \ i t m ->
                    Set.fold ( \ pt ->
-                       let (ni, nt) = mapPredSym sMap2 pMap2 $
-                                     mapPredSym sMap1 pMap1 (i, pt)
-                       in assert (mapPredType sMap pt == nt) $
-                       if i == ni then id else Map.insert (i, pt) ni) m t)
+                       let ni = fst $ mapPredSym sMap2 pMap2
+                             $ mapPredSym sMap1 pMap1 (i, pt)
+                       in if i == ni then id else Map.insert (i, pt) ni) m t)
                       Map.empty $ predMap src
   extComp <- comp (extended_map mor1) $ extended_map mor2
   let emb = embedMorphism extComp src tar
