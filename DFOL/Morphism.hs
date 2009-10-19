@@ -81,7 +81,7 @@ morphCanForm (Morphism sig1 sig2 map1) =
 
 -- constructs the inclusion morphism between signatures
 inclusionMorph :: Sign -> Sign -> Result.Result Morphism
-inclusionMorph sig1 sig2 = 
+inclusionMorph sig1 sig2 =
   let m = Morphism sig1 sig2 Map.empty
       in if (isValidMorph m)
             then Result.Result [] $ Just m
@@ -92,37 +92,37 @@ morphUnion :: Morphism -> Morphism -> Result.Result Morphism
 morphUnion m1@(Morphism sig1D sig1C map1) m2@(Morphism sig2D sig2C map2) =
   let Result.Result diag1 sigDM = sigUnion sig1D sig2D
       Result.Result diag2 sigCM = sigUnion sig1C sig2C
-      Result.Result diag3 map3M = combineMaps map1 map2 
+      Result.Result diag3 map3M = combineMaps map1 map2
       in case sigDM of
               Nothing -> Result.Result diag1 Nothing
-              Just sigD -> 
+              Just sigD ->
                 case sigCM of
                      Nothing -> Result.Result diag2 Nothing
-                     Just sigC -> 
+                     Just sigC ->
                        case map3M of
                             Nothing -> Result.Result diag3 Nothing
                             Just map3 ->
                               let m = Morphism sigD sigC map3
                                   in if (isValidMorph m)
                                      then Result.Result [] $ Just m
-                                     else Result.Result 
+                                     else Result.Result
                                             [invalidMorphError m1 m2] Nothing
 
-combineMaps :: Map.Map NAME NAME -> Map.Map NAME NAME -> 
+combineMaps :: Map.Map NAME NAME -> Map.Map NAME NAME ->
                Result.Result (Map.Map NAME NAME)
 combineMaps map1 map2 = combineMapsH map1 $ Map.toList map2
 
-combineMapsH :: Map.Map NAME NAME -> [(NAME,NAME)] -> 
-                Result.Result (Map.Map NAME NAME) 
+combineMapsH :: Map.Map NAME NAME -> [(NAME,NAME)] ->
+                Result.Result (Map.Map NAME NAME)
 combineMapsH map1 [] = Result.Result [] $ Just map1
 combineMapsH map1 ((k,v):ds) =
   if (Map.member k map1)
      then let Just v1 = Map.lookup k map1
               in if (v == v1)
                  then combineMapsH map1 ds
-                 else Result.Result [incompatibleMapError k v v1] Nothing   
+                 else Result.Result [incompatibleMapError k v v1] Nothing
      else let map2 = Map.insert k v map1
-          in combineMapsH map2 ds   
+          in combineMapsH map2 ds
 
 -- applies a morphism to a symbol
 mapSymbol :: Morphism -> NAME -> NAME
@@ -278,7 +278,7 @@ noSubsigError sig1 sig2 =
                           ++ "\nis not a subsignature of\n"
                           ++ (show $ pretty sig2)
                           ++ "\nand hence the inclusion morphism "
-                          ++ "cannot be constructed."                         
+                          ++ "cannot be constructed."
     , Result.diagPos = nullRange
     }
 

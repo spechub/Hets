@@ -197,7 +197,7 @@ sigUnion sig (Sign ds) = sigUnionH (expandDecls ds) sig
 
 sigUnionH :: [DECL] -> Sign -> Result.Result Sign
 sigUnionH [] sig = Result.Result [] $ Just sig
-sigUnionH (([n],t):ds) sig = 
+sigUnionH (([n],t):ds) sig =
   if (isConstant n sig)
      then let Just t1 = getSymbolType n sig
               in if (t == t1)
@@ -210,7 +210,7 @@ sigUnionH _ _ = Result.Result [] Nothing
 
 {- Intersection of signatures. The intersection of two DFOL signatures Sig1 and
    Sig2 is defined as the largest valid signature contained both in Sig1 and
-   Sig2 as a subsignature. It is always defined but may be the empty 
+   Sig2 as a subsignature. It is always defined but may be the empty
    signature. -}
 sigIntersection :: Sign -> Sign -> Result.Result Sign
 sigIntersection (Sign ds) sig = sigIntersectionH (expandDecls ds) emptySig sig
@@ -223,7 +223,7 @@ sigIntersectionH (([n],t):ds) sig sig2 =
                         in if (t == t1)
                               then True
                               else False
-                   else False  
+                   else False
       Diagn _ valid = isValidDecl ([n],t) sig emptyContext
       in if (and [present,valid])
             then let sig1 = addSymbolDecl ([n],t) sig
@@ -352,7 +352,7 @@ noFunctionTermError term t cont =
   Result.Diag
     { Result.diagKind = Result.Error
     , Result.diagString = "Term\n" ++ (show $ pretty term)
-                          ++ "\nhas the non-function type\n" 
+                          ++ "\nhas the non-function type\n"
                           ++ (show $ pretty t)
                           ++ "\nin the context\n" ++ (show $ pretty cont)
                           ++ "\nand hence cannot be applied to an argument."
