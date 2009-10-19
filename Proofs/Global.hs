@@ -241,13 +241,17 @@ globDecompForOneEdgeAux target (dgraph, proof_basis) path =
       morphism = case calculateMorphismOfPath morphismPath of
         Just morph -> morph
         Nothing -> error "globDecomp: could not determine morphism of new edge"
-      newEdge = (node, target, DGLink
+      newEdgeLbl = DGLink
         { dgl_morphism = morphism
         , dgl_type = if isHiding then hidingThm $ dgl_morphism lbl
             else if isGlobalDef lbltype then globalThm else localThm
         , dgl_origin = DGLinkProof
-        , dgl_id = defaultEdgeId })
-      in case tryToGetEdge newEdge dgraph of
+        , dgl_id = defaultEdgeId }
+      newEdge = (node, target, newEdgeLbl)
+      in if node == target && isInc (getRealDGLinkType newEdgeLbl)
+           && isGlobalDef lbltype
+      then (dgraph, addEdgeId proof_basis $ dgl_id lbl)
+      else case tryToGetEdge newEdge dgraph of
         Nothing -> let
           newGraph = changeDGH dgraph $ InsertEdge newEdge
           finalEdge = case getLastChange newGraph of

@@ -82,7 +82,6 @@ rules :: [LibName -> LibEnv -> LibEnv]
 rules =
     [ automaticHideTheoremShift
     , globDecomp
-    , globSubsume
     , wrapTheoremHideShift
     ]
 
