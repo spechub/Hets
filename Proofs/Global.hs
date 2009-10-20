@@ -213,11 +213,9 @@ globDecompAux dgraph edge =
 -- applies global decomposition to a single edge
 globDecompForOneEdge :: DGraph -> LEdge DGLinkLab -> DGraph
 globDecompForOneEdge dgraph edge@(source, target, edgeLab) = let
-    defEdgesToSource = [e | e@(_, _, lbl) <- innDG dgraph source,
-                        isDefEdge (dgl_type lbl)]
-    paths = map (\e -> [e, edge]) defEdgesToSource ++ [[edge]]
-             -- why not? [edge] : map ...
-    (newGr,  proof_basis) = foldl
+    defEdgesToSource = filter (liftE isDefEdge) $ innDG dgraph source
+    paths = [edge] : map (: [edge]) defEdgesToSource
+    (newGr, proof_basis) = foldl
       (globDecompForOneEdgeAux target) (dgraph, emptyProofBasis) paths
     provenEdge = (source, target, edgeLab
         { dgl_type = setProof (Proven (globDecompRule edge) proof_basis)
@@ -241,6 +239,10 @@ globDecompForOneEdgeAux target (dgraph, proof_basis) path =
       morphism = case calculateMorphismOfPath morphismPath of
         Just morph -> morph
         Nothing -> error "globDecomp: could not determine morphism of new edge"
+      defEdgesToTarget = filter
+        (\ (s, _, l) -> s == node && isGlobalDef (dgl_type l)
+        && dgl_morphism l == morphism)
+        $ innDG dgraph target
       newEdgeLbl = DGLink
         { dgl_morphism = morphism
         , dgl_type = if isHiding then hidingThm $ dgl_morphism lbl
@@ -248,10 +250,13 @@ globDecompForOneEdgeAux target (dgraph, proof_basis) path =
         , dgl_origin = DGLinkProof
         , dgl_id = defaultEdgeId }
       newEdge = (node, target, newEdgeLbl)
-      in if node == target && isInc (getRealDGLinkType newEdgeLbl)
-           && isGlobalDef lbltype
-      then (dgraph, addEdgeId proof_basis $ dgl_id lbl)
-      else case tryToGetEdge newEdge dgraph of
+      in case defEdgesToTarget of
+      (_, _, dl) : _ | isGlobalDef lbltype
+             -> (dgraph, addEdgeId proof_basis $ dgl_id dl)
+      _ | node == target && isInc (getRealDGLinkType newEdgeLbl)
+               && isGlobalDef lbltype
+             -> (dgraph, addEdgeId proof_basis $ dgl_id lbl)
+      _ -> case tryToGetEdge newEdge dgraph of
         Nothing -> let
           newGraph = changeDGH dgraph $ InsertEdge newEdge
           finalEdge = case getLastChange newGraph of
