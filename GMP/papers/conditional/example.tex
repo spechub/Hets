@@ -655,12 +655,12 @@ advantages or disadvantages of each algorithm:
 
 \begin{itemize}
 \item The formula \verb|bloat(|$i$\verb|)| is a full binary tree of depth $i$ (containing $2^i$ pairwise logically
-inequivalent atoms and $2^i-1$ modal antecedents):
+inequivalent atoms and $2^i-1$ independent modal antecedents):
 \begin{quote}
 \verb|bloat(|$i$\verb|)| = $($\verb|bloat(|$i-1$\verb|)|$)\Rightarrow($\verb|bloat(|$i-1$\verb|)|)\\
 \verb|bloat(|$0$\verb|)| = $p_{rand}$
 \end{quote}
-formulas from this class should show the problematic performance of Algorithm~\ref{alg:preprove} whenever
+Formulas from this class should show the problematic performance of Algorithm~\ref{alg:preprove} whenever
 a formula contains many modal antecedents which appear at different depths. A comparison of the different
 algorithms w.r.t. formulas \verb|bloat(|$i$\verb|)| is depicted in Figure~\ref{fig:benchBloat}.
 Since Algorithm~\ref{alg:preprove} does not check whether pairs of modal antecedents are independent or connected,
@@ -676,13 +676,13 @@ of a proof. This is the price to pay for the optimisation by dynamic programming
 \hline
 $i$ & Algorithm~\ref{alg:seq} & Algorithm~\ref{alg:preprove} & Algorithm~\ref{alg:optPreprove}  \\
 \hline
- 1 & 0.008s & 0.009s & 0.010s\\
- 2 & 0.008s & 0.011s & 0.010s\\
- 3 & 0.009s & 0.028s & 0.014s\\
- 4 & 0.010s & 0.233s & 0.022s\\
- 5 & 0.011s & 2.840s & 0.087s\\
- 6 & 0.013s & 33.476s & 0.590s\\
- 7 & 0.019s & 402.239s & 4.989s\\
+ 1 & 0.007s & 0.007s & 0.007s\\
+ 2 & 0.007s & 0.007s & 0.007s\\
+ 3 & 0.007s & 0.008s & 0.008s\\
+ 4 & 0.008s & 0.017s & 0.012s\\
+ 5 & 0.009s & 0.112s & 0.048s\\
+ 6 & 0.010s & 1.154s & 0.416s\\
+ 7 & 0.012s & 11.998s & 4.116s\\
  \hline
  \end{tabular}
   \end{center}
@@ -703,10 +703,10 @@ Figure~\ref{fig:benchConjunct}. It is obvious that the optimized algorithms perf
 Algorithm~\ref{alg:seq}. The reason for this is, that Algorithm~\ref{alg:seq} repeatedly proves equivalences between the same
 pairs of modal antecedents. The optimized algorithms on the other hand are equipped with knowledge about the modal antecedents,
 so that these equivalences have to be proved only once. However, even the runtime of the optimized algorithms is exponential in $i$,
-due to the exponentially increasing complexity of the underlying propositional formula. Note that the use of propositional taulogies (such as
+due to the exponentially increasing complexity of the underlying propositional formula. Note that the use of propositional tautologies (such as
 $A \leftrightarrow (A\wedge A) $ in this case) would help to greatly reduce the computing time for \verb|conjunct(|$i$\verb|)|.
 Optimisation of propositional reasoning is not the scope of this paper though, thus we devise the following examplary class of formulas
-(for which propositional tautologies would not help).
+(for which propositional tautologies would not help):
 \end{itemize}
 
 \begin{figure}[!h]
@@ -715,15 +715,15 @@ Optimisation of propositional reasoning is not the scope of this paper though, t
 \hline
 $i$ & Algorithm~\ref{alg:seq} & Algorithm~\ref{alg:preprove} & Algorithm~\ref{alg:optPreprove}  \\
 \hline
- 1 & 0.012s & 0.013s & 0.012s\\
- 2 & 0.021s & 0.015s & 0.014s\\
- 3 & 0.681s & 0.021s & 0.021s\\
- 4 & 131.496s & 0.048s & 0.048s\\
- 5 & $>$600.000s & 0.199s & 0.201s\\
- 6 & $\gg$600.000s & 1.152s & 1.161s\\
- 7 & $\gg$600.000s & 8.746s & 8.667s\\
- 8 & $\gg$600.000s & 74.805s & 75.595s\\
- 9 & $\gg$600.000s & $>$600.000s & $>$600.000s\\
+ 1 & 0.008s & 0.008s & 0.008s\\
+ 2 & 0.009s & 0.009s & 0.009s\\
+ 3 & 0.011s & 0.010s & 0.010s\\
+ 4 & 0.058s & 0.011s & 0.011s\\
+ 5 & 1.335s & 0.014s & 0.015s\\
+ 6 & 42.885s & 0.038s & 0.040s\\
+ 7 & $>$600.000s ? & 0.220s & 0.232s\\
+ 8 & $\gg$600.000s ? & 1.944s & 2.019s\\
+ 9 & $\gg$600.000s ? & 17.826s & 18.790s\\
  \hline
  \end{tabular}
   \end{center}
@@ -758,15 +758,15 @@ Figure~\ref{fig:benchExplode}).
 \hline
 $i$ & Algorithm~\ref{alg:seq} & Algorithm~\ref{alg:preprove} & Algorithm~\ref{alg:optPreprove}  \\
 \hline
- 1 & 0.009s & 0.008s & 0.009s\\
- 2 & 0.011s & 0.010s & 0.010s\\
- 3 & 0.028s & 0.012s & 0.014s\\
- 4 & 0.268s & 0.018s & 0.018s\\
- 5 & 4.555s & 0.025s & 0.027s\\
- 6 & 10.785s & 0.035s & 0.039s\\
- 7 & $\gg$600.000s & 0.054s & 0.060s\\
- 8 & $\gg$600.000s & 0.079s & 0.089s\\
- 9 & $\gg$600.000s & 0.122s & 0.140s\\
+ 1 & 0.007s & 0.007s & 0.007s\\
+ 2 & 0.007s & 0.007s & 0.007s\\
+ 3 & 0.009s & 0.009s & 0.009s\\
+ 4 & 0.017s & 0.010s & 0.010s\\
+ 5 & 0.133s & 0.012s & 0.012s\\
+ 6 & 0.305s & 0.015s & 0.016s\\
+ 7 & 430.684s& 0.018s & 0.022s\\
+ 8 & $\gg$600.000s ?& 0.023s & 0.029s\\
+ 9 & $\gg$600.000s ?& 0.029s & 0.044s\\
  \hline
  \end{tabular}
   \end{center}
@@ -777,8 +777,8 @@ $i$ & Algorithm~\ref{alg:seq} & Algorithm~\ref{alg:preprove} & Algorithm~\ref{al
 The tests were conducted on a Linux PC (Dual Core AMD Opteron 2220S
 (2800MHZ), 16GB RAM).  It is obvious that a significant increase of
 performance may be obtained through the proposed optimisations. In
-general, the implementation of the proposed algorithms in the generic
-reasoner \COLOSS has at least comparable performance as dedicated
+general, the performance of the implementation of the proposed
+algorithms in the generic reasoner CoLoSS is at comparable to dedicated
 conditional logic provers such as CondLean; a direct comparison is
 presently made difficult by the fact that the benchmarking formulas
 used to evaluate CondLean are not listed explicitly
@@ -934,10 +934,10 @@ We presented (from a practical point of view) two optimisations for reasoning
 in conditional logic:
 \begin{itemize}
 \item The first optimisation makes use of the concept of dynamic programming
-in order to seperate the two tasks that showing validity of formulas in conditional
+in order to separate the two tasks that showing validity of formulas in conditional
 logic consists of: The first task of proving equivalences of antecedents and the second task
-of ordinary sequent proving. This substantially decreases the branching breadth
-of the resulting sequent calculus.
+of ordinary sequent proving. The use of dynamic programming substantially decreases the
+branching breadth of the resulting sequent calculus.
 \item The second proposed optimisation introduces a strategy to reduce the amount
 of pairs of antecedents whose equivalence has to be considered. This is achieved
 by distinguishing between connected and independent pairs of modal arguments.
