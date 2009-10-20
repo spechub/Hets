@@ -430,10 +430,10 @@ modal nesting depth $i-1$ and which contains no antecedent
 of modal nesting depth greater than $i-1$. A
 conditional antecedent of nesting depth 0 is an antecedent
 that does not contain any further modal operators.
-Let $p_i$ denote the set of all conditional antecedents of modal
+Let $a_i$ denote the set of all conditional antecedents of modal
 nesting depth $i$. Further, let $\prems(n)$ denote the set of all
 conditional antecedents of modal nesting depth at most $n$ (i.e.
-$\prems(n)=\bigcup_{j=1..n}^{} p_j$).
+$\prems(n)=\bigcup_{j=1..n}^{} a_j$).
 Finally, let $depth(\phi)$ denote the maximal modal nesting in
 the formula $\phi$.
 \end{definition}
@@ -700,7 +700,7 @@ This class consists of formulas which contain logically (but not sytactically) e
 As $i$ increases, so does the amount of appearances of identical modal antecedents in different positions
 of the considered formula. A comparison of the different algorithms w.r.t. formulas \verb|conjunct(|$i$\verb|)| is depicted in
 Figure~\ref{fig:benchConjunct}. It is obvious that the optimized algorithms perform considerably better than the unoptimized
-Algorithm~\ref{alg:seq}. The reason for this is, that Algorithm~\ref{alg:seq} repeatedly proves equivalences between the same
+Algorithm~\ref{alg:seq}. The reason for this is that Algorithm~\ref{alg:seq} repeatedly proves equivalences between the same
 pairs of modal antecedents. The optimized algorithms on the other hand are equipped with knowledge about the modal antecedents,
 so that these equivalences have to be proved only once. However, even the runtime of the optimized algorithms is exponential in $i$,
 due to the exponentially increasing complexity of the underlying propositional formula. Note that the use of propositional tautologies (such as
@@ -765,8 +765,8 @@ $i$ & Algorithm~\ref{alg:seq} & Algorithm~\ref{alg:preprove} & Algorithm~\ref{al
  5 & 0.133s & 0.012s & 0.012s\\
  6 & 0.305s & 0.015s & 0.016s\\
  7 & 430.684s& 0.018s & 0.022s\\
- 8 & $\gg$600.000s ?& 0.023s & 0.029s\\
- 9 & $\gg$600.000s ?& 0.029s & 0.044s\\
+ 8 & $\gg$600.000s& 0.023s & 0.029s\\
+ 9 & $\gg$600.000s& 0.029s & 0.044s\\
  \hline
  \end{tabular}
   \end{center}
