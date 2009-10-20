@@ -130,6 +130,7 @@ isaComorphisms = do
             >>= (\ x -> compComorphism x (Comorphism CoCFOL2IsabelleHOL))
        -- ModalCASL
        mod2IHOL <- compComorphism (Comorphism Modal2CASL) subpc2IHOL
+       maude2IHOL <- compComorphism (Comorphism Maude2CASL) subpc2IHOL
 #endif
 #ifndef NOOWLLOGIC
        owl2HOL  <- compComorphism (Comorphism OWL2CASL) subpc2IHOL
@@ -143,6 +144,7 @@ isaComorphisms = do
 #ifdef CASLEXTENSIONS
          , co2IHOL
          , mod2IHOL
+         , maude2IHOL
          , casl_dl2CASL
 #endif
 #ifdef PROGRAMATICA
