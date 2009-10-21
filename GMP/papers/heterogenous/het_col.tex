@@ -1,0 +1,148 @@
+\documentclass{entcs} \usepackage{entcsmacro}
+\usepackage{graphicx}
+\usepackage{mathpartir}
+\usepackage{amsmath,amssymb}
+\newcommand{\hearts}{\heartsuit}
+\newcommand{\prems}{\mathit{prems}}
+\newcommand{\eval}{\mathit{eval}}
+\input{header}
+\sloppy
+% The following is enclosed to allow easy detection of differences in
+% ascii coding.
+% Upper-case    A B C D E F G H I J K L M N O P Q R S T U V W X Y Z
+% Lower-case    a b c d e f g h i j k l m n o p q r s t u v w x y z
+% Digits        0 1 2 3 4 5 6 7 8 9
+% Exclamation   !           Double quote "          Hash (number) #
+% Dollar        $           Percent      %          Ampersand     &
+% Acute accent  '           Left paren   (          Right paren   )
+% Asterisk      *           Plus         +          Comma         ,
+% Minus         -           Point        .          Solidus       /
+% Colon         :           Semicolon    ;          Less than     <
+% Equals        =3D           Greater than >          Question mark ?
+% At            @           Left bracket [          Backslash     \
+% Right bracket ]           Circumflex   ^          Underscore    _
+% Grave accent  `           Left brace   {          Vertical bar  |
+% Right brace   }           Tilde        ~
+
+% A couple of exemplary definitions:
+
+%\newcommand{\Nat}{{\mathbb N}}
+%\newcommand{\Real}{{\mathbb R}}
+\newcommand{\COLOSS}{{\textrm CoLoSS}}
+\def\lastname{Hausmann and Schr\"oder}
+\begin{document}
+\begin{frontmatter}
+  \title{Heterogenous modal logics within \COLOSS}
+  \author[DFKI]{Daniel Hausmann\thanksref{myemail}}
+  \author[DFKI,UBremen]{Lutz Schr\"oder\thanksref{coemail}}
+  \address[DFKI]{DFKI Bremen, SKS}
+  \address[UBremen]{Department of Mathematics and Computer Science, Universit\"at Bremen, Germany}
+%  \thanks[ALL]{Work forms part of DFG-project \emph{Generic Algorithms and Complexity
+%      Bounds in Coalgebraic Modal Logic} (SCHR 1118/5-1)}
+  \thanks[myemail]{Email: \href{mailto:Daniel.Hausmann@dfki.de} {\texttt{\normalshape Daniel.Hausmann@dfki.de}}}
+  \thanks[coemail]{Email: \href{mailto:Lutz.Schroeder@dfki.de} {\texttt{\normalshape Lutz.Schroeder@dfki.de}}}
+\begin{abstract} 
+abstract hier, abstract da
+\end{abstract}
+\begin{keyword}
+  Coalgebraic modal logic, heterogenous modal logic, automated reasoning
+\end{keyword}
+\end{frontmatter}
+\section{Introduction}\label{intro}
+introbla
+ 
+\section{Generic Sequent Calculi for Coalgebraic Modal Logic}
+
+theorybla
+
+\section{Generic and Heterogenous Sequent Calculi for Coalgebraic Modal Logic}
+
+There are several reasonable definitions of what a heterogenous modal logic could be. For the remainder
+of this paper we go with the following definition:
+
+\begin{definition}
+Given a set $\mathcal{P}$ of atoms, the set $Prop(\mathcal{F})$ of \emph{propositional formulas} over
+a set $\mathcal{F}$ of other formulas is defined as follows ($p\in\mathcal{P}$, $\xi\in\mathcal{F}$):
+\begin{quote}
+$\phi,\psi::= p\mid \phi\wedge\psi\mid\neg\phi\mid \xi$
+\end{quote}
+Furthermore, given a modal similarity type $\Lambda$, the set $Mod^\Lambda(\mathcal{F})$ of \emph{modal formulas}
+over a set $\mathcal{F}$ of other formulas is defined as follows (where $\hearts$ is a $n$-ary operator
+from $\Lambda$ and $\psi_1,\ldots,\psi_n\in\mathcal{F}$):
+\begin{quote}
+$\phi::= \hearts(\psi_1,\dots,\psi_n)$
+\end{quote}
+\end{definition}
+
+Using the previous definition which provides us with a notion of \emph{layers} of a formula,
+we may now define heterogenous modal logics:
+
+\begin{definition}
+A \emph{heterogenous modal logic} consists of formulas that show a precisely defined constellation
+of layers: Given a finite list $\mathcal{M}=[\Lambda_1,\ldots,\Lambda_n]$ of modal similarity
+types, formulas $Het(\mathcal{M})=\phi^1$ of the according heterogenous modal logic are defined by circular induction:
+\begin{quote}
+$\phi^{(i \mod n)}::=Prop(Mod^{\Lambda_{(i\mod n)}}(\phi^{((i+1) \mod n)}).$
+\end{quote}
+\end{definition}
+This definition divides a formula into distinguished \emph{modal layers} (which appear in the
+order given by $\mathcal{M}$), with a
+\emph{propositional layer} between every two modal layers.
+\begin{remark}
+Observe that this definition of heterogenous modal logics subsumes the case of modal logics
+for composed functors (for given functors $F_1$ to $F_n$ (with associated modal logics)
+of suiting arities, the composed modal logic is just the logic associated with
+$F_1\circ\ldots\circ F_n$).
+Use the above definition and set all (except the first) propositional layers to be the
+identity.
+\end{remark}
+
+\begin{example}[Heterogenous Formulas]
+Let $\mathcal{M}=\{\Lambda_1,\Lambda_2\}$ where $\Lambda_1=\{\Box_{KD}\}$ and
+$\Lambda_2=\{\Box_{K}\}$. The formulas of the according heterogenous modal logic
+then contain alternating appearences of the two modal operators $\Box_{KD}$ and
+$\Box_{K}$, such as in the following examplary formulas:
+\begin{quote}
+$\phi=\Box_{KD}\Box_{K}\Box_{KD}\Box_{K}\top$\\
+$\psi=(\Box_{KD} \Box_{K} ((\Box_{KD} \bot) \vee \top)))\wedge(\Box_{KD}\neg \Box_{K} \top)$
+\end{quote}
+\end{example}
+
+\begin{definition}
+A \emph{formula of level $i$} is a formula whose top-level modalities are all from $\Lambda_i$.
+A \emph{heterogenous sequent} is a heterogenous list of formulas of possibly varying levels. 
+A \emph{heterogenous premise} is just a list of lists of heterogenous sequents.
+\end{definition}
+
+Typed sequent rules:
+\begin{figure}[!h]
+  \begin{center}
+    \begin{tabular}{| c |}
+    \hline
+      \\[-5pt]
+      (\textsc {Linear})\inferrule{stripped of type a}
+                      {\Gamma, formula of type a} \\[-5pt]
+      \\
+    \hline
+    \end{tabular}
+  \end{center}
+  \caption{The linear sequent rules}
+  \label{fig:linear}
+\end{figure}
+
+
+matching function, heterogenous sequent algorithm
+
+\section{Implementation}
+
+\section{Generic and Heterogenous Optimisation}
+
+\section{Conclusion}  
+
+concludebla
+
+\bibliographystyle{myabbrv}
+\bibliography{coalgml}
+
+
+\end{document}
