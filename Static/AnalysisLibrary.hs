@@ -53,6 +53,8 @@ import Data.List
 import Control.Monad
 import Control.Monad.Trans
 
+import Data.Char
+
 import System.Directory
 import System.FilePath
 import System.Time
@@ -73,21 +75,33 @@ anaSourceFile lgraph opts topLns libenv initDG fname = ResultT $ do
         if any (flip isSuffixOf file) [envSuffix, prfSuffix] then
             fail $ "no matching source file for '" ++ fname ++ "' found."
         else do
-        curDir <- getCurrentDirectory
         input <- readFile file
         mt <- getModificationTime file
-        let aPath = curDir </> file
-        putIfVerbose opts 2 $ "Reading file " ++ aPath
-        runResultT $ anaString lgraph opts topLns libenv initDG input aPath mt
+        putIfVerbose opts 2 $ "Reading file " ++ file
+        runResultT $ anaString lgraph opts topLns libenv initDG input file mt
 
 -- | parsing and static analysis for string (=contents of file)
 -- Parameters: logic graph, default logic, contents of file, filename
 anaString :: LogicGraph -> HetcatsOpts -> LNS -> LibEnv -> DGraph -> String
           -> FilePath -> ClockTime -> ResultT IO (LibName, LibEnv)
 anaString lgraph opts topLns libenv initDG input file mt = do
-  let Result ds mast = readLibDefnM lgraph opts file input mt
+  curDir <- lift $ getCurrentDirectory -- get full path for parser positions
+  let Result ds mast = readLibDefnM lgraph opts (curDir </> file) input mt
   case mast of
-    Just ast@(Lib_defn ln _ _ ans) -> case analysis opts of
+    Just pAst@(Lib_defn pln is ps ans) ->
+         let libPath = filter (\ c -> isAlphaNum c || elem c "'_/")
+               $ dropWhile (== '/') $ rmSuffix file
+             nLn = LibName (IndirectLink libPath nullRange file mt) Nothing
+             noLibName = null $ show $ getLibId pln
+             spN = reverse $ takeWhile (/= '/') $ reverse libPath
+             nIs = case is of
+               [Annoted (Spec_defn spn gn as qs) rs [] []]
+                 | noLibName && null (tokStr spn)
+                   -> [Annoted (Spec_defn (mkSimpleId spN) gn as qs) rs [] []]
+               _ -> is
+             ast@(Lib_defn ln _ _ _) = if noLibName then
+               Lib_defn nLn nIs ps ans else pAst
+         in case analysis opts of
       Skip  -> do
           lift $ putIfVerbose opts 1 $
                   "Skipping static analysis of library " ++ show ln
@@ -101,8 +115,8 @@ anaString lgraph opts topLns libenv initDG input file mt = do
             $ "### file name '" ++ file ++ "' does not match library name '"
             ++ libstring ++ "'"
           lift $ putIfVerbose opts 1 $ "Analyzing "
-               ++ if null libstring then "file " ++ file else
-                 "library " ++ show ln
+               ++ (if noLibName then "file " ++ file ++ " as " else "")
+               ++ "library " ++ show ln
           (_, ld, _, lenv) <- anaLibDefn lgraph opts topLns libenv initDG ast
           case Map.lookup ln lenv of
               Nothing -> error $ "anaString: missing library: " ++ show ln
