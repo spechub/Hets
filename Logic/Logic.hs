@@ -249,9 +249,6 @@ class (Language lid, Category sign morphism, Ord sentence,
       where
 
       ----------------------- sentences ---------------------------
-      -- | check whether a sentence belongs to a signature
-      is_of_sign :: lid -> sentence -> sign -> Bool
-      is_of_sign l _ _ = statError l "is_of_sign"
       -- | sentence translation along a signature morphism
       map_sen :: lid -> morphism -> sentence -> Result sentence
       map_sen l _ _ = statFail l "map_sen"

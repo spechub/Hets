@@ -44,7 +44,6 @@ instance Syntax DMU Text () () where
   parse_basic_spec DMU = Just $ fmap Text $ many1 anyChar
 
 instance Sentences DMU Text () (DefaultMorphism ()) () where
-  is_of_sign DMU _ _ = True
   map_sen DMU _ = return
   sym_of DMU _ = Set.singleton ()
   symmap_of DMU _ = Map.empty

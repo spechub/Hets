@@ -33,7 +33,6 @@ module Maude.Sign (
     -- * Testing
     isLegal,
     isSubsign,
-    includesSentence,
     -- * Modification
     simplifySentence,
     renameSort,
@@ -289,14 +288,6 @@ isSubsign sig1 sig2 = let
     has'subsorts = apply Rel.isSubrelOf subsorts
     has'ops = apply Map.isSubmapOf ops
     in all id [has'sorts, has'subsorts, has'ops]
-
--- | True if the given 'Sign'ature can include the given 'Sentence'.
-includesSentence :: Sign -> Sentence -> Bool
-includesSentence sign sen = let
-    apply func a1 a2 = func (a1 sen) (a2 sign)
-    has'ops   = apply Set.isSubsetOf getOps getOps
-    has'sorts = apply Set.isSubsetOf getSorts getSorts
-    in all id [has'sorts, has'ops]
 
 -- * Modification
 
