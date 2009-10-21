@@ -1,0 +1,338 @@
+<?xml version='1.0' encoding='UTF-8'?>
+
+
+
+<ClashResult ResultCount="62" Responsible="Klein" CATDocument="Unknown DocumentC:\Dokumente und Einstellungen\Klein\Desktop\STEPP\Produkt_mit 5 Schrauben.CATProduct" > 
+
+<Date Hour="17" Minute="0" Seconde="41" Month="9" Day="30" Year="2009" /> 
+
+
+
+<ClashSpec Name="Kollision.1" SelectMode="Zwischen allen Komponenten" CaseOfCalc="�berschneidung + Kontakt" DistanceClearance="5,000000 mm" TabTitle="Spezifikation der �berschneidungsberechnung" TabListTitle="Ausgew�hlte Produkte" > 
+
+<Product Name1="Flanschdeckel.1" Name2="" /> 
+
+
+
+<Product Name1="Rohrflansch.1" Name2="" /> 
+
+
+
+<Product Name1="ISO 4034 NUT M14 STEEL GRADE C HEXAGON HEAD NONPREFERRED.1" Name2="" /> 
+
+
+
+<Product Name1="Part2.1" Name2="" /> 
+
+
+
+<Product Name1="Rohrflansch.2" Name2="" /> 
+
+
+
+<Product Name1="ISO 4014 BOLT M14x70 STEEL GRADE A HEXAGON HEAD NONPREFERRED.1" Name2="" /> 
+
+
+
+<Product Name1="ISO 4014 BOLT M14x70 STEEL GRADE A HEXAGON HEAD NONPREFERRED.2" Name2="" /> 
+
+
+
+<Product Name1="ISO 4014 BOLT M14x70 STEEL GRADE A HEXAGON HEAD NONPREFERRED.3" Name2="" /> 
+
+
+
+<Product Name1="ISO 4014 BOLT M14x70 STEEL GRADE A HEXAGON HEAD NONPREFERRED.4" Name2="" /> 
+
+
+
+<Product Name1="ISO 4014 BOLT M14x70 STEEL GRADE A HEXAGON HEAD NONPREFERRED.5" Name2="" /> 
+
+
+
+<Product Name1="ISO 4034 NUT M14 STEEL GRADE C HEXAGON HEAD NONPREFERRED.5" Name2="" /> 
+
+
+
+<Product Name1="ISO 4034 NUT M14 STEEL GRADE C HEXAGON HEAD NONPREFERRED.6" Name2="" /> 
+
+
+
+<Product Name1="ISO 4034 NUT M14 STEEL GRADE C HEXAGON HEAD NONPREFERRED.7" Name2="" /> 
+
+
+
+<Product Name1="ISO 4034 NUT M14 STEEL GRADE C HEXAGON HEAD NONPREFERRED.8" Name2="" /> 
+
+
+
+<Product Name1="Rohrflansch.3" Name2="" /> 
+
+
+
+<Product Name1="Rohrflansch.4" Name2="" /> 
+
+
+
+<Product Name1="ISO 4034 NUT M14 STEEL GRADE C HEXAGON HEAD NONPREFERRED.2" Name2="" /> 
+
+
+
+<Product Name1="ISO 4034 NUT M14 STEEL GRADE C HEXAGON HEAD NONPREFERRED.10" Name2="" /> 
+
+
+
+<Product Name1="ISO 4034 NUT M14 STEEL GRADE C HEXAGON HEAD NONPREFERRED.11" Name2="" /> 
+
+
+
+<Product Name1="ISO 4034 NUT M14 STEEL GRADE C HEXAGON HEAD NONPREFERRED.12" Name2="" /> 
+
+
+
+<Product Name1="ISO 4034 NUT M14 STEEL GRADE C HEXAGON HEAD NONPREFERRED.13" Name2="" /> 
+
+
+
+<Product Name1="ISO 4014 BOLT M14x70 STEEL GRADE A HEXAGON HEAD NONPREFERRED.6" Name2="" /> 
+
+
+
+<Product Name1="Part5.1" Name2="" /> 
+
+
+
+<Product Name1="Part5.2" Name2="" /> 
+
+
+
+<Product Name1="Part5.3" Name2="" /> 
+
+
+
+<Product Name1="Part5.4" Name2="" /> 
+
+
+
+<Product Name1="Dichtring.1" Name2="" /> 
+
+
+
+<Product Name1="Dichtring.2" Name2="" /> 
+
+
+
+<Product Name1="Dichtring klein.1" Name2="" /> 
+
+
+
+
+
+</ClashSpec> 
+
+<ClashResultSpec Chaine="Ausgew�hlte(s) Produkt(e):62 (�berschneidung: 14, Kontakt: 48, Sicherheitsbereich: 0) - Vom Endbenutzer gefilterte Ergebnisse" > 
+
+<Interference NumInterf="1" Product1Name="Flanschdeckel (Flanschdeckel.1)" Product2Name="Dichtring (Part2.1)" ResultType="�berschneidung" Value="-2,235800 mm" Status="Relevant" > 
+
+<Comment>   
+
+</Comment> 
+
+<Picture HRef="Federated_ClashPublish_30_9_2009_16_55_54_Pic_1.jpg" Preview="Federated_ClashPublish_30_9_2009_16_55_54_Pic_1_Preview.jpg" /> 
+
+
+
+
+
+</Interference> 
+
+<Interference NumInterf="2" Product1Name="Flanschdeckel (Flanschdeckel.1)" Product2Name="Dichtring (Dichtring.2)" ResultType="�berschneidung" Value="Nicht definiert" Status="Nicht gepr�ft" > 
+
+<Comment>   
+
+</Comment> 
+
+<Picture HRef="Federated_ClashPublish_30_9_2009_16_55_54_Pic_2.jpg" Preview="Federated_ClashPublish_30_9_2009_16_55_54_Pic_2_Preview.jpg" /> 
+
+
+
+
+
+</Interference> 
+
+<Interference NumInterf="3" Product1Name="Rohrflansch (Rohrflansch.1)" Product2Name="Dichtring (Part2.1)" ResultType="�berschneidung" Value="Nicht definiert" Status="Nicht gepr�ft" > 
+
+<Comment>   
+
+</Comment> 
+
+<Picture HRef="Federated_ClashPublish_30_9_2009_16_55_54_Pic_3.jpg" Preview="Federated_ClashPublish_30_9_2009_16_55_54_Pic_3_Preview.jpg" /> 
+
+
+
+
+
+</Interference> 
+
+<Interference NumInterf="4" Product1Name="ISO 4034 NUT M14 STEEL GRADE C HEXAGON HEAD NONPREFERRED (ISO 4034 NUT M14 STEEL GRADE C HEXAGON HEAD NONPREFERRED.1)" Product2Name="ISO 4014 BOLT M14x70 STEEL GRADE A HEXAGON HEAD NONPREFERRED (ISO 4014 BOLT M14x70 STEEL GRADE A HEXAGON HEAD NONPREFERRED.1)" ResultType="�berschneidung" Value="Nicht definiert" Status="Nicht gepr�ft" > 
+
+<Comment>   
+
+</Comment> 
+
+<Picture HRef="Federated_ClashPublish_30_9_2009_16_55_54_Pic_4.jpg" Preview="Federated_ClashPublish_30_9_2009_16_55_54_Pic_4_Preview.jpg" /> 
+
+
+
+
+
+</Interference> 
+
+<Interference NumInterf="5" Product1Name="Rohrflansch (Rohrflansch.2)" Product2Name="Dichtring (Dichtring.2)" ResultType="�berschneidung" Value="Nicht definiert" Status="Nicht gepr�ft" > 
+
+<Comment>   
+
+</Comment> 
+
+<Picture HRef="Federated_ClashPublish_30_9_2009_16_55_54_Pic_5.jpg" Preview="Federated_ClashPublish_30_9_2009_16_55_54_Pic_5_Preview.jpg" /> 
+
+
+
+
+
+</Interference> 
+
+<Interference NumInterf="6" Product1Name="ISO 4014 BOLT M14x70 STEEL GRADE A HEXAGON HEAD NONPREFERRED (ISO 4014 BOLT M14x70 STEEL GRADE A HEXAGON HEAD NONPREFERRED.2)" Product2Name="ISO 4034 NUT M14 STEEL GRADE C HEXAGON HEAD NONPREFERRED (ISO 4034 NUT M14 STEEL GRADE C HEXAGON HEAD NONPREFERRED.5)" ResultType="�berschneidung" Value="Nicht definiert" Status="Nicht gepr�ft" > 
+
+<Comment>   
+
+</Comment> 
+
+<Picture HRef="Federated_ClashPublish_30_9_2009_16_55_54_Pic_6.jpg" Preview="Federated_ClashPublish_30_9_2009_16_55_54_Pic_6_Preview.jpg" /> 
+
+
+
+
+
+</Interference> 
+
+<Interference NumInterf="7" Product1Name="ISO 4014 BOLT M14x70 STEEL GRADE A HEXAGON HEAD NONPREFERRED (ISO 4014 BOLT M14x70 STEEL GRADE A HEXAGON HEAD NONPREFERRED.3)" Product2Name="ISO 4034 NUT M14 STEEL GRADE C HEXAGON HEAD NONPREFERRED (ISO 4034 NUT M14 STEEL GRADE C HEXAGON HEAD NONPREFERRED.6)" ResultType="�berschneidung" Value="Nicht definiert" Status="Nicht gepr�ft" > 
+
+<Comment>   
+
+</Comment> 
+
+<Picture HRef="Federated_ClashPublish_30_9_2009_16_55_54_Pic_7.jpg" Preview="Federated_ClashPublish_30_9_2009_16_55_54_Pic_7_Preview.jpg" /> 
+
+
+
+
+
+</Interference> 
+
+<Interference NumInterf="8" Product1Name="ISO 4014 BOLT M14x70 STEEL GRADE A HEXAGON HEAD NONPREFERRED (ISO 4014 BOLT M14x70 STEEL GRADE A HEXAGON HEAD NONPREFERRED.4)" Product2Name="ISO 4034 NUT M14 STEEL GRADE C HEXAGON HEAD NONPREFERRED (ISO 4034 NUT M14 STEEL GRADE C HEXAGON HEAD NONPREFERRED.7)" ResultType="�berschneidung" Value="Nicht definiert" Status="Nicht gepr�ft" > 
+
+<Comment>   
+
+</Comment> 
+
+<Picture HRef="Federated_ClashPublish_30_9_2009_16_55_54_Pic_8.jpg" Preview="Federated_ClashPublish_30_9_2009_16_55_54_Pic_8_Preview.jpg" /> 
+
+
+
+
+
+</Interference> 
+
+<Interference NumInterf="9" Product1Name="ISO 4014 BOLT M14x70 STEEL GRADE A HEXAGON HEAD NONPREFERRED (ISO 4014 BOLT M14x70 STEEL GRADE A HEXAGON HEAD NONPREFERRED.5)" Product2Name="ISO 4034 NUT M14 STEEL GRADE C HEXAGON HEAD NONPREFERRED (ISO 4034 NUT M14 STEEL GRADE C HEXAGON HEAD NONPREFERRED.8)" ResultType="�berschneidung" Value="Nicht definiert" Status="Nicht gepr�ft" > 
+
+<Comment>   
+
+</Comment> 
+
+<Picture HRef="Federated_ClashPublish_30_9_2009_16_55_54_Pic_9.jpg" Preview="Federated_ClashPublish_30_9_2009_16_55_54_Pic_9_Preview.jpg" /> 
+
+
+
+
+
+</Interference> 
+
+<Interference NumInterf="10" Product1Name="ISO 4034 NUT M14 STEEL GRADE C HEXAGON HEAD NONPREFERRED (ISO 4034 NUT M14 STEEL GRADE C HEXAGON HEAD NONPREFERRED.2)" Product2Name="Schraube (Part5.4)" ResultType="�berschneidung" Value="Nicht definiert" Status="Nicht gepr�ft" > 
+
+<Comment>   
+
+</Comment> 
+
+<Picture HRef="Federated_ClashPublish_30_9_2009_16_55_54_Pic_10.jpg" Preview="Federated_ClashPublish_30_9_2009_16_55_54_Pic_10_Preview.jpg" /> 
+
+
+
+
+
+</Interference> 
+
+<Interference NumInterf="11" Product1Name="ISO 4034 NUT M14 STEEL GRADE C HEXAGON HEAD NONPREFERRED (ISO 4034 NUT M14 STEEL GRADE C HEXAGON HEAD NONPREFERRED.10)" Product2Name="Schraube (Part5.1)" ResultType="�berschneidung" Value="Nicht definiert" Status="Nicht gepr�ft" > 
+
+<Comment>   
+
+</Comment> 
+
+<Picture HRef="Federated_ClashPublish_30_9_2009_16_55_54_Pic_11.jpg" Preview="Federated_ClashPublish_30_9_2009_16_55_54_Pic_11_Preview.jpg" /> 
+
+
+
+
+
+</Interference> 
+
+<Interference NumInterf="12" Product1Name="ISO 4034 NUT M14 STEEL GRADE C HEXAGON HEAD NONPREFERRED (ISO 4034 NUT M14 STEEL GRADE C HEXAGON HEAD NONPREFERRED.11)" Product2Name="Schraube (Part5.2)" ResultType="�berschneidung" Value="Nicht definiert" Status="Nicht gepr�ft" > 
+
+<Comment>   
+
+</Comment> 
+
+<Picture HRef="Federated_ClashPublish_30_9_2009_16_55_54_Pic_12.jpg" Preview="Federated_ClashPublish_30_9_2009_16_55_54_Pic_12_Preview.jpg" /> 
+
+
+
+
+
+</Interference> 
+
+<Interference NumInterf="13" Product1Name="ISO 4034 NUT M14 STEEL GRADE C HEXAGON HEAD NONPREFERRED (ISO 4034 NUT M14 STEEL GRADE C HEXAGON HEAD NONPREFERRED.12)" Product2Name="Schraube (Part5.3)" ResultType="�berschneidung" Value="Nicht definiert" Status="Nicht gepr�ft" > 
+
+<Comment>   
+
+</Comment> 
+
+<Picture HRef="Federated_ClashPublish_30_9_2009_16_55_54_Pic_13.jpg" Preview="Federated_ClashPublish_30_9_2009_16_55_54_Pic_13_Preview.jpg" /> 
+
+
+
+
+
+</Interference> 
+
+<Interference NumInterf="14" Product1Name="ISO 4034 NUT M14 STEEL GRADE C HEXAGON HEAD NONPREFERRED (ISO 4034 NUT M14 STEEL GRADE C HEXAGON HEAD NONPREFERRED.13)" Product2Name="Schraube (ISO 4014 BOLT M14x70 STEEL GRADE A HEXAGON HEAD NONPREFERRED.6)" ResultType="�berschneidung" Value="Nicht definiert" Status="Nicht gepr�ft" > 
+
+<Comment>   
+
+</Comment> 
+
+<Picture HRef="Federated_ClashPublish_30_9_2009_16_55_54_Pic_14.jpg" Preview="Federated_ClashPublish_30_9_2009_16_55_54_Pic_14_Preview.jpg" /> 
+
+
+
+
+
+</Interference> 
+
+
+
+</ClashResultSpec> 
+
+
+
+</ClashResult> 
+

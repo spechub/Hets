@@ -18,6 +18,7 @@ import Logic.Logic
 
 import Common.AS_Annotation
 import Common.DefaultMorphism
+import Common.Doc
 import Common.DocUtils
 import Common.ExtSign
 import Common.Id
@@ -35,8 +36,11 @@ data DMU = DMU deriving Show
 instance Language DMU where
   description _ = "wrap Catia ouput"
 
-newtype Text = Text String
-  deriving (Show, Eq, Ord, Pretty, GetRange, Typeable, ShATermConvertible)
+newtype Text = Text { fromText :: String }
+  deriving (Show, Eq, Ord, GetRange, Typeable, ShATermConvertible)
+
+instance Pretty Text where
+  pretty (Text s) = text s
 
 -- use generic Category instance from Logic.Logic
 

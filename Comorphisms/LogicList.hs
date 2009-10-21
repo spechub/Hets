@@ -61,9 +61,9 @@ import Temporal.Logic_Temporal
 import DFOL.Logic_DFOL
 import OMDoc.Logic_OMDoc ()
 import Maude.Logic_Maude
-import DMU.Logic_DMU
 #endif
 #ifndef NOOWLLOGIC
+import DMU.Logic_DMU
 import OWL.Logic_OWL
 #endif
 
@@ -90,9 +90,9 @@ logicList =
   , Logic Temporal
   , Logic DFOL
   , Logic Maude
-  , Logic DMU
 #endif
 #ifndef NOOWLLOGIC
+  , Logic DMU
   , Logic OWL
 #endif
   ]

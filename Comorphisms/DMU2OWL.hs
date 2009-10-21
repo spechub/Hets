@@ -1,0 +1,91 @@
+{- |
+Module      :  $Header$
+Description :  translating DMU xml to OWL
+Copyright   :  (c) Christian Maeder, DFKI and Uni Bremen 2009
+License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
+
+Maintainer  :  Christian.Maeder@dfki.de
+Stability   :  provisional
+Portability :  non-portable (imports Logic.Logic)
+
+translating DMU xml to OWL using OntoDMU.jar by Marco Franke
+fma@biba.uni-bremen.de
+-}
+
+module Comorphisms.DMU2OWL where
+
+import Logic.Logic
+import Logic.Comorphism
+
+import Common.AS_Annotation
+import Common.DefaultMorphism
+import Common.ExtSign
+import Common.GlobalAnnotations
+import Common.ProofTree
+import Common.Result
+import Common.Utils
+
+import DMU.Logic_DMU
+
+import OWL.AS
+import OWL.Logic_OWL
+import OWL.Parse
+import OWL.Morphism
+import OWL.Sign
+import OWL.StaticAnalysis
+import OWL.Sublogic
+
+import Text.ParserCombinators.Parsec
+
+import Control.Monad
+
+import System.Cmd (system)
+import System.Directory (getTemporaryDirectory)
+import System.IO
+import System.IO.Unsafe (unsafePerformIO)
+
+-- | The identity of the comorphism
+data DMU2OWL = DMU2OWL deriving Show
+
+instance Language DMU2OWL -- default definition is okay
+
+instance Comorphism DMU2OWL
+   DMU () Text Text () () () (DefaultMorphism ()) () () ()
+   OWL OWLSub OntologyFile Axiom SymbItems SymbMapItems
+       Sign OWLMorphism Entity RawSymb ProofTree where
+    sourceLogic DMU2OWL = DMU
+    sourceSublogic DMU2OWL = top
+    targetLogic DMU2OWL = OWL
+    mapSublogic DMU2OWL _ = Just top
+    map_theory DMU2OWL = mapTheory
+    map_morphism DMU2OWL _ = return $ inclOWLMorphism emptySign emptySign
+    has_model_expansion DMU2OWL = True
+    is_weakly_amalgamable DMU2OWL = True
+    isInclusionComorphism DMU2OWL = True
+
+mapTheory :: ((), [Named Text]) -> Result (Sign, [Named Axiom])
+mapTheory (_, sens) = readOWL
+  $ unsafePerformIO $ runOntoDMU $ concatMap (fromText . sentence) sens
+
+runOntoDMU :: String -> IO String
+runOntoDMU str = do
+  tmpDir <- getTemporaryDirectory
+  ontoDMUpath <- getEnvDef "HETS_ONTODMU" "DMU/OntoDMU.jar"
+  (tmpFile, hndl) <- openTempFile tmpDir "ontoDMU.xml"
+  let outFile = tmpFile ++ ".het"
+  hPutStr hndl str
+  hFlush hndl
+  hClose hndl
+  system $ "java -jar " ++ ontoDMUpath ++ " -f " ++ tmpFile
+    ++ " -o " ++ outFile
+  readFile outFile
+
+readOWL :: Monad m => String -> m (Sign, [Named Axiom])
+readOWL str = case runParser (liftM2 const basicSpec eof) () "" str of
+  Left err -> fail $ show err
+  Right ontoFile -> case basicOWLAnalysis
+    (ontoFile, emptySign, emptyGlobalAnnos) of
+    Result ds ms -> case ms of
+      Nothing -> fail $ showRelDiags 1 ds
+      Just (_, ExtSign sig _, sens) -> return (sig, sens)
+

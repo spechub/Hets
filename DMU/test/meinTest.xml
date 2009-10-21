@@ -1,0 +1,22 @@
+<?xml version='1.0' encoding='UTF-8'?>
+
+<ClashResult ResultCount="7" Responsible="Klein" CATDocument="Unknown DocumentC:\Dokumente und Einstellungen\Klein\Desktop\STEPP\Produkt_mit 5 Schrauben.CATProduct" > 
+<Date Hour="14" Minute="17" Seconde="24" Month="8" Day="25" Year="2009" /> 
+
+<ClashSpec Name="Kollision.2" SelectMode="Auswahl mit allen" CaseOfCalc="�berschneidung + Kontakt" DistanceClearance="5,000000 mm" TabTitle="Spezifikation der �berschneidungsberechnung" TabListTitle="Ausgew�hlte Produkte" > 
+<Product Name1="Flanschdeckel.1" Name2="" /> 
+
+
+</ClashSpec> 
+<ClashResultSpec Chaine="Ausgew�hlte(s) Produkt(e):7 (Überschneidung: 1, Kontakt: 6, Sicherheitsbereich: 0) - Vom Endbenutzer gefilterte Ergebnisse" > 
+<Interference NumInterf="1" Product1Name="ISO 4014 BOLT M14x70 STEEL GRADE A HEXAGON HEAD NONPREFERRED (ISO 4014 BOLT M14x70 STEEL GRADE A HEXAGON HEAD NONPREFERRED.4)" Product2Name="ISO 4034 NUT M14 STEEL GRADE C HEXAGON HEAD NONPREFERRED (ISO 4034 NUT M14 STEEL GRADE C HEXAGON HEAD NONPREFERRED.7)" ResultType="Überschneidung" Value="-23,070425 mm" Status="Relevant" > 
+<Comment>   
+</Comment> 
+<Picture HRef="Federated_ClashPublish_25_8_2009_14_17_17_Pic_1.jpg" Preview="Federated_ClashPublish_25_8_2009_14_17_17_Pic_1_Preview.jpg" /> 
+
+
+</Interference> 
+
+</ClashResultSpec> 
+
+</ClashResult> 
