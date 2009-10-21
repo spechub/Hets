@@ -64,14 +64,6 @@ inclusion morphism of { sorts i} extended with {p}</GMorphism>
     <GMorphism>id_CASL.SubPCSOL=E : CASL -&gt; CASL
 inclusion morphism of { sorts i} extended with {p}</GMorphism>
   </Link>
-  <Link source="s_IU1" target="s2_A1V" linkid="15" status="proven">
-    <Type>GlobalProvenThmInc</Type>
-    <Rule>Global-Subsumption</Rule>
-    <RuleTarget linkref="15" />
-    <ProofBasis linkref="5" />
-    <GMorphism>id_CASL.SubPCSOL=E : CASL -&gt; CASL
-inclusion morphism of { sorts i} extended with {p}</GMorphism>
-  </Link>
   <Link source="s_PU1" target="s" linkid="1">
     <Type>GlobalDefInc</Type>
     <GMorphism>id_CASL.SubPCSOL=E : CASL -&gt; CASL
@@ -81,12 +73,12 @@ inclusion morphism of { sorts i, p} extended with {s}</GMorphism>
     <Type>GlobalProvenThmInc</Type>
     <Rule>Global-Decomposition</Rule>
     <RuleTarget linkref="7" />
+    <ProofBasis linkref="5" />
     <ProofBasis linkref="15" />
-    <ProofBasis linkref="16" />
     <GMorphism>id_CASL.SubPCSOL=E : CASL -&gt; CASL
 identity morphism over { sorts i, p}</GMorphism>
   </Link>
-  <Link source="s_PU1" target="s2_A1V" linkid="16" status="proven">
+  <Link source="s_PU1" target="s2_A1V" linkid="15" status="proven">
     <Type>LocalProvenThmInc</Type>
     <Rule>Local-Inference</Rule>
     <GMorphism>id_CASL.SubPCSOL=E : CASL -&gt; CASL
@@ -107,14 +99,6 @@ inclusion morphism of { sorts j} extended with {r}</GMorphism>
     <GMorphism>id_CASL.SubPCSOL=E : CASL -&gt; CASL
 inclusion morphism of { sorts j} extended with {t}</GMorphism>
   </Link>
-  <Link source="v_IU1" target="s2_A1A1" linkid="17" status="proven">
-    <Type>GlobalProvenThmInc</Type>
-    <Rule>Global-Subsumption</Rule>
-    <RuleTarget linkref="17" />
-    <ProofBasis linkref="8" />
-    <GMorphism>id_CASL.SubPCSOL=E : CASL -&gt; CASL
-inclusion morphism of { sorts j} extended with {t}</GMorphism>
-  </Link>
   <Link source="v_PU1" target="v_T" linkid="3">
     <Type>GlobalDefInc</Type>
     <GMorphism>id_CASL.SubPCSOL=E : CASL -&gt; CASL
@@ -124,12 +108,12 @@ inclusion morphism of { sorts j, r} extended with {q}</GMorphism>
     <Type>GlobalProvenThm</Type>
     <Rule>Global-Decomposition</Rule>
     <RuleTarget linkref="9" />
-    <ProofBasis linkref="17" />
-    <ProofBasis linkref="18" />
+    <ProofBasis linkref="8" />
+    <ProofBasis linkref="16" />
     <GMorphism>id_CASL.SubPCSOL=E : CASL -&gt; CASL
 {r |-&gt; t} : { sorts j, r} |-&gt; { sorts j, t}</GMorphism>
   </Link>
-  <Link source="v_PU1" target="s2_A1A1" linkid="18" status="proven">
+  <Link source="v_PU1" target="s2_A1A1" linkid="16" status="proven">
     <Type>LocalProvenThm</Type>
     <Rule>Local-Inference</Rule>
     <GMorphism>id_CASL.SubPCSOL=E : CASL -&gt; CASL
@@ -139,11 +123,11 @@ inclusion morphism of { sorts j, r} extended with {q}</GMorphism>
     <Type>GlobalProvenThm</Type>
     <Rule>Global-Decomposition</Rule>
     <RuleTarget linkref="4" />
-    <ProofBasis linkref="19" />
+    <ProofBasis linkref="17" />
     <GMorphism>id_CASL.SubPCSOL=E : CASL -&gt; CASL
 {p |-&gt; q} : { sorts p} |-&gt; { sorts j, q, r}</GMorphism>
   </Link>
-  <Link source="v_S" target="v_T" linkid="19" status="proven">
+  <Link source="v_S" target="v_T" linkid="17" status="proven">
     <Type>LocalProvenThm</Type>
     <Rule>Local-Inference</Rule>
     <GMorphism>id_CASL.SubPCSOL=E : CASL -&gt; CASL
