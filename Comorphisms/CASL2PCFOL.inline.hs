@@ -98,59 +98,33 @@ encodeSig sig
 -- | Make the name for the embedding injectivity axiom from s to s'
 mkEmbInjName :: SORT -> SORT -> String
 mkEmbInjName s s' =
-    "ga_embedding_injectivity_" ++ (show s) ++ "_to_" ++ (show s')
+    "ga_embedding_injectivity_" ++ show s ++ "_to_" ++ show s'
 
 -- | Make the named sentence for the embedding injectivity axiom from s to s'
+--   i.e., forall x,y:s . inj(x)=e=inj(y) => x=e=y
 mkEmbInjAxiom:: SORT -> SORT -> Named (FORMULA ())
 mkEmbInjAxiom s s' =
     makeNamed name
-        (mkForall [Var_decl [x, y] s nullRange]
-            (mkImplication
-                (mkExistl_equation
-                    (appl_inj_s_to_s' qualX)
-                    (appl_inj_s_to_s' qualY)
-                    nullRange)
-                (mkExistl_equation qualX qualY nullRange)
-                    True
-                    nullRange)
-            nullRange)
+        (mkForall [vx, vy]
+            (mkImpl
+                (mkExEq
+                   (injectUnique nullRange qualX s')
+                   (injectUnique nullRange qualY s')
+                )
+                (mkExEq qualX qualY)
+            ) nullRange
+        )
     where name = mkEmbInjName s s'
-          x = mkSimpleId "x"
-          y = mkSimpleId "y"
-          qualX = toQualVar (Var_decl [x] s nullRange)
-          qualY = toQualVar (Var_decl [y] s nullRange)
-          inj = injName
-          appl_inj_s_to_s' x = mkApplication
-                               (Qual_op_name inj (Op_type Total [s] s' nullRange) nullRange)
-                               [x]
-                               nullRange
+          vx = mkVarDeclStr "x" s
+          vy = mkVarDeclStr "y" s
+          qualX = toQualVar vx
+          qualY = toQualVar vy
 
 generateAxioms :: Sign f e -> [Named (FORMULA ())]
 generateAxioms sig = map (mapNamed $ renameFormula id) $ concat $
 
       [[mkEmbInjAxiom s s']
 
-
---       [[SenAttr{senAttr = "ga_embedding_injectivity_" ++ (show s) ++ "_to_" ++ (show s'), isAxiom = True,
---                 isDef = False, wasTheorem = False, simpAnno = Nothing,
---                 sentence =
---                   Quantification Universal [Var_decl [x, y] s nullRange]
---                     (Implication
---                        (Existl_equation
---                           (Application
---                              (Qual_op_name inj (Op_type Total [s] s' nullRange) nullRange)
---                              [Qual_var x s nullRange]
---                              nullRange)
---                           (Application
---                              (Qual_op_name inj (Op_type Total [s] s' nullRange) nullRange)
---                              [Qual_var y s nullRange]
---                              nullRange)
---                           nullRange)
---                        (Existl_equation (Qual_var x s nullRange) (Qual_var y s nullRange)
---                           nullRange)
---                        True
---                        nullRange)
---                     nullRange}]
     ++ inlineAxioms CASL
       " sort s, s' \
       \ op pr : s'->?s \
