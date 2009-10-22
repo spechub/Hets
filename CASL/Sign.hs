@@ -177,13 +177,13 @@ printSign fE s = let
   srel = sortRel s
   cs = Rel.sccOfClosure $ Rel.transClosure srel
   nsorts = Set.difference (sortSet s) esorts in
-    (if Set.null nsorts then empty else text (sortS++sS) <+>
+    (if Set.null nsorts then empty else text (sortS ++ sS) <+>
        sepByCommas (map idDoc (Set.toList nsorts))) $+$
-    (if Set.null esorts then empty else text (esortS++sS) <+>
+    (if Set.null esorts then empty else text (esortS ++ sS) <+>
        sepByCommas (map idDoc (Set.toList esorts))) $+$
     (if Rel.null srel then empty
       else text (sortS++sS) <+>
-       (fsep $ punctuate semi $
+       fsep (punctuate semi $
           map (fsep . punctuate (space <> equals) . map pretty)
            (filter ((> 1) . length) $ map Set.toList cs)
          ++ map printRel (Map.toList
@@ -308,9 +308,9 @@ isSubMapSet = Map.isSubmapOfBy Set.isSubsetOf
 
 isSubOpMap :: OpMap -> OpMap -> Bool
 isSubOpMap = Map.isSubmapOfBy $ \ s t ->
-  Set.fold ( \ e r -> r && (Set.member e t || case opKind e of
+  Set.fold (\ e -> (&& (Set.member e t || case opKind e of
     Partial -> Set.member (mkTotal e) t
-    Total -> False)) True s
+    Total -> False))) True s
 
 isSubSig :: (e -> e -> Bool) -> Sign f e -> Sign f e -> Bool
 isSubSig isSubExt a b = Set.isSubsetOf (sortSet a) (sortSet b)
@@ -473,5 +473,20 @@ mkExEq f f' = Existl_equation f f' nullRange
 mkAppl :: OP_SYMB -> [TERM f] -> TERM f
 mkAppl op_symb fs = Application op_symb fs nullRange
 
+-- | turn sorted variable into variable delcaration
+mkVarDecl :: (VAR, SORT) -> VAR_DECL
+mkVarDecl (v, s) = Var_decl [v] s nullRange
+
+-- | turn sorted variable into term
+mkVarTerm :: (VAR, SORT) -> TERM f
+mkVarTerm = toQualVar . mkVarDecl
+
+-- | optimized conjunction
+conjunct :: [FORMULA f] -> FORMULA f
+conjunct fs = case fs of
+  [] -> False_atom nullRange
+  [phi] -> phi
+  _ -> Conjunction fs nullRange
+
 mkVarDeclStr :: String -> SORT -> VAR_DECL
-mkVarDeclStr x s = Var_decl [mkSimpleId x] s nullRange
+mkVarDeclStr x s = mkVarDecl (mkSimpleId x, s)

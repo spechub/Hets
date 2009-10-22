@@ -74,11 +74,11 @@ induction constrSubsts = do
        sortInfo = map (\ ((cs, sub), i) -> (cs, sub, (mkVar i, newSort cs)))
          $ number constrSubsts
        mkConclusion (_, subst, v) =
-         Quantification Universal [mkVarDecl v] (subst (mkVarTerm v)) nullRange
-       inductionConclusion = mkConj $ map mkConclusion sortInfo
+         mkForall [mkVarDecl v] (subst (mkVarTerm v)) nullRange
+       inductionConclusion = conjunct $ map mkConclusion sortInfo
    inductionPremises <- mapM (mkPrems $ map snd constrSubsts) sortInfo
-   let inductionPremise = mkConj $ concat inductionPremises
-   return $ Implication inductionPremise inductionConclusion True nullRange
+   let inductionPremise = conjunct $ concat inductionPremises
+   return $ mkImpl inductionPremise inductionConclusion
 
 -- | construct premise set for the induction scheme
 -- | for one sort in the constraint
@@ -94,14 +94,13 @@ mkPrem :: Pretty f =>  [TERM f -> FORMULA f]
            -> Result (FORMULA f)
 mkPrem substs (_,subst,_)
        (opSym@(Qual_op_name _ (Op_type _ argTypes _ _) _), idx) =
-  return $ if null qVars then phi
-            else Quantification Universal (map mkVarDecl qVars) phi nullRange
+  return $ mkForall (map mkVarDecl qVars) phi nullRange
   where
   qVars = map (\ (a, i) -> (mkVar i, a)) $ number argTypes
   mkVar i = mkSimpleId ("y_" ++ show i)
   phi = if null indHyps then indConcl
-           else Implication (mkConj indHyps) indConcl True nullRange
-  indConcl = subst (Application opSym (map mkVarTerm qVars) nullRange)
+           else mkImpl (conjunct indHyps) indConcl
+  indConcl = subst $ mkAppl opSym $ map mkVarTerm qVars
   indHyps = mapMaybe indHyp (zip qVars idx)
   indHyp (v1, i) =
     if i < 0 then Nothing -- leave out sorts from outside the constraint
@@ -110,20 +109,6 @@ mkPrem _ _ (opSym, _) =
   fail ("CASL.Induction. mkPrems: "
         ++ "unqualified operation symbol occuring in constraint: "
         ++ show opSym)
-
--- | turn sorted variable into variable delcaration
-mkVarDecl :: (VAR, SORT) -> VAR_DECL
-mkVarDecl (v, s) = Var_decl [v] s nullRange
-
--- | turn sorted variable into term
-mkVarTerm :: Pretty f =>  (VAR, SORT) -> TERM f
-mkVarTerm (v, s) = Qual_var v s nullRange
-
--- | optimized conjunction
-mkConj :: Pretty f =>  [FORMULA f] -> FORMULA f
-mkConj [] = False_atom nullRange
-mkConj [phi] = phi
-mkConj phis = Conjunction phis nullRange
 
 -- !! documentation is missing
 generateInductionLemmas :: Pretty f =>  (Sign f e, [Named (FORMULA f)])
