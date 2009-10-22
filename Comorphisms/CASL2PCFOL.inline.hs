@@ -120,15 +120,42 @@ mkEmbInjAxiom s s' =
           qualX = toQualVar vx
           qualY = toQualVar vy
 
+-- | Make the name for the projection injectivity axiom from s' to s
+mkProjInjName :: SORT -> SORT -> String
+mkProjInjName s s' =
+    "ga_projection_injectivity_" ++ show s' ++ "_to_" ++ show s
+
+-- | Make the named sentence for the projection injectivity axiom from s' to s
+--   i.e., forall x,y:s . pr(x)=e=pr(y) => x=e=y
+mkProjInjAxiom:: SORT -> SORT -> Named (FORMULA ())
+mkProjInjAxiom s s' =
+    makeNamed name
+        (mkForall [vx, vy]
+            (mkImpl
+                (mkExEq
+                   (appProj qualX) -- Projections of x:s' to s
+                   (appProj qualY) -- Projections of y:s' to s
+                )
+                (mkExEq qualX qualY)
+            ) nullRange
+        )
+    where name = mkProjInjName s s'
+          vx = mkVarDeclStr "x" s'
+          vy = mkVarDeclStr "y" s'
+          qualX = toQualVar vx
+          qualY = toQualVar vy
+          appProj x = mkAppl
+                        (Qual_op_name projName
+                                          (Op_type Partial [s'] s nullRange)
+                                          nullRange
+                        )
+                        [x]
+
 generateAxioms :: Sign f e -> [Named (FORMULA ())]
 generateAxioms sig = map (mapNamed $ renameFormula id) $ concat $
 
-      [[mkEmbInjAxiom s s']
+    [[mkEmbInjAxiom s s'] ++ [mkProjInjAxiom s s']
 
-    ++ inlineAxioms CASL
-      " sort s, s' \
-      \ op pr : s'->?s \
-      \ forall x,y:s'. pr(x)=e=pr(y)=>x=e=y   %(ga_projection_injectivity)% "
     ++ inlineAxioms CASL
      " sort s, s' \
       \ op pr : s'->?s ; inj:s->s' \
