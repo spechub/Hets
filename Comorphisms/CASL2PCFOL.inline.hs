@@ -100,7 +100,6 @@ mkInjectivityName :: String -> SORT -> SORT -> String
 mkInjectivityName str s s' =
     "ga_" ++ str ++ "_injectivity_" ++ show s ++ "_to_" ++ show s'
 
--- | Make the name for the embedding injectivity axiom from s to s'
 mkEmbInjName :: SORT -> SORT -> String
 mkEmbInjName = mkInjectivityName "embedding"
 
@@ -129,6 +128,26 @@ mkProjInjAxiom s s' = let appProj q = projectUnique Partial nullRange q s in
     makeNamed (mkProjInjName s s')
       $ mkInjectivity appProj (mkVarDeclStr "x" s') $ mkVarDeclStr "y" s'
 
+-- | Make the name for the transitivity axiom from s to s' to s''
+mkTransAxiomName :: SORT -> SORT -> SORT -> String
+mkTransAxiomName s s' s'' =
+    "ga_transitivity_" ++ show s ++ "_to_" ++ show s' ++ "_to_" ++ show s''
+
+-- | Make the named sentence for the transitivity axiom from s to s' to s''
+--   i.e., forall x:s . inj(inj(x))=e=inj(x)"
+mkTransAxiom:: SORT -> SORT -> SORT -> Named (FORMULA ())
+mkTransAxiom s s' s'' =
+    makeNamed name
+        (mkForall [vx]
+            (mkExEq
+                (injectUnique nullRange (injectUnique nullRange qualX s') s'')
+                (injectUnique nullRange qualX s'')
+            ) nullRange
+        )
+    where name = mkTransAxiomName s s' s''
+          vx = mkVarDeclStr "x" s
+          qualX = toQualVar vx
+
 generateAxioms :: Sign f e -> [Named (FORMULA ())]
 generateAxioms sig = map (mapNamed $ renameFormula id) $ concat $
 
@@ -140,10 +159,7 @@ generateAxioms sig = map (mapNamed $ renameFormula id) $ concat $
       \ forall x:s . pr(inj(x))=e=x             %(ga_projection)% "
       | s <- sorts,
         s' <- realSupers s]
-   ++ [inlineAxioms CASL
-     " sort s, s', s'' \
-      \ op inj:s'->s'' ; inj: s->s' ; inj:s->s'' \
-      \ forall x:s . inj(inj(x))=e=inj(x)      %(ga_transitivity)% "
+   ++ [[mkTransAxiom s s' s'']
           | s <- sorts,
             s' <- realSupers s,
             s'' <- realSupers s',
