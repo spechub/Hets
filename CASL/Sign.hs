@@ -464,4 +464,12 @@ toQualVar :: VAR_DECL -> TERM f
 toQualVar (Var_decl v s ps) =
     if isSingle v then Qual_var (head v) s ps else error "toQualVar"
 
+mkImplication :: FORMULA f -> FORMULA f -> Bool -> Range -> FORMULA f
+mkImplication f f' b r = Implication f f' b r
 
+mkExistl_equation :: TERM f -> TERM f -> Range -> FORMULA f
+mkExistl_equation f f' r = Existl_equation f f' r
+
+
+mkApplication :: OP_SYMB -> [TERM f] -> Range -> TERM f
+mkApplication op_symb fs r = Application op_symb fs r
