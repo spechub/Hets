@@ -8,8 +8,7 @@ Maintainer  :  Christian.Maeder@dfki.de
 Stability   :  provisional
 Portability :  non-portable (imports Logic.Logic)
 
-translating DMU xml to OWL using OntoDMU.jar by Marco Franke
-fma@biba.uni-bremen.de
+translating DMU xml to OWL using OntoDMU.jar by Marco Franke from BIBA
 -}
 
 module Comorphisms.DMU2OWL where
