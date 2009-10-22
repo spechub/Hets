@@ -207,7 +207,7 @@ anaInput contents selectedBoxes outputfiles =
       maybe (return $ CRes.Result parseErrors Nothing) ana_ast mast
    where
       CRes.Result parseErrors mast =
-              readLibDefnM logicGraph webOpts "<stdin>" contents noTime
+              readLibDefnM logicGraph webOpts "<stdin>" contents
       ana_ast ast = do
          CRes.Result ds mres <- runResultT
            $ anaLibDefn logicGraph webOpts Set.empty emptyLibEnv emptyDG ast

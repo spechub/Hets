@@ -89,6 +89,10 @@ updFilePathOfLibId fp mt li = case li of
   DirectLink _ _ -> li
   IndirectLink p r _ _ -> IndirectLink p r fp mt
 
+setFilePath :: FilePath -> ClockTime -> LibName -> LibName
+setFilePath fp mt ln =
+  ln { getLibId = updFilePathOfLibId fp mt $ getLibId ln }
+
 data VersionNumber = VersionNumber [String] Range
                       -- pos: "version", start of first string
 

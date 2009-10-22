@@ -57,7 +57,6 @@ import Data.Char
 
 import System.Directory
 import System.FilePath
-import System.Time
 
 -- a set of library names to check for cyclic imports
 type LNS = Set.Set LibName
@@ -76,31 +75,32 @@ anaSourceFile lgraph opts topLns libenv initDG fname = ResultT $ do
             fail $ "no matching source file for '" ++ fname ++ "' found."
         else do
         input <- readFile file
-        mt <- getModificationTime file
         putIfVerbose opts 2 $ "Reading file " ++ file
-        runResultT $ anaString lgraph opts topLns libenv initDG input file mt
+        runResultT $ anaString lgraph opts topLns libenv initDG input file
 
 -- | parsing and static analysis for string (=contents of file)
 -- Parameters: logic graph, default logic, contents of file, filename
 anaString :: LogicGraph -> HetcatsOpts -> LNS -> LibEnv -> DGraph -> String
-          -> FilePath -> ClockTime -> ResultT IO (LibName, LibEnv)
-anaString lgraph opts topLns libenv initDG input file mt = do
+  -> FilePath -> ResultT IO (LibName, LibEnv)
+anaString lgraph opts topLns libenv initDG input file = do
   curDir <- lift $ getCurrentDirectory -- get full path for parser positions
-  let Result ds mast = readLibDefnM lgraph opts (curDir </> file) input mt
+  mt <- lift $ getModificationTime file
+  let Result ds mast = readLibDefnM lgraph opts (curDir </> file) input
   case mast of
-    Just pAst@(Lib_defn pln is ps ans) ->
-         let libPath = filter (\ c -> isAlphaNum c || elem c "'_/")
-               $ dropWhile (== '/') $ rmSuffix file
-             nLn = LibName (IndirectLink libPath nullRange file mt) Nothing
+    Just (Lib_defn pln is ps ans) ->
+         let noSuffixFile = dropExtensions file
+             libPath = dropWhile (== '/')
+               $ filter (\ c -> isAlphaNum c || elem c "'_/") noSuffixFile
              noLibName = null $ show $ getLibId pln
+             nLn = setFilePath file mt
+               $ if noLibName then emptyLibName libPath else pln
              spN = reverse $ takeWhile (/= '/') $ reverse libPath
              nIs = case is of
                [Annoted (Spec_defn spn gn as qs) rs [] []]
                  | noLibName && null (tokStr spn)
                    -> [Annoted (Spec_defn (mkSimpleId spN) gn as qs) rs [] []]
                _ -> is
-             ast@(Lib_defn ln _ _ _) = if noLibName then
-               Lib_defn nLn nIs ps ans else pAst
+             ast@(Lib_defn ln _ _ _) = Lib_defn nLn nIs ps ans
          in case analysis opts of
       Skip  -> do
           lift $ putIfVerbose opts 1 $
@@ -110,7 +110,7 @@ anaString lgraph opts topLns libenv initDG input file mt = do
           liftR $ Result ds Nothing
       _ -> do
           let libstring = show $ getLibId ln
-          unless (isSuffixOf libstring $ rmSuffix file) $ lift
+          unless (isSuffixOf libstring noSuffixFile) $ lift
             $ putIfVerbose opts 1
             $ "### file name '" ++ file ++ "' does not match library name '"
             ++ libstring ++ "'"

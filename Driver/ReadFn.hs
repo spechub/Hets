@@ -38,25 +38,20 @@ import Common.LibName
 import Text.ParserCombinators.Parsec
 
 import System.FilePath
-import System.Time
 
 import Data.List (isPrefixOf)
 import Data.Maybe
 
-readLibDefnM :: Monad m => LogicGraph -> HetcatsOpts
-                -> FilePath -> String -> ClockTime -> m LIB_DEFN
-readLibDefnM lgraph opts file input mt =
+readLibDefnM :: Monad m => LogicGraph -> HetcatsOpts -> FilePath -> String
+  -> m LIB_DEFN
+readLibDefnM lgraph opts file input =
     if null input then fail ("empty input file: " ++ file) else
     case intype opts of
     ATermIn _  -> return $ from_sml_ATermString input
     _ -> case runParser (library lgraph { currentLogic = defLogic opts })
           (emptyAnnos ()) file input of
          Left err  -> fail (showErr err)
-         Right ast -> return $ setFilePath file mt ast
-
-setFilePath :: FilePath -> ClockTime -> LIB_DEFN -> LIB_DEFN
-setFilePath fp mt (Lib_defn ln lis r as) =
-  Lib_defn ln { getLibId = updFilePathOfLibId fp mt $ getLibId ln } lis r as
+         Right ast -> return ast
 
 readShATermFile :: ShATermLG a => LogicGraph -> FilePath -> IO (Result a)
 readShATermFile lg fp = do
