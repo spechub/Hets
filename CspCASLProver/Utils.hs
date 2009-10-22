@@ -40,6 +40,7 @@ import qualified CASL.Inject as CASLInject
 import Common.AS_Annotation (makeNamed, Named, SenAttr(..))
 import qualified Common.Lib.Rel as Rel
 
+import Comorphisms.CASL2PCFOL (mkEmbInjName)
 import Comorphisms.CFOL2IsabelleHOL (IsaTheory)
 import qualified Comorphisms.CFOL2IsabelleHOL as CFOL2IsabelleHOL
 
@@ -809,16 +810,11 @@ mkInjection s s' t =
        else termAppl injOp t
 
 -- | Return the list of string of all embedding_injectivity axioms
---   produced by the translation CASL2PCFOL; CASL2SubCFOL. This
---   function is not implemented in a satisfactory way.
+--   produced by the translation CASL2PCFOL; CASL2SubCFOL.
 getCollectionEmbInjAx :: [(SORT,SORT)] -> [String]
 getCollectionEmbInjAx sortRel =
-    let mkEmbInjAxName = (\i -> "ga_embedding_injectivity"
-                                ++ (if (i==0)
-                                    then ""
-                                    else ("_" ++ show i))
-                         )
-    in map mkEmbInjAxName [0 .. (length(sortRel) - 1)]
+    let mkName (s,s') = mkEmbInjName s s'
+    in map mkName sortRel
 
 -- | Return the list of strings of all ga_notDefBottom axioms. This function is
 --   not implemented in a satisfactory way
