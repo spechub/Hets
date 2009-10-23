@@ -148,6 +148,26 @@ mkTransAxiom s s' s'' =
           vx = mkVarDeclStr "x" s
           qualX = toQualVar vx
 
+-- | Make the name for the identity axiom from s to s'
+mkIdAxiomName :: SORT -> SORT -> String
+mkIdAxiomName s s' =
+    "ga_identity_" ++ show s ++ "_to_" ++ show s'
+
+-- | Make the named sentence for the identity axiom from s to s'
+--   i.e., forall x:s . inj(inj(x))=e=x"
+mkIdAxiom:: SORT -> SORT -> Named (FORMULA ())
+mkIdAxiom s s' =
+    makeNamed name
+        (mkForall [vx]
+            (mkExEq
+                (injectUnique nullRange (injectUnique nullRange qualX s') s)
+                qualX
+            ) nullRange
+        )
+    where name = mkIdAxiomName s s'
+          vx = mkVarDeclStr "x" s
+          qualX = toQualVar vx
+
 generateAxioms :: Sign f e -> [Named (FORMULA ())]
 generateAxioms sig = map (mapNamed $ renameFormula id) $ concat $
 
@@ -164,10 +184,7 @@ generateAxioms sig = map (mapNamed $ renameFormula id) $ concat $
             s' <- realSupers s,
             s'' <- realSupers s',
             s'' /= s]
-   ++ [inlineAxioms CASL
-     " sort s, s' \
-      \ op inj:s->s' ; inj: s'->s \
-      \ forall x:s . inj(inj(x))=e=x      %(ga_identity)% "
+   ++ [[mkIdAxiom s s']
           | s <- sorts,
             s' <- realSupers s,
             Set.member s $ supersortsOf s' sig]
