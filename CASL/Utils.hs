@@ -23,6 +23,7 @@ import qualified Data.Map as Map
 import Common.Id
 
 import CASL.AS_Basic_CASL
+import CASL.Sign (mkVarTerm)
 import CASL.Fold
 
 -- |
@@ -54,45 +55,45 @@ replacePropPredication mTerm pSymb frmIns =
 
 type FreshVARMap f = Map.Map VAR (TERM f)
 
--- | build_vMap constructs a mapping between a list of old variables and
+-- | buildVMap constructs a mapping between a list of old variables and
 -- corresponding fresh variables based on two lists of VAR_DECL
-build_vMap :: [VAR_DECL] -> [VAR_DECL] -> FreshVARMap f
-build_vMap vDecls f_vDecls =
-    Map.fromList (concat (zipWith toTups vDecls f_vDecls))
+buildVMap :: [VAR_DECL] -> [VAR_DECL] -> FreshVARMap f
+buildVMap vDecls fVDecls =
+    Map.fromList (concat (zipWith toTups vDecls fVDecls))
     where toTups (Var_decl vars1 sor1 _) (Var_decl vars2 sor2 _) =
             if sor1 == sor2 then zipWith (toTup sor1) vars1 vars2
-            else error "CASL.Utils.build_vMap"
-          toTup s v1 v2 = (v1,toVarTerm v2 s)
+            else error "CASL.Utils.buildVMap"
+          toTup s v1 v2 = (v1, mkVarTerm (v2, s))
 
 -- | specialised lookup in FreshVARMap that ensures that the VAR with
 -- the correct type (SORT) is replaced
-lookup_vMap :: VAR -> SORT -> FreshVARMap f -> Maybe (TERM f)
-lookup_vMap v s =
+lookupVMap :: VAR -> SORT -> FreshVARMap f -> Maybe (TERM f)
+lookupVMap v s =
     maybe Nothing
           (\ t@(Qual_var _ s' _) -> if s==s' then Just t else Nothing)
           . Map.lookup v
 
 -- | specialized delete that deletes all shadowed variables
-delete_vMap :: [VAR_DECL] -> FreshVARMap f -> FreshVARMap f
-delete_vMap vDecls m = foldr Map.delete m
+deleteVMap :: [VAR_DECL] -> FreshVARMap f -> FreshVARMap f
+deleteVMap vDecls m = foldr Map.delete m
   $ concatMap (\ (Var_decl vs _ _) -> vs) vDecls
 
 replaceVarsRec :: FreshVARMap f -> (f -> f) -> Record f (FORMULA f) (TERM f)
 replaceVarsRec m mf = (mapRecord mf)
      { foldQual_var = \ qv v s _ ->
-           fromMaybe qv $ lookup_vMap v s m
+           fromMaybe qv $ lookupVMap v s m
      , foldQuantification = \ (Quantification q vs f ps) _ _ _ _ ->
-               let nm = delete_vMap vs m
-               in Quantification q vs (replace_varsF nm mf f) ps
+               let nm = deleteVMap vs m
+               in Quantification q vs (replaceVarsF nm mf f) ps
      }
 
--- | replace_vars replaces all Qual_var occurences that are supposed
+-- | replaceVars replaces all Qual_var occurences that are supposed
 -- to be replaced according to the FreshVARMap
-replace_varsF :: FreshVARMap f
+replaceVarsF :: FreshVARMap f
              -> (f -> f)
              -- ^ this function replaces Qual_var in ExtFORMULA
              -> FORMULA f -> FORMULA f
-replace_varsF m = foldFormula . replaceVarsRec m
+replaceVarsF m = foldFormula . replaceVarsRec m
 
 codeOutUniqueRecord :: (f -> f) -> (f -> f) -> Record f (FORMULA f) (TERM f)
 codeOutUniqueRecord rf mf = (mapRecord mf)
@@ -102,15 +103,15 @@ codeOutUniqueRecord rf mf = (mapRecord mf)
             eqForms (Var_decl vars1 sor1 _) (Var_decl vars2 sor2 _) =
               if sor1 == sor2 then zipWith (eqFor sor1) vars1 vars2
               else error "codeOutUniqueRecord1"
-            eqFor s v1 v2 = Strong_equation (toSortTerm (toVarTerm v1 s))
-                                          (toSortTerm (toVarTerm v2 s))
+            eqFor s v1 v2 = Strong_equation (mkVarTerm (v1, s))
+                                          (mkVarTerm (v2, s))
                                           nullRange
-            -- fresh_vars produces new variables based on a list
+            -- freshVars produces new variables based on a list
             -- of defined variables
             -- args: (1) set of already used variable names
             --       (2) list of variables
-            fresh_vars = mapAccumL fresh_var
-            fresh_var accSet (Var_decl vars sor _) =
+            freshVars = mapAccumL freshVar
+            freshVar accSet (Var_decl vars sor _) =
               let accSet' = Set.union (Set.fromList vars) accSet
                   (accSet'',vars') = mapAccumL nVar accSet' vars
               in (accSet'',Var_decl vars' sor nullRange)
@@ -119,10 +120,10 @@ codeOutUniqueRecord rf mf = (mapRecord mf)
               let v' = fromJust (find (not . flip Set.member aSet)
                                  [genVar v (i :: Int) | i<-[1..]])
               in (Set.insert v' aSet,v')
-            (vSet', vDecl')  = fresh_vars Set.empty vDecl
-            (_vSet'', vDecl'')  = fresh_vars vSet' vDecl
-            f'_rep_x = replace_varsF (build_vMap vDecl vDecl') rf f'
-            f'_rep_y = replace_varsF (build_vMap vDecl vDecl'') rf f'
+            (vSet', vDecl')  = freshVars Set.empty vDecl
+            (_vSet'', vDecl'')  = freshVars vSet' vDecl
+            f'_rep_x = replaceVarsF (buildVMap vDecl vDecl') rf f'
+            f'_rep_y = replaceVarsF (buildVMap vDecl vDecl'') rf f'
             allForm = Quantification Universal (vDecl'++vDecl'')
                            (Implication
                               (Conjunction [f'_rep_x,f'_rep_y] nullRange)
@@ -170,7 +171,7 @@ codeOutCondRecord fun =
           , foldMembership =
               \ (Membership t s ps) _ _ _ ->
                   either (codeOutConditionalF fun) id
-                    (mkSingleTermF (\ x y -> Membership x s y) t ps)
+                    (mkSingleTermF (\ x -> Membership x s) t ps)
           , foldDefinedness =
               \ (Definedness t ps) _ _ ->
                   either (codeOutConditionalF fun) id
@@ -183,7 +184,7 @@ codeOutCondPredication :: (Eq f) => FORMULA f
                    -- Right means no Conditional left
 codeOutCondPredication phi@(Predication _ ts _) =
     maybe (Right phi) (Left . constructExpansion phi)
-          (listToMaybe (catMaybes (map findConditionalT ts)))
+          $ listToMaybe $ mapMaybe findConditionalT ts
 codeOutCondPredication _ = error "CASL.Utils: Predication expected"
 
 constructExpansion :: (Eq f) => FORMULA f
@@ -203,7 +204,7 @@ mkEquationAtom :: (Eq f) => (TERM f -> TERM f -> Range -> FORMULA f)
                -- Right means no Conditional left
 mkEquationAtom cons t1 t2 ps =
     maybe (Right phi) (Left . constructExpansion phi)
-          (listToMaybe (catMaybes (map findConditionalT [t1,t2])))
+          $ listToMaybe $ mapMaybe findConditionalT [t1, t2]
     where phi = cons t1 t2 ps
 
 mkSingleTermF :: (Eq f) => (TERM f -> Range -> FORMULA f)
@@ -282,12 +283,3 @@ eqSubstRecord eqPredSet extFun =
 
 substEqPreds :: Set.Set PRED_SYMB -> (f -> f) -> FORMULA f -> FORMULA f
 substEqPreds eqPredSet = foldFormula . eqSubstRecord eqPredSet
-
--- | adds Sorted_term to a Qual_var term
-toSortTerm :: TERM f -> TERM f
-toSortTerm t@(Qual_var _ s ps) = Sorted_term t s ps
-toSortTerm _ = error "CASL2TopSort.toSortTerm: can only handle Qual_var"
-
--- | generates from a variable and sort an Qual_var term
-toVarTerm :: VAR -> SORT -> TERM f
-toVarTerm vs s = Qual_var vs s nullRange

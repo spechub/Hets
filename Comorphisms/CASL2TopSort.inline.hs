@@ -30,7 +30,6 @@ import qualified Common.Lib.Rel as Rel
 -- CASL
 import CASL.Logic_CASL
 import CASL.AS_Basic_CASL
-import CASL.Utils
 import CASL.Sign
 import CASL.Morphism
 import CASL.Sublogic as SL
@@ -240,13 +239,13 @@ generateAxioms subSortMap pMap oMap = do
     return $ reverse hi_axs ++ reverse p_axs ++ reverse axs
     where p_axs =
           -- generate argument restrictions for predicates
-           Map.foldWithKey (\ pName set al ->
-              al ++ Map.foldWithKey
+           Map.foldWithKey (\ pName set ->
+              (++ Map.foldWithKey
                              (\ sl -> genArgRest
                                       (genSenName "p" pName $ length sl)
                                       (genPredication pName)
                                       sl)
-                                    [] (mkProfMapPred subSortMap set))
+                                    [] (mkProfMapPred subSortMap set)))
                    [] pMap
           hi_axs =
           -- generate subclass_of axioms derived from subsorts
@@ -323,7 +322,7 @@ genArgRest :: String
            -> [Named (FORMULA f)] -> [Named (FORMULA f)]
 genArgRest sen_name genProp sl spl fs =
     let vars = genVars sl
-        mquant = genQuantification (genProp sl $ map toSortTerm vars) vars spl
+        mquant = genQuantification (genProp sl vars) vars spl
     in maybe fs (\ quant -> mapNamed (const quant) (makeNamed "" sen_name)
                              : fs) mquant
 
@@ -344,7 +343,7 @@ genOpEquation kind opName sl terms =
           resSort  = last sl
 
 genVars :: [SORT] -> [TERM f]
-genVars = zipWith toVarTerm varSymbs
+genVars = map mkVarTerm . zip varSymbs
     where varSymbs = map mkSimpleId
             (map (: []) "xyzuwv" ++ map (\ i -> 'v' : show i) [(1::Int)..])
 
@@ -458,16 +457,13 @@ mapSen1 subSortMap f =
           -- universal? the use implication
           relativize Universal vdl f1 =
               if null vdl then f1
-              else Implication (mkVarPreds vdl) f1 True nullRange
+              else mkImpl (mkVarPreds vdl) f1
           -- existential or unique-existential? then use conjuction
           relativize _ vdl f1 =
               if null vdl then f1
-              else Conjunction [mkVarPreds vdl,f1] nullRange
-          mkVarPreds [v] = mkVarPred v
-          mkVarPreds vdl = Conjunction (map mkVarPred vdl) nullRange
-          mkVarPred (Var_decl [v] s _) = mkVarPred1 s v
-          mkVarPred (Var_decl vs s _) =
-              Conjunction (map (mkVarPred1 s) vs) nullRange
+              else conjunct [mkVarPreds vdl, f1]
+          mkVarPreds = conjunct . map mkVarPred
+          mkVarPred (Var_decl vs s _) = conjunct $ map (mkVarPred1 s) vs
           mkVarPred1 s v =
               let sTop = lkupTop subSortMap s
                   p = lkupPredName subSortMap s
@@ -489,8 +485,7 @@ mapTerm ssMap t = case t of
     Cast t1 _ _ -> mapTerm ssMap t1
     Conditional t1 f t2 pl ->
         Conditional (mapTerm ssMap t1) (mapSen1 ssMap f) (mapTerm ssMap t2) pl
-    _ ->
-        error "CASL2TopSort.mapTerm"
+    _ -> error "CASL2TopSort.mapTerm"
     where lTop = lkupTop ssMap
           updateOP_SYMB (Op_name _) =
               error "CASL2TopSort.mapTerm: got untyped application"
@@ -510,7 +505,7 @@ genEitherAxiom ssMap =
                     [] -> fatal_error "No injective operation found" nullRange
                     [xs@(x : _)] -> return $ genQuant x $ genImpl xs
                     ((x : _) : _) -> return $ genQuant x
-                        $ Conjunction (map genImpl groupedInjOps) nullRange
+                        $ conjunct $ map genImpl groupedInjOps
                     _ -> error "CASL2TopSort.genEitherAxiom.groupedInjOps"
                else Result [Diag Error
                                   "CASL2TopSort: Cannot handle \
@@ -528,25 +523,24 @@ genEitherAxiom ssMap =
           compTarget x1 x2 = compare (resultSort x1) (resultSort x2)
           sameTarget x1 x2 = compTarget x1 x2 == EQ
           lTop = lkupTop ssMap
-          varName = mkSimpleId "x"
-          mkVarTerm qon =
-              Sorted_term (Qual_var varName s nullRange) s nullRange
-              where s = lTop $ resultSort qon
-          mkVarDecl qon =
-              Var_decl [varName] (lTop (resultSort qon)) nullRange
-          genQuant qon f = Quantification Universal [mkVarDecl qon] f nullRange
-          genImpl []       = error "No OP_SYMB found"
-          genImpl xs@(x:_) =
-              assert (lTop (resultSort x) == lTop (argSort x))
-              (if resultSort x == lTop (resultSort x)
-               then genDisj xs
-               else Implication (genProp x) (genDisj xs) True nullRange)
-          genProp qon = genPredication (lPredName (resultSort qon))
-                                       [lTop (resultSort qon)]
-                                       [mkVarTerm qon]
+          mkXVarTerm = toQualVar . mkXVarDecl
+              -- I do not think this term needs to be a sorted term
+          mkXVarDecl = mkVarDeclStr "x" . lTop . resultSort
+          genQuant qon f = mkForall [mkXVarDecl qon] f nullRange
+          genImpl xs = case xs of
+            x : _ -> let
+              rSrt = resultSort x
+              ltSrt = lTop rSrt
+              disjs = genDisj xs
+              in if ltSrt == lTop (argSort x) then
+                   if rSrt == ltSrt then disjs else mkImpl (genProp x) disjs
+                 else  error "CASL2TopSort.genEitherAxiom.genImpl"
+            _ -> error "CASL2TopSort.genEitherAxiom.genImpl No OP_SYMB found"
+          genProp qon = let rSrt = resultSort qon in
+              genPredication (lPredName rSrt) [lTop rSrt] [mkXVarTerm qon]
           lPredName s = fromMaybe (error $
               "CASL2TopSort.genEitherAxiom: No PRED_NAME for \""
               ++ shows s "\" found!") $ lkupPredName ssMap s
           genDisj qons = Disjunction (map genPred qons) nullRange
           genPred qon = genPredication (lPredName $ argSort qon)
-              [lTop $ resultSort qon] [mkVarTerm qon]
+              [lTop $ resultSort qon] [mkXVarTerm qon]
