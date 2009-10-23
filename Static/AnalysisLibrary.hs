@@ -200,15 +200,18 @@ anaLibItemAux opts topLns (libItems', dg1, libenv1, lG) libItem =
           Logic_decl (Logic_name logTok _) _ : _ ->
               lG { currentLogic = tokStr logTok }
           _ -> lG
+        currLog = currentLogic newLG
+        newOpts = if elem currLog ["DMU"] then
+          opts { defLogic = currLog } else opts
     in ResultT (do
       Result diags2 res <-
-         runResultT $ anaLibItem newLG opts topLns libenv1 dg1 libItem
-      runResultT $ showDiags1 opts (liftR (Result diags2 res))
+         runResultT $ anaLibItem newLG newOpts topLns libenv1 dg1 libItem
+      runResultT $ showDiags1 newOpts (liftR (Result diags2 res))
       let mRes = case res of
              Just (libItem', dg1', libenv1') ->
                  Just (libItem' : libItems', dg1', libenv1', newLG)
              Nothing -> Nothing
-      if outputToStdout opts then
+      if outputToStdout newOpts then
          if hasErrors diags2 then
             fail "Stopped due to errors"
             else runResultT $ liftR $ Result [] mRes
