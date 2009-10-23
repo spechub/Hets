@@ -16,7 +16,6 @@ module DMU.Logic_DMU where
 
 import Logic.Logic
 
-import Common.AS_Annotation
 import Common.DefaultMorphism
 import Common.Doc
 import Common.DocUtils
@@ -47,15 +46,16 @@ instance Pretty Text where
 instance Syntax DMU Text () () where
   parse_basic_spec DMU = Just $ fmap Text $ many1 anyChar
 
-instance Sentences DMU Text () (DefaultMorphism ()) () where
+instance Sentences DMU () Text (DefaultMorphism Text) () where
   map_sen DMU _ = return
   sym_of DMU _ = Set.singleton ()
   symmap_of DMU _ = Map.empty
   sym_name DMU _ = genName "DMU"
 
-instance StaticAnalysis DMU Text Text () () () (DefaultMorphism ()) () () where
+instance StaticAnalysis DMU Text () () () Text (DefaultMorphism Text) () ()
+  where
   basic_analysis DMU = Just $ \ (s, _, _) ->
-    return (s, mkExtSign (), [makeNamed "DMU" s])
-  empty_signature DMU = ()
+    return (s, mkExtSign s, [])
+  empty_signature DMU = Text ""
 
-instance Logic DMU () Text Text () () () (DefaultMorphism ()) () () ()
+instance Logic DMU () Text () () () Text (DefaultMorphism Text) () () ()

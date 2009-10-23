@@ -1,0 +1,7 @@
+library DMU/test/Integrated
+
+logic DMU
+
+from DMU/test/test4 get test4
+
+spec MyFlange = test4 with logic DMU -> OWL

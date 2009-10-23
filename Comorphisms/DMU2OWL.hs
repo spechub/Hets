@@ -49,7 +49,7 @@ data DMU2OWL = DMU2OWL deriving Show
 instance Language DMU2OWL -- default definition is okay
 
 instance Comorphism DMU2OWL
-   DMU () Text Text () () () (DefaultMorphism ()) () () ()
+   DMU () Text () () () Text (DefaultMorphism Text) () () ()
    OWL OWLSub OntologyFile Axiom SymbItems SymbMapItems
        Sign OWLMorphism Entity RawSymb ProofTree where
     sourceLogic DMU2OWL = DMU
@@ -62,9 +62,8 @@ instance Comorphism DMU2OWL
     is_weakly_amalgamable DMU2OWL = True
     isInclusionComorphism DMU2OWL = True
 
-mapTheory :: ((), [Named Text]) -> Result (Sign, [Named Axiom])
-mapTheory (_, sens) = readOWL
-  $ unsafePerformIO $ runOntoDMU $ concatMap (fromText . sentence) sens
+mapTheory :: (Text, [Named ()]) -> Result (Sign, [Named Axiom])
+mapTheory = readOWL . unsafePerformIO . runOntoDMU . fromText . fst
 
 runOntoDMU :: String -> IO String
 runOntoDMU str = if null str then return "" else do
