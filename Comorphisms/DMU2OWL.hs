@@ -67,7 +67,7 @@ mapTheory (_, sens) = readOWL
   $ unsafePerformIO $ runOntoDMU $ concatMap (fromText . sentence) sens
 
 runOntoDMU :: String -> IO String
-runOntoDMU str = do
+runOntoDMU str = if null str then return "" else do
   tmpDir <- getTemporaryDirectory
   ontoDMUpath <- getEnvDef "HETS_ONTODMU" "DMU/OntoDMU.jar"
   (tmpFile, hndl) <- openTempFile tmpDir "ontoDMU.xml"
