@@ -315,37 +315,41 @@ lkupPredName :: SubSortMap -> SORT -> Maybe PRED_NAME
 lkupPredName ssm s = maybe Nothing (Just . predicatePI) (Map.lookup s ssm)
 
 genArgRest :: String
-           -> ([SORT] -> [TERM f] -> FORMULA f)
+           -> ([VAR_DECL] -> FORMULA f)
                -- ^ generates from a list of variables
                -- either the predication or function equation
            -> [SORT] -> (Set.Set [Maybe PRED_NAME])
            -> [Named (FORMULA f)] -> [Named (FORMULA f)]
 genArgRest sen_name genProp sl spl fs =
     let vars = genVars sl
-        mquant = genQuantification (genProp sl vars) vars spl
+        mquant = genQuantification (genProp vars) vars spl
     in maybe fs (\ quant -> mapNamed (const quant) (makeNamed "" sen_name)
                              : fs) mquant
 
--- | generate a predication with qualified pred name
-genPredication :: PRED_NAME -> [SORT] -> [TERM f] -> FORMULA f
-genPredication pName sl ts = Predication (Qual_pred_name pName
-   (Pred_type sl nullRange) nullRange) ts nullRange
+genPredication :: PRED_NAME -> [VAR_DECL] -> FORMULA f
+genPredication pName vars =
+  genPredAppl pName (map (\ (Var_decl _ s _) -> s) vars) $ map toQualVar vars
 
-genOpEquation :: OpKind -> OP_NAME -> [SORT] -> [TERM f] -> FORMULA f
-genOpEquation kind opName sl terms =
-    Strong_equation sortedOpTerm resTerm nullRange
-    where sortedOpTerm = Sorted_term (Application (Qual_op_name opName
-              opType nullRange) argTerms nullRange) resSort nullRange
+-- | generate a predication with qualified pred name
+genPredAppl :: PRED_NAME -> [SORT] -> [TERM f] -> FORMULA f
+genPredAppl pName sl terms = Predication (Qual_pred_name pName
+    (Pred_type sl nullRange) nullRange) terms nullRange
+
+genOpEquation :: OpKind -> OP_NAME -> [VAR_DECL] -> FORMULA f
+genOpEquation kind opName vars =
+    Strong_equation opTerm resTerm nullRange
+    where terms = map toQualVar vars
+          opTerm = mkAppl (Qual_op_name opName opType nullRange) argTerms
           opType = Op_type kind argSorts resSort nullRange
           argTerms = init terms
           resTerm  = last terms
-          argSorts = init sl
-          resSort  = last sl
+          argSorts = map sortOfTerm argTerms
+          resSort  = sortOfTerm resTerm
 
-genVars :: [SORT] -> [TERM f]
-genVars = zipWith mkVarTerm varSymbs
-    where varSymbs = map mkSimpleId
-            (map (: []) "xyzuwv" ++ map (\ i -> 'v' : show i) [(1::Int)..])
+genVars :: [SORT] -> [VAR_DECL]
+genVars = zipWith mkVarDeclStr varSymbs
+    where varSymbs =
+            map (: []) "xyzuwv" ++ map (\ i -> 'v' : show i) [(1::Int)..]
 
 genSenName :: Show a => String -> a -> Int -> String
 genSenName suff symbName arity =
@@ -353,25 +357,15 @@ genSenName suff symbName arity =
 
 genQuantification :: FORMULA f -- ^ either the predication or
                                -- function equation
-                  -> [TERM f] -- ^ Qual_vars
+                  -> [VAR_DECL] -- ^ Qual_vars
                   -> (Set.Set [Maybe PRED_NAME])
                   -> Maybe (FORMULA f)
 genQuantification prop vars spl = do
      dis <- genDisjunction vars spl
-     return $ Quantification Universal vds
-                (Implication prop dis True nullRange) nullRange
-   where vds = reverse (foldl toVarDecl [] vars)
-         toVarDecl :: [VAR_DECL] -> TERM f -> [VAR_DECL]
-         toVarDecl [] (Qual_var n s _) = [Var_decl [n] s nullRange]
-         toVarDecl xxs@(Var_decl l s1 _ : xs) (Qual_var n s _)
-             | s1 == s = Var_decl (l ++ [n]) s1 nullRange:xs
-             | otherwise = Var_decl [n] s nullRange : xxs
-         toVarDecl _ _ =
-             error "CASL2TopSort.toVarDecl: can only handle Qual_var"
+     return $ mkForall vars
+                (mkImpl prop dis) nullRange
 
-genDisjunction :: [TERM f] -- ^ Qual_vars
-                  -> (Set.Set [Maybe PRED_NAME])
-                  -> Maybe (FORMULA f)
+genDisjunction :: [VAR_DECL] -> Set.Set [Maybe PRED_NAME] -> Maybe (FORMULA f)
 genDisjunction vars spn
     | Set.size spn == 1 =
         case disjs of
@@ -385,10 +379,8 @@ genDisjunction vars spn
                 | null conjs = acc
                 | otherwise  = Conjunction (reverse conjs) nullRange : acc
                 where conjs = foldl genPred [] (zip vars pns)
-            genPred acc (v@(Qual_var _ s _), mpn) =
-                maybe acc (\ pn -> genPredication pn [s] [v] : acc) mpn
-            genPred _ _ =
-                error "CASL2TopSort.genPred: can only handle Qual_var"
+            genPred acc (v, mpn) = maybe acc
+                (\ pn -> genPredication pn [v] : acc) mpn
 
 -- | Each membership test of a subsort is transformed to a predication
 -- of the corresponding unary predicate. Variables quantified over a
@@ -432,7 +424,7 @@ mapSen1 subSortMap f =
     Membership t s pl ->
         let t' = mapTerm subSortMap t
         in maybe (Membership t' s pl)
-                 (\pn -> genPredication pn [lkupTop subSortMap s]
+                 (\pn -> genPredAppl pn [lkupTop subSortMap s]
                                            [t'])
                  (lkupPredName subSortMap s)
     Existl_equation t1 t2 pl ->
@@ -470,8 +462,7 @@ mapSen1 subSortMap f =
               in case p of
                  -- no subsort? then no relativization
                  Nothing -> True_atom nullRange
-                 Just p1 -> genPredication p1 [sTop] [Qual_var v s nullRange]
-
+                 Just p1 -> genPredAppl p1 [sTop] [mkVarTerm v s]
 
 
 mapTerm :: SubSortMap -> TERM f -> TERM f
@@ -523,8 +514,6 @@ genEitherAxiom ssMap =
           compTarget x1 x2 = compare (resultSort x1) (resultSort x2)
           sameTarget x1 x2 = compTarget x1 x2 == EQ
           lTop = lkupTop ssMap
-          mkXVarTerm = toQualVar . mkXVarDecl
-              -- I do not think this term needs to be a sorted term
           mkXVarDecl = mkVarDeclStr "x" . lTop . resultSort
           genQuant qon f = mkForall [mkXVarDecl qon] f nullRange
           genImpl xs = case xs of
@@ -536,11 +525,11 @@ genEitherAxiom ssMap =
                    if rSrt == ltSrt then disjs else mkImpl (genProp x) disjs
                  else  error "CASL2TopSort.genEitherAxiom.genImpl"
             _ -> error "CASL2TopSort.genEitherAxiom.genImpl No OP_SYMB found"
-          genProp qon = let rSrt = resultSort qon in
-              genPredication (lPredName rSrt) [lTop rSrt] [mkXVarTerm qon]
+          genProp qon =
+              genPredication (lPredName $ resultSort qon) [mkXVarDecl qon]
           lPredName s = fromMaybe (error $
               "CASL2TopSort.genEitherAxiom: No PRED_NAME for \""
               ++ shows s "\" found!") $ lkupPredName ssMap s
           genDisj qons = Disjunction (map genPred qons) nullRange
-          genPred qon = genPredication (lPredName $ argSort qon)
-              [lTop $ resultSort qon] [mkXVarTerm qon]
+          genPred qon =
+              genPredication (lPredName $ argSort qon) [mkXVarDecl qon]
