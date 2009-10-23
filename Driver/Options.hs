@@ -537,7 +537,8 @@ existsAnSource :: HetcatsOpts -> FilePath -> IO (Maybe FilePath)
 existsAnSource opts file = do
        let base = rmSuffix file
            exts = case intype opts of
-                  GuessIn -> downloadExtensions
+                  GuessIn -> if defLogic opts == "DMU"
+                    then [".xml"] else downloadExtensions
                   e@(ATermIn _) -> ['.' : show e, '.' : treeS ++ show e]
                   e -> ['.' : show e]
            names = file : map (base ++) (exts ++ [envSuffix])
