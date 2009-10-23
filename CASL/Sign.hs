@@ -474,12 +474,12 @@ mkAppl :: OP_SYMB -> [TERM f] -> TERM f
 mkAppl op_symb fs = Application op_symb fs nullRange
 
 -- | turn sorted variable into variable delcaration
-mkVarDecl :: (VAR, SORT) -> VAR_DECL
-mkVarDecl (v, s) = Var_decl [v] s nullRange
+mkVarDecl :: VAR -> SORT -> VAR_DECL
+mkVarDecl v s = Var_decl [v] s nullRange
 
 -- | turn sorted variable into term
-mkVarTerm :: (VAR, SORT) -> TERM f
-mkVarTerm = toQualVar . mkVarDecl
+mkVarTerm :: VAR -> SORT -> TERM f
+mkVarTerm v = toQualVar . mkVarDecl v
 
 -- | optimized conjunction
 conjunct :: [FORMULA f] -> FORMULA f
@@ -489,4 +489,4 @@ conjunct fs = case fs of
   _ -> Conjunction fs nullRange
 
 mkVarDeclStr :: String -> SORT -> VAR_DECL
-mkVarDeclStr x s = mkVarDecl (mkSimpleId x, s)
+mkVarDeclStr = mkVarDecl . mkSimpleId

@@ -63,7 +63,7 @@ buildVMap vDecls fVDecls =
     where toTups (Var_decl vars1 sor1 _) (Var_decl vars2 sor2 _) =
             if sor1 == sor2 then zipWith (toTup sor1) vars1 vars2
             else error "CASL.Utils.buildVMap"
-          toTup s v1 v2 = (v1, mkVarTerm (v2, s))
+          toTup s v1 v2 = (v1, mkVarTerm v2 s)
 
 -- | specialised lookup in FreshVARMap that ensures that the VAR with
 -- the correct type (SORT) is replaced
@@ -103,8 +103,8 @@ codeOutUniqueRecord rf mf = (mapRecord mf)
             eqForms (Var_decl vars1 sor1 _) (Var_decl vars2 sor2 _) =
               if sor1 == sor2 then zipWith (eqFor sor1) vars1 vars2
               else error "codeOutUniqueRecord1"
-            eqFor s v1 v2 = Strong_equation (mkVarTerm (v1, s))
-                                          (mkVarTerm (v2, s))
+            eqFor s v1 v2 = Strong_equation (mkVarTerm v1 s)
+                                          (mkVarTerm v2 s)
                                           nullRange
             -- freshVars produces new variables based on a list
             -- of defined variables

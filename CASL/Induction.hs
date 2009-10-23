@@ -74,7 +74,7 @@ induction constrSubsts = do
        sortInfo = map (\ ((cs, sub), i) -> (cs, sub, (mkVar i, newSort cs)))
          $ number constrSubsts
        mkConclusion (_, subst, v) =
-         mkForall [mkVarDecl v] (subst (mkVarTerm v)) nullRange
+         mkForall [uncurry mkVarDecl v] (subst (uncurry mkVarTerm v)) nullRange
        inductionConclusion = conjunct $ map mkConclusion sortInfo
    inductionPremises <- mapM (mkPrems $ map snd constrSubsts) sortInfo
    let inductionPremise = conjunct $ concat inductionPremises
@@ -94,17 +94,16 @@ mkPrem :: Pretty f =>  [TERM f -> FORMULA f]
            -> Result (FORMULA f)
 mkPrem substs (_,subst,_)
        (opSym@(Qual_op_name _ (Op_type _ argTypes _ _) _), idx) =
-  return $ mkForall (map mkVarDecl qVars) phi nullRange
+  return $ mkForall qVars phi nullRange
   where
-  qVars = map (\ (a, i) -> (mkVar i, a)) $ number argTypes
-  mkVar i = mkSimpleId ("y_" ++ show i)
+  qVars = map (\ (a, i) -> mkVarDeclStr ("y_" ++ show i) a) $ number argTypes
   phi = if null indHyps then indConcl
            else mkImpl (conjunct indHyps) indConcl
-  indConcl = subst $ mkAppl opSym $ map mkVarTerm qVars
+  indConcl = subst $ mkAppl opSym $ map toQualVar qVars
   indHyps = mapMaybe indHyp (zip qVars idx)
   indHyp (v1, i) =
     if i < 0 then Nothing -- leave out sorts from outside the constraint
-     else Just $ (substs !! i) $ mkVarTerm v1
+     else Just $ (substs !! i) $ toQualVar v1
 mkPrem _ _ (opSym, _) =
   fail ("CASL.Induction. mkPrems: "
         ++ "unqualified operation symbol occuring in constraint: "

@@ -343,7 +343,7 @@ genOpEquation kind opName sl terms =
           resSort  = last sl
 
 genVars :: [SORT] -> [TERM f]
-genVars = map mkVarTerm . zip varSymbs
+genVars = zipWith mkVarTerm varSymbs
     where varSymbs = map mkSimpleId
             (map (: []) "xyzuwv" ++ map (\ i -> 'v' : show i) [(1::Int)..])
 
