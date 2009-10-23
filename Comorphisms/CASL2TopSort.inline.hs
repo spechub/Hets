@@ -144,12 +144,12 @@ generateSubSortMap sortRels pMap =
 -- one element of the top-sort.
 
 transSig :: Sign () e -> Result (Sign () e, [Named (FORMULA ())])
-transSig sig
-    | Rel.null (sortRel sig) = hint (sig, [])
+transSig sig = if Rel.null sortRels then
+        hint (sig, [])
         "CASL2TopSort.transSig: Signature is unchanged (no subsorting present)"
         nullRange
-    | otherwise = do
-    subSortMap <- generateSubSortMap (sortRel sig) (predMap sig)
+    else do
+    subSortMap <- generateSubSortMap sortRels (predMap sig)
     let (dias2, newPredMap) = Map.mapAccum (\ ds (un, ds1) -> (ds ++ ds1, un))
           [] $ Map.unionWithKey repError (transPredMap subSortMap
                   $ predMap sig) $ newPreds subSortMap
@@ -162,8 +162,8 @@ transSig sig
         , opMap   = transOpMap subSortMap (opMap sig)
         , assocOps= transOpMap subSortMap (assocOps sig)
         , predMap = newPredMap
-        }, axs ++ symmetryAxioms subSortMap (sortRel sig))
-    where
+        }, axs ++ symmetryAxioms subSortMap sortRels)
+    where sortRels = Rel.transClosure $ sortRel sig
           repError k (v1, d1) (v2, d2) =
               (Set.union v1 v2,
                Diag Warning
@@ -390,13 +390,13 @@ genDisjunction vars spn
 -- disjointness axioms.
 
 transSen :: (Show f) => Sign f e -> FORMULA f -> Result (FORMULA f)
-transSen sig f
-    | Rel.null (sortRel sig) =
+transSen sig f = let sortRels = Rel.transClosure $ sortRel sig in
+    if Rel.null sortRels then
         Result [Diag Hint
         "CASL2TopSort.transSen: Sentence is unchanged (no subsorting present)"
         nullRange ] (Just f)
-    | otherwise = do
-    ssm <- generateSubSortMap (sortRel sig)(predMap sig)
+    else do
+    ssm <- generateSubSortMap sortRels (predMap sig)
     mapSen ssm f
 
 mapSen :: SubSortMap -> FORMULA f -> Result (FORMULA f)
