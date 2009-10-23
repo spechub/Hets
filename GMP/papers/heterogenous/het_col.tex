@@ -74,12 +74,12 @@ $\phi::= \hearts(\psi_1,\dots,\psi_n)$
 \end{quote}
 \end{definition}
 
-Using the previous definition which provides us with a notion of \emph{layers} of a formula,
-we may now define heterogenous modal logics:
+Using the previous definition which provides us with the notion of \emph{layers} of a formula,
+we may now fix our concept of heterogenous modal logics:
 
 \begin{definition}
 A \emph{heterogenous modal logic} consists of formulas that show a precisely defined constellation
-of layers: Given a finite list $\mathcal{M}=[\Lambda_1,\ldots,\Lambda_n]$ of modal similarity
+of layers. Given a finite list $\mathcal{M}=[\Lambda_1,\ldots,\Lambda_n]$ of modal similarity
 types, formulas $Het(\mathcal{M})=\phi^1$ of the according heterogenous modal logic are defined by circular induction:
 \begin{quote}
 $\phi^{(i \mod n)}::=Prop(Mod^{\Lambda_{(i\mod n)}}(\phi^{((i+1) \mod n)}).$
@@ -114,15 +114,32 @@ A \emph{heterogenous sequent} is a heterogenous list of formulas of possibly var
 A \emph{heterogenous premise} is just a list of lists of heterogenous sequents.
 \end{definition}
 
-Typed sequent rules:
+We now proceed by introducing a generic sequent calculus that allows for the treatment of
+heterogenous modal logics allthewhile restricting our attention to the propositional
+portion of the rules at first. The calculus makes use of several \emph{inference rules} each of
+which consists of a number of heterogenous premises accompanied by one heterogenous sequent
+(refered to as the \emph{conclusion} of the rule).
+
+In order to cope with the increased complexity of the process of proving (or refuting)
+possibly heterogenous modal formulas, we are free to assign a level $i$ to each formula
+$\psi$ (with the obvious meaning that all top-level modalities in $\psi$ are from
+$\Lambda_i$, i.e. $\psi=\phi^i$). The fact that level $i$ is assigned to a formula $\psi$
+is denoted by $\psi:i$.
+
+So now we are ready to define the propositional inference rules of the generic sequent
+calculus. In order to allow for an efficient implementation of the calculus, it is
+reasonable to conceptually section these rules into a group of \emph{linear rules}
+(as depicted in Fig.~\ref{fig:linear}) and a group of \emph{closing or branching
+rules} (as shown in Fig.~\ref{fig:branch}).
 \begin{figure}[!h]
   \begin{center}
     \begin{tabular}{| c |}
     \hline
       \\[-5pt]
-      (\textsc {Linear})\inferrule{stripped of type a}
-                      {\Gamma, formula of type a} \\[-5pt]
-      \\
+      (\textsc {$\neg\neg$})\inferrule{\Gamma, A:i}
+                      {\Gamma, \neg\neg A:i} 
+      (\textsc {$\neg\wedge$})\inferrule{\Gamma, \neg A:i, \neg B:i}
+                      {\Gamma, \neg (A\wedge B):i} \\[-5pt]\\
     \hline
     \end{tabular}
   \end{center}
@@ -130,8 +147,27 @@ Typed sequent rules:
   \label{fig:linear}
 \end{figure}
 
+\begin{figure}[!h]
+  \begin{center}
+    \begin{tabular}{| c |}
+    \hline
+      \\[-5pt]
+      (\textsc {$\neg$F})\inferrule{ }
+                      {\Gamma, \neg\bot:i} 
+      (\textsc {Ax})\inferrule{ }
+                      {\Gamma, p:i, \neg p:i} 
+      (\textsc {$\neg\wedge$})\inferrule{\Gamma, A:i \\ \Gamma, B:i}
+                      {\Gamma, A\wedge B:i} \\[-5pt]\\
+    \hline
+    \end{tabular}
+  \end{center}
+  \caption{The closing or branching sequent rules}
+  \label{fig:branch}
+\end{figure}
+Take note of the fact that the propositional sequent rules do not interfere
+with the level of any involved formulas.
 
-matching function, heterogenous sequent algorithm
+heterogenous sequent algorithm
 
 \section{Implementation}
 
