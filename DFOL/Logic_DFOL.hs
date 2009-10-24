@@ -2,10 +2,10 @@
 Module      :  $Header$
 Description :  Instances of classes defined in Logic.hs for first-order logic
                with dependent types (DFOL)
-Copyright   :  (c) Kristina Sojakova, Jacobs University 2009
+Copyright   :  (c) Kristina Sojakova, DFKI Bremen 2009
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
-Maintainer  :  k.sojakova@ijacobs-university.de
+Maintainer  :  k.sojakova@jacobs-university.de
 Stability   :  experimental
 Portability :  portable
 
