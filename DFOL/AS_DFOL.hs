@@ -37,7 +37,7 @@ module DFOL.AS_DFOL
       expandDecls,
       Translatable,
       translate,
-      getNewName  
+      getNewName
    )  where
 
 import Common.AS_Annotation
@@ -248,11 +248,11 @@ getNewName :: NAME -> Set.Set NAME -> NAME
 getNewName var names = getNewNameH var names (tokStr var) 0
 
 getNewNameH :: NAME -> Set.Set NAME -> String -> Int -> Token
-getNewNameH var names root i = 
+getNewNameH var names root i =
   if (Set.notMember var names)
      then var
      else let newVar = Token (root ++ (show i)) nullRange
-              in getNewNameH newVar names root $ i+1 
+              in getNewNameH newVar names root $ i+1
 
 -- equality
 instance Eq TERM where

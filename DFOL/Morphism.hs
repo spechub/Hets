@@ -137,7 +137,7 @@ mapSymbol m sym = Map.findWithDefault sym sym $ symMap m
 
 -- translates a term, type or formula along the given morphism
 applyMorph :: Translatable a => Morphism -> a -> a
-applyMorph m t = 
+applyMorph m t =
   let syms = getSymbols (target m)
       map1 = toTermMap $ symMap m
       in translate map1 syms t

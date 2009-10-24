@@ -9,7 +9,7 @@ Maintainer  :  k.sojakova@ijacobs-university.de
 Stability   :  experimental
 Portability :  portable
 
-Ref: Florian Rabe: First-Order Logic with Dependent Types. 
+Ref: Florian Rabe: First-Order Logic with Dependent Types.
      IJCAR 2006, pages 377-391.
 -}
 
