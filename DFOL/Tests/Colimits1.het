@@ -12,6 +12,10 @@ spec SP3 = SP1 then
 t :: Sort
 end
 
-view v1 : SP1 to SP2
-view v2 : SP1 to SP2
+spec SP4 = SP1 then
+t :: Sort
+end
 
+view v1 : SP1 to SP2
+view v2 : SP1 to SP3
+view v3 : SP1 to SP4
