@@ -1,0 +1,33 @@
+logic DFOL
+spec SP1 = 
+Nat :: Sort
+t1, t3 :: Nat
+. t1 == t3
+end
+
+spec SP2 =
+nat :: Sort
+s1, s2, s3 :: nat
+. s1 == s2 /\ s2 == s3
+end
+
+view v1 : SP1 to SP2 = t1 |-> s1, t3 |-> s3
+
+spec SP3 = SP2 with nat |-> Nat
+
+view v2 : SP1 to SP3 = t1 |-> s1, t3 |-> s3
+
+spec SP4 = 
+s :: Sort
+f :: s -> s
+end
+ 
+spec SP5 = 
+s :: Sort
+t :: Sort
+g :: t -> t
+end
+
+view v3 : SP4 to SP5 = s |-> t
+
+spec S6 = SP1 and SP3

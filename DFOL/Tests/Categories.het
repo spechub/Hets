@@ -1,0 +1,18 @@
+logic DFOL
+spec Categories = 
+Ob :: Sort
+Mor :: Ob -> Ob -> Sort
+id :: Pi A : Ob. Mor(A,A)
+comp :: Pi A,B,C : Ob. Mor(A,B) -> Mor(B,C) -> Mor(A,C)
+
+term :: Ob -> Form
+isom :: Ob -> Ob -> Form
+
+. forall A,B : Ob; f : Mor(A,B). comp(A,A,B,id(A),f) == f %(iden_left)%
+. forall A,B : Ob; f : Mor(B,A). comp(B,A,A,f,id(A)) == f %(iden_right)%  
+. forall A,B,C,D : Ob; f : Mor(A,B); g : Mor(B,C); h : Mor(C,D). comp(A,B,D,f,comp(B,C,D,g,h)) == comp(A,C,D,comp(A,B,C,f,g),h) %(assoc)%
+. forall A : Ob. term(A) <=> (forall B : Ob. exists f : Mor(B,A). forall g : Mor(B,A). f == g) %(term_def)%
+. forall A,B : Ob. (isom(A,B) <=> (exists f : Mor(A,B). exists g : Mor(B,A). comp(A,B,A,f,g) == id(A) /\ comp(B,A,B,g,f) == id(B))) %(isom_def)%
+
+. forall A,B : Ob. term(A) /\ term(B) => isom(A,B) %(terminals_are_iso)%  %implied
+
