@@ -1,0 +1,34 @@
+logic DFOL
+
+spec SP1 = 
+i, j :: Sort
+f :: i -> j
+end
+
+spec SP2 =
+i :: Sort
+k :: i -> i
+end
+
+spec SP3 = 
+Nat :: Sort
+Mat :: Nat -> Nat -> Sort
+Plus :: Pi m,n : Nat. Mat(m,n) -> Mat(m,n) -> Mat(m,n)
+end
+
+spec SP4 = 
+nat :: Sort
+mat :: nat -> nat -> Sort
+plus :: Pi m,n : nat. mat(m,n) -> mat(m,n) -> mat(m,n)
+end
+
+spec SP5 = 
+i :: Sort
+j :: Form
+end
+
+view v1 : SP1 to SP2 = j |-> i, f |-> k
+view v2 : SP3 to SP4 = Nat |-> nat, Mat |-> mat, Plus |-> plus
+view v3 : SP4 to SP3 = nat |-> Nat, mat |-> Mat, plus |-> Plus
+view v4 : SP5 to SP5
+

@@ -1,0 +1,17 @@
+logic DFOL
+
+spec SP1 = 
+s, t1 :: Sort
+end
+
+spec SP2 = SP1 then
+t :: Sort
+end
+
+spec SP3 = SP1 then
+t :: Sort
+end
+
+view v1 : SP1 to SP2
+view v2 : SP1 to SP2
+
