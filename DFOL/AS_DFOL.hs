@@ -1,6 +1,12 @@
 {- |
 Module      :  $Header$
 Description :  Abstract syntax for first-order logic with dependent types (DFOL)
+Copyright   :  (c) Kristina Sojakova, Jacobs University 2009
+License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
+
+Maintainer  :  k.sojakova@ijacobs-university.de
+Stability   :  experimental
+Portability :  portable
 -}
 
 module DFOL.AS_DFOL
@@ -239,11 +245,14 @@ translateFormula _ _ f = f
 {- modifies the given name until it is different from each of the names
    in the input set -}
 getNewName :: NAME -> Set.Set NAME -> NAME
-getNewName var names =
+getNewName var names = getNewNameH var names (tokStr var) 0
+
+getNewNameH :: NAME -> Set.Set NAME -> String -> Int -> Token
+getNewNameH var names root i = 
   if (Set.notMember var names)
      then var
-     else let newVar = Token ((tokStr var) ++ "1") nullRange
-              in getNewName newVar names
+     else let newVar = Token (root ++ (show i)) nullRange
+              in getNewNameH newVar names root $ i+1 
 
 -- equality
 instance Eq TERM where

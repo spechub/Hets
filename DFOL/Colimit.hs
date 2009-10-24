@@ -1,6 +1,18 @@
-module DFOL.Colimit {-(
+{- |
+Module      :  $Header$
+Description :  Signature colimits for first-order logic with dependent
+               types (DFOL)
+Copyright   :  (c) Kristina Sojakova, Jacobs University 2009
+License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
+
+Maintainer  :  k.sojakova@ijacobs-university.de
+Stability   :  experimental
+Portability :  portable
+-}
+
+module DFOL.Colimit (
     sigColimit
-  ) -} where
+  ) where
  
 import DFOL.AS_DFOL
 import DFOL.Sign
@@ -43,7 +55,7 @@ processSig :: Sign ->                        -- the signature determined so far
        [DECL] ->                             -- the declarations to be processed
        Set.Set (Int, NAME) ->                -- the symbols done so far
        Rel.Rel (Int, NAME) ->                -- the equality relation
-       [(Int, Sign)] ->                      -- the signatures to be processed      
+       [(Int, Sign)] ->                      -- the signatures to be processed
        (Sign, IntMap.IntMap (Map.Map NAME NAME))     -- the determined colimit
 
 processSig sig maps m i [] doneSyms rel sigs = 
@@ -66,7 +78,7 @@ processSig sig maps m i (([n],t):ds) doneSyms rel sigs =
                      c = findValue k $ IntMap.insert i m maps
                      m1 = Map.insert n c m
                      doneSyms1 = Set.insert n1 doneSyms 
-                     in processSig sig maps m1 i ds doneSyms1 rel sigs     
+                     in processSig sig maps m1 i ds doneSyms1 rel sigs
 
 processSig _ _ _ _ _ _ _ _ = (emptySig, IntMap.empty)
 
@@ -90,7 +102,7 @@ computeRel gr =
                      let syms = Set.toList $ getSymbols $ source m
                          in foldl (\ r2 s -> let t = mapSymbol m s
                                                  in Rel.insert (i,s) (j,t)
-                                                     $ Rel.insert (j,t) (i,s) r2 
+                                                     $ Rel.insert (j,t) (i,s) r2
                                   )
                                   r1 
                                   syms

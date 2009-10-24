@@ -1,3 +1,18 @@
+{- |
+Module      :  $Header$
+Description :  Instances of classes defined in Logic.hs for first-order logic
+               with dependent types (DFOL)
+Copyright   :  (c) Kristina Sojakova, Jacobs University 2009
+License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
+
+Maintainer  :  k.sojakova@ijacobs-university.de
+Stability   :  experimental
+Portability :  portable
+
+Ref: Florian Rabe: First-Order Logic with Dependent Types. 
+     IJCAR 2006, pages 377-391.
+-}
+
 module DFOL.Logic_DFOL where
 
 import DFOL.AS_DFOL

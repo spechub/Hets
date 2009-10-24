@@ -18,7 +18,7 @@ natTok = mkTok "Nat"
 matTok = mkTok "Mat"
 plusTok = mkTok "plus"
 mTok = mkTok "m"
-m1Tok = mkTok "m1"
+m1Tok = mkTok "m0"
 nTok = mkTok "n"
 
 nat, mat, plus, m, n, m1 :: TERM
@@ -44,4 +44,6 @@ t1 = Pi [([mTok, m1Tok], Univ nat)] $ Func [Univ $ Appl mat [m, m1], Univ $ Appl
 t2 = Func [] $ piRecForm t0
 t3 = Func [Univ nat, Univ nat] Sort
 t4 = Func [Univ nat] $ Func [Univ nat] $ Func [] Sort
+
+
 
