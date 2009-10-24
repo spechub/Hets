@@ -30,7 +30,8 @@ module DFOL.AS_DFOL
       compactDecls,
       expandDecls,
       Translatable,
-      translate
+      translate,
+      getNewName  
    )  where
 
 import Common.AS_Annotation
@@ -239,10 +240,10 @@ translateFormula _ _ f = f
    in the input set -}
 getNewName :: NAME -> Set.Set NAME -> NAME
 getNewName var names =
-  let newVar = Token ((tokStr var) ++ "1") nullRange
-      in if (Set.notMember newVar names)
-            then newVar
-            else getNewName newVar names
+  if (Set.notMember var names)
+     then var
+     else let newVar = Token ((tokStr var) ++ "1") nullRange
+              in getNewName newVar names
 
 -- equality
 instance Eq TERM where

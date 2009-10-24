@@ -16,6 +16,7 @@ module DFOL.Morphism
    , morphUnion
    , inducedFromMorphism
    , inducedFromToMorphism
+   , toTermMap
    ) where
 
 import DFOL.AS_DFOL
@@ -130,11 +131,14 @@ mapSymbol m sym = Map.findWithDefault sym sym $ symMap m
 
 -- translates a term, type or formula along the given morphism
 applyMorph :: Translatable a => Morphism -> a -> a
-applyMorph m t =
+applyMorph m t = 
   let syms = getSymbols (target m)
-      map1 = Map.fromList $ map (\ (k,a) -> (k, Identifier a))
-               $ Map.toList $ symMap m
+      map1 = toTermMap $ symMap m
       in translate map1 syms t
+
+toTermMap :: Map.Map NAME NAME -> Map.Map NAME TERM
+toTermMap m = Map.fromList $ map (\ (k,a) -> (k, Identifier a))
+               $ Map.toList m
 
 -- pretty printing
 instance Pretty Morphism where
@@ -168,8 +172,7 @@ buildSigH :: [DECL] -> Sign -> Map.Map NAME NAME -> Result.Result Sign
 buildSigH [] sig _ = Result.Result [] $ Just sig
 buildSigH (([n1],t1):ds) sig map1 =
   let n2 = Map.findWithDefault n1 n1 map1
-      map2 = Map.fromList $ map (\ (k,a) -> (k, Identifier a))
-               $ Map.toList map1
+      map2 = toTermMap map1
       syms = Set.map (\ n -> Map.findWithDefault n n map1)
                  $ getSymbols sig
       t2 = translate map2 syms t1

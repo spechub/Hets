@@ -7,6 +7,7 @@ import DFOL.Parse_AS_DFOL
 import DFOL.ATC_DFOL ()
 import DFOL.Analysis_DFOL
 import DFOL.Symbol
+import DFOL.Colimit
 import Logic.Logic
 import Common.Result
 import qualified Data.Map as Map
@@ -66,6 +67,7 @@ instance StaticAnalysis DFOL
    morphism_union DFOL = morphUnion
    induced_from_morphism DFOL = inducedFromMorphism
    induced_from_to_morphism DFOL = inducedFromToMorphism
+   signature_colimit DFOL = sigColimit
 
 -- instance of logic for DFOL
 instance Logic DFOL
