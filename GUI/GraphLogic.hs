@@ -130,9 +130,9 @@ updateGraphAux gInfo' ln changes dg = do
     Just gInfo@(GInfo { graphInfo = gi
                       , options = opts }) -> do
       flags <- readIORef opts
-      let (nodes, comp) = if flagHideNodes flags then hideNodesAux dg
+      let edges = if flagHideEdges flags then hideEdgesAux dg else []
+          (nodes, comp) = if flagHideNodes flags then hideNodesAux dg edges
                           else ([],[])
-          edges = if flagHideEdges flags then hideEdgesAux dg else []
       GA.showTemporaryMessage gi
         "Applying development graph calculus proof rule..."
       GA.deactivateGraphWindow gi
@@ -166,14 +166,14 @@ toggleHideNames gInfo@(GInfo { graphInfo = gi
   updateGraph gInfo []
 
 -- | hides all unnamed internal nodes that are proven
-hideNodesAux :: DGraph
+hideNodesAux :: DGraph -> [EdgeId]
              -> ([GA.NodeId], [(GA.NodeId, GA.NodeId, DGEdgeType, Bool)])
-hideNodesAux dg =
+hideNodesAux dg ignoreEdges =
   let nodes = selectNodesByType dg [DGNodeType { nonRefType = NonRefType
                                                  { isProvenCons = True
                                                  , isInternalSpec = True}
                                                , isLocallyEmpty = True}]
-      edges = getCompressedEdges dg nodes
+      edges = getCompressedEdges dg nodes ignoreEdges
   in (nodes, edges)
 
 toggleHideNodes :: GInfo -> IO ()
@@ -239,16 +239,25 @@ compressTypes b (t1:t2:r)
   | t1 > t2 = compressTypes False (t1:r)
   | otherwise = compressTypes False (t2:r)
 
+-- | innDG with filter of not shown edges
+fInnDG :: [EdgeId] -> DGraph -> Node -> [LEdge DGLinkLab]
+fInnDG ignore dg = filter (\ (_,_,l) -> elem (dgl_id l) ignore) . innDG dg
+
+-- | outDG with filter of not shown edges
+fOutDG :: [EdgeId] -> DGraph -> Node -> [LEdge DGLinkLab]
+fOutDG ignore dg = filter (\ (_,_,l) -> elem (dgl_id l) ignore) . outDG dg
+
 -- | returns a list of compressed edges
-getCompressedEdges :: DGraph -> [Node] -> [(Node,Node,DGEdgeType, Bool)]
-getCompressedEdges dg hidden = filterDuplicates $ getShortPaths
-  $ concatMap (\ e@(_,t,_) -> map (e:) $ getPaths dg t hidden []) inEdges
+getCompressedEdges :: DGraph -> [Node] -> [EdgeId]
+                   -> [(Node,Node,DGEdgeType, Bool)]
+getCompressedEdges dg hidden ign = filterDuplicates $ getShortPaths
+  $ concatMap (\ e@(_,t,_) -> map (e:) $ getPaths dg t hidden [] ign) inEdges
   where
     inEdges = filter (\ (_,t,_) -> elem t hidden)
-                     $ concatMap (outDG dg)
+                     $ concatMap (fOutDG ign dg)
                      $ foldr (\ n i -> if elem n hidden
                                        || elem n i then i else n:i) []
-                     $ map (\ (s,_,_) -> s) $ concatMap (innDG dg) hidden
+                     $ map (\ (s,_,_) -> s) $ concatMap (fInnDG ign dg) hidden
 
 -- | filter duplicate paths
 filterDuplicates :: [(Node,Node,DGEdgeType, Bool)]
@@ -263,14 +272,16 @@ filterDuplicates r@((s, t, _, _) : _) = edges ++ filterDuplicates others
     edges = if null mtypes then stypes' else (s,t,et',False):stypes'
 
 -- | returns the pahts of a given node through hidden nodes
-getPaths :: DGraph -> Node -> [Node] -> [Node] -> [[LEdge DGLinkLab]]
-getPaths dg node hidden seen' = if elem node hidden then
+getPaths :: DGraph -> Node -> [Node] -> [Node] -> [EdgeId]
+         -> [[LEdge DGLinkLab]]
+getPaths dg node hidden seen' ign = if elem node hidden then
   if null edges then []
-    else concatMap (\ e@(_,t,_) -> map (e:) $ getPaths dg t hidden seen) edges
+    else concatMap (\ e@(_,t,_) -> map (e:) $ getPaths dg t hidden seen ign)
+                   edges
   else [[]]
   where
     seen = node:seen'
-    edges = filter (\ (_,t,_) -> notElem t seen) $ outDG dg node
+    edges = filter (\ (_,t,_) -> notElem t seen) $ fOutDG ign dg node
 
 -- | returns source and target node of a path with the compressed type
 getShortPaths :: [[LEdge DGLinkLab]]
