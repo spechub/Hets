@@ -53,7 +53,6 @@ import Control.Concurrent(ThreadId, killThread)
 import Control.Concurrent.MVar(MVar, newMVar, putMVar, takeMVar, readMVar,
                                swapMVar, modifyMVar_)
 
-import System.IO(IO, putStrLn)
 import Control.Monad(when)
 
 

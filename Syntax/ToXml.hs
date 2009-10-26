@@ -31,7 +31,6 @@ import Logic.Grothendieck
 import Text.XML.Light
 
 import Data.Maybe
-import Data.List
 
 xmlLibDefn :: GlobalAnnos -> LIB_DEFN -> Element
 xmlLibDefn ga (Lib_defn n il rg an) =

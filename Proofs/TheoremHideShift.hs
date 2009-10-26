@@ -41,7 +41,6 @@ import Common.Result
 import Data.Graph.Inductive.Graph as Graph
 import qualified Data.Map as Map
 import Data.Maybe
-import Control.Monad
 
 ------------------------------------------------
 -- Theorem hide shift and  auxiliaries

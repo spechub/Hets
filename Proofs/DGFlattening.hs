@@ -62,7 +62,6 @@ import Proofs.NormalForm
 import Static.DevGraph
 import Static.GTheory
 
-import Control.Monad
 import Data.Graph.Inductive.Graph hiding (empty)
 import Data.List
 import Data.Maybe

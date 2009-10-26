@@ -21,8 +21,6 @@ import CMDL.ParseProofScript as Parser
 
 import Common.Utils
 
-import Data.Char
-import Data.Either
 import Data.List
 
 import Control.Monad

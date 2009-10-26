@@ -30,7 +30,6 @@ import Common.Result
 
 import Data.Graph.Inductive.Graph as Graph
 import Data.List (sortBy)
-import Control.Monad
 
 -- * nodes with incoming hiding definition links
 

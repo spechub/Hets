@@ -14,8 +14,6 @@ Printing a (G_theory CASL _) into a DFG Doc.
 
 module SoftFOL.CreateDFGDoc (printTheoryAsSoftFOL) where
 
-import Data.Maybe
-
 import Logic.Prover
 import Logic.Grothendieck
 import Logic.Comorphism
