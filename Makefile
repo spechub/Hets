@@ -288,7 +288,8 @@ DFOL_files = DFOL/AS_DFOL.hs DFOL/Sign.hs DFOL/Morphism.hs DFOL/Symbol.hs
 Maude_files = Maude/Sign.hs Maude/Morphism.hs Maude/Sentence.hs \
     Maude/Symbol.hs Maude/AS_Maude.hs
 
-ExtModal_files = ExtModal/AS_ExtModal.hs ExtModal/ExtModalSign.hs
+ExtModal_files = ExtModal/AS_ExtModal.hs ExtModal/ExtModalSign.hs \
+    ExtModal/MorphismExtension.hs
 
 # ATC DrIFT-rule generation for logics
 CASL/ATC_CASL.der.hs: $(CASL_files) $(GENRULES)
