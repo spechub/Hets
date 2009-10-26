@@ -17,27 +17,35 @@ import CASL.Sign
 import CASL.Morphism
 import Common.Id
 import Common.Result
+import Common.DocUtils
+import Common.Doc
 
 import ExtModal.AS_ExtModal
 import ExtModal.ExtModalSign
+import ExtModal.Print_AS
 
 data MorphExtension = MorphExtension
-	{ source :: Sign EM_FORMULA EModalSign
-	, target :: Sign EM_FORMULA EModalSign
+	{ source :: EModalSign
+	, target :: EModalSign
 	, mod_map :: Map.Map SIMPLE_ID SIMPLE_ID
 	, nom_map :: Map.Map SIMPLE_ID SIMPLE_ID
 	} deriving (Show, Eq, Ord)
 
 emptyMorphExtension :: MorphExtension 
-emptyMorphExtension = MorphExtension (emptySign emptyEModalSign) (emptySign emptyEModalSign) Map.empty Map.empty
+emptyMorphExtension = MorphExtension emptyEModalSign emptyEModalSign Map.empty Map.empty
 
-instance MorphismExtension (Sign EM_FORMULA EModalSign) MorphExtension where 
+
+instance Pretty MorphExtension where 
+	pretty me = pretty (source me) <+> pretty (target me) <+> 
+			text (show (Map.toList (mod_map me))) <+> text (show (Map.toList (nom_map me)))
+
+instance MorphismExtension EModalSign MorphExtension where 
  
 	ideMorphismExtension sgn = 
 		let insert_next old_map s_id = Map.insert  s_id s_id old_map in
 		MorphExtension sgn sgn 
-			(foldl insert_next Map.empty (Map.keys (modalities (extendedInfo sgn)))) 
-			(foldl insert_next Map.empty (Set.toList (nominals (extendedInfo sgn))))
+			(foldl insert_next Map.empty (Map.keys (modalities sgn)))
+			(foldl insert_next Map.empty (Set.toList (nominals sgn)))
 
 	composeMorphismExtension sgn me1 me2 = 
 		if me1 == me2 
@@ -56,8 +64,8 @@ instance MorphismExtension (Sign EM_FORMULA EModalSign) MorphExtension where
 		    	if me_val1 == me_val2 then True else occurs_alt l True me_val2
 		    occurs_alt ((me_k,me_val1):l) False me_val2 = 
 		    	if me_val1 == me_val2 then occurs_alt l True me_val2 else occurs_alt l False me_val2
-		in if Map.keys (modalities (extendedInfo (target me))) == Map.elems (mod_map me) 
-			&& Set.toList (nominals (extendedInfo (target me))) == Map.elems (nom_map me)
+		in if Map.keys (modalities (target me)) == Map.elems (mod_map me) 
+			&& Set.toList (nominals (target me)) == Map.elems (nom_map me)
 			&& Map.filter (occurs_alt (Map.toList (mod_map me)) False) (mod_map me) == Map.empty
 			&& Map.filter (occurs_alt (Map.toList (nom_map me)) False) (nom_map me) == Map.empty 
 		      then return $ MorphExtension (target me) (source me) 

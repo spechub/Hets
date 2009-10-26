@@ -187,7 +187,6 @@ modalFormulaParser =
 	
 
 {-Term modality parser-}
--- parseModality :: [String] -> AParser st MODALITY
 parseModality :: GenParser Char (AnnoState st) MODALITY
 parseModality =
 	do t <- simpleId

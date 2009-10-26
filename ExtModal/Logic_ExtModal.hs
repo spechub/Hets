@@ -16,9 +16,11 @@ import ExtModal.AS_ExtModal
 import ExtModal.ExtModalSign
 import ExtModal.ATC_ExtModal()
 import ExtModal.Parse_AS
+import ExtModal.Print_AS
 import ExtModal.StatAna
 import ExtModal.MorphismExtension
 
+import CASL.Formula
 import CASL.Sign
 import CASL.Morphism
 import CASL.SymbolMapAnalysis
@@ -28,6 +30,8 @@ import CASL.Parse_AS_Basic
 import CASL.MapSentence
 import CASL.SymbolParser
 import CASL.Sublogic
+import CASL.SimplifySen
+import CASL.Taxonomy
 import CASL.Logic_CASL ()
 import Logic.Logic
 
@@ -57,7 +61,7 @@ instance Syntax ExtModal EM_BASIC_SPEC SYMB_ITEMS SYMB_MAP_ITEMS where
 	parse_symb_map_items ExtModal = Just $ symbMapItems ext_modal_reserved_words
 
 -- Modal formula mapping via signature morphism
-map_EM_FORMULA :: MapSen EM_FORMULA EModalSign (DefMorExt EModalSign)
+map_EM_FORMULA :: MapSen EM_FORMULA EModalSign MorphExtension
 
 map_EM_FORMULA morph (BoxOrDiamond choice t_m leq_geq number f pos) = 
 	let new_tm tm = case tm of 
@@ -72,11 +76,14 @@ map_EM_FORMULA morph (BoxOrDiamond choice t_m leq_geq number f pos) =
 	in BoxOrDiamond choice (new_tm t_m) leq_geq number new_f pos
 
 
-map_EM_FORMULA morph (Hybrid choice nom f pos) = 
-	let new_nom = let nms = nom_map (extended_map morph) in
-			if Map.member nom nms then (nms Map.! nom) else nom
-  	    new_f = mapSen map_EM_FORMULA morph f
-	in Hybrid choice new_nom new_f pos
+map_EM_FORMULA morph (Hybrid choice nm f pos) =
+	let new_nom = case nm of 
+			Nominal nom -> let nms = nom_map (extended_map morph) 
+		  	               in if Map.member nom nms then (Nominal (nms Map.! nom)) else nm
+			_ -> nm
+	    new_f = mapSen map_EM_FORMULA morph f
+        in Hybrid choice new_nom new_f pos
+		
 
 map_EM_FORMULA morph (UntilSince choice f1 f2 pos) = 
 	let new_f1 = mapSen map_EM_FORMULA morph f1
@@ -93,7 +100,7 @@ map_EM_FORMULA morph (PathQuantification choice f pos) =
 
 map_EM_FORMULA morph (StateQuantification t_dir choice f pos) = 
 	let new_f = mapSen map_EM_FORMULA morph f
-	in StatQuantification t_dir choice new_f pos
+	in StateQuantification t_dir choice new_f pos
 
 map_EM_FORMULA morph (FixedPoint choice p_var f pos) = 
 	let new_f = mapSen map_EM_FORMULA morph f
@@ -102,33 +109,33 @@ map_EM_FORMULA morph (FixedPoint choice p_var f pos) =
 -- Simplification of formulas - simplifySen for ExtFORMULA
 simEMSen :: Sign EM_FORMULA EModalSign -> EM_FORMULA -> EM_FORMULA
 simEMSen sign (BoxOrDiamond choice tm leq_geq number f pos) = 
-	BoxOrDiamond choice tm leq_geq number (simplifySen minExpForm simEMSen sign f) pos
+	BoxOrDiamond choice tm leq_geq number (simplifySen frmTypeAna simEMSen sign f) pos
 simEMSen sign (Hybrid choice nom f pos) = 
-	Hybrid choice nom (simplifySen minExpForm simEMSen sign f) pos
+	Hybrid choice nom (simplifySen frmTypeAna simEMSen sign f) pos
 simEMSen sign (UntilSince choice f1 f2 pos) = 
-	UntilSince choice (simplifySen minExpForm simEMSen sign f1) 
-		(simplifySen minExpForm simEMSen sign f1) pos
+	UntilSince choice (simplifySen frmTypeAna simEMSen sign f1) 
+		(simplifySen frmTypeAna simEMSen sign f1) pos
 simEMSen sign (NextY choice f pos) =
-	NextY choice (simplifySen minExpForm simEMSen sign f) pos
+	NextY choice (simplifySen frmTypeAna simEMSen sign f) pos
 simEMSen sign (PathQuantification choice f pos) = 
-	PathQuantification choice (simplifySen minExpForm simEMSen sign f) pos
+	PathQuantification choice (simplifySen frmTypeAna simEMSen sign f) pos
 simEMSen sign (StateQuantification t_dir choice f pos) = 
-	StateQuantification t_dir choice (simplifySen minExpForm simEMSen sign f) pos
+	StateQuantification t_dir choice (simplifySen frmTypeAna simEMSen sign f) pos
 simEMSen sign (FixedPoint choice p_var f pos) = 
-	FixedPoint choice p_var (simplifySen minExpForm simEMSen sign f) pos
+	FixedPoint choice p_var (simplifySen frmTypeAna simEMSen sign f) pos
 
 instance Sentences ExtModal ExtModalFORMULA ExtModalSign ExtModalMorph Symbol where 
 	map_sen ExtModal morph = return . mapSen map_EM_FORMULA morph
-	simplify_sen ExtModal = simplifySen minExpForm simEMSen
-	parse_sentence ExtModal = Just modalFormulaParser
+	simplify_sen ExtModal = simplifySen frmTypeAna simEMSen
+	parse_sentence ExtModal = Just $ primFormula ext_modal_reserved_words
 	print_sign ExtModal sig = printSign 
-		(printEModalSign $ simplifySen minExpForm simEMSen sig) sig
+		(printEModalSign $ simplifySen frmTypeAna simEMSen sig) sig
 	sym_of ExtModal = symOf 
  	symmap_of ExtModal = morphismToSymbMap
 	sym_name ExtModal = symName
 
 instance StaticAnalysis ExtModal EM_BASIC_SPEC ExtModalFORMULA SYMB_ITEMS SYMB_MAP_ITEMS 
-		ExtModalSign ExtModalMorph Symbol RawSymbol () where 
+		ExtModalSign ExtModalMorph Symbol RawSymbol where 
 	basic_analysis ExtModal = Just basicEModalAnalysis
 	stat_symb_map_items ExtModal = statSymbMapItems
 	stat_symb_items ExtModal = statSymbItems
@@ -151,7 +158,7 @@ instance StaticAnalysis ExtModal EM_BASIC_SPEC ExtModalFORMULA SYMB_ITEMS SYMB_M
 		inducedFromToMorphism emptyMorphExtension isSubEModalSign diffEModalSign
 	theory_to_taxonomy ExtModal = convTaxo
 
-instance Logic () EM_BASIC_SPEC ExtModalFORMULA SYMB_ITEMS SYMB_MAP_ITEMS 
+instance Logic ExtModal () EM_BASIC_SPEC ExtModalFORMULA SYMB_ITEMS SYMB_MAP_ITEMS 
 		ExtModalSign ExtModalMorph Symbol RawSymbol () where 
 
 	stability _ = Experimental 

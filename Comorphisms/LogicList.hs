@@ -49,6 +49,7 @@ import Isabelle.Logic_Isabelle
 import SoftFOL.Logic_SoftFOL
 #ifdef CASLEXTENSIONS
 import Modal.Logic_Modal
+import ExtModal.Logic_ExtModal
 import CoCASL.Logic_CoCASL
 import CspCASL.Logic_CspCASL
 import COL.Logic_COL ()
@@ -79,6 +80,7 @@ logicList =
 #endif
 #ifdef CASLEXTENSIONS
   , Logic CoCASL
+  , Logic ExtModal
   , Logic Modal
   , Logic cspCASL
   , Logic traceCspCASL

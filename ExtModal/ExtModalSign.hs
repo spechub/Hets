@@ -13,7 +13,10 @@ Signatures for extended modal logic, as extension of CASL signatures.
 module ExtModal.ExtModalSign where
 
 import CASL.Sign
+
 import Common.Id
+import Common.DocUtils
+import Common.Doc
 
 import qualified Data.Map as Map
 import qualified Data.List as List
