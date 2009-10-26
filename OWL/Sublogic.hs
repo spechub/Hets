@@ -33,7 +33,6 @@ module OWL.Sublogic
 import OWL.AS
 import OWL.Morphism
 import OWL.Sign
-import qualified Data.Set as Set
 
 import qualified Data.Set as Set
 

@@ -26,7 +26,6 @@ import Common.Lib.Graph
 import Data.Graph.Inductive.Graph
 import qualified Data.Map as Map
 import qualified Data.Set as Set
-import Data.List
 import CASL.Overload(leqClasses)
 import Common.Id
 

@@ -34,8 +34,6 @@ import CASL.OpItem
 
 import Text.ParserCombinators.Parsec
 
-import Control.Monad
-
 -- * signature items
 
 sortItems, typeItems, opItems, predItems, sigItems

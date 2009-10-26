@@ -33,16 +33,17 @@ module RelationalScheme.Sign
         )
         where
 
-import Common.Id
+import RelationalScheme.Keywords
+
 import Common.AS_Annotation
 import Common.Doc
 import Common.DocUtils
-import RelationalScheme.Keywords
-import qualified Data.Set as Set
-import qualified Data.Map as Map
+import Common.Id
 import Common.Result
 import Common.Utils
-import Control.Monad
+
+import qualified Data.Map as Map
+import qualified Data.Set as Set
 
 type RSIsKey = Bool
 

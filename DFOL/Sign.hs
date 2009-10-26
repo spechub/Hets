@@ -41,12 +41,12 @@ module DFOL.Sign
 
 import DFOL.Utils
 import DFOL.AS_DFOL
+
 import Common.Id
 import Common.Doc
 import Common.DocUtils
-import Data.List
-import Data.Maybe
 import qualified Common.Result as Result
+
 import qualified Data.Set as Set
 import qualified Data.Map as Map
 

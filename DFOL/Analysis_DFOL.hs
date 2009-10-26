@@ -20,13 +20,14 @@ import DFOL.Utils
 import DFOL.AS_DFOL
 import DFOL.Sign
 import DFOL.Symbol
+
 import Common.DocUtils
 import Common.ExtSign
 import Common.GlobalAnnotations
 import Common.Id
-import Data.Maybe
 import qualified Common.Result as Result
 import qualified Common.AS_Annotation as Anno
+
 import qualified Data.Set as Set
 import qualified Data.Map as Map
 

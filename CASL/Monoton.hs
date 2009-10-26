@@ -19,7 +19,6 @@ import qualified Data.Map as Map
 import qualified Data.Set as Set
 import Common.AS_Annotation
 import Common.Utils
-import Data.List
 
 -- CASL
 import CASL.AS_Basic_CASL

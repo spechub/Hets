@@ -19,7 +19,6 @@ module CspCASL.LocalTop (
 ) where
 
 import qualified Data.Set as S
-import Data.List
 import Data.Maybe
 
 -- A relation is a set of pairs.

@@ -33,15 +33,12 @@ import Common.Utils
 import Data.Time ()
 import Data.Time.Clock (UTCTime(..), getCurrentTime)
 
-import qualified Control.Concurrent as Concurrent
+import Control.Concurrent
 
 import System.Exit
 import System.IO
 import System.Process
 import System.Directory
-
-import Control.Concurrent
-import Control.Concurrent.MVar
 
 import qualified Data.Foldable as Fold
 import qualified Common.Lib.Rel as Rel
