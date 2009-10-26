@@ -21,6 +21,8 @@ import Common.Id
 import Common.Lexer
 import qualified Data.Map as Map
 import Data.Char (isSpace)
+import Data.Maybe
+import Control.Monad
 
 -- * lexical matter
 
@@ -42,7 +44,7 @@ identifierS = try $ anyWord >>=
     (\ s -> if elem s reservedList then unexpected $ show s else return s)
 
 identifierT :: Parser Token
-identifierT = bind (\ p s -> Token s (Range [p])) getPos identifierS
+identifierT = liftM2 (\ p s -> Token s (Range [p])) getPos identifierS
 
 arityT :: Parser Int
 arityT = fmap read $ many1 digit <|> try (string "-1" << notFollowedBy digit)
@@ -80,18 +82,18 @@ parensDot p = symbolT "(" >> p << symbolT ")."
 squaresDot :: Parser a -> Parser a
 squaresDot p = symbolT "[" >> p << symbolT "]."
 
-text :: Parser [Char]
+text :: Parser String
 text = fmap (reverse . dropWhile isSpace . reverse) $
-    symbolT "{*" >> (manyTill anyChar $ symbolT "*}")
+    symbolT "{*" >> manyTill anyChar (symbolT "*}")
 
-list_of ::  [Char] -> Parser String
-list_of sort = symbolT $ "list_of_" ++ sort
+listOf :: String -> Parser String
+listOf = symbolT . ("list_of_" ++)
 
-list_of_dot :: [Char] -> Parser String
-list_of_dot sort = list_of (sort ++ ".")
+listOfDot :: String -> Parser String
+listOfDot = listOf . (++ ".")
 
-end_of_list :: Parser String
-end_of_list = symbolT "end_of_list."
+endOfList :: Parser String
+endOfList = symbolT "end_of_list."
 
 mapTokensToData :: [(String, a)] -> Parser a
 mapTokensToData ls = choice (map tokenToData ls)
@@ -112,9 +114,9 @@ problem :: Parser SPProblem
 problem = do
     symbolT "begin_problem"
     i  <- parensDot identifierS
-    dl <- description_list
-    lp <- logical_part
-    s  <- setting_list
+    dl <- descriptionList
+    lp <- logicalPartP
+    s  <- settingList
     symbolT "end_problem."
     many anyChar
     eof
@@ -129,9 +131,9 @@ problem = do
 {- | A description is mandatory for a SPASS problem. It has to specify
   at least a 'name', the name of the 'author', the 'status' (see also
   'SPLogState' below), and a (verbose) description. -}
-description_list :: Parser SPDescription
-description_list = do
-    list_of_dot "descriptions"
+descriptionList :: Parser SPDescription
+descriptionList = do
+    listOfDot "descriptions"
     keywordT "name"
     n <- parensDot text
     keywordT "author"
@@ -145,7 +147,7 @@ description_list = do
     keywordT "description"
     de <- parensDot text
     da <- maybeParser (keywordT "date" >> parensDot text)
-    end_of_list
+    endOfList
     return SPDescription
       { name = n
       , author = a
@@ -162,13 +164,13 @@ description_list = do
   set of formula lists. Support for clause lists and proof lists hasn't
   been implemented yet.
 -}
-logical_part :: Parser SPLogicalPart
-logical_part = do
-    sl <- maybeParser symbol_list
-    dl <- maybeParser declaration_list
-    fs <- many formula_list
-    cl <- many clause_list
-    pl <- many proof_list
+logicalPartP :: Parser SPLogicalPart
+logicalPartP = do
+    sl <- maybeParser symbolListP
+    dl <- maybeParser declarationListP
+    fs <- many formulaList
+    cl <- many clauseList
+    pl <- many proofList
     return SPLogicalPart
       { symbolList = sl
       , declarationList = dl
@@ -181,13 +183,13 @@ logical_part = do
 {- |
   SPASS Symbol List
 -}
-symbol_list :: Parser SPSymbolList
-symbol_list = do
-    list_of_dot "symbols"
+symbolListP :: Parser SPSymbolList
+symbolListP = do
+    listOfDot "symbols"
     fs <- option [] (signSymFor "functions")
     ps <- option [] (signSymFor "predicates")
     ss <- option [] sortSymFor
-    end_of_list
+    endOfList
     return emptySymbolList
       { functions = fs
       , predicates = ps
@@ -208,27 +210,27 @@ signSym = do
     a <- arityT
     return SPSignSym {sym = s, arity = a}
 
-func_list :: Parser [SPIdentifier]
-func_list = squaresDot $ commaSep identifierT
+functList :: Parser [SPIdentifier]
+functList = squaresDot $ commaSep identifierT
 
 -- *** Formula List
 
 {- |
   SPASS Formula List
 -}
-formula_list :: Parser SPFormulaList
-formula_list = do
-    list_of "formulae"
+formulaList :: Parser SPFormulaList
+formulaList = do
+    listOf "formulae"
     ot <- parensDot $ mapTokensToData
       [ ("axioms", SPOriginAxioms)
       , ("conjectures", SPOriginConjectures)]
     fs <- many (formula (case ot of {SPOriginAxioms -> True; _ -> False}))
-    end_of_list
+    endOfList
     return SPFormulaList { originType = ot, formulae = fs }
 
-clause_list :: Parser SPClauseList
-clause_list = do
-    list_of "clauses"
+clauseList :: Parser SPClauseList
+clauseList = do
+    listOf "clauses"
     (ot, ct) <- parensDot $ do
         ot <- mapTokensToData
           [ ("axioms", SPOriginAxioms)
@@ -239,7 +241,7 @@ clause_list = do
     fs <- many $ clause ct $ case ot of
       SPOriginAxioms -> True
       _ -> False
-    end_of_list
+    endOfList
     return SPClauseList
       { coriginType = ot
       , clauseType  = ct
@@ -253,11 +255,11 @@ clause ct bool = keywordT "clause" >> parensDot (do
 
 clauseFork :: SPClauseType -> Parser NSPClause
 clauseFork ct = do
-  termWsList1@(TWL ls b) <- term_ws_list
+  termWsList1@(TWL ls b) <- termWsList
   do  symbolT "||"
-      termWsList2 <- term_ws_list
+      termWsList2 <- termWsList
       symbolT "->"
-      termWsList3 <- term_ws_list
+      termWsList3 <- termWsList
       return (BriefClause termWsList1 termWsList2 termWsList3)
     <|> case ls of
           [t] | not b -> toNSPClause ct t
@@ -273,11 +275,11 @@ toNSPClause ct t = case t of
         b <- toClauseBody ct t
         return $ SimpleClause b
 
-term_ws_list :: Parser TermWsList
-term_ws_list = do
+termWsList :: Parser TermWsList
+termWsList = do
     twl <- many term
     p <- maybeParser (symbolT "+")
-    return (TWL twl (maybe False (const True) p))
+    return $ TWL twl $ isJust p
 
 formula :: Bool -> Parser (Named SoftFOL.Sign.SPTerm)
 formula bool = keywordT "formula" >> parensDot (do
@@ -285,11 +287,11 @@ formula bool = keywordT "formula" >> parensDot (do
      fname <- option "" (comma >> identifierS)
      return (makeNamed fname sen) { isAxiom = bool })
 
-declaration_list :: Parser [SPDeclaration]
-declaration_list = do
-    list_of_dot "declarations"
+declarationListP :: Parser [SPDeclaration]
+declarationListP = do
+    listOfDot "declarations"
     decl <- many declaration
-    end_of_list
+    endOfList
     return decl
 
 declaration :: Parser SPDeclaration
@@ -298,7 +300,7 @@ declaration = do
     sortName <- identifierT
     maybeFreely <- option False (keywordT "freely" >> return True)
     keywordT "generated by"
-    funList <- func_list
+    funList <- functList
     return SPGenDecl
       { sortSym = sortName
       , freelyGenerated = maybeFreely
@@ -316,7 +318,7 @@ declaration = do
     (pn, sl) <- parensDot $ do
         pn <- identifierT
         comma
-        sl <- commaSep $ identifierT
+        sl <- commaSep identifierT
         return (pn, sl)
     return SPPredDecl { predSym  = pn, sortSyms = sl }
   <|> do
@@ -328,15 +330,15 @@ declaration = do
       _ -> SPSimpleTermDecl t
 
 -- | SPASS Proof List
-proof_list :: Parser SPProofList
-proof_list = do
-    list_of "proof"
+proofList :: Parser SPProofList
+proofList = do
+    listOf "proof"
     pa <- maybeParser $ parensDot $ do
         pt <- maybeParser getproofType
-        assocList <- option Map.empty (comma >> assoc_list)
-        return (pt, assocList)
-    steps <- many proof_step
-    end_of_list
+        assList <- option Map.empty (comma >> assocList)
+        return (pt, assList)
+    steps <- many proofStep
+    endOfList
     return $ case pa of
       Nothing -> SPProofList
         { proofType = Nothing
@@ -350,13 +352,9 @@ proof_list = do
 getproofType :: Parser SPIdentifier
 getproofType = identifierT
 
-assoc_list :: Parser SPAssocList
-assoc_list = fmap Map.fromList $ squares ( commaSep $ takeTroop )
-    where takeTroop = do
-            key <- getKey
-            symbolT ":"
-            val <- getValue
-            return (key, val)
+assocList :: Parser SPAssocList
+assocList = fmap Map.fromList $ squares $ commaSep
+  $ pair getKey $ symbolT ":" >> getValue
 
 getKey :: Parser SPKey
 getKey = fmap PKeyTerm term
@@ -364,8 +362,8 @@ getKey = fmap PKeyTerm term
 getValue :: Parser SPValue
 getValue = fmap PValTerm term
 
-proof_step :: Parser SPProofStep
-proof_step = do
+proofStep :: Parser SPProofStep
+proofStep = do
     keywordT "step"
     (ref, res, rule, pl, mal) <- parensDot takeStep
     return SPProofStep
@@ -382,7 +380,7 @@ proof_step = do
           rule <- getRuleAppl
           comma
           pl <- getParentList
-          mal <- option Map.empty (comma >> assoc_list)
+          mal <- option Map.empty (comma >> assocList)
           return (ref, res, rule, pl, mal)
 
         getReference = fmap PRefTerm term
@@ -408,30 +406,30 @@ proof_step = do
               Just u -> PRuleUser u
               Nothing -> r
             _ -> r
-        getParentList = squares (commaSep $ getParent)
+        getParentList = squares $ commaSep getParent
         getParent = fmap PParTerm term
 
 -- SPASS Settings.
-setting_list :: Parser [SPSetting]
-setting_list  = many setting
+settingList :: Parser [SPSetting]
+settingList  = many setting
 
 setting :: Parser SPSetting
 setting = do
-    list_of_dot "general_settings"
-    entriesList <- many setting_entry
-    end_of_list
+    listOfDot "general_settings"
+    entriesList <- many settingEntry
+    endOfList
     return SPGeneralSettings {entries = entriesList}
   <|> do
-    list_of "settings"
+    listOf "settings"
     slabel <- parensDot getLabel
     symbolT "{*"
     t <- many clauseFormulaRelation
     symbolT "*}"
-    end_of_list
+    endOfList
     return SPSettings {settingName = slabel, settingBody = t}
 
-setting_entry :: Parser SPHypothesis
-setting_entry = do
+settingEntry :: Parser SPHypothesis
+settingEntry = do
     keywordT "hypothesis"
     slabels <- squaresDot (commaSep identifierT)
     return (SPHypothesis slabels)

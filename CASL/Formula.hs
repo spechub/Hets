@@ -79,7 +79,7 @@ simpleTerm k = fmap Mixfix_token $ pToken
 
 restTerms :: AParsable f => [String] -> AParser st [TERM f]
 restTerms k = (tryItemEnd startKeyword >> return [])
-  <|> bind (:) (restTerm k) (restTerms k)
+  <|> restTerm k <:> restTerms k
   <|> return []
 
 startTerm :: AParsable f => [String] -> AParser st (TERM f)

@@ -18,7 +18,7 @@ module Syntax.Parse_AS_Structured
     , aSpec
     , logicName
     , parseMapping
-    , translation_list
+    , translationList
     ) where
 
 import Logic.Logic (AnyLogic(..), language_name, data_logic, Syntax(..))
@@ -31,19 +31,23 @@ import Logic.Grothendieck
     , lookupCurrentLogic
     , lookupComorphism)
 import Syntax.AS_Structured
+
 import Common.AS_Annotation
 import Common.AnnoState
 import Common.Keywords
 import Common.Lexer
 import Common.Token
 import Common.Id
+
 import Text.ParserCombinators.Parsec
+
 import Data.List((\\))
+import Control.Monad
 
 -- | parse annotations and then still call an annotation parser
 annoParser2 :: AParser st (Annoted a) -> AParser st (Annoted a)
-annoParser2 parser = bind (\ x (Annoted y pos l r) ->
-                           Annoted y pos (x ++ l) r) annos parser
+annoParser2 =
+  liftM2 (\ x (Annoted y pos l r) -> Annoted y pos (x ++ l) r) annos
 
 ------------------------------------------------------------------------
 -- logic and encoding names
@@ -127,11 +131,10 @@ plainComma = anComma `notFollowedWith` asKey logicS
 
 callSymParser :: Maybe (AParser st a) -> String -> String ->
                  AParser st ([a], [Token])
-callSymParser p name itemType = do
-    case p of
-         Nothing -> fail ("no symbol" ++itemType++ " parser for language "
-                            ++ name)
-         Just pa -> pa `separatedBy` plainComma
+callSymParser p name itemType = case p of
+    Nothing ->
+        fail $ "no symbol" ++ itemType ++ " parser for language " ++ name
+    Just pa -> separatedBy pa plainComma
 
 parseItemsMap :: AnyLogic -> AParser st (G_symb_map_items_list, [Token])
 parseItemsMap (Logic lid) = do
@@ -177,30 +180,32 @@ parseHiding = parseMapOrHide G_logic_projection G_symb_list parseItemsList
 ------------------------------------------------------------------------
 
 spec :: LogicGraph -> AParser st (Annoted SPEC)
-spec l = do (sps,ps) <- annoParser2 (specA l) `separatedBy` (asKey thenS)
-            return $ case sps of
-                    [sp] -> sp
-                    _ -> emptyAnno (Extension sps $ catRange ps)
+spec l = do
+  (sps,ps) <- annoParser2 (specA l) `separatedBy` asKey thenS
+  return $ case sps of
+    [sp] -> sp
+    _ -> emptyAnno (Extension sps $ catRange ps)
 
 specA :: LogicGraph -> AParser st (Annoted SPEC)
-specA l = do (sps,ps) <- annoParser2 (specB l) `separatedBy` (asKey andS)
-             return $ case sps of
-                     [sp] -> sp
-                     _ -> emptyAnno (Union sps $ catRange ps)
+specA l = do
+  (sps,ps) <- annoParser2 (specB l) `separatedBy` asKey andS
+  return $ case sps of
+    [sp] -> sp
+    _ -> emptyAnno (Union sps $ catRange ps)
 
 specB :: LogicGraph -> AParser st (Annoted SPEC)
-specB l = do    p1 <- asKey localS
-                sp1 <- aSpec l
-                p2 <- asKey withinS
-                sp2 <- annoParser2 $ specB l
-                return (emptyAnno $ Local_spec sp1 sp2
-                                  $ tokPos p1 `appRange` tokPos p2)
-          <|> specC l
+specB l = do
+    p1 <- asKey localS
+    sp1 <- aSpec l
+    p2 <- asKey withinS
+    sp2 <- annoParser2 $ specB l
+    return (emptyAnno $ Local_spec sp1 sp2 $ tokPos p1 `appRange` tokPos p2)
+  <|> specC l
 
 specC :: LogicGraph -> AParser st (Annoted SPEC)
 specC lG = do
     let spD = annoParser $ specD lG
-        rest = spD >>= translation_list lG Translation Reduction
+        rest = spD >>= translationList lG Translation Reduction
     l@(Logic lid) <- lookupCurrentLogic "specC" lG
     -- if the current logic has an associated data_logic,
     -- parse "data SPEC1 SPEC2", where SPEC1 is in the data_logic
@@ -216,13 +221,12 @@ specC lG = do
               return (emptyAnno $ Data lD l sp1 sp2 $ tokPos p1)
             <|> rest
 
-translation_list :: LogicGraph -> (Annoted b -> RENAMING -> b)
-                 -> (Annoted b -> RESTRICTION -> b) -> Annoted b
-                 -> AParser st (Annoted b)
-translation_list l ftrans frestr sp =
+translationList :: LogicGraph -> (Annoted b -> RENAMING -> b)
+  -> (Annoted b -> RESTRICTION -> b) -> Annoted b -> AParser st (Annoted b)
+translationList l ftrans frestr sp =
      do sp' <- translation l sp ftrans frestr
-        translation_list l ftrans frestr (emptyAnno sp')
- <|> return sp
+        translationList l ftrans frestr (emptyAnno sp')
+  <|> return sp
 
 -- | Parse renaming
 -- @
@@ -264,17 +268,12 @@ translation l sp ftrans frestr =
        return (frestr sp r)
 
 groupSpecLookhead :: AParser st Token
-groupSpecLookhead = oBraceT <|> ((simpleId << annos)
-                                 `followedWith`
-                                 (asKey withS <|> asKey hideS
-                                  <|> asKey revealS <|> asKey andS
-                                  <|> asKey thenS <|> cBraceT
-                                  <|> asKey fitS <|> asKey viewS
-                                  <|> asKey specS <|> asKey archS
-                                  <|> asKey unitS
-                                  <|> asKey withinS <|> asKey endS
-                                  <|> oBracketT <|> cBracketT
-                                  <|> (eof >> return (Token "" nullRange))))
+groupSpecLookhead = oBraceT <|> followedWith (simpleId << annos)
+  (asKey withS <|> asKey hideS <|> asKey revealS <|> asKey andS
+   <|> asKey thenS <|> cBraceT <|> asKey fitS <|> asKey viewS
+   <|> asKey specS <|> asKey archS <|> asKey unitS <|> asKey withinS
+   <|> asKey endS <|> oBracketT <|> cBracketT
+   <|> (eof >> return (Token "" nullRange)))
 
 specD :: LogicGraph -> AParser st SPEC
            -- do some lookahead for free spec, to avoid clash with free type
@@ -292,17 +291,13 @@ specD l = do p <- asKey freeS `followedWith` groupSpecLookhead
 specE :: LogicGraph -> AParser st SPEC
 specE l = logicSpec l
       <|> (lookAhead groupSpecLookhead >> groupSpec l)
-      <|> do
-        nl <- lookupCurrentLogic "basic spec" l
-        basicSpec nl
+      <|> (lookupCurrentLogic "basic spec" l >>= basicSpec)
 
 -- | call a logic specific parser if it exists
 callParser :: Maybe (AParser st a) -> String -> String -> AParser st a
-callParser p name itemType = do
-    case p of
-         Nothing -> fail ("no "++itemType++" parser for language "
-                            ++ name)
-         Just pa -> pa
+callParser p name itemType = case p of
+  Nothing -> fail $ "no "++ itemType ++ " parser for language " ++ name
+  Just pa -> pa
 
 basicSpec :: AnyLogic -> AParser st SPEC
 basicSpec (Logic lid) = do
@@ -329,7 +324,7 @@ lookupAndSetComorphismName ctok lg = do
     return lg { currentLogic = language_name $ targetLogic cid }
 
 aSpec :: LogicGraph -> AParser st (Annoted SPEC)
-aSpec l = annoParser2 (spec l)
+aSpec = annoParser2 . spec
 
 groupSpec :: LogicGraph -> AParser st SPEC
 groupSpec l = do

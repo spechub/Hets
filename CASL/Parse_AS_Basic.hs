@@ -25,12 +25,16 @@ import Common.AnnoState
 import Common.Id
 import Common.Keywords
 import Common.Lexer
-import CASL.AS_Basic_CASL
 import Common.AS_Annotation
-import Text.ParserCombinators.Parsec
+
+import CASL.AS_Basic_CASL
 import CASL.Formula
 import CASL.SortItem
 import CASL.OpItem
+
+import Text.ParserCombinators.Parsec
+
+import Control.Monad
 
 -- * signature items
 
@@ -116,10 +120,10 @@ dotFormulae ks =
        return $ Axiom_items ns (ps `appRange` catRange m)
 
 aFormula  :: AParsable f => [String] -> AParser st (Annoted (FORMULA f))
-aFormula ks = bind appendAnno (annoParser $ formula ks) lineAnnos
+aFormula = allAnnoParser . formula
 
 -- * basic spec
 
 basicSpec :: (AParsable f, AParsable s, AParsable b) =>
              [String] -> AParser st (BASIC_SPEC b s f)
-basicSpec ks = fmap Basic_spec $ annosParser $ basicItems ks
+basicSpec = fmap Basic_spec . annosParser . basicItems

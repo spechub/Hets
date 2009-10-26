@@ -27,6 +27,8 @@ import HasCASL.As
 import HasCASL.AsUtils
 import HasCASL.ParseTerm
 
+import Control.Monad
+
 -- * adapted item list parser (using 'itemAux')
 
 hasCaslItemList :: String -> AParser st b
@@ -37,7 +39,7 @@ hasCaslItemList kw ip constr = do
 
 hasCaslItemAux :: [Token] -> AParser st b -> ([Annoted b] -> Range -> a)
                -> AParser st a
-hasCaslItemAux ps = auxItemList hasCaslStartKeywords ps
+hasCaslItemAux = auxItemList hasCaslStartKeywords
 
 -- * parsing type items
 
@@ -117,7 +119,7 @@ typeItem = do
         <|> return (TypeDecl [s] universe nullRange)
 
 typeItemList :: [Token] -> Instance -> AParser st SigItems
-typeItemList ps k = hasCaslItemAux ps typeItem $ TypeItems k
+typeItemList ps = hasCaslItemAux ps typeItem . TypeItems
 
 typeItems :: AParser st SigItems
 typeItems = do
@@ -183,7 +185,7 @@ dataDef :: TypePattern -> Kind -> [Token] -> AParser st TypeItem
 dataDef t k l = do
     c <- asKey defnS
     a <- annos
-    let aAlternative = bind (\ i an -> Annoted i nullRange [] an)
+    let aAlternative = liftM2 (\ i -> Annoted i nullRange [])
           alternative annos
     (Annoted v _ _ b : as, ps) <- aAlternative `separatedBy` barT
     let aa = Annoted v nullRange a b : as
@@ -213,7 +215,7 @@ dataItems = hasCaslItemList typeS dataItem FreeDatatype
 classDecl :: AParser st ClassDecl
 classDecl = do
     (is, cs) <- classId `separatedBy` anComma
-    (ps, k) <- option ([], universe) $ bind  (,) (single lessT) kind
+    (ps, k) <- option ([], universe) $ liftM2  (,) (single lessT) kind
     return $ ClassDecl is k $ catRange $ cs ++ ps
 
 classItem :: AParser st ClassItem
@@ -226,7 +228,7 @@ classItem = do
       <|> return (ClassItem c [] nullRange)
 
 classItemList :: [Token] -> Instance -> AParser st BasicItem
-classItemList ps k = hasCaslItemAux ps classItem $ ClassItems k
+classItemList ps = hasCaslItemAux ps classItem . ClassItems
 
 classItems :: AParser st BasicItem
 classItems = do
@@ -394,8 +396,7 @@ genVarItem = do
 dotFormulae :: AParser st BasicItem
 dotFormulae = do
     d <- dotT
-    let aFormula = bind appendAnno (annoParser term) lineAnnos
-    (fs, ds) <- aFormula `separatedBy` dotT
+    (fs, ds) <- allAnnoParser term `separatedBy` dotT
     let ps = catRange $ d : ds
         lst = last fs
     if null $ r_annos lst then do

@@ -29,9 +29,11 @@ import qualified Common.AS_Annotation as Annotation
 import Common.Id as Id
 import Common.Keywords as Keywords
 import Common.Lexer as Lexer
+
 import Propositional.AS_BASIC_Propositional as AS_BASIC
-import qualified Common.AS_Annotation as AS_Anno
 import Text.ParserCombinators.Parsec
+
+import Control.Monad
 
 propKeywords :: [String]
 propKeywords =
@@ -61,7 +63,7 @@ parseAxItems = do
        (fs, ds) <- aFormula `Lexer.separatedBy` AnnoState.dotT
        (_, an) <- AnnoState.optSemi
        let _  = Id.catRange (d:ds)
-           ns = init fs ++ [AS_Anno.appendAnno (last fs) an]
+           ns = init fs ++ [Annotation.appendAnno (last fs) an]
        return $ AS_BASIC.Axiom_items ns
 
 -- | Any word to token
@@ -163,9 +165,8 @@ parenFormula = do
        Lexer.cParenT >> return f
 
 -- | Toplevel parser for formulae
-aFormula :: AnnoState.AParser st (AS_Anno.Annoted AS_BASIC.FORMULA)
-aFormula = Lexer.bind AS_Anno.appendAnno (AnnoState.annoParser impFormula)
-  AnnoState.lineAnnos
+aFormula :: AnnoState.AParser st (Annotation.Annoted AS_BASIC.FORMULA)
+aFormula =  AnnoState.allAnnoParser impFormula
 
 -- | parsing a prop symbol
 symb :: GenParser Char st SYMB

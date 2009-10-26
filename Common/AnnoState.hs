@@ -25,11 +25,14 @@ import Common.Id
 import Common.Keywords
 import Common.AS_Annotation
 import Common.AnnoParser
+
 import Text.ParserCombinators.Parsec
-import Data.List(delete)
+
+import Data.List
+import Control.Monad
 
 -- | parsers that can collect annotations via side effects
-type AParser st a = GenParser Char (AnnoState st) a
+type AParser st = GenParser Char (AnnoState st)
 
 class AParsable a where
   aparser :: AParser st a
@@ -98,7 +101,7 @@ lineAnnos = addLineAnnos >> getAnnos
 
 -- | optional semicolon followed by annotations on consecutive lines
 optSemi :: AParser st ([Token], [Annotation])
-optSemi = do (a1, s) <- try $ bind (,) annos semiT
+optSemi = do (a1, s) <- try $ pair annos semiT
              a2 <- lineAnnos
              return ([s], a1 ++ a2)
           <|> do a <- lineAnnos
@@ -110,7 +113,7 @@ tryItemEnd l = try $ do
   c <- lookAhead $ annos >>
     (single (oneOf "\"([{") <|> placeS <|> scanAnySigns
      <|> many (scanLPD <|> char '_' <?> "") <?> "")
-  if null c || c `elem` l then return () else pzero
+  unless (null c || elem c l) pzero
 
 -- | keywords that indicate a new item for 'tryItemEnd'.
 -- the quantifier exists does not start a new item.
@@ -119,14 +122,17 @@ startKeyword = dotS : cDot : delete existsS casl_reserved_words
 
 -- | parse preceding annotations and the following item
 annoParser :: AParser st a -> AParser st (Annoted a)
-annoParser = bind addLeftAnno annos
+annoParser = liftM2 addLeftAnno annos
+
+allAnnoParser :: AParser st a -> AParser st (Annoted a)
+allAnnoParser p = liftM2 appendAnno (annoParser p) lineAnnos
 
 {- | parse preceding and consecutive trailing annotations of an item in
      between.  Unlike 'annosParser' do not treat all trailing annotations as
      preceding annotations of the next item.  -}
 trailingAnnosParser :: AParser st a -> AParser st [Annoted a]
 trailingAnnosParser p = do
-  l <- many1 $ bind appendAnno (annoParser p) lineAnnos
+  l <- many1 $ allAnnoParser p
   a <- annos -- append remaining annos to last item
   return $ init l ++ [appendAnno (last l) a]
 
@@ -134,7 +140,7 @@ trailingAnnosParser p = do
 annosParser :: AParser st a -> AParser st [Annoted a]
 annosParser parser =
     do a <- annos
-       l <- many1 $ bind (,) parser annos
+       l <- many1 $ pair parser annos
        let ps = map fst l
            as = map snd l
            is = zipWith addLeftAnno (a: init as) ps
@@ -146,7 +152,7 @@ itemList :: [String] -> String -> ([String] -> AParser st b)
                -> ([Annoted b] -> Range -> a) -> AParser st a
 itemList ks kw ip constr =
     do p <- pluralKeyword kw
-       auxItemList (ks++startKeyword) [p] (ip ks) constr
+       auxItemList (ks ++ startKeyword) [p] (ip ks) constr
 
 -- | generalized version of 'itemList'
 -- for an other keyword list for 'tryItemEnd' and without 'pluralKeyword'

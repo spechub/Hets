@@ -21,9 +21,14 @@ import Common.Token
 import HasCASL.HToken
 import HasCASL.As
 import HasCASL.AsUtils
+
 import Text.ParserCombinators.Parsec
+
+import Control.Monad
+
 import Data.List ((\\))
 import qualified Data.Set as Set
+
 
 -- * key sign tokens
 
@@ -44,11 +49,11 @@ bracketParser parser op cl sep k = do
 
 -- | parser for square brackets
 mkBrackets :: AParser st a -> ([a] -> Range -> b) -> AParser st b
-mkBrackets p c = bracketParser p oBracketT cBracketT anComma c
+mkBrackets p = bracketParser p oBracketT cBracketT anComma
 
 -- | parser for braces
 mkBraces :: AParser st a -> ([a] -> Range -> b) -> AParser st b
-mkBraces p c = bracketParser p oBraceT cBraceT anComma c
+mkBraces p = bracketParser p oBraceT cBraceT anComma
 
 -- * kinds
 
@@ -62,7 +67,7 @@ parseSimpleKind = parseClassId <|> (oParenT >> kind << cParenT)
 
 -- | do 'parseSimpleKind' and check for an optional 'Variance'
 parseExtKind :: AParser st (Variance, Kind)
-parseExtKind = bind (,) variance parseSimpleKind
+parseExtKind = pair variance parseSimpleKind
 
 -- | parse a (right associative) function kind for a given argument kind
 arrowKind :: (Variance, Kind) -> AParser st Kind
@@ -95,7 +100,7 @@ variance = let l = [CoVar, ContraVar] in
 
 -- a (simple) type variable with a 'Variance'
 extVar :: AParser st Id -> AParser st (Id, Variance)
-extVar vp = bind (,) vp variance
+extVar vp = pair vp variance
 
 -- several 'extVar' with a 'Kind'
 typeVars :: AParser st [TypeArg]
@@ -332,7 +337,7 @@ varDeclType vs ps = do
 
 -- | attach the 'Type' to every 'Var'
 makeVarDecls :: [Id] -> [Token] -> Type -> Range -> [VarDecl]
-makeVarDecls vs ps t q = zipWith ( \ v p -> VarDecl v t Comma $ tokPos p)
+makeVarDecls vs ps t q = zipWith ( \ v -> VarDecl v t Comma . tokPos)
     (init vs) ps ++ [VarDecl (last vs) t Other q]
 
 -- | either like 'varDecls' or declared type variables.
@@ -346,7 +351,7 @@ genVarDecls = fmap (map ( \ g -> case g of
     (vs, ps) <- extVar var `separatedBy` anComma
     let other = fmap (map GenTypeVarDecl) (typeKind True vs ps)
     if allIsNonVar vs then fmap (map GenVarDecl)
-        (varDeclType (map ( \ (i, _) -> i) vs) ps) <|> other
+        (varDeclType (map fst vs) ps) <|> other
       else other
 
 -- * patterns
@@ -413,7 +418,7 @@ lamDot = myChoice [ (choice $ map (asKey . (++ exMark)) [dotS, cDot], Total)
 -- | patterns between 'lamS' and 'lamDot'
 lamPattern :: AParser st [Term]
 lamPattern =
-    (lookAhead lamDot >> return []) <|> bind (:) (typedPattern []) lamPattern
+    (lookAhead lamDot >> return []) <|> typedPattern [] <:> lamPattern
 
 -- * terms
 
@@ -496,8 +501,8 @@ varTerm = do
 
 -- | 'opS' or 'functS'
 opBrand :: AParser st (Token, OpBrand)
-opBrand = bind (,) (asKey opS) (return Op)
-    <|> bind (,) (asKey functS) (return Fun)
+opBrand = pair (asKey opS) (return Op)
+    <|> pair (asKey functS) (return Fun)
 
 parsePolyId :: AParser st PolyId
 parsePolyId = do
@@ -572,7 +577,7 @@ term = whereTerm (WithIn, [])
 
 -- | a 'Universal', 'Unique' or 'Existential' 'QuantifiedTerm'
 exQuant :: AParser st (Token, Quantifier)
-exQuant = choice $ map (\ (v, s) -> bind (,) (asKey s) $ return v)
+exQuant = choice $ map (\ (v, s) -> pair (asKey s) $ return v)
   [ (Universal, forallS)
   , (Unique, existsS ++ exMark)
   , (Existential, existsS) ]

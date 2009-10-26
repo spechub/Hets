@@ -17,6 +17,8 @@ module Common.Lexer where
 import Common.Id
 import Text.ParserCombinators.Parsec
 import qualified Text.ParserCombinators.Parsec.Pos as Pos
+
+import Control.Monad
 import Data.Char (digitToInt, isDigit, ord)
 import Data.List (isPrefixOf)
 
@@ -41,7 +43,7 @@ scanAnySigns = fmap (\ s -> if s == "\215" then "*" else s)
 caslLetters :: Char -> Bool
 caslLetters ch = let c = ord ch in
    if c <= 122 && c >= 65 then  c >= 97 || c <= 90
-   else c >= 192 && c <= 255 && not (elem c [215, 247])
+   else c >= 192 && c <= 255 && notElem c [215, 247]
 
 -- ['A'..'Z'] ++ ['a'..'z'] ++
 -- "ÀÁÂÃÄÅÆÇÈÉÊËÌÍÎÏÐÑÒÓÔÕÖØÙÚÛÜÝÞßàáâãäåæçèéêëìíîïðñòóôõöøùúûüýþÿ"
@@ -60,29 +62,29 @@ scanLPD = caslLetter <|> digit <|> prime <?> "casl char"
 
 -- * Monad and Functor extensions
 
-bind :: (Monad m) => (a -> b -> c) -> m a -> m b -> m c
-bind f p q = do { x <- p; y <- q; return (f x y) }
-
 infixl <<
 
-(<<) :: (Monad m) => m a -> m b -> m a
-(<<) = bind const
+(<<) :: Monad m => m a -> m b -> m a
+(<<) = liftM2 const
 
 infixr 5 <:>
 
-(<:>) :: (Monad m) => m a -> m [a] -> m [a]
-(<:>) = bind (:)
+(<:>) :: Monad m => m a -> m [a] -> m [a]
+(<:>) = liftM2 (:)
 
 infixr 5 <++>
 
-(<++>) :: (Monad m) => m [a] -> m [a] -> m [a]
-(<++>) = bind (++)
+(<++>) :: Monad m => m [a] -> m [a] -> m [a]
+(<++>) = liftM2 (++)
+
+pair :: Monad m => m a -> m b -> m (a, b)
+pair = liftM2 (,)
 
 -- Functor extension
 single :: (Functor f, Monad m) => f a -> f (m a)
 single = fmap return
 
-flat :: (Functor f) => f [[a]] -> f [a]
+flat :: Functor f => f [[a]] -> f [a]
 flat = fmap concat
 
 -- * ParsecCombinator extension
@@ -272,18 +274,17 @@ skipSmart = do
   try (do
       skip
       q <- getPosition
-      if Pos.sourceLine q <= Pos.sourceLine p + 1
-        then return ()
-        else notFollowedBy (char '%') >> return ())
+      unless (Pos.sourceLine q <= Pos.sourceLine p + 1)
+        $ notFollowedBy (char '%') >> return ())
     <|> return ()
 
 -- * keywords WORDS or NO-BRACKET-SIGNS
 
 keyWord :: CharParser st a -> CharParser st a
-keyWord p = try(p << notFollowedBy (scanLPD <|> singleUnderline))
+keyWord = try . (<< notFollowedBy (scanLPD <|> singleUnderline))
 
 keySign :: CharParser st a -> CharParser st a
-keySign p = try(p << notFollowedBy (oneOf signChars))
+keySign = try . (<< notFollowedBy (oneOf signChars))
 
 reserved :: [String] -> CharParser st String -> CharParser st String
 -- "try" to avoid reading keywords
@@ -292,8 +293,7 @@ reserved l p = try $ checkWith p (`notElem` l)
 -- * lexical tokens with position
 
 pToken :: CharParser st String -> CharParser st Token
-pToken parser =
-  bind (\ p s -> Token s $ Range [p]) getPos (parser << skipSmart)
+pToken = liftM2 (\ p s -> Token s $ Range [p]) getPos . (<< skipSmart)
 
 pluralKeyword :: String -> CharParser st Token
 pluralKeyword s = pToken (keyWord (string s <++> option "" (string "s")))
@@ -354,8 +354,7 @@ placeT = pToken placeS
 
 notFollowedWith :: GenParser tok st a -> GenParser tok st b
                 -> GenParser tok st a
-notFollowedWith p1 p2 = try $ do
-  pp <- (try (p1 >> p2) >> return pzero) <|> return p1
-  pp
+notFollowedWith p1 p2 =
+  try $ join $ (try (p1 >> p2) >> return pzero) <|> return p1
 -- see http://www.mail-archive.com/haskell@haskell.org/msg14388.html
 -- by Andrew Pimlott

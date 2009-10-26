@@ -16,11 +16,15 @@ module SoftFOL.ParseTPTP where
 
 import Text.ParserCombinators.Parsec
 import SoftFOL.Sign
-import Common.Id
-import Common.Lexer ((<<), bind, getPos)
-import Data.Char (ord, toLower, isAlphaNum)
-import qualified Common.Doc as Doc
 import SoftFOL.PrintTPTP
+
+import qualified Common.Doc as Doc
+import Common.Id
+import Common.Lexer ((<<), getPos)
+
+import Control.Monad
+import Data.Char (ord, toLower, isAlphaNum)
+
 
 data TPTP =
     FormAnno FormKind Name Role SPTerm (Maybe Annos)
@@ -104,7 +108,7 @@ tptp = skip >> many (headerLine <|> include <|> formAnno
    <|> (newline >> skip >> return EmptyLine)) << eof
 
 blank :: Parser p -> Parser ()
-blank p = p >> skipMany1 whiteSpace
+blank = (>> skipMany1 whiteSpace)
 
 szsOutput :: Parser ()
 szsOutput = blank (string "SZS") >> blank (string "output")
@@ -144,10 +148,10 @@ skipAll = skipMany $ whiteSpace <|> commentBlock <|> (commentLine >> return ())
   <|> (newline >> return ())
 
 lexeme :: Parser a -> Parser a
-lexeme p = p << skipAll
+lexeme = (<< skipAll)
 
 key :: Parser a -> Parser ()
-key p = p >> skipAll
+key = (>> skipAll)
 
 comma :: Parser ()
 comma = key $ char ','
@@ -291,8 +295,7 @@ andOp :: Parser ()
 andOp = key $ char '&'
 
 pToken :: Parser String -> Parser Token
-pToken parser =
-  bind (\ p s -> Token s (Range [p])) getPos (parser << skipAll)
+pToken = liftM2 (\ p s -> Token s (Range [p])) getPos . (<< skipAll)
 
 form :: Parser SPTerm
 form = do

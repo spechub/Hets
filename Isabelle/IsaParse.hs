@@ -20,14 +20,19 @@ module Isabelle.IsaParse
     , warnSimpAttr
     , compatibleBodies) where
 
-import Data.List
-import Common.Lexer
-import Text.ParserCombinators.Parsec
-import qualified Data.Map as Map
 import Isabelle.IsaConsts
-import Common.Id
-import Common.Result
+
 import Common.DocUtils
+import Common.Id
+import Common.Lexer
+import Common.Result
+
+import Text.ParserCombinators.Parsec
+
+import Control.Monad
+
+import Data.List
+import qualified Data.Map as Map
 
 latin :: Parser String
 latin = single letter <?> "latin"
@@ -101,7 +106,7 @@ isaSkip :: Parser ()
 isaSkip = skipMany (many1 space <|> nestComment <?> "")
 
 lexP :: Parser String -> Parser Token
-lexP pa = bind (\ p s -> Token s (Range [p])) getPos $ pa << isaSkip
+lexP = liftM2 (\ p s -> Token s (Range [p])) getPos . (<< isaSkip)
 
 lexS :: String -> Parser String
 lexS s = try (string s) << isaSkip
@@ -139,7 +144,7 @@ theoryHead = do
     return $ TheoryHead th is us oc
 
 commalist :: Parser a -> Parser [a]
-commalist p = fmap fst $ p `separatedBy` lexS ","
+commalist = fmap fst . flip separatedBy (lexS ",")
 
 parensP :: Parser a -> Parser a
 parensP p = do
@@ -205,7 +210,7 @@ args = many $ lexP atom
 -- | look for the simp attribute
 attributes :: Parser [Bool]
 attributes = bracketsP . commalist $
-             bind (\ n l -> null l && show n == simpS) namerefP args
+             liftM2 (\ n l -> null l && show n == simpS) namerefP args
 
 lessOrEq :: Parser String
 lessOrEq = lexS "<" <|> lexS "\\<subseteq>"
@@ -250,7 +255,7 @@ typeSuffix :: Parser Token
 typeSuffix = lexS "::" >> typeP
 
 consts :: Parser [Const]
-consts = lexS constsS >> many1 (bind Const nameP (typeSuffix
+consts = lexS constsS >> many1 (liftM2 Const nameP (typeSuffix
                                           << option () mixfix))
 
 vars :: Parser ()
@@ -287,7 +292,7 @@ optAttributes :: Parser Bool
 optAttributes = fmap or $ option [] attributes
 
 axmdecl :: Parser SenDecl
-axmdecl = (bind SenDecl nameP optAttributes) << lexS ":"
+axmdecl = liftM2 SenDecl nameP optAttributes << lexS ":"
 
 prop :: Parser Token
 prop = lexP $ reserved isaKeywords term
@@ -295,7 +300,7 @@ prop = lexP $ reserved isaKeywords term
 data Axiom = Axiom SenDecl Token
 
 axiomsP :: Parser [Axiom]
-axiomsP = many1 (bind Axiom axmdecl prop)
+axiomsP = many1 (liftM2 Axiom axmdecl prop)
 
 defs :: Parser [Axiom]
 defs = lexS defsS >> option "" (parensP $ lexS "overloaded") >>
@@ -305,7 +310,7 @@ axioms :: Parser [Axiom]
 axioms = lexS axiomsS >> axiomsP
 
 thmbind :: Parser SenDecl
-thmbind = (bind SenDecl nameP optAttributes)
+thmbind = liftM2 SenDecl nameP optAttributes
           <|> (attributes >> return emptySen)
 
 selection :: Parser ()
@@ -336,7 +341,7 @@ proppat = forget . parensP . many1 $ lexP term
 data Goal = Goal SenDecl [Token]
 
 props :: Parser Goal
-props = bind Goal (option (emptySen) thmdecl)
+props = liftM2 Goal (option emptySen thmdecl)
         $ many1 (prop << option () proppat)
 
 goal :: Parser [Goal]
@@ -357,7 +362,7 @@ mltext :: Parser Token
 mltext = lexS mlS >> lexP isaText
 
 cons :: Parser [Token]
-cons = bind (:) nameP (many typeP) << option () mixfix
+cons = nameP <:> many typeP << option () mixfix
 
 data Dtspec = Dtspec Typespec [[Token]]
 
@@ -435,18 +440,18 @@ data Body = Body
 
 addAxiom :: Axiom -> Map.Map Token (SimpValue Token)
          -> Map.Map Token (SimpValue Token)
-addAxiom (Axiom (SenDecl n b) a) m = Map.insert n (SimpValue b a) m
+addAxiom (Axiom (SenDecl n b) a) = Map.insert n (SimpValue b a)
 
 addGoal :: Goal -> Map.Map Token (SimpValue [Token])
         -> Map.Map Token (SimpValue [Token])
-addGoal (Goal (SenDecl n b) a) m = Map.insert n (SimpValue b a) m
+addGoal (Goal (SenDecl n b) a) = Map.insert n (SimpValue b a)
 
 addConst :: Const -> Map.Map Token Token -> Map.Map Token Token
-addConst (Const n a) m = Map.insert n a m
+addConst (Const n a) = Map.insert n a
 
 addDatatype :: Dtspec -> Map.Map Token ([Token], [[Token]])
             -> Map.Map Token ([Token], [[Token]])
-addDatatype (Dtspec (Typespec n ps) a) m = Map.insert n (ps, a) m
+addDatatype (Dtspec (Typespec n ps) a) = Map.insert n (ps, a)
 
 emptyBody :: Body
 emptyBody = Body
@@ -466,7 +471,7 @@ concatBodyElems x b = case x of
 
 -- | parses a complete isabelle theory file, but skips i.e. proofs
 parseTheory :: Parser (TheoryHead, Body)
-parseTheory = bind (,)
+parseTheory = pair
     theoryHead (fmap (foldr concatBodyElems emptyBody) theoryBody)
     << lexS endS << eof
 
@@ -480,11 +485,11 @@ compatibleBodies b1 b2 =
     ++ diffMap "goal" GT (goalsF b2) (goalsF b1)
 
 warnSimpAttr :: Body -> [Diagnosis]
-warnSimpAttr b =
+warnSimpAttr =
     map ( \ a -> Diag Warning
          ("use 'declare " ++ tokStr a
           ++ " [simp]' for proper Isabelle proof details") $ tokPos a)
-        $ Map.keys . Map.filter hasSimp $ axiomsF b
+        . Map.keys . Map.filter hasSimp . axiomsF
 
 diffMap :: (Ord a, Pretty a, GetRange a, Eq b, Show b)
           => String -> Ordering -> Map.Map a b -> Map.Map a b -> [Diagnosis]
@@ -504,6 +509,6 @@ diffMap msg o m1 m2 =
                    GT -> False
                    LT -> True
              kd = if b then kd12 else kd21
-               in map ( \ k -> mkDiag Error
-                    (msg ++ " entry illegally " ++
-                         if b then "added" else "deleted") k) kd
+               in map (mkDiag Error
+                      $ msg ++ " entry illegally " ++
+                         if b then "added" else "deleted") kd
