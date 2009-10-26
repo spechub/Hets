@@ -95,10 +95,12 @@ encodeSig sig
           injOpMap setprojOptype
     -- membership predicates are coded out
 
+mkAxName :: String -> SORT -> SORT -> String
+mkAxName str s s' = "ga_" ++ str ++ "_" ++ show s ++ "_to_" ++ show s'
+
 -- | Make the name for the embedding or projecton injectivity axiom
 mkInjectivityName :: String -> SORT -> SORT -> String
-mkInjectivityName str s s' =
-    "ga_" ++ str ++ "_injectivity_" ++ show s ++ "_to_" ++ show s'
+mkInjectivityName = mkAxName . (++ "_injectivity")
 
 -- | Make the name for the embedding injectivity axiom
 mkEmbInjName :: SORT -> SORT -> String
@@ -108,99 +110,86 @@ mkEmbInjName = mkInjectivityName "embedding"
 mkProjInjName :: SORT -> SORT -> String
 mkProjInjName s s' = mkInjectivityName "projection" s' s
 
+-- | create a quantified injectivity implication
 mkInjectivity :: (TERM () -> TERM ()) -> VAR_DECL -> VAR_DECL -> FORMULA ()
 mkInjectivity f vx vy = mkForall [vx, vy]
   (mkInjImpl f (toQualVar vx) $ toQualVar vy) nullRange
 
---
+-- | create an injectivity implication over x and y
 mkInjImpl :: (TERM () -> TERM ()) -> TERM () -> TERM () -> FORMULA ()
 mkInjImpl f x y = mkImpl (mkExEq (f x) (f y)) (mkExEq x y)
 
+-- | apply injection function
+injectTo :: SORT -> TERM () -> TERM ()
+injectTo s q = injectUnique nullRange q s
+
+-- | apply (a partial) projection function
+projectTo :: SORT -> TERM () -> TERM ()
+projectTo s q = projectUnique Partial nullRange q s
+
 -- | Make the named sentence for the embedding injectivity axiom from s to s'
 --   i.e., forall x,y:s . inj(x)=e=inj(y) => x=e=y
-mkEmbInjAxiom:: SORT -> SORT -> Named (FORMULA ())
-mkEmbInjAxiom s s' = let appInj q = injectUnique nullRange q s' in
+mkEmbInjAxiom :: SORT -> SORT -> Named (FORMULA ())
+mkEmbInjAxiom s s' =
     makeNamed (mkEmbInjName s s')
-      $ mkInjectivity appInj (mkVarDeclStr "x" s) $ mkVarDeclStr "y" s
+      $ mkInjectivity (injectTo s') (mkVarDeclStr "x" s) $ mkVarDeclStr "y" s
 
 -- | Make the named sentence for the projection injectivity axiom from s' to s
 --   i.e., forall x,y:s . pr(x)=e=pr(y) => x=e=y
-mkProjInjAxiom:: SORT -> SORT -> Named (FORMULA ())
-mkProjInjAxiom s s' = let appProj q = projectUnique Partial nullRange q s in
+mkProjInjAxiom :: SORT -> SORT -> Named (FORMULA ())
+mkProjInjAxiom s s' =
     makeNamed (mkProjInjName s s')
-      $ mkInjectivity appProj (mkVarDeclStr "x" s') $ mkVarDeclStr "y" s'
+      $ mkInjectivity (projectTo s) (mkVarDeclStr "x" s') $ mkVarDeclStr "y" s'
 
 -- | Make the name for the projection axiom
 mkProjName :: SORT -> SORT -> String
-mkProjName s s' =
-    "ga_projection_" ++ show s ++ "_to_" ++ show s' ++ "_to_" ++ show s
+mkProjName = mkAxName "projection"
+
+-- | create an existential equation over x of sort s
+mkXExEq :: SORT -> (TERM () -> TERM ()) -> (TERM () -> TERM ()) -> FORMULA ()
+mkXExEq s fl fr = let
+  vx = mkVarDeclStr "x" s
+  qualX = toQualVar vx
+  in mkForall [vx] (mkExEq (fl qualX) (fr qualX)) nullRange
 
 -- | Make the named sentence for the projection axiom from s' to s
 --   i.e., forall x:s . pr(inj(x))=e=x
 mkProjAxiom:: SORT -> SORT -> Named (FORMULA ())
-mkProjAxiom s s' =
-    makeNamed (mkProjName s s')
-      $ (mkForall [vx]
-            (mkExEq
-                (appProj $ injectUnique nullRange qualX s')
-                qualX
-            ) nullRange
-        )
-    where appProj x = projectUnique Partial nullRange x s
-          vx = mkVarDeclStr "x" s
-          qualX = toQualVar vx
+mkProjAxiom s s' = makeNamed (mkProjName s s')
+    $ mkXExEq s (projectTo s . injectTo s') id
 
 -- | Make the name for the transitivity axiom from s to s' to s''
 mkTransAxiomName :: SORT -> SORT -> SORT -> String
 mkTransAxiomName s s' s'' =
-    "ga_transitivity_" ++ show s ++ "_to_" ++ show s' ++ "_to_" ++ show s''
+  mkAxName "transitivity" s s' ++ "_to_" ++ show s''
 
 -- | Make the named sentence for the transitivity axiom from s to s' to s''
 --   i.e., forall x:s . inj(inj(x))=e=inj(x)
 mkTransAxiom:: SORT -> SORT -> SORT -> Named (FORMULA ())
-mkTransAxiom s s' s'' =
-    makeNamed name
-        (mkForall [vx]
-            (mkExEq
-                (injectUnique nullRange (injectUnique nullRange qualX s') s'')
-                (injectUnique nullRange qualX s'')
-            ) nullRange
-        )
-    where name = mkTransAxiomName s s' s''
-          vx = mkVarDeclStr "x" s
-          qualX = toQualVar vx
+mkTransAxiom s s' s'' = makeNamed (mkTransAxiomName s s' s'')
+    $ mkXExEq s (injectTo s'' . injectTo s') $ injectTo s''
 
 -- | Make the name for the identity axiom from s to s'
 mkIdAxiomName :: SORT -> SORT -> String
-mkIdAxiomName s s' =
-    "ga_identity_" ++ show s ++ "_to_" ++ show s' ++ "_to_" ++ show s
+mkIdAxiomName = mkAxName "identity"
 
 -- | Make the named sentence for the identity axiom from s to s'
 --   i.e., forall x:s . inj(inj(x))=e=x
 mkIdAxiom:: SORT -> SORT -> Named (FORMULA ())
-mkIdAxiom s s' =
-    makeNamed name
-        (mkForall [vx]
-            (mkExEq
-                (injectUnique nullRange (injectUnique nullRange qualX s') s)
-                qualX
-            ) nullRange
-        )
-    where name = mkIdAxiomName s s'
-          vx = mkVarDeclStr "x" s
-          qualX = toQualVar vx
+mkIdAxiom s s' = makeNamed (mkIdAxiomName s s')
+    $ mkXExEq s (injectTo s . injectTo s') id
 
 generateAxioms :: Sign f e -> [Named (FORMULA ())]
-generateAxioms sig = map (mapNamed $ renameFormula id) $ concat $
-    [[mkEmbInjAxiom s s'] ++ [mkProjInjAxiom s s'] ++ [mkProjAxiom s s']
+generateAxioms sig = concat
+    $ [[mkEmbInjAxiom s s'] ++ [mkProjInjAxiom s s'] ++ [mkProjAxiom s s']
       | s <- sorts,
         s' <- realSupers s]
-   ++ [[mkTransAxiom s s' s'']
+    ++ [[mkTransAxiom s s' s'']
           | s <- sorts,
             s' <- realSupers s,
             s'' <- realSupers s',
             s'' /= s]
-   ++ [[mkIdAxiom s s']
+    ++ [[mkIdAxiom s s']
           | s <- sorts,
             s' <- realSupers s,
             Set.member s $ supersortsOf s' sig]
