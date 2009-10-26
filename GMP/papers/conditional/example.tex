@@ -262,13 +262,28 @@ consider a slightly extended logic below), which is characterised by
 assuming normality of the right-hand argument of the non-monotonic
 conditional $\Rightarrow$, but only replacement of equivalents in the
 left-hand arguments. Absorption of cut and contraction requires a
-unified rule set consisting of the rules
-\begin{equation*}
-  \infrule{A_0=A_1;\;\dots;\; A_n=A_0\quad \neg B_1,\dots,\neg B_1,B_0}
-  {\neg(A_1\Rightarrow B_1),\dots,\neg(A_n\Rightarrow B_n),(A_0\Rightarrow B_0)}
-\end{equation*}
+unified rule set consisting of the rules depicted in Fig.~\ref{fig:modalCK}
 with $A=C$ abbreviating the pair of sequents $\neg A,C$ and $\neg
-C,A$.  This illustrates two important points that play a role in the
+C,A$.
+\begin{figure}[!h]
+  \begin{center}
+    \begin{tabular}{| c |}
+    \hline
+      \\[-5pt]
+      (\textsc {\textbf{CK}})\inferrule{A_0=A_1;\dots;A_n=A_0\\ \neg B_1,\dots,\neg B_1,B_0}
+  {\Gamma, \neg(A_1\Rightarrow B_1),\dots,\neg(A_n\Rightarrow B_n),(A_0\Rightarrow B_0)}\\[-5pt]
+      \\
+    \hline
+    \end{tabular}
+  \end{center}
+  \caption{The modal rule of \textbf{CK}}
+  \label{fig:modalCK}
+\end{figure}
+%\begin{equation*}
+%  \infrule{A_0=A_1;\;\dots;\; A_n=A_0\quad \neg B_1,\dots,\neg B_1,B_0}
+%  {\neg(A_1\Rightarrow B_1),\dots,\neg(A_n\Rightarrow B_n),(A_0\Rightarrow B_0)}
+%\end{equation*}
+This illustrates two important points that play a role in the
 optimisation strategies described below. First, the rule has a large
 branching degree both existentially and universally -- we have to
 check that there \emph{exists} a rule proving some sequent such that
@@ -289,7 +304,7 @@ calculi remains an open issue for the time being.
 
 According to the framework introduced above, we now devise a generic
 algorithm to decide the provability of formulas, which is easily
-instantiated a to specific logic by just implementing the relevant modal
+instantiated to a specific logic by just implementing the relevant modal
 rules.
 
 
@@ -304,8 +319,9 @@ in~\cite{SchroderPattinson09,PattinsonSchroder08b}, this algorithm
 realises the theoretical upper bound $\mathit{PSPACE}$. It is the
 starting point of the proof search algorithms employed in CoLoSS,
 being essentially a sequent reformulation of the algorithm described
-in~\cite{CalinEA09}; optimisations of this algorithm are the subject
-of the present work. 
+in~\cite{CalinEA09}, where it is easily verified that correctness and termination
+of the algorithm are preserved by this reformulation; optimisations of this
+algorithm are the subject of the present work. 
 
 %\begin{algorithm}[h]
 %\fbox{\parbox{\myboxwidth}{
@@ -343,18 +359,27 @@ of the present work.
 
 The genericity of the introduced sequent calculus allows us to easiliy
 create instantiations of Algorithm~\ref{alg:seq} for a large variety
-of modal logics: By setting $\mathcal R^m_{sc}$ for instance to the
-rule shown in Figure~\ref{fig:modalCKCEM},
-% (where $A_a = A_b$ is
-%shorthand for $A_a\rightarrow A_b\wedge A_b\rightarrow A_a$), 
-we obtain an algorithm for deciding provability (and satisfiability)
-of conditional logic. We restrict ourselves to the examplary
+of modal logics: 
+
+\noindent For instance it has been shown in~\cite{PattinsonSchroder09a} that the
+complexity of \textbf{CKCEM} is $\mathit{coNP}$, using a dynamic
+programming approach in the spirit of~\cite{Vardi89}; in fact, this
+was the original motivation for exploring the optimisation strategies
+pursued here.
+Due to this reason, we restrict ourselves to the examplary
 conditional logic \textbf{CKCEM} for the remainder of this section;
 slightly adapted versions of the optimisation will work for other
 conditional logics. \textbf{CKCEM} is characterised by the additional
 axioms of \emph{conditional excluded middle} $(A\Rightarrow
 B)\lor(A\Rightarrow\neg B)$, which to absorb cut and contraction is
-integrated in the rule for \textbf{CK} as follows.
+integrated in the rule for \textbf{CK} as shown in Figure~\ref{fig:modalCKCEM}.
+
+%By setting $\mathcal R^m_{sc}$ for to the
+%rule shown in Figure~\ref{fig:modalCKCEM},
+% (where $A_a = A_b$ is
+%shorthand for $A_a\rightarrow A_b\wedge A_b\rightarrow A_a$), 
+%we obtain an algorithm for deciding provability (and satisfiability)
+%of conditional logic. 
 
 \begin{figure}[h!]
   \begin{center}
@@ -371,11 +396,6 @@ integrated in the rule for \textbf{CK} as follows.
   \caption{The modal rule $\textbf{CKCEM}$ of conditional logic}
   \label{fig:modalCKCEM}
 \end{figure}
-\noindent It has been shown in~\cite{PattinsonSchroder09a} that the
-complexity of \textbf{CKCEM} is $\mathit{coNP}$, using a dynamic
-programming approach in the spirit of~\cite{Vardi89}; in fact, this
-was the original motivation for exploring the optimisation strategies
-pursued here.
 
 In the following, we use the notions of \emph{conditional antecedent} and
 \emph{conditional consequent} to refer to the parameters of the modal operator of
