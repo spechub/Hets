@@ -136,10 +136,10 @@ rules} (as shown in Fig.~\ref{fig:branch}).
     \begin{tabular}{| c |}
     \hline
       \\[-5pt]
-      (\textsc {$\neg\neg$})\inferrule{\Gamma, A:i}
-                      {\Gamma, \neg\neg A:i} 
-      (\textsc {$\neg\wedge$})\inferrule{\Gamma, \neg A:i, \neg B:i}
-                      {\Gamma, \neg (A\wedge B):i} \\[-5pt]\\
+      (\textsc {$\neg\neg$})\inferrule{\Gamma, A_{:i}}
+                      {\Gamma, \neg\neg A_{:i}} 
+      (\textsc {$\neg\wedge$})\inferrule{\Gamma, \neg A_{:i}, \neg B_{:i}}
+                      {\Gamma, (\neg (A\wedge B))_{:i}} \\[-5pt]\\
     \hline
     \end{tabular}
   \end{center}
@@ -153,11 +153,11 @@ rules} (as shown in Fig.~\ref{fig:branch}).
     \hline
       \\[-5pt]
       (\textsc {$\neg$F})\inferrule{ }
-                      {\Gamma, \neg\bot:i} 
+                      {\Gamma, \neg\bot_{:i}} 
       (\textsc {Ax})\inferrule{ }
-                      {\Gamma, p:i, \neg p:i} 
-      (\textsc {$\neg\wedge$})\inferrule{\Gamma, A:i \\ \Gamma, B:i}
-                      {\Gamma, A\wedge B:i} \\[-5pt]\\
+                      {\Gamma, p_{:i}, \neg p_{:i}} 
+      (\textsc {$\neg\wedge$})\inferrule{\Gamma, A_{:i} \\ \Gamma, B_{:i}}
+                      {\Gamma, (A\wedge B)_{:i}} \\[-5pt]\\
     \hline
     \end{tabular}
   \end{center}
@@ -165,7 +165,56 @@ rules} (as shown in Fig.~\ref{fig:branch}).
   \label{fig:branch}
 \end{figure}
 Take note of the fact that the propositional sequent rules do not interfere
-with the level of any involved formulas.
+with the level of any involved formulas, i.e. the modal level of formulas
+in the premises and the modal level of formulas in the conclusion are the
+same.
+
+However, the sequent rules for modal operators may change the level of the
+involved formulas. One examplary modal rule is shown in Fig.~\ref{fig:modalK}.
+This rule has a homogenous (subset of a) sequent of level $i$ as its
+conclusion whereas the only premise consists of one homogenous sequent of level
+$i+1$. For this reason the rule realizes a \emph{one-level-step}
+(from level $i$ to level $i+1$) upon application during proof search.
+
+\begin{figure}[!h]
+  \begin{center}
+    \begin{tabular}{| c |}
+    \hline
+      \\[-5pt]
+      (\textsc {\textbf{K}})\inferrule{ (\neg A_1)_{:i+1},\ldots,(\neg A_n)_{:i+1}, (A_0)_{:i+1}}
+                      {\Gamma, (\neg\Box A_1)_{:i},\ldots,(\neg\Box A_n)_{:i},(\Box A_0)_{:i}} \\[-5pt]\\
+    \hline
+    \end{tabular}
+  \end{center}
+  \caption{The modal rule for \textbf{K}}
+  \label{fig:modalK}
+\end{figure}
+
+For now we consider only homogenous modal rules that realize one-level-steps. Take note that
+the resulting logic still is heterogenous since different homogenous logics are combined
+together.
+
+\begin{remark}
+Heterogenous rules are defined to have rules of different levels in their premises and/or
+their conclusion. What's a reasonable example of this case? Are these logics covered by
+the coalgebraic theory?
+\end{remark}
+
+Put KD, CKCEM, P, G, HM, Mon etcpp here!
+\begin{figure}[!h]
+  \begin{center}
+    \begin{tabular}{| c |}
+    \hline
+      \\[-5pt]
+      (\textsc {\textbf{CK}})\inferrule{ (A_0=A_1;\ldots;A_n=A_0)_{:i+1}\\(\neg B_1)_{:i+1},\ldots,(\neg B_n)_{:i+1},(B_0)_{:i+1}}
+                      {\Gamma, \neg(A_1\Rightarrow B_1)_{:i},\ldots,\neg(A_n\Rightarrow B_n)_{:i},(A_0\Rightarrow B_0)_{:i}} \\[-5pt]\\
+    \hline
+    \end{tabular}
+  \end{center}
+  \caption{The modal rule for \textbf{CK}}
+  \label{fig:modalK}
+\end{figure}
+
 
 heterogenous sequent algorithm
 
