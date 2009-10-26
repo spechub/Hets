@@ -31,7 +31,6 @@ import CASL_DL.AS_CASL_DL
 import CASL_DL.Sign()
 import CASL_DL.PredefinedSign
 import CASL_DL.StatAna -- DLSign
-import CASL_DL.PredefinedSign
 import CASL_DL.Sublogics
 
 --CASL = codomain
@@ -41,7 +40,6 @@ import CASL.Sign
 import CASL.Morphism
 import CASL.Sublogic as Sublogic
 
-import Data.List
 import qualified Data.Set as Set
 
 data CASL_DL2CASL = CASL_DL2CASL deriving Show

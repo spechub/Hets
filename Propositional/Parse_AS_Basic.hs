@@ -33,8 +33,6 @@ import Common.Lexer as Lexer
 import Propositional.AS_BASIC_Propositional as AS_BASIC
 import Text.ParserCombinators.Parsec
 
-import Control.Monad
-
 propKeywords :: [String]
 propKeywords =
   [ Keywords.propS

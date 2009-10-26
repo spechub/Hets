@@ -47,7 +47,6 @@ import qualified Common.Result as Result
 import Control.Monad (when)
 import qualified Control.Concurrent as Concurrent
 import qualified Common.Exception as Exception
-import Data.Char
 import Data.List
 import Data.Maybe
 import Data.Time (TimeOfDay,timeToTimeOfDay)

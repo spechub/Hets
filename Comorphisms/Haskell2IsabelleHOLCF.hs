@@ -27,10 +27,6 @@ import Haskell.HatAna as HatAna
 import Isabelle.IsaSign as IsaSign
 import Isabelle.Logic_Isabelle
 
--- Programatica
-import PNT
-import TiPropDecorate
-
 -- * Comorphisms
 
 -- The identity of the comorphism

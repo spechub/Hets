@@ -31,7 +31,6 @@ import Common.LibName
 import OMDoc.DataTypes
 
 import Data.Graph.Inductive.Graph
-import Data.List
 import Data.Maybe
 
 -- | DGraph to OMDoc translation

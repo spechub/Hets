@@ -32,7 +32,6 @@ import qualified Common.Lib.Graph as Tree
 
 import qualified Data.Map as Map
 import Data.Graph.Inductive.Graph
-import Data.List
 
 compositionCreatingEdgesFromList :: LibName -> [LEdge DGLinkLab] -> LibEnv
                                  -> LibEnv

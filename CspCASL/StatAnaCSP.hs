@@ -19,7 +19,6 @@ module CspCASL.StatAnaCSP where
 
 import qualified Control.Monad as Monad
 import qualified Data.Map as Map
-import qualified Data.Maybe as Maybe
 import qualified Data.Set as S
 import CASL.AS_Basic_CASL (FORMULA(..), OpKind(..), SORT, TERM(..), VAR,
                            VAR_DECL(..))

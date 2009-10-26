@@ -30,7 +30,6 @@ import Proofs.EdgeUtils
 import Static.DevGraph
 
 import qualified Data.Map as Map
-import Data.List
 
 -- | Datatype used to differentiate between the two actions (so that code does
 -- not get duplicated

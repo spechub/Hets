@@ -40,7 +40,6 @@ import Network (connectTo, PortID(PortNumber), accept, listenOn)
 import System.IO
 
 import Data.List (isInfixOf)
-import Control.Monad
 
 -- | Generates the XML packet that contains information about what
 -- commands can the interface respond to

@@ -27,7 +27,6 @@ import CASL.Sublogic as SL
 import CASL.AS_Basic_CASL
 import CASL.Sign
 import CASL.Morphism
-import CASL.Sublogic
 import CASL.Inject
 import CASL.Project
 import CASL.Monoton

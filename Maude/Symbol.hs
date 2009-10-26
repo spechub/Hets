@@ -41,7 +41,6 @@ import Data.Set (Set)
 import Data.Map (Map)
 import Common.Lib.Rel (Rel)
 import qualified Data.Set as Set
-import qualified Data.Map as Map
 import qualified Common.Lib.Rel as Rel
 
 import Common.Id (Id, mkId, mkSimpleId, GetRange, getRange, nullRange)

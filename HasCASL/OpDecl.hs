@@ -24,7 +24,6 @@ import Text.ParserCombinators.Parsec (parse, eof)
 import Control.Monad
 
 import Common.Id
-import Common.AS_Annotation
 import Common.Lib.State as State
 import Common.Result
 import Common.GlobalAnnotations

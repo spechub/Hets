@@ -19,15 +19,17 @@ module RelationalScheme.StaticAnalysis
 
 import RelationalScheme.AS
 import RelationalScheme.Sign
+
+import Common.AS_Annotation
 import Common.ExtSign
 import Common.GlobalAnnotations
-import Common.Result
-import Common.AS_Annotation
-import qualified Data.Set as Set
 import Common.Id
+import Common.Result
+
 import Control.Monad
+
 import Data.Maybe
-import Data.List
+import qualified Data.Set as Set
 
 basic_Rel_analysis :: (RSScheme, Sign,GlobalAnnos) ->
                       Result (RSScheme, ExtSign Sign RSSymbol,[Named Sentence])

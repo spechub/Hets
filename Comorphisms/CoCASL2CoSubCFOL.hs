@@ -25,7 +25,6 @@ import CASL.Sublogic as SL
 import CASL.AS_Basic_CASL
 import CASL.Sign
 import CASL.Morphism
-import CASL.Sublogic
 import CASL.Fold
 import CASL.Simplify
 import Comorphisms.CASL2SubCFOL

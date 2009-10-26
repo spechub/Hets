@@ -38,9 +38,6 @@ import Data.List
 
 import Control.Monad.Error
 import Control.Concurrent
-import Control.Concurrent.MVar
-
-import System.IO
 
 import GUI.GenericATP
 import Interfaces.GenericATPState

@@ -29,12 +29,10 @@ import NewPrettyPrint (pp)
 import TypedIds
 
 import TiTypes
-import TiKinds
 
 import PNT
 import UniqueNames
 
-import SyntaxRec
 import TiPropDecorate
 import PropSyntaxStruct
 import HsDeclStruct

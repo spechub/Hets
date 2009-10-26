@@ -25,9 +25,7 @@ import qualified Data.Set as Set
 import Common.Id
 import System.Exit
 import System.IO.Unsafe
-import Control.Monad
 import qualified Data.Map as Map
-import Common.Id
 import System.Cmd
 import System.Directory
 import Data.Time.Clock

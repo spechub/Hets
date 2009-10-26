@@ -46,7 +46,7 @@ import Proofs.AbstractState(ProofState(sublogicOfTheory, theoryName))
 import Static.ComputeTheory(computeTheory)
 
 import Data.Graph.Inductive.Graph(LNode, LEdge, Node)
-import Data.List((++), filter, find, null)
+import Data.List (find)
 
 import Common.Result(Result(maybeResult, Result))
 

@@ -26,7 +26,6 @@ import Common.Id
 import Common.Result
 import Common.Lib.State
 import Data.List as List
-import Data.Maybe
 import Control.Monad
 
 -- * infer kind

@@ -15,7 +15,6 @@ module Taxonomy.MMiSSOntologyGraph (displayClassGraph) where
 import Data.List
 import Control.Monad
 import Data.IORef
-import Data.Char
 
 import GUI.UDGUtils
 import qualified GUI.HTkUtils as S

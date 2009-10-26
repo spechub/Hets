@@ -45,8 +45,6 @@ import Common.Result
 import Common.ConvertLiteral
 import Common.ExtSign
 
-import Data.List
-
 instance FreeVars DL_FORMULA where
     freeVarsOfExt sign (Cardinality _ _ t1 t2 mf _) =
         Set.union (freeTermVars sign t1) $ Set.union (freeTermVars sign t2)

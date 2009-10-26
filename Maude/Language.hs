@@ -27,10 +27,7 @@ module Maude.Language (
     parse,
 ) where
 
-import Text.ParserCombinators.Parsec (ParseError, CharParser)
-import Text.ParserCombinators.Parsec.Prim ((<|>))
-import Text.ParserCombinators.Parsec.Char
-import Text.ParserCombinators.Parsec.Combinator
+import Text.ParserCombinators.Parsec hiding (parseFromFile, parse)
 import qualified Text.ParserCombinators.Parsec.Token as Token
 import qualified Text.ParserCombinators.Parsec.Language as Language
 import qualified Text.ParserCombinators.Parsec as Parsec (parseFromFile)

@@ -87,14 +87,12 @@ import Common.Utils (number)
 -- Haskell (Programatica)
 import SourceNames
 import TiTypes
-import TiKinds
 import TiInstanceDB
 
 import PNT
 import PosName
 import UniqueNames
 
-import SyntaxRec
 import TiPropDecorate
 import PropSyntaxStruct as HsName
 

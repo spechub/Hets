@@ -43,12 +43,8 @@ import Common.ProofTree
 import qualified Common.AS_Annotation as AS_Anno
 import qualified Common.Id as Id
 
-import Data.Char
-import Data.List
-import Data.Maybe
 import qualified Data.Set as Set
 import qualified Common.OrderedMap as OMap
-import System.IO
 import System.IO.Unsafe
 
 import Common.Consistency

@@ -38,7 +38,7 @@ module CMDL.Utils
 
 import Data.List
 import Data.Maybe
-import Data.Char(Char, String, isDigit, isSpace)
+import Data.Char (isDigit, isSpace)
 import Data.Graph.Inductive.Graph(LNode, LEdge)
 
 import System.Environment(getEnv)

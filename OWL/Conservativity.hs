@@ -19,7 +19,6 @@ import Common.Result
 import Common.Utils
 
 import Control.Concurrent
-import Control.Concurrent.MVar
 import Data.Time.Clock (UTCTime(..), getCurrentTime)
 
 import GUI.Utils ()

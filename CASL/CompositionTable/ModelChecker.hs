@@ -29,7 +29,6 @@ import qualified Data.Map as Map
 import qualified Data.Set as Set
 import Data.Maybe
 import Data.List
-import Control.Monad
 
 modelCheck :: SIMPLE_ID -> (Sign () (), [Named (FORMULA ())])
            -> Table -> Result Bool

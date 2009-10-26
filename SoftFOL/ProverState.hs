@@ -30,8 +30,6 @@ import Common.DocUtils
 
 import qualified Common.Exception as Exception
 
-import Data.Maybe
-
 import Interfaces.GenericATPState
 
 -- * Data structures

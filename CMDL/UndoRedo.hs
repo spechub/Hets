@@ -15,11 +15,6 @@ module CMDL.UndoRedo
        , cRedo
        ) where
 
-
-import Data.List((++))
-
-import System.IO(IO)
-
 import Interfaces.History(redoOneStep, undoOneStep)
 import Interfaces.Command(showCmd)
 import Interfaces.DataTypes(IntHistory(undoList, redoList),

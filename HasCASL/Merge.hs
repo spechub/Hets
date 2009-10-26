@@ -36,7 +36,6 @@ import qualified Data.Map as Map
 import qualified Data.Set as Set
 
 import Control.Monad(foldM)
-import Data.List
 
 mergeTypeInfo :: ClassMap -> TypeInfo -> TypeInfo -> Result TypeInfo
 mergeTypeInfo cm t1 t2 = do

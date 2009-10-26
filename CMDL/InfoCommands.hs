@@ -61,7 +61,6 @@ import qualified Common.OrderedMap as OMap
 import Data.Graph.Inductive.Graph (LNode, LEdge, Node)
 import Data.List
 import qualified Data.Set as Set
-import qualified Data.Map as Map
 
 import Logic.Logic (Sentences(sym_of))
 import Logic.Prover (SenStatus)
@@ -71,7 +70,7 @@ import Driver.Options (defaultHetcatsOpts)
 
 import Interfaces.Command (cmdNameStr, describeCmd, showCmd)
 import Interfaces.DataTypes
-import Interfaces.Utils (getAllEdges, getAllNodes)
+import Interfaces.Utils (getAllEdges)
 
 -- show list of all goals(i.e. prints their name)
 cShowDgGoals :: CmdlState -> IO CmdlState

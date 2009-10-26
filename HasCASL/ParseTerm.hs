@@ -24,8 +24,6 @@ import HasCASL.AsUtils
 
 import Text.ParserCombinators.Parsec
 
-import Control.Monad
-
 import Data.List ((\\))
 import qualified Data.Set as Set
 

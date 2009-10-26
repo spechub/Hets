@@ -42,9 +42,6 @@ import qualified Common.Result as Result
 
 import Control.Monad (when)
 import qualified Control.Concurrent as Concurrent
-import Data.Char
-import Data.List
-import Data.Maybe
 import Data.Time (timeToTimeOfDay)
 import System.Directory
 import System.Exit
@@ -54,7 +51,6 @@ import System.Process
 import Data.Time.Clock
 
 import Control.Concurrent
-import Control.Concurrent.MVar
 
 -- * Prover implementation
 

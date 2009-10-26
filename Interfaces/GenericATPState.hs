@@ -28,7 +28,6 @@ import Common.Id
 import Common.Doc
 import Common.Utils
 
-import Data.List
 import Data.Maybe (fromMaybe)
 import Data.Time (TimeOfDay, midnight)
 

@@ -47,7 +47,6 @@ import Common.DocUtils
 import Common.Utils
 import Common.Lib.State
 
-import Data.List as List
 import Data.Maybe (catMaybes)
 import Control.Monad (when, unless)
 

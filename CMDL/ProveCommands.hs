@@ -40,7 +40,7 @@ import Common.Result(Result(Result))
 import qualified Common.OrderedMap as OMap
 import Common.Utils(trim)
 
-import Data.List((++), filter, map, find, nub, words, concatMap)
+import Data.List (find, nub)
 
 import Comorphisms.LogicGraph(lookupComorphism_in_LG)
 
@@ -54,7 +54,6 @@ import Control.Concurrent.MVar(newEmptyMVar, newMVar, takeMVar)
 #ifdef UNIX
 import System.Posix.Signals(Handler(Catch), installHandler, sigINT)
 #endif
-import System.IO(IO)
 
 import Interfaces.GenericATPState(ATPTacticScript(tsTimeLimit, tsExtraOpts))
 import Interfaces.DataTypes(ListChange(..), IntIState(..), Int_NodeInfo(..),

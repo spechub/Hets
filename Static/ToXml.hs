@@ -35,7 +35,6 @@ import Text.XML.Light
 import Data.Graph.Inductive.Graph as Graph
 import qualified Data.Map as Map
 import qualified Data.Set as Set
-import Data.List
 
 dGraph :: LibEnv -> DGraph -> Element
 dGraph lenv dg =

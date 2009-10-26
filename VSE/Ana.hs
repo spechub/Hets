@@ -44,7 +44,6 @@ module VSE.Ana
 import Control.Monad
 import Data.Char (toLower)
 import Data.List
-import Data.Maybe
 import qualified Data.Map as Map
 import qualified Data.Set as Set
 

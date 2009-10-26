@@ -53,7 +53,6 @@ import Maude.Printing ()
 import Maude.Sign (Sign)
 import Maude.Sentence (Sentence)
 import qualified Maude.Sign as Sign
-import qualified Maude.Sentence as Sen
 
 import Data.List (partition)
 import Data.Maybe (fromJust)
@@ -61,7 +60,6 @@ import qualified Data.Set as Set
 import qualified Data.Map as Map
 
 import Common.Result (Result)
-import qualified Common.Result as Result
 
 import Common.Doc hiding (empty)
 import Common.DocUtils (Pretty(..))
@@ -88,7 +86,7 @@ data Morphism = Morphism {
 
 instance Pretty Morphism where
     pretty mor = let
-        pr'pair txt left right = hsep 
+        pr'pair txt left right = hsep
             [txt, pretty left, text "to", pretty right]
         pr'ops src tgt = pr'pair (text "op") src (getName tgt)
         pr'map fun = vcat . map (uncurry fun) . Map.toList
@@ -167,7 +165,7 @@ insertRenaming apply rename = let
         else id
     ren'sort = mapOpMap $ uncurry renameSortOpMap syms
     add'labl = mapLabelMap $ uncurry Map.insert syms
-    use'labl = if apply 
+    use'labl = if apply
         then mapTarget $ uncurry Sign.renameLabel syms
         else id
     in case rename of

@@ -22,7 +22,6 @@ module Proofs.Global
 
 import Data.Graph.Inductive.Graph
 import qualified Data.Map as Map
-import Data.List
 
 import Static.GTheory
 import Static.DevGraph

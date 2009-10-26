@@ -82,7 +82,6 @@ import Driver.AnaLib(anaLib)
 import Data.IORef
 import Data.Char(toLower)
 import Data.List(partition, delete, isPrefixOf)
-import Data.Maybe
 import Data.Graph.Inductive.Graph (Node, LEdge, LNode)
 import qualified Data.Map as Map
 

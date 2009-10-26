@@ -23,8 +23,6 @@ import Logic.Prover
 import SoftFOL.MathServParsing
 import SoftFOL.Sign
 
-import Data.Maybe
-
 import Interfaces.GenericATPState
 
 {- |

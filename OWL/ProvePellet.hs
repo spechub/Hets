@@ -49,7 +49,6 @@ import System.Directory
 
 import Control.Monad (when)
 import Control.Concurrent
-import Control.Concurrent.MVar
 
 data PelletProverState = PelletProverState
                         { ontologySign :: Sign

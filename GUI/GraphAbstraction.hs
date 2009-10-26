@@ -41,7 +41,6 @@ module GUI.GraphAbstraction
 import GUI.UDGUtils
 import GUI.Utils (pulseBar)
 import qualified UDrawGraph.Types as DVT
-import qualified UDrawGraph.Basic as DVB
 import Events.Destructible as Destructible
 import Reactor.BSem
 
@@ -52,7 +51,6 @@ import Data.IORef
 import Data.List (partition)
 import qualified Data.Map as Map
 import Data.Graph.Inductive.Graph (LEdge)
-import qualified Data.Graph.Inductive.Graph as Graph
 import Data.Maybe (isNothing)
 
 import Control.Monad (foldM)

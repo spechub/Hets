@@ -16,9 +16,7 @@ module Common.ProverTools
 
 import Common.Utils
 
-import System.IO
 import System.Directory
-import Data.List
 import System.IO.Unsafe
 
 -- ^ Checks if a Prover Binary exists and is executable

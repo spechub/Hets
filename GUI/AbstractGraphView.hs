@@ -55,7 +55,6 @@ module GUI.AbstractGraphView
 
 import GUI.UDGUtils
 import qualified UDrawGraph.Types as DVT
-import Util.Computation
 
 import ATC.DevGraph()
 import Static.DevGraph (DGLinkLab)

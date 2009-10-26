@@ -16,8 +16,6 @@ Pretty printing for SoftFOL signatures in TPTP syntax.
 
 module SoftFOL.PrintTPTP where
 
-import Data.Maybe
-
 import Common.AS_Annotation
 import Common.Doc
 import Common.DocUtils

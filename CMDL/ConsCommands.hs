@@ -39,10 +39,8 @@ import Common.Consistency
 import Common.LibName(LibName)
 import qualified Common.OrderedMap as OMap
 
-import System.IO(IO)
 import Data.Graph.Inductive.Graph(LNode, LEdge)
-import Data.Char(String)
-import Data.List((++), map, groupBy, find, sortBy, concatMap)
+import Data.List (groupBy, find, sortBy)
 
 -- Command that processes the input and applies a
 -- conservativity check

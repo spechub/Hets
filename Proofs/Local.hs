@@ -44,7 +44,6 @@ import qualified Common.OrderedMap as OMap
 
 import qualified Data.Map as Map
 import Data.Graph.Inductive.Graph
-import Data.List
 
 -- | local decomposition
 locDecompFromList :: LibName ->  [LEdge DGLinkLab] -> LibEnv -> LibEnv

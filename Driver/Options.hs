@@ -53,7 +53,6 @@ import Common.Amalgamate
 
 import System.Directory
 import System.Console.GetOpt
-import System.IO.Error
 import System.Exit
 
 import Control.Monad

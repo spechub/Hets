@@ -63,12 +63,10 @@ import Common.ResultT
 import Common.Id
 import Common.AS_Annotation
 
-import Control.Monad
 
 import Data.Graph.Inductive.Graph (LEdge)
 import qualified Data.Map as Map
 import qualified Data.Set as Set
-import Data.Maybe
 
 -- | Wraps Result structure around the result of a dg all style command
 wrapResultDgAll :: (LibName -> LibEnv -> LibEnv)

@@ -17,8 +17,6 @@ module HasCASL.ConvertTypePattern
     , convertTypePattern
     ) where
 
-import Data.Maybe
-
 import Common.Lexer
 import Common.Id
 import Common.Result

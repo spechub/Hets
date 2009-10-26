@@ -17,7 +17,6 @@ module Comorphisms.CASL2PCFOL where
 import Logic.Logic
 import Logic.Comorphism
 
-import Data.List
 import qualified Data.Set as Set
 
 import qualified Common.Lib.Rel as Rel

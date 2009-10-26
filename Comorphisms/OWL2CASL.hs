@@ -29,7 +29,6 @@ import OWL.Logic_OWL
 import OWL.AS
 import OWL.Sublogic
 import OWL.Morphism
-import OWL.AS
 import qualified OWL.Sign as OS
 --CASL_DL = codomain
 import CASL.Logic_CASL

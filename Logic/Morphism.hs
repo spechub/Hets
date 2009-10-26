@@ -27,7 +27,6 @@ module Logic.Morphism where
 import Logic.Logic
 import Logic.Comorphism
 import qualified Data.Set as Set
-import Data.Maybe
 import Data.Typeable
 import ATerm.Lib -- (ShATermConvertible)
 import Common.DocUtils

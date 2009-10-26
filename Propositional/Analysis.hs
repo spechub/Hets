@@ -25,23 +25,21 @@ module Propositional.Analysis
     )
     where
 
-import qualified Propositional.AS_BASIC_Propositional as AS_BASIC
-import Propositional.Sign as Sign
-import qualified Common.GlobalAnnotations as GlobalAnnos
-import qualified Common.AS_Annotation as AS_Anno
-import qualified Common.Result as Result
-import qualified Common.Id as Id
-import qualified Data.List as List
-import qualified Data.Set as Set
-import qualified Data.Map as Map
-import qualified Propositional.Symbol as Symbol
-import qualified Propositional.Morphism as Morphism
-import Common.Doc ()
-import Common.DocUtils
 import Common.ExtSign
 import Common.Lib.Graph
-import Data.Graph.Inductive.Graph
 import Common.SetColimit
+import Data.Graph.Inductive.Graph
+import Propositional.Sign as Sign
+import qualified Common.AS_Annotation as AS_Anno
+import qualified Common.GlobalAnnotations as GlobalAnnos
+import qualified Common.Id as Id
+import qualified Common.Result as Result
+import qualified Data.List as List
+import qualified Data.Map as Map
+import qualified Data.Set as Set
+import qualified Propositional.AS_BASIC_Propositional as AS_BASIC
+import qualified Propositional.Morphism as Morphism
+import qualified Propositional.Symbol as Symbol
 
 -- | Datatype for formulas with diagnosis data
 data DIAG_FORM = DiagForm

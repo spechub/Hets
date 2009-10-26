@@ -41,7 +41,6 @@ import Common.Result
 import Control.Monad.Identity
 import qualified Data.Map as Map
 import Data.Graph.Inductive.Graph
-import Data.List
 
 type ListSelector m a = [a] -> m (Maybe a)
 type PathTuple = ([LEdge DGLinkLab], [LEdge DGLinkLab])

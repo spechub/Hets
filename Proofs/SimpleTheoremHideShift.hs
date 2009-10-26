@@ -38,7 +38,6 @@ import Common.LibName
 
 import qualified Data.Map as Map
 import Data.Graph.Inductive.Graph
-import Data.List
 
 -- | rule name
 thmHideShift :: DGRule

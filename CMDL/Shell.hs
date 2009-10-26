@@ -50,7 +50,6 @@ import Static.GTheory(G_theory(G_theory), sublogicOfTh)
 import Data.Char(isSpace)
 import Data.List
 import System.Directory(doesDirectoryExist, getDirectoryContents)
-import System.IO(IO)
 
 register2history :: CmdlCmdDescription -> CmdlState -> IO CmdlState
 register2history dscr state = do

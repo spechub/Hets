@@ -22,7 +22,6 @@ import Maude.Sentence (Sentence)
 import Maude.Sign     (Sign)
 import Maude.Morphism (Morphism)
 import qualified Maude.Symbol   as Symbol
-import qualified Maude.Sentence as Sentence
 import qualified Maude.Sign     as Sign
 import qualified Maude.Morphism as Morphism
 
@@ -34,9 +33,6 @@ import Common.AS_Annotation
 import Common.DocUtils
 import Common.ExtSign
 import System.IO.Unsafe
-
-import Data.Maybe
-
 
 -- | Lid for Maude
 data Maude = Maude
