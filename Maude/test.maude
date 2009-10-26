@@ -1,9 +1,21 @@
-fth ALPHA-ASSOC is
+fth FREENESS is
+ pr BOOL .
+ 
+ sort Foo .
+ 
+ eq true and true = true .
+endfth
+
+view Freeness from FREENESS to BOOL is
+ sort Foo to Bool .
+endv
+
+fth ALPHA_ASSOC is
  sort Foo .
  op f : Foo Foo -> Foo [ctor assoc] .
 endfth
 
-fmod OTHER-ALPHA-ASSOC is
+fmod OTHER_ALPHA_ASSOC is
  sort Elt .
  op g : Elt Elt -> Elt [ctor] .
  
@@ -12,12 +24,12 @@ fmod OTHER-ALPHA-ASSOC is
  eq g(E1, g(E2, E3)) = g(g(E1, E2), E3) [nonexec] .
 endfm
 
-view VALPHA from ALPHA-ASSOC to OTHER-ALPHA-ASSOC is
+view VALPHA from ALPHA_ASSOC to OTHER_ALPHA_ASSOC is
  sort Foo to Elt .
  op f to g .
 endv
 
-fmod MY-LIST is
+fmod MY_LIST is
  sorts List Elt .
  subsort Elt < List .
  
@@ -32,8 +44,8 @@ fmod MY-LIST is
  eq reverse(E L) = reverse(L) E .
 endfm
 
-fmod MY-LIST-OPS is
- pr MY-LIST .
+fmod MY_LIST_OPS is
+ pr MY_LIST .
 endfm
 
 fth ASSOC-OP is

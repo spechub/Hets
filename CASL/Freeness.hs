@@ -497,7 +497,7 @@ freeCons (sorts, rel, ops) = do
 
 -- | given the signature in M the function computes the morphism from M' to K
 create_iota_mor :: Set.Set SORT -> CASLSign -> CASLMor
-create_iota_mor ss sg_m = Morphism sg_m usg' sm om pm ()
+create_iota_mor ss sg_m = Morphism iota_sg usg' sm om pm ()
       where iota_sg = totalSignCopy sg_m
             usg = addSig const sg_m iota_sg
             sm = iota_sort_map_mor $ sortSet sg_m
