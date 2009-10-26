@@ -1,7 +1,7 @@
 {- |
 Module      :  $Header$
 Description :  Coding of Maude with preorder semantics into CASL
-Copyright   :  (c) Adri‡n Riesco and Uni Bremen 2007
+Copyright   :  (c) Adrian Riesco and Uni Bremen 2007
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
 Maintainer  :  ariesco@fdi.ucm.es

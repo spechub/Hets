@@ -15,17 +15,16 @@ module CASL.Freeness where
 
 import CASL.Sign
 import CASL.Morphism
-import CASL.Sublogic
 import CASL.StaticAna
---import CASL.Logic_CASL ()
+
 import CASL.AS_Basic_CASL
+
+import Logic.Prover ()
 
 import Common.Id
 import Common.Result
 import Common.AS_Annotation
 import qualified Common.Lib.Rel as Rel
-
-import Logic.Logic
 
 import Data.Char
 import Data.Maybe
@@ -67,7 +66,7 @@ horn_clauses _ = True
 -- | generates the axioms of the module K
 create_axs :: Set.Set SORT -> CASLSign -> CASLSign -> [Named CASLFORMULA]
               -> [Named CASLFORMULA]
-create_axs sg_ss sg_m sg_k sens = forms 
+create_axs sg_ss sg_m sg_k sens = forms
       where ss_m = sortSet sg_m
             ss = Set.map mkFreeName $ Set.difference ss_m sg_ss
             sr = sortRel sg_k
@@ -107,7 +106,7 @@ make_form s = makeNamed "" q_eq
             eq = Strong_equation term_hom v nullRange
             q_eq = quantifyUniversally eq
 
--- | computes the last part of the axioms to assert the kernel of h
+-- | computes the last part of the axioms to assert the kernel of h
 larger_then_ker_h :: Set.Set SORT -> Map.Map Id (Set.Set PredType) -> CASLFORMULA
 larger_then_ker_h ss mis = conj
      where ltkhs = ltkh_sorts ss
@@ -274,9 +273,9 @@ phiName s = mkId [mkSimpleId $ "Phi_" ++ show s]
 psiName :: Id -> Id
 psiName s = mkId [mkSimpleId $ "Psi_" ++ show s]
 
--- | creates the axiom for the kernel of h given the sorts and the predicates
+-- | creates the axiom for the kernel of h given the sorts and the predicates
 -- in M, the premises and the conclusion
-mkKernelAx :: Set.Set SORT -> Map.Map Id (Set.Set PredType) -> CASLFORMULA 
+mkKernelAx :: Set.Set SORT -> Map.Map Id (Set.Set PredType) -> CASLFORMULA
               -> CASLFORMULA -> Named CASLFORMULA
 mkKernelAx ss preds prem conc = makeNamed "freeness_kernel" q2
      where imp = Implication prem conc True nullRange
@@ -385,7 +384,7 @@ hom_surjectivity :: Set.Set SORT -> [Named CASLFORMULA]
 hom_surjectivity = Set.fold f []
       where f = \ x y -> (sort_surj x) : y
 
--- | generates the formula to state the homomorphism is surjective
+-- | generates the formula to state the homomorphism is surjective
 sort_surj :: SORT -> Named CASLFORMULA
 sort_surj s = form'
       where v1 = newVarIndex 0 $ mkFreeName s

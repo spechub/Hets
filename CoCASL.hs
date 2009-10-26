@@ -11,7 +11,7 @@ Portability :  portable (except CoCASL.Logic_CoCASL)
 This folder contains the files for CoCASL basic specs
 
 CoCASL is the coalgebraic extension of CASL.  See /Till
-Mossakowski, Lutz Schröder, Markus Roggenbach, Horst
+Mossakowski, Lutz Schroeder, Markus Roggenbach, Horst
 Reichel. Algebraic-co-algebraic specification in CoCASL. Journal of
 Logic and Algebraic Programming. To appear./
 
