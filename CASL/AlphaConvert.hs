@@ -27,7 +27,7 @@ convertRecord n mf = (mapRecord mf)
       let nvs = flatVAR_DECLs vs
           mkVar i = mkSimpleId $ "v" ++ show i
           rvs = map mkVar [n .. ]
-          nf = replace_varsF (Map.fromList $ zipWith ( \ (v, s) i ->
+          nf = replaceVarsF (Map.fromList $ zipWith ( \ (v, s) i ->
                              (v, Qual_var i s ps)) nvs rvs) mf
                $ convertFormula (n + length nvs) mf qf
       in foldr ( \ (v, s) cf ->
