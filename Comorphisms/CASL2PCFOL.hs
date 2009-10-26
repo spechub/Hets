@@ -1,12 +1,12 @@
 {- |
 Module      :  $Header$
-Descripzion :  coding out subsorting
-Copyright   :  (c) Zicheng Wang, C.Maeder Uni Bremen 2002-2005
+Description :  coding out subsorting
+Copyright   :  (c) Zicheng Wang, Liam O'Reilly, C. Maeder Uni Bremen 2002-2009
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
 Maintainer  :  Christian.Maeder@dfki.de
 Stability   :  provisional
-Portability :  portable
+Portability :  non-portable (imports Logic.Logic)
 
 Coding out subsorting (SubPCFOL= -> PCFOL=),
    following Chap. III:3.1 of the CASL Reference Manual
