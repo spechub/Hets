@@ -42,7 +42,6 @@ import Common.ExtSign
 import Common.Lib.Graph
 import Data.Graph.Inductive.Graph
 import Common.SetColimit
-import CASL.ColimSign(renameSorts)
 
 -- | Datatype for formulas with diagnosis data
 data DIAG_FORM = DiagForm
@@ -392,7 +391,7 @@ signatureColimit :: Gr Sign.Sign (Int, Morphism.Morphism)
                  -> Result.Result (Sign.Sign, Map.Map Int Morphism.Morphism)
 signatureColimit graph = do
  let graph1 = nmap Sign.items $ emap (\(x,y) -> (x, Morphism.propMap y)) graph
-     (set, maps) = renameSorts $ computeColimitSet graph1
+     (set, maps) = addIntToSymbols $ computeColimitSet graph1
      cSig = Sign.Sign{Sign.items = set}
  return (cSig,
          Map.fromList $ map (\(i, n) ->

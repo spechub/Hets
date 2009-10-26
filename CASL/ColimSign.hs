@@ -14,7 +14,7 @@ based on
 
 -}
 
-module CASL.ColimSign(signColimit, extCASLColimit, renameSorts) where
+module CASL.ColimSign(signColimit, extCASLColimit) where
 
 import CASL.Sign
 import CASL.Morphism
@@ -56,7 +56,7 @@ signColimit graph extColimit =
    getSortMap (x, phi) = (x,sort_map phi)
    sortGraph = emap getSortMap $ nmap sortSet graph
    (setSort0, funSort0) = computeColimitSet sortGraph
-   (setSort, funSort) = renameSorts (setSort0, funSort0)
+   (setSort, funSort) = addIntToSymbols (setSort0, funSort0)
    sigmaSort = (emptySign $ error "err"){sortSet=setSort}
    phiSort = Map.fromList
     $ map (\ (node, s)-> (node, (embedMorphism (error "err") s sigmaSort)
@@ -79,47 +79,6 @@ signColimit graph extColimit =
                                          node extMaps})
      phiAssoc
    in (sigmaExt, phiExt)
-
--- method for adding the number as suffix of the id it pairs
-addSuffixToId :: (Id, Node) -> Id
-addSuffixToId (idN, n) = appendNumber idN n
-
---method for applying the renaming to the colimit of sorts
-renameSorts :: (Set.Set (Id, Node), Map.Map Node (Map.Map Id (Id, Node))) ->
-               (Set.Set Id, Map.Map Node (EndoMap Id))
-renameSorts (set, fun) = let
-  fstEqual (x1,_) (x2,_) = x1 == x2
-  partList pairSet = leqClasses fstEqual pairSet
-  namePartitions elemList f0 s1 f1 = case elemList of
-   [] -> (s1, f1)
-   p:ps -> if length p == 1 then
-     -- a single element with this name,it can be kept
-    let s2 = Set.insert (fst $ head p) s1
-        updateF node = Map.union (Map.findWithDefault (error "f1") node f1) $
-                       Map.fromList $ map (\x -> (x, fst $ head p)) $
-                       filter (\x -> Map.findWithDefault (error "fo(node)") x
-                                      (Map.findWithDefault (error "f0") node f0)
-                                     == head p) $
-                       Map.keys $ Map.findWithDefault (error "f0")
-                                   node f0
-        f2 = Map.fromList $ zip (Map.keys f0) $ map updateF $ Map.keys f0
-    in namePartitions ps f0 s2 f2
-                else
-     --several elements with same name, the number is added at the end
-    let s2 = Set.union s1 $ Set.fromList $ map addSuffixToId p
-        updateF node = Map.union (Map.findWithDefault (error "f1") node f1) $
-             Map.fromList $
-             map ( \x -> (x, addSuffixToId $
-                                  Map.findWithDefault (error "addSuffixToId") x
-                                  (Map.findWithDefault (error "f0") node f0))) $
-             filter (\x -> (Map.findWithDefault (error "fo(node)") x
-                           (Map.findWithDefault (error "f0") node f0))
-                           `elem` p) $
-             Map.keys $ Map.findWithDefault (error "f0") node f0
-        f2 = Map.fromList $ zip (Map.keys f0) $ map updateF $ Map.keys f0
-    in namePartitions ps f0 s2 f2
- in namePartitions (partList set) fun (Set.empty) $
-    Map.fromList $ zip (Map.keys fun) (repeat Map.empty)
 
 -- computing subsorts in the colimit
 -- the subsort relation in the colimit is the transitive closure

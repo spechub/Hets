@@ -17,7 +17,8 @@ Computes the colimit of an arbitrary diagram in Set:
 -}
 
 module Common.SetColimit(
-    computeColimitSet
+    computeColimitSet,
+    addIntToSymbols
   )
  where
 
@@ -26,6 +27,8 @@ import Data.Graph.Inductive.Graph
 import qualified Data.Map as Map
 import qualified Data.Set as Set
 import Data.List
+import CASL.Overload(leqClasses)
+import Common.Id
 
 compose :: (Ord a) => Set.Set (a, Int) ->
                       Map.Map (a, Int) (a, Int) ->
@@ -101,6 +104,47 @@ computeCoeqs graph (colim, morMap) edgeList =
                $ Map.toList  morMap
     in computeCoeqs graph (colim', morMap') edges'
 
+class (Eq a, Ord a) => SymbolName a where
+  addIntAsSuffix :: (a, Int) -> a
 
+instance SymbolName Id where
+ addIntAsSuffix (x,y) = appendNumber x y
+
+addIntToSymbols :: (SymbolName a) =>
+               (Set.Set (a, Node), Map.Map Node (Map.Map a (a, Node))) ->
+               (Set.Set a, Map.Map Node (Map.Map a a))
+addIntToSymbols (set, fun) = let
+  fstEqual (x1,_) (x2,_) = x1 == x2
+  partList pairSet = leqClasses fstEqual pairSet
+  namePartitions elemList f0 s1 f1 = case elemList of
+   [] -> (s1, f1)
+   p:ps -> if length p == 1 then
+     -- a single element with this name,it can be kept
+    let s2 = Set.insert (fst $ head p) s1
+        updateF node = Map.union (Map.findWithDefault (error "f1") node f1) $
+                       Map.fromList $ map (\x -> (x, fst $ head p)) $
+                       filter (\x -> Map.findWithDefault (error "fo(node)") x
+                                      (Map.findWithDefault (error "f0") node f0)
+                                     == head p) $
+                       Map.keys $ Map.findWithDefault (error "f0")
+                                   node f0
+        f2 = Map.fromList $ zip (Map.keys f0) $ map updateF $ Map.keys f0
+    in namePartitions ps f0 s2 f2
+                else
+     --several elements with same name, the number is added at the end
+    let s2 = Set.union s1 $ Set.fromList $ map addIntAsSuffix p
+        updateF node = Map.union (Map.findWithDefault (error "f1") node f1) $
+             Map.fromList $
+             map ( \x -> (x, addIntAsSuffix $
+                                  Map.findWithDefault (error "addSuffixToId") x
+                                  (Map.findWithDefault (error "f0") node f0))) $
+             filter (\x -> (Map.findWithDefault (error "fo(node)") x
+                           (Map.findWithDefault (error "f0") node f0))
+                           `elem` p) $
+             Map.keys $ Map.findWithDefault (error "f0") node f0
+        f2 = Map.fromList $ zip (Map.keys f0) $ map updateF $ Map.keys f0
+    in namePartitions ps f0 s2 f2
+ in namePartitions (partList set) fun (Set.empty) $
+    Map.fromList $ zip (Map.keys fun) (repeat Map.empty)
 
 
