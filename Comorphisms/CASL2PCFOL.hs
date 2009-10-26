@@ -145,7 +145,7 @@ mkProjInjAxiom s s' =
 mkProjName :: SORT -> SORT -> String
 mkProjName = mkAxName "projection"
 
--- | create an existential equation over x of sort s
+-- | create a quantified existential equation over x of sort s
 mkXExEq :: SORT -> (TERM () -> TERM ()) -> (TERM () -> TERM ()) -> FORMULA ()
 mkXExEq s fl fr = let
   vx = mkVarDeclStr "x" s
