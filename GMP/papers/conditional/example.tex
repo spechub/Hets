@@ -311,7 +311,7 @@ rules.
 Algorithm~\ref{alg:seq} makes use of the sequent rules in the
 following manner: In order to show the \emph{provability} of a formula
 $\phi$, the algorithm starts with the sequent $\{\phi\}$ and just
-keeps trying to apply all of the sequent rules in $R_{sc}$ to it,
+keeps trying to apply all of the sequent rules in $\mathcal{R}_{sc}$ to it,
 giving precedence to the linear rules.  Below, we refer to a sequent
 as \emph{open} if it has not yet been checked for provability. Under
 suitable tractability assumptions on the rule set as
@@ -328,7 +328,7 @@ algorithm are the subject of the present work.
 \begin{alg}(Decide provability of a sequent $\Gamma$)
 \begin{upshape}
  \begin{algenumerate}
-   \item Try all possible applications of rules from $R_{sc}$ to $\Gamma$, 
+   \item Try all possible applications of rules from $\mathcal{R}_{sc}$ to $\Gamma$, 
      giving precedence to linear rules. For every such rule application,
      perform the following steps, and answer `provable' in case these steps
      succeed for one of the rule applications.
@@ -386,7 +386,7 @@ integrated in the rule for \textbf{CK} as shown in Figure~\ref{fig:modalCKCEM}.
     \begin{tabular}{| c |}
     \hline
       \\[-5pt]
-      (\textsc {\textbf{CKCEM}})\inferrule{A_0 = \ldots = A_n \\ B_0,\ldots, B_j,\neg B_{j+1},\ldots,\neg B_n}
+      (\textsc {\textbf{CKCEM}})\inferrule{A_0 = A_1;\ldots;A_n = A_0 \\ B_0,\ldots, B_j,\neg B_{j+1},\ldots,\neg B_n}
                       {\Gamma, (A_0\Rightarrow B_0),\ldots,(A_j\Rightarrow B_j),
                       \neg(A_{j+1}\Rightarrow B_{j+1}),\ldots,\neg(A_n\Rightarrow B_n) } \\[-5pt]
       \\
