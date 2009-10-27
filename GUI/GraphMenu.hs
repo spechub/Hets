@@ -56,19 +56,12 @@ nodeTypes :: HetcatsOpts
               , String -- Color
               )]
 nodeTypes opts = map
-  ( (\ (n, s) -> if isLocallyEmpty n then -- Add color
-      case nonRefType n of
-        NonRefType { isProvenCons = False }
-                -> (n, s, getColor opts Yellow False True)
-        _       -> (n, s, getColor opts Green  True  False)
-      else case nonRefType n of
-        RefType -> (n, s, getColor opts Coral False False)
-        t       -> (n, s, getColor opts Coral False $ isProvenCons t)
-    )
-  . (\ n -> case nonRefType n of -- Add shape
-      RefType -> (n, Box)
-      NonRefType {} -> (n, Ellipse)
-    )
+  ((\ (n, s) -> if isProvenNode n then -- Add color
+      if isProvenCons n
+      then (n, s, getColor opts Green  True  False)
+      else (n, s, getColor opts Yellow False True)
+     else (n, s, getColor opts Coral False $ isProvenCons n))
+  . \ n -> (n, if isRefType n then Box else Ellipse) -- Add shape
   ) listDGNodeTypes
 
 -- | A Map of all nodetypes and their properties.
@@ -291,14 +284,11 @@ createNodeTypes :: GInfo -> ConvFunc -> LibFunc
 createNodeTypes gInfo@(GInfo {hetcatsOpts = opts}) cGraph showLib = map
   (\ (n, s, c) ->
     ( n
-    , case nonRefType n of
-        RefType -> createLocalMenuNodeTypeDgRef s c gInfo cGraph showLib
-        NonRefType { isInternalSpec = True }
-                -> createLocalMenuNodeTypeInternal s c gInfo
-        NonRefType { isInternalSpec = False }
-                -> createLocalMenuNodeTypeSpec s c gInfo
-    )
-  ) $ nodeTypes opts
+    , if isRefType n
+      then createLocalMenuNodeTypeDgRef s c gInfo cGraph showLib
+      else if isInternalSpec n
+           then createLocalMenuNodeTypeInternal s c gInfo
+           else createLocalMenuNodeTypeSpec s c gInfo)) $ nodeTypes opts
 
 -- | the edge types (share strings to avoid typos)
 createEdgeTypes :: GInfo -> [(DGEdgeType,DaVinciArcTypeParms GA.EdgeValue)]
@@ -444,8 +434,7 @@ createLocalMenuButtonShowNodeInfo =
 -- * methods to create the local menus for the edges
 
 createLocalEdgeMenu :: GInfo -> LocalMenu GA.EdgeValue
-createLocalEdgeMenu gInfo = LocalMenu $ Menu (Just "short edge menu")
-  [createLocalMenuButtonShowEdgeInfo gInfo]
+createLocalEdgeMenu = LocalMenu . createLocalMenuButtonShowEdgeInfo
 
 createLocalEdgeMenuConsEdge :: GInfo -> LocalMenu GA.EdgeValue
 createLocalEdgeMenuConsEdge gInfo =
@@ -467,7 +456,7 @@ createLocalMenuButtonCheckconservativityOfEdge gInfo =
 createLocalMenuValueTitleShowConservativity :: ValueTitle GA.EdgeValue
 createLocalMenuValueTitleShowConservativity = ValueTitle
   (\ (_, _, maybeLEdge) -> case maybeLEdge of
-    Just (_,_,edgelab) -> case dgl_type edgelab of
+    Just (_, _, edgelab) -> case dgl_type edgelab of
       ScopedLink _ _ (ConsStatus c cp status) -> return (showCons c cp status)
       _ -> return ""
     Nothing -> return "")
@@ -485,7 +474,7 @@ getProofScriptFileName f
     | "/" `isPrefixOf` f = return $ f ++ ".hpf"
     | otherwise          = do
                            dir <- getCurrentDirectory
-                           return $ dir ++ '/':f ++ ".hpf"
+                           return $ dir ++ '/' : f ++ ".hpf"
 
 
 -- | Displays a Save-As dialog and writes the proof-script.

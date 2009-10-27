@@ -169,9 +169,9 @@ hasSenKind f dgn = case dgn_theory dgn of
 hasOpenGoals :: DGNodeLab -> Bool
 hasOpenGoals = hasSenKind (\ s -> not (isAxiom s) && not (isProvenSenStatus s))
 
--- | check if the node has an internal name (wrong for DGRef!)
+-- | check if the node has an internal name
 isInternalNode :: DGNodeLab -> Bool
-isInternalNode l@DGNodeLab {dgn_name = n} = not (isDGRef l) && isInternal n
+isInternalNode DGNodeLab {dgn_name = n} = isInternal n
 
 getNodeConsStatus :: DGNodeLab -> ConsStatus
 getNodeConsStatus lbl = case nodeInfo lbl of
@@ -199,36 +199,32 @@ hasOpenConsStatus b (ConsStatus cons _ thm) = case cons of
     _ -> not $ isProvenThmLinkStatus thm
 
 data DGNodeType = DGNodeType
-  { nonRefType :: NonRefType
-  , isLocallyEmpty :: Bool }
-  deriving (Eq, Ord, Show)
-
-data NonRefType =
-    RefType
-  | NonRefType { isProvenCons :: Bool
-               , isInternalSpec :: Bool }
+  { isRefType :: Bool
+  , isProvenNode :: Bool
+  , isProvenCons :: Bool
+  , isInternalSpec :: Bool }
   deriving (Eq, Ord, Show)
 
 -- | creates a DGNodeType from a DGNodeLab
 getRealDGNodeType :: DGNodeLab -> DGNodeType
 getRealDGNodeType dgnlab = DGNodeType
-  { nonRefType = if isDGRef dgnlab then RefType else
-      NonRefType { isProvenCons = not $ hasOpenNodeConsStatus False dgnlab
-                 , isInternalSpec = isInternalNode dgnlab }
-  , isLocallyEmpty = not $ hasOpenGoals dgnlab
-  }
+  { isRefType = isDGRef dgnlab
+  , isProvenNode = not $ hasOpenGoals dgnlab
+  , isProvenCons = not $ hasOpenNodeConsStatus False dgnlab
+  , isInternalSpec = isInternalNode dgnlab }
 
 -- | Creates a list with all DGNodeType types
 listDGNodeTypes :: [DGNodeType]
-listDGNodeTypes =
-  [ DGNodeType { nonRefType = ref, isLocallyEmpty = isEmpty' }
-  | ref <- RefType :
-      [ NonRefType { isProvenCons = proven, isInternalSpec = spec }
-      | proven <- [True, False]
-      , spec <- [True, False]
-      ]
-  , isEmpty' <- [True, False]
-  ]
+listDGNodeTypes = let bs = [False, True] in
+  [ DGNodeType
+    { isRefType = ref
+    , isProvenNode = isEmpty'
+    , isProvenCons = proven
+    , isInternalSpec = spec }
+  | ref <- bs
+  , isEmpty' <- bs
+  , proven <- bs
+  , spec <- bs ]
 
 -- ** edge label types
 

@@ -168,10 +168,8 @@ toggleHideNames gInfo@(GInfo { graphInfo = gi
 hideNodesAux :: DGraph -> [EdgeId]
              -> ([GA.NodeId], [(GA.NodeId, GA.NodeId, DGEdgeType, Bool)])
 hideNodesAux dg ignoreEdges =
-  let nodes = selectNodesByType dg [DGNodeType { nonRefType = NonRefType
-                                                 { isProvenCons = True
-                                                 , isInternalSpec = True}
-                                               , isLocallyEmpty = True}]
+  let nodes = selectNodesByType dg
+        (\ n -> isInternalSpec n && isProvenNode n && isProvenCons n)
       edges = getCompressedEdges dg nodes ignoreEdges
   in (nodes, edges)
 
@@ -218,10 +216,10 @@ flattenHistory ((HistGroup _ ph):r) cs =
   flattenHistory r $ flattenHistory (SizedList.toList ph) cs
 
 -- | selects all nodes of a type with outgoing edges
-selectNodesByType :: DGraph -> [DGNodeType] -> [Node]
+selectNodesByType :: DGraph -> (DGNodeType -> Bool) -> [Node]
 selectNodesByType dg types =
-  filter (\ n -> (not . null $ outDG dg n) && filterInUnproven dg n) $ map fst
-  $ filter (\ (_, n) -> elem (getRealDGNodeType n) types) $ labNodesDG dg
+  filter (\ n -> not (null $ outDG dg n) && filterInUnproven dg n) $ map fst
+  $ filter (types . getRealDGNodeType . snd) $ labNodesDG dg
 
 filterInUnproven :: DGraph -> Node -> Bool
 filterInUnproven dg =
@@ -240,11 +238,11 @@ compressTypes b (t1:t2:r)
 
 -- | innDG with filter of not shown edges
 fInnDG :: [EdgeId] -> DGraph -> Node -> [LEdge DGLinkLab]
-fInnDG ignore dg = filter (\ (_,_,l) -> elem (dgl_id l) ignore) . innDG dg
+fInnDG ignore dg = filter (\ (_,_,l) -> notElem (dgl_id l) ignore) . innDG dg
 
 -- | outDG with filter of not shown edges
 fOutDG :: [EdgeId] -> DGraph -> Node -> [LEdge DGLinkLab]
-fOutDG ignore dg = filter (\ (_,_,l) -> elem (dgl_id l) ignore) . outDG dg
+fOutDG ignore dg = filter (\ (_,_,l) -> notElem (dgl_id l) ignore) . outDG dg
 
 -- | returns a list of compressed edges
 getCompressedEdges :: DGraph -> [Node] -> [EdgeId]
