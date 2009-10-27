@@ -282,82 +282,76 @@ createGlobalMenu gInfo@(GInfo { hetcatsOpts = opts
 createNodeTypes :: GInfo -> ConvFunc -> LibFunc
                 -> [(DGNodeType,DaVinciNodeTypeParms GA.NodeValue)]
 createNodeTypes gInfo@(GInfo {hetcatsOpts = opts}) cGraph showLib = map
-  (\ (n, s, c) ->
-    ( n
-    , if isRefType n
-      then createLocalMenuNodeTypeDgRef s c gInfo cGraph showLib
-      else if isInternalSpec n
-           then createLocalMenuNodeTypeInternal s c gInfo
-           else createLocalMenuNodeTypeSpec s c gInfo)) $ nodeTypes opts
+  (\ (n, s, c) -> (n, if isRefType n
+    then createMenuNodeRef s c gInfo cGraph showLib $ isInternalSpec n
+    else createMenuNode s c gInfo $ isInternalSpec n)) $ nodeTypes opts
 
 -- | the edge types (share strings to avoid typos)
 createEdgeTypes :: GInfo -> [(DGEdgeType,DaVinciArcTypeParms GA.EdgeValue)]
 createEdgeTypes gInfo@(GInfo {hetcatsOpts = opts}) =
   map (\(title, look, color, hasCons) ->
         (title, look
-            $$$ Color color
-            $$$ (if hasCons then createLocalEdgeMenuConsEdge gInfo
-                  else createLocalEdgeMenu gInfo)
-            $$$ (if hasCons then createLocalMenuValueTitleShowConservativity
-                  $$$ emptyArcTypeParms :: DaVinciArcTypeParms GA.EdgeValue
-                  else
-                    emptyArcTypeParms :: DaVinciArcTypeParms GA.EdgeValue))
+          $$$ Color color
+          $$$ (if hasCons then createEdgeMenuConsEdge gInfo
+                else createEdgeMenu gInfo)
+          $$$ (if hasCons then createMenuValueTitleShowConservativity
+                $$$ emptyArcTypeParms :: DaVinciArcTypeParms GA.EdgeValue
+                else emptyArcTypeParms :: DaVinciArcTypeParms GA.EdgeValue))
       ) $ edgeTypes opts
 
 -- * methods to create the local menus of the different nodetypes
 
-createLocalMenuNode :: GInfo -> DaVinciNodeTypeParms GA.NodeValue
-createLocalMenuNode gInfo = LocalMenu (Menu (Just "node menu") $ map ($ gInfo)
-  [ createLocalMenuButtonShowNodeInfo
-  , createLocalMenuButtonShowTheory
-  , createLocalMenuButtonTranslateTheory
-  , createLocalMenuTaxonomy
-  , createLocalMenuButtonShowProofStatusOfNode
-  , createLocalMenuButtonProveAtNode
-  , createLocalMenuButtonProveStructured
-  , createLocalMenuButtonCheckCons
-  , createLocalMenuButtonCCCAtNode ]) $$$ emptyNodeTypeParms
+titleNormal :: forall t. ValueTitle (String, t)
+titleNormal = ValueTitle (\ (s,_) -> return s)
+
+titleInternal :: forall t. GInfo -> ValueTitleSource (String, t)
+titleInternal (GInfo { internalNames = updaterIORef }) =
+  ValueTitleSource (\ (s,_) -> do
+                     b <- newSimpleBroadcaster ""
+                     updater <- readIORef updaterIORef
+                     let upd = (s,applySimpleUpdate b)
+                     writeIORef updaterIORef $ upd:updater
+                     return $ toSimpleSource b)
 
 -- | local menu for the nodetypes spec and locallyEmpty_spec
-createLocalMenuNodeTypeSpec :: Shape GA.NodeValue -> String -> GInfo
-                            -> DaVinciNodeTypeParms GA.NodeValue
-createLocalMenuNodeTypeSpec shape color gInfo =
-                 shape $$$ Color color
-                 $$$ ValueTitle (\ (s,_) -> return s)
-                 $$$ createLocalMenuNode gInfo
+createMenuNode :: Shape GA.NodeValue -> String -> GInfo -> Bool
+               -> DaVinciNodeTypeParms GA.NodeValue
+createMenuNode shape color gInfo internal = shape
+  $$$ Color color
+  $$$ (if internal then Just $ titleInternal gInfo else Nothing)
+  $$$? (if internal then Nothing else Just titleNormal)
+  $$$? LocalMenu (Menu Nothing (map ($ gInfo)
+        [ createMenuButtonShowNodeInfo
+        , createMenuButtonShowTheory
+        , createMenuButtonTranslateTheory
+        , createMenuTaxonomy
+        , createMenuButtonShowProofStatusOfNode
+        , createMenuButtonProveAtNode
+        , createMenuButtonProveStructured
+        , createMenuButtonCheckCons
+#ifndef GTKGLADE
+        , createMenuButtonCCCAtNode
+#endif
+        ]))
+  $$$ emptyNodeTypeParms
 
--- | local menu for the nodetypes internal and locallyEmpty_internal
-createLocalMenuNodeTypeInternal :: Shape GA.NodeValue -> String -> GInfo
-                                -> DaVinciNodeTypeParms GA.NodeValue
-createLocalMenuNodeTypeInternal shape color
-               gInfo@(GInfo { internalNames = updaterIORef }) =
-                 shape $$$ Color color
-                 $$$ ValueTitleSource (\ (s,_) -> do
-                       b <- newSimpleBroadcaster ""
-                       updater <- readIORef updaterIORef
-                       let upd = (s,applySimpleUpdate b)
-                       writeIORef updaterIORef $ upd:updater
-                       return $ toSimpleSource b)
-                 $$$ createLocalMenuNode gInfo
 
 -- | local menu for the nodetypes dg_ref and locallyEmpty_dg_ref
-createLocalMenuNodeTypeDgRef :: Shape GA.NodeValue -> String -> GInfo
-                             -> ConvFunc -> LibFunc
-                             -> DaVinciNodeTypeParms GA.NodeValue
-createLocalMenuNodeTypeDgRef shape color gInfo convGraph showLib =
-                 shape $$$ Color color
-                 $$$ ValueTitle (\ (s,_) -> return s)
-                 $$$ LocalMenu (Menu (Just "node menu")
-                   [createLocalMenuButtonShowNodeInfo gInfo,
-                    createLocalMenuButtonShowTheory gInfo,
-                    createLocalMenuButtonShowProofStatusOfNode gInfo,
-                    createLocalMenuButtonProveAtNode gInfo,
-                    Button "Show referenced library"
-                     (\ (_, descr) -> do
-                       showReferencedLibrary descr gInfo convGraph showLib
-                       return ()
-                     )])
-                 $$$ emptyNodeTypeParms
+createMenuNodeRef :: Shape GA.NodeValue -> String -> GInfo -> ConvFunc
+                  -> LibFunc -> Bool -> DaVinciNodeTypeParms GA.NodeValue
+createMenuNodeRef shape color gInfo convGraph showLib internal = shape
+  $$$ Color color
+  $$$ (if internal then Just $ titleInternal gInfo else Nothing)
+  $$$? (if internal then Nothing else Just titleNormal)
+  $$$? LocalMenu (Menu Nothing
+        [ createMenuButtonShowNodeInfo gInfo
+        , createMenuButtonShowTheory gInfo
+        , createMenuButtonShowProofStatusOfNode gInfo
+        , createMenuButtonProveAtNode gInfo
+        , Button "Show referenced library"
+            (\ (_, n) -> showReferencedLibrary n gInfo convGraph showLib)
+        ])
+  $$$ emptyNodeTypeParms
 
 type ButtonMenu a = MenuPrim (Maybe String) (a -> IO ())
 
@@ -375,86 +369,81 @@ createMenuButton title menuFun gInfo@(GInfo { libName = ln }) = Button title
         menuFun descr dGraph
         return ()
 
-createLocalMenuButtonShowTheory :: GInfo -> ButtonMenu GA.NodeValue
-createLocalMenuButtonShowTheory gInfo =
+createMenuButtonShowTheory :: GInfo -> ButtonMenu GA.NodeValue
+createMenuButtonShowTheory gInfo =
   createMenuButton "Show theory" (getTheoryOfNode gInfo) gInfo
 
-createLocalMenuButtonTranslateTheory :: GInfo -> ButtonMenu GA.NodeValue
-createLocalMenuButtonTranslateTheory gInfo =
+createMenuButtonTranslateTheory :: GInfo -> ButtonMenu GA.NodeValue
+createMenuButtonTranslateTheory gInfo =
   createMenuButton "Translate theory" (translateTheoryOfNode gInfo) gInfo
 
 -- | create a sub menu for taxonomy visualisation
-createLocalMenuTaxonomy :: GInfo -> ButtonMenu GA.NodeValue
-createLocalMenuTaxonomy gInfo = let
-    passTh displayFun descr _ = do
-      ost <- readIORef $ intState gInfo
-      case i_state ost of
-        Nothing -> return ()
-        Just ist -> do
-          let Result ds res = computeTheory (i_libEnv ist) (libName gInfo) descr
-          showDiagMess (hetcatsOpts gInfo) ds
-          maybe (return ()) (displayFun $ show descr) res
-    in Menu (Just "Taxonomy graphs")
+createMenuTaxonomy :: GInfo -> ButtonMenu GA.NodeValue
+createMenuTaxonomy gInfo = let
+  passTh displayFun descr _ = do
+    ost <- readIORef $ intState gInfo
+    case i_state ost of
+      Nothing -> return ()
+      Just ist -> do
+        let Result ds res = computeTheory (i_libEnv ist) (libName gInfo) descr
+        showDiagMess (hetcatsOpts gInfo) ds
+        maybe (return ()) (displayFun $ show descr) res
+  in Menu (Just "Taxonomy graphs")
     [ createMenuButton "Subsort graph" (passTh displaySubsortGraph) gInfo
     , createMenuButton "Concept graph" (passTh displayConceptGraph) gInfo ]
 
-createLocalMenuButtonShowProofStatusOfNode :: GInfo -> ButtonMenu GA.NodeValue
-createLocalMenuButtonShowProofStatusOfNode gInfo =
+createMenuButtonShowProofStatusOfNode :: GInfo -> ButtonMenu GA.NodeValue
+createMenuButtonShowProofStatusOfNode gInfo =
   createMenuButton "Show proof status" (showProofStatusOfNode gInfo) gInfo
 
-createLocalMenuButtonProveAtNode :: GInfo -> ButtonMenu GA.NodeValue
-createLocalMenuButtonProveAtNode gInfo =
-  createMenuButton "Prove"
-    (proveAtNode False gInfo) gInfo
+createMenuButtonProveAtNode :: GInfo -> ButtonMenu GA.NodeValue
+createMenuButtonProveAtNode gInfo =
+  createMenuButton "Prove" (proveAtNode False gInfo) gInfo
 
-createLocalMenuButtonProveStructured :: GInfo -> ButtonMenu GA.NodeValue
-createLocalMenuButtonProveStructured gInfo =
-  createMenuButton "Prove VSE Structured"
-    (\ descr _ -> proveVSEStructured gInfo descr) gInfo
+createMenuButtonProveStructured :: GInfo -> ButtonMenu GA.NodeValue
+createMenuButtonProveStructured gInfo =
+  createMenuButton "Prove VSE Structured" (\ descr _ ->
+    proofMenu gInfo (SelectCmd Prover $ "VSE structured: " ++ show descr)
+              $ VSE.prove (libName gInfo, descr)) gInfo
 
-createLocalMenuButtonCheckCons :: GInfo -> ButtonMenu GA.NodeValue
-createLocalMenuButtonCheckCons gInfo =
+createMenuButtonCheckCons :: GInfo -> ButtonMenu GA.NodeValue
+createMenuButtonCheckCons gInfo =
   createMenuButton "Check conservativity"
     (\ descr -> checkconservativityOfNode descr gInfo) gInfo
 
--- | call VSE structured
-proveVSEStructured :: GInfo -> Int -> IO ()
-proveVSEStructured gi n =
-  proofMenu gi (SelectCmd Prover $ "VSE structured: " ++ show n)
-    $ VSE.prove (libName gi, n)
-
-createLocalMenuButtonCCCAtNode :: GInfo -> ButtonMenu GA.NodeValue
-createLocalMenuButtonCCCAtNode gInfo =
+#ifndef GTKGLADE
+createMenuButtonCCCAtNode :: GInfo -> ButtonMenu GA.NodeValue
+createMenuButtonCCCAtNode gInfo =
   createMenuButton "Check consistency" (proveAtNode True gInfo) gInfo
+#endif
 
-createLocalMenuButtonShowNodeInfo :: GInfo -> ButtonMenu GA.NodeValue
-createLocalMenuButtonShowNodeInfo =
+createMenuButtonShowNodeInfo :: GInfo -> ButtonMenu GA.NodeValue
+createMenuButtonShowNodeInfo =
   createMenuButton "Show node info" showNodeInfo
 
 -- * methods to create the local menus for the edges
 
-createLocalEdgeMenu :: GInfo -> LocalMenu GA.EdgeValue
-createLocalEdgeMenu = LocalMenu . createLocalMenuButtonShowEdgeInfo
+createEdgeMenu :: GInfo -> LocalMenu GA.EdgeValue
+createEdgeMenu = LocalMenu . createMenuButtonShowEdgeInfo
 
-createLocalEdgeMenuConsEdge :: GInfo -> LocalMenu GA.EdgeValue
-createLocalEdgeMenuConsEdge gInfo =
-  LocalMenu (Menu (Just "egde menu")
-                  [ createLocalMenuButtonShowEdgeInfo gInfo
-                  , createLocalMenuButtonCheckconservativityOfEdge gInfo])
+createEdgeMenuConsEdge :: GInfo -> LocalMenu GA.EdgeValue
+createEdgeMenuConsEdge gInfo = LocalMenu $ Menu Nothing
+  [ createMenuButtonShowEdgeInfo gInfo
+  , createMenuButtonCheckconservativityOfEdge gInfo]
 
-createLocalMenuButtonShowEdgeInfo :: GInfo -> ButtonMenu GA.EdgeValue
-createLocalMenuButtonShowEdgeInfo _ = Button "Show info"
+createMenuButtonShowEdgeInfo :: GInfo -> ButtonMenu GA.EdgeValue
+createMenuButtonShowEdgeInfo _ = Button "Show info"
   (\ (_, (EdgeId descr), maybeLEdge) -> showEdgeInfo descr maybeLEdge)
 
-createLocalMenuButtonCheckconservativityOfEdge :: GInfo
+createMenuButtonCheckconservativityOfEdge :: GInfo
                                                -> ButtonMenu GA.EdgeValue
-createLocalMenuButtonCheckconservativityOfEdge gInfo =
+createMenuButtonCheckconservativityOfEdge gInfo =
   Button "Check conservativity"
     (\ (_, (EdgeId descr), maybeLEdge)  ->
       checkconservativityOfEdge descr gInfo maybeLEdge)
 
-createLocalMenuValueTitleShowConservativity :: ValueTitle GA.EdgeValue
-createLocalMenuValueTitleShowConservativity = ValueTitle
+createMenuValueTitleShowConservativity :: ValueTitle GA.EdgeValue
+createMenuValueTitleShowConservativity = ValueTitle
   (\ (_, _, maybeLEdge) -> case maybeLEdge of
     Just (_, _, edgelab) -> case dgl_type edgelab of
       ScopedLink _ _ (ConsStatus c cp status) -> return (showCons c cp status)
@@ -471,36 +460,34 @@ createLocalMenuValueTitleShowConservativity = ValueTitle
 -- Suggests a proof-script filename.
 getProofScriptFileName :: String -> IO FilePath
 getProofScriptFileName f
-    | "/" `isPrefixOf` f = return $ f ++ ".hpf"
-    | otherwise          = do
-                           dir <- getCurrentDirectory
-                           return $ dir ++ '/' : f ++ ".hpf"
+ | "/" `isPrefixOf` f = return $ f ++ ".hpf"
+ | otherwise          = do
+                          dir <- getCurrentDirectory
+                          return $ dir ++ '/' : f ++ ".hpf"
 
 
 -- | Displays a Save-As dialog and writes the proof-script.
 askSaveProofScript :: GA.GraphInfo -> IORef IntState -> IO ()
-askSaveProofScript gi ch =
-    do
-    h <- readIORef ch
-    case undoList $ i_hist h of
-     [] -> infoDialog "Information" "The history is empty. No file written."
-     _ -> do
-      ff <- getProofScriptFileName $ rmSuffix $ filename h
-      maybeFilePath<- fileSaveDialog ff [("Proof Script",["*.hpf"])
-                                         , ("All Files", ["*"])] Nothing
-      case maybeFilePath of
-        Just fPath -> do
-           GA.showTemporaryMessage gi "Saving proof script ..."
-           saveCommandHistory ch fPath
-           GA.showTemporaryMessage gi $ "Proof script saved to " ++
-                                            fPath ++ "!"
-        Nothing -> GA.showTemporaryMessage gi "Aborted!"
+askSaveProofScript gi ch = do
+  h <- readIORef ch
+  case undoList $ i_hist h of
+   [] -> infoDialog "Information" "The history is empty. No file written."
+   _ -> do
+     ff <- getProofScriptFileName $ rmSuffix $ filename h
+     maybeFilePath <- fileSaveDialog ff [ ("Proof Script",["*.hpf"])
+                                        , ("All Files", ["*"])] Nothing
+     case maybeFilePath of
+       Just fPath -> do
+         GA.showTemporaryMessage gi "Saving proof script ..."
+         saveCommandHistory ch fPath
+         GA.showTemporaryMessage gi $ "Proof script saved to " ++ fPath ++ "!"
+       Nothing -> GA.showTemporaryMessage gi "Aborted!"
 
 -- Saves the history of commands in a file.
 saveCommandHistory :: IORef IntState -> String -> IO ()
 saveCommandHistory c f = do
-    h <- readIORef c
-    let history = ["# automatically generated hets proof-script", "",
-                   "use " ++ filename h, ""]
-          ++ reverse (map (showCmd . command) $ undoList $ i_hist h)
-    writeFile f $ unlines history
+  h <- readIORef c
+  let history = [ "# automatically generated hets proof-script", ""
+                , "use " ++ filename h, ""]
+                ++ reverse (map (showCmd . command) $ undoList $ i_hist h)
+  writeFile f $ unlines history
