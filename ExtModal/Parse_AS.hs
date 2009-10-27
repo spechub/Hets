@@ -47,53 +47,53 @@ modalFormulaParser =
 	do open <- oBracketT
 	   modal <- parseModality
 	   close <- cBracketT
-	   grading <- asKey lessEq
+	   asKey lessEq
 	   number <- getNumber
-	   formula <- primFormula ext_modal_reserved_words
-	   return (BoxOrDiamond True modal True (value 10 number) formula $ toRange open [] close)
+	   em_formula <- primFormula ext_modal_reserved_words
+	   return (BoxOrDiamond True modal True (value 10 number) em_formula $ toRange open [] close)
 	<|>
 	{-box, >=-}
 	do open <- oBracketT
 	   modal <- parseModality
 	   close <- cBracketT
-	   grading <- asKey greaterEq
+	   asKey greaterEq
 	   number <- getNumber
-	   formula <- primFormula ext_modal_reserved_words
-	   return (BoxOrDiamond True modal False (value 10 number) formula $ toRange open [] close)
+	   em_formula <- primFormula ext_modal_reserved_words
+	   return (BoxOrDiamond True modal False (value 10 number) em_formula $ toRange open [] close)
 	<|>
 	{-diamond, <=-}
 	do open <- asKey lessS
 	   modal <- parseModality 
 	   close <- asKey greaterS
-	   grading <- asKey lessEq
+	   asKey lessEq
 	   number <- getNumber
-	   formula <- primFormula ext_modal_reserved_words
-	   return (BoxOrDiamond False modal True (value 10 number) formula $ toRange open [] close)
+	   em_formula <- primFormula ext_modal_reserved_words
+	   return (BoxOrDiamond False modal True (value 10 number) em_formula $ toRange open [] close)
 	<|>
 	{-diamond, >=-}
 	do open <- asKey lessS
 	   modal <- parseModality 
 	   close <- asKey greaterS
-	   grading <- asKey greaterEq
+	   asKey greaterEq
 	   number <- getNumber
-	   formula <- primFormula ext_modal_reserved_words
-	   return (BoxOrDiamond False modal False (value 10 number) formula $ toRange open [] close)
+	   em_formula <- primFormula ext_modal_reserved_words
+	   return (BoxOrDiamond False modal False (value 10 number) em_formula $ toRange open [] close)
 	<|>
 	{-empty diamond, <=-}
 	do diam <- asKey diamondS
-	   grading <- asKey lessEq
+	   asKey lessEq
 	   number <- getNumber
-	   formula <- primFormula ext_modal_reserved_words
+	   em_formula <- primFormula ext_modal_reserved_words
 	   let pos = tokPos diam
-	   return (BoxOrDiamond False (Simple_modality $ Token emptyS pos) True (value 10 number) formula pos)
+	   return (BoxOrDiamond False (Simple_modality $ Token emptyS pos) True (value 10 number) em_formula pos)
 	<|>
 	{-empty diamond, >=-}
 	do diam <- asKey diamondS
-	   grading <- asKey greaterEq
+	   asKey greaterEq
 	   number <- getNumber
-	   formula <- primFormula ext_modal_reserved_words
+	   em_formula <- primFormula ext_modal_reserved_words
 	   let pos = tokPos diam
-	   return (BoxOrDiamond False (Simple_modality $ Token emptyS pos) False (value 10 number) formula pos)
+	   return (BoxOrDiamond False (Simple_modality $ Token emptyS pos) False (value 10 number) em_formula pos)
 	<|>
 	{-Until, U-}
 	do formula1 <- primFormula ext_modal_reserved_words
@@ -111,79 +111,79 @@ modalFormulaParser =
 	<|>
 	{-All paths, A-}
 	do ap <- asKey allPathsS
-	   formula <- primFormula ext_modal_reserved_words
+	   em_formula <- primFormula ext_modal_reserved_words
 	   let pos = tokPos ap
-	   return (PathQuantification True formula pos)
+	   return (PathQuantification True em_formula pos)
 	<|>
 	{-Some paths, E-}
 	do sp <- asKey somePathsS
-	   formula <- primFormula ext_modal_reserved_words
+	   em_formula <- primFormula ext_modal_reserved_words
 	   let pos = tokPos sp
-	   return (PathQuantification False formula pos)
+	   return (PathQuantification False em_formula pos)
 	<|>
 	{-Next, X-}
 	do nxt <- asKey nextS
-	   formula <- primFormula ext_modal_reserved_words
+	   em_formula <- primFormula ext_modal_reserved_words
 	   let pos = tokPos nxt
-	   return (NextY True formula pos)
+	   return (NextY True em_formula pos)
 	<|>
 	{-Yesterday, Y-}
 	do ysd <- asKey yesterdayS
-	   formula <- primFormula ext_modal_reserved_words
+	   em_formula <- primFormula ext_modal_reserved_words
 	   let pos = tokPos ysd
-	   return (NextY False formula pos)
+	   return (NextY False em_formula pos)
 	<|>
 	{-Generally, G-}
 	do grl <- asKey generallyS
-	   formula <- primFormula ext_modal_reserved_words
+	   em_formula <- primFormula ext_modal_reserved_words
 	   let pos = tokPos grl
-	   return (StateQuantification True True formula pos)
+	   return (StateQuantification True True em_formula pos)
 	<|>
 	{-Eventually, F-}
 	do evt <- asKey eventuallyS
-	   formula <- primFormula ext_modal_reserved_words
+	   em_formula <- primFormula ext_modal_reserved_words
 	   let pos = tokPos evt
-	   return (StateQuantification True False formula pos)
+	   return (StateQuantification True False em_formula pos)
 	<|>
 	{-Hitherto, H-}
 	do hth <- asKey hithertoS
-	   formula <- primFormula ext_modal_reserved_words
+	   em_formula <- primFormula ext_modal_reserved_words
 	   let pos = tokPos hth
-	   return (StateQuantification False True formula pos)
+	   return (StateQuantification False True em_formula pos)
 	<|>
 	{-Previously, P-}
 	do prv <- asKey previouslyS
-	   formula <- primFormula ext_modal_reserved_words
+	   em_formula <- primFormula ext_modal_reserved_words
 	   let pos = tokPos prv
-	   return (StateQuantification False False formula pos)
+	   return (StateQuantification False False em_formula pos)
 	<|>
 	{-parse Mu-}
 	do mu <- asKey muS
 	   z <- varId ext_modal_reserved_words
-	   formula <- primFormula ext_modal_reserved_words
+	   em_formula <- primFormula ext_modal_reserved_words
 	   let pos = tokPos mu
-	   return (FixedPoint True z formula pos)
+	   return (FixedPoint True z em_formula pos)
 	<|>	
 	{-parse Nu-}
 	do nu <- asKey nuS
 	   z <- varId ext_modal_reserved_words
-	   formula <- primFormula ext_modal_reserved_words
+	   em_formula <- primFormula ext_modal_reserved_words
 	   let pos = tokPos nu
-	   return (FixedPoint False z formula pos)
+	   return (FixedPoint False z em_formula pos)
 	<|>
 	{-@-}
 	do at <- asKey atS
 	   nom <- simpleId
-	   formula <- primFormula ext_modal_reserved_words
+	   em_formula <- primFormula ext_modal_reserved_words
 	   let pos = tokPos at
-	   return (Hybrid True (Nominal nom) formula pos)
+	   return (Hybrid True (Nominal nom) em_formula pos)
 	<|>
 	{-Here-}
 	do her <- asKey hereS
 	   nom <- simpleId
-	   formula <- primFormula ext_modal_reserved_words
+	   em_formula <- primFormula ext_modal_reserved_words
 	   let pos = tokPos her
-	   return (Hybrid False (Nominal nom) formula pos)
+	   return (Hybrid False (Nominal nom) em_formula pos)
 	
 
 {-Term modality parser-}
@@ -192,26 +192,26 @@ parseModality =
 	do t <- simpleId
 	   return (Simple_modality t)
 	<|>
-	do opn <- asKey tmOParanthS
+	do asKey tmOParanthS
 	   t <- parseModality 
-	   cls <- asKey tmCParanthS
+	   asKey tmCParanthS
 	   return t
 	<|>
 	do f <- primFormula ext_modal_reserved_words
-	   grd <- asKey tmGuardS
+	   asKey tmGuardS
 	   return (Guard f)
 	<|>
 	do t <- parseModality 
-	   tc <- asKey tmTransClosS
+	   asKey tmTransClosS
 	   return (TransitiveClosure t)
 	<|>
 	do t1 <- parseModality
-	   cmp <- asKey tmCompositionS
+	   asKey tmCompositionS
 	   t2 <- parseModality
 	   return (Composition t1 t2)
 	<|>
 	do t1 <- parseModality
-	   un <- asKey tmUnionS
+	   asKey tmUnionS
 	   t2 <- parseModality
 	   return (Union t1 t2)
 	<|> return (Simple_modality $ mkSimpleId emptyS)
@@ -248,7 +248,7 @@ basicItemParser =
 	   (annoId, ks) <- separatedBy (annoParser simpleId) anComma
 	   parseAxioms False annoId ( catRange $ k : ks )
 	<|>
-	do tmp <- asKey timeS
+	do asKey timeS
 	   k <- mKey 
 	   (annoId, ks) <- separatedBy (annoParser simpleId) anComma
 	   parseAxioms True annoId ( catRange $ k : ks )

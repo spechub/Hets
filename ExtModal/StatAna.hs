@@ -42,7 +42,7 @@ instance FreeVars EM_FORMULA where
 	freeVarsOfExt sign ( PathQuantification _ f _ ) = freeVars sign f
 	freeVarsOfExt sign ( StateQuantification _ _ f _ ) = freeVars sign f
 	freeVarsOfExt sign ( NextY _ f _ ) = freeVars sign f
-	freeVarsOfExt sign ( FixedPoint _ fpvar f _ ) = freeVars sign f
+	freeVarsOfExt sign ( FixedPoint _ _ f _ ) = freeVars sign f
 
 basicEModalAnalysis 
 	:: (BASIC_SPEC EM_BASIC_ITEM EM_SIG_ITEM EM_FORMULA
@@ -67,7 +67,7 @@ frmTypeAna sign form =
 	  					  return $ Composition new_md1 new_md2
 			Union md1 md2 -> do new_md1 <- checkMod md1
 					    new_md2 <- checkMod md2
-					    return $ Union md1 md2
+					    return $ Union new_md1 new_md2
 			TransitiveClosure md -> do new_md <- checkMod md
 						   return $ TransitiveClosure new_md
 			Guard frm -> do new_frm <- minExpFORMULA frmTypeAna sign frm

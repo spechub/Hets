@@ -12,7 +12,6 @@ printing AS_ExtModal ExtModalSign data types
 
 module ExtModal.Print_AS where
 
-import Common.Id
 import Common.Keywords
 import qualified Data.Map as Map
 import qualified Data.Set as Set
@@ -23,6 +22,7 @@ import Common.DocUtils
 import ExtModal.AS_ExtModal
 import ExtModal.ExtModalSign
 import ExtModal.Keywords
+import ExtModal.MorphismExtension
 
 import CASL.AS_Basic_CASL (FORMULA(..))
 import CASL.ToDoc
@@ -61,33 +61,36 @@ instance Pretty NOMINAL where
 	pretty (Nominal idt) = pretty idt
 
 instance Pretty EM_FORMULA where 
-	pretty (BoxOrDiamond choice modality leq_geq number sentence _) = 
+	pretty (BoxOrDiamond choice modality leq_geq number em_sentence _) = 
 		let sp = case modality of 
 				Simple_modality _ -> (<>)
 				_ -> (<+>)
 		    mdl = pretty modality
 		in sep $ (if choice then brackets mdl else less `sp` mdl `sp` greater)
 		       : (if leq_geq then keyword lessEq else keyword greaterEq)
-		       : (text (show number)) : space : [condParensInnerF (printFormula pretty) parens sentence]
+		       : (text (show number)) : space : [condParensInnerF (printFormula pretty) parens em_sentence]
 
-	pretty (Hybrid choice nom sentence _) = 
+	pretty (Hybrid choice nom em_sentence _) = 
 		sep $ (if choice then keyword atS else keyword hereS) : space : (pretty nom) : space
-		    : [condParensInnerF (printFormula pretty) parens sentence]
+		    : [condParensInnerF (printFormula pretty) parens em_sentence]
 	pretty (UntilSince choice sentence1 sentence2 _) = 
 		sep $ ([condParensInnerF (printFormula pretty) parens sentence1]
 		       ++ ( space : (if choice then keyword untilS else keyword sinceS) : space 
 		             : [condParensInnerF (printFormula pretty) parens sentence2]))
-	pretty (PathQuantification choice sentence _) = 
+	pretty (PathQuantification choice em_sentence _) = 
 		sep $ (if choice then keyword allPathsS else keyword somePathsS) : space
-		    : [condParensInnerF (printFormula pretty) parens sentence]
-	pretty (NextY choice sentence _) = 
+		    : [condParensInnerF (printFormula pretty) parens em_sentence]
+	pretty (NextY choice em_sentence _) = 
 		sep $ (if choice then keyword nextS else keyword yesterdayS) : space
-		    : [condParensInnerF (printFormula pretty) parens sentence]
-	pretty (StateQuantification dir_choice choice sentence _) = 
+		    : [condParensInnerF (printFormula pretty) parens em_sentence]
+	pretty (StateQuantification dir_choice choice em_sentence _) = 
 		let kw = case dir_choice of 
 				True -> if choice then keyword generallyS else keyword eventuallyS
 				_ -> if choice then keyword hithertoS else keyword previouslyS
-		in sep $ kw : space : [condParensInnerF (printFormula pretty) parens sentence]
+		in sep $ kw : space : [condParensInnerF (printFormula pretty) parens em_sentence]
+	pretty (FixedPoint choice p_var em_sentence _) = 
+		sep $ (if choice then keyword muS else keyword nuS) : space : (pretty p_var) : space
+			: [condParensInnerF (printFormula pretty) parens em_sentence]
 	
 condParensInnerF :: Pretty f => (FORMULA f -> Doc) -> (Doc -> Doc) -> FORMULA f -> Doc
 condParensInnerF frm_print parens_fun frm  = 
@@ -130,4 +133,8 @@ printEModalSign sim sign =
 printFormulaOfEModalSign :: Pretty f => (FORMULA f -> FORMULA f) -> [[Annoted (FORMULA f)]] -> Doc
 printFormulaOfEModalSign sim =
 	vcat . map (\ tf -> fsep $ punctuate semi $ map (printAnnoted $ pretty . sim) tf)
+
+instance Pretty MorphExtension where 
+	pretty me = pretty (source me) <+> pretty (target me) <+> 
+			text (show (Map.toList (mod_map me))) <+> text (show (Map.toList (nom_map me)))
 

@@ -13,16 +13,10 @@ module ExtModal.MorphismExtension where
 import qualified Data.Map as Map
 import qualified Data.Set as Set
 
-import CASL.Sign
 import CASL.Morphism
 import Common.Id
-import Common.Result
-import Common.DocUtils
-import Common.Doc
 
-import ExtModal.AS_ExtModal
 import ExtModal.ExtModalSign
-import ExtModal.Print_AS
 
 data MorphExtension = MorphExtension
 	{ source :: EModalSign
@@ -35,10 +29,6 @@ emptyMorphExtension :: MorphExtension
 emptyMorphExtension = MorphExtension emptyEModalSign emptyEModalSign Map.empty Map.empty
 
 
-instance Pretty MorphExtension where 
-	pretty me = pretty (source me) <+> pretty (target me) <+> 
-			text (show (Map.toList (mod_map me))) <+> text (show (Map.toList (nom_map me)))
-
 instance MorphismExtension EModalSign MorphExtension where 
  
 	ideMorphismExtension sgn = 
@@ -47,7 +37,7 @@ instance MorphismExtension EModalSign MorphExtension where
 			(foldl insert_next Map.empty (Map.keys (modalities sgn)))
 			(foldl insert_next Map.empty (Set.toList (nominals sgn)))
 
-	composeMorphismExtension sgn me1 me2 = 
+	composeMorphismExtension _ me1 me2 = 
 		if me1 == me2 
 		   then let me_compos second_map  old_map (me_k, me_val) = 
 		   		if (Map.member me_val second_map) then Map.insert me_k (second_map Map.! me_val) old_map
@@ -59,10 +49,10 @@ instance MorphismExtension EModalSign MorphExtension where
 
 	inverseMorphismExtension me = 
 		let swap_arrows old_map (me_k, me_val) = Map.insert me_val me_k old_map
-		    occurs_alt [] once me_val = once
-		    occurs_alt ((me_k,me_val1):l) True me_val2 = 
+		    occurs_alt [] once _ = once
+		    occurs_alt ((_,me_val1):l) True me_val2 = 
 		    	if me_val1 == me_val2 then True else occurs_alt l True me_val2
-		    occurs_alt ((me_k,me_val1):l) False me_val2 = 
+		    occurs_alt ((_,me_val1):l) False me_val2 = 
 		    	if me_val1 == me_val2 then occurs_alt l True me_val2 else occurs_alt l False me_val2
 		in if Map.keys (modalities (target me)) == Map.elems (mod_map me) 
 			&& Set.toList (nominals (target me)) == Map.elems (nom_map me)
