@@ -66,9 +66,8 @@ nodeTypes opts = map
         t       -> (n, s, getColor opts Coral False $ isProvenCons t)
     )
   . (\ n -> case nonRefType n of -- Add shape
-      RefType                               -> (n, Box)
-      NonRefType { isInternalSpec = True }  -> (n, Circle)
-      NonRefType { isInternalSpec = False } -> (n, Ellipse)
+      RefType -> (n, Box)
+      NonRefType {} -> (n, Ellipse)
     )
   ) listDGNodeTypes
 
