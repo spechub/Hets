@@ -147,8 +147,11 @@ showConsistencyChecker gInfo@(GInfo { libName = ln }) = postGUIAsync $ do
                   case mf of
                     Just (_,f) -> do
                       case comorphs f !! selected f of
-                        (Comorphism cid) ->
-                          labelSetLabel lblComorphism $ language_name cid
+                        Comorphism cid ->
+                          let cName = language_name cid
+                              dName = drop 1 $ dropWhile (/= ';') cName
+                          in labelSetLabel lblComorphism
+                            $ if null dName then "identity" else dName
                       widgetSetSensitive btnCheck True
                     Nothing -> do
                       labelSetLabel lblComorphism "No path selected"
@@ -160,8 +163,7 @@ showConsistencyChecker gInfo@(GInfo { libName = ln }) = postGUIAsync $ do
                                     (\ s -> do
                                        labelSetLabel lblSublogic $ show s
                                        updateFinder trvFinder listFinder s)
-                                    (do labelSetLabel lblSublogic
-                                                      "No sublogic given"
+                                    (do labelSetLabel lblSublogic "No sublogic"
                                         listStoreClear listFinder
                                         activate widgets False
                                         widgetSetSensitive btnCheck False)
@@ -200,7 +202,7 @@ showConsistencyChecker gInfo@(GInfo { libName = ln }) = postGUIAsync $ do
   onClicked btnCheck $ do
     activate checkWidgets False
     timeout <- spinButtonGetValueAsInt sbTimeout
-    (update, exit) <- progressBar "Checking consistency" "please wait..."
+    (updat, exit) <- progressBar "Checking consistency" "please wait..."
     nodes' <- getSelectedMultiple trvNodes listNodes
     mf <- getSelectedSingle trvFinder listFinder
     f <- case mf of
@@ -208,7 +210,7 @@ showConsistencyChecker gInfo@(GInfo { libName = ln }) = postGUIAsync $ do
       Just (_,f) -> return f
     switch False
     forkIOWithPostProcessing
-      (check ln le dg f timeout update nodes' stop)
+      (check ln le dg f timeout updat nodes' stop)
       $ \ res -> do
         widgetSetSensitive btnStop False
         mapM_ (uncurry (listStoreSetValue listNodes)) res
