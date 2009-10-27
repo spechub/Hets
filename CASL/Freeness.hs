@@ -36,7 +36,7 @@ import qualified Data.Set as Set
 quotientTermAlgebra :: CASLMor -- sigma : Sigma -> SigmaM
                     -> [Named CASLFORMULA] -- Th(M)
                     -> Result (CASLSign, -- SigmaK
-                               CASLMor, -- iota : SigmaM' -> SigmaK
+                               -- CASLMor, -- iota : SigmaM' -> SigmaK
                                [Named CASLFORMULA] -- Ax(K)
                               )
 quotientTermAlgebra sigma sens = case horn_clauses sens of
@@ -45,10 +45,9 @@ quotientTermAlgebra sigma sens = case horn_clauses sens of
                     sigma_0 = msource sigma
                     ss_0 = sortSet sigma_0
                     sigma_m = mtarget sigma
-                    iota_mor = create_iota_mor ss_0 sigma_m
-                    sigma_k = mtarget iota_mor
+                    sigma_k = create_sigma_k ss_0 sigma_m
                     axs = create_axs ss_0 sigma_m sigma_k sens
-                  in return (sigma_k, iota_mor, axs)
+                  in return (sigma_k, axs)
 
 horn_clauses :: [Named CASLFORMULA] -> Bool
 horn_clauses _ = True
@@ -495,14 +494,11 @@ freeCons (sorts, rel, ops) = do
     makeNamed ("ga_generated_" ++
                        showSepList (showString "_") showId sortList "") f
 
--- | given the signature in M the function computes the morphism from M' to K
-create_iota_mor :: Set.Set SORT -> CASLSign -> CASLMor
-create_iota_mor ss sg_m = Morphism iota_sg usg' sm om pm ()
+-- | given the signature in M the function computes the signature K
+create_sigma_k :: Set.Set SORT -> CASLSign -> CASLSign
+create_sigma_k ss sg_m = usg'
       where iota_sg = totalSignCopy sg_m
             usg = addSig const sg_m iota_sg
-            sm = iota_sort_map_mor $ sortSet sg_m
-            om = iota_op_map_mor $ opMap sg_m
-            pm = iota_pred_map_mor $ predMap sg_m
             om' = homomorphism_ops (sortSet sg_m) (opMap usg)
             om'' = make_ops ss om'
             usg' = usg { opMap = om'' }

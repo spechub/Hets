@@ -360,7 +360,6 @@ class ( Syntax lid basic_spec symb_items symb_map_items
              -> [Named sentence] -- Th(M)
              -> Result
                  (sign, -- SigmaK
-                  morphism, -- iota : SigmaM' -> SigmaK
                   [Named sentence] -- Ax(K)
                  )
          quotient_term_algebra l _ _ = statFail l "quotient_term_algebra"

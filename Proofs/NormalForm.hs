@@ -264,33 +264,22 @@ handleEdge dg edge@(m,n,x) = do
           mor <- coerceMorphism (targetLogic cid) lid "free" mor1
           let res = quotient_term_algebra lid mor $ toNamedList sen
           case maybeResult res of
-           Just (sigK, iota, axK) -> do
+           Just (sigK, axK) -> do
                -- success in logic lid
             let thK = G_theory lid (makeExtSign lid sigK)
                              startSigId (toThSens axK) startThId
-            let thM' = noSensGTheory lid sig startSigId
-                iotaM' = gEmbed $ mkG_morphism lid iota
             incl <- subsig_inclusion lid (plainSign sig) sigK
             let inclM = gEmbed $ mkG_morphism lid incl
-      -- m' with signature = sig, no sentences
       -- remove x
       -- add nodes
       -- k  with signature = sigK, sentences axK
-      -- global def links from m and m' to k, mapped with incl, resp iota
+      -- global def link from m to k, labeled with inclusion
       -- hiding def link from k to n, labeled with inclusion
-                m' = getNewNodeDG dg -- new node
+              --   m' = getNewNodeDG dg -- new node
                 nodelab = labDG dg m
                 info = nodeInfo nodelab
                 ConsStatus c _ _ = node_cons_status info
-                labelM' = newInfoNodeLab
-                  (extName "NormalForm" $ dgn_name nodelab)
-                  info
-                  { node_origin = DGNormalForm m
-                  , node_cons_status = mkConsStatus c }
-                  thM'
-            -- insert the new node and add edges from the predecessors
-                insM' = InsertNode (m', labelM')
-                k = (getNewNodeDG dg) + 1
+                k = (getNewNodeDG dg)
                 labelK = newInfoNodeLab
                    (extName "NormalForm" $ dgn_name nodelab)
                    info
@@ -303,18 +292,13 @@ handleEdge dg edge@(m,n,x) = do
                                                , dgl_origin = DGLinkProof
                                                , dgl_id = defaultEdgeId
                                                }),
-                       InsertEdge (m',k,DGLink { dgl_morphism = iotaM'
-                                              , dgl_type = globalDef
-                                              , dgl_origin = DGLinkProof
-                                              , dgl_id = defaultEdgeId
-                                              }),
                        InsertEdge (k, n,DGLink { dgl_morphism = inclM
                                               , dgl_type = HidingDefLink
                                               , dgl_origin = DGLinkProof
                                               , dgl_id = defaultEdgeId
                                               })]
                 del = DeleteEdge edge
-                allChanges = del:insM' : insK : insE
+                allChanges = del: insK : insE
             return $ changesDGH dg allChanges
            _ -> do
                -- failed in logic lid, look for comorphism and translate
@@ -326,7 +310,6 @@ handleEdge dg edge@(m,n,x) = do
                Just com -> do
                 (m', dgM) <- translateFree dg edge com
                 foldM handleEdge dgM $ out (dgBody dgM) m'
-                --return dgM
      _ -> return dg
 
 translateFree :: DGraph -> LEdge DGLinkLab -> AnyComorphism ->
