@@ -185,7 +185,7 @@ indicatorString :: LBStatusIndicator
                 -> String
 indicatorString i = case i of
   LBIndicatorProved      -> "[+]"
-  LBIndicatorProvedInconsistent -> "[\215]" -- maybe \177 (±) is nicer
+  LBIndicatorProvedInconsistent -> "[*]"
   LBIndicatorDisproved   -> "[-]"
   LBIndicatorOpen        -> "[ ]"
   LBIndicatorGuessed     -> "[.]"
