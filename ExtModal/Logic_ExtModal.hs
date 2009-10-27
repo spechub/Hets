@@ -24,12 +24,10 @@ import CASL.Formula
 import CASL.Sign
 import CASL.Morphism
 import CASL.SymbolMapAnalysis
-import CASL.Logic_CASL
 import CASL.AS_Basic_CASL
 import CASL.Parse_AS_Basic
 import CASL.MapSentence
 import CASL.SymbolParser
-import CASL.Sublogic
 import CASL.SimplifySen
 import CASL.Taxonomy
 import CASL.Logic_CASL ()
@@ -80,7 +78,6 @@ map_EM_FORMULA morph (Hybrid choice nm f pos) =
 	let new_nom = case nm of 
 			Nominal nom -> let nms = nom_map (extended_map morph) 
 		  	               in if Map.member nom nms then (Nominal (nms Map.! nom)) else nm
-			_ -> nm
 	    new_f = mapSen map_EM_FORMULA morph f
         in Hybrid choice new_nom new_f pos
 		
@@ -114,7 +111,7 @@ simEMSen sign (Hybrid choice nom f pos) =
 	Hybrid choice nom (simplifySen frmTypeAna simEMSen sign f) pos
 simEMSen sign (UntilSince choice f1 f2 pos) = 
 	UntilSince choice (simplifySen frmTypeAna simEMSen sign f1) 
-		(simplifySen frmTypeAna simEMSen sign f1) pos
+		(simplifySen frmTypeAna simEMSen sign f2) pos
 simEMSen sign (NextY choice f pos) =
 	NextY choice (simplifySen frmTypeAna simEMSen sign f) pos
 simEMSen sign (PathQuantification choice f pos) = 
