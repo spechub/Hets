@@ -37,9 +37,9 @@ import Static.DevGraph
 import Static.GTheory(G_theory(G_theory), coerceThSens, startThId, sublogicOfTh)
 import Static.ComputeTheory
 
-import Logic.Comorphism(AnyComorphism(..), Comorphism(targetLogic))
-import Logic.Grothendieck(findComorphismPaths)
-import Logic.Logic(Language(language_name), Logic(provers))
+import Logic.Comorphism
+import Logic.Grothendieck
+import Logic.Logic
 import qualified Logic.Prover as P
 
 import Common.LibName(LibName)
@@ -53,25 +53,14 @@ import Control.Concurrent(ThreadId, killThread)
 import Control.Concurrent.MVar(MVar, newMVar, putMVar, takeMVar, readMVar,
                                swapMVar, modifyMVar_)
 
-import Control.Monad(when)
+import Control.Monad
 
-
-getProversAutomatic :: [AnyComorphism] -> [(G_prover, AnyComorphism)]
-getProversAutomatic = foldl addProvers []
- where addProvers acc cm =
-        case cm of
-         Comorphism cid -> acc ++
-             foldl (\ l p ->
-                          if P.hasProverKind
-                             P.ProveCMDLautomatic p
-                          then (G_prover (targetLogic cid)
-                             p,cm):l
-                          else l) []  (provers $ targetLogic cid)
-
+getProversAutomatic :: G_sublogics -> [(G_prover, AnyComorphism)]
+getProversAutomatic sl =
+  getProvers P.ProveCMDLautomatic (Just sl) $ findComorphismPaths logicGraph sl
 
 -- | Select a prover
-cProver::String -> CmdlState ->
-                    IO CmdlState
+cProver::String -> CmdlState -> IO CmdlState
 cProver input state =
   do
    -- trimed input
@@ -85,14 +74,13 @@ cProver input state =
      -- check that some theories are selected
      case elements pS of
       [] -> return $ genErrorMsg "Nothing selected" state
-      (Element z _):_ ->
+      Element z _ :_ -> let sl = sublogicOfTh $ theory z in
         -- see if any comorphism was used
        case cComorphism pS of
        -- if none use the theory  of the first selected node
        -- to find possible comorphisms
-       Nothing-> case find (\(y,_)-> getPName y == inp) $
-                      getProversAutomatic $ findComorphismPaths logicGraph $
-                      sublogicOfTh $ theory z of
+       Nothing-> case find (\ (y, _)-> getPName y == inp)
+                 $ getProversAutomatic sl of
                    Nothing -> return $ genErrorMsg ("No applicable prover with"
                                                 ++" this name found") state
                    Just (p,_)-> return $ add2hist [ProverChange$ prover pS]$
@@ -106,10 +94,11 @@ cProver input state =
        -- if yes,  use the comorphism to find a list
        -- of provers
        Just x ->
-         case find (\(y,_)-> getPName y == inp) $ getProversAutomatic [x] of
+         case find (\ (y, _)-> getPName y == inp)
+         $ getProvers P.ProveCMDLautomatic (Just sl) [x] of
             Nothing ->
-             case find (\(y,_) -> getPName y == inp) $ getProversAutomatic $
-                  findComorphismPaths logicGraph $ sublogicOfTh $ theory z of
+             case find (\(y,_) -> getPName y == inp)
+               $ getProversAutomatic sl of
                Nothing -> return $ genErrorMsg ("No applicable prover with"
                                           ++ " this name found") state
                Just (p,nCm@(Comorphism cid))->
@@ -155,7 +144,7 @@ cConsChecker input state =
         --to find possible comorphisms
         Nothing -> case find (\(y,_)->
                                   getPName y == inp) $
-                             getConsCheckersAutomatic $ findComorphismPaths
+                             getConsCheckers $ findComorphismPaths
                                 logicGraph $ sublogicOfTh $ theory z of
                     Nothing -> return $ genErrorMsg ("No applicable "++
                                  "consistency checker with this name found")
@@ -170,9 +159,9 @@ cConsChecker input state =
                                       }
         Just x ->
           case find(\(y,_) -> getPName y == inp)
-                     $ getConsCheckersAutomatic [x] of
+                     $ getConsCheckers [x] of
            Nothing ->
-            case find (\(y,_) -> getPName y == inp)$ getConsCheckersAutomatic $
+            case find (\(y,_) -> getPName y == inp) $ getConsCheckers $
                           findComorphismPaths logicGraph $ sublogicOfTh $
                           theory z of
              Nothing -> return $ genErrorMsg ("No applicable consistency "++
@@ -208,8 +197,8 @@ checkNode ::
               ATPTacticScript ->
               -- proofState of the node that needs proving
               -- all theorems, goals and axioms should have
-              -- been selected before,but the theory should have
-              -- not beed recomputed
+              -- been selected before, but the theory should have
+              -- not been recomputed
               Int_NodeInfo ->
               -- node name
               String ->
@@ -225,7 +214,7 @@ checkNode ::
               LibName ->
               -- returns an error message if anything happens
                IO String
-checkNode useTh save2File sTxt ndpf ndnm mp mcm mThr mSt mlbE libname
+checkNode _useTh _save2File sTxt ndpf ndnm mp mcm _mThr mSt _mlbE _libname
  = case ndpf of
     Element pf_st nd ->
      do
@@ -234,68 +223,41 @@ checkNode useTh save2File sTxt ndpf ndnm mp mcm mThr mSt mlbE libname
      st <- recalculateSublogicAndSelectedTheory pf_st
      -- compute a prover,comorphism pair to be used in preparing
      -- the theory
-     p_cm@(_,acm)
-        <-case mcm of
-           Nothing -> lookupKnownConsChecker st P.ProveCMDLautomatic
+     p_cm@(_, acm)<- case mcm of
+           Nothing -> lookupKnownConsChecker st
            Just cm' ->
             case mp of
-             Nothing-> lookupKnownConsChecker st P.ProveCMDLautomatic
-             Just p' -> return (p',cm')
+             Nothing -> lookupKnownConsChecker st
+             Just p' -> return (p', cm')
 
      -- try to prepare the theory
      prep <- case prepareForConsChecking st p_cm of
              Result _ Nothing ->
                do
                 p_cm'@(prv',acm'@(Comorphism cid)) <-
-                          lookupKnownConsChecker st P.ProveCMDLautomatic
+                          lookupKnownConsChecker st
                 putStrLn ("Analyzing node " ++ ndnm)
                 putStrLn ("Using the comorphism " ++ language_name cid)
                 putStrLn ("Using consistency checker " ++ getPName prv')
                 return $ case prepareForConsChecking st p_cm' of
                           Result _ Nothing -> Nothing
-                          Result _ (Just sm)-> Just (sm,acm')
-             Result _ (Just sm) -> return $ Just (sm,acm)
+                          Result _ (Just sm)-> Just (sm, acm')
+             Result _ (Just sm) -> return $ Just (sm, acm)
      case prep of
      -- theory could not be computed
       Nothing -> return "No suitable prover and comorphism found"
-      Just (G_theory_with_cons_checker lid1 th p, cmp)->
-        case P.proveCMDLautomaticBatch p of
-         Nothing -> return "Error obtaining the prover"
-         Just fn ->
+      Just (G_theory_with_cons_checker _ th p, _)->
+        case P.ccAutomatic p of
+         fn ->
           do
-          -- mVar to poll the prover for results
-          answ <- newMVar (return [])
-          let st' = st { proverRunning= True}
+          let st' = st { proverRunning = True}
           -- store initial input of the prover
           swapMVar mSt $ Just $ Element st' nd
-          {- putStrLn ((theoryName st)++"\n"++
-                    (showDoc sign "") ++
-                    show (vsep (map (print_named lid1)
-                                        $ P.toNamedList sens))) -}
-          case selectedGoals st' of
-           [] -> return "No goals selected. Nothing to prove"
-           _ ->
-            do
-             tmp <-fn useTh
-                      save2File
-                      answ
-                      (theoryName st)
+          fn (theoryName st)
                       (P.TacticScript $ show sTxt)
                       th []
-             swapMVar mThr $ Just $ fst tmp
-             getResults lid1 cmp (snd tmp) answ mSt
-             swapMVar mThr Nothing
-             lbEnv  <- readMVar mlbE
-             state <- readMVar mSt
-             case state of
-              Nothing -> return []
-              Just state' ->
-               do
-                lbEnv' <- addResults lbEnv libname state'
-                swapMVar mSt  Nothing
-                swapMVar mlbE lbEnv'
-                return []
-
+          swapMVar mSt $ Just $ Element st nd
+          return ""
 
 -- | Given a proofstatus the function does the actual call of the
 -- prover for proving the node or check consistency
@@ -376,7 +338,7 @@ proveNode useTh save2File sTxt ndpf ndnm mp mcm mThr mSt mlbE libname
            [] -> return "No goals selected. Nothing to prove"
            _ ->
             do
-             tmp <-fn useTh
+             tmp <- fn useTh
                       save2File
                       answ
                       (theoryName st)
@@ -418,22 +380,13 @@ getResults lid acm mStop mData mState =
                                             (markProved acm lid d' st) node)
 
 -- | inserts the results of the proof in the development graph
-addResults ::    LibEnv
-              -> LibName
-              -> Int_NodeInfo
-              -> IO LibEnv
+addResults :: LibEnv -> LibName -> Int_NodeInfo -> IO LibEnv
 addResults lbEnv libname ndps =
   case ndps of
-   Element ps' node ->
-    do
-    -- inspired from Proofs/InferBasic.hs
-    -- and GUI/ProofManagement.hs
-    let ps'' = ps' {
-                    proverRunning = False }
-    case theory ps'' of
+   Element ps'' node -> case theory ps'' of
      G_theory lidT sigT indT sensT _ ->
       do
-       gMap <-coerceThSens (logicId ps'') lidT
+       gMap <- coerceThSens (logicId ps'') lidT
                   "ProveCommands last coerce"
                   (goalMap ps'')
        let nwTh = G_theory lidT sigT indT (Map.union sensT gMap) startThId
@@ -530,5 +483,5 @@ doLoop mlbE mThr mSt mOut pS ls prvr =
                                     mSt
                                     mlbE
                                     (i_ln pS))
-           when (not $ null err) (putStrLn err)
+           unless (null err) (putStrLn err)
            doLoop mlbE mThr mSt mOut pS l prvr

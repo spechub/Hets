@@ -41,6 +41,7 @@ import Text.ParserCombinators.Parsec
 import Data.Char
 import Data.List (isSuffixOf)
 import Control.Monad
+import Data.Time (midnight)
 
 import System.Directory
 import System.Exit
@@ -56,7 +57,7 @@ isabelleProver :: Prover Sign Sentence (DefaultMorphism Sign) () ()
 isabelleProver = mkProverTemplate isabelleS () isaProve
 
 isabelleConsChecker :: ConsChecker Sign Sentence () (DefaultMorphism Sign) ()
-isabelleConsChecker = mkProverTemplate "Isabelle-refute" () consCheck
+isabelleConsChecker = ConsChecker "Isabelle-refute" () consCheck
 
 -- | the name of the inconsistent lemma for consistency checks
 inconsistentS :: String
@@ -69,17 +70,22 @@ metaToTerm mt = case mt of
     [] -> t
     _ -> binImpl (foldr1 binConj ts) t
 
-consCheck :: String -> TheoryMorphism Sign Sentence (DefaultMorphism Sign) ()
-          -> a -> IO([ProofStatus ()])
-consCheck thName tm freedefs = case tTarget tm of
-    Theory sig nSens -> let (axs, _) = getAxioms $ toNamedList nSens in
-       isaProve (thName ++ "_c")
+consCheck :: String -> b
+  -> TheoryMorphism Sign Sentence (DefaultMorphism Sign) () -> a
+  -> IO (CCStatus ())
+consCheck thName _tac tm freedefs = case tTarget tm of
+    Theory sig nSens -> do
+      let (axs, _) = getAxioms $ toNamedList nSens
+      l <- isaProve (thName ++ "_c")
            (Theory sig
                $ markAsGoal $ toThSens $ if null axs then [] else
                    [ makeNamed inconsistentS $ mkRefuteSen $ termAppl notOp
                      $ foldr1 binConj
                      $ map (metaToTerm . metaTerm . sentence) axs ])
            freedefs
+      return $ CCStatus () midnight $ case l of
+        [_] -> Just False -- inconsistency was proven
+        _ -> Nothing -- consistency cannot be recorded automatically
 
 prepareTheory :: Theory Sign Sentence ()
     -> (Sign, [Named Sentence], [Named Sentence], Map.Map String String)
@@ -116,7 +122,7 @@ getProofDeps m thName thm = do
 
 getAllProofDeps :: Map.Map String String -> String -> [String]
                 -> IO([ProofStatus ()])
-getAllProofDeps m thName = mapM $ getProofDeps m thName
+getAllProofDeps m = mapM . getProofDeps m
 
 checkFinalThyFile :: (TheoryHead, Body) -> String -> IO Bool
 checkFinalThyFile (ho, bo) thyFile = do
@@ -129,7 +135,7 @@ checkFinalThyFile (ho, bo) thyFile = do
                   putStrLn "illegal change of theory header"
                   return False
               else return $ null ds
-    Left err -> putStrLn (show err) >> return False
+    Left err -> print err >> return False
 
 mkProved :: String -> [String] -> ProofStatus ()
 mkProved thm used = (openIsaProofStatus thm)
@@ -143,8 +149,8 @@ prepareThyFiles ast thyFile thy = do
     let origFile = thyFile ++ ".orig"
     exOrig <- doesFileExist origFile
     exThyFile <- doesFileExist thyFile
-    if exOrig then return () else writeFile origFile thy
-    if exThyFile then return () else writeFile thyFile thy
+    unless exOrig $ writeFile origFile thy
+    unless exThyFile $ writeFile thyFile thy
     thy_time <- getModificationTime thyFile
     orig_time <- getModificationTime origFile
     s <- readFile origFile
@@ -173,7 +179,7 @@ patchThyFile (ho, bo) origFile thyFile thy = do
             unless h $ putStrLn "theory header is corrupt"
             unless (h && null ds) $ revertThyFile thyFile thy
     Left err -> do
-      putStrLn $ show err
+      print err
       revertThyFile thyFile thy
 
 revertThyFile :: String -> String -> IO ()
@@ -212,7 +218,7 @@ isaProve thName th _freedefs = do
       if ok then getAllProofDeps m thBaseName thms
           else return []
     Left err -> do
-      putStrLn $ show err
+      print err
       putStrLn $ "Sorry, generated theory cannot be parsed, see: " ++ thyFile
       writeFile thyFile thy
       putStrLn "aborting Isabelle proof attempt"

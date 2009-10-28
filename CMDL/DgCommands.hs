@@ -204,10 +204,9 @@ selectANode x dgState = let
                 (shows (getLibId $ i_ln dgState) "_" ++ nodeName x)
                 th
                 (shrinkKnownProvers sl kpMap)
-                (getProvers ProveCMDLautomatic sl $
+                (getProvers ProveCMDLautomatic (Just sl) $
                  filter hasModelExpansion $
-                 findComorphismPaths logicGraph $
-                 sublogicOfTh th
+                 findComorphismPaths logicGraph sl
                 )
          -- all goals and axioms are selected initialy in the proof status
          return (initNodeInfo tmp x)

@@ -22,7 +22,7 @@ import qualified Common.OrderedMap as OMap
 import qualified Data.Map as Map
 import Data.List
 import Data.Maybe (isJust)
-import Data.Time (TimeOfDay,midnight)
+import Data.Time (TimeOfDay, midnight)
 import Data.Typeable
 
 import Control.Monad
@@ -165,12 +165,6 @@ mapTheoryStatus :: (a -> b) -> Theory sign sentence a
 mapTheoryStatus f (Theory sig thSens) =
   Theory sig (mapThSensStatus (mapProofStatus f) thSens)
 
--- | theory morphisms between two theories
-data TheoryMorphism sign sen mor proof_tree = TheoryMorphism
-    { tSource :: Theory sign sen proof_tree
-    , tTarget :: Theory sign sen proof_tree
-    , tMorphism :: mor }
-
 -- e.g. the file name, or the script itself, or a configuration string
 data TacticScript = TacticScript String deriving (Eq, Ord, Show)
 
@@ -207,7 +201,7 @@ isOpenGoal gs = case gs of
 openGoalStatus :: GoalStatus
 openGoalStatus = Open $ Reason []
 
--- | data type representing the proof status for a goal or
+-- | data type representing the proof status for a goal
 data ProofStatus proof_tree = ProofStatus
     { goalName :: String
     , goalStatus :: GoalStatus
@@ -216,14 +210,13 @@ data ProofStatus proof_tree = ProofStatus
     , proofTree :: proof_tree
     , usedTime :: TimeOfDay
     , tacticScript :: TacticScript }
-    | Consistent TacticScript
     deriving (Show, Eq, Ord)
 
 {- | constructs an open proof status with basic information filled in;
      make sure to set proofTree to a useful value before you access it. -}
 openProofStatus :: Ord pt => String -- ^ name of the goal
-                 -> String -- ^ name of the prover
-                 -> pt -> ProofStatus pt
+                -> String -- ^ name of the prover
+                -> pt -> ProofStatus pt
 openProofStatus goalname provername proof_tree = ProofStatus
    { goalName = goalname
    , goalStatus = openGoalStatus
@@ -237,9 +230,7 @@ mapProofStatus :: (a -> b) -> ProofStatus a -> ProofStatus b
 mapProofStatus f st = st {proofTree = f $ proofTree st}
 
 isProvedStat :: ProofStatus proof_tree -> Bool
-isProvedStat pst = case pst of
-    Consistent _ -> False
-    _ -> isProvedGStat . goalStatus $ pst
+isProvedStat = isProvedGStat . goalStatus
 
 isProvedGStat :: GoalStatus -> Bool
 isProvedGStat gs = case gs of
@@ -289,7 +280,7 @@ data ProverTemplate theory sentence morphism sublogics proof_tree = Prover
                  -> TacticScript  -- 5.
                  -> theory  -- 6.
                  -> [FreeDefMorphism sentence morphism]
-                 -> IO (Concurrent.ThreadId,Concurrent.MVar ())) -- output
+                 -> IO (Concurrent.ThreadId, Concurrent.MVar ())) -- output
       -- input: 1. True means include proven theorems in subsequent
       --           proof attempts;
       --        2. True means save problem file for each goal;
@@ -320,6 +311,29 @@ mkProverTemplate str sl fct = Prover
     , proveCMDLautomatic = Nothing
     , proveCMDLautomaticBatch = Nothing }
 
-type ConsChecker sign sentence sublogics morphism proof_tree =
-    ProverTemplate (TheoryMorphism sign sentence morphism proof_tree)
-        sentence morphism sublogics proof_tree
+-- | theory morphisms between two theories
+data TheoryMorphism sign sen mor proof_tree = TheoryMorphism
+    { tSource :: Theory sign sen proof_tree
+    , tTarget :: Theory sign sen proof_tree
+    , tMorphism :: mor }
+
+data CCStatus proof_tree = CCStatus
+  { ccProofTree :: proof_tree
+  , ccUsedTime :: TimeOfDay
+  , ccResult :: Maybe Bool }
+
+data ConsChecker sign sentence sublogics morphism proof_tree = ConsChecker
+  { ccName :: String
+  , ccSublogic :: sublogics
+  , ccAutomatic :: String -- 1.
+                 -> TacticScript  -- 2.
+                 -> TheoryMorphism sign sentence morphism proof_tree  -- 3.
+                 -> [FreeDefMorphism sentence morphism]  -- 4.
+                 -> IO (CCStatus proof_tree) -- output
+      -- input: 1. theory name
+      --        2. default TacticScript
+      --        3. theory morphism
+      --        5. ingoing free definition morphisms
+      -- output: consistency result status
+  } deriving Typeable
+

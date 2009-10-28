@@ -31,7 +31,7 @@ import Propositional.Sign
 import qualified Propositional.Morphism as PMorphism
 import qualified Propositional.ProverState as PState
 import qualified Propositional.Sign as Sig
-import Propositional.Sublogic(PropSL,top)
+import Propositional.Sublogic (PropSL, top)
 
 import qualified Logic.Prover as LP
 
@@ -50,7 +50,7 @@ import System.IO.Unsafe
 import Common.Consistency
 import qualified Common.Result as Result
 
-
+import Data.Time (midnight)
 
 -- * Prover implementation
 
@@ -63,12 +63,11 @@ maxSigSize :: Int
 maxSigSize = 17
 
 -- display error message when signature is too large
-sigTooLarge :: Int -> IO()
-sigTooLarge sigSize =
-   infoDialog "Signature is too large"
-              ("Signature is too large. "++
-               "It should contain < "++show maxSigSize++" symbols, "++
-               "but it contains "++show sigSize++" symbols.")
+sigTooLarge :: Int -> String
+sigTooLarge sigSize = unlines
+  [ "Signature is too large."
+  , "It should contain < " ++ show maxSigSize ++ " symbols,"
+  , "but it contains " ++ show sigSize ++ " symbols." ]
 
 ttHelpText :: String
 ttHelpText = "An implementation of the truth table method.\n"++
@@ -222,7 +221,7 @@ renderTT tt = Table rowHeaders header table
         emptyPrefix = map (const "") [1..length common]
     in case map makeExtRow (rextrows r) of
        [] -> [common]
-       (e:extrows) -> (common++e):map (emptyPrefix ++) extrows
+       e : extrows -> (common ++ e) : map (emptyPrefix ++) extrows
   table = concatMap makeRow rowsTT
 
 
@@ -241,20 +240,19 @@ ttProver = (LP.mkProverTemplate ttS top ttProveGUI)
 -}
 ttConsistencyChecker :: LP.ConsChecker Sig.Sign FORMULA PropSL
                                   PMorphism.Morphism ProofTree
-ttConsistencyChecker = LP.mkProverTemplate ttS top consCheck
+ttConsistencyChecker = LP.ConsChecker ttS top consCheck
 
-consCheck :: String -> LP.TheoryMorphism Sig.Sign FORMULA
-             PMorphism.Morphism ProofTree
-          -> [LP.FreeDefMorphism FORMULA PMorphism.Morphism]
-          -- ^ free definitions
-          -> IO([LP.ProofStatus ProofTree])
-consCheck thName tm _freedefs =
+consCheck :: String -> LP.TacticScript
+  -> LP.TheoryMorphism Sig.Sign FORMULA PMorphism.Morphism ProofTree
+  -> [LP.FreeDefMorphism FORMULA PMorphism.Morphism]
+    -- ^ free definitions
+  -> IO (LP.CCStatus ProofTree)
+consCheck _ _ tm _freedefs =
   case LP.tTarget tm of
     LP.Theory sig nSens ->
       let sigSize = Set.size (items sig) in
-      if sigSize >= maxSigSize then do
-        sigTooLarge sigSize
-        return []
+      if sigSize >= maxSigSize then
+        return $ LP.CCStatus (ProofTree $ sigTooLarge sigSize) midnight Nothing
       else do
         let axs = filter (AS_Anno.isAxiom . snd) $ OMap.toList nSens
             models = allModels sig
@@ -280,14 +278,10 @@ consCheck thName tm _freedefs =
             table = TruthTable { thead = heading,
                                  trows = rows
                                }
-            title = if isOK then "Theory is consistent"
-                            else "Theory is inconsistent"
-            legend = "Legend:\nM+ = model of the axioms\n"++
-                     " - = not a model of the axioms\n"
-            body = legend++"\n"++render id (renderTT table)
-        createTextSaveDisplay title (thName++".tt") body
-        return []
-
+            legend = "Legend:\nM+ = model of the axioms\n"
+              ++ " - = not a model of the axioms\n"
+            body = legend ++ "\n" ++ render id (renderTT table)
+        return $ LP.CCStatus (ProofTree body) midnight $ Just isOK
 
 -- ** prover GUI
 
@@ -358,7 +352,7 @@ runTt pState cfg _ _thName nGoal =
   let sig = PState.initialSignature pState
       sigSize = Set.size $ items sig
    in if sigSize >= maxSigSize then do
-        sigTooLarge sigSize
+        infoDialog "Signature too large" $ sigTooLarge sigSize
         return (ATPState.ATPTLimitExceeded,
                 cfg{ATPState.proofStatus = defaultProofStatus nGoal})
       else do
@@ -448,7 +442,7 @@ ttConservativityChecker (_, srcSens) mor tarSens=
       sigSize       = Set.size tarSig
   in
     if sigSize >= maxSigSize then do
-       return (seq (unsafePerformIO $ sigTooLarge sigSize) Nothing)
+       return Nothing
     else do
       let imageAxs = map (AS_Anno.mapNamed (PMorphism.mapSentenceH mor)) srcAxs
           models = allModels (Sign imageSig)

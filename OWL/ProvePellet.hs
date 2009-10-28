@@ -26,7 +26,7 @@ import OWL.Sublogic
 
 import GUI.GenericATP
 import Interfaces.GenericATPState
-import GUI.Utils (createTextSaveDisplay, infoDialog)
+import GUI.Utils (infoDialog)
 
 import Proofs.BatchProcessing
 
@@ -76,7 +76,7 @@ pelletProverState :: Sign
                  -> PelletProverState
 pelletProverState sig oSens _ = PelletProverState
          { ontologySign = sig
-          ,initialState = filter isAxiom oSens }
+         , initialState = filter isAxiom oSens }
 
 {- |
   The Prover implementation. First runs the batch prover (with graphical feedback), then starts the GUI prover.
@@ -86,12 +86,8 @@ pelletProver = (mkProverTemplate "Pellet" sl_top pelletGUI)
     { proveCMDLautomatic = Just pelletCMDLautomatic
     , proveCMDLautomaticBatch = Just pelletCMDLautomaticBatch }
 
-pelletConsChecker :: ConsChecker Sign Axiom OWLSub
-                     OWLMorphism ProofTree
-pelletConsChecker = (mkProverTemplate "Pellet Consistency Checker" sl_top
-  (\ s -> consCheck True s $ TacticScript "800"))
-  { proveCMDLautomatic = Just
-      $ \ s ts t -> fmap return . consCheck False s ts t }
+pelletConsChecker :: ConsChecker Sign Axiom OWLSub OWLMorphism ProofTree
+pelletConsChecker = ConsChecker "Pellet" sl_top consCheck
 
 {- |
   Record for prover specific functions. This is used by both GUI and command
@@ -119,8 +115,7 @@ insertOWLAxiom :: PelletProverState -- ^ prover state containing
                                       --   initial logical part
                   -> Named Axiom -- ^ goal to add
                   -> PelletProverState
-insertOWLAxiom pps s =
-    pps{initialState = (initialState pps) ++ [s]}
+insertOWLAxiom pps s = pps { initialState = initialState pps ++ [s] }
 
 -- ** GUI
 
@@ -182,53 +177,15 @@ pelletCMDLautomaticBatch inclProvedThs saveProblem_batch resultMVar
   Runs the Pellet service.
 -}
 
-spamOutput :: ProofStatus ProofTree -> IO ()
-spamOutput ps =
-    let
-        dName = goalName ps
-        dStat = goalStatus ps
-        dTree = proofTree ps
-    in
-      case dStat of
-        Open (Reason l) ->
-            createTextSaveDisplay "Pellet prover" ("./"++ dName ++".pellet.log")
-              $ unlines
-                (show dTree :l)
-        Disproved -> createTextSaveDisplay "Pellet prover" (dName ++".pellet.owl")
-                (
-                 show dTree
-                )
-        Proved (Just True) ->     -- consistent
-             do --createInfoWindow "Pellet consistency check"
-                --                     "This ontology is consistent."
-                createTextSaveDisplay "Pellet prover" ("./"++ dName ++".pellet.log")
-                 (
-                 -- "I found a model for the theory " ++
-                 -- dName ++". :) \n" ++
-                 show dTree
-                 )
-
-        Proved (Just False) ->   -- not consistent
-             do --createInfoWindow "Pellet consistency check"
-                --                     "This ontology is not consistent."
-                createTextSaveDisplay "Pellet prover" ("./"++ dName ++".pellet.log")
-                 (
-                 -- "I found a model for the theory " ++
-                 -- dName ++". :) \n" ++
-                 show dTree
-                 )
-
-        Proved Nothing -> return ()  -- todo: another errors
-
 getEnvSec :: String -> IO String
 getEnvSec s = getEnvDef s ""
 
-consCheck :: Bool -> String
+consCheck :: String
           -> TacticScript
           -> TheoryMorphism Sign Axiom OWLMorphism ProofTree
           -> [FreeDefMorphism Axiom OWLMorphism] -- ^ freeness constraints
-          -> IO([ProofStatus ProofTree])
-consCheck doSpamOutput thName tac@(TacticScript tl) tm freedefs =
+          -> IO (CCStatus ProofTree)
+consCheck thName (TacticScript tl) tm freedefs =
     case tTarget tm of
       Theory sig nSens ->
         let
@@ -236,52 +193,41 @@ consCheck doSpamOutput thName tac@(TacticScript tl) tm freedefs =
           timeLimitI = fromMaybe 800 $ readMaybe tl
           proverStateI = pelletProverState sig
                                        (toNamedList nSens) freedefs
-          -- problem     = showOWLProblemA thName proverStateI []
           problemS     = showOWLProblemS thName proverStateI []
           simpleOptions = "consistency "
           extraOptions  = ""
           saveFileName  = reverse $ fst $ span (/='/') $ reverse thName
           tmpFileName   = saveFileName
-          pStatus out tUsed = ProofStatus
-            { goalName = thName
-            , goalStatus = Disproved
-            , usedAxioms = getAxioms
-            , usedProver = proverName pelletProver
-            , proofTree = ProofTree $ unlines out ++ "\n\n" ++ problemS
-            , usedTime = timeToTimeOfDay
-                $ secondsToDiffTime $ toInteger tUsed
-            , tacticScript  = tac }
+          pStatus out tUsed = CCStatus
+            { ccResult = Nothing
+            , ccProofTree = ProofTree $ unlines out ++ "\n\n" ++ problemS
+            , ccUsedTime = timeToTimeOfDay
+                $ secondsToDiffTime $ toInteger tUsed }
           proofStatM :: ExitCode -> String ->  [String]
-                      -> Int -> ProofStatus ProofTree
+                     -> Int -> CCStatus ProofTree
           proofStatM exitCode _ out tUsed =
               case exitCode of
                 ExitSuccess ->   -- consistent
                     (pStatus out tUsed)
-                    { goalStatus = Proved (Just True) }
+                    { ccResult = Just True }
                 ExitFailure 1 ->   -- not consistent
                     (pStatus out tUsed)
-                    { goalStatus = Proved (Just False) }
+                    { ccResult = Just False }
                 ExitFailure 2 ->   -- error by runing pellet
                     (pStatus out tUsed)
-                    { proofTree = ProofTree "Cannot run pellet." }
+                    { ccProofTree = ProofTree "Cannot run pellet." }
                 ExitFailure 3 ->  -- timeout
                     (pStatus out tUsed)
-                    { goalStatus = openGoalStatus
-                    , proofTree = ProofTree $ unlines out ++ "\n\n" ++ "timeout"
-                        ++ unlines out
-                    , usedTime = timeToTimeOfDay $ secondsToDiffTime 0 }
+                    { ccProofTree = ProofTree $ unlines out ++ "\n\n"
+                                    ++ "timeout" }
                 ExitFailure 4 ->   -- error by runing pellet
                     (pStatus out tUsed)
-                    { proofTree = ProofTree $ "Pellet returned an error.\n"
+                    { ccProofTree = ProofTree $ "Pellet returned an error.\n"
                         ++ unlines out }
                 ExitFailure _ ->    -- another errors
                     pStatus out tUsed
-          getAxioms =
-               map senAttr $ initialState proverStateI
 
-          timeWatch :: Int
-                    -> IO (ProofStatus ProofTree)
-                    -> IO (ProofStatus ProofTree)
+          timeWatch :: Int -> IO (CCStatus ProofTree) -> IO (CCStatus ProofTree)
           timeWatch time process =
               do
                 mvar <- newEmptyMVar
@@ -296,15 +242,7 @@ consCheck doSpamOutput thName tac@(TacticScript tl) tm freedefs =
                            return z
                   Nothing -> do
                            killThread tid1 `catch` print
-                           return (ProofStatus{
-                               goalName = thName
-                             , goalStatus = openGoalStatus
-                             , usedAxioms = getAxioms
-                             , usedProver = proverName pelletProver
-                             , proofTree  = ProofTree ("\n\n" ++ "timeout")
-                             , usedTime = timeToTimeOfDay $ secondsToDiffTime 0
-                             , tacticScript = tac
-                             })
+                           return $ pStatus ["timeout"] time
         in
           do
               (progTh, progEx) <- check4Pellet
@@ -335,18 +273,13 @@ consCheck doSpamOutput thName tac@(TacticScript tl) tm freedefs =
                                               output tUsed
                        return outState
                      )
-                   when doSpamOutput $ spamOutput outState
                    removeFile timeTmpFile
-                   return [outState]
+                   return outState
                 (b, _) -> do
                    let mess = "Pellet not " ++
                          if b then "executable" else "found"
                    infoDialog "Pellet prover" mess
-                   return [(openProofStatus thName (proverName pelletProver)
-                           $ ProofTree mess)
-                           { usedAxioms = getAxioms
-                           , tacticScript = tac
-                           }]
+                   return $ pStatus [mess] (0 :: Int)
 
 check4Pellet :: IO (Bool, Bool)
 check4Pellet =

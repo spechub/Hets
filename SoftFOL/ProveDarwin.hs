@@ -58,11 +58,8 @@ darwinProver = (mkProverTemplate "Darwin" () darwinGUI)
     { proveCMDLautomatic = Just darwinCMDLautomatic
     , proveCMDLautomaticBatch = Just darwinCMDLautomaticBatch }
 
-darwinConsChecker
-    :: ConsChecker Sign Sentence () SoftFOLMorphism ProofTree
-darwinConsChecker = (mkProverTemplate "darwin" ()
-    (\ s -> consCheck s $ TacticScript "20"))
-    { proveCMDLautomatic = Just (\ s ts t -> fmap return . consCheck s ts t) }
+darwinConsChecker :: ConsChecker Sign Sentence () SoftFOLMorphism ProofTree
+darwinConsChecker = ConsChecker "darwin" () consCheck
 
 {- |
   Record for prover specific functions. This is used by both GUI and command
@@ -153,31 +150,26 @@ consCheck :: String
           -> TacticScript
           -> TheoryMorphism Sign Sentence SoftFOLMorphism ProofTree
           -> [FreeDefMorphism SPTerm SoftFOLMorphism] -- ^ freeness constraints
-          -> IO([ProofStatus ProofTree])
-consCheck thName tac@(TacticScript tl) tm freedefs = case tTarget tm of
+          -> IO(CCStatus ProofTree)
+consCheck thName (TacticScript tl) tm freedefs = case tTarget tm of
     Theory sig nSens -> let
         saveTPTP = False
         proverStateI = spassProverState sig (toNamedList nSens) freedefs
         problem     = showTPTPProblemM thName proverStateI []
-        simpleOptions = ""
         extraOptions  = "-pc true -pmtptp true -fd true -to "
                         ++ tl
         saveFileName  = reverse $ fst $ span (/= '/') $ reverse thName
-        runDarwinRealM :: IO([ProofStatus ProofTree])
+        runDarwinRealM :: IO(CCStatus ProofTree)
         runDarwinRealM = do
             probl <- problem
             hasProgramm <- system ("which darwin > /dev/null 2> /dev/null")
             case hasProgramm of
               ExitFailure _ -> do
                   infoDialog "Darwin prover" "Darwin not found"
-                  return [ProofStatus
-                    { goalName = thName
-                    , goalStatus = openGoalStatus
-                    , usedAxioms = getAxioms
-                    , usedProver = proverName darwinProver
-                    , proofTree  = ProofTree "Darwin not found"
-                    , usedTime = timeToTimeOfDay $ secondsToDiffTime 0
-                    , tacticScript  = tac }]
+                  return CCStatus
+                    { ccResult = Nothing
+                    , ccProofTree  = ProofTree "Darwin not found"
+                    , ccUsedTime = timeToTimeOfDay $ secondsToDiffTime 0 }
               ExitSuccess -> do
                   when saveTPTP $ writeFile (saveFileName ++ ".tptp") probl
                   t <- getCurrentTime
@@ -187,30 +179,20 @@ consCheck thName tac@(TacticScript tl) tm freedefs = case tTarget tm of
                   let command = "darwin " ++ extraOptions ++ " " ++ timeTmpFile
                   (_, outh, errh, proch) <- runInteractiveCommand command
                   (exCode, output, tUsed) <- parseDarwinOut outh errh proch
-                  let outState = proofStatM exCode simpleOptions output tUsed
-                  return [outState]
-        proofStatM :: ExitCode -> String ->  [String] -> Int
-                    -> ProofStatus ProofTree
-        proofStatM exitCode _ out tUsed = let
-             outState = ProofStatus
-               { goalName = thName
-               , goalStatus = Proved (Just True)
-               , usedAxioms = getAxioms
-               , usedProver = proverName darwinProver
-               , proofTree = ProofTree (unlines out)
-               , usedTime = timeToTimeOfDay $ secondsToDiffTime
-                            $ toInteger tUsed
-               , tacticScript  = tac }
+                  let outState = proofStatM exCode output tUsed
+                  return outState
+        proofStatM :: ExitCode -> [String] -> Int -> CCStatus ProofTree
+        proofStatM exitCode out tUsed = let
+             outState = CCStatus
+               { ccResult = Just True
+               , ccProofTree = ProofTree $ unlines $ show exitCode : out
+               , ccUsedTime = timeToTimeOfDay $ secondsToDiffTime
+                            $ toInteger tUsed }
              in case exitCode of
                   ExitSuccess -> outState
                   ExitFailure i -> outState
-                    { goalStatus = if elem i [2, 105, 112]
-                        then Open $ Reason [show exitCode]
-                        else Disproved }
-        getAxioms = let
-              fl = formulaLists $ initialLogicalPart proverStateI
-              fs = concatMap formulae $ filter isAxiomFormula fl
-              in map AS_Anno.senAttr fs
+                    { ccResult = if elem i [2, 105, 112]
+                        then Nothing else Just False }
         in runDarwinRealM
 
 runDarwin :: SoftFOLProverState

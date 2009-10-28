@@ -222,7 +222,7 @@ showLogicGraph
                                else unlines $ map proverName (provers lid)
 
              showConsChecker lid = if null (cons_checkers lid) then "None"
-                        else unlines $ map proverName (cons_checkers lid)
+                        else unlines $ map ccName (cons_checkers lid)
              showParse lid =
                    let s1 =  case parse_basic_spec lid of
                                Just _  -> "Parser for basic specifications.\n"
@@ -414,7 +414,7 @@ showHetSublogicGraph
                  ls -> unlines $ map proverName ls
              showConsChecker li = case cons_checkers li of
                  [] -> "None"
-                 ls -> unlines $ map proverName ls
+                 ls -> unlines $ map ccName ls
              showParse li =
                    let s1 =  case parse_basic_spec li of
                                Just _  -> "Parser for basic specifications.\n"

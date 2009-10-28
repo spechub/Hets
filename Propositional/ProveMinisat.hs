@@ -32,7 +32,6 @@ import qualified Logic.Prover as LP
 
 import Interfaces.GenericATPState
 import GUI.GenericATP
-import GUI.Utils (infoDialog)
 
 import Common.ProofTree
 import qualified Common.AS_Annotation as AS_Anno
@@ -42,7 +41,7 @@ import qualified Common.Result as Result
 
 import Control.Monad (when)
 import qualified Control.Concurrent as Concurrent
-import Data.Time (timeToTimeOfDay)
+import Data.Time (timeToTimeOfDay, midnight)
 import System.Directory
 import System.Exit
 import System.IO
@@ -78,15 +77,15 @@ minisatProver = (LP.mkProverTemplate minisatS top minisatProveGUI)
    The Consistency Cheker.
 -}
 minisatConsChecker :: LP.ConsChecker Sig.Sign AS_BASIC.FORMULA PropSL
-                                  PMorphism.Morphism ProofTree
-minisatConsChecker = LP.mkProverTemplate minisatS top consCheck
+  PMorphism.Morphism ProofTree
+minisatConsChecker = LP.ConsChecker minisatS top consCheck
 
-consCheck :: String -> LP.TheoryMorphism Sig.Sign AS_BASIC.FORMULA
-             PMorphism.Morphism ProofTree
-          -> [LP.FreeDefMorphism AS_BASIC.FORMULA PMorphism.Morphism]
-          -- ^ free definitions
-          -> IO([LP.ProofStatus ProofTree])
-consCheck thName tm _ =
+consCheck :: String -> LP.TacticScript
+  -> LP.TheoryMorphism Sig.Sign AS_BASIC.FORMULA PMorphism.Morphism ProofTree
+  -> [LP.FreeDefMorphism AS_BASIC.FORMULA PMorphism.Morphism]
+  -- ^ free definitions
+  -> IO (LP.CCStatus ProofTree)
+consCheck thName _ tm _ =
     case LP.tTarget tm of
       LP.Theory sig nSens -> do
             let axioms = getAxioms $ snd $ unzip $ OMap.toList nSens
@@ -117,12 +116,14 @@ consCheck thName tm _ =
               $ "minisat \"" ++ tmpFile ++ "\""
             exitCode <- waitForProcess pid
             removeFile tmpFile
-            infoDialog "consistency checker" $ case exitCode of
-              ExitFailure 20 -> "consistent."
-              ExitFailure 10 -> "inconsistent."
-              _ -> "error by calling minisat " ++ thName
-            return []
-
+            let (res, out) = case exitCode of
+                  ExitFailure 20 -> (Just True, "consistent.")
+                  ExitFailure 10 -> (Just False, "inconsistent.")
+                  _ -> (Nothing, "error by calling minisat " ++ thName)
+            return LP.CCStatus
+              { LP.ccResult = res
+              , LP.ccUsedTime = midnight
+              , LP.ccProofTree = ProofTree out }
     where
         getAxioms :: [LP.SenStatus AS_BASIC.FORMULA (LP.ProofStatus ProofTree)]
                   -> [AS_Anno.Named AS_BASIC.FORMULA]

@@ -142,10 +142,8 @@ consCheck :: Logic lid sublogics
            -> String -> TacticScript
            -> TheoryMorphism sign sentence morphism proof_tree
            -> [FreeDefMorphism sentence morphism]
-           -> IO (Result [ProofStatus proof_tree])
-consCheck _ =
-  fromMaybe (\ _ _ -> fail "proveCMDLautomatic not implemented")
-            . proveCMDLautomatic
+           -> IO (CCStatus proof_tree)
+consCheck _ = ccAutomatic
 
 proveTheory :: Logic lid sublogics
               basic_spec sentence symb_items symb_map_items
@@ -194,18 +192,16 @@ basicInferenceNode checkCons lg ln dGraph (node, lbl) libEnv intSt =
             cc' <- coerceConsChecker lid4 lidT "" cc
             pts <- lift $ consCheck lidT cc' thName (TacticScript "20") mor
                 $ getCFreeDefMorphs lidT libEnv ln dGraph node
-            liftR $ case pts of
-                  Result _ (Just [pt]) -> case goalStatus pt of
-                    Proved (Just True) -> let
-                      Result ds ms = extractModel cid sig1 $ proofTree pt
-                      in case ms of
-                      Nothing -> fail $ "consistent but could not reconstruct model\n"
-                        ++ show (proofTree pt)
-                      Just (sig3, sens3) -> Result ds $ Just $
+            liftR $ case ccResult pts of
+              Just True -> let
+                Result ds ms = extractModel cid sig1 $ ccProofTree pts
+                in case ms of
+                Nothing -> fail $ "consistent but could not reconstruct model\n"
+                Just (sig3, sens3) -> Result ds $ Just $
                          G_theory lidS (mkExtSign sig3) startSigId
                               (toThSens sens3) startThId
-                    st -> fail $ "prover status is: " ++ show st
-                  Result ds _ -> Result ds Nothing
+              Just False -> fail "theory is inconsistent."
+              Nothing -> fail "could not determine consistency."
           else do
             let freedefs = getCFreeDefMorphs lid1 libEnv ln dGraph node
             kpMap <- liftR knownProversGUI
@@ -217,7 +213,7 @@ basicInferenceNode checkCons lg ln dGraph (node, lbl) libEnv intSt =
                      , recalculateSublogicF  =
                                      recalculateSublogicAndSelectedTheory
                      } thName (hidingLabelWarning lbl) thForProof
-                       kpMap (getProvers ProveGUI sublogic cms)
+                       kpMap (getProvers ProveGUI (Just sublogic) cms)
 
 data ConsistencyStatus = CSUnchecked
                        | CSConsistent String
@@ -228,45 +224,42 @@ data ConsistencyStatus = CSUnchecked
 consistencyCheck :: G_cons_checker -> AnyComorphism -> LibName -> LibEnv
                  -> DGraph -> LNode DGNodeLab -> Int
                  -> IO ConsistencyStatus
-consistencyCheck (G_cons_checker lid4 cc) (Comorphism cid) ln le dg (n',lbl)
+consistencyCheck (G_cons_checker lid4 cc) (Comorphism cid) ln le dg (n', lbl)
                  timeout = do
   let lidS = sourceLogic cid
+      lidT = targetLogic cid
+      thName = shows (getLibId ln) "_" ++ getDGNodeName lbl
       t' = timeToTimeOfDay $ secondsToDiffTime $ toInteger timeout
       ts = TacticScript $ show timeout
-  res <- runResultT $ do
-    (G_theory lid1 (ExtSign sign _) _ axs _) <-
-      liftR $ getGlobalTheory lbl
-    let thName = shows (getLibId ln) "_" ++ getDGNodeName lbl
-        sens = toNamedList axs
-        lidT = targetLogic cid
-    bTh'@(sig1, _) <- coerceBasicTheory lid1 lidS "" (sign, sens)
-    (sig2, sens2) <- liftR $ wrapMapTheory cid bTh'
-    incl <- liftR $ subsig_inclusion lidT (empty_signature lidT) sig2
-    let mor = TheoryMorphism { tSource = emptyTheory lidT
-                             , tTarget = Theory sig2 $ toThSens sens2
-                             , tMorphism = incl }
-    cc' <- coerceConsChecker lid4 lidT "" cc
-    Result ds pts <- lift $ consCheck lidT cc' thName ts mor
-                $ getCFreeDefMorphs lidT le ln dg n'
-    case pts of
-      Just pts' -> return (pts', sig1)
-      _ -> liftR $ Result ds Nothing
-  case res of
+  case do
+        (G_theory lid1 (ExtSign sign _) _ axs _) <- getGlobalTheory lbl
+        let sens = toNamedList axs
+        bTh'@(sig1, _) <- coerceBasicTheory lid1 lidS "" (sign, sens)
+        (sig2, sens2) <- wrapMapTheory cid bTh'
+        incl <- subsig_inclusion lidT (empty_signature lidT) sig2
+        return (sig1, TheoryMorphism
+          { tSource = emptyTheory lidT
+          , tTarget = Theory sig2 $ toThSens sens2
+          , tMorphism = incl }) of
     Result ds Nothing -> return $ CSError $ unlines $ map diagString ds
-    Result _ (Just ([pt], sig1)) -> if usedTime pt >= t' then
-        return $ CSTimeout $ "No results within: " ++ show (usedTime pt)
-      else case goalStatus pt of
-        Proved (Just True) -> let
-          Result ds ms = extractModel cid sig1 $ proofTree pt
+    Result _ (Just (sig1, mor)) -> do
+      cc' <- coerceConsChecker lid4 lidT "" cc
+      pt <- consCheck lidT cc' thName ts mor
+                $ getCFreeDefMorphs lidT le ln dg n'
+      return $ case ccResult pt of
+        Just b -> if b then let
+          Result ds ms = extractModel cid sig1 $ ccProofTree pt
           in case ms of
-          Nothing ->  return $ CSConsistent $ unlines $
-            "consistent, but could not (re-)construct a model"
-            : map diagString ds
-          Just (sig3, sens3) ->  return $ CSConsistent $ showDoc
+          Nothing -> CSConsistent $ unlines $
+            "consistent, but could not reconstruct a model"
+            : map diagString ds ++ lines (show $ ccProofTree pt)
+          Just (sig3, sens3) -> CSConsistent $ showDoc
             (G_theory lidS (mkExtSign sig3) startSigId (toThSens sens3)
                        startThId) ""
-        st -> return $ CSInconsistent $ "prover status is:\n\n" ++ show st
-    _ -> return $ CSError "no unique cons checkers found!"
+          else CSInconsistent $ "prover status is:\n\n" ++ show (ccProofTree pt)
+        Nothing -> if ccUsedTime pt >= t' then
+          CSTimeout $ "No results within: " ++ show (ccUsedTime pt)
+          else CSError $ show (ccProofTree pt)
 
 proveKnownPMap :: (Logic lid sublogics1
                basic_spec1
@@ -337,7 +330,7 @@ proveFineGrainedSelect lg intSt freedefs st =
            cmsToProvers =
              if sl == lastSublogic st
                then comorphismsToProvers st
-               else getProvers ProveGUI sl $
+               else getProvers ProveGUI (Just sl) $
                       filter hasModelExpansion $ findComorphismPaths lg sl
        pr <- selectProver cmsToProvers
        ResultT $ callProver st{lastSublogic = sublogicOfTheory st,

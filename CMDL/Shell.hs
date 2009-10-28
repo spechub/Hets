@@ -35,14 +35,12 @@ import Interfaces.DataTypes
 import Interfaces.Utils(getAllEdges)
 import Interfaces.GenericATPState
 
-import Logic.Comorphism(AnyComorphism(..), Comorphism(sourceLogic, targetLogic))
+import Logic.Comorphism
 import Logic.Grothendieck(findComorphismPaths)
-import Logic.Prover(ProverKind(ProveCMDLautomatic),
-                    ProverTemplate(proverName), hasProverKind)
-import Logic.Logic(Language(language_name), Logic(cons_checkers, provers))
+import Logic.Prover
+import Logic.Logic
 
-import Proofs.AbstractState(ProofState(logicId, theory), G_prover(..),
-                            G_cons_checker(..))
+import Proofs.AbstractState
 
 import Static.DevGraph(DGNodeLab(dgn_name), isProvenSenStatus, showName)
 import Static.GTheory(G_theory(G_theory), sublogicOfTh)
@@ -333,19 +331,9 @@ cmdlCompletionFn allcmds allState input =
            bC = if isSpace $ lastChar input
                  then trimRight input
                  else unwords $ init $ words input
-           addConsCheckers acc cm =
-            case cm of
-             Comorphism cid -> acc ++
-                 foldl (\ l p -> if hasProverKind ProveCMDLautomatic p
-                                   then G_cons_checker (targetLogic cid) p : l
-                                   else l)
-                 []
-                 (cons_checkers $ targetLogic cid)
-           getPName' x = case x of
-                          (G_cons_checker _ p) -> proverName p
-           getConsCheckersAutomatic' = foldl addConsCheckers []
-           createConsCheckersList = map getPName' . getConsCheckersAutomatic'
-       case  i_state $ intState allState of
+           getCCName (G_cons_checker _ p) = ccName p
+           createConsCheckersList = map (getCCName . fst) . getConsCheckers
+       case i_state $ intState allState of
         Nothing ->
          -- not in proving mode !? you can not choose a consistency
          -- checker here
@@ -353,40 +341,23 @@ cmdlCompletionFn allcmds allState input =
         Just proofState ->
          case cComorphism proofState of
           -- some comorphism was used
-          Just c-> return $ map (app bC) $ filter (isPrefixOf tC)
+          Just c -> return $ map (app bC) $ filter (isPrefixOf tC)
                    $ createConsCheckersList [c]
           Nothing ->
            case elements proofState of
             -- no elements selected
             [] -> return []
-            c:_ ->
-              case c of
+            c : _ -> case c of
                Element z _ -> return $ map (app bC)
                                $ filter (isPrefixOf tC)
                                $ createConsCheckersList
                                $ findComorphismPaths logicGraph
                                    (sublogicOfTh $ theory z)
    ReqProvers -> do
-       let tC = unwords $ tail $ words input
-           bC =  head $ words input
-           addProvers acc cm =
-            case cm of
-            Comorphism cid -> acc ++
-                foldl (\ l p -> if hasProverKind ProveCMDLautomatic p
-                                  then G_prover (targetLogic cid) p : l
-                                  else l)
-                []
-                (provers $ targetLogic cid)
-           -- this function is identical to the one defined
-           -- in Proofs.InferBasic, but it is redone here
-           -- because InferBasic does not compile without
-           -- UNI_PACKAGE (so it should be moved)
-           getPName' (G_prover _ p) = proverName p
-      -- from the given comorphism generate a list of
-      -- provers that can be applied to theories in that
-      -- comorphism
-           getProversCMDLautomatic = foldl addProvers []
-           createProverList = map getPName' . getProversCMDLautomatic
+       let bC : tl = words input
+           tC = unwords tl
+           createProverList = map (getProverName . fst)
+             . getProvers ProveCMDLautomatic Nothing
       -- find the last comorphism used if none use the
       -- the comorphism of the first selected node
        case i_state $ intState allState of
@@ -405,9 +376,8 @@ cmdlCompletionFn allcmds allState input =
              -- no elements selected
              [] -> return []
              -- use the first element to get a comorphism
-             c:_ ->
-               case c of
-                Element z _->do
+             c : _ -> case c of
+                Element z _ -> do
                               lst <- checkPresenceProvers
                                          $ createProverList
                                          $ findComorphismPaths

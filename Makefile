@@ -249,6 +249,7 @@ ATC/GlobalAnnotations.der.hs: Common/GlobalAnnotations.hs $(GENRULES)
 
 ATC/Prover.der.hs: Logic/Prover.hs $(GENRULES)
 	$(GENRULECALL) -x Logic.Prover.ProverTemplate \
+            -x  Logic.Prover.ConsChecker \
             -i ATC.AS_Annotation -i ATC.OrderedMap -o $@ $<
 
 ATC/DevGraph.der.hs: Static/DevGraph.hs $(GENRULES)

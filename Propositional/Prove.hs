@@ -33,7 +33,6 @@ import qualified Logic.Prover as LP
 
 import Interfaces.GenericATPState
 import GUI.GenericATP
-import GUI.Utils (infoDialog)
 
 import Common.UniUtils as CP
 
@@ -49,7 +48,7 @@ import qualified Control.Concurrent as Concurrent
 import qualified Common.Exception as Exception
 import Data.List
 import Data.Maybe
-import Data.Time (TimeOfDay,timeToTimeOfDay)
+import Data.Time (TimeOfDay, timeToTimeOfDay, midnight)
 import System.Directory
 import System.Cmd
 import System.Exit
@@ -82,14 +81,14 @@ zchaffProver = (LP.mkProverTemplate zchaffS top zchaffProveGUI)
 -}
 propConsChecker :: LP.ConsChecker Sig.Sign AS_BASIC.FORMULA PropSL
                                   PMorphism.Morphism ProofTree
-propConsChecker = LP.mkProverTemplate zchaffS top consCheck
+propConsChecker = LP.ConsChecker zchaffS top consCheck
 
-consCheck :: String -> LP.TheoryMorphism Sig.Sign AS_BASIC.FORMULA
-             PMorphism.Morphism ProofTree
-          -> [LP.FreeDefMorphism AS_BASIC.FORMULA PMorphism.Morphism]
-          -- ^ free definitions
-          -> IO([LP.ProofStatus ProofTree])
-consCheck thName tm _ =
+consCheck :: String -> LP.TacticScript
+   -> LP.TheoryMorphism Sig.Sign AS_BASIC.FORMULA PMorphism.Morphism ProofTree
+   -> [LP.FreeDefMorphism AS_BASIC.FORMULA PMorphism.Morphism]
+    -- ^ free definitions
+   -> IO (LP.CCStatus ProofTree)
+consCheck thName _ tm _ =
     case LP.tTarget tm of
       LP.Theory sig nSens -> do
             let axioms = getAxioms $ snd $ unzip $ OMap.toList nSens
@@ -119,42 +118,24 @@ consCheck thName tm _ =
             hClose outputHf
             exitCode <- system ("zchaff " ++ tmpFile ++ " >> " ++ resultFile)
             removeFile tmpFile
-            if exitCode /= ExitSuccess then
-                infoDialog "consistency checker"
-                          ("error by call zchaff " ++ thName)
+            if exitCode /= ExitSuccess then return $ LP.CCStatus
+                   (ProofTree $ "error by call zchaff " ++ thName)
+                   midnight Nothing
                else do
-                   resultHf <- openFile resultFile ReadMode
-                   isSAT <- searchResult resultHf
-                   hClose resultHf
-                   removeFile resultFile
-                   if isSAT then
-                       infoDialog "consistency checker"
-                          ("consistent.")
-                     else
-                         infoDialog "consistency checker"
-                          ("inconsistent.")
-            return []
+                   resultHf <- readFile resultFile
+                   let isSAT = searchResult resultHf
+                   when (length resultHf > 0) $ removeFile resultFile
+                   return $ LP.CCStatus (ProofTree resultHf) midnight isSAT
 
     where
         getAxioms :: [LP.SenStatus AS_BASIC.FORMULA (LP.ProofStatus ProofTree)]
                   -> [AS_Anno.Named AS_BASIC.FORMULA]
         getAxioms f = map (AS_Anno.makeNamed "consistency" . AS_Anno.sentence)
           $ filter AS_Anno.isAxiom f
-
-        searchResult :: Handle -> IO Bool
-        searchResult hf = do
-            eof <- hIsEOF hf
-            if eof then
-                return False
-              else
-               do
-                line <- hGetLine hf
-                putStrLn line
-                if line == "RESULT:\tUNSAT" then
-                      return True
-                  else if line == "RESULT:\tSAT" then
-                          return False
-                         else searchResult hf
+        searchResult :: String -> Maybe Bool
+        searchResult hf = let ls = lines hf in
+          if any (== "RESULT:\tUNSAT") ls then Just True else
+          if any (== "RESULT:\tSAT") ls then Just False else Nothing
 
 -- ** GUI
 

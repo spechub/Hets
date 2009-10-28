@@ -20,13 +20,10 @@ module Proofs.AbstractState
     , G_cons_checker (..)
     , coerceConsChecker
     , ProofActions (..)
-    , ProofState
-    , theoryName, theory, logicId, sublogicOfTheory, lastSublogic
-    , goalMap, proversMap, comorphismsToProvers, selectedGoals
-    , includedAxioms, includedTheorems, proverRunning, accDiags
-    , selectedProver, selectedConsChecker, selectedTheory
+    , ProofState (..)
     , initialState
-    , selectedGoalMap, axiomMap
+    , selectedGoalMap
+    , axiomMap
     , recalculateSublogicAndSelectedTheory
     , GetPName (..)
     , markProved
@@ -34,10 +31,10 @@ module Proofs.AbstractState
     , G_theory_with_cons_checker (..)
     , prepareForProving
     , prepareForConsChecking
-    , getProvers, getConsCheckers
+    , getProvers
+    , getConsCheckers
     , lookupKnownProver
     , lookupKnownConsChecker
-    , getConsCheckersAutomatic
     ) where
 
 import qualified Data.Map as Map
@@ -60,7 +57,6 @@ import Comorphisms.KnownProvers
 
 import Static.GTheory
 import Static.DevGraph
-
 
 -- * Provers
 
@@ -357,24 +353,16 @@ class GetPName a where
     getPName :: a -> String
 
 instance GetPName G_prover where
-    getPName (G_prover _ p) = proverName p
+    getPName = getProverName
 
 instance GetPName G_cons_checker where
-    getPName (G_cons_checker _ p) = proverName p
+    getPName (G_cons_checker _ p) = ccName p
 
 
-getConsCheckersAutomatic :: [AnyComorphism] ->
-                                [(G_cons_checker, AnyComorphism)]
-getConsCheckersAutomatic = foldl addConsCheckers []
- where addConsCheckers acc cm =
-        case cm of
-         Comorphism cid -> acc ++
-            foldl (\ l p ->
-                         if hasProverKind
-                            ProveCMDLautomatic p
-                         then (G_cons_checker (targetLogic cid) p,cm):l
-                         else l) [] (cons_checkers $ targetLogic cid)
-
+getConsCheckers :: [AnyComorphism] -> [(G_cons_checker, AnyComorphism)]
+getConsCheckers = concatMap (\ cm@(Comorphism cid) ->
+    map (\ cc -> (G_cons_checker (targetLogic cid) cc, cm))
+      $ cons_checkers $ targetLogic cid)
 
 lookupKnownConsChecker :: (Logic lid sublogics1
                             basic_spec1
@@ -386,17 +374,17 @@ lookupKnownConsChecker :: (Logic lid sublogics1
                             symbol1
                             raw_symbol1
                             proof_tree1
-                         ,Monad m) =>
-                         ProofState lid sentence -> ProverKind
-                         -> m (G_cons_checker,AnyComorphism)
-lookupKnownConsChecker st _ =
+                         , Monad m) =>
+                         ProofState lid sentence
+                         -> m (G_cons_checker, AnyComorphism)
+lookupKnownConsChecker st =
        let sl = sublogicOfTheory st
            mt = do
                  pr_s <- selectedConsChecker st
                  ps <- Map.lookup pr_s (proversMap st)
                  return (pr_s, ps)
            matchingCC s (gp,_) = case gp of
-                                  G_cons_checker _ p -> proverName p == s
+                                  G_cons_checker _ p -> ccName p == s
            findCC (pr_n,cms) =
                case filter (matchingCC pr_n) $ getConsCheckers
                     $ filter (lessSublogicComor sl) cms of
@@ -426,10 +414,10 @@ lookupKnownProver st pk =
            pr_s <- selectedProver st
            ps <- Map.lookup pr_s (proversMap st)
            return (pr_s, ps)
-        matchingPr s (gp,_) = case gp of
-                               G_prover _ p -> proverName p == s
+        matchingPr s (gp, _) = case gp of
+          G_prover _ p -> proverName p == s
         findProver (pr_n, cms) =
-            case filter (matchingPr pr_n) $ getProvers pk sl
+            case filter (matchingPr pr_n) $ getProvers pk (Just sl)
                  $ filter (lessSublogicComor sl) cms of
                [] -> fail "Proofs.InferBasic: no prover found"
                p : _ -> return p
@@ -437,30 +425,23 @@ lookupKnownProver st pk =
              findProver mt
 
 -- | Pairs each target prover of these comorphisms with its comorphism
-getProvers :: ProverKind -> G_sublogics
+getProvers :: ProverKind -> Maybe G_sublogics
            -> [AnyComorphism] -> [(G_prover, AnyComorphism)]
-getProvers pk (G_sublogics lid sl) = foldl addProvers []
-    where addProvers acc cm =
-              case cm of
-              Comorphism cid -> let slid = sourceLogic cid in acc ++
-                  foldl (\ l p -> if hasProverKind pk p
-                                    && language_name lid == language_name slid
-                                    && maybe False
-                                     (flip isSubElem $ proverSublogic p)
-                                     (mapSublogic cid
-                                     $ forceCoerceSublogic lid slid sl)
-                                     then (G_prover (targetLogic cid) p,cm):l
-                                     else l)
-                        []
-                        (provers $ targetLogic cid)
-
-getConsCheckers :: [AnyComorphism] -> [(G_cons_checker, AnyComorphism)]
-getConsCheckers = foldl addCCs []
-    where addCCs acc cm =
-              case cm of
-              Comorphism cid -> acc ++
-                  map (\p -> (G_cons_checker (targetLogic cid) p,cm))
-                      (cons_checkers $ targetLogic cid)
+getProvers pk msl = foldl addProvers []
+    where addProvers acc cm = case cm of
+              Comorphism cid -> let
+                slid = sourceLogic cid
+                tlid = targetLogic cid
+                in acc ++ foldl (\ l p ->
+                  if hasProverKind pk p
+                    && case msl of
+                      Just (G_sublogics lid sl) ->
+                        language_name lid == language_name slid
+                         && maybe False (flip isSubElem $ proverSublogic p)
+                           (mapSublogic cid $ forceCoerceSublogic lid slid sl)
+                      Nothing -> True
+                  then (G_prover tlid p, cm) : l else l)
+                [] (provers tlid)
 
 -- | the list of proof statuses is integrated into the goalMap of the state
 -- after validation of the Disproved Statuses
@@ -483,8 +464,8 @@ markProvedGoalMap :: (Ord a, Logic lid sublogics
          basic_spec sentence symb_items symb_map_items
          sign morphism symbol raw_symbol proof_tree) =>
        AnyComorphism -> lid -> [ProofStatus proof_tree]
-    -> ThSens a (AnyComorphism,BasicProof)
-    -> ThSens a (AnyComorphism,BasicProof)
+    -> ThSens a (AnyComorphism, BasicProof)
+    -> ThSens a (AnyComorphism, BasicProof)
 markProvedGoalMap c lid status thSens = foldl upd thSens status
     where upd m pStat = OMap.update (updStat pStat) (goalName pStat) m
           updStat ps s = Just $

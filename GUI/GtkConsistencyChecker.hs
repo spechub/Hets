@@ -263,12 +263,12 @@ updateFinder view list sl = do
   listStoreClear list
   forkIOWithPostProcessing
     (return $ Map.elems $ foldr
-                (\ (cc,c) m ->
+                (\ (cc, c) m ->
                   let n = getPName cc
                       f = Map.findWithDefault (Finder n cc [] 0) n m in
                   Map.insert n (f { comorphs = c : comorphs f}) m
                 ) Map.empty
-                $ getConsCheckersAutomatic $ findComorphismPaths logicGraph sl)
+                $ getConsCheckers $ findComorphismPaths logicGraph sl)
     $ \ res -> do
       mapM_ (listStoreAppend list) res
       update "finished"

@@ -68,8 +68,7 @@ hetSublogicGraph = removeDuplicateComorphisms $
                                        in (show gsl,gsl)
                         top_gsl = toGSLPair $ top_sublogic lid
                         getPrvSL = map proverSublogic
-                        prv_sls = getPrvSL (provers lid) ++
-                                  getPrvSL (cons_checkers lid)
+                        prv_sls = getPrvSL (provers lid)
                     in Map.union mp $
                        Map.fromList (top_gsl :
                                      map toGSLPair prv_sls)
