@@ -362,8 +362,7 @@ genRules: $(generated_rule_files)
 gendrifted_files = $(patsubst %.der.hs, %.hs, $(generated_rule_files))
 
 # files to be processed by utils/InlineAxioms
-inline_axiom_files = \
-    Comorphisms/Modal2CASL.hs Comorphisms/CASL2TopSort.hs \
+inline_axiom_files = Comorphisms/Modal2CASL.hs \
     Comorphisms/CASL2SubCFOL.hs CASL_DL/PredefinedSign.hs
 
 gen_inline_axiom_files = $(patsubst %.hs,%.inline.hs, $(inline_axiom_files))

@@ -210,24 +210,23 @@ procOpMapping subSortMap opName set r = do
     procProfMapOpMapping sl (kind, spl) = genArgRest
         (genSenName "o" opName $ length sl) (genOpEquation kind opName) sl spl
 
+mkQualPred :: PRED_NAME -> SORT -> PRED_SYMB
+mkQualPred symS ts = Qual_pred_name symS (Pred_type [ts] nullRange) nullRange
+
 symmetryAxioms :: SubSortMap -> Rel.Rel SORT -> [Named (FORMULA ())]
 symmetryAxioms ssMap sortRels =
     let symSets = Rel.sccOfClosure sortRels
         mR = Rel.mostRight sortRels
         symTopSorts = not . Set.null . Set.intersection mR
-        xVar = mkSimpleId "x"
-        updateLabel ts symS [sen] =
-          reName (\ s -> show ts ++ s ++ show symS) sen
-        updateLabel _ _ _ = error "CASL2TopSort.symmetryAxioms"
-        toAxioms symSet =
-            [updateLabel ts symS (inlineAxioms CASL
-                    "sort ts pred symS:ts\n\
-                    \forall xVar : ts\n\
-                    \. symS(xVar) %(_symmetric_with_)%")
-                        | s <- Set.toList (Set.difference symSet mR),
-                          let ts = lkupTop ssMap s,
-                          let symS = fromJust (lkupPredName ssMap s)]
-
+        toAxioms symSet = map (\ s ->
+            let ts = lkupTop ssMap s
+                Just symS = lkupPredName ssMap s
+                psy = mkQualPred symS ts
+                vd = mkVarDeclStr "x" ts
+                vt = toQualVar vd
+            in makeNamed (show ts ++ "_symmetric_with_" ++ show symS)
+                   $ mkForall [vd] (Predication psy [vt] nullRange) nullRange
+            ) $ Set.toList (Set.difference symSet mR)
     in concatMap toAxioms (filter symTopSorts symSets)
 
 generateAxioms :: SubSortMap -> Map.Map PRED_NAME (Set.Set PredType)
@@ -236,7 +235,7 @@ generateAxioms :: SubSortMap -> Map.Map PRED_NAME (Set.Set PredType)
 generateAxioms subSortMap pMap oMap = do
     -- generate argument restrictions for operations
     axs <- Map.foldWithKey (procOpMapping subSortMap) (return []) oMap
-    return $ reverse hi_axs ++ reverse p_axs ++ reverse axs
+    return $ hi_axs ++ reverse p_axs ++ reverse axs
     where p_axs =
           -- generate argument restrictions for predicates
            Map.foldWithKey (\ pName set ->
@@ -250,7 +249,7 @@ generateAxioms subSortMap pMap oMap = do
           hi_axs =
           -- generate subclass_of axioms derived from subsorts
           -- and non-emptyness axioms
-              Map.fold (\ prdInf al ->
+              concatMap (\ prdInf ->
                let ts = topSortPI prdInf
                    subS = predicatePI prdInf
                    set = directSuperSortsPI prdInf
@@ -260,23 +259,18 @@ generateAxioms subSortMap pMap oMap = do
                                    " impossible happend: " ++ show s))
                                   predicatePI $ Map.lookup s subSortMap)
                          $ Set.toList set
-                   x = mkSimpleId "x"
-                in al ++ zipWith (\ sen supS ->
-                                      reName (\ s -> show subS ++ s
-                                                      ++ show supS) sen)
-                         (concat [inlineAxioms CASL
-                                  "sort ts\n\
-                                  \pred subS,supS: ts\n\
-                                  \ forall x : ts . subS(x) =>\n\
-                                  \ supS(x) %(_subclassOf_)%"|supS<-supPreds]
-                         ) supPreds ++
-                         map (reName (show subS ++))
-                                 (concat [inlineAxioms CASL
-                                  "sort ts\n\
-                                  \pred subS: ts \n\
-                                  \. exists x:ts . \n\
-                                  \ subS(x) %(_non_empty)%"])
-             ) [] subSortMap
+                   x = mkVarDeclStr "x" ts
+                   mkPredf sS = Predication (mkQualPred sS ts) [toQualVar x]
+                                nullRange
+                in makeNamed (show subS ++ "_non_empty")
+                   (Quantification Existential [x] (mkPredf subS)
+                     nullRange)
+                   : map (\ supS ->
+                       makeNamed (show subS ++ "_subclassOf_" ++ show supS)
+                       $ mkForall [x]
+                          (mkImpl (mkPredf subS) $ mkPredf supS)
+                          nullRange) supPreds
+             ) $ Map.elems subSortMap
 
 mkProfMapPred :: SubSortMap -> Set.Set PredType
               -> Map.Map [SORT] (Set.Set [Maybe PRED_NAME])
