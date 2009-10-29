@@ -69,6 +69,8 @@ module GUI.GtkUtils
   , selectAll
   , selectNone
   , selectInvert
+
+  , activate
   )
   where
 
@@ -612,3 +614,7 @@ updateListData :: ListStore a -> [a] -> IO ()
 updateListData list listData = do
   listStoreClear list
   mapM_ (listStoreAppend list) listData
+
+-- | Activates or deactivates a list of widgets
+activate :: [Widget] -> Bool -> IO ()
+activate widgets active = mapM_ (\ w -> widgetSetSensitive w active) widgets

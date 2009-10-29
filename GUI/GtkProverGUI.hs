@@ -27,7 +27,7 @@ import qualified Common.Result as Result
 import qualified Common.OrderedMap as OMap
 import Common.ExtSign
 
-import Control.Concurrent
+import Control.Concurrent.MVar
 
 import Proofs.AbstractState
 
@@ -94,13 +94,13 @@ showProverGUI lid prGuiAcs thName warningTxt th knownProvers comorphList = do
     btnDisplay            <- xmlGetWidget xml castToButton "btnDisplay"
     btnProofDetails       <- xmlGetWidget xml castToButton "btnProofDetails"
     btnProve              <- xmlGetWidget xml castToButton "btnProve"
-    lblStatus             <- xmlGetWidget xml castToLabel "lblStatus"
+    lblComorphism         <- xmlGetWidget xml castToLabel "lblComorphism"
     lblSublogic           <- xmlGetWidget xml castToLabel "lblSublogic"
     -- prover
     trvProvers            <- xmlGetWidget xml castToTreeView "trvProvers"
-    btnFineSelection      <- xmlGetWidget xml castToButton "btnFineSelection"
+    btnFineGrained        <- xmlGetWidget xml castToButton "btnFineGrained"
 
-    windowSetTitle window $ thName ++ " - Select Goal(s) and Prove"
+    windowSetTitle window $ "Prove: " ++ thName
 
     axioms <- axiomMap initState
 
@@ -195,15 +195,12 @@ showProverGUI lid prGuiAcs thName warningTxt th knownProvers comorphList = do
       s <- readMVar state
       displayGoals s
 
-    onClicked btnProofDetails $ do
-      s <- readMVar state
-      proofDetails xml s
+    onClicked btnProofDetails $ return ()
 
-    onClicked btnProve $ putStrLn "click"
+    onClicked btnProve $ return ()
 
-    onClicked btnFineSelection $ forkIO_ $ modifyMVar_ state $ (\ s -> do
+    onClicked btnFineGrained $ forkIO_ $ modifyMVar_ state $ (\ s -> do
       let s' = s { proverRunning = True }
-      setStatus window lblStatus True
       prState <- update s'
       Result.Result ds ms'' <- fineGrainedSelectionF prGuiAcs prState
       s'' <- case ms'' of
@@ -212,7 +209,6 @@ showProverGUI lid prGuiAcs thName warningTxt th knownProvers comorphList = do
           --errorDialog "Error" (showRelDiags 2 ds)
           return s'
         Just res -> return res
-      setStatus window lblStatus False
       return s'' { proverRunning = False
                  , accDiags = accDiags s'' ++ ds })
 
@@ -223,7 +219,6 @@ showProverGUI lid prGuiAcs thName warningTxt th knownProvers comorphList = do
   _ <- takeMVar wait
   return $ Result.Result { Result.diags = []
                          , Result.maybeResult = Nothing }
-
 
 -- | Called whenever the button "Display" is clicked.
 displayGoals ::
@@ -321,76 +316,7 @@ selectProver view listPrs s = do
   prover <- listStoreGetValue listPrs row
   return s { selectedProver = Just prover }
 
--- | Called to set satus text
-setStatus :: Window -> Label -> Bool -> IO ()
-setStatus window label running = case running of
-  True -> do
-    widgetSetSensitive window False
-    labelSetLabel label "<span color=\"blue\">Waiting for prover</span>"
-  False -> do
-    widgetSetSensitive window True
-    labelSetLabel label "<span color=\"black\">No prover running</span>"
-
 -- | Called to set sublogic label
 setSublogic :: Label -> String -> IO ()
 setSublogic label text = labelSetLabel label $ "<b>" ++ text ++ "</b>"
 
-{- Proof details GUI -}
-
--- | Display text in an uneditable, scrollable editor. Not blocking!
-proofDetails ::
-     GladeXML
-  -> ProofState lid sentence
-  -> IO ()
-proofDetails xml state = postGUIAsync $ do
-  -- get objects
-  window           <- xmlGetWidget xml castToWindow "ProofDetails"
-  tvDetails        <- xmlGetWidget xml castToTextView "tvDetails"
-  btnExpandScripts <- xmlGetWidget xml castToButton "btnExpandScripts"
-  btnExpandTrees   <- xmlGetWidget xml castToButton "btnExpandTrees"
-  btnSave          <- xmlGetWidget xml castToButton "btnSave1"
-  btnClose         <- xmlGetWidget xml castToButton "btnClose1"
-
-  let
-    thName = theoryName state
-    title = "Proof Details of Selected Goals from Theory " ++ thName
-    message = "Test text message!"
-    file = thName ++ "-proof-details.txt"
-
-  windowSetTitle window title
-  buffer <- textViewGetBuffer tvDetails
-  textBufferInsertAtCursor buffer message
-
-  tagTable <- textBufferGetTagTable buffer
-  font <- textTagNew Nothing
-  set font [ textTagFont := "FreeMono" ]
-  textTagTableAdd tagTable font
-  start <- textBufferGetStartIter buffer
-  end <- textBufferGetEndIter buffer
-  textBufferApplyTag buffer font start end
-
-  onClicked btnSave $ do
-        fileSaveDialog file
-                   [("Nothing", ["*"]), ("Text", ["*.txt"])]
-                   $ Just (\ filepath -> writeFile filepath message)
-        return ()
-
-  onClicked btnClose $ widgetDestroy window
-
-  onClicked btnExpandScripts $ do
-    label <- buttonGetLabel btnExpandScripts
-    let expand = isPrefixOf "Expand" label
-    if expand then buttonSetLabel btnExpandScripts "Hide tactic scripts"
-              else buttonSetLabel btnExpandScripts "Expand tactic scripts"
-    return ()
-
-  onClicked btnExpandTrees $ do
-    label <- buttonGetLabel btnExpandTrees
-    let expand = isPrefixOf "Expand" label
-    if expand then buttonSetLabel btnExpandTrees "Hide proof trees"
-              else buttonSetLabel btnExpandTrees "Expand proof trees"
-    return ()
-
-  widgetShow window
-
-{- Prove GUI -}

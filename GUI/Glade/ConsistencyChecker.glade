@@ -342,7 +342,6 @@
                         <property name="visible">True</property>
                         <property name="bottom_padding">6</property>
                         <property name="left_padding">6</property>
-                        <property name="right_padding">6</property>
                         <child>
                           <widget class="GtkScrolledWindow" id="scrolledwindow1">
                             <property name="visible">True</property>
