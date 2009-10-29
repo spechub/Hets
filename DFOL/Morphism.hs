@@ -112,11 +112,11 @@ Output : an inclusion morphism
 
 3 : Check if todo is empty
     3.1 : If yes, go to 5
-	3.2 : If not, go to 4
+    3.2 : If not, go to 4
 
 4 : Pick a symbol "s" from todo
     4.1 : Get the type "t" of s in sig
-	4.2 : Get the set "vars" of free variables in t, i.e. the symbols of sig
+    4.2 : Get the set "vars" of free variables in t, i.e. the symbols of sig
           that t depends on
     4.3 : For each "v" in vars :
           4.3.1 : Add v to incl
@@ -140,8 +140,8 @@ Output : an inclusion morphism
 3 : For each symbol "s" in sig (keeping the order in which they are defined) :
     3.1 : If s does not occur in excl :
           4.1 : Get the type "t" of s in sig
-	      4.2 : Get the set "vars" of free variables in t, i.e. the symbols
-                    of sig that t depends on
+          4.2 : Get the set "vars" of free variables in t, i.e. the symbols
+                of sig that t depends on
           4.3 : If any of the symbols in vars occurs in excl, add s to excl
 
 4 : Let "sig1" be the subsignature of sig containing all the symbols not
