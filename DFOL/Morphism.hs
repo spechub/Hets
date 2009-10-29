@@ -409,7 +409,8 @@ symsNotInSigError :: Set.Set NAME -> Sign -> Result.Diagnosis
 symsNotInSigError syms sig =
   Result.Diag
     { Result.diagKind = Result.Error
-    , Result.diagString = "The symbols\n" ++ (show $ printNames $ Set.toList syms)
+    , Result.diagString = "The symbols\n"
+                          ++ (show $ printNames $ Set.toList syms)
                           ++ "\nare not in the signature\n"
                           ++ (show $ pretty sig)
                           ++ "\nand hence the (co)generated signature "
