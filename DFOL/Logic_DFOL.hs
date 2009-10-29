@@ -85,6 +85,7 @@ instance StaticAnalysis DFOL
    signature_colimit DFOL = sigColimit
    generated_sign DFOL = coGenSig False
    cogenerated_sign DFOL = coGenSig True
+   final_union DFOL = sigUnion        -- in DFOL every signature union is final
 
 -- instance of logic for DFOL
 instance Logic DFOL
