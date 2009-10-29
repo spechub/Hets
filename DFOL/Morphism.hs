@@ -96,6 +96,57 @@ inclusionMorph sig1 sig2 =
             else Result.Result [noSubsigError sig1 sig2] Nothing
 
 -- generated and cogenerated signatures
+{- Algorithm description:
+
+FOR GENERATED SIGNATURES
+
+Input : a signature "sig" and a set of symbols "syms"
+Output : an inclusion morphism
+
+1 : Check if all symbols in syms occur in sig; if not, output Nothing
+
+2 : Initialize the set of symbols "incl" which necessarily must be included
+    in the generated signature to syms
+    Initialize the set "done" of analyzed symbols to empty
+    Initialize the set "todo" of symbols to be analyzed to syms
+
+3 : Check if todo is empty
+    3.1 : If yes, go to 5
+	3.2 : If not, go to 4
+
+4 : Pick a symbol "s" from todo
+    4.1 : Get the type "t" of s in sig
+	4.2 : Get the set "vars" of free variables in t, i.e. the symbols of sig
+          that t depends on
+    4.3 : For each "v" in vars :
+          4.3.1 : Add v to incl
+          4.3.2 : If v does not occur in done, add it to todo
+    4.4 : Remove v from todo and add it to done
+    4.5 : Go to 3
+
+5 : Let "sig1" be the subsignature of sig containing only the symbols in incl
+    and output the inclusion morphism m : sig1 -> sig
+
+FOR COGENERATED SIGNATURES
+
+Input : a signature "sig" and a set of symbols "syms"
+Output : an inclusion morphism
+
+1 : Check if all symbols in syms occur in sig; if not, output Nothing
+
+2 : Initialize the set of symbols "excl" which necessarily must be excluded
+    from the cogenerated signature to syms
+
+3 : For each symbol "s" in sig (keeping the order in which they are defined) :
+    3.1 : If s does not occur in excl :
+          4.1 : Get the type "t" of s in sig
+	      4.2 : Get the set "vars" of free variables in t, i.e. the symbols of
+          		sig that t depends on
+          4.3 : If any of the symbols in vars occurs in excl, add s to excl
+
+4 : Let "sig1" be the subsignature of sig containing all the symbols not
+    occurring in excl and output the inclusion morphism m : sig1 -> sig
+-}
 coGenSig :: Bool -> Set.Set Symbol -> Sign -> Result Morphism
 coGenSig flag syms sig@(Sign ds) =
   let names = Set.map name syms
@@ -106,12 +157,12 @@ coGenSig flag syms sig@(Sign ds) =
                                else genSig names (Set.empty) names sig
                      ds2 = filter (\ ([n],_) -> Set.member n incl) ds1
                      in inclusionMorph (Sign ds2) sig
-            else Result.Result [symsNotInSigError names sig] Nothing   
+            else Result.Result [symsNotInSigError names sig] Nothing
 
 genSig :: Set.Set NAME -> Set.Set NAME -> Set.Set NAME -> Sign -> Set.Set NAME
 genSig incl done todo sig =
   if (Set.null todo)
-     then incl   
+     then incl
      else let n = Set.findMin todo
               Just t = getSymbolType n sig
               ns = getFreeVars t
@@ -122,16 +173,16 @@ genSig incl done todo sig =
               in genSig incl1 done1 todo1 sig
 
 cogSig :: Set.Set NAME -> [DECL] -> Sign -> Set.Set NAME
-cogSig incl [] sig = Set.difference (getSymbols sig) incl 
-cogSig incl (([n],t):ds) sig =
-  if (Set.member n incl)
-     then cogSig incl ds sig  
+cogSig excl [] sig = Set.difference (getSymbols sig) excl
+cogSig excl (([n],t):ds) sig =
+  if (Set.member n excl)
+     then cogSig excl ds sig
      else let ns = Set.toList $ getFreeVars t
-              depen = or $ map (\ n1 -> Set.member n1 incl) ns 
+              depen = or $ map (\ n1 -> Set.member n1 excl) ns
               in if depen
-                    then let incl1 = Set.insert n incl
-                             in cogSig incl1 ds sig
-                    else cogSig incl ds sig       
+                    then let incl1 = Set.insert n excl
+                             in cogSig excl1 ds sig
+                    else cogSig excl ds sig
 cogSig _ _ _ = Set.empty
 
 -- morphism union

@@ -38,7 +38,7 @@ module DFOL.AS_DFOL
       Translatable,
       translate,
       getNewName,
-      getFreeVars  
+      getFreeVars
    )  where
 
 import Common.AS_Annotation

@@ -1,3 +1,18 @@
+{- |
+Module      :  $Header$
+Description :  Translation of first-order logic with dependent types (DFOL) to
+               CASL
+Copyright   :  (c) Kristina Sojakova, DFKI Bremen 2009
+License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
+
+Maintainer  :  k.sojakova@jacobs-university.de
+Stability   :  experimental
+Portability :  portable
+
+Ref: K. Sojakova and F. Rabe. Translating a Dependently-Typed Logic to
+     First-Order Logic. LNCS 2009, pages 326-341.
+-}
+
 module Comorphisms.DFOL2CASL where
 
 import Logic.Logic
