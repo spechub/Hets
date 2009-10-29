@@ -23,7 +23,7 @@ import qualified Common.Lib.Rel as Rel
 import Common.Utils (keepMins)
 
 import Logic.Logic
-import Logic.Prover (proverSublogic)
+import Logic.Prover
 import Logic.Comorphism
 import Logic.Grothendieck
 import Logic.Coerce
@@ -67,8 +67,8 @@ hetSublogicGraph = removeDuplicateComorphisms $
                     let toGSLPair sl = let gsl = G_sublogics lid sl
                                        in (show gsl,gsl)
                         top_gsl = toGSLPair $ top_sublogic lid
-                        getPrvSL = map proverSublogic
-                        prv_sls = getPrvSL (provers lid)
+                        prv_sls = map proverSublogic (provers lid)
+                          ++ map ccSublogic (cons_checkers lid)
                     in Map.union mp $
                        Map.fromList (top_gsl :
                                      map toGSLPair prv_sls)
