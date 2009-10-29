@@ -1,7 +1,7 @@
 {- |
 Module      :  $Id$
 Description :  graphical user interface modules
-Copyright   :  (c) Uni Bremen 2005-2007
+Copyright   :  (c) Uni Bremen 2005-2009
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
 Maintainer  :  raider@informatik.uni-bremen.de
@@ -17,44 +17,50 @@ module "GraphDisp").
 
 "GUI.AbstractGraphView" is a graph interface, based on the Workbench
 encapsulation of uDraw(Graph). Provides additional functions
-for hiding and redisplaying (groups of) nodes and edges.
-
-"GUI.ConsistencyChecker" provides generic GUI for consistency checker. Based
-upon "GUI.GenericATP" GUI.
+for hiding and redisplaying (groups of) nodes and edges. (Obsolete, use
+GraphAbstraction instead)
 
 "GUI.ConsoleUtils" are similar utilities for using without "HTk" (only
 console).
 
-"GUI.DGTranslations" provides funtions to display the logic graph.
-
 "GUI.GenericATP" is a generic graphical interface for automatic
-theorem provers.
+theorem provers. Decides between Gtk and HTk implementation.
 
-"GUI.GenericATPState" provides data structures and initialising functions for
-prover state and configurations.
-
-"GUI.GraphAbstraction" provides an interface to the uDrawGraph
+"GUI.GraphAbstraction" provides an interface to uDrawGraph.
 
 "GUI.GraphDisplay" provides functions to display a DevGraph in a new window.
 
 "GUI.GraphLogic" provides the functionality for the menus created with
 "GUI.GraphMenu"
 
-"GUI.GraphMenu" creates all the menu functions for the File and the Edit menu of the uDrawGraph window.
+"GUI.GraphMenu" creates the File and the Edit menu of uDrawGraph, as well as the
+local node and edge menus and types.
 
 "GUI.GraphTypes" defines the types used in "GUI.GraphDisplay", "GUI.GraphLogic"
 and "GUI.GraphMenu".
 
-"GUI.History" provides a history of commands in proof-script format.
+"GUI.GtkConsistencyChecker" gui for checking consistency.
+
+"GUI.GtkGenericATP" gtk version of generic prove gui.
+
+"GUI.GtkLinkTypeChoice" small window letting the user select the link types that
+should be displayed or hidden.
+
+"GUI.GtkProverGUI" prover gui implementation in gtk.
+
+"GUI.GtkUtils" a bunch of utility functions for use in and outside of gtk.
+
+"GUI.HTkGenericATP" htk version of generic prove gui.
+
+"GUI.HTkProofDetails" sets an additional window used by "GUI.ProverGUI" for
+displaying and saving proof details (prover output, tactic script, proof tree).
+
+"GUI.HTkProverGUI" is a goal management GUI for the structured level.
 
 "GUI.HTkUtils" provides some utilities on top of "HTk".
 
-"GUI.PrintUtils" are pretty printing functions used by "GUI.GenericATP".
-
-"GUI.ProofDetails" sets an additional window used by "GUI.ProofManagement" for
-displaying and saving proof details (prover output, tactic script, proof tree).
-
-"GUI.ProofManagement" is a goal management GUI for the structured level.
+"GUI.ProverGUI" is a goal management GUI for the structured level. Decides
+between Gtk and HTk implementation.
 
 "GUI.ShowGraph" displays the final graph.
 
@@ -64,7 +70,9 @@ displaying and saving proof details (prover output, tactic script, proof tree).
 
 "GUI.Taxonomy" displays a subsort relation (taxonomy).
 
-"GUI.Utils" are either "GUI.HTkUtils" or "GUI.ConsoleUtils".
+"GUI.Utils" are either "GUI.HTkUtils", "GUI.GtkUtils" or "GUI.ConsoleUtils".
+
+"GUI.UDGUtils" just imports and exports uDrawGraph modules.
 -}
 
 module GUI where
