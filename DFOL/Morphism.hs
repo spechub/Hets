@@ -140,8 +140,8 @@ Output : an inclusion morphism
 3 : For each symbol "s" in sig (keeping the order in which they are defined) :
     3.1 : If s does not occur in excl :
           4.1 : Get the type "t" of s in sig
-	      4.2 : Get the set "vars" of free variables in t, i.e. the symbols of
-          		sig that t depends on
+	      4.2 : Get the set "vars" of free variables in t, i.e. the symbols
+                    of sig that t depends on
           4.3 : If any of the symbols in vars occurs in excl, add s to excl
 
 4 : Let "sig1" be the subsignature of sig containing all the symbols not
@@ -180,7 +180,7 @@ cogSig excl (([n],t):ds) sig =
      else let ns = Set.toList $ getFreeVars t
               depen = or $ map (\ n1 -> Set.member n1 excl) ns
               in if depen
-                    then let incl1 = Set.insert n excl
+                    then let excl1 = Set.insert n excl
                              in cogSig excl1 ds sig
                     else cogSig excl ds sig
 cogSig _ _ _ = Set.empty
