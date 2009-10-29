@@ -1,7 +1,7 @@
 {- |
 Module      :  $Header$
 Description :  Gtk GUI for the consistency checker
-Copyright   :  (c) Thiemo Wiedemeyer, Uni Bremen 2008
+Copyright   :  (c) Thiemo Wiedemeyer, Uni Bremen 2009
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
 Maintainer  :  raider@informatik.uni-bremen.de

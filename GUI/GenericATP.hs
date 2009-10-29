@@ -2,7 +2,7 @@
 {- |
 Module      :  $Header$
 Description :  Generic Prover GUI.
-Copyright   :  (c) Thiemo Wiedemeyer, Uni Bremen 2006
+Copyright   :  (c) Thiemo Wiedemeyer, Uni Bremen 2009
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
 Maintainer  :  raider@informatik.uni-bremen.de
@@ -15,8 +15,6 @@ Generic GUI for automatic theorem provers. CPP between HTk and Gtk.
 module GUI.GenericATP (genericATPgui) where
 
 import Interfaces.GenericATPState
-
-import Proofs.BatchProcessing
 
 import Logic.Prover
 

@@ -12,7 +12,7 @@ Goal management GUI for the structured level similar to how 'SPASS.Prove'
 works for SPASS.
 -}
 
-module GUI.ProofManagement (proofManagementGUI,GUIMVar) where
+module GUI.HTkProverGUI (proofManagementGUI,GUIMVar) where
 
 import Common.AS_Annotation as AS_Anno
 import qualified Common.Doc as Pretty
@@ -32,7 +32,7 @@ import HTk.Devices.XSelection
 import GUI.Utils
 import GUI.HTkUtils hiding
   (createTextSaveDisplay, displayTheoryWithWarning)
-import GUI.ProofDetails
+import GUI.HTkProofDetails
 
 import Proofs.AbstractState
 import Logic.Comorphism

@@ -222,9 +222,12 @@ createExit (GInfo {exitMVar = exit}) = putMVar exit ()
 createGlobalMenu :: GInfo -> LibFunc -> IORef [String]
                  -> IO [GlobalMenu]
 createGlobalMenu gInfo@(GInfo { hetcatsOpts = opts
-                              , graphInfo = gi
-                              , libName = ln })
-                 showLib deselectEdgeTypes =
+                              , libName = ln
+#ifdef GTKGLADE
+                              , graphInfo = gi}) showLib deselectEdgeTypes =
+#else
+                              }) showLib _ =
+#endif
  do
  ost <- readIORef $ intState gInfo
  case i_state ost of

@@ -11,7 +11,7 @@ Portability :  needs POSIX
 Additional window used by 'GUI.ProofManagement' for displaying proof details.
 -}
 
-module GUI.ProofDetails (doShowProofDetails) where
+module GUI.HTkProofDetails (doShowProofDetails) where
 
 import qualified Common.Doc as Pretty
 import qualified Common.OrderedMap as OMap

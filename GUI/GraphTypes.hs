@@ -25,7 +25,7 @@ module GUI.GraphTypes
     ) where
 
 import GUI.GraphAbstraction(GraphInfo, initGraph)
-import GUI.ProofManagement (GUIMVar)
+import GUI.HTkProverGUI (GUIMVar)
 import GUI.UDGUtils
 
 import Common.LibName

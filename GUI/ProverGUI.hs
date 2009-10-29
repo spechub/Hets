@@ -26,7 +26,7 @@ import qualified Comorphisms.KnownProvers as KnownProvers
 -- import GUI.GtkProverGUI
 -- #elif defined UNI_PACKAGE
 import Control.Concurrent
-import GUI.ProofManagement
+import GUI.HTkProverGUI
 -- #endif
 
 proverGUI ::
