@@ -37,7 +37,8 @@ module DFOL.AS_DFOL
       expandDecls,
       Translatable,
       translate,
-      getNewName
+      getNewName,
+      getFreeVars  
    )  where
 
 import Common.AS_Annotation

@@ -5,6 +5,7 @@ Description :  Test file for structuring mechanisms
 import DFOL.AS_DFOL
 import DFOL.Analysis_DFOL
 import DFOL.Sign
+import DFOL.Symbol
 import DFOL.Morphism
 import Common.Id
 import Data.Maybe
@@ -41,7 +42,13 @@ sig2 = Sign [([iTok], Sort),
 sig :: Sign
 sig = Sign [([iTok], Sort),
             ([jTok], Sort),
-            ([dTok], Func [Univ j] $ Univ j)]
+            ([dTok], Func [Univ j] $ Univ j),
+            ([pTok], Pi [([cTok], Univ i)] $ Univ j)]
+
+syms :: Set.Set Symbol
+syms = Set.fromList [Symbol cTok]
+
+Result.Result ds Nothing = coGenSig True syms sig
 
 sig3 :: Sign
 sig3 = Sign [([iTok], Sort)]            
@@ -50,6 +57,5 @@ m1,m2 :: Morphism
 m1 = Morphism sig1 sig3 $ Map.fromList $ [(iTok,jTok)]
 m2 = Morphism sig2 sig $ Map.fromList $ [(cTok,dTok)]
 
-Result.Result ds (Just m) = morphUnion m1 m2
 
 

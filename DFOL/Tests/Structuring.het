@@ -31,3 +31,15 @@ end
 view v3 : SP4 to SP5 = s |-> t
 
 spec S6 = SP1 and SP3
+
+spec S7 = 
+i :: Sort
+j :: Sort
+d :: j -> j
+p :: Pi x : i. i
+end
+
+spec S8 = S7 hide i
+
+spec S9 = S7 reveal d, i   
+

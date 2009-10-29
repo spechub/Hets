@@ -83,6 +83,8 @@ instance StaticAnalysis DFOL
    induced_from_morphism DFOL = inducedFromMorphism
    induced_from_to_morphism DFOL = inducedFromToMorphism
    signature_colimit DFOL = sigColimit
+   generated_sign DFOL = coGenSig False
+   cogenerated_sign DFOL = coGenSig True
 
 -- instance of logic for DFOL
 instance Logic DFOL

@@ -22,6 +22,7 @@ module DFOL.Morphism
    , morphUnion
    , inducedFromMorphism
    , inducedFromToMorphism
+   , coGenSig
    , toTermMap
    ) where
 
@@ -93,6 +94,45 @@ inclusionMorph sig1 sig2 =
       in if (isValidMorph m)
             then Result.Result [] $ Just m
             else Result.Result [noSubsigError sig1 sig2] Nothing
+
+-- generated and cogenerated signatures
+coGenSig :: Bool -> Set.Set Symbol -> Sign -> Result Morphism
+coGenSig flag syms sig@(Sign ds) =
+  let names = Set.map name syms
+      ds1 = expandDecls ds
+      in if (Set.isSubsetOf names $ getSymbols sig)
+            then let incl = if flag
+                               then cogSig names ds1 sig
+                               else genSig names (Set.empty) names sig
+                     ds2 = filter (\ ([n],_) -> Set.member n incl) ds1
+                     in inclusionMorph (Sign ds2) sig
+            else Result.Result [symsNotInSigError names sig] Nothing   
+
+genSig :: Set.Set NAME -> Set.Set NAME -> Set.Set NAME -> Sign -> Set.Set NAME
+genSig incl done todo sig =
+  if (Set.null todo)
+     then incl   
+     else let n = Set.findMin todo
+              Just t = getSymbolType n sig
+              ns = getFreeVars t
+              incl1 = Set.union incl ns
+              ns1 = Set.filter (\ n1 -> Set.member n1 done) ns
+              done1 = Set.insert n done
+              todo1 = Set.union ns1 $ Set.delete n todo
+              in genSig incl1 done1 todo1 sig
+
+cogSig :: Set.Set NAME -> [DECL] -> Sign -> Set.Set NAME
+cogSig incl [] sig = Set.difference (getSymbols sig) incl 
+cogSig incl (([n],t):ds) sig =
+  if (Set.member n incl)
+     then cogSig incl ds sig  
+     else let ns = Set.toList $ getFreeVars t
+              depen = or $ map (\ n1 -> Set.member n1 incl) ns 
+              in if depen
+                    then let incl1 = Set.insert n incl
+                             in cogSig incl1 ds sig
+                    else cogSig incl ds sig       
+cogSig _ _ _ = Set.empty
 
 -- morphism union
 morphUnion :: Morphism -> Morphism -> Result.Result Morphism
@@ -311,5 +351,17 @@ invalidMorphError m1 m2 =
                           ++ "\nand\n" ++ (show $ pretty m2)
                           ++ "\nis not a valid morphism and hence "
                           ++ "their union cannot be constructed."
+    , Result.diagPos = nullRange
+    }
+
+symsNotInSigError :: Set.Set NAME -> Sign -> Result.Diagnosis
+symsNotInSigError syms sig =
+  Result.Diag
+    { Result.diagKind = Result.Error
+    , Result.diagString = "The symbols\n" ++ (show $ printNames $ Set.toList syms)
+                          ++ "\nare not in the signature\n"
+                          ++ (show $ pretty sig)
+                          ++ "\nand hence the (co)generated signature "
+                          ++ "cannot be constructed."
     , Result.diagPos = nullRange
     }

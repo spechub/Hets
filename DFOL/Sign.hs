@@ -347,7 +347,8 @@ redeclaredNamesError :: Set.Set NAME -> CONTEXT -> Result.Diagnosis
 redeclaredNamesError ns cont =
   Result.Diag
     { Result.diagKind = Result.Error
-    , Result.diagString = "Symbols or variables\n" ++ show ns
+    , Result.diagString = "Symbols or variables\n"
+                          ++ (show $ printNames $ Set.toList ns)
                           ++ "\ndeclared previously in the context\n"
                           ++ (show $ pretty cont) ++ "\nor in the signature."
     , Result.diagPos = nullRange
