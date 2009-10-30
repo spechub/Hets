@@ -193,10 +193,9 @@ basicOWLAnalysis (ofile, inSign, _) =
           : map localPart (importsList $ ontology ofile)
 
         removeDefault :: Namespace -> Namespace
-        removeDefault =
-            Map.delete "owl11" . Map.delete "owl" . Map.delete "xsd"
-               . Map.delete "rdf" . Map.delete "rdfs"
-                  . Map.delete "xml"
+        removeDefault ns =
+            foldr Map.delete ns
+            ["owl11", "owl", "xsd", "rdf", "rdfs", "xml", "owl2xml"]
 
 getObjRoleFromExpression :: ObjectPropertyExpression -> IndividualRoleURI
 getObjRoleFromExpression opExp =
