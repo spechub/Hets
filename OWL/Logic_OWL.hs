@@ -66,6 +66,7 @@ instance Sentences OWL Axiom Sign OWLMorphism Entity where
         pretty (sentence namedSen) <>
           if isAxiom namedSen then empty else space <> text "%implied"
     sym_of OWL = symOf
+    symmap_of OWL = symMapOf
 
 instance StaticAnalysis OWL OntologyFile Axiom
                SymbItems SymbMapItems
@@ -84,6 +85,7 @@ instance StaticAnalysis OWL OntologyFile Axiom
       matches OWL = matchesSym
       symbol_to_raw OWL = ASymbol
       induced_from_morphism OWL = inducedFromMor
+      induced_from_to_morphism OWL = inducedFromToMor
       cogenerated_sign OWL = cogeneratedSign
       generated_sign OWL = fail "cogenerated_sign OWL nyi"
 #ifdef UNI_PACKAGE

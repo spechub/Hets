@@ -69,7 +69,7 @@ anaDataRange dr = case dr of
   DataOneOf cs -> mapM_ anaConstant cs
   DatatypeRestriction r fcs -> do
     anaDataRange r
-    mapM_ anaConstant $ map snd fcs
+    mapM_ (anaConstant . snd) fcs
 
 anaDescription :: Description -> State Sign ()
 anaDescription desc = case desc of
@@ -164,12 +164,14 @@ basicOWLAnalysis (ofile, inSign, _) =
         (integNamespace, transMap) =
             integrateNamespaces (namespaceMap inSign) ns
         ofile' = renameNamespace transMap ofile
+        syms = Set.difference (symOf accSign) $ symOf inSign
         (sens, accSign) = runState
           (mapM anaAxiom $ axiomsList $ ontology ofile')
           inSign {namespaceMap = integNamespace
-                 ,ontologyID   = uri $ ontology $ ofile'
+                 ,ontologyID   = uri $ ontology ofile'
                  }
-    in Result diags1 $ Just (ofile', mkExtSign accSign, concat sens)
+    in Result diags1
+           $ Just (ofile', ExtSign accSign syms, concat sens)
     where
         oName = uri $ ontology ofile
 
@@ -177,24 +179,24 @@ basicOWLAnalysis (ofile, inSign, _) =
         isNamespaceInImport iuri =
           if null iuri then []
             else
-             let uri' = take ((length iuri) -1) iuri
-             in  if uri' `elem` importList
+             let uri' = take (length iuri - 1) iuri
+             in  if elem uri' importList
                   then []
                   else
                     [mkDiag
                         Warning
                         ("\"" ++ uri' ++ "\"" ++
                                   " is not imported in ontology: " ++
-                                  (show $ localPart oName))
+                                  show (localPart oName))
                         ()]
-        importList = (localPart oName):
-                        (map localPart (importsList $ ontology ofile))
+        importList = localPart oName
+          : map localPart (importsList $ ontology ofile)
 
         removeDefault :: Namespace -> Namespace
-        removeDefault namespace =
-            Map.delete "owl11" (Map.delete "owl" (Map.delete "xsd"
-               (Map.delete "rdf" (Map.delete "rdfs"
-                  (Map.delete "xml" namespace)))))
+        removeDefault =
+            Map.delete "owl11" . Map.delete "owl" . Map.delete "xsd"
+               . Map.delete "rdf" . Map.delete "rdfs"
+                  . Map.delete "xml"
 
 getObjRoleFromExpression :: ObjectPropertyExpression -> IndividualRoleURI
 getObjRoleFromExpression opExp =
@@ -206,7 +208,7 @@ getObjRoleFromSubExpression :: SubObjectPropertyExpression
                             -> [IndividualRoleURI]
 getObjRoleFromSubExpression sopExp =
     case sopExp of
-      OPExpression opExp -> (getObjRoleFromExpression opExp):[]
+      OPExpression opExp -> [getObjRoleFromExpression opExp]
       SubObjectPropertyChain expList ->
           map getObjRoleFromExpression expList
 
@@ -223,9 +225,6 @@ isToProve [] = False
 isToProve (anno:r) =
     case anno of
       ExplicitAnnotation auri (Constant value (Typed _)) ->
-          if localPart auri == "Implied" then
-             if value == "true" then
-                 True
-               else False
+          if localPart auri == "Implied" then value == "true"
             else isToProve r
       _ -> isToProve r
