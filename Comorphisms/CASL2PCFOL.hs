@@ -94,9 +94,6 @@ encodeSig sig
           injOpMap setprojOptype
     -- membership predicates are coded out
 
-mkAxName :: String -> SORT -> SORT -> String
-mkAxName str s s' = "ga_" ++ str ++ "_" ++ show s ++ "_to_" ++ show s'
-
 -- | Make the name for the embedding or projecton injectivity axiom
 mkInjectivityName :: String -> SORT -> SORT -> String
 mkInjectivityName = mkAxName . (++ "_injectivity")

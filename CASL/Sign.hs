@@ -470,6 +470,12 @@ mkImpl f f' = Implication f f' True nullRange
 mkExEq :: TERM f -> TERM f -> FORMULA f
 mkExEq f f' = Existl_equation f f' nullRange
 
+mkStEq :: TERM f -> TERM f -> FORMULA f
+mkStEq u v = Strong_equation u v nullRange
+
+mkEqv :: FORMULA f -> FORMULA f -> FORMULA f
+mkEqv u v = Equivalence u v nullRange
+
 mkAppl :: OP_SYMB -> [TERM f] -> TERM f
 mkAppl op_symb fs = Application op_symb fs nullRange
 
@@ -484,9 +490,12 @@ mkVarTerm v = toQualVar . mkVarDecl v
 -- | optimized conjunction
 conjunct :: [FORMULA f] -> FORMULA f
 conjunct fs = case fs of
-  [] -> False_atom nullRange
+  [] -> True_atom nullRange
   [phi] -> phi
   _ -> Conjunction fs nullRange
 
 mkVarDeclStr :: String -> SORT -> VAR_DECL
 mkVarDeclStr = mkVarDecl . mkSimpleId
+
+mkAxName :: String -> SORT -> SORT -> String
+mkAxName str s s' = "ga_" ++ str ++ "_" ++ show s ++ "_to_" ++ show s'

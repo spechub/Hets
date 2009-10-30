@@ -1,7 +1,7 @@
 {- |
 Module      :  $Header$
 Description :  coding out partiality
-Copyright   :  (c) Zicheng Wang, C.Maeder Uni Bremen 2002-2006
+Copyright   :  (c) Zicheng Wang, C.Maeder Uni Bremen 2002-2009
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
 Maintainer  :  Christian.Maeder@dfki.de
@@ -36,11 +36,14 @@ import qualified Common.Lib.Rel as Rel
 import Common.AS_Annotation
 import Common.ProofUtils
 import Common.ProofTree
-
-import Data.List (zip)
+import Common.Utils
 
 -- | determine the need for bottom constants
-data FormulaTreatment = NoMembershipOrCast | FormulaDependent | SubsortBottoms | AllSortBottoms
+data FormulaTreatment =
+    NoMembershipOrCast
+  | FormulaDependent
+  | SubsortBottoms
+  | AllSortBottoms
     deriving Show
 
 -- | a case selector for formula treatment
@@ -140,10 +143,9 @@ sortsWithBottom m sig formBotSrts =
                map (Set.map opRes . Set.filter
                     ( \ t -> opKind t == Partial)) ops
         collect given =
-            let more = allSortsWithBottom $
-                       Set.unions $ map (Set.map opRes .
-                                 Set.filter ( \ t -> any
-                                 (flip Set.member given) $ opArgs t)) ops
+            let more = allSortsWithBottom $ Set.unions $ map
+                     (Set.map opRes . Set.filter
+                      (any (flip Set.member given) . opArgs)) ops
             in if Set.isSubsetOf more given then given
                else collect $ Set.union more given
      in collect resSortsOfPartialFcts
@@ -151,21 +153,20 @@ sortsWithBottom m sig formBotSrts =
 defPred :: Id
 defPred = genName "defined"
 
-defined :: Set.Set SORT -> TERM f -> SORT -> Range -> FORMULA f
-defined bsorts t s ps =
+defined :: Set.Set SORT -> TERM f -> Range -> FORMULA f
+defined bsorts t ps = let s = sortOfTerm t in
   if Set.member s bsorts then Predication
          (Qual_pred_name defPred (Pred_type [s] nullRange) nullRange) [t] ps
   else True_atom ps
 
 defVards :: Set.Set SORT -> [VAR_DECL] -> FORMULA f
-defVards bs [vs@(Var_decl [_] _ _)] = head $ defVars bs vs
-defVards bs vs = Conjunction (concatMap (defVars bs) vs) nullRange
+defVards bs = conjunct . concatMap (defVars bs)
 
 defVars :: Set.Set SORT -> VAR_DECL -> [FORMULA f]
 defVars bs (Var_decl vns s _) = map (defVar bs s) vns
 
 defVar :: Set.Set SORT -> SORT -> Token -> FORMULA f
-defVar bs s v = defined bs (Qual_var v s nullRange) s nullRange
+defVar bs s v = defined bs (Qual_var v s nullRange) nullRange
 
 totalizeOpSymb :: OP_SYMB -> OP_SYMB
 totalizeOpSymb o = case o of
@@ -188,12 +189,14 @@ totalizeConstraint bsrts c =
     (if Set.member (newSort c) bsrts then addBottomAlt else id)
     c { opSymbs = map ( \ (o, is) -> (totalizeOpSymb o, is)) $ opSymbs c }
 
+botType :: SORT -> OpType
+botType x = OpType {opKind = Total, opArgs = [], opRes = x }
+
 -- | Add projections to the signature
 encodeSig :: Set.Set SORT -> Sign f e -> Sign f e
 encodeSig bsorts sig = if Set.null bsorts then sig else
     sig { opMap = projOpMap, predMap = newpredMap } where
    newTotalMap = Map.map (Set.map $ makeTotal Total) $ opMap sig
-   botType x = OpType {opKind = Total, opArgs = [], opRes = x }
    botOpMap  = Set.fold (\ bt -> addOpTo (uniqueBotName $ toOP_TYPE bt) bt)
        newTotalMap $ Set.map botType bsorts
    defType x = PredType{predArgs=[x]}
@@ -207,71 +210,76 @@ encodeSig bsorts sig = if Set.null bsorts then sig else
        botOpMap setprojOptype
 
 generateAxioms :: Bool -> Set.Set SORT -> Sign f e -> [Named (FORMULA ())]
-generateAxioms b bsorts sig = filter (not . is_True_atom . sentence) $
-  map (mapNamed $ simplifyFormula id . rmDefs bsorts id) $
-    map (mapNamed $ renameFormula id) $ concat $
-    [inlineAxioms CASL
-      " sort s < s'     \
-      \ op pr : s'->s   \
-      \ pred d:s        \
-      \ forall x,y:s'. d(pr(x)) /\\ d(pr(y)) /\\ pr(x)=pr(y) => x=y \
-      \ %(ga_projection_injectivity)% "
-    ++ inlineAxioms CASL
-     " sort s < s'      \
-      \ op pr : s'->s   \
-      \ pred d:s        \
-      \ forall x:s . d(x) => pr(x)=x %(ga_projection)% "
-      | s <- sortList, let y = mkSimpleId "y",
-        s' <- minSupers s]
-    ++ [inlineAxioms CASL
-      " sort s          \
-      \ pred d:s        \
-      \ . exists x:s.d(x) %(ga_nonEmpty)%" ++
-     (if b then
-     inlineAxioms CASL
-      " sort s          \
-      \ op bottom:s     \
-      \ pred d:s        \
-      \ . forall x:s . not d(x) <=> x=bottom %(ga_notDefBottom)%"
-      else
-     inlineAxioms CASL
-      " sort s          \
-      \ op bottom:s     \
-      \ pred d:s        \
-      \ . not d(bottom) %(ga_notDefBottom)%")
-        | s <- sortList ] ++
-    [inlineAxioms CASL
-      " sort t          \
-      \ sorts s_i       \
-      \ op f:s_i->t     \
-      \ forall y_k:s_i . def f(y_k) <=> def y_k /\\ def y_k %(ga_totality)%"
-        | (f,typ) <- opList, opKind typ == Total,
-          let s=opArgs typ; t=opRes typ; y= mkVars (length s) ] ++
-    [inlineAxioms CASL
-      " sort t          \
-      \ sorts s_i       \
-      \ op f:s_i->t     \
-      \ forall y_k:s_i . def f(y_k) => def y_k /\\ def y_k %(ga_strictness)%"
-        | (f,typ) <- opList, opKind typ == Partial,
-          let s=opArgs typ; t=opRes typ; y= mkVars (length s) ] ++
-    [inlineAxioms CASL
-      " sorts s_i       \
-      \ pred p:s_i      \
-      \ forall y_k:s_i . p(y_k) => def y_k /\\ def y_k \
-      \ %(ga_predicate_strictness)%"
-        | (p,typ) <- predList, let s=predArgs typ; y=mkVars (length s) ]
+generateAxioms uniqBot bsorts sig = concatMap (\ s -> let
+      vx = mkVarDeclStr "x" s
+      xt = toQualVar vx
+      hasBot = Set.member s bsorts
+      prj z = projectUnique Total nullRange z s
+      df z = defined bsorts z nullRange
+      in concatMap (\ s' ->
+      [makeNamed (mkAxName "projection_injectivity" s' s)
+      $ let xv = mkVarDeclStr "x" s'
+            yv = mkVarDeclStr "y" s'
+            tx = toQualVar xv
+            ty = toQualVar yv
+            px = prj tx
+            py = prj ty
+            epxy = mkStEq px py
+      -- forall x,y:s' . d(pr(x)) /\\ d(pr(y)) /\\ pr(x)=pr(y) => x=y
+        in mkForall [xv, yv]
+           (mkImpl (if hasBot then conjunct [df px, df py, epxy]
+                    else epxy) $ mkStEq tx ty)
+           nullRange
+            -- forall x:s . d(x) => pr(x)=x
+      , makeNamed (mkAxName "projection" s' s)
+      $ let eq = mkStEq (prj $ Sorted_term xt s' nullRange) xt
+        in mkForall [vx]
+               (if hasBot then mkImpl (df xt) eq else eq)
+               nullRange]) (minSupers s)
+         -- exists x:s . d(x)
+      ++ [makeNamed ("ga_nonEmpty_" ++ show s)
+         $ Quantification Existential [vx] (df xt) nullRange
+         | hasBot]
+      ++ [makeNamed ("ga_notDefBottom_" ++ show s)
+         $ let bty = toOP_TYPE $ botType s
+               bt = mkAppl (Qual_op_name (uniqueBotName bty) bty nullRange) []
+           in if uniqBot then
+              -- forall x:s . not d(x) <=> x=bottom
+              mkForall [vx]
+              (mkEqv (Negation (df xt) nullRange)
+               $ mkStEq xt bt) nullRange
+              else Negation (df bt) nullRange -- not d(bottom)
+         | hasBot]) sortList
+   ++ filter (not . is_True_atom . sentence)
+   (map (mapNamed $ simplifyFormula id)
+    $ map (\ (f, typ) ->
+      let vs = map (\ (s, i) -> mkVarDeclStr ("x_" ++ show i) s)
+              $ number $ opArgs typ
+      in makeNamed ("ga_totality_" ++ show f)
+      -- forall x_i:s_i . d f(x_1, ..., x_n) {<}=> d x_1 /\\ ... /\\ d x_n
+         $ mkForall vs
+           ((if opKind typ == Total then mkEqv else mkImpl)
+            (defined bsorts (mkAppl (Qual_op_name f (toOP_TYPE typ) nullRange)
+                      $ map toQualVar vs) nullRange)
+            $ defVards bsorts vs) nullRange) opList
+    ++ map (\ (p, typ) ->
+      let vs = map (\ (s, i) -> mkVarDeclStr ("x_" ++ show i) s)
+              $ number $ predArgs typ
+      in makeNamed ("ga_predicate_strictness_" ++ show p)
+      -- forall x_i:s_i . p(x_1, ..., x_n) => d x_1 /\\ ... /\\ d x_n
+         $ mkForall vs
+           (mkImpl
+            (Predication (Qual_pred_name p (toPRED_TYPE typ) nullRange)
+                      (map toQualVar vs) nullRange)
+            $ defVards bsorts vs) nullRange) predList)
     where
-        x = mkSimpleId "x"
-        pr = projName
         minSupers so = keepMinimals sig id $ Set.toList $ Set.delete so
                            $ supersortsOf so sig
-        d = defPred
         sortList = Set.toList bsorts
         opList = [(f,t) | (f,types) <- Map.toList $ opMap sig,
                   t <- Set.toList types ]
         predList = [(p,t) | (p,types) <- Map.toList $ predMap sig,
                     t <- Set.toList types ]
-        mkVars n = [mkSimpleId ("x_"++show i) | i<-[1..n]]
 
 codeRecord :: Bool -> Set.Set SORT -> (f -> f) -> Record f (FORMULA f) (TERM f)
 codeRecord uniBot bsrts mf = (mapRecord mf)
@@ -280,18 +288,18 @@ codeRecord uniBot bsrts mf = (mapRecord mf)
       Universal ->
           Quantification q vs (Implication (defVards bsrts vs) qf True ps) ps
       _ -> Quantification q vs (Conjunction [defVards bsrts vs, qf] ps) ps
-    , foldDefinedness = \ _ t ps -> defined bsrts t (sortOfTerm t) ps
+    , foldDefinedness = const $ defined bsrts
     , foldExistl_equation = \ _ t1 t2 ps ->
       Conjunction[Strong_equation t1 t2 ps,
-                  defined bsrts t1 (sortOfTerm t1) ps] ps
+                  defined bsrts t1 ps] ps
     , foldMembership = \ _ t s ps ->
-          defined bsrts (projectUnique Total ps t s) s ps
+          defined bsrts (projectUnique Total ps t s) ps
     , foldSort_gen_ax = \ _ cs b -> if uniBot then
-          Sort_gen_ax (map (totalizeConstraint bsrts) cs) $
-              if not uniBot || Set.null (Set.intersection bsrts
-                $ Set.fromList $ map newSort cs) then b else False
+          Sort_gen_ax (map (totalizeConstraint bsrts) cs)
+              $ Set.null (Set.intersection bsrts
+                $ Set.fromList $ map newSort cs) && b
           else error "SubPFOL2SubFOL: unexpected Sort_gen_ax"
-    , foldApplication = \ _ o args ps -> Application (totalizeOpSymb o) args ps
+    , foldApplication = const $ Application . totalizeOpSymb
     , foldCast = \ _ t s ps -> projectUnique Total ps t s }
 
 codeFormula :: Bool -> Set.Set SORT -> FORMULA () -> FORMULA ()
@@ -299,13 +307,6 @@ codeFormula b bsorts = foldFormula (codeRecord b bsorts $ error "CASL2SubCFol")
 
 codeTerm :: Bool -> Set.Set SORT -> TERM () -> TERM ()
 codeTerm b bsorts = foldTerm (codeRecord b bsorts $ error "CASL2SubCFol")
-
-rmDefsRecord :: Set.Set SORT -> (f -> f) ->  Record f (FORMULA f) (TERM f)
-rmDefsRecord  bsrts mf = (mapRecord mf)
-    { foldDefinedness = \ _ t ps -> defined bsrts t (sortOfTerm t) ps }
-
-rmDefs :: Set.Set SORT -> (f -> f) -> FORMULA f -> FORMULA f
-rmDefs bsrts = foldFormula . rmDefsRecord bsrts
 
 -- | find sorts that need a bottom in membership formulas and casts
 

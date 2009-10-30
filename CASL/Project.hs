@@ -47,9 +47,6 @@ uniqueProjName t = case t of
 botTok :: Token
 botTok = genToken "bottom"
 
-bottom :: Id
-bottom = mkId [botTok]
-
 uniqueBotName :: OP_TYPE -> Id
 uniqueBotName t = case t of
     Op_type _ [] to _ -> mkUniqueName botTok [to]
@@ -57,22 +54,3 @@ uniqueBotName t = case t of
 
 projectUnique :: OpKind -> Range -> TERM f -> SORT -> TERM f
 projectUnique = makeInjOrProj uniqueProjName
-
-rename :: OP_SYMB -> OP_SYMB
-rename o = case o of
-    Qual_op_name i t r -> Qual_op_name
-        (if i == injName then uniqueInjName t
-         else if i == projName then uniqueProjName t
-         else if i == bottom then uniqueBotName t
-              else i) t r
-    _ -> o
-
-renameRecord :: (f -> f) -> Record f (FORMULA f) (TERM f)
-renameRecord mf = (mapRecord mf)
-     { foldApplication = \ _ o args r -> Application (rename o) args r }
-
-renameTerm :: (f -> f) -> TERM f -> TERM f
-renameTerm = foldTerm . renameRecord
-
-renameFormula :: (f -> f) -> FORMULA f -> FORMULA f
-renameFormula = foldFormula . renameRecord
