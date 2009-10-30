@@ -40,7 +40,7 @@ import qualified CASL.Inject as CASLInject
 import Common.AS_Annotation (makeNamed, Named, SenAttr(..))
 import qualified Common.Lib.Rel as Rel
 
-import Comorphisms.CASL2PCFOL (mkEmbInjName, mkTransAxiomName)
+import Comorphisms.CASL2PCFOL (mkEmbInjName, mkTransAxiomName, mkIdAxiomName)
 import Comorphisms.CASL2SubCFOL (mkNotDefBotAxiomName, mkTotalityAxiomName)
 
 import Comorphisms.CFOL2IsabelleHOL (IsaTheory)
@@ -184,7 +184,7 @@ addJustificationTheorems caslSign pfolSign isaTh =
         sorts = Set.toList(CASLSign.sortSet caslSign)
     in   addTransitivityTheorem sorts sortRel
        $ addAllInjectivityTheorems pfolSign sorts sortRel
-       $ addAllDecompositionTheorem pfolSign sorts sortRel
+       $ addAllDecompositionTheorem caslSign pfolSign sorts sortRel
        $ addSymmetryTheorem sorts
        $ addReflexivityTheorem
        $ isaTh
@@ -227,12 +227,14 @@ addSymmetryTheorem _ isaTh =
     in addTheoremWithProof name thmConds thmConcl proof' isaTh
 
 -- | Add all the decoposition theorems and proofs
-addAllDecompositionTheorem :: CASLSign.CASLSign -> [SORT] -> [(SORT,SORT)] ->
-                             IsaTheory -> IsaTheory
-addAllDecompositionTheorem pfolSign sorts sortRel isaTh =
+addAllDecompositionTheorem :: CASLSign.CASLSign -> CASLSign.CASLSign
+                           -> [SORT] -> [(SORT,SORT)]
+                           -> IsaTheory -> IsaTheory
+addAllDecompositionTheorem caslSign pfolSign sorts sortRel isaTh =
     let tripples = [(s1,s2,s3) |
                     (s1,s2) <- sortRel, (s2',s3) <- sortRel, s2==s2']
-    in foldl (addDecompositionTheorem pfolSign sorts sortRel) isaTh tripples
+    in foldl (addDecompositionTheorem caslSign pfolSign sorts)
+       isaTh tripples
 
 -- | Add the decomposition theorem and proof which should be deduced
 --   from the transitivity axioms from the translation CASL2PCFOL;
@@ -240,9 +242,10 @@ addAllDecompositionTheorem pfolSign sorts sortRel isaTh =
 --   sorts. e.g. (S,T,U) means produce the lemma and proof for
 --   inj_T_U(inj_S_T(x)) = inj_S_U(x). As a work around, we need to
 --   know all sorts to pass them on.
-addDecompositionTheorem :: CASLSign.CASLSign -> [SORT] -> [(SORT,SORT)] ->
-                         IsaTheory -> (SORT,SORT,SORT) -> IsaTheory
-addDecompositionTheorem pfolSign sorts sortRel isaTh (s1,s2,s3) =
+addDecompositionTheorem :: CASLSign.CASLSign -> CASLSign.CASLSign -> [SORT]
+                        -> IsaTheory -> (SORT,SORT,SORT)
+                        -> IsaTheory
+addDecompositionTheorem caslSign pfolSign sorts isaTh (s1,s2,s3) =
     let x = mkFree "x"
         -- These 5 lines make use of currying
         injOp_s1_s2 = mkInjection s1 s2
@@ -253,7 +256,8 @@ addDecompositionTheorem pfolSign sorts sortRel isaTh (s1,s2,s3) =
 
         definedOp_s1 = getDefinedOp sorts s1
         definedOp_s3 = getDefinedOp sorts s3
-        collectionTransAx = getCollectionTransAx sortRel
+        collectionIdentityAx = getCollectionIdentityAx caslSign
+        collectionTransAx = getCollectionTransAx caslSign
         collectionTotAx = getCollectionTotAx pfolSign
         collectionNotDefBotAx = getCollectionNotDefBotAx sorts
 
@@ -264,7 +268,8 @@ addDecompositionTheorem pfolSign sorts sortRel isaTh (s1,s2,s3) =
         proof' = IsaProof [Apply[CaseTac (definedOp_s3 inj_s1_s2_s3_x)] False,
                            -- Case 1
                            Apply[SubgoalTac(definedOp_s1 x)] False,
-                           Apply[Insert collectionTransAx] False,
+                           Apply[Insert (collectionIdentityAx
+                                         ++ collectionTransAx)] False,
                            Apply[Simp] False,
                            Apply[SimpAdd Nothing collectionTotAx] False,
 
@@ -844,7 +849,20 @@ getInjectivityThmName (s, s') =
 
 -- | Return the list of strings of all the transitivity axioms names produced by
 --   the translation CASL2PCFOL; CASL2SubCFOL.
-getCollectionTransAx :: [(SORT,SORT)] -> [String]
-getCollectionTransAx sortRel =
-    [mkTransAxiomName s1 s2 s3
-         | (s1,s2) <- sortRel, (s2',s3) <- sortRel, s2==s2']
+getCollectionTransAx :: CASLSign.CASLSign -> [String]
+getCollectionTransAx caslSign =
+    let sorts = Set.toList $ CASLSign.sortSet caslSign
+        allSupers s s' s'' =
+            (Set.member s' $ CASLSign.supersortsOf s caslSign) &&
+            (Set.member s'' $ CASLSign.supersortsOf s' caslSign) && (s /= s'')
+    in [mkTransAxiomName s s' s''
+            | s <- sorts, s' <- sorts, s'' <- sorts, allSupers s s' s'']
+
+-- | Return the list of strings of all the identity axioms names produced by
+--   the translation CASL2PCFOL; CASL2SubCFOL.
+getCollectionIdentityAx :: CASLSign.CASLSign -> [String]
+getCollectionIdentityAx caslSign =
+    let sorts = Set.toList $ CASLSign.sortSet caslSign
+        isomorphic s s' = (Set.member s $ CASLSign.supersortsOf s' caslSign) &&
+                          (Set.member s' $ CASLSign.supersortsOf s caslSign)
+    in [mkIdAxiomName s s' | s <- sorts, s' <- sorts, isomorphic s s']
