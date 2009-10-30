@@ -209,6 +209,18 @@ encodeSig bsorts sig = if Set.null bsorts then sig else
    projOpMap = Set.fold (\ t -> addOpTo (uniqueProjName $ toOP_TYPE t) t)
        botOpMap setprojOptype
 
+-- | Make the name for the non empty axiom from s to s' to s''
+mkNonEmptyAxiomName :: SORT -> String
+mkNonEmptyAxiomName = mkAxNameSingle "nonEmpty"
+
+-- | Make the name for the not defined bottom axiom
+mkNotDefBotAxiomName :: SORT -> String
+mkNotDefBotAxiomName = mkAxNameSingle "notDefBottom"
+
+-- | Make the name for the totality axiom
+mkTotalityAxiomName :: OP_NAME -> String
+mkTotalityAxiomName f = "ga_totality_" ++ show f
+
 generateAxioms :: Bool -> Set.Set SORT -> Sign f e -> [Named (FORMULA ())]
 generateAxioms uniqBot bsorts sig = concatMap (\ s -> let
       vx = mkVarDeclStr "x" s
@@ -237,10 +249,10 @@ generateAxioms uniqBot bsorts sig = concatMap (\ s -> let
                (if hasBot then mkImpl (df xt) eq else eq)
                nullRange]) (minSupers s)
          -- exists x:s . d(x)
-      ++ [makeNamed ("ga_nonEmpty_" ++ show s)
+      ++ [makeNamed (mkNonEmptyAxiomName s)
          $ Quantification Existential [vx] (df xt) nullRange
          | hasBot]
-      ++ [makeNamed ("ga_notDefBottom_" ++ show s)
+      ++ [makeNamed (mkNotDefBotAxiomName s)
          $ let bty = toOP_TYPE $ botType s
                bt = mkAppl (mkQualOp (uniqueBotName bty) bty) []
            in if uniqBot then
@@ -254,7 +266,7 @@ generateAxioms uniqBot bsorts sig = concatMap (\ s -> let
     $ map (\ (f, typ) ->
       let vs = map (\ (s, i) -> mkVarDeclStr ("x_" ++ show i) s)
               $ number $ opArgs typ
-      in makeNamed ("ga_totality_" ++ show f)
+      in makeNamed (mkTotalityAxiomName f)
       -- forall x_i:s_i . d f(x_1, ..., x_n) {<}=> d x_1 /\\ ... /\\ d x_n
          $ mkForall vs
            ((if opKind typ == Total then mkEqv else mkImpl)

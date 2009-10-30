@@ -40,7 +40,9 @@ import qualified CASL.Inject as CASLInject
 import Common.AS_Annotation (makeNamed, Named, SenAttr(..))
 import qualified Common.Lib.Rel as Rel
 
-import Comorphisms.CASL2PCFOL (mkEmbInjName)
+import Comorphisms.CASL2PCFOL (mkEmbInjName, mkTransAxiomName)
+import Comorphisms.CASL2SubCFOL (mkNotDefBotAxiomName, mkTotalityAxiomName)
+
 import Comorphisms.CFOL2IsabelleHOL (IsaTheory)
 import qualified Comorphisms.CFOL2IsabelleHOL as CFOL2IsabelleHOL
 
@@ -743,13 +745,7 @@ getCollectionTotAx pfolSign =
         totFilter (_,setOpType) = let listOpType = Set.toList setOpType
                                  in CASLSign.opKind (head listOpType) == Total
         totList = filter totFilter opList
-
-        mkTotAxName = (\i -> "ga_totality"
-                             ++ (if (i==0)
-                                 then ""
-                                 else ("_" ++ show i))
-                      )
-    in map mkTotAxName [0 .. (length(totList) - 1)]
+    in map (mkTotalityAxiomName . fst) totList
 
 -- | Return the name of the definedness function for a sort. We need
 --   to know all sorts to perform this workaround
@@ -816,15 +812,9 @@ getCollectionEmbInjAx sortRel =
     let mkName (s,s') = mkEmbInjName s s'
     in map mkName sortRel
 
--- | Return the list of strings of all ga_notDefBottom axioms. This function is
---   not implemented in a satisfactory way
+-- | Return the list of strings of all ga_notDefBottom axioms.
 getCollectionNotDefBotAx :: [SORT] -> [String]
-getCollectionNotDefBotAx sorts =
-    let mkNotDefBotAxName = (\i -> "ga_notDefBottom"
-                                   ++ (if (i==0)
-                                       then ""
-                                       else ("_" ++ show i)))
-    in map mkNotDefBotAxName [0 .. (length(sorts) - 1)]
+getCollectionNotDefBotAx = map mkNotDefBotAxiomName
 
 -- | Return the list of string of all decomposition theorem names that we
 --   generate. This function is not implemented in a satisfactory way
@@ -852,17 +842,9 @@ getInjectivityThmName :: (SORT,SORT) -> String
 getInjectivityThmName (s, s') =
     "injectivity_" ++ (convertSort2String s) ++ "_" ++ (convertSort2String s')
 
-
 -- | Return the list of strings of all the transitivity axioms names produced by
---   the translation CASL2PCFOL; CASL2SubCFOL. This function is not implemented
---   in a satisfactory way.
+--   the translation CASL2PCFOL; CASL2SubCFOL.
 getCollectionTransAx :: [(SORT,SORT)] -> [String]
 getCollectionTransAx sortRel =
-    let tripples = [(s1,s2,s3) |
-                    (s1,s2) <- sortRel, (s2',s3) <- sortRel, s2==s2']
-        mkEmbInjAxName = (\i -> "ga_transitivity"
-                                ++ (if (i==0)
-                                    then ""
-                                    else ("_" ++ show i))
-                         )
-    in  map mkEmbInjAxName [0 .. (length(tripples) - 1)]
+    [mkTransAxiomName s1 s2 s3
+         | (s1,s2) <- sortRel, (s2',s3) <- sortRel, s2==s2']

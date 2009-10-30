@@ -499,3 +499,6 @@ mkVarDeclStr = mkVarDecl . mkSimpleId
 
 mkAxName :: String -> SORT -> SORT -> String
 mkAxName str s s' = "ga_" ++ str ++ "_" ++ show s ++ "_to_" ++ show s'
+
+mkAxNameSingle :: String -> SORT -> String
+mkAxNameSingle str s = "ga_" ++ str ++ "_" ++ show s
