@@ -317,8 +317,7 @@ genArgRest :: String
 genArgRest sen_name genProp sl spl fs =
     let vars = genVars sl
         mquant = genQuantification (genProp vars) vars spl
-    in maybe fs (\ quant -> mapNamed (const quant) (makeNamed "" sen_name)
-                             : fs) mquant
+    in maybe fs (\ quant -> makeNamed sen_name quant : fs) mquant
 
 genPredication :: PRED_NAME -> [VAR_DECL] -> FORMULA f
 genPredication pName vars =
