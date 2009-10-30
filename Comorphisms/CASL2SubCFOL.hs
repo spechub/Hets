@@ -217,7 +217,7 @@ generateAxioms uniqBot bsorts sig = concatMap (\ s -> let
       prj z = projectUnique Total nullRange z s
       df z = defined bsorts z nullRange
       in concatMap (\ s' ->
-      [makeNamed (mkAxName "projection_injectivity" s' s)
+      [makeNamed (mkAxName "total_projection_injectivity" s' s)
       $ let xv = mkVarDeclStr "x" s'
             yv = mkVarDeclStr "y" s'
             tx = toQualVar xv
@@ -231,7 +231,7 @@ generateAxioms uniqBot bsorts sig = concatMap (\ s -> let
                     else epxy) $ mkStEq tx ty)
            nullRange
             -- forall x:s . d(x) => pr(x)=x
-      , makeNamed (mkAxName "projection" s' s)
+      , makeNamed (mkAxName "total_projection" s' s)
       $ let eq = mkStEq (prj $ Sorted_term xt s' nullRange) xt
         in mkForall [vx]
                (if hasBot then mkImpl (df xt) eq else eq)
@@ -242,13 +242,12 @@ generateAxioms uniqBot bsorts sig = concatMap (\ s -> let
          | hasBot]
       ++ [makeNamed ("ga_notDefBottom_" ++ show s)
          $ let bty = toOP_TYPE $ botType s
-               bt = mkAppl (Qual_op_name (uniqueBotName bty) bty nullRange) []
+               bt = mkAppl (mkQualOp (uniqueBotName bty) bty) []
            in if uniqBot then
               -- forall x:s . not d(x) <=> x=bottom
               mkForall [vx]
-              (mkEqv (Negation (df xt) nullRange)
-               $ mkStEq xt bt) nullRange
-              else Negation (df bt) nullRange -- not d(bottom)
+              (mkEqv (mkNeg $ df xt) $ mkStEq xt bt) nullRange
+              else mkNeg $ df bt -- not d(bottom)
          | hasBot]) sortList
    ++ filter (not . is_True_atom . sentence)
    (map (mapNamed $ simplifyFormula id)
@@ -259,7 +258,7 @@ generateAxioms uniqBot bsorts sig = concatMap (\ s -> let
       -- forall x_i:s_i . d f(x_1, ..., x_n) {<}=> d x_1 /\\ ... /\\ d x_n
          $ mkForall vs
            ((if opKind typ == Total then mkEqv else mkImpl)
-            (defined bsorts (mkAppl (Qual_op_name f (toOP_TYPE typ) nullRange)
+            (defined bsorts (mkAppl (mkQualOp f $ toOP_TYPE typ)
                       $ map toQualVar vs) nullRange)
             $ defVards bsorts vs) nullRange) opList
     ++ map (\ (p, typ) ->
@@ -273,6 +272,8 @@ generateAxioms uniqBot bsorts sig = concatMap (\ s -> let
                       (map toQualVar vs) nullRange)
             $ defVards bsorts vs) nullRange) predList)
     where
+        mkQualOp f ty = Qual_op_name f ty nullRange
+        mkNeg f = Negation f nullRange
         minSupers so = keepMinimals sig id $ Set.toList $ Set.delete so
                            $ supersortsOf so sig
         sortList = Set.toList bsorts
