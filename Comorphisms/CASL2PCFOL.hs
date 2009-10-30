@@ -107,7 +107,7 @@ mkEmbInjName = mkInjectivityName "embedding"
 
 -- | Make the name for the projection injectivity axiom
 mkProjInjName :: SORT -> SORT -> String
-mkProjInjName s s' = mkInjectivityName "projection" s' s
+mkProjInjName = mkInjectivityName "projection"
 
 -- | create a quantified injectivity implication
 mkInjectivity :: (TERM () -> TERM ()) -> VAR_DECL -> VAR_DECL -> FORMULA ()
@@ -137,7 +137,7 @@ mkEmbInjAxiom s s' =
 --   i.e., forall x,y:s . pr(x)=e=pr(y) => x=e=y
 mkProjInjAxiom :: SORT -> SORT -> Named (FORMULA ())
 mkProjInjAxiom s s' =
-    makeNamed (mkProjInjName s s')
+    makeNamed (mkProjInjName s' s)
       $ mkInjectivity (projectTo s) (mkVarDeclStr "x" s') $ mkVarDeclStr "y" s'
 
 -- | Make the name for the projection axiom
@@ -154,7 +154,7 @@ mkXExEq s fl fr = let
 -- | Make the named sentence for the projection axiom from s' to s
 --   i.e., forall x:s . pr(inj(x))=e=x
 mkProjAxiom:: SORT -> SORT -> Named (FORMULA ())
-mkProjAxiom s s' = makeNamed (mkProjName s s')
+mkProjAxiom s s' = makeNamed (mkProjName s' s)
     $ mkXExEq s (projectTo s . injectTo s') id
 
 -- | Make the name for the transitivity axiom from s to s' to s''
@@ -179,22 +179,14 @@ mkIdAxiom s s' = makeNamed (mkIdAxiomName s s')
     $ mkXExEq s (injectTo s . injectTo s') id
 
 generateAxioms :: Sign f e -> [Named (FORMULA ())]
-generateAxioms sig = concat
-    $ [[mkEmbInjAxiom s s'] ++ [mkProjInjAxiom s s'] ++ [mkProjAxiom s s']
-      | s <- sorts,
-        s' <- realSupers s]
-    ++ [[mkTransAxiom s s' s'']
-          | s <- sorts,
-            s' <- realSupers s,
-            s'' <- realSupers s',
-            s'' /= s]
-    ++ [[mkIdAxiom s s']
-          | s <- sorts,
-            s' <- realSupers s,
-            Set.member s $ supersortsOf s' sig]
+generateAxioms sig = concatMap (\ s ->
+    concatMap (\ s' ->
+      [mkIdAxiom s s' | Set.member s $ supersortsOf s' sig ]
+      ++ mkEmbInjAxiom s s' : mkProjInjAxiom s s' : mkProjAxiom s s'
+      : map (mkTransAxiom  s s') (realSupers s'))
+    $ realSupers s) $ Set.toList $ sortSet sig
     where
         realSupers so = Set.toList $ supersortsOf so sig
-        sorts = Set.toList $ sortSet sig
 
 f2Formula :: FORMULA f -> FORMULA f
 f2Formula = projFormula Partial id . injFormula id
