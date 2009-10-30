@@ -183,7 +183,7 @@ generateAxioms sig = concatMap (\ s ->
     concatMap (\ s' ->
       [mkIdAxiom s s' | Set.member s $ supersortsOf s' sig ]
       ++ mkEmbInjAxiom s s' : mkProjInjAxiom s s' : mkProjAxiom s s'
-      : map (mkTransAxiom  s s') (realSupers s'))
+      : map (mkTransAxiom  s s') (filter (/= s) $ realSupers s'))
     $ realSupers s) $ Set.toList $ sortSet sig
     where
         realSupers so = Set.toList $ supersortsOf so sig
