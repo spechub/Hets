@@ -400,8 +400,7 @@ mapSen ssMap f =
     _ -> return $ mapSen1 ssMap f
 
 mapSen1 :: SubSortMap -> FORMULA f -> FORMULA f
-mapSen1 subSortMap f =
-    case f of
+mapSen1 subSortMap f = case f of
     Conjunction fl pl -> Conjunction (map (mapSen1 subSortMap) fl) pl
     Disjunction fl pl -> Disjunction (map (mapSen1 subSortMap) fl) pl
     Implication f1 f2 b pl ->
@@ -449,13 +448,11 @@ mapSen1 subSortMap f =
               else conjunct [mkVarPreds vdl, f1]
           mkVarPreds = conjunct . map mkVarPred
           mkVarPred (Var_decl vs s _) = conjunct $ map (mkVarPred1 s) vs
-          mkVarPred1 s v =
-              let sTop = lkupTop subSortMap s
-                  p = lkupPredName subSortMap s
-              in case p of
+          mkVarPred1 s v = case lkupPredName subSortMap s of
                  -- no subsort? then no relativization
                  Nothing -> True_atom nullRange
-                 Just p1 -> genPredAppl p1 [sTop] [mkVarTerm v s]
+                 Just p1 -> genPredication p1
+                   [mkVarDecl v $ lkupTop subSortMap s]
 
 
 mapTerm :: SubSortMap -> TERM f -> TERM f
