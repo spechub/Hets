@@ -17,15 +17,18 @@ module Isabelle.Translate
     , mkIsaConstT, mkIsaConstIT, transString, isaPrelude, IsaPreludes
     , getConstIsaToks ) where
 
+import Common.AS_Annotation
+import Common.GlobalAnnotations
 import Common.Id
 import Common.ProofUtils
-import Common.GlobalAnnotations
-import Common.AS_Annotation
+import Common.Utils
+import qualified Common.Lib.Rel as Rel
 
 import qualified Data.Map as Map
 import qualified Data.Set as Set
-import qualified Common.Lib.Rel as Rel
+
 import Data.Char
+import Data.Maybe
 import Data.List
 
 import Isabelle.IsaSign
@@ -99,7 +102,7 @@ toAltSyntax prd over ga n i thy toks = let
     ni = placeCount i
     atoks@(hd : tl) = getAltTokenList newPlace over i thy
     compoundToks = map (: []) ",[]{}"
-    convert = \ Token { tokStr = s } ->
+    convert Token { tokStr = s } =
       if elem s $ newPlace : compoundToks then s else br ++ quote s
     tts = concatMap convert tl
     ht = let chd = convert hd in
@@ -145,7 +148,7 @@ showIsaConstT ide thy = showIsaT1 (transConstStringT thy) ide
 -- also pass number of arguments
 mkIsaConstT :: Bool -> GlobalAnnos -> Int -> Id -> BaseSig -> Set.Set String
             -> VName
-mkIsaConstT prd ga n ide = mkIsaConstVName 0 showIsaConstT prd ga n ide
+mkIsaConstT = mkIsaConstVName 0 showIsaConstT
 
 mkIsaConstVName :: Int -> (Id -> BaseSig -> String) -> Bool -> GlobalAnnos
                 -> Int -> Id -> BaseSig -> Set.Set String -> VName
@@ -179,16 +182,16 @@ getConstIsaToks ide i thy = if i < 2 then
    else getConstIsaToksAux ide i thy
 
 getConstIsaToksAux :: Id -> Int -> BaseSig -> Set.Set String
-getConstIsaToksAux ide i thy =
+getConstIsaToksAux ide i =
    foldr (Set.insert . tokStr)
-             Set.empty $ getAltTokenList "" i ide thy
+             Set.empty . getAltTokenList "" i ide
 
 transIsaStringT :: Map.Map BaseSig (Set.Set String) -> BaseSig
                 -> String -> String
 transIsaStringT m i s = let t = transStringAux False s in
-  if Set.member t $ maybe (error "Isabelle.transIsaStringT") id
+  if Set.member t $ fromMaybe (error "Isabelle.transIsaStringT")
          $ Map.lookup i m
-  then transIsaStringT m i $ "_" ++ s else t
+  then transIsaStringT m i $ '_' : s else t
 
 transConstStringT :: BaseSig -> String -> String
 transConstStringT = transIsaStringT $ preConsts isaPrelude
@@ -216,11 +219,12 @@ transStringAux b str = let
     "" -> error "transString"
     c : s -> let l = replaceChar1 c in
              (if isDigit c || elem c "_'" then [x, c]
-             else l) ++ concatMap replaceChar1 s
+             else l) ++ concatMap replaceChar1
+        (if b then replace "' '" "'Space'" s else s)
 
 -- | injective replacement of special characters
 replaceChar :: Char -> String
 -- <http://www.htmlhelp.com/reference/charset/>
 replaceChar c = if isIsaChar c then [c] else let n = ord c in
     if n <= 32 || n >= 127 && n < 160 || n > 255 then "Slash_" ++ show n
-    else maybe (error "Isabelle.replaceChar") id $ Map.lookup c charMap
+    else fromMaybe (error "Isabelle.replaceChar") $ Map.lookup c charMap
