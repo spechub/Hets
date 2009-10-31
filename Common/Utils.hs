@@ -14,6 +14,7 @@ Utility functions that can't be found in the libraries
 
 module Common.Utils
   ( isSingleton
+  , replace
   , hasMany
   , number
   , combine
@@ -45,6 +46,20 @@ import qualified Data.Set as Set
 
 import System.Environment
 import Control.Monad
+
+-- | replace first (non-empty) sublist with second one in third argument list
+replace :: Eq a => [a] -> [a] -> [a] -> [a]
+replace sl r = case sl of
+  [] -> error "Common.Utils.replace: empty list"
+  _ -> replaceBy $ \ l@(hd : tl) -> case stripPrefix sl l of
+    Nothing -> ([hd], tl)
+    Just rt -> (r, rt)
+
+replaceBy :: ([a] -> ([b], [a])) -> [a] -> [b]
+replaceBy splt l = case l of
+  [] -> []
+  _ -> let (ft, rt) = splt l in
+    ft ++ replaceBy splt rt
 
 -- | add indices to a list starting from one
 number :: [a] -> [(a, Int)]
