@@ -270,7 +270,8 @@ generateAxioms uniqBot bsorts sig = concatMap (\ s -> let
       -- forall x_i:s_i . d f(x_1, ..., x_n) {<}=> d x_1 /\\ ... /\\ d x_n
          $ mkForall vs
            ((if opKind typ == Total then mkEqv else mkImpl)
-            (defined bsorts (mkAppl (mkQualOp f $ toOP_TYPE typ)
+            (defined bsorts
+             (mkAppl (mkQualOp f $ toOP_TYPE typ { opKind = Total })
                       $ map toQualVar vs) nullRange)
             $ defVards bsorts vs) nullRange) opList
     ++ map (\ (p, typ) ->
