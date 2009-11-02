@@ -27,16 +27,16 @@ If the graph contains cycles exclude suitable modules in 'exclude'.
 module Main where
 
 -- for graph display
-import DaVinciGraph
-import GraphDisp
-import GraphConfigure
+import UDrawGraph.Graph
+import Graphs.GraphDisp
+import Graphs.GraphConfigure
 
 -- for windows display
-import TextDisplay
-import Configuration (size)
-import Events (sync)
-import Destructible (destroy, destroyed)
-import qualified HTk
+import HTk.Toolkit.TextDisplay
+import HTk.Kernel.Configuration (size)
+import Events.Events (sync)
+import Events.Destructible (destroy, destroyed)
+import qualified HTk.Toplevel.HTk as HTk
 
 import qualified Data.Map as Map
 import qualified Data.Set as Set
