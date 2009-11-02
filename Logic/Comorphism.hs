@@ -43,12 +43,16 @@ module Logic.Comorphism
 import Logic.Logic
 import Logic.Coerce
 import Logic.ExtSign
-import Common.ExtSign
-import Common.Result
-import Common.ProofUtils
+
 import Common.AS_Annotation
 import Common.Doc
 import Common.DocUtils
+import Common.ExtSign
+import Common.Id
+import Common.ProofUtils
+import Common.Result
+
+import Data.Maybe
 import qualified Data.Set as Set
 import Data.Typeable
 
@@ -119,8 +123,8 @@ targetSublogic :: Comorphism cid
             lid2 sublogics2 basic_spec2 sentence2 symb_items2 symb_map_items2
                 sign2 morphism2 symbol2 raw_symbol2 proof_tree2
          => cid -> sublogics2
-targetSublogic cid = maybe (top_sublogic $ targetLogic cid)
-                           id $ mapSublogic cid $ sourceSublogic cid
+targetSublogic cid = fromMaybe (top_sublogic $ targetLogic cid)
+                           $ mapSublogic cid $ sourceSublogic cid
 
 -- | this function is base on 'map_theory' using no sentences as input
 map_sign :: Comorphism cid
@@ -186,15 +190,19 @@ wrapMapTheory cid (sign, sens) = let res = map_theory cid (sign, sens) in
             senLog ->
               if isSubElem senLog sub
                  then res
-                 else fail $ "for '" ++ language_name cid ++
+                 else Result
+                  [ Diag Hint
+                      (show (vcat $ pretty sign : map
+                                (print_named $ sourceLogic cid) sens))
+                      nullRange
+                  , Diag Error
+                      ("for '" ++ language_name cid ++
                            "' expected sublogic '" ++
                            sublogicName sub ++
                            "'\n but found sublogic '" ++
                            sublogicName senLog ++
                            "' with signature sublogic '" ++
-                           sublogicName sigLog ++ "'\n" ++
-                 show (vcat $ pretty sign : map
-                                (print_named $ sourceLogic cid) sens)
+                           sublogicName sigLog ++ "'") nullRange] Nothing
 
 simpleTheoryMapping :: (sign1 -> sign2) -> (sentence1 -> sentence2)
                     -> (sign1, [Named sentence1])
@@ -236,7 +244,7 @@ mkInclComorphism :: (Logic lid sublogics
                  -> m (InclComorphism lid sublogics)
 mkInclComorphism lid srcSub trgSub =
     if isSubElem srcSub trgSub
-    then return $ InclComorphism
+    then return InclComorphism
       { inclusion_logic = lid
       , inclusion_source_sublogic = srcSub
       , inclusion_target_sublogic = trgSub }
@@ -250,10 +258,9 @@ instance (Language lid, Eq sublogics, Show sublogics, SublogicName sublogics)
                 lname = language_name lid
             in if sub_src == sub_trg
                then "id_" ++ lname ++
-                    if null sblName
-                    then "" else "." ++ sblName
-               else "incl_" ++ lname ++ ":" ++
-                    sblName ++ "->" ++ sublogicName sub_trg
+                    if null sblName then "" else '.' : sblName
+               else "incl_" ++ lname ++ ':'
+                    : sblName ++ "->" ++ sublogicName sub_trg
 
 instance Logic lid sublogics
         basic_spec sentence symb_items symb_map_items
@@ -275,7 +282,7 @@ instance Logic lid sublogics
                else Nothing
            map_theory _ = return
            map_morphism _ = return
-           map_sentence _ = \_ -> return
+           map_sentence _ _ = return
            map_symbol _ _ = Set.singleton
            constituents cid =
                if inclusion_source_sublogic cid
@@ -317,10 +324,9 @@ instance (Comorphism cid1
      sourceSublogic cid1
    mapSublogic (CompComorphism cid1 cid2) sl =
          mapSublogic cid1 sl >>=
-           (\ y -> mapSublogic cid2 $
-          forceCoerceSublogic (targetLogic cid1) (sourceLogic cid2) y)
-   map_sentence (CompComorphism cid1 cid2) =
-       \si1 se1 ->
+           mapSublogic cid2 .
+            forceCoerceSublogic (targetLogic cid1) (sourceLogic cid2)
+   map_sentence (CompComorphism cid1 cid2) si1 se1 =
          do (si2,_) <- map_sign cid1 si1
             se2 <- map_sentence cid1 si1 se1
             (si2', se2') <- coerceBasicTheory
@@ -330,14 +336,13 @@ instance (Comorphism cid1
                 [x] -> map_sentence cid2 si2' $ sentence x
                 _ -> error "CompComorphism.map_sentence"
 
-   map_theory (CompComorphism cid1 cid2) =
-       \ti1 ->
+   map_theory (CompComorphism cid1 cid2) ti1 =
          do ti2 <- map_theory cid1 ti1
             ti2' <- coerceBasicTheory (targetLogic cid1) (sourceLogic cid2)
                         "Mapping theory along comorphism" ti2
             wrapMapTheory cid2 ti2'
 
-   map_morphism (CompComorphism cid1 cid2) = \ m1 ->
+   map_morphism (CompComorphism cid1 cid2) m1 =
        do m2 <- map_morphism cid1 m1
           m3 <- coerceMorphism (targetLogic cid1) (sourceLogic cid2)
                   "Mapping signature morphism along comorphism"m2
@@ -458,4 +463,4 @@ compComorphism (Comorphism cid1) (Comorphism cid2) =
          (_,True) -> return cm1
          _ ->  -} return $ Comorphism (CompComorphism cid1 cid2)
        else fail $ "Subl" ++ msg
-    else fail $ "L" ++ msg
+    else fail $ 'L' : msg
