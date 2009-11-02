@@ -45,3 +45,4 @@ moreChecks
 checkCalculi
 checkEnvs
 checkHpfs
+ssh denebola "(cd /tmp; \rm -f eprover* formalDescription* tstp* *.tptp)"
