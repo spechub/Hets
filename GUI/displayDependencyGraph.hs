@@ -104,18 +104,23 @@ main = do
     HTk.finishHTk
 
 exclude :: String -> Bool
-exclude s = not $
-    isPrefixOf "ATC." s || isPrefixOf ".ATC_" (dropWhile (/= '.') s)
+exclude s = not
+    $ isPrefixOf "ATC." s || isPrefixOf ".ATC_" (dropWhile (/= '.') s)
     || Set.member s (Set.fromList
     [ "Isabelle.CreateTheories"
+    , "CspCASLProver.Utils", "CspCASLProver.IsabelleUtils"
+    , "CspCASLProver.TransProcesses", "CspCASLProver.CspCASLProver"
+    , "CASL.QuickCheck"
     , "OWL.StructureAnalysis", "OWL.OWLAnalysis"
-    , "OWL.ProvePellet"
+    , "OWL.ProvePellet", "OWL.ProveFact"
+    , "Proofs.InferBasic", "Proofs.BatchProcessing"
+    , "Comorphisms.GetPreludeLib"
+    , "Maude.Maude2DG", "Maude.PreComorphism"
     , "Haskell.Haskell2DG", "Haskell.CreateModules"
-    , "Comorphisms.KnownProvers", "Interfaces.GenericATPState", "CMDL.Utils"
-    , "GUI.Utils", "GUI.ProofManagement" -- Proofs
-    , "Proofs.Automatic", "Driver.Options" -- Static
-    , "Proofs.EdgeUtils", "Proofs.StatusUtils" -- Driver
-    , "Proofs.BatchProcessing", "Interfaces.GenericATPState"
+    , "Comorphisms.KnownProvers", "Comorphisms.LogicGraph"
+    , "Interfaces.GenericATPState"
+    , "GUI.Utils"
+    , "Driver.Options" -- Static
     , "GUI.GenericATP", "SoftFOL.CreateDFGDoc"
     , "SoftFOL.MathServMapping", "SoftFOL.ProveMathServ"
     , "SoftFOL.ProveDarwin", "SoftFOL.ProveSPASS"
@@ -124,8 +129,9 @@ exclude s = not $
     , "Propositional.Prop2CNF", "Propositional.Prop2CASLHelpers"
     , "Propositional.Prove"
     , "Modifications.ModalEmbedding"
-    , "Static.AnalysisLibrary"
-    , "OMDoc.OMDocDefs", "OMDoc.OMDocOutput"
+    , "Static.AnalysisLibrary", "Static.WACocone"
+    , "OMDoc.OMDocDefs", "OMDoc.OMDocOutput", "OMDoc.DataTypes"
+    , "OMDoc.Export", "OMDoc.Sentences"
     , "OMDoc.OMDocInput", "OMDoc.HetsDefs", "Debug.Trace"
     ])
 
