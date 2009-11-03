@@ -127,7 +127,7 @@ rmNull = Map.filter (not . Set.null)
 
 -- | make relation irreflexive
 irreflex :: Ord a => Rel a -> Rel a
-irreflex (Rel m) = Rel $ rmNull $ Map.mapWithKey (Set.delete) m
+irreflex (Rel m) = Rel $ rmNull $ Map.mapWithKey Set.delete m
 
 -- | compute strongly connected components for a transitively closed relation
 sccOfClosure :: Ord a => Rel a -> [Set.Set a]
@@ -145,8 +145,7 @@ collaps :: Ord a => [Set.Set a] -> Rel a -> Rel a
 collaps = delSet . Set.unions . List.map Set.deleteMin
 
 setToMap :: Ord a => Set.Set a -> Map.Map a a
-setToMap s = Map.fromDistinctAscList $
-             List.map (\ a -> (a, a)) $ Set.toList s
+setToMap = Map.fromDistinctAscList . List.map (\ a -> (a, a)) . Set.toList
 
 {- | transitive reduction (minimal relation with the same transitive closure)
      of a transitively closed DAG (i.e. without cycles)! -}
@@ -187,7 +186,7 @@ image f s =
 -- | map the values of a relation
 map :: (Ord a, Ord b) => (a -> b) -> Rel a -> Rel b
 map f (Rel m) = Rel $ Map.foldWithKey
-    ( \ a v -> Map.insertWith Set.union (f a) $ Set.map f v) Map.empty m
+    ( \ a -> Map.insertWith Set.union (f a) . Set.map f) Map.empty m
 
 -- | Restriction of a relation under a set
 restrict :: Ord a => Rel a -> Set.Set a -> Rel a
@@ -203,7 +202,7 @@ toSet = Set.fromDistinctAscList . toList
 
 -- | convert a set of ordered pairs to a relation
 fromSet :: (Ord a) => Set.Set (a, a) -> Rel a
-fromSet s = fromAscList $ Set.toList s
+fromSet = fromAscList . Set.toList
 
 -- | convert a sorted list of ordered pairs to a relation
 fromAscList :: (Ord a) => [(a, a)] -> Rel a
@@ -222,9 +221,9 @@ elemsSet = Set.unions . Map.elems
 {- | Construct a precedence map from a closed relation. Indices range
    between 1 and the second value that is output. -}
 toPrecMap :: Ord a =>  Rel a -> (Map.Map a Int, Int)
-toPrecMap r = foldl ( \ (m1, c) s -> let n = c + 1 in
+toPrecMap = foldl ( \ (m1, c) s -> let n = c + 1 in
                     (Set.fold ( \ i -> Map.insert i n) m1 s, n))
-                 (Map.empty, 0) $ topSort r
+                 (Map.empty, 0) . topSort
 
 topSortDAG :: Ord a => Rel a -> [Set.Set a]
 topSortDAG r@(Rel m) = if Map.null m then [] else
@@ -253,8 +252,8 @@ mostRightOfCollapsed :: Ord a => Rel a -> Set.Set a
 mostRightOfCollapsed r@(Rel m) = if Map.null m then Set.empty
     else let Rel im = irreflex r
              mr = elemsSet im Set.\\ Map.keysSet im
-         in if Set.null mr then Map.keysSet $ Map.filterWithKey (\ k v ->
-                                           Set.singleton k == v) m
+         in if Set.null mr then Map.keysSet $ Map.filterWithKey
+                ((==) . Set.singleton) m
             else mr
 
 {- |
@@ -286,7 +285,7 @@ addCycle :: Ord a => Set.Set a -> Rel a -> Rel a
 addCycle c r = if Set.null c then error "Common.Lib.Rel.addCycle" else
     let (a, b) = Set.deleteFindMin c
         (m, d) = Set.deleteFindMax c
-    in insert m a $ foldr ( \ (x, y) -> insert x y) (delete a a r) $
+    in insert m a $ foldr (uncurry insert) (delete a a r) $
        zip (Set.toList d) (Set.toList b)
 
 {- | calculates if two given elements have a common left element
@@ -295,8 +294,7 @@ addCycle c r = if Set.null c then error "Common.Lib.Rel.addCycle" else
 -}
 haveCommonLeftElem :: (Ord a) => a -> a -> Rel a -> Bool
 haveCommonLeftElem t1 t2 =
-    Map.fold(\ e rs -> rs || (t1 `Set.member` e &&
-                              t2 `Set.member` e)) False . toMap
+    Map.fold(\ e -> (|| Set.member t1 e && Set.member t2 e)) False . toMap
 
 -- | partitions a set into a list of disjoint non-empty subsets
 -- determined by the given function as equivalence classes
@@ -326,7 +324,7 @@ locallyFiltered :: (Ord a) => Rel a -> Bool
 locallyFiltered rel = (check . flatSet . partSet iso . mostRight) rel
     where iso x y = member x y rel && member y x rel
           check s = Set.null s ||
-                  Set.fold (\y rs -> rs &&
-                                     not (haveCommonLeftElem x y rel)) True s'
+                  Set.fold (\ y ->
+                            (&& not (haveCommonLeftElem x y rel))) True s'
                   && check s'
               where (x, s') = Set.deleteFindMin s
