@@ -186,9 +186,7 @@ instance (Modification lid1 cid1 cid2
              (sigma4, _) <- map_sign (targetComorphism lid1) sigma3
              case cast sigma4 of
                Nothing -> fail "Cannot compose modifications"
-               Just sigma5 ->do
-                 mor61 <- tauSigma lid2 sigma5
-                 comp mor6 mor61
+               Just sigma5 -> tauSigma lid2 sigma5 >>= comp mor6
 
 -- | Modifications
 data AnyModification = forall
@@ -213,10 +211,12 @@ data AnyModification = forall
             => Modification lid
 
 instance Eq AnyModification where
-  Modification lid1 == Modification lid2 =
-   language_name lid1 == language_name lid2
- -- for now
+  m1 == m2 = compare m1 m2 == EQ
 
+instance Ord AnyModification where
+  compare (Modification lid1) (Modification lid2) =
+    compare (language_name lid1) $ language_name lid2
+    -- maybe needs to be more elaborate
 
 instance Show AnyModification where
    show (Modification lid) = language_name lid

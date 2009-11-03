@@ -86,6 +86,7 @@ module Logic.Grothendieck
   , mkIdSquare
   , mkDefSquare
   , mirrorSquare
+  , lookupSquare
   ) where
 
 import Logic.Coerce
@@ -106,7 +107,7 @@ import Common.Token
 import Common.Utils
 
 import Control.Monad (foldM)
-import Data.Maybe (catMaybes)
+import Data.Maybe (mapMaybe)
 import Data.Typeable
 import qualified Data.Map as Map
 import qualified Data.Set as Set
@@ -737,13 +738,13 @@ compInclusion = genCompInclusion . inclusionAux False
 -- | Find all (composites of) comorphisms starting from a given logic
 findComorphismPaths :: LogicGraph ->  G_sublogics -> [AnyComorphism]
 findComorphismPaths lg (G_sublogics lid sub) =
-  nubOrd $ map fst $ iterateComp (0::Int) [(idc,[idc])]
+  nubOrd $ map fst $ iterateComp (0::Int) [(idc, [idc])]
   where
   idc = Comorphism (mkIdComorphism lid sub)
   coMors = Map.elems $ comorphisms lg
   -- compute possible compositions, but only up to depth 3
-  iterateComp n l = -- (l::[(AnyComorphism,[AnyComorphism])]) =
-    if n>1 || l==newL then newL else iterateComp (n+1) newL
+  iterateComp n l =
+    if n > 1 || l == newL then newL else iterateComp (n + 1) newL
     where
     newL = nubOrd $ l ++ concatMap extend l
     -- extend comorphism list in all directions, but no cylces
@@ -752,7 +753,7 @@ findComorphismPaths lg (G_sublogics lid sub) =
             case compComorphism coMor c of
               Nothing -> Nothing
               Just c1 -> Just (c1, c : cmps)
-        in catMaybes . map addCoMor $ filter (not . (`elem` cmps)) coMors
+        in mapMaybe addCoMor $ filter (not . (`elem` cmps)) coMors
 
 -- | finds first comorphism with a matching sublogic
 findComorphism ::Monad m => G_sublogics -> [AnyComorphism] -> m AnyComorphism
@@ -786,13 +787,13 @@ isTransportable (GMorphism cid _ ind1 mor ind2) =
 data LaxTriangle = LaxTriangle {
                      laxModif :: AnyModification,
                      laxFst, laxSnd, laxTarget :: AnyComorphism
-                   } deriving (Show, Eq)
+                   } deriving (Show, Eq, Ord)
 -- a weakly amalgamable square of lax triangles
 -- consists of two lax triangles with the same laxTarget
 
 data Square = Square {
                  leftTriangle, rightTriangle :: LaxTriangle
-              } deriving (Show, Eq)
+              } deriving (Show, Eq, Ord)
 
 -- for deriving Eq, first equality for modifications is needed
 
@@ -832,4 +833,11 @@ mirrorSquare :: Square -> Square
 mirrorSquare s = Square{
                  leftTriangle = rightTriangle s,
                  rightTriangle = leftTriangle s}
+
+lookupSquare :: AnyComorphism -> AnyComorphism -> LogicGraph -> Result [Square]
+lookupSquare com1 com2 lg = maybe (fail "lookupSquare") return $ do
+  sqL1 <- Map.lookup (com1, com2) $ squares lg
+  sqL2 <- Map.lookup (com2, com1) $ squares lg
+  return $ nubOrd $ sqL1 ++ map mirrorSquare sqL2
+  -- maybe adjusted if comparing AnyModifications change
 

@@ -179,7 +179,7 @@ addComps cm = Map.unions
               case compComorphism c1 c2 of
                 Just c3 -> Map.insert (l1, l4) c3 m
                 _ -> m
-              else m) (Map.empty) cm) (Map.toList cm)
+              else m) Map.empty cm) (Map.toList cm)
 
 addCompsN :: Map.Map (String, String) AnyComorphism
           -> Map.Map (String, String) AnyComorphism
@@ -218,14 +218,6 @@ logicGraph = emptyLogicGraph
     , qTATranslations =
        Map.fromList $ map (\x@(Comorphism c)-> (show (sourceLogic c), x))
                        qtaList}
-
-lookupSquare :: AnyComorphism -> AnyComorphism -> LogicGraph -> Result [Square]
-lookupSquare com1 com2 lg = maybe (fail "lookupSquare") return $ do
-                            sqL1 <- Map.lookup (com1, com2) $ squares lg
-                            sqL2 <- Map.lookup (com2, com1) $ squares lg
-                            return $ nub $ sqL1 ++ (map mirrorSquare sqL2)
- -- Here have to update to nub $ .. ++ ..
- -- after i write equality for AnyModifications (equality for Squares nyi)
 
 lookupSquare_in_LG :: AnyComorphism -> AnyComorphism -> Result [Square]
 lookupSquare_in_LG com1 com2 = lookupSquare com1 com2 logicGraph
