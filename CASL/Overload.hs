@@ -29,7 +29,6 @@ module CASL.Overload
   , haveCommonSupersorts
   , keepMinimals1
   , keepMinimals
-  , leqClasses
   ) where
 
 import CASL.Sign
@@ -206,7 +205,7 @@ minExpFORMULApred mef sign ide mty args pos = do
               Map.findWithDefault Set.empty ide $ predMap sign
         preds = case mty of
                    Nothing -> map (pSortBy predArgs sign)
-                              $ leqClasses (leqP' sign) preds'
+                              $ Rel.leqClasses (leqP' sign) preds'
                    Just ty -> [[ty] | Set.member ty preds']
     noOpOrPred preds "predicate" mty ide pos nargs
     expansions <- mapM (minExpTerm mef sign) args
@@ -306,7 +305,7 @@ minExpTermAppl mef sign ide mty args pos = do
               Map.findWithDefault Set.empty ide $ opMap sign
         ops = case mty of
                    Nothing -> map (pSortBy opArgs sign)
-                              $ leqClasses (leqF' sign) ops'
+                              $ Rel.leqClasses (leqF' sign) ops'
                    Just ty -> [[ty] | Set.member ty ops' ||
                                   -- might be known to be total
                                  Set.member ty {opKind = Total} ops' ]
@@ -471,10 +470,6 @@ leqP sign p1 p2 = length (predArgs p1) == length (predArgs p2)
 leqP' :: Sign f e -> PredType -> PredType -> Bool
 leqP' sign p1 =
     and . zipWith (haveCommonSubsorts sign) (predArgs p1) . predArgs
-
--- | Divide a Set (List) into equivalence classes w.r.t. eq
-leqClasses :: Ord a => (a -> a -> Bool) -> Set.Set a -> [[a]]
-leqClasses eq = map Set.toList . Rel.partSet eq
 
 cmpSubsort :: Sign f e -> POrder SORT
 cmpSubsort sign s1 s2 =

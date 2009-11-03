@@ -39,7 +39,7 @@ module Common.Lib.Rel
     , intransKernel, mostRight, restrict, delSet
     , toSet, fromSet, topSort, nodes, collaps
     , transpose, transReduce, setInsert, setToMap
-    , fromDistinctMap, locallyFiltered, flatSet, partSet
+    , fromDistinctMap, locallyFiltered, flatSet, partSet, leqClasses
     ) where
 
 import Prelude hiding (map, null)
@@ -306,6 +306,10 @@ partSet f s = if Set.null s then [] else
                   (ds, es) = List.partition (Set.null . Set.filter (f x))
                              $ partSet f s'
               in Set.insert x (Set.unions es) : ds
+
+-- | Divide a Set (List) into equivalence classes w.r.t. eq
+leqClasses :: Ord a => (a -> a -> Bool) -> Set.Set a -> [[a]]
+leqClasses eq = List.map Set.toList . partSet eq
 
 -- | flattens a list of non-empty sets and uses the minimal element of
 -- each set to represent the set

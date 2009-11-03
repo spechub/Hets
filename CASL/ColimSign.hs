@@ -211,7 +211,7 @@ buildOvrlAtNode graph' colim morMap ovrl names totalF nodeList =
                                    y g)
                        names $ Set.toList oSet
        equivF (id1, ot1) (id2, ot2) = (id1 == id2) && leqF sig ot1 ot2
-       parts = leqClasses equivF oSet
+       parts = Rel.leqClasses equivF oSet
        addParts rel equivList =
          foldl (\(r, f) l -> let l1 = map (\x -> Map.findWithDefault (x,n) x $
                                             Map.findWithDefault
@@ -388,7 +388,7 @@ buildPOvrlAtNode graph' colim morMap ovrl names nodeList =
                                    y g)
                        names $ Set.toList pSet
        equivP (id1, pt1) (id2, pt2) = (id1 == id2) && leqP sig pt1 pt2
-       parts = leqClasses equivP pSet
+       parts = Rel.leqClasses equivP pSet
        nmor = Map.findWithDefault (error "buildAtNode") n morMap
        addParts rel equivList =
          foldl (\r l -> let l1 = map (\x ->

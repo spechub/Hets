@@ -22,12 +22,13 @@ module Common.SetColimit(
   )
  where
 
+import Common.Id
 import Common.Lib.Graph
+import Common.Lib.Rel (leqClasses)
+
 import Data.Graph.Inductive.Graph
 import qualified Data.Map as Map
 import qualified Data.Set as Set
-import CASL.Overload(leqClasses)
-import Common.Id
 
 compose :: (Ord a) => Set.Set (a, Int) ->
                       Map.Map (a, Int) (a, Int) ->
