@@ -81,7 +81,7 @@ zchaffProver = (LP.mkProverTemplate zchaffS top zchaffProveGUI)
 -}
 propConsChecker :: LP.ConsChecker Sig.Sign AS_BASIC.FORMULA PropSL
                                   PMorphism.Morphism ProofTree
-propConsChecker = LP.ConsChecker zchaffS top consCheck
+propConsChecker = LP.mkConsChecker zchaffS top consCheck
 
 consCheck :: String -> LP.TacticScript
    -> LP.TheoryMorphism Sig.Sign AS_BASIC.FORMULA PMorphism.Morphism ProofTree

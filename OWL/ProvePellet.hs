@@ -87,7 +87,9 @@ pelletProver = (mkProverTemplate "Pellet" sl_top pelletGUI)
     , proveCMDLautomaticBatch = Just pelletCMDLautomaticBatch }
 
 pelletConsChecker :: ConsChecker Sign Axiom OWLSub OWLMorphism ProofTree
-pelletConsChecker = ConsChecker "Pellet" sl_top consCheck
+pelletConsChecker = (mkConsChecker "Pellet" sl_top consCheck)
+  { ccNeedsTimer = False }
+
 
 {- |
   Record for prover specific functions. This is used by both GUI and command

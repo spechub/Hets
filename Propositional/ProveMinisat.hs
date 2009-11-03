@@ -78,7 +78,7 @@ minisatProver = (LP.mkProverTemplate minisatS top minisatProveGUI)
 -}
 minisatConsChecker :: LP.ConsChecker Sig.Sign AS_BASIC.FORMULA PropSL
   PMorphism.Morphism ProofTree
-minisatConsChecker = LP.ConsChecker minisatS top consCheck
+minisatConsChecker = LP.mkConsChecker minisatS top consCheck
 
 consCheck :: String -> LP.TacticScript
   -> LP.TheoryMorphism Sig.Sign AS_BASIC.FORMULA PMorphism.Morphism ProofTree

@@ -240,7 +240,7 @@ ttProver = (LP.mkProverTemplate ttS top ttProveGUI)
 -}
 ttConsistencyChecker :: LP.ConsChecker Sig.Sign FORMULA PropSL
                                   PMorphism.Morphism ProofTree
-ttConsistencyChecker = LP.ConsChecker ttS top consCheck
+ttConsistencyChecker = LP.mkConsChecker ttS top consCheck
 
 consCheck :: String -> LP.TacticScript
   -> LP.TheoryMorphism Sig.Sign FORMULA PMorphism.Morphism ProofTree

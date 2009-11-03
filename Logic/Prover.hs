@@ -325,6 +325,8 @@ data CCStatus proof_tree = CCStatus
 data ConsChecker sign sentence sublogics morphism proof_tree = ConsChecker
   { ccName :: String
   , ccSublogic :: sublogics
+  , ccBatch :: Bool -- True for batch checkers
+  , ccNeedsTimer :: Bool -- True for checkers that ignore time limits
   , ccAutomatic :: String -- 1.
                  -> TacticScript  -- 2.
                  -> TheoryMorphism sign sentence morphism proof_tree  -- 3.
@@ -337,3 +339,13 @@ data ConsChecker sign sentence sublogics morphism proof_tree = ConsChecker
       -- output: consistency result status
   } deriving Typeable
 
+mkConsChecker :: String -> sublogics
+  -> (String -> TacticScript -> TheoryMorphism sign sentence morphism proof_tree
+      -> [FreeDefMorphism sentence morphism] -> IO (CCStatus proof_tree))
+  -> ConsChecker sign sentence sublogics morphism proof_tree
+mkConsChecker n sl f = ConsChecker
+  { ccName = n
+  , ccSublogic = sl
+  , ccBatch = True
+  , ccNeedsTimer = True
+  , ccAutomatic = f }
