@@ -11,22 +11,22 @@ Portability :  portable
 This module provides a GUI for the prover.
 -}
 
-module GUI.GtkProverGUI
-  (showProverGUI)
-  where
+module GUI.GtkProverGUI ( showProverGUI ) where
 
 import Graphics.UI.Gtk
 import Graphics.UI.Gtk.Glade
 
 import GUI.GtkUtils
 import qualified GUI.Glade.ProverGUI as ProverGUI
+import GUI.HTkProofDetails -- not implemented in Gtk
 
 import Common.AS_Annotation as AS_Anno
 import qualified Common.Doc as Pretty
-import qualified Common.Result as Result
+import Common.Result
 import qualified Common.OrderedMap as OMap
 import Common.ExtSign
 
+import Control.Monad ((<=<))
 import Control.Concurrent.MVar
 
 import Proofs.AbstractState
@@ -39,18 +39,20 @@ import qualified Comorphisms.KnownProvers as KnownProvers
 
 import Static.GTheory
 
-import Monad (when)
-
-import Data.IORef
 import qualified Data.Map as Map
 import Data.List
+import Data.Maybe ( fromJust, fromMaybe, isJust )
+
+data GProver = GProver { pName :: String
+                       , prover :: G_prover
+                       , comorphism :: [AnyComorphism]
+                       , selected :: Int }
 
 {- ProverGUI -}
 
 -- | Displays the consistency checker window
-showProverGUI ::
-  (Logic lid sublogics basic_spec sentence symb_items symb_map_items
-         sign morphism symbol raw_symbol proof_tree)
+showProverGUI :: Logic lid sublogics basic_spec sentence symb_items
+                       symb_map_items sign morphism symbol raw_symbol proof_tree
   => lid
   -> ProofActions lid sentence -- ^ record of possible GUI actions
   -> String -- ^ theory name
@@ -59,8 +61,8 @@ showProverGUI ::
   -> KnownProvers.KnownProversMap -- ^ map of known provers
   -> [(G_prover,AnyComorphism)] -- ^ list of suitable comorphisms to provers
                                 -- for sublogic of G_theory
-  -> IO (Result.Result G_theory)
-showProverGUI lid prGuiAcs thName warningTxt th knownProvers comorphList = do
+  -> IO (Result G_theory)
+showProverGUI lid prGuiAcs thName warn th knownProvers comorphList = do
   initState <- (initialState lid thName th knownProvers comorphList
                 >>= recalculateSublogicF prGuiAcs)
   state <- newMVar initState
@@ -105,218 +107,276 @@ showProverGUI lid prGuiAcs thName warningTxt th knownProvers comorphList = do
     axioms <- axiomMap initState
 
     -- set list data
-    listProvers <- setListData trvProvers id $ Map.keys $ proversMap initState
-    listGoals <- setListData trvGoals id $ OMap.keys $ goalMap initState
-    listAxioms <- setListData trvAxioms id
-                    $ map (\ (k,s) -> if wasTheorem s then "(Th) " ++ k else k)
-                    $ OMap.toList axioms
-    listTheorems <- setListData trvTheorems (id) $ OMap.keys $ goalMap initState
+    listProvers <- setListData trvProvers pName []
+    listGoals <- setListData trvGoals show $ toGoals initState
+    listAxioms <- setListData trvAxioms id $ toAxioms axioms
+    listTheorems <- setListData trvTheorems id $ toTheorem initState
+
+    let noProver = [ toWidget btnFineGrained
+                   , toWidget btnProve
+                   , toWidget lblComorphism
+                   , toWidget lblSublogic ]
+        noAxiom = [ toWidget btnAxiomsAll
+                  , toWidget btnAxiomsNone
+                  , toWidget btnAxiomsInvert
+                  , toWidget btnAxiomsFormer ]
+        noTheory = [ toWidget btnTheoremsAll
+                   , toWidget btnTheoremsNone
+                   , toWidget btnTheoremsInvert ]
+        noGoal = [ toWidget btnGoalsAll
+                 , toWidget btnGoalsNone
+                 , toWidget btnGoalsInvert
+                 , toWidget btnGoalsSelectOpen ]
+        prove = noProver ++ noAxiom ++ noTheory ++ noGoal ++
+                [ toWidget btnShowTheory
+                , toWidget btnShowSelectedTheory
+                , toWidget btnClose
+                , toWidget btnProofDetails
+                , toWidget btnDisplay ]
+        update s' = do
+          s <- updateGoals trvGoals listGoals =<<
+               updateComorphism lblComorphism trvProvers listProvers =<<
+               updateProver trvProvers listProvers =<<
+               updateSublogic lblSublogic prGuiAcs knownProvers =<<
+               setSelectedGoals trvGoals listGoals =<<
+               setSelectedSens trvAxioms listAxioms trvTheorems listTheorems s'
+          activate noProver
+            (isJust (selectedProver s) && not (null $ selectedGoals s))
+          return s
+
+    activate noGoal (not $ OMap.null $ goalMap initState)
+    activate noAxiom (not $ OMap.null axioms)
+    activate noTheory (not $ OMap.null $ goalMap initState)
 
     -- setup provers list
-    setListSelectorSingle trvProvers $ modifyMVar_ state
-                                     $ selectProver trvProvers listProvers
-    setSelectedProver trvProvers initState
-
-    let update = updateStatusSublogic lblSublogic trvGoals listGoals trvAxioms
-                   listAxioms trvTheorems listTheorems trvProvers listProvers
-                   prGuiAcs knownProvers
-        action = modifyMVar_ state $ update
+    setListSelectorSingle trvProvers $ modifyMVar_ state $
+      update <=< setSelectedProver trvProvers listProvers
 
     -- setup goal list
-    selectedGoals' <- setListSelectorMultiple trvGoals btnGoalsAll btnGoalsNone
-                        btnGoalsInvert action
-    onClicked btnGoalsSelectOpen $ modifyMVar_ state $ (\ s -> do
-      (Just model) <- treeViewGetModel trvGoals
-      selector <- treeViewGetSelection trvGoals
-      let
-        isOpen st =
-          let thst = thmStatus st
-          in if null thst
-            then True
-            else case maximum $ map snd $ thst of
+    setListSelectorMultiple trvGoals btnGoalsAll btnGoalsNone btnGoalsInvert $
+      modifyMVar_ state update
+
+    onClicked btnGoalsSelectOpen $ modifyMVar_ state $ \ s -> do
+      model <- treeViewGetModel trvGoals
+      sel <- treeViewGetSelection trvGoals
+      let isOpen st = let thst = thmStatus st in
+            null thst || case maximum $ map snd thst of
               BasicProof _ pst -> isOpenGoal $ goalStatus pst
               _ -> False
-        select iter = do
-          (row:[]) <- treeModelGetPath model iter
-          key <- listStoreGetValue listGoals row
-          if maybe (error "goal lookup") isOpen $ OMap.lookup key $ goalMap s
-            then do
-              modifyIORef selectedGoals' ((row:[]):)
-              treeSelectionSelectIter selector iter
-            else treeSelectionUnselectIter selector iter
-          return False
-      writeIORef selectedGoals' []
-      treeModelForeach model select
-      s' <- update s
-      return s')
+      treeModelForeach (fromJust model) $ \ i -> do
+        (row:[]) <- treeModelGetPath (fromJust model) i
+        key <- listStoreGetValue listGoals row
+        (if isOpen $ fromJust $ OMap.lookup (gName key) $ goalMap s
+          then treeSelectionSelectIter else treeSelectionUnselectIter) sel i
+        return False
+      update s
 
     -- setup axioms list
-    selectedAxioms <- setListSelectorMultiple trvAxioms btnAxiomsAll
-                        btnAxiomsNone btnAxiomsInvert action
-    onClicked btnAxiomsFormer $ modifyMVar_ state $ (\ s -> do
+    setListSelectorMultiple trvAxioms btnAxiomsAll btnAxiomsNone btnAxiomsInvert
+      $ modifyMVar_ state update
+    onClicked btnAxiomsFormer $ modifyMVar_ state $ \ s -> do
       aM <- axiomMap s
-      (Just model) <- treeViewGetModel trvAxioms
-      selector <- treeViewGetSelection trvAxioms
-      let
-        isNotFormerTheorem st = not $ wasTheorem st
-        select iter = do
-          (row:[]) <- treeModelGetPath model iter
-          key <- listStoreGetValue listAxioms row
-          k <- case stripPrefix "(Th) " key of
-            Just k -> return k
-            Nothing -> return key
-          if maybe (error "axiom lookup") isNotFormerTheorem $ OMap.lookup k aM
-            then do
-              modifyIORef selectedAxioms ((row:[]):)
-              treeSelectionSelectIter selector iter
-            else treeSelectionUnselectIter selector iter
-          return False
-      writeIORef selectedAxioms []
-      treeModelForeach model select
-      s' <- update s
-      return s')
+      model <- treeViewGetModel trvAxioms
+      sel <- treeViewGetSelection trvAxioms
+      treeModelForeach (fromJust model) $ \ i -> do
+        (row:[]) <- treeModelGetPath (fromJust model) i
+        key <- listStoreGetValue listAxioms row
+        k <- case stripPrefix "(Th) " key of
+          Just k -> return k
+          Nothing -> return key
+        (if not $ wasTheorem $ fromJust $ OMap.lookup k aM
+          then treeSelectionSelectIter else treeSelectionUnselectIter) sel i
+        return False
+      update s
+
+    modifyMVar_ state $ update <=< updateProver trvProvers listProvers
 
     -- setup theorems list
     setListSelectorMultiple trvTheorems btnTheoremsAll btnTheoremsNone
-                            btnTheoremsInvert action
+                            btnTheoremsInvert $ modifyMVar_ state update
 
     -- button bindings
     onClicked btnClose $ widgetDestroy window
 
     onClicked btnShowTheory $
-      displayTheoryWithWarning "Theory" thName warningTxt th
+      displayTheoryWithWarning "Theory" thName warn th
 
     onClicked btnShowSelectedTheory $ do
       s <- readMVar state
-      displayTheoryWithWarning "Selected Theory" thName warningTxt
-                               (selectedTheory s)
+      displayTheoryWithWarning "Selected Theory" thName warn $ selectedTheory s
 
-    onClicked btnDisplay $ do
+    onClicked btnDisplay $ readMVar state >>= displayGoals
+
+    onClicked btnProofDetails $ do
       s <- readMVar state
-      displayGoals s
+      forkIO_ $ doShowProofDetails s
 
-    onClicked btnProofDetails $ return ()
+    onClicked btnProve $ do
+      activate prove False
+      forkIOWithPostProcessing (readMVar state >>= proveF prGuiAcs)
+        $ \ (Result ds ms) -> do
+            s <- case ms of
+              Nothing -> do
+                errorDialog "Error" (showRelDiags 2 ds)
+                takeMVar state
+              Just res -> do
+                takeMVar state
+                return res
+            activate prove True
+            putMVar state =<< update s { proverRunning = False
+                                       , accDiags = accDiags s ++ ds}
 
-    onClicked btnProve $ return ()
-
-    onClicked btnFineGrained $ forkIO_ $ modifyMVar_ state $ (\ s -> do
-      let s' = s { proverRunning = True }
-      prState <- update s'
-      Result.Result ds ms'' <- fineGrainedSelectionF prGuiAcs prState
-      s'' <- case ms'' of
-        Nothing -> do
-          -- Is error needed?
-          --errorDialog "Error" (showRelDiags 2 ds)
-          return s'
-        Just res -> return res
-      return s'' { proverRunning = False
-                 , accDiags = accDiags s'' ++ ds })
+    onClicked btnFineGrained $ modifyMVar_ state $ \ s -> do
+      mp <- fineGrainedSelection trvProvers listProvers
+      update <=< updateProver trvProvers listProvers
+        $ maybe s (\ p -> s { selectedProver = Just $ pName p }) mp
 
     onDestroy window $ putMVar wait ()
 
     widgetShow window
 
   _ <- takeMVar wait
-  return $ Result.Result { Result.diags = []
-                         , Result.maybeResult = Nothing }
+  s <- takeMVar state
+  case theory s of
+    G_theory lidT sigT indT sensT _ -> do
+      gMap <- coerceThSens (logicId s) lidT "ProverGUI last coerce" $ goalMap s
+      return Result { diags = accDiags s
+                    , maybeResult = Just $ G_theory lidT sigT indT
+                                             (Map.union sensT gMap) startThId }
 
 -- | Called whenever the button "Display" is clicked.
-displayGoals ::
-  (Logic lid sublogics basic_spec sentence symb_items symb_map_items
-         sign morphism symbol raw_symbol proof_tree)
-  => ProofState lid sentence
-  -> IO ()
+displayGoals :: Logic lid sublogics basic_spec sentence symb_items
+                      symb_map_items sign morphism symbol raw_symbol proof_tree
+             => ProofState lid sentence -> IO ()
 displayGoals s = case theory s of
   G_theory lid1 (ExtSign sig1 _) _ _ _ -> do
     let thName = theoryName s
-        goalsText s' = show $ Pretty.vsep $
-                       map (print_named lid1 .
-                            AS_Anno.mapNamed (simplify_sen lid1 sig1)) $
-                       toNamedList s'
+        goalsText = show . Pretty.vsep
+          . map (print_named lid1 . AS_Anno.mapNamed (simplify_sen lid1 sig1))
+          . toNamedList
         sens = selectedGoalMap s
     sens' <- coerceThSens (logicId s) lid1 "" sens
     textView ("Selected Goals from Theory " ++ thName) (goalsText sens')
              $ Just (thName ++ "-goals.txt")
 
-setSelectedProver ::
-     TreeView
-  -> ProofState lid sentence
-  -> IO ()
-setSelectedProver view s = do
+fineGrainedSelection :: TreeView -> ListStore GProver -> IO (Maybe GProver)
+fineGrainedSelection view list = do
+  ps <- listStoreToList list
   selector <- treeViewGetSelection view
-  let ind = case selectedProver s of
-              Just sp -> findIndex (==sp) $ Map.keys (proversMap s)
-              Nothing -> Nothing
-  maybe (return ()) (\i -> treeSelectionSelectPath selector [i]) ind
+  if null ps then error "Cant make selection without sublogic!"
+    else do
+      ret <- listChoiceAux "Choose a translation"
+               (\ (n,_,c) -> n ++ ": " ++ show c) $ concatMap expand ps
+      case ret of
+        Just (_,(n,_,c)) -> case findIndex ((n ==) . pName) ps of
+          Just i -> let p = ps !! i in case findIndex (c ==) $ comorphism p of
+            Just i' -> do
+              let p' = p { selected = i' }
+              listStoreSetValue list i p'
+              treeSelectionSelectPath selector [i]
+              return $ Just p'
+            Nothing -> error "can't find selected comorphism"
+          Nothing -> error "can't find selected prover"
+        Nothing -> return Nothing
 
-updateStatusSublogic ::
-     Label -- ^ sublogic label
-  -> TreeView -- ^ goals list
-  -> ListStore String -- ^ goals list
-  -> TreeView -- ^ axioms list
-  -> ListStore String -- ^ axioms list store
-  -> TreeView -- ^ theorems list
-  -> ListStore String -- ^ theorems list store
-  -> TreeView -- ^ provers list
-  -> ListStore String -- ^ provers list store
-  -> ProofActions lid sentence -- ^ record of possible GUI actions
-  -> KnownProvers.KnownProversMap -- ^ map of known provers
-  -> ProofState lid sentence
-  -> IO (ProofState lid sentence)
-updateStatusSublogic lbl gls listGls axs listAxs ths listThs prs listPrs
-  prGuiAcs knownProvers s' = do
-  s'' <- updateStateGetSelectedSens axs listAxs ths listThs s'
-  s''' <- updateStateGetSelectedGoals gls listGls s''
-  s <- recalculateSublogicF prGuiAcs $ (s''' {proversMap = knownProvers})
-  setSublogic lbl $ show $ sublogicOfTheory s
-  when (Map.keys (proversMap s') /= Map.keys (proversMap s))
-       (do updateListData listPrs $ Map.keys $ proversMap s'
-           setSelectedProver prs s)
-  return s{ selectedProver =
-              maybe Nothing (\ sp -> find (==sp) $ Map.keys (proversMap s))
-                    (selectedProver s) }
+expand :: GProver -> [(String, G_prover, AnyComorphism)]
+expand (GProver { pName = n, prover = p, comorphism = cs }) =
+  map (\ c -> (n, p, c)) cs
 
-updateStateGetSelectedGoals ::
-     TreeView
-  -> ListStore String
-  -> ProofState lid sentence
-  -> IO (ProofState lid sentence)
-updateStateGetSelectedGoals view listGoals s = do
-  selector <- treeViewGetSelection view
-  rows <- treeSelectionGetSelectedRows selector
-  goals <- mapM (\ (row:[]) -> listStoreGetValue listGoals row) rows
-  return s { selectedGoals = goals }
+updateSublogic :: Label -> ProofActions lid sentence
+               -> KnownProvers.KnownProversMap -> ProofState lid sentence
+               -> IO (ProofState lid sentence)
+updateSublogic lbl prGuiAcs knownProvers s' = do
+  s <- recalculateSublogicF prGuiAcs s' { proversMap = knownProvers }
+  labelSetLabel lbl $ show $ sublogicOfTheory s
+  return s
 
-updateStateGetSelectedSens ::
-     TreeView -- ^ axioms listbox
-  -> ListStore String
-  -> TreeView -- ^ theorems listbox
-  -> ListStore String
-  -> ProofState lid sentence
-  -> IO (ProofState lid sentence)
-updateStateGetSelectedSens axs listAxs ths listThs s = do
-  selectorAxs <- treeViewGetSelection axs
-  selectorThs <- treeViewGetSelection ths
-  rowsAxs <- treeSelectionGetSelectedRows selectorAxs
-  rowsThs <- treeSelectionGetSelectedRows selectorThs
-  axioms <- mapM (\ (row:[]) -> listStoreGetValue listAxs row) rowsAxs
-  theorems <- mapM (\ (row:[]) -> listStoreGetValue listThs row) rowsThs
-  return s { includedAxioms   = axioms
-           , includedTheorems = theorems }
+updateComorphism :: Label -> TreeView -> ListStore GProver
+                 -> ProofState lid sentence -> IO (ProofState lid sentence)
+updateComorphism lbl trvProvers listProvers s = do
+  mprover <- getSelectedSingle trvProvers listProvers
+  case mprover of
+    Just (_, p) -> case comorphism p !! selected p of
+      Comorphism cid -> let dN = drop 1 $ dropWhile (/= ';') $ language_name cid
+        in labelSetLabel lbl $ if null dN then "identity" else dN
+    Nothing -> return ()
+  return s
+
+updateProver :: TreeView -> ListStore GProver -> ProofState lid sentence
+             -> IO (ProofState lid sentence)
+updateProver trvProvers listProvers s = do
+  let new = toProvers s
+  old <- listStoreToList listProvers
+  let prvs = map (\ p -> case find ((pName p ==) . pName) old of
+          Nothing -> p
+          Just p' -> let oldC = comorphism p' !! selected p' in
+            p { selected = fromMaybe 0 $ findIndex (== oldC) $ comorphism p }
+        ) new
+      selFirst = do
+        selectFirst trvProvers
+        setSelectedProver trvProvers listProvers s
+  updateListData listProvers prvs
+  case selectedProver s of
+    Just p -> case findIndex ((p ==) . pName) prvs of
+      Just i -> do
+        sel <- treeViewGetSelection trvProvers
+        treeSelectionSelectPath sel [i]
+        return s
+      Nothing -> selFirst
+    Nothing -> selFirst
+
+updateGoals :: TreeView -> ListStore Goal -> ProofState lid sentence
+            -> IO (ProofState lid sentence)
+updateGoals trvGoals listGoals s = do
+  updateListData listGoals $ toGoals s
+  model <- treeViewGetModel trvGoals
+  sel <- treeViewGetSelection trvGoals
+  treeModelForeach (fromJust model) $ \ i -> do
+    (row:[]) <- treeModelGetPath (fromJust model) i
+    g <- listStoreGetValue listGoals row
+    (if any (gName g ==) $ selectedGoals s
+      then treeSelectionSelectIter else treeSelectionUnselectIter) sel i
+    return False
+  return s
+
+setSelectedGoals :: TreeView -> ListStore Goal -> ProofState lid sentence
+                 -> IO (ProofState lid sentence)
+setSelectedGoals trvGoals listGoals s = do
+  goals <- getSelectedMultiple trvGoals listGoals
+  return s { selectedGoals = map (gName . snd) goals }
+
+setSelectedSens :: TreeView -> ListStore String -> TreeView -> ListStore String
+                -> ProofState lid sentence -> IO (ProofState lid sentence)
+setSelectedSens axs listAxs ths listThs s = do
+  axioms <- getSelectedMultiple axs listAxs
+  theorems <- getSelectedMultiple ths listThs
+  return s { includedAxioms   = map snd axioms
+           , includedTheorems = map snd theorems }
 
 -- | Called whenever a prover is selected from the "Pick Theorem Prover" list.
-selectProver ::
-     TreeView
-  -> ListStore String
-  -> ProofState lid sentence
-  -> IO (ProofState lid sentence)
-selectProver view listPrs s = do
-  selector <- treeViewGetSelection view
-  ((row:[]):[]) <- treeSelectionGetSelectedRows selector
-  prover <- listStoreGetValue listPrs row
-  return s { selectedProver = Just prover }
+setSelectedProver :: TreeView -> ListStore GProver -> ProofState lid sentence
+                  -> IO (ProofState lid sentence)
+setSelectedProver trvProvers listProvers s = do
+  mprover <- getSelectedSingle trvProvers listProvers
+  return s { selectedProver = maybe Nothing (Just . pName . snd) mprover }
 
--- | Called to set sublogic label
-setSublogic :: Label -> String -> IO ()
-setSublogic label text = labelSetLabel label $ "<b>" ++ text ++ "</b>"
+toAxioms :: ThSens sentence (AnyComorphism, BasicProof) -> [String]
+toAxioms =
+  map (\ (k,s) -> if wasTheorem s then "(Th) " ++ k else k) . OMap.toList
 
+toGoals :: ProofState lid sentence -> [Goal]
+toGoals = map toGoal . OMap.toList . goalMap
+  where toGoal (n, st) = let ts = thmStatus st in
+          Goal { gName = n
+               , gStatus = if null ts then GOpen
+                           else basicProofToGStatus $ maximum $ map snd ts }
+
+toTheorem :: ProofState lid sentence -> [String]
+toTheorem = OMap.keys . goalMap
+
+toProvers :: ProofState lid sentence -> [GProver]
+toProvers = Map.elems . foldr (\ (p', c) m ->
+    let n = getPName p'
+        p = Map.findWithDefault (GProver n p' [] 0) n m in
+    Map.insert n (p { comorphism = c : comorphism p}) m
+  ) Map.empty . comorphismsToProvers

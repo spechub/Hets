@@ -50,9 +50,9 @@ import qualified Data.Map as Map
 import Data.List (findIndex)
 import Data.Maybe
 
-data Finder = Finder { fname :: String
+data Finder = Finder { fName :: String
                      , finder :: G_cons_checker
-                     , comorphs :: [AnyComorphism]
+                     , comorphism :: [AnyComorphism]
                      , selected :: Int }
 
 data FNode = FNode { name :: String
@@ -124,21 +124,17 @@ showConsistencyChecker gInfo@(GInfo { libName = ln }) = postGUIAsync $ do
   windowSetTitle window "Consistency Checker"
   spinButtonSetValue sbTimeout $ fromIntegral guiDefaultTimeLimit
 
-  let widgets = [ toWidget trvFinder
-                , toWidget btnFineGrained
+  let widgets = [ toWidget btnFineGrained
                 , toWidget sbTimeout
                 , toWidget lblComorphism
-                , toWidget lblSublogic
-                ]
+                , toWidget lblSublogic ]
       checkWidgets = widgets ++ [ toWidget btnClose
-                                , toWidget trvNodes
                                 , toWidget btnNodesAll
                                 , toWidget btnNodesNone
                                 , toWidget btnNodesInvert
                                 , toWidget btnNodesUnchecked
                                 , toWidget btnNodesTimeout
-                                , toWidget btnResults
-                                ]
+                                , toWidget btnResults ]
       switch b = do
         widgetSetSensitive btnStop $ not b
         widgetSetSensitive btnCheck b
@@ -166,52 +162,43 @@ showConsistencyChecker gInfo@(GInfo { libName = ln }) = postGUIAsync $ do
   listNodes <- setListData trvNodes show
     $ map (\ (n@(_,l),s) -> FNode (getDGNodeName l) n s CSUnchecked)
     $ zip nodes sls
-  listFinder <- setListData trvFinder fname []
+  listFinder <- setListData trvFinder fName []
 
   -- setup view selection actions
-  let update = do mf <- getSelectedSingle trvFinder listFinder
-                  case mf of
-                    Just (_,f) -> do
-                      case comorphs f !! selected f of
-                        Comorphism cid ->
-                          let cName = language_name cid
-                              dName = drop 1 $ dropWhile (/= ';') cName
-                          in labelSetLabel lblComorphism
-                            $ if null dName then "identity" else dName
-                      widgetSetSensitive btnCheck True
-                    Nothing -> do
-                      labelSetLabel lblComorphism "No path selected"
-                      widgetSetSensitive btnCheck False
+  let update = do
+        mf <- getSelectedSingle trvFinder listFinder
+        case mf of
+          Just (_,f) -> do
+            case comorphism f !! selected f of
+              Comorphism cid ->let cN = language_name cid
+                                   dN = drop 1 $ dropWhile (/= ';') cN in
+                labelSetLabel lblComorphism $ if null dN then "identity" else dN
+            widgetSetSensitive btnCheck True
+          Nothing -> do
+            labelSetLabel lblComorphism "No path selected"
+            widgetSetSensitive btnCheck False
   setListSelectorSingle trvFinder update
 
-  selection <- setListSelectorMultiple trvNodes btnNodesAll btnNodesNone
-                 btnNodesInvert $ updateNodes trvNodes listNodes
-                                    (\ s -> do
-                                       labelSetLabel lblSublogic $ show s
-                                       updateFinder trvFinder listFinder s)
-                                    (do labelSetLabel lblSublogic "No sublogic"
-                                        listStoreClear listFinder
-                                        activate widgets False
-                                        widgetSetSensitive btnCheck False)
-                                    (do activate widgets True
-                                        widgetSetSensitive btnCheck False)
+  setListSelectorMultiple trvNodes btnNodesAll btnNodesNone btnNodesInvert
+    $ updateNodes trvNodes listNodes
+    (\ s -> do labelSetLabel lblSublogic $ show s
+               updateFinder trvFinder listFinder s)
+    (do labelSetLabel lblSublogic "No sublogic"
+        listStoreClear listFinder
+        activate widgets False
+        widgetSetSensitive btnCheck False)
+    (do activate widgets True; widgetSetSensitive btnCheck False)
 
   -- bindings
   let selectWith f = do
-        mModel <- treeViewGetModel trvNodes
-        case mModel of
-          Nothing -> return ()
-          Just m -> do
-            writeIORef selection []
-            selector <- treeViewGetSelection trvNodes
-            treeModelForeach m $ \ iter -> do
-              path@(row:[]) <- treeModelGetPath m iter
-              (FNode { status = s }) <- listStoreGetValue listNodes row
-              if f s then do
-                  treeSelectionSelectIter selector iter
-                  modifyIORef selection (path:)
-                else treeSelectionUnselectIter selector iter
-              return False
+        model <- treeViewGetModel trvNodes
+        sel <- treeViewGetSelection trvNodes
+        treeModelForeach (fromJust model) $ \ i -> do
+          (row:[]) <- treeModelGetPath (fromJust model) i
+          (FNode { status = s }) <- listStoreGetValue listNodes row
+          (if f s then treeSelectionSelectIter else treeSelectionUnselectIter)
+            sel i
+          return False
 
   onClicked btnNodesUnchecked $ selectWith (== CSUnchecked)
   onClicked btnNodesTimeout  $ selectWith (== CSTimeout "")
@@ -275,7 +262,7 @@ updateFinder view list sl = do
                 (\ (cc, c) m ->
                   let n = getPName cc
                       f = Map.findWithDefault (Finder n cc [] 0) n m in
-                  Map.insert n (f { comorphs = c : comorphs f}) m
+                  Map.insert n (f { comorphism = c : comorphism f}) m
                 ) Map.empty
                 $ getConsCheckers $ findComorphismPaths logicGraph sl)
     $ \ res -> do
@@ -286,7 +273,7 @@ updateFinder view list sl = do
 
 check :: LibName -> LibEnv -> DGraph -> Finder -> Int
       -> (Double -> String -> IO ()) -> [(Int,FNode)] -> IO [(Int, FNode)]
-check ln le dg (Finder { finder = cc, comorphs = cs, selected = i}) timeout
+check ln le dg (Finder { finder = cc, comorphism = cs, selected = i}) timeout
       update nodes = do
   let count' = fromIntegral $ length nodes
       c = cs !! i
@@ -305,18 +292,19 @@ fineGrainedSelection view list unlock = do
       ret <- listChoiceAux "Choose a translation"
                (\ (n,_,c) -> n ++ ": " ++ show c) $ concatMap expand paths
       case ret of
-        Just (_,(n,_,c)) -> case findIndex ((n ==) . fname) paths of
-          Just i -> let f = paths !! i in case findIndex (c ==) $ comorphs f of
-            Just i' -> do
-              listStoreSetValue list i $ f { selected = i' }
-              treeSelectionSelectPath selector [i]
-              unlock
-            Nothing -> return ()
+        Just (_,(n,_,c)) -> case findIndex ((n ==) . fName) paths of
+          Just i -> let f = paths !! i in
+            case findIndex (c ==) $ comorphism f of
+              Just i' -> do
+                listStoreSetValue list i $ f { selected = i' }
+                treeSelectionSelectPath selector [i]
+                unlock
+              Nothing -> return ()
           Nothing -> return ()
         Nothing -> return ()
 
 expand :: Finder -> [(String, G_cons_checker, AnyComorphism)]
-expand (Finder { fname = n, finder = cc, comorphs = cs }) =
+expand (Finder { fName = n, finder = cc, comorphism = cs }) =
   map (\ c -> (n,cc,c)) cs
 
 -- | Displays the model view window

@@ -89,7 +89,7 @@
                                     <property name="visible">True</property>
                                     <property name="can_focus">True</property>
                                     <property name="invisible_char">&#x25CF;</property>
-                                    <property name="adjustment">20 0 40 1 0 0</property>
+                                    <property name="adjustment">20 1 3600 1 0 0</property>
                                   </widget>
                                   <packing>
                                     <property name="expand">False</property>
@@ -147,7 +147,6 @@ theorems in next proof attempt</property>
                                 <property name="visible">True</property>
                                 <property name="can_focus">True</property>
                                 <property name="receives_default">False</property>
-                                <property name="active">True</property>
                                 <property name="draw_indicator">True</property>
                               </widget>
                               <packing>

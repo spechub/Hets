@@ -85,7 +85,7 @@ statusProved = (Green, "Proved")
   (but inconsistent) proof status.
 -}
 statusProvedButInconsistent :: (ProofStatusColour, String)
-statusProvedButInconsistent = (Brown, "Proved (Theory inconsistent!)")
+statusProvedButInconsistent = (Brown, "Proved by contradiction")
 
 {- |
   Generates a ('ProofStatusColour', 'String') tuple representing a Disproved

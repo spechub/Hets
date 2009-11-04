@@ -71,6 +71,13 @@ module GUI.GtkUtils
   , selectInvert
 
   , activate
+
+  -- * Datatypes and functions for prover
+  , Goal (..)
+  , GStatus (..)
+  , proofStatusToGStatus
+  , basicProofToGStatus
+  , genericConfigToGStatus
   )
   where
 
@@ -79,7 +86,8 @@ import Graphics.UI.Gtk.Glade
 
 import qualified GUI.Glade.Utils as Utils
 
-import Static.GTheory (G_theory)
+import Static.GTheory
+
 import Common.DocUtils (showDoc)
 
 import Control.Concurrent (forkIO)
@@ -90,7 +98,9 @@ import System.Directory ( removeFile, getTemporaryDirectory, doesFileExist
 import System.FilePath (takeFileName, takeDirectory)
 import System.IO (hFlush, hClose, hPutStr, openTempFile)
 
-import Data.IORef
+import Logic.Prover
+
+import Interfaces.GenericATPState
 
 -- | Returns a GladeXML Object of a xmlstring.
 getGladeXML :: (String, String) -> IO GladeXML
@@ -500,31 +510,21 @@ setListSelectorSingle view action= do
 
 -- | Setup list with multiple selection
 setListSelectorMultiple :: TreeView -> Button -> Button -> Button -> IO ()
-                        -> IO (IORef [TreePath])
+                        -> IO ()
 setListSelectorMultiple view btnAll btnNone btnInvert action = do
   selector <- treeViewGetSelection view
   treeSelectionSetMode selector SelectionMultiple
-  ioRefSelection <- newIORef ([] :: [TreePath])
 
   -- setup selector
-  onCursorChanged view $ do
-    s' <- treeSelectionGetSelectedRows selector
-    s <- readIORef ioRefSelection
-    let newSelection = [ x | x <- s', notElem x s]
-                    ++ [ x | x <- s, notElem x s']
-    writeIORef ioRefSelection newSelection
-    treeSelectionUnselectAll selector
-    mapM_ (treeSelectionSelectPath selector) newSelection
-    action
+  onCursorChanged view action
 
   treeSelectionSelectAll selector
 
   -- setup buttons
-  onClicked btnAll $ do selectAll view ioRefSelection; action
-  onClicked btnNone $ do selectNone view ioRefSelection; action
-  onClicked btnInvert $ do selectInvert view ioRefSelection; action
-
-  return ioRefSelection
+  onClicked btnAll $ do selectAll view; action
+  onClicked btnNone $ do selectNone view; action
+  onClicked btnInvert $ do selectInvert view; action
+  return ()
 
 -- | Selects the first item if possible
 selectFirst :: TreeView -> IO ()
@@ -541,6 +541,25 @@ selectFirst view = do
           treeSelectionSelectIter selector iter
           path <- treeModelGetPath model iter
           treeViewSetCursor view path Nothing
+
+-- | Select all rows
+selectAll :: TreeView -> IO ()
+selectAll view = treeViewGetSelection view >>= treeSelectionSelectAll
+
+-- | Deselect all rows
+selectNone :: TreeView -> IO ()
+selectNone view = treeViewGetSelection view >>= treeSelectionUnselectAll
+
+-- | Invert selection of list
+selectInvert :: TreeView -> IO ()
+selectInvert view = do
+  sel <- treeViewGetSelection view
+  selected <- treeSelectionGetSelectedRows sel
+  treeSelectionSelectAll sel
+  rows <- treeSelectionGetSelectedRows sel
+  mapM_ (\ row -> (if elem row selected
+      then treeSelectionUnselectPath else treeSelectionSelectPath) sel row
+    ) rows
 
 -- | Get selected item
 getSelectedSingle :: TreeView -> ListStore a -> IO (Maybe (Int,a))
@@ -570,31 +589,6 @@ getSelectedMultiple view list = do
   items <- mapM (listStoreGetValue list) rows
   return $ zip rows items
 
--- | Select all rows
-selectAll :: TreeView -> IORef [TreePath] -> IO ()
-selectAll view ioRefSelection = do
-  selector <- treeViewGetSelection view
-  treeSelectionSelectAll selector
-  s <- treeSelectionGetSelectedRows selector
-  writeIORef ioRefSelection s
-
--- | Deselect all rows
-selectNone :: TreeView -> IORef [TreePath] -> IO ()
-selectNone view ioRefSelection = do
-  selector <- treeViewGetSelection view
-  treeSelectionUnselectAll selector
-  writeIORef ioRefSelection []
-
--- | Invert selection of list
-selectInvert :: TreeView -> IORef [TreePath] -> IO ()
-selectInvert view ioRefSelection = do
-  selector <- treeViewGetSelection view
-  old <- treeSelectionGetSelectedRows selector
-  treeSelectionSelectAll selector
-  mapM_ (treeSelectionUnselectPath selector) old
-  new <- treeSelectionGetSelectedRows selector
-  writeIORef ioRefSelection new
-
 -- | Sets data of list
 setListData :: TreeView -> (a -> String) -> [a] -> IO (ListStore a)
 setListData view getT listData = do
@@ -618,3 +612,79 @@ updateListData list listData = do
 -- | Activates or deactivates a list of widgets
 activate :: [Widget] -> Bool -> IO ()
 activate widgets active = mapM_ (\ w -> widgetSetSensitive w active) widgets
+
+
+-- * Datatypes and functions for prover
+
+data Goal = Goal { gName :: String
+                 , gStatus :: GStatus }
+
+data GStatus = GOpen
+             | GTimeout
+             | GDisproved
+             | GInconsistent
+             | GProved
+             | GGuessed
+             | GConjectured
+             | GHandwritten
+               deriving (Eq, Ord)
+
+instance Show Goal where
+  show (Goal { gName = n, gStatus = s }) = spanString s $ statusToPrefix s ++ n
+
+statusToColor :: GStatus -> String
+statusToColor s = case s of
+  GOpen         -> "black"
+  GProved       -> "green"
+  GDisproved    -> "red"
+  GTimeout      -> "blue"
+  GInconsistent -> "orange"
+  GGuessed      -> "darkgreen"
+  GConjectured  -> "darkgreen"
+  GHandwritten  -> "darkgreen"
+
+statusToPrefix :: GStatus -> String
+statusToPrefix s = case s of
+  GOpen         -> "[ ] "
+  GProved       -> "[+] "
+  GDisproved    -> "[-] "
+  GTimeout      -> "[t] "
+  GInconsistent -> "[*] "
+  GGuessed      -> "[.] "
+  GConjectured  -> "[:] "
+  GHandwritten  -> "[/] "
+
+spanString :: GStatus -> String -> String
+spanString s m = "<span color=\"" ++ statusToColor s ++ "\">" ++ m ++ "</span>"
+
+instance Show GStatus where
+  show GProved       = spanString GProved       "Proved"
+  show GInconsistent = spanString GInconsistent "Proved by contradiction"
+  show GDisproved    = spanString GDisproved    "Disproved"
+  show GOpen         = spanString GOpen         "Open"
+  show GTimeout      = spanString GTimeout      "Open (Timeout!)"
+  show GGuessed      = spanString GGuessed      "Guessed"
+  show GConjectured  = spanString GConjectured  "Conjectured"
+  show GHandwritten  = spanString GHandwritten  "Handwritten"
+
+-- | Converts a ProofStatus into a GStatus
+proofStatusToGStatus :: forall a . ProofStatus a -> GStatus
+proofStatusToGStatus p = case goalStatus p  of
+  Proved (Just True) -> GProved
+  Proved _           -> GInconsistent
+  Disproved          -> GDisproved
+  Open _             -> GOpen
+
+-- | Converts a BasicProof into a GStatus
+basicProofToGStatus :: BasicProof -> GStatus
+basicProofToGStatus p = case p of
+  BasicProof _ st -> proofStatusToGStatus st
+  Guessed         -> GGuessed
+  Conjectured     -> GConjectured
+  Handwritten     -> GHandwritten
+
+-- | Converts a GenericConfig into a GStatus
+genericConfigToGStatus :: GenericConfig a -> GStatus
+genericConfigToGStatus cfg = case proofStatusToGStatus $ proofStatus cfg of
+  GOpen -> if timeLimitExceeded cfg then GTimeout else GOpen
+  s     -> s

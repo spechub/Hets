@@ -11,7 +11,7 @@ Portability :  needs POSIX
 Generic Gtk GUI for automatic theorem provers.
 -}
 
-module GUI.GtkGenericATP (genericATPgui) where
+module GUI.GtkGenericATP ( genericATPgui ) where
 
 import Graphics.UI.Gtk
 import Graphics.UI.Gtk.Glade
@@ -35,45 +35,6 @@ import Data.Maybe (fromMaybe, fromJust)
 import qualified Data.Map as Map
 
 import Logic.Prover
-
-data Goal = Goal { name :: String
-                 , status :: GStatus }
-
-data GStatus = GOpen
-             | GTimeout
-             | GDisproved
-             | GInconsistent
-             | GProved
-               deriving (Eq, Ord)
-
-instance Show Goal where
-  show (Goal { name = n, status = s }) = spanString s $ statusToPrefix s ++ n
-
-statusToColor :: GStatus -> String
-statusToColor s = case s of
-  GOpen         -> "black"
-  GProved       -> "green"
-  GDisproved    -> "red"
-  GTimeout      -> "blue"
-  GInconsistent -> "orange"
-
-statusToPrefix :: GStatus -> String
-statusToPrefix s = case s of
-  GOpen         -> "[ ] "
-  GProved       -> "[+] "
-  GDisproved    -> "[-] "
-  GTimeout      -> "[t] "
-  GInconsistent -> "[*] "
-
-spanString :: GStatus -> String -> String
-spanString s m = "<span color=\"" ++ statusToColor s ++ "\">" ++ m ++ "</span>"
-
-instance Show GStatus where
-  show GProved       = spanString GProved       "Proved"
-  show GInconsistent = spanString GInconsistent "Proved (Theory inconsistent!)"
-  show GDisproved    = spanString GDisproved    "Disproved"
-  show GOpen         = spanString GOpen         "Open"
-  show GTimeout      = spanString GTimeout      "Open (Timeout!)"
 
 genericATPgui :: (Ord proof_tree, Ord sentence)
               => ATPFunctions sign sentence mor proof_tree pst
@@ -116,14 +77,12 @@ genericATPgui atpFun hasEOptions prName thName th freedefs pt = do
 
     windowSetTitle window $ prName ++ ": " ++ thName
 
-    let widgets = [ toWidget trvGoals        , toWidget btnClose
+    let widgets = [ toWidget btnClose        , toWidget btnShowDetails
                   , toWidget btnHelp         , toWidget btnSaveConfig
                   , toWidget sbTimeout       , toWidget entryOptions
                   , toWidget cbIncludeProven , toWidget btnProveSelected
                   , toWidget btnProveSelected, toWidget btnProveAll
-                  , toWidget lblStatus       , toWidget trvAxioms
-                  , toWidget btnSaveProblem  , toWidget btnShowDetails
-                  ]
+                  , toWidget lblStatus       , toWidget btnSaveProblem ]
         switch = activate widgets
         switchAll b = do
           activate widgets b
@@ -139,12 +98,7 @@ genericATPgui atpFun hasEOptions prName thName th freedefs pt = do
     threadId <- newMVar tid'
 
     -- setting up lists
-    listGoals <- setListData trvGoals show $
-      map (\ g -> let n = AS_Anno.senAttr g
-                      cfg = Map.findWithDefault (error "Config not found!") n
-                              $ configsMap initState
-                  in Goal { name = n
-                          , status = toGStatus cfg }) initGoals
+    listGoals <- setListData trvGoals show $ toGoals initState
     listAxioms <- setListData trvAxioms id []
 
     -- short update function
@@ -160,7 +114,7 @@ genericATPgui atpFun hasEOptions prName thName th freedefs pt = do
       s' <- save s''
       -- setting new selected goal
       mSelected <- getSelectedSingle trvGoals listGoals
-      let s = maybe s' (\ (_, Goal { name = n }) -> s' { currentGoal = Just n})
+      let s = maybe s' (\ (_, Goal { gName = n }) -> s' { currentGoal = Just n})
                     mSelected
       putMVar stateMVar s
       update' s
@@ -220,7 +174,9 @@ genericATPgui atpFun hasEOptions prName thName th freedefs pt = do
             (seq (length detailsText) detailsText) $ Just $ g ++ ext
 
     -- show details of selected goal
-    onClicked btnStop $ tryTakeMVar threadId >>=maybe (return ()) killThread
+    onClicked btnStop $ do
+      tryTakeMVar threadId >>=maybe (return ()) killThread
+      putMVar threadId tid'
 
     -- show details of selected goal
     onClicked btnProveSelected $ do
@@ -276,7 +232,7 @@ genericATPgui atpFun hasEOptions prName thName th freedefs pt = do
               case retval of
                 ATPError m -> errorDialog "Error" m
                 _ -> return ()
-              postGUISync $ do
+              postGUIAsync $ do
                 let progress = fromIntegral gPSF / fromIntegral numGoals
                 if cont then updat progress $ AS_Anno.senAttr $ fromJust nextSen
                   else do
@@ -285,7 +241,7 @@ genericATPgui atpFun hasEOptions prName thName th freedefs pt = do
                     return ()
                 s' <- readMVar stateMVar
                 update' s'
-                return cont)
+              return cont)
         updat 0 firstGoalName
         switchAll False
         mtid <- tryTakeMVar threadId
@@ -366,18 +322,18 @@ update s trvGoals listGoals listAxioms lblStatus sbTimeout entryOptions = do
   oldGoals' <- listStoreToList listGoals
   let newGoals = goalsList s
       oldGoals = foldl (\ gs g -> (g, length gs):gs) [] oldGoals'
-  mapM_ (\ g -> do
-      let n = AS_Anno.senAttr g
-          (g', idx) = fromMaybe (error "Goal not found!")
-                        $ find (\ (Goal { name = n' }, _) -> n == n') oldGoals
-          cfg = Map.findWithDefault (error "Config not found!") n $ configsMap s
-      listStoreSetValue listGoals idx $ g' { status = toGStatus cfg }
+  mapM_ (\ g' -> do
+      let n = AS_Anno.senAttr g'
+          (g, idx) = fromMaybe (error "Goal not found!")
+                        $ find (\ (Goal { gName = n' }, _) -> n == n') oldGoals
+          c = Map.findWithDefault (error "Config not found!") n $ configsMap s
+      listStoreSetValue listGoals idx $ g { gStatus = genericConfigToGStatus c }
     ) newGoals
 
   -- update status and axioms
   selected <- getSelectedSingle trvGoals listGoals
   case selected of
-    Just (_, Goal { name = n, status = stat }) -> do
+    Just (_, Goal { gName = n, gStatus = stat }) -> do
       let cfg = Map.findWithDefault (error "GUI.GenericATP.updateDisplay") n
                   $ configsMap s
       spinButtonSetValue sbTimeout $ fromIntegral
@@ -395,10 +351,8 @@ setTimeLimit n c = c { timeLimit = if n > 0 then Just n else Nothing }
 setExtraOpts :: [String] -> GenericConfig proof_tree -> GenericConfig proof_tree
 setExtraOpts opts c = c { extraOpts = opts }
 
--- | Converts a ProofStatus into a GStatus
-toGStatus :: GenericConfig proof_tree -> GStatus
-toGStatus cfg = case goalStatus $ proofStatus cfg of
-  Proved (Just True) -> GProved
-  Proved _           -> GInconsistent
-  Disproved          -> GDisproved
-  Open _             -> if timeLimitExceeded cfg then GTimeout else GOpen
+toGoals :: GenericState sign sentence proof_tree pst -> [Goal]
+toGoals s = map (\ g ->
+  let n = AS_Anno.senAttr g
+      c = Map.findWithDefault (error "Config not found!") n $ configsMap s
+  in Goal { gName = n, gStatus = genericConfigToGStatus c }) $ goalsList s

@@ -276,6 +276,8 @@
                             <property name="yalign">0</property>
                             <property name="label" translatable="yes">No sublogic</property>
                             <property name="use_markup">True</property>
+                            <property name="selectable">True</property>
+                            <property name="max_width_chars">30</property>
                           </widget>
                         </child>
                       </widget>
@@ -292,6 +294,7 @@
                     </child>
                   </widget>
                   <packing>
+                    <property name="expand">False</property>
                     <property name="position">1</property>
                   </packing>
                 </child>
@@ -310,8 +313,8 @@
                           <widget class="GtkLabel" id="lblComorphism">
                             <property name="visible">True</property>
                             <property name="xalign">0</property>
+                            <property name="yalign">0</property>
                             <property name="label" translatable="yes">No path selected</property>
-                            <property name="wrap">True</property>
                             <property name="selectable">True</property>
                           </widget>
                         </child>
@@ -329,6 +332,7 @@
                     </child>
                   </widget>
                   <packing>
+                    <property name="expand">False</property>
                     <property name="position">2</property>
                   </packing>
                 </child>
