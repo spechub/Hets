@@ -87,7 +87,7 @@ instance StaticAnalysis OWL OntologyFile Axiom
       induced_from_morphism OWL = inducedFromMor
       induced_from_to_morphism OWL = inducedFromToMor
       cogenerated_sign OWL = cogeneratedSign
-      generated_sign OWL = fail "cogenerated_sign OWL nyi"
+      generated_sign OWL = generatedSign
 #ifdef UNI_PACKAGE
       theory_to_taxonomy OWL = onto2Tax
 #endif

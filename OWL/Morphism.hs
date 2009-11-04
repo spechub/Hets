@@ -18,6 +18,7 @@ module OWL.Morphism
   , legalMor
   , composeMor
   , cogeneratedSign
+  , generatedSign
   , matchesSym
   , statSymbItems
   , statSymbMapItems
@@ -141,7 +142,10 @@ cogeneratedSign :: Set.Set Entity -> Sign -> Result OWLMorphism
 cogeneratedSign s sign =
   let sig2 = execState (mapM_ (modEntity Set.delete) $ Set.toList s) sign
   in if isSubSign sig2 sign then return $ inclOWLMorphism sig2 sign else
-         fail "non OWL subsignatures for cogeneratedSign"
+         fail "non OWL subsignatures for (co)generatedSign"
+
+generatedSign :: Set.Set Entity -> Sign -> Result OWLMorphism
+generatedSign s sign = cogeneratedSign (Set.difference (symOf sign) s) sign
 
 matchesSym :: Entity -> RawSymb -> Bool
 matchesSym e@(Entity _ u) r = case r of
