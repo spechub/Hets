@@ -1151,3 +1151,8 @@ topsortedNodes :: DGraph -> [LNode DGNodeLab]
 topsortedNodes dgraph = let dg = dgBody dgraph in
   reverse $ postorderF $ dffWith (\ (_, n, nl, _) -> (n, nl)) (nodes dg)
     $ efilter (\ (s, t, el) -> s /= t && isDefEdge (dgl_type el)) dg
+
+duplicateDefEdges :: DGraph -> [Edge]
+duplicateDefEdges = concat .
+  filter (not . isSingle) . group . map (\ (s, t, _) -> (s, t))
+  . filter (liftE isDefEdge) . labEdgesDG

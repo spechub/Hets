@@ -299,6 +299,8 @@ writeSpecFiles opts file lenv0 ln dg = do
     doDump opts "GlobalAnnos" $ putStrLn $ showGlobalDoc ga ga ""
     doDump opts "PrintStat" $ putStrLn $ printStatistics dg
     doDump opts "DGraph" $ putStrLn $ showDoc dg ""
+    doDump opts "DuplicateDefEdges" $ let es = duplicateDefEdges dg in
+      unless (null es) $ print es
     doDump opts "DGraphXML" $ writeVerbFile opts
            (filePrefix ++ ".xml") $ ppTopElement $ ToXml.dGraph lenv dg
     doDump opts "LogicGraph" $ putStrLn $ showDoc logicGraph ""
