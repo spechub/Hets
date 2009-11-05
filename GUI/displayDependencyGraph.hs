@@ -119,7 +119,7 @@ exclude s = not
     , "Haskell.Haskell2DG", "Haskell.CreateModules"
     , "Comorphisms.KnownProvers", "Comorphisms.LogicGraph"
     , "Interfaces.GenericATPState"
-    , "GUI.Utils"
+    , "GUI.Utils", "GUI.Taxonomy"
     , "Driver.Options" -- Static
     , "GUI.GenericATP", "SoftFOL.CreateDFGDoc"
     , "SoftFOL.MathServMapping", "SoftFOL.ProveMathServ"
