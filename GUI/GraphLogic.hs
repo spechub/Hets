@@ -218,14 +218,14 @@ flattenHistory ((HistGroup _ ph):r) cs =
 -- | selects all nodes of a type with outgoing edges
 selectNodesByType :: DGraph -> (DGNodeType -> Bool) -> [Node]
 selectNodesByType dg types =
-  filter (\ n -> not (null $ outDG dg n) && filterInUnproven dg n) $ map fst
+  filter (\ n -> not (null $ outDG dg n) && hasUnprovenEdges dg n) $ map fst
   $ filter (types . getRealDGNodeType . snd) $ labNodesDG dg
 
-filterInUnproven :: DGraph -> Node -> Bool
-filterInUnproven dg =
+hasUnprovenEdges :: DGraph -> Node -> Bool
+hasUnprovenEdges dg =
   foldl (\ b (_,_,l) -> case edgeTypeModInc $ getRealDGLinkType l of
                           ThmType { isProvenEdge = False } -> False
-                          _ -> b) True . innDG dg
+                          _ -> b) True . (\ n -> innDG dg n ++ outDG dg n)
 
 -- | compresses a list of types to the highest one
 compressTypes :: Bool -> [DGEdgeType] -> (DGEdgeType, Bool)
