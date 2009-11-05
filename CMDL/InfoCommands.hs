@@ -47,22 +47,19 @@ import CMDL.Shell (nodeNames)
 import CMDL.Utils (createEdgeNames, decomposeIntoGoals, obtainEdgeList,
                    obtainNodeList, prettyPrintErrList)
 
-import Static.GTheory (G_theory(G_theory), BasicProof, sublogicOfTh)
+import Static.GTheory (G_theory(G_theory), BasicProof)
 import Static.DevGraph
-import Static.PrintDevGraph (dgLinkOriginHeader, dgOriginHeader)
+import Static.PrintDevGraph (showLEdge)
 
 import Common.AS_Annotation (SenAttr(isAxiom))
 import Common.DocUtils (showDoc)
-import Common.ExtSign (ExtSign(ExtSign))
 import Common.Taxonomy (TaxoGraphKind(..))
 import Common.Utils (trim)
 import qualified Common.OrderedMap as OMap
 
 import Data.Graph.Inductive.Graph (LNode, LEdge, Node)
 import Data.List
-import qualified Data.Set as Set
 
-import Logic.Logic (Sentences(sym_of))
 import Logic.Prover (SenStatus)
 import Logic.Comorphism (AnyComorphism)
 
@@ -159,90 +156,15 @@ cShowTheoryGoals :: String -> CmdlState -> IO CmdlState
 cShowTheoryGoals input st =
   getInfoFromNodes input (concatMap (\ n -> getGoalThS Do_translate n st)) st
 
--- | Given a node it returns the information that needs to
--- be printed as a string
-showNodeInfo::CmdlState -> LNode DGNodeLab -> String
-showNodeInfo state (nb,nd) =
-  let
-    -- node name
-      name'= "dgn_name : " ++ showName (dgn_name nd) ++ "\n"
-      -- origin of the node
-      orig'= if isDGRef nd then "dgn_orig : no origin (ref node)"
-             else "dgn_orig : " ++ dgOriginHeader (dgn_origin nd) ++ "\n"
-      -- conservativity annotations
-      th = getTh Do_translate nb state
-  in
-   case th of
-    Nothing ->name' ++ orig'++"Theory could not be evaluated\n"
-    Just t@(G_theory x (ExtSign y _) _ thSens _) ->
-     let
-      -- find out the sublogic of the theory if we found
-      -- a theory
-      sublog = "   sublogic: "++ show
-                              (sublogicOfTh t) ++ "\n"
-      -- compute the number of axioms by counting the
-      -- number of symbols of the signature !?
-      nbAxm = "   number of axioms: "++ show (OMap.size $
-                                   OMap.filter isAxiom thSens) ++"\n"
-      -- compute the number of symbols as the number of
-      -- sentences that are axioms in the senstatus of the
-      -- theory
-      nbSym = "   number of symbols: "++ show (Set.size $ sym_of x y) ++ "\n"
-      -- compute the number of proven theorems as the
-      -- number of sentences that have no theorem status
-      -- left
-      nbThm = let n'=OMap.size $ OMap.filter (\s -> not (isAxiom s)
-                      && isProvenSenStatus s) thSens
-              in "   number of proven theorems: " ++ show n' ++ "\n"
-      -- compute the number of unproven theorems as the
-      -- sentences that have something in their theorem
-      -- status
-      nbUThm = let n'= OMap.size $ OMap.filter(\s -> not (isAxiom s)
-                       && not (isProvenSenStatus s)) thSens
-               in "   number of unproven theorems: " ++ show n' ++ "\n"
-      -- compute the final theory (i.e.just add partial
-      -- results obtained before (sublogic, nbAxm..)
-      th' = "dgl_theory:\n"++ sublog ++ nbAxm ++ nbSym ++ nbThm ++ nbUThm
-     in name' ++ orig' ++ th'
+showNodeInfo :: LNode DGNodeLab -> String
+showNodeInfo (i, l) =
+  (if isDGRef l
+     then ("reference " ++)
+     else if isInternalNode l then ("internal " ++) else id)
+  "node " ++ getDGNodeName l ++ " " ++ show i ++ "\n" ++ showDoc l ""
 
-
--- | Given an edge it returns the information that needs to
---   be printed as a string
-showEdgeInfo::CmdlState -> LEdge DGLinkLab -> String
-showEdgeInfo state (x, y, dglab)
- = case i_state $ intState state of
-   Nothing -> ""
-   Just dgS ->
-    let
-     ls = getAllNodes dgS
-     nameOf x' l = case find ((== x') . fst) l of
-                   Nothing -> "Unknown node"
-                   Just (_, n) -> showName $ dgn_name n
-     nm = "dgl_name: "++ nameOf x ls ++ " -> " ++
-               nameOf y ls
-     orig = "dgl_origin: " ++ dgLinkOriginHeader (dgl_origin dglab)
-     defS = "definition"
-     mkDefS = (++ ' ':defS)
-     ltype= "dgl_type: " ++
-       case edgeTypeModInc $  getRealDGLinkType dglab of
-         GlobalDef -> mkDefS "global"
-         HetDef -> mkDefS "het"
-         HidingDef -> mkDefS "hiding"
-         LocalDef -> mkDefS "local"
-         FreeOrCofreeDef -> defS
-         ThmType thm isPrvn _ _ ->
-           let prvn = (if isPrvn then "" else "un") ++ "proven"
-               thmS = "theorem"
-           in case thm of
-                HidingThm -> unwords [prvn, "hiding", thmS]
-                FreeOrCofreeThm -> unwords [prvn, thmS]
-                GlobalOrLocalThm scope isHom ->
-                   let het = if isHom then [] else ["het"]
-                       sc = case scope of
-                              Local -> "local"
-                              Global -> "global"
-                   in unwords $ het ++ [sc, prvn, thmS]
-    in unlines [nm, orig, ltype]
+showEdgeInfo :: LEdge DGLinkLab -> String
+showEdgeInfo e@(_, _, l) = showLEdge e ++ "\n" ++ showDoc l ""
 
 -- show all information of selection
 cInfoCurrent::CmdlState -> IO CmdlState
@@ -272,12 +194,12 @@ cInfo input state =
                 lsEdges = getAllEdges dgS
                 (errs'',listEdges) = obtainEdgeList edg nbEdg lsNodes lsEdges
                 (errs',listNodes) = obtainNodeList nds lsNodes
-                strsNode = map (showNodeInfo state) listNodes
-                strsEdge = map (showEdgeInfo state) listEdges
+                strsNode = map showNodeInfo listNodes
+                strsEdge = map showEdgeInfo listEdges
                 tmpErrs' = tmpErrs ++ prettyPrintErrList errs'
                 tmpErrs''= tmpErrs'++ prettyPrintErrList errs''
-             in return $ genMessage tmpErrs'' (unlines (strsNode ++ strsEdge))
-                           state
+             in return $ genMessage tmpErrs''
+                         (intercalate "\n\n" (strsNode ++ strsEdge)) state
 
 taxoShowGeneric:: TaxoGraphKind -> CmdlState
                       -> [LNode DGNodeLab] -> IO()
