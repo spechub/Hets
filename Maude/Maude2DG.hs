@@ -47,6 +47,7 @@ import Common.Id
 import Common.Result
 import Common.LibName
 import Common.AS_Annotation
+import Common.Utils
 
 import Driver.Options
 
@@ -586,6 +587,8 @@ getImportsSortsStmnts (_ : stmts) p = getImportsSortsStmnts stmts p
 -- | builds the development graph of the specified Maude file
 directMaudeParsing :: FilePath -> IO DGraph
 directMaudeParsing fp = do
+  ml <- getEnvDef "MAUDE_LIB" ""
+  if null ml then error "environment variable MAUDE_LIB is not set" else do
     ns <- parse fp
     let ns' = either (\ _ -> []) id ns
     (hIn, hOut, _, procH) <-
