@@ -35,12 +35,12 @@ import Common.Utils (trim)
 
 import Data.List
 
-import Control.Concurrent.MVar
+import Data.IORef
 import Control.Monad
 import Control.Monad.Trans (MonadIO(..))
 
 #ifdef HASKELINE
-shellSettings :: MVar CmdlState -> Settings IO
+shellSettings :: IORef CmdlState -> Settings IO
 shellSettings st =
   Settings {
       complete = cmdlComplete st
@@ -50,9 +50,9 @@ shellSettings st =
 
 -- We need an MVar here
 -- because our CmdlState is not a Monad (and we use IO as Monad).
-cmdlComplete :: MVar CmdlState -> CompletionFunc IO
+cmdlComplete :: IORef CmdlState -> CompletionFunc IO
 cmdlComplete st (left, _) = do
-  state <- liftIO $ readMVar st
+  state <- liftIO $ readIORef st
   comps <- liftIO $ cmdlCompletionFn getCommands state $ reverse left
   let (_, nodes) = case i_state $ intState state of
                      Nothing      -> ("", [])
@@ -65,7 +65,7 @@ cmdlComplete st (left, _) = do
   return ("", map simpleCompletion $ comps ++ cmdcomps')
 #endif
 
-shellLoop :: MVar CmdlState
+shellLoop :: IORef CmdlState
           -> Bool
 #ifdef HASKELINE
           -> InputT IO CmdlState
@@ -74,7 +74,7 @@ shellLoop :: MVar CmdlState
 #endif
 shellLoop st isTerminal =
   do
-    state <- liftIO $ readMVar st
+    state <- liftIO $ readIORef st
     let prompt = if isTerminal then generatePrompter state else ""
 #ifdef HASKELINE
     minput <- getInputLine prompt
@@ -106,14 +106,14 @@ shellLoop st isTerminal =
                                          Nothing -> return newState
                                          Just cm -> checkCom
                                               cm { cmdDescription = c } newState
-                        liftIO $ swapMVar st newState'
+                        liftIO $ writeIORef st newState'
                         shellLoop st isTerminal
 
 -- | The function runs hets in a shell
 cmdlRunShell :: CmdlState -> IO CmdlState
 cmdlRunShell state = do
   isTerminal <- hIsTerminalDevice stdin
-  st <- newMVar state
+  st <- newIORef state
 #ifdef HASKELINE
   runInputT (shellSettings st) $ shellLoop st isTerminal
 #else
