@@ -250,7 +250,7 @@ globDecompForOneEdgeAux target (dgraph, proof_basis) path =
         , dgl_id = defaultEdgeId }
       newEdge = (node, target, newEdgeLbl)
       in case defEdgesToTarget of
-      (_, _, dl) : _ | isGlobalDef lbltype
+      (_, _, dl) : _ | not isHiding
              -> (dgraph, addEdgeId proof_basis $ dgl_id dl)
       _ | node == target && isInc (getRealDGLinkType newEdgeLbl)
                && isGlobalDef lbltype
