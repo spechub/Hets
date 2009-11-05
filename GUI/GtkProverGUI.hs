@@ -157,36 +157,31 @@ showProverGUI lid prGuiAcs thName warn th knownProvers comorphList = do
       modifyMVar_ state update
 
     onClicked btnGoalsSelectOpen $ modifyMVar_ state $ \ s -> do
-      model <- treeViewGetModel trvGoals
       sel <- treeViewGetSelection trvGoals
-      let isOpen st = let thst = thmStatus st in
-            null thst || case maximum $ map snd thst of
-              BasicProof _ pst -> isOpenGoal $ goalStatus pst
-              _ -> False
-      treeModelForeach (fromJust model) $ \ i -> do
-        (row:[]) <- treeModelGetPath (fromJust model) i
-        key <- listStoreGetValue listGoals row
-        (if isOpen $ fromJust $ OMap.lookup (gName key) $ goalMap s
-          then treeSelectionSelectIter else treeSelectionUnselectIter) sel i
-        return False
+      treeSelectionSelectAll sel
+      rs <- treeSelectionGetSelectedRows sel
+      mapM_ ( \ p@(row:[]) -> do
+        i <- listStoreGetValue listGoals row
+        let isOpen st = let thst = thmStatus st in
+              null thst || case maximum $ map snd thst of
+                BasicProof _ pst -> isOpenGoal $ goalStatus pst
+                _ -> False
+        (if isOpen $ fromJust $ OMap.lookup (gName i) $ goalMap s
+          then treeSelectionSelectPath else treeSelectionUnselectPath) sel p) rs
       update s
 
     -- setup axioms list
     setListSelectorMultiple trvAxioms btnAxiomsAll btnAxiomsNone btnAxiomsInvert
       $ modifyMVar_ state update
+
     onClicked btnAxiomsFormer $ modifyMVar_ state $ \ s -> do
-      aM <- axiomMap s
-      model <- treeViewGetModel trvAxioms
       sel <- treeViewGetSelection trvAxioms
-      treeModelForeach (fromJust model) $ \ i -> do
-        (row:[]) <- treeModelGetPath (fromJust model) i
-        key <- listStoreGetValue listAxioms row
-        k <- case stripPrefix "(Th) " key of
-          Just k -> return k
-          Nothing -> return key
-        (if not $ wasTheorem $ fromJust $ OMap.lookup k aM
-          then treeSelectionSelectIter else treeSelectionUnselectIter) sel i
-        return False
+      treeSelectionSelectAll sel
+      rs <- treeSelectionGetSelectedRows sel
+      mapM_ ( \ p@(row:[]) -> do
+        i <- listStoreGetValue listAxioms row
+        (if wasTheorem $ fromJust $ OMap.lookup (stripPrefixAxiom i) axioms
+          then treeSelectionUnselectPath else treeSelectionSelectPath) sel p) rs
       update s
 
     modifyMVar_ state $ update <=< updateProver trvProvers listProvers
@@ -198,18 +193,14 @@ showProverGUI lid prGuiAcs thName warn th knownProvers comorphList = do
     -- button bindings
     onClicked btnClose $ widgetDestroy window
 
-    onClicked btnShowTheory $
-      displayTheoryWithWarning "Theory" thName warn th
+    onClicked btnShowTheory $ displayTheoryWithWarning "Theory" thName warn th
 
-    onClicked btnShowSelectedTheory $ do
-      s <- readMVar state
-      displayTheoryWithWarning "Selected Theory" thName warn $ selectedTheory s
+    onClicked btnShowSelectedTheory $ readMVar state >>=
+      displayTheoryWithWarning "Selected Theory" thName warn . selectedTheory
 
     onClicked btnDisplay $ readMVar state >>= displayGoals
 
-    onClicked btnProofDetails $ do
-      s <- readMVar state
-      forkIO_ $ doShowProofDetails s
+    onClicked btnProofDetails $ forkIO_ $ readMVar state >>= doShowProofDetails
 
     onClicked btnProve $ do
       activate prove False
@@ -350,8 +341,13 @@ setSelectedSens :: TreeView -> ListStore String -> TreeView -> ListStore String
 setSelectedSens axs listAxs ths listThs s = do
   axioms <- getSelectedMultiple axs listAxs
   theorems <- getSelectedMultiple ths listThs
-  return s { includedAxioms   = map snd axioms
+  return s { includedAxioms   = map (stripPrefixAxiom . snd) axioms
            , includedTheorems = map snd theorems }
+
+stripPrefixAxiom :: String -> String
+stripPrefixAxiom a = case stripPrefix "(Th) " a of
+  Just a' -> a'
+  Nothing -> a
 
 -- | Called whenever a prover is selected from the "Pick Theorem Prover" list.
 setSelectedProver :: TreeView -> ListStore GProver -> ProofState lid sentence

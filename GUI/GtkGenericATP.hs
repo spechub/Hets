@@ -21,8 +21,9 @@ import qualified GUI.Glade.GenericATP as GenericATP
 
 import Interfaces.GenericATPState
 
-import Control.Concurrent (forkIO, killThread, myThreadId)
+import Control.Concurrent (forkIO, killThread, yield)
 import Control.Concurrent.MVar
+import Control.Monad (unless, when)
 
 import Common.AS_Annotation as AS_Anno
 import Common.Result
@@ -94,8 +95,8 @@ genericATPgui atpFun hasEOptions prName thName th freedefs pt = do
         initGoals = goalsList initState
 
     stateMVar <- newMVar initState
-    tid' <- myThreadId
-    threadId <- newMVar tid'
+    threadId <- newEmptyMVar
+    finished <- newEmptyMVar
 
     -- setting up lists
     listGoals <- setListData trvGoals show $ toGoals initState
@@ -175,8 +176,8 @@ genericATPgui atpFun hasEOptions prName thName th freedefs pt = do
 
     -- show details of selected goal
     onClicked btnStop $ do
-      tryTakeMVar threadId >>=maybe (return ()) killThread
-      putMVar threadId tid'
+      tryTakeMVar threadId >>= maybe (error "MVar 'tId' not set") killThread
+      putMVar finished ()
 
     -- show details of selected goal
     onClicked btnProveSelected $ do
@@ -226,35 +227,33 @@ genericATPgui atpFun hasEOptions prName thName th freedefs pt = do
         let firstGoalName = head $ filter (flip Map.member openGoalsMap)
                               $ map AS_Anno.senAttr $ goalsList s
             opts = words opts'
-            afterEachProofAttempt = (\ gPSF nSen nextSen cfg@(retval,_) -> do
+            afterEachProofAttempt = \ gPSF nSen nextSen cfg@(retval,_) -> do
               cont <- goalProcessed stateMVar timeout opts numGoals prName
                                     gPSF nSen False cfg
               case retval of
                 ATPError m -> errorDialog "Error" m
                 _ -> return ()
-              postGUIAsync $ do
-                let progress = fromIntegral gPSF / fromIntegral numGoals
-                if cont then updat progress $ AS_Anno.senAttr $ fromJust nextSen
-                  else do
-                    switchAll True
-                    takeMVar threadId
-                    return ()
+              postGUISync $ do
                 s' <- readMVar stateMVar
                 update' s'
-              return cont)
+                let progress = fromIntegral gPSF / fromIntegral numGoals
+                when cont $ updat progress $ AS_Anno.senAttr $ fromJust nextSen
+                return cont
         updat 0 firstGoalName
-        switchAll False
-        mtid <- tryTakeMVar threadId
-        maybe (error "MVar was not set.") (\ _ -> return ()) mtid
         tid <- forkIO $ do
+          yield
           genericProveBatch False timeout opts inclProven saveBatch
             afterEachProofAttempt (atpInsertSentence atpFun) (runProver atpFun)
             prName thName s Nothing
-          return ()
-        putMVar threadId tid
+          b <- isEmptyMVar threadId
+          unless b $ putMVar finished ()
+        b <- tryPutMVar threadId tid
+        unless b $ error "MVar 'threadId' already set"
+        switchAll False
         forkIO_ $ do
-          putMVar threadId tid'
-          postGUISync $ do
+          takeMVar finished
+          tryTakeMVar threadId
+          postGUIAsync $ do
             switchAll True
             exit
 

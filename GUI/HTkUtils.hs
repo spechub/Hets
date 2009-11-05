@@ -14,6 +14,7 @@ module GUI.HTkUtils
   ( LBGoalView (..)
   , LBStatusIndicator (..)
   , EnableWid (..)
+  , GUIMVar
   , listBox
   , errorMess
   , confirmMess
@@ -50,6 +51,14 @@ import Logic.Prover
 import Static.GTheory
 
 import Common.DocUtils
+
+import Control.Concurrent.MVar
+
+
+-- ** some types
+
+-- | Type for storing the proof management window
+type GUIMVar = MVar (Maybe Toplevel)
 
 -- | create a window with title and list of options, return selected option
 listBox :: String -> [String] -> IO (Maybe Int)

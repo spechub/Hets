@@ -43,11 +43,6 @@ import Static.GTheory
 
 -- * Proof Management GUI
 
--- ** some types
-
--- | Type for storing the proof management window
-type GUIMVar = Conc.MVar (Maybe Toplevel)
-
 -- ** Defining the view
 
 {- |
@@ -330,7 +325,7 @@ proofManagementGUI ::
              {- must be filled with Nothing and is filled with Nothing after
                 closing the window; while the window is open it is filled with
                 the Toplevel -}
-    -> IO (Result.Result G_theory)
+  -> IO (Result.Result G_theory)
 proofManagementGUI lid prGuiAcs
                    thName warningTxt th
                    knownProvers comorphList guiMVar =
