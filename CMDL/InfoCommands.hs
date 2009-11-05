@@ -17,7 +17,6 @@ theories
 module CMDL.InfoCommands
        ( cNodes
        , cShowDgGoals
-       , cDisplayGraph
        , cShowNodeProvenGoals
        , cShowNodeUnprovenGoals
        , cRedoHistory
@@ -38,7 +37,6 @@ module CMDL.InfoCommands
 #ifdef UNI_PACKAGE
 import Common.UniUtils
 import GUI.Taxonomy
-import GUI.ShowGraph
 #endif
 
 import CMDL.DataTypesUtils
@@ -62,8 +60,6 @@ import Data.List
 
 import Logic.Prover (SenStatus)
 import Logic.Comorphism (AnyComorphism)
-
-import Driver.Options (defaultHetcatsOpts)
 
 import Interfaces.Command (cmdNameStr, describeCmd, showCmd)
 import Interfaces.DataTypes
@@ -301,23 +297,6 @@ cNodes state
      let ls = nodeNames $ getAllNodes dgState
      -- print a sorted version of it
      return $ genMessage [] (intercalate "\n" $ sort ls) state
-
--- draw graph
-cDisplayGraph::CmdlState -> IO CmdlState
-cDisplayGraph state
- = case i_state $ intState state of
-#ifdef UNI_PACKAGE
-    Just dgState ->
-     do
-      -- obtain the name of the last loaded library for
-      -- documentation/debugging reasons
-      let flnm = fileLoaded $  prompter state
-      showGraph flnm defaultHetcatsOpts ( Just
-                   (i_ln dgState, i_libEnv dgState))
-      return state
-#endif
-   -- no development graph present
-    _ -> return state
 
 cHelp :: [CmdlCmdDescription] -> CmdlState -> IO CmdlState
 cHelp allcmds state = do
