@@ -28,7 +28,7 @@ import Common.Lib.State
 import Data.List as List
 import Control.Monad
 
--- * infer kind
+ -- * infer kind
 
 -- | extract kinds of type identifier
 getIdKind :: Env -> Id -> Result ((Variance, RawKind, Set.Set Kind), Type)
@@ -63,7 +63,7 @@ subKinds dk cm ty sk ks res =
    else Result [Diag dk
         ("no kind found for '" ++ showDoc ty "'" ++
          if Set.null ks then "" else expected sk ks)
-        $ getRange ty] $ Just Set.empty
+        $ getRange ty] $ if dk == Error then Nothing else Just Set.empty
 
 -- | add an analysed type argument (warn on redeclared types)
 addTypeVarDecl :: Bool -> TypeArg -> State Env ()

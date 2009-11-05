@@ -7,17 +7,17 @@ types [__], {__} : a -> b
 vars  u : [ r ]; v : { s }
 type  tuple3 : a -> b -> c -> d
 var   x : tuple3 r s t
-var   y : tuple3 r s
+var
 type  tuple1 : b -> a
 type  m : (a -> b) -> c
 var   z : m [__]
 type  List : a -> b
 var   w : m List
-var   o1 : m
-var   o2 : m tuple1
-var   o3 : m tuple3
+var
+var
+var
 var   nt : a -> (b -> c) -> c -> d
-var   o4 : nt r List s
+var
 types s1, r1, t1 < t
 types s2 = r2 = t2
 type  s3 = {x : t . x = x}
@@ -55,15 +55,10 @@ s2 := t2
 var
 nt : a -> (b -> c) -> c -> d %(var_1)%
 vars
-o1 : m;
-o2 : m tuple1;
-o3 : m tuple3;
-o4 : nt r List s;
 u : [ r ];
 v : { s };
 w : m List;
 x : tuple3 r s t;
-y : tuple3 r s;
 z : m [__]
 forall x : t . (x in s3) <=> x = x
 ### Hint 7.6, not a kind '[r]'
