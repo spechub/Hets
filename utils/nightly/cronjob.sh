@@ -295,6 +295,21 @@ date
 fgrep \*\*\* ../isa2.log
 }
 
+topSortCheck ()
+{
+cd $HETS_LIB
+date
+\rm Basic/*.th
+\rm Basic/*.thy
+for i in Basic/*.casl;
+    do ./hets -v2 -o th,thy -t CASL2PCFOLTopSort $i; done
+date
+for i in Basic/*.th; do ./hets -v2 -o th,pp.het $i; done
+date
+../Hets/utils/nightly/runisabelle.sh Basic/*.thy > ../isa3.log 2>&1
+fgrep \*\*\* ../isa3.log
+}
+
 checkEnvs ()
 {
 date

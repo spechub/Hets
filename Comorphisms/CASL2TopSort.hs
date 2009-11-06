@@ -9,6 +9,9 @@ Portability :  portable
 
 Coding out subsorting into unary predicates.
    New concept for proving Ontologies.
+
+generatedness via non-injective datatype constructors
+(i.e. proper data constructors) is simply ignored
 -}
 
 module Comorphisms.CASL2TopSort (CASL2TopSort(..)) where
@@ -55,12 +58,9 @@ instance Comorphism CASL2TopSort
                CASLMor
                Symbol RawSymbol ProofTree where
     sourceLogic CASL2TopSort = CASL
-    sourceSublogic CASL2TopSort = SL.top
+    sourceSublogic CASL2TopSort = SL.caslTop
         { sub_features = LocFilSub
-        , which_logic = FOL
-        , cons_features = SortGen
-            { emptyMapping = True
-            , onlyInjConstrs = True }}
+        , cons_features = emptyMapConsFeature }
     targetLogic CASL2TopSort = CASL
     mapSublogic CASL2TopSort sub =
         if sub `isSubElem` sourceSublogic CASL2TopSort
@@ -144,16 +144,11 @@ generateSubSortMap sortRels pMap =
 -- one element of the top-sort.
 
 transSig :: Sign () e -> Result (Sign () e, [Named (FORMULA ())])
-transSig sig = if Rel.null sortRels then
-        hint (sig, [])
-        "CASL2TopSort.transSig: Signature is unchanged (no subsorting present)"
-        nullRange
+transSig sig = if Rel.null sortRels then return (sig, [])
     else do
     subSortMap <- generateSubSortMap sortRels (predMap sig)
-    let (dias2, newPredMap) = Map.mapAccum (\ ds (un, ds1) -> (ds ++ ds1, un))
-          [] $ Map.unionWithKey repError (transPredMap subSortMap
+    let newPredMap = Map.unionWith Set.union (transPredMap subSortMap
                   $ predMap sig) $ newPreds subSortMap
-    Result dias2 $ Just ()
     axs <- generateAxioms subSortMap (predMap sig) (opMap sig)
     return (sig
         { sortSet = Set.fromList (map topSortPI $ Map.elems subSortMap)
@@ -164,22 +159,15 @@ transSig sig = if Rel.null sortRels then
         , predMap = newPredMap
         }, axs ++ symmetryAxioms subSortMap sortRels)
     where sortRels = Rel.transClosure $ sortRel sig
-          repError k (v1, d1) (v2, d2) =
-              (Set.union v1 v2,
-               Diag Warning
-                     ("CASL2TopSort.transSig: generating " ++
-                      "overloading: Predicate " ++ show k ++
-                      " gets additional type(s): " ++ show v2) nullRange
-               : d1 ++ d2 )
           newPreds =
               foldr (\ pI -> Map.insert (predicatePI pI)
                                            (Set.singleton
-                                            (PredType [topSortPI pI]),[]))
+                                            (PredType [topSortPI pI])))
                     Map.empty . Map.elems
 
 transPredMap :: SubSortMap -> Map.Map PRED_NAME (Set.Set PredType)
-             -> Map.Map PRED_NAME (Set.Set PredType, [Diagnosis])
-transPredMap subSortMap = Map.map (\ s -> (Set.map transType s, []))
+             -> Map.Map PRED_NAME (Set.Set PredType)
+transPredMap subSortMap = Map.map $ Set.map transType
     where transType t = t
             { predArgs = map (\ s -> maybe s topSortPI
                              $ Map.lookup s subSortMap) $ predArgs t }
@@ -216,7 +204,7 @@ mkQualPred symS ts = Qual_pred_name symS (Pred_type [ts] nullRange) nullRange
 symmetryAxioms :: SubSortMap -> Rel.Rel SORT -> [Named (FORMULA ())]
 symmetryAxioms ssMap sortRels =
     let symSets = Rel.sccOfClosure sortRels
-        toAxioms symSet = concatMap
+        toAxioms = concatMap
           (\ s ->
             let ts = lkupTop ssMap s
                 Just symS = lkupPredName ssMap s
@@ -226,7 +214,7 @@ symmetryAxioms ssMap sortRels =
             in if ts == s then [] else
                    [makeNamed (show ts ++ "_symmetric_with_" ++ show symS)
                    $ mkForall [vd] (Predication psy [vt] nullRange) nullRange]
-          ) $ Set.toList symSet
+          ) . Set.toList
     in concatMap toAxioms symSets
 
 generateAxioms :: SubSortMap -> Map.Map PRED_NAME (Set.Set PredType)
@@ -291,13 +279,7 @@ mkProfMapOp opName ssm = Set.fold seperate (return Map.empty)
                 (fKind, Set.singleton $ pt2preds joinedList) mp
               where joinedList = opArgs ot ++ [opRes ot]
                     fKind = opKind ot
-                    dias' = [ Diag Warning
-                                        ("Please, check if operation \"" ++
-                                         show opName ++
-                                         "\" is still partial as intended,\
-                                          \ since a joining of types could\
-                                         \ have made it total!!")
-                                        nullRange
+                    dias' = [ mkDiag Hint "partial op" opName
                               | fKind == Partial ]
           pt2topSorts = map (lkupTop ssm)
           pt2preds = map (lkupPredName ssm)
@@ -384,10 +366,7 @@ genDisjunction vars spn
 
 transSen :: (Show f) => Sign f e -> FORMULA f -> Result (FORMULA f)
 transSen sig f = let sortRels = Rel.transClosure $ sortRel sig in
-    if Rel.null sortRels then
-        Result [Diag Hint
-        "CASL2TopSort.transSen: Sentence is unchanged (no subsorting present)"
-        nullRange ] (Just f)
+    if Rel.null sortRels then return f
     else do
     ssm <- generateSubSortMap sortRels (predMap sig)
     mapSen ssm f
@@ -488,11 +467,10 @@ genEitherAxiom ssMap =
                     ((x : _) : _) -> return $ genQuant x
                         $ conjunct $ map genImpl groupedInjOps
                     _ -> error "CASL2TopSort.genEitherAxiom.groupedInjOps"
-               else Result [Diag Error
-                                  "CASL2TopSort: Cannot handle \
-                                  \datatype constructors; only subsort \
-                                  \embeddings are allowed with free and \
-                                  \generated types!" nullRange] Nothing
+               else Result [mkDiag Warning
+                            "ignoring generating constructors"
+                            constrs]
+                    $ Just $ True_atom nullRange
           isInjOp ops =
               case ops of
               Op_name _ -> error "CASL2TopSort.genEitherAxiom.isInjObj"
