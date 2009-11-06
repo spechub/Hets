@@ -28,7 +28,7 @@ import Common.Lib.State
 import Data.List as List
 import Control.Monad
 
- -- * infer kind
+-- * infer kind
 
 -- | extract kinds of type identifier
 getIdKind :: Env -> Id -> Result ((Variance, RawKind, Set.Set Kind), Type)
