@@ -200,9 +200,8 @@ produceProcesses thName ccSign ccNnamedSens pcfolSign cfolSign =
                                                     , cspFThyS] }
         -- Start with our empty isabelle theory and add the
         -- processes the the process refinement theorems.
-        (isaSign, isaSens) = addProcMap ccNnamedSens caslSign pcfolSign cfolSign
+        (isaSign, isaSens) = addProcMap ccNnamedSens ccSign pcfolSign cfolSign
                            $ addProcNameDatatype cspSign
-                           $ addDataSetTypes sortList
                            $ addFlatTypes sortList
                            $ addProjFlatFun
                            $ addEventDataType sortRel' chanNameMap

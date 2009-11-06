@@ -20,7 +20,6 @@ module CspCASLProver.Utils
     , addAllChooseFunctions
     , addAllCompareWithFun
     , addAllIntegrationTheorems
-    , addDataSetTypes
     , addEqFun
     , addEventDataType
     , addFlatTypes
@@ -32,7 +31,7 @@ module CspCASLProver.Utils
     , addProjFlatFun
     ) where
 
-import CASL.AS_Basic_CASL (SORT, OpKind(..))
+import CASL.AS_Basic_CASL (SORT, OpKind(..), TERM(..))
 import qualified CASL.Fold as CASL_Fold
 import qualified CASL.Sign as CASLSign
 import qualified CASL.Inject as CASLInject
@@ -47,12 +46,12 @@ import Comorphisms.CFOL2IsabelleHOL (IsaTheory)
 import qualified Comorphisms.CFOL2IsabelleHOL as CFOL2IsabelleHOL
 
 import CspCASL.AS_CspCASL_Process (PROCESS_NAME)
-import CspCASL.SignCSP (ChanNameMap, CspSign(..), ProcProfile(..),
-                        CspCASLSen(..), isProcessEq)
+import CspCASL.SignCSP (CspCASLSign, ccSig2CASLSign, ChanNameMap, CspSign(..),
+                        ProcProfile(..), CspCASLSen(..), isProcessEq)
 
 import CspCASLProver.Consts
 import CspCASLProver.IsabelleUtils
-import CspCASLProver.TransProcesses (transProcess)
+import CspCASLProver.TransProcesses (transProcess, VarSource(..))
 
 import qualified Data.List as List
 import qualified Data.Map as Map
@@ -133,7 +132,7 @@ addCompareWithFun caslSign isaTh sort =
                 sort'Constructor = mkPreAlphabetConstructor sort'
                 lhs = termAppl lhs_a lhs_b
                 lhs_a = termAppl (conDouble funName) x
-                lhs_b = termAppl (conDouble (sort'Constructor)) y
+                lhs_b = termAppl (conDouble sort'Constructor) y
                 sort'SuperSet =CASLSign.supersortsOf sort' caslSign
                 commonSuperList = Set.toList (Set.intersection
                                                  sortSuperSet
@@ -141,7 +140,7 @@ addCompareWithFun caslSign isaTh sort =
 
                 -- If there are no tests then the rhs=false else
                 -- combine all tests using binConj
-                rhs = if (null allTests)
+                rhs = if null allTests
                       then false
                       else foldr1 binConj allTests
 
@@ -151,7 +150,7 @@ addCompareWithFun caslSign isaTh sort =
                 -- Test 3 =  test equality at: super sorts  vs current sort
                 -- Test 4 =  test equality at: super sorts  vs super sorts
                 allTests = concat [test1, test2, test3, test4]
-                test1 = if (sort == sort') then [binEq x y] else []
+                test1 = if sort == sort' then [binEq x y] else []
                 test2 = if (Set.member sort sort'SuperSet)
                         then [binEq x (mkInjection sort' sort y)]
                         else []
@@ -558,31 +557,26 @@ addIntegrationTheorem_A caslSign isaTh (s1,s2) =
 --------------------------------------------------------------------------
 
 -- | Add the Event datatype (built from a list of channels and the subsort
---  relation) to an Isabelle theory. BUG
+--  relation) to an Isabelle theory.
 addEventDataType :: Rel.Rel SORT -> ChanNameMap -> IsaTheory -> IsaTheory
 addEventDataType sortRel chanNameMap isaTh =
     let eventDomainEntry = mkEventDE sortRel chanNameMap
        -- Add to the isabelle signature the new domain entry
     in updateDomainTab eventDomainEntry isaTh
 
--- | Make a Domain Entry for the Event from a list of sorts. BUG
+-- | Make a Domain Entry for the Event from a list of sorts.
 mkEventDE :: Rel.Rel SORT -> ChanNameMap -> DomainEntry
-mkEventDE sortRel chanNameMap =
+mkEventDE _ chanNameMap =
     let flat = (mkVName flatS, [alphabetType])
-        -- Make a constuctor type pair for a channel with a target sort
-        mkCon (c, s) = (mkVName (mkEventChannelConstructor c s),
-                                 [mkSortBarType s])
-        -- Make pairs of channel and sorts, where the sorts are all the possible
-        -- predecessors of the sort of the channel.
-        mkChanSortPairs (cn,sort) =
-                -- get all predecessors including s
-            let subSorts = Set.insert sort (Rel.predecessors sortRel sort)
-                mkPair s = (cn,s)
-            in Set.toList $ Set.map mkPair subSorts
+        -- Make a constuctor type for a channel with a target sort
+        mkChanCon (c, s) = (mkVName (convertChannelString c),
+                                        [mkSortBarType s])
+        -- Make pairs of channel and sorts, where we only build the declared
+        -- channels and not the subsorted channels.
+        mkAllChanCons = map mkChanCon $ Map.toList chanNameMap
         -- We build the event type out of the flat constructions and the list of
         -- channel constructions
-    in (eventType, (flat:(map mkCon $ concat $ map mkChanSortPairs $
-                              Map.toList chanNameMap)))
+    in (eventType, (flat:mkAllChanCons))
 
 -- | Add the eq function to an Isabelle theory using a list of sorts
 addProjFlatFun :: IsaTheory -> IsaTheory
@@ -627,36 +621,6 @@ addFlatType isaTh sort =
         namedSen = (makeNamed sortFlatString sen)
     in (isaTh_sign, isaTh_sen ++ [namedSen])
 
--- | Function to add all the Data Set types. These capture the original sorts by
---   creating sets of the bar varients. We use these sets when communicating
---   over a channel.
-addDataSetTypes :: [SORT] -> IsaTheory -> IsaTheory
-addDataSetTypes sorts isaTh = foldl addDataSetType isaTh sorts
-
--- | Function to add the Data Set type of a sort to an Isabelle theory.
-addDataSetType :: IsaTheory -> SORT -> IsaTheory
-addDataSetType isaTh sort =
-    let sortDataSetString = mkSortDataSetString sort
-        dataSetType = Type {typeId = sortDataSetString,
-                            typeSort = [],
-                            typeArgs =[]}
-        isaTh_sign = fst isaTh
-        isaTh_sen = snd isaTh
-        x = mkFree "x"
-        y = mkFree "y"
-        -- y in sort_Bar
-        condition1 = binMembership y (conDouble $ mkSortBarString sort)
-        -- x = Abs_sort_Bar y
-        condition2 = binEq x ((mkSortBarAbsOp sort) y)
-        -- y in x_Bar /\ x = Flat y
-        condition_eq = binConj condition1 condition2
-        exist_eq = termAppl (conDouble exS) (Abs y condition_eq NotCont)
-        subset = SubSet x (mkSortBarType sort) exist_eq
-        proof' = AutoSimpAdd Nothing [(mkSortBarString sort) ++ "_def"]
-        sen = TypeDef dataSetType subset (IsaProof [] (By proof'))
-        namedSen = (makeNamed sortDataSetString sen)
-    in (isaTh_sign, isaTh_sen ++ [namedSen])
-
 --------------------------------------------------------------------------
 -- Functions for adding the process name datatype to an Isabelle theory --
 --------------------------------------------------------------------------
@@ -697,11 +661,11 @@ mkProcNameDE processes =
 --   sentences and the casl signature (data part). We need the PCFOL and CFOL
 --   signatures of the data part after translation to PCFOL and CFOL to pass
 --   along the process translation.
-addProcMap :: [Named CspCASLSen] -> CASLSign.Sign () () ->
+addProcMap :: [Named CspCASLSen] -> CspCASLSign ->
               CASLSign.Sign () () -> CASLSign.Sign () () ->
               IsaTheory -> IsaTheory
-addProcMap namedSens caslSign pcfolSign cfolSign isaTh =
-    let
+addProcMap namedSens ccSign pcfolSign cfolSign isaTh =
+    let caslSign = ccSig2CASLSign ccSign
         -- Translate a fully qualified variable (CASL term) to Isabelle
         tyToks = CFOL2IsabelleHOL.typeToks caslSign
         trForm = CFOL2IsabelleHOL.formTrCASL
@@ -728,7 +692,12 @@ addProcMap namedSens caslSign pcfolSign cfolSign isaTh =
                 -- free variables
                 varTerms = map transVar fqVars
                 lhs = procMapTerm (foldl termAppl (procNameTerm) varTerms)
-                rhs = transProcess caslSign pcfolSign cfolSign fqVars proc
+                addToVdm fqvar vdm' =
+                    case fqvar of
+                      Qual_var v _ _ -> Map.insert v GlobalParameter vdm'
+                      _ -> error "CspCASLProver.Utils.addProcMap: Term other than fully qualified variable in process parameter variable list"
+                vdm = foldr addToVdm Map.empty fqVars
+                rhs = transProcess ccSign pcfolSign cfolSign vdm proc
              in binEq lhs rhs
         -- to avoid warnings we specify the behaviour on CASL sentences. This
         -- should never be called as they have been filtered out.

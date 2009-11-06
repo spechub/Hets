@@ -33,6 +33,8 @@ module CspCASLProver.CspProverConsts
     , cspProver_renamingOp
     , cspProver_conditionalOp
     , cspProver_chan_nondeterministic_sendOp
+    , cspProver_chan_sendOp
+    , cspProver_chan_recOp
 ) where
 
 import Isabelle.IsaSign as IsaSign
@@ -211,6 +213,26 @@ cspProver_chan_nondeterministic_sendAltArgPrios = [900,900,1000,80]
 cspProver_chan_nondeterministic_sendAltArgOpPrio :: Int
 cspProver_chan_nondeterministic_sendAltArgOpPrio = 80
 
+-- | Channel send operator symbols
+cspProver_chan_sendS :: String
+cspProver_chan_sendS = "Send_prefix"
+cspProver_chan_sendAltS :: String
+cspProver_chan_sendAltS = "(_ ! _ -> _)"
+cspProver_chan_sendAltArgPrios :: [Int]
+cspProver_chan_sendAltArgPrios = [900,1000,80]
+cspProver_chan_sendAltArgOpPrio :: Int
+cspProver_chan_sendAltArgOpPrio = 80
+
+-- | Channel receive operator symbols
+cspProver_chan_recS :: String
+cspProver_chan_recS = "Rec_prefix"
+cspProver_chan_recAltS :: String
+cspProver_chan_recAltS = "(_ ? _ : _ -> _)"
+cspProver_chan_recAltArgPrios :: [Int]
+cspProver_chan_recAltArgPrios = [900,900,1000,80]
+cspProver_chan_recAltArgOpPrio :: Int
+cspProver_chan_recAltArgOpPrio = 80
+
 -- Isabelle Terms representing the operations for CspProver
 
 -- | Name Process operator
@@ -353,7 +375,21 @@ cspProver_chan_nondeterministic_sendOp  =
                         cspProver_chan_nondeterministic_sendAltArgPrios
                         cspProver_chan_nondeterministic_sendAltArgOpPrio
 
+-- | Channel send operator
+cspProver_chan_sendOp :: Term -> Term -> Term -> Term
+cspProver_chan_sendOp  =
+    makeTriCspProverOp cspProver_chan_sendS
+                       cspProver_chan_sendAltS
+                       cspProver_chan_sendAltArgPrios
+                       cspProver_chan_sendAltArgOpPrio
 
+-- | Channel receive operator
+cspProver_chan_recOp :: Term -> Term -> Term -> Term -> Term
+cspProver_chan_recOp  =
+    makeQuadCspProverOp cspProver_chan_recS
+                        cspProver_chan_recAltS
+                        cspProver_chan_recAltArgPrios
+                        cspProver_chan_recAltArgOpPrio
 
 -- | Create an Isabelle Term representing a (Unary) CspProver operator
 --   with no alternative syntax

@@ -19,6 +19,7 @@ module CspCASLProver.Consts
     , binEq_PreAlphabet
     , classOp
     , classS
+    , convertChannelString
     , convertProcessName2String
     , convertSort2String
     , cspFThyS
@@ -29,23 +30,24 @@ module CspCASLProver.Consts
     , eventS
     , eventType
     , flatS
+    , flatOp
     , preAlphabetQuotType
     , preAlphabetS
     , preAlphabetSimS
     , preAlphabetType
     , projFlatS
+     , projFlatOp
     , mkChooseFunName
     , mkChooseFunOp
     , mkCompareWithFunName
-    , mkEventChannelConstructor
     , mkPreAlphabetConstructor
     , mkPreAlphabetConstructorOp
     , mkProcNameConstructor
+    , mkSortBarAbsString
     , mkSortBarAbsOp
     , mkSortBarRepOp
     , mkSortBarString
     , mkSortBarType
-    , mkSortDataSetString
     , mkSortFlatString
     , mkThyNameAlphabet
     , mkThyNameDataEnc
@@ -100,6 +102,11 @@ classOp = termAppl (conDouble classS)
 classS :: String
 classS = "class"
 
+-- | Function that takes a channel name produces the
+--   CspCASLProver's constructor for that channel.
+convertChannelString :: CHANNEL_NAME -> String
+convertChannelString = show
+
 -- | Convert a SORT to a string
 convertSort2String :: SORT -> String
 convertSort2String s = showIsaTypeT s Main_thy
@@ -111,11 +118,6 @@ convertProcessName2String = show
 -- |  Theory file name for CSP_F of CSP-Prover
 cspFThyS :: String
 cspFThyS  = "CSP_F"
-
--- | The string to use for the names of the data set types. See the channel
---   construction and the event data type.
-dataSetS :: String
-dataSetS = "DataSet"
 
 -- | String of the name of the function to compare eqaulity of two
 --   elements of the PreAlphabet.
@@ -153,6 +155,10 @@ eventType = Type {typeId = eventS,
 flatS :: String
 flatS = "Flat"
 
+-- | Function that takes a Term and adds a flat around it
+flatOp :: Term -> Term
+flatOp = termAppl (conDouble flatS)
+
 -- | Function that takes a sort and outputs the function name for the
 --   corresponing choose function
 mkChooseFunName :: SORT -> String
@@ -167,11 +173,6 @@ mkChooseFunOp s = termAppl (conDouble (mkChooseFunName s))
 --   corresponing compare_with function
 mkCompareWithFunName :: SORT -> String
 mkCompareWithFunName sort = ("compare_with_" ++ (mkPreAlphabetConstructor sort))
-
--- | Function that takes a channel name and a target sort and produces the
---   CspCASLProver's constructor for that channel with that target sort.
-mkEventChannelConstructor :: CHANNEL_NAME -> SORT -> String
-mkEventChannelConstructor c s = (show c) ++ "_" ++ (convertSort2String s)
 
 -- | Function that returns the constructor of PreAlphabet for a given
 --   sort
@@ -198,18 +199,6 @@ mkSortBarString s = convertSort2String s ++ barExtS
 mkSortBarType :: SORT -> Typ
 mkSortBarType sort = Type {typeId = (mkSortBarString sort), typeSort = [], typeArgs =[]}
 
--- | Converts a sort in to the corresponding Data Set type for that sort
--- represented as a string. This is used in the construction of the channels and
--- is linked with the type event.
-mkSortDataSetString :: SORT -> String
-mkSortDataSetString s = (convertSort2String s) ++ "_" ++ dataSetS
-
--- | Converts asort in to the corresponding flat type for that sort represented
--- as a string. This is used in the construction of the channels and is linked
--- with the type event.
-mkSortFlatString :: SORT -> String
-mkSortFlatString s = (convertSort2String s) ++ "_" ++ flatS
-
 -- | Given a sort this function produces the function name (string) of the built
 --   in Isabelle fucntion that corresponds to the abstraction function of the
 --   type that sort_bar.
@@ -233,6 +222,12 @@ mkSortBarRepString s = "Rep_" ++ convertSort2String s ++ barExtS
 --   to the representation function of the type sort_bar.
 mkSortBarRepOp :: SORT -> Term -> Term
 mkSortBarRepOp s = termAppl (conDouble (mkSortBarRepString s))
+
+-- | Converts asort in to the corresponding flat type for that sort represented
+-- as a string. This is used in the construction of the channels and is linked
+-- with the type event.
+mkSortFlatString :: SORT -> String
+mkSortFlatString s = (convertSort2String s) ++ "_" ++ flatS
 
 -- | Created a name for the theory file which stores the alphabet
 --   construction for CspCASLProver.
@@ -301,6 +296,10 @@ procS = "proc"
 --   type Alphabet
 projFlatS :: String
 projFlatS = "projFlat"
+
+-- | Apply the CspCASLProvers projFlat function to an isabelle term
+projFlatOp :: Term -> Term
+projFlatOp = termAppl (conDouble projFlatS)
 
 -- | Name for IsabelleHOL quot type
 quotS :: String

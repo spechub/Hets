@@ -96,6 +96,13 @@ unionS = "op Un"
 membershipS :: String
 membershipS = "op :"
 
+-- | Imange of functions
+imageS :: String
+imageS = "image"
+
+rangeS :: String
+rangeS = "range"
+
 -- * some stuff for Isabelle
 
 pcpoS :: String
@@ -340,7 +347,8 @@ binVNameAppl v t1 t2 = termAppl (termAppl (con v) t1) t2
 
 -- * TERM CONSTRUCTORS
 -- | binary junctors
-binConj, binDisj, binImpl, binEqv, binEq, binEqvSim, binUnion, binMembership
+binConj, binDisj, binImpl, binEqv, binEq, binEqvSim, binUnion,
+       binMembership, binImageOp
     :: Term -> Term -> Term
 binConj = binVNameAppl conjV
 binDisj = binVNameAppl disjV
@@ -350,6 +358,10 @@ binEqv = binEq
 binEqvSim = binVNameAppl eqvSimV
 binUnion = binVNameAppl unionV
 binMembership = binVNameAppl membershipV
+binImageOp = binVNameAppl imageV
+
+rangeOp :: Term -> Term
+rangeOp t = termAppl (con rangeV) t
 
 -- | HOL function application
 termAppl :: Term -> Term -> Term
@@ -553,6 +565,12 @@ unionV = VName unionS $ Just $ AltSyntax "(_ \\<union>/ _)" [65,66] 65
 
 membershipV :: VName
 membershipV = VName membershipS $ Just $ AltSyntax "(_ \\<in>/ _)" [65,66] 65
+
+imageV :: VName
+imageV = VName imageS $ Just $ AltSyntax "(_ `/ _)" [65,66] 65
+
+rangeV :: VName
+rangeV = VName rangeS Nothing
 
 -- **** keywords in theory files from the Isar Reference Manual 2005
 
