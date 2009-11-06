@@ -216,18 +216,18 @@ mkQualPred symS ts = Qual_pred_name symS (Pred_type [ts] nullRange) nullRange
 symmetryAxioms :: SubSortMap -> Rel.Rel SORT -> [Named (FORMULA ())]
 symmetryAxioms ssMap sortRels =
     let symSets = Rel.sccOfClosure sortRels
-        mR = Rel.mostRight sortRels
-        symTopSorts = not . Set.null . Set.intersection mR
-        toAxioms symSet = map (\ s ->
+        toAxioms symSet = concatMap
+          (\ s ->
             let ts = lkupTop ssMap s
                 Just symS = lkupPredName ssMap s
                 psy = mkQualPred symS ts
                 vd = mkVarDeclStr "x" ts
                 vt = toQualVar vd
-            in makeNamed (show ts ++ "_symmetric_with_" ++ show symS)
-                   $ mkForall [vd] (Predication psy [vt] nullRange) nullRange
-            ) $ Set.toList (Set.difference symSet mR)
-    in concatMap toAxioms (filter symTopSorts symSets)
+            in if ts == s then [] else
+                   [makeNamed (show ts ++ "_symmetric_with_" ++ show symS)
+                   $ mkForall [vd] (Predication psy [vt] nullRange) nullRange]
+          ) $ Set.toList symSet
+    in concatMap toAxioms symSets
 
 generateAxioms :: SubSortMap -> Map.Map PRED_NAME (Set.Set PredType)
                -> Map.Map OP_NAME (Set.Set OpType)
