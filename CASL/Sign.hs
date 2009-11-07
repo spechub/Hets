@@ -246,7 +246,7 @@ rmOrAddParts b s =
   in (if b then Set.difference else Set.union) s t
 
 addOpMapSet :: OpMap -> OpMap -> OpMap
-addOpMapSet m = Map.map (rmOrAddParts True). addMapSet m
+addOpMapSet m = Map.map (rmOrAddParts True) . addMapSet m
 
 interMapSet :: (Ord a, Ord b) => Map.Map a (Set.Set b) -> Map.Map a (Set.Set b)
             -> Map.Map a (Set.Set b)
