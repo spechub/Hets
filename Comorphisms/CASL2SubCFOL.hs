@@ -23,7 +23,6 @@ import CASL.AS_Basic_CASL
 import CASL.Sign
 import CASL.Morphism
 import CASL.Sublogic as SL hiding (bottom)
-import CASL.Overload
 import CASL.Fold
 import CASL.Project
 import CASL.Simplify
@@ -132,8 +131,8 @@ totalizeSymbType t = case t of
 
 sortsWithBottom :: FormulaTreatment -> Sign f e -> Set.Set SORT -> Set.Set SORT
 sortsWithBottom m sig formBotSrts =
-    let bsrts = treatFormula m Set.empty formBotSrts   (Map.keysSet $
-            Rel.toMap $ sortRel sig ) (sortSet sig)
+    let bsrts = treatFormula m Set.empty formBotSrts
+          (Map.keysSet $ Rel.toMap $ sortRel sig) (sortSet sig)
         ops = Map.elems $ opMap sig
         -- all supersorts inherit the same bottom element
         allSortsWithBottom s =
@@ -287,8 +286,9 @@ generateAxioms uniqBot bsorts sig = concatMap (\ s -> let
     where
         mkQualOp f ty = Qual_op_name f ty nullRange
         mkNeg f = Negation f nullRange
-        minSupers so = keepMinimals sig id $ Set.toList $ Set.delete so
-                           $ supersortsOf so sig
+        rel = Rel.transReduce . Rel.transClosure $ sortRel sig
+        minSupers so = Set.toList $ Set.delete so
+                           $ Rel.succs rel so
         sortList = Set.toList bsorts
         opList = [(f,t) | (f,types) <- Map.toList $ opMap sig,
                   t <- Set.toList types ]
