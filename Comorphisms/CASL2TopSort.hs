@@ -174,8 +174,7 @@ transPredMap :: SubSortMap -> Map.Map PRED_NAME (Set.Set PredType)
              -> Map.Map PRED_NAME (Set.Set PredType)
 transPredMap subSortMap = Map.map $ Set.map transType
     where transType t = t
-            { predArgs = map (\ s -> maybe s topSortPI
-                             $ Map.lookup s subSortMap) $ predArgs t }
+            { predArgs = map (lkupTop subSortMap) $ predArgs t }
 
 transOpMap :: SubSortMap -> Map.Map OP_NAME (Set.Set OpType)
            -> Map.Map OP_NAME (Set.Set OpType)
@@ -189,7 +188,7 @@ transOpMap subSortMap = Map.map (rmOrAddParts True . Set.map transType)
               t { opArgs = map lkp (opArgs t)
                 , opRes = lkp (opRes t)
                 , opKind = if args == newArgs then kd else Partial }
-          lkp s = maybe s topSortPI (Map.lookup s subSortMap)
+          lkp = lkupTop subSortMap
 
 procOpMapping :: SubSortMap -> OP_NAME -> Set.Set OpType
   -> [Named (FORMULA ())] -> [Named (FORMULA ())]
@@ -210,7 +209,7 @@ symmetryAxioms ssMap sortRels =
         toAxioms = concatMap
           (\ s ->
             let ts = lkupTop ssMap s
-                Just symS = lkupPredName ssMap s
+                symS = lkupPred ssMap s
                 psy = mkQualPred symS ts
                 vd = mkVarDeclStr "x" ts
                 vt = toQualVar vd
@@ -243,12 +242,7 @@ generateAxioms subSortMap pMap oMap =
                let ts = topSortPI prdInf
                    subS = predicatePI prdInf
                    set = directSuperSortsPI prdInf
-                   supPreds =
-                     map (\ s ->
-                            maybe (error ("CASL2TopSort: genAxioms:" ++
-                                   " impossible happend: " ++ show s))
-                                  predicatePI $ Map.lookup s subSortMap)
-                         $ Set.toList set
+                   supPreds = map (lkupPred subSortMap) $ Set.toList set
                    x = mkVarDeclStr "x" ts
                    mkPredf sS = Predication (mkQualPred sS ts) [toQualVar x]
                                 nullRange
@@ -267,7 +261,7 @@ mkProfMapPred :: SubSortMap -> Set.Set PredType
 mkProfMapPred ssm = Set.fold seperate Map.empty
     where seperate pt = Rel.setInsert (pt2topSorts pt) (pt2preds pt)
           pt2topSorts = map (lkupTop ssm) . predArgs
-          pt2preds = map (lkupPredName ssm) . predArgs
+          pt2preds = map (lkupPredM ssm) . predArgs
 
 mkProfMapOp :: SubSortMap -> Set.Set OpType
             -> Map.Map [SORT] (OpKind, Set.Set [Maybe PRED_NAME])
@@ -280,13 +274,16 @@ mkProfMapOp ssm = Set.fold seperate Map.empty
               where joinedList = opRes ot : opArgs ot
                     fKind = opKind ot
                     pt2topSorts = map (lkupTop ssm)
-                    pt2preds = map (lkupPredName ssm)
+                    pt2preds = map (lkupPredM ssm)
 
 lkupTop :: SubSortMap -> SORT -> SORT
 lkupTop ssm s = maybe s topSortPI (Map.lookup s ssm)
 
-lkupPredName :: SubSortMap -> SORT -> Maybe PRED_NAME
-lkupPredName ssm s = maybe Nothing (Just . predicatePI) (Map.lookup s ssm)
+lkupPredM :: SubSortMap -> SORT -> Maybe PRED_NAME
+lkupPredM ssm s = fmap predicatePI $ Map.lookup s ssm
+
+lkupPred :: SubSortMap -> SORT -> PRED_NAME
+lkupPred ssm = fromMaybe (error "CASL2TopSort.lkupPred") . lkupPredM ssm
 
 genArgRest :: String
            -> ([VAR_DECL] -> FORMULA f)
@@ -380,7 +377,7 @@ mapRec ssM opM = (mapRecord id)
   { foldQuantification = \ _ q vdl ->
         Quantification q (map updateVarDecls vdl) . relativize q vdl
   , foldMembership = \ _ t s pl -> maybe (Membership t s pl)
-      (\ pn -> genPredAppl pn [lTop s] [t]) (lPred s)
+      (\ pn -> genPredAppl pn [lTop s] [t]) $ lPred s
   , foldPredication = \ _ -> Predication . updatePRED_SYMB
   , foldQual_var = \ _ v -> Qual_var v . lTop
   , foldApplication = \ _ -> Application . updateOP_SYMB
@@ -388,7 +385,7 @@ mapRec ssM opM = (mapRecord id)
     -- casts are discarded due to missing subsorting
   , foldCast = \ _ t1 _ _ -> t1 }
     where lTop = lkupTop ssM
-          lPred = lkupPredName ssM
+          lPred = lkupPredM ssM
           updateOP_SYMB (Op_name _) =
               error "CASL2TopSort.mapTerm: got untyped application"
           updateOP_SYMB (Qual_op_name on ot pl) =
@@ -462,9 +459,7 @@ genEitherAxiom ssMap =
             _ -> error "CASL2TopSort.genEitherAxiom.genImpl No OP_SYMB found"
           genProp qon =
               genPredication (lPredName $ resultSort qon) [mkXVarDecl qon]
-          lPredName s = fromMaybe (error $
-              "CASL2TopSort.genEitherAxiom: No PRED_NAME for \""
-              ++ shows s "\" found!") $ lkupPredName ssMap s
+          lPredName = lkupPred ssMap
           genDisj qons = Disjunction (map genPred qons) nullRange
           genPred qon =
               genPredication (lPredName $ argSort qon) [mkXVarDecl qon]
