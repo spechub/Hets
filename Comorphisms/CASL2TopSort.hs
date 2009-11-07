@@ -22,8 +22,6 @@ total function
 
 module Comorphisms.CASL2TopSort (CASL2TopSort(..)) where
 
-import Control.Exception (assert)
-
 import Data.Maybe
 import Data.List
 
@@ -108,36 +106,24 @@ generateSubSortMap :: Rel.Rel SORT -> Map.Map Id (Set.Set PredType)
   -> SubSortMap
 generateSubSortMap sortRels pMap =
     let disAmbMap = Map.map disAmbPred
-        disAmbPred v = if Map.member (predicatePI v) pMap
-                       then disAmbPred' (1::Int) v'
-                       else v
-            where v' = add "_s" v
-                  disAmbPred' x v1 =
-                      if Map.member (predicatePI v1) pMap
-                      then disAmbPred' (x + 1) (add (show x) v')
-                      else v1
-                  add s v1 = v1 {predicatePI =
-                                   case predicatePI v1 of
-                                   Id ts is ps ->
-                                      assert (not (null ts))
-                                         (Id (init ts ++
-                                              [(last ts) {tokStr =
-                                                          tokStr (last ts)++s}
-                                              ]) is ps)
-                                }
+        disAmbPred v = let pn = predicatePI v in
+          case dropWhile (flip Map.member pMap)
+                   $ pn : map (appendNumber (predicatePI v)) [1 ..] of
+            n : _ -> v { predicatePI = n }
+            [] -> error "generateSubSortMap"
         mR = (Rel.flatSet .
               Rel.partSet (\ x y -> Rel.member x y sortRels &&
                                     Rel.member y x sortRels))
              (Rel.mostRight sortRels)
         toPredInfo k e =
-            let ts = case filter (\pts -> Rel.member k pts sortRels)
+            let ts = case filter (flip (Rel.member k) sortRels)
                      $ Set.toList mR of
                      [x] -> x
                      _ -> error "CASL2TopSort.generateSubSortMap.toPredInfo"
             in PredInfo { topSortPI = ts
                         , directSuperSortsPI = Set.difference e mR
                         , predicatePI = k }
-        initMap = Map.filterWithKey (\k _ -> not (Set.member k mR))
+        initMap = Map.filterWithKey (\ k _ -> not $ Set.member k mR)
             (Map.mapWithKey toPredInfo
                    (Rel.toMap (Rel.intransKernel sortRels)))
     in disAmbMap initMap
@@ -153,8 +139,8 @@ transSig :: Sign () e -> Result (Sign () e, [Named (FORMULA ())])
 transSig sig = return $ let sortRels = Rel.transClosure $ sortRel sig in
     if Rel.null sortRels then (sig, []) else
     let subSortMap = generateSubSortMap sortRels (predMap sig)
-        newOpMap = transOpMap sig subSortMap (opMap sig)
-        newAssOpMap0 = transOpMap sig subSortMap (assocOps sig)
+        newOpMap = transOpMap sortRels subSortMap (opMap sig)
+        newAssOpMap0 = transOpMap sortRels subSortMap (assocOps sig)
         axs = generateAxioms subSortMap (predMap sig) newOpMap
         newPreds = foldr (\ pI -> Map.insert (predicatePI pI)
                           $ Set.singleton $ PredType [topSortPI pI])
@@ -176,9 +162,9 @@ transPredMap subSortMap = Map.map $ Set.map transType
     where transType t = t
             { predArgs = map (lkupTop subSortMap) $ predArgs t }
 
-transOpMap :: Sign f e -> SubSortMap -> Map.Map OP_NAME (Set.Set OpType)
+transOpMap :: Rel.Rel SORT -> SubSortMap -> Map.Map OP_NAME (Set.Set OpType)
            -> Map.Map OP_NAME (Set.Set OpType)
-transOpMap sig subSortMap = Map.map (rmOrAddParts True . Set.map transType)
+transOpMap sRel subSortMap = Map.map (rmOrAddParts True . Set.map transType)
     where
           transType t =
               let args = opArgs t
@@ -188,10 +174,8 @@ transOpMap sig subSortMap = Map.map (rmOrAddParts True . Set.map transType)
               in -- make function partial if argument sorts are subsorts
               t { opArgs = map lkp $ opArgs t
                 , opRes = lkp $ opRes t
-                , opKind = if kd == Total
-                           && and (zipWith
-                           (\ a na -> a == na
-                            || Set.member a (supersortsOf na sig))
+                , opKind = if kd == Total && and (zipWith
+                           (\ a na -> a == na || Rel.member na a sRel)
                            args newArgs) then kd else Partial }
 
 procOpMapping :: SubSortMap -> OP_NAME -> Set.Set OpType
@@ -288,8 +272,7 @@ lkupPredM ssm s = fmap predicatePI $ Map.lookup s ssm
 lkupPred :: SubSortMap -> SORT -> PRED_NAME
 lkupPred ssm = fromMaybe (error "CASL2TopSort.lkupPred") . lkupPredM ssm
 
-genArgRest :: String
-           -> ([VAR_DECL] -> FORMULA f)
+genArgRest :: String -> ([VAR_DECL] -> FORMULA f)
                -- ^ generates from a list of variables
                -- either the predication or function equation
            -> [SORT] -> (Set.Set [Maybe PRED_NAME])
@@ -362,10 +345,9 @@ genDisjunction vars spn
 
 transSen :: Sign f e -> FORMULA f -> Result (FORMULA f)
 transSen sig f = let sortRels = Rel.transClosure $ sortRel sig in
-    if Rel.null sortRels then return f
-    else do
+    if Rel.null sortRels then return f else do
     let ssm = generateSubSortMap sortRels (predMap sig)
-        newOpMap = transOpMap sig ssm (opMap sig)
+        newOpMap = transOpMap sortRels ssm (opMap sig)
     mapSen ssm newOpMap f
 
 mapSen :: SubSortMap -> OpMap -> FORMULA f -> Result (FORMULA f)
