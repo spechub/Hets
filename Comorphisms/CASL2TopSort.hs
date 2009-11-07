@@ -153,8 +153,8 @@ transSig :: Sign () e -> Result (Sign () e, [Named (FORMULA ())])
 transSig sig = return $ let sortRels = Rel.transClosure $ sortRel sig in
     if Rel.null sortRels then (sig, []) else
     let subSortMap = generateSubSortMap sortRels (predMap sig)
-        newOpMap = transOpMap subSortMap (opMap sig)
-        newAssOpMap0 = transOpMap subSortMap (assocOps sig)
+        newOpMap = transOpMap sig subSortMap (opMap sig)
+        newAssOpMap0 = transOpMap sig subSortMap (assocOps sig)
         axs = generateAxioms subSortMap (predMap sig) newOpMap
         newPreds = foldr (\ pI -> Map.insert (predicatePI pI)
                           $ Set.singleton $ PredType [topSortPI pI])
@@ -176,19 +176,23 @@ transPredMap subSortMap = Map.map $ Set.map transType
     where transType t = t
             { predArgs = map (lkupTop subSortMap) $ predArgs t }
 
-transOpMap :: SubSortMap -> Map.Map OP_NAME (Set.Set OpType)
+transOpMap :: Sign f e -> SubSortMap -> Map.Map OP_NAME (Set.Set OpType)
            -> Map.Map OP_NAME (Set.Set OpType)
-transOpMap subSortMap = Map.map (rmOrAddParts True . Set.map transType)
+transOpMap sig subSortMap = Map.map (rmOrAddParts True . Set.map transType)
     where
           transType t =
               let args = opArgs t
+                  lkp = lkupTop subSortMap
                   newArgs = map lkp args
                   kd = opKind t
-              in -- make function partial if argument sorts are different
-              t { opArgs = map lkp (opArgs t)
-                , opRes = lkp (opRes t)
-                , opKind = if args == newArgs then kd else Partial }
-          lkp = lkupTop subSortMap
+              in -- make function partial if argument sorts are subsorts
+              t { opArgs = map lkp $ opArgs t
+                , opRes = lkp $ opRes t
+                , opKind = if kd == Total
+                           && and (zipWith
+                           (\ a na -> a == na
+                            || Set.member a (supersortsOf na sig))
+                           args newArgs) then kd else Partial }
 
 procOpMapping :: SubSortMap -> OP_NAME -> Set.Set OpType
   -> [Named (FORMULA ())] -> [Named (FORMULA ())]
@@ -221,8 +225,7 @@ symmetryAxioms ssMap sortRels =
 
 generateAxioms :: SubSortMap -> Map.Map PRED_NAME (Set.Set PredType)
   -> Map.Map OP_NAME (Set.Set OpType) -> [Named (FORMULA ())]
-generateAxioms subSortMap pMap oMap =
-    hi_axs ++ p_axs ++ axs
+generateAxioms subSortMap pMap oMap = hi_axs ++ p_axs ++ axs
     where -- generate argument restrictions for operations
           axs = Map.foldWithKey (procOpMapping subSortMap) [] oMap
           p_axs =
@@ -362,7 +365,7 @@ transSen sig f = let sortRels = Rel.transClosure $ sortRel sig in
     if Rel.null sortRels then return f
     else do
     let ssm = generateSubSortMap sortRels (predMap sig)
-        newOpMap = transOpMap ssm (opMap sig)
+        newOpMap = transOpMap sig ssm (opMap sig)
     mapSen ssm newOpMap f
 
 mapSen :: SubSortMap -> OpMap -> FORMULA f -> Result (FORMULA f)
