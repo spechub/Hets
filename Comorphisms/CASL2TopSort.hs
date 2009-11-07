@@ -393,17 +393,13 @@ mapRec ssM opM = (mapRecord id)
               error "CASL2TopSort.mapTerm: got untyped application"
           updateOP_SYMB (Qual_op_name on ot pl) =
               Qual_op_name on (updateOP_TYPE on ot) pl
-          updateOP_TYPE on (Op_type fk sl s pl) =
+          updateOP_TYPE on (Op_type _ sl s pl) =
               let args = map lTop sl
                   res = lTop s
-                  t1 = toOpType $ Op_type fk args res pl
+                  t1 = toOpType $ Op_type Total args res pl
                   ts = Map.findWithDefault Set.empty on opM
-                  nK = if fk == Partial || Set.member t1 ts then fk else
-                           Partial
-                  t2 = t1 { opKind = nK }
-              in if Set.member t2 ts then Op_type nK args res pl else
-                     error $ "CASL2TopSort.mapTerm: " ++ shows on " :" ++
-                        shows t2 " not in signature."
+                  nK = if Set.member t1 ts then Total else Partial
+              in Op_type nK args res pl
           updateVarDecls (Var_decl vl s pl) =
               Var_decl vl (lTop s) pl
           updatePRED_SYMB (Pred_name _) =
@@ -438,7 +434,7 @@ genEitherAxiom ssMap =
                     ((x : _) : _) -> return $ genQuant x
                         $ conjunct $ map genImpl groupedInjOps
                     _ -> error "CASL2TopSort.genEitherAxiom.groupedInjOps"
-               else Result [mkDiag Warning
+               else Result [mkDiag Hint
                             "ignoring generating constructors"
                             constrs]
                     $ Just $ True_atom nullRange
