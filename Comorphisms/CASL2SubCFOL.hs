@@ -286,9 +286,12 @@ generateAxioms uniqBot bsorts sig = concatMap (\ s -> let
     where
         mkQualOp f ty = Qual_op_name f ty nullRange
         mkNeg f = Negation f nullRange
-        rel = Rel.transReduce . Rel.transClosure $ sortRel sig
-        minSupers so = Set.toList $ Set.delete so
-                           $ Rel.succs rel so
+        rel1 = Rel.transClosure $ sortRel sig
+        sccs = Rel.sccOfClosure rel1
+        rel2 = Rel.transReduce $ Rel.collaps sccs rel1
+        isos so = Set.insert so $ Set.unions $ filter (Set.member so) sccs
+        minSupers so = Set.toList $ Set.delete so $ Set.union (isos so)
+          $ Set.unions $ map isos $ Set.toList $ Rel.succs rel2 so
         sortList = Set.toList bsorts
         opList = [(f,t) | (f,types) <- Map.toList $ opMap sig,
                   t <- Set.toList types ]
