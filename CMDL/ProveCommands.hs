@@ -209,7 +209,7 @@ cDoLoop prvr state
                                (ListChange hst)] $
                          state {
                            intState = (intState state) {
-                             i_state = Just $ pS { elements = nwls } }
+                             i_state = Just $ nwpS { elements = nwls } }
                          }
 
 -- | Proves only selected goals from all nodes using selected

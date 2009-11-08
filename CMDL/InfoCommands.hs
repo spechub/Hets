@@ -125,7 +125,7 @@ cShowFromNode :: (forall a . SenStatus a (AnyComorphism, BasicProof) -> Bool)
                -> IO CmdlState
 cShowFromNode f input state =
   getInfoFromNodes input (concatMap (\ n ->
-                case getTh Do_translate n state of
+                case getTh Dont_translate n state of
                   Nothing -> []
                   Just th -> case th of
                                  G_theory _ _ _ sens _ -> OMap.keys $
