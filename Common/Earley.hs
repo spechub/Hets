@@ -50,15 +50,18 @@ module Common.Earley
     , getResolved
     ) where
 
-import Common.Id
-import Common.Result
-import Common.GlobalAnnotations
 import Common.AS_Annotation
+import Common.GlobalAnnotations
+import Common.Id
 import Common.Prec
+import Common.Result
 import Common.Utils (nubOrd)
-import qualified Data.Map as Map
-import Data.List
+
 import Control.Exception
+
+import Data.List
+import Data.Maybe
+import qualified Data.Map as Map
 
 -- | take the difference of the two input lists take (length l2 - length l1) l2
 takeDiff :: [a] -> [b] -> [b]
@@ -206,17 +209,16 @@ mixRule :: Int -> Id -> Rule
 mixRule b i = (i, b, getTokenPlaceList i)
 
 asListAppl :: ToExpr a -> Id -> [a] -> Range -> a
-asListAppl toExpr i ra br =
-    if isListId i then
+asListAppl toExpr i ra br
+  | isListId i =
       let Id _ [f, c] _ = i
           mkList [] ps = toExpr c [] ps
           mkList (hd:tl) ps = toExpr f [hd, mkList tl ps] ps
       in mkList ra br
-    else if elem i [typeId, exprId, parenId, varId]
-         then case ra of
+  | elem i [typeId, exprId, parenId, varId] = case ra of
          [arg] -> arg
          _ -> error "asListAppl"
-    else toExpr i ra br
+  | otherwise = toExpr i ra br
 
 -- | construct the list rules
 listRules :: Int -> GlobalAnnos -> [Rule]
@@ -304,7 +306,7 @@ mkExpr :: ToExpr a -> Item a -> (a, Range)
 mkExpr toExpr Item { rule = orig, posList = ps, args = iArgs } =
     let rs = reverseRange ps
         (ide, qs) = if isListId orig then (orig, rs) else
-                    setPlainIdePos (maybe orig id $ unProtect orig) rs
+                    setPlainIdePos (fromMaybe orig $ unProtect orig) rs
         in (asListAppl toExpr ide (reverse iArgs) qs, rs)
 
 reduce :: GlobalAnnos -> Table a -> ToExpr a -> Item a -> [Item a]

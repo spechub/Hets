@@ -68,7 +68,7 @@ newPos = SourcePos
 
 -- | increment the column counter
 incSourceColumn :: Pos -> Int -> Pos
-incSourceColumn (SourcePos s l c) i = SourcePos s l (c + i)
+incSourceColumn (SourcePos s l c) = SourcePos s l . (c +)
 
 -- | show a position
 showPos :: Pos -> ShowS
@@ -178,7 +178,7 @@ genNamePrefix = "gn_"
 
 -- | create a generated simple identifier
 genToken :: String -> Token
-genToken str = mkSimpleId $ genNamePrefix ++ str
+genToken = mkSimpleId . (genNamePrefix ++)
 
 -- | create a generated, numbered variable
 genNumVar :: String -> Int -> Token

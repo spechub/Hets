@@ -37,7 +37,7 @@ exec :: [(String, StringParser)] -> [(String, StringParser)] -> IO ()
 exec lps fps = do
   l <- getArgs
   case l of
-   [] -> parseSpec emptyGlobalAnnos $ snd $ head $ fps
+   [] -> parseSpec emptyGlobalAnnos . snd $ head fps
    opt : tl -> do
     let lps' = filter (\(s, _) -> s == opt) lps
         fps' = filter (\(s, _) -> s == opt) fps

@@ -92,11 +92,10 @@ isGenString splt ga i trs = case getLiteralType ga i of
                                _           -> False
 
 isGenList :: SplitM a -> GlobalAnnos -> Id -> [a] -> Bool
-isGenList splt ga i trms =
-                   (case getLiteralType ga i of
+isGenList splt ga i trms = case getLiteralType ga i of
                      ListNull _ -> null trms
                      ListCons _ n -> listTest n i trms
-                     _ -> False)
+                     _ -> False
     where listTest n1 i1 terms = case getLiteralType ga i1 of
               ListNull _ -> n1 == i1 && null terms
               ListCons _ n2 -> n1 == n2 && case terms of

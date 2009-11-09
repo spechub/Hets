@@ -214,7 +214,7 @@ replaceAnnoted x (Annoted _ o l r) = Annoted x o l r
 
 -- | add further following annotations
 appendAnno :: Annoted a -> [Annotation] -> Annoted a
-appendAnno (Annoted x p l r) y = Annoted x p l $ r ++ y
+appendAnno (Annoted x p l r) = Annoted x p l . (r ++)
 
 -- | put together preceding annotations and an item
 addLeftAnno :: [Annotation] -> a -> Annoted a

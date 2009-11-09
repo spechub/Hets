@@ -169,18 +169,20 @@ module Common.Doc
     , rmTopKey
     ) where
 
+import Common.AS_Annotation
+import Common.ConvertLiteral
+import Common.GlobalAnnotations
 import Common.Id
 import Common.Keywords
-import Common.AS_Annotation
-import Common.GlobalAnnotations
-import qualified Data.Map as Map
-import qualified Data.Set as Set
-import qualified Common.Lib.Pretty as Pretty
 import Common.LaTeX_funs
-import Common.ConvertLiteral
 import Common.Prec
+import qualified Common.Lib.Pretty as Pretty
+
 import Data.Char
 import Data.List
+import Data.Maybe
+import qualified Data.Map as Map
+import qualified Data.Set as Set
 
 infixl 6 <>
 infixl 6 <+>
@@ -325,9 +327,10 @@ a $+$ b = vcat [a, b]
 
 -- | vertical composition with a specified number of blank lines
 aboveWithNLs :: Int -> Doc -> Doc -> Doc
-aboveWithNLs n d1 d2 = if isEmpty d2 then d1 else
-             if isEmpty d1 then d2 else
-             d1 $+$ foldr ($+$) d2 (replicate n $ text "")
+aboveWithNLs n d1 d2
+  | isEmpty d2 = d1
+  | isEmpty d1 = d2
+  | otherwise = d1 $+$ foldr ($+$) d2 (replicate n $ text "")
 
 -- | vertical composition with one blank line
 ($++$) :: Doc -> Doc -> Doc
@@ -532,7 +535,7 @@ toLatex ga d = let dm = Map.map (Map.! DF_LATEX) .
 toLatexRecord :: Set.Set Id -> Bool -> DocRecord Pretty.Doc
 toLatexRecord dis tab = anyRecord
     { foldEmpty = const Pretty.empty
-    , foldText = \ _ k s -> textToLatex dis False k s
+    , foldText = const $ textToLatex dis False
     , foldCat = \ (Cat c os) _ _ ->
           if any isNative os then Pretty.hcat $
              latex_macro "{\\Ax{"
@@ -600,8 +603,7 @@ needsMathMode :: Int -> String -> Bool
 needsMathMode i s = case s of
     [] -> i > 0
     c : r -> if c == '{' then needsMathMode (i + 1) r else
-             if c == '}' then if i == 0 then True else
-                                  needsMathMode (i - 1) r
+             if c == '}' then i == 0 || needsMathMode (i - 1) r
              else needsMathMode i r
 
 isMathLatex :: Doc -> Bool
@@ -631,7 +633,7 @@ anaSpace d = case d of
 allHoriz :: Doc -> Bool
 allHoriz d = case d of
                Text _ _ -> True
-               Cat Horiz l -> and $ map allHoriz l
+               Cat Horiz l -> all allHoriz l
                Attr _ f -> allHoriz f
                Empty -> True
                _ -> False
@@ -648,7 +650,7 @@ getDeclIds :: Doc -> Set.Set Id
 getDeclIds = foldDoc anyRecord
     { foldEmpty = const Set.empty
     , foldText = \ _ _ _ -> Set.empty
-    , foldCat = \ _ _ c -> Set.unions c
+    , foldCat = \ _ _ -> Set.unions
     , foldAttr = \ _ _ d -> d
     , foldChangeGlobalAnnos = \ _ _ d -> d
     , foldIdDoc = \ _ lk i ->
@@ -676,7 +678,7 @@ textToLatex dis b k s = case s of
     Indexed -> hc_sty_structid_indexed s
     StructId -> hc_sty_structid s
     Native -> hc_sty_axiom s
-    HetsLabel -> Pretty.hcat [ latex_macro $ "\\HetsLabel{"
+    HetsLabel -> Pretty.hcat [ latex_macro "\\HetsLabel{"
                              , textToLatex dis b Comment s
                              , latex_macro $ "}{" ++ escapeLabel s ++ "}" ]
     IdLabel appl tk i -> let d = textToLatex dis b tk s
@@ -684,7 +686,7 @@ textToLatex dis b k s = case s of
         in if b || appl == IdAppl && not (Set.member i dis)
                || not (isLegalLabel si)
            then d else Pretty.hcat
-            [ latex_macro $ "\\" ++ shows appl "Label{"
+            [ latex_macro $ '\\' : shows appl "Label{"
             , d
             , latex_macro $ "}{" ++ escapeLabel si ++ "}" ]
 
@@ -891,7 +893,7 @@ codeOutAppl ga precs md m origDoc args = case origDoc of
         pm = precMap precs
         e = Map.findWithDefault mx eqId pm
         p = Map.findWithDefault (if isInfix i then e else mx) i pm
-        doSplit = maybe (error "doSplit") id . splitDoc
+        doSplit = fromMaybe (error "doSplit") . splitDoc
         mkList op largs cl = fsep $ codeOutId IdAppl m op : punctuate comma
                              (map (codeOut ga precs md m) largs)
                              ++ [codeOutId IdAppl m cl]

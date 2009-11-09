@@ -19,6 +19,8 @@ import Common.AS_Annotation
 import qualified Data.Map as Map
 import qualified Data.Set as Set
 import qualified Common.Lib.Rel as Rel
+
+import Data.Maybe
 import Data.List (partition)
 
 -- | a precedence map using numbers for faster lookup
@@ -62,11 +64,12 @@ dropPrefix (_ : xs) (_ : ys) = dropPrefix xs ys
 -- (The 'Int' is the number of current arguments.)
 isLeftArg :: Id -> [a] -> Bool
 isLeftArg op nArgs = null nArgs && begPlace op
+
 -- | check if a right argument will be added.
 isRightArg :: Id -> [a] -> Bool
-isRightArg op@(Id toks _ _) nArgs = endPlace op &&
-    (isSingle $ dropPrefix nArgs $
-     filter (flip elem [placeTok, typeInstTok]) toks)
+isRightArg op@(Id toks _ _) nArgs = endPlace op
+  && isSingle (dropPrefix nArgs
+  $ filter (flip elem [placeTok, typeInstTok]) toks)
 
 joinPlace :: AssocEither -> Id -> Bool
 joinPlace side = case side of
@@ -107,12 +110,12 @@ nextWeight side ga arg op =
        else op
 
 -- | check precedence of an argument and a top-level operator.
-checkPrec :: GlobalAnnos -> (Id, Int) -> (Id, Int) -> [a] ->
-             (AssocEither -> Id) -> Bool
-checkPrec ga op@(o, _) arg args weight =
-    if isLeftArg o args then checkArg ARight ga op arg (weight ARight)
-    else if isRightArg o args then checkArg ALeft ga op arg (weight ALeft)
-    else True
+checkPrec :: GlobalAnnos -> (Id, Int) -> (Id, Int) -> [a]
+  -> (AssocEither -> Id) -> Bool
+checkPrec ga op@(o, _) arg args weight
+  | isLeftArg o args = checkArg ARight ga op arg (weight ARight)
+  | isRightArg o args = checkArg ALeft ga op arg (weight ALeft)
+  | otherwise = True
 
 -- | token for instantiation lists of polymorphic operations
 typeInstTok :: Token
@@ -131,7 +134,7 @@ unPolyId (Id ts cs ps) = let (ft, rt) = partition (== typeInstTok) ts in
       _ -> Nothing
 
 stripPoly :: Id -> Id
-stripPoly w = maybe w id $ unPolyId w
+stripPoly w = fromMaybe w $ unPolyId w
 
 -- | get the token lists for polymorphic ids
 getGenPolyTokenList :: String -> Id -> [Token]

@@ -67,8 +67,8 @@ initialLRState = LRS { indentTabs         = []
                      }
 
 -- a function that knows how to print LaTeX TextDetails
-latex_txt :: TextDetails -> State LRState ShowS -> State LRState ShowS
-latex_txt (Chr c)   cont
+latexTxt :: TextDetails -> State LRState ShowS -> State LRState ShowS
+latexTxt (Chr c)   cont
     | c == '\n' = do annoBrace <- endOfLine
                      indent <- getIndent
                      s <- cont
@@ -76,14 +76,14 @@ latex_txt (Chr c)   cont
                              showChar c . indent . s)
     | otherwise = do s <- cont
                      return (showChar c . s)
-latex_txt (Str s1)  cont
+latexTxt (Str s1)  cont
     | null s1        = cont
     | all isSpace s1 = do s2 <- cont
                           return (showChar ' ' . s2)
     | otherwise      = do setOnlyTabs False
                           s2 <- cont
                           return (showString s1 . s2)
-latex_txt (PStr s1) cont
+latexTxt (PStr s1) cont
     | s1 == startTab = do indent <- addTabStop
                           s2 <- cont
                           return (indent . s2)
@@ -126,24 +126,23 @@ latex_txt (PStr s1) cont
                           return (showString s1 . s2)
 
 -- a function that knows how to print LaTeX TextDetails
-debug_latex_txt :: TextDetails -> State LRState String -> State LRState String
-debug_latex_txt (Chr c)   cont
+debugLatexTxt :: TextDetails -> State LRState String -> State LRState String
+debugLatexTxt (Chr c) cont
     | c == '\n' = do state <- get
                      annoBrace <- endOfLine
                      indent <- getIndent
                      s <- cont
-                     return (annoBrace "\\\\%"++show (state::LRState)
-                             ++c:(indent s))
-    | otherwise = do s <- cont
-                     return (c:s)
-debug_latex_txt (Str s1)  cont
+                     return (annoBrace "\\\\%" ++ show (state::LRState)
+                             ++ c : indent s)
+    | otherwise = fmap (c :) cont
+debugLatexTxt (Str s1)  cont
     | null s1        = cont
     | all isSpace s1 = do s2 <- cont
                           return ( ' ':s2)
     | otherwise      = do setOnlyTabs False
                           s2 <- cont
                           return (s1 ++ s2)
-debug_latex_txt (PStr s1) cont
+debugLatexTxt (PStr s1) cont
     | s1 == startTab = do indent <- addTabStop
                           s2 <- cont
                           return (s1 ++ indent s2)
@@ -191,7 +190,7 @@ setInsideAnno b = do state <- get
 -- a function to produce a String containing the actual tab stops in use
 getIndent :: State LRState ShowS
 getIndent = do state <- get
-               let indentTabsSum = foldl (+) 0 (indentTabs state)
+               let indentTabsSum = sum (indentTabs state)
                put $ state { indentTabsWritten = indentTabsSum
                            , collSpaceIndents  = []
                            , onlyTabs = True
@@ -261,7 +260,7 @@ addTabStop = State (\state -> let (new_indentTabs,newTabs) =
                                               then recentlySet state
                                               else 1
                                      in (condAdd_indentTabs nT, nT)
-                                  indentTabsSum = foldl (+) 0
+                                  indentTabsSum = sum
                                   condAdd_indentTabs i =
                                          if   i + indentTabsSum
                                                    (indentTabs state)
@@ -324,7 +323,7 @@ renderLatexCore latexStyle' d =
                (mode           latexStyle')
                (lineLength     latexStyle')
                (ribbonsPerLine latexStyle')
-               latex_txt (return id) d) initialLRState
+               latexTxt (return id) d) initialLRState
 
 renderLatex, renderLatexVerb :: Maybe Int -> Doc -> String
 
@@ -339,7 +338,7 @@ debugRenderLatex :: Maybe Int -> Doc -> String
 debugRenderLatex mi d = evalState (fullRender (mode           latexStyle')
                                               (lineLength     latexStyle')
                                               (ribbonsPerLine latexStyle')
-                                              debug_latex_txt
+                                              debugLatexTxt
                                               (return "")
                                               d')
                                   initialLRState

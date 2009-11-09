@@ -24,13 +24,13 @@ totalOrder x = Just . compare x
 -- | split a list of elements into equivalence classes
 equivBy :: POrder a -> [a] -> [[a]]
 equivBy order l = equiv0 [] l
-  where equiv0 cs  []    = cs
-        equiv0 cs (x:xs) = equiv0 (add x cs) xs
-        add x  []          = [[x]]
-        add _ ([] : _)     = error "Partial.equivBy"
-        add x (c@(y:_):cs) = case order x y of
-                               Just EQ -> (x:c) : cs
-                               _       ->    c  : add x cs
+  where equiv0 = foldl add
+        add cs x = case cs of
+          [] -> [[x]]
+          [] : _ -> error "Partial.equivBy"
+          c@(y : _) : r -> case order x y of
+            Just EQ -> (x : c) : r
+            _ -> c : add r x
 
 -- | split a set into the minimal elements and the remaining elements
 minimalBy :: POrder a -> [a] -> ([a],[a])

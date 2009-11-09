@@ -58,7 +58,7 @@ makeNumberTerm f asAppl t@(Token n p) =
 
 makeFraction :: Id -> Id -> AsAppl a -> Token -> a
 makeFraction f d asAppl t@(Token s p) =
-    let (n, r) = span (\c -> c /= '.') s
+    let (n, r) = span (/= '.') s
         dotOffset = length n
     in if null r then makeNumberTerm f asAppl t
        else asAppl d [makeNumberTerm f asAppl (Token n p),
