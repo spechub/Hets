@@ -59,6 +59,7 @@ import qualified Data.Set as Set
 
 import Isabelle.IsaConsts
 import Isabelle.IsaSign
+import Isabelle.Translate(transString)
 
 -------------------------------------------------------------------------
 -- Functions for adding the PreAlphabet datatype to an Isabelle theory --
@@ -783,12 +784,12 @@ mkInjection s s' t =
 --   produced by the translation CASL2PCFOL; CASL2SubCFOL.
 getCollectionEmbInjAx :: [(SORT,SORT)] -> [String]
 getCollectionEmbInjAx sortRel =
-    let mkName (s,s') = mkEmbInjName s s'
+    let mkName (s,s') = transString $ mkEmbInjName s s'
     in map mkName sortRel
 
 -- | Return the list of strings of all ga_notDefBottom axioms.
 getCollectionNotDefBotAx :: [SORT] -> [String]
-getCollectionNotDefBotAx = map mkNotDefBotAxiomName
+getCollectionNotDefBotAx = map $ transString . mkNotDefBotAxiomName
 
 -- | Return the list of string of all decomposition theorem names that we
 --   generate. This function is not implemented in a satisfactory way
@@ -824,7 +825,7 @@ getCollectionTransAx caslSign =
         allSupers s s' s'' =
             (Set.member s' $ CASLSign.supersortsOf s caslSign) &&
             (Set.member s'' $ CASLSign.supersortsOf s' caslSign) && (s /= s'')
-    in [mkTransAxiomName s s' s''
+    in [transString $ mkTransAxiomName s s' s''
             | s <- sorts, s' <- sorts, s'' <- sorts, allSupers s s' s'']
 
 -- | Return the list of strings of all the identity axioms names produced by
@@ -834,4 +835,5 @@ getCollectionIdentityAx caslSign =
     let sorts = Set.toList $ CASLSign.sortSet caslSign
         isomorphic s s' = (Set.member s $ CASLSign.supersortsOf s' caslSign) &&
                           (Set.member s' $ CASLSign.supersortsOf s caslSign)
-    in [mkIdAxiomName s s' | s <- sorts, s' <- sorts, isomorphic s s']
+    in [transString $ mkIdAxiomName s s'
+            | s <- sorts, s' <- sorts, isomorphic s s']

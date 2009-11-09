@@ -67,7 +67,7 @@ import CASL.AS_Basic_CASL (SORT)
 import CspCASL.AS_CspCASL_Process (CHANNEL_NAME, PROCESS_NAME)
 import Isabelle.IsaConsts (binVNameAppl, conDouble, mkFunType, termAppl)
 import Isabelle.IsaSign (BaseSig(..), Term, Typ(..), VName(..))
-import Isabelle.Translate(showIsaTypeT)
+import Isabelle.Translate(showIsaTypeT, transString)
 
 -- | Name for the CspCASLProver's Alphabet
 alphabetS :: String
@@ -109,7 +109,7 @@ convertChannelString = show
 
 -- | Convert a SORT to a string
 convertSort2String :: SORT -> String
-convertSort2String s = showIsaTypeT s Main_thy
+convertSort2String s = transString $ showIsaTypeT s Main_thy
 
 -- | Convert a process name to a string
 convertProcessName2String :: PROCESS_NAME -> String
