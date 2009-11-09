@@ -149,8 +149,9 @@ value = do
   s1 <- many $ noneOf "{}\\"
   s2 <- option "" $ braced value
         <|> liftM2 (\ c1 c2 -> [c1, c2]) (char '\\') anyChar
-  s3 <- value
-  return $ s1 ++ s2 ++ s3
+  if null s2 then return s1 else do
+    s3 <- value
+    return $ s1 ++ s2 ++ s3
 
 ontologyElement :: GenParser Char st Frag
 ontologyElement = declClassP <|> declObjectP <|> declRelationP
