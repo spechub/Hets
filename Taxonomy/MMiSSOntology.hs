@@ -10,12 +10,10 @@ Portability :  non-portable (imports Control.Monad.Error)
 MMiSSOntology provides the abstract data type for an Ontology
 -}
 
-{-- \section*{Modul: MMiSSOntology}
-\subsection*{Introduction}
-
+{-
 Within the MMiSS project a language for defining and representing
 ontologies has been created. In general classes, relations, predicates
-and operations between classe, objects and links between objects can
+and operations between classes, objects and links between objects can
 be expressed. Inheritance is possible for classes and
 relations. Further details about ontologies in MMiSS are given in the
 paper "Semantic Interrelation with Ontologies".
@@ -24,13 +22,11 @@ At the moment, the module ist designed for storing ontologies in the
 "MMiSS sense". Later on, it should be investigated, if it is
 reasonable to adapt the module for OWL or KIF ontologies.
 
-\subsection*{Interface}
-
 The module defines a data type \tt{MMISSOntology} which stores all
 information contained in a MMiSS-Ontology. \tt{emptyMMiSSOntology}
 provides a fresh, clean ontology labeld with the delivered name. After
 creating an empty ontology, the insertion functions () should be used
-to fill the ontology.  --}
+to fill the ontology. -}
 
 module Taxonomy.MMiSSOntology
     ( MMiSSOntology
@@ -88,7 +84,7 @@ type RelName = String
 type RelationText = String
 type AutoInserted = Bool
 
-type WithError a = Either String a
+type WithError = Either String
 type ClassGraph = Gr (String, String, OntoObjectType) String
 
 hasError :: String -> WithError a
@@ -167,7 +163,7 @@ emptyMMiSSOntology ontoName insertMode = MMiSSOntology
     , getRelationGraph = empty }
 
 getRelationNames :: MMiSSOntology -> [String]
-getRelationNames onto = Map.keys (relations onto)
+getRelationNames = Map.keys . relations
 
 insError :: String -> String -> WithError a
 insError s r = hasError $ "Insertion of " ++ s ++ r
@@ -242,9 +238,9 @@ insertClass onto className optText superCs maybeType =
         -- at this place all autoinserted classes have type
         -- Nothing (s. def. of sClassDecls)
         (g2,node2) -> insEdge (node1, node2, "isa") g2
-    addIsaEdge node1 g1 superClass =
+    addIsaEdge node1 g1 =
         maybe g1 (\ sNode -> insEdge (node1, sNode, "isa") g1)
-                 (findLNode g1 superClass)
+                 . findLNode g1
     getClassNodeType = maybe OntoClass ( \ cType -> case cType of
                                Predicate -> OntoPredicate
                                _ -> OntoClass)
@@ -319,8 +315,7 @@ insertRelationType onto relName source target =
                    newRel = (RelationDecl nam card defText
                              (typeList ++ [newType]) super inserted)
                in  return (addRelations o2 [(nam, newRel)])
-     o4 <- addEdge o3 (getClassGraph o3) relName source target
-     return o4
+     addEdge o3 (getClassGraph o3) relName source target
   where
     lookupClass o className =
        case Map.lookup className $ classes o of
@@ -351,7 +346,7 @@ isEqualTypelist (r1, _) (r2, _) = r1 == r2
 insertObject :: MMiSSOntology -> ObjectName -> DefaultText -> ClassName
              -> WithError MMiSSOntology
 insertObject onto objectName defText className =
-  do o1 <- if (Map.member objectName (objects onto))
+  do o1 <- if Map.member objectName (objects onto)
              then hasError("Insertion of object: " ++ objectName
                            ++ " already exists.")
              else return onto
@@ -442,7 +437,7 @@ writeOWLLink inStr (ObjectLink object1 object2 relName) =
 writeOWLObject :: String -> ObjectDecl -> String
 writeOWLObject inStr (ObjectDecl nam defText instanceOf) =
  let start = "<rdf:Description" ++ " rdf:about=\"#" ++ nam ++ "\">\n"
-     defTextStr = "<MPhrase>" ++ (latexToEntity defText) ++ "</MPhrase>\n"
+     defTextStr = "<MPhrase>" ++ latexToEntity defText ++ "</MPhrase>\n"
      classStr = "<rdf:type>\n  <owl:Class rdf:about=\"#" ++ instanceOf
                 ++ "\"/>\n</rdf:type>"
      end = "</rdf:Description>"
@@ -451,7 +446,7 @@ writeOWLObject inStr (ObjectDecl nam defText instanceOf) =
 writeOWLClass :: String -> ClassDecl -> String
 writeOWLClass inStr (ClassDecl nam defText super relTypes _ _) =
  let start = "<owl:Class rdf:ID=\"" ++ nam ++ "\">\n"
-     defTextStr = "  <MPhrase>" ++ (latexToEntity defText) ++ "</MPhrase>\n"
+     defTextStr = "  <MPhrase>" ++ latexToEntity defText ++ "</MPhrase>\n"
      superStr =
          concatMap (\ str -> "<rdfs:subClassOf rdf:resource=\"#" ++
                              str ++ "\"/>\n" ) super
@@ -461,11 +456,12 @@ writeOWLClass inStr (ClassDecl nam defText super relTypes _ _) =
 
 writePropRestriction :: String -> (RelName, [ClassName]) -> String
 writePropRestriction inStr (relName, classList) =
-  case length classList of
-    0 -> inStr
-    1 -> let start = "<rdfs:subClassOf>\n  <owl:Restriction>\n"
+  case classList of
+    [] -> inStr
+    [hd] -> let
+             start = "<rdfs:subClassOf>\n  <owl:Restriction>\n"
              classStr = "    <owl:allValuesFrom>\n" ++
-                        "      <owl:Class rdf:about=\"#" ++ (head classList)
+                        "      <owl:Class rdf:about=\"#" ++ hd
                         ++ "\"/>\n" ++
                         "    </owl:allValuesFrom>\n"
              onPropStr = "    <owl:onProperty>\n"
@@ -488,8 +484,8 @@ writePropRestriction inStr (relName, classList) =
          in inStr ++ start ++ restrictions ++ end
 
 writeSingleClassRestriction :: String -> ClassName -> String
-writeSingleClassRestriction inStr className
-  = inStr ++ "<owl:Class rdf:about=\"#" ++ className ++  "\"/>\n"
+writeSingleClassRestriction inStr className =
+    inStr ++ "<owl:Class rdf:about=\"#" ++ className ++  "\"/>\n"
 
 writeOWLRelation :: String -> RelationDecl -> String
 writeOWLRelation inStr (RelationDecl relName card relText _ super _) =
@@ -504,7 +500,7 @@ writeOWLRelation inStr (RelationDecl relName card relText _ super _) =
            ++ "  <rdf:type rdf:resource=\"&owl;InverseFunctionalProperty\"/>"
        _ -> ""
      cardStr = case card of
-                 Just str -> "  <MCardinality>" ++ (latexToEntity str)
+                 Just str -> "  <MCardinality>" ++ latexToEntity str
                               ++  "</MCardinality>\n"
                  Nothing -> ""
      defText = "  <MPhrase>" ++ relText ++ "</MPhrase>\n"
@@ -559,13 +555,11 @@ latexToEntity :: String -> String
 latexToEntity inStr = foldl (applyTranslation "") inStr latexToEntityList
 
 applyTranslation :: String -> String -> (String, String) -> String
-applyTranslation outStr inStr (search, replaceStr) =
-   if lenInStr < lenSearch
-     then outStr ++ inStr
-     else if isPrefixOf search inStr
-            then applyTranslation (outStr ++ replaceStr)
+applyTranslation outStr inStr (search, replaceStr)
+   | lenInStr < lenSearch = outStr ++ inStr
+   | isPrefixOf search inStr = applyTranslation (outStr ++ replaceStr)
                      (genericDrop lenSearch inStr)  (search, replaceStr)
-            else applyTranslation (outStr ++ take 1 inStr)
+   | otherwise = applyTranslation (outStr ++ take 1 inStr)
                      (drop 1 inStr)  (search, replaceStr)
    where
    lenInStr = genericLength inStr

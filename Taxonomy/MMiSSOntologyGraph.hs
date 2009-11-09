@@ -53,24 +53,18 @@ displayClassGraph onto startClass = do
     updateDaVinciGraph classGraph gid ginfo
     setEmptyRelationSpecs gid ginfo onto
     A.Result gid' _ <- A.redisplay gid ginfo
-    graph <- A.get_graphid gid' ginfo
-    return graph
+    A.get_graphid gid' ginfo
 
 setEmptyRelationSpecs :: A.Descr -> A.GraphInfo -> MMiSSOntology -> IO ()
 setEmptyRelationSpecs gid gv onto = do
     (gs, _) <- readIORef gv
     case lookup gid gs of
       Nothing -> return ()
-      __ -> do
+      _ -> do
           A.writeRelViewSpecs gid
                (map ( \ relname -> A.RelViewSpec relname False False)
                $ getRelationNames onto) gv
           return ()
-
-{- Klassengraph -> Objekte dazu (mit Links auf Klasse)
-Klassengraph vorhanden -> Objektgraph als Input -> Objekte und
-Links sowie 'instanceOf' einfügen. Klassen vorhanden -> Objekte hinzu:
--}
 
 updateDaVinciGraph :: Gr (String, String, OntoObjectType) String -> A.Descr
                    -> A.GraphInfo -> IO ()
@@ -188,17 +182,6 @@ showWholeObjectGraph onto gv (_, _, gid) =
            A.redisplay gid gv
            return ()
 
-{-- makeObjectGraph bekommt den alten Graphen, in den die Objekte und
-deren Klassen einzubeziehen sind, den Klassen-Graphen, in dem alle
-Klassen vorhanden sein sollten, sowie den Graphen mit den
-einzufügenden Objekten und deren Links übergeben. Die Funktion geht
-den Objektgraphen durch, fügt die Objekt-Knoten in den alten Graphen
-ein.  Für jeden eingefügten Objekt-Knoten sucht die Funktion im
-Klassengraphen dessen Klasse und fügt diese als Klassen-Knoten
-ebenfalls in den alten Graphen ein. Zwischen Klasse und Objekt wird
-eine InstanceOf-Kante eingefügt. Bei allen Einfüge-Operationen wird
-vorher geprüft, ob der Knoten schon drin war oder nicht.  --}
-
 makeObjectGraph :: ClassGraph -> ClassGraph -> ClassGraph -> ClassGraph
 makeObjectGraph oldGr classGr objectGr =
   let newGr = insNodes (labNodes objectGr) oldGr
@@ -269,32 +252,6 @@ showAllRelations onto gv withIncoming rels (name, _, gid) =
                        empty withIncoming rels name
      updateDaVinciGraph newGr gid gv
      writeIORef gv oldGv
-
-{-- reduceToRelations bekommt den aktuellen Graph, einen Klassenknoten
-darin sowie eine Liste mit Relationsnamen, die _nicht_ angezeigt
-werden sollen, übergeben. Ausgehend von dem Klassenknoten werden aus
-dem Ontologiegraphen transitiv alle Klassenknoten ermittelt, die über
-eine der nicht-ausgeblendeten Relationen erreicht werden können. Diese
-werden (mit ihren Relationen zu ebenfalls neu hinzugefügten Knoten) in
-den aktuellen Graphen eingefügt. Bezüge zwischen neu eingefügten
-Knoten uns alten????  Im ersten Schritt werden transitiv alle Knoten
-ermittelt, die mit dem ausgewählten Knoten in einer der nicht
-verbotenen Beziehungen stehen. Dann wird rekursiv für jeden dieser
-gefunden Knoten dessen direkte Subklassen ermittelt und für diese
-wiederum die direkten Nachbarn ermittelt und aufgenommen.
-
-g1 = Gesamter Ontologiegraph nach erlaubten Relationen gefiltert
-
-nodeList = Alle Knoten der transitiven Hülle des ausgewählten Knotens
-(selectedNode)
-
-(delNodes toDelete g1) = Ontologiegraph reduziert auf die Knoten (und
-Kanten) der transitiven Hülle
-
-g2 = Merge aus dem aktuellen Graphen g und der transitiven Hülle von
-selectedNode
-
-newNodesList = Zu g neu hinzugekommene Knoten.  --}
 
 reduceToRelations :: ClassGraph -> ClassGraph -> Bool -> [String] -> String
                   -> ClassGraph
@@ -537,18 +494,18 @@ createLocalMenu onto ginfo =
             createRelationMenuButtons b (getRelationNames onto) onto ginfo
         allRels f b = [ Button "All relations" $ f onto ginfo b ["isa"]
                       , Blank ] ++ relMenus b
-        superSub' f b1 b2 = Button
+        superSub' f b1 = Button
             (if b1 then "Sub/Superclasses" else "Subclasses")
-            $ f onto ginfo b1 b2
+            . f onto ginfo b1
         superSub = superSub' showSuperSubClasses
         superSubForVis = superSub' showSuperSubClassesForVisible
         relMen f = Menu (Just "Show relations")
                    [ Menu (Just "Outgoing") $ f False
                    , Menu (Just "Out + In") $ f True ]
-        nodeMen f b l = Menu (Just $ "Show "
+        nodeMen f b = Menu (Just $ "Show "
                               ++ if b then "transitively" else "adjacent")
-                        $ [ f False b, f True b ] ++ l
-    in LocalMenu $ Menu Nothing $
+                        . ([ f False b, f True b ] ++)
+    in LocalMenu $ Menu Nothing
     [ Menu (Just "For this node")
       [ nodeMen superSub True [relMen $ allRels showAllRelations]
       , nodeMen superSub False
@@ -622,7 +579,7 @@ nfilter f = ufold cfilter empty
 
 getTypedNodes :: [OntoObjectType] -> ClassGraph
               -> [LNode (String, String, OntoObjectType)]
-getTypedNodes ts g = map labNode' $ gselType (`elem` ts) g
+getTypedNodes ts = map labNode' . gselType (`elem` ts)
 
 showRelationDialog :: A.GraphInfo -> (String, Int, Int) -> IO ()
 showRelationDialog gv (_ , _,gid) =
