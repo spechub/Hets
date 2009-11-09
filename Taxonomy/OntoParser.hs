@@ -124,9 +124,6 @@ frag = comment
   <|> do
     backslash
     ontologyElement <|> escapedChar <|> return (OtherFrag "\\")
-  <|> do
-    eof
-    return (OtherFrag "")
   <|> other
 
 backslash :: GenParser Char st Char
@@ -141,7 +138,7 @@ other :: GenParser Char st Frag
 other = fmap OtherFrag $ many1 (noneOf "\\%")
 
 comment :: GenParser Char st Frag
-comment = char '%' >> manyTill anyChar (try newline) >> return (OtherFrag "")
+comment = char '%' >> manyTill anyChar newline >> return (OtherFrag "")
 
 braced :: GenParser Char st a -> GenParser Char st a
 braced = between (char '{') (char '}')
