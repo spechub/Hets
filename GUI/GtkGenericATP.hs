@@ -227,7 +227,7 @@ genericATPgui atpFun hasEOptions prName thName th freedefs pt = do
         let firstGoalName = head $ filter (flip Map.member openGoalsMap)
                               $ map AS_Anno.senAttr $ goalsList s
             opts = words opts'
-            afterEachProofAttempt = \ gPSF nSen nextSen cfg@(retval,_) -> do
+            afterEachProofAttempt gPSF nSen nextSen cfg@(retval,_) = do
               cont <- goalProcessed stateMVar timeout opts numGoals prName
                                     gPSF nSen False cfg
               case retval of

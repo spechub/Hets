@@ -93,6 +93,8 @@ import Common.DocUtils (showDoc)
 import Control.Concurrent (forkIO)
 import Control.Monad (when)
 
+import Data.Maybe (fromMaybe)
+
 import System.Directory ( removeFile, getTemporaryDirectory, doesFileExist
                         , canonicalizePath)
 import System.FilePath (takeFileName, takeDirectory)
@@ -126,9 +128,7 @@ stopMainLoop :: IO ()
 stopMainLoop = postGUISync mainQuit
 
 forkIO_ :: IO () -> IO ()
-forkIO_ f = do
-  forkIO f
-  return ()
+forkIO_ f = forkIO f >> return ()
 
 forkIOWithPostProcessing :: IO a -> (a -> IO ()) -> IO ()
 forkIOWithPostProcessing action post = forkIO_ $ do
@@ -166,13 +166,10 @@ dialog messageType title message mAction = do
     _ -> return False
 
   widgetDestroy dlg
-  if choice then
-    case mAction of
-      Just action -> do
-        forkIO action
-        return choice
-      Nothing -> return choice
-    else return choice
+
+  when choice $ fromMaybe (return ()) mAction
+
+  return choice
 
 -- | create a window which displays a given text
 infoDialog :: String -- ^ Title
@@ -214,7 +211,7 @@ warningDialogExt :: String -- ^ Title
                  -> String -- ^ Message
                  -> Maybe (IO ()) -- ^ Action on Ok
                  -> IO Bool
-warningDialogExt title message  = postGUISync . warningDialog title message
+warningDialogExt title message = postGUISync . warningDialog title message
 
 -- | create a window which displays a given question
 questionDialog :: String  -- ^ Title
@@ -539,8 +536,6 @@ selectFirst view = do
         Just iter -> do
           selector <- treeViewGetSelection view
           treeSelectionSelectIter selector iter
-          path <- treeModelGetPath model iter
-          treeViewSetCursor view path Nothing
 
 -- | Select all rows
 selectAll :: TreeView -> IO ()

@@ -86,7 +86,6 @@ import Data.Graph.Inductive.Graph (Node, LEdge, LNode)
 import qualified Data.Map as Map
 
 import Control.Monad
-import Control.Concurrent (forkIO)
 import Control.Concurrent.MVar
 
 import Interfaces.Command
@@ -516,13 +515,11 @@ showStatusAux dgnode =
              then consGoal
              else ""
 
-hidingWarnDiag :: DGNodeLab -> IO () -> IO ()
-hidingWarnDiag dgn action =
-      if labelHasHiding dgn then do
-          warningDialog "Warning"
-             (unwords $ hidingWarning ++ ["Try anyway?"]) $ Just action
-          return ()
-        else forkIO action >> return ()
+hidingWarnDiag :: DGNodeLab -> IO Bool
+hidingWarnDiag dgn =
+  if labelHasHiding dgn then warningDialog "Warning"
+    (unwords $ hidingWarning ++ ["Try anyway?"]) Nothing
+  else return True
 
 -- | start local theorem proving or consistency checking at a node
 proveAtNode :: Bool -> GInfo -> Int -> DGraph -> IO ()
@@ -550,7 +547,8 @@ proveAtNode checkCons gInfo descr dgraph = do
                                 dgraph' (descr, dgn') le' iSt
           when (null d || diagString (head d) /= "Proofs.Proofs: selection")
                $ runProveAtNode checkCons gInfo (descr, dgn') res
-      hidingWarnDiag dgn' action
+      b <- hidingWarnDiag dgn'
+      when b action
       unlockLocal dgn'
     else errorDialog "Error" "Proofwindow already open"
 
@@ -618,20 +616,21 @@ checkconservativityOfNode descr gInfo dgraph = do
   ost <- readIORef iSt
   case i_state ost of
     Nothing -> return ()
-    Just iist -> hidingWarnDiag nlbl $ do
-      lockGlobal gInfo
-      (str, libEnv', ph) <- checkConservativityNode True
-                            (descr, nlbl) (i_libEnv iist) ln
-      if isPrefixOf "No conservativity" str
-        then
+    Just iist -> do
+      b <- hidingWarnDiag nlbl
+      when b $ do
+        lockGlobal gInfo
+        (str, libEnv', ph) <- checkConservativityNode True (descr, nlbl)
+                                                      (i_libEnv iist) ln
+        if isPrefixOf "No conservativity" str then
           errorDialog "Result of conservativity check" str
-        else do
-          createTextDisplay "Result of conservativity check" str
-          let nst = add2history (SelectCmd Node $ showDoc descr "")
-                    ost [DgCommandChange ln]
-              nwst = nst { i_state = Just $ iist { i_libEnv = libEnv' }}
-          writeIORef iSt nwst
-          runAndLock gInfo $ updateGraph gInfo (reverse $ flatHistory ph)
+          else do
+            createTextDisplay "Result of conservativity check" str
+            let nst = add2history (SelectCmd Node $ showDoc descr "")
+                      ost [DgCommandChange ln]
+                nwst = nst { i_state = Just $ iist { i_libEnv = libEnv' }}
+            writeIORef iSt nwst
+            runAndLock gInfo $ updateGraph gInfo (reverse $ flatHistory ph)
       unlockGlobal gInfo
 
 edgeErr :: Int -> IO ()

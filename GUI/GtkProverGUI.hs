@@ -184,8 +184,6 @@ showProverGUI lid prGuiAcs thName warn th knownProvers comorphList = do
           then treeSelectionUnselectPath else treeSelectionSelectPath) sel p) rs
       update s
 
-    modifyMVar_ state $ update <=< updateProver trvProvers listProvers
-
     -- setup theorems list
     setListSelectorMultiple trvTheorems btnTheoremsAll btnTheoremsNone
                             btnTheoremsInvert $ modifyMVar_ state update
@@ -223,6 +221,8 @@ showProverGUI lid prGuiAcs thName warn th knownProvers comorphList = do
         $ maybe s (\ p -> s { selectedProver = Just $ pName p }) mp
 
     onDestroy window $ putMVar wait ()
+
+    modifyMVar_ state $ update <=< updateProver trvProvers listProvers
 
     widgetShow window
 
