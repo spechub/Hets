@@ -74,7 +74,7 @@ cProver input state =
      -- check that some theories are selected
      case elements pS of
       [] -> return $ genErrorMsg "Nothing selected" state
-      Element z _ :_ -> let sl = sublogicOfTh $ theory z in
+      Element z _ :_ -> let sl = sublogicOfTheory z in
         -- see if any comorphism was used
        case cComorphism pS of
        -- if none use the theory  of the first selected node
