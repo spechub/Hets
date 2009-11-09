@@ -134,12 +134,12 @@ showProverGUI lid prGuiAcs thName warn th knownProvers comorphList = do
                 , toWidget btnProofDetails
                 , toWidget btnDisplay ]
         update s' = do
-          s <- updateGoals trvGoals listGoals =<<
-               updateComorphism lblComorphism trvProvers listProvers =<<
-               updateProver trvProvers listProvers =<<
+          s <- updateProver trvProvers listProvers =<<
                updateSublogic lblSublogic prGuiAcs knownProvers =<<
                setSelectedGoals trvGoals listGoals =<<
                setSelectedSens trvAxioms listAxioms trvTheorems listTheorems s'
+          updateComorphism lblComorphism trvProvers listProvers
+          updateGoals listGoals s
           activate noProver
             (isJust (selectedProver s) && not (null $ selectedGoals s))
           return s
@@ -153,8 +153,8 @@ showProverGUI lid prGuiAcs thName warn th knownProvers comorphList = do
       update <=< setSelectedProver trvProvers listProvers
 
     -- setup goal list
-    setListSelectorMultiple trvGoals btnGoalsAll btnGoalsNone btnGoalsInvert $
-      modifyMVar_ state update
+    setListSelectorMultiple trvGoals btnGoalsAll btnGoalsNone btnGoalsInvert
+      $ modifyMVar_ state update
 
     onClicked btnGoalsSelectOpen $ modifyMVar_ state $ \ s -> do
       sel <- treeViewGetSelection trvGoals
@@ -282,16 +282,12 @@ updateSublogic lbl prGuiAcs knownProvers s' = do
   labelSetLabel lbl $ show $ sublogicOfTheory s
   return s
 
-updateComorphism :: Label -> TreeView -> ListStore GProver
-                 -> ProofState lid sentence -> IO (ProofState lid sentence)
-updateComorphism lbl trvProvers listProvers s = do
-  mprover <- getSelectedSingle trvProvers listProvers
-  case mprover of
-    Just (_, p) -> case comorphism p !! selected p of
-      Comorphism cid -> let dN = drop 1 $ dropWhile (/= ';') $ language_name cid
-        in labelSetLabel lbl $ if null dN then "identity" else dN
-    Nothing -> return ()
-  return s
+updateComorphism :: Label -> TreeView -> ListStore GProver -> IO ()
+updateComorphism lbl trvProvers listProvers =
+  getSelectedSingle trvProvers listProvers >>=
+  maybe (return ()) (\ (_, p) -> case comorphism p !! selected p of
+    Comorphism cid -> let dN = drop 1 $ dropWhile (/= ';') $ language_name cid
+      in labelSetLabel lbl $ if null dN then "identity" else dN)
 
 updateProver :: TreeView -> ListStore GProver -> ProofState lid sentence
              -> IO (ProofState lid sentence)
@@ -316,19 +312,14 @@ updateProver trvProvers listProvers s = do
       Nothing -> selFirst
     Nothing -> selFirst
 
-updateGoals :: TreeView -> ListStore Goal -> ProofState lid sentence
-            -> IO (ProofState lid sentence)
-updateGoals trvGoals listGoals s = do
-  updateListData listGoals $ toGoals s
-  model <- treeViewGetModel trvGoals
-  sel <- treeViewGetSelection trvGoals
-  treeModelForeach (fromJust model) $ \ i -> do
-    (row:[]) <- treeModelGetPath (fromJust model) i
-    g <- listStoreGetValue listGoals row
-    (if any (gName g ==) $ selectedGoals s
-      then treeSelectionSelectIter else treeSelectionUnselectIter) sel i
-    return False
-  return s
+updateGoals :: ListStore Goal -> ProofState lid sentence -> IO ()
+updateGoals listGoals s = do
+  oldGoals' <- listStoreToList listGoals
+  let oldGoals = foldl (\ gs g -> (g, length gs):gs) [] oldGoals'
+  mapM_ (\ g -> let (_, idx) = fromMaybe (error "Goal not found!")
+                                 $ find ((==) g . fst) oldGoals
+      in listStoreSetValue listGoals idx g
+    ) $ toGoals s
 
 setSelectedGoals :: TreeView -> ListStore Goal -> ProofState lid sentence
                  -> IO (ProofState lid sentence)

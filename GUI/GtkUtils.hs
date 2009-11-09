@@ -627,6 +627,9 @@ data GStatus = GOpen
 instance Show Goal where
   show (Goal { gName = n, gStatus = s }) = spanString s $ statusToPrefix s ++ n
 
+instance Eq Goal where
+  (==) (Goal { gName = n1 }) (Goal { gName = n2 }) = n1 == n2
+
 statusToColor :: GStatus -> String
 statusToColor s = case s of
   GOpen         -> "black"
