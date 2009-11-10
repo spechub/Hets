@@ -36,13 +36,13 @@ data ClassDecl = ClassDecl {
   className :: String,
   classText :: String,
   super :: Maybe String
-} deriving(Show)
+} deriving Show
 
 data ObjectDecl = ObjectDecl {
   objName :: String,
   objectText :: String,
   instanceOf :: String
-} deriving(Show)
+} deriving Show
 
 data RelationDecl = RelationDecl {
   multiplicities :: Maybe String,
@@ -50,26 +50,26 @@ data RelationDecl = RelationDecl {
   relationText :: String,
   source :: String,
   target :: String
-} deriving(Show)
+} deriving Show
 
 data BaseRelationDecl = BaseRelationDecl {
   baseMultiplicities :: Maybe String,
   baseRelName :: String,
   baseRelationText :: String,
   superRel :: Maybe String
-} deriving(Show)
+} deriving Show
 
 data RelationTypeDecl = RelationTypeDecl {
   nameOfRel :: String,
   nameOfSource :: String,
   nameOfTarget :: String
-} deriving(Show)
+} deriving Show
 
 data ObjectLink = ObjectLink {
   sourceObj :: String,
   targetObj :: String,
   linkRelation :: String
-} deriving(Show)
+} deriving Show
 
 data Frag =
    ClassDeclFrag ClassDecl
@@ -78,8 +78,7 @@ data Frag =
  | BaseRelationDeclFrag BaseRelationDecl
  | RelationTypeDeclFrag RelationTypeDecl
  | ObjectLinkFrag ObjectLink
- | OtherFrag Other deriving(Show)
-
+ | OtherFrag Other deriving Show
 
 parseMMiSSOntologyFile :: SourceName -> IO(WithError MMiSSOntology)
 parseMMiSSOntologyFile s =
@@ -123,7 +122,7 @@ frag :: GenParser Char st Frag
 frag = comment
   <|> do
     backslash
-    ontologyElement <|> escapedChar <|> return (OtherFrag "\\")
+    ontologyElement <|> escapedChar
   <|> other
 
 backslash :: GenParser Char st Char
@@ -145,13 +144,10 @@ braced = between (char '{') (char '}')
 
 -- | maybe empty
 value :: GenParser Char st String
-value = do
-  s1 <- many $ noneOf "{}\\"
-  s2 <- option "" $ braced value
-        <|> liftM2 (\ c1 c2 -> [c1, c2]) (char '\\') anyChar
-  if null s2 then return s1 else do
-    s3 <- value
-    return $ s1 ++ s2 ++ s3
+value = fmap concat $ many
+  $ many1 (noneOf "{}\\")
+  <|> fmap (\ v -> '{' : v ++ "}") (braced value)
+  <|> liftM2 (\ c1 c2 -> [c1, c2]) (char '\\') anyChar
 
 ontologyElement :: GenParser Char st Frag
 ontologyElement = declClassP <|> declObjectP <|> declRelationP
@@ -191,7 +187,7 @@ declObjectP = do
 declRelationP :: GenParser Char st Frag
 declRelationP = do
   try (string "DeclRelation")
-  card <- option "" $ braced idParser
+  card <- braced idParser
   let cardVal = if card == "" then Nothing else Just card
   (name, deflTxt, srcCl) <- nameDeflOther
   spaces
@@ -202,9 +198,9 @@ declBaseRelationP :: GenParser Char st Frag
 declBaseRelationP = do
   try (string "DeclRel") <|> try (string "Relation")
   card <- braced idParser
-  let cardVal = if card == "{}" then Nothing else Just card
+  let cardVal = if card == "" then Nothing else Just card
   (name, deflTxt, sup) <- nameDeflOther
-  let supRel = if sup == "{}" then Nothing else Just sup
+  let supRel = if sup == "" then Nothing else Just sup
   return $ BaseRelationDeclFrag $ BaseRelationDecl cardVal name deflTxt supRel
 
 declRelTypeP :: GenParser Char st Frag

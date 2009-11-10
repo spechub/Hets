@@ -41,7 +41,7 @@ main =
          in error (str ++ message)) (\ o -> let messages = isComplete o in
                  if null messages then do
                    hPutStr stderr
-                     "Parse: Successfull\nChecking Ontology: Successfull\n"
+                     "Parsing and checking ontology: successful\n"
                    return o
                  else do
                    hPutStr stderr (unlines messages)
