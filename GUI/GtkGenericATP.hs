@@ -78,9 +78,10 @@ genericATPgui atpFun hasEOptions prName thName th freedefs pt = do
 
     windowSetTitle window $ prName ++ ": " ++ thName
 
-    let widgets = [ toWidget btnClose        , toWidget btnShowDetails
+    let widgets = [toWidget entryOptions | hasEOptions] ++
+                  [ toWidget btnClose        , toWidget btnShowDetails
                   , toWidget btnHelp         , toWidget btnSaveConfig
-                  , toWidget sbTimeout       , toWidget entryOptions
+                  , toWidget sbTimeout
                   , toWidget cbIncludeProven , toWidget btnProveSelected
                   , toWidget btnProveSelected, toWidget btnProveAll
                   , toWidget lblStatus       , toWidget btnSaveProblem ]
@@ -123,7 +124,6 @@ genericATPgui atpFun hasEOptions prName thName th freedefs pt = do
     -- setting options
     spinButtonSetValue sbTimeout $ fromIntegral guiDefaultTimeLimit
     widgetSetSensitive entryOptions hasEOptions
-    widgetSetSensitive sbTimeout hasEOptions
     widgetSetSensitive btnStop False
     enableSaveBatch <- getEnvSave False "HETS_ENABLE_BATCH_SAVE" readMaybe
     widgetSetSensitive cbSaveBatch enableSaveBatch
