@@ -270,8 +270,8 @@ runDarwin sps cfg saveTPTP thName nGoal = do
 
     provedStatus opts ut = ProofStatus
       { goalName = AS_Anno.senAttr nGoal
-      , goalStatus = Proved (Just True)
-      , usedAxioms = getAxioms -- []
+      , goalStatus = Proved True
+      , usedAxioms = getAxioms
       , usedProver = proverName darwinProver
       , proofTree = emptyProofTree
       , usedTime = timeToTimeOfDay $ secondsToDiffTime $ toInteger ut

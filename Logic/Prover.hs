@@ -181,7 +181,7 @@ instance Eq Reason where
 data GoalStatus =
     Open Reason -- ^ failure reason
   | Disproved
-  | Proved (Maybe Bool) -- ^ Just True means consistent; Nothing don't know
+  | Proved Bool -- ^ Just True means consistent; False inconsistent
     deriving (Eq, Ord)
  -- needed for automated theorem provers like SPASS;
  -- provers like Isabelle set it to Nothing
@@ -190,8 +190,7 @@ instance Show GoalStatus where
     show gs = case gs of
         Open (Reason l) -> unlines $ "Open" : l
         Disproved -> "Disproved"
-        Proved mc -> "Proved" ++ maybe ""
-            ( \ c -> "(" ++ (if c then "" else "in") ++ "consistent)") mc
+        Proved c -> "Proved" ++ if c then "" else "(inconsistent)"
 
 isOpenGoal :: GoalStatus -> Bool
 isOpenGoal gs = case gs of
@@ -236,11 +235,6 @@ isProvedGStat :: GoalStatus -> Bool
 isProvedGStat gs = case gs of
     Proved _ -> True
     _ -> False
-
-goalUsedInProof :: Monad m => ProofStatus proof_tree -> m Bool
-goalUsedInProof pst = case goalStatus pst of
-    Proved m -> maybe (fail "don't know if goal was used") return m
-    _ -> fail "not a proof"
 
 -- | different kinds of prover interfaces
 data ProverKind = ProveGUI | ProveCMDLautomatic

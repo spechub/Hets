@@ -228,10 +228,7 @@ populateGoalsListBox lb v = do
 indicatorFromProofStatus :: ProofStatus a
                           -> LBStatusIndicator
 indicatorFromProofStatus st = case goalStatus st of
-  Proved mc -> maybe LBIndicatorProved
-                     (\ c -> if c then LBIndicatorProved
-                                  else LBIndicatorProvedInconsistent)
-                     mc
+  Proved c  -> if c then LBIndicatorProved else LBIndicatorProvedInconsistent
   Disproved -> LBIndicatorDisproved
   Open _    -> LBIndicatorOpen
 

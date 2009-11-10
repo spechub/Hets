@@ -85,7 +85,7 @@ statusProved = (Green, "Proved")
   (but inconsistent) proof status.
 -}
 statusProvedButInconsistent :: (ProofStatusColour, String)
-statusProvedButInconsistent = (Brown, "Proved by contradiction")
+statusProvedButInconsistent = (Brown, "Proved/Inconsistent")
 
 {- |
   Generates a ('ProofStatusColour', 'String') tuple representing a Disproved
@@ -123,11 +123,7 @@ toGuiStatus :: GenericConfig proof_tree -- ^ current prover configuration
             -> (ProofStatus a) -- ^ status to convert
             -> (ProofStatusColour, String)
 toGuiStatus cf st = case goalStatus st of
-  Proved mc -> maybe (statusProved)
-                     ( \ c -> if c
-                              then statusProved
-                              else statusProvedButInconsistent)
-                     mc
+  Proved c  -> if c then statusProved else statusProvedButInconsistent
   Disproved -> statusDisproved
   _         -> if timeLimitExceeded cf
                then statusOpenTExceeded

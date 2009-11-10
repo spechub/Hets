@@ -427,15 +427,13 @@ runPellet sps cfg savePellet thName nGoal =
     provedStatus opts ut =
         ProofStatus {
                goalName = senAttr nGoal
-              ,goalStatus = Proved (Just True)
-              ,usedAxioms = getAxioms -- []
+              ,goalStatus = Proved True
+              ,usedAxioms = []
               ,usedProver = proverName pelletProver
               ,proofTree =  emptyProofTree
               ,usedTime = timeToTimeOfDay $
                                  secondsToDiffTime $ toInteger ut
               ,tacticScript = tScript opts }
-
-    getAxioms = []
 
 analyseOutput :: String -> String -> (ExitCode, [String], Int)
 analyseOutput err outp =

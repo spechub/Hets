@@ -311,7 +311,7 @@ runminisat pState cfg saveDIMACS thName nGoal =
                           $ PState.initialAxioms pState
                     return (ATPSuccess, cfg
                       { proofStatus = (defaultProofStatus [])
-                          { LP.goalStatus = LP.Proved $ Nothing
+                          { LP.goalStatus = LP.Proved True
                           , LP.usedAxioms = filter (/= AS_Anno.senAttr nGoal)
                                             usedAxs
                           , LP.proofTree = ProofTree out }

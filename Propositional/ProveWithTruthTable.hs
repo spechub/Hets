@@ -394,7 +394,7 @@ runTt pState cfg _ _thName nGoal =
              ++ "irrelevant\n"
            body = legend++"\n"++render id (renderTT table)
        let status = (defaultProofStatus nGoal)
-                     { LP.goalStatus = if isOK then LP.Proved $ Just consistent
+                     { LP.goalStatus = if isOK then LP.Proved consistent
                                                else LP.Disproved,
                        LP.usedAxioms = map AS_Anno.senAttr sens
                      }

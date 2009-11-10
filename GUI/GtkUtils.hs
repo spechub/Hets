@@ -657,7 +657,7 @@ spanString s m = "<span color=\"" ++ statusToColor s ++ "\">" ++ m ++ "</span>"
 
 instance Show GStatus where
   show GProved       = spanString GProved       "Proved"
-  show GInconsistent = spanString GInconsistent "Proved by contradiction"
+  show GInconsistent = spanString GInconsistent "Inconsistent"
   show GDisproved    = spanString GDisproved    "Disproved"
   show GOpen         = spanString GOpen         "Open"
   show GTimeout      = spanString GTimeout      "Open (Timeout!)"
@@ -668,10 +668,10 @@ instance Show GStatus where
 -- | Converts a ProofStatus into a GStatus
 proofStatusToGStatus :: forall a . ProofStatus a -> GStatus
 proofStatusToGStatus p = case goalStatus p  of
-  Proved (Just True) -> GProved
-  Proved _           -> GInconsistent
-  Disproved          -> GDisproved
-  Open _             -> GOpen
+  Proved False -> GInconsistent
+  Proved True  -> GProved
+  Disproved    -> GDisproved
+  Open _       -> GOpen
 
 -- | Converts a BasicProof into a GStatus
 basicProofToGStatus :: BasicProof -> GStatus

@@ -314,9 +314,7 @@ runSpass sps cfg saveDFG thName nGoal = do
       | isJust res && elem (fromJust res) proved =
           (ATPSuccess,
            (defaultProofStatus options)
-           { goalStatus = Proved $ if elem (AS_Anno.senAttr nGoal) usedAxs
-                                   then Nothing
-                                   else Just False
+           { goalStatus = Proved $ elem (AS_Anno.senAttr nGoal) usedAxs
            , usedAxioms = filter (/= AS_Anno.senAttr nGoal) usedAxs
            , proofTree = ProofTree $ spassProof out })
       | isJust res && elem (fromJust res) disproved =

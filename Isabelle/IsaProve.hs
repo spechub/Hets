@@ -140,10 +140,9 @@ checkFinalThyFile (ho, bo) thyFile = do
 
 mkProved :: String -> [String] -> ProofStatus ()
 mkProved thm used = (openIsaProofStatus thm)
-    { goalStatus = Proved Nothing
+    { goalStatus = Proved True
     , usedAxioms = used
-    , tacticScript = TacticScript "unknown isabelle user input"
-    }
+    , tacticScript = TacticScript "unknown isabelle user input" }
 
 prepareThyFiles :: (TheoryHead, Body) -> String -> String -> IO ()
 prepareThyFiles ast thyFile thy = do

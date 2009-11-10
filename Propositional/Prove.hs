@@ -280,7 +280,7 @@ runZchaff pState cfg saveDIMACS thName nGoal =
                            | isJust res && elem (fromJust res) proved =
                                (ATPSuccess,
                                 (defaultProofStatus options)
-                                {LP.goalStatus = LP.Proved $ Nothing
+                                {LP.goalStatus = LP.Proved True
                                 , LP.usedAxioms = filter
                                     (/= AS_Anno.senAttr nGoal) usedAxs
                                 , LP.proofTree = ProofTree $ out })
@@ -336,12 +336,12 @@ analyzeZchaff str pState =
       then
           return (Just $ head timelimit, usedAx, output, time)
           else
-              if (sat && (not unsat))
+              if sat && not unsat
               then
-                  return (Just $ head $ disproved, usedAx, output, time)
-              else if ((not sat) && unsat)
+                  return (Just $ head disproved, usedAx, output, time)
+              else if not sat && unsat
                    then
-                       return (Just $ head $ proved, usedAx, output, time)
+                       return (Just $ head proved, usedAx, output, time)
                    else
                        do
                          return (Nothing, usedAx, output, time)

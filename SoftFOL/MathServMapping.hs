@@ -120,7 +120,7 @@ mapProverResult atpResult timeRes cfg nGoal prName =
 mapToGoalStatus :: MWStatus -- ^ goal status
                 -> GoalStatus -- ^ final parsed goal status
 mapToGoalStatus stat = case foAtpStatus stat of
-        Solved Theorem            -> Proved Nothing
+        Solved Theorem            -> Proved True
         Solved CounterSatisfiable -> Disproved
         s                         -> Open $ Reason [show s]
 
@@ -164,16 +164,10 @@ proof_stat :: AS_Anno.Named SPTerm -- ^ goal to prove
            -> (ATPRetval, ProofStatus ProofTree)
            -- ^ General return value of a prover run, used in GUI.
            --   Detailed proof status if information is available.
-proof_stat nGoal res usedAxs timeOut defaultPrStat
-  | (res == Proved Nothing) =
+proof_stat nGoal res usedAxs timeOut defaultPrStat = case res of
+  Proved _ -> let nName = AS_Anno.senAttr nGoal in
       (ATPSuccess, defaultPrStat
-       { goalStatus = Proved $ if elem (AS_Anno.senAttr nGoal) usedAxs
-                               then Nothing
-                               else Just False
-       , usedAxioms = filter (/=(AS_Anno.senAttr nGoal)) usedAxs })
-  | (res == Disproved) =
-      (ATPSuccess, defaultPrStat { goalStatus = Disproved } )
-  | timeOut =
-      (ATPTLimitExceeded,
-       defaultPrStat { goalStatus = res })
-  | otherwise = (ATPSuccess, defaultPrStat { goalStatus = res })
+       { goalStatus = Proved $ elem nName usedAxs
+       , usedAxioms = filter (/= nName) usedAxs })
+  _ -> (if timeOut then ATPTLimitExceeded else ATPSuccess
+       , defaultPrStat { goalStatus = res })

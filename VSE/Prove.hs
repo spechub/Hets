@@ -40,7 +40,7 @@ vseProverName = "VSE"
 
 mkVseProofStatus :: String -> [String] -> ProofStatus ()
 mkVseProofStatus n axs = (openProofStatus n vseProverName ())
-   { goalStatus = Proved Nothing
+   { goalStatus = Proved True
    , usedAxioms = axs }
 
 vse :: Prover VSESign Sentence VSEMor () ()
@@ -222,7 +222,7 @@ readFinalVSEOutput cp out = do
 readLemmas :: [SExpr] -> Map.Map String [String]
 readLemmas =
   foldr (\ (node, sen) -> Map.insertWith (++) node [sen]) Map.empty
-  . catMaybes . map findState
+  . mapMaybe findState
 
 prove :: String -> Theory VSESign Sentence () -> a -> IO [ProofStatus ()]
 prove ostr (Theory sig thsens) _freedefs = do

@@ -88,7 +88,7 @@ runQuickCheck qm cfg _saveFile _thName nGoal = do
           _ -> unlines ["Formula failed: ", fstr, " some Counterexamples: "]
                ++ showDiagStrings(take 10 d)
        gstat = case res of
-          Just True -> Proved Nothing
+          Just True -> Proved True
           Just False -> Disproved
           Nothing -> openGoalStatus
        setStatus pstat = pstat { goalStatus = gstat,
