@@ -185,9 +185,9 @@ instance Pretty Morphism where
           fm = funMap m
           -- the types in funs are already mapped
           -- key und value types only differ wrt. partiality
-          ds = Map.foldWithKey ( \ (i, _) (j, t) l ->
-                (pretty i <+> mapsto <+>
-                pretty j <+> colon <+> pretty t) : l)
+          ds = Map.foldWithKey ( \ (i, _) (j, t) ->
+                ((pretty i <+> mapsto <+>
+                  pretty j <+> colon <+> pretty t) :))
                [] fm
       in (if Map.null tm then empty
          else keyword (typeS ++ sS) <+> printMap1 tm)
@@ -231,13 +231,13 @@ improveDiag v d = d
 
 mergeMap :: (Ord a, GetRange a, Pretty a) => (b -> b -> Result b)
          -> Map.Map a b -> Map.Map a b -> Result (Map.Map a b)
-mergeMap f m1 m2 = foldM ( \ m (k, v) -> case Map.lookup k m of
+mergeMap f m1 = foldM ( \ m (k, v) -> case Map.lookup k m of
     Nothing -> return $ Map.insert k v m
     Just w -> let
       Result ds r = do
         u <- f w v
         return $ Map.insert k u m
-      in Result (map (improveDiag k) ds) r) m1 $ Map.toList m2
+      in Result (map (improveDiag k) ds) r) m1 . Map.toList
 
 mergeClassInfo :: ClassInfo -> ClassInfo -> Result ClassInfo
 mergeClassInfo c1 c2 = do

@@ -36,7 +36,7 @@ mkTypeConstrAppls m e ty = case ty of
     TypeName _ _ _ -> return ty
     TypeToken tt -> return $ toType $ simpleIdToId tt
     BracketType b ts ps -> do
-       args <- mapM (\ trm -> mkTypeConstrAppls m e trm) ts
+       args <- mapM (mkTypeConstrAppls m e) ts
        case b of
          Squares -> hint () ("a non-compound list: " ++ showDoc ty "") ps
          _ -> return ()
@@ -55,7 +55,7 @@ mkTypeConstrAppls m e ty = case ty of
     MixfixType l -> case mkCompoundTypeIds e l of
          f : a -> do
            newF <- mkTypeConstrAppls TopLevel e f
-           nA <- mapM ( \ t -> mkTypeConstrAppls OnlyArg e t) a
+           nA <- mapM (mkTypeConstrAppls OnlyArg e) a
            return $ foldl1 TypeAppl $ newF : nA
          [] -> error "mkTypeConstrAppl (MixfixType [])"
     KindedType t k p -> do

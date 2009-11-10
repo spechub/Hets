@@ -22,20 +22,22 @@ module HasCASL.DataAna
     , mkVarDecl
     ) where
 
-import Data.Maybe (mapMaybe)
-
-import qualified Data.Map as Map
-import qualified Data.Set as Set
+import Common.AS_Annotation
 import Common.Id
 import Common.Result
-import Common.AS_Annotation
 
 import HasCASL.As
-import HasCASL.Le
-import HasCASL.TypeAna
 import HasCASL.AsUtils
 import HasCASL.Builtin
+import HasCASL.Le
+import HasCASL.TypeAna
 import HasCASL.Unify
+
+import Control.Monad
+
+import Data.Maybe (mapMaybe)
+import qualified Data.Map as Map
+import qualified Data.Set as Set
 
 -- | description of polymorphic data types
 data DataPat = DataPat Id [TypeArg] RawKind Type
@@ -161,7 +163,7 @@ anaCompType :: GenKind -> [DataPat] -> DataPat -> Type -> Env -> Result Type
 anaCompType genKind tys (DataPat _ tArgs _ _) t te = do
     (_, ct) <- anaStarTypeM t te
     let ds = unboundTypevars True tArgs ct
-    if null ds then return () else Result ds Nothing
+    unless (null ds) $ Result ds Nothing
     mapM_ (checkMonomorphRecursion ct te) tys
     mapM_ (rejectNegativeOccurrence genKind ct te) tys
     return $ generalize tArgs ct

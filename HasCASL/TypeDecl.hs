@@ -21,9 +21,6 @@ module HasCASL.TypeDecl
     , addDataSen
     ) where
 
-import Data.Maybe
-import Data.List(group)
-
 import Common.Id
 import Common.AS_Annotation
 import Common.Lib.State
@@ -44,6 +41,11 @@ import HasCASL.VarDecl
 import HasCASL.SubtypeDecl
 import HasCASL.MixAna
 import HasCASL.TypeCheck
+
+import Control.Monad
+
+import Data.Maybe
+import Data.List(group)
 
 -- | resolve and type check a formula
 anaFormula :: Annoted Term -> State Env (Maybe (Annoted Term, Annoted Term))
@@ -105,7 +107,7 @@ addDataSen tys = do
                                 _ -> dl) [] tis
         sen = (makeNamed ("ga_" ++ showSepList (showString "_") showId tis "")
               $ DatatypeSen ds) { isDef = True }
-    if null tys then return () else appendSentences [sen]
+    unless (null tys) $ appendSentences [sen]
 
 ana1TypeItem :: Annoted TypeItem -> State Env (Maybe TypeItem)
 ana1TypeItem t = case item t of

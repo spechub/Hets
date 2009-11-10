@@ -30,14 +30,16 @@ import Common.Id
 import Common.Result
 import Common.Utils (composeMap)
 import Common.Lib.Rel (setToMap)
+
+import Control.Monad
+
 import qualified Data.Set as Set
 import qualified Data.Map as Map
 
 disjointKeys :: (Ord a, Pretty a, Monad m) => Map.Map a b -> Map.Map a c
              -> m ()
 disjointKeys m1 m2 = let d = Map.keysSet $ Map.intersection m1 m2 in
-  if Set.null d then return () else
-      fail $ show
+  unless (Set.null d) $ fail $ show
          (sep [ text "overlapping identifiers for types and classes:"
               , pretty d])
 
@@ -52,9 +54,8 @@ mapKinds = mapKindI . classIdMap
 -- | only rename the kinds in a type
 mapKindsOfType :: IdMap -> TypeMap -> IdMap -> Type -> Type
 mapKindsOfType jm tm im = foldType mapTypeRec
-    { foldTypeAbs = \ _ a t p -> TypeAbs (mapTypeArg jm tm im a) t p
-    , foldKindedType = \ _ t ks p -> KindedType t
-          (Set.map (mapKindI jm) ks) p }
+    { foldTypeAbs = \ _ -> TypeAbs . mapTypeArg jm tm im
+    , foldKindedType = \ _ t -> KindedType t . Set.map (mapKindI jm) }
 
 -- | map type, expand it, and also adjust the kinds
 mapTypeE :: IdMap -> TypeMap -> IdMap -> Type -> Type

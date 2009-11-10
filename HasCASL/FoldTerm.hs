@@ -42,22 +42,22 @@ type MapRec = FoldRec Term ProgEq
 
 mapRec :: MapRec
 mapRec = FoldRec
-    { foldQualVar = \ _ -> QualVar
-    , foldQualOp = \ _ -> QualOp
-    , foldApplTerm = \ _ -> ApplTerm
-    , foldTupleTerm = \ _ -> TupleTerm
-    , foldTypedTerm = \ _ -> TypedTerm
-    , foldAsPattern = \ _ -> AsPattern
-    , foldQuantifiedTerm = \ _ -> QuantifiedTerm
-    , foldLambdaTerm = \ _ -> LambdaTerm
-    , foldCaseTerm = \ _ -> CaseTerm
-    , foldLetTerm = \ _ -> LetTerm
-    , foldResolvedMixTerm = \ _ -> ResolvedMixTerm
-    , foldTermToken = \ _ -> TermToken
-    , foldMixTypeTerm = \ _ -> MixTypeTerm
-    , foldMixfixTerm = \ _ -> MixfixTerm
-    , foldBracketTerm = \ _ -> BracketTerm
-    , foldProgEq = \ _ -> ProgEq
+    { foldQualVar = const QualVar
+    , foldQualOp = const QualOp
+    , foldApplTerm = const ApplTerm
+    , foldTupleTerm = const TupleTerm
+    , foldTypedTerm = const TypedTerm
+    , foldAsPattern = const AsPattern
+    , foldQuantifiedTerm = const QuantifiedTerm
+    , foldLambdaTerm = const LambdaTerm
+    , foldCaseTerm = const CaseTerm
+    , foldLetTerm = const LetTerm
+    , foldResolvedMixTerm = const ResolvedMixTerm
+    , foldTermToken = const TermToken
+    , foldMixTypeTerm = const MixTypeTerm
+    , foldMixfixTerm = const MixfixTerm
+    , foldBracketTerm = const BracketTerm
+    , foldProgEq = const ProgEq
     }
 
 foldTerm :: FoldRec a b -> Term -> a
@@ -105,14 +105,14 @@ getAllTypes = foldTerm FoldRec
     , foldResolvedMixTerm = \ _ _ ts tts _ -> ts ++ concat tts
     , foldTermToken = \ _ _ -> []
     , foldMixTypeTerm = \ _ _ _ _ -> []
-    , foldMixfixTerm = \ _ tts -> concat tts
+    , foldMixfixTerm = const concat
     , foldBracketTerm = \ _ _ tts _ -> concat tts
     , foldProgEq = \ _ ps ts _ -> ps ++ ts
     }
 
 freeVars :: Term -> Set.Set VarDecl
 freeVars = foldTerm FoldRec
-    { foldQualVar = \ _ t -> Set.singleton t
+    { foldQualVar = const Set.singleton
     , foldQualOp = \ _ _ _ _ _ _ _ -> Set.empty
     , foldApplTerm = \ _ t1 t2 _ -> Set.union t1 t2
     , foldTupleTerm = \ _ tts _ -> Set.unions tts
@@ -130,7 +130,7 @@ freeVars = foldTerm FoldRec
     , foldResolvedMixTerm = \ _ _ _ tts _ -> Set.unions tts
     , foldTermToken = \ _ _ -> Set.empty
     , foldMixTypeTerm = \ _ _ _ _ -> Set.empty
-    , foldMixfixTerm = \ _ tts -> Set.unions tts
+    , foldMixfixTerm = const Set.unions
     , foldBracketTerm = \ _ _ tts _ -> Set.unions tts
     , foldProgEq = \ _ ps ts _ -> (ps, ts)
     }

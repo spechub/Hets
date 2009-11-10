@@ -350,12 +350,12 @@ data SymbMapItems =
 -- | kind of symbols
 data SymbKind =
     Implicit
-  | SK_type
-  | SK_sort
-  | SK_fun
-  | SK_op
-  | SK_pred
-  | SK_class
+  | SyKtype
+  | SyKsort
+  | SyKfun
+  | SyKop
+  | SyKpred
+  | SyKclass
     deriving (Show, Eq, Ord)
 
 -- | type annotated symbols

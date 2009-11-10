@@ -64,11 +64,11 @@ symbToRaw k (Symb idt mt _)     = case mt of
                            ("not a kind: " ++ showDoc t "") rk
         in case k of
               Implicit -> r
-              SK_op -> r
-              SK_fun -> r
-              SK_pred -> return $ AQualId idt $ OpAsItemType
+              SyKop -> r
+              SyKfun -> r
+              SyKpred -> return $ AQualId idt $ OpAsItemType
                          $ predTypeScheme (posOfId idt) sc
-              SK_class -> do
+              SyKclass -> do
                     (_, ck) <- rrk
                     return $ AQualId idt $ ClassAsItemType ck
               _ -> do

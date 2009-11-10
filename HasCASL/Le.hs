@@ -359,7 +359,7 @@ type RawSymbolMap = Map.Map RawSymbol RawSymbol
 
 -- | create a raw symbol from an identifier
 idToRaw :: Id -> RawSymbol
-idToRaw x = AnID x
+idToRaw = AnID
 
 -- | extract the top identifer from a raw symbol
 rawSymName :: RawSymbol -> Id
@@ -372,22 +372,22 @@ rawSymName r = case r of
 -- | convert a symbol type to a symbol kind
 symbTypeToKind :: SymbolType a -> SymbKind
 symbTypeToKind s = case s of
-    OpAsItemType _ -> SK_op
-    TypeAsItemType _ -> SK_type
-    ClassAsItemType _ -> SK_class
+    OpAsItemType _ -> SyKop
+    TypeAsItemType _ -> SyKtype
+    ClassAsItemType _ -> SyKclass
 
 -- | wrap a symbol as raw symbol (is 'ASymbol')
 symbolToRaw :: Symbol -> RawSymbol
-symbolToRaw sym = ASymbol sym
+symbolToRaw = ASymbol
 
 -- | create a raw symbol from a symbol kind and an identifier
 symbKindToRaw :: SymbKind -> Id -> RawSymbol
 symbKindToRaw sk = case sk of
     Implicit -> AnID
     _ -> AKindedId $ case sk of
-        SK_pred -> SK_op
-        SK_fun -> SK_op
-        SK_sort -> SK_type
+        SyKpred -> SyKop
+        SyKfun -> SyKop
+        SyKsort -> SyKtype
         _ -> sk
 
 getCompoundLists :: Env -> Set.Set [Id]

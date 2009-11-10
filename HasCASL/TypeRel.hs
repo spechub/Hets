@@ -99,8 +99,8 @@ subtAx tm (i1, i2) = let
                 ta = mkTypeArg a (- (length tl + 1))
                 b = simpleIdToId $ genNumVar "b" c
                 tb = mkTypeArg b (- (length tl + 2))
-                x = stringToId $ "x" ++ show c
-                y = stringToId $ "y" ++ show c
+                x = stringToId $ 'x' : show c
+                y = stringToId $ 'y' : show c
                 tx = typeArgToType ta
                 ty = typeArgToType tb
                 vx = mkVarDecl x tx
@@ -199,7 +199,7 @@ makeMonos e (i, s) = makeEquivMonos e i . map opType $ Set.toList s
 makeEquivMonos :: Env -> Id -> [TypeScheme] -> [Named Sentence]
 makeEquivMonos e i l = case l of
   [] -> []
-  t : r -> catMaybes (map (makeEquivMono e i t) r) ++ makeEquivMonos e i r
+  t : r -> mapMaybe (makeEquivMono e i t) r ++ makeEquivMonos e i r
 
 makeEquivMono :: Env -> Id -> TypeScheme -> TypeScheme -> Maybe (Named Sentence)
 makeEquivMono e i s1 s2 = if
@@ -207,6 +207,5 @@ makeEquivMono e i s1 s2 = if
     Just $ makeNamed "ga_monotonicity"
          $ Formula $ mkEqTerm eqId unitType nr
            (QualOp Op (PolyId i [] nr) s1 [] Infer nr)
-           $ (QualOp Op (PolyId i [] nr) s2 [] Infer nr)
+           $ QualOp Op (PolyId i [] nr) s2 [] Infer nr
   else Nothing
-

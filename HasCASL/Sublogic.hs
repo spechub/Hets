@@ -264,7 +264,7 @@ sublogic_min = sublogic_join min min min
 
 -- | compute union sublogic from a list of sublogics
 comp_list :: [Sublogic] -> Sublogic
-comp_list l = foldl sublogic_max bottom l
+comp_list = foldl sublogic_max bottom
 
 ------------------------------------------------------------------------------
 -- Functions to analyse formulae
@@ -287,7 +287,7 @@ isPredication :: Term -> Bool
 isPredication = foldTerm FoldRec
     { foldQualVar = \ _ _ -> True
     , foldQualOp = \ _ b (PolyId i _ _) t _ _ _ ->
-                   b /= Fun && not (elem (i, t) bList)
+                   b /= Fun && notElem (i, t) bList
     , foldApplTerm = \ _ b1 b2 _ -> b1 && b2
     , foldTupleTerm = \ _ bs _ -> and bs
     , foldTypedTerm = \ _ b q _ _ -> q /= InType && b
@@ -297,10 +297,10 @@ isPredication = foldTerm FoldRec
     , foldCaseTerm = \ _ _ _ _ -> False
     , foldLetTerm = \ _ _ _ _ _ -> False
     , foldResolvedMixTerm = \ _ i _ bs _ ->
-          not (elem i $ map fst bList) && and bs
+          notElem i (map fst bList) && and bs
     , foldTermToken = \ _ _ -> True
     , foldMixTypeTerm = \ _ q _ _ -> q /= InType
-    , foldMixfixTerm = \ _ bs -> and bs
+    , foldMixfixTerm = const and
     , foldBracketTerm = \ _ _ bs _ -> and bs
     , foldProgEq = \ _ _ _ _ -> False
     }
@@ -313,7 +313,7 @@ is_atomic_t term = case term of
     ApplTerm (QualOp _ (PolyId i _ _) t _ _ _) arg _
       | (case arg of
         TupleTerm ts@[_, _] _ ->
-            i == andId && t == logType && and (map is_atomic_t ts)
+            i == andId && t == logType && all is_atomic_t ts
             || i == exEq && t == eqType
         _ -> False) || i == defId && t == defType
         -> True
@@ -342,7 +342,7 @@ is_horn_t term = case term of
 is_horn_p_conj :: Term -> Bool
 is_horn_p_conj term = case term of
     ApplTerm (QualOp _ (PolyId i _ _) t _ _ _) (TupleTerm ts@[_, _] _) _
-        | i == andId && t == logType && and (map is_horn_a ts)
+        | i == andId && t == logType && all is_horn_a ts
           -> True
     _ -> is_atomic_t term
 
@@ -391,17 +391,17 @@ is_ghorn_t term = case term of
 -- C-CONJUNCTION
 --
 is_ghorn_c_conj :: [Term] -> Bool
-is_ghorn_c_conj = and . map is_ghorn_conc
+is_ghorn_c_conj = all is_ghorn_conc
 
 -- F-CONJUNCTION
 --
 is_ghorn_f_conj :: [Term] -> Bool
-is_ghorn_f_conj = and . map is_ghorn_t
+is_ghorn_f_conj = all is_ghorn_t
 
 -- P-CONJUNCTION
 --
 is_ghorn_p_conj :: [Term] -> Bool
-is_ghorn_p_conj = and . map is_ghorn_prem
+is_ghorn_p_conj = all is_ghorn_prem
 
 -- PREMISE
 is_ghorn_prem :: Term -> Bool
@@ -430,10 +430,12 @@ is_fol_t t = case t of
 
 -- | compute logic of a formula by checking all logics in turn
 get_logic :: Term -> Sublogic
-get_logic t = if is_atomic_t t then bottom else
-                if is_horn_t t then need_horn else
-                  if is_ghorn_t t then need_ghorn else
-                    if is_fol_t t then need_fol else need_hol
+get_logic t
+  | is_atomic_t t = bottom
+  | is_horn_t t = need_horn
+  | is_ghorn_t t = need_ghorn
+  | is_fol_t t = need_fol
+  | otherwise = need_hol
 
 ------------------------------------------------------------------------------
 -- Functions to compute minimal sublogic for a given element; these work
@@ -654,7 +656,7 @@ sl_genVarDecl g = case g of
 
 sl_opId :: PolyId -> Sublogic
 sl_opId (PolyId i tys _) = if i == exEq || i == eqId then need_eq else
-    if null tys then bottom else comp_list $ map sl_typeArg tys
+    comp_list $ map sl_typeArg tys
 
 sl_symbItems :: SymbItems -> Sublogic
 sl_symbItems (SymbItems k l _ _) = comp_list $ sl_symbKind k : map sl_symb l
@@ -665,8 +667,8 @@ sl_symbMapItems (SymbMapItems k l _ _) =
 
 sl_symbKind :: SymbKind -> Sublogic
 sl_symbKind k = case k of
-    SK_pred -> need_pred
-    SK_class -> simpleTypeClasses
+    SyKpred -> need_pred
+    SyKclass -> simpleTypeClasses
     _ -> bottom
 
 sl_symb :: Symb -> Sublogic
@@ -722,7 +724,7 @@ sl_opDefn o = case o of
     _ -> bottom
 
 sl_constrInfo :: ConstrInfo -> Sublogic
-sl_constrInfo c = sl_typeScheme $ constrType c
+sl_constrInfo = sl_typeScheme . constrType
 
 sl_sentence :: Sentence -> Sublogic
 sl_sentence s = sublogicUp $ case s of

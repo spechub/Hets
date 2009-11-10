@@ -30,14 +30,14 @@ data FoldTypeRec a = FoldTypeRec
 
 mapTypeRec :: FoldTypeRec Type
 mapTypeRec = FoldTypeRec
-  { foldTypeName = \ _ -> TypeName
-  , foldTypeAppl = \ _ -> TypeAppl
-  , foldExpandedType = \ _ -> ExpandedType
-  , foldTypeAbs = \ _ -> TypeAbs
-  , foldKindedType = \ _ -> KindedType
-  , foldTypeToken = \ _ -> TypeToken
-  , foldBracketType = \ _ -> BracketType
-  , foldMixfixType = \ _ -> MixfixType }
+  { foldTypeName = const TypeName
+  , foldTypeAppl = const TypeAppl
+  , foldExpandedType = const ExpandedType
+  , foldTypeAbs = const TypeAbs
+  , foldKindedType = const KindedType
+  , foldTypeToken = const TypeToken
+  , foldBracketType = const BracketType
+  , foldMixfixType = const MixfixType }
 
 foldType :: FoldTypeRec a -> Type -> a
 foldType r t = case t of
@@ -53,7 +53,7 @@ foldType r t = case t of
 -- | recursively substitute type alias names within a type
 replAlias :: (Id -> RawKind -> Int -> Type) -> Type -> Type
 replAlias m = foldType mapTypeRec
-    { foldTypeName = \ _ -> m
+    { foldTypeName = const m
     , foldExpandedType = \ (ExpandedType t1 _) r1 r2 -> case (t1, r1) of
         (TypeName _ _ _, ExpandedType t3 _) | t1 == t3 ->
             ExpandedType t1 r2
@@ -62,15 +62,15 @@ replAlias m = foldType mapTypeRec
 -- | the type name components of a type
 leaves :: (Int -> Bool) -> Type -> [(Int, (Id, RawKind))]
 leaves b = foldType FoldTypeRec
-  { foldTypeName = \ _ i k c -> if b c then [(c, (i, k))] else []
-  , foldTypeAppl = \ _ t1 t2 -> List.union t1 t2
+  { foldTypeName = \ _ i k c -> [(c, (i, k)) | b c]
+  , foldTypeAppl = const List.union
   , foldExpandedType = \ _ _ t2 -> t2
   , foldTypeAbs = \ _ (TypeArg i _ _ r c _ _) ty _ ->
         List.delete (c, (i, r)) ty
   , foldKindedType = \ _ ty _ _ -> ty
   , foldTypeToken = \ _ _ -> error "leaves.foldTypeToken"
   , foldBracketType = \ _ _ _ _ -> error "leaves.foldBracketType"
-  , foldMixfixType = \ _ -> error "leaves.foldMixfixType" }
+  , foldMixfixType = const $ error "leaves.foldMixfixType" }
 
 -- | uninstantiate, non-generalized, unknown type variables
 freeTVars :: Type -> [(Int, (Id, RawKind))]

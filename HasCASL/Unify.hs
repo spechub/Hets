@@ -91,7 +91,7 @@ freshVar :: Id -> State Int (Id, Int)
 freshVar i@(Id ts _ _) = do
     c <- inc
     return (Id [mkSimpleId $ "_v" ++ show c ++ case ts of
-                  [t] -> "_" ++ dropWhile (== '_') (tokStr t)
+                  [t] -> '_' : dropWhile (== '_') (tokStr t)
                   _ -> ""] [] $ posOfId i, c)
 
 mkSingleSubst :: (Id, RawKind) -> State Int Type
@@ -136,9 +136,9 @@ match tm rel p1@(b1, ty1) p2@(b2, ty2) =
    a partial function that is mapped to a total one.
    Maybe a subtype condition is better. -}
         else if not b1 && b2 && v1 == 0 && v2 == 0 && Set.member i1
-           (superIds tm i2) then return eps
-        else if b1 && not b2 && v1 == 0 && v2 == 0 && Set.member i2
-           (superIds tm i1) then return eps
+                  (superIds tm i2)
+             || b1 && not b2 && v1 == 0 && v2 == 0 && Set.member i2
+                  (superIds tm i1) then return eps
         else uniResult "typename" ty1 "is not unifiable with typename" ty2
     (TypeName _ _ v1, _) -> case redStep ty2 of
       Just ry2 -> match tm rel p1 (b2, ry2)

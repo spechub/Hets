@@ -109,8 +109,8 @@ reduceCommonSubtypes e l = let
     mkPair s = case s of
           (a, _) : _ -> (a, map snd s)
           _ -> error "reduceCommonSubtypes2"
-    in null (concat rest2) && and (map (commonSubtype e True . mkPair) csubts)
-           && and (map (commonSubtype e False . mkPair) csuperts)
+    in null (concat rest2) && all (commonSubtype e True . mkPair) csubts
+           && all (commonSubtype e False . mkPair) csuperts
 
 commonSubtype :: Rel.Rel Type -> Bool -> (Type, [Type]) -> Bool
 commonSubtype e b (a, l) = case l of

@@ -23,21 +23,21 @@ type Rename = ((Id, TypeScheme) -> (Id, TypeScheme), Type -> Type)
 
 renameRec :: Rename -> MapRec
 renameRec m = mapRec
-   { foldQualVar = \ _ vd -> QualVar $ mapVar (snd m) vd
+   { foldQualVar = \ _ -> QualVar . mapVar (snd m)
    , foldQualOp = \ _ b (PolyId i as ps) sc tys qs ->
         let (i2, sc2) = fst m (i, sc)
             in QualOp b (PolyId i2 as ps) sc2 (map (snd m) tys) qs
-   , foldTypedTerm = \ _ te q ty ps -> TypedTerm te q (snd m ty) ps
-   , foldQuantifiedTerm = \ _ q vs te ps ->
-       QuantifiedTerm q (map (mapGenVar $ snd m) vs) te ps
-   , foldAsPattern = \ _ vd pa ps -> AsPattern (mapVar (snd m) vd) pa ps
-   , foldMixTypeTerm = \ _ q ty ps -> MixTypeTerm q (snd m ty) ps }
+   , foldTypedTerm = \ _ te q -> TypedTerm te q . snd m
+   , foldQuantifiedTerm = \ _ q ->
+       QuantifiedTerm q . map (mapGenVar $ snd m)
+   , foldAsPattern = \ _ -> AsPattern . mapVar (snd m)
+   , foldMixTypeTerm = \ _ q -> MixTypeTerm q . snd m }
 
 mapTerm :: Rename -> Term -> Term
-mapTerm m = foldTerm $ renameRec m
+mapTerm = foldTerm . renameRec
 
 mapEq :: Rename -> ProgEq -> ProgEq
-mapEq m = foldEq $ renameRec m
+mapEq = foldEq . renameRec
 
 mapVar :: (Type -> Type) -> VarDecl -> VarDecl
 mapVar m (VarDecl v ty q ps) = VarDecl v (m ty) q ps

@@ -47,6 +47,7 @@ import qualified Text.ParserCombinators.Parsec as P
 
 import Data.Maybe
 import Control.Exception (assert)
+import Control.Monad
 
 addType :: Term -> Term -> Term
 addType (MixTypeTerm q ty ps) t = TypedTerm t q ty ps
@@ -84,10 +85,10 @@ anaPolyId (PolyId i@(Id _ cs _) _ _) sc = do
                 , Map.keysSet $ typeMap e
                 , Map.keysSet $ assumps e ]
               es = filter (not . flip Set.member ids) cs
-          addDiags $ map (\ j -> mkDiag Warning
-            "unexpected identifier in compound list" j) es
-          if null cs || null tvars then return () else
-            addDiags [mkDiag Hint "is polymorphic compound identifier" i]
+          addDiags $ map (mkDiag Warning
+            "unexpected identifier in compound list") es
+          unless (null cs || null tvars)
+            $ addDiags [mkDiag Hint "is polymorphic compound identifier" i]
           return $ Just newSc
 
 resolveQualOp :: PolyId -> TypeScheme -> State Env TypeScheme
@@ -97,10 +98,9 @@ resolveQualOp i@(PolyId j _ _) sc = do
     case mSc of
       Nothing -> return sc -- and previous
       Just nSc -> do
-        if Set.null $ Set.filter ((== nSc) . opType)
-                  $ Map.findWithDefault Set.empty j $ assumps e
-           then addDiags [mkDiag Error "operation not found" j]
-           else return ()
+        when (Set.null $ Set.filter ((== nSc) . opType)
+                  $ Map.findWithDefault Set.empty j $ assumps e)
+          $ addDiags [mkDiag Error "operation not found" j]
         return nSc
 
 iterateCharts :: GlobalAnnos -> Set.Set Id -> Set.Set [Id] -> [Term]
@@ -156,7 +156,7 @@ iterateCharts ga sIds compIds terms chart = do
           mt <- resolve hd
           putLocalVars vs
           putTypeMap tm
-          recurse $ QuantifiedTerm quant (catMaybes newDs) (maybe hd id mt) ps
+          recurse $ QuantifiedTerm quant (catMaybes newDs) (fromMaybe hd mt) ps
         LambdaTerm decls part hd ps -> do
           mDecls <- mapM resolve decls
           let anaDecls = catMaybes mDecls
@@ -165,16 +165,16 @@ iterateCharts ga sIds compIds terms chart = do
           mapM_ (addLocalVar False) bs
           mt <- resolve hd
           putLocalVars vs
-          recurse $ LambdaTerm anaDecls part (maybe hd id mt) ps
+          recurse $ LambdaTerm anaDecls part (fromMaybe hd mt) ps
         CaseTerm hd eqs ps -> do
           mt <- resolve hd
           newEs <- resolveCaseEqs eqs
-          recurse $ CaseTerm (maybe hd id mt) newEs ps
+          recurse $ CaseTerm (fromMaybe hd mt) newEs ps
         LetTerm b eqs hd ps -> do
           newEs <- resolveLetEqs eqs
           mt <- resolve hd
           putLocalVars vs
-          recurse $ LetTerm b newEs (maybe hd id mt) ps
+          recurse $ LetTerm b newEs (fromMaybe hd mt) ps
         TermToken tok -> do
           let (ds1, trm) = convertMixfixToken (literal_annos ga)
                 (flip ResolvedMixTerm []) TermToken tok
@@ -184,11 +184,11 @@ iterateCharts ga sIds compIds terms chart = do
             _ -> (trm, exprTok {tokPos = tokPos tok})
         AsPattern vd p ps -> do
           mp <- resolve p
-          recurse $ AsPattern vd (maybe p id mp) ps
+          recurse $ AsPattern vd (fromMaybe p mp) ps
         TypedTerm trm k ty ps -> do
           -- assume that type is analysed
           mt <- resolve trm
-          recurse $ TypedTerm (maybe trm id mt) k ty ps
+          recurse $ TypedTerm (fromMaybe trm mt) k ty ps
         _ -> error ("iterCharts: " ++ show t)
 
 -- * equation stuff
@@ -246,18 +246,17 @@ mkPatAppl op arg qs = case op of
 bracketTermToTypes :: Env -> Term -> [Type]
 bracketTermToTypes e t = case t of
     BracketTerm Squares tys _ ->
-      map (monoType . snd) $ maybe (error "bracketTermToTypes") id $
-      maybeResult $ mapM ( \ ty -> anaTypeM (Nothing, ty) e) $
-      maybe (error "bracketTermToTypes1") id $ mapM termToType tys
+      map (monoType . snd) $ fromMaybe (error "bracketTermToTypes")
+      $ maybeResult $ mapM ( \ ty -> anaTypeM (Nothing, ty) e)
+      $ fromMaybe (error "bracketTermToTypes1") $ mapM termToType tys
     _ -> error "bracketTermToTypes2"
 
 toMixTerm :: Env -> Id -> [Term] -> Range -> Term
-toMixTerm e i ar qs =
-    if i == applId then assert (length ar == 2) $
+toMixTerm e i ar qs
+  | i == applId = assert (length ar == 2) $
            let [op, arg] = ar in mkPatAppl op arg qs
-    else if i == tupleId || i == unitId then
-         mkTupleTerm ar qs
-    else case unPolyId i of
+  | i == tupleId || i == unitId = mkTupleTerm ar qs
+  | otherwise = case unPolyId i of
       Just j@(Id ts _ _) -> if isMixfix j && isSingle ar then
           ResolvedMixTerm j (bracketTermToTypes e $ head ar) [] qs
         else assert (length ar == 1 + placeCount j) $
@@ -305,10 +304,9 @@ makeRules ga ps@(p, _) polyIds aIds =
         ks = Set.fold (Set.union . getKnowns) Set.empty ids
         rIds = Set.union ids $ Set.intersection sIds $ Set.map simpleIdToId ks
         m2 = maxWeight p + 2
-    in ( \ tok -> if isSimpleToken tok
-                     && not (Set.member tok ks)
-                         || tok == uTok then
-                     [(simpleIdToId tok, m2, [tok])] else []
+    in ( \ tok -> [(simpleIdToId tok, m2, [tok])
+                   | isSimpleToken tok && not (Set.member tok ks)
+                     || tok == uTok ]
        , partitionRules $ listRules m2 ga ++
              initRules ps (Set.toList polyIds) builtinIds (Set.toList rIds)
        , sIds)

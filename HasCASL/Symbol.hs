@@ -29,17 +29,17 @@ instance GetRange Symbol where
 
 checkSymbols :: SymbolSet -> SymbolSet -> Result a -> Result a
 checkSymbols s1 s2 r =
-    let s = foldr ( \ e2 d ->
-                 Set.filter (not . matchSymb e2 . ASymbol) d)
+    let s = foldr ( \ e2 ->
+                 Set.filter (not . matchSymb e2 . ASymbol))
                   s1 $ Set.toList s2 in
     if Set.null s then r else
        Result [mkDiag Error "unknown symbols" s] Nothing
 
 dependentSyms :: Symbol -> Env -> SymbolSet
-dependentSyms sym sig =
+dependentSyms sym =
     Set.fold ( \ op se ->
                if Set.member sym $ subSymsOf op then
-               Set.insert op se else se) Set.empty $ symOf sig
+               Set.insert op se else se) Set.empty . symOf
 
 hideRelSymbol :: Symbol -> Env -> Env
 hideRelSymbol sym sig =
@@ -92,8 +92,8 @@ closeSymbSet s = Set.unions (s : map subSymsOf (Set.toList s))
 
 symOf :: Env -> SymbolSet
 symOf sigma =
-    let classes = Map.foldWithKey ( \ i ks ->
-                          Set.insert $ idToClassSymbol sigma i $ rawKind ks)
+    let classes = Map.foldWithKey ( \ i ->
+                          Set.insert . idToClassSymbol sigma i . rawKind)
                   Set.empty $ classMap sigma
         types = Map.foldWithKey ( \ i ti ->
                         if Map.member i bTypes then id else
@@ -101,7 +101,7 @@ symOf sigma =
                 classes $ typeMap sigma
         ops = Map.foldWithKey ( \ i ts s ->
                       if Map.member i bOps then s else
-                      Set.fold ( \ t ->
-                          Set.insert $ idToOpSymbol sigma i $ opType t) s ts)
+                      Set.fold (Set.insert . idToOpSymbol sigma i . opType)
+                         s ts)
               types $ assumps sigma
         in ops

@@ -17,7 +17,7 @@ module HasCASL.OpDecl
   , mkEnvForall
   ) where
 
-import Data.Maybe (catMaybes)
+import Data.Maybe
 import qualified Data.Set as Set
 import qualified Data.Map as Map
 import Text.ParserCombinators.Parsec (parse, eof)
@@ -62,13 +62,14 @@ anaAttr (TypeScheme tvs ty _) b = case b of
                            putTypeMap tm
                            return Nothing
              Just (t1, t2, t3) ->
-                 do if t1 == t2 && t2 == t3 then return ()
-                       else addDiags [mkDiag Error
+                 do unless (t1 == t2 && t2 == t3)
+                      $ addDiags [mkDiag Error
                                  "unexpected type components of operation" ty]
                     mt <- resolveTerm t3 trm
                     putTypeMap tm
-                    case mt of Nothing -> return Nothing
-                               Just t -> return $ Just $ UnitOpAttr t ps
+                    return $ case mt of
+                               Nothing -> Nothing
+                               Just t -> Just $ UnitOpAttr t ps
     _ -> return $ Just b
 
 tuplePatternToType :: [VarDecl] -> Type
@@ -178,14 +179,12 @@ anaProgEq ape = do
                                             $ ProgEqSen i sc newPrg)
                                             { isDef = True }]
                            e <- get
-                           if isLHS e newPat then return ()
-                              else addDiags [mkNiceDiag ga Warning
-                                         "illegal lhs pattern"
-                                         newPat]
+                           unless (isLHS e newPat)
+                             $ addDiags [mkNiceDiag ga Warning
+                                         "illegal lhs pattern" newPat]
                            return $ Just rpe
                Nothing -> do addDiags [mkNiceDiag ga Error
-                                         "illegal toplevel pattern"
-                                         newPat]
+                                       "illegal toplevel pattern" newPat]
                              return Nothing
              _ -> return Nothing
          _ -> return Nothing
@@ -201,7 +200,7 @@ extractBinders :: [Annotation] -> Result [Id]
 extractBinders as =
     let rs = map extractBinderId as
         ds = concatMap diags rs
-    in if null ds then return $ catMaybes $ map maybeResult rs
+    in if null ds then return $ mapMaybe maybeResult rs
        else Result ds $ Just []
 
 addBinding :: Id -> Id -> State.State Env ()

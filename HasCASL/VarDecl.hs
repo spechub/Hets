@@ -76,7 +76,7 @@ anaStarType t = fmap (fmap snd) $ anaType (Just universe, t)
 
 anaType :: (Maybe Kind, Type)
         -> State Env (Maybe ((RawKind, Set.Set Kind), Type))
-anaType p = fromResult $ anaTypeM p
+anaType = fromResult . anaTypeM
 
 anaTypeScheme :: TypeScheme -> State Env (Maybe TypeScheme)
 anaTypeScheme (TypeScheme tArgs ty p) =
@@ -115,9 +115,8 @@ addTypeId warn dfn k i = do
     tvs <- gets localTypeVars
     case Map.lookup i tvs of
         Just _ -> do
-            if warn then addDiags[mkDiag Warning
+            when warn $ addDiags[mkDiag Warning
                                   "new type shadows type variable" i]
-               else return ()
             putLocalTypeVars $ Map.delete i tvs
         Nothing -> return()
     cm <- gets classMap
@@ -160,10 +159,10 @@ addTypeKind warn d i k = do
   rk <- anaKind k
   let tm = typeMap e
       cm = classMap e
-      addTypeSym ck = if Map.member i bTypes then return () else
-                         addSymbol $ idToTypeSymbol e i ck
-  if placeCount i <= kindArity rk then return () else
-      addDiags [mkDiag Error "wrong arity of" i]
+      addTypeSym = unless (Map.member i bTypes)
+                        . addSymbol . idToTypeSymbol e i
+  unless (placeCount i <= kindArity rk)
+    $ addDiags [mkDiag Error "wrong arity of" i]
   case Map.lookup i tm of
     Nothing -> do
       addTypeSym rk
@@ -179,11 +178,10 @@ addTypeKind warn d i k = do
         let isNewInst = newKind cm nk oldks
             insts = if isNewInst then addNewKind cm nk oldks else oldks
             Result ds mDef = mergeTypeDefn dfn d
-        if warn && not isNewInst && case (dfn, d) of
+        when (warn && not isNewInst && case (dfn, d) of
            (PreDatatype, DatatypeDefn _) -> False
-           _ -> True
-          then addDiags [mkDiag Hint "redeclared type" i]
-          else return ()
+           _ -> True)
+          $ addDiags [mkDiag Hint "redeclared type" i]
         case mDef of
           Just newDefn -> do
             addTypeSym r
@@ -253,9 +251,9 @@ checkUnusedTypevars :: TypeScheme -> State Env TypeScheme
 checkUnusedTypevars sc@(TypeScheme tArgs t ps) = do
     let ls = map (fst . snd) $ leaves (< 0) t -- generic vars
         rest = map getTypeVar tArgs List.\\ ls
-    if null rest then return ()
-      else addDiags [Diag Warning ("unused type variables: "
-               ++ show(ppWithCommas rest)) ps]
+    unless (null rest)
+      $ addDiags [Diag Warning ("unused type variables: "
+                                ++ show (ppWithCommas rest)) ps]
     return sc
 
 checkPlaceCount :: Env -> Id -> TypeScheme -> [Diagnosis]
@@ -266,9 +264,8 @@ checkPlaceCount e i (TypeScheme _ ty _) =
             let (pty, ts) = getTypeAppl (head fargs)
                 n = length ts in
             if n > 1 && lesserType e pty (toProdType n nullRange) then
-                if placeCount i /= n then
-                    [mkDiag Warning "wrong number of places in" i]
-                else []
+                    [mkDiag Warning "wrong number of places in" i
+                    | placeCount i /= n ]
             else [mkDiag Warning "expected tuple argument for" i]
         else [mkDiag Warning "expected function type for" i]
     else []
@@ -323,7 +320,7 @@ addGenVarDecl(GenTypeVarDecl t) = addTypeVarDecl False t
 anaddGenVarDecl :: Bool -> GenVarDecl -> State Env (Maybe GenVarDecl)
 anaddGenVarDecl warn gv = case gv of
     GenVarDecl v -> optAnaddVarDecl warn v
-    GenTypeVarDecl t -> anaddTypeVarDecl t >>= (return . fmap GenTypeVarDecl)
+    GenTypeVarDecl t -> fmap (fmap GenTypeVarDecl) $ anaddTypeVarDecl t
 
 convTypeToKind :: Type -> Maybe (Variance, Kind)
 convTypeToKind ty = let s = showDoc ty "" in

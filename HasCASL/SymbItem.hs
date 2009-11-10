@@ -47,10 +47,10 @@ symbMap = do
 symbKind :: AParser st (SymbKind, Token)
 symbKind = choice (map ( \ k -> do
    q <- pluralKeyword $ drop 3 $ show k
-   return (k, q)) [SK_op, SK_fun, SK_pred, SK_type, SK_sort])
+   return (k, q)) [SyKop, SyKfun, SyKpred, SyKtype, SyKsort])
   <|> do
     q <- asKey (classS ++ "es") <|> asKey classS
-    return (SK_class, q)
+    return (SyKclass, q)
   <?> "kind"
 
 -- | parse symbol items

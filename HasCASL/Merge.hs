@@ -32,9 +32,10 @@ import HasCASL.ClassAna
 import HasCASL.TypeAna
 import HasCASL.Builtin
 import HasCASL.MapTerm
+
 import qualified Data.Map as Map
 import qualified Data.Set as Set
-
+import Data.Maybe
 import Control.Monad(foldM)
 
 mergeTypeInfo :: ClassMap -> TypeInfo -> TypeInfo -> Result TypeInfo
@@ -97,7 +98,7 @@ mergeOpDefn d1 d2 = case (d1, d2) of
     (_, SelectData _ _) -> return d2
 
 addUnit :: ClassMap -> TypeMap -> TypeMap
-addUnit cm = maybe (error "addUnit") id . maybeResult . mergeTypeMap cm bTypes
+addUnit cm = fromMaybe (error "addUnit") . maybeResult . mergeTypeMap cm bTypes
 
 mergeOpInfos :: Set.Set OpInfo -> Set.Set OpInfo -> Result (Set.Set OpInfo)
 mergeOpInfos s1 s2 = if Set.null s1 then return s2 else do
@@ -114,7 +115,7 @@ mergeOpInfo o1 o2 = do
     return $ OpInfo (opType o1) as d
 
 mergeTypeMap :: ClassMap -> TypeMap -> TypeMap -> Result TypeMap
-mergeTypeMap cm = mergeMap $ mergeTypeInfo cm
+mergeTypeMap = mergeMap . mergeTypeInfo
 
 minimizeClassMap :: ClassMap -> ClassMap
 minimizeClassMap cm = Map.map (\ ci -> ci { classKinds =
@@ -133,7 +134,7 @@ merge e1 e2 = do
     return initialEnv
       { classMap = clMap
       , typeMap = tMap
-      , assumps = Map.map (Set.map $ mapOpInfo (id, expandAliases tAs)) $ as
+      , assumps = Map.map (Set.map $ mapOpInfo (id, expandAliases tAs)) as
       , binders = bs }
 
 mergeA :: (Pretty a, Eq a) => String -> a -> a -> Result a

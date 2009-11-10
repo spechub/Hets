@@ -45,6 +45,7 @@ import Common.Result
 import Common.Utils
 
 import Control.Exception (assert)
+import Control.Monad
 
 import Data.List
 import Data.Maybe
@@ -104,14 +105,13 @@ entail te c = let cm = classMap te in case c of
                    case mk of
                    Nothing -> fail $ "constrain '" ++
                                   showDoc c "' is unprovable"
-                   Just ((_, ks), _) -> if newKind cm k ks then
-                       fail $ "constrain '" ++
+                   Just ((_, ks), _) -> when (newKind cm k ks)
+                       $ fail $ "constrain '" ++
                            showDoc c "' is unprovable" ++
                               if Set.null ks then "" else
                                   "\n  known kinds are: " ++ showDoc ks ""
-                       else return ()
-    Subtyping t1 t2 -> if lesserType te t1 t2 then return ()
-                       else fail ("unable to prove: " ++ showDoc t1 " < "
+    Subtyping t1 t2 -> unless (lesserType te t1 t2)
+                       $ fail ("unable to prove: " ++ showDoc t1 " < "
                                   ++ showDoc t2 "")
 
 freshLeaves :: Type -> State Int Type
@@ -408,7 +408,7 @@ shapeRelAndMono te subL mTy = do
           Just ty -> let
             ms = monoSubsts
                        (Rel.transClosure $ Rel.union (fromTypeMap $ typeMap te)
-                          $ trel) (subst s ty)
+                          trel) (subst s ty)
             in Result ds
                  $ Just (compSubst s ms, Rel.map (subst ms) trel)
 

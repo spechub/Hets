@@ -18,8 +18,6 @@ module HasCASL.SubtypeDecl
 
 import Common.Id
 import Common.Lib.State
-import qualified Data.Set as Set
-import qualified Data.Map as Map
 import Common.Result
 
 import HasCASL.As
@@ -30,6 +28,11 @@ import HasCASL.TypeAna
 import HasCASL.ClassAna
 import HasCASL.Unify
 import HasCASL.VarDecl
+
+import qualified Data.Map as Map
+import qualified Data.Set as Set
+
+import Control.Monad
 
 etaReduceAux :: ([TypeArg], [TypeArg], [Type])
              -> ([TypeArg], [TypeArg], [Type])
@@ -51,7 +54,7 @@ etaReduce k nAs t =
 addSuperType :: Type -> Kind -> (Id, [TypeArg]) -> State Env ()
 addSuperType t ak p@(i, nAs) = case t of
     TypeName j _ v -> if v /= 0 then
-         addDiags[mkDiag Error ("illegal type variable as supertype") j]
+         addDiags[mkDiag Error "illegal type variable as supertype" j]
          else addSuperId i ak j
     _ -> case etaReduce ak nAs t of
         Just (nk, rAs, rT) -> addSuperType rT nk (i, rAs)
@@ -79,7 +82,7 @@ addSuperType t ak p@(i, nAs) = case t of
           ExpandedType t1 t2 -> do
             addSuperType t1 ak p
             addSuperType t2 ak p
-          _ -> addDiags[mkDiag Error ("unexpected type as supertype") t]
+          _ -> addDiags[mkDiag Error "unexpected type as supertype" t]
 
 -- | generalize a type scheme for an alias type
 generalizeT :: TypeScheme -> State Env TypeScheme
@@ -90,15 +93,15 @@ generalizeT sc@(TypeScheme args ty p) = do
 newTypeIdentifier :: Id -> State Env Id
 newTypeIdentifier i = do
    n <- toEnvState inc
-   return $ Id [genToken $ "t" ++ show n] [i] $ posOfId i
+   return $ Id [genToken $ 't' : show n] [i] $ posOfId i
 
 -- | add second identifier as super type of known first identifier
 addSuperId :: Id -> Kind -> Id -> State Env ()
 addSuperId i kind j = do
     tm <- gets typeMap
     cm <- gets classMap
-    if i == j then return () -- silently ignore
-      else case Map.lookup i tm of
+    unless (i == j) -- silently ignore
+      $ case Map.lookup i tm of
           Nothing -> return () -- previous error
           Just (TypeInfo ok ks sups defn) -> if Set.member j sups
               then addDiags[mkDiag Hint "repeated supertype" j]

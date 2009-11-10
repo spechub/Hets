@@ -38,7 +38,7 @@ universe = ClassKind universeId
 
 -- | the type universe
 universeWithRange :: Range -> Kind
-universeWithRange r = ClassKind $ simpleIdToId $ Token typeUniverseS r
+universeWithRange = ClassKind . simpleIdToId . Token typeUniverseS
 
 -- | the name for the Unit type
 unitTypeS :: String
@@ -173,7 +173,7 @@ unitType = toType unitTypeId
 
 -- | the Unit type (name)
 unitTypeWithRange :: Range -> Type
-unitTypeWithRange r = toType $ simpleIdToId $ Token unitTypeS r
+unitTypeWithRange = toType . simpleIdToId . Token unitTypeS
 
 -- | the prefix name for lazy types
 lazyTypeId :: Id
@@ -189,7 +189,7 @@ lazyTypeConstr = TypeName lazyTypeId (toRaw coKind) 0
 
 -- | make a type lazy
 mkLazyType :: Type -> Type
-mkLazyType t = TypeAppl lazyTypeConstr t
+mkLazyType = TypeAppl lazyTypeConstr
 
 -- | function type
 mkFunArrType :: Type -> Arrow -> Type -> Type
@@ -225,7 +225,7 @@ predType r t = case t of
 
 -- | change the type of the scheme to a 'predType'
 predTypeScheme :: Range -> TypeScheme -> TypeScheme
-predTypeScheme r = mapTypeOfScheme $ predType r
+predTypeScheme = mapTypeOfScheme . predType
 
 -- | check for and remove predicate arrow
 unPredType :: Type -> (Bool, Type)
@@ -369,7 +369,7 @@ patToType i args rk =
 -- | create the (raw if True) kind from type arguments
 typeArgsListToRawKind :: [TypeArg] -> RawKind -> RawKind
 typeArgsListToRawKind tArgs = mkFunKind (getRange tArgs) $
-    map ( \ (TypeArg _ v _ rk _ _ _) -> (v, rk)) tArgs
+    map (\ (TypeArg _ v _ rk _ _ _) -> (v, rk)) tArgs
 
 -- | create the kind from type arguments
 typeArgsListToKind :: [TypeArg] -> Kind -> Kind
@@ -381,13 +381,13 @@ getFunType :: Type -> Partiality -> [Type] -> Type
 getFunType rty p ts = (case p of
     Total -> id
     Partial -> addPartiality ts)
-    $ foldr ( \ c r -> mkFunArrType c FunArr r) rty ts
+    $ foldr (\ c -> mkFunArrType c FunArr) rty ts
 
 -- | get the type of a selector given the data type as first arguemnt
 getSelType :: Type -> Partiality -> Type -> Type
-getSelType dt p rt = (case p of
+getSelType dt p = (case p of
     Partial -> addPartiality [dt]
-    Total -> id) $ mkFunArrType dt FunArr rt
+    Total -> id) . mkFunArrType dt FunArr
 
 -- | make type argument non-variant
 nonVarTypeArg :: TypeArg -> TypeArg
@@ -399,7 +399,7 @@ getTypeVar(TypeArg v _ _ _ _ _ _) = v
 
 -- | construct application left-associative
 mkTypeAppl :: Type -> [Type] -> Type
-mkTypeAppl = foldl ( \ c a -> TypeAppl c a)
+mkTypeAppl = foldl TypeAppl
 
 -- | get the kind of an analyzed type variable
 toKind :: VarKind -> Kind

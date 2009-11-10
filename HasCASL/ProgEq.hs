@@ -103,7 +103,7 @@ mkProgEq e t = case getTupleAp t of
        in if i `elem` [eqId, exEq, eqvId] then
               if cond a b
                  then Just $ ProgEq a b $ getRange i
-                 else if cond a b then Just $ ProgEq a b $ getRange i
+                 else if cond b a then Just $ ProgEq b a $ getRange i
                       else mkConstTrueEq e t
           else mkConstTrueEq e t
     _ -> case getAppl t of

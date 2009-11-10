@@ -96,7 +96,7 @@ isEmptyEnv e = Map.null (classMap e)
 
 -- | is the first argument a subsignature of the second?
 isSubEnv :: Env -> Env -> Bool
-isSubEnv e1 e2 = if e1 == e2 then True else isEmptyEnv $ diffEnv e1 e2
+isSubEnv e1 e2 = e1 == e2 || isEmptyEnv (diffEnv e1 e2)
 
 -- | compute difference of signatures
 diffEnv :: Env -> Env -> Env

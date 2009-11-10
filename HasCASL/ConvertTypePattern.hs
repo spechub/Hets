@@ -41,13 +41,13 @@ convertTypePatterns ts = case ts of
                   Just i -> i : l
 
 illegalTypePattern :: TypePattern -> Result a
-illegalTypePattern tp = mkError "illegal type pattern" tp
+illegalTypePattern = mkError "illegal type pattern"
 
 illegalTypePatternArg :: TypePattern -> Result a
-illegalTypePatternArg tp = mkError "illegal type pattern argument" tp
+illegalTypePatternArg = mkError "illegal type pattern argument"
 
 illegalTypeId :: TypePattern -> Result a
-illegalTypeId tp = mkError "illegal type pattern identifier" tp
+illegalTypeId = mkError "illegal type pattern identifier"
 
 -- | convert a type pattern
 convertTypePattern :: TypePattern -> Result (Id, [TypeArg])

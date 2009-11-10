@@ -17,13 +17,15 @@ import HasCASL.As
 import HasCASL.AsUtils
 import HasCASL.FoldTerm
 import HasCASL.Builtin
+
 import Common.Id
 import Common.Keywords
 import Common.DocUtils
 import Common.Doc
 import Common.AS_Annotation
+
 import qualified Data.Set as Set
-import Data.List (groupBy, mapAccumL)
+import Data.List
 
 -- | short cut for: if b then empty else d
 noPrint :: Bool -> Doc -> Doc
@@ -239,7 +241,7 @@ zipArgs n ts ds = case (ts, ds) of
 
 isPatVarDecl :: VarDecl -> Bool
 isPatVarDecl (VarDecl v ty _ _) = case ty of
-           TypeName t _ _ -> isSimpleId v && take 2 (show t) == "_v"
+           TypeName t _ _ -> isSimpleId v && isPrefixOf "_v" (show t)
            _ -> False
 
 parenTermDoc :: Term -> Doc -> Doc
@@ -316,9 +318,9 @@ printTermRec = FoldRec
                 Let -> fsep [sep [text letS <+> des, text inS], t]
                 Where -> fsep [sep [t, text whereS], des]
                 Program -> text programS <+> des
-     , foldTermToken = \ _ t -> pretty t
+     , foldTermToken = const pretty
      , foldMixTypeTerm = \ _ q t _ -> pretty q <+> pretty t
-     , foldMixfixTerm = \ _ ts -> fsep ts
+     , foldMixfixTerm = const fsep
      , foldBracketTerm = \ _ k l _ -> bracket k $ sepByCommas l
      , foldAsPattern = \ _ (VarDecl v _ _ _) p _ ->
            fsep [pretty v, text asP, p]
@@ -355,14 +357,14 @@ parenTermRec = let
            TupleTerm _ _ -> t
            _ -> TupleTerm [t] nullRange
      in mapRec
-    { foldApplTerm = \ _ t1 t2 ps ->
-         ApplTerm (addParAppl t1) (addParAppl t2) ps
-    , foldResolvedMixTerm = \ _ n tys ts ps ->
-        ResolvedMixTerm n tys (map addParAppl ts) ps
-    , foldTypedTerm = \ _ t q typ ps ->
-        TypedTerm (addParAppl t) q typ ps
-    , foldMixfixTerm = \ _ ts -> MixfixTerm $ map addParAppl ts
-    , foldAsPattern = \ _ v p ps -> AsPattern v (addParAppl p) ps
+    { foldApplTerm = \ _ t1 t2 ->
+         ApplTerm (addParAppl t1) (addParAppl t2)
+    , foldResolvedMixTerm = \ _ n tys ->
+        ResolvedMixTerm n tys . map addParAppl
+    , foldTypedTerm = \ _ ->
+        TypedTerm . addParAppl
+    , foldMixfixTerm = \ _ -> MixfixTerm . map addParAppl
+    , foldAsPattern = \ _ v -> AsPattern v . addParAppl
     }
 
 parenTerm :: Term -> Term
@@ -474,7 +476,7 @@ isDatatype si = case si of
     _ -> False
 
 instance Pretty OpBrand where
-    pretty b = keyword $ show b
+    pretty = keyword . show
 
 instance Pretty SigItems where
     pretty si = case si of
@@ -570,7 +572,7 @@ prettyOpItem b oi = case oi of
               (if null a then id else (<> comma))(printItScheme l b t)]
           ++ punctuate comma (map pretty a)
         OpDefn n ps s t _ -> fcat $
-            ((if null ps then (<> space) else id) $ pretty n)
+            (if null ps then (<> space) else id) (pretty n)
             : map ((<> space) . parens . printGenVarDecls . map GenVarDecl) ps
             ++ (if b then [] else [colon <+> printItScheme [n] b s <> space])
             ++ [(if b then equiv else equals) <> space, pretty t]

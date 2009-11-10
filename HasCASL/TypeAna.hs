@@ -25,7 +25,10 @@ import Common.DocUtils
 import Common.Id
 import Common.Result
 import Common.Lib.State
+
+import Data.Maybe
 import Data.List as List
+
 import Control.Monad
 
 -- * infer kind
@@ -96,7 +99,7 @@ inferKinds b ty te@Env{classMap = cm} = case ty of
            FunKind v _ rr _ -> do
                ((_, l), t4) <- inferKinds (case v of
                             ContraVar -> Just $ maybe False not b
-                            CoVar -> Just $ maybe True id b
+                            CoVar -> Just $ fromMaybe True b
                             _ -> Nothing) t2 te
                kks <- mapM (getFunKinds cm) $ Set.toList ks
                rs <- mapM ( \ fk -> case fk of
@@ -134,10 +137,9 @@ rawKindOfType = foldType FoldTypeRec
   , foldTypeAppl = \ _ ka _ -> case ka of
         FunKind _ _ k _ -> k
         _ -> error "rawKindOfType"
-  , foldExpandedType = \ _ k1 k2 ->
-        maybe (error "rawKindOfType.foldExpandedType") id $ minRawKind "" k1 k2
-  , foldTypeAbs = \ _ (TypeArg _ v _ r _ _ _) k p ->
-        FunKind v r k p
+  , foldExpandedType = \ _ k1 ->
+        fromMaybe (error "rawKindOfType.foldExpandedType") . minRawKind "" k1
+  , foldTypeAbs = \ _ (TypeArg _ v _ r _ _ _) -> FunKind v r
   , foldKindedType = \ _ k _ _ -> k
   , foldTypeToken = \ _ _ -> error "rawKindOfType.foldTypeToken"
   , foldBracketType = \ _ _ _ _ -> error "rawKindOfType.foldBracketType"
@@ -222,11 +224,10 @@ expandAliases tm = if Map.null tm then id else expandAux tm
 
 -- | expand aliases in a type
 expandAux :: TypeMap -> Type -> Type
-expandAux tm ty = replAlias ( \ i k n ->
-                 case Map.lookup i tm of
-                      Just TypeInfo {typeDefn = AliasTypeDefn s} ->
-                          ExpandedType (TypeName i k n) s
-                      _ -> TypeName i k n) ty
+expandAux tm = replAlias $ \ i k n -> case Map.lookup i tm of
+    Just TypeInfo {typeDefn = AliasTypeDefn s} ->
+        ExpandedType (TypeName i k n) s
+    _ -> TypeName i k n
 
 -- | find unexpanded alias identifier
 hasAlias :: TypeMap -> Type -> [Diagnosis]
@@ -262,7 +263,7 @@ anaStarTypeM t = anaTypeM (Just universe, t)
 
 -- | check if an id occurs in a type
 cyclicType :: Id -> Type -> Bool
-cyclicType i ty = Set.member i $ idsOf (==0) ty
+cyclicType i = Set.member i . idsOf (== 0)
 
 -- | check for unbound (or if False for too many) type variables
 unboundTypevars :: Bool -> [TypeArg] -> Type -> [Diagnosis]

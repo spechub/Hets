@@ -140,7 +140,7 @@ addBuiltins ga =
         pMap = Rel.toMap precs
         opIds = Set.unions (Map.keysSet pMap : Map.elems pMap)
         opIs = Set.toList
-               ((((Set.filter (\ i -> begPlace i || endPlace i) opIds)
+               (((Set.filter (\ i -> begPlace i || endPlace i) opIds
                 Set.\\ builtinRelIds) Set.\\ builtinLogIds)
                 Set.\\ Set.fromList [applId, whenElse])
         logs = [(eqvId, implId), (implId, andId), (implId, orId),
@@ -209,7 +209,7 @@ aTypeArg :: TypeArg
 aTypeArg = mkATypeArg NonVar
 
 aTypeArgK :: Kind -> TypeArg
-aTypeArgK k = varToTypeArgK aVar (-1) NonVar k
+aTypeArgK = varToTypeArgK aVar (-1) NonVar
 
 bTypeArg :: TypeArg
 bTypeArg = varToTypeArg bVar (-2) NonVar
@@ -288,7 +288,7 @@ mkEntry :: Id -> Kind -> [Kind] -> TypeDefn -> (Id, TypeInfo)
 mkEntry i k cs = mkTypesEntry i k cs []
 
 pEntry :: Id -> Kind -> TypeDefn -> (Id, TypeInfo)
-pEntry i k d = mkEntry i k [k] d
+pEntry i k = mkEntry i k [k]
 
 -- | builtin data type map
 bTypes :: TypeMap
@@ -344,13 +344,13 @@ mkBinTerm :: Id -> TypeScheme -> [Type] -> Range -> Term  -> Term -> Term
 mkBinTerm i sc tys ps t1 t2 = mkTerm i sc tys ps $ TupleTerm [t1, t2] ps
 
 mkLogTerm :: Id -> Range -> Term -> Term -> Term
-mkLogTerm i ps = mkBinTerm i logType [] ps
+mkLogTerm i = mkBinTerm i logType []
 
 mkEqTerm :: Id -> Type -> Range -> Term -> Term -> Term
-mkEqTerm i ty ps = mkBinTerm i eqType [ty] ps
+mkEqTerm i ty = mkBinTerm i eqType [ty]
 
 unitTerm :: Id -> Range -> Term
-unitTerm i ps = mkQualOp i unitTypeScheme [] ps
+unitTerm i = mkQualOp i unitTypeScheme []
 
 toBinJunctor :: Id -> [Term] -> Range -> Term
 toBinJunctor i ts ps = case ts of

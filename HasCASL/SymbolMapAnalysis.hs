@@ -140,7 +140,7 @@ classFun e rmap s k = do
     let rsys = Set.unions $ map ( \ x -> case Map.lookup x rmap of
                  Nothing -> Set.empty
                  Just r -> Set.singleton r)
-               [ASymbol $ idToClassSymbol e s k, AnID s, AKindedId SK_class s]
+               [ASymbol $ idToClassSymbol e s k, AnID s, AKindedId SyKclass s]
     -- rsys contains the raw symbols to which s is mapped to
     if Set.null rsys then return s -- use default = identity mapping
        else if Set.null $ Set.deleteMin rsys then
@@ -154,7 +154,7 @@ typeFun e rmap s k = do
     let rsys = Set.unions $ map ( \ x -> case Map.lookup x rmap of
                  Nothing -> Set.empty
                  Just r -> Set.singleton r)
-               [ASymbol $ idToTypeSymbol e s k, AnID s, AKindedId SK_type s]
+               [ASymbol $ idToTypeSymbol e s k, AnID s, AKindedId SyKtype s]
     -- rsys contains the raw symbols to which s is mapped to
     if Set.null rsys then return s -- use default = identity mapping
        else if Set.null $ Set.deleteMin rsys then
@@ -170,7 +170,7 @@ opFun rmap e jm tm im i ots m =
     let (ots1, m1) = Set.fold (directOpMap rmap e jm tm im i)
                     (Set.empty, m) ots
     -- now try the remaining ones with (un)kinded raw symbol
-    in case (Map.lookup (AKindedId SK_op i) rmap,Map.lookup (AnID i) rmap) of
+    in case (Map.lookup (AKindedId SyKop i) rmap,Map.lookup (AnID i) rmap) of
        (Just rsy1, Just rsy2) ->
              Result [mkDiag Error ("Operation " ++ showId i " is mapped twice")
                      (rsy1, rsy2)] Nothing
@@ -203,7 +203,7 @@ mapOpSym e jm tm im i ot rsy =
       case rsy of
       AnID id' -> return (id', sc)
       AKindedId k id' -> case k of
-          SK_op -> return (id', sc)
+          SyKop -> return (id', sc)
           _ -> err "wrongly kinded raw symbol"
       ASymbol sy -> case symType sy of
           OpAsItemType ot2 -> if ot2 == expand (typeMap $ symEnv sy) sc
@@ -277,8 +277,8 @@ inducedFromToMorphism rmap1 e1@(ExtSign sigma1 sy1) (ExtSign sigma2 sy2) = do
         if Set.size s1 == 1 && Set.size s2 == 1 then do
           let Symbol n1 _ _ = Set.findMin s1
               Symbol n2 _ _ = Set.findMin s2
-          mor2 <- inducedFromMorphism (Map.insert (AKindedId SK_type n1)
-                                       (AKindedId SK_type n2) rmap1) sigma1
+          mor2 <- inducedFromMorphism (Map.insert (AKindedId SyKtype n1)
+                                       (AKindedId SyKtype n2) rmap1) sigma1
           if isSubEnv (mtarget mor2) sigma2
             then return mor2 { mtarget = sigma2 }
             else err mor2
