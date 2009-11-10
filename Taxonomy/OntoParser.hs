@@ -30,8 +30,6 @@ import Data.Maybe
 import Taxonomy.MMiSSOntology
 import Text.ParserCombinators.Parsec
 
-type Other = String
-
 data ClassDecl = ClassDecl {
   className :: String,
   classText :: String,
@@ -78,7 +76,7 @@ data Frag =
  | BaseRelationDeclFrag BaseRelationDecl
  | RelationTypeDeclFrag RelationTypeDecl
  | ObjectLinkFrag ObjectLink
- | OtherFrag Other deriving Show
+   deriving Show
 
 parseMMiSSOntologyFile :: SourceName -> IO(WithError MMiSSOntology)
 parseMMiSSOntologyFile s =
@@ -90,9 +88,10 @@ parseMMiSSOntologyFile s =
 -- | main function that collects fragments
 ontoDoc :: GenParser Char st [Frag]
 ontoDoc = do
+  skip
   fs <- many (frag <?> "Fragment")
   eof
-  return fs
+  return $ catMaybes fs
 
 generateOntology :: MMiSSOntology -> [Frag] -> WithError MMiSSOntology
 generateOntology onto frs = case frs of
@@ -114,33 +113,27 @@ generateOntology onto frs = case frs of
           insertRelationType onto name src tgt
       ObjectLinkFrag (ObjectLink src tgt name) ->
           insertLink onto src tgt name
-      _ -> hasValue onto
     in weither (const weOnto) (flip generateOntology fs) weOnto
 
 -- | parse fragments
-frag :: GenParser Char st Frag
-frag = comment
-  <|> do
-    backslash
-    ontologyElement <|> escapedChar
-  <|> other
+frag :: GenParser Char st (Maybe Frag)
+frag = do
+  char '\\'
+  f <- fmap Just ontologyElement <|> (anyChar >> return Nothing)
+  skip
+  return f
 
-backslash :: GenParser Char st Char
-backslash = char '\\'
+skip :: GenParser Char st String
+skip = many $ comment <|> noneOf "\\%"
 
-escapedChar :: GenParser Char st Frag
-escapedChar = do
-  c <- anyChar
-  return (OtherFrag [c])
-
-other :: GenParser Char st Frag
-other = fmap OtherFrag $ many1 (noneOf "\\%")
-
-comment :: GenParser Char st Frag
-comment = char '%' >> manyTill anyChar newline >> return (OtherFrag "")
+comment :: GenParser Char st Char
+comment = char '%' >> manyTill anyChar newline >> return '%'
 
 braced :: GenParser Char st a -> GenParser Char st a
-braced = between (char '{') (char '}')
+braced p = do
+   b <- between (char '{') (char '}') p
+   spaces
+   return b
 
 -- | maybe empty
 value :: GenParser Char st String
@@ -150,68 +143,83 @@ value = fmap concat $ many
   <|> liftM2 (\ c1 c2 -> [c1, c2]) (char '\\') anyChar
 
 ontologyElement :: GenParser Char st Frag
-ontologyElement = declClassP <|> declObjectP <|> declRelationP
-  <|> declBaseRelationP <|> declRelTypeP <|> objRelationP
+ontologyElement = declClassP <|> declObjectP <|> relationNameP
+  <|> declRelationP <|> declBaseRelationP <|> declRelTypeP <|> objRelationP
 
-parseThree :: Bool -> GenParser Char st (String, String, String)
-parseThree b = do
+nameDefl :: GenParser Char st (String, String)
+nameDefl = do
   s1 <- braced idParser
-  spaces
-  s2 <- braced $ if b then value else idParser
-  spaces
+  s2 <- braced value
+  return (s1, s2)
+
+cardP :: GenParser Char st (Maybe String)
+cardP = do
+  s <- braced idParser
+  return $ if null s then Nothing else Just s
+
+nameDeflOpt :: GenParser Char st (String, String, Maybe String)
+nameDeflOpt = do
+  (s1, s2) <- nameDefl
+  s3 <- option "" $ braced idParser
+  return (s1, s2, if null s3 then Nothing else Just s3)
+
+nameSrcTgt :: GenParser Char st (String, String, String)
+nameSrcTgt = do
+  s1 <- braced idParser
+  s2 <- braced idParser
   s3 <- braced idParser
   return (s1, s2, s3)
 
-nameDeflClass :: GenParser Char st (String, String, String)
-nameDeflClass = parseThree True
-
-nameDeflOther :: GenParser Char st (String, String, String)
-nameDeflOther = parseThree False
-
-nameSrcTgt :: GenParser Char st (String, String, String)
-nameSrcTgt = parseThree False
+keyWord :: String -> GenParser Char st ()
+keyWord s = do
+  try (string s >> notFollowedBy alphaNum)
+  spaces
 
 declClassP :: GenParser Char st Frag
 declClassP = do
-  try (string "DeclClass") <|> try (string "Class")
-  (name, deflTxt, superClass) <- nameDeflClass
-  let supClassVal = if superClass == "" then Nothing else Just superClass
+  keyWord "DeclClass" <|> keyWord "Class"
+  (name, deflTxt, supClassVal) <- nameDeflOpt
   return $ ClassDeclFrag $ ClassDecl name deflTxt supClassVal
 
 declObjectP :: GenParser Char st Frag
 declObjectP = do
-  try (string "DeclObject") <|> try (string "Object")
-  (name, deflTxt, instOf) <- nameDeflClass
+  keyWord "DeclObject" <|> keyWord "Object"
+  (name, deflTxt) <- nameDefl
+  instOf <- braced idParser
   return $ ObjectDeclFrag $ ObjectDecl name deflTxt instOf
 
 declRelationP :: GenParser Char st Frag
 declRelationP = do
-  try (string "DeclRelation")
-  card <- braced idParser
-  let cardVal = if card == "" then Nothing else Just card
-  (name, deflTxt, srcCl) <- nameDeflOther
-  spaces
-  tgtCl <- braced idParser
+  keyWord "DeclRelation"
+  cardVal <- cardP
+  name <- braced idParser
+  (deflTxt, srcCl, tgtCl) <- nameSrcTgt
   return $ RelationDeclFrag $ RelationDecl cardVal name deflTxt srcCl tgtCl
 
 declBaseRelationP :: GenParser Char st Frag
 declBaseRelationP = do
-  try (string "DeclRel") <|> try (string "Relation")
-  card <- braced idParser
-  let cardVal = if card == "" then Nothing else Just card
-  (name, deflTxt, sup) <- nameDeflOther
-  let supRel = if sup == "" then Nothing else Just sup
+  keyWord "DeclRel" <|> keyWord "Relation"
+  optional $ between (char '[') (char ']') idParser
+  cardVal <- cardP
+  (name, deflTxt, supRel) <- nameDeflOpt
   return $ BaseRelationDeclFrag $ BaseRelationDecl cardVal name deflTxt supRel
+
+relationNameP :: GenParser Char st Frag
+relationNameP = do
+  keyWord "RelationName"
+  name <- braced idParser
+  deflTxt <- braced idParser
+  return $ BaseRelationDeclFrag $ BaseRelationDecl Nothing name deflTxt Nothing
 
 declRelTypeP :: GenParser Char st Frag
 declRelTypeP = do
-  try (string "RelType")
+  keyWord "RelType"
   (name, src, tgt) <- nameSrcTgt
   return $ RelationTypeDeclFrag $ RelationTypeDecl name src tgt
 
 objRelationP :: GenParser Char st Frag
 objRelationP = do
-  try (string "Relate")
+  keyWord "Relate"
   (name, src, tgt) <- nameSrcTgt
   return $ ObjectLinkFrag $ ObjectLink src tgt name
 
