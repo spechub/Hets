@@ -1,4 +1,4 @@
-{-# OPTIONS -fglasgow-exts #-}
+{-# LANGUAGE RankNTypes #-}
 
 -- Implementation of LogicT based on the two-continuation model of streams
 
