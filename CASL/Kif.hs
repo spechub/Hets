@@ -30,7 +30,7 @@ dq = '"'
 scanString :: CharParser st String
 scanString = do
   o <- char dq
-  s <- many $ fmap (: []) (satisfy (/= dq)) <|> (try (string "\\\""))
+  s <- many $ fmap (: []) (satisfy (/= dq)) <|> try (string "\\\"")
   c <- char dq
   return $ o : concat s ++ [c]
 
@@ -40,7 +40,8 @@ isKTokenChar c = isPrint c && not (elem c "()\";" || isSpace c)
 scanLiteral :: CharParser st ListOfList
 scanLiteral = do
   s@(c : _) <- many1 (satisfy isKTokenChar)
-  return $ Literal (if c == '?' then QWord else if c=='@' then AtWord else KToken) s
+  return $ Literal (if c == '?' then QWord else
+                        if c == '@' then AtWord else KToken) s
 
 eolOrEof :: GenParser Char st ()
 eolOrEof = (oneOf "\n\r" >> return ()) <|> eof
@@ -82,5 +83,5 @@ kifParse :: String -> IO ()
 kifParse s = do
   e <- parseFromFile kifProg s
   case e of
-    Left err -> putStrLn $ show err
-    Right l -> putStrLn $ show $ Doc.vcat $ map ppListOfList l
+    Left err -> print err
+    Right l -> print $ Doc.vcat $ map ppListOfList l

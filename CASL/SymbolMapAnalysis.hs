@@ -38,7 +38,7 @@ import Common.Id
 import Common.Result
 
 import Data.List (partition, find)
-import Data.Maybe (catMaybes, isJust)
+import Data.Maybe
 
 {-
 inducedFromMorphism :: RawSymbolMap -> sign -> Result morphism
@@ -143,18 +143,18 @@ inducedFromMorphismExt extInd extEm rmap sigma = do
   -- the sorts of the source signature
   -- sortFun is the sort map as a Haskell function
 sortFun :: RawSymbolMap -> Id -> Result Id
-sortFun rmap s =
+sortFun rmap s
     -- rsys contains the raw symbols to which s is mapped to
-    if Set.null rsys then return s -- use default = identity mapping
-    else if Set.null $ Set.deleteMin rsys then
+  | Set.null rsys = return s -- use default = identity mapping
+  | Set.null $ Set.deleteMin rsys =
           return $ rawSymName $ Set.findMin rsys -- take the unique rsy
-          else plain_error s  -- ambiguity! generate an error
+  | otherwise = plain_error s  -- ambiguity! generate an error
                  ("sort " ++ showId s
                   " is mapped ambiguously: "  ++ showDoc rsys "")
                  $ getRange rsys
     where
     -- get all raw symbols to which s is mapped to
-    rsys = Set.fromList $ catMaybes $ map (flip Map.lookup rmap)
+    rsys = Set.fromList $ mapMaybe (flip Map.lookup rmap)
                [ ASymbol $ idToSortSymbol s
                , AKindedSymb Implicit s ]
 
@@ -397,7 +397,7 @@ inducedFromToMorphismExt extInd extEm isSubExt diffExt rmap sig1@(ExtSign _ sy1)
        let ss1 = Set.filter (\ s -> Set.null $ Set.filter (\ s2 ->
                    compatibleSymbols True (s, s2)) sy2)
              $ Set.filter (\ s -> not $ any (matches s) $ Map.keys rmap)
-                 $ sy1
+                 sy1
            combs = pairs (map ASymbol $ Set.toList ss1)
              $ map ASymbol $ Set.toList sy2
            fcombs = filter (all compatibleRawSymbs) combs
@@ -578,7 +578,7 @@ cogeneratedSign extEm symset sigma =
 
 leCl :: Ord a => (a -> a -> Bool) -> Map.Map Id (Set.Set a)
      -> Map.Map Id [Set.Set a]
-leCl eq = Map.map (Rel.partSet eq)
+leCl = Map.map . Rel.partSet
 
 mkp :: Map.Map Id (Set.Set OpType) -> Map.Map Id (Set.Set OpType)
 mkp = Map.map makePartial

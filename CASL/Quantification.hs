@@ -46,10 +46,10 @@ instance FreeVars () where
   freeVarsOfExt _ () = Set.empty
 
 freeTermVars :: FreeVars f => Sign f e -> TERM f -> VarSet
-freeTermVars sign = foldTerm $ freeVarsRecord $ freeVarsOfExt sign
+freeTermVars = foldTerm . freeVarsRecord . freeVarsOfExt
 
 freeVars :: FreeVars f => Sign f e -> FORMULA f -> VarSet
-freeVars sign = foldFormula $ freeVarsRecord $ freeVarsOfExt sign
+freeVars = foldFormula . freeVarsRecord . freeVarsOfExt
 
 -- | quantify only over free variables (and only once)
 effQuantify :: FreeVars f => Sign f e -> QUANTIFIER -> [VAR_DECL]
@@ -113,5 +113,5 @@ diffVars = Set.fold (\ (v, s) m -> case Map.lookup v m of
     _ -> m)
 
 warnUnused :: Sign f e -> [Named (FORMULA f)] -> [Diagnosis]
-warnUnused sig sens = map (mkDiag Warning "unused variable")
-  $ Map.keys $ diffVars (varMap sig) (getTopVars sens)
+warnUnused sig = map (mkDiag Warning "unused variable")
+  . Map.keys . diffVars (varMap sig) . getTopVars

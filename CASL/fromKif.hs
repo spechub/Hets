@@ -29,7 +29,7 @@ process :: String -> IO ()
 process s = do
   e <- parseFromFile kifProg s
   case e of
-    Left err -> putStrLn $ show err
+    Left err -> print err
     Right l -> do
         let f = fst (stripSuffix [".kif"] s) ++ ".casl"
         writeFile f $ showDoc (kif2CASL l) "\n"

@@ -152,10 +152,10 @@ symOf :: Sign f e -> SymbolSet
 symOf sigma = let
     sorts = Set.map idToSortSymbol $ sortSet sigma
     ops = Set.fromList $
-      concatMap (\ (i, ts) -> map ( \ t -> idToOpSymbol i t) $ Set.toList ts)
+      concatMap (\ (i, ts) -> map (idToOpSymbol i) $ Set.toList ts)
         $ Map.toList $ opMap sigma
     preds = Set.fromList $
-       concatMap (\ (i, ts) -> map ( \ t -> idToPredSymbol i t)
+       concatMap (\ (i, ts) -> map (idToPredSymbol i)
            $ Set.toList ts) $ Map.toList $ predMap sigma
     in Set.unions [sorts, ops, preds]
 
@@ -359,12 +359,12 @@ composeM comp mor1 mor2 = do
 
 legalSign :: Sign f e -> Bool
 legalSign sigma =
-  Map.foldWithKey (\s sset b -> b && legalSort s && all legalSort
-                                (Set.toList sset))
+  Map.foldWithKey (\ s sset -> (&& legalSort s && all legalSort
+                                (Set.toList sset)))
                   True (Rel.toMap (sortRel sigma))
-  && Map.fold (\ts b -> b && all legalOpType (Set.toList ts))
+  && Map.fold (\ts -> (&& all legalOpType (Set.toList ts)))
               True (opMap sigma)
-  && Map.fold (\ts b -> b && all legalPredType (Set.toList ts))
+  && Map.fold (\ts -> (&& all legalPredType (Set.toList ts)))
               True (predMap sigma)
   where sorts = sortSet sigma
         legalSort s = Set.member s sorts
@@ -526,7 +526,7 @@ cleanMorMaps m = m
   , op_map = Map.filterWithKey
         (\ (i, ot) (j, k) -> i /= j || k == Total && Set.member ot
          (Map.findWithDefault Set.empty i $ opMap $ msource m)) $ op_map m
-  , pred_map = Map.filterWithKey (\ (i, _) j -> i /= j) $ pred_map m }
+  , pred_map = Map.filterWithKey ((/=) . fst) $ pred_map m }
 
 isSortInjective :: Morphism f e m -> Bool
 isSortInjective m =

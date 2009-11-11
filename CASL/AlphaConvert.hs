@@ -25,7 +25,7 @@ convertRecord :: Int -> (f -> f) -> Record f (FORMULA f) (TERM f)
 convertRecord n mf = (mapRecord mf)
     { foldQuantification = \ (Quantification q vs qf ps) _ _ _ _ ->
       let nvs = flatVAR_DECLs vs
-          mkVar i = mkSimpleId $ "v" ++ show i
+          mkVar i = mkSimpleId $ 'v' : show i
           rvs = map mkVar [n .. ]
           nf = replaceVarsF (Map.fromList $ zipWith ( \ (v, s) i ->
                              (v, Qual_var i s ps)) nvs rvs) mf

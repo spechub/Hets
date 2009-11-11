@@ -100,7 +100,7 @@ symbMapItems = symbMapItemsExt []
 symbMapItemsExt :: [String] -> [String] -> GenParser Char st SYMB_MAP_ITEMS
 symbMapItemsExt kinds ks =
     do (is, ps) <- symbMaps ks
-       return (Symb_map_items Implicit is $ catRange $ ps)
+       return (Symb_map_items Implicit is $ catRange ps)
     <|>
     do (k, p) <- symbKind kinds
        (is, ps) <- symbMaps ks

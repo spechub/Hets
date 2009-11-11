@@ -83,16 +83,14 @@ opItem ks =
               do c <- anColon
                  t <- opType ks
                  if isConstant t then
-                   opBody ks (head os) (toHead (tokPos c) t)
-                   <|> opAttrs ks os t [c]  -- this always succeeds
+                     opBody ks (head os) (toHead (tokPos c) t)
+                     <|> opAttrs ks os t [c]  -- this always succeeds
                    else opAttrs ks os t [c]
-              <|>
-              do h <- opHead ks
-                 opBody ks (head os) h
-              else
-              do c <- anColon
-                 t <- opType ks
-                 opAttrs ks os t (cs++[c])
+              <|> (opHead ks >>= opBody ks (head os))
+          else do
+            c <- anColon
+            t <- opType ks
+            opAttrs ks os t $ cs ++ [c]
 
 opBody :: AParsable f => [String] -> OP_NAME -> OP_HEAD
        -> AParser st (OP_ITEM f)
@@ -122,12 +120,9 @@ predItem ks =
     do (ps, cs)  <- parseId ks `separatedBy` anComma
        if isSingle ps then
                 predBody ks (head ps) (Pred_head [] nullRange)
-                <|>
-                do h <- predHead ks
-                   predBody ks (head ps) h
-                <|>
-                predTypeCont ks ps cs
-                else predTypeCont ks ps cs
+                <|> (predHead ks >>= predBody ks (head ps))
+                <|> predTypeCont ks ps cs
+         else predTypeCont ks ps cs
 
 predBody :: AParsable f => [String] -> PRED_NAME -> PRED_HEAD
          -> AParser st (PRED_ITEM f)

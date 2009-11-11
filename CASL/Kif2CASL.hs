@@ -144,7 +144,7 @@ collectPreds = foldFormula
 collectVars :: CASLFORMULA -> Set.Set Token
 collectVars = foldFormula
     (constRecord (error "Kif2CASL.collectVars") Set.unions Set.empty)
-    { foldMixfix_token = \ _ v -> Set.singleton v }
+    { foldMixfix_token = const Set.singleton }
 
 data Opsym = Opsym Int OP_NAME
                 deriving (Eq, Ord, Show)

@@ -29,22 +29,26 @@ items and formulas.
 module CASL.StaticAna where
 
 import CASL.AS_Basic_CASL
-import CASL.Sign
 import CASL.MixfixParser
 import CASL.Overload
 import CASL.Quantification
-import Common.Lib.State
+import CASL.Sign
+
+import Common.AS_Annotation
 import Common.Doc
 import Common.DocUtils
 import Common.ExtSign
-import qualified Data.Map as Map
-import qualified Data.Set as Set
-import qualified Common.Lib.Rel as Rel
+import Common.GlobalAnnotations
 import Common.Id
 import Common.Keywords
-import Common.AS_Annotation
-import Common.GlobalAnnotations
+import Common.Lib.State
 import Common.Result
+import qualified Common.Lib.Rel as Rel
+
+import Control.Monad
+
+import qualified Data.Map as Map
+import qualified Data.Set as Set
 import Data.Maybe
 import Data.List
 
@@ -248,7 +252,7 @@ toSortGenAx ps isFree (sorts, rel, ops) = do
         allSyms = opSyms ++ injSyms
         resType _ (Op_name _) = False
         resType s (Qual_op_name _ t _) = res_OP_TYPE t == s
-        getIndex s = maybe (-1) id $ findIndex (== s) sortList
+        getIndex s = fromMaybe (-1) $ findIndex (== s) sortList
         addIndices (Op_name _) =
           error "CASL/StaticAna: Internal error in function addIndices"
         addIndices os@(Qual_op_name _ t _) =
@@ -261,15 +265,14 @@ toSortGenAx ps isFree (sorts, rel, ops) = do
         noConsList = Set.difference sorts resList
         voidOps = Set.difference resList sorts
         f = Sort_gen_ax constrs isFree
-    if null sortList then
-       addDiags[Diag Error "missing generated sort" ps]
-       else return ()
-    if Set.null noConsList then return () else
-       addDiags[mkDiag Warning "generated sorts without constructor"
-                noConsList]
-    if Set.null voidOps then return () else
-       addDiags[mkDiag Warning "non-generated sorts as constructor result"
-                voidOps]
+    when (null sortList)
+      $ addDiags[Diag Error "missing generated sort" ps]
+    unless (Set.null noConsList)
+      $ addDiags[mkDiag Warning "generated sorts without constructor"
+                 noConsList]
+    unless (Set.null voidOps)
+      $ addDiags[mkDiag Warning "non-generated sorts as constructor result"
+                 voidOps]
     addSentences [makeNamed ("ga_generated_" ++
                        showSepList (showString "_") showId sortList "") f]
 
@@ -347,8 +350,8 @@ getGenSorts si =
            Subsort_defn sub _ super _ _ -> (Set.singleton sub
                                            , Rel.insert sub super Rel.empty)
            Iso_decl il _ -> (Set.fromList il
-                            , foldr ( \ s r -> foldr ( \ t ->
-                              Rel.insert s t) r il) Rel.empty il)
+                            , foldr ( \ s r -> foldr (Rel.insert s) r il)
+                              Rel.empty il)
         in (sorts, rel, Set.empty)
 
 getOps :: OP_ITEM f -> Set.Set Component
@@ -412,16 +415,14 @@ ana_OP_ITEM mef mix aoi =
                ni = notImplied aoi
            mapM_ (addOp aoi oty) ops
            ul <- mapM (ana_OP_ATTR mef mix oty ni ops) il
-           if any ( \ a -> case a of
+           when (any ( \ a -> case a of
                   Assoc_op_attr -> True
-                  _ -> False) il then do
+                  _ -> False) il) $ do
               mapM_ (addAssocOp oty) ops
-              if any ( \ a -> case a of
+              when (any ( \ a -> case a of
                   Comm_op_attr -> True
-                  _ -> False) il then
-                   addSentences $ map (addLeftComm oty ni) ops
-                 else return ()
-             else return ()
+                  _ -> False) il)
+                   $ addSentences $ map (addLeftComm oty ni) ops
            return aoi {item = Op_decl ops ty (catMaybes ul) ps}
     Op_defn i ohd at ps ->
         do let ty = headToType ohd
@@ -485,10 +486,9 @@ ana_OP_ATTR mef mix ty ni ois oa = do
         atys = opArgs ty
         q = posOfId rty
   case atys of
-         [t1,t2] | t1 == t2 -> case oa of
+         [t1, t2] | t1 == t2 -> case oa of
               Comm_op_attr -> return ()
-              _ -> if t1 == rty then return ()
-                   else addDiags [Diag Error
+              _ -> unless (t1 == rty) $ addDiags [Diag Error
                              "result sort must be equal to argument sorts" q]
          _ -> addDiags [Diag Error
                         "expecting two arguments of equal sort" q]
@@ -566,18 +566,18 @@ makeUnit b t ty ni i =
 ana_PRED_ITEM :: (GetRange f, Pretty f) => Min f e -> Mix b s f e
               -> Annoted (PRED_ITEM f)
               -> State (Sign f e) (Annoted (PRED_ITEM f))
-ana_PRED_ITEM mef mix ap = case item ap of
+ana_PRED_ITEM mef mix apr = case item apr of
     Pred_decl preds ty _ -> do
-      mapM_ (addPred ap $ toPredType ty) preds
-      return ap
+      mapM_ (addPred apr $ toPredType ty) preds
+      return apr
     Pred_defn i phd@(Pred_head args rs) at ps -> do
            let lb = getRLabel at
-               lab = if null lb then getRLabel ap else lb
+               lab = if null lb then getRLabel apr else lb
                ty = Pred_type (sortsOfArgs args) rs
                vs = map (\ (Arg_decl v s qs) -> (Var_decl v s qs)) args
                arg = concatMap ( \ (Var_decl v s qs) ->
                                  map ( \ j -> Qual_var j s qs) v) vs
-           addPred ap (toPredType ty) i
+           addPred apr (toPredType ty) i
            e <- get -- save
            put e { varMap = Map.empty }
            mapM_ addVars vs
@@ -586,7 +586,7 @@ ana_PRED_ITEM mef mix ap = case item ap of
            let Result ds mt = anaForm mef mix sign $ item at
            addDiags ds
            case mt of
-             Nothing -> return ap {item = Pred_decl [i] ty ps}
+             Nothing -> return apr {item = Pred_decl [i] ty ps}
              Just (resF, anaF) -> do
                let p = posOfId i
                addSentences [(makeNamed lab $
@@ -594,7 +594,7 @@ ana_PRED_ITEM mef mix ap = case item ap of
                               (Equivalence (Predication (Qual_pred_name i ty p)
                                             arg p) anaF p) p) {
                               isDef = True }]
-               return ap {item = Pred_defn i phd at { item = resF } ps}
+               return apr {item = Pred_defn i phd at { item = resF } ps}
 
 -- full function type of a selector (result sort is component sort)
 data Component = Component { compId :: Id, compType :: OpType } deriving Show
@@ -620,8 +620,8 @@ ana_DATATYPE_DECL gk (Datatype_decl s al _) =
     do ul <- mapM (ana_ALTERNATIVE s) al
        let constr = catMaybes ul
            cs = map fst constr
-       if null constr then return ()
-          else do addDiags $ checkUniqueness cs
+       unless (null constr) $ do
+                  addDiags $ checkUniqueness cs
                   let totalSels = Set.unions $ map snd constr
                       wrongConstr = filter ((totalSels /=) . snd) constr
                   addDiags $ map ( \ (c, _) -> mkDiag Warning

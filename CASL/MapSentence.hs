@@ -19,21 +19,21 @@ import CASL.AS_Basic_CASL
 import CASL.Fold
 
 mapSrt :: Morphism f e m -> SORT -> SORT
-mapSrt m = mapSort (sort_map m)
+mapSrt = mapSort . sort_map
 
 type MapSen f e m = Morphism f e m -> f -> f
 
 mapMorphism :: MapSen f e m -> Morphism f e m
           -> Record f (FORMULA f) (TERM f)
 mapMorphism mf m = (mapRecord $ mf m)
-     { foldQual_var = \ _ v s ps -> Qual_var v (mapSrt m s) ps
-     , foldApplication = \ _ o ts ps -> Application (mapOpSymb m o) ts ps
-     , foldSorted_term = \ _ st s ps -> Sorted_term st (mapSrt m s) ps
-     , foldCast = \ _ st s ps -> Cast st (mapSrt m s) ps
-     , foldQuantification = \ _ q vs f ps ->
-           Quantification q (map (mapVars m) vs) f ps
-     , foldPredication = \ _ p ts ps -> Predication (mapPrSymb m p) ts ps
-     , foldMembership = \ _ t s ps -> Membership t (mapSrt m s) ps
+     { foldQual_var = \ _ v -> Qual_var v . mapSrt m
+     , foldApplication = \ _ -> Application . mapOpSymb m
+     , foldSorted_term = \ _ st -> Sorted_term st . mapSrt m
+     , foldCast = \ _ st -> Cast st . mapSrt m
+     , foldQuantification = \ _ q ->
+           Quantification q . map (mapVars m)
+     , foldPredication = \ _ -> Predication . mapPrSymb m
+     , foldMembership = \ _ t -> Membership t . mapSrt m
      , foldSort_gen_ax = \ _ constrs isFree -> let
        newConstrs = map (mapConstr m) constrs in Sort_gen_ax newConstrs isFree
      }

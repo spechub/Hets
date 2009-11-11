@@ -36,7 +36,9 @@ import Common.Result
 import Common.DocUtils
 import Common.ExtSign
 
-import Data.Maybe (catMaybes)
+import Control.Monad
+
+import Data.Maybe
 import Data.List (partition)
 
 type CSign = Sign C_FORMULA CoCASLSign
@@ -81,11 +83,11 @@ ids_CODATATYPE_DECL (CoDatatype_decl _ al _) =
 ids_COALTERNATIVE :: COALTERNATIVE -> Set.Set Id
 ids_COALTERNATIVE a = case a of
     Co_construct _ mi cs _ -> Set.unions $
-        maybe Set.empty single mi : map ids_COCOMPONENTS cs
+        maybe Set.empty Set.singleton mi : map ids_COCOMPONENTS cs
     CoSubsorts _ _ -> Set.empty
 
 ids_COCOMPONENTS :: COCOMPONENTS -> Set.Set Id
-ids_COCOMPONENTS (CoSelect l _ _) = Set.unions $ map single l
+ids_COCOMPONENTS (CoSelect l _ _) = Set.unions $ map Set.singleton l
 
 data CoRecord a b c d = CoRecord
     { foldBoxOrDiamond :: C_FORMULA -> Bool -> d -> a -> Range -> c
@@ -107,15 +109,15 @@ foldModality r cr m = case m of
 
 mapCoRecord :: CoRecord (FORMULA C_FORMULA) (TERM C_FORMULA) C_FORMULA MODALITY
 mapCoRecord = CoRecord
-    { foldBoxOrDiamond = \ _ -> BoxOrDiamond
-    , foldCoSort_gen_ax = \ _ -> CoSort_gen_ax
-    , foldTerm_mod = \ _ -> Term_mod
-    , foldSimple_mod = \ _ -> Simple_mod
+    { foldBoxOrDiamond = const BoxOrDiamond
+    , foldCoSort_gen_ax = const CoSort_gen_ax
+    , foldTerm_mod = const Term_mod
+    , foldSimple_mod = const Simple_mod
     }
 
 constCoRecord :: ([a] -> a) -> a -> CoRecord a a a a
-constCoRecord join c = CoRecord
-    { foldBoxOrDiamond = \ _ _ m f _ -> join [m, f]
+constCoRecord jn c = CoRecord
+    { foldBoxOrDiamond = \ _ _ m f _ -> jn [m, f]
     , foldCoSort_gen_ax = \ _ _ _ _ -> c
     , foldTerm_mod = \ _ t -> t
     , foldSimple_mod = \ _ _ -> c
@@ -197,8 +199,8 @@ ana_CODATATYPE_DECL gk (CoDatatype_decl s al _) =
     do ul <- mapM (ana_COALTERNATIVE s) al
        let constr = catMaybes ul
            cs = map fst constr
-       if null constr then return ()
-          else do addDiags $ checkUniqueness cs
+       unless (null constr) $ do
+                  addDiags $ checkUniqueness cs
                   let totalSels = Set.unions $ map snd constr
                       wrongConstr = filter ((totalSels /=) . snd) constr
                   addDiags $ map ( \ (c, _) -> mkDiag Error
@@ -210,10 +212,10 @@ ana_CODATATYPE_DECL gk (CoDatatype_decl s al _) =
            let (alts, subs) = partition isCoConsAlt $ map item al
                sbs = concatMap getCoSubsorts subs
                comps = map (getCoConsType s) alts
-               ttrips = map ( \ (a, vs, ses) -> (a, vs, catSels ses))
-                            $ map (coselForms1 "X") $ comps
+               ttrips = map (( \ (a, vs, ses) -> (a, vs, catSels ses))
+                            . coselForms1 "X") comps
                sels = concatMap ( \ (_, _, ses) -> ses) ttrips
-           addSentences $ catMaybes $ map comakeInjective
+           addSentences $ mapMaybe comakeInjective
                             $ filter ( \ (_, _, ces) -> not $ null ces)
                               comps
            addSentences $ makeDisjSubsorts s sbs
@@ -285,7 +287,7 @@ comakeInjective a = do
 
 comakeDisjoint :: [(Maybe Id, OpType, [COCOMPONENTS])] -> [Named (FORMULA f)]
 comakeDisjoint [] = []
-comakeDisjoint (a:as) = catMaybes (map (comakeDisj a) as) ++ comakeDisjoint as
+comakeDisjoint (a:as) = mapMaybe (comakeDisj a) as ++ comakeDisjoint as
 
 comakeDisj :: (Maybe Id, OpType, [COCOMPONENTS])
                            -> (Maybe Id, OpType, [COCOMPONENTS])
@@ -332,7 +334,7 @@ ana_COCOMPONENTS s c = do
 
 ana_C_BASIC_ITEM
     :: Ana C_BASIC_ITEM C_BASIC_ITEM C_SIG_ITEM C_FORMULA CoCASLSign
-ana_C_BASIC_ITEM mix bi = do
+ana_C_BASIC_ITEM mix bi =
   case bi of
     CoFree_datatype al ps ->
         do mapM_ (\ i -> case item i of
@@ -354,9 +356,8 @@ toCoSortGenAx ps isFree (sorts, rel, ops) = do
         injSyms = map ( \ (s, t) -> let p = posOfId s in
                         Qual_op_name (mkUniqueInjName s t)
                         (Op_type Total [s] t p) p) $ Rel.toList rel
-    if null sortList then
-              addDiags[Diag Error "missing cogenerated sort" ps]
-              else return ()
+    when (null sortList)
+      $ addDiags [Diag Error "missing cogenerated sort" ps]
     addSentences [makeNamed ("ga_cogenerated_" ++ showSepList (showString "_")
                               showId sortList "")
                    $ ExtFORMULA $ CoSort_gen_ax sortList
@@ -387,7 +388,7 @@ getCoDataGenSig dl =
                        map ( \ a -> (s, item a)) al) . item) dl
         sorts = map fst alts
         (realAlts, subs) = partition (isCoConsAlt . snd) alts
-        sels = map ( \ (i, ot) -> Component i ot) $ concatMap get_sel realAlts
+        sels = map (uncurry Component) $ concatMap get_sel realAlts
         rel = foldr ( \ (t, a) r ->
                   foldr ( \ s ->
                           Rel.insert s t)

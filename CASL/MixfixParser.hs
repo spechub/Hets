@@ -14,7 +14,7 @@ Mixfix analysis of terms
 module CASL.MixfixParser
     ( resolveFormula, resolveMixfix, MixResolve
     , resolveMixTrm, resolveMixFrm
-    , IdSets, mkIdSets, emptyIdSets, unite, single
+    , IdSets, mkIdSets, emptyIdSets, unite
     , makeRules, Mix(..), emptyMix
     , ids_BASIC_SPEC, ids_SIG_ITEMS, ids_OP_ITEM, ids_PRED_ITEM)
     where
@@ -95,18 +95,14 @@ ids_SIG_ITEMS f si = case si of
 -- | get all op ids of an op item
 ids_OP_ITEM :: OP_ITEM f -> Set.Set Id
 ids_OP_ITEM o = case o of
-    Op_decl ops _ _ _ -> Set.unions $ map single ops
-    Op_defn i _ _ _ -> single i
-
--- | same as singleton
-single :: Id -> Set.Set Id
-single i = Set.singleton i
+    Op_decl ops _ _ _ -> Set.unions $ map Set.singleton ops
+    Op_defn i _ _ _ -> Set.singleton i
 
 -- | get all pred ids of a pred item
 ids_PRED_ITEM :: PRED_ITEM f -> Set.Set Id
 ids_PRED_ITEM p = case p of
-    Pred_decl preds _ _ -> Set.unions $ map single preds
-    Pred_defn i _ _ _ -> single i
+    Pred_decl preds _ _ -> Set.unions $ map Set.singleton preds
+    Pred_defn i _ _ _ -> Set.singleton i
 
 ids_DATATYPE_DECL :: DATATYPE_DECL -> Set.Set Id
 ids_DATATYPE_DECL (Datatype_decl _ al _) =
@@ -114,12 +110,13 @@ ids_DATATYPE_DECL (Datatype_decl _ al _) =
 
 ids_ALTERNATIVE :: ALTERNATIVE -> Set.Set Id
 ids_ALTERNATIVE a = case a of
-    Alt_construct _ i cs _ -> Set.unions $ single i : map ids_COMPONENTS cs
+    Alt_construct _ i cs _ ->
+        Set.unions $ Set.singleton i : map ids_COMPONENTS cs
     Subsorts _ _ -> Set.empty
 
 ids_COMPONENTS :: COMPONENTS -> Set.Set Id
 ids_COMPONENTS c = case c of
-    Cons_select _ l _ _ -> Set.unions $ map single l
+    Cons_select _ l _ _ -> Set.unions $ map Set.singleton l
     Sort _ -> Set.empty
 
 -- predicates get lower precedence
@@ -160,8 +157,8 @@ addRule ga uRules (ops, preds) tok =
         tId = mkId [tok]
         tPId = mkId [tok, placeTok] -- prefix identifier
     in (if isSimpleToken tok && not (Set.member tId sops)
-        then [mkRule tId] -- add rule for new variable
-             ++ if Set.member tPId ops || Set.member tPId rpreds then [] else
+        then mkRule tId -- add rule for new variable
+             : if Set.member tPId ops || Set.member tPId rpreds then [] else
                   [mkSingleArgRule 1 tId, mkArgsRule 1 tId]
               -- add also rules for undeclared op
         else []) ++ Map.findWithDefault [] tok m
@@ -169,7 +166,7 @@ addRule ga uRules (ops, preds) tok =
 -- insert only identifiers starting with a place
 initRules :: IdSets -> Rules
 initRules (opS, predS) =
-    let addR p = Set.fold ( \ i l -> mixRule p i : l)
+    let addR p = Set.fold ((:) . mixRule p)
     in (addR 1 (addR 0 [mkRule typeId] predS) opS, [])
 
 -- | construct rules from 'IdSets' to be put into a 'Mix' record

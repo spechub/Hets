@@ -39,10 +39,10 @@ data LITC a = LITC ItemType a
 
 --------------------- lifting to Local Contexts
 withLIT :: ItemTypeable a => a -> b -> LITC b
-withLIT it = LITC $ toIT it
+withLIT = LITC . toIT
 
 listWithLIT :: ItemTypeable a => a -> [b] -> [LITC b]
-listWithLIT it = map (withLIT it)
+listWithLIT = map . withLIT
 
 -- analogous for annotated objects, don't needed yet
 --annWithLIT :: ItemTypeable a => a -> Annoted b -> Annoted (LITC b)

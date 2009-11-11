@@ -58,8 +58,8 @@ qualifySigExt extInd extEm nodeId libId m sig = do
       sMap = Set.fold (flip Map.insert 1) Map.empty ss
       om = createOpMorMap $ qualOverloaded sMap (Map.map fst $ op_map m)
            nodeId libId (mapOpType sm) (\ o -> o { opKind = Partial }) os
-      oMap = Map.foldWithKey (\ i s ->
-             Map.insertWith (+) i $ Set.size s) sMap os
+      oMap = Map.foldWithKey (\ i ->
+             Map.insertWith (+) i . Set.size) sMap os
       pm = Map.map fst $ qualOverloaded oMap (pred_map m) nodeId libId
            (mapPredType sm) id ps
   return ((embedMorphism extEm sig $ inducedSignAux extInd sm om pm extEm sig)

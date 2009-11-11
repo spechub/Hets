@@ -68,7 +68,7 @@ convSign KSubsort onto sign =
                         weOnto
           insClass o nm supL =
               insertClass o nm nm supL (Just SubSort)
-          toStrL = Set.fold (\ s rs -> str s : rs) []
+          toStrL = Set.fold ((:) . str) []
 
 convPred :: Sign f e -> MMiSSOntology -> WithError MMiSSOntology
 convPred s o =
@@ -86,8 +86,9 @@ convPred s o =
                  insType t wOn =
                      weither (const wOn)
                              (\ ont ->
-                                 let src = (show (predArgs t !! 0))
-                                     tar = (show (predArgs t !! 1))
+                                 let [a1, a2] = predArgs t
+                                     src = show a1
+                                     tar = show a2
                                  in insertRelationType ont (show pn)
                                        src tar)
                              wOn
