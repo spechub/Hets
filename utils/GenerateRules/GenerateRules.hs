@@ -18,6 +18,7 @@ import System.Environment
 import ParseFile
 import Data.List
 import Data.Char
+import qualified Data.Set as Set
 
 data Flag = Rule String | Exclude String | Import String | Output String
             deriving Show
@@ -78,11 +79,10 @@ genRules flags files =
        if null ds then fail "no data types left" else
            writeFile outf $
                   fileHead ++ "\n\nmodule " ++ toModule outf
-                  ++ " () where\n"
-                  ++ concatMap ( \ i -> "\nimport " ++ qualify i)
-                                            (imports ++ is)
-                  ++ "\n"
-                  ++ concatMap ( \ r -> "\n" ++
+                  ++ " () where\n\n"
+                  ++ unlines (map ("import " ++)
+                     . Set.toList . Set.fromList $ map qualify imports ++ is)
+                  ++ concatMap ( \ r -> '\n' :
                          concatMap ( \ d -> "{-! for " ++ d
                                  ++ " derive : " ++ r ++ " !-}\n")
                                  ds) rules
