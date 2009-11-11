@@ -57,8 +57,8 @@ data ProverStatusColour
 
 data SelButtonFrame = SBF { selAllEv :: Event ()
                           , deselAllEv :: Event ()
-                          , sbf_btns :: [Button]
-                          , sbf_btnFrame :: Frame}
+                          , sbfBtns :: [Button]
+                          , sbfBtnFrame :: Frame}
 
 data SelAllListbox = SAL SelButtonFrame (ListBox String)
 
@@ -262,8 +262,8 @@ newSelectButtonsFrame b3 = do
   return SBF
     { selAllEv = selectAll
     , deselAllEv = deselectAll
-    , sbf_btns = [deselectAllButton,selectAllButton]
-    , sbf_btnFrame = selFrame }
+    , sbfBtns = [deselectAllButton,selectAllButton]
+    , sbfBtnFrame = selFrame }
 
 newExtSelListBoxFrame :: (Container par) => par -> String -> Distance
                       -> IO SelAllListbox
@@ -347,8 +347,8 @@ proofManagementGUI lid prGuiAcs thName warningTxt th
   -- ListBox for goal selection
   (SAL (SBF { selAllEv = selectAllGoals
             , deselAllEv = deselectAllGoals
-            , sbf_btns = goalBtns
-            , sbf_btnFrame = goalsBtnFrame}) lb)
+            , sbfBtns = goalBtns
+            , sbfBtnFrame = goalsBtnFrame}) lb)
       <- newExtSelListBoxFrame b2 "Goals:" 14
   -- button to select only the open goals
   selectOpenGoalsButton <- newButton goalsBtnFrame [text "Select open goals"]
@@ -449,8 +449,8 @@ proofManagementGUI lid prGuiAcs thName warningTxt th
   compBox <- newVBox composer []
   pack compBox [Expand On, Fill Both]
 
-  newLabel compBox [text "Fine grained composition of theory:"] >>=
-        (\ lab -> pack lab [])
+  newLabel compBox [text "Fine grained composition of theory:"]
+    >>= flip pack []
 
   icomp <- newFrame compBox []
   pack icomp [Expand On, Fill Both]
@@ -460,8 +460,8 @@ proofManagementGUI lid prGuiAcs thName warningTxt th
 
   (SAL (SBF { selAllEv = selectAllAxs
             , deselAllEv = deselectAllAxs
-            , sbf_btns = axsBtns
-            , sbf_btnFrame = axiomsBtnFrame}) lbAxs)
+            , sbfBtns = axsBtns
+            , sbfBtnFrame = axiomsBtnFrame}) lbAxs)
        <- newExtSelListBoxFrame icBox "Axioms to include:" 10
   -- button to deselect axioms that are former theorems
   deselectFormerTheoremsButton <- newButton axiomsBtnFrame
@@ -470,7 +470,7 @@ proofManagementGUI lid prGuiAcs thName warningTxt th
 
   (SAL (SBF { selAllEv = selectAllThs
             , deselAllEv = deselectAllThs
-            , sbf_btns = thsBtns}) lbThs)
+            , sbfBtns = thsBtns}) lbThs)
       <- newExtSelListBoxFrame icBox "Theorems to include if proven:" 10
   -- separator
   spac1 <- newSpace b (cm 0.15) []
@@ -515,8 +515,8 @@ proofManagementGUI lid prGuiAcs thName warningTxt th
   pack main [Expand On, Fill Both]
   putWinOnTop main
   let updateStatusSublogic s = do
-        sWithSel <- (updateStateGetSelectedSens s lbAxs lbThs >>=
-                     (\ si -> updateStateGetSelectedGoals si lb))
+        sWithSel <- updateStateGetSelectedSens s lbAxs lbThs
+          >>= flip updateStateGetSelectedGoals lb
         s' <- recalculateSublogicF prGuiAcs
                 sWithSel {proversMap = knownProvers}
         let newSublogicText = show $ sublogicOfTheory s'
@@ -580,7 +580,7 @@ proofManagementGUI lid prGuiAcs thName warningTxt th
                 isNotFormerTheorem (_,st) = not $ wasTheorem st
             sel <- getSelection lbAxs :: IO (Maybe [Int])
             clearSelection lbAxs
-            mapM_ (\ i -> selection i lbAxs) $
+            mapM_ (flip selection lbAxs) $
                   maybe [] (filter (isNotFormerTheorem . (!!) axiomList)) sel
             s' <- updateStatusSublogic s
             Conc.putMVar stateMVar s'
@@ -617,8 +617,7 @@ proofManagementGUI lid prGuiAcs thName warningTxt th
             doDisplayGoals s'
             done
       +> selectProverPath >>> do
-            Conc.modifyMVar_ stateMVar (\ s ->
-                       doSelectProverPath s pathsLb)
+            Conc.modifyMVar_ stateMVar (flip doSelectProverPath pathsLb)
             done
       +> moreProverPaths >>> do
             s <- Conc.readMVar stateMVar

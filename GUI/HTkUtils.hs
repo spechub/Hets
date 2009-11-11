@@ -101,7 +101,7 @@ createTextSaveDisplayExt title fname txt conf upost =
      t   <- newLabel b [text title, font (Helvetica, Roman, 18::Int)]
      q   <- newButton b [text "Close", width 12]
      s   <- newButton b [text "Save", width 12]
-     (sb, ed) <- newScrollBox b (\p-> newEditor p conf) []
+     (sb, ed) <- newScrollBox b (flip newEditor conf) []
      ed # state Disabled
      pack b [Side AtTop, Fill Both,Expand On]
      pack t [Side AtTop, Expand Off, PadY 10]
@@ -217,7 +217,7 @@ populateGoalsListBox :: ListBox String -- ^ listbox
 populateGoalsListBox lb v = do
   selectedOld <- getSelection lb :: IO (Maybe [Int])
   lb # value (toString v)
-  maybe (return ()) (mapM_ (\n -> selection n lb)) selectedOld
+  maybe (return ()) (mapM_ (flip selection lb)) selectedOld
   where
     toString = map (\ LBGoalView {statIndicator = i, goalDescription = d} ->
                         indicatorString i ++ ' ' : d)

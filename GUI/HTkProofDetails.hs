@@ -228,7 +228,7 @@ doShowProofDetails prGUISt =
     pack winTitle [Side AtTop, Expand Off, PadY 10]
 
     (sb, ed) <- newScrollBox bFrame
-        ( \ p -> newEditor p [state Normal, size(80,40)]) []
+        (flip newEditor [state Normal, size(80,40)]) []
     ed # state Disabled
     pack bFrame [Side AtTop, Expand On, Fill Both]
     pack sb     [Side AtTop, Expand On, Fill Both]

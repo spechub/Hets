@@ -41,14 +41,14 @@ import Proofs.BatchProcessing
   Utility function to set the time limit of a Config.
   For values <= 0 a default value is used.
 -}
-setTimeLimit :: Int -> GenericConfig proof_tree -> GenericConfig proof_tree
+setTimeLimit :: Int -> GenericConfig proofTree -> GenericConfig proofTree
 setTimeLimit n c = if n > 0 then c{timeLimit = Just n}
                    else c{timeLimit = Nothing}
 
 {- |
   Utility function to set the extra options of a Config.
 -}
-setExtraOpts :: [String] -> GenericConfig proof_tree -> GenericConfig proof_tree
+setExtraOpts :: [String] -> GenericConfig proofTree -> GenericConfig proofTree
 setExtraOpts opts c = c{extraOpts = opts}
 
 -- ** Constants
@@ -119,7 +119,7 @@ statusRunning = (Blue, "Running")
   Converts a 'ProofStatus' into a ('ProofStatusColour', 'String') tuple to be
   displayed by the GUI.
 -}
-toGuiStatus :: GenericConfig proof_tree -- ^ current prover configuration
+toGuiStatus :: GenericConfig proofTree -- ^ current prover configuration
             -> (ProofStatus a) -- ^ status to convert
             -> (ProofStatusColour, String)
 toGuiStatus cf st = case goalStatus st of
@@ -130,17 +130,17 @@ toGuiStatus cf st = case goalStatus st of
                else statusOpen
 
 {- | stores widgets of an options frame and the frame itself -}
-data OpFrame = OpFrame { of_Frame :: Frame
-                       , of_timeSpinner :: SpinButton
-                       , of_timeEntry :: Entry Int
-                       , of_optionsEntry :: Entry String
+data OpFrame = OpFrame { ofFrame :: Frame
+                       , ofTimeSpinner :: SpinButton
+                       , ofTimeEntry :: Entry Int
+                       , ofOptionsEntry :: Entry String
                        }
 
 {- |
   Generates a list of 'GUI.HTkUtils.LBGoalView' representations of all goals
   from a 'GenericATPState.GenericState'.
 -}
-goalsView :: GenericState sign sentence proof_tree pst -- ^ current global
+goalsView :: GenericState sign sentence proofTree pst -- ^ current global
                                                        -- prover state
           -> [LBGoalView] -- ^ resulting ['LBGoalView'] list
 goalsView s = map ((\ g ->
@@ -202,7 +202,7 @@ batchInfoText tl gTotal gDone =
 {- |
    Updates the display of the status of the current goal.
 -}
-updateDisplay :: GenericState sign sentence proof_tree pst
+updateDisplay :: GenericState sign sentence proofTree pst
                  -- ^ current global prover state
               -> Bool -- ^ set to 'True' if you want the 'ListBox' to be
                       -- updated
@@ -297,10 +297,10 @@ newOptionsFrame con updateFn isExtraOps = do
        pack optionsEntry [Fill X, PadX (cm 0.1)]
 
   return OpFrame
-    { of_Frame = right
-    , of_timeSpinner = timeSpinner
-    , of_timeEntry = timeEntry
-    , of_optionsEntry = optionsEntry }
+    { ofFrame = right
+    , ofTimeSpinner = timeSpinner
+    , ofTimeEntry = timeEntry
+    , ofOptionsEntry = optionsEntry }
 
 -- ** Main GUI
 
@@ -308,17 +308,17 @@ newOptionsFrame con updateFn isExtraOps = do
   Invokes the prover GUI. Users may start the batch prover run on all goals,
   or use a detailed GUI for proving each goal manually.
 -}
-genericATPgui :: (Ord proof_tree, Ord sentence)
-              => ATPFunctions sign sentence mor proof_tree pst -- ^ prover specific
+genericATPgui :: (Ord proofTree, Ord sentence)
+              => ATPFunctions sign sentence mor proofTree pst -- ^ prover specific
                                                            -- functions
               -> Bool -- ^ prover supports extra options
               -> String -- ^ prover name
               -> String -- ^ theory name
-              -> Theory sign sentence proof_tree -- ^ theory consisting of a
+              -> Theory sign sentence proofTree -- ^ theory consisting of a
                  -- signature and a list of Named sentence
               -> [FreeDefMorphism sentence mor] -- ^ freeness constraints
-              -> proof_tree -- ^ initial empty proof_tree
-              -> IO([ProofStatus proof_tree]) -- ^ proof status for each goal
+              -> proofTree -- ^ initial empty proofTree
+              -> IO([ProofStatus proofTree]) -- ^ proof status for each goal
 genericATPgui atpFun isExtraOptions prName thName th freedefs pt = do
   -- create initial backing data structure
   let initState = initialGenericState prName
@@ -360,10 +360,10 @@ genericATPgui atpFun isExtraOptions prName thName th freedefs pt = do
   lb # scrollbar Vertical sb
 
   -- right frame (options/results)
-  OpFrame { of_Frame = right
-          , of_timeSpinner = timeSpinner
-          , of_timeEntry = timeEntry
-          , of_optionsEntry = optionsEntry}
+  OpFrame { ofFrame = right
+          , ofTimeSpinner = timeSpinner
+          , ofTimeEntry = timeEntry
+          , ofOptionsEntry = optionsEntry}
       <- newOptionsFrame b2
                  (\ timeEntry sp -> synchronize main
                    (do
@@ -486,10 +486,10 @@ genericATPgui atpFun isExtraOptions prName thName th freedefs pt = do
   batchStatusLabel <- newLabel batchRight [text "\n\n"]
   pack batchStatusLabel []
 
-  OpFrame { of_Frame = batchLeft
-          , of_timeSpinner = batchTimeSpinner
-          , of_timeEntry = batchTimeEntry
-          , of_optionsEntry = batchOptionsEntry}
+  OpFrame { ofFrame = batchLeft
+          , ofTimeSpinner = batchTimeSpinner
+          , ofTimeEntry = batchTimeEntry
+          , ofOptionsEntry = batchOptionsEntry}
       <- newOptionsFrame batchIFrame
                  (\ tEntry sp -> synchronize main
                    (do
@@ -749,9 +749,8 @@ genericATPgui atpFun isExtraOptions prName thName th freedefs pt = do
                    (\ gPSF nSen nextSen cfg@(retval,_) -> do
                      cont <- goalProcessed stateMVar tLimit extOpts'
                                            numGoals prName gPSF nSen False cfg
-                     mTId <- Conc.tryTakeMVar mVar_batchId
-                     flip (maybe (return False)) mTId
-                        (\ tId -> do
+                     Conc.tryTakeMVar mVar_batchId >>=
+                       maybe (return False) (\ tId -> do
                            stored <- Conc.tryPutMVar
                                                  mVar_batchId
                                                  tId
@@ -843,7 +842,7 @@ genericATPgui atpFun isExtraOptions prName thName th freedefs pt = do
                  cleanupThread mVar_batchId
                  destroy main
   s <- Conc.takeMVar stateMVar
-  let Result _ proof_stats = revertRenamingOfLabels s $
+  let Result _ proofstats = revertRenamingOfLabels s $
           map ((\ g -> let
                  res = Map.lookup g (configsMap s)
                  g' = Map.findWithDefault
@@ -855,7 +854,7 @@ genericATPgui atpFun isExtraOptions prName thName th freedefs pt = do
                               proofStatus res) . AS_Anno.senAttr)
           $ goalsList s
   -- diags should not be plainly shown by putStrLn here
-  maybe (fail "reverse translation of names failed") return proof_stats
+  maybe (fail "reverse translation of names failed") return proofstats
 
   where
     cleanupThread mVar_TId =
