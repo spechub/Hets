@@ -450,7 +450,7 @@ hidenodes :: Descr -> [Descr] -> GraphInfo -> IO Result
 hidenodes gid node_list gv =
   fetch_graph gid gv False (\(g,ev_cnt) ->
     case sequence (map (\node -> Map.lookup node (nodes g)) node_list) of
-      Just _ -> do
+      Just _ ->
         -- try to determine the path to add and the edges to remove
         case makepathsMain g node_list of
           -- try to create the paths

@@ -81,8 +81,8 @@ inclusionArcColor = "blue"
 isInclComorphism :: AnyComorphism -> Bool
 isInclComorphism (Comorphism cid) =
     Logic (sourceLogic cid) == Logic (targetLogic cid) &&
-    (isProperSublogic (G_sublogics (sourceLogic cid) (sourceSublogic cid))
-                      (G_sublogics (targetLogic cid) (targetSublogic cid)))
+    isProperSublogic (G_sublogics (sourceLogic cid) (sourceSublogic cid))
+                      (G_sublogics (targetLogic cid) (targetSublogic cid))
 
 showLogicGraph ::
    (GraphAllConfig graph graphParms node nodeType nodeTypeParms
@@ -97,7 +97,7 @@ showLogicGraph
     do
            -- disp s tD = debug (s ++ (show tD))
        logicG <- newGraph displaySrt (GlobalMenu (UDG.Menu Nothing [
-                Button "Show detailed logic graph" (showHSG) ]) $$
+                Button "Show detailed logic graph" showHSG ]) $$
                                       graphParms displaySrt "Logic Graph"
                                      )
        let logicNodeMenu = LocalMenu(UDG.Menu (Just "Info")
@@ -111,9 +111,8 @@ showLogicGraph
                       ("Description of " ++ show lg) (showDescription lg)
                                       [size(83,25)])
                ])
-           makeLogicNodeMenu color =
-               makeNodeMenu displaySrt (return . show)
-                            logicNodeMenu color
+           makeLogicNodeMenu = makeNodeMenu displaySrt (return . show)
+                            logicNodeMenu
        stableNodeType <- newNodeType logicG $ makeLogicNodeMenu stableColor
        testingNodeType <- newNodeType logicG $ makeLogicNodeMenu testingColor
        unstableNodeType <- newNodeType logicG $ makeLogicNodeMenu unstableColor
@@ -123,15 +122,14 @@ showLogicGraph
            newNodeType logicG $ makeLogicNodeMenu proverColor
        let newNode' logic =
              case logic of
-                  Logic lid -> if (hasProver lid) then
-                                      newNode logicG proverNodeType logic
-                               else let nodeType = case stability lid of
-                                         Stable -> stableNodeType
-                                         Testing -> testingNodeType
-                                         Unstable -> unstableNodeType
-                                         Experimental -> experimentalNodeType
-                                      in newNode logicG nodeType logic
-             where hasProver lid = not $ null $ provers lid
+               Logic lid -> if null $ provers lid then let
+                   nodeType = case stability lid of
+                     Stable -> stableNodeType
+                     Testing -> testingNodeType
+                     Unstable -> unstableNodeType
+                     Experimental -> experimentalNodeType
+                   in newNode logicG nodeType logic
+                 else newNode logicG proverNodeType logic
 
        -- production of the nodes (in a list)
        nodeList <- mapM newNode' (Map.elems(logics logicGraph))
@@ -156,10 +154,10 @@ showLogicGraph
                           in  createTextDisplay (show c)
                                   (showComoDescription c ++ "\n\n" ++
                               "source logic:     " ++
-                                   (language_name $ sourceLogic cid) ++
+                                   language_name (sourceLogic cid) ++
                               "\n\n" ++
                               "target logic:     " ++
-                                   (language_name $ targetLogic cid) ++
+                                   language_name (targetLogic cid) ++
                               "\n" ++
                               "source sublogic:  " ++ showSubTitle ssid ++
                                    "\n" ++
@@ -193,13 +191,11 @@ showLogicGraph
                     in  newArc logicG inclArcType i (lookupLogi sid)
                             (lookupLogi tid))
        mapM_ insertIncl inclusionList
-       mapM_ insertComo $
-             filter (not . flip elem inclusionList) $
-             comorphismList
+       mapM_ insertComo $ filter (flip notElem inclusionList) comorphismList
        redraw logicG
     where
         (nullArcTypeParms :: arcTypeParms AnyComorphism) = emptyArcTypeParms
-        (nullSubArcTypeParms:: arcTypeParms [Char]) = emptyArcTypeParms
+        (nullSubArcTypeParms :: arcTypeParms String) = emptyArcTypeParms
         showSublogic l =
             case l of
               Logic lid -> unlines (map sublogicName (all_sublogics lid))
@@ -254,8 +250,7 @@ showLogicGraph
                      subNodeTypeParms =
                          subNodeMenu $$$
                          Ellipse $$$
-                         ValueTitle
-                           (\gsl -> return (sublogicName gsl)) $$$
+                         ValueTitle (return . sublogicName) $$$
                          Color "yellow" $$$
                          emptyNodeTypeParms
                  subNodeType <- newNodeType subLogicG subNodeTypeParms
@@ -272,7 +267,7 @@ showLogicGraph
                                        Color "green" $$$
                                        nullSubArcTypeParms
                  subArcType <- newArcType subLogicG subArcTypeParms
-                 let insertSubArc = \ (node1, node2) ->
+                 let insertSubArc (node1, node2) =
                            newArc subLogicG subArcType ""
                                   (lookupSublogic node1)
                                   (lookupSublogic node2)
@@ -310,9 +305,8 @@ showHetSublogicGraph
                       ("Description of " ++ show lg) (showDescription lg)
                                       [size(83,25)])
                ])
-           makeLogicNodeMenu color =
-               makeNodeMenu displaySrt (return . show)
-                            logicNodeMenu color
+           makeLogicNodeMenu = makeNodeMenu displaySrt (return . show)
+               logicNodeMenu
        stableNodeType <- newNodeType logicG $ makeLogicNodeMenu stableColor
        testingNodeType <- newNodeType logicG $ makeLogicNodeMenu testingColor
        unstableNodeType <- newNodeType logicG $ makeLogicNodeMenu unstableColor
@@ -338,7 +332,7 @@ showHetSublogicGraph
                                  nodeList)
            lookupLogi gslStr =
                Map.findWithDefault (error "lookupLogi: Logic not found")
-                                   (gslStr)
+                                   gslStr
                                    namesAndNodes
            {- each edge can also show the informations (the
              description of comorphism and names of
@@ -354,10 +348,10 @@ showHetSublogicGraph
                           in  createTextDisplay (show c)
                                   (showComoDescription c ++ "\n\n" ++
                               "source logic:     " ++
-                                   (language_name $ sourceLogic cid) ++
+                                   language_name (sourceLogic cid) ++
                               "\n\n" ++
                               "target logic:     " ++
-                                   (language_name $ targetLogic cid) ++
+                                   language_name (targetLogic cid) ++
                               "\n" ++
                               "source sublogic:  " ++ showSubTitle ssid ++
                                    "\n" ++

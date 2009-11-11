@@ -90,7 +90,7 @@ main = do
                             Color "green" $$$
                           emptyArcTypeParms
     subArcType <- newArcType depG subArcTypeParms
-    let insertSubArc = \ (node1, node2) ->
+    let insertSubArc (node1, node2) =
                            newArc depG subArcType (return "")
                                   (lookup' node1)
                                   (lookup' node2)
@@ -139,13 +139,13 @@ getContent2 :: String -> [String] -> [(String, String)]
 getContent2 x  = map (\ m -> (x, m))
 
 getContent4 :: [String] -> [String]
-getContent4 s = map ((!! 1) .  words) s
+getContent4 = map ((!! 1) .  words)
 
 getContent5 :: [String] -> [String]
 getContent5  = map $ fst . break (== '(')
 
 getContent6 :: [[String]] ->[[String]]
-getContent6 = map $ (filter (elem '.')) . getContent5 . getContent4
+getContent6 = map $ filter (elem '.') . getContent5 . getContent4
 
-isIn3 :: (Eq a)=> [(a, a)] -> [(a, a)]
-isIn3 = filter (\(x,y) -> x /= y)
+isIn3 :: (Eq a) => [(a, a)] -> [(a, a)]
+isIn3 = filter $ uncurry (/=)

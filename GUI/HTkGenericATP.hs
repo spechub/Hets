@@ -21,7 +21,7 @@ import Common.Utils (getEnvSave, readMaybe)
 import Common.Result
 
 import Data.List
-import Data.Maybe (isJust)
+import Data.Maybe
 import qualified Common.Exception as Exception
 import qualified Control.Concurrent as Conc
 
@@ -143,7 +143,7 @@ data OpFrame = OpFrame { of_Frame :: Frame
 goalsView :: GenericState sign sentence proof_tree pst -- ^ current global
                                                        -- prover state
           -> [LBGoalView] -- ^ resulting ['LBGoalView'] list
-goalsView s = map (\ g ->
+goalsView s = map ((\ g ->
                       let cfg = Map.lookup g (configsMap s)
                           statind = maybe LBIndicatorOpen
                                      (indicatorFromProofStatus . proofStatus)
@@ -151,7 +151,7 @@ goalsView s = map (\ g ->
                        in
                          LBGoalView {statIndicator = statind,
                                      goalDescription = g})
-                  (map AS_Anno.senAttr (goalsList s))
+                  . AS_Anno.senAttr) $ goalsList s
 
 -- * GUI Implementation
 
@@ -165,7 +165,7 @@ getValueSafe :: Int -- ^ default time limt
              -> IO Int -- ^ user-requested time limit or default in case of a
                        -- parse error
 getValueSafe defaultTimeLimit timeEntry =
-    Exception.catchJust Exception.userErrors ((getValue timeEntry) :: IO Int)
+    Exception.catchJust Exception.userErrors (getValue timeEntry :: IO Int)
       $ \ s -> do
          putStrLn $ "Warning: Error " ++ show s ++ " was ignored"
          return defaultTimeLimit
@@ -235,10 +235,10 @@ updateDisplay st updateLb goalsLb statusLabel timeEntry optionsEntry axiomsLb =
                    cf = Map.findWithDefault
                         (error "GUI.GenericATP.updateDisplay")
                         go (configsMap st)
-                   t' = maybe guiDefaultTimeLimit id (timeLimit cf)
+                   t' = fromMaybe guiDefaultTimeLimit (timeLimit cf)
                    opts' = unwords (extraOpts cf)
                    (color, label) = maybe statusOpen
-                                    ((toGuiStatus cf) . proofStatus)
+                                    (toGuiStatus cf . proofStatus)
                                     mprfst
                    usedAxs = maybe [] (usedAxioms . proofStatus) mprfst
 
@@ -296,10 +296,11 @@ newOptionsFrame con updateFn isExtraOps = do
   when isExtraOps $
        pack optionsEntry [Fill X, PadX (cm 0.1)]
 
-  return $ OpFrame { of_Frame = right
-                   , of_timeSpinner = timeSpinner
-                   , of_timeEntry = timeEntry
-                   , of_optionsEntry = optionsEntry}
+  return OpFrame
+    { of_Frame = right
+    , of_timeSpinner = timeSpinner
+    , of_timeEntry = timeEntry
+    , of_optionsEntry = optionsEntry }
 
 -- ** Main GUI
 
@@ -380,10 +381,10 @@ genericATPgui atpFun isExtraOptions prName thName th freedefs pt = do
                           t = timeLimit cfg
                           t' = (case sp of
                                 Up -> maybe (guiDefaultTimeLimit + 10)
-                                            (+10)
+                                            (+ 10)
                                             t
                                 _ -> maybe (guiDefaultTimeLimit - 10)
-                                            (\ t1 -> t1-10)
+                                            (subtract 10)
                                             t)
                           s' = sEnt {configsMap =
                                          adjustOrSetConfig
@@ -391,11 +392,9 @@ genericATPgui atpFun isExtraOptions prName thName th freedefs pt = do
                                               prName goal pt (configsMap sEnt)}
                       Conc.putMVar stateMVar s'
                       timeEntry # value
-                                    (maybe guiDefaultTimeLimit
-                                           id
-                                           (timeLimit $
-                                              getConfig prName goal pt $
-                                                configsMap s'))
+                                    (fromMaybe guiDefaultTimeLimit
+                                    $ timeLimit $ getConfig prName goal pt
+                                    $ configsMap s')
                       done)
                      (currentGoal st)))
                  isExtraOptions
@@ -406,7 +405,7 @@ genericATPgui atpFun isExtraOptions prName thName th freedefs pt = do
   pack buttonsHb1 [Anchor NorthEast]
 
   saveProbButton <- newButton buttonsHb1 [text $ "Save "
-      ++ (removeFirstDot $ problemOutput $ fileExtensions atpFun)
+      ++ removeFirstDot (problemOutput $ fileExtensions atpFun)
       ++ " File"]
   pack saveProbButton [Side AtLeft]
   proveButton <- newButton buttonsHb1 [text "Prove"]
@@ -441,7 +440,7 @@ genericATPgui atpFun isExtraOptions prName thName th freedefs pt = do
   pack statusLabel [Anchor West]
   axiomsFrame <- newFrame rc2 []
   pack axiomsFrame [Expand On, Anchor West, Fill Both]
-  axiomsLb <- newListBox axiomsFrame [value $ ([]::[String]),
+  axiomsLb <- newListBox axiomsFrame [value ([]::[String]),
                                       bg "white",exportSelection False,
                                       selectMode Browse,
                                       height 6, width 19] :: IO (ListBox String)
@@ -466,7 +465,7 @@ genericATPgui atpFun isExtraOptions prName thName th freedefs pt = do
   batch <- newFrame b []
   pack batch [Expand Off, Fill X]
 
-  batchTitle <- newLabel batch [text $ (prName)++" Batch Mode:"]
+  batchTitle <- newLabel batch [text $ prName ++ " Batch Mode:"]
   pack batchTitle [Side AtTop]
 
   batchIFrame <- newFrame batch []
@@ -517,7 +516,7 @@ genericATPgui atpFun isExtraOptions prName thName th freedefs pt = do
          newCheckButton batchLeft
                       [variable saveProblem_batch,
                        text $ "Save "
-                   ++ (removeFirstDot $ problemOutput $ fileExtensions atpFun)]
+                   ++ removeFirstDot (problemOutput $ fileExtensions atpFun)]
 
   enableSaveCheckBox <- getEnvSave False "HETS_ENABLE_BATCH_SAVE" readMaybe
   when enableSaveCheckBox $
@@ -603,12 +602,11 @@ genericATPgui atpFun isExtraOptions prName thName th freedefs pt = do
   disable stopBatchButton
 
   -- event handlers
-  spawnEvent
-    (forever
-      ((selectGoal >>> do
+  _ <- spawnEvent $ forever
+      $ selectGoal >>> do
           s <- Conc.takeMVar stateMVar
           let oldGoal = currentGoal s
-          curEntTL <- (getValueSafe guiDefaultTimeLimit timeEntry) :: IO Int
+          curEntTL <- getValueSafe guiDefaultTimeLimit timeEntry :: IO Int
           let s' = maybe s
                          (\ og -> s
                              {configsMap =
@@ -616,7 +614,7 @@ genericATPgui atpFun isExtraOptions prName thName th freedefs pt = do
                                                     prName og pt
                                                     (configsMap s)})
                          oldGoal
-          sel <- (getSelection lb) :: IO (Maybe [Int])
+          sel <- getSelection lb :: IO (Maybe [Int])
           let s'' = maybe s' (\ sg -> s' {currentGoal =
                                               Just $ AS_Anno.senAttr
                                                (goalsList s' !! head sg)})
@@ -627,11 +625,11 @@ genericATPgui atpFun isExtraOptions prName thName th freedefs pt = do
                (enableWids goalSpecificWids)
           when (isJust sel) $ enableWids [EnW detailsButton,EnW saveProbButton]
           updateDisplay s'' False lb statusLabel timeEntry optionsEntry axiomsLb
-          done)
-      +> (saveProb >>> do
+          done
+      +> saveProb >>> do
             rs <- Conc.readMVar stateMVar
-            curEntTL <- (getValueSafe guiDefaultTimeLimit
-                                      timeEntry) :: IO Int
+            curEntTL <- getValueSafe guiDefaultTimeLimit
+                                      timeEntry :: IO Int
             inclProvedThs <- readTkVariable inclProvedThsTK
             maybe (return ())
                   (\ goal -> do
@@ -642,30 +640,29 @@ genericATPgui atpFun isExtraOptions prName thName th freedefs pt = do
                                             (setTimeLimit curEntTL)
                                             prName goal pt
                                             (configsMap rs)}
-                      extraOptions <- (getValue optionsEntry) :: IO String
+                      extraOptions <- getValue optionsEntry :: IO String
                       let s' = s {configsMap = adjustOrSetConfig
                                             (setExtraOpts (words extraOptions))
                                             prName goal pt
                                             (configsMap s)}
 
-                      prob <- (goalOutput atpFun) lp' nGoal $
-                        (createProverOptions atpFun)
+                      prob <- goalOutput atpFun lp' nGoal $
+                        createProverOptions atpFun
                           (getConfig prName goal pt $ configsMap s')
                       createTextSaveDisplay
-                        (prName++" Problem for Goal "++goal)
-                        (thName++'_':goal
-                               ++(problemOutput $ fileExtensions atpFun))
-                        (prob)
-                  )
+                        (prName ++ " Problem for Goal " ++ goal)
+                        (thName ++ '_' : goal
+                               ++ problemOutput (fileExtensions atpFun))
+                        prob)
                   $ currentGoal rs
-            done)
-      +> (doProve >>> do
+            done
+      +> doProve >>> do
             rs <- Conc.readMVar stateMVar
             case currentGoal rs of
               Nothing -> noGoalSelected >> done
               Just goal -> do
-                curEntTL <- (getValueSafe guiDefaultTimeLimit
-                                          timeEntry) :: IO Int
+                curEntTL <- getValueSafe guiDefaultTimeLimit
+                                          timeEntry :: IO Int
                 inclProvedThs <- readTkVariable inclProvedThsTK
                 let s = rs {configsMap = adjustOrSetConfig
                                             (setTimeLimit curEntTL)
@@ -673,7 +670,7 @@ genericATPgui atpFun isExtraOptions prName thName th freedefs pt = do
                                             (configsMap rs)}
                     (nGoal,lp') = prepareLP (proverState rs)
                                         rs goal inclProvedThs
-                extraOptions <- (getValue optionsEntry) :: IO String
+                extraOptions <- getValue optionsEntry :: IO String
                 let s' = s {configsMap = adjustOrSetConfig
                                             (setExtraOpts (words extraOptions))
                                             prName goal pt
@@ -681,8 +678,7 @@ genericATPgui atpFun isExtraOptions prName thName th freedefs pt = do
                 statusLabel # text (snd statusRunning)
                 statusLabel # foreground (show $ fst statusRunning)
                 disableWids wids
-                (retval, cfg) <-
-                    (runProver atpFun) lp'
+                (retval, cfg) <- runProver atpFun lp'
                           (getConfig prName goal pt $ configsMap s') False
                           thName nGoal
                 -- check if window was closed
@@ -715,8 +711,8 @@ genericATPgui atpFun isExtraOptions prName thName th freedefs pt = do
                     updateDisplay s'' True lb statusLabel timeEntry
                                   optionsEntry axiomsLb
                     enableWids wids
-                 done)
-      +> (showDetails >>> do
+                 done
+      +> showDetails >>> do
             Conc.yield
             s <- Conc.readMVar stateMVar
             case currentGoal s of
@@ -729,21 +725,21 @@ genericATPgui atpFun isExtraOptions prName thName th freedefs pt = do
                                    result
                     detailsText = concatMap ('\n':) output
                 createTextSaveDisplay (prName ++ " Output for Goal "++goal)
-                        (goal ++ (proverOutput $ fileExtensions atpFun))
+                        (goal ++ proverOutput (fileExtensions atpFun))
                         (seq (length detailsText) detailsText)
-                done)
-      +> (runBatch >>> do
+                done
+      +> runBatch >>> do
             s <- Conc.readMVar stateMVar
             -- get options for this batch run
-            curEntTL <- (getValueSafe batchTLimit batchTimeEntry) :: IO Int
+            curEntTL <- getValueSafe batchTLimit batchTimeEntry :: IO Int
             let tLimit = if curEntTL > 0 then curEntTL else batchTLimit
             batchTimeEntry # value tLimit
-            extOpts <- (getValue batchOptionsEntry) :: IO String
+            extOpts <- getValue batchOptionsEntry :: IO String
             let extOpts' = words extOpts
                 openGoalsMap =  filterOpenGoals $ configsMap s
                 numGoals = Map.size openGoalsMap
-                firstGoalName = maybe "--" id $
-                                find ((flip Map.member) openGoalsMap) $
+                firstGoalName = fromMaybe "--" $
+                                find (flip Map.member openGoalsMap) $
                                 map AS_Anno.senAttr (goalsList s)
             if numGoals > 0
              then do
@@ -754,7 +750,7 @@ genericATPgui atpFun isExtraOptions prName thName th freedefs pt = do
                      cont <- goalProcessed stateMVar tLimit extOpts'
                                            numGoals prName gPSF nSen False cfg
                      mTId <- Conc.tryTakeMVar mVar_batchId
-                     (flip (maybe (return False))) mTId
+                     flip (maybe (return False)) mTId
                         (\ tId -> do
                            stored <- Conc.tryPutMVar
                                                  mVar_batchId
@@ -769,8 +765,7 @@ genericATPgui atpFun isExtraOptions prName thName th freedefs pt = do
                               else do
                                batchStatusLabel #
                                   text (if cont
-                                        then (batchInfoText tLimit
-                                                      numGoals gPSF)
+                                        then batchInfoText tLimit numGoals gPSF
                                         else "Batch mode finished\n\n")
                                setCurrentGoalLabel batchCurrentGoalLabel
                                   (if cont
@@ -785,12 +780,11 @@ genericATPgui atpFun isExtraOptions prName thName th freedefs pt = do
                                batchModeRunning <-
                                    isBatchModeRunning mVar_batchId
                                let cont' = cont && batchModeRunning
-                               when (not cont)
-                                   (do
+                               unless cont $ do
                                     disable stopBatchButton
                                     enableWids wids
                                     enableWidsUponSelection lb goalSpecificWids
-                                    cleanupThread mVar_batchId)
+                                    cleanupThread mVar_batchId
                                return cont'))
                     -- END of afterEachProofAttempt
               batchStatusLabel # text (batchInfoText tLimit numGoals 0)
@@ -813,10 +807,10 @@ genericATPgui atpFun isExtraOptions prName thName th freedefs pt = do
                  then done
                  else fail "GenericATP: MVar for batchProverId already taken!!"
              else {- numGoals < 1 -} do
-              batchStatusLabel # text ("No further open goals\n\n")
+              batchStatusLabel # text "No further open goals\n\n"
               batchCurrentGoalLabel # text "--"
-              done)
-      +> (stopBatch >>> do
+              done
+      +> stopBatch >>> do
             cleanupThread mVar_batchId
             wDestroyed <- windowDestroyed windowDestroyedMVar
             if wDestroyed
@@ -830,38 +824,36 @@ genericATPgui atpFun isExtraOptions prName thName th freedefs pt = do
                   st <- Conc.readMVar stateMVar
                   updateDisplay st True lb statusLabel timeEntry
                                 optionsEntry axiomsLb
-                  done)
-      +> (help >>> do
+                  done
+      +> help >>> do
             createTextDisplay (prName ++ " Help")
                               (proverHelpText atpFun)
-            done)
-      +> (saveConfiguration >>> do
+            done
+      +> saveConfiguration >>> do
             s <- Conc.readMVar stateMVar
             let cfgText = show $ printCfgText $ configsMap s
             createTextSaveDisplay
                 (prName ++ " Configuration for Theory " ++ thName)
-                (thName ++ (theoryConfiguration $ fileExtensions atpFun))
+                (thName ++ theoryConfiguration (fileExtensions atpFun))
                 cfgText
-            done)
-      ))
-  sync ( (exit >>> destroy main)
-      +> (closeWindow >>> do
+            done
+  sync $ exit >>> destroy main
+      +> closeWindow >>> do
                  Conc.putMVar windowDestroyedMVar ()
                  cleanupThread mVar_batchId
-                 destroy main)
-       )
+                 destroy main
   s <- Conc.takeMVar stateMVar
   let Result _ proof_stats = revertRenamingOfLabels s $
-          map (\g -> let res = Map.lookup g (configsMap s)
-                         g' = Map.findWithDefault
-                                        (error ("Lookup of name failed: (1) "
-                                                ++"should not happen \""
-                                                ++g++"\""))
-                                        g (namesMap s)
-                     in maybe (openProofStatus g' prName $ currentProofTree s)
-                              proofStatus
-                              res)
-                    (map AS_Anno.senAttr $ goalsList s)
+          map ((\ g -> let
+                 res = Map.lookup g (configsMap s)
+                 g' = Map.findWithDefault
+                      (error ("Lookup of name failed: (1) "
+                              ++ "should not happen \""
+                              ++ g ++ "\""))
+                      g (namesMap s)
+               in maybe (openProofStatus g' prName $ currentProofTree s)
+                              proofStatus res) . AS_Anno.senAttr)
+          $ goalsList s
   -- diags should not be plainly shown by putStrLn here
   maybe (fail "reverse translation of names failed") return proof_stats
 
@@ -881,22 +873,21 @@ genericATPgui atpFun isExtraOptions prName thName th freedefs pt = do
     noGoalSelected = errorDialog "Error" "Please select a goal first."
     prepareLP prS s goal inclProvedThs =
        let (beforeThis, afterThis) =
-              splitAt (maybe (error "GUI.GenericATP: goal shoud be found") id $
-                             findIndex (\sen -> AS_Anno.senAttr sen == goal)
-                                  (goalsList s))
-                       (goalsList s)
-           proved = filter (\sen-> checkGoal (configsMap s)
-                                       (AS_Anno.senAttr sen)) beforeThis
+              splitAt (fromMaybe (error "GUI.GenericATP: goal shoud be found")
+                      $ findIndex ((== goal) . AS_Anno.senAttr)
+                      $ goalsList s) $ goalsList s
+           proved = filter (checkGoal (configsMap s) . AS_Anno.senAttr)
+                    beforeThis
        in if inclProvedThs
              then (head afterThis,
                    foldl (\lp provedGoal ->
-                     (atpInsertSentence atpFun)
-                       lp (provedGoal{AS_Anno.isAxiom = True}))
+                     atpInsertSentence atpFun
+                       lp provedGoal {AS_Anno.isAxiom = True})
                          prS
                          (reverse proved))
-             else (maybe (error ("GUI.GenericATP.prepareLP: Goal "++goal++
-                                 " not found!!"))
-                         id (find ((==goal) . AS_Anno.senAttr) (goalsList s)),
+             else (fromMaybe (error ("GUI.GenericATP.prepareLP: Goal "
+                                     ++ goal ++ " not found!!"))
+                         (find ((== goal) . AS_Anno.senAttr) (goalsList s)),
                    prS)
     setCurrentGoalLabel batchLabel s = batchLabel # text (take 65 s)
     removeFirstDot [] = error "GenericATP: no extension given"

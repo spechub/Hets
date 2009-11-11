@@ -116,19 +116,16 @@ createTextSaveDisplayExt title fname txt conf upost =
      (editClicked, _) <- bindSimple ed (ButtonPress (Just 1))
      quit <- clicked q
      save <- clicked s
-     spawnEvent (forever (quit >>> do destroy win; upost
-                         +>
-                       save >>> do disableButs q s
-                                   askFileNameAndSave fname txt
-                                   enableButs q s
-                                   done
-                         +>
-                       editClicked >>> forceFocus ed))
+     _ <- spawnEvent $ forever $ quit >>> (destroy win >> upost)
+       +> save >>> do
+           disableButs q s
+           askFileNameAndSave fname txt
+           enableButs q s
+           done
+       +> editClicked >>> forceFocus ed
      return (win, ed)
-   where disableButs b1 b2 = do disable b1
-                                disable b2
-         enableButs b1 b2 = do enable b1
-                               enable b2
+   where disableButs b1 b2 = disable b1 >> disable b2
+         enableButs b1 b2 = enable b1 >> enable b2
 -- |
 -- Display some (longish) text in an uneditable, scrollable editor.
 -- Simplified version of createTextSaveDisplayExt
@@ -136,8 +133,9 @@ createTextSaveDisplay :: String -- ^ title of the window
                       -> String -- ^ default filename for saving the text
                       -> String -- ^ text to be displayed
                       -> IO()
-createTextSaveDisplay t f txt =
-    do createTextSaveDisplayExt t f txt [size(100,44)] done; done
+createTextSaveDisplay t f txt = do
+  createTextSaveDisplayExt t f txt [size(100,44)] done
+  done
 
 --- added by KL
 -- |
@@ -148,7 +146,7 @@ askFileNameAndSave :: String -- ^ default filename for saving the text
                    -> IO ()
 askFileNameAndSave defFN txt =
     do curDir <- getCurrentDirectory
-       selev <- newFileDialogStr "Save file" (curDir++'/':defFN)
+       selev <- newFileDialogStr "Save file" (curDir ++ '/' : defFN)
        mfile <- sync selev
        maybe done saveFile mfile
     where saveFile fp = writeFile fp txt
@@ -171,7 +169,7 @@ displayTheoryWithWarning :: String -- ^ kind of theory
                          -> G_theory -- ^ to be shown theory
                          -> IO ()
 displayTheoryWithWarning kind thname warningTxt gth =
-    let str = warningTxt ++ (showDoc gth "\n")
+    let str = warningTxt ++ showDoc gth "\n"
         title = kind ++ " of " ++ thname
      in createTextSaveDisplay title (thname++".het") str
 
@@ -217,12 +215,12 @@ populateGoalsListBox :: ListBox String -- ^ listbox
 --  length must remain constant after the first call
                      -> IO ()
 populateGoalsListBox lb v = do
-  selectedOld <- (getSelection lb) :: IO (Maybe [Int])
+  selectedOld <- getSelection lb :: IO (Maybe [Int])
   lb # value (toString v)
   maybe (return ()) (mapM_ (\n -> selection n lb)) selectedOld
   where
     toString = map (\ LBGoalView {statIndicator = i, goalDescription = d} ->
-                        (indicatorString i) ++ (' ' : d))
+                        indicatorString i ++ ' ' : d)
 
 -- | Converts a 'Logic.Prover.ProofStatus' into a 'LBStatusIndicator'
 indicatorFromProofStatus :: ProofStatus a
@@ -254,7 +252,6 @@ disableWids = mapM_ ( \ ew -> case ew of EnW w -> disable w >> return ())
 -- otherwise the widgets are disabled
 enableWidsUponSelection :: ListBox String -> [EnableWid] -> IO ()
 enableWidsUponSelection lb goalSpecificWids =
-    do sel <- (getSelection lb) :: IO (Maybe [Int])
+  (getSelection lb :: IO (Maybe [Int])) >>=
        maybe (disableWids goalSpecificWids)
              (const $ enableWids goalSpecificWids)
-             sel

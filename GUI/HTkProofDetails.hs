@@ -16,6 +16,7 @@ module GUI.HTkProofDetails (doShowProofDetails) where
 import qualified Common.Doc as Pretty
 import qualified Common.OrderedMap as OMap
 
+import Data.Maybe
 import Data.List
 import Data.IORef
 
@@ -85,8 +86,8 @@ data Content = TacticScriptText | ProofTreeText deriving Eq
 -}
 numberOfLines :: String
               -> Int
-numberOfLines str =
-    foldr (\ch su -> su + (if ch == '\n' then 1 else 0)) 0 str
+numberOfLines =
+    foldr (\ ch -> if ch == '\n' then (+ 1) else id) 0
 
 {- |
   Change the x-value of a 'Position' by a given arithmetical function and value.
@@ -126,15 +127,14 @@ fillGoalDescription (cmo, basicProof) =
         stat str = Pretty.text "Status:" Pretty.<+> Pretty.text str
         printCmWStat (c, bp) =
             Pretty.text "Com:" Pretty.<+> Pretty.text (show c)
-            Pretty.$+$ (indent stdIndent $ show $ printBP bp)
+            Pretty.$+$ indent stdIndent (show $ printBP bp)
         printBP bp = case bp of
                      BasicProof _ ps ->
                       stat (show $ goalStatus ps) Pretty.$+$
                       (case goalStatus ps of
                        Proved _ -> Pretty.text "Used axioms:" Pretty.<+>
-                           (Pretty.fsep (Pretty.punctuate Pretty.comma
-                                         (map (Pretty.text . show) $
-                                                 usedAxioms ps)))
+                           Pretty.fsep (Pretty.punctuate Pretty.comma
+                             $ map (Pretty.text . show) $ usedAxioms ps)
                            Pretty.$+$ Pretty.text "Used time:" Pretty.<+>
                                  Pretty.text (show $ usedTime ps)
                        _ -> Pretty.empty)
@@ -179,20 +179,19 @@ adaptTextPositions :: (Int -> Int -> Int)  -- ^ mostly add or subtract values
                    -> OMap.OMap (String, Int) GoalDescription
                       -- ^ Map for all proofs
                    -> OMap.OMap (String, Int) GoalDescription -- ^ adapted Map
-adaptTextPositions f diff pos li =
-    OMap.map (\ gDesc ->
+adaptTextPositions f diff pos =
+    OMap.map $ \ gDesc ->
       let tst = tacticScriptText gDesc
           ptt = proofTreeText gDesc
       in gDesc {
-           tacticScriptText = if (textStartPosition tst) > pos
+           tacticScriptText = if textStartPosition tst > pos
                then tst { textStartPosition = changePosition f diff $
                                 textStartPosition tst }
                else tst,
-           proofTreeText = if (textStartPosition ptt) > pos
+           proofTreeText = if textStartPosition ptt > pos
                then ptt { textStartPosition = changePosition f diff $
                                 textStartPosition ptt }
-               else ptt } )
-      li
+               else ptt }
 
 -- ** main GUI
 
@@ -254,10 +253,10 @@ doShowProofDetails prGUISt =
 
     stateRef <- newIORef elementMap
     ed # state Normal
-    mapM_ (\ ((gName,ind), goalDesc) -> do
+    mapM_ (\ ((gName, ind), goalDesc) -> do
         when (ind == 0) $
           appendText ed $ replicate 75 '-' ++ "\n" ++ gName ++ "\n"
-        appendText ed $ (proverInfo goalDesc) ++ "\n"
+        appendText ed $ proverInfo goalDesc ++ "\n"
         opTextTS <- addTextTagButton sttDesc (tacticScriptText goalDesc)
                        TacticScriptText ed (gName, ind) stateRef
         opTextPT <- addTextTagButton sptDesc (proofTreeText goalDesc)
@@ -265,8 +264,7 @@ doShowProofDetails prGUISt =
         appendText ed "\n"
         let goalDesc' = goalDesc{ tacticScriptText = opTextTS,
                                   proofTreeText    = opTextPT }
-        modifyIORef stateRef (\ref -> OMap.update (\ _ -> Just goalDesc')
-                                                  (gName, ind) ref)
+        modifyIORef stateRef (OMap.update (\ _ -> Just goalDesc') (gName, ind))
       ) $ OMap.toList elementMap
 
     ed # state Disabled
@@ -277,35 +275,32 @@ doShowProofDetails prGUISt =
     toggleTacticScript <- clicked tsBut
     toggleProofTree <- clicked ptBut
     btnState <- newIORef (False, False)
-
-    spawnEvent (forever (
-           quit >>> do destroy win
-        +>
-           save >>> do disable qBut; disable sBut
-                       curDir <- getCurrentDirectory
-                       let f = curDir++'/':thName++"-proof-details.txt"
-                       mfile <- fileSaveDialog f [ ("Text",["*.txt"])
-                                                 , ("All Files",["*"])] Nothing
-                       maybe done (\fp -> writeTextToFile ed fp) mfile
-                       enable qBut; enable sBut
-                       done
-        +>
-           toggleTacticScript >>> do
+    _ <- spawnEvent $ forever
+        $ quit >>> destroy win
+        +> save >>> do
+          disable qBut
+          disable sBut
+          curDir <- getCurrentDirectory
+          let f = curDir ++ '/' : thName ++ "-proof-details.txt"
+          mfile <- fileSaveDialog f [ ("Text",["*.txt"])
+                                    , ("All Files",["*"])] Nothing
+          maybe done (writeTextToFile ed) mfile
+          enable qBut
+          enable sBut
+          done
+        +> toggleTacticScript >>> do
              (expTS, expPT) <- readIORef btnState
              tsBut # text (if expTS then expand_tacticScripts
                                     else hide_tacticScripts)
              toggleMultipleTags TacticScriptText expTS ed stateRef
              writeIORef btnState (not expTS, expPT)
-        +>
-           toggleProofTree >>> do
+        +> toggleProofTree >>> do
              (expTS, expPT) <- readIORef btnState
              ptBut # text (if expPT then expand_proofTrees
                                     else hide_proofTrees)
              toggleMultipleTags ProofTreeText expPT ed stateRef
              writeIORef btnState (expTS, not expPT)
-        +>
-           editClicked >>> forceFocus ed
-        ))
+        +> editClicked >>> forceFocus ed
     return ()
   where
     expand_tacticScripts = "Expand tactic scripts"
@@ -327,13 +322,12 @@ toggleMultipleTags :: Content -- ^ kind of text tag to toggle
 toggleMultipleTags content expanded ed stateRef = do
     s <- readIORef stateRef
     mapM_ (\ (dKey, goalDesc) -> do
-        let openText = if (content == TacticScriptText)
+        let openText = if content == TacticScriptText
                          then tacticScriptText goalDesc
                          else proofTreeText goalDesc
         when (textShown openText == expanded)
              (toggleTextTag content ed dKey stateRef)
       ) $ OMap.toList s
-
     done
 
 {- |
@@ -351,13 +345,13 @@ toggleTextTag :: Content -- ^ kind of text tag to toggle
               -> IO ()
 toggleTextTag content ed (gName, ind) stateRef = do
     s <- readIORef stateRef
-    let gd = maybe (emptyGoalDescription gName) id $
-                     OMap.lookup (gName, ind) s
-        openText = if (content == TacticScriptText) then tacticScriptText gd
+    let gd = fromMaybe (emptyGoalDescription gName)
+             $ OMap.lookup (gName, ind) s
+        openText = if content == TacticScriptText then tacticScriptText gd
                                                     else proofTreeText gd
         tsp = textStartPosition openText
         nol = (numberOfLines $ additionalText openText)
-    if (not $ textShown openText) then do
+    if not $ textShown openText then do
         ed # state Normal
         insertText ed tsp $ additionalText openText
         ed # state Disabled
@@ -369,7 +363,7 @@ toggleTextTag content ed (gName, ind) stateRef = do
         done
     let openText' = openText { textShown = not $ textShown openText }
         s' = OMap.update
-                 (\_ -> Just $ if (content == TacticScriptText)
+                 (\_ -> Just $ if content == TacticScriptText
                           then gd{ tacticScriptText = openText' }
                           else gd{ proofTreeText =  openText' } )
                  (gName, ind) s
@@ -406,11 +400,14 @@ addTextTagButton cap addText content ed dKey stateRef = do
     (selectTextTag, _) <- bindSimple ttag (ButtonPress (Just 1))
     (enterTT, _) <- bindSimple ttag Enter
     (leaveTT, _) <- bindSimple ttag Leave
-    spawnEvent ( forever (
-                      selectTextTag >>> toggleTextTag content ed dKey stateRef
-                   +> enterTT >>> do ed # cursor hand2; done
-                   +> leaveTT >>> do ed # cursor xterm; done
-                ))
-    return OpenText {additionalText = "\n" ++ (additionalText addText) ++ "\n",
+    _ <- spawnEvent $ forever
+                   $ selectTextTag >>> toggleTextTag content ed dKey stateRef
+                   +> enterTT >>> do
+                     ed # cursor hand2
+                     done
+                   +> leaveTT >>> do
+                     ed # cursor xterm
+                     done
+    return OpenText {additionalText = "\n" ++ additionalText addText ++ "\n",
                      textShown = False,
                      textStartPosition = curPosEnd}
