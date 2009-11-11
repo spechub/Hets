@@ -67,7 +67,7 @@ logics = CASL HasCASL Isabelle Modal Temporal CoCASL COL CspCASL CASL_DL \
 TESTTARGETFILES += CASL/fromKif.hs CASL/capa.hs HasCASL/hacapa.hs \
     Haskell/wrap.hs Isabelle/isa.hs Syntax/hetpa.hs \
     ATC/ATCTest.hs ATC/ATCTest2.hs Common/ATerm/ATermLibTest.hs \
-    Common/ATerm/ATermDiffMain.hs Common/annos.hs Common/test_parser.hs \
+    Common/ATerm/ATermDiffMain.hs Common/annos.hs \
     SoftFOL/tests/PrintTPTPTests.hs Comorphisms/test/showKP.hs \
     Comorphisms/test/sublogicGraph.hs PGIP/ParseProofScript.hs \
     SoftFOL/dfg.hs GUI/displayDependencyGraph.hs

@@ -232,7 +232,6 @@ chgrp wwwbkb Hets.tar.gz
 
 checkMoreBins ()
 {
-Common/test_parser -p casl_id2 Common/test/MixIds.casl
 Haskell/hana ToHaskell/test/*.hascasl.hs
 }
 
