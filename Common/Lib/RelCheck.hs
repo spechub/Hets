@@ -1,4 +1,4 @@
-{-# OPTIONS -fglasgow-exts #-}
+{-# LANGUAGE FlexibleInstances #-}
 {- |
 Module      :  $Header$
 Description :  a couple of test cases mainly for intransKernel
@@ -10,7 +10,6 @@ Stability   :  provisional
 Portability :  non-portable (Arbitrary instance not of form (T a b c))
 
 a couple of test cases mainly for intransKernel
-
 -}
 
 module Common.Lib.RelCheck where
@@ -39,16 +38,16 @@ instance Arbitrary (Rel Int) where
                         insert x y $
                         insert x z $
                         insert z y $
-                        insert y x $ r
+                        insert y x r
                    return r'
 
-prop_intransKernel_transClosure = prp_transClosure intransKernel
+prop_IntransKernelTransClosure = prpTransClosure intransKernel
 
-prp_transClosure intrKern r =
+prpTransClosure intrKern r =
     (Set.size (mostRight rel) <= 3 &&
      length (sccOfClosure rel) > 1 &&
-     length (Map.keys $ toMap r) > 6 )  ==>
-       ((Set.size $ toSet $ irreflex r) < 10) `trivial`
+     length (Map.keys $ toMap r) > 6)  ==>
+       (Set.size (toSet $ irreflex r) < 10) `trivial`
         collect (length (Map.keys $ toMap r))
                  (rel == transClosure (intrKern rel))
     where rel = transClosure r :: Rel Int
@@ -79,30 +78,30 @@ myQuick = Config
   , configEvery   = \n args -> let s = show n in s ++ [ '\b' | _ <- s ]
   }
 
-prp_invTest :: (Rel Int -> Rel Int) -> Rel Int -> Property
-prp_invTest relFun rel =
-    (length (Map.keys $ toMap rel) > 6 )  ==>
-       ((Set.size $ toSet $ irreflex rel) < 10) `trivial`
+prpInvTest :: (Rel Int -> Rel Int) -> Rel Int -> Property
+prpInvTest relFun rel =
+    (length (Map.keys $ toMap rel) > 6)  ==>
+       (Set.size (toSet $ irreflex rel) < 10) `trivial`
         collect (length (Map.keys $ toMap rel))
-                ((not . elem Set.empty) $ Map.elems (toMap $ relFun rel))
+                (notElem Set.empty $ Map.elems (toMap $ relFun rel))
 
-prop_inv_intransKernel = prp_invTest intransKernel -- violated precondition!
-prop_inv_transReduce = prp_invTest transReduce  -- violated precondition!
-prop_inv_transpose = prp_invTest transpose
-prop_inv_irreflex = prp_invTest irreflex
-prop_inv_transClosure = prp_invTest transClosure
+prop_InvIntransKernel = prpInvTest intransKernel -- violated precondition!
+prop_InvTransReduce = prpInvTest transReduce  -- violated precondition!
+prop_InvTranspose = prpInvTest transpose
+prop_InvIrreflex = prpInvTest irreflex
+prop_InvTransClosure = prpInvTest transClosure
 
-prp_eq :: (Rel Int -> Rel Int) -> (Rel Int -> Rel Int) -> Rel Int -> Property
-prp_eq relFun1 relFun2 rel = let clos = transClosure rel in
+prpEq :: (Rel Int -> Rel Int) -> (Rel Int -> Rel Int) -> Rel Int -> Property
+prpEq relFun1 relFun2 rel = let clos = transClosure rel in
     (Set.size (nodes rel) > 6 &&
       clos /= rel && clos /= irreflex clos && transpose rel /= rel) ==>
-       ((Set.size $ toSet rel) < 10) `trivial`
+       (Set.size (toSet rel) < 10) `trivial`
         collect (Set.size (nodes rel))
                 (relFun1 rel == relFun2 rel)
 
-prop_transpose_transpose = prp_eq id (transpose . transpose)
-prop_irreflex_transpose = prp_eq (irreflex .  transpose) (transpose . irreflex)
-prop_transClosure_transpose =
-    prp_eq (transClosure . transpose) (transpose . transClosure)
-prop_transClosure_intransKernel = prp_eq transClosure
+prop_TransposeTranspose = prpEq id (transpose . transpose)
+prop_IrreflexTranspose = prpEq (irreflex .  transpose) (transpose . irreflex)
+prop_TransClosureTranspose =
+    prpEq (transClosure . transpose) (transpose . transClosure)
+prop_TransClosureIntransKernel = prpEq transClosure
     (transClosure . intransKernel . transClosure)

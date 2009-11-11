@@ -222,7 +222,7 @@ elemsSet = Set.unions . Map.elems
    between 1 and the second value that is output. -}
 toPrecMap :: Ord a =>  Rel a -> (Map.Map a Int, Int)
 toPrecMap = foldl ( \ (m1, c) s -> let n = c + 1 in
-                    (Set.fold ( \ i -> Map.insert i n) m1 s, n))
+                    (Set.fold (flip Map.insert n) m1 s, n))
                  (Map.empty, 0) . topSort
 
 topSortDAG :: Ord a => Rel a -> [Set.Set a]
