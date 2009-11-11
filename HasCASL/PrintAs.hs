@@ -487,7 +487,7 @@ instance Pretty SigItems where
             Instance ->
               sep [keyword typeS <+> keyword (instanceS ++ plTypes l), b]
         OpItems b l _ -> noNullPrint l $ topSigKey (show b ++ plOps l)
-            <+> let po = (prettyOpItem $ isPred b) in
+            <+> let po = prettyOpItem $ isPred b in
                 if case item $ last l of
                   OpDecl _ _ a@(_ : _) _ -> case last a of
                     UnitOpAttr {} -> True
@@ -565,6 +565,9 @@ printItScheme ps b = (case ps of
     [p] -> printTypeScheme p
     _ -> pretty) . (if b then unPredTypeScheme else id)
 
+printHead :: [[VarDecl]] -> [Doc]
+printHead = map ((<> space) . parens . printGenVarDecls . map GenVarDecl)
+
 prettyOpItem :: Bool -> OpItem -> Doc
 prettyOpItem b oi = case oi of
         OpDecl l t a _ -> fsep $ punctuate comma (map pretty l)
@@ -573,7 +576,7 @@ prettyOpItem b oi = case oi of
           ++ punctuate comma (map pretty a)
         OpDefn n ps s t _ -> fcat $
             (if null ps then (<> space) else id) (pretty n)
-            : map ((<> space) . parens . printGenVarDecls . map GenVarDecl) ps
+            : printHead ps
             ++ (if b then [] else [colon <+> printItScheme [n] b s <> space])
             ++ [(if b then equiv else equals) <> space, pretty t]
 

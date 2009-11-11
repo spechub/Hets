@@ -28,7 +28,10 @@ import HasCASL.SymbolMapAnalysis
 import HasCASL.Sublogic
 import HasCASL.SimplifyTerm
 import HasCASL.Merge
+import HasCASL.ToItem
+
 import Logic.Logic
+
 import Common.Doc
 import Common.DocUtils
 
@@ -64,6 +67,7 @@ instance Syntax HasCASL BasicSpec
          parse_basic_spec HasCASL = Just basicSpec
          parse_symb_items HasCASL = Just symbItems
          parse_symb_map_items HasCASL = Just symbMapItems
+         toItem HasCASL = bsToItem
 
 instance Category Env Morphism where
     ide = ideMor

@@ -414,6 +414,11 @@ instance Ord TypeArg where
 bestRange :: GetRange a => [a] -> Range -> Range
 bestRange l (Range ps) = Range (rangeToList (getRange l) ++ ps)
 
+instance GetRange OpAttr where
+  getRange a = case a of
+    BinOpAttr _ r -> r
+    UnitOpAttr _ r -> r
+
 instance GetRange Type where
   getRange ty = case ty of
     TypeName i _ _ -> posOfId i
