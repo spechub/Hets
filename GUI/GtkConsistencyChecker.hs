@@ -39,7 +39,7 @@ import Common.LibName (LibName)
 
 import Control.Concurrent (forkIO, killThread)
 import Control.Concurrent.MVar
-import Control.Monad (foldM_, join, mapM_)
+import Control.Monad (foldM_, join, mapM_, when)
 
 import Proofs.AbstractState
 import Proofs.InferBasic (consistencyCheck, ConsistencyStatus (..))
@@ -60,9 +60,13 @@ data FNode = FNode { name :: String
                    , sublogic :: G_sublogics
                    , status :: ConsistencyStatus }
 
+instance Eq Finder where
+  (==) (Finder { fName = n1, comorphism = c1 })
+       (Finder { fName = n2, comorphism = c2 })= n1 == n2 && c1 == c2
+
 -- | Get a markup string containing name and color
 instance Show FNode where
-  show FNode { name = n, status = s} =
+  show FNode { name = n, status = s } =
     "<span color=\"" ++ statusToColor s ++ "\">" ++ statusToPrefix s ++ n ++
     "</span>"
 
@@ -248,21 +252,32 @@ updateNodes view listNodes update lock unlock = do
 -- | Update the list of finder
 updateFinder :: TreeView -> ListStore Finder -> G_sublogics -> IO ()
 updateFinder view list sl = do
-  (update, exit) <- pulseBar "Calculating paths" "please wait..."
-  listStoreClear list
-  forkIOWithPostProcessing
-    (return $ Map.elems $ foldr
-                (\ (cc, c) m ->
-                  let n = getPName cc
-                      f = Map.findWithDefault (Finder n cc [] 0) n m in
-                  Map.insert n (f { comorphism = c : comorphism f}) m
-                ) Map.empty
-                $ getConsCheckers $ findComorphismPaths logicGraph sl)
-    $ \ res -> do
-      mapM_ (listStoreAppend list) res
-      update "finished"
-      exit
-      selectFirst view
+  old <- listStoreToList list
+  let new = Map.elems $ foldr (\ (cc, c) m ->
+              let n = getPName cc
+                  f = Map.findWithDefault (Finder n cc [] 0) n m
+              in Map.insert n (f { comorphism = c : comorphism f}) m) Map.empty
+              $ getConsCheckers $ findComorphismPaths logicGraph sl
+  when (old /= new) $ do
+    -- update list and try to select previos finder
+    selected' <- getSelectedSingle view list
+    sel <- treeViewGetSelection view
+    listStoreClear list
+    mapM_ (listStoreAppend list) $ mergeFinder old new
+    maybe (selectFirst view)
+      (\ (_,f) -> let i = findIndex ((fName f ==) . fName) new in
+        maybe (selectFirst view) (treeSelectionSelectPath sel . (:[])) i
+      ) selected'
+
+-- | Try to select previos selected comorphism if possible
+mergeFinder :: [Finder] -> [Finder] -> [Finder]
+mergeFinder old new = let m' = Map.fromList $ map (\ f -> (fName f, f)) new in
+  Map.elems $ foldl (\ m (Finder { fName = n, comorphism = cc, selected = i}) ->
+      case Map.lookup n m of
+        Nothing -> m
+        Just f@(Finder { comorphism = cc' }) -> let c = cc !! i in
+          Map.insert n (f { selected = fromMaybe 0 $ findIndex (== c) cc' }) m
+    ) m' old
 
 check :: LibName -> LibEnv -> DGraph -> Finder -> Int -> ListStore FNode
       -> (Double -> String -> IO ()) -> [(Int,FNode)] -> IO ()
@@ -342,8 +357,13 @@ showModelViewAux lock title list = do
   onDestroy window $ do takeMVar lock; return ()
 
   putMVar lock $ do
-    nodes' <- listStoreToList list
-    updateListData listNodes $ filterNodes nodes'
+    sel' <- getSelectedSingle trvNodes listNodes
+    sel <- treeViewGetSelection trvNodes
+    nodes'' <- listStoreToList list
+    let nodes' = filterNodes nodes''
+    updateListData listNodes nodes'
+    maybe (selectFirst trvNodes) (treeSelectionSelectPath sel . (:[]))
+      $ maybe Nothing (\ (_,n) -> findIndex ((name n ==) . name) nodes') sel'
 
   widgetSetSizeRequest window 800 600
   widgetSetSizeRequest frNodes 250 (-1)

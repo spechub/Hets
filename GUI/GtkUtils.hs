@@ -498,14 +498,14 @@ setListSelectorMultiple view btnAll btnNone btnInvert action = do
   treeSelectionSetMode selector SelectionMultiple
 
   -- setup selector
-  afterSelectionChanged selector action
+  handle <- afterSelectionChanged selector action
 
   treeSelectionSelectAll selector
 
   -- setup buttons
   onClicked btnAll $ selectAll view
   onClicked btnNone $ selectNone view
-  onClicked btnInvert $ selectInvert view
+  onClicked btnInvert $ do selectInvert view handle; action
   return ()
 
 -- | Selects the first item if possible
@@ -531,8 +531,9 @@ selectNone :: TreeView -> IO ()
 selectNone view = treeViewGetSelection view >>= treeSelectionUnselectAll
 
 -- | Invert selection of list
-selectInvert :: TreeView -> IO ()
-selectInvert view = do
+selectInvert :: TreeView -> ConnectId TreeSelection -> IO ()
+selectInvert view handle = do
+  signalBlock handle
   sel <- treeViewGetSelection view
   selected <- treeSelectionGetSelectedRows sel
   treeSelectionSelectAll sel
@@ -540,6 +541,7 @@ selectInvert view = do
   mapM_ (\ row -> (if elem row selected
       then treeSelectionUnselectPath else treeSelectionSelectPath) sel row
     ) rows
+  signalUnblock handle
 
 -- | Get selected item
 getSelectedSingle :: TreeView -> ListStore a -> IO (Maybe (Int,a))
