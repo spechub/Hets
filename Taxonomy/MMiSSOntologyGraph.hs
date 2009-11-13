@@ -53,7 +53,7 @@ displayClassGraph onto startClass = do
     updateDaVinciGraph classGraph gid ginfo
     setEmptyRelationSpecs gid ginfo onto
     A.Result gid' _ <- A.redisplay gid ginfo
-    A.get_graphid gid' ginfo
+    A.getGraphid gid' ginfo
 
 setEmptyRelationSpecs :: A.Descr -> A.GraphInfo -> MMiSSOntology -> IO ()
 setEmptyRelationSpecs gid gv onto = do

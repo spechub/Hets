@@ -302,7 +302,7 @@ isHiddenNode' g nId = isNothing $ udgNode $ get nId $ nodes g
 isHiddenNode :: GraphInfo -- ^ The graph
              -> NodeId -- ^ ID of the node
              -> IO Bool -- ^ Is hidden
-isHiddenNode gi nId = wrapperBool (\ g -> isHiddenNode' g nId) gi
+isHiddenNode gi nId = wrapperBool (flip isHiddenNode' nId) gi
 
 -- | Shows a hidden node again
 showNode :: AbstractionGraph -- ^ The graph
@@ -343,7 +343,7 @@ focusNode' g nId = maybe (error "focusNode: node is hidden!")
 focusNode :: GraphInfo -- ^ The graph
           -> NodeId -- ^ ID of the node
           -> IO ()
-focusNode gi nId = wrapperRead (\ g -> focusNode' g nId) gi
+focusNode gi nId = wrapperRead (flip focusNode' nId) gi
 
 {- Functions for adding, deleting, changing and hidding edges.-}
 
@@ -460,7 +460,7 @@ hideSetOfEdgeTypes :: GraphInfo -- ^ The graph
                    -> IO ()
 hideSetOfEdgeTypes gi eT = do
   (update, exit) <- pulseBar "Updating graph" "hiding/showing edge types..."
-  wrapperWrite (\g -> hideSetOfEdgeTypes' g eT) gi
+  wrapperWrite (flip hideSetOfEdgeTypes' eT) gi
   update "finished"
   exit
 
@@ -474,7 +474,7 @@ isHiddenEdge' g eId = isNothing $ udgEdge $ get eId $ edges g
 isHiddenEdge :: GraphInfo -- ^ The graph
              -> EdgeId -- ^ ID of the edge
              -> IO Bool -- ^ Is edge hidden
-isHiddenEdge gi eId = wrapperBool (\ g -> isHiddenEdge' g eId) gi
+isHiddenEdge gi eId = wrapperBool (flip isHiddenEdge' eId) gi
 
 -- | Shows a hidden edge again
 showEdge :: AbstractionGraph -- ^ The graph

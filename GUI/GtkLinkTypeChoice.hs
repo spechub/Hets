@@ -77,9 +77,9 @@ showLinkTypeChoice ioRefDeselect updateFunction = postGUIAsync $ do
                              ) keys
     writeIORef ioRefDeselect edgeTypeNames
     let edgeTypes =  foldl (\ eList (e, eI) -> e:eI:eList) []
-                           $ map (\ name -> Map.findWithDefault
-                                   (error "GtkLinkTypeChoice: lookup error!")
-                                   name edgeMap
+                           $ map (flip (Map.findWithDefault
+                                   (error "GtkLinkTypeChoice: lookup error!"))
+                                   edgeMap
                                  ) edgeTypeNames
     forkIO_ $ updateFunction edgeTypes
     widgetDestroy window

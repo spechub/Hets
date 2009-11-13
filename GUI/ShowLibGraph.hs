@@ -73,9 +73,8 @@ showLibGraph gInfo@(GInfo { windowCount = wc
 reloadLibGraph :: GInfo -> IORef DaVinciGraphTypeSyn -> IORef NodeEdgeList
                -> IO ()
 reloadLibGraph gInfo graph nodesEdges = do
-  warningDialog "Reload library" warnTxt
-                $ Just $ reloadLibGraph' gInfo graph nodesEdges
-  return ()
+  b <- warningDialog "Reload library" warnTxt Nothing
+  when b $ reloadLibGraph' gInfo graph nodesEdges
 
 warnTxt :: String
 warnTxt = unlines
@@ -114,8 +113,8 @@ reloadLibGraph' gInfo@(GInfo { hetcatsOpts = opts
 -- | Translate Graph
 translate :: GInfo -> IO ()
 translate gInfo = do
-  warningDialog "Translate library" warnTxt $ Just $ translate' gInfo
-  return ()
+  b <- warningDialog "Translate library" warnTxt Nothing
+  when b $ translate' gInfo
 
 -- | Translate Graph
 translate' :: GInfo -> IO ()

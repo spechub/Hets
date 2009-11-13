@@ -443,7 +443,7 @@ textView title message mfile = do
       onClicked btnSave $ do
         fileDialog FileChooserActionSave file
                    [("Nothing", ["*"]), ("Text", ["*.txt"])]
-                   $ Just (\ filepath -> writeFile filepath message)
+                   $ Just (flip writeFile message)
         return ()
       return ()
     Nothing -> return ()
@@ -606,7 +606,7 @@ updateListData list listData = do
 
 -- | Activates or deactivates a list of widgets
 activate :: [Widget] -> Bool -> IO ()
-activate widgets active = mapM_ (\ w -> widgetSetSensitive w active) widgets
+activate widgets active = mapM_ (flip widgetSetSensitive active) widgets
 
 
 -- * Datatypes and functions for prover

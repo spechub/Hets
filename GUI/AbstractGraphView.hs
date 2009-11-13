@@ -24,7 +24,7 @@ module GUI.AbstractGraphView
     , makegraph
     , makegraphExt
     , redisplay
-    , get_graphid
+    , getGraphid
     , Descr
     , GraphInfo
     , RelationViewSpec(RelViewSpec)
@@ -191,8 +191,8 @@ fetchGraph gid gv delete cmd = do
       where gs' = remove gid gs
     Nothing -> return (Result 0 (Just ("Graph id "++show gid++" not found")))
 
-get_graphid :: Descr -> GraphInfo -> IO OurGraph
-get_graphid gid gv = do
+getGraphid :: Descr -> GraphInfo -> IO OurGraph
+getGraphid gid gv = do
   (gs,_) <- readIORef gv
   case lookup gid gs of
     Just g -> return $ theGraph g

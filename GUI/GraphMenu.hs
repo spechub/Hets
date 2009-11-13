@@ -412,7 +412,7 @@ createMenuButtonProveStructured gInfo =
 createMenuButtonCheckCons :: GInfo -> ButtonMenu GA.NodeValue
 createMenuButtonCheckCons gInfo =
   createMenuButton "Check conservativity"
-    (\ descr -> checkconservativityOfNode descr gInfo) gInfo
+    (flip checkconservativityOfNode gInfo) gInfo
 
 #ifndef GTKGLADE
 createMenuButtonCCCAtNode :: GInfo -> ButtonMenu GA.NodeValue

@@ -20,12 +20,13 @@ module GUI.ConsoleUtils where
 
 import Data.Char
 import Data.List
+import Control.Monad ( unless )
 
 -- | present a list of choices and return the selection
 listBox :: String -> [String] -> IO (Maybe Int)
 listBox prompt choices = do
    putStrLn prompt
-   mapM_ putStrLn $ zipWith (\ n c -> shows n ": " ++ c) [0::Int ..] choices
+   mapM_ putStrLn $ zipWith (\ n -> (shows n ": " ++)) [0::Int ..] choices
    putStrLn "Please enter a number on the next line"
    s <- getLine
    if all isDigit s then
@@ -63,4 +64,4 @@ askFileNameAndSave f txt = do
       else do
       putStrLn "enter new file name (or abort with return):"
       n <- getLine
-      if null n then return () else askFileNameAndSave n txt
+      unless (null n) askFileNameAndSave n txt
