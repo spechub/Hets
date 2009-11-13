@@ -176,7 +176,6 @@ warningDialog _ = confirmMess
 -- | create a window which displays a given question
 questionDialog :: String  -- ^ Title
                -> String  -- ^ Message
-               -> Maybe (IO ()) -- ^ Action on Yes
                -> IO Bool
 questionDialog _ = confirmMess
 

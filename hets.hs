@@ -35,6 +35,8 @@ import OMDoc.OMDocInput
 
 #ifdef UNI_PACKAGE
 import GUI.ShowGraph
+#else
+import Control.Monad ( when )
 #endif
 
 #ifdef PROGRAMATICA
@@ -84,14 +86,13 @@ processFile opts file = do
     displayGraph file opts res
 
 displayGraph :: FilePath -> HetcatsOpts -> Maybe (LibName, LibEnv) -> IO ()
-displayGraph file opts res =
-  case guiType opts of
-    NoGui -> return ()
-    UseGui ->
 #ifdef UNI_PACKAGE
-        showGraph file opts res
+displayGraph file opts res = case guiType opts of
+    NoGui -> return ()
+    UseGui -> showGraph file opts res
 #else
-        fail $ "No graph display interface; \n"
-          ++ "UNI_PACKAGE option has been "
-          ++ "disabled during compilation of Hets"
+displayGraph _ opts _ = when (guiType opts == UseGui)
+  $ fail $ "No graph display interface; \n"
+            ++ "UNI_PACKAGE option has been "
+            ++ "disabled during compilation of Hets"
 #endif

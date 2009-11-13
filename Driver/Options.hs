@@ -261,6 +261,7 @@ instance Show AnaType where
 
 -- | 'GuiType' determines if we want the GUI shown
 data GuiType = UseGui | NoGui
+  deriving Eq
 
 instance Show GuiType where
   show g = case g of

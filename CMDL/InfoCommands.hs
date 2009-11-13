@@ -197,11 +197,10 @@ cInfo input state =
              in return $ genMessage tmpErrs''
                          (intercalate "\n\n" (strsNode ++ strsEdge)) state
 
-taxoShowGeneric:: TaxoGraphKind -> CmdlState
-                      -> [LNode DGNodeLab] -> IO()
+taxoShowGeneric:: TaxoGraphKind -> CmdlState -> [LNode DGNodeLab] -> IO()
+#ifdef UNI_PACKAGE
 taxoShowGeneric kind state ls =
   case ls of
-#ifdef UNI_PACKAGE
     (nb,nlab):ll ->
      case i_state $ intState state of
       Nothing -> return ()
@@ -227,8 +226,10 @@ taxoShowGeneric kind state ls =
                taxoShowGeneric kind state ll
         -- theory couldn't be computed so just go next
         _ -> taxoShowGeneric kind state ll
-#endif
     _ -> return ()
+#else
+taxoShowGeneric _ _ _ = return ()
+#endif
 
 cShowTaxoGraph :: TaxoGraphKind -> String -> CmdlState -> IO CmdlState
 cShowTaxoGraph kind input state =

@@ -27,9 +27,9 @@ import SoftFOL.Sign
 import SoftFOL.Print
 import SoftFOL.Conversions
 import SoftFOL.Morphism
-import Common.ProverTools
 
 #ifdef UNI_PACKAGE
+import Common.ProverTools
 import SoftFOL.ProveSPASS
 #ifndef NOMATHSERVER
 import SoftFOL.ProveMathServ

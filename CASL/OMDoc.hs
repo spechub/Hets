@@ -192,9 +192,9 @@ makeObjectType spid (OpType opkind opargs oprange) =
 
 -- | the qualified name of an identifier consisting of
 --   the name, the spec and the lib
-data NameTriple = NameTriple { getName :: String,
-                               getSpecName :: String,
-                               getLibName :: String } deriving Show
+data NameTriple = NameTriple { getName :: String
+                             , getSpecName :: String
+                             , getLibName :: String } deriving Show
 
 
 -- gn_Over has still to be outcoded
@@ -205,11 +205,13 @@ idToName spid = getName . (idToNameTriple spid)
 idToNameTriple :: SPEC_ID -> Id -> NameTriple
 -- spid-structure
 idToNameTriple spid s
-    | isQualName s = NameTriple (show $ unQualName s)
-                     (show $ getNodeId s) (show $ libIdOfQualName s)
+    | isQualName s = NameTriple { getName = show $ unQualName s
+                                , getSpecName = show $ getNodeId s
+                                , getLibName = show $ libIdOfQualName s }
     | otherwise = case spid of
-                    (SPEC_ID sid lid) ->
-                        NameTriple (show s) (show sid) (show lid)
+                    (SPEC_ID sid lid) -> NameTriple { getName = show s
+                                                    , getSpecName = show sid
+                                                    , getLibName = show lid }
                     NOSPEC -> error $ "unqualified morphism entry" ++ show s
 
 isLocalId :: SPEC_ID -> Id -> Bool
@@ -224,7 +226,7 @@ isLocalId _ _ = True
 
 -- | probably outsource this to a generic module
 makeOMS :: NameTriple -> OMElement
-makeOMS (NameTriple i s l) =
+makeOMS (NameTriple { getName = i, getSpecName = s, getLibName = l }) =
 -- special handling for library entries !??
     OMS (CD s $ if l == "library" || l == "" then Nothing else Just l)
             $ OMName i

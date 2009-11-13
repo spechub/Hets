@@ -26,7 +26,6 @@ import Common.Id
 import System.Exit
 import System.IO.Unsafe
 import qualified Data.Map as Map
-import System.Cmd
 import System.Directory
 import Data.Time.Clock
 import System.Process

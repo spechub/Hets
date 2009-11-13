@@ -64,4 +64,4 @@ askFileNameAndSave f txt = do
       else do
       putStrLn "enter new file name (or abort with return):"
       n <- getLine
-      unless (null n) askFileNameAndSave n txt
+      unless (null n) $ askFileNameAndSave n txt

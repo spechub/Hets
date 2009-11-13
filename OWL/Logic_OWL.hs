@@ -32,11 +32,10 @@ import OWL.Sign
 import OWL.StaticAnalysis
 import OWL.Sublogic
 import OWL.Morphism
+#ifdef UNI_PACKAGE
 import Common.Consistency
 import Common.ProverTools
-#ifdef UNI_PACKAGE
 import OWL.ProvePellet
--- import OWL.ProveFact
 import OWL.Conservativity
 import OWL.Taxonomy
 #endif

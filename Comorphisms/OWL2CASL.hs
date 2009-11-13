@@ -22,7 +22,6 @@ import Control.Monad
 import Data.Char
 import qualified Data.Set as Set
 import qualified Data.Map as Map
-import Comorphisms.GetPreludeLib
 
 --OWL = domain
 import OWL.Logic_OWL

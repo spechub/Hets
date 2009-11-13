@@ -129,9 +129,7 @@ forkIO_ :: IO () -> IO ()
 forkIO_ f = forkIO f >> return ()
 
 forkIOWithPostProcessing :: IO a -> (a -> IO ()) -> IO ()
-forkIOWithPostProcessing action post = forkIO_ $ do
-  result <- action
-  postGUIAsync $ post result
+forkIOWithPostProcessing action post = forkIO_ $ action >>= postGUIAsync . post
 
 {- * Usefull windows and function.
      !!! IMPORTANT for all following functions !!!
@@ -489,9 +487,8 @@ setListSelectorSingle :: TreeView -> IO () -> IO ()
 setListSelectorSingle view action= do
   selector <- treeViewGetSelection view
   treeSelectionSetMode selector SelectionSingle
-  onCursorChanged view action
+  afterSelectionChanged selector action
   selectFirst view
-  return ()
 
 -- | Setup list with multiple selection
 setListSelectorMultiple :: TreeView -> Button -> Button -> Button -> IO ()
@@ -501,14 +498,14 @@ setListSelectorMultiple view btnAll btnNone btnInvert action = do
   treeSelectionSetMode selector SelectionMultiple
 
   -- setup selector
-  onCursorChanged view action
+  afterSelectionChanged selector action
 
   treeSelectionSelectAll selector
 
   -- setup buttons
-  onClicked btnAll $ do selectAll view; action
-  onClicked btnNone $ do selectNone view; action
-  onClicked btnInvert $ do selectInvert view; action
+  onClicked btnAll $ selectAll view
+  onClicked btnNone $ selectNone view
+  onClicked btnInvert $ selectInvert view
   return ()
 
 -- | Selects the first item if possible

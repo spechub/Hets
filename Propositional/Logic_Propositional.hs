@@ -39,6 +39,8 @@ import Propositional.Analysis
 import Propositional.Sublogic as Sublogic
 
 #ifdef UNI_PACKAGE
+import Common.ProverTools
+import Common.Consistency
 #ifdef TABULAR_PACKAGE
 import Propositional.ProveWithTruthTable
 #endif
@@ -49,8 +51,6 @@ import Propositional.ProveMinisat
 
 import ATC.ProofTree ()
 import Common.ProofTree
-import Common.ProverTools
-import Common.Consistency
 
 import qualified Data.Map as Map
 

@@ -37,9 +37,9 @@ import Comorphisms.LogicGraph (logicGraph)
 
 import Common.LibName (LibName)
 
-import Control.Concurrent (forkIO, killThread, myThreadId)
+import Control.Concurrent (forkIO, killThread)
 import Control.Concurrent.MVar
-import Control.Monad (foldM, join, mapM_)
+import Control.Monad (foldM_, join, mapM_)
 
 import Proofs.AbstractState
 import Proofs.InferBasic (consistencyCheck, ConsistencyStatus (..))
@@ -143,8 +143,8 @@ showConsistencyChecker gInfo@(GInfo { libName = ln }) = postGUIAsync $ do
   widgetSetSensitive btnCheck False
   widgetSetSensitive btnResults False
 
-  tid' <- myThreadId
-  threadId <- newMVar tid'
+  threadId <- newEmptyMVar
+  wait <- newEmptyMVar
   mView <- newEmptyMVar
 
   -- get nodes
@@ -206,7 +206,7 @@ showConsistencyChecker gInfo@(GInfo { libName = ln }) = postGUIAsync $ do
   onClicked btnResults $ showModelView mView "Models" listNodes
   onClicked btnClose $ widgetDestroy window
   onClicked btnFineGrained $ fineGrainedSelection trvFinder listFinder update
-  onClicked btnStop $ tryTakeMVar threadId >>=maybe (return ()) killThread
+  onClicked btnStop $ takeMVar threadId >>= killThread >>= putMVar wait
 
   onClicked btnCheck $ do
     activate checkWidgets False
@@ -218,22 +218,15 @@ showConsistencyChecker gInfo@(GInfo { libName = ln }) = postGUIAsync $ do
       Nothing -> error "Consistency checker: internal error"
       Just (_,f) -> return f
     switch False
-    mtid <- tryTakeMVar threadId
-    maybe (error "MVar was not set.") (\ _ -> return ()) mtid
     tid <- forkIO $ do
-      res <- check ln le dg f timeout updat nodes'
-      postGUIAsync $ do
-        widgetSetSensitive btnStop False
-        mapM_ (uncurry (listStoreSetValue listNodes)) res
-        switch True
-        showModelView mView "Results of consistency check" listNodes
-        activate checkWidgets True
-        exit
+      check ln le dg f timeout listNodes updat nodes'
+      putMVar wait ()
     putMVar threadId tid
     forkIO_ $ do
-      putMVar threadId tid'
-      postGUISync $ do
+      takeMVar wait
+      postGUIAsync $ do
         switch True
+        tryTakeMVar threadId
         showModelView mView "Results of consistency check" listNodes
         activate checkWidgets True
         exit
@@ -271,17 +264,16 @@ updateFinder view list sl = do
       exit
       selectFirst view
 
-check :: LibName -> LibEnv -> DGraph -> Finder -> Int
-      -> (Double -> String -> IO ()) -> [(Int,FNode)] -> IO [(Int, FNode)]
+check :: LibName -> LibEnv -> DGraph -> Finder -> Int -> ListStore FNode
+      -> (Double -> String -> IO ()) -> [(Int,FNode)] -> IO ()
 check ln le dg (Finder { finder = cc, comorphism = cs, selected = i}) timeout
-      update nodes = do
-  let count' = fromIntegral $ length nodes
-      c = cs !! i
-  (_,r) <- foldM (\ (count, r) (row, fn@(FNode { name = n', node = n })) -> do
-                   postGUISync $ update (count / count') n'
-                   res <- consistencyCheck cc c ln le dg n timeout
-                   return (count+1, (row, fn { status = res }):r)) (0,[]) nodes
-  return r
+      listNodes update nodes = let count' = fromIntegral $ length nodes
+                                   c = cs !! i in
+  foldM_ (\ count (row, fn@(FNode { name = n', node = n })) -> do
+           postGUISync $ update (count / count') n'
+           res <- consistencyCheck cc c ln le dg n timeout
+           postGUISync $ listStoreSetValue listNodes row fn { status = res }
+           return $ count + 1) 0 nodes
 
 fineGrainedSelection :: TreeView -> ListStore Finder -> IO () -> IO ()
 fineGrainedSelection view list unlock = do
