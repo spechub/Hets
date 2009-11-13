@@ -66,14 +66,12 @@ errorDialog = errorDialogExt
 -- | create a window which displays a given warning and ask for continue
 warningDialog :: String -- ^ Title
               -> String -- ^ Message
-              -> Maybe (IO ()) -- ^ Action on Ok
               -> IO Bool
 warningDialog = warningDialogExt
 
 -- | create a window which displays a given question
 questionDialog :: String  -- ^ Title
                -> String  -- ^ Message
-               -> Maybe (IO ()) -- ^ Action on Yes
                -> IO Bool
 questionDialog = questionDialogExt
 
@@ -172,30 +170,15 @@ errorDialog _ m = errorMess m
 -- | create a window which displays a given warning and ask for continue
 warningDialog :: String -- ^ Title
               -> String -- ^ Message
-              -> Maybe (IO ()) -- ^ Action on Ok
               -> IO Bool
-warningDialog _ m mAction = do
-  ret <- confirmMess m
-  case ret of
-    True -> case mAction of
-      Just action -> action
-      Nothing -> return ()
-    False -> return ()
-  return ret
+warningDialog _ = confirmMess
 
 -- | create a window which displays a given question
 questionDialog :: String  -- ^ Title
                -> String  -- ^ Message
                -> Maybe (IO ()) -- ^ Action on Yes
                -> IO Bool
-questionDialog _ m mAction = do
-  ret <- confirmMess m
-  case ret of
-    True -> case mAction of
-      Just action -> action
-      Nothing -> return ()
-    False -> return ()
-  return ret
+questionDialog _ = confirmMess
 
 fileOpenDialog :: FilePath -- ^ Defaultname for file
                -> [(String, [String])] -- ^ Filter (name, pattern list)

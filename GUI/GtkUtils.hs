@@ -93,8 +93,6 @@ import Common.DocUtils (showDoc)
 import Control.Concurrent (forkIO)
 import Control.Monad (when)
 
-import Data.Maybe (fromMaybe)
-
 import System.Directory ( removeFile, getTemporaryDirectory, doesFileExist
                         , canonicalizePath)
 import System.FilePath (takeFileName, takeDirectory)
@@ -144,9 +142,8 @@ forkIOWithPostProcessing action post = forkIO_ $ do
 dialog :: MessageType -- ^ Dialogtype
        -> String -- ^ Title
        -> String -- ^ Message
-       -> Maybe (IO()) -- ^ Action on Ok, Yes
        -> IO Bool
-dialog messageType title message mAction = do
+dialog messageType title message = do
   dlg <- case messageType of
     MessageInfo ->
       messageDialogNew Nothing [] messageType ButtonsOk message
@@ -160,23 +157,19 @@ dialog messageType title message mAction = do
   windowSetTitle dlg title
 
   response <- dialogRun dlg
-  choice <- case response of
+  widgetDestroy dlg
+
+  case response of
     ResponseOk -> return True
     ResponseYes -> return True
     _ -> return False
-
-  widgetDestroy dlg
-
-  when choice $ fromMaybe (return ()) mAction
-
-  return choice
 
 -- | create a window which displays a given text
 infoDialog :: String -- ^ Title
            -> String -- ^ Message
            -> IO ()
 infoDialog title message = do
-  dialog MessageInfo title message Nothing
+  dialog MessageInfo title message
   return ()
 
 -- | create a window which displays a given text
@@ -190,7 +183,7 @@ errorDialog :: String -- ^ Title
             -> String -- ^ Message
             -> IO ()
 errorDialog title message = do
-  dialog MessageError title message Nothing
+  dialog MessageError title message
   return ()
 
 -- | create a window which displays a given error
@@ -202,30 +195,26 @@ errorDialogExt title = postGUISync . errorDialog title
 -- | create a window which displays a given warning and ask for continue
 warningDialog :: String -- ^ Title
               -> String -- ^ Message
-              -> Maybe (IO ()) -- ^ Action on Ok
               -> IO Bool
 warningDialog = dialog MessageWarning
 
 -- | create a window which displays a given warning and ask for continue
 warningDialogExt :: String -- ^ Title
                  -> String -- ^ Message
-                 -> Maybe (IO ()) -- ^ Action on Ok
                  -> IO Bool
-warningDialogExt title message = postGUISync . warningDialog title message
+warningDialogExt title = postGUISync . warningDialog title
 
 -- | create a window which displays a given question
 questionDialog :: String  -- ^ Title
                -> String  -- ^ Message
-               -> Maybe (IO ()) -- ^ Action on Yes
                -> IO Bool
 questionDialog = dialog MessageQuestion
 
 -- | create a window which displays a given question
 questionDialogExt :: String  -- ^ Title
                   -> String  -- ^ Message
-                  -> Maybe (IO ()) -- ^ Action on Yes
                   -> IO Bool
-questionDialogExt title message = postGUISync . questionDialog title message
+questionDialogExt title = postGUISync . questionDialog title
 
 
 -- | Filedialog for opening and saving
@@ -268,9 +257,8 @@ fileDialog fAction fname' filters mAction = do
       case mpath of
         Just path -> do
           exist <- doesFileExist path
-          answer <- if exist then
-            dialog MessageQuestion "File already exist"
-                   "Are you sure to overwrite existing file?" Nothing
+          answer <- if exist then questionDialog "File already exist"
+                                    "Are you sure to overwrite existing file?"
             else return True
           if answer then
             case mAction of

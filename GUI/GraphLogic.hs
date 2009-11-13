@@ -516,9 +516,8 @@ showStatusAux dgnode =
              else ""
 
 hidingWarnDiag :: DGNodeLab -> IO Bool
-hidingWarnDiag dgn =
-  if labelHasHiding dgn then warningDialog "Warning"
-    (unwords $ hidingWarning ++ ["Try anyway?"]) Nothing
+hidingWarnDiag dgn = if labelHasHiding dgn then
+  warningDialog "Warning" $ unwords $ hidingWarning ++ ["Try anyway?"]
   else return True
 
 -- | start local theorem proving or consistency checking at a node
