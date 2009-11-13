@@ -34,6 +34,7 @@ import qualified CASL.AS_Basic_CASL as ABC
 import Logic.Grothendieck (startSigId)
 import Static.GTheory
 import Static.DevGraph
+import Static.ComputeTheory
 import qualified Data.Graph.Inductive.Graph as Graph
 import qualified Common.Lib.Graph as CLGraph
 
@@ -80,6 +81,12 @@ import qualified OMDoc.Util as Util
 import qualified System.Directory as System.Directory
 import qualified Data.Char as Char
 
+computeTheories :: LibEnv -> LibEnv
+computeTheories libEnv =
+  foldl (\ le ln -> Map.insert ln
+          (computeDGraphTheories le $ lookupDGraph ln libEnv) le)
+  Map.empty $ getTopsortedLibs libEnv
+
 {- |
   A wrapper-function for Hets.
   Tries to load an OMDoc file and to create a LibEnv.
@@ -97,7 +104,7 @@ mLibEnvFromOMDocFile hco file =
         (ln, _, lenv) <- libEnvFromOMDocFile
           (emptyGlobalOptions { hetsOpts = hco })
           file
-        return (Just (ln, lenv))
+        return (Just (ln, computeTheories lenv))
     )
     (\_ -> putIfVerbose hco 0 "Error loading OMDoc!" >> return Nothing)
 
