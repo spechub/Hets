@@ -259,7 +259,7 @@ updateFinder view list sl = do
               in Map.insert n (f { comorphism = c : comorphism f}) m) Map.empty
               $ getConsCheckers $ findComorphismPaths logicGraph sl
   when (old /= new) $ do
-    -- update list and try to select previos finder
+    -- update list and try to select previous finder
     selected' <- getSelectedSingle view list
     sel <- treeViewGetSelection view
     listStoreClear list
@@ -269,7 +269,7 @@ updateFinder view list sl = do
         maybe (selectFirst view) (treeSelectionSelectPath sel . (:[])) i
       ) selected'
 
--- | Try to select previos selected comorphism if possible
+-- | Try to select previous selected comorphism if possible
 mergeFinder :: [Finder] -> [Finder] -> [Finder]
 mergeFinder old new = let m' = Map.fromList $ map (\ f -> (fName f, f)) new in
   Map.elems $ foldl (\ m (Finder { fName = n, comorphism = cc, selected = i}) ->
@@ -350,7 +350,6 @@ showModelViewAux lock title list = do
     case mn of
       Nothing -> textBufferSetText buffer ""
       Just (_,n) -> textBufferSetText buffer $ show $ status n
-
 
   -- setup actions
   onClicked btnClose $ widgetDestroy window
