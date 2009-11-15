@@ -26,7 +26,6 @@ import Common.Result
 import qualified Common.OrderedMap as OMap
 import Common.ExtSign
 
-import Control.Monad ((<=<))
 import Control.Concurrent.MVar
 
 import Proofs.AbstractState
@@ -47,6 +46,9 @@ data GProver = GProver { pName :: String
                        , prover :: G_prover
                        , comorphism :: [AnyComorphism]
                        , selected :: Int }
+
+maxLabelLength :: Int
+maxLabelLength = 30
 
 {- ProverGUI -}
 
@@ -112,6 +114,32 @@ showProverGUI lid prGuiAcs thName warn th knownProvers comorphList = do
     listAxioms <- setListData trvAxioms id $ toAxioms axioms
     listTheorems <- setListData trvTheorems id $ toTheorem initState
 
+    -- setup provers list
+    shP <- setListSelectorSingle trvProvers $ modifyMVar_ state
+      $ setSelectedProver trvProvers listProvers lblComorphism
+
+    -- setup axioms list
+    shA <- setListSelectorMultiple trvAxioms btnAxiomsAll btnAxiomsNone
+      btnAxiomsInvert $ modifyMVar_ state
+      $ setSelectedAxioms trvAxioms listAxioms
+
+    onClicked btnAxiomsFormer $ do
+      signalBlock shA
+      sel <- treeViewGetSelection trvAxioms
+      treeSelectionSelectAll sel
+      rs <- treeSelectionGetSelectedRows sel
+      mapM_ ( \ p@(row:[]) -> do
+        i <- listStoreGetValue listAxioms row
+        (if wasTheorem $ fromJust $ OMap.lookup (stripPrefixAxiom i) axioms
+          then treeSelectionUnselectPath else treeSelectionSelectPath) sel p) rs
+      signalUnblock shA
+      modifyMVar_ state $ setSelectedAxioms trvAxioms listAxioms
+
+   -- setup theorems list
+    setListSelectorMultiple trvTheorems btnTheoremsAll btnTheoremsNone
+      btnTheoremsInvert $ modifyMVar_ state
+      $ setSelectedTheorems trvTheorems listTheorems
+
     let noProver = [ toWidget btnFineGrained
                    , toWidget btnProve
                    , toWidget lblComorphism
@@ -134,12 +162,12 @@ showProverGUI lid prGuiAcs thName warn th knownProvers comorphList = do
                 , toWidget btnProofDetails
                 , toWidget btnDisplay ]
         update s' = do
-          s <- updateProver trvProvers listProvers =<<
-               updateSublogic lblSublogic prGuiAcs knownProvers =<<
-               setSelectedGoals trvGoals listGoals =<<
-               setSelectedSens trvAxioms listAxioms trvTheorems listTheorems s'
-          updateComorphism lblComorphism trvProvers listProvers
-          updateGoals listGoals s
+          signalBlock shP
+          s <- setSelectedProver trvProvers listProvers lblComorphism
+            =<< updateProver trvProvers listProvers
+            =<< updateSublogic lblSublogic prGuiAcs knownProvers
+            =<< setSelectedGoals trvGoals listGoals s'
+          signalUnblock shP
           activate noProver
             (isJust (selectedProver s) && not (null $ selectedGoals s))
           return s
@@ -148,45 +176,21 @@ showProverGUI lid prGuiAcs thName warn th knownProvers comorphList = do
     activate noAxiom (not $ OMap.null axioms)
     activate noTheory (not $ OMap.null $ goalMap initState)
 
-    -- setup provers list
-    setListSelectorSingle trvProvers $ modifyMVar_ state $
-      update <=< setSelectedProver trvProvers listProvers
-
     -- setup goal list
-    setListSelectorMultiple trvGoals btnGoalsAll btnGoalsNone btnGoalsInvert
-      $ modifyMVar_ state update
+    shG <- setListSelectorMultiple trvGoals btnGoalsAll btnGoalsNone
+      btnGoalsInvert $ modifyMVar_ state update
 
-    onClicked btnGoalsSelectOpen $ modifyMVar_ state $ \ s -> do
+    onClicked btnGoalsSelectOpen $ do
+      signalBlock shG
       sel <- treeViewGetSelection trvGoals
       treeSelectionSelectAll sel
       rs <- treeSelectionGetSelectedRows sel
       mapM_ ( \ p@(row:[]) -> do
-        i <- listStoreGetValue listGoals row
-        let isOpen st = let thst = thmStatus st in
-              null thst || case maximum $ map snd thst of
-                BasicProof _ pst -> isOpenGoal $ goalStatus pst
-                _ -> False
-        (if isOpen $ fromJust $ OMap.lookup (gName i) $ goalMap s
+        g <- listStoreGetValue listGoals row
+        (if gStatus g == GOpen || gStatus g == GTimeout
           then treeSelectionSelectPath else treeSelectionUnselectPath) sel p) rs
-      update s
-
-    -- setup axioms list
-    setListSelectorMultiple trvAxioms btnAxiomsAll btnAxiomsNone btnAxiomsInvert
-      $ modifyMVar_ state update
-
-    onClicked btnAxiomsFormer $ modifyMVar_ state $ \ s -> do
-      sel <- treeViewGetSelection trvAxioms
-      treeSelectionSelectAll sel
-      rs <- treeSelectionGetSelectedRows sel
-      mapM_ ( \ p@(row:[]) -> do
-        i <- listStoreGetValue listAxioms row
-        (if wasTheorem $ fromJust $ OMap.lookup (stripPrefixAxiom i) axioms
-          then treeSelectionUnselectPath else treeSelectionSelectPath) sel p) rs
-      update s
-
-    -- setup theorems list
-    setListSelectorMultiple trvTheorems btnTheoremsAll btnTheoremsNone
-                            btnTheoremsInvert $ modifyMVar_ state update
+      signalUnblock shG
+      modifyMVar_ state update
 
     -- button bindings
     onClicked btnClose $ widgetDestroy window
@@ -201,28 +205,25 @@ showProverGUI lid prGuiAcs thName warn th knownProvers comorphList = do
     onClicked btnProofDetails $ forkIO_ $ readMVar state >>= doShowProofDetails
 
     onClicked btnProve $ do
+      s' <- takeMVar state
       activate prove False
-      forkIOWithPostProcessing (readMVar state >>= proveF prGuiAcs)
+      forkIOWithPostProcessing (proveF prGuiAcs s')
         $ \ (Result ds ms) -> do
             s <- case ms of
-              Nothing -> do
-                errorDialog "Error" (showRelDiags 2 ds)
-                takeMVar state
-              Just res -> do
-                takeMVar state
-                return res
+              Nothing -> do errorDialog "Error" (showRelDiags 2 ds); return s'
+              Just res -> return res
             activate prove True
-            putMVar state =<< update s { proverRunning = False
-                                       , accDiags = accDiags s ++ ds}
+            updateGoals listGoals s
+            putMVar state s { proverRunning = False
+                            , accDiags = accDiags s ++ ds }
 
-    onClicked btnFineGrained $ modifyMVar_ state $ \ s -> do
-      mp <- fineGrainedSelection trvProvers listProvers
-      update <=< updateProver trvProvers listProvers
-        $ maybe s (\ p -> s { selectedProver = Just $ pName p }) mp
+    onClicked btnFineGrained $ fineGrainedSelection trvProvers listProvers
 
     onDestroy window $ putMVar wait ()
 
-    modifyMVar_ state $ update <=< updateProver trvProvers listProvers
+    selectAll trvTheorems
+    selectAll trvAxioms
+    selectAll trvGoals
 
     widgetShow window
 
@@ -250,7 +251,7 @@ displayGoals s = case theory s of
     textView ("Selected Goals from Theory " ++ thName) (goalsText sens')
              $ Just (thName ++ "-goals.txt")
 
-fineGrainedSelection :: TreeView -> ListStore GProver -> IO (Maybe GProver)
+fineGrainedSelection :: TreeView -> ListStore GProver -> IO ()
 fineGrainedSelection view list = do
   ps <- listStoreToList list
   selector <- treeViewGetSelection view
@@ -265,10 +266,9 @@ fineGrainedSelection view list = do
               let p' = p { selected = i' }
               listStoreSetValue list i p'
               treeSelectionSelectPath selector [i]
-              return $ Just p'
             Nothing -> error "can't find selected comorphism"
           Nothing -> error "can't find selected prover"
-        Nothing -> return Nothing
+        Nothing -> return ()
 
 expand :: GProver -> [(String, G_prover, AnyComorphism)]
 expand (GProver { pName = n, prover = p, comorphism = cs }) =
@@ -282,13 +282,6 @@ updateSublogic lbl prGuiAcs knownProvers s' = do
   labelSetLabel lbl $ show $ sublogicOfTheory s
   return s
 
-updateComorphism :: Label -> TreeView -> ListStore GProver -> IO ()
-updateComorphism lbl trvProvers listProvers =
-  getSelectedSingle trvProvers listProvers >>=
-  maybe (return ()) (\ (_, p) -> case comorphism p !! selected p of
-    Comorphism cid -> let dN = drop 1 $ dropWhile (/= ';') $ language_name cid
-      in labelSetLabel lbl $ if null dN then "identity" else dN)
-
 updateProver :: TreeView -> ListStore GProver -> ProofState lid sentence
              -> IO (ProofState lid sentence)
 updateProver trvProvers listProvers s = do
@@ -299,18 +292,15 @@ updateProver trvProvers listProvers s = do
           Just p' -> let oldC = comorphism p' !! selected p' in
             p { selected = fromMaybe 0 $ findIndex (== oldC) $ comorphism p }
         ) new
-      selFirst = do
-        selectFirst trvProvers
-        setSelectedProver trvProvers listProvers s
   updateListData listProvers prvs
   case selectedProver s of
     Just p -> case findIndex ((p ==) . pName) prvs of
       Just i -> do
         sel <- treeViewGetSelection trvProvers
         treeSelectionSelectPath sel [i]
-        return s
-      Nothing -> selFirst
-    Nothing -> selFirst
+      Nothing -> selectFirst trvProvers
+    Nothing -> selectFirst trvProvers
+  return s
 
 updateGoals :: ListStore Goal -> ProofState lid sentence -> IO ()
 updateGoals listGoals s = do
@@ -327,13 +317,17 @@ setSelectedGoals trvGoals listGoals s = do
   goals <- getSelectedMultiple trvGoals listGoals
   return s { selectedGoals = map (gName . snd) goals }
 
-setSelectedSens :: TreeView -> ListStore String -> TreeView -> ListStore String
-                -> ProofState lid sentence -> IO (ProofState lid sentence)
-setSelectedSens axs listAxs ths listThs s = do
+setSelectedAxioms :: TreeView -> ListStore String -> ProofState lid sentence
+                  -> IO (ProofState lid sentence)
+setSelectedAxioms axs listAxs s = do
   axioms <- getSelectedMultiple axs listAxs
+  return s { includedAxioms   = map (stripPrefixAxiom . snd) axioms }
+
+setSelectedTheorems :: TreeView -> ListStore String -> ProofState lid sentence
+                    -> IO (ProofState lid sentence)
+setSelectedTheorems ths listThs s = do
   theorems <- getSelectedMultiple ths listThs
-  return s { includedAxioms   = map (stripPrefixAxiom . snd) axioms
-           , includedTheorems = map snd theorems }
+  return s { includedTheorems = map snd theorems }
 
 stripPrefixAxiom :: String -> String
 stripPrefixAxiom a = case stripPrefix "(Th) " a of
@@ -341,10 +335,15 @@ stripPrefixAxiom a = case stripPrefix "(Th) " a of
   Nothing -> a
 
 -- | Called whenever a prover is selected from the "Pick Theorem Prover" list.
-setSelectedProver :: TreeView -> ListStore GProver -> ProofState lid sentence
-                  -> IO (ProofState lid sentence)
-setSelectedProver trvProvers listProvers s = do
+setSelectedProver :: TreeView -> ListStore GProver -> Label
+                  -> ProofState lid sentence -> IO (ProofState lid sentence)
+setSelectedProver trvProvers listProvers lbl s = do
   mprover <- getSelectedSingle trvProvers listProvers
+  -- update comorphism label
+  maybe (return ()) (\ (_, p) -> case comorphism p !! selected p of
+    Comorphism cid -> let dN = drop 1 $ dropWhile (/= ';') $ language_name cid
+                          l = if null dN then "identity" else dN
+      in labelSetLabel lbl $ shortenLabel maxLabelLength l) mprover
   return s { selectedProver = maybe Nothing (Just . pName . snd) mprover }
 
 toAxioms :: ThSens sentence (AnyComorphism, BasicProof) -> [String]

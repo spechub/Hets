@@ -25,7 +25,6 @@ module GUI.GraphTypes
     ) where
 
 import GUI.GraphAbstraction(GraphInfo, initGraph)
-import GUI.HTkUtils (GUIMVar)
 import GUI.UDGUtils
 
 import Common.LibName
@@ -61,7 +60,6 @@ data GInfo = GInfo
              , libName :: LibName
              , graphInfo :: GraphInfo
              , internalNames :: IORef [(String,(String -> String) -> IO ())]
-             , proofGUIMVar :: GUIMVar
              , options :: IORef Flags
              }
 
@@ -100,7 +98,6 @@ emptyGInfo = do
   flags <- newIORef Flags { flagHideNodes = True
                           , flagHideEdges = True
                           , flagHideNames = True }
-  guiMVar <- newEmptyMVar
   gl <- newEmptyMVar
   fl <- newEmptyMVar
   exit <- newEmptyMVar
@@ -119,7 +116,6 @@ emptyGInfo = do
                , libName = emptyLibName ""
                , graphInfo = gi
                , internalNames = iorIN
-               , proofGUIMVar = guiMVar
                , options = flags
                }
 
@@ -128,7 +124,6 @@ copyGInfo :: GInfo -> LibName -> IO GInfo
 copyGInfo gInfo ln = do
   gi <- initGraph
   iorIN <- newIORef []
-  guiMVar <- newEmptyMVar
   flags <- newIORef Flags { flagHideNodes = True
                           , flagHideEdges = True
                           , flagHideNames = True }
@@ -136,7 +131,6 @@ copyGInfo gInfo ln = do
   let gInfo' = gInfo { libName = ln
                      , graphInfo = gi
                      , internalNames = iorIN
-                     , proofGUIMVar = guiMVar
                      , options = flags
                      }
   oGraphs <- readIORef $ openGraphs gInfo

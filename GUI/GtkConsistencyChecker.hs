@@ -55,20 +55,30 @@ data Finder = Finder { fName :: String
                      , comorphism :: [AnyComorphism]
                      , selected :: Int }
 
+instance Eq Finder where
+  (==) (Finder { fName = n1, comorphism = c1 })
+       (Finder { fName = n2, comorphism = c2 }) = n1 == n2 && c1 == c2
+
 data FNode = FNode { name :: String
                    , node :: LNode DGNodeLab
                    , sublogic :: G_sublogics
                    , status :: ConsistencyStatus }
-
-instance Eq Finder where
-  (==) (Finder { fName = n1, comorphism = c1 })
-       (Finder { fName = n2, comorphism = c2 })= n1 == n2 && c1 == c2
 
 -- | Get a markup string containing name and color
 instance Show FNode where
   show FNode { name = n, status = s } =
     "<span color=\"" ++ statusToColor s ++ "\">" ++ statusToPrefix s ++ n ++
     "</span>"
+
+instance Eq FNode where
+  (==) (FNode { name = n1, status = s1 })
+       (FNode { name = n2, status = s2 }) = s1 == s2 && n1 == n2
+
+instance Ord FNode where
+  compare (FNode { name = n1, status = s1 })
+          (FNode { name = n2, status = s2 }) = case compare s1 s2 of
+    EQ -> compare n1 n2
+    c  -> c
 
 statusToColor :: ConsistencyStatus -> String
 statusToColor s = case s of
@@ -86,20 +96,8 @@ statusToPrefix s = case s of
   CSTimeout _      -> "[t] "
   CSError _        -> "[f] "
 
-instance Show ConsistencyStatus where
-  show CSUnchecked        = "Unchecked"
-  show (CSConsistent s)   = s
-  show (CSInconsistent s) = s
-  show (CSTimeout s)      = s
-  show (CSError s)        = s
-
-instance Eq ConsistencyStatus where
-  (==) CSUnchecked CSUnchecked = True
-  (==) (CSConsistent _) (CSConsistent _) = True
-  (==) (CSInconsistent _) (CSInconsistent _) = True
-  (==) (CSTimeout _) (CSTimeout _) = True
-  (==) (CSError _) (CSError _) = True
-  (==) _ _ = False
+maxLabelLength :: Int
+maxLabelLength = 30
 
 -- | Displays the consistency checker window
 showConsistencyChecker :: GInfo -> IO ()
@@ -174,38 +172,43 @@ showConsistencyChecker gInfo@(GInfo { libName = ln }) = postGUIAsync $ do
         case mf of
           Just (_,f) -> do
             case comorphism f !! selected f of
-              Comorphism cid ->let cN = language_name cid
-                                   dN = drop 1 $ dropWhile (/= ';') cN in
-                labelSetLabel lblComorphism $ if null dN then "identity" else dN
+              Comorphism cid ->
+                let dN = drop 1 $ dropWhile (/= ';') $ language_name cid
+                    l = if null dN then "identity" else dN
+                in labelSetLabel lblComorphism $ shortenLabel maxLabelLength l
             widgetSetSensitive btnCheck True
           Nothing -> do
             labelSetLabel lblComorphism "No path selected"
             widgetSetSensitive btnCheck False
   setListSelectorSingle trvFinder update
 
-  setListSelectorMultiple trvNodes btnNodesAll btnNodesNone btnNodesInvert
-    $ updateNodes trvNodes listNodes
-    (\ s -> do labelSetLabel lblSublogic $ show s
-               updateFinder trvFinder listFinder s)
-    (do labelSetLabel lblSublogic "No sublogic"
-        listStoreClear listFinder
-        activate widgets False
-        widgetSetSensitive btnCheck False)
-    (do activate widgets True; widgetSetSensitive btnCheck False)
+  let upd = updateNodes trvNodes listNodes
+        (\ s -> do labelSetLabel lblSublogic $ show s
+                   updateFinder trvFinder listFinder s)
+        (do labelSetLabel lblSublogic "No sublogic"
+            listStoreClear listFinder
+            activate widgets False
+            widgetSetSensitive btnCheck False)
+        (do activate widgets True; widgetSetSensitive btnCheck False)
+
+  shN <- setListSelectorMultiple trvNodes btnNodesAll btnNodesNone
+    btnNodesInvert upd
 
   -- bindings
-  let selectWith f = do
-        model <- treeViewGetModel trvNodes
+  let selectWith f u = do
+        signalBlock shN
         sel <- treeViewGetSelection trvNodes
-        treeModelForeach (fromJust model) $ \ i -> do
-          (row:[]) <- treeModelGetPath (fromJust model) i
+        treeSelectionSelectAll sel
+        rs <- treeSelectionGetSelectedRows sel
+        mapM_ ( \ p@(row:[]) -> do
           (FNode { status = s }) <- listStoreGetValue listNodes row
-          (if f s then treeSelectionSelectIter else treeSelectionUnselectIter)
-            sel i
-          return False
+          (if f s then treeSelectionSelectPath else treeSelectionUnselectPath)
+            sel p) rs
+        signalUnblock shN
+        u
 
-  onClicked btnNodesUnchecked $ selectWith (== CSUnchecked)
-  onClicked btnNodesTimeout  $ selectWith (== CSTimeout "")
+  onClicked btnNodesUnchecked $ selectWith (== CSUnchecked) upd
+  onClicked btnNodesTimeout  $ selectWith (== CSTimeout "") upd
 
   onClicked btnResults $ showModelView mView "Models" listNodes
   onClicked btnClose $ widgetDestroy window
@@ -234,6 +237,8 @@ showConsistencyChecker gInfo@(GInfo { libName = ln }) = postGUIAsync $ do
         showModelView mView "Results of consistency check" listNodes
         activate checkWidgets True
         exit
+
+  selectAll trvNodes
 
   widgetShow window
 
@@ -363,6 +368,8 @@ showModelViewAux lock title list = do
     updateListData listNodes nodes'
     maybe (selectFirst trvNodes) (treeSelectionSelectPath sel . (:[]))
       $ maybe Nothing (\ (_,n) -> findIndex ((name n ==) . name) nodes') sel'
+
+  selectFirst trvNodes
 
   widgetSetSizeRequest window 800 600
   widgetSetSizeRequest frNodes 250 (-1)

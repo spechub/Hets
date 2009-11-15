@@ -40,21 +40,21 @@ module GUI.GraphLogic
     , focusNode
     ) where
 
-import Logic.Coerce(coerceSign)
+import Logic.Coerce (coerceSign)
 import Logic.Grothendieck
 import Logic.Comorphism
 import Logic.Prover hiding (openProofStatus)
-import Comorphisms.LogicGraph(logicGraph)
+import Comorphisms.LogicGraph (logicGraph)
 
 import Static.GTheory
 import Static.DevGraph
 import Static.PrintDevGraph
-import Static.DGTranslation(libEnv_translation, getDGLogic)
+import Static.DGTranslation (libEnv_translation, getDGLogic)
 
 import Static.ComputeTheory
 import Proofs.EdgeUtils
-import Proofs.InferBasic(basicInferenceNode)
-import Proofs.StatusUtils(lookupHistory, removeContraryChanges)
+import Proofs.InferBasic (basicInferenceNode)
+import Proofs.StatusUtils (lookupHistory, removeContraryChanges)
 
 import GUI.Taxonomy (displayConceptGraph,displaySubsortGraph)
 import GUI.GraphTypes
@@ -62,8 +62,7 @@ import qualified GUI.GraphAbstraction as GA
 import GUI.Utils
 
 import Graphs.GraphConfigure
-import Reactor.InfoBus(encapsulateWaitTermAct)
-import qualified GUI.HTkUtils as HTk
+import Reactor.InfoBus (encapsulateWaitTermAct)
 
 import Common.DocUtils (showDoc)
 import Common.AS_Annotation (isAxiom)
@@ -74,14 +73,15 @@ import Common.Result
 import qualified Common.OrderedMap as OMap
 import qualified Common.Lib.SizedList as SizedList
 
-import Driver.Options(HetcatsOpts,putIfVerbose,outtypes,doDump,verbose,rmSuffix)
-import Driver.WriteLibDefn(writeShATermFile)
-import Driver.ReadFn(libNameToFile, readVerbose)
-import Driver.AnaLib(anaLib)
+import Driver.Options ( HetcatsOpts, putIfVerbose, outtypes, doDump, verbose
+                      , rmSuffix)
+import Driver.WriteLibDefn (writeShATermFile)
+import Driver.ReadFn (libNameToFile, readVerbose)
+import Driver.AnaLib (anaLib)
 
 import Data.IORef
-import Data.Char(toLower)
-import Data.List(partition, delete, isPrefixOf)
+import Data.Char (toLower)
+import Data.List (partition, delete, isPrefixOf)
 import Data.Graph.Inductive.Graph (Node, LEdge, LNode)
 import qualified Data.Map as Map
 
@@ -330,15 +330,15 @@ openProofStatus :: GInfo -> FilePath -> ConvFunc -> LibFunc
                 -> IO ()
 openProofStatus gInfo@(GInfo { hetcatsOpts = opts
                              , libName = ln }) file convGraph showLib = do
- ost <- readIORef $ intState gInfo
- case i_state ost of
-  Nothing -> return ()
-  Just ist -> do
-    mh <- readVerbose logicGraph opts ln file
-    case mh of
-      Nothing -> errorDialog "Error" $ "Could not read proof status from file '"
-                               ++ file ++ "'"
-      Just h -> do
+  ost <- readIORef $ intState gInfo
+  case i_state ost of
+    Nothing -> return ()
+    Just ist -> do
+      mh <- readVerbose logicGraph opts ln file
+      case mh of
+        Nothing -> errorDialog "Error" $
+                     "Could not read proof status from file '" ++ file ++ "'"
+        Just h -> do
           let libfile = libNameToFile ln
           m <- anaLib opts { outtypes = [] } libfile
           case m of
@@ -346,24 +346,22 @@ openProofStatus gInfo@(GInfo { hetcatsOpts = opts
                          $ "Could not read original development graph from '"
                            ++ libfile ++  "'"
             Just (_, libEnv) -> case Map.lookup ln libEnv of
-                Nothing -> errorDialog "Error" $ "Could not get original"
-                             ++ "development graph for '" ++ showDoc ln "'"
-                Just dg -> do
-                    lockGlobal gInfo
-                    let oldEnv = i_libEnv ist
-                        proofStatus = Map.insert ln
-                                      (applyProofHistory h dg) oldEnv
-                        nwst = ost { i_state = Just ist {
-                                      i_libEnv = proofStatus } }
-                    writeIORef (intState gInfo) nwst
-                    unlockGlobal gInfo
-                    gInfo' <- copyGInfo gInfo ln
-                    convGraph gInfo' "Proof Status " showLib
-                    let gi = graphInfo gInfo
-                    GA.deactivateGraphWindow gi
-                    GA.redisplay gi
-                    GA.layoutImproveAll gi
-                    GA.activateGraphWindow gi
+              Nothing -> errorDialog "Error" $ "Could not get original"
+                           ++ "development graph for '" ++ showDoc ln "'"
+              Just dg -> do
+                lockGlobal gInfo
+                let oldEnv = i_libEnv ist
+                    proofStatus = Map.insert ln (applyProofHistory h dg) oldEnv
+                    nwst = ost { i_state = Just ist { i_libEnv = proofStatus } }
+                writeIORef (intState gInfo) nwst
+                unlockGlobal gInfo
+                gInfo' <- copyGInfo gInfo ln
+                convGraph gInfo' "Proof Status " showLib
+                let gi = graphInfo gInfo
+                GA.deactivateGraphWindow gi
+                GA.redisplay gi
+                GA.layoutImproveAll gi
+                GA.activateGraphWindow gi
 
 -- | apply a rule of the development graph calculus
 proofMenu :: GInfo
@@ -371,23 +369,12 @@ proofMenu :: GInfo
              -> (LibEnv -> IO (Result LibEnv))
              -> IO ()
 proofMenu gInfo@(GInfo { hetcatsOpts = hOpts
-                       , proofGUIMVar = guiMVar
                        , libName = ln
                        }) cmd proofFun = do
- ost <- readIORef $ intState gInfo
- case i_state ost of
-  Nothing -> return ()
-  Just ist -> do
-   filled <- tryPutMVar guiMVar Nothing
-   if not filled
-    then readMVar guiMVar >>=
-                  maybe (putIfVerbose hOpts 0 "proofMenu: ignored Nothing")
-                         (\ w -> do
-                             putIfVerbose hOpts 4 $
-                                  "proofMenu: Ignored Proof command; " ++
-                                  "maybe a proof window is still open?"
-                             HTk.putWinOnTop w)
-    else do
+  ost <- readIORef $ intState gInfo
+  case i_state ost of
+    Nothing -> return ()
+    Just ist -> do
       lockGlobal gInfo
       let proofStatus = i_libEnv ist
       putIfVerbose hOpts 4 "Proof started via menu"
@@ -410,10 +397,6 @@ proofMenu gInfo@(GInfo { hetcatsOpts = hOpts
           writeIORef (intState gInfo) nwst
           updateGraph gInfo (reverse $ flatHistory history)
           unlockGlobal gInfo
-          mGUIMVar <- tryTakeMVar guiMVar
-          maybe (fail "should be filled with Nothing after proof attempt")
-                (const $ return ())
-                mGUIMVar
 
 calcGlobalHistory :: LibEnv -> LibEnv -> [LibName]
 calcGlobalHistory old new = let
@@ -441,65 +424,64 @@ showDiagMess = showDiagMessAux . verbose
      used by the node menu -}
 getTheoryOfNode :: GInfo -> Int -> DGraph -> IO ()
 getTheoryOfNode gInfo descr dgraph = do
- ost <- readIORef $ intState gInfo
- case i_state ost of
-  Nothing -> return ()
-  Just ist -> do
-    let Result ds res = computeTheory (i_libEnv ist) (libName gInfo) descr
-    showDiagMess (hetcatsOpts gInfo) ds
-    maybe (return ())
+  ost <- readIORef $ intState gInfo
+  case i_state ost of
+    Nothing -> return ()
+    Just ist -> do
+      let Result ds res = computeTheory (i_libEnv ist) (libName gInfo) descr
+      showDiagMess (hetcatsOpts gInfo) ds
+      maybe (return ())
         (displayTheoryWithWarning "Theory" (getNameOfNode descr dgraph)
-        $ addHasInHidingWarning dgraph descr) res
+          $ addHasInHidingWarning dgraph descr) res
 
 {- | translate the theory of a node in a window;
      used by the node menu -}
 translateTheoryOfNode :: GInfo -> Int -> DGraph -> IO ()
 translateTheoryOfNode gInfo@(GInfo { hetcatsOpts = opts
                                    , libName = ln }) node dgraph = do
- ost <- readIORef $ intState gInfo
- case i_state ost of
-  Nothing -> return ()
-  Just ist -> do
-    let libEnv = i_libEnv ist
-        Result ds moTh = computeTheory libEnv ln node
-    case moTh of
-      Just th@(G_theory lid sign _ sens _) -> do
-         -- find all comorphism paths starting from lid
-         let paths = findComorphismPaths logicGraph (sublogicOfTh th)
-         -- let the user choose one
-         sel <- listBox "Choose a node logic translation" $ map show paths
-         case sel of
-           Nothing -> errorDialog "Error" "no node logic translation chosen"
-           Just i -> do
-             Comorphism cid <- return (paths!!i)
-             -- adjust lid's
-             let lidS = sourceLogic cid
-                 lidT = targetLogic cid
-             sign' <- coerceSign lid lidS "" sign
-             sens' <- coerceThSens lid lidS "" sens
-             -- translate theory along chosen comorphism
-             let Result es mTh = wrapMapTheory cid
-                   (plainSign sign', toNamedList sens')
-             case mTh of
-               Nothing -> showDiagMess opts es
-               Just (sign'', sens1) -> displayTheoryWithWarning
-                "Translated Theory" (getNameOfNode node dgraph)
-                (addHasInHidingWarning dgraph node)
-                (G_theory lidT (mkExtSign sign'') startSigId
-                 (toThSens sens1) startThId)
-      Nothing -> showDiagMess opts ds
+  ost <- readIORef $ intState gInfo
+  case i_state ost of
+    Nothing -> return ()
+    Just ist -> do
+      let libEnv = i_libEnv ist
+          Result ds moTh = computeTheory libEnv ln node
+      case moTh of
+        Just th@(G_theory lid sign _ sens _) -> do
+          -- find all comorphism paths starting from lid
+          let paths = findComorphismPaths logicGraph (sublogicOfTh th)
+          -- let the user choose one
+          sel <- listBox "Choose a node logic translation" $ map show paths
+          case sel of
+            Nothing -> errorDialog "Error" "no node logic translation chosen"
+            Just i -> do
+              Comorphism cid <- return (paths!!i)
+              -- adjust lid's
+              let lidS = sourceLogic cid
+                  lidT = targetLogic cid
+              sign' <- coerceSign lid lidS "" sign
+              sens' <- coerceThSens lid lidS "" sens
+              -- translate theory along chosen comorphism
+              let Result es mTh = wrapMapTheory cid
+                    (plainSign sign', toNamedList sens')
+              case mTh of
+                Nothing -> showDiagMess opts es
+                Just (sign'', sens1) -> displayTheoryWithWarning
+                  "Translated Theory" (getNameOfNode node dgraph)
+                  (addHasInHidingWarning dgraph node)
+                  $ G_theory lidT (mkExtSign sign'') startSigId (toThSens sens1)
+                             startThId
+        Nothing -> showDiagMess opts ds
 
 -- | Show proof status of a node
 showProofStatusOfNode :: GInfo -> Int -> DGraph -> IO ()
-showProofStatusOfNode _ descr dgraph = do
+showProofStatusOfNode _ descr dgraph =
   let dgnode = labDG dgraph descr
       stat = showStatusAux dgnode
       title =  "Proof status of node "++showName (dgn_name dgnode)
-  createTextDisplay title stat
+  in createTextDisplay title stat
 
 showStatusAux :: DGNodeLab -> String
-showStatusAux dgnode =
-  case dgn_theory dgnode of
+showStatusAux dgnode = case dgn_theory dgnode of
   G_theory _ _ _ sens _ ->
      let goals = OMap.filter (not . isAxiom) sens
          (proven,open) = OMap.partition isProvenSenStatus goals
@@ -523,33 +505,34 @@ hidingWarnDiag dgn = if labelHasHiding dgn then
 -- | start local theorem proving or consistency checking at a node
 proveAtNode :: Bool -> GInfo -> Int -> DGraph -> IO ()
 proveAtNode checkCons gInfo descr dgraph = do
- let ln = libName gInfo
-     iSt = intState gInfo
- ost <- readIORef iSt
- case i_state ost of
-  Nothing -> return ()
-  Just ist -> do
-   let le = i_libEnv ist
-       dgn = labDG dgraph descr
-   (dgraph', dgn', le') <- if hasLock dgn then return (dgraph, dgn, le) else do
-      lockGlobal gInfo
-      (dgraph', dgn') <- initLocking (lookupDGraph ln le) (descr, dgn)
-      let nwle = Map.insert ln dgraph' le
-          nwst = ost { i_state = Just $ ist { i_libEnv = nwle} }
-      writeIORef iSt nwst
-      unlockGlobal gInfo
-      return (dgraph', dgn', nwle)
-   acquired <- tryLockLocal dgn'
-   if acquired then do
-      let action = do
-          res@(Result d _) <- basicInferenceNode checkCons logicGraph ln
-                                dgraph' (descr, dgn') le' iSt
-          when (null d || diagString (head d) /= "Proofs.Proofs: selection")
-               $ runProveAtNode checkCons gInfo (descr, dgn') res
-      b <- hidingWarnDiag dgn'
-      when b action
-      unlockLocal dgn'
-    else errorDialog "Error" "Proofwindow already open"
+  let ln = libName gInfo
+      iSt = intState gInfo
+  ost <- readIORef iSt
+  case i_state ost of
+    Nothing -> return ()
+    Just ist -> do
+      let le = i_libEnv ist
+          dgn = labDG dgraph descr
+      (dgraph', dgn', le') <- if hasLock dgn then return (dgraph, dgn, le)
+        else do
+          lockGlobal gInfo
+          (dgraph', dgn') <- initLocking (lookupDGraph ln le) (descr, dgn)
+          let nwle = Map.insert ln dgraph' le
+              nwst = ost { i_state = Just $ ist { i_libEnv = nwle} }
+          writeIORef iSt nwst
+          unlockGlobal gInfo
+          return (dgraph', dgn', nwle)
+      acquired <- tryLockLocal dgn'
+      if acquired then do
+        let action = do
+              res@(Result d _) <- basicInferenceNode checkCons logicGraph ln
+                                    dgraph' (descr, dgn') le' iSt
+              when (null d || diagString (head d) /= "Proofs.Proofs: selection")
+                $ runProveAtNode checkCons gInfo (descr, dgn') res
+        b <- hidingWarnDiag dgn'
+        when b action
+        unlockLocal dgn'
+        else errorDialog "Error" "Proofwindow already open"
 
 runProveAtNode :: Bool -> GInfo -> LNode DGNodeLab
                -> Result G_theory -> IO ()

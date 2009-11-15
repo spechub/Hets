@@ -72,6 +72,8 @@ module GUI.GtkUtils
 
   , activate
 
+  , shortenLabel
+
   -- * Datatypes and functions for prover
   , Goal (..)
   , GStatus (..)
@@ -483,30 +485,25 @@ displayTheoryWithWarningExt k n w =
 -- * Frequently used functions
 
 -- | Setup list with single selection
-setListSelectorSingle :: TreeView -> IO () -> IO ()
+setListSelectorSingle :: TreeView -> IO () -> IO (ConnectId TreeSelection)
 setListSelectorSingle view action= do
   selector <- treeViewGetSelection view
   treeSelectionSetMode selector SelectionSingle
   afterSelectionChanged selector action
-  selectFirst view
 
 -- | Setup list with multiple selection
 setListSelectorMultiple :: TreeView -> Button -> Button -> Button -> IO ()
-                        -> IO ()
+                        -> IO (ConnectId TreeSelection)
 setListSelectorMultiple view btnAll btnNone btnInvert action = do
   selector <- treeViewGetSelection view
   treeSelectionSetMode selector SelectionMultiple
-
-  -- setup selector
-  handle <- afterSelectionChanged selector action
-
-  treeSelectionSelectAll selector
+  sh <- afterSelectionChanged selector action
 
   -- setup buttons
   onClicked btnAll $ selectAll view
   onClicked btnNone $ selectNone view
-  onClicked btnInvert $ do selectInvert view handle; action
-  return ()
+  onClicked btnInvert $ do selectInvert view sh; action
+  return sh
 
 -- | Selects the first item if possible
 selectFirst :: TreeView -> IO ()
@@ -595,11 +592,26 @@ updateListData list listData = do
 activate :: [Widget] -> Bool -> IO ()
 activate widgets active = mapM_ (flip widgetSetSensitive active) widgets
 
+-- | shortens a String to a given size and adds some dots
+shortenLabel :: Int -> String -> String
+shortenLabel i s = if length s <= i then s else take (i - 3) s ++ "..."
 
 -- * Datatypes and functions for prover
 
 data Goal = Goal { gName :: String
                  , gStatus :: GStatus }
+
+instance Show Goal where
+  show (Goal { gName = n, gStatus = s }) = spanString s $ statusToPrefix s ++ n
+
+instance Eq Goal where
+  (==) (Goal { gName = n1 }) (Goal { gName = n2 }) = n1 == n2
+
+instance Ord Goal where
+  compare (Goal { gName = n1, gStatus = s1 })
+          (Goal { gName = n2, gStatus = s2 }) = case compare s1 s2 of
+                                                  EQ -> compare n1 n2
+                                                  c  -> c
 
 data GStatus = GOpen
              | GTimeout
@@ -611,11 +623,15 @@ data GStatus = GOpen
              | GHandwritten
                deriving (Eq, Ord)
 
-instance Show Goal where
-  show (Goal { gName = n, gStatus = s }) = spanString s $ statusToPrefix s ++ n
-
-instance Eq Goal where
-  (==) (Goal { gName = n1 }) (Goal { gName = n2 }) = n1 == n2
+instance Show GStatus where
+  show GProved       = spanString GProved       "Proved"
+  show GInconsistent = spanString GInconsistent "Inconsistent"
+  show GDisproved    = spanString GDisproved    "Disproved"
+  show GOpen         = spanString GOpen         "Open"
+  show GTimeout      = spanString GTimeout      "Open (Timeout!)"
+  show GGuessed      = spanString GGuessed      "Guessed"
+  show GConjectured  = spanString GConjectured  "Conjectured"
+  show GHandwritten  = spanString GHandwritten  "Handwritten"
 
 statusToColor :: GStatus -> String
 statusToColor s = case s of
@@ -641,16 +657,6 @@ statusToPrefix s = case s of
 
 spanString :: GStatus -> String -> String
 spanString s m = "<span color=\"" ++ statusToColor s ++ "\">" ++ m ++ "</span>"
-
-instance Show GStatus where
-  show GProved       = spanString GProved       "Proved"
-  show GInconsistent = spanString GInconsistent "Inconsistent"
-  show GDisproved    = spanString GDisproved    "Disproved"
-  show GOpen         = spanString GOpen         "Open"
-  show GTimeout      = spanString GTimeout      "Open (Timeout!)"
-  show GGuessed      = spanString GGuessed      "Guessed"
-  show GConjectured  = spanString GConjectured  "Conjectured"
-  show GHandwritten  = spanString GHandwritten  "Handwritten"
 
 -- | Converts a ProofStatus into a GStatus
 proofStatusToGStatus :: forall a . ProofStatus a -> GStatus

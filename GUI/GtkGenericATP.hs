@@ -279,7 +279,6 @@ genericATPgui atpFun hasEOptions prName thName th freedefs pt = do
 
   -- waiting for results
   res <- takeMVar result
-  -- diags should not be plainly shown by putStrLn here
   maybe (fail "reverse translation of names failed") return res
 
   where

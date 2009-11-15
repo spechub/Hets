@@ -196,7 +196,7 @@ basicInferenceNode checkCons lg ln dGraph (node, lbl) libEnv intSt =
               Just True -> let
                 Result ds ms = extractModel cid sig1 $ ccProofTree pts
                 in case ms of
-                Nothing -> fail $ "consistent but could not reconstruct model\n"
+                Nothing -> fail "consistent but could not reconstruct model"
                 Just (sig3, sens3) -> Result ds $ Just $
                          G_theory lidS (mkExtSign sig3) startSigId
                               (toThSens sens3) startThId
@@ -220,6 +220,33 @@ data ConsistencyStatus = CSUnchecked
                        | CSInconsistent String
                        | CSTimeout String
                        | CSError String
+
+instance Show ConsistencyStatus where
+  show CSUnchecked        = "Unchecked"
+  show (CSConsistent s)   = s
+  show (CSInconsistent s) = s
+  show (CSTimeout s)      = s
+  show (CSError s)        = s
+
+instance Eq ConsistencyStatus where
+  (==) CSUnchecked        CSUnchecked        = True
+  (==) (CSConsistent _)   (CSConsistent _)   = True
+  (==) (CSInconsistent _) (CSInconsistent _) = True
+  (==) (CSTimeout _)      (CSTimeout _)      = True
+  (==) (CSError _)        (CSError _)        = True
+  (==) _                  _                  = False
+
+instance Ord ConsistencyStatus where
+  compare CSUnchecked        CSUnchecked        = EQ
+  compare (CSConsistent _)   (CSConsistent _)   = EQ
+  compare (CSInconsistent _) (CSInconsistent _) = EQ
+  compare (CSTimeout _)      (CSTimeout _)      = EQ
+  compare (CSError _)        (CSError _)        = EQ
+  compare CSUnchecked        _ = LT
+  compare (CSConsistent _)   _ = LT
+  compare (CSInconsistent _) _ = LT
+  compare (CSTimeout _)      _ = LT
+  compare (CSError _)        _ = LT
 
 consistencyCheck :: G_cons_checker -> AnyComorphism -> LibName -> LibEnv
                  -> DGraph -> LNode DGNodeLab -> Int
