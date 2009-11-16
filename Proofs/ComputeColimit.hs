@@ -51,12 +51,9 @@ insertColimitInGraph le dgraph = do
   let -- a better node name, gn_Signature_Colimit?
       newNode = newInfoNodeLab emptyNodeName (newNodeInfo DGProof) gth
       newNodeNr = getNewNodeDG dgraph
-      edgeList = map (\n -> (n, newNodeNr,DGLink{
-                    dgl_morphism = (Map.!)morFun n,
-                    dgl_type = globalDef,
-                    dgl_origin = SeeTarget,
-                    dgl_id = defaultEdgeId})) $
-                   nodes $ dgBody dgraph
+      edgeList = map (\n -> (n, newNodeNr, globDefLink
+                      (morFun Map.! n) SeeTarget))
+                   $ nodes $ dgBody dgraph
       changes  = InsertNode (newNodeNr, newNode) : map InsertEdge edgeList
       newDg = changesDGH dgraph changes
       newGraph = changeDGH newDg $ SetNodeLab newNode

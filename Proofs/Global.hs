@@ -242,12 +242,10 @@ globDecompForOneEdgeAux target (dgraph, proof_basis) path =
         (\ (s, _, l) -> s == node && isGlobalDef (dgl_type l)
         && dgl_morphism l == morphism)
         $ innDG dgraph target
-      newEdgeLbl = DGLink
-        { dgl_morphism = morphism
-        , dgl_type = if isHiding then hidingThm $ dgl_morphism lbl
-            else if isGlobalDef lbltype then globalThm else localThm
-        , dgl_origin = DGLinkProof
-        , dgl_id = defaultEdgeId }
+      newEdgeLbl = defDGLink morphism
+        (if isHiding then hidingThm $ dgl_morphism lbl
+            else if isGlobalDef lbltype then globalThm else localThm)
+        DGLinkProof
       newEdge = (node, target, newEdgeLbl)
       in case defEdgesToTarget of
       (_, _, dl) : _ | not isHiding

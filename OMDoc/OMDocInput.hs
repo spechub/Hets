@@ -296,8 +296,7 @@ defaultDGOrigin = DGLinkExtension
 
 defaultDGLinkLab :: DGLinkLab
 defaultDGLinkLab =
-  DGLink Hets.emptyCASLGMorphism defaultDGLinkType defaultDGOrigin defaultEdgeId
-
+  defDGLink Hets.emptyCASLGMorphism defaultDGLinkType defaultDGOrigin
 
 -- remove keys from a map (will result in removing double entries when merging sets)
 mapSetToSet::(Ord b)=>Map.Map a (Set.Set b)->Set.Set b
@@ -2162,21 +2161,14 @@ createDGLinkFromLinkSpecification
             , pred_map = predmap
             , op_map = opmap }
   in
-    if (ls_fromname ls) /= (ts_name tsFrom) || (ls_toname ls) /= (ts_name tsTo)
-      then
-        error "OMDoc.OMDocInput.createDGLinkFromLinkSpecification: Wrong application!"
+    if ls_fromname ls /= ts_name tsFrom || ls_toname ls /= ts_name tsTo
+      then error
+      "OMDoc.OMDocInput.createDGLinkFromLinkSpecification: Wrong application!"
       else
-        (
-            ts_nodenum tsFrom
-          , ts_nodenum tsTo
-          , DGLink
-              {
-                  dgl_morphism = Hets.makeCASLGMorphism caslmorph
-                , dgl_type = ls_type ls
-                , dgl_origin = ls_origin ls
-                , dgl_id = defaultEdgeId
-              }
-        )
+        ( ts_nodenum tsFrom
+        , ts_nodenum tsTo
+        , defDGLink (Hets.makeCASLGMorphism caslmorph) (ls_type ls)
+            $ ls_origin ls )
 
 ffxiFromTheorySpecifications::
     GlobalOptions

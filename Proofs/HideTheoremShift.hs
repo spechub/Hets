@@ -244,13 +244,7 @@ createEdgeForPath path =
   case (calculateMorphismOfPath path, path) of
     (Just morphism, (s, _, _) : _) ->
         let (_, t, _) = last path
-        in (s, t,
-                      DGLink { dgl_morphism = morphism
-                             , dgl_type = globalThm
-                             , dgl_origin = DGLinkProof
-                             , dgl_id = defaultEdgeId
-                             }
-                     )
+        in (s, t, defDGLink morphism globalThm DGLinkProof)
     _ -> error "createEdgeForPath"
 
 {- returns a list of path pairs, as shorthand the pairs are not

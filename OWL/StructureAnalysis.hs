@@ -80,14 +80,10 @@ graphFromMap ouri (OntologyFile _ onto) (ontoMap, dg) =
              gEmbedComorphism morphism (G_sign OWL currentSign startSigId)
 
         -- to add ids into edges
-        ledgeList = zipWith (\(indT, _) n ->
-                                (ind, indT, DGLink{ dgl_morphism = comorphism
-                                                  , dgl_type = globalDef
-                                                  , dgl_origin = DGLinkImports
-                                                  , dgl_id = n
-                                                  }))
+        ledgeList = map (\ (indT, _) ->
+                                (ind, indT, globDefLink comorphism
+                                    DGLinkImports))
                             tagLNodes
-                            [getNewEdgeId dg ..]
     in (ontoMap2, insEdgesDG ledgeList (insNodesDG newLNodes dg))
 
 createLNodes :: [String] -> [LNode DGNodeLab]

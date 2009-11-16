@@ -182,14 +182,10 @@ extendDGraph dg (NodeSig n _) morph orig = case cod morph of
     targetSig@(G_sign lid tar ind) -> let
       nodeContents = newNodeLab emptyNodeName orig
         $ noSensGTheory lid tar ind
-      linkContents = DGLink
-        { dgl_morphism = morph
-        , dgl_type = globalDef
-        , dgl_origin = SeeTarget
-        , dgl_id = getNewEdgeId dg' }
+      linkContents = globDefLink morph SeeTarget
       node = getNewNodeDG dg
       dg' = insNodeDG (node, nodeContents) dg
-      dg'' = insEdgeDG (n, node, linkContents) dg'
+      dg'' = snd $ insLEdgeDG (n, node, linkContents) dg'
       in return (NodeSig node targetSig, dg'')
 
 -- | Extend the development graph with given morphism pointing to
@@ -204,14 +200,10 @@ extendDGraphRev dg (NodeSig n _) morph orig = case dom morph of
     sourceSig@(G_sign lid src ind) -> let
       nodeContents = newNodeLab emptyNodeName orig
         $ noSensGTheory lid src ind
-      linkContents = DGLink
-        { dgl_morphism = morph
-        , dgl_type = globalDef
-        , dgl_origin = SeeSource
-        , dgl_id = getNewEdgeId dg' }
+      linkContents = globDefLink morph SeeSource
       node = getNewNodeDG dg
       dg' = insNodeDG (node, nodeContents) dg
-      dg'' = insEdgeDG (node, n, linkContents) dg'
+      dg'' = snd $ insLEdgeDG (node, n, linkContents) dg'
       in return (NodeSig node sourceSig, dg'')
 
 {- | Build a diagram that extends the given diagram with a node and an

@@ -234,13 +234,9 @@ checkConservativityNode useGUI (nodeId, nodeLab) libEnv ln = do
                    dgn_sign nodeLab of
              Just m  -> m
              Nothing -> error "Utils.checkConservativityNode"
-      lnkId = getNewEdgeId dg
-      lnk = (newN, nodeId, DGLink {
-          dgl_morphism = morphism
-        , dgl_type     = ScopedLink Global DefLink $ getNodeConsStatus nodeLab
-        , dgl_origin   = SeeSource
-        , dgl_id       = lnkId
-      })
+      lnk = (newN, nodeId, defDGLink
+        morphism (ScopedLink Global DefLink $ getNodeConsStatus nodeLab)
+        SeeSource)
       tempChanges = [ InsertNode (newN, newL), InsertEdge lnk ]
       tempDG = changesDGH dg tempChanges
       tempLibEnv = insert ln (groupHistory dg conservativityRule tempDG) libEnv

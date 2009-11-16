@@ -167,8 +167,8 @@ getSublogicFromDGraph le ln =
     gc = lookupDGraph ln le
 
     testAndGetSublogicFromEdge :: LEdge DGLinkLab -> Result G_sublogics
-    testAndGetSublogicFromEdge l@(_, _,
-             DGLink gm@(GMorphism cid' (ExtSign lsign _) _ lmorphism _) _ _ _)
+    testAndGetSublogicFromEdge l@(_, _, DGLink
+      { dgl_morphism = gm@(GMorphism cid' (ExtSign lsign _) _ lmorphism _) })
         =
           if isHomogeneous gm then
               Result [] (joinSublogics g_mor g_sign)

@@ -107,12 +107,8 @@ nodeSigUnion lgraph dg nodeSigs orig =
                  EmptyNode _ -> dgres
                  JustNode (NodeSig n sig) -> do
                      incl <- ginclusion lgraph sig sigUnion
-                     return $ insEdgeDG (n, node, DGLink
-                         { dgl_morphism = incl
-                         , dgl_type = globalDef
-                         , dgl_origin = SeeTarget
-                         , dgl_id = getNewEdgeId dgv
-                         }) dgv
+                     return $ snd $ insLEdgeDG
+                       (n, node, globDefLink incl SeeTarget) dgv
      dg'' <- foldl inslink (return dg') nodeSigs
      return (NodeSig node sigUnion, dg'')
 

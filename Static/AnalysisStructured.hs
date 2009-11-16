@@ -114,11 +114,7 @@ insLink dg (GMorphism cid sign si mor mi) ty orig n t =
         nsi = if si == startSigId then succ s else si
         nmi = if mi == startMorId then succ m else mi
         nmor = GMorphism cid sign nsi mor nmi
-        link = DGLink
-          { dgl_morphism = nmor
-          , dgl_type = ty
-          , dgl_origin = orig
-          , dgl_id = defaultEdgeId }
+        link = defDGLink nmor ty orig
     in (if mi == startMorId then setMorMapDG $ Map.insert (succ m)
          (toG_morphism nmor) mrMap else id) $
        (if si == startSigId then setSigMapDG $ Map.insert (succ s)

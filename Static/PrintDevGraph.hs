@@ -252,7 +252,7 @@ instance Pretty ConsStatus where
      c -> text (show c) <> pretty thm
 
 instance Pretty DGLinkType where
-    pretty t = text (getDGEdgeTypeModIncName $ getHomEdgeType True t)
+    pretty t = text (getDGEdgeTypeModIncName $ getHomEdgeType False True t)
                <> prettyThmLinkStatus t
                $+$ pretty (getLinkConsStatus t)
 

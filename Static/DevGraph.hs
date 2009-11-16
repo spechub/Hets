@@ -332,8 +332,23 @@ data DGLinkLab = DGLink
   { dgl_morphism :: GMorphism  -- signature morphism of link
   , dgl_type :: DGLinkType     -- type: local, global, def, thm?
   , dgl_origin :: DGLinkOrigin -- origin in input language
+  , dglPending :: Bool        -- open proofs of edges in proof basis
   , dgl_id :: EdgeId          -- id of the edge
   } deriving (Show, Eq)
+
+mkDGLink :: GMorphism -> DGLinkType -> DGLinkOrigin -> EdgeId -> DGLinkLab
+mkDGLink mor ty orig ei = DGLink
+  { dgl_morphism = mor
+  , dgl_type = ty
+  , dgl_origin = orig
+  , dglPending = False
+  , dgl_id = ei }
+
+defDGLink :: GMorphism -> DGLinkType -> DGLinkOrigin -> DGLinkLab
+defDGLink m ty orig = mkDGLink m ty orig defaultEdgeId
+
+globDefLink :: GMorphism -> DGLinkOrigin -> DGLinkLab
+globDefLink m orig = defDGLink m globalDef orig
 
 -- | describe the link type of the label
 getDGLinkType :: DGLinkLab -> String
@@ -384,8 +399,8 @@ data ThmTypes =
                      , isHomThm :: Bool }
   deriving (Eq, Ord, Show)
 
-getHomEdgeType :: Bool -> DGLinkType -> DGEdgeTypeModInc
-getHomEdgeType isHom lt = case lt of
+getHomEdgeType :: Bool -> Bool -> DGLinkType -> DGEdgeTypeModInc
+getHomEdgeType isPend isHom lt = case lt of
       ScopedLink scope lk cons -> case lk of
           DefLink -> case scope of
             Local -> LocalDef
@@ -394,7 +409,7 @@ getHomEdgeType isHom lt = case lt of
             { thmEdgeType = GlobalOrLocalThm scope isHom
             , isProvenEdge = isProvenThmLinkStatus st
             , isConservativ = isProvenConsStatusLink cons
-            , isPending = False } -- needs to be checked
+            , isPending = isPend } -- needs to be checked
       HidingDefLink -> HidingDef
       FreeOrCofreeDefLink _ _ -> FreeOrCofreeDef
       HidingFreeOrCofreeThm mh _ st -> ThmType
@@ -403,14 +418,15 @@ getHomEdgeType isHom lt = case lt of
             _ -> FreeOrCofreeThm
         , isProvenEdge = isProvenThmLinkStatus st
         , isConservativ = True
-        , isPending = False }
+        , isPending = isPend }
 
 -- | creates a DGEdgeType from a DGLinkLab
 getRealDGLinkType :: DGLinkLab -> DGEdgeType
 getRealDGLinkType lnk = let
   gmor = dgl_morphism lnk
   in DGEdgeType
-  { edgeTypeModInc = getHomEdgeType (isHomogeneous gmor) $ dgl_type lnk
+  { edgeTypeModInc = getHomEdgeType (dglPending lnk) (isHomogeneous gmor)
+      $ dgl_type lnk
   , isInc = case gmor of
       GMorphism cid _ _ mor _ -> isInclusionComorphism cid && isInclusion mor
   }
@@ -919,7 +935,7 @@ insLEdgeDG :: LEdge DGLinkLab -> DGraph -> (LEdge DGLinkLab, DGraph)
 insLEdgeDG (s, t, l) g =
   let eId = dgl_id l
       nId = getNewEdgeId g
-      newId = dgl_id l == defaultEdgeId
+      newId = eId == defaultEdgeId
       e = (s, t, if newId then l { dgl_id = nId } else l)
   in (e, g
     { getNewEdgeId = if newId then succ nId else max nId $ succ eId
@@ -949,7 +965,7 @@ insEdgeDG l oldDG =
 
 -- | insert a list of labeled edge into a given DG
 insEdgesDG :: [LEdge DGLinkLab] -> DGraph -> DGraph
-insEdgesDG = flip $ foldr insEdgeDG
+insEdgesDG = flip $ foldr (\ l -> snd . insLEdgeDG l)
 
 -- | merge a list of lnodes and ledges into a given DG
 mkGraphDG :: [LNode DGNodeLab] -> [LEdge DGLinkLab] -> DGraph -> DGraph

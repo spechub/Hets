@@ -83,12 +83,7 @@ theoremHideShiftForEdgeAux dg (sn, tn, llab) = do
       phi = dgl_morphism llab
       Just muN = dgn_sigma tlab
   cmor <- comp phi muN
-  let newEdge =(sn, nfNode, DGLink{
-                 dgl_morphism = cmor,
-                 dgl_type = globalThm,
-                 dgl_origin = DGLinkProof,
-                 dgl_id = defaultEdgeId
-               })
+  let newEdge =(sn, nfNode, defDGLink cmor globalThm DGLinkProof)
   case tryToGetEdge newEdge dg of
         Nothing -> let
           newGraph = changeDGH dg $ InsertEdge newEdge

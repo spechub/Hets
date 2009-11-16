@@ -150,11 +150,7 @@ normalFormDG libEnv dgraph = foldM (\ dg (node, nodelab) ->
                 chLab = SetNodeLab nodelab (node, newLab)
             -- insert the new node and add edges from the predecessors
                 insNNF = InsertNode (nfNode, nfLabel)
-                makeEdge src tgt m = (src, tgt, DGLink { dgl_morphism = m
-                                              , dgl_type = globalDef
-                                              , dgl_origin = DGLinkProof
-                                              , dgl_id = defaultEdgeId
-                                              })
+                makeEdge src tgt m = (src, tgt, globDefLink m DGLinkProof)
                 insStrMor = map (\ (x, f) -> InsertEdge $ makeEdge x nfNode f)
                   $ nub $ map (\ (x, y) -> (g Map.! x, y))
                   $ (node, morNode) : Map.toList mmap
@@ -287,16 +283,9 @@ handleEdge dg edge@(m,n,x) = do
                   , node_cons_status = mkConsStatus c }
                   thK
                 insK = InsertNode (k, labelK)
-                insE = [InsertEdge (m,k,DGLink { dgl_morphism = inclM
-                                               , dgl_type = globalDef
-                                               , dgl_origin = DGLinkProof
-                                               , dgl_id = defaultEdgeId
-                                               }),
-                       InsertEdge (k, n,DGLink { dgl_morphism = inclM
-                                              , dgl_type = HidingDefLink
-                                              , dgl_origin = DGLinkProof
-                                              , dgl_id = defaultEdgeId
-                                              })]
+                insE = [ InsertEdge (m,k, globDefLink inclM DGLinkProof)
+                       , InsertEdge (k, n, defDGLink inclM HidingDefLink
+                                      DGLinkProof)]
                 del = DeleteEdge edge
                 allChanges = del: insK : insE
             return $ changesDGH dg allChanges
@@ -332,12 +321,8 @@ translateEdge dg edge (GMorphism cid _sig _i1 mor1 _i2)
  let
    gm = gEmbed $ mkG_morphism lidT mor3
    del = DeleteEdge edge
-   edge' = DGLink { dgl_morphism = gm
-                                , dgl_type =  FreeOrCofreeDefLink Free
-                                              (EmptyNode $ Logic lidT)
-                                , dgl_origin = DGLinkProof
-                                , dgl_id = defaultEdgeId
-                                              }
+   edge' = defDGLink gm
+             (FreeOrCofreeDefLink Free $ EmptyNode $ Logic lidT)  DGLinkProof
    ins = InsertEdge (m, n, edge')
  return $ changesDGH dg [del, ins]
 
@@ -364,11 +349,7 @@ translateNode dg n s@(G_theory lid sig _ _ _) com@(Comorphism cid) = do
                   gth
     insM' = InsertNode (m', labelM')
  gMor <- gEmbedComorphism com (signOf s)
- let insE = InsertEdge (n,m',DGLink { dgl_morphism = gMor
-                                    , dgl_type = globalDef
-                                    , dgl_origin = DGLinkProof
-                                    , dgl_id = defaultEdgeId
-                                    })
+ let insE = InsertEdge (n,m', globDefLink gMor DGLinkProof)
  return $ (m', changesDGH dg [insM', insE])
 
 

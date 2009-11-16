@@ -66,14 +66,12 @@ compositionCreatingEdgesAux dgraph (path : paths) =
     cons = case getConservativityOfPath path of
              Mono -> if isTransportable morph then Mono else Cons
              c -> c
-    newEdge = (src, tgt, DGLink
-      { dgl_morphism = morph
-      , dgl_type = ScopedLink Global
+    newEdge = (src, tgt, defDGLink morph
+      (ScopedLink Global
           (ThmLink (Proven (Composition path)
                    $ foldl addEdgeId emptyProofBasis $ map getEdgeId path))
-          (ConsStatus cons None LeftOpen)
-      , dgl_origin = DGLinkProof
-      , dgl_id = defaultEdgeId })
+          $ ConsStatus cons None LeftOpen)
+      DGLinkProof)
     newDGraph = insertDGLEdge newEdge dgraph
     newDGraph2 = deleteRedundantEdges newDGraph newEdge
     in groupHistory dgraph (Composition path) newDGraph2

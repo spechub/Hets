@@ -513,31 +513,31 @@ insertDefEdgesMorphism n1 ((n2, morph) : views) sg2 dg = insertDefEdgesMorphism 
 
 -- | inserts a definition link between the nodes with the given morphism
 insertDefEdgeMorphism :: Node -> Node -> Morphism -> DGraph -> DGraph
-insertDefEdgeMorphism n1 n2 morph dg = insEdgeDG (n2, n1, edg) dg
+insertDefEdgeMorphism n1 n2 morph dg = snd $ insLEdgeDG (n2, n1, edg) dg
                      where mor = G_morphism Maude morph startMorId
-                           edg = DGLink (gEmbed mor) globalDef SeeTarget $ getNewEdgeId dg
+                           edg = globDefLink (gEmbed mor) SeeTarget
 
 -- | inserts a theorem link, labeled with the name of the view, between the nodes
 -- with the given morphism in the development graph
 insertThmEdgeMorphism :: Token -> Node -> Node -> Morphism -> DGraph -> DGraph
-insertThmEdgeMorphism name n1 n2 morph dg = insEdgeDG (n2, n1, edg) dg
+insertThmEdgeMorphism name n1 n2 morph dg = snd $ insLEdgeDG (n2, n1, edg) dg
                      where mor = G_morphism Maude morph startMorId
-                           edg = DGLink (gEmbed mor) globalThm (DGLinkView name) $ getNewEdgeId dg
+                           edg = defDGLink (gEmbed mor) globalThm (DGLinkView name)
 
 -- | inserts a PCons link between the nodes with the given morphism
 insertConsEdgeMorphism :: Node -> Node -> Morphism -> DGraph -> DGraph
-insertConsEdgeMorphism n1 n2 morph dg = insEdgeDG (n2, n1, edg) dg
+insertConsEdgeMorphism n1 n2 morph dg = snd $ insLEdgeDG (n2, n1, edg) dg
                      where mor = G_morphism Maude morph startMorId
-                           edg = DGLink (gEmbed mor) (globalConsThm PCons) SeeTarget $ getNewEdgeId dg
+                           edg = defDGLink (gEmbed mor) (globalConsThm PCons) SeeTarget
 
 -- | inserts a free definition link between the nodes with the given name
 insertFreeEdge :: Token -> Token -> TokenInfoMap -> DGraph -> DGraph
-insertFreeEdge tok1 tok2 tim dg = insEdgeDG (n2, n1, edg) dg
+insertFreeEdge tok1 tok2 tim dg = snd $ insLEdgeDG (n2, n1, edg) dg
                      where (n1, sg1, _, _, _) = fromJust $ Map.lookup tok1 tim
                            (n2, sg2, _, _, _) = fromJust $ Map.lookup tok2 tim
                            mor = G_morphism Maude (Maude.Morphism.inclusion sg1 sg2) startMorId
                            dgt = FreeOrCofreeDefLink Free $ EmptyNode (Logic Maude)
-                           edg = DGLink (gEmbed mor) dgt SeeTarget $ getNewEdgeId dg
+                           edg = defDGLink (gEmbed mor) dgt SeeTarget
 
 -- | the importation mode "protecting M" generates a new node M' and a free link
 -- between M and M'. This function is in charge of creating such M' if it does not

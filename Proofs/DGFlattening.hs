@@ -346,10 +346,7 @@ createLinks dg (nd, lb) (hd:tl) =
    sign_target = signOf (dgn_theory $ labDG dg hd)
    n_edg = propagateErrors $ do
       ng_morphism <- ginclusion logicGraph sign_source sign_target
-      return (nd, hd, DGLink { dgl_morphism = ng_morphism,
-                               dgl_type = globalDef,
-                               dgl_origin = DGLinkFlatteningUnion,
-                               dgl_id = defaultEdgeId })
+      return (nd, hd, globDefLink ng_morphism DGLinkFlatteningUnion)
    u_dg = case tryToGetEdge n_edg dg of
             Nothing -> changeDGH dg $ InsertEdge n_edg
             Just _ -> dg
