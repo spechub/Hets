@@ -22,7 +22,7 @@ mStuff = flat . many $ lineComment <|> blockComment <|> stringLit
         <|> balanced "()"
         <|> balanced "[]"
         <|> (char '`' <:> single anyChar)
-        <|> many1 (noneOf "\"`])}")
+        <|> fmap (: []) (noneOf "\"`])}")
 
 balanced :: String -> CharParser st String
 balanced [o, c] = char o <:> mStuff <++> string [c]
