@@ -85,8 +85,9 @@ instance Pretty Sign where
     pretty sign = let
         descend = flip . Set.fold
         -- print sort declarations
-        pr'sorts ss = hsep
-            [keyword "sorts", hsep $ map pretty ss, dot]
+        pr'sorts ss = case ss of
+            s : _ -> hsep [keyword "sorts", hsep $ map pretty ss, dot]
+            _ -> text ""
         -- print subsort declarations
         pr'sups = hsep . map pretty . Set.elems
         pr'pair sub sups = (:) . hsep $

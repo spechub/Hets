@@ -10,6 +10,27 @@ view Freeness from FREENESS to BOOL is
  sort Foo to Bool .
 endv
 
+mod TALK_TEST is
+ sorts A B C D E .
+ subsort A < B .
+ subsort A < C .
+ subsort D < E .
+ 
+ op f : A B -> C [comm assoc] .
+ op a : -> A [ctor] .
+ op b : -> B [ctor] .
+ op c : -> C [ctor] .
+ op d : -> D [ctor] .
+ op e : -> E [ctor] .
+ 
+ mb b : A .
+ 
+ vars X Y : B .
+ 
+ ceq f(X, Y) = X if X = Y .
+ rl [d] : d => e .
+endm
+
 fth ALPHA_ASSOC is
  sort Foo .
  op f : Foo Foo -> Foo [ctor assoc] .
@@ -158,44 +179,3 @@ view V2 from TEST8 to BOOL is
  
  op update(X:Foo) to term _or_(true, X:Bool) .
 endv
-
-fmod TEST9 is
- sorts A B .
- subsort A < B .
- 
- op a_ : A -> A [prec 10] .
- op _a_ : A A -> A [prec 11] .
-endfm
-
-fmod TEST10 is
- pr TEST9 * (op a_ : B -> B to b_ [prec 12],
-             sort A to C) .
-endfm
-
-fmod TEST11 is
- pr LIST{Nat} .
-endfm
-
-fmod TEST12 is
- pr LIST{TRIV}{TRIV}{Nat} .
-endfm
-
-fmod TEST13{X :: TRIV, Y :: TRIV} is
- sort L{X,Y} .
-endfm
-
-fmod TEST14 is
- pr TEST13{Nat, Nat} .
-endfm
-
-fth TEST15 is
- sort Elta .
-endfth
-
-view V3 from TRIV to TEST15 is
- sort Elt to Elta .
-endv
-
-fmod TEST16{Y :: TRIV} is
- pr LIST{Y} .
-endfm

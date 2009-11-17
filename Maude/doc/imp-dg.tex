@@ -4,7 +4,7 @@ We describe in this section the main functions used to draw the
 development graph for Maude specifications. The main function is
 \verb"anaMaudeFile", that receives a record of all the options received
 from the command line (of type \verb"HetcatsOpts") and the path of
-the Maude file to be parsed and return a pair with the library
+the Maude file to be parsed and returns a pair with the library
 name and its environment.
 
 {\codesize
@@ -18,7 +18,7 @@ anaMaudeFile _ file = do
 }
 
 This environment is computed with the function
-\verb"directMaudeParsing", that receives the file path and returns
+\verb"directMaudeParsing", that receives the path and returns
 a development graph. This analysis is performed in different stages:
 First, the parser described in Section \ref{subsec:lex-parser}
 Then, Maude is executed with \verb"runInteractiveCommand" to use
@@ -42,7 +42,8 @@ directMaudeParsing fp = do
 \end{verbatim}
 }
 
-We explain briefly the main data structures used during the generation of
+Before describing these functions,
+we briefly explain the data structures used during the generation of
 the development graph:
 
 \begin{itemize}
@@ -92,8 +93,8 @@ returned, containing the following information:
 
 \begin{itemize}
 \item The identifier of the module expression.
-\item The \verb"TokenInfoMap" updated with the data in the module
-expression.
+\item The \verb"TokenInfoMap" structure updated with the data
+in the module expression.
 \item The morphism associated to the module expression.
 \item The list of sorts parameterized in this module expression.
 \item The development graph thus far.
@@ -114,18 +115,9 @@ data ImportType = Pr | Ex | Inc
 \end{verbatim}
 }
 
-\item When parsing an importation statement we return a tuple containing:
-
-\begin{itemize}
-
-\item The type of importation.
-\item The identifier of the module expression imported.
-\item The updated map with the information associated with each
-module expression.
-\item The morphism associated to the module expression.
-\item The list of sorts parameterized in this module expression.
-\item The updated development graph.
-\end{itemize}
+\item When parsing an importation statement we return a tuple 
+consisting of the importation type and the information associated
+to the module expression:
 
 {\codesize
 \begin{verbatim}
@@ -133,7 +125,8 @@ type ImportProc = (ImportType, Token, TokenInfoMap, Morphism, [ParamSort], DGrap
 \end{verbatim}
 }
 
-\item When parsing a list of importation statements we return:
+\item When parsing a list of importation statements we return a
+\verb"ParamInfo" tuple, containing:
 
 \begin{itemize}
 \item The list of parameter information: the name of the parameter,
@@ -166,14 +159,15 @@ type ViewMap = Map.Map Token (Node, Token, Morphism, [Renaming], Bool)
 \end{verbatim}
 }
 
-\item Finally, we describe the tuple used to return the data structures
+\item Finally, we describe the tuple \verb"InsSpecRes"
+used to return the data structures
 updated when a specification or a view is introduced in the development
 graph. It contains:
 
 \begin{itemize}
 \item The updated \verb"TokenInfoMap".
 \item The updated \verb"ViewMap".
-\item A list of tokens indicating
+\item A list of tokens indicating the theories introduced thus far.
 \item The new development graph.
 \end{itemize}
 
@@ -185,7 +179,8 @@ type InsSpecRes = (TokenInfoMap, ViewMap, [Token], DGraph)
 
 \end{itemize}
 
-The function \verb"insertSpecs" traverses the specifications updating the
+The main function in charge of creating the graph is
+\verb"insertSpecs", that traverses the specifications updating the
 data structures and the development graph with \verb"insertSpec":
 
 {\codesize
@@ -198,24 +193,24 @@ insertSpecs (s : ss) tim vm ths dg = insertSpecs ss tim' vm' ths' dg'
 }
 
 The behavior of \verb"insertSpec" is different for each type of Maude
-specifications. When the introduced specification is a module, the
+specification. When the introduced specification is a module, the
 following actions are performed:
 
 \begin{itemize}
-\item The parameters are parsed as follows:
+\item The parameters are parsed:
 
 \begin{itemize}
-\item The list of parameters declarations is obtained with the auxiliary
+\item The list of parameter declarations is obtained with the auxiliary
 function \verb"getParams".
 \item These declarations are processed with \verb"processParameters",
 that returns a tuple of type \verb"ParamInfo" shown above.
 \item Given the parameters names, we traverse the list of sorts to check
 if the module defines parameterized sorts with \verb"getSortsParameterizedBy".
-\item The links between the theories in the parameters and the current modules
+\item The links between the theories in the parameters and the current module
 are created with \verb"createEdgesParams".
 \end{itemize}
 
-\item The importations are handled as follows:
+\item The importations are handled:
 
 \begin{itemize}
 \item The importation statements are obtained with \verb"getImportsSorts".
@@ -224,12 +219,12 @@ this case they are not needed and its value is ignored.
 \item These importations are handled by \verb"processImports", that
 returns a list of \verb"ImportProc" containing the information of each
 parameter.
-\item The definition link generated by the imports are created with
+\item The definition links generated by the imports are created with
 \verb"createEdgesImports".
 \end{itemize}
 
 \item The final signature is obtained with \verb"sign_union_morphs"
-by merging the signature in the current module with the one obtained
+by merging the signature in the current module with the ones obtained
 from the morphisms from the parameters and the imports.
 
 \end{itemize}
@@ -327,6 +322,7 @@ insertSpec (SpecView sp_v) tim vm ths dg = (tim2, vm', ths, dg4)
 \end{verbatim}
 }
 
+We describe now the main auxiliary functions described above.
 Modules expressions are parsed following the guidelines outlined in
 Section \ref{subsec:me}:
 
@@ -349,7 +345,7 @@ processModExp tim _ dg (ModExp modId) = (tok, tim, morph, ps, dg)
 steps:
 
 \begin{itemize}
-\item The information about the modules expressions is recursively
+\item The information about the module expressions is recursively
 computed with \verb"processModExp".
 \item The signature of the resulting module expression is obtained
 with the \verb"union" of signatures.
@@ -387,8 +383,8 @@ processModExp tim vm dg (SummationModExp modExp1 modExp2) = (tok, tim3, morph, p
 
 \item The renaming module expression recursively parses the inner expression, computes the morphism from the given renamings with \verb"fromSignRenamings",
 taking special care of the renaming of the parameterized sorts with
-\verb"applyRenamingParamSorts". Finally, the final morphism is obtained
-from the composition of the morphism computed for the inner expression and
+\verb"applyRenamingParamSorts". Eventually, the final morphism is obtained
+from the composition of the morphisms computed for the inner expression and
 the one computed from the renamings:
 
 
@@ -419,7 +415,7 @@ to be applied from the parameterized module, a list of pairs of nodes
 and morphisms, indicating the morphism that has to be used in the link
 from each view, and a list with the updated information about the
 parameters due to the views with theories as target.
-\item The morphism return is the inclusion morphism.
+\item The morphism returned is the inclusion morphism.
 \item The links between the targets of the views and the expression
 are created with \verb"updateGraphViews". 
 \end{itemize}
@@ -448,25 +444,18 @@ processModExp tim vm dg (InstantiationModExp modExp views) =
 \end{itemize}
 
 We present the function \verb"insertNode" to describe how nodes are
-introduced in the development graph; the rest of functions that insert
-nodes in the graph work in an analogous way. This function receives the
+introduced in the development graph. This function receives the
 identifier of the node, its signature\footnote{Note that when this
-function is used there are no sentences a }, the \verb"TokenInfoMap" map,
+function is used there are not sentences.}, the \verb"TokenInfoMap" map,
 a list of sorts, and information about the parameters and
 returns the updated map and graph. First, it checks if
 the node is already in the development graph. If it is in the graph,
 the current map and graph are returned, while in other case the extended
-signature is
-
-
-the current development graph and checks if the node is necessary (the
-morphism is not an identity and there is at least one sentence). In that
-case, the sentences are made named with \verb"makeNamed" and transformed
-into theory sentences with \verb"toThSens", the signature is extended with
-\verb"makeExtSign"; the sentences and the signature obtained in this way
-are used to create a Hets theory that is introduced in the development
-graph with \verb"insGTheory", a function that returns the new node signature
-and the updated development graph. Finally, a 
+signature is computed with \verb"makeExtSign" and used to create a graph
+theory that will be inserted with \verb"insGTheory", obtaining the new
+node information and the new development graph. Finally, the map is
+updated with the information received as parameter and the node identifier
+obtained when the node was introduced:
 
 {\codesize
 \begin{verbatim}
@@ -484,7 +473,13 @@ insertNode tok sg tim ss deps dg = if Map.member tok tim
 \end{verbatim}
 }
 
-The function
+The function \verb"insertDefEdgeMorphism" describes how definition links
+are introduced in the
+development graph. It receives the identifier of the source and target
+nodes, the morphism to be used in the link and the current development
+graph. The morphism is transformed into a development graph morphism
+indicating the current logic (\verb"Maude") and the type (\verb"globalDef")
+and is introduced in the development graph with \verb"insEdgeDG":
 
 {\codesize
 \begin{verbatim}
@@ -494,6 +489,40 @@ insertDefEdgeMorphism n1 n2 morph dg = insEdgeDG (n2, n1, edg) dg
                            edg = DGLink (gEmbed mor) globalDef SeeTarget $ getNewEdgeId dg
 \end{verbatim}
 }
+
+Theorem links are introduced with \verb"insertThmEdgeMorphism"
+in the same way, but specifying with
+\verb"globalThm" that the link is a theorem link. This function receives
+as extra argument the name of the view generating the proof obligations,
+that is used to name the link:
+
+{\codesize
+\begin{verbatim}
+insertThmEdgeMorphism :: Token -> Node -> Node -> Morphism -> DGraph -> DGraph
+insertThmEdgeMorphism name n1 n2 morph dg = insEdgeDG (n2, n1, edg) dg
+    where mor = G_morphism Maude morph startMorId
+          edg = DGLink (gEmbed mor) globalThm (DGLinkView name) $ getNewEdgeId dg
+\end{verbatim}
+}
+
+The function \verb"insertFreeEdge" receives the names of the nodes and
+the \verb"TokenInfoMap" and builds an inclusion morphism to use it in
+the \verb"FreeOrCofreeDefLink" link:
+
+{\codesize
+\begin{verbatim}
+insertFreeEdge :: Token -> Token -> TokenInfoMap -> DGraph -> DGraph
+insertFreeEdge tok1 tok2 tim dg = insEdgeDG (n2, n1, edg) dg
+           where (n1, sg1, _, _, _) = fromJust $ Map.lookup tok1 tim
+                 (n2, sg2, _, _, _) = fromJust $ Map.lookup tok2 tim
+                 mor = G_morphism Maude (Maude.Morphism.inclusion sg1 sg2) startMorId
+                 dgt = FreeOrCofreeDefLink Free $ EmptyNode (Logic Maude)
+                 edg = DGLink (gEmbed mor) dgt SeeTarget $ getNewEdgeId dg
+\end{verbatim}
+}
+
+
+
 
 
 

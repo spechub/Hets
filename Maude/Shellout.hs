@@ -22,7 +22,7 @@ maudePath = "maude"
 maudeCmd :: String
 maudeCmd = unwords [maudePath, "-interactive", "-no-banner", "-no-advise"]
 maudeHetsPath :: String
-maudeHetsPath = "Hets/Maude/hets.prj"
+maudeHetsPath = "Maude/hets.prj"
 
 -- | performs the basic analysis, extracting the signature and the sentences
 -- of the given Maude text, that can use the signature accumulated thus far
@@ -30,10 +30,10 @@ basicAnalysis :: Sign -> MaudeText -> IO (Sign, [Sentence])
 basicAnalysis sign (MaudeText mt) = do
     (hIn, hOut, _, _) <- runInteractiveCommand maudeCmd
     hPutStrLn hIn $ unwords ["in", maudeHetsPath]
-    let printedSign = parens $ vcat [text "fmod FROM-HETS is", pretty sign, text mt, text "endfm"]
+    let printedSign = parens $ vcat [text "mod FROM-HETS is", pretty sign, text mt, text "endm"]
     hPutStrLn hIn $ show printedSign
-    hClose hIn
     specOut <- hGetContents hOut
+    hClose hIn
     return $ convertSpec $ read $ findSpec specOut
 
 -- | extracts the signature and the sentences from a specification
