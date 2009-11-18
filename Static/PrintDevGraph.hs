@@ -261,6 +261,7 @@ instance Pretty DGLinkLab where
     [ text "Origin:" <+> pretty (dgl_origin l)
     , text "Type:" <+> pretty (dgl_type l)
     , text "Signature Morphism:"
+    , if dglPending l then text "proof chain incomplete" else Doc.empty
     , pretty $ dgl_morphism l
     , case dgl_type l of
         HidingFreeOrCofreeThm Nothing gm _ ->
