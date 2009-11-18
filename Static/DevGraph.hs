@@ -1168,6 +1168,27 @@ topsortedNodes dgraph = let dg = dgBody dgraph in
   reverse $ postorderF $ dffWith (\ (_, n, nl, _) -> (n, nl)) (nodes dg)
     $ efilter (\ (s, t, el) -> s /= t && isDefEdge (dgl_type el)) dg
 
+changedPendingEdges :: DGraph -> [LEdge DGLinkLab]
+changedPendingEdges dg = let
+  ls = filter (liftE $ not . isDefEdge) $ labEdgesDG dg
+  (ms, ps) = foldr (\ (s, t, l) (m, es) ->
+       let b = dglPending l
+           e = dgl_id l
+       in (Map.insert e
+          (b, s, t,
+          maybe Set.empty (\ ts -> case ts of
+             LeftOpen -> Set.empty
+             Proven _ pb -> proofBasis pb) . thmLinkStatus $ dgl_type l) m
+       , if b then Set.insert e es else es)) (Map.empty, Set.empty) ls
+  close known =
+      let nxt = Map.keysSet $ Map.filter
+                (\ (_, _, _, s) -> not $ Set.null $ Set.intersection s known)
+                ms
+          new = Set.union nxt known
+      in if new == known then new else close new
+  aPs = close ps
+  in filter (\ (_, _, l) -> dglPending l /= Set.member (dgl_id l) aPs) ls
+
 duplicateDefEdges :: DGraph -> [Edge]
 duplicateDefEdges = concat .
   filter (not . isSingle) . group . map (\ (s, t, _) -> (s, t))

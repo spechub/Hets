@@ -74,7 +74,7 @@ computeDGraphTheories le dgraph =
 
 computeLabelTheory :: LibEnv -> DGraph -> LNode DGNodeLab -> Maybe G_theory
 computeLabelTheory le dg (n, lbl) = let localTh = dgn_theory lbl in
-    maybeResult $ if isDGRef lbl then do
+    fmap reduceTheory . maybeResult $ if isDGRef lbl then do
         let refNode = dgn_node lbl
             dg' = lookupDGraph (dgn_libname lbl) le
             newLab = labDG dg' refNode
@@ -92,3 +92,7 @@ computeLabelTheory le dg (n, lbl) = let localTh = dgn_theory lbl in
             $ filter (liftE $ liftOr isGlobalDef isLocalDef)
             $ innDG dg n
       flatG_sentences localTh ths
+
+reduceTheory :: G_theory -> G_theory
+reduceTheory (G_theory lid sig ind sens _) =
+  G_theory lid sig ind (reduceSens sens) startThId

@@ -129,34 +129,37 @@ localInferenceAux libEnv dgraph ledge@(src, tgt, edgeLab) = let
     oldContents = labDG dgraph tgt
     in case maybeThSrc of
     Just thSrc ->
-      case (globalTheory oldContents,
+      case (dgn_theory oldContents,
                         maybeResult $ translateG_theory morphism thSrc) of
-        (Just (G_theory lidTgt _ _ sensTgt _),
-              Just (G_theory lidSrc _ _ sensSrc _)) ->
-          case maybeResult (coerceThSens lidTgt lidSrc "" sensTgt) of
+        (th@(G_theory lidTgt sig ind sensTgt _),
+              Just (G_theory lidSrc _ _ sentensSrc _)) ->
+          case maybeResult (coerceThSens lidSrc lidTgt "" sentensSrc) of
             Nothing -> dgraph
-            Just sentencesTgt ->
+            Just sensSrc ->
               -- check if all source axioms are also axioms in the target
-              let goals = diffSens (OMap.filter isAxiom sensSrc) sentencesTgt
+              let goals = OMap.filter isAxiom sensSrc
                   goals' = markAsGoal goals
-                  (newTh, renms) = case dgn_theory oldContents of
-                    G_theory lid sig ind sens ind' ->
-                      case coerceThSens lidSrc lid "" goals' of
-                        Nothing -> (G_theory lid sig ind sens ind', [])
-                        Just goals'' ->
-                          let (newSens, rnms) = joinSensAux sens goals''
-                          in (G_theory lid sig ind newSens startThId, rnms)
+                  noGoals = OMap.null goals'
+                  (newSens, renms) = joinSensAux sensTgt goals'
+                  newTh = if noGoals then th else
+                              G_theory lidTgt sig ind newSens startThId
                   newContents = oldContents { dgn_theory = newTh }
                   locInferRule = DGRuleLocalInference renms
                   newLab = edgeLab
                     { dgl_type = setProof (Proven locInferRule emptyProofBasis)
                         $ dgl_type edgeLab
-                    , dgl_origin = DGLinkProof }
+                    , dgl_origin = DGLinkProof
+                    , dglPending = not noGoals }
                   newEdge = (src, tgt, newLab)
-                  newGraph = changesDGH dgraph
-                     $ (if OMap.null goals then [] else
+                  newGraph0 = changesDGH dgraph
+                     $ (if noGoals then [] else
                          [SetNodeLab oldContents (tgt, newContents)])
                          ++ [DeleteEdge ledge, InsertEdge newEdge]
+                  newGraph = if noGoals then newGraph0 else changesDGH newGraph0
+                     $ concatMap (\ e@(s, t, l) ->
+                        [DeleteEdge e, InsertEdge
+                           (s, t, l { dglPending = not (dglPending l)})])
+                     $ changedPendingEdges newGraph0
               in groupHistory dgraph locInferRule newGraph
         _ -> dgraph
     _ -> dgraph

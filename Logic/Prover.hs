@@ -81,28 +81,25 @@ mapThSensStatus = OMap.map . mapStatus
 joinSensAux :: (Ord a, Eq b) => ThSens a b -> ThSens a b
             -> (ThSens a b, [(String, String)])
 joinSensAux s1 s2 = let
-    l1 = sortBy cmpSnd $ Map.toList s1
+    l1 = Map.toList s1
     updN n (_, e) = (n, e)
     m = OMap.size s1
-    l2 = map (\ (x, e) -> (x, e {OMap.order = m + OMap.order e })) $
-         sortBy cmpSnd $ Map.toList s2
+    l2 = map (\ (x, e) -> (x, e {OMap.order = m + OMap.order e }))
+         $ Map.toList s2
     sl2 = genericDisambigSens m fst updN (OMap.keysSet s1) l2
-    in (Map.fromList $ mergeSens l1 sl2,
+    in (Map.fromList $ l1 ++ sl2,
          zipWith (\ (n1, _) (n2, _) -> (n1, n2)) l2 sl2)
-    where mergeSens [] l2 = l2
-          mergeSens l1 [] = l1
-          mergeSens l1@((k1, e1) : r1) l2@((k2, e2) : r2) =
-              case cmpSenEle e1 e2 of
-              LT -> (k1, e1) : mergeSens r1 l2
-              EQ -> (k1, e1 { OMap.ele = (OMap.ele e1)
-                                        { senAttr = ThmStatus $
-                                              union (thmStatus $ OMap.ele e1)
-                                                  (thmStatus $ OMap.ele e2)}})
-                         : mergeSens r1 r2
-              GT -> (k2, e2) : mergeSens l1 r2
 
 joinSens :: (Ord a, Eq b) => ThSens a b -> ThSens a b -> ThSens a b
 joinSens s1 = fst . joinSensAux s1
+
+reduceSens :: (Ord a, Eq b) => ThSens a b -> ThSens a b
+reduceSens =
+    Map.fromList
+  . map head
+  . groupBy (\ (_, a) (_, b) -> sentence (OMap.ele a) == sentence (OMap.ele b))
+  . sortBy cmpSnd
+  . Map.toList
 
 cmpSnd :: (Ord a1) => (String, OMap.ElemWOrd (SenStatus a1 b))
        -> (String, OMap.ElemWOrd (SenStatus a1 b)) -> Ordering
@@ -112,20 +109,7 @@ cmpSenEle :: (Ord a1) => OMap.ElemWOrd (SenStatus a1 b)
           -> OMap.ElemWOrd (SenStatus a1 b) -> Ordering
 cmpSenEle x y = case (OMap.ele x, OMap.ele y) of
     (d1, d2) -> compare
-      (sentence d1, isAxiom d1, isDef d1) (sentence d2, isAxiom d2, isDef d2)
-
-diffSens :: (Ord a,Eq b) => ThSens a b -> ThSens a b -> ThSens a b
-diffSens s1 s2 = let
-    l1 = sortBy cmpSnd $ Map.toList s1
-    l2 = sortBy cmpSnd $ Map.toList s2
-    in Map.fromList $ diffS l1 l2
-    where diffS [] _ = []
-          diffS l1 [] = l1
-          diffS l1@((k1, e1) : r1) l2@((_, e2) : r2) =
-              case cmpSenEle e1 e2 of
-              LT -> (k1, e1) : diffS r1 l2
-              EQ -> diffS r1 r2
-              GT -> diffS l1 r2
+      (sentence d1, isAxiom d2, isDef d2) (sentence d2, isAxiom d1, isDef d1)
 
 mapValue :: (a -> b) -> SenStatus a c -> SenStatus b c
 mapValue f d = d { sentence = f $ sentence d }
