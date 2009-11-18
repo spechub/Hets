@@ -46,9 +46,9 @@ qualifyLibEnv libEnv = fmap fst
   $ foldM (\ (le, m) ln -> do
     dg0 <- updateRefNodes (le, m) $ lookupDGraph ln le
     (dg, trm) <- qualifyDGraph ln dg0
-    return (Map.insert ln (computeDGraphTheories le dg) le, Map.insert ln trm m))
-      (libEnv, Map.empty)
-    $ getTopsortedLibs libEnv
+    return ( Map.insert ln (computeDGraphTheories le dg) le
+           , Map.insert ln trm m))
+    (libEnv, Map.empty) $ getTopsortedLibs libEnv
 
 type RenameMap = Map.Map Int (GMorphism, GMorphism)
 
