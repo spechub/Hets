@@ -38,6 +38,11 @@ TAR = gtar
 else
 TAR = tar
 endif
+ifneq ($(findstring Darwin, $(OSBYUNAME)),)
+GET = curl -o
+else
+GET = wget -O
+endif
 
 SPASSURL_SOLARIS = \
   http://www.spass-prover.org/download/binaries/spass22sparc59.tgz
@@ -54,12 +59,11 @@ download : izpack-checkout hets-download release-hets-download spass-download
 hets-lib-checkout :
 	@echo get Hets-lib
 	mkdir -p $(IZPACK_SAMPLE)/Hets-lib
-	wget --output-document=$(IZPACK_SAMPLE)/Hets-lib/Hets-lib.tgz \
-            $(HETS_LIB_URL)
+	$(GET) $(IZPACK_SAMPLE)/Hets-lib/Hets-lib.tgz $(HETS_LIB_URL)
 
 hets-download : hets-lib-checkout
 	@cd $(IZPACK_SAMPLE)/src ; \
-        wget --output-document=Hets.tgz $(RELEASED_HETS_SRC) ; \
+        $(GET) Hets.tgz $(RELEASED_HETS_SRC) ; \
         $(TAR) xvfz Hets.tgz ; \
         cd Hets ; \
         cp LICENSE.txt $(IZPACK_PACK)/ ; \
@@ -84,7 +88,7 @@ hets-download : hets-lib-checkout
 release-hets-download :
 	for i in $(ARCH_OSES); do \
         mkdir -p $(IZPACK_HETS)/$$i ; \
-        wget --output-document=$(IZPACK_HETS)/$$i/hets-$(HETS_VERSION).bz2 \
+        $(GET) $(IZPACK_HETS)/$$i/hets-$(HETS_VERSION).bz2 \
            $(HETS_URL)/$$i/versions/hets-$(HETS_VERSION).bz2; done
 
 tools-checkout :
@@ -103,23 +107,18 @@ izpack-checkout :
 	svn checkout $(IZPACK_TRUNK) $(IZPACK_PATH)
 
 spass-download :
-	wget --output-document=$(IZPACK_SPASS)/spass-src.tgz  $(SPASS_SRC)
+	$(GET) $(IZPACK_SPASS)/spass-src.tgz  $(SPASS_SRC)
 	for i in $(ARCH_OSES) ; do \
            spassdir=$(IZPACK_SPASS)/$$i ; \
            mkdir -p $$spassdir ; \
            cp -f $(IZPACK_SPASS)/spass-src.tgz $$spassdir/ ; \
            done
 	$(RM) $(IZPACK_SPASS)/spass-src.tgz
-	wget --output-document=$(IZPACK_SPASS)/linux/spass.tgz \
-            $(SPASSURL_LINUX)
-	wget --output-document=$(IZPACK_SPASS)/linux64/spass.tgz \
-            $(SPASSURL_LINUX)
-	wget --output-document=$(IZPACK_SPASS)/solaris/spass.tgz \
-            $(SPASSURL_SOLARIS)
-	wget --output-document=$(IZPACK_SPASS)/mac/spass.dmp \
-            $(SPASSURL_MAC)
-	wget --output-document=$(IZPACK_SPASS)/intel-mac/spass.dmg \
-            $(SPASSURL_INTELMAC)
+	$(GET) $(IZPACK_SPASS)/linux/spass.tgz $(SPASSURL_LINUX)
+	$(GET) $(IZPACK_SPASS)/linux64/spass.tgz $(SPASSURL_LINUX)
+	$(GET) $(IZPACK_SPASS)/solaris/spass.tgz $(SPASSURL_SOLARIS)
+	$(GET) $(IZPACK_SPASS)/mac/spass.dmp $(SPASSURL_MAC)
+	$(GET) $(IZPACK_SPASS)/intel-mac/spass.dmg $(SPASSURL_INTELMAC)
 	for i in linux solaris linux64; do \
            cd $(IZPACK_SPASS)/$$i/ ; $(TAR) xvfz spass.tgz ; \
                 $(RM) spass.tgz ; mv SPASS*/SPASS . ; $(RM) -r SPASS*/* ; \
