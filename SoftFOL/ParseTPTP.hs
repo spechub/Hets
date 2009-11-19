@@ -12,7 +12,11 @@ A parser for the TPTP Input Syntax v3.4.0.1 taken from
 <http://www.cs.miami.edu/~tptp/TPTP/SyntaxBNF.html>
 -}
 
-module SoftFOL.ParseTPTP where
+module SoftFOL.ParseTPTP
+  ( tptp
+  , prTPTPs
+  , tptpModel
+  ) where
 
 import Text.ParserCombinators.Parsec
 import SoftFOL.Sign
@@ -24,7 +28,6 @@ import Common.Lexer ((<<), getPos)
 
 import Control.Monad
 import Data.Char (ord, toLower, isAlphaNum)
-
 
 data TPTP =
     FormAnno FormKind Name Role SPTerm (Maybe Annos)
@@ -113,14 +116,14 @@ blank = (>> skipMany1 whiteSpace)
 szsOutput :: Parser ()
 szsOutput = blank (string "SZS") >> blank (string "output")
 
-tptpModel :: Parser [TPTP]
+tptpModel :: Parser [(String, SPTerm)]
 tptpModel = do
   manyTill anyChar $ try $ szsOutput >> blank (string "start")
   manyTill anyChar newline
   skipAll
   ts <- many1 (formAnno << skipAll)
   szsOutput >> blank (string "end")
-  return ts
+  return $ map (\ (FormAnno _ (Name n) _ t _) -> (n, t)) ts
 
 printable :: Char -> Bool
 printable c = let i = ord c in i >= 32 && i <= 126

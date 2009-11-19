@@ -843,10 +843,9 @@ extractCASLModel :: CASLSign -> ProofTree
                  -> Result (CASLSign, [Named (FORMULA ())])
 extractCASLModel sign (ProofTree output) =
   case parse tptpModel "" output of
-    Right ts -> do
+    Right rfs -> do
       let (_, idMap, _) = transSign sign
           rMap = getSignMap idMap
-          rfs = map (\ (FormAnno _ (Name n) _ t _) -> (n, t)) ts
           (rs, ofs) = partition ((== "interpretation_atoms") . fst) rfs
       (nm, _) <- mapAccumLM (toForm sign) rMap $ map snd $ rs ++ ofs
       let nops = Map.filter (\ v -> case v of
