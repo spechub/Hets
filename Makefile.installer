@@ -40,14 +40,14 @@ TAR = tar
 endif
 
 SPASSURL_SOLARIS = \
-  http://spass.mpi-sb.mpg.de/download/binaries/spass22sparc59.tgz
+  http://www.spass-prover.org/download/binaries/spass22sparc59.tgz
 SPASSURL_MAC = \
-  http://spass.mpi-sb.mpg.de/download/binaries/spass30powerpcmac.dmg
+  http://www.spass-prover.org/download/binaries/spass30powerpcmac.dmg
 SPASSURL_LINUX = \
-  http://spass.mpi-sb.mpg.de/download/binaries/spass30pclinux.tgz
+  http://www.spass-prover.org/download/binaries/spass30pclinux.tgz
 SPASSURL_INTELMAC = \
-  http://spass.mpi-sb.mpg.de/download/binaries/spass30x86macosx.dmg
-SPASS_SRC = http://spass.mpi-sb.mpg.de/download/sources/spass30.tgz
+  http://www.spass-prover.org/download/binaries/spass30x86macosx.dmg
+SPASS_SRC = http://www.spass-prover.org/download/sources/spass30.tgz
 
 download : izpack-checkout hets-download release-hets-download spass-download
 
