@@ -56,6 +56,7 @@ import qualified Data.Foldable as Fold
 import qualified Common.Lib.Rel as Rel
 
 import Common.Doc hiding (empty)
+import qualified Common.Doc as Doc
 import Common.DocUtils (Pretty(..))
 
 -- * Types
@@ -85,9 +86,8 @@ instance Pretty Sign where
     pretty sign = let
         descend = flip . Set.fold
         -- print sort declarations
-        pr'sorts ss = case ss of
-            s : _ -> hsep [keyword "sorts", hsep $ map pretty ss, dot]
-            _ -> text ""
+        pr'sorts ss = if null ss then Doc.empty else
+            hsep [keyword "sorts", hsep $ map pretty ss, dot]
         -- print subsort declarations
         pr'sups = hsep . map pretty . Set.elems
         pr'pair sub sups = (:) . hsep $
