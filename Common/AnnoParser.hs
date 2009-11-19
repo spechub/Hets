@@ -139,11 +139,6 @@ annotations = many (annotationL << skip)
 commaIds :: GenParser Char st [Id]
 commaIds = commaSep1 parseAnnoId
 
-annoArg :: Annote_text -> String
-annoArg txt = case txt of
-  Line_anno str -> str
-  Group_anno ls -> unlines ls
-
 parseAnno :: Annotation -> Pos -> Either ParseError Annotation
 parseAnno anno sp =
     case anno of

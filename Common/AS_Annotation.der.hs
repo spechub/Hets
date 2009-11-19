@@ -249,3 +249,19 @@ makeNamedSen a = (makeNamed (getRLabel a) $ item a)
     (True, False) -> Just True
     (False, True) -> Just False
     _ -> Nothing }
+
+annoArg :: Annote_text -> String
+annoArg txt = case txt of
+  Line_anno str -> str
+  Group_anno ls -> unlines ls
+
+newtype Name = Name String
+
+instance Show Name where
+  show (Name s) = s
+
+getAnnoName :: Annoted a -> Name
+getAnnoName = Name . foldr (\ an -> case an of
+  Unparsed_anno (Annote_word wrd) txt _ | wrd == "name" ->
+     (annoArg txt ++)
+  _ -> id) "" . l_annos

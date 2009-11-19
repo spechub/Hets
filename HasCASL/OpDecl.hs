@@ -191,7 +191,7 @@ anaProgEq ape = do
 extractBinderId :: Annotation -> Result Id
 extractBinderId a = case a of
   Unparsed_anno (Annote_word f@"binder") s r ->
-    case parse (skip >> opId << eof) f $ fromAText s of
+    case parse (skip >> opId << eof) f $ annoArg s of
       Right i -> return i
       Left err -> fatal_error (showErr err ++ "\nin " ++ show (annoDoc a)) r
   _ -> Result [] Nothing
@@ -238,8 +238,3 @@ addBinder o b = do
         addBinding o b
       else addDiags [mkDiag Warning "repeated binder syntax" b]
     Nothing -> addBinding o b
-
-fromAText :: Annote_text -> String
-fromAText t = case t of
-  Line_anno s -> s
-  Group_anno l -> unlines l
