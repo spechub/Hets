@@ -75,9 +75,10 @@ hasMany s = Set.size s > 1
 
 -- | Transform a list [l1,l2, ... ln] to (in sloppy notation)
 -- [[x1,x2, ... ,xn] | x1<-l1, x2<-l2, ... xn<-ln]
-combine      :: [[a]] -> [[a]]
-combine []    = [[]]
-combine (x:l) = concatMap ((`map` combine l) . (:)) x
+-- (this is just sequence!)
+combine :: [[a]] -> [[a]]
+combine = sequence
+-- see http://www.haskell.org/pipermail/haskell-cafe/2009-November/069490.html
 
 -- | trims a string both on left and right hand side
 trim :: String -> String
