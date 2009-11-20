@@ -97,8 +97,7 @@ reduceSens :: (Ord a, Eq b) => ThSens a b -> ThSens a b
 reduceSens =
     Map.fromList
   . map head
-  . groupBy (\ (_, a) (_, b) -> let e = OMap.ele b in
-          sentence (OMap.ele a) == sentence e && isAxiom e)
+  . groupBy (\ (_, a) (_, b) -> sentence (OMap.ele a) == sentence (OMap.ele b))
   . sortBy cmpSnd
   . Map.toList
 
