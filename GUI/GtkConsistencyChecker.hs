@@ -189,7 +189,7 @@ showConsistencyChecker gInfo@(GInfo { libName = ln }) = postGUIAsync $ do
             listStoreClear listFinder
             activate widgets False
             widgetSetSensitive btnCheck False)
-        (do activate widgets True; widgetSetSensitive btnCheck False)
+        (do activate widgets True; widgetSetSensitive btnCheck True)
 
   shN <- setListSelectorMultiple trvNodes btnNodesAll btnNodesNone
     btnNodesInvert upd
