@@ -51,15 +51,11 @@ import Control.Monad
 replace :: Eq a => [a] -> [a] -> [a] -> [a]
 replace sl r = case sl of
   [] -> error "Common.Utils.replace: empty list"
-  _ -> replaceBy $ \ l@(hd : tl) -> case stripPrefix sl l of
-    Nothing -> ([hd], tl)
-    Just rt -> (r, rt)
-
-replaceBy :: ([a] -> ([b], [a])) -> [a] -> [b]
-replaceBy splt l = case l of
-  [] -> []
-  _ -> let (ft, rt) = splt l in
-    ft ++ replaceBy splt rt
+  _ -> concat . unfoldr (\ l -> case l of
+    [] -> Nothing
+    hd : tl -> Just $ case stripPrefix sl l of
+      Nothing -> ([hd], tl)
+      Just rt -> (r, rt))
 
 -- | add indices to a list starting from one
 number :: [a] -> [(a, Int)]
