@@ -42,8 +42,8 @@ import Logic.Logic
 
 import Proofs.AbstractState
 
-import Static.DevGraph(DGNodeLab(dgn_name), isProvenSenStatus, showName)
-import Static.GTheory(G_theory(G_theory), sublogicOfTh)
+import Static.DevGraph
+import Static.GTheory
 
 import Data.Char(isSpace)
 import Data.List

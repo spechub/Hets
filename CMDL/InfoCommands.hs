@@ -45,7 +45,7 @@ import CMDL.Shell (nodeNames)
 import CMDL.Utils (createEdgeNames, decomposeIntoGoals, obtainEdgeList,
                    obtainNodeList, prettyPrintErrList)
 
-import Static.GTheory (G_theory(G_theory), BasicProof)
+import Static.GTheory
 import Static.DevGraph
 import Static.PrintDevGraph (showLEdge)
 

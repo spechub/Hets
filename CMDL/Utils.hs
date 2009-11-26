@@ -41,15 +41,14 @@ import Data.Maybe
 import Data.Char (isDigit, isSpace)
 import Data.Graph.Inductive.Graph(LNode, LEdge)
 
-import System.Environment(getEnv)
 import System.Directory(doesDirectoryExist, doesFileExist,
                         getDirectoryContents)
 
-import Static.GTheory(G_theory(G_theory))
+import Static.GTheory
 import Static.DevGraph
 
 import Common.AS_Annotation(SenAttr(isAxiom))
-import Common.Utils(trim, trimLeft, splitOn)
+import Common.Utils
 import qualified Common.OrderedMap as OMap
 
 
@@ -67,7 +66,7 @@ checkPresenceProvers :: [String] -> IO [String]
 checkPresenceProvers ls = case ls of
     [] -> return []
     "SPASS" : l -> do
-                  path <- getEnv "PATH"
+                  path <- getEnvDef "PATH" ""
                   let lsPaths = map trim $ splitOn ':' path
                       completePath x = case x of
                                         [] -> []
