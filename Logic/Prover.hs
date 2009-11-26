@@ -273,15 +273,22 @@ type Prover sign sentence morphism sublogics proof_tree =
     sentence morphism sublogics proof_tree
 
 mkProverTemplate :: String -> sublogics
-                 -> (String -> theory -> [FreeDefMorphism sentence morphism]
-                     -> IO [ProofStatus proof_tree])
-                 -> ProverTemplate theory sentence morphism sublogics proof_tree
+  -> (String -> theory -> [FreeDefMorphism sentence morphism]
+      -> IO [ProofStatus proof_tree])
+  -> ProverTemplate theory sentence morphism sublogics proof_tree
 mkProverTemplate str sl fct = Prover
     { proverName = str
     , proverSublogic = sl
     , proveGUI = Just fct
     , proveCMDLautomaticBatch = Nothing }
 
+mkAutomaticProver :: String -> sublogics
+  -> (String -> theory -> [FreeDefMorphism sentence morphism]
+      -> IO [ProofStatus proof_tree])
+  -> (Bool -> Bool -> Concurrent.MVar (Result [ProofStatus proof_tree])
+      -> String -> TacticScript -> theory -> [FreeDefMorphism sentence morphism]
+      -> IO (Concurrent.ThreadId, Concurrent.MVar ()))
+  -> ProverTemplate theory sentence morphism sublogics proof_tree
 mkAutomaticProver str sl fct bFct =
   (mkProverTemplate str sl fct)
   { proveCMDLautomaticBatch = Just bFct }
