@@ -51,6 +51,7 @@ import Common.AS_Annotation(SenAttr(isAxiom))
 import Common.Utils
 import qualified Common.OrderedMap as OMap
 
+import qualified Data.Map as Map
 
 -- a any version of function that supports IO
 anyIO :: (a -> IO Bool) -> [a] -> IO Bool
@@ -200,7 +201,7 @@ nodeContainsGoals:: LNode DGNodeLab -> G_theory -> Bool
 nodeContainsGoals (_, l) th =
    (case th of
        G_theory _ _ _ sens _ ->
-         not $ OMap.null $ OMap.filter
+         not $ Map.null $ OMap.filter
            (\ s -> not (isAxiom s) && not (isProvenSenStatus s)) sens) ||
            hasOpenNodeConsStatus False l
 

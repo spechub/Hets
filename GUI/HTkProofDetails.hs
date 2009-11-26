@@ -16,6 +16,7 @@ module GUI.HTkProofDetails (doShowProofDetails) where
 import qualified Common.Doc as Pretty
 import qualified Common.OrderedMap as OMap
 
+import qualified Data.Map as Map
 import Data.Maybe
 import Data.List
 import Data.IORef
@@ -243,7 +244,7 @@ doShowProofDetails prGUISt =
     let sttDesc = "Tactic script"
         sptDesc = "Proof tree"
         sens = selectedGoalMap prGUISt
-        elementMap = foldr insertSenSt OMap.empty (reverse $ OMap.toList sens)
+        elementMap = foldr insertSenSt Map.empty (reverse $ OMap.toList sens)
         insertSenSt (gN, st) resOMap =
             foldl (flip $ \ (s2, ind) -> OMap.insert (gN, ind) $
                                                      fillGoalDescription s2)

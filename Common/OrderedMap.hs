@@ -19,17 +19,15 @@ insertion\/conversion order for the creation of the new list
 module Common.OrderedMap
   ( OMap
   , ElemWOrd (..)
-  , Map.empty, Map.null, Map.size
-  , Map.member
   , lookup
-  , insert, insertWith, insertWithKey
+  , insert
   , map, mapWithKey
-  , delete, (\\), difference
-  , update, updateWithKey
-  , filter, filterWithKey
-  , partition, partitionWithKey
+  , update
+  , difference
+  , filter
+  , partition
   , fromList, toList
-  , keys, Map.keysSet, elems
+  , keys, elems
   ) where
 
 import Prelude hiding (lookup, map, filter, null)
@@ -37,11 +35,6 @@ import Prelude hiding (lookup, map, filter, null)
 import qualified Data.Map as Map
 import qualified Data.List as List
 import Data.Maybe
-
-infix 9 \\ -- add a comment for cpp
-
-(\\) :: Ord k => OMap k a -> OMap k b -> OMap k a
-(\\) = difference
 
 data ElemWOrd a = EWOrd
   { order :: Int
@@ -62,53 +55,24 @@ lookup k = maybe (fail "Common.OrderedMap.lookup")
 
 insert :: Ord k => k -> a -> OMap k a -> OMap k a
 insert k e m = Map.insertWith (\ ne oe -> oe {ele = ele ne})
-               k (EWOrd (Map.size m) e) m
-
-insertWith :: Ord k => (a -> a -> a) -> k -> a -> OMap k a -> OMap k a
-insertWith = insertWithKey . const
-
-insertWithKey :: Ord k => (k -> a -> a -> a) -> k -> a -> OMap k a -> OMap k a
-insertWithKey f k e m =
-    Map.insertWithKey (\ k1 eo1 eo2 -> eo2 { ele = f k1 (ele eo1) (ele eo2)})
-       k (EWOrd (Map.size m) e) m
-
-delete :: Ord k => k -> OMap k a -> OMap k a
-delete k m =
-    if Map.size dm == Map.size m
-       then dm
-       else updateOrder (order $ fromJust $ Map.lookup k m) dm
-    where dm = Map.delete k m
-
-updateOrder :: Ord k =>
-               Int -- ^ order of removed element
-            -> OMap k a -> OMap k a
-updateOrder dOrder = Map.map updateOrd
-    where updateOrd e
-              | order e < dOrder = e
-              | order e == dOrder = error "Something strange happened"
-              | order e > dOrder = e { order = order e - 1}
-              | otherwise = error "Never happens"
+               k (EWOrd (succ $ Map.size m) e) m
 
 update :: Ord k => (a -> Maybe a) -> k -> OMap k a -> OMap k a
 update = updateWithKey . const
 
 updateWithKey :: Ord k => (k -> a -> Maybe a) -> k -> OMap k a -> OMap k a
-updateWithKey f k m1 =
-    let m2 = Map.updateWithKey (\ k1 e -> case f k1 (ele e) of
+updateWithKey f =
+    Map.updateWithKey $ \ k1 e -> case f k1 (ele e) of
                                          Nothing -> Nothing
-                                         Just x -> Just (e {ele = x})) k m1
-    in if Map.size m2 == Map.size m1
-       then m2
-       else updateOrder (order $ fromJust $ Map.lookup k m1) m2
-
+                                         Just x -> Just e {ele = x}
 filter :: Ord k => (a -> Bool) -> OMap k a -> OMap k a
 filter = filterWithKey . const
 
 filterWithKey :: Ord k => (k -> a -> Bool) -> OMap k a -> OMap k a
-filterWithKey p = fromList . toList . Map.filterWithKey (\ k -> p k . ele)
+filterWithKey p = Map.filterWithKey (\ k -> p k . ele)
 
 difference :: Ord k => OMap k a -> OMap k b -> OMap k a
-difference m = fromList . toList . Map.difference m
+difference m = Map.difference m
 
 map :: Ord k => (a -> b) -> OMap k a -> OMap k b
 map = mapWithKey . const
@@ -121,9 +85,7 @@ partition = partitionWithKey . const
 
 partitionWithKey :: Ord k => (k -> a -> Bool) -> OMap k a
                  -> (OMap k a,OMap k a)
-partitionWithKey p m = case Map.partitionWithKey (\ k -> p k . ele) m of
-                       (x, y) -> (updOrder x, updOrder y)
-    where updOrder = fromList . toList
+partitionWithKey p = Map.partitionWithKey (\ k -> p k . ele)
 
 fromList :: Ord k => [(k,a)] -> OMap k a
 fromList = List.foldl ins Map.empty

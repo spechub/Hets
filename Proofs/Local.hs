@@ -140,7 +140,7 @@ localInferenceAux libEnv dgraph ledge@(src, tgt, edgeLab) = let
               -- check if all source axioms are also axioms in the target
               let goals = OMap.filter isAxiom sensSrc
                   goals' = markAsGoal goals
-                  noGoals = OMap.null goals'
+                  noGoals = Map.null goals'
                   (newSens, renms) = joinSensAux sensTgt goals'
                   provenSens = proveSens lidTgt newSens
                   pendingGoals =

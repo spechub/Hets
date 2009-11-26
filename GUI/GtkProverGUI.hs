@@ -172,9 +172,9 @@ showProverGUI lid prGuiAcs thName warn th knownProvers comorphList = do
             (isJust (selectedProver s) && not (null $ selectedGoals s))
           return s
 
-    activate noGoal (not $ OMap.null $ goalMap initState)
-    activate noAxiom (not $ OMap.null axioms)
-    activate noTheory (not $ OMap.null $ goalMap initState)
+    activate noGoal (not $ Map.null $ goalMap initState)
+    activate noAxiom (not $ Map.null axioms)
+    activate noTheory (not $ Map.null $ goalMap initState)
 
     -- setup goal list
     shG <- setListSelectorMultiple trvGoals btnGoalsAll btnGoalsNone

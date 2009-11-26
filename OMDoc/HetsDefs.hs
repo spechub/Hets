@@ -103,47 +103,43 @@ module OMDoc.HetsDefs
   )
   where
 
-import Data.Graph.Inductive.Graph
-import qualified Data.Graph.Inductive.Graph as Graph
+import CASL.AS_Basic_CASL
+import CASL.Logic_CASL
+import CASL.Morphism
+import CASL.Sign
 
+import Common.ExtSign
+import Common.Id
 import Common.LibName
+import Common.Utils (trim)
+
+import Data.Graph.Inductive.Graph
+import Data.List (find, nub, partition, intercalate)
+
+import Debug.Trace (trace)
 
 import Driver.Options
 
+import Logic.Coerce
+import Logic.Comorphism
 import Logic.Grothendieck
+
+import OMDoc.Util
 
 import Static.DevGraph
 import Static.GTheory
 
-import CASL.AS_Basic_CASL
-import CASL.Logic_CASL
-
 import qualified CASL.Induction as Induction
 
-import CASL.Sign
-import CASL.Morphism
-import qualified CASL.AS_Basic_CASL as CASLBasic
-import Common.Id
-import qualified Data.Set as Set
-import qualified Data.Map as Map
-import qualified Common.Lib.Rel as Rel
-import qualified Logic.Grothendieck as Gro
 import qualified Common.AS_Annotation as Ann
-import qualified Logic.Prover as Prover
-import Logic.Coerce
-import Logic.Comorphism
-import Common.ExtSign
-import Common.Utils (trim)
-
-import qualified Common.OrderedMap as OMap
-
+import qualified Common.Lib.Rel as Rel
 import qualified Common.Result as Result
 
-import Debug.Trace (trace)
+import qualified Data.Graph.Inductive.Graph as Graph
+import qualified Data.Map as Map
+import qualified Data.Set as Set
 
-import Data.List (find, nub, partition, intercalate)
-
-import OMDoc.Util
+import qualified Logic.Prover as Prover
 
 -- | \"alias\" for 'defaultHetcatsOpts' (for export)
 dho::HetcatsOpts
