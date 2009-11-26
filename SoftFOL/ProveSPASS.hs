@@ -22,10 +22,7 @@ See <http://spass.mpi-sb.mpg.de/> for details on SPASS.
       - Implement a consistency checker based on GUI
 -}
 
-module SoftFOL.ProveSPASS (spassProver,
-                           spassProveGUI,
-                           spassProveCMDLautomatic,
-                           spassProveCMDLautomaticBatch) where
+module SoftFOL.ProveSPASS (spassProver, spassProveCMDLautomaticBatch) where
 
 import Logic.Prover
 
@@ -62,9 +59,8 @@ import Data.Time (TimeOfDay(..),midnight -- only in ghc-6.6.1: ,parseTime
   Implemented are: a prover GUI, and both commandline prover interfaces.
 -}
 spassProver :: Prover Sign Sentence SoftFOLMorphism () ProofTree
-spassProver = (mkProverTemplate "SPASS" () spassProveGUI)
-    { proveCMDLautomatic = Just spassProveCMDLautomatic
-    , proveCMDLautomaticBatch = Just spassProveCMDLautomaticBatch }
+spassProver = mkAutomaticProver "SPASS" () spassProveGUI
+  spassProveCMDLautomaticBatch
 
 -- * Main prover functions
 
@@ -75,7 +71,7 @@ spassProver = (mkProverTemplate "SPASS" () spassProveGUI)
   line interface.
 -}
 atpFun :: String -- ^ theory name
-       -> ATPFunctions Sign Sentence SoftFOLMorphism ProofTree SoftFOLProverState
+  -> ATPFunctions Sign Sentence SoftFOLMorphism ProofTree SoftFOLProverState
 atpFun thName = ATPFunctions
     { initialProverState = spassProverState,
       atpTransSenName = transSenName,
@@ -114,24 +110,7 @@ spassProveGUI thName th freedefs =
     genericATPgui (atpFun thName) True (proverName spassProver) thName th
                   freedefs emptyProofTree
 
--- ** command line functions
-
-{- |
-  Implementation of 'Logic.Prover.proveCMDLautomatic' which provides an
-  automatic command line interface for a single goal.
-  SPASS specific functions are omitted by data type ATPFunctions.
--}
-spassProveCMDLautomatic ::
-           String -- ^ theory name
-        -> TacticScript -- ^ default tactic script
-        -> Theory Sign Sentence ProofTree -- ^ theory consisting of a
-                                -- signature and a list of Named sentence
-        -> [FreeDefMorphism SPTerm SoftFOLMorphism] -- ^ freeness constraints
-        -> IO (Result.Result ([ProofStatus ProofTree]))
-           -- ^ Proof status for goals and lemmas
-spassProveCMDLautomatic thName defTS th freedefs =
-    genericCMDLautomatic (atpFun thName) (proverName spassProver) thName
-        (parseSpassTacticScript defTS) th freedefs emptyProofTree
+-- ** command line function
 
 {- |
   Implementation of 'Logic.Prover.proveCMDLautomaticBatch' which provides an

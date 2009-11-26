@@ -512,12 +512,9 @@ getCarrier qm s =
 {- | The Prover implementation. First runs the batch prover (with
   graphical feedback), then starts the GUI prover.  -}
 quickCheckProver :: Prover CASLSign CASLFORMULA CASLMor CASL_Sublogics ProofTree
-quickCheckProver =
-  (mkProverTemplate "QuickCheck"
-                    (SL.top {has_part = False, which_logic = SL.FOL})
-                    quickCheckGUI)
-    { proveCMDLautomatic = Just quickCheckCMDLautomatic
-    , proveCMDLautomaticBatch = Just quickCheckCMDLautomaticBatch }
+quickCheckProver = mkAutomaticProver "QuickCheck"
+  (SL.top {has_part = False, which_logic = SL.FOL})
+  quickCheckGUI quickCheckCMDLautomaticBatch
 
 {- |
   Record for prover specific functions. This is used by both GUI and command
@@ -559,24 +556,7 @@ quickCheckGUI :: String -- ^ theory name
 quickCheckGUI thName th freedefs = genericATPgui (atpFun thName) True
     (proverName quickCheckProver) thName th freedefs emptyProofTree
 
--- ** command line functions
-
-{- |
-  Implementation of 'Logic.Prover.proveCMDLautomatic' which provides an
-  automatic command line interface for a single goal.
-  QuickCheck specific functions are omitted by data type ATPFunctions.
--}
-quickCheckCMDLautomatic ::
-           String -- ^ theory name
-        -> TacticScript -- ^ default tactic script
-        -> Theory CASLSign CASLFORMULA ProofTree
-           -- ^ theory consisting of a signature and a list of Named sentence
-        -> [FreeDefMorphism CASLFORMULA CASLMor] -- ^ freeness constraints
-        -> IO (Result.Result ([ProofStatus ProofTree]))
-           -- ^ Proof status for goals and lemmas
-quickCheckCMDLautomatic thName defTS th freedefs =
-    genericCMDLautomatic (atpFun thName) (proverName quickCheckProver) thName
-        (parseTacticScript batchTimeLimit [] defTS) th freedefs emptyProofTree
+-- ** command line function
 
 {- |
   Implementation of 'Logic.Prover.proveCMDLautomaticBatch' which provides an

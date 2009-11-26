@@ -72,9 +72,8 @@ zchaffS = "zchaff"
 -}
 zchaffProver
   :: LP.Prover Sig.Sign AS_BASIC.FORMULA PMorphism.Morphism PropSL ProofTree
-zchaffProver = (LP.mkProverTemplate zchaffS top zchaffProveGUI)
-    { LP.proveCMDLautomatic = Just $ zchaffProveCMDLautomatic
-    , LP.proveCMDLautomaticBatch = Just $ zchaffProveCMDLautomaticBatch }
+zchaffProver = LP.mkAutomaticProver zchaffS top zchaffProveGUI
+  zchaffProveCMDLautomaticBatch
 
 {- |
    The Consistency Cheker.
@@ -157,25 +156,7 @@ zchaffProveGUI thName th freedefs =
 parseZchaffTacticScript :: LP.TacticScript -> ATPTacticScript
 parseZchaffTacticScript = parseTacticScript batchTimeLimit []
 
--- ** command line functions
-
-{- |
-  Implementation of 'Logic.Prover.proveCMDLautomatic' which provides an
-  automatic command line interface for a single goal.
-  SPASS specific functions are omitted by data type ATPFunctions.
--}
-zchaffProveCMDLautomatic ::
-           String -- ^ theory name
-        -> LP.TacticScript -- ^ default tactic script
-        -> LP.Theory Sig.Sign AS_BASIC.FORMULA ProofTree
-        -- ^ theory consisting of a signature and a list of Named sentence
-        -> [LP.FreeDefMorphism AS_BASIC.FORMULA PMorphism.Morphism]
-        -- ^ free definitions
-        -> IO (Result.Result ([LP.ProofStatus ProofTree]))
-           -- ^ Proof status for goals and lemmas
-zchaffProveCMDLautomatic thName defTS th freedefs =
-    genericCMDLautomatic (atpFun thName) (LP.proverName zchaffProver) thName
-        (parseZchaffTacticScript defTS) th freedefs emptyProofTree
+-- ** command line function
 
 {- |
   Implementation of 'Logic.Prover.proveCMDLautomaticBatch' which provides an

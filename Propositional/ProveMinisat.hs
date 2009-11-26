@@ -69,9 +69,8 @@ minisatS = "minisat"
 -}
 minisatProver
   :: LP.Prover Sig.Sign AS_BASIC.FORMULA PMorphism.Morphism PropSL ProofTree
-minisatProver = (LP.mkProverTemplate minisatS top minisatProveGUI)
-    { LP.proveCMDLautomatic = Just $ minisatProveCMDLautomatic
-    , LP.proveCMDLautomaticBatch = Just $ minisatProveCMDLautomaticBatch }
+minisatProver = LP.mkAutomaticProver minisatS top minisatProveGUI
+  minisatProveCMDLautomaticBatch
 
 {- |
    The Consistency Cheker.
@@ -152,25 +151,7 @@ parseminisatTacticScript :: LP.TacticScript
                         -> ATPTacticScript
 parseminisatTacticScript = parseTacticScript batchTimeLimit []
 
--- ** command line functions
-
-{- |
-  Implementation of 'Logic.Prover.proveCMDLautomatic' which provides an
-  automatic command line interface for a single goal.
-  SPASS specific functions are omitted by data type ATPFunctions.
--}
-minisatProveCMDLautomatic ::
-           String -- ^ theory name
-        -> LP.TacticScript -- ^ default tactic script
-        -> LP.Theory Sig.Sign AS_BASIC.FORMULA ProofTree
-        -- ^ theory consisting of a signature and a list of Named sentence
-        -> [LP.FreeDefMorphism AS_BASIC.FORMULA PMorphism.Morphism]
-        -- ^ free definitions
-        -> IO (Result.Result ([LP.ProofStatus ProofTree]))
-           -- ^ Proof status for goals and lemmas
-minisatProveCMDLautomatic thName defTS th freedefs =
-    genericCMDLautomatic (atpFun thName) (LP.proverName minisatProver) thName
-        (parseminisatTacticScript defTS) th freedefs emptyProofTree
+-- ** command line function
 
 {- |
   Implementation of 'Logic.Prover.proveCMDLautomaticBatch' which provides an

@@ -130,9 +130,7 @@ main = do
      hSetBuffering stdout NoBuffering
      if null args
         then runAllTests
-        else case args of
-               ["batch"] -> runBatchTests
-               _ -> runMathServTest
+        else runBatchTests
 
 exitOnBool :: Bool -> IO ()
 exitOnBool b = exitWith $ if b then ExitSuccess else ExitFailure 9
@@ -161,16 +159,6 @@ runBatchTests =
                   (zip ["gone","ga_comm_sup"] (repeat LProver.openGoalStatus))
    ] >>= (exitOnBool . and)
 
-runMathServTest :: IO ()
-runMathServTest = do
-    let goRes = [("go", LProver.Proved True)]
-    pass1 <-
-        runTest mathServBrokerCMDLautomatic "MathServ" "[Test]Foo1" theory1
-                goRes
-    pass2 <-
-        runTest vampireCMDLautomatic "Vampire" "[Test]Foo1" theory1
-                goRes
-    exitOnBool (pass1 && pass2)
 {- |
   Main function doing all tests (combinations of theory and prover) in a row.
   Outputs status lines with information whether test passed or failed.
@@ -184,24 +172,7 @@ runAllTests = do
        goneComm = goneR
          ++ zip ["ga_comm_inf","ga_comm_sup"] (repeat LProver.openGoalStatus)
    sequence
-    [runTest spassProveCMDLautomatic "SPASS" "[Test]Foo1" theory1 goRes
-    ,runTest darwinCMDLautomatic "Darwin" "[Test]Foo1" theory1 goRes
-    ,runTest vampireCMDLautomatic "Vampire" "[Test]Foo1" theory1 goRes
-    ,runTest mathServBrokerCMDLautomatic "MathServ" "[Test]Foo1" theory1 goRes
-    ,runTest spassProveCMDLautomatic "SPASS" "[Test]Foo2" theory2 goRes
-    ,runTest darwinCMDLautomatic "Darwin" "[Test]Foo2" theory2 goRes
-    ,runTest vampireCMDLautomatic "Vampire" "[Test]Foo2" theory2 goRes
-    ,runTest mathServBrokerCMDLautomatic "MathServ" "[Test]Foo2" theory2 goRes
-
-    ,runTest spassProveCMDLautomatic "SPASS" "[Test]ExtPartialOrder" theoryExt
-                goneR
-    ,runTest darwinCMDLautomatic "Darwin" "[Test]Foo2" theoryExt goneR
-    ,runTest vampireCMDLautomatic "Vampire" "[Test]ExtPartialOrder" theoryExt
-                [("gone", LProver.openGoalStatus)]
-    ,runTest mathServBrokerCMDLautomatic "MathServ"
-                "[Test]ExtPartialOrder" theoryExt goneR
-
-    ,runTestBatch Nothing spassProveCMDLautomaticBatch "SPASS"
+    [runTestBatch Nothing spassProveCMDLautomaticBatch "SPASS"
                  "[Test]Foo1" theory1 go2
     ,runTestBatch Nothing darwinCMDLautomaticBatch "Darwin"
                  "[Test]Foo1" theory1 go2

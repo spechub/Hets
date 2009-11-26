@@ -12,9 +12,7 @@ See <http://www.w3.org/2004/OWL/> for details on OWL, and
 <http://pellet.owldl.com/> for Pellet.
 -}
 
-module OWL.ProvePellet (pelletProver,pelletGUI,pelletCMDLautomatic,
-                           pelletCMDLautomaticBatch,
-                           pelletConsChecker) where
+module OWL.ProvePellet (pelletProver, pelletConsChecker) where
 
 import Logic.Prover
 
@@ -72,19 +70,20 @@ data PelletSetting = PelletSetting
 -- * Prover implementation
 pelletProverState :: Sign
                  -> [Named Axiom]
-                 -> [FreeDefMorphism Axiom OWLMorphism] -- ^ freeness constraints
+                 -> [FreeDefMorphism Axiom OWLMorphism]
+                 -- ^ freeness constraints
                  -> PelletProverState
 pelletProverState sig oSens _ = PelletProverState
          { ontologySign = sig
          , initialState = filter isAxiom oSens }
 
 {- |
-  The Prover implementation. First runs the batch prover (with graphical feedback), then starts the GUI prover.
+  The Prover implementation. First runs the batch prover (with graphical
+  feedback), then starts the GUI prover.
 -}
 pelletProver :: Prover Sign Axiom OWLMorphism OWLSub ProofTree
-pelletProver = (mkProverTemplate "Pellet" sl_top pelletGUI)
-    { proveCMDLautomatic = Just pelletCMDLautomatic
-    , proveCMDLautomaticBatch = Just pelletCMDLautomaticBatch }
+pelletProver = mkAutomaticProver "Pellet" sl_top pelletGUI
+  pelletCMDLautomaticBatch
 
 pelletConsChecker :: ConsChecker Sign Axiom OWLSub OWLMorphism ProofTree
 pelletConsChecker = (mkConsChecker "Pellet" sl_top consCheck)
@@ -132,24 +131,7 @@ pelletGUI thName th freedefs =
     genericATPgui (atpFun thName) True (proverName pelletProver) thName th
                   freedefs emptyProofTree
 
--- ** command line functions
-
-{- |
-  Implementation of 'Logic.Prover.proveCMDLautomatic' which provides an
-  automatic command line interface for a single goal.
-  Pellet specific functions are omitted by data type ATPFunctions.
--}
-pelletCMDLautomatic ::
-           String -- ^ theory name
-        -> TacticScript -- ^ default tactic script
-        -> Theory Sign Axiom ProofTree
-           -- ^ theory consisting of a signature and a list of Named sentence
-        -> [FreeDefMorphism Axiom OWLMorphism] -- ^ freeness constraints
-        -> IO (Result.Result ([ProofStatus ProofTree]))
-           -- ^ Proof status for goals and lemmas
-pelletCMDLautomatic thName defTS th freedefs =
-    genericCMDLautomatic (atpFun thName) (proverName pelletProver) thName
-        (parseTacticScript batchTimeLimit [] defTS) th freedefs emptyProofTree
+-- ** command line function
 
 {- |
   Implementation of 'Logic.Prover.proveCMDLautomaticBatch' which provides an

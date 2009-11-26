@@ -18,7 +18,6 @@ module Proofs.BatchProcessing ( batchTimeLimit
                               , checkGoal
                               , goalProcessed
                               , genericProveBatch
-                              , genericCMDLautomatic
                               , genericCMDLautomaticBatch
                               ) where
 
@@ -243,56 +242,7 @@ atpRetvalToDiags gName err =
       _ -> []
 
 
--- * Generic command line prover functions
-
-{- |
-  Automatic command line prover which only proves the first goal (if possible).
--}
-genericCMDLautomatic ::
-        (Ord proof_tree, Ord sentence)
-        => ATPFunctions sign sentence morphism proof_tree pst
-           -- ^ prover specific functions
-        -> String -- ^ prover name
-        -> String -- ^ theory name
-        -> ATPTacticScript -- ^ default prover specific tactic script
-        -> Theory sign sentence proof_tree
-           -- ^ theory consisting of a signature and a list of Named sentence
-        -> [FreeDefMorphism sentence morphism] -- ^ freeness constraints
-        -> proof_tree -- ^ initial empty proof_tree
-        -> IO (Result ([ProofStatus proof_tree]))
-           -- ^ proof status for goals and lemmas
-genericCMDLautomatic atpFun prName thName def_TS th freedefs pt = do
-    let iGS = initialGenericState prName
-                                  (initialProverState atpFun)
-                                  (atpTransSenName atpFun) th freedefs pt
-        openGoals = filterOpenGoals (configsMap iGS)
-        emptyResult = Result { diags = [], maybeResult = Just [] }
-        goals = goalsList iGS
-    if null goals then return emptyResult
-      else do
-        let g = head goals
-            gName = AS_Anno.senAttr g
-        if Map.member gName openGoals then do
---          putStrLn $ "Trying to prove goal: " ++ gName
-          let initEmptyCfg = (emptyConfig prName gName pt)
-              curCfg = Map.findWithDefault initEmptyCfg gName openGoals
-              runConfig = initEmptyCfg
-                  { timeLimit = Just $
-                                fromMaybe (tsTimeLimit def_TS) $
-                                      timeLimit curCfg
-                  , extraOpts = if not . null $ extraOpts curCfg
-                                 then extraOpts curCfg
-                                 else tsExtraOpts def_TS }
-          (err, res_cfg) <-
-                runProver atpFun (proverState iGS) runConfig False thName g
---          putStrLn $ prName ++ " returned: " ++ (show err)
-          let dias = atpRetvalToDiags (goalName $ proofStatus res_cfg) err
-              rawResult = appendDiags dias >>
-                          revertRenamingOfLabels iGS [proofStatus res_cfg]
-          return $ if hasErrors dias
-                   then rawResult { maybeResult = Nothing }
-                   else rawResult
-         else return emptyResult
+-- * Generic command line prover function
 
 {- |
   Automatic command line prover using batch mode.

@@ -227,7 +227,7 @@ data ProverKind = ProveGUI | ProveCMDLautomatic
 hasProverKind :: ProverKind -> ProverTemplate x s m y z -> Bool
 hasProverKind pk pt = case pk of
     ProveGUI -> isJust $ proveGUI pt
-    ProveCMDLautomatic -> isJust $ proveCMDLautomatic pt
+    ProveCMDLautomatic -> isJust $ proveCMDLautomaticBatch pt
 
 data FreeDefMorphism sentence morphism = FreeDefMorphism
   { freeDefMorphism :: morphism
@@ -243,12 +243,6 @@ data ProverTemplate theory sentence morphism sublogics proof_tree = Prover
       proveGUI :: Maybe (String -> theory -> [FreeDefMorphism sentence morphism]
                          -> IO ([ProofStatus proof_tree])),
       -- input: imported theories, theory name, theory (incl. goals)
-      -- output: proof status for goals and lemmas
-      proveCMDLautomatic :: Maybe (String -> TacticScript
-                         -> theory -> [FreeDefMorphism sentence morphism]
-                         ->IO (Result ([ProofStatus proof_tree]))),
-      -- input: theory name, TacticScript,
-      --        theory (incl. goals, but only the first one is tried)
       -- output: proof status for goals and lemmas
       proveCMDLautomaticBatch ::
           Maybe (Bool -- 1.
@@ -286,8 +280,11 @@ mkProverTemplate str sl fct = Prover
     { proverName = str
     , proverSublogic = sl
     , proveGUI = Just fct
-    , proveCMDLautomatic = Nothing
     , proveCMDLautomaticBatch = Nothing }
+
+mkAutomaticProver str sl fct bFct =
+  (mkProverTemplate str sl fct)
+  { proveCMDLautomaticBatch = Just bFct }
 
 -- | theory morphisms between two theories
 data TheoryMorphism sign sen mor proof_tree = TheoryMorphism

@@ -14,8 +14,6 @@ See <http://spass.mpi-sb.mpg.de/> for details on SPASS, and
 
 module SoftFOL.ProveDarwin
   ( darwinProver
-  , darwinGUI
-  , darwinCMDLautomatic
   , darwinCMDLautomaticBatch
   , darwinConsChecker
   ) where
@@ -53,9 +51,7 @@ import Proofs.BatchProcessing
 {- | The Prover implementation. First runs the batch prover (with
   graphical feedback), then starts the GUI prover.  -}
 darwinProver :: Prover Sign Sentence SoftFOLMorphism () ProofTree
-darwinProver = (mkProverTemplate "Darwin" () darwinGUI)
-    { proveCMDLautomatic = Just darwinCMDLautomatic
-    , proveCMDLautomaticBatch = Just darwinCMDLautomaticBatch }
+darwinProver = mkAutomaticProver "Darwin" () darwinGUI darwinCMDLautomaticBatch
 
 darwinConsChecker :: ConsChecker Sign Sentence () SoftFOLMorphism ProofTree
 darwinConsChecker = (mkConsChecker "darwin" () consCheck)
@@ -97,24 +93,7 @@ darwinGUI thName th freedefs =
     genericATPgui (atpFun thName) True (proverName darwinProver) thName th
                   freedefs emptyProofTree
 
--- ** command line functions
-
-{- |
-  Implementation of 'Logic.Prover.proveCMDLautomatic' which provides an
-  automatic command line interface for a single goal.
-  Darwin specific functions are omitted by data type ATPFunctions.
--}
-darwinCMDLautomatic ::
-           String -- ^ theory name
-        -> TacticScript -- ^ default tactic script
-        -> Theory Sign Sentence ProofTree
-           -- ^ theory consisting of a signature and a list of Named sentence
-        -> [FreeDefMorphism SPTerm SoftFOLMorphism] -- ^ freeness constraints
-        -> IO (Result.Result ([ProofStatus ProofTree]))
-           -- ^ Proof status for goals and lemmas
-darwinCMDLautomatic thName defTS th freedefs =
-    genericCMDLautomatic (atpFun thName) (proverName darwinProver) thName
-        (parseTacticScript batchTimeLimit [] defTS) th freedefs emptyProofTree
+-- ** command line function
 
 {- |
   Implementation of 'Logic.Prover.proveCMDLautomaticBatch' which provides an

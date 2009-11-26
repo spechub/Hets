@@ -231,9 +231,7 @@ renderTT tt = Table rowHeaders header table
   Implemented are: a prover GUI.
 -}
 ttProver :: LP.Prover Sig.Sign FORMULA PMorphism.Morphism PropSL ProofTree
-ttProver = (LP.mkProverTemplate ttS top ttProveGUI)
-    { LP.proveCMDLautomatic = Nothing
-    , LP.proveCMDLautomaticBatch = Nothing}
+ttProver = LP.mkProverTemplate ttS top ttProveGUI
 
 {- |
    The Consistency Cheker.

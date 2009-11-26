@@ -14,8 +14,7 @@ See <http://spass.mpi-sb.mpg.de/> for details on SPASS.
 
 -}
 
-module SoftFOL.ProveVampire (vampire,vampireGUI,vampireCMDLautomatic,
-                           vampireCMDLautomaticBatch) where
+module SoftFOL.ProveVampire (vampire, vampireCMDLautomaticBatch) where
 
 import Logic.Prover
 
@@ -44,14 +43,12 @@ import Proofs.BatchProcessing
   feedback), then starts the GUI prover.
 -}
 vampire :: Prover Sign Sentence SoftFOLMorphism () ProofTree
-vampire = (mkProverTemplate "Vampire" () vampireGUI)
-    { proveCMDLautomatic = Just vampireCMDLautomatic
-    , proveCMDLautomaticBatch = Just vampireCMDLautomaticBatch }
+vampire = mkAutomaticProver "Vampire" () vampireGUI vampireCMDLautomaticBatch
 
 vampireHelpText :: String
 vampireHelpText =
   "No help yet available.\n" ++
-  "Ask Dominik L\252cke (luecke@informatik.uni-bremen.de) " ++
+  "email hets-devel@informatik.uni-bremen.de " ++
   "for more information.\n"
 
 
@@ -64,7 +61,7 @@ vampireHelpText =
   line interface.
 -}
 atpFun :: String -- ^ theory name
-       -> ATPFunctions Sign Sentence SoftFOLMorphism ProofTree SoftFOLProverState
+  -> ATPFunctions Sign Sentence SoftFOLMorphism ProofTree SoftFOLProverState
 atpFun thName = ATPFunctions
     { initialProverState = spassProverState,
       atpTransSenName = transSenName,
@@ -94,24 +91,7 @@ vampireGUI thName th freedefs =
     genericATPgui (atpFun thName) True (proverName vampire) thName th
                  freedefs emptyProofTree
 
--- ** command line functions
-
-{- |
-  Implementation of 'Logic.Prover.proveCMDLautomatic' which provides an
-  automatic command line interface for a single goal.
-  Vampire specific functions are omitted by data type ATPFunctions.
--}
-vampireCMDLautomatic ::
-           String -- ^ theory name
-        -> TacticScript -- ^ default tactic script
-        -> Theory Sign Sentence ProofTree
-           -- ^ theory consisting of a signature and a list of Named sentence
-        -> [FreeDefMorphism SPTerm SoftFOLMorphism] -- ^ freeness constraints
-        -> IO (Result.Result ([ProofStatus ProofTree]))
-           -- ^ Proof status for goals and lemmas
-vampireCMDLautomatic thName defTS th freedefs =
-    genericCMDLautomatic (atpFun thName) (proverName vampire) thName
-        (parseTacticScript batchTimeLimit [] defTS) th freedefs emptyProofTree
+-- ** command line function
 
 {- |
   Implementation of 'Logic.Prover.proveCMDLautomaticBatch' which provides an

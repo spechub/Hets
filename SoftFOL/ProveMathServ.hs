@@ -20,10 +20,10 @@ uses GUI.GenericATP.
       an error window. Also the proving won't stop.
 -}
 
-module SoftFOL.ProveMathServ ( mathServBroker
-                           , mathServBrokerGUI
-                           , mathServBrokerCMDLautomatic
-                           , mathServBrokerCMDLautomaticBatch) where
+module SoftFOL.ProveMathServ
+  ( mathServBroker
+  , mathServBrokerCMDLautomaticBatch
+  ) where
 
 import Logic.Prover
 
@@ -52,9 +52,8 @@ import Proofs.BatchProcessing
   feedback), then starts the GUI prover.
 -}
 mathServBroker :: Prover Sign Sentence SoftFOLMorphism () ProofTree
-mathServBroker = (mkProverTemplate brokerName () mathServBrokerGUI)
-    { proveCMDLautomatic = Just mathServBrokerCMDLautomatic
-    , proveCMDLautomaticBatch = Just mathServBrokerCMDLautomaticBatch }
+mathServBroker = mkAutomaticProver brokerName () mathServBrokerGUI
+  mathServBrokerCMDLautomaticBatch
 
 mathServHelpText :: String
 mathServHelpText =
@@ -69,7 +68,7 @@ mathServHelpText =
   line interface.
 -}
 atpFun :: String -- ^ theory name
-       -> ATPFunctions Sign Sentence SoftFOLMorphism ProofTree SoftFOLProverState
+  -> ATPFunctions Sign Sentence SoftFOLMorphism ProofTree SoftFOLProverState
 atpFun thName = ATPFunctions
     { initialProverState = spassProverState,
       atpTransSenName = transSenName,
@@ -93,31 +92,15 @@ mathServBrokerGUI :: String -- ^ theory name
                   -> Theory Sign Sentence ProofTree
                   -- ^ theory consisting of a SoftFOL.Sign.Sign
                   --   and a list of Named SoftFOL.Sign.Sentence
-                  -> [FreeDefMorphism SPTerm SoftFOLMorphism] -- ^ freeness constraints
+                  -> [FreeDefMorphism SPTerm SoftFOLMorphism]
+                  -- ^ freeness constraints
                   -> IO([ProofStatus ProofTree])
                      -- ^ proof status for each goal
 mathServBrokerGUI thName th freedefs =
     genericATPgui (atpFun thName) False (proverName mathServBroker) thName th
                   freedefs emptyProofTree
 
--- ** command line functions
-
-{- |
-  Implementation of 'Logic.Prover.proveCMDLautomatic' which provides an
-  automatic command line interface for a single goal.
-  MathServ specific functions are omitted by data type ATPFunctions.
--}
-mathServBrokerCMDLautomatic ::
-           String -- ^ theory name
-        -> TacticScript -- ^ default tactic script
-        -> Theory Sign Sentence ProofTree
-           -- ^ theory consisting of a signature and a list of Named sentence
-        -> [FreeDefMorphism SPTerm SoftFOLMorphism] -- ^ freeness constraints
-        -> IO (Result.Result ([ProofStatus ProofTree]))
-           -- ^ Proof status for goals and lemmas
-mathServBrokerCMDLautomatic thName defTS th freedefs =
-    genericCMDLautomatic (atpFun thName) (proverName mathServBroker) thName
-        (parseTacticScript batchTimeLimit [] defTS) th freedefs emptyProofTree
+-- ** command line function
 
 {- |
   Implementation of 'Logic.Prover.proveCMDLautomaticBatch' which provides an
@@ -158,7 +141,6 @@ runMSBroker :: SoftFOLProverState
             -> IO (ATPRetval, GenericConfig ProofTree)
             -- ^ (retval, configuration with proof status and complete output)
 runMSBroker sps cfg saveTPTP thName nGoal = do
---    putStrLn ("running MathServ Broker...")
   Exception.catch (do
     prob <- showTPTPProblem thName sps nGoal $ extraOpts cfg
             ++ ['[':brokerName++"]"]
