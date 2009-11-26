@@ -70,9 +70,6 @@ mapThSensValueM f = foldM (\ m (k, v) -> do
   let ne = oe { sentence = ns }
   return $ Map.insert k v { OMap.ele = ne } m) Map.empty . Map.toList
 
-mapThSensStatus :: (b -> c) -> ThSens a b -> ThSens a c
-mapThSensStatus = OMap.map . mapStatus
-
 -- | join and disambiguate
 --
 -- * separate Axioms from Theorems
@@ -114,9 +111,6 @@ cmpSenEle x y = case (OMap.ele x, OMap.ele y) of
 mapValue :: (a -> b) -> SenStatus a c -> SenStatus b c
 mapValue f d = d { sentence = f $ sentence d }
 
-mapStatus :: (b -> c) -> SenStatus a b -> SenStatus a c
-mapStatus f d = d { senAttr = ThmStatus $ map f $ thmStatus d }
-
 -- | sets the field isAxiom according to the boolean value;
 -- if isAxiom is False for a sentence and set to True,
 -- the field wasTheorem is set to True
@@ -143,11 +137,6 @@ toThSens = OMap.fromList . map
 -- | theories with a signature and sentences with proof states
 data Theory sign sen proof_tree =
     Theory sign (ThSens sen (ProofStatus proof_tree))
-
-mapTheoryStatus :: (a -> b) -> Theory sign sentence a
-                   -> Theory sign sentence b
-mapTheoryStatus f (Theory sig thSens) =
-  Theory sig (mapThSensStatus (mapProofStatus f) thSens)
 
 -- e.g. the file name, or the script itself, or a configuration string
 data TacticScript = TacticScript String deriving (Eq, Ord, Show)
@@ -208,9 +197,6 @@ openProofStatus goalname provername proof_tree = ProofStatus
    , proofTree = proof_tree
    , usedTime = midnight
    , tacticScript = TacticScript "" }
-
-mapProofStatus :: (a -> b) -> ProofStatus a -> ProofStatus b
-mapProofStatus f st = st {proofTree = f $ proofTree st}
 
 isProvedStat :: ProofStatus proof_tree -> Bool
 isProvedStat = isProvedGStat . goalStatus
