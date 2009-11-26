@@ -56,7 +56,6 @@ import Logic.Coerce
 import Comorphisms.KnownProvers
 
 import Static.GTheory
-import Static.DevGraph
 
 -- * Provers
 

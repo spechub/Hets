@@ -42,8 +42,9 @@ import Common.LibName
 import Common.Result
 import qualified Common.OrderedMap as OMap
 
-import qualified Data.Map as Map
 import Data.Graph.Inductive.Graph
+import qualified Data.Map as Map
+import Data.Maybe
 
 -- | local decomposition
 locDecompFromList :: LibName ->  [LEdge DGLinkLab] -> LibEnv -> LibEnv
@@ -129,9 +130,9 @@ localInferenceAux libEnv dgraph ledge@(src, tgt, edgeLab) = let
     oldContents = labDG dgraph tgt
     in case maybeThSrc of
     Just thSrc ->
-      case (dgn_theory oldContents,
+      case (computeLocalNodeTheory libEnv dgraph tgt,
                         maybeResult $ translateG_theory morphism thSrc) of
-        (th@(G_theory lidTgt sig ind sensTgt _),
+        (Just th@(G_theory lidTgt sig ind sensTgt _),
               Just (G_theory lidSrc _ _ sentensSrc _)) ->
           case maybeResult (coerceThSens lidSrc lidTgt "" sentensSrc) of
             Nothing -> dgraph
@@ -141,15 +142,21 @@ localInferenceAux libEnv dgraph ledge@(src, tgt, edgeLab) = let
                   goals' = markAsGoal goals
                   noGoals = OMap.null goals'
                   (newSens, renms) = joinSensAux sensTgt goals'
+                  provenSens = proveSens lidTgt newSens
+                  pendingGoals =
+                    any (not . isProvenSenStatus
+                         . fromMaybe (error "localInferenceAux")
+                         . flip OMap.lookup provenSens)
+                        $ map snd renms
                   newTh = if noGoals then th else
-                              G_theory lidTgt sig ind newSens startThId
+                    G_theory lidTgt sig ind provenSens startThId
                   newContents = oldContents { dgn_theory = newTh }
                   locInferRule = DGRuleLocalInference renms
                   newLab = edgeLab
                     { dgl_type = setProof (Proven locInferRule emptyProofBasis)
                         $ dgl_type edgeLab
                     , dgl_origin = DGLinkProof
-                    , dglPending = not noGoals }
+                    , dglPending = pendingGoals }
                   newEdge = (src, tgt, newLab)
                   newGraph0 = changesDGH dgraph
                      $ (if noGoals then [] else

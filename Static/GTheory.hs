@@ -22,6 +22,8 @@ import Logic.Coerce
 import qualified Common.OrderedMap as OMap
 
 import ATerm.Lib
+import Common.Lib.Graph as Tree
+import Common.Amalgamate --for now
 import Common.Keywords
 import Common.AS_Annotation
 import Common.Doc
@@ -29,15 +31,16 @@ import Common.DocUtils
 import Common.ExtSign
 import Common.Result
 
+import Data.Graph.Inductive.Graph as Graph
+
+import qualified Data.Map as Map
+
 import Data.Typeable
 
 import Control.Monad (foldM)
 import Control.Exception
 
-import Data.Graph.Inductive.Graph as Graph
 
-import Common.Lib.Graph as Tree
-import Common.Amalgamate --for now
 
 -- a theory index describing a set of sentences
 newtype ThId = ThId Int
@@ -202,6 +205,29 @@ instance Show BasicProof where
   show Conjectured = "Conjectured"
   show Handwritten = "Handwritten"
 
+-- | test a theory sentence
+isProvenSenStatus :: SenStatus a (AnyComorphism, BasicProof) -> Bool
+isProvenSenStatus = any isProvenSenStatusAux . thmStatus
+  where isProvenSenStatusAux (_, BasicProof _ pst) = isProvedStat pst
+        isProvenSenStatusAux _ = False
+
+proveSens :: Logic lid sublogics basic_spec sentence symb_items
+    symb_map_items sign morphism symbol raw_symbol proof_tree
+    => lid -> ThSens sentence (AnyComorphism, BasicProof)
+           -> ThSens sentence (AnyComorphism, BasicProof)
+proveSens lid sens = let
+  (axs, ths) = OMap.partition isAxiom sens
+  axSet = Map.fromList $ map (\ (n, s) -> (sentence s, n)) $ OMap.toList axs
+  in Map.union axs $ Map.mapWithKey (\ i e -> let sen = OMap.ele e in
+         case Map.lookup (sentence sen) axSet of
+           Just ax | not (isProvenSenStatus sen) ->
+             e { OMap.ele = sen { senAttr = ThmStatus $
+                   ( Comorphism $ mkIdComorphism lid $ top_sublogic lid
+                   , BasicProof lid
+                     (openProofStatus i "hets" $ empty_proof_tree lid)
+                     { usedAxioms = [ax]
+                     , goalStatus = Proved True }) : thmStatus sen } }
+           _ -> e) ths
 
 -- | Grothendieck diagrams
 type GDiagram = Gr G_theory (Int, GMorphism)

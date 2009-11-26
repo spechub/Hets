@@ -154,12 +154,6 @@ isDGRef l = case nodeInfo l of
     DGNode {} -> False
     DGRef {} -> True
 
--- | test a theory sentence
-isProvenSenStatus :: SenStatus a (AnyComorphism, BasicProof) -> Bool
-isProvenSenStatus = any isProvenSenStatusAux . thmStatus
-  where isProvenSenStatusAux (_, BasicProof _ pst) = isProvedStat pst
-        isProvenSenStatusAux _ = False
-
 hasSenKind :: (forall a . SenStatus a (AnyComorphism, BasicProof) -> Bool)
            -> DGNodeLab -> Bool
 hasSenKind f dgn = case dgn_theory dgn of
