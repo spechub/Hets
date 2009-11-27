@@ -216,11 +216,11 @@ proveSens :: Logic lid sublogics basic_spec sentence symb_items
     => lid -> ThSens sentence (AnyComorphism, BasicProof)
            -> ThSens sentence (AnyComorphism, BasicProof)
 proveSens lid sens = let
-  (axs, ths) = OMap.partition isAxiom sens
+  (axs, ths) = OMap.partition (\ s -> isAxiom s || isProvenSenStatus s) sens
   axSet = Map.fromList $ map (\ (n, s) -> (sentence s, n)) $ OMap.toList axs
   in Map.union axs $ Map.mapWithKey (\ i e -> let sen = OMap.ele e in
          case Map.lookup (sentence sen) axSet of
-           Just ax | not (isProvenSenStatus sen) ->
+           Just ax ->
              e { OMap.ele = sen { senAttr = ThmStatus $
                    ( Comorphism $ mkIdComorphism lid $ top_sublogic lid
                    , BasicProof lid
