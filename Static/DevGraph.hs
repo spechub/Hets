@@ -178,13 +178,23 @@ getNodeCons nl = case getNodeConsStatus nl of
 
 -- | returns the Conservativity if the given node has one, otherwise none
 getNodeConservativity :: LNode DGNodeLab -> Conservativity
-getNodeConservativity (_,nl) = getNodeCons nl
+getNodeConservativity = getNodeCons . snd
 
 -- | test if a node conservativity is open,
 --  return input for refs or nodes with normal forms
 hasOpenNodeConsStatus :: Bool -> DGNodeLab -> Bool
 hasOpenNodeConsStatus b lbl = if isJust $ dgn_nf lbl then b else
   hasOpenConsStatus b $ getNodeConsStatus lbl
+
+markNodeConsistent :: String -> DGNodeLab -> DGNodeLab
+markNodeConsistent str dgnode = dgnode
+  { nodeInfo = case nodeInfo dgnode of
+      ninfo@DGNode { node_cons_status = ConsStatus c pc thm } ->
+          if pc >= Cons && isProvenThmLinkStatus thm then ninfo else
+          ninfo { node_cons_status = ConsStatus c Cons
+                    $ Proven (DGRule $ "Consistency" ++ str)
+                      emptyProofBasis }
+      ninfo -> ninfo }
 
 -- | test if a conservativity is open, return input for None
 hasOpenConsStatus :: Bool -> ConsStatus -> Bool

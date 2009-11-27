@@ -332,9 +332,7 @@ createMenuNode shape color gInfo internal = shape
         , createMenuButtonProveAtNode
         , createMenuButtonProveStructured
         , createMenuButtonCheckCons
-#ifndef GTKGLADE
         , createMenuButtonCCCAtNode
-#endif
         ]))
   $$$ emptyNodeTypeParms
 
@@ -414,11 +412,9 @@ createMenuButtonCheckCons gInfo =
   createMenuButton "Check conservativity"
     (flip checkconservativityOfNode gInfo) gInfo
 
-#ifndef GTKGLADE
 createMenuButtonCCCAtNode :: GInfo -> ButtonMenu GA.NodeValue
 createMenuButtonCCCAtNode gInfo =
   createMenuButton "Check consistency" (proveAtNode True gInfo) gInfo
-#endif
 
 createMenuButtonShowNodeInfo :: GInfo -> ButtonMenu GA.NodeValue
 createMenuButtonShowNodeInfo =

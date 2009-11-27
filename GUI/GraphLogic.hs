@@ -66,7 +66,6 @@ import Reactor.InfoBus (encapsulateWaitTermAct)
 
 import Common.DocUtils (showDoc)
 import Common.AS_Annotation (isAxiom)
-import Common.Consistency
 import Common.ExtSign
 import Common.LibName
 import Common.Result
@@ -567,14 +566,8 @@ updateNodeProof checkCons gInfo (v, dgnode) tres = case tres of
       Just iist -> do
         let le = i_libEnv iist
             dgraph = lookupDGraph ln le
-            new = if checkCons then dgnode
-                { nodeInfo = case nodeInfo dgnode of
-                    ninfo@DGNode { node_cons_status = ConsStatus c _ _ } ->
-                        ninfo { node_cons_status = ConsStatus c Cons
-                                $ Proven (DGRule "ConsistencyChecker")
-                                emptyProofBasis }
-                    ninfo -> ninfo }
-                else dgnode { dgn_theory = theory }
+            new = if checkCons then markNodeConsistent "Checker" dgnode
+                  else dgnode { dgn_theory = theory }
             newLbl = if checkCons then new else new { globalTheory
               = computeLabelTheory le dgraph (v, new) }
             newDg = changeDGH dgraph $ SetNodeLab dgnode (v, newLbl)
