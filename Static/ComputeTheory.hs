@@ -30,6 +30,7 @@ import Common.Result
 
 import Data.Graph.Inductive.Graph as Graph
 import Data.List (sortBy)
+import qualified Data.Map as Map
 
 -- * nodes with incoming hiding definition links
 
@@ -68,8 +69,12 @@ globalNodeTheory dg = getGlobalTheory . labDG dg
 
 computeDGraphTheories :: LibEnv -> DGraph -> DGraph
 computeDGraphTheories le dgraph =
-  foldl (\ dg l@(n, lbl) -> fst $ labelNodeDG (n, lbl
-     { globalTheory = computeLabelTheory le dg l }) dg)
+  foldl (\ dg l@(n, lbl) -> fst $ labelNodeDG (n,
+    let gth = computeLabelTheory le dg l in
+    (case gth of
+      Just (G_theory _ _ _ sens _) | Map.null sens ->
+         markNodeConsistent "ByNoSentences"
+      _ -> id) lbl { globalTheory = gth }) dg)
      dgraph $ topsortedNodes dgraph
 
 computeLabelTheory :: LibEnv -> DGraph -> LNode DGNodeLab -> Maybe G_theory
