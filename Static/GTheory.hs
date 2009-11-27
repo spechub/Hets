@@ -211,6 +211,8 @@ isProvenSenStatus = any isProvenSenStatusAux . thmStatus
   where isProvenSenStatusAux (_, BasicProof _ pst) = isProvedStat pst
         isProvenSenStatusAux _ = False
 
+{- | mark sentences as proven if an identical axiom or other proven sentence
+     is part of the same theory. -}
 proveSens :: Logic lid sublogics basic_spec sentence symb_items
     symb_map_items sign morphism symbol raw_symbol proof_tree
     => lid -> ThSens sentence (AnyComorphism, BasicProof)
@@ -228,6 +230,19 @@ proveSens lid sens = let
                      { usedAxioms = [ax]
                      , goalStatus = Proved True }) : thmStatus sen } }
            _ -> e) ths
+
+{- | mark all sentences of a local theory that have been proven via a prover
+     over a global theory (with the same signature) as proven.
+     Also mark duplicates of proven sentences as proven. -}
+propagateProofs :: G_theory -> G_theory -> G_theory
+propagateProofs locTh@(G_theory lid1 sig ind lsens _)
+  (G_theory lid2 _ _ gsens _) =
+  case coerceThSens lid2 lid1 "" gsens of
+    Just psens ->
+      let ps = OMap.filter isProvenSenStatus psens in
+      if Map.null ps then locTh else
+          G_theory lid1 sig ind (proveSens lid1 $ Map.union ps lsens) startThId
+    Nothing -> error "propagateProofs"
 
 -- | Grothendieck diagrams
 type GDiagram = Gr G_theory (Int, GMorphism)

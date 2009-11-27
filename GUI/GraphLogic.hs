@@ -547,10 +547,11 @@ runProveAtNode checkCons gInfo (v, dgnode) (Result ds mres) =
           Nothing -> infoDialog nodetext $ unlines
             $ "could not (re-)construct a" : "model" : map diagString ds
     else let oldTh = dgn_theory dgnode in case mres of
-       Just newTh | newTh /= oldTh -> do
-         let Result es tres = joinG_sentences oldTh newTh
-         showDiagMessAux 2 $ ds ++ es
-         updateNodeProof checkCons gInfo (v, dgnode) tres
+       Just newTh ->
+         let rTh = propagateProofs oldTh newTh in
+         if rTh == oldTh then return () else do
+         showDiagMessAux 2 ds
+         updateNodeProof checkCons gInfo (v, dgnode) $ Just rTh
        _ -> return ()
 
 updateNodeProof :: Bool -> GInfo -> LNode DGNodeLab -> Maybe G_theory -> IO ()
