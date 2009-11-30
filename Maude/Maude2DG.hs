@@ -119,7 +119,7 @@ insertSpecs (s : ss) tim vm ths dg = insertSpecs ss tim' vm' ths' dg'
 -- | inserts the given specification in the development graph, updating
 -- the data structures
 insertSpec :: Spec -> TokenInfoMap -> ViewMap -> [Token] -> DGraph -> InsSpecRes
-insertSpec (SpecMod sp_mod) tim vm ths dg = (tim4, vm, ths, dg5)
+insertSpec (SpecMod sp_mod) tim vm ths dg = (tim5, vm, ths, dg6)
               where ps = getParams sp_mod
                     (pl, tim1, morphs, dg1) = processParameters ps tim dg
                     top_sg = Maude.Sign.fromSpec sp_mod
@@ -138,6 +138,7 @@ insertSpec (SpecMod sp_mod) tim vm ths dg = (tim4, vm, ths, dg5)
                     tim3 = Map.insert tok (getNode ns, sg, [], pl, paramSorts) tim2
                     (tim4, dg4) = createEdgesImports tok ips sg tim3 dg3
                     dg5 = createEdgesParams tok pl morphs sg tim4 dg4
+                    (_, tim5, dg6) = insertFreeNode tok tim4 dg5
 insertSpec (SpecTh sp_th) tim vm ths dg = (tim3, vm, tok : ths, dg3)
               where (il, ss1) = getImportsSorts sp_th
                     ips = processImports tim vm dg il
@@ -533,9 +534,10 @@ insertConsEdgeMorphism n1 n2 morph dg = snd $ insLEdgeDG (n2, n1, edg) dg
 -- | inserts a free definition link between the nodes with the given name
 insertFreeEdge :: Token -> Token -> TokenInfoMap -> DGraph -> DGraph
 insertFreeEdge tok1 tok2 tim dg = snd $ insLEdgeDG (n2, n1, edg) dg
-                     where (n1, sg1, _, _, _) = fromJust $ Map.lookup tok1 tim
+                     -- currently, the empty sign is used in the inclusion instead of sg1
+                     where (n1, _, _, _, _) = fromJust $ Map.lookup tok1 tim
                            (n2, sg2, _, _, _) = fromJust $ Map.lookup tok2 tim
-                           mor = G_morphism Maude (Maude.Morphism.inclusion sg1 sg2) startMorId
+                           mor = G_morphism Maude (Maude.Morphism.inclusion Maude.Sign.empty sg2) startMorId
                            dgt = FreeOrCofreeDefLink Free $ EmptyNode (Logic Maude)
                            edg = defDGLink (gEmbed mor) dgt SeeTarget
 

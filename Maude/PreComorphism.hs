@@ -545,7 +545,7 @@ existencialNegationOtherEqs :: CAS.OP_SYMB -> [CAS.CASLTERM] ->
                                [Named CAS.CASLFORMULA] -> CAS.CASLFORMULA
 existencialNegationOtherEqs op ts forms = form
       where ex_forms = foldr ((++) . existencialNegationOtherEq op ts) [] forms
-            form = if length ex_forms > 1 
+            form = if length ex_forms > 1
                    then CAS.Conjunction ex_forms nullRange
                    else head ex_forms
 
