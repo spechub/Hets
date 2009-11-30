@@ -581,9 +581,7 @@ instance Category G_sign GMorphism where
          if isIdComorphism (Comorphism r1) &&
            case coerceSublogic lid2 lid3 "Grothendieck.comp"
                               (targetSublogic r1) of
-             Just sl1 -> maybe (error ("Logic.Grothendieck: Category "++
-                                      "instance.comp: no mapping for " ++
-                                      show sl1))
+             Just sl1 -> maybe False
                               (isSubElem (targetSublogic r2))
                               (mapSublogic r2 sl1)
              _ -> False
