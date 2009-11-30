@@ -182,3 +182,43 @@ view V2 from TEST8 to BOOL is
  
  op update(X:Foo) to term _or_(true, X:Bool) .
 endv
+
+fmod MYLIST is
+pr NAT .
+
+sorts List .
+subsort Nat < List .
+
+op nil : -> List [ctor] .
+op __ : List List -> List [ctor assoc id: nil] .
+
+var L : List .
+var E : Nat .
+
+op reverse : List -> List .
+eq reverse(nil) = nil .
+eq reverse(E L) = reverse(L) E .
+endfm
+
+fth TH is 
+pr NAT .
+
+sorts List .
+subsort Nat < List .
+
+op nil : -> List [ctor] .
+op __ : List List -> List [ctor assoc id: nil] .
+
+var L : List .
+var E : Nat .
+
+op reverse : List -> List .
+eq reverse(reverse(L)) = L .
+endfth
+
+view IDEM from TH to MYLIST is
+sort List to List .
+op nil to nil .
+op __ to __ .
+op reverse to reverse .
+endv

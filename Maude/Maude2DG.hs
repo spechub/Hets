@@ -139,7 +139,7 @@ insertSpec (SpecMod sp_mod) tim vm ths dg = (tim5, vm, ths, dg6)
                     (tim4, dg4) = createEdgesImports tok ips sg tim3 dg3
                     dg5 = createEdgesParams tok pl morphs sg tim4 dg4
                     (_, tim5, dg6) = insertFreeNode tok tim4 dg5
-insertSpec (SpecTh sp_th) tim vm ths dg = (tim3, vm, tok : ths, dg3)
+insertSpec (SpecTh sp_th) tim vm ths dg = (tim4, vm, tok : ths, dg4)
               where (il, ss1) = getImportsSorts sp_th
                     ips = processImports tim vm dg il
                     ss2 = getThSorts ips
@@ -154,7 +154,8 @@ insertSpec (SpecTh sp_th) tim vm ths dg = (tim3, vm, tok : ths, dg3)
                     (ns, dg2) = insGTheory dg1 name DGBasic gt
                     tim2 = Map.insert tok (getNode ns, sg, ss1 ++ ss2, [], []) tim1
                     (tim3, dg3) = createEdgesImports tok ips sg tim2 dg2
-insertSpec (SpecView sp_v) tim vm ths dg = (tim2, vm', ths, dg4)
+                    (_, tim4, dg4) = insertFreeNode tok tim3 dg3
+insertSpec (SpecView sp_v) tim vm ths dg = (tim3, vm', ths, dg4)
               where View name from to rnms = sp_v
                     inst = isInstantiated ths to
                     tok_name = HasName.getName name
@@ -165,7 +166,7 @@ insertSpec (SpecView sp_v) tim vm ths dg = (tim2, vm', ths, dg4)
                     morph = fromSignsRenamings (target morph1) (target morph2) rnms
                     morph' = fromJust $ maybeResult $ compose morph1 morph
                     (new_sign, new_sens) = sign4renamings (target morph1) (sortMap morph) rnms
-                    (n3, dg3) = insertInnerNode n2 (makeName tok2) morph2 new_sign new_sens dg2
+                    (n3, tim3, dg3) = insertInnerNode n2 tim2 tok2 morph2 new_sign new_sens dg2
                     vm' = Map.insert (HasName.getName name) (n3, tok2, morph', rnms, inst) vm
                     dg4 = insertThmEdgeMorphism tok_name n3 n1 morph' dg3
 
@@ -488,21 +489,45 @@ insertNode tok sg tim ss deps dg = if Map.member tok tim
 -- | inserts an inner node. This function is used when a view defines a map
 -- between terms, so it is neccesary to extend the signature of the target
 -- module in order to have the appropriate map.
-insertInnerNode :: Node -> NodeName -> Morphism -> Sign -> [Sentence] -> DGraph
-                   -> (Node, DGraph)
-insertInnerNode nod nm morph sg sens dg =
+insertInnerNode :: Node -> TokenInfoMap -> Token -> Morphism -> Sign -> [Sentence]
+                   -> DGraph -> (Node, TokenInfoMap, DGraph)
+insertInnerNode nod tim tok morph sg sens dg =
                          if (isIdentity morph) && null sens
-                         then (nod, dg)
+                         then let 
+                                (fn, tim', dg') = insertFreeNode tok tim dg
+                                (n2, _, _, _, _) = fromJust $ Map.lookup fn tim'
+                              in (n2, tim', dg')
                          else let
+                                nm = makeName tok
                                 th_sens = toThSens $ map (makeNamed "") sens
                                 sg' = Maude.Sign.union sg $ target morph
                                 ext_sg = makeExtSign Maude sg'
                                 gt = G_theory Maude ext_sg startSigId th_sens startThId
-                                (ns, dg') = insGTheory dg (inc nm) DGBasic gt
+                                (ns, dg1) = insGTheory dg (inc nm) DGBasic gt
                                 nod2 = getNode ns
                                 morph' = setTarget sg' morph
-                                dg'' = insertDefEdgeMorphism nod2 nod morph' dg'
-                              in (nod2, dg'')
+                                dg2 = insertDefEdgeMorphism nod2 nod morph' dg1
+                                -- inserting the free node
+                              in (nod2, tim, dg2)
+
+insertInnerFreeNode :: Token -> TokenInfoMap -> DGraph -> (Token, TokenInfoMap, DGraph)
+insertInnerFreeNode t tim dg = (t', tim', dg'')
+               where t' = mkFreeName t
+                     b = Map.member t' tim
+                     (tim', dg') = if b
+                                   then (tim, dg)
+                                   else insertInnerFreeNode2 t' tim (fromJust $ Map.lookup t tim) dg
+                     dg'' = if b
+                            then dg'
+                            else insertFreeEdge t' t tim' dg'
+
+insertInnerFreeNode2 :: Token -> TokenInfoMap -> ProcInfo -> DGraph -> (TokenInfoMap, DGraph)
+insertInnerFreeNode2 t tim (_, sg, _, _, _) dg = (tim', dg')
+              where ext_sg = makeExtSign Maude sg
+                    gt = G_theory Maude ext_sg startSigId noSens startThId
+                    name = makeName t
+                    (ns, dg') = insGTheory dg name DGBasic gt
+                    tim' = Map.insert t (getNode ns, sg, [], [], []) tim
 
 -- | inserts the list of definition edges, building for each node the inclusion morphism
 -- between the signatures
