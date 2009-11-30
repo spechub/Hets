@@ -162,11 +162,10 @@ localInferenceAux libEnv dgraph ledge@(src, tgt, edgeLab) = let
                      $ (if noGoals then [] else
                          [SetNodeLab oldContents (tgt, newContents)])
                          ++ [DeleteEdge ledge, InsertEdge newEdge]
-                  newGraph = if noGoals then newGraph0 else changesDGH newGraph0
-                     $ concatMap (\ e@(s, t, l) ->
-                        [DeleteEdge e, InsertEdge
-                           (s, t, l { dglPending = not (dglPending l)})])
-                     $ changedPendingEdges newGraph0
+                  newGraph = if noGoals then newGraph0 else
+                    togglePending newGraph0 $ changedPendingEdges newGraph0
               in groupHistory dgraph locInferRule newGraph
         _ -> dgraph
     _ -> dgraph
+
+

@@ -85,6 +85,13 @@ applyReverseHistory l dg = if SizedList.null l then dg else
 changesDGH :: DGraph -> [DGChange] -> DGraph
 changesDGH = foldl' changeDGH
 
+-- | toggle the pending flag of the input edges
+togglePending :: DGraph -> [LEdge DGLinkLab] -> DGraph
+togglePending dg = changesDGH dg . concatMap
+  (\ e@(s, t, l) ->
+       [DeleteEdge e, InsertEdge
+        (s, t, l { dglPending = not (dglPending l)})])
+
 -- | forget redo stack
 clearRedo :: DGraph -> DGraph
 clearRedo g = g { redoHistory = SizedList.empty }

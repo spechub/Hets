@@ -571,7 +571,11 @@ updateNodeProof checkCons gInfo (v, dgnode) tres = case tres of
                   else dgnode { dgn_theory = theory }
             newLbl = if checkCons then new else new { globalTheory
               = computeLabelTheory le dgraph (v, new) }
-            newDg = changeDGH dgraph $ SetNodeLab dgnode (v, newLbl)
+            newDg0 = changeDGH dgraph $ SetNodeLab dgnode (v, newLbl)
+            newDG1 = togglePending newDg0
+              $ changedLocalTheorems newDg0 (v, newLbl)
+            newDg = if checkCons then newDg0 else
+              togglePending newDG1 $ changedPendingEdges newDG1
             history = snd $ splitHistory dgraph newDg
             nst = add2history
                        (CommentCmd $ "basic inference done on " ++ nn ++ "\n")

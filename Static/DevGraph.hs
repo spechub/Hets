@@ -1183,7 +1183,8 @@ changedPendingEdges dg = let
           maybe Set.empty (\ ts -> case ts of
              LeftOpen -> Set.empty
              Proven _ pb -> proofBasis pb) . thmLinkStatus $ dgl_type l) m
-       , if b then Set.insert e es else es)) (Map.empty, Set.empty) ls
+       , if b && isLocalEdge (dgl_type l) then Set.insert e es else es))
+    (Map.empty, Set.empty) ls
   close known =
       let nxt = Map.keysSet $ Map.filter
                 (\ (_, _, _, s) -> not $ Set.null $ Set.intersection s known)
@@ -1192,6 +1193,21 @@ changedPendingEdges dg = let
       in if new == known then new else close new
   aPs = close ps
   in filter (\ (_, _, l) -> dglPending l /= Set.member (dgl_id l) aPs) ls
+
+changedLocalTheorems :: DGraph -> LNode DGNodeLab -> [LEdge DGLinkLab]
+changedLocalTheorems dg (v, lbl) =
+  case dgn_theory lbl of
+    G_theory _ _ _ sens _ ->
+      foldr (\ e@(_, _, el) l ->
+        let pend = dglPending el
+            psens = Map.keysSet $ OMap.filter isProvenSenStatus sens
+        in case thmLinkStatus $ dgl_type el of
+        Just (Proven (DGRuleLocalInference nms) _) | pend
+          == Set.isSubsetOf (Set.fromList $ map snd nms) psens -> e : l
+        _ -> l
+         ) []
+      $ filter (liftE $ \ e -> isLocalEdge e && not (isLocalDef e))
+      $ innDG dg v
 
 duplicateDefEdges :: DGraph -> [Edge]
 duplicateDefEdges = concat .
