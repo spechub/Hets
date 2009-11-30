@@ -219,6 +219,7 @@ globDecompForOneEdge dgraph edge@(source, target, edgeLab) = let
     provenEdge = (source, target, edgeLab
         { dgl_type = setProof (Proven (globDecompRule edge) proof_basis)
             $ dgl_type edgeLab
+        , dglPending = True
         , dgl_origin = DGLinkProof })
     in changesDGH newGr [DeleteEdge edge, InsertEdge provenEdge]
 
