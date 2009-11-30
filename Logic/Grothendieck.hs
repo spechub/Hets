@@ -110,7 +110,6 @@ import Control.Monad (foldM)
 import Data.Maybe (mapMaybe)
 import Data.Typeable
 import qualified Data.Map as Map
-import qualified Data.Set as Set
 
 import Text.ParserCombinators.Parsec (Parser, try, parse, eof, string, (<|>))
 -- for looking up modifications
@@ -593,14 +592,10 @@ instance Category G_sign GMorphism where
                 sigma1 ind1 mor startMorId
   dom (GMorphism r sigma ind _mor _) =
     G_sign (sourceLogic r) sigma ind
-  cod (GMorphism r (ExtSign _ sys) _ mor _) =
-    let lid1 = sourceLogic r
-        lid2 = targetLogic r
+  cod (GMorphism r (ExtSign _ _) _ mor _) =
+    let lid2 = targetLogic r
         sig2 = cod mor
-    in case coerceSymbolSet lid1 lid2 "" sys of
-      Nothing ->  G_sign lid2 (makeExtSign lid2 sig2) startSigId
-      Just sys2 -> G_sign lid2 (ExtSign sig2 $ Set.map (\ sy ->
-        Map.findWithDefault sy sy $ symmap_of lid2 mor) sys2) startSigId
+    in G_sign lid2 (makeExtSign lid2 sig2) startSigId
   legal_mor (GMorphism r (ExtSign s _) _ mor _) =
     legal_mor mor &&
     case maybeResult $ map_sign r s of
