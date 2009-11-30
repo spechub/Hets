@@ -32,6 +32,7 @@ basicAnalysis sign (MaudeText mt) = do
     hPutStrLn hIn $ unwords ["in", maudeHetsPath]
     let printedSign = parens $ vcat [text "mod FROM-HETS is", pretty sign, text mt, text "endm"]
     hPutStrLn hIn $ show printedSign
+    hFlush hIn
     specOut <- hGetContents hOut
     hClose hIn
     return $ convertSpec $ read $ findSpec specOut

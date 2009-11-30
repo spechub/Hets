@@ -431,6 +431,10 @@ createConjForm [] = CAS.True_atom nullRange
 createConjForm [a] = a
 createConjForm fs = CAS.Conjunction fs nullRange
 
+createImpForm :: CAS.CASLFORMULA -> CAS.CASLFORMULA -> CAS.CASLFORMULA
+createImpForm (CAS.True_atom _) form = form
+createImpForm form1 form2 = CAS.Implication form1 form2 True nullRange
+
 -- | generates the predicates asserting the "true" sort of the operator if all
 -- the arguments have the correct sort 
 ops2predPremises :: IdMap -> [MSym.Symbol] -> Int -> ([CAS.CASLTERM], [CAS.CASLFORMULA])
@@ -511,16 +515,18 @@ rewID = token2id $ mkSimpleId "rew"
 
 -- | translates a Maude equation without the "owise" attribute into a CASL formula
 noOwiseEq2Formula :: IdMap -> MAS.Equation -> CAS.CASLFORMULA
-noOwiseEq2Formula im (MAS.Eq t t' [] _) = quantifyUniversally form
+noOwiseEq2Formula im eq@(MAS.Eq t t' [] _) = quantifyUniversally vars_form
       where ct = maudeTerm2caslTerm im t
             ct' = maudeTerm2caslTerm im t'
             form = CAS.Strong_equation ct ct' nullRange
-noOwiseEq2Formula im (MAS.Eq t t' conds@(_:_) _) = quantifyUniversally form
+            vars_form = varsImp (MSentence.Equation eq) im form
+noOwiseEq2Formula im eq@(MAS.Eq t t' conds@(_:_) _) = quantifyUniversally vars_form
       where ct = maudeTerm2caslTerm im t
             ct' = maudeTerm2caslTerm im t'
             conds_form = conds2formula im conds
             concl_form = CAS.Strong_equation ct ct' nullRange
-            form = CAS.Implication conds_form concl_form True nullRange
+            form = createImpForm conds_form concl_form
+            vars_form = varsImp (MSentence.Equation eq) im form
 
 -- | transforms a Maude equation defined with the otherwise attribute into
 -- a CASL formula
@@ -528,9 +534,10 @@ owiseEq2Formula :: IdMap -> [Named CAS.CASLFORMULA] -> MAS.Equation
                    -> CAS.CASLFORMULA
 owiseEq2Formula im no_owise_form eq = form
       where (eq_form, vars) = noQuantification $ noOwiseEq2Formula im eq
+            vars_form = varsImp (MSentence.Equation eq) im eq_form
             (op, ts, _) = fromJust $ getLeftApp eq_form
             ex_form = existencialNegationOtherEqs op ts no_owise_form
-            imp_form = CAS.Implication ex_form eq_form True nullRange
+            imp_form = createImpForm ex_form vars_form
             form = CAS.Quantification CAS.Universal vars imp_form nullRange
 
 -- | generates a conjunction of negation of existencial quantifiers
@@ -656,14 +663,15 @@ getPremisesImplication form = [form]
 
 -- | translate a Maude membership into a CASL formula
 mb2formula :: IdMap -> MAS.Membership -> CAS.CASLFORMULA
-mb2formula im (MAS.Mb t s [] _) = quantifyUniversally form
+mb2formula im mb@(MAS.Mb t s [] _) = quantifyUniversally vars_form
       where ct = maudeTerm2caslTerm im t
             s' = token2id $ getName s
             kind = Map.findWithDefault (errorId "mb to formula")  s' im
             pred_type = CAS.Pred_type [kind] nullRange
             pred_name = CAS.Qual_pred_name s' pred_type nullRange
             form = CAS.Predication pred_name [ct] nullRange
-mb2formula im (MAS.Mb t s conds@(_ : _) _) = quantifyUniversally form
+            vars_form = varsImp (MSentence.Membership mb) im form
+mb2formula im mb@(MAS.Mb t s conds@(_ : _) _) = quantifyUniversally vars_form
       where ct = maudeTerm2caslTerm im t
             s' = token2id $ getName s
             kind = Map.findWithDefault (errorId "mb to formula") s' im
@@ -672,10 +680,11 @@ mb2formula im (MAS.Mb t s conds@(_ : _) _) = quantifyUniversally form
             conds_form = conds2formula im conds
             concl_form = CAS.Predication pred_name [ct] nullRange
             form = CAS.Implication conds_form concl_form True nullRange
+            vars_form = varsImp (MSentence.Membership mb) im form
 
 -- | translate a Maude rule into a CASL formula
 rl2formula :: IdMap -> MAS.Rule -> CAS.CASLFORMULA
-rl2formula im (MAS.Rl t t' [] _) = quantifyUniversally form
+rl2formula im rl@(MAS.Rl t t' [] _) = quantifyUniversally vars_form
        where ty = token2id $ getName $ MAS.getTermType t
              kind = Map.findWithDefault (errorId "rl to formula") ty im
              pred_type = CAS.Pred_type [kind, kind] nullRange
@@ -683,7 +692,8 @@ rl2formula im (MAS.Rl t t' [] _) = quantifyUniversally form
              ct = maudeTerm2caslTerm im t
              ct' = maudeTerm2caslTerm im t'
              form = CAS.Predication pred_name [ct, ct'] nullRange
-rl2formula im (MAS.Rl t t' conds@(_:_) _) = quantifyUniversally form
+             vars_form = varsImp (MSentence.Rule rl) im form
+rl2formula im rl@(MAS.Rl t t' conds@(_:_) _) = quantifyUniversally vars_form
        where ty = token2id $ getName $ MAS.getTermType t
              kind = Map.findWithDefault (errorId "rl to formula") ty im
              pred_type = CAS.Pred_type [kind, kind] nullRange
@@ -693,6 +703,7 @@ rl2formula im (MAS.Rl t t' conds@(_:_) _) = quantifyUniversally form
              conds_form = conds2formula im conds
              concl_form = CAS.Predication pred_name [ct, ct'] nullRange
              form = CAS.Implication conds_form concl_form True nullRange
+             vars_form = varsImp (MSentence.Rule rl) im form
 
 -- | translate a conjunction of Maude conditions to a CASL formula
 conds2formula :: IdMap -> [MAS.Condition] -> CAS.CASLFORMULA
@@ -902,6 +913,60 @@ quantifyUniversally form = if null var_decl
 listVarDecl :: Map.Map Id (Set.Set Token) -> [CAS.VAR_DECL]
 listVarDecl = Map.foldWithKey f []
       where f = \ sort var_set acc -> CAS.Var_decl (Set.toList var_set) sort nullRange : acc
+
+varsImp :: MSentence.Sentence -> IdMap -> CAS.CASLFORMULA -> CAS.CASLFORMULA
+varsImp sen im form = createImpForm imp_form form
+      where imp_form = varsImplication sen im
+
+-- | generates the implication obtained from the implicit information given
+-- in Maude variables
+varsImplication :: MSentence.Sentence -> IdMap -> CAS.CASLFORMULA
+varsImplication (MSentence.Membership mb) im = createConjForm forms
+      where MAS.Mb t _ conds _ = mb
+            formsTerm = varsImpTerm im t
+            formsCond = varsImpConds im conds
+            forms = Set.toList $ Set.union formsTerm formsCond
+varsImplication (MSentence.Equation eq) im = createConjForm forms
+      where MAS.Eq t _ conds _ = eq
+            formsTerm = varsImpTerm im t
+            formsCond = varsImpConds im conds
+            forms = Set.toList $ Set.union formsTerm formsCond
+varsImplication (MSentence.Rule rl) im = createConjForm forms
+      where MAS.Rl t _ conds _ = rl
+            formsTerm = varsImpTerm im t
+            formsCond = varsImpConds im conds
+            forms = Set.toList $ Set.union formsTerm formsCond
+
+-- | computes the predicates with the information associated to the variables in
+-- matching conditions
+varsImpConds :: IdMap -> [MAS.Condition] -> Set.Set CAS.CASLFORMULA
+varsImpConds im = foldr (Set.union . (varsImpCond im)) Set.empty
+
+-- | auxiliary function that computes the predicates with the information associated 
+-- to the variables in matching conditions
+varsImpCond :: IdMap -> MAS.Condition -> Set.Set CAS.CASLFORMULA
+varsImpCond im (MAS.MatchCond t _) = varsImpTerm im t
+varsImpCond _ _ = Set.empty
+
+-- | computes the predicates with the information associated to the variables in
+-- the terms
+varsImpTerms :: IdMap -> [MAS.Term] -> Set.Set CAS.CASLFORMULA
+varsImpTerms im = foldr (Set.union . (varsImpTerm im)) Set.empty
+
+-- | computes the predicates with the information associated to the variables in
+-- a term
+varsImpTerm :: IdMap -> MAS.Term -> Set.Set CAS.CASLFORMULA
+varsImpTerm im (MAS.Var q (MAS.TypeSort s)) = 
+                                  Set.singleton $ CAS.Predication ps [term] nullRange
+      where sort = token2id $ getName s
+            kind = im Map.! sort
+            pt = CAS.Pred_type [kind] nullRange
+            ps = CAS.Qual_pred_name sort pt nullRange
+            term = CAS.Qual_var q kind nullRange
+-- The variable is declared on the kind
+varsImpTerm _ (MAS.Var _ _) = Set.empty
+varsImpTerm im (MAS.Apply _ terms _) = varsImpTerms im terms
+varsImpTerm _ _ = Set.empty
 
 -- | removes a quantification from a formula
 noQuantification :: CAS.CASLFORMULA -> (CAS.CASLFORMULA, [CAS.VAR_DECL])

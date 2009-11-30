@@ -29,6 +29,7 @@ mod TALK_TEST is
  
  ceq f(X, Y) = X if X = Y .
  rl [d] : d => e .
+ rl f(X, Y) => Y .
 endm
 
 fth ALPHA_ASSOC is
@@ -51,14 +52,16 @@ view VALPHA from ALPHA_ASSOC to OTHER_ALPHA_ASSOC is
 endv
 
 fmod MY_LIST is
- sorts List Elt .
- subsort Elt < List .
+ pr NAT .
+ 
+ sorts List  .
+ subsort Nat < List .
  
  op nil : -> List [ctor] .
  op __ : List List -> List [ctor assoc id: nil] .
  
  var L : List .
- var E : Elt .
+ var E : Nat .
  
  op reverse : List -> List .
  eq reverse(nil) = nil .
