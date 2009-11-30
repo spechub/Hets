@@ -503,31 +503,22 @@ insertInnerNode nod tim tok morph sg sens dg =
                                 sg' = Maude.Sign.union sg $ target morph
                                 ext_sg = makeExtSign Maude sg'
                                 gt = G_theory Maude ext_sg startSigId th_sens startThId
-                                (ns, dg1) = insGTheory dg (inc nm) DGBasic gt
+                                nm' = inc nm
+                                (ns, dg1) = insGTheory dg nm' DGBasic gt
                                 nod2 = getNode ns
                                 morph' = setTarget sg' morph
                                 dg2 = insertDefEdgeMorphism nod2 nod morph' dg1
                                 -- inserting the free node
-                              in (nod2, tim, dg2)
-
-insertInnerFreeNode :: Token -> TokenInfoMap -> DGraph -> (Token, TokenInfoMap, DGraph)
-insertInnerFreeNode t tim dg = (t', tim', dg'')
-               where t' = mkFreeName t
-                     b = Map.member t' tim
-                     (tim', dg') = if b
-                                   then (tim, dg)
-                                   else insertInnerFreeNode2 t' tim (fromJust $ Map.lookup t tim) dg
-                     dg'' = if b
-                            then dg'
-                            else insertFreeEdge t' t tim' dg'
-
-insertInnerFreeNode2 :: Token -> TokenInfoMap -> ProcInfo -> DGraph -> (TokenInfoMap, DGraph)
-insertInnerFreeNode2 t tim (_, sg, _, _, _) dg = (tim', dg')
-              where ext_sg = makeExtSign Maude sg
-                    gt = G_theory Maude ext_sg startSigId noSens startThId
-                    name = makeName t
-                    (ns, dg') = insGTheory dg name DGBasic gt
-                    tim' = Map.insert t (getNode ns, sg, [], [], []) tim
+                                gt2 = G_theory Maude ext_sg startSigId noSens startThId
+                                (ns2, dg3) = insGTheory dg2 (inc nm') DGBasic gt2
+                                nod3 = getNode ns2
+                                -- inserting the free link
+                                inc_sg = Maude.Morphism.inclusion Maude.Sign.empty sg'
+                                mor = G_morphism Maude inc_sg startMorId
+                                dgt = FreeOrCofreeDefLink Free $ EmptyNode (Logic Maude)
+                                edg = defDGLink (gEmbed mor) dgt SeeTarget
+                                dg4 = snd $ insLEdgeDG (nod2, nod3, edg) dg3
+                              in (nod3, tim, dg4)
 
 -- | inserts the list of definition edges, building for each node the inclusion morphism
 -- between the signatures
