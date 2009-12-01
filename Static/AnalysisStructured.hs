@@ -717,15 +717,20 @@ anaAllFitArgs lg opts dg nsig name spname
   (gsigma', morDelta) <- applyGS lg gs actualargs
   gsigmaRes <- gsigUnion lg (getMaybeSig nsig) gsigma'
   let (ns, dg2) = insGSig dg' name (DGInst spname) gsigmaRes
-  dg3 <- foldM (parLink lg (DGLinkInstArg spname) ns) dg2 $ map snd actualargs
+  dg3 <- foldM (parLink lg nsig (DGLinkInstArg spname) ns) dg2
+    $ map snd actualargs
   return ( zipWith replaceAnnoted (reverse fitargs') afitargs, dg3
          , (morDelta, gsigma', ns))
 
-parLink :: LogicGraph -> DGLinkOrigin -> NodeSig -> DGraph -> NodeSig
-        -> Result DGraph
-parLink lg orig (NodeSig node gsigma') dg (NodeSig nA_i sigA_i)= do
-    incl <- ginclusion lg sigA_i gsigma'
-    return $ insLink dg incl globalDef orig nA_i node
+parLink :: LogicGraph -> MaybeNode -> DGLinkOrigin -> NodeSig -> DGraph
+           -> NodeSig -> Result DGraph
+parLink lg nsig orig (NodeSig node gsigma') dg (NodeSig nA_i sigA_i) =
+  case nsig of
+    JustNode (NodeSig nI _) | nI == nA_i -> return dg
+      -- actual parameter will be included via import
+    _ -> do
+      incl <- ginclusion lg sigA_i gsigma'
+      return $ insLink dg incl globalDef orig nA_i node
 
 -- Extension of signature morphisms (for instantitations)
 -- first some auxiliary functions
