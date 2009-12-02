@@ -18,6 +18,7 @@ module Static.ComputeTheory
     , computeDGraphTheories
     , computeLabelTheory
     , markHiding
+    , markFree
     ) where
 
 import Logic.Prover
@@ -37,9 +38,32 @@ import qualified Data.Map as Map
 nodeHasHiding :: DGraph -> Node -> Bool
 nodeHasHiding dg = labelHasHiding . labDG dg
 
+nodeHasFree :: DGraph -> Node -> Bool
+nodeHasFree dg = labelHasFree . labDG dg
+
+
+isFreeEdge :: DGLinkType -> Bool
+-- this is duplicated because I wanted to avoid quickly a cyclic import
+isFreeEdge edge = case edge of
+    FreeOrCofreeDefLink Free _ -> True
+    _ -> False
+
 {- | mark all nodes if they have incoming hiding edges.
    Assume reference nodes to other libraries being properly marked already.
 -}
+markFree :: LibEnv -> DGraph -> DGraph
+markFree le dgraph =
+  foldl (\ dg (n, lbl) -> let
+     ingoingEdges = innDG dg n
+     defEdges = filter (liftE isDefEdge) ingoingEdges
+     freeDefEdges = filter (liftE isFreeEdge ) defEdges
+     in fst $ labelNodeDG (n, lbl { labelHasFree =
+            if isDGRef lbl
+            then nodeHasFree (lookupDGraph (dgn_libname lbl) le)
+                 $ dgn_node lbl
+            else not (null freeDefEdges) }) dg)
+     dgraph $ topsortedNodes dgraph
+
 markHiding :: LibEnv -> DGraph -> DGraph
 markHiding le dgraph =
   foldl (\ dg (n, lbl) -> let
