@@ -68,9 +68,9 @@ leaves b = foldType FoldTypeRec
   , foldTypeAbs = \ _ (TypeArg i _ _ r c _ _) ty _ ->
         List.delete (c, (i, r)) ty
   , foldKindedType = \ _ ty _ _ -> ty
-  , foldTypeToken = \ _ _ -> error "leaves.foldTypeToken"
-  , foldBracketType = \ _ _ _ _ -> error "leaves.foldBracketType"
-  , foldMixfixType = const $ error "leaves.foldMixfixType" }
+  , foldTypeToken = \ _ _ -> []
+  , foldBracketType = \ _ _ _ _ -> []
+  , foldMixfixType = \ _ _ -> [] }
 
 -- | uninstantiate, non-generalized, unknown type variables
 freeTVars :: Type -> [(Int, (Id, RawKind))]
