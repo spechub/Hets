@@ -493,7 +493,7 @@ insertInnerNode :: Node -> TokenInfoMap -> Token -> Morphism -> Sign -> [Sentenc
                    -> DGraph -> (Node, TokenInfoMap, DGraph)
 insertInnerNode nod tim tok morph sg sens dg =
                          if (isIdentity morph) && null sens
-                         then let 
+                         then let
                                 (fn, tim', dg') = insertFreeNode tok tim dg
                                 (n2, _, _, _, _) = fromJust $ Map.lookup fn tim'
                               in (n2, tim', dg')
@@ -926,4 +926,6 @@ anaMaudeFile :: HetcatsOpts -> FilePath -> IO (Maybe (LibName, LibEnv))
 anaMaudeFile _ file = do
     dg <- directMaudeParsing file
     let name = emptyLibName "Maude_Module"
-    return $ Just (name, Map.singleton name $ computeDGraphTheories Map.empty dg)
+    return $ Just (name, Map.singleton name $
+              computeDGraphTheories Map.empty $ markFree Map.empty $
+              markHiding Map.empty dg)
