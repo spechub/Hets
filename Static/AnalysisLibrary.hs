@@ -187,7 +187,8 @@ anaLibDefn lgraph opts topLns libenv dg (Lib_defn ln alibItems pos ans) = do
   gannos <- showDiags1 opts $ liftR $ addGlobalAnnos emptyGlobalAnnos ans
   (libItems', dg', libenv', _) <- foldM (anaLibItemAux opts topLns)
       ([], dg { globalAnnos = gannos }, libenv, lgraph) (map item alibItems)
-  let dg1 = computeDGraphTheories libenv' $ markHiding libenv' dg'
+  let dg1 = computeDGraphTheories libenv' $ markFree libenv' $
+            markHiding libenv' dg'
   return (ln, Lib_defn ln
       (zipWith replaceAnnoted (reverse libItems') alibItems)
       pos ans, dg1, Map.insert ln dg1 libenv')

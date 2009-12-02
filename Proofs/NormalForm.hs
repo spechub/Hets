@@ -49,7 +49,6 @@ import Comorphisms.LogicGraph
 
 import Data.Maybe
 import Proofs.SimpleTheoremHideShift(getInComingGlobalUnprovenEdges)
-import Debug.Trace
 
 normalFormRule :: DGRule
 normalFormRule = DGRule "NormalForm"
@@ -405,7 +404,7 @@ theoremFreeShiftAux  ns dg = let
      -- have to replaced by theorem links with the same origin
      -- but pointing to the normal form of the former target node
   ingoingEdges = concatMap (getInComingGlobalUnprovenEdges dg) nodesWFree
-  in trace (show nodesWFree)$ foldl theoremFreeShiftForEdge
+  in foldl theoremFreeShiftForEdge
                               dg ingoingEdges
 
 theoremFreeShiftForEdge :: DGraph -> LEdge DGLinkLab -> DGraph
