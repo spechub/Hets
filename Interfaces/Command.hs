@@ -34,6 +34,7 @@ data GlobCmd =
   | Colimit
   | NormalForm
   | Freeness
+  | ThmFreeShift
   | QualifyNames
   | UndoCmd
   | RedoCmd
@@ -62,6 +63,7 @@ menuTextGlobCmd cmd = case cmd of
   CompositionCreateEdges -> "Create composed proven edges"
   Conservativity -> "Conservativity"
   ThmHideShift -> "Theorem-Hide-Shift"
+  ThmFreeShift -> "Theorem-Free-Shift"
   HideThmShift -> "Hide-Theorem-Shift"
   Colimit -> "Compute colimit"
   NormalForm -> "Compute normal form"

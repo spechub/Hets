@@ -123,6 +123,7 @@ data DGOrigin =
   | DGFlattening
     deriving (Show, Eq, Ord)
 
+
 -- | node content or reference to another library's node
 data DGNodeInfo = DGNode
   { node_origin :: DGOrigin       -- origin in input language
@@ -140,8 +141,11 @@ data DGNodeLab =
   , dgn_theory :: G_theory       -- local theory
   , globalTheory :: Maybe G_theory -- global theory
   , labelHasHiding :: Bool      -- has this node an ingoing hiding link
+  , labelHasFree :: Bool        -- has incoming free definition link
   , dgn_nf :: Maybe Node         -- normal form, for Theorem-Hide-Shift
   , dgn_sigma :: Maybe GMorphism -- inclusion of signature into nf signature
+  , dgn_freenf :: Maybe Node -- normal form for freeness
+  , dgn_phi :: Maybe GMorphism --morphism from signature to nffree signature
   , nodeInfo :: DGNodeInfo
   , dgn_lock :: Maybe (MVar ())
   } deriving (Show, Eq)
@@ -659,8 +663,11 @@ newInfoNodeLab name info gTh = DGNodeLab
   , dgn_theory = gTh
   , globalTheory = Nothing
   , labelHasHiding = False
+  , labelHasFree = False
   , dgn_nf = Nothing
   , dgn_sigma = Nothing
+  , dgn_freenf = Nothing
+  , dgn_phi = Nothing
   , nodeInfo = info
   , dgn_lock = Nothing }
 

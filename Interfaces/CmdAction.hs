@@ -15,7 +15,7 @@ module Interfaces.CmdAction where
 
 import Proofs.QualifyNames (qualifyLibEnv)
 import Proofs.DGFlattening
-import Proofs.NormalForm (normalForm, freeness)
+import Proofs.NormalForm (normalForm, freeness, theoremFreeShift)
 import Proofs.Automatic(automatic)
 import Proofs.Global (globSubsume, globDecomp)
 import Proofs.Local (localInference, locDecomp)
@@ -49,7 +49,8 @@ globLibResultAct =
   [ (ThmHideShift, theoremHideShift)
   , (Colimit, computeColimit)
   , (NormalForm, normalForm)
-  , (Freeness, freeness) ]
+  , (Freeness, freeness)
+  , (ThmFreeShift, theoremFreeShift) ]
 
 globResultAct :: [(GlobCmd, LibEnv -> Result LibEnv)]
 globResultAct =
