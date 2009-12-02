@@ -367,8 +367,12 @@ anaViewDefn lgraph libenv dg opts vn gen vt gsis pos = do
       emor <- fmap gEmbed $ anaGmaps lgraph opts pos gsigmaS' gsigmaT gsis
       gmor <- comp tmor emor
       let vsig = ExtViewSig src gmor $ ExtGenSig gsig tar
+          voidView = nodeS == nodeT && isHomInclusion gmor
+      when voidView $ warning ()
+        ("identity mapping of source to same target for view: " ++ tokStr vn)
+        pos
       return (View_defn vn gen' vt' gsis pos,
-                (insLink dg'' gmor globalThm
+                (if voidView then dg'' else insLink dg'' gmor globalThm
                  (DGLinkView vn) nodeS nodeT)
                 -- 'LeftOpen' for conserv correct?
                 { globalEnv = Map.insert vn (ViewEntry vsig) genv }
