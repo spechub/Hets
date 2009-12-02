@@ -401,7 +401,7 @@ inducedFromToMorphismExt extInd extEm isSubExt diffExt rmap sig1@(ExtSign _ sy1)
            combs = pairs (map ASymbol $ Set.toList ss1)
              $ map ASymbol $ Set.toList sy2
            fcombs = filter (all compatibleRawSymbs) combs
-       in if null (drop 170 combs) && null (drop 20 fcombs) then
+       in if null (drop 257 combs) && null (drop 20 fcombs) then
           case filter (isOk . fst) $ map (iftm . Map.union rmap . Map.fromList)
                fcombs of
             [] -> res
@@ -431,7 +431,7 @@ compatibleRawSymbs p = case p of
   (ASymbol s1, ASymbol s2) -> compatibleSymbols False (s1, s2)
   _ -> False -- irrelevant
 
-pairs :: [a] -> [a] -> [[(a, a)]]
+pairs :: [a] -> [b] -> [[(a, b)]]
 pairs l1 = map (zip l1) . takeKFromN l1
 
 takeKFromN :: [b] -> [a] -> [[a]]
