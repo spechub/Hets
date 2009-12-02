@@ -1103,7 +1103,8 @@ stringMap = Map.fromList
      ("_<_", "__<__"),
      ("_<=_", "__<=__"),
      ("_>_", "__>__"),
-     ("_>=_", "__>=__")]
+     ("_>=_", "__>=__"),
+     ("_and_", "__maudeAnd__")]
 
 -- | splits the string into a list of tokens, separating the double
 -- underscores from the rest of characters

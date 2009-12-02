@@ -626,7 +626,7 @@ mkFreeName i@(Id ts cs r) = case ts of
 
 -- | a prefix for free names
 freeNamePrefix :: String
-freeNamePrefix = "free_"
+freeNamePrefix = "gn_free_"
 
 -- | create a generated simple identifier
 freeToken :: String -> Token
