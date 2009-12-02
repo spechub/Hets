@@ -394,14 +394,14 @@ inducedFromToMorphismExt extInd extEm isSubExt diffExt rmap sig1@(ExtSign _ sy1)
         res = fst $ iftm rmap
         pos = concatMapRange getRange $ Map.keys rmap
     in if isOk res then res else
-       let ss1 = Set.filter (\ s -> Set.null $ Set.filter (\ s2 ->
-                   compatibleSymbols True (s, s2)) sy2)
+       let ss1 = Set.filter (\ s -> Set.null $ Set.filter
+                             (compatibleSymbols True s) sy2)
              $ Set.filter (\ s -> not $ any (matches s) $ Map.keys rmap)
                  sy1
-           combs = pairs (map ASymbol $ Set.toList ss1)
-             $ map ASymbol $ Set.toList sy2
-           fcombs = filter (all compatibleRawSymbs) combs
-       in if null (drop 257 combs) && null (drop 20 fcombs) then
+           fcombs = filteredPairs compatibleRawSymbs
+                    (map ASymbol $ Set.toList ss1)
+                    $ map ASymbol $ Set.toList sy2
+       in if null (drop 20 fcombs) then
           case filter (isOk . fst) $ map (iftm . Map.union rmap . Map.fromList)
                fcombs of
             [] -> res
@@ -412,32 +412,28 @@ inducedFromToMorphismExt extInd extEm isSubExt diffExt rmap sig1@(ExtSign _ sy1)
                   (vcat $ map (pretty . snd) l)) pos
           else warning () "too many possibilities for symbol maps" pos >> res
 
-compatibleSymbTypes :: (SymbType, SymbType) -> Bool
-compatibleSymbTypes p = case p of
+compatibleSymbTypes :: SymbType -> SymbType -> Bool
+compatibleSymbTypes s1 s2 = case (s1, s2) of
   (SortAsItemType, SortAsItemType) -> True
-  (OtherTypeKind s1, OtherTypeKind s2) -> s1 == s2
+  (OtherTypeKind t1, OtherTypeKind t2) -> t1 == t2
   (OpAsItemType t1, OpAsItemType t2) ->
      length (opArgs t1) == length (opArgs t2)
   (PredAsItemType p1, PredAsItemType p2) ->
       length (predArgs p1) == length (predArgs p2)
   _ -> False
 
-compatibleSymbols :: Bool -> (Symbol, Symbol) -> Bool
-compatibleSymbols alsoId (Symbol i1 k1, Symbol i2 k2) =
-  compatibleSymbTypes (k1, k2) && (not alsoId || i1 == i2)
+compatibleSymbols :: Bool -> Symbol -> Symbol -> Bool
+compatibleSymbols alsoId (Symbol i1 k1) (Symbol i2 k2) =
+  compatibleSymbTypes k1 k2 && (not alsoId || i1 == i2)
 
-compatibleRawSymbs :: (RawSymbol, RawSymbol) -> Bool
-compatibleRawSymbs p = case p of
-  (ASymbol s1, ASymbol s2) -> compatibleSymbols False (s1, s2)
+compatibleRawSymbs :: RawSymbol -> RawSymbol -> Bool
+compatibleRawSymbs r1 r2 = case (r1, r2) of
+  (ASymbol s1, ASymbol s2) -> compatibleSymbols False s1 s2
   _ -> False -- irrelevant
 
-pairs :: [a] -> [b] -> [[(a, b)]]
-pairs l1 = map (zip l1) . takeKFromN l1
-
-takeKFromN :: [b] -> [a] -> [[a]]
-takeKFromN s l = case s of
-  [] -> [[]]
-  _ : r -> [ a : b | a <- l, b <- takeKFromN r l]
+filteredPairs :: (a -> b -> Bool) -> [a] -> [b] -> [[(a, b)]]
+filteredPairs p s l = sequence [[(a, b) | b <- filter (p a) l] | a <- s]
+-- http://www.haskell.org/pipermail/haskell-cafe/2009-December/069957.html
 
 inducedFromToMorphismAuxExt :: (Eq e, Show f, Pretty e, Pretty m)
                       => InducedSign f e m e
