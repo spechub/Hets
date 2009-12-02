@@ -639,9 +639,11 @@ anaFitArg lg dg spname nsigI (NodeSig nP gsigmaP) opts name fv = case fv of
    (sp', nsigA@(NodeSig nA gsigA), dg') <-
        anaSpec False lg dg nsigI name opts (item asp)
    gmor <- anaGmaps lg opts pos gsigmaP gsigA gsis
-   return (Fit_spec (replaceAnnoted sp' asp) gsis pos,
-          insLink dg' (gEmbed gmor) globalThm
-             (DGLinkInst spname) nP nA, (gmor, nsigA))
+   return ( Fit_spec (replaceAnnoted sp' asp) gsis pos
+          , let eGmor = gEmbed gmor in
+            if nP == nA && isHomInclusion eGmor then dg' else
+                insLink dg' eGmor globalThm (DGLinkInst spname) nP nA
+          , (gmor, nsigA))
   Fit_view vn afitargs pos -> case lookupGlobalEnvDG vn dg of
     Just (ViewEntry (ExtViewSig (NodeSig nSrc gsigmaS) mor
       gs@(ExtGenSig (GenSig _ params _) target@(NodeSig nTar _))))
