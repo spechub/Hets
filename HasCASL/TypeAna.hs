@@ -141,9 +141,9 @@ rawKindOfType = foldType FoldTypeRec
         fromMaybe (error "rawKindOfType.foldExpandedType") . minRawKind "" k1
   , foldTypeAbs = \ _ (TypeArg _ v _ r _ _ _) -> FunKind v r
   , foldKindedType = \ _ k _ _ -> k
-  , foldTypeToken = \ _ _ -> error "rawKindOfType.foldTypeToken"
-  , foldBracketType = \ _ _ _ _ -> error "rawKindOfType.foldBracketType"
-  , foldMixfixType = \ _ -> error "rawKindOfType.foldMixfixType" }
+  , foldTypeToken = \ _ _ -> rStar
+  , foldBracketType = \ _ _ _ _ -> rStar
+  , foldMixfixType = \ _ _ -> rStar }
 
 -- | subtyping relation
 lesserType :: Env -> Type -> Type -> Bool
