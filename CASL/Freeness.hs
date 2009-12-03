@@ -619,9 +619,9 @@ mkFreeName :: Id -> Id
 mkFreeName i@(Id ts cs r) = case ts of
   t : s -> let st = tokStr t in case st of
     c : _ | isAlpha c || isDigit c -> Id (freeToken st : s) cs r
-          | isPlace t -> Id (mkSimpleId "free" : ts) cs r
+          | isPlace t -> Id (mkSimpleId "gn_free" : ts) cs r
           | c == '\'' -> i
-    _ -> Id (mkSimpleId "free_f" : ts) cs r
+    _ -> Id (mkSimpleId "gn_free_f" : ts) cs r
   _ -> i
 
 -- | a prefix for free names
