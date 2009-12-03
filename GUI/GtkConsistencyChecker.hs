@@ -183,8 +183,8 @@ showConsistencyChecker gInfo@(GInfo { libName = ln }) = postGUIAsync $ do
   setListSelectorSingle trvFinder update
 
   let upd = updateNodes trvNodes listNodes
-        (\ s -> do labelSetLabel lblSublogic $ show s
-                   updateFinder trvFinder listFinder s)
+        (\ b s -> do labelSetLabel lblSublogic $ show s
+                     updateFinder trvFinder listFinder b s)
         (do labelSetLabel lblSublogic "No sublogic"
             listStoreClear listFinder
             activate widgets False
@@ -242,26 +242,26 @@ showConsistencyChecker gInfo@(GInfo { libName = ln }) = postGUIAsync $ do
   widgetShow window
 
 -- | Called when node selection is changed. Updates finder list
-updateNodes :: TreeView -> ListStore FNode -> (G_sublogics -> IO ())
+updateNodes :: TreeView -> ListStore FNode -> (Bool -> G_sublogics -> IO ())
             -> IO () -> IO () -> IO ()
 updateNodes view listNodes update lock unlock = do
   nodes <- getSelectedMultiple view listNodes
   if null nodes then lock
     else let sls = map (sublogic . snd) nodes in
-      maybe lock (\ sl -> do unlock; update sl)
+      maybe lock (\ sl -> do unlock; update (length nodes == 1) sl)
             $ foldl (\ ma b -> case ma of
                       Just a -> joinSublogics b a
                       Nothing -> Nothing) (Just $ head sls) $ tail sls
 
 -- | Update the list of finder
-updateFinder :: TreeView -> ListStore Finder -> G_sublogics -> IO ()
-updateFinder view list sl = do
+updateFinder :: TreeView -> ListStore Finder -> Bool -> G_sublogics -> IO ()
+updateFinder view list useNonBatch sl = do
   old <- listStoreToList list
   let new = Map.elems $ foldr (\ (cc, c) m ->
               let n = getPName cc
                   f = Map.findWithDefault (Finder n cc [] 0) n m
               in Map.insert n (f { comorphism = c : comorphism f}) m) Map.empty
-              $ filter (\ (G_cons_checker _ cc, _) -> ccBatch cc)
+              $ filter (\ (G_cons_checker _ cc, _) -> useNonBatch || ccBatch cc)
               $ getConsCheckers $ findComorphismPaths logicGraph sl
   when (old /= new) $ do
     -- update list and try to select previous finder
