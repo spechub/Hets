@@ -31,6 +31,7 @@ import Interfaces.GenericATPState (guiDefaultTimeLimit)
 
 import Logic.Grothendieck
 import Logic.Comorphism (AnyComorphism(..))
+import Logic.Prover
 
 import Comorphisms.LogicGraph (logicGraph)
 
@@ -260,6 +261,7 @@ updateFinder view list sl = do
               let n = getPName cc
                   f = Map.findWithDefault (Finder n cc [] 0) n m
               in Map.insert n (f { comorphism = c : comorphism f}) m) Map.empty
+              $ filter (\ (G_cons_checker _ cc, _) -> ccBatch cc)
               $ getConsCheckers $ findComorphismPaths logicGraph sl
   when (old /= new) $ do
     -- update list and try to select previous finder
